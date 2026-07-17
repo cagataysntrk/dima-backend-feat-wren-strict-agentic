@@ -25,8 +25,11 @@ pnpm dev
 `pnpm dev`, [localtld](https://github.com/abdullahharunozturk) kuruluysa uygulamayı
 sabit bir domain altında çalıştırır (yoksa düz `next dev`'e düşer):
 
-- Frontend → **http://frontend.dima.localtld.sh** (`package.json` › `localtld: frontend.dima`)
-- Backend  → **http://backend.dima.localtld.sh** (`.env.local` › `NEXT_PUBLIC_API_URL`)
+- Frontend → **http://frontend.dima.localtld** (`package.json` › `localtld: frontend.dima`)
+- Backend  → **http://backend.dima.localtld** (`.env.local` › `NEXT_PUBLIC_API_URL`)
+
+> Kanonik domain `.localtld`'dir; bazı kurulumlar (localtld.sh servisi) `.localtld.sh` sunar —
+> `allowedDevOrigins` ve backend CORS ikisini de kapsar.
 
 Böylece `localhost:3000`/`:8000` yerine kalıcı domainler kullanılır (aaron/mamut ile aynı desen).
 İlk sefer: `localtld setup`. localtld yoksa `NEXT_PUBLIC_API_URL=http://localhost:8000` yapın.
