@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...ama örnek şablonlar (sır içermez) commit edilir
+!.env.example
+!.env.local.example
 
 # vercel
 .vercel

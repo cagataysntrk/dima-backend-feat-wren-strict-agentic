@@ -3,11 +3,11 @@
 `dima`'nın kullanıcı arayüzü — **Next.js 16** (App Router) + React 19 + Tailwind 4.
 Doğal dille soru sor, dima'nın ürettiği SQL'i ve sonuç tablosunu gör.
 
-WrenAI (dima) açık kaynak tarafında hazır bir son-kullanıcı UI sunmaz; bu arayüzü
-biz geliştiriyoruz. `dima-backend` (FastAPI) üzerinden `dima` motoruna bağlanır.
+WrenAI (dima-wrenai) açık kaynak tarafında hazır bir son-kullanıcı UI sunmaz; bu arayüzü
+biz geliştiriyoruz. `dima-backend` (FastAPI) üzerinden `dima-wrenai` motoruna bağlanır.
 
 ```
-dima-frontend (bu repo)  ──HTTP──►  dima-backend  ──►  dima (Wren) motoru  ──►  DB
+dima-frontend (bu repo)  ──HTTP──►  dima-backend  ──►  dima-wrenai (Wren) motoru  ──►  DB
 ```
 
 ## Teknoloji
