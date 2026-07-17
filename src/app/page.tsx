@@ -9,10 +9,12 @@ import { useHistory } from "@/stores/history";
 import type { AskResponse } from "@/lib/types";
 
 const EXAMPLES = [
-  "Müşteri bazında toplam ciro nedir?",
-  "En çok satan ürün hangisi?",
-  "Durumlara göre sipariş tutarları nedir?",
-  "Tamamlanan siparişlerin toplam cirosu nedir?",
+  "Makine bazında ortalama OEE nedir?",
+  "En verimsiz vardiya hangisi?",
+  "Personel bazında ortalama OEE nedir?",
+  "Makine bazında toplam fire kaç kg?",
+  "En çok su tüketen renk hangisi?",
+  "Reddedilen partilerin toplam ağırlığı nedir?",
 ];
 
 export default function Home() {
@@ -56,7 +58,7 @@ export default function Home() {
             <input
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Örn. Müşteri bazında toplam ciro nedir?"
+              placeholder="Örn. Makine bazında ortalama OEE nedir?"
               className="flex-1 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-transparent px-4 py-2.5 text-sm outline-none focus:border-neutral-500"
             />
             <button
