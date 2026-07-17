@@ -7,7 +7,8 @@
     "dev": "if command -v localtld >/dev/null 2>&1; then localtld run -- next dev; else next dev; fi",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "e2e": "node e2e/browser-e2e.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",
