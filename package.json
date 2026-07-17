@@ -2,6 +2,7 @@
   "name": "dima-frontend",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.12.1",
   "localtld": "frontend.dima",
   "scripts": {
     "dev": "if command -v localtld >/dev/null 2>&1; then localtld run -- next dev; else next dev; fi",
