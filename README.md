@@ -18,9 +18,18 @@ dima-frontend (bu repo)  ──HTTP──►  dima-backend  ──►  dima (Wre
 ```bash
 pnpm install
 cp .env.local.example .env.local   # NEXT_PUBLIC_API_URL → dima-backend
-pnpm dev                            # http://localhost:3000
+pnpm dev
 ```
-`dima-backend`'in `http://localhost:8000` üzerinde çalışıyor olması gerekir.
+
+### localtld (yerel domain)
+`pnpm dev`, [localtld](https://github.com/abdullahharunozturk) kuruluysa uygulamayı
+sabit bir domain altında çalıştırır (yoksa düz `next dev`'e düşer):
+
+- Frontend → **http://frontend.dima.localtld.sh** (`package.json` › `localtld: frontend.dima`)
+- Backend  → **http://backend.dima.localtld.sh** (`.env.local` › `NEXT_PUBLIC_API_URL`)
+
+Böylece `localhost:3000`/`:8000` yerine kalıcı domainler kullanılır (aaron/mamut ile aynı desen).
+İlk sefer: `localtld setup`. localtld yoksa `NEXT_PUBLIC_API_URL=http://localhost:8000` yapın.
 
 ## Yapı
 ```
