@@ -37,6 +37,24 @@ export function SchemaPanel() {
           </li>
         ))}
       </ul>
+
+      {data?.relationships && data.relationships.length > 0 && (
+        <>
+          <h2 className="mt-6 text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-3">
+            İlişkiler
+          </h2>
+          <ul className="space-y-2">
+            {data.relationships.map((rel) => (
+              <li key={rel.name} className="text-xs text-neutral-500">
+                <span className="font-mono text-neutral-700 dark:text-neutral-300">
+                  {rel.models.join(" → ")}
+                </span>
+                <span className="block text-neutral-400">{rel.condition}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </aside>
   );
 }

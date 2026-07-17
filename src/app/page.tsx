@@ -9,6 +9,7 @@ import { useHistory } from "@/stores/history";
 import type { AskResponse } from "@/lib/types";
 
 const EXAMPLES = [
+  "Makine bazında verim ve fire oranı",
   "Makine bazında ortalama OEE nedir?",
   "En verimsiz vardiya hangisi?",
   "Personel bazında ortalama OEE nedir?",

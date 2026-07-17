@@ -10,10 +10,18 @@ export interface ModelMeta {
   columns: ColumnMeta[];
 }
 
+export interface RelationshipMeta {
+  name: string;
+  models: string[];
+  join_type: string;
+  condition: string;
+}
+
 export interface SchemaResponse {
   catalog: string | null;
   schema_name: string | null;
   models: ModelMeta[];
+  relationships: RelationshipMeta[];
 }
 
 export type Row = Record<string, unknown>;
