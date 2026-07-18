@@ -14,7 +14,10 @@ const EXAMPLES = [
   "En verimsiz vardiya hangisi?",
   "Aşama bazında toplam fire",
   "Müşteri bazında ciro",
-  "Kumaş cinsine göre su tüketimi",
+  "En pahalı reçete hangisi?",
+  "Geciken siparişler",
+  "Müşteri bazında sevkiyat fire oranı",
+  "Aylık fire trendi",
   "Reddedilen partileri listele",
 ];
 
