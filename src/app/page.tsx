@@ -3,21 +3,21 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { apiErrorMessage, ask } from "@/lib/api-client";
-import { ResultTable } from "@/components/ResultTable";
+import { ResultView } from "@/components/ResultView";
 import { SchemaPanel } from "@/components/SchemaPanel";
 import { useHistory } from "@/stores/history";
 import type { AskResponse } from "@/lib/types";
 
 const EXAMPLES = [
+  "Vardiya × gün verimlilik tablosu",
   "Makine bazında verim ve fire oranı",
   "Personel bazında ortalama OEE nedir?",
-  "En verimsiz vardiya hangisi?",
   "Aşama bazında toplam fire",
   "Müşteri bazında ciro",
   "En pahalı reçete hangisi?",
   "Geciken siparişler",
-  "Müşteri bazında sevkiyat fire oranı",
   "Aylık fire trendi",
+  "Marmara boya aylara göre cirosu",
   "Reddedilen partileri listele",
 ];
 
@@ -103,14 +103,7 @@ export default function Home() {
                 </pre>
               </div>
 
-              {data.result && (
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">
-                    Sonuç ({data.result.row_count} satır)
-                  </h3>
-                  <ResultTable result={data.result} />
-                </div>
-              )}
+              {data.result && <ResultView result={data.result} />}
             </section>
           )}
         </div>

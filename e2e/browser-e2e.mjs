@@ -258,19 +258,31 @@ async function testBrowser() {
       );
     });
 
-    await check("Sonuç geldi: SQL'de JOIN + tablo satırları", async () => {
+    await check("Sonuç geldi: SQL'de JOIN + grafik render edildi", async () => {
+      // Sonuç varsayılan olarak GRAFİK (ECharts canvas) olarak gelir.
       const res = await waitFor(
         cdp,
         `(() => {
           const pre = document.querySelector('pre');
+          const canvas = document.querySelector('canvas');
           const rows = document.querySelectorAll('table tbody tr').length;
-          if (!pre || rows === 0) return null;
-          return { sql: pre.textContent, rows };
+          if (!pre || (!canvas && rows === 0)) return null;
+          return { sql: pre.textContent, chart: !!canvas, rows };
         })()`,
-        { timeout: 20000, label: "sonuç tablosu" },
+        { timeout: 20000, label: "sonuç grafiği" },
       );
       if (!/join/i.test(res.sql)) throw new Error(`SQL'de JOIN yok: ${res.sql}`);
-      return `${res.rows} satır, SQL çapraz-tablo`;
+      return res.chart ? "ECharts grafik + SQL çapraz-tablo" : `${res.rows} satır (tablo)`;
+    });
+
+    await check("Tablo görünümüne geçilebiliyor", async () => {
+      await cdp.evaluate(`(() => {
+        const b = [...document.querySelectorAll('button')].find(x => (x.textContent||'').trim() === 'Tablo');
+        if (b) b.click();
+      })()`);
+      await waitFor(cdp, `document.querySelectorAll('table tbody tr').length > 0`, {
+        label: "tablo satırları",
+      });
     });
   } finally {
     cdp?.close();
