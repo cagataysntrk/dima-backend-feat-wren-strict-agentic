@@ -9,7 +9,7 @@ import { useHistory } from "@/stores/history";
 import type { AskResponse } from "@/lib/types";
 
 const EXAMPLES = [
-  "Vardiya × gün verimlilik tablosu",
+  "Vardiya × haftanın günü verimliliği (son 3 ay)",
   "Makine bazında verim ve fire oranı",
   "Personel bazında ortalama OEE nedir?",
   "Aşama bazında toplam fire",

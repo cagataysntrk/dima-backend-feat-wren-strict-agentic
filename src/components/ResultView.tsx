@@ -40,10 +40,13 @@ export function ResultView({ result }: { result: QueryResult }) {
   }, []);
 
   const availableTypes = useMemo<ChartKind[]>(() => {
-    if (a.heat) return ["heatmap", "bar"];
-    const t: ChartKind[] = a.timeCol ? ["line", "bar"] : ["bar", "line"];
-    if (a.primaryDim && a.measures.length >= 1 && result.rows.length <= 12) t.push("pie");
-    return t;
+    const t: ChartKind[] = [];
+    if (a.timeCol) t.push("line");
+    t.push("bar");
+    if (a.heat) t.push("heatmap");
+    if (!a.timeCol && a.primaryDim && a.measures.length >= 1 && result.rows.length <= 12) t.push("pie");
+    // analiz edilen tip başta, tekrarsız (kpi/none hariç)
+    return [...new Set([a.kind, ...t])].filter((k) => k !== "kpi" && k !== "none");
   }, [a, result.rows.length]);
 
   const option = useMemo(

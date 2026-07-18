@@ -1,8 +1,9 @@
 import type { QueryResult } from "@/lib/types";
+import { fmtValue } from "@/lib/format";
 
-function formatCell(value: unknown): string {
+function formatCell(value: unknown, col: string): string {
   if (value === null || value === undefined) return "—";
-  if (typeof value === "number") return value.toLocaleString("tr-TR");
+  if (typeof value === "number") return fmtValue(value, col);
   return String(value);
 }
 
@@ -30,7 +31,7 @@ export function ResultTable({ result }: { result: QueryResult }) {
             <tr key={i} className="border-t border-neutral-100 dark:border-neutral-800">
               {result.columns.map((col) => (
                 <td key={col} className="px-3 py-2 whitespace-nowrap tabular-nums">
-                  {formatCell(row[col])}
+                  {formatCell(row[col], col)}
                 </td>
               ))}
             </tr>
