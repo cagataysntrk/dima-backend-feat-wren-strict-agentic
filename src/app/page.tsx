@@ -10,12 +10,12 @@ import type { AskResponse } from "@/lib/types";
 
 const EXAMPLES = [
   "Makine bazında verim ve fire oranı",
-  "Makine bazında ortalama OEE nedir?",
-  "En verimsiz vardiya hangisi?",
   "Personel bazında ortalama OEE nedir?",
-  "Makine bazında toplam fire kaç kg?",
-  "En çok su tüketen renk hangisi?",
-  "Reddedilen partilerin toplam ağırlığı nedir?",
+  "En verimsiz vardiya hangisi?",
+  "Aşama bazında toplam fire",
+  "Müşteri bazında ciro",
+  "Kumaş cinsine göre su tüketimi",
+  "Reddedilen partileri listele",
 ];
 
 export default function Home() {
