@@ -37,6 +37,8 @@ export interface AskResponse {
   sql: string;
   planned_sql: string | null;
   result: QueryResult | null;
+  // Provenance: SQL'i kim üretti — "cube" (deterministik 🥇) | "llm:<sağlayıcı>" | "rule".
+  source: string | null;
 }
 
 export interface AskRequest {

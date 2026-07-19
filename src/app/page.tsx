@@ -21,6 +21,30 @@ const EXAMPLES = [
   "Reddedilen partileri listele",
 ];
 
+// SQL'in nasıl üretildiğini gösterir: cube = deterministik (🥇), llm, kural.
+function SourceBadge({ source }: { source: string | null }) {
+  if (!source) return null;
+  let label: string, cls: string;
+  if (source === "cube") {
+    label = "🥇 Deterministik · cube";
+    cls = "border-green-300 text-green-700 dark:text-green-400 dark:border-green-800 bg-green-50/60 dark:bg-green-950/30";
+  } else if (source.startsWith("llm:")) {
+    label = `🤖 LLM · ${source.slice(4)}`;
+    cls = "border-blue-300 text-blue-700 dark:text-blue-400 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-950/30";
+  } else {
+    label = "⚙️ Kural-tabanlı";
+    cls = "border-neutral-300 text-neutral-600 dark:text-neutral-400 dark:border-neutral-700";
+  }
+  return (
+    <span
+      title="SQL bu yolla üretildi (deterministik-önce: bilinen metrik → cube, yeni soru → LLM)"
+      className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${cls}`}
+    >
+      {label}
+    </span>
+  );
+}
+
 export default function Home() {
   const [question, setQuestion] = useState("");
   const addHistory = useHistory((s) => s.add);
@@ -95,9 +119,12 @@ export default function Home() {
           {data && (
             <section className="mt-8 space-y-5">
               <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">
-                  Üretilen SQL
-                </h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    Üretilen SQL
+                  </h3>
+                  <SourceBadge source={data.source} />
+                </div>
                 <pre className="overflow-auto rounded-lg bg-neutral-900 p-4 text-xs text-neutral-100 font-mono">
                   {data.sql}
                 </pre>
