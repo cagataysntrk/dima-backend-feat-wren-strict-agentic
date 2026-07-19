@@ -28,6 +28,9 @@ function SourceBadge({ source }: { source: string | null }) {
   if (source === "cube") {
     label = "🥇 Deterministik · cube";
     cls = "border-green-300 text-green-700 dark:text-green-400 dark:border-green-800 bg-green-50/60 dark:bg-green-950/30";
+  } else if (source === "cube+llm") {
+    label = "🥇 Cube · LLM eşleme";
+    cls = "border-emerald-300 text-emerald-700 dark:text-emerald-400 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-950/30";
   } else if (source.startsWith("llm:")) {
     label = `🤖 LLM · ${source.slice(4)}`;
     cls = "border-blue-300 text-blue-700 dark:text-blue-400 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-950/30";
