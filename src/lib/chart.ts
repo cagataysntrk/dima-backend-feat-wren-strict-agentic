@@ -66,6 +66,8 @@ export function analyze(result: QueryResult): Analysis {
 
   let kind: ChartKind = "none";
   if (rows.length === 1 && measures.length >= 1 && dims.length <= 1) kind = "kpi";
+  // Geniş detay/liste (çok kolon) ya da ölçüsüz sonuç → grafik değil, TABLO.
+  else if (measures.length === 0 || dims.length > 2) kind = "none";
   else if (heat) kind = "heatmap";
   else if (timeCol && measures.length >= 1) kind = "line";
   else if (primaryDim && measures.length >= 1) kind = "bar";
