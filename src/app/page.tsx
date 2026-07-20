@@ -18,6 +18,7 @@ type Drawer = "settings" | "help" | null;
 export default function Home() {
   const [active, setActive] = useState<AskResponse | null>(null);
   const [drawer, setDrawer] = useState<Drawer>(null);
+  const [sessionId] = useState(() => crypto.randomUUID());
   const items = useHistory((s) => s.items);
   const addHistory = useHistory((s) => s.add);
 
@@ -29,6 +30,7 @@ export default function Home() {
         // mevcut raporu düzenler ("aylara göre", "temmuzu çıkar") — ADR-0007.
         cube_query: active?.cube_query ?? null,
         history: items.map((i) => i.question).slice(0, 8),
+        session_id: sessionId,
       }),
     onSuccess: (data) => {
       addHistory(data);

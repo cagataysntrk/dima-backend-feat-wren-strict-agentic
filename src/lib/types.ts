@@ -45,6 +45,8 @@ export interface AskResponse {
   cube_query: CubeQuery | null;
   // Rapor üretilmediğinde dürüst açıklama (alan modelde yok / anlaşılamadı) — rapor değişmez.
   note?: string | null;
+  // Sorgunun nasıl çözüldüğü — pipeline adımları ("?" ile gösterilir).
+  trace?: string[];
 }
 
 export interface AskRequest {
@@ -54,4 +56,6 @@ export interface AskRequest {
   // Konuşmasal daraltma: önceki mesajlar + o anki raporun CubeQuery durumu.
   history?: string[];
   cube_query?: CubeQuery | null;
+  // Sohbet oturumu kimliği — kalıcı logda chat'i gruplamak için.
+  session_id?: string;
 }

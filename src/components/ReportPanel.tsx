@@ -16,6 +16,7 @@ export function ReportPanel({
   error: string | null;
 }) {
   const [showSql, setShowSql] = useState(false);
+  const [showTrace, setShowTrace] = useState(false);
 
   if (error) {
     return (
@@ -50,11 +51,40 @@ export function ReportPanel({
 
   return (
     <div className="mx-auto max-w-4xl px-8 py-7">
-      <div className="mb-5 flex items-start justify-between gap-3 border-b border-hairline pb-4">
-        <h2 className="font-mono text-[15px] leading-snug text-foreground">{data.question}</h2>
-        <div className="shrink-0 pt-0.5">
-          <SourceBadge source={data.source} />
+      <div className="mb-5 border-b border-hairline pb-4">
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="font-mono text-[15px] leading-snug text-foreground">{data.question}</h2>
+          <div className="flex shrink-0 items-center gap-1.5 pt-0.5">
+            <SourceBadge source={data.source} />
+            {data.trace && data.trace.length > 0 && (
+              <button
+                onClick={() => setShowTrace((s) => !s)}
+                title="Bu sorgu nasıl çözüldü?"
+                aria-label="Trace"
+                className={`flex h-[18px] w-[18px] items-center justify-center border font-mono text-[11px] transition-colors ${
+                  showTrace ? "border-accent/40 text-accent" : "border-hairline text-neutral-400 hover:text-foreground"
+                }`}
+              >
+                ?
+              </button>
+            )}
+          </div>
         </div>
+        {showTrace && data.trace && (
+          <div className="mt-3 border border-hairline bg-neutral-500/[0.03] p-3">
+            <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+              nasıl çözüldü
+            </div>
+            <ol className="space-y-0.5">
+              {data.trace.map((t, i) => (
+                <li key={i} className="font-mono text-[11px] text-neutral-500">
+                  <span className="mr-1 text-accent">{String(i + 1).padStart(2, "0")}</span>
+                  {t}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
       </div>
 
       {data.result && (
