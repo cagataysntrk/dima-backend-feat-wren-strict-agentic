@@ -3,6 +3,8 @@
 export interface ColumnMeta {
   name: string;
   type: string;
+  // Düşük kardinaliteli kolonların olası değerleri (filtre chip'i seçenekleri).
+  values?: string[] | null;
 }
 
 export interface ModelMeta {

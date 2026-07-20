@@ -2,7 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { apiErrorMessage, ask } from "@/lib/api-client";
+import { apiErrorMessage, ask, askCube } from "@/lib/api-client";
 import { ChatPanel } from "@/components/ChatPanel";
 import { FloatingControls } from "@/components/FloatingControls";
 import { HelpPanel } from "@/components/HelpPanel";
@@ -67,6 +67,17 @@ export default function Home() {
     mutation.mutate({ question: q });
   };
 
+  // Yorum çubuğu chip düzenlemesi → deterministik /cube (LLM yok); transkripte de düşer.
+  const cubeMutation = useMutation<AskResponse, unknown, { cq: NonNullable<AskResponse["cube_query"]>; label: string }>({
+    mutationFn: ({ cq, label }) => askCube({ cube_query: cq, label, session_id: sessionId }),
+    onSuccess: (data) => {
+      addHistory(data);
+      setActive(data);
+      setViewHint(null);
+      setContextCq(data.cube_query ?? null);
+    },
+  });
+
   const started = startedLatch || items.length > 0 || mutation.isPending;
   const pendingQuestion = mutation.isPending ? mutation.variables?.question : undefined;
 
@@ -94,8 +105,9 @@ export default function Home() {
           <section className="min-w-0 flex-1 overflow-auto">
             <ReportPanel
               data={active}
-              pending={mutation.isPending}
+              pending={mutation.isPending || cubeMutation.isPending}
               viewHint={viewHint}
+              onCubeEdit={({ cq, label }) => cubeMutation.mutate({ cq, label })}
               error={mutation.isError ? apiErrorMessage(mutation.error) : null}
             />
           </section>

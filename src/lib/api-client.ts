@@ -2,7 +2,7 @@
 // through this module (no scattered fetch calls).
 
 import axios from "axios";
-import type { AskRequest, AskResponse, QueryResult, SchemaResponse } from "./types";
+import type { AskRequest, AskResponse, CubeQuery, QueryResult, SchemaResponse } from "./types";
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -18,6 +18,16 @@ export async function getSchema(): Promise<SchemaResponse> {
 
 export async function ask(body: AskRequest): Promise<AskResponse> {
   const { data } = await apiClient.post<AskResponse>("/ask", body);
+  return data;
+}
+
+// Yorum çubuğu (chip) düzenlemesi — CubeQuery doğrudan, deterministik çalışır (LLM yok).
+export async function askCube(body: {
+  cube_query: CubeQuery;
+  label?: string;
+  session_id?: string;
+}): Promise<AskResponse> {
+  const { data } = await apiClient.post<AskResponse>("/cube", body);
   return data;
 }
 

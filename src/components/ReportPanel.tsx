@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import type { AskResponse } from "@/lib/types";
+import type { AskResponse, CubeQuery } from "@/lib/types";
 import { BrandMark } from "@/components/BrandMark";
+import { InterpretationBar } from "@/components/InterpretationBar";
 import { ResultView } from "@/components/ResultView";
 import { SourceBadge } from "@/components/ChatPanel";
 
@@ -12,12 +13,15 @@ export function ReportPanel({
   data,
   pending,
   viewHint,
+  onCubeEdit,
   error,
 }: {
   data: AskResponse | null;
   pending: boolean;
   // "grafik ver" tarzı görünüm isteği — ResultView remount edilip başlangıç görünümü olur.
   viewHint?: { kind: string; nonce: number } | null;
+  // Yorum çubuğu chip düzenlemeleri (deterministik /cube).
+  onCubeEdit?: (edit: { cq: CubeQuery; label: string }) => void;
   error: string | null;
 }) {
   const [showSql, setShowSql] = useState(false);
@@ -91,6 +95,10 @@ export function ReportPanel({
           </div>
         )}
       </div>
+
+      {data.cube_query && onCubeEdit && (
+        <InterpretationBar cq={data.cube_query} onEdit={onCubeEdit} />
+      )}
 
       {data.result && (
         <div className="border border-hairline bg-background p-4">
