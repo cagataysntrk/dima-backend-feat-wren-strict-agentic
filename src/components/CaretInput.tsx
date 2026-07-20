@@ -4,8 +4,9 @@ import { useRef, useState } from "react";
 
 // Terminal komut satırı: monospace metin + yanıp sönen amber imleç + altında ince
 // tarama/kurulma çizgisi. Görünmez textarea tuşları yakalar; imleç her zaman görünür.
-// Uzun metin YATAY TAŞMAZ — alta sarar (wrap). Seçim (Cmd+A) görünür metinle hizalı olsun
-// diye görünür ayna ile gizli textarea aynı tipografi/hiza/sarmayı kullanır.
+// Uzun metin YATAY TAŞMAZ — alta sarar (wrap); belli bir satır sayısından sonra da
+// yükseklik SINIRLI kalır ve içeride kaydırılır (cap + scroll). Görünür ayna ile gizli
+// textarea grid'de üst üste durur → aynı sarma/hiza → seçim (Cmd+A) ve imleç hizalı.
 export function CaretInput({
   value,
   onChange,
@@ -22,6 +23,7 @@ export function CaretInput({
   size?: "hero" | "inline";
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [focused, setFocused] = useState(false);
   const hero = size === "hero";
 
@@ -30,6 +32,13 @@ export function CaretInput({
     : "font-mono tracking-tight text-sm leading-[1.6]";
   const align = hero ? "text-center" : "text-left";
   const wrap = "whitespace-pre-wrap [overflow-wrap:anywhere]";
+  // Üst sınır: hero ~4 satır, inline ~6 satır; sonrası içeride kaydırılır.
+  const cap = hero ? "max-h-[6.5em]" : "max-h-[9.5em]";
+
+  const keepCaretInView = () => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight; // imleç sonda → en alta kaydır
+  };
 
   return (
     <div
@@ -41,9 +50,9 @@ export function CaretInput({
         }
       }}
     >
-      <div className="relative">
-        {/* görünür ayna — uzun metin alta sarar; imleç metnin sonunda */}
-        <div className={`${textCls} ${align} ${wrap} text-foreground`}>
+      {/* kaydırılabilir alan: ayna + textarea aynı grid hücresinde üst üste (birlikte kayar) */}
+      <div ref={scrollRef} className={`grid ${cap} overflow-y-auto`}>
+        <div className={`col-start-1 row-start-1 ${textCls} ${align} ${wrap} text-foreground`}>
           {value}
           <span
             className="dima-caret ml-[2px]"
@@ -51,13 +60,15 @@ export function CaretInput({
             aria-hidden
           />
         </div>
-        {/* görünmez katman: metin şeffaf (seçim görünür), native imleç gizli, AYNI sarma */}
         <textarea
           ref={ref}
           value={value}
           rows={1}
           autoFocus={autoFocus}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            onChange(e.target.value);
+            keepCaretInView();
+          }}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onKeyDown={(e) => {
@@ -66,7 +77,7 @@ export function CaretInput({
               onSubmit();
             }
           }}
-          className={`absolute inset-0 h-full w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-transparent caret-transparent outline-none ${textCls} ${align} ${wrap}`}
+          className={`col-start-1 row-start-1 h-full w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-transparent caret-transparent outline-none ${textCls} ${align} ${wrap}`}
           spellCheck={false}
           autoComplete="off"
         />
