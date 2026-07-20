@@ -9,6 +9,15 @@ const EXAMPLES = [
   "Vardiya × haftanın günü verimliliği (son 3 ay)",
   "Aşama bazında toplam fire",
   "Müşteri bazında ciro (son 6 ay)",
+  "En kârlı müşteriler",
+  "Erkek çalışanlar için haftanın günleri bazında OEE",
+  "Temmuz ayında makine bazında duruş",
+  "Kumaş cinsine göre fire oranı (bu yıl)",
+  "Aylık üretim trendi",
+  "Renklere göre ortalama renk sapması",
+  "Kişilerin aylık verimliliğini önceki dönemle karşılaştır",
+  "Reddedilen partileri listele",
+  "Su tüketimi aylara göre",
 ];
 
 export function HelpPanel({ onPick }: { onPick: (q: string) => void }) {
