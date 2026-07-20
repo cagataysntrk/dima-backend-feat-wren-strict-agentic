@@ -301,8 +301,13 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
   }
 
   // -- BAR (tek boyut → tek seri) ----------------------------------------
+  // Kategoriler hafta günüyse KANONİK sıra (Pzt→Paz); değilse SQL sırası korunur
+  // ("en düşükleri göster" gibi kasıtlı sıralamalar bozulmasın).
   const dim = a.primaryDim!;
-  const cats = rows.map((r) => fmtCat(r[dim]));
+  const rawCats = rows.map((r) => fmtCat(r[dim]));
+  const isWeekdays = rawCats.length > 0 && rawCats.every((c) => WEEKDAY_ORDER.includes(c));
+  const cats = isWeekdays ? orderCats(rawCats) : rawCats;
+  const valByCat = new Map(rows.map((r) => [fmtCat(r[dim]), num(r[measure])]));
   return {
     ...base,
     tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, valueFormatter: (v: unknown) => fmtValue(v, measure) },
@@ -323,7 +328,7 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
       {
         type: "bar",
         name: measure,
-        data: rows.map((r) => num(r[measure])),
+        data: cats.map((c) => valByCat.get(c) ?? null),
         itemStyle: { borderRadius: [5, 5, 0, 0], color: PALETTE[0] },
         barMaxWidth: 46,
       },
