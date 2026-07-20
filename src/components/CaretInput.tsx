@@ -3,9 +3,9 @@
 import { useRef, useState } from "react";
 
 // Terminal komut satırı: monospace metin + yanıp sönen amber imleç + altında ince
-// tarama/kurulma çizgisi. Görünmez native input tuşları yakalar; imleç her zaman görünür.
-// Seçim (Cmd+A) görünür metinle hizalı olsun diye input tipografisi + hizası birebir eşlenir
-// ve input yalnız METİN SATIRINI kaplar (alt çizgiyi değil).
+// tarama/kurulma çizgisi. Görünmez textarea tuşları yakalar; imleç her zaman görünür.
+// Uzun metin YATAY TAŞMAZ — alta sarar (wrap). Seçim (Cmd+A) görünür metinle hizalı olsun
+// diye görünür ayna ile gizli textarea aynı tipografi/hiza/sarmayı kullanır.
 export function CaretInput({
   value,
   onChange,
@@ -21,14 +21,15 @@ export function CaretInput({
   busy?: boolean;
   size?: "hero" | "inline";
 }) {
-  const ref = useRef<HTMLInputElement>(null);
+  const ref = useRef<HTMLTextAreaElement>(null);
   const [focused, setFocused] = useState(false);
   const hero = size === "hero";
 
-  // Görünür span ile gizli input AYNI tipografiyi kullanır → seçim kutusu hizalı çıkar.
   const textCls = hero
     ? "font-mono tracking-tight text-[clamp(1.4rem,3.6vw,2rem)] leading-[1.5]"
     : "font-mono tracking-tight text-sm leading-[1.6]";
+  const align = hero ? "text-center" : "text-left";
+  const wrap = "whitespace-pre-wrap [overflow-wrap:anywhere]";
 
   return (
     <div
@@ -40,29 +41,32 @@ export function CaretInput({
         }
       }}
     >
-      {/* metin satırı — input yalnız burayı kaplar (dikey hiza doğru) */}
       <div className="relative">
-        <div className={`flex items-center overflow-hidden ${hero ? "justify-center" : "justify-start"} ${textCls}`}>
-          <span className="whitespace-pre text-foreground">{value}</span>
-          <span className="dima-caret ml-[2px]" style={{ height: "1.05em" }} aria-hidden />
+        {/* görünür ayna — uzun metin alta sarar; imleç metnin sonunda */}
+        <div className={`${textCls} ${align} ${wrap} text-foreground`}>
+          {value}
+          <span
+            className="dima-caret ml-[2px]"
+            style={{ height: "1.05em", verticalAlign: "-0.15em" }}
+            aria-hidden
+          />
         </div>
-        <input
+        {/* görünmez katman: metin şeffaf (seçim görünür), native imleç gizli, AYNI sarma */}
+        <textarea
           ref={ref}
           value={value}
+          rows={1}
           autoFocus={autoFocus}
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
               onSubmit();
             }
           }}
-          // görünmez katman: metin şeffaf (seçim görünür), native imleç gizli
-          className={`absolute inset-0 h-full w-full cursor-text bg-transparent text-transparent caret-transparent outline-none ${textCls} ${
-            hero ? "text-center" : "text-left"
-          }`}
+          className={`absolute inset-0 h-full w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-transparent caret-transparent outline-none ${textCls} ${align} ${wrap}`}
           spellCheck={false}
           autoComplete="off"
         />
