@@ -6,7 +6,7 @@ import type { EChartsOption } from "echarts";
 import type { QueryResult, Row } from "./types";
 import { fmtAxis, fmtValue, unitSuffix } from "./format";
 
-export type ChartKind = "kpi" | "bar" | "line" | "pie" | "heatmap" | "none";
+export type ChartKind = "kpi" | "bar" | "line" | "pie" | "heatmap" | "facet" | "none";
 
 // SÜREKLI zaman (trend → çizgi). "gün/vardiya" gibi DÖNGÜSEL kategorikler kasıtlı olarak
 // burada YOK — onlar ısı haritasına gitsin (ör. vardiya × haftanın günü). Gerçek tarih
@@ -39,6 +39,9 @@ export interface Analysis {
   timeCol: string | null;
   primaryDim: string | null;
   heat: { row: string; col: string } | null;
+  // 3 kırılım → small multiples (facet/trellis): en az-değerli boyut panellere bölünür,
+  // her panel gruplu sütun (BI best practice; stack oran metriklerinde YANLIŞ olurdu).
+  facet: { dim: string; x: string; series: string } | null;
 }
 
 export function analyze(result: QueryResult): Analysis {
@@ -77,16 +80,27 @@ export function analyze(result: QueryResult): Analysis {
       ? dims.slice().sort((a, b) => distinct(rows, b).length - distinct(rows, a).length)[0]
       : null);
 
+  // 3 kırılım → facet adayı: en düşük kardinaliteli boyut panel olur (≤6 panel),
+  // kalan ikisinden büyüğü x-ekseni, küçüğü renk serisi.
+  let facet: Analysis["facet"] = null;
+  if (dims.length === 3 && measures.length >= 1) {
+    const sorted = [...dims].sort((a, b) => distinct(rows, a).length - distinct(rows, b).length);
+    const [fd, sd, xd] = sorted;
+    if (distinct(rows, fd).length <= 6) facet = { dim: fd, x: xd, series: sd };
+  }
+
   let kind: ChartKind = "none";
   if (rows.length === 1 && measures.length >= 1 && dims.length <= 1) kind = "kpi";
-  // Geniş detay/liste (çok kolon) ya da ölçüsüz sonuç → grafik değil, TABLO.
-  else if (measures.length === 0 || dims.length > 2) kind = "none";
+  else if (measures.length === 0) kind = "none";
+  else if (dims.length === 3 && facet) kind = "facet";
+  // Geniş detay/liste (3+ kırılım facet'lenemedi ya da 4+) → grafik değil, TABLO.
+  else if (dims.length > 2) kind = "none";
   // Zaman ekseni varsa TREND önce gelir (çizgi), ısı haritasından önce.
   else if (timeCol && measures.length >= 1) kind = "line";
   else if (heat) kind = "heatmap";
   else if (primaryDim && measures.length >= 1) kind = "bar";
 
-  return { kind, measures, dims, timeCol, primaryDim, heat };
+  return { kind, measures, dims, timeCol, primaryDim, heat, facet };
 }
 
 interface BuildOpts {
@@ -200,6 +214,70 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
           emphasis: { itemStyle: { shadowBlur: 8, shadowColor: "rgba(0,0,0,0.3)" } },
         },
       ],
+    };
+  }
+
+  // -- FACET (small multiples): 3 kırılım → panel başına gruplu sütun ------
+  if (o.kind === "facet" && a.facet) {
+    const { dim: fDim, x: xDim, series: sDim } = a.facet;
+    const panels = orderCats(distinct(rows, fDim).map(String));
+    const xs = orderCats(distinct(rows, xDim).map(fmtCat));
+    const groups = distinct(rows, sDim).map(String);
+    const N = panels.length;
+    const w = 100 / N;
+    // ORTAK y-skala — paneller karşılaştırılabilir olsun (best practice).
+    const allVals = rows.map((r) => num(r[measure])).filter((v) => !Number.isNaN(v));
+    const yMax = allVals.length ? Math.max(...allVals) * 1.08 : undefined;
+
+    return {
+      ...base,
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, valueFormatter: (v: unknown) => fmtValue(v, measure) },
+      legend: { type: "scroll", top: 0, textStyle: { color: axis } },
+      title: panels.map((p, i) => ({
+        text: p,
+        left: `${i * w + w / 2}%`,
+        textAlign: "center" as const,
+        top: 22,
+        textStyle: { fontSize: 11, color: axis, fontWeight: "normal" as const },
+      })),
+      grid: panels.map((_, i) => ({
+        left: `${i * w + 5}%`,
+        width: `${w - 8}%`,
+        top: 46,
+        bottom: 28,
+      })),
+      xAxis: panels.map((_, i) => ({
+        type: "category" as const,
+        gridIndex: i,
+        data: xs,
+        axisLabel: { color: axis, fontSize: 10, rotate: xs.length > 5 ? 45 : 0 },
+        axisLine: { lineStyle: { color: split } },
+      })),
+      yAxis: panels.map((_, i) => ({
+        type: "value" as const,
+        gridIndex: i,
+        max: yMax,
+        axisLabel: i === 0 ? { color: axis, formatter: (v: number) => fmtAxis(v, measure) } : { show: false },
+        splitLine: { lineStyle: { color: split } },
+        name: i === 0 ? unitSuffix(measure) : undefined,
+        nameTextStyle: { color: axis },
+      })),
+      series: panels.flatMap((p, i) =>
+        groups.map((g) => ({
+          name: g, // aynı ad → lejant panolar arası paylaşılır
+          type: "bar" as const,
+          xAxisIndex: i,
+          yAxisIndex: i,
+          data: xs.map((x) => {
+            const r = rows.find(
+              (rr) => String(rr[fDim]) === p && fmtCat(rr[xDim]) === x && String(rr[sDim]) === g,
+            );
+            return r ? num(r[measure]) : null;
+          }),
+          itemStyle: { borderRadius: [2, 2, 0, 0] as [number, number, number, number] },
+          barMaxWidth: 18,
+        })),
+      ),
     };
   }
 

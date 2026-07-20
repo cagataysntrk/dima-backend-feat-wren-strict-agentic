@@ -12,6 +12,7 @@ const TYPE_LABEL: Record<ChartKind, string> = {
   line: "Çizgi",
   pie: "Pasta",
   heatmap: "Isı haritası",
+  facet: "Panelli",
   kpi: "KPI",
   none: "—",
 };
@@ -35,7 +36,7 @@ export function ResultView({ result, viewHint }: { result: QueryResult; viewHint
   const a = useMemo(() => analyze(result), [result]);
   const chartable = a.kind !== "none" && a.kind !== "kpi";
 
-  const hintKind = (["line", "bar", "pie", "heatmap"] as ChartKind[]).find((k) => k === viewHint);
+  const hintKind = (["line", "bar", "pie", "heatmap", "facet"] as ChartKind[]).find((k) => k === viewHint);
   const wantsChart = viewHint != null && viewHint !== "table";
   const [view, setView] = useState<"chart" | "table">(() => {
     if (viewHint === "table") return "table";
@@ -48,8 +49,9 @@ export function ResultView({ result, viewHint }: { result: QueryResult; viewHint
 
   const availableTypes = useMemo<ChartKind[]>(() => {
     const t: ChartKind[] = [];
+    if (a.facet) t.push("facet");
     if (a.timeCol) t.push("line");
-    t.push("bar");
+    if (!a.facet) t.push("bar");
     if (a.heat) t.push("heatmap");
     if (!a.timeCol && a.primaryDim && a.measures.length >= 1 && result.rows.length <= 12) t.push("pie");
     // analiz edilen tip başta, tekrarsız (kpi/none hariç)
