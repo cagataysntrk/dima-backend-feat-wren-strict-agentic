@@ -8,7 +8,10 @@ import { fmtAxis, fmtValue, unitSuffix } from "./format";
 
 export type ChartKind = "kpi" | "bar" | "line" | "pie" | "heatmap" | "none";
 
-const TIME_NAMES = new Set(["donem", "dönem", "tarih", "ay", "hafta", "gun", "gün", "period"]);
+// SÜREKLI zaman (trend → çizgi). "gün/vardiya" gibi DÖNGÜSEL kategorikler kasıtlı olarak
+// burada YOK — onlar ısı haritasına gitsin (ör. vardiya × haftanın günü). Gerçek tarih
+// kolonları zaten değer biçiminden (looksDate) yakalanır.
+const TIME_NAMES = new Set(["donem", "dönem", "tarih", "ay", "hafta", "period", "yil", "yıl", "year", "ceyrek", "çeyrek"]);
 const PALETTE = ["#4F8CFF", "#22C55E", "#F59E0B", "#EF4444", "#A855F7", "#06B6D4", "#EC4899", "#84CC16"];
 const HEAT = ["#EF4444", "#F59E0B", "#FDE047", "#84CC16", "#22C55E"]; // düşük→yüksek (kırmızı→yeşil)
 const AVG = "∑ Ort.";
@@ -20,6 +23,14 @@ const looksDate = (v: unknown) => typeof v === "string" && /^\d{4}-\d{2}/.test(v
 const distinct = (rows: Row[], c: string) => [...new Set(rows.map((r) => r[c]))];
 const fmtCat = (v: unknown) => (looksDate(v) ? String(v).slice(0, 10) : String(v ?? "—"));
 const mean = (a: number[]) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+
+// Kanonik haftanın-günü sırası — kategori değerleri gün ise kronolojik sırala (Pzt→Paz),
+// değilse alfabetik (tarih YYYY-MM zaten kronolojik). Kaynak cube ya da LLM olsun, her yerde.
+const WEEKDAY_ORDER = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+const orderCats = (vals: string[]): string[] =>
+  vals.length && vals.every((v) => WEEKDAY_ORDER.includes(v))
+    ? [...vals].sort((a, b) => WEEKDAY_ORDER.indexOf(a) - WEEKDAY_ORDER.indexOf(b))
+    : [...vals].sort();
 
 export interface Analysis {
   kind: ChartKind;
@@ -68,8 +79,9 @@ export function analyze(result: QueryResult): Analysis {
   if (rows.length === 1 && measures.length >= 1 && dims.length <= 1) kind = "kpi";
   // Geniş detay/liste (çok kolon) ya da ölçüsüz sonuç → grafik değil, TABLO.
   else if (measures.length === 0 || dims.length > 2) kind = "none";
-  else if (heat) kind = "heatmap";
+  // Zaman ekseni varsa TREND önce gelir (çizgi), ısı haritasından önce.
   else if (timeCol && measures.length >= 1) kind = "line";
+  else if (heat) kind = "heatmap";
   else if (primaryDim && measures.length >= 1) kind = "bar";
 
   return { kind, measures, dims, timeCol, primaryDim, heat };
@@ -95,9 +107,9 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
   // -- HEATMAP: satır × sütun matrisi + kenar ortalamaları (marj) ---------
   if (o.kind === "heatmap" && a.heat) {
     const { row, col } = a.heat;
-    const rowKeys = distinct(rows, row).map(String);
-    // Sütun sırası SQL'den gelir (Pzt→Paz ya da kronolojik) — alfabetik sıralama YOK.
-    const colKeys = distinct(rows, col).map(fmtCat);
+    const rowKeys = orderCats(distinct(rows, row).map(String));
+    // Sütun sırası: haftanın günü ise kanonik (Pzt→Paz), değilse alfabetik/kronolojik.
+    const colKeys = orderCats(distinct(rows, col).map(fmtCat));
     const val = new Map<string, number>();
     rows.forEach((r) => {
       const ri = rowKeys.indexOf(String(r[row]));
@@ -218,7 +230,7 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
   if (o.kind === "line") {
     const xCol = a.timeCol ?? a.primaryDim!;
     const seriesDim = a.dims.find((d) => d !== xCol) ?? null;
-    const xs = distinct(rows, xCol).map(fmtCat).sort();
+    const xs = orderCats(distinct(rows, xCol).map(fmtCat));
     const series = seriesDim
       ? distinct(rows, seriesDim).map(String).map((g) => ({
           name: g,
@@ -261,7 +273,7 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
   // -- BAR — zaman + kategori ise GRUPLU sütun (ör. ay × müşteri) --------
   const barSeries = a.timeCol ? a.dims.find((d) => d !== a.timeCol) ?? null : null;
   if (a.timeCol && barSeries) {
-    const xs = distinct(rows, a.timeCol).map(fmtCat).sort();
+    const xs = orderCats(distinct(rows, a.timeCol).map(fmtCat));
     const groups = distinct(rows, barSeries).map(String);
     return {
       ...base,
