@@ -19,11 +19,21 @@ export interface RelationshipMeta {
   condition: string;
 }
 
+export interface CubeMeta {
+  name: string;
+  measures?: string[];
+  dimensions?: string[];
+  time_dimensions?: string[];
+  // Türev boyutlar dahil olası değerler (chip alternatifleri): {hafta_gunu: [Pzt..Paz]}
+  dimension_values?: Record<string, string[]>;
+}
+
 export interface SchemaResponse {
   catalog: string | null;
   schema_name: string | null;
   models: ModelMeta[];
   relationships: RelationshipMeta[];
+  cubes?: CubeMeta[];
 }
 
 export type Row = Record<string, unknown>;
