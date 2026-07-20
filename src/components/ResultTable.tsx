@@ -9,17 +9,17 @@ function formatCell(value: unknown, col: string): string {
 
 export function ResultTable({ result }: { result: QueryResult }) {
   if (result.row_count === 0) {
-    return <p className="text-sm text-neutral-500">Sonuç yok.</p>;
+    return <p className="font-mono text-[13px] text-neutral-500">sonuç yok.</p>;
   }
   return (
-    <div className="overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-      <table className="w-full border-collapse text-sm">
+    <div className="overflow-auto border border-hairline">
+      <table className="w-full border-collapse font-mono text-[13px]">
         <thead>
-          <tr className="bg-neutral-50 dark:bg-neutral-900">
+          <tr className="border-b border-hairline">
             {result.columns.map((col) => (
               <th
                 key={col}
-                className="px-3 py-2 text-left font-semibold text-neutral-700 dark:text-neutral-300 whitespace-nowrap"
+                className="whitespace-nowrap px-3 py-2 text-left text-[11px] uppercase tracking-wide text-neutral-400"
               >
                 {col}
               </th>
@@ -28,9 +28,9 @@ export function ResultTable({ result }: { result: QueryResult }) {
         </thead>
         <tbody>
           {result.rows.map((row, i) => (
-            <tr key={i} className="border-t border-neutral-100 dark:border-neutral-800">
+            <tr key={i} className="border-t border-hairline/70 odd:bg-neutral-500/[0.03]">
               {result.columns.map((col) => (
-                <td key={col} className="px-3 py-2 whitespace-nowrap tabular-nums">
+                <td key={col} className="whitespace-nowrap px-3 py-2 tabular-nums">
                   {formatCell(row[col], col)}
                 </td>
               ))}

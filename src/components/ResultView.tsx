@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import type { QueryResult } from "@/lib/types";
 import { analyze, buildOption, kpiCards, type ChartKind } from "@/lib/chart";
 import { EChart } from "./EChart";
 import { ResultTable } from "./ResultTable";
+import { Select } from "./Select";
 
 const TYPE_LABEL: Record<ChartKind, string> = {
   bar: "Sütun",
@@ -15,6 +16,20 @@ const TYPE_LABEL: Record<ChartKind, string> = {
   none: "—",
 };
 
+// Sistem koyu-tema tercihini dışsal store olarak izler (effect'te setState yok).
+function usePrefersDark(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      const mq = window.matchMedia("(prefers-color-scheme: dark)");
+      mq.addEventListener("change", cb);
+      return () => mq.removeEventListener("change", cb);
+    },
+    () => window.matchMedia("(prefers-color-scheme: dark)").matches,
+    () => false,
+  );
+}
+
+// Not: yeni sonuçta seçimlerin sıfırlanması için ana bileşen bunu `key={...}` ile remount eder.
 export function ResultView({ result }: { result: QueryResult }) {
   const a = useMemo(() => analyze(result), [result]);
   const chartable = a.kind !== "none" && a.kind !== "kpi";
@@ -22,22 +37,7 @@ export function ResultView({ result }: { result: QueryResult }) {
   const [view, setView] = useState<"chart" | "table">(a.kind === "none" ? "table" : "chart");
   const [type, setType] = useState<ChartKind>(a.kind);
   const [measure, setMeasure] = useState<string>(a.measures[0] ?? "");
-  const [dark, setDark] = useState(false);
-
-  // yeni sonuç geldiğinde otomatik seçime dön
-  useEffect(() => {
-    setView(a.kind === "none" ? "table" : "chart");
-    setType(a.kind);
-    setMeasure(a.measures[0] ?? "");
-  }, [a]);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    setDark(mq.matches);
-    const h = (e: MediaQueryListEvent) => setDark(e.matches);
-    mq.addEventListener("change", h);
-    return () => mq.removeEventListener("change", h);
-  }, []);
+  const dark = usePrefersDark();
 
   const availableTypes = useMemo<ChartKind[]>(() => {
     const t: ChartKind[] = [];
@@ -56,55 +56,47 @@ export function ResultView({ result }: { result: QueryResult }) {
 
   const cards = a.kind === "kpi" ? kpiCards(result, a) : [];
 
-  const seg =
-    "px-3 py-1 text-xs font-medium rounded-md transition-colors";
-  const segOn = "bg-neutral-900 dark:bg-white text-white dark:text-black";
-  const segOff = "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200";
+  const seg = "px-3 py-1 font-mono text-[11px] tracking-wide transition-colors";
+  const segOn = "bg-foreground text-background";
+  const segOff = "text-neutral-500 hover:text-foreground";
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-          Sonuç ({result.row_count} satır)
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">
+          sonuç · {result.row_count} satır
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {view === "chart" && chartable && (
             <>
               {availableTypes.length > 1 && (
-                <select
+                <Select
+                  ariaLabel="Grafik tipi"
                   value={type}
-                  onChange={(e) => setType(e.target.value as ChartKind)}
-                  className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-transparent px-2 py-1 text-xs"
-                >
-                  {availableTypes.map((t) => (
-                    <option key={t} value={t}>
-                      {TYPE_LABEL[t]}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setType(v as ChartKind)}
+                  options={availableTypes.map((t) => ({ value: t, label: TYPE_LABEL[t] }))}
+                />
               )}
               {a.measures.length > 1 && (
-                <select
+                <Select
+                  ariaLabel="Ölçü"
                   value={measure}
-                  onChange={(e) => setMeasure(e.target.value)}
-                  className="rounded-md border border-neutral-200 dark:border-neutral-800 bg-transparent px-2 py-1 text-xs"
-                >
-                  {a.measures.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setMeasure}
+                  options={a.measures.map((m) => ({ value: m, label: m }))}
+                />
               )}
             </>
           )}
           {a.kind !== "none" && (
-            <div className="flex rounded-lg border border-neutral-200 dark:border-neutral-800 p-0.5">
+            <div className="inline-flex border border-hairline">
               <button className={`${seg} ${view === "chart" ? segOn : segOff}`} onClick={() => setView("chart")}>
-                Grafik
+                grafik
               </button>
-              <button className={`${seg} ${view === "table" ? segOn : segOff}`} onClick={() => setView("table")}>
-                Tablo
+              <button
+                className={`border-l border-hairline ${seg} ${view === "table" ? segOn : segOff}`}
+                onClick={() => setView("table")}
+              >
+                tablo
               </button>
             </div>
           )}
@@ -114,20 +106,21 @@ export function ResultView({ result }: { result: QueryResult }) {
       {view === "table" || a.kind === "none" ? (
         <ResultTable result={result} />
       ) : a.kind === "kpi" ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {cards.map((c) => (
-            <div
-              key={c.label}
-              className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-4 bg-neutral-50/50 dark:bg-neutral-900/40"
-            >
-              <div className="text-2xl font-bold tabular-nums">{c.value}</div>
-              <div className="mt-1 text-xs text-neutral-500">{c.label}</div>
-              {c.ctx && <div className="text-xs text-neutral-400">{c.ctx}</div>}
+            <div key={c.label} className="border border-hairline p-4">
+              <div className="font-mono text-[1.6rem] leading-none tabular-nums text-foreground">
+                {c.value}
+              </div>
+              <div className="mt-2 font-mono text-[11px] uppercase tracking-wide text-neutral-400">
+                {c.label}
+              </div>
+              {c.ctx && <div className="font-mono text-[11px] text-neutral-400">{c.ctx}</div>}
             </div>
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 p-2">
+        <div className="border border-hairline p-2">
           <EChart option={option} />
         </div>
       )}
