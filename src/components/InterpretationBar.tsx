@@ -112,7 +112,9 @@ export function InterpretationBar({
   const fmtDate = (f: Filter) => f.value;
 
   // Dönem hazır seçenekleri — client tarafında deterministik tarih (backend chip'leriyle aynı).
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  // DİKKAT: toISOString() UTC'ye çevirir (TR'de 1 Ocak 00:00 → 31 Aralık!) — YEREL formatla.
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const periodPresets = (): { label: string; start: string | null }[] => {
     const t = new Date();
     const monday = new Date(t);
