@@ -75,5 +75,7 @@ export function fmtTemporal(v: unknown, col: string): string | null {
   const [, y, mo, d] = m;
   const ay = MONTHS_TR_SHORT[Number(mo) - 1] ?? mo;
   if (/__month$/.test(col)) return `${ay} ${y}`;
+  if (/__quarter$/.test(col)) return `${y} Ç${Math.floor((Number(mo) - 1) / 3) + 1}`;
+  if (/__year$/.test(col)) return y;
   return `${Number(d)} ${ay} ${y}`;
 }

@@ -59,6 +59,12 @@ export function InterpretationBar({
     onEdit({ cq: next, label: `chip: kırılım − ${d}` });
   };
 
+  const setGran = (g: string) => {
+    const next = clone();
+    next.timeDimensions = [{ dimension: "tarih", granularity: g }];
+    onEdit({ cq: next, label: `chip: kova → ${g}` });
+  };
+
   const removeGran = () => {
     const next = clone();
     delete next.timeDimensions;
@@ -181,12 +187,34 @@ export function InterpretationBar({
         </span>
       ))}
 
-      {tds.map((t) => (
-        <span key={t.dimension} className={chip} title="Zaman kovası">
-          kova: {t.granularity === "month" ? "ay" : t.granularity === "week" ? "hafta" : "gün"}
-          <button onClick={removeGran} className={xBtn} aria-label="Zaman kovasını kaldır">×</button>
-        </span>
-      ))}
+      {tds.map((t) => {
+        const GRAN_TR: Record<string, string> = { day: "gün", week: "hafta", month: "ay", quarter: "çeyrek", year: "yıl" };
+        const open = openFilter === "kova";
+        return (
+          <span key={t.dimension} className={`relative ${chip}`} title="Zaman kovası — tıkla: değiştir">
+            <button
+              onClick={() => setOpenFilter(open ? null : "kova")}
+              className="inline-flex items-center gap-1 hover:text-foreground"
+            >
+              kova: <span className="text-accent">{GRAN_TR[t.granularity] ?? t.granularity}</span> ▾
+            </button>
+            <button onClick={removeGran} className={xBtn} aria-label="Zaman kovasını kaldır">×</button>
+            {open && (
+              <span className="absolute left-0 top-full z-30 mt-1 flex min-w-full flex-col border border-hairline bg-background shadow-lg">
+                {(Object.entries(GRAN_TR) as [string, string][]).map(([g, label]) => (
+                  <button
+                    key={g}
+                    onClick={() => { setOpenFilter(null); if (g !== t.granularity) setGran(g); }}
+                    className={`px-2 py-1 text-left font-mono text-[11px] hover:bg-neutral-500/[0.06] ${g === t.granularity ? "text-accent" : ""}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </span>
+            )}
+          </span>
+        );
+      })}
 
       {dims.map((d) => {
         const opts = valuesFor(d);
