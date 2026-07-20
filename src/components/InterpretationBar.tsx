@@ -96,7 +96,45 @@ export function InterpretationBar({
     onEdit({ cq: next, label: `chip: ${dim} filtresi kaldırıldı` });
   };
 
+  // Kırılımdan tek değere GERİ dönüş: boyutu kaldır, o değere filtrele
+  // (ör. cinsiyet kırılımı → yalnız Kadın).
+  const dimToFilter = (dim: string, value: string) => {
+    const next = clone();
+    next.dimensions = dims.filter((x) => x !== dim);
+    if (!(next.dimensions as string[]).length) delete next.dimensions;
+    next.filters = [
+      ...filters.filter((f) => f.dimension !== dim),
+      { dimension: dim, operator: "eq", value },
+    ];
+    onEdit({ cq: next, label: `chip: kırılım → ${dim} = ${value}` });
+  };
+
   const fmtDate = (f: Filter) => f.value;
+
+  // Dönem hazır seçenekleri — client tarafında deterministik tarih (backend chip'leriyle aynı).
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const periodPresets = (): { label: string; start: string | null }[] => {
+    const t = new Date();
+    const monday = new Date(t);
+    monday.setDate(t.getDate() - ((t.getDay() + 6) % 7));
+    return [
+      { label: "Bugün", start: iso(t) },
+      { label: "Bu hafta", start: iso(monday) },
+      { label: "Bu ay", start: iso(new Date(t.getFullYear(), t.getMonth(), 1)) },
+      { label: "Bu yıl", start: iso(new Date(t.getFullYear(), 0, 1)) },
+      { label: "Tümü", start: null },
+    ];
+  };
+
+  const setPeriod = (label: string, start: string | null) => {
+    const next = clone();
+    const rest = filters.filter((f) => f.dimension !== "tarih");
+    next.filters = start
+      ? [...rest, { dimension: "tarih", operator: "gte", value: start }]
+      : rest;
+    if (!(next.filters as Filter[]).length) delete next.filters;
+    onEdit({ cq: next, label: `chip: dönem → ${label}` });
+  };
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-1.5">
@@ -117,12 +155,43 @@ export function InterpretationBar({
         </span>
       ))}
 
-      {dims.map((d) => (
-        <span key={d} className={chip} title="Kırılım">
-          kırılım: {d}
-          <button onClick={() => removeDim(d)} className={xBtn} aria-label={`${d} kırılımını kaldır`}>×</button>
-        </span>
-      ))}
+      {dims.map((d) => {
+        const opts = valuesFor(d);
+        const open = openFilter === `dim:${d}`;
+        if (!opts.length) {
+          return (
+            <span key={d} className={chip} title="Kırılım">
+              kırılım: {d}
+              <button onClick={() => removeDim(d)} className={xBtn} aria-label={`${d} kırılımını kaldır`}>×</button>
+            </span>
+          );
+        }
+        // Kategorik kırılım — tıkla: tek değere geri dön (filtre) ya da kaldır.
+        return (
+          <span key={d} className={`relative ${chip}`} title="Kırılım — tıkla: tek değere filtrele">
+            <button
+              onClick={() => setOpenFilter(open ? null : `dim:${d}`)}
+              className="inline-flex items-center gap-1 hover:text-foreground"
+            >
+              kırılım: {d} ▾
+            </button>
+            <button onClick={() => removeDim(d)} className={xBtn} aria-label={`${d} kırılımını kaldır`}>×</button>
+            {open && (
+              <span className="absolute left-0 top-full z-30 mt-1 flex min-w-full flex-col border border-hairline bg-background shadow-lg">
+                {opts.map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => { setOpenFilter(null); dimToFilter(d, v); }}
+                    className="px-2 py-1 text-left font-mono text-[11px] hover:bg-neutral-500/[0.06]"
+                  >
+                    sadece {v}
+                  </button>
+                ))}
+              </span>
+            )}
+          </span>
+        );
+      })}
 
       {catFilters.map((f) => {
         const opts = valuesFor(f.dimension);
@@ -159,12 +228,41 @@ export function InterpretationBar({
         );
       })}
 
-      {dateFilters.length > 0 && (
-        <span className={chip} title="Dönem">
-          tarih: {dateFilters.map(fmtDate).join(" → ")}
-          <button onClick={removeDateFilters} className={xBtn} aria-label="Dönem filtresini kaldır">×</button>
-        </span>
-      )}
+      {(() => {
+        const open = openFilter === "tarih";
+        return (
+          <span className={`relative ${chip}`} title="Dönem — tıkla: değiştir">
+            <button
+              onClick={() => setOpenFilter(open ? null : "tarih")}
+              className="inline-flex items-center gap-1 hover:text-foreground"
+            >
+              tarih:{" "}
+              {dateFilters.length > 0 ? (
+                <span className="text-accent">{dateFilters.map(fmtDate).join(" → ")}</span>
+              ) : (
+                "tümü"
+              )}{" "}
+              ▾
+            </button>
+            {dateFilters.length > 0 && (
+              <button onClick={removeDateFilters} className={xBtn} aria-label="Dönem filtresini kaldır">×</button>
+            )}
+            {open && (
+              <span className="absolute left-0 top-full z-30 mt-1 flex min-w-full flex-col border border-hairline bg-background shadow-lg">
+                {periodPresets().map((p) => (
+                  <button
+                    key={p.label}
+                    onClick={() => { setOpenFilter(null); setPeriod(p.label, p.start); }}
+                    className="whitespace-nowrap px-2 py-1 text-left font-mono text-[11px] hover:bg-neutral-500/[0.06]"
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </span>
+            )}
+          </span>
+        );
+      })()}
     </div>
   );
 }

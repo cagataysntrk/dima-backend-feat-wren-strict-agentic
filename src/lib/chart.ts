@@ -61,7 +61,9 @@ export function analyze(result: QueryResult): Analysis {
         const ca = distinct(rows, dims[i]).length;
         const cb = distinct(rows, dims[j]).length;
         const prod = ca * cb;
-        if (ca > 1 && cb > 1 && prod <= rows.length * 1.6 && prod >= rows.length * 0.5) {
+        // min eksen 3+: 2 kategorili boyut (ör. cinsiyet) ısı haritası değil GRUPLU
+        // sütun olarak daha okunur (farklı renk + lejant).
+        if (ca > 1 && cb > 1 && Math.min(ca, cb) >= 3 && prod <= rows.length * 1.6 && prod >= rows.length * 0.5) {
           const [row, col] = ca <= cb ? [dims[i], dims[j]] : [dims[j], dims[i]];
           heat = { row, col };
         }
@@ -270,10 +272,12 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
     };
   }
 
-  // -- BAR — zaman + kategori ise GRUPLU sütun (ör. ay × müşteri) --------
-  const barSeries = a.timeCol ? a.dims.find((d) => d !== a.timeCol) ?? null : null;
-  if (a.timeCol && barSeries) {
-    const xs = orderCats(distinct(rows, a.timeCol).map(fmtCat));
+  // -- BAR — İKİNCİ boyut varsa GRUPLU sütun (ay × müşteri, hafta günü × cinsiyet):
+  //    her grup ayrı renk + lejant; 14 tek-renk sütun yerine 7 gün × 2 seri.
+  const barX = a.timeCol ?? (a.dims.length >= 2 ? a.primaryDim : null);
+  const barSeries = barX ? a.dims.find((d) => d !== barX) ?? null : null;
+  if (barX && barSeries) {
+    const xs = orderCats(distinct(rows, barX).map(fmtCat));
     const groups = distinct(rows, barSeries).map(String);
     return {
       ...base,
@@ -291,7 +295,7 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
         name: g,
         type: "bar" as const,
         data: xs.map((x) => {
-          const r = rows.find((rr) => fmtCat(rr[a.timeCol!]) === x && String(rr[barSeries]) === g);
+          const r = rows.find((rr) => fmtCat(rr[barX]) === x && String(rr[barSeries]) === g);
           return r ? num(r[measure]) : null;
         }),
         itemStyle: { borderRadius: [3, 3, 0, 0] as [number, number, number, number] },
