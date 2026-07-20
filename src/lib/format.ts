@@ -62,3 +62,18 @@ export function unitSuffix(col: string): string {
   const u = unitFor(col);
   return u ? u.suffix : "";
 }
+
+// Zaman kovası değerlerini okunur Türkçe'ye çevirir: tarih__month → "Oca 2026",
+// tarih__day/__week → "5 Tem 2026". Kolon kovası bilinmiyorsa kısa tarih.
+// NOT: sıralama HAM değerlerle yapılır; bu yalnız ETİKET katmanıdır.
+const MONTHS_TR_SHORT = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
+
+export function fmtTemporal(v: unknown, col: string): string | null {
+  if (typeof v !== "string") return null;
+  const m = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  const [, y, mo, d] = m;
+  const ay = MONTHS_TR_SHORT[Number(mo) - 1] ?? mo;
+  if (/__month$/.test(col)) return `${ay} ${y}`;
+  return `${Number(d)} ${ay} ${y}`;
+}

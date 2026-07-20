@@ -1,9 +1,12 @@
 import type { QueryResult } from "@/lib/types";
-import { fmtValue } from "@/lib/format";
+import { fmtTemporal, fmtValue } from "@/lib/format";
 
 function formatCell(value: unknown, col: string): string {
   if (value === null || value === undefined) return "—";
   if (typeof value === "number") return fmtValue(value, col);
+  // Zaman kovaları ham timestamp değil okunur biçim: "Oca 2026" / "5 Tem 2026"
+  const t = fmtTemporal(value, col);
+  if (t) return t;
   return String(value);
 }
 

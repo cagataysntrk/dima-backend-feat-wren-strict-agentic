@@ -4,7 +4,10 @@
 
 import type { EChartsOption } from "echarts";
 import type { QueryResult, Row } from "./types";
-import { fmtAxis, fmtValue, unitSuffix } from "./format";
+import { fmtAxis, fmtTemporal, fmtValue, unitSuffix } from "./format";
+
+// Eksen ETİKETİ: zaman kovalarını okunur yap ("Oca 2026") — sıralama ham değerle kalır.
+const axisLabel = (v: string, col: string | null) => (col ? fmtTemporal(v, col) ?? v : v);
 
 export type ChartKind = "kpi" | "bar" | "line" | "pie" | "heatmap" | "facet" | "none";
 
@@ -133,8 +136,8 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
       if (ri >= 0 && ci >= 0) val.set(`${ri}|${ci}`, num(r[measure]));
     });
 
-    const rowLabels = [...rowKeys, AVG];
-    const colLabels = [...colKeys, AVG];
+    const rowLabels = [...rowKeys.map((k) => axisLabel(k, row)), AVG];
+    const colLabels = [...colKeys.map((k) => axisLabel(k, col)), AVG];
     const R = rowKeys.length;
     const C = colKeys.length;
     const marginStyle = { borderColor: axis, borderWidth: 1, borderType: "dashed" as const };
@@ -249,7 +252,7 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
       xAxis: panels.map((_, i) => ({
         type: "category" as const,
         gridIndex: i,
-        data: xs,
+        data: xs.map((x) => axisLabel(x, xDim)),
         axisLabel: { color: axis, fontSize: 10, rotate: xs.length > 5 ? 45 : 0 },
         axisLine: { lineStyle: { color: split } },
       })),
@@ -338,7 +341,7 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
       ...base,
       tooltip: { trigger: "axis", valueFormatter: (v: unknown) => fmtValue(v, measure) },
       legend: seriesDim ? { type: "scroll", top: 0, textStyle: { color: axis } } : undefined,
-      xAxis: { type: "category", data: xs, axisLabel: { color: axis }, axisLine: { lineStyle: { color: split } } },
+      xAxis: { type: "category", data: xs.map((x) => axisLabel(x, xCol)), axisLabel: { color: axis }, axisLine: { lineStyle: { color: split } } },
       yAxis: {
         type: "value",
         name: unitSuffix(measure),
@@ -361,7 +364,7 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
       ...base,
       tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, valueFormatter: (v: unknown) => fmtValue(v, measure) },
       legend: { type: "scroll", top: 0, textStyle: { color: axis } },
-      xAxis: { type: "category", data: xs, axisLabel: { color: axis, rotate: xs.length > 8 ? 35 : 0 }, axisLine: { lineStyle: { color: split } } },
+      xAxis: { type: "category", data: xs.map((x) => axisLabel(x, barX)), axisLabel: { color: axis, rotate: xs.length > 8 ? 35 : 0 }, axisLine: { lineStyle: { color: split } } },
       yAxis: {
         type: "value",
         name: unitSuffix(measure),
