@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { BrandMark } from "@/components/BrandMark";
+
 const EXAMPLES = [
   "Bu ay toplam üretim",
   "Makine bazında ortalama OEE",
@@ -11,6 +14,13 @@ const EXAMPLES = [
 export function HelpPanel({ onPick }: { onPick: (q: string) => void }) {
   return (
     <div className="space-y-6 text-sm">
+      <Link
+        href="/brand"
+        className="inline-flex opacity-90 transition-opacity hover:opacity-100"
+      >
+        <BrandMark size="sm" interpunct />
+      </Link>
+
       <section className="space-y-2">
         <p className="text-neutral-600 dark:text-neutral-300">
           <span className="font-mono text-accent">dima</span> — verinle doğal dille konuş.

@@ -16,6 +16,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "dima — Veriyle Konuş",
   description: "Doğal dille sor, güvenilir SQL ve rapor al.",
+  // OG görseli (app/opengraph-image.tsx) Next tarafından otomatik eklenir.
+  openGraph: {
+    title: "dima — Veriyle Konuş",
+    description: "deterministic · intelligent · modeled · agentic",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

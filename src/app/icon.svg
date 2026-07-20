@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <rect width="32" height="32" fill="#0a0b0d"/>
+  <!-- 'd' — monoline (BrandMark grameriyle): kase + gövde -->
+  <g fill="none" stroke="#ededed" stroke-width="3" stroke-linecap="round">
+    <circle cx="12" cy="20" r="6.4"/>
+    <path d="M18.4 6 V26.4"/>
+  </g>
+  <!-- i-noktası atomu = accent (imleç göndermesi) -->
+  <circle cx="24.4" cy="8.6" r="2.7" fill="#f5a524"/>
+</svg>

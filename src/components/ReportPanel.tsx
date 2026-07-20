@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import type { AskResponse } from "@/lib/types";
+import { BrandMark } from "@/components/BrandMark";
 import { ResultView } from "@/components/ResultView";
 import { SourceBadge } from "@/components/ChatPanel";
 
@@ -110,6 +112,17 @@ export function ReportPanel({
   );
 }
 
+// Boş/bekleme durumlarında landing ile aynı imza: alt-orta ink filigran.
 function Center({ children }: { children: React.ReactNode }) {
-  return <div className="flex h-full items-center justify-center p-6">{children}</div>;
+  return (
+    <div className="relative flex h-full items-center justify-center p-6">
+      {children}
+      <Link
+        href="/brand"
+        className="absolute inset-x-0 bottom-8 flex justify-center opacity-30 transition-opacity hover:opacity-80"
+      >
+        <BrandMark size="sm" ink />
+      </Link>
+    </div>
+  );
 }
