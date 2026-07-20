@@ -33,6 +33,8 @@ export default function Home() {
   // Takip bağlamı: bir sonraki mesajla gönderilecek CubeQuery. Rapor VE clarify notu (kısmi
   // cube_query) bunu günceller — "bu ay" chip'i doğru sorguya uygulansın (ADR-0007 Faz C).
   const [contextCq, setContextCq] = useState<AskResponse["cube_query"]>(null);
+  // Görünüm ipucu ("grafik ver") — sağ paneldeki raporun görünümünü değiştirir.
+  const [viewHint, setViewHint] = useState<{ kind: string; nonce: number } | null>(null);
   const [drawer, setDrawer] = useState<Drawer>(null);
   const [startedLatch, setStarted] = useState(false);
   const [sessionId] = useState(makeSessionId);
@@ -51,6 +53,9 @@ export default function Home() {
       addHistory(data);
       // Rapor → sağ paneli güncelle; not → mevcut raporu koru.
       if (!data.note) setActive(data);
+      // Görünüm ipucu: yeni raporla geldiyse onunla; salt-görünüm yanıtında mevcut rapora.
+      if (data.view_hint) setViewHint({ kind: data.view_hint, nonce: Date.now() });
+      else if (data.result && !data.note) setViewHint(null);
       // Bağlam: rapor ya da clarify (kısmi cube_query) her ikisi de bir sonraki mesaj için.
       setContextCq(data.cube_query ?? null);
     },
@@ -77,7 +82,12 @@ export default function Home() {
               active={active}
               pending={mutation.isPending}
               pendingQuestion={pendingQuestion}
-              onSelect={setActive}
+              contextLabel={contextCq ? String(contextCq.cube ?? "rapor") : null}
+              onClearContext={() => setContextCq(null)}
+              onSelect={(item) => {
+                setActive(item);
+                setContextCq(item.cube_query ?? null); // seçilen rapor bağlam olur
+              }}
               onSubmit={submit}
             />
           </section>
@@ -85,6 +95,7 @@ export default function Home() {
             <ReportPanel
               data={active}
               pending={mutation.isPending}
+              viewHint={viewHint}
               error={mutation.isError ? apiErrorMessage(mutation.error) : null}
             />
           </section>

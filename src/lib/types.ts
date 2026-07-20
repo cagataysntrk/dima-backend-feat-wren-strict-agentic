@@ -49,6 +49,8 @@ export interface AskResponse {
   trace?: string[];
   // Tıklanır chip'ler — meta örnek sorgular / dönem clarification seçenekleri.
   suggestions?: { label: string; query: string }[];
+  // Görünüm isteği ("grafik ver") — client mevcut raporun görünümünü değiştirir.
+  view_hint?: string | null;
 }
 
 export interface AskRequest {

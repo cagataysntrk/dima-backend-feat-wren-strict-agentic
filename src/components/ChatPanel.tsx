@@ -36,6 +36,8 @@ export function ChatPanel({
   active,
   pending,
   pendingQuestion,
+  contextLabel,
+  onClearContext,
   onSelect,
   onSubmit,
 }: {
@@ -43,6 +45,10 @@ export function ChatPanel({
   active: AskResponse | null;
   pending: boolean;
   pendingQuestion?: string;
+  // Aktif konuşma bağlamı (takip mesajları bu raporu düzenler) — görünür + sıfırlanabilir,
+  // böylece kasıtlı konu değişimi tahmine kalmaz (ADR-0007).
+  contextLabel?: string | null;
+  onClearContext?: () => void;
   onSelect: (item: AskResponse) => void;
   onSubmit: (q: string) => void;
 }) {
@@ -137,6 +143,19 @@ export function ChatPanel({
 
       {/* alt komut satırı */}
       <div className="shrink-0 border-t border-hairline px-4 py-3">
+        {contextLabel && (
+          <div className="mb-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wide text-neutral-400">
+            <span className="text-accent">◆</span>
+            <span>bağlam: {contextLabel}</span>
+            <button
+              onClick={onClearContext}
+              title="Bağlamı sıfırla — sonraki soru yeni konu olarak işlenir"
+              className="border border-hairline px-1 leading-tight transition-colors hover:border-accent/50 hover:text-foreground"
+            >
+              ×
+            </button>
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <span className="select-none font-mono text-sm text-accent">›</span>
           <div className="flex-1">

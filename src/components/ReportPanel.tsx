@@ -11,10 +11,13 @@ import { SourceBadge } from "@/components/ChatPanel";
 export function ReportPanel({
   data,
   pending,
+  viewHint,
   error,
 }: {
   data: AskResponse | null;
   pending: boolean;
+  // "grafik ver" tarzı görünüm isteği — ResultView remount edilip başlangıç görünümü olur.
+  viewHint?: { kind: string; nonce: number } | null;
   error: string | null;
 }) {
   const [showSql, setShowSql] = useState(false);
@@ -91,7 +94,11 @@ export function ReportPanel({
 
       {data.result && (
         <div className="border border-hairline bg-background p-4">
-          <ResultView key={`${data.question}·${data.sql}`} result={data.result} />
+          <ResultView
+            key={`${data.question}·${data.sql}·${viewHint?.nonce ?? 0}`}
+            result={data.result}
+            viewHint={viewHint?.kind}
+          />
         </div>
       )}
 

@@ -29,13 +29,20 @@ function usePrefersDark(): boolean {
   );
 }
 
-// Not: yeni sonuçta seçimlerin sıfırlanması için ana bileşen bunu `key={...}` ile remount eder.
-export function ResultView({ result }: { result: QueryResult }) {
+// Not: yeni sonuçta/görünüm ipucunda seçimlerin sıfırlanması için ana bileşen bunu
+// `key={...}` ile remount eder; viewHint ("grafik ver") başlangıç görünümünü belirler.
+export function ResultView({ result, viewHint }: { result: QueryResult; viewHint?: string }) {
   const a = useMemo(() => analyze(result), [result]);
   const chartable = a.kind !== "none" && a.kind !== "kpi";
 
-  const [view, setView] = useState<"chart" | "table">(a.kind === "none" ? "table" : "chart");
-  const [type, setType] = useState<ChartKind>(a.kind);
+  const hintKind = (["line", "bar", "pie", "heatmap"] as ChartKind[]).find((k) => k === viewHint);
+  const wantsChart = viewHint != null && viewHint !== "table";
+  const [view, setView] = useState<"chart" | "table">(() => {
+    if (viewHint === "table") return "table";
+    if (wantsChart) return "chart";
+    return a.kind === "none" ? "table" : "chart";
+  });
+  const [type, setType] = useState<ChartKind>(hintKind ?? a.kind);
   const [measure, setMeasure] = useState<string>(a.measures[0] ?? "");
   const dark = usePrefersDark();
 
@@ -105,7 +112,15 @@ export function ResultView({ result }: { result: QueryResult }) {
       </div>
 
       {view === "table" || a.kind === "none" ? (
-        <ResultTable result={result} />
+        <>
+          {wantsChart && a.kind === "none" && (
+            <p className="mb-2 font-mono text-[11px] text-neutral-400">
+              bu sonuç grafik için çok boyutlu — bir kırılımı azaltmayı dene
+              (ör. &quot;sadece vardiya bazında&quot;)
+            </p>
+          )}
+          <ResultTable result={result} />
+        </>
       ) : a.kind === "kpi" ? (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {cards.map((c) => (
