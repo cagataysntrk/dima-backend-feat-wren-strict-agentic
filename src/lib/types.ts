@@ -43,6 +43,8 @@ export interface AskResponse {
   source: string | null;
   // Rapor cube ile üretildiyse yapısal durum — takip mesajlarında geri gönderilir (ADR-0007).
   cube_query: CubeQuery | null;
+  // Rapor üretilmediğinde dürüst açıklama (alan modelde yok / anlaşılamadı) — rapor değişmez.
+  note?: string | null;
 }
 
 export interface AskRequest {

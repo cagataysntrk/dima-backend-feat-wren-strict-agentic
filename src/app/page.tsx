@@ -32,7 +32,8 @@ export default function Home() {
       }),
     onSuccess: (data) => {
       addHistory(data);
-      setActive(data);
+      // Not (rapor yok) ise mevcut raporu koru; yalnız gerçek raporda sağ paneli güncelle.
+      if (!data.note) setActive(data);
     },
   });
 

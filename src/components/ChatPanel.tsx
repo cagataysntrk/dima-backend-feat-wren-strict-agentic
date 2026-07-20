@@ -76,22 +76,29 @@ export function ChatPanel({
                     {item.question}
                   </span>
                 </div>
-                {/* sistem çıktısı satırı — tıklanınca o rapora döner */}
-                <button
-                  onClick={() => onSelect(item)}
-                  className={`flex w-full items-center gap-2 border-l-2 py-1 pl-3 text-left transition-colors ${
-                    isActive
-                      ? "border-accent bg-accent/[0.06]"
-                      : "border-hairline hover:bg-neutral-500/[0.04]"
-                  }`}
-                >
-                  <span className="font-mono text-[11px] text-neutral-500">
-                    {item.result ? `${item.result.row_count} satır` : "sql"}
-                  </span>
-                  <span className="ml-auto">
-                    <SourceBadge source={item.source} />
-                  </span>
-                </button>
+                {/* not (rapor yok): dürüst açıklama; rapor değişmez */}
+                {item.note ? (
+                  <div className="border-l-2 border-amber-500/50 py-1 pl-3 font-mono text-[12px] leading-snug text-neutral-500">
+                    {item.note}
+                  </div>
+                ) : (
+                  /* sistem çıktısı satırı — tıklanınca o rapora döner */
+                  <button
+                    onClick={() => onSelect(item)}
+                    className={`flex w-full items-center gap-2 border-l-2 py-1 pl-3 text-left transition-colors ${
+                      isActive
+                        ? "border-accent bg-accent/[0.06]"
+                        : "border-hairline hover:bg-neutral-500/[0.04]"
+                    }`}
+                  >
+                    <span className="font-mono text-[11px] text-neutral-500">
+                      {item.result ? `${item.result.row_count} satır` : "sql"}
+                    </span>
+                    <span className="ml-auto">
+                      <SourceBadge source={item.source} />
+                    </span>
+                  </button>
+                )}
               </div>
             );
           })}
