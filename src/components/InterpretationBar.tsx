@@ -109,7 +109,38 @@ export function InterpretationBar({
     onEdit({ cq: next, label: `chip: kırılım → ${dim} = ${value}` });
   };
 
-  const fmtDate = (f: Filter) => f.value;
+  // Chip YORUMU gösterir, ham tarihi değil: preset ("Bu yıl"), ay ("Temmuz 2026") ya da
+  // okunur aralık ("1 Oca – 31 Mar 2026"). Ham değerler tooltip'te şeffaf kalır.
+  const MONTHS_TR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+                     "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+  const parseIso = (s: string) => {
+    const [y, m, d] = s.split("-").map(Number);
+    return { y, m, d };
+  };
+  const fmtShort = (s: string) => {
+    const { y, m, d } = parseIso(s);
+    return `${d} ${MONTHS_TR[m - 1].slice(0, 3)} ${y}`;
+  };
+  const periodLabel = (): string => {
+    const gte = dateFilters.find((f) => f.operator === "gte")?.value;
+    const lte = dateFilters.find((f) => f.operator === "lte")?.value;
+    if (!gte && !lte) return "tümü";
+    if (gte && !lte) {
+      const preset = periodPresets().find((p) => p.start === gte);
+      if (preset) return preset.label;
+      return `${fmtShort(gte)}'den beri`;
+    }
+    if (gte && lte) {
+      const g = parseIso(gte);
+      const l = parseIso(lte);
+      const lastDay = new Date(l.y, l.m, 0).getDate();
+      if (g.d === 1 && g.m === l.m && g.y === l.y && l.d === lastDay) {
+        return `${MONTHS_TR[g.m - 1]} ${g.y}`; // tam ay: "Temmuz 2026"
+      }
+      return `${fmtShort(gte)} – ${fmtShort(lte)}`;
+    }
+    return `≤ ${fmtShort(lte!)}`;
+  };
 
   // Dönem hazır seçenekleri — client tarafında deterministik tarih (backend chip'leriyle aynı).
   // DİKKAT: toISOString() UTC'ye çevirir (TR'de 1 Ocak 00:00 → 31 Aralık!) — YEREL formatla.
@@ -232,15 +263,16 @@ export function InterpretationBar({
 
       {(() => {
         const open = openFilter === "tarih";
+        const raw = dateFilters.map((f) => `${f.operator} ${f.value}`).join(" · ");
         return (
-          <span className={`relative ${chip}`} title="Dönem — tıkla: değiştir">
+          <span className={`relative ${chip}`} title={raw ? `Dönem (${raw}) — tıkla: değiştir` : "Dönem — tıkla: değiştir"}>
             <button
               onClick={() => setOpenFilter(open ? null : "tarih")}
               className="inline-flex items-center gap-1 hover:text-foreground"
             >
-              tarih:{" "}
+              dönem:{" "}
               {dateFilters.length > 0 ? (
-                <span className="text-accent">{dateFilters.map(fmtDate).join(" → ")}</span>
+                <span className="text-accent">{periodLabel()}</span>
               ) : (
                 "tümü"
               )}{" "}
