@@ -47,6 +47,8 @@ export interface AskResponse {
   note?: string | null;
   // Sorgunun nasıl çözüldüğü — pipeline adımları ("?" ile gösterilir).
   trace?: string[];
+  // Tıklanır chip'ler — meta örnek sorgular / dönem clarification seçenekleri.
+  suggestions?: { label: string; query: string }[];
 }
 
 export interface AskRequest {

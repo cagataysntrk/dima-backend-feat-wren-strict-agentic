@@ -30,6 +30,9 @@ function makeSessionId(): string {
 
 export default function Home() {
   const [active, setActive] = useState<AskResponse | null>(null);
+  // Takip bağlamı: bir sonraki mesajla gönderilecek CubeQuery. Rapor VE clarify notu (kısmi
+  // cube_query) bunu günceller — "bu ay" chip'i doğru sorguya uygulansın (ADR-0007 Faz C).
+  const [contextCq, setContextCq] = useState<AskResponse["cube_query"]>(null);
   const [drawer, setDrawer] = useState<Drawer>(null);
   const [startedLatch, setStarted] = useState(false);
   const [sessionId] = useState(makeSessionId);
@@ -40,16 +43,16 @@ export default function Home() {
     mutationFn: ({ question }) =>
       ask({
         question,
-        // Konuşmasal daraltma: o anki raporun CubeQuery'si + geçmiş → takip mesajları
-        // mevcut raporu düzenler ("aylara göre", "temmuzu çıkar") — ADR-0007.
-        cube_query: active?.cube_query ?? null,
+        cube_query: contextCq,
         history: items.map((i) => i.question).slice(0, 8),
         session_id: sessionId,
       }),
     onSuccess: (data) => {
       addHistory(data);
-      // Not (rapor yok) ise mevcut raporu koru; yalnız gerçek raporda sağ paneli güncelle.
+      // Rapor → sağ paneli güncelle; not → mevcut raporu koru.
       if (!data.note) setActive(data);
+      // Bağlam: rapor ya da clarify (kısmi cube_query) her ikisi de bir sonraki mesaj için.
+      setContextCq(data.cube_query ?? null);
     },
   });
 

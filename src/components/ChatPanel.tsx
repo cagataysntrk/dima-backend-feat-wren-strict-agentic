@@ -76,10 +76,25 @@ export function ChatPanel({
                     {item.question}
                   </span>
                 </div>
-                {/* not (rapor yok): dürüst açıklama; rapor değişmez */}
+                {/* not (rapor yok): dürüst açıklama + tıklanır chip'ler (örnek/dönem) */}
                 {item.note ? (
-                  <div className="border-l-2 border-amber-500/50 py-1 pl-3 font-mono text-[12px] leading-snug text-neutral-500">
-                    {item.note}
+                  <div className="border-l-2 border-amber-500/50 py-1 pl-3">
+                    <div className="font-mono text-[12px] leading-snug text-neutral-500">
+                      {item.note}
+                    </div>
+                    {item.suggestions && item.suggestions.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {item.suggestions.map((s) => (
+                          <button
+                            key={s.label}
+                            onClick={() => onSubmit(s.query)}
+                            className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-600 transition-colors hover:border-accent/50 hover:text-foreground dark:text-neutral-300"
+                          >
+                            {s.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   /* sistem çıktısı satırı — tıklanınca o rapora döner */
