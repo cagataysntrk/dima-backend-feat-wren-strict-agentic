@@ -49,9 +49,10 @@ export function ResultView({ result }: { result: QueryResult }) {
     return [...new Set([a.kind, ...t])].filter((k) => k !== "kpi" && k !== "none");
   }, [a, result.rows.length]);
 
+  // Grafik yalnız çizilebilir + ölçü varsa hesaplanır (0 satır / ölçüsüz → tablo, çökme yok).
   const option = useMemo(
-    () => buildOption(result, a, { kind: type, measure, dark }),
-    [result, a, type, measure, dark],
+    () => (chartable && measure ? buildOption(result, a, { kind: type, measure, dark }) : null),
+    [chartable, result, a, type, measure, dark],
   );
 
   const cards = a.kind === "kpi" ? kpiCards(result, a) : [];
@@ -120,9 +121,13 @@ export function ResultView({ result }: { result: QueryResult }) {
           ))}
         </div>
       ) : (
-        <div className="border border-hairline p-2">
-          <EChart option={option} />
-        </div>
+        option ? (
+          <div className="border border-hairline p-2">
+            <EChart option={option} />
+          </div>
+        ) : (
+          <ResultTable result={result} />
+        )
       )}
     </div>
   );

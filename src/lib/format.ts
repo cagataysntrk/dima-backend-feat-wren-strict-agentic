@@ -8,6 +8,7 @@ export interface Unit {
 
 // Sıra önemli: parasal/özel kontroller genel eklerden ÖNCE gelir.
 export function unitFor(col: string): Unit | null {
+  if (!col) return null; // ölçü yok (ör. 0 satır) → birim yok, çökme
   const c = col.toLowerCase();
   if (c.includes("yil")) return null; // yıl (kurulum_yili) — grupsuz tam sayı
   if (c === "kar" || /(tutar|ciro|maliyet|fiyat|katki|gelir|kazanc)/.test(c)) return { suffix: "₺" };

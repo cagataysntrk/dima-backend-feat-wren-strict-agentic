@@ -15,10 +15,24 @@ import type { AskResponse } from "@/lib/types";
 
 type Drawer = "settings" | "help" | null;
 
+// Oturum kimliği — crypto.randomUUID yalnız güvenli bağlamda (https/localhost) var;
+// http://*.localtld.sh'de yok, bu yüzden fallback.
+function makeSessionId(): string {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+  } catch {
+    /* güvenli bağlam değil */
+  }
+  return `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export default function Home() {
   const [active, setActive] = useState<AskResponse | null>(null);
   const [drawer, setDrawer] = useState<Drawer>(null);
-  const [sessionId] = useState(() => crypto.randomUUID());
+  const [startedLatch, setStarted] = useState(false);
+  const [sessionId] = useState(makeSessionId);
   const items = useHistory((s) => s.items);
   const addHistory = useHistory((s) => s.add);
 
@@ -41,10 +55,11 @@ export default function Home() {
 
   const submit = (q: string) => {
     setDrawer(null);
+    setStarted(true); // ilk sorudan sonra çalışma alanında kal (hata olsa da landing'e dönme)
     mutation.mutate({ question: q });
   };
 
-  const started = items.length > 0 || mutation.isPending;
+  const started = startedLatch || items.length > 0 || mutation.isPending;
   const pendingQuestion = mutation.isPending ? mutation.variables?.question : undefined;
 
   return (
