@@ -21,8 +21,15 @@ export default function Home() {
   const items = useHistory((s) => s.items);
   const addHistory = useHistory((s) => s.add);
 
-  const mutation = useMutation<AskResponse, unknown, string>({
-    mutationFn: (q: string) => ask({ question: q }),
+  const mutation = useMutation<AskResponse, unknown, { question: string }>({
+    mutationFn: ({ question }) =>
+      ask({
+        question,
+        // Konuşmasal daraltma: o anki raporun CubeQuery'si + geçmiş → takip mesajları
+        // mevcut raporu düzenler ("aylara göre", "temmuzu çıkar") — ADR-0007.
+        cube_query: active?.cube_query ?? null,
+        history: items.map((i) => i.question).slice(0, 8),
+      }),
     onSuccess: (data) => {
       addHistory(data);
       setActive(data);
@@ -31,11 +38,11 @@ export default function Home() {
 
   const submit = (q: string) => {
     setDrawer(null);
-    mutation.mutate(q);
+    mutation.mutate({ question: q });
   };
 
   const started = items.length > 0 || mutation.isPending;
-  const pendingQuestion = mutation.isPending ? mutation.variables : undefined;
+  const pendingQuestion = mutation.isPending ? mutation.variables?.question : undefined;
 
   return (
     <div className="h-full">

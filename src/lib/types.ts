@@ -32,6 +32,8 @@ export interface QueryResult {
   row_count: number;
 }
 
+export type CubeQuery = Record<string, unknown>;
+
 export interface AskResponse {
   question: string;
   sql: string;
@@ -39,10 +41,15 @@ export interface AskResponse {
   result: QueryResult | null;
   // Provenance: SQL'i kim üretti — "cube" (deterministik 🥇) | "llm:<sağlayıcı>" | "rule".
   source: string | null;
+  // Rapor cube ile üretildiyse yapısal durum — takip mesajlarında geri gönderilir (ADR-0007).
+  cube_query: CubeQuery | null;
 }
 
 export interface AskRequest {
   question: string;
   limit?: number;
   execute?: boolean;
+  // Konuşmasal daraltma: önceki mesajlar + o anki raporun CubeQuery durumu.
+  history?: string[];
+  cube_query?: CubeQuery | null;
 }
