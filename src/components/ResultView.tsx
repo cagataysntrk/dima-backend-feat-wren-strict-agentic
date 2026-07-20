@@ -52,7 +52,7 @@ export function ResultView({ result, viewHint }: { result: QueryResult; viewHint
     if (a.facet) t.push("facet");
     if (a.timeCol) t.push("line");
     if (!a.facet) t.push("bar");
-    if (a.heat) t.push("heatmap");
+    if (a.heat || a.heatAny) t.push("heatmap");  // açık seçim min-eksen kuralına takılmaz
     if (!a.timeCol && a.primaryDim && a.measures.length >= 1 && result.rows.length <= 12) t.push("pie");
     // analiz edilen tip başta, tekrarsız (kpi/none hariç)
     return [...new Set([a.kind, ...t])].filter((k) => k !== "kpi" && k !== "none");

@@ -42,6 +42,9 @@ export interface Analysis {
   timeCol: string | null;
   primaryDim: string | null;
   heat: { row: string; col: string } | null;
+  // Açık istek için serbest eşleme: "ısı haritası olarak ver" min-eksen≥3 otomatik
+  // kuralına takılmamalı (kural yalnız OTOMATİK tip seçimi içindir; log 2026-07-20).
+  heatAny: { row: string; col: string } | null;
   // 3 kırılım → small multiples (facet/trellis): en az-değerli boyut panellere bölünür,
   // her panel gruplu sütun (BI best practice; stack oran metriklerinde YANLIŞ olurdu).
   facet: { dim: string; x: string; series: string } | null;
@@ -77,6 +80,15 @@ export function analyze(result: QueryResult): Analysis {
     }
   }
 
+  // Açık "ısı haritası" isteği için: 2+ boyutta her zaman kurulabilir bir eşleme
+  // (küçük kardinalite → satır). Otomatik seçim yine `heat` kuralını kullanır.
+  let heatAny: Analysis["heatAny"] = heat;
+  if (!heatAny && dims.length >= 2 && measures.length >= 1) {
+    const multi = [...dims].filter((d) => distinct(rows, d).length > 1)
+      .sort((a, b) => distinct(rows, a).length - distinct(rows, b).length);
+    if (multi.length >= 2) heatAny = { row: multi[0], col: multi[multi.length - 1] };
+  }
+
   const primaryDim =
     timeCol ??
     (dims.length
@@ -103,7 +115,7 @@ export function analyze(result: QueryResult): Analysis {
   else if (heat) kind = "heatmap";
   else if (primaryDim && measures.length >= 1) kind = "bar";
 
-  return { kind, measures, dims, timeCol, primaryDim, heat, facet };
+  return { kind, measures, dims, timeCol, primaryDim, heat, heatAny, facet };
 }
 
 interface BuildOpts {
@@ -124,8 +136,9 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
   } as const;
 
   // -- HEATMAP: satır × sütun matrisi + kenar ortalamaları (marj) ---------
-  if (o.kind === "heatmap" && a.heat) {
-    const { row, col } = a.heat;
+  // Açık istek otomatik min-eksen kuralını ezer: a.heat yoksa a.heatAny kullanılır.
+  if (o.kind === "heatmap" && (a.heat || a.heatAny)) {
+    const { row, col } = (a.heat ?? a.heatAny)!;
     const rowKeys = orderCats(distinct(rows, row).map(String));
     // Sütun sırası: haftanın günü ise kanonik (Pzt→Paz), değilse alfabetik/kronolojik.
     const colKeys = orderCats(distinct(rows, col).map(fmtCat));
