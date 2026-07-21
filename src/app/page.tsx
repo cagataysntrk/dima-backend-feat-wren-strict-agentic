@@ -38,6 +38,9 @@ export default function Home() {
   const [drawer, setDrawer] = useState<Drawer>(null);
   const [startedLatch, setStarted] = useState(false);
   const [sessionId] = useState(makeSessionId);
+  // "✓ doğru" etiketi: raporu üreten SON GERÇEK soru (chip düzenlemeleri soru değildir —
+  // "chip: kova → month" VQR'a yazılamaz; öğrenme orijinal soru metniyle anlamlı).
+  const [verifyLabel, setVerifyLabel] = useState<string | null>(null);
   const items = useHistory((s) => s.items);
   const addHistory = useHistory((s) => s.add);
 
@@ -64,6 +67,7 @@ export default function Home() {
   const submit = (q: string) => {
     setDrawer(null);
     setStarted(true); // ilk sorudan sonra çalışma alanında kal (hata olsa da landing'e dönme)
+    setVerifyLabel(q); // gerçek kullanıcı sorusu — verify etiketi bu olur
     mutation.mutate({ question: q });
   };
 
@@ -98,6 +102,7 @@ export default function Home() {
               onSelect={(item) => {
                 setActive(item);
                 setContextCq(item.cube_query ?? null); // seçilen rapor bağlam olur
+                if (!item.question.startsWith("chip:")) setVerifyLabel(item.question);
               }}
               onSubmit={submit}
             />
@@ -109,6 +114,8 @@ export default function Home() {
               viewHint={viewHint}
               onCubeEdit={({ cq, label }) => cubeMutation.mutate({ cq, label })}
               error={mutation.isError ? apiErrorMessage(mutation.error) : null}
+              verifyLabel={verifyLabel}
+              sessionId={sessionId}
             />
           </section>
         </div>

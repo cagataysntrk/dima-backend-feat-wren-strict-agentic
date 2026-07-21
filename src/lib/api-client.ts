@@ -48,7 +48,7 @@ export async function getFeatures(): Promise<Record<string, string>> {
 export async function verifyReport(
   cube_query: CubeQuery,
   label: string,
-  opts?: { undo?: boolean; verdict?: "right" | "wrong" },
+  opts?: { undo?: boolean; verdict?: "right" | "wrong"; session_id?: string },
 ): Promise<{ stored: boolean; removed: boolean }> {
   const { data } = await apiClient.post<{ stored: boolean; removed: boolean }>("/verify", {
     cube_query,

@@ -32,6 +32,8 @@ export function ReportPanel({
   viewHint,
   onCubeEdit,
   error,
+  verifyLabel,
+  sessionId,
 }: {
   data: AskResponse | null;
   pending: boolean;
@@ -40,14 +42,22 @@ export function ReportPanel({
   // Yorum çubuğu chip düzenlemeleri (deterministik /cube).
   onCubeEdit?: (edit: { cq: CubeQuery; label: string }) => void;
   error: string | null;
+  // Raporu üreten son GERÇEK soru (chip etiketi değil) — verify bu metinle öğrenir.
+  verifyLabel?: string | null;
+  sessionId?: string;
 }) {
   const [showSql, setShowSql] = useState(false);
   const [showTrace, setShowTrace] = useState(false);
   // "✓ doğru" / "✗ yanlış" (beta bayrağı): geri bildirim — doğrulama geri ALINABİLİR.
+  // Durum RAPOR BAŞINA haritada tutulur: oturumda birden çok rapora verilen ✓/✗
+  // işaretleri, raporlar arasında gezerken korunur (tek anahtar son işareti eziyordu).
   const verifyStage = useFeature("verify_button");
-  const [verified, setVerified] = useState<string | null>(null);
-  const [flagged, setFlagged] = useState<string | null>(null);
-  const verifyKey = data?.cube_query ? `${data.question}` : null;
+  const [fb, setFb] = useState<Record<string, "ok" | "bad">>({});
+  const vLabel =
+    data && data.question.startsWith("chip:") ? (verifyLabel ?? data.question) : data?.question;
+  const verifyKey = data?.cube_query && vLabel ? `${vLabel}::${data.sql ?? ""}` : null;
+  const verified = verifyKey != null && fb[verifyKey] === "ok";
+  const flagged = verifyKey != null && fb[verifyKey] === "bad";
 
   if (error) {
     return (
@@ -91,45 +101,46 @@ export function ReportPanel({
               <div className="inline-flex h-[20px] items-stretch border border-hairline font-mono text-[11px]">
                 <button
                   onClick={() => {
-                    if (!data.cube_query) return;
-                    const isOn = verified === verifyKey;
+                    if (!data.cube_query || !vLabel || !verifyKey) return;
                     // ikinci tık = GERİ AL (yanlışlıkla doğrulamayı düzeltme yolu)
-                    verifyReport(data.cube_query, data.question, isOn ? { undo: true } : undefined)
-                      .then(() => {
-                        setVerified(isOn ? null : verifyKey);
-                        setFlagged(null);
-                      })
+                    verifyReport(data.cube_query, vLabel, {
+                      undo: verified || undefined,
+                      session_id: sessionId,
+                    })
+                      .then(() =>
+                        setFb((m) => {
+                          const n = { ...m };
+                          if (verified) delete n[verifyKey];
+                          else n[verifyKey] = "ok";
+                          return n;
+                        }),
+                      )
                       .catch(() => {});
                   }}
                   title={
-                    verified === verifyKey
+                    verified
                       ? "Doğrulamayı geri al"
                       : "Bu raporu doğru olarak işaretle — aynı soru bundan sonra LLM'siz cevaplanır"
                   }
                   className={`px-1.5 transition-colors ${
-                    verified === verifyKey
-                      ? "text-emerald-500"
-                      : "text-neutral-400 hover:text-foreground"
+                    verified ? "text-emerald-500" : "text-neutral-400 hover:text-foreground"
                   }`}
                 >
-                  {verified === verifyKey ? "✓ öğrenildi" : "✓ doğru"}
+                  {verified ? "✓ öğrenildi" : "✓ doğru"}
                 </button>
                 <button
                   onClick={() => {
-                    if (!data.cube_query || flagged === verifyKey) return;
-                    verifyReport(data.cube_query, data.question, { verdict: "wrong" })
-                      .then(() => {
-                        setFlagged(verifyKey);
-                        setVerified(null);
-                      })
+                    if (!data.cube_query || !vLabel || !verifyKey || flagged) return;
+                    verifyReport(data.cube_query, vLabel, { verdict: "wrong", session_id: sessionId })
+                      .then(() => setFb((m) => ({ ...m, [verifyKey]: "bad" })))
                       .catch(() => {});
                   }}
                   title="Bu rapor yanlış — kayda geçer; bu soruya öğrenilmiş yakın bir çift varsa silinir"
                   className={`border-l border-hairline px-1.5 transition-colors ${
-                    flagged === verifyKey ? "text-red-500" : "text-neutral-400 hover:text-foreground"
+                    flagged ? "text-red-500" : "text-neutral-400 hover:text-foreground"
                   }`}
                 >
-                  {flagged === verifyKey ? "✗ kaydedildi" : "✗ yanlış"}
+                  {flagged ? "✗ kaydedildi" : "✗ yanlış"}
                 </button>
               </div>
             )}
