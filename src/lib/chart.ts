@@ -150,16 +150,35 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
     const maxOf = (m: string) =>
       Math.max(0, ...rows.map((r) => num(r[m])).filter((v) => !Number.isNaN(v)));
     const gmax = Math.max(...a.measures.map(maxOf));
-    // ikincil eksen: global maksimumun 1/50'sinin altında kalan ölçüler (oranlar)
-    const secondary = a.measures.filter((m) => maxOf(m) < gmax / 50);
-    const primary = a.measures.filter((m) => !secondary.includes(m));
+    // Eksen ayrımı BİRİME göre: kg ölçüleri birlikte SOL (sütun), farklı birimdekiler
+    // (%) SAĞ (çizgi). fire_kg ~1000 vs agirlik ~50k aynı birimdir — ölçek sezgisi
+    // onları yanlış ayırıyordu (ekran görüntüsü 2026-07-21). Birimler ayrışmazsa
+    // ölçek sezgisine düşülür.
+    const dominant = [...a.measures].sort((x, y) => maxOf(y) - maxOf(x))[0];
+    let primary = a.measures.filter((m) => unitSuffix(m) === unitSuffix(dominant));
+    let secondary = a.measures.filter((m) => !primary.includes(m));
+    if (secondary.length === 0 && primary.length > 1) {
+      secondary = a.measures.filter((m) => maxOf(m) < gmax / 50);
+      primary = a.measures.filter((m) => !secondary.includes(m));
+    }
     const val = (m: string, x: string) => {
       const r = rows.find((rr) => fmtCat(rr[comboX]) === x);
       return r ? num(r[m]) : null;
     };
     return {
       ...base,
-      tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        // her seri KENDİ birimiyle biçimlenir (819.4000000000001 ham değeri değil)
+        formatter: (ps: unknown) => {
+          const arr = ps as { marker: string; seriesName: string; value: number | null }[];
+          const head = arr.length ? `${(arr[0] as unknown as { name: string }).name}<br/>` : "";
+          return head + arr
+            .map((p) => `${p.marker}${p.seriesName}: <b>${fmtValue(p.value, p.seriesName)}</b>`)
+            .join("<br/>");
+        },
+      },
       legend: { type: "scroll", top: 0, textStyle: { color: axis } },
       grid: { left: 8, right: secondary.length ? 8 : 18, top: 30, bottom: 8, containLabel: true },
       xAxis: {
