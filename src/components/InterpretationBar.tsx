@@ -102,6 +102,25 @@ export function InterpretationBar({
     onEdit({ cq: next, label: `chip: ${dim} filtresi kaldırıldı` });
   };
 
+  // KIRILIM ALTINDA ÇOKLU DEĞER SEÇİMİ: kırılım kalır, kapsam in-filtresiyle daralır
+  // ("sadece beyaz ve siyah"). Tümü seçili = filtre yok; tek seçili = eq.
+  const setDimSelection = (dim: string, selected: string[], all: string[]) => {
+    const next = clone();
+    const others = filters.filter((f) => f.dimension !== dim);
+    if (selected.length === 0 || selected.length === all.length) {
+      next.filters = others; // hepsi = filtresiz
+    } else if (selected.length === 1) {
+      next.filters = [...others, { dimension: dim, operator: "eq", value: selected[0] }];
+    } else {
+      next.filters = [...others, { dimension: dim, operator: "in", value: selected }];
+    }
+    if (!(next.filters as Filter[]).length) delete next.filters;
+    onEdit({
+      cq: next,
+      label: `chip: ${dim} seçimi → ${selected.length && selected.length < all.length ? selected.join(", ") : "hepsi"}`,
+    });
+  };
+
   // Kırılımdan tek değere GERİ dönüş: boyutu kaldır, o değere filtrele
   // (ör. cinsiyet kırılımı → yalnız Kadın).
   const dimToFilter = (dim: string, value: string) => {
@@ -228,34 +247,57 @@ export function InterpretationBar({
             </span>
           );
         }
-        // Kategorik kırılım — tıkla: tek değere geri dön (filtre) ya da kaldır.
+        // Kategorik kırılım — ÇOKLU SEÇİM: değerleri işaretle/kaldır ("sadece beyaz
+        // ve siyah"), kırılım kalır, sorguya in-filtre yansır. Tek değere indirmek
+        // için "sadece X" davranışı: son kalan işaretli değer eq olur.
+        const dimFilter = catFilters.find((f) => f.dimension === d);
+        const selected = dimFilter
+          ? (Array.isArray(dimFilter.value) ? dimFilter.value : [dimFilter.value])
+          : opts;
+        const label =
+          dimFilter && selected.length < opts.length
+            ? `kırılım: ${d} · ${selected.length}/${opts.length}`
+            : `kırılım: ${d}`;
         return (
-          <span key={d} className={`relative ${chip}`} title="Kırılım — tıkla: tek değere filtrele">
+          <span key={d} className={`relative ${chip}`} title="Kırılım — tıkla: değerleri seç">
             <button
               onClick={() => setOpenFilter(open ? null : `dim:${d}`)}
               className="inline-flex items-center gap-1 hover:text-foreground"
             >
-              kırılım: {d} ▾
+              {label} ▾
             </button>
             <button onClick={() => removeDim(d)} className={xBtn} aria-label={`${d} kırılımını kaldır`}>×</button>
             {open && (
               <span className="absolute left-0 top-full z-30 mt-1 flex min-w-full flex-col border border-hairline bg-background shadow-lg">
-                {opts.map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => { setOpenFilter(null); dimToFilter(d, v); }}
-                    className="px-2 py-1 text-left font-mono text-[11px] hover:bg-neutral-500/[0.06]"
-                  >
-                    sadece {v}
-                  </button>
-                ))}
+                {opts.map((v) => {
+                  const on = selected.includes(v);
+                  return (
+                    <button
+                      key={v}
+                      onClick={() => {
+                        const nextSel = on ? selected.filter((x) => x !== v) : [...selected, v];
+                        if (!nextSel.length) return; // en az bir değer kalmalı
+                        setDimSelection(d, nextSel, opts);
+                      }}
+                      className={`px-2 py-1 text-left font-mono text-[11px] hover:bg-neutral-500/[0.06] ${on ? "text-accent" : "text-neutral-400"}`}
+                    >
+                      {on ? "☑" : "☐"} {v}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setDimSelection(d, opts, opts)}
+                  className="border-t border-hairline px-2 py-1 text-left font-mono text-[11px] text-neutral-500 hover:bg-neutral-500/[0.06]"
+                >
+                  hepsi
+                </button>
               </span>
             )}
           </span>
         );
       })}
 
-      {catFilters.map((f) => {
+      {catFilters.filter((f) => !dims.includes(f.dimension)).map((f) => {
         const opts = valuesFor(f.dimension);
         const open = openFilter === f.dimension;
         return (
