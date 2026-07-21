@@ -1,12 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { AskResponse, CubeQuery } from "@/lib/types";
+import { getFeatures, verifyReport } from "@/lib/api-client";
 import { BrandMark } from "@/components/BrandMark";
 import { InterpretationBar } from "@/components/InterpretationBar";
 import { ResultView } from "@/components/ResultView";
 import { SourceBadge } from "@/components/ChatPanel";
+
+// Özellik bayrakları (ADR-0009) — açılışta bir kez okunur, modül düzeyinde tutulur.
+let _features: Record<string, string> | null = null;
+function useFeature(name: string): string | null {
+  const [stage, setStage] = useState<string | null>(_features?.[name] ?? null);
+  useEffect(() => {
+    if (_features) return;
+    getFeatures()
+      .then((f) => {
+        _features = f;
+        setStage(f[name] ?? null);
+      })
+      .catch(() => {});
+  }, [name]);
+  return stage;
+}
 
 // Sağ bölme: seçili raporun canlı görünümü (keskin, mono readout).
 export function ReportPanel({
@@ -26,6 +43,10 @@ export function ReportPanel({
 }) {
   const [showSql, setShowSql] = useState(false);
   const [showTrace, setShowTrace] = useState(false);
+  // "✓ doğru" (beta bayrağı): soru→CubeQuery çifti VQR'a doğrulanmış yazılır.
+  const verifyStage = useFeature("verify_button");
+  const [verified, setVerified] = useState<string | null>(null);
+  const verifyKey = data?.cube_query ? `${data.question}` : null;
 
   if (error) {
     return (
@@ -64,6 +85,27 @@ export function ReportPanel({
         <div className="flex items-start justify-between gap-3">
           <h2 className="font-mono text-[15px] leading-snug text-foreground">{data.question}</h2>
           <div className="flex shrink-0 items-center gap-1.5 pt-0.5">
+            {verifyStage && data.cube_query && data.source && (
+              <button
+                onClick={() => {
+                  if (!data.cube_query || verified === verifyKey) return;
+                  verifyReport(data.cube_query, data.question)
+                    .then(() => setVerified(verifyKey))
+                    .catch(() => {});
+                }}
+                title={`Bu raporu doğru olarak işaretle — aynı soru bundan sonra LLM'siz cevaplanır (${verifyStage})`}
+                className={`flex h-[18px] items-center gap-1 border px-1.5 font-mono text-[11px] transition-colors ${
+                  verified === verifyKey
+                    ? "border-emerald-500/40 text-emerald-500"
+                    : "border-hairline text-neutral-400 hover:text-foreground"
+                }`}
+              >
+                {verified === verifyKey ? "✓ öğrenildi" : "✓ doğru"}
+                {verifyStage !== "prod" && (
+                  <span className="text-[9px] uppercase tracking-wider text-accent">{verifyStage}</span>
+                )}
+              </button>
+            )}
             <SourceBadge source={data.source} />
             {data.trace && data.trace.length > 0 && (
               <button

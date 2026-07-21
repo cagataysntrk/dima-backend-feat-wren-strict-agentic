@@ -36,6 +36,19 @@ export async function runQuery(sql: string, limit?: number): Promise<QueryResult
   return data;
 }
 
+// Özellik bayrakları (ADR-0009): sektör ⊕ şirket katmanlı; değerler alpha|beta|prod.
+export async function getFeatures(): Promise<Record<string, string>> {
+  const { data } = await apiClient.get<{ features: Record<string, string> }>("/features");
+  return data.features ?? {};
+}
+
+// "✓ doğru" (beta): raporun soru→CubeQuery çifti doğrulanmış olarak VQR'a yazılır —
+// aynı soru bir daha LLM'siz cevaplanır (öğrenme döngüsünün kullanıcı ayağı).
+export async function verifyReport(cube_query: CubeQuery, label: string): Promise<boolean> {
+  const { data } = await apiClient.post<{ stored: boolean }>("/verify", { cube_query, label });
+  return data.stored;
+}
+
 // Normalize axios errors into a readable message (backend sends {detail}).
 export function apiErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
