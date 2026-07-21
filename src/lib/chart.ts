@@ -334,8 +334,8 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
     const { dim: fDim, x: xDim, series: sDim } = a.facet;
     const panels = orderCats(distinct(rows, fDim).map(String));
     const xs = orderCats(distinct(rows, xDim).map(fmtCat));
-    // seri sırası KANONİK: renk ataması (palet sırası) koşumdan bağımsız sabit kalsın
-    const groups = orderCats(distinct(rows, sDim).map(String));
+    // seri sırası KANONİK + zaman değerleri BİÇİMLİ (ham ISO lejantı olmasın)
+    const groups = orderCats(distinct(rows, sDim).map(fmtCat));
     const N = panels.length;
     // 4'ten çok panel İKİ SATIRA sarılır ("her kumaş türü için ayrı grafik" — 7 panel
     // tek satırda okunmazdı). Satır içi konum: i % cols, satır: floor(i / cols).
@@ -384,13 +384,13 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
       })),
       series: panels.flatMap((p, i) =>
         groups.map((g) => ({
-          name: g, // aynı ad → lejant panolar arası paylaşılır
+          name: axisLabel(g, sDim), // aynı ad → lejant panolar arası paylaşılır; ay → "Oca 2026"
           type: "bar" as const,
           xAxisIndex: i,
           yAxisIndex: i,
           data: xs.map((x) => {
             const r = rows.find(
-              (rr) => String(rr[fDim]) === p && fmtCat(rr[xDim]) === x && String(rr[sDim]) === g,
+              (rr) => String(rr[fDim]) === p && fmtCat(rr[xDim]) === x && fmtCat(rr[sDim]) === g,
             );
             return r ? num(r[measure]) : null;
           }),

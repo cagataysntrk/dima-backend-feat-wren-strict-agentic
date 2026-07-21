@@ -12,7 +12,7 @@ import type { CubeQuery } from "@/lib/types";
 interface Filter {
   dimension: string;
   operator: string;
-  value: string;
+  value: string | string[];  // in-filtre: liste
 }
 
 type Edit = { cq: CubeQuery; label: string };
@@ -128,8 +128,9 @@ export function InterpretationBar({
     return `${d} ${MONTHS_TR[m - 1].slice(0, 3)} ${y}`;
   };
   const periodLabel = (): string => {
-    const gte = dateFilters.find((f) => f.operator === "gte")?.value;
-    const lte = dateFilters.find((f) => f.operator === "lte")?.value;
+    // tarih filtreleri her zaman TEK değerdir (liste yalnız kategorik in-filtrede)
+    const gte = dateFilters.find((f) => f.operator === "gte")?.value as string | undefined;
+    const lte = dateFilters.find((f) => f.operator === "lte")?.value as string | undefined;
     if (!gte && !lte) return "tümü";
     if (gte && !lte) {
       const preset = periodPresets().find((p) => p.start === gte);
@@ -263,7 +264,11 @@ export function InterpretationBar({
               onClick={() => setOpenFilter(open ? null : f.dimension)}
               className="inline-flex items-center gap-1 hover:text-foreground"
             >
-              {f.dimension} = <span className="text-accent">{f.value}</span> ▾
+              {f.dimension} {Array.isArray(f.value) ? "∈" : "="}{" "}
+              <span className="text-accent">
+                {Array.isArray(f.value) ? f.value.join(", ") : f.value}
+              </span>{" "}
+              ▾
             </button>
             <button onClick={() => removeFilter(f.dimension)} className={xBtn} aria-label="Filtreyi kaldır">×</button>
             {open && (
