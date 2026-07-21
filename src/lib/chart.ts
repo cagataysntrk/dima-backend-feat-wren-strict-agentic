@@ -129,6 +129,10 @@ interface BuildOpts {
   dark: boolean;
 }
 
+// Panelli görünümde gezinme (carousel): panel değerleri kanonik sırayla.
+export const facetPanelValues = (result: QueryResult, dim: string): string[] =>
+  orderCats(distinct(result.rows, dim).map(String));
+
 // Ölçü seçicide "tümü" nöbetçisi — çok-ölçülü kombo görünüm (ADR/log 2026-07-21).
 export const ALL_MEASURES = "__tumu__";
 
@@ -332,7 +336,13 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
     const xs = orderCats(distinct(rows, xDim).map(fmtCat));
     const groups = distinct(rows, sDim).map(String);
     const N = panels.length;
-    const w = 100 / N;
+    // 4'ten çok panel İKİ SATIRA sarılır ("her kumaş türü için ayrı grafik" — 7 panel
+    // tek satırda okunmazdı). Satır içi konum: i % cols, satır: floor(i / cols).
+    const cols = N > 4 ? Math.ceil(N / 2) : N;
+    const twoRows = N > cols;
+    const w = 100 / cols;
+    const colOf = (i: number) => i % cols;
+    const rowOf = (i: number) => Math.floor(i / cols);
     // ORTAK y-skala — paneller karşılaştırılabilir olsun (best practice).
     const allVals = rows.map((r) => num(r[measure])).filter((v) => !Number.isNaN(v));
     const yMax = allVals.length ? Math.max(...allVals) * 1.08 : undefined;
@@ -343,16 +353,17 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
       legend: { type: "scroll", top: 0, textStyle: { color: axis } },
       title: panels.map((p, i) => ({
         text: p,
-        left: `${i * w + w / 2}%`,
+        left: `${colOf(i) * w + w / 2}%`,
         textAlign: "center" as const,
-        top: 22,
+        top: twoRows ? (rowOf(i) === 0 ? "7%" : "54%") : 22,
         textStyle: { fontSize: 11, color: axis, fontWeight: "normal" as const },
       })),
       grid: panels.map((_, i) => ({
-        left: `${i * w + 5}%`,
+        left: `${colOf(i) * w + 5}%`,
         width: `${w - 8}%`,
-        top: 46,
-        bottom: 28,
+        ...(twoRows
+          ? { top: rowOf(i) === 0 ? "12%" : "59%", height: "30%" }
+          : { top: 46, bottom: 28 }),
       })),
       xAxis: panels.map((_, i) => ({
         type: "category" as const,
@@ -365,9 +376,9 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
         type: "value" as const,
         gridIndex: i,
         max: yMax,
-        axisLabel: i === 0 ? { color: axis, formatter: (v: number) => fmtAxis(v, measure) } : { show: false },
+        axisLabel: colOf(i) === 0 ? { color: axis, formatter: (v: number) => fmtAxis(v, measure) } : { show: false },
         splitLine: { lineStyle: { color: split } },
-        name: i === 0 ? unitSuffix(measure) : undefined,
+        name: i === 0 ? unitSuffix(measure) : undefined,  // birim adı yalnız ilk panelde
         nameTextStyle: { color: axis },
       })),
       series: panels.flatMap((p, i) =>

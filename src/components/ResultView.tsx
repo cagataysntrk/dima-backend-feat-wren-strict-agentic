@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useSyncExternalStore } from "react";
 import type { QueryResult } from "@/lib/types";
-import { ALL_MEASURES, analyze, buildOption, kpiCards, type ChartKind } from "@/lib/chart";
+import { ALL_MEASURES, analyze, buildOption, facetPanelValues, kpiCards, type ChartKind } from "@/lib/chart";
 import { EChart } from "./EChart";
 import { ResultTable } from "./ResultTable";
 import { Select } from "./Select";
@@ -33,13 +33,26 @@ function usePrefersDark(): boolean {
 // Not: yeni sonuçta/görünüm ipucunda seçimlerin sıfırlanması için ana bileşen bunu
 // `key={...}` ile remount eder; viewHint ("grafik ver") başlangıç görünümünü belirler.
 export function ResultView({ result, viewHint }: { result: QueryResult; viewHint?: string }) {
-  const a = useMemo(() => analyze(result), [result]);
+  // "facet:kumas_cinsi" — panel boyutu KULLANICININ istediği boyut olur ("her kumaş
+  // türü için ayrı grafik"); analiz sezgisi (en düşük kardinalite) ezilir.
+  const hintBase = viewHint?.split(":")[0];
+  const facetDim = viewHint?.startsWith("facet:") ? viewHint.slice(6) : null;
+  const a = useMemo(() => {
+    const b = analyze(result);
+    if (facetDim && b.dims.length === 3 && b.dims.includes(facetDim)) {
+      const others = b.dims.filter((d) => d !== facetDim);
+      const x = b.timeCol && b.timeCol !== facetDim ? b.timeCol : others[0];
+      const series = others.find((d) => d !== x) ?? others[0];
+      return { ...b, kind: "facet" as ChartKind, facet: { dim: facetDim, x, series } };
+    }
+    return b;
+  }, [result, facetDim]);
   const chartable = a.kind !== "none" && a.kind !== "kpi";
 
-  const hintKind = (["line", "bar", "pie", "heatmap", "facet"] as ChartKind[]).find((k) => k === viewHint);
-  const wantsChart = viewHint != null && viewHint !== "table";
+  const hintKind = (["line", "bar", "pie", "heatmap", "facet"] as ChartKind[]).find((k) => k === hintBase);
+  const wantsChart = viewHint != null && hintBase !== "table";
   const [view, setView] = useState<"chart" | "table">(() => {
-    if (viewHint === "table") return "table";
+    if (hintBase === "table") return "table";
     if (wantsChart) return "chart";
     return a.kind === "none" ? "table" : "chart";
   });
@@ -61,10 +74,35 @@ export function ResultView({ result, viewHint }: { result: QueryResult; viewHint
     return [...new Set([a.kind, ...t])].filter((k) => k !== "kpi" && k !== "none");
   }, [a, result.rows.length]);
 
+  // PANEL GEZİNME (carousel, "instagram" tarzı): panelli görünümde ◀ ▶ ile
+  // "tüm paneller" ↔ tek panel arasında geçilir; tek panelde o dilim TAM BOY çizilir.
+  const facetInfo = type === "facet" && a.facet ? a.facet : null;
+  const panels = useMemo(
+    () => (facetInfo ? facetPanelValues(result, facetInfo.dim) : []),
+    [result, facetInfo],
+  );
+  const [panelIdx, setPanelIdx] = useState(-1); // -1 = tüm paneller (grid)
+  const single = facetInfo && panelIdx >= 0 && panelIdx < panels.length;
+  const effResult = useMemo(() => {
+    if (!single || !facetInfo) return result;
+    const val = panels[panelIdx];
+    const rows = result.rows
+      .filter((r) => String(r[facetInfo.dim]) === val)
+      .map((r) => {
+        const { [facetInfo.dim]: _omit, ...rest } = r;
+        return rest;
+      });
+    return { ...result, columns: result.columns.filter((c) => c !== facetInfo.dim), rows, row_count: rows.length };
+  }, [single, facetInfo, result, panels, panelIdx]);
+  const effA = useMemo(() => (single ? analyze(effResult) : a), [single, effResult, a]);
+  const effKind: ChartKind = single
+    ? (effA.kind === "none" || effA.kind === "kpi" ? "bar" : effA.kind)
+    : type;
+
   // Grafik yalnız çizilebilir + ölçü varsa hesaplanır (0 satır / ölçüsüz → tablo, çökme yok).
   const option = useMemo(
-    () => (chartable && measure ? buildOption(result, a, { kind: type, measure, dark }) : null),
-    [chartable, result, a, type, measure, dark],
+    () => (chartable && measure ? buildOption(effResult, effA, { kind: effKind, measure, dark }) : null),
+    [chartable, effResult, effA, effKind, measure, dark],
   );
 
   const cards = a.kind === "kpi" ? kpiCards(result, a) : [];
@@ -147,6 +185,27 @@ export function ResultView({ result, viewHint }: { result: QueryResult; viewHint
       ) : (
         option ? (
           <div className="border border-hairline p-2">
+            {facetInfo && (
+              <div className="mb-1 flex items-center justify-center gap-3 font-mono text-[11px] text-neutral-400">
+                <button
+                  aria-label="Önceki panel"
+                  className="px-1 transition-colors hover:text-foreground"
+                  onClick={() => setPanelIdx((i) => (i < 0 ? panels.length - 1 : i - 1))}
+                >
+                  ◀
+                </button>
+                <span className="min-w-[9rem] text-center">
+                  {single ? `${panels[panelIdx]} · ${panelIdx + 1}/${panels.length}` : "tüm paneller"}
+                </span>
+                <button
+                  aria-label="Sonraki panel"
+                  className="px-1 transition-colors hover:text-foreground"
+                  onClick={() => setPanelIdx((i) => (i >= panels.length - 1 ? -1 : i + 1))}
+                >
+                  ▶
+                </button>
+              </div>
+            )}
             <EChart option={option} />
           </div>
         ) : (
