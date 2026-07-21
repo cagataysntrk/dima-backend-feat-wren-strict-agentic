@@ -104,9 +104,17 @@ export function analyze(result: QueryResult): Analysis {
   // kalan ikisinden büyüğü x-ekseni, küçüğü renk serisi.
   let facet: Analysis["facet"] = null;
   if (dims.length === 3 && measures.length >= 1) {
-    const sorted = [...dims].sort((a, b) => distinct(rows, a).length - distinct(rows, b).length);
-    const [fd, sd, xd] = sorted;
-    if (distinct(rows, fd).length <= 6) facet = { dim: fd, x: xd, series: sd };
+    if (timeCol) {
+      // ZAMAN ekseni varsa x HER ZAMAN zamandır (aylar seri olursa okunmaz — ISO
+      // lejant karmaşası); kalan iki boyuttan küçüğü panel, diğeri renk serisi.
+      const [a, b] = dims.filter((d) => d !== timeCol)
+        .sort((x, y) => distinct(rows, x).length - distinct(rows, y).length);
+      if (distinct(rows, a).length <= 6) facet = { dim: a, x: timeCol, series: b };
+    } else {
+      const sorted = [...dims].sort((a, b) => distinct(rows, a).length - distinct(rows, b).length);
+      const [fd, sd, xd] = sorted;
+      if (distinct(rows, fd).length <= 6) facet = { dim: fd, x: xd, series: sd };
+    }
   }
 
   let kind: ChartKind = "none";

@@ -56,6 +56,9 @@ export function InterpretationBar({
     const next = clone();
     next.dimensions = dims.filter((x) => x !== d);
     if (!(next.dimensions as string[]).length) delete next.dimensions;
+    // seçim kırılıma AİTTİR: kırılım kalkınca gizli in/eq filtresi arkada kalmasın
+    next.filters = filters.filter((f) => f.dimension !== d);
+    if (!(next.filters as Filter[]).length) delete next.filters;
     onEdit({ cq: next, label: `chip: kırılım − ${d}` });
   };
 
@@ -275,8 +278,15 @@ export function InterpretationBar({
                     <button
                       key={v}
                       onClick={() => {
-                        const nextSel = on ? selected.filter((x) => x !== v) : [...selected, v];
-                        if (!nextSel.length) return; // en az bir değer kalmalı
+                        // TÜMÜ seçiliyken tıklama = "sadece bu" (beklenen davranış);
+                        // kısmi seçimde normal aç/kapa. En az bir değer kalmalı.
+                        const allOn = selected.length === opts.length;
+                        const nextSel = allOn
+                          ? [v]
+                          : on
+                            ? selected.filter((x) => x !== v)
+                            : [...selected, v];
+                        if (!nextSel.length) return;
                         setDimSelection(d, nextSel, opts);
                       }}
                       className={`px-2 py-1 text-left font-mono text-[11px] hover:bg-neutral-500/[0.06] ${on ? "text-accent" : "text-neutral-400"}`}
