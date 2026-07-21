@@ -184,7 +184,7 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
       xAxis: {
         type: "category",
         data: xs.map((x) => axisLabel(x, comboX)),
-        axisLabel: { color: axis, rotate: xs.length > 8 ? 35 : 0 },
+        axisLabel: { color: axis, interval: 0, rotate: xs.length > 8 ? 35 : 0 },
         axisLine: { lineStyle: { color: split } },
       },
       yAxis: [
@@ -288,9 +288,10 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
         type: "category",
         data: colLabels,
         splitArea: { show: true },
-        axisLabel: { color: axis, rotate: colLabels.length > 8 ? 40 : 0 },
+        // kategorik eksende etiket ATLANMAZ (kumaş adları gibi her değer anlamlı)
+        axisLabel: { color: axis, interval: 0, rotate: colLabels.length > 5 ? 30 : 0 },
       },
-      yAxis: { type: "category", data: rowLabels, splitArea: { show: true }, axisLabel: { color: axis } },
+      yAxis: { type: "category", data: rowLabels, splitArea: { show: true }, axisLabel: { color: axis, interval: 0 } },
       visualMap: {
         min: Math.min(...vals),
         max: Math.max(...vals),
@@ -352,7 +353,7 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
         type: "category" as const,
         gridIndex: i,
         data: xs.map((x) => axisLabel(x, xDim)),
-        axisLabel: { color: axis, fontSize: 10, rotate: xs.length > 5 ? 45 : 0 },
+        axisLabel: { color: axis, fontSize: 10, interval: 0, rotate: xs.length > 5 ? 45 : 0 },
         axisLine: { lineStyle: { color: split } },
       })),
       yAxis: panels.map((_, i) => ({
@@ -463,7 +464,7 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
       ...base,
       tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, valueFormatter: (v: unknown) => fmtValue(v, measure) },
       legend: { type: "scroll", top: 0, textStyle: { color: axis } },
-      xAxis: { type: "category", data: xs.map((x) => axisLabel(x, barX)), axisLabel: { color: axis, rotate: xs.length > 8 ? 35 : 0 }, axisLine: { lineStyle: { color: split } } },
+      xAxis: { type: "category", data: xs.map((x) => axisLabel(x, barX)), axisLabel: { color: axis, interval: 0, rotate: xs.length > 8 ? 35 : 0 }, axisLine: { lineStyle: { color: split } } },
       yAxis: {
         type: "value",
         name: unitSuffix(measure),
