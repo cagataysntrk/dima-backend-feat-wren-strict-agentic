@@ -24,7 +24,7 @@ export function SourceBadge({ source }: { source: string | null }) {
   return (
     <span
       title="SQL bu yolla üretildi (deterministik-önce)"
-      className={`border px-1.5 py-0.5 font-mono text-[10px] tracking-wide ${cls}`}
+      className={`inline-flex h-[20px] items-center border px-1.5 font-mono text-[10px] tracking-wide ${cls}`}
     >
       {label}
     </span>

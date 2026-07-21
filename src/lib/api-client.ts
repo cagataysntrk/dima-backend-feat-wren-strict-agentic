@@ -42,11 +42,20 @@ export async function getFeatures(): Promise<Record<string, string>> {
   return data.features ?? {};
 }
 
-// "✓ doğru" (beta): raporun soru→CubeQuery çifti doğrulanmış olarak VQR'a yazılır —
-// aynı soru bir daha LLM'siz cevaplanır (öğrenme döngüsünün kullanıcı ayağı).
-export async function verifyReport(cube_query: CubeQuery, label: string): Promise<boolean> {
-  const { data } = await apiClient.post<{ stored: boolean }>("/verify", { cube_query, label });
-  return data.stored;
+// "✓ doğru" / "✗ yanlış" (beta): kullanıcı geri bildirimi. right → çift VQR'a yazılır
+// (aynı soru bir daha LLM'siz); undo → geri alınır; wrong → yakın öğrenilmiş çift
+// silinir + negatif sinyal loglanır (eval/log madenciliği).
+export async function verifyReport(
+  cube_query: CubeQuery,
+  label: string,
+  opts?: { undo?: boolean; verdict?: "right" | "wrong" },
+): Promise<{ stored: boolean; removed: boolean }> {
+  const { data } = await apiClient.post<{ stored: boolean; removed: boolean }>("/verify", {
+    cube_query,
+    label,
+    ...opts,
+  });
+  return data;
 }
 
 // Normalize axios errors into a readable message (backend sends {detail}).

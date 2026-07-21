@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useSyncExternalStore } from "react";
 import type { QueryResult } from "@/lib/types";
-import { analyze, buildOption, kpiCards, type ChartKind } from "@/lib/chart";
+import { ALL_MEASURES, analyze, buildOption, kpiCards, type ChartKind } from "@/lib/chart";
 import { EChart } from "./EChart";
 import { ResultTable } from "./ResultTable";
 import { Select } from "./Select";
@@ -44,7 +44,10 @@ export function ResultView({ result, viewHint }: { result: QueryResult; viewHint
     return a.kind === "none" ? "table" : "chart";
   });
   const [type, setType] = useState<ChartKind>(hintKind ?? a.kind);
-  const [measure, setMeasure] = useState<string>(a.measures[0] ?? "");
+  // çok ölçü → varsayılan "tümü" (kombo); tek ölçü → kendisi
+  const [measure, setMeasure] = useState<string>(
+    a.measures.length > 1 ? ALL_MEASURES : (a.measures[0] ?? ""),
+  );
   const dark = usePrefersDark();
 
   const availableTypes = useMemo<ChartKind[]>(() => {
@@ -92,7 +95,11 @@ export function ResultView({ result, viewHint }: { result: QueryResult; viewHint
                   ariaLabel="Ölçü"
                   value={measure}
                   onChange={setMeasure}
-                  options={a.measures.map((m) => ({ value: m, label: m }))}
+                  options={[
+                    // "tümü": kombo görünüm — miktarlar sütun, oranlar sağ eksende çizgi
+                    { value: ALL_MEASURES, label: "tümü" },
+                    ...a.measures.map((m) => ({ value: m, label: m })),
+                  ]}
                 />
               )}
             </>

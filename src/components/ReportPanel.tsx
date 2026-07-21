@@ -43,9 +43,10 @@ export function ReportPanel({
 }) {
   const [showSql, setShowSql] = useState(false);
   const [showTrace, setShowTrace] = useState(false);
-  // "✓ doğru" (beta bayrağı): soru→CubeQuery çifti VQR'a doğrulanmış yazılır.
+  // "✓ doğru" / "✗ yanlış" (beta bayrağı): geri bildirim — doğrulama geri ALINABİLİR.
   const verifyStage = useFeature("verify_button");
   const [verified, setVerified] = useState<string | null>(null);
+  const [flagged, setFlagged] = useState<string | null>(null);
   const verifyKey = data?.cube_query ? `${data.question}` : null;
 
   if (error) {
@@ -86,25 +87,51 @@ export function ReportPanel({
           <h2 className="font-mono text-[15px] leading-snug text-foreground">{data.question}</h2>
           <div className="flex shrink-0 items-center gap-1.5 pt-0.5">
             {verifyStage && data.cube_query && data.source && (
-              <button
-                onClick={() => {
-                  if (!data.cube_query || verified === verifyKey) return;
-                  verifyReport(data.cube_query, data.question)
-                    .then(() => setVerified(verifyKey))
-                    .catch(() => {});
-                }}
-                title={`Bu raporu doğru olarak işaretle — aynı soru bundan sonra LLM'siz cevaplanır (${verifyStage})`}
-                className={`flex h-[18px] items-center gap-1 border px-1.5 font-mono text-[11px] transition-colors ${
-                  verified === verifyKey
-                    ? "border-emerald-500/40 text-emerald-500"
-                    : "border-hairline text-neutral-400 hover:text-foreground"
-                }`}
-              >
-                {verified === verifyKey ? "✓ öğrenildi" : "✓ doğru"}
-                {verifyStage !== "prod" && (
-                  <span className="text-[9px] uppercase tracking-wider text-accent">{verifyStage}</span>
-                )}
-              </button>
+              // tek kutu: ✓/✗ geri bildirim (aşama rozeti gösterilmez — bayrak iç bilgi)
+              <div className="inline-flex h-[20px] items-stretch border border-hairline font-mono text-[11px]">
+                <button
+                  onClick={() => {
+                    if (!data.cube_query) return;
+                    const isOn = verified === verifyKey;
+                    // ikinci tık = GERİ AL (yanlışlıkla doğrulamayı düzeltme yolu)
+                    verifyReport(data.cube_query, data.question, isOn ? { undo: true } : undefined)
+                      .then(() => {
+                        setVerified(isOn ? null : verifyKey);
+                        setFlagged(null);
+                      })
+                      .catch(() => {});
+                  }}
+                  title={
+                    verified === verifyKey
+                      ? "Doğrulamayı geri al"
+                      : "Bu raporu doğru olarak işaretle — aynı soru bundan sonra LLM'siz cevaplanır"
+                  }
+                  className={`px-1.5 transition-colors ${
+                    verified === verifyKey
+                      ? "text-emerald-500"
+                      : "text-neutral-400 hover:text-foreground"
+                  }`}
+                >
+                  {verified === verifyKey ? "✓ öğrenildi" : "✓ doğru"}
+                </button>
+                <button
+                  onClick={() => {
+                    if (!data.cube_query || flagged === verifyKey) return;
+                    verifyReport(data.cube_query, data.question, { verdict: "wrong" })
+                      .then(() => {
+                        setFlagged(verifyKey);
+                        setVerified(null);
+                      })
+                      .catch(() => {});
+                  }}
+                  title="Bu rapor yanlış — kayda geçer; bu soruya öğrenilmiş yakın bir çift varsa silinir"
+                  className={`border-l border-hairline px-1.5 transition-colors ${
+                    flagged === verifyKey ? "text-red-500" : "text-neutral-400 hover:text-foreground"
+                  }`}
+                >
+                  {flagged === verifyKey ? "✗ kaydedildi" : "✗ yanlış"}
+                </button>
+              </div>
             )}
             <SourceBadge source={data.source} />
             {data.trace && data.trace.length > 0 && (
@@ -112,7 +139,7 @@ export function ReportPanel({
                 onClick={() => setShowTrace((s) => !s)}
                 title="Bu sorgu nasıl çözüldü?"
                 aria-label="Trace"
-                className={`flex h-[18px] w-[18px] items-center justify-center border font-mono text-[11px] transition-colors ${
+                className={`flex h-[20px] w-[20px] items-center justify-center border font-mono text-[11px] transition-colors ${
                   showTrace ? "border-accent/40 text-accent" : "border-hairline text-neutral-400 hover:text-foreground"
                 }`}
               >

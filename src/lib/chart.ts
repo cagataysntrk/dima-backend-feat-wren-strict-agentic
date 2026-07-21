@@ -124,16 +124,83 @@ interface BuildOpts {
   dark: boolean;
 }
 
+// Ölçü seçicide "tümü" nöbetçisi — çok-ölçülü kombo görünüm (ADR/log 2026-07-21).
+export const ALL_MEASURES = "__tumu__";
+
 export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): EChartsOption {
   const { rows } = result;
   const axis = o.dark ? "#9ca3af" : "#6b7280";
   const split = o.dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
-  const measure = o.measure || a.measures[0];
+  const multi = o.measure === ALL_MEASURES && a.measures.length > 1;
+  const measure = (!o.measure || o.measure === ALL_MEASURES) ? a.measures[0] : o.measure;
   const base = {
     color: PALETTE,
     textStyle: { fontFamily: "inherit" },
     grid: { left: 8, right: 18, top: 30, bottom: 8, containLabel: true },
   } as const;
+
+  // -- KOMBO (çok ölçü, "tümü"): miktarlar yan yana SÜTUN; ölçek olarak ezilen
+  //    ölçüler (oranlar: %2 vs 100.000 kg) SAĞ EKSENDE ÇİZGİ — klasik BI kombosu.
+  //    Yalnız tek kategorik eksen (ya da zaman ekseni, seri boyutu yokken) desteklenir;
+  //    boyut-serili görünümlerde ölçü teke düşer (iki seri kaynağı aynı anda olmaz).
+  const comboX = a.timeCol ?? a.primaryDim;
+  const comboSeriesDim = comboX ? a.dims.find((d) => d !== comboX) ?? null : null;
+  if (multi && (o.kind === "bar" || o.kind === "line") && comboX && !comboSeriesDim) {
+    const xs = orderCats(distinct(rows, comboX).map(fmtCat));
+    const maxOf = (m: string) =>
+      Math.max(0, ...rows.map((r) => num(r[m])).filter((v) => !Number.isNaN(v)));
+    const gmax = Math.max(...a.measures.map(maxOf));
+    // ikincil eksen: global maksimumun 1/50'sinin altında kalan ölçüler (oranlar)
+    const secondary = a.measures.filter((m) => maxOf(m) < gmax / 50);
+    const primary = a.measures.filter((m) => !secondary.includes(m));
+    const val = (m: string, x: string) => {
+      const r = rows.find((rr) => fmtCat(rr[comboX]) === x);
+      return r ? num(r[m]) : null;
+    };
+    return {
+      ...base,
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+      legend: { type: "scroll", top: 0, textStyle: { color: axis } },
+      grid: { left: 8, right: secondary.length ? 8 : 18, top: 30, bottom: 8, containLabel: true },
+      xAxis: {
+        type: "category",
+        data: xs.map((x) => axisLabel(x, comboX)),
+        axisLabel: { color: axis, rotate: xs.length > 8 ? 35 : 0 },
+        axisLine: { lineStyle: { color: split } },
+      },
+      yAxis: [
+        {
+          type: "value",
+          axisLabel: { color: axis, formatter: (v: number) => fmtAxis(v, primary[0] ?? measure) },
+          splitLine: { lineStyle: { color: split } },
+        },
+        ...(secondary.length
+          ? [{
+              type: "value" as const,
+              axisLabel: { color: axis, formatter: (v: number) => fmtAxis(v, secondary[0]) },
+              splitLine: { show: false },
+            }]
+          : []),
+      ],
+      series: [
+        ...primary.map((m) => ({
+          name: m,
+          type: (o.kind === "line" ? "line" : "bar") as "line" | "bar",
+          data: xs.map((x) => val(m, x)),
+          ...(o.kind === "bar"
+            ? { itemStyle: { borderRadius: [3, 3, 0, 0] as [number, number, number, number] }, barMaxWidth: 34 }
+            : { smooth: true, showSymbol: false }),
+        })),
+        ...secondary.map((m) => ({
+          name: m,
+          type: "line" as const,
+          yAxisIndex: 1,
+          smooth: true,
+          data: xs.map((x) => val(m, x)),
+        })),
+      ],
+    };
+  }
 
   // -- HEATMAP: satır × sütun matrisi + kenar ortalamaları (marj) ---------
   // Açık istek otomatik min-eksen kuralını ezer: a.heat yoksa a.heatAny kullanılır.
