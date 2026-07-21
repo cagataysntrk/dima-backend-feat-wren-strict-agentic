@@ -334,7 +334,8 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
     const { dim: fDim, x: xDim, series: sDim } = a.facet;
     const panels = orderCats(distinct(rows, fDim).map(String));
     const xs = orderCats(distinct(rows, xDim).map(fmtCat));
-    const groups = distinct(rows, sDim).map(String);
+    // seri sırası KANONİK: renk ataması (palet sırası) koşumdan bağımsız sabit kalsın
+    const groups = orderCats(distinct(rows, sDim).map(String));
     const N = panels.length;
     // 4'ten çok panel İKİ SATIRA sarılır ("her kumaş türü için ayrı grafik" — 7 panel
     // tek satırda okunmazdı). Satır içi konum: i % cols, satır: floor(i / cols).
@@ -431,7 +432,7 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
     const seriesDim = a.dims.find((d) => d !== xCol) ?? null;
     const xs = orderCats(distinct(rows, xCol).map(fmtCat));
     const series = seriesDim
-      ? distinct(rows, seriesDim).map(String).map((g) => ({
+      ? orderCats(distinct(rows, seriesDim).map(String)).map((g) => ({
           name: g,
           type: "line" as const,
           smooth: true,
@@ -475,7 +476,7 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
   const barSeries = barX ? a.dims.find((d) => d !== barX) ?? null : null;
   if (barX && barSeries) {
     const xs = orderCats(distinct(rows, barX).map(fmtCat));
-    const groups = distinct(rows, barSeries).map(String);
+    const groups = orderCats(distinct(rows, barSeries).map(String));  // kanonik seri sırası
     return {
       ...base,
       tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, valueFormatter: (v: unknown) => fmtValue(v, measure) },

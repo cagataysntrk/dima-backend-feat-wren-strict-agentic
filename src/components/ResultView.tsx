@@ -206,7 +206,22 @@ export function ResultView({ result, viewHint }: { result: QueryResult; viewHint
                 </button>
               </div>
             )}
-            <EChart option={option} />
+            <EChart
+              option={option}
+              onSeriesClick={
+                facetInfo && !single
+                  ? (si) => {
+                      // panel ÖNE ÇIKARMA: paneldeki bir seriye tıkla → o panel tam boy.
+                      // seriler panels.flatMap(groups) sırasında → panel = si / grupSayısı.
+                      const groups = Math.max(
+                        1,
+                        (Array.isArray(option.series) ? option.series.length : 1) / Math.max(1, panels.length),
+                      );
+                      setPanelIdx(Math.floor(si / groups));
+                    }
+                  : undefined
+              }
+            />
           </div>
         ) : (
           <ResultTable result={result} />
