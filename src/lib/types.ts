@@ -63,6 +63,8 @@ export interface AskResponse {
   suggestions?: { label: string; query: string }[];
   // Görünüm isteği ("grafik ver") — client mevcut raporun görünümünü değiştirir.
   view_hint?: string | null;
+  // Query Contract (ADR-0010): raporun kanıt kaydı kimliği
+  contract_id?: string | null;
 }
 
 export interface AskRequest {

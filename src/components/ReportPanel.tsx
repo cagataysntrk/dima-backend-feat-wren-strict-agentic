@@ -190,13 +190,21 @@ export function ReportPanel({
         </div>
       )}
 
-      <div className="mt-5">
+      <div className="mt-5 flex items-center justify-between">
         <button
           onClick={() => setShowSql((s) => !s)}
           className="font-mono text-[11px] uppercase tracking-wider text-neutral-400 transition-colors hover:text-foreground"
         >
           {showSql ? "— sql gizle" : "+ sql göster"}
         </button>
+        {data.contract_id && (
+          <span
+            className="font-mono text-[10px] tracking-wider text-neutral-300 dark:text-neutral-600"
+            title="Query Contract — bu raporun kanıt kaydı: soru + sorgu + sonuç özeti mühürlendi; sonradan yeniden oynatılıp doğrulanabilir"
+          >
+            {data.contract_id}
+          </span>
+        )}
         {showSql && (
           <pre className="mt-2 overflow-auto border border-hairline bg-neutral-950 p-4 font-mono text-xs leading-relaxed text-neutral-100">
             {data.sql}
