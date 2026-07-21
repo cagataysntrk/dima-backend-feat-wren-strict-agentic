@@ -77,7 +77,8 @@ export default function Home() {
     onSuccess: (data) => {
       addHistory(data);
       setActive(data);
-      setViewHint(null);
+      // chip düzenlemesi RAPOR ŞEKLİNİ küçük değiştirir — mevcut görünüm tercihi
+      // (ör. panelli) KORUNUR; yeni ipucu yalnız /ask cevabından gelir.
       setContextCq(data.cube_query ?? null);
     },
   });
