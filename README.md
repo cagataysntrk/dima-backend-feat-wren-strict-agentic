@@ -51,6 +51,14 @@ src/
     └── history.ts      # Zustand: son sorular
 ```
 
+## Canlıya alma (Vercel)
+`vercel.json` framework'ü `nextjs`, paket yöneticisini `pnpm` olarak sabitler. Backend URL'i
+tek env değişkeninden gelir: **`NEXT_PUBLIC_API_URL`** (Vercel → Environment Variables;
+`api-client.ts` bunu okur, yoksa `localhost:8000`'e düşer). `NEXT_PUBLIC_*` build-time
+inline'dır — değişince yeniden deploy gerekir. Bu repo backend'den bağımsız deploy edilir
+(ekip ayrımı); backend'e yalnızca HTTP + Swagger `/docs` üzerinden erişilir. Detay: dima kökü
+[`docs/deployment.md`](../docs/deployment.md).
+
 ## Notlar
 - Kimlik doğrulama demo fazında yok (planlı).
 - Standartlar: kök `saka-standards` submodule'ü (strict TS, no `any`, `lib/api-client.ts` tekil).
