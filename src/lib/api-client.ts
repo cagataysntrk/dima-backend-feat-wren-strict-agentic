@@ -58,6 +58,33 @@ export async function verifyReport(
   return data;
 }
 
+// Zamanlanmış raporlar + bildirimler (ADR-0011)
+export interface ScheduleSpec {
+  label: string;
+  cube_query: CubeQuery;
+  period?: string | null;   // GÖRELİ dönem ("dün") — koşum anında çözülür
+  every?: "hour" | "day" | "week";
+  at?: string;
+  weekday?: number;
+  threshold?: { measure: string; op: string; value: number } | null;
+}
+export interface Notification {
+  id: string;
+  ts: string;
+  kind: "alert" | "report";
+  message: string;
+  label?: string;
+  contract_id?: string | null;
+}
+export async function createSchedule(spec: ScheduleSpec): Promise<{ id: string }> {
+  const { data } = await apiClient.post<{ schedule: { id: string } }>("/schedules", spec);
+  return data.schedule;
+}
+export async function getNotifications(limit = 20): Promise<Notification[]> {
+  const { data } = await apiClient.get<{ notifications: Notification[] }>("/notifications", { params: { limit } });
+  return data.notifications ?? [];
+}
+
 // Normalize axios errors into a readable message (backend sends {detail}).
 export function apiErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {

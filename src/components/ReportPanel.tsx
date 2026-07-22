@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { AskResponse, CubeQuery } from "@/lib/types";
-import { getFeatures, verifyReport } from "@/lib/api-client";
+import { createSchedule, getFeatures, verifyReport } from "@/lib/api-client";
 import { BrandMark } from "@/components/BrandMark";
 import { InterpretationBar } from "@/components/InterpretationBar";
 import { ResultView } from "@/components/ResultView";
@@ -48,6 +48,22 @@ export function ReportPanel({
 }) {
   const [showSql, setShowSql] = useState(false);
   const [showTrace, setShowTrace] = useState(false);
+  // 🔔 zamanla (ADR-0011, beta bayrağı): raporun CubeQuery'si göreli dönemle zamanlanır.
+  const schedStage = useFeature("scheduled_reports");
+  const [schedOpen, setSchedOpen] = useState(false);
+  const [scheduled, setScheduled] = useState<string | null>(null);
+  const schedule = (preset: { every: "hour" | "day" | "week"; at?: string; weekday?: number; period: string; name: string }) => {
+    if (!data?.cube_query) return;
+    const cq = { ...data.cube_query,
+      filters: ((data.cube_query.filters as { dimension: string }[] | undefined) ?? [])
+        .filter((f) => f.dimension !== "tarih") };
+    if (!(cq.filters as unknown[]).length) delete (cq as Record<string, unknown>).filters;
+    createSchedule({ label: vLabel ?? data.question, cube_query: cq,
+      period: preset.period, every: preset.every, at: preset.at, weekday: preset.weekday })
+      .then(() => { setScheduled(verifyKey); setSchedOpen(false); })
+      .catch(() => {});
+  };
+
   // "✓ doğru" / "✗ yanlış" (beta bayrağı): geri bildirim — doğrulama geri ALINABİLİR.
   // Durum RAPOR BAŞINA haritada tutulur: oturumda birden çok rapora verilen ✓/✗
   // işaretleri, raporlar arasında gezerken korunur (tek anahtar son işareti eziyordu).
@@ -96,6 +112,38 @@ export function ReportPanel({
         <div className="flex items-start justify-between gap-3">
           <h2 className="font-mono text-[15px] leading-snug text-foreground">{data.question}</h2>
           <div className="flex shrink-0 items-center gap-1.5 pt-0.5">
+            {schedStage && data.cube_query && data.source && (
+              <span className="relative">
+                <button
+                  onClick={() => setSchedOpen((o) => !o)}
+                  title="Bu raporu zamanla — belirlenen aralıkla otomatik koşar, bildirim üretir"
+                  className={`flex h-[20px] items-center border px-1.5 font-mono text-[11px] transition-colors ${
+                    scheduled === verifyKey
+                      ? "border-accent/40 text-accent"
+                      : "border-hairline text-neutral-400 hover:text-foreground"
+                  }`}
+                >
+                  {scheduled === verifyKey ? "🔔 zamanlandı" : "🔔 zamanla"}
+                </button>
+                {schedOpen && (
+                  <span className="absolute right-0 top-full z-30 mt-1 flex w-56 flex-col border border-hairline bg-background shadow-lg">
+                    {[
+                      { name: "her sabah 08:00 · dünün verisi", every: "day" as const, at: "08:00", period: "dün" },
+                      { name: "her saat · bugünün verisi", every: "hour" as const, period: "bugün" },
+                      { name: "her pazartesi 08:00 · geçen hafta", every: "week" as const, at: "08:00", weekday: 1, period: "geçen hafta" },
+                    ].map((pr) => (
+                      <button
+                        key={pr.name}
+                        onClick={() => schedule(pr)}
+                        className="px-2 py-1.5 text-left font-mono text-[11px] text-neutral-500 hover:bg-neutral-500/[0.06] hover:text-foreground"
+                      >
+                        {pr.name}
+                      </button>
+                    ))}
+                  </span>
+                )}
+              </span>
+            )}
             {verifyStage && data.cube_query && data.source && (
               // tek kutu: ✓/✗ geri bildirim (aşama rozeti gösterilmez — bayrak iç bilgi)
               <div className="inline-flex h-[20px] items-stretch border border-hairline font-mono text-[11px]">
