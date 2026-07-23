@@ -3,7 +3,8 @@
 import { usePathname, useRouter } from "next/navigation";
 import { logout } from "@/lib/api-client";
 
-// Sağ ALT köşede tek ince float — FloatingControls (sağ üst: ?, ⚙) ile AYNI stil.
+// Sağ ikon KOLONUNUN (rail, w-12) EN ALTI — FloatingControls ile aynı stil;
+// right-2 = 8px → 32px'lik buton 48px'lik kolonda ortalanır.
 export function LogoutButton() {
   const pathname = usePathname();
   const router = useRouter();
@@ -22,7 +23,7 @@ export function LogoutButton() {
       onClick={onClick}
       aria-label="Çıkış"
       title="Çıkış"
-      className={`fixed bottom-4 right-4 z-50 ${btn}`}
+      className={`fixed bottom-4 right-2 z-50 ${btn}`}
     >
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

@@ -88,7 +88,8 @@ export default function Home() {
   const pendingQuestion = mutation.isPending ? mutation.variables?.question : undefined;
 
   return (
-    <div className="h-full">
+    // pr-12: sağdaki kalıcı ikon kolonu (rail) içeriği örtmesin.
+    <div className="h-full pr-12">
       {!started ? (
         <Landing onSubmit={submit} />
       ) : (

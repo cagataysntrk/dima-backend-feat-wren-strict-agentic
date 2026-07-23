@@ -2,10 +2,14 @@
 
 import { NotificationsBell } from "@/components/NotificationsBell";
 
-// Sayfada tek chrome: sağ üst köşede DİKEY ikon sırası (yukarıdan aşağı:
-// bildirim 🔔, yardım ?, ayarlar ⚙; yeni ikonlar altta devam eder).
-// Hepsi aynı deseni izler: tıkla → sağdan sheet açılır.
+// Sayfada tek chrome: sağ kenarda GÖRÜNMEZ bir ikon ŞERİDİ (rail) — çizgisi/
+// zemini yok, sayfayla bütünleşik; yalnız ikonlar yüzer. Yukarıdan aşağı:
+// bildirim 🔔, yardım ?, ayarlar ⚙; yeni ikonlar altta devam eder (çıkış en altta).
+// Sheet'ler şeridin SOLUNDA açılır (SettingsDrawer right-12) — üst üste binmez;
+// sheet açıkken bile diğer ikonlara tıklanıp içerik değiştirilebilir.
 // Keskin köşe, ghost, monospace işaret; "sistem paneli" hissi.
+export const RAIL_W = "3rem"; // w-12 — page pr-12 ve drawer right-12 ile eşleşir
+
 export function FloatingControls({
   onNotifications,
   onHelp,
@@ -18,7 +22,7 @@ export function FloatingControls({
   const btn =
     "flex h-8 w-8 items-center justify-center border border-hairline bg-background/70 text-muted backdrop-blur-sm transition-colors hover:text-foreground hover:border-neutral-400 dark:hover:border-neutral-600";
   return (
-    <div className="fixed right-4 top-4 z-50 flex flex-col gap-1.5">
+    <div className="pointer-events-none fixed right-0 top-0 z-50 flex h-full w-12 flex-col items-center gap-1.5 pt-4 [&>*]:pointer-events-auto">
       <NotificationsBell onOpen={onNotifications} />
       <button onClick={onHelp} aria-label="Yardım" className={btn}>
         <span className="font-mono text-[13px]">?</span>

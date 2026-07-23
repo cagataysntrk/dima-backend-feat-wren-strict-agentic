@@ -2,7 +2,8 @@
 
 import { useEffect } from "react";
 
-// Sağdan açılan ayarlar paneli (veri modeli burada yaşar — ADR-0007 K7).
+// Sağdan açılan sheet (ayarlar/yardım/bildirimler). Sağ ikon KOLONUNU (rail,
+// w-12) örtmez: right-12'de durur — kolon her zaman görünür ve tıklanabilir.
 export function SettingsDrawer({
   open,
   onClose,
@@ -29,8 +30,8 @@ export function SettingsDrawer({
         }`}
       />
       <aside
-        className={`absolute right-0 top-0 flex h-full w-[22rem] max-w-[86vw] flex-col border-l border-hairline bg-background shadow-2xl transition-transform duration-200 ${
-          open ? "translate-x-0" : "translate-x-full"
+        className={`absolute right-12 top-0 flex h-full w-[22rem] max-w-[80vw] flex-col border-x border-hairline bg-background shadow-2xl transition-transform duration-200 ${
+          open ? "translate-x-0" : "translate-x-[calc(100%+3rem)]"
         }`}
       >
         <header className="flex h-14 shrink-0 items-center justify-between border-b border-hairline px-4">
