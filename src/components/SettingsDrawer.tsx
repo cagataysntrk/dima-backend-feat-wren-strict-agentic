@@ -34,17 +34,8 @@ export function SettingsDrawer({
           open ? "translate-x-0" : "translate-x-[calc(100%+3rem)]"
         }`}
       >
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-hairline px-4">
+        <header className="flex h-14 shrink-0 items-center border-b border-hairline px-4">
           <h2 className="font-mono text-[13px] tracking-wide">{title}</h2>
-          <button
-            onClick={onClose}
-            aria-label="Kapat"
-            className="p-1.5 text-neutral-400 transition-colors hover:text-foreground"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
         </header>
         <div className="flex-1 overflow-auto p-4">{children}</div>
       </aside>
@@ -57,7 +48,18 @@ export function SettingsDrawer({
           open ? "opacity-100" : "opacity-0"
         }`}
       >
-        <div className="h-14 border-b border-hairline" />
+        {/* Kapatma (✕): şeridin başlık bandında, rail ikonlarıyla AYNI hizada ve stilde. */}
+        <div className="flex h-14 items-center justify-center border-b border-hairline">
+          <button
+            onClick={onClose}
+            aria-label="Kapat"
+            className="flex h-8 w-8 items-center justify-center border border-hairline bg-background/70 text-muted transition-colors hover:border-neutral-400 hover:text-foreground dark:hover:border-neutral-600"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );
