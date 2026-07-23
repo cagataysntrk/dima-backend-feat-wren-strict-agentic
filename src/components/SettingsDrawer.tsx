@@ -29,13 +29,6 @@ export function SettingsDrawer({
           open ? "opacity-100" : "opacity-0"
         }`}
       />
-      {/* İkon şeridinin zemini: kapalıyken sayfa rengi (görünmez), açıkken PANEL
-          rengini alır — panel + şerit tek yüzey gibi okunur (ikonlar üstte yüzer). */}
-      <div
-        className={`absolute right-0 top-0 h-full w-12 bg-background transition-opacity duration-200 ${
-          open ? "opacity-100" : "opacity-0"
-        }`}
-      />
       <aside
         className={`absolute right-12 top-0 flex h-full w-[22rem] max-w-[80vw] flex-col border-l border-hairline bg-background shadow-2xl transition-transform duration-200 ${
           open ? "translate-x-0" : "translate-x-[calc(100%+3rem)]"
@@ -55,6 +48,14 @@ export function SettingsDrawer({
         </header>
         <div className="flex-1 overflow-auto p-4">{children}</div>
       </aside>
+      {/* İkon şeridinin zemini: kapalıyken sayfa rengi (görünmez), açıkken PANELLE
+          AYNI renk. aside'dan SONRA render edilir ki panelin gölgesi (shadow-2xl)
+          şeridi karartmasın — panel + şerit tek yüzey gibi okunur. */}
+      <div
+        className={`absolute right-0 top-0 h-full w-12 bg-background transition-opacity duration-200 ${
+          open ? "opacity-100" : "opacity-0"
+        }`}
+      />
     </div>
   );
 }
