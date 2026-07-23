@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { LogoutButton } from "@/components/LogoutButton";
 import { Providers } from "@/lib/providers";
 
 const geistSans = Geist({
@@ -35,7 +36,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="h-full flex flex-col overflow-hidden">
-        <Providers>{children}</Providers>
+        <Providers>
+          <LogoutButton />
+          {children}
+        </Providers>
       </body>
     </html>
   );

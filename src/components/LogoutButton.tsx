@@ -1,0 +1,34 @@
+"use client";
+
+import { usePathname, useRouter } from "next/navigation";
+import { logout } from "@/lib/api-client";
+
+// Sağ ALT köşede tek ince float — FloatingControls (sağ üst: ?, ⚙) ile AYNI stil.
+export function LogoutButton() {
+  const pathname = usePathname();
+  const router = useRouter();
+  if (pathname === "/login") return null;
+
+  async function onClick() {
+    await logout();
+    router.replace("/login");
+  }
+
+  const btn =
+    "flex h-8 w-8 items-center justify-center border border-hairline bg-background/70 text-muted backdrop-blur-sm transition-colors hover:text-foreground hover:border-neutral-400 dark:hover:border-neutral-600";
+
+  return (
+    <button
+      onClick={onClick}
+      aria-label="Çıkış"
+      title="Çıkış"
+      className={`fixed bottom-4 right-4 z-50 ${btn}`}
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+        <path d="M16 17l5-5-5-5" />
+        <path d="M21 12H9" />
+      </svg>
+    </button>
+  );
+}
