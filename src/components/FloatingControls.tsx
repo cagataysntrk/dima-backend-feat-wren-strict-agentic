@@ -22,7 +22,9 @@ export function FloatingControls({
   const btn =
     "flex h-8 w-8 items-center justify-center border border-hairline bg-background/70 text-muted backdrop-blur-sm transition-colors hover:text-foreground hover:border-neutral-400 dark:hover:border-neutral-600";
   return (
-    <div className="pointer-events-none fixed right-0 top-0 z-50 flex h-full w-12 flex-col items-center gap-1.5 pt-4 [&>*]:pointer-events-auto">
+    // pt-[4.5rem]: ikonlar panel başlık çizgisinin (h-14) ALTINDA başlar — panel
+    // açıkken de kapalıyken de aynı hizada (başlık şeridi sağa kadar uzar).
+    <div className="pointer-events-none fixed right-0 top-0 z-50 flex h-full w-12 flex-col items-center gap-1.5 pt-[4.5rem] [&>*]:pointer-events-auto">
       <NotificationsBell onOpen={onNotifications} />
       <button onClick={onHelp} aria-label="Yardım" className={btn}>
         <span className="font-mono text-[13px]">?</span>

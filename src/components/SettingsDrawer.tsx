@@ -50,12 +50,15 @@ export function SettingsDrawer({
       </aside>
       {/* İkon şeridinin zemini: kapalıyken sayfa rengi (görünmez), açıkken PANELLE
           AYNI renk. aside'dan SONRA render edilir ki panelin gölgesi (shadow-2xl)
-          şeridi karartmasın — panel + şerit tek yüzey gibi okunur. */}
+          şeridi karartmasın — panel + şerit tek yüzey gibi okunur. İçindeki h-14
+          bölme, panel başlığının alt çizgisini ekranın sağ kenarına kadar uzatır. */}
       <div
         className={`absolute right-0 top-0 h-full w-12 bg-background transition-opacity duration-200 ${
           open ? "opacity-100" : "opacity-0"
         }`}
-      />
+      >
+        <div className="h-14 border-b border-hairline" />
+      </div>
     </div>
   );
 }
