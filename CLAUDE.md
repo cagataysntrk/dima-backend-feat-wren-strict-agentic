@@ -24,5 +24,22 @@ pnpm lint      # eslint
 - Commit mesajlarında Claude footer KULLANILMAZ.
 
 ## Backend sözleşmesi
-`dima-backend` endpoint'leri: `GET /schema`, `POST /ask`, `POST /query`, `POST /dry-plan`.
-`NEXT_PUBLIC_API_URL` ile adres verilir (varsayılan `http://localhost:8000`).
+Tarayıcı same-origin **`/api/*`**'e konuşur; Next rewrite-proxy'si `BACKEND_ORIGIN`'e
+iletir (backend URL'i browser'a sızmaz, refresh cookie same-origin kalır).
+Uçlar: `POST /auth/login|refresh|logout` · `GET /auth/me` (roller + `permissions`) ·
+`GET /schema` (cube kataloğu + `lower_is_better`) · `GET /features` (bayraklar,
+kimlikli) · `POST /ask` `/cube` `/verify` `/query` · `/schedules*` `/notifications`
+`/contracts*`.
+
+## Kimlik doğrulama
+- Auth ZORUNLU: access token memory'de (`api-client.ts` — localStorage'a ASLA), refresh
+  HTTP-only cookie'de; 401 → tek uçuşta paylaşılan refresh → retry interceptor'ı.
+- Sayfa koruması `src/proxy.ts` (cookie adı `NEXT_PUBLIC_SESSION_COOKIE ?? "dima_refresh"`).
+- Login'de OTP adımı: backend 401 "OTP gerekli" dönerse alan açılır.
+- Buton görünürlüğü `/auth/me` `permissions`'ından (`vqr:write`, `schedule:create`) —
+  rol matrisi backend'dedir, UI'a KOPYALANMAZ.
+
+## UI chrome
+Sağ kenarda görünmez ikon şeridi (rail, w-12; sayfa `pr-12` bırakır); sheet'ler şeridin
+solunda (`right-12`) açılır, aynı ikona ikinci tıklama kapatır (toggle), ✕ şerit başlık
+bandında. Güvenlik başlıkları `next.config.ts › headers()`.
