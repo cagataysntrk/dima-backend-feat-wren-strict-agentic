@@ -29,6 +29,8 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpNeeded, setOtpNeeded] = useState(false); // MFA'lı hesap: parola doğru → OTP iste
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -37,10 +39,16 @@ function LoginForm() {
     setBusy(true);
     setErr(null);
     try {
-      await login(email, password);
+      await login(email, password, otp || undefined);
       router.replace(next);
     } catch (error) {
-      setErr(apiErrorMessage(error));
+      const msg = apiErrorMessage(error);
+      if (msg.includes("OTP")) {
+        setOtpNeeded(true);
+        setErr(otp ? msg : null); // ilk sefer hata değil, alanın açılması yeterli
+      } else {
+        setErr(msg);
+      }
     } finally {
       setBusy(false);
     }
@@ -95,6 +103,28 @@ function LoginForm() {
         </button>
       </div>
 
+      {otpNeeded && (
+        <>
+          <label
+            htmlFor="otp"
+            className="mb-1 block font-mono text-[0.7rem] uppercase tracking-wide text-muted"
+          >
+            doğrulama kodu (otp)
+          </label>
+          <input
+            id="otp"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            autoFocus
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            className="mb-4 w-full rounded-md border border-hairline bg-transparent px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+          />
+        </>
+      )}
+
       {err && (
         <p className="mb-3 text-xs" style={{ color: "var(--danger, #b42318)" }}>
           {err}
@@ -102,7 +132,7 @@ function LoginForm() {
       )}
 
       <button
-        disabled={busy || !email || !password}
+        disabled={busy || !email || !password || (otpNeeded && otp.length < 6)}
         className="w-full rounded-md bg-accent py-2 text-sm font-medium text-white disabled:opacity-50"
       >
         {busy ? "…" : "Giriş"}

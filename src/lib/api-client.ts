@@ -85,10 +85,14 @@ export interface AuthUser {
   roles: string[];
 }
 
-export async function login(email: string, password: string): Promise<AuthUser> {
+export async function login(
+  email: string,
+  password: string,
+  otp?: string,
+): Promise<AuthUser> {
   const { data } = await apiClient.post<{ access_token: string; user: AuthUser }>(
     "/auth/login",
-    { email, password },
+    { email, password, ...(otp ? { otp } : {}) },
   );
   setAccessToken(data.access_token);
   return data.user;
