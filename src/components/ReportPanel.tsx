@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { AskResponse, CubeQuery } from "@/lib/types";
-import { createSchedule, getFeatures, verifyReport } from "@/lib/api-client";
+import { createSchedule, getFeatures, getMe, verifyReport } from "@/lib/api-client";
 import { BrandMark } from "@/components/BrandMark";
 import { InterpretationBar } from "@/components/InterpretationBar";
 import { ResultView } from "@/components/ResultView";
@@ -23,6 +23,24 @@ function useFeature(name: string): string | null {
       .catch(() => {});
   }, [name]);
   return stage;
+}
+
+// İzinler (/auth/me permissions) — kaynak backend authorize matrisi; rol semantiği
+// UI'a KOPYALANMAZ, rol açmak yalnız backend değişikliğidir. Liste yüklenene kadar
+// izinli varsayılır (regresyon olmasın); backend her eylemi kendi tarafında da zorlar.
+let _perms: string[] | null = null;
+function usePermission(action: string): boolean {
+  const [ok, setOk] = useState<boolean>(_perms ? _perms.includes(action) : true);
+  useEffect(() => {
+    if (_perms) return;
+    getMe()
+      .then((me) => {
+        _perms = me.permissions ?? [];
+        setOk(_perms.includes(action));
+      })
+      .catch(() => {});
+  }, [action]);
+  return ok;
 }
 
 // Sağ bölme: seçili raporun canlı görünümü (keskin, mono readout).
@@ -50,6 +68,8 @@ export function ReportPanel({
   const [showTrace, setShowTrace] = useState(false);
   // 🔔 zamanla (ADR-0011, beta bayrağı): raporun CubeQuery'si göreli dönemle zamanlanır.
   const schedStage = useFeature("scheduled_reports");
+  const canSchedule = usePermission("schedule:create");
+  const canVerify = usePermission("vqr:write");
   const [schedOpen, setSchedOpen] = useState(false);
   const [scheduled, setScheduled] = useState<string | null>(null);
   const schedule = (preset: { every: "hour" | "day" | "week"; at?: string; weekday?: number; period: string; name: string }) => {
@@ -112,7 +132,7 @@ export function ReportPanel({
         <div className="flex items-start justify-between gap-3">
           <h2 className="font-mono text-[15px] leading-snug text-foreground">{data.question}</h2>
           <div className="flex shrink-0 items-center gap-1.5 pt-0.5">
-            {schedStage && data.cube_query && data.source && (
+            {schedStage && canSchedule && data.cube_query && data.source && (
               <span className="relative">
                 <button
                   onClick={() => setSchedOpen((o) => !o)}
@@ -144,7 +164,7 @@ export function ReportPanel({
                 )}
               </span>
             )}
-            {verifyStage && data.cube_query && data.source && (
+            {verifyStage && canVerify && data.cube_query && data.source && (
               // tek kutu: ✓/✗ geri bildirim (aşama rozeti gösterilmez — bayrak iç bilgi)
               <div className="inline-flex h-[20px] items-stretch border border-hairline font-mono text-[11px]">
                 <button

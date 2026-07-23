@@ -1,11 +1,30 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { getSchema } from "@/lib/api-client";
 import type { QueryResult } from "@/lib/types";
 import { ALL_MEASURES, analyze, buildOption, facetPanelValues, kpiCards, type ChartKind } from "@/lib/chart";
 import { EChart } from "./EChart";
 import { ResultTable } from "./ResultTable";
 import { Select } from "./Select";
+
+// "Yüksek=kötü" ölçü kümesi — kaynağı metadata (/schema cubes[].lower_is_better);
+// açılışta bir kez okunur, modül düzeyinde tutulur (useFeature deseni).
+let _lowerSet: ReadonlySet<string> | null = null;
+function useLowerSet(): ReadonlySet<string> | undefined {
+  const [set, setSet] = useState<ReadonlySet<string> | undefined>(_lowerSet ?? undefined);
+  useEffect(() => {
+    if (_lowerSet) return;
+    getSchema()
+      .then((s) => {
+        const cubes = (s as { cubes?: { lower_is_better?: string[] }[] }).cubes ?? [];
+        _lowerSet = new Set(cubes.flatMap((c) => c.lower_is_better ?? []));
+        setSet(_lowerSet);
+      })
+      .catch(() => {});
+  }, []);
+  return set;
+}
 
 const TYPE_LABEL: Record<ChartKind, string> = {
   bar: "Sütun",
@@ -100,9 +119,13 @@ export function ResultView({ result, viewHint }: { result: QueryResult; viewHint
     : type;
 
   // Grafik yalnız çizilebilir + ölçü varsa hesaplanır (0 satır / ölçüsüz → tablo, çökme yok).
+  const lowerSet = useLowerSet();
   const option = useMemo(
-    () => (chartable && measure ? buildOption(effResult, effA, { kind: effKind, measure, dark }) : null),
-    [chartable, effResult, effA, effKind, measure, dark],
+    () =>
+      chartable && measure
+        ? buildOption(effResult, effA, { kind: effKind, measure, dark, lowerSet })
+        : null,
+    [chartable, effResult, effA, effKind, measure, dark, lowerSet],
   );
 
   const cards = a.kind === "kpi" ? kpiCards(result, a) : [];

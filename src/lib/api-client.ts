@@ -83,6 +83,9 @@ export interface AuthUser {
   tenant_id: string | null;
   is_superadmin: boolean;
   roles: string[];
+  // Backend authorize matrisinden gelen izinli aksiyonlar (ör. "vqr:write").
+  // UI buton görünürlüğü BUNDAN okunur — rol semantiği frontend'e kopyalanmaz.
+  permissions?: string[];
 }
 
 export async function login(

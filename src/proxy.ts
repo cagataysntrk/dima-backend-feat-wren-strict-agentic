@@ -6,8 +6,9 @@ import type { NextRequest } from "next/server";
 // client'ta (memory); bu katman yalnız SAYFA erişimini kapılar. API token yaşam
 // döngüsü api-client'te (Bearer + 401→refresh).
 //
-// Cookie adı backend DIMA_ ayarıyla eşleşir (varsayılan "dima_refresh").
-const SESSION_COOKIE = "dima_refresh";
+// Cookie adı backend DIMA_COOKIE_NAME ile eşleşir; env ile senkron tutulur
+// (backend adı değiştirirse kod değil yalnız build config değişir).
+const SESSION_COOKIE = process.env.NEXT_PUBLIC_SESSION_COOKIE ?? "dima_refresh";
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;

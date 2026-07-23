@@ -17,11 +17,13 @@ export type ChartKind = "kpi" | "bar" | "line" | "pie" | "heatmap" | "facet" | "
 const TIME_NAMES = new Set(["donem", "dönem", "tarih", "ay", "hafta", "period", "yil", "yıl", "year", "ceyrek", "çeyrek"]);
 const PALETTE = ["#4F8CFF", "#22C55E", "#F59E0B", "#EF4444", "#A855F7", "#06B6D4", "#EC4899", "#84CC16"];
 const HEAT = ["#EF4444", "#F59E0B", "#FDE047", "#84CC16", "#22C55E"]; // düşük→yüksek (kırmızı→yeşil)
-// YÖN SEMANTİĞİ: bu metriklerde YÜKSEK KÖTÜDÜR (fire, duruş, sapma, maliyet, tüketim,
-// yoğunluk) → ısı haritası paleti ters çevrilir (yüksek=kırmızı). Varsayılan: yüksek=iyi.
+// YÖN SEMANTİĞİ: yüksek=KÖTÜ ölçülerde ısı paleti ters çevrilir (yüksek=kırmızı).
+// ASIL kaynak metadata'dır (/schema cubes[].lower_is_better → BuildOpts.lowerSet):
+// yeni sektör pack'i frontend değişikliği İSTEMEZ. Regex yalnız metadata'sız
+// eski/serbest ölçüler için yedektir.
 const LOWER_IS_BETTER = /fire|durus|sapma|maliyet|tuketim|yogunluk|su_|enerji/i;
-const heatPalette = (measure: string): string[] =>
-  LOWER_IS_BETTER.test(measure) ? [...HEAT].reverse() : HEAT;
+const heatPalette = (measure: string, lowerSet?: ReadonlySet<string>): string[] =>
+  lowerSet?.has(measure) || LOWER_IS_BETTER.test(measure) ? [...HEAT].reverse() : HEAT;
 const AVG = "∑ Ort.";
 
 const isNum = (v: unknown) =>
@@ -135,6 +137,8 @@ interface BuildOpts {
   kind: ChartKind;
   measure: string;
   dark: boolean;
+  // Metadata kaynaklı "yüksek=kötü" ölçü kümesi (/schema'dan) — ısı paleti yönü.
+  lowerSet?: ReadonlySet<string>;
 }
 
 // Panelli görünümde gezinme (carousel): panel değerleri kanonik sırayla.
@@ -316,7 +320,7 @@ export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): ECh
         orient: "horizontal",
         left: "center",
         bottom: 4,
-        inRange: { color: heatPalette(measure) },
+        inRange: { color: heatPalette(measure, o.lowerSet) },
         textStyle: { color: axis },
         formatter: (v: number | string | Date | null | undefined) => fmtValue(v, measure),
       },
