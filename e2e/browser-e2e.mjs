@@ -16,8 +16,8 @@
 //   npm run e2e
 //
 // Ortam değişkenleri:
-//   FRONTEND_URL  (varsayılan http://frontend.dima.localtld.sh)
-//   BACKEND_URL   (varsayılan http://backend.dima.localtld.sh)
+//   FRONTEND_URL  (varsayılan http://frontend.dima.localtld)
+//   BACKEND_URL   (varsayılan http://backend.dima.localtld)
 //   CHROME_BIN    (otomatik bulunamazsa Chrome ikili yolu)
 //   CDP_PORT      (varsayılan 9222)
 //   HEADFUL=1     (tarayıcıyı görünür başlat — hata ayıklama)
@@ -28,8 +28,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://frontend.dima.localtld.sh";
-const BACKEND_URL = process.env.BACKEND_URL ?? "http://backend.dima.localtld.sh";
+const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://frontend.dima.localtld";
+const BACKEND_URL = process.env.BACKEND_URL ?? "http://backend.dima.localtld";
 const CDP_PORT = Number(process.env.CDP_PORT ?? 9222);
 const CROSS_QUESTION = "Makine bazında verim ve fire oranı";
 

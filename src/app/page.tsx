@@ -16,7 +16,7 @@ import type { AskResponse } from "@/lib/types";
 type Drawer = "settings" | "help" | null;
 
 // Oturum kimliği — crypto.randomUUID yalnız güvenli bağlamda (https/localhost) var;
-// http://*.localtld.sh'de yok, bu yüzden fallback.
+// http://*.localtld'de yok, bu yüzden fallback.
 function makeSessionId(): string {
   try {
     if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {

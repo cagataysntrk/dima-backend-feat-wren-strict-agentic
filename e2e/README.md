@@ -40,8 +40,8 @@ npm run e2e
 
 | Değişken       | Varsayılan                          |
 | -------------- | ----------------------------------- |
-| `FRONTEND_URL` | `http://frontend.dima.localtld.sh`  |
-| `BACKEND_URL`  | `http://backend.dima.localtld.sh`   |
+| `FRONTEND_URL` | `http://frontend.dima.localtld`  |
+| `BACKEND_URL`  | `http://backend.dima.localtld`   |
 | `CHROME_BIN`   | otomatik bulunur                    |
 | `CDP_PORT`     | `9222`                              |
 | `HEADFUL=1`    | tarayıcıyı görünür başlatır (debug) |

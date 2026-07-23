@@ -28,8 +28,7 @@ sabit bir domain altında çalıştırır (yoksa düz `next dev`'e düşer):
 - Frontend → **http://frontend.dima.localtld** (`package.json` › `localtld: frontend.dima`)
 - Backend  → **http://backend.dima.localtld** (`.env.local` › `NEXT_PUBLIC_API_URL`)
 
-> Kanonik domain `.localtld`'dir; bazı kurulumlar (localtld.sh servisi) `.localtld.sh` sunar —
-> `allowedDevOrigins` ve backend CORS ikisini de kapsar.
+> Domain `.localtld`'dir (localtld servisi); `allowedDevOrigins` ve backend CORS bunu kapsar.
 
 Böylece `localhost:3000`/`:8000` yerine kalıcı domainler kullanılır (aaron/mamut ile aynı desen).
 İlk sefer: `localtld setup`. localtld yoksa `NEXT_PUBLIC_API_URL=http://localhost:8000` yapın.
