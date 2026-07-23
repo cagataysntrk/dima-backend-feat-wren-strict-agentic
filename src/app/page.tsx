@@ -124,10 +124,11 @@ export default function Home() {
         </div>
       )}
 
+      {/* Aynı ikona ikinci tıklama sheet'i KAPATIR (toggle); farklıysa içerik değişir. */}
       <FloatingControls
-        onNotifications={() => setDrawer("notifications")}
-        onHelp={() => setDrawer("help")}
-        onSettings={() => setDrawer("settings")}
+        onNotifications={() => setDrawer((d) => (d === "notifications" ? null : "notifications"))}
+        onHelp={() => setDrawer((d) => (d === "help" ? null : "help"))}
+        onSettings={() => setDrawer((d) => (d === "settings" ? null : "settings"))}
       />
 
       <SettingsDrawer
