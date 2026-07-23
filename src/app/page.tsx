@@ -7,13 +7,14 @@ import { ChatPanel } from "@/components/ChatPanel";
 import { FloatingControls } from "@/components/FloatingControls";
 import { HelpPanel } from "@/components/HelpPanel";
 import { Landing } from "@/components/Landing";
+import { NotificationsPanel } from "@/components/NotificationsBell";
 import { ReportPanel } from "@/components/ReportPanel";
 import { SchemaPanel } from "@/components/SchemaPanel";
 import { SettingsDrawer } from "@/components/SettingsDrawer";
 import { useHistory } from "@/stores/history";
 import type { AskResponse } from "@/lib/types";
 
-type Drawer = "settings" | "help" | null;
+type Drawer = "settings" | "help" | "notifications" | null;
 
 // Oturum kimliği — crypto.randomUUID yalnız güvenli bağlamda (https/localhost) var;
 // http://*.localtld'de yok, bu yüzden fallback.
@@ -122,14 +123,30 @@ export default function Home() {
         </div>
       )}
 
-      <FloatingControls onHelp={() => setDrawer("help")} onSettings={() => setDrawer("settings")} />
+      <FloatingControls
+        onNotifications={() => setDrawer("notifications")}
+        onHelp={() => setDrawer("help")}
+        onSettings={() => setDrawer("settings")}
+      />
 
       <SettingsDrawer
         open={drawer !== null}
         onClose={() => setDrawer(null)}
-        title={drawer === "help" ? "dima · yardım" : "Ayarlar · Veri Modeli"}
+        title={
+          drawer === "help"
+            ? "dima · yardım"
+            : drawer === "notifications"
+              ? "Bildirimler"
+              : "Ayarlar · Veri Modeli"
+        }
       >
-        {drawer === "help" ? <HelpPanel onPick={submit} /> : <SchemaPanel />}
+        {drawer === "help" ? (
+          <HelpPanel onPick={submit} />
+        ) : drawer === "notifications" ? (
+          <NotificationsPanel />
+        ) : (
+          <SchemaPanel />
+        )}
       </SettingsDrawer>
     </div>
   );

@@ -2,20 +2,24 @@
 
 import { NotificationsBell } from "@/components/NotificationsBell";
 
-// Sayfada tek chrome: sağ üstte üç ince float — bildirim (🔔), yardım (?), ayarlar (⚙).
+// Sayfada tek chrome: sağ üst köşede DİKEY ikon sırası (yukarıdan aşağı:
+// bildirim 🔔, yardım ?, ayarlar ⚙; yeni ikonlar altta devam eder).
+// Hepsi aynı deseni izler: tıkla → sağdan sheet açılır.
 // Keskin köşe, ghost, monospace işaret; "sistem paneli" hissi.
 export function FloatingControls({
+  onNotifications,
   onHelp,
   onSettings,
 }: {
+  onNotifications: () => void;
   onHelp: () => void;
   onSettings: () => void;
 }) {
   const btn =
     "flex h-8 w-8 items-center justify-center border border-hairline bg-background/70 text-muted backdrop-blur-sm transition-colors hover:text-foreground hover:border-neutral-400 dark:hover:border-neutral-600";
   return (
-    <div className="fixed right-4 top-4 z-50 flex gap-1.5">
-      <NotificationsBell />
+    <div className="fixed right-4 top-4 z-50 flex flex-col gap-1.5">
+      <NotificationsBell onOpen={onNotifications} />
       <button onClick={onHelp} aria-label="Yardım" className={btn}>
         <span className="font-mono text-[13px]">?</span>
       </button>
