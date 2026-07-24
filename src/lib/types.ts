@@ -34,6 +34,7 @@ export interface SchemaResponse {
   models: ModelMeta[];
   relationships: RelationshipMeta[];
   cubes?: CubeMeta[];
+  db_online?: boolean; // veri kaynağı TCP erişilebilir mi → çevrimiçi/çevrimdışı rozeti
 }
 
 export type Row = Record<string, unknown>;
