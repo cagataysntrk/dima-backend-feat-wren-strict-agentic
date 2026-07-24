@@ -2,15 +2,25 @@
 
 import { useMemo, useState } from "react";
 import type { QueryResult } from "@/lib/types";
-import { fmtTemporal, fmtValue, unitFor } from "@/lib/format";
+import { fmtTemporal, fmtValue } from "@/lib/format";
+
+// KİMLİK/kod kolonları: sayısal olsa da biçimlenMEZ (cari_kodu "6403" → "6.403" olmasın).
+function isIdentifierCol(col: string): boolean {
+  return /(?:^|_)(kod|kodu|no|ref|id|barkod|tckn|vkn|iban|fis)(?:$|_)/.test(col.toLowerCase());
+}
 
 function formatCell(value: unknown, col: string): string {
   if (value === null || value === undefined) return "—";
   if (typeof value === "number") return fmtValue(value, col);
-  // DECIMAL/BIGINT sürücüden STRING gelebilir ("40474542.81000000"). Yalnız BİRİMLİ
-  // ölçü kolonlarında sayı biçimle (para/kg/vb.) — cari_kodu "6403" gibi ID'ler
-  // (birimsiz) ham kalır, yanlışlıkla "6.403" olmaz.
-  if (typeof value === "string" && value.trim() !== "" && !Number.isNaN(Number(value)) && unitFor(col)) {
+  // DECIMAL/BIGINT sürücüden STRING gelebilir ("218123764.00000000"). ID/kod DIŞINDAKİ
+  // tüm sayısal ölçüler yerelleştirilir (binlik ayraç; birim tanınıyorsa ₺/kg/% eklenir).
+  // Birimsiz ölçüler de (satis_miktari) artık formatlanır — eskiden ham string kalıyordu.
+  if (
+    typeof value === "string" &&
+    value.trim() !== "" &&
+    !Number.isNaN(Number(value)) &&
+    !isIdentifierCol(col)
+  ) {
     return fmtValue(Number(value), col);
   }
   const t = fmtTemporal(value, col);
