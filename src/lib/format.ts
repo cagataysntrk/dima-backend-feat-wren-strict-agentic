@@ -11,7 +11,8 @@ export function unitFor(col: string): Unit | null {
   if (!col) return null; // ölçü yok (ör. 0 satır) → birim yok, çökme
   const c = col.toLowerCase();
   if (c.includes("yil")) return null; // yıl (kurulum_yili) — grupsuz tam sayı
-  if (c === "kar" || /(tutar|ciro|maliyet|fiyat|katki|gelir|kazanc)/.test(c)) return { suffix: "₺" };
+  if (c === "kar" || /(tutar|ciro|maliyet|fiyat|katki|gelir|kazanc|borc|alacak|bakiye|tahsilat|odeme)/.test(c))
+    return { suffix: "₺" };
   if (/_kwh$/.test(c) || c.includes("enerji")) return { suffix: "kWh" };
   if (/_lt$|_litre$/.test(c) || c.includes("su_") || c.includes("_su")) return { suffix: "L" };
   if (/_dakika$/.test(c) || /(durus|calisma|planlanan)/.test(c)) return { suffix: "dk" };
