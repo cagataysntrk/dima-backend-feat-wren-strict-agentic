@@ -33,6 +33,9 @@ export function InterpretationBar({
   const [openFilter, setOpenFilter] = useState<string | null>(null);
 
   const measures = (cq.measures as string[]) ?? [];
+  // CROSS-CUBE BLEND: başka cube'lardan katılan ölçüler (cq.blend). "kâr da ekle" tek
+  // raporda ticaret + karlilik ölçüsünü birleştirir; burada cube etiketiyle gösterilir.
+  const blend = (cq.blend as { cube: string; measures: string[] }[]) ?? [];
   const dims = (cq.dimensions as string[]) ?? [];
   const filters = (cq.filters as Filter[]) ?? [];
   const tds = (cq.timeDimensions as { dimension: string; granularity: string }[]) ?? [];
@@ -60,6 +63,18 @@ export function InterpretationBar({
     next.measures = measures.filter((x) => x !== m);
     const ord = next.order as { measure?: string } | undefined;
     if (ord?.measure === m) delete next.order;
+    onEdit({ cq: next, label: `chip: ölçü − ${m}` });
+  };
+
+  // Blend ölçüsü kaldırma: cq.blend'den düşür; o cube'un ölçüsü kalmazsa entry'i at,
+  // hiç blend kalmazsa alanı sil (tek-cube rapora döner). Deterministik /cube.
+  const removeBlendMeasure = (cubeName: string, m: string) => {
+    const next = clone();
+    const nb = ((next.blend as { cube: string; measures: string[] }[]) ?? [])
+      .map((b) => (b.cube === cubeName ? { ...b, measures: b.measures.filter((x) => x !== m) } : b))
+      .filter((b) => b.measures.length > 0);
+    if (nb.length) next.blend = nb;
+    else delete next.blend;
     onEdit({ cq: next, label: `chip: ölçü − ${m}` });
   };
 
@@ -218,11 +233,23 @@ export function InterpretationBar({
       {measures.map((m) => (
         <span key={m} className={chip} title="Ölçü">
           <span className="text-accent">◆</span> {m}
-          {measures.length > 1 && (
+          {(measures.length > 1 || blend.length > 0) && (
             <button onClick={() => removeMeasure(m)} className={xBtn} aria-label={`${m} ölçüsünü kaldır`}>×</button>
           )}
         </span>
       ))}
+
+      {/* CROSS-CUBE BLEND ölçüleri — cube etiketiyle ("◆ brut_kar ·karlilik"): tek raporda
+          birden çok cube. "kâr da ekle" bunları katar; × ile kaldırılır. */}
+      {blend.flatMap((b) =>
+        b.measures.map((m) => (
+          <span key={`${b.cube}:${m}`} className={chip} title={`Ölçü · ${b.cube}`}>
+            <span className="text-accent">◆</span> {m}
+            <span className="text-[9px] text-neutral-400">·{b.cube}</span>
+            <button onClick={() => removeBlendMeasure(b.cube, m)} className={xBtn} aria-label={`${m} ölçüsünü kaldır`}>×</button>
+          </span>
+        )),
+      )}
 
       {tds.map((t) => {
         const GRAN_TR: Record<string, string> = { day: "gün", week: "hafta", month: "ay", quarter: "çeyrek", year: "yıl" };
