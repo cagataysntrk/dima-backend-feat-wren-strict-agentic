@@ -20,8 +20,18 @@ function fmt(v: number | null | undefined, unit?: string | null): string {
   return `${s} ${unit}`;
 }
 
-// KPI dönem-serisi → çizgi grafik (evrensel kova trendi). Birim eksene/tooltip'e taşınır.
-function trendOption(card: KpiCard, series: { bucket: string; value: number | null }[]): EChartsOption {
+// Etiketten kısa ad: "Alacak Tahsil Süresi (DSO)" → "DSO"; parantez yoksa etiketin kendisi.
+function shortName(label: string): string {
+  const m = label.match(/\(([^)]+)\)\s*$/);
+  return m ? m[1] : label;
+}
+
+const COMP_COLORS = ["#10b981", "#f59e0b", "#ef4444", "#0ea5e9", "#a855f7"];
+
+// KPI dönem-serisi → çizgi grafik (evrensel kova trendi). Headline çizgisi + AYNI BİRİMDEKİ
+// bileşenler otomatik ayrı çizgi (CCC → DSO/DIO/DPO). Farklı birim (likidite: ₺ vs oran) →
+// skala bozulmasın diye yalnız headline. Jenerik: hiçbir KPI'ya özel kod yok, veriden çizer.
+function trendOption(card: KpiCard, series: NonNullable<KpiCard["series"]>): EChartsOption {
   const u = card.unit ?? "";
   const n = (v: number) => {
     const s = new Intl.NumberFormat("tr-TR", {
@@ -29,8 +39,26 @@ function trendOption(card: KpiCard, series: { bucket: string; value: number | nu
     }).format(v);
     return u === "%" ? `%${s}` : u ? `${s} ${u}` : s;
   };
+  const comps = series[0]?.components ?? [];
+  // Bileşenler headline ile AYNI birimde mi? (öyleyse ayrı çizgi mantıklı — aynı eksen)
+  const plotComps = comps.length > 0 && comps.every((c) => (c.unit ?? "") === u);
+
+  const lines: { name: string; data: (number | null)[]; color: string; head: boolean }[] = [
+    { name: shortName(card.label), color: "#6366f1", head: true,
+      data: series.map((s) => s.value) },
+  ];
+  if (plotComps) {
+    comps.forEach((c, i) => lines.push({
+      name: shortName(c.label), color: COMP_COLORS[i % COMP_COLORS.length], head: false,
+      data: series.map((s) => s.components?.find((x) => x.key === c.key)?.value ?? null),
+    }));
+  }
   return {
-    grid: { left: 8, right: 16, top: 12, bottom: 20, containLabel: true },
+    legend: plotComps
+      ? { top: 0, right: 0, icon: "roundRect", itemWidth: 10, itemHeight: 3,
+          textStyle: { fontSize: 10, color: "#9ca3af" } }
+      : undefined,
+    grid: { left: 8, right: 16, top: plotComps ? 28 : 12, bottom: 20, containLabel: true },
     xAxis: {
       type: "category", data: series.map((s) => s.bucket), boundaryGap: false,
       axisLabel: { fontSize: 10, color: "#9ca3af" }, axisTick: { show: false },
@@ -42,11 +70,13 @@ function trendOption(card: KpiCard, series: { bucket: string; value: number | nu
       splitLine: { lineStyle: { color: "rgba(120,120,120,0.12)" } },
     },
     tooltip: { trigger: "axis", valueFormatter: (v) => n(v as number) },
-    series: [{
-      type: "line", smooth: true, symbol: "circle", symbolSize: 5,
-      data: series.map((s) => s.value), lineStyle: { width: 2, color: "#6366f1" },
-      itemStyle: { color: "#6366f1" }, areaStyle: { opacity: 0.06, color: "#6366f1" },
-    }],
+    series: lines.map((l) => ({
+      type: "line", name: l.name, smooth: true, symbol: "circle",
+      symbolSize: l.head ? 5 : 3, data: l.data,
+      lineStyle: { width: l.head ? 2.5 : 1.5, color: l.color, type: l.head ? "solid" : "dashed" },
+      itemStyle: { color: l.color },
+      areaStyle: l.head && !plotComps ? { opacity: 0.06, color: l.color } : undefined,
+    })),
   };
 }
 

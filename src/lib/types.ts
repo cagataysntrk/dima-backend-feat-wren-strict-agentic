@@ -80,10 +80,15 @@ export interface KpiCard {
   explain?: string | null;
   value: number | null;
   components: { key: string; label: string; unit?: string | null; value: number | null }[];
-  // Dönem-serisi ("aylara göre ccc"): her kova için KPI değeri → trend grafiği. Evrensel
-  // kova (gün/hafta/ay/çeyrek/yıl); value = SON dönem (as-of başlık).
+  // Dönem-serisi ("aylara göre ccc"): her kova için KPI değeri + bileşenleri → trend grafiği
+  // (bileşenler aynı birimdeyse ayrı çizgi: CCC → DSO/DIO/DPO). Evrensel kova (gün/hafta/ay/
+  // çeyrek/yıl); value = SON dönem (as-of başlık).
   granularity?: string | null;
-  series?: { bucket: string; value: number | null }[] | null;
+  series?: {
+    bucket: string;
+    value: number | null;
+    components?: { key: string; label: string; unit?: string | null; value: number | null }[];
+  }[] | null;
 }
 
 export interface AskRequest {
