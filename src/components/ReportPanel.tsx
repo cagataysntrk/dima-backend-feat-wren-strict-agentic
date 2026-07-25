@@ -245,7 +245,8 @@ export function ReportPanel({
         )}
       </div>
 
-      {data.cube_query && onCubeEdit && (
+      {data.cube_query && onCubeEdit &&
+        ((data.cube_query as { measures?: unknown[] }).measures?.length ?? 0) > 0 && (
         <InterpretationBar cq={data.cube_query} onEdit={onCubeEdit} />
       )}
 
