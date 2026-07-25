@@ -55,8 +55,9 @@ export default function Home() {
       }),
     onSuccess: (data) => {
       addHistory(data);
-      // Rapor → sağ paneli güncelle; not → mevcut raporu koru.
-      if (!data.note) setActive(data);
+      // Rapor → sağ paneli güncelle; salt-not → mevcut raporu koru. KPI yanıtı NOT taşısa
+      // da bir RAPORDUR (kart+trend) — sağ panele düşmeli (yoksa kart hiç render edilmezdi).
+      if (!data.note || data.kpi) setActive(data);
       // Görünüm ipucu: yeni raporla geldiyse onunla; salt-görünüm yanıtında mevcut rapora.
       if (data.view_hint) setViewHint({ kind: data.view_hint, nonce: Date.now() });
       else if (data.result && !data.note) setViewHint(null);
