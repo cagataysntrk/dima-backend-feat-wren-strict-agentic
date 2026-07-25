@@ -11,6 +11,9 @@ export function SourceBadge({ source }: { source: string | null }) {
   if (source === "cube") {
     label = "◆ CUBE";
     cls = "text-accent border-accent/40";
+  } else if (source === "kpi") {
+    label = "◆ KPI";
+    cls = "text-accent border-accent/40";
   } else if (source === "cube+llm") {
     label = "◆ CUBE·LLM";
     cls = "text-accent border-accent/40";
@@ -82,8 +85,10 @@ export function ChatPanel({
                     {item.question}
                   </span>
                 </div>
-                {/* not (rapor yok): dürüst açıklama + tıklanır chip'ler (örnek/dönem) */}
-                {item.note ? (
+                {/* not (rapor yok): dürüst açıklama + tıklanır chip'ler (örnek/dönem).
+                    KPI yanıtı NOT taşısa da bir RAPORDUR (kart) → tıklanır satır (aksi halde
+                    eski KPI raporuna geri dönülemiyordu — canlı 2026-07-25). */}
+                {item.note && !item.kpi ? (
                   <div className="border-l-2 border-amber-500/50 py-1 pl-3">
                     <div className="font-mono text-[12px] leading-snug text-neutral-500">
                       {item.note}
@@ -113,7 +118,7 @@ export function ChatPanel({
                     }`}
                   >
                     <span className="font-mono text-[11px] text-neutral-500">
-                      {item.result ? `${item.result.row_count} satır` : "sql"}
+                      {item.result ? `${item.result.row_count} satır` : item.kpi ? "KPI kartı" : "sql"}
                     </span>
                     <span className="ml-auto">
                       <SourceBadge source={item.source} />
