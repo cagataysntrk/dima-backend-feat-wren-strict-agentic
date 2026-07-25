@@ -1,14 +1,26 @@
-// Kolon adından birim çıkarımı + Türkçe sayı biçimlendirme.
+// Birim çözümü + Türkçe sayı biçimlendirme.
 // Hem tabloda hem grafiklerde (eksen/tooltip/KPI/heatmap) kullanılır.
+//
+// BİRİNCİL kaynak: /schema cubes[].units (ölçü metadata'sı — cube YAML'ında bir kez
+// tanımlanır, lower_is_better borusuyla aynı desen). Kolon-adı regex'i YALNIZ YEDEKTİR;
+// yeni ölçüler (cari_oran→x, dso_gun→gün, net_isletme_sermayesi→₺) regex'e takılmaz.
 
 export interface Unit {
   suffix: string;
   scale?: number; // değeri gösterime çevirirken çarpan (oran 0-1 → %)
 }
 
-// Sıra önemli: parasal/özel kontroller genel eklerden ÖNCE gelir.
+// /schema'dan gelen ölçü→birim haritası (ResultView açılışta doldurur).
+let _schemaUnits: Record<string, string> = {};
+export function setSchemaUnits(units: Record<string, string>) {
+  _schemaUnits = units || {};
+}
+
+// Sıra önemli: METADATA birinci; regex'te parasal/özel kontroller genel eklerden ÖNCE.
 export function unitFor(col: string): Unit | null {
   if (!col) return null; // ölçü yok (ör. 0 satır) → birim yok, çökme
+  const meta = _schemaUnits[col];
+  if (meta) return { suffix: meta }; // cube YAML birimi (₺/%/x/gün/adet…) — kesin kaynak
   const c = col.toLowerCase();
   if (c.includes("yil")) return null; // yıl (kurulum_yili) — grupsuz tam sayı
   if (c === "kar" || /(tutar|ciro|maliyet|fiyat|katki|gelir|kazanc|borc|alacak|bakiye|tahsilat|odeme)/.test(c))

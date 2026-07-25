@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { getSchema } from "@/lib/api-client";
+import { setSchemaUnits } from "@/lib/format";
 import type { QueryResult } from "@/lib/types";
 import { ALL_MEASURES, analyze, buildOption, facetPanelValues, kpiCards, type ChartKind } from "@/lib/chart";
 import { EChart } from "./EChart";
@@ -9,7 +10,9 @@ import { ResultTable } from "./ResultTable";
 import { Select } from "./Select";
 
 // "Yüksek=kötü" ölçü kümesi — kaynağı metadata (/schema cubes[].lower_is_better);
-// açılışta bir kez okunur, modül düzeyinde tutulur (useFeature deseni).
+// açılışta bir kez okunur, modül düzeyinde tutulur (useFeature deseni). Aynı okumada
+// ölçü BİRİMLERİ de (/schema cubes[].units) format katmanına verilir — birim şirket/cube
+// başına yeniden tanımlanmaz, metadata'da bir kez, gerisi platform.
 let _lowerSet: ReadonlySet<string> | null = null;
 function useLowerSet(): ReadonlySet<string> | undefined {
   const [set, setSet] = useState<ReadonlySet<string> | undefined>(_lowerSet ?? undefined);
@@ -17,8 +20,11 @@ function useLowerSet(): ReadonlySet<string> | undefined {
     if (_lowerSet) return;
     getSchema()
       .then((s) => {
-        const cubes = (s as { cubes?: { lower_is_better?: string[] }[] }).cubes ?? [];
+        const cubes = (s as {
+          cubes?: { lower_is_better?: string[]; units?: Record<string, string> }[];
+        }).cubes ?? [];
         _lowerSet = new Set(cubes.flatMap((c) => c.lower_is_better ?? []));
+        setSchemaUnits(Object.assign({}, ...cubes.map((c) => c.units ?? {})));
         setSet(_lowerSet);
       })
       .catch(() => {});
