@@ -52,6 +52,17 @@ export function InterpretationBar({
 
   const clone = (): CubeQuery => JSON.parse(JSON.stringify(cq));
 
+  // Ölçü kaldırma (canlı 2026-07-25: kırılım/filtre/kova/dönem chip'lerinde × vardı ama
+  // ÖLÇÜde yoktu → kullanıcı çok-ölçülü rapordan ölçü düşüremiyordu). Son ölçü korunur
+  // (raporun en az bir ölçüsü olmalı); sıralama o ölçüye bağlıysa düşer. Deterministik /cube.
+  const removeMeasure = (m: string) => {
+    const next = clone();
+    next.measures = measures.filter((x) => x !== m);
+    const ord = next.order as { measure?: string } | undefined;
+    if (ord?.measure === m) delete next.order;
+    onEdit({ cq: next, label: `chip: ölçü − ${m}` });
+  };
+
   const removeDim = (d: string) => {
     const next = clone();
     next.dimensions = dims.filter((x) => x !== d);
@@ -207,6 +218,9 @@ export function InterpretationBar({
       {measures.map((m) => (
         <span key={m} className={chip} title="Ölçü">
           <span className="text-accent">◆</span> {m}
+          {measures.length > 1 && (
+            <button onClick={() => removeMeasure(m)} className={xBtn} aria-label={`${m} ölçüsünü kaldır`}>×</button>
+          )}
         </span>
       ))}
 
