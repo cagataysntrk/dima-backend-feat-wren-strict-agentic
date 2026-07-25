@@ -66,6 +66,20 @@ export interface AskResponse {
   view_hint?: string | null;
   // Query Contract (ADR-0010): raporun kanıt kaydı kimliği
   contract_id?: string | null;
+  // Cross-cube KPI kartı (CCC / likidite oranları): tek skaler + bileşenleri (DSO/DIO/DPO,
+  // dönen varlık/KV kaynak…). Cube tablosu değil bileşke — KPI kartı olarak render edilir.
+  kpi?: KpiCard | null;
+}
+
+export interface KpiCard {
+  kpi: string;
+  label: string;
+  unit?: string | null;
+  lower_is_better?: boolean;
+  formula?: string | null;
+  explain?: string | null;
+  value: number | null;
+  components: { key: string; label: string; unit?: string | null; value: number | null }[];
 }
 
 export interface AskRequest {

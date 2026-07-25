@@ -7,6 +7,7 @@ import { createSchedule, getFeatures, getMe, verifyReport } from "@/lib/api-clie
 import { BrandMark } from "@/components/BrandMark";
 import { InterpretationBar } from "@/components/InterpretationBar";
 import { ResultView } from "@/components/ResultView";
+import { KpiCardView } from "@/components/KpiCard";
 import { SourceBadge } from "@/components/ChatPanel";
 
 // Özellik bayrakları (ADR-0009) — açılışta bir kez okunur, modül düzeyinde tutulur.
@@ -247,6 +248,9 @@ export function ReportPanel({
       {data.cube_query && onCubeEdit && (
         <InterpretationBar cq={data.cube_query} onEdit={onCubeEdit} />
       )}
+
+      {/* Cross-cube KPI kartı (CCC / likidite) — cube tablosu değil bileşke skaler. */}
+      {data.kpi && <KpiCardView card={data.kpi} />}
 
       {data.result && (
         <div className="border border-hairline bg-background p-4">
