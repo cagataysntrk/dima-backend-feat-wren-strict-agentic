@@ -33,6 +33,19 @@ apiClient.interceptors.request.use((config) => {
 
 // Eşzamanlı 401'ler tek refresh'i paylaşır.
 let refreshing: Promise<string | null> | null = null;
+// Oturum düştüğünde TEK bir yönlendirme yapılır: aynı anda 401 yiyen birden çok
+// istek (me/features/schema/ask) art arda location atarsa tarayıcı döngüye girer.
+let redirectingToLogin = false;
+
+// Bayat refresh cookie'si HTTP-only olduğu için JS silemez; ?expired=1 işareti
+// proxy.ts'e "bu cookie'yi sil ve login'i göster" der (yoksa /login → / döngüsü).
+function bounceToLogin() {
+  if (typeof window === "undefined" || redirectingToLogin) return;
+  if (window.location.pathname === "/login") return;
+  redirectingToLogin = true;
+  const next = encodeURIComponent(window.location.pathname + window.location.search);
+  window.location.href = `/login?expired=1&next=${next}`;
+}
 
 async function doRefresh(): Promise<string | null> {
   try {
@@ -68,9 +81,7 @@ apiClient.interceptors.response.use(
         original.headers.Authorization = `Bearer ${token}`;
         return apiClient(original);
       }
-      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
-        window.location.href = "/login";
-      }
+      bounceToLogin();
     }
     return Promise.reject(error);
   },
@@ -103,6 +114,33 @@ export async function login(
 
 export async function refresh(): Promise<string | null> {
   return doRefresh();
+}
+
+// NOT: Aşağıdaki uçlar backend sözleşmesinde HENÜZ yok (auth şu an login/refresh/logout/me).
+// UI hazır; backend `POST /auth/register`, `POST /auth/forgot`, `GET /auth/oauth/<p>`
+// eklediğinde çalışır. Eklenene kadar zarifçe hata döner (apiErrorMessage gösterir).
+export async function register(
+  email: string,
+  password: string,
+): Promise<AuthUser> {
+  const { data } = await apiClient.post<{ access_token: string; user: AuthUser }>(
+    "/auth/register",
+    { email, password },
+  );
+  setAccessToken(data.access_token);
+  return data.user;
+}
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  await apiClient.post("/auth/forgot", { email });
+}
+
+export type OAuthProvider = "google" | "github" | "apple";
+// OAuth başlat: backend'in yönlendirme başlattığı same-origin uca git.
+export function startOAuth(provider: OAuthProvider, next = "/"): void {
+  if (typeof window === "undefined") return;
+  const url = `/api/auth/oauth/${provider}?next=${encodeURIComponent(next)}`;
+  window.location.href = url;
 }
 
 export async function logout(): Promise<void> {

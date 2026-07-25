@@ -2,7 +2,17 @@
 
 import { useMemo, useState } from "react";
 import type { QueryResult } from "@/lib/types";
+import { ChevronDown, ChevronsUpDown, ChevronUp } from "lucide-react";
 import { fmtTemporal, fmtValue } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 // KİMLİK/kod kolonları: sayısal olsa da biçimlenMEZ (cari_kodu "6403" → "6.403" olmasın).
 function isIdentifierCol(col: string): boolean {
@@ -36,6 +46,17 @@ function sortKey(v: unknown): number | string {
   return String(v).toLocaleLowerCase("tr-TR");
 }
 
+// Sayısal kolonlar sağa yaslanır (BI tablosu okunurluğu). DECIMAL string'ler de sayısaldır.
+const isNumericCol = (result: QueryResult, col: string) =>
+  !isIdentifierCol(col) &&
+  result.rows.some(
+    (r) =>
+      typeof r[col] === "number" ||
+      (typeof r[col] === "string" &&
+        (r[col] as string).trim() !== "" &&
+        !Number.isNaN(Number(r[col]))),
+  );
+
 export function ResultTable({ result }: { result: QueryResult }) {
   const [sort, setSort] = useState<{ col: string; dir: "asc" | "desc" } | null>(null);
 
@@ -52,53 +73,73 @@ export function ResultTable({ result }: { result: QueryResult }) {
   }, [result.rows, sort]);
 
   if (result.row_count === 0) {
-    return <p className="font-mono text-[13px] text-neutral-500">sonuç yok.</p>;
+    return <p className="text-sm text-muted-foreground">Sonuç yok.</p>;
   }
+  const numeric = new Set(result.columns.filter((c) => isNumericCol(result, c)));
 
+  // desc → asc → sırasız (üçüncü tık)
   const toggle = (col: string) =>
-    setSort((s) =>
-      s?.col === col
-        ? s.dir === "desc"
-          ? { col, dir: "asc" }
-          : null // desc → asc → sırasız (üçüncü tık)
-        : { col, dir: "desc" },
+    setSort((cur) =>
+      cur?.col === col ? (cur.dir === "desc" ? { col, dir: "asc" } : null) : { col, dir: "desc" },
     );
 
   return (
-    <div className="overflow-auto border border-hairline">
-      <table className="w-full border-collapse font-mono text-[13px]">
-        <thead>
-          <tr className="border-b border-hairline">
+    <div className="overflow-auto rounded-lg border border-border">
+      <Table className="font-mono text-[13px]">
+        <TableHeader>
+          <TableRow>
             {result.columns.map((col) => {
               const active = sort?.col === col;
+              const Icon = !active ? ChevronsUpDown : sort!.dir === "desc" ? ChevronDown : ChevronUp;
               return (
-                <th
+                <TableHead
                   key={col}
                   onClick={() => toggle(col)}
                   title="Sıralamak için tıkla"
-                  className="cursor-pointer select-none whitespace-nowrap px-3 py-2 text-left text-[11px] uppercase tracking-wide text-neutral-400 hover:text-neutral-200"
+                  aria-sort={active ? (sort!.dir === "desc" ? "descending" : "ascending") : "none"}
+                  className={cn(
+                    "cursor-pointer text-[11px] tracking-wide uppercase select-none hover:text-foreground",
+                    numeric.has(col) && "text-right",
+                  )}
                 >
-                  {col}
-                  <span className="ml-1 text-neutral-500">
-                    {active ? (sort!.dir === "desc" ? "▼" : "▲") : "⇅"}
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1",
+                      numeric.has(col) && "flex-row-reverse",
+                    )}
+                  >
+                    {col}
+                    <Icon
+                      className={cn(
+                        "size-3 shrink-0",
+                        active ? "text-brand" : "text-muted-foreground/50",
+                      )}
+                    />
                   </span>
-                </th>
+                </TableHead>
               );
             })}
-          </tr>
-        </thead>
-        <tbody>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.map((row, i) => (
-            <tr key={i} className="border-t border-hairline/70 odd:bg-neutral-500/[0.03]">
+            <TableRow key={i}>
               {result.columns.map((col) => (
-                <td key={col} className="whitespace-nowrap px-3 py-2 tabular-nums">
+                <TableCell
+                  key={col}
+                  className={
+                    numeric.has(col)
+                      ? "text-right whitespace-nowrap tabular-nums"
+                      : "whitespace-nowrap"
+                  }
+                >
                   {formatCell(row[col], col)}
-                </td>
+                </TableCell>
               ))}
-            </tr>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

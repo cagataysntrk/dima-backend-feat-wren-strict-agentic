@@ -1,0 +1,119 @@
+{
+  "common": {
+    "appName": "dima",
+    "tagline": "Talk to your data",
+    "newChat": "New chat",
+    "settings": "Settings",
+    "help": "Help",
+    "logout": "Log out",
+    "close": "Close",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "language": "Language",
+    "search": "Search",
+    "toggleSidebar": "Toggle sidebar",
+    "sql": "SQL",
+    "searchHint": "Search chats or type a command…",
+    "noResults": "No results.",
+    "actions": "Actions",
+    "share": "Share",
+    "artifacts": "Artifacts"
+  },
+  "auth": {
+    "brandHeadline": "Talk to your data.",
+    "brandSub": "Ask in natural language; dima generates trustworthy SQL, validates, runs, and reports.",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "capsLock": "Caps Lock is on",
+    "or": "or",
+    "continueWith": "Continue with {provider}",
+    "otpTitle": "Verification code",
+    "otpHint": "Enter the 6-digit code from your authenticator app.",
+    "passwordsNoMatch": "Passwords don't match.",
+    "strength": {
+      "label": "Password strength",
+      "weak": "Weak",
+      "fair": "Fair",
+      "good": "Good",
+      "strong": "Strong"
+    }
+  },
+  "login": {
+    "title": "Sign in",
+    "subtitle": "Access your account.",
+    "submit": "Sign in",
+    "noAccount": "Don't have an account?",
+    "signUp": "Sign up",
+    "forgot": "Forgot password"
+  },
+  "register": {
+    "title": "Create account",
+    "subtitle": "Get started with dima.",
+    "submit": "Sign up",
+    "haveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "terms": "By signing up you agree to the Terms of Service and Privacy Policy."
+  },
+  "forgot": {
+    "title": "Reset your password",
+    "subtitle": "Enter your email and we'll send a reset link.",
+    "submit": "Send link",
+    "sent": "Link sent. Check your inbox.",
+    "back": "Back to sign in"
+  },
+  "chat": {
+    "placeholder": "Ask a question about your data…",
+    "send": "Send",
+    "attach": "Add",
+    "addFiles": "Add files or photos",
+    "conversations": "Chats",
+    "dataSources": "Data sources",
+    "context": "context",
+    "clearContext": "Clear context",
+    "thinking": "Thinking…",
+    "rows": "{count} rows",
+    "steps": {
+      "parse": "Parsing the question",
+      "catalog": "Scanning the cube catalog",
+      "plan": "Planning SQL",
+      "verify": "Validating the dry plan",
+      "run": "Running the query"
+    },
+    "thought": "Thought for {seconds, number}s",
+    "voice": "Dictate",
+    "voiceStop": "Stop listening",
+    "voiceUnsupported": "This browser does not support dictation"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications"
+  },
+  "report": {
+    "sql": "SQL",
+    "showSql": "Show SQL",
+    "hideSql": "Hide SQL",
+    "chart": "Chart",
+    "table": "Table",
+    "verifyCorrect": "correct",
+    "verifyWrong": "wrong",
+    "schedule": "schedule",
+    "trace": "How was this resolved?",
+    "openArtifact": "Open in panel"
+  },
+  "share": {
+    "tooltip": "Share this chat",
+    "title": "Share public link to chat",
+    "subtitle": "Your name and any messages you add after sharing stay private.",
+    "scope": "Anyone with the link can view this chat",
+    "placeholder": "no link created yet",
+    "create": "Create link",
+    "pending": "The backend has no share endpoint yet, so a public link cannot be created. Until then you can copy the chat title.",
+    "copyTitle": "Copy title",
+    "copied": "Copied"
+  }
+}

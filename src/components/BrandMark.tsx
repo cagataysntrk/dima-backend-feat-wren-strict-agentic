@@ -1,7 +1,7 @@
-// dima wordmark — monoline letterforms drawn from a shared geometric grammar
-// (bowl + stem + arch). Terminal-minimal dili izler: tek vurgu rengi accent,
-// keskin köşeler, mono chip'ler. i'nin noktası accent'tir (imleç göndermesi).
-// Açılım gerekçesi: docs/branding.md (kök repo).
+// dima wordmark — Plus Jakarta Sans, 400. Sade tipografik kilit: çizilen monoline
+// SVG harfler ve draw-in animasyonları kaldırıldı. Tek marka motifi kaldı: i'nin
+// noktası accent'tir — bu yüzden "i" noktasız "ı" olarak dizilip nokta ayrı bir
+// öğe olarak konur. Açılım gerekçesi: docs/branding.md (kök repo).
 
 type PillarKey = "d" | "i" | "m" | "a";
 
@@ -34,56 +34,51 @@ export const PILLARS: Pillar[] = [
   },
 ];
 
-// Shared metrics: viewBox height 56, baseline y=46, x-height y=22, ascender y=8.
-const GLYPHS: Record<PillarKey, { width: number; paths: string[] }> = {
-  d: {
-    width: 34,
-    paths: ["M29 34 A12 12 0 1 1 5 34 A12 12 0 1 1 29 34", "M29 8 L29 46"],
-  },
-  i: {
-    width: 10,
-    paths: ["M5 22 L5 46"],
-  },
-  m: {
-    width: 42,
-    paths: [
-      "M5 46 L5 22",
-      "M5 31 C5 21.5 21 21.5 21 31 L21 46",
-      "M21 31 C21 21.5 37 21.5 37 31 L37 46",
-    ],
-  },
-  a: {
-    width: 34,
-    paths: ["M29 34 A12 12 0 1 1 5 34 A12 12 0 1 1 29 34", "M29 22 L29 46"],
-  },
-};
-
 const SIZES = {
-  sm: { letter: "h-5", gap: "gap-1.5", dot: "size-[2px]", stroke: 5.5 },
-  md: { letter: "h-9", gap: "gap-2", dot: "size-[3px]", stroke: 5 },
-  xl: {
-    letter: "h-16 md:h-20",
-    gap: "gap-3 md:gap-4",
-    dot: "size-[4px]",
-    stroke: 5,
-  },
+  sm: { text: "text-base", gap: "gap-[0.02em]", sep: "size-[2px]" },
+  md: { text: "text-2xl", gap: "gap-[0.02em]", sep: "size-[3px]" },
+  xl: { text: "text-5xl md:text-6xl", gap: "gap-[0.02em]", sep: "size-[4px]" },
 } as const;
 
 interface BrandMarkProps {
   size?: keyof typeof SIZES;
-  /** Draw-in animation on mount (stroke reveal + dot pop). */
+  /** One-shot reveal on mount: letters rise in sequence, then the i-dot drops. */
   animate?: boolean;
   /** Monochrome variant: i-dot inherits currentColor, hover accents off. */
   ink?: boolean;
+  /** Show the per-letter pillar words on hover. Off by default — in app chrome
+   *  (sidebar, auth, help) the wordmark is a logo, not an explainer. */
+  pillars?: boolean;
   /** Pixel-dot separators between letters: d·i·m·a. */
   interpunct?: boolean;
   className?: string;
+}
+
+/** Delay of the i-dot: after the last letter has landed. */
+const DOT_DELAY = "0.6s";
+
+/** The dotless-ı + separate accent dot that carries the brand motif. */
+function DottedI({ ink, animate }: { ink?: boolean; animate?: boolean }) {
+  return (
+    <span className="relative inline-block">
+      {/* U+0131 — noktasız ı (latin-ext altkümesi zaten Türkçe için yükleniyor) */}
+      {"ı"}
+      <span
+        aria-hidden="true"
+        className={`absolute left-1/2 top-[0.14em] size-[0.14em] -translate-x-1/2 rounded-full ${
+          ink ? "bg-current" : "bg-brand"
+        } ${animate ? "brand-dot-drop" : ""}`}
+        style={animate ? { ["--brand-delay" as string]: DOT_DELAY } : undefined}
+      />
+    </span>
+  );
 }
 
 export function BrandMark({
   size = "md",
   animate = false,
   ink = false,
+  pillars = false,
   interpunct = false,
   className = "",
 }: BrandMarkProps) {
@@ -92,75 +87,43 @@ export function BrandMark({
     <span
       role="img"
       aria-label="dima — deterministic, intelligent, modeled, agentic"
-      className={`inline-flex items-end ${s.gap} ${className}`}
+      // ink varyantı currentColor'ı miras alır (koyu zeminli lockup'lar için).
+      className={`inline-flex items-end font-sans font-normal leading-none tracking-tight ${
+        ink ? "" : "text-foreground"
+      } ${s.gap} ${s.text} ${className}`}
     >
-      {PILLARS.map((pillar, idx) => {
-        const glyph = GLYPHS[pillar.letter];
-        const delay = `${idx * 0.15}s`;
-        return (
-          <span key={pillar.letter} className="contents">
-            {interpunct && idx > 0 && (
-              <span
-                aria-hidden="true"
-                className={`${s.dot} mb-[0.35em] self-center bg-neutral-400 dark:bg-neutral-600 ${animate ? "brand-pop" : ""}`}
-                style={
-                  animate
-                    ? { ["--brand-delay" as string]: `${0.55 + idx * 0.08}s` }
-                    : undefined
-                }
-              />
-            )}
-            <span className="group relative flex flex-col items-center">
-              <svg
-                viewBox={`0 0 ${glyph.width} 56`}
-                style={{ aspectRatio: `${glyph.width} / 56` }}
-                className={`${s.letter} w-auto text-foreground transition-colors ${ink ? "" : "group-hover:text-accent"}`}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={s.stroke}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                {glyph.paths.map((d) => (
-                  <path
-                    key={d}
-                    d={d}
-                    pathLength={1}
-                    className={animate ? "brand-draw" : undefined}
-                    style={
-                      animate ? { ["--brand-delay" as string]: delay } : undefined
-                    }
-                  />
-                ))}
-                {pillar.letter === "i" && (
-                  <circle
-                    cx={5}
-                    cy={10.5}
-                    r={3.75}
-                    stroke="none"
-                    className={`${ink ? "fill-current" : "fill-accent"} ${animate ? "brand-pop dima-dot" : ""}`}
-                    style={
-                      animate
-                        ? { ["--brand-delay" as string]: "0.55s" }
-                        : undefined
-                    }
-                  />
-                )}
-              </svg>
-
-              {!ink && (
-                <span
-                  lang="en"
-                  className="pointer-events-none absolute top-full z-10 mt-2 whitespace-nowrap border border-hairline bg-background px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-neutral-500 opacity-0 translate-y-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-0"
-                >
-                  {pillar.word}
-                </span>
-              )}
+      {PILLARS.map((pillar, idx) => (
+        <span key={pillar.letter} className="contents">
+          {interpunct && idx > 0 && (
+            <span
+              aria-hidden="true"
+              className={`${s.sep} mb-[0.42em] shrink-0 rounded-full bg-neutral-400 dark:bg-neutral-600`}
+            />
+          )}
+          <span className="group relative inline-flex flex-col items-center">
+            <span
+              aria-hidden="true"
+              className={`${ink ? "" : "transition-colors group-hover:text-brand"} ${
+                animate ? "brand-rise" : ""
+              }`}
+              style={
+                animate ? { ["--brand-delay" as string]: `${idx * 0.08}s` } : undefined
+              }
+            >
+              {pillar.letter === "i" ? <DottedI ink={ink} animate={animate} /> : pillar.letter}
             </span>
+
+            {pillars && (
+              <span
+                lang="en"
+                className="pointer-events-none absolute top-full z-10 mt-2 translate-y-1 whitespace-nowrap border border-hairline bg-background px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-neutral-500 opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100"
+              >
+                {pillar.word}
+              </span>
+            )}
           </span>
-        );
-      })}
+        </span>
+      ))}
     </span>
   );
 }
@@ -169,52 +132,31 @@ export function BrandMark({
 export function BrandLockup() {
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      {PILLARS.map((pillar, idx) => {
-        const glyph = GLYPHS[pillar.letter];
-        return (
-          <div
-            key={pillar.letter}
-            className="group border border-hairline p-4 transition-colors hover:border-accent/40"
+      {PILLARS.map((pillar, idx) => (
+        <div
+          key={pillar.letter}
+          className="group border border-hairline p-4 transition-colors hover:border-brand/40"
+        >
+          <span
+            aria-hidden="true"
+            className="inline-block font-sans text-4xl font-normal leading-none tracking-tight text-neutral-400 transition-colors group-hover:text-brand dark:text-neutral-600"
           >
-            <svg
-              viewBox={`0 0 ${glyph.width} 56`}
-              style={{ aspectRatio: `${glyph.width} / 56` }}
-              className="h-8 w-auto text-neutral-400 transition-colors group-hover:text-accent dark:text-neutral-600"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              {glyph.paths.map((d) => (
-                <path key={d} d={d} />
-              ))}
-              {pillar.letter === "i" && (
-                <circle
-                  cx={5}
-                  cy={10.5}
-                  r={3.75}
-                  stroke="none"
-                  className="fill-current"
-                />
-              )}
-            </svg>
-            <p
-              lang="en"
-              className="mt-3 font-mono text-[11px] uppercase tracking-wider text-foreground"
-            >
-              <span className="mr-1.5 text-accent">
-                {String(idx + 1).padStart(2, "0")}
-              </span>
-              {pillar.word}
-            </p>
-            <p className="mt-1.5 text-xs leading-relaxed text-neutral-500">
-              {pillar.tr}
-            </p>
-          </div>
-        );
-      })}
+            {pillar.letter === "i" ? <DottedI ink /> : pillar.letter}
+          </span>
+          <p
+            lang="en"
+            className="mt-3 font-mono text-[11px] uppercase tracking-wider text-foreground"
+          >
+            <span className="mr-1.5 text-brand">
+              {String(idx + 1).padStart(2, "0")}
+            </span>
+            {pillar.word}
+          </p>
+          <p className="mt-1.5 text-xs leading-relaxed text-neutral-500">
+            {pillar.tr}
+          </p>
+        </div>
+      ))}
     </div>
   );
 }

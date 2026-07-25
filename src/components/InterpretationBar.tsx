@@ -1,26 +1,39 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { ChevronDown, Plus, X } from "lucide-react";
 import { getSchema } from "@/lib/api-client";
 import type { CubeQuery } from "@/lib/types";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 // Yorum çubuğu: sistemin sorudan çıkardığı YORUM (ölçü/kırılım/filtre/dönem) chip'ler
-// olarak görünür ve OYNANABİLİR — UpcyBrain IntentRouter deseninin CubeQuery-natif hali.
-// Her düzenleme deterministik /cube ucuna gider (LLM yok).
+// olarak görünür ve OYNANABİLİR. Her düzenleme deterministik /cube ucuna gider (LLM yok).
 
 interface Filter {
   dimension: string;
   operator: string;
-  value: string | string[];  // in-filtre: liste
+  value: string | string[]; // in-filtre: liste
 }
 
 type Edit = { cq: CubeQuery; label: string };
 
-const chip =
-  "inline-flex items-center gap-1 border border-hairline px-1.5 py-0.5 font-mono text-[11px] text-neutral-600 dark:text-neutral-300";
-const xBtn =
-  "ml-0.5 text-neutral-400 transition-colors hover:text-accent";
+const wrap =
+  "inline-flex items-center rounded-md border border-border bg-card text-xs";
+const trigger =
+  "flex items-center gap-1 rounded-md px-2 py-0.5 text-muted-foreground outline-none transition-colors hover:text-foreground data-[state=open]:text-foreground";
+const removeBtn = "pr-1.5 pl-0.5 text-muted-foreground transition-colors hover:text-brand";
 
 export function InterpretationBar({
   cq,
@@ -30,7 +43,6 @@ export function InterpretationBar({
   onEdit: (edit: Edit) => void;
 }) {
   const { data: schema } = useQuery({ queryKey: ["schema"], queryFn: getSchema });
-  const [openFilter, setOpenFilter] = useState<string | null>(null);
 
   const measures = (cq.measures as string[]) ?? [];
   // CROSS-CUBE BLEND: başka cube'lardan katılan ölçüler (cq.blend). "kâr da ekle" tek
@@ -43,7 +55,6 @@ export function InterpretationBar({
   const catFilters = filters.filter((f) => f.dimension !== "tarih");
   const dateFilters = filters.filter((f) => f.dimension === "tarih");
 
-  // Boyutun kategorik değerleri (şemadan) — filtre chip'i düzenlenirken seçenek olur.
   const valuesFor = (dim: string): string[] => {
     for (const m of schema?.models ?? []) {
       for (const c of m.columns) {
@@ -82,7 +93,6 @@ export function InterpretationBar({
     const next = clone();
     next.dimensions = dims.filter((x) => x !== d);
     if (!(next.dimensions as string[]).length) delete next.dimensions;
-    // seçim kırılıma AİTTİR: kırılım kalkınca gizli in/eq filtresi arkada kalmasın
     next.filters = filters.filter((f) => f.dimension !== d);
     if (!(next.filters as Filter[]).length) delete next.filters;
     onEdit({ cq: next, label: `chip: kırılım − ${d}` });
@@ -131,13 +141,12 @@ export function InterpretationBar({
     onEdit({ cq: next, label: `chip: ${dim} filtresi kaldırıldı` });
   };
 
-  // KIRILIM ALTINDA ÇOKLU DEĞER SEÇİMİ: kırılım kalır, kapsam in-filtresiyle daralır
-  // ("sadece beyaz ve siyah"). Tümü seçili = filtre yok; tek seçili = eq.
+  // KIRILIM ALTINDA ÇOKLU DEĞER SEÇİMİ: tümü = filtresiz; tek = eq; birden çok = in.
   const setDimSelection = (dim: string, selected: string[], all: string[]) => {
     const next = clone();
     const others = filters.filter((f) => f.dimension !== dim);
     if (selected.length === 0 || selected.length === all.length) {
-      next.filters = others; // hepsi = filtresiz
+      next.filters = others;
     } else if (selected.length === 1) {
       next.filters = [...others, { dimension: dim, operator: "eq", value: selected[0] }];
     } else {
@@ -150,23 +159,8 @@ export function InterpretationBar({
     });
   };
 
-  // Kırılımdan tek değere GERİ dönüş: boyutu kaldır, o değere filtrele
-  // (ör. cinsiyet kırılımı → yalnız Kadın).
-  const dimToFilter = (dim: string, value: string) => {
-    const next = clone();
-    next.dimensions = dims.filter((x) => x !== dim);
-    if (!(next.dimensions as string[]).length) delete next.dimensions;
-    next.filters = [
-      ...filters.filter((f) => f.dimension !== dim),
-      { dimension: dim, operator: "eq", value },
-    ];
-    onEdit({ cq: next, label: `chip: kırılım → ${dim} = ${value}` });
-  };
-
-  // Chip YORUMU gösterir, ham tarihi değil: preset ("Bu yıl"), ay ("Temmuz 2026") ya da
-  // okunur aralık ("1 Oca – 31 Mar 2026"). Ham değerler tooltip'te şeffaf kalır.
-  const MONTHS_TR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
-                     "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+  // ── dönem yorumu (ham tarih değil): preset / ay / okunur aralık ──
+  const MONTHS_TR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
   const parseIso = (s: string) => {
     const [y, m, d] = s.split("-").map(Number);
     return { y, m, d };
@@ -176,7 +170,6 @@ export function InterpretationBar({
     return `${d} ${MONTHS_TR[m - 1].slice(0, 3)} ${y}`;
   };
   const periodLabel = (): string => {
-    // tarih filtreleri her zaman TEK değerdir (liste yalnız kategorik in-filtrede)
     const gte = dateFilters.find((f) => f.operator === "gte")?.value as string | undefined;
     const lte = dateFilters.find((f) => f.operator === "lte")?.value as string | undefined;
     if (!gte && !lte) return "tümü";
@@ -190,15 +183,12 @@ export function InterpretationBar({
       const l = parseIso(lte);
       const lastDay = new Date(l.y, l.m, 0).getDate();
       if (g.d === 1 && g.m === l.m && g.y === l.y && l.d === lastDay) {
-        return `${MONTHS_TR[g.m - 1]} ${g.y}`; // tam ay: "Temmuz 2026"
+        return `${MONTHS_TR[g.m - 1]} ${g.y}`;
       }
       return `${fmtShort(gte)} – ${fmtShort(lte)}`;
     }
     return `≤ ${fmtShort(lte!)}`;
   };
-
-  // Dönem hazır seçenekleri — client tarafında deterministik tarih (backend chip'leriyle aynı).
-  // DİKKAT: toISOString() UTC'ye çevirir (TR'de 1 Ocak 00:00 → 31 Aralık!) — YEREL formatla.
   const iso = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const periodPresets = (): { label: string; start: string | null }[] => {
@@ -213,7 +203,6 @@ export function InterpretationBar({
       { label: "Tümü", start: null },
     ];
   };
-
   const setPeriod = (label: string, start: string | null) => {
     const next = clone();
     const rest = filters.filter((f) => f.dimension !== "tarih");
@@ -224,205 +213,293 @@ export function InterpretationBar({
     onEdit({ cq: next, label: `chip: dönem → ${label}` });
   };
 
-  return (
-    <div className="mb-4 flex flex-wrap items-center gap-1.5">
-      <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">
-        yorum
-      </span>
+  const GRAN_TR: Record<string, string> = { day: "gün", week: "hafta", month: "ay", quarter: "çeyrek", year: "yıl" };
 
+  // ── "+" ile yorum ekleme ────────────────────────────────────────────────
+  // Aday alanlar şemadan gelir; zaten çubukta olanlar listelenmez.
+  const cols = (schema?.models ?? []).flatMap((m) => m.columns);
+  const addableDims = [
+    ...new Set(
+      cols
+        .filter((c) => c.type !== "number" && c.name !== "tarih")
+        .map((c) => c.name)
+        .filter((n) => !dims.includes(n)),
+    ),
+  ];
+  const addableMeasures = [
+    ...new Set(
+      cols
+        .filter((c) => c.type === "number")
+        .map((c) => c.name)
+        .filter((n) => !measures.includes(n)),
+    ),
+  ];
+
+  const addDim = (d: string) => {
+    const next = clone();
+    next.dimensions = [...dims, d];
+    onEdit({ cq: next, label: `chip: kırılım + ${d}` });
+  };
+  const addMeasure = (m: string) => {
+    const next = clone();
+    next.measures = [...measures, m];
+    onEdit({ cq: next, label: `chip: ölçü + ${m}` });
+  };
+
+  const canAdd = addableDims.length > 0 || addableMeasures.length > 0 || tds.length === 0;
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {/* ölçüler — birden fazlaysa (ya da blend varsa) kaldırılabilir */}
       {measures.map((m) => (
-        <span key={m} className={chip} title="Ölçü">
-          <span className="text-accent">◆</span> {m}
+        <span
+          key={m}
+          title="Ölçü"
+          className="inline-flex items-center gap-1 rounded-md border border-brand/20 bg-brand/5 py-0.5 pr-1 pl-2 text-xs text-foreground"
+        >
+          <span className="text-brand">◆</span> {m}
           {(measures.length > 1 || blend.length > 0) && (
-            <button onClick={() => removeMeasure(m)} className={xBtn} aria-label={`${m} ölçüsünü kaldır`}>×</button>
+            <button
+              type="button"
+              onClick={() => removeMeasure(m)}
+              aria-label={`${m} ölçüsünü kaldır`}
+              className="rounded-full p-0.5 text-muted-foreground transition-colors hover:text-brand"
+            >
+              <X className="size-3" />
+            </button>
           )}
         </span>
       ))}
 
-      {/* CROSS-CUBE BLEND ölçüleri — cube etiketiyle ("◆ brut_kar ·karlilik"): tek raporda
-          birden çok cube. "kâr da ekle" bunları katar; × ile kaldırılır. */}
+      {/* CROSS-CUBE BLEND ölçüleri — cube etiketiyle ("◆ brut_kar ·karlilik"): tek
+          raporda birden çok cube. "kâr da ekle" bunları katar; × ile kaldırılır. */}
       {blend.flatMap((b) =>
         b.measures.map((m) => (
-          <span key={`${b.cube}:${m}`} className={chip} title={`Ölçü · ${b.cube}`}>
-            <span className="text-accent">◆</span> {m}
-            <span className="text-[9px] text-neutral-400">·{b.cube}</span>
-            <button onClick={() => removeBlendMeasure(b.cube, m)} className={xBtn} aria-label={`${m} ölçüsünü kaldır`}>×</button>
+          <span
+            key={`${b.cube}:${m}`}
+            title={`Ölçü · ${b.cube}`}
+            className="inline-flex items-center gap-1 rounded-md border border-brand/20 bg-brand/5 py-0.5 pr-1 pl-2 text-xs text-foreground"
+          >
+            <span className="text-brand">◆</span> {m}
+            <span className="text-[10px] text-muted-foreground">·{b.cube}</span>
+            <button
+              type="button"
+              onClick={() => removeBlendMeasure(b.cube, m)}
+              aria-label={`${m} ölçüsünü kaldır`}
+              className="rounded-full p-0.5 text-muted-foreground transition-colors hover:text-brand"
+            >
+              <X className="size-3" />
+            </button>
           </span>
         )),
       )}
 
-      {tds.map((t) => {
-        const GRAN_TR: Record<string, string> = { day: "gün", week: "hafta", month: "ay", quarter: "çeyrek", year: "yıl" };
-        const open = openFilter === "kova";
-        return (
-          <span key={t.dimension} className={`relative ${chip}`} title="Zaman kovası — tıkla: değiştir">
-            <button
-              onClick={() => setOpenFilter(open ? null : "kova")}
-              className="inline-flex items-center gap-1 hover:text-foreground"
-            >
-              kova: <span className="text-accent">{GRAN_TR[t.granularity] ?? t.granularity}</span> ▾
-            </button>
-            <button onClick={removeGran} className={xBtn} aria-label="Zaman kovasını kaldır">×</button>
-            {open && (
-              <span className="absolute left-0 top-full z-30 mt-1 flex min-w-full flex-col border border-hairline bg-background shadow-lg">
-                {(Object.entries(GRAN_TR) as [string, string][]).map(([g, label]) => (
-                  <button
-                    key={g}
-                    onClick={() => { setOpenFilter(null); if (g !== t.granularity) setGran(g); }}
-                    className={`px-2 py-1 text-left font-mono text-[11px] hover:bg-neutral-500/[0.06] ${g === t.granularity ? "text-accent" : ""}`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </span>
-            )}
-          </span>
-        );
-      })}
+      {/* zaman kovası */}
+      {tds.map((t) => (
+        <span key={t.dimension} className={wrap} title="Zaman kovası">
+          <DropdownMenu>
+            <DropdownMenuTrigger className={trigger}>
+              kova: <span className="text-brand">{GRAN_TR[t.granularity] ?? t.granularity}</span>
+              <ChevronDown className="size-3" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {Object.entries(GRAN_TR).map(([g, label]) => (
+                <DropdownMenuItem
+                  key={g}
+                  onSelect={() => g !== t.granularity && setGran(g)}
+                  className={g === t.granularity ? "text-brand" : ""}
+                >
+                  {label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <button onClick={removeGran} className={removeBtn} aria-label="Zaman kovasını kaldır">
+            <X className="size-3" />
+          </button>
+        </span>
+      ))}
 
+      {/* kırılımlar */}
       {dims.map((d) => {
         const opts = valuesFor(d);
-        const open = openFilter === `dim:${d}`;
         if (!opts.length) {
           return (
-            <span key={d} className={chip} title="Kırılım">
-              kırılım: {d}
-              <button onClick={() => removeDim(d)} className={xBtn} aria-label={`${d} kırılımını kaldır`}>×</button>
+            <span key={d} className={wrap} title="Kırılım">
+              <span className={cn(trigger, "cursor-default hover:text-muted-foreground")}>
+                kırılım: {d}
+              </span>
+              <button onClick={() => removeDim(d)} className={removeBtn} aria-label={`${d} kırılımını kaldır`}>
+                <X className="size-3" />
+              </button>
             </span>
           );
         }
-        // Kategorik kırılım — ÇOKLU SEÇİM: değerleri işaretle/kaldır ("sadece beyaz
-        // ve siyah"), kırılım kalır, sorguya in-filtre yansır. Tek değere indirmek
-        // için "sadece X" davranışı: son kalan işaretli değer eq olur.
         const dimFilter = catFilters.find((f) => f.dimension === d);
         const selected = dimFilter
-          ? (Array.isArray(dimFilter.value) ? dimFilter.value : [dimFilter.value])
+          ? Array.isArray(dimFilter.value)
+            ? dimFilter.value
+            : [dimFilter.value]
           : opts;
         const label =
           dimFilter && selected.length < opts.length
             ? `kırılım: ${d} · ${selected.length}/${opts.length}`
             : `kırılım: ${d}`;
         return (
-          <span key={d} className={`relative ${chip}`} title="Kırılım — tıkla: değerleri seç">
-            <button
-              onClick={() => setOpenFilter(open ? null : `dim:${d}`)}
-              className="inline-flex items-center gap-1 hover:text-foreground"
-            >
-              {label} ▾
-            </button>
-            <button onClick={() => removeDim(d)} className={xBtn} aria-label={`${d} kırılımını kaldır`}>×</button>
-            {open && (
-              <span className="absolute left-0 top-full z-30 mt-1 flex min-w-full flex-col border border-hairline bg-background shadow-lg">
+          <span key={d} className={wrap} title="Kırılım — değerleri seç">
+            <DropdownMenu>
+              <DropdownMenuTrigger className={trigger}>
+                {label}
+                <ChevronDown className="size-3" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="max-h-72 overflow-auto">
                 {opts.map((v) => {
                   const on = selected.includes(v);
                   return (
-                    <button
+                    <DropdownMenuCheckboxItem
                       key={v}
-                      onClick={() => {
-                        // TÜMÜ seçiliyken tıklama = "sadece bu" (beklenen davranış);
-                        // kısmi seçimde normal aç/kapa. En az bir değer kalmalı.
+                      checked={on}
+                      onSelect={(e) => e.preventDefault()}
+                      onCheckedChange={() => {
+                        // TÜMÜ seçiliyken tıklama = "sadece bu"; kısmi seçimde aç/kapa.
                         const allOn = selected.length === opts.length;
-                        const nextSel = allOn
-                          ? [v]
-                          : on
-                            ? selected.filter((x) => x !== v)
-                            : [...selected, v];
+                        const nextSel = allOn ? [v] : on ? selected.filter((x) => x !== v) : [...selected, v];
                         if (!nextSel.length) return;
                         setDimSelection(d, nextSel, opts);
                       }}
-                      className={`px-2 py-1 text-left font-mono text-[11px] hover:bg-neutral-500/[0.06] ${on ? "text-accent" : "text-neutral-400"}`}
                     >
-                      {on ? "☑" : "☐"} {v}
-                    </button>
+                      {v}
+                    </DropdownMenuCheckboxItem>
                   );
                 })}
-                <button
-                  onClick={() => setDimSelection(d, opts, opts)}
-                  className="border-t border-hairline px-2 py-1 text-left font-mono text-[11px] text-neutral-500 hover:bg-neutral-500/[0.06]"
-                >
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => setDimSelection(d, opts, opts)}>
                   hepsi
-                </button>
-              </span>
-            )}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <button onClick={() => removeDim(d)} className={removeBtn} aria-label={`${d} kırılımını kaldır`}>
+              <X className="size-3" />
+            </button>
           </span>
         );
       })}
 
-      {catFilters.filter((f) => !dims.includes(f.dimension)).map((f) => {
-        const opts = valuesFor(f.dimension);
-        const open = openFilter === f.dimension;
-        return (
-          <span key={f.dimension} className={`relative ${chip}`} title="Filtre — tıkla: değiştir">
-            <button
-              onClick={() => setOpenFilter(open ? null : f.dimension)}
-              className="inline-flex items-center gap-1 hover:text-foreground"
-            >
-              {f.dimension} {Array.isArray(f.value) ? "∈" : "="}{" "}
-              <span className="text-accent">
-                {Array.isArray(f.value) ? f.value.join(", ") : f.value}
-              </span>{" "}
-              ▾
-            </button>
-            <button onClick={() => removeFilter(f.dimension)} className={xBtn} aria-label="Filtreyi kaldır">×</button>
-            {open && (
-              <span className="absolute left-0 top-full z-30 mt-1 flex min-w-full flex-col border border-hairline bg-background shadow-lg">
-                {opts.map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => { setOpenFilter(null); if (v !== f.value) setFilterValue(f.dimension, v); }}
-                    className={`px-2 py-1 text-left font-mono text-[11px] hover:bg-neutral-500/[0.06] ${v === f.value ? "text-accent" : ""}`}
-                  >
-                    {v}
-                  </button>
-                ))}
-                <button
-                  onClick={() => { setOpenFilter(null); filterToDim(f.dimension); }}
-                  className="border-t border-hairline px-2 py-1 text-left font-mono text-[11px] text-neutral-500 hover:bg-neutral-500/[0.06]"
-                >
-                  ◫ hepsi ayrı (kırılım)
-                </button>
-              </span>
-            )}
-          </span>
-        );
-      })}
+      {/* kategorik filtreler (kırılımda olmayan) */}
+      {catFilters
+        .filter((f) => !dims.includes(f.dimension))
+        .map((f) => {
+          const opts = valuesFor(f.dimension);
+          return (
+            <span key={f.dimension} className={wrap} title="Filtre">
+              <DropdownMenu>
+                <DropdownMenuTrigger className={trigger}>
+                  {f.dimension} {Array.isArray(f.value) ? "∈" : "="}{" "}
+                  <span className="text-brand">
+                    {Array.isArray(f.value) ? f.value.join(", ") : f.value}
+                  </span>
+                  <ChevronDown className="size-3" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="max-h-72 overflow-auto">
+                  {opts.map((v) => (
+                    <DropdownMenuItem
+                      key={v}
+                      onSelect={() => v !== f.value && setFilterValue(f.dimension, v)}
+                      className={v === f.value ? "text-brand" : ""}
+                    >
+                      {v}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => filterToDim(f.dimension)}>
+                    ◫ hepsi ayrı (kırılım)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <button onClick={() => removeFilter(f.dimension)} className={removeBtn} aria-label="Filtreyi kaldır">
+                <X className="size-3" />
+              </button>
+            </span>
+          );
+        })}
 
-      {(() => {
-        const open = openFilter === "tarih";
-        const raw = dateFilters.map((f) => `${f.operator} ${f.value}`).join(" · ");
-        return (
-          <span className={`relative ${chip}`} title={raw ? `Dönem (${raw}) — tıkla: değiştir` : "Dönem — tıkla: değiştir"}>
-            <button
-              onClick={() => setOpenFilter(open ? null : "tarih")}
-              className="inline-flex items-center gap-1 hover:text-foreground"
-            >
-              dönem:{" "}
-              {dateFilters.length > 0 ? (
-                <span className="text-accent">{periodLabel()}</span>
-              ) : (
-                "tümü"
-              )}{" "}
-              ▾
-            </button>
-            {dateFilters.length > 0 && (
-              <button onClick={removeDateFilters} className={xBtn} aria-label="Dönem filtresini kaldır">×</button>
+      {/* dönem */}
+      <span className={wrap} title="Dönem">
+        <DropdownMenu>
+          <DropdownMenuTrigger className={trigger}>
+            dönem:{" "}
+            {dateFilters.length > 0 ? <span className="text-brand">{periodLabel()}</span> : "tümü"}
+            <ChevronDown className="size-3" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {periodPresets().map((p) => (
+              <DropdownMenuItem key={p.label} onSelect={() => setPeriod(p.label, p.start)}>
+                {p.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {dateFilters.length > 0 && (
+          <button onClick={removeDateFilters} className={removeBtn} aria-label="Dönem filtresini kaldır">
+            <X className="size-3" />
+          </button>
+        )}
+      </span>
+
+      {/* yorum ekle — yuvarlak "+", açılır menüden ölçü/kırılım/zaman kovası */}
+      {canAdd && (
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger
+                aria-label="Yorum ekle"
+                className="inline-flex size-6 items-center justify-center rounded-full border border-dashed border-border text-muted-foreground outline-none transition-colors hover:border-brand/50 hover:text-brand focus-visible:ring-[3px] focus-visible:ring-ring/25 data-[state=open]:border-brand/50 data-[state=open]:text-brand"
+              >
+                <Plus className="size-3.5" />
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="top">Yorum ekle</TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent align="start" className="w-48">
+            {addableMeasures.length > 0 && (
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>Ölçü ekle</DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="max-h-72 overflow-auto">
+                  {addableMeasures.map((m) => (
+                    <DropdownMenuItem key={m} onSelect={() => addMeasure(m)}>
+                      {m}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
             )}
-            {open && (
-              <span className="absolute left-0 top-full z-30 mt-1 flex min-w-full flex-col border border-hairline bg-background shadow-lg">
-                {periodPresets().map((p) => (
-                  <button
-                    key={p.label}
-                    onClick={() => { setOpenFilter(null); setPeriod(p.label, p.start); }}
-                    className="whitespace-nowrap px-2 py-1 text-left font-mono text-[11px] hover:bg-neutral-500/[0.06]"
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </span>
+            {addableDims.length > 0 && (
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>Kırılım ekle</DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="max-h-72 overflow-auto">
+                  {addableDims.map((d) => (
+                    <DropdownMenuItem key={d} onSelect={() => addDim(d)}>
+                      {d}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
             )}
-          </span>
-        );
-      })()}
+            {tds.length === 0 && (
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>Zaman kovası</DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {Object.entries(GRAN_TR).map(([g, label]) => (
+                    <DropdownMenuItem key={g} onSelect={() => setGran(g)}>
+                      {label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   );
 }

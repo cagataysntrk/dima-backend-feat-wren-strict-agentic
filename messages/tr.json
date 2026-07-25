@@ -1,0 +1,119 @@
+{
+  "common": {
+    "appName": "dima",
+    "tagline": "Verinle konuş",
+    "newChat": "Yeni sohbet",
+    "settings": "Ayarlar",
+    "help": "Yardım",
+    "logout": "Çıkış",
+    "close": "Kapat",
+    "theme": "Tema",
+    "themeLight": "Açık",
+    "themeDark": "Koyu",
+    "themeSystem": "Sistem",
+    "language": "Dil",
+    "search": "Ara",
+    "toggleSidebar": "Kenar çubuğu",
+    "sql": "SQL",
+    "searchHint": "Sohbetlerde ara ya da bir komut yaz…",
+    "noResults": "Sonuç yok.",
+    "actions": "Aksiyonlar",
+    "share": "Paylaş",
+    "artifacts": "Panel"
+  },
+  "auth": {
+    "brandHeadline": "Verinle konuş.",
+    "brandSub": "Doğal dille sor; güvenilir SQL üretir, doğrular, çalıştırır ve raporlar.",
+    "email": "E-posta",
+    "password": "Parola",
+    "confirmPassword": "Parolayı doğrula",
+    "showPassword": "Parolayı göster",
+    "hidePassword": "Parolayı gizle",
+    "capsLock": "Caps Lock açık",
+    "or": "veya",
+    "continueWith": "{provider} ile devam et",
+    "otpTitle": "Doğrulama kodu",
+    "otpHint": "Kimlik doğrulayıcı uygulamandaki 6 haneli kodu gir.",
+    "passwordsNoMatch": "Parolalar eşleşmiyor.",
+    "strength": {
+      "label": "Parola gücü",
+      "weak": "Zayıf",
+      "fair": "Orta",
+      "good": "İyi",
+      "strong": "Güçlü"
+    }
+  },
+  "login": {
+    "title": "Giriş yap",
+    "subtitle": "Hesabına eriş.",
+    "submit": "Giriş yap",
+    "noAccount": "Hesabın yok mu?",
+    "signUp": "Kayıt ol",
+    "forgot": "Parolamı unuttum"
+  },
+  "register": {
+    "title": "Hesap oluştur",
+    "subtitle": "dima'ya başla.",
+    "submit": "Kayıt ol",
+    "haveAccount": "Zaten hesabın var mı?",
+    "signIn": "Giriş yap",
+    "terms": "Kaydolarak Kullanım Şartları ve Gizlilik Politikası'nı kabul edersin."
+  },
+  "forgot": {
+    "title": "Parolanı sıfırla",
+    "subtitle": "E-postanı gir; sıfırlama bağlantısı gönderelim.",
+    "submit": "Bağlantı gönder",
+    "sent": "Bağlantı gönderildi. Gelen kutunu kontrol et.",
+    "back": "Girişe dön"
+  },
+  "chat": {
+    "placeholder": "Verine bir soru sor…",
+    "send": "Gönder",
+    "attach": "Ekle",
+    "addFiles": "Dosya veya foto ekle",
+    "conversations": "Sohbetler",
+    "dataSources": "Veri kaynakları",
+    "context": "bağlam",
+    "clearContext": "Bağlamı temizle",
+    "thinking": "Düşünüyor…",
+    "rows": "{count} satır",
+    "steps": {
+      "parse": "Soru çözümleniyor",
+      "catalog": "Cube kataloğu taranıyor",
+      "plan": "SQL planlanıyor",
+      "verify": "Dry-plan doğrulanıyor",
+      "run": "Sorgu çalıştırılıyor"
+    },
+    "thought": "{seconds, number} sn düşündü",
+    "voice": "Sesle yaz",
+    "voiceStop": "Dinlemeyi durdur",
+    "voiceUnsupported": "Bu tarayıcı sesle yazmayı desteklemiyor"
+  },
+  "notifications": {
+    "title": "Bildirimler",
+    "empty": "Bildirim yok"
+  },
+  "report": {
+    "sql": "SQL",
+    "showSql": "SQL göster",
+    "hideSql": "SQL gizle",
+    "chart": "Grafik",
+    "table": "Tablo",
+    "verifyCorrect": "doğru",
+    "verifyWrong": "yanlış",
+    "schedule": "zamanla",
+    "trace": "Nasıl çözüldü?",
+    "openArtifact": "Panelde aç"
+  },
+  "share": {
+    "tooltip": "Bu sohbeti paylaş",
+    "title": "Sohbete genel bağlantı paylaş",
+    "subtitle": "Adın ve paylaşımdan sonra eklediğin mesajlar gizli kalır.",
+    "scope": "Bağlantısı olan herkes bu sohbeti görüntüleyebilir",
+    "placeholder": "bağlantı henüz oluşturulmadı",
+    "create": "Bağlantı oluştur",
+    "pending": "Paylaşım ucu backend sözleşmesinde henüz yok — uç eklenene kadar genel bağlantı üretilemiyor. O zamana dek sohbet başlığını kopyalayabilirsin.",
+    "copyTitle": "Başlığı kopyala",
+    "copied": "Kopyalandı"
+  }
+}

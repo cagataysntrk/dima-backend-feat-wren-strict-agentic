@@ -1,171 +1,171 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type { AskResponse } from "@/lib/types";
-import { CaretInput } from "@/components/CaretInput";
-
-// SQL provenance — keskin, monospace "sistem readout" rozeti.
-export function SourceBadge({ source }: { source: string | null }) {
-  if (!source) return null;
-  let label: string, cls: string;
-  if (source === "cube") {
-    label = "◆ CUBE";
-    cls = "text-accent border-accent/40";
-  } else if (source === "kpi") {
-    label = "◆ KPI";
-    cls = "text-accent border-accent/40";
-  } else if (source === "cube+llm") {
-    label = "◆ CUBE·LLM";
-    cls = "text-accent border-accent/40";
-  } else if (source.startsWith("llm:")) {
-    label = `▚ LLM·${source.slice(4)}`;
-    cls = "text-neutral-500 border-hairline";
-  } else {
-    label = "⚙ KURAL";
-    cls = "text-neutral-400 border-hairline";
-  }
-  return (
-    <span
-      title="SQL bu yolla üretildi (deterministik-önce)"
-      className={`inline-flex h-[20px] items-center border px-1.5 font-mono text-[10px] tracking-wide ${cls}`}
-    >
-      {label}
-    </span>
-  );
-}
+import { useState } from "react";
+import { useTranslations } from "next-intl";
+import type { AskResponse, CubeQuery } from "@/lib/types";
+import { Composer } from "@/components/shell/Composer";
+import { ResultView } from "@/components/ResultView";
+import { InterpretationBar } from "@/components/InterpretationBar";
+import { SourceBadge } from "@/components/report/SourceBadge";
+import { MessageActions } from "@/components/report/MessageActions";
+import { SqlBlock } from "@/components/report/SqlBlock";
+import { KpiCardView } from "@/components/KpiCard";
+import { Bubble, DimaAvatar, Message, MessageScroller, UserAvatar } from "@/components/ai/chat";
+import { ChainOfThought, Reasoning } from "@/components/ai/thinking";
+import { thinkingMs } from "@/lib/thinking";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export function ChatPanel({
   items,
   active,
   pending,
   pendingQuestion,
-  contextLabel,
-  onClearContext,
   onSelect,
   onSubmit,
+  onCubeEdit,
+  verifyLabel,
+  sessionId,
 }: {
   items: AskResponse[];
   active: AskResponse | null;
   pending: boolean;
   pendingQuestion?: string;
-  // Aktif konuşma bağlamı (takip mesajları bu raporu düzenler) — görünür + sıfırlanabilir,
-  // böylece kasıtlı konu değişimi tahmine kalmaz (ADR-0007).
-  contextLabel?: string | null;
-  onClearContext?: () => void;
   onSelect: (item: AskResponse) => void;
   onSubmit: (q: string) => void;
+  onCubeEdit?: (edit: { cq: CubeQuery; label: string }) => void;
+  verifyLabel?: string | null;
+  sessionId?: string;
 }) {
+  const t = useTranslations();
   const [value, setValue] = useState("");
-  const threadRef = useRef<HTMLDivElement>(null);
   const thread = [...items].reverse(); // eski üstte, yeni altta
 
-  useEffect(() => {
-    threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" });
-  }, [items.length, pending]);
-
   const send = () => {
-    const t = value.trim();
-    if (!t) return;
-    onSubmit(t);
+    const q = value.trim();
+    if (!q) return;
+    onSubmit(q);
     setValue("");
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div ref={threadRef} className="flex-1 overflow-auto px-4 py-5">
-        <div className="space-y-5">
-          {thread.map((item, i) => {
-            const isActive = active === item;
-            return (
-              <div key={`${item.question}-${i}`} className="space-y-1.5">
-                {/* kullanıcı komutu */}
-                <div className="flex items-start gap-2">
-                  <span className="mt-0.5 select-none font-mono text-xs text-accent">›</span>
-                  <span className="font-mono text-[13px] leading-snug text-foreground">
-                    {item.question}
-                  </span>
-                </div>
-                {/* not (rapor yok): dürüst açıklama + tıklanır chip'ler (örnek/dönem).
-                    KPI yanıtı NOT taşısa da bir RAPORDUR (kart) → tıklanır satır (aksi halde
-                    eski KPI raporuna geri dönülemiyordu — canlı 2026-07-25). */}
-                {item.note && !item.kpi ? (
-                  <div className="border-l-2 border-amber-500/50 py-1 pl-3">
-                    <div className="font-mono text-[12px] leading-snug text-neutral-500">
-                      {item.note}
+    // Sohbet, üstteki bar ve alttaki komut satırının ALTINDAN akar; ikisi de
+    // overlay. Bu yüzden kaydırma alanı tam yükseklik, boşluklar içeride padding.
+    <div className="relative flex h-full min-h-0 flex-col">
+      {/* Üstte yumuşak erime: içerik bara doğru yaklaşırken saydamlaşır (Claude
+          davranışı). Blur'lu opak bir bant yerine maske — böylece "arkasında bir
+          panel var" hissi değil, "yazı sönümleniyor" hissi oluşuyor. */}
+      <MessageScroller className="[mask-image:linear-gradient(to_bottom,transparent_0,#000_4rem)]">
+        <div className="mx-auto w-full max-w-3xl space-y-6 px-4 pt-16 pb-36">
+          {thread.map((item, i) => (
+            <div key={`${item.question}-${i}`} className="space-y-2.5">
+              <Message from="user" className="items-start gap-3">
+                <Bubble from="user">{item.question}</Bubble>
+                <UserAvatar className="mt-0.5 shrink-0" />
+              </Message>
+
+              <Message from="assistant" className="items-start gap-3">
+                <DimaAvatar className="mt-0.5 shrink-0" />
+                <Bubble from="assistant" className="space-y-2">
+                  {/* düşünce zinciri cevabın yanında kalır — varsayılan kapalı */}
+                  {thinkingMs(item) !== undefined && <Reasoning durationMs={thinkingMs(item)} />}
+                  {/* KPI yanıtı NOT taşısa da bir RAPORDUR (kart) — salt-not gibi
+                      davranıp gömmüyoruz (canlı 2026-07-25). */}
+                  {/* Cross-cube KPI kartı (CCC / likidite) — cube tablosu değil bileşke. */}
+                  {item.kpi && <KpiCardView card={item.kpi} />}
+                  {item.note && !item.kpi ? (
+                    <div className="rounded-lg border-l-2 border-brand/50 bg-brand/[0.04] py-2 pr-2 pl-3">
+                      <p className="text-sm leading-snug text-muted-foreground">{item.note}</p>
+                      {item.suggestions && item.suggestions.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {item.suggestions.map((s) => (
+                            <button key={s.label} type="button" onClick={() => onSubmit(s.query)}>
+                              <Badge
+                                variant="outline"
+                                className="cursor-pointer font-normal hover:border-brand/40 hover:bg-brand/5"
+                              >
+                                {s.label}
+                              </Badge>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    {item.suggestions && item.suggestions.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {item.suggestions.map((s) => (
-                          <button
-                            key={s.label}
-                            onClick={() => onSubmit(s.query)}
-                            className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-600 transition-colors hover:border-accent/50 hover:text-foreground dark:text-neutral-300"
-                          >
-                            {s.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  /* sistem çıktısı satırı — tıklanınca o rapora döner */
-                  <button
-                    onClick={() => onSelect(item)}
-                    className={`flex w-full items-center gap-2 border-l-2 py-1 pl-3 text-left transition-colors ${
-                      isActive
-                        ? "border-accent bg-accent/[0.06]"
-                        : "border-hairline hover:bg-neutral-500/[0.04]"
-                    }`}
-                  >
-                    <span className="font-mono text-[11px] text-neutral-500">
-                      {item.result ? `${item.result.row_count} satır` : item.kpi ? "KPI kartı" : "sql"}
-                    </span>
-                    <span className="ml-auto">
-                      <SourceBadge source={item.source} />
-                    </span>
-                  </button>
-                )}
-              </div>
-            );
-          })}
+                  ) : item.result ? (
+                    <>
+                      {/* Yorum çubuğu artık sohbetin içinde — sağ panelde kopyası yok. */}
+                      {item.cube_query && onCubeEdit && (
+                        <InterpretationBar cq={item.cube_query} onEdit={onCubeEdit} />
+                      )}
+                      <Card className={cn("gap-3 p-3", active === item && "ring-1 ring-brand/30")}>
+                        {/* Tek başlık satırı: rozet + satır sayısı solda, grafik/tablo sağda.
+                            ("Panelde aç" kaldırıldı — rapor artık sohbetin içinde yaşıyor.) */}
+                        <ResultView
+                          result={item.result}
+                          viewHint={item.view_hint ?? undefined}
+                          meta={
+                            <>
+                              <SourceBadge source={item.source} />
+                              <span className="text-xs text-muted-foreground">
+                                {t("chat.rows", { count: item.result.row_count })}
+                              </span>
+                            </>
+                          }
+                        />
+                        {/* sorgunun kendisi — grafiğin/tablonun altında, kapalı başlar */}
+                        {item.sql && <SqlBlock sql={item.sql} />}
+                      </Card>
+                      <MessageActions
+                        data={item}
+                        verifyLabel={verifyLabel}
+                        sessionId={sessionId}
+                      />
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onSelect(item)}
+                      className="flex w-full items-center gap-2 rounded-lg border border-border px-3 py-2 text-left transition-colors hover:bg-accent"
+                    >
+                      <span className="font-mono text-[11px] text-muted-foreground">
+                        {item.kpi ? "KPI kartı" : "SQL"}
+                      </span>
+                      <span className="ml-auto">
+                        <SourceBadge source={item.source} />
+                      </span>
+                    </button>
+                  )}
+                </Bubble>
+              </Message>
+            </div>
+          ))}
 
           {pendingQuestion && (
-            <div className="space-y-1.5">
-              <div className="flex items-start gap-2">
-                <span className="mt-0.5 select-none font-mono text-xs text-accent">›</span>
-                <span className="font-mono text-[13px] leading-snug text-foreground">
-                  {pendingQuestion}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 border-l-2 border-hairline py-1 pl-3 font-mono text-[11px] text-neutral-400">
-                <span className="dima-caret" style={{ height: "0.9em" }} />
-                yürütülüyor…
-              </div>
+            <div className="space-y-2.5">
+              <Message from="user" className="items-start gap-3">
+                <Bubble from="user">{pendingQuestion}</Bubble>
+                <UserAvatar className="mt-0.5 shrink-0" />
+              </Message>
+              <Message from="assistant" className="items-start gap-3">
+                <DimaAvatar className="mt-0.5 shrink-0" />
+                <ChainOfThought />
+              </Message>
             </div>
           )}
         </div>
-      </div>
+      </MessageScroller>
 
-      {/* alt komut satırı */}
-      <div className="shrink-0 border-t border-hairline px-4 py-3">
-        {contextLabel && (
-          <div className="mb-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wide text-neutral-400">
-            <span className="text-accent">◆</span>
-            <span>bağlam: {contextLabel}</span>
-            <button
-              onClick={onClearContext}
-              title="Bağlamı sıfırla — sonraki soru yeni konu olarak işlenir"
-              className="border border-hairline px-1 leading-tight transition-colors hover:border-accent/50 hover:text-foreground"
-            >
-              ×
-            </button>
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          <span className="select-none font-mono text-sm text-accent">›</span>
-          <div className="flex-1">
-            <CaretInput value={value} onChange={setValue} onSubmit={send} busy={pending} size="inline" />
-          </div>
+      {/* komut satırı — sohbetin ÜSTÜNDE yüzer, arkasından içerik geçer.
+          Zemin bandı yok; ayrımı yalnız kartın kendi gölgesi yapıyor. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10">
+        <div className="pointer-events-auto mx-auto w-full max-w-3xl px-4 pb-3">
+          <Composer
+            value={value}
+            onChange={setValue}
+            onSubmit={send}
+            busy={pending}
+          />
         </div>
       </div>
     </div>

@@ -1,156 +1,171 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { apiErrorMessage, ask, askCube } from "@/lib/api-client";
+import { markThinking } from "@/lib/thinking";
+import { AppShell } from "@/components/shell/AppShell";
 import { ChatPanel } from "@/components/ChatPanel";
-import { FloatingControls } from "@/components/FloatingControls";
 import { HelpPanel } from "@/components/HelpPanel";
 import { Landing } from "@/components/Landing";
-import { NotificationsPanel } from "@/components/NotificationsBell";
 import { ReportPanel } from "@/components/ReportPanel";
 import { SchemaPanel } from "@/components/SchemaPanel";
-import { SettingsDrawer } from "@/components/SettingsDrawer";
-import { useHistory } from "@/stores/history";
+import { SearchDialog } from "@/components/shell/SearchDialog";
+import { selectActive, useConversations } from "@/stores/conversations";
 import type { AskResponse } from "@/lib/types";
 
-type Drawer = "settings" | "help" | "notifications" | null;
-
-// Oturum kimliği — crypto.randomUUID yalnız güvenli bağlamda (https/localhost) var;
-// http://*.localtld'de yok, bu yüzden fallback.
-function makeSessionId(): string {
-  try {
-    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-      return crypto.randomUUID();
-    }
-  } catch {
-    /* güvenli bağlam değil */
-  }
-  return `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-}
+type Artifact = "report" | "schema" | "help" | null;
 
 export default function Home() {
   const [active, setActive] = useState<AskResponse | null>(null);
-  // Takip bağlamı: bir sonraki mesajla gönderilecek CubeQuery. Rapor VE clarify notu (kısmi
-  // cube_query) bunu günceller — "bu ay" chip'i doğru sorguya uygulansın (ADR-0007 Faz C).
+  // Takip bağlamı: bir sonraki mesajla gönderilecek CubeQuery (ADR-0007 Faz C).
   const [contextCq, setContextCq] = useState<AskResponse["cube_query"]>(null);
-  // Görünüm ipucu ("grafik ver") — sağ paneldeki raporun görünümünü değiştirir.
   const [viewHint, setViewHint] = useState<{ kind: string; nonce: number } | null>(null);
-  const [drawer, setDrawer] = useState<Drawer>(null);
-  const [startedLatch, setStarted] = useState(false);
-  const [sessionId] = useState(makeSessionId);
-  // "✓ doğru" etiketi: raporu üreten SON GERÇEK soru (chip düzenlemeleri soru değildir —
-  // "chip: kova → month" VQR'a yazılamaz; öğrenme orijinal soru metniyle anlamlı).
   const [verifyLabel, setVerifyLabel] = useState<string | null>(null);
-  const items = useHistory((s) => s.items);
-  const addHistory = useHistory((s) => s.add);
+  const [artifact, setArtifact] = useState<Artifact>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
 
-  const mutation = useMutation<AskResponse, unknown, { question: string }>({
-    mutationFn: ({ question }) =>
+  const activeConv = useConversations(selectActive);
+  const items = activeConv?.items ?? [];
+
+  // Aktif konuşmanın oturum kimliğini garanti et (yoksa yeni konuşma aç).
+  function ensureSessionId(): string {
+    const state = useConversations.getState();
+    let conv = selectActive(state);
+    if (!conv) {
+      state.newConversation();
+      conv = selectActive(useConversations.getState());
+    }
+    return conv!.sessionId;
+  }
+
+  // Düşünme süresi ölçümü — cevabın yanında kalan "N sn düşündü" bloğu için.
+  const askedAt = useRef(0);
+
+  const mutation = useMutation<AskResponse, unknown, { question: string; sessionId: string }>({
+    mutationFn: ({ question, sessionId }) =>
       ask({
         question,
         cube_query: contextCq,
         history: items.map((i) => i.question).slice(0, 8),
         session_id: sessionId,
       }),
+    onMutate: () => {
+      askedAt.current = Date.now();
+    },
     onSuccess: (data) => {
-      addHistory(data);
-      // Rapor → sağ paneli güncelle; salt-not → mevcut raporu koru. KPI yanıtı NOT taşısa
-      // da bir RAPORDUR (kart+trend) — sağ panele düşmeli (yoksa kart hiç render edilmezdi).
+      markThinking(data, Date.now() - askedAt.current);
+      useConversations.getState().add(data);
+      // Rapor artık sohbetin içinde yaşıyor — sağ paneli KENDİLİĞİNDEN açmıyoruz
+      // (panel Yardım/Veri kaynakları ve ileride dashboard'lar için ayrıldı).
+      // KPI yanıtı NOT taşısa da bir RAPORDUR (kart+trend) → aktif rapor olmalı.
       if (!data.note || data.kpi) setActive(data);
-      // Görünüm ipucu: yeni raporla geldiyse onunla; salt-görünüm yanıtında mevcut rapora.
       if (data.view_hint) setViewHint({ kind: data.view_hint, nonce: Date.now() });
       else if (data.result && !data.note) setViewHint(null);
-      // Bağlam: rapor ya da clarify (kısmi cube_query) her ikisi de bir sonraki mesaj için.
       setContextCq(data.cube_query ?? null);
     },
   });
 
   const submit = (q: string) => {
-    setDrawer(null);
-    setStarted(true); // ilk sorudan sonra çalışma alanında kal (hata olsa da landing'e dönme)
-    setVerifyLabel(q); // gerçek kullanıcı sorusu — verify etiketi bu olur
-    mutation.mutate({ question: q });
+    const sessionId = ensureSessionId();
+    setVerifyLabel(q);
+    mutation.mutate({ question: q, sessionId });
   };
 
-  // Yorum çubuğu chip düzenlemesi → deterministik /cube (LLM yok); transkripte de düşer.
   const cubeMutation = useMutation<AskResponse, unknown, { cq: NonNullable<AskResponse["cube_query"]>; label: string }>({
-    mutationFn: ({ cq, label }) => askCube({ cube_query: cq, label, session_id: sessionId }),
+    mutationFn: ({ cq, label }) =>
+      askCube({ cube_query: cq, label, session_id: ensureSessionId() }),
     onSuccess: (data) => {
-      addHistory(data);
+      useConversations.getState().add(data);
       setActive(data);
-      // chip düzenlemesi RAPOR ŞEKLİNİ küçük değiştirir — mevcut görünüm tercihi
-      // (ör. panelli) KORUNUR; yeni ipucu yalnız /ask cevabından gelir.
       setContextCq(data.cube_query ?? null);
     },
   });
 
-  const started = startedLatch || items.length > 0 || mutation.isPending;
+  function newChat() {
+    useConversations.getState().newConversation();
+    setActive(null);
+    setContextCq(null);
+    setArtifact(null);
+    setVerifyLabel(null);
+  }
+
+  function selectConversation(id: string) {
+    useConversations.getState().select(id);
+    setActive(null);
+    setContextCq(null);
+    setArtifact(null);
+  }
+
+  const started = items.length > 0 || mutation.isPending;
   const pendingQuestion = mutation.isPending ? mutation.variables?.question : undefined;
 
+  const artifactTitle =
+    artifact === "schema"
+      ? "Veri modeli"
+      : artifact === "help"
+        ? "dima · yardım"
+        : active?.question
+          ? active.question.slice(0, 60)
+          : "Rapor";
+
+  const artifactContent =
+    artifact === "schema" ? (
+      <SchemaPanel />
+    ) : artifact === "help" ? (
+      <HelpPanel onPick={submit} />
+    ) : artifact === "report" ? (
+      <ReportPanel
+        data={active}
+        pending={mutation.isPending || cubeMutation.isPending}
+        viewHint={viewHint}
+        error={mutation.isError ? apiErrorMessage(mutation.error) : null}
+      />
+    ) : null;
+
   return (
-    // pr-12: sağdaki kalıcı ikon kolonu (rail) içeriği örtmesin.
-    <div className="h-full pr-12">
+    <>
+    <SearchDialog
+      open={searchOpen}
+      onOpenChange={setSearchOpen}
+      onNewChat={newChat}
+      onSelectConversation={selectConversation}
+      onOpenSchema={() => setArtifact("schema")}
+      onOpenHelp={() => setArtifact("help")}
+    />
+    <AppShell
+      onNewChat={newChat}
+      onSelectConversation={selectConversation}
+      onOpenSchema={() => setArtifact("schema")}
+      onOpenHelp={() => setArtifact("help")}
+      onOpenSearch={() => setSearchOpen(true)}
+      onToggleArtifact={() => setArtifact((a) => (a ? null : "help"))}
+      artifactOpen={artifact !== null}
+      artifactTitle={artifactTitle}
+      onArtifactClose={() => setArtifact(null)}
+      artifact={artifactContent}
+    >
       {!started ? (
         <Landing onSubmit={submit} />
       ) : (
-        <div className="flex h-full min-h-0">
-          <section className="flex w-[38%] min-w-[320px] max-w-[440px] shrink-0 flex-col border-r border-hairline">
-            <ChatPanel
-              items={items}
-              active={active}
-              pending={mutation.isPending}
-              pendingQuestion={pendingQuestion}
-              contextLabel={contextCq ? String(contextCq.cube ?? "rapor") : null}
-              onClearContext={() => setContextCq(null)}
-              onSelect={(item) => {
-                setActive(item);
-                setContextCq(item.cube_query ?? null); // seçilen rapor bağlam olur
-                if (!item.question.startsWith("chip:")) setVerifyLabel(item.question);
-              }}
-              onSubmit={submit}
-            />
-          </section>
-          <section className="min-w-0 flex-1 overflow-auto">
-            <ReportPanel
-              data={active}
-              pending={mutation.isPending || cubeMutation.isPending}
-              viewHint={viewHint}
-              onCubeEdit={({ cq, label }) => cubeMutation.mutate({ cq, label })}
-              error={mutation.isError ? apiErrorMessage(mutation.error) : null}
-              verifyLabel={verifyLabel}
-              sessionId={sessionId}
-            />
-          </section>
-        </div>
+        <ChatPanel
+          items={items}
+          active={active}
+          pending={mutation.isPending}
+          pendingQuestion={pendingQuestion}
+          onSelect={(item) => {
+            setActive(item);
+            setArtifact("report");
+            setContextCq(item.cube_query ?? null);
+            if (!item.question.startsWith("chip:")) setVerifyLabel(item.question);
+          }}
+          onSubmit={submit}
+          onCubeEdit={({ cq, label }) => cubeMutation.mutate({ cq, label })}
+          verifyLabel={verifyLabel}
+          sessionId={activeConv?.sessionId ?? ""}
+        />
       )}
-
-      {/* Aynı ikona ikinci tıklama sheet'i KAPATIR (toggle); farklıysa içerik değişir. */}
-      <FloatingControls
-        onNotifications={() => setDrawer((d) => (d === "notifications" ? null : "notifications"))}
-        onHelp={() => setDrawer((d) => (d === "help" ? null : "help"))}
-        onSettings={() => setDrawer((d) => (d === "settings" ? null : "settings"))}
-      />
-
-      <SettingsDrawer
-        open={drawer !== null}
-        onClose={() => setDrawer(null)}
-        title={
-          drawer === "help"
-            ? "dima · yardım"
-            : drawer === "notifications"
-              ? "Bildirimler"
-              : "Ayarlar · Veri Modeli"
-        }
-      >
-        {drawer === "help" ? (
-          <HelpPanel onPick={submit} />
-        ) : drawer === "notifications" ? (
-          <NotificationsPanel />
-        ) : (
-          <SchemaPanel />
-        )}
-      </SettingsDrawer>
-    </div>
+    </AppShell>
+    </>
   );
 }

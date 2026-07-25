@@ -1,18 +1,26 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, JetBrains_Mono, Playfair_Display } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale } from "next-intl/server";
 import "./globals.css";
-import { ConnectionBadge } from "@/components/ConnectionBadge";
-import { LogoutButton } from "@/components/LogoutButton";
 import { Providers } from "@/lib/providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const sans = Plus_Jakarta_Sans({
+  variable: "--font-sans",
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const mono = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+});
+
+const display = Playfair_Display({
+  variable: "--font-display",
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -26,22 +34,24 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
   return (
     <html
-      lang="tr"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      lang={locale}
+      suppressHydrationWarning
+      className={`${sans.variable} ${mono.variable} ${display.variable} h-full antialiased`}
     >
-      <body className="h-full flex flex-col overflow-hidden">
-        <Providers>
-          <ConnectionBadge />
-          <LogoutButton />
-          {children}
-        </Providers>
+      {/* suppressHydrationWarning: browser extensions (Grammarly vb.) <body>'ye
+          data-gr-* attribute enjekte eder; bu yalnız o attribute farkını susturur. */}
+      <body suppressHydrationWarning className="h-full flex flex-col overflow-hidden">
+        <NextIntlClientProvider>
+          <Providers>{children}</Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

@@ -20,7 +20,7 @@ export default function BrandPage() {
 
         {/* Hero: animated wordmark */}
         <section className="mt-6 flex flex-col items-center py-16">
-          <BrandMark size="xl" animate interpunct />
+          <BrandMark size="xl" animate interpunct pillars />
           <p
             lang="en"
             className="mt-10 font-mono text-[11px] uppercase tracking-[0.25em] text-neutral-400"
@@ -84,7 +84,7 @@ export default function BrandPage() {
               Ürün adı her zaman küçük harf: <strong>dima</strong>.
             </li>
             <li>
-              Tek vurgu rengi <span className="text-accent">accent</span>{" "}
+              Tek vurgu rengi <span className="text-brand">accent</span>{" "}
               (amber)&apos;dır — provenance rozetleri ve imleçle aynı dil;
               i&apos;nin noktası bu renktedir.
             </li>

@@ -1,30 +1,36 @@
-// Sonuç tablosunun ŞEKLİNDEN otomatik grafik tipi çıkarımı + ECharts option üretimi.
-// Desteklenen: KPI (tek satır), bar, line (zaman), pie, heatmap (2 boyut × ölçü matrisi).
+// Sonuç tablosunun ŞEKLİNDEN otomatik grafik tipi çıkarımı + Recharts serisi üretimi.
+// Desteklenen otomatik tipler: KPI (tek satır), bar, line (zaman), pie, heatmap, facet.
+// `buildSeries` motordan bağımsız veri döndürür; çizim <Chart> façade'ında Recharts iledir.
+// (heatmap/facet şimdilik tabloya düşer — bkz. components/chart/Chart.tsx.)
 // Tüm sayılar birim-farkında biçimlendirilir (₺, kg, L, kWh, %, dk...) — bkz. format.ts.
 
-import type { EChartsOption } from "echarts";
 import type { QueryResult, Row } from "./types";
-import { fmtAxis, fmtTemporal, fmtValue, unitSuffix } from "./format";
+import { fmtTemporal, fmtValue } from "./format";
 
 // Eksen ETİKETİ: zaman kovalarını okunur yap ("Oca 2026") — sıralama ham değerle kalır.
 const axisLabel = (v: string, col: string | null) => (col ? fmtTemporal(v, col) ?? v : v);
 
-export type ChartKind = "kpi" | "bar" | "line" | "pie" | "heatmap" | "facet" | "none";
+// analyze() yalnız ÇIKARILAN tipleri döndürür (kpi/bar/line/pie/heatmap/facet/none).
+// Gerisi kullanıcının elle seçebildiği varyantlardır — otomatik seçim asla üretmez,
+// ama <Chart> hepsini çizebilir ve ResultView geçerli olanları menüde listeler.
+export type ChartKind =
+  | "kpi"
+  | "bar"
+  | "line"
+  | "pie"
+  | "heatmap"
+  | "facet"
+  | "none"
+  | "area"
+  | "bar-stacked"
+  | "bar-h"
+  | "scatter"
+  | "radial";
 
 // SÜREKLI zaman (trend → çizgi). "gün/vardiya" gibi DÖNGÜSEL kategorikler kasıtlı olarak
 // burada YOK — onlar ısı haritasına gitsin (ör. vardiya × haftanın günü). Gerçek tarih
 // kolonları zaten değer biçiminden (looksDate) yakalanır.
 const TIME_NAMES = new Set(["donem", "dönem", "tarih", "ay", "hafta", "period", "yil", "yıl", "year", "ceyrek", "çeyrek"]);
-const PALETTE = ["#4F8CFF", "#22C55E", "#F59E0B", "#EF4444", "#A855F7", "#06B6D4", "#EC4899", "#84CC16"];
-const HEAT = ["#EF4444", "#F59E0B", "#FDE047", "#84CC16", "#22C55E"]; // düşük→yüksek (kırmızı→yeşil)
-// YÖN SEMANTİĞİ: yüksek=KÖTÜ ölçülerde ısı paleti ters çevrilir (yüksek=kırmızı).
-// ASIL kaynak metadata'dır (/schema cubes[].lower_is_better → BuildOpts.lowerSet):
-// yeni sektör pack'i frontend değişikliği İSTEMEZ. Regex yalnız metadata'sız
-// eski/serbest ölçüler için yedektir.
-const LOWER_IS_BETTER = /fire|durus|sapma|maliyet|tuketim|yogunluk|su_|enerji/i;
-const heatPalette = (measure: string, lowerSet?: ReadonlySet<string>): string[] =>
-  lowerSet?.has(measure) || LOWER_IS_BETTER.test(measure) ? [...HEAT].reverse() : HEAT;
-const AVG = "∑ Ort.";
 
 const isNum = (v: unknown) =>
   typeof v === "number" || (typeof v === "string" && v.trim() !== "" && !Number.isNaN(Number(v)));
@@ -32,15 +38,23 @@ const num = (v: unknown) => (typeof v === "number" ? v : Number(v));
 const looksDate = (v: unknown) => typeof v === "string" && /^\d{4}-\d{2}/.test(v);
 const distinct = (rows: Row[], c: string) => [...new Set(rows.map((r) => r[c]))];
 const fmtCat = (v: unknown) => (looksDate(v) ? String(v).slice(0, 10) : String(v ?? "—"));
-const mean = (a: number[]) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
 
 // Kanonik haftanın-günü sırası — kategori değerleri gün ise kronolojik sırala (Pzt→Paz),
 // değilse alfabetik (tarih YYYY-MM zaten kronolojik). Kaynak cube ya da LLM olsun, her yerde.
 const WEEKDAY_ORDER = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
-const orderCats = (vals: string[]): string[] =>
+export const orderCats = (vals: string[]): string[] =>
   vals.length && vals.every((v) => WEEKDAY_ORDER.includes(v))
     ? [...vals].sort((a, b) => WEEKDAY_ORDER.indexOf(a) - WEEKDAY_ORDER.indexOf(b))
     : [...vals].sort();
+
+// Kategori sırası: zaman/haftanın günü → kanonik; aksi halde SQL sırası korunur
+// ("en düşükleri göster" gibi kasıtlı sıralamalar bozulmasın).
+function catOrder(rows: Row[], xCol: string, isTime: boolean): string[] {
+  const raw = [...new Set(rows.map((r) => fmtCat(r[xCol])))];
+  if (isTime) return orderCats(raw);
+  const allWeekdays = raw.length > 0 && raw.every((c) => WEEKDAY_ORDER.includes(c));
+  return allWeekdays ? orderCats(raw) : raw;
+}
 
 export interface Analysis {
   kind: ChartKind;
@@ -107,8 +121,6 @@ export function analyze(result: QueryResult): Analysis {
   let facet: Analysis["facet"] = null;
   if (dims.length === 3 && measures.length >= 1) {
     if (timeCol) {
-      // ZAMAN ekseni varsa x HER ZAMAN zamandır (aylar seri olursa okunmaz — ISO
-      // lejant karmaşası); kalan iki boyuttan küçüğü panel, diğeri renk serisi.
       const [a, b] = dims.filter((d) => d !== timeCol)
         .sort((x, y) => distinct(rows, x).length - distinct(rows, y).length);
       if (distinct(rows, a).length <= 6) facet = { dim: a, x: timeCol, series: b };
@@ -133,14 +145,6 @@ export function analyze(result: QueryResult): Analysis {
   return { kind, measures, dims, timeCol, primaryDim, heat, heatAny, facet };
 }
 
-interface BuildOpts {
-  kind: ChartKind;
-  measure: string;
-  dark: boolean;
-  // Metadata kaynaklı "yüksek=kötü" ölçü kümesi (/schema'dan) — ısı paleti yönü.
-  lowerSet?: ReadonlySet<string>;
-}
-
 // Panelli görünümde gezinme (carousel): panel değerleri kanonik sırayla.
 export const facetPanelValues = (result: QueryResult, dim: string): string[] =>
   orderCats(distinct(result.rows, dim).map(String));
@@ -148,406 +152,92 @@ export const facetPanelValues = (result: QueryResult, dim: string): string[] =>
 // Ölçü seçicide "tümü" nöbetçisi — çok-ölçülü kombo görünüm (ADR/log 2026-07-21).
 export const ALL_MEASURES = "__tumu__";
 
-export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): EChartsOption {
+// Recharts satır anahtarı: x kategori değeri (biçimli etiket) bu alanda tutulur.
+export const X_KEY = "__x";
+
+export interface SeriesSpec {
+  key: string;
+  label: string;
+}
+
+export interface ChartData {
+  xKey: string;
+  data: Record<string, string | number | null>[];
+  series: SeriesSpec[];
+  // seriler ÖLÇÜ ise (çok-ölçü "tümü" kombosu) her seri kendi birimiyle biçimlenir;
+  // aksi halde tüm seriler tek `measure` biriminde (ör. kırılım grupları).
+  multiMeasure: boolean;
+  measure: string;
+}
+
+// Motordan bağımsız Recharts verisi. bar/line/area/pie destekler; heatmap/facet null
+// döner (façade tabloya düşer). Birim biçimlendirme <Chart>'ta format.ts ile yapılır.
+export function buildSeries(
+  result: QueryResult,
+  a: Analysis,
+  kind: ChartKind,
+  measureSel: string,
+): ChartData | null {
   const { rows } = result;
-  const axis = o.dark ? "#9ca3af" : "#6b7280";
-  const split = o.dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
-  const multi = o.measure === ALL_MEASURES && a.measures.length > 1;
-  const measure = (!o.measure || o.measure === ALL_MEASURES) ? a.measures[0] : o.measure;
-  const base = {
-    color: PALETTE,
-    textStyle: { fontFamily: "inherit" },
-    grid: { left: 8, right: 18, top: 30, bottom: 8, containLabel: true },
-  } as const;
+  if (rows.length === 0 || a.measures.length === 0) return null;
 
-  // -- KOMBO (çok ölçü, "tümü"): miktarlar yan yana SÜTUN; ölçek olarak ezilen
-  //    ölçüler (oranlar: %2 vs 100.000 kg) SAĞ EKSENDE ÇİZGİ — klasik BI kombosu.
-  //    Yalnız tek kategorik eksen (ya da zaman ekseni, seri boyutu yokken) desteklenir;
-  //    boyut-serili görünümlerde ölçü teke düşer (iki seri kaynağı aynı anda olmaz).
-  const comboX = a.timeCol ?? a.primaryDim;
-  const comboSeriesDim = comboX ? a.dims.find((d) => d !== comboX) ?? null : null;
-  if (multi && (o.kind === "bar" || o.kind === "line") && comboX && !comboSeriesDim) {
-    const xs = orderCats(distinct(rows, comboX).map(fmtCat));
-    const maxOf = (m: string) =>
-      Math.max(0, ...rows.map((r) => num(r[m])).filter((v) => !Number.isNaN(v)));
-    const gmax = Math.max(...a.measures.map(maxOf));
-    // Eksen ayrımı BİRİME göre: kg ölçüleri birlikte SOL (sütun), farklı birimdekiler
-    // (%) SAĞ (çizgi). fire_kg ~1000 vs agirlik ~50k aynı birimdir — ölçek sezgisi
-    // onları yanlış ayırıyordu (ekran görüntüsü 2026-07-21). Birimler ayrışmazsa
-    // ölçek sezgisine düşülür.
-    const dominant = [...a.measures].sort((x, y) => maxOf(y) - maxOf(x))[0];
-    let primary = a.measures.filter((m) => unitSuffix(m) === unitSuffix(dominant));
-    let secondary = a.measures.filter((m) => !primary.includes(m));
-    if (secondary.length === 0 && primary.length > 1) {
-      secondary = a.measures.filter((m) => maxOf(m) < gmax / 50);
-      primary = a.measures.filter((m) => !secondary.includes(m));
-    }
-    const val = (m: string, x: string) => {
-      const r = rows.find((rr) => fmtCat(rr[comboX]) === x);
-      return r ? num(r[m]) : null;
-    };
-    return {
-      ...base,
-      tooltip: {
-        trigger: "axis",
-        axisPointer: { type: "shadow" },
-        // her seri KENDİ birimiyle biçimlenir (819.4000000000001 ham değeri değil)
-        formatter: (ps: unknown) => {
-          const arr = ps as { marker: string; seriesName: string; value: number | null }[];
-          const head = arr.length ? `${(arr[0] as unknown as { name: string }).name}<br/>` : "";
-          return head + arr
-            .map((p) => `${p.marker}${p.seriesName}: <b>${fmtValue(p.value, p.seriesName)}</b>`)
-            .join("<br/>");
-        },
-      },
-      legend: { type: "scroll", top: 0, textStyle: { color: axis } },
-      grid: { left: 8, right: secondary.length ? 8 : 18, top: 30, bottom: 8, containLabel: true },
-      xAxis: {
-        type: "category",
-        data: xs.map((x) => axisLabel(x, comboX)),
-        axisLabel: { color: axis, interval: 0, rotate: xs.length > 8 ? 35 : 0 },
-        axisLine: { lineStyle: { color: split } },
-      },
-      yAxis: [
-        {
-          type: "value",
-          axisLabel: { color: axis, formatter: (v: number) => fmtAxis(v, primary[0] ?? measure) },
-          splitLine: { lineStyle: { color: split } },
-        },
-        ...(secondary.length
-          ? [{
-              type: "value" as const,
-              axisLabel: { color: axis, formatter: (v: number) => fmtAxis(v, secondary[0]) },
-              splitLine: { show: false },
-            }]
-          : []),
-      ],
-      series: [
-        ...primary.map((m) => ({
-          name: m,
-          type: (o.kind === "line" ? "line" : "bar") as "line" | "bar",
-          data: xs.map((x) => val(m, x)),
-          ...(o.kind === "bar"
-            ? { itemStyle: { borderRadius: [3, 3, 0, 0] as [number, number, number, number] }, barMaxWidth: 34 }
-            : { smooth: true, showSymbol: false }),
-        })),
-        ...secondary.map((m) => ({
-          name: m,
-          type: "line" as const,
-          yAxisIndex: 1,
-          smooth: true,
-          data: xs.map((x) => val(m, x)),
-        })),
-      ],
-    };
-  }
+  const measure = !measureSel || measureSel === ALL_MEASURES ? a.measures[0] : measureSel;
 
-  // -- HEATMAP: satır × sütun matrisi + kenar ortalamaları (marj) ---------
-  // Açık istek otomatik min-eksen kuralını ezer: a.heat yoksa a.heatAny kullanılır.
-  if (o.kind === "heatmap" && (a.heat || a.heatAny)) {
-    const { row, col } = (a.heat ?? a.heatAny)!;
-    const rowKeys = orderCats(distinct(rows, row).map(String));
-    // Sütun sırası: haftanın günü ise kanonik (Pzt→Paz), değilse alfabetik/kronolojik.
-    const colKeys = orderCats(distinct(rows, col).map(fmtCat));
-    const val = new Map<string, number>();
-    rows.forEach((r) => {
-      const ri = rowKeys.indexOf(String(r[row]));
-      const ci = colKeys.indexOf(fmtCat(r[col]));
-      if (ri >= 0 && ci >= 0) val.set(`${ri}|${ci}`, num(r[measure]));
-    });
-
-    const rowLabels = [...rowKeys.map((k) => axisLabel(k, row)), AVG];
-    const colLabels = [...colKeys.map((k) => axisLabel(k, col)), AVG];
-    const R = rowKeys.length;
-    const C = colKeys.length;
-    const marginStyle = { borderColor: axis, borderWidth: 1, borderType: "dashed" as const };
-    type Cell = { value: [number, number, number]; itemStyle?: object };
-    const data: Cell[] = [];
-
-    for (let ri = 0; ri < R; ri++)
-      for (let ci = 0; ci < C; ci++) {
-        const v = val.get(`${ri}|${ci}`);
-        if (v != null) data.push({ value: [ci, ri, v] });
-      }
-    // satır ortalamaları (sağ kenar sütunu)
-    for (let ri = 0; ri < R; ri++) {
-      const m = mean([...Array(C).keys()].map((ci) => val.get(`${ri}|${ci}`)).filter((x): x is number => x != null));
-      if (m != null) data.push({ value: [C, ri, m], itemStyle: marginStyle });
-    }
-    // sütun ortalamaları (alt kenar satırı)
-    for (let ci = 0; ci < C; ci++) {
-      const m = mean([...Array(R).keys()].map((ri) => val.get(`${ri}|${ci}`)).filter((x): x is number => x != null));
-      if (m != null) data.push({ value: [ci, R, m], itemStyle: marginStyle });
-    }
-    // genel ortalama (köşe)
-    const all = [...val.values()];
-    const grand = mean(all);
-    if (grand != null) data.push({ value: [C, R, grand], itemStyle: { ...marginStyle, borderWidth: 1.5 } });
-
-    const vals = data.map((d) => d.value[2]);
-    return {
-      ...base,
-      title: {
-        text: `Ortalama ${fmtValue(grand, measure)}`,
-        subtext: `en düşük ${fmtValue(Math.min(...all), measure)} · en yüksek ${fmtValue(Math.max(...all), measure)}`,
-        left: 8,
-        top: 4,
-        textStyle: { fontSize: 13, color: o.dark ? "#e5e7eb" : "#374151" },
-        subtextStyle: { fontSize: 11, color: axis },
-      },
-      tooltip: {
-        position: "top",
-        formatter: (p: unknown) => {
-          const d = (p as { data: Cell }).data.value;
-          const rl = d[1] === R ? "Ortalama" : rowLabels[d[1]];
-          const cl = d[0] === C ? "Ortalama" : colLabels[d[0]];
-          return `${rl} · ${cl}<br/><b>${fmtValue(d[2], measure)}</b>`;
-        },
-      },
-      grid: { left: 8, right: 18, top: 54, bottom: 64, containLabel: true },
-      xAxis: {
-        type: "category",
-        data: colLabels,
-        splitArea: { show: true },
-        // kategorik eksende etiket ATLANMAZ (kumaş adları gibi her değer anlamlı)
-        axisLabel: { color: axis, interval: 0, rotate: colLabels.length > 5 ? 30 : 0 },
-      },
-      yAxis: { type: "category", data: rowLabels, splitArea: { show: true }, axisLabel: { color: axis, interval: 0 } },
-      visualMap: {
-        min: Math.min(...vals),
-        max: Math.max(...vals),
-        calculable: true,
-        orient: "horizontal",
-        left: "center",
-        bottom: 4,
-        inRange: { color: heatPalette(measure, o.lowerSet) },
-        textStyle: { color: axis },
-        formatter: (v: number | string | Date | null | undefined) => fmtValue(v, measure),
-      },
-      series: [
-        {
-          type: "heatmap",
-          data,
-          label: {
-            show: true,
-            formatter: (p: unknown) => {
-              const d = (p as { data: Cell }).data.value;
-              return fmtValue(d[2], measure);
-            },
-          },
-          emphasis: { itemStyle: { shadowBlur: 8, shadowColor: "rgba(0,0,0,0.3)" } },
-        },
-      ],
-    };
-  }
-
-  // -- FACET (small multiples): 3 kırılım → panel başına gruplu sütun ------
-  if (o.kind === "facet" && a.facet) {
-    const { dim: fDim, x: xDim, series: sDim } = a.facet;
-    const panels = orderCats(distinct(rows, fDim).map(String));
-    const xs = orderCats(distinct(rows, xDim).map(fmtCat));
-    // seri sırası KANONİK + zaman değerleri BİÇİMLİ (ham ISO lejantı olmasın)
-    const groups = orderCats(distinct(rows, sDim).map(fmtCat));
-    const N = panels.length;
-    // 4'ten çok panel İKİ SATIRA sarılır ("her kumaş türü için ayrı grafik" — 7 panel
-    // tek satırda okunmazdı). Satır içi konum: i % cols, satır: floor(i / cols).
-    const cols = N > 4 ? Math.ceil(N / 2) : N;
-    const twoRows = N > cols;
-    const w = 100 / cols;
-    const colOf = (i: number) => i % cols;
-    const rowOf = (i: number) => Math.floor(i / cols);
-    // ORTAK y-skala — paneller karşılaştırılabilir olsun (best practice).
-    const allVals = rows.map((r) => num(r[measure])).filter((v) => !Number.isNaN(v));
-    const yMax = allVals.length ? Math.max(...allVals) * 1.08 : undefined;
-
-    return {
-      ...base,
-      tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, valueFormatter: (v: unknown) => fmtValue(v, measure) },
-      legend: { type: "scroll", top: 0, textStyle: { color: axis } },
-      title: panels.map((p, i) => ({
-        text: p,
-        left: `${colOf(i) * w + w / 2}%`,
-        textAlign: "center" as const,
-        top: twoRows ? (rowOf(i) === 0 ? "7%" : "54%") : 22,
-        textStyle: { fontSize: 11, color: axis, fontWeight: "normal" as const },
-      })),
-      grid: panels.map((_, i) => ({
-        left: `${colOf(i) * w + 5}%`,
-        width: `${w - 8}%`,
-        ...(twoRows
-          ? { top: rowOf(i) === 0 ? "12%" : "59%", height: "30%" }
-          : { top: 46, bottom: 28 }),
-      })),
-      xAxis: panels.map((_, i) => ({
-        type: "category" as const,
-        gridIndex: i,
-        data: xs.map((x) => axisLabel(x, xDim)),
-        axisLabel: { color: axis, fontSize: 10, interval: 0, rotate: xs.length > 5 ? 45 : 0 },
-        axisLine: { lineStyle: { color: split } },
-      })),
-      yAxis: panels.map((_, i) => ({
-        type: "value" as const,
-        gridIndex: i,
-        max: yMax,
-        axisLabel: colOf(i) === 0 ? { color: axis, formatter: (v: number) => fmtAxis(v, measure) } : { show: false },
-        splitLine: { lineStyle: { color: split } },
-        name: i === 0 ? unitSuffix(measure) : undefined,  // birim adı yalnız ilk panelde
-        nameTextStyle: { color: axis },
-      })),
-      series: panels.flatMap((p, i) =>
-        groups.map((g) => ({
-          name: axisLabel(g, sDim), // aynı ad → lejant panolar arası paylaşılır; ay → "Oca 2026"
-          type: "bar" as const,
-          xAxisIndex: i,
-          yAxisIndex: i,
-          data: xs.map((x) => {
-            const r = rows.find(
-              (rr) => String(rr[fDim]) === p && fmtCat(rr[xDim]) === x && fmtCat(rr[sDim]) === g,
-            );
-            return r ? num(r[measure]) : null;
-          }),
-          itemStyle: { borderRadius: [2, 2, 0, 0] as [number, number, number, number] },
-          barMaxWidth: 18,
-        })),
-      ),
-    };
-  }
-
-  // -- PIE ---------------------------------------------------------------
-  if (o.kind === "pie" && a.primaryDim) {
+  // -- PIE / RADIAL: tek boyut × tek ölçü (aynı ad/değer şekli) -----------
+  if (kind === "pie" || kind === "radial") {
     const dim = a.primaryDim;
+    if (!dim) return null;
     return {
-      ...base,
-      tooltip: {
-        trigger: "item",
-        formatter: (p: unknown) => {
-          const d = p as { name: string; value: number; percent: number };
-          return `${d.name}<br/><b>${fmtValue(d.value, measure)}</b> (%${d.percent})`;
-        },
-      },
-      legend: { type: "scroll", bottom: 0, textStyle: { color: axis } },
-      series: [
-        {
-          type: "pie",
-          radius: ["42%", "70%"],
-          itemStyle: { borderRadius: 6, borderColor: o.dark ? "#0a0a0a" : "#fff", borderWidth: 2 },
-          data: rows.map((r) => ({ name: fmtCat(r[dim]), value: num(r[measure]) })),
-          label: { color: axis, formatter: (p: unknown) => (p as { name: string }).name },
-        },
-      ],
+      xKey: "name",
+      data: rows.map((r) => ({ name: fmtCat(r[dim]), value: num(r[measure]) })),
+      series: [{ key: "value", label: measure }],
+      multiMeasure: false,
+      measure,
     };
   }
 
-  // -- LINE (zaman, ops. çoklu seri) -------------------------------------
-  if (o.kind === "line") {
-    const xCol = a.timeCol ?? a.primaryDim!;
-    const seriesDim = a.dims.find((d) => d !== xCol) ?? null;
-    const xs = orderCats(distinct(rows, xCol).map(fmtCat));
-    const series = seriesDim
-      ? orderCats(distinct(rows, seriesDim).map(String)).map((g) => ({
-          name: g,
-          type: "line" as const,
-          smooth: true,
-          showSymbol: false,
-          data: xs.map((x) => {
-            const r = rows.find((rr) => fmtCat(rr[xCol]) === x && String(rr[seriesDim]) === g);
-            return r ? num(r[measure]) : null;
-          }),
-        }))
-      : [
-          {
-            name: measure,
-            type: "line" as const,
-            smooth: true,
-            areaStyle: { opacity: 0.12 },
-            data: xs.map((x) => {
-              const r = rows.find((rr) => fmtCat(rr[xCol]) === x);
-              return r ? num(r[measure]) : null;
-            }),
-          },
-        ];
-    return {
-      ...base,
-      tooltip: { trigger: "axis", valueFormatter: (v: unknown) => fmtValue(v, measure) },
-      legend: seriesDim ? { type: "scroll", top: 0, textStyle: { color: axis } } : undefined,
-      xAxis: { type: "category", data: xs.map((x) => axisLabel(x, xCol)), axisLabel: { color: axis }, axisLine: { lineStyle: { color: split } } },
-      yAxis: {
-        type: "value",
-        name: unitSuffix(measure),
-        nameTextStyle: { color: axis },
-        axisLabel: { color: axis, formatter: (v: number) => fmtAxis(v, measure) },
-        splitLine: { lineStyle: { color: split } },
-      },
-      series,
-    };
+  // heatmap/facet: Recharts primitifi yok → tabloya düş (visx ileride).
+  if (kind === "heatmap" || kind === "facet" || kind === "none" || kind === "kpi") return null;
+
+  // -- BAR / LINE / AREA --------------------------------------------------
+  const xCol = a.timeCol ?? a.primaryDim;
+  if (!xCol) return null;
+  const isTime = xCol === a.timeCol;
+  const xs = catOrder(rows, xCol, isTime);
+  const label = (x: string) => axisLabel(x, xCol);
+
+  const multi = measureSel === ALL_MEASURES && a.measures.length > 1;
+
+  // çok-ölçü kombo: her ölçü ayrı seri (tek kategorik eksen gerekir).
+  if (multi) {
+    const data = xs.map((x) => {
+      const r = rows.find((rr) => fmtCat(rr[xCol]) === x);
+      const row: Record<string, string | number | null> = { [X_KEY]: label(x) };
+      for (const m of a.measures) row[m] = r ? num(r[m]) : null;
+      return row;
+    });
+    return { xKey: X_KEY, data, series: a.measures.map((m) => ({ key: m, label: m })), multiMeasure: true, measure };
   }
 
-  // -- BAR — İKİNCİ boyut varsa GRUPLU sütun (ay × müşteri, hafta günü × cinsiyet):
-  //    her grup ayrı renk + lejant; 14 tek-renk sütun yerine 7 gün × 2 seri.
-  const barX = a.timeCol ?? (a.dims.length >= 2 ? a.primaryDim : null);
-  const barSeries = barX ? a.dims.find((d) => d !== barX) ?? null : null;
-  if (barX && barSeries) {
-    const xs = orderCats(distinct(rows, barX).map(fmtCat));
-    const groups = orderCats(distinct(rows, barSeries).map(String));  // kanonik seri sırası
-    return {
-      ...base,
-      tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, valueFormatter: (v: unknown) => fmtValue(v, measure) },
-      legend: { type: "scroll", top: 0, textStyle: { color: axis } },
-      xAxis: { type: "category", data: xs.map((x) => axisLabel(x, barX)), axisLabel: { color: axis, interval: 0, rotate: xs.length > 8 ? 35 : 0 }, axisLine: { lineStyle: { color: split } } },
-      yAxis: {
-        type: "value",
-        name: unitSuffix(measure),
-        nameTextStyle: { color: axis },
-        axisLabel: { color: axis, formatter: (v: number) => fmtAxis(v, measure) },
-        splitLine: { lineStyle: { color: split } },
-      },
-      series: groups.map((g) => ({
-        name: g,
-        type: "bar" as const,
-        data: xs.map((x) => {
-          const r = rows.find((rr) => fmtCat(rr[barX]) === x && String(rr[barSeries]) === g);
-          return r ? num(r[measure]) : null;
-        }),
-        itemStyle: { borderRadius: [3, 3, 0, 0] as [number, number, number, number] },
-        barMaxWidth: 40,
-      })),
-    };
+  // ikinci boyut → gruplu seri (ay × müşteri, hafta günü × cinsiyet)
+  const seriesDim = a.dims.find((d) => d !== xCol) ?? null;
+  if (seriesDim) {
+    const groups = orderCats(distinct(rows, seriesDim).map(String));
+    const data = xs.map((x) => {
+      const row: Record<string, string | number | null> = { [X_KEY]: label(x) };
+      for (const g of groups) {
+        const r = rows.find((rr) => fmtCat(rr[xCol]) === x && String(rr[seriesDim]) === g);
+        row[g] = r ? num(r[measure]) : null;
+      }
+      return row;
+    });
+    return { xKey: X_KEY, data, series: groups.map((g) => ({ key: g, label: g })), multiMeasure: false, measure };
   }
 
-  // -- BAR (tek boyut → tek seri) ----------------------------------------
-  // Kategoriler hafta günüyse KANONİK sıra (Pzt→Paz); değilse SQL sırası korunur
-  // ("en düşükleri göster" gibi kasıtlı sıralamalar bozulmasın).
-  const dim = a.primaryDim!;
-  const rawCats = rows.map((r) => fmtCat(r[dim]));
-  const isWeekdays = rawCats.length > 0 && rawCats.every((c) => WEEKDAY_ORDER.includes(c));
-  const cats = isWeekdays ? orderCats(rawCats) : rawCats;
-  const valByCat = new Map(rows.map((r) => [fmtCat(r[dim]), num(r[measure])]));
-  return {
-    ...base,
-    tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, valueFormatter: (v: unknown) => fmtValue(v, measure) },
-    xAxis: {
-      type: "category",
-      data: cats,
-      axisLabel: { color: axis, rotate: cats.length > 8 ? 35 : 0, interval: 0 },
-      axisLine: { lineStyle: { color: split } },
-    },
-    yAxis: {
-      type: "value",
-      name: unitSuffix(measure),
-      nameTextStyle: { color: axis },
-      axisLabel: { color: axis, formatter: (v: number) => fmtAxis(v, measure) },
-      splitLine: { lineStyle: { color: split } },
-    },
-    series: [
-      {
-        type: "bar",
-        name: measure,
-        data: cats.map((c) => valByCat.get(c) ?? null),
-        itemStyle: { borderRadius: [5, 5, 0, 0], color: PALETTE[0] },
-        barMaxWidth: 46,
-      },
-    ],
-  };
+  // tek boyut → tek seri
+  const valByCat = new Map(rows.map((r) => [fmtCat(r[xCol]), num(r[measure])]));
+  const data = xs.map((x) => ({ [X_KEY]: label(x), [measure]: valByCat.get(x) ?? null }));
+  return { xKey: X_KEY, data, series: [{ key: measure, label: measure }], multiMeasure: false, measure };
 }
 
 // KPI kartları (tek satırlık sonuç) — birim-farkında.

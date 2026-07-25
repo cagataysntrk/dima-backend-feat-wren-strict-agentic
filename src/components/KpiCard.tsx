@@ -1,8 +1,22 @@
 "use client";
 
-import type { EChartsOption } from "echarts";
-import { EChart } from "@/components/EChart";
+import { useMemo } from "react";
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import type { KpiCard } from "@/lib/types";
+import {
+  ChartContainer,
+  ChartLegendContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import { Card } from "@/components/ui/card";
 
 const GRAN_TR: Record<string, string> = {
   day: "günlük", week: "haftalık", month: "aylık", quarter: "çeyreklik", year: "yıllık",
@@ -10,6 +24,9 @@ const GRAN_TR: Record<string, string> = {
 
 // Cross-cube KPI kartı (CCC / likidite oranları): tek headline skaler + bileşenleri
 // (DSO/DIO/DPO, dönen varlık/KV kaynak…) + formül + açıklama. Cube tablosu değil bileşke.
+//
+// NOT: trend grafiği ECharts'tan Recharts'a taşındı (tek motor — bkz. chart/Chart.tsx).
+// Renkler artık --chart-* token'larından gelir, böylece koyu/açık tema otomatik doğru.
 
 function fmt(v: number | null | undefined, unit?: string | null): string {
   if (v === null || v === undefined) return "—";
@@ -26,99 +43,137 @@ function shortName(label: string): string {
   return m ? m[1] : label;
 }
 
-const COMP_COLORS = ["#10b981", "#f59e0b", "#ef4444", "#0ea5e9", "#a855f7"];
-
-// KPI dönem-serisi → çizgi grafik (evrensel kova trendi). Headline çizgisi + AYNI BİRİMDEKİ
-// bileşenler otomatik ayrı çizgi (CCC → DSO/DIO/DPO). Farklı birim (likidite: ₺ vs oran) →
-// skala bozulmasın diye yalnız headline. Jenerik: hiçbir KPI'ya özel kod yok, veriden çizer.
-function trendOption(card: KpiCard, series: NonNullable<KpiCard["series"]>): EChartsOption {
-  const u = card.unit ?? "";
-  const n = (v: number) => {
-    const s = new Intl.NumberFormat("tr-TR", {
-      notation: Math.abs(v) >= 10000 ? "compact" : "standard", maximumFractionDigits: 1,
-    }).format(v);
-    return u === "%" ? `%${s}` : u ? `${s} ${u}` : s;
-  };
-  const comps = series[0]?.components ?? [];
-  // Bileşenler headline ile AYNI birimde mi? (öyleyse ayrı çizgi mantıklı — aynı eksen)
-  const plotComps = comps.length > 0 && comps.every((c) => (c.unit ?? "") === u);
-
-  const lines: { name: string; data: (number | null)[]; color: string; head: boolean }[] = [
-    { name: shortName(card.label), color: "#6366f1", head: true,
-      data: series.map((s) => s.value) },
-  ];
-  if (plotComps) {
-    comps.forEach((c, i) => lines.push({
-      name: shortName(c.label), color: COMP_COLORS[i % COMP_COLORS.length], head: false,
-      data: series.map((s) => s.components?.find((x) => x.key === c.key)?.value ?? null),
-    }));
-  }
-  return {
-    legend: plotComps
-      ? { top: 0, right: 0, icon: "roundRect", itemWidth: 10, itemHeight: 3,
-          textStyle: { fontSize: 10, color: "#9ca3af" } }
-      : undefined,
-    grid: { left: 8, right: 16, top: plotComps ? 28 : 12, bottom: 20, containLabel: true },
-    xAxis: {
-      type: "category", data: series.map((s) => s.bucket), boundaryGap: false,
-      axisLabel: { fontSize: 10, color: "#9ca3af" }, axisTick: { show: false },
-      axisLine: { lineStyle: { color: "#e5e7eb" } },
-    },
-    yAxis: {
-      type: "value",
-      axisLabel: { fontSize: 10, color: "#9ca3af", formatter: (v: number) => n(v) },
-      splitLine: { lineStyle: { color: "rgba(120,120,120,0.12)" } },
-    },
-    tooltip: { trigger: "axis", valueFormatter: (v) => n(v as number) },
-    series: lines.map((l) => ({
-      type: "line", name: l.name, smooth: true, symbol: "circle",
-      symbolSize: l.head ? 5 : 3, data: l.data,
-      lineStyle: { width: l.head ? 2.5 : 1.5, color: l.color, type: l.head ? "solid" : "dashed" },
-      itemStyle: { color: l.color },
-      areaStyle: l.head && !plotComps ? { opacity: 0.06, color: l.color } : undefined,
-    })),
-  };
-}
+const seriesColor = (i: number) => `var(--chart-${(i % 5) + 1})`;
 
 export function KpiCardView({ card }: { card: KpiCard }) {
   const series = (card.series ?? []).filter((s) => s.value !== null && s.value !== undefined);
-  const gran = card.granularity ? GRAN_TR[card.granularity] ?? card.granularity : null;
+  const gran = card.granularity ? (GRAN_TR[card.granularity] ?? card.granularity) : null;
+  const unit = card.unit ?? "";
+
+  // Bileşenler headline ile AYNI birimde mi? (öyleyse ayrı çizgi mantıklı — aynı eksen)
+  // Farklı birim (likidite: ₺ vs oran) → skala bozulmasın diye yalnız headline.
+  const { rows, lines, config } = useMemo(() => {
+    const comps = series[0]?.components ?? [];
+    const plotComps = comps.length > 0 && comps.every((c) => (c.unit ?? "") === unit);
+
+    const defs = [
+      { key: "__head__", label: shortName(card.label), head: true },
+      ...(plotComps ? comps.map((c) => ({ key: c.key, label: shortName(c.label), head: false })) : []),
+    ];
+
+    const data = series.map((s) => {
+      const row: Record<string, string | number | null> = { bucket: s.bucket, __head__: s.value };
+      if (plotComps) {
+        for (const c of comps) {
+          row[c.key] = s.components?.find((x) => x.key === c.key)?.value ?? null;
+        }
+      }
+      return row;
+    });
+
+    const cfg: ChartConfig = {};
+    defs.forEach((d, i) => {
+      cfg[d.key] = { label: d.label, color: d.head ? "var(--brand)" : seriesColor(i) };
+    });
+
+    return { rows: data, lines: defs, config: cfg };
+  }, [series, card.label, unit]);
+
+  const n = (v: number) => {
+    const s = new Intl.NumberFormat("tr-TR", {
+      notation: Math.abs(v) >= 10000 ? "compact" : "standard",
+      maximumFractionDigits: 1,
+    }).format(v);
+    return unit === "%" ? `%${s}` : unit ? `${s} ${unit}` : s;
+  };
+  const axisTick = { fill: "var(--muted-foreground)", fontSize: 11 };
 
   return (
-    <div className="border border-hairline bg-background p-5">
+    <Card className="gap-0 p-5">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+        <span className="text-[10px] tracking-wider text-muted-foreground uppercase">
           KPI{gran ? ` · ${gran} trend` : ""}
         </span>
         {card.lower_is_better && (
-          <span className="font-mono text-[10px] tracking-wider text-neutral-400" title="Düşük değer daha iyi">
+          <span
+            className="text-[10px] tracking-wider text-muted-foreground"
+            title="Düşük değer daha iyi"
+          >
             ↓ düşük iyi
           </span>
         )}
       </div>
 
       <div className="mt-1 flex items-baseline gap-3">
-        <span className="text-3xl font-semibold tabular-nums text-foreground">
+        <span className="text-3xl font-semibold text-foreground tabular-nums">
           {fmt(card.value, card.unit)}
         </span>
-        <span className="text-sm text-neutral-500">
+        <span className="text-sm text-muted-foreground">
           {card.label}
-          {gran && <span className="text-neutral-400"> · son dönem</span>}
+          {gran && <span className="text-muted-foreground/70"> · son dönem</span>}
         </span>
       </div>
 
       {series.length > 1 && (
-        <div className="mt-4">
-          <EChart height={220} option={trendOption(card, series)} />
-        </div>
+        <ChartContainer config={config} className="mt-4 aspect-[16/7] w-full">
+          <LineChart data={rows} margin={{ left: 4, right: 12, top: 8, bottom: 0 }}>
+            <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.6} />
+            <XAxis
+              dataKey="bucket"
+              tick={axisTick}
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+            />
+            <YAxis
+              tick={axisTick}
+              tickLine={false}
+              axisLine={false}
+              width={52}
+              tickFormatter={n}
+            />
+            <Tooltip
+              formatter={(v) => n(Number(v))}
+              contentStyle={{
+                background: "var(--popover)",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius-md)",
+                fontSize: 12,
+              }}
+            />
+            {lines.length > 1 && (
+              <Legend
+                verticalAlign="bottom"
+                align="center"
+                content={<ChartLegendContent />}
+                wrapperStyle={{ fontSize: 12 }}
+              />
+            )}
+            {lines.map((l, i) => (
+              <Line
+                key={l.key}
+                type="monotone"
+                dataKey={l.key}
+                name={l.key}
+                stroke={l.head ? "var(--brand)" : seriesColor(i)}
+                strokeWidth={l.head ? 2.5 : 1.5}
+                strokeDasharray={l.head ? undefined : "4 3"}
+                dot={false}
+                activeDot={{ r: 4 }}
+                connectNulls
+                isAnimationActive={false}
+              />
+            ))}
+          </LineChart>
+        </ChartContainer>
       )}
 
       {card.components?.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-x-8 gap-y-3 border-t border-hairline pt-4">
+        <div className="mt-4 flex flex-wrap gap-x-8 gap-y-3 border-t border-border pt-4">
           {card.components.map((c) => (
             <div key={c.key} className="flex flex-col">
-              <span className="text-[11px] text-neutral-400">{c.label}</span>
-              <span className="font-mono text-sm tabular-nums text-neutral-700 dark:text-neutral-300">
+              <span className="text-[11px] text-muted-foreground">{c.label}</span>
+              <span className="font-mono text-sm text-foreground tabular-nums">
                 {fmt(c.value, c.unit)}
               </span>
             </div>
@@ -127,13 +182,13 @@ export function KpiCardView({ card }: { card: KpiCard }) {
       )}
 
       {card.formula && (
-        <div className="mt-3 font-mono text-[11px] text-neutral-400">= {card.formula}</div>
+        <div className="mt-3 font-mono text-[11px] text-muted-foreground">= {card.formula}</div>
       )}
       {card.explain && (
-        <p className="mt-3 max-w-prose whitespace-pre-line text-xs leading-relaxed text-neutral-500">
+        <p className="mt-3 max-w-prose text-xs leading-relaxed whitespace-pre-line text-muted-foreground">
           {card.explain}
         </p>
       )}
-    </div>
+    </Card>
   );
 }

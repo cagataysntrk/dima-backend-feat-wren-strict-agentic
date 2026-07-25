@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 // Backend origin SERVER-SIDE'da tutulur (browser'a sızmaz). Browser same-origin `/api/*`'e
-// konuşur; Next bunu backend'e proxy'ler. Böylece: refresh cookie same-origin (middleware
-// okuyabilir), CORS gerekmez, backend URL gizli (ADR-0012 rewrite-proxy alternatifi).
-const backend = process.env.BACKEND_ORIGIN ?? "http://localhost:8000";
+// konuşur; proxy'yi artık bir Route Handler yapar (src/app/api/[...path]/route.ts) —
+// böylece Set-Cookie normalize edilebilir (dev'de http üzerinde Secure/Domain düşer,
+// oturum cookie'si düşmez). Backend URL gizli kalır, CORS gerekmez (ADR-0012).
 
 const nextConfig: NextConfig = {
   // localtld ile dev server'a proxy'lenmiş bir origin'den (ör. frontend.dima.localtld)
@@ -13,11 +16,9 @@ const nextConfig: NextConfig = {
     "frontend.dima.localtld",
     "*.localtld",
   ],
-  async rewrites() {
-    return [{ source: "/api/:path*", destination: `${backend}/:path*` }];
-  },
   // Temel güvenlik başlıkları. Tam CSP bilinçli eklenmedi: Next dev runtime'ı ve
-  // ECharts inline stiller kullanır; nonce'suz sıkı CSP uygulamayı kırar.
+  // Recharts/Framer Motion/Radix inline `style` attribute'ları kullanır; nonce'suz
+  // sıkı `style-src` uygulamayı kırar. CSP istenirse önce Report-Only ile ölçülmeli.
   async headers() {
     return [
       {
@@ -33,4 +34,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

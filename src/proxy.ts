@@ -10,18 +10,34 @@ import type { NextRequest } from "next/server";
 // (backend adı değiştirirse kod değil yalnız build config değişir).
 const SESSION_COOKIE = process.env.NEXT_PUBLIC_SESSION_COOKIE ?? "dima_refresh";
 
+// Oturum gerektirmeyen genel auth sayfaları.
+const AUTH_ROUTES = new Set(["/login", "/register", "/forgot-password"]);
+
+// api-client, refresh de başarısız olduğunda /login?expired=1'e yönlendirir.
+// Cookie hâlâ tarayıcıda (HTTP-only, JS silemez) olduğu için bu işaret olmadan
+// aşağıdaki "girişliyken /login'e gelme" kuralı /login ↔ / arasında sonsuz
+// döngü yaratır. İşaret varsa: bayat cookie'yi burada sil ve login'i göster.
+const EXPIRED_FLAG = "expired";
+
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const hasSession = req.cookies.has(SESSION_COOKIE);
-  const isLogin = pathname === "/login";
+  const isAuthPage = AUTH_ROUTES.has(pathname);
 
-  if (!hasSession && !isLogin) {
+  if (isAuthPage && req.nextUrl.searchParams.has(EXPIRED_FLAG)) {
+    const res = NextResponse.next();
+    if (hasSession) res.cookies.delete(SESSION_COOKIE);
+    return res;
+  }
+
+  if (!hasSession && !isAuthPage) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
-  if (hasSession && isLogin) {
+  // Girişliyken auth sayfalarına gelme → ana uygulamaya dön.
+  if (hasSession && isAuthPage) {
     const url = req.nextUrl.clone();
     url.pathname = "/";
     url.search = "";
