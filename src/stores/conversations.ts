@@ -21,6 +21,8 @@ interface ConversationsState {
   /** Append an answer to the active conversation (creating one if needed). */
   add: (item: AskResponse) => void;
   clearActive: () => void;
+  /** Wipe ALL conversations (cross-user isolation on logout/login). */
+  reset: () => void;
 }
 
 // crypto.randomUUID yalnız güvenli bağlamda (https/localhost) var; http://*.localtld'de yok.
@@ -84,6 +86,10 @@ export const useConversations = create<ConversationsState>((set) => ({
         c.id === s.activeId ? { ...c, items: [], title: "" } : c,
       ),
     })),
+  // ÇAPRAZ-KULLANICI İZOLASYON (güvenlik, canlı 2026-07-25): store modül-seviyesi global,
+  // SPA login/logout round-trip'inde (hard reload yok) yaşar. Temizlenmezse LOGOUT sonrası
+  // BAŞKA kullanıcı önceki kullanıcının tüm konuşma/rapor zincirini görürdü. reset hepsini siler.
+  reset: () => set({ conversations: [], activeId: null }),
 }));
 
 /** The active conversation object (or null). */

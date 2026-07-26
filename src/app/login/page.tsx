@@ -32,6 +32,10 @@ function LoginForm() {
     setErr(null);
     try {
       await login(email, password, (code ?? otp) || undefined);
+      // Yeni oturum TEMİZ başlasın — token-expiry gibi buton-dışı çıkışlarda da önceki
+      // kullanıcının konuşma zinciri sızmasın (çapraz-kullanıcı izolasyon, canlı 2026-07-25).
+      const { useConversations } = await import("@/stores/conversations");
+      useConversations.getState().reset();
       router.replace(next);
     } catch (error) {
       const msg = apiErrorMessage(error);

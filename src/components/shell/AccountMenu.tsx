@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { ChevronsUpDown, LogOut, Monitor, Moon, Sun, Languages } from "lucide-react";
 import { useTheme } from "next-themes";
 import { logout } from "@/lib/api-client";
+import { useConversations } from "@/stores/conversations";
 import { useMe } from "@/lib/access";
 import { setLocale } from "@/i18n/actions";
 import { LOCALES, LOCALE_LABELS } from "@/i18n/config";
@@ -45,6 +46,10 @@ export function AccountMenu() {
     try {
       await logout();
     } finally {
+      // ÇIKIŞTA KONUŞMA DURUMUNU TEMİZLE (güvenlik/izolasyon, canlı 2026-07-25): geçmiş global
+      // Zustand store'da; temizlenmezse LOGOUT sonrası BAŞKA kullanıcı önceki kullanıcının tüm
+      // konuşma/rapor zincirini görürdü (çapraz-kullanıcı sızıntı).
+      useConversations.getState().reset();
       router.push("/login");
     }
   }
