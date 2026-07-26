@@ -170,7 +170,7 @@ export default async function MarketingHome() {
           </Reveal>
           <Stagger className="mt-12">
             <BentoGrid>
-            <StaggerItem className="min-h-0 md:col-span-4 md:row-span-2">
+            <StaggerItem className="row-span-2 min-h-0 md:col-span-4">
               <div className="h-full [&>figure]:h-full">
                 <ProductWorkbenchVisual locale={content.locale} />
               </div>
@@ -193,13 +193,13 @@ export default async function MarketingHome() {
                 <MiniSignal index={4} />
               </SignalCard>
             </StaggerItem>
-            <StaggerItem className="md:col-span-3">
-              <div className="h-full overflow-hidden rounded-xl [&>figure]:h-full">
+            <StaggerItem className="row-span-3 min-h-0 md:col-span-3 md:row-span-2">
+              <div className="h-full rounded-xl [&>figure]:h-full">
                 <SemanticMapVisual locale={content.locale} />
               </div>
             </StaggerItem>
-            <StaggerItem className="md:col-span-3">
-              <div className="h-full overflow-hidden rounded-xl [&>figure]:h-full">
+            <StaggerItem className="row-span-3 min-h-0 md:col-span-3 md:row-span-2">
+              <div className="h-full rounded-xl [&>figure]:h-full">
                 <ValidationPipelineVisual locale={content.locale} />
               </div>
             </StaggerItem>

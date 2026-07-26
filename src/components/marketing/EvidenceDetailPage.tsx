@@ -40,7 +40,6 @@ const pageScenes: Record<PageKind, Record<string, MarketingSceneKey>> = {
 
 const ui = {
   tr: {
-    synthetic: "Örnek ürün görünümü",
     question: "Brüt kârı hedefin altında kalan gruplar hangileri?",
     modeled: "Onaylı iş tanımları",
     verified: "ön kontrol tamamlandı",
@@ -49,7 +48,6 @@ const ui = {
     evidence: "kanıt görünümü",
   },
   en: {
-    synthetic: "Sample product view",
     question: "Which groups are below gross-margin target?",
     modeled: "Approved business definitions",
     verified: "pre-check complete",
@@ -60,28 +58,16 @@ const ui = {
 } as const;
 
 function EvidenceFrame({
-  locale,
-  code,
   children,
   summary,
   labelledBy,
 }: {
-  locale: MarketingLocale;
-  code: string;
   children: React.ReactNode;
   summary: string;
   labelledBy: string;
 }) {
-  const t = ui[locale];
   return (
     <figure aria-labelledby={labelledBy} className="overflow-hidden bg-card">
-      <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
-        <span className="text-xs font-medium text-muted-foreground">{code}</span>
-        <span className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.12em]">
-          <span className="size-1.5 rounded-full bg-chart-2" aria-hidden="true" />
-          {t.synthetic}
-        </span>
-      </div>
       <div aria-hidden="true">{children}</div>
       <figcaption className="border-t bg-muted/20 px-4 py-3 text-xs leading-5 text-muted-foreground">
         {summary}
@@ -297,7 +283,7 @@ export function EvidenceDetailPage({ page, content, kind, heroVisual }: { page: 
                   </Reveal>
                   <Reveal delay={0.08} y={18}>
                     <MagicCard>
-                      <EvidenceFrame locale={content.locale} code={section.title} labelledBy={`${kind}-${section.id}-title`} summary={section.body}>
+                      <EvidenceFrame labelledBy={`${kind}-${section.id}-title`} summary={section.body}>
                         <SectionVisual scene={scene} id={section.id} locale={content.locale} />
                       </EvidenceFrame>
                     </MagicCard>

@@ -30,7 +30,6 @@ type LocaleProps = { locale: MarketingLocale };
 
 const labels = {
   tr: {
-    synthetic: "Örnek ürün görünümü",
     signalTitle: "Bir soru, dört anlaşılır adım",
     signalBody: "İş sorusu önce ortak tanımlarla eşleşir, ardından kontrol edilir ve incelenebilir bir rapora dönüşür.",
     question: "Hangi ürün grupları hedefin altında?",
@@ -53,7 +52,6 @@ const labels = {
     available: "Dima’da doğrulandı",
     planned: "planlanıyor",
     verified: "doğrulandı",
-    liveModel: "örnek görünüm",
     concepts: "Müşteri × Ürün × Dönem",
     customerSource: "müşteri kaynağı",
     commercialSource: "ticari kaynak",
@@ -72,7 +70,6 @@ const labels = {
     workbenchNav: ["Konuşma", "Katalog", "Sözleşmeler", "Raporlar"],
   },
   en: {
-    synthetic: "Sample product view",
     signalTitle: "One question, four visible decision points",
     signalBody: "A business question matches shared definitions, passes its checks, and becomes an inspectable report.",
     question: "Which product groups are below target?",
@@ -95,7 +92,6 @@ const labels = {
     available: "Verified in Dima",
     planned: "Planned",
     verified: "verified",
-    liveModel: "sample view",
     concepts: "Customer × Product × Period",
     customerSource: "customer source",
     commercialSource: "commercial source",
@@ -116,31 +112,20 @@ const labels = {
 } as const;
 
 function VisualFrame({
-  eyebrow,
   title,
   body,
   children,
-  statusLabel,
   className = "",
 }: {
-  eyebrow: string;
   title: string;
   body: string;
   children: React.ReactNode;
-  statusLabel: string;
   className?: string;
 }) {
   return (
-    <figure className={`overflow-hidden rounded-xl border bg-card shadow-lg ${className}`}>
-      <div className="flex items-center justify-between gap-4 border-b px-5 py-3">
-        <span className="font-mono text-[10px] tracking-[0.1em] text-muted-foreground">{eyebrow}</span>
-        <span className="flex items-center gap-2 font-mono text-[10px] tracking-[0.08em] text-foreground">
-          <span className="visual-pulse size-1.5 rounded-full bg-chart-2" />
-          {statusLabel}
-        </span>
-      </div>
-      {children}
-      <figcaption className="border-t bg-muted/25 px-5 py-4">
+    <figure className={`flex flex-col overflow-hidden rounded-xl border bg-card shadow-lg ${className}`}>
+      <div className="min-h-0 flex-1 [&>*]:h-full">{children}</div>
+      <figcaption className="shrink-0 border-t bg-muted/25 px-5 py-4">
         <p className="text-sm font-semibold">{title}</p>
         <p className="mt-1 max-w-3xl text-xs leading-5 text-muted-foreground">{body}</p>
       </figcaption>
@@ -157,7 +142,7 @@ export function AnalyticalSignalMap({ locale }: LocaleProps) {
     { icon: CircleGauge, label: t.report, code: locale === "tr" ? "04 / sonuç" : "04 / result" },
   ];
   return (
-    <VisualFrame eyebrow={t.synthetic} title={t.signalTitle} body={t.signalBody} statusLabel={t.liveModel} className="mt-10 sm:mt-14">
+    <VisualFrame title={t.signalTitle} body={t.signalBody} className="mt-10 sm:mt-14">
       <div className="relative grid gap-px bg-border lg:grid-cols-4">
         <div aria-hidden="true" className="visual-scan absolute inset-y-0 left-0 z-10 hidden w-px bg-brand shadow-[0_0_20px_var(--brand)] lg:block" />
         {stages.map((stage, index) => {
@@ -178,28 +163,39 @@ export function AnalyticalSignalMap({ locale }: LocaleProps) {
   );
 }
 
-function GraphNode({ label, detail, featured = false }: { label: string; detail: string; featured?: boolean }) {
+const GraphNode = forwardRef<
+  HTMLDivElement,
+  { label: string; detail: string; featured?: boolean }
+>(function GraphNode({ label, detail, featured = false }, ref) {
   return (
-    <MagicCard className={`relative z-10 rounded-lg p-3 ${featured ? "border-brand/50 bg-brand/10 shadow-md" : ""}`} tilt={false}>
-      <p className="font-mono text-[10px] tracking-[0.06em] text-muted-foreground">{detail}</p>
-      <p className="mt-1 text-sm font-semibold">{label}</p>
-    </MagicCard>
+    <div className="relative z-10 h-full" ref={ref}>
+      <MagicCard className={`h-full rounded-lg p-3 ${featured ? "border-brand/50 bg-brand/10 shadow-md" : ""}`} tilt={false}>
+        <p className="font-mono text-[10px] tracking-[0.06em] text-muted-foreground">{detail}</p>
+        <p className="mt-1 text-sm font-semibold">{label}</p>
+      </MagicCard>
+    </div>
   );
-}
+});
 
 export function SemanticMapVisual({ locale }: LocaleProps) {
   const t = labels[locale];
+  const containerRef = useRef<HTMLDivElement>(null);
+  const crmRef = useRef<HTMLDivElement>(null);
+  const erpRef = useRef<HTMLDivElement>(null);
+  const modelRef = useRef<HTMLDivElement>(null);
+  const metricRef = useRef<HTMLDivElement>(null);
+  const reportRef = useRef<HTMLDivElement>(null);
   return (
-    <VisualFrame eyebrow={locale === "tr" ? "iş tanımları / 01" : "business definitions / 01"} title={t.semanticTitle} body={t.semanticBody} statusLabel={t.liveModel}>
-      <div className="marketing-grid relative grid min-h-80 gap-8 p-6 sm:grid-cols-[1fr_1.1fr_1fr] sm:items-center sm:p-8">
-        <svg aria-hidden="true" className="pointer-events-none absolute inset-0 hidden size-full text-brand/35 sm:block" viewBox="0 0 720 320" preserveAspectRatio="none">
-          <path className="visual-dash" d="M150 72 C245 72 230 160 340 160 M150 248 C245 248 230 160 340 160 M380 160 C490 160 475 74 570 74 M380 160 C490 160 475 246 570 246" fill="none" stroke="currentColor" strokeDasharray="5 8" />
-        </svg>
-        <div className="space-y-4">
-          <GraphNode label="CRM" detail={t.customerSource} />
-          <GraphNode label="ERP" detail={t.commercialSource} />
+    <VisualFrame title={t.semanticTitle} body={t.semanticBody}>
+      <div
+        className="marketing-grid relative grid min-h-80 gap-6 p-6 sm:grid-cols-[1fr_1.15fr_1fr] sm:items-stretch sm:gap-10 sm:p-8"
+        ref={containerRef}
+      >
+        <div className="relative z-10 grid grid-cols-2 gap-4 sm:grid-cols-1 sm:grid-rows-2">
+          <GraphNode label="CRM" detail={t.customerSource} ref={crmRef} />
+          <GraphNode label="ERP" detail={t.commercialSource} ref={erpRef} />
         </div>
-        <div className="rounded-xl border border-brand/50 bg-background p-5 text-center shadow-xl">
+        <div className="relative z-10 self-center rounded-xl border border-brand/50 bg-background p-5 text-center shadow-xl" ref={modelRef}>
           <Network className="mx-auto size-6 text-brand" aria-hidden="true" />
           <p className="mt-3 font-mono text-[10px] text-brand">{t.model}</p>
           <p className="mt-2 font-semibold">{t.concepts}</p>
@@ -207,10 +203,14 @@ export function SemanticMapVisual({ locale }: LocaleProps) {
             {(locale === "tr" ? ["gelir", "kâr", "aktif müşteri"] : ["revenue", "margin", "active customer"]).map((item) => <span className="rounded-full border px-2 py-1 font-mono text-[9px]" key={item}>{item}</span>)}
           </div>
         </div>
-        <div className="space-y-4">
-          <GraphNode label={locale === "tr" ? "Gösterge" : "Metric"} detail={t.metricSurface} />
-          <GraphNode label={locale === "tr" ? "Rapor" : "Report"} detail={t.evidenceSurface} />
+        <div className="relative z-10 grid grid-cols-2 gap-4 sm:grid-cols-1 sm:grid-rows-2">
+          <GraphNode label={locale === "tr" ? "Gösterge" : "Metric"} detail={t.metricSurface} ref={metricRef} />
+          <GraphNode label={locale === "tr" ? "Rapor" : "Report"} detail={t.evidenceSurface} ref={reportRef} />
         </div>
+        <AnimatedBeam className="hidden sm:block" containerRef={containerRef} fromRef={crmRef} toRef={modelRef} curvature={30} duration={4.1} />
+        <AnimatedBeam className="hidden sm:block" containerRef={containerRef} fromRef={erpRef} toRef={modelRef} curvature={-30} duration={4.5} delay={0.35} />
+        <AnimatedBeam className="hidden sm:block" containerRef={containerRef} fromRef={modelRef} toRef={metricRef} curvature={-30} reverse duration={4.2} delay={0.2} />
+        <AnimatedBeam className="hidden sm:block" containerRef={containerRef} fromRef={modelRef} toRef={reportRef} curvature={30} reverse duration={4.6} delay={0.55} />
       </div>
     </VisualFrame>
   );
@@ -221,7 +221,7 @@ export function SecurityFlowVisual({ locale }: LocaleProps) {
   const icons = [KeyRound, Fingerprint, LockKeyhole, ShieldCheck];
   const gates = t.securityGates.map(([label, state], index) => ({ icon: icons[index], label, state }));
   return (
-    <VisualFrame eyebrow={locale === "tr" ? "güven zinciri / 02" : "trust chain / 02"} title={t.securityTitle} body={t.securityBody} statusLabel={t.liveModel}>
+    <VisualFrame title={t.securityTitle} body={t.securityBody}>
       <div className="relative min-h-80 p-6 sm:p-8">
         <div aria-hidden="true" className="absolute left-10 right-10 top-1/2 hidden h-px bg-border sm:block" />
         <AnimatedList className="relative grid gap-3 sm:grid-cols-4 sm:items-center">
@@ -270,7 +270,7 @@ export function IntegrationFlowVisual({ locale }: LocaleProps) {
   const modelRef = useRef<HTMLDivElement>(null);
   const outputRef = useRef<HTMLDivElement>(null);
   return (
-    <VisualFrame eyebrow={locale === "tr" ? "kaynak haritası / 03" : "source map / 03"} title={t.integrationTitle} body={t.integrationBody} statusLabel={t.liveModel}>
+    <VisualFrame title={t.integrationTitle} body={t.integrationBody}>
       <div className="relative grid min-h-80 gap-px overflow-hidden bg-border sm:grid-cols-[1fr_1.15fr_1fr]" ref={containerRef}>
         <div className="relative z-10 bg-background p-5 sm:p-6">
           <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{t.sources}</p>
@@ -401,7 +401,7 @@ export function MiniSignal({ index }: { index: number }) {
 export function ProductWorkbenchVisual({ locale }: LocaleProps) {
   const t = labels[locale];
   return (
-    <VisualFrame eyebrow={`${t.synthetic} / ${locale === "tr" ? "çalışma alanı" : "workspace"}`} title={t.workbenchTitle} body={t.workbenchBody} statusLabel={t.liveModel}>
+    <VisualFrame title={t.workbenchTitle} body={t.workbenchBody}>
       <div className="grid min-h-96 bg-muted/20 lg:grid-cols-[180px_1fr]">
         <div className="hidden border-r bg-background p-4 lg:block">
           <div className="h-8 rounded-md border bg-card" />
@@ -450,9 +450,9 @@ export function ValidationPipelineVisual({ locale }: LocaleProps) {
   const t = labels[locale];
   const steps = t.validationSteps;
   return (
-    <VisualFrame eyebrow={locale === "tr" ? "kontrollü çözüm" : "checked resolution"} title={t.validationTitle} body={t.validationBody} statusLabel={t.liveModel}>
-      <div className="marketing-grid p-6 sm:p-8">
-        <AnimatedList className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    <VisualFrame title={t.validationTitle} body={t.validationBody}>
+      <div className="marketing-grid flex items-center p-6 sm:p-8">
+        <AnimatedList className="grid w-full grid-cols-2 gap-3 [&>*:last-child]:col-span-2 lg:grid-cols-5 lg:[&>*:last-child]:col-span-1">
           {steps.map(([title, detail], index) => (
             <MagicCard className={`relative min-h-36 rounded-lg p-4 ${index === 0 ? "border-dashed bg-muted/40" : ""}`} key={title} tilt={false}>
               <span className="font-mono text-[9px] text-brand">0{index + 1}</span>
