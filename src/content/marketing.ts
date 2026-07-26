@@ -63,8 +63,8 @@ export type MarketingContent = {
     workflow: Array<{ title: string; body: string }>;
     useCasesTitle: string;
     useCases: Array<{ title: string; question: string }>;
-    textileTitle: string;
-    textileBody: string;
+    operationsTitle: string;
+    operationsBody: string;
     trustTitle: string;
     trustBody: string;
     integrationTitle: string;
@@ -149,16 +149,16 @@ const tr: MarketingContent = {
     ],
     useCasesTitle: "Ekiplerin sorduğu gerçek sorular.",
     useCases: [
-      { title: "Operasyon", question: "Bugünkü plana göre geride kalan makineler hangileri?" },
-      { title: "Üretim / OEE", question: "En yüksek performans kaybı hangi vardiya ve makinede?" },
+      { title: "Operasyon", question: "Bu hafta hedefinden en fazla sapan KPI’lar hangileri?" },
+      { title: "Finans", question: "Brüt kârı hedefin altında kalan ürün grupları hangileri?" },
       { title: "Finans", question: "Nakit dönüşüm süresi bu çeyrekte nasıl değişti?" },
       { title: "Satış", question: "Brüt kârı düşen müşteri ve ürün grupları hangileri?" },
       { title: "Stok", question: "Kritik seviyeye yaklaşan malzemeler hangileri?" },
       { title: "Yönetim", question: "Bu hafta hedeflerden en fazla sapan üç KPI nedir?" },
     ],
-    textileTitle: "Boyahane verisini rapor beklemeden anlayın.",
-    textileBody:
-      "Parti, reçete, makine, vardiya, fire, kalite, su, enerji, termin ve sevkiyat verilerini modellenmiş bir analitik bağlamda sorgulayın.",
+    operationsTitle: "Operasyonun tamamını aynı iş diliyle anlayın.",
+    operationsBody:
+      "Finans, satış, stok, müşteri ve operasyon verilerini ortak tanımlar üzerinde sorgulayın; ekipler aynı metriğin farklı yorumlarıyla uğraşmasın.",
     trustTitle: "Cevabın arkasındaki mekanizmayı görün.",
     trustBody:
       "Read-only query kontrolleri, semantic model, dry-plan, görünür SQL ve permission-aware erişim; hız ile yönetişim arasında açık bir sınır kurar.",
@@ -218,7 +218,7 @@ const tr: MarketingContent = {
         "Doğal dil rahatlığı; semantic context ve deterministic validation katmanlarıyla sınırlandırılır.",
       cta: "Teknik bir görüşme planlayın",
       sections: [
-        { id: "raw-llm", title: "Ham text-to-SQL neden yetmez?", body: "Bir şema, “ciro”, “aktif müşteri” veya “fire” kavramlarının işletmenizde nasıl hesaplandığını tek başına söylemez." },
+        { id: "raw-llm", title: "Ham text-to-SQL neden yetmez?", body: "Bir şema, “ciro”, “aktif müşteri” veya “stok devir hızı” kavramlarının işletmenizde nasıl hesaplandığını tek başına söylemez." },
         { id: "onboarding", title: "1. Kaynağı ve şemayı tanımla", body: "Bağlantı bilgisi tenant bağlamında yönetilir; şema ve ilişkiler keşfedilir." },
         { id: "semantics", title: "2. İş anlamını modelle", body: "İlişkiler, metrik ifadeleri, zaman boyutları, birimler ve terimler semantic modele eklenir." },
         { id: "interpret", title: "3. Soruyu bağlama eşleştir", body: "Doğal dil sorusu katalogdaki ölçü ve boyutlara çözülür; LLM öneri üretir." },
@@ -236,27 +236,11 @@ const tr: MarketingContent = {
       cta: "Öncelikli kullanım alanınızı konuşalım",
       sections: [
         { id: "executive", title: "Yönetim görünürlüğü", body: "Hedeflerden sapan KPI’ları ve istisnaları görün.", points: ["Bu hafta hedeflerden en fazla sapan üç KPI nedir?", "KPI özeti ve açıklanabilir kırılım"] },
-        { id: "operations", title: "Üretim ve OEE", body: "Kayıpları makine, vardiya ve süreç bazında sorgulayın.", points: ["En yüksek performans kaybı hangi vardiyada?", "OEE, fire ve üretim tablosu"] },
+        { id: "operations", title: "Operasyon performansı", body: "Hedef, gerçekleşen ve sapma nedenlerini ekip, süreç ve dönem bazında sorgulayın.", points: ["Hangi KPI’lar hedefinden en fazla saptı?", "Açıklanabilir performans kırılımı"] },
         { id: "sales", title: "Satış ve müşteri", body: "Müşteri, ürün, fiyat ve kârlılık trendlerini karşılaştırın." },
         { id: "finance", title: "Finans ve KPI", body: "Formülü ve bileşenleri görünür finansal göstergeler üretin." },
         { id: "inventory", title: "Stok ve tedarik", body: "Kritik stokları, yavaş hareketi ve termin etkisini birlikte değerlendirin." },
         { id: "data", title: "Data / IT yönetişimi", body: "Ad-hoc talepleri azaltırken query governance ve permission sınırlarını koruyun." },
-      ],
-    },
-    textile: {
-      eyebrow: "Tekstil ve boyahane",
-      title: "Boyahanenizin üretim verisine iş dilinde erişin.",
-      description:
-        "Parti ve reçeteden OEE, fire, enerji ve termin analizine kadar boyahane verisini modellenmiş bir bağlamda sorgulayın.",
-      cta: "Boyahane demosu talep edin",
-      sections: [
-        { id: "landscape", title: "İlişkili operasyon verisi", body: "Partiler, vardiya kayıtları, makineler, reçeteler, siparişler, sevkiyatlar, müşteriler ve personel tek analiz haritasında ilişkilendirilir." },
-        { id: "oee", title: "Üretim ve OEE", body: "Bu ay makine bazında OEE nedir? Vardiya × haftanın günü verimliliği nasıl değişti?" },
-        { id: "quality", title: "Fire ve kalite", body: "En yüksek fire hangi aşamada? Renk sapması en yüksek parti ve reçeteler hangileri?" },
-        { id: "recipe", title: "Reçete ve kimyasal", body: "Reçete bazında kimyasal maliyet katkısı ve proses sonuçları nasıl değişiyor?" },
-        { id: "energy", title: "Su ve enerji", body: "Kilogram başına su ve enerji tüketimini makine, reçete veya dönem bazında karşılaştırın." },
-        { id: "orders", title: "Termin ve sevkiyat", body: "Termin riski taşıyan siparişleri üretim ilerlemesi ve sevkiyat durumu ile birlikte görün." },
-        { id: "scope", title: "Bir MES veya ERP değildir", body: "Dima, mevcut operasyonel sisteminizin üzerinde semantic analytics ve raporlama katmanı olarak konumlanır." },
       ],
     },
     security: {
@@ -281,7 +265,7 @@ const tr: MarketingContent = {
         "Connector kabiliyetini, Dima’da doğrulanmış üretim desteğinden açıkça ayırıyoruz.",
       cta: "Entegrasyon kapsamını değerlendirin",
       sections: [
-        { id: "duckdb", title: "DuckDB demo modeli", body: "Boyahane demosunun uçtan uca çalışan, sentetik veri kaynağıdır.", status: "available" },
+        { id: "duckdb", title: "DuckDB demo modeli", body: "Ürün akışını gerçek müşteri verisi kullanmadan gösteren sentetik veri kaynağıdır.", status: "available" },
         { id: "postgres", title: "Postgres", body: "Dima bağlantı konfigürasyonunda kullanılan ve mevcut kapsamda desteklenen kaynaktır.", status: "available" },
         { id: "engine", title: "MSSQL ve Oracle", body: "Wren motorunda connector kabiliyeti bulunur; Dima production desteği lehçe, model ve gerçek bağlantı testleri tamamlanmadan ilan edilmez.", status: "planned" },
         { id: "process", title: "Onboarding akışı", body: "Bağlantı → şema keşfi → semantic model → dry-plan doğrulaması → tenant-scoped kullanıcı erişimi." },
@@ -416,16 +400,16 @@ const en: MarketingContent = {
     ],
     useCasesTitle: "Questions real teams ask.",
     useCases: [
-      { title: "Operations", question: "Which machines are behind today’s production plan?" },
-      { title: "Production / OEE", question: "Which shift and machine has the greatest performance loss?" },
+      { title: "Operations", question: "Which KPIs deviated most from target this week?" },
+      { title: "Finance", question: "Which product groups are below gross-margin target?" },
       { title: "Finance", question: "How did the cash conversion cycle change this quarter?" },
       { title: "Sales", question: "Which customer and product groups lost gross margin?" },
       { title: "Inventory", question: "Which materials are approaching critical stock?" },
       { title: "Executive", question: "Which three KPIs deviated most from target this week?" },
     ],
-    textileTitle: "Understand dyehouse data without waiting for a report.",
-    textileBody:
-      "Query batch, recipe, machine, shift, waste, quality, water, energy, due-date, and shipment data in one modeled context.",
+    operationsTitle: "Understand the whole operation in one business language.",
+    operationsBody:
+      "Query finance, sales, inventory, customer, and operational data through shared definitions so teams do not interpret the same metric differently.",
     trustTitle: "See the mechanism behind the answer.",
     trustBody:
       "Read-only controls, the semantic model, dry-plan validation, visible SQL, and permission-aware access create an explicit governance boundary.",
@@ -463,7 +447,7 @@ const en: MarketingContent = {
       description: "Natural-language convenience is bounded by semantic context and deterministic validation.",
       cta: "Schedule a technical conversation",
       sections: [
-        { id: "raw-llm", title: "Why raw text-to-SQL is insufficient", body: "A schema alone cannot explain how your organization defines revenue, active customer, or waste." },
+        { id: "raw-llm", title: "Why raw text-to-SQL is insufficient", body: "A schema alone cannot explain how your organization defines revenue, active customer, or inventory turnover." },
         { id: "onboarding", title: "1. Define the source and schema", body: "Connection information is managed in tenant context; schema and relationships are discovered." },
         { id: "semantics", title: "2. Model business meaning", body: "Relationships, metric expressions, time dimensions, units, and terms are added to the semantic model." },
         { id: "interpret", title: "3. Match the question to context", body: "The natural-language question is resolved against catalog measures and dimensions; the LLM proposes." },
@@ -480,26 +464,11 @@ const en: MarketingContent = {
       cta: "Discuss your priority use case",
       sections: [
         { id: "executive", title: "Executive visibility", body: "See KPI exceptions and deviations from target.", points: ["Which three KPIs deviated most this week?", "KPI summary with explainable breakdown"] },
-        { id: "operations", title: "Production and OEE", body: "Query losses by machine, shift, and process.", points: ["Which shift has the greatest performance loss?", "OEE, waste, and production table"] },
+        { id: "operations", title: "Operational performance", body: "Query targets, actuals, and drivers by team, process, and period.", points: ["Which KPIs deviated most from target?", "Explainable performance breakdown"] },
         { id: "sales", title: "Sales and customer", body: "Compare customer, product, pricing, and profitability trends." },
         { id: "finance", title: "Finance and KPI", body: "Produce financial indicators with visible formulas and components." },
         { id: "inventory", title: "Inventory and supply", body: "Assess critical stock, slow movement, and due-date impact together." },
         { id: "data", title: "Data / IT governance", body: "Reduce ad-hoc requests while preserving query governance and permissions." },
-      ],
-    },
-    textile: {
-      eyebrow: "Textile and dyehouse",
-      title: "Access your dyehouse production data in business language.",
-      description: "Query dyehouse data from batch and recipe to OEE, waste, energy, and delivery risk in a modeled context.",
-      cta: "Request a dyehouse demo",
-      sections: [
-        { id: "landscape", title: "Connected operational data", body: "Batches, shifts, machines, recipes, orders, shipments, customers, and personnel form one analytical map." },
-        { id: "oee", title: "Production and OEE", body: "What is OEE by machine this month? How does efficiency vary by shift × weekday?" },
-        { id: "quality", title: "Waste and quality", body: "Which stage has the highest waste? Which batch and recipe has the greatest color deviation?" },
-        { id: "recipe", title: "Recipe and chemicals", body: "How does chemical cost contribution vary by recipe and process result?" },
-        { id: "energy", title: "Water and energy", body: "Compare water and energy per kilogram by machine, recipe, or period." },
-        { id: "orders", title: "Due dates and shipments", body: "See at-risk orders alongside production progress and shipment status." },
-        { id: "scope", title: "Not a MES or ERP", body: "Dima is a semantic analytics and reporting layer over your operational systems." },
       ],
     },
     security: {
@@ -522,7 +491,7 @@ const en: MarketingContent = {
       description: "We distinguish engine capability from production-tested Dima support.",
       cta: "Assess your integration scope",
       sections: [
-        { id: "duckdb", title: "DuckDB demo model", body: "The end-to-end synthetic data source for the dyehouse demo.", status: "available" },
+        { id: "duckdb", title: "DuckDB demo model", body: "A synthetic source that demonstrates the product flow without real customer data.", status: "available" },
         { id: "postgres", title: "Postgres", body: "A data source used in Dima connection configuration and supported in the current scope.", status: "available" },
         { id: "engine", title: "MSSQL and Oracle", body: "Connectors exist in the Wren engine; Dima production support requires dialect, model, and live-connection validation.", status: "planned" },
         { id: "process", title: "Onboarding flow", body: "Connection → schema discovery → semantic model → dry-plan validation → tenant-scoped access." },
@@ -607,7 +576,6 @@ export const publicRoutes = [
   "/product",
   "/how-it-works",
   "/solutions",
-  "/solutions/textile-dyehouse",
   "/security",
   "/integrations",
   "/about",

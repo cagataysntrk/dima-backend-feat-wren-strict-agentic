@@ -7,22 +7,22 @@ import type { MarketingLocale } from "@/content/marketing";
 
 const copy = {
   tr: {
-    question: "Bu hafta hedefin gerisinde kalan makineler hangileri?",
-    context: "OEE hedefi ≥ %78 · dönem: son 7 gün · boyut: makine",
+    question: "Brüt kârı hedefin altında kalan ürün grupları hangileri?",
+    context: "Brüt kâr hedefi ≥ %32 · dönem: bu çeyrek · boyut: ürün grubu",
     tabs: ["Sonuç", "SQL", "Çözüm izi"],
-    result: "3 makine eşik altında",
-    columns: ["Makine", "OEE", "Fark"],
-    rows: [["JET-04", "%71,8", "−6,2 puan"], ["HT-02", "%74,1", "−3,9 puan"], ["JET-01", "%77,3", "−0,7 puan"]],
-    trace: ["Semantic ölçü eşleşti: oee", "SELECT-only guard geçti", "Dry-plan başarıyla tamamlandı"],
+    result: "3 ürün grubu eşik altında",
+    columns: ["Ürün grubu", "Brüt kâr", "Fark"],
+    rows: [["Kurumsal", "%24,8", "−7,2 puan"], ["Standart", "%28,1", "−3,9 puan"], ["Hizmet", "%31,3", "−0,7 puan"]],
+    trace: ["Semantic ölçü eşleşti: gross_margin", "SELECT-only guard geçti", "Dry-plan başarıyla tamamlandı"],
   },
   en: {
-    question: "Which machines fell behind target this week?",
-    context: "OEE target ≥ 78% · period: last 7 days · dimension: machine",
+    question: "Which product groups are below gross-margin target?",
+    context: "Gross-margin target ≥ 32% · period: this quarter · dimension: product group",
     tabs: ["Result", "SQL", "Resolution trace"],
-    result: "3 machines below threshold",
-    columns: ["Machine", "OEE", "Delta"],
-    rows: [["JET-04", "71.8%", "−6.2 pts"], ["HT-02", "74.1%", "−3.9 pts"], ["JET-01", "77.3%", "−0.7 pts"]],
-    trace: ["Semantic measure matched: oee", "SELECT-only guard passed", "Dry plan completed"],
+    result: "3 product groups below threshold",
+    columns: ["Product group", "Gross margin", "Delta"],
+    rows: [["Enterprise", "24.8%", "−7.2 pts"], ["Standard", "28.1%", "−3.9 pts"], ["Services", "31.3%", "−0.7 pts"]],
+    trace: ["Semantic measure matched: gross_margin", "SELECT-only guard passed", "Dry plan completed"],
   },
 } as const;
 
@@ -62,7 +62,7 @@ export function ProductProof({ locale }: { locale: MarketingLocale }) {
                 </div>
               </>
             )}
-            {tab === 1 && <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-xs leading-6 text-muted-foreground"><code>{`SELECT machine_name,\n  ROUND(AVG(oee) * 100, 1) AS oee_pct\nFROM production_performance\nWHERE production_date >= CURRENT_DATE - INTERVAL '7 days'\nGROUP BY machine_name\nHAVING AVG(oee) < 0.78\nORDER BY oee_pct ASC;`}</code></pre>}
+            {tab === 1 && <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-xs leading-6 text-muted-foreground"><code>{`SELECT product_group,\n  ROUND(100 * SUM(gross_profit) /\n    NULLIF(SUM(net_revenue), 0), 1) AS margin_pct\nFROM sales_performance\nWHERE booked_at >= DATE_TRUNC('quarter', CURRENT_DATE)\nGROUP BY product_group\nHAVING SUM(gross_profit) /\n  NULLIF(SUM(net_revenue), 0) < 0.32\nORDER BY margin_pct ASC;`}</code></pre>}
             {tab === 2 && <ol className="space-y-4">{c.trace.map((item, index) => <li className="flex gap-4" key={item}><span className="flex size-7 shrink-0 items-center justify-center rounded-full border font-mono text-xs text-brand">{index + 1}</span><span className="pt-1 text-sm">{item}</span></li>)}</ol>}
           </div>
         </div>

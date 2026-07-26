@@ -83,7 +83,7 @@ export default async function MarketingHome() {
         </Container>
       </section>
 
-      <EditorialFeature eyebrow="textile / dyehouse" title={h.textileTitle} body={h.textileBody} href="/solutions/textile-dyehouse" content={content} />
+      <EditorialFeature eyebrow="connected operations" title={h.operationsTitle} body={h.operationsBody} href="/solutions" content={content} />
       <EditorialFeature eyebrow="security / governance" title={h.trustTitle} body={h.trustBody} href="/security" content={content} reverse />
       <EditorialFeature eyebrow="integrations / deployment" title={h.integrationTitle} body={h.integrationBody} href="/integrations" content={content} />
 
