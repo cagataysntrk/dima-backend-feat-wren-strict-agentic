@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CapabilityStatus, MarketingContent, PageContent } from "@/content/marketing";
 
@@ -29,39 +29,6 @@ export function StatusBadge({ status, content }: { status?: CapabilityStatus; co
     <span className="inline-flex rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
       {content.common[status]}
     </span>
-  );
-}
-
-export function DetailPage({ page, content, visual }: { page: PageContent; content: MarketingContent; visual?: React.ReactNode }) {
-  return (
-    <>
-      <PageHero page={page} />
-      {visual}
-      <Container className="py-16 sm:py-24">
-        <div className="divide-y border-y">
-          {page.sections.map((section, index) => (
-            <article key={section.id} id={section.id} className="grid gap-6 py-10 md:grid-cols-[72px_1fr_1.4fr] md:gap-10 md:py-14">
-              <span className="font-mono text-xs text-brand">{String(index + 1).padStart(2, "0")}</span>
-              <div>
-                <StatusBadge status={section.status} content={content} />
-                <h2 className="mt-3 text-balance text-2xl font-semibold tracking-tight">{section.title}</h2>
-              </div>
-              <div>
-                <p className="leading-7 text-muted-foreground">{section.body}</p>
-                {section.points && (
-                  <ul className="mt-5 grid gap-2">
-                    {section.points.map((point) => (
-                      <li key={point} className="flex gap-3 text-sm"><Check className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden="true" />{point}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </article>
-          ))}
-        </div>
-      </Container>
-      <FinalCta content={content} label={page.cta} />
-    </>
   );
 }
 

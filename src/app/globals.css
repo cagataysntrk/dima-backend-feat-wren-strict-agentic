@@ -265,15 +265,15 @@
 }
 
 .visual-scan {
-  animation: visual-scan 6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  animation: visual-scan 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
 }
 
 .visual-dash {
-  animation: visual-dash 3s linear infinite;
+  animation: visual-dash 1.1s ease-out 0.2s both;
 }
 
 .visual-ring {
-  animation: visual-ring 4s ease-in-out infinite;
+  animation: visual-ring 0.8s ease-out 0.25s both;
 }
 
 .visual-pulse {

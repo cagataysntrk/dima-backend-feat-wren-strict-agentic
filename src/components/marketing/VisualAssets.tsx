@@ -326,6 +326,29 @@ export function MiniSignal({ index }: { index: number }) {
     "M2 12 18 18 34 8 50 22 66 17 82 25 98 14",
     "M2 24 18 24 34 19 50 18 66 12 82 10 98 4",
   ];
+  if (index === 1) {
+    return (
+      <svg aria-hidden="true" className="mt-7 h-9 w-full text-brand/70" viewBox="0 0 100 30" preserveAspectRatio="none">
+        {[12, 26, 43, 61, 78].map((x, i) => <rect fill="currentColor" height={6 + i * 4} key={x} opacity={0.22 + i * 0.1} width="9" x={x} y={24 - i * 4} />)}
+        <path d="M0 8h100" stroke="currentColor" strokeDasharray="3 4" strokeOpacity=".45" />
+      </svg>
+    );
+  }
+  if (index === 3) {
+    return (
+      <svg aria-hidden="true" className="mt-7 h-9 w-full text-brand/70" viewBox="0 0 100 30" preserveAspectRatio="none">
+        {Array.from({ length: 12 }, (_, i) => <rect fill="currentColor" height="7" key={i} opacity={i % 5 === 0 ? ".65" : i % 3 === 0 ? ".32" : ".12"} width="7" x={(i % 6) * 16 + 2} y={Math.floor(i / 6) * 13 + 2} />)}
+      </svg>
+    );
+  }
+  if (index === 4) {
+    return (
+      <svg aria-hidden="true" className="mt-7 h-9 w-full text-brand/70" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <rect fill="currentColor" height="8" opacity=".12" width="100" y="11" /><rect fill="currentColor" height="8" opacity=".55" width="28" y="11" />
+        <path d="M35 4v22" stroke="currentColor" strokeDasharray="2 3" />
+      </svg>
+    );
+  }
   return (
     <svg aria-hidden="true" className="mt-7 h-9 w-full text-brand/70" fill="none" preserveAspectRatio="none" viewBox="0 0 100 30">
       <path d="M0 29h100" stroke="currentColor" strokeOpacity=".18" />

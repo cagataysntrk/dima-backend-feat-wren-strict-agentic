@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Mail } from "lucide-react";
+import { ArrowDown, Braces, Database, Mail, MessageSquareText } from "lucide-react";
 import { getLocale } from "next-intl/server";
 import { ContactForm } from "@/components/marketing/ContactForm";
 import { Container, Eyebrow } from "@/components/marketing/MarketingPrimitives";
@@ -19,7 +19,14 @@ export default async function ContactPage() {
   return (
     <section className="marketing-grid py-20 sm:py-28">
       <Container className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr]">
-        <div><Eyebrow>{tr ? "İletişim" : "Contact"}</Eyebrow><h1 className="mt-5 text-balance font-display text-5xl leading-tight sm:text-6xl">{tr ? "Gerçek bir iş sorusuyla tanışalım." : "Let’s meet through a real business question."}</h1><p className="mt-6 max-w-lg text-lg leading-8 text-muted-foreground">{tr ? "Veri kaynağınızı, mevcut rapor akışınızı ve doğrulanması gereken ilk soruyu paylaşın." : "Tell us about your data source, reporting flow, and the first question that needs validation."}</p><a className="mt-8 inline-flex items-center gap-2 text-sm hover:underline" href="mailto:contact@upcytech.com"><Mail className="size-4 text-brand" />contact@upcytech.com</a></div>
+        <div><Eyebrow>{tr ? "İletişim" : "Contact"}</Eyebrow><h1 className="mt-5 text-balance font-display text-5xl leading-tight sm:text-6xl">{tr ? "Gerçek bir iş sorusuyla tanışalım." : "Let’s meet through a real business question."}</h1><p className="mt-6 max-w-lg text-lg leading-8 text-muted-foreground">{tr ? "Veri kaynağınızı, mevcut rapor akışınızı ve doğrulanması gereken ilk soruyu paylaşın." : "Tell us about your data source, reporting flow, and the first question that needs validation."}</p><a className="mt-8 inline-flex items-center gap-2 text-sm hover:underline" href="mailto:contact@upcytech.com"><Mail className="size-4 text-brand" />contact@upcytech.com</a>
+          <div className="mt-12 overflow-hidden rounded-xl border bg-card">
+            <p className="border-b px-4 py-3 font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">{tr ? "Demo kapsamı" : "Demo scope"}</p>
+            <div className="grid gap-px bg-border sm:grid-cols-3">
+              {[[Database, tr ? "Veri kaynağı" : "Data source"], [MessageSquareText, tr ? "İlk iş sorusu" : "First question"], [Braces, tr ? "Doğrulama akışı" : "Validation flow"]].map(([Icon, label], index) => { const StepIcon = Icon as typeof Database; return <div className="relative bg-background p-4" key={String(label)}><StepIcon className="size-4 text-brand" /><p className="mt-6 text-xs font-semibold">{String(label)}</p><span className="absolute right-3 top-3 font-mono text-[8px] text-muted-foreground">0{index + 1}</span>{index < 2 ? <ArrowDown className="absolute -bottom-2 left-1/2 z-10 hidden size-3 -rotate-90 text-brand sm:block" /> : null}</div>; })}
+            </div>
+          </div>
+        </div>
         <div className="rounded-xl border bg-card p-6 shadow-lg sm:p-9"><ContactForm locale={content.locale} /></div>
       </Container>
     </section>

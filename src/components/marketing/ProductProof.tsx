@@ -78,7 +78,15 @@ export function ProductProof({ locale }: { locale: MarketingLocale }) {
             {tab === 0 && (
               <>
                 <p className="mb-5 flex items-center gap-2 text-sm font-medium"><CheckCircle2 className="size-4 text-chart-2" />{c.result}</p>
-                <div className="overflow-x-auto border">
+                <div className="grid gap-2 sm:hidden">
+                  {c.rows.map((row) => (
+                    <div className="rounded-lg border bg-background p-3" key={row[0]}>
+                      <div className="flex items-center justify-between gap-3"><span className="text-xs font-medium">{row[0]}</span><span className="font-mono text-xs">{row[1]}</span></div>
+                      <p className="mt-2 font-mono text-[9px] text-muted-foreground">{c.columns[2]} · {row[2]}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="hidden overflow-x-auto border sm:block">
                   <table className="w-full min-w-md text-left text-sm">
                     <thead className="bg-muted font-mono text-[11px] uppercase tracking-wider text-muted-foreground"><tr>{c.columns.map((col) => <th className="px-4 py-3 font-medium" key={col}>{col}</th>)}</tr></thead>
                     <tbody>{c.rows.map((row) => <tr className="border-t" key={row[0]}>{row.map((cell) => <td className="px-4 py-3" key={cell}>{cell}</td>)}</tr>)}</tbody>
