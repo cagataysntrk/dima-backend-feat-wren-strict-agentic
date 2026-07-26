@@ -31,6 +31,7 @@ const navigation = [
 export function MarketingHeader({ content }: { content: MarketingContent }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const update = () => setScrolled(window.scrollY > 18);
@@ -76,9 +77,20 @@ export function MarketingHeader({ content }: { content: MarketingContent }) {
           <Button asChild variant="brand" className="hidden sm:inline-flex">
             <Link href="/contact">{content.nav.demo}</Link>
           </Button>
-          <Sheet>
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="lg:hidden" aria-label={content.nav.menu}>
+              <Button
+                variant="outline"
+                size="icon"
+                className="lg:hidden"
+                aria-label={
+                  mobileOpen
+                    ? content.locale === "tr"
+                      ? "Menüyü kapat"
+                      : "Close menu"
+                    : content.nav.menu
+                }
+              >
                 <Menu />
               </Button>
             </SheetTrigger>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { BorderBeam } from "@/components/marketing/MagicUI";
+import { BorderBeam, Particles } from "@/components/marketing/MagicUI";
 import { Reveal } from "@/components/marketing/MarketingMotion";
 import { Button } from "@/components/ui/button";
 import type { CapabilityStatus, MarketingContent, PageContent } from "@/content/marketing";
@@ -43,13 +43,14 @@ export function FinalCta({ content, label }: { content: MarketingContent; label?
   return (
     <section className="relative overflow-hidden border-t bg-foreground py-16 text-background sm:py-20">
       <BorderBeam duration={8} />
+      <Particles className="opacity-35" quantity={28} />
       <Container className="relative z-10 flex flex-col items-start justify-between gap-8 md:flex-row md:items-end">
         <div>
           <p className="font-mono text-xs font-medium tracking-[0.12em] text-background/80">{content.common.demo}</p>
           <h2 className="mt-4 max-w-2xl font-display text-4xl leading-tight sm:text-5xl">{content.common.finalTitle}</h2>
           <p className="mt-4 max-w-xl text-background/70">{content.common.finalBody}</p>
         </div>
-        <Button asChild variant="brand" size="lg" className="min-h-11 max-w-full whitespace-normal text-center">
+        <Button asChild variant="brand" size="lg" className="relative min-h-11 max-w-full overflow-hidden whitespace-normal text-center shadow-lg transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-xl focus-visible:-translate-y-0.5 focus-visible:shadow-xl">
           <Link href="/contact">{label ?? content.common.demo}<ArrowRight aria-hidden="true" /></Link>
         </Button>
       </Container>

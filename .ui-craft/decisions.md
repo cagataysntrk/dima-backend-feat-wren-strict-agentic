@@ -15,3 +15,16 @@ sanitized fixtures and existing product mechanisms.
 
 Use Motion's lazy `domAnimation` feature bundle and tween-based timing. No bounce,
 magnetic cursor, cinematic scroll, or interaction-blocking stagger.
+
+## 2026-07-27 — UpcyMan-level motion density
+
+Increase marketing motion to UpcyMan-level density through tokenized MagicUI patterns:
+cursor-follow card light, restrained tilt, animated beams, number tickers, question
+marquees, particles, and rotating hero language. Pause or simplify continuous motion
+off-screen, on touch devices, and under reduced-motion preferences.
+
+## 2026-07-27 — Plain bilingual marketing language
+
+Main Turkish copy uses natural Turkish and main English copy uses natural English.
+Technical terms remain only where product proof, security, integrations, or legal
+accuracy requires them. Every section visual must demonstrate the promise in its heading.

@@ -9,7 +9,15 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { getLocale } from "next-intl/server";
-import { BentoGrid, MagicCard, ProgressiveBlur } from "@/components/marketing/MagicUI";
+import {
+  BentoGrid,
+  BorderBeam,
+  MagicCard,
+  Marquee,
+  Particles,
+  ProgressiveBlur,
+  WordRotate,
+} from "@/components/marketing/MagicUI";
 import { MarketingEditorialImage } from "@/components/marketing/MarketingAssets";
 import {
   Float,
@@ -55,11 +63,14 @@ export default async function MarketingHome() {
     <>
       <section className="relative overflow-hidden border-b">
         <div aria-hidden="true" className="marketing-grid absolute inset-0 opacity-45 [mask-image:linear-gradient(to_bottom,black,transparent_88%)]" />
+        <Particles className="hidden opacity-70 sm:block" quantity={38} />
         <Container className="relative grid min-h-[calc(100svh-4rem)] gap-12 py-16 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:py-20">
           <Reveal className="relative z-10">
             <Eyebrow>{h.eyebrow}</Eyebrow>
             <h1 className="mt-6 max-w-3xl text-balance font-display text-5xl leading-[0.96] tracking-[-0.045em] sm:text-7xl lg:text-[5.15rem]">
               {h.title}
+              <br />
+              <WordRotate className="text-brand" words={h.rotateWords} />
             </h1>
             <p className="mt-7 max-w-xl text-pretty text-lg leading-8 text-muted-foreground">
               {h.description}
@@ -77,11 +88,11 @@ export default async function MarketingHome() {
             </div>
             <div className="mt-12 grid max-w-xl grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-4">
               {h.process.map((step, index) => (
-                <div className="bg-background px-3 py-4" key={step}>
+                <div className="group bg-background px-3 py-4 transition-colors duration-300 hover:bg-brand/5" key={step}>
                   <span className="font-mono text-[9px] tabular-nums text-brand">
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <p className="mt-2 text-xs font-medium leading-5">{step}</p>
+                  <p className="mt-2 text-xs font-medium leading-5 transition-transform duration-300 group-hover:translate-x-0.5">{step}</p>
                 </div>
               ))}
             </div>
@@ -89,6 +100,7 @@ export default async function MarketingHome() {
 
           <Reveal delay={0.12} y={18} className="relative">
             <div className="relative aspect-[4/3] overflow-hidden rounded-[1.15rem] border bg-card shadow-xl">
+              <BorderBeam duration={9} />
               <MarketingEditorialImage
                 asset="hero"
                 className="marketing-editorial-image"
@@ -99,23 +111,41 @@ export default async function MarketingHome() {
               <ProgressiveBlur />
             </div>
             <Float className="absolute -left-3 top-[12%] sm:-left-8" distance={7}>
-              <EvidenceChip icon={Braces} label={tr ? "Modeled context" : "Modeled context"} meta="semantic / ready" />
+              <EvidenceChip icon={Braces} label={tr ? "Ortak iş tanımları" : "Shared business definitions"} meta={tr ? "tanımlar / hazır" : "definitions / ready"} />
             </Float>
             <Float className="absolute -right-2 bottom-[28%] sm:-right-7" distance={6} duration={6.3} delay={0.4}>
-              <EvidenceChip icon={ShieldCheck} label={tr ? "Dry-plan doğrulandı" : "Dry plan verified"} meta="guard / pass" />
+              <EvidenceChip icon={ShieldCheck} label={tr ? "Ön kontroller tamam" : "Pre-checks complete"} meta={tr ? "güvenli / hazır" : "safe / ready"} />
             </Float>
             <Float className="absolute bottom-4 left-[8%] sm:bottom-6" distance={5} duration={6.8} delay={0.8}>
-              <EvidenceChip icon={GitBranch} label={tr ? "Çözüm izi görünür" : "Resolution trace visible"} meta="evidence / linked" />
+              <EvidenceChip icon={GitBranch} label={tr ? "Cevabın kaynağı görünür" : "Answer source visible"} meta={tr ? "kaynak / bağlı" : "source / linked"} />
             </Float>
           </Reveal>
         </Container>
+      </section>
+
+      <section className="relative overflow-hidden border-b bg-muted/20 py-8">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-background to-transparent sm:w-36" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-background to-transparent sm:w-36" />
+        <Marquee className="[--duration:36s] [--gap:0.75rem]">
+          {h.useCases.map((item) => (
+            <div className="group flex w-80 shrink-0 items-start gap-3 rounded-xl border bg-card/90 p-4 shadow-sm transition-[border-color,transform] duration-300 hover:-translate-y-1 hover:border-brand/35" key={`${item.title}-${item.question}`}>
+              <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
+                <Search className="size-3.5" aria-hidden="true" />
+              </span>
+              <span>
+                <span className="block text-[10px] font-semibold text-brand">{item.title}</span>
+                <span className="mt-1 block text-sm leading-5">{item.question}</span>
+              </span>
+            </div>
+          ))}
+        </Marquee>
       </section>
 
       <section className="border-b py-18 sm:py-24">
         <Container>
           <Reveal className="grid gap-5 md:grid-cols-[0.9fr_1.1fr] md:items-end">
             <div>
-              <Eyebrow>{tr ? "Ürün kanıtı" : "Product evidence"}</Eyebrow>
+              <Eyebrow>{tr ? "Ürün içinde görün" : "See it in the product"}</Eyebrow>
               <h2 className="mt-4 max-w-2xl text-balance font-display text-4xl leading-tight sm:text-5xl">
                 {h.proofTitle}
               </h2>
@@ -131,11 +161,11 @@ export default async function MarketingHome() {
       <section className="border-b bg-muted/20 py-18 sm:py-24">
         <Container>
           <Reveal className="max-w-3xl">
-            <Eyebrow>{tr ? "Görünür mekanizma" : "Visible mechanism"}</Eyebrow>
+            <Eyebrow>{tr ? "Bir cevabın içinde ne var?" : "What is inside an answer?"}</Eyebrow>
             <h2 className="mt-4 text-balance font-display text-4xl sm:text-5xl">
               {tr
-                ? "Tek bir cevap değil, incelenebilir bir analitik çalışma alanı."
-                : "Not a single answer—an analytical workbench you can inspect."}
+                ? "Soru, kontrol ve sonuç birbirinden kopuk kalmaz."
+                : "The question, checks, and result stay connected."}
             </h2>
           </Reveal>
           <Stagger className="mt-12">
@@ -148,8 +178,8 @@ export default async function MarketingHome() {
             <StaggerItem className="md:col-span-2">
               <SignalCard
                 icon={Search}
-                title={tr ? "Soru bağlama çözülür" : "The question resolves to context"}
-                body={tr ? "Ölçü, boyut ve dönem aynı görünümde eşleşir." : "Measure, dimension, and period match in one view."}
+                title={tr ? "Soru doğru tanımlarla eşleşir" : "The question matches the right definitions"}
+                body={tr ? "Brüt kâr, ürün grubu ve dönem aynı anlamda buluşur." : "Gross margin, product group, and period meet in one shared meaning."}
               >
                 <MiniSignal index={1} />
               </SignalCard>
@@ -157,8 +187,8 @@ export default async function MarketingHome() {
             <StaggerItem className="md:col-span-2">
               <SignalCard
                 icon={CheckCircle2}
-                title={tr ? "Her karar görünür kalır" : "Every decision stays visible"}
-                body={tr ? "Guard, dry-plan ve provenance tek çözüm izinde." : "Guard, dry plan, and provenance share one trace."}
+                title={tr ? "Her kontrol görünür kalır" : "Every check stays visible"}
+                body={tr ? "Yalnızca okuma, ön kontrol ve cevap kaynağı tek akışta görünür." : "Read-only access, pre-checks, and the answer source share one flow."}
               >
                 <MiniSignal index={4} />
               </SignalCard>
@@ -181,7 +211,7 @@ export default async function MarketingHome() {
       <section className="border-b py-18 sm:py-24">
         <Container>
           <Reveal>
-            <Eyebrow>{tr ? "Sorudan kanıta" : "Question to evidence"}</Eyebrow>
+            <Eyebrow>{tr ? "Sorudan rapora" : "Question to report"}</Eyebrow>
             <h2 className="mt-4 max-w-3xl text-balance font-display text-4xl sm:text-5xl">
               {h.workflowTitle}
             </h2>
@@ -193,7 +223,7 @@ export default async function MarketingHome() {
       </section>
 
       <EditorialFeature
-        eyebrow={tr ? "Ortak karar bağlamı" : "Shared decision context"}
+        eyebrow={tr ? "Ekiplerin ortak dili" : "One language for every team"}
         title={h.operationsTitle}
         body={h.operationsBody}
         href="/solutions"
@@ -205,7 +235,7 @@ export default async function MarketingHome() {
         }
       />
       <EditorialFeature
-        eyebrow={tr ? "Güven sınırları" : "Trust boundaries"}
+        eyebrow={tr ? "Her istekte güven" : "Protection on every request"}
         title={h.trustTitle}
         body={h.trustBody}
         href="/security"
@@ -214,7 +244,7 @@ export default async function MarketingHome() {
         reverse
       />
       <EditorialFeature
-        eyebrow={tr ? "Kaynaklardan kullanıma" : "Sources to use"}
+        eyebrow={tr ? "Kaynaklardan rapora" : "Sources to reports"}
         title={h.integrationTitle}
         body={h.integrationBody}
         href="/integrations"

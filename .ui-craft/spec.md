@@ -5,6 +5,9 @@
 Use a product-forward landing composition: split hero, interactive product evidence,
 asymmetric bento, visible workflow, alternating evidence rows, FAQ, and one final CTA.
 
+Each section heading, body, and adjacent visual must express one shared promise. A visual
+cannot be reused as generic decoration when it does not explain that section.
+
 ## Route contracts
 
 - Home: image-led split hero, product workbench, bento evidence, workflow, trust and
@@ -22,7 +25,8 @@ asymmetric bento, visible workflow, alternating evidence rows, FAQ, and one fina
 
 - No identical icon-card feature grids.
 - No fake product screenshots or unsupported claims.
-- One accent and one signature motion detail per viewport.
+- Two to four coordinated motion signals may share a viewport. Only one may dominate;
+  the rest support it through card tilt, spotlight, beam, ticker, or list sequencing.
 - Every interactive element is keyboard reachable and has a visible focus state.
 - Reduced motion preserves all information.
 - Mobile layouts never require horizontal page scrolling.

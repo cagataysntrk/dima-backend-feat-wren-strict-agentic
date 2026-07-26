@@ -1,9 +1,32 @@
 "use client";
 
-import type { CSSProperties, MouseEvent, ReactNode } from "react";
-import { useRef, useState } from "react";
-import { m, useReducedMotion } from "motion/react";
+import type { CSSProperties, PointerEvent, ReactNode, RefObject } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
+import {
+  AnimatePresence,
+  m,
+  useInView,
+  useMotionValue,
+  useSpring,
+  useTransform,
+} from "motion/react";
 import { cn } from "@/lib/utils";
+
+const reducedMotionQuery = "(prefers-reduced-motion: reduce)";
+
+function subscribeToReducedMotion(onStoreChange: () => void) {
+  const media = window.matchMedia(reducedMotionQuery);
+  media.addEventListener("change", onStoreChange);
+  return () => media.removeEventListener("change", onStoreChange);
+}
+
+function useStableReducedMotion() {
+  return useSyncExternalStore(
+    subscribeToReducedMotion,
+    () => window.matchMedia(reducedMotionQuery).matches,
+    () => false,
+  );
+}
 
 export function BentoGrid({
   children,
@@ -27,50 +50,89 @@ export function BentoGrid({
 export function MagicCard({
   children,
   className,
+  tilt = true,
 }: {
   children: ReactNode;
   className?: string;
+  tilt?: boolean;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [pointer, setPointer] = useState({ x: 0, y: 0, visible: false });
+  const reduceMotion = useStableReducedMotion();
+  const pointerX = useMotionValue(50);
+  const pointerY = useMotionValue(50);
+  const rotateX = useSpring(useTransform(pointerY, [0, 100], [2.4, -2.4]), {
+    stiffness: 210,
+    damping: 24,
+  });
+  const rotateY = useSpring(useTransform(pointerX, [0, 100], [-2.4, 2.4]), {
+    stiffness: 210,
+    damping: 24,
+  });
+  const [active, setActive] = useState(false);
+  const [supportsPointerMotion, setSupportsPointerMotion] = useState(false);
 
-  function onPointerMove(event: MouseEvent<HTMLDivElement>) {
+  useEffect(() => {
+    const media = window.matchMedia(
+      "(min-width: 768px) and (hover: hover) and (pointer: fine)",
+    );
+    const update = () => setSupportsPointerMotion(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  function onPointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (!supportsPointerMotion) return;
     const bounds = cardRef.current?.getBoundingClientRect();
     if (!bounds) return;
-    setPointer({
-      x: event.clientX - bounds.left,
-      y: event.clientY - bounds.top,
-      visible: true,
-    });
+    pointerX.set(((event.clientX - bounds.left) / bounds.width) * 100);
+    pointerY.set(((event.clientY - bounds.top) / bounds.height) * 100);
+    setActive(true);
+  }
+
+  function resetPointer() {
+    pointerX.set(50);
+    pointerY.set(50);
+    setActive(false);
   }
 
   return (
-    <div
+    <m.div
       ref={cardRef}
       className={cn(
-        "group relative overflow-hidden rounded-xl border bg-card shadow-sm",
+        "group relative overflow-hidden rounded-xl border bg-card shadow-sm [transform-style:preserve-3d]",
+        "transition-[border-color,box-shadow] duration-300 hover:border-brand/30 hover:shadow-xl hover:shadow-brand/5 focus-visible:border-brand/30 focus-visible:shadow-xl focus-within:border-brand/30 focus-within:shadow-xl focus-within:shadow-brand/5",
         className,
       )}
-      onMouseMove={onPointerMove}
-      onMouseLeave={() => setPointer((value) => ({ ...value, visible: false }))}
+      onPointerMove={onPointerMove}
+      onPointerLeave={resetPointer}
+      onBlurCapture={resetPointer}
+      style={
+        tilt && supportsPointerMotion && !reduceMotion
+          ? { rotateX, rotateY, transformPerspective: 900 }
+          : undefined
+      }
     >
-      <div
+      <m.div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-0 opacity-0 transition-opacity duration-200"
-        style={
-          {
-            background: `radial-gradient(360px circle at ${pointer.x}px ${pointer.y}px, color-mix(in oklch, var(--brand) 12%, transparent), transparent 70%)`,
-            opacity: pointer.visible ? 1 : 0,
-          } as CSSProperties
-        }
+        className="pointer-events-none absolute -inset-px z-0"
+        animate={{ opacity: active ? 1 : 0 }}
+        transition={{ duration: 0.2 }}
+        style={{
+          background: useTransform(
+            [pointerX, pointerY],
+            ([x, y]) =>
+              `radial-gradient(420px circle at ${x}% ${y}%, color-mix(in oklch, var(--brand) 16%, transparent), transparent 68%)`,
+          ),
+        }}
       />
-      <div className="relative z-10 h-full">{children}</div>
-    </div>
+      <div className="relative z-10 h-full [transform:translateZ(0)]">{children}</div>
+    </m.div>
   );
 }
 
 export function AnimatedGridPattern({ className }: { className?: string }) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useStableReducedMotion();
   return (
     <div
       aria-hidden="true"
@@ -146,6 +208,245 @@ export function AnimatedList({
         </m.div>
       ))}
     </div>
+  );
+}
+
+export function WordRotate({
+  words,
+  className,
+  duration = 2400,
+}: {
+  words: string[];
+  className?: string;
+  duration?: number;
+}) {
+  const reduceMotion = useStableReducedMotion();
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (reduceMotion || words.length < 2) return;
+    const timer = window.setInterval(
+      () => setIndex((value) => (value + 1) % words.length),
+      duration,
+    );
+    return () => window.clearInterval(timer);
+  }, [duration, reduceMotion, words]);
+
+  return (
+    <span
+      className={cn(
+        "relative isolate inline-grid overflow-visible pb-[0.12em] align-bottom leading-[1.04]",
+        className,
+      )}
+    >
+      <span className="invisible col-start-1 row-start-1">
+        {words.reduce((longest, word) => (word.length > longest.length ? word : longest), words[0] ?? "")}
+      </span>
+      <AnimatePresence mode="wait" initial={false}>
+        <m.span
+          className="relative z-10 col-start-1 row-start-1"
+          key={words[index]}
+          initial={reduceMotion ? false : { opacity: 0, y: -18, filter: "blur(6px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          exit={reduceMotion ? undefined : { opacity: 0, y: 18, filter: "blur(6px)" }}
+          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {words[index]}
+        </m.span>
+      </AnimatePresence>
+    </span>
+  );
+}
+
+export function Marquee({
+  children,
+  className,
+  reverse = false,
+  pauseOnHover = true,
+  repeat = 4,
+}: {
+  children: ReactNode;
+  className?: string;
+  reverse?: boolean;
+  pauseOnHover?: boolean;
+  repeat?: number;
+}) {
+  const marqueeRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(marqueeRef, { margin: "160px" });
+  return (
+    <div
+      ref={marqueeRef}
+      className={cn(
+        "marketing-marquee group flex overflow-hidden [--duration:42s] [--gap:1rem]",
+        className,
+      )}
+    >
+      {Array.from({ length: repeat }, (_, index) => (
+        <div
+          aria-hidden={index > 0 || undefined}
+          className={cn(
+            "flex shrink-0 items-center gap-[var(--gap)] pr-[var(--gap)]",
+            reverse ? "marketing-marquee-reverse" : "marketing-marquee-track",
+            pauseOnHover && "group-hover:[animation-play-state:paused] group-focus-within:[animation-play-state:paused]",
+            !inView && "[animation-play-state:paused]",
+          )}
+          key={index}
+        >
+          {children}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function NumberTicker({
+  value,
+  className,
+  decimals = 0,
+  locale = "en-US",
+}: {
+  value: number;
+  className?: string;
+  decimals?: number;
+  locale?: string;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-60px" });
+  const reduceMotion = useStableReducedMotion();
+  const motionValue = useMotionValue(reduceMotion ? value : 0);
+  const spring = useSpring(motionValue, { damping: 36, stiffness: 90 });
+  const display = useTransform(spring, (latest) =>
+    new Intl.NumberFormat(locale, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(latest),
+  );
+
+  useEffect(() => {
+    if (inView || reduceMotion) motionValue.set(value);
+  }, [inView, motionValue, reduceMotion, value]);
+
+  return <m.span className={className} ref={ref}>{display}</m.span>;
+}
+
+export function Particles({
+  className,
+  quantity = 42,
+}: {
+  className?: string;
+  quantity?: number;
+}) {
+  const reduceMotion = useStableReducedMotion();
+  const particlesRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(particlesRef, { margin: "160px" });
+  return (
+    <div aria-hidden="true" className={cn("pointer-events-none absolute inset-0 overflow-hidden", className)} ref={particlesRef}>
+      {Array.from({ length: quantity }, (_, index) => {
+        const left = (index * 37 + 11) % 100;
+        const top = (index * 61 + 7) % 100;
+        const size = 1 + (index % 3) * 0.6;
+        return (
+          <span
+            className={cn("marketing-particle absolute rounded-full bg-brand/45", reduceMotion && "animate-none")}
+            key={index}
+            style={
+              {
+                left: `${left}%`,
+                top: `${top}%`,
+                width: `${size}px`,
+                height: `${size}px`,
+                "--particle-delay": `${-(index % 12) * 0.7}s`,
+                "--particle-duration": `${7 + (index % 6)}s`,
+                "--particle-drift": `${(index % 2 ? 1 : -1) * (10 + (index % 5) * 4)}px`,
+                animationPlayState: reduceMotion || !inView ? "paused" : "running",
+              } as CSSProperties
+            }
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+export function AnimatedBeam({
+  containerRef,
+  fromRef,
+  toRef,
+  className,
+  curvature = 0,
+  reverse = false,
+  duration = 4,
+  delay = 0,
+}: {
+  containerRef: RefObject<HTMLElement | null>;
+  fromRef: RefObject<HTMLElement | null>;
+  toRef: RefObject<HTMLElement | null>;
+  className?: string;
+  curvature?: number;
+  reverse?: boolean;
+  duration?: number;
+  delay?: number;
+}) {
+  const id = useId();
+  const reduceMotion = useStableReducedMotion();
+  const [path, setPath] = useState({ d: "", width: 0, height: 0 });
+
+  useEffect(() => {
+    const update = () => {
+      const container = containerRef.current?.getBoundingClientRect();
+      const from = fromRef.current?.getBoundingClientRect();
+      const to = toRef.current?.getBoundingClientRect();
+      if (!container || !from || !to) return;
+      const startX = from.left - container.left + from.width / 2;
+      const startY = from.top - container.top + from.height / 2;
+      const endX = to.left - container.left + to.width / 2;
+      const endY = to.top - container.top + to.height / 2;
+      setPath({
+        width: container.width,
+        height: container.height,
+        d: `M ${startX},${startY} Q ${(startX + endX) / 2},${startY - curvature} ${endX},${endY}`,
+      });
+    };
+    const observer = new ResizeObserver(update);
+    if (containerRef.current) observer.observe(containerRef.current);
+    update();
+    return () => observer.disconnect();
+  }, [containerRef, curvature, fromRef, toRef]);
+
+  return (
+    <svg
+      aria-hidden="true"
+      className={cn("pointer-events-none absolute inset-0", className)}
+      fill="none"
+      height={path.height}
+      viewBox={`0 0 ${path.width} ${path.height}`}
+      width={path.width}
+    >
+      <path d={path.d} stroke="var(--border)" strokeWidth="1.5" />
+      {!reduceMotion ? (
+        <path
+          className={reverse ? "marketing-beam-path-reverse" : "marketing-beam-path"}
+          d={path.d}
+          pathLength="1"
+          stroke={`url(#${id})`}
+          strokeLinecap="round"
+          strokeWidth="2"
+          style={
+            {
+              "--beam-path-duration": `${duration}s`,
+              "--beam-path-delay": `${delay}s`,
+            } as CSSProperties
+          }
+        />
+      ) : null}
+      <defs>
+        <linearGradient id={id}>
+          <stop stopColor="var(--brand)" stopOpacity="0" />
+          <stop offset="0.45" stopColor="var(--brand)" />
+          <stop offset="1" stopColor="var(--brand)" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+    </svg>
   );
 }
 

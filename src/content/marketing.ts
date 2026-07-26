@@ -1,5 +1,27 @@
 export type MarketingLocale = "tr" | "en";
 export type CapabilityStatus = "available" | "beta" | "planned";
+export type MarketingSceneKey =
+  | "question"
+  | "definitions"
+  | "checks"
+  | "results"
+  | "source"
+  | "reuse"
+  | "access"
+  | "priority"
+  | "coordination"
+  | "memory"
+  | "session"
+  | "audit"
+  | "data-flow"
+  | "deployment"
+  | "database"
+  | "connection"
+  | "support"
+  | "purpose"
+  | "principles"
+  | "company"
+  | "truth";
 
 export type ContentSection = {
   id: string;
@@ -7,6 +29,11 @@ export type ContentSection = {
   body: string;
   points?: string[];
   status?: CapabilityStatus;
+  visual?: {
+    key: MarketingSceneKey;
+    caption: string;
+    technicalNote?: string;
+  };
 };
 
 export type PageContent = {
@@ -53,6 +80,7 @@ export type MarketingContent = {
   home: {
     eyebrow: string;
     title: string;
+    rotateWords: string[];
     description: string;
     process: string[];
     proofTitle: string;
@@ -95,7 +123,7 @@ const tr: MarketingContent = {
   },
   footer: {
     statement:
-      "Doğal dil rahatlığını modellenmiş iş bağlamı ve doğrulanmış sorgularla birleştiren konuşmalı analitik.",
+      "İşletme verisine soru sormayı, cevabı anlamayı ve dayanağını görmeyi kolaylaştıran analitik.",
     product: "Ürün",
     company: "Şirket",
     legal: "Yasal",
@@ -107,9 +135,9 @@ const tr: MarketingContent = {
   },
   common: {
     learnMore: "Ayrıntıyı incele",
-    available: "Kullanılabilir",
+    available: "Dima’da doğrulandı",
     beta: "Beta",
-    planned: "Planlandı",
+    planned: "Planlanıyor",
     finalTitle: "İlk gerçek iş sorunuzla başlayalım.",
     finalBody:
       "Veri yapınızı ve öncelikli rapor ihtiyacınızı birlikte değerlendirelim.",
@@ -117,112 +145,113 @@ const tr: MarketingContent = {
     login: "Giriş yap",
   },
   home: {
-    eyebrow: "Güvenilir konuşmalı analitik",
-    title: "İşletme verinizle konuşun. Cevabın nasıl üretildiğini görün.",
+    eyebrow: "İşletme verisini anlamanın daha kolay yolu",
+    title: "Verinize sorun. Sonucu",
+    rotateWords: ["anlayın.", "karşılaştırın.", "paylaşın."],
     description:
-      "dima, doğal dilde sorduğunuz soruları modellenmiş iş bağlamına dayalı SQL’e dönüştürür, sorguyu çalıştırmadan önce doğrular ve sonucu açıklanabilir bir rapor olarak sunar.",
-    process: ["Doğal dil", "Modeled context", "Dry-plan doğrulama", "Rapor"],
-    proofTitle: "Cevaptan önce kanıt.",
+      "dima, günlük iş dilinizle sorduğunuz soruları verinizde bulur; sonucu tablo veya grafikle gösterir ve cevabın nereden geldiğini açıklar.",
+    process: ["Sorunuzu yazın", "İş tanımlarıyla eşleşsin", "Kontrol edilsin", "Sonucu görün"],
+    proofTitle: "Yalnızca cevabı değil, dayanağını da görün.",
     proofBody:
-      "Hangi iş tanımının eşleştiğini, sorgunun hangi güvenlik sınırlarından geçtiğini ve sonucu üreten SQL’i aynı akışta görün.",
+      "Hangi tanımların kullanıldığını, sorgunun hangi kontrollerden geçtiğini ve sonucun nasıl oluştuğunu tek yerde inceleyin.",
     pillarsTitle: "Güven, yalnızca doğru görünen bir cevaptan gelmez.",
     pillarsBody:
       "Her cevap; iş anlamını taşıyan model, sorgu güvenlik sınırları ve görünür bir çözüm izi üzerinde oluşur.",
     workflowTitle: "Sorudan rapora, görünür bir zincir.",
     workflow: [
       {
-        title: "Bağla ve modelle",
-        body: "Şema, ilişkiler, ölçüler, birimler ve onaylanmış iş tanımları tek bağlamda kurulur.",
+        title: "Veri kaynağını bağlayın",
+        body: "Tablolar, ilişkiler ve kurumunuzun kullandığı iş tanımları birlikte hazırlanır.",
       },
       {
-        title: "İş dilinde sor",
-        body: "Kullanıcı tablo veya kolon adı bilmeden gerçek operasyon sorusunu yazar.",
+        title: "Sorunuzu yazın",
+        body: "Tablo veya kolon adı bilmeden, ekibinizin kullandığı dille sorun.",
       },
       {
-        title: "Planla ve doğrula",
-        body: "Önerilen sorgu read-only guard ve semantic dry-plan aşamalarından geçer.",
+        title: "Kontroller tamamlansın",
+        body: "Sorgu veri kaynağına gitmeden önce yalnızca okuma ve çalıştırma kontrollerinden geçer.",
       },
       {
-        title: "İncele ve yeniden kullan",
-        body: "Sonuç, SQL ve provenance görünür; doğrulanan analitik tekrar kullanılabilir.",
+        title: "Sonucu inceleyin",
+        body: "Cevabı, grafiği ve kaynağını görün; yararlı analizi daha sonra yeniden kullanın.",
       },
     ],
     useCasesTitle: "Ekiplerin sorduğu gerçek sorular.",
     useCases: [
-      { title: "Operasyon", question: "Bu hafta hedefinden en fazla sapan KPI’lar hangileri?" },
+      { title: "Operasyon", question: "Bu hafta hedefinden en fazla sapan göstergeler hangileri?" },
       { title: "Finans", question: "Brüt kârı hedefin altında kalan ürün grupları hangileri?" },
       { title: "Finans", question: "Nakit dönüşüm süresi bu çeyrekte nasıl değişti?" },
       { title: "Satış", question: "Brüt kârı düşen müşteri ve ürün grupları hangileri?" },
       { title: "Stok", question: "Kritik seviyeye yaklaşan malzemeler hangileri?" },
-      { title: "Yönetim", question: "Bu hafta hedeflerden en fazla sapan üç KPI nedir?" },
+      { title: "Yönetim", question: "Bu hafta hedeflerden en fazla sapan üç gösterge nedir?" },
     ],
     operationsTitle: "Operasyonun tamamını aynı iş diliyle anlayın.",
     operationsBody:
       "Finans, satış, stok, müşteri ve operasyon verilerini ortak tanımlar üzerinde sorgulayın; ekipler aynı metriğin farklı yorumlarıyla uğraşmasın.",
-    trustTitle: "Cevabın arkasındaki mekanizmayı görün.",
+    trustTitle: "Cevabın nasıl korunduğunu görün.",
     trustBody:
-      "Read-only query kontrolleri, semantic model, dry-plan, görünür SQL ve permission-aware erişim; hız ile yönetişim arasında açık bir sınır kurar.",
+      "Yalnızca okuma, çalıştırma öncesi kontrol, görünür sorgu ve yetkiye dayalı erişim birlikte çalışır.",
     integrationTitle: "Mevcut veri altyapınızın üzerinde çalışır.",
     integrationBody:
-      "Bağlantı, şema keşfi, semantic modeling ve doğrulama adımları kaynak desteğinin gerçek durumuyla birlikte anlatılır.",
+      "Bağlantı, şema keşfi, ortak iş tanımları ve kontroller; her veri kaynağının gerçek destek durumuyla birlikte gösterilir.",
     faqTitle: "Sık sorulanlar",
     faq: [
       {
-        question: "dima bir chatbot mu?",
+        question: "dima yalnızca bir sohbet aracı mı?",
         answer:
           "Hayır. Sohbet arayüzü giriş noktasıdır; cevaplar modellenmiş iş bağlamı, kontrollü sorgu üretimi ve görünür raporlama akışı üzerinde oluşur.",
       },
       {
-        question: "SQL’i kim doğruluyor?",
+        question: "Oluşturulan sorgu nasıl kontrol ediliyor?",
         answer:
-          "LLM sorguyu önerebilir. Dima, izin verilen okuma biçimini guard ile kontrol eder ve sorgunun semantic model üzerinden planlanabilirliğini dry-plan ile doğrular.",
+          "Yapay zekâ sorguyu önerir. Dima, sorgunun yalnızca izin verilen veriyi okuduğunu ve çalıştırılabilir olduğunu veri kaynağına göndermeden önce kontrol eder.",
       },
       {
-        question: "Dry-plan cevabın iş açısından kesin doğru olduğunu garanti eder mi?",
+        question: "Çalıştırma öncesi kontrol kesin doğruluk sağlar mı?",
         answer:
-          "Hayır. Dry-plan sorgunun planlanabilirliğini ve semantic uyumunu sınar; iş tanımlarının doğruluğu modellenmiş bağlamın kalitesine ve kullanıcı doğrulamasına bağlıdır.",
+          "Hayır. Bu kontrol sorgunun güvenli ve çalıştırılabilir olup olmadığını sınar. İş tanımlarının ve kaynak verinin doğruluğu ayrıca kullanıcı tarafından değerlendirilir.",
       },
       {
         question: "Hangi veri kaynakları destekleniyor?",
         answer:
-          "DuckDB demo akışında, Postgres yapılandırılabilir mevcut kapsamda kullanılır. Motorun diğer connector yetenekleri Dima production desteği anlamına gelmez ve ayrı doğrulanır.",
+          "DuckDB örnek gösterimde, Postgres ise mevcut bağlantı kapsamında kullanılır. Diğer veri kaynakları Dima’da gerçek bağlantı testleri tamamlandıktan sonra desteklenmiş sayılır.",
       },
       {
-        question: "On-prem kullanılabilir mi?",
+        question: "Kurum içi kurulum kullanılabilir mi?",
         answer:
-          "Thin-agent ve hibrit on-prem yaklaşımı planlanan mimaridir; hazır production özelliği olarak sunulmaz.",
+          "Kurum ağı içinde çalışan hibrit bağlantı yaklaşımı planlanmaktadır; bugün hazır bir özellik olarak sunulmamaktadır.",
       },
     ],
   },
   pages: {
     product: {
       eyebrow: "Ürün",
-      title: "İş sorusundan doğrulanmış rapora, tek ürün akışında.",
+      title: "Bir iş sorusundan anlaşılır bir rapora.",
       description:
-        "Doğal dil arayüzü; semantic modeling, query validation ve açıklanabilir sonuç yüzeyleriyle birlikte çalışır.",
+        "Sorunuzu günlük dille yazın. dima ilgili veriyi bulsun, kontrolleri tamamlasın ve sonucu inceleyebileceğiniz biçimde göstersin.",
       cta: "Ürünü kendi verinizle değerlendirin",
       sections: [
-        { id: "ask", title: "İş dilinde sorun", body: "Tablo ve kolon adı ezberlemeden, işletmenizin kullandığı terimlerle sorun.", points: ["Takip soruları", "Konuşma bağlamı", "Türkçe-first deneyim"] },
-        { id: "model", title: "Şemayı iş anlamıyla zenginleştirin", body: "Ölçüler, boyutlar, ilişkiler, birimler ve onaylanmış tanımlar semantic modelde buluşur.", points: ["MDL semantic layer", "İlişki kataloğu", "Gösterim adları ve birimler"] },
-        { id: "validate", title: "Çalıştırmadan önce doğrulayın", body: "Önerilen SQL, izinli okuma yapısı ve semantic planlanabilirlik bakımından kontrol edilir.", points: ["SELECT/WITH guard", "Dry-plan", "Görünür planned SQL"] },
-        { id: "explore", title: "Sonucu uygun biçimde inceleyin", body: "Aynı veri tablo, grafik, KPI veya pivot yüzeyinde araştırılabilir.", points: ["Tablo", "Grafik", "KPI", "Pivot"] },
-        { id: "verify", title: "Cevabı doğrulayın", body: "Kullanıcı geri bildirimi, provenance ve çözüm izi analitiğin nasıl oluştuğunu görünür tutar.", status: "beta" },
-        { id: "reuse", title: "Tek seferlik cevabı iş akışına dönüştürün", body: "Query contract, yeniden çalıştırma, zamanlama ve bildirim kabiliyetleri kontrollü biçimde ilerler.", status: "beta" },
-        { id: "govern", title: "Yetki sınırlarını koruyun", body: "Session, tenant ve permission bağlamları ürün ve backend tarafından birlikte uygulanır." },
+        { id: "ask", title: "İş dilinde sorun", body: "Tablo ve kolon adı ezberlemeden, kurumunuzun kullandığı ifadelerle sorun.", points: ["Takip soruları", "Konuşma bağlamı", "Doğal Türkçe deneyimi"] },
+        { id: "model", title: "Herkes aynı tanımı kullansın", body: "Ölçüler, ilişkiler, birimler ve onaylanmış tanımlar ortak bir iş anlamında buluşur.", points: ["Ortak iş tanımları", "İlişkiler", "Anlaşılır adlar ve birimler"] },
+        { id: "validate", title: "Çalıştırmadan önce kontrol edin", body: "Önerilen sorgu yalnızca izin verilen veriyi okuma ve çalıştırılabilirlik açısından kontrol edilir.", points: ["Yalnızca okuma", "Çalıştırma öncesi kontrol", "Görünür sorgu"] },
+        { id: "explore", title: "Sonucu size uygun biçimde görün", body: "Aynı sonucu tablo, grafik, özet gösterge veya karşılaştırmalı görünümde inceleyin.", points: ["Tablo", "Grafik", "Özet göstergeler", "Karşılaştırma"] },
+        { id: "verify", title: "Cevabı değerlendirin", body: "Geri bildirim ve cevap kaynağı, analizin nasıl oluştuğunu görünür tutar.", status: "beta" },
+        { id: "reuse", title: "Yararlı cevabı yeniden kullanın", body: "Kaydedilen analizleri yeniden çalıştırma, zamanlama ve bildirim özellikleri kontrollü olarak geliştirilmektedir.", status: "beta" },
+        { id: "govern", title: "Yetki sınırlarını koruyun", body: "Oturum, kurum kapsamı ve kullanıcı yetkileri hem ürün hem sunucu tarafında uygulanır." },
       ],
     },
     how: {
       eyebrow: "Nasıl çalışır?",
-      title: "LLM’nin önerdiği sorguyu doğrudan çalıştırmıyoruz.",
+      title: "Yapay zekânın önerisini kontrol etmeden çalıştırmıyoruz.",
       description:
-        "Doğal dil rahatlığı; semantic context ve deterministic validation katmanlarıyla sınırlandırılır.",
+        "Soruyu anlamaktan sonucu göstermeye kadar her adım görünür ve denetlenebilir bir akışta ilerler.",
       cta: "Teknik bir görüşme planlayın",
       sections: [
-        { id: "onboarding", title: "Kaynağı ve şemayı tanımla", body: "Bağlantı tenant bağlamında yönetilir; şema ve ilişkiler kontrollü biçimde keşfedilir." },
-        { id: "semantics", title: "İş anlamını modelle", body: "İlişkiler, metrik ifadeleri, zaman boyutları, birimler ve onaylı terimler semantic modele eklenir." },
-        { id: "dry-plan", title: "Öneriyi sınırla ve doğrula", body: "LLM önerisi SELECT/WITH guard’dan ve semantic dry-plan’dan geçmeden veri kaynağına ulaşmaz." },
-        { id: "execute", title: "Çalıştır ve kanıtı göster", body: "İzinli sorgu çalışır; sonuç, SQL, kaynak ve çözüm izi aynı inceleme yüzeyinde sunulur." },
-        { id: "planned", title: "Hibrit / thin-agent", body: "Müşteri ağına outbound-only ajan yaklaşımı mimari yöndür; mevcut production özelliği değildir.", status: "planned" },
+        { id: "onboarding", title: "Veri kaynağını tanımlayın", body: "Bağlantı kurum kapsamında yönetilir; tablolar ve ilişkiler kontrollü biçimde keşfedilir." },
+        { id: "semantics", title: "İş tanımlarını ekleyin", body: "Metrikler, zaman aralıkları, birimler ve kurumun kullandığı terimler ortak bir anlamda buluşur." },
+        { id: "dry-plan", title: "Öneriyi kontrol edin", body: "Yapay zekânın önerdiği sorgu, yalnızca okuma ve çalıştırılabilirlik kontrollerinden geçmeden veri kaynağına ulaşmaz." },
+        { id: "execute", title: "Sonucu ve kaynağını görün", body: "İzinli sorgu çalışır; sonuç, sorgu ve cevabın kaynağı aynı inceleme alanında sunulur." },
+        { id: "planned", title: "Kurum içi hibrit bağlantı", body: "Müşteri ağından dışarı doğru güvenli bağlantı kuran yaklaşım planlanmaktadır; bugün hazır bir özellik değildir.", status: "planned" },
       ],
     },
     solutions: {
@@ -232,9 +261,9 @@ const tr: MarketingContent = {
         "Dima, organizasyon şemasını değil karar verilmesi gereken gerçek sonuçları başlangıç noktası alır.",
       cta: "Öncelikli kullanım alanınızı konuşalım",
       sections: [
-        { id: "executive", title: "Karar veren ekipler", body: "Hedeflerden sapan KPI ve istisnaları, sonucu üreten tanım ve kırılımlarla birlikte görün.", points: ["Öncelikli sapmaları belirleyin", "Açıklanabilir kırılıma inin"] },
+        { id: "executive", title: "Karar veren ekipler", body: "Hedeflerden sapan göstergeleri, sonucu oluşturan tanım ve ayrıntılarla birlikte görün.", points: ["Öncelikli sapmaları belirleyin", "Ayrıntıya inin"] },
         { id: "operations", title: "Operasyonel koordinasyon", body: "Hedef, gerçekleşen ve sapma nedenlerini ekip, süreç ve dönem bağlamında aynı iş diliyle sorgulayın.", points: ["Ortak metrik tanımları", "Takip sorularıyla derinleşme"] },
-        { id: "data", title: "Kurumsal hafıza ve yönetişim", body: "Ad-hoc talepleri azaltırken sorgu, provenance ve permission sınırlarını görünür tutun.", points: ["Yeniden kullanılabilir analitik", "Görünür çözüm izi"] },
+        { id: "data", title: "Kurumsal hafıza", body: "Tek seferlik rapor taleplerini azaltırken sorguyu, cevabın kaynağını ve yetki sınırlarını görünür tutun.", points: ["Yeniden kullanılabilir analizler", "Görünür cevap kaynağı"] },
       ],
     },
     security: {
@@ -244,26 +273,26 @@ const tr: MarketingContent = {
         "Mevcut güvenlik mimarisini doğrulanmış mekanizmalarla anlatıyor, sertifika veya mutlak güvenlik iddiası üretmiyoruz.",
       cta: "Güvenlik görüşmesi planlayın",
       sections: [
-        { id: "read-only", title: "Read-only query controls", body: "Query akışı izinli SELECT/WITH biçimlerine göre sınırlandırılır ve planlama aşamasında doğrulanır." },
-        { id: "session", title: "Session güvenliği", body: "Kısa ömürlü access token tarayıcı belleğinde; refresh token HTTP-only, same-origin cookie’de tutulur. Başarısız 401 zinciri tek refresh ve retry akışına girer." },
-        { id: "tenant", title: "Tenant ve permission bağlamı", body: "UI görünürlüğü backend’den gelen izinlere dayanır; rol matrisi frontend’e kopyalanmaz. Backend her isteği yeniden yetkilendirir." },
-        { id: "audit", title: "İzlenebilirlik", body: "Sorgu, auth ve yönetim eylemleri mevcut deployment kapsamına göre audit kanıtı üretebilir; kapsam müşteri sözleşmesinde doğrulanır." },
-        { id: "flow", title: "Veri akışı", body: "Kullanıcı → Dima UI → same-origin Dima API → semantic engine → guarded query → müşteri veritabanı. Backend origin tarayıcıya açılmaz." },
-        { id: "deployment", title: "Deployment seçenekleri", body: "Mevcut bulut topolojisi kullanılabilir. Thin-agent ve hibrit on-prem yaklaşımı planlanan durumdadır.", status: "planned" },
+        { id: "read-only", title: "Yalnızca okuma", body: "Sorgular yalnızca izin verilen okuma biçimleriyle sınırlandırılır ve çalıştırılmadan önce kontrol edilir." },
+        { id: "session", title: "Oturum güvenliği", body: "Kısa ömürlü erişim anahtarı tarayıcı belleğinde tutulur. Yenileme anahtarı tarayıcı kodunun erişemediği güvenli çerezde saklanır." },
+        { id: "tenant", title: "Kurum ve yetki kapsamı", body: "Ekranda görünen işlemler sunucudan gelen yetkilere dayanır. Sunucu her isteği yeniden yetkilendirir." },
+        { id: "audit", title: "İzlenebilirlik", body: "Sorgu, kimlik doğrulama ve yönetim eylemleri kurulum kapsamına göre kayıt altına alınabilir; ayrıntılar müşteri sözleşmesinde doğrulanır." },
+        { id: "flow", title: "Veri akışı", body: "Kullanıcı isteği Dima üzerinden kontrollü sorguya dönüşür ve yalnızca izin verilen veri kaynağına ulaşır. Sunucu adresi tarayıcıya açılmaz." },
+        { id: "deployment", title: "Kurulum seçenekleri", body: "Mevcut bulut kurulumu kullanılabilir. Kurum içi hibrit bağlantı yaklaşımı planlanmaktadır.", status: "planned" },
       ],
     },
     integrations: {
       eyebrow: "Entegrasyonlar",
-      title: "Mevcut veri altyapınızın üzerinde modellenmiş analitik.",
+      title: "Mevcut veri kaynaklarınızı değiştirmeden başlayın.",
       description:
-        "Connector kabiliyetini, Dima’da doğrulanmış üretim desteğinden açıkça ayırıyoruz.",
+        "Her bağlantının Dima’da doğrulanmış, teknik olarak mümkün veya planlanan durumunu açıkça gösteriyoruz.",
       cta: "Entegrasyon kapsamını değerlendirin",
       sections: [
-        { id: "duckdb", title: "DuckDB demo modeli", body: "Ürün akışını gerçek müşteri verisi kullanmadan gösteren sentetik veri kaynağıdır.", status: "available" },
-        { id: "postgres", title: "Postgres", body: "Dima bağlantı konfigürasyonunda kullanılan ve mevcut kapsamda desteklenen kaynaktır.", status: "available" },
-        { id: "engine", title: "MSSQL ve Oracle", body: "Wren motorunda connector kabiliyeti bulunur; Dima production desteği lehçe, model ve gerçek bağlantı testleri tamamlanmadan ilan edilmez.", status: "planned" },
-        { id: "process", title: "Onboarding akışı", body: "Bağlantı → şema keşfi → semantic model → dry-plan doğrulaması → tenant-scoped kullanıcı erişimi." },
-        { id: "status", title: "Destek ne anlama gelir?", body: "Her kaynak current-tested, engine-capable veya planned olarak açıkça etiketlenir; connector sayısı pazarlama metriğine çevrilmez." },
+        { id: "duckdb", title: "DuckDB örnek veri kaynağı", body: "Ürün akışını gerçek müşteri verisi kullanmadan gösteren örnek kaynaktır.", status: "available" },
+        { id: "postgres", title: "Postgres", body: "Dima’nın mevcut bağlantı kapsamında kullandığı ve doğruladığı veri kaynağıdır.", status: "available" },
+        { id: "engine", title: "MSSQL ve Oracle", body: "Altyapıda bağlantı imkânı vardır; Dima desteği gerçek bağlantı ve sorgu testleri tamamlandıktan sonra sunulur.", status: "planned" },
+        { id: "process", title: "Kurulum akışı", body: "Bağlantı → tabloları keşfetme → iş tanımlarını ekleme → sorguyu kontrol etme → kullanıcı erişimi." },
+        { id: "status", title: "Destek ne anlama gelir?", body: "Her kaynak “Dima’da doğrulandı”, “teknik olarak mümkün” veya “planlanıyor” olarak açıkça etiketlenir." },
       ],
     },
     about: {
@@ -273,10 +302,10 @@ const tr: MarketingContent = {
         "dima, UpcyTech Teknoloji Anonim Şirketi tarafından geliştirilen güvenilir konuşmalı analitik ürünüdür.",
       cta: "Bizimle iletişime geçin",
       sections: [
-        { id: "purpose", title: "Neden dima?", body: "İş ekiplerinin cevap için teknik rapor sırasına girmesi ile data ekiplerinin kontrol ihtiyacı arasındaki gerilimi azaltmak için." },
-        { id: "principles", title: "Dört ürün ilkesi", body: "Deterministic, Intelligent, Modeled ve Agentic; slogan değil, ürün mekanizmalarını tarif eder.", points: ["LLM önerir; motor doğrular", "İş dilinde erişim", "Onaylı semantic context", "Tekrar kullanılabilir analitik"] },
+        { id: "purpose", title: "Neden dima?", body: "İş ekiplerinin cevap beklemesini azaltırken veri ekiplerinin ihtiyaç duyduğu kontrolü korumak için." },
+        { id: "principles", title: "Dört ürün ilkesi", body: "Bu ilkeler yapay zekâ ile denetimi, iş dilini, ortak tanımları ve yeniden kullanılabilir çalışmaları bir araya getirir.", points: ["Yapay zekâ önerir; sistem kontrol eder", "İş dilinde erişim", "Onaylı iş tanımları", "Yeniden kullanılabilir analizler"] },
         { id: "company", title: "UpcyTech", body: "UpcyTech, ekiplerin karmaşık iş akışlarını daha anlaşılır ve yönetilebilir kılan yazılım ürünleri geliştirir. Dima bu ürün ekosisteminin analitik katmanıdır." },
-        { id: "truth", title: "Kanıtı iddianın önüne koyuyoruz", body: "Sahte istatistik, sertifika, müşteri logosu veya doğrulanmamış roadmap iddiası kullanmıyoruz." },
+        { id: "truth", title: "Kanıtı iddianın önüne koyuyoruz", body: "Sahte istatistik, sertifika, müşteri logosu veya doğrulanmamış gelecek planı kullanmıyoruz." },
       ],
     },
   },
@@ -293,14 +322,14 @@ const tr: MarketingContent = {
       sections: [
         { id: "controller", title: "1. Veri sorumlusu", body: "UPCYTECH TEKNOLOJİ ANONİM ŞİRKETİ (“UpcyTech”), Reşitpaşa Mah. Katar Cad. İTÜ Tasarım ve Prototip Merkezi No:2/41 İç Kapı:19, 34469 Sarıyer/İstanbul. İletişim: contact@upcytech.com." },
         { id: "scope", title: "2. Roller ve kapsam", body: "UpcyTech; web sitesi, hesap yönetimi, güvenlik ve demo taleplerinde veri sorumlusudur. Müşterinin dima’ya yüklediği veya bağlı veri kaynağında tuttuğu iş verilerinde müşteri veri sorumlusu, UpcyTech ise sözleşme ve talimatlar çerçevesinde veri işleyen olabilir." },
-        { id: "categories", title: "3. İşlenen veri kategorileri", body: "Kimlik ve iletişim verileri; şirket/rol bilgisi; hesap ve tenant tanımlayıcıları; oturum, IP, cihaz ve güvenlik kayıtları; destek/demo mesajları; ürün içinde kullanıcının yazdığı sorular, oluşturulan SQL, rapor metadata’sı, doğrulama ve audit kayıtları. Özel nitelikli veri talep etmiyoruz; serbest metin alanlarına bu tür veri girilmemelidir." },
-        { id: "purposes", title: "4. Amaçlar ve hukuki sebepler", body: "Demo ve iletişim talepleri talep üzerine iletişim kurmak ve meşru B2B ilişki yönetimi için; hesap ve ürün verileri sözleşmenin kurulması/ifası için; güvenlik ve audit kayıtları hukuki yükümlülükler ile temel haklara zarar vermeyen meşru menfaat için; açık rızaya dayanan ayrı bir pazarlama faaliyeti varsa yalnız ilgili rıza kapsamında işlenir." },
+        { id: "categories", title: "3. İşlenen veri kategorileri", body: "Kimlik ve iletişim verileri; şirket/rol bilgisi; hesap ve kurum tanımlayıcıları; oturum, IP, cihaz ve güvenlik kayıtları; destek/demo mesajları; ürün içinde kullanıcının yazdığı sorular, oluşturulan SQL, rapor üst verileri, doğrulama ve denetim kayıtları. Özel nitelikli veri talep etmiyoruz; serbest metin alanlarına bu tür veri girilmemelidir." },
+        { id: "purposes", title: "4. Amaçlar ve hukuki sebepler", body: "Demo ve iletişim talepleri talep üzerine iletişim kurmak ve meşru B2B ilişki yönetimi için; hesap ve ürün verileri sözleşmenin kurulması/ifası için; güvenlik ve denetim kayıtları hukuki yükümlülükler ile temel haklara zarar vermeyen meşru menfaat için; açık rızaya dayanan ayrı bir pazarlama faaliyeti varsa yalnız ilgili rıza kapsamında işlenir." },
         { id: "collection", title: "5. Toplama yöntemi", body: "Veriler formlar, hesap ve oturum işlemleri, ürün kullanımı, same-origin API trafiği, destek iletişimi ve güvenlik logları üzerinden tamamen veya kısmen otomatik yöntemlerle elde edilir." },
         { id: "sharing", title: "6. Alıcı grupları", body: "Veriler; barındırma ve altyapı sağlayıcıları, e-posta teslim hizmeti, sözleşmeyle bağlı teknik hizmet sağlayıcılar, yetkili kamu kurumları ve hukuki yükümlülük halinde danışmanlarla yalnız gerekli kapsamda paylaşılabilir. Reklam veri brokerlarına satılmaz." },
-        { id: "transfer", title: "7. Yurt dışı aktarım", body: "Vercel ve Resend gibi hizmetlerin kullanıldığı deployment’larda hesap dışı teknik veriler ve iletişim formu verileri yurt dışında işlenebilir. Aktarım, KVKK m.9’daki yeterlilik, uygun güvence/standart sözleşme veya kanundaki istisnai aktarım şartlarından uygulanabilir olana dayanır. Resend üzerinden gönderim başlamadan önce uygun mekanizma ve Kurul bildirimi doğrulanır." },
+        { id: "transfer", title: "7. Yurt dışı aktarım", body: "Vercel ve Resend gibi hizmetlerin kullanıldığı kurulumlarda hesap dışı teknik veriler ve iletişim formu verileri yurt dışında işlenebilir. Aktarım, KVKK m.9’daki yeterlilik, uygun güvence/standart sözleşme veya kanundaki istisnai aktarım şartlarından uygulanabilir olana dayanır. Resend üzerinden gönderim başlamadan önce uygun mekanizma ve Kurul bildirimi doğrulanır." },
         { id: "retention", title: "8. Saklama ve silme", body: "Demo/iletişim verileri son anlamlı etkileşimden itibaren 12 ay saklanır. Hesap, sözleşme ve müşteri verileri sözleşme süresince ve uygulanabilir yasal zamanaşımı/saklama sürelerince; güvenlik kayıtları risk ve mevzuatla orantılı süre boyunca tutulur. Süre dolunca veri silinir, yok edilir veya anonimleştirilir." },
-        { id: "cookies", title: "9. Çerezler ve yerel depolama", body: "HTTP-only session cookie kimlik doğrulama için, dima_locale çerezi dil tercihi için gereklidir. Tema tercihi tarayıcı localStorage alanında tutulabilir. Marketing analytics adapter’ı başlangıçta no-op’tur; analitik veya reklam çerezi yerleştirmez." },
-        { id: "security", title: "10. Güvenlik", body: "Same-origin API proxy, memory access token, HTTP-only refresh cookie, permission kontrolleri, tenant bağlamı, güvenlik başlıkları ve audit kayıtları gibi teknik/idari tedbirler uygulanır. Hiçbir internet iletimi veya depolama yöntemi mutlak güvenlik garantisi vermez." },
+        { id: "cookies", title: "9. Çerezler ve yerel depolama", body: "Tarayıcı kodunun erişemediği güvenli oturum çerezi kimlik doğrulama için, dima_locale çerezi dil tercihi için gereklidir. Tema tercihi tarayıcının yerel depolama alanında tutulabilir. Pazarlama analitiği bağlantısı başlangıçta devre dışıdır; analitik veya reklam çerezi yerleştirmez." },
+        { id: "security", title: "10. Güvenlik", body: "Aynı kaynak üzerinden çalışan API geçidi, bellekte tutulan erişim anahtarı, güvenli yenileme çerezi, yetki kontrolleri, kurum kapsamı, güvenlik başlıkları ve denetim kayıtları gibi teknik/idari tedbirler uygulanır. Hiçbir internet iletimi veya depolama yöntemi mutlak güvenlik garantisi vermez." },
         { id: "rights", title: "11. KVKK m.11 hakları", body: "Verinizin işlenip işlenmediğini öğrenme, bilgi isteme, amacına uygun kullanımı öğrenme, aktarılan üçüncü kişileri bilme, düzeltme, silme/yok etme, düzeltme veya silmenin alıcılara bildirilmesini isteme, otomatik analiz sonucuna itiraz ve hukuka aykırı işlem nedeniyle zararın giderilmesini talep etme haklarına sahipsiniz." },
         { id: "application", title: "12. Başvuru yöntemi", body: "Talebinizi kimliğinizi ve talebinizi doğrulamaya yeterli bilgilerle contact@upcytech.com adresine veya şirketin kayıtlı adresine iletebilirsiniz. Başvurular niteliğine göre en kısa sürede ve en geç 30 gün içinde, mevzuattaki ücret istisnaları dışında ücretsiz sonuçlandırılır." },
         { id: "changes", title: "13. Değişiklikler", body: "Politika veri işleme faaliyetleri veya mevzuat değiştiğinde güncellenebilir. Önemli değişiklikler yürürlüğe girmeden önce uygun kanallardan duyurulur; güncel tarih sayfanın üstünde gösterilir." },
@@ -314,18 +343,18 @@ const tr: MarketingContent = {
       cta: "Şartlar hakkında bize yazın",
       sections: [
         { id: "party", title: "1. Taraflar ve kabul", body: "Bu şartlar UPCYTECH TEKNOLOJİ ANONİM ŞİRKETİ (“UpcyTech”) ile dima’ya erişen müşteri kuruluş ve onun yetkili kullanıcıları arasındadır. Sipariş formu, teklif, ana hizmet sözleşmesi veya veri işleme eki varsa özel hükümler bu genel şartlara üstün gelir. Kuruluş adına işlem yapan kişi bağlama yetkisi olduğunu beyan eder." },
-        { id: "service", title: "2. Hizmet", body: "dima; doğal dil sorularını modellenmiş semantic context üzerinden sorgu ve rapor akışına dönüştüren B2B SaaS analitik hizmetidir. Kapsam, tenant konfigürasyonu, lisanslanan modüller, feature flag’ler ve sipariş formuna göre değişebilir." },
+        { id: "service", title: "2. Hizmet", body: "dima; doğal dil sorularını modellenmiş iş tanımları üzerinden sorgu ve rapor akışına dönüştüren B2B SaaS analitik hizmetidir. Kapsam, kurum yapılandırması, lisanslanan modüller, özellik ayarları ve sipariş formuna göre değişebilir." },
         { id: "account", title: "3. Hesap ve güvenlik", body: "Kullanıcı doğru bilgi sağlamalı, kimlik bilgilerini paylaşmamalı, MFA ve güvenlik kontrollerini devre dışı bırakmamalı ve şüpheli erişimi gecikmeden bildirmelidir. Müşteri kullanıcı yetkilerini ve işten ayrılan kullanıcıların erişimini yönetmekten sorumludur." },
         { id: "license", title: "4. Sınırlı kullanım hakkı", body: "UpcyTech, sözleşme süresince müşteriye kendi iç iş amaçları için devredilemez, münhasır olmayan ve sınırlı bir kullanım hakkı verir. Hizmet satılmaz; fikri mülkiyet hakları UpcyTech ve lisans verenlerinde kalır." },
-        { id: "acceptable", title: "5. Kabul edilebilir kullanım", body: "Hizmet hukuka aykırı faaliyet, yetkisiz erişim, güvenlik testi, tersine mühendislik, kaynak kod çıkarma, zararlı yazılım, aşırı otomatik yük, üçüncü kişi hak ihlali veya izin verilmeyen kişisel veri işleme için kullanılamaz. Güvenliği veya diğer tenant’ları etkileyen kullanım askıya alınabilir." },
+        { id: "acceptable", title: "5. Kabul edilebilir kullanım", body: "Hizmet hukuka aykırı faaliyet, yetkisiz erişim, güvenlik testi, tersine mühendislik, kaynak kod çıkarma, zararlı yazılım, aşırı otomatik yük, üçüncü kişi hak ihlali veya izin verilmeyen kişisel veri işleme için kullanılamaz. Güvenliği veya diğer kurum hesaplarını etkileyen kullanım askıya alınabilir." },
         { id: "customer-data", title: "6. Müşteri verisi", body: "Müşteri kendi verisinin ve talimatlarının hukuka uygunluğundan, gerekli aydınlatma/izinlerden ve veri kaynağı erişim yetkisinden sorumludur. UpcyTech müşteri verisini hizmeti sunmak, güvenliğini sağlamak ve belgelenmiş talimatları yerine getirmek için işler; veri üzerindeki hak müşteride kalır." },
-        { id: "ai", title: "7. AI ve analitik çıktılar", body: "LLM sorgu veya yorum önerebilir; Dima guard ve dry-plan kontrolleri uygular. Bu kontroller iş tanımlarının, kaynak verinin veya sonucun mutlak doğruluğunu garanti etmez. Çıktılar profesyonel, hukuki, mali veya güvenlik kararlarında insan incelemesi olmadan tek dayanak yapılmamalıdır." },
-        { id: "beta", title: "8. Beta ve planlanan özellikler", body: "Beta özellikler değişebilir, sınırlı desteklenebilir veya kaldırılabilir. Planlanan özellikler taahhüt edilmiş teslim tarihi oluşturmaz. Query contracts, doğrulama, zamanlama ve bildirim kapsamı tenant özelliği ve sözleşmeyle belirlenir." },
+        { id: "ai", title: "7. Yapay zekâ ve analitik çıktılar", body: "Yapay zekâ modeli sorgu veya yorum önerebilir; Dima güvenlik ve çalıştırma öncesi kontroller uygular. Bu kontroller iş tanımlarının, kaynak verinin veya sonucun mutlak doğruluğunu garanti etmez. Çıktılar profesyonel, hukuki, mali veya güvenlik kararlarında insan incelemesi olmadan tek dayanak yapılmamalıdır." },
+        { id: "beta", title: "8. Beta ve planlanan özellikler", body: "Beta özellikler değişebilir, sınırlı desteklenebilir veya kaldırılabilir. Planlanan özellikler taahhüt edilmiş teslim tarihi oluşturmaz. Kayıtlı sorgu tanımları, doğrulama, zamanlama ve bildirim kapsamı kurum özellikleri ve sözleşmeyle belirlenir." },
         { id: "fees", title: "9. Ücret, vergi ve yenileme", body: "Ücretler, para birimi, ödeme takvimi, vergi, kullanım limitleri ve yenileme koşulları sipariş formu veya teklifte belirtilir. Public web sitesinde fiyat yayımlanmaması ücretsiz hizmet anlamına gelmez. Geciken tutarlar uygulanabilir hukuk ve sözleşme sınırlarında erişim kısıtına yol açabilir." },
         { id: "availability", title: "10. Değişiklik ve erişilebilirlik", body: "UpcyTech güvenlik, performans ve ürün gelişimi için hizmeti güncelleyebilir. Belirli uptime, destek süresi, bakım penceresi veya servis kredisi yalnız imzalı SLA veya sipariş formunda yazıyorsa geçerlidir." },
         { id: "confidentiality", title: "11. Gizlilik", body: "Taraflar hizmet ilişkisi içinde öğrendikleri kamuya açık olmayan teknik, ticari ve müşteri bilgilerini yalnız sözleşme amacıyla kullanır ve makul koruma tedbirleri uygular. Kanunen zorunlu açıklamalar mümkünse önceden bildirilir." },
         { id: "ip", title: "12. Fikri mülkiyet ve geri bildirim", body: "Dima yazılımı, modelleri, arayüzü, dokümantasyonu ve türevleri UpcyTech’e veya lisans verenlerine aittir. Müşteri verisi müşteriye aittir. Kullanıcı geri bildirimi gizli bilgi içermemek kaydıyla ürün geliştirmede bedelsiz kullanılabilir." },
-        { id: "third-party", title: "13. Üçüncü taraf hizmetleri", body: "Veri kaynağı, LLM sağlayıcısı, hosting veya e-posta teslimi gibi üçüncü taraflar kendi şartlarına tabi olabilir. UpcyTech seçtiği alt işleyenleri veri koruma yükümlülükleriyle bağlar; müşterinin bağımsız seçtiği entegrasyonlardan müşteri sorumludur." },
+        { id: "third-party", title: "13. Üçüncü taraf hizmetleri", body: "Veri kaynağı, yapay zekâ sağlayıcısı, barındırma veya e-posta teslimi gibi üçüncü taraflar kendi şartlarına tabi olabilir. UpcyTech seçtiği alt işleyenleri veri koruma yükümlülükleriyle bağlar; müşterinin bağımsız seçtiği entegrasyonlardan müşteri sorumludur." },
         { id: "termination", title: "14. Süre, askıya alma ve fesih", body: "Süre ve fesih hakları sipariş formunda belirlenir. Esaslı ihlal, güvenlik riski, hukuka aykırı kullanım veya ödeme temerrüdü halinde erişim bildirimle ya da acil riskte derhal askıya alınabilir. Fesih sonrası veri iadesi ve silme sözleşme/veri işleme eki ile yasal saklama yükümlülüklerine göre yürütülür." },
         { id: "warranty", title: "15. Garantilerin sınırı", body: "Emredici hukuk dışında hizmet “mevcut haliyle” sunulur. Kesintisizlik, her veri kaynağıyla uyum, her sorgunun doğru yorumlanması veya tüm hataların giderileceği garanti edilmez. UpcyTech üzerinde anlaşılan hizmeti mesleki özenle sunar." },
         { id: "liability", title: "16. Sorumluluk sınırı", body: "Emredici hukuk, kast, ağır kusur, gizlilik veya kişisel veri ihlalinde sınırlandırılamayan sorumluluklar saklıdır. Diğer hallerde UpcyTech’in toplam sözleşmesel sorumluluğu, talebe yol açan olaydan önceki 12 ayda ilgili hizmet için ödenen net ücretlerle sınırlıdır; dolaylı zarar ve kâr/veri kaybı uygulanabilir hukukun izin verdiği ölçüde kapsam dışıdır." },
@@ -353,7 +382,7 @@ const en: MarketingContent = {
   },
   footer: {
     statement:
-      "Conversational analytics combining natural-language access with modeled business context and validated queries.",
+      "Analytics that makes it easier to ask questions, understand answers, and see what supports them.",
     product: "Product",
     company: "Company",
     legal: "Legal",
@@ -365,7 +394,7 @@ const en: MarketingContent = {
   },
   common: {
     learnMore: "Explore the details",
-    available: "Available",
+    available: "Verified in Dima",
     beta: "Beta",
     planned: "Planned",
     finalTitle: "Let’s begin with your first real business question.",
@@ -374,23 +403,24 @@ const en: MarketingContent = {
     login: "Sign in",
   },
   home: {
-    eyebrow: "Trusted conversational analytics",
-    title: "Talk to your business data. See how the answer was produced.",
+    eyebrow: "A clearer way to understand business data",
+    title: "Ask your data. Then",
+    rotateWords: ["understand it.", "compare it.", "share it."],
     description:
-      "dima turns natural-language questions into SQL grounded in modeled business context, validates the query before execution, and presents the result as an explainable report.",
-    process: ["Natural language", "Modeled context", "Dry-plan validation", "Report"],
-    proofTitle: "Evidence before answers.",
+      "Ask in everyday business language. dima finds the relevant data, shows the result as a table or chart, and explains where the answer came from.",
+    process: ["Write a question", "Match business definitions", "Run checks", "See the result"],
+    proofTitle: "See the answer and what supports it.",
     proofBody:
-      "See which business definitions matched, which query controls passed, and the SQL that produced the result.",
+      "Review the definitions used, the checks completed, and the steps that produced the result in one place.",
     pillarsTitle: "Trust takes more than an answer that looks right.",
     pillarsBody:
-      "Every answer is formed on business semantics, query boundaries, and a visible resolution trace.",
+      "Every answer is grounded in shared business definitions, clear access boundaries, and a visible source.",
     workflowTitle: "A visible chain from question to report.",
     workflow: [
-      { title: "Connect and model", body: "Define schema, relationships, measures, units, and approved business definitions." },
-      { title: "Ask in business language", body: "Users ask real operational questions without knowing table or column names." },
-      { title: "Plan and validate", body: "The proposed query passes read-only guards and a semantic dry plan." },
-      { title: "Inspect and reuse", body: "The result, SQL, and provenance remain visible and reusable." },
+      { title: "Connect your data", body: "Prepare tables, relationships, and the business definitions your organization uses." },
+      { title: "Write your question", body: "Ask in familiar language without knowing table or column names." },
+      { title: "Complete the checks", body: "The query is checked for read-only access and execution before it reaches the data source." },
+      { title: "Review the result", body: "See the answer, chart, and source; save useful analysis for later." },
     ],
     useCasesTitle: "Questions real teams ask.",
     useCases: [
@@ -404,48 +434,48 @@ const en: MarketingContent = {
     operationsTitle: "Understand the whole operation in one business language.",
     operationsBody:
       "Query finance, sales, inventory, customer, and operational data through shared definitions so teams do not interpret the same metric differently.",
-    trustTitle: "See the mechanism behind the answer.",
+    trustTitle: "See how every answer is protected.",
     trustBody:
-      "Read-only controls, the semantic model, dry-plan validation, visible SQL, and permission-aware access create an explicit governance boundary.",
+      "Read-only access, pre-execution checks, visible queries, and permission-based access work together.",
     integrationTitle: "Built over your existing data infrastructure.",
     integrationBody:
-      "Connection, schema discovery, semantic modeling, and validation are explained alongside the real support status of each source.",
+      "Connections, schema discovery, shared business definitions, and checks are shown with the real support status of each source.",
     faqTitle: "Frequently asked questions",
     faq: [
-      { question: "Is dima a chatbot?", answer: "No. Chat is the entry point; answers are produced through modeled context, controlled query generation, and explainable reporting." },
-      { question: "Who validates the SQL?", answer: "The LLM may propose a query. Dima checks its permitted read structure and validates semantic planability with a dry plan." },
-      { question: "Does dry-plan guarantee business correctness?", answer: "No. It checks planability and semantic execution. Business correctness also depends on the quality of model definitions and human verification." },
-      { question: "Which data sources are supported?", answer: "DuckDB powers the demo and Postgres is configurable in the current scope. Engine connector capabilities are not automatically Dima production support." },
-      { question: "Is on-prem available?", answer: "The thin-agent and hybrid on-prem model is planned architecture, not a currently available production capability." },
+      { question: "Is dima only a chat tool?", answer: "No. Chat is the starting point; dima connects each answer to shared business definitions, controlled queries, and a visible report." },
+      { question: "How is a generated query checked?", answer: "AI may propose the query. Dima verifies that it only reads permitted data and can run safely before sending it to the data source." },
+      { question: "Do pre-execution checks guarantee accuracy?", answer: "No. They confirm that a query is safe and executable. Business definitions and source data still require human ownership." },
+      { question: "Which data sources are supported?", answer: "DuckDB powers the sample experience and Postgres is supported in the current connection scope. Other sources require live Dima validation." },
+      { question: "Is an on-premises setup available?", answer: "A hybrid connection that runs inside the customer network is planned; it is not currently offered as a ready feature." },
     ],
   },
   pages: {
     product: {
       eyebrow: "Product",
-      title: "From business question to validated report in one product flow.",
-      description: "Natural-language access works together with semantic modeling, query validation, and explainable result surfaces.",
+      title: "From a business question to a clear report.",
+      description: "Write the question in everyday language. dima finds the relevant data, completes its checks, and presents a result you can inspect.",
       cta: "Evaluate dima with your own data",
       sections: [
-        { id: "ask", title: "Ask in business language", body: "Use the terms your organization knows—without memorizing tables or columns.", points: ["Follow-up questions", "Conversation context", "Turkish-first experience"] },
-        { id: "model", title: "Enrich schemas with business meaning", body: "Measures, dimensions, relationships, units, and approved definitions meet in the semantic model.", points: ["MDL semantic layer", "Relationship catalog", "Display labels and units"] },
-        { id: "validate", title: "Validate before execution", body: "Proposed SQL is checked for permitted read structure and semantic planability.", points: ["SELECT/WITH guard", "Dry plan", "Visible planned SQL"] },
-        { id: "explore", title: "Explore in the right format", body: "Inspect the same data as a table, chart, KPI, or pivot.", points: ["Table", "Chart", "KPI", "Pivot"] },
-        { id: "verify", title: "Verify the answer", body: "Feedback, provenance, and the resolution trace keep the analytical path visible.", status: "beta" },
-        { id: "reuse", title: "Turn one answer into a workflow", body: "Query contracts, replay, schedules, and notifications evolve under controlled feature status.", status: "beta" },
-        { id: "govern", title: "Preserve access boundaries", body: "Session, tenant, and permission contexts are enforced by both product and backend." },
+        { id: "ask", title: "Ask in business language", body: "Use the terms your organization knows without memorizing tables or columns.", points: ["Follow-up questions", "Conversation context", "Natural English experience"] },
+        { id: "model", title: "Give everyone the same definitions", body: "Measures, relationships, units, and approved definitions meet in one shared business model.", points: ["Shared definitions", "Relationships", "Clear labels and units"] },
+        { id: "validate", title: "Check before execution", body: "The proposed query is checked for permitted read access and execution.", points: ["Read-only access", "Pre-execution check", "Visible query"] },
+        { id: "explore", title: "Review the result your way", body: "Inspect the same result as a table, chart, summary metric, or comparison.", points: ["Table", "Chart", "Summary metrics", "Comparison"] },
+        { id: "verify", title: "Review the answer", body: "Feedback and answer sources keep the analytical path visible.", status: "beta" },
+        { id: "reuse", title: "Reuse helpful answers", body: "Replay, scheduling, and notification capabilities are being developed under controlled feature status.", status: "beta" },
+        { id: "govern", title: "Preserve access boundaries", body: "Sessions, organization scope, and user permissions are enforced by both the product and server." },
       ],
     },
     how: {
       eyebrow: "How it works",
-      title: "We do not execute an LLM-proposed query directly.",
-      description: "Natural-language convenience is bounded by semantic context and deterministic validation.",
+      title: "We never run an AI suggestion without checking it.",
+      description: "Every step—from understanding the question to showing the result—remains visible and reviewable.",
       cta: "Schedule a technical conversation",
       sections: [
-        { id: "onboarding", title: "Define the source and schema", body: "The connection is managed in tenant context; schema and relationships are discovered under control." },
-        { id: "semantics", title: "Model business meaning", body: "Relationships, metric expressions, time dimensions, units, and approved terms are added to the semantic model." },
-        { id: "dry-plan", title: "Bound and validate the proposal", body: "An LLM proposal cannot reach the source before the SELECT/WITH guard and semantic dry plan pass." },
-        { id: "execute", title: "Execute and show evidence", body: "The permitted query runs; result, SQL, source, and resolution trace appear in one inspection surface." },
-        { id: "planned", title: "Hybrid / thin agent", body: "An outbound-only customer-network agent is planned architecture, not a current production feature.", status: "planned" },
+        { id: "onboarding", title: "Define the data source", body: "The connection is managed within the organization scope while tables and relationships are discovered safely." },
+        { id: "semantics", title: "Add business definitions", body: "Metrics, time periods, units, and approved terms come together in one shared meaning." },
+        { id: "dry-plan", title: "Check the proposal", body: "An AI-proposed query cannot reach the data source before read-only and execution checks pass." },
+        { id: "execute", title: "Show the result and its source", body: "The permitted query runs; the result, query, and answer source appear in one review surface." },
+        { id: "planned", title: "Hybrid on-premises connection", body: "An outbound-only connection from the customer network is planned; it is not a current production feature.", status: "planned" },
       ],
     },
     solutions: {
@@ -454,9 +484,9 @@ const en: MarketingContent = {
       description: "Dima starts with the outcome that needs a decision—not only the org chart.",
       cta: "Discuss your priority use case",
       sections: [
-        { id: "executive", title: "Decision-making teams", body: "See KPI deviations and exceptions together with the definitions and breakdowns that produced them.", points: ["Identify priority deviations", "Move into an explainable breakdown"] },
+        { id: "executive", title: "Decision-making teams", body: "See performance gaps and exceptions together with the definitions and details that produced them.", points: ["Identify priority gaps", "Explore the details"] },
         { id: "operations", title: "Operational coordination", body: "Query targets, actuals, and drivers across teams, processes, and periods in one business language.", points: ["Shared metric definitions", "Deeper follow-up questions"] },
-        { id: "data", title: "Institutional memory and governance", body: "Reduce ad-hoc requests while keeping queries, provenance, and permission boundaries visible.", points: ["Reusable analytics", "Visible resolution trace"] },
+        { id: "data", title: "Institutional memory", body: "Reduce one-off report requests while keeping queries, answer sources, and permission boundaries visible.", points: ["Reusable analysis", "Visible answer source"] },
       ],
     },
     security: {
@@ -465,25 +495,25 @@ const en: MarketingContent = {
       description: "We describe verified mechanisms—not certifications or absolute security claims.",
       cta: "Schedule a security review",
       sections: [
-        { id: "read-only", title: "Read-only query controls", body: "The query flow is constrained to permitted SELECT/WITH shapes and checked during planning." },
-        { id: "session", title: "Session security", body: "Short-lived access tokens stay in memory; refresh tokens use HTTP-only same-origin cookies with single-flight refresh and retry." },
-        { id: "tenant", title: "Tenant and permission context", body: "UI visibility comes from backend permissions; the role matrix is not duplicated in the frontend, and the backend reauthorizes each request." },
-        { id: "audit", title: "Auditability", body: "Query, authentication, and management actions can produce audit evidence according to deployment scope; customer contracts confirm coverage." },
-        { id: "flow", title: "Data flow", body: "User → Dima UI → same-origin Dima API → semantic engine → guarded query → customer database. The backend origin remains private." },
-        { id: "deployment", title: "Deployment options", body: "The current cloud topology is available. Thin-agent and hybrid on-prem remain planned.", status: "planned" },
+        { id: "read-only", title: "Read-only access", body: "Queries are limited to permitted read operations and checked before execution." },
+        { id: "session", title: "Session security", body: "Short-lived access tokens stay in memory. Refresh tokens use secure cookies that browser scripts cannot read." },
+        { id: "tenant", title: "Organization and permission scope", body: "The interface follows permissions from the server, and the server authorizes every request again." },
+        { id: "audit", title: "Activity records", body: "Query, authentication, and management actions can be recorded according to the agreed deployment scope." },
+        { id: "flow", title: "Data flow", body: "A user request becomes a controlled query through Dima and reaches only the permitted customer data source." },
+        { id: "deployment", title: "Setup options", body: "The current cloud setup is available. A hybrid on-premises connection remains planned.", status: "planned" },
       ],
     },
     integrations: {
       eyebrow: "Integrations",
-      title: "Modeled analytics over your existing data infrastructure.",
-      description: "We distinguish engine capability from production-tested Dima support.",
+      title: "Start without replacing your existing data sources.",
+      description: "Every connection is clearly marked as verified in Dima, technically possible, or planned.",
       cta: "Assess your integration scope",
       sections: [
         { id: "duckdb", title: "DuckDB demo model", body: "A synthetic source that demonstrates the product flow without real customer data.", status: "available" },
         { id: "postgres", title: "Postgres", body: "A data source used in Dima connection configuration and supported in the current scope.", status: "available" },
-        { id: "engine", title: "MSSQL and Oracle", body: "Connectors exist in the Wren engine; Dima production support requires dialect, model, and live-connection validation.", status: "planned" },
-        { id: "process", title: "Onboarding flow", body: "Connection → schema discovery → semantic model → dry-plan validation → tenant-scoped access." },
-        { id: "status", title: "What support means", body: "Each source is labeled current-tested, engine-capable, or planned. Connector counts are not used as marketing metrics." },
+        { id: "engine", title: "MSSQL and Oracle", body: "The underlying engine can connect to these sources. Dima support follows live connection and query testing.", status: "planned" },
+        { id: "process", title: "Setup flow", body: "Connection → table discovery → business definitions → query checks → user access." },
+        { id: "status", title: "What support means", body: "Each source is labeled “Verified in Dima,” “Engine capable,” or “Planned.”" },
       ],
     },
     about: {
@@ -492,10 +522,10 @@ const en: MarketingContent = {
       description: "dima is a trusted conversational analytics product built by UpcyTech Teknoloji Anonim Şirketi.",
       cta: "Contact us",
       sections: [
-        { id: "purpose", title: "Why dima?", body: "To reduce the tension between business teams waiting for reports and data teams preserving control." },
-        { id: "principles", title: "Four product principles", body: "Deterministic, Intelligent, Modeled, and Agentic describe product mechanisms—not decorative slogans.", points: ["The LLM proposes; the engine validates", "Business-language access", "Approved semantic context", "Reusable analytics"] },
+        { id: "purpose", title: "Why dima?", body: "To help business teams get answers sooner while preserving the control data teams need." },
+        { id: "principles", title: "Four product principles", body: "These principles bring together AI with checks, business language, shared definitions, and reusable work.", points: ["AI proposes; the system checks", "Business-language access", "Approved business definitions", "Reusable analysis"] },
         { id: "company", title: "UpcyTech", body: "UpcyTech builds software that makes complex business workflows easier for teams to understand and manage. Dima is the analytics layer of this product ecosystem." },
-        { id: "truth", title: "Evidence before claims", body: "We do not use fabricated statistics, certifications, customer logos, or unverified roadmap claims." },
+        { id: "truth", title: "Evidence before claims", body: "We do not use fabricated statistics, certifications, customer logos, or unverified future plans." },
       ],
     },
   },

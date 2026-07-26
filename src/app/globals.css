@@ -249,6 +249,15 @@
 
 .marketing-border-beam {
   overflow: hidden;
+  padding: 1px;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
 }
 
 .marketing-border-beam::before {
@@ -263,14 +272,6 @@
     transparent 97%
   );
   animation: marketing-beam-spin var(--beam-duration, 7s) linear infinite;
-}
-
-.marketing-border-beam::after {
-  content: "";
-  position: absolute;
-  inset: 1px;
-  border-radius: calc(var(--radius) + 3px);
-  background: var(--foreground);
 }
 
 @keyframes visual-scan {
@@ -332,6 +333,79 @@
   animation: visual-pulse 2s ease-in-out infinite;
 }
 
+@keyframes marketing-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+}
+
+.marketing-marquee-track {
+  animation: marketing-marquee var(--duration) linear infinite;
+}
+
+.marketing-marquee-reverse {
+  animation: marketing-marquee var(--duration) linear infinite reverse;
+}
+
+@keyframes marketing-particle-drift {
+  0%,
+  100% {
+    opacity: 0.12;
+    transform: translate3d(0, 8px, 0) scale(0.8);
+  }
+  45% {
+    opacity: 0.72;
+  }
+  60% {
+    transform: translate3d(var(--particle-drift), -18px, 0) scale(1.15);
+  }
+}
+
+.marketing-particle {
+  animation:
+    marketing-particle-drift var(--particle-duration) ease-in-out
+    var(--particle-delay) infinite;
+}
+
+@keyframes marketing-beam-path {
+  from {
+    stroke-dasharray: 0.02 0.98;
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dasharray: 0.24 0.76;
+    stroke-dashoffset: -1;
+  }
+}
+
+.marketing-beam-path,
+.marketing-beam-path-reverse {
+  animation: marketing-beam-path var(--beam-path-duration) linear
+    var(--beam-path-delay) infinite;
+}
+
+.marketing-beam-path-reverse {
+  animation-direction: reverse;
+}
+
+@keyframes marketing-bar-rise {
+  from {
+    transform: scaleY(0.08);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.marketing-bar-rise {
+  transform-origin: bottom;
+  animation: marketing-bar-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--bar-delay, 0s);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -342,6 +416,14 @@
     transition-duration: 0.01ms !important;
   }
   .marketing-border-beam::before {
+    animation: none;
+  }
+  .marketing-marquee-track,
+  .marketing-marquee-reverse,
+  .marketing-particle,
+  .marketing-beam-path,
+  .marketing-beam-path-reverse,
+  .marketing-bar-rise {
     animation: none;
   }
   [data-marketing-reveal] {
