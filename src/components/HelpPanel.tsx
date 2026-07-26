@@ -31,7 +31,7 @@ export function HelpPanel({ onPick }: { onPick: (q: string) => void }) {
   return (
     <div className="space-y-6">
       <Link
-        href="/brand"
+        href="/app/brand"
         className="inline-flex opacity-90 transition-opacity hover:opacity-100"
       >
         <BrandMark size="sm" />

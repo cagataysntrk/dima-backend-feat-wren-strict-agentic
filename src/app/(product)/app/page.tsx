@@ -16,7 +16,7 @@ import type { AskResponse } from "@/lib/types";
 
 type Artifact = "report" | "schema" | "help" | null;
 
-export default function Home() {
+export default function AppPage() {
   const [active, setActive] = useState<AskResponse | null>(null);
   // Takip bağlamı: bir sonraki mesajla gönderilecek CubeQuery (ADR-0007 Faz C).
   const [contextCq, setContextCq] = useState<AskResponse["cube_query"]>(null);

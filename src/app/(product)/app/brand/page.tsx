@@ -12,7 +12,7 @@ export default function BrandPage() {
     <main className="flex-1 overflow-auto">
       <div className="mx-auto max-w-3xl px-6 py-10">
         <Link
-          href="/"
+          href="/app"
           className="font-mono text-[11px] tracking-wider text-neutral-400 transition-colors hover:text-foreground"
         >
           ← dima

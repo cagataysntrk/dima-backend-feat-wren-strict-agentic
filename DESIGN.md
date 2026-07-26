@@ -119,4 +119,4 @@ inside its own `overflow-x-auto`; the page body never scrolls horizontally.
 Lowercase **`dima`**. Wordmark = `BrandMark` (Plus Jakarta Sans 400, dotless `ı` + a
 separate `--brand` dot — the i-dot "atom"). The four pillars stay English:
 `Deterministic · Intelligent · Modeled · Agentic`. The indigo-violet (`--brand`) is the
-brand/provenance accent — used sparingly. Living reference: **`/style`**.
+brand/provenance accent — used sparingly. Living reference: **`/app/style`**.

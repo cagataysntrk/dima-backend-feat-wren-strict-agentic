@@ -18,7 +18,11 @@ function LoginForm() {
   const t = useTranslations();
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/";
+  const requestedNext = params.get("next");
+  const next =
+    requestedNext?.startsWith("/app") && !requestedNext.startsWith("//")
+      ? requestedNext
+      : "/app";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

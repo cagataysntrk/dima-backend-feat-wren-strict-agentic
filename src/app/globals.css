@@ -197,10 +197,39 @@
     @apply bg-background text-foreground;
     font-family: var(--font-sans), system-ui, sans-serif;
   }
+  :where(h1, h2, h3, [id]) {
+    scroll-margin-top: 6rem;
+  }
+  :where(h1, h2, h3) {
+    overflow-wrap: anywhere;
+  }
+  :where(a, button, input, textarea, select, summary):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
 }
 
 ::selection {
   background: color-mix(in srgb, var(--brand) 24%, transparent);
+}
+
+.marketing-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklch, var(--border) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklch, var(--border) 55%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* React Flow (ERD) — strip default node chrome (our TableNode supplies its own),

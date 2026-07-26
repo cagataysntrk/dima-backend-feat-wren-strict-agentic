@@ -33,7 +33,7 @@ function RegisterForm() {
     setErr(null);
     try {
       await register(email, password);
-      router.replace("/");
+      router.replace("/app");
     } catch (error) {
       setErr(apiErrorMessage(error));
     } finally {

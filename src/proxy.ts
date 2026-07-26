@@ -10,7 +10,6 @@ import type { NextRequest } from "next/server";
 // (backend adı değiştirirse kod değil yalnız build config değişir).
 const SESSION_COOKIE = process.env.NEXT_PUBLIC_SESSION_COOKIE ?? "dima_refresh";
 
-// Oturum gerektirmeyen genel auth sayfaları.
 const AUTH_ROUTES = new Set(["/login", "/register", "/forgot-password"]);
 
 // api-client, refresh de başarısız olduğunda /login?expired=1'e yönlendirir.
@@ -23,6 +22,7 @@ export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const hasSession = req.cookies.has(SESSION_COOKIE);
   const isAuthPage = AUTH_ROUTES.has(pathname);
+  const isProductPage = pathname === "/app" || pathname.startsWith("/app/");
 
   if (isAuthPage && req.nextUrl.searchParams.has(EXPIRED_FLAG)) {
     const res = NextResponse.next();
@@ -30,7 +30,7 @@ export function proxy(req: NextRequest) {
     return res;
   }
 
-  if (!hasSession && !isAuthPage) {
+  if (!hasSession && isProductPage) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
@@ -39,16 +39,20 @@ export function proxy(req: NextRequest) {
   // Girişliyken auth sayfalarına gelme → ana uygulamaya dön.
   if (hasSession && isAuthPage) {
     const url = req.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/app";
     url.search = "";
     return NextResponse.redirect(url);
   }
   return NextResponse.next();
 }
 
-// api (proxy), _next, statik dosyalar ve ikonlar hariç her route korunur.
+// Yalnız ürün ve auth rotalarında çalışır; marketing ve bilinmeyen public URL'ler
+// middleware'e girmeden normal App Router/404 davranışını korur.
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|icon.svg|opengraph-image|.*\\.(?:png|jpg|jpeg|svg|ico|webp)$).*)",
+    "/app/:path*",
+    "/login",
+    "/register",
+    "/forgot-password",
   ],
 };

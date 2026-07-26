@@ -137,7 +137,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
 
 export type OAuthProvider = "google" | "github" | "apple";
 // OAuth başlat: backend'in yönlendirme başlattığı same-origin uca git.
-export function startOAuth(provider: OAuthProvider, next = "/"): void {
+export function startOAuth(provider: OAuthProvider, next = "/app"): void {
   if (typeof window === "undefined") return;
   const url = `/api/auth/oauth/${provider}?next=${encodeURIComponent(next)}`;
   window.location.href = url;
@@ -179,6 +179,22 @@ export async function askCube(body: {
 
 export async function runQuery(sql: string, limit?: number): Promise<QueryResult> {
   const { data } = await apiClient.post<QueryResult>("/query", { sql, limit });
+  return data;
+}
+
+export interface LiveSnapshot {
+  synthetic: true;
+  watermark: string;
+  window_status: "partial" | "complete";
+  department: "knitting" | "dyehouse" | "factory";
+  oee: number;
+  production_kg: number;
+  downtime_min: number;
+  freshness_seconds: number;
+}
+
+export async function getLiveSnapshot(): Promise<LiveSnapshot[]> {
+  const { data } = await apiClient.get<LiveSnapshot[]>("/internal/live/snapshot");
   return data;
 }
 

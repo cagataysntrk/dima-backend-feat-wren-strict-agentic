@@ -9,6 +9,7 @@ interface Pillar {
   letter: PillarKey;
   word: string;
   tr: string;
+  en: string;
 }
 
 export const PILLARS: Pillar[] = [
@@ -16,21 +17,25 @@ export const PILLARS: Pillar[] = [
     letter: "d",
     word: "deterministic",
     tr: "Her SQL çalıştırılmadan önce dry-plan'dan geçer; SELECT-only guard.",
+    en: "Every SQL query passes a dry plan before execution, with a SELECT-only guard.",
   },
   {
     letter: "i",
     word: "intelligent",
     tr: "Doğal dil → SQL: bilinen metrik cube'dan, gerisi denetlenen LLM ile.",
+    en: "Natural language to SQL, grounded in known metrics and bounded LLM proposals.",
   },
   {
     letter: "m",
     word: "modeled",
     tr: "MDL semantik katman tek doğruluk kaynağıdır; şema uydurma yok.",
+    en: "The MDL semantic layer is the source of truth; schemas are not invented.",
   },
   {
     letter: "a",
     word: "agentic",
-    tr: "İnce ajan müşteri tarafında; zamanlanmış, otonom raporlama.",
+    tr: "Planlanan ince ajan mimarisi ve kontrollü, yeniden kullanılabilir analitik akışları.",
+    en: "Planned thin-agent architecture and controlled, reusable analytical workflows.",
   },
 ];
 
@@ -129,7 +134,7 @@ export function BrandMark({
 }
 
 /** Four pillar cards — the letter-by-letter expansion of the wordmark. */
-export function BrandLockup() {
+export function BrandLockup({ locale = "tr" }: { locale?: "tr" | "en" }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {PILLARS.map((pillar, idx) => (
@@ -152,8 +157,8 @@ export function BrandLockup() {
             </span>
             {pillar.word}
           </p>
-          <p className="mt-1.5 text-xs leading-relaxed text-neutral-500">
-            {pillar.tr}
+          <p className="mt-1.5 text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">
+            {pillar[locale]}
           </p>
         </div>
       ))}

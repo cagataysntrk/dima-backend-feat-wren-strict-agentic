@@ -17,13 +17,7 @@ function AuthBootstrap({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-export function Providers({ children }: { children: React.ReactNode }) {
-  const [client] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
-      }),
-  );
+export function GlobalProviders({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider
       attribute="class"
@@ -31,14 +25,24 @@ export function Providers({ children }: { children: React.ReactNode }) {
       enableSystem
       disableTransitionOnChange
     >
-      <QueryClientProvider client={client}>
-        <MotionConfig reducedMotion="user">
-          <TooltipProvider delayDuration={200}>
-            <AuthBootstrap>{children}</AuthBootstrap>
-          </TooltipProvider>
-          <Toaster />
-        </MotionConfig>
-      </QueryClientProvider>
+      <MotionConfig reducedMotion="user">{children}</MotionConfig>
     </ThemeProvider>
+  );
+}
+
+export function ProductProviders({ children }: { children: React.ReactNode }) {
+  const [client] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
+      }),
+  );
+  return (
+    <QueryClientProvider client={client}>
+      <TooltipProvider delayDuration={200}>
+        <AuthBootstrap>{children}</AuthBootstrap>
+      </TooltipProvider>
+      <Toaster />
+    </QueryClientProvider>
   );
 }

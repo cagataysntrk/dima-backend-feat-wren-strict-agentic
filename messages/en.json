@@ -93,6 +93,24 @@
     "title": "Notifications",
     "empty": "No notifications"
   },
+  "digitalTwin": {
+    "synthetic": "Synthetic digital twin · V2",
+    "notice": "All people, company, and operational records are synthetic. No legal certification or real production is claimed.",
+    "stories": {
+      "s1": "What was yesterday's factory OEE?",
+      "s2": "Compare knitting machine OEE and production over the last 30 days.",
+      "s3": "Show knitting waste by fabric family.",
+      "s4": "What are quality ratio and ΔE00 by dyeing machine?",
+      "s5": "Analyze water intensity for rework batches.",
+      "s6": "Show the top 10 batches by energy intensity.",
+      "s7": "What are the rework rate and good production quantity?",
+      "s8": "Trace yarn through greige roll to dye batch.",
+      "s9": "How many machines are stale or disconnected?",
+      "s10": "Count source data anomalies by type.",
+      "s11": "Show late orders with their production status.",
+      "s12": "Compare wastewater COD trend with the rework rate."
+    }
+  },
   "report": {
     "sql": "SQL",
     "showSql": "Show SQL",

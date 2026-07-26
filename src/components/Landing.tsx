@@ -7,13 +7,7 @@ import { Composer } from "@/components/shell/Composer";
 import { Badge } from "@/components/ui/badge";
 import { enterUp, stagger } from "@/lib/motion";
 
-// Örnek sorular — boyahane demo alanı (docs/research terminoloji). Tıklanınca gönderilir.
-const EXAMPLES = [
-  "Makine bazında OEE",
-  "Bu ay toplam üretim",
-  "Aşama bazında toplam fire",
-  "Vardiya × haftanın günü verimliliği",
-];
+const STORY_KEYS = Array.from({ length: 12 }, (_, index) => `s${index + 1}` as const);
 
 /** Editorial empty state: brand, headline, composer, and example prompts. */
 export function Landing({ onSubmit }: { onSubmit: (q: string) => void }) {
@@ -26,9 +20,12 @@ export function Landing({ onSubmit }: { onSubmit: (q: string) => void }) {
   };
 
   return (
-    <div className="flex h-full items-center justify-center overflow-auto px-6 py-10">
-      <motion.div variants={stagger()} initial="hidden" animate="show" className="w-full max-w-2xl">
-        <motion.div variants={enterUp} className="mb-8 flex flex-col items-center text-center">
+    <div className="flex h-full justify-center overflow-auto px-6 py-10">
+      <motion.div variants={stagger()} initial="hidden" animate="show" className="my-auto w-full max-w-4xl">
+        <motion.div variants={enterUp} className="mb-7 flex flex-col items-center text-center">
+          <Badge variant="brand-subtle" className="mb-4">
+            {t("digitalTwin.synthetic")}
+          </Badge>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             {t("common.tagline")}
           </h1>
@@ -37,22 +34,28 @@ export function Landing({ onSubmit }: { onSubmit: (q: string) => void }) {
           </p>
         </motion.div>
 
-        <motion.div variants={enterUp}>
+        <motion.div variants={enterUp} className="mx-auto max-w-2xl">
           <Composer value={value} onChange={setValue} onSubmit={send} autoFocus size="hero" />
         </motion.div>
 
-        <motion.div variants={stagger(0.1)} className="mt-4 flex flex-wrap justify-center gap-2">
-          {EXAMPLES.map((ex) => (
-            <motion.button key={ex} variants={enterUp} type="button" onClick={() => onSubmit(ex)}>
+        <motion.div variants={stagger(0.05)} className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {STORY_KEYS.map((key) => {
+            const question = t(`digitalTwin.stories.${key}`);
+            return (
+            <motion.button key={key} variants={enterUp} type="button" onClick={() => onSubmit(question)}>
               <Badge
                 variant="outline"
-                className="cursor-pointer px-3 py-1 text-xs font-normal transition-colors hover:border-brand/40 hover:bg-brand/5"
+                className="h-full w-full cursor-pointer justify-start whitespace-normal px-3 py-2 text-left text-xs font-normal leading-relaxed transition-colors hover:border-brand/40 hover:bg-brand/5"
               >
-                {ex}
+                {question}
               </Badge>
             </motion.button>
-          ))}
+            );
+          })}
         </motion.div>
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          {t("digitalTwin.notice")}
+        </p>
       </motion.div>
     </div>
   );

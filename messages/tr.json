@@ -93,6 +93,24 @@
     "title": "Bildirimler",
     "empty": "Bildirim yok"
   },
+  "digitalTwin": {
+    "synthetic": "Sentetik dijital ikiz · V2",
+    "notice": "Tüm kişi, şirket ve operasyon kayıtları sentetiktir. Yasal sertifika veya gerçek üretim iddiası içermez.",
+    "stories": {
+      "s1": "Dünkü fabrika OEE nedir?",
+      "s2": "Son 30 günde örme makinelerinin OEE ve üretimini karşılaştır.",
+      "s3": "Örmede kumaş ailesine göre fireyi göster.",
+      "s4": "Boya makinelerine göre kalite oranı ve ΔE00 nedir?",
+      "s5": "Rework partilerinde su yoğunluğunu incele.",
+      "s6": "Enerji yoğunluğu en yüksek ilk 10 partiyi getir.",
+      "s7": "Yeniden işlem oranı ve iyi üretim miktarı nedir?",
+      "s8": "İplikten örme ruloya ve boya partisine izlenebilirliği göster.",
+      "s9": "Stale ve bağlantısı kopuk makine sayısı kaç?",
+      "s10": "Kaynak veri anomalilerini türüne göre say.",
+      "s11": "Geciken siparişleri üretim durumuyla birlikte göster.",
+      "s12": "Atıksu COD trendini rework oranıyla karşılaştır."
+    }
+  },
   "report": {
     "sql": "SQL",
     "showSql": "SQL göster",
