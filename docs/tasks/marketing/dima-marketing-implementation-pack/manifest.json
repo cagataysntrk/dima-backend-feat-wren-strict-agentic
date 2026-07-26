@@ -1,0 +1,132 @@
+[
+  {
+    "path": "00_RESEARCH_SYNTHESIS.md",
+    "bytes": 7208,
+    "lines": 122
+  },
+  {
+    "path": "01_REPOSITORY_ARCHITECTURE_AUDIT.md",
+    "bytes": 6505,
+    "lines": 173
+  },
+  {
+    "path": "02_POSITIONING_AND_CLAIMS.md",
+    "bytes": 6437,
+    "lines": 147
+  },
+  {
+    "path": "03_INFORMATION_ARCHITECTURE_AND_CONTENT.md",
+    "bytes": 6345,
+    "lines": 225
+  },
+  {
+    "path": "04_DESIGN_SYSTEM_DIRECTION.md",
+    "bytes": 5097,
+    "lines": 220
+  },
+  {
+    "path": "05_TARGET_TECHNICAL_ARCHITECTURE.md",
+    "bytes": 4732,
+    "lines": 198
+  },
+  {
+    "path": "06_QUALITY_SECURITY_SEO.md",
+    "bytes": 4792,
+    "lines": 209
+  },
+  {
+    "path": "07_COMPETITIVE_BEST_PRACTICE_RESEARCH.md",
+    "bytes": 7237,
+    "lines": 240
+  },
+  {
+    "path": "08_PAGE_COPY_BLUEPRINT.md",
+    "bytes": 6829,
+    "lines": 220
+  },
+  {
+    "path": "09_COMPONENT_INVENTORY.md",
+    "bytes": 2607,
+    "lines": 136
+  },
+  {
+    "path": "AGENT_RUNBOOK.md",
+    "bytes": 2787,
+    "lines": 121
+  },
+  {
+    "path": "DIMA_MARKETING_MASTER_PLAN.md",
+    "bytes": 101796,
+    "lines": 3786
+  },
+  {
+    "path": "MASTER_PROMPT.md",
+    "bytes": 8917,
+    "lines": 298
+  },
+  {
+    "path": "README.md",
+    "bytes": 3385,
+    "lines": 59
+  },
+  {
+    "path": "SOURCE_MAP.md",
+    "bytes": 2782,
+    "lines": 96
+  },
+  {
+    "path": "stages/STAGE_00_PREFLIGHT_AND_REPO_AUDIT.md",
+    "bytes": 2426,
+    "lines": 102
+  },
+  {
+    "path": "stages/STAGE_01_ROUTE_ARCHITECTURE_AND_AUTH_BOUNDARIES.md",
+    "bytes": 3045,
+    "lines": 126
+  },
+  {
+    "path": "stages/STAGE_02_MARKETING_DESIGN_SYSTEM.md",
+    "bytes": 2642,
+    "lines": 112
+  },
+  {
+    "path": "stages/STAGE_03_SHARED_MARKETING_SHELL.md",
+    "bytes": 2153,
+    "lines": 101
+  },
+  {
+    "path": "stages/STAGE_04_HOMEPAGE.md",
+    "bytes": 2603,
+    "lines": 126
+  },
+  {
+    "path": "stages/STAGE_05_PRODUCT_AND_HOW_IT_WORKS.md",
+    "bytes": 2063,
+    "lines": 94
+  },
+  {
+    "path": "stages/STAGE_06_SOLUTIONS_AND_TEXTILE_VERTICAL.md",
+    "bytes": 2110,
+    "lines": 113
+  },
+  {
+    "path": "stages/STAGE_07_SECURITY_INTEGRATIONS_AND_TRUST.md",
+    "bytes": 2241,
+    "lines": 105
+  },
+  {
+    "path": "stages/STAGE_08_COMPANY_RESOURCES_LEGAL_CONTACT.md",
+    "bytes": 2219,
+    "lines": 99
+  },
+  {
+    "path": "stages/STAGE_09_SEO_ANALYTICS_PERFORMANCE_ACCESSIBILITY.md",
+    "bytes": 2449,
+    "lines": 113
+  },
+  {
+    "path": "stages/STAGE_10_TESTING_RELEASE_AND_HANDOFF.md",
+    "bytes": 2289,
+    "lines": 133
+  }
+]
