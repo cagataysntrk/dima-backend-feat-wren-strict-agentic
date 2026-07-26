@@ -28,7 +28,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ConnectionBadge } from "@/components/ConnectionBadge";
 import { NotificationsPopover } from "./NotificationsPopover";
 import { AccountMenu } from "./AccountMenu";
 import { Onboarding } from "./Onboarding";
@@ -57,8 +56,10 @@ export function AppSidebar({
 
   return (
     <Sidebar collapsible="offcanvas">
-      <SidebarHeader className="gap-2">
-        <div className="flex h-10 items-center justify-between px-2">
+      <SidebarHeader className="gap-2 pt-0">
+        {/* h-12 + pt-0: logo satırının merkezi, ana paneldeki üst barın (h-12)
+            ikonlarıyla aynı yatay eksende dursun */}
+        <div className="flex h-12 items-center justify-between px-2">
           {/* logo — sadece marka; harf-harf hover açıklamaları kapalı (pillars) */}
           <BrandMark size="sm" />
           <Tooltip>
@@ -177,7 +178,6 @@ export function AppSidebar({
             <div className="min-w-0 flex-1">
               <AccountMenu />
             </div>
-            <ConnectionBadge />
             <NotificationsPopover />
           </SidebarMenuItem>
         </SidebarMenu>

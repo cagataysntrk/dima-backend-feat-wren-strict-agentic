@@ -37,19 +37,16 @@ export function ConnectionBadge({ className }: { className?: string }) {
         <span
           aria-label={label}
           role="status"
-          className={cn("flex size-7 items-center justify-center", className)}
-        >
-          <span
-            className={cn(
-              "inline-block size-2 rounded-full",
-              isLoading
-                ? "bg-muted-foreground"
-                : online
-                  ? "bg-emerald-500"
-                  : "animate-pulse bg-destructive",
-            )}
-          />
-        </span>
+          className={cn(
+            "block size-2.5 rounded-full ring-2 ring-sidebar",
+            isLoading
+              ? "bg-muted-foreground/60"
+              : online
+                ? "bg-emerald-500"
+                : "animate-pulse bg-destructive",
+            className,
+          )}
+        />
       </TooltipTrigger>
       <TooltipContent side="top">{label}</TooltipContent>
     </Tooltip>

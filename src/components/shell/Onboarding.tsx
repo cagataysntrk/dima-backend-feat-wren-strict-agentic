@@ -76,6 +76,29 @@ function writeHidden(next: boolean) {
   persist(DISMISS, next);
 }
 
+/** Circular progress ring — sayacın görsel karşılığı (0'da boş halka). */
+function Ring({ value, total }: { value: number; total: number }) {
+  const r = 6.5;
+  const c = 2 * Math.PI * r;
+  const pct = total ? value / total : 0;
+  return (
+    <svg viewBox="0 0 18 18" className="size-3.5 shrink-0 -rotate-90" aria-hidden="true">
+      <circle cx="9" cy="9" r={r} fill="none" stroke="currentColor" strokeWidth="2" opacity="0.25" />
+      <circle
+        cx="9"
+        cy="9"
+        r={r}
+        fill="none"
+        stroke="var(--brand)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeDasharray={`${c * pct} ${c}`}
+        className="transition-[stroke-dasharray] duration-300"
+      />
+    </svg>
+  );
+}
+
 /**
  * "Başlangıç" — sidebar'ın altında duran, YERİNDE açılan onboarding kartı
  * (ChatGPT pattern; modal değil). Kapalıyken tek satır + ilerleme; açıkken
@@ -97,16 +120,19 @@ export function Onboarding() {
     <Collapsible
       open={open}
       onOpenChange={setOpen}
-      className="group/ob rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-1"
+      className="group/ob rounded-lg px-0.5 py-0.5 transition-colors hover:bg-sidebar-accent/40 data-[state=open]:bg-sidebar-accent/40"
     >
-      <div className="flex items-center gap-1 pr-1">
-        <CollapsibleTrigger className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-1.5 text-left outline-none transition-colors hover:bg-sidebar-accent">
+      <div className="flex items-center gap-0.5 pr-0.5">
+        <CollapsibleTrigger className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left outline-none transition-colors hover:bg-sidebar-accent">
+          <span className="text-muted-foreground">
+            <Ring value={count} total={STEPS.length} />
+          </span>
           <span className="min-w-0 flex-1 truncate text-sm text-sidebar-foreground">
             Başlangıç
           </span>
-          {/* sayaç normalde görünür; satıra gelince yerini şerit ikonlarına bırakır */}
+          {/* sayaç normalde görünür; satıra gelince yerini ··· ve ⌄ ikonlarına bırakır */}
           <span className="shrink-0 text-xs text-muted-foreground tabular-nums group-hover/ob:hidden">
-            {count} / {STEPS.length}
+            {count}/{STEPS.length}
           </span>
         </CollapsibleTrigger>
 
@@ -115,9 +141,9 @@ export function Onboarding() {
           <DropdownMenu>
             <DropdownMenuTrigger
               aria-label="Başlangıç seçenekleri"
-              className="rounded-md p-1 text-muted-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-foreground"
+              className="rounded-md p-0.5 text-muted-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-foreground"
             >
-              <MoreHorizontal className="size-4" />
+              <MoreHorizontal className="size-3.5" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" side="top">
               <DropdownMenuItem onSelect={() => writeDone(STEPS.map((s) => s.id))}>
@@ -132,25 +158,17 @@ export function Onboarding() {
           </DropdownMenu>
           <CollapsibleTrigger
             aria-label={open ? "Kapat" : "Aç"}
-            className="rounded-md p-1 text-muted-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-foreground"
+            className="rounded-md p-0.5 text-muted-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-foreground"
           >
             <ChevronDown
-              className={cn("size-4 transition-transform duration-200", open && "rotate-180")}
+              className={cn("size-3.5 transition-transform duration-200", open && "rotate-180")}
             />
           </CollapsibleTrigger>
         </div>
       </div>
 
-      {/* ince ilerleme şeridi — kapalıyken de görünür, ilerlemeyi hep gösterir */}
-      <div className="mx-2 mt-0.5 mb-1 h-1 overflow-hidden rounded-full bg-sidebar-border">
-        <div
-          className="h-full rounded-full bg-brand transition-[width] duration-300"
-          style={{ width: `${(count / STEPS.length) * 100}%` }}
-        />
-      </div>
-
       <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
-        <ul className="space-y-0.5 pt-1">
+        <ul className="space-y-0.5 pt-0.5 pb-1">
           {STEPS.map((s) => {
             const isDone = done.includes(s.id);
             return (

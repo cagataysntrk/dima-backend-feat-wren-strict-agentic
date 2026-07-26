@@ -22,7 +22,9 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SidebarMenuButton } from "@/components/ui/sidebar";
+import { ConnectionBadge } from "@/components/ConnectionBadge";
 
 /**
  * Bottom-left account entry (ChatGPT/Claude pattern): avatar + name, opening a
@@ -35,8 +37,9 @@ export function AccountMenu() {
   const me = useMe();
   const { theme, setTheme } = useTheme();
 
-  const name = me?.email?.split("@")[0] ?? "—";
-  const initial = (name[0] ?? "?").toUpperCase();
+  // /auth/me henüz gelmediyse "—" yazmak yerine iskelet göster (yükleniyor ≠ boş isim).
+  const name = me?.email?.split("@")[0] ?? null;
+  const initial = name ? name[0]!.toUpperCase() : "";
 
   async function onLogout() {
     try {
@@ -50,19 +53,28 @@ export function AccountMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <SidebarMenuButton size="lg" className="gap-2">
-          <Avatar className="size-7 shrink-0 border border-border">
-            <AvatarFallback className="rounded-[inherit] bg-brand/10 text-xs text-brand">
-              {initial}
-            </AvatarFallback>
-          </Avatar>
-          <span className="min-w-0 flex-1 truncate text-sm">{name}</span>
+          {/* veri kaynağı durumu avatarın üstünde küçük bir nokta (presence deseni) —
+              satırda ayrı bir ikon olarak durmasın diye */}
+          <span className="relative shrink-0">
+            <Avatar className="size-7 border border-border">
+              <AvatarFallback className="rounded-[inherit] bg-brand/10 text-xs font-medium text-brand">
+                {initial}
+              </AvatarFallback>
+            </Avatar>
+            <ConnectionBadge className="absolute -right-0.5 -bottom-0.5" />
+          </span>
+          {name ? (
+            <span className="min-w-0 flex-1 truncate text-sm">{name}</span>
+          ) : (
+            <Skeleton className="h-3.5 min-w-0 flex-1" />
+          )}
           <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
         </SidebarMenuButton>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent side="top" align="start" className="w-56">
         <DropdownMenuLabel className="truncate font-normal text-muted-foreground">
-          {me?.email ?? "—"}
+          {me?.email ?? "…"}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
