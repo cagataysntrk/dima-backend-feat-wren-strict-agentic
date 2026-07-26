@@ -221,6 +221,65 @@
   background-position: center;
 }
 
+@keyframes visual-scan {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  12%,
+  78% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(min(78vw, 76rem));
+    opacity: 0;
+  }
+}
+
+@keyframes visual-dash {
+  to {
+    stroke-dashoffset: -26;
+  }
+}
+
+@keyframes visual-ring {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes visual-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.visual-scan {
+  animation: visual-scan 6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.visual-dash {
+  animation: visual-dash 3s linear infinite;
+}
+
+.visual-ring {
+  animation: visual-ring 4s ease-in-out infinite;
+}
+
+.visual-pulse {
+  animation: visual-pulse 2s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

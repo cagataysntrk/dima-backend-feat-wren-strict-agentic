@@ -32,10 +32,11 @@ export function StatusBadge({ status, content }: { status?: CapabilityStatus; co
   );
 }
 
-export function DetailPage({ page, content }: { page: PageContent; content: MarketingContent }) {
+export function DetailPage({ page, content, visual }: { page: PageContent; content: MarketingContent; visual?: React.ReactNode }) {
   return (
     <>
       <PageHero page={page} />
+      {visual}
       <Container className="py-16 sm:py-24">
         <div className="divide-y border-y">
           {page.sections.map((section, index) => (
