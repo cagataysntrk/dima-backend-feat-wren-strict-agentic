@@ -221,6 +221,58 @@
   background-position: center;
 }
 
+.marketing-surface {
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in oklch, var(--card) 96%, var(--brand) 4%),
+      var(--card) 62%
+    );
+  box-shadow:
+    0 1px 2px oklch(0 0 0 / 0.04),
+    0 18px 50px -32px oklch(0 0 0 / 0.32);
+}
+
+.marketing-editorial-image {
+  filter: saturate(0.88) contrast(0.98);
+}
+
+.dark .marketing-editorial-image {
+  filter: saturate(0.68) brightness(0.72) contrast(1.08);
+}
+
+@keyframes marketing-beam-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.marketing-border-beam {
+  overflow: hidden;
+}
+
+.marketing-border-beam::before {
+  content: "";
+  position: absolute;
+  inset: -150%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 78%,
+    color-mix(in oklch, var(--brand) 28%, transparent) 86%,
+    var(--brand) 91%,
+    transparent 97%
+  );
+  animation: marketing-beam-spin var(--beam-duration, 7s) linear infinite;
+}
+
+.marketing-border-beam::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: calc(var(--radius) + 3px);
+  background: var(--foreground);
+}
+
 @keyframes visual-scan {
   0% {
     transform: translateX(0);
@@ -288,6 +340,13 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  .marketing-border-beam::before {
+    animation: none;
+  }
+  [data-marketing-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 

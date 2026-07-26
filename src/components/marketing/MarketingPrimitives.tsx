@@ -1,23 +1,30 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { BorderBeam } from "@/components/marketing/MagicUI";
+import { Reveal } from "@/components/marketing/MarketingMotion";
 import { Button } from "@/components/ui/button";
 import type { CapabilityStatus, MarketingContent, PageContent } from "@/content/marketing";
+import { cn } from "@/lib/utils";
 
 export function Container({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`mx-auto max-w-7xl px-5 sm:px-8 ${className}`}>{children}</div>;
+  return <div className={cn("mx-auto max-w-7xl px-5 sm:px-8", className)}>{children}</div>;
 }
 
 export function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-brand">{children}</p>;
 }
 
-export function PageHero({ page }: { page: PageContent }) {
+export function PageHero({ page, media }: { page: PageContent; media?: React.ReactNode }) {
   return (
-    <section className="marketing-grid border-b py-20 sm:py-28">
-      <Container>
-        <Eyebrow>{page.eyebrow}</Eyebrow>
-        <h1 className="mt-5 max-w-4xl text-balance font-display text-5xl leading-[1.03] tracking-[-0.035em] sm:text-6xl lg:text-7xl">{page.title}</h1>
-        <p className="mt-7 max-w-2xl text-pretty text-lg leading-8 text-muted-foreground">{page.description}</p>
+    <section className="relative overflow-hidden border-b py-16 sm:py-24 lg:py-28">
+      <div aria-hidden="true" className="marketing-grid absolute inset-0 opacity-60 [mask-image:linear-gradient(to_bottom,black,transparent)]" />
+      <Container className={cn("relative grid gap-12", media ? "lg:grid-cols-[0.88fr_1.12fr] lg:items-center" : "")}>
+        <Reveal>
+          <Eyebrow>{page.eyebrow}</Eyebrow>
+          <h1 className="mt-5 max-w-4xl text-balance font-display text-5xl leading-[1.02] tracking-[-0.04em] sm:text-6xl lg:text-7xl">{page.title}</h1>
+          <p className="mt-7 max-w-2xl text-pretty text-lg leading-8 text-muted-foreground">{page.description}</p>
+        </Reveal>
+        {media ? <Reveal delay={0.12} y={16}>{media}</Reveal> : null}
       </Container>
     </section>
   );
@@ -34,10 +41,11 @@ export function StatusBadge({ status, content }: { status?: CapabilityStatus; co
 
 export function FinalCta({ content, label }: { content: MarketingContent; label?: string }) {
   return (
-    <section className="border-t bg-foreground py-16 text-background sm:py-20">
-      <Container className="flex flex-col items-start justify-between gap-8 md:flex-row md:items-end">
+    <section className="relative overflow-hidden border-t bg-foreground py-16 text-background sm:py-20">
+      <BorderBeam duration={8} />
+      <Container className="relative z-10 flex flex-col items-start justify-between gap-8 md:flex-row md:items-end">
         <div>
-          <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-background/80">{content.common.demo}</p>
+          <p className="font-mono text-xs font-medium tracking-[0.12em] text-background/80">{content.common.demo}</p>
           <h2 className="mt-4 max-w-2xl font-display text-4xl leading-tight sm:text-5xl">{content.common.finalTitle}</h2>
           <p className="mt-4 max-w-xl text-background/70">{content.common.finalBody}</p>
         </div>

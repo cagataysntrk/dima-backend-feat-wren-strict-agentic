@@ -124,8 +124,8 @@ function VisualFrame({
   return (
     <figure className={`overflow-hidden rounded-xl border bg-card shadow-lg ${className}`}>
       <div className="flex items-center justify-between gap-4 border-b px-5 py-3">
-        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{eyebrow}</span>
-        <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-foreground">
+        <span className="font-mono text-[10px] tracking-[0.1em] text-muted-foreground">{eyebrow}</span>
+        <span className="flex items-center gap-2 font-mono text-[10px] tracking-[0.08em] text-foreground">
           <span className="visual-pulse size-1.5 rounded-full bg-chart-2" />
           {statusLabel}
         </span>
@@ -172,7 +172,7 @@ export function AnalyticalSignalMap({ locale }: LocaleProps) {
 function GraphNode({ label, detail, featured = false }: { label: string; detail: string; featured?: boolean }) {
   return (
     <div className={`relative z-10 rounded-lg border p-3 ${featured ? "border-brand/50 bg-brand/10 shadow-md" : "bg-card"}`}>
-      <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{detail}</p>
+      <p className="font-mono text-[10px] tracking-[0.06em] text-muted-foreground">{detail}</p>
       <p className="mt-1 text-sm font-semibold">{label}</p>
     </div>
   );
@@ -192,7 +192,7 @@ export function SemanticMapVisual({ locale }: LocaleProps) {
         </div>
         <div className="rounded-xl border border-brand/50 bg-background p-5 text-center shadow-xl">
           <Network className="mx-auto size-6 text-brand" aria-hidden="true" />
-          <p className="mt-3 font-mono text-[10px] uppercase tracking-wider text-brand">{t.model}</p>
+          <p className="mt-3 font-mono text-[10px] text-brand">{t.model}</p>
           <p className="mt-2 font-semibold">{t.concepts}</p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             {["revenue", "margin", "active_customer"].map((item) => <span className="rounded-full border px-2 py-1 font-mono text-[9px]" key={item}>{item}</span>)}
@@ -219,7 +219,7 @@ export function SecurityFlowVisual({ locale }: LocaleProps) {
           {gates.map((gate, index) => {
             const Icon = gate.icon;
             return (
-              <div className="group relative rounded-lg border bg-background p-4 shadow-sm transition-transform hover:-translate-y-1" key={gate.label}>
+              <div className="relative rounded-lg border bg-background p-4 shadow-sm" key={gate.label}>
                 <div className="flex items-center justify-between">
                   <Icon className="size-4 text-brand" aria-hidden="true" />
                   <span className="font-mono text-[9px] text-foreground">0{index + 1} PASS</span>
@@ -288,7 +288,7 @@ export function MechanismPillars({ locale }: LocaleProps) {
   return (
     <div className="grid gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-2 lg:grid-cols-4">
       {PILLARS.map((pillar, index) => (
-        <article className="group bg-background p-6 transition-colors hover:bg-muted/30" key={pillar.letter}>
+        <article className="bg-background p-6" key={pillar.letter}>
           <div className="flex items-start justify-between">
             <span className="font-display text-5xl text-muted-foreground/45">{pillar.letter}</span>
             <svg aria-hidden="true" className="size-10 text-brand" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24">{motifs[index]}</svg>
@@ -376,7 +376,7 @@ export function ProductWorkbenchVisual({ locale }: LocaleProps) {
           </div>
           <div className="mt-4 rounded-lg border bg-card p-5">
             <div className="flex h-32 items-end gap-3">
-              {[72, 48, 86, 61, 93, 67, 78].map((height, index) => <div className="group relative flex h-full flex-1 items-end" key={index}><div className="w-full rounded-t-sm bg-brand/20 transition-colors group-hover:bg-brand/60" style={{ height: `${height}%` }} /></div>)}
+              {[72, 48, 86, 61, 93, 67, 78].map((height, index) => <div className="relative flex h-full flex-1 items-end" key={index}><div className="w-full rounded-t-sm bg-brand/25" style={{ height: `${height}%` }} /></div>)}
             </div>
             <div className="mt-3 flex justify-between font-mono text-[8px] text-muted-foreground"><span>{t.periodStart}</span><span>{t.current}</span></div>
           </div>
@@ -409,7 +409,7 @@ export function ValidationPipelineVisual({ locale }: LocaleProps) {
 
 export function PageVisualStage({ variant, locale }: LocaleProps & { variant: "product" | "validation" | "security" | "integration" }) {
   return (
-    <div className="mx-auto max-w-7xl px-5 pt-12 sm:px-8 sm:pt-16">
+    <div className="min-w-0">
       {variant === "product" ? <ProductWorkbenchVisual locale={locale} /> : null}
       {variant === "validation" ? <ValidationPipelineVisual locale={locale} /> : null}
       {variant === "security" ? <SecurityFlowVisual locale={locale} /> : null}

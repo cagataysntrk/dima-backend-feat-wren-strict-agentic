@@ -16,6 +16,9 @@ import {
   Table2,
   Timer,
 } from "lucide-react";
+import { MagicCard } from "@/components/marketing/MagicUI";
+import { MarketingEditorialImage } from "@/components/marketing/MarketingAssets";
+import { Reveal } from "@/components/marketing/MarketingMotion";
 import { Container, FinalCta, PageHero, StatusBadge } from "@/components/marketing/MarketingPrimitives";
 import type { MarketingContent, MarketingLocale, PageContent } from "@/content/marketing";
 
@@ -55,7 +58,7 @@ function EvidenceFrame({
 }) {
   const t = ui[locale];
   return (
-    <figure className="overflow-hidden rounded-xl border bg-card shadow-lg">
+    <figure className="overflow-hidden bg-card">
       <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
         <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">{code}</span>
         <span className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.12em]">
@@ -206,25 +209,43 @@ function SectionVisual({ kind, id, locale }: { kind: PageKind; id: string; local
 }
 
 export function EvidenceDetailPage({ page, content, kind, heroVisual }: { page: PageContent; content: MarketingContent; kind: PageKind; heroVisual?: React.ReactNode }) {
+  const fallbackHero = kind === "solutions"
+    ? (
+      <div className="relative aspect-[16/10] overflow-hidden rounded-xl border bg-card shadow-xl">
+        <MarketingEditorialImage asset="decisions" className="marketing-editorial-image" />
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-foreground/25 via-transparent to-transparent" />
+      </div>
+    )
+    : kind === "about"
+      ? (
+        <div className="relative aspect-[4/3] overflow-hidden rounded-xl border bg-card shadow-xl">
+          <MarketingEditorialImage asset="archive" className="marketing-editorial-image" />
+        </div>
+      )
+      : undefined;
+
   return (
     <>
-      <PageHero page={page} />
-      {heroVisual}
+      <PageHero page={page} media={heroVisual ?? fallbackHero} />
       <Container className="py-16 sm:py-24">
         <div className="space-y-20 sm:space-y-28">
           {page.sections.map((section, index) => (
             <section className="scroll-mt-24" id={section.id} key={section.id}>
               <div className={`grid items-center gap-8 lg:grid-cols-2 lg:gap-16 ${index % 2 ? "lg:[&>*:first-child]:order-2" : ""}`}>
-                <div>
-                  <span className="font-mono text-xs text-brand">{String(index + 1).padStart(2, "0")}</span>
+                <Reveal>
+                  {kind === "how" ? <span className="font-mono text-xs text-brand">{String(index + 1).padStart(2, "0")}</span> : null}
                   <div className="mt-5"><StatusBadge status={section.status} content={content} /></div>
                   <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">{section.title}</h2>
                   <p className="mt-5 max-w-xl leading-7 text-muted-foreground">{section.body}</p>
                   {section.points ? <ul className="mt-6 grid gap-2">{section.points.map((point) => <li className="flex gap-3 text-sm" key={point}><Check className="mt-0.5 size-4 shrink-0 text-brand" />{point}</li>)}</ul> : null}
-                </div>
-                <EvidenceFrame locale={content.locale} code={`${kind} / ${String(index + 1).padStart(2, "0")}`} summary={`${section.title}: ${section.body}`}>
-                  <SectionVisual kind={kind} id={section.id} locale={content.locale} />
-                </EvidenceFrame>
+                </Reveal>
+                <Reveal delay={0.08} y={18}>
+                  <MagicCard>
+                    <EvidenceFrame locale={content.locale} code={`${kind} / ${String(index + 1).padStart(2, "0")}`} summary={`${section.title}: ${section.body}`}>
+                      <SectionVisual kind={kind} id={section.id} locale={content.locale} />
+                    </EvidenceFrame>
+                  </MagicCard>
+                </Reveal>
               </div>
             </section>
           ))}

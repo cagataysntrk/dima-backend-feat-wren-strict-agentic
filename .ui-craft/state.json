@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "version": "0.36.0",
+  "mirrorVersion": "",
+  "harnesses": [
+    {
+      "name": "codex",
+      "installedComponents": [
+        "mcp-gates"
+      ],
+      "installedAt": "2026-07-26T18:59:56Z"
+    }
+  ]
+}

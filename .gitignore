@@ -39,6 +39,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# ui-craft local rollback snapshots
+.ui-craft-backups/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
