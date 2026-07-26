@@ -7,6 +7,7 @@ import type { QueryResult } from "@/lib/types";
 import { ALL_MEASURES, analyze, type ChartKind } from "@/lib/chart";
 import { Chart } from "./chart/Chart";
 import { KpiGrid } from "./chart/kpi";
+import { PivotTable } from "./PivotTable";
 import { ResultTable } from "./ResultTable";
 import {
   Select,
@@ -113,8 +114,20 @@ export function ResultView({
   const canChart = availableTypes.length > 0;
   const wantsTable = hintBase === "table";
 
-  const [view, setView] = useState<"chart" | "table">(() => {
-    if (wantsTable || !canChart) return "table";
+  // PIVOT: zaman kovası + TEK varlık boyutu + ölçü → çapraz tablo (varlık satır × kova sütun).
+  // Uzun "N ürün × ay × metrik" sonucunu okunur matrise çevirir (canlı 2026-07-25: 98 satır
+  // yerine 20×7). Jenerik — herhangi bir varlık×zaman×ölçü.
+  const pivotDim =
+    a.timeCol && a.dims.length === 2 && a.measures.length >= 1
+      ? a.dims.find((d) => d !== a.timeCol) ?? null
+      : null;
+  const pivotable = pivotDim != null;
+
+  const [view, setView] = useState<"chart" | "table" | "pivot">(() => {
+    if (wantsTable) return "table";
+    // Çok-varlıklı zaman serisi: çizgi kalabalık, tablo çok uzun → PIVOT varsayılan.
+    if (pivotable && result.rows.length > 12) return "pivot";
+    if (!canChart) return "table";
     // heatmap/facet doğal tip ise tabloyu göster (façade henüz çizemiyor)
     if (a.kind === "none" || a.kind === "heatmap" || a.kind === "facet") return "table";
     return "chart";
@@ -167,20 +180,27 @@ export function ResultView({
               </SelectContent>
             </Select>
           )}
-          {a.kind !== "none" && canChart && (
+          {((a.kind !== "none" && canChart) || pivotable) && (
             <ToggleGroup
               type="single"
               size="sm"
               variant="outline"
               value={view}
-              onValueChange={(v) => v && setView(v as "chart" | "table")}
+              onValueChange={(v) => v && setView(v as "chart" | "table" | "pivot")}
             >
-              <ToggleGroupItem value="chart" className="px-2.5 text-xs">
-                grafik
-              </ToggleGroupItem>
+              {a.kind !== "none" && canChart && (
+                <ToggleGroupItem value="chart" className="px-2.5 text-xs">
+                  grafik
+                </ToggleGroupItem>
+              )}
               <ToggleGroupItem value="table" className="px-2.5 text-xs">
                 tablo
               </ToggleGroupItem>
+              {pivotable && (
+                <ToggleGroupItem value="pivot" className="px-2.5 text-xs">
+                  pivot
+                </ToggleGroupItem>
+              )}
             </ToggleGroup>
           )}
         </div>
@@ -190,6 +210,13 @@ export function ResultView({
 
       {a.kind === "kpi" ? (
         <KpiGrid result={result} analysis={a} />
+      ) : view === "pivot" && pivotDim && a.timeCol ? (
+        <PivotTable
+          result={result}
+          timeCol={a.timeCol}
+          entityDim={pivotDim}
+          measure={!measure || measure === ALL_MEASURES ? a.measures[0] : measure}
+        />
       ) : view === "chart" && canChart ? (
         <ChartOrTable result={result} analysis={a} type={type} measure={measure} />
       ) : (
