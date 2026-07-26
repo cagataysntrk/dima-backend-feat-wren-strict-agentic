@@ -10,6 +10,7 @@ import { SourceBadge } from "@/components/report/SourceBadge";
 import { MessageActions } from "@/components/report/MessageActions";
 import { SqlBlock } from "@/components/report/SqlBlock";
 import { KpiCardView } from "@/components/KpiCard";
+import { OutputInsight } from "@/components/OutputInsight";
 import { Bubble, DimaAvatar, Message, MessageScroller, UserAvatar } from "@/components/ai/chat";
 import { ChainOfThought, Reasoning } from "@/components/ai/thinking";
 import { thinkingMs } from "@/lib/thinking";
@@ -136,6 +137,8 @@ export function ChatPanel({
                       </span>
                     </button>
                   )}
+                  {/* Evrensel çıktı yorumu — KPI/tablo/grafik/rapor hepsinin altında (flag'li). */}
+                  <OutputInsight interpretation={item.interpretation} />
                 </Bubble>
               </Message>
             </div>

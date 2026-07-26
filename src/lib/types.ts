@@ -69,6 +69,14 @@ export interface AskResponse {
   // Cross-cube KPI kartı (CCC / likidite oranları): tek skaler + bileşenleri (DSO/DIO/DPO,
   // dönen varlık/KV kaynak…). Cube tablosu değil bileşke — KPI kartı olarak render edilir.
   kpi?: KpiCard | null;
+  // EVRENSEL ÇIKTI YORUMU (feature flag: cikti_yorumlama) — her tablo/grafik/rapor/KPI için
+  // DETERMİNİSTİK data-güdümlü yorum. Bayrak kapalıysa null (admin panelden kim görür kararlaşır).
+  interpretation?: Interpretation | null;
+}
+
+export interface Interpretation {
+  summary: string; // deterministik Türkçe özet (en yüksek/düşük, % değişim, trend, pay)
+  facts?: { type: string; text: string }[]; // yapısal bulgular (ileride chip/rozet)
 }
 
 export interface KpiCard {

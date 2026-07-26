@@ -5,6 +5,7 @@ import { HelpCircle } from "lucide-react";
 import type { AskResponse } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import { KpiCardView } from "@/components/KpiCard";
+import { OutputInsight } from "@/components/OutputInsight";
 import { SourceBadge } from "@/components/report/SourceBadge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -114,6 +115,9 @@ export function ReportPanel({
           />
         </div>
       )}
+
+      {/* Evrensel çıktı yorumu (feature flag'li) — KPI/tablo/grafik altında. */}
+      <OutputInsight interpretation={data.interpretation} />
 
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-2">
