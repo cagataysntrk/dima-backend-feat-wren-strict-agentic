@@ -16,6 +16,7 @@ import { ChainOfThought, Reasoning } from "@/components/ai/thinking";
 import { thinkingMs } from "@/lib/thinking";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { useFeature } from "@/lib/access";
 import { cn } from "@/lib/utils";
 
 export function ChatPanel({
@@ -42,6 +43,9 @@ export function ChatPanel({
   const t = useTranslations();
   const [value, setValue] = useState("");
   const thread = [...items].reverse(); // eski üstte, yeni altta
+  // SQL gösterimi (sql_display bayrağı, ADR-0009) — ham şeffaflık özelliği; bayrak
+  // kapalıysa SQL bloğu hiç render edilmez (backend /features'tan çözülür).
+  const sqlStage = useFeature("sql_display");
 
   const send = () => {
     const q = value.trim();
@@ -114,8 +118,9 @@ export function ChatPanel({
                             </>
                           }
                         />
-                        {/* sorgunun kendisi — grafiğin/tablonun altında, kapalı başlar */}
-                        {item.sql && <SqlBlock sql={item.sql} />}
+                        {/* sorgunun kendisi — grafiğin/tablonun altında, kapalı başlar
+                            (sql_display bayrağı açıksa) */}
+                        {sqlStage && item.sql && <SqlBlock sql={item.sql} />}
                       </Card>
                       <MessageActions
                         data={item}
