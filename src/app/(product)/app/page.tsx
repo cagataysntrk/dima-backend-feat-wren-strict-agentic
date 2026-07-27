@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { apiErrorMessage, ask, askCube } from "@/lib/api-client";
 import { markThinking } from "@/lib/thinking";
+import { markAttachments } from "@/lib/attachments";
 import { AppShell } from "@/components/shell/AppShell";
 import { ChatPanel } from "@/components/ChatPanel";
 import { HelpPanel } from "@/components/HelpPanel";
@@ -23,6 +24,9 @@ export default function AppPage() {
   const [viewHint, setViewHint] = useState<{ kind: string; nonce: number } | null>(null);
   const [verifyLabel, setVerifyLabel] = useState<string | null>(null);
   const [artifact, setArtifact] = useState<Artifact>(null);
+  // Panel düğmesi neyi geri açacağını bilsin — "yardım" varsayılanı yanlıştı
+  // (panel düğmesi yardım açmamalı; yardım kendi menüsünden gelir).
+  const lastArtifact = useRef<Exclude<Artifact, null>>("report");
   const [searchOpen, setSearchOpen] = useState(false);
 
   const activeConv = useConversations(selectActive);
@@ -41,6 +45,9 @@ export default function AppPage() {
 
   // Düşünme süresi ölçümü — cevabın yanında kalan "N sn düşündü" bloğu için.
   const askedAt = useRef(0);
+  // Gönderilen ekler — yanıt gelince o mesaja iliştirilir (lib/attachments.ts).
+  const sentFiles = useRef<File[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   const mutation = useMutation<AskResponse, unknown, { question: string; sessionId: string }>({
     mutationFn: ({ question, sessionId }) =>
@@ -55,6 +62,9 @@ export default function AppPage() {
     },
     onSuccess: (data) => {
       markThinking(data, Date.now() - askedAt.current);
+      markAttachments(data, sentFiles.current);
+      sentFiles.current = [];
+      setPendingFiles([]);
       useConversations.getState().add(data);
       // Rapor artık sohbetin içinde yaşıyor — sağ paneli KENDİLİĞİNDEN açmıyoruz
       // (panel Yardım/Veri kaynakları ve ileride dashboard'lar için ayrıldı).
@@ -66,9 +76,11 @@ export default function AppPage() {
     },
   });
 
-  const submit = (q: string) => {
+  const submit = (q: string, files: File[] = []) => {
     const sessionId = ensureSessionId();
     setVerifyLabel(q);
+    sentFiles.current = files;
+    setPendingFiles(files);
     mutation.mutate({ question: q, sessionId });
   };
 
@@ -145,7 +157,15 @@ export default function AppPage() {
       onOpenSchema={() => setArtifact("schema")}
       onOpenHelp={() => setArtifact("help")}
       onOpenSearch={() => setSearchOpen(true)}
-      onToggleArtifact={() => setArtifact((a) => (a ? null : "help"))}
+      onToggleArtifact={() =>
+        setArtifact((a) => {
+          if (a) {
+            lastArtifact.current = a;
+            return null;
+          }
+          return lastArtifact.current;
+        })
+      }
       artifactOpen={artifact !== null}
       artifactTitle={artifactTitle}
       onArtifactClose={() => setArtifact(null)}
@@ -159,6 +179,7 @@ export default function AppPage() {
           active={active}
           pending={mutation.isPending || cubeMutation.isPending}
           pendingQuestion={pendingQuestion}
+          pendingFiles={pendingFiles}
           onSelect={(item) => {
             setActive(item);
             setArtifact("report");

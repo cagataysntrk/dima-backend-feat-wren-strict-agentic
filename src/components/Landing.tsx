@@ -10,13 +10,13 @@ import { enterUp, stagger } from "@/lib/motion";
 const STORY_KEYS = Array.from({ length: 12 }, (_, index) => `s${index + 1}` as const);
 
 /** Editorial empty state: brand, headline, composer, and example prompts. */
-export function Landing({ onSubmit }: { onSubmit: (q: string) => void }) {
+export function Landing({ onSubmit }: { onSubmit: (q: string, files?: File[]) => void }) {
   const t = useTranslations();
   const [value, setValue] = useState("");
 
-  const send = () => {
+  const send = (files: File[]) => {
     const q = value.trim();
-    if (q) onSubmit(q);
+    if (q) onSubmit(q, files);
   };
 
   return (

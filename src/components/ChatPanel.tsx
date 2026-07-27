@@ -14,16 +14,31 @@ import { OutputInsight } from "@/components/OutputInsight";
 import { Bubble, DimaAvatar, Message, MessageScroller, UserAvatar } from "@/components/ai/chat";
 import { ChainOfThought, Reasoning } from "@/components/ai/thinking";
 import { thinkingMs } from "@/lib/thinking";
+import { attachmentsOf } from "@/lib/attachments";
+import { Attachment } from "@/components/ai/attachment";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { useFeature } from "@/lib/access";
 import { cn } from "@/lib/utils";
+
+/** Mesajla gönderilen ekler — balonun altında, yatay kaydırmalı. */
+function MessageAttachments({ files }: { files?: File[] }) {
+  if (!files?.length) return null;
+  return (
+    <div className="flex max-w-full items-center gap-1.5 overflow-x-auto pb-0.5">
+      {files.map((f, i) => (
+        <Attachment key={`${f.name}-${i}`} file={f} className="shrink-0 scale-95" />
+      ))}
+    </div>
+  );
+}
 
 export function ChatPanel({
   items,
   active,
   pending,
   pendingQuestion,
+  pendingFiles,
   onSelect,
   onSubmit,
   onCubeEdit,
@@ -34,8 +49,9 @@ export function ChatPanel({
   active: AskResponse | null;
   pending: boolean;
   pendingQuestion?: string;
+  pendingFiles?: File[];
   onSelect: (item: AskResponse) => void;
-  onSubmit: (q: string) => void;
+  onSubmit: (q: string, files?: File[]) => void;
   onCubeEdit?: (edit: { cq: CubeQuery; label: string }) => void;
   verifyLabel?: string | null;
   sessionId?: string;
@@ -47,10 +63,10 @@ export function ChatPanel({
   // kapalıysa SQL bloğu hiç render edilmez (backend /features'tan çözülür).
   const sqlStage = useFeature("sql_display");
 
-  const send = () => {
+  const send = (files: File[]) => {
     const q = value.trim();
     if (!q) return;
-    onSubmit(q);
+    onSubmit(q, files);
     setValue("");
   };
 
@@ -75,7 +91,10 @@ export function ChatPanel({
           {thread.map((item, i) => (
             <div key={`${item.question}-${i}`} className="space-y-9">
               <Message from="user" className="items-start gap-3 pl-10">
-                <Bubble from="user">{item.question}</Bubble>
+                <div className="flex min-w-0 flex-col items-end gap-1.5">
+                  <Bubble from="user">{item.question}</Bubble>
+                  <MessageAttachments files={attachmentsOf(item)} />
+                </div>
                 <UserAvatar className="mt-0.5 shrink-0" />
               </Message>
 
@@ -161,7 +180,10 @@ export function ChatPanel({
           {pendingQuestion && (
             <div className="space-y-9">
               <Message from="user" className="items-start gap-3 pl-10">
-                <Bubble from="user">{pendingQuestion}</Bubble>
+                <div className="flex min-w-0 flex-col items-end gap-1.5">
+                  <Bubble from="user">{pendingQuestion}</Bubble>
+                  <MessageAttachments files={pendingFiles} />
+                </div>
                 <UserAvatar className="mt-0.5 shrink-0" />
               </Message>
               <Message from="assistant" className="items-start gap-3 pr-10">

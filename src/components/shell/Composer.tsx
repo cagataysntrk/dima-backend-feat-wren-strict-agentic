@@ -23,6 +23,8 @@ import { cn } from "@/lib/utils";
  * Attachments are collected client-side (chips with remove); the backend `/ask`
  * is text-only for now, so they're cleared on send.
  */
+export const MAX_FILES = 20;
+
 export function Composer({
   value,
   onChange,
@@ -34,7 +36,8 @@ export function Composer({
 }: {
   value: string;
   onChange: (v: string) => void;
-  onSubmit: () => void;
+  /** Ekler gönderimle birlikte taşınır — mesajın altında görünürler. */
+  onSubmit: (files: File[]) => void;
   busy?: boolean;
   autoFocus?: boolean;
   placeholder?: string;
@@ -58,34 +61,41 @@ export function Composer({
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, size === "hero" ? 240 : 180)}px`;
-  }, [value, size]);
+  }, [value, size, files.length]);
 
   const canSend = (value.trim().length > 0 || files.length > 0) && !busy;
 
   function send() {
     if (!canSend) return;
-    onSubmit();
+    onSubmit(files);
     setFiles([]);
   }
 
   function addFiles(list: FileList | null) {
     if (!list?.length) return;
-    setFiles((prev) => [...prev, ...Array.from(list)].slice(0, 8));
+    setFiles((prev) => [...prev, ...Array.from(list)].slice(0, MAX_FILES));
   }
 
   return (
     // shadow-lg: içerik altından aktığı için komut satırı yüzeyden KALKMALI
     <div className="rounded-2xl border border-input bg-card shadow-lg transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/25">
-      {/* ekler (input'un içinde, üst şerit) */}
+      {/* Ekler — sarmak yerine YATAY kaydırır: 20 dosyada sarma komut satırını
+          ekranın yarısına çıkarıyordu. Şerit sabit yükseklikte kalır. */}
       {files.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 px-3 pt-3">
-          {files.map((f, i) => (
-            <Attachment
-              key={`${f.name}-${i}`}
-              file={f}
-              onRemove={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
-            />
-          ))}
+        <div className="flex items-center gap-2 px-3 pt-3">
+          <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pb-1">
+            {files.map((f, i) => (
+              <Attachment
+                key={`${f.name}-${f.lastModified}-${i}`}
+                file={f}
+                className="shrink-0"
+                onRemove={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
+              />
+            ))}
+          </div>
+          <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+            {files.length}/{MAX_FILES}
+          </span>
         </div>
       )}
 
@@ -136,6 +146,7 @@ export function Composer({
               devleştiriyordu; artık içeriğine göre daralıyor. */}
           <DropdownMenuContent align="start" side="top" className="w-auto min-w-0">
             <DropdownMenuItem
+              disabled={files.length >= MAX_FILES}
               onSelect={() => fileRef.current?.click()}
               className="gap-2 text-xs whitespace-nowrap"
             >

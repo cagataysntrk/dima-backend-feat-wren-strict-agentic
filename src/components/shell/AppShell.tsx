@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "motion/react";
-import { MessageSquarePlus, PanelLeft, Search, SquareDashed } from "lucide-react";
+import { MessageSquarePlus, PanelLeft, PanelRight, Search } from "lucide-react";
 import {
   SidebarInset,
   SidebarProvider,
@@ -56,7 +56,7 @@ export function AppShell({
         onOpenHelp={onOpenHelp}
         onOpenSearch={onOpenSearch}
       />
-      <SidebarInset className="flex min-h-0 flex-row overflow-hidden">
+      <SidebarInset className="flex min-h-0 flex-row overflow-clip">
         {/* relative: üst bar ve komut satırı içeriğin ÜSTÜNDE yüzer */}
         <div className="relative flex min-w-0 flex-1 flex-col">
           <TopBar
@@ -65,7 +65,10 @@ export function AppShell({
             onToggleArtifact={onToggleArtifact}
             artifactOpen={artifactOpen}
           />
-          <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+          {/* overflow-clip (hidden DEĞİL): hidden bir kap, odak görünür alana
+              alınırken tarayıcı tarafından kaydırılabilir ve geri dönmez —
+              ek gönderdikten sonra komut satırının kayıp kalmasının sebebi buydu. */}
+          <div className="min-h-0 flex-1 overflow-clip">{children}</div>
         </div>
         <ArtifactPanel open={artifactOpen} title={artifactTitle} onClose={onArtifactClose}>
           {artifact}
@@ -182,7 +185,7 @@ function TopBar({
                 artifactOpen && "bg-accent text-foreground",
               )}
             >
-              <SquareDashed className="size-4" />
+              <PanelRight className="size-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">{t("common.artifacts")}</TooltipContent>
