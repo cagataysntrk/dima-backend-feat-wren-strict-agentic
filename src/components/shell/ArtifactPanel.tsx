@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 export const PANEL_TABS = [
   { id: "report", label: "Rapor", icon: FileText },
   { id: "attachments", label: "Ekler", icon: Paperclip },
-  { id: "dashboards", label: "Panolar", icon: LayoutDashboard },
+  { id: "dashboards", label: "Paneller", icon: LayoutDashboard },
   { id: "schema", label: "Veri", icon: Database },
   { id: "help", label: "Yardım", icon: HelpCircle },
 ] as const;

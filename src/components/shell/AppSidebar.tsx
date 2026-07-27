@@ -121,7 +121,7 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton onClick={onOpenDashboards}>
               <LayoutDashboard className="size-4" />
-              <span>Panolar</span>
+              <span>Paneller</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
 

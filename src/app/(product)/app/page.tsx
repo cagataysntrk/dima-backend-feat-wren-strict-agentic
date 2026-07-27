@@ -145,7 +145,7 @@ export default function AppPage() {
         : artifact === "attachments"
           ? "Ekler"
           : artifact === "dashboards"
-            ? "Panolar"
+            ? "Paneller"
             : active?.question
               ? active.question.slice(0, 60)
               : "Rapor";

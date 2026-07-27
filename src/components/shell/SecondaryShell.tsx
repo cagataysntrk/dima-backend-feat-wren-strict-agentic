@@ -19,7 +19,7 @@ import { ShortcutsDialog } from "./ShortcutsDialog";
  * sağ artifact paneli DURMAZ — bu sayfaların bir "artifact"ı yok, boş bir panel
  * göstermek yer kaplamaktan başka bir şey yapmazdı.
  *
- * Panel açan sidebar girişleri (Veri kaynakları, Panolar, Yardım) buradan
+ * Panel açan sidebar girişleri (Veri kaynakları, Paneller, Yardım) buradan
  * /app'e `?panel=` ile döner; sohbet sayfası açılışta o sekmeyi açar.
  */
 export function SecondaryShell({ children }: { children: React.ReactNode }) {
