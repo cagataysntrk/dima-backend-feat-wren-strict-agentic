@@ -36,7 +36,7 @@ export default function ChatsPage() {
     new Intl.DateTimeFormat("tr-TR", { dateStyle: "medium", timeStyle: "short" }).format(ts);
 
   return (
-    <main className="mx-auto max-w-3xl space-y-6 px-6 py-10">
+    <main className="dima-page-in mx-auto max-w-3xl space-y-6 px-6 py-10">
       <header className="space-y-3">
         <Button variant="ghost" size="sm" asChild className="-ml-2 gap-1.5">
           <Link href="/app">

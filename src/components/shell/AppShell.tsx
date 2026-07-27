@@ -15,6 +15,7 @@ import { railItem, railReveal } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { AppSidebar } from "./AppSidebar";
 import type { PanelTab } from "./ArtifactPanel";
+import { ChatNav } from "./ChatNav";
 import { IncognitoBackdrop, IncognitoToggle } from "./IncognitoToggle";
 import { ShareDialog } from "./ShareDialog";
 import { ArtifactPanel } from "./ArtifactPanel";
@@ -77,6 +78,7 @@ export function AppShell({
           <TopBar
             started={started}
             onNewChat={onNewChat}
+            onSelectConversation={onSelectConversation}
             onOpenSearch={onOpenSearch}
             onToggleArtifact={onToggleArtifact}
             artifactOpen={artifactOpen}
@@ -119,6 +121,7 @@ export function AppShell({
 function TopBar({
   started,
   onNewChat,
+  onSelectConversation,
   onOpenSearch,
   onToggleArtifact,
   artifactOpen,
@@ -126,6 +129,7 @@ function TopBar({
   /** Sohbet başladı mı — başlamadan Gizli, başlayınca Paylaş gösterilir. */
   started: boolean;
   onNewChat: () => void;
+  onSelectConversation: (id: string) => void;
   onOpenSearch: () => void;
   onToggleArtifact: () => void;
   artifactOpen: boolean;
@@ -155,6 +159,10 @@ function TopBar({
           <Kbd className="bg-background/20 text-background dark:bg-background/15">⌘B</Kbd>
         </TooltipContent>
       </Tooltip>
+
+      {/* sohbet gezinme okları — kenar çubuğu düğmesinin SAĞINDA; sidebar açık
+          da kapalı da olsa aynı yerde durur (konum değişseydi kas hafızası bozulurdu) */}
+      <ChatNav onSelect={onSelectConversation} />
 
       <AnimatePresence>
         {!open && (

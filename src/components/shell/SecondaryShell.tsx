@@ -10,6 +10,7 @@ import { Kbd } from "@/components/ui/kbd";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useConversations } from "@/stores/conversations";
 import { AppSidebar } from "./AppSidebar";
+import { ChatNav } from "./ChatNav";
 import { SearchDialog } from "./SearchDialog";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 
@@ -65,7 +66,12 @@ export function SecondaryShell({ children }: { children: React.ReactNode }) {
           onOpenShortcuts={() => setShortcutsOpen(true)}
         />
         <SidebarInset className="flex min-h-0 flex-col overflow-hidden">
-          <SecondaryTopBar />
+          <SecondaryTopBar
+            onSelectConversation={(id) => {
+              select(id);
+              router.push("/app");
+            }}
+          />
           <div className="min-h-0 flex-1 overflow-auto">{children}</div>
         </SidebarInset>
       </SidebarProvider>
@@ -73,7 +79,11 @@ export function SecondaryShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SecondaryTopBar() {
+function SecondaryTopBar({
+  onSelectConversation,
+}: {
+  onSelectConversation: (id: string) => void;
+}) {
   const t = useTranslations();
   const { toggleSidebar } = useSidebar();
   return (
@@ -95,6 +105,7 @@ function SecondaryTopBar() {
           <Kbd className="bg-background/20 text-background dark:bg-background/15">⌘B</Kbd>
         </TooltipContent>
       </Tooltip>
+      <ChatNav onSelect={onSelectConversation} />
     </div>
   );
 }
