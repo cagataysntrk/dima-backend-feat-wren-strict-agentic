@@ -92,8 +92,8 @@ export function ChatPanel({
             <div key={`${item.question}-${i}`} className="space-y-9">
               <Message from="user" className="items-start gap-3 pl-10">
                 <div className="flex min-w-0 max-w-[calc(100%-2.5rem)] flex-col items-end gap-1.5">
-                  <Bubble from="user">{item.question}</Bubble>
                   <MessageAttachments files={attachmentsOf(item)} />
+                  <Bubble from="user">{item.question}</Bubble>
                 </div>
                 <UserAvatar className="mt-0.5 shrink-0" />
               </Message>
@@ -181,8 +181,8 @@ export function ChatPanel({
             <div className="space-y-9">
               <Message from="user" className="items-start gap-3 pl-10">
                 <div className="flex min-w-0 max-w-[calc(100%-2.5rem)] flex-col items-end gap-1.5">
-                  <Bubble from="user">{pendingQuestion}</Bubble>
                   <MessageAttachments files={pendingFiles} />
+                  <Bubble from="user">{pendingQuestion}</Bubble>
                 </div>
                 <UserAvatar className="mt-0.5 shrink-0" />
               </Message>

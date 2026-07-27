@@ -62,15 +62,16 @@ export function IncognitoBackdrop() {
     >
       <FlickeringGrid
         className="size-full"
-        squareSize={3}
-        gridGap={7}
+        squareSize={4}
+        gridGap={6}
         // marka moru — token'dan değil sabit, çünkü canvas CSS değişkeni okuyamaz
         color="rgb(139, 92, 246)"
-        maxOpacity={0.18}
-        flickerChance={0.08}
+        maxOpacity={0.55}
+        flickerChance={0.14}
       />
-      {/* okunurluk için merkeze doğru sönümlenir — metin ızgaranın üstünde kalsın */}
-      <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/85 to-background/60" />
+      {/* Okunurluk örtüsü yalnız OKUMA SÜTUNUNDA yoğun; kenarlarda ızgara açıkta
+          kalır. Eskiden her yeri kaplayan düz bir perde vardı ve efekt kayboluyordu. */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_75%_at_50%_50%,var(--background)_45%,color-mix(in_srgb,var(--background)_55%,transparent)_100%)]" />
     </div>
   );
 }
