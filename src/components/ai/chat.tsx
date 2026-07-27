@@ -168,7 +168,7 @@ export function Bubble({
     <div
       className={cn(
         from === "user"
-          ? "max-w-[calc(100%-2.5rem)] rounded-2xl rounded-br-sm bg-secondary px-4 py-2 text-sm text-secondary-foreground"
+          ? "max-w-full rounded-2xl rounded-br-sm bg-secondary px-4 py-2 text-sm break-words text-secondary-foreground"
           : "min-w-0 flex-1",
         className,
       )}

@@ -56,7 +56,7 @@ export function AppShell({
         onOpenHelp={onOpenHelp}
         onOpenSearch={onOpenSearch}
       />
-      <SidebarInset className="flex min-h-0 flex-row overflow-clip">
+      <SidebarInset className="flex min-h-0 flex-row overflow-hidden">
         {/* relative: üst bar ve komut satırı içeriğin ÜSTÜNDE yüzer */}
         <div className="relative flex min-w-0 flex-1 flex-col">
           <TopBar
@@ -65,10 +65,20 @@ export function AppShell({
             onToggleArtifact={onToggleArtifact}
             artifactOpen={artifactOpen}
           />
-          {/* overflow-clip (hidden DEĞİL): hidden bir kap, odak görünür alana
-              alınırken tarayıcı tarafından kaydırılabilir ve geri dönmez —
-              ek gönderdikten sonra komut satırının kayıp kalmasının sebebi buydu. */}
-          <div className="min-h-0 flex-1 overflow-clip">{children}</div>
+          {/* overflow-hidden bir kap kaydırma ÇUBUĞU göstermez ama programatik
+              olarak kaydırılabilir: tarayıcı odaklanan textarea'yı görünür tutmak
+              için burayı kaydırıp bırakıyordu ("input aşağı kaydı, düzelmiyor").
+              Kaydırmayı anında geri alıyoruz — bu kap asla kaymamalı. */}
+          <div
+            className="min-h-0 flex-1 overflow-hidden"
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              if (el.scrollTop !== 0) el.scrollTop = 0;
+              if (el.scrollLeft !== 0) el.scrollLeft = 0;
+            }}
+          >
+            {children}
+          </div>
         </div>
         <ArtifactPanel open={artifactOpen} title={artifactTitle} onClose={onArtifactClose}>
           {artifact}
