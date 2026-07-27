@@ -17,7 +17,7 @@ import { AppSidebar } from "./AppSidebar";
 import type { PanelTab } from "./ArtifactPanel";
 import { ChatNav } from "./ChatNav";
 import { ChatTitle } from "./ChatTitle";
-import { IncognitoBackdrop, IncognitoToggle } from "./IncognitoToggle";
+import { IncognitoToggle } from "./IncognitoToggle";
 import { ShareDialog } from "./ShareDialog";
 import { ArtifactPanel } from "./ArtifactPanel";
 
@@ -89,15 +89,14 @@ export function AppShell({
               için burayı kaydırıp bırakıyordu ("input aşağı kaydı, düzelmiyor").
               Kaydırmayı anında geri alıyoruz — bu kap asla kaymamalı. */}
           <div
-            className="relative min-h-0 flex-1 overflow-hidden"
+            className="min-h-0 flex-1 overflow-hidden"
             onScroll={(e) => {
               const el = e.currentTarget;
               if (el.scrollTop !== 0) el.scrollTop = 0;
               if (el.scrollLeft !== 0) el.scrollLeft = 0;
             }}
           >
-            <IncognitoBackdrop />
-            <div className="relative z-[1] h-full">{children}</div>
+            {children}
           </div>
         </div>
         <ArtifactPanel

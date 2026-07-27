@@ -33,6 +33,11 @@ type Cell = {
   numeric: boolean;
   colSpan?: number;
   rowSpan?: number;
+  /** Dosyadan okunan hücre stili (yalnız .xlsx — bkz. loadStyled). */
+  bold?: boolean;
+  fill?: string;
+  color?: string;
+  align?: "left" | "center" | "right";
 } | null;
 
 type Grid = {
@@ -58,6 +63,91 @@ function colName(i: number): string {
   return s;
 }
 
+/** ARGB ("FF1F4E79") → CSS. ExcelJS renkleri bu biçimde verir. */
+function argb(v?: string): string | undefined {
+  if (!v || v.length < 6) return undefined;
+  const hex = v.length === 8 ? v.slice(2) : v;
+  return `#${hex}`;
+}
+
+/**
+ * .xlsx için stilli yol (ExcelJS): dolgu, kalın, yazı rengi ve hizalama okunur.
+ * SheetJS'in topluluk sürümü stil VERMİYOR — dosyanın görsel kimliği (başlık
+ * bantları, renk rehberi) ancak böyle korunuyor.
+ * .xls (eski BIFF) ve .csv ExcelJS'te desteklenmiyor; onlar SheetJS yolunda kalır.
+ */
+async function loadStyled(file: File): Promise<Grid[]> {
+  const ExcelJS = (await import("exceljs")).default;
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(await file.arrayBuffer());
+
+  return wb.worksheets.map((ws) => {
+    const totalRows = ws.rowCount;
+    const rowCount = Math.min(totalRows, MAX_ROWS);
+    const cols = Math.min(ws.columnCount, MAX_COLS);
+
+    // Birleştirmeler: kapsanan koordinatları atla, sol-üste span ver.
+    const covered = new Set<string>();
+    const spanAt = new Map<string, { colSpan: number; rowSpan: number }>();
+    const merges: string[] = Object.values(
+      (ws as unknown as { _merges?: Record<string, { model?: unknown }> })._merges ?? {},
+    )
+      .map((m) => (m as { model?: { tl?: string; br?: string } }).model)
+      .filter((m): m is { tl: string; br: string } => !!m?.tl && !!m?.br)
+      .map((m) => `${m.tl}:${m.br}`);
+
+    for (const range of merges) {
+      const [tl, br] = range.split(":");
+      const a = ws.getCell(tl);
+      const b = ws.getCell(br);
+      const r0 = Number(a.row);
+      const c0 = Number(a.col);
+      const r1 = Number(b.row);
+      const c1 = Number(b.col);
+      spanAt.set(`${r0}:${c0}`, { colSpan: c1 - c0 + 1, rowSpan: r1 - r0 + 1 });
+      for (let r = r0; r <= r1; r++) {
+        for (let c = c0; c <= c1; c++) {
+          if (r !== r0 || c !== c0) covered.add(`${r}:${c}`);
+        }
+      }
+    }
+
+    const rows: Cell[][] = [];
+    for (let r = 1; r <= rowCount; r++) {
+      const row: Cell[] = [];
+      for (let c = 1; c <= cols; c++) {
+        if (covered.has(`${r}:${c}`)) {
+          row.push(null);
+          continue;
+        }
+        const cell = ws.getRow(r).getCell(c);
+        const font = cell.font;
+        const f = cell.fill;
+        const fill =
+          f && f.type === "pattern" && f.pattern === "solid"
+            ? argb((f.fgColor as { argb?: string } | undefined)?.argb)
+            : undefined;
+        const h = cell.alignment?.horizontal;
+        const span = spanAt.get(`${r}:${c}`);
+        row.push({
+          text: cell.text ?? "",
+          numeric: typeof cell.value === "number",
+          bold: font?.bold,
+          fill,
+          color: argb((font?.color as { argb?: string } | undefined)?.argb),
+          align: h === "center" ? "center" : h === "right" ? "right" : h === "left" ? "left" : undefined,
+          colSpan: span?.colSpan,
+          rowSpan: span?.rowSpan,
+        });
+      }
+      rows.push(row);
+    }
+
+    const widths = ws.columns?.map((c) => c?.width ?? 0) ?? [];
+    return { name: ws.name, rows, cols, widths, truncated: totalRows > MAX_ROWS };
+  });
+}
+
 export default function SheetView({ file }: { file: File }) {
   const [sheets, setSheets] = useState<Grid[] | null>(null);
   const [active, setActive] = useState(0);
@@ -67,6 +157,12 @@ export default function SheetView({ file }: { file: File }) {
     let alive = true;
     (async () => {
       try {
+        // .xlsx → ExcelJS (stilli). .xls / .csv → SheetJS (ExcelJS okumuyor).
+        if (/\.xlsx$/i.test(file.name)) {
+          const styled = await loadStyled(file);
+          if (alive) setSheets(styled);
+          return;
+        }
         const XLSX = await import("xlsx");
         // CSV metin olarak okunmalı — ikili verince kodlama bozulabiliyor.
         const isCsv = /\.csv$/i.test(file.name);
@@ -178,9 +274,22 @@ export default function SheetView({ file }: { file: File }) {
                       colSpan={cell.colSpan}
                       rowSpan={cell.rowSpan}
                       title={cell.text || undefined}
+                      style={{
+                        backgroundColor: cell.fill,
+                        color: cell.color,
+                        fontWeight: cell.bold ? 600 : undefined,
+                      }}
                       className={cn(
                         "truncate border-r border-b border-border px-2 py-1",
-                        cell.numeric ? "text-right tabular-nums" : "text-left",
+                        cell.align === "center"
+                          ? "text-center"
+                          : cell.align === "right"
+                            ? "text-right"
+                            : cell.align === "left"
+                              ? "text-left"
+                              : cell.numeric
+                                ? "text-right tabular-nums"
+                                : "text-left",
                       )}
                     >
                       {cell.text}
