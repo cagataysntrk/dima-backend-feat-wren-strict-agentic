@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import {
   ArrowUpRight,
+  Bell,
   ChevronDown,
   Database,
   LayoutDashboard,
@@ -14,6 +15,7 @@ import {
   Search,
 } from "lucide-react";
 import { useConversations } from "@/stores/conversations";
+import { useNotifications } from "@/lib/notifications";
 import { BrandMark } from "@/components/BrandMark";
 import {
   Sidebar,
@@ -39,7 +41,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { NotificationsPopover } from "./NotificationsPopover";
 import { AccountMenu } from "./AccountMenu";
 import { Onboarding } from "./Onboarding";
 
@@ -72,6 +73,7 @@ export function AppSidebar({
   const activeId = useConversations((s) => s.activeId);
   const [filter, setFilter] = useState<ChatFilter>("all");
   const [listOpen, setListOpen] = useState(true);
+  const { unread } = useNotifications();
 
   const shown = conversations.filter((c) =>
     filter === "named" ? !!c.title : filter === "empty" ? !c.title : true,
@@ -122,6 +124,19 @@ export function AppSidebar({
             <SidebarMenuButton onClick={onOpenDashboards}>
               <LayoutDashboard className="size-4" />
               <span>Paneller</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link href="/notifications">
+                <Bell className="size-4" />
+                <span className="flex-1">Bildirimler</span>
+                {unread > 0 && (
+                  <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-brand text-[10px] font-medium text-brand-foreground tabular-nums">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
 
@@ -238,7 +253,6 @@ export function AppSidebar({
             <div className="min-w-0 flex-1">
               <AccountMenu onOpenHelp={onOpenHelp} onOpenShortcuts={onOpenShortcuts} />
             </div>
-            <NotificationsPopover />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
