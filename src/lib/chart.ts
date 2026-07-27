@@ -25,7 +25,8 @@ export type ChartKind =
   | "bar-stacked"
   | "bar-h"
   | "scatter"
-  | "radial";
+  | "radial"
+  | "radar";
 
 // SÜREKLI zaman (trend → çizgi). "gün/vardiya" gibi DÖNGÜSEL kategorikler kasıtlı olarak
 // burada YOK — onlar ısı haritasına gitsin (ör. vardiya × haftanın günü). Gerçek tarih
@@ -184,7 +185,7 @@ export function buildSeries(
   const measure = !measureSel || measureSel === ALL_MEASURES ? a.measures[0] : measureSel;
 
   // -- PIE / RADIAL: tek boyut × tek ölçü (aynı ad/değer şekli) -----------
-  if (kind === "pie" || kind === "radial") {
+  if (kind === "pie" || kind === "radial" || kind === "radar") {
     const dim = a.primaryDim;
     if (!dim) return null;
     return {

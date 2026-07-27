@@ -255,7 +255,10 @@ export function InterpretationBar({
         <span
           key={m}
           title="Ölçü"
-          className="inline-flex items-center gap-1 rounded-md border border-brand/20 bg-brand/5 py-0.5 pr-1 pl-2 text-xs text-foreground"
+          className={cn(
+            "inline-flex items-center gap-1 rounded-md border border-brand/20 bg-brand/5 py-0.5 pl-2 text-xs text-foreground",
+            measures.length > 1 || blend.length > 0 ? "pr-1" : "pr-2",
+          )}
         >
           <span className="text-brand">◆</span> {m}
           {(measures.length > 1 || blend.length > 0) && (
@@ -302,7 +305,7 @@ export function InterpretationBar({
               kova: <span className="text-brand">{GRAN_TR[t.granularity] ?? t.granularity}</span>
               <ChevronDown className="size-3" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
+            <DropdownMenuContent align="start" className="[&_[data-slot=dropdown-menu-item]]:text-xs [&_[data-slot=dropdown-menu-checkbox-item]]:text-xs [&_[data-slot=dropdown-menu-sub-trigger]]:text-xs">
               {Object.entries(GRAN_TR).map(([g, label]) => (
                 <DropdownMenuItem
                   key={g}
@@ -352,7 +355,7 @@ export function InterpretationBar({
                 {label}
                 <ChevronDown className="size-3" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="max-h-72 overflow-auto">
+              <DropdownMenuContent align="start" className="max-h-72 overflow-auto [&_[data-slot=dropdown-menu-item]]:text-xs [&_[data-slot=dropdown-menu-checkbox-item]]:text-xs [&_[data-slot=dropdown-menu-sub-trigger]]:text-xs">
                 {opts.map((v) => {
                   const on = selected.includes(v);
                   return (
@@ -400,7 +403,7 @@ export function InterpretationBar({
                   </span>
                   <ChevronDown className="size-3" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="max-h-72 overflow-auto">
+                <DropdownMenuContent align="start" className="max-h-72 overflow-auto [&_[data-slot=dropdown-menu-item]]:text-xs [&_[data-slot=dropdown-menu-checkbox-item]]:text-xs [&_[data-slot=dropdown-menu-sub-trigger]]:text-xs">
                   {opts.map((v) => (
                     <DropdownMenuItem
                       key={v}
@@ -431,7 +434,7 @@ export function InterpretationBar({
             {dateFilters.length > 0 ? <span className="text-brand">{periodLabel()}</span> : "tümü"}
             <ChevronDown className="size-3" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
+          <DropdownMenuContent align="start" className="[&_[data-slot=dropdown-menu-item]]:text-xs [&_[data-slot=dropdown-menu-checkbox-item]]:text-xs [&_[data-slot=dropdown-menu-sub-trigger]]:text-xs">
             {periodPresets().map((p) => (
               <DropdownMenuItem key={p.label} onSelect={() => setPeriod(p.label, p.start)}>
                 {p.label}
@@ -460,11 +463,11 @@ export function InterpretationBar({
             </TooltipTrigger>
             <TooltipContent side="top">Yorum ekle</TooltipContent>
           </Tooltip>
-          <DropdownMenuContent align="start" className="w-48">
+          <DropdownMenuContent align="start" className="w-48 [&_[data-slot=dropdown-menu-item]]:text-xs [&_[data-slot=dropdown-menu-checkbox-item]]:text-xs [&_[data-slot=dropdown-menu-sub-trigger]]:text-xs">
             {addableMeasures.length > 0 && (
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>Ölçü ekle</DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="max-h-72 overflow-auto">
+                <DropdownMenuSubContent className="max-h-72 overflow-auto [&_[data-slot=dropdown-menu-item]]:text-xs [&_[data-slot=dropdown-menu-checkbox-item]]:text-xs [&_[data-slot=dropdown-menu-sub-trigger]]:text-xs">
                   {addableMeasures.map((m) => (
                     <DropdownMenuItem key={m} onSelect={() => addMeasure(m)}>
                       {m}
@@ -476,7 +479,7 @@ export function InterpretationBar({
             {addableDims.length > 0 && (
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>Kırılım ekle</DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="max-h-72 overflow-auto">
+                <DropdownMenuSubContent className="max-h-72 overflow-auto [&_[data-slot=dropdown-menu-item]]:text-xs [&_[data-slot=dropdown-menu-checkbox-item]]:text-xs [&_[data-slot=dropdown-menu-sub-trigger]]:text-xs">
                   {addableDims.map((d) => (
                     <DropdownMenuItem key={d} onSelect={() => addDim(d)}>
                       {d}
@@ -488,7 +491,7 @@ export function InterpretationBar({
             {tds.length === 0 && (
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>Zaman kovası</DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
+                <DropdownMenuSubContent className="[&_[data-slot=dropdown-menu-item]]:text-xs [&_[data-slot=dropdown-menu-checkbox-item]]:text-xs [&_[data-slot=dropdown-menu-sub-trigger]]:text-xs">
                   {Object.entries(GRAN_TR).map(([g, label]) => (
                     <DropdownMenuItem key={g} onSelect={() => setGran(g)}>
                       {label}

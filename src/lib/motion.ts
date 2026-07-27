@@ -21,3 +21,17 @@ export const stagger = (delayChildren = 0): Variants => ({
   hidden: {},
   show: { transition: { staggerChildren: 0.05, delayChildren } },
 });
+
+// Sidebar kapanınca üst barda beliren aksiyonlar. Sidebar SOLA doğru kayboluyor,
+// bu yüzden ikonlar da SOLDAN gelir — hareket, boşalan yeri devraldıklarını anlatır
+// (mekânsal tutarlılık). `delayChildren` sidebar genişlik geçişinin bitmesini bekler,
+// yoksa ikonlar kapanan panelin üstünde belirip çakışıyor.
+export const railReveal: Variants = {
+  hidden: { transition: { staggerChildren: 0.03, staggerDirection: -1 } },
+  show: { transition: { staggerChildren: 0.05, delayChildren: 0.12 } },
+};
+
+export const railItem: Variants = {
+  hidden: { opacity: 0, x: -10, scale: 0.9, transition: { duration: 0.12, ease: EASE_OUT } },
+  show: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.2, ease: EASE_OUT } },
+};

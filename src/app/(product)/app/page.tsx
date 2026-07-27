@@ -97,8 +97,14 @@ export default function AppPage() {
     setArtifact(null);
   }
 
-  const started = items.length > 0 || mutation.isPending;
-  const pendingQuestion = mutation.isPending ? mutation.variables?.question : undefined;
+  const started = items.length > 0 || mutation.isPending || cubeMutation.isPending;
+  // Chip düzenlemeleri de bekleme durumu gösterir — aksi halde × basınca hiçbir
+  // şey olmuyormuş gibi duruyordu (canlı geri bildirim 2026-07-26).
+  const pendingQuestion = mutation.isPending
+    ? mutation.variables?.question
+    : cubeMutation.isPending
+      ? cubeMutation.variables?.label
+      : undefined;
 
   const artifactTitle =
     artifact === "schema"
@@ -151,7 +157,7 @@ export default function AppPage() {
         <ChatPanel
           items={items}
           active={active}
-          pending={mutation.isPending}
+          pending={mutation.isPending || cubeMutation.isPending}
           pendingQuestion={pendingQuestion}
           onSelect={(item) => {
             setActive(item);

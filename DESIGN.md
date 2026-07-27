@@ -35,10 +35,10 @@ Dark mode is class-driven (`.dark`, toggled by next-themes), overriding OS.
 | `--secondary` | subtle surface / chat bubbles | `oklch(0.955 …)` | `oklch(0.25 …)` |
 | `--muted` / `--muted-foreground` | muted surface / mid-gray text | — | — |
 | `--accent` | subtle hover/selected surface (shadcn) | neutral | neutral |
-| `--brand` / `--brand-foreground` | **dima indigo-violet** — provenance, focus, chart-1 | `oklch(0.55 0.2 277)` | `oklch(0.72 0.17 277)` |
+| `--brand` / `--brand-foreground` | **dima violet** — provenance, focus, chart-1 | `oklch(0.551 0.26 292)` `#7e38f8` | `oklch(0.615 0.231 293)` `#8f5bff` |
 | `--destructive` | errors / alerts | red | red |
 | `--border` / `--input` / `--ring` | hairline / field / focus ring (=brand) | — | — |
-| `--chart-1..5` | categorical, hue-separated: violet · emerald · amber · rose · cyan (277 → 160 → 65 → 12 → 212) | — | dark-tuned |
+| `--chart-1..5` | categorical, **validator-passed**: violet · aqua · orange · blue · magenta. Slot order IS the CVD-safety mechanism — do not reorder. Dark has its own steps, not a flip. | `#7e38f8 #1baf7a #eb6834 #2a78d6 #e87ba4` | `#8f5bff #199e70 #d95926 #3987e5 #d55181` |
 | `--sidebar-*` | left-nav surface set | — | — |
 | `--radius` | `0.625rem` (editorial, tight) | — | — |
 | `--shadow-*` | subtle neutral elevation (overlays only; surfaces stay flat + hairline) | — | stronger |

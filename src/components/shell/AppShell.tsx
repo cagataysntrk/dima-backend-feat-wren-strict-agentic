@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { AnimatePresence, motion } from "motion/react";
 import { MessageSquarePlus, PanelLeft, Search, SquareDashed } from "lucide-react";
 import {
   SidebarInset,
@@ -10,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { railItem, railReveal } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { AppSidebar } from "./AppSidebar";
 import { ShareDialog } from "./ShareDialog";
@@ -115,9 +117,18 @@ function TopBar({
         </TooltipContent>
       </Tooltip>
 
-      {!open && (
-        <>
-          <Tooltip>
+      <AnimatePresence>
+        {!open && (
+          <motion.div
+            key="rail-actions"
+            variants={railReveal}
+            initial="hidden"
+            animate="show"
+            exit="hidden"
+            className="flex items-center gap-0.5"
+          >
+            <motion.span variants={railItem} className="inline-flex">
+              <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
@@ -129,9 +140,11 @@ function TopBar({
                 <MessageSquarePlus className="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">{t("common.newChat")}</TooltipContent>
-          </Tooltip>
-          <Tooltip>
+                <TooltipContent side="bottom">{t("common.newChat")}</TooltipContent>
+              </Tooltip>
+            </motion.span>
+            <motion.span variants={railItem} className="inline-flex">
+              <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
@@ -143,13 +156,15 @@ function TopBar({
                 <Search className="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="flex items-center gap-1.5">
-              {t("common.search")}
-              <Kbd className="bg-background/20 text-background dark:bg-background/15">⌘K</Kbd>
-            </TooltipContent>
-          </Tooltip>
-        </>
-      )}
+                <TooltipContent side="bottom" className="flex items-center gap-1.5">
+                  {t("common.search")}
+                  <Kbd className="bg-background/20 text-background dark:bg-background/15">⌘K</Kbd>
+                </TooltipContent>
+              </Tooltip>
+            </motion.span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* sağ küme: paylaş + artifacts */}
       <div className="ml-auto flex items-center gap-0.5">

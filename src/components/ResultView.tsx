@@ -8,6 +8,7 @@ import { ALL_MEASURES, analyze, type ChartKind } from "@/lib/chart";
 import { Chart } from "./chart/Chart";
 import { KpiGrid } from "./chart/kpi";
 import { PivotTable } from "./PivotTable";
+import { Heatmap } from "./chart/Heatmap";
 import { ResultTable } from "./ResultTable";
 import {
   Select,
@@ -18,26 +19,35 @@ import {
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
-// Ölçü BİRİMLERİ metadata'dan (/schema cubes[].units) format katmanına verilir —
-// birim şirket/cube başına yeniden tanımlanmaz: metadata'da bir kez, gerisi platform.
+// Ölçü metadata'sı (/schema cubes[]) TEK okumadan iki şey besler:
+//   • units            → format katmanı (₺, kg, %…)
+//   • lower_is_better  → ısı haritası yön semantiği (yüksek = kötü ölçülerde rampa ters)
+// Metadata'da bir kez tanımlanır, şirket/cube başına UI değişikliği gerekmez.
 // Açılışta bir kez okunur, modül düzeyinde tutulur (useFeature deseni).
-//
-// NOT: aynı uçtaki `lower_is_better` (ısı haritası yön semantiği) şimdilik OKUNMUYOR;
-// Recharts façade'ı henüz heatmap çizmiyor (tabloya düşüyor). Heatmap dönünce buradan
-// yeniden bağlanmalı — metadata backend'de duruyor.
-let _unitsLoaded = false;
-function useSchemaUnits(): void {
+let _schemaLoaded = false;
+let _lowerSet: ReadonlySet<string> = new Set();
+
+function useSchemaMeta(): ReadonlySet<string> {
+  const [lower, setLower] = useState<ReadonlySet<string>>(_lowerSet);
   useEffect(() => {
-    if (_unitsLoaded) return;
+    if (_schemaLoaded) return;
     getSchema()
       .then((s) => {
-        const cubes = (s as { cubes?: { units?: Record<string, string> }[] }).cubes ?? [];
+        const cubes =
+          (s as { cubes?: { units?: Record<string, string>; lower_is_better?: string[] }[] })
+            .cubes ?? [];
         setSchemaUnits(Object.assign({}, ...cubes.map((c) => c.units ?? {})));
-        _unitsLoaded = true;
+        _lowerSet = new Set(cubes.flatMap((c) => c.lower_is_better ?? []));
+        _schemaLoaded = true;
+        setLower(_lowerSet);
       })
       .catch(() => {});
   }, []);
+  return lower;
 }
+
+// Metadata yoksa (eski/serbest ölçüler) ad kalıbından yedek çıkarım.
+const LOWER_IS_BETTER_RE = /fire|durus|duruş|sapma|maliyet|tuketim|tüketim|yogunluk|yoğunluk|hata|iade|gecikme/i;
 
 const TYPE_LABEL: Record<ChartKind, string> = {
   bar: "Sütun",
@@ -47,6 +57,7 @@ const TYPE_LABEL: Record<ChartKind, string> = {
   area: "Alan",
   pie: "Pasta",
   radial: "Radyal",
+  radar: "Radar",
   scatter: "Dağılım",
   heatmap: "Isı haritası",
   facet: "Panelli",
@@ -64,6 +75,8 @@ const CHARTABLE: ChartKind[] = [
   "pie",
   "radial",
   "scatter",
+  "radar",
+  "heatmap",
 ];
 
 // Not: yeni sonuçta/görünüm ipucunda seçimlerin sıfırlanması için ana bileşen bunu
@@ -78,7 +91,7 @@ export function ResultView({
   /** Başlık satırının solunda gösterilecek içerik (provenance rozeti, satır sayısı…). */
   meta?: React.ReactNode;
 }) {
-  useSchemaUnits(); // /schema cubes[].units → format katmanı (₺, kg, %…)
+  const lowerSet = useSchemaMeta();
   const hintBase = viewHint?.split(":")[0];
   const a = useMemo(() => analyze(result), [result]);
 
@@ -101,8 +114,10 @@ export function ResultView({
     }
     if (!a.timeCol && hasCat && few) {
       t.push("pie");
-      if (a.measures.length === 1) t.push("radial");
+      if (a.measures.length === 1) t.push("radial", "radar");
     }
+    // ısı haritası: iki kategorik boyut × bir ölçü eşlemesi kurulabiliyorsa
+    if ((a.heatAny ?? a.heat) && a.measures.length >= 1) t.push("heatmap");
     // iki ölçü → korelasyon bakışı anlamlı
     if (a.measures.length >= 2) t.push("scatter");
 
@@ -128,8 +143,8 @@ export function ResultView({
     // Çok-varlıklı zaman serisi: çizgi kalabalık, tablo çok uzun → PIVOT varsayılan.
     if (pivotable && result.rows.length > 12) return "pivot";
     if (!canChart) return "table";
-    // heatmap/facet doğal tip ise tabloyu göster (façade henüz çizemiyor)
-    if (a.kind === "none" || a.kind === "heatmap" || a.kind === "facet") return "table";
+    // facet hâlâ çizilemiyor → tablo. heatmap ARTIK çiziliyor (chart/Heatmap.tsx).
+    if (a.kind === "none" || a.kind === "facet") return "table";
     return "chart";
   });
   const [type, setType] = useState<ChartKind>(hintKind ?? availableTypes[0] ?? "bar");
@@ -218,7 +233,13 @@ export function ResultView({
           measure={!measure || measure === ALL_MEASURES ? a.measures[0] : measure}
         />
       ) : view === "chart" && canChart ? (
-        <ChartOrTable result={result} analysis={a} type={type} measure={measure} />
+        <ChartOrTable
+          result={result}
+          analysis={a}
+          type={type}
+          measure={measure}
+          lowerSet={lowerSet}
+        />
       ) : (
         <div className="overflow-x-auto">
           <ResultTable result={result} />
@@ -234,11 +255,14 @@ function ChartOrTable({
   analysis,
   type,
   measure,
+  lowerSet,
 }: {
   result: QueryResult;
   analysis: ReturnType<typeof analyze>;
   type: ChartKind;
   measure: string;
+  /** /schema cubes[].lower_is_better — "yüksek = kötü" ölçüler. */
+  lowerSet: ReadonlySet<string>;
 }) {
   const rendered = (
     <Chart result={result} analysis={analysis} kind={type} measure={measure} />
@@ -247,7 +271,15 @@ function ChartOrTable({
   // buildSeries çıktısına göre karar veririz.
   return (
     <div className="rounded-lg border border-border p-3">
-      {type === "heatmap" || type === "facet" ? (
+      {type === "heatmap" ? (
+        <Heatmap
+          result={result}
+          analysis={analysis}
+          measure={measure}
+          // Yön ASIL metadata'dan gelir; regex yalnız metadata'sız ölçüler için yedek.
+          lowerIsBetter={lowerSet.has(measure) || LOWER_IS_BETTER_RE.test(measure)}
+        />
+      ) : type === "facet" ? (
         <div className="overflow-x-auto">
           <ResultTable result={result} />
         </div>

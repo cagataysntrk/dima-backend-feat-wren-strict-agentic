@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ChevronsUpDown, LogOut, Monitor, Moon, Sun, Languages } from "lucide-react";
+import { ChevronsUpDown, LogOut, Monitor, Moon, RotateCcw, Sun, Languages } from "lucide-react";
 import { useTheme } from "next-themes";
 import { logout } from "@/lib/api-client";
 import { useConversations } from "@/stores/conversations";
@@ -26,6 +26,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { SidebarMenuButton } from "@/components/ui/sidebar";
 import { ConnectionBadge } from "@/components/ConnectionBadge";
+import { resetOnboarding, useOnboardingDismissed } from "./Onboarding";
 
 /**
  * Bottom-left account entry (ChatGPT/Claude pattern): avatar + name, opening a
@@ -37,6 +38,7 @@ export function AccountMenu() {
   const router = useRouter();
   const me = useMe();
   const { theme, setTheme } = useTheme();
+  const onboardingDismissed = useOnboardingDismissed();
 
   // /auth/me henüz gelmediyse "—" yazmak yerine iskelet göster (yükleniyor ≠ boş isim).
   const name = me?.email?.split("@")[0] ?? null;
@@ -119,6 +121,17 @@ export function AccountMenu() {
             ))}
           </DropdownMenuSubContent>
         </DropdownMenuSub>
+
+        {/* Gizlenen/biten turu geri getir — aksi halde "Gizle" tek yönlü kapı olurdu */}
+        {onboardingDismissed && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={resetOnboarding}>
+              <RotateCcw className="size-4" />
+              Başlangıç turunu göster
+            </DropdownMenuItem>
+          </>
+        )}
 
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={onLogout} variant="destructive">

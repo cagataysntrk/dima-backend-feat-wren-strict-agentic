@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Check, Globe, Link2, Share } from "lucide-react";
+import { Globe, Link2, Share } from "lucide-react";
 import { selectActive, useConversations } from "@/stores/conversations";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { CopyIcon } from "@/components/ai/copy-icon";
 
 /**
  * Sohbeti paylaş — ChatGPT'deki "Share public link to chat" karşılığı.
@@ -87,7 +88,7 @@ export function ShareDialog() {
             />
           </div>
           <Button variant="brand" disabled className="gap-1.5">
-            {copied ? <Check className="size-4" /> : <Link2 className="size-4" />}
+            <Link2 className="size-4" />
             {t("share.create")}
           </Button>
         </div>
@@ -95,7 +96,8 @@ export function ShareDialog() {
         <p className="text-xs leading-relaxed text-muted-foreground">{t("share.pending")}</p>
 
         <div className="flex justify-end">
-          <Button variant="ghost" size="sm" onClick={copyTitle}>
+          <Button variant="ghost" size="sm" onClick={copyTitle} className="gap-1.5">
+            <CopyIcon copied={copied} />
             {copied ? t("share.copied") : t("share.copyTitle")}
           </Button>
         </div>

@@ -61,16 +61,25 @@ export function ChatPanel({
       {/* Üstte yumuşak erime: içerik bara doğru yaklaşırken saydamlaşır (Claude
           davranışı). Blur'lu opak bir bant yerine maske — böylece "arkasında bir
           panel var" hissi değil, "yazı sönümleniyor" hissi oluşuyor. */}
-      <MessageScroller className="[mask-image:linear-gradient(to_bottom,transparent_0,#000_4rem)]">
-        <div className="mx-auto w-full max-w-3xl space-y-6 px-4 pt-16 pb-36">
+      <MessageScroller
+        className="[mask-image:linear-gradient(to_bottom,transparent_0,#000_4rem)]"
+        jumpOffset="bottom-[7rem]"
+        // yeni cevap (ya da chip düzenlemesi) gelince en alta zorla kaydır
+        scrollKey={`${items.length}:${pendingQuestion ?? ""}`}
+      >
+        {/* Tek ritim: hem turlar arasında hem tur içinde space-y-9 (36px).
+            Eşit boşluk, konuşmayı "soru+cevap blokları" yerine tek bir akış gibi
+            okutur — ChatGPT/Claude deseni. Gruplamayı boşluk değil, avatar ve
+            hizalama taşıyor. */}
+        <div className="mx-auto w-full max-w-3xl space-y-9 px-4 pt-16 pb-36">
           {thread.map((item, i) => (
-            <div key={`${item.question}-${i}`} className="space-y-2.5">
-              <Message from="user" className="items-start gap-3">
+            <div key={`${item.question}-${i}`} className="space-y-9">
+              <Message from="user" className="items-start gap-3 pl-10">
                 <Bubble from="user">{item.question}</Bubble>
                 <UserAvatar className="mt-0.5 shrink-0" />
               </Message>
 
-              <Message from="assistant" className="items-start gap-3">
+              <Message from="assistant" className="items-start gap-3 pr-10">
                 <DimaAvatar className="mt-0.5 shrink-0" />
                 <Bubble from="assistant" className="space-y-2">
                   {/* düşünce zinciri cevabın yanında kalır — varsayılan kapalı */}
@@ -150,12 +159,12 @@ export function ChatPanel({
           ))}
 
           {pendingQuestion && (
-            <div className="space-y-2.5">
-              <Message from="user" className="items-start gap-3">
+            <div className="space-y-9">
+              <Message from="user" className="items-start gap-3 pl-10">
                 <Bubble from="user">{pendingQuestion}</Bubble>
                 <UserAvatar className="mt-0.5 shrink-0" />
               </Message>
-              <Message from="assistant" className="items-start gap-3">
+              <Message from="assistant" className="items-start gap-3 pr-10">
                 <DimaAvatar className="mt-0.5 shrink-0" />
                 <ChainOfThought />
               </Message>

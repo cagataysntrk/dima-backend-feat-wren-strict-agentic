@@ -14,6 +14,10 @@ import {
   Pie,
   PieChart,
   PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
   RadialBar,
   RadialBarChart,
   Scatter,
@@ -182,6 +186,28 @@ export function Chart({
     );
   }
 
+  // Radar — az sayıda kategoride tek ölçünün profili (ör. makine bazında OEE).
+  if (kind === "radar") {
+    return (
+      <ChartContainer config={config} className={box}>
+        <RadarChart data={data.data} outerRadius="72%">
+          <PolarGrid stroke={GRID} strokeOpacity={0.7} />
+          <PolarAngleAxis dataKey="name" tick={axisTick} />
+          <PolarRadiusAxis tick={false} axisLine={false} tickFormatter={yTick} />
+          <Tooltip content={<ChartTooltip data={data} />} />
+          <Radar
+            dataKey="value"
+            stroke="var(--chart-1)"
+            fill="var(--chart-1)"
+            fillOpacity={0.22}
+            strokeWidth={2}
+            isAnimationActive={false}
+          />
+        </RadarChart>
+      </ChartContainer>
+    );
+  }
+
   // Dağılım — ilk iki ölçüyü x/y olarak karşılaştırır (korelasyon bakışı).
   if (kind === "scatter") {
     const xk = data.series[0]?.key;
@@ -220,6 +246,11 @@ export function Chart({
 
   // Yatay sütun — uzun kategori etiketleri için (etiketler kırpılmadan okunur).
   if (kind === "bar-h") {
+    const longest = data.data.reduce(
+      (n, d) => Math.max(n, String(d[data.xKey] ?? "").length),
+      0,
+    );
+    const catWidth = Math.min(160, Math.max(44, longest * 7 + 12));
     return (
       <ChartContainer config={config} className={box}>
         <BarChart data={data.data} layout="vertical" margin={{ left: 8, right: 16, top: 8, bottom: 0 }}>
@@ -231,7 +262,7 @@ export function Chart({
             tick={axisTick}
             tickLine={false}
             axisLine={false}
-            width={110}
+            width={catWidth}
           />
           {tip}
           {legend}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, Check, Copy, X } from "lucide-react";
+import { Bell, Check, X } from "lucide-react";
 import type { AskResponse } from "@/lib/types";
 import { createSchedule, verifyReport } from "@/lib/api-client";
 import { useFeature, usePermission } from "@/lib/access";
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { CopyIcon } from "@/components/ai/copy-icon";
 import { cn } from "@/lib/utils";
 
 const SCHEDULE_PRESETS = [
@@ -196,7 +197,7 @@ export function MessageActions({
               aria-label="SQL'i kopyala"
               className="h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
             >
-              <Copy className="size-3.5" />
+              <CopyIcon copied={copied} />
               {copied ? "kopyalandı" : "kopyala"}
             </Button>
           </TooltipTrigger>

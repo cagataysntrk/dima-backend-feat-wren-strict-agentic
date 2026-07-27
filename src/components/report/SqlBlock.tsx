@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Check, ChevronRight, Copy } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { formatSql, tokenizeSql, type SqlTokenType } from "@/lib/sql-format";
 import {
   Collapsible,
@@ -10,6 +10,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
+import { CopyIcon } from "@/components/ai/copy-icon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -64,7 +65,7 @@ export function SqlBlock({ sql, className }: { sql: string; className?: string }
                 onClick={copy}
                 className="size-6 text-muted-foreground hover:text-foreground"
               >
-                {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                <CopyIcon copied={copied} />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top">SQL&apos;i panoya kopyala</TooltipContent>
@@ -80,7 +81,9 @@ export function SqlBlock({ sql, className }: { sql: string; className?: string }
                 <div key={ln} className="flex px-0">
                   <span
                     aria-hidden="true"
-                    className="sticky left-0 w-9 shrink-0 select-none bg-muted/40 pr-3 text-right text-muted-foreground/60 tabular-nums"
+                    // yatay kaydırmada kod bu sütunun ALTINDAN geçiyor — backdrop-blur
+                    // + opak zemin okunurluğu koruyor; sağdaki ince çizgi kenarı belli eder
+                    className="sticky left-0 z-10 w-10 shrink-0 border-r border-border/60 bg-muted/85 pr-3 text-right text-muted-foreground/60 tabular-nums backdrop-blur-md select-none"
                   >
                     {ln + 1}
                   </span>

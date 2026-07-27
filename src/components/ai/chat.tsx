@@ -42,9 +42,15 @@ export function UserAvatar({ className }: { className?: string }) {
 export function MessageScroller({
   children,
   className,
+  /** Alta-git butonunun dipten yüksekliği (üstünde yüzen komut satırını aşmak için). */
+  jumpOffset = "bottom-3",
+  /** Değeri değişince yukarıda olsan bile en alta ZORLA kaydırır (yeni cevap geldi). */
+  scrollKey,
 }: {
   children: React.ReactNode;
   className?: string;
+  jumpOffset?: string;
+  scrollKey?: string | number;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
@@ -74,26 +80,45 @@ export function MessageScroller({
     el?.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   };
 
+  // Yeni cevap/soru geldiğinde kullanıcı yukarıda okuyor olsa bile oraya götür.
+  // (Chip düzenlemesi eski bir mesajın üstünde yapılır; cevap en altta doğar —
+  //  kaydırmazsak "hiçbir şey olmadı" hissi veriyordu.)
+  const firstRun = useRef(true);
+  useEffect(() => {
+    if (scrollKey === undefined) return;
+    const el = viewportRef.current;
+    if (!el) return;
+    stick.current = true;
+    setShowJump(false);
+    el.scrollTo({ top: el.scrollHeight, behavior: firstRun.current ? "auto" : "smooth" });
+    firstRun.current = false;
+  }, [scrollKey]);
+
   return (
     <div className="relative min-h-0 flex-1">
-      <div ref={viewportRef} onScroll={onScroll} className={cn("h-full overflow-auto", className)}>
+      <div ref={viewportRef} onScroll={onScroll} className={cn("h-full overflow-auto [scrollbar-gutter:stable_both-edges]", className)}>
         {children}
       </div>
+      {/* Emil kuralları: kısa (~0.22s), yay değil hızlı-yavaşlayan eğri, ve hareket
+          ANLAM taşısın — buton aşağı-inişi temsil ettiği için AŞAĞIDAN yukarı süzülüp
+          gelir, kaybolurken aşağı döner. Dönüş küçük (-90°→0): fark edilir ama dikkat
+          çalmaz. Çıkış girişin yarısı kadar sürer (çıkışlar hızlı olmalı). */}
       <AnimatePresence>
         {showJump && (
           <motion.div
-            initial={{ opacity: 0, x: "-50%", y: 6, scale: 0.9 }}
-            animate={{ opacity: 1, x: "-50%", y: 0, scale: 1 }}
-            exit={{ opacity: 0, x: "-50%", y: 6, scale: 0.9 }}
-            transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
-            className="absolute bottom-3 left-1/2"
+            initial={{ opacity: 0, y: 10, scale: 0.85, rotate: -90 }}
+            animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+            exit={{ opacity: 0, y: 8, scale: 0.9, rotate: -60, transition: { duration: 0.12 } }}
+            transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+            style={{ x: "-50%" }}
+            className={cn("pointer-events-none absolute left-1/2 z-20", jumpOffset)}
           >
             <Button
               variant="outline"
               size="icon-sm"
               aria-label="En alta git"
               onClick={jump}
-              className="rounded-full shadow-md"
+              className="pointer-events-auto rounded-full bg-card shadow-lg transition-transform duration-150 hover:-translate-y-px active:translate-y-0"
             >
               <ArrowDown className="size-4" />
             </Button>
@@ -143,7 +168,7 @@ export function Bubble({
     <div
       className={cn(
         from === "user"
-          ? "max-w-[85%] rounded-2xl rounded-br-sm bg-secondary px-4 py-2 text-sm text-secondary-foreground"
+          ? "max-w-[calc(100%-2.5rem)] rounded-2xl rounded-br-sm bg-secondary px-4 py-2 text-sm text-secondary-foreground"
           : "min-w-0 flex-1",
         className,
       )}

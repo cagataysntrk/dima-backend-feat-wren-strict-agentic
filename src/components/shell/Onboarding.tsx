@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { Check, ChevronDown, MoreHorizontal, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, MoreHorizontal, X } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -99,6 +99,19 @@ function Ring({ value, total }: { value: number; total: number }) {
   );
 }
 
+/** Kart şu an gizli mi / bitmiş mi? (hesap menüsündeki "geri getir" için) */
+export function useOnboardingDismissed(): boolean {
+  const done = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const hidden = useSyncExternalStore(subscribe, getHidden, getServerHidden);
+  return hidden || done.length >= STEPS.length;
+}
+
+/** Turu sıfırla ve yeniden göster — "Gizle" tek yönlü bir kapı olmasın. */
+export function resetOnboarding() {
+  writeHidden(false);
+  writeDone([]);
+}
+
 /**
  * "Başlangıç" — sidebar'ın altında duran, YERİNDE açılan onboarding kartı
  * (ChatGPT pattern; modal değil). Kapalıyken tek satır + ilerleme; açıkken
@@ -120,55 +133,73 @@ export function Onboarding() {
     <Collapsible
       open={open}
       onOpenChange={setOpen}
-      className="group/ob rounded-lg px-0.5 py-0.5 transition-colors hover:bg-sidebar-accent/40 data-[state=open]:bg-sidebar-accent/40"
+      className="group/ob rounded-xl bg-sidebar-accent/70 px-0.5 py-0.5 transition-colors hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent"
     >
       <div className="flex items-center gap-0.5 pr-0.5">
         <CollapsibleTrigger className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left outline-none transition-colors hover:bg-sidebar-accent">
-          <span className="text-muted-foreground">
-            <Ring value={count} total={STEPS.length} />
-          </span>
+          {/* Halka YALNIZ kapalıyken: açıkken ilerlemeyi yatay şerit anlatıyor,
+              iki gösterge aynı anda gereksiz tekrar olurdu. */}
+          {!open && (
+            <span className="text-muted-foreground">
+              <Ring value={count} total={STEPS.length} />
+            </span>
+          )}
           <span className="min-w-0 flex-1 truncate text-sm text-sidebar-foreground">
             Başlangıç
           </span>
-          {/* sayaç normalde görünür; satıra gelince yerini ··· ve ⌄ ikonlarına bırakır */}
-          <span className="shrink-0 text-xs text-muted-foreground tabular-nums group-hover/ob:hidden">
-            {count}/{STEPS.length}
-          </span>
         </CollapsibleTrigger>
 
-        {/* hover'da beliren aksiyonlar (ChatGPT "Recents" davranışı) */}
-        <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover/ob:opacity-100 focus-within:opacity-100">
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              aria-label="Başlangıç seçenekleri"
-              className="rounded-md p-0.5 text-muted-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-foreground"
+        {/* Sağ küme: durağan hâlde sayaç; satıra gelince aksiyonlar.
+            Kapalıyken yalnız › (aç), açıkken ··· + ⌄ (seçenekler + kapat). */}
+        <div className="flex shrink-0 items-center">
+          <span className="px-1 text-xs text-muted-foreground tabular-nums group-hover/ob:hidden">
+            {count}/{STEPS.length}
+          </span>
+
+          <div className="hidden items-center group-hover/ob:flex focus-within:flex">
+            {open && (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  aria-label="Başlangıç seçenekleri"
+                  className="rounded-md p-1 text-muted-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-foreground"
+                >
+                  <MoreHorizontal className="size-3.5" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" side="top">
+                  <DropdownMenuItem onSelect={() => writeDone(STEPS.map((st) => st.id))}>
+                    <Check className="size-4" />
+                    Tümünü tamamlandı işaretle
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => writeHidden(true)} variant="destructive">
+                    <X className="size-4" />
+                    Gizle
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <CollapsibleTrigger
+              aria-label={open ? "Kapat" : "Aç"}
+              className="rounded-md p-1 text-muted-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-foreground"
             >
-              <MoreHorizontal className="size-3.5" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" side="top">
-              <DropdownMenuItem onSelect={() => writeDone(STEPS.map((s) => s.id))}>
-                <Check className="size-4" />
-                Tümünü tamamlandı işaretle
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => writeHidden(true)} variant="destructive">
-                <X className="size-4" />
-                Gizle
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <CollapsibleTrigger
-            aria-label={open ? "Kapat" : "Aç"}
-            className="rounded-md p-0.5 text-muted-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-foreground"
-          >
-            <ChevronDown
-              className={cn("size-3.5 transition-transform duration-200", open && "rotate-180")}
-            />
-          </CollapsibleTrigger>
+              {open ? (
+                <ChevronDown className="size-3.5" />
+              ) : (
+                <ChevronRight className="size-3.5" />
+              )}
+            </CollapsibleTrigger>
+          </div>
         </div>
       </div>
 
       <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
-        <ul className="space-y-0.5 pt-0.5 pb-1">
+        {/* yatay ilerleme — yalnız açıkken (kapalıyken halka bunu anlatıyor) */}
+        <div className="mx-2 mt-1 mb-2 h-1 overflow-hidden rounded-full bg-sidebar-border">
+          <div
+            className="h-full rounded-full bg-brand transition-[width] duration-300"
+            style={{ width: `${(count / STEPS.length) * 100}%` }}
+          />
+        </div>
+        <ul className="space-y-0.5 pb-1">
           {STEPS.map((s) => {
             const isDone = done.includes(s.id);
             return (
