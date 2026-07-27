@@ -11,8 +11,10 @@ dima-frontend (bu repo)  ──HTTP──►  dima-backend  ──►  dima-wren
 ```
 
 ## Teknoloji
-- Next.js 16 · React 19 · TypeScript (strict) · Tailwind 4
+- Next.js 16 (App Router) · React 19 · TypeScript (strict) · Tailwind 4
+- **shadcn/ui** (Radix) tasarım sistemi · **next-intl** (çok-dil) · next-themes · lucide ikonlar
 - TanStack Query (server state) · Zustand (client state) · axios (`lib/api-client.ts`)
+- Recharts (grafik) · motion (animasyon) · sonner (toast)
 
 ## Kurulum
 ```bash
@@ -37,17 +39,20 @@ Böylece `localhost:3000`/`:8000` yerine kalıcı domainler kullanılır (aaron/
 ```
 src/
 ├── app/
-│   ├── layout.tsx      # Providers (React Query) sarmalar
-│   └── page.tsx        # Ana demo: soru → SQL → sonuç
+│   ├── (auth)/          # login · register · forgot-password
+│   ├── (marketing)/     # pazarlama sayfaları (about, product, solutions, security, …)
+│   ├── (product)/app/   # asıl dima uygulaması (sohbet + rapor)
+│   └── api/[...path]/    # same-origin proxy → BACKEND_ORIGIN
 ├── components/
-│   ├── ResultTable.tsx
-│   └── SchemaPanel.tsx # /schema'dan veri modeli
-├── lib/
-│   ├── api-client.ts   # tüm HTTP burada
-│   ├── providers.tsx   # React Query provider
-│   └── types.ts        # backend ile senkron tipler
-└── stores/
-    └── history.ts      # Zustand: son sorular
+│   ├── ui/              # shadcn/ui primitifleri (Radix)
+│   ├── shell/           # AppShell · AppSidebar · Composer · drawer'lar
+│   ├── ai/ chart/ report/ schema/ auth/ marketing/
+│   ├── ChatPanel · ReportPanel · ResultView · ResultTable · PivotTable
+│   ├── KpiCard · OutputInsight (çıktı yorumu, ADR-0022) · InterpretationBar (cube-query chip'leri)
+│   └── SchemaPanel · Landing · NotificationsBell · ConnectionBadge · …
+├── lib/                 # api-client (tüm HTTP) · chart · format · thinking · access · types · utils
+├── stores/conversations.ts   # Zustand: sohbet listesi (memory; backend persist ileride)
+└── hooks/ · i18n/ · content/
 ```
 
 ## Canlıya alma (Vercel)
@@ -67,11 +72,10 @@ MFA'lı hesapta doğru paroladan sonra OTP alanı açılır. Verify (✓/✗) ve
 butonları `/auth/me` `permissions` listesine bağlıdır — rol semantiği UI'a kopyalanmaz.
 
 ## UI düzeni (chrome)
-Sağ kenarda **görünmez ikon şeridi** (rail, 3rem): yukarıdan aşağı bildirim 🔔, yardım ?,
-ayarlar ⚙; çıkış en altta. Sheet'ler şeridin SOLUNDA açılır (`SettingsDrawer` right-12),
-açık ikona ikinci tıklama sheet'i kapatır; ✕ şeridin başlık bandında durur. Bildirimler
-popover değil sheet'tir. Isı haritası renk yönü `/schema cubes[].lower_is_better`
-metadata'sından gelir (regex yalnız yedek).
+shadcn tabanlı uygulama kabuğu: `components/shell/AppShell` + `AppSidebar` (sol kenar çubuğu —
+gezinme + sohbetler), `Composer` (soru girişi + 📎 dosya). Sheet/dialog/popover shadcn `ui/`
+primitifleriyle; tema `next-themes` (amber-CRT), çok-dil `next-intl`. Isı haritası renk yönü
+`/schema cubes[].lower_is_better` metadata'sından gelir (regex yalnız yedek).
 
 ## Notlar
 - Güvenlik başlıkları `next.config.ts › headers()` içinde (frame/sniff/referrer/permissions).

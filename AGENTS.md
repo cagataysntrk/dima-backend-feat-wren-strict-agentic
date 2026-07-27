@@ -72,8 +72,9 @@ The UI never touches data directly — everything goes through `dima-backend` ov
 - `src/app/page.tsx` — shell host; wires conversations, `ask`/`cube` mutations, artifact state.
 - `src/components/shell/*` — AppShell, AppSidebar, ArtifactPanel, Composer, ThemeToggle,
   LocaleSwitcher, NotificationsPopover.
-- `src/components/{report,chart}/*` + `ChatPanel`, `ReportPanel`, `InterpretationBar`,
-  `ResultView`, `ResultTable`, `SchemaPanel`, `Landing` — feature surfaces.
+- `src/components/{report,chart}/*` + `ChatPanel`, `ReportPanel`, `ResultView`, `ResultTable`,
+  `PivotTable`, `KpiCard`, `OutputInsight` (deterministic output interpretation, ADR-0022),
+  `InterpretationBar` (editable cube-query chips), `SchemaPanel`, `Landing` — feature surfaces.
 - `src/stores/conversations.ts` — named chat sessions (memory; persist-ready).
 - `src/i18n/*` — next-intl request config, locale cookie action, `config.ts`.
 - **`/style`** — living style guide (tokens, primitives, charts). Keep it current when you
@@ -82,7 +83,8 @@ The UI never touches data directly — everything goes through `dima-backend` ov
 ## Backend contract (surface a UI can use)
 
 `POST /ask /cube /verify /query` · `GET /schema /features /auth/me` · `/schedules*`
-`/notifications` `/contracts*`. Provenance `source`: `cube` | `cube+llm` | `llm:<provider>`
+`/notifications` `/contracts*`. `/ask` yanıtı, `cikti_yorumlama` flag'i açıkken deterministik
+`interpretation` (→ `OutputInsight`) taşır (ADR-0022). Provenance `source`: `cube` | `cube+llm` | `llm:<provider>`
 | `rule`. Trust surfaces worth building on: provenance badges, verify (VQR) loop, Query
 Contract **replay** (same / data-changed / definition-changed), threshold notifications.
 

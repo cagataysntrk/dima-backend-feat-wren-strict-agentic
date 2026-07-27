@@ -7,7 +7,10 @@ bu arayüz sıfırdan bizim ürünümüz. Veriye asla doğrudan dokunmaz; her ş
 
 ## Teknoloji
 - Next.js 16 (App Router) · React 19 · TypeScript strict · Tailwind 4
-- TanStack Query (server state) · Zustand (client state) · axios
+- **shadcn/ui** (Radix) tasarım sistemi · **next-intl** (çok-dil) · next-themes · lucide
+- TanStack Query (server state) · Zustand (client state, `stores/conversations.ts`) · axios
+- Recharts (grafik) · motion (animasyon) · sonner (toast)
+- Rota grupları: `(auth)` · `(marketing)` · `(product)/app` (asıl uygulama) · `api/[...path]` proxy
 
 ## Komutlar
 ```bash
@@ -28,7 +31,8 @@ Tarayıcı same-origin **`/api/*`**'e konuşur; Next rewrite-proxy'si `BACKEND_O
 iletir (backend URL'i browser'a sızmaz, refresh cookie same-origin kalır).
 Uçlar: `POST /auth/login|refresh|logout` · `GET /auth/me` (roller + `permissions`) ·
 `GET /schema` (cube kataloğu + `lower_is_better`) · `GET /features` (bayraklar,
-kimlikli) · `POST /ask` `/cube` `/verify` `/query` · `/schedules*` `/notifications`
+kimlikli) · `POST /ask` (+ flag `cikti_yorumlama` açıksa yanıtta `interpretation` →
+OutputInsight, ADR-0022) `/cube` `/verify` `/query` · `/schedules*` `/notifications`
 `/contracts*`.
 
 ## Kimlik doğrulama
@@ -40,6 +44,6 @@ kimlikli) · `POST /ask` `/cube` `/verify` `/query` · `/schedules*` `/notificat
   rol matrisi backend'dedir, UI'a KOPYALANMAZ.
 
 ## UI chrome
-Sağ kenarda görünmez ikon şeridi (rail, w-12; sayfa `pr-12` bırakır); sheet'ler şeridin
-solunda (`right-12`) açılır, aynı ikona ikinci tıklama kapatır (toggle), ✕ şerit başlık
-bandında. Güvenlik başlıkları `next.config.ts › headers()`.
+shadcn tabanlı kabuk: `components/shell/AppShell` + `AppSidebar` (sol kenar çubuğu — gezinme +
+sohbetler) + `Composer` (soru + 📎 dosya). Sheet/dialog/popover `components/ui/` primitifleri;
+tema `next-themes`, çok-dil `next-intl`. Güvenlik başlıkları `next.config.ts › headers()`.
