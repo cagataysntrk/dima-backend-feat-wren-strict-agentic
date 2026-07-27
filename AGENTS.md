@@ -90,6 +90,28 @@ The UI never touches data directly — everything goes through `dima-backend` ov
 | `rule`. Trust surfaces worth building on: provenance badges, verify (VQR) loop, Query
 Contract **replay** (same / data-changed / definition-changed), threshold notifications.
 
+## Attachments & document preview (kararlar — 2026-07-27)
+
+**Bugünkü durum:** ekler yalnız İSTEMCİDE yaşar. `/ask` metin-only, yükleme ucu yok;
+dosyalar bir `WeakMap`'te tutulur (`lib/attachments.ts`) ve sayfa yenilenince kaybolur.
+Ekler paneli bunu kullanıcıya açıkça yazar — "yükledim" yanılgısı üretmemek için.
+
+Önizleme tamamen tarayıcıda: PDF → `react-pdf`/pdf.js · `.xlsx` → ExcelJS (hücre stilleri
+için; SheetJS'in topluluk sürümü stil vermez) · `.xls`/`.csv` → SheetJS · `.docx` → mammoth
+(yapı, sayfa düzeni değil) · metin/görsel → yerel · **PPTX ve eski Office → yalnız indirme**
+(tarayıcıda güvenilir çizen açık kaynak yok; bozuk render, render etmemekten kötü).
+
+**Backend hazır olduğunda (kararlaştırıldı):** review için TEK motor yeterli —
+her formatı sunucuda PDF'e çevirip PDF.js ile göstermek. ONLYOFFICE/WOPI gibi tam ofis
+paketleri ya da format başına ayrı motorlar gereksiz. `.xlsx` ızgara olarak daha okunur
+olduğu için mevcut istemci görüntüleyicide kalabilir.
+
+Bunun için backend'den beklenenler: dosya yükleme ucu + nesne depolama, izole dönüştürme
+worker'ı (LibreOffice headless), imzalı/kimlikli URL, içerik hash'iyle önbellek. Güvenlik:
+uzantıya değil magic byte'a güven, açılmış ZIP boyutunu sınırla (ZIP bomb), makro içeren
+biçimleri (`.docm`/`.xlsm`) ayrı ele al, worker'ı ana API sürecinden ayır. Yazı tipi paketi
+(Liberation/Noto) dönüştürme kabında olmalı — eksik font, bozuk düzenin bir numaralı sebebi.
+
 ## Definition of done
 
 `pnpm build` and `pnpm lint` pass (strict TS, no `any`, no stray `fetch`, no raw
