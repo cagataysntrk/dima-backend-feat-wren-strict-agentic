@@ -4,12 +4,11 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import {
+  ArrowUpRight,
   ChevronLeft,
   ChevronRight,
   Database,
-  HelpCircle,
   LayoutDashboard,
-  Settings,
   ListFilter,
   MessageSquarePlus,
   MessagesSquare,
@@ -59,6 +58,7 @@ export function AppSidebar({
   onOpenHelp,
   onOpenDashboards,
   onOpenSearch,
+  onOpenShortcuts,
 }: {
   onNewChat: () => void;
   onSelectConversation: (id: string) => void;
@@ -66,6 +66,7 @@ export function AppSidebar({
   onOpenHelp: () => void;
   onOpenDashboards: () => void;
   onOpenSearch: () => void;
+  onOpenShortcuts: () => void;
 }) {
   const t = useTranslations();
   const conversations = useConversations((s) => s.conversations);
@@ -163,20 +164,7 @@ export function AppSidebar({
               <span>Panolar</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={onOpenHelp}>
-              <HelpCircle className="size-4" />
-              <span>{t("common.help")}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <Link href="/settings">
-                <Settings className="size-4" />
-                <span>{t("common.settings")}</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+
         </SidebarMenu>
       </SidebarHeader>
 
@@ -184,7 +172,21 @@ export function AppSidebar({
         <SidebarGroup className="group/recents">
           {/* başlık şeridi — ikonlar yalnız hover'da (ChatGPT "Recents") */}
           <div className="flex items-center justify-between gap-1 pr-1">
-            <SidebarGroupLabel>{t("chat.conversations")}</SidebarGroupLabel>
+            <SidebarGroupLabel className="gap-1">
+              {t("chat.conversations")}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href="/chats"
+                    aria-label="Tüm sohbetler"
+                    className="rounded p-0.5 text-muted-foreground transition-transform hover:-translate-y-px hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none"
+                  >
+                    <ArrowUpRight className="size-3.5" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Tüm sohbetler</TooltipContent>
+              </Tooltip>
+            </SidebarGroupLabel>
             <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover/recents:opacity-100 focus-within:opacity-100">
               <DropdownMenu>
                 <Tooltip>
@@ -266,7 +268,7 @@ export function AppSidebar({
           <SidebarSeparator className="-mx-2 my-1 w-auto" />
           <SidebarMenuItem className="flex items-center gap-1">
             <div className="min-w-0 flex-1">
-              <AccountMenu />
+              <AccountMenu onOpenHelp={onOpenHelp} onOpenShortcuts={onOpenShortcuts} />
             </div>
             <NotificationsPopover />
           </SidebarMenuItem>

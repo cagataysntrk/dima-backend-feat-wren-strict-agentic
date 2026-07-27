@@ -2,6 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { apiErrorMessage, ask, askCube } from "@/lib/api-client";
 import { markThinking } from "@/lib/thinking";
 import { markAttachments } from "@/lib/attachments";
@@ -13,13 +14,16 @@ import { ReportPanel } from "@/components/ReportPanel";
 import { SchemaPanel } from "@/components/SchemaPanel";
 import { AttachmentsPanel } from "@/components/shell/AttachmentsPanel";
 import { DashboardsPanel } from "@/components/shell/DashboardsPanel";
-import type { PanelTab } from "@/components/shell/ArtifactPanel";
+import { PANEL_TABS, type PanelTab } from "@/components/shell/ArtifactPanel";
 import { SearchDialog } from "@/components/shell/SearchDialog";
+import { ShortcutsDialog } from "@/components/shell/ShortcutsDialog";
 import { selectActive, useConversations } from "@/stores/conversations";
 import type { AskResponse } from "@/lib/types";
 
 // Panel sekmeleri artık tek kaynaktan (ArtifactPanel.PANEL_TABS).
 type Artifact = PanelTab | null;
+
+const PANEL_IDS: readonly PanelTab[] = PANEL_TABS.map((t) => t.id);
 
 export default function AppPage() {
   const [active, setActive] = useState<AskResponse | null>(null);
@@ -27,12 +31,19 @@ export default function AppPage() {
   const [contextCq, setContextCq] = useState<AskResponse["cube_query"]>(null);
   const [viewHint, setViewHint] = useState<{ kind: string; nonce: number } | null>(null);
   const [verifyLabel, setVerifyLabel] = useState<string | null>(null);
-  const [artifact, setArtifact] = useState<Artifact>(null);
+  // İkincil sayfalardan (/settings, /chats) bir panel girişine basılınca buraya
+  // ?panel=... ile dönülür. Yalnız AÇILIŞTA anlamlı olduğu için effect değil
+  // lazy başlangıç değeri (effect içinde setState zincirleme render yapar).
+  const panelParam = useSearchParams().get("panel");
+  const [artifact, setArtifact] = useState<Artifact>(() =>
+    PANEL_IDS.includes(panelParam as PanelTab) ? (panelParam as PanelTab) : null,
+  );
   // Panel düğmesi neyi geri açacağını bilsin (yardım DEĞİL — yardımın kendi
   // menü girişi var). Sekme şeridi de kapalıyken hangi sekmenin seçili
   // görüneceğini buradan okur, o yüzden ref değil state.
   const [lastArtifact, setLastArtifact] = useState<PanelTab>("report");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   const activeConv = useConversations(selectActive);
   const incognito = useConversations((st) => st.incognito);
@@ -165,6 +176,7 @@ export default function AppPage() {
 
   return (
     <>
+    <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
     <SearchDialog
       open={searchOpen}
       onOpenChange={setSearchOpen}
@@ -179,6 +191,7 @@ export default function AppPage() {
       onOpenSchema={() => setArtifact("schema")}
       onOpenHelp={() => setArtifact("help")}
       onOpenDashboards={() => setArtifact("dashboards")}
+      onOpenShortcuts={() => setShortcutsOpen(true)}
       onOpenSearch={() => setSearchOpen(true)}
       onToggleArtifact={() =>
         setArtifact((a) => {
@@ -189,6 +202,7 @@ export default function AppPage() {
           return lastArtifact;
         })
       }
+      started={started}
       artifactOpen={artifact !== null}
       artifactTitle={artifactTitle}
       artifactTab={artifact ?? lastArtifact}

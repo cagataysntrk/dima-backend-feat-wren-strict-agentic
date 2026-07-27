@@ -3,11 +3,11 @@ import { ProductProviders } from "@/lib/providers";
 import { SecondaryShell } from "@/components/shell/SecondaryShell";
 
 export const metadata: Metadata = {
-  title: "Ayarlar",
+  title: "Sohbetler",
   robots: { index: false, follow: false },
 };
 
-export default function SettingsLayout({
+export default function ChatsLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (

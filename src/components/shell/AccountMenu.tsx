@@ -2,7 +2,19 @@
 
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ChevronsUpDown, LogOut, Monitor, Moon, RotateCcw, Sun, Languages } from "lucide-react";
+import Link from "next/link";
+import {
+  ChevronsUpDown,
+  HelpCircle,
+  Keyboard,
+  LogOut,
+  Monitor,
+  Moon,
+  RotateCcw,
+  Settings,
+  Sun,
+  Languages,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { logout } from "@/lib/api-client";
 import { useConversations } from "@/stores/conversations";
@@ -18,11 +30,13 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SidebarMenuButton } from "@/components/ui/sidebar";
 import { ConnectionBadge } from "@/components/ConnectionBadge";
@@ -33,7 +47,13 @@ import { resetOnboarding, useOnboardingDismissed } from "./Onboarding";
  * menu that collects the low-frequency chrome — tema, dil, çıkış. Keeps the
  * sidebar footer to a single row instead of four loose icon buttons.
  */
-export function AccountMenu() {
+export function AccountMenu({
+  onOpenHelp,
+  onOpenShortcuts,
+}: {
+  onOpenHelp: () => void;
+  onOpenShortcuts: () => void;
+}) {
   const t = useTranslations();
   const router = useRouter();
   const me = useMe();
@@ -83,6 +103,37 @@ export function AccountMenu() {
         <DropdownMenuLabel className="truncate font-normal text-muted-foreground">
           {me?.email ?? "…"}
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem asChild>
+          <Link href="/settings">
+            <Settings className="size-4" />
+            {t("common.settings")}
+            <DropdownMenuShortcut>
+              <KbdGroup>
+                <Kbd>⌘</Kbd>
+                <Kbd>,</Kbd>
+              </KbdGroup>
+            </DropdownMenuShortcut>
+          </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem onSelect={onOpenHelp}>
+          <HelpCircle className="size-4" />
+          {t("common.help")}
+        </DropdownMenuItem>
+
+        <DropdownMenuItem onSelect={onOpenShortcuts}>
+          <Keyboard className="size-4" />
+          Klavye kısayolları
+          <DropdownMenuShortcut>
+            <KbdGroup>
+              <Kbd>⌘</Kbd>
+              <Kbd>/</Kbd>
+            </KbdGroup>
+          </DropdownMenuShortcut>
+        </DropdownMenuItem>
+
         <DropdownMenuSeparator />
 
         <DropdownMenuSub>

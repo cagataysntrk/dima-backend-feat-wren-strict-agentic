@@ -19,11 +19,21 @@ export function DimaAvatar({
   thinking?: boolean;
 }) {
   return (
-    <Avatar className={cn("size-7 border border-brand/20", className)}>
-      <AvatarFallback className="rounded-[inherit] bg-brand/10 text-brand">
-        <Sparkles className={cn("size-3.5", thinking && "dima-think")} />
-      </AvatarFallback>
-    </Avatar>
+    <span className={cn("relative inline-flex size-7 shrink-0", className)}>
+      {/* Dönen: avatarın etrafındaki YAY — ikon sabit kalır, yoksa sembol
+          okunmaz hale geliyor. Yay çeyrek turlarla dönüp duraklıyor. */}
+      {thinking && (
+        <span
+          aria-hidden="true"
+          className="dima-think absolute -inset-0.5 rounded-full border border-transparent border-t-brand border-r-brand/40"
+        />
+      )}
+      <Avatar className="size-7 border border-brand/20">
+        <AvatarFallback className="rounded-[inherit] bg-brand/10 text-brand">
+          <Sparkles className="size-3.5" />
+        </AvatarFallback>
+      </Avatar>
+    </span>
   );
 }
 

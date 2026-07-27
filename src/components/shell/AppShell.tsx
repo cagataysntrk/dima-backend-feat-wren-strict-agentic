@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { AppSidebar } from "./AppSidebar";
 import type { PanelTab } from "./ArtifactPanel";
 import { IncognitoBackdrop, IncognitoToggle } from "./IncognitoToggle";
+import { ShareDialog } from "./ShareDialog";
 import { ArtifactPanel } from "./ArtifactPanel";
 
 /**
@@ -30,7 +31,9 @@ export function AppShell({
   onOpenHelp,
   onOpenDashboards,
   onOpenSearch,
+  onOpenShortcuts,
   onToggleArtifact,
+  started,
   artifactOpen,
   artifactTitle,
   artifactTab,
@@ -45,7 +48,10 @@ export function AppShell({
   onOpenHelp: () => void;
   onOpenDashboards: () => void;
   onOpenSearch: () => void;
+  onOpenShortcuts: () => void;
   onToggleArtifact: () => void;
+  /** Sohbet başladı mı (üst bardaki Gizli↔Paylaş takası için). */
+  started: boolean;
   artifactOpen: boolean;
   artifactTitle: string;
   artifactTab: PanelTab;
@@ -63,11 +69,13 @@ export function AppShell({
         onOpenHelp={onOpenHelp}
         onOpenDashboards={onOpenDashboards}
         onOpenSearch={onOpenSearch}
+        onOpenShortcuts={onOpenShortcuts}
       />
       <SidebarInset className="flex min-h-0 flex-row overflow-hidden">
         {/* relative: üst bar ve komut satırı içeriğin ÜSTÜNDE yüzer */}
         <div className="relative flex min-w-0 flex-1 flex-col">
           <TopBar
+            started={started}
             onNewChat={onNewChat}
             onOpenSearch={onOpenSearch}
             onToggleArtifact={onToggleArtifact}
@@ -109,11 +117,14 @@ export function AppShell({
  * here so nothing is more than one click away without the rail.
  */
 function TopBar({
+  started,
   onNewChat,
   onOpenSearch,
   onToggleArtifact,
   artifactOpen,
 }: {
+  /** Sohbet başladı mı — başlamadan Gizli, başlayınca Paylaş gösterilir. */
+  started: boolean;
   onNewChat: () => void;
   onOpenSearch: () => void;
   onToggleArtifact: () => void;
@@ -196,7 +207,7 @@ function TopBar({
 
       {/* sağ küme: paylaş + artifacts */}
       <div className="ml-auto flex items-center gap-0.5">
-        <IncognitoToggle />
+        {started ? <ShareDialog /> : <IncognitoToggle />}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
