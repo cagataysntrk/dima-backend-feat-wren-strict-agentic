@@ -1,9 +1,12 @@
 "use client";
 
-import { Paperclip } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, Paperclip } from "lucide-react";
 import type { AskResponse } from "@/lib/types";
 import { attachmentsOf } from "@/lib/attachments";
 import { Attachment } from "@/components/ai/attachment";
+import { DocumentViewer } from "@/components/report/DocumentViewer";
+import { Button } from "@/components/ui/button";
 
 /**
  * Bu sohbette gönderilen tüm ekler, mesajına göre gruplu.
@@ -14,11 +17,29 @@ import { Attachment } from "@/components/ai/attachment";
  * bunu panelde açıkça yazıyoruz; yükleme ucu eklenince bu not kalkar.
  */
 export function AttachmentsPanel({ items }: { items: AskResponse[] }) {
+  const [preview, setPreview] = useState<File | null>(null);
   const groups = items
     .map((item) => ({ item, files: attachmentsOf(item) }))
     .filter((g): g is { item: AskResponse; files: File[] } => !!g.files?.length);
 
   const total = groups.reduce((n, g) => n + g.files.length, 0);
+
+  if (preview) {
+    return (
+      <div className="flex h-full min-h-0 flex-col gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setPreview(null)}
+          className="-ml-2 w-fit gap-1.5"
+        >
+          <ArrowLeft className="size-4" />
+          Eklere dön
+        </Button>
+        <DocumentViewer file={preview} className="min-h-0 flex-1" />
+      </div>
+    );
+  }
 
   if (!total) {
     return (
@@ -46,7 +67,14 @@ export function AttachmentsPanel({ items }: { items: AskResponse[] }) {
           </h3>
           <div className="flex flex-wrap gap-2">
             {files.map((f, i) => (
-              <Attachment key={`${f.name}-${i}`} file={f} />
+              <button
+                key={`${f.name}-${i}`}
+                type="button"
+                onClick={() => setPreview(f)}
+                className="rounded-xl text-left transition-transform hover:-translate-y-px focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none"
+              >
+                <Attachment file={f} />
+              </button>
             ))}
           </div>
         </section>

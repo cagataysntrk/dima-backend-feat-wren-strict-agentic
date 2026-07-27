@@ -87,7 +87,14 @@
     "thought": "Thought for {seconds, number}s",
     "voice": "Dictate",
     "voiceStop": "Stop listening",
-    "voiceUnsupported": "This browser does not support dictation"
+    "voiceUnsupported": "This browser does not support dictation",
+    "stepsDone": {
+      "parse": "Question parsed",
+      "catalog": "Cube catalog scanned",
+      "plan": "SQL planned",
+      "verify": "Dry plan validated",
+      "run": "Query executed"
+    }
   },
   "notifications": {
     "title": "Notifications",

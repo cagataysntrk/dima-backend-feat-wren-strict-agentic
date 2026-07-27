@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { AppSidebar } from "./AppSidebar";
 import type { PanelTab } from "./ArtifactPanel";
 import { ChatNav } from "./ChatNav";
+import { ChatTitle } from "./ChatTitle";
 import { IncognitoBackdrop, IncognitoToggle } from "./IncognitoToggle";
 import { ShareDialog } from "./ShareDialog";
 import { ArtifactPanel } from "./ArtifactPanel";
@@ -163,6 +164,7 @@ function TopBar({
       {/* sohbet gezinme okları — kenar çubuğu düğmesinin SAĞINDA; sidebar açık
           da kapalı da olsa aynı yerde durur (konum değişseydi kas hafızası bozulurdu) */}
       <ChatNav onSelect={onSelectConversation} />
+      <ChatTitle className="min-w-0" />
 
       <AnimatePresence>
         {!open && (

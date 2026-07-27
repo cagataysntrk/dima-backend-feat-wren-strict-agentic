@@ -87,7 +87,14 @@
     "thought": "{seconds, number} sn düşündü",
     "voice": "Sesle yaz",
     "voiceStop": "Dinlemeyi durdur",
-    "voiceUnsupported": "Bu tarayıcı sesle yazmayı desteklemiyor"
+    "voiceUnsupported": "Bu tarayıcı sesle yazmayı desteklemiyor",
+    "stepsDone": {
+      "parse": "Soru çözümlendi",
+      "catalog": "Cube kataloğu tarandı",
+      "plan": "SQL planlandı",
+      "verify": "Dry-plan doğrulandı",
+      "run": "Sorgu çalıştırıldı"
+    }
   },
   "notifications": {
     "title": "Bildirimler",

@@ -114,7 +114,7 @@ export function ChatPanel({
                 <DimaAvatar className="mt-0.5 shrink-0" />
                 <Bubble from="assistant" className="space-y-2">
                   {/* düşünce zinciri cevabın yanında kalır — varsayılan kapalı */}
-                  {thinkingMs(item) !== undefined && <Reasoning durationMs={thinkingMs(item)} />}
+                  {thinkingMs(item) !== undefined && <Reasoning durationMs={thinkingMs(item)} trace={item.trace} />}
                   {/* KPI yanıtı NOT taşısa da bir RAPORDUR (kart) — salt-not gibi
                       davranıp gömmüyoruz (canlı 2026-07-25). */}
                   {/* Cross-cube KPI kartı (CCC / likidite) — cube tablosu değil bileşke. */}

@@ -21,6 +21,10 @@ interface ConversationsState {
   /** Append an answer to the active conversation (creating one if needed). */
   add: (item: AskResponse) => void;
   clearActive: () => void;
+  /** Sohbeti yeniden adlandır (başlık kullanıcı tarafından sabitlenir). */
+  rename: (id: string, title: string) => void;
+  /** Sohbeti sil; aktifse aktiflik bir sonrakine geçer. */
+  remove: (id: string) => void;
   /** Wipe ALL conversations (cross-user isolation on logout/login). */
   reset: () => void;
 
@@ -94,6 +98,18 @@ export const useConversations = create<ConversationsState>((set) => ({
             }
           : c,
       );
+      return { conversations, activeId };
+    }),
+  rename: (id, title) =>
+    set((s) => ({
+      conversations: s.conversations.map((c) => (c.id === id ? { ...c, title } : c)),
+    })),
+  remove: (id) =>
+    set((s) => {
+      const conversations = s.conversations.filter((c) => c.id !== id);
+      // Aktif sohbet silindiyse aktiflik listedeki ilkine geçer (null kalırsa
+      // ekran boş bir "sohbet yok" durumuna düşerdi).
+      const activeId = s.activeId === id ? (conversations[0]?.id ?? null) : s.activeId;
       return { conversations, activeId };
     }),
   clearActive: () =>
