@@ -136,7 +136,7 @@ export function Onboarding() {
       className="group/ob rounded-xl bg-sidebar-accent/70 px-0.5 py-0.5 transition-colors hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent"
     >
       <div className="flex items-center gap-0.5 pr-0.5">
-        <CollapsibleTrigger className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left outline-none transition-colors hover:bg-sidebar-accent">
+        <CollapsibleTrigger className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left outline-none transition-colors hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar">
           {/* Halka YALNIZ kapalıyken: açıkken ilerlemeyi yatay şerit anlatıyor,
               iki gösterge aynı anda gereksiz tekrar olurdu. */}
           {!open && (
@@ -161,7 +161,7 @@ export function Onboarding() {
               <DropdownMenu>
                 <DropdownMenuTrigger
                   aria-label="Başlangıç seçenekleri"
-                  className="rounded-md p-1 text-muted-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-foreground"
+                  className="rounded-md p-1 text-muted-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar"
                 >
                   <MoreHorizontal className="size-3.5" />
                 </DropdownMenuTrigger>
@@ -179,7 +179,7 @@ export function Onboarding() {
             )}
             <CollapsibleTrigger
               aria-label={open ? "Kapat" : "Aç"}
-              className="rounded-md p-1 text-muted-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-foreground"
+              className="rounded-md p-1 text-muted-foreground outline-none transition-colors hover:bg-sidebar-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar"
             >
               {open ? (
                 <ChevronDown className="size-3.5" />
@@ -193,10 +193,19 @@ export function Onboarding() {
 
       <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
         {/* yatay ilerleme — yalnız açıkken (kapalıyken halka bunu anlatıyor) */}
-        <div className="mx-2 mt-1 mb-2 h-1 overflow-hidden rounded-full bg-sidebar-border">
+        {/* İlerleme scaleX ile ölçeklenir — width animasyonu layout tetikler,
+            transform compositor'da kalır (ui-craft-detect kuralı). */}
+        <div
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={STEPS.length}
+          aria-valuenow={count}
+          aria-label="Başlangıç ilerlemesi"
+          className="mx-2 mt-1 mb-2 h-1 overflow-hidden rounded-full bg-sidebar-border"
+        >
           <div
-            className="h-full rounded-full bg-brand transition-[width] duration-300"
-            style={{ width: `${(count / STEPS.length) * 100}%` }}
+            className="h-full origin-left rounded-full bg-brand transition-transform duration-300"
+            style={{ transform: `scaleX(${count / STEPS.length})` }}
           />
         </div>
         <ul className="space-y-0.5 pb-1">

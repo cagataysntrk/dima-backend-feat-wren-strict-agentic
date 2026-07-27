@@ -118,7 +118,7 @@ export function MessageScroller({
               size="icon-sm"
               aria-label="En alta git"
               onClick={jump}
-              className="pointer-events-auto rounded-full bg-card shadow-lg transition-transform duration-150 hover:-translate-y-px active:translate-y-0"
+              className="pointer-events-auto rounded-full bg-card shadow-lg transition-transform duration-150 hover:-translate-y-px focus-visible:-translate-y-px active:translate-y-0"
             >
               <ArrowDown className="size-4" />
             </Button>
