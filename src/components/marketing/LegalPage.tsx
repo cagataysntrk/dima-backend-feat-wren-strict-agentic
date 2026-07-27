@@ -4,7 +4,7 @@ import type { MarketingContent, PageContent } from "@/content/marketing";
 export function LegalPage({ page, content }: { page: PageContent; content: MarketingContent }) {
   return (
     <>
-      <section className="marketing-grid border-b py-20 sm:py-24">
+      <section className="marketing-grid border-b py-20 sm:py-28">
         <Container>
           <Eyebrow>{page.eyebrow}</Eyebrow>
           <h1 className="mt-5 max-w-4xl text-balance font-display text-5xl leading-tight sm:text-6xl">{page.title}</h1>

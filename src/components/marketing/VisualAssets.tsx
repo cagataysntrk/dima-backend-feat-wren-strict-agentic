@@ -10,32 +10,24 @@ import {
   Fingerprint,
   GitBranch,
   KeyRound,
-  Layers3,
   LockKeyhole,
   Network,
   ShieldCheck,
-  Sparkles,
   Table2,
 } from "lucide-react";
-import { PILLARS } from "@/components/BrandMark";
 import {
   AnimatedBeam,
   AnimatedList,
   MagicCard,
   NumberTicker,
 } from "@/components/marketing/MagicUI";
+import { TileBody } from "@/components/marketing/MarketingPrimitives";
 import type { MarketingLocale } from "@/content/marketing";
 
 type LocaleProps = { locale: MarketingLocale };
 
 const labels = {
   tr: {
-    signalTitle: "Bir soru, dört anlaşılır adım",
-    signalBody: "İş sorusu önce ortak tanımlarla eşleşir, ardından kontrol edilir ve incelenebilir bir rapora dönüşür.",
-    question: "Hangi ürün grupları hedefin altında?",
-    context: "Brüt kâr · ürün grubu · bu çeyrek",
-    query: "Sorgu · yalnızca okuma",
-    report: "Tablo · grafik · cevap kaynağı",
     semanticTitle: "Ortak tanımlar üzerinde bağlı operasyon",
     semanticBody: "Kaynak sistemler tablo isimleriyle değil; müşteri, ürün, gelir ve dönem gibi onaylı iş kavramlarıyla bağlanır.",
     securityTitle: "Her istek aynı güven zincirinden geçer",
@@ -70,12 +62,6 @@ const labels = {
     workbenchNav: ["Konuşma", "Katalog", "Sözleşmeler", "Raporlar"],
   },
   en: {
-    signalTitle: "One question, four visible decision points",
-    signalBody: "A business question matches shared definitions, passes its checks, and becomes an inspectable report.",
-    question: "Which product groups are below target?",
-    context: "Gross margin · product group · this quarter",
-    query: "SELECT · read-only",
-    report: "Table · chart · answer source",
     semanticTitle: "Connected operations over shared definitions",
     semanticBody: "Source systems connect through approved concepts such as customer, product, revenue, and period—not only table names.",
     securityTitle: "Every request follows the same trust chain",
@@ -124,42 +110,18 @@ function VisualFrame({
 }) {
   return (
     <figure className={`flex flex-col overflow-hidden rounded-xl border bg-card shadow-lg ${className}`}>
-      <div className="min-h-0 flex-1 [&>*]:h-full">{children}</div>
+      {/* @container/stage: bu görseller hem ~484px'lik bento hücresinde hem de
+          ~654px'lik sayfa hero'sunda AYNI JSX'ten render ediliyor. Viewport
+          breakpoint'i "pencere genişse" der, "ben genişsem" diyemez — 78px'lik
+          kartların sebebi buydu. İç düzenler artık @{boy}/stage: ile sürülüyor.
+          Container ölçeği breakpoint ölçeği DEĞİL: @sm=384 @md=448 @lg=512
+          @xl=576 @2xl=672 @3xl=768 @4xl=896px. */}
+      <div className="@container/stage min-h-0 flex-1 [&>*]:h-full">{children}</div>
       <figcaption className="shrink-0 border-t bg-muted/25 px-5 py-4">
         <p className="text-sm font-semibold">{title}</p>
         <p className="mt-1 max-w-3xl text-xs leading-5 text-muted-foreground">{body}</p>
       </figcaption>
     </figure>
-  );
-}
-
-export function AnalyticalSignalMap({ locale }: LocaleProps) {
-  const t = labels[locale];
-  const stages = [
-    { icon: Sparkles, label: t.question, code: locale === "tr" ? "01 / soru" : "01 / ask" },
-    { icon: Layers3, label: t.context, code: locale === "tr" ? "02 / tanımlar" : "02 / definitions" },
-    { icon: ShieldCheck, label: t.query, code: locale === "tr" ? "03 / kontrol" : "03 / checks" },
-    { icon: CircleGauge, label: t.report, code: locale === "tr" ? "04 / sonuç" : "04 / result" },
-  ];
-  return (
-    <VisualFrame title={t.signalTitle} body={t.signalBody} className="mt-10 sm:mt-14">
-      <div className="relative grid gap-px bg-border lg:grid-cols-4">
-        <div aria-hidden="true" className="visual-scan absolute inset-y-0 left-0 z-10 hidden w-px bg-brand shadow-[0_0_20px_var(--brand)] lg:block" />
-        {stages.map((stage, index) => {
-          const Icon = stage.icon;
-          return (
-            <div className="relative min-h-36 bg-background p-5 sm:p-6" key={stage.code}>
-              <div className="flex items-start justify-between">
-                <span className="flex size-10 items-center justify-center rounded-full border bg-card text-brand"><Icon className="size-4" aria-hidden="true" /></span>
-                <span className="font-mono text-[10px] text-muted-foreground">{stage.code}</span>
-              </div>
-              <p className="mt-7 max-w-52 text-sm font-medium leading-6">{stage.label}</p>
-              {index < stages.length - 1 ? <span aria-hidden="true" className="absolute -right-1 top-1/2 z-20 hidden size-2 rounded-full bg-brand ring-4 ring-background lg:block" /> : null}
-            </div>
-          );
-        })}
-      </div>
-    </VisualFrame>
   );
 }
 
@@ -169,8 +131,8 @@ const GraphNode = forwardRef<
 >(function GraphNode({ label, detail, featured = false }, ref) {
   return (
     <div className="relative z-10 h-full" ref={ref}>
-      <MagicCard className={`h-full rounded-lg p-3 ${featured ? "border-brand/50 bg-brand/10 shadow-md" : ""}`} tilt={false}>
-        <p className="font-mono text-[10px] tracking-[0.06em] text-muted-foreground">{detail}</p>
+      <MagicCard className={`h-full rounded-lg p-4 ${featured ? "border-brand/50 bg-brand/10 shadow-md" : ""}`} tilt={false}>
+        <p className="font-mono text-micro tracking-[0.06em] text-muted-foreground">{detail}</p>
         <p className="mt-1 text-sm font-semibold">{label}</p>
       </MagicCard>
     </div>
@@ -188,29 +150,30 @@ export function SemanticMapVisual({ locale }: LocaleProps) {
   return (
     <VisualFrame title={t.semanticTitle} body={t.semanticBody}>
       <div
-        className="marketing-grid relative grid min-h-80 gap-6 p-6 sm:grid-cols-[1fr_1.15fr_1fr] sm:items-stretch sm:gap-10 sm:p-8"
+        className="marketing-grid relative grid gap-6 p-5 @3xl/stage:grid-cols-[1fr_1.15fr_1fr] @3xl/stage:gap-10 @3xl/stage:p-8"
         ref={containerRef}
       >
-        <div className="relative z-10 grid grid-cols-2 gap-4 sm:grid-cols-1 sm:grid-rows-2">
+        <div className="relative z-10 grid grid-cols-2 gap-4 @3xl/stage:grid-cols-1 @3xl/stage:grid-rows-2">
           <GraphNode label="CRM" detail={t.customerSource} ref={crmRef} />
           <GraphNode label="ERP" detail={t.commercialSource} ref={erpRef} />
         </div>
-        <div className="relative z-10 self-center rounded-xl border border-brand/50 bg-background p-5 text-center shadow-xl" ref={modelRef}>
+        <div className="relative z-10 rounded-xl border border-brand/50 bg-background p-5 text-center shadow-xl @3xl/stage:self-center" ref={modelRef}>
           <Network className="mx-auto size-6 text-brand" aria-hidden="true" />
-          <p className="mt-3 font-mono text-[10px] text-brand">{t.model}</p>
+          <p className="mt-3 font-mono text-micro text-brand">{t.model}</p>
           <p className="mt-2 font-semibold">{t.concepts}</p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
-            {(locale === "tr" ? ["gelir", "kâr", "aktif müşteri"] : ["revenue", "margin", "active customer"]).map((item) => <span className="rounded-full border px-2 py-1 font-mono text-[9px]" key={item}>{item}</span>)}
+            {(locale === "tr" ? ["gelir", "kâr", "aktif müşteri"] : ["revenue", "margin", "active customer"]).map((item) => <span className="rounded-full border px-2 py-1 font-mono text-micro" key={item}>{item}</span>)}
           </div>
         </div>
-        <div className="relative z-10 grid grid-cols-2 gap-4 sm:grid-cols-1 sm:grid-rows-2">
+        <div className="relative z-10 grid grid-cols-2 gap-4 @3xl/stage:grid-cols-1 @3xl/stage:grid-rows-2">
           <GraphNode label={locale === "tr" ? "Gösterge" : "Metric"} detail={t.metricSurface} ref={metricRef} />
           <GraphNode label={locale === "tr" ? "Rapor" : "Report"} detail={t.evidenceSurface} ref={reportRef} />
         </div>
-        <AnimatedBeam className="hidden sm:block" containerRef={containerRef} fromRef={crmRef} toRef={modelRef} curvature={30} duration={4.1} />
-        <AnimatedBeam className="hidden sm:block" containerRef={containerRef} fromRef={erpRef} toRef={modelRef} curvature={-30} duration={4.5} delay={0.35} />
-        <AnimatedBeam className="hidden sm:block" containerRef={containerRef} fromRef={modelRef} toRef={metricRef} curvature={-30} reverse duration={4.2} delay={0.2} />
-        <AnimatedBeam className="hidden sm:block" containerRef={containerRef} fromRef={modelRef} toRef={reportRef} curvature={30} reverse duration={4.6} delay={0.55} />
+        {/* Beam'ler ref'ler arası geometrik: yalnızca 3 sütunlu düzende anlamlı. */}
+        <AnimatedBeam className="hidden @3xl/stage:block" containerRef={containerRef} fromRef={crmRef} toRef={modelRef} curvature={30} duration={4.1} />
+        <AnimatedBeam className="hidden @3xl/stage:block" containerRef={containerRef} fromRef={erpRef} toRef={modelRef} curvature={-30} duration={4.5} delay={0.35} />
+        <AnimatedBeam className="hidden @3xl/stage:block" containerRef={containerRef} fromRef={modelRef} toRef={metricRef} curvature={-30} reverse duration={4.2} delay={0.2} />
+        <AnimatedBeam className="hidden @3xl/stage:block" containerRef={containerRef} fromRef={modelRef} toRef={reportRef} curvature={30} reverse duration={4.6} delay={0.55} />
       </div>
     </VisualFrame>
   );
@@ -222,19 +185,25 @@ export function SecurityFlowVisual({ locale }: LocaleProps) {
   const gates = t.securityGates.map(([label, state], index) => ({ icon: icons[index], label, state }));
   return (
     <VisualFrame title={t.securityTitle} body={t.securityBody}>
-      <div className="relative min-h-80 p-6 sm:p-8">
-        <div aria-hidden="true" className="absolute left-10 right-10 top-1/2 hidden h-px bg-border sm:block" />
-        <AnimatedList className="relative grid gap-3 sm:grid-cols-4 sm:items-center">
+      <div className="relative p-5 @2xl/stage:p-8">
+        {/* Yatay ray yalnızca 4'lü satır düzeninde var. */}
+        <div aria-hidden="true" className="absolute left-10 right-10 top-1/2 hidden h-px bg-border @3xl/stage:block" />
+        <AnimatedList className="relative grid gap-3 @xs/stage:grid-cols-2 @3xl/stage:grid-cols-4">
           {gates.map((gate, index) => {
             const Icon = gate.icon;
             return (
               <MagicCard className="relative rounded-lg p-4 shadow-sm" key={gate.label} tilt={false}>
-                <div className="flex items-center justify-between">
-                  <Icon className="size-4 text-brand" aria-hidden="true" />
-                  <span className="font-mono text-[9px] text-foreground">0{index + 1} · {locale === "tr" ? "TAMAM" : "PASS"}</span>
-                </div>
-                <p className="mt-7 text-sm font-semibold">{gate.label}</p>
-                <p className="mt-1 font-mono text-[9px] text-muted-foreground">{gate.state}</p>
+                <TileBody
+                  top={
+                    <>
+                      <Icon className="size-4 shrink-0 text-brand" aria-hidden="true" />
+                      <span className="whitespace-nowrap font-mono text-micro text-foreground">0{index + 1} · {locale === "tr" ? "TAMAM" : "PASS"}</span>
+                    </>
+                  }
+                >
+                  <p className="text-sm font-semibold">{gate.label}</p>
+                  <p className="mt-1 font-mono text-micro text-muted-foreground">{gate.state}</p>
+                </TileBody>
               </MagicCard>
             );
           })}
@@ -271,21 +240,23 @@ export function IntegrationFlowVisual({ locale }: LocaleProps) {
   const outputRef = useRef<HTMLDivElement>(null);
   return (
     <VisualFrame title={t.integrationTitle} body={t.integrationBody}>
-      <div className="relative grid min-h-80 gap-px overflow-hidden bg-border sm:grid-cols-[1fr_1.15fr_1fr]" ref={containerRef}>
-        <div className="relative z-10 bg-background p-5 sm:p-6">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{t.sources}</p>
+      <div className="relative grid gap-px overflow-hidden bg-border @2xl/stage:grid-cols-[1fr_1.15fr_1fr]" ref={containerRef}>
+        <div className="relative z-10 bg-background p-5 @2xl/stage:p-6">
+          <p className="font-mono text-micro uppercase tracking-wider text-muted-foreground">{t.sources}</p>
           <div className="mt-6 space-y-3">
-            <BeamNode className="flex items-center justify-between px-3 py-3" ref={postgresRef}>
-              <span className="flex items-center gap-2 text-xs font-medium"><Database className="size-3.5 text-brand" />Postgres</span>
-              <span className="font-mono text-[8px] text-foreground">{t.available}</span>
+            {/* min-w-0 + shrink-0: "MSSQL / Oracle" ile "Dima'da doğrulandı"
+                aynı satırda yer için çekişiyor; etiket sarmalı, durum sarmamalı. */}
+            <BeamNode className="flex items-center justify-between gap-2 px-3 py-3" ref={postgresRef}>
+              <span className="flex min-w-0 items-center gap-2 text-xs font-medium"><Database className="size-3.5 shrink-0 text-brand" />Postgres</span>
+              <span className="shrink-0 font-mono text-micro text-foreground">{t.available}</span>
             </BeamNode>
-            <BeamNode className="flex items-center justify-between px-3 py-3" ref={duckRef}>
-              <span className="flex items-center gap-2 text-xs font-medium"><Database className="size-3.5 text-brand" />DuckDB</span>
-              <span className="font-mono text-[8px] text-foreground">{t.available}</span>
+            <BeamNode className="flex items-center justify-between gap-2 px-3 py-3" ref={duckRef}>
+              <span className="flex min-w-0 items-center gap-2 text-xs font-medium"><Database className="size-3.5 shrink-0 text-brand" />DuckDB</span>
+              <span className="shrink-0 font-mono text-micro text-foreground">{t.available}</span>
             </BeamNode>
-            <BeamNode className="flex items-center justify-between px-3 py-3" ref={plannedRef}>
-              <span className="flex items-center gap-2 text-xs font-medium"><Database className="size-3.5 text-brand" />MSSQL / Oracle</span>
-              <span className="font-mono text-[8px] text-muted-foreground">{t.planned}</span>
+            <BeamNode className="flex items-center justify-between gap-2 px-3 py-3" ref={plannedRef}>
+              <span className="flex min-w-0 items-center gap-2 text-xs font-medium"><Database className="size-3.5 shrink-0 text-brand" />MSSQL / Oracle</span>
+              <span className="shrink-0 font-mono text-micro text-muted-foreground">{t.planned}</span>
             </BeamNode>
           </div>
         </div>
@@ -294,16 +265,16 @@ export function IntegrationFlowVisual({ locale }: LocaleProps) {
             <div aria-hidden="true" className="visual-ring absolute -inset-3 rounded-2xl border border-dashed border-brand/25" />
             <Braces className="mx-auto size-6 text-brand" aria-hidden="true" />
             <p className="mt-3 text-sm font-semibold">{t.model}</p>
-            <p className="mt-1 font-mono text-[9px] text-muted-foreground">{locale === "tr" ? "tablolar → ilişkiler → ölçüler" : "tables → relationships → metrics"}</p>
+            <p className="mt-1 font-mono text-micro text-muted-foreground">{locale === "tr" ? "tablolar → ilişkiler → ölçüler" : "tables → relationships → metrics"}</p>
           </BeamNode>
         </div>
-        <div className="relative z-10 bg-background p-5 sm:p-6">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{t.consumers}</p>
-          <BeamNode className="mt-6 grid grid-cols-2 gap-3 p-3" ref={outputRef}>
+        <div className="relative z-10 bg-background p-5 @2xl/stage:p-6">
+          <p className="font-mono text-micro uppercase tracking-wider text-muted-foreground">{t.consumers}</p>
+          <BeamNode className="mt-6 grid grid-cols-2 gap-3 p-4" ref={outputRef}>
             {[Table2, CircleGauge, GitBranch, FileCode2].map((Icon, index) => (
-              <div className="flex aspect-square flex-col justify-between rounded-md border bg-background p-3" key={index}>
-                <Icon className="size-4 text-brand" aria-hidden="true" />
-                <span className="font-mono text-[9px] text-muted-foreground">0{index + 1}</span>
+              <div className="flex aspect-square flex-col justify-between rounded-md border bg-background p-4" key={index}>
+                <Icon className="size-4 shrink-0 text-brand" aria-hidden="true" />
+                <span className="font-mono text-micro text-muted-foreground">0{index + 1}</span>
               </div>
             ))}
           </BeamNode>
@@ -317,42 +288,25 @@ export function IntegrationFlowVisual({ locale }: LocaleProps) {
   );
 }
 
-export function MechanismPillars({ locale }: LocaleProps) {
-  const motifs = [
-    <path d="M5 15h14M8 11h8M11 7h2" key="d" />,
-    <><circle cx="12" cy="12" r="6" key="i1" /><path d="M12 8v4l3 2" key="i2" /></>,
-    <><path d="M5 8l7-4 7 4-7 4-7-4Z" key="m1" /><path d="m5 12 7 4 7-4M5 16l7 4 7-4" key="m2" /></>,
-    <><path d="M5 18 12 5l7 13" key="a1" /><circle cx="12" cy="14" r="2" key="a2" /></>,
-  ];
-  return (
-    <div className="grid gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-2 lg:grid-cols-4">
-      {PILLARS.map((pillar, index) => (
-        <article className="bg-background p-6" key={pillar.letter}>
-          <div className="flex items-start justify-between">
-            <span className="font-display text-5xl text-muted-foreground/45">{pillar.letter}</span>
-            <svg aria-hidden="true" className="size-10 text-brand" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24">{motifs[index]}</svg>
-          </div>
-          <p className="mt-10 font-mono text-[10px] uppercase tracking-[0.16em]"><span className="mr-2 text-brand">0{index + 1}</span>{pillar.word}</p>
-          <p className="mt-3 text-xs leading-5 text-muted-foreground">{pillar[locale]}</p>
-        </article>
-      ))}
-    </div>
-  );
-}
-
 export function WorkflowPipeline({ items }: { items: Array<{ title: string; body: string }> }) {
   return (
     <div className="relative mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <div aria-hidden="true" className="visual-scan absolute inset-y-0 left-0 z-20 hidden w-px bg-brand lg:block" />
       {items.map((item, index) => (
-        <MagicCard className="min-h-64" key={item.title}>
-          <article className="relative h-full p-6 sm:p-8">
-            <div className="flex items-center justify-between">
-              <span className="flex size-8 items-center justify-center rounded-full border font-mono text-[10px] text-brand">0{index + 1}</span>
-              <span aria-hidden="true" className="h-px w-16 origin-right scale-x-[0.625] bg-brand/35 transition-[transform,background-color] duration-300 group-focus-within:scale-x-100 group-focus-within:bg-brand" />
-            </div>
-            <h3 className="mt-16 text-xl font-semibold">{item.title}</h3>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">{item.body}</p>
+        <MagicCard key={item.title}>
+          <article className="relative h-full p-6">
+            <TileBody
+              className="gap-10"
+              top={
+                <>
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full border font-mono text-micro text-brand">0{index + 1}</span>
+                  <span aria-hidden="true" className="mt-4 h-px w-16 shrink-0 origin-right scale-x-[0.625] bg-brand/35 transition-[transform,background-color] duration-300 group-focus-within:scale-x-100 group-focus-within:bg-brand" />
+                </>
+              }
+            >
+              <h3 className="text-xl font-semibold">{item.title}</h3>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">{item.body}</p>
+            </TileBody>
             <div aria-hidden="true" className="absolute bottom-0 left-0 h-1 bg-brand/70" style={{ width: `${42 + index * 17}%` }} />
           </article>
         </MagicCard>
@@ -402,17 +356,18 @@ export function ProductWorkbenchVisual({ locale }: LocaleProps) {
   const t = labels[locale];
   return (
     <VisualFrame title={t.workbenchTitle} body={t.workbenchBody}>
-      <div className="grid min-h-96 bg-muted/20 lg:grid-cols-[180px_1fr]">
-        <div className="hidden border-r bg-background p-4 lg:block">
+      <div className="grid bg-muted/20 @2xl/stage:grid-cols-[10rem_1fr]">
+        <div className="hidden border-r bg-background p-4 @2xl/stage:block">
           <div className="h-8 rounded-md border bg-card" />
-          <div className="mt-8 space-y-2">{t.workbenchNav.map((item, index) => <div className={`rounded-md px-3 py-2 text-[10px] ${index === 0 ? "border-l-2 border-brand bg-brand/10 text-foreground" : "text-muted-foreground"}`} key={item}>{item}</div>)}</div>
+          <div className="mt-8 space-y-2">{t.workbenchNav.map((item, index) => <div className={`rounded-md px-3 py-2 text-micro ${index === 0 ? "border-l-2 border-brand bg-brand/10 text-foreground" : "text-muted-foreground"}`} key={item}>{item}</div>)}</div>
         </div>
-        <div className="p-5 sm:p-8">
+        {/* İç içe container: bu panel sahneden 160px dar, kendi eşiğine ihtiyacı var. */}
+        <div className="@container/pane p-5 @2xl/stage:p-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div><p className="font-mono text-[9px] text-muted-foreground">{locale === "tr" ? "brüt kâr / bu çeyrek" : "gross margin / this quarter"}</p><p className="mt-1 text-lg font-semibold">{t.productPerformance}</p></div>
-            <span className="rounded-full border border-chart-2/40 bg-chart-2/10 px-3 py-1 font-mono text-[9px] text-foreground"><Check className="mr-1 inline size-3 text-chart-2" />{t.verified}</span>
+            <div className="min-w-0"><p className="font-mono text-micro text-muted-foreground">{locale === "tr" ? "brüt kâr / bu çeyrek" : "gross margin / this quarter"}</p><p className="mt-1 text-lg font-semibold">{t.productPerformance}</p></div>
+            <span className="shrink-0 whitespace-nowrap rounded-full border border-chart-2/40 bg-chart-2/10 px-3 py-1 font-mono text-micro text-foreground"><Check className="mr-1 inline size-3 text-chart-2" />{t.verified}</span>
           </div>
-          <div className="mt-7 grid gap-4 sm:grid-cols-3">
+          <div className="mt-7 grid gap-4 @sm/pane:grid-cols-3">
             {[
               { value: 31.4, suffix: "%", decimals: 1, label: t.grossMargin },
               { value: 12, suffix: "", decimals: 0, label: t.productGroups },
@@ -423,7 +378,7 @@ export function ProductWorkbenchVisual({ locale }: LocaleProps) {
                   <NumberTicker decimals={item.decimals} locale={locale === "tr" ? "tr-TR" : "en-US"} value={item.value} />
                   {item.suffix}
                 </p>
-                <p className="mt-2 text-[10px] text-muted-foreground">{item.label}</p>
+                <p className="mt-2 text-xs text-muted-foreground">{item.label}</p>
               </MagicCard>
             ))}
           </div>
@@ -438,7 +393,7 @@ export function ProductWorkbenchVisual({ locale }: LocaleProps) {
                 </div>
               ))}
             </div>
-            <div className="mt-3 flex justify-between font-mono text-[8px] text-muted-foreground"><span>{t.periodStart}</span><span>{t.current}</span></div>
+            <div className="mt-3 flex justify-between gap-2 font-mono text-micro text-muted-foreground"><span>{t.periodStart}</span><span>{t.current}</span></div>
           </div>
         </div>
       </div>
@@ -451,14 +406,24 @@ export function ValidationPipelineVisual({ locale }: LocaleProps) {
   const steps = t.validationSteps;
   return (
     <VisualFrame title={t.validationTitle} body={t.validationBody}>
-      <div className="marketing-grid flex items-center p-6 sm:p-8">
-        <AnimatedList className="grid w-full grid-cols-2 gap-3 [&>*:last-child]:col-span-2 lg:grid-cols-5 lg:[&>*:last-child]:col-span-1">
+      <div className="marketing-grid p-5 @2xl/stage:p-8">
+        {/* 5 sütun aritmetiği: 5×144px min kart + 4×12px boşluk + 64px padding = 832px
+            → ilk dürüst eşik @4xl (896px). Altında 3'lü, daha altında 2'li düzene düşer;
+            eskiden lg:grid-cols-5 dar hücrede 78px'lik kartlar üretiyordu. */}
+        <AnimatedList className="grid w-full grid-cols-1 gap-3 @xs/stage:grid-cols-2 @xs/stage:[&>*:last-child]:col-span-2 @xl/stage:grid-cols-3 @xl/stage:[&>*:last-child]:col-span-1 @4xl/stage:grid-cols-5">
           {steps.map(([title, detail], index) => (
-            <MagicCard className={`relative min-h-36 rounded-lg p-4 ${index === 0 ? "border-dashed bg-muted/40" : ""}`} key={title} tilt={false}>
-              <span className="font-mono text-[9px] text-brand">0{index + 1}</span>
-              <p className="mt-8 text-sm font-semibold">{title}</p>
-              <p className="mt-1 font-mono text-[8px] text-muted-foreground">{detail}</p>
-              {index > 0 ? <Check className="absolute right-3 top-3 size-3 text-chart-2" aria-hidden="true" /> : null}
+            <MagicCard className={`relative rounded-lg p-4 ${index === 0 ? "border-dashed bg-muted/40" : ""}`} key={title} tilt={false}>
+              <TileBody
+                top={
+                  <>
+                    <span className="font-mono text-micro text-brand">0{index + 1}</span>
+                    {index > 0 ? <Check className="size-3 shrink-0 text-chart-2" aria-hidden="true" /> : null}
+                  </>
+                }
+              >
+                <p className="text-sm font-semibold">{title}</p>
+                <p className="mt-1 font-mono text-xs text-muted-foreground">{detail}</p>
+              </TileBody>
             </MagicCard>
           ))}
         </AnimatedList>

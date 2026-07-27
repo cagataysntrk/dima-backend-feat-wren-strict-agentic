@@ -64,10 +64,12 @@ export default async function MarketingHome() {
       <section className="relative overflow-hidden border-b">
         <div aria-hidden="true" className="marketing-grid absolute inset-0 opacity-45 [mask-image:linear-gradient(to_bottom,black,transparent_88%)]" />
         <Particles className="hidden opacity-70 sm:block" quantity={38} />
-        <Container className="relative grid min-h-[calc(100svh-4rem)] gap-12 py-16 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:py-20">
+        <Container className="relative grid gap-12 py-20 sm:py-28 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <Reveal className="relative z-10">
             <Eyebrow>{h.eyebrow}</Eyebrow>
-            <h1 className="mt-6 max-w-3xl text-balance font-display text-5xl leading-[0.96] tracking-[-0.045em] sm:text-7xl lg:text-[5.15rem]">
+            {/* Ölçek 6xl'i atlamıyor artık: eskiden tam 640px'te 48px'ten 72px'e
+                sıçrayıp TR başlığını 3 satıra bölüyordu. PageHero'daki ramp ile aynı. */}
+            <h1 className="mt-6 max-w-3xl text-balance font-display text-5xl leading-[0.96] tracking-[-0.045em] sm:text-6xl lg:text-7xl xl:text-[5.15rem]">
               {h.title}
               <br />
               <WordRotate className="text-brand" words={h.rotateWords} />
@@ -89,7 +91,7 @@ export default async function MarketingHome() {
             <div className="mt-12 grid max-w-xl grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-4">
               {h.process.map((step, index) => (
                 <div className="group bg-background px-3 py-4 transition-colors duration-300 hover:bg-brand/5" key={step}>
-                  <span className="font-mono text-[9px] tabular-nums text-brand">
+                  <span className="font-mono text-micro tabular-nums text-brand">
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <p className="mt-2 text-xs font-medium leading-5 transition-transform duration-300 group-hover:translate-x-0.5">{step}</p>
@@ -132,8 +134,8 @@ export default async function MarketingHome() {
               <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
                 <Search className="size-3.5" aria-hidden="true" />
               </span>
-              <span>
-                <span className="block text-[10px] font-semibold text-brand">{item.title}</span>
+              <span className="min-w-0">
+                <span className="block text-xs font-semibold text-brand">{item.title}</span>
                 <span className="mt-1 block text-sm leading-5">{item.question}</span>
               </span>
             </div>
@@ -141,7 +143,7 @@ export default async function MarketingHome() {
         </Marquee>
       </section>
 
-      <section className="border-b py-18 sm:py-24">
+      <section className="border-b py-16 sm:py-24">
         <Container>
           <Reveal className="grid gap-5 md:grid-cols-[0.9fr_1.1fr] md:items-end">
             <div>
@@ -158,7 +160,7 @@ export default async function MarketingHome() {
         </Container>
       </section>
 
-      <section className="border-b bg-muted/20 py-18 sm:py-24">
+      <section className="border-b bg-muted/20 py-16 sm:py-24">
         <Container>
           <Reveal className="max-w-3xl">
             <Eyebrow>{tr ? "Bir cevabın içinde ne var?" : "What is inside an answer?"}</Eyebrow>
@@ -170,7 +172,7 @@ export default async function MarketingHome() {
           </Reveal>
           <Stagger className="mt-12">
             <BentoGrid>
-            <StaggerItem className="row-span-2 min-h-0 md:col-span-4">
+            <StaggerItem className="min-h-0 md:col-span-4 md:row-span-2">
               <div className="h-full [&>figure]:h-full">
                 <ProductWorkbenchVisual locale={content.locale} />
               </div>
@@ -193,13 +195,16 @@ export default async function MarketingHome() {
                 <MiniSignal index={4} />
               </SignalCard>
             </StaggerItem>
-            <StaggerItem className="row-span-3 min-h-0 md:col-span-3 md:row-span-2">
-              <div className="h-full rounded-xl [&>figure]:h-full">
+            {/* Bu ikisi tam genişlik sahne grafiği: 3 sütunlu beam diyagramı ve
+                5 adımlı doğrulama hattı. Yarım sütuna (col-span-3) sıkıştırıldıklarında
+                container query'ler onları 2-3'lü basit düzene düşürüyordu. */}
+            <StaggerItem className="min-h-0 md:col-span-6">
+              <div className="h-full [&>figure]:h-full">
                 <SemanticMapVisual locale={content.locale} />
               </div>
             </StaggerItem>
-            <StaggerItem className="row-span-3 min-h-0 md:col-span-3 md:row-span-2">
-              <div className="h-full rounded-xl [&>figure]:h-full">
+            <StaggerItem className="min-h-0 md:col-span-6">
+              <div className="h-full [&>figure]:h-full">
                 <ValidationPipelineVisual locale={content.locale} />
               </div>
             </StaggerItem>
@@ -208,7 +213,7 @@ export default async function MarketingHome() {
         </Container>
       </section>
 
-      <section className="border-b py-18 sm:py-24">
+      <section className="border-b py-16 sm:py-24">
         <Container>
           <Reveal>
             <Eyebrow>{tr ? "Sorudan rapora" : "Question to report"}</Eyebrow>
@@ -252,11 +257,13 @@ export default async function MarketingHome() {
         visual={<IntegrationFlowVisual locale={content.locale} />}
       />
 
-      <section className="border-t py-18 sm:py-24">
+      {/* border-t YOK: üstteki EditorialFeature zaten border-b basıyor, ikisi
+          birleşince 2px'lik bir dikiş oluşuyordu. */}
+      <section className="py-16 sm:py-24">
         <Container className="grid gap-10 lg:grid-cols-[0.7fr_1.3fr]">
           <Reveal>
             <Eyebrow>FAQ</Eyebrow>
-            <h2 className="mt-4 font-display text-4xl">{h.faqTitle}</h2>
+            <h2 className="mt-4 font-display text-4xl sm:text-5xl">{h.faqTitle}</h2>
           </Reveal>
           <Reveal delay={0.06}>
             <Accordion type="single" collapsible className="border-y">
@@ -287,13 +294,15 @@ function EvidenceChip({
   meta: string;
 }) {
   return (
-    <div className="marketing-surface flex min-w-44 items-center gap-3 rounded-lg border bg-card/95 px-3 py-3 shadow-lg backdrop-blur-sm">
+    // max-w: min-w-44 tek başına EN'de "Shared business definitions" (27 karakter)
+    // için 3 satır üretip çipi çapasının dışına taşırıyordu.
+    <div className="marketing-surface flex min-w-44 max-w-[15rem] items-center gap-3 rounded-lg border bg-card/95 p-4 shadow-lg backdrop-blur-sm">
       <span className="flex size-8 shrink-0 items-center justify-center rounded-md border bg-background text-brand">
         <Icon className="size-4" aria-hidden="true" />
       </span>
-      <span>
-        <span className="block text-[11px] font-semibold">{label}</span>
-        <span className="mt-1 block font-mono text-[8px] text-muted-foreground">{meta}</span>
+      <span className="min-w-0">
+        <span className="block text-xs font-semibold">{label}</span>
+        <span className="mt-1 block font-mono text-micro text-muted-foreground">{meta}</span>
       </span>
     </div>
   );
@@ -311,13 +320,17 @@ function SignalCard({
   children: React.ReactNode;
 }) {
   return (
+    // items-start + mt-0.5: başlık iki satıra sardığında ikon ilk satırla
+    // hizalı kalır; shrink-0 olmadan 16px'lik ikon ovale eziliyordu.
     <MagicCard className="h-full p-5">
-      <div className="flex items-center gap-2">
-        <Icon className="size-4 text-brand" aria-hidden="true" />
+      <div className="flex items-start gap-2">
+        <Icon className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden="true" />
         <h3 className="text-sm font-semibold">{title}</h3>
       </div>
       <p className="mt-2 text-xs leading-5 text-muted-foreground">{body}</p>
-      {children}
+      {/* mt-auto: sparkline kartın altına sabitlenir, böylece komşu kartlarda
+          başlık farklı sarsa da grafikler aynı hizada durur. */}
+      <div className="mt-auto">{children}</div>
     </MagicCard>
   );
 }
@@ -340,15 +353,15 @@ function EditorialFeature({
   reverse?: boolean;
 }) {
   return (
-    <section className="border-b py-18 sm:py-24">
-      <Container className={`grid gap-10 lg:grid-cols-2 lg:items-center ${reverse ? "lg:[&>*:first-child]:order-2" : ""}`}>
+    <section className="border-b py-16 sm:py-24">
+      <Container className={`grid gap-10 lg:grid-cols-2 lg:items-center [&>*]:min-w-0 ${reverse ? "lg:[&>*:first-child]:order-2" : ""}`}>
         <Reveal>
           <Eyebrow>{eyebrow}</Eyebrow>
           <h2 className="mt-4 text-balance font-display text-4xl sm:text-5xl">{title}</h2>
           <p className="mt-5 max-w-xl leading-7 text-muted-foreground">{body}</p>
           <Link href={href} className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-brand underline-offset-4 hover:underline focus-visible:underline">
             {content.common.learnMore}
-            <ArrowRight className="size-4" aria-hidden="true" />
+            <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
           </Link>
         </Reveal>
         <Reveal delay={0.08}>{visual}</Reveal>

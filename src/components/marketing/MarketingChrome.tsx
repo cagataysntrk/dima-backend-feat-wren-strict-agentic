@@ -49,18 +49,22 @@ export function MarketingHeader({ content }: { content: MarketingContent }) {
           : "border-transparent bg-background/76 backdrop-blur-md",
       )}
     >
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-5 px-5 sm:px-8">
-        <Link href="/" aria-label={content.locale === "tr" ? "dima ana sayfa" : "dima home"} className="rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
+      {/* shrink-0 + whitespace-nowrap: butonlarda zaten vardı, nav'da yoktu — bu
+          yüzden dar alanda önce nav sıkışıp iki satıra kırılıyor ve sabit h-16'yı
+          taşırıyordu. TR etiketleri ("Nasıl çalışır?", "Entegrasyonlar") lg'de
+          ~30px pay bırakıyor. */}
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-5 sm:px-8">
+        <Link href="/" aria-label={content.locale === "tr" ? "dima ana sayfa" : "dima home"} className="shrink-0 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
           <BrandMark size="md" />
         </Link>
-        <nav aria-label={content.locale === "tr" ? "Ana navigasyon" : "Main navigation"} className="ml-auto hidden items-center gap-1 lg:flex">
+        <nav aria-label={content.locale === "tr" ? "Ana navigasyon" : "Main navigation"} className="ml-auto hidden items-center gap-0.5 lg:flex">
           {navigation.map((item) => (
             <Link
               key={item.key}
               href={item.href}
               aria-current={pathname === item.href ? "page" : undefined}
               className={cn(
-                "rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring",
+                "whitespace-nowrap rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring",
                 pathname === item.href ? "bg-accent text-foreground" : "text-muted-foreground",
               )}
             >
@@ -68,7 +72,7 @@ export function MarketingHeader({ content }: { content: MarketingContent }) {
             </Link>
           ))}
         </nav>
-        <div className="ml-auto flex items-center gap-1 lg:ml-3">
+        <div className="ml-auto flex shrink-0 items-center gap-1 lg:ml-3">
           <LocaleSwitcher />
           <ThemeToggle />
           <Button asChild variant="ghost" className="hidden sm:inline-flex">
@@ -131,7 +135,7 @@ export function MarketingFooter({ content }: { content: MarketingContent }) {
   const year = new Date().getFullYear();
   return (
     <footer className="border-t bg-muted/35">
-      <div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 sm:px-8 md:grid-cols-[1.6fr_1fr_1fr_1fr]">
+      <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:grid-cols-2 sm:px-8 md:grid-cols-[1.6fr_1fr_1fr_1fr]">
         <div>
           <BrandMark size="md" />
           <p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">{content.footer.statement}</p>

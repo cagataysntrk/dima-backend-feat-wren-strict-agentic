@@ -105,6 +105,34 @@ Two-rail shell: left nav and right artifact both collapse; on mobile (`use-mobil
 become Sheets and the center chat goes full-width. Wide content (tables, charts) scrolls
 inside its own `overflow-x-auto`; the page body never scrolls horizontally.
 
+## Marketing kart ölçeği
+
+Marketing yüzeyinde (`src/app/(marketing)`, `src/components/marketing`) kartlar
+**içeriğe göre** boyutlanır. Sabit satır yüksekliği, `min-h` tabanı veya sihirli
+`mt-N` boşluğu ile hizalama yapılmaz.
+
+- **Kart padding — yalnız üç değer:** `p-4` (görsel içi yoğun tile) · `p-5`
+  (varsayılan kart) · `p-6` (öne çıkan kart / bağımsız yüzey). `p-8` sadece
+  container-kapsamlı adım olarak (`@2xl/stage:p-8`). Chip/buton/tablo hücresi
+  padding'i kontrol padding'idir, bu ölçeğin dışındadır.
+- **Bölüm ritmi — yalnız üç değer:** `py-16 sm:py-24` (içerik bölümleri) ·
+  `py-20 sm:py-28` (hero'lar) · `py-8` (marquee bandı).
+- **Tipografi tabanı:** en küçük boy `text-micro` (10px) ve **yalnızca** `font-mono`
+  büyük harf / meta etiketlerde (`01`, `hazır`, `doğrulandı`). Cümle, başlık veya
+  isim tamlaması olan her şey en az `text-xs` (12px). Rastgele `text-[Npx]` yok.
+- **Kart içi düzen container query ile kırılır**, viewport breakpoint'i ile değil.
+  Aynı bileşen hem dar bento hücresinde hem geniş sayfa hero'sunda render ediliyor;
+  `sm:`/`lg:` "pencere genişse" der, "ben genişsem" diyemez. Sahne kökleri
+  `@container/stage`, `@container/pane`, `@container/proof`, `@container/panel`,
+  `@container/tile`. **Container ölçeği breakpoint ölçeği değildir:** `@sm`=384px,
+  `@md`=448, `@lg`=512, `@xl`=576, `@2xl`=672, `@3xl`=768, `@4xl`=896.
+  Viewport breakpoint'i yalnızca gerçek sayfa düzeyi ızgaralarda kalır.
+- **Dikey hizalama `mt-auto` ile yapılır** — `TileBody` (`MarketingPrimitives.tsx`)
+  üstte meta satırı, altta tabana sabitlenen içerik verir. Sabit `mt-6/7/8/16`
+  hizalama YAPMAZ: bir hücrenin başlığı sarıp komşusununki sarmayınca kayar.
+- **Taşma yerine sarma:** flex satırlarında ikonlara `shrink-0`, metne `min-w-0`;
+  bilinen uzun tokenlar (`contact@upcytech.com`) `break-anywhere`.
+
 ## Accessibility & i18n
 
 - Copy is Turkish-first with English available (next-intl, `messages/{tr,en}.json`,

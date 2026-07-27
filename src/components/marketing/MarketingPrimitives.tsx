@@ -10,13 +10,37 @@ export function Container({ children, className = "" }: { children: React.ReactN
   return <div className={cn("mx-auto max-w-7xl px-5 sm:px-8", className)}>{children}</div>;
 }
 
+/**
+ * Kart/tile iç düzeni: üstte meta satırı, altta `mt-auto` ile tabana sabitlenen
+ * içerik. Bu şekil marketing yüzeyinde defalarca tekrar ediyordu ve her seferinde
+ * `mt-6/7/8/10/16` gibi sihirli bir boşlukla taklit ediliyordu — o sayılar hizalama
+ * YAPMIYOR: bir hücrenin başlığı iki satıra sarıp komşusununki sarmayınca meta
+ * satırları kayıyordu. `mt-auto` gerçekten alttan hizalar.
+ */
+export function TileBody({
+  top,
+  className,
+  children,
+}: {
+  top?: React.ReactNode;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={cn("flex h-full min-h-0 flex-col gap-3", className)}>
+      {top ? <div className="flex items-start justify-between gap-2">{top}</div> : null}
+      <div className="mt-auto min-w-0">{children}</div>
+    </div>
+  );
+}
+
 export function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-brand">{children}</p>;
 }
 
 export function PageHero({ page, media }: { page: PageContent; media?: React.ReactNode }) {
   return (
-    <section className="relative overflow-hidden border-b py-16 sm:py-24 lg:py-28">
+    <section className="relative overflow-hidden border-b py-20 sm:py-28">
       <div aria-hidden="true" className="marketing-grid absolute inset-0 opacity-60 [mask-image:linear-gradient(to_bottom,black,transparent)]" />
       <Container className={cn("relative grid gap-12", media ? "lg:grid-cols-[0.88fr_1.12fr] lg:items-center" : "")}>
         <Reveal>
@@ -33,7 +57,7 @@ export function PageHero({ page, media }: { page: PageContent; media?: React.Rea
 export function StatusBadge({ status, content }: { status?: CapabilityStatus; content: MarketingContent }) {
   if (!status) return null;
   return (
-    <span className="inline-flex rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+    <span className="inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 font-mono text-micro uppercase tracking-wider text-muted-foreground">
       {content.common[status]}
     </span>
   );
@@ -41,7 +65,7 @@ export function StatusBadge({ status, content }: { status?: CapabilityStatus; co
 
 export function FinalCta({ content, label }: { content: MarketingContent; label?: string }) {
   return (
-    <section className="relative overflow-hidden border-t bg-foreground py-16 text-background sm:py-20">
+    <section className="relative overflow-hidden border-t bg-foreground py-16 text-background sm:py-24">
       <BorderBeam duration={8} />
       <Particles className="opacity-35" quantity={28} />
       <Container className="relative z-10 flex flex-col items-start justify-between gap-8 md:flex-row md:items-end">

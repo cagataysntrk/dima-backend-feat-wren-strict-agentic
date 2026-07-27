@@ -161,6 +161,12 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
+  /* Mikro etiket tabanı — okunabilir en küçük boy. YALNIZCA font-mono
+     büyük harf / meta etiketlerde kullanılır (`01`, `hazır`, `doğrulandı`).
+     Cümle, başlık veya isim tamlaması olan her şey en az `text-xs` (12px). */
+  --text-micro: 0.625rem;
+  --text-micro--line-height: 0.875rem;
+
   --shadow-xs: var(--shadow-xs);
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
@@ -203,6 +209,14 @@
   :where(h1, h2, h3) {
     overflow-wrap: anywhere;
   }
+  /* Gövde metni `break-word` alır, `anywhere` değil: `anywhere` min-content
+     boyutlamayı da çökertir ve ilgisiz grid track'lerinin daralmasına yol açar.
+     Bilinen uzun tokenlar (contact@upcytech.com gibi) `break-anywhere` ile
+     tek tek işaretlenir. `hyphens: auto` kullanılmaz — Chrome'un Türkçe
+     tireleme sözlüğü işletim sistemine bağlı, tutarsız render eder. */
+  :where(h4, p, li, dt, dd, figcaption) {
+    overflow-wrap: break-word;
+  }
   :where(a, button, input, textarea, select, summary):focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 3px;
@@ -211,6 +225,11 @@
 
 ::selection {
   background: color-mix(in srgb, var(--brand) 24%, transparent);
+}
+
+/* Bilinen uzun/bölünmez tokenlar için (e-posta adresi, uzun Türkçe bileşikler). */
+@utility break-anywhere {
+  overflow-wrap: anywhere;
 }
 
 .marketing-grid {

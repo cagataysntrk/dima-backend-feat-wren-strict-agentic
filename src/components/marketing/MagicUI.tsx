@@ -38,7 +38,10 @@ export function BentoGrid({
   return (
     <div
       className={cn(
-        "grid auto-rows-[15rem] grid-cols-1 gap-4 md:grid-cols-6",
+        // Satır yüksekliği sabitlenmez: `grid-auto-rows: auto` her satırı en uzun
+        // öğesine göre boyutlar ve kardeşleri o yüksekliğe stretch eder. `auto-rows-fr`
+        // kullanılmaz — v4'te minmax(0,1fr)'e derlenir ve taşan içeriği kırpar.
+        "grid grid-cols-1 gap-4 md:grid-cols-6",
         className,
       )}
     >
@@ -100,7 +103,7 @@ export function MagicCard({
     <m.div
       ref={cardRef}
       className={cn(
-        "group relative overflow-hidden rounded-xl border bg-card shadow-sm [transform-style:preserve-3d]",
+        "group relative flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm [transform-style:preserve-3d]",
         "transition-[border-color,box-shadow] duration-300 hover:border-brand/30 hover:shadow-xl hover:shadow-brand/5 focus-visible:border-brand/30 focus-visible:shadow-xl focus-within:border-brand/30 focus-within:shadow-xl focus-within:shadow-brand/5",
         className,
       )}
@@ -126,7 +129,10 @@ export function MagicCard({
           ),
         }}
       />
-      <div className="relative z-10 h-full [transform:translateZ(0)]">{children}</div>
+      {/* `flex-1` + `flex flex-col`: kart hücresini gerçekten doldurur ve çocukların
+          `mt-auto` ile alta sabitlenmesini mümkün kılar. Eskiden buradaki `h-full`
+          atıldı — ebeveyn yüksekliği auto olduğu için hiçbir şey yapmıyordu. */}
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col [transform:translateZ(0)]">{children}</div>
     </m.div>
   );
 }
@@ -187,27 +193,38 @@ export function BorderBeam({
   );
 }
 
+// Düzen sınıfı ÜRETMEZ: eskiden varsayılan `grid gap-2` basıyordu ve çağıran taraf
+// `space-y-*` geçtiğinde tailwind-merge ikisini uzlaştıramadığı için (farklı CSS
+// özellikleri) boşluk iki kez uygulanıyordu. Düzeni artık her zaman çağıran verir.
+// `as="ul"` gerçek liste semantiği için — çocuklar `<li>` olarak sarılır.
 export function AnimatedList({
   children,
   className,
+  as = "div",
+  itemClassName,
 }: {
   children: ReactNode[];
   className?: string;
+  as?: "div" | "ul";
+  itemClassName?: string;
 }) {
+  const Root = as === "ul" ? "ul" : "div";
+  const Item = as === "ul" ? m.li : m.div;
   return (
-    <div className={cn("grid gap-2", className)}>
+    <Root className={className}>
       {children.map((child, index) => (
-        <m.div
+        <Item
           key={index}
+          className={itemClassName}
           initial={{ opacity: 0, x: -12 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, amount: 0.7 }}
           transition={{ duration: 0.32, delay: index * 0.07, ease: [0.22, 1, 0.36, 1] }}
         >
           {child}
-        </m.div>
+        </Item>
       ))}
-    </div>
+    </Root>
   );
 }
 
@@ -239,9 +256,15 @@ export function WordRotate({
         className,
       )}
     >
-      <span className="invisible col-start-1 row-start-1">
-        {words.reduce((longest, word) => (word.length > longest.length ? word : longest), words[0] ?? "")}
-      </span>
+      {/* Yer tutucu, kelimeleri aynı grid hücresine bindirerek hücreyi gerçek
+          RENDER genişliğine göre boyutlar. Eski hâli `word.length` (karakter sayısı)
+          ile seçiyordu; orantılı display fontunda kısa ama geniş bir kelime
+          (ör. "MODEL") uzun ama dar olandan taşabiliyordu. */}
+      {words.map((word) => (
+        <span aria-hidden="true" className="invisible col-start-1 row-start-1" key={word}>
+          {word}
+        </span>
+      ))}
       <AnimatePresence mode="wait" initial={false}>
         <m.span
           className="relative z-10 col-start-1 row-start-1"
@@ -285,7 +308,9 @@ export function Marquee({
         <div
           aria-hidden={index > 0 || undefined}
           className={cn(
-            "flex shrink-0 items-center gap-[var(--gap)] pr-[var(--gap)]",
+            // items-stretch: kartlar içerik uzunluğuna göre 72/92px arasında değişip
+            // dikey ortalanmak yerine satırın yüksekliğini paylaşır.
+            "flex shrink-0 items-stretch gap-[var(--gap)] pr-[var(--gap)]",
             reverse ? "marketing-marquee-reverse" : "marketing-marquee-track",
             pauseOnHover && "group-hover:[animation-play-state:paused] group-focus-within:[animation-play-state:paused]",
             !inView && "[animation-play-state:paused]",
