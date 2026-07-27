@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowDown, Sparkles, User, X } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -97,17 +97,31 @@ export function MessageScroller({
     el?.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   };
 
-  // Yeni cevap/soru geldiğinde kullanıcı yukarıda okuyor olsa bile oraya götür.
-  // (Chip düzenlemesi eski bir mesajın üstünde yapılır; cevap en altta doğar —
-  //  kaydırmazsak "hiçbir şey olmadı" hissi veriyordu.)
+  // Yeni cevap/soru geldiğinde (ya da sohbet değişince) kullanıcı yukarıda
+  // okuyor olsa bile en alta götür.
+  //
+  // useLayoutEffect: boyama ÖNCESİ konumlan. useEffect ile yapınca tarayıcı
+  // bir kare boyunca ESKİ scrollTop ile çiziyordu; yeni sohbet daha kısaysa o
+  // konum içeriğin dışında kalıyor ve sohbet "kayboluyor", ancak kullanıcı
+  // kaydırınca düzeliyordu. Ayrıca sohbet değişimi anlık olmalı (smooth değil):
+  // farklı bir bağlama geçiliyor, aradaki yolu göstermenin anlamı yok.
   const firstRun = useRef(true);
-  useEffect(() => {
+  const prevKey = useRef(scrollKey);
+  useLayoutEffect(() => {
     if (scrollKey === undefined) return;
     const el = viewportRef.current;
     if (!el) return;
+    // aynı sohbet içinde yeni mesaj → yumuşak; sohbet/ilk açılış → anlık
+    const sameThread =
+      !firstRun.current &&
+      String(prevKey.current).split("::")[0] === String(scrollKey).split("::")[0];
     stick.current = true;
     setShowJump(false);
-    el.scrollTo({ top: el.scrollHeight, behavior: firstRun.current ? "auto" : "smooth" });
+    el.scrollTop = el.scrollHeight;
+    if (sameThread) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }
+    prevKey.current = scrollKey;
     firstRun.current = false;
   }, [scrollKey]);
 

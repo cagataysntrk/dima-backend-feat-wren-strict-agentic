@@ -219,6 +219,7 @@ export default function AppPage() {
           pending={mutation.isPending || cubeMutation.isPending}
           pendingQuestion={pendingQuestion}
           pendingFiles={pendingFiles}
+          conversationId={incognito ? "incognito" : activeConv?.id}
           onSelect={(item) => {
             setActive(item);
             setArtifact("report");

@@ -39,6 +39,7 @@ export function ChatPanel({
   pending,
   pendingQuestion,
   pendingFiles,
+  conversationId,
   onSelect,
   onSubmit,
   onCubeEdit,
@@ -50,6 +51,8 @@ export function ChatPanel({
   pending: boolean;
   pendingQuestion?: string;
   pendingFiles?: File[];
+  /** Aktif sohbetin kimliği — sohbet değişince kaydırma anlık olmalı. */
+  conversationId?: string;
   onSelect: (item: AskResponse) => void;
   onSubmit: (q: string, files?: File[]) => void;
   onCubeEdit?: (edit: { cq: CubeQuery; label: string }) => void;
@@ -88,7 +91,9 @@ export function ChatPanel({
         className="[mask-image:linear-gradient(to_bottom,transparent_0,#000_4rem)]"
         jumpOffset="bottom-[7rem]"
         // yeni cevap (ya da chip düzenlemesi) gelince en alta zorla kaydır
-        scrollKey={`${items.length}:${pendingQuestion ?? ""}`}
+        // "::" öncesi sohbet kimliği (değişirse anlık atla), sonrası mesaj
+        // sayısı/bekleyen soru (aynı sohbette değişirse yumuşak kaydır)
+        scrollKey={`${conversationId ?? ""}::${items.length}:${pendingQuestion ?? ""}`}
       >
         {/* Tek ritim: hem turlar arasında hem tur içinde space-y-9 (36px).
             Eşit boşluk, konuşmayı "soru+cevap blokları" yerine tek bir akış gibi
