@@ -60,6 +60,11 @@
 
   --radius: 0.625rem;
 
+  /* Panel/çekmece eğrisi (Ionic'in iOS drawer curve'ü) — sol sidebar ve sağ
+     artifact paneli AYNI hareketi paylaşmalı; shadcn'in varsayılanı `linear`di
+     ve mekanik duruyordu. JS karşılığı: EASE_DRAWER (lib/motion.ts). */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
   /* subtle neutral elevation — surfaces stay flat + hairline; overlays lift. */
   --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.04);
   --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.06), 0 1px 2px -1px oklch(0 0 0 / 0.05);

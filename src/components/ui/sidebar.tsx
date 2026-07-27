@@ -218,7 +218,11 @@ function Sidebar({
       <div
         data-slot="sidebar-gap"
         className={cn(
-          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear",
+          // Bu AKIŞ İÇİ boşluk tutucudur — genişliği, içeriği iten şeyin ta kendisi.
+          // transform burada işe yaramaz: reflow tetiklemez, içerik yerinde kalırdı.
+          // Sabit panelle (aşağıda) birlikte animasyonlanmalı, yoksa ikisi ayrışır.
+          // ui-craft-detect-ignore-next-line
+          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-300 ease-[var(--ease-drawer)]",
           "group-data-[collapsible=offcanvas]:w-0",
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
@@ -229,7 +233,7 @@ function Sidebar({
       <div
         data-slot="sidebar-container"
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex",
+          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-300 ease-[var(--ease-drawer)] md:flex",
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",

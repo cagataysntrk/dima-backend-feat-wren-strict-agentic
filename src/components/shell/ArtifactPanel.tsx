@@ -49,7 +49,7 @@ export function ArtifactPanel({
       aria-hidden={!open}
       className={cn(
         "flex min-h-0 shrink-0 flex-col overflow-hidden border-border bg-card/40",
-        "transition-[width,border-left-width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
+        "transition-[width,border-left-width] duration-300 ease-[var(--ease-drawer)]",
         "motion-reduce:transition-none",
         open
           ? cn("border-l", expanded ? "w-[min(70vw,900px)]" : "w-[min(46vw,600px)]")
