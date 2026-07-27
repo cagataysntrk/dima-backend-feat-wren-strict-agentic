@@ -61,7 +61,14 @@ export function ChatPanel({
   const thread = [...items].reverse(); // eski üstte, yeni altta
   // SQL gösterimi (sql_display bayrağı, ADR-0009) — ham şeffaflık özelliği; bayrak
   // kapalıysa SQL bloğu hiç render edilmez (backend /features'tan çözülür).
+  // SQL gösterimi (sql_display, ADR-0009). Bayrak YOKKEN varsayılan AÇIK:
+  // deterministik-önce bir üründe sorguyu görebilmek güven yüzeyinin parçası,
+  // gizlemek istisna olmalı. Backend "off" döndürürse kapanır — böylece
+  // tenant bazlı kapatma imkânı korunuyor, ama sessizce kaybolmuyor.
+  // NOT: "off", alpha|beta|prod sözlüğüne EK bir değer; backend registry'sine
+  // eklenmeli, yoksa bu dal hiç tetiklenmez.
   const sqlStage = useFeature("sql_display");
+  const showSql = sqlStage !== "off";
 
   const send = (files: File[]) => {
     const q = value.trim();
@@ -148,7 +155,7 @@ export function ChatPanel({
                         />
                         {/* sorgunun kendisi — grafiğin/tablonun altında, kapalı başlar
                             (sql_display bayrağı açıksa) */}
-                        {sqlStage && item.sql && <SqlBlock sql={item.sql} />}
+                        {showSql && item.sql && <SqlBlock sql={item.sql} />}
                       </Card>
                       <MessageActions
                         data={item}

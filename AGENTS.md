@@ -62,7 +62,7 @@ The UI never touches data directly — everything goes through `dima-backend` ov
   loaded (no first-paint regression; the backend re-enforces).
 - **Feature flags** (`useFeature`, ADR-0009) gate rollout/visibility only — `alpha`/`beta`
   should render **with a badge**; `flag ≠ permission`. Global platform flags: `verify_button`,
-  `scheduled_reports`, `sql_display` (SqlBlock gate), `cikti_yorumlama` (backend omits
+  `scheduled_reports`, `sql_display` (SqlBlock; **varsayılan AÇIK** — yalnız `off` kapatır), `cikti_yorumlama` (backend omits
   `interpretation` when off). Flag metadata (label/description/category) lives in the backend
   registry; a new raw surface = add the flag there + `useFeature("<key>")` here.
 
