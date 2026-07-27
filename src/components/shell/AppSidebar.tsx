@@ -1,9 +1,12 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import {
   Database,
   HelpCircle,
+  LayoutDashboard,
+  Settings,
   ListFilter,
   MessageSquarePlus,
   MessagesSquare,
@@ -42,12 +45,14 @@ export function AppSidebar({
   onSelectConversation,
   onOpenSchema,
   onOpenHelp,
+  onOpenDashboards,
   onOpenSearch,
 }: {
   onNewChat: () => void;
   onSelectConversation: (id: string) => void;
   onOpenSchema: () => void;
   onOpenHelp: () => void;
+  onOpenDashboards: () => void;
   onOpenSearch: () => void;
 }) {
   const t = useTranslations();
@@ -95,9 +100,23 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
+            <SidebarMenuButton onClick={onOpenDashboards}>
+              <LayoutDashboard className="size-4" />
+              <span>Panolar</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
             <SidebarMenuButton onClick={onOpenHelp}>
               <HelpCircle className="size-4" />
               <span>{t("common.help")}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link href="/settings">
+                <Settings className="size-4" />
+                <span>{t("common.settings")}</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

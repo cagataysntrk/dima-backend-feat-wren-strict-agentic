@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { railItem, railReveal } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { AppSidebar } from "./AppSidebar";
+import type { PanelTab } from "./ArtifactPanel";
 import { ShareDialog } from "./ShareDialog";
 import { ArtifactPanel } from "./ArtifactPanel";
 
@@ -27,10 +28,13 @@ export function AppShell({
   onSelectConversation,
   onOpenSchema,
   onOpenHelp,
+  onOpenDashboards,
   onOpenSearch,
   onToggleArtifact,
   artifactOpen,
   artifactTitle,
+  artifactTab,
+  onArtifactTabChange,
   onArtifactClose,
   artifact,
   children,
@@ -39,10 +43,13 @@ export function AppShell({
   onSelectConversation: (id: string) => void;
   onOpenSchema: () => void;
   onOpenHelp: () => void;
+  onOpenDashboards: () => void;
   onOpenSearch: () => void;
   onToggleArtifact: () => void;
   artifactOpen: boolean;
   artifactTitle: string;
+  artifactTab: PanelTab;
+  onArtifactTabChange: (tab: PanelTab) => void;
   onArtifactClose: () => void;
   artifact: React.ReactNode;
   children: React.ReactNode;
@@ -54,6 +61,7 @@ export function AppShell({
         onSelectConversation={onSelectConversation}
         onOpenSchema={onOpenSchema}
         onOpenHelp={onOpenHelp}
+        onOpenDashboards={onOpenDashboards}
         onOpenSearch={onOpenSearch}
       />
       <SidebarInset className="flex min-h-0 flex-row overflow-hidden">
@@ -80,7 +88,13 @@ export function AppShell({
             {children}
           </div>
         </div>
-        <ArtifactPanel open={artifactOpen} title={artifactTitle} onClose={onArtifactClose}>
+        <ArtifactPanel
+          open={artifactOpen}
+          title={artifactTitle}
+          tab={artifactTab}
+          onTabChange={onArtifactTabChange}
+          onClose={onArtifactClose}
+        >
           {artifact}
         </ArtifactPanel>
       </SidebarInset>

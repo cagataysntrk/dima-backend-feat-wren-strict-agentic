@@ -11,11 +11,15 @@ import { HelpPanel } from "@/components/HelpPanel";
 import { Landing } from "@/components/Landing";
 import { ReportPanel } from "@/components/ReportPanel";
 import { SchemaPanel } from "@/components/SchemaPanel";
+import { AttachmentsPanel } from "@/components/shell/AttachmentsPanel";
+import { DashboardsPanel } from "@/components/shell/DashboardsPanel";
+import type { PanelTab } from "@/components/shell/ArtifactPanel";
 import { SearchDialog } from "@/components/shell/SearchDialog";
 import { selectActive, useConversations } from "@/stores/conversations";
 import type { AskResponse } from "@/lib/types";
 
-type Artifact = "report" | "schema" | "help" | null;
+// Panel sekmeleri artık tek kaynaktan (ArtifactPanel.PANEL_TABS).
+type Artifact = PanelTab | null;
 
 export default function AppPage() {
   const [active, setActive] = useState<AskResponse | null>(null);
@@ -24,9 +28,10 @@ export default function AppPage() {
   const [viewHint, setViewHint] = useState<{ kind: string; nonce: number } | null>(null);
   const [verifyLabel, setVerifyLabel] = useState<string | null>(null);
   const [artifact, setArtifact] = useState<Artifact>(null);
-  // Panel düğmesi neyi geri açacağını bilsin — "yardım" varsayılanı yanlıştı
-  // (panel düğmesi yardım açmamalı; yardım kendi menüsünden gelir).
-  const lastArtifact = useRef<Exclude<Artifact, null>>("report");
+  // Panel düğmesi neyi geri açacağını bilsin (yardım DEĞİL — yardımın kendi
+  // menü girişi var). Sekme şeridi de kapalıyken hangi sekmenin seçili
+  // görüneceğini buradan okur, o yüzden ref değil state.
+  const [lastArtifact, setLastArtifact] = useState<PanelTab>("report");
   const [searchOpen, setSearchOpen] = useState(false);
 
   const activeConv = useConversations(selectActive);
@@ -123,15 +128,29 @@ export default function AppPage() {
       ? "Veri modeli"
       : artifact === "help"
         ? "dima · yardım"
-        : active?.question
-          ? active.question.slice(0, 60)
-          : "Rapor";
+        : artifact === "attachments"
+          ? "Ekler"
+          : artifact === "dashboards"
+            ? "Panolar"
+            : active?.question
+              ? active.question.slice(0, 60)
+              : "Rapor";
 
   const artifactContent =
     artifact === "schema" ? (
       <SchemaPanel />
     ) : artifact === "help" ? (
       <HelpPanel onPick={submit} />
+    ) : artifact === "attachments" ? (
+      <AttachmentsPanel items={items} />
+    ) : artifact === "dashboards" ? (
+      <DashboardsPanel
+        items={items}
+        onSelect={(item) => {
+          setActive(item);
+          setArtifact("report");
+        }}
+      />
     ) : artifact === "report" ? (
       <ReportPanel
         data={active}
@@ -156,18 +175,21 @@ export default function AppPage() {
       onSelectConversation={selectConversation}
       onOpenSchema={() => setArtifact("schema")}
       onOpenHelp={() => setArtifact("help")}
+      onOpenDashboards={() => setArtifact("dashboards")}
       onOpenSearch={() => setSearchOpen(true)}
       onToggleArtifact={() =>
         setArtifact((a) => {
           if (a) {
-            lastArtifact.current = a;
+            setLastArtifact(a);
             return null;
           }
-          return lastArtifact.current;
+          return lastArtifact;
         })
       }
       artifactOpen={artifact !== null}
       artifactTitle={artifactTitle}
+      artifactTab={artifact ?? lastArtifact}
+      onArtifactTabChange={setArtifact}
       onArtifactClose={() => setArtifact(null)}
       artifact={artifactContent}
     >

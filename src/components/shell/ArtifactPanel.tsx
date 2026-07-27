@@ -1,6 +1,15 @@
 "use client";
 
-import { X, Maximize2, Minimize2 } from "lucide-react";
+import {
+  Database,
+  FileText,
+  HelpCircle,
+  LayoutDashboard,
+  Maximize2,
+  Minimize2,
+  Paperclip,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -12,14 +21,29 @@ import { cn } from "@/lib/utils";
  * Right-hand artifact panel (Claude-Artifacts analog): hosts the report/dashboard
  * or the schema browser. Desktop → a collapsible side panel; mobile → a Sheet.
  */
+/** Panel sekmeleri — sağ panelin barındırdığı yüzeyler. */
+export const PANEL_TABS = [
+  { id: "report", label: "Rapor", icon: FileText },
+  { id: "attachments", label: "Ekler", icon: Paperclip },
+  { id: "dashboards", label: "Panolar", icon: LayoutDashboard },
+  { id: "schema", label: "Veri", icon: Database },
+  { id: "help", label: "Yardım", icon: HelpCircle },
+] as const;
+
+export type PanelTab = (typeof PANEL_TABS)[number]["id"];
+
 export function ArtifactPanel({
   open,
   title,
+  tab,
+  onTabChange,
   onClose,
   children,
 }: {
   open: boolean;
   title: string;
+  tab: PanelTab;
+  onTabChange: (tab: PanelTab) => void;
   onClose: () => void;
   children: React.ReactNode;
 }) {
@@ -34,6 +58,7 @@ export function ArtifactPanel({
           <SheetHeader className="border-b border-border">
             <SheetTitle className="text-base font-medium">{title}</SheetTitle>
           </SheetHeader>
+          <PanelTabs tab={tab} onTabChange={onTabChange} />
           <div className="min-h-0 flex-1 overflow-auto p-4">{children}</div>
         </SheetContent>
       </Sheet>
@@ -88,8 +113,54 @@ export function ArtifactPanel({
             </Button>
           </div>
         </header>
+
+        <PanelTabs tab={tab} onTabChange={onTabChange} />
         <div className="min-h-0 flex-1 overflow-auto p-4">{children}</div>
       </div>
     </aside>
+  );
+}
+
+/**
+ * Sekme şeridi. Panel HANGİ içerik gösterileceğini burada değiştirir; sol
+ * sidebar da bu sekmelere atlar. Panel düğmesi yalnız aç/kapa yapar — üç iş
+ * (nereye git · neyi göster · açık mı) ayrı tutulur.
+ */
+function PanelTabs({
+  tab,
+  onTabChange,
+}: {
+  tab: PanelTab;
+  onTabChange: (tab: PanelTab) => void;
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Panel bölümleri"
+      className="flex shrink-0 items-center gap-0.5 overflow-x-auto border-b border-border px-2 py-1.5"
+    >
+      {PANEL_TABS.map(({ id, label, icon: Icon }) => {
+        const active = id === tab;
+        return (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onTabChange(id)}
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors",
+              "focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:outline-none",
+              active
+                ? "bg-accent font-medium text-foreground"
+                : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+            )}
+          >
+            <Icon className="size-3.5" />
+            {label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
