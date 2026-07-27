@@ -649,3 +649,34 @@
     animation: none;
   }
 }
+
+/* ─── düşünürken avatar: dön → dur → dön ────────────────────────────────────
+   Sürekli dönen bir spinner "yükleniyor" der; buradaki iş DÜŞÜNMEK, o yüzden
+   çeyrek tur atıp duraklıyor. Duraklama, hareketin kendisi kadar anlamlı: her
+   çeyrek bir "adım" hissi veriyor. Yumuşak eğri + belirgin bekleme. */
+@keyframes dima-think-spin {
+  0%,
+  18% {
+    transform: rotate(0deg);
+  }
+  32%,
+  50% {
+    transform: rotate(90deg);
+  }
+  64%,
+  82% {
+    transform: rotate(180deg);
+  }
+  96%,
+  100% {
+    transform: rotate(270deg);
+  }
+}
+.dima-think {
+  animation: dima-think-spin 3.2s cubic-bezier(0.32, 0.72, 0, 1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dima-think {
+    animation: none;
+  }
+}

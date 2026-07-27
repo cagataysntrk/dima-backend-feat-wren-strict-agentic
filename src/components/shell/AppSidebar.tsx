@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import {
+  ChevronLeft,
+  ChevronRight,
   Database,
   HelpCircle,
   LayoutDashboard,
@@ -30,6 +33,13 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { NotificationsPopover } from "./NotificationsPopover";
 import { AccountMenu } from "./AccountMenu";
@@ -40,6 +50,8 @@ import { Onboarding } from "./Onboarding";
  * no icon rail — so the reading column gets the whole viewport. The icons come
  * back on hover at the left edge (see AppShell's HoverRail).
  */
+type ChatFilter = "all" | "named" | "empty";
+
 export function AppSidebar({
   onNewChat,
   onSelectConversation,
@@ -58,6 +70,19 @@ export function AppSidebar({
   const t = useTranslations();
   const conversations = useConversations((s) => s.conversations);
   const activeId = useConversations((s) => s.activeId);
+  const [filter, setFilter] = useState<ChatFilter>("all");
+
+  const shown = conversations.filter((c) =>
+    filter === "named" ? !!c.title : filter === "empty" ? !c.title : true,
+  );
+
+  // Sohbetler arası gezinme: aktifin bir öncesi/sonrası (filtrelenmiş listede).
+  const idx = shown.findIndex((c) => c.id === activeId);
+  const go = (delta: number) => {
+    if (!shown.length) return;
+    const next = idx < 0 ? 0 : Math.min(shown.length - 1, Math.max(0, idx + delta));
+    onSelectConversation(shown[next].id);
+  };
 
   return (
     <Sidebar collapsible="offcanvas">
@@ -87,11 +112,44 @@ export function AppSidebar({
         </div>
 
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={onNewChat}>
+          <SidebarMenuItem className="flex items-center gap-1">
+            <SidebarMenuButton onClick={onNewChat} className="min-w-0 flex-1">
               <MessageSquarePlus className="size-4" />
               <span>{t("common.newChat")}</span>
             </SidebarMenuButton>
+            {/* Sohbetler arası gezinme — listeye gitmeden bir önceki/sonraki */}
+            <div className="flex shrink-0 items-center">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Önceki sohbet"
+                    disabled={idx <= 0}
+                    onClick={() => go(-1)}
+                    className="size-6 text-muted-foreground transition-transform hover:-translate-x-0.5 hover:text-foreground"
+                  >
+                    <ChevronLeft className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Önceki sohbet</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Sonraki sohbet"
+                    disabled={idx < 0 || idx >= shown.length - 1}
+                    onClick={() => go(1)}
+                    className="size-6 text-muted-foreground transition-transform hover:translate-x-0.5 hover:text-foreground"
+                  >
+                    <ChevronRight className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Sonraki sohbet</TooltipContent>
+              </Tooltip>
+            </div>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={onOpenSchema}>
@@ -128,20 +186,33 @@ export function AppSidebar({
           <div className="flex items-center justify-between gap-1 pr-1">
             <SidebarGroupLabel>{t("chat.conversations")}</SidebarGroupLabel>
             <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover/recents:opacity-100 focus-within:opacity-100">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={t("common.search")}
-                    onClick={onOpenSearch}
-                    className="size-6 text-muted-foreground hover:text-foreground"
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Filtrele"
+                        className="size-6 text-muted-foreground hover:text-foreground"
+                      >
+                        <ListFilter className="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Filtrele</TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuRadioGroup
+                    value={filter}
+                    onValueChange={(v) => setFilter(v as ChatFilter)}
                   >
-                    <ListFilter className="size-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">{t("common.search")}</TooltipContent>
-              </Tooltip>
+                    <DropdownMenuRadioItem value="all">Tümü</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="named">Adlandırılmış</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="empty">Boş</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -161,10 +232,10 @@ export function AppSidebar({
 
           <SidebarGroupContent>
             <SidebarMenu>
-              {conversations.length === 0 && (
+              {shown.length === 0 && (
                 <div className="px-2 py-1.5 text-xs text-muted-foreground">—</div>
               )}
-              {conversations.map((c) => (
+              {shown.map((c) => (
                 <SidebarMenuItem key={c.id} className="group/row">
                   <SidebarMenuButton
                     isActive={c.id === activeId}

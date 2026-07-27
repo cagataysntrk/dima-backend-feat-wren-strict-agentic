@@ -10,11 +10,18 @@ import { enterUp } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 /** dima's assistant avatar — brand-tinted mark (icon placeholder). */
-export function DimaAvatar({ className }: { className?: string }) {
+export function DimaAvatar({
+  className,
+  thinking = false,
+}: {
+  className?: string;
+  /** Yanıt beklenirken ikon çeyrek turlarla döner (bkz. .dima-think). */
+  thinking?: boolean;
+}) {
   return (
     <Avatar className={cn("size-7 border border-brand/20", className)}>
       <AvatarFallback className="rounded-[inherit] bg-brand/10 text-brand">
-        <Sparkles className="size-3.5" />
+        <Sparkles className={cn("size-3.5", thinking && "dima-think")} />
       </AvatarFallback>
     </Avatar>
   );

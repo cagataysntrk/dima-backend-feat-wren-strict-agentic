@@ -23,6 +23,14 @@ interface ConversationsState {
   clearActive: () => void;
   /** Wipe ALL conversations (cross-user isolation on logout/login). */
   reset: () => void;
+
+  // ── Gizli sohbet ────────────────────────────────────────────────────────
+  // Açıkken konuşma listeye HİÇ yazılmaz: geçmişte iz bırakmaz, sidebar'da
+  // görünmez, kapanınca da silinir. (Sunucu tarafı ayrı bir mesele — backend
+  // yine session_id görür; burada söz verdiğimiz şey YEREL geçmiş.)
+  incognito: boolean;
+  incognitoItems: AskResponse[];
+  setIncognito: (on: boolean) => void;
 }
 
 // crypto.randomUUID yalnız güvenli bağlamda (https/localhost) var; http://*.localtld'de yok.
@@ -54,6 +62,12 @@ const titleFrom = (item: AskResponse) =>
 export const useConversations = create<ConversationsState>((set) => ({
   conversations: [],
   activeId: null,
+  incognito: false,
+  incognitoItems: [],
+  setIncognito: (on) =>
+    // Moda girerken de çıkarken de gizli mesajları temizle — mod kapanınca
+    // içerik kalıcı geçmişe SIZMAMALI.
+    set({ incognito: on, incognitoItems: [] }),
   newConversation: () => {
     const conv = freshConversation();
     set((s) => ({ conversations: [conv, ...s.conversations], activeId: conv.id }));
@@ -62,6 +76,8 @@ export const useConversations = create<ConversationsState>((set) => ({
   select: (id) => set({ activeId: id }),
   add: (item) =>
     set((s) => {
+      // gizli mod: kalıcı listeye dokunma
+      if (s.incognito) return { incognitoItems: [item, ...s.incognitoItems].slice(0, 40) };
       let conversations = s.conversations;
       let activeId = s.activeId;
       if (!activeId || !conversations.some((c) => c.id === activeId)) {
@@ -85,6 +101,7 @@ export const useConversations = create<ConversationsState>((set) => ({
       conversations: s.conversations.map((c) =>
         c.id === s.activeId ? { ...c, items: [], title: "" } : c,
       ),
+      incognitoItems: [],
     })),
   // ÇAPRAZ-KULLANICI İZOLASYON (güvenlik, canlı 2026-07-25): store modül-seviyesi global,
   // SPA login/logout round-trip'inde (hard reload yok) yaşar. Temizlenmezse LOGOUT sonrası

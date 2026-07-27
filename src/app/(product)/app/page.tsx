@@ -35,7 +35,10 @@ export default function AppPage() {
   const [searchOpen, setSearchOpen] = useState(false);
 
   const activeConv = useConversations(selectActive);
-  const items = activeConv?.items ?? [];
+  const incognito = useConversations((st) => st.incognito);
+  const incognitoItems = useConversations((st) => st.incognitoItems);
+  // Gizli modda konuşma kalıcı listeye hiç yazılmaz — ayrı bir tamponda yaşar.
+  const items = incognito ? incognitoItems : (activeConv?.items ?? []);
 
   // Aktif konuşmanın oturum kimliğini garanti et (yoksa yeni konuşma aç).
   function ensureSessionId(): string {

@@ -187,7 +187,7 @@ export function ChatPanel({
                 <UserAvatar className="mt-0.5 shrink-0" />
               </Message>
               <Message from="assistant" className="items-start gap-3 pr-10">
-                <DimaAvatar className="mt-0.5 shrink-0" />
+                <DimaAvatar className="mt-0.5 shrink-0" thinking />
                 <ChainOfThought />
               </Message>
             </div>

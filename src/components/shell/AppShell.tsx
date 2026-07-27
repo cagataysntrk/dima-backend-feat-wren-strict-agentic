@@ -15,7 +15,7 @@ import { railItem, railReveal } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { AppSidebar } from "./AppSidebar";
 import type { PanelTab } from "./ArtifactPanel";
-import { ShareDialog } from "./ShareDialog";
+import { IncognitoBackdrop, IncognitoToggle } from "./IncognitoToggle";
 import { ArtifactPanel } from "./ArtifactPanel";
 
 /**
@@ -55,7 +55,7 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider>
+    <SidebarProvider className="h-svh min-h-0 overflow-hidden">
       <AppSidebar
         onNewChat={onNewChat}
         onSelectConversation={onSelectConversation}
@@ -78,14 +78,15 @@ export function AppShell({
               için burayı kaydırıp bırakıyordu ("input aşağı kaydı, düzelmiyor").
               Kaydırmayı anında geri alıyoruz — bu kap asla kaymamalı. */}
           <div
-            className="min-h-0 flex-1 overflow-hidden"
+            className="relative min-h-0 flex-1 overflow-hidden"
             onScroll={(e) => {
               const el = e.currentTarget;
               if (el.scrollTop !== 0) el.scrollTop = 0;
               if (el.scrollLeft !== 0) el.scrollLeft = 0;
             }}
           >
-            {children}
+            <IncognitoBackdrop />
+            <div className="relative z-[1] h-full">{children}</div>
           </div>
         </div>
         <ArtifactPanel
@@ -195,7 +196,7 @@ function TopBar({
 
       {/* sağ küme: paylaş + artifacts */}
       <div className="ml-auto flex items-center gap-0.5">
-        <ShareDialog />
+        <IncognitoToggle />
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
