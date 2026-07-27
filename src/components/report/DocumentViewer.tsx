@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { AlertTriangle, Download, FileText, Loader2 } from "lucide-react";
+import { AlertTriangle, Download, FileText } from "lucide-react";
 import { formatBytes } from "@/components/ai/attachment";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -53,9 +53,21 @@ function kindOf(file: File): Kind {
 
 export function DocumentViewer({ file, className }: { file: File; className?: string }) {
   const kind = useMemo(() => kindOf(file), [file]);
-  // Object URL'i bir kez üret, unmount'ta serbest bırak (yoksa bellek sızar).
-  const [url] = useState(() => URL.createObjectURL(file));
-  useEffect(() => () => URL.revokeObjectURL(url), [url]);
+  // Object URL EFFECT İÇİNDE üretilir, memo/lazy-state ile değil: StrictMode
+  // dev'de effect'i mount→unmount→mount olarak iki kez çalıştırıyor. Memo'lanmış
+  // bir URL ilk temizlikte iptal ediliyor ve ikinci mount ölü tutamacı yeniden
+  // kullanıyordu. Effect'te üretince her çalışma kendi URL'ini alıp kendi
+  // temizliğinde bırakıyor. (Yalnız görsel önizleme + indirme bağlantısı için;
+  // PDF dosyayı doğrudan alıyor.)
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    const objectUrl = URL.createObjectURL(file);
+    // Dış kaynak (object URL) yaşam döngüsü effect'e ait; tek seferlik atama,
+    // zincirleme render yok — kuralın hedeflediği durum bu değil.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
 
   return (
     <div className={cn("flex min-h-0 flex-col gap-3", className)}>
@@ -65,8 +77,8 @@ export function DocumentViewer({ file, className }: { file: File; className?: st
           <p className="truncate text-sm font-medium text-foreground">{file.name}</p>
           <p className="text-xs text-muted-foreground">{formatBytes(file.size)}</p>
         </div>
-        <Button variant="outline" size="sm" asChild className="gap-1.5">
-          <a href={url} download={file.name}>
+        <Button variant="outline" size="sm" asChild disabled={!url} className="gap-1.5">
+          <a href={url ?? undefined} download={file.name}>
             <Download className="size-3.5" />
             İndir
           </a>
@@ -74,8 +86,8 @@ export function DocumentViewer({ file, className }: { file: File; className?: st
       </header>
 
       <div className="min-h-0 flex-1">
-        {kind === "pdf" && <PdfView url={url} />}
-        {kind === "image" && (
+        {kind === "pdf" && <PdfView file={file} />}
+        {kind === "image" && url && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={url}
@@ -119,5 +131,3 @@ function Unsupported({ name }: { name: string }) {
     </div>
   );
 }
-
-export { Loader2 };

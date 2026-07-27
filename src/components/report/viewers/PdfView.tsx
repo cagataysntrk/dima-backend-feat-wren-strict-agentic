@@ -17,7 +17,10 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
-export default function PdfView({ url }: { url: string }) {
+// react-pdf `file` olarak doğrudan Blob/File alır; object URL üretmiyoruz —
+// URL üretmek StrictMode'un çift-mount'unda iptal edilmiş bir tutamaç bırakıyordu
+// ("Unexpected server response (0)").
+export default function PdfView({ file }: { file: File }) {
   const [pages, setPages] = useState(0);
   const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +37,7 @@ export default function PdfView({ url }: { url: string }) {
     <div className="flex min-h-0 flex-col gap-2">
       <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-border bg-muted/30 p-2">
         <Document
-          file={url}
+          file={file}
           onLoadSuccess={({ numPages }) => setPages(numPages)}
           onLoadError={(e) => setError(e.message)}
           loading={<Skeleton className="h-72 w-full" />}
