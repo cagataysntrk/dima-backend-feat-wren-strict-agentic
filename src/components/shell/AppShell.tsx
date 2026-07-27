@@ -164,7 +164,9 @@ function TopBar({
       {/* sohbet gezinme okları — kenar çubuğu düğmesinin SAĞINDA; sidebar açık
           da kapalı da olsa aynı yerde durur (konum değişseydi kas hafızası bozulurdu) */}
       <ChatNav onSelect={onSelectConversation} />
-      <ChatTitle className="min-w-0" />
+
+      {/* Sidebar AÇIKKEN başlık kenar çubuğu düğmesinin hemen sağında. */}
+      {open && <ChatTitle className="min-w-0" />}
 
       <AnimatePresence>
         {!open && (
@@ -210,6 +212,11 @@ function TopBar({
                   <Kbd className="bg-background/20 text-background dark:bg-background/15">⌘K</Kbd>
                 </TooltipContent>
               </Tooltip>
+            </motion.span>
+            {/* Sidebar KAPALIYKEN başlık ikonların ARASINDA değil, sol kümenin
+                EN SAĞINDA — böylece sohbet sütununun soluna hizalı okunur. */}
+            <motion.span variants={railItem} className="inline-flex min-w-0">
+              <ChatTitle className="min-w-0" />
             </motion.span>
           </motion.div>
         )}
