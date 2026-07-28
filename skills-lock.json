@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "openui": {
+      "source": "thesysdev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/openui/SKILL.md",
+      "computedHash": "5c255f8d8a36935ad1e02529f3f14ac6e7325e341d6b9bea71c9e232d142aca5"
+    },
     "ui-craft": {
       "source": "educlopez/ui-craft",
       "sourceType": "github",
