@@ -1,0 +1,45 @@
+name: quality
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.9
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      # Turbo'nun yerel cache'i işler arasında taşınır: değişmeyen paketler
+      # yeniden derlenmez. Anahtar lockfile + kaynak hash'ine bağlı.
+      - name: Restore turbo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+
+      # Tek koşuda hepsi: turbo bağımlılık grafiğine göre sıralar ve
+      # birbirinden bağımsız olanları paraleller.
+      #
+      # SIR YOK — bilinçli. Build'in çalışma zamanı sırrına ihtiyaç duymaması
+      # bir gereklilik: on-prem imajı da sırsız üretilecek. Bir görev burada
+      # anahtar isterse, o bir hatadır ve burada yakalanmalıdır.
+      - name: Lint · typecheck · test · build
+        run: bun run turbo run lint typecheck test build
