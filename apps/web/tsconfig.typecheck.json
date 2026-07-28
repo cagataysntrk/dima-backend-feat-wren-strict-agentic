@@ -1,0 +1,16 @@
+{
+  "//": [
+    "`typecheck` görevi için — build ÇIKTISINI okumaz.",
+    "",
+    "turbo, aynı paketin `build` ve `typecheck` görevlerini paralel koşturur.",
+    "Ana tsconfig `.next/types/**` içerir (IDE'de rota tipi tamamlaması için);",
+    "build o dizini yeniden yazarken typecheck onu okuyunca yarım dosya yakalanır",
+    "ve 'Cannot find module ./routes.js' gibi hayalet hatalar çıkar.",
+    "",
+    "Rota tiplerinin doğrulanması kaybolmuyor: `next build` zaten TypeScript'i",
+    "üretilmiş tiplerle birlikte çalıştırıyor. Burada kaynak kodu denetliyoruz."
+  ],
+  "extends": "./tsconfig.json",
+  "include": ["next-env.d.ts", "src/**/*.ts", "src/**/*.tsx", "e2e/**/*.mjs", "*.ts", "*.mts"],
+  "exclude": ["node_modules", ".next"]
+}

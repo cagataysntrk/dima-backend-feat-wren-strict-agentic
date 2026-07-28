@@ -48,6 +48,9 @@
         "@dima/api-client": "workspace:*",
         "@dima/contracts": "workspace:*",
         "@dima/domain": "workspace:*",
+        "@dima/genui": "workspace:*",
+        "@openuidev/lang-core": "0.2.10",
+        "@openuidev/react-lang": "0.2.9",
         "@tanstack/react-query": "^5.101.2",
         "@xyflow/react": "^12.11.2",
         "axios": "^1.18.1",
@@ -73,6 +76,7 @@
         "sonner": "^2.0.7",
         "tailwind-merge": "^3.6.0",
         "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+        "zod": "^4.1.13",
         "zustand": "^5.0.14",
       },
       "devDependencies": {
@@ -145,6 +149,21 @@
         "eslint": "^9",
       },
     },
+    "packages/genui": {
+      "name": "@dima/genui",
+      "version": "0.0.0",
+      "dependencies": {
+        "@dima/contracts": "workspace:*",
+        "@dima/domain": "workspace:*",
+      },
+      "devDependencies": {
+        "@dima/eslint-config": "workspace:*",
+        "@dima/typescript-config": "workspace:*",
+        "eslint": "^9",
+        "typescript": "^5",
+        "vitest": "^4.1.10",
+      },
+    },
     "packages/typescript-config": {
       "name": "@dima/typescript-config",
       "version": "0.0.0",
@@ -210,6 +229,8 @@
     "@dima/domain": ["@dima/domain@workspace:packages/domain"],
 
     "@dima/eslint-config": ["@dima/eslint-config@workspace:packages/eslint-config"],
+
+    "@dima/genui": ["@dima/genui@workspace:packages/genui"],
 
     "@dima/openui": ["@dima/openui@workspace:apps/openui"],
 

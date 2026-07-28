@@ -1,0 +1,25 @@
+{
+  "name": "@dima/genui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@dima/contracts": "workspace:*",
+    "@dima/domain": "workspace:*"
+  },
+  "devDependencies": {
+    "@dima/eslint-config": "workspace:*",
+    "@dima/typescript-config": "workspace:*",
+    "eslint": "^9",
+    "typescript": "^5",
+    "vitest": "^4.1.10"
+  }
+}
