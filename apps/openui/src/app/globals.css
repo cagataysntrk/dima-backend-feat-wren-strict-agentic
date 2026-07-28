@@ -1,1 +1,37 @@
 @import "tailwindcss";
+
+/* --- Vokabüler tezgâhı ---------------------------------------------------
+   Kasıtlı olarak sade: burası görsel tasarım yeri değil, vokabülerin
+   kompozisyonu ifade edip etmediğini gördüğümüz yer. Gerçek görsel dil
+   apps/web'de (shadcn + tokenlar). */
+
+.bench { display: grid; grid-template-columns: minmax(320px, 420px) 1fr; gap: 1.5rem; padding: 1.5rem; min-height: 100svh; }
+.bench-pane { display: flex; flex-direction: column; gap: .5rem; min-width: 0; }
+.bench-pane h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; opacity: .7; margin-top: .75rem; }
+.bench-catalog { font-size: .7rem; line-height: 1.6; white-space: pre-wrap; background: #0000000a; padding: .75rem; border-radius: .5rem; overflow-x: auto; }
+.bench-source { font-family: ui-monospace, monospace; font-size: .75rem; line-height: 1.6; min-height: 16rem; padding: .75rem; border: 1px solid #0002; border-radius: .5rem; resize: vertical; }
+.bench-output { overflow: auto; }
+.bench-error { color: #c0392b; font-size: .8rem; }
+.muted { opacity: .6; font-size: .75rem; }
+
+.dima-dashboard h1 { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; }
+.dima-section { margin-block: 1.25rem; }
+.dima-section h2 { font-size: .95rem; font-weight: 600; margin-bottom: .5rem; text-transform: none; letter-spacing: 0; opacity: 1; }
+.dima-grid { display: grid; gap: .75rem; }
+.dima-tile { border: 1px solid #0002; border-radius: .625rem; padding: .875rem; display: flex; flex-direction: column; gap: .5rem; }
+.dima-tile-title { font-size: .8rem; font-weight: 500; opacity: .75; }
+.dima-missing { border-style: dashed; border-color: #c0392b66; color: #c0392b; }
+.dima-kpi-value { font-size: 1.6rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.dima-kpi-unit { font-size: .8rem; font-weight: 400; opacity: .6; }
+.dima-kpi-components { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: .5rem; }
+.dima-kpi-components dt { font-size: .7rem; opacity: .6; }
+.dima-kpi-components dd { font-size: .95rem; font-variant-numeric: tabular-nums; }
+.dima-table-wrap { overflow-x: auto; }
+.dima-table { width: 100%; border-collapse: collapse; font-size: .75rem; }
+.dima-table th, .dima-table td { text-align: left; padding: .3rem .5rem; border-bottom: 1px solid #0001; white-space: nowrap; }
+.dima-table td { font-variant-numeric: tabular-nums; }
+.dima-insight p { font-size: .8rem; line-height: 1.6; }
+.dima-insight ul { font-size: .75rem; opacity: .75; padding-left: 1rem; margin-top: .35rem; }
+.dima-provenance { display: flex; gap: .5rem; font-size: .65rem; margin-top: auto; padding-top: .35rem; }
+.dima-provenance .ok { color: #1baf7a; }
+.dima-provenance .warn { color: #eda100; }

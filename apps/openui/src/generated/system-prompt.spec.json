@@ -1,0 +1,204 @@
+{
+  "root": "Dashboard",
+  "components": {
+    "Dashboard": {
+      "signature": "Dashboard(title: string, blocks: any[])",
+      "description": "Panonun kökü. Başlık ve sıralı bloklar (Section, Grid veya tek karo) alır. Her panoda tam olarak bir tane bulunur."
+    },
+    "Section": {
+      "signature": "Section(title: string, blocks: any[])",
+      "description": "Başlıklı bir grup. İlgili karoları bir arada tutmak için kullanılır (ör. \"Satış\", \"Üretim\")."
+    },
+    "Grid": {
+      "signature": "Grid(blocks: any[], columns?: \"2\" | \"3\" | \"4\")",
+      "description": "Karoları yan yana dizer. KPI karolarını üst sıraya almak veya grafik ile tabloyu yan yana koymak için kullanılır."
+    },
+    "KpiTile": {
+      "signature": "KpiTile(resultId: string)",
+      "description": "Tek bir sayısal göstergeyi büyük puntoyla gösterir. Katalogda \"KPI:\" ile işaretlenmiş sonuçlar veya tek satırlık sonuçlar için kullanılır."
+    },
+    "ChartTile": {
+      "signature": "ChartTile(resultId: string, kind?: \"bar\" | \"line\" | \"area\" | \"pie\" | \"bar-stacked\" | \"bar-h\" | \"scatter\" | \"radial\" | \"radar\", measure?: string)",
+      "description": "Sonucu grafik olarak gösterir. Grafik türü verilmezse dima veri şeklinden kendisi seçer — ÖNERİLEN bu, katalogdaki \"önerilen\" değeri zaten en uygun türdür. Türü yalnız kullanıcı açıkça istediyse ver."
+    },
+    "TableTile": {
+      "signature": "TableTile(resultId: string, limit?: number)",
+      "description": "Sonucu tablo olarak gösterir. Satır sayısı fazla olduğunda veya kesin değerler gerektiğinde grafiğe tercih edilir."
+    },
+    "InsightNote": {
+      "signature": "InsightNote(resultId: string)",
+      "description": "Sonucun dima tarafından ÜRETİLMİŞ deterministik yorumunu gösterir. Metni sen yazmazsın — yalnız hangi sonucun yorumunun gösterileceğini seçersin. Katalogda \"yorum var\" yazmayan sonuçlar için kullanma."
+    }
+  },
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "Dashboard": {
+        "$ref": "#/$defs/Dashboard"
+      },
+      "Section": {
+        "$ref": "#/$defs/Section"
+      },
+      "Grid": {
+        "$ref": "#/$defs/Grid"
+      },
+      "KpiTile": {
+        "$ref": "#/$defs/KpiTile"
+      },
+      "ChartTile": {
+        "$ref": "#/$defs/ChartTile"
+      },
+      "TableTile": {
+        "$ref": "#/$defs/TableTile"
+      },
+      "InsightNote": {
+        "$ref": "#/$defs/InsightNote"
+      }
+    },
+    "required": [
+      "Dashboard",
+      "Section",
+      "Grid",
+      "KpiTile",
+      "ChartTile",
+      "TableTile",
+      "InsightNote"
+    ],
+    "additionalProperties": false,
+    "$defs": {
+      "Dashboard": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "blocks": {
+            "type": "array",
+            "items": {}
+          }
+        },
+        "required": [
+          "title",
+          "blocks"
+        ],
+        "additionalProperties": false,
+        "description": "Panonun kökü. Başlık ve sıralı bloklar (Section, Grid veya tek karo) alır. Her panoda tam olarak bir tane bulunur."
+      },
+      "Section": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "blocks": {
+            "type": "array",
+            "items": {}
+          }
+        },
+        "required": [
+          "title",
+          "blocks"
+        ],
+        "additionalProperties": false,
+        "description": "Başlıklı bir grup. İlgili karoları bir arada tutmak için kullanılır (ör. \"Satış\", \"Üretim\")."
+      },
+      "Grid": {
+        "type": "object",
+        "properties": {
+          "blocks": {
+            "type": "array",
+            "items": {}
+          },
+          "columns": {
+            "type": "string",
+            "enum": [
+              "2",
+              "3",
+              "4"
+            ]
+          }
+        },
+        "required": [
+          "blocks"
+        ],
+        "additionalProperties": false,
+        "description": "Karoları yan yana dizer. KPI karolarını üst sıraya almak veya grafik ile tabloyu yan yana koymak için kullanılır."
+      },
+      "KpiTile": {
+        "type": "object",
+        "properties": {
+          "resultId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "resultId"
+        ],
+        "additionalProperties": false,
+        "description": "Tek bir sayısal göstergeyi büyük puntoyla gösterir. Katalogda \"KPI:\" ile işaretlenmiş sonuçlar veya tek satırlık sonuçlar için kullanılır."
+      },
+      "ChartTile": {
+        "type": "object",
+        "properties": {
+          "resultId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "bar",
+              "line",
+              "area",
+              "pie",
+              "bar-stacked",
+              "bar-h",
+              "scatter",
+              "radial",
+              "radar"
+            ]
+          },
+          "measure": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "resultId"
+        ],
+        "additionalProperties": false,
+        "description": "Sonucu grafik olarak gösterir. Grafik türü verilmezse dima veri şeklinden kendisi seçer — ÖNERİLEN bu, katalogdaki \"önerilen\" değeri zaten en uygun türdür. Türü yalnız kullanıcı açıkça istediyse ver."
+      },
+      "TableTile": {
+        "type": "object",
+        "properties": {
+          "resultId": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "resultId"
+        ],
+        "additionalProperties": false,
+        "description": "Sonucu tablo olarak gösterir. Satır sayısı fazla olduğunda veya kesin değerler gerektiğinde grafiğe tercih edilir."
+      },
+      "InsightNote": {
+        "type": "object",
+        "properties": {
+          "resultId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "resultId"
+        ],
+        "additionalProperties": false,
+        "description": "Sonucun dima tarafından ÜRETİLMİŞ deterministik yorumunu gösterir. Metni sen yazmazsın — yalnız hangi sonucun yorumunun gösterileceğini seçersin. Katalogda \"yorum var\" yazmayan sonuçlar için kullanma."
+      }
+    }
+  }
+}
