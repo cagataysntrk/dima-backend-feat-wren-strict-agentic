@@ -1,0 +1,23 @@
+{
+  "name": "@dima/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@dima/contracts": "workspace:*",
+    "axios": "^1.18.1"
+  },
+  "devDependencies": {
+    "@dima/eslint-config": "workspace:*",
+    "@dima/typescript-config": "workspace:*",
+    "eslint": "^9",
+    "typescript": "^5"
+  }
+}

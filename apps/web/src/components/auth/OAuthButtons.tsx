@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { startOAuth, type OAuthProvider } from "@/lib/api-client";
+import { startOAuth, type OAuthProvider } from "@dima/api-client";
 
 function GoogleIcon() {
   return (

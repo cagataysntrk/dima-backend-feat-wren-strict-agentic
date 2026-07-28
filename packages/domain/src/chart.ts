@@ -4,7 +4,7 @@
 // (heatmap/facet şimdilik tabloya düşer — bkz. components/chart/Chart.tsx.)
 // Tüm sayılar birim-farkında biçimlendirilir (₺, kg, L, kWh, %, dk...) — bkz. format.ts.
 
-import type { QueryResult, Row } from "./types";
+import type { QueryResult, Row } from "@dima/contracts";
 import { fmtTemporal, fmtValue } from "./format";
 
 // Eksen ETİKETİ: zaman kovalarını okunur yap ("Oca 2026") — sıralama ham değerle kalır.

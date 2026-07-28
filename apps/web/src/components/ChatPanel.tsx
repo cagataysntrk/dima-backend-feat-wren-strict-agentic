@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import type { AskResponse, CubeQuery } from "@/lib/types";
+import type { AskResponse, CubeQuery } from "@dima/contracts";
 import { Composer } from "@/components/shell/Composer";
 import { ResultView } from "@/components/ResultView";
 import { InterpretationBar } from "@/components/InterpretationBar";

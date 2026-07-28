@@ -2,7 +2,7 @@
 // Memory-only for now; the shape allows a later `zustand/persist` without a rewrite.
 
 import { create } from "zustand";
-import type { AskResponse } from "@/lib/types";
+import type { AskResponse } from "@dima/contracts";
 
 export interface Conversation {
   id: string;

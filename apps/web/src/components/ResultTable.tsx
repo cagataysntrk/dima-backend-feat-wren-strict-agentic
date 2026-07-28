@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { QueryResult } from "@/lib/types";
+import type { QueryResult } from "@dima/contracts";
 import { ChevronDown, ChevronsUpDown, ChevronUp } from "lucide-react";
-import { fmtTemporal, fmtValue } from "@/lib/format";
+import { fmtTemporal, fmtValue } from "@dima/domain";
 import { cn } from "@/lib/utils";
 import {
   Table,

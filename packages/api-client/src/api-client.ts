@@ -6,10 +6,51 @@
 // cookie middleware'e görünür, CORS yok, backend URL gizli). 401 → /auth/refresh → retry.
 
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
-import type { AskRequest, AskResponse, CubeQuery, QueryResult, SchemaResponse } from "./types";
+import type {
+  AskRequest,
+  AskResponse,
+  CubeQuery,
+  QueryResult,
+  SchemaResponse,
+} from "@dima/contracts";
 
-// Same-origin: browser "/api/..."e konuşur, Next backend'e rewrite'ler (next.config.ts).
-const baseURL = "/api";
+// --- Platform enjeksiyonu --------------------------------------------------
+//
+// Varsayılanlar bugünkü web davranışının BİREBİR aynısı; hiçbir çağıran
+// değişmek zorunda değil. Enjeksiyon noktaları iki ihtiyaç için var:
+//
+// 1. ON-PREM: `NEXT_PUBLIC_*` build'e gömülür, dolayısıyla tek imaj N müşteriye
+//    gidemez. Backend adresi çalışma anında verilebilmeli.
+// 2. MASAÜSTÜ (Tauri/Electron): uygulamanın önünde Next sunucusu YOK, yani
+//    "/api" hiçbir yere gitmez ve same-origin refresh cookie'si kurulamaz.
+//    Kullanıcı kendi on-prem adresini girer.
+//
+// `window` erişimi bu pakette bilinçli olarak SERBEST: api-client bir taşıma
+// katmanı, platformdan haberdar olabilir — platforma KİLİTLİ olmamalı. Buna
+// karşılık @dima/contracts ve @dima/domain'de DOM lint ile yasak.
+
+export interface ApiClientConfig {
+  /** Backend taban adresi. Varsayılan "/api" (Next rewrite-proxy'si). */
+  baseURL?: string;
+  /** Oturum kurtarılamadığında çağrılır. Varsayılan: /login'e yönlendirir. */
+  onSessionExpired?: () => void;
+  /** Harici/gezinme URL'i açar (OAuth). Varsayılan: window.location.href. */
+  openUrl?: (url: string) => void;
+}
+
+const DEFAULT_BASE_URL = "/api";
+let baseURL = DEFAULT_BASE_URL;
+let onSessionExpired: () => void = defaultBounceToLogin;
+let openUrl: (url: string) => void = defaultOpenUrl;
+
+export function configureApiClient(config: ApiClientConfig): void {
+  if (config.baseURL !== undefined) {
+    baseURL = config.baseURL;
+    apiClient.defaults.baseURL = config.baseURL;
+  }
+  if (config.onSessionExpired) onSessionExpired = config.onSessionExpired;
+  if (config.openUrl) openUrl = config.openUrl;
+}
 
 export const apiClient = axios.create({
   baseURL,
@@ -39,12 +80,20 @@ let redirectingToLogin = false;
 
 // Bayat refresh cookie'si HTTP-only olduğu için JS silemez; ?expired=1 işareti
 // proxy.ts'e "bu cookie'yi sil ve login'i göster" der (yoksa /login → / döngüsü).
-function bounceToLogin() {
+//
+// WEB VARSAYILANI: masaüstünde rota kavramı farklı olacağı için
+// `configureApiClient({ onSessionExpired })` ile değiştirilebilir.
+function defaultBounceToLogin() {
   if (typeof window === "undefined" || redirectingToLogin) return;
   if (window.location.pathname === "/login") return;
   redirectingToLogin = true;
   const next = encodeURIComponent(window.location.pathname + window.location.search);
   window.location.href = `/login?expired=1&next=${next}`;
+}
+
+function defaultOpenUrl(url: string) {
+  if (typeof window === "undefined") return;
+  window.location.href = url;
 }
 
 async function doRefresh(): Promise<string | null> {
@@ -81,7 +130,7 @@ apiClient.interceptors.response.use(
         original.headers.Authorization = `Bearer ${token}`;
         return apiClient(original);
       }
-      bounceToLogin();
+      onSessionExpired();
     }
     return Promise.reject(error);
   },
@@ -136,11 +185,9 @@ export async function requestPasswordReset(email: string): Promise<void> {
 }
 
 export type OAuthProvider = "google" | "github" | "apple";
-// OAuth başlat: backend'in yönlendirme başlattığı same-origin uca git.
+// OAuth başlat: backend'in yönlendirme başlattığı uca git.
 export function startOAuth(provider: OAuthProvider, next = "/app"): void {
-  if (typeof window === "undefined") return;
-  const url = `/api/auth/oauth/${provider}?next=${encodeURIComponent(next)}`;
-  window.location.href = url;
+  openUrl(`${baseURL}/auth/oauth/${provider}?next=${encodeURIComponent(next)}`);
 }
 
 export async function logout(): Promise<void> {

@@ -15,7 +15,7 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import type { ColumnMeta, ModelMeta, RelationshipMeta } from "@/lib/types";
+import type { ColumnMeta, ModelMeta, RelationshipMeta } from "@dima/contracts";
 
 // mounted flag without setState-in-effect: server snapshot false, client true.
 const subscribeNoop = () => () => {};

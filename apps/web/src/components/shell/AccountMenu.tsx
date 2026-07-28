@@ -16,7 +16,7 @@ import {
   Languages,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { logout } from "@/lib/api-client";
+import { logout } from "@dima/api-client";
 import { useConversations } from "@/stores/conversations";
 import { useMe } from "@/lib/access";
 import { setLocale } from "@/i18n/actions";

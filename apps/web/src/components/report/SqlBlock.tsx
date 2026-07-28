@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronRight } from "lucide-react";
-import { formatSql, tokenizeSql, type SqlTokenType } from "@/lib/sql-format";
+import { formatSql, tokenizeSql, type SqlTokenType } from "@dima/domain";
 import {
   Collapsible,
   CollapsibleContent,

@@ -1,8 +1,8 @@
 "use client";
 
 import { motion } from "motion/react";
-import type { QueryResult } from "@/lib/types";
-import { kpiCards, type Analysis } from "@/lib/chart";
+import type { QueryResult } from "@dima/contracts";
+import { kpiCards, type Analysis } from "@dima/domain";
 import { enterUp, stagger } from "@/lib/motion";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";

@@ -1,7 +1,7 @@
 "use client";
 
-import { fmtTemporal, fmtValue } from "@/lib/format";
-import type { QueryResult } from "@/lib/types";
+import { fmtTemporal, fmtValue } from "@dima/domain";
+import type { QueryResult } from "@dima/contracts";
 
 // JENERİK çapraz tablo (pivot): VARLIK satır × ZAMAN-KOVA sütun × ÖLÇÜ hücre. "N ürün × ay ×
 // ortalama fiyat" gibi uzun (N×kova satır) sonuçları okunur matrise çevirir. Zaman kovaları

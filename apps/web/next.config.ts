@@ -9,6 +9,11 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 // oturum cookie'si düşmez). Backend URL gizli kalır, CORS gerekmez (ADR-0012).
 
 const nextConfig: NextConfig = {
+  // Workspace paketleri ham TypeScript dışa aktarır (build adımı yok — "JIT
+  // paket"). Derlemesini tüketen uygulama yapar; böylece paketleri sıraya
+  // dizen ayrı bir build orkestrasyonu gerekmiyor ve pakete yapılan düzenleme
+  // dev'de anında yansıyor.
+  transpilePackages: ["@dima/contracts", "@dima/domain", "@dima/api-client"],
   // localtld ile dev server'a proxy'lenmiş bir origin'den (ör. frontend.dima.localtld)
   // erişildiğinde Next dev runtime'ının/HMR'ın bu origin'i kabul etmesi için gerekli.
   // Aksi halde client hydrate olmaz (istekler bloklanır). Domain `.localtld`.

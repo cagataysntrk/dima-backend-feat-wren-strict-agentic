@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { HelpCircle } from "lucide-react";
-import type { AskResponse } from "@/lib/types";
+import type { AskResponse } from "@dima/contracts";
 import { ResultView } from "@/components/ResultView";
 import { KpiCardView } from "@/components/KpiCard";
 import { OutputInsight } from "@/components/OutputInsight";

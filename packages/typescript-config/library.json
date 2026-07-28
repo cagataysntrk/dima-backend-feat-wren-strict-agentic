@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "dima library (saf TS — React/DOM yok)",
+  "extends": "./base.json",
+  "compilerOptions": {
+    "lib": ["esnext"]
+  }
+}

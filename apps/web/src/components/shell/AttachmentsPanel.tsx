@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ArrowLeft, Paperclip } from "lucide-react";
-import type { AskResponse } from "@/lib/types";
+import type { AskResponse } from "@dima/contracts";
 import { attachmentsOf } from "@/lib/attachments";
 import { Attachment } from "@/components/ai/attachment";
 import { DocumentViewer } from "@/components/report/DocumentViewer";

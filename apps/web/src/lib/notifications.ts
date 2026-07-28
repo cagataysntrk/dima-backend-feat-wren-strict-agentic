@@ -5,7 +5,7 @@
 // iki ayrı poll'la iki farklı sayı göstermek en kötü sonuç olurdu.
 
 import { useCallback, useEffect, useState } from "react";
-import { getNotifications, type Notification } from "@/lib/api-client";
+import { getNotifications, type Notification } from "@dima/api-client";
 
 const SEEN_KEY = "dima.notifications.seen";
 const POLL_MS = 60_000;

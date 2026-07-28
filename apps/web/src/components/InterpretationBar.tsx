@@ -2,8 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, Plus, X } from "lucide-react";
-import { getSchema } from "@/lib/api-client";
-import type { CubeQuery } from "@/lib/types";
+import { getSchema } from "@dima/api-client";
+import type { CubeQuery } from "@dima/contracts";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,

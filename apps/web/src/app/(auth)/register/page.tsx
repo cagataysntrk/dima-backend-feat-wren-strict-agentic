@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { apiErrorMessage, register } from "@/lib/api-client";
+import { apiErrorMessage, register } from "@dima/api-client";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { AuthDivider, OAuthButtons } from "@/components/auth/OAuthButtons";
 import { PasswordInput } from "@/components/auth/PasswordInput";

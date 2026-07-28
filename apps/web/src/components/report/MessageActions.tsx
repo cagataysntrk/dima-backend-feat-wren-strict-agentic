@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Bell, Check, X } from "lucide-react";
-import type { AskResponse } from "@/lib/types";
-import { createSchedule, verifyReport } from "@/lib/api-client";
+import type { AskResponse } from "@dima/contracts";
+import { createSchedule, verifyReport } from "@dima/api-client";
 import { useFeature, usePermission } from "@/lib/access";
 import { Button } from "@/components/ui/button";
 import {

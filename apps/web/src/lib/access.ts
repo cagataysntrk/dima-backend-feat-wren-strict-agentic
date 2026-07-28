@@ -6,7 +6,7 @@
 // there's no UI regression on first paint (the backend enforces every action anyway).
 
 import { useEffect, useState } from "react";
-import { getFeatures, getMe, type AuthUser } from "@/lib/api-client";
+import { getFeatures, getMe, type AuthUser } from "@dima/api-client";
 
 let _me: AuthUser | null = null;
 /** The signed-in user (for the account entry). Null until /auth/me resolves. */

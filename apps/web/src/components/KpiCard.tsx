@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { KpiCard } from "@/lib/types";
+import type { KpiCard } from "@dima/contracts";
 import {
   ChartContainer,
   ChartLegendContent,

@@ -37,6 +37,9 @@
       "name": "@dima/web",
       "version": "0.1.0",
       "dependencies": {
+        "@dima/api-client": "workspace:*",
+        "@dima/contracts": "workspace:*",
+        "@dima/domain": "workspace:*",
         "@tanstack/react-query": "^5.101.2",
         "@xyflow/react": "^12.11.2",
         "axios": "^1.18.1",
@@ -65,6 +68,8 @@
         "zustand": "^5.0.14",
       },
       "devDependencies": {
+        "@dima/eslint-config": "workspace:*",
+        "@dima/typescript-config": "workspace:*",
         "@tailwindcss/postcss": "^4",
         "@types/node": "^20",
         "@types/react": "^19",
@@ -81,6 +86,59 @@
       "optionalDependencies": {
         "@abdullahharunozturk/localtld": "^0.1.0",
       },
+    },
+    "packages/api-client": {
+      "name": "@dima/api-client",
+      "version": "0.0.0",
+      "dependencies": {
+        "@dima/contracts": "workspace:*",
+        "axios": "^1.18.1",
+      },
+      "devDependencies": {
+        "@dima/eslint-config": "workspace:*",
+        "@dima/typescript-config": "workspace:*",
+        "eslint": "^9",
+        "typescript": "^5",
+      },
+    },
+    "packages/contracts": {
+      "name": "@dima/contracts",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@dima/eslint-config": "workspace:*",
+        "@dima/typescript-config": "workspace:*",
+        "eslint": "^9",
+        "typescript": "^5",
+      },
+    },
+    "packages/domain": {
+      "name": "@dima/domain",
+      "version": "0.0.0",
+      "dependencies": {
+        "@dima/contracts": "workspace:*",
+      },
+      "devDependencies": {
+        "@dima/eslint-config": "workspace:*",
+        "@dima/typescript-config": "workspace:*",
+        "eslint": "^9",
+        "typescript": "^5",
+      },
+    },
+    "packages/eslint-config": {
+      "name": "@dima/eslint-config",
+      "version": "0.0.0",
+      "dependencies": {
+        "@eslint/js": "^9",
+        "eslint-config-next": "16.2.12",
+        "typescript-eslint": "^8",
+      },
+      "peerDependencies": {
+        "eslint": "^9",
+      },
+    },
+    "packages/typescript-config": {
+      "name": "@dima/typescript-config",
+      "version": "0.0.0",
     },
   },
   "trustedDependencies": [
@@ -136,7 +194,17 @@
 
     "@date-fns/tz": ["@date-fns/tz@1.5.0", "", {}, "sha512-lwYN/vDPeNRULcepoE/LO2Pgx+7/RV+S9ARfbc9lr2DtGkOD7pAiruHvbR1RX3Qyf6ja47EWJDMsNK5vK08DJg=="],
 
+    "@dima/api-client": ["@dima/api-client@workspace:packages/api-client"],
+
+    "@dima/contracts": ["@dima/contracts@workspace:packages/contracts"],
+
+    "@dima/domain": ["@dima/domain@workspace:packages/domain"],
+
+    "@dima/eslint-config": ["@dima/eslint-config@workspace:packages/eslint-config"],
+
     "@dima/openui": ["@dima/openui@workspace:apps/openui"],
+
+    "@dima/typescript-config": ["@dima/typescript-config@workspace:packages/typescript-config"],
 
     "@dima/web": ["@dima/web@workspace:apps/web"],
 

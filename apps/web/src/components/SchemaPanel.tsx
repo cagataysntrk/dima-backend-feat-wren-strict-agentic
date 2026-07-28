@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Database, GitBranch, Network } from "lucide-react";
-import { getSchema } from "@/lib/api-client";
+import { getSchema } from "@dima/api-client";
 import { ErdView } from "@/components/schema/ErdView";
 import {
   Accordion,

@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import type { AskResponse, CubeQuery, QueryResult } from "@/lib/types";
+import type { AskResponse, CubeQuery, QueryResult } from "@dima/contracts";
 import { ResultView } from "@/components/ResultView";
 import { ChatPanel } from "@/components/ChatPanel";
 import { InterpretationBar } from "@/components/InterpretationBar";

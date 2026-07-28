@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowLeft } from "lucide-react";
-import { apiErrorMessage, login } from "@/lib/api-client";
+import { apiErrorMessage, login } from "@dima/api-client";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { AuthDivider, OAuthButtons } from "@/components/auth/OAuthButtons";
 import { PasswordInput } from "@/components/auth/PasswordInput";

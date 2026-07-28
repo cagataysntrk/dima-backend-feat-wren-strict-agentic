@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Bell } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { getNotifications, type Notification } from "@/lib/api-client";
+import { getNotifications, type Notification } from "@dima/api-client";
 import { Button } from "@/components/ui/button";
 import {
   Popover,

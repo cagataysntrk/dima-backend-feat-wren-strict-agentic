@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, MailCheck } from "lucide-react";
-import { apiErrorMessage, requestPasswordReset } from "@/lib/api-client";
+import { apiErrorMessage, requestPasswordReset } from "@dima/api-client";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

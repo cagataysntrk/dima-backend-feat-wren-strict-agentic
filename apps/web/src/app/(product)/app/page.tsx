@@ -3,7 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { apiErrorMessage, ask, askCube } from "@/lib/api-client";
+import { apiErrorMessage, ask, askCube } from "@dima/api-client";
 import { markThinking } from "@/lib/thinking";
 import { markAttachments } from "@/lib/attachments";
 import { AppShell } from "@/components/shell/AppShell";
@@ -18,7 +18,7 @@ import { PANEL_TABS, type PanelTab } from "@/components/shell/ArtifactPanel";
 import { SearchDialog } from "@/components/shell/SearchDialog";
 import { ShortcutsDialog } from "@/components/shell/ShortcutsDialog";
 import { selectActive, useConversations } from "@/stores/conversations";
-import type { AskResponse } from "@/lib/types";
+import type { AskResponse } from "@dima/contracts";
 
 // Panel sekmeleri artık tek kaynaktan (ArtifactPanel.PANEL_TABS).
 type Artifact = PanelTab | null;

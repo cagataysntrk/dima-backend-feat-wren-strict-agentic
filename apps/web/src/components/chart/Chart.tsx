@@ -27,14 +27,14 @@ import {
   YAxis,
   ZAxis,
 } from "recharts";
-import type { QueryResult } from "@/lib/types";
+import type { QueryResult } from "@dima/contracts";
 import {
   buildSeries,
   type Analysis,
   type ChartData,
   type ChartKind,
-} from "@/lib/chart";
-import { fmtAxis, fmtValue } from "@/lib/format";
+} from "@dima/domain";
+import { fmtAxis, fmtValue } from "@dima/domain";
 import { ChartContainer, ChartLegendContent, type ChartConfig } from "@/components/ui/chart";
 import { cn } from "@/lib/utils";
 

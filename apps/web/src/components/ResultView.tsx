@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { getSchema } from "@/lib/api-client";
-import { setSchemaUnits } from "@/lib/format";
-import type { QueryResult } from "@/lib/types";
-import { ALL_MEASURES, analyze, type ChartKind } from "@/lib/chart";
+import { getSchema } from "@dima/api-client";
+import { setSchemaUnits } from "@dima/domain";
+import type { QueryResult } from "@dima/contracts";
+import { ALL_MEASURES, analyze, type ChartKind } from "@dima/domain";
 import { Chart } from "./chart/Chart";
 import { KpiGrid } from "./chart/kpi";
 import { PivotTable } from "./PivotTable";

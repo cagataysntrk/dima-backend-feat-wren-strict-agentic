@@ -1,7 +1,7 @@
 "use client";
 
 import { LayoutDashboard, Sparkles } from "lucide-react";
-import type { AskResponse } from "@/lib/types";
+import type { AskResponse } from "@dima/contracts";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SourceBadge } from "@/components/report/SourceBadge";
