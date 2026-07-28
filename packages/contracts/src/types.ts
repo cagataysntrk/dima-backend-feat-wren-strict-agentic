@@ -1,24 +1,26 @@
-// dima-backend response/request types (kept in sync with app/schemas.py).
+/**
+ * ELLE YAZILAN sözleşme parçaları.
+ *
+ * Buradaki her tip, backend'in `dict[str, Any]` ile geçtiği bir alanın
+ * kullanılabilir şeklidir. Codegen bunları üretemez — ürettiği şey
+ * `Record<string, never>` olur ki bu "hiç anahtar kabul etmeyen nesne"
+ * demektir; işe yaramaz değil, doğrudan yanlıştır.
+ *
+ * KURAL: bu dosya YALNIZ backend'in tiplemediği şeyleri içerir. Backend bir
+ * alanı düzgün tiplediği anda karşılığı buradan SİLİNİR ve `generated.ts`'ten
+ * gelir. Aksi halde ikinci bir doğruluk kaynağı oluşur — kaçındığımız şeyin ta
+ * kendisi.
+ *
+ * Yapısal alanlar için: bkz. generated.ts (üretilmiş, elle düzenlenmez).
+ */
 
-export interface ColumnMeta {
-  name: string;
-  type: string;
-  // Düşük kardinaliteli kolonların olası değerleri (filtre chip'i seçenekleri).
-  values?: string[] | null;
-}
+/** Sonuç satırı — backend `dict[str, Any]`. */
+export type Row = Record<string, unknown>;
 
-export interface ModelMeta {
-  name: string;
-  columns: ColumnMeta[];
-}
+/** Cube sorgu durumu — backend `dict[str, Any]`. Takip mesajlarında geri gönderilir. */
+export type CubeQuery = Record<string, unknown>;
 
-export interface RelationshipMeta {
-  name: string;
-  models: string[];
-  join_type: string;
-  condition: string;
-}
-
+/** `SchemaResponse.cubes` öğesi — backend `list[dict[str, Any]]`. */
 export interface CubeMeta {
   name: string;
   measures?: string[];
@@ -28,57 +30,20 @@ export interface CubeMeta {
   dimension_values?: Record<string, string[]>;
 }
 
-export interface SchemaResponse {
-  catalog: string | null;
-  schema_name: string | null;
-  models: ModelMeta[];
-  relationships: RelationshipMeta[];
-  cubes?: CubeMeta[];
-  db_online?: boolean; // veri kaynağı TCP erişilebilir mi → çevrimiçi/çevrimdışı rozeti
-}
-
-export type Row = Record<string, unknown>;
-
-export interface QueryResult {
-  columns: string[];
-  rows: Row[];
-  row_count: number;
-}
-
-export type CubeQuery = Record<string, unknown>;
-
-export interface AskResponse {
-  question: string;
-  sql: string;
-  planned_sql: string | null;
-  result: QueryResult | null;
-  // Provenance: SQL'i kim üretti — "cube" (deterministik 🥇) | "llm:<sağlayıcı>" | "rule".
-  source: string | null;
-  // Rapor cube ile üretildiyse yapısal durum — takip mesajlarında geri gönderilir (ADR-0007).
-  cube_query: CubeQuery | null;
-  // Rapor üretilmediğinde dürüst açıklama (alan modelde yok / anlaşılamadı) — rapor değişmez.
-  note?: string | null;
-  // Sorgunun nasıl çözüldüğü — pipeline adımları ("?" ile gösterilir).
-  trace?: string[];
-  // Tıklanır chip'ler — meta örnek sorgular / dönem clarification seçenekleri.
-  suggestions?: { label: string; query: string }[];
-  // Görünüm isteği ("grafik ver") — client mevcut raporun görünümünü değiştirir.
-  view_hint?: string | null;
-  // Query Contract (ADR-0010): raporun kanıt kaydı kimliği
-  contract_id?: string | null;
-  // Cross-cube KPI kartı (CCC / likidite oranları): tek skaler + bileşenleri (DSO/DIO/DPO,
-  // dönen varlık/KV kaynak…). Cube tablosu değil bileşke — KPI kartı olarak render edilir.
-  kpi?: KpiCard | null;
-  // EVRENSEL ÇIKTI YORUMU (feature flag: cikti_yorumlama) — her tablo/grafik/rapor/KPI için
-  // DETERMİNİSTİK data-güdümlü yorum. Bayrak kapalıysa null (admin panelden kim görür kararlaşır).
-  interpretation?: Interpretation | null;
-}
-
+/**
+ * EVRENSEL ÇIKTI YORUMU (feature flag: cikti_yorumlama) — backend
+ * `dict[str, Any]`. Her tablo/grafik/rapor/KPI için DETERMİNİSTİK, data-güdümlü
+ * yorum; metin LLM'den değil veriden üretilir.
+ */
 export interface Interpretation {
   summary: string; // deterministik Türkçe özet (en yüksek/düşük, % değişim, trend, pay)
-  facts?: { type: string; text: string }[]; // yapısal bulgular (ileride chip/rozet)
+  facts?: { type: string; text: string }[]; // yapısal bulgular (chip/rozet)
 }
 
+/**
+ * Cross-cube KPI kartı (CCC / likidite oranları) — backend `dict[str, Any]`.
+ * Tek skaler + bileşenleri (DSO/DIO/DPO…). Cube tablosu değil bileşke.
+ */
 export interface KpiCard {
   kpi: string;
   label: string;
@@ -87,25 +52,17 @@ export interface KpiCard {
   formula?: string | null;
   explain?: string | null;
   value: number | null;
-  components: { key: string; label: string; unit?: string | null; value: number | null }[];
-  // Dönem-serisi ("aylara göre ccc"): her kova için KPI değeri + bileşenleri → trend grafiği
-  // (bileşenler aynı birimdeyse ayrı çizgi: CCC → DSO/DIO/DPO). Evrensel kova (gün/hafta/ay/
-  // çeyrek/yıl); value = SON dönem (as-of başlık).
+  components: KpiComponent[];
+  // Dönem-serisi ("aylara göre ccc"): her kova için KPI değeri + bileşenleri
+  // (CCC → DSO/DIO/DPO). Evrensel kova (gün/hafta/ay/çeyrek/yıl);
+  // value = SON dönem (as-of başlık).
   granularity?: string | null;
-  series?: {
-    bucket: string;
-    value: number | null;
-    components?: { key: string; label: string; unit?: string | null; value: number | null }[];
-  }[] | null;
+  series?: { bucket: string; value: number | null; components?: KpiComponent[] }[] | null;
 }
 
-export interface AskRequest {
-  question: string;
-  limit?: number;
-  execute?: boolean;
-  // Konuşmasal daraltma: önceki mesajlar + o anki raporun CubeQuery durumu.
-  history?: string[];
-  cube_query?: CubeQuery | null;
-  // Sohbet oturumu kimliği — kalıcı logda chat'i gruplamak için.
-  session_id?: string;
+export interface KpiComponent {
+  key: string;
+  label: string;
+  unit?: string | null;
+  value: number | null;
 }

@@ -98,7 +98,13 @@ export default function Bench() {
           <Renderer
             response={source}
             library={library}
-            onError={(e) => console.error("[genui]", e)}
+            // onError HER çözümlemede çağrılır ve her şey yolundaysa [] gelir —
+            // koşulsuz loglamak "hata var" sanılan bir gürültü üretiyordu.
+            // Boş dizi = temiz. Dolu dizi, modele geri beslenecek düzeltme
+            // sinyalidir (bilinmeyen bileşen, eksik prop, çözülmemiş referans).
+            onError={(errors) => {
+              if (errors.length) console.warn("[genui] düzeltilebilir hatalar:", errors);
+            }}
           />
         </CatalogProvider>
       </section>

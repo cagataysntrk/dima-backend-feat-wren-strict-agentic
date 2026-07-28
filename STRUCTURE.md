@@ -87,9 +87,7 @@ dima kurumsal müşterinin kendi altyapısına kuruluyor. Yapıyı etkileyenler:
 
 Bilinçli olarak çözülmedi — yeri belli, zamanı değil:
 
-- **`contracts` elle senkron.** `types.ts` backend `schemas.py` ile elle
-  hizalanıyor; canlı kayma riski. Kalıcı çözüm backend'in OpenAPI şemasından
-  üretmek. Monorepo'suz da kazandırır, sıradaki en yüksek değerli iş.
+- ~~`contracts` elle senkron.~~ **Çözüldü** — bkz. aşağıdaki bölüm.
 - **Masaüstü refresh token.** Bugün HTTP-only cookie — tarayıcıda doğru olan
   bu. Tauri/Electron'da same-origin sunucu olmadığı için cookie kurulamaz;
   OS anahtarlığına geçmesi gerekecek. Değişecek yer `api-client`'ın
@@ -102,6 +100,53 @@ Bilinçli olarak çözülmedi — yeri belli, zamanı değil:
 - **`ui-web`.** `components/ui/` altındaki shadcn primitifleri bizim
   düzenlediğimiz dosyalar; paket yapılırsa her küçük düzenleme paketler arası
   değişikliğe döner. İkinci gerçek tüketici (desktop/storybook) çıkınca.
+
+## Sözleşme üretimi (`packages/contracts`)
+
+Tipler artık backend'in `app/schemas.py`'sinden üretiliyor:
+
+```bash
+DIMA_BACKEND_PATH=../../dima-backend bun run --filter @dima/contracts codegen
+# ya da backend çalışıyorsa:
+DIMA_BACKEND_URL=http://localhost:8000 bun run --filter @dima/contracts codegen
+```
+
+Backend yolu **açıkça verilir**, varsayılan yok: komşu bir çalışma ağacının
+hangi dalda olduğu bilinemez ve eski bir kopyadan üretmek sözleşmeyi geriye
+alır.
+
+**Tüm app import edilmez.** `from app.main import app` FastAPI'nin tam
+belgesini verirdi ama sqlmodel/DB katmanını da çeker. `app/schemas.py` yalnız
+pydantic'e bağlı ve sözleşme yüzeyi zaten orada.
+
+**Codegen ancak backend'in tiplediği kadar iyi.** Backend `kpi`,
+`interpretation`, `cube_query`, `rows`, `cubes` alanlarını `dict[str, Any]`
+bırakıyor; openapi-typescript bunları `Record<string, never>` — yani "hiç
+anahtar kabul etmeyen nesne" — olarak üretiyor. Bu işe yaramaz değil,
+**zararlı**: daraltmasak `rows[0].ay` derlenmezdi. Bu yüzden:
+
+| dosya | ne | kim yazar |
+|---|---|---|
+| `src/generated.ts` | yapı | codegen — elle düzenlenmez |
+| `src/types.ts` | `dict[str, Any]` alanlarının kullanılabilir şekilleri | elle |
+| `src/index.ts` | ikisini birleştiren daraltmalar | elle |
+
+Backend bir alanı düzgün tiplediği gün, `types.ts`'teki karşılığı ve
+`index.ts`'teki daraltma **silinir**.
+
+**İstek/yanıt ayrımı.** openapi-typescript varsayılanı olan alanları zorunlu
+üretir. Bu *yanıtlar* için doğru (sunucu Pydantic varsayılanını da serileştirir)
+ama *istekler* için yanlış (istemci atlar, sunucu doldurur). `index.ts`'teki
+`RequestOf<>` bunu düzeltir.
+
+**Kayma denetimi iki kademeli** (`codegen:check`):
+
+1. Backend erişilebilirse — commit'lenmiş şema backend'le uyuşuyor mu? Asıl
+   kontrol bu.
+2. Erişilemiyorsa (CI) — commit'lenmiş şemadan üretilen TS, commit'lenmiş TS
+   ile aynı mı? Backend kaymasını göremez, ama `generated.ts`'in elle
+   düzenlenmiş olmasını yakalar. Neyi **kapsamadığını** açıkça yazdırır;
+   sessizce geçen bir kontrol, olmayan kontrolden kötüdür.
 
 ## Komutlar
 

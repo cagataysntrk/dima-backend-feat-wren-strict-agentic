@@ -43,3 +43,10 @@ jobs:
       # anahtar isterse, o bir hatadır ve burada yakalanmalıdır.
       - name: Lint · typecheck · test · build
         run: bun run turbo run lint typecheck test build
+
+      # Backend repo'su burada yok, bu yüzden bu koşu yalnız generated.ts'in
+      # commit'lenmiş şemayla tutarlı olduğunu (yani elle düzenlenmediğini)
+      # doğrular. Backend kaymasını görmek için DIMA_BACKEND_URL gerekir —
+      # betik neyi kontrol EDEMEDİĞİNİ açıkça yazdırır.
+      - name: Sözleşme kayması
+        run: bun run turbo run codegen:check

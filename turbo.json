@@ -25,6 +25,11 @@
     },
     "quality:ui": {
       "dependsOn": []
+    },
+    "codegen:check": {
+      "dependsOn": [],
+      "cache": false,
+      "env": ["DIMA_BACKEND_PATH", "DIMA_BACKEND_URL"]
     }
   },
   "globalEnv": ["NODE_ENV"],

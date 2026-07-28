@@ -8,12 +8,15 @@
   },
   "scripts": {
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "codegen": "node scripts/codegen.mjs",
+    "codegen:check": "node scripts/codegen.mjs --check"
   },
   "devDependencies": {
     "@dima/eslint-config": "workspace:*",
     "@dima/typescript-config": "workspace:*",
     "eslint": "^9",
+    "openapi-typescript": "^7.9.1",
     "typescript": "^5"
   }
 }

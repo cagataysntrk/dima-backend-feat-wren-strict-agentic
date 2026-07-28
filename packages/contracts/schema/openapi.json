@@ -1,0 +1,706 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "dima-backend contracts",
+    "version": "0",
+    "description": "app/schemas.py'den ÜRETİLMİŞTİR. Elle düzenleme. Yenilemek için: bun run --filter @dima/contracts codegen"
+  },
+  "paths": {},
+  "components": {
+    "schemas": {
+      "AskRequest": {
+        "properties": {
+          "question": {
+            "description": "Natural-language question (Turkish or English).",
+            "title": "Question",
+            "type": "string"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Limit"
+          },
+          "execute": {
+            "default": true,
+            "description": "If false, only generate + validate SQL.",
+            "title": "Execute",
+            "type": "boolean"
+          },
+          "history": {
+            "items": {
+              "type": "string"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "cube_query": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cube Query"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Session Id"
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "title": "AskRequest",
+        "type": "object"
+      },
+      "AskResponse": {
+        "properties": {
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "sql": {
+            "default": "",
+            "title": "Sql",
+            "type": "string"
+          },
+          "planned_sql": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Planned Sql"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QueryResult"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source"
+          },
+          "cube_query": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cube Query"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Note"
+          },
+          "trace": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Trace",
+            "type": "array"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/Suggestion"
+            },
+            "title": "Suggestions",
+            "type": "array"
+          },
+          "view_hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "View Hint"
+          },
+          "contract_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Contract Id"
+          },
+          "kpi": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Kpi"
+          },
+          "interpretation": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Interpretation"
+          },
+          "next_steps": {
+            "items": {
+              "$ref": "#/components/schemas/NextStep"
+            },
+            "title": "Next Steps",
+            "type": "array"
+          },
+          "recommendations": {
+            "items": {
+              "$ref": "#/components/schemas/Recommendation"
+            },
+            "title": "Recommendations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "title": "AskResponse",
+        "type": "object"
+      },
+      "ColumnMeta": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "values": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Values"
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ],
+        "title": "ColumnMeta",
+        "type": "object"
+      },
+      "ConversationDetail": {
+        "description": "Tek sohbet + mesajları — resume için. messages = ham AskResponse payload'ları\n(frontend doğrudan render eder; yeniden çalıştırma yok).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "messages": {
+            "items": {
+              "type": "object"
+            },
+            "title": "Messages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "session_id",
+          "messages"
+        ],
+        "title": "ConversationDetail",
+        "type": "object"
+      },
+      "ConversationOut": {
+        "description": "Sohbet listesi öğesi (geçmiş kenar çubuğu).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "message_count": {
+            "title": "Message Count",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "session_id",
+          "message_count",
+          "updated_at"
+        ],
+        "title": "ConversationOut",
+        "type": "object"
+      },
+      "CubeRequest": {
+        "description": "Yorum çubuğu (chip) düzenlemesi: client CubeQuery'yi doğrudan düzenler,\nmotor deterministik çalıştırır (LLM yok). label: transkriptte görünen açıklama.",
+        "properties": {
+          "cube_query": {
+            "title": "Cube Query",
+            "type": "object"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Label"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Limit"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Session Id"
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Verdict"
+          },
+          "undo": {
+            "default": false,
+            "title": "Undo",
+            "type": "boolean"
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Comment"
+          }
+        },
+        "required": [
+          "cube_query"
+        ],
+        "title": "CubeRequest",
+        "type": "object"
+      },
+      "ModelMeta": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/ColumnMeta"
+            },
+            "title": "Columns",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "columns"
+        ],
+        "title": "ModelMeta",
+        "type": "object"
+      },
+      "NextStep": {
+        "description": "K2 (rehberli analitik) — bir rapordan DETERMİNİSTİK 'sonraki adım' chip'i. label\ngösterilir; tıklanınca TAM cube_query `/cube` ile LLM'siz koşar (drill-down/ölçek/zaman).\nkind = dimension (kırılım) | measure (ölçek) | time (granülerlik) — FE gruplama/renk için.",
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "cube_query": {
+            "title": "Cube Query",
+            "type": "object"
+          }
+        },
+        "required": [
+          "label",
+          "kind",
+          "cube_query"
+        ],
+        "title": "NextStep",
+        "type": "object"
+      },
+      "QueryRequest": {
+        "properties": {
+          "sql": {
+            "description": "SQL SELECT executed through the Wren semantic layer.",
+            "title": "Sql",
+            "type": "string"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional row cap.",
+            "title": "Limit"
+          }
+        },
+        "required": [
+          "sql"
+        ],
+        "title": "QueryRequest",
+        "type": "object"
+      },
+      "QueryResult": {
+        "properties": {
+          "columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Columns",
+            "type": "array"
+          },
+          "rows": {
+            "items": {
+              "type": "object"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "row_count": {
+            "title": "Row Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "columns",
+          "rows",
+          "row_count"
+        ],
+        "title": "QueryResult",
+        "type": "object"
+      },
+      "Recommendation": {
+        "description": "K4 (karar motoru) — bir SİNYALDEN (K3) türetilen aksiyon önerisi: \"neye bakmalısın\".\ntext = deterministik öneri cümlesi; action opsiyonel = tıklanınca koşan drill (K2 reuse)\n— böylece içgörü→öneri→AKSİYON tek tıkla kapanır.",
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NextStep"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "Recommendation",
+        "type": "object"
+      },
+      "RelationshipMeta": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "models": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Models",
+            "type": "array"
+          },
+          "join_type": {
+            "default": "",
+            "title": "Join Type",
+            "type": "string"
+          },
+          "condition": {
+            "default": "",
+            "title": "Condition",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "models"
+        ],
+        "title": "RelationshipMeta",
+        "type": "object"
+      },
+      "SchemaResponse": {
+        "properties": {
+          "catalog": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Catalog"
+          },
+          "schema_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Schema Name"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelMeta"
+            },
+            "title": "Models",
+            "type": "array"
+          },
+          "relationships": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RelationshipMeta"
+            },
+            "title": "Relationships",
+            "type": "array"
+          },
+          "cubes": {
+            "items": {
+              "type": "object"
+            },
+            "title": "Cubes",
+            "type": "array"
+          },
+          "db_online": {
+            "default": true,
+            "title": "Db Online",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "models"
+        ],
+        "title": "SchemaResponse",
+        "type": "object"
+      },
+      "Suggestion": {
+        "description": "Tıklanır hızlı-yanıt chip'i: label gösterilir, tıklanınca query gönderilir.\nMeta yanıtta örnek sorgular; clarification'da dönem seçenekleri (ADR-0007).",
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "query"
+        ],
+        "title": "Suggestion",
+        "type": "object"
+      },
+      "UploadRequest": {
+        "description": "Chat-scoped Excel/CSV yükleme (base modu). Dosya base64; python-multipart gerektirmez.\nVeri oturum DuckDB'sine iner (ephemeral) → oto-cube → mevcut NL pipeline.",
+        "properties": {
+          "session_id": {
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "filename": {
+            "minLength": 1,
+            "title": "Filename",
+            "type": "string"
+          },
+          "content_b64": {
+            "minLength": 1,
+            "title": "Content B64",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "filename",
+          "content_b64"
+        ],
+        "title": "UploadRequest",
+        "type": "object"
+      },
+      "UploadResponse": {
+        "properties": {
+          "dataset": {
+            "title": "Dataset",
+            "type": "string"
+          },
+          "row_count": {
+            "title": "Row Count",
+            "type": "integer"
+          },
+          "columns": {
+            "items": {
+              "type": "object"
+            },
+            "title": "Columns",
+            "type": "array"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/Suggestion"
+            },
+            "title": "Suggestions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "dataset",
+          "row_count",
+          "columns"
+        ],
+        "title": "UploadResponse",
+        "type": "object"
+      }
+    }
+  }
+}

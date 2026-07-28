@@ -14,6 +14,12 @@ import type { CatalogEntry } from "./catalog";
  * uydurmasıydı — o yolu katalog tasarımı kapatıyor (bkz. catalog.tsx).
  */
 
+/**
+ * Yanıt tipi, varsayılanı olan alanları ZORUNLU tutuyor — ve bu doğru: sunucu
+ * Pydantic varsayılanlarını da serileştirip gönderir, yani `note` gerçek bir
+ * yanıtta her zaman vardır (değeri null olsa bile). Fixture'ın da bunu
+ * karşılaması gerekiyor; eksik bırakmak gerçek yanıtı taklit etmemek olurdu.
+ */
 const cube = (over: Partial<AskResponse>): AskResponse => ({
   question: "",
   sql: "SELECT …",
@@ -21,6 +27,8 @@ const cube = (over: Partial<AskResponse>): AskResponse => ({
   result: null,
   source: "cube",
   cube_query: { measures: [], dimensions: [] },
+  note: null,
+  view_hint: null,
   contract_id: null,
   ...over,
 });
