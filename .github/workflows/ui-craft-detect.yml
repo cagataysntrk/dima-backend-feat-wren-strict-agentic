@@ -20,16 +20,19 @@ jobs:
   detect:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # --scope changed/files needs merge-base resolution against the
           # default branch — the default shallow (depth-1) checkout has no
           # history to resolve it, so --scope silently falls back to full
           # scan on every PR. Fetch full history so scoping actually works.
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          # Node 20 is deprecated on GitHub-hosted runners. Keep the detector on
+          # the current LTS/runtime line so checkout/setup-node are not forced
+          # through the legacy Node 20 compatibility path.
+          node-version: '24'
       - name: Scan (pull_request — diff-scoped)
         if: github.event_name == 'pull_request'
         run: npx --yes ui-craft-detect@0.11.0 . --scope changed --fail-on error
