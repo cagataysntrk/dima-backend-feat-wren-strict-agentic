@@ -7,11 +7,15 @@
 
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import type {
+  Analysis,
   AskRequest,
   AskResponse,
   CubeQuery,
+  Preference,
   QueryResult,
+  Report,
   SchemaResponse,
+  UploadResponse,
 } from "@dima/contracts";
 
 // --- Platform enjeksiyonu --------------------------------------------------
@@ -224,6 +228,43 @@ export async function askCube(body: {
   return data;
 }
 
+/**
+ * Chat'e bağlı Excel/CSV yükleme (D1/D2/D36 — "kurulum = konuşma").
+ *
+ * Dosya base64 gövdede gider: backend `python-multipart` istemiyor, sözleşme
+ * `UploadRequest{session_id, filename, content_b64}`. Veri OTURUM DuckDB'sine
+ * iner (ephemeral) → oto-cube → mevcut NL hattı; yani yükledikten hemen sonra
+ * aynı sohbette sorgulanabilir.
+ *
+ * Ham dosya buluta/LLM'e GİTMEZ — yerel DuckDB'ye ingest edilir.
+ */
+export async function uploadDataset(
+  file: File,
+  sessionId: string,
+): Promise<UploadResponse> {
+  const content_b64 = await fileToBase64(file);
+  const { data } = await apiClient.post<UploadResponse>("/ask/upload", {
+    session_id: sessionId,
+    filename: file.name,
+    content_b64,
+  });
+  return data;
+}
+
+/** FileReader → saf base64 (data: URL öneki kırpılır). */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error ?? new Error("Dosya okunamadı"));
+    reader.onload = () => {
+      const out = String(reader.result ?? "");
+      const comma = out.indexOf(",");
+      resolve(comma >= 0 ? out.slice(comma + 1) : out);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 export async function runQuery(sql: string, limit?: number): Promise<QueryResult> {
   const { data } = await apiClient.post<QueryResult>("/query", { sql, limit });
   return data;
@@ -251,13 +292,29 @@ export async function getFeatures(): Promise<Record<string, string>> {
   return data.features ?? {};
 }
 
+// K1 (rehberli analitik) — rol/sektör bazlı başlangıç soruları. Küratörlü (pack
+// zinciri, rol-filtreli); küratör boşsa backend katalog otomatiğine düşer, o da
+// erişilemezse boş liste döner (çağıran yerel yedeğini gösterir). Deterministik.
+export interface Starter {
+  label: string;
+  query: string;
+}
+export async function getStarters(): Promise<Starter[]> {
+  const { data } = await apiClient.get<{ starters: Starter[] }>("/starters");
+  return data.starters ?? [];
+}
+
 // "✓ doğru" / "✗ yanlış" (beta): kullanıcı geri bildirimi. right → çift VQR'a yazılır
 // (aynı soru bir daha LLM'siz); undo → geri alınır; wrong → yakın öğrenilmiş çift
 // silinir + negatif sinyal loglanır (eval/log madenciliği).
+//
+// `comment`: "✗ yanlış"ta OPSİYONEL gerekçe ("yanlış ölçü", "dönem hatalı"…).
+// Backend bunu etkileşim kaydının note'una yazar → log madencisini besler.
+// "Neden yanlış" bilgisi olmadan negatif sinyal yalnız "bir şey bozuk" der.
 export async function verifyReport(
   cube_query: CubeQuery,
   label: string,
-  opts?: { undo?: boolean; verdict?: "right" | "wrong"; session_id?: string },
+  opts?: { undo?: boolean; verdict?: "right" | "wrong"; session_id?: string; comment?: string },
 ): Promise<{ stored: boolean; removed: boolean }> {
   const { data } = await apiClient.post<{ stored: boolean; removed: boolean }>("/verify", {
     cube_query,
@@ -268,6 +325,19 @@ export async function verifyReport(
 }
 
 // Zamanlanmış raporlar + bildirimler (ADR-0011)
+/** Sabit EŞİK alarmı — ölçü bir sınırı geçince bildirim düşer. */
+export interface ThresholdAlarm {
+  measure: string;
+  op: "gt" | "gte" | "lt" | "lte";
+  value: number;
+}
+/** ANOMALİ alarmı — sabit sınır yok; z-skoru ile "olağandışı" değer yakalanır. */
+export interface AnomalyAlarm {
+  measure: string;
+  method: "zscore";
+  k?: number;
+}
+
 export interface ScheduleSpec {
   label: string;
   cube_query: CubeQuery;
@@ -275,12 +345,17 @@ export interface ScheduleSpec {
   every?: "hour" | "day" | "week";
   at?: string;
   weekday?: number;
-  threshold?: { measure: string; op: string; value: number } | null;
+  // Alarm (opsiyonel). Backend aynı `threshold` alanında iki şekli de kabul eder
+  // ve check_alert içinde ayrıştırır — bu yüzden burada da tek alan, birleşim tipi.
+  threshold?: ThresholdAlarm | AnomalyAlarm | null;
+  // Ek teslim kanalları (opsiyonel). Uygulama içi bildirim (zil) HER ZAMAN düşer;
+  // burası onun yerine değil ÜSTÜNE e-posta ekler.
+  delivery?: { email?: { to: string[] } } | null;
 }
 export interface Notification {
   id: string;
   ts: string;
-  kind: "alert" | "report";
+  kind: "alert" | "report" | "anomaly";
   message: string;
   label?: string;
   contract_id?: string | null;
@@ -294,6 +369,158 @@ export async function getNotifications(limit = 20): Promise<Notification[]> {
     params: { limit },
   });
   return data.notifications ?? [];
+}
+
+// --- Panolar (§9 canlı izleme) ---------------------------------------------
+//
+// Widget = KAYITLI SORGU (cube_query + GÖRELİ dönem), sonuç değil. Dönem her
+// `/data` çağrısında yeniden çözülür ("dün" bugün başka bir gündür) — schedule
+// ve VQR ile aynı "kayıtlı sorgu" soyutlaması. Bu yüzden pano bayatlamaz ve
+// satırlar hiçbir zaman istemcide saklanmaz.
+export interface DashboardListItem {
+  id: string;
+  title: string;
+  visibility: "private" | "tenant";
+  widget_count: number;
+  /** Sahibi ben miyim — tenant'a açık panolar başkasına SALT-OKUNUR görünür. */
+  own: boolean;
+  updated_at: string;
+}
+export interface DashboardWidget {
+  id: string;
+  title: string;
+  cube_query: CubeQuery;
+  view_hint?: string | null;
+  period?: string | null;
+  pos?: Record<string, number> | null;
+  refresh: string;
+}
+export interface DashboardDetail {
+  id: string;
+  title: string;
+  visibility: "private" | "tenant";
+  own: boolean;
+  widgets: DashboardWidget[];
+}
+/** Widget başına sonuç. `error` doludur → o karo hata gösterir, pano ayakta kalır. */
+export interface WidgetData {
+  id: string;
+  result: QueryResult | null;
+  error: string | null;
+}
+
+export async function listDashboards(): Promise<{
+  dashboards: DashboardListItem[];
+  max_per_user: number;
+}> {
+  const { data } = await apiClient.get<{
+    dashboards: DashboardListItem[];
+    max_per_user: number;
+  }>("/dashboards");
+  return { dashboards: data.dashboards ?? [], max_per_user: data.max_per_user ?? 10 };
+}
+
+export async function createDashboard(title?: string): Promise<{ id: string; title: string }> {
+  const { data } = await apiClient.post<{ id: string; title: string }>("/dashboards", {
+    title: title ?? "",
+  });
+  return data;
+}
+
+export async function getDashboard(id: string): Promise<DashboardDetail> {
+  const { data } = await apiClient.get<DashboardDetail>(`/dashboards/${id}`);
+  return data;
+}
+
+export async function updateDashboard(
+  id: string,
+  patch: { title?: string; visibility?: "private" | "tenant" },
+): Promise<void> {
+  await apiClient.patch(`/dashboards/${id}`, patch);
+}
+
+export async function deleteDashboard(id: string): Promise<void> {
+  await apiClient.delete(`/dashboards/${id}`);
+}
+
+export async function addDashboardWidget(
+  id: string,
+  widget: {
+    title?: string;
+    cube_query: CubeQuery;
+    view_hint?: string | null;
+    period?: string | null;
+    refresh?: string;
+  },
+): Promise<{ id: string }> {
+  const { data } = await apiClient.post<{ id: string }>(`/dashboards/${id}/widgets`, widget);
+  return data;
+}
+
+export async function deleteDashboardWidget(id: string, widgetId: string): Promise<void> {
+  await apiClient.delete(`/dashboards/${id}/widgets/${widgetId}`);
+}
+
+/** Tüm widget'ları KOŞAR (göreli dönemler yeniden çözülür). Canlı görünüm budur. */
+export async function getDashboardData(id: string): Promise<WidgetData[]> {
+  const { data } = await apiClient.get<{ widgets: WidgetData[] }>(`/dashboards/${id}/data`);
+  return data.widgets ?? [];
+}
+
+// --- CEO demo — backend sözleşmesi hazır, uçlar henüz gelmedi ---------------
+//
+// Şekiller `docs/contracts/ceo-demo.md`'de sabit. Bu fonksiyonlar
+// feature flag açılmadan çağrılmaz (web'de ReportBuilder / AnalystStudio
+// geçitli); böylece olmayan bir endpoint için kullanıcıya 404 deneyimi yaşatmak
+// yerine yetenek tamamen karanlıkta kalır.
+
+export type ReportTemplate = "uretim_ozeti" | "surdurulebilirlik" | "yonetim" | "gunluk";
+
+export interface ReportRequest {
+  template: ReportTemplate;
+  period?: string | null;
+  locale?: string;
+  session_id?: string;
+  cube_queries?: CubeQuery[];
+}
+
+export async function generateReport(request: ReportRequest): Promise<Report> {
+  const { data } = await apiClient.post<Report>("/report", request);
+  return data;
+}
+
+export type AnalysisKind = "swot" | "scorecard" | "plan" | "risk" | "breakeven";
+
+export interface AnalysisRequest {
+  kind: AnalysisKind;
+  period?: string | null;
+  session_id?: string;
+  cube_queries?: CubeQuery[];
+}
+
+export async function runAnalysis(request: AnalysisRequest): Promise<Analysis> {
+  const { data } = await apiClient.post<Analysis>("/analysis", request);
+  return data;
+}
+
+export interface CreatePreferenceRequest {
+  scope: Preference["scope"];
+  value: string;
+  source_question: string;
+}
+
+export async function listPreferences(): Promise<Preference[]> {
+  const { data } = await apiClient.get<{ preferences: Preference[] }>("/preferences");
+  return data.preferences ?? [];
+}
+
+export async function createPreference(request: CreatePreferenceRequest): Promise<Preference> {
+  const { data } = await apiClient.post<Preference>("/preferences", request);
+  return data;
+}
+
+export async function deletePreference(id: string): Promise<void> {
+  await apiClient.delete(`/preferences/${id}`);
 }
 
 // Normalize axios errors into a readable message (backend sends {detail}).

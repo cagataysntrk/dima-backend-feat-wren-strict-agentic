@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { HelpCircle } from "lucide-react";
-import type { AskResponse } from "@dima/contracts";
-import { ResultView } from "@/components/ResultView";
+import type { AskResponse, CubeQuery } from "@dima/contracts";
 import { KpiCardView } from "@/components/KpiCard";
 import { OutputInsight } from "@/components/OutputInsight";
+import { NextSteps, Recommendations } from "@/components/report/NextSteps";
+import { ResultCard } from "@/components/report/ResultCard";
+import { SqlBlock } from "@/components/report/SqlBlock";
 import { SourceBadge } from "@/components/report/SourceBadge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,19 +15,24 @@ import { Skeleton } from "@/components/ui/skeleton";
 /**
  * Salt-okunur rapor görünümü. Yorum çubuğu ve doğru/yanlış/zamanla aksiyonları
  * SOHBETE taşındı (bkz. ChatPanel + report/MessageActions) — burada kopyası yok.
+ *
+ * İSTİSNA: K2/K4 yönlendirmeleri burada da var. Onlar geri bildirim değil
+ * GEZİNME — raporu panelde açmış bir kullanıcının sohbete dönüp aynı chip'i
+ * araması gerekmesin. Tıklama yine sohbete yeni bir mesaj olarak düşer.
  */
 export function ReportPanel({
   data,
   pending,
   viewHint,
   error,
+  onCubeEdit,
 }: {
   data: AskResponse | null;
   pending: boolean;
   viewHint?: { kind: string; nonce: number } | null;
   error: string | null;
+  onCubeEdit?: (edit: { cq: CubeQuery; label: string }) => void;
 }) {
-  const [showSql, setShowSql] = useState(false);
   const [showTrace, setShowTrace] = useState(false);
 
   if (error) {
@@ -102,46 +109,42 @@ export function ReportPanel({
       {data.kpi && <KpiCardView card={data.kpi} />}
 
       {data.result && (
-        <div className="rounded-lg border border-border p-4">
-          <ResultView
-            key={`${data.question}·${data.sql}·${viewHint?.nonce ?? 0}`}
-            result={data.result}
-            viewHint={viewHint?.kind}
-            meta={
-              <span className="text-xs text-muted-foreground">
-                {data.result.row_count} satır
-              </span>
-            }
-          />
+        <ResultCard
+          key={`${data.question}·${data.sql}·${viewHint?.nonce ?? 0}`}
+          result={data.result}
+          viewHint={viewHint?.kind}
+          // Genişlet YOK: panelin genişliği panelin kendi işi, kartın değil.
+          // Daha çok yer gerekiyorsa tam ekran düğmesi zaten burada.
+          meta={
+            <span className="text-xs text-muted-foreground">
+              {data.result.row_count} satır
+            </span>
+          }
+        />
+      )}
+
+      {/* Evrensel çıktı yorumu + K3 proaktif sinyaller — KPI/tablo/grafik altında. */}
+      <OutputInsight interpretation={data.interpretation} />
+
+      {onCubeEdit && (
+        <div className="space-y-2">
+          <Recommendations items={data.recommendations} onDrill={onCubeEdit} />
+          <NextSteps steps={data.next_steps} onDrill={onCubeEdit} />
         </div>
       )}
 
-      {/* Evrensel çıktı yorumu (feature flag'li) — KPI/tablo/grafik altında. */}
-      <OutputInsight interpretation={data.interpretation} />
-
       <div className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowSql((s) => !s)}
-            className="font-mono text-[11px] tracking-wider text-muted-foreground uppercase"
+        {/* Sohbetteki ile AYNI blok: yeniden akıtılmış cümlecikler, satır
+            numaralı oluk, grafik paletinden token renkleri. Panelde ham `<pre>`
+            duruyordu — aynı sorgunun iki farklı görünümü olmasının sebebi yoktu. */}
+        {data.sql && <SqlBlock sql={data.sql} />}
+        {data.contract_id && (
+          <span
+            className="block truncate font-mono text-[10px] tracking-wider text-muted-foreground/60"
+            title="Query Contract — bu raporun kanıt kaydı: soru + sorgu + sonuç özeti mühürlendi; yeniden oynatılıp doğrulanabilir"
           >
-            {showSql ? "— sql gizle" : "+ sql göster"}
-          </Button>
-          {data.contract_id && (
-            <span
-              className="truncate font-mono text-[10px] tracking-wider text-muted-foreground/60"
-              title="Query Contract — bu raporun kanıt kaydı: soru + sorgu + sonuç özeti mühürlendi; yeniden oynatılıp doğrulanabilir"
-            >
-              {data.contract_id}
-            </span>
-          )}
-        </div>
-        {showSql && (
-          <pre className="overflow-auto rounded-lg border border-border bg-muted/50 p-4 font-mono text-xs leading-relaxed text-foreground">
-            {data.sql}
-          </pre>
+            {data.contract_id}
+          </span>
         )}
       </div>
     </div>

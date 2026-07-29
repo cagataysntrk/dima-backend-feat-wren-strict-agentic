@@ -60,8 +60,8 @@ src/
 adresi **server-side** env'den gelir: **`BACKEND_ORIGIN`** (Vercel → Environment
 Variables). Tarayıcı backend'i hiç görmez: istekler same-origin `/api/*`'e gider, Next
 rewrite-proxy'si backend'e iletir (refresh cookie same-origin kalır, CORS gerekmez).
-Bu repo backend'den bağımsız deploy edilir (ekip ayrımı). Detay: dima kökü
-[`docs/deployment.md`](../docs/deployment.md).
+Bu repo backend'den bağımsız deploy edilir (ekip ayrımı). Mevcut referanslar ve
+planlar için [dokümantasyon dizinine](docs/README.md) bakın.
 
 ## Kimlik doğrulama
 Login **zorunludur** (ADR-0014): `/login` sayfası → Bearer access token **memory'de**

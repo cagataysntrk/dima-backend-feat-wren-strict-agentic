@@ -13,12 +13,24 @@ export {
   ALL_MEASURES,
   X_KEY,
   analyze,
+  buildFacet,
+  buildHeatGrid,
   buildSeries,
+  chartDensity,
   facetPanelValues,
   kpiCards,
   orderCats,
+  splitAxes,
 } from "./chart";
-export type { Analysis, ChartData, ChartKind, SeriesSpec } from "./chart";
+export type {
+  Analysis,
+  ChartData,
+  ChartKind,
+  FacetData,
+  FacetPanel,
+  HeatGrid,
+  SeriesSpec,
+} from "./chart";
 
 // Birim/değer biçimlendirme (₺, kg, %)
 export {

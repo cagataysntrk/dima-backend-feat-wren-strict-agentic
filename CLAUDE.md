@@ -31,9 +31,22 @@ Tarayıcı same-origin **`/api/*`**'e konuşur; Next rewrite-proxy'si `BACKEND_O
 iletir (backend URL'i browser'a sızmaz, refresh cookie same-origin kalır).
 Uçlar: `POST /auth/login|refresh|logout` · `GET /auth/me` (roller + `permissions`) ·
 `GET /schema` (cube kataloğu + `lower_is_better`) · `GET /features` (bayraklar,
-kimlikli) · `POST /ask` (+ flag `cikti_yorumlama` açıksa yanıtta `interpretation` →
-OutputInsight, ADR-0022) `/cube` `/verify` `/query` · `/schedules*` `/notifications`
-`/contracts*`.
+kimlikli) · `GET /starters` (K1 küratörlü başlangıç soruları) · `POST /ask`
+(+ flag `cikti_yorumlama` açıksa yanıtta `interpretation` → OutputInsight, ADR-0022;
++ `next_steps`/`recommendations` → K2/K4) `/cube` `/verify` (opsiyonel `comment`)
+`/query` · `/schedules*` (alarm: `threshold` eşik|zscore, `delivery.email`)
+`/notifications` `/contracts*`.
+
+## Rehberli analitik (K1–K4)
+Cevabın altındaki yönlendirmeler; hepsi DETERMİNİSTİK (LLM yok) ve bayrak arkasında —
+backend göndermezse hiç render edilmez.
+- **K1** `/starters` → `HelpPanel` (küratör boşsa yerel yedek liste).
+- **K2** `next_steps` → `report/NextSteps` chip'leri; tıklama TAM `cube_query` ile
+  `/cube`'a gider (yorum çubuğundaki chip düzenlemesiyle aynı yol).
+- **K3** `interpretation.signals` → `OutputInsight` içinde önem renkli kutular
+  (anomali · yön · yoğunlaşma).
+- **K4** `recommendations` → `report/Recommendations`; opsiyonel `action` K2'nin
+  drill mekanizmasını yeniden kullanır.
 
 ## Kimlik doğrulama
 - Auth ZORUNLU: access token memory'de (`api-client.ts` — localStorage'a ASLA), refresh

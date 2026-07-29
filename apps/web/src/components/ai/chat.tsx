@@ -200,7 +200,7 @@ export function Bubble({
       className={cn(
         from === "user"
           ? "max-w-full rounded-2xl rounded-br-sm bg-secondary px-4 py-2 text-sm break-words text-secondary-foreground"
-          : "min-w-0 flex-1",
+          : "min-w-0 flex-1 text-foreground",
         className,
       )}
     >

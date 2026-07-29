@@ -1,24 +1,26 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { apiErrorMessage, ask, askCube } from "@dima/api-client";
+import { useRouter, useSearchParams } from "next/navigation";
+import { apiErrorMessage, ask, askCube, uploadDataset } from "@dima/api-client";
 import { markThinking } from "@/lib/thinking";
 import { markAttachments } from "@/lib/attachments";
+import { isDatasetFile, markDataset } from "@/lib/dataset";
 import { AppShell } from "@/components/shell/AppShell";
 import { ChatPanel } from "@/components/ChatPanel";
 import { HelpPanel } from "@/components/HelpPanel";
 import { Landing } from "@/components/Landing";
-import { ReportPanel } from "@/components/ReportPanel";
-import { SchemaPanel } from "@/components/SchemaPanel";
 import { AttachmentsPanel } from "@/components/shell/AttachmentsPanel";
-import { DashboardsPanel } from "@/components/shell/DashboardsPanel";
+import { SourcesPanel } from "@/components/shell/SourcesPanel";
+import { ChatPanelsPanel } from "@/components/shell/ChatPanelsPanel";
 import { PANEL_TABS, type PanelTab } from "@/components/shell/ArtifactPanel";
 import { SearchDialog } from "@/components/shell/SearchDialog";
 import { ShortcutsDialog } from "@/components/shell/ShortcutsDialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { selectActive, useConversations } from "@/stores/conversations";
-import type { AskResponse } from "@dima/contracts";
+import type { AskResponse, UploadResponse } from "@dima/contracts";
 
 // Panel sekmeleri artık tek kaynaktan (ArtifactPanel.PANEL_TABS).
 type Artifact = PanelTab | null;
@@ -29,7 +31,6 @@ export default function AppPage() {
   const [active, setActive] = useState<AskResponse | null>(null);
   // Takip bağlamı: bir sonraki mesajla gönderilecek CubeQuery (ADR-0007 Faz C).
   const [contextCq, setContextCq] = useState<AskResponse["cube_query"]>(null);
-  const [viewHint, setViewHint] = useState<{ kind: string; nonce: number } | null>(null);
   const [verifyLabel, setVerifyLabel] = useState<string | null>(null);
   // İkincil sayfalardan (/settings, /chats) bir panel girişine basılınca buraya
   // ?panel=... ile dönülür. Yalnız AÇILIŞTA anlamlı olduğu için effect değil
@@ -41,7 +42,11 @@ export default function AppPage() {
   // Panel düğmesi neyi geri açacağını bilsin (yardım DEĞİL — yardımın kendi
   // menü girişi var). Sekme şeridi de kapalıyken hangi sekmenin seçili
   // görüneceğini buradan okur, o yüzden ref değil state.
-  const [lastArtifact, setLastArtifact] = useState<PanelTab>("report");
+  const [lastArtifact, setLastArtifact] = useState<PanelTab>("panels");
+  const router = useRouter();
+  const [helpOpen, setHelpOpen] = useState(false);
+  // Sağ panelden seçilen sonuç — sohbette o karta kaydırılır.
+  const [focus, setFocus] = useState<{ item: AskResponse; nonce: number } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
@@ -79,6 +84,9 @@ export default function AppPage() {
     onMutate: () => {
       askedAt.current = Date.now();
     },
+    // Hata artık sağ panelde gösterilemiyor (rapor sekmesi kalktı) — geçici bir
+    // başarısızlığın doğru yeri zaten toast: sohbet akışını bozmadan görünür.
+    onError: (error) => toast.error(apiErrorMessage(error)),
     onSuccess: (data) => {
       markThinking(data, Date.now() - askedAt.current);
       markAttachments(data, sentFiles.current);
@@ -89,23 +97,76 @@ export default function AppPage() {
       // (panel Yardım/Veri kaynakları ve ileride dashboard'lar için ayrıldı).
       // KPI yanıtı NOT taşısa da bir RAPORDUR (kart+trend) → aktif rapor olmalı.
       if (!data.note || data.kpi) setActive(data);
-      if (data.view_hint) setViewHint({ kind: data.view_hint, nonce: Date.now() });
-      else if (data.result && !data.note) setViewHint(null);
       setContextCq(data.cube_query ?? null);
+    },
+  });
+
+  // Yükleme sohbetin bir OLAYIdır: dosya /ask/upload'a gider, dönen çıkarım
+  // (kolonlar + örnek sorular) kendi turu olarak akışa düşer. Böylece "kurulum =
+  // konuşma" (D1) gerçekten sohbetin içinde oluyor, ayrı bir sihirbaz ekranında
+  // değil. Yükleme BİTMEDEN soru gönderilmez — aksi halde soru henüz var olmayan
+  // tabloyu sorardı.
+  const uploadMutation = useMutation<
+    { res: UploadResponse; name: string },
+    unknown,
+    { file: File; sessionId: string }
+  >({
+    mutationFn: async ({ file, sessionId }) => ({
+      res: await uploadDataset(file, sessionId),
+      name: file.name,
+    }),
+    onError: (error) => toast.error(apiErrorMessage(error)),
+    onSuccess: ({ res, name }) => {
+      // Yükleme turu AskResponse şeklinde taşınır (sohbet tek tip item tutar);
+      // çıkarım detayı yan kanalda (lib/dataset.ts) — sözleşme kirlenmez.
+      const item: AskResponse = {
+        question: name,
+        sql: "",
+        planned_sql: null,
+        result: null,
+        source: "cube",
+        cube_query: null,
+        note: null,
+        trace: [],
+        suggestions: [],
+        view_hint: null,
+        contract_id: null,
+      };
+      markDataset(item, res);
+      useConversations.getState().add(item);
+      setActive(null);
     },
   });
 
   const submit = (q: string, files: File[] = []) => {
     const sessionId = ensureSessionId();
-    setVerifyLabel(q);
-    sentFiles.current = files;
-    setPendingFiles(files);
-    mutation.mutate({ question: q, sessionId });
+    // Tablolaşabilen dosyalar YÜKLENİR; diğerleri eskisi gibi mesaja iliştirilir.
+    const datasets = files.filter(isDatasetFile);
+    const rest = files.filter((f) => !isDatasetFile(f));
+
+    const run = () => {
+      if (!q.trim()) return;
+      setVerifyLabel(q);
+      sentFiles.current = rest;
+      setPendingFiles(rest);
+      mutation.mutate({ question: q, sessionId });
+    };
+
+    if (datasets.length === 0) return run();
+    // Sırayla yükle (oturum DuckDB'si aynı; paralel ingest yarışa girer), sonra sor.
+    void datasets
+      .reduce(
+        (chain, file) => chain.then(() => uploadMutation.mutateAsync({ file, sessionId })),
+        Promise.resolve() as Promise<unknown>,
+      )
+      .then(run)
+      .catch(() => {});
   };
 
   const cubeMutation = useMutation<AskResponse, unknown, { cq: NonNullable<AskResponse["cube_query"]>; label: string }>({
     mutationFn: ({ cq, label }) =>
       askCube({ cube_query: cq, label, session_id: ensureSessionId() }),
+    onError: (error) => toast.error(apiErrorMessage(error)),
     onSuccess: (data) => {
       useConversations.getState().add(data);
       setActive(data);
@@ -128,7 +189,7 @@ export default function AppPage() {
     setArtifact(null);
   }
 
-  const started = items.length > 0 || mutation.isPending || cubeMutation.isPending;
+  const started = items.length > 0 || mutation.isPending || cubeMutation.isPending || uploadMutation.isPending;
   // Chip düzenlemeleri de bekleme durumu gösterir — aksi halde × basınca hiçbir
   // şey olmuyormuş gibi duruyordu (canlı geri bildirim 2026-07-26).
   const pendingQuestion = mutation.isPending
@@ -137,60 +198,58 @@ export default function AppPage() {
       ? cubeMutation.variables?.label
       : undefined;
 
-  const artifactTitle =
-    artifact === "schema"
-      ? "Veri modeli"
-      : artifact === "help"
-        ? "dima · yardım"
-        : artifact === "attachments"
-          ? "Ekler"
-          : artifact === "dashboards"
-            ? "Paneller"
-            : active?.question
-              ? active.question.slice(0, 60)
-              : "Rapor";
-
+  // Sağ panel YALNIZ AÇIK SOHBET hakkında: kaynaklar (veri nereden geldi) ve
+  // belgeler (bu sohbetin ekleri/çıktıları). Veri kataloğu, kayıtlı panolar ve
+  // yardım hesap kapsamlı sayfalara taşındı — sol kenar çubuğundan açılırlar.
   const artifactContent =
-    artifact === "schema" ? (
-      <SchemaPanel />
-    ) : artifact === "help" ? (
-      <HelpPanel onPick={submit} />
-    ) : artifact === "attachments" ? (
-      <AttachmentsPanel items={items} />
-    ) : artifact === "dashboards" ? (
-      <DashboardsPanel
+    artifact === "panels" ? (
+      <ChatPanelsPanel
         items={items}
-        onSelect={(item) => {
+        sessionId={activeConv?.sessionId}
+        onCubeEdit={({ cq, label }) => cubeMutation.mutate({ cq, label })}
+        onFocus={(item) => {
           setActive(item);
-          setArtifact("report");
+          // aynı panele ikinci kez basmak da kaydırsın → nonce
+          setFocus({ item, nonce: Date.now() });
         }}
       />
-    ) : artifact === "report" ? (
-      <ReportPanel
-        data={active}
-        pending={mutation.isPending || cubeMutation.isPending}
-        viewHint={viewHint}
-        error={mutation.isError ? apiErrorMessage(mutation.error) : null}
+    ) : artifact === "sources" ? (
+      <SourcesPanel
+        items={items}
+        onRerun={({ cq, label }) => cubeMutation.mutate({ cq, label })}
       />
+    ) : artifact === "attachments" ? (
+      <AttachmentsPanel items={items} conversationId={activeConv?.id} />
     ) : null;
 
   return (
     <>
     <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+    {/* Yardım artık sağ panelde DEĞİL: sağ panel yalnız açık sohbet hakkında,
+        yardım ise sohbetten bağımsız. Diyalog olarak her yerden açılabilir. */}
+    <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
+      <DialogContent className="max-h-[85svh] overflow-auto sm:max-w-lg">
+        <DialogTitle className="sr-only">dima · yardım</DialogTitle>
+        <HelpPanel
+          onPick={(q) => {
+            setHelpOpen(false);
+            submit(q);
+          }}
+        />
+      </DialogContent>
+    </Dialog>
     <SearchDialog
       open={searchOpen}
       onOpenChange={setSearchOpen}
       onNewChat={newChat}
       onSelectConversation={selectConversation}
-      onOpenSchema={() => setArtifact("schema")}
-      onOpenHelp={() => setArtifact("help")}
+      onOpenSchema={() => router.push("/data-sources")}
+      onOpenHelp={() => setHelpOpen(true)}
     />
     <AppShell
       onNewChat={newChat}
       onSelectConversation={selectConversation}
-      onOpenSchema={() => setArtifact("schema")}
-      onOpenHelp={() => setArtifact("help")}
-      onOpenDashboards={() => setArtifact("dashboards")}
+      onOpenHelp={() => setHelpOpen(true)}
       onOpenShortcuts={() => setShortcutsOpen(true)}
       onOpenSearch={() => setSearchOpen(true)}
       onToggleArtifact={() =>
@@ -204,7 +263,6 @@ export default function AppPage() {
       }
       started={started}
       artifactOpen={artifact !== null}
-      artifactTitle={artifactTitle}
       artifactTab={artifact ?? lastArtifact}
       onArtifactTabChange={setArtifact}
       onArtifactClose={() => setArtifact(null)}
@@ -216,13 +274,13 @@ export default function AppPage() {
         <ChatPanel
           items={items}
           active={active}
-          pending={mutation.isPending || cubeMutation.isPending}
+          pending={mutation.isPending || cubeMutation.isPending || uploadMutation.isPending}
           pendingQuestion={pendingQuestion}
           pendingFiles={pendingFiles}
           conversationId={incognito ? "incognito" : activeConv?.id}
           onSelect={(item) => {
             setActive(item);
-            setArtifact("report");
+            setArtifact("panels");
             setContextCq(item.cube_query ?? null);
             if (!item.question.startsWith("chip:")) setVerifyLabel(item.question);
           }}
@@ -230,6 +288,7 @@ export default function AppPage() {
           onCubeEdit={({ cq, label }) => cubeMutation.mutate({ cq, label })}
           verifyLabel={verifyLabel}
           sessionId={activeConv?.sessionId ?? ""}
+          focus={focus}
         />
       )}
     </AppShell>

@@ -90,14 +90,28 @@ Tailwind-v4-clean.
 
 - Always go through the **`<Chart>` façade** (`src/components/chart/Chart.tsx`) — never
   import Recharts directly in a feature. The façade dispatches by `kind`.
-- Shape analysis lives in `src/lib/chart.ts` (`analyze()` → default kind, `buildSeries()`
-  → engine-neutral data). Unit-aware formatting via `src/lib/format.ts` (₺, kg, %, kWh…).
-- **Supported now:** bar (single + grouped), line, pie, KPI tiles (`chart/kpi.tsx`).
-  **Table fallback:** heatmap & faceted small-multiples (reserved for a future **visx/D3**
-  renderer behind the same façade — do not reach for ECharts).
-- A chart-type dropdown reshapes the **same dataset** (`ResultView`).
+- Shape analysis lives in `packages/domain/src/chart.ts` (`analyze()` → default kind,
+  `buildSeries()`/`buildFacet()`/`buildHeatGrid()` → engine-neutral data). Unit-aware
+  formatting via `packages/domain/src/format.ts` (₺, kg, %, kWh…).
+- **Supported:** bar (single · grouped · stacked · horizontal), line, area, **combo**
+  (bar + line, dual axis), pie, radial, radar, scatter, KPI tiles (`chart/kpi.tsx`),
+  **heatmap** (`chart/Heatmap.tsx`) and **faceted small-multiples** (`chart/Facet.tsx`).
+  Heatmap and facet have no Recharts primitive, so they are drawn by their own
+  components — still one engine, still behind the same façade contract. **Do not
+  reach for ECharts.**
+- **Combo axis split is by UNIT, not by scale:** measures sharing the dominant
+  measure's unit stay on the left as bars; the rest move to the right axis as lines
+  (`splitAxes`). Scale is only the fallback when units don't separate — `fire_kg`
+  (~1k) and `agirlik_kg` (~50k) are the same unit and must not be split.
+- **Legends are interactive.** Clicking a series hides/shows it (`InteractiveLegend`);
+  the legend renders from our own series list, not Recharts' payload, so a hidden
+  series can always be turned back on. Pie/radial toggle *categories*, not series.
+- A chart-type dropdown reshapes the **same dataset** (`ResultView`), and only offers
+  types this data actually supports.
 - Which chart: 1 row → KPI · time axis → line · 1 dim → bar · 2 dims → grouped bar ·
-  ≤12 slices of a share → pie. Categorical colors must stay distinct (no two greens).
+  3 dims → facet · 2 categorical dims × measure → heatmap · ≤12 slices of a share →
+  pie. Categorical colors must stay distinct (no two greens).
+- Live examples of every type: `/app/style` (fixtures, no backend needed).
 
 ## Layout & responsive
 

@@ -38,6 +38,80 @@ export interface CubeMeta {
 export interface Interpretation {
   summary: string; // deterministik Türkçe özet (en yüksek/düşük, % değişim, trend, pay)
   facts?: { type: string; text: string }[]; // yapısal bulgular (chip/rozet)
+  // K3 (rehberli analitik) — PROAKTİF sinyaller: anomali (z-score) / yön endişesi
+  // (lower_is_better ölçü artıyor) / yoğunlaşma (tek kalem payı ≥%50). Nötr
+  // özetten AYRI tutulur çünkü dikkat çekmesi gerekir; önem düzeyine göre vurgulanır.
+  signals?: Signal[];
+}
+
+export interface Signal {
+  severity: "info" | "warning" | "critical";
+  kind: string; // anomaly | trend | concentration — FE ikon/gruplama için
+  text: string;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * CEO DEMO — HENÜZ BACKEND'DE OLMAYAN YETENEKLER
+ *
+ * Aşağıdakiler `dima-backend` HEAD'de YOK. Sözleşmesi
+ * `docs/contracts/ceo-demo.md`'de yazılı; backend o şekle göre yazılınca
+ * bu bloklar SİLİNİR ve karşılıkları `generated.ts`'ten gelir — types.ts'in
+ * kuralı bu (yalnız backend'in tiplemediği şeyler burada durur).
+ *
+ * Şimdiden yazılmalarının sebebi: ekranlar bir şekle bağlanmak zorunda ve o şekli
+ * iki tarafın ayrı ayrı icat etmesi entegrasyonda çakışır.
+ * ────────────────────────────────────────────────────────────────────────────*/
+
+/** Rapor bölümü (D12/D34/D62). `commentary` AYRI alan — ekranda "yorumdur"
+ *  etiketiyle işaretlenir; sayı içermez, sayılar `body`/`result`'tan gelir. */
+export interface ReportSection {
+  title: string;
+  body?: string | null;
+  commentary?: string | null;
+  result?: unknown | null; // QueryResult — index.ts'te daraltılır
+  cube_query?: CubeQuery | null;
+  view_hint?: string | null;
+}
+
+export interface Report {
+  title: string;
+  period_resolved?: string | null;
+  sections: ReportSection[];
+  contract_id?: string | null;
+  generated_at: string;
+}
+
+/** Analizin tek iddiası (D44/D47/D63). Her iddia kanıta bağlıdır: `evidence`
+ *  tıklanınca `/cube` ile koşan cube_query'dir. */
+export interface AnalysisClaim {
+  text: string;
+  kind: "strength" | "weakness" | "opportunity" | "threat" | "action" | (string & {});
+  metric?: string | null;
+  value?: number | null;
+  unit?: string | null;
+  evidence?: CubeQuery | null;
+  /** deterministic = katalogdan hesaplandı · estimated = referans parametreli
+   *  · model = LLM üretti. Demo kuralı: `estimated` varsa `assumptions` DOLU olmalı. */
+  confidence: "deterministic" | "estimated" | "model" | (string & {});
+}
+
+export interface Analysis {
+  kind: "swot" | "scorecard" | "plan" | "risk" | "breakeven" | (string & {});
+  title: string;
+  summary: string;
+  claims: AnalysisClaim[];
+  /** Tahmin/projeksiyon içeren analizin parametreleri — boşsa tahmin gösterilmez. */
+  assumptions?: string[];
+  contract_id?: string | null;
+}
+
+/** Sözle kurulan kalıcı tercih (D30/D58). */
+export interface Preference {
+  id: string;
+  scope: "default_period" | "currency" | "granularity" | "summary_style" | (string & {});
+  value: string;
+  source_question: string;
+  created_at: string;
 }
 
 /**

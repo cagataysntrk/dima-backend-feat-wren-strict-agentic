@@ -15,12 +15,9 @@ import { SearchDialog } from "./SearchDialog";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 
 /**
- * Ayarlar / Sohbetler gibi ikincil sayfaların kabuğu: SOL sidebar durur,
- * sağ artifact paneli DURMAZ — bu sayfaların bir "artifact"ı yok, boş bir panel
- * göstermek yer kaplamaktan başka bir şey yapmazdı.
- *
- * Panel açan sidebar girişleri (Veri kaynakları, Paneller, Yardım) buradan
- * /app'e `?panel=` ile döner; sohbet sayfası açılışta o sekmeyi açar.
+ * Hesap kapsamlı sayfaların kabuğu (Veri kaynakları · Paneller · Belgeler ·
+ * Sohbetler · Bildirimler · Ayarlar): SOL sidebar durur, sağ panel DURMAZ —
+ * bu sayfaların açık bir sohbeti yok, sağ panel de yalnız sohbet hakkındadır.
  */
 export function SecondaryShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -44,7 +41,7 @@ export function SecondaryShell({ children }: { children: React.ReactNode }) {
           select(id);
           router.push("/app");
         }}
-        onOpenSchema={() => goPanel("schema")}
+        onOpenSchema={() => router.push("/data-sources")}
         onOpenHelp={() => goPanel("help")}
       />
       <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
@@ -59,9 +56,7 @@ export function SecondaryShell({ children }: { children: React.ReactNode }) {
             select(id);
             router.push("/app");
           }}
-          onOpenSchema={() => goPanel("schema")}
           onOpenHelp={() => goPanel("help")}
-          onOpenDashboards={() => goPanel("dashboards")}
           onOpenSearch={() => setSearchOpen(true)}
           onOpenShortcuts={() => setShortcutsOpen(true)}
         />

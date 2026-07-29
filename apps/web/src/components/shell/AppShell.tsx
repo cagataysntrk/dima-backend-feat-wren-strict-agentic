@@ -22,22 +22,23 @@ import { ShareDialog } from "./ShareDialog";
 import { ArtifactPanel } from "./ArtifactPanel";
 
 /**
- * Two-rail Claude/ChatGPT-style shell: collapsible left nav · center chat ·
- * collapsible right artifact panel. Charts render inline in the center; heavy
- * objects (schema, help, later dashboards) open in the artifact panel.
+ * İki raylı kabuk (Claude/ChatGPT deseni): solda gezinme · ortada sohbet ·
+ * sağda sohbet paneli. Grafikler sohbetin içinde çizilir.
+ *
+ * KAPSAM AYRIMI: sol kenar çubuğu HESAP geneline açılır (tüm veri kaynakları,
+ * tüm paneller, tüm belgeler — hepsi tam sayfa). Sağ panel yalnız AÇIK SOHBET
+ * hakkındadır (kaynaklar · belgeler). Aynı şeyin iki kapsamı iki yerde durur,
+ * karışmaz.
  */
 export function AppShell({
   onNewChat,
   onSelectConversation,
-  onOpenSchema,
   onOpenHelp,
-  onOpenDashboards,
   onOpenSearch,
   onOpenShortcuts,
   onToggleArtifact,
   started,
   artifactOpen,
-  artifactTitle,
   artifactTab,
   onArtifactTabChange,
   onArtifactClose,
@@ -46,16 +47,13 @@ export function AppShell({
 }: {
   onNewChat: () => void;
   onSelectConversation: (id: string) => void;
-  onOpenSchema: () => void;
   onOpenHelp: () => void;
-  onOpenDashboards: () => void;
   onOpenSearch: () => void;
   onOpenShortcuts: () => void;
   onToggleArtifact: () => void;
   /** Sohbet başladı mı (üst bardaki Gizli↔Paylaş takası için). */
   started: boolean;
   artifactOpen: boolean;
-  artifactTitle: string;
   artifactTab: PanelTab;
   onArtifactTabChange: (tab: PanelTab) => void;
   onArtifactClose: () => void;
@@ -67,9 +65,7 @@ export function AppShell({
       <AppSidebar
         onNewChat={onNewChat}
         onSelectConversation={onSelectConversation}
-        onOpenSchema={onOpenSchema}
         onOpenHelp={onOpenHelp}
-        onOpenDashboards={onOpenDashboards}
         onOpenSearch={onOpenSearch}
         onOpenShortcuts={onOpenShortcuts}
       />
@@ -101,7 +97,6 @@ export function AppShell({
         </div>
         <ArtifactPanel
           open={artifactOpen}
-          title={artifactTitle}
           tab={artifactTab}
           onTabChange={onArtifactTabChange}
           onClose={onArtifactClose}

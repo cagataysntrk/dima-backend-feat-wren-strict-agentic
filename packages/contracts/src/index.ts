@@ -45,7 +45,27 @@ type RequestOf<T, RequiredKeys extends keyof T> = Pick<T, RequiredKeys> &
   Partial<Omit<T, RequiredKeys>>;
 
 // --- Elle yazılanlar (backend tiplemiyor) -----------------------------------
-export type { CubeMeta, CubeQuery, Interpretation, KpiCard, KpiComponent, Row } from "./types";
+export type {
+  AnalysisClaim,
+  CubeMeta,
+  CubeQuery,
+  Interpretation,
+  KpiCard,
+  KpiComponent,
+  Preference,
+  Row,
+  Signal,
+} from "./types";
+
+// CEO demo yetenekleri — backend'de HENÜZ yok (bkz. docs/contracts/ceo-demo.md).
+// Report burada daraltılır: ReportSection.result gerçekte QueryResult'tır.
+export type { Analysis } from "./types";
+export type ReportSection = Omit<import("./types").ReportSection, "result"> & {
+  result?: QueryResult | null;
+};
+export type Report = Omit<import("./types").Report, "sections"> & {
+  sections: ReportSection[];
+};
 
 // --- Üretilenler: olduğu gibi kullanılabilenler ------------------------------
 export type ColumnMeta = Schemas["ColumnMeta"];
@@ -54,8 +74,6 @@ export type RelationshipMeta = Schemas["RelationshipMeta"];
 export type Suggestion = Schemas["Suggestion"];
 export type ConversationOut = Schemas["ConversationOut"];
 export type ConversationDetail = Schemas["ConversationDetail"];
-export type NextStep = Schemas["NextStep"];
-export type Recommendation = Schemas["Recommendation"];
 export type UploadResponse = Schemas["UploadResponse"];
 
 // --- Üretilenler: `dict[str, Any]` alanları daraltılmış ----------------------
@@ -66,6 +84,25 @@ export type QueryResult = Omit<Schemas["QueryResult"], "rows"> & {
 
 export type SchemaResponse = Omit<Schemas["SchemaResponse"], "cubes"> & {
   cubes?: CubeMeta[];
+};
+
+/**
+ * K2 — rapordan DETERMİNİSTİK "sonraki adım" chip'i. Tıklanınca TAM `cube_query`
+ * `/cube` ile LLM'siz koşar (kırılım / ölçek / zaman granülerliği).
+ *
+ * `cube_query` daraltılıyor: backend `dict[str, Any]` bıraktığı için codegen onu
+ * `Record<string, never>` üretiyor — yani "hiç anahtar kabul etmeyen nesne". O
+ * haliyle askCube()'a geçirilemezdi.
+ */
+export type NextStep = Omit<Schemas["NextStep"], "cube_query" | "kind"> & {
+  cube_query: CubeQuery;
+  // Backend `str` diyor; FE ikon seçimi için bilinen değerler + serbest kuyruk.
+  kind: "dimension" | "measure" | "time" | (string & {});
+};
+
+/** K4 — bir K3 sinyalinden türetilen aksiyon önerisi + opsiyonel tıklanır drill. */
+export type Recommendation = Omit<Schemas["Recommendation"], "action"> & {
+  action: NextStep | null;
 };
 
 // --- İstekler: zorunlu alanlar şemadaki `required` ile aynı -----------------
@@ -85,13 +122,17 @@ export type CubeRequest = RequestOf<Omit<Schemas["CubeRequest"], "cube_query">, 
 
 export type AskResponse = Omit<
   Schemas["AskResponse"],
-  "result" | "cube_query" | "kpi" | "interpretation"
+  "result" | "cube_query" | "kpi" | "interpretation" | "next_steps" | "recommendations"
 > & {
   result: QueryResult | null;
   // Rapor cube ile üretildiyse yapısal durum — takip mesajlarında geri gönderilir (ADR-0007).
   cube_query: CubeQuery | null;
   kpi?: KpiCard | null;
   interpretation?: Interpretation | null;
+  // K2/K4 (rehberli analitik) — cevabın ALTINDAKİ yönlendirmeler. Bayrak kapalıysa
+  // backend hiç göndermez → hiç render edilmez.
+  next_steps?: NextStep[];
+  recommendations?: Recommendation[];
 };
 
 // Üretilen ham tiplere erişim (nadir; daraltılmamış hali gerektiğinde).

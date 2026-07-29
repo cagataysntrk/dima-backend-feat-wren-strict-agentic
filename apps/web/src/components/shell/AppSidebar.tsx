@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   ArrowUpRight,
   Bell,
@@ -12,6 +13,7 @@ import {
   ListFilter,
   MessageSquarePlus,
   MessagesSquare,
+  Paperclip,
   Search,
 } from "lucide-react";
 import { useConversations } from "@/stores/conversations";
@@ -45,30 +47,32 @@ import { AccountMenu } from "./AccountMenu";
 import { Onboarding } from "./Onboarding";
 
 /**
- * ChatGPT-style left nav. `collapsible="offcanvas"`: it collapses AWAY entirely —
- * no icon rail — so the reading column gets the whole viewport. The icons come
- * back on hover at the left edge (see AppShell's HoverRail).
+ * Sol gezinme (ChatGPT deseni). `collapsible="offcanvas"`: tamamen çekilir —
+ * ikon rayı bırakmaz — böylece okuma sütunu tüm pencereyi alır; ikonlar sol
+ * kenarda hover ile geri gelir (AppShell'deki HoverRail).
+ *
+ * KAPSAM: buradaki her giriş HESAP GENELİNE gider ve TAM SAYFA açar — tüm veri
+ * kaynakları, tüm paneller, tüm belgeler. Tek bir sohbete ait olan şey buraya
+ * girmez, o sağ panelin işidir. Kural basit tutuluyor çünkü kullanıcı "bunu
+ * nerede arayacağım?" sorusunu her seferinde yeniden çözmek zorunda kalmasın.
  */
 type ChatFilter = "all" | "named" | "empty";
 
 export function AppSidebar({
   onNewChat,
   onSelectConversation,
-  onOpenSchema,
   onOpenHelp,
-  onOpenDashboards,
   onOpenSearch,
   onOpenShortcuts,
 }: {
   onNewChat: () => void;
   onSelectConversation: (id: string) => void;
-  onOpenSchema: () => void;
   onOpenHelp: () => void;
-  onOpenDashboards: () => void;
   onOpenSearch: () => void;
   onOpenShortcuts: () => void;
 }) {
   const t = useTranslations();
+  const pathname = usePathname();
   const conversations = useConversations((s) => s.conversations);
   const activeId = useConversations((s) => s.activeId);
   const [filter, setFilter] = useState<ChatFilter>("all");
@@ -115,19 +119,31 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={onOpenSchema}>
-              <Database className="size-4" />
-              <span>{t("chat.dataSources")}</span>
+            <SidebarMenuButton asChild isActive={pathname === "/data-sources"}>
+              <Link href="/data-sources">
+                <Database className="size-4" />
+                <span>{t("chat.dataSources")}</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={onOpenDashboards}>
-              <LayoutDashboard className="size-4" />
-              <span>Paneller</span>
+            <SidebarMenuButton asChild isActive={pathname === "/dashboards"}>
+              <Link href="/dashboards">
+                <LayoutDashboard className="size-4" />
+                <span>Paneller</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton asChild isActive={pathname === "/documents"}>
+              <Link href="/documents">
+                <Paperclip className="size-4" />
+                <span>Belgeler</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname === "/notifications"}>
               <Link href="/notifications">
                 <Bell className="size-4" />
                 <span className="flex-1">Bildirimler</span>
