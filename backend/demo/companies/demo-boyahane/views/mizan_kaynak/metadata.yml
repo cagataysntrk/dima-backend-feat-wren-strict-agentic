@@ -1,0 +1,18 @@
+# Mizan kaynağı — yevmiye satırları + hesap planı (isim) + fiş tarihi. Kanonik kolonlar
+# (hesap_kodu/hesap_adi/borc/alacak/tarih) generic mizan contract'ıyla AYNI → statements.py
+# (gelir tablosu/bilanço) ve KPI'lar değişmeden çalışır. Tekdüzen Hesap Planı (6xx gelir/
+# gider, 1-5 bilanço). Tarih fişten gelir (satırda yok).
+name: mizan_kaynak
+statement: |
+  SELECT y.hesap_kodu,
+         COALESCE(NULLIF(h.hesap_adi, ''), y.hesap_kodu) AS hesap_adi,
+         f.tarih, y.borc, y.alacak
+  FROM yevmiye_satirlari y
+  LEFT JOIN hesap_plani h ON y.hesap_kodu = h.hesap_kodu
+  LEFT JOIN yevmiye_fisleri f ON y.fis_no = f.fis_no
+columns:
+  - {name: hesap_kodu, type: VARCHAR}
+  - {name: hesap_adi, type: VARCHAR}
+  - {name: tarih, type: DATE}
+  - {name: borc, type: DOUBLE}
+  - {name: alacak, type: DOUBLE}

@@ -1,0 +1,17 @@
+# ÜRETİLMİŞTİR: lab/generate_models.py ← ATIKSAN_MIKRO.CARI_HESAPLAR (elle düzenleme,
+# yeniden üretimde ezilir; kolon seçimi gereksinim.yml'de yaşar.)
+name: cari_hesaplar
+table_reference:
+  schema: dbo
+  table: CARI_HESAPLAR
+columns:
+- name: cari_kod
+  type: VARCHAR
+  is_primary_key: true
+- name: cari_unvan1
+  type: VARCHAR
+- name: cari_doviz_cinsi
+  type: INTEGER
+- name: cari_vdaire_adi
+  type: VARCHAR
+primary_key: cari_kod

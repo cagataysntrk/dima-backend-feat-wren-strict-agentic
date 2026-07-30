@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --muted: #8a8a8a;
+  --hairline: #e6e6e6;
+  --accent: #b45309; /* oksit/amber — pigment & amber-CRT çağrışımı, jenerik mavi değil */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-hairline: var(--hairline);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #08090a;
+    --foreground: #e8e8e6;
+    --muted: #6b6b6b;
+    --hairline: #1c1d1f;
+    --accent: #f5a524;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  /* Geist — Arial override kaldırıldı (premium tipografi) */
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+/* Terminal imleci: yanıp sönen ince dikey bar (amber-CRT) */
+@keyframes dima-blink {
+  0%, 48% { opacity: 1; }
+  52%, 100% { opacity: 0; }
+}
+.dima-caret {
+  display: inline-block;
+  width: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 55%, transparent);
+  animation: dima-blink 1.15s steps(1, end) infinite;
+}
+
+/* Odakta: input çizgisi amber'a "kurulur" (statik glow — hareket yok, Matrix değil) */
+.dima-line-armed {
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 45%, var(--hairline)) 50%, transparent);
+}
+
+/* Yalnız İŞLEM sırasında: tarama parıltısı akar (hareket = iş dönüyor) */
+@keyframes dima-scan {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(300%); }
+}
+.dima-scanline::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 65%, transparent), transparent);
+  animation: dima-scan 1.5s ease-in-out infinite;
+}
+
+/* Konsol derinliği — boşlukta hafif vignette (içerik değil, atmosfer) */
+.dima-vignette {
+  background: radial-gradient(120% 80% at 50% 42%, transparent 55%, color-mix(in srgb, var(--foreground) 5%, transparent) 100%);
+}
+
+@keyframes dima-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.dima-dot {
+  animation: dima-pulse 2.4s ease-in-out infinite;
+}
+
+/* BrandMark draw-in: strokes reveal via dashoffset, dots pop with overshoot. */
+@keyframes brand-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes brand-pop {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.brand-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: brand-draw 0.8s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  animation-delay: var(--brand-delay, 0s);
+}
+
+.brand-pop {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: brand-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-delay: var(--brand-delay, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-draw,
+  .brand-pop {
+    animation: none;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}

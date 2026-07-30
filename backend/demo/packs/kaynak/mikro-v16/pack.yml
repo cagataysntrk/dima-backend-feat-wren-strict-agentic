@@ -1,0 +1,12 @@
+# Mikro V16 KAYNAK pack'i (ADR-0017): fiziksel şema katmanı — modeller,
+# ilişkiler ve sektörden bağımsız jenerik cube'lar (cari, satış/alım).
+# Sektör bağları packs/kaynak/mikro-v16/sektor/<s>/ kesişim katmanında yaşar.
+name: mikro-v16
+tur: kaynak
+datasource: mssql
+
+# ERP fingerprint imzaları (ADR-0017 Karar 3): admin panel introspection'ı
+# bu imzalarla eşleşince pack'i önerir, superadmin onaylar.
+fingerprint:
+  tablolar: [CARI_HESAPLAR, STOKLAR, STOK_HAREKETLERI, CARI_HESAP_HAREKETLERI]
+  kolon_onekleri: [cari_, sto_, sth_, cha_]

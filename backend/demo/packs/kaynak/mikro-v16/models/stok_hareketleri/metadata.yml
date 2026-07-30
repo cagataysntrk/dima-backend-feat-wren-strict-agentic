@@ -1,0 +1,27 @@
+# ÜRETİLMİŞTİR: lab/generate_models.py ← ATIKSAN_MIKRO.STOK_HAREKETLERI (elle düzenleme,
+# yeniden üretimde ezilir; kolon seçimi gereksinim.yml'de yaşar.)
+name: stok_hareketleri
+table_reference:
+  schema: dbo
+  table: STOK_HAREKETLERI
+columns:
+- name: sth_tarih
+  type: TIMESTAMP
+- name: sth_tip
+  type: INTEGER
+- name: sth_cins
+  type: INTEGER
+- name: sth_evraktip
+  type: INTEGER
+- name: sth_stok_kod
+  type: VARCHAR
+- name: sth_cari_kodu
+  type: VARCHAR
+- name: sth_miktar
+  type: DOUBLE
+- name: sth_tutar
+  type: DOUBLE
+- name: sth_giris_depo_no
+  type: INTEGER
+- name: sth_cikis_depo_no
+  type: INTEGER

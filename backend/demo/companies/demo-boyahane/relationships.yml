@@ -1,0 +1,139 @@
+# WrenAI ilişkileri (join grafiği) — 47-tablo şeması. MANY_TO_ONE: fact → boyut (PK).
+# Yalnız kolon adları KESİN eşleşen join'ler tanımlı (yanlış join = yanlış metrik;
+# cari_kodu/irsaliye gibi master-tablosuz FK'ler bilinçli ATLANDI). ONE_TO_ONE = özlük.
+relationships:
+  # --- üretim / parti (+ operatör KİŞİ köprüsü: operator = personel.ad_soyad) ---
+  - name: partiler_personel
+    join_type: MANY_TO_ONE
+    models: [partiler, personel]
+    condition: "partiler.operator = personel.ad_soyad"
+  - name: partiler_makineler
+    join_type: MANY_TO_ONE
+    models: [partiler, makineler]
+    condition: "partiler.makine = makineler.makine"
+  - name: partiler_musteriler
+    join_type: MANY_TO_ONE
+    models: [partiler, musteriler]
+    condition: "partiler.musteri_kod = musteriler.musteri_kodu"
+  - name: partiler_tedarikciler
+    join_type: MANY_TO_ONE
+    models: [partiler, tedarikciler]
+    condition: "partiler.tedarikci_kod = tedarikciler.tedarikci_kodu"
+  - name: top_stok_partiler
+    join_type: MANY_TO_ONE
+    models: [top_stok, partiler]
+    condition: "top_stok.parti_no = partiler.parti_no"
+
+  # --- OEE / makine olayları ---
+  - name: oee_vardiya_makineler
+    join_type: MANY_TO_ONE
+    models: [oee_vardiya, makineler]
+    condition: "oee_vardiya.makine = makineler.makine"
+  - name: makine_duruslari_makineler
+    join_type: MANY_TO_ONE
+    models: [makine_duruslari, makineler]
+    condition: "makine_duruslari.makine = makineler.makine"
+  - name: ariza_kayitlari_makineler
+    join_type: MANY_TO_ONE
+    models: [ariza_kayitlari, makineler]
+    condition: "ariza_kayitlari.makine = makineler.makine"
+  - name: bakim_planlari_makineler
+    join_type: MANY_TO_ONE
+    models: [bakim_planlari, makineler]
+    condition: "bakim_planlari.makine = makineler.makine"
+  - name: makine_enerji_aylik_makineler
+    join_type: MANY_TO_ONE
+    models: [makine_enerji_aylik, makineler]
+    condition: "makine_enerji_aylik.makine = makineler.makine"
+
+  # --- kalite / lab ---
+  - name: lab_olcumleri_makineler
+    join_type: MANY_TO_ONE
+    models: [lab_olcumleri, makineler]
+    condition: "lab_olcumleri.makine = makineler.makine"
+  - name: lab_olcumleri_partiler
+    join_type: MANY_TO_ONE
+    models: [lab_olcumleri, partiler]
+    condition: "lab_olcumleri.parti = partiler.parti_no"
+  - name: tamir_rework_makineler
+    join_type: MANY_TO_ONE
+    models: [tamir_rework, makineler]
+    condition: "tamir_rework.makine = makineler.makine"
+  - name: tamir_rework_partiler
+    join_type: MANY_TO_ONE
+    models: [tamir_rework, partiler]
+    condition: "tamir_rework.parti = partiler.parti_no"
+
+  # --- İK (personel → özlük 1:1 demografi köprüsü) ---
+  - name: personel_ozluk_personel
+    join_type: ONE_TO_ONE
+    models: [personel_ozluk, personel]
+    condition: "personel_ozluk.personel_kodu = personel.personel_kodu"
+  - name: bordro_personel
+    join_type: MANY_TO_ONE
+    models: [bordro, personel]
+    condition: "bordro.personel_kodu = personel.personel_kodu"
+  - name: puantaj_personel
+    join_type: MANY_TO_ONE
+    models: [puantaj, personel]
+    condition: "puantaj.personel_kodu = personel.personel_kodu"
+  - name: izinler_personel
+    join_type: MANY_TO_ONE
+    models: [izinler, personel]
+    condition: "izinler.personel_kodu = personel.personel_kodu"
+
+  # --- muhasebe / finans ---
+  - name: yevmiye_satirlari_fisleri
+    join_type: MANY_TO_ONE
+    models: [yevmiye_satirlari, yevmiye_fisleri]
+    condition: "yevmiye_satirlari.fis_no = yevmiye_fisleri.fis_no"
+  - name: yevmiye_satirlari_hesap_plani
+    join_type: MANY_TO_ONE
+    models: [yevmiye_satirlari, hesap_plani]
+    condition: "yevmiye_satirlari.hesap_kodu = hesap_plani.hesap_kodu"
+  - name: fatura_satirlari_faturalar
+    join_type: MANY_TO_ONE
+    models: [fatura_satirlari, faturalar]
+    condition: "fatura_satirlari.fatura_no = faturalar.fatura_no"
+  - name: banka_hareketleri_hesaplari
+    join_type: MANY_TO_ONE
+    models: [banka_hareketleri, banka_hesaplari]
+    condition: "banka_hareketleri.banka_kodu = banka_hesaplari.banka_kodu"
+
+  # --- stok / satınalma ---
+  - name: stok_hareketleri_kartlari
+    join_type: MANY_TO_ONE
+    models: [stok_hareketleri, stok_kartlari]
+    condition: "stok_hareketleri.stok_kodu = stok_kartlari.stok_kodu"
+  - name: stok_hareketleri_depolar
+    join_type: MANY_TO_ONE
+    models: [stok_hareketleri, depolar]
+    condition: "stok_hareketleri.depo_kodu = depolar.depo_kodu"
+  - name: sayimlar_stok_kartlari
+    join_type: MANY_TO_ONE
+    models: [sayimlar, stok_kartlari]
+    condition: "sayimlar.stok_kodu = stok_kartlari.stok_kodu"
+  - name: sayimlar_depolar
+    join_type: MANY_TO_ONE
+    models: [sayimlar, depolar]
+    condition: "sayimlar.depo_kodu = depolar.depo_kodu"
+  - name: satinalma_tedarikciler
+    join_type: MANY_TO_ONE
+    models: [satinalma_siparisleri, tedarikciler]
+    condition: "satinalma_siparisleri.tedarikci_kodu = tedarikciler.tedarikci_kodu"
+  - name: satinalma_stok_kartlari
+    join_type: MANY_TO_ONE
+    models: [satinalma_siparisleri, stok_kartlari]
+    condition: "satinalma_siparisleri.stok_kodu = stok_kartlari.stok_kodu"
+  - name: iplik_lotlari_ham_kartlari
+    join_type: MANY_TO_ONE
+    models: [iplik_lotlari, ham_kartlari]
+    condition: "iplik_lotlari.ham_kodu = ham_kartlari.ham_kodu"
+  - name: iplik_lotlari_tedarikciler
+    join_type: MANY_TO_ONE
+    models: [iplik_lotlari, tedarikciler]
+    condition: "iplik_lotlari.tedarikci_kodu = tedarikciler.tedarikci_kodu"
+  - name: teklifler_musteriler
+    join_type: MANY_TO_ONE
+    models: [teklifler, musteriler]
+    condition: "teklifler.musteri_kodu = musteriler.musteri_kodu"

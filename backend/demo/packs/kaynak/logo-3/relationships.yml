@@ -1,0 +1,27 @@
+# Logo 3 çekirdek ilişkileri — soyut model adlarıyla (fiziksel önekler modellerde
+# çözülür); bağlar LOGICALREF kimlikleri üzerinden kurulur.
+relationships:
+  - name: cari_hareket_cari
+    join_type: MANY_TO_ONE
+    models:
+      - cari_hareketleri
+      - cari_kartlar
+    condition: "cari_hareketleri.CLIENTREF = cari_kartlar.LOGICALREF"
+  - name: fatura_cari
+    join_type: MANY_TO_ONE
+    models:
+      - faturalar
+      - cari_kartlar
+    condition: "faturalar.CLIENTREF = cari_kartlar.LOGICALREF"
+  - name: fatura_satir_stok
+    join_type: MANY_TO_ONE
+    models:
+      - fatura_satirlari
+      - stok_kartlari
+    condition: "fatura_satirlari.STOCKREF = stok_kartlari.LOGICALREF"
+  - name: fatura_satir_cari
+    join_type: MANY_TO_ONE
+    models:
+      - fatura_satirlari
+      - cari_kartlar
+    condition: "fatura_satirlari.CLIENTREF = cari_kartlar.LOGICALREF"

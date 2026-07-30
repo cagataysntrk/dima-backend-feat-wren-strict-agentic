@@ -1,0 +1,23 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.sertifikalar
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: sertifikalar
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: sertifikalar
+columns:
+- name: sertifika_kodu
+  type: VARCHAR
+  is_primary_key: true
+  not_null: true
+- name: tur
+  type: VARCHAR
+- name: gecerlilik_baslangic
+  type: DATE
+- name: gecerlilik_bitis
+  type: DATE
+- name: kapsam
+  type: VARCHAR
+- name: durum
+  type: VARCHAR
+primary_key: sertifika_kodu

@@ -1,0 +1,147 @@
+name: parti
+label: parti
+base_object: parti_zengin  # partiler + operatör demografisi (cinsiyet/yaş/eğitim) JOIN view'ı
+
+# NL yönlendirme içeriği (ADR-0005: içerik Wren'de, kod generic). Eşleşme: varsayılan
+# ALTDİZİ; sonu "!" olan TAM KELİME ("kar!" → "karşılaştır"ı yakalamaz).
+# 47-tablo şemasına rebind (2026-07-29): public contract (ölçü/boyut ADLARI) KORUNDU,
+# expression'lar yeni kolonlara bağlandı → routing/golden regresyonu YOK. Su/enerji
+# sözlüğü surdurulebilirlik cube'una aittir (kimlik tekil kalsın). Kişi-verimliliği +
+# demografi (cinsiyet/yaş/eğitim) BU cube'da: partiler.operator = personel köprüsü.
+synonyms: [fire, ciro, gelir, tutar, satış, kar!, kârımız, karımız, kârlı, karlı,
+           kazanç, marj, sapma, ağırlık, kilo, tonaj, parti, müşteri, kumaş, renk, aşama,
+           boyama, yıkama, apre, kurutma, reddedil, maliyet,
+           operatör, çalışan, cinsiyet, yaş, eğitim, departman]
+# NOT: "verim/verimlilik/randıman" OEE cube kimliğidir → parti'de TUTULMAZ (routing
+# ambiguity). Kişi-verimliliği parti'ye operatör/cinsiyet/çalışan + ölçü (ilk_seferde_
+# tamam_yuzde / kg) ile ulaşılır; "randıman" tek başına oee'ye gider (golden korunur).
+# default_measure YOK: ölçü kelimesi eşleşmezse LLM'e düşülür.
+
+measures:
+  # lower_is_better: görselleştirme yön semantiği (yüksek=KÖTÜ → ısı haritasında kırmızı).
+  # FİRE (parti düzeyi): gerçek fire_kg kolonu yok → ilk-seferde-tamamlanamayan (rework'e
+  # giden) partilerin kg'ı fire proxy'sidir. Ağırlık-bazlı rework `kalite` cube'unda.
+  - name: toplam_fire_kg
+    expression: "SUM(CASE WHEN ilk_seferde_tamam = 0 THEN kg ELSE 0 END)"
+    type: DOUBLE
+    synonyms: [fire]
+    lower_is_better: true
+  - name: fire_orani_yuzde
+    expression: "ROUND(SUM(CASE WHEN ilk_seferde_tamam = 0 THEN kg ELSE 0 END)*100.0/NULLIF(SUM(kg),0),2)"
+    type: DOUBLE
+    synonyms: [fire oranı, fire yüzdesi, hata oranı]
+    lower_is_better: true
+  - name: toplam_agirlik_kg
+    expression: SUM(kg)
+    type: DOUBLE
+    synonyms: [ağırlık, kilo, tonaj, işlenen, üretim, üretilen]  # parti bağlamında üretim = işlenen kg
+  - name: toplam_metre
+    expression: SUM(metre)
+    type: DOUBLE
+    synonyms: [metre, metraj, uzunluk]
+  - name: toplam_ciro
+    expression: SUM(ciro_tl)
+    type: DOUBLE
+    synonyms: [ciro, gelir, tutar, satış]
+  # KÂR (parti düzeyi katkı marjı): boyahanede enerji + kimyasal ana değişken maliyettir →
+  # kâr ≈ ciro − enerji_toplam_tl − kimyasal_tl. İşçilik/SG&A dönemsel (finans/mizan gelir
+  # tablosunda tam SMM); bu parti-düzeyi değişken-maliyet katkı payıdır.
+  - name: kar
+    expression: "SUM(ciro_tl - enerji_toplam_tl - kimyasal_tl)"
+    type: DOUBLE
+    synonyms: [kar!, kârımız, karımız, kârlı, karlı, kazanç]  # "kar!" tam-kelime (karşılaştır tuzağı)
+  - name: kar_marji_yuzde
+    expression: "ROUND(SUM(ciro_tl - enerji_toplam_tl - kimyasal_tl)*100.0/NULLIF(SUM(ciro_tl),0),2)"
+    type: DOUBLE
+    synonyms: [kar oranı, kar yüzdesi, kâr marjı, kar marjı, karlılık oranı, karlılık, marj]
+  # ORAN ölçüsü = TOPLAM/TOPLAM (ISO tarzı, satır-AVG değil). renk sapması = uretim_dE.
+  - name: ort_renk_sapmasi
+    expression: AVG(uretim_dE)
+    type: DOUBLE
+    synonyms: [sapma, delta, renk sapması, dE]
+    lower_is_better: true
+  # VERİMLİLİK (kişi/operatör bazında anlamlı): ilk-seferde-tamam oranı (RFT). Yüksek iyi.
+  - name: ilk_seferde_tamam_yuzde
+    expression: "ROUND(SUM(ilk_seferde_tamam)*100.0/NULLIF(COUNT(*),0),2)"
+    type: DOUBLE
+    synonyms: [ilk seferde tamam, rft, ilk sefer, ilk seferde]
+  - name: parti_sayisi
+    expression: COUNT(*)
+    type: DOUBLE
+    synonyms: [parti sayısı, kaç parti, adet]
+
+dimensions:
+  - name: makine
+    expression: makine
+    type: VARCHAR
+    label: makine
+    synonyms: [makin, cihaz, tezgah]
+  - name: hat
+    expression: hat
+    type: VARCHAR
+    synonyms: [hat, hattı, line]
+  - name: kumas_cinsi
+    expression: ham_ad
+    type: VARCHAR
+    label: kumaş cinsi
+    synonyms: [kumaş, kumaş cinsi, ham, hammadde]
+  - name: ham_grup
+    expression: ham_grup
+    type: VARCHAR
+    label: iplik grubu
+    synonyms: [ham grubu, iplik grubu, örgü tipi]  # bare "kumaş" kumas_cinsi'nin (label da)
+  - name: renk
+    expression: renk_ad
+    type: VARCHAR
+    synonyms: [renk]
+  - name: renk_derinlik
+    expression: renk_derinlik
+    type: VARCHAR
+    label: ton derinliği
+    synonyms: [derinlik, ton, açık ton, koyu ton]  # bare "renk" renk boyutunun (label da)
+  - name: asama
+    expression: asama
+    type: VARCHAR
+    synonyms: [aşama, boyama, yıkama, apre, kurutma]
+  - name: musteri
+    expression: musteri_ad
+    type: VARCHAR
+    synonyms: [müşteri, firma]
+  # --- KİŞİ / DEMOGRAFİ boyutları (personel köprüsü — calc field'lar model'de) ---
+  - name: operator
+    expression: operator
+    type: VARCHAR
+    label: operatör
+    synonyms: [operatör, çalışan baz, çalışana göre, çalışanlara göre, kişi baz, kişiye göre]
+  - name: cinsiyet
+    expression: operator_cinsiyet
+    type: VARCHAR
+    synonyms: [cinsiyet, kadın, erkek, cinsiyete göre]
+  - name: departman
+    expression: operator_departman
+    type: VARCHAR
+    synonyms: [departman, bölüm, birim]
+  - name: egitim
+    expression: operator_egitim
+    type: VARCHAR
+    label: eğitim
+    synonyms: [eğitim, öğrenim, okul]
+  # YAŞ GRUBU: doğum tarihinden türetilir (2-hop calc: partiler→personel→özlük). Hiç
+  # sorulmamış olsa da ŞEMADA doğum tarihi var → yaş-bazlı verimlilik analizi mümkün.
+  - name: yas_grubu
+    label: yaş grubu
+    expression: "CASE WHEN operator_dogum_tarihi IS NULL THEN NULL WHEN date_diff('year', operator_dogum_tarihi, current_date) < 30 THEN '<30' WHEN date_diff('year', operator_dogum_tarihi, current_date) < 40 THEN '30-39' WHEN date_diff('year', operator_dogum_tarihi, current_date) < 50 THEN '40-49' ELSE '50+' END"
+    type: VARCHAR
+    synonyms: [yaş, yaş grubu, yaşa göre, yaş aralığı, kaç yaş]
+
+  # Türev zaman boyutu (base/time deseni): haftanın günü — Pzt..Paz (TR), oee ile aynı.
+  - name: hafta_gunu
+    label: haftanın günü
+    expression: "CASE isodow(tarih) WHEN 1 THEN 'Pzt' WHEN 2 THEN 'Sal' WHEN 3 THEN 'Çar' WHEN 4 THEN 'Per' WHEN 5 THEN 'Cum' WHEN 6 THEN 'Cmt' WHEN 7 THEN 'Paz' END"
+    type: VARCHAR
+    synonyms: [haftanın gün, hafta gün, hangi gün, günlere göre, güne göre]
+
+time_dimensions:
+  - name: tarih
+    expression: tarih
+    type: DATE

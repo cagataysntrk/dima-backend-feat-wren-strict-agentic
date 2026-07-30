@@ -1,0 +1,44 @@
+name: enerji_sapma
+label: enerji performans sapması (CUSUM/EnPG)
+base_object: cusum
+
+# Enerji performans sapması (ISO-50015 M&V + ISO-50006 EnB). Gerçekleşen vs üretime-dayalı
+# beklenen tüketim; EnPG = fark, CUSUM = kümülatif fark. Grain = ay×kaynak (elektrik/doğalgaz/su).
+# NOT (ISO-50006 sınırı, YGG slayt 10): mevcut beklenen yalnız ÜRETİM regresyonu — derece-gün
+# (HDD/CDD) normalizasyonu YOK. Tam uyum için veri katmanında çok-değişkenli EnB gerekir.
+synonyms: [cusum, enpg, enerji sapması, performans sapması, beklenen tüketim, sapma analizi,
+           regresyon sapması, enerji performans göstergesi, gerçekleşen beklenen]
+default_measure: toplam_enpg
+
+measures:
+  - name: toplam_enpg
+    # Net EnPG (aylık farkların toplamı ≈ dönem-sonu CUSUM). Pozitif = beklenenin üstü (araştır).
+    expression: "ROUND(SUM(enpg),0)"
+    type: DOUBLE
+    synonyms: [enpg, sapma, net sapma, fark, kümülatif fark, cusum]
+    lower_is_better: true
+  - name: sapma_yuzde
+    expression: "ROUND(SUM(enpg)*100.0/NULLIF(SUM(beklenen),0),1)"
+    type: DOUBLE
+    synonyms: [sapma yüzdesi, sapma oranı, performans sapması yüzde]
+    lower_is_better: true
+  - name: toplam_gerceklesen
+    expression: SUM(gerceklesen)
+    type: DOUBLE
+    synonyms: [gerçekleşen, gerçekleşen tüketim, fiili tüketim]
+  - name: toplam_beklenen
+    expression: SUM(beklenen)
+    type: DOUBLE
+    synonyms: [beklenen, beklenen tüketim, regresyon, referans tüketim]
+
+dimensions:
+  - name: kaynak
+    expression: kaynak
+    type: VARCHAR
+    label: enerji kaynağı
+    synonyms: [kaynak, enerji kaynağı, elektrik doğalgaz su, hangi kaynak]
+
+time_dimensions:
+  - name: donem_tarih
+    expression: "make_date(yil, ay, 1)"
+    type: DATE

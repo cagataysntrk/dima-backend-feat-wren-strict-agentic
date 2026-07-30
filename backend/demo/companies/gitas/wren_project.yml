@@ -1,0 +1,6 @@
+schema_version: 5
+name: gitas
+version: "1.0"
+catalog: wren
+schema: dbo
+data_source: mssql

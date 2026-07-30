@@ -1,0 +1,52 @@
+name: cari
+label: cari hesap
+base_object: cari_hareketleri
+
+# Logo 3 anlam sabitleri (GULTEKS_2021 verisinden doğrulandı): SIGN 0 = BORÇ,
+# 1 = ALACAK; tutar = AMOUNT; iptal satırlar CANCELLED=1. Cube tek-tablodur (JOIN
+# yok) — cari KİMLİĞİ (CLIENTREF) boyut olarak verilir, unvana LLM yolu relationship
+# üzerinden ulaşır.
+always_filter: "CANCELLED = 0"
+synonyms: [cari, bakiye, borç, borc, alacak, tahsilat, ödeme, odeme, ekstre, hesap]
+
+measures:
+  - name: toplam_borc
+    expression: "SUM(CASE WHEN SIGN = 0 THEN AMOUNT ELSE 0 END)"
+    type: DOUBLE
+    unit: "₺"
+    additive: full
+    synonyms: [borç, borc, borç toplamı]
+  - name: toplam_alacak
+    expression: "SUM(CASE WHEN SIGN = 1 THEN AMOUNT ELSE 0 END)"
+    type: DOUBLE
+    unit: "₺"
+    additive: full
+    synonyms: [alacak, alacak toplamı, tahsilat]
+  - name: bakiye
+    expression: "SUM(CASE WHEN SIGN = 0 THEN AMOUNT ELSE -AMOUNT END)"
+    type: DOUBLE
+    unit: "₺"
+    additive: semi
+    synonyms: [bakiye, net bakiye, kalan]
+  - name: hareket_sayisi
+    expression: "COUNT(*)"
+    type: DOUBLE
+    unit: "adet"
+    synonyms: [hareket sayısı, kaç hareket, işlem sayısı]
+
+dimensions:
+  - name: cari_ref
+    expression: CLIENTREF
+    type: INTEGER
+    label: cari ref
+    synonyms: [cari kod, firma kodu, hesap]
+  - name: islem_turu
+    expression: TRCODE
+    type: INTEGER
+    label: işlem türü
+    synonyms: [işlem, evrak türü]
+
+time_dimensions:
+  - name: tarih
+    expression: DATE_
+    type: TIMESTAMP

@@ -1,0 +1,97 @@
+name: ik
+label: İK / bordro
+base_object: ik_zengin
+
+# İK/bordro cube'u (YENİ modül, 2026-07-29) — sektörden bağımsız X-ekseni topic.
+# Maaş/SGK/mesai/prim + personel demografisi (departman/cinsiyet/yaş/eğitim). Eski yapıda
+# İK YOKTU → tümüyle yeni yetenek (logic ileri). Demografi köprüsü = ik_zengin view.
+# NOT: "personel/çalışan" parti operatör-boyutu + oee ile çakışır → cube kimliğinde
+# TUTULMAZ (personel_sayisi ölçüsünde kalır). İK'ya ik/bordro/maaş/sgk ile ulaşılır.
+synonyms: [ik, insan kaynakları, bordro, maaş, ücret, sgk, mesai, prim, kadro, işçilik,
+           puantaj, özlük]
+
+measures:
+  - name: toplam_brut_maas
+    expression: SUM(brut_maas)
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [brüt maaş, brüt ücret, toplam brüt, brüt]
+  - name: toplam_net_maas
+    expression: SUM(net_maas)
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [net maaş, net ücret, ele geçen, toplam net, net]
+  - name: toplam_isveren_maliyeti
+    # İşverene toplam maliyet = brüt + SGK işveren payı (bordro maliyeti).
+    expression: "SUM(brut_maas + sgk_isveren)"
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [işveren maliyeti, işçilik maliyeti, toplam maliyet, bordro maliyeti, kadro maliyeti]
+  - name: toplam_mesai_ucreti
+    expression: SUM(mesai_ucreti)
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [mesai, fazla mesai, mesai ücreti, ek mesai]
+  - name: toplam_prim
+    expression: SUM(prim)
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [prim, ikramiye, bonus]
+  - name: toplam_sgk
+    expression: "SUM(sgk_isci + sgk_isveren)"
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [sgk, sigorta, sgk primi, sosyal güvenlik]
+  - name: ort_brut_maas
+    expression: "ROUND(AVG(brut_maas),0)"
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [ortalama maaş, ortalama brüt, ortalama ücret, maaş ortalaması]
+  - name: personel_sayisi
+    expression: "COUNT(DISTINCT personel_kodu)"
+    type: DOUBLE
+    synonyms: [personel sayısı, çalışan sayısı, kaç kişi, kadro, headcount, mevcut]
+
+dimensions:
+  - name: departman
+    expression: departman
+    type: VARCHAR
+    synonyms: [departman, bölüm, birim]
+  - name: cinsiyet
+    expression: cinsiyet
+    type: VARCHAR
+    synonyms: [cinsiyet, kadın, erkek, cinsiyete göre]
+  - name: egitim
+    expression: egitim
+    type: VARCHAR
+    label: eğitim
+    synonyms: [eğitim, öğrenim, okul]
+  - name: pozisyon
+    expression: pozisyon
+    type: VARCHAR
+    synonyms: [pozisyon, unvan, görev]
+  - name: medeni_hal
+    expression: medeni_hal
+    type: VARCHAR
+    label: medeni hal
+    synonyms: [medeni hal, medeni durum, evli, bekar]
+  - name: personel_vardiya
+    expression: personel_vardiya
+    type: VARCHAR
+    label: vardiya
+    synonyms: [vardiya, vardiyası]
+  - name: donem
+    expression: donem
+    type: VARCHAR
+    label: dönem
+    synonyms: [dönem, ay, periyot]
+  - name: yas_grubu
+    label: yaş grubu
+    expression: "CASE WHEN dogum_tarihi IS NULL THEN NULL WHEN date_diff('year', dogum_tarihi, current_date) < 30 THEN '<30' WHEN date_diff('year', dogum_tarihi, current_date) < 40 THEN '30-39' WHEN date_diff('year', dogum_tarihi, current_date) < 50 THEN '40-49' ELSE '50+' END"
+    type: VARCHAR
+    synonyms: [yaş, yaş grubu, yaşa göre, yaş aralığı]
+
+time_dimensions:
+  - name: donem_tarih
+    expression: donem_tarih
+    type: DATE

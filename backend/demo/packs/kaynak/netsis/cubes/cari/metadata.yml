@@ -1,0 +1,67 @@
+name: cari
+label: cari hesap
+base_object: cari_hareketleri
+
+# Netsis anlam sabitleri (GITAS2026F verisinden doğrulandı): BORÇ ve ALACAK ayrı
+# kolonlardır (tip bayrağı yok); bakiye = borç − alacak. Şube ekseni SUBE_KODU.
+synonyms: [cari, bakiye, borç, borc, alacak, tahsilat, ödeme, odeme, ekstre, hesap]
+
+measures:
+  - name: toplam_borc
+    expression: "SUM(BORC)"
+    type: DOUBLE
+    unit: "₺"
+    additive: full
+    synonyms: [borç, borc, borç toplamı]
+  - name: toplam_alacak
+    expression: "SUM(ALACAK)"
+    type: DOUBLE
+    unit: "₺"
+    additive: full
+    synonyms: [alacak, alacak toplamı, tahsilat]
+  - name: bakiye
+    expression: "SUM(BORC - ALACAK)"
+    type: DOUBLE
+    unit: "₺"
+    additive: semi
+    synonyms: [bakiye, net bakiye, kalan]
+  - name: hareket_sayisi
+    expression: COUNT(*)
+    type: DOUBLE
+    unit: "adet"
+    synonyms: [hareket sayısı, kaç hareket, işlem sayısı]
+
+dimensions:
+  - name: cari_adi
+    expression: cari_adi
+    type: VARCHAR
+    label: cari adı
+    synonyms: [cari, müşteri, firma, hesap, kime, kimden]
+  - name: cari_kodu
+    expression: CARI_KOD
+    type: VARCHAR
+    label: cari kodu
+    synonyms: [cari kod, hesap kodu, firma kodu]
+  - name: sube
+    expression: SUBE_KODU
+    type: INTEGER
+    label: şube
+    synonyms: [şube, sube, şubeye göre]
+  - name: hareket_turu
+    expression: HAREKET_TURU
+    type: VARCHAR
+    label: hareket türü
+    synonyms: [hareket türü, işlem türü]
+
+  # Türev zaman boyutu (boyahane parti/oee deseni): haftanın günü — Pzt..Paz.
+  # DATEFIRST'ten bağımsız: DATEDIFF(DAY, 0, x) % 7 → 0=Pzt (1900-01-01 Pazartesi).
+  - name: hafta_gunu
+    label: haftanın günü
+    expression: "CASE DATEDIFF(DAY, 0, TARIH) % 7 WHEN 0 THEN 'Pzt' WHEN 1 THEN 'Sal' WHEN 2 THEN 'Çar' WHEN 3 THEN 'Per' WHEN 4 THEN 'Cum' WHEN 5 THEN 'Cmt' ELSE 'Paz' END"
+    type: VARCHAR
+    synonyms: [haftanın gün, hafta gün, hangi gün, günlere göre, güne göre]
+
+time_dimensions:
+  - name: tarih
+    expression: TARIH
+    type: TIMESTAMP

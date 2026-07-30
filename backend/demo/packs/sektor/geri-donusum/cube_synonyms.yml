@@ -1,0 +1,5 @@
+# Geri dönüşüm terminolojisi → generic kaynak cube'una eklenir.
+ticaret:
+  synonyms: [hurda, hurda alımı, hurda satışı, atık, toplama]
+mal:
+  synonyms: [hurda, atık, tonaj, kaç ton, kaç kilo]

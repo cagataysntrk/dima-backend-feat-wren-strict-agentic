@@ -1,0 +1,37 @@
+# ÜRETİLMİŞTİR: lab/generate_models.py ← GITAS_SNAP.TBLSTHAR (elle düzenleme,
+# yeniden üretimde ezilir; kolon seçimi gereksinim.yml'de yaşar.)
+name: stok_hareketleri
+table_reference:
+  schema: dbo
+  table: TBLSTHAR
+columns:
+- name: STOK_KODU
+  type: VARCHAR
+- name: STHAR_GCMIK
+  type: DOUBLE
+- name: STHAR_GCKOD
+  type: VARCHAR
+- name: STHAR_TARIH
+  type: TIMESTAMP
+- name: STHAR_NF
+  type: DOUBLE
+- name: DEPO_KODU
+  type: INTEGER
+- name: STHAR_FTIRSIP
+  type: VARCHAR
+- name: STHAR_CARIKOD
+  type: VARCHAR
+- name: stok_kartlari
+  type: stok_kartlari
+  relationship: stok_hareket_stok
+- name: stok_adi
+  type: VARCHAR
+  is_calculated: true
+  expression: stok_kartlari.STOK_ADI
+- name: cari_kartlar
+  type: cari_kartlar
+  relationship: stok_hareket_cari
+- name: cari_adi
+  type: VARCHAR
+  is_calculated: true
+  expression: cari_kartlar.CARI_ISIM

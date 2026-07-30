@@ -1,0 +1,223 @@
+"""Query Contract + Replay (ADR-0010) — her raporun kanıt kaydı.
+
+UpcyBrain'in QueryContract deseninin CubeQuery-natif hali: her başarılı rapor,
+soru + CubeQuery + üretilen SQL + SONUÇ HASH'İ + şema sürümü ile mühürlenir ve
+`GET /contracts/{id}/replay` ile yeniden oynatılabilir. Üç seviyeli teşhis:
+
+    sonuç hash'i aynı  → AYNI (birebir doğrulandı)
+    SQL aynı, hash farklı → VERİ DEĞİŞTİ (motor masum; kaynağa kayıt girmiş)
+    SQL farklı            → TANIM DEĞİŞTİ (cube/şema evrimi — CubeQuery yeniden derlendi)
+
+CubeQuery IR sözleşmelendiği için şema evrildiğinde bile "aynı soru bugünkü
+şemada ne verirdi" cevaplanabilir (SQL-sözleşmeden daha güçlü). Depo TEK-KAYNAK
+Postgres (`contract_log`).
+
+DAYANIKLILIK (audit deseni, kullanıcı 2026-07-29): contract = raporun KANITI →
+DB-down'da kaybolmamalı. Yol: DB'ye yaz → DB down ise `logs/contract-spool.jsonl`'e
+ekle → `replay_spool()` startup'ta boşaltır. Contract'ın PK'sı SABİT (`cid`)
+olduğundan replay `merge()` (upsert) ile IDEMPOTENT — audit'ten farklı olarak
+çift-kayıt bile olmaz. Fail-closed DEĞİL: kanıt (raporun kendisi değil) olduğundan
+disk+DB birlikte patlarsa raporu düşürmek yerine cid dönülür (kayıp yalnız bu uç).
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+import uuid
+from datetime import datetime
+
+from app.config import BASE_DIR
+
+_log = logging.getLogger("dima.contracts")
+_SPOOL_PATH = BASE_DIR / "logs" / "contract-spool.jsonl"
+
+
+def _row_from_payload(p: dict):
+    """Payload → ContractLog (DB insert / spool replay ORTAK yolu; ts korunur)."""
+    from control_plane.models import ContractLog
+    return ContractLog(
+        id=p["id"], session_id=p.get("session_id"), tenant_id=p.get("tenant_id"),
+        question=p.get("question"), cube_query_json=p.get("cube_query_json"),
+        sql=p.get("sql"), result_hash=p.get("result_hash"), row_count=p.get("row_count"),
+        schema_version=p.get("schema_version"), source=p.get("source"),
+        ts=datetime.fromisoformat(p["ts"]) if p.get("ts") else datetime.utcnow())
+
+
+def _persist(row) -> None:
+    """merge() = PK (cid) varsa UPDATE, yoksa INSERT → replay idempotent (çift-kayıt yok)."""
+    from sqlmodel import Session
+
+    from control_plane.db import engine
+    with Session(engine) as s:
+        s.merge(row)
+        s.commit()
+
+
+def _spool_append(payload: dict) -> None:
+    _SPOOL_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with _SPOOL_PATH.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(payload, ensure_ascii=False, default=str) + "\n")
+
+
+def replay_spool() -> int:
+    """Startup'ta spool'daki bekleyen contract'ları DB'ye boşaltır (boşaltılan sayı döner).
+    Boşaltılamayanlar (DB hâlâ down) dosyada KALIR → sonraki startup'ta yeniden denenir.
+    merge() sayesinde idempotent: aynı satır iki kez replay edilse bile çift-kayıt olmaz."""
+    if not _SPOOL_PATH.exists():
+        return 0
+    try:
+        lines = _SPOOL_PATH.read_text(encoding="utf-8").splitlines()
+    except Exception:
+        return 0
+    remaining: list[str] = []
+    flushed = 0
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            _persist(_row_from_payload(json.loads(line)))
+            flushed += 1
+        except Exception:
+            remaining.append(line)  # DB hâlâ yazılamıyor → sakla, sonra dene
+    try:
+        if remaining:
+            _SPOOL_PATH.write_text("\n".join(remaining) + "\n", encoding="utf-8")
+        else:
+            _SPOOL_PATH.unlink()
+    except Exception:
+        pass
+    if flushed:
+        _log.info("contract spool boşaltıldı: %d kayıt DB'ye yazıldı", flushed)
+    return flushed
+
+
+def result_hash(result: dict | None) -> str | None:
+    """Sonucun kanonik özeti — SIRA-BAĞIMSIZ küme eşitliği.
+
+    ORDER BY'sız sorgularda motor satırları her koşumda farklı sırada döndürebilir
+    (hash aggregate); sözleşmenin sorusu "SAYILAR değişti mi"dir, sunum sırası değil.
+    Satırlar kanonik JSON temsilleriyle sıralanıp öyle hash'lenir."""
+    if not result:
+        return None
+    rows = sorted(
+        json.dumps(r, sort_keys=True, ensure_ascii=False, default=str)
+        for r in result.get("rows") or []
+    )
+    payload = {"columns": result.get("columns"), "rows": rows}
+    s = json.dumps(payload, sort_keys=True, ensure_ascii=False, default=str)
+    return "sha256:" + hashlib.sha256(s.encode()).hexdigest()
+
+
+def _norm_sql(sql: str | None) -> str:
+    return " ".join((sql or "").split()).rstrip(";").lower()
+
+
+def sql_equal(a: str | None, b: str | None) -> bool:
+    return _norm_sql(a) == _norm_sql(b)
+
+
+class ContractStore:
+    """Query Contract deposu — TEK-KAYNAK DB (`contract_log`). contracts.jsonl kaldırıldı:
+    volume dosyası tek-servis → admin plane (AYRI servis) replay/denetim için okuyamıyordu +
+    managed backup yok + partial-write riski. Kanıt Postgres'te (admin-erişilir, yedekli)."""
+
+    def _session(self):
+        from sqlmodel import Session
+
+        from control_plane.db import engine
+        return Session(engine)
+
+    def record(
+        self,
+        *,
+        session_id: str | None,
+        question: str,
+        cube_query: dict | None,
+        sql: str | None,
+        result: dict | None,
+        source: str | None,
+        schema_version: str,
+        tenant_id: str | None = None,
+    ) -> str:
+        cid = "c-" + uuid.uuid4().hex[:10]
+        # Alanlar bir kez çözülür → DB satırı ve spool payload'ı AYNI kaynaktan (ts + hash
+        # dahil). Ham SONUÇ spool'lanmaz; yalnız result_hash (KVKK + boyut) — audit deseni.
+        payload = {
+            "id": cid, "session_id": session_id, "tenant_id": tenant_id, "question": question,
+            "cube_query_json": (json.dumps(cube_query, ensure_ascii=False) if cube_query else None),
+            "sql": sql, "result_hash": result_hash(result),
+            "row_count": (result or {}).get("row_count"),
+            "schema_version": schema_version, "source": source,
+            "ts": datetime.utcnow().isoformat(),
+        }
+        try:
+            _persist(_row_from_payload(payload))
+        except Exception as db_exc:
+            # DB down → dayanıklı spool: kanıt kaybolmaz, replay_spool() startup'ta boşaltır.
+            try:
+                _spool_append(payload)
+                _log.warning("contract DB'ye yazılamadı, spool'a alındı: %s", db_exc)
+            except Exception:
+                # Disk+DB birlikte patladı → kanıt kaybı YALNIZ bu uçta; rapor yine döner
+                # (fail-closed DEĞİL: contract raporun kendisi değil, kanıtı).
+                _log.warning("contract DB VE spool yazılamadı (kanıt kaybı)", exc_info=True)
+        return cid
+
+    @staticmethod
+    def _visible_row(r, tenant_id: str | None, include_legacy: bool) -> bool:
+        """Tenant-RLS: kayıt sahibinin tenant'ı eşleşmeli. tenant_id'siz (RLS-öncesi)
+        kayıtlar yalnız aktif şirketin tenant'ına görünür (include_legacy)."""
+        if r.tenant_id is None:
+            return include_legacy
+        return r.tenant_id == tenant_id
+
+    def _row_to_dict(self, r) -> dict:
+        return {
+            "id": r.id, "ts": r.ts.isoformat() if r.ts else None, "session": r.session_id,
+            "tenant_id": r.tenant_id, "question": r.question,
+            "cube_query": json.loads(r.cube_query_json) if r.cube_query_json else None,
+            "sql": r.sql, "result_hash": r.result_hash, "row_count": r.row_count,
+            "schema_version": r.schema_version, "source": r.source,
+        }
+
+    def get(self, cid: str, tenant_id: str | None = None,
+            include_legacy: bool = True) -> dict | None:
+        try:
+            from sqlmodel import select
+
+            from control_plane.models import ContractLog
+            with self._session() as s:
+                r = s.exec(select(ContractLog).where(ContractLog.id == cid)).first()
+            if r is None:
+                return None
+            if tenant_id is not None and not self._visible_row(r, tenant_id, include_legacy):
+                return None  # başka tenant'ın kaydı: varlığı da sızmaz (404 gibi)
+            return self._row_to_dict(r)
+        except Exception:
+            _log.warning("contract okunamadı", exc_info=True)
+            return None
+
+    def recent(self, limit: int = 20, tenant_id: str | None = None,
+               include_legacy: bool = True) -> list[dict]:
+        try:
+            from sqlmodel import col, select
+
+            from control_plane.models import ContractLog
+            with self._session() as s:
+                # RLS sonrası limit'i doldurabilmek için fazladan çek (headroom)
+                rows = s.exec(select(ContractLog)
+                              .order_by(col(ContractLog.ts).desc())
+                              .limit(max(limit * 3, limit))).all()
+            items = [r for r in rows
+                     if tenant_id is None or self._visible_row(r, tenant_id, include_legacy)]
+            return [
+                {k: self._row_to_dict(r).get(k)
+                 for k in ("id", "ts", "session", "question", "row_count", "source")}
+                for r in items[:limit]
+            ]
+        except Exception:
+            _log.warning("contract listesi okunamadı", exc_info=True)
+            return []

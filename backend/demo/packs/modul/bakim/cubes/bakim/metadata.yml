@@ -1,0 +1,67 @@
+name: bakim
+label: bakım / arıza
+base_object: ariza_kayitlari
+
+# Bakım/arıza cube'u (YENİ modül, 2026-07-29) — sektörden bağımsız X-ekseni topic
+# (araştırma taksonomisi: cube-mimarisi-standartlari-2026-07.md). Arıza duruşu, yedek
+# parça maliyeti, arıza tipi/sıklığı. OEE cube'undaki plansız duruşu KÖK-NEDENE bağlar.
+# NOT: bare "duruş/downtime" OEE kimliğidir (toplam_durus_dakika) → bakım'da TUTULMAZ;
+# bakım'a arıza/bakım/tamir/yedek parça ile ulaşılır (arıza duruşu ölçüde ayrıca var).
+synonyms: [bakım, arıza, ariza, tamir, breakdown, yedek parça, müdahale,
+           bakim, makine arızası, servis]
+
+measures:
+  - name: ariza_sayisi
+    expression: COUNT(*)
+    type: DOUBLE
+    synonyms: [arıza sayısı, kaç arıza, arıza adedi, adet]
+    lower_is_better: true
+  - name: toplam_durus_dakika
+    expression: SUM(durus_dakika)
+    type: DOUBLE
+    synonyms: [arıza duruşu, arıza süresi, arıza kaybı, kayıp süre]  # bare "duruş" oee'de
+    lower_is_better: true
+  - name: ort_durus_dakika
+    # MTTR yaklaşımı — arıza başına ortalama duruş (onarım süresi göstergesi).
+    expression: "ROUND(AVG(durus_dakika),1)"
+    type: DOUBLE
+    synonyms: [ortalama duruş, mttr, arıza başına duruş, ortalama onarım]
+    lower_is_better: true
+  - name: toplam_yedek_parca_maliyet
+    expression: SUM(yedek_parca_maliyet)
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [yedek parça, yedek parça maliyeti, parça maliyeti, bakım maliyeti]
+    lower_is_better: true
+
+dimensions:
+  - name: makine
+    expression: makine
+    type: VARCHAR
+    label: makine
+    synonyms: [makin, cihaz, tezgah]
+  - name: ariza_tipi
+    expression: ariza_tipi
+    type: VARCHAR
+    label: arıza tipi
+    synonyms: [arıza tipi, arıza türü, arıza cinsi, ariza tipi]
+  - name: durum
+    expression: durum
+    type: VARCHAR
+    synonyms: [durum, statü, açık, kapalı]
+  - name: mudahale_eden
+    expression: mudahale_eden
+    type: VARCHAR
+    label: müdahale eden
+    synonyms: [müdahale eden, teknisyen, bakımcı, kim baktı]
+
+  - name: hafta_gunu
+    label: haftanın günü
+    expression: "CASE isodow(tarih) WHEN 1 THEN 'Pzt' WHEN 2 THEN 'Sal' WHEN 3 THEN 'Çar' WHEN 4 THEN 'Per' WHEN 5 THEN 'Cum' WHEN 6 THEN 'Cmt' WHEN 7 THEN 'Paz' END"
+    type: VARCHAR
+    synonyms: [haftanın gün, hafta gün, hangi gün, günlere göre, güne göre]
+
+time_dimensions:
+  - name: tarih
+    expression: tarih
+    type: DATE

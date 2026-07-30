@@ -1,0 +1,5 @@
+# Geri dönüşüm sektör paketi (ADR-0017 ile açıldı — ilk şirket: Atıksan/Mikro).
+# Cube'lar kaynak pack'inden gelir; bu paket sektör terminolojisi ve kuralları taşır.
+name: geri-donusum
+moduller: []
+features:

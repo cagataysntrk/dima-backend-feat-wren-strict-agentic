@@ -1,0 +1,38 @@
+[project]
+name = "dima-backend"
+version = "0.1.0"
+description = "FastAPI bridge exposing the Wren (dima-wrenai) semantic SQL engine over HTTP for the dima-frontend-demo."
+requires-python = ">=3.11"
+dependencies = [
+  # Wren semantic SQL engine (the forked `dima-wrenai` core, published as `wrenai`).
+  # For local fork development install it editable instead:
+  #   pip install -e ../dima-wrenai/core/wren[postgres]
+  "wrenai>=0.13,<0.14",
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "anthropic>=0.40",
+  "openai>=1.0.0",
+  "pydantic>=2",
+  "pydantic-settings>=2",
+  # Auth / control-plane (ADR-0014/0015; saka-standards 02/08)
+  "sqlmodel>=0.0.22",
+  "alembic>=1.13",
+  "argon2-cffi>=23.1",
+  "pyjwt>=2.9",
+  # Postgres sürücüsü (prod); lokal/demo SQLite ile çalışır, bu opsiyoneldir.
+  "psycopg[binary]>=3.2",
+  # Bildirim teslimi (ADR-0011): e-posta gövdesi MJML (mrml = Rust MJML derleyici,
+  # Node gerekmez) + Jinja2 (veri → MJML markup). Ürün maili backend'de yönetilir.
+  "mrml>=0.2",
+  "jinja2>=3.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff]
+line-length = 100

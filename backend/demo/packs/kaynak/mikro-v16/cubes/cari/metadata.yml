@@ -1,0 +1,51 @@
+name: cari
+label: cari hesap
+base_object: cari_hesap_hareketleri
+
+# Mikro V16 anlam sabitleri: cha_tip 0 = BORÇ, 1 = ALACAK; tutar = cha_meblag.
+# İfadeler taşınabilir SQL'dir (SUM/CASE/NULLIF) — hedef lehçe T-SQL'e transpile edilir;
+# DuckDB'ye özgü fonksiyon (isodow vb.) KULLANILMAZ.
+synonyms: [cari, bakiye, borç, borc, alacak, tahsilat, ödeme, odeme, hesap ekstresi,
+           ekstre, kimden, kime, vade]
+
+measures:
+  - name: toplam_borc
+    expression: "SUM(CASE WHEN cha_tip = 0 THEN cha_meblag ELSE 0 END)"
+    type: DOUBLE
+    unit: "₺"
+    additive: full
+    synonyms: [borç, borc, borç toplamı]
+  - name: toplam_alacak
+    expression: "SUM(CASE WHEN cha_tip = 1 THEN cha_meblag ELSE 0 END)"
+    type: DOUBLE
+    unit: "₺"
+    additive: full
+    synonyms: [alacak, alacak toplamı, tahsilat]
+  - name: bakiye
+    expression: "SUM(CASE WHEN cha_tip = 0 THEN cha_meblag ELSE -cha_meblag END)"
+    type: DOUBLE
+    unit: "₺"
+    additive: semi
+    synonyms: [bakiye, net bakiye, kalan]
+  - name: hareket_sayisi
+    expression: COUNT(*)
+    type: DOUBLE
+    unit: "adet"
+    synonyms: [hareket sayısı, kaç hareket, işlem sayısı]
+
+dimensions:
+  - name: cari_kodu
+    expression: cha_kod
+    type: VARCHAR
+    label: cari kodu
+    synonyms: [cari kod, hesap kodu, firma kodu]
+  - name: evrak_tipi
+    expression: cha_evrak_tip
+    type: INTEGER
+    label: evrak tipi
+    synonyms: [evrak, evrak tip]
+
+time_dimensions:
+  - name: tarih
+    expression: cha_tarihi
+    type: TIMESTAMP

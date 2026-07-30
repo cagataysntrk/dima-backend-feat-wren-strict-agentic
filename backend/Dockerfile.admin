@@ -1,0 +1,44 @@
+# syntax=docker/dockerfile:1
+#
+# dima-admin-api — superadmin control-plane (ADR-0015). WREN'SİZ ince imaj.
+#
+# Build context = parent `dima` repo (ADR-0012 deseni ile tutarlı; Wren'e ihtiyaç YOK).
+# Railway: ayrı servis, `dockerfilePath: dima-backend/Dockerfile.admin`, kendi domain'i
+# (dima-admin-api.…) + Cloudflare statik-IP allowlist + mTLS (ADR-0015 Karar 4).
+#
+# Public `dima-api`'nin aksine `app` paketinin yalnız HAFİF parçaları kopyalanır
+# (app/config.py = BASE_DIR/ayarlar); app.main / app.llm / app.wren_service İMPORT EDİLMEZ.
+FROM --platform=linux/amd64 python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /app
+
+# Control-plane runtime deps (Wren/LLM/embedder YOK → küçük, hızlı, düşük saldırı yüzeyi).
+RUN pip install \
+      "fastapi==0.139.2" \
+      "uvicorn[standard]==0.51.0" \
+      "pydantic-settings==2.14.2" \
+      "sqlmodel>=0.0.22" \
+      "alembic>=1.13" \
+      "argon2-cffi>=23.1" \
+      "pyjwt>=2.9" \
+      "psycopg[binary]>=3.2"
+
+# Ortak çekirdek + admin servisi + alembic + app'in hafif parçaları.
+COPY dima-backend/control_plane   /app/control_plane
+COPY dima-backend/admin_app       /app/admin_app
+COPY dima-backend/alembic.ini     /app/alembic.ini
+COPY dima-backend/migrations      /app/migrations
+COPY dima-backend/app/__init__.py /app/app/__init__.py
+COPY dima-backend/app/config.py   /app/app/config.py
+
+RUN mkdir -p /app/logs
+
+EXPOSE 8000
+
+# admin-api migration sahibidir (ADR-0015 Karar 3): önce `alembic upgrade head`, sonra serve.
+CMD ["sh", "-c", "alembic upgrade head && uvicorn admin_app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

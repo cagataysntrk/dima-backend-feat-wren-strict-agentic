@@ -1,0 +1,16 @@
+# ÜRETİLMİŞTİR: lab/generate_models.py ← GULTEKS_2021.LG_121_CLCARD (elle düzenleme,
+# yeniden üretimde ezilir; kolon seçimi gereksinim.yml'de yaşar.)
+name: cari_kartlar
+table_reference:
+  schema: dbo
+  table: LG_121_CLCARD
+columns:
+- name: LOGICALREF
+  type: INTEGER
+  is_primary_key: true
+  not_null: true
+- name: CODE
+  type: VARCHAR
+- name: DEFINITION_
+  type: VARCHAR
+primary_key: LOGICALREF

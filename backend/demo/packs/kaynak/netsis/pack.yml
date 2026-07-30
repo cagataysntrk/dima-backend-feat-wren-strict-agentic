@@ -1,0 +1,9 @@
+# Netsis (Logo Netsis/Entegre) KAYNAK pack'i (ADR-0017) — ilk şirket: Gitaş.
+# Tablo adları TBL* önekli; firma başına AYRI DB (Logo-3'ün aksine önek yok),
+# şube ekseni SUBE_KODU kolonuyla tablo İÇİNDE.
+name: netsis
+tur: kaynak
+datasource: mssql
+
+fingerprint:
+  tablolar: [TBLCASABIT, TBLCAHAR, TBLSTSABIT, TBLSTHAR]

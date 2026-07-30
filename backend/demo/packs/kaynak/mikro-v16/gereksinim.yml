@@ -1,0 +1,27 @@
+# mikro-v16 kaynak pack'i — GEREKSİNİM LİSTESİ (ADR-0017 Karar 8).
+# İki işi var: (1) lab/generate_models.py bu listeden model YAML'ları üretir,
+# (2) onboarding uyumluluk raporu müşteri şemasını BU listeyle karşılaştırır —
+# cube'ın dokunmadığı kolonlardaki sapmalar bizi ilgilendirmez.
+# Mikro V16'da PK constraint'leri export'a gelmez; primary_key burada beyan edilir.
+
+modeller:
+  - name: cari_hesaplar
+    tablo: CARI_HESAPLAR
+    primary_key: cari_kod
+    kolonlar: [cari_kod, cari_unvan1, cari_doviz_cinsi, cari_vdaire_adi]
+
+  - name: cari_hesap_hareketleri
+    tablo: CARI_HESAP_HAREKETLERI
+    kolonlar: [cha_tarihi, cha_tip, cha_cinsi, cha_evrak_tip, cha_kod,
+               cha_meblag, cha_aciklama, cha_belge_no]
+
+  - name: stoklar
+    tablo: STOKLAR
+    primary_key: sto_kod
+    kolonlar: [sto_kod, sto_isim, sto_cins, sto_birim1_ad, sto_kategori_kodu]
+
+  - name: stok_hareketleri
+    tablo: STOK_HAREKETLERI
+    kolonlar: [sth_tarih, sth_tip, sth_cins, sth_evraktip, sth_stok_kod,
+               sth_cari_kodu, sth_miktar, sth_tutar,
+               sth_giris_depo_no, sth_cikis_depo_no]

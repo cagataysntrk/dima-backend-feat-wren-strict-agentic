@@ -1,0 +1,23 @@
+# Lab SQL Server — müşteri DB yedeklerinin restore edildiği yerel ortam (ADR-0017 Faz 0).
+# Gerçek müşteri verisi taşır: data/ ve backups/ gitignore'ludur, git'e ASLA girmez.
+# Apple Silicon'da amd64 emülasyonuyla çalışır (Docker Desktop → Rosetta açık olmalı).
+#
+#   docker compose up -d
+#   docker compose exec mssql /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT @@VERSION"
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    container_name: dima-lab-mssql
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-DimaLab!2026}"
+      MSSQL_PID: Developer
+      MSSQL_MEMORY_LIMIT_MB: "4096"
+    ports:
+      - "14333:1433" # 1433 değil: olası yerel SQL Server/başka container ile çakışmasın
+    volumes:
+      - ./data:/var/opt/mssql
+      - ./backups:/backups
+    restart: unless-stopped

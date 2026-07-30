@@ -1,0 +1,44 @@
+name: mizan
+label: mizan (hesap bakiyeleri)
+base_object: mizan_kaynak
+
+# Boyahane GL cube'u (YENİ, 2026-07-29) — generic modul/turev/mizan ile AYNI contract
+# (bakiye/hesap_kodu/hesap_adi). statements.py gelir tablosu + bilanço bunu sorgular.
+# Ölçü adı KOLON adından FARKLI (Wren SUM(borc)'u ölçü sanmasın).
+synonyms: [mizan, hesap bakiyesi, hesap bakiyeleri, muhasebe, defter, muavin,
+           hesap planı, genel muhasebe, hesap hareketleri, yevmiye, gelir tablosu, bilanço]
+
+measures:
+  - name: toplam_borc
+    expression: "SUM(borc)"
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [borç, toplam borç, borç tutarı, debit]
+  - name: toplam_alacak
+    expression: "SUM(alacak)"
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [alacak, toplam alacak, alacak tutarı, credit]
+  - name: bakiye
+    expression: "SUM(borc - alacak)"
+    type: DOUBLE
+    unit: "₺"
+    additive: semi
+    synonyms: [bakiye, hesap bakiyesi, net bakiye, kalan bakiye, borç bakiyesi]
+
+dimensions:
+  - name: hesap_kodu
+    expression: hesap_kodu
+    type: VARCHAR
+    label: hesap kodu
+    synonyms: [hesap, hesap kodu, kod, hesap no]
+  - name: hesap_adi
+    expression: hesap_adi
+    type: VARCHAR
+    label: hesap adı
+    synonyms: [hesap adı, hesap ismi, hesap açıklaması]
+
+time_dimensions:
+  - name: tarih
+    expression: tarih
+    type: DATE

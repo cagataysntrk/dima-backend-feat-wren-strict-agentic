@@ -1,0 +1,98 @@
+name: ticaret
+label: satış & alım (fatura)
+base_object: faturalar
+
+# Netsis anlam sabitleri (GITAS2026F verisinden doğrulandı): FTIRSIP '1' = SATIŞ
+# faturası, '2' = ALIŞ faturası, 'A' = irsaliye (tutar taşımaz), '3' = iade.
+# Toplam GENELTOPLAM, brüt BRUTTUTAR. Şube ekseni SUBE_KODU.
+synonyms: [satış, satis, ciro, gelir, alım, alim, alış, alis, fatura, mal]
+
+measures:
+  - name: satis_tutari
+    expression: "SUM(CASE WHEN FTIRSIP = '1' THEN GENELTOPLAM ELSE 0 END)"
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [satış, ciro, gelir, satış tutarı]
+  - name: alim_tutari
+    expression: "SUM(CASE WHEN FTIRSIP = '2' THEN GENELTOPLAM ELSE 0 END)"
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [alım, alış, alım tutarı, hurda alımı]
+  - name: satis_kdv
+    expression: "SUM(CASE WHEN FTIRSIP = '1' THEN KDV ELSE 0 END)"
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [kdv, satış kdv]
+  - name: satis_fatura_sayisi
+    expression: "SUM(CASE WHEN FTIRSIP = '1' THEN 1 ELSE 0 END)"
+    type: DOUBLE
+    unit: "adet"
+    synonyms: [fatura sayısı, satış fatura sayısı, kaç fatura, fatura adedi, satış fatura adedi]
+  # Alış fatura sayısı — satışın simetriği (FTIRSIP 2=alış). Canlı 2026-07-25: "alış fatura
+  # sayısı" ölçü bulunamadı; simetrik ölçü eksikti.
+  - name: alim_fatura_sayisi
+    expression: "SUM(CASE WHEN FTIRSIP = '2' THEN 1 ELSE 0 END)"
+    type: DOUBLE
+    unit: "adet"
+    synonyms: [alış fatura sayısı, alım fatura sayısı, kaç alış faturası, alış fatura adedi, alım fatura adedi]
+  # --- P0 satış genişletme (cube-katalog): iade + net satış + AOV (tek-tablo, deterministik).
+  # SMM/gerçek brüt kâr maliyet-bazı ister → Sınıf-B view cube'u (knowledge/metrics, Katman 2).
+  - name: iade_tutari
+    expression: "SUM(CASE WHEN FTIRSIP = '3' THEN GENELTOPLAM ELSE 0 END)"
+    type: DOUBLE
+    unit: "₺"
+    lower_is_better: true
+    synonyms: [iade, iadeler, iade tutarı, geri dönen, iade edilen]
+  - name: net_satis
+    expression: "SUM(CASE WHEN FTIRSIP = '1' THEN GENELTOPLAM WHEN FTIRSIP = '3' THEN -GENELTOPLAM ELSE 0 END)"
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [net satış, net satis, iadesiz satış, iade düşülmüş satış]
+  # AOV = ortalama fatura/sepet tutarı (SUM/COUNT tek ifade — oran; grup grananda doğru).
+  - name: ort_fatura_tutari
+    expression: "SUM(CASE WHEN FTIRSIP = '1' THEN GENELTOPLAM ELSE 0 END) / NULLIF(SUM(CASE WHEN FTIRSIP = '1' THEN 1 ELSE 0 END), 0)"
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [ortalama fatura, ortalama sepet, sepet tutarı, aov,
+               ortalama fatura tutarı, fatura başına, ortalama işlem tutarı]
+  - name: iade_orani_yuzde
+    expression: "ROUND(SUM(CASE WHEN FTIRSIP = '3' THEN GENELTOPLAM ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN FTIRSIP = '1' THEN GENELTOPLAM ELSE 0 END), 0), 2)"
+    type: DOUBLE
+    unit: "%"
+    lower_is_better: true
+    synonyms: [iade oranı, iade yüzdesi, iade orani]
+
+dimensions:
+  - name: cari_adi
+    expression: cari_adi
+    type: VARCHAR
+    label: cari adı
+    synonyms: [cari, müşteri, tedarikçi, firma, kime, kimden]
+  - name: cari_kodu
+    expression: CARI_KODU
+    type: VARCHAR
+    label: cari kodu
+    synonyms: [cari kod, müşteri kodu]
+  - name: sube
+    expression: SUBE_KODU
+    type: INTEGER
+    label: şube
+    synonyms: [şube, sube, şubeye göre]
+  - name: fatura_no
+    expression: FATIRS_NO
+    type: VARCHAR
+    label: fatura no
+    synonyms: [fatura no, fiş no]
+
+  # Türev zaman boyutu (boyahane parti/oee deseni): haftanın günü — Pzt..Paz.
+  # DATEFIRST'ten bağımsız: DATEDIFF(DAY, 0, x) % 7 → 0=Pzt (1900-01-01 Pazartesi).
+  - name: hafta_gunu
+    label: haftanın günü
+    expression: "CASE DATEDIFF(DAY, 0, TARIH) % 7 WHEN 0 THEN 'Pzt' WHEN 1 THEN 'Sal' WHEN 2 THEN 'Çar' WHEN 3 THEN 'Per' WHEN 4 THEN 'Cum' WHEN 5 THEN 'Cmt' ELSE 'Paz' END"
+    type: VARCHAR
+    synonyms: [haftanın gün, hafta gün, hangi gün, günlere göre, güne göre]
+
+time_dimensions:
+  - name: tarih
+    expression: TARIH
+    type: TIMESTAMP

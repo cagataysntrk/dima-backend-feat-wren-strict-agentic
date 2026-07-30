@@ -1,0 +1,97 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+# ...ama örnek şablonlar (sır içermez) commit edilir
+!.env.example
+!.env.local.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Env / secrets
+.env
+
+# DERLENMİŞ Wren projesi — composer üretir (packs + companies → wren-project);
+# başlangıçta otomatik compose+build edilir (ADR-0005 kompozisyon).
+demo/wren-project/
+demo/wren-projects/
+
+# Node (localtld manifest only — no real node deps)
+node_modules/
+
+# OS
+.DS_Store
+logs/
+eval/report.json
+
+# lab/ müşteri DB laboratuvarı (ADR-0017): gerçek veri git'e girmez
+lab/data/
+lab/backups/
+lab/reports/
+# Üretilmiş NL korpusu (harness çıktısı, ~56MB): script + stats izlenir, ham korpus değil
+lab/generated/*.jsonl
+
+# Secrets / env
+.env
+.env.local
+*.pem
+*.key
+
+# Python
+__pycache__/
+.venv/
+
+# Node
+node_modules/
+.next/
+
+# OS / editor
+.DS_Store
+*.log
+
+# WIP: cube-axes-explainer video (henüz commitlenmiyor — hazır olunca `git add -f videos/`)
+videos/

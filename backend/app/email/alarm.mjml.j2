@@ -1,0 +1,31 @@
+{# Alarm/anomali bildirimi — uyarı başlığı + özet + ihlal listesi + veri tablosu.
+   accent önem rengiyle gelir (critical=kırmızı, warning=amber). #}
+{% extends "base.mjml.j2" %}
+{% block body %}
+  <mj-text font-size="17px" font-weight="700" color="{{ accent }}" padding-bottom="4px">⚠ {{ e.title }}</mj-text>
+  <mj-text padding-top="0">{{ e.summary }}</mj-text>
+  {% if e.violations %}
+  <mj-text font-weight="600" padding="10px 0 2px">Tespitler</mj-text>
+  {% for v in e.violations[:10] %}
+  <mj-text color="{{ accent }}" padding="1px 0" font-size="13px">• {{ v }}</mj-text>
+  {% endfor %}
+  {% if e.violations|length > 10 %}
+  <mj-text font-size="12px" color="#9ca3af" padding-top="4px">+{{ e.violations|length - 10 }} tespit daha</mj-text>
+  {% endif %}
+  {% endif %}
+  {# VİZ (ADR-0024): backend grafik kararı → email-safe HTML/CSS grafik (varsa; JS yok). #}
+  {% if chart_html %}
+  <mj-raw>{{ chart_html | safe }}</mj-raw>
+  {% endif %}
+  {% if cols %}
+  <mj-table css-class="data-table" padding-top="12px">
+    <tr>{% for c in cols %}<th>{{ c }}</th>{% endfor %}</tr>
+    {% for row in rows %}
+    <tr>{% for c in cols %}<td>{{ row[c] }}</td>{% endfor %}</tr>
+    {% endfor %}
+  </mj-table>
+  {% if more %}
+  <mj-text font-size="12px" color="#9ca3af" padding-top="6px">+{{ more }} satır daha</mj-text>
+  {% endif %}
+  {% endif %}
+{% endblock %}

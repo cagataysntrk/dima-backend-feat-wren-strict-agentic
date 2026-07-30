@@ -1,0 +1,22 @@
+# GLOBAL PLATFORM özellik varsayılanları (ADR-0009 fabrika katmanının EN DİBİ).
+#
+# "fabrika ayarı" = factory-default (koda gömülü varsayılan) — üretim tesisi DEĞİL.
+# Buradaki bayraklar SEKTÖR/ŞİRKETTEN BAĞIMSIZ platform yetenekleridir; tek yerde durur,
+# tüm şirketlerce miras alınır ve admin panelde HER tenant için keşfedilebilir olur.
+# Sektör pack.yml artık yalnız SEKTÖRE-ÖZEL bayrak taşımalı (ör. OEE).
+#
+# Öncelik (soldan sağa artar): global(bu dosya) < sektör < şirket < DB-override
+# (global-scope < sektör < tenant < rol < kullanıcı). En spesifik kazanır.
+# NOT: buradaki "global" = platform-geneli fabrika varsayılanı; DB'deki "global" = global
+# SCOPE override (ayrı kavram, aynı sözcük).
+
+# Aşamalar: off | alpha | beta | prod. `beta` = herkese KAPALI değil ama varsayılanda
+# yalnız burada tanımlı; admin panelden tenant/rol/kullanıcı override'ı ile açılır.
+# Metadata (etiket/açıklama/kategori) app/features.py FLAG_REGISTRY'de — tek kaynak.
+features:
+  cikti_yorumlama: beta   # evrensel çıktı yorumu — her tablo/grafik/rapor/KPI
+  sql_display: beta       # üretilen SQL'i kullanıcıya göster ('+ sql göster')
+  verify_button: beta     # ✓/✗ doğrulama — VQR öğrenme (eskiden boyahane sektöründe)
+  scheduled_reports: beta # 🔔 zamanla + bildirim (ADR-0011; eskiden boyahane sektöründe)
+  dashboards: beta        # kullanıcı panoları — canlı izleme (§9)
+  next_steps: beta        # rehberli analitik K2 — sonraki adım (kırılım/ölçek/zaman) chip'leri

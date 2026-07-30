@@ -1,0 +1,36 @@
+# Zenginleştirilmiş bordro view'ı — maaş + PERSONEL DEMOGRAFİSİ (departman/cinsiyet/yaş/
+# eğitim/pozisyon). bordro.personel_kodu ile personel + personel_ozluk JOIN. Böylece
+# "departman/cinsiyet/yaş bazında maaş/maliyet" DETERMİNİSTİK. tarih: donem'den türetilir.
+name: ik_zengin
+statement: |
+  SELECT b.id, b.donem, b.personel_kodu, b.brut_maas, b.sgk_isci, b.issizlik_isci,
+         b.gelir_vergisi, b.damga_vergisi, b.mesai_ucreti, b.prim, b.net_maas, b.sgk_isveren,
+         pe.ad_soyad, pe.departman, pe.cinsiyet, pe.vardiya AS personel_vardiya,
+         po.dogum_tarihi, po.egitim, po.pozisyon, po.medeni_hal, po.ise_giris,
+         CAST(b.donem || '-01' AS DATE) AS donem_tarih
+  FROM bordro b
+  LEFT JOIN personel pe ON b.personel_kodu = pe.personel_kodu
+  LEFT JOIN personel_ozluk po ON b.personel_kodu = po.personel_kodu
+columns:
+  - {name: id, type: INTEGER}
+  - {name: donem, type: VARCHAR}
+  - {name: personel_kodu, type: VARCHAR}
+  - {name: brut_maas, type: DOUBLE}
+  - {name: sgk_isci, type: DOUBLE}
+  - {name: issizlik_isci, type: DOUBLE}
+  - {name: gelir_vergisi, type: DOUBLE}
+  - {name: damga_vergisi, type: DOUBLE}
+  - {name: mesai_ucreti, type: DOUBLE}
+  - {name: prim, type: DOUBLE}
+  - {name: net_maas, type: DOUBLE}
+  - {name: sgk_isveren, type: DOUBLE}
+  - {name: ad_soyad, type: VARCHAR}
+  - {name: departman, type: VARCHAR}
+  - {name: cinsiyet, type: VARCHAR}
+  - {name: personel_vardiya, type: VARCHAR}
+  - {name: dogum_tarihi, type: DATE}
+  - {name: egitim, type: VARCHAR}
+  - {name: pozisyon, type: VARCHAR}
+  - {name: medeni_hal, type: VARCHAR}
+  - {name: ise_giris, type: DATE}
+  - {name: donem_tarih, type: DATE}

@@ -1,0 +1,28 @@
+# ÜRETİLMİŞTİR: lab/generate_models.py ← GULTEKS_2021.LG_121_01_INVOICE (elle düzenleme,
+# yeniden üretimde ezilir; kolon seçimi gereksinim.yml'de yaşar.)
+name: faturalar
+table_reference:
+  schema: dbo
+  table: LG_121_01_INVOICE
+columns:
+- name: LOGICALREF
+  type: INTEGER
+  is_primary_key: true
+  not_null: true
+- name: TRCODE
+  type: INTEGER
+- name: FICHENO
+  type: VARCHAR
+- name: DATE_
+  type: TIMESTAMP
+- name: DOCODE
+  type: VARCHAR
+- name: CLIENTREF
+  type: INTEGER
+- name: CANCELLED
+  type: INTEGER
+- name: GROSSTOTAL
+  type: DOUBLE
+- name: NETTOTAL
+  type: DOUBLE
+primary_key: LOGICALREF

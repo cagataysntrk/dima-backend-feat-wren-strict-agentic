@@ -1,0 +1,67 @@
+# netsis kaynak pack'i — GEREKSİNİM LİSTESİ (ADR-0017 Karar 8).
+# Kolon anlamları GITAS2026F canlı verisinden doğrulandı (2026-07-24):
+# TBLCAHAR: BORC/ALACAK ayrı kolon; TBLSTHAR: GCKOD G=giriş(alış) C=çıkış(satış),
+# satır tutarı = STHAR_GCMIK × STHAR_NF; TBLFATUIRS: FTIRSIP 1=satış 2=alış
+# A=irsaliye(tutarsız); SUBE_KODU şube ekseni.
+
+modeller:
+  - name: cari_kartlar
+    tablo: TBLCASABIT
+    primary_key: CARI_KOD
+    kolonlar: [CARI_KOD, CARI_ISIM, CARI_TIP, CARI_IL, GRUP_KODU, SUBE_KODU]
+
+  - name: cari_hareketleri
+    tablo: TBLCAHAR
+    kolonlar: [SUBE_KODU, CARI_KOD, TARIH, VADE_TARIHI, BELGE_NO, ACIKLAMA, BORC,
+               ALACAK, HAREKET_TURU, PLASIYER_KODU]
+    # Calculated ad kolonları (upstream calculated field — JOIN'i motor üretir).
+    # handle kolonunun type'ı ilişkili MODELİN ADI olmak zorundadır (lineage kuralı).
+    hesaplanan:
+      - handle: cari_kartlar
+        relationship: cari_hareket_cari
+      - name: cari_adi
+        type: VARCHAR
+        expression: cari_kartlar.CARI_ISIM
+
+  - name: stok_kartlari
+    tablo: TBLSTSABIT
+    primary_key: STOK_KODU
+    kolonlar: [STOK_KODU, STOK_ADI, GRUP_KODU, OLCU_BR1, DEPO_KODU]
+
+  - name: stok_hareketleri
+    tablo: TBLSTHAR
+    kolonlar: [STOK_KODU, STHAR_GCMIK, STHAR_GCKOD, STHAR_TARIH, STHAR_NF,
+               STHAR_FTIRSIP, STHAR_CARIKOD, DEPO_KODU]
+    hesaplanan:
+      - handle: stok_kartlari
+        relationship: stok_hareket_stok
+      - name: stok_adi
+        type: VARCHAR
+        expression: stok_kartlari.STOK_ADI
+      - handle: cari_kartlar
+        relationship: stok_hareket_cari
+      - name: cari_adi
+        type: VARCHAR
+        expression: cari_kartlar.CARI_ISIM
+
+  - name: faturalar
+    tablo: TBLFATUIRS
+    kolonlar: [SUBE_KODU, FTIRSIP, FATIRS_NO, CARI_KODU, TARIH, BRUTTUTAR,
+               KDV, GENELTOPLAM]
+    hesaplanan:
+      - handle: cari_kartlar
+        relationship: fatura_cari
+      - name: cari_adi
+        type: VARCHAR
+        expression: cari_kartlar.CARI_ISIM
+
+  # Muhasebe fişi (GL) — mizan + likidite oranlarının kaynağı. HES_KOD Tekdüzen hesap
+  # kodu (1xx dönen varlık, 3xx KV yab. kaynak…); BA 1=borç 2=alacak; HESAPISMI denormalize.
+  - name: muhasebe_hareketleri
+    tablo: TBLMUHFIS
+    kolonlar: [HES_KOD, BA, TUTAR, TARIH, HESAPISMI, SUBE_KODU, FISNO]
+
+  # Hesap planı — mizan hesap ADLARI (TBLMUHFIS.HESAPISMI boş; HESAP_KODU → HS_ADI).
+  - name: hesap_plani
+    tablo: TBLMUPLAN
+    kolonlar: [HESAP_KODU, HS_ADI]

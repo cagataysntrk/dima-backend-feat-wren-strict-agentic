@@ -1,0 +1,24 @@
+# Boyahane (tekstil terbiye) sektör paketi — yeniden kullanılabilir içerik:
+# fire cube + boyahane kuralları/golden SQL. Varsayılan konu modülleri:
+name: boyahane
+moduller: [oee, bakim, ik, enerji]
+
+# Özellik bayrakları (ADR-0009): burası YALNIZ SEKTÖRE-ÖZEL bayrak taşır. Platform
+# geneli bayraklar (verify_button, scheduled_reports, sql_display, cikti_yorumlama)
+# global katmana taşındı → demo/packs/features.yml. Sektöre-özel bayrak çıkınca buraya.
+
+# Başlangıç soruları (rehberli analitik K1) — sektöre-özel KÜRATÖRLÜ örnekler; "neler
+# yapabilirsin"/selamlama chip'i bunları gösterir (yoksa katalog otomatiğine düşer).
+# roles opsiyonel: verilirse yalnız o roldeki kullanıcıya gösterilir (rol bazlı).
+starters:
+  - label: "Makine bazında OEE (son 3 ay)"
+    query: "makine bazında oee son 3 ay"
+  - label: "Renk bazında fire oranı"
+    query: "renk bazında fire oranı"
+  - label: "Bu ay toplam ciro"
+    query: "bu ay toplam ciro"
+  - label: "Vardiya bazında ortalama OEE"
+    query: "vardiya bazında ortalama oee"
+  - label: "Makine bazında enerji yoğunluğu"
+    query: "makine bazında enerji yoğunluğu"
+    roles: [surdurulebilirlik, yonetici]

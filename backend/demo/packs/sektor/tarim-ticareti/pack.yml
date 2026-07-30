@@ -1,0 +1,6 @@
+# Tarımsal emtia ticareti sektör paketi (hububat, yem hammaddesi, gübre) —
+# ilk şirket: Gitaş (Netsis). İş kolu DB verisinden teşhis edildi (2026-07-24):
+# soya/mısır/buğday/küspe/karma yem, alım≈satım hacmi (toptan ticaret deseni).
+name: tarim-ticareti
+moduller: []
+features:

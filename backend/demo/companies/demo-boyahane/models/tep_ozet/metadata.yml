@@ -1,0 +1,32 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.tep_ozet
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: tep_ozet
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: tep_ozet
+columns:
+- name: yil
+  type: INTEGER
+- name: ay
+  type: INTEGER
+- name: uretim_kg
+  type: DOUBLE
+- name: sevkiyat_kg
+  type: DOUBLE
+- name: elektrik_tep
+  type: DOUBLE
+- name: dogalgaz_tep
+  type: DOUBLE
+- name: kati_yakit_tep
+  type: DOUBLE
+- name: motorin_tep
+  type: DOUBLE
+- name: benzin_tep
+  type: DOUBLE
+- name: toplam_tep
+  type: DOUBLE
+- name: set_uretim_tep_ton
+  type: DOUBLE
+- name: set_sevkiyat_tep_ton
+  type: DOUBLE

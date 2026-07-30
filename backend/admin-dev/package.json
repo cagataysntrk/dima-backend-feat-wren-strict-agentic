@@ -1,0 +1,11 @@
+{
+  "name": "dima-admin-api-dev",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.12.1",
+  "description": "localtld launcher for the admin control-plane API (admin-api.dima.localtld). Ayrı process (ADR-0015): admin_app.main, Wren'siz. --app-dir .. ile paketler dima-backend kökünden çözülür; cwd burada kalır ki localtld .localtld alanını (admin-api.dima) okusun.",
+  "localtld": "admin-api.dima",
+  "scripts": {
+    "dev": "if command -v localtld >/dev/null 2>&1; then localtld run -- sh -c '../.venv/bin/uvicorn admin_app.main:app --reload --app-dir .. --reload-dir ../admin_app --reload-dir ../control_plane --reload-dir ../app --port ${PORT:-8001}'; else ../.venv/bin/uvicorn admin_app.main:app --reload --app-dir .. --reload-dir ../admin_app --reload-dir ../control_plane --reload-dir ../app --port 8001; fi"
+  }
+}

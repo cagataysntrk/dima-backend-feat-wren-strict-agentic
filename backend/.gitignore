@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Env / secrets
+.env
+
+# DERLENMİŞ Wren projesi — composer üretir (packs + companies → wren-project);
+# başlangıçta otomatik compose+build edilir (ADR-0005 kompozisyon).
+demo/wren-project/
+demo/wren-projects/
+
+# Node (localtld manifest only — no real node deps)
+node_modules/
+
+# OS
+.DS_Store
+logs/
+eval/report.json
+
+# lab/ müşteri DB laboratuvarı (ADR-0017): gerçek veri git'e girmez
+lab/data/
+lab/backups/
+lab/reports/
+# Üretilmiş NL korpusu (harness çıktısı, ~56MB): script + stats izlenir, ham korpus değil
+lab/generated/*.jsonl

@@ -1,0 +1,36 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.tesis_enerji_aylik
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: tesis_enerji_aylik
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: tesis_enerji_aylik
+columns:
+- name: yil
+  type: INTEGER
+- name: ay
+  type: INTEGER
+- name: uretim_kg
+  type: DOUBLE
+- name: sevkiyat_kg
+  type: DOUBLE
+- name: sebeke_kwh
+  type: DOUBLE
+- name: ges_kwh
+  type: DOUBLE
+- name: toplam_elektrik_kwh
+  type: DOUBLE
+- name: fatura_tl
+  type: DOUBLE
+- name: birim_tl_kwh
+  type: DOUBLE
+- name: elektrik_kg
+  type: DOUBLE
+- name: ges_payi_yuzde
+  type: DOUBLE
+- name: kuyu_su_m3
+  type: DOUBLE
+- name: atiksu_m3
+  type: DOUBLE
+- name: su_lt_kg
+  type: DOUBLE

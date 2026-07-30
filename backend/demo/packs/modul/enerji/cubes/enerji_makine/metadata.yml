@@ -1,0 +1,46 @@
+name: enerji_makine
+label: bölüm/makine enerji (ölçülen)
+base_object: makine_enerji_aylik
+
+# Bölüm/makine bazlı ÖLÇÜLEN enerji (ISO-50001 §6.3.1 SEU/ÖEK belirleme kaynağı). Grain =
+# makine×ay (bölüm'lü). surdurulebilirlik parti-grain'inden AYRI — burada BÖLÜM ekseni var
+# (surdurulebilirlik'te yok) ve sayaç-ölçümüdür (tahsis değil). KİMLİK: bölüm/ölçülen/ÖEK
+# odaklı → bare "tep/enerji" tutulmaz (surdurulebilirlik makine-yoğunluğunu çalmasın).
+synonyms: [bölüm enerji, ölçülen enerji, sayaç, öek, önemli enerji kullanımı, bölüm tüketim,
+           ekipman tüketim, bölüm bazlı enerji, kuru terbiye, boyahane enerji]
+
+measures:
+  - name: toplam_elektrik_kwh
+    expression: SUM(elektrik_kwh)
+    type: DOUBLE
+    synonyms: [elektrik, elektrik tüketimi, ölçülen elektrik, kwh]
+  - name: toplam_dogalgaz_sm3
+    expression: SUM(dogalgaz_sm3)
+    type: DOUBLE
+    synonyms: [doğalgaz, gaz, doğalgaz tüketimi, sm3]
+  - name: toplam_tep
+    expression: SUM(tep)
+    type: DOUBLE
+    synonyms: [tep, ölçülen tep, enerji tep, ton eşdeğer petrol]
+    lower_is_better: true
+
+dimensions:
+  - name: bolum
+    expression: bolum
+    type: VARCHAR
+    label: bölüm
+    synonyms: [bölüm, bolum, kısım, ünite, hangi bölüm]
+  - name: makine
+    expression: makine
+    type: VARCHAR
+    label: makine
+    synonyms: [makin, cihaz, tezgah, ekipman]
+  - name: hat
+    expression: hat
+    type: VARCHAR
+    synonyms: [hat, hattı, line]
+
+time_dimensions:
+  - name: donem_tarih
+    expression: "make_date(yil, ay, 1)"
+    type: DATE

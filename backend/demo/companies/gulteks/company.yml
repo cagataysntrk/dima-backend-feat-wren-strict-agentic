@@ -1,0 +1,9 @@
+# BU DOSYA TÜRETİLMİŞTİR — kaynak: control-plane DB (tenant_config), admin panel.
+# Elle düzenleme bir sonraki materialize'da EZİLİR. (ADR-0005 + TenantConfig)
+name: gulteks
+sektorler:
+- kumas-ticareti
+kaynaklar:
+- logo-3
+firma_no: 121
+donem_no: 1

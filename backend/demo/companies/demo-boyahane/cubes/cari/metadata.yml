@@ -1,0 +1,59 @@
+name: cari
+label: cari hesap
+base_object: cari_hareketler
+
+# Boyahane cari cube'u (YENİ, 2026-07-29) — müşteri/tedarikçi borç-alacak-bakiye.
+# cari_tip (musteri/tedarikci) ayrımı VERİDEN. Bakiye = borç − alacak.
+# NOT: "müşteri/hesap" parti/mizan kimlikleriyle çakışır → cube kimliğinde TUTULMAZ
+# (müşteri/tedarikçi ayrımı cari_tip boyutundadır). Cari'ye cari/bakiye/borç/alacak ile ulaşılır.
+synonyms: [cari, cariler, tahsilat, ödeme, odeme, ekstre, cari bakiye, cari borç]
+
+measures:
+  - name: toplam_borc
+    expression: "SUM(borc)"
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [borç, borc, borç toplamı]
+  - name: toplam_alacak
+    expression: "SUM(alacak)"
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [alacak, alacak toplamı, tahsilat]
+  - name: bakiye
+    expression: "SUM(borc - alacak)"
+    type: DOUBLE
+    unit: "₺"
+    additive: semi
+    synonyms: [bakiye, net bakiye, kalan, açık bakiye]
+  - name: hareket_sayisi
+    expression: COUNT(*)
+    type: DOUBLE
+    synonyms: [hareket sayısı, kaç hareket, işlem sayısı, adet]
+
+dimensions:
+  - name: cari_kodu
+    expression: cari_kodu
+    type: VARCHAR
+    label: cari kodu
+    synonyms: [cari kod, hesap kodu, firma kodu]
+  - name: cari_tip
+    expression: cari_tip
+    type: VARCHAR
+    label: cari tipi
+    synonyms: [cari tip, müşteri, tedarikçi, alıcı, satıcı, tür]
+  - name: evrak_tip
+    expression: evrak_tip
+    type: VARCHAR
+    label: evrak tipi
+    synonyms: [evrak, evrak tipi, belge, işlem türü]
+
+  - name: hafta_gunu
+    label: haftanın günü
+    expression: "CASE isodow(tarih) WHEN 1 THEN 'Pzt' WHEN 2 THEN 'Sal' WHEN 3 THEN 'Çar' WHEN 4 THEN 'Per' WHEN 5 THEN 'Cum' WHEN 6 THEN 'Cmt' WHEN 7 THEN 'Paz' END"
+    type: VARCHAR
+    synonyms: [haftanın gün, hafta gün, hangi gün, günlere göre, güne göre]
+
+time_dimensions:
+  - name: tarih
+    expression: tarih
+    type: DATE

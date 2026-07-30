@@ -1,0 +1,115 @@
+name: surdurulebilirlik
+label: sürdürülebilirlik
+base_object: partiler
+
+# Boyahane sürdürülebilirlik/kaynak KPI'ları (ZDHC/Higg + ISO 22400 6.23 E/PQ deseni).
+# YOĞUNLUKLAR = TOPLAM/TOPLAM (satır-AVG değil). 47-tablo rebind (2026-07-29): eski su/
+# enerji yoğunlukları KORUNDU + doğalgaz/enerji-maliyeti/TEP/atıksu EKLENDİ (zengin).
+# Kimyasal yoğunluğu (kimyasal_yogunlugu_tl_kg) RESTORE edildi (2026-07-29): partiler.
+# kimyasal_tl = reçete/renk-derinliği×ham-zorluğu×kg (RENKLER.kimyasal çarpanı) → renk/
+# müşteri/makine bazında kimyasal yoğunluğu tekrar analiz edilebilir.
+synonyms: [sürdürülebilirlik, çevre, su!, su tüket, enerji, elektrik, kwh, doğalgaz,
+           gaz, yoğunluk, tüketim, karbon, tep, atıksu, kimyasal]
+
+measures:
+  # Tüketim/yoğunluk = düşük iyi (ısı haritası yönü).
+  - name: su_yogunlugu_lt_kg
+    expression: "ROUND(SUM(su_lt)/NULLIF(SUM(kg),0),2)"
+    type: DOUBLE
+    synonyms: [su yoğunluğu, kg başına su, litre bölü kg, spesifik su]
+    lower_is_better: true
+  - name: enerji_yogunlugu_kwh_kg
+    expression: "ROUND(SUM(elektrik_kwh)/NULLIF(SUM(kg),0),3)"
+    type: DOUBLE
+    synonyms: [enerji yoğunluğu, kg başına enerji, spesifik enerji, kwh bölü kg]
+    lower_is_better: true
+  - name: dogalgaz_yogunlugu_sm3_kg
+    expression: "ROUND(SUM(dogalgaz_sm3)/NULLIF(SUM(kg),0),4)"
+    type: DOUBLE
+    synonyms: [doğalgaz yoğunluğu, gaz yoğunluğu, kg başına gaz, sm3 bölü kg]
+    lower_is_better: true
+  - name: enerji_maliyet_yogunlugu_tl_kg
+    expression: "ROUND(SUM(enerji_toplam_tl)/NULLIF(SUM(kg),0),2)"
+    type: DOUBLE
+    synonyms: [enerji maliyeti yoğunluğu, kg başına enerji maliyeti, birim enerji maliyeti]
+    lower_is_better: true
+  - name: toplam_su_lt
+    expression: SUM(su_lt)
+    type: DOUBLE
+    synonyms: [su!, su tüket, toplam su]
+    lower_is_better: true
+  - name: toplam_enerji_kwh
+    expression: SUM(elektrik_kwh)
+    type: DOUBLE
+    synonyms: [enerji, elektrik, kwh]
+    lower_is_better: true
+  - name: toplam_dogalgaz_sm3
+    expression: SUM(dogalgaz_sm3)
+    type: DOUBLE
+    synonyms: [doğalgaz, gaz, sm3]
+    lower_is_better: true
+  - name: toplam_enerji_tl
+    expression: SUM(enerji_toplam_tl)
+    type: DOUBLE
+    synonyms: [enerji maliyeti, enerji tutarı, enerji gideri]
+    lower_is_better: true
+  - name: toplam_tep
+    expression: SUM(tep)
+    type: DOUBLE
+    synonyms: [tep, ton eşdeğer petrol, enerji tep]
+    lower_is_better: true
+  - name: toplam_atiksu_tl
+    expression: SUM(atiksu_tl)
+    type: DOUBLE
+    synonyms: [atıksu, atık su, atıksu maliyeti]
+    lower_is_better: true
+  - name: toplam_kimyasal_tl
+    expression: SUM(kimyasal_tl)
+    type: DOUBLE
+    synonyms: [kimyasal, kimyasal maliyeti, boya maliyeti, kimyasal tutarı]
+    lower_is_better: true
+  - name: kimyasal_yogunlugu_tl_kg
+    expression: "ROUND(SUM(kimyasal_tl)/NULLIF(SUM(kg),0),2)"
+    type: DOUBLE
+    synonyms: [kimyasal yoğunluğu, kg başına kimyasal, spesifik kimyasal, birim kimyasal maliyeti]
+    lower_is_better: true
+
+dimensions:
+  - name: makine
+    expression: makine
+    type: VARCHAR
+    label: makine
+    synonyms: [makin, cihaz, tezgah]
+  - name: hat
+    expression: hat
+    type: VARCHAR
+    synonyms: [hat, hattı, line]
+  - name: kumas_cinsi
+    expression: ham_ad
+    type: VARCHAR
+    label: kumaş cinsi
+    synonyms: [kumaş, kumaş cinsi, ham]
+  - name: renk
+    expression: renk_ad
+    type: VARCHAR
+    synonyms: [renk]
+  - name: asama
+    expression: asama
+    type: VARCHAR
+    synonyms: [aşama, boyama, yıkama, apre, kurutma]
+  - name: musteri
+    expression: musteri_ad
+    type: VARCHAR
+    synonyms: [müşteri, firma]
+
+  # Türev zaman boyutu (base/time deseni): haftanın günü — Pzt..Paz (TR), oee ile aynı.
+  - name: hafta_gunu
+    label: haftanın günü
+    expression: "CASE isodow(tarih) WHEN 1 THEN 'Pzt' WHEN 2 THEN 'Sal' WHEN 3 THEN 'Çar' WHEN 4 THEN 'Per' WHEN 5 THEN 'Cum' WHEN 6 THEN 'Cmt' WHEN 7 THEN 'Paz' END"
+    type: VARCHAR
+    synonyms: [haftanın gün, hafta gün, hangi gün, günlere göre, güne göre]
+
+time_dimensions:
+  - name: tarih
+    expression: tarih
+    type: DATE

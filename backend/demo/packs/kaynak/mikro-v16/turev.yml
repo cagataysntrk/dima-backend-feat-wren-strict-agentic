@@ -1,0 +1,22 @@
+# Türev-metrik binding'leri — Mikro V16: sth_tip 0=giriş(alım), 1=çıkış(satış);
+# miktar sth_miktar, tutar sth_tutar; stok sth_stok_kod ↔ stoklar.sto_kod.
+karlilik:
+  base_model: stok_hareketleri
+  stok_key: sth_stok_kod
+  name_model: stoklar
+  name_col: sto_isim
+  name_key: sto_kod
+  tarih: sth_tarih
+  sale_amount: "CASE WHEN sth_tip = 1 THEN sth_tutar ELSE 0 END"
+  sale_qty: "CASE WHEN sth_tip = 1 THEN sth_miktar ELSE 0 END"
+  purchase_amount: "CASE WHEN sth_tip = 0 THEN sth_tutar ELSE 0 END"
+  purchase_qty: "CASE WHEN sth_tip = 0 THEN sth_miktar ELSE 0 END"
+cari_finans:
+  base_model: cari_hesap_hareketleri
+  cari_key: cha_kod
+  name_model: cari_hesaplar
+  name_col: cari_unvan1
+  name_key: cari_kod
+  tarih: cha_tarihi
+  borc: "CASE WHEN cha_tip = 0 THEN cha_meblag ELSE 0 END"
+  alacak: "CASE WHEN cha_tip = 1 THEN cha_meblag ELSE 0 END"

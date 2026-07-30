@@ -1,0 +1,38 @@
+# Tesis-geneli aylık enerji view'ı (ISO-50001 §6.3 enerji gözden geçirme). 4 aylık tablo
+# `ay` üzerinden JOIN: tesis_enerji_aylik (elektrik/GES/su) ⊕ tep_ozet (TEP/SET) ⊕
+# uretim_aylik_ozet (proses TEP) ⊕ yakit_karmasi (katı yakıt/buhar). Grain = tesis-aylık
+# (surdurulebilirlik'in parti-grain'inden AYRI — ADR-0023 Kapı 2). donem_tarih: yıl filtresi.
+name: enerji_tesis
+statement: |
+  SELECT t.yil, t.ay,
+         t.uretim_kg, t.sevkiyat_kg,
+         t.sebeke_kwh, t.ges_kwh, t.toplam_elektrik_kwh, t.fatura_tl,
+         t.kuyu_su_m3, t.atiksu_m3,
+         p.toplam_tep, p.elektrik_tep, p.dogalgaz_tep, p.kati_yakit_tep,
+         y.kati_yakit_kg, y.buhar_ton, y.kazan_dogalgaz_sm3,
+         u.tep_proses,
+         make_date(t.yil, t.ay, 1) AS donem_tarih
+  FROM tesis_enerji_aylik t
+  LEFT JOIN tep_ozet p ON p.yil = t.yil AND p.ay = t.ay
+  LEFT JOIN uretim_aylik_ozet u ON u.yil = t.yil AND u.ay = t.ay
+  LEFT JOIN yakit_karmasi y ON y.yil = t.yil AND y.ay = t.ay
+columns:
+  - {name: yil, type: INTEGER}
+  - {name: ay, type: INTEGER}
+  - {name: uretim_kg, type: DOUBLE}
+  - {name: sevkiyat_kg, type: DOUBLE}
+  - {name: sebeke_kwh, type: DOUBLE}
+  - {name: ges_kwh, type: DOUBLE}
+  - {name: toplam_elektrik_kwh, type: DOUBLE}
+  - {name: fatura_tl, type: DOUBLE}
+  - {name: kuyu_su_m3, type: DOUBLE}
+  - {name: atiksu_m3, type: DOUBLE}
+  - {name: toplam_tep, type: DOUBLE}
+  - {name: elektrik_tep, type: DOUBLE}
+  - {name: dogalgaz_tep, type: DOUBLE}
+  - {name: kati_yakit_tep, type: DOUBLE}
+  - {name: kati_yakit_kg, type: DOUBLE}
+  - {name: buhar_ton, type: DOUBLE}
+  - {name: kazan_dogalgaz_sm3, type: DOUBLE}
+  - {name: tep_proses, type: DOUBLE}
+  - {name: donem_tarih, type: DATE}

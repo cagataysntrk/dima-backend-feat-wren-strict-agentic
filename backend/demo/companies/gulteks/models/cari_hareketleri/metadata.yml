@@ -1,0 +1,23 @@
+# ÜRETİLMİŞTİR: lab/generate_models.py ← GULTEKS_2021.LG_121_01_CLFLINE (elle düzenleme,
+# yeniden üretimde ezilir; kolon seçimi gereksinim.yml'de yaşar.)
+name: cari_hareketleri
+table_reference:
+  schema: dbo
+  table: LG_121_01_CLFLINE
+columns:
+- name: CLIENTREF
+  type: INTEGER
+- name: DATE_
+  type: TIMESTAMP
+- name: TRCODE
+  type: INTEGER
+- name: TRANNO
+  type: VARCHAR
+- name: LINEEXP
+  type: VARCHAR
+- name: SIGN
+  type: INTEGER
+- name: AMOUNT
+  type: DOUBLE
+- name: CANCELLED
+  type: INTEGER
