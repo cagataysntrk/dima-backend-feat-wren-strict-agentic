@@ -240,6 +240,11 @@ export interface AskRequest {
   // Konuşmasal daraltma: önceki mesajlar + o anki raporun CubeQuery durumu.
   history?: string[];
   cube_query?: CubeQuery | null;
+  // Strict-agentic (wren_sql) takip bağlamı: bir önceki AskResponse.sql. cube_query'den
+  // BİLEREK ayrı — cube_query scheduling/dashboard/verify gibi gerçek CubeQuery şekli
+  // varsayan özelliklerin de gate'i (bkz. ReportPanel.tsx); onu ham SQL taşımak için
+  // yeniden kullanmak o özellikleri wren_sql cevaplarında da yanlışlıkla açardı.
+  prev_sql?: string | null;
   // Sohbet oturumu kimliği — kalıcı logda chat'i gruplamak için.
   session_id?: string;
 }

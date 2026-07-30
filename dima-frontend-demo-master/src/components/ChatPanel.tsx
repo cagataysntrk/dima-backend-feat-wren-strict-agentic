@@ -4,29 +4,49 @@ import { useEffect, useRef, useState } from "react";
 import type { AskResponse } from "@/lib/types";
 import { CaretInput } from "@/components/CaretInput";
 
-// SQL provenance — keskin, monospace "sistem readout" rozeti.
+// SQL provenance — keskin, monospace "sistem readout" rozeti. "vqr" (VQR birebir/yakın
+// eşleşme tekrar oynatma) ve "meta"/"catalog" (deterministik, veri sorgusu değil) da
+// LLM'siz aile — cube/kpi ile aynı vurguyu taşır ki kullanıcı ne zaman LLM'in atlandığını
+// görebilsin (strict-agentic /ask önceden her soruyu LLM'e düşürüyordu, artık düşürmüyor).
 export function SourceBadge({ source }: { source: string | null }) {
   if (!source) return null;
-  let label: string, cls: string;
+  let label: string, cls: string, title: string;
   if (source === "cube") {
     label = "◆ CUBE";
     cls = "text-accent border-accent/40";
+    title = "Deterministik cube motoru — LLM kullanılmadı";
   } else if (source === "kpi") {
     label = "◆ KPI";
     cls = "text-accent border-accent/40";
+    title = "Deterministik KPI kartı — LLM kullanılmadı";
   } else if (source === "cube+llm") {
     label = "◆ CUBE·LLM";
     cls = "text-accent border-accent/40";
+    title = "SQL bu yolla üretildi (deterministik-önce)";
+  } else if (source === "vqr") {
+    label = "◆ VQR";
+    cls = "text-accent border-accent/40";
+    title = "Daha önce doğrulanmış/onaylanmış SQL tekrar oynatıldı — LLM'e gidilmedi";
+  } else if (source === "meta") {
+    label = "· META";
+    cls = "text-neutral-400 border-hairline";
+    title = "Veri sorgusu değil — deterministik yanıt (LLM kullanılmadı)";
+  } else if (source === "catalog") {
+    label = "☰ KATALOG";
+    cls = "text-neutral-400 border-hairline";
+    title = "Katalog keşfi — deterministik yanıt (LLM kullanılmadı)";
   } else if (source.startsWith("llm:")) {
     label = `▚ LLM·${source.slice(4)}`;
     cls = "text-neutral-500 border-hairline";
+    title = "SQL bu yolla üretildi (deterministik-önce)";
   } else {
     label = "⚙ KURAL";
     cls = "text-neutral-400 border-hairline";
+    title = "SQL bu yolla üretildi (deterministik-önce)";
   }
   return (
     <span
-      title="SQL bu yolla üretildi (deterministik-önce)"
+      title={title}
       className={`inline-flex h-[20px] items-center border px-1.5 font-mono text-[10px] tracking-wide ${cls}`}
     >
       {label}

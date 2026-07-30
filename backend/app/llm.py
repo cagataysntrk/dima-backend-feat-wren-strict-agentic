@@ -86,6 +86,10 @@ Kurallar:
 - Kullanıcı Türkçe sorabilir; kolon/tablo adları şemadaki gibi kalır.
 - Örnek sorgular DESEN göstermek içindir: onlardaki tablo/kolon adlarını KOPYALAMA;
   yalnız sorunun konusuna uygun tabloları kullan. Sorulmayan filtre/dönem EKLEME.
+- Birden fazla satır dönebilecek her sorguya AÇIK bir ORDER BY ekle (sıralama ölçütü
+  sorudan belli değilse birincil ölçüye veya ilk boyuta göre sırala). ORDER BY'sız çok
+  satırlı bir sorgu + LIMIT kombinasyonu motor/veritabanına göre HANGİ satırların
+  döneceğini belirsiz bırakır — aynı soru farklı zamanlarda farklı veri döndürebilir.
 """
 
 
@@ -151,6 +155,30 @@ def _build_system(schema: dict, dialect: str) -> str:
     if golden:
         # ADR-0005 context: doğrulanmış örnek sorgular — benzer soruda deseni izle.
         parts.append(golden)
+    return "\n\n".join(parts)
+
+
+def _followup_user(prev_question: str, prev_sql: str, history: list[str], message: str) -> str:
+    """Takip mesajı prompt'u (WrenAI'nin followup_sql_generation deseninin Dima-yerlisi —
+    ADR: strict-agentic /ask bağlam eksikliği düzeltmesi). WrenAI ham sohbet metnini
+    yığmaz: her turu (soru, SQL) çiftine sıkıştırıp SIRADAKİ soruyla birlikte LLM'e verir,
+    SQL'i sıfırdan değil önceki SQL'i ÇAPA alarak yeniden ürettirir. Burada da aynı desen:
+    önceki soru+SQL güçlü bağlam, geri kalan geçmiş (varsa) yalnız referans içindir."""
+    parts: list[str] = []
+    older = [h for h in (history or []) if h and h != prev_question][-4:]
+    if older:
+        parts.append("Daha eski sorular (eski→yeni, yalnız bağlam):\n"
+                     + "\n".join(f"- {h}" for h in older))
+    parts.append(f"Bir önceki soru: {prev_question}\nBir önceki SQL:\n{prev_sql}")
+    parts.append(
+        f"Yeni mesaj: {message}\n\n"
+        "Yeni mesaj önceki sorunun DEVAMI/DÜZENLEMESİ olabilir (kırılım ekleme/değiştirme, "
+        "filtre ekleme/çıkarma, ölçü değiştirme, dönem değiştirme, \"aylara göre\" gibi bir "
+        "detaylandırma isteği vb.) — bu durumda BİR ÖNCEKİ SQL'i bu isteğe göre DÜZENLEYEREK "
+        "yeni SQL'i yaz (sıfırdan yazma; mevcut yapıyı koru, yalnız istenen değişikliği uygula). "
+        "Eğer yeni mesaj öncekiyle TAMAMEN ilgisiz, bağımsız bir konuysa önceki SQL'i YOK SAY "
+        "ve sıfırdan yaz. Yalnızca nihai SQL'i döndür, hangi yolu seçtiğini açıklama."
+    )
     return "\n\n".join(parts)
 
 
@@ -230,6 +258,9 @@ class AnthropicSqlGenerator:
         message = self._client.messages.create(
             model=self._model,
             max_tokens=1024,
+            temperature=0,  # OpenAICompatibleSqlGenerator zaten 0 kullanıyor; burada
+                            # eksikti — Anthropic varsayılanı (1.0) aynı soruya farklı
+                            # SQL üretebiliyordu (canlı 2026-07-31 kök neden analizi).
             system=system,
             messages=[{"role": "user", "content": user}],
         )
@@ -244,6 +275,11 @@ class AnthropicSqlGenerator:
 
     def generate_sql(self, question: str, schema: dict) -> str:
         return self._ask(_build_system(schema, self._dialect), question)
+
+    def generate_followup_sql(self, question: str, schema: dict, prev_question: str,
+                              prev_sql: str, history: list[str]) -> str:
+        return self._ask(_build_system(schema, self._dialect),
+                         _followup_user(prev_question, prev_sql, history, question))
 
     def repair(self, question: str, schema: dict, bad_sql: str, error: str) -> str:
         return self._ask(_build_system(schema, self._dialect), _repair_prompt(question, bad_sql, error))
@@ -300,6 +336,11 @@ class OpenAICompatibleSqlGenerator:
     def generate_sql(self, question: str, schema: dict) -> str:
         return self._chat(_build_system(schema, self._dialect), question)
 
+    def generate_followup_sql(self, question: str, schema: dict, prev_question: str,
+                              prev_sql: str, history: list[str]) -> str:
+        return self._chat(_build_system(schema, self._dialect),
+                          _followup_user(prev_question, prev_sql, history, question))
+
     def repair(self, question: str, schema: dict, bad_sql: str, error: str) -> str:
         return self._chat(_build_system(schema, self._dialect), _repair_prompt(question, bad_sql, error))
 
@@ -333,6 +374,13 @@ class RuleBasedSqlGenerator:
     """LLM'siz sezgisel NL→SQL. İki tabloyu yönlendirir:
     - `vardiya_kayitlari` (OEE): makine/vardiya/personel bazlı verimlilik.
     - `partiler` (boya partileri): fire, su/enerji, maliyet, renk sapması, ağırlık, ciro."""
+
+    def generate_followup_sql(self, question: str, schema: dict, prev_question: str,  # noqa: ARG002
+                              prev_sql: str, history: list[str]) -> str:  # noqa: ARG002
+        # Kural motoru bağlam düzenleyemez (kalıp eşleştirici, LLM değil) — takip mesajını
+        # bağımsız bir soru gibi ele alır. Onurlu sınır: sessiz yanlış üretmek yerine
+        # en azından anahtar-kelime kalıbına uyan bir SQL döner ya da dürüstçe reddeder.
+        return self.generate_sql(question, schema)
 
     def generate_sql(self, question: str, schema: dict) -> str:
         models = schema.get("models") or []
@@ -714,6 +762,20 @@ class FailoverSqlGenerator:
                 errs.append(f"{getattr(g, '_provider', type(g).__name__)}: {e}")
         raise RuntimeError("Tüm LLM sağlayıcıları başarısız: " + " | ".join(errs))
 
+    def generate_followup_sql(self, question: str, schema: dict, prev_question: str,
+                              prev_sql: str, history: list[str]) -> str:
+        errs = []
+        for g in self._gens:
+            try:
+                fn = getattr(g, "generate_followup_sql", None)
+                sql = (fn(question, schema, prev_question, prev_sql, history) if fn
+                      else g.generate_sql(question, schema))
+                self._last = g
+                return sql
+            except Exception as e:
+                errs.append(f"{getattr(g, '_provider', type(g).__name__)}: {e}")
+        raise RuntimeError("Tüm LLM sağlayıcıları başarısız (followup): " + " | ".join(errs))
+
     def repair(self, question: str, schema: dict, bad_sql: str, error: str) -> str:
         order = ([self._last] if self._last else []) + [g for g in self._gens if g is not self._last]
         for g in order:
@@ -778,6 +840,10 @@ class NoLlmGenerator:
     fırlatır; routers/ask.py bunu dürüst redde çevirir (sessiz-yanlış SQL yerine)."""
 
     def generate_sql(self, question: str, schema: dict) -> str:  # noqa: ARG002
+        raise RuntimeError("LLM sağlayıcısı yok ve kural yedeği kapalı (DIMA_RULE_FALLBACK)")
+
+    def generate_followup_sql(self, question: str, schema: dict, prev_question: str,  # noqa: ARG002
+                              prev_sql: str, history: list[str]) -> str:  # noqa: ARG002
         raise RuntimeError("LLM sağlayıcısı yok ve kural yedeği kapalı (DIMA_RULE_FALLBACK)")
 
 

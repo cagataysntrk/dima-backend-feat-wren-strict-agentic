@@ -844,14 +844,22 @@ def verify(request: Request, body: CubeRequest) -> dict:
 def ask(request: Request, body: AskRequest) -> AskResponse:
     """Strict-agentic NL→Wren SQL: LLM doğrudan MDL üzerinden SQL üretir (cube ara-katmanı
     yok — ADR: wren-strict-agentic geçişi). Sıra, WrenAI'nin kendi Ask pipeline'ının
-    (intent_classification → historical_question → SQL-pairs few-shot) Dima-yerlisi
-    karşılığıdır — dış WrenAI servisleri değil, zaten var olan app/vqr.py + app/llm.py
-    kullanılır:
+    (intent_classification → historical_question → SQL-pairs few-shot → followup_sql_generation
+    → chart_generation) Dima-yerlisi karşılığıdır — dış WrenAI servisleri değil, zaten var
+    olan app/vqr.py + app/llm.py + app/viz.py kullanılır:
 
     1. Meta/katalog soruları → deterministik yanıt (LLM YOK).
-    2. VQR birebir/yakın eşleşme → önceden doğrulanmış SQL tekrar oynatılır (LLM YOK).
+    2. TAKİP mesajıysa (history + önceki wren_sql var) → önceki SQL'i bağlam alarak LLM'e
+       düzenlettirmek (WrenAI'nin followup_sql_generation deseni); DEĞİLSE VQR birebir/yakın
+       eşleşme → önceden doğrulanmış SQL tekrar oynatılır (LLM YOK).
     3. VQR few-shot + şirket business_rules/golden_sql ile LLM SQL üretimi → dry_plan
-       doğrulama → hata varsa kendi kendini onarma (repair)."""
+       doğrulama → hata varsa kendi kendini onarma (repair).
+    4. Başarılı BAĞIMSIZ (takip olmayan) yanıt VQR'a otomatik yazılır (source="auto") —
+       aynı/çok benzer soru bir daha LLM'e hiç gitmeden tekrar oynatılabilsin diye
+       (POST /ask/verify ile insan onayı bu kaydı "user_verified" seviyesine yükseltir).
+    5. Sonuç varsa `viz.recommend` ile grafik önerisi eklenir (önceden yalnız /cube
+       yapıyordu; /ask boş bırakınca frontend zayıf bir client-side sezgisele düşüyordu).
+    """
     import time
 
     from app.llm import reset_llm_usage
@@ -865,9 +873,23 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     principal = getattr(request.state, "principal", None)
     limit = min(body.limit or settings.max_result_rows, settings.max_result_rows)
 
+    # Önceki tur bağlamı (ADR-0007'nin wren_sql karşılığı). `cube_query` BİLEREK
+    # kullanılmıyor — o alan frontend'de scheduling/dashboard/verify gibi gerçek CubeQuery
+    # şekli varsayan başka özelliklerin de gate'i; `prev_sql` ayrı, dar amaçlı bir alan.
+    prev_sql = body.prev_sql
+    is_followup = bool(prev_sql) and bool(body.history)
+    prev_question = body.history[-1] if body.history else ""
+
     def _finish(resp: AskResponse) -> AskResponse:
         _persist_message(request, resp, body.session_id)
         _log_interaction(body.session_id, body, resp, int((time.monotonic() - t0) * 1000), principal)
+        return resp
+
+    def _attach_viz(resp: AskResponse, result: dict | None) -> AskResponse:
+        try:
+            resp.viz = viz.recommend(result, units={}, lower_set=[], cube_query=None)
+        except Exception:
+            _log.warning("viz önerisi üretilemedi (best-effort)", exc_info=True)
         return resp
 
     # 1) Deterministik ön-kapı — WrenAI'nin intent_classification'ının LLM'siz Dima
@@ -887,48 +909,60 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             trace=["katalog keşfi → deterministik yanıt (LLM'siz)"],
         ))
 
-    # 2) VQR: birebir/yakın eşleşme → LLM'e HİÇ gitmeden önceki doğrulanmış SQL'i tekrar
-    # oynat (Snowflake VQR deseni — WrenAI'nin historical_question short-circuit'inin
-    # Dima-yerlisi). Önceden bu yol yalnız cube_query içindi ve VQR non-default
-    # tenant'larda tamamen kapalıydı (bkz. company_registry.vqr_for_request); artık
-    # her tenant için wren_sql çiftlerini de kapsar.
     from app.company_registry import vqr_for_request
 
     vqr = vqr_for_request(request)
-    cached = vqr.near_exact(body.question) if vqr else None
-    cached_sql = (cached.get("cube_query") or {}).get("wren_sql") if cached else None
-    if cached_sql:
-        try:
-            planned = service.dry_plan(cached_sql)
-            result = service.query(cached_sql, limit=limit)
-            return _finish(AskResponse(
-                question=body.question, sql=cached_sql, planned_sql=planned,
-                result=QueryResult(**result) if result else None, source="vqr",
-                trace=["VQR birebir eşleşme → doğrulanmış SQL tekrar oynatıldı (LLM'siz)"],
-            ))
-        except Exception:
-            _log.warning("VQR'daki SQL artık geçersiz (şema değişmiş olabilir) — "
-                        "LLM yoluna düşülüyor", exc_info=True)
+
+    # 2) VQR: yalnız BAĞIMSIZ (takip olmayan) sorularda kontrol edilir. Bir takip mesajı
+    # ("aylara göre") bağlamsız haliyle BAŞKA bir konuşmadan gelen alakasız bir VQR
+    # kaydını yanlışlıkla eşleştirip tekrar oynatabilirdi — bu yüzden takip turlarında
+    # VQR atlanır (Snowflake VQR deseni — WrenAI'nin historical_question short-circuit'inin
+    # Dima-yerlisi; önceden non-default tenant'larda tamamen kapalıydı, bkz. vqr_for_request).
+    if not is_followup:
+        cached = vqr.near_exact(body.question) if vqr else None
+        cached_sql = (cached.get("cube_query") or {}).get("wren_sql") if cached else None
+        if cached_sql:
+            try:
+                planned = service.dry_plan(cached_sql)
+                result = service.query(cached_sql, limit=limit)
+                resp = AskResponse(
+                    question=body.question, sql=cached_sql, planned_sql=planned,
+                    result=QueryResult(**result) if result else None, source="vqr",
+                    trace=["VQR birebir eşleşme → doğrulanmış SQL tekrar oynatıldı (LLM'siz)"],
+                )
+                return _finish(_attach_viz(resp, result))
+            except Exception:
+                _log.warning("VQR'daki SQL artık geçersiz (şema değişmiş olabilir) — "
+                            "LLM yoluna düşülüyor", exc_info=True)
 
     # 3) LLM üretimi: sağlayıcı zinciri (failover + kural-tabanlı/dürüst-ret yedeği —
-    # app/llm.py, app.state.llm) + VQR few-shot + şirket business_rules/golden_sql.
-    # Eskiden burada tek-sağlayıcılı, telemetrisiz, few-shot'suz ham bir OpenAI çağrısı
-    # vardı; artık startup'ta zaten kurulu olan aynı altyapı kullanılıyor.
+    # app/llm.py, app.state.llm). Takip turunda ÖNCEKİ SQL'i bağlam alan followup üretimi
+    # (WrenAI'nin followup_sql_generation deseni); bağımsız soruda VQR few-shot + şirket
+    # business_rules/golden_sql. Eskiden burada tek-sağlayıcılı, telemetrisiz, bağlamsız,
+    # ham bir OpenAI çağrısı vardı; artık startup'ta zaten kurulu olan altyapı kullanılıyor.
     llm = getattr(request.app.state, "llm", None)
     if llm is None:
         raise HTTPException(status_code=503, detail="LLM sağlayıcısı yapılandırılmamış.")
-    few_shot = vqr.few_shot_block(body.question) if vqr else ""
+
     prompt_schema = schema
-    if few_shot:
-        prompt_schema = {**schema, "golden_sql": "\n\n".join(
-            s for s in (schema.get("golden_sql"), few_shot) if s)}
+    if is_followup:
+        try:
+            wren_sql = llm.generate_followup_sql(
+                body.question, schema, prev_question, prev_sql, body.history)
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"SQL üretilemedi: {exc}") from exc
+        trace = ["önceki SQL bağlamında takip üretimi (LLM önceki SQL'i düzenledi/yok saydı)"]
+    else:
+        few_shot = vqr.few_shot_block(body.question) if vqr else ""
+        if few_shot:
+            prompt_schema = {**schema, "golden_sql": "\n\n".join(
+                s for s in (schema.get("golden_sql"), few_shot) if s)}
+        try:
+            wren_sql = llm.generate_sql(body.question, prompt_schema)
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"SQL üretilemedi: {exc}") from exc
+        trace = ["VQR few-shot ile LLM üretimi" if few_shot else "LLM üretimi"]
 
-    try:
-        wren_sql = llm.generate_sql(body.question, prompt_schema)
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"SQL üretilemedi: {exc}") from exc
-
-    trace = ["VQR few-shot ile LLM üretimi" if few_shot else "LLM üretimi"]
     try:
         planned = service.dry_plan(wren_sql)
     except Exception as e:
@@ -937,12 +971,24 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         planned = service.dry_plan(wren_sql)
 
     result = service.query(wren_sql, limit=limit)
-    return _finish(AskResponse(
+
+    # 4) Öğrenme döngüsü: yalnız BAĞIMSIZ başarılı yanıtlar VQR'a otomatik yazılır.
+    # Bir takip cevabını ("aylara göre" → SQL) standalone soru metniyle önbelleklemek,
+    # sonraki alakasız bir konuşmada YANLIŞ tekrar oynatmaya yol açardı — bu yüzden yalnız
+    # bağlamdan bağımsız (kendi başına anlamlı) sorular öğrenilir.
+    if vqr is not None and not is_followup:
+        try:
+            vqr.store(body.question, {"wren_sql": wren_sql}, source="auto")
+        except Exception:
+            _log.warning("VQR otomatik kayıt başarısız (best-effort)", exc_info=True)
+
+    resp = AskResponse(
         question=body.question, sql=wren_sql, planned_sql=planned,
         result=QueryResult(**result) if result else None,
         source=_llm_source(llm, used_rule=isinstance(llm, RuleBasedSqlGenerator)),
         trace=trace,
-    ))
+    )
+    return _finish(_attach_viz(resp, result))
 
 
 @router.post("/ask/verify", dependencies=[Depends(require("vqr:write")), Depends(require_company)])

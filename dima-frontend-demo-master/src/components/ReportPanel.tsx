@@ -6,6 +6,7 @@ import { useClickOutside } from "@/lib/useClickOutside";
 import type { AskResponse, CubeQuery, DashboardListItem } from "@/lib/types";
 import {
   addDashboardWidget,
+  askVerify,
   createDashboard,
   createSchedule,
   getFeatures,
@@ -165,7 +166,11 @@ export function ReportPanel({
   const [fb, setFb] = useState<Record<string, "ok" | "bad">>({});
   const vLabel =
     data && data.question.startsWith("chip:") ? (verifyLabel ?? data.question) : data?.question;
-  const verifyKey = data?.cube_query && vLabel ? `${vLabel}::${data.sql ?? ""}` : null;
+  // Doğrulanabilir iki şekilden biri: deterministik cube_query (eski /verify) YA DA
+  // strict-agentic wren_sql cevabı (yeni /ask/verify) — ikisi de "gerçek bir SQL üretti ve
+  // çalıştırdı" anlamına gelir, yalnız hangi API çağrılacağı farklıdır (bkz. doVerify).
+  const verifiable = Boolean(data?.cube_query) || Boolean(data?.sql);
+  const verifyKey = verifiable && vLabel ? `${vLabel}::${data?.sql ?? ""}` : null;
   const verified = verifyKey != null && fb[verifyKey] === "ok";
   const flagged = verifyKey != null && fb[verifyKey] === "bad";
   // ✗ yanlış → yorum popup'ı: kullanıcı isterse "neden yanlış"ı yazar, isterse yazmadan
@@ -175,11 +180,20 @@ export function ReportPanel({
   // Rapor aksiyon menüleri (zamanla / panoya ekle / yanlış) TEK-AÇIK + dışarı-tıklamada kapanır.
   const closeMenus = () => { setDashOpen(false); setSchedOpen(false); setWrongOpen(false); };
   const actionsRef = useClickOutside<HTMLDivElement>(dashOpen || schedOpen || wrongOpen, closeMenus);
+  // cube_query varsa deterministik /verify; yoksa (strict-agentic /ask) wren_sql /ask/verify.
+  const doVerify = (opts: { undo?: boolean; verdict?: "wrong"; comment?: string }) => {
+    if (!vLabel) return Promise.reject(new Error("no label"));
+    if (data?.cube_query) {
+      return verifyReport(data.cube_query, vLabel, { session_id: sessionId, ...opts });
+    }
+    if (data?.sql) {
+      return askVerify({ question: vLabel, sql: data.sql, session_id: sessionId, ...opts });
+    }
+    return Promise.reject(new Error("no verifiable payload"));
+  };
   const submitWrong = () => {
-    if (!data?.cube_query || !vLabel || !verifyKey) return;
-    verifyReport(data.cube_query, vLabel, {
-      verdict: "wrong", session_id: sessionId, comment: wrongComment.trim() || undefined,
-    })
+    if (!verifyKey) return;
+    doVerify({ verdict: "wrong", comment: wrongComment.trim() || undefined })
       .then(() => { setFb((m) => ({ ...m, [verifyKey]: "bad" })); setWrongOpen(false); setWrongComment(""); })
       .catch(() => {});
   };
@@ -357,17 +371,14 @@ export function ReportPanel({
                 )}
               </span>
             )}
-            {verifyStage && canVerify && data.cube_query && data.source && (
+            {verifyStage && canVerify && verifiable && data.source && (
               // tek kutu: ✓/✗ geri bildirim (aşama rozeti gösterilmez — bayrak iç bilgi)
               <div className="relative inline-flex h-[20px] items-stretch border border-hairline font-mono text-[11px]">
                 <button
                   onClick={() => {
-                    if (!data.cube_query || !vLabel || !verifyKey) return;
+                    if (!verifyKey) return;
                     // ikinci tık = GERİ AL (yanlışlıkla doğrulamayı düzeltme yolu)
-                    verifyReport(data.cube_query, vLabel, {
-                      undo: verified || undefined,
-                      session_id: sessionId,
-                    })
+                    doVerify({ undo: verified || undefined })
                       .then(() =>
                         setFb((m) => {
                           const n = { ...m };

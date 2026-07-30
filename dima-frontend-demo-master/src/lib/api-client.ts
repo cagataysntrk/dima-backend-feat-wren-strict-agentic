@@ -203,6 +203,23 @@ export async function verifyReport(
   return data;
 }
 
+// "✓ doğru" / "✗ yanlış" — strict-agentic (wren_sql) /ask cevapları için geri bildirim.
+// verifyReport'un (CubeQuery) wren_sql karşılığı: right → VQR'a yazılır (aynı/çok benzer
+// soru bir daha LLM'siz), undo → geri alınır, wrong → kayıt silinir + negatif sinyal loglanır.
+export async function askVerify(
+  body: {
+    question: string;
+    sql?: string | null;
+    session_id?: string;
+    verdict?: "right" | "wrong";
+    undo?: boolean;
+    comment?: string;
+  },
+): Promise<{ stored: boolean; removed: boolean }> {
+  const { data } = await apiClient.post<{ stored: boolean; removed: boolean }>("/ask/verify", body);
+  return data;
+}
+
 // Zamanlanmış raporlar + bildirimler (ADR-0011)
 export interface ScheduleSpec {
   label: string;

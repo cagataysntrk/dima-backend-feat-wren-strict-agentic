@@ -48,6 +48,10 @@ export default function Home() {
   // Takip bağlamı: bir sonraki mesajla gönderilecek CubeQuery. Rapor VE clarify notu (kısmi
   // cube_query) bunu günceller — "bu ay" chip'i doğru sorguya uygulansın (ADR-0007 Faz C).
   const [contextCq, setContextCq] = useState<AskResponse["cube_query"]>(null);
+  // Strict-agentic (wren_sql) takip bağlamı: bir önceki /ask cevabının SQL'i — cube_query'den
+  // AYRI (bkz. lib/types.ts AskRequest.prev_sql); "aylara göre" gibi bir takip mesajı backend'de
+  // bu SQL'i düzenleyerek yanıtlanır (generate_followup_sql), sıfırdan bağlamsız üretmez.
+  const [prevSql, setPrevSql] = useState<string | null>(null);
   // Görünüm ipucu ("grafik ver") — sağ paneldeki raporun görünümünü değiştirir.
   const [viewHint, setViewHint] = useState<{ kind: string; nonce: number } | null>(null);
   const [drawer, setDrawer] = useState<Drawer>(null);
@@ -75,6 +79,7 @@ export default function Home() {
     setContextCq(null);
     const lastReport = msgs.find((m) => (m.result && !m.note) || m.kpi) ?? null;
     setActive(lastReport);
+    setPrevSql(lastReport?.sql || null);
     setStarted(true);
     setDrawer(null);
   };
@@ -84,6 +89,7 @@ export default function Home() {
     clearHistory();
     setActive(null);
     setContextCq(null);
+    setPrevSql(null);
     setStarted(false);
     setDrawer(null);
   };
@@ -93,6 +99,7 @@ export default function Home() {
       ask({
         question,
         cube_query: contextCq,
+        prev_sql: prevSql,
         history: items.map((i) => i.question).slice(0, 8),
         session_id: sessionId,
       }),
@@ -106,6 +113,9 @@ export default function Home() {
       else if (data.result && !data.note) setViewHint(null);
       // Bağlam: rapor ya da clarify (kısmi cube_query) her ikisi de bir sonraki mesaj için.
       setContextCq(data.cube_query ?? null);
+      // wren_sql takip bağlamı: sql yoksa (meta/katalog/hata notu) bir sonraki soru
+      // bağlamsız (fresh) sayılır — stale SQL'e "düzenleme" uygulanmaz.
+      setPrevSql(data.sql || null);
       qc.invalidateQueries({ queryKey: ["conversations"] }); // geçmiş listesi tazelensin
     },
   });
@@ -126,6 +136,9 @@ export default function Home() {
       // chip düzenlemesi RAPOR ŞEKLİNİ küçük değiştirir — mevcut görünüm tercihi
       // (ör. panelli) KORUNUR; yeni ipucu yalnız /ask cevabından gelir.
       setContextCq(data.cube_query ?? null);
+      // /cube deterministik cube_query akışıdır — wren_sql takip bağlamıyla ilgisiz;
+      // bir sonraki /ask sıfırdan (fresh) başlasın diye temizlenir.
+      setPrevSql(null);
     },
   });
 
@@ -140,6 +153,7 @@ export default function Home() {
     onSuccess: (r, file) => {
       setStarted(true);
       setContextCq(null); // yeni veri kaynağı — eski cube bağlamı düşer
+      setPrevSql(null); // yeni veri kaynağı — eski wren_sql takip bağlamı da düşer
       const cols = r.columns.map((c) => c.orig).join(", ");
       addHistory({
         question: `📎 ${file.name}`,
@@ -179,6 +193,7 @@ export default function Home() {
               onSelect={(item) => {
                 setActive(item);
                 setContextCq(item.cube_query ?? null); // seçilen rapor bağlam olur
+                setPrevSql(item.sql || null); // wren_sql takibi de seçilen rapordan devam eder
                 if (!item.question.startsWith("chip:")) setVerifyLabel(item.question);
               }}
               onSubmit={submit}

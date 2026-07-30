@@ -379,7 +379,11 @@ class WrenService:
                         except Exception:
                             continue
                         if 0 < len(got) <= self._MAX_ENUM:
-                            vals[name] = got
+                            # ORDER BY'sız DISTINCT: motor satır sırasını garanti etmez
+                            # (_enrich_categorical zaten sorted() kullanıyor — burada
+                            # eksikti, schema() çağrıları arasında dimension_values sırası
+                            # veri değişmeden de kayabiliyordu).
+                            vals[name] = sorted(got)
                     cube["dimension_values"] = vals
         except Exception:
             pass

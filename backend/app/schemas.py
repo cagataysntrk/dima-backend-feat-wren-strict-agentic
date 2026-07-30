@@ -57,6 +57,13 @@ class AskRequest(BaseModel):
     # bunlarla yorumlanır; motor mevcut sorguyu düzenler.
     history: list[str] = Field(default_factory=list)
     cube_query: dict[str, Any] | None = None
+    # Strict-agentic /ask'in takip (follow-up) bağlamı: bir önceki turun `AskResponse.sql`'i.
+    # BİLEREK `cube_query`den AYRI bir alan — `cube_query` frontend'de scheduling/dashboard/
+    # verify gibi başka özelliklerin de gate'i (gerçek CubeQuery şekli varsayıyorlar); onu
+    # ham SQL taşımak için yeniden kullanmak o özellikleri yanlışlıkla wren_sql cevaplarında
+    # da açardı. Yalnız history doluyken ve bu alan set edilmişken /ask bunu bir takip
+    # düzenlemesi (edit) olarak ele alır (bkz. routers/ask.py generate_followup_sql).
+    prev_sql: str | None = None
     # Sohbet oturumu kimliği (client üretir) — kalıcı logda chat'i yeniden kurmak için.
     session_id: str | None = None
 

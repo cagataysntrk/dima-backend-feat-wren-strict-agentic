@@ -28,8 +28,10 @@ Tarayıcı same-origin **`/api/*`**'e konuşur; Next rewrite-proxy'si `BACKEND_O
 iletir (backend URL'i browser'a sızmaz, refresh cookie same-origin kalır).
 Uçlar: `POST /auth/login|refresh|logout` · `GET /auth/me` (roller + `permissions`) ·
 `GET /schema` (cube kataloğu + `lower_is_better`) · `GET /features` (bayraklar,
-kimlikli) · `POST /ask` (+ flag'liyse `interpretation` — OutputInsight) `/cube` `/verify`
-`/query` · `POST /ask/upload` (chat-scoped Excel/CSV → oto-cube) · `GET|DELETE /conversations`
+kimlikli) · `POST /ask` (strict-agentic wren_sql; takip bağlamı `prev_sql` ile taşınır,
++ flag'liyse `interpretation` — OutputInsight) `/cube` `/verify` (cube_query doğrulama)
+`/ask/verify` (wren_sql doğrulama — VQR'a öğretir) `/query` · `POST /ask/upload`
+(chat-scoped Excel/CSV → oto-cube) · `GET|DELETE /conversations`
 (sohbet geçmişi + resume, soft-delete) · `/schedules*` `/notifications` `/contracts*`.
 
 ## Kimlik doğrulama
