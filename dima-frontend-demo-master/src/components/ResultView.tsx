@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { getSchema } from "@/lib/api-client";
-import { setSchemaUnits } from "@/lib/format";
+import { setSchemaUnits, unitSuffix } from "@/lib/format";
 import type { QueryResult, VizSpec } from "@/lib/types";
 import { ALL_MEASURES, analyze, analysisFromViz, buildOption, facetPanelValues, kpiCards, type ChartKind } from "@/lib/chart";
 import { EChart } from "./EChart";
@@ -63,7 +63,7 @@ function usePrefersDark(): boolean {
 // Not: yeni sonuçta/görünüm ipucunda seçimlerin sıfırlanması için ana bileşen bunu
 // `key={...}` ile remount eder; viewHint ("grafik ver") başlangıç görünümünü belirler.
 export function ResultView({
-  result,
+  result: rawResult,
   viewHint,
   viz,
   onViewChange,
@@ -74,6 +74,32 @@ export function ResultView({
   // Pano: kullanıcı görünümü/tipi değiştirince ÜSTE bildir → widget'a KAYDET (view_hint).
   onViewChange?: (viewHint: string) => void;
 }) {
+  // Yüzdelik oranların (0-1) dinamik olarak 0-100 ölçeğine çekilmesi.
+  // Bu sayede 0.8 (Kullanılabilirlik) ve 60 (OEE) aynı grafikte patlamadan çizilir.
+  const result = useMemo(() => {
+    const isNum = (v: unknown) => typeof v === "number" || (typeof v === "string" && v.trim() !== "" && !Number.isNaN(Number(v)));
+    const num = (v: unknown) => typeof v === "number" ? v : Number(v);
+    
+    const pctMeasures = rawResult.columns.filter(c => unitSuffix(c) === "%");
+    if (pctMeasures.length === 0) return rawResult;
+
+    const rows = rawResult.rows.map(r => ({ ...r }));
+    let changed = false;
+
+    for (const m of pctMeasures) {
+      const maxVal = Math.max(0, ...rows.map(r => num(r[m])).filter(v => !Number.isNaN(v)));
+      if (maxVal > 0 && maxVal <= 1.2) {
+        changed = true;
+        for (const r of rows) {
+          if (isNum(r[m])) {
+            r[m] = num(r[m]) * 100;
+          }
+        }
+      }
+    }
+    return changed ? { ...rawResult, rows } : rawResult;
+  }, [rawResult]);
+
   // BİLEŞİK view_hint (grafiğin TÜM özellikleri panoya taşınsın): "<main>#<measure>".
   //   main = table | pivot | <grafikTipi> | facet:<dim>  ·  measure = ALL_MEASURES ("__tumu__") | kolon
   // "facet:kumas_cinsi" — panel boyutu KULLANICININ istediği boyut olur; analiz sezgisi ezilir.

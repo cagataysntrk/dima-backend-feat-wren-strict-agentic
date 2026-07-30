@@ -35,7 +35,7 @@ export function unitFor(col: string): Unit | null {
   if (c === "gramaj") return { suffix: "g/m²" };
   if (/_cm$/.test(c)) return { suffix: "cm" };
   if (/yuzde|orani/.test(c)) return { suffix: "%" }; // zaten yüzde ölçeğinde
-  if (/(^oee$|oee|kullanilabilirlik|performans|kalite)/.test(c)) return { suffix: "%", scale: 100 }; // oran 0-1
+  if (/(^oee$|oee|kullanilabilirlik|performans|kalite)/.test(c)) return { suffix: "%" }; // 0-1 veya 0-100 olabilir, dinamik çözülecek
   if (/_kg$/.test(c) || c.includes("agirlik") || c.includes("kapasite") || c.includes("tonaj"))
     return { suffix: "kg" };
   return null;
