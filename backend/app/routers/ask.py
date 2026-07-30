@@ -18,6 +18,7 @@ from app.logging_setup import get_logger
 from app.schemas import (
     AskRequest,
     AskResponse,
+    AskVerifyRequest,
     CubeRequest,
     QueryResult,
     ReportRequest,
@@ -32,12 +33,23 @@ _log = get_logger("ask")  # system/app log (ADR-0020): best-effort bloklar sessi
 
 
 def _source_kind(source: str | None) -> str:
-    """Ham source → normalize tür (interaction_log facet/filtre): cube|llm|rule|upload|none|other."""
+    """Ham source → normalize tür (interaction_log facet/filtre):
+    cube|llm|rule|upload|vqr|meta|catalog|none|other.
+
+    vqr/meta/catalog LLM'e HİÇ düşmeyen yolları ayırt eder — bu facet olmadan
+    "her soru LLM'e mi düşüyor" sorusu loglardan ölçülemez (ADR: strict-agentic
+    /ask gözlemlenebilirliği)."""
     s = (source or "").lower()
     if not s:
         return "none"
     if s.startswith("cube"):
         return "cube"
+    if s.startswith("vqr"):
+        return "vqr"
+    if s.startswith("meta"):
+        return "meta"
+    if s.startswith("catalog"):
+        return "catalog"
     if s.startswith("llm"):
         return "llm"
     if s.startswith(("rule", "kural")):
@@ -782,7 +794,16 @@ def verify(request: Request, body: CubeRequest) -> dict:
     # VQR (replay cache) KAPALI olsa bile geri bildirim KAYBOLMAZ: store/remove atlanır
     # ama sinyal her durumda loglanır (ADR-0008 log-madenciliği). Canlı 2026-07-25: VQR
     # None iken "yanlış" verdict'i 400'le düşüyor, negatif sinyal yutuyordu — asıl amaç bu.
-    vqr = None if getattr(request.state, "wren", None) else getattr(request.app.state, "vqr", None)
+    #
+    # ÖNCEDEN burada `None if getattr(request.state, "wren", None) else app.state.vqr`
+    # vardı — bu, VARSAYILAN ŞİRKET DIŞINDAKİ HER tenant için VQR'ı sessizce tamamen
+    # kapatıyordu (request.state.wren yalnız non-default tenant'ta set edilir; "wren
+    # strict mode" ile ilgisi yok). Sonuç: öğrenme döngüsü tek şirket dışında hiç
+    # çalışmıyordu. vqr_for_request artık her tenant için kendi VQR'ını (registry'de
+    # slug-bazlı önbelleklenmiş) döndürür — bkz. company_registry.vqr_for.
+    from app.company_registry import vqr_for_request
+
+    vqr = vqr_for_request(request)
     principal = getattr(request.state, "principal", None)
     stored = removed = False
     if vqr is not None:
@@ -805,7 +826,7 @@ def verify(request: Request, body: CubeRequest) -> dict:
         SimpleNamespace(question=f"verify[{verdict}]: {body.label}", cube_query=cq),  # type: ignore[arg-type]
         SimpleNamespace(source="verify", sql=None, result=None,
                         note=(comment if verdict == "wrong" else None),
-                        cube_query=cq, trace=trace),  # type: ignore[arg-type]
+                        cube_query=cq, trace=trace, interpretation=None),  # type: ignore[arg-type]
         0,
         principal,
     )
@@ -818,89 +839,165 @@ def verify(request: Request, body: CubeRequest) -> dict:
 
 
 
-import json
-import os
-import hashlib
-import json
-import os
-import hashlib
-from openai import OpenAI
-
-LLM_MODEL = os.getenv("DIMA_OPENROUTER_MODEL", "gpt-4o")
-
-def call_llm_for_wren_sql(system_prompt: str, user_question: str) -> str:
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key or api_key.startswith("${"):
-        api_key = os.environ.get("DIMA_OPENROUTER_API_KEY", "")
-        
-    base_url = "https://openrouter.ai/api/v1" if api_key and api_key.startswith("sk-or") else None
-    client = OpenAI(api_key=api_key, base_url=base_url)
-    
-    completion = client.chat.completions.create(
-        model=LLM_MODEL,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_question}
-        ],
-        temperature=0.0
-    )
-    raw = completion.choices[0].message.content or ""
-    if "```sql" in raw:
-        raw = raw.split("```sql")[1].split("```")[0]
-    return raw.strip()
-
-def fix_llm_sql(system_prompt: str, user_question: str, bad_sql: str, error_msg: str) -> str:
-    prompt = f"""
-    Sen DİMA Semantik SQL Ajanısın.
-    Kullanıcının Sorusu: {user_question}
-    Yazdığın Hatalı SQL: {bad_sql}
-    Wren Engine Hata Mesajı: {error_msg}
-    
-    Lütfen hatayı düzelt ve sadece doğru Wren SQL kodunu dön.
-    """
-    return call_llm_for_wren_sql(system_prompt, prompt)
-
-@router.post("/ask", response_model=AskResponse, dependencies=[Depends(require("query:run")), Depends(require_company)])
+@router.post("/ask", response_model=AskResponse,
+             dependencies=[Depends(require("query:run")), Depends(require_company)])
 def ask(request: Request, body: AskRequest) -> AskResponse:
+    """Strict-agentic NL→Wren SQL: LLM doğrudan MDL üzerinden SQL üretir (cube ara-katmanı
+    yok — ADR: wren-strict-agentic geçişi). Sıra, WrenAI'nin kendi Ask pipeline'ının
+    (intent_classification → historical_question → SQL-pairs few-shot) Dima-yerlisi
+    karşılığıdır — dış WrenAI servisleri değil, zaten var olan app/vqr.py + app/llm.py
+    kullanılır:
+
+    1. Meta/katalog soruları → deterministik yanıt (LLM YOK).
+    2. VQR birebir/yakın eşleşme → önceden doğrulanmış SQL tekrar oynatılır (LLM YOK).
+    3. VQR few-shot + şirket business_rules/golden_sql ile LLM SQL üretimi → dry_plan
+       doğrulama → hata varsa kendi kendini onarma (repair)."""
     import time
+
+    from app.llm import reset_llm_usage
+
+    t0 = time.monotonic()
+    reset_llm_usage()
     settings = get_settings()
     service = _service_for(request, body.session_id)
     schema = service.schema()
-    
-    t0 = time.monotonic()
-    
-    system_prompt = f"""
-    Sen DİMA Semantik SQL Ajanısın.
-    Aşağıdaki MDL Şemasını incele ve kullanıcının Türkçe sorusuna karşılık gelen geçerli bir Wren SQL yaz.
-    KURALLAR:
-    - SADECE MDL içindeki tanımlı model, metrik ve kolon isimlerini kullan.
-    - Veritabanında olmayan tablo veya kolon uydurma.
-    - Yanıt olarak SADECE saf Wren SQL kodu döndür, açıklama veya yorum ekleme.
-    MDL ŞEMASI:
-    {json.dumps(schema)}
-    """
-    
-    wren_sql = call_llm_for_wren_sql(system_prompt, body.question)
-    
-    try:
-        service.dry_plan(wren_sql)
-    except Exception as e:
-        wren_sql = fix_llm_sql(system_prompt, body.question, wren_sql, str(e))
-        service.dry_plan(wren_sql)
-        
-    result = service.query(wren_sql)
-    
-    resp = AskResponse(
-        question=body.question,
-        sql=wren_sql,
-        source="llm:cortex",
-        result=QueryResult(**result) if result else None
-    )
-    
-    _persist_message(request, resp, body.session_id)
-    
+    q_norm = cube_router._norm(body.question)
     principal = getattr(request.state, "principal", None)
-    _log_interaction(body.session_id, body, resp, int((time.monotonic() - t0) * 1000), principal)
-    
-    return resp
+    limit = min(body.limit or settings.max_result_rows, settings.max_result_rows)
+
+    def _finish(resp: AskResponse) -> AskResponse:
+        _persist_message(request, resp, body.session_id)
+        _log_interaction(body.session_id, body, resp, int((time.monotonic() - t0) * 1000), principal)
+        return resp
+
+    # 1) Deterministik ön-kapı — WrenAI'nin intent_classification'ının LLM'siz Dima
+    # karşılığı: meta/ürün soruları ve katalog-keşfi SQL üretimine hiç girmez. Bu
+    # yardımcılar (_is_meta/_is_catalog_query) eski cube_router akışı için yazılmıştı;
+    # strict-agentic geçişinde /ask'e hiç bağlanmamışlardı.
+    if _is_meta(q_norm):
+        return _finish(AskResponse(
+            question=body.question, source="meta", note=_META_TEXT,
+            suggestions=[Suggestion(**s) for s in _META_SUGGESTIONS],
+            trace=["meta soru → deterministik yanıt (LLM'siz)"],
+        ))
+    if _is_catalog_query(q_norm):
+        return _finish(AskResponse(
+            question=body.question, source="catalog", note=_catalog_listing(schema),
+            suggestions=[Suggestion(**s) for s in _catalog_all_suggestions(schema)],
+            trace=["katalog keşfi → deterministik yanıt (LLM'siz)"],
+        ))
+
+    # 2) VQR: birebir/yakın eşleşme → LLM'e HİÇ gitmeden önceki doğrulanmış SQL'i tekrar
+    # oynat (Snowflake VQR deseni — WrenAI'nin historical_question short-circuit'inin
+    # Dima-yerlisi). Önceden bu yol yalnız cube_query içindi ve VQR non-default
+    # tenant'larda tamamen kapalıydı (bkz. company_registry.vqr_for_request); artık
+    # her tenant için wren_sql çiftlerini de kapsar.
+    from app.company_registry import vqr_for_request
+
+    vqr = vqr_for_request(request)
+    cached = vqr.near_exact(body.question) if vqr else None
+    cached_sql = (cached.get("cube_query") or {}).get("wren_sql") if cached else None
+    if cached_sql:
+        try:
+            planned = service.dry_plan(cached_sql)
+            result = service.query(cached_sql, limit=limit)
+            return _finish(AskResponse(
+                question=body.question, sql=cached_sql, planned_sql=planned,
+                result=QueryResult(**result) if result else None, source="vqr",
+                trace=["VQR birebir eşleşme → doğrulanmış SQL tekrar oynatıldı (LLM'siz)"],
+            ))
+        except Exception:
+            _log.warning("VQR'daki SQL artık geçersiz (şema değişmiş olabilir) — "
+                        "LLM yoluna düşülüyor", exc_info=True)
+
+    # 3) LLM üretimi: sağlayıcı zinciri (failover + kural-tabanlı/dürüst-ret yedeği —
+    # app/llm.py, app.state.llm) + VQR few-shot + şirket business_rules/golden_sql.
+    # Eskiden burada tek-sağlayıcılı, telemetrisiz, few-shot'suz ham bir OpenAI çağrısı
+    # vardı; artık startup'ta zaten kurulu olan aynı altyapı kullanılıyor.
+    llm = getattr(request.app.state, "llm", None)
+    if llm is None:
+        raise HTTPException(status_code=503, detail="LLM sağlayıcısı yapılandırılmamış.")
+    few_shot = vqr.few_shot_block(body.question) if vqr else ""
+    prompt_schema = schema
+    if few_shot:
+        prompt_schema = {**schema, "golden_sql": "\n\n".join(
+            s for s in (schema.get("golden_sql"), few_shot) if s)}
+
+    try:
+        wren_sql = llm.generate_sql(body.question, prompt_schema)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"SQL üretilemedi: {exc}") from exc
+
+    trace = ["VQR few-shot ile LLM üretimi" if few_shot else "LLM üretimi"]
+    try:
+        planned = service.dry_plan(wren_sql)
+    except Exception as e:
+        trace.append(f"dry_plan hatası → kendi kendini onarma: {e}")
+        wren_sql = llm.repair(body.question, prompt_schema, wren_sql, str(e))
+        planned = service.dry_plan(wren_sql)
+
+    result = service.query(wren_sql, limit=limit)
+    return _finish(AskResponse(
+        question=body.question, sql=wren_sql, planned_sql=planned,
+        result=QueryResult(**result) if result else None,
+        source=_llm_source(llm, used_rule=isinstance(llm, RuleBasedSqlGenerator)),
+        trace=trace,
+    ))
+
+
+@router.post("/ask/verify", dependencies=[Depends(require("vqr:write")), Depends(require_company)])
+def ask_verify(request: Request, body: AskVerifyRequest) -> dict:
+    """Strict-agentic /ask cevapları için geri bildirim (UI '✓ doğru' / '✗ yanlış' düğmeleri) —
+    `/verify`'nin (CubeQuery) wren_sql karşılığı. Bu uç nokta olmadan VQR'a hiçbir wren_sql
+    çifti yazılmaz: sistem aynı/benzer soruyu her seferinde yeniden LLM'e sorar, hiç
+    "öğrenmez". Onaylanan SQL önce dry_plan'dan geçirilir — geçersiz bir onay VQR'ı kirletip
+    gelecekteki tekrar-oynatmaları bozamaz.
+
+    - verdict=right (varsayılan): soru→wren_sql çifti VQR'a yazılır (few-shot + gelecekte
+      birebir eşleşirse LLM'siz tekrar oynatma).
+    - undo=true: önceki onay geri alınır.
+    - verdict=wrong: negatif sinyal — VQR'daki (varsa) çift silinir; her durumda loglanır.
+    """
+    if not body.question.strip():
+        raise HTTPException(status_code=400, detail="Soru eksik.")
+    from app.company_registry import vqr_for_request
+
+    vqr = vqr_for_request(request)
+    principal = getattr(request.state, "principal", None)
+    verdict = "wrong" if body.verdict == "wrong" else ("undo" if body.undo else "right")
+    stored = removed = False
+    if vqr is not None:
+        if body.undo or body.verdict == "wrong":
+            removed = vqr.remove(body.question)
+        elif body.sql and body.sql.strip():
+            service = _service_for(request, body.session_id)
+            try:
+                service.dry_plan(body.sql)
+            except Exception as exc:
+                raise HTTPException(status_code=400, detail=f"SQL doğrulanamadı: {exc}") from exc
+            stored = vqr.store(body.question, {"wren_sql": body.sql}, source="user_verified",
+                               extra={"verified_by": getattr(principal, "user_id", None),
+                                      "tenant_id": getattr(principal, "tenant_id", None)})
+
+    from types import SimpleNamespace
+
+    comment = (body.comment or "").strip() or None
+    trace = [f"kullanıcı geri bildirimi (/ask) → {verdict}"
+             + (" · VQR'a yazıldı" if stored else " · VQR'dan silindi" if removed else "")
+             + (f" · yorum: {comment}" if comment else "")]
+    _log_interaction(
+        body.session_id,
+        SimpleNamespace(question=f"ask-verify[{verdict}]: {body.question}", cube_query=None),
+        SimpleNamespace(source="verify", sql=body.sql, result=None,
+                        note=(comment if verdict == "wrong" else None),
+                        cube_query=None, trace=trace, interpretation=None),
+        0,
+        principal,
+    )
+    from control_plane import audit
+
+    audit.record(principal, "verify",
+                 nl_question=f"[{verdict}] {body.question}" + (f" · {comment}" if comment else ""),
+                 ip=request.client.host if request.client else None)
+    return {"stored": stored, "removed": removed}
 

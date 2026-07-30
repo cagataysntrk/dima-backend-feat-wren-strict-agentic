@@ -75,6 +75,19 @@ class CubeRequest(BaseModel):
     comment: str | None = None
 
 
+class AskVerifyRequest(BaseModel):
+    """Strict-agentic /ask yanıtları için geri bildirim (CubeRequest/`/verify`'nin wren_sql
+    karşılığı): kullanıcı bir /ask cevabını onaylar/reddederse VQR'a wren_sql çifti olarak
+    yazılır/silinir — bu olmadan VQR asla büyümez ve sistem tekrarlanan sorularda dahi
+    LLM'e düşmeye devam eder."""
+    question: str = Field(..., min_length=1)
+    sql: str | None = None  # onaylanan /ask yanıtının `sql` alanı (verdict=right/undo'da gerekmez)
+    session_id: str | None = None
+    verdict: str | None = None  # "right" (varsayılan) | "wrong"
+    undo: bool = False
+    comment: str | None = None
+
+
 class ReportBlockSpec(BaseModel):
     """Rapor bloğu isteği (ADR-0024): kayıtlı cube_query + göreli dönem + opsiyonel başlık.
     Panodan ("raporu dışa aktar") ya da seçili sonuçlardan derlenir."""

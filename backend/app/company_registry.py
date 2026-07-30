@@ -25,6 +25,7 @@ class CompanyRegistry:
     def __init__(self, settings):
         self.settings = settings
         self._services: dict[str, object] = {}
+        self._vqrs: dict[str, object] = {}
         self._lock = threading.Lock()
         self._build_locks: dict[str, threading.Lock] = {}
 
@@ -106,6 +107,24 @@ class CompanyRegistry:
     def invalidate(self, slug: str) -> None:
         with self._lock:
             self._services.pop(slug, None)
+            self._vqrs.pop(slug, None)
+
+    def vqr_for(self, slug: str):
+        """Slug'a bağlı VQR (öğrenen sorgu deposu) — talep üzerine oluşturulur, önbelleklenir.
+        WrenService ile aynı desen (ADR-0005/0008 çok-şirketli genişleme): önceden VQR
+        yalnız ``settings.company`` için vardı ve diğer TÜM tenant'larda `/verify`
+        tarafından bilerek None'a zorlanıyordu — öğrenme döngüsü tek şirket dışında
+        hiç çalışmıyordu. Artık her tenant kendi çiftlerini biriktirir."""
+        with self._lock:
+            vqr = self._vqrs.get(slug)
+            if vqr is not None:
+                return vqr
+        from app.vqr import VQR
+
+        vqr = VQR(slug)
+        with self._lock:
+            vqr = self._vqrs.setdefault(slug, vqr)
+        return vqr
 
 
 def wren_for_request(request):
@@ -114,3 +133,20 @@ def wren_for_request(request):
     ``require_company`` varsayılan-dışı tenant için servisi ``request.state.wren``'e
     bağlar; yoksa süreç varsayılanı (settings.company) kullanılır."""
     return getattr(request.state, "wren", None) or request.app.state.wren
+
+
+def vqr_for_request(request):
+    """İsteğin şirketine bağlı VQR — wren_for_request ile AYNI tenant çözünürlüğünü izler.
+
+    Varsayılan şirket ``app.state.vqr``'ı (startup'ta kurulan) kullanır; diğer her
+    tenant için ``company_registry`` üzerinden slug-bazlı VQR talep üzerine derlenir.
+    Önceden `/verify` bu durumda VQR'ı tamamen None'a zorluyordu (bkz. CompanyRegistry.vqr_for)."""
+    service = wren_for_request(request)
+    slug = getattr(service, "company_slug", None)
+    default_vqr = getattr(request.app.state, "vqr", None)
+    if not slug or (default_vqr is not None and slug == default_vqr.company):
+        return default_vqr
+    registry = getattr(request.app.state, "company_registry", None)
+    if registry is None:
+        return default_vqr
+    return registry.vqr_for(slug)

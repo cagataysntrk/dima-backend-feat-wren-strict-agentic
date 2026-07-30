@@ -1,9 +1,13 @@
 """Verified Query Repository (A#4 / literatür önerisi #2 — Snowflake VQR deseni).
 
-Onaylı soru→CubeQuery çiftleri saklanır ve üç yolla kullanılır:
+Onaylı soru→çift saklanır ve üç yolla kullanılır:
 1. BİREBİR eşleşme → LLM'siz deterministik tekrar oynatma ("doğrulanmış" — en yüksek güven).
-2. Top-k benzer çift → LLM select prompt'una FEW-SHOT (DAIL-SQL ana kazancı).
-3. Chip-onaylı cevaplar depoya GERİ yazılır → sistem sora sora öğrenir.
+2. Top-k benzer çift → LLM select/generation prompt'una FEW-SHOT (DAIL-SQL ana kazancı).
+3. Chip/verify-onaylı cevaplar depoya GERİ yazılır → sistem sora sora öğrenir.
+
+Çift iki şekilden biri olabilir (bkz. ``store``/``few_shot_block``): eski hibrit yoldan
+CubeQuery, ya da strict-agentic ``/ask`` yolundan ``{"wren_sql": "..."}``. VQR ikisini de
+opak JSON olarak taşır — hangi şekil olduğunu yalnız üst katman (routers/ask.py) bilir.
 
 Çiftler Postgres'te yaşar (verified_query tablosu, şirket kapsamlı) — eskiden
 companies/<şirket>/verified/queries.jsonl'daydı ama Railway volume dışı olduğundan
@@ -135,18 +139,25 @@ class VQR:
             self._pairs = pairs
         return self._pairs
 
-    def store(self, question: str, cube_query: dict, source: str = "user",
+    def store(self, question: str, payload: dict, source: str = "user",
               extra: dict | None = None) -> bool:
-        """Çifti ekler (dönem filtresi düşülür). Aynı norm-soru varsa günceller.
+        """Çifti ekler. Aynı norm-soru varsa günceller.
+
+        ``payload`` iki şekilden biri olabilir:
+        - CubeQuery (``{"cube": ..., "measures": [...], ...}``) — dönem filtresi düşülür
+          (sorgu ŞEKLİ öğrenilir).
+        - Wren SQL sarmalayıcı (``{"wren_sql": "SELECT ..."}``) — strict-agentic /ask
+          akışının doğrulanmış SQL'i; olduğu gibi saklanır (tarih genelde SQL'in
+          içindedir, ayrıca düşürülemez).
 
         ``extra``: kayda eklenecek kimlik/iz alanları (ör. verified_by, tenant_id) —
         kim doğrulamış görünür olsun (KVKK erişim izi + küratörlük)."""
         q = (question or "").strip()
-        if not q or not cube_query or not cube_query.get("cube"):
+        if not q or not payload:
             return False
         if q.lower().startswith("chip:"):
             return False  # chip etiketleri soru değildir
-        cq = _strip_dates(cube_query)
+        cq = _strip_dates(payload) if payload.get("cube") else dict(payload)
         meta = {k: v for k, v in (extra or {}).items() if v is not None}
         qn = _norm(q)
         with self._lock:
@@ -281,12 +292,18 @@ class VQR:
         return None
 
     def few_shot_block(self, question: str, k: int = 3) -> str:
-        """Select prompt'una eklenecek doğrulanmış örnekler bloğu ("" olabilir)."""
+        """Select/SQL üretim prompt'una eklenecek doğrulanmış örnekler bloğu ("" olabilir).
+        Çift wren_sql sarmalayıcıysa (strict-agentic /ask) SQL olarak, CubeQuery ise
+        JSON olarak gösterilir — DAIL-SQL desenindeki few-shot kazancı iki şekle de uygular."""
         hits = self.recall(question, k)
         if not hits:
             return ""
         lines = ["Doğrulanmış örnekler (benzer sorular — deseni izle):"]
         for p, _s in hits:
+            payload = p["cube_query"]
             lines.append(f"- Soru: {p['question']}")
-            lines.append(f"  CubeQuery: {json.dumps(p['cube_query'], ensure_ascii=False)}")
+            if isinstance(payload, dict) and payload.get("wren_sql"):
+                lines.append(f"  SQL: {payload['wren_sql']}")
+            else:
+                lines.append(f"  CubeQuery: {json.dumps(payload, ensure_ascii=False)}")
         return "\n".join(lines)
