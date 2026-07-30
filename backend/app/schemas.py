@@ -201,9 +201,3 @@ class AskResponse(BaseModel):
     # K4 (karar motoru) — K3 sinyallerinden türetilen aksiyon önerileri: "neye bakmalısın"
     # + opsiyonel tıklanır drill (sürükleyeni bul). Sinyal yoksa boş. Deterministik.
     recommendations: list[Recommendation] = Field(default_factory=list)
-    
-    # Yeni Bilişsel Hat (Cortex) Alanları
-    badge: str | None = None
-    proof: dict[str, Any] | None = None
-    data: list[dict[str, Any]] | None = None
-    suggested_follow_up_questions: list[str] | None = None

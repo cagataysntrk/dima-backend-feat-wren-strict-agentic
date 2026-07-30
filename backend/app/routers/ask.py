@@ -821,24 +821,21 @@ def verify(request: Request, body: CubeRequest) -> dict:
 import json
 import os
 import hashlib
+import json
+import os
+import hashlib
 from openai import OpenAI
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", os.getenv("DIMA_OPENROUTER_API_KEY", ""))
-BASE_URL = "https://openrouter.ai/api/v1" if os.getenv("DIMA_OPENROUTER_API_KEY") else None
 LLM_MODEL = os.getenv("DIMA_OPENROUTER_MODEL", "gpt-4o")
 
-client = OpenAI(
-    api_key=OPENAI_API_KEY,
-    base_url=BASE_URL
-)
-
-class DIMAQueryContract:
-    @staticmethod
-    def seal(wren_sql: str) -> str:
-        payload = f"{wren_sql}:GOLD_TRUST_BADGE:2026"
-        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
-
 def call_llm_for_wren_sql(system_prompt: str, user_question: str) -> str:
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key or api_key.startswith("${"):
+        api_key = os.environ.get("DIMA_OPENROUTER_API_KEY", "")
+        
+    base_url = "https://openrouter.ai/api/v1" if api_key and api_key.startswith("sk-or") else None
+    client = OpenAI(api_key=api_key, base_url=base_url)
+    
     completion = client.chat.completions.create(
         model=LLM_MODEL,
         messages=[
@@ -891,20 +888,12 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         wren_sql = fix_llm_sql(system_prompt, body.question, wren_sql, str(e))
         service.dry_plan(wren_sql)
         
-    contract_hash = DIMAQueryContract.seal(wren_sql)
-    
     result = service.query(wren_sql)
     
     resp = AskResponse(
         question=body.question,
         sql=wren_sql,
         source="llm:cortex",
-        badge="GOLD_TRUST_BADGE",
-        proof={
-            "executed_wren_sql": wren_sql,
-            "query_contract_hash": contract_hash
-        },
-        data=result.get("rows", []),
         result=QueryResult(**result) if result else None
     )
     

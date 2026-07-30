@@ -19,7 +19,7 @@ import { ResultView } from "@/components/ResultView";
 import { KpiCardView } from "@/components/KpiCard";
 import { OutputInsight } from "@/components/OutputInsight";
 import { SourceBadge } from "@/components/ChatPanel";
-import { DIMAInsightCard } from "@/components/DIMAInsightCard";
+
 
 // Özellik bayrakları (ADR-0009) — açılışta bir kez okunur, modül düzeyinde tutulur.
 let _features: Record<string, string> | null = null;
@@ -469,22 +469,9 @@ export function ReportPanel({
       {/* Cross-cube KPI kartı (CCC / likidite) — cube tablosu değil bileşke skaler. */}
       {data.kpi && <KpiCardView card={data.kpi} />}
 
-      {/* DİMA Bilişsel Sorgu Hattı Çıktısı */}
-      {data.badge === "GOLD_TRUST_BADGE" && (
-          <DIMAInsightCard 
-              responseData={data} 
-              onFollowUpClick={(q) => {
-                  const askInput = document.querySelector('input[type="text"]') as HTMLInputElement;
-                  if (askInput) {
-                      askInput.value = q;
-                      const event = new Event('input', { bubbles: true });
-                      askInput.dispatchEvent(event);
-                  }
-              }} 
-          />
-      )}
 
-      {data.result && !data.badge && (
+
+      {data.result && (
         <div className="border border-hairline bg-background p-4">
           <ResultView
             key={`${data.question}·${data.sql}·${viewHint?.nonce ?? 0}`}

@@ -135,27 +135,9 @@ export async function getSchema(): Promise<SchemaResponse> {
   return data;
 }
 
-export async function ask(body: AskRequest): Promise<any> {
-  try {
-    const { data } = await apiClient.post<any>("/v1/cortex/query", {
-      user_id: "demo_user",
-      question: body.question,
-    });
-    
-    return {
-      ...data,
-      sql: data.proof?.executed_wren_sql || "",
-      source: "llm:cortex",
-      result: {
-        row_count: data.visualization?.data_length || data.data?.length || 0,
-        columns: [],
-        rows: data.data || []
-      }
-    };
-  } catch (e) {
-    // fallback or throw
-    throw e;
-  }
+export async function ask(body: AskRequest): Promise<AskResponse> {
+  const { data } = await apiClient.post<AskResponse>("/ask", body);
+  return data;
 }
 
 // Chat-scoped Excel/CSV yükleme (base modu): dosya base64 → oturum DuckDB'sine ingest →
