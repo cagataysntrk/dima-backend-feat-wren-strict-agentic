@@ -77,8 +77,12 @@ export default function Home() {
     loadHistory(msgs);
     setSessionId(det.session_id);
     setContextCq(null);
-    const lastReport = msgs.find((m) => (m.result && !m.note) || m.kpi) ?? null;
+    // NOT: `note` bir raporun VARLIĞINI dışlamaz (Faz 1.5 — konu-değişimi cevapları hem
+    // `note` hem gerçek `result` taşıyabilir, KPI kartlarıyla aynı desen). "Son rapor" =
+    // gerçek sonuç taşıyan (ya da KPI) SON mesaj, notu olsun ya da olmasın.
+    const lastReport = msgs.find((m) => m.result || m.kpi) ?? null;
     setActive(lastReport);
+    setViewHint(lastReport?.view_hint ? { kind: lastReport.view_hint, nonce: Date.now() } : null);
     setPrevSql(lastReport?.sql || null);
     setStarted(true);
     setDrawer(null);
@@ -105,12 +109,14 @@ export default function Home() {
       }),
     onSuccess: (data) => {
       addHistory(data);
-      // Rapor → sağ paneli güncelle; salt-not → mevcut raporu koru. KPI yanıtı NOT taşısa
-      // da bir RAPORDUR (kart+trend) — sağ panele düşmeli (yoksa kart hiç render edilmezdi).
-      if (!data.note || data.kpi) setActive(data);
+      // Rapor → sağ paneli güncelle; salt-not (result YOK) → mevcut raporu koru. `note`'un
+      // VARLIĞI tek başına raporu göstermeyi engellemez (Faz 1.5 — konu-değişimi cevapları
+      // hem `note` hem gerçek `result` taşır, "Konu değişti: X → Y"; KPI yanıtı da NOT
+      // taşısa bir RAPORDUR — aynı desenin bir örneği, aşağıya genelleştirildi).
+      if (data.result || data.kpi) setActive(data);
       // Görünüm ipucu: yeni raporla geldiyse onunla; salt-görünüm yanıtında mevcut rapora.
       if (data.view_hint) setViewHint({ kind: data.view_hint, nonce: Date.now() });
-      else if (data.result && !data.note) setViewHint(null);
+      else if (data.result) setViewHint(null);
       // Bağlam: rapor ya da clarify (kısmi cube_query) her ikisi de bir sonraki mesaj için.
       setContextCq(data.cube_query ?? null);
       // wren_sql takip bağlamı: sql yoksa (meta/katalog/hata notu) bir sonraki soru
@@ -194,6 +200,10 @@ export default function Home() {
                 setActive(item);
                 setContextCq(item.cube_query ?? null); // seçilen rapor bağlam olur
                 setPrevSql(item.sql || null); // wren_sql takibi de seçilen rapordan devam eder
+                // Seçilen mesajın KENDİ görünüm ipucunu geri yükle (ör. "facet:kumas_cinsi")
+                // — aksi halde sayfa-seviyesi viewHint eski/başka bir mesajdan kalıp yanlış
+                // görünümü zorlar (Faz 1.5'in "hangi kırılıma göre" chip akışı bunu sıklaştırdı).
+                setViewHint(item.view_hint ? { kind: item.view_hint, nonce: Date.now() } : null);
                 if (!item.question.startsWith("chip:")) setVerifyLabel(item.question);
               }}
               onSubmit={submit}

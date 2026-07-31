@@ -455,6 +455,15 @@ export function ReportPanel({
             )}
           </div>
         </div>
+        {/* Faz 1.5: konu-değişimi gibi bilgilendirici notlar (ör. "Konu değişti: OEE → parti")
+            artık gerçek bir raporla BİRLİKTE gelebilir (ChatPanel'deki AYNI desen) — rapor
+            açıldığında kullanıcı NEDEN konunun değiştiğini burada da görsün, yalnız sohbet
+            akışına gömülü kalmasın. */}
+        {data.note && !data.kpi && (
+          <div className="mt-3 border-l-2 border-amber-500/50 bg-amber-500/[0.04] py-1.5 pl-3 font-mono text-[12px] leading-snug text-neutral-500">
+            {data.note}
+          </div>
+        )}
         {showTrace && data.trace && (
           <div className="mt-3 border border-hairline bg-neutral-500/[0.03] p-3">
             <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">

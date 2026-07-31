@@ -111,10 +111,12 @@ export function ChatPanel({
                     {item.question}
                   </span>
                 </div>
-                {/* not (rapor yok): dürüst açıklama + tıklanır chip'ler (örnek/dönem).
-                    KPI yanıtı NOT taşısa da bir RAPORDUR (kart) → tıklanır satır (aksi halde
-                    eski KPI raporuna geri dönülemiyordu — canlı 2026-07-25). */}
-                {item.note && !item.kpi ? (
+                {/* not bandı VE tıklanır sonuç satırı ARTIK BİRBİRİNİ DIŞLAMAZ (Faz 1.5):
+                    konu-değişimi cevapları hem `note` ("Konu değişti: X → Y") hem gerçek
+                    `result` taşıyabilir — KPI'nın NOT taşısa da bir RAPOR olması (canlı
+                    2026-07-25) ile AYNI desen, şimdi source="cube" için de geçerli. İkisi
+                    de varsa İKİSİ DE render edilir (not üstte, tıklanır satır altta). */}
+                {item.note && !item.kpi && (
                   <div className="border-l-2 border-amber-500/50 py-1 pl-3">
                     <div className="font-mono text-[12px] leading-snug text-neutral-500">
                       {item.note}
@@ -133,8 +135,10 @@ export function ChatPanel({
                       </div>
                     )}
                   </div>
-                ) : (
-                  /* sistem çıktısı satırı — tıklanınca o rapora döner */
+                )}
+                {(!item.note || item.kpi || item.result) && (
+                  /* sistem çıktısı satırı — tıklanınca o rapora döner. Salt-netleştirme
+                     (note var, result/kpi yok) TEK istisna — o durumda gösterilecek rapor yok. */
                   <button
                     onClick={() => onSelect(item)}
                     className={`flex w-full items-center gap-2 border-l-2 py-1 pl-3 text-left transition-colors ${

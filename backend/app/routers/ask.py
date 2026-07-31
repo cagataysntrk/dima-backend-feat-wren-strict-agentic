@@ -472,7 +472,13 @@ def _llm_source(llm, used_rule: bool) -> str:
     prov = getattr(last, "_provider", None)
     if prov:
         return f"llm:{prov}"
-    return "llm:anthropic" if type(last).__name__ == "AnthropicSqlGenerator" else "llm"
+    if type(last).__name__ == "AnthropicSqlGenerator":
+        return "llm:anthropic"
+    # Son-çare: `_provider` yok VE bilinen bir tür değil. ÇIPLAK "llm" (":" YOK) döndürmek
+    # frontend'in SourceBadge'inde (ChatPanel.tsx, `source.startsWith("llm:")`) yakalanmıyor
+    # ve yanlışlıkla "⚙ KURAL" (LLM kullanılmadı) etiketine düşüyordu — bir LLM cevabı
+    # deterministik gösteriliyordu. Tür adı her zaman ":" taşıyacak şekilde eklenir.
+    return f"llm:{type(last).__name__}"
 
 
 def _maybe_interpret(request: Request, resp: AskResponse) -> None:
