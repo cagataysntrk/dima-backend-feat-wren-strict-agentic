@@ -393,13 +393,55 @@ def check_alert(config: dict | None, result: dict) -> tuple[str, list[str]]:
     return ("threshold", check_threshold(config, result))
 
 
+def _tenant_slug(tenant_id: str) -> str | None:
+    """tenant_id (UUID str) → Tenant.slug (company_registry'nin anahtarı)."""
+    try:
+        import uuid as _uuid
+
+        from sqlmodel import Session, select
+
+        from control_plane.db import engine
+        from control_plane.models import Tenant
+        with Session(engine) as s:
+            row = s.exec(select(Tenant).where(Tenant.id == _uuid.UUID(tenant_id))).first()
+            return row.slug if row else None
+    except Exception:
+        _log.warning(f"tenant {tenant_id} slug'ı çözülemedi", exc_info=True)
+        return None
+
+
+def _wren_for_schedule(state, sched: dict):
+    """Zamanlanmış raporun GERÇEK sahibi tenant'ının WrenService'i — süreç varsayılanı
+    (`state.wren`) DEĞİL. ÖNCEDEN `run_schedule` körlemesine `state.wren` kullanıyordu: B
+    tenant'ının zamanlanmış raporu A'nın (varsayılan şirket) verisini görüyordu — kanıtlanmış
+    cross-tenant sızıntı (KVKK md. 12 ihlali). `company_registry.vqr_for`/`wren_for_request`
+    ile aynı desen: slug'a göre talep-üzerine derlenmiş servisi döner.
+
+    Fail-closed: tenant_id set ama slug/servis çözülemiyorsa, YANLIŞ (varsayılan) tenant'ın
+    verisini göstermek yerine raporu ÇALIŞTIRMAZ (istisna fırlatır)."""
+    tenant_id = sched.get("tenant_id")
+    if not tenant_id:
+        return state.wren  # eski/tenant'sız kayıt (RLS-öncesi) — süreç varsayılanı zaten doğru
+    slug = _tenant_slug(tenant_id)
+    if slug is None:
+        raise RuntimeError(f"schedule {sched.get('id')}: tenant {tenant_id} slug'ı bulunamadı "
+                          "(fail-closed — varsayılan tenant'ın verisi gösterilmez)")
+    if slug == getattr(state.wren, "company_slug", None):
+        return state.wren  # zaten varsayılan şirket
+    registry = getattr(state, "company_registry", None)
+    if registry is None:
+        raise RuntimeError(f"schedule {sched.get('id')}: company_registry yok, "
+                          f"tenant {slug} servisi çözülemez (fail-closed)")
+    return registry.service_for(slug)
+
+
 def run_schedule(state, sched: dict, *, manual: bool = False) -> dict:
     """Bir zamanlanmış raporu KOŞAR: dönem çözülür → sorgu → sözleşme → eşik → bildirim.
 
     `state` = FastAPI app.state (wren, contracts, schedules)."""
     from app import cube_router
 
-    svc = state.wren
+    svc = _wren_for_schedule(state, sched)
     store: ScheduleStore = state.schedules
 
     cq = json.loads(json.dumps(sched.get("cube_query") or {}))

@@ -35,14 +35,27 @@ def _out(o: SynonymOverride) -> SynonymOut:
     )
 
 
-def _known_cubes() -> dict[str, dict]:
-    """Aktif kataloğun cube→{measures,dimensions} haritası (hedef doğrulaması için)."""
+def _known_cubes(slug: str | None = None) -> dict[str, dict]:
+    """Hedef kataloğun cube→{measures,dimensions} haritası (hedef doğrulaması için).
+
+    ÖNCEDEN her zaman süreç varsayılanının (`settings.company`) kataloğunu döndürüyordu —
+    `tenant`-kapsamlı bir sinonim adayı (`scope_id`=başka bir tenant slug'ı) incelenirken
+    YANLIŞ tenant'ın cube/ölçü/boyut listesine karşı doğrulanıyordu (aynı hata sınıfı: bkz.
+    app/schedules.py, app/routers/dashboards.py düzeltmeleri — burada veri sızıntısı değil,
+    ama yanlış-kabul/yanlış-ret riski). `slug` verilmişse VE varsayılandan farklıysa, o
+    tenant'ın ZATEN DERLENMİŞ projesini kullanmayı dener (admin_app kendi compose/build
+    tetiklemez — Wren'siz ince imaj ilkesi); derlenmiş proje yoksa süreç varsayılanına düşer."""
     try:
         from app.config import get_settings
         from app.wren_service import WrenService
 
         s = get_settings()
-        svc = WrenService(s.resolved_project_dir(), s.datasource, {}, company_slug=s.company)
+        project_dir = s.resolved_project_dir()
+        if slug and slug != s.company:
+            candidate = project_dir.parent / "wren-projects" / slug
+            if (candidate / "target" / "mdl.json").exists():
+                project_dir = candidate
+        svc = WrenService(project_dir, s.datasource, {}, company_slug=slug or s.company)
         return {c["name"]: c for c in svc.schema().get("cubes", [])}
     except Exception:
         return {}
@@ -68,8 +81,9 @@ def create_synonym(body: SynonymCreate, request: Request,
         raise HTTPException(status_code=400, detail="field_kind: cube|measure|dimension")
     if body.field_kind != "cube" and not body.field_name:
         raise HTTPException(status_code=400, detail="measure/dimension için field_name gerekli")
-    # Hedef katalogda var mı? (bozuk overlay sessizce çürümesin)
-    cubes = _known_cubes()
+    # Hedef katalogda var mı? (bozuk overlay sessizce çürümesin) — tenant-kapsamlı adaylar
+    # KENDİ tenant'larının kataloğuna karşı doğrulanır (bkz. _known_cubes docstring).
+    cubes = _known_cubes(body.scope_id if body.scope_type == "tenant" else None)
     meta = cubes.get(body.cube)
     if meta is None:
         raise HTTPException(status_code=400, detail=f"Bilinmeyen cube: {body.cube}")
@@ -185,12 +199,13 @@ def mine_candidates(limit: int = 50, session: Session = Depends(get_session)) ->
 
 
 @router.get("/cubes")
-def synonym_cube_targets() -> dict:
-    """Synonym hedef kataloğu (aday kuyruğu formu için): cube → {measures, dimensions}."""
+def synonym_cube_targets(slug: str | None = None) -> dict:
+    """Synonym hedef kataloğu (aday kuyruğu formu için): cube → {measures, dimensions}.
+    `slug` verilirse (tenant-kapsamlı aday incelenirken) o tenant'ın kataloğu döner."""
     return {"cubes": [{"name": n, "label": c.get("display") or n,
                        "measures": c.get("measures") or [],
                        "dimensions": c.get("dimensions") or []}
-                      for n, c in _known_cubes().items()]}
+                      for n, c in _known_cubes(slug).items()]}
 
 
 class VqrPromote(_BaseModel):

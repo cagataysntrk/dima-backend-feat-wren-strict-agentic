@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from sqlmodel import Session, col, select
 
 from app import cube_router, viz, yoy
+from app.company_registry import wren_for_request
 from control_plane.db import get_session
 from control_plane.models import Dashboard, DashboardWidget
 
@@ -157,7 +158,10 @@ def add_widget(request: Request, did: str, body: WidgetCreate,
     p = _principal(request)
     d = _get_owned(session, did, p, write=True)
     # cube_query katalog doğrulaması (bozuk widget çürümesin) — schedules ile aynı.
-    service = request.app.state.wren
+    # wren_for_request KULLAN (request.app.state.wren DEĞİL) — önceden non-default tenant'ın
+    # widget'ı YANLIŞ (varsayılan şirket) katalogla doğrulanıyordu (cross-tenant sızıntı sınıfı,
+    # bkz. schedules.py aynı hatanın düzeltmesi).
+    service = wren_for_request(request)
     _, index = cube_router.build_catalog(service.schema())
     cq = cube_router.parse_cube_query(json.dumps(body.cube_query, ensure_ascii=False), index)
     if not cq:
@@ -238,7 +242,12 @@ def dashboard_data(request: Request, did: str, session: Session = Depends(get_se
     sonraki katman (Redis/§9); şimdilik doğrudan icra."""
     p = _principal(request)
     d = _get_owned(session, did, p)
-    svc = request.app.state.wren
+    # wren_for_request KULLAN — ÖNCEDEN burada `request.app.state.wren` (süreç varsayılanı)
+    # kullanılıyordu: non-default tenant'ın pano widget'ları YANLIŞ tenant'ın veritabanını
+    # sorguluyordu (kanıtlanmış cross-tenant veri sızıntısı — schedules.py'deki ile AYNI hata
+    # sınıfı, bkz. app/schedules.py:_wren_for_schedule). `_get_owned` zaten `d`'nin `p`'ye ait
+    # olduğunu doğruluyor; sorguyu ÇALIŞTIRAN servis de aynı tenant'a ait olmalı.
+    svc = wren_for_request(request)
     schema = svc.schema()
     cubes = {c.get("name"): c for c in (schema.get("cubes") or [])}
     out = []

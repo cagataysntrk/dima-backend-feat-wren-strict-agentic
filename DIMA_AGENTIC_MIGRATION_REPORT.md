@@ -5,6 +5,33 @@
 
 ---
 
+> ## ⛔ GÜNCELLEME (31 Temmuz 2026) — `cube_router.py` SİLME PLANI KESİN OLARAK İPTAL EDİLDİ
+>
+> Bu rapordaki **Bölüm 3 / Faz 1** (`cube_router.py`'nin sistemden tamamen sökülmesi) **ARTIK
+> UYGULANMAYACAK**. Kapsamlı bir vizyon-doküman ↔ kod karşılaştırması sonucunda şu karara
+> varıldı: `cube_router.py` zaten hedeflenen "Intent Query + Semantic Compiler" mimarisine
+> (WrenAI/Cube.dev tarzı, LLM'in ham SQL yazmak yerine tipli bir sorgu-niyeti JSON'u
+> doldurduğu, deterministik bir derleyicinin SQL'i ürettiği yaklaşım) çok yakın, kısmen hazır
+> bir temel oluşturuyor. Bu dosyayı silip her soruyu ham-SQL LLM üretimine (bu raporun
+> önerdiği "Strict Agentic" yaklaşım) yönlendirmek, aslında hedeflenen nihai mimarinin TAM
+> TERSİ yönde bir adım olurdu.
+>
+> **Yeni yön:** `cube_router.py` silinmeyecek — tersine, resmi bir tipli şema (Pydantic/JSON-
+> schema) kazandırılarak, `/ask` akışının varsayılan (birincil) yolu haline getirilecek şekilde
+> BÜYÜTÜLECEK. Ham-SQL LLM üretimi (bu raporun 6 adımlı "Strict Agent" akışı) sistemden
+> kaldırılmayacak, ama artık varsayılan değil, Intent-şemasının kapsamadığı sorular için
+> AÇIKÇA ETİKETLİ bir "Discovery" istisna yolu olarak konumlandırılacak.
+>
+> Ayrıntılı gerekçe, boşluk analizi ve fazlı yol haritası için bkz.:
+> `~/.claude/plans/genel-projeyi-anla-u-nifty-charm.md` (Dima: Vizyon Dokümanı ↔ Mevcut Kod —
+> Kapsamlı Gap Analizi ve Yol Haritası).
+>
+> Bu raporun geri kalanı, o ana kadar YAPILMIŞ olan işlemlerin (Cortex/Gold Trust temizliği,
+> port/DevOps düzeltmeleri vb.) tarihsel kaydı olarak KORUNUYOR — yalnız Bölüm 3'teki
+> gelecek-plan kısmı geçersizdir.
+
+---
+
 ## 1. Şu Ana Kadar Hangi Dosyada Ne Yapıldı?
 
 # DİMA Backend - Strict Agentic (Wren SQL) Migration Report
@@ -97,9 +124,14 @@ Eski sistemdeki karmaşık kriptografik kanıt ("Gold Trust Badge") ve kullanıl
 
 ---
 
-## 3. Henüz Uygulanmayan Temizlik (Planımızdaki Kısım)
-Yukarıdaki kusursuz akış `/ask` endpoint'i üzerinden çalışmasına rağmen, `ask.py` dosyasının içerisinde ve projede hala **eski kural bazlı sistemi (`cube_router.py`) tetikleyen `/cube`, `/report` gibi kullanımdan kalkan yan yollar** bulunmaktadır. 
-*Onayladığın plan, sisteme zarar vermeden işte bu kalabalığı kökünden sökmeyi hedeflemektedir.*
+## 3. Henüz Uygulanmayan Temizlik (Planımızdaki Kısım) — ⛔ İPTAL, bkz. dosya başındaki güncelleme
+
+> **Bu bölümdeki plan (Faz 1/2/3) UYGULANMAYACAK.** `cube_router.py` silinmeyecek; tam
+> tersine `/ask`'in birincil (Intent-first) yolu olarak formalize edilip büyütülecek. Aşağıdaki
+> metin yalnızca o an neyin düşünüldüğünün tarihsel kaydı olarak bırakılmıştır.
+
+~~Yukarıdaki kusursuz akış `/ask` endpoint'i üzerinden çalışmasına rağmen, `ask.py` dosyasının içerisinde ve projede hala eski kural bazlı sistemi (`cube_router.py`) tetikleyen `/cube`, `/report` gibi kullanımdan kalkan yan yollar bulunmaktadır.
+Onayladığın plan, sisteme zarar vermeden işte bu kalabalığı kökünden sökmeyi hedeflemektedir.~~
  plan şöyle: ancak karar verilmedi***
  # DİMA Strict Agentic Architecture Transition Plan (Güncellenmiş)
 

@@ -1,0 +1,45 @@
+name: backend-ci
+
+# Faz 0-f: backend/eval/ (golden-set + Wilson-CI precision/coverage regresyon kapısı,
+# bkz. backend/tests/test_eval_gate.py) ve ~300 pytest testi (backend/tests/) ÖNCEDEN
+# hiçbir CI'a bağlı değildi — yalnız bir geliştirici elle `pytest` çalıştırırsa işliyordu.
+# Bu, yol haritasındaki tüm sonraki fazların (Intent-first yönlendirme, Discovery→Promote)
+# güvenilir bir regresyon ağına dayanabilmesi için ön koşuldu.
+#
+# Kurulum sırası backend/Dockerfile'ı BİREBİR izler (wren-core-py'yi wrenai'den ÖNCE
+# sabitlemek, pip'in onu sessizce yeni bir sürüme yükseltmesini engeller — Dockerfile'daki
+# yorum aynı gerekçeyi anlatır). control-plane DB testte SQLite (control_plane/db.py),
+# Wren tarafı repo'daki demo DuckDB projesi — harici servis/Docker gerekmez.
+
+"on":
+  push:
+  pull_request:
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      # Dockerfile ile AYNI sıra: Rust motor binding'i ÖNCE sabitlenir, yoksa `wrenai`nin
+      # gevşek `wren-core-py` bağımlılığı pip'i daha yeni (test edilmemiş) bir sürüme
+      # yükseltebilir. Bu, Faz 0-e'nin (vendoring/pin sağlamlaştırma) düzelteceği kırılgan
+      # bir zemin üzerine kuruludur — CI şimdilik PROD'un fiilen kurduğu paketle eşleşir.
+      - name: Wren Rust engine binding'i sabitle
+        run: pip install "wren-core-py==0.7.2"
+
+      - name: Backend paketini + test bağımlılıklarını kur
+        run: pip install -e ".[dev]"
+
+      - name: Testler (golden set + eval kapısı + regresyon kilitleri dahil)
+        run: pytest -q

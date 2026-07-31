@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from app import cube_router
 from app.auth.dependencies import require, require_company
+from app.company_registry import wren_for_request
 from app.config import get_settings
 from app.schedules import run_schedule
 from control_plane.authorize import Principal, can
@@ -52,8 +53,11 @@ def list_schedules(request: Request) -> dict:
 @router.post("/schedules", dependencies=[Depends(require("schedule:create")),
                                          Depends(require_company)])
 def create_schedule(request: Request, body: ScheduleRequest) -> dict:
-    # CubeQuery katalog doğrulamasından geçmeli (bozuk zamanlama sessizce çürümesin)
-    service = request.app.state.wren
+    # CubeQuery katalog doğrulamasından geçmeli (bozuk zamanlama sessizce çürümesin).
+    # wren_for_request KULLAN — ÖNCEDEN `request.app.state.wren` (süreç varsayılanı)
+    # kullanılıyordu: non-default tenant'ın zamanlaması YANLIŞ katalogla doğrulanıyordu
+    # (aynı hata sınıfı — bkz. app/schedules.py:_wren_for_schedule, dashboards.py).
+    service = wren_for_request(request)
     _, index = cube_router.build_catalog(service.schema())
     cq = cube_router.parse_cube_query(json.dumps(body.cube_query, ensure_ascii=False), index)
     if not cq:
