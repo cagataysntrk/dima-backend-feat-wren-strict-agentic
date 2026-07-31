@@ -1,0 +1,30 @@
+diff --git a/bin/localtld b/bin/localtld
+index f400293289564ccf93613e80b03b8cf6a602908e..ee395017f30b185ffe9e7703f43a3ed176a89b00 100755
+--- a/bin/localtld
++++ b/bin/localtld
+@@ -63,9 +63,13 @@ read_label() {
+ 
+ # Find a free port in the ephemeral range (pure bash /dev/tcp, no dependencies).
+ find_free_port() {
+-  local p
++  local p random
+   while :; do
+-    p=$(( (RANDOM % 16384) + 49152 ))
++    # Separate localtld processes can be started at the same instant (for
++    # example by Turborepo). Bash's RANDOM is then seeded identically, making
++    # every process select the same first port. Draw from the OS instead.
++    random="$(od -An -N2 -tu2 /dev/urandom | tr -d '[:space:]')"
++    p=$(( (random % 16384) + 49152 ))
+     (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null || { printf '%s\n' "$p"; return; }
+   done
+ }
+@@ -219,7 +223,8 @@ cmd_run() {
+ 
+   local host="$label.$TLD"
+   local port; port="$(find_free_port)"
+-  local snip="$SITES_DIR/$host.caddy"
++  # Keep this global: the EXIT trap runs after cmd_run's local scope has gone.
++  snip="$SITES_DIR/$host.caddy"
+ 
+   mkdir -p "$SITES_DIR"
+   cat > "$snip" <<EOF

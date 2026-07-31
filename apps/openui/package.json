@@ -3,7 +3,7 @@
   "version": "0.1.1",
   "private": true,
   "scripts": {
-    "dev": "if command -v localtld >/dev/null 2>&1; then localtld run -- next dev --port 3001; else next dev --port 3001; fi",
+    "dev": "if command -v localtld >/dev/null 2>&1; then localtld run -- next dev; else next dev --port 3001; fi",
     "build": "next build",
     "start": "next start --port 3001",
     "lint": "eslint",

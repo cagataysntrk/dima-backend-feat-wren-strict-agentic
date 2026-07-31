@@ -31,5 +31,8 @@
     "esbuild",
     "sharp",
     "unrs-resolver"
-  ]
+  ],
+  "patchedDependencies": {
+    "@abdullahharunozturk/localtld@0.1.2": "patches/@abdullahharunozturk%2Flocaltld@0.1.2.patch"
+  }
 }
