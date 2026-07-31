@@ -136,6 +136,8 @@ def _route_path(source: str | None) -> str:
         return "rule"         # LLM'siz kural-tabanlı yedek
     if s in ("meta", "catalog"):
         return "meta_katalog"
+    if s == "statement":
+        return "intent"        # GL yapısal rapor — deterministik, sıfır-LLM (Faz 2a)
     return "other"
 
 

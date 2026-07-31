@@ -15,6 +15,7 @@ ya-da-ret garantisi, (3) golden test ve mümkünse metadata/synonyms ile olur.
 from __future__ import annotations
 
 import calendar
+import difflib
 import re
 from datetime import date, timedelta
 
@@ -1097,6 +1098,77 @@ def partial_unknowns(q: str, schema: dict) -> tuple[list[str], list[tuple[dict, 
     known |= _period_hit_words(q)
     known |= _misc_hit_words(q)
     return _uncovered(q, known), hits
+
+
+# --- Typo/bulanık-eşleştirme toleransı (Faz 2c/Faz 3, 31 Temmuz 2026) -------
+# route()'un değer/sözlük eşleştirmesi (_value_token_hit, _syn_hit) TAM/ALT-DİZİ
+# eşleşme yapar, yazım hatasına karşı kırılgandı ("Siyh"/"vardya"/"müterileri" hiç
+# tanınmıyordu, dürüst-ret ya da serbest-SQL'e düşüyordu). Yanlış-pozitif riski (bir
+# YANLIŞ "düzeltme" sessiz-yanlış veriden KÖTÜdür, ADR-0008 ilkesi) yüzünden İKİ katı
+# güvence var: (1) YALNIZ `partial_unknowns`'ın zaten "hiçbir şeye karşılık gelmiyor"
+# dediği kelimeler denenir (stopword/kısa-kelime riski sıfır — mevcut kapsam-kapısı
+# aynen miras alınır), (2) OTOMATİK düzeltme yalnız YÜKSEK benzerlik + NET aday (ikinci
+# en-iyi adayla belirgin fark) şartıyla olur; aksi hâlde metin DEĞİŞMEZ, yalnız "şunu mu
+# demek istedin?" ÖNERİSİ üretilir (tahmin YOK).
+_TYPO_MIN_WORD_LEN = 4    # 3 harf ve altı fuzzy'ye hiç girmez (gürültü/yanlış-pozitif riski)
+_TYPO_HIGH = 0.82         # bu ve üstü + net aday → OTOMATİK düzelt
+_TYPO_MID = 0.60          # bu ve üstü (HIGH altı) → yalnız "şunu mu demek istedin?" öner
+_TYPO_GAP = 0.08          # en iyi/ikinci-iyi aday arası bu kadar fark olmalı (net aday şartı)
+
+
+def _catalog_vocabulary(schema: dict) -> set[str]:
+    """Katalogdaki TÜM tanınan tek-kelimelik terimler (değer + sinonim, tüm cube'lar) —
+    typo-düzeltme adaylarının havuzu. `partial_unknowns`'ın kapsam evreniyle AYNI
+    kaynaklardan beslenir (cube/ölçü/boyut sinonimleri + kategorik değerler)."""
+    terms: set[str] = set()
+    for c in schema.get("cubes", []):
+        terms.update(s.removesuffix("!") for s in (c.get("synonyms") or []))
+        for syns in (c.get("measure_synonyms") or {}).values():
+            terms.update(s.removesuffix("!") for s in syns)
+        for syns in (c.get("dimension_synonyms") or {}).values():
+            terms.update(s.removesuffix("!") for s in syns)
+        for vals in (c.get("dimension_values") or {}).values():
+            terms.update(str(v) for v in vals or [])
+    words: set[str] = set()
+    for term in terms:
+        words.update(re.findall(r"[a-z]+", _norm(term)))
+    return {w for w in words if len(w) >= _TYPO_MIN_WORD_LEN}
+
+
+def typo_correct(q: str, schema: dict) -> tuple[str, list[dict]]:
+    """Sorudaki TANINMAYAN kelimeleri (`partial_unknowns` kapsamında) katalog kelime
+    haznesine karşı bulanık eşler. Döner: (olası-düzeltilmiş soru metni, düzeltme
+    kayıtları — `{"kind": "auto"|"suggest", "from": ..., "to": ...}`). `kind="auto"`
+    metne YANSIR (ask.py trace'e "yazım düzeltme" ekler); `kind="suggest"` metni
+    DEĞİŞTİRMEZ (ask.py "şunu mu demek istedin?" chip'i kurar, tahmin etmez)."""
+    unknown, _hits = partial_unknowns(q, schema)
+    if not unknown:
+        return q, []
+    vocab = _catalog_vocabulary(schema)
+    if not vocab:
+        return q, []
+    corrections: list[dict] = []
+    q_out = q
+    for w in unknown:
+        if len(w) < _TYPO_MIN_WORD_LEN:
+            continue
+        scored = sorted(
+            ((difflib.SequenceMatcher(None, w, cand).ratio(), cand) for cand in vocab),
+            key=lambda t: t[0], reverse=True,
+        )
+        best_score, best = scored[0]
+        if best == w or best_score < _TYPO_MID:
+            continue
+        second_score = scored[1][0] if len(scored) > 1 else 0.0
+        fixed_q = re.sub(rf"\b{re.escape(w)}\b", best, q)
+        if best_score >= _TYPO_HIGH and (best_score - second_score) >= _TYPO_GAP:
+            q_out = re.sub(rf"\b{re.escape(w)}\b", best, q_out)
+            corrections.append({"kind": "auto", "from": w, "to": best, "corrected_q": fixed_q})
+        else:
+            # "suggest": q_out (asıl dönen metin) DEĞİŞMEZ — yalnız kayıtta "eğer bu
+            # kelime düzeltilseydi" metni taşınır, ask.py chip'in `query`'si için kullanır.
+            corrections.append({"kind": "suggest", "from": w, "to": best, "corrected_q": fixed_q})
+    return q_out, corrections
 
 
 # ÖLÇÜ EŞİĞİ (HAVING): "10 milyon üzeri / 100 bin altında / 5 milyon TL'den fazla".

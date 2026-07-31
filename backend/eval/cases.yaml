@@ -632,14 +632,18 @@
   expect: answer
   shape: {cube: enerji_tesis, measures: [set_tep_ton]}
 
-# ── KAPSAM SINIRI (hâlâ cube YOK / routing çakışması → dürüst chip) ──────────
+# ── KAPSAM SINIRI (routing çakışması → dürüst chip) ──────────────────────────
 # "birim elektrik/şebeke" bare "elektrik" surdurulebilirlik parti-elektriğiyle çakışıp
-# çapraz-konu chip'i verir (tesis-özel "birim bedel/fatura/GES" ile erişilir). Duruş-nedeni
-# için `makine_duruslari` cube'u yok (gelecek). Dürüst kapsam sınırı.
+# çapraz-konu chip'i verir (tesis-özel "birim bedel/fatura/GES" ile erişilir).
 - id: ny-gap-durus-neden
+  # Faz 2b (31 Temmuz 2026): `makine_duruslari` cube'u eklendi (ham tablo/model/ilişki
+  # zaten vardı, yalnız semantik katman eksikti) — artık dürüst kapsam sınırı DEĞİL,
+  # gerçek bir cevap. Eski beklenti (expect: chip) burada TARİHÇE olarak duruyordu, artık
+  # yanlış — güncellendi.
   q: duruş nedenlerine göre toplam duruş bu yıl
-  tags: [ny, gap, bakim]
-  expect: chip
+  tags: [ny, bakim]
+  expect: answer
+  shape: {cube: makine_duruslari, measures: [toplam_sure_dk], dims: [neden]}
 
 # ── LLM dilimi (canlı model gerekir; CI'da koşulmaz) ────────────────────────
 - id: llm-birader-ciro

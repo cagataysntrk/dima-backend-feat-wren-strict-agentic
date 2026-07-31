@@ -5,7 +5,7 @@ Uygulamalar:
 - `OpenAICompatibleSqlGenerator` — OpenAI-uyumlu /chat/completions; **Groq** (ücretsiz key)
                                    ve **Ollama** (tam yerel, anahtarsız) bunu kullanır.
 - `RuleBasedSqlGenerator`        — LLM'siz, anahtarsız; boyahane demo şeması (partiler +
-                                   vardiya_kayitlari/OEE) üzerinde Türkçe soruları kurallarla
+                                   oee_vardiya/OEE) üzerinde Türkçe soruları kurallarla
                                    SQL'e çevirir; doğru tabloya yönlendirir.
 
 Üretilen SQL her durumda motorun dry_plan doğrulamasından + SELECT-only guard'dan geçer.
@@ -115,7 +115,7 @@ def _schema_prompt(schema: dict) -> str:
             lines.append(f'- {r["name"]} ({r.get("join_type", "")}): {r.get("condition", "")}')
         lines.append(
             "Çapraz-tablo sorularında bu koşullarla açık JOIN yaz "
-            "(ör. partiler ile vardiya_kayitlari makineler üzerinden birleşir)."
+            "(ör. partiler ile oee_vardiya makineler üzerinden birleşir)."
         )
     return "\n".join(lines)
 
@@ -372,7 +372,8 @@ _OEE_HINTS = (
 
 class RuleBasedSqlGenerator:
     """LLM'siz sezgisel NL→SQL. İki tabloyu yönlendirir:
-    - `vardiya_kayitlari` (OEE): makine/vardiya/personel bazlı verimlilik.
+    - `oee_vardiya` (OEE): makine/vardiya bazlı verimlilik (47-tablo rebind, eski adı
+      `vardiya_kayitlari` — bkz. app/llm.py Faz 2b notu, kolon adları da değişti).
     - `partiler` (boya partileri): fire, su/enerji, maliyet, renk sapması, ağırlık, ciro."""
 
     def generate_followup_sql(self, question: str, schema: dict, prev_question: str,  # noqa: ARG002
@@ -397,17 +398,17 @@ class RuleBasedSqlGenerator:
         if ("recete" in q or ("kimyasal" in q and "maliyet" not in q)) and "recete_kimyasal" in names:
             return self._recete_sql(q)
 
-        # Çapraz-tablo: verim (vardiya_kayitlari) VE fire (partiler) birlikte,
+        # Çapraz-tablo: verim (oee_vardiya) VE fire (partiler) birlikte,
         # makineler hub'ı üzerinden birleştirilir.
         oee_hit = any(h in q for h in _OEE_HINTS)
         fire_hit = "fire" in q
-        both_tables = {"vardiya_kayitlari", "partiler", "makineler"} <= set(names)
+        both_tables = {"oee_vardiya", "partiler", "makineler"} <= set(names)
         if oee_hit and fire_hit and both_tables:
             return self._cross_makine_sql(q)
 
-        use_oee = oee_hit and "vardiya_kayitlari" in names
+        use_oee = oee_hit and "oee_vardiya" in names
         if use_oee:
-            return self._oee_sql(q, names["vardiya_kayitlari"])
+            return self._oee_sql(q, names["oee_vardiya"])
         # ŞEMA-GUARD (panel K8, 4 ajan): _partiler_sql boyahane şemasına ÖZGÜdür
         # (fire_kg/agirlik_kg). partiler yoksa `models[0]`'a bu şablonu uygulamak
         # mikro/logo/netsis tenant'ında sessiz-yanlış/çökme üretir → dürüst ret.
@@ -499,7 +500,7 @@ class RuleBasedSqlGenerator:
         order_col = "ort_oee" if ("verim" in q or "oee" in q) else "fire_orani_yuzde"
         return (
             "WITH oee AS ("
-            "SELECT makine, AVG(oee) AS ort_oee FROM vardiya_kayitlari GROUP BY makine"
+            "SELECT makine, AVG(OEE) AS ort_oee FROM oee_vardiya GROUP BY makine"
             "), fire AS ("
             "SELECT makine, ROUND(SUM(fire_kg)*100.0/NULLIF(SUM(agirlik_kg),0),2) "
             "AS fire_orani_yuzde FROM partiler GROUP BY makine"
@@ -519,25 +520,34 @@ class RuleBasedSqlGenerator:
         return (asc or desc), ("ASC" if asc else "DESC")
 
     # -- OEE / vardiya ----------------------------------------------------
+    # NOT (Faz 2b, 31 Temmuz 2026): bu metod 47-tablo rebind'inden (eski
+    # `vardiya_kayitlari` → `oee_vardiya`) SONRA hiç güncellenmemişti — `use_oee`
+    # kapısı (`"vardiya_kayitlari" in names`) artık HİÇBİR ZAMAN doğru olmadığından bu
+    # metot fiilen ÖLÜ KODdu; oee-ipucu taşıyan sorular sessizce `_partiler_sql`'e
+    # (ilgisiz cube) düşüyordu (gerçek bulgu: "duruş nedenlerine göre..." → alakasız
+    # parti_sayisi cevabı). Tablo/kolon adları GERÇEK `oee_vardiya` şemasına göre
+    # düzeltildi (bkz. demo/companies/demo-boyahane/models/oee_vardiya/metadata.yml).
+    # `personel_kodu` artık BU tabloda YOK (operatör verimliliği `parti` cube'una taşındı,
+    # bkz. oee cube metadata'sının kendi yorumu) — personel-boyutu dalı bilerek kaldırıldı.
     def _oee_sql(self, q: str, model: dict) -> str:
         cols = {c["name"] for c in model["columns"]}
 
         if "kullanilabilirlik" in q or "availability" in q:
-            measure, alias = "AVG(kullanilabilirlik)", "ort_kullanilabilirlik"
+            measure, alias = "AVG(kullanilabilirlik_EV)", "ort_kullanilabilirlik"
         elif "performans" in q:
-            measure, alias = "AVG(performans)", "ort_performans"
+            measure, alias = "AVG(performans_PV)", "ort_performans"
         elif "durus" in q or "ariza" in q or "downtime" in q:
-            measure, alias = "SUM(durus_dakika)", "toplam_durus_dakika"
+            measure, alias = "SUM(planli_durus_dk + plansiz_durus_dk)", "toplam_durus_dakika"
         elif "calisma" in q:
-            measure, alias = "SUM(calisma_dakika)", "toplam_calisma_dakika"
-        elif ("uretim" in q or "miktar" in q) and "gercek_uretim_kg" in cols:
-            measure, alias = "SUM(gercek_uretim_kg)", "toplam_uretim_kg"
-        elif "fire" in q and "fire_kg" in cols:
-            measure, alias = "SUM(fire_kg)", "toplam_fire_kg"
-        elif "kalite" in q and "kalite" in cols:
-            measure, alias = "AVG(kalite)", "ort_kalite"
+            measure, alias = "SUM(calisma_suresi_dk)", "toplam_calisma_dakika"
+        elif ("uretim" in q or "miktar" in q) and "uretim_kg" in cols:
+            measure, alias = "SUM(uretim_kg)", "toplam_uretim_kg"
+        elif "fire" in q and "hatali_kg" in cols:
+            measure, alias = "SUM(hatali_kg)", "toplam_fire_kg"
+        elif "kalite" in q and "kalite_KS" in cols:
+            measure, alias = "AVG(kalite_KS)", "ort_kalite"
         else:
-            measure, alias = "AVG(oee)", "ort_oee"
+            measure, alias = "AVG(OEE)", "ort_oee"
 
         # İki boyutlu matris: vardiya × gün → heatmap. "vardiya" + gün/hafta/tarih.
         if "vardiya" in q and (re.search(r"\bgun(luk|ler|lere|u)?\b", q) or "hafta" in q or "tarih" in q):
@@ -558,7 +568,7 @@ class RuleBasedSqlGenerator:
                 )
                 return (
                     f"SELECT vardiya, {gun_expr} AS gun, {measure} AS {alias} "
-                    f"FROM vardiya_kayitlari{win} GROUP BY vardiya, gun, isodow(tarih) "
+                    f"FROM oee_vardiya{win} GROUP BY vardiya, gun, isodow(tarih) "
                     "ORDER BY isodow(tarih), vardiya"
                 )
             # Gün-adı değilse: pencere belirtilmemişse VARSAYILAN son 7 gün (anlık görüntü).
@@ -566,39 +576,29 @@ class RuleBasedSqlGenerator:
                 win = " WHERE tarih >= CURRENT_DATE - INTERVAL '7 days'"
             return (
                 f"SELECT vardiya, CAST(tarih AS DATE) AS gun, {measure} AS {alias} "
-                f"FROM vardiya_kayitlari{win} GROUP BY vardiya, gun ORDER BY gun, vardiya"
+                f"FROM oee_vardiya{win} GROUP BY vardiya, gun ORDER BY gun, vardiya"
             )
 
         dim = None
-        personel_dim = False
         if "makin" in q:  # makine/makina/makinesi/makineler
             dim = "makine"
         elif "vardiya" in q or "varidya" in q:
             dim = "vardiya"
-        elif "personel" in q or "operator" in q:
-            personel_dim = True  # ad göstermek için personel tablosuna JOIN
 
         where = ""
-        for token, val in (("gunduz", "Gündüz"), ("aksam", "Akşam"), ("gece", "Gece")):
+        # vardiya artık TAM SAYI (1/2/3), eski şemadaki gibi metin adı DEĞİL — bkz.
+        # cube katmanındaki CASE eşlemesi (1=Gündüz/08-16, 2=Akşam/16-24, 3=Gece/00-08).
+        for token, val in (("gunduz", 1), ("aksam", 2), ("gece", 3)):
             if token in q:
-                where = f" WHERE vardiya = '{val}'"
+                where = f" WHERE vardiya = {val}"
                 break
 
         has_top, direction = self._direction(q)
-        if personel_dim:
-            # personel_kodu ham; ad_soyad için personel tablosuna JOIN.
-            w = where.replace(" WHERE vardiya =", " WHERE v.vardiya =")
-            return (
-                f"SELECT p.ad_soyad, {measure} AS {alias} "
-                "FROM vardiya_kayitlari v JOIN personel p "
-                "ON v.personel_kodu = p.personel_kodu"
-                f"{w} GROUP BY p.ad_soyad ORDER BY {alias} {direction}{self._limit(q, has_top, True)}"
-            )
         select_dim = f"{dim}, " if dim else ""
         group = f" GROUP BY {dim}" if dim else ""
         order = f" ORDER BY {alias} {direction}" if dim else ""
         limit = self._limit(q, has_top, dim is not None)
-        return f"SELECT {select_dim}{measure} AS {alias} FROM vardiya_kayitlari{where}{group}{order}{limit}"
+        return f"SELECT {select_dim}{measure} AS {alias} FROM oee_vardiya{where}{group}{order}{limit}"
 
     # -- partiler / boya süreç -------------------------------------------
     def _partiler_sql(self, q: str, raw: str, model: dict) -> str:

@@ -34,7 +34,7 @@ _log = get_logger("ask")  # system/app log (ADR-0020): best-effort bloklar sessi
 
 def _source_kind(source: str | None) -> str:
     """Ham source → normalize tür (interaction_log facet/filtre):
-    cube|llm|rule|upload|vqr|meta|catalog|none|other.
+    cube|llm|rule|upload|vqr|meta|catalog|statement|none|other.
 
     vqr/meta/catalog LLM'e HİÇ düşmeyen yolları ayırt eder — bu facet olmadan
     "her soru LLM'e mi düşüyor" sorusu loglardan ölçülemez (ADR: strict-agentic
@@ -50,6 +50,8 @@ def _source_kind(source: str | None) -> str:
         return "meta"
     if s.startswith("catalog"):
         return "catalog"
+    if s.startswith("statement"):
+        return "statement"
     if s.startswith("llm"):
         return "llm"
     if s.startswith(("rule", "kural")):
@@ -1096,6 +1098,37 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             trace=["katalog keşfi → deterministik yanıt (LLM'siz)"],
         ))
 
+    # 1b) GL YAPISAL RAPOR (gelir tablosu / bilanço, Faz 2a) — route()'tan/VQR'dan ÖNCE
+    # denenir: "gelir tablosu" içindeki "gelir" kelimesi parti/ticaret cube'larının da
+    # ölçü sinonimidir (toplam_ciro) — route() bunu YANLIŞ cube'a yönlendirip dönem
+    # sorardı (gerçek eval bulgusu: ny-gelir-tablosu). GL raporu tamamen ayrı, zaten test
+    # edilmiş deterministik bir mekanizma (app/statements.py) — cube-eşleştirmeyle hiç
+    # karışmamalı, LLM'e hiç düşmemeli. Tenant'ta `mizan` cube'u yoksa (GL bağlı değil)
+    # sessizce normal akışa düşer.
+    stmt_kind = _statement_kind(q_norm)
+    if stmt_kind:
+        try:
+            from app import statements
+
+            stmt_cq = {"cube": "mizan", "measures": ["bakiye"], "dimensions": ["hesap_kodu"]}
+            out = statements.resolve_statement(service, stmt_kind)
+            planned = service.dry_plan(out["sql"])
+            qr = _statement_result(out)
+            result = {"columns": qr.columns, "rows": qr.rows, "row_count": qr.row_count}
+            resp = AskResponse(
+                question=body.question, sql=out["sql"], planned_sql=planned,
+                result=qr, source="statement", cube_query=stmt_cq,
+                trace=["GL yapısal rapor (gelir tablosu/bilanço) → deterministik (LLM'siz)"],
+            )
+            resp.contract_id = _record_contract(stmt_cq, out["sql"], result, "statement")
+            # viz.recommend'e stmt_cq VERİLMEZ: sonuç tablosunun kolonları ("Kalem"/"Tutar
+            # (₺)") mizan'ın ham kolonlarıyla (hesap_kodu/bakiye) eşleşmez — kolon-adı
+            # sezgisiyle genel tablo analizine düşmesi daha DOĞRU (yanlış chip önerisi yok).
+            return _finish(_attach_viz(resp, result))
+        except Exception:
+            _log.warning("GL yapısal rapor başarısız (best-effort) — normal akışa düşülüyor",
+                        exc_info=True)
+
     from app.company_registry import vqr_for_request
 
     vqr = vqr_for_request(request)
@@ -1156,12 +1189,41 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         action="new" (konu tamamen değişti) dediğinde de BU fonksiyon çağrılır."""
         route_hit: dict | None = None
         intent_source: str | None = None
+        typo_fix_trace: str | None = None
+        typo_suggestion: dict | None = None
         try:
             route_hit = cube_router.route(body.question, schema)
             if route_hit:
                 intent_source = "cube"
         except Exception:
             _log.warning("cube_router.route() hata verdi (best-effort)", exc_info=True)
+
+        # TYPO/BULANIK-EŞLEŞTİRME (Faz 2c/Faz 3) — ilk deneme (ham metin) başarısızsa,
+        # `partial_unknowns` kapsamındaki tanınmayan kelimeler katalog haznesine karşı
+        # bulanık eşlenir. Yüksek-benzerlik + net aday → metin OTOMATİK düzeltilip route()
+        # TEKRAR denenir (trace'te AÇIKÇA belirtilir — sessiz değil); orta-benzerlik → metin
+        # değişmez, `typo_suggestion` aşağıdaki "neden-özel" chip zincirinde kullanılır.
+        if route_hit is None:
+            try:
+                corrected_q, typo_fixes = cube_router.typo_correct(q_norm, schema)
+            except Exception:
+                corrected_q, typo_fixes = q_norm, []
+                _log.warning("typo_correct hata verdi (best-effort)", exc_info=True)
+            autos = [f for f in typo_fixes if f["kind"] == "auto"]
+            if autos:
+                try:
+                    retry_hit = cube_router.route(corrected_q, schema)
+                except Exception:
+                    retry_hit = None
+                    _log.warning("cube_router.route() (typo-düzeltmeli) hata verdi "
+                                "(best-effort)", exc_info=True)
+                if retry_hit:
+                    route_hit = retry_hit
+                    intent_source = "cube"
+                    fixes_text = ", ".join(f'"{f["from"]}"→"{f["to"]}"' for f in autos)
+                    typo_fix_trace = f"yazım düzeltme ({fixes_text})"
+            if route_hit is None:
+                typo_suggestion = next((f for f in typo_fixes if f["kind"] == "suggest"), None)
 
         # Dönemsel kıyas (YoY/MoM) — route() _COMPARE_HINTS nedeniyle BİLEREK None döner;
         # ayrı, YİNE deterministik bir mekanizma var (/cube'un compare chip'iyle AYNI —
@@ -1230,15 +1292,32 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             gate = _period_gate(cq, cube_meta, route_hit.get("period_optional"), "Intent-path")
             if gate:
                 return gate
+            fresh_trace = (["Intent-path: cube_router.route() (LLM'siz, sıfır maliyet)"]
+                          if intent_source == "cube" else
+                          ["Intent-path: LLM Intent-JSON seçimi (SQL değil, ölçü/boyut/"
+                           "filtre seçimi) → deterministik derleyici"])
+            if typo_fix_trace:
+                fresh_trace.append(f"Intent-path: {typo_fix_trace}")
             resp = _answer_from_cube_query(
                 cq, source=intent_source, learn=(intent_source == "cube+llm"),
-                trace=(["Intent-path: cube_router.route() (LLM'siz, sıfır maliyet)"]
-                      if intent_source == "cube" else
-                      ["Intent-path: LLM Intent-JSON seçimi (SQL değil, ölçü/boyut/"
-                       "filtre seçimi) → deterministik derleyici"]),
+                trace=fresh_trace,
             )
             if resp:
                 return resp
+
+        # YAZIM BENZERLİĞİ (orta güven, Faz 2c/Faz 3) — yüksek-güvenli otomatik düzeltme
+        # (yukarıda) mümkün olmadıysa ama en azından ORTA benzerlikte tek bir aday varsa,
+        # TAHMİN ETMEDEN "şunu mu demek istedin?" chip'i sorulur — tıklayınca düzeltilmiş
+        # tam soru metniyle gerçek bir cevap gelir (chip'in `query`'si zaten düzeltilmiş).
+        if typo_suggestion:
+            return _finish(AskResponse(
+                question=body.question, source=None,
+                note=f"\"{typo_suggestion['from']}\" yerine \"{typo_suggestion['to']}\" mi "
+                    "demek istedin?",
+                suggestions=[Suggestion(label=typo_suggestion["to"],
+                                       query=typo_suggestion["corrected_q"])],
+                trace=["Intent-path: yazım benzerliği → \"şunu mu demek istedin?\" (LLM'siz)"],
+            ))
 
         # route()+YoY+LLM-select tükendi — Discovery'ye köre düşmeden NEDEN-özel
         # netleştirme: TEK cube (ölçü belirsiz) / çapraz-konu (iki rakip cube kimliği) /
@@ -1338,7 +1417,11 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             return _finish(AskResponse(
                 question=body.question, source=None,
                 note="Neyi karşılaştırmak/görmek istediğini anlayamadım. Hangi ölçüyü istersin?",
-                suggestions=[Suggestion(label=lb, query=lb) for lb in example_labels[:8]],
+                # 8 → 14: katalog büyüdükçe (Faz 2b'de `makine_duruslari` eklendi, artık 13
+                # cube var) sabit bir küçük kesim en spesifik/tanıdık örnekleri (ör. OEE)
+                # sessizce dışarıda bırakabiliyordu — kesim kataloğun BUGÜNKÜ boyutunu
+                # rahatça kapsayacak şekilde büyütüldü.
+                suggestions=[Suggestion(label=lb, query=lb) for lb in example_labels[:14]],
                 trace=["Intent-path: konu belirtilmedi → netleştirme (LLM'siz)"],
             ))
         return None

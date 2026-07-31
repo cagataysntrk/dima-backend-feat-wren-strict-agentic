@@ -7,22 +7,7 @@ kesin asserte edilir (veri Ocak–Tem 2026; bugün ilerledikçe dönemli sayıla
 
 from __future__ import annotations
 
-import pytest
-
 from tests.conftest import ask
-
-# Faz 1.5 (31 Temmuz 2026): edit-distance/bulanık eşleştirme (typo toleransı) bilinçli
-# ERTELENDİ — cube_router.route()'un değer/sözlük eşleştirmesi (_value_token_hit,
-# _match_measure) yalnız TAM/ALT-DİZİ eşleşme yapar, typo'ya karşı kırılgan. Ayrı,
-# dikkatli bir tasarım gerektirir (bkz. eval/BASELINE_RECONCILIATION_2026-07-31.md §B) —
-# CI'ı gizlice kırmızıya boyamak yerine xfail: bilinen, izlenen, gizlenmeyen bir boşluk.
-_TYPO_TOLERANCE_NOT_YET_BUILT = pytest.mark.xfail(
-    reason="typo/bulanık-eşleştirme toleransı henüz yok (Faz 1.5 kapsamı dışı, "
-          "bkz. eval/BASELINE_RECONCILIATION_2026-07-31.md §B) — deterministik yol "
-          "yazım hatalı değer/sözlük terimlerini tanımıyor, dürüst 'anlaşılmadı' chip'i "
-          "veriyor (serbest-SQL uydurmuyor, ama otomatik düzeltmiyor de).",
-    strict=True,
-)
 
 # --- meta/ürün soruları → yardım + örnek chip'leri ---------------------------
 
@@ -739,7 +724,6 @@ def test_rule_fallback_kapali_durust_ret(monkeypatch):
 
 # --- Değer indeksi (lit #4): typo toleransı ---------------------------------
 
-@_TYPO_TOLERANCE_NOT_YET_BUILT
 def test_typo_otomatik_duzeltme_deger(client):
     """"Siyh" → tek ve açık aday "Siyah" (renk) → görünür otomatik düzeltme, deterministik
     cevap (filtre uygulanır)."""
@@ -749,7 +733,6 @@ def test_typo_otomatik_duzeltme_deger(client):
     assert {"dimension": "renk", "operator": "eq", "value": "Siyah"} in d["cube_query"]["filters"]
 
 
-@_TYPO_TOLERANCE_NOT_YET_BUILT
 def test_typo_otomatik_duzeltme_sozluk(client):
     """"vardya" → "vardiya" (sözlük typo'su) → kırılım deterministik kurulur."""
     d = ask(client, "vardya bazında ortalama oee bu yıl")
@@ -757,7 +740,6 @@ def test_typo_otomatik_duzeltme_sozluk(client):
     assert d["cube_query"]["dimensions"] == ["vardiya"]
 
 
-@_TYPO_TOLERANCE_NOT_YET_BUILT
 def test_typo_orta_benzerlik_chip(client):
     """"müterileri" (çekim + typo) orta benzerlik → tahmin YOK, "şunu mu demek istedin?"
     chip'i; chip sorgusu düzeltilmiş sorudur → tıklayınca cevap gelir."""
@@ -768,6 +750,28 @@ def test_typo_orta_benzerlik_chip(client):
     d2 = ask(client, next(s["query"] for s in sugg if "musteri" in s["label"]))
     assert d2["source"] == "cube"
     assert d2["cube_query"]["dimensions"] == ["musteri"]
+
+
+# --- GL yapısal rapor (Faz 2a): gelir tablosu / bilanço --------------------------
+
+def test_gelir_tablosu_dogru_cubea_gider(client):
+    """"gelir tablosu" içindeki "gelir" kelimesi parti/ticaret cube'larının da ölçü
+    sinonimidir — route()'a düşerse YANLIŞ cube'a (parti/toplam_ciro) yönlenip dönem
+    sorardı (gerçek eval bulgusu). GL algılaması route()'tan/VQR'dan ÖNCE çalışmalı."""
+    d = ask(client, "gelir tablosu")
+    assert d["source"] == "statement"
+    assert d["cube_query"]["cube"] == "mizan"
+    assert d["result"]["row_count"] > 0
+    labels = [r["Kalem"] for r in d["result"]["rows"]]
+    assert "DÖNEM KARI/ZARARI" in labels
+
+
+def test_bilanco_deterministik_cevap(client):
+    d = ask(client, "bilanço")
+    assert d["source"] == "statement"
+    assert d["cube_query"]["cube"] == "mizan"
+    bolumler = {r["Bölüm"] for r in d["result"]["rows"]}
+    assert bolumler == {"AKTİF", "PASİF"}
 
 
 def test_alakasiz_kelime_oneriye_donusmez(client):

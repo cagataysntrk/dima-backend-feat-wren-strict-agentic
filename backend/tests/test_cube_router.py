@@ -698,3 +698,23 @@ def test_measure_threshold_having():
     plan = cube_router.route(_norm("stok ref bazında satış tutarı 1 milyon üzeri"), sc)
     assert plan is not None
     assert plan["cube_query"]["measure_having"] == {"measure": "satis_tutari", "op": ">", "value": 1_000_000}
+
+
+# --- Faz 2b: makine_duruslari (duruş nedeni) — çakışma koruması + doğru yönlendirme ----
+
+def test_durus_nedeni_dogru_cubea_yonlenir(schema):
+    """"duruş nedenlerine göre toplam duruş" → yeni makine_duruslari cube'u (neden kırılımı) —
+    OEE'nin bare "duruş" kimliğiyle YARIŞ ama en-uzun-eşleşme kuralıyla bu cube kazanır."""
+    plan = cube_router.route(_norm("duruş nedenlerine göre toplam duruş bu yıl"), schema)
+    assert plan is not None
+    cq = plan["cube_query"]
+    assert cq["cube"] == "makine_duruslari"
+    assert cq["measures"] == ["toplam_sure_dk"]
+    assert cq["dimensions"] == ["neden"]
+
+
+def test_bare_durus_hala_oeeye_gider(schema):
+    """Yeni cube, OEE'nin bare "duruş" sorularını ÇALMAMALI (çakışma koruması regresyonu)."""
+    for q in ["makine bazında toplam duruş bu yıl", "makine bazında duruş bu yıl"]:
+        plan = cube_router.route(_norm(q), schema)
+        assert plan is not None and plan["cube_query"]["cube"] == "oee", q

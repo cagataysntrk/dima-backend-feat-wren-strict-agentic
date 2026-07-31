@@ -35,6 +35,10 @@ export function SourceBadge({ source }: { source: string | null }) {
     label = "☰ KATALOG";
     cls = "text-neutral-400 border-hairline";
     title = "Katalog keşfi — deterministik yanıt (LLM kullanılmadı)";
+  } else if (source === "statement") {
+    label = "▤ GL";
+    cls = "text-accent border-accent/40";
+    title = "Yapısal finansal tablo (gelir tablosu/bilanço) — deterministik, LLM kullanılmadı";
   } else if (source.startsWith("llm:")) {
     label = `▚ LLM·${source.slice(4)}`;
     cls = "text-neutral-500 border-hairline";
