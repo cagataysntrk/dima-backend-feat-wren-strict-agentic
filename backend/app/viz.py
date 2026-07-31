@@ -50,7 +50,7 @@ _SIZES = {"xs", "s", "m", "l", "xl", "xxl"}
 # İNTENSİF (yoğunluk/oran) ölçüler additive DEĞİLDİR → yığma/pay grafiği YANLIŞ olur
 # (ortalama %'leri toplamak anlamsız). Birim "%" ya da ad deseni oran/ortalama ise intensif.
 _INTENSIVE_NAME = re.compile(r"(_yuzde|_orani?|_ort|_oran|oee|verimlilik|haslik|_de|yogunluk)$", re.I)
-# Birim yedeği (schema.measure_units yoksa) — kaba eşleme; gerçek birim MDL'den gelir.
+# Birim yedeği (schema()'nın "units" dict'i yoksa) — kaba eşleme; gerçek birim MDL'den gelir.
 _UNIT_RX: list[tuple[re.Pattern, str]] = [
     (re.compile(r"(_yuzde$|_orani?$|oee|haslik|verimlilik)", re.I), "%"),
     (re.compile(r"(tl$|_tl_|_tl$|ciro|maliyet|tutar|fiyat|gelir|gider|bakiye|kar$|karlilik)", re.I), "₺"),
@@ -95,7 +95,7 @@ def _card(rows: list[dict], c: str) -> int:
 
 
 def _unit_of(col: str, units: dict[str, str] | None) -> str:
-    """Ölçünün birimi: MDL metadata (schema.measure_units) öncelik, yoksa regex yedeği,
+    """Ölçünün birimi: MDL metadata (schema()'nın "units" dict'i) öncelik, yoksa regex yedeği,
     yoksa boş (birimsiz/sayım). Boş birim de AYRI birim sayılır (çok-birim kuralı için)."""
     if units and col in units and units[col]:
         return str(units[col])

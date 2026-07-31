@@ -747,26 +747,35 @@ def cube(request: Request, body: CubeRequest) -> AskResponse:
     # DÖNEMSEL KIYAS (YoY/MoM chip'i): cube_query.compare varsa period-shift ile iki seri
     # + %değişim (app.yoy). parse compare'ı düşürebilir → body'den okunur.
     _cmp = (body.cube_query or {}).get("compare")
-    if _cmp in ("yoy", "mom"):
-        tdn = yoy.time_dim_of(schema, cq.get("cube"))
-        out = yoy.compute(service, {**cq, "compare": _cmp}, _cmp, tdn, limit=limit)
-        sql = out["base_sql"]
-        planned = service.dry_plan(sql)
-        result = {"columns": out["columns"], "rows": out["rows"], "row_count": out["row_count"]}
-        cq = {**out["base_cq"], "compare": _cmp}
-        trace_msg = f"chip düzenleme → dönemsel kıyas ({_cmp}, LLM'siz)"
-    # CROSS-CUBE BLEND: chip düzenlemesi blend içeriyorsa (ölçü ekle/çıkar) blend_sql ile
-    # birleştir (agregat → limit'siz, WITH+FOJ limit sarmalayıcısını bozuyor).
-    elif cq.get("blend"):
-        sql = service.blend_sql(cq)
-        planned = service.dry_plan(sql)
-        result = service.query(sql)
-        trace_msg = "chip düzenleme → cross-cube blend"
-    else:
-        sql = service.cube_sql(cq)
-        planned = service.dry_plan(sql)
-        result = service.query(sql, limit=limit)
-        trace_msg = "chip düzenleme → deterministik cube"
+    # Derleme/ÇALIŞTIRMA hataları (canlı bulgu, 31 Temmuz 2026 — bkz. /ask Discovery
+    # yolundaki AYNI sınıf düzeltme): `parse_cube_query` yalnız YAPIYI doğrular, motorun
+    # gerçek çalıştırması (compare/blend kombinasyonu, dry_plan'ın yakalamadığı bir
+    # çalıştırma-zamanı hatası) yine de patlayabilir — çıplak 500 yerine dürüst 400.
+    try:
+        if _cmp in ("yoy", "mom"):
+            tdn = yoy.time_dim_of(schema, cq.get("cube"))
+            out = yoy.compute(service, {**cq, "compare": _cmp}, _cmp, tdn, limit=limit)
+            sql = out["base_sql"]
+            planned = service.dry_plan(sql)
+            result = {"columns": out["columns"], "rows": out["rows"], "row_count": out["row_count"]}
+            cq = {**out["base_cq"], "compare": _cmp}
+            trace_msg = f"chip düzenleme → dönemsel kıyas ({_cmp}, LLM'siz)"
+        # CROSS-CUBE BLEND: chip düzenlemesi blend içeriyorsa (ölçü ekle/çıkar) blend_sql ile
+        # birleştir (agregat → limit'siz, WITH+FOJ limit sarmalayıcısını bozuyor).
+        elif cq.get("blend"):
+            sql = service.blend_sql(cq)
+            planned = service.dry_plan(sql)
+            result = service.query(sql)
+            trace_msg = "chip düzenleme → cross-cube blend"
+        else:
+            sql = service.cube_sql(cq)
+            planned = service.dry_plan(sql)
+            result = service.query(sql, limit=limit)
+            trace_msg = "chip düzenleme → deterministik cube"
+    except Exception as exc:
+        _log.warning("chip düzenleme derleme/çalıştırma başarısız", exc_info=True)
+        raise HTTPException(status_code=400,
+                            detail=f"Bu düzenleme çalıştırılamadı: {str(exc)[:200]}")
     resp = AskResponse(
         question=body.label or "(chip düzenleme)",
         sql=sql,
@@ -1045,6 +1054,20 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     prev_question = body.history[-1] if body.history else ""
 
     def _finish(resp: AskResponse) -> AskResponse:
+        # EVRENSEL ZENGİNLEŞTİRME (canlı bulgu, 31 Temmuz 2026): bu üçü ÖNCEDEN yalnız
+        # `/cube` (chip düzenlemesi) endpoint'inin kendi kapanışında çağrılıyordu — `/ask`'in
+        # TEK choke-point'i olan bu fonksiyon (`_build_explain` de burada) hiç çağırmıyordu.
+        # Sonuç: `/ask`'ten gelen HİÇBİR yanıt (ilk mesaj dahil, source="cube" olsa bile)
+        # interpretation/next_steps/recommendations TAŞIMIYORDU — kullanıcı bunları yalnız
+        # BİR SONRAKİ `/cube` isteğinde (ör. bir chip'e tıklayınca) görüyordu ("bazen küpten
+        # gelen yanıttan sonra çalışıyor" — TAM OLARAK bu). Üçü de KENDİ İÇİNDE güvenli
+        # guard'lara sahip (result/kpi ya da cube_query yoksa no-op) — meta/katalog/Discovery
+        # gibi yanıtları BOZMAZ. Sıra ÖNEMLİ: recommendations interpretation'ın signals'ına
+        # bağımlı, ikisi de explain'den ÖNCE (explain bunlara bağımlı değil, sıra onunla
+        # ilgili değil ama /cube'daki köklü sırayla TUTARLI tutuldu).
+        _maybe_interpret(request, resp)
+        _attach_next_steps(request, resp)
+        _attach_recommendations(request, resp)
         resp.explain = _build_explain(resp)
         _persist_message(request, resp, body.session_id)
         _log_interaction(body.session_id, body, resp, int((time.monotonic() - t0) * 1000), principal)
@@ -1816,7 +1839,30 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 trace=trace + [f"self-healing başarısız ({exc2}) → dürüst ret"],
             )
 
-    result = service.query(wren_sql, limit=limit)
+    # ÇALIŞTIRMA (canlı bulgu, 31 Temmuz 2026 — gerçek kullanıcı testinde 500 olarak
+    # patladı): `dry_plan` yalnız PLANLAMA/SEMANTİK doğrulamadır — motorun GERÇEK
+    # ÇALIŞTIRMASI (DuckDB/hedef lehçe) ayrı bir aşamadır ve dry_plan'ın geçtiği bir SQL
+    # yine de ÇALIŞTIRMA anında patlayabilir (karmaşık, çok-parçalı sorular — "trend +
+    # son N ay + X'in Y'ye etkisi" gibi bileşik istekler LLM'i geçersiz/aşırı karmaşık bir
+    # sorguya götürebiliyor). Bu satır TEK BAŞINA sarmalanmamıştı — dosyadaki HER DİĞER
+    # adımın (SQL üretimi, dry_plan, self-healing) aksine — üretim/planlama başarısız
+    # olduğunda "dürüst ret" (502/500 DEĞİL) ilkesini burada da uygula: ÇALIŞTIRMA hatası
+    # da dry_plan hatasıyla AYNI self-healing (`llm.repair`) turuna girer; o da başarısız
+    # olursa dürüst ret (asla çıplak 500).
+    try:
+        result = service.query(wren_sql, limit=limit)
+    except Exception as e:
+        trace.append(f"çalıştırma hatası → kendi kendini onarma: {e}")
+        try:
+            wren_sql = llm.repair(body.question, prompt_schema, wren_sql, str(e))
+            planned = service.dry_plan(wren_sql)
+            result = service.query(wren_sql, limit=limit)
+        except Exception as exc2:
+            _log.warning("Discovery çalıştırma + self-healing başarısız", exc_info=True)
+            return _honest_refusal(
+                note="Bu soru için güvenilir bir sorgu üretemedim.",
+                trace=trace + [f"self-healing (çalıştırma) başarısız ({exc2}) → dürüst ret"],
+            )
 
     # 6) Öğrenme döngüsü: yalnız BAĞIMSIZ başarılı yanıtlar VQR'a otomatik yazılır.
     # Bir takip cevabını ("aylara göre" → SQL) standalone soru metniyle önbelleklemek,

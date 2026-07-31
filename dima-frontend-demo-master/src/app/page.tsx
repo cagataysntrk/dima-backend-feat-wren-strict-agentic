@@ -192,7 +192,10 @@ export default function Home() {
         <Landing onSubmit={submit} onUpload={onUpload} uploading={uploadMut.isPending} />
       ) : (
         <div className="flex h-full min-h-0">
-          <section className="flex w-[38%] min-w-[320px] max-w-[440px] shrink-0 flex-col border-r border-hairline">
+          <section
+            data-no-print
+            className="flex w-[38%] min-w-[320px] max-w-[440px] shrink-0 flex-col border-r border-hairline"
+          >
             <ChatPanel
               items={items}
               active={active}

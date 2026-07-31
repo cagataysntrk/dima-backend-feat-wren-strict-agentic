@@ -124,3 +124,13 @@ body {
     opacity: 1;
   }
 }
+
+/* Yazdır/PDF (dışa aktarma, 31 Temmuz 2026): `data-no-print` işaretli sohbet paneli/rail/
+   buton gibi arayüz kromu yazdırmada gizlenir — yalnız rapor alanı (grafik/tablo/yorum)
+   kağıda/PDF'e çıkar. Yeni bir "yazdırma görünümü" sayfası İCAT EDİLMEDİ — mevcut DOM
+   üzerinde CSS ile süzülür (src/lib/export.ts::printReport → window.print()). */
+@media print {
+  [data-no-print] {
+    display: none !important;
+  }
+}

@@ -98,6 +98,31 @@ def test_bilinmeyen_kirilim_reddedilir(schema):
     assert route(schema, "tedarikçi bazında oee") is None
 
 
+# --- typo_correct YANLIŞ-POZİTİF regresyonu (canlı bulgu, 31 Temmuz 2026) ----------
+# Gerçek kullanımda "hesapla" (calculate) katalogdaki "hesap" (mizan/cari boyutu,
+# muhasebe hesap kodu) ile 0.83 benzerlik taşıyor → typo_correct bunu YANLIŞLIKLA
+# "hesap"a düzeltmeye çalışıyordu (iki kelime aynı kökten ama tamamen farklı anlam).
+# "kalemlere" de alakasız bir kelimeye ("bekleme") öneriliyordu — cube'a-daraltma
+# (`only_cube`) + "hesapla" stop-stem ile ikisi de düzeltildi.
+
+def test_hesapla_fiili_typo_onerisine_donusmez(schema):
+    from app.cube_router import _norm, typo_correct
+
+    q = _norm("ram 3 icin verimlilik hesapla")
+    corrected, fixes = typo_correct(q, schema)
+    assert corrected == q
+    assert fixes == []
+
+
+def test_kalemlere_alakasiz_oneriye_donusmez(schema):
+    from app.cube_router import _norm, typo_correct
+
+    q = _norm("kalemlere gore karsilastir satislari ve karlilik hesapla")
+    corrected, fixes = typo_correct(q, schema)
+    assert corrected == q
+    assert fixes == []
+
+
 def test_kirilimsiz_pur_toplam_hala_calisir(schema):
     # koruma pür toplamları etkilememeli
     assert route(schema, "toplam fire") is not None
@@ -387,6 +412,33 @@ def test_ay_adi_tarih_araligi():
     # "aralık" tek başına belirsiz ("tarih aralığı") → ay sayılmaz; "aralık ayı" sayılır
     assert cube_router.date_filters(_norm("tarih aralığı seç"), "tarih") == []
     assert len(cube_router.date_filters(_norm("aralık ayı"), "tarih")) == 2
+
+
+def test_tek_gun_ay_toplamina_donusmez():
+    """Canlı bulgu (31 Temmuz 2026): "1 nisan" tüm Nisan'a değil O GÜNE (tek gün, gte=lte)
+    çözülmeli — önceden gün numarası yok sayılıp `_month_range_filters` tüm ayı dönüyordu
+    (sessiz-yanlış: kullanıcı NET bir gün sordu, ay-toplamı aldı)."""
+    fs = cube_router.date_filters(_norm("1 nisan"), "tarih")
+    assert len(fs) == 2
+    assert fs[0] == {"dimension": "tarih", "operator": "gte", "value": fs[0]["value"]}
+    assert fs[0]["value"] == fs[1]["value"]  # gte == lte → tek gün
+    assert fs[0]["value"].endswith("-04-01")
+
+    # "günü" ekiyle de aynı (gerçek kullanıcı ifadesi: "1 nisan günü ram 3 için ...")
+    fs2 = cube_router.date_filters(_norm("1 nisan gunu"), "tarih")
+    assert fs2 == fs
+
+    # Yıl açıkça verilirse o yıl kullanılır; bare ay adı hâlâ TÜM AYI döner (regresyon yok).
+    fs3 = cube_router.date_filters(_norm("15 mart 2026"), "tarih")
+    assert fs3[0]["value"] == fs3[1]["value"] == "2026-03-15"
+    fs4 = cube_router.date_filters(_norm("nisan ayi"), "tarih")
+    assert fs4[0]["value"].endswith("-04-01") and fs4[1]["value"].endswith("-04-30")
+
+    # Aralık/açık-uçlu ifadeler tek-gün mekanizmasına YAKALANMAZ (öncelik sırası korunur).
+    rng = cube_router.date_filters(_norm("1 ocak 31 mart arasi"), "tarih")
+    assert rng[0]["value"].endswith("01-01") and rng[1]["value"].endswith("03-31")
+    opn = cube_router.date_filters(_norm("1 marttan itibaren"), "tarih")
+    assert opn[0]["value"].endswith("03-01")
 
 
 def test_refine_temmuz_ayi_yutulmaz(schema):

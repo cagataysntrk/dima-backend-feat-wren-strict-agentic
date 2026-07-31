@@ -5,10 +5,71 @@ import { getSchema } from "@/lib/api-client";
 import { setSchemaUnits, unitSuffix } from "@/lib/format";
 import type { QueryResult, VizSpec } from "@/lib/types";
 import { ALL_MEASURES, analyze, analysisFromViz, buildOption, facetPanelValues, kpiCards, type ChartKind } from "@/lib/chart";
+import { exportChartImage, exportTableCsv, printReport } from "@/lib/export";
 import { EChart } from "./EChart";
 import { ResultTable } from "./ResultTable";
 import { PivotTable } from "./PivotTable";
 import { Select } from "./Select";
+
+// Dışa aktarma açılır menüsü — grafik PNG/SVG (yalnız grafik görünümdeyken anlamlı), tablo
+// CSV (her zaman), rapor yazdır/PDF (her zaman). `Select` gibi "seçili değer" taşımaz —
+// her tıklama ANINDA bir eylem tetikler (indirme/yazdırma), bu yüzden ayrı, basit bir menü.
+function ExportMenu({
+  onPng,
+  onSvg,
+  onCsv,
+  onPrint,
+}: {
+  onPng?: () => void;
+  onSvg?: () => void;
+  onCsv: () => void;
+  onPrint: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const item =
+    "flex w-full items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-left font-mono text-[11px] text-neutral-600 transition-colors hover:bg-neutral-500/[0.06] dark:text-neutral-300";
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        aria-label="Dışa aktar"
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-1.5 border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-600 transition-colors hover:border-neutral-400 dark:text-neutral-300 dark:hover:border-neutral-600"
+      >
+        <span>⬇ dışa aktar</span>
+      </button>
+      {open && (
+        <>
+          <button
+            type="button"
+            aria-hidden
+            tabIndex={-1}
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-20 cursor-default"
+          />
+          <div className="absolute right-0 z-30 mt-1 min-w-full border border-hairline bg-background shadow-lg">
+            {onPng && (
+              <button type="button" className={item} onClick={() => { setOpen(false); onPng(); }}>
+                Grafik · PNG
+              </button>
+            )}
+            {onSvg && (
+              <button type="button" className={item} onClick={() => { setOpen(false); onSvg(); }}>
+                Grafik · SVG
+              </button>
+            )}
+            <button type="button" className={item} onClick={() => { setOpen(false); onCsv(); }}>
+              Tablo · CSV
+            </button>
+            <button type="button" className={item} onClick={() => { setOpen(false); onPrint(); }}>
+              Yazdır / PDF olarak kaydet
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 // "Yüksek=kötü" ölçü kümesi — kaynağı metadata (/schema cubes[].lower_is_better);
 // açılışta bir kez okunur, modül düzeyinde tutulur (useFeature deseni). Aynı okumada
@@ -249,6 +310,29 @@ export function ResultView({
     [chartable, effResult, effA, effKind, measure, dark, lowerSet],
   );
 
+  // YÜKSEKLİK (canlı bulgu, 31 Temmuz 2026): EChart'ın sabit min/max aralığı (240-460px,
+  // genişlik×0.56) grafiğin İÇERİK KARMAŞIKLIĞINI hesaba katmıyordu — 2-satırlı panel
+  // grid'i (facet/facet_measure, N panel eşiği aşınca) ya da çok-satırlı ısı haritası
+  // AYNI dar aralığa sıkışıp okunaksızlaşıyordu ("aşırı küçülebiliyor" şikâyeti). Panel/satır
+  // sayısına göre taban/tavan büyütülür; basit tek-panel grafikler ESKİ (240-460) davranışta kalır.
+  const { chartMinHeight, chartMaxHeight } = useMemo(() => {
+    let minH = 240, maxH = 460;
+    if (effKind === "facet_measure" && effA.facetMeasure) {
+      if (effA.facetMeasure.measures.length > 3) { minH = 420; maxH = 720; } // 2 satır
+    } else if (effKind === "facet" && effA.facet && !single) {
+      if (panels.length > 4) { minH = 420; maxH = 720; } // 2 satır
+    } else if (effKind === "heatmap" && (effA.heat || effA.heatAny)) {
+      const rowDim = (effA.heat ?? effA.heatAny)!.row;
+      const rowCount = new Set(effResult.rows.map((r) => String(r[rowDim]))).size;
+      if (rowCount > 8) {
+        const px = Math.min(700, 140 + rowCount * 22); // başlık/marj + satır başına yer
+        minH = Math.max(minH, px);
+        maxH = Math.max(maxH, px);
+      }
+    }
+    return { chartMinHeight: minH, chartMaxHeight: maxH };
+  }, [effKind, effA, panels.length, single, effResult]);
+
   const cards = a.kind === "kpi" ? kpiCards(result, a) : [];
 
   const seg = "px-3 py-1 font-mono text-[11px] tracking-wide transition-colors";
@@ -261,7 +345,7 @@ export function ResultView({
         <h3 className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">
           sonuç · {result.row_count} satır
         </h3>
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div data-no-print className="flex flex-wrap items-center gap-1.5">
           {view === "chart" && chartable && (
             <>
               {availableTypes.length > 1 && (
@@ -309,6 +393,20 @@ export function ResultView({
               )}
             </div>
           )}
+          <ExportMenu
+            onPng={
+              view === "chart" && option
+                ? () => exportChartImage(option, "png", "dima-grafik", { dark })
+                : undefined
+            }
+            onSvg={
+              view === "chart" && option
+                ? () => exportChartImage(option, "svg", "dima-grafik", { dark })
+                : undefined
+            }
+            onCsv={() => exportTableCsv(effResult, "dima-tablo")}
+            onPrint={printReport}
+          />
         </div>
       </div>
 
@@ -369,6 +467,8 @@ export function ResultView({
             )}
             <EChart
               option={option}
+              minHeight={chartMinHeight}
+              maxHeight={chartMaxHeight}
               onSeriesClick={
                 facetInfo && !single
                   ? (si) => {

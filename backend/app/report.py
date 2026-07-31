@@ -68,8 +68,12 @@ def compose_report(
             block["result"] = result
             if result:
                 cmeta = cubes.get(cq.get("cube")) or {}
+                # NOT (31 Temmuz 2026): "measure_units" YANLIŞ anahtardı — schema() dict'i ölçü
+                # birimlerini "units" adıyla taşıyor (bkz. app/wren_service.py:236); bu yüzden
+                # `recommend()`'in birim-farkındalığı burada da HİÇ devreye giremiyordu (`/ask`,
+                # `/cube`, dashboards.py'deki AYNI hata sınıfı, bkz. app/routers/ask.py `_attach_viz`).
                 block["viz"] = viz.recommend(
-                    result, units=cmeta.get("measure_units") or {},
+                    result, units=cmeta.get("units") or {},
                     lower_set=cmeta.get("lower_is_better") or [], cube_query=viz_cq,
                 )
         except Exception as exc:  # noqa: BLE001 — tek blok hatası raporu düşürmesin

@@ -216,6 +216,29 @@ def _open_range_filters(q: str, time_dim: str) -> list[dict] | None:
     return out or None
 
 
+# TEK GÜN ("1 nisan", "15 mart 2026", "1 nisan günü") — canlı bulgu (31 Temmuz 2026):
+# `_month_range_filters` ay adını AY BAŞINDAN AY SONUNA çeviriyordu, önündeki gün
+# numarasını YOK SAYIYORDU ("1 nisan" → tüm Nisan). Bu, tek gün ile tüm-ay arasındaki
+# farkı sessizce kaybediyordu (kullanıcı NET bir gün sordu, ay-toplamı aldı — sessiz-yanlış).
+# Yalnız date_filters'ın DİĞER TÜM aralık/açık-uçlu/göreli denemeleri BAŞARISIZ olunca
+# denenir (sıra: explicit range → open range → prev → quarter → relative/current →
+# TEK GÜN → son çare ay-adı). "arası/itibaren/kadar" gibi işaretçiler zaten önce
+# yakalandığından tek-gün burada YALNIZ gerçekten "gün + ay" ifadesiyle eşleşir.
+_SINGLE_DAY_RE = re.compile(rf"\b(\d{{1,2}})\s+({_MONTH_ALT})\w*(?:\s+(20\d{{2}}))?\b")
+
+
+def _single_day_filters(q: str, time_dim: str) -> list[dict] | None:
+    m = _SINGLE_DAY_RE.search(q)
+    if not m:
+        return None
+    day_s, mon_name, year_s = m.groups()
+    d = _month_date(day_s, mon_name, year_s)
+    return [
+        {"dimension": time_dim, "operator": "gte", "value": d.isoformat()},
+        {"dimension": time_dim, "operator": "lte", "value": d.isoformat()},
+    ]
+
+
 def date_filters(q: str, time_dim: str = "tarih") -> list[dict]:
     """Dönem ifadesini deterministik tarih filtrelerine çevirir: açık aralık
     ("1 ocak 31 mart arası"), göreli ("son 3 ay"), içinde bulunulan ("bu ay") ya da
@@ -238,6 +261,9 @@ def date_filters(q: str, time_dim: str = "tarih") -> list[dict]:
         return [single]
     if re.search(r"\baras[ıi]", q):
         return []  # aralık istendi ama çözülemedi → yarım ay-adı uygulama YAPMA
+    day = _single_day_filters(q, time_dim)  # "1 nisan" (belirli GÜN — ay değil)
+    if day:
+        return day
     return _month_range_filters(q, time_dim) or []
 
 
@@ -985,6 +1011,12 @@ _STOP_STEMS = (
     "listele", "liste", "dokum", "detay",
     # niyet/nicelik kelimeleri: typo adayı sanılmamalı (değer indeksi gürültüsü)
     "karsilastir", "kiyasla", "tum", "her", "miktar", "tek", "yan yana", "yanyana", "donem", "filtre", "kalsin",
+    # jenerik KOMUT fiili (canlı bulgu, 31 Temmuz 2026): "hesapla" gerçek kullanımda
+    # katalogdaki "hesap" (mizan/cari boyutu, muhasebe hesap kodu) ile 0.83 benzerlik
+    # taşıyor — typo_correct bunu "hesap"a düzeltmeye ÇALIŞIYORDU (yanlış-pozitif: iki
+    # kelime aynı TR kökten [hesap+la] ama TAMAMEN farklı anlam, typo DEĞİL). "hesapla"
+    # (calculate) diğer jenerik fiiller (goster/getir/ver) gibi anlam taşımaz → dolgu.
+    "hesapla",
 )
 
 
@@ -1112,7 +1144,13 @@ def partial_unknowns(q: str, schema: dict) -> tuple[list[str], list[tuple[dict, 
 # demek istedin?" ÖNERİSİ üretilir (tahmin YOK).
 _TYPO_MIN_WORD_LEN = 4    # 3 harf ve altı fuzzy'ye hiç girmez (gürültü/yanlış-pozitif riski)
 _TYPO_HIGH = 0.82         # bu ve üstü + net aday → OTOMATİK düzelt
-_TYPO_MID = 0.60          # bu ve üstü (HIGH altı) → yalnız "şunu mu demek istedin?" öner
+# 0.60 → 0.65 (canlı bulgu, 31 Temmuz 2026): cube'a-daraltma (aşağıdaki `only_cube`) doğru
+# adayları güçlendirirken, KÜÇÜLEN havuzda alakasız bir kelime de "en iyi" olabiliyordu —
+# "fizibilite"/"profitability" tam 0.6087 (uzunluk-oranı korumasını GEÇİYOR, 0.77) → 0.60
+# eşiğinde YANLIŞ öneri üretti (test_alakasiz_kelime_oneriye_donusmez canlı yakaladı).
+# Gerçek düzeltmelerin (müterileri/müşteri=0.706, vardya/vardiya=0.923, siyh/siyah=0.889)
+# hepsi 0.65'in ÜSTÜNDE kalıyor — 0.60→0.65 net bir ayrım sağlıyor, regresyon YOK.
+_TYPO_MID = 0.65          # bu ve üstü (HIGH altı) → yalnız "şunu mu demek istedin?" öner
 _TYPO_GAP = 0.08          # en iyi/ikinci-iyi aday arası bu kadar fark olmalı (net aday şartı)
 # UZUNLUK-ORANI KORUMASI: SequenceMatcher.ratio() ÇOK FARKLI uzunluktaki kelimeler için
 # de yanıltıcı biçimde orta-yüksek çıkabiliyor (gerçek bulgu: "fizibilite"(10)/"fiili"(5)
@@ -1123,12 +1161,17 @@ _TYPO_GAP = 0.08          # en iyi/ikinci-iyi aday arası bu kadar fark olmalı 
 _TYPO_LEN_RATIO = 0.65
 
 
-def _catalog_vocabulary(schema: dict) -> set[str]:
-    """Katalogdaki TÜM tanınan tek-kelimelik terimler (değer + sinonim, tüm cube'lar) —
-    typo-düzeltme adaylarının havuzu. `partial_unknowns`'ın kapsam evreniyle AYNI
-    kaynaklardan beslenir (cube/ölçü/boyut sinonimleri + kategorik değerler)."""
+def _catalog_vocabulary(schema: dict, only_cube: dict | None = None) -> set[str]:
+    """Katalogdaki tanınan tek-kelimelik terimler (değer + sinonim) — typo-düzeltme
+    adaylarının havuzu. `partial_unknowns`'ın kapsam evreniyle AYNI kaynaklardan
+    beslenir (cube/ölçü/boyut sinonimleri + kategorik değerler). `only_cube` verilirse
+    (soru zaten belirli bir cube'a çözüldüyse) YALNIZ o cube'un sözlüğü kullanılır —
+    aksi halde jenerik bir kelime ("hesapla" gibi) alakasız bir cube'un (mizan'ın
+    "hesap"ı gibi) teriminle rastgele yüksek benzerlik yakalayıp yanlış öneri üretebilir
+    (canlı bulgu, 31 Temmuz 2026 — `partial_unknowns`'ın kendi `in_scope` ilkesiyle AYNI)."""
+    cubes = [only_cube] if only_cube is not None else schema.get("cubes", [])
     terms: set[str] = set()
-    for c in schema.get("cubes", []):
+    for c in cubes:
         terms.update(s.removesuffix("!") for s in (c.get("synonyms") or []))
         for syns in (c.get("measure_synonyms") or {}).values():
             terms.update(s.removesuffix("!") for s in syns)
@@ -1151,7 +1194,10 @@ def typo_correct(q: str, schema: dict) -> tuple[str, list[dict]]:
     unknown, _hits = partial_unknowns(q, schema)
     if not unknown:
         return q, []
-    vocab = _catalog_vocabulary(schema)
+    # Soru zaten bir cube'a çözülüyorsa (route()'un KENDİ eşleştirmesiyle AYNI), sözlük
+    # O CUBE'A daralır — `partial_unknowns`'ın "unknown" tanımıyla TUTARLI kapsam.
+    resolved = _match_cube(q, schema)
+    vocab = _catalog_vocabulary(schema, only_cube=resolved)
     if not vocab:
         return q, []
     corrections: list[dict] = []

@@ -198,7 +198,36 @@ export const facetPanelValues = (result: QueryResult, dim: string): string[] =>
 // Ölçü seçicide "tümü" nöbetçisi — çok-ölçülü kombo görünüm (ADR/log 2026-07-21).
 export const ALL_MEASURES = "__tumu__";
 
+// KAYDIRMA/YAKINLAŞTIRMA (canlı bulgu, 31 Temmuz 2026): grafiklerde ASLA yaklaşma imkanı
+// yoktu (dataZoom hiç eklenmemişti) — çok-kategorili bar/line/heatmap'te (ör. onlarca
+// müşteri/kumaş türü) etiketler sıkışıp okunaksızlaşıyordu ve kullanıcının bunu düzeltecek
+// hiçbir yolu yoktu. `type: "inside"` (fare tekerleği/pinch — GÖRÜNÜR yer kaplamaz, mevcut
+// grid/layout'a dokunmadan EKLENİR) TEK kategorik eksenli (bar/line/combo/stacked/gruplu-bar/
+// heatmap) grafiklere post-hoc uygulanır; çok-panelli (facet_measure/pivot, xAxis DİZİ) ve
+// value-eksenli (scatter) grafiklere KARIŞMAZ — onların KENDİ etkileşim modeli var/farklı.
+function withZoom(option: EChartsOption): EChartsOption {
+  const xAxis = option.xAxis;
+  const yAxis = option.yAxis;
+  if (!xAxis || Array.isArray(xAxis)) return option;
+  const ax = xAxis as { type?: string; data?: unknown[] };
+  const ay = !yAxis || Array.isArray(yAxis) ? null : (yAxis as { type?: string; data?: unknown[] });
+  const xZoomable = ax.type === "category" && (ax.data?.length ?? 0) > 8;
+  const yZoomable = ay?.type === "category" && (ay.data?.length ?? 0) > 8;
+  if (!xZoomable && !yZoomable) return option;
+  return {
+    ...option,
+    dataZoom: [
+      ...(xZoomable ? [{ type: "inside" as const, xAxisIndex: 0 }] : []),
+      ...(yZoomable ? [{ type: "inside" as const, yAxisIndex: 0 }] : []),
+    ],
+  };
+}
+
 export function buildOption(result: QueryResult, a: Analysis, o: BuildOpts): EChartsOption {
+  return withZoom(buildOptionInner(result, a, o));
+}
+
+function buildOptionInner(result: QueryResult, a: Analysis, o: BuildOpts): EChartsOption {
   const { rows } = result;
   const axis = o.dark ? "#9ca3af" : "#6b7280";
   const split = o.dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";

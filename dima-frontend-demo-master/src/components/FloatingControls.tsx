@@ -32,7 +32,10 @@ export function FloatingControls({
   return (
     // pt-[4.5rem]: ikonlar panel başlık çizgisinin (h-14) ALTINDA başlar — panel
     // açıkken de kapalıyken de aynı hizada (başlık şeridi sağa kadar uzar).
-    <div className="pointer-events-none fixed right-0 top-0 z-50 flex h-full w-12 flex-col items-center gap-1.5 pt-[4.5rem] [&>*]:pointer-events-auto">
+    <div
+      data-no-print
+      className="pointer-events-none fixed right-0 top-0 z-50 flex h-full w-12 flex-col items-center gap-1.5 pt-[4.5rem] [&>*]:pointer-events-auto"
+    >
       <button onClick={onHistory} aria-label="Sohbet geçmişi" title="Sohbet geçmişi" className={btn}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M3 3v5h5" />

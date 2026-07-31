@@ -502,8 +502,11 @@ def run_schedule(state, sched: dict, *, manual: bool = False) -> dict:
         _cmeta = next(
             (c for c in (svc.schema().get("cubes") or []) if c.get("name") == cq.get("cube")), None
         )
+        # NOT (31 Temmuz 2026): "measure_units" YANLIŞ anahtardı — schema() dict'i ölçü
+        # birimlerini "units" adıyla taşıyor (bkz. app/wren_service.py:236) — AYNI hata
+        # sınıfı /ask, /cube, dashboards.py, report.py'de de vardı (hepsi düzeltildi).
         viz_spec = _viz.recommend(
-            result, units=(_cmeta or {}).get("measure_units") or {},
+            result, units=(_cmeta or {}).get("units") or {},
             lower_set=(_cmeta or {}).get("lower_is_better") or [], cube_query=cq,
         )
     except Exception:
