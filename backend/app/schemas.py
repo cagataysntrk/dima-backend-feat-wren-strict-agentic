@@ -176,6 +176,18 @@ class Recommendation(BaseModel):
     action: NextStep | None = None
 
 
+class Explain(BaseModel):
+    """Faz 3 birleşik açıklama: `path` = source'un insan-okur normalize hâli (`_source_kind()`'ın
+    yaptığı işin BİR ÜSTÜ — cube/cube+llm ayrımı KORUNUR, ikisinin güveni farklı); `confidence`
+    yalnız deterministik/yarı-deterministik yollarda dolu (LLM/rule yollarında ÖLÇÜLEBİLİR bir
+    güven skoru YOK — uydurma sayı yerine None); `assumptions` yalnız GERÇEKTEN sessiz bir
+    varsayım yapıldıysa dolu (ör. dönem açıkça belirtilmedi → "tüm zamanlar" seçildi/onaylandı)."""
+
+    path: str
+    confidence: float | None = None
+    assumptions: list[str] = Field(default_factory=list)
+
+
 class AskResponse(BaseModel):
     question: str
     sql: str = ""
@@ -221,3 +233,9 @@ class AskResponse(BaseModel):
     # K4 (karar motoru) — K3 sinyallerinden türetilen aksiyon önerileri: "neye bakmalısın"
     # + opsiyonel tıklanır drill (sürükleyeni bul). Sinyal yoksa boş. Deterministik.
     recommendations: list[Recommendation] = Field(default_factory=list)
+    # Faz 3 (31 Temmuz 2026) — birleşik açıklama nesnesi: `trace[]`/`source` Faz 1.5'te az
+    # önce kapsamlıca düzeltildiğinden BÜYÜK bir göç riskli olurdu; bunun yerine EKLEYİCİ
+    # (trace/source SİLİNMEDİ, ikisi paralel durur — mevcut SourceBadge/trace render'ı
+    # kırılmaz) tek bir `explain` alanı. Frontend YENİ alanı kullanmaya başlayabilir,
+    # kademeli geçiş.
+    explain: Explain | None = None

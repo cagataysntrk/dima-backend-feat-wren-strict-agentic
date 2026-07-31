@@ -477,6 +477,22 @@ export function ReportPanel({
                 </li>
               ))}
             </ol>
+            {/* Faz 3: `explain` trace'in ÜSTÜNE biner (onu değiştirmez) — yalnız sessizce
+                yapılan gerçek bir varsayım varsa (ör. dönem belirtilmedi) gösterilir. */}
+            {data.explain && data.explain.assumptions.length > 0 && (
+              <div className="mt-2 border-t border-hairline pt-2">
+                <div className="mb-1 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+                  varsayımlar
+                </div>
+                <ul className="space-y-0.5">
+                  {data.explain.assumptions.map((a, i) => (
+                    <li key={i} className="font-mono text-[11px] text-amber-600">
+                      {a}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
       </div>

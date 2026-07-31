@@ -466,6 +466,67 @@ class RefreshToken(SQLModel, table=True):
     revoked_at: datetime | None = None
 
 
+class MeasureCandidate(SQLModel, table=True):
+    """Discovery→Promote adayı (Faz 2d, 31 Temmuz 2026): Discovery (ham-SQL LLM) yolunun
+    ürettiği bir cevap best-effort bir "taslak ölçü" adayı olarak buraya yakalanır
+    (`app/routers/ask.py` Discovery bloğu). `SynonymOverride`'ın (ADR-0018 katman 3)
+    aday→onay→additive-overlay deseninin ÖLÇÜ-seviyesi genişlemesi — ama blast-radius
+    kategorik olarak farklı (yanlış bir ölçü = yeni SQL/join/agregasyon riski, yanlış bir
+    eşanlamlıdan çok daha tehlikeli): onay AYRICA `expression`'ı `dry_plan`'dan geçirir +
+    eşleşen bir altın-vaka (`golden_case_id`) ister + blast-radius (best-effort) taraması
+    yapar. Onay MDL YAML'ına (`app/mdl_writer.py`, ruamel round-trip) kalıcı bir ölçü
+    EKLER — var olan bir cube'a; yeni cube/model/ilişki icat ETMEZ (base_object zaten
+    var olmalı). Geri-alma YAML'dan SİLME değil `MeasureOverride` (suppress) overlay'idir
+    (kanıt silinmez ilkesi — eski VQR/dashboard/Contract kullanımları kırılmaz)."""
+
+    __tablename__ = "measure_candidate"
+    id: uuid.UUID = Field(default_factory=_uuid, primary_key=True)
+    tenant_id: uuid.UUID | None = Field(default=None, foreign_key="tenant.id", index=True)
+    company: str = Field(index=True)  # settings.company kapsamı (VerifiedQuery ile tutarlı)
+    status: str = Field(default="draft", index=True)  # draft|pending_review|approved|rejected|deprecated
+    question: str
+    sql: str
+    sample_rows_json: str | None = None  # ilk ~5 satır (reviewer'a bağlam)
+    schema_version: str | None = None
+    # Onay formunda doldurulur (approve öncesi None):
+    cube: str | None = None
+    measure_name: str | None = None
+    expression: str | None = None
+    measure_type: str = "DOUBLE"
+    label: str | None = None
+    synonyms_json: str | None = None
+    lower_is_better: bool | None = None
+    golden_case_id: str | None = None  # eval/cases.yaml'a eklenen vakanın id'si
+    proposed_by: str | None = None  # user_id (varsa) — Discovery yakalaması genelde sistem
+    reviewed_by: uuid.UUID | None = None
+    review_note: str | None = None
+    superseded_by_id: uuid.UUID | None = Field(default=None, foreign_key="measure_candidate.id")
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
+    deleted_at: datetime | None = Field(default=None, index=True)  # soft-delete (ADR-0019)
+
+
+class MeasureOverride(SQLModel, table=True):
+    """Ölçü GİZLEME overlay'i (Faz 2d) — `SynonymOverride`'ın additive-EKLEME deseninin
+    TERSİ: bir MDL ölçüsünü NL-routing'ten (`cube_router.route()`/`cube_only_match()`,
+    `_match_measure` yalnız `measure_synonyms`'a bakar) sessizce gizler ama YAML'dan
+    SİLMEZ (dosya değişikliği/deploy yok) — dashboard/VQR/Contract'taki ESKİ kullanımlar
+    (ölçüye adıyla, sinonim aramadan referans verir) kırılmaz (ADR ilkesi: kanıt silinmez).
+    Kaynak: bir `MeasureCandidate.status='deprecated'` kararı (kötü/yanlış onaylanmış ölçü)."""
+
+    __tablename__ = "measure_override"
+    id: uuid.UUID = Field(default_factory=_uuid, primary_key=True)
+    scope_type: str = Field(index=True)          # global | tenant
+    scope_id: str | None = Field(default=None, index=True)  # tenant slug; global'de None
+    cube: str = Field(index=True)
+    measure_name: str = Field(index=True)
+    reason: str | None = None
+    candidate_id: uuid.UUID | None = Field(default=None, foreign_key="measure_candidate.id")
+    superseded_by_measure: str | None = None
+    updated_by: uuid.UUID | None = None
+    created_at: datetime = Field(default_factory=_now)
+
+
 class AuditLog(SQLModel, table=True):
     """Append-only erişim kanıtı — contracts.py genişletmesi + KVKK (ADR-0014 Karar 6).
     Başarı, audit yazılmadan raporlanmaz (mamut invariant #4)."""

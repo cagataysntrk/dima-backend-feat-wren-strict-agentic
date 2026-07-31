@@ -9,10 +9,13 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import type {
   AskRequest,
   AskResponse,
+  BlastRadius,
   CubeQuery,
   DashboardDetail,
   DashboardListItem,
   DashboardWidgetData,
+  MeasureApproveInput,
+  MeasureCandidate,
   QueryResult,
   Report,
   ReportBlockInput,
@@ -331,6 +334,62 @@ export async function postReport(body: {
   session_id?: string;
 }): Promise<Report> {
   const { data } = await apiClient.post<Report>("/report", body);
+  return data;
+}
+
+// --- Discovery→Promote (Faz 2d) — ölçü onay iş akışı --------------------------------
+export async function listMeasureCandidates(status?: string): Promise<MeasureCandidate[]> {
+  const { data } = await apiClient.get<{ candidates: MeasureCandidate[] }>(
+    "/measures/candidates",
+    { params: status ? { status } : undefined },
+  );
+  return data.candidates ?? [];
+}
+
+export async function getMeasureCandidate(id: string): Promise<MeasureCandidate> {
+  const { data } = await apiClient.get<MeasureCandidate>(`/measures/candidates/${id}`);
+  return data;
+}
+
+export async function getMeasureBlastRadius(
+  id: string,
+  cube: string,
+  measure_name: string,
+): Promise<BlastRadius> {
+  const { data } = await apiClient.get<BlastRadius>(
+    `/measures/candidates/${id}/blast-radius`,
+    { params: { cube, measure_name } },
+  );
+  return data;
+}
+
+export async function approveMeasureCandidate(
+  id: string,
+  body: MeasureApproveInput,
+): Promise<MeasureCandidate> {
+  const { data } = await apiClient.post<MeasureCandidate>(
+    `/measures/candidates/${id}/approve`,
+    body,
+  );
+  return data;
+}
+
+export async function rejectMeasureCandidate(id: string, note?: string): Promise<MeasureCandidate> {
+  const { data } = await apiClient.post<MeasureCandidate>(`/measures/candidates/${id}/reject`, {
+    note,
+  });
+  return data;
+}
+
+export async function deprecateMeasureCandidate(
+  id: string,
+  reason?: string,
+  superseded_by_measure?: string,
+): Promise<MeasureCandidate> {
+  const { data } = await apiClient.post<MeasureCandidate>(
+    `/measures/candidates/${id}/deprecate`,
+    { reason, superseded_by_measure },
+  );
   return data;
 }
 

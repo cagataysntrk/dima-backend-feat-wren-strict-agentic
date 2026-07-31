@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from sqlmodel import Session, col, select
 
 from app import cube_router, viz, yoy
+from app.auth.dependencies import require_company
 from app.company_registry import wren_for_request
 from control_plane.db import get_session
 from control_plane.models import Dashboard, DashboardWidget
@@ -152,7 +153,7 @@ def delete_dashboard(request: Request, did: str, session: Session = Depends(get_
     return {"removed": True}
 
 
-@router.post("/dashboards/{did}/widgets")
+@router.post("/dashboards/{did}/widgets", dependencies=[Depends(require_company)])
 def add_widget(request: Request, did: str, body: WidgetCreate,
                session: Session = Depends(get_session)) -> dict:
     p = _principal(request)
@@ -160,7 +161,14 @@ def add_widget(request: Request, did: str, body: WidgetCreate,
     # cube_query katalog doğrulaması (bozuk widget çürümesin) — schedules ile aynı.
     # wren_for_request KULLAN (request.app.state.wren DEĞİL) — önceden non-default tenant'ın
     # widget'ı YANLIŞ (varsayılan şirket) katalogla doğrulanıyordu (cross-tenant sızıntı sınıfı,
-    # bkz. schedules.py aynı hatanın düzeltmesi).
+    # bkz. schedules.py aynı hatanın düzeltmesi). NOT (31 Temmuz 2026 — canlı testle yakalandı):
+    # `wren_for_request` TEK BAŞINA yetmez — `request.state.wren`'i YALNIZ `require_company`
+    # dependency'si doldurur; bu router `require_company`'yi hiç çağırmıyordu, bu yüzden
+    # önceki "düzeltme" fiilen HİÇBİR ZAMAN devreye girmiyordu (statik regex-kilit
+    # test_no_default_tenant_leak.py bunu YAKALAYAMAZ — yalnız `request.app.state.wren`
+    # doğrudan kullanımını arar, eksik dependency'yi değil). Router-seviyesinde DEĞİL,
+    # endpoint-seviyesinde eklendi (dashboards.py'de query-tabanlı GET'ler tenant-bağımsız
+    # kalabilir; yalnız wren_for_request çağıran iki endpoint gerçekten ihtiyaç duyuyor).
     service = wren_for_request(request)
     _, index = cube_router.build_catalog(service.schema())
     cq = cube_router.parse_cube_query(json.dumps(body.cube_query, ensure_ascii=False), index)
@@ -236,7 +244,7 @@ def delete_widget(request: Request, did: str, wid: str,
     return {"removed": True}
 
 
-@router.get("/dashboards/{did}/data")
+@router.get("/dashboards/{did}/data", dependencies=[Depends(require_company)])
 def dashboard_data(request: Request, did: str, session: Session = Depends(get_session)) -> dict:
     """Her widget'ın göreli dönemini çözer + cube_query'yi KOŞAR → sonuç. Cache MVP
     sonraki katman (Redis/§9); şimdilik doğrudan icra."""
@@ -247,6 +255,11 @@ def dashboard_data(request: Request, did: str, session: Session = Depends(get_se
     # sorguluyordu (kanıtlanmış cross-tenant veri sızıntısı — schedules.py'deki ile AYNI hata
     # sınıfı, bkz. app/schedules.py:_wren_for_schedule). `_get_owned` zaten `d`'nin `p`'ye ait
     # olduğunu doğruluyor; sorguyu ÇALIŞTIRAN servis de aynı tenant'a ait olmalı.
+    # NOT (31 Temmuz 2026): bu wren_for_request çağrısı `require_company` (üstteki endpoint
+    # dependency'si) ÇALIŞMADAN `request.state.wren`'i hiç dolduramaz — router bunu daha önce
+    # hiç çağırmıyordu, yani "düzeltme" yalnız yorumda vardı, çalışma zamanında etkisizdi
+    # (canlı testle doğrulandı: atiksan tenant'ı demo-boyahane'nin `oee` cube'unu widget'a
+    # ekleyebiliyordu). Şimdi gerçekten bağlı.
     svc = wren_for_request(request)
     schema = svc.schema()
     cubes = {c.get("name"): c for c in (schema.get("cubes") or [])}
@@ -275,8 +288,12 @@ def dashboard_data(request: Request, did: str, session: Session = Depends(get_se
             # VİZ ÖNERİSİ (ADR-0024): pano widget'ı da backend grafik/tablo/pivot kararını taşır
             # (cross-surface: chat ile AYNI görünüm). Widget'ın kendi view_hint'i FE'de üstüne biner.
             cmeta = cubes.get(cq.get("cube")) or {}
+            # NOT (31 Temmuz 2026): "measure_units" YANLIŞ anahtardı — schema() dict'i ölçü
+            # birimlerini "units" adıyla taşıyor (bkz. app/wren_service.py:236); bu yüzden
+            # `recommend()`'in birim-farkındalığı burada da HİÇ devreye giremiyordu (`/cube`
+            # ve `/ask`'teki AYNI hata sınıfı, bkz. app/routers/ask.py `_attach_viz`).
             wviz = viz.recommend(
-                result, units=cmeta.get("measure_units") or {},
+                result, units=cmeta.get("units") or {},
                 lower_set=cmeta.get("lower_is_better") or [], cube_query=viz_cq,
             )
             out.append({"id": str(w.id), "result": result, "viz": wviz, "error": None})

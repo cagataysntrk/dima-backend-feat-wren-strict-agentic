@@ -20,6 +20,7 @@ from app.schemas import (
     AskResponse,
     AskVerifyRequest,
     CubeRequest,
+    Explain,
     QueryResult,
     ReportRequest,
     Suggestion,
@@ -59,6 +60,50 @@ def _source_kind(source: str | None) -> str:
     if s.startswith("upload"):
         return "upload"
     return "other"
+
+
+# Faz 3 (31 Temmuz 2026) — `explain.path` insan-okur etiketleri, ham `source` ÖNEKİNE göre
+# (cube/cube+llm AYRIMI KORUNUR — _source_kind() bunu "cube"da birleştirir, güvenleri farklı
+# olduğundan burada AYRI tutulur). `confidence`: yalnız deterministik/yarı-deterministik
+# yollarda dolu (LLM/rule'da UYDURMA bir sayı yerine None — "ölçülebilir güven yok" dürüstçe).
+_EXPLAIN_PATH = {
+    "cube": ("cube (route() — LLM'siz, sıfır maliyet)", 1.0),
+    "cube+llm": ("cube + LLM-destekli alan seçimi (SQL değil Intent-JSON)", 0.85),
+    "vqr": ("önceden doğrulanmış sorgu (VQR) — LLM'siz tekrar oynatma", 0.95),
+    "statement": ("yapısal finansal tablo (gelir tablosu/bilanço) — LLM'siz", 1.0),
+    "meta": ("meta/karşılama sorusu — LLM'siz", 1.0),
+    "catalog": ("katalog/kapsam sorusu — LLM'siz", 1.0),
+    "rule": ("kural-tabanlı NL→SQL (anahtarsız LLM yedeği)", None),
+}
+
+
+def _build_explain(resp: AskResponse) -> Explain | None:
+    """`resp` üzerinde ZATEN oturan alanlardan (source/cube_query/trace) EKLEYİCİ bir
+    `Explain` sentezler — yeni bir hesaplama/yan-etki YOK, salt post-hoc özetleme. `source`
+    yoksa (netleştirme/chip/dürüst-ret gibi rapor ÜRETMEYEN yanıtlar) None döner — bu
+    yanıtlarda zaten açıklanacak bir "yol" yok."""
+    s = (resp.source or "").lower()
+    if not s:
+        return None
+    if s.startswith("llm"):
+        path, confidence = f"LLM (ham SQL, Discovery) — {s}", None
+    else:
+        prefix = next((k for k in _EXPLAIN_PATH if s.startswith(k)), None)
+        if prefix is None:
+            return None
+        path, confidence = _EXPLAIN_PATH[prefix]
+
+    assumptions: list[str] = []
+    cq = resp.cube_query or {}
+    if cq.get("period_confirmed") and not any(
+        f.get("dimension") in ("tarih", "donem", "dönem") for f in (cq.get("filters") or [])
+    ):
+        assumptions.append(
+            "Dönem açıkça belirtilmedi — kullanıcı \"tüm zamanlar\"ı seçti/onayladı "
+            "(filtresiz, tüm-zamanlar toplama)."
+        )
+    return Explain(path=path, confidence=confidence, assumptions=assumptions)
+
 
 _LOG_DIR = Path(__file__).resolve().parent.parent.parent / "logs"
 _UPLOAD_DIR = _LOG_DIR / "uploads"  # chat-scoped yüklenen veri (ephemeral, oturum DuckDB'si)
@@ -157,6 +202,36 @@ def _log_upload(session_id: str | None, filename: str, dataset_label: str,
             s.commit()
     except Exception:
         _log.warning("upload interaction log (DB) yazılamadı (best-effort)", exc_info=True)
+
+
+def _capture_measure_candidate(question: str, sql: str, result: dict, principal=None) -> None:
+    """Discovery→Promote yakalama (Faz 2d): başarılı bir Discovery (ham-SQL LLM) cevabını
+    best-effort bir `MeasureCandidate` taslağı olarak DB'ye yazar (status='draft'). Yalnız
+    YAKALAMA — inceleme/onay/MDL-yazımı tamamen AYRI (app/routers/measures.py), burada hiçbir
+    doğrulama/dry_plan YAPILMAZ (onay anında yapılır). `SynonymOverride`'ın (ADR-0018) aday-
+    kuyruğu deseniyle AYNI ruhta: pasif, sessiz, kullanıcı akışını YAVAŞLATMAZ — `_record_
+    contract` ile AYNI best-effort try/except deseni. Ham SONUÇ SATIRLARI TUTULMAZ (yalnız
+    ilk ~5 örnek — reviewer bağlamı için; KVKK/hassas-veri sınırı InteractionLog ile AYNI)."""
+    try:
+        import json as _json
+
+        from sqlmodel import Session
+
+        from control_plane.db import engine
+        from control_plane.models import MeasureCandidate
+
+        sample = {"columns": result.get("columns"), "rows": (result.get("rows") or [])[:5]}
+        with Session(engine) as s:
+            s.add(MeasureCandidate(
+                tenant_id=_uuid_or_none(getattr(principal, "tenant_id", None)),
+                company=getattr(principal, "tenant_slug", None) or get_settings().company,
+                question=question, sql=sql,
+                sample_rows_json=_json.dumps(sample, ensure_ascii=False, default=str),
+                proposed_by=getattr(principal, "user_id", None),
+            ))
+            s.commit()
+    except Exception:
+        _log.warning("MeasureCandidate yakalaması başarısız (best-effort)", exc_info=True)
 
 
 def _persist_message(request: Request, resp: AskResponse, session_id: str | None) -> None:
@@ -708,7 +783,13 @@ def cube(request: Request, body: CubeRequest) -> AskResponse:
         )
         resp.viz = viz.recommend(
             result,
-            units=(cmeta or {}).get("measure_units") or {},
+            # NOT (31 Temmuz 2026): "measure_units" YANLIŞ anahtardı — schema() dict'i
+            # ölçü birimlerini "units" adıyla taşıyor (bkz. app/wren_service.py:236);
+            # "measure_units" hiçbir zaman var olmadığından `recommend()`'in birim-
+            # farkındalığı (facet_measure/dual_axis/partition rengi) burada da HİÇ
+            # devreye giremiyordu — `_attach_viz`'teki AYNI hata sınıfı (bkz. yukarıdaki
+            # `_attach_viz` docstring'i).
+            units=(cmeta or {}).get("units") or {},
             lower_set=(cmeta or {}).get("lower_is_better") or [],
             cube_query=cq,
         )
@@ -730,6 +811,7 @@ def cube(request: Request, body: CubeRequest) -> AskResponse:
     _maybe_interpret(request, resp)  # evrensel çıktı yorumu (feature flag'li)
     _attach_next_steps(request, resp)  # K2 sonraki-adım chip'leri (feature flag'li)
     _attach_recommendations(request, resp)  # K4 sinyal→aksiyon önerileri
+    resp.explain = _build_explain(resp)  # Faz 3 — birleşik açıklama (trace/source KIRILMAZ)
     _persist_message(request, resp, body.session_id)  # kalıcı sohbete yaz
     from types import SimpleNamespace
 
@@ -963,6 +1045,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     prev_question = body.history[-1] if body.history else ""
 
     def _finish(resp: AskResponse) -> AskResponse:
+        resp.explain = _build_explain(resp)
         _persist_message(request, resp, body.session_id)
         _log_interaction(body.session_id, body, resp, int((time.monotonic() - t0) * 1000), principal)
         # Erişim-audit (KVKK izi, ADR-0014/0015): /cube bunu her zaman yapıyordu, strict-agentic
@@ -981,10 +1064,37 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         return resp
 
     def _attach_viz(resp: AskResponse, result: dict | None, cq: dict | None = None) -> AskResponse:
+        """Faz 2d+3 (viz.py↔chart.ts birleştirme, 31 Temmuz 2026): ÖNCEDEN `units={}`/
+        `lower_set=[]` SABİT geçiliyordu — `recommend()`'in birim-farkındalığı (facet_measure/
+        dual_axis/partition rengi) cube metadata'sında GERÇEK birimler olsa bile HİÇBİR ZAMAN
+        devreye giremiyordu (schema zaten `units`/`lower_is_better`'ı taşıyor, ask.py bunu
+        yalnız yanlışlıkla kullanmıyordu). Ayrıca `recommend()` istisna fırlatırsa `resp.viz`
+        sessizce None kalıyordu ve `result` yine de döndürülüyordu — frontend bu durumda
+        `chart.ts`'in KENDİ (daha az yetenekli, `recommend()` katmanı olmayan — bkz. viz.py
+        modül docstring'i) yerel `analyze()`'ine düşüyordu: "tek backend-hesaplı spec" hedefinin
+        TAM TERSİ bir sessiz-geriye-düşüş. İki düzeltme: (1) gerçek units/lower_set schema'dan
+        okunur, (2) recommend() başarısız olursa ÇIPLAK analyze()'e (birim/karşılaştırma
+        farkındalığı yok ama HER ZAMAN bir karar) düşülür — resp.viz sonuç doluyken asla None
+        kalmaz."""
+        units: dict = {}
+        lower_set: list = []
+        if cq and cq.get("cube"):
+            cube_meta = cube_router._cube_meta(schema, cq["cube"])
+            if cube_meta:
+                units = cube_meta.get("units") or {}
+                lower_set = cube_meta.get("lower_is_better") or []
         try:
-            resp.viz = viz.recommend(result, units={}, lower_set=[], cube_query=cq)
+            resp.viz = viz.recommend(result, units=units, lower_set=lower_set, cube_query=cq)
         except Exception:
-            _log.warning("viz önerisi üretilemedi (best-effort)", exc_info=True)
+            _log.warning("viz önerisi üretilemedi (recommend) — taban analyze()'e düşülüyor",
+                        exc_info=True)
+            try:
+                cols = (result or {}).get("columns") or []
+                rows = (result or {}).get("rows") or []
+                resp.viz = viz.analyze(cols, rows) if (cols and rows) else None
+            except Exception:
+                _log.warning("viz taban kararı (analyze) da üretilemedi (best-effort)",
+                            exc_info=True)
         return resp
 
     def _record_contract(cq: dict | None, sql: str | None, result: dict | None,
@@ -1717,6 +1827,13 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             vqr.store(body.question, {"wren_sql": wren_sql}, source="auto")
         except Exception:
             _log.warning("VQR otomatik kayıt başarısız (best-effort)", exc_info=True)
+
+    # 6b) Discovery→Promote yakalama (Faz 2d): başarılı BAĞIMSIZ bir Discovery cevabı,
+    # best-effort bir "taslak ölçü" adayı olarak yakalanır (yalnız yakalama — inceleme/onay
+    # AYRI, bkz. app/routers/measures.py). VQR'la (madde 6) AYNI "yalnız bağımsız soru"
+    # politikası: bir takibin SQL'i tek başına anlamlı bir ölçü önerisi değildir.
+    if result is not None and not is_followup:
+        _capture_measure_candidate(body.question, wren_sql, result, principal)
 
     resp = AskResponse(
         question=body.question, sql=wren_sql, planned_sql=planned,

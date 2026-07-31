@@ -1114,6 +1114,13 @@ _TYPO_MIN_WORD_LEN = 4    # 3 harf ve altı fuzzy'ye hiç girmez (gürültü/yan
 _TYPO_HIGH = 0.82         # bu ve üstü + net aday → OTOMATİK düzelt
 _TYPO_MID = 0.60          # bu ve üstü (HIGH altı) → yalnız "şunu mu demek istedin?" öner
 _TYPO_GAP = 0.08          # en iyi/ikinci-iyi aday arası bu kadar fark olmalı (net aday şartı)
+# UZUNLUK-ORANI KORUMASI: SequenceMatcher.ratio() ÇOK FARKLI uzunluktaki kelimeler için
+# de yanıltıcı biçimde orta-yüksek çıkabiliyor (gerçek bulgu: "fizibilite"(10)/"fiili"(5)
+# → 0.667, "müterileri"(10)/"musteri"(7) → 0.706 — aradaki fark ince, salt eşik yetmez).
+# Gerçek bir yazım hatası kelimeyi genelde 1-2 harf değiştirir/ekler/eksiltir, İKİYE
+# KATLAMAZ — kısa/uzun kelime oranı bu payı aşarsa (alakasız kelime, "fizibilite" gibi)
+# aday tamamen ELENİR (öneri bile YOK — ADR-0008: yanlış öneri, önerisizlikten kötüdür).
+_TYPO_LEN_RATIO = 0.65
 
 
 def _catalog_vocabulary(schema: dict) -> set[str]:
@@ -1159,6 +1166,9 @@ def typo_correct(q: str, schema: dict) -> tuple[str, list[dict]]:
         best_score, best = scored[0]
         if best == w or best_score < _TYPO_MID:
             continue
+        len_ratio = min(len(w), len(best)) / max(len(w), len(best))
+        if len_ratio < _TYPO_LEN_RATIO:
+            continue  # uzunluk çok farklı → muhtemelen alakasız kelime, ELE
         second_score = scored[1][0] if len(scored) > 1 else 0.0
         fixed_q = re.sub(rf"\b{re.escape(w)}\b", best, q)
         if best_score >= _TYPO_HIGH and (best_score - second_score) >= _TYPO_GAP:

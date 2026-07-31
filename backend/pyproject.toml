@@ -25,6 +25,10 @@ dependencies = [
   # Node gerekmez) + Jinja2 (veri → MJML markup). Ürün maili backend'de yönetilir.
   "mrml>=0.2",
   "jinja2>=3.1",
+  # Discovery→Promote (Faz 2d): onaylanan ölçüyü cube YAML'ına round-trip-güvenli (yorum/
+  # biçim korur) eklemek için — pyyaml safe_load+dump reponun elle yazılmış, açıklayıcı
+  # yorumlarla dolu cube YAML'larını sessizce siler (app/mdl_writer.py).
+  "ruamel.yaml>=0.18",
 ]
 
 [project.optional-dependencies]

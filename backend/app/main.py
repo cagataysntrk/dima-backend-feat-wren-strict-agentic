@@ -17,6 +17,7 @@ from app.routers import ask, health, query
 from app.routers import contracts as contracts_router
 from app.routers import conversations as conversations_router
 from app.routers import dashboards as dashboards_router
+from app.routers import measures as measures_router
 from app.routers import schedules as schedules_router
 from app.vqr import VQR
 from app.wren_service import WrenService
@@ -134,6 +135,7 @@ def create_app() -> FastAPI:
     app.include_router(schedules_router.router, dependencies=_protected)
     app.include_router(conversations_router.router, dependencies=_protected)
     app.include_router(dashboards_router.router, dependencies=_protected)
+    app.include_router(measures_router.router, dependencies=_protected)
     return app
 
 

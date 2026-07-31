@@ -92,3 +92,26 @@ def test_dashboard_isolation_other_user_404(client):
     # başka kullanıcının (private) panosu — varlığı sızmaz
     assert c.get(f"/dashboards/{did}").status_code == 404
     assert c.post(f"/dashboards/{did}/widgets", json={"cube_query": _CQ}).status_code == 404
+
+
+def test_dashboard_widget_rejects_other_tenant_cube(client):
+    """Cross-tenant sızıntı regresyonu (31 Temmuz 2026): `add_widget`/`dashboard_data`
+    `wren_for_request(request)` çağırıyordu ama router `require_company` dependency'sini
+    HİÇ tetiklemiyordu — bu yalnız `request.state.wren`'i dolduran tek yer olduğundan,
+    `wren_for_request` her zaman SÜREÇ VARSAYILANI (demo-boyahane) servisine düşüyordu.
+    Canlı testle kanıtlandı: "atiksan" (sektör: geri-donusum, `oee` cube'u YOK) tenant'ı
+    demo-boyahane'ye özel `oee` cube'unu widget'a ekleyebiliyordu — statik regresyon kilidi
+    (test_no_default_tenant_leak.py) bunu YAKALAYAMAZ (yalnız `request.app.state.wren`
+    doğrudan kullanımını arar, eksik dependency'yi değil). Düzeltme: her iki endpoint'e
+    `Depends(require_company)` eklendi — bu test canlı davranışı (yalnız statik deseni değil)
+    kilitler."""
+    make_tenant_user("atiksan-owner@dima.local", "atiksan-parola-1", "owner",
+                     tenant_slug="atiksan")
+    c = _login_as(client, "atiksan-owner@dima.local", "atiksan-parola-1")
+    did = c.post("/dashboards", json={"title": "atiksan panosu"}).json()["id"]
+    # oee yalnız demo-boyahane'de var; atiksan (geri-donusum sektörü) bu cube'u TANIMAZ —
+    # kabul edilirse demo-boyahane'nin şeması/DB'si yanlışlıkla kullanılıyor demektir.
+    r = c.post(f"/dashboards/{did}/widgets",
+              json={"cube_query": {"cube": "oee", "measures": ["ort_oee"]}})
+    assert r.status_code == 400, (
+        f"atiksan tenant'ı demo-boyahane'nin 'oee' cube'unu kabul etti (cross-tenant sızıntı): {r.text}")

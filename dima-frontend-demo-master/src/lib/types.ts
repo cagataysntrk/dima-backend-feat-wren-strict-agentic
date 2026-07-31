@@ -83,6 +83,17 @@ export interface AskResponse {
   // üretilir (Show Me + Cleveland-McGill + çok-birim politikası). Varsa FE yerel analyze() yerine
   // bunu render eder; view_hint + kullanıcı toggle üstüne biner. Yoksa null (FE analyze()'e düşer).
   viz?: VizSpec | null;
+  // Faz 3 (31 Temmuz 2026) — birleşik açıklama: `trace`/`source`'un ÜSTÜNE biner, onları
+  // SİLMEZ (SourceBadge/trace render'ı kırılmaz — kademeli geçiş). Rapor üretmeyen yanıtlarda
+  // (netleştirme/chip) null.
+  explain?: Explain | null;
+}
+
+// Faz 3 birleşik açıklama nesnesi (bkz. backend app/schemas.py::Explain).
+export interface Explain {
+  path: string;
+  confidence: number | null;
+  assumptions: string[];
 }
 
 // VizSpec — backend viz.recommend() çıktısı (ADR-0024). FE `chart.ts` Analysis'ine adapte edilir.
@@ -247,4 +258,53 @@ export interface AskRequest {
   prev_sql?: string | null;
   // Sohbet oturumu kimliği — kalıcı logda chat'i gruplamak için.
   session_id?: string;
+}
+
+// Discovery→Promote (Faz 2d) — Discovery (ham-SQL LLM) yolunun ürettiği bir cevabın
+// taslak "ölçü adayı" olarak yakalanmış hâli. `/measures/candidates*` bunları taşır.
+export interface MeasureCandidate {
+  id: string;
+  status: "draft" | "pending_review" | "approved" | "rejected" | "deprecated";
+  company: string;
+  tenant_id: string | null;
+  question: string;
+  sql: string;
+  sample_rows: { columns: string[]; rows: unknown[][] } | null;
+  cube: string | null;
+  measure_name: string | null;
+  expression: string | null;
+  measure_type: string;
+  label: string | null;
+  synonyms: string[];
+  lower_is_better: boolean | null;
+  golden_case_id: string | null;
+  review_note: string | null;
+  created_at: string;
+  updated_at: string;
+  name_conflict?: boolean | null;
+}
+
+export interface MeasureApproveInput {
+  cube: string;
+  measure_name: string;
+  expression: string;
+  type?: string;
+  label?: string | null;
+  synonyms?: string[];
+  lower_is_better?: boolean | null;
+  golden_case: {
+    id: string;
+    q: string;
+    tags?: string[];
+    expect?: string;
+    shape?: Record<string, unknown>;
+  };
+}
+
+export interface BlastRadius {
+  verified_query: number;
+  dashboard_widget: number;
+  contract_log_structured: number;
+  contract_log_raw_sql_text_match: number;
+  note: string;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiErrorMessage, ask, askCube, getConversation, uploadDataset } from "@/lib/api-client";
 import { ChatPanel } from "@/components/ChatPanel";
@@ -16,6 +17,7 @@ import { SchemaPanel } from "@/components/SchemaPanel";
 import { SettingsDrawer } from "@/components/SettingsDrawer";
 import { useHistory } from "@/stores/history";
 import { useFeature } from "@/lib/useFeature";
+import { usePermission } from "@/lib/usePermission";
 import type { AskResponse } from "@/lib/types";
 
 type Drawer = "settings" | "help" | "notifications" | "history" | "dashboards" | null;
@@ -58,6 +60,8 @@ export default function Home() {
   // Açık pano (main-area overlay) — set ise chat/rapor yerine pano grid'i gösterilir (§9).
   const [openDashboard, setOpenDashboard] = useState<string | null>(null);
   const dashStage = useFeature("dashboards");
+  const canReview = usePermission("measure:read");
+  const router = useRouter();
   const [startedLatch, setStarted] = useState(false);
   const [sessionId, setSessionId] = useState(makeSessionId);
   const qc = useQueryClient();
@@ -234,6 +238,7 @@ export default function Home() {
             ? () => setDrawer((d) => (d === "dashboards" ? null : "dashboards"))
             : undefined
         }
+        onReview={canReview ? () => router.push("/review") : undefined}
         onHelp={() => setDrawer((d) => (d === "help" ? null : "help"))}
         onSettings={() => setDrawer((d) => (d === "settings" ? null : "settings"))}
       />

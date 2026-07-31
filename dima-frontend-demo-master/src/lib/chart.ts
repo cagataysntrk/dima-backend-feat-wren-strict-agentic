@@ -95,6 +95,18 @@ export function analysisFromViz(v: VizSpec): Analysis {
   };
 }
 
+// KOPYA-MANTIK DURUMU (31 Temmuz 2026 — bağımsız araştırmayla denetlendi, eşlenik not:
+// backend app/viz.py modül docstring'i): bu fonksiyon backend'in `viz.analyze()`'iyle taban
+// karar (kpi/bar/line/heatmap/facet/table) düzeyinde birebir eşdeğer KALMALI (drift YOK,
+// doğrulandı) ama backend'in `recommend()` katmanını (scatter/facet_measure/stacked/pivot/
+// partition, birim-farkındalığı) BİLEREK taşımıyor — bu yüzden bu fonksiyon HER ZAMAN
+// backend'inkinden daha zayıf bir karar üretir. Artık genel bir "viz yoksa yedek" değil,
+// YALNIZ ResultView'in facet tek-panel drill-down'ı için kullanılmalı (o alt-küme backend'e
+// hiç gitmediğinden `data.viz` onu kapsamaz — mimari olarak gerekli, dar kapsamlı bir
+// istisna). Üst-seviye `data.viz` YOKSA/eskiyse artık backend kendini onarır: `/ask` hiçbir
+// zaman `viz=null` bırakmaz (recommend() patlarsa çıplak analyze()'e düşer) ve sohbet
+// resume'i (`/conversations/{id}`) `viz`'i her seferinde taze hesaplar — bu fonksiyonu genel
+// bir yedek olarak çağırmak YENİ kod için artık YANLIŞ.
 export function analyze(result: QueryResult): Analysis {
   const { columns, rows } = result;
   const measures: string[] = [];

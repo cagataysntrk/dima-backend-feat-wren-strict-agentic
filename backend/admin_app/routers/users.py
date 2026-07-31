@@ -64,10 +64,13 @@ def create_user(body: SAUserCreate, request: Request,
 
     if not body.tenant_id:
         raise HTTPException(status_code=400, detail="Tenant kullanıcısı için tenant_id gerekli")
-    # Bu fazda yalnız owner (rol matrisi uykuda — bkz. tenants._DEFAULT_ROLES).
-    if body.role_key != "owner":
-        raise HTTPException(status_code=400,
-                            detail="Bu fazda yalnız 'owner' rolü kullanılabilir")
+    # Faz 2d (31 Temmuz 2026): owner + admin/analyst (ölçü-onay reviewer rolü için DAR
+    # KAPSAMLI açılış — bkz. tenants._DEFAULT_ROLES). viewer hâlâ ürünleştirilmedi (400) —
+    # rol matrisinin GENEL açılışı hâlâ ertelenir, yalnız bu somut kullanım durumu aktif.
+    if body.role_key not in ("owner", "admin", "analyst"):
+        raise HTTPException(
+            status_code=400,
+            detail="Bu fazda yalnız 'owner', 'admin' ya da 'analyst' rolü kullanılabilir")
     tid = _parse_uuid(body.tenant_id, "tenant_id")
     if not session.get(Tenant, tid):
         raise HTTPException(status_code=404, detail="Tenant bulunamadı")

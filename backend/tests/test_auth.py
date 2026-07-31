@@ -294,14 +294,26 @@ def test_analyst_can_delete_only_own_schedule(client):
     assert client.delete(f"/schedules/{other['id']}").status_code == 200  # owner herkesinkini
 
 
-def test_admin_api_allows_only_owner_role(admin_client):
+def test_admin_api_allows_owner_admin_analyst_not_viewer(admin_client):
+    """Faz 2d (31 Temmuz 2026): ölçü-onay reviewer iş akışı analyst/admin rolü GEREKTİRİYOR
+    (dar kapsamlı RBAC açılışı — bkz. admin_app/routers/tenants.py _DEFAULT_ROLES) — owner-only
+    kısıtlama analyst/admin'i de kabul edecek şekilde GEVŞETİLDİ. viewer'ın genel açılışı hâlâ
+    ERTELENDİ (400 kalır)."""
     r = admin_client.post("/auth/login", json=TEST_SUPERADMIN)
     h = {"Authorization": f"Bearer {r.json()['access_token']}"}
     tid = admin_client.get("/sadmin/tenants", headers=h).json()[0]["id"]
     r = admin_client.post("/sadmin/users", headers=h, json={
-        "email": "yeni@dima.local", "password": "parola-123", "tenant_id": tid,
+        "email": "yeni-analyst@dima.local", "password": "parola-123", "tenant_id": tid,
         "role_key": "analyst"})
-    assert r.status_code == 400  # bu fazda yalnız owner
+    assert r.status_code == 201, r.text
+    r = admin_client.post("/sadmin/users", headers=h, json={
+        "email": "yeni-admin@dima.local", "password": "parola-123", "tenant_id": tid,
+        "role_key": "admin"})
+    assert r.status_code == 201, r.text
+    r = admin_client.post("/sadmin/users", headers=h, json={
+        "email": "yeni-viewer@dima.local", "password": "parola-123", "tenant_id": tid,
+        "role_key": "viewer"})
+    assert r.status_code == 400  # viewer'ın genel açılışı hâlâ ertelendi
 
 
 def test_permissions_reflect_role_matrix(client):

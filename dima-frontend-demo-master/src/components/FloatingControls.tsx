@@ -14,6 +14,7 @@ export function FloatingControls({
   onHistory,
   onNotifications,
   onDashboards,
+  onReview,
   onHelp,
   onSettings,
 }: {
@@ -21,6 +22,8 @@ export function FloatingControls({
   onNotifications: () => void;
   // Panolar (dashboards bayrağı) — yalnız verilirse ikon çıkar (flag ile geçitlenir).
   onDashboards?: () => void;
+  // Ölçü inceleme (/review, Faz 2e) — yalnız `measure:read` izni varsa çıkar.
+  onReview?: () => void;
   onHelp: () => void;
   onSettings: () => void;
 }) {
@@ -45,6 +48,14 @@ export function FloatingControls({
             <rect x="14" y="3" width="7" height="5" />
             <rect x="14" y="12" width="7" height="9" />
             <rect x="3" y="16" width="7" height="5" />
+          </svg>
+        </button>
+      )}
+      {onReview && (
+        <button onClick={onReview} aria-label="Ölçü inceleme" title="Ölçü inceleme" className={btn}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 11l3 3L22 4" />
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
           </svg>
         </button>
       )}

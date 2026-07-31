@@ -268,6 +268,7 @@ class WrenService:
             for c in mdl.get("cubes", [])
         ]
         self._apply_synonym_overlays(cubes)  # ADR-0018 katman 3 (canlı, deploy'suz)
+        self._apply_measure_overrides(cubes)  # Faz 2d: deprecate edilen ölçüleri NL'den gizle
         if db_ok:
             self._enrich_cube_dim_values(cubes, mdl, models)
         # CROSS-CUBE KPI kataloğu (kpis/*.yml): yönlendirme için ad/etiket/sinonim; tam
@@ -341,6 +342,37 @@ class WrenService:
                 for x in extra:
                     if x not in pool:
                         pool.append(x)
+
+    def _apply_measure_overrides(self, cubes: list) -> None:
+        """Control-plane DB'deki `MeasureOverride` (Faz 2d, ölçü GİZLEME) satırlarını
+        uygular: eşleşen ölçünün `measure_synonyms` girdisini BOŞALTIR. `cube_router.
+        _match_measure` YALNIZ `measure_synonyms`'a bakar (bare ölçü adına değil) — bu
+        yüzden boşaltmak `route()`/`cube_only_match()`'in onu bir daha ÖNERMEMESİ için
+        yeterli VE tektir; ölçü `measures` listesinden/YAML'dan SİLİNMEZ (eski VQR/
+        dashboard/Contract kayıtları ölçüyü ADIYLA taşır, sinonim aramaz — kırılmazlar).
+        DB erişilemezse sessizce atlar (deterministik çekirdek DB'ye bağımlı olmasın)."""
+        try:
+            from sqlmodel import Session, select
+
+            from control_plane.db import engine
+            from control_plane.models import MeasureOverride
+
+            with Session(engine) as s:
+                rows = s.exec(select(MeasureOverride)).all()
+        except Exception:
+            return
+        if not rows:
+            return
+        by_name = {c.get("name"): c for c in cubes}
+        for r in rows:
+            if r.scope_type == "tenant" and r.scope_id != self.company_slug:
+                continue
+            cube = by_name.get(r.cube)
+            if cube is None:
+                continue
+            msyn = cube.get("measure_synonyms")
+            if msyn is not None and r.measure_name in msyn:
+                msyn[r.measure_name] = []
 
     def _enrich_cube_dim_values(self, cubes: list, mdl: dict, models: list) -> None:
         """Cube boyutlarının olası değerlerini `dimension_values` olarak ekler.

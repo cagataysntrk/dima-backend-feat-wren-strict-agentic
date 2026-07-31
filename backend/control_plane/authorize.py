@@ -64,6 +64,11 @@ _ACTION_MIN_RANK = {
     "schedule:run": 1,
     "sql:run": 1,            # ham SQL / dry-plan (guard SELECT-only olsa da güç yüzeyi)
     "schedule:delete": 2,    # admin+; analyst KENDİ oluşturduğunu silebilir (handler'da)
+    # Discovery→Promote (Faz 2d): bir Discovery adayını kalıcı MDL ölçüsüne yükseltmek
+    # yanlış eşanlamlıdan KATEGORİK olarak daha riskli (yeni SQL/join/agregasyon — çift-
+    # sayım/grain riski), admin+ seviyesi gerektirir (analyst yalnız görüntüler/önerir).
+    "measure:read": 1,       # aday listesi/detayı — analyst+ (viewer'a SQL/örnek gösterilmez)
+    "measure:approve": 2,    # onay/ret/deprecate — admin+
 }
 
 

@@ -21,10 +21,12 @@ from admin_app.schemas import TenantConfigUpdate, TenantCreate, TenantOut, Tenan
 
 router = APIRouter(prefix="/sadmin/tenants", tags=["sadmin-tenants"])
 
-# Bu fazda TEK rol kullanılır: owner (kullanıcı kararı 2026-07-24 — "rolleri şimdilik
-# dert etmeyelim"). Rol matrisi altyapısı (authorize.py) uyumda bekler; diğer roller
-# ürünleştirilirken buraya ve SAUserCreate doğrulamasına eklenir.
-_DEFAULT_ROLES = ("owner",)
+# Faz 2d (31 Temmuz 2026) — Discovery→Promote ölçü-onay iş akışı analyst/admin rolü
+# GEREKTİRİYOR (bkz. plan "Faz 2'nin ön koşulu": dar kapsamlı, genel RBAC açılışı DEĞİL).
+# admin/analyst artık HER tenant'ta Role satırı olarak var — owner hâlâ TEK ürün-genel rol
+# (viewer'ı herkese açmak hâlâ ertelenir, bkz. authorize.py ROLE_RANK/CLAUDE.md "rol matrisi
+# uykuda"). users.py yalnız owner/admin/analyst'ı kabul eder (viewer hâlâ 400).
+_DEFAULT_ROLES = ("owner", "admin", "analyst")
 
 
 def _known_pack_keys() -> tuple[set[str], set[str], dict[str, bool]]:

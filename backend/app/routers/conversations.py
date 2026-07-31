@@ -10,9 +10,10 @@ import json
 import uuid as _uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 
+from app.auth.dependencies import require_company
 from app.schemas import ConversationDetail, ConversationOut
 from control_plane.db import engine
 from control_plane.models import Conversation, ConversationMessage
@@ -55,9 +56,45 @@ def _owned(request: Request, cid: str) -> Conversation:
     return conv
 
 
-@router.get("/{cid}", response_model=ConversationDetail)
+def _refresh_viz(payload: dict, schema: dict) -> None:
+    """Faz 2d+3 (viz.py↔chart.ts birleştirme, 31 Temmuz 2026): kayıtlı `viz` DONDURULMUŞ
+    bir anlık görüntüdür (`ConversationMessage.payload_json` — "yeniden çalıştırma yok,
+    veri sabit kalır" ADR ilkesi, bkz. control_plane/models.py `ConversationMessage`
+    docstring'i). Bu doğru — SONUÇ/SAYILAR asla resume'de değişmemeli. Ama `viz` bir
+    SUNUM KARARIDIR, veri değil: eski bir algoritma sürümüyle (ya da `recommend()`
+    o an başarısız olduğu için hiç) hesaplanmış donuk bir `viz`, kullanıcıyı frontend'in
+    KENDİ yerel `chart.ts::analyze()` yedeğine düşürür — bu, `recommend()`'in birim-
+    farkındalı zenginleştirme katmanını (scatter/facet_measure/stacked/pivot/partition)
+    HİÇ taşımayan, daha az yetenekli bir kopya (bağımsız araştırmayla doğrulandı). Sayılar
+    SABİT kalırken (`result` asla dokunulmaz) `viz`'i HER resume'de TAZE hesaplamak bu
+    sessiz-geriye-düşüşü kapatır — deterministik/saf bir fonksiyonun güncel sürümünü
+    uygulamak "tek backend-hesaplı spec" ilkesini bozmaz, güçlendirir. Best-effort: hata
+    olursa kayıtlı (varsa eski) `viz` korunur, resume asla kırılmaz."""
+    result = payload.get("result")
+    if not result:
+        return
+    try:
+        from app import cube_router, viz
+
+        cq = payload.get("cube_query")
+        units: dict = {}
+        lower_set: list = []
+        if cq and cq.get("cube"):
+            cube_meta = cube_router._cube_meta(schema, cq["cube"])
+            if cube_meta:
+                units = cube_meta.get("units") or {}
+                lower_set = cube_meta.get("lower_is_better") or []
+        payload["viz"] = viz.recommend(result, units=units, lower_set=lower_set, cube_query=cq)
+    except Exception:
+        pass  # best-effort — donmuş (varsa eski) viz korunur, resume kırılmaz
+
+
+@router.get("/{cid}", response_model=ConversationDetail,
+           dependencies=[Depends(require_company)])
 def get_conversation(cid: str, request: Request) -> ConversationDetail:
-    """Bir sohbet + tüm mesajları (resume): kayıtlı AskResponse payload'ları sırayla."""
+    """Bir sohbet + tüm mesajları (resume): kayıtlı AskResponse payload'ları sırayla.
+    `viz` (sunum kararı) her resume'de TAZE hesaplanır (bkz. `_refresh_viz`); `result`
+    (sayılar) asla dokunulmaz."""
     conv = _owned(request, cid)
     with Session(engine) as s:
         msgs = s.exec(select(ConversationMessage)
@@ -69,6 +106,15 @@ def get_conversation(cid: str, request: Request) -> ConversationDetail:
             payloads.append(json.loads(m.payload_json))
         except (ValueError, TypeError):
             continue
+    if payloads:
+        try:
+            from app.company_registry import wren_for_request
+
+            schema = wren_for_request(request).schema()
+            for p in payloads:
+                _refresh_viz(p, schema)
+        except Exception:
+            pass  # best-effort — şema alınamazsa kayıtlı viz'lerle devam edilir
     return ConversationDetail(id=str(conv.id), title=conv.title, session_id=conv.session_id,
                               messages=payloads)
 

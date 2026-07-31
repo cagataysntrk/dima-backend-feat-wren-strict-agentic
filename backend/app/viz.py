@@ -14,6 +14,21 @@ kullanır; `view_hint` (açık NL niyeti) + kullanıcı toggle bu otomatik karar
                   analyze()'in birebir portu; mevcut davranışı KORUR (regresyonsuz geçiş).
   • recommend() — analyze üstüne STANDART katmanı: veri-tipi + BİRİM farkındalığı ile yeni mark'lar
                   (facet_measure / scatter / stacked / pivot) ve çok-birim politikası (§3).
+
+KOPYA-MANTIK DURUMU (31 Temmuz 2026 — bağımsız araştırmayla denetlendi, `docs/research/
+viz-chart-drift-2026-07-31.md` YERİNE burada özetlendi): chart.ts'in yerel `analyze()`'i BU
+dosyanın `analyze()`'iyle hâlâ birebir eşdeğer (drift YOK) ama `recommend()`'in zenginleştirme
+katmanını (scatter/facet_measure/stacked/pivot/partition) HİÇ taşımıyor — yani FE yereline
+her düştüğünde kullanıcı GERÇEKTEN daha zayıf bir karar görüyor (varsayımsal değil, ölçüldü).
+Kapatılan iki canlı tetikleyici: (1) `/ask`'in `_attach_viz`'i artık gerçek units/lower_set
+kullanıyor + `recommend()` patlarsa None yerine çıplak `analyze()`'e düşüyor (ask.py), (2)
+sohbet resume'i (`/conversations/{id}`) artık `viz`'i HER seferinde TAZE hesaplıyor (`result`
+sabit kalır, yalnız sunum kararı yenilenir) — önceden donmuş/eski bir `viz` kalıcı olarak FE
+yereline zorluyordu. KASITLI OLARAK AÇIK bırakılan TEK durum: `ResultView.tsx`'in facet
+tek-panel drill-down'ı (kullanıcı bir facet panelini açtığında o ALT-KÜME satır için yerel
+`analyze()` çağrılır) — backend bu ad-hoc alt-kümeyi hiç görmediğinden (yalnız tam sonuç
+kümesi için `viz` hesaplanır) burada yerel bir yeniden-sınıflandırma mimari olarak gerekli;
+bilinçli, dar kapsamlı bir istisna (genel bir "yedek" değil) — bkz. chart.ts'teki eşlenik not.
 """
 
 from __future__ import annotations

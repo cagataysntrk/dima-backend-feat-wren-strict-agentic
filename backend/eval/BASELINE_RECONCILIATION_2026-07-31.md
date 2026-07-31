@@ -176,17 +176,42 @@ push/PR'da koşuyor.
    tehlikeli ("saDEce" içinde "de" geçiyor) — `"dE!"` TAM-KELİME işaretine çevrildi (parti
    cube'unda; aynı desen kalite cube'unda BULUNDU ama henüz düzeltilmedi — bkz. Kalan İş).
 
-### Kalan iş (bilerek ertelendi, Faz 2+ adayı)
+### Kalan iş (bilerek ertelendi, Faz 2+ adayı) — Faz 2'de TAMAMLANDI
 
-- **Typo/bulanık-eşleştirme toleransı** (§B, 3 xfail test): edit-distance eşiği — ayrı,
-  dikkatli tasarım gerektirir (yanlış-pozitif riski: "yanlış" bir düzeltme sessiz-yanlış
-  veriden kötüdür).
-- **Finansal tablo entegrasyonu** (§E, 2 eval vakası): `_statement_kind`/`_statement_result`
-  hâlâ `/ask`'e bağlı değil.
-- **`makine_duruslari` cube'u yok** (1 eval vakası, `ny-gap-durus-neden`): duruş-nedeni
-  boyutu hiçbir cube'da modellenmemiş — veri modelleme işi, routing kapsamı dışı.
-- **`kalite` cube'unun `ort_dE` ölçüsü de düzeltildi** (`"dE!"` TAM-KELİME) — `ny-gap-
-  durus-neden` eval vakası debug edilirken keşfedildi ("neDEnlerine" içinde "de" geçip
-  kalite/ort_dE'yi sahte-eşleştiriyordu). Sistematik bir katalog taraması (TÜM cube'lardaki
-  ≤3 harfli kısa sinonimler) yine de ayrı bir iş kalemi — bu iki örnek rastlantısal keşfedildi,
-  kapsamlı olmayabilir.
+Aşağıdaki üç kalem Faz 2a/2b/2c'de (aynı gün, 31 Temmuz 2026) TAMAMLANDI:
+
+- **Finansal tablo entegrasyonu (Faz 2a — TAMAMLANDI)**: `_statement_kind`/`_statement_
+  result` artık `/ask`'in EN BAŞINDA (route()'tan/VQR'dan ÖNCE) çalışıyor — "gelir tablosu"
+  içindeki "gelir" kelimesi parti/ticaret'in de ölçü sinonimi olduğundan route()'a bırakılsa
+  YANLIŞ cube'a yönlenip dönem sorardı (gerçek bulgu). `ny-bilanco`/`ny-gelir-tablosu` artık
+  `answer` (yeni `source="statement"` — SourceBadge'e "▤ GL" etiketi eklendi).
+- **`makine_duruslari` cube'u (Faz 2b — TAMAMLANDI)**: ham tablo/model/ilişki zaten vardı
+  (DDL/reseed GEREKMEDİ) — yalnız semantik cube katmanı eklendi (`neden` boyutu). Çakışma
+  koruması: bare "duruş" OEE kimliği, bare "neden" kalite.sebep sinonimi olduğundan bu
+  cube'un TÜM sinonimleri çok-kelimeli tutuldu. AYRICA bağımsız bir ikinci hata bulundu ve
+  düzeltildi: `RuleBasedSqlGenerator._oee_sql` (app/llm.py) 47-tablo rebind'inden beri hiç
+  güncellenmemişti — `use_oee` kapısı artık hiçbir zaman doğru olmadığından fiilen ÖLÜ KODdu,
+  oee-ipucu taşıyan sorular sessizce `_partiler_sql`'e (ilgisiz cube) düşüyordu. Tablo/kolon
+  adları gerçek `oee_vardiya` şemasına göre düzeltildi, kalıcı bir regresyon testi eklendi
+  (`tests/test_rule_sql_generator.py`).
+- **Typo/bulanık-eşleştirme toleransı (Faz 2c/Faz 3 — TAMAMLANDI)**: `cube_router.
+  typo_correct()` — YALNIZ `partial_unknowns` kapsamındaki tanınmayan kelimeler denenir
+  (stopword/kısa-kelime riski sıfır, mevcut kapsam-kapısı miras alınır); YÜKSEK benzerlik +
+  net aday + UZUNLUK-ORANI şartı (yeni bulunan bir yanlış-pozitif riski: "fizibilite"(10)/
+  "fiili"(5) gibi ÇOK FARKLI uzunluktaki kelime çiftleri orta-benzerlik bandına yanlışlıkla
+  düşebiliyordu — uzunluk oranı ≥0.65 şartı eklenerek elendi) → OTOMATİK düzelt + "yazım
+  düzeltme" trace'i; ORTA benzerlik → "şunu mu demek istedin?" chip'i (tahmin YOK).
+
+**Sonuç (gerçek `pytest`/`eval.run` koşumlarıyla doğrulandı): golden-set (129 vaka) %99.1 →
+%100.0 precision, %97.3 → %100.0 coverage. `tests/test_ask_golden.py`: 3 `xfail` da
+KALDIRILDI (artık gerçek geçen test) — dosyada sıfır bilinen açık kalmadı. Tüm backend paketi
+(`pytest -q`, 316 test): 316 geçti, 0 xfail, 0 gerçek başarısızlık.**
+
+### Gerçek kalan iş (Faz 2+ adayı, henüz açık)
+
+- **`kalite` cube'unun `ort_dE` ölçüsü de düzeltildi** (`"dE!"` TAM-KELİME) — bu iki örnek
+  (parti/kalite) rastlantısal keşfedildi. Sistematik bir katalog taraması (TÜM cube'lardaki
+  ≤3 harfli kısa sinonimler) yine de ayrı bir iş kalemi olarak açık kalıyor — kapsamlı olmayabilir.
+- **Discovery→Promote lifecycle sistemi** (Faz 2d/2e — devam ediyor, ayrı bir alt-proje):
+  `MeasureCandidate` DB tablosu + reviewer akışı + reviewer UI. Bkz. plan dosyasının
+  "Faz 2 + Faz 3 — Uygulama Planı" bölümü.
