@@ -41,5 +41,16 @@ jobs:
       - name: Backend paketini + test bağımlılıklarını kur
         run: pip install -e ".[dev]"
 
-      - name: Testler (golden set + eval kapısı + regresyon kilitleri dahil)
+      # tests/test_ask_golden.py Faz 1.5 UZLAŞTIRMASIYLA GERİ EKLENDİ (31 Temmuz 2026):
+      # 31 Temmuz'da bu dosya gerçek demo projesine karşı ilk kez koşturulduğunda 66
+      # testten 43-48'i ÖNCEDEN (Faz 1 öncesi kodda da AYNEN, git-stash ile doğrulandı)
+      # başarısız çıkmıştı — "strict agentic" göçünün strip ettiği konuşmasal-daraltma
+      # mekanizmalarının (cube_router.py'de zaten var, hiç bağlanmamış) hiç bağlanmamasına
+      # bağlıydı. Faz 1.5 bunları /ask'e bağladı (deterministic_refine/cross_cube_*/route()
+      # yeniden-eşleştirme/yetenek-chip'leri/VQR-CubeQuery replay); geri kalan üç test
+      # (typo/bulanık-eşleştirme toleransı — henüz inşa edilmemiş, ayrı kapsam) xfail
+      # işaretli. Bkz. backend/eval/BASELINE_RECONCILIATION_2026-07-31.md — 129 vakalık
+      # golden-set precision'ı %68.2 (keşfedilen gerçek zemin) → %99.1'e, dosya 48 başarısız
+      # → 0 başarısız (3 bilinçli xfail) hale geldi.
+      - name: Testler (golden-set eval kapısı + regresyon kilitleri + konuşmasal-akış testleri)
         run: pytest -q

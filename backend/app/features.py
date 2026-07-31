@@ -73,6 +73,15 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "LLM'siz koşar (rehberli analitik K2).",
         "category": "Rehber",
     },
+    "ask_intent_first": {
+        "label": "Intent-first yönlendirme (/ask)",
+        "description": "/ask'te route() boş dönerse LLM'e ham SQL yerine bir Intent-JSON "
+                       "(ölçü/boyut/filtre seçimi) doldurttur; deterministik derleyici SQL'i "
+                       "üretir (Faz 1). route()'un kendisi bu bayraktan BAĞIMSIZ her zaman "
+                       "dener (sıfır risk) — bu bayrak yalnız LLM-destekli Intent-JSON adımını "
+                       "kademeli açar (davranış değişikliği taşıyan tek adım).",
+        "category": "Yönlendirme",
+    },
 }
 
 

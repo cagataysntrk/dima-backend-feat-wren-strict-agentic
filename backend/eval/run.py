@@ -39,11 +39,19 @@ REPORT = EVAL_DIR / "report.json"
 # --------------------------------------------------------------------------- #
 
 def classify(d: dict) -> str:
-    """AskResponse → answer | chip | refuse."""
-    if d.get("source"):
-        return "answer"
+    """AskResponse → answer | chip | refuse.
+
+    ÖNCEDEN `source` her zaman "chip'siz cevap" anlamına gelirdi (eski hibrit akışta
+    netleştirme yanıtları source SET ETMEZDİ). Artık `_is_meta`/`_is_catalog_query` gibi
+    deterministik ön-kapılar HER yanıta (netleştirme/chip olsa bile, ör. "dima nedir?")
+    telemetri için `source` set ediyor — bu yüzden `source` kontrolü ÖNCE gelirse her
+    chip yanıtı yanlışlıkla "answer" sayılıyordu (canlı 2026-07-31 kök neden: CI'a ilk
+    bağlandığında ~32 puanlık sahte precision düşüşü — ürün regresyonu değil, bu fonksiyon
+    bayattı). `suggestions` varlığı chip'in daha güvenilir imzası — önce o kontrol edilir."""
     if d.get("suggestions"):
         return "chip"
+    if d.get("source"):
+        return "answer"
     return "refuse"
 
 

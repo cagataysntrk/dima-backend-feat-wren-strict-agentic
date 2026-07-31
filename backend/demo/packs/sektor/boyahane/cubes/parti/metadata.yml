@@ -58,7 +58,10 @@ measures:
   - name: ort_renk_sapmasi
     expression: AVG(uretim_dE)
     type: DOUBLE
-    synonyms: [sapma, delta, renk sapması, dE]
+    # "dE!" TAM-KELİME (sonu "!"): 2 harfli kısa sinonim substring-eşleşmede tehlikeli
+    # ("saDEce" içinde "de" geçiyor → yanlış ölçü eşleşmesi, log: "sadece beyaz ve
+    # siyah renk ver" deterministic_refine'ı yanlışlıkla ölçü-değişimi sanıp bail ediyordu).
+    synonyms: [sapma, delta, renk sapması, "dE!"]
     lower_is_better: true
   # VERİMLİLİK (kişi/operatör bazında anlamlı): ilk-seferde-tamam oranı (RFT). Yüksek iyi.
   - name: ilk_seferde_tamam_yuzde

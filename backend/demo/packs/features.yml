@@ -20,3 +20,5 @@ features:
   scheduled_reports: beta # 🔔 zamanla + bildirim (ADR-0011; eskiden boyahane sektöründe)
   dashboards: beta        # kullanıcı panoları — canlı izleme (§9)
   next_steps: beta        # rehberli analitik K2 — sonraki adım (kırılım/ölçek/zaman) chip'leri
+  ask_intent_first: beta  # /ask: route() boşsa LLM'e Intent-JSON doldurttur (Faz 1 canary —
+                          # route()'un kendisi bu bayraktan bağımsız her zaman çalışır)

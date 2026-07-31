@@ -839,29 +839,96 @@ def verify(request: Request, body: CubeRequest) -> dict:
 
 
 
+def _resolve_entity_limit(service, cq: dict, order, limit: int | None) -> str | None:
+    """route()'un ürettiği ``entity_limit``'li CubeQuery için İKİ-ADIMLI SQL üretir
+    (Faz 1 — eski 1800 satırlık kaldırılmış `/ask` işleyicisindeki mekanizmanın yeniden
+    inşası; git tarihinde hayatta kalan bir sürümü yoktu).
+
+    Neden iki adım: "ilk 3 müşterinin aylık cirosu" gibi bir soruda tek adımda LIMIT 3
+    uygulamak zaman×varlık satırlarını keser (LIMIT ilk ayın 3 satırını alır, 3 MÜŞTERİ
+    değil). Çözüm: (1) zaman kovası OLMADAN yalnız varlık×kıstas-ölçü ile top-N varlık
+    bulunur, (2) TAM sorgu (zaman kovası dahil) o varlıklara `in` filtresiyle daraltılır.
+
+    Herhangi bir adımda beklenmedik veri/hata olursa None döner — çağıran Discovery'ye
+    düşer (asla yarım/yanlış SQL ile devam etmez)."""
+    el = cq.get("entity_limit") or {}
+    dim, crit, n = el.get("dimension"), el.get("measure"), el.get("n")
+    direction = str(el.get("direction") or "desc").upper()
+    if not (dim and crit and n):
+        return None
+    try:
+        probe_cq: dict = {"cube": cq.get("cube"), "measures": [crit], "dimensions": [dim]}
+        if cq.get("filters"):
+            probe_cq["filters"] = list(cq["filters"])
+        probe_sql = service.cube_sql(probe_cq, order=(crit, direction), limit=int(n))
+        probe_result = service.query(probe_sql, limit=int(n))
+        entities = [r.get(dim) for r in (probe_result.get("rows") or []) if r.get(dim) is not None]
+        if not entities:
+            return None
+        full_cq = {k: v for k, v in cq.items() if k != "entity_limit"}
+        kept_filters = [f for f in (full_cq.get("filters") or []) if f.get("dimension") != dim]
+        kept_filters.append({"dimension": dim, "operator": "in", "value": entities})
+        full_cq["filters"] = kept_filters
+        sql = service.cube_sql(full_cq, order=order, limit=limit)
+        # ÇAĞIRANIN cq'sini YERİNDE çözülmüş şekille günceller (entity_limit → gerçek
+        # `in` filtresi): AskResponse.cube_query yalnız SQL'i değil GERÇEKTEN NEYİN
+        # çalıştırıldığını yansıtsın — aksi halde bir takip mesajı bu raporu devam
+        # ettirirken hâlâ çözülmemiş `entity_limit` şeklini görür (deterministic_refine
+        # onu farklı yorumlayabilir), ve şeffaflık ilkesi (Query Contract) bozulur.
+        cq.pop("entity_limit", None)
+        cq["filters"] = kept_filters
+        return sql
+    except Exception:
+        _log.warning("entity_limit iki-adımlı çözümleme başarısız (best-effort)", exc_info=True)
+        return None
+
+
 @router.post("/ask", response_model=AskResponse,
              dependencies=[Depends(require("query:run")), Depends(require_company)])
 def ask(request: Request, body: AskRequest) -> AskResponse:
-    """Strict-agentic NL→Wren SQL: LLM doğrudan MDL üzerinden SQL üretir (cube ara-katmanı
-    yok — ADR: wren-strict-agentic geçişi). Sıra, WrenAI'nin kendi Ask pipeline'ının
-    (intent_classification → historical_question → SQL-pairs few-shot → followup_sql_generation
-    → chart_generation) Dima-yerlisi karşılığıdır — dış WrenAI servisleri değil, zaten var
-    olan app/vqr.py + app/llm.py + app/viz.py kullanılır:
+    """NL→cevap: Intent-first yönlendirme (Faz 1 + Faz 1.5 — ADR: vizyon-yol-haritası,
+    Cube.dev/WrenAI'nin "text-to-semantic-query" ilkesi). LLM'in rolü varsayılan olarak SQL
+    YAZARLIĞINDAN niyet SEÇİCİLİĞİNE çekilir; ham-SQL üretimi artık kapsam-dışı sorular için
+    AÇIKÇA ETİKETLİ bir "Discovery" istisnasıdır.
 
+    Faz 1.5 (31 Temmuz 2026): `cube_router.py`'nin TAMAMI okunup denetlendi — deterministik
+    takip-düzenleme (`deterministic_refine`), çapraz-cube ekleme/geçiş, dönemsel kıyas
+    (YoY/MoM), ve kısmi-anlama/çapraz-konu netleştirme mekanizmaları ZATEN vardı, test edilmiş
+    ve olgun ama strict-agentic göçünden beri `/ask`'e hiç bağlanmamıştı. Bu fonksiyon artık
+    hepsini birleştiriyor — YENİ mantık icat edilmedi, var olan mükemmel-ama-kopuk parçalar
+    doğru sırayla bağlandı (bkz. tests/test_ask_golden.py — bu testler beklenen davranışın
+    canlı kanıtı, gerçek demo projesine karşı doğrulandı).
+
+    Sıra (her adım bir öncekinin başarısız/uygunsuz olmasıyla tetiklenir):
     1. Meta/katalog soruları → deterministik yanıt (LLM YOK).
-    2. TAKİP mesajıysa (history + önceki wren_sql var) → önceki SQL'i bağlam alarak LLM'e
-       düzenlettirmek (WrenAI'nin followup_sql_generation deseni); DEĞİLSE VQR birebir/yakın
-       eşleşme → önceden doğrulanmış SQL tekrar oynatılır (LLM YOK).
-    3. VQR few-shot + şirket business_rules/golden_sql ile LLM SQL üretimi → dry_plan
-       doğrulama → hata varsa kendi kendini onarma (repair).
-    4. Başarılı BAĞIMSIZ (takip olmayan) yanıt VQR'a otomatik yazılır (source="auto") —
-       aynı/çok benzer soru bir daha LLM'e hiç gitmeden tekrar oynatılabilsin diye
-       (POST /ask/verify ile insan onayı bu kaydı "user_verified" seviyesine yükseltir).
-    5. Sonuç varsa `viz.recommend` ile grafik önerisi eklenir (önceden yalnız /cube
-       yapıyordu; /ask boş bırakınca frontend zayıf bir client-side sezgisele düşüyordu).
+    2. BAĞIMSIZ (takip olmayan) sorularda VQR birebir/yakın eşleşme → önceden doğrulanmış
+       SQL tekrar oynatılır (LLM YOK).
+    3. YAPISAL TAKİP (body.cube_query + history dolu — önceki tur gerçek bir CubeQuery
+       ürettiyse): `deterministic_refine` (LLM'siz düzenleme: ölçü değişimi/çıkarma,
+       kırılım, dönem, sıralama, top-N) → `cross_cube_add` (blend) → `cross_cube_dim_switch`
+       (konu değişti notu) → LLM-destekli yapısal düzenleme (`llm.refine_cube`, hâlâ SQL
+       DEĞİL) → hiçbiri olmazsa DÜRÜST RET (Discovery'ye düşülmez — takip bağlamı olmadan
+       ham-SQL üretmek yanıltıcı olurdu).
+    4. FRESH (bağımsız) soru — Intent-first:
+       a. `cube_router.route()` — SIFIR-LLM deterministik CubeQuery eşleştirme.
+       b. Dönemsel kıyas niyeti (`compare_mode`: "geçen yıla göre") → `strip_compare` +
+          `route()` + `app.yoy.compute` — YİNE LLM'siz, deterministik period-shift.
+       c. route() boş dönerse VE `ask_intent_first` bayrağı açıksa: LLM'e SQL DEĞİL,
+          Intent-JSON doldurttur (`llm.select_cube`), `parse_cube_query` ile doğrula.
+       d. Hâlâ boşsa: `measure_cube_candidates`/`partial_unknowns` ile NEDEN-özel
+          netleştirme chip'i (çapraz-konu ya da kısmi-anlama) — Discovery'ye köre düşmeden.
+    5. Discovery: yukarıdakiler kapsamadıysa — VQR few-shot + business_rules/golden_sql ile
+       LLM ham Wren SQL üretimi → dry_plan doğrulama → self-healing (repair). Üretim
+       başarısız olursa (rule/NoLlm sağlayıcı ya da tüm sağlayıcılar tükendi) 502 DEĞİL,
+       dürüst ret notu döner.
+    6. Başarılı BAĞIMSIZ yanıt VQR'a otomatik yazılır — Intent-path'te yalnız LLM
+       kullanıldıysa (route() zaten ücretsiz, tekrar önbelleklemeye gerek yok).
+    7. Her yanıt bir Query Contract + access-audit kaydı alır ve `viz.recommend` ile grafik
+       önerisi eklenir (gerçek cube_query varsa daha isabetli karar).
     """
     import time
 
+    from app.features import resolve_for
     from app.llm import reset_llm_usage
 
     t0 = time.monotonic()
@@ -873,29 +940,143 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     principal = getattr(request.state, "principal", None)
     limit = min(body.limit or settings.max_result_rows, settings.max_result_rows)
 
-    # Önceki tur bağlamı (ADR-0007'nin wren_sql karşılığı). `cube_query` BİLEREK
-    # kullanılmıyor — o alan frontend'de scheduling/dashboard/verify gibi gerçek CubeQuery
-    # şekli varsayan başka özelliklerin de gate'i; `prev_sql` ayrı, dar amaçlı bir alan.
+    # Önceki tur bağlamı — İKİ ayrı mekanizma, `cube_query` YAPISAL (önceki tur Intent-path
+    # ürettiyse) tercih edilir: deterministic_refine/cross_cube_* gibi zengin, LLM'siz
+    # düzenleme mümkün kılar. `prev_sql` yalnız ham-SQL (Discovery) devamı içindir — önceki
+    # tur Intent-path DEĞİLSE (structural veri yoksa) buna düşülür.
     prev_sql = body.prev_sql
-    is_followup = bool(prev_sql) and bool(body.history)
+    # `cube_query` TEK BAŞINA yeterli sinyal — çağıran (frontend/test) onu bilerek
+    # gönderiyor demektir ("bu rapora devam"), `history` dolu olması ŞART değil (gerçek
+    # eval koşumu bunu ortaya çıkardı: conftest.py'nin `ask()` yardımcısı history
+    # göndermeden cube_query gönderiyor — history yalnızca ham-SQL takibi için ek sinyal).
+    structural_followup = bool(body.cube_query)
+    raw_followup = bool(prev_sql) and bool(body.history) and not structural_followup
+    is_followup = structural_followup or raw_followup
     prev_question = body.history[-1] if body.history else ""
 
     def _finish(resp: AskResponse) -> AskResponse:
         _persist_message(request, resp, body.session_id)
         _log_interaction(body.session_id, body, resp, int((time.monotonic() - t0) * 1000), principal)
+        # Erişim-audit (KVKK izi, ADR-0014/0015): /cube bunu her zaman yapıyordu, strict-agentic
+        # /ask'e HİÇ bağlanmamıştı (gerçek test koşumu bunu ortaya çıkardı —
+        # test_superadmin_public_access_is_allowed_and_logged, Query Contract'tan AYRI bir
+        # boşluk). TEK choke-point'te (her /ask yanıtı buradan geçer) — unutulması imkansız.
+        # BİLEREK try/except'siz — audit.record kendi içinde DB→spool'a düşer, YALNIZ ikisi
+        # BİRLİKTE başarısız olursa fırlatır ("başarı audit'siz raporlanamaz" — /cube ile
+        # AYNI kasıtlı fail-closed davranış, best-effort SARMALANMAZ).
+        from control_plane import audit
+
+        audit.record(principal, "query", nl_question=resp.question, generated_sql=resp.sql or None,
+                    rows_returned=resp.result.row_count if resp.result else None,
+                    contract_id=resp.contract_id,
+                    ip=request.client.host if request.client else None)
         return resp
 
-    def _attach_viz(resp: AskResponse, result: dict | None) -> AskResponse:
+    def _attach_viz(resp: AskResponse, result: dict | None, cq: dict | None = None) -> AskResponse:
         try:
-            resp.viz = viz.recommend(result, units={}, lower_set=[], cube_query=None)
+            resp.viz = viz.recommend(result, units={}, lower_set=[], cube_query=cq)
         except Exception:
             _log.warning("viz önerisi üretilemedi (best-effort)", exc_info=True)
         return resp
 
+    def _record_contract(cq: dict | None, sql: str | None, result: dict | None,
+                         source: str | None) -> str | None:
+        store = getattr(request.app.state, "contracts", None)
+        if store is None:
+            return None
+        try:
+            return store.record(
+                session_id=body.session_id, question=body.question, cube_query=cq, sql=sql,
+                result=result, source=source, schema_version=service.mdl_version,
+                tenant_id=getattr(principal, "tenant_id", None),
+            )
+        except Exception:
+            _log.warning("query contract kaydedilemedi (best-effort)", exc_info=True)
+            return None
+
+    def _honest_refusal(note: str, trace: list[str],
+                        suggestions: list[Suggestion] | None = None) -> AskResponse:
+        """Dürüst ret — NoLlmGenerator'ın kendi docstring'inin vaat ettiği ama strict-agentic
+        göçünde hiç uygulanmayan dönüşüm ("routers/ask.py bunu dürüst redde çevirir").
+        ÖNCEDEN generate_sql/generate_followup_sql/refine_cube başarısızlığı 502 fırlatıyordu
+        — kullanıcıya çökme gibi görünen bir hata. "Anlaşılmadı" bir SİSTEM HATASI değil,
+        dürüstçe söylenecek bir sonuçtur (source=None, sql yok, çökme yok)."""
+        return _finish(AskResponse(question=body.question, source=None, note=note,
+                                   suggestions=suggestions or [], trace=trace))
+
+    def _period_gate(cq: dict, cube_meta: dict | None, period_optional: bool | None,
+                     trace_prefix: str) -> AskResponse | None:
+        """DÖNEM BELİRSİZLİĞİ KAPISI — route()/YoY/LLM-select/takip-düzenleme HANGİ yoldan
+        gelirse gelsin AYNI kural: zaman boyutu var, period_optional DEĞİL, hiç dönem
+        filtresi/kırılımı yok VE kullanıcı hiçbir dönem ifadesi kullanmadıysa sessizce tüm-
+        zamanlar varsayma — SOR. Zaman KIRILIMI (timeDimensions, "aylık trend") İSTİSNA:
+        kendi başına anlamlı bir varsayılan taşır (mevcut tüm geçmiş üzerinden trend)."""
+        if period_optional is None:
+            period_optional = cube_router.is_period_optional(
+                (cq.get("measures") or [None])[0], cube_meta)
+        time_dims = (cube_meta or {}).get("time_dimensions") or []
+        # `period_confirmed`: "Tümü" chip'i BİR KEZ tıklanır (needs_period docstring'i,
+        # deterministic_refine is_all_time kolu) — deepcopy(prev) ile SONRAKİ her takip
+        # düzenlemesine (yeni cq teknik olarak "farklı" olsa da) taşınır, tekrar sorulmaz.
+        if cq.get("period_confirmed") or period_optional or not time_dims or cq.get("timeDimensions"):
+            return None
+        time_dim = time_dims[0]
+        has_period_filter = any(f.get("dimension") == time_dim for f in (cq.get("filters") or []))
+        if has_period_filter or cube_router._period_hit_words(q_norm):
+            return None
+        return _finish(AskResponse(
+            question=body.question, source=None, note=_PERIOD_TEXT, cube_query=cq,
+            suggestions=[Suggestion(**s) for s in _PERIOD_SUGGESTIONS],
+            trace=[f"{trace_prefix}: dönem belirsiz → netleştirme (LLM'siz)"],
+        ))
+
+    def _answer_from_cube_query(cq: dict, *, order=None, limit_val: int | None = None,
+                                source: str, trace: list[str], note: str | None = None,
+                                learn: bool = False) -> AskResponse | None:
+        """CubeQuery → derle+doğrula+çalıştır+yanıtla ORTAK son adım — route()/YoY/LLM-
+        select/takip-düzenleme (deterministic_refine/cross_cube_*) hepsi buraya çıkar. TEK
+        yerde durur ki entity_limit/blend özel çözümü, VQR öğrenme, Query Contract, viz her
+        yeni Intent-path kaynağında yeniden yazılmasın (Faz 1'de zaten kopya kod riski
+        vardı, Faz 1.5'te dört kaynak daha eklenince tek helper'a çıkarıldı).
+        Derleme/doğrulama başarısız olursa None döner (çağıran sıradaki adıma düşer)."""
+        try:
+            if "entity_limit" in cq:
+                sql = _resolve_entity_limit(service, cq, order, limit_val or limit)
+            elif cq.get("blend"):
+                sql = service.blend_sql(cq)
+            else:
+                sql = service.cube_sql(cq, order=order, limit=limit_val)
+            if not sql:
+                return None
+            planned = service.dry_plan(sql)
+            result = service.query(sql, limit=limit)
+        except Exception:
+            _log.warning(f"{source}: derleme/çalıştırma başarısız (best-effort)", exc_info=True)
+            return None
+        resp = AskResponse(
+            question=body.question, sql=sql, planned_sql=planned,
+            result=QueryResult(**result) if result else None,
+            source=source, cube_query=cq, note=note, trace=trace,
+        )
+        # PANELLİ görünüm niyeti ("her X için ayrı ayrı grafik") — açık NL niyeti, hem
+        # taze hem takip yolunda AYNI şekilde geçerli → tek ortak noktada çözülür.
+        cq_meta = next((c for c in (schema.get("cubes") or [])
+                        if c.get("name") == cq.get("cube")), None)
+        if cq_meta:
+            try:
+                resp.view_hint = cube_router.detect_facet(q_norm, cq_meta)
+            except Exception:
+                _log.warning("facet görünüm tespiti başarısız (best-effort)", exc_info=True)
+        if learn and vqr is not None:
+            try:
+                vqr.store(body.question, {"wren_sql": sql}, source="auto")
+            except Exception:
+                _log.warning("VQR otomatik kayıt başarısız (best-effort)", exc_info=True)
+        resp.contract_id = _record_contract(cq, sql, result, source)
+        return _finish(_attach_viz(resp, result, cq))
+
     # 1) Deterministik ön-kapı — WrenAI'nin intent_classification'ının LLM'siz Dima
-    # karşılığı: meta/ürün soruları ve katalog-keşfi SQL üretimine hiç girmez. Bu
-    # yardımcılar (_is_meta/_is_catalog_query) eski cube_router akışı için yazılmıştı;
-    # strict-agentic geçişinde /ask'e hiç bağlanmamışlardı.
+    # karşılığı: meta/ürün soruları ve katalog-keşfi SQL üretimine hiç girmez.
     if _is_meta(q_norm):
         return _finish(AskResponse(
             question=body.question, source="meta", note=_META_TEXT,
@@ -913,14 +1094,13 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
 
     vqr = vqr_for_request(request)
 
-    # 2) VQR: yalnız BAĞIMSIZ (takip olmayan) sorularda kontrol edilir. Bir takip mesajı
-    # ("aylara göre") bağlamsız haliyle BAŞKA bir konuşmadan gelen alakasız bir VQR
-    # kaydını yanlışlıkla eşleştirip tekrar oynatabilirdi — bu yüzden takip turlarında
-    # VQR atlanır (Snowflake VQR deseni — WrenAI'nin historical_question short-circuit'inin
-    # Dima-yerlisi; önceden non-default tenant'larda tamamen kapalıydı, bkz. vqr_for_request).
+    # 2) VQR: yalnız BAĞIMSIZ (takip olmayan) sorularda kontrol edilir — bir takip mesajı
+    # ("aylara göre") bağlamsız haliyle BAŞKA bir konuşmadan gelen alakasız bir VQR kaydını
+    # yanlışlıkla eşleştirip tekrar oynatabilirdi.
     if not is_followup:
         cached = vqr.near_exact(body.question) if vqr else None
-        cached_sql = (cached.get("cube_query") or {}).get("wren_sql") if cached else None
+        cached_payload = cached.get("cube_query") if cached else None
+        cached_sql = (cached_payload or {}).get("wren_sql") if cached_payload else None
         if cached_sql:
             try:
                 planned = service.dry_plan(cached_sql)
@@ -928,30 +1108,485 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 resp = AskResponse(
                     question=body.question, sql=cached_sql, planned_sql=planned,
                     result=QueryResult(**result) if result else None, source="vqr",
-                    trace=["VQR birebir eşleşme → doğrulanmış SQL tekrar oynatıldı (LLM'siz)"],
+                    trace=["VQR (verified repository) birebir eşleşme → doğrulanmış SQL "
+                          "tekrar oynatıldı (LLM'siz)"],
                 )
+                resp.contract_id = _record_contract(None, cached_sql, result, "vqr")
                 return _finish(_attach_viz(resp, result))
             except Exception:
                 _log.warning("VQR'daki SQL artık geçersiz (şema değişmiş olabilir) — "
-                            "LLM yoluna düşülüyor", exc_info=True)
+                            "sonraki adıma düşülüyor", exc_info=True)
+        elif cached_payload and cached_payload.get("cube"):
+            # `/verify` (CubeQuery-şekilli, eski) ile öğrenilmiş çift — wren_sql sarmalayıcı
+            # DEĞİL, ham CubeQuery. Deterministik derleyiciden geçirilir (ham SQL replay
+            # değil): whitelist-doğrulama + her zaman güncel `always_filter`/dialect. Dönem
+            # depoda YOK (VQR.store dönem filtresini bilerek düşürür, ADR: şekil öğrenilir,
+            # tarih değil) → period-kapısı AYNI politika ile yeniden sorar (gerekirse).
+            try:
+                _, vqr_index = cube_router.build_catalog(schema)
+                vqr_cq = cube_router.parse_cube_query(
+                    json.dumps(cached_payload, ensure_ascii=False), vqr_index)
+            except Exception:
+                vqr_cq = None
+                _log.warning("VQR CubeQuery çifti ayrıştırılamadı (şema değişmiş olabilir) — "
+                            "sonraki adıma düşülüyor", exc_info=True)
+            if vqr_cq:
+                vqr_cube_meta = next((c for c in (schema.get("cubes") or [])
+                                      if c.get("name") == vqr_cq.get("cube")), None)
+                gate = _period_gate(vqr_cq, vqr_cube_meta, None,
+                                    "VQR (verified repository) eşleşme bulundu")
+                if gate:
+                    return gate
+                resp = _answer_from_cube_query(
+                    vqr_cq, source="vqr",
+                    trace=["VQR (verified repository) birebir eşleşme → deterministik "
+                          "derleyici (LLM'siz)"])
+                if resp:
+                    return resp
 
-    # 3) LLM üretimi: sağlayıcı zinciri (failover + kural-tabanlı/dürüst-ret yedeği —
-    # app/llm.py, app.state.llm). Takip turunda ÖNCEKİ SQL'i bağlam alan followup üretimi
-    # (WrenAI'nin followup_sql_generation deseni); bağımsız soruda VQR few-shot + şirket
-    # business_rules/golden_sql. Eskiden burada tek-sağlayıcılı, telemetrisiz, bağlamsız,
-    # ham bir OpenAI çağrısı vardı; artık startup'ta zaten kurulu olan altyapı kullanılıyor.
+    def _try_fresh_intent() -> AskResponse | None:
+        """route() → YoY/MoM → LLM-Intent-JSON → neden-özel netleştirme chip'i. Hiçbiri
+        cevaplayamazsa None (çağıran Discovery'ye düşer). Yapısal takip zinciri
+        action="new" (konu tamamen değişti) dediğinde de BU fonksiyon çağrılır."""
+        route_hit: dict | None = None
+        intent_source: str | None = None
+        try:
+            route_hit = cube_router.route(body.question, schema)
+            if route_hit:
+                intent_source = "cube"
+        except Exception:
+            _log.warning("cube_router.route() hata verdi (best-effort)", exc_info=True)
+
+        # Dönemsel kıyas (YoY/MoM) — route() _COMPARE_HINTS nedeniyle BİLEREK None döner;
+        # ayrı, YİNE deterministik bir mekanizma var (/cube'un compare chip'iyle AYNI —
+        # app/yoy.py). Kıyas ifadesi sökülüp temiz metinle route() tekrar denenir.
+        if route_hit is None:
+            mode = cube_router.compare_mode(q_norm)
+            if mode:
+                cleaned = cube_router.strip_compare(q_norm)
+                try:
+                    base_hit = cube_router.route(cleaned, schema)
+                except Exception:
+                    base_hit = None
+                if base_hit:
+                    try:
+                        from app import yoy as _yoy
+
+                        base_cq = base_hit["cube_query"]
+                        time_dim = _yoy.time_dim_of(schema, base_cq.get("cube"))
+                        out = _yoy.compute(service, {**base_cq, "compare": mode}, mode,
+                                           time_dim, limit=limit)
+                        final_cq = {**out["base_cq"], "compare": mode}
+                        result = {"columns": out["columns"], "rows": out["rows"],
+                                 "row_count": out["row_count"]}
+                        resp = AskResponse(
+                            question=body.question, sql=out["base_sql"],
+                            planned_sql=service.dry_plan(out["base_sql"]),
+                            result=QueryResult(**result), source="cube", cube_query=final_cq,
+                            trace=[f"Intent-path: dönemsel kıyas ({mode}, LLM'siz)"],
+                        )
+                        resp.contract_id = _record_contract(
+                            final_cq, out["base_sql"], result, "cube")
+                        return _finish(_attach_viz(resp, result, final_cq))
+                    except Exception:
+                        _log.warning("YoY/MoM hesaplama başarısız (best-effort) — "
+                                    "sıradaki adıma düşülüyor", exc_info=True)
+
+        if route_hit is None and "ask_intent_first" in resolve_for(settings, principal):
+            llm_probe = getattr(request.app.state, "llm", None)
+            if llm_probe is not None and hasattr(llm_probe, "select_cube"):
+                try:
+                    catalog_text, cube_index = cube_router.build_catalog(schema)
+                    raw = llm_probe.select_cube(body.question, catalog_text)
+                    parsed = cube_router.parse_cube_query(raw, cube_index)
+                    if parsed:
+                        route_hit = {"cube_query": parsed, "order": None, "limit": None}
+                        intent_source = "cube+llm"
+                except Exception:
+                    _log.warning("LLM Intent-JSON seçimi başarısız (best-effort)", exc_info=True)
+
+        if route_hit:
+            cq = route_hit["cube_query"]
+            # Gitaş logu 2026-07-24: order/limit route()'tan AYRI alanlar olarak
+            # dönüyordu ("en çok ciro yapılan 5 müşteri" → order=(measure,DESC),
+            # limit=5) — dönem-belirsizliği kapıya takılınca (clarification cube_query'yi
+            # DÖNDÜRÜR ama _answer_from_cube_query'ye hiç uğramaz) bu ikisi kaybolup
+            # takip mesajı (dönem chip'i) sıralamasız/limitsiz bir rapora dönüşüyordu.
+            # cq'nin İÇİNE gömülü taşınır (cube_sql zaten gömülü order/limit okuyabilir)
+            # → clarification cube_query'si dahil HER round-trip'te hayatta kalır.
+            if route_hit.get("order"):
+                om, odir = route_hit["order"]
+                cq = {**cq, "order": {"measure": om, "direction": str(odir).lower()}}
+            if route_hit.get("limit"):
+                cq = {**cq, "limit": route_hit["limit"]}
+            cube_meta = next((c for c in (schema.get("cubes") or [])
+                              if c.get("name") == cq.get("cube")), None)
+            gate = _period_gate(cq, cube_meta, route_hit.get("period_optional"), "Intent-path")
+            if gate:
+                return gate
+            resp = _answer_from_cube_query(
+                cq, source=intent_source, learn=(intent_source == "cube+llm"),
+                trace=(["Intent-path: cube_router.route() (LLM'siz, sıfır maliyet)"]
+                      if intent_source == "cube" else
+                      ["Intent-path: LLM Intent-JSON seçimi (SQL değil, ölçü/boyut/"
+                       "filtre seçimi) → deterministik derleyici"]),
+            )
+            if resp:
+                return resp
+
+        # route()+YoY+LLM-select tükendi — Discovery'ye köre düşmeden NEDEN-özel
+        # netleştirme: TEK cube (ölçü belirsiz) / çapraz-konu (iki rakip cube kimliği) /
+        # kısmi-anlama (tanınan + tanınmayan kelime karışımı). cube_router.py'de zaten
+        # vardı, hiç bağlanmamıştı.
+        try:
+            only_cube = cube_router.cube_only_match(q_norm, schema)
+        except Exception:
+            only_cube = None
+        if only_cube:
+            labels = []
+            for m in only_cube.get("measures") or []:
+                mdisp = (only_cube.get("measure_synonyms_display") or {}).get(m) or m
+                if mdisp not in labels:
+                    labels.append(mdisp)
+            cube_label = only_cube.get("display") or only_cube.get("name") or ""
+            return _finish(AskResponse(
+                question=body.question, source=None,
+                note=f"{cube_label} için hangi ölçüyü istiyorsun?",
+                suggestions=[Suggestion(label=lb, query=lb) for lb in labels[:8]],
+                trace=["Intent-path: cube belirlendi, ölçü belirsiz → netleştirme (LLM'siz)"],
+            ))
+
+        try:
+            cands = cube_router.measure_cube_candidates(q_norm, schema)
+        except Exception:
+            cands = []
+        distinct_cubes = {c["name"]: (c, m) for c, m in cands}
+        if len(distinct_cubes) >= 2:
+            m_disp_labels = []
+            for c, m in distinct_cubes.values():
+                mdisp = (c.get("measure_synonyms_display") or {}).get(m) or m
+                if mdisp not in m_disp_labels:
+                    m_disp_labels.append(mdisp)
+            if len(m_disp_labels) >= 2:
+                return _finish(AskResponse(
+                    question=body.question, source=None,
+                    note="Birden fazla konu anlaşıldı, hangisini istiyorsun?",
+                    suggestions=[Suggestion(label=lb, query=lb) for lb in m_disp_labels[:6]],
+                    trace=["Intent-path: çapraz konu → netleştirme (LLM'siz)"],
+                ))
+
+        try:
+            unknown, hits = cube_router.partial_unknowns(q_norm, schema)
+        except Exception:
+            unknown, hits = [], []
+        if unknown and hits:
+            labels = []
+            for c, m in hits:
+                mdisp = (c.get("measure_synonyms_display") or {}).get(m) or m
+                if mdisp not in labels:
+                    labels.append(mdisp)
+            # "Tanınmayan" kelime aslında BAŞKA bir cube'un kendi kimliği olabilir (ör.
+            # "sürdürülebilirlik" — partial_unknowns onu `resolved` cube'a (parti) ait
+            # SAYMAZ ama katalogda meşru bir konu). O konu da chip'lenir — kullanıcı iki
+            # rakip yorumdan birini seçsin (ADR-0008: sessizce biri seçilip ötekisi
+            # yutulmaz).
+            hit_cube_names = {c["name"] for c, _ in hits}
+            other_topic = False
+            for c in schema.get("cubes") or []:
+                if c.get("name") in hit_cube_names:
+                    continue
+                # Cube-düzeyi VEYA boyut-düzeyi sinonim — "tedarikçi" gibi bir kelime
+                # ölçü değil, BAŞKA bir cube'un BOYUTU olabilir (cari/ticaret'in
+                # "tedarikçi" boyutu). İkisi de "başka bir konu" sinyali sayılır.
+                dim_hit = any(cube_router._syn_hit_words(q_norm, syns)
+                             for syns in (c.get("dimension_synonyms") or {}).values())
+                if cube_router._syn_hit_words(q_norm, c.get("synonyms")) or dim_hit:
+                    clabel = c.get("display") or c.get("name") or ""
+                    if clabel and clabel not in labels:
+                        labels.append(clabel)
+                        other_topic = True
+            trace_msg = ("Intent-path: çapraz konu (rakip cube kimliği) → netleştirme "
+                        "(LLM'siz)" if other_topic else
+                        "Intent-path: kısmi anlama → rapor düşülmedi, netleştirme (LLM'siz)")
+            note = (f"\"{' '.join(unknown)}\" başka bir konu gibi görünüyor. "
+                   "Hangisini istiyorsun?" if other_topic else
+                   f"\"{' '.join(unknown)}\" kısmını anlayamadım, bu yüzden rapor "
+                   "düşülmedi. Ne demek istediğini biraz daha açar mısın?")
+            return _finish(AskResponse(
+                question=body.question, source=None, note=note,
+                suggestions=[Suggestion(label=lb, query=lb) for lb in labels[:6]],
+                trace=[trace_msg],
+            ))
+
+        # HİÇ KONU YOK ("bu yıl tüm aylarını karşılaştır" — NEYİ?): dönem/kıyas dili var
+        # ama partial_unknowns HİÇBİR (cube, ölçü) çifti bulamadı (hits boş) — LLM'e
+        # bırakılırsa alakasız bir raporu (ör. personel) uydurabilir (log regresyonu).
+        # Katalogdan örnek ölçülerle "hangisini istiyorsun?" sorulur.
+        if not hits and (cube_router._period_hit_words(q_norm) or cube_router.compare_mode(q_norm)):
+            example_labels = []
+            for c in schema.get("cubes") or []:
+                for m in (c.get("measures") or [])[:1]:
+                    mdisp = (c.get("measure_synonyms_display") or {}).get(m) or m
+                    if mdisp not in example_labels:
+                        example_labels.append(mdisp)
+            return _finish(AskResponse(
+                question=body.question, source=None,
+                note="Neyi karşılaştırmak/görmek istediğini anlayamadım. Hangi ölçüyü istersin?",
+                suggestions=[Suggestion(label=lb, query=lb) for lb in example_labels[:8]],
+                trace=["Intent-path: konu belirtilmedi → netleştirme (LLM'siz)"],
+            ))
+        return None
+
+    def _learn_chip_completion(cq: dict, cube_meta: dict | None) -> str | None:
+        """Takip zinciri bir raporu TAMAMLADIĞINDA (deterministic_refine), önceki mesaj
+        (`history[-1]`) GERÇEK bir konu taşıyorsa (cube/ölçü sinonimi) — o soru +
+        TAMAMLANMIŞ şekil VQR'a öğrenilir (log regresyonu: "aylara göre" gibi konusuz
+        şekil-parçaları geçmişte chip-onayıyla yanlışlıkla öğreniliyordu — bağlamsız
+        yanlış replay riski, ADR-0008). Konu taşımayan mesaj → None (öğrenilmez)."""
+        if vqr is None or not body.history or not cube_meta:
+            return None
+        prev_q = body.history[-1]
+        prev_q_norm = cube_router._norm(prev_q)
+        topical = bool(cube_router._syn_hit_words(prev_q_norm, cube_meta.get("synonyms"))) or \
+            cube_router._match_measure(prev_q_norm, cube_meta)[0] is not None
+        if not topical:
+            return None
+        try:
+            if vqr.store(prev_q, cq, source="chip_approved"):
+                return "chip-onaylı → VQR güncellendi (LLM'siz öğrenme)"
+        except Exception:
+            _log.warning("chip-onaylı VQR öğrenme başarısız (best-effort)", exc_info=True)
+        return None
+
+    # 3) YAPISAL TAKİP — önceki tur GERÇEK bir CubeQuery ürettiyse (route()/LLM-select/
+    # YoY/bu zincirin kendisi), deterministik düzenleme zinciri denenir (bkz. docstring §3).
+    # cube_router.py'de zaten tam, test edilmiş, LLM'siz bir zincirdi — strict-agentic
+    # göçünden beri /ask'e hiç bağlanmamıştı.
+    if structural_followup:
+        prev_cq = dict(body.cube_query or {})
+        # Cube-adı göçü (yeniden adlandırma sonrası istemcide eski adla kalan rapor,
+        # "fire" → "parti" gibi): /cube ve /report bunu zaten çözüyordu (satır ~658/761),
+        # /ask'in yapısal takip zinciri hiç çözmüyordu — eski adla gelen HER takip mesajı
+        # sahte "bağlam kopması" (dürüst ret) üretiyordu, oysa ad değişmiş tek bir cube.
+        migration_trace: list[str] = []
+        _resolved = cube_router.resolve_cube_name(prev_cq.get("cube"), schema)
+        if _resolved and _resolved != prev_cq.get("cube"):
+            migration_trace = [f"cube adı göçü → {_resolved}"]
+            prev_cq["cube"] = _resolved
+        prev_cube_meta = next((c for c in (schema.get("cubes") or [])
+                               if c.get("name") == prev_cq.get("cube")), None)
+
+        # BAYAT cube_query (Gitaş 500'ü, 2026-07-24): istemcide önceki oturumdan/şirketten
+        # kalan bir cube_query artık MEVCUT şemada çalıştırılamıyor olabilir (ölçü/boyut
+        # kaldırılmış, MDL değişmiş). Zincirin geri kalanı bunu SESSİZCE "anlaşılmadı"
+        # sanıp genel bir "ilişkilendiremedim" notuna düşerdi — oysa asıl sorun ŞEKLİN
+        # KENDİSİ artık geçersiz. ÖNCEDEN yakalanır: 500 yerine dürüst, isabetli not.
+        if prev_cube_meta is None or any(
+            m not in (prev_cube_meta.get("measures") or []) for m in (prev_cq.get("measures") or [])
+        ) or any(
+            d not in (prev_cube_meta.get("dimensions") or []) for d in (prev_cq.get("dimensions") or [])
+        ):
+            return _honest_refusal(
+                note="Önceki rapor artık çalıştırılamadı (şema değişmiş olabilir). "
+                    "Yeni bir soru olarak sorar mısın?",
+                trace=migration_trace + ["Takip: bayat cube_query (şema uyuşmazlığı) → dürüst ret"],
+            )
+
+        # YETENEK SORUSU ("hangi kırılımlara göre detaylandırabilirim?") — bir DÜZENLEME
+        # DEĞİL, mevcut cube'un boyut LİSTESİNİ ister (log regresyonu: LLM bunu edit
+        # sanıp TÜM boyutları ekleyip aşırı büyük rapor üretiyordu). deterministic_refine
+        # DENENMEDEN önce yakalanır — aksi halde "hangi"/"kırılım" gibi kelimeler onun
+        # dolgu/kapsam mantığına karışabilir.
+        if prev_cube_meta and cube_router.is_capability_query(q_norm):
+            existing_dims = set(prev_cq.get("dimensions") or [])
+            labels = []
+            for dname in prev_cube_meta.get("dimensions") or []:
+                if dname in existing_dims:
+                    continue
+                dlabel = (prev_cube_meta.get("dimension_labels") or {}).get(dname) or dname
+                if dlabel not in labels:
+                    labels.append(dlabel)
+            return _finish(AskResponse(
+                question=body.question, source=None,
+                note="Bu raporu hangi kırılıma göre detaylandırmak istersin?",
+                suggestions=[Suggestion(label=lb, query=lb) for lb in labels[:10]],
+                trace=migration_trace + ["Takip: yetenek sorusu → kırılım chip'leri (LLM'siz)"],
+            ))
+
+        try:
+            refined = cube_router.deterministic_refine(prev_cq, q_norm, schema)
+        except Exception:
+            _log.warning("deterministic_refine hata verdi (best-effort)", exc_info=True)
+            refined = None
+        if refined:
+            gate = _period_gate(refined, prev_cube_meta, None, "Takip")
+            if gate:
+                return gate
+            _el = refined.get("entity_limit")
+            if _el and _el.get("n"):
+                trace_msg = f"refine → varlık top-{_el['n']} (LLM'siz)"
+            elif cube_router.is_all_time(q_norm):
+                trace_msg = "refine → tüm zamanlar (dönem filtresi kaldırıldı, LLM'siz)"
+            else:
+                trace_msg = "refine → deterministik düzenleme"
+            trace_list = migration_trace + [trace_msg]
+            learn_note = _learn_chip_completion(refined, prev_cube_meta)
+            if learn_note:
+                trace_list.append(learn_note)
+            resp = _answer_from_cube_query(refined, source="cube", trace=trace_list)
+            if resp:
+                return resp
+
+        try:
+            added = cube_router.cross_cube_add(prev_cq, q_norm, schema)
+        except Exception:
+            _log.warning("cross_cube_add hata verdi (best-effort)", exc_info=True)
+            added = None
+        if added:
+            resp = _answer_from_cube_query(
+                added, source="cube",
+                trace=migration_trace + ["Takip: çapraz-cube ekleme (blend, LLM'siz)"])
+            if resp:
+                return resp
+
+        try:
+            switched = cube_router.cross_cube_dim_switch(prev_cq, q_norm, schema)
+        except Exception:
+            _log.warning("cross_cube_dim_switch hata verdi (best-effort)", exc_info=True)
+            switched = None
+        if switched:
+            new_meta = next((c for c in (schema.get("cubes") or [])
+                             if c.get("name") == switched.get("cube")), None)
+            gate = _period_gate(switched, new_meta, None, "Takip")
+            if gate:
+                return gate
+            prev_label = (prev_cube_meta or {}).get("display") or prev_cq.get("cube") or ""
+            new_label = (new_meta or {}).get("display") or switched.get("cube") or ""
+            resp = _answer_from_cube_query(
+                switched, source="cube",
+                note=f"Konu değişti: {prev_label} → {new_label}",
+                trace=migration_trace + ["Takip: çapraz-cube konu geçişi (LLM'siz)"])
+            if resp:
+                return resp
+
+        # KONU DEĞİŞİMİ (ÖLÇÜ DE farklı) — cross_cube_dim_switch yalnız AYNI ölçü(ler)i
+        # YENİ boyutla taşıyan cube'a geçirir; mesaj hem YENİ boyut hem YENİ ölçü
+        # taşıyorsa (ör. OEE raporundayken "kumaş cinsine göre fire oranı") o fonksiyon
+        # bilerek None döner. Mesaj tek başına TAM bağımsız bir rapor tanımlıyorsa
+        # route() onu zaten sıfır-LLM çözer — deterministik zincirin son, en genel adımı.
+        try:
+            fresh_route = cube_router.route(q_norm, schema)
+        except Exception:
+            _log.warning("route() (konu değişimi denemesi) hata verdi (best-effort)",
+                        exc_info=True)
+            fresh_route = None
+        if fresh_route:
+            new_cq = fresh_route["cube_query"]
+            new_meta = next((c for c in (schema.get("cubes") or [])
+                             if c.get("name") == new_cq.get("cube")), None)
+            topic_switched = new_cq.get("cube") != prev_cq.get("cube")
+            # DÖNEM TAŞIMA (panel K2, canlı gitas log 2026-07-24): konu değişimi mesajın
+            # kendisi yeni bir dönem belirtmiyorsa önceki raporun dönem filtresi SESSİZCE
+            # tüm-zamana düşmemeli — hedef cube'da AYNI zaman boyutu varsa taşınır (ikisi
+            # de "tarih" — cross_cube_dim_switch'in deepcopy(prev) ile yaptığının aynısı,
+            # burada yalnız route() TAMAMEN yeni bir cq ürettiği için elle yapılır).
+            if (topic_switched and not new_cq.get("filters") and new_meta
+                    and (new_meta.get("time_dimensions") or [None])[0]
+                    == ((prev_cube_meta or {}).get("time_dimensions") or [None])[0]):
+                prev_period_f = [f for f in (prev_cq.get("filters") or [])
+                                 if f.get("dimension") == new_meta["time_dimensions"][0]]
+                if prev_period_f:
+                    new_cq = {**new_cq, "filters": prev_period_f}
+            gate = _period_gate(new_cq, new_meta, fresh_route.get("period_optional"), "Takip")
+            if gate:
+                return gate
+            note = None
+            if topic_switched:
+                prev_label = (prev_cube_meta or {}).get("display") or prev_cq.get("cube") or ""
+                new_label = (new_meta or {}).get("display") or new_cq.get("cube") or ""
+                note = f"Konu değişti: {prev_label} → {new_label}"
+            resp = _answer_from_cube_query(
+                new_cq, order=fresh_route.get("order"), limit_val=fresh_route.get("limit"),
+                source="cube", note=note,
+                trace=migration_trace + (
+                    ["Takip: çapraz-cube konu geçişi (route() ile yeniden eşleştirme, LLM'siz)"]
+                    if topic_switched else
+                    ["Takip: route() ile yeniden eşleştirme (LLM'siz)"]))
+            if resp:
+                return resp
+
+        # Deterministik zincir tükendi — LLM-destekli YAPISAL düzenleme (hâlâ SQL DEĞİL,
+        # bir karar JSON'u: edit|new|unavailable). Kural-tabanlı sağlayıcıda refine_cube
+        # yok (hasattr) → doğrudan dürüst rete düşer.
+        llm_probe = getattr(request.app.state, "llm", None)
+        reason = None
+        if llm_probe is not None and hasattr(llm_probe, "refine_cube"):
+            try:
+                catalog_text, cube_index = cube_router.build_catalog(schema)
+                raw = llm_probe.refine_cube(
+                    json.dumps(prev_cq, ensure_ascii=False), body.question, catalog_text)
+                decision = _parse_decision(raw)
+                action = decision.get("action")
+                if action == "edit" and isinstance(decision.get("cube_query"), dict):
+                    cq2 = cube_router.parse_cube_query(
+                        json.dumps(decision["cube_query"], ensure_ascii=False), cube_index)
+                    if cq2:
+                        cq2 = _drop_invented(cq2, q_norm, prev_cq)
+                        cq2, unresolved = _resolve_period(
+                            prev_cq, cq2, decision.get("period_expr"), q_norm)
+                        if not unresolved:
+                            new_meta = next((c for c in (schema.get("cubes") or [])
+                                             if c.get("name") == cq2.get("cube")), None)
+                            gate = _period_gate(cq2, new_meta, None, "Takip")
+                            if gate:
+                                return gate
+                            resp = _answer_from_cube_query(
+                                cq2, source="cube+llm",
+                                trace=["Takip: LLM-destekli yapısal düzenleme"])
+                            if resp:
+                                return resp
+                elif action == "new":
+                    fresh = _try_fresh_intent()
+                    if fresh:
+                        return fresh
+                reason = decision.get("reason")
+            except Exception:
+                _log.warning("LLM yapısal takip düzenlemesi başarısız (best-effort)", exc_info=True)
+
+        return _honest_refusal(
+            note=reason or "Bu takip mesajını önceki raporla ilişkilendiremedim. "
+                          "Yeni bir soru olarak sorar mısın?",
+            trace=migration_trace + ["Takip: deterministik/LLM düzenleme tükendi → dürüst ret"],
+        )
+
+    # 4) FRESH (bağımsız) soru — Intent-first (bkz. docstring §4).
+    if not is_followup:
+        fresh = _try_fresh_intent()
+        if fresh:
+            return fresh
+
+    # 5) Discovery: sağlayıcı zinciri (failover + kural-tabanlı/dürüst-ret yedeği —
+    # app/llm.py, app.state.llm). Yalnız RAW takip (önceki tur yapısal cube_query
+    # ÜRETMEMİŞSE, yalnız ham SQL varsa) ya da bağımsız-ama-Intent-path'in kapsamadığı
+    # sorular buraya ulaşır — YAPISAL takip (§3) buraya HİÇ düşmez (kendi dürüst-ret'i var).
     llm = getattr(request.app.state, "llm", None)
     if llm is None:
         raise HTTPException(status_code=503, detail="LLM sağlayıcısı yapılandırılmamış.")
 
     prompt_schema = schema
-    if is_followup:
+    if raw_followup:
         try:
             wren_sql = llm.generate_followup_sql(
                 body.question, schema, prev_question, prev_sql, body.history)
         except Exception as exc:
-            raise HTTPException(status_code=502, detail=f"SQL üretilemedi: {exc}") from exc
-        trace = ["önceki SQL bağlamında takip üretimi (LLM önceki SQL'i düzenledi/yok saydı)"]
+            # Dürüst ret — NoLlmGenerator'ın vaat ettiği ("routers/ask.py bunu dürüst
+            # redde çevirir") ama strict-agentic göçünde 502'ye dönüşen davranış düzeltildi.
+            _log.warning("Discovery takip üretimi başarısız", exc_info=True)
+            return _honest_refusal(
+                note="Bu takip mesajını anlayamadım. Farklı bir şekilde sorar mısın?",
+                trace=[f"Discovery: takip üretimi başarısız ({exc}) → dürüst ret"],
+            )
+        trace = ["Discovery: önceki SQL bağlamında takip üretimi (LLM önceki SQL'i düzenledi/yok saydı)"]
     else:
         few_shot = vqr.few_shot_block(body.question) if vqr else ""
         if few_shot:
@@ -960,19 +1595,31 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         try:
             wren_sql = llm.generate_sql(body.question, prompt_schema)
         except Exception as exc:
-            raise HTTPException(status_code=502, detail=f"SQL üretilemedi: {exc}") from exc
-        trace = ["VQR few-shot ile LLM üretimi" if few_shot else "LLM üretimi"]
+            _log.warning("Discovery SQL üretimi başarısız", exc_info=True)
+            return _honest_refusal(
+                note="Bu soruyu anlayamadım. Farklı bir şekilde sorar mısın?",
+                trace=[f"Discovery: SQL üretimi başarısız ({exc}) → dürüst ret"],
+            )
+        trace = ["Discovery: VQR few-shot ile ham-SQL üretimi" if few_shot else
+                "Discovery: ham-SQL üretimi (Intent-path kapsamadı)"]
 
     try:
         planned = service.dry_plan(wren_sql)
     except Exception as e:
         trace.append(f"dry_plan hatası → kendi kendini onarma: {e}")
-        wren_sql = llm.repair(body.question, prompt_schema, wren_sql, str(e))
-        planned = service.dry_plan(wren_sql)
+        try:
+            wren_sql = llm.repair(body.question, prompt_schema, wren_sql, str(e))
+            planned = service.dry_plan(wren_sql)
+        except Exception as exc2:
+            _log.warning("Discovery self-healing başarısız", exc_info=True)
+            return _honest_refusal(
+                note="Bu soru için güvenilir bir sorgu üretemedim.",
+                trace=trace + [f"self-healing başarısız ({exc2}) → dürüst ret"],
+            )
 
     result = service.query(wren_sql, limit=limit)
 
-    # 4) Öğrenme döngüsü: yalnız BAĞIMSIZ başarılı yanıtlar VQR'a otomatik yazılır.
+    # 6) Öğrenme döngüsü: yalnız BAĞIMSIZ başarılı yanıtlar VQR'a otomatik yazılır.
     # Bir takip cevabını ("aylara göre" → SQL) standalone soru metniyle önbelleklemek,
     # sonraki alakasız bir konuşmada YANLIŞ tekrar oynatmaya yol açardı — bu yüzden yalnız
     # bağlamdan bağımsız (kendi başına anlamlı) sorular öğrenilir.
@@ -988,6 +1635,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         source=_llm_source(llm, used_rule=isinstance(llm, RuleBasedSqlGenerator)),
         trace=trace,
     )
+    resp.contract_id = _record_contract(None, wren_sql, result, resp.source)
     return _finish(_attach_viz(resp, result))
 
 

@@ -279,6 +279,16 @@ def is_period_only(q: str) -> bool:
     ))
 
 
+def is_capability_query(q: str) -> bool:
+    """"Hangi kırılımlara göre detaylandırabilirim?" gibi META-sorular bir DÜZENLEME
+    DEĞİL — mevcut cube'un HANGİ boyutları taşıdığının sorulmasıdır (log regresyonu:
+    LLM bunu düzenleme sanıp TÜM boyutları rapora ekleyip 861 satır üretiyordu).
+    "hangi" + "kırılım/boyut" birlikte geçiyorsa (sıra önemsiz) yakalanır — ayrı ayrı
+    ikisi de yaygın kelimeler olduğundan BİRLİKTE geçme şartı yanlış-pozitifi düşürür."""
+    return bool(re.search(r"\bhangi\b", q)) and bool(
+        re.search(r"\bkirilim\w*\b|\bboyut\w*\b", q))
+
+
 # --- Generic sinonim eşleştirme (ADR-0005: içerik cube metadata'sında, kod generic) --
 # Sinonimler cube metadata.yml'den gelir (wren_service.schema() normalize eder).
 # Eşleşme kuralı: varsayılan ALTDİZİ ("ciro" → "cirosu"yu yakalar); sonu "!" olan
@@ -329,6 +339,18 @@ def _value_token_hit(q: str, nv: str) -> bool:
 
 def _cube_meta(schema: dict, name: str) -> dict | None:
     return next((c for c in schema.get("cubes", []) if c.get("name") == name), None)
+
+
+def is_period_optional(measure: str | None, cube_meta: dict | None) -> bool:
+    """Dönem-kapısı (ask.py `_period_gate`) İÇİN tek gerçek kaynak: hangi ölçüde
+    "hangi dönem?" SORULMAZ. Yalnız semi-additive (bakiye/stok — dönemsiz SUM = güncel
+    bakiye, zaten as-of-now) bunun dışında tutulur. Diğer TÜM ölçülerde (avg/oran dahil)
+    dönem sorulur — kırılımlı sorularda bile sessiz tüm-zaman varsayımı YOK, kullanıcı
+    "Tümü" chip'iyle bilinçli tercih eder (ürün politikası, bkz. tests/test_ask_golden.py
+    `_ask_all_time` — "dönem bilgisi yoksa KIRILIMLI sorularda da sorulur")."""
+    if not measure or not cube_meta:
+        return False
+    return measure in (cube_meta.get("semi_additive") or [])
 
 
 _ADD_RE = re.compile(r"\b(ekle\w*|ayrica|bir de|yanina|ilave|dahil et|hem de)\b")
@@ -665,12 +687,31 @@ def deterministic_refine(prev: dict, q: str, schema: dict) -> dict | None:
             ] + [flt]
             changed = True
 
-    dfs = date_filters(q, time_dims[0])  # "son 3 ay" / "bu ay" / "temmuz ayı" (aralık)
-    if dfs:
-        cq["filters"] = [
-            f for f in cq.get("filters", []) if f.get("dimension") != time_dims[0]
-        ] + dfs
-        changed = True
+    if is_all_time(q):
+        # "Tümü" chip'i / "tüm zamanlar" yazımı: bilinçli tüm-veri seçimi (needs_period
+        # de aynı sinyali okur). Var olan dönem filtresi varsa SİLİNİR (log regresyonu:
+        # "bu yıl" → "Tümü" eski filtreyi taşımamalı); filtre zaten yoksa bu bir NO-OP'tur
+        # ama yine de "already" sayılır — aksi halde deterministic_refine None döner ve
+        # zincir LLM'e/dürüst-rete düşer, oysa istek zaten tam olarak mevcut durumu onaylıyor.
+        had_period_filter = any(f.get("dimension") == time_dims[0] for f in cq.get("filters", []))
+        if had_period_filter:
+            cq["filters"] = [f for f in cq.get("filters", []) if f.get("dimension") != time_dims[0]]
+            changed = True
+        else:
+            already = True
+        # KALICI ONAY İMZASI: "Tümü" tek-tık bir seçimdir (needs_period docstring'i) —
+        # sonraki HER düzenleme (ör. "vardiyalara göre de") teknik olarak YENİ bir cq
+        # üretir ve dönem kapısı yeniden sorardı (kullanıcı ZATEN bilinçli seçim yaptı).
+        # cube_query_to_sql BİLİNMEYEN üst-düzey alanları yutar (zararsız) — bu imza
+        # sonraki turlarda ask.py'nin dönem-kapısını (period_confirmed) atlatır.
+        cq["period_confirmed"] = True
+    else:
+        dfs = date_filters(q, time_dims[0])  # "son 3 ay" / "bu ay" / "temmuz ayı" (aralık)
+        if dfs:
+            cq["filters"] = [
+                f for f in cq.get("filters", []) if f.get("dimension") != time_dims[0]
+            ] + dfs
+            changed = True
 
     # KAPSAM KAPISI (ADR-0008): mesajda tanınmayan içerik varsa kısa devre YOK — LLM
     # devralsın ("istanbul için haftanın günü" → istanbul'u anlamadık; no-op yutma yok).
@@ -717,6 +758,23 @@ def needs_period(cube_query: dict, q: str) -> bool:
 # dahil — hafta_gunu boyutu olmayan cube'larda da doğru davranış: reddet → LLM).
 _BREAKDOWN_HINTS = ("bazinda", "bazli", "gore", "kirilim",
                     "haftanin gun", "hafta gunu", "hangi gun", "gunlere", "gune gore")
+
+# PANELLİ (facet) görünüm niyeti: "her X için ayrı ayrı [grafik]" — AÇIK kullanıcı
+# isteği, viz.py'nin otomatik kararının ÜSTÜNE biner (ADR-0024, AskResponse.view_hint).
+# X, cube'un dimension_synonyms'ından hangi boyuta denk geliyorsa ("kumaş türü" →
+# kumas_cinsi) o boyut panel-eksenidir; fragment YALNIZ "her"–"ayrı ayrı" arası (soruda
+# geçen DİĞER boyutlar — ör. "renklerine göre" — normal kırılım kalır, facet olmaz).
+_FACET_RE = re.compile(r"\bher\s+(.+?)\s+(?:icin\s+)?ayri\s+ayri\b")
+
+
+def detect_facet(q: str, cube_meta: dict) -> str | None:
+    """"her kumaş türü için ayrı ayrı grafik" → "facet:kumas_cinsi". Fragmentte
+    tanınan boyut yoksa None (görünüm kararı viz.py'nin varsayılanına kalır)."""
+    m = _FACET_RE.search(q)
+    if not m:
+        return None
+    dims = _match_dims(m.group(1), cube_meta)
+    return f"facet:{dims[0]}" if dims else None
 
 # DÖNEMSEL karşılaştırma niyeti (önceki dönem/LAG) — cube bunu ifade EDEMEZ; golden
 # SQL'li LLM yolu (aggregate-then-LAG) devralmalı. DİKKAT: yalın "karşılaştır" burada
@@ -854,6 +912,19 @@ def _top_n_entity(q: str, cube_meta: dict) -> dict | None:
         "direction": "asc" if direction == "ASC" else "desc",
         "n": int(m.group(1)),
     }
+
+
+def cube_only_match(q: str, schema: dict) -> dict | None:
+    """Cube-düzeyi sinonim TEK bir cube'a işaret ediyor ama hiçbir ÖLÇÜ sinonimi
+    geçmiyor VE cube'un `default_measure`'ı yoksa o cube_meta'yı döner — route()'un
+    NEDEN None döndüğünü ayırt eder (çapraz-konu/kısmi-anlama DEĞİL: "hangi ölçü?"
+    chip'i gerekir). Çok-ölçülü, eşit-geçerli cube'larda (ör. sürdürülebilirlik: su/
+    enerji/gaz/kimyasal yoğunluğu) sessizce bir ölçü varsaymak yanıltıcı olur
+    (ADR-0008) — kullanıcı seçsin."""
+    cube_meta = _match_cube(q, schema)
+    if cube_meta is None or _match_measure(q, cube_meta)[0] or cube_meta.get("default_measure"):
+        return None
+    return cube_meta
 
 
 def measure_cube_candidates(q: str, schema: dict) -> list[tuple[dict, str]]:
@@ -995,20 +1066,34 @@ def partial_unknowns(q: str, schema: dict) -> tuple[list[str], list[tuple[dict, 
     tanınmayan açıkça söylenir."""
     known: set[str] = set()
     hits: list[tuple[dict, str]] = []
+    # route()'un KENDİ kapsam-kapısıyla AYNI standart: bir cube adı yalnız KATALOGDA var
+    # olması "anlaşıldı" saymaz — mesaj BAŞKA bir cube'a çözülüyorsa (ör. "kar oranı
+    # sürdürülebilirlik" → ölçü kanıtıyla parti'ye çözülür) "sürdürülebilirlik" hâlâ
+    # AÇIKLANMAMIŞTIR. Belirsizse (resolved=None, çapraz-konu adayı) TÜM cube-düzeyi
+    # sinonimler sayılır — o durumda birden fazla konu GERÇEKTEN tanınmış olabilir.
+    resolved = _match_cube(q, schema)
     for c in schema.get("cubes", []):
-        known |= _syn_hit_words(q, c.get("synonyms"))
+        # AYNI kısıt (cube-düzeyi/ölçü/boyut/değer — DÖRDÜ de) yalnız ÇÖZÜLEN cube'un
+        # kendi sözlüğüne uygulanır; resolved=None ise (gerçek çapraz-konu adayı,
+        # "verim ve fire oranı" gibi) TÜM katalog sayılır — o durumda birden fazla
+        # konu GERÇEKTEN tanınmış olabilir. `hits` HER ZAMAN kısıtsız (hangi ölçü
+        # NEREDE geçerse, "hangisini istedin?" chip'i için gerekli).
+        in_scope = resolved is None or c is resolved
+        if in_scope:
+            known |= _syn_hit_words(q, c.get("synonyms"))
         m, msyn = _match_measure(q, c)
         if m:
             hits.append((c, m))
-            if msyn:
+            if msyn and in_scope:
                 known.update(re.findall(r"[a-z]+", msyn))
-        for syns in (c.get("dimension_synonyms") or {}).values():
-            known |= _syn_hit_words(q, syns)
-        for vals in (c.get("dimension_values") or {}).values():
-            for v in vals or []:
-                nv = _norm(str(v))
-                if nv and _value_token_hit(q, nv):
-                    known.update(re.findall(r"[a-z]+", nv))
+        if in_scope:
+            for syns in (c.get("dimension_synonyms") or {}).values():
+                known |= _syn_hit_words(q, syns)
+            for vals in (c.get("dimension_values") or {}).values():
+                for v in vals or []:
+                    nv = _norm(str(v))
+                    if nv and _value_token_hit(q, nv):
+                        known.update(re.findall(r"[a-z]+", nv))
     known |= _period_hit_words(q)
     known |= _misc_hit_words(q)
     return _uncovered(q, known), hits
@@ -1210,15 +1295,16 @@ def route(question: str, schema: dict) -> dict | None:
             "n": n,
         }
         return {"cube_query": cq, "measure": measure, "order": None, "limit": None,
-                "period_optional": is_semi}
+                "period_optional": is_period_optional(measure, cube_meta)}
     order = (measure, direction) if (direction and has_group) else None
     limit = n if (n and has_group) else (1 if (direction and dims and not gran) else None)
 
-    # period_optional: semi-additive snapshot ölçüde (dönemsiz bakiye) dönem SORULMAZ —
-    # güncel bakiye zaten as-of-now; "hangi dönem?" chip'i kullanıcıyı net-hareket
-    # tuzağına iter (panel K4). ask.py period-kapısı bu bayrağı okur.
+    # period_optional: semi-additive (bakiye/stok) VE non-additive (avg/count_distinct)
+    # ölçülerde dönem SORULMAZ (bkz. is_period_optional) — güncel bakiye zaten as-of-now,
+    # tüm-zamanların ortalaması da SUM'un aksine sessizce yanıltıcı değil. ask.py
+    # period-kapısı bu bayrağı okur.
     return {"cube_query": cq, "measure": measure, "order": order, "limit": limit,
-            "period_optional": is_semi}
+            "period_optional": is_period_optional(measure, cube_meta)}
 
 
 # --- LLM'e cube seçtirme (kelime yönlendirici kaçırırsa) --------------------

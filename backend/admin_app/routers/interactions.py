@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import uuid as _uuid
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func
@@ -29,6 +30,13 @@ def _loads(v: str | None):
         return None
 
 
+def _uuid_or_none(v):
+    try:
+        return _uuid.UUID(v) if v else None
+    except (ValueError, TypeError):
+        return None
+
+
 @router.get("")
 def list_interactions(
     limit: int = Query(50, ge=1, le=500),
@@ -42,12 +50,6 @@ def list_interactions(
     session: Session = Depends(get_session),
 ) -> dict:
     """Filtrelenmiş + sayfalanmış etkileşim + toplam + filtre facet'leri (SQL-backed)."""
-    def _uuid_or_none(v):
-        try:
-            return _uuid.UUID(v) if v else None
-        except (ValueError, TypeError):
-            return None
-
     conds = []
     if source:
         conds.append(InteractionLog.kind == source)
@@ -117,4 +119,67 @@ def list_interactions(
             "tenants": [{"id": str(t), "slug": slug.get(str(t), str(t))}
                         for t in sorted(facet_tids, key=str)],
         },
+    }
+
+
+# path kategorisi → hangi ham `source` değerleri kapsar. Faz 1 KPI'sı: "Intent-payı" —
+# route()/LLM-Intent-JSON'ın (SQL yazmadan) ham-SQL Discovery'ye göre payı gerçekten arttı mı?
+def _route_path(source: str | None) -> str:
+    s = (source or "").lower()
+    if s.startswith("cube"):
+        return "intent"       # cube (route(), sıfır-LLM) + cube+llm (LLM Intent-JSON seçimi)
+    if s == "vqr":
+        return "cache"        # önceden doğrulanmış SQL tekrar oynatıldı
+    if s.startswith("llm:"):
+        return "discovery"    # ham-SQL üretimi (Intent kapsamadı / takip mesajı)
+    if s == "rule":
+        return "rule"         # LLM'siz kural-tabanlı yedek
+    if s in ("meta", "catalog"):
+        return "meta_katalog"
+    return "other"
+
+
+@router.get("/route-distribution")
+def route_distribution(
+    days: int = Query(7, ge=1, le=90),
+    tenant: str | None = None,
+    session: Session = Depends(get_session),
+) -> dict:
+    """Faz 1 KPI: son N gündeki /ask cevaplarının yolu — intent (route()+LLM-Intent-JSON,
+    SQL yazmadan) / cache (VQR) / discovery (ham-SQL) / diğer. "Intent-first flip trafiği
+    gerçekten kaydırdı mı" sorusunun ölçülebilir cevabı (bkz. Faz 1 yol haritası — rota-
+    dağılımı telemetrisi flip'ten ÖNCE/yanında kurulmalı gereksinimi). Ham `source` kırılımı
+    da döner (cube vs cube+llm ayrımı — route()'un tek başına ne kadarını kapsadığı görünür
+    olsun, LLM-Intent-JSON adımının canary'de ne kadar tetiklendiği de)."""
+    since = datetime.utcnow() - timedelta(days=days)
+    conds = [InteractionLog.ts >= since]
+    if tenant and (_t := _uuid_or_none(tenant)) is not None:
+        conds.append(InteractionLog.tenant_id == _t)
+
+    stmt = select(InteractionLog.source, func.count()).group_by(InteractionLog.source)
+    for c in conds:
+        stmt = stmt.where(c)
+    rows = session.exec(stmt).all()
+    total = sum(c for _, c in rows)
+
+    def _pct(c: int) -> float:
+        return round(c / total * 100, 1) if total else 0.0
+
+    by_source = sorted(
+        [{"source": s or "(yok)", "count": c, "pct": _pct(c)} for s, c in rows],
+        key=lambda r: -r["count"],
+    )
+    path_counts: dict[str, int] = {}
+    for s, c in rows:
+        p = _route_path(s)
+        path_counts[p] = path_counts.get(p, 0) + c
+    by_path = sorted(
+        [{"path": p, "count": c, "pct": _pct(c)} for p, c in path_counts.items()],
+        key=lambda r: -r["count"],
+    )
+
+    return {
+        "since": since.isoformat(timespec="seconds"), "days": days, "total": total,
+        "by_path": by_path,      # {"intent"|"cache"|"discovery"|"rule"|"meta_katalog"|"other", count, pct}
+        "by_source": by_source,  # ham source kırılımı ("cube" vs "cube+llm" ayrımı dahil)
     }
