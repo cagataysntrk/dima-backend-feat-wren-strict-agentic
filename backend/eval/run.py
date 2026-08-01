@@ -87,12 +87,57 @@ def shape_ok(cq: dict | None, shape: dict) -> bool:
     return True
 
 
+# Ham `source` → yol sınıfı. `admin_app/routers/interactions.py::_route_path` ile AYNI
+# taksonomi (tek doğruluk kaynağı olsun; oradaki KPI ile buradaki eval aynı dili konuşmalı).
+def source_class(source: str | None) -> str:
+    s = (source or "").lower()
+    if not s:
+        return "refuse"
+    if s.startswith("cube"):
+        return "intent"          # cube (route(), sıfır-LLM) + cube+llm (Intent-JSON)
+    if s == "vqr":
+        return "cache"
+    if s.startswith("llm:"):
+        return "discovery"       # ham SQL — yapısal cevap DEĞİL, chip/drill YOK
+    if s == "rule":
+        return "rule"            # kural-tabanlı serbest SQL yedeği (yalnız demo)
+    if s in ("meta", "catalog", "statement"):
+        return "meta_katalog" if s != "statement" else "intent"
+    return "other"
+
+
+# LLM'e HİÇ gitmeyen yollar — "deterministik pay" metriğinin tanımı.
+_DETERMINISTIC = {"intent", "cache", "meta_katalog"}
+
+
+def source_ok(d: dict, expected: str) -> bool:
+    """`expect_source` denetimi. Ham source ADI ya da yol SINIFI kabul edilir.
+
+    NEDEN VAR (2 Ağustos 2026): `classify()` `source` dolu olan HER şeyi "answer" sayıyor,
+    yani ham-SQL Discovery cevabı ile sıfır-LLM cube cevabı bu harness'a AYNI görünüyordu.
+    Oysa ikisinin taşıdığı garanti farklı: cube cevabı chip/kırılım/drill/Query Contract
+    taşır, Discovery cevabı tek atımlık düz tablodur. Doğruluk kapısı bunu ayırt edemezse
+    "kapsam Discovery'ye kayarak arttı" gibi bir regresyon SESSİZCE geçer.
+    """
+    src = (d.get("source") or "").lower()
+    want = expected.lower()
+    if want == "any":
+        return True
+    if want == "deterministic":
+        return source_class(src) in _DETERMINISTIC
+    if want in ("intent", "cache", "discovery", "rule", "meta_katalog", "other"):
+        return source_class(src) == want
+    return src == want          # tam eşleşme: "cube", "cube+llm", "vqr", "statement"...
+
+
 def step_result(d: dict, expect: str, step: dict) -> tuple[str, bool]:
-    """(actual, correct). correct: davranış VE (cevapsa) şekil/not doğru."""
+    """(actual, correct). correct: davranış VE (cevapsa) şekil/kaynak/not doğru."""
     actual = classify(d)
     if actual != expect:
         return actual, False
     if expect == "answer":
+        if "expect_source" in step and not source_ok(d, str(step["expect_source"])):
+            return actual, False
         if "shape" in step:
             return actual, shape_ok(d.get("cube_query"), step["shape"])
         return actual, True
@@ -134,6 +179,8 @@ def run_cases(client, cases: list[dict], slice_: str = "det") -> dict:
                 "correct": correct,
                 "note": (d.get("note") or "")[:80],
                 "cq": d.get("cube_query"),
+                "source": d.get("source"),
+                "path": source_class(d.get("source")),
             })
             cq = d.get("cube_query") or cq  # rapor durumu zincirde taşınır (UI davranışı)
             hist = hist + [step["q"]]
@@ -162,6 +209,15 @@ def score(records: list[dict]) -> dict:
     p, plo, phi = wilson(len(correct_answers), len(answered))
     c, clo, chi = wilson(len(covered), len(answerable))
 
+    by_path: dict[str, int] = {}
+    by_source: dict[str, int] = {}
+    for r in answered:
+        by_path[r.get("path") or "other"] = by_path.get(r.get("path") or "other", 0) + 1
+        key = r.get("source") or "(yok)"
+        by_source[key] = by_source.get(key, 0) + 1
+    det_n = sum(n for k, n in by_path.items() if k in _DETERMINISTIC)
+    det_share = det_n / len(answered) if answered else 0.0
+
     tags: dict[str, list] = {}
     for r in records:
         for t in r["tags"]:
@@ -178,6 +234,13 @@ def score(records: list[dict]) -> dict:
         "coverage": round(c, 4),
         "coverage_ci95": [round(clo, 4), round(chi, 4)],
         "chip_accuracy": round(len(chips_ok) / len(chips), 4) if chips else None,
+        # YOL DAĞILIMI (2 Ağustos 2026): cevapların hangi katmandan geldiği. Ürünün ana
+        # KPI'ı ("Intent ≥%70 · Discovery <%30") ile aynı taksonomi. `deterministic_share`
+        # = LLM'e HİÇ gitmeyen cevapların payı; deterministik dilimde bunun 1.0'dan sapması
+        # kapsamın LLM'e kaydığının işaretidir.
+        "by_path": by_path,
+        "by_source": by_source,
+        "deterministic_share": round(det_share, 4),
         "by_tag": by_tag,
         "failures": [
             {k: r[k] for k in ("id", "expect", "actual", "note")}
@@ -196,6 +259,11 @@ def print_report(m: dict) -> None:
           f"(CI95 {m['coverage_ci95'][0]:.1%}–{m['coverage_ci95'][1]:.1%})")
     if m["chip_accuracy"] is not None:
         print(f"chip-accuracy      : {m['chip_accuracy']:.1%}")
+    if m.get("by_path"):
+        print(f"deterministik pay  : {m['deterministic_share']:.1%}  "
+              f"(LLM'e HİÇ gitmeyen cevaplar)")
+        print("yol dağılımı       : " + " · ".join(
+            f"{k}={v}" for k, v in sorted(m["by_path"].items(), key=lambda x: -x[1])))
     print("\netiket           n    doğru")
     for t, v in m["by_tag"].items():
         flag = "" if v["ok"] == v["n"] else "  ←"
@@ -251,6 +319,11 @@ def main() -> None:
 
     if args.slice == "det":  # LLM'siz, ağsız, deterministik koşum
         os.environ["DIMA_LLM_PROVIDER"] = "rule"
+    # HERMETİKLİK (2 Ağustos 2026): "ağsız" iddiası VQR embedder'ı yüzünden DOĞRU DEĞİLDİ —
+    # `vqr._embedder()` HF Hub'dan ~2.2 GB ONNX indirmeye çalışıyordu; kimliksiz indirme
+    # oranlanıyor ve pratikte duruyor, timeout da yok. Kapalıyken F5-token sözlüksel
+    # fallback koşar; eval vakaları zaten o eşiklere göre kalibre. (bkz. app/config.py)
+    os.environ["DIMA_VQR_EMBEDDER"] = "off"
     import tempfile
 
     os.environ["DIMA_VQR_PATH"] = os.path.join(
@@ -282,7 +355,8 @@ def main() -> None:
     REPORT.write_text(json.dumps(m, ensure_ascii=False, indent=1))
     if args.update_baseline:
         BASELINE.write_text(json.dumps(
-            {k: m[k] for k in ("n", "answered", "answered_precision", "coverage")},
+            {k: m[k] for k in ("n", "answered", "answered_precision", "coverage",
+                               "deterministic_share")},
             ensure_ascii=False, indent=1,
         ))
         print(f"\nbaseline güncellendi → {BASELINE}")
@@ -290,7 +364,9 @@ def main() -> None:
         b = json.loads(BASELINE.read_text())
         dp = m["answered_precision"] - b["answered_precision"]
         dc = m["coverage"] - b["coverage"]
-        print(f"\nbaseline'a göre: precision {dp:+.1%} · coverage {dc:+.1%}")
+        dd = m["deterministic_share"] - b.get("deterministic_share", m["deterministic_share"])
+        print(f"\nbaseline'a göre: precision {dp:+.1%} · coverage {dc:+.1%} "
+              f"· deterministik pay {dd:+.1%}")
 
 
 if __name__ == "__main__":

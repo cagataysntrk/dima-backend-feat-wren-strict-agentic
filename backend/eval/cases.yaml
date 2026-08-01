@@ -2,12 +2,20 @@
 # Kaynak: gerçek kullanım logları (logs/chat-*.jsonl) + golden testler + Türkçe varyantlar.
 # slice: det = deterministik katman (LLM'siz, CI'da koşar) · llm = canlı model dilimi.
 # shape: yalnız verilen anahtarlar denetlenir (cube/measures/dims/gran/filter_ops/...).
+# expect_source: cevabın HANGİ KATMANDAN geldiğini denetler (2 Ağustos 2026). Ham ad
+#   ("cube", "cube+llm", "vqr") ya da yol sınıfı ("intent", "cache", "discovery",
+#   "deterministic", "any") kabul edilir. Neden gerekli: `classify()` source dolu olan
+#   HER şeyi "answer" sayar, yani bir soru cube yolundan Discovery'ye kayarsa precision
+#   ve coverage AYNI kalır ve regresyon SESSİZ geçer — oysa Discovery cevabında chip,
+#   kırılım, drill ve always_filter YOKTUR. Toplam pay ayrıca `deterministic_share`
+#   metriğiyle ve tests/test_eval_gate.py'deki kapıyla korunur.
 
 # ── OEE: deterministik cevaplar ─────────────────────────────────────────────
 - id: oee-makine
   q: makine bazında ortalama oee bu yıl
   tags: [oee, kirilim]
   expect: answer
+  expect_source: cube
   shape: {cube: oee, measures: [ort_oee], dims: [makine], filter_ops: [gte]}
 - id: oee-randiman-cihaz
   q: cihaz bazında randıman bu yıl
@@ -508,6 +516,7 @@
   q: operatör bazında işlenen kg bu yıl
   tags: [ny, parti, personel]
   expect: answer
+  expect_source: cube
   shape: {cube: parti, measures: [toplam_agirlik_kg], dims: [operator]}
 - id: ny-metre-makine
   q: makine bazında metre bu yıl
@@ -523,6 +532,7 @@
   q: müşteri bazında ortalama dE bu yıl
   tags: [ny, parti, kalite]
   expect: answer
+  expect_source: cube
   shape: {cube: parti, measures: [ort_renk_sapmasi], dims: [musteri]}
 
 # ── Rework / kalite raporu (tamir_rework) ───────────────────────────────────
