@@ -456,6 +456,41 @@ def match_kpi(q: str, schema: dict) -> str | None:
     return best[1] if best else None
 
 
+def match_kpi(q_norm: str, schema: dict) -> str | None:
+    """Zaten NORMALİZE edilmiş soru metnini (`_norm(...)` — çağıranın sorumluluğu, `route()`'un
+    kendi `q_norm`'uyla TUTARLI kalsın diye burada TEKRAR normalize EDİLMEZ) derlenmiş
+    CROSS-CUBE KPI kataloğuna (`WrenService.schema()["kpis"]` — `app/kpi.py::load_kpis`,
+    yalnız gerekli türev-view'ları ÜRETİLMİŞ şirketlerde dolu olur, ör. CCC/cari oran) karşı
+    eşler, eşleşen KPI'nın ADINI (`kpis/<ad>.yml`'deki `name`) döner.
+
+    Doğrulama turu düzeltmesi (1 Ağustos 2026): bu katalog metadata için (`app/wren_
+    service.py`) ZATEN hazırlanmıştı ("yönlendirme için ad/etiket/sinonim") ve `tests/
+    test_kpi.py` bu fonksiyonun VAR OLMASINI ZATEN BEKLİYORDU (`test_likidite_kpileri_
+    mizan_uzerinde`, `test_match_kpi_en_uzun_sinonim_kazanir`) — ama `cube_router.py`'de
+    HİÇ TANIMLANMAMIŞTI (AttributeError ile başarısız oluyorlardı). Bu fonksiyon o eksik
+    son-kilometre'dir. `schema()["kpis"]` boş olan şirketlerde (demo-boyahane dahil ÇOĞU
+    demo/tenant) HER ZAMAN None döner — davranış DEĞİŞMEZ, KPI paketi derlenmiş
+    şirketlerde (gulteks/gitas gibi) devreye girer.
+
+    Birden fazla KPI eşleşirse EN UZUN eşleşen sinonim kazanır (cube-eşleştirmedeki
+    "ölçü kanıtı" ilkesiyle AYNI ruh — daha spesifik ifade önceliklidir)."""
+    kpis = schema.get("kpis") or []
+    if not kpis:
+        return None
+    best_name: str | None = None
+    best_len = 0
+    for k in kpis:
+        candidates = list(k.get("synonyms") or [])
+        if k.get("label"):
+            candidates.append(_norm(str(k["label"])))
+        for syn in candidates:
+            syn_n = str(syn).strip()
+            if syn_n and len(syn_n) >= 3 and syn_n in q_norm and len(syn_n) > best_len:
+                best_name = k.get("name")
+                best_len = len(syn_n)
+    return best_name
+
+
 def _match_cube(q: str, schema: dict) -> dict | None:
     """Cube-düzeyi sinonimlerden aday cube. Birden fazla aday → ÖLÇÜ kanıtıyla kırılır:
     yalnız birinde ölçü sinonimi de geçiyorsa ("müşteri bazında SU tüketimi" → su cube'u;
@@ -1230,6 +1265,35 @@ def typo_correct(q: str, schema: dict) -> tuple[str, list[dict]]:
             # "suggest": q_out (asıl dönen metin) DEĞİŞMEZ — yalnız kayıtta "eğer bu
             # kelime düzeltilseydi" metni taşınır, ask.py chip'in `query`'si için kullanır.
             corrections.append({"kind": "suggest", "from": w, "to": best, "corrected_q": fixed_q})
+
+    # Doğrulama turu düzeltmesi (1 Ağustos 2026) — `app/value_index.py` (ADR-0008) TAM
+    # yazılmıştı ama HİÇ bağlanmamıştı. Yukarıdaki difflib geçişi yalnız TEK KELİMELİK
+    # düzeltme yapabilir (`_catalog_vocabulary` çok-kelimeli değerleri BİLE tek tek
+    # kelimelere bölüyor) — `value_index.FuzzyIndex` KOMŞU KELİME İKİLEMELERİNİ de dener
+    # (ör. "efe dokma" → çok-kelimeli bir müşteri/ürün adı "efe dokuma" ancak böyle
+    # yakalanır). Bu YÜZDEN yukarıdaki geçişin YERİNE değil, YALNIZ onun ÇÖZEMEDİĞİ
+    # (hâlâ tanınmayan) kelimeler için EK bir deneme olarak eklenir — mevcut, %100
+    # hassasiyetli tek-kelime kararını asla EZMEZ/DEĞİŞTİRMEZ.
+    corrected_words = {c["from"] for c in corrections}
+    leftover = [w for w in unknown if w not in corrected_words and len(w) >= _TYPO_MIN_WORD_LEN]
+    if leftover:
+        from app.value_index import FuzzyIndex
+
+        fi_schema = {"cubes": [resolved]} if resolved is not None else schema
+        idx = FuzzyIndex(fi_schema)
+        auto = idx.auto_fix(q, leftover)
+        if auto is not None and auto.surface != auto.span:
+            fixed_q = re.sub(rf"\b{re.escape(auto.span)}\b", auto.surface, q)
+            q_out = re.sub(rf"\b{re.escape(auto.span)}\b", auto.surface, q_out)
+            corrections.append({"kind": "auto", "from": auto.span, "to": auto.surface,
+                                "corrected_q": fixed_q})
+        else:
+            for c in idx.suggest(q, leftover)[:1]:  # yalnız EN İYİ aday (chip gürültüsü olmasın)
+                if c.surface == c.span:
+                    continue
+                fixed_q = re.sub(rf"\b{re.escape(c.span)}\b", c.surface, q)
+                corrections.append({"kind": "suggest", "from": c.span, "to": c.surface,
+                                    "corrected_q": fixed_q})
     return q_out, corrections
 
 

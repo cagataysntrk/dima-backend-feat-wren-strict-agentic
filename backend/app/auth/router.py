@@ -4,6 +4,12 @@ Refresh token HTTP-only cookie'de (saka-standards 02): JS erişemez. path="/" �
 frontend rewrite-proxy arkasında same-origin olduğundan (ADR-0012 alternatifi) Next
 middleware cookie'yi okuyabilsin ve her istekte gönderilsin. Access token gövdede döner
 (frontend memory'de tutar).
+
+NOT (doğrulama turu düzeltmesi, 1 Ağustos 2026): `admin_app/auth_router.py` bu dosyanın
+PARALELİ — ADR-0015'in bilinçli ağ-izolasyonu gereği AYRI bir JWT secret çiftiyle imzalar,
+tek bir ortak modüle BİLEREK birleştirilmedi. Cookie/güvenlik ayarlarından biri (ör.
+`SameSite`/`Secure`/`httponly`) burada değişirse, ORADA da (ve tersi) kontrol edilmeli —
+ikisi bağımsız kod yollarıdır, biri yamanırken öbürü unutulma riski taşır.
 """
 
 from __future__ import annotations

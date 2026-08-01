@@ -17,6 +17,7 @@ import {
   listTenantConnections,
   testTenantConnection,
 } from "@/lib/api-client";
+import { usePermission } from "@/lib/usePermission";
 import type { ConnectionDraft, DraftCube } from "@/lib/types";
 
 type Step = "form" | "review" | "done";
@@ -39,6 +40,13 @@ function FormField({
 
 export function ConnectionReviewPanel() {
   const qc = useQueryClient();
+  // Doğrulama turu düzeltmesi (1 Ağustos 2026): bu panel HİÇ izin kontrolü YAPMIYORDU —
+  // `connection:write` yetkisi olmayan (analyst/viewer) bir kullanıcı sihirbazın TAMAMINI
+  // görüyor, submit ettiğinde backend'in doğru şekilde engellediği bir 403 alıyordu
+  // (backend zaten `Depends(require("connection:write"))` ile ZORLUYOR — bu GÜVENLİK
+  // açığı değildi, yalnız kafa karıştırıcı bir UX'ti). Diğer izin-duyarlı bileşenlerle
+  // (ReportPanel/SettingsDrawer) AYNI paylaşılan `usePermission` hook'u kullanılır.
+  const canWrite = usePermission("connection:write");
   const [step, setStep] = useState<Step>("form");
   const [form, setForm] = useState({
     host: "", port: "5432", database: "", user: "", password: "",
@@ -109,6 +117,15 @@ export function ConnectionReviewPanel() {
   };
 
   const includedNames = new Set((draft?.cubes ?? []).filter((c) => c.include).map((c) => c.name));
+
+  if (!canWrite) {
+    return (
+      <p className="text-sm text-muted">
+        Veri kaynağı bağlama sihirbazı yalnız yönetici yetkisiyle kullanılabilir. Erişim
+        gerekiyorsa yöneticinizle iletişime geçin.
+      </p>
+    );
+  }
 
   return (
     <div className="text-sm">

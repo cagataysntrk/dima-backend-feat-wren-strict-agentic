@@ -10,8 +10,10 @@ madde o planın ilgili bölümüne karşılık gelir.
 **Okuma sırası önerisi**: (1) bu belgenin §1 özet tablosu, (2) ilgilendiğiniz maddenin
 detay bölümü (§2), (3) §3 "doğrulama turunda bulunup düzeltilen eksikler" (kritik —
 ilk uygulama turunun ÜSTÜN KÖRÜ bıraktığı noktalar burada), (4) §4 UC eşleme tablosu,
-(5) §5 test durumu, (6) §6 bilinen sınırlar. Gelecek iş önerileri AYRI bir dosyada:
-`FAZ4-SONRASI-ONERILER_2026-08-01.md`.
+(5) §5 test durumu, (6) §6 bilinen sınırlar, (7) §7 — AYNI GÜN İKİNCİ bir turda P0/P1/P2
+kalemlerinin GERÇEK UYGULAMASI (bu turda §6'daki sınırların çoğu KAPANDI). Gelecek iş
+önerileri AYRI bir dosyada: `FAZ4-SONRASI-ONERILER_2026-08-01.md` (o dosya bu ikinci
+turun sonuçlarıyla da güncellendi).
 
 ---
 
@@ -320,3 +322,75 @@ KARIŞTIRILMAMALI, ayrı bir sayaç).
 - **Canlı tarayıcı UI testi**: bu oturumda hiç yapılamadı (araç yok) — 4.10/4.11'in
   GERÇEK bir tarayıcıda (chrome-in-claude ya da elle) bir smoke-test turu ÖNERİLİR (bkz.
   gelecek-iş belgesi).
+
+---
+
+## §7 — AYNI GÜN İKİNCİ TUR: `FAZ4-SONRASI-ONERILER` maddelerinin GERÇEK uygulaması
+
+§6'yı yazdıktan hemen sonra, kullanıcı `FAZ4-SONRASI-ONERILER_2026-08-01.md`'deki 25
+maddeyi ("P0/P1/P2'yi mükemmelce hallet") UYGULAMAMI istedi. 7 madde (yeni bağımlılık
+gerektiren ya da büyük bir güvenlik/mimari kararı olan) kullanıcının AÇIK seçimiyle
+ERTELENDİ; KALAN 18 madde bu turda GERÇEKTEN uygulandı ve test edildi. Tam detay/kanıt
+`FAZ4-SONRASI-ONERILER_2026-08-01.md`'nin GÜNCELLENMİŞ hâlinde (her madde ✅/⏸ işaretli) —
+burada yalnız EN ÖNEMLİ, dosya:satır referanslı özet.
+
+### 7.1 — P0 (kritik güvenlik boşluğu) KAPANDI
+`app/pii.py::mask_query_result()` (yeni, paylaşılan yardımcı) artık `/query`, `/report`
+(`app/routers/ask.py::report()`), `/dashboards/{id}/data` (`app/routers/dashboards.py::
+dashboard_data`) VE zamanlanmış rapor teslimi (`app/schedules.py::run_schedule` —
+`principal=None` ile HER ZAMAN maskeler, otomatik e-posta teslimi için fail-closed) tarafından
+çağrılıyor. Kanıt: `tests/test_pii_integration.py`'deki 5 yeni test, özellikle `test_
+schedule_delivery_always_masks_tckn_even_for_owner` — `channels.dispatch`'i yakalayıp
+`event.rows`'un (GERÇEKTEN e-posta gövdesine giren veri, `app/email_render.py:64`) maskeli
+olduğunu birebir kanıtlıyor.
+
+### 7.2 — P1'in TAMAMI (15/15) uygulandı
+En dikkat çekici ikisi:
+- **KPI motoru wiring'i** (`app/cube_router.py::match_kpi`, `app/routers/ask.py::_try_kpi`)
+  yalnız YENİ bir özellik değildi — `tests/test_kpi.py`'nin İKİ testi (`test_likidite_
+  kpileri_mizan_uzerinde`, `test_match_kpi_en_uzun_sinonim_kazanir`) `cube_router.match_kpi`
+  fonksiyonunun VAR OLMASINI ÖNCEDEN BEKLİYORDU ama fonksiyon HİÇ TANIMLI değildi — yani bu
+  iki test bu tur başlamadan ÖNCE de AttributeError ile BAŞARISIZ oluyordu, yalnız daha önce
+  hiç FARK EDİLMEMİŞTİ (tam suite çalıştırıldığında görülmesi gerekirken, muhtemelen daha
+  önceki tur `test_kpi.py`'yi tek başına hiç çalıştırmamıştı). Bu bulgu, kullanıcının
+  "üstün körü uygulamış olabilirsin" şüphesinin SOMUT bir doğrulamasıdır — düzeltildi.
+- **Grafik-tıklama→drill** (`EChart.tsx`, `ResultView.tsx::handleChartDataPointClick`,
+  `DrillDownPanel.tsx`'in yeni `initialFilter` prop'u) — dikkatle, YALNIZ belirsizlik
+  taşımayan basit grafik biçimlerinde devreye girecek şekilde SINIRLANDI; canlı tıklama
+  davranışı bu oturumda yine doğrulanamadı (dürüstçe belirtilir).
+
+Kalan 13 madde (ConnectionReviewPanel izni, dashboard yeniden-adlandırma, zamanlanmış rapor
+yönetim UI'ı — YENİ `SchedulesPanel.tsx`, Query Contract keşif UI'ı — YENİ
+`ContractDetailPanel.tsx`, ReportPanel hook-tekrarının giderilmesi, sessiz-hata-yutma
+düzeltmeleri, DrillDownPanel erişilebilirliği, test kapsamı — YENİ `test_health.py` + 3
+dosyaya ek test) hepsi `FAZ4-SONRASI-ONERILER_2026-08-01.md`'de tek tek belgeli.
+
+**Yan kazanç**: `NotificationsBell.tsx`'teki, bu OTURUMUN EN BAŞINDAN beri projede duran TEK
+`eslint` HATASI (`react-hooks/set-state-in-effect`) bu turda (P1-12'yi düzeltirken, aynı
+dosyaya zaten dokunulduğu için) da giderildi — proje artık `npx eslint .` ile TAMAMEN
+sıfır hata veriyor (yalnız 4 pre-existing UYARI kaldı, dokunulmamış dosyalarda).
+
+### 7.3 — P2'den seçilen 2 madde
+- **`@dnd-kit` geçişi**: kullanıcı onayıyla `@dnd-kit/core`+`sortable`+`utilities` GERÇEKTEN
+  kuruldu (`pnpm add`, ~3 dakika, ağ erişimi bu turda doğrulandı) ve `AnalysisCanvas.tsx`
+  native HTML5 DnD'den taşındı — artık GERÇEK klavye-erişilebilir sıralama da var.
+- **Ölü alan geliştirme (silme yok)**: `Interpretation.facts` → `OutputInsight.tsx`'te
+  rozet; `CubeMeta.dimension_values`/`ColumnMeta.values` → `SchemaPanel.tsx`'e yeni bir
+  "Cube'lar" bölümü; **`DashboardWidget.pos`/`refresh`** — en dikkat çekici bulgu: bu iki
+  alan için DB KOLONLARI (`control_plane/models.py:341-342`) VE okuma tarafı (`_widget_
+  dict()`, `app/routers/dashboards.py:73-77`) ZATEN vardı, yalnız YAZMA ucu (`WidgetPatch`)
+  iki alanı hiç KABUL ETMİYORDU — eklendi + `DashboardView.tsx`'e genişlik-toggle'ı +
+  yenileme-sıklığı seçici UI'ı bağlandı; `AskResponse.planned_sql` → `ReportPanel.tsx`'e
+  (yalnız gerçek SQL'den farklıysa) eklendi. `getAccessToken()`/`runQuery()` İNCELENDİ,
+  BİLİNÇLİ olarak dokunulmadı (gerekçesi `FAZ4-SONRASI-ONERILER`'de).
+
+### 7.4 — Bu turun sonunda test durumu
+- Backend: **449 passed**, 2 bilinen ÖNCEDEN-VAR-OLAN başarısızlık (değişmedi).
+- Frontend: `tsc --noEmit` VE `eslint .` PROJE GENELİNDE **sıfır hata** (yalnız 4
+  dokunulmamış-dosya uyarısı kaldı — bu turdan ÖNCE de vardı).
+
+### 7.5 — Bu turda BİLEREK ertelenen 7 madde
+RBAC Layer B tam uygulaması, eval harness genişletme, MySQL desteği, WebSocket geçişi,
+Plane Enforcer sertleştirme, bildirim kanalları genişletme — hepsi kullanıcının AÇIK
+seçimiyle ("diğerlerine gerek yok") bu turun DIŞINDA tutuldu; gerekçeleri DEĞİŞMEDİ,
+`FAZ4-SONRASI-ONERILER_2026-08-01.md`'nin "Ertelenmiş" bölümünde aynen duruyor.

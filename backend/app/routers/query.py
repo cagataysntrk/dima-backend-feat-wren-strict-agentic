@@ -43,19 +43,14 @@ def run_query(request: Request, body: QueryRequest) -> QueryResult:
     # PII maskeleme (Faz 4.14, 1 Ağustos 2026): `/query` ham SQL'dir (`sql:run`,
     # analyst+) — cube katalogunun aksine HERHANGİ bir kolonu seçebilir (ör.
     # `personel_ozluk.tc_kimlik`) — bu yüzden BU uç da app/pii.py'den geçer
-    # (app/routers/ask.py::_finish ile AYNI ilke).
-    if result.get("rows"):
-        from app.pii import mask_rows
-        from control_plane.authorize import can
+    # (app/routers/ask.py::_finish ile AYNI ilke). Paylaşılan `mask_query_result`
+    # (1 Ağustos 2026 doğrulama turu) — `/report`/pano/zamanlanmış teslim de AYNISINI kullanır.
+    from app.pii import mask_query_result
 
-        has_pii_view = principal is not None and can(principal, "pii:view")
-        masked_rows, found = mask_rows(result["rows"])
-        if found:
-            if has_pii_view:
-                audit.record(principal, "pii_view", generated_sql=body.sql,
-                            ip=request.client.host if request.client else None)
-            else:
-                result = {**result, "rows": masked_rows}
+    result, unmasked_pii_shown = mask_query_result(result, principal)
+    if unmasked_pii_shown:
+        audit.record(principal, "pii_view", generated_sql=body.sql,
+                    ip=request.client.host if request.client else None)
 
     audit.record(principal, "query",
                  generated_sql=body.sql, rows_returned=result.get("row_count"),

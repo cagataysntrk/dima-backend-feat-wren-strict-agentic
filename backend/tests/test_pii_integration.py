@@ -8,7 +8,13 @@ BU testlerin doğruladığı, zaten maskelenmiş/HTTP üzerinden gelen `AskRespo
 Kanıt: `personel_ozluk.tc_kimlik` gerçek şemada var (demo/data/boyahane.duckdb) ama HİÇBİR
 cube onu SEÇMİYOR — `/query` (ham SQL, `sql:run`) ise HERHANGİ bir kolonu seçebilir, bu
 yüzden gerçek sızıntı YÜZEYİ budur (Discovery/gerçek-LLM de aynı şekilde erişebilir).
-Testler gerçek bir personel satırına DOKUNMADAN (literal SELECT) bu yüzeyi kanıtlar."""
+Testler gerçek bir personel satırına DOKUNMADAN (literal SELECT) bu yüzeyi kanıtlar.
+
+**Doğrulama turu düzeltmesi (1 Ağustos 2026)**: Faz 4.14 yalnız `/ask`/`/cube`/`/query`'yi
+kapsıyordu — `/report`, `/dashboards/{id}/data` ve zamanlanmış rapor TESLİMİ (e-posta)
+maskelemiyordu (bkz. `app/pii.py::mask_query_result` docstring'i). Aşağıdaki testler bu
+ÜÇ yeni yüzeyi de aynı titizlikle kanıtlar — `WrenService.query`'yi monkeypatch'leyerek
+(cube_query GERÇEK bir cube'a bağlı olmalı, ama ÇALIŞTIRMA sonucu kontrollü enjekte edilir)."""
 
 from __future__ import annotations
 
@@ -16,6 +22,20 @@ from tests.conftest import make_tenant_user
 from tests.test_auth import _login_as
 
 _VALID_TCKN = "10000000146"
+_CQ = {"cube": "parti", "measures": ["toplam_ciro"]}
+
+
+def _inject_tckn_query(monkeypatch) -> None:
+    """`WrenService.query`'yi, GERÇEK SQL'i yok sayıp sabit bir TCKN-taşıyan satır dönecek
+    şekilde değiştirir — cube_query yine de gerçek bir cube'a karşı doğrulanır (`cube_sql`
+    hâlâ gerçek çalışır), yalnız ÇALIŞTIRMA adımı kontrollü hâle getirilir."""
+    from app.wren_service import WrenService
+
+    def fake_query(self, sql, *args, **kwargs):
+        return {"columns": ["ad", "tc_kimlik"],
+               "rows": [{"ad": "Test", "tc_kimlik": _VALID_TCKN}], "row_count": 1}
+
+    monkeypatch.setattr(WrenService, "query", fake_query)
 
 
 def test_query_masks_tckn_for_non_privileged_role(client):
@@ -94,3 +114,107 @@ def test_apply_to_ask_response_masks_result_and_interpretation_text():
     shown2 = apply_to_ask_response(resp2, _principal("owner"))
     assert shown2 is True
     assert resp2.result.rows[0]["tc_kimlik"] == _VALID_TCKN
+
+
+def test_report_masks_tckn_for_non_privileged_role(client, monkeypatch):
+    """Yüzey 1/3: `/report` (çok-blok rapor derleme) — doğrulama turundan ÖNCE hiç
+    maskelemiyordu."""
+    _inject_tckn_query(monkeypatch)
+    make_tenant_user("analyst-pii-report@dima.local", "analyst-pii-report-1", "analyst")
+    c = _login_as(client, "analyst-pii-report@dima.local", "analyst-pii-report-1")
+    r = c.post("/report", json={"title": "PII testi", "blocks": [{"cube_query": _CQ}]})
+    assert r.status_code == 200, r.text
+    row = r.json()["pages"][0][0]["result"]["rows"][0]
+    assert row["tc_kimlik"] != _VALID_TCKN
+    assert "*" in row["tc_kimlik"]
+
+
+def test_report_owner_sees_unmasked_and_is_audited(client, monkeypatch):
+    _inject_tckn_query(monkeypatch)
+    r = client.post("/report", json={"title": "PII testi", "blocks": [{"cube_query": _CQ}]})
+    assert r.status_code == 200, r.text
+    row = r.json()["pages"][0][0]["result"]["rows"][0]
+    assert row["tc_kimlik"] == _VALID_TCKN
+
+    from sqlmodel import Session, select
+
+    from control_plane.db import engine
+    from control_plane.models import AuditLog
+
+    with Session(engine) as s:
+        found = s.exec(
+            select(AuditLog).where(AuditLog.action == "pii_view",
+                                   AuditLog.nl_question.contains("rapor"))
+        ).all()
+    assert found
+
+
+def test_dashboard_data_masks_tckn_for_non_privileged_role(client, monkeypatch):
+    """Yüzey 2/3: `GET /dashboards/{id}/data` (panonun CANLI veri ucu) — doğrulama
+    turundan ÖNCE hiç maskelemiyordu."""
+    _inject_tckn_query(monkeypatch)
+    make_tenant_user("analyst-pii-dash@dima.local", "analyst-pii-dash-1", "analyst")
+    c = _login_as(client, "analyst-pii-dash@dima.local", "analyst-pii-dash-1")
+    did = c.post("/dashboards", json={"title": "pii testi"}).json()["id"]
+    c.post(f"/dashboards/{did}/widgets", json={"cube_query": _CQ, "period": "bu yıl"})
+    data = c.get(f"/dashboards/{did}/data").json()
+    row = data["widgets"][0]["result"]["rows"][0]
+    assert row["tc_kimlik"] != _VALID_TCKN
+    assert "*" in row["tc_kimlik"]
+
+
+def test_dashboard_data_owner_sees_unmasked_and_is_audited(client, monkeypatch):
+    _inject_tckn_query(monkeypatch)
+    did = client.post("/dashboards", json={"title": "pii testi owner"}).json()["id"]
+    client.post(f"/dashboards/{did}/widgets", json={"cube_query": _CQ, "period": "bu yıl"})
+    data = client.get(f"/dashboards/{did}/data").json()
+    row = data["widgets"][0]["result"]["rows"][0]
+    assert row["tc_kimlik"] == _VALID_TCKN
+
+    from sqlmodel import Session, select
+
+    from control_plane.db import engine
+    from control_plane.models import AuditLog
+
+    with Session(engine) as s:
+        found = s.exec(
+            select(AuditLog).where(AuditLog.action == "pii_view",
+                                   AuditLog.nl_question.contains("pano widget"))
+        ).all()
+    assert found
+
+
+def test_schedule_delivery_always_masks_tckn_even_for_owner(client, monkeypatch):
+    """Yüzey 3/3: zamanlanmış rapor TESLİMİ (`run_schedule` → `channels.NotificationEvent.
+    rows` → `app/email_render.py::render_email`'in GERÇEKTEN e-posta gövdesine gömdüğü veri,
+    bkz. email_render.py:64 `rows=event.rows[:20]`) — doğrulama turundan ÖNCE hiç
+    maskelemiyordu. Diğer iki yüzeyden FARKLI olarak bu yol `principal=None` ile HER ZAMAN
+    maskeler (fail-closed) — otomatik/arka-plan bir işte hangi e-posta ALICISININ
+    `pii:view` yetkisi olduğu ÖNCEDEN bilinemez, bu yüzden koşan kullanıcı (aşağıda owner,
+    pii:view sahibi) sonucu BİLE maskeli çıkar."""
+    _inject_tckn_query(monkeypatch)
+
+    from app import channels as channels_mod
+
+    captured: dict = {}
+    original_dispatch = channels_mod.dispatch
+
+    def capture_dispatch(event, targets, ctx):
+        captured["event"] = event
+        return original_dispatch(event, targets, ctx)
+
+    monkeypatch.setattr(channels_mod, "dispatch", capture_dispatch)
+
+    sid = client.post("/schedules", json={
+        "label": "pii-testi", "cube_query": _CQ, "period": "bu yıl",
+    }).json()["schedule"]["id"]
+    try:
+        r = client.post(f"/schedules/{sid}/run")
+        assert r.status_code == 200, r.text
+        assert "event" in captured, "channels.dispatch hiç çağrılmadı"
+        rows = captured["event"].rows
+        assert rows, "test kurulumunda satır bekleniyordu"
+        assert rows[0]["tc_kimlik"] != _VALID_TCKN
+        assert "*" in rows[0]["tc_kimlik"]
+    finally:
+        client.delete(f"/schedules/{sid}")

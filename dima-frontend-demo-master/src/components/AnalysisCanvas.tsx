@@ -8,9 +8,13 @@
 // "tuval" moduna geçtiyse) AYNI raporu `canvasItems`'a da EKLER — üsttekini SİLMEZ, biriktirir.
 // Tuval modu kapalıyken (varsayılan) bu bileşen hiç render edilmez, sıfır regresyon riski.
 //
-// Sürükle-bırak sıralama: yeni bir npm bağımlılığı (ör. @dnd-kit) EKLEMEDEN native HTML5
-// Drag and Drop API ile (package.json'da mevcut bir DnD kütüphanesi yok, ağ erişimi
-// gerektiren bir kurulum bu oturumda doğrulanamaz).
+// Sürükle-bırak sıralama: doğrulama turu düzeltmesi (1 Ağustos 2026, P2-18) — İLK sürümde
+// yeni bir bağımlılık EKLEMEDEN native HTML5 DnD kullanılmıştı (kurulum bu oturumda
+// doğrulanamıyordu); şimdi `@dnd-kit/core`+`sortable` GERÇEKTEN kuruldu (kullanıcı onayıyla)
+// — daha akıcı sürükleme + native HTML5 DnD'nin SAHİP OLMADIĞI klavye-erişilebilir sıralamayı
+// (Tab ile odakla → Space ile "kaldır" → ok tuşlarıyla taşı → Space ile "bırak") ÜCRETSİZE
+// getirir. ▲/▼ butonları YİNE DE korunur — basit, her zaman görünür bir yedek (iki mekanizma
+// birbirini dışlamaz).
 //
 // "Rapor oluştur": DashboardView.tsx'teki AYNI postReport→ReportView deseni yeniden
 // kullanılır (yeni bir rapor-render mantığı İCAT edilmedi, mevcut mekanizmanın YENİ bir
@@ -18,12 +22,34 @@
 
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import {
+  DndContext, KeyboardSensor, PointerSensor, closestCenter,
+  useSensor, useSensors, type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, sortableKeyboardCoordinates, useSortable, rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { addDashboardWidget, createDashboard, listDashboards, postReport } from "@/lib/api-client";
 import type { AskResponse, DashboardListItem, Report } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import { ReportView } from "@/components/ReportView";
 import { KpiCardView } from "@/components/KpiCard";
 import { OutputInsight } from "@/components/OutputInsight";
+
+// `AskResponse`'un kendi kalıcı bir kimliği yok (sohbet mesajı DEĞİL, bir tuval öğesi) —
+// @dnd-kit her öge için SABİT bir `id` ister (index KULLANILAMAZ, sıralama sırasında anlamı
+// değişir). Her item nesnesine (referans eşitliğiyle) BİR KEZ, kalıcı bir id atanır.
+const _idFor = new WeakMap<AskResponse, string>();
+let _idSeq = 0;
+function stableId(item: AskResponse): string {
+  let id = _idFor.get(item);
+  if (!id) {
+    id = `canvas-item-${_idSeq++}`;
+    _idFor.set(item, id);
+  }
+  return id;
+}
 
 export function AnalysisCanvas({
   items,
@@ -37,7 +63,19 @@ export function AnalysisCanvas({
   onClear: () => void;
 }) {
   const [report, setReport] = useState<Report | null>(null);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const ids = items.map(stableId);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const from = ids.indexOf(String(active.id));
+    const to = ids.indexOf(String(over.id));
+    if (from !== -1 && to !== -1) onReorder(from, to);
+  };
 
   // Yalnız gerçek bir cube_query+result taşıyan bloklar rapora girebilir (DashboardView'daki
   // widget→blok dönüşümüyle AYNI kural) — Discovery/ham-SQL veya salt-not öğeleri dürüstçe atlanır.
@@ -103,49 +141,41 @@ export function AnalysisCanvas({
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        {items.map((item, i) => (
-          <CanvasCard
-            key={i}
-            index={i}
-            total={items.length}
-            item={item}
-            dragging={dragIndex === i}
-            onDragStart={() => setDragIndex(i)}
-            onDragEnd={() => setDragIndex(null)}
-            onDropOn={() => {
-              if (dragIndex !== null && dragIndex !== i) onReorder(dragIndex, i);
-              setDragIndex(null);
-            }}
-            onMoveUp={() => onReorder(i, i - 1)}
-            onMoveDown={() => onReorder(i, i + 1)}
-            onRemove={() => onRemove(i)}
-          />
-        ))}
-      </div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={ids} strategy={rectSortingStrategy}>
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            {items.map((item, i) => (
+              <CanvasCard
+                key={ids[i]}
+                id={ids[i]}
+                index={i}
+                total={items.length}
+                item={item}
+                onMoveUp={() => onReorder(i, i - 1)}
+                onMoveDown={() => onReorder(i, i + 1)}
+                onRemove={() => onRemove(i)}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
     </div>
   );
 }
 
 function CanvasCard({
+  id,
   index,
   total,
   item,
-  dragging,
-  onDragStart,
-  onDragEnd,
-  onDropOn,
   onMoveUp,
   onMoveDown,
   onRemove,
 }: {
+  id: string;
   index: number;
   total: number;
   item: AskResponse;
-  dragging: boolean;
-  onDragStart: () => void;
-  onDragEnd: () => void;
-  onDropOn: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
   onRemove: () => void;
@@ -153,6 +183,13 @@ function CanvasCard({
   const [dashOpen, setDashOpen] = useState(false);
   const [dashList, setDashList] = useState<DashboardListItem[]>([]);
   const [addedTo, setAddedTo] = useState<string | null>(null);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
 
   const openDashMenu = () => {
     if (!dashOpen) listDashboards().then((r) => setDashList(r.dashboards)).catch(() => {});
@@ -185,22 +222,23 @@ function CanvasCard({
 
   return (
     <div
-      draggable
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={onDropOn}
-      className={`flex flex-col border border-hairline bg-background p-3 transition-opacity ${
-        dragging ? "opacity-40" : ""
-      }`}
+      ref={setNodeRef}
+      style={style}
+      className="flex flex-col border border-hairline bg-background p-3"
     >
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-1.5">
-          <span className="cursor-grab text-neutral-400" title="Sürükleyerek sırala" aria-hidden>
+          <span
+            {...attributes}
+            {...listeners}
+            className="cursor-grab touch-none text-neutral-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+            title="Sürükleyerek sırala (odaklayıp ok tuşlarıyla da taşınabilir)"
+            aria-label="Sürükleyerek sırala"
+          >
             ⠿
           </span>
-          {/* Fare-sürükleme dışında (klavye/dokunmatik) da sıralanabilsin diye — native
-              HTML5 DnD'nin klavye eşdeğeri yok, bu iki buton onun erişilebilir yedeği. */}
+          {/* ▲/▼ butonları @dnd-kit'in klavye modunun YANINDA basit, her zaman görünür bir
+              yedek olarak korunur (iki mekanizma birbirini dışlamaz). */}
           <span className="flex shrink-0 flex-col leading-none">
             <button
               onClick={onMoveUp}

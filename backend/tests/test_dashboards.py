@@ -69,6 +69,37 @@ def test_dashboard_widget_patch_view_persists(client):
     assert d["widgets"][0]["view_hint"] == "table"
 
 
+def test_dashboard_widget_patch_pos_and_refresh_persist(client):
+    """Doğrulama turu düzeltmesi (1 Ağustos 2026, P2-22) — `DashboardWidget.pos_json`/
+    `refresh` DB'de ve `_widget_dict()`'in OKUMA tarafında ZATEN vardı, yalnız bu YAZMA
+    ucu (`WidgetPatch`) iki alanı hiç KABUL ETMİYORDU (kullanıcı genişlik/yenileme
+    sıklığını hiç KAYDEDEMİYORDU) — bu test artık kaydedebildiğini kanıtlar."""
+    did = client.post("/dashboards", json={"title": "pos-refresh"}).json()["id"]
+    wid = client.post(f"/dashboards/{did}/widgets", json={"cube_query": _CQ}).json()["id"]
+
+    # varsayılan: pos yok, refresh="onview" (model varsayılanı).
+    d0 = client.get(f"/dashboards/{did}").json()
+    assert d0["widgets"][0]["pos"] is None
+    assert d0["widgets"][0]["refresh"] == "onview"
+
+    r = client.patch(f"/dashboards/{did}/widgets/{wid}",
+                     json={"pos": {"x": 0, "y": 0, "w": 2, "h": 1}, "refresh": "live"})
+    assert r.status_code == 200, r.text
+
+    d = client.get(f"/dashboards/{did}").json()
+    w = d["widgets"][0]
+    assert w["pos"] == {"x": 0, "y": 0, "w": 2, "h": 1}
+    assert w["refresh"] == "live"
+
+    # pos=None GÖNDERİLİRSE (genişliği sıfırla) temizlenir; refresh boş string İSE
+    # (Pydantic "gönderilmedi" ile "boşalt" ayrımı basit tutulur) DOKUNULMAZ, sessizce atlanır.
+    r2 = client.patch(f"/dashboards/{did}/widgets/{wid}", json={"pos": None})
+    assert r2.status_code == 200, r2.text
+    d2 = client.get(f"/dashboards/{did}").json()
+    assert d2["widgets"][0]["pos"] is None
+    assert d2["widgets"][0]["refresh"] == "live"  # önceki değer KORUNDU
+
+
 def test_dashboard_invalid_cube_query_rejected(client):
     did = client.post("/dashboards", json={"title": "x"}).json()["id"]
     r = client.post(f"/dashboards/{did}/widgets",
@@ -83,6 +114,28 @@ def test_dashboard_max_per_user_guard(client):
         assert c.post("/dashboards", json={"title": f"p{i}"}).status_code == 200
     r = c.post("/dashboards", json={"title": "11."})
     assert r.status_code == 409
+
+
+def test_dashboard_patch_renames_and_changes_visibility(client):
+    """Doğrulama turu düzeltmesi (1 Ağustos 2026) — `PATCH /dashboards/{id}` (başlık +
+    görünürlük) zaten vardı ama frontend'den HİÇ çağrılmıyordu (`DashboardsPanel.tsx`'e
+    ✎/🏢/🔒 aksiyonları bu turda eklendi) — bu uç ise HTTP katmanında hiç test edilmemişti."""
+    did = client.post("/dashboards", json={"title": "eski ad"}).json()["id"]
+    r = client.patch(f"/dashboards/{did}", json={"title": "yeni ad", "visibility": "tenant"})
+    assert r.status_code == 200, r.text
+    assert r.json()["title"] == "yeni ad"
+    assert r.json()["visibility"] == "tenant"
+
+    d = client.get(f"/dashboards/{did}").json()
+    assert d["title"] == "yeni ad"
+    assert d["visibility"] == "tenant"
+
+    # başka bir kullanıcı ARTIK görebilir (tenant-geneli oldu, GET 200) ama YAZAMAZ
+    # (PATCH 403 — kaynak GÖRÜNÜR olduğu için 404 değil, "yetkisiz" AÇIKÇA söylenir).
+    make_tenant_user("dashpatch-other@dima.local", "dashpatch-other-1", "owner")
+    c = _login_as(client, "dashpatch-other@dima.local", "dashpatch-other-1")
+    assert c.get(f"/dashboards/{did}").status_code == 200
+    assert c.patch(f"/dashboards/{did}", json={"title": "izinsiz"}).status_code == 403
 
 
 def test_dashboard_isolation_other_user_404(client):

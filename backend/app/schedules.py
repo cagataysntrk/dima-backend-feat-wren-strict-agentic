@@ -452,6 +452,16 @@ def run_schedule(state, sched: dict, *, manual: bool = False) -> dict:
 
     sql = svc.cube_sql(cq)
     result = svc.query(sql, limit=1000)
+    # PII maskeleme (doğrulama turu düzeltmesi, 1 Ağustos 2026): zamanlanmış teslim daha önce
+    # HİÇ maskelemiyordu — sonuç doğrudan e-posta/bildirim gövdesine (`channels.NotificationEvent
+    # .rows`, aşağıda) giriyordu. Burada `principal=None` KASITLI: bu ANLIK/canlı bir kullanıcı
+    # DEĞİL, otomatik bir arka-plan işi — kimin (hangi e-posta alıcısının) göreceği ÖNCEDEN
+    # bilinemez, bu yüzden `pii:view` bypass'ı YOK, HER ZAMAN maskelenir (fail-closed). Query
+    # Contract kaydı da (aşağıda `contracts.record(..., result=result, ...)`) bu MASKELİ
+    # sonucu alır — otomatik işler için ikincil bir sızıntı yüzeyi bırakılmaz.
+    from app.pii import mask_query_result
+
+    result, _ = mask_query_result(result, None)
 
     contract_id = None
     contracts = getattr(state, "contracts", None)

@@ -29,6 +29,35 @@ def test_conversation_resume_lists_messages(client):
     assert msg["viz"] is not None  # taze hesaplandı, boş kalmadı
 
 
+def test_conversation_delete_is_soft_and_filters_list_and_detail(client):
+    """Doğrulama turu düzeltmesi (1 Ağustos 2026, P1-14) — `DELETE /conversations/{cid}`
+    HTTP katmanında hiç test edilmemişti. SOFT DELETE: kayıt DB'de kalır (proje kuralı,
+    hard-delete yok) ama liste/getir onu artık göstermemeli."""
+    sid = "conv-test-delete-1"
+    r = client.post("/ask", json={"question": "müşteri bazında ciro bu yıl",
+                                  "execute": True, "session_id": sid})
+    assert r.status_code == 200, r.text
+    cid = _last_conversation_id(client, sid)
+
+    assert client.delete(f"/conversations/{cid}").status_code == 204
+    assert not any(c["id"] == cid for c in client.get("/conversations").json())
+    assert client.get(f"/conversations/{cid}").status_code == 404
+
+    # kayıt DB'de HÂLÂ VAR (soft-delete) — hard-delete olmadığını doğrudan kanıtla.
+    from sqlmodel import Session
+
+    from control_plane.db import engine
+    from control_plane.models import Conversation
+
+    with Session(engine) as s:
+        conv = s.get(Conversation, __import__("uuid").UUID(cid))
+        assert conv is not None and conv.deleted_at is not None
+
+    # ikinci silme: kayıt ARTIK "bulunamadı" sayılır (soft-delete filtresi kendi
+    # sorgusunu da kapsar) — 404, çıplak bir hata DEĞİL.
+    assert client.delete(f"/conversations/{cid}").status_code == 404
+
+
 def test_conversation_resume_recomputes_stale_viz(client):
     """Kayıtlı `viz`'i BİLEREK bayat/yanlış bir değere değiştir, resume'in onu TAZE
     hesapla(y)arak ezdiğini doğrula (result'a dokunmadan)."""

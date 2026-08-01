@@ -13,9 +13,21 @@ const SIGNAL_TONE: Record<string, string> = {
   info: "border-hairline bg-neutral-500/[0.04] text-neutral-500 dark:text-neutral-400",
 };
 
+// Doğrulama turu düzeltmesi (1 Ağustos 2026, P2-22) — `interpretation.facts` backend'de
+// (app/interpret.py) ZATEN yapısal olarak üretiliyordu (trend/peak/bottom/kpi_components
+// türleri) ama frontend'de hiç OKUNMUYORDU (yorum kodu "ileride chip/rozet" diyordu, o
+// "ileri"si hiç gelmedi). `summary` zaten bu fact'lerin metnini BİRLEŞTİRİLMİŞ tek cümlede
+// gösteriyor — bu yüzden burada facts'i TEKRAR aynı metinle değil, TARANABİLİR küçük
+// rozetler olarak (tür-simgesiyle) ayrıca sunuyoruz; mundane türler (count/shape/measures/
+// single, zaten summary'de yeterince açık) rozete DÖNÜŞTÜRÜLMEZ, gürültü olmasın.
+const FACT_ICON: Record<string, string> = {
+  trend: "📈", peak: "🏆", bottom: "🔻", kpi_components: "🧮",
+};
+
 export function OutputInsight({ interpretation }: { interpretation?: Interpretation | null }) {
   if (!interpretation?.summary) return null;
   const signals = interpretation.signals ?? [];
+  const badgeFacts = (interpretation.facts ?? []).filter((f) => FACT_ICON[f.type]);
   return (
     <div className="mt-3 space-y-2">
       <div className="flex gap-2 border border-hairline bg-neutral-500/[0.04] px-3 py-2">
@@ -35,6 +47,23 @@ export function OutputInsight({ interpretation }: { interpretation?: Interpretat
           {interpretation.summary}
         </p>
       </div>
+
+      {/* Taranabilir bulgu rozetleri (trend/en-yüksek/en-düşük/KPI bileşenleri) — özet
+          cümlenin ÜSTÜNE biner (facts zaten summary'nin kaynağıdır), yalnız hızlı-tarama
+          için görsel olarak AYRIŞTIRIR. */}
+      {badgeFacts.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {badgeFacts.map((f, i) => (
+            <span
+              key={`${f.type}-${i}`}
+              className="border border-hairline px-1.5 py-0.5 font-mono text-[10px] text-neutral-500 dark:text-neutral-400"
+            >
+              <span aria-hidden className="mr-1">{FACT_ICON[f.type]}</span>
+              {f.text}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* K3 proaktif sinyaller — anomali/yön/yoğunlaşma; önem rengiyle vurgulu. */}
       {signals.map((s, i) => (

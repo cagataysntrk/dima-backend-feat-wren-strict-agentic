@@ -1,61 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useClickOutside } from "@/lib/useClickOutside";
+import { useFeature } from "@/lib/useFeature";
+import { usePermission } from "@/lib/usePermission";
 import type { AskResponse, CubeQuery, DashboardListItem } from "@/lib/types";
 import {
   addDashboardWidget,
   askVerify,
   createDashboard,
   createSchedule,
-  getFeatures,
-  getMe,
   listDashboards,
   verifyReport,
 } from "@/lib/api-client";
 import { BrandMark } from "@/components/BrandMark";
+import { ContractDetailPanel } from "@/components/ContractDetailPanel";
 import { DrillDownPanel } from "@/components/DrillDownPanel";
 import { InterpretationBar } from "@/components/InterpretationBar";
 import { ResultView } from "@/components/ResultView";
 import { KpiCardView } from "@/components/KpiCard";
 import { OutputInsight } from "@/components/OutputInsight";
 import { SourceBadge } from "@/components/ChatPanel";
-
-
-// Özellik bayrakları (ADR-0009) — açılışta bir kez okunur, modül düzeyinde tutulur.
-let _features: Record<string, string> | null = null;
-function useFeature(name: string): string | null {
-  const [stage, setStage] = useState<string | null>(_features?.[name] ?? null);
-  useEffect(() => {
-    if (_features) return;
-    getFeatures()
-      .then((f) => {
-        _features = f;
-        setStage(f[name] ?? null);
-      })
-      .catch(() => {});
-  }, [name]);
-  return stage;
-}
-
-// İzinler (/auth/me permissions) — kaynak backend authorize matrisi; rol semantiği
-// UI'a KOPYALANMAZ, rol açmak yalnız backend değişikliğidir. Liste yüklenene kadar
-// izinli varsayılır (regresyon olmasın); backend her eylemi kendi tarafında da zorlar.
-let _perms: string[] | null = null;
-function usePermission(action: string): boolean {
-  const [ok, setOk] = useState<boolean>(_perms ? _perms.includes(action) : true);
-  useEffect(() => {
-    if (_perms) return;
-    getMe()
-      .then((me) => {
-        _perms = me.permissions ?? [];
-        setOk(_perms.includes(action));
-      })
-      .catch(() => {});
-  }, [action]);
-  return ok;
-}
 
 // Sağ bölme: seçili raporun canlı görünümü (keskin, mono readout).
 export function ReportPanel({
@@ -83,6 +49,12 @@ export function ReportPanel({
   // Faz 4.10 — dallı kök-neden analizi paneli (tıkla-dallan, ilişkili cube'lara geçiş,
   // yaprak seviyesinde ham satırlar).
   const [drillOpen, setDrillOpen] = useState(false);
+  // Doğrulama turu düzeltmesi (1 Ağustos 2026, P1-2) — grafikte tıklanan tek kategori;
+  // doluysa drill panelini "Başlangıç"tan değil DOĞRUDAN o kategoriye seçili açar.
+  const [drillFilter, setDrillFilter] = useState<{ dimension: string; value: string } | null>(null);
+  const closeDrill = () => { setDrillOpen(false); setDrillFilter(null); };
+  // Query Contract keşif/replay paneli (doğrulama turu düzeltmesi, 1 Ağustos 2026, P1-9).
+  const [contractOpen, setContractOpen] = useState(false);
   // SQL gösterimi (sql_display bayrağı) — ham şeffaflık özelliği; kapalıysa buton yok.
   const sqlStage = useFeature("sql_display");
   // Panoya ekle (dashboards bayrağı, §9) — bu raporun cube_query'si widget olur.
@@ -156,11 +128,12 @@ export function ReportPanel({
           ? { measure, method: "zscore" as const }
           : null;
     const to = emails.split(",").map((e) => e.trim()).filter((e) => e.includes("@"));
+    setActionError(null);
     createSchedule({ label: vLabel ?? data.question, cube_query: cq,
       period: preset.period, every: preset.every, at: preset.at, weekday: preset.weekday,
       threshold, delivery: to.length ? { email: { to } } : null })
       .then(() => { setScheduled(verifyKey); setSchedOpen(false); })
-      .catch(() => {});
+      .catch(() => setActionError("Zamanlama kaydedilemedi. Lütfen tekrar dener misin?"));
   };
 
   // "✓ doğru" / "✗ yanlış" (beta bayrağı): geri bildirim — doğrulama geri ALINABİLİR.
@@ -181,6 +154,10 @@ export function ReportPanel({
   // yollar. Yorum backend'de note'a düşer → log madencisini (#57) besler.
   const [wrongOpen, setWrongOpen] = useState(false);
   const [wrongComment, setWrongComment] = useState("");
+  // Doğrulama turu düzeltmesi (1 Ağustos 2026, P1-12): zamanla/doğrula/yanlış-işaretle
+  // aksiyonları başarısız olursa kullanıcı HİÇBİR geri bildirim almıyordu (popup sessizce
+  // açık kalıyor ya da buton durumu güncellenmiyordu) — tek, paylaşılan bir hata metni.
+  const [actionError, setActionError] = useState<string | null>(null);
   // Rapor aksiyon menüleri (zamanla / panoya ekle / yanlış) TEK-AÇIK + dışarı-tıklamada kapanır.
   const closeMenus = () => { setDashOpen(false); setSchedOpen(false); setWrongOpen(false); };
   const actionsRef = useClickOutside<HTMLDivElement>(dashOpen || schedOpen || wrongOpen, closeMenus);
@@ -197,9 +174,10 @@ export function ReportPanel({
   };
   const submitWrong = () => {
     if (!verifyKey) return;
+    setActionError(null);
     doVerify({ verdict: "wrong", comment: wrongComment.trim() || undefined })
       .then(() => { setFb((m) => ({ ...m, [verifyKey]: "bad" })); setWrongOpen(false); setWrongComment(""); })
-      .catch(() => {});
+      .catch(() => setActionError("Geri bildirim gönderilemedi. Lütfen tekrar dener misin?"));
   };
 
   if (error) {
@@ -381,6 +359,7 @@ export function ReportPanel({
                 <button
                   onClick={() => {
                     if (!verifyKey) return;
+                    setActionError(null);
                     // ikinci tık = GERİ AL (yanlışlıkla doğrulamayı düzeltme yolu)
                     doVerify({ undo: verified || undefined })
                       .then(() =>
@@ -391,7 +370,7 @@ export function ReportPanel({
                           return n;
                         }),
                       )
-                      .catch(() => {});
+                      .catch(() => setActionError("İşlem gerçekleştirilemedi. Lütfen tekrar dener misin?"));
                   }}
                   title={
                     verified
@@ -468,6 +447,9 @@ export function ReportPanel({
             )}
           </div>
         </div>
+        {actionError && (
+          <p className="mt-2 font-mono text-[11px] text-red-500">{actionError}</p>
+        )}
         {/* Faz 1.5: konu-değişimi gibi bilgilendirici notlar (ör. "Konu değişti: OEE → parti")
             artık gerçek bir raporla BİRLİKTE gelebilir (ChatPanel'deki AYNI desen) — rapor
             açıldığında kullanıcı NEDEN konunun değiştiğini burada da görsün, yalnız sohbet
@@ -528,6 +510,14 @@ export function ReportPanel({
             viewHint={viewHint?.kind}
             viz={data.viz}
             onViewChange={onLiveView}
+            onDataPointClick={
+              data.cube_query
+                ? (dimension, value) => {
+                    setDrillFilter({ dimension, value });
+                    setDrillOpen(true);
+                  }
+                : undefined
+            }
           />
         </div>
       )}
@@ -600,12 +590,13 @@ export function ReportPanel({
           <span />
         )}
         {data.contract_id && (
-          <span
-            className="font-mono text-[10px] tracking-wider text-neutral-300 dark:text-neutral-600"
-            title="Query Contract — bu raporun kanıt kaydı: soru + sorgu + sonuç özeti mühürlendi; sonradan yeniden oynatılıp doğrulanabilir"
+          <button
+            onClick={() => setContractOpen(true)}
+            className="font-mono text-[10px] tracking-wider text-neutral-300 underline-offset-2 transition-colors hover:text-foreground hover:underline dark:text-neutral-600"
+            title="Query Contract — bu raporun kanıt kaydı: soru + sorgu + sonuç özeti mühürlendi; sonradan yeniden oynatılıp doğrulanabilir (tıkla → incele)"
           >
             {data.contract_id}
-          </span>
+          </button>
         )}
       </div>
       {sqlStage && showSql && (
@@ -613,12 +604,31 @@ export function ReportPanel({
           {data.sql}
         </pre>
       )}
+      {/* Doğrulama turu düzeltmesi (1 Ağustos 2026, P2-22): `planned_sql` (dry-plan çıktısı —
+          backend'de zaten dolduruluyordu, bkz. app/routers/ask.py) hiç GÖSTERİLMİYORDU.
+          Yalnız GERÇEK çalışan SQL'den FARKLIYSA gösterilir (self-healing/repair sonrası
+          "plan neydi, gerçekte ne çalıştı" farkını görünür kılar) — aynıysa gürültü olmasın
+          diye tekrar edilmez. */}
+      {sqlStage && showSql && data.planned_sql && data.planned_sql !== data.sql && (
+        <div className="mt-2">
+          <p className="mb-1 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+            plan (öz iyileştirme öncesi derlenen SQL)
+          </p>
+          <pre className="overflow-auto border border-hairline bg-neutral-950 p-4 font-mono text-xs leading-relaxed text-neutral-400">
+            {data.planned_sql}
+          </pre>
+        </div>
+      )}
+      {contractOpen && data.contract_id && (
+        <ContractDetailPanel contractId={data.contract_id} onClose={() => setContractOpen(false)} />
+      )}
       {drillOpen && data.cube_query && data.result && (
         <DrillDownPanel
           cubeQuery={data.cube_query}
           result={data.result}
           sessionId={sessionId}
-          onClose={() => setDrillOpen(false)}
+          initialFilter={drillFilter}
+          onClose={closeDrill}
         />
       )}
     </div>

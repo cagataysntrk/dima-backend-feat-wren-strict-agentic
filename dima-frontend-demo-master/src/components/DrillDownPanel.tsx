@@ -14,6 +14,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { drillAsk } from "@/lib/api-client";
+import { ContractDetailPanel } from "@/components/ContractDetailPanel";
 import type { CubeQuery, DrillResponse, QueryResult } from "@/lib/types";
 
 interface Step {
@@ -26,20 +27,32 @@ export function DrillDownPanel({
   result,
   sessionId,
   onClose,
+  initialFilter,
 }: {
   cubeQuery: CubeQuery;
   result: QueryResult | null;
   sessionId?: string;
   onClose: () => void;
+  // Doğrulama turu düzeltmesi (1 Ağustos 2026, P1-2) — grafikte TEK bir çubuğa/dilime
+  // tıklanınca panel BOŞTAN (action:"explain") değil, DOĞRUDAN o kategoriye filtrelenmiş
+  // (action:"select") açılsın diye. Ekstra bir effect/ikinci-adım GEREKMEZ — ilk sorgunun
+  // KENDİSİ koşullu seçilir (aşağıdaki queryFn).
+  initialFilter?: { dimension: string; value: string } | null;
 }) {
-  // İlk adım (action=explain, YENİ bir sorgu ÇALIŞTIRMAZ) — useQuery ile getirilir (mevcut
-  // SchemaPanel/HelpPanel deseniyle TUTARLI). Sonraki adımlar (extraSteps) yalnız KULLANICI
-  // bir çipe TIKLADIĞINDA eklenir — hiçbir setState bir effect İÇİNDEN çağrılmaz (React'ın
-  // "effect'te senkron setState" uyarısını doğuran ara-state kopyalama YOK: `steps` diziliş
-  // render SIRASINDA initialQuery.data + extraSteps'ten TÜRETİLİR, saklanmaz).
+  // İlk adım — useQuery ile getirilir (mevcut SchemaPanel/HelpPanel deseniyle TUTARLI).
+  // `initialFilter` verilmişse İLK adımın KENDİSİ zaten "select" olur (explain+ayrı bir
+  // select adımı ZİNCİRLEMEK yerine) — bu yüzden ek bir effect/ikinci-adım GEREKMEZ.
+  // Sonraki adımlar (extraSteps) yalnız KULLANICI bir çipe TIKLADIĞINDA eklenir — hiçbir
+  // setState bir effect İÇİNDEN çağrılmaz (React'ın "effect'te senkron setState" uyarısını
+  // doğuran ara-state kopyalama YOK: `steps` dizisi render SIRASINDA initialQuery.data +
+  // extraSteps'ten TÜRETİLİR, saklanmaz).
   const initialQuery = useQuery({
-    queryKey: ["drill-explain", cubeQuery, result],
-    queryFn: () => drillAsk({ cube_query: cubeQuery, result, session_id: sessionId, action: "explain" }),
+    queryKey: ["drill-explain", cubeQuery, result, initialFilter],
+    queryFn: () =>
+      initialFilter
+        ? drillAsk({ cube_query: cubeQuery, session_id: sessionId, action: "select",
+                    dimension: initialFilter.dimension, filter_value: initialFilter.value })
+        : drillAsk({ cube_query: cubeQuery, result, session_id: sessionId, action: "explain" }),
   });
 
   const [extraSteps, setExtraSteps] = useState<Step[]>([]);
@@ -51,6 +64,7 @@ export function DrillDownPanel({
   // ekrandaki AYNI sonucu vermeli (bkz. backend test_drill_steps_expose_running_sql_and_duration…).
   const [showSql, setShowSql] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [contractOpen, setContractOpen] = useState(false);
 
   // Klavye ile kapatma (Esc) — dış sistemden (DOM) gelen bir olaya ABONE OLUNUYOR, setState
   // yalnız KULLANICI tuşa bastığında (callback İÇİNDE) çağrılıyor — bu, bu oturumda daha önce
@@ -64,7 +78,10 @@ export function DrillDownPanel({
   }, [onClose]);
 
   const steps: Step[] = initialQuery.data
-    ? [{ label: "Başlangıç", data: initialQuery.data }, ...extraSteps]
+    ? [{
+        label: initialFilter ? `${initialFilter.dimension}=${initialFilter.value}` : "Başlangıç",
+        data: initialQuery.data,
+      }, ...extraSteps]
     : [];
   const effectiveCursor = cursor === null ? steps.length - 1 : cursor;
   const current = effectiveCursor >= 0 ? steps[effectiveCursor] : null;
@@ -126,7 +143,13 @@ export function DrillDownPanel({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[1px]" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[1px]"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Kök nedeni incele"
+    >
       <div
         className="max-h-[85vh] w-[min(720px,92vw)] overflow-auto border border-hairline bg-background p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
@@ -192,15 +215,35 @@ export function DrillDownPanel({
                     <pre className="overflow-auto border border-hairline bg-neutral-950 p-3 font-mono text-[11px] leading-relaxed text-neutral-100">
                       {current.data.sql}
                     </pre>
-                    <button
-                      onClick={copySql}
-                      className="mt-1 font-mono text-[10px] text-muted underline hover:text-foreground"
-                    >
-                      {copied ? "✓ kopyalandı" : "sql'i kopyala"}
-                    </button>
+                    <div className="mt-1 flex items-center gap-3">
+                      <button
+                        onClick={copySql}
+                        className="font-mono text-[10px] text-muted underline hover:text-foreground"
+                      >
+                        {copied ? "✓ kopyalandı" : "sql'i kopyala"}
+                      </button>
+                      {/* Doğrulama turu düzeltmesi (P1-10): drill'in HER adımı kendi Query
+                          Contract kaydını üretiyordu ama kimliği ekranda hiç gösterilmiyordu
+                          (ReportPanel'de gösteriliyor, drill'de unutulmuştu). */}
+                      {current.data.contract_id && (
+                        <button
+                          onClick={() => setContractOpen(true)}
+                          className="font-mono text-[10px] text-neutral-400 underline-offset-2 hover:text-foreground hover:underline"
+                          title="Query Contract — bu adımın kanıt kaydı (tıkla → incele)"
+                        >
+                          {current.data.contract_id}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
+            )}
+            {contractOpen && current?.data.contract_id && (
+              <ContractDetailPanel
+                contractId={current.data.contract_id}
+                onClose={() => setContractOpen(false)}
+              />
             )}
 
             {current.data.result && current.data.result.rows.length > 0 && (
@@ -327,11 +370,21 @@ function BreakdownTable({
           {result.rows.map((r, i) => {
             const dimValue = dimension ? String(r[dimension] ?? "") : null;
             const anomaly = dimValue ? anomalyByValue.get(dimValue) : undefined;
+            const pick = () => clickable && dimValue && onPick(dimension!, dimValue);
             return (
               <tr
                 key={i}
-                onClick={() => clickable && dimValue && onPick(dimension!, dimValue)}
-                className={`${clickable ? "cursor-pointer hover:bg-accent/10" : ""} ${
+                onClick={pick}
+                onKeyDown={(e) => {
+                  if (clickable && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    pick();
+                  }
+                }}
+                tabIndex={clickable ? 0 : undefined}
+                role={clickable ? "button" : undefined}
+                aria-label={clickable && dimValue ? `${dimension}: ${dimValue} — bu değere göre kır` : undefined}
+                className={`${clickable ? "cursor-pointer hover:bg-accent/10 focus-visible:bg-accent/10 focus-visible:outline-none" : ""} ${
                   anomaly ? (anomaly.direction === "below" ? "bg-red-500/10" : "bg-green-500/10") : ""
                 }`}
                 title={anomaly ? `Ortalamadan ${anomaly.direction === "below" ? "düşük" : "yüksek"} (z=${anomaly.z_score})` : undefined}

@@ -885,10 +885,29 @@ def report(request: Request, body: ReportRequest) -> dict:
             cq["compare"] = cqb["compare"]
         spec_blocks.append({"cube_query": cq, "title": b.title, "period": b.period,
                             "view_hint": b.view_hint})
-    return report_mod.compose_report(
+    rep = report_mod.compose_report(
         service, schema,
         {"title": body.title, "blocks": spec_blocks, "page_size": body.page_size},
     )
+    # PII maskeleme (doğrulama turu düzeltmesi, 1 Ağustos 2026): rapor derleme daha önce HİÇ
+    # maskelemiyordu — `/ask` üzerinden maskeli görülen bir sorgu rapora konunca maskesiz
+    # görünüyordu (`compose_report` "saf" bir fonksiyon olarak kalsın diye maskeleme BİLEREK
+    # burada, HTTP sınırında uygulanır — `_finish()`/`/query` ile AYNI ilke).
+    from app.pii import mask_query_result
+
+    principal = getattr(request.state, "principal", None)
+    any_unmasked = False
+    for page in rep.get("pages") or []:
+        for block in page:
+            if block.get("result"):
+                block["result"], unmasked = mask_query_result(block["result"], principal)
+                any_unmasked = any_unmasked or unmasked
+    if any_unmasked:
+        from control_plane import audit
+
+        audit.record(principal, "pii_view", nl_question=f"rapor · {body.title or 'Rapor'}",
+                    ip=request.client.host if request.client else None)
+    return rep
 
 
 @router.post("/verify", dependencies=[Depends(require("vqr:write")),
@@ -1470,10 +1489,51 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 if resp:
                     return resp
 
+    def _try_kpi() -> AskResponse | None:
+        """Doğrulama turu düzeltmesi (1 Ağustos 2026) — `app/kpi.py`'nin cross-cube KPI
+        motoru (CCC/cari oran gibi TEK cube ölçüsü OLAMAYAN bileşke metrikler) daha önce
+        canlı akışa HİÇ bağlı değildi: `resolve_kpi`/`resolve_kpi_series` hiçbir router'dan
+        çağrılmıyordu, `AskResponse.kpi` hiçbir zaman set edilmiyordu — altyapı (formül
+        motoru + 3 ERP paketinin turev.yml'i + 8 birim testi) HAZIRDI, yalnız son kilometre
+        (soru→KPI eşleşmesi) eksikti. `cube_router.match_kpi` yalnız BU şirkette GERÇEKTEN
+        derlenmiş KPI'lar (`schema()["kpis"]`) için eşleşir — boşsa (demo-boyahane dahil
+        ÇOĞU tenant) HER ZAMAN None döner, mevcut davranış DEĞİŞMEZ. Kapsam (bilinçli, bu
+        turda MİNİMAL): yalnız SKALER kart (`resolve_kpi`) — dönem-serisi (`resolve_kpi_
+        series`, "aylara göre X" gibi) ayrı bir turda ele alınabilir (gran-tespiti route()'un
+        kendi karmaşık mekanizmasına dokunmadan izole edilmeli)."""
+        kpi_name = cube_router.match_kpi(q_norm, schema)
+        if not kpi_name:
+            return None
+        try:
+            from app.kpi import load_kpis, resolve_kpi
+
+            spec = load_kpis(service.project_dir).get(kpi_name)
+            if not spec:
+                return None
+            kpi_meta = next((k for k in (schema.get("kpis") or [])
+                            if k.get("name") == kpi_name), {})
+            op_sql = {"gte": ">=", "lte": "<=", "gt": ">", "lt": "<", "eq": "="}
+            conds = [f"tarih {op_sql.get(f['operator'], '=')} '{f['value']}'"
+                    for f in cube_router.date_filters(q_norm, "tarih")
+                    if f.get("dimension") == "tarih" and f.get("value")]
+            where = ("WHERE " + " AND ".join(conds)) if conds else ""
+            card = resolve_kpi(service, spec, where)
+            return AskResponse(
+                question=body.question, source="cube", kpi=card,
+                trace=[f"KPI eşleşmesi (LLM'siz, sıfır maliyet): {kpi_meta.get('label', kpi_name)}"],
+            )
+        except Exception:
+            _log.warning("KPI resolver hata verdi (best-effort) — Discovery'ye düşülüyor",
+                        exc_info=True)
+            return None
+
     def _try_fresh_intent() -> AskResponse | None:
         """route() → YoY/MoM → LLM-Intent-JSON → neden-özel netleştirme chip'i. Hiçbiri
         cevaplayamazsa None (çağıran Discovery'ye düşer). Yapısal takip zinciri
         action="new" (konu tamamen değişti) dediğinde de BU fonksiyon çağrılır."""
+        kpi_resp = _try_kpi()
+        if kpi_resp:
+            return kpi_resp
         route_hit: dict | None = None
         intent_source: str | None = None
         typo_fix_trace: str | None = None

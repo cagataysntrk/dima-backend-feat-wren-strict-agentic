@@ -307,10 +307,82 @@ export interface Notification {
   label?: string;
   contract_id?: string | null;
 }
+
+// Zamanlanmış rapor kaydı (GET /schedules öğesi) — doğrulama turu düzeltmesi (1 Ağustos
+// 2026): kullanıcı bir zamanlama OLUŞTURABİLİYORDU ama sonra listeleyip SİLEMİYOR/elle
+// ÇALIŞTIRAMIYORDU (yalnız `createSchedule` vardı) — bu tip + aşağıdaki 3 fonksiyon o
+// eksik yönetim yüzeyini kapatır.
+export interface ScheduleListItem {
+  id: string;
+  label: string;
+  cube_query: CubeQuery;
+  period?: string | null;
+  every: string;
+  at?: string | null;
+  weekday?: number | null;
+  threshold?: Record<string, unknown> | null;
+  enabled?: boolean;
+}
 export async function createSchedule(spec: ScheduleSpec): Promise<{ id: string }> {
   const { data } = await apiClient.post<{ schedule: { id: string } }>("/schedules", spec);
   return data.schedule;
 }
+// Query Contract keşif/replay (doğrulama turu düzeltmesi, 1 Ağustos 2026) — `contract_id`
+// ekranda küçük bir metin olarak gösteriliyordu ama TIKLANAMAZ/incelenip yeniden-
+// oynatılamazdı; backend uçları (/contracts, /contracts/{cid}, /contracts/{cid}/replay)
+// zaten HAZIRDI, yalnız frontend'den hiç çağrılmıyordu.
+export interface ContractRecord {
+  id: string;
+  ts: string | null;
+  session: string | null;
+  question: string | null;
+  cube_query: CubeQuery | null;
+  sql: string | null;
+  result_hash: string | null;
+  row_count: number | null;
+  schema_version: string | null;
+  source: string | null;
+}
+export interface ContractReplayResult {
+  contract: ContractRecord;
+  replay: {
+    verdict: string;
+    sql?: string;
+    row_count?: number;
+    sql_match?: boolean;
+    result_match?: boolean;
+    schema_version_now?: string;
+    schema_changed?: boolean;
+    error?: string;
+  };
+}
+
+export async function getContract(cid: string): Promise<ContractRecord> {
+  const { data } = await apiClient.get<ContractRecord>(`/contracts/${cid}`);
+  return data;
+}
+
+export async function replayContract(cid: string): Promise<ContractReplayResult> {
+  const { data } = await apiClient.get<ContractReplayResult>(`/contracts/${cid}/replay`);
+  return data;
+}
+
+export async function listSchedules(): Promise<ScheduleListItem[]> {
+  const { data } = await apiClient.get<{ schedules: ScheduleListItem[] }>("/schedules");
+  return data.schedules ?? [];
+}
+
+export async function deleteSchedule(id: string): Promise<void> {
+  await apiClient.delete(`/schedules/${id}`);
+}
+
+export async function runScheduleNow(id: string): Promise<{ notification: Notification }> {
+  const { data } = await apiClient.post<{ notification: Notification }>(
+    `/schedules/${id}/run`,
+  );
+  return data;
+}
+
 export async function getNotifications(limit = 20): Promise<Notification[]> {
   const { data } = await apiClient.get<{ notifications: Notification[] }>("/notifications", {
     params: { limit },
@@ -358,6 +430,19 @@ export async function deleteDashboard(id: string): Promise<void> {
   await apiClient.delete(`/dashboards/${id}`);
 }
 
+// Panoyu yeniden adlandır / görünürlüğünü değiştir (doğrulama turu düzeltmesi, 1 Ağustos
+// 2026) — `PATCH /dashboards/{id}` zaten vardı, frontend'den hiç çağrılmıyordu; kullanıcı
+// bir panoyu oluşturduktan sonra ASLA adını değiştiremiyordu.
+export async function patchDashboard(
+  id: string,
+  body: { title?: string; visibility?: "private" | "tenant" },
+): Promise<{ id: string; title: string; visibility: string }> {
+  const { data } = await apiClient.patch<{ id: string; title: string; visibility: string }>(
+    `/dashboards/${id}`, body,
+  );
+  return data;
+}
+
 export async function addDashboardWidget(
   id: string,
   widget: {
@@ -376,10 +461,15 @@ export async function deleteDashboardWidget(id: string, wid: string): Promise<vo
 }
 
 // Widget görünüm durumunu KAYDET (pano'da tip/görünüm/dönem değişince) → yeniden yüklemede korunur.
+// `pos`/`refresh` (doğrulama turu düzeltmesi, 1 Ağustos 2026, P2-22) — backend'de zaten
+// var olan (`DashboardWidget.pos_json`/`refresh`) ama YAZMA ucu hiç kabul etmediği için
+// frontend'den hiç kullanılamayan iki alan; genişlik (`pos.w`) + yenileme sıklığı artık
+// kaydedilebilir.
 export async function patchDashboardWidget(
   id: string,
   wid: string,
-  body: { view_hint?: string; period?: string; title?: string },
+  body: { view_hint?: string; period?: string; title?: string;
+          pos?: { x: number; y: number; w: number; h: number } | null; refresh?: string },
 ): Promise<void> {
   await apiClient.patch(`/dashboards/${id}/widgets/${wid}`, body);
 }

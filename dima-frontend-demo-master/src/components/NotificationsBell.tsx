@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getNotifications, type Notification } from "@/lib/api-client";
+import { ContractDetailPanel } from "@/components/ContractDetailPanel";
 
 // Bildirim zili (ADR-0011): zamanlanmış rapor/alarm bildirimleri — 60sn'de bir yoklanır.
 // Okunmamış sayacı localStorage'daki son-görülme zamanına göre hesaplanır.
@@ -11,11 +12,14 @@ const SEEN_KEY = "dima.notifications.seen";
 
 export function NotificationsBell({ onOpen }: { onOpen: () => void }) {
   const [items, setItems] = useState<Notification[]>([]);
-  const [seenTs, setSeenTs] = useState<string>("");
+  // Lazy initializer (fonksiyon olarak) — yalnız İLK render'da okunur, bir effect
+  // İÇİNDE senkron setState ÇAĞIRMAZ (bu oturumda başka yerlerde de düzeltilen
+  // "effect gövdesinde setState" antipattern'inin AYNISI burada da vardı).
+  const [seenTs, setSeenTs] = useState<string>(() =>
+    typeof window === "undefined" ? "" : localStorage.getItem(SEEN_KEY) ?? "");
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    setSeenTs(localStorage.getItem(SEEN_KEY) ?? "");
     const poll = () => getNotifications(20).then(setItems).catch(() => {});
     poll();
     timer.current = setInterval(poll, 60_000);
@@ -60,14 +64,25 @@ export function NotificationsBell({ onOpen }: { onOpen: () => void }) {
 export function NotificationsPanel() {
   const [items, setItems] = useState<Notification[]>([]);
   const [loaded, setLoaded] = useState(false);
+  // Doğrulama turu düzeltmesi (1 Ağustos 2026, P1-12): başarısız bir fetch daha önce
+  // "hiç bildirim yok" ile AYIRT EDİLEMİYORDU (ikisi de aynı boş listeye düşüyordu).
+  const [error, setError] = useState(false);
+  const [openContract, setOpenContract] = useState<string | null>(null);
 
   useEffect(() => {
     getNotifications(50)
       .then(setItems)
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoaded(true));
   }, []);
 
+  if (loaded && error) {
+    return (
+      <div className="px-1 py-4 font-mono text-[11px] text-red-500">
+        Bildirimler yüklenemedi. Sayfayı yenileyip tekrar dener misin?
+      </div>
+    );
+  }
   if (loaded && items.length === 0) {
     return (
       <div className="px-1 py-4 font-mono text-[11px] text-neutral-400">
@@ -76,22 +91,35 @@ export function NotificationsPanel() {
     );
   }
   return (
-    <ul>
-      {items.map((n) => (
-        <li key={n.id} className="border-b border-hairline px-1 py-2 last:border-b-0">
-          <div
-            className={`font-mono text-[11px] leading-snug ${
-              n.kind === "alert" ? "text-red-500" : "text-neutral-600 dark:text-neutral-300"
-            }`}
-          >
-            {n.message}
-          </div>
-          <div className="mt-0.5 flex items-center justify-between font-mono text-[9px] text-neutral-400">
-            <span>{n.ts.replace("T", " ").slice(0, 16)}</span>
-            {n.contract_id && <span title="Kanıt kaydı (Query Contract)">{n.contract_id}</span>}
-          </div>
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul>
+        {items.map((n) => (
+          <li key={n.id} className="border-b border-hairline px-1 py-2 last:border-b-0">
+            <div
+              className={`font-mono text-[11px] leading-snug ${
+                n.kind === "alert" ? "text-red-500" : "text-neutral-600 dark:text-neutral-300"
+              }`}
+            >
+              {n.message}
+            </div>
+            <div className="mt-0.5 flex items-center justify-between font-mono text-[9px] text-neutral-400">
+              <span>{n.ts.replace("T", " ").slice(0, 16)}</span>
+              {n.contract_id && (
+                <button
+                  onClick={() => setOpenContract(n.contract_id ?? null)}
+                  title="Kanıt kaydı (Query Contract) — tıkla → incele"
+                  className="underline-offset-2 hover:text-foreground hover:underline"
+                >
+                  {n.contract_id}
+                </button>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+      {openContract && (
+        <ContractDetailPanel contractId={openContract} onClose={() => setOpenContract(null)} />
+      )}
+    </>
   );
 }

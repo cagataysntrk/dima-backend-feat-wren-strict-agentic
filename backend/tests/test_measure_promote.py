@@ -134,3 +134,73 @@ def test_measure_promote_full_lifecycle(client, clean_promote_artifacts):
         "cube_query": {"cube": _TEST_CUBE, "measures": [_TEST_MEASURE]},
     })
     assert r.status_code == 200 and r.json().get("result") is not None, r.text
+
+
+def test_measure_candidate_reject_lifecycle(client):
+    """Doğrulama turu düzeltmesi (1 Ağustos 2026, P1-14) — `reject_candidate` HTTP
+    katmanında hiç test edilmemişti. Reddedilen bir aday YAZILMAZ (kabul edilenin AKSİNE,
+    hiçbir dosya değişmez) — durumu "rejected"e döner, tekrar reddedilemez/onaylanamaz."""
+    from sqlmodel import Session
+
+    from control_plane.db import engine
+    from control_plane.models import MeasureCandidate
+
+    with Session(engine) as s:
+        cand = MeasureCandidate(company="demo-boyahane", question="test reddedilecek aday",
+                                sql="SELECT 1")
+        s.add(cand); s.commit(); s.refresh(cand)
+        cid = str(cand.id)
+
+    make_tenant_user("faz2d-reject-analyst@dima.local", "faz2d-reject-1", "analyst")
+    analyst = _login_as(client, "faz2d-reject-analyst@dima.local", "faz2d-reject-1")
+    # analyst yalnız GÖRÜNTÜLEME (measure:read) — reddedemez (measure:approve gerektirir).
+    assert analyst.post(f"/measures/candidates/{cid}/reject",
+                        json={"note": "yetkisiz deneme"}).status_code == 403
+
+    make_tenant_user("faz2d-reject-admin@dima.local", "faz2d-reject-1", "admin")
+    admin = _login_as(client, "faz2d-reject-admin@dima.local", "faz2d-reject-1")
+    r = admin.post(f"/measures/candidates/{cid}/reject", json={"note": "yanlış anlaşılmış"})
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "rejected"
+
+    # zaten reddedilmiş bir aday TEKRAR reddedilemez/onaylanamaz (409 — durum makinesi).
+    assert admin.post(f"/measures/candidates/{cid}/reject",
+                      json={"note": "tekrar"}).status_code == 409
+    approve_body = {"cube": _TEST_CUBE, "measure_name": "asla_yazilmayacak_olcu",
+                    "expression": "1", "type": "DOUBLE",
+                    "golden_case": {"id": "asla-yazilmayacak", "q": "x", "shape": {}}}
+    assert admin.post(f"/measures/candidates/{cid}/approve",
+                      json=approve_body).status_code == 409
+
+
+def test_measure_blast_radius_counts_real_usage(client):
+    """Doğrulama turu düzeltmesi (1 Ağustos 2026, P1-14) — `blast_radius` HTTP katmanında
+    hiç test edilmemişti. Bir ölçüyü GERÇEKTEN kullanan bir Query Contract kaydı varsa,
+    tarama bunu YAKALAMALI (deprecate-öncesi "kaç yerde kullanılıyor" uyarısının temeli)."""
+    from sqlmodel import Session
+
+    from control_plane.db import engine
+    from control_plane.models import MeasureCandidate
+
+    with Session(engine) as s:
+        cand = MeasureCandidate(company="demo-boyahane", question="test blast-radius adayı",
+                                sql="SELECT 1")
+        s.add(cand); s.commit(); s.refresh(cand)
+        cid = str(cand.id)
+
+    # GERÇEK bir cube_query kullanımı üret (Query Contract'a kendi kaydını düşürür —
+    # /cube ile AYNI çalıştırma yolu, ask.py'deki diğer contract testleriyle TUTARLI).
+    client.post("/cube", json={"cube_query": {"cube": "parti", "measures": ["toplam_ciro"]}})
+
+    r = client.get(f"/measures/candidates/{cid}/blast-radius",
+                   params={"cube": "parti", "measure_name": "toplam_ciro"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["contract_log_structured"] >= 1
+    assert "note" in body
+
+    # hiç kullanılmayan bir ölçü için hepsi SIFIR olmalı (yanlış-pozitif üretmemeli).
+    r2 = client.get(f"/measures/candidates/{cid}/blast-radius",
+                    params={"cube": "parti", "measure_name": "hic_kullanilmayan_olcu_xyz"})
+    assert r2.json()["contract_log_structured"] == 0
+    assert r2.json()["verified_query"] == 0

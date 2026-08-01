@@ -128,6 +128,39 @@ def test_kirilimsiz_pur_toplam_hala_calisir(schema):
     assert route(schema, "toplam fire") is not None
 
 
+# --- value_index.py entegrasyonu (doğrulama turu düzeltmesi, 1 Ağustos 2026) --------
+# `app/value_index.py` (ADR-0008) TAM yazılmıştı ama hiç bağlanmamıştı — yukarıdaki
+# difflib geçişi yalnız TEK KELİMELİK düzeltme yapabiliyor (`_catalog_vocabulary` çok-
+# kelimeli değerleri BİLE tek kelimelere bölüyor); `FuzzyIndex` komşu kelime ikilemelerini
+# de dener. Bu YÜZDEN yukarıdaki geçişin YERİNE değil, YALNIZ onun çözemediği (hâlâ
+# tanınmayan) kelimeler için EK bir deneme olarak eklendi (bkz. FAZ4-SONRASI-ONERILER
+# P1-4). "KONTİNÜ KASAR" (oee cube'unun gerçek çok-kelimeli bir makine değeri) burada
+# somut örnek: "kontinu" tek başına difflib geçişini geçemiyor (best==w ya da skor
+# yetersiz), yalnız BİGRAM ("kontinu kasr") üzerinden value_index yakalıyor.
+
+def test_value_index_multi_word_value_typo_fallback(schema):
+    """Tek-kelimelik difflib geçişi çözemediği bir ÇOK-KELİMELİ değer typo'sunu
+    value_index.py'nin bigram-farkında bulanık eşleştirmesi yakalamalı."""
+    from app.cube_router import _norm, typo_correct
+
+    q = _norm("kontinü kasr makinesinde oee bu yıl")
+    corrected, fixes = typo_correct(q, schema)
+    assert "kontinu kasar" in corrected
+    assert any(f["kind"] == "auto" and "kontinu" in f["from"] and "kasar" in f["to"]
+              for f in fixes)
+
+
+def test_value_index_fallback_does_not_fire_when_nothing_left_unknown(schema):
+    """Tüm kelimeler ZATEN tanınıyorsa (ya da ilk geçiş hepsini çözdüyse) value_index
+    hiç DEVREYE GİRMEMELİ — regresyon kilidi (mevcut %100 hassasiyetli davranış korunur)."""
+    from app.cube_router import _norm, typo_correct
+
+    q = _norm("makine bazında ortalama oee")
+    corrected, fixes = typo_correct(q, schema)
+    assert corrected == q
+    assert fixes == []
+
+
 # --- metadata-tabanlı sinonimler (generic router — içerik Wren'de) ----------
 
 def test_metadata_synonym_randiman_cihaz(schema):

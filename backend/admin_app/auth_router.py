@@ -2,6 +2,13 @@
 
 Ortak servis ``control_plane.auth_service``. Login yalnız superadmin'e izin verir —
 tenant kullanıcısı admin plane'e giremez.
+
+NOT (doğrulama turu düzeltmesi, 1 Ağustos 2026): `app/auth/router.py` (public plane) bu
+dosyanın PARALELİ — ADR-0015'in bilinçli ağ-izolasyonu gereği AYRI bir JWT secret
+çiftiyle imzalar, tek bir ortak modüle BİLEREK birleştirilmedi. Cookie/güvenlik
+ayarlarından biri (ör. `SameSite`/`Secure`/`httponly`) burada değişirse, ORADA da (ve
+tersi) kontrol edilmeli — ikisi bağımsız kod yollarıdır, biri yamanırken öbürü unutulma
+riski taşır.
 """
 
 from __future__ import annotations

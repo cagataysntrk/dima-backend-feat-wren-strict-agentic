@@ -17,14 +17,38 @@ import type { Report } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import { ReportView } from "@/components/ReportView";
 
+// Doğrulama turu düzeltmesi (1 Ağustos 2026, P2-22): widget-BAŞINA yenileme sıklığı
+// (`DashboardWidget.refresh` — backend'de zaten vardı, yalnız YAZMA ucu eksikti, bkz.
+// app/routers/dashboards.py::WidgetPatch). `/dashboards/{id}/data` TEK bir birleşik uçtur
+// (widget-başına ayrı istek YOK) — bu yüzden GERÇEK per-widget polling yerine, PRAGMATİK
+// bir yaklaşım: pano en HIZLI (en kısa) yapılandırılmış widget'ın sıklığında yenilenir
+// (diğer widget'lar biraz fazla-sıklıkta tazelenir ama YANLIŞ/eksik veri GÖSTERMEZ).
+const REFRESH_OPTIONS = [
+  { value: "onview", label: "yalnız açılışta" },
+  { value: "cache:300", label: "5 dakikada bir" },
+  { value: "cache:60", label: "dakikada bir" },
+  { value: "live", label: "canlı (10sn)" },
+] as const;
+
+function refreshMs(refresh: string | undefined | null): number | null {
+  if (!refresh || refresh === "onview") return null;
+  if (refresh === "live") return 10_000;
+  const m = /^cache:(\d+)$/.exec(refresh);
+  return m ? Number(m[1]) * 1000 : null;
+}
+
 export function DashboardView({ id, onClose }: { id: string; onClose: () => void }) {
   const qc = useQueryClient();
   const [report, setReport] = useState<Report | null>(null);
   const meta = useQuery({ queryKey: ["dashboard", id], queryFn: () => getDashboard(id) });
+  const fastestMs = Math.min(
+    60_000, // varsayılan taban — hiçbir widget daha hızlısını istemiyorsa bu korunur
+    ...(meta.data?.widgets ?? []).map((w) => refreshMs(w.refresh) ?? Infinity),
+  );
   const data = useQuery({
     queryKey: ["dashboard-data", id],
     queryFn: () => getDashboardData(id),
-    refetchInterval: 60_000, // canlı: 60sn'de bir yeniden koş (göreli dönem yeniden çözülür)
+    refetchInterval: Number.isFinite(fastestMs) ? fastestMs : 60_000,
   });
   const del = useMutation({
     mutationFn: (wid: string) => deleteDashboardWidget(id, wid),
@@ -65,6 +89,29 @@ export function DashboardView({ id, onClose }: { id: string; onClose: () => void
     saveView.mutate({ wid, viewHint });
     qc.setQueryData(["dashboard", id], (old: typeof meta.data) =>
       old ? { ...old, widgets: old.widgets.map((w) => (w.id === wid ? { ...w, view_hint: viewHint } : w)) } : old,
+    );
+  };
+
+  // YENİLEME SIKLIĞI + GENİŞLİK kaydet (P2-22) — AYNI optimistik-güncelleme deseni.
+  const saveRefresh = useMutation({
+    mutationFn: ({ wid, refresh }: { wid: string; refresh: string }) =>
+      patchDashboardWidget(id, wid, { refresh }),
+  });
+  const onWidgetRefresh = (wid: string, refresh: string) => {
+    saveRefresh.mutate({ wid, refresh });
+    qc.setQueryData(["dashboard", id], (old: typeof meta.data) =>
+      old ? { ...old, widgets: old.widgets.map((w) => (w.id === wid ? { ...w, refresh } : w)) } : old,
+    );
+  };
+  const saveWidth = useMutation({
+    mutationFn: ({ wid, w }: { wid: string; w: 1 | 2 }) =>
+      patchDashboardWidget(id, wid, { pos: { x: 0, y: 0, w, h: 1 } }),
+  });
+  const onWidgetWidth = (wid: string, w: 1 | 2) => {
+    saveWidth.mutate({ wid, w });
+    qc.setQueryData(["dashboard", id], (old: typeof meta.data) =>
+      old ? { ...old, widgets: old.widgets.map((wg) =>
+        wg.id === wid ? { ...wg, pos: { x: 0, y: 0, w, h: 1 } } : wg) } : old,
     );
   };
 
@@ -109,8 +156,12 @@ export function DashboardView({ id, onClose }: { id: string; onClose: () => void
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {widgets.map((w) => {
               const wd = dataById.get(w.id);
+              const wide = w.pos?.w === 2;
               return (
-                <div key={w.id} className="flex flex-col border border-hairline bg-background p-3">
+                <div
+                  key={w.id}
+                  className={`flex flex-col border border-hairline bg-background p-3 ${wide ? "xl:col-span-2" : ""}`}
+                >
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <span className="truncate font-mono text-[12px] text-foreground">
                       {w.title ||
@@ -119,13 +170,37 @@ export function DashboardView({ id, onClose }: { id: string; onClose: () => void
                         <span className="ml-1 text-neutral-400">· {w.period}</span>
                       ) : null}
                     </span>
-                    <button
-                      onClick={() => del.mutate(w.id)}
-                      title="Widget'ı kaldır"
-                      className="shrink-0 font-mono text-[13px] text-neutral-400 transition-colors hover:text-red-500"
-                    >
-                      ×
-                    </button>
+                    <span className="flex shrink-0 items-center gap-2">
+                      {/* P2-22: genişlik + yenileme sıklığı — ikisi de backend'de zaten
+                          var olan (pos_json/refresh) alanları KULLANIR, yeni bir kavram
+                          İCAT ETMEZ. */}
+                      <button
+                        onClick={() => onWidgetWidth(w.id, wide ? 1 : 2)}
+                        title={wide ? "Normal genişliğe al" : "Geniş yap (2 kolon)"}
+                        aria-label={wide ? "Normal genişliğe al" : "Geniş yap"}
+                        className="font-mono text-[11px] text-neutral-400 transition-colors hover:text-foreground"
+                      >
+                        {wide ? "⇔ dar" : "⇔ geniş"}
+                      </button>
+                      <select
+                        value={w.refresh ?? "onview"}
+                        onChange={(e) => onWidgetRefresh(w.id, e.target.value)}
+                        title="Bu widget'ın yenileme sıklığı"
+                        className="border border-hairline bg-background font-mono text-[10px] text-neutral-400"
+                      >
+                        {REFRESH_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => del.mutate(w.id)}
+                        title="Widget'ı kaldır"
+                        aria-label="Widget'ı kaldır"
+                        className="shrink-0 font-mono text-[13px] text-neutral-400 transition-colors hover:text-red-500"
+                      >
+                        ×
+                      </button>
+                    </span>
                   </div>
                   {data.isLoading ? (
                     <p className="font-mono text-[11px] text-neutral-400">yürütülüyor…</p>

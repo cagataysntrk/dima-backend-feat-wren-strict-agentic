@@ -198,6 +198,12 @@ class WidgetPatch(BaseModel):
     view_hint: str | None = None
     period: str | None = None
     title: str | None = None
+    # Doğrulama turu düzeltmesi (1 Ağustos 2026, P2-22): `DashboardWidget.pos_json`/`refresh`
+    # (control_plane/models.py) VE `_widget_dict()`'in OKUMA tarafı ZATEN vardı (grep ile
+    # doğrulandı) — yalnız bu YAZMA ucu iki alanı hiç KABUL ETMİYORDU, bu yüzden kullanıcı
+    # ne widget genişliğini/yerleşimini ne de yenileme sıklığını hiç KAYDEDEMİYORDU.
+    pos: dict | None = None                # {x,y,w,h} — bu sürümde yalnız "w" (genişlik) kullanılır
+    refresh: str | None = None             # onview | live | cache:<saniye>
 
 
 @router.patch("/dashboards/{did}/widgets/{wid}")
@@ -220,6 +226,10 @@ def patch_widget(request: Request, did: str, wid: str, body: WidgetPatch,
         w.period = data["period"]
     if "title" in data:
         w.title = data["title"] or ""
+    if "pos" in data:
+        w.pos_json = json.dumps(data["pos"], ensure_ascii=False) if data["pos"] else None
+    if "refresh" in data and data["refresh"]:
+        w.refresh = data["refresh"]
     session.add(w)
     d.updated_at = datetime.utcnow()
     session.add(d)
@@ -296,6 +306,17 @@ def dashboard_data(request: Request, did: str, session: Session = Depends(get_se
                 result, units=cmeta.get("units") or {},
                 lower_set=cmeta.get("lower_is_better") or [], cube_query=viz_cq,
             )
+            # PII maskeleme (doğrulama turu düzeltmesi, 1 Ağustos 2026): panonun CANLI veri
+            # ucu daha önce HİÇ maskelemiyordu — `/ask` üzerinden maskeli görülen bir sorgu
+            # panoya widget olarak eklenince maskesiz görünüyordu. `/query` ile AYNI paylaşılan
+            # yardımcı (app/pii.py::mask_query_result).
+            from app.pii import mask_query_result
+
+            result, unmasked_pii_shown = mask_query_result(result, p)
+            if unmasked_pii_shown:
+                from control_plane import audit
+                audit.record(p, "pii_view", nl_question=f"pano widget · {w.id}",
+                            ip=request.client.host if request.client else None)
             out.append({"id": str(w.id), "result": result, "viz": wviz, "error": None})
         except Exception as exc:  # noqa: BLE001 — tek widget hatası panoyu düşürmesin
             out.append({"id": str(w.id), "result": None, "viz": None, "error": str(exc)[:200]})

@@ -17,6 +17,7 @@ export function EChart({
   minHeight = 240,
   maxHeight = 460,
   onSeriesClick,
+  onDataPointClick,
 }: {
   option: echarts.EChartsOption;
   // Açık yükseklik (px) — verilirse responsive türetim kapanır (email/rapor sabit ölçek).
@@ -26,15 +27,22 @@ export function EChart({
   maxHeight?: number;
   // Seri tıklaması (panel öne çıkarma vb.) — seriesIndex geri verilir.
   onSeriesClick?: (seriesIndex: number) => void;
+  // Doğrulama turu düzeltmesi (1 Ağustos 2026, P1-2) — TEK bir veri noktasına (çubuk/dilim)
+  // tıklamayı da taşır: `dataIndex` (serideki konum) + `name` (ECharts'ın x-ekseni/dilim
+  // etiketi olarak zaten gösterdiği KATEGORİ DEĞERİ — ayrı bir satır-eşleme İCAT ETMEDEN
+  // doğrudan kullanılabilir). `onSeriesClick`'in YANINDA, GERİYE-UYUMLU ek bir callback.
+  onDataPointClick?: (info: { seriesIndex: number; dataIndex: number; name: string }) => void;
 }) {
   const el = useRef<HTMLDivElement>(null);
   const chart = useRef<echarts.ECharts | null>(null);
   const clickRef = useRef(onSeriesClick);
+  const pointClickRef = useRef(onDataPointClick);
   // Boyut parametreleri closure'da bayatlamasın → ref'ten okunur (RO tek sefer bağlanır).
   const sizeRef = useRef({ height, aspect, minHeight, maxHeight });
   // Ref güncellemeleri RENDER'da değil effect'te (react-compiler: no ref access during render).
   useEffect(() => {
     clickRef.current = onSeriesClick;
+    pointClickRef.current = onDataPointClick;
     sizeRef.current = { height, aspect, minHeight, maxHeight };
   });
 
@@ -43,8 +51,11 @@ export function EChart({
     const c = echarts.init(el.current, undefined, { renderer: "canvas" });
     chart.current = c;
     c.on("click", (params) => {
-      const si = (params as { seriesIndex?: number }).seriesIndex;
-      if (typeof si === "number") clickRef.current?.(si);
+      const p = params as { seriesIndex?: number; dataIndex?: number; name?: string };
+      if (typeof p.seriesIndex === "number") clickRef.current?.(p.seriesIndex);
+      if (typeof p.seriesIndex === "number" && typeof p.dataIndex === "number" && p.name) {
+        pointClickRef.current?.({ seriesIndex: p.seriesIndex, dataIndex: p.dataIndex, name: p.name });
+      }
     });
     const applySize = () => {
       const node = el.current;

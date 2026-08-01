@@ -4,7 +4,7 @@
 // React Query ile liste + mutation'da invalidate. Açma → page main-area overlay'i.
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createDashboard, deleteDashboard, listDashboards } from "@/lib/api-client";
+import { createDashboard, deleteDashboard, listDashboards, patchDashboard } from "@/lib/api-client";
 
 export function DashboardsPanel({ onOpen }: { onOpen: (id: string) => void }) {
   const qc = useQueryClient();
@@ -17,6 +17,21 @@ export function DashboardsPanel({ onOpen }: { onOpen: (id: string) => void }) {
     mutationFn: (id: string) => deleteDashboard(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["dashboards"] }),
   });
+  // Doğrulama turu düzeltmesi (1 Ağustos 2026) — PATCH /dashboards/{id} zaten vardı ama
+  // hiç çağrılmıyordu: kullanıcı bir panoyu oluşturduktan sonra adını/görünürlüğünü ASLA
+  // değiştiremiyordu.
+  const patch = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Parameters<typeof patchDashboard>[1] }) =>
+      patchDashboard(id, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["dashboards"] }),
+  });
+  const rename = (id: string, currentTitle: string) => {
+    const title = window.prompt("Yeni pano adı:", currentTitle);
+    if (title && title !== currentTitle) patch.mutate({ id, body: { title } });
+  };
+  const toggleVisibility = (id: string, current: string) => {
+    patch.mutate({ id, body: { visibility: current === "tenant" ? "private" : "tenant" } });
+  };
 
   const list = data?.dashboards ?? [];
   const ownCount = list.filter((d) => d.own).length;
@@ -60,14 +75,35 @@ export function DashboardsPanel({ onOpen }: { onOpen: (id: string) => void }) {
                 </div>
               </button>
               {d.own && (
-                <button
-                  onClick={() => del.mutate(d.id)}
-                  disabled={del.isPending}
-                  title="Panoyu sil"
-                  className="ml-2 font-mono text-[13px] text-neutral-400 transition-colors hover:text-red-500"
-                >
-                  ×
-                </button>
+                <span className="ml-2 flex shrink-0 items-center gap-1.5">
+                  <button
+                    onClick={() => rename(d.id, d.title)}
+                    disabled={patch.isPending}
+                    title="Yeniden adlandır"
+                    aria-label="Yeniden adlandır"
+                    className="font-mono text-[11px] text-neutral-400 transition-colors hover:text-foreground"
+                  >
+                    ✎
+                  </button>
+                  <button
+                    onClick={() => toggleVisibility(d.id, d.visibility)}
+                    disabled={patch.isPending}
+                    title={d.visibility === "tenant" ? "Şirket geneli — özel yap" : "Özel — şirket geneline aç"}
+                    aria-label="Görünürlüğü değiştir"
+                    className="font-mono text-[11px] text-neutral-400 transition-colors hover:text-foreground"
+                  >
+                    {d.visibility === "tenant" ? "🏢" : "🔒"}
+                  </button>
+                  <button
+                    onClick={() => del.mutate(d.id)}
+                    disabled={del.isPending}
+                    title="Panoyu sil"
+                    aria-label="Panoyu sil"
+                    className="font-mono text-[13px] text-neutral-400 transition-colors hover:text-red-500"
+                  >
+                    ×
+                  </button>
+                </span>
               )}
             </li>
           ))}

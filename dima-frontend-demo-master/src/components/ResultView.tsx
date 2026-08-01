@@ -128,12 +128,19 @@ export function ResultView({
   viewHint,
   viz,
   onViewChange,
+  onDataPointClick,
 }: {
   result: QueryResult;
   viewHint?: string;
   viz?: VizSpec | null;
   // Pano: kullanıcı görünümü/tipi değiştirince ÜSTE bildir → widget'a KAYDET (view_hint).
   onViewChange?: (viewHint: string) => void;
+  // Doğrulama turu düzeltmesi (1 Ağustos 2026, P1-2) — grafikte TEK bir çubuğa/dilime
+  // tıklamayı kök-neden dallanmasına (DrillDownPanel action:"select") bağlar. Yalnız
+  // TEK bir birincil kategorik boyutlu, basit grafik biçimlerinde (bar/line/pie; facet/
+  // scatter/heatmap HARİÇ) — bu şekillerde "hangi kategori tıklandı" belirsizleşir,
+  // yanlış bir dallanma UYDURMAKTANSA hiç tetiklenmemesi tercih edilir.
+  onDataPointClick?: (dimension: string, value: string) => void;
 }) {
   // Yüzdelik oranların (0-1) dinamik olarak 0-100 ölçeğine çekilmesi.
   // Bu sayede 0.8 (Kullanılabilirlik) ve 60 (OEE) aynı grafikte patlamadan çizilir.
@@ -299,6 +306,20 @@ export function ResultView({
   const effKind: ChartKind = single
     ? (effA.kind === "none" || effA.kind === "kpi" ? "bar" : effA.kind)
     : type;
+
+  // P1-2: TEK bir çubuğa/dilime tıkla → kök-neden dallanması. Yalnız BASİT, tek birincil
+  // boyutlu şekillerde (facet/scatter/heatmap HARİÇ) — bu diğerlerinde "hangi kategori"
+  // belirsizleşir. ECharts'ın gösterdiği `name` BİÇİMLENDİRİLMİŞ olabilir (ör. tarih) —
+  // ham satırlarda TAM eşleşen değeri ARARIZ; bulunamazsa (biçim farklıysa) SESSİZCE
+  // atlanır (yanlış bir filtre göndermektense hiç göndermemek daha güvenlidir).
+  const handleChartDataPointClick = (info: { seriesIndex: number; dataIndex: number; name: string }) => {
+    if (!onDataPointClick) return;
+    const dim = effA.primaryDim;
+    if (!dim || effA.facet || effA.facetMeasure || effA.scatter || effA.heat || effA.heatAny) return;
+    const rawValue = effResult.rows.find((r) => String(r[dim] ?? "") === info.name)?.[dim];
+    if (rawValue == null) return;
+    onDataPointClick(dim, String(rawValue));
+  };
 
   // Grafik yalnız çizilebilir + ölçü varsa hesaplanır (0 satır / ölçüsüz → tablo, çökme yok).
   const lowerSet = useLowerSet();
@@ -482,6 +503,7 @@ export function ResultView({
                     }
                   : undefined
               }
+              onDataPointClick={onDataPointClick ? handleChartDataPointClick : undefined}
             />
           </div>
         ) : (

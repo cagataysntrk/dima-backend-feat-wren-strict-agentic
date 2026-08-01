@@ -82,6 +82,34 @@ def _mask_scalar(v):
     return v
 
 
+def mask_query_result(result: dict, principal=None) -> tuple[dict, bool]:
+    """`/query`'nin maskeleme deseninin PAYLAŞILAN hâli — `result` (columns/rows/row_count
+    sözlüğü) alır, (yeni_result, unmasked_pii_shown) döner. Doğrulama turunda (1 Ağustos
+    2026) bulunan gerçek boşluk: Faz 4.14 yalnız `/ask`/`/cube`/`/query`'yi kapsıyordu —
+    `app/report.py`, `app/routers/dashboards.py::dashboard_data`, `app/schedules.py::
+    run_schedule` de `svc.query(...)` çağırıyor ama HİÇBİRİ maskelemiyordu (üçü de aynı
+    ham satırları ya panoya, ya rapora, ya da BİR E-POSTAYA taşıyordu). Bu fonksiyon o
+    dört çağrı yerinin (bu üçü + `/query`) TEK ortak uygulamasıdır — tekrarı önler.
+
+    `principal=None` (ör. zamanlanmış rapor TESLİMİ gibi canlı bir kullanıcı OLMAYAN,
+    otomatik/arka-plan bağlamlar) HER ZAMAN maskeler — bypass edecek bir yetkili
+    GÖRÜNTÜLEYİCİ o anda YOK (e-postanın kime gideceği önceden bilinemez), bu yüzden
+    fail-closed varsayılan uygulanır. Bu fonksiyon `audit.record` ÇAĞIRMAZ — hangi ek
+    alanların (session_id, generated_sql, dashboard/schedule id vb.) loglanacağı çağırana
+    göre değiştiği için audit satırını ÇAĞIRAN kendi bağlamıyla yazar."""
+    if not result.get("rows"):
+        return result, False
+    from control_plane.authorize import can
+
+    has_pii_view = principal is not None and can(principal, "pii:view")
+    masked_rows, found = mask_rows(result["rows"])
+    if not found:
+        return result, False
+    if has_pii_view:
+        return result, True
+    return {**result, "rows": masked_rows}, False
+
+
 def apply_to_ask_response(resp, principal) -> bool:
     """`resp`'i YERİNDE (in-place) maskeler — `result.rows` + `interpretation` metni.
     `pii:view` yetkisi olan principal (admin+, control_plane/authorize.py) İÇİN dokunulmaz.
