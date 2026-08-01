@@ -15,6 +15,7 @@ import {
   verifyReport,
 } from "@/lib/api-client";
 import { BrandMark } from "@/components/BrandMark";
+import { DrillDownPanel } from "@/components/DrillDownPanel";
 import { InterpretationBar } from "@/components/InterpretationBar";
 import { ResultView } from "@/components/ResultView";
 import { KpiCardView } from "@/components/KpiCard";
@@ -79,6 +80,9 @@ export function ReportPanel({
 }) {
   const [showSql, setShowSql] = useState(false);
   const [showTrace, setShowTrace] = useState(false);
+  // Faz 4.10 — dallı kök-neden analizi paneli (tıkla-dallan, ilişkili cube'lara geçiş,
+  // yaprak seviyesinde ham satırlar).
+  const [drillOpen, setDrillOpen] = useState(false);
   // SQL gösterimi (sql_display bayrağı) — ham şeffaflık özelliği; kapalıysa buton yok.
   const sqlStage = useFeature("sql_display");
   // Panoya ekle (dashboards bayrağı, §9) — bu raporun cube_query'si widget olur.
@@ -440,7 +444,16 @@ export function ReportPanel({
                 )}
               </div>
             )}
-            <SourceBadge source={data.source} />
+            <SourceBadge source={data.source} confidence={data.explain?.confidence} />
+            {data.cube_query && data.result && (
+              <button
+                onClick={() => setDrillOpen(true)}
+                title="Bu sonucu tıklaya tıklaya incele — kök nedenine in"
+                className="border border-hairline px-2 py-[3px] font-mono text-[11px] text-neutral-400 transition-colors hover:border-accent hover:text-accent"
+              >
+                ⤵ kök neden
+              </button>
+            )}
             {data.trace && data.trace.length > 0 && (
               <button
                 onClick={() => setShowTrace((s) => !s)}
@@ -599,6 +612,14 @@ export function ReportPanel({
         <pre className="mt-2 overflow-auto border border-hairline bg-neutral-950 p-4 font-mono text-xs leading-relaxed text-neutral-100">
           {data.sql}
         </pre>
+      )}
+      {drillOpen && data.cube_query && data.result && (
+        <DrillDownPanel
+          cubeQuery={data.cube_query}
+          result={data.result}
+          sessionId={sessionId}
+          onClose={() => setDrillOpen(false)}
+        />
       )}
     </div>
   );

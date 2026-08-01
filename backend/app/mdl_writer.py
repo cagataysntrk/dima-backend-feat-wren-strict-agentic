@@ -113,3 +113,173 @@ def cube_base_object(yaml_path: Path) -> str | None:
     y = _yaml()
     data = y.load(yaml_path.read_text(encoding="utf-8")) or {}
     return data.get("base_object")
+
+
+# ── Faz 4.5 (31 Temmuz 2026) — introspect edilmiş bir DB bağlantısından YENİ model+cube+
+# ilişki yazımı. Yukarıdaki fonksiyonlardan FARKI: onlar MEVCUT bir cube'a ölçü EKLER,
+# bunlar YENİ fiziksel model + YENİ semantik cube + YENİ ilişki YARATIR — DB bağlama
+# sihirbazının (app/db_introspect.py) kullanıcı-onaylı taslağını gerçek dosyaya döker.
+# Aynı ruamel.yaml round-trip-güvenli yazıcı; şirket klasöründe HENÜZ VAR OLMAYAN
+# dosyalar için (var olan bir cube/modelin üstüne YAZILMAZ — çakışma varsa atlanır,
+# ConnectionConfirmResult bunu `written_cubes`'ta göstermez).
+
+
+def _column_type_map(table) -> dict[str, str]:
+    return {c.name: c.type for c in table.columns}
+
+
+def write_model_yaml(base: Path, company: str, table_name: str, columns: list,
+                     primary_key: str | None, *, db_schema: str = "public") -> Path:
+    """Wren MODEL (fiziksel tablo bağı) — `models/<table>/metadata.yml`. `columns`:
+    `app/db_introspect.py::IntrospectedColumn` listesi. Dosya zaten varsa DOKUNULMAZ
+    (var olan bir fiziksel modelin üstüne asla sessizce yazılmaz)."""
+    path = base / "companies" / company / "models" / table_name / "metadata.yml"
+    if path.exists():
+        return path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    y = _yaml()
+    data = CommentedMap()
+    data["name"] = table_name
+    tref = CommentedMap()
+    tref["schema"] = db_schema
+    tref["table"] = table_name
+    data["table_reference"] = tref
+    cols = CommentedSeq()
+    for c in columns:
+        cm = CommentedMap()
+        cm["name"] = c.name
+        cm["type"] = c.type
+        if c.is_primary_key:
+            cm["is_primary_key"] = True
+        if not c.nullable:
+            cm["not_null"] = True
+        cols.append(cm)
+    data["columns"] = cols
+    if primary_key:
+        data["primary_key"] = primary_key
+    with path.open("w", encoding="utf-8") as f:
+        y.dump(data, f)
+    return path
+
+
+def write_cube_yaml(base: Path, company: str, cube: dict) -> Path:
+    """Semantik CUBE — `cubes/<name>/metadata.yml`. `cube`: `app/db_introspect.py::
+    draft_mdl`'in ürettiği (kullanıcı onayından geçmiş) sözlük {name, measures,
+    dimensions, time_dimensions}. Sinonim ÜRETİLMEZ (yalnız tablo adının kendisi) —
+    kullanıcı sonradan cube_synonyms.yml ile ZENGİNLEŞTİREBİLİR (mevcut mekanizma,
+    app/compose.py::_merge_cube_synonyms); burada TAHMİNİ sinonim UYDURULMAZ. Dosya
+    zaten varsa DOKUNULMAZ."""
+    name = cube["name"]
+    path = cube_yaml_path(base, company, name)
+    if path.exists():
+        return path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    y = _yaml()
+    data = CommentedMap()
+    data["name"] = name
+    data["label"] = name.replace("_", " ")
+    data["base_object"] = name
+    syns = CommentedSeq([name])
+    syns.fa.set_flow_style()
+    data["synonyms"] = syns
+
+    measures = CommentedSeq()
+    for m in cube.get("measures") or []:
+        mm = CommentedMap()
+        mm["name"] = m
+        mm["expression"] = f"SUM({m})"
+        mm["type"] = "DOUBLE"
+        measures.append(mm)
+    if measures:
+        data["measures"] = measures
+
+    dimensions = CommentedSeq()
+    for d in cube.get("dimensions") or []:
+        dm = CommentedMap()
+        dm["name"] = d
+        dm["expression"] = d
+        dm["type"] = "VARCHAR"
+        dimensions.append(dm)
+    if dimensions:
+        data["dimensions"] = dimensions
+
+    time_dims = CommentedSeq()
+    for t in cube.get("time_dimensions") or []:
+        tm = CommentedMap()
+        tm["name"] = t
+        tm["expression"] = t
+        tm["type"] = "DATE"
+        time_dims.append(tm)
+    if time_dims:
+        data["time_dimensions"] = time_dims
+
+    with path.open("w", encoding="utf-8") as f:
+        y.dump(data, f)
+    return path
+
+
+def merge_relationships_yaml(base: Path, company: str, relationships: list[dict]) -> int:
+    """`relationships.yml`e (company kökü, `wren.context.load_relationships` şeması —
+    bkz. demo/companies/demo-boyahane/relationships.yml canlı örneği) YENİ ilişkileri
+    ADDITIVE ekler: aynı `name` zaten varsa ATLANIR (üstüne yazılmaz — elle düzenlenmiş
+    bir ilişkiyi bozmaz). Döner: kaç YENİ ilişki eklendi."""
+    path = base / "companies" / company / "relationships.yml"
+    y = _yaml()
+    if path.exists():
+        data = y.load(path.read_text(encoding="utf-8")) or CommentedMap()
+    else:
+        data = CommentedMap()
+    existing = data.get("relationships")
+    if existing is None:
+        existing = CommentedSeq()
+        data["relationships"] = existing
+    existing_names = {r.get("name") for r in existing if isinstance(r, dict)}
+    added = 0
+    for rel in relationships:
+        if rel["name"] in existing_names:
+            continue
+        rm = CommentedMap()
+        rm["name"] = rel["name"]
+        rm["join_type"] = rel.get("join_type", "MANY_TO_ONE")
+        models_seq = CommentedSeq(list(rel["models"]))
+        models_seq.fa.set_flow_style()
+        rm["models"] = models_seq
+        rm["condition"] = rel["condition"]
+        existing.append(rm)
+        existing_names.add(rel["name"])
+        added += 1
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as f:
+        y.dump(data, f)
+    return added
+
+
+def write_introspected_schema(base: Path, company: str, tables: list, draft: dict, *,
+                              db_schema: str = "public") -> tuple[list[str], int]:
+    """Onaylanmış taslağın (`draft`, kullanıcı `include`/sınıflandırma düzenlemesi geçmiş)
+    TAMAMINI yazar: her `include=True` cube için model+cube YAML (yalnız henüz VAR
+    OLMAYANLAR — çakışan bir isim SESSİZCE atlanır, `written_cubes` bunu yansıtır) +
+    yalnız HER İKİ ucu da yazılan cube'larda olan ilişkiler. Döner: (yazılan cube adları,
+    eklenen ilişki sayısı)."""
+    tables_by_name = {t.name: t for t in tables}
+    included = {c["name"] for c in draft.get("cubes") or [] if c.get("include", True)}
+    written: list[str] = []
+    for cube in draft.get("cubes") or []:
+        name = cube["name"]
+        if name not in included:
+            continue
+        table = tables_by_name.get(name)
+        if table is None:
+            continue  # taslak, artık introspect edilmemiş bir tablo adı taşıyor — atla
+        cube_path = cube_yaml_path(base, company, name)
+        model_path = base / "companies" / company / "models" / name / "metadata.yml"
+        if cube_path.exists() or model_path.exists():
+            continue  # var olan bir isimle çakışıyor — üstüne YAZILMAZ
+        write_model_yaml(base, company, name, table.columns, cube.get("primary_key"),
+                         db_schema=db_schema)
+        write_cube_yaml(base, company, cube)
+        written.append(name)
+    rels = [r for r in (draft.get("relationships") or [])
+            if set(r["models"]) <= included]
+    added = merge_relationships_yaml(base, company, rels) if rels else 0
+    return written, added

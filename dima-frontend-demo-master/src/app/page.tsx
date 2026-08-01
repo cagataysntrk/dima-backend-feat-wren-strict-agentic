@@ -4,7 +4,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiErrorMessage, ask, askCube, getConversation, uploadDataset } from "@/lib/api-client";
+import { AnalysisCanvas } from "@/components/AnalysisCanvas";
 import { ChatPanel } from "@/components/ChatPanel";
+import { ConnectionReviewPanel } from "@/components/ConnectionReviewPanel";
 import { DashboardsPanel } from "@/components/DashboardsPanel";
 import { DashboardView } from "@/components/DashboardView";
 import { FloatingControls } from "@/components/FloatingControls";
@@ -57,6 +59,9 @@ export default function Home() {
   // Görünüm ipucu ("grafik ver") — sağ paneldeki raporun görünümünü değiştirir.
   const [viewHint, setViewHint] = useState<{ kind: string; nonce: number } | null>(null);
   const [drawer, setDrawer] = useState<Drawer>(null);
+  // "Ayarlar" drawer'ı içi iki sekmeli (Faz 4.5): mevcut şema görünümü + DB bağlama
+  // sihirbazı — YENİ bir rail ikonu/Drawer değeri EKLEMEDEN, en düşük riskli entegrasyon.
+  const [settingsTab, setSettingsTab] = useState<"sema" | "baglanti">("sema");
   // Açık pano (main-area overlay) — set ise chat/rapor yerine pano grid'i gösterilir (§9).
   const [openDashboard, setOpenDashboard] = useState<string | null>(null);
   const dashStage = useFeature("dashboards");
@@ -73,6 +78,28 @@ export default function Home() {
   const loadHistory = useHistory((s) => s.load);
   const clearHistory = useHistory((s) => s.clear);
 
+  // Faz 4.11 — Analiz Tuvali (dış yol haritası 2.6+2.10): EKLEYİCİ, opsiyonel ikinci görünüm.
+  // `active` (tek-rapor akışı) HİÇ değişmiyor; tuval modu açıkken ÜSTÜNE, her yeni gerçek
+  // rapor (soru/chip/sonraki-adım/öneri) `canvasItems`'a da eklenir — üsttekini SİLMEZ.
+  const [canvasMode, setCanvasMode] = useState(false);
+  const [canvasItems, setCanvasItems] = useState<AskResponse[]>([]);
+  const addToCanvas = (data: AskResponse) => {
+    if (!canvasMode) return;
+    if (!(data.result || data.kpi)) return; // yalnız gerçek rapor/KPI (not/clarify değil)
+    setCanvasItems((prev) => [...prev, data]);
+  };
+  const reorderCanvas = (from: number, to: number) => {
+    setCanvasItems((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+  };
+  const removeFromCanvas = (index: number) => {
+    setCanvasItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
   // Resume: kayıtlı sohbeti yükle — mesajlar (seq eski→yeni) store'a newest-first konur;
   // session_id o sohbete geçer (takip soruları aynı sohbete eklenir).
   const resumeConversation = async (id: string) => {
@@ -86,6 +113,7 @@ export default function Home() {
     // gerçek sonuç taşıyan (ya da KPI) SON mesaj, notu olsun ya da olmasın.
     const lastReport = msgs.find((m) => m.result || m.kpi) ?? null;
     setActive(lastReport);
+    setCanvasItems([]); // tuval sohbet-oturumu kapsamlı — devralınan sohbette sıfırdan başlar
     setViewHint(lastReport?.view_hint ? { kind: lastReport.view_hint, nonce: Date.now() } : null);
     setPrevSql(lastReport?.sql || null);
     setStarted(true);
@@ -98,19 +126,31 @@ export default function Home() {
     setActive(null);
     setContextCq(null);
     setPrevSql(null);
+    setCanvasItems([]); // tuval sohbet-oturumu kapsamlı — yeni sohbet sıfırdan başlar
     setStarted(false);
     setDrawer(null);
   };
 
+  // Faz 4.12 (1 Ağustos 2026) — dış yol haritası 2.9 "canlı düşünme adımları": backend
+  // Discovery'yi arka-plana kuyrukladıysa (ask_async_discovery bayrağı) api-client.ts
+  // bunu poll ederken biriken adımları BURAYA iletir; ChatPanel statik "yürütülüyor…"
+  // yerine SON adımı gösterir. Bayrak kapalıyken (varsayılan) callback hiç tetiklenmez.
+  const [liveTrace, setLiveTrace] = useState<string[]>([]);
+
   const mutation = useMutation<AskResponse, unknown, { question: string }>({
-    mutationFn: ({ question }) =>
-      ask({
-        question,
-        cube_query: contextCq,
-        prev_sql: prevSql,
-        history: items.map((i) => i.question).slice(0, 8),
-        session_id: sessionId,
-      }),
+    mutationFn: ({ question }) => {
+      setLiveTrace([]);
+      return ask(
+        {
+          question,
+          cube_query: contextCq,
+          prev_sql: prevSql,
+          history: items.map((i) => i.question).slice(0, 8),
+          session_id: sessionId,
+        },
+        setLiveTrace,
+      );
+    },
     onSuccess: (data) => {
       addHistory(data);
       // Rapor → sağ paneli güncelle; salt-not (result YOK) → mevcut raporu koru. `note`'un
@@ -118,6 +158,7 @@ export default function Home() {
       // hem `note` hem gerçek `result` taşır, "Konu değişti: X → Y"; KPI yanıtı da NOT
       // taşısa bir RAPORDUR — aynı desenin bir örneği, aşağıya genelleştirildi).
       if (data.result || data.kpi) setActive(data);
+      addToCanvas(data); // Faz 4.11 — tuval modu açıksa üste EKLENİR (active'i değiştirmez)
       // Görünüm ipucu: yeni raporla geldiyse onunla; salt-görünüm yanıtında mevcut rapora.
       if (data.view_hint) setViewHint({ kind: data.view_hint, nonce: Date.now() });
       else if (data.result) setViewHint(null);
@@ -143,6 +184,7 @@ export default function Home() {
     onSuccess: (data) => {
       addHistory(data);
       setActive(data);
+      addToCanvas(data); // Faz 4.11 — chip/sonraki-adım/öneri tıklaması da tuvale eklenir
       // chip düzenlemesi RAPOR ŞEKLİNİ küçük değiştirir — mevcut görünüm tercihi
       // (ör. panelli) KORUNUR; yeni ipucu yalnız /ask cevabından gelir.
       setContextCq(data.cube_query ?? null);
@@ -201,6 +243,7 @@ export default function Home() {
               active={active}
               pending={mutation.isPending}
               pendingQuestion={pendingQuestion}
+              liveTrace={liveTrace}
               contextLabel={contextCq ? String(contextCq.cube ?? "rapor") : null}
               onClearContext={() => setContextCq(null)}
               onSelect={(item) => {
@@ -218,16 +261,57 @@ export default function Home() {
               uploading={uploadMut.isPending}
             />
           </section>
-          <section className="min-w-0 flex-1 overflow-auto">
-            <ReportPanel
-              data={active}
-              pending={mutation.isPending || cubeMutation.isPending}
-              viewHint={viewHint}
-              onCubeEdit={({ cq, label }) => cubeMutation.mutate({ cq, label })}
-              error={mutation.isError ? apiErrorMessage(mutation.error) : null}
-              verifyLabel={verifyLabel}
-              sessionId={sessionId}
-            />
+          <section className="flex min-w-0 flex-1 flex-col overflow-auto">
+            <div
+              data-no-print
+              className="flex shrink-0 items-center justify-end gap-2 border-b border-hairline px-3 py-1.5"
+            >
+              {/* Kullanıcı tuval moduna GEÇ bir noktada geçmiş olabilir — ekrandaki mevcut
+                  raporu (soru/chip/geçmiş-seçimi FARK ETMEKSİZİN) elle de ekleyebilsin, yalnız
+                  otomatik-eklemenin (chip/sonraki-adım) başladığı ANDAN sonrasına bağlı kalmasın. */}
+              {canvasMode && active && (active.result || active.kpi) && (
+                <button
+                  onClick={() =>
+                    setCanvasItems((prev) => (prev[prev.length - 1] === active ? prev : [...prev, active]))
+                  }
+                  title="Ekrandaki mevcut raporu tuvale ekle"
+                  className="flex h-[22px] items-center border border-hairline px-2 font-mono text-[11px] text-neutral-400 transition-colors hover:border-accent hover:text-accent"
+                >
+                  + şu anki raporu ekle
+                </button>
+              )}
+              <button
+                onClick={() => setCanvasMode((m) => !m)}
+                title="Tıklanan sonraki-adım/öneri raporlarını biriktiren, sürükle-sıralanabilir ek görünüm"
+                className={`flex h-[22px] items-center border px-2 font-mono text-[11px] transition-colors ${
+                  canvasMode
+                    ? "border-accent/40 text-accent"
+                    : "border-hairline text-neutral-400 hover:text-foreground"
+                }`}
+              >
+                🗂 tuval{canvasItems.length > 0 ? ` (${canvasItems.length})` : ""}
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto">
+              {canvasMode ? (
+                <AnalysisCanvas
+                  items={canvasItems}
+                  onReorder={reorderCanvas}
+                  onRemove={removeFromCanvas}
+                  onClear={() => setCanvasItems([])}
+                />
+              ) : (
+                <ReportPanel
+                  data={active}
+                  pending={mutation.isPending || cubeMutation.isPending}
+                  viewHint={viewHint}
+                  onCubeEdit={({ cq, label }) => cubeMutation.mutate({ cq, label })}
+                  error={mutation.isError ? apiErrorMessage(mutation.error) : null}
+                  verifyLabel={verifyLabel}
+                  sessionId={sessionId}
+                />
+              )}
+            </div>
           </section>
         </div>
       )}
@@ -279,7 +363,23 @@ export default function Home() {
             }}
           />
         ) : (
-          <SchemaPanel />
+          <div>
+            <div className="mb-4 flex gap-1 border-b border-hairline text-xs">
+              <button
+                onClick={() => setSettingsTab("sema")}
+                className={`px-3 py-2 ${settingsTab === "sema" ? "border-b-2 border-accent text-foreground" : "text-muted"}`}
+              >
+                Şema
+              </button>
+              <button
+                onClick={() => setSettingsTab("baglanti")}
+                className={`px-3 py-2 ${settingsTab === "baglanti" ? "border-b-2 border-accent text-foreground" : "text-muted"}`}
+              >
+                Veri Kaynağı Bağla
+              </button>
+            </div>
+            {settingsTab === "sema" ? <SchemaPanel /> : <ConnectionReviewPanel />}
+          </div>
         )}
       </SettingsDrawer>
     </div>

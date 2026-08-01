@@ -995,6 +995,12 @@ _STOP_STEMS = (
     "ver", "yap", "peki", "simdi", "lutfen", "acaba", "toplam", "ortalama",
     "sadece", "yalniz", "calisan", "ile", "daha", "nedir", "nasil", "kadar",
     "ayir", "ayri", "grafi", "tablo", "cizgi", "sutun", "panel", "chart",
+    # "pasta" (pasta grafik = pie chart) Faz 4.4'e kadar eksikti (31 Temmuz 2026):
+    # `_viz_hint()`/`_VIZ_MAP` (app/routers/ask.py) bu kelimeyi ZATEN tanıyordu ama
+    # kelime burada STOP değildi → typo_correct katalogda bulamayınca fuzzy-eşleşme
+    # denedi ("pasta"→"pass" gibi alakasız bir öneri) — grafik-tipi isteği bu yüzden
+    # cevap yerine sahte bir "şunu mu demek istedin?" netleştirmesine düşüyordu.
+    "pasta",
     "gorsel", "heatmap", "isi", "harita", "goruntule", "olsun", "istiyorum",
     "turl", "turu", "cesit", "cins", "kirilim", "kova", "ekle", "cikar",  # kökler tüm çekimleri kapsar
     "degil", "yerine", "yapilan", "yapan", "olan", "sahip",

@@ -87,6 +87,22 @@ export interface AskResponse {
   // SİLMEZ (SourceBadge/trace render'ı kırılmaz — kademeli geçiş). Rapor üretmeyen yanıtlarda
   // (netleştirme/chip) null.
   explain?: Explain | null;
+  // Faz 4.1 (31 Temmuz 2026) — yalnız backend'de `ask_async_discovery` bayrağı açıkken dolar:
+  // Discovery arka-plan işine kuyruklandığında (result/source HENÜZ yok). `api-client.ts::ask()`
+  // bunu GÖRÜNMEZ şekilde poll'lar (mutation.isPending zaten doğru davranır) — normal şartlarda
+  // bu alan bileşenlere HİÇ ULAŞMAZ, yalnız api-client içinde tüketilir.
+  job_id?: string | null;
+}
+
+// Faz 4.1 — GET /ask/jobs/{id} yanıtı (yalnız api-client.ts::ask()'in dahili poll döngüsü kullanır).
+// `trace` (Faz 4.12) iş HENÜZ tamamlanmadan da (pending/running) BİRİKEREK dolar.
+export interface AskJobStatus {
+  id: string;
+  status: "pending" | "running" | "completed" | "failed";
+  question?: string | null;
+  response?: AskResponse | null;
+  error?: string | null;
+  trace?: string[];
 }
 
 // Faz 3 birleşik açıklama nesnesi (bkz. backend app/schemas.py::Explain).
@@ -307,4 +323,130 @@ export interface BlastRadius {
   contract_log_structured: number;
   contract_log_raw_sql_text_match: number;
   note: string;
+}
+
+// Faz 4.5 (31 Temmuz 2026) — tenant-kendi-hizmeti DB bağlama sihirbazı.
+export interface TenantConnectionCreateInput {
+  datasource?: string; // yalnız "postgres" desteklenir bu sürümde
+  host: string;
+  port?: number;
+  database: string;
+  user: string;
+  password: string;
+}
+
+export interface TenantConnectionOut {
+  id: string;
+  datasource: string;
+  host: string;
+  port: number;
+  database: string;
+  user: string;
+  has_secret: boolean;
+}
+
+export interface ConnectionTestResult {
+  ok: boolean;
+  detail?: string | null;
+}
+
+export interface DraftCube {
+  name: string;
+  include: boolean;
+  measures: string[];
+  dimensions: string[];
+  time_dimensions: string[];
+  primary_key?: string | null;
+}
+
+export interface DraftRelationship {
+  name: string;
+  join_type: string;
+  models: string[];
+  condition: string;
+}
+
+export interface ConnectionDraft {
+  cubes: DraftCube[];
+  relationships: DraftRelationship[];
+}
+
+export interface ConnectionConfirmResult {
+  written_cubes: string[];
+  written_relationships: number;
+}
+
+// Faz 4.10 (1 Ağustos 2026) — dış yol haritası 2.5+2.15 "dallı kök-neden analizi".
+// Kullanıcı senaryosu: bir metrik düşük/yüksek çıktığında NEDEN olduğunu bulmak için
+// tıklaya tıklaya dallanıp GERÇEK verilerle (ilişkili cube'lar dahil) en alttaki ham
+// satırlara kadar inebilmek.
+export interface DrillDimension {
+  name: string;
+  label: string;
+}
+
+export interface DrillAnomaly {
+  value: string;
+  amount: number;
+  direction: "above" | "below";
+  z_score: number;
+}
+
+export interface DrillRelatedCube {
+  cube: string;
+  label: string;
+  shared_dimensions: string[];
+}
+
+export interface DrillKpiComponent {
+  name?: string | null;
+  label: string;
+  value?: number | null;
+  unit?: string | null;
+}
+
+export interface RawRowResult {
+  columns: string[];
+  rows: Record<string, unknown>[];
+  row_count: number;
+}
+
+export type DrillAction = "explain" | "expand" | "select" | "raw" | "related";
+
+export interface DrillRequestInput {
+  cube_query: CubeQuery | null;
+  result?: QueryResult | null;
+  kpi?: Record<string, unknown> | null;
+  session_id?: string | null;
+  action: DrillAction;
+  dimension?: string | null;
+  filter_value?: string | null;
+  target_cube?: string | null;
+  limit?: number;
+}
+
+export interface DrillResponse {
+  cube_query: CubeQuery | null;
+  formula_explanation: string;
+  available_dimensions: DrillDimension[];
+  related_cubes: DrillRelatedCube[];
+  anomalies: DrillAnomaly[];
+  result: QueryResult | null;
+  raw_rows: RawRowResult | null;
+  kpi_components: DrillKpiComponent[] | null;
+  contract_id?: string | null;
+  note?: string | null;
+  // Doğrulama düzeltmesi (1 Ağustos 2026) — dış yol haritası UC-2.18/2.19 "kanıt paneli":
+  // bu adımı üreten GERÇEK SQL + çalışma süresi (ms). `explain` yeni sorgu çalıştırmadığından
+  // duration_ms orada null'dır ama sql yine de (derlenmiş, çalıştırılmamış olarak) doludur.
+  sql?: string | null;
+  duration_ms?: number | null;
+}
+
+// Faz 4.13c (1 Ağustos 2026) — son-kullanıcı meta-güven özeti (GET /stats/today).
+export interface StatsToday {
+  total: number;
+  llm_free: number;
+  llm_free_pct: number | null;
+  message: string;
 }

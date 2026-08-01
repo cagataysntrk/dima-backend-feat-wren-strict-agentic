@@ -8,8 +8,32 @@ import { CaretInput } from "@/components/CaretInput";
 // eşleşme tekrar oynatma) ve "meta"/"catalog" (deterministik, veri sorgusu değil) da
 // LLM'siz aile — cube/kpi ile aynı vurguyu taşır ki kullanıcı ne zaman LLM'in atlandığını
 // görebilsin (strict-agentic /ask önceden her soruyu LLM'e düşürüyordu, artık düşürmüyor).
-export function SourceBadge({ source }: { source: string | null }) {
+// Faz 4.13b (1 Ağustos 2026) — dış yol haritası 2.17 "güven rozeti": `explain.confidence`
+// (Faz 3'ten beri backend'de var) görsel bir 🥇/🥈/🥉'e çevrilir. `confidence` prop'u
+// VERİLMEZSE (eski çağrı yerleri/explain henüz yoksa) rozet HİÇ gösterilmez — yalnız
+// SourceBadge'in metin etiketi (mevcut davranış) görünür, hiçbir şey KIRILMAZ.
+function confidenceBadge(
+  confidence: number | null | undefined,
+): { emoji: string; title: string } | null {
+  if (confidence === undefined) return null;
+  if (confidence === null) {
+    return { emoji: "🥉", title: "Güven ölçülemedi (LLM/kural yolu — deterministik değil)" };
+  }
+  const pct = Math.round(confidence * 100);
+  if (confidence >= 0.9) return { emoji: "🥇", title: `Yüksek güven (${pct}%)` };
+  if (confidence >= 0.7) return { emoji: "🥈", title: `Orta güven (${pct}%)` };
+  return { emoji: "🥉", title: `Düşük güven (${pct}%) — bir varsayım yapılmış olabilir` };
+}
+
+export function SourceBadge({
+  source,
+  confidence,
+}: {
+  source: string | null;
+  confidence?: number | null;
+}) {
   if (!source) return null;
+  const badge = confidenceBadge(confidence);
   let label: string, cls: string, title: string;
   if (source === "cube") {
     label = "◆ CUBE";
@@ -50,9 +74,10 @@ export function SourceBadge({ source }: { source: string | null }) {
   }
   return (
     <span
-      title={title}
-      className={`inline-flex h-[20px] items-center border px-1.5 font-mono text-[10px] tracking-wide ${cls}`}
+      title={badge ? `${title} · ${badge.title}` : title}
+      className={`inline-flex h-[20px] items-center gap-1 border px-1.5 font-mono text-[10px] tracking-wide ${cls}`}
     >
+      {badge && <span aria-hidden>{badge.emoji}</span>}
       {label}
     </span>
   );
@@ -63,6 +88,7 @@ export function ChatPanel({
   active,
   pending,
   pendingQuestion,
+  liveTrace,
   contextLabel,
   onClearContext,
   onSelect,
@@ -74,6 +100,9 @@ export function ChatPanel({
   active: AskResponse | null;
   pending: boolean;
   pendingQuestion?: string;
+  // Faz 4.12 — Discovery arka-plana kuyruklandığında (ask_async_discovery) biriken canlı
+  // adımlar; boş/verilmezse statik "yürütülüyor…" gösterilir (davranış değişmez).
+  liveTrace?: string[];
   // Aktif konuşma bağlamı (takip mesajları bu raporu düzenler) — görünür + sıfırlanabilir,
   // böylece kasıtlı konu değişimi tahmine kalmaz (ADR-0007).
   contextLabel?: string | null;
@@ -155,7 +184,7 @@ export function ChatPanel({
                       {item.result ? `${item.result.row_count} satır` : item.kpi ? "KPI kartı" : "sql"}
                     </span>
                     <span className="ml-auto">
-                      <SourceBadge source={item.source} />
+                      <SourceBadge source={item.source} confidence={item.explain?.confidence} />
                     </span>
                   </button>
                 )}
@@ -173,7 +202,7 @@ export function ChatPanel({
               </div>
               <div className="flex items-center gap-2 border-l-2 border-hairline py-1 pl-3 font-mono text-[11px] text-neutral-400">
                 <span className="dima-caret" style={{ height: "0.9em" }} />
-                yürütülüyor…
+                {liveTrace && liveTrace.length > 0 ? liveTrace[liveTrace.length - 1] : "yürütülüyor…"}
               </div>
             </div>
           )}

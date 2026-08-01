@@ -22,7 +22,12 @@ def test_explain_all_time_chip_records_assumption(client):
     d = ask(client, "tüm zamanlar", cube_query=d1["cube_query"])
     assert d["source"] == "cube"
     assert d["explain"] is not None
-    assert d["explain"]["confidence"] == 1.0
+    # Faz 4.13a (1 Ağustos 2026): sessiz bir varsayım yapıldığında (burada "tüm zamanlar")
+    # confidence artık BİR KADEME DÜŞÜRÜLÜR (1.0 → 0.85) — dış yol haritası 2.17 "güven
+    # rozeti"nin varsayımlı/varsayımsız aynı-source yanıtları ayırt edebilmesi için.
+    # Önceden (Faz 3) assumptions confidence'ı ETKİLEMİYORDU — bu BİLİNÇLİ bir davranış
+    # değişikliği (bkz. app/routers/ask.py::_build_explain), eski değer (1.0) değil.
+    assert d["explain"]["confidence"] == 0.85
     assert len(d["explain"]["assumptions"]) == 1
     assert "tüm zamanlar" in d["explain"]["assumptions"][0].lower()
 

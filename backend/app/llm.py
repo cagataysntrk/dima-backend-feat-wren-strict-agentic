@@ -246,17 +246,22 @@ def _cube_refine_user(prev_cq_json: str, message: str) -> str:
 
 
 class AnthropicSqlGenerator:
-    def __init__(self, api_key: str, model: str, dialect: str = ""):
+    def __init__(self, api_key: str, model: str, dialect: str = "", select_model: str | None = None):
         from anthropic import Anthropic
 
         self._client = Anthropic(api_key=api_key)
         self._model = model
+        # Faz 4.2 — Intent-JSON seçimi (select_cube/refine_cube) generate_sql/repair'dan
+        # (Discovery, ham-SQL) DAHA UCUZ/HIZLI bir modelle yanıtlanabilir; boş → AYNI model
+        # (davranış değişmez).
+        self._select_model = select_model or model
         self._dialect = dialect
 
-    def _ask(self, system: str, user: str) -> str:
+    def _ask(self, system: str, user: str, model: str | None = None) -> str:
+        use_model = model or self._model
         _t0 = time.monotonic()
         message = self._client.messages.create(
-            model=self._model,
+            model=use_model,
             max_tokens=1024,
             temperature=0,  # OpenAICompatibleSqlGenerator zaten 0 kullanıyor; burada
                             # eksikti — Anthropic varsayılanı (1.0) aynı soruya farklı
@@ -266,7 +271,7 @@ class AnthropicSqlGenerator:
         )
         try:  # telemetri — asla yanıtı bozmaz
             _u = getattr(message, "usage", None)
-            record_llm_usage(self._model, getattr(_u, "input_tokens", None),
+            record_llm_usage(use_model, getattr(_u, "input_tokens", None),
                              getattr(_u, "output_tokens", None), int((time.monotonic() - _t0) * 1000))
         except Exception:
             pass
@@ -285,10 +290,11 @@ class AnthropicSqlGenerator:
         return self._ask(_build_system(schema, self._dialect), _repair_prompt(question, bad_sql, error))
 
     def select_cube(self, question: str, catalog: str) -> str:
-        return self._ask(_cube_select_system(catalog), question)
+        return self._ask(_cube_select_system(catalog), question, model=self._select_model)
 
     def refine_cube(self, prev_cq_json: str, message: str, catalog: str) -> str:
-        return self._ask(_cube_select_system(catalog), _cube_refine_user(prev_cq_json, message))
+        return self._ask(_cube_select_system(catalog), _cube_refine_user(prev_cq_json, message),
+                         model=self._select_model)
 
 
 # --- OpenAI-uyumlu (Groq / Ollama) ------------------------------------------
@@ -299,21 +305,25 @@ class OpenAICompatibleSqlGenerator:
     Groq: base_url=https://api.groq.com/openai/v1 (Bearer key).
     Ollama: base_url=http://localhost:11434/v1 (key gerekmez)."""
 
-    def __init__(self, base_url: str, api_key: str, model: str, provider: str = "openai", dialect: str = ""):
+    def __init__(self, base_url: str, api_key: str, model: str, provider: str = "openai", dialect: str = "",
+                 select_model: str | None = None):
         self._url = base_url.rstrip("/") + "/chat/completions"
         self._key = api_key
         self._model = model
+        # Faz 4.2 — bkz. AnthropicSqlGenerator._select_model docstring'i (aynı ilke).
+        self._select_model = select_model or model
         self._provider = provider
         self._dialect = dialect
 
-    def _chat(self, system: str, user: str) -> str:
+    def _chat(self, system: str, user: str, model: str | None = None) -> str:
         import requests  # wrenai zaten requests'e bağımlı
 
+        use_model = model or self._model
         headers = {"Content-Type": "application/json"}
         if self._key:
             headers["Authorization"] = f"Bearer {self._key}"
         payload = {
-            "model": self._model,
+            "model": use_model,
             "temperature": 0,
             "messages": [
                 {"role": "system", "content": system},
@@ -326,7 +336,7 @@ class OpenAICompatibleSqlGenerator:
         data = resp.json()
         try:  # telemetri — asla yanıtı bozmaz
             _u = data.get("usage") or {}
-            record_llm_usage(self._model, _u.get("prompt_tokens"), _u.get("completion_tokens"),
+            record_llm_usage(use_model, _u.get("prompt_tokens"), _u.get("completion_tokens"),
                              int((time.monotonic() - _t0) * 1000))
         except Exception:
             pass
@@ -345,10 +355,11 @@ class OpenAICompatibleSqlGenerator:
         return self._chat(_build_system(schema, self._dialect), _repair_prompt(question, bad_sql, error))
 
     def select_cube(self, question: str, catalog: str) -> str:
-        return self._chat(_cube_select_system(catalog), question)
+        return self._chat(_cube_select_system(catalog), question, model=self._select_model)
 
     def refine_cube(self, prev_cq_json: str, message: str, catalog: str) -> str:
-        return self._chat(_cube_select_system(catalog), _cube_refine_user(prev_cq_json, message))
+        return self._chat(_cube_select_system(catalog), _cube_refine_user(prev_cq_json, message),
+                          model=self._select_model)
 
 
 # --- Kural-tabanlı (anahtarsız) — boyahane demo şeması ----------------------
@@ -815,22 +826,27 @@ class FailoverSqlGenerator:
 def _make(provider: str, settings, dialect: str):
     """Tek bir sağlayıcı için üretici döndürür (anahtar/erişim yoksa None)."""
     if provider == "anthropic" and settings.anthropic_api_key:
-        return AnthropicSqlGenerator(settings.anthropic_api_key, settings.llm_model, dialect)
+        return AnthropicSqlGenerator(settings.anthropic_api_key, settings.llm_model, dialect,
+                                     select_model=settings.anthropic_select_model)
     if provider == "xai" and settings.xai_api_key:
         return OpenAICompatibleSqlGenerator(
-            settings.xai_base_url, settings.xai_api_key, settings.xai_model, "xai", dialect
+            settings.xai_base_url, settings.xai_api_key, settings.xai_model, "xai", dialect,
+            select_model=settings.xai_select_model,
         )
     if provider == "gemini" and settings.gemini_api_key:
         return OpenAICompatibleSqlGenerator(
-            settings.gemini_base_url, settings.gemini_api_key, settings.gemini_model, "gemini", dialect
+            settings.gemini_base_url, settings.gemini_api_key, settings.gemini_model, "gemini", dialect,
+            select_model=settings.gemini_select_model,
         )
     if provider == "groq" and settings.groq_api_key:
         return OpenAICompatibleSqlGenerator(
-            settings.groq_base_url, settings.groq_api_key, settings.groq_model, "groq", dialect
+            settings.groq_base_url, settings.groq_api_key, settings.groq_model, "groq", dialect,
+            select_model=settings.groq_select_model,
         )
     if provider == "ollama" and _reachable(settings.ollama_base_url):
         return OpenAICompatibleSqlGenerator(
-            settings.ollama_base_url, "", settings.ollama_model, "ollama", dialect
+            settings.ollama_base_url, "", settings.ollama_model, "ollama", dialect,
+            select_model=settings.ollama_select_model,
         )
     return None
 

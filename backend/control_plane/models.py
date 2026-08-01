@@ -527,6 +527,41 @@ class MeasureOverride(SQLModel, table=True):
     created_at: datetime = Field(default_factory=_now)
 
 
+class AskJob(SQLModel, table=True):
+    """Discovery (ham-SQL LLM) yolunun arka-plan iş kuyruğu karşılığı (Faz 4.1 — dış yol
+    haritası 0.1'in BullMQ/Redis'siz, ölçeğimize uygun karşılığı). `CloneJob` (yukarıda)
+    ile AYNI desen: DB-tablosu tabanlı durum + thread, in-memory DEĞİL (restart'ta iz kalır).
+
+    Yalnız `ask_async_discovery` bayrağı açıkken devreye girer (varsayılan KAPALI —
+    demo/packs/features.yml'e BİLEREK eklenmedi, mevcut senkron davranış hiçbir tenant'ta
+    değişmez). `request_json`, işi tekrar bağlamlandırmak için gereken girdiyi taşır (soru,
+    prev_sql, history, session_id) — ama bu ilk sürümde CloneJob'un aksine tam "kaldığı
+    yerden devam" YOK: süreç çökmüşken pending/running kalan işler, yeniden başlatmada
+    dürüst bir hata notuyla `failed`e çevrilir (bkz. app/main.py lifespan) — kullanıcı
+    soruyu tekrar sorar. Sessizce kaybolma YOK, ama ORTASINDAN devam da YOK (bilinçli
+    kapsam sınırı — tam resume, `_run_discovery`'nin request-bağımlı kapanışlarını tümüyle
+    request-bağımsız hale getirmeyi gerektirir, bu ilk iterasyonda orantısız risk).
+    `result_json`, tamamlanan işin TAM AskResponse'udur (frontend'in poll'da aldığı payload)."""
+
+    __tablename__ = "ask_job"
+    id: uuid.UUID = Field(default_factory=_uuid, primary_key=True)
+    tenant_id: uuid.UUID | None = Field(default=None, index=True)
+    session_id: str | None = Field(default=None, index=True)
+    question: str
+    status: str = Field(default="pending", index=True)  # pending|running|completed|failed
+    request_json: str = "{}"
+    result_json: str | None = None
+    # Faz 4.12 (1 Ağustos 2026 — dış yol haritası 2.9 "canlı düşünme adımları"): `trace[]`
+    # artık iş TAMAMLANMADAN da (pending/running iken) BİRİKEREK yazılır — `_run_discovery`
+    # her adımı ekledikçe (`on_step` callback) buraya da anında düşer; istemci poll
+    # ederken TÜM iş bitmesini beklemeden hangi aşamada olduğunu görebilir.
+    trace_json: str | None = None
+    error: str | None = None
+    created_at: datetime = Field(default_factory=_now)
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+
+
 class AuditLog(SQLModel, table=True):
     """Append-only erişim kanıtı — contracts.py genişletmesi + KVKK (ADR-0014 Karar 6).
     Başarı, audit yazılmadan raporlanmaz (mamut invariant #4)."""

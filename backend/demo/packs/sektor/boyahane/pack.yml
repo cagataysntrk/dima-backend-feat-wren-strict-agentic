@@ -10,15 +10,27 @@ moduller: [oee, bakim, ik, enerji]
 # Başlangıç soruları (rehberli analitik K1) — sektöre-özel KÜRATÖRLÜ örnekler; "neler
 # yapabilirsin"/selamlama chip'i bunları gösterir (yoksa katalog otomatiğine düşer).
 # roles opsiyonel: verilirse yalnız o roldeki kullanıcıya gösterilir (rol bazlı).
+# grup opsiyonel (Faz 4.8, 1 Ağustos 2026 — dış yol haritası 1.13 "Ne sorabilirim?"
+# departman haritası): HelpPanel.tsx bunu sekme/bölüm başlığı olarak gösterir.
 starters:
   - label: "Makine bazında OEE (son 3 ay)"
     query: "makine bazında oee son 3 ay"
-  - label: "Renk bazında fire oranı"
-    query: "renk bazında fire oranı"
+    grup: "Üretim"
+  - label: "Renk bazında fire oranı (bu yıl)"
+    # NOT (1 Ağustos 2026, Faz 4.8 doğrulaması): dönemsiz hali ("renk bazında fire
+    # oranı") period-gate'e takılıp "hangi dönem için?" netleştirmesine düşüyordu —
+    # bir başlangıç sorusu TEK TIKLA anlık cevap vermeli, ikinci bir soru sormamalı.
+    query: "renk bazında fire oranı bu yıl"
+    grup: "Kalite"
   - label: "Bu ay toplam ciro"
     query: "bu ay toplam ciro"
-  - label: "Vardiya bazında ortalama OEE"
-    query: "vardiya bazında ortalama oee"
+    grup: "Satış/Ticaret"
+  - label: "Vardiya bazında ortalama OEE (bu yıl)"
+    # NOT (1 Ağustos 2026, Faz 4.8 doğrulaması): "Renk bazında fire oranı" ile AYNI
+    # sınıf hata — dönemsiz hali period-gate'e takılıyordu.
+    query: "vardiya bazında ortalama oee bu yıl"
+    grup: "Üretim"
   - label: "Makine bazında enerji yoğunluğu"
     query: "makine bazında enerji yoğunluğu"
     roles: [surdurulebilirlik, yonetici]
+    grup: "Sürdürülebilirlik"

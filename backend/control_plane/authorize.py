@@ -69,6 +69,16 @@ _ACTION_MIN_RANK = {
     # sayım/grain riski), admin+ seviyesi gerektirir (analyst yalnız görüntüler/önerir).
     "measure:read": 1,       # aday listesi/detayı — analyst+ (viewer'a SQL/örnek gösterilmez)
     "measure:approve": 2,    # onay/ret/deprecate — admin+
+    # Faz 4.5 (31 Temmuz 2026): tenant-kendi-hizmeti DB bağlama sihirbazı. Bir üçüncü-
+    # taraf veritabanı KİMLİK BİLGİSİ eklemek/silmek en az measure:approve kadar riskli
+    # (yanlış/kötü niyetli bağlantı → veri sızıntısı/yanlış kaynak) — admin+ gerektirir.
+    # Salt listeleme/görüntüleme (sır İÇERMEZ, has_secret bool'u) analyst+ yeterli.
+    "connection:read": 1,
+    "connection:write": 2,
+    # Faz 4.14 (1 Ağustos 2026) — PII maskeleme (dış yol haritası 2.19): sonuç
+    # hücrelerindeki TCKN/e-posta/telefon/IBAN varsayılan MASKELİ döner; bu aksiyona
+    # sahip rol (admin+) maskesiz görür — bu erişim audit'e düşer (app/pii.py).
+    "pii:view": 2,
 }
 
 

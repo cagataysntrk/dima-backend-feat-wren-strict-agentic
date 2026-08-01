@@ -1,0 +1,39 @@
+# Global platform K1 (rehberli analitik) başlangıç soruları — DEPARTMAN/GRUP etiketli
+# (Faz 4.8, 1 Ağustos 2026 — dış yol haritası 1.13 "Ne sorabilirim?" departman haritası).
+#
+# starters.py::_curated() en-spesifik-non-boş kazanır kuralıyla çalışır (İKAME, additive
+# DEĞİL): bir sektör/şirket kendi starters.yml'ini tanımlarsa bu dosyanın YERİNE geçer.
+# Sorular BİLEREK önceden test edilmiş/kanıtlı ifadelerdir (bkz. dima-frontend-demo-master/
+# src/components/HelpPanel.tsx eski FALLBACK listesi + tests/test_ask_golden.py) — yeni,
+# doğrulanmamış ifade İCAT EDİLMEDİ. `grup` alanı HelpPanel.tsx'te sekme/bölüm başlığı olur.
+starters:
+  - label: "Bu ay toplam üretim"
+    query: "bu ay toplam üretim"
+    grup: "Üretim"
+  - label: "Makine bazında ortalama OEE"
+    query: "makine bazında ortalama oee"
+    grup: "Üretim"
+  - label: "Vardiya × haftanın günü verimliliği (son 3 ay)"
+    query: "vardiya × haftanın günü verimliliği (son 3 ay)"
+    grup: "Üretim"
+  - label: "Aylık üretim trendi"
+    query: "aylık üretim trendi"
+    grup: "Üretim"
+  - label: "Duruş nedenlerine göre toplam süre (bu ay)"
+    query: "duruş nedenlerine göre toplam süre bu ay"
+    grup: "Bakım"
+  - label: "Aşama bazında toplam fire"
+    query: "aşama bazında toplam fire"
+    grup: "Kalite"
+  - label: "Kumaş cinsine göre fire oranı (bu yıl)"
+    query: "kumaş cinsine göre fire oranı bu yıl"
+    grup: "Kalite"
+  - label: "Müşteri bazında ciro (son 6 ay)"
+    query: "müşteri bazında ciro son 6 ay"
+    grup: "Satış/Ticaret"
+  - label: "Cari tipine göre bakiye (bu yıl)"
+    query: "bu yıl cari tipine göre bakiye"
+    grup: "Finans"
+  - label: "Su tüketimi aylara göre"
+    query: "su tüketimi aylara göre"
+    grup: "Sürdürülebilirlik"

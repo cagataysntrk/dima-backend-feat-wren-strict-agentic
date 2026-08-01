@@ -82,6 +82,16 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "kademeli açar (davranış değişikliği taşıyan tek adım).",
         "category": "Yönlendirme",
     },
+    "ask_async_discovery": {
+        "label": "Discovery arka-plan işi",
+        "description": "/ask'in Discovery (ham-SQL LLM) yolu senkron HTTP yerine arka-plan "
+                       "işi (AskJob) olarak çalışır; istemci GET /ask/jobs/{id} ile poll eder "
+                       "(Faz 4.1 — uzun LLM çağrılarında arayüz donmasın). BİLEREK "
+                       "demo/packs/features.yml'e eklenmedi (varsayılan KAPALI) — mevcut "
+                       "senkron davranış hiçbir tenant'ta değişmeden kalır; yalnız açıkça "
+                       "override edilince devreye girer.",
+        "category": "Yönlendirme",
+    },
 }
 
 

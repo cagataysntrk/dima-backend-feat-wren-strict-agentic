@@ -40,21 +40,33 @@ class Settings(BaseSettings):
     llm_provider: str = "auto"
     anthropic_api_key: str = ""
     llm_model: str = "claude-sonnet-4-6"
+    # Faz 4.2 (dış yol haritası 2.11 "model sınıfı seçimi" karşılığı, 31 Temmuz 2026):
+    # select_cube/refine_cube (Intent-JSON — katalogdan ölçü/boyut/filtre SEÇİMİ, basit
+    # yapılandırılmış çıktı) generate_sql/repair'dan (Discovery — ham SQL üretimi, çok
+    # daha zor bir görev) DAHA UCUZ/HIZLI bir modelle yanıtlanabilir. Boş (varsayılan) =
+    # `llm_model` ile AYNI (davranış/geriye-uyum değişmez) — yalnız Anthropic'e somut,
+    # gerçek bir ucuz-model varsayılanı verildi (diğer sağlayıcıların varsayılan modelleri
+    # zaten hafif katman, ayrıca ucuzlatmaya gerek yok).
+    anthropic_select_model: str = "claude-haiku-4-5-20251001"
     # xAI Grok (OpenAI-uyumlu: https://console.x.ai — hesapta kredi gerekir)
     xai_api_key: str = ""
     xai_base_url: str = "https://api.x.ai/v1"
     xai_model: str = "grok-4.5"
+    xai_select_model: str = ""
     # Google Gemini (ücretsiz katman; OpenAI-uyumlu endpoint)
     gemini_api_key: str = ""
     gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
     gemini_model: str = "gemini-flash-lite-latest"
+    gemini_select_model: str = ""
     # Groq (ücretsiz key: https://console.groq.com)
     groq_api_key: str = ""
     groq_base_url: str = "https://api.groq.com/openai/v1"
     groq_model: str = "openai/gpt-oss-120b"
+    groq_select_model: str = ""
     # Ollama (tam yerel, anahtarsız: `brew install ollama` + `ollama pull ...`)
     ollama_base_url: str = "http://localhost:11434/v1"
     ollama_model: str = "qwen2.5-coder:7b"
+    ollama_select_model: str = ""
 
     # A#5 (ADR-0008): kural-tabanlı serbest-SQL YEDEĞİ yalnız demo/geliştirme içindir.
     # Üretimde False: LLM yoksa ya da hata verirse TAHMİN yerine dürüst ret döner

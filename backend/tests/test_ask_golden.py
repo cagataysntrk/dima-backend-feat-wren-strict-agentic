@@ -499,6 +499,22 @@ def test_taze_soruda_gorunum_ipucu(client):
     assert d["cube_query"]["timeDimensions"][0]["granularity"] == "month"
 
 
+def test_grafik_tipi_ipucu_pasta(client):
+    """Faz 4.4 (31 Temmuz 2026): `_viz_hint()`/`_VIZ_MAP` (app/routers/ask.py) TANIMLIYDI ama
+    hiçbir yerden ÇAĞRILMIYORDU (ölü kod) — açık grafik-TİPİ isteği ("pasta grafik olarak
+    göster") artık view_hint'e yansır. Facet YOKKEN devreye girer (facet her zaman öncelikli,
+    bkz. test_taze_soruda_gorunum_ipucu/test_her_x_icin_ayri_grafik — bu ikisi ETKİLENMEZ)."""
+    d = ask(client, "bu yıl makine bazında ortalama oee, pasta grafik olarak göster")
+    assert d["source"] == "cube", d.get("note")
+    assert d["view_hint"] == "pie"
+
+
+def test_grafik_tipi_ipucu_tablo(client):
+    d = ask(client, "bu yıl makine bazında ortalama oee tablo olarak göster")
+    assert d["source"] == "cube", d.get("note")
+    assert d["view_hint"] == "table"
+
+
 def test_her_x_icin_ayri_grafik(client):
     """Log (2026-07-21): "her kumaş türü için ayrı ayrı grafik ver, aylık olarak" —
     sohbet dolgusu kapsamı düşürüp salt-görünüme yutuluyordu. Artık VERİ düzenlemesi

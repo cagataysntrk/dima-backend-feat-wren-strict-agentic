@@ -206,6 +206,13 @@ class WrenService:
         cubes = [
             {
                 "name": c.get("name"),
+                # Faz 4.10 (1 Ağustos 2026): cube'un fiziksel taban tablosu/view'ı — dallı
+                # kök-neden analizinin YAPRAK seviyesi (app/drill.py::build_raw_row_sql)
+                # ham satırları BURADAN çeker. Önceden schema()'da HİÇ yoktu (yalnız
+                # app/mdl_writer.py YAML dosyasını doğrudan okuyarak biliyordu) — canlı
+                # bulgu: /ask/drill'in "raw" action'ı bu alan olmadan cube ADINI (fiziksel
+                # olarak var OLMAYAN bir tablo) sorgulamaya çalışıp WrenError üretiyordu.
+                "base_object": c.get("baseObject") or c.get("base_object"),
                 "measures": [m.get("name") for m in c.get("measures", [])],
                 "dimensions": [d.get("name") for d in c.get("dimensions", [])],
                 "time_dimensions": [t.get("name") for t in c.get("timeDimensions", [])],

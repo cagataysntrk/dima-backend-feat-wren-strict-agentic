@@ -39,7 +39,25 @@ def run_query(request: Request, body: QueryRequest) -> QueryResult:
     # AUDIT (ADR-0014 Karar 6): ham SQL erişimi de kanıtlanabilir iz bırakır.
     from control_plane import audit
 
-    audit.record(getattr(request.state, "principal", None), "query",
+    principal = getattr(request.state, "principal", None)
+    # PII maskeleme (Faz 4.14, 1 Ağustos 2026): `/query` ham SQL'dir (`sql:run`,
+    # analyst+) — cube katalogunun aksine HERHANGİ bir kolonu seçebilir (ör.
+    # `personel_ozluk.tc_kimlik`) — bu yüzden BU uç da app/pii.py'den geçer
+    # (app/routers/ask.py::_finish ile AYNI ilke).
+    if result.get("rows"):
+        from app.pii import mask_rows
+        from control_plane.authorize import can
+
+        has_pii_view = principal is not None and can(principal, "pii:view")
+        masked_rows, found = mask_rows(result["rows"])
+        if found:
+            if has_pii_view:
+                audit.record(principal, "pii_view", generated_sql=body.sql,
+                            ip=request.client.host if request.client else None)
+            else:
+                result = {**result, "rows": masked_rows}
+
+    audit.record(principal, "query",
                  generated_sql=body.sql, rows_returned=result.get("row_count"),
                  ip=request.client.host if request.client else None)
     return QueryResult(**result)

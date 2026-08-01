@@ -16,12 +16,16 @@ from app.config import get_settings
 from app.llm import RuleBasedSqlGenerator
 from app.logging_setup import get_logger
 from app.schemas import (
+    AskJobStatus,
     AskRequest,
     AskResponse,
     AskVerifyRequest,
     CubeRequest,
+    DrillRequest,
+    DrillResponse,
     Explain,
     QueryResult,
+    RawRow,
     ReportRequest,
     Suggestion,
     UploadRequest,
@@ -102,6 +106,14 @@ def _build_explain(resp: AskResponse) -> Explain | None:
             "Dönem açıkça belirtilmedi — kullanıcı \"tüm zamanlar\"ı seçti/onayladı "
             "(filtresiz, tüm-zamanlar toplama)."
         )
+    # Faz 4.13a (1 Ağustos 2026) — dış yol haritası 2.17 "güven rozeti": sessiz bir
+    # varsayım yapıldıysa (yukarıdaki `assumptions`, ör. "tüm zamanlar" otomatik seçildi)
+    # güven bir kademe DÜŞÜRÜLÜR — aynı `source`'tan gelen ama varsayımsız bir yanıttan
+    # daha az kesin kabul edilir (frontend'in 🥇/🥈/🥉 rozetinin ayırt edebileceği somut
+    # bir sinyal). `confidence=None` olan yollarda (LLM/rule — zaten "ölçülemez") dokunulmaz.
+    if assumptions and confidence is not None:
+        confidence = round(max(0.0, confidence - 0.15), 2)
+
     return Explain(path=path, confidence=confidence, assumptions=assumptions)
 
 
@@ -821,10 +833,19 @@ def cube(request: Request, body: CubeRequest) -> AskResponse:
     _attach_next_steps(request, resp)  # K2 sonraki-adım chip'leri (feature flag'li)
     _attach_recommendations(request, resp)  # K4 sinyal→aksiyon önerileri
     resp.explain = _build_explain(resp)  # Faz 3 — birleşik açıklama (trace/source KIRILMAZ)
+    principal = getattr(request.state, "principal", None)
+    from control_plane import audit
+
+    # PII maskeleme (Faz 4.14) — /ask'in _finish()'iyle AYNI ilke: kalıcı sohbete
+    # yazılmadan ÖNCE uygulanır (bkz. app/pii.py::apply_to_ask_response).
+    from app.pii import apply_to_ask_response
+
+    if apply_to_ask_response(resp, principal):
+        audit.record(principal, "pii_view", nl_question=resp.question,
+                     ip=request.client.host if request.client else None)
     _persist_message(request, resp, body.session_id)  # kalıcı sohbete yaz
     from types import SimpleNamespace
 
-    principal = getattr(request.state, "principal", None)
     _log_interaction(
         body.session_id,
         SimpleNamespace(question=resp.question, cube_query=cq),  # type: ignore[arg-type]
@@ -833,8 +854,6 @@ def cube(request: Request, body: CubeRequest) -> AskResponse:
         principal,
     )
     # AUDIT (ADR-0014 Karar 6): her veri erişimi kanıtlanabilir iz bırakır.
-    from control_plane import audit
-
     audit.record(principal, "query", nl_question=resp.question, generated_sql=sql,
                  rows_returned=result.get("row_count"), contract_id=resp.contract_id,
                  ip=request.client.host if request.client else None)
@@ -982,6 +1001,124 @@ def _resolve_entity_limit(service, cq: dict, order, limit: int | None) -> str | 
         return None
 
 
+def recover_stale_ask_jobs() -> int:
+    """Faz 4.1 — süreç başlangıcında (app/main.py lifespan) çağrılır: önceki çalıştırmadan
+    `pending`/`running` kalmış AskJob satırları (süreç Discovery ORTASINDAYKEN çökmüş
+    demektir — thread'le birlikte sessizce yok oldu) dürüst bir `failed`e çevrilir.
+    Kullanıcı soruyu yeniden sorar (bkz. control_plane/models.py::AskJob docstring'i —
+    bu ilk sürümde TAM "kaldığı yerden devam" YOK, bilinçli kapsam sınırı). `replay_spool`/
+    `replay_contract_spool` ile AYNI "başlangıçta yarım kalanı temizle" deseni. Döner:
+    kaç iş kurtarıldı (log/gözlem için)."""
+    try:
+        from sqlmodel import Session, select
+
+        from control_plane.db import engine
+        from control_plane.models import AskJob
+
+        with Session(engine) as s:
+            stale = s.exec(select(AskJob).where(
+                AskJob.status.in_(["pending", "running"]))).all()
+            for j in stale:
+                j.status = "failed"
+                j.error = "Sunucu yeniden başlatıldı, iş yarıda kaldı. Soruyu tekrar sorar mısın?"
+                j.finished_at = datetime.utcnow()
+                s.add(j)
+            if stale:
+                s.commit()
+            return len(stale)
+    except Exception:
+        _log.warning("AskJob kurtarma taraması başarısız (best-effort)", exc_info=True)
+        return 0
+
+
+def _queue_discovery_job(request: Request, body: AskRequest, principal, runner) -> AskResponse:
+    """Faz 4.1 (dış yol haritası 0.1'in BullMQ/Redis'siz karşılığı) — Discovery'yi arka-plan
+    işine kuyruklar (yalnız `ask_async_discovery` bayrağı açıkken çağrılır). `CloneJob` ile
+    AYNI desen (control_plane/models.py::AskJob docstring'i): DB-tablosu tabanlı durum +
+    thread — in-memory DEĞİL, süreç yeniden başlasa da iz bırakır.
+
+    `runner` (ask()'in `_run_discovery` kapanışı) zaten `service`/`schema`/`vqr`/`llm`/
+    `principal`/`body`'yi KAPANIŞ olarak taşıyor — CloneJob'un aksine bunları TEKRAR DB'den
+    türetmeye GEREK YOK: iş aynı süreçte, aynı anda başlıyor (yalnız İSTEMCİYE hemen dönmek
+    için arka plana alınıyor), request-bağımsız yeniden-kurulum gerektirmiyor. Süreç bu iş
+    bitmeden ÇÖKERSE (`app/main.py` lifespan'daki kurtarma), iş "yarıda kaldı" diye dürüstçe
+    `failed`e çevrilir — sessizce kaybolmaz, ama otomatik yeniden-deneme bu ilk sürümde
+    kapsam dışı (bilinçli sınır, AskJob docstring'inde gerekçeli)."""
+    import json as _json
+    import threading
+    import uuid as _uuid
+
+    from sqlmodel import Session
+
+    from control_plane.db import engine
+    from control_plane.models import AskJob
+
+    tenant_id_raw = getattr(principal, "tenant_id", None)
+    try:
+        tenant_uuid = _uuid.UUID(str(tenant_id_raw)) if tenant_id_raw else None
+    except (ValueError, TypeError):
+        tenant_uuid = None
+
+    job = AskJob(
+        tenant_id=tenant_uuid, session_id=body.session_id, question=body.question,
+        request_json=_json.dumps({"question": body.question, "session_id": body.session_id},
+                                 ensure_ascii=False),
+    )
+    with Session(engine) as s:
+        s.add(job)
+        s.commit()
+        s.refresh(job)
+    job_id = job.id
+
+    def _on_step(trace: list[str]) -> None:
+        """Faz 4.12 — HER Discovery adımından sonra çağrılır, job satırına ANINDA yazar
+        (best-effort: bir yazım başarısız olursa Discovery'yi DURDURMAZ, yalnız o adımın
+        canlı görünürlüğü kaybolur — sonuç yine de tamamlanınca result_json'da tam gelir)."""
+        try:
+            import json as _json
+            with Session(engine) as s:
+                j = s.get(AskJob, job_id)
+                if j is not None:
+                    j.trace_json = _json.dumps(trace, ensure_ascii=False)
+                    s.add(j)
+                    s.commit()
+        except Exception:
+            _log.warning("AskJob canlı adım yazımı başarısız (best-effort)", exc_info=True)
+
+    def _bg() -> None:
+        with Session(engine) as s:
+            j = s.get(AskJob, job_id)
+            j.status = "running"
+            j.started_at = datetime.utcnow()
+            s.add(j)
+            s.commit()
+        try:
+            resp = runner(on_step=_on_step)
+            with Session(engine) as s:
+                j = s.get(AskJob, job_id)
+                j.status = "completed"
+                j.result_json = resp.model_dump_json()
+                j.finished_at = datetime.utcnow()
+                s.add(j)
+                s.commit()
+        except Exception as exc:  # noqa: BLE001 - arka-plan işi ASLA sessizce kaybolmaz
+            _log.warning("AskJob arka-plan çalıştırması başarısız", exc_info=True)
+            with Session(engine) as s:
+                j = s.get(AskJob, job_id)
+                j.status = "failed"
+                j.error = str(exc)[:500]
+                j.finished_at = datetime.utcnow()
+                s.add(j)
+                s.commit()
+
+    threading.Thread(target=_bg, daemon=True).start()
+    return AskResponse(
+        question=body.question, source=None, job_id=str(job_id),
+        note="Bu soru arka planda hazırlanıyor…",
+        trace=["Discovery: arka-plan işine kuyruklandı (ask_async_discovery)"],
+    )
+
+
 @router.post("/ask", response_model=AskResponse,
              dependencies=[Depends(require("query:run")), Depends(require_company)])
 def ask(request: Request, body: AskRequest) -> AskResponse:
@@ -1069,6 +1206,18 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         _attach_next_steps(request, resp)
         _attach_recommendations(request, resp)
         resp.explain = _build_explain(resp)
+        from control_plane import audit
+
+        # PII maskeleme (Faz 4.14, 1 Ağustos 2026 — dış yol haritası 2.19): `_persist_
+        # message`/`_log_interaction`'dan ÖNCE çağrılır ki ham TCKN/e-posta/telefon/IBAN
+        # kalıcı sohbet geçmişine de düşmesin (bkz. app/pii.py::apply_to_ask_response).
+        # `pii:view` yetkisi olan roller maskesiz görür — bu erişim AYRI bir audit satırı
+        # olarak kayda geçer (KVKK erişim izi, hangi PII'nin kim tarafından görüldüğü).
+        from app.pii import apply_to_ask_response
+
+        if apply_to_ask_response(resp, principal):
+            audit.record(principal, "pii_view", nl_question=resp.question,
+                        ip=request.client.host if request.client else None)
         _persist_message(request, resp, body.session_id)
         _log_interaction(body.session_id, body, resp, int((time.monotonic() - t0) * 1000), principal)
         # Erişim-audit (KVKK izi, ADR-0014/0015): /cube bunu her zaman yapıyordu, strict-agentic
@@ -1078,8 +1227,6 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # BİLEREK try/except'siz — audit.record kendi içinde DB→spool'a düşer, YALNIZ ikisi
         # BİRLİKTE başarısız olursa fırlatır ("başarı audit'siz raporlanamaz" — /cube ile
         # AYNI kasıtlı fail-closed davranış, best-effort SARMALANMAZ).
-        from control_plane import audit
-
         audit.record(principal, "query", nl_question=resp.question, generated_sql=resp.sql or None,
                     rows_returned=resp.result.row_count if resp.result else None,
                     contract_id=resp.contract_id,
@@ -1208,6 +1355,13 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 resp.view_hint = cube_router.detect_facet(q_norm, cq_meta)
             except Exception:
                 _log.warning("facet görünüm tespiti başarısız (best-effort)", exc_info=True)
+        # Faz 4.4 (31 Temmuz 2026) — GRAFİK TİPİ isteği ("pasta grafik olarak göster", "tablo
+        # olarak"): `_viz_hint()`/`_VIZ_MAP` (yukarıda) TANIMLIYDI ama hiçbir yerden
+        # ÇAĞRILMIYORDU (ölü kod). Panelli görünüm (facet, üstte) YAPISAL bir kırılım isteğidir
+        # ve ÖNCELİKLİDİR; bu yalnız facet TESPİT EDİLMEDİYSE devreye girer — ikisi ÇAKIŞMAZ,
+        # TAMAMLAYICI (biri panel-görünümü, diğeri grafik-TİPİ niyeti).
+        if not resp.view_hint:
+            resp.view_hint = _viz_hint(q_norm)
         if learn and vqr is not None:
             try:
                 vqr.store(body.question, {"wren_sql": sql}, source="auto")
@@ -1795,100 +1949,420 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     if llm is None:
         raise HTTPException(status_code=503, detail="LLM sağlayıcısı yapılandırılmamış.")
 
-    prompt_schema = schema
-    if raw_followup:
-        try:
-            wren_sql = llm.generate_followup_sql(
-                body.question, schema, prev_question, prev_sql, body.history)
-        except Exception as exc:
-            # Dürüst ret — NoLlmGenerator'ın vaat ettiği ("routers/ask.py bunu dürüst
-            # redde çevirir") ama strict-agentic göçünde 502'ye dönüşen davranış düzeltildi.
-            _log.warning("Discovery takip üretimi başarısız", exc_info=True)
-            return _honest_refusal(
-                note="Bu takip mesajını anlayamadım. Farklı bir şekilde sorar mısın?",
-                trace=[f"Discovery: takip üretimi başarısız ({exc}) → dürüst ret"],
-            )
-        trace = ["Discovery: önceki SQL bağlamında takip üretimi (LLM önceki SQL'i düzenledi/yok saydı)"]
-    else:
-        few_shot = vqr.few_shot_block(body.question) if vqr else ""
-        if few_shot:
-            prompt_schema = {**schema, "golden_sql": "\n\n".join(
-                s for s in (schema.get("golden_sql"), few_shot) if s)}
-        try:
-            wren_sql = llm.generate_sql(body.question, prompt_schema)
-        except Exception as exc:
-            _log.warning("Discovery SQL üretimi başarısız", exc_info=True)
-            return _honest_refusal(
-                note="Bu soruyu anlayamadım. Farklı bir şekilde sorar mısın?",
-                trace=[f"Discovery: SQL üretimi başarısız ({exc}) → dürüst ret"],
-            )
-        trace = ["Discovery: VQR few-shot ile ham-SQL üretimi" if few_shot else
-                "Discovery: ham-SQL üretimi (Intent-path kapsamadı)"]
+    def _run_discovery(on_step=None) -> AskResponse:
+        """Discovery'nin TAM yürütmesi — SQL üretimi→dry_plan→self-healing→çalıştırma→
+        öğrenme→_finish (Faz 4.1, 31 Temmuz 2026): önceden bu blok doğrudan ask() gövdesinde
+        SIRALI çalışıyordu; SENKRON (varsayılan) ve arka-plan işi (bayrak `ask_async_
+        discovery` açıkken, bkz. _queue_discovery_job) yollarının İKİSİNDEN de AYNI şekilde
+        çağrılabilsin diye bir kapanışa çıkarıldı — davranış BİREBİR korunur (hiçbir satır
+        değişmedi), yalnız çağrılma şekli dallanır.
 
-    try:
-        planned = service.dry_plan(wren_sql)
-    except Exception as e:
-        trace.append(f"dry_plan hatası → kendi kendini onarma: {e}")
-        try:
-            wren_sql = llm.repair(body.question, prompt_schema, wren_sql, str(e))
-            planned = service.dry_plan(wren_sql)
-        except Exception as exc2:
-            _log.warning("Discovery self-healing başarısız", exc_info=True)
-            return _honest_refusal(
-                note="Bu soru için güvenilir bir sorgu üretemedim.",
-                trace=trace + [f"self-healing başarısız ({exc2}) → dürüst ret"],
-            )
+        `on_step` (Faz 4.12, 1 Ağustos 2026 — dış yol haritası 2.9 "canlı düşünme adımları"):
+        verilirse HER trace adımından SONRA `on_step(mevcut_trace_listesi)` çağrılır —
+        `_queue_discovery_job` bunu AskJob.trace_json'a ANINDA yazmak için kullanır, iş
+        HENÜZ tamamlanmadan istemci hangi aşamada olunduğunu poll'layarak görebilir.
+        Senkron yolda (bayrak kapalı) `on_step=None` — sıfır davranış değişikliği."""
+        prompt_schema = schema
+        if raw_followup:
+            try:
+                wren_sql = llm.generate_followup_sql(
+                    body.question, schema, prev_question, prev_sql, body.history)
+            except Exception as exc:
+                # Dürüst ret — NoLlmGenerator'ın vaat ettiği ("routers/ask.py bunu dürüst
+                # redde çevirir") ama strict-agentic göçünde 502'ye dönüşen davranış düzeltildi.
+                _log.warning("Discovery takip üretimi başarısız", exc_info=True)
+                return _honest_refusal(
+                    note="Bu takip mesajını anlayamadım. Farklı bir şekilde sorar mısın?",
+                    trace=[f"Discovery: takip üretimi başarısız ({exc}) → dürüst ret"],
+                )
+            trace = ["Discovery: önceki SQL bağlamında takip üretimi (LLM önceki SQL'i düzenledi/yok saydı)"]
+            if on_step:
+                on_step(list(trace))
+        else:
+            few_shot = vqr.few_shot_block(body.question) if vqr else ""
+            if few_shot:
+                prompt_schema = {**schema, "golden_sql": "\n\n".join(
+                    s for s in (schema.get("golden_sql"), few_shot) if s)}
+            try:
+                wren_sql = llm.generate_sql(body.question, prompt_schema)
+            except Exception as exc:
+                _log.warning("Discovery SQL üretimi başarısız", exc_info=True)
+                return _honest_refusal(
+                    note="Bu soruyu anlayamadım. Farklı bir şekilde sorar mısın?",
+                    trace=[f"Discovery: SQL üretimi başarısız ({exc}) → dürüst ret"],
+                )
+            trace = ["Discovery: VQR few-shot ile ham-SQL üretimi" if few_shot else
+                    "Discovery: ham-SQL üretimi (Intent-path kapsamadı)"]
+            if on_step:
+                on_step(list(trace))
 
-    # ÇALIŞTIRMA (canlı bulgu, 31 Temmuz 2026 — gerçek kullanıcı testinde 500 olarak
-    # patladı): `dry_plan` yalnız PLANLAMA/SEMANTİK doğrulamadır — motorun GERÇEK
-    # ÇALIŞTIRMASI (DuckDB/hedef lehçe) ayrı bir aşamadır ve dry_plan'ın geçtiği bir SQL
-    # yine de ÇALIŞTIRMA anında patlayabilir (karmaşık, çok-parçalı sorular — "trend +
-    # son N ay + X'in Y'ye etkisi" gibi bileşik istekler LLM'i geçersiz/aşırı karmaşık bir
-    # sorguya götürebiliyor). Bu satır TEK BAŞINA sarmalanmamıştı — dosyadaki HER DİĞER
-    # adımın (SQL üretimi, dry_plan, self-healing) aksine — üretim/planlama başarısız
-    # olduğunda "dürüst ret" (502/500 DEĞİL) ilkesini burada da uygula: ÇALIŞTIRMA hatası
-    # da dry_plan hatasıyla AYNI self-healing (`llm.repair`) turuna girer; o da başarısız
-    # olursa dürüst ret (asla çıplak 500).
-    try:
-        result = service.query(wren_sql, limit=limit)
-    except Exception as e:
-        trace.append(f"çalıştırma hatası → kendi kendini onarma: {e}")
         try:
-            wren_sql = llm.repair(body.question, prompt_schema, wren_sql, str(e))
             planned = service.dry_plan(wren_sql)
+        except Exception as e:
+            trace.append(f"dry_plan hatası → kendi kendini onarma: {e}")
+            if on_step:
+                on_step(list(trace))
+            try:
+                wren_sql = llm.repair(body.question, prompt_schema, wren_sql, str(e))
+                planned = service.dry_plan(wren_sql)
+            except Exception as exc2:
+                _log.warning("Discovery self-healing başarısız", exc_info=True)
+                return _honest_refusal(
+                    note="Bu soru için güvenilir bir sorgu üretemedim.",
+                    trace=trace + [f"self-healing başarısız ({exc2}) → dürüst ret"],
+                )
+
+        # ÇALIŞTIRMA (canlı bulgu, 31 Temmuz 2026 — gerçek kullanıcı testinde 500 olarak
+        # patladı): `dry_plan` yalnız PLANLAMA/SEMANTİK doğrulamadır — motorun GERÇEK
+        # ÇALIŞTIRMASI (DuckDB/hedef lehçe) ayrı bir aşamadır ve dry_plan'ın geçtiği bir SQL
+        # yine de ÇALIŞTIRMA anında patlayabilir (karmaşık, çok-parçalı sorular — "trend +
+        # son N ay + X'in Y'ye etkisi" gibi bileşik istekler LLM'i geçersiz/aşırı karmaşık bir
+        # sorguya götürebiliyor). Bu satır TEK BAŞINA sarmalanmamıştı — dosyadaki HER DİĞER
+        # adımın (SQL üretimi, dry_plan, self-healing) aksine — üretim/planlama başarısız
+        # olduğunda "dürüst ret" (502/500 DEĞİL) ilkesini burada da uygula: ÇALIŞTIRMA hatası
+        # da dry_plan hatasıyla AYNI self-healing (`llm.repair`) turuna girer; o da başarısız
+        # olursa dürüst ret (asla çıplak 500).
+        trace.append("Discovery: dry_plan geçti, çalıştırılıyor…")
+        if on_step:
+            on_step(list(trace))
+        try:
             result = service.query(wren_sql, limit=limit)
-        except Exception as exc2:
-            _log.warning("Discovery çalıştırma + self-healing başarısız", exc_info=True)
-            return _honest_refusal(
-                note="Bu soru için güvenilir bir sorgu üretemedim.",
-                trace=trace + [f"self-healing (çalıştırma) başarısız ({exc2}) → dürüst ret"],
-            )
+        except Exception as e:
+            trace.append(f"çalıştırma hatası → kendi kendini onarma: {e}")
+            if on_step:
+                on_step(list(trace))
+            try:
+                wren_sql = llm.repair(body.question, prompt_schema, wren_sql, str(e))
+                planned = service.dry_plan(wren_sql)
+                result = service.query(wren_sql, limit=limit)
+            except Exception as exc2:
+                _log.warning("Discovery çalıştırma + self-healing başarısız", exc_info=True)
+                return _honest_refusal(
+                    note="Bu soru için güvenilir bir sorgu üretemedim.",
+                    trace=trace + [f"self-healing (çalıştırma) başarısız ({exc2}) → dürüst ret"],
+                )
 
-    # 6) Öğrenme döngüsü: yalnız BAĞIMSIZ başarılı yanıtlar VQR'a otomatik yazılır.
-    # Bir takip cevabını ("aylara göre" → SQL) standalone soru metniyle önbelleklemek,
-    # sonraki alakasız bir konuşmada YANLIŞ tekrar oynatmaya yol açardı — bu yüzden yalnız
-    # bağlamdan bağımsız (kendi başına anlamlı) sorular öğrenilir.
-    if vqr is not None and not is_followup:
-        try:
-            vqr.store(body.question, {"wren_sql": wren_sql}, source="auto")
-        except Exception:
-            _log.warning("VQR otomatik kayıt başarısız (best-effort)", exc_info=True)
+        # 6) Öğrenme döngüsü: yalnız BAĞIMSIZ başarılı yanıtlar VQR'a otomatik yazılır.
+        # Bir takip cevabını ("aylara göre" → SQL) standalone soru metniyle önbelleklemek,
+        # sonraki alakasız bir konuşmada YANLIŞ tekrar oynatmaya yol açardı — bu yüzden yalnız
+        # bağlamdan bağımsız (kendi başına anlamlı) sorular öğrenilir.
+        if vqr is not None and not is_followup:
+            try:
+                vqr.store(body.question, {"wren_sql": wren_sql}, source="auto")
+            except Exception:
+                _log.warning("VQR otomatik kayıt başarısız (best-effort)", exc_info=True)
 
-    # 6b) Discovery→Promote yakalama (Faz 2d): başarılı BAĞIMSIZ bir Discovery cevabı,
-    # best-effort bir "taslak ölçü" adayı olarak yakalanır (yalnız yakalama — inceleme/onay
-    # AYRI, bkz. app/routers/measures.py). VQR'la (madde 6) AYNI "yalnız bağımsız soru"
-    # politikası: bir takibin SQL'i tek başına anlamlı bir ölçü önerisi değildir.
-    if result is not None and not is_followup:
-        _capture_measure_candidate(body.question, wren_sql, result, principal)
+        # 6b) Discovery→Promote yakalama (Faz 2d): başarılı BAĞIMSIZ bir Discovery cevabı,
+        # best-effort bir "taslak ölçü" adayı olarak yakalanır (yalnız yakalama — inceleme/onay
+        # AYRI, bkz. app/routers/measures.py). VQR'la (madde 6) AYNI "yalnız bağımsız soru"
+        # politikası: bir takibin SQL'i tek başına anlamlı bir ölçü önerisi değildir.
+        if result is not None and not is_followup:
+            _capture_measure_candidate(body.question, wren_sql, result, principal)
 
-    resp = AskResponse(
-        question=body.question, sql=wren_sql, planned_sql=planned,
-        result=QueryResult(**result) if result else None,
-        source=_llm_source(llm, used_rule=isinstance(llm, RuleBasedSqlGenerator)),
-        trace=trace,
+        resp = AskResponse(
+            question=body.question, sql=wren_sql, planned_sql=planned,
+            result=QueryResult(**result) if result else None,
+            source=_llm_source(llm, used_rule=isinstance(llm, RuleBasedSqlGenerator)),
+            trace=trace,
+        )
+        resp.contract_id = _record_contract(None, wren_sql, result, resp.source)
+        return _finish(_attach_viz(resp, result))
+
+    # Faz 4.1 (31 Temmuz 2026) — bayrak KAPALIYKEN (varsayılan, tüm mevcut testler/tenant'lar)
+    # davranış BİREBİR eskisiyle aynı: Discovery senkron çalışır, /ask onun sonucunu döner.
+    # Yalnız `ask_async_discovery` açık tenant'larda Discovery'nin bu kendi kendine en yavaş
+    # (LLM+self-healing) adımı arka-plan işine kuyruklanır (dış yol haritası 0.1 karşılığı).
+    if "ask_async_discovery" not in resolve_for(settings, principal):
+        return _run_discovery()
+    return _queue_discovery_job(request, body, principal, _run_discovery)
+
+
+@router.get("/ask/jobs/{job_id}", response_model=AskJobStatus,
+            dependencies=[Depends(require("query:run")), Depends(require_company)])
+def ask_job_status(job_id: str, request: Request) -> AskJobStatus:
+    """Faz 4.1 — arka-plan Discovery işinin durumu (istemci bunu poll eder). Tamamlanmışsa
+    `response` tam bir AskResponse'tur — client bunu normal /ask cevabı gibi işler (job_id
+    alanı boş kalır, tekrar poll edilmez)."""
+    import uuid as _uuid
+
+    from sqlmodel import Session
+
+    from control_plane.db import engine
+    from control_plane.models import AskJob
+
+    try:
+        jid = _uuid.UUID(job_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Geçersiz iş kimliği.")
+    with Session(engine) as s:
+        job = s.get(AskJob, jid)
+        if job is None:
+            raise HTTPException(status_code=404, detail="İş bulunamadı.")
+        # Tenant izolasyonu (RLS ilkesi, backend/CLAUDE.md): başka tenant'ın işi görülemez.
+        principal = getattr(request.state, "principal", None)
+        principal_tenant = getattr(principal, "tenant_id", None)
+        if job.tenant_id is not None and str(job.tenant_id) != str(principal_tenant):
+            raise HTTPException(status_code=404, detail="İş bulunamadı.")
+        resp = AskResponse.model_validate_json(job.result_json) if job.result_json else None
+        # Faz 4.12 — trace HENÜZ tamamlanmamışken de (pending/running) job.trace_json'dan
+        # gelir; tamamlanınca resp.trace (tam/nihai liste) önceliklidir.
+        trace = json.loads(job.trace_json) if job.trace_json else []
+        if resp is not None and resp.trace:
+            trace = resp.trace
+        return AskJobStatus(id=str(job.id), status=job.status, question=job.question,
+                            response=resp, error=job.error, trace=trace)
+
+
+def _drill_record_contract(request: Request, service, session_id: str | None,
+                           question: str, cq: dict, sql: str, result: dict) -> str | None:
+    """/cube'un contract-kaydıyla AYNI desen (app/contracts.py) — HER dallanma adımı
+    (expand/select/related) KENDİ kanıt kaydını üretir (kullanıcı talimatı: "HER dallanma
+    adımı ayrı ayrı loglanır, tüm kök neden yolu SONRADAN yeniden oynatılabilir")."""
+    store = getattr(request.app.state, "contracts", None)
+    if store is None:
+        return None
+    try:
+        principal = getattr(request.state, "principal", None)
+        return store.record(
+            session_id=session_id, question=question, cube_query=cq, sql=sql,
+            result=result, source="drill", schema_version=service.mdl_version,
+            tenant_id=getattr(principal, "tenant_id", None),
+        )
+    except Exception:
+        _log.warning("drill query contract kaydedilemedi (best-effort)", exc_info=True)
+        return None
+
+
+@router.post("/ask/drill", response_model=DrillResponse,
+            dependencies=[Depends(require("query:run")), Depends(require_company)])
+def ask_drill(request: Request, body: DrillRequest) -> DrillResponse:
+    """Faz 4.10 (1 Ağustos 2026) — dış yol haritası 2.5+2.15 "dallı kök-neden analizi
+    temeli", kullanıcı talebiyle GENİŞLETİLMİŞ: yalnız "açıkla" değil, `action`'a göre
+    GERÇEK sorgu çalıştırır (expand/select/raw/related) — kullanıcının "tüm veri ağacına
+    ulaşabilmeli" ve "hesapta olan tüm ilişkiyi inceleyip dallandırılabilmeli" talebi
+    (ör. OEE düşükken makine_duruslari'na geçip GERÇEK duruş nedenini görebilmek).
+
+    Her GERÇEK sorgu adımı (expand/select/related) KENDİ Query Contract kaydını üretir
+    (app/contracts.py — /cube ile AYNI ilke) VE cube'un TÜM ölçülerini birlikte döner
+    (yalnız tek bir ölçü değil — "OEE düşük" derken YANINDA Kullanılabilirlik/Performans/
+    Kalite/duruş dakikası da görünsün, kullanıcının "hesabı OLUŞTURAN ilişkiyi görme"
+    talebi budur). Anomali tespiti `app/schedules.py::detect_anomalies` İLE AYNI z-skoru
+    yöntemini kullanır (app/drill.py::flag_outliers — yeni bir istatistik motoru YOK).
+
+    KAPSAM SINIRI: yapısal (cube-kaynaklı) sonuçlarda tam çalışır. Discovery/ham-SQL
+    kaynaklı bir sonuç için `cube_query` yoktur — bu durumda dallanma sunulmaz, yalnız
+    dürüst bir genel açıklama verilir (asla sahte bir dallanma UYDURULMAZ)."""
+    import time as _time
+
+    from app.drill import (
+        available_dimensions,
+        expand_cube_query,
+        flag_outliers,
+        formula_explanation,
+        jump_to_related_cube,
+        kpi_components,
+        related_cubes,
+        select_cube_query,
     )
-    resp.contract_id = _record_contract(None, wren_sql, result, resp.source)
-    return _finish(_attach_viz(resp, result))
+
+    # KPI (bileşke metrik) — bu sistemde şu an inert (bkz. app/drill.py::kpi_components
+    # docstring'i) ama şema hazır: dallanma sunulmaz, yalnız formül + bileşenler.
+    if body.kpi:
+        label = body.kpi.get("label") or body.kpi.get("kpi") or "KPI"
+        formula = body.kpi.get("formula")
+        explanation = (f"{label} = {formula}" if formula
+                      else f"{label} — bileşke bir metriktir (birden çok cube'dan türetilir).")
+        return DrillResponse(formula_explanation=explanation, kpi_components=kpi_components(body.kpi))
+
+    if not body.cube_query or not body.cube_query.get("cube"):
+        return DrillResponse(
+            formula_explanation="Bu sonuç Discovery (ham-SQL) yoluyla üretildi — yapısal "
+                                "bir cube_query taşımıyor, bu yüzden dallanma sunulamıyor. "
+                                "Üretilen SQL'i \"sql göster\" ile inceleyebilirsin.",
+        )
+
+    service = _service_for(request, body.session_id)
+    settings = get_settings()
+    schema = service.schema()
+    cubes_by_name = {c.get("name"): c for c in (schema.get("cubes") or [])}
+    cube_meta = cubes_by_name.get(body.cube_query.get("cube"))
+    if cube_meta is None:
+        raise HTTPException(status_code=400, detail="Cube bulunamadı (şema değişmiş olabilir).")
+
+    def _run(cq: dict) -> tuple[dict, str, float]:
+        """cube_query'yi GERÇEKTEN çalıştırır (dry_plan+query, /cube ile AYNI adımlar) —
+        (result_dict, sql, duration_ms) döner. Hata → HTTPException(400), asla çıplak 500.
+        `sql`+`duration_ms` DrillResponse'a taşınır (UC-2.18/2.19 kanıt paneli — kullanıcı
+        SQL'i kopyalayıp DB'de çalıştırdığında AYNI sonucu görmeli)."""
+        started = _time.perf_counter()
+        try:
+            sql = service.cube_sql(cq, limit=settings.max_result_rows)
+            service.dry_plan(sql)
+            result = service.query(sql, limit=settings.max_result_rows)
+            return result, sql, round((_time.perf_counter() - started) * 1000, 1)
+        except Exception as exc:
+            _log.warning("drill sorgusu çalıştırılamadı", exc_info=True)
+            raise HTTPException(status_code=400,
+                                detail=f"Bu dallanma adımı çalıştırılamadı: {str(exc)[:200]}")
+
+    def _with_all_measures(cq: dict, meta: dict) -> dict:
+        """Kullanıcı talebi: "hesapta olan TÜM ilişkiyi görebilmeli" — bir ölçüye
+        bakarken cube'un DİĞER ölçüleri de (ör. OEE'nin yanında Kullanılabilirlik/
+        Performans/Kalite/duruş dakikası) AYNI dilimde birlikte döner, tek bir sayı
+        yerine hesabı oluşturan TÜM bileşenler görünür kalır."""
+        all_measures = list(meta.get("measures") or [])
+        return {**cq, "measures": all_measures or cq.get("measures") or []}
+
+    def _anomalies_for(cq: dict, result: dict) -> list[dict]:
+        dims = cq.get("dimensions") or []
+        measures = cq.get("measures") or []
+        primary = (body.cube_query.get("measures") or measures or [None])[0]
+        if not dims or not primary or not result.get("rows"):
+            return []
+        try:
+            return flag_outliers(result["rows"], dims[-1], primary)
+        except Exception:  # noqa: BLE001 - yorumlama best-effort, rapor yine de döner
+            _log.warning("drill anomali tespiti başarısız (best-effort)", exc_info=True)
+            return []
+
+    action = body.action
+
+    if action == "explain":
+        anomalies = []
+        if body.result and body.result.rows:
+            anomalies = _anomalies_for(body.cube_query, body.result.model_dump())
+        active_dims = set(body.cube_query.get("dimensions") or [])
+        active_dims |= {f.get("dimension") for f in (body.cube_query.get("filters") or [])}
+        # UC-2.18 kanıt paneli: "explain" YENİ bir sorgu ÇALIŞTIRMAZ (mevcut result yeniden
+        # kullanılır) ama SQL METNİ yine de üretilebilir (derleme, ÇALIŞTIRMA değil) — kullanıcı
+        # ilk tıklamada bile formülün YANINDA gerçek SQL'i görsün. Başarısız olursa sessizce None
+        # (bu alan "iyi olsun" niteliğinde, drill'in kendisini engellemez).
+        try:
+            explain_sql = service.cube_sql(body.cube_query, limit=settings.max_result_rows)
+        except Exception:  # noqa: BLE001
+            explain_sql = None
+        return DrillResponse(
+            cube_query=body.cube_query,
+            formula_explanation=formula_explanation(body.cube_query, cube_meta),
+            available_dimensions=available_dimensions(cube_meta, body.cube_query),
+            related_cubes=related_cubes(cube_meta["name"], active_dims, list(cubes_by_name.values())),
+            anomalies=anomalies,
+            sql=explain_sql,
+        )
+
+    if action == "expand":
+        if not body.dimension:
+            raise HTTPException(status_code=400, detail="'expand' için 'dimension' gerekli.")
+        new_cq = _with_all_measures(expand_cube_query(body.cube_query, body.dimension), cube_meta)
+        result, sql, duration_ms = _run(new_cq)
+        contract_id = _drill_record_contract(
+            request, service, body.session_id,
+            f"drill: {cube_meta.get('display') or cube_meta['name']} → {body.dimension}",
+            new_cq, sql, result)
+        active_dims = set(new_cq.get("dimensions") or [])
+        active_dims |= {f.get("dimension") for f in (new_cq.get("filters") or [])}
+        return DrillResponse(
+            cube_query=new_cq,
+            formula_explanation=formula_explanation(new_cq, cube_meta),
+            available_dimensions=available_dimensions(cube_meta, new_cq),
+            related_cubes=related_cubes(cube_meta["name"], active_dims, list(cubes_by_name.values())),
+            anomalies=_anomalies_for(new_cq, result),
+            result=QueryResult(**result),
+            contract_id=contract_id,
+            sql=sql,
+            duration_ms=duration_ms,
+        )
+
+    if action == "select":
+        if not body.dimension or body.filter_value is None:
+            raise HTTPException(status_code=400,
+                                detail="'select' için 'dimension' ve 'filter_value' gerekli.")
+        new_cq = _with_all_measures(
+            select_cube_query(body.cube_query, body.dimension, body.filter_value), cube_meta)
+        result, sql, duration_ms = _run(new_cq)
+        contract_id = _drill_record_contract(
+            request, service, body.session_id,
+            f"drill: {cube_meta.get('display') or cube_meta['name']} → "
+            f"{body.dimension}={body.filter_value}",
+            new_cq, sql, result)
+        active_dims = set(new_cq.get("dimensions") or [])
+        active_dims |= {f.get("dimension") for f in (new_cq.get("filters") or [])}
+        return DrillResponse(
+            cube_query=new_cq,
+            formula_explanation=formula_explanation(new_cq, cube_meta),
+            available_dimensions=available_dimensions(cube_meta, new_cq),
+            related_cubes=related_cubes(cube_meta["name"], active_dims, list(cubes_by_name.values())),
+            anomalies=_anomalies_for(new_cq, result),
+            result=QueryResult(**result),
+            contract_id=contract_id,
+            sql=sql,
+            duration_ms=duration_ms,
+        )
+
+    if action == "related":
+        if not body.target_cube:
+            raise HTTPException(status_code=400, detail="'related' için 'target_cube' gerekli.")
+        target_meta = cubes_by_name.get(body.target_cube)
+        if target_meta is None:
+            raise HTTPException(status_code=400, detail="Hedef cube bulunamadı.")
+        new_cq = jump_to_related_cube(body.cube_query, body.target_cube, target_meta)
+        result, sql, duration_ms = _run(new_cq)
+        contract_id = _drill_record_contract(
+            request, service, body.session_id,
+            f"drill: {cube_meta.get('display') or cube_meta['name']} → "
+            f"{target_meta.get('display') or body.target_cube} (ilişkili veri)",
+            new_cq, sql, result)
+        active_dims = set(new_cq.get("dimensions") or [])
+        active_dims |= {f.get("dimension") for f in (new_cq.get("filters") or [])}
+        return DrillResponse(
+            cube_query=new_cq,
+            formula_explanation=formula_explanation(new_cq, target_meta),
+            available_dimensions=available_dimensions(target_meta, new_cq),
+            related_cubes=related_cubes(body.target_cube, active_dims, list(cubes_by_name.values())),
+            anomalies=_anomalies_for(new_cq, result),
+            result=QueryResult(**result),
+            contract_id=contract_id,
+            note=f"İlişkili veri: {target_meta.get('display') or body.target_cube}",
+            sql=sql,
+            duration_ms=duration_ms,
+        )
+
+    if action == "raw":
+        from app.drill import build_raw_row_sql, UnsafeDrillError
+
+        base_object = cube_meta.get("base_object") or cube_meta["name"]
+        filters = list(body.cube_query.get("filters") or [])
+        for d in (body.cube_query.get("dimensions") or []):
+            if body.filter_value is not None and d == body.dimension:
+                filters.append({"dimension": d, "operator": "eq", "value": body.filter_value})
+        try:
+            raw_sql = build_raw_row_sql(base_object, filters, limit=body.limit)
+        except UnsafeDrillError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        started = _time.perf_counter()
+        try:
+            service.dry_plan(raw_sql)
+            raw_result = service.query(raw_sql, limit=body.limit)
+        except Exception as exc:
+            _log.warning("drill ham-satır sorgusu başarısız", exc_info=True)
+            raise HTTPException(status_code=400,
+                                detail=f"Ham satırlar getirilemedi: {str(exc)[:200]}")
+        duration_ms = round((_time.perf_counter() - started) * 1000, 1)
+        contract_id = _drill_record_contract(
+            request, service, body.session_id,
+            f"drill: {cube_meta.get('display') or cube_meta['name']} → ham satırlar",
+            body.cube_query, raw_sql, raw_result)
+        return DrillResponse(
+            cube_query=body.cube_query,
+            formula_explanation=f"{base_object} tablosunun bu dilime ait ham satırları "
+                                f"(en fazla {body.limit}).",
+            raw_rows=RawRow(**raw_result),
+            contract_id=contract_id,
+            sql=raw_sql,
+            duration_ms=duration_ms,
+        )
+
+    raise HTTPException(status_code=400, detail=f"Bilinmeyen action: {action!r}")
 
 
 @router.post("/ask/verify", dependencies=[Depends(require("vqr:write")), Depends(require_company)])

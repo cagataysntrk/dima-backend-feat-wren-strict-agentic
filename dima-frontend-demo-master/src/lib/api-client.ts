@@ -7,9 +7,13 @@
 
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import type {
+  AskJobStatus,
   AskRequest,
   AskResponse,
   BlastRadius,
+  ConnectionConfirmResult,
+  ConnectionDraft,
+  ConnectionTestResult,
   CubeQuery,
   DashboardDetail,
   DashboardListItem,
@@ -19,7 +23,12 @@ import type {
   QueryResult,
   Report,
   ReportBlockInput,
+  DrillRequestInput,
+  DrillResponse,
   SchemaResponse,
+  StatsToday,
+  TenantConnectionCreateInput,
+  TenantConnectionOut,
 } from "./types";
 
 // Same-origin: browser "/api/..."e konuşur, Next backend'e rewrite'ler (next.config.ts).
@@ -138,8 +147,58 @@ export async function getSchema(): Promise<SchemaResponse> {
   return data;
 }
 
-export async function ask(body: AskRequest): Promise<AskResponse> {
+// Faz 4.1 (31 Temmuz 2026) — backend'de `ask_async_discovery` bayrağı açık tenant'larda
+// Discovery (LLM ham-SQL, en yavaş yol) senkron dönmez: /ask hemen bir job_id taşıyan
+// yanıt döner, gerçek sonuç GET /ask/jobs/{id} poll'uyla gelir. Bayrak kapalıyken (varsayılan,
+// bugünkü demo) `data.job_id` HİÇ dolmaz — bu fonksiyon aynı satırda hemen döner, hiçbir
+// davranış değişmez. Poll GÖRÜNMEZDİR: page.tsx'in useMutation'ı bu Promise'in çözülmesini
+// bekler, mevcut "yürütülüyor" yükleme durumu (mutation.isPending) OLDUĞU GİBİ çalışmaya
+// devam eder — yeni bir UI bileşeni gerekmez.
+const ASK_JOB_POLL_MS = 1500;
+const ASK_JOB_MAX_POLLS = 240; // ~6 dakika üst sınır — sonsuz poll'u önler
+
+// Faz 4.12 (1 Ağustos 2026) — dış yol haritası 2.9 "canlı düşünme adımları": her poll'da
+// BİRİKEN trace'i (iş henüz tamamlanmasa da) opsiyonel bir callback'e iletir — page.tsx
+// bunu görüntüleyebilir. Verilmezse davranış AYNI (yalnız nihai sonucu bekler).
+async function pollAskJob(
+  jobId: string,
+  onProgress?: (trace: string[]) => void,
+): Promise<AskResponse> {
+  for (let i = 0; i < ASK_JOB_MAX_POLLS; i++) {
+    await new Promise((resolve) => setTimeout(resolve, ASK_JOB_POLL_MS));
+    const { data } = await apiClient.get<AskJobStatus>(`/ask/jobs/${jobId}`);
+    if (data.trace && data.trace.length > 0) onProgress?.(data.trace);
+    if (data.status === "completed" && data.response) {
+      return data.response;
+    }
+    if (data.status === "failed") {
+      // Dürüst ret — arka-plan işi çökse bile kullanıcıya çıplak hata yerine mevcut
+      // "note" desenine uyan bir AskResponse döner (ChatPanel bunu normal notmuş gibi gösterir).
+      return {
+        question: data.question ?? "",
+        sql: "",
+        planned_sql: null,
+        result: null,
+        source: null,
+        cube_query: null,
+        note: data.error || "Bu soru için arka planda bir sorun oluştu.",
+        trace: [`arka-plan işi: başarısız (${data.error || "bilinmeyen hata"})`],
+      };
+    }
+  }
+  throw new Error(
+    "İşlem beklenenden uzun sürdü (arka planda hâlâ çalışıyor olabilir). Lütfen tekrar dener misin?",
+  );
+}
+
+export async function ask(
+  body: AskRequest,
+  onProgress?: (trace: string[]) => void,
+): Promise<AskResponse> {
   const { data } = await apiClient.post<AskResponse>("/ask", body);
+  if (data.job_id) {
+    return pollAskJob(data.job_id, onProgress);
+  }
   return data;
 }
 
@@ -260,8 +319,14 @@ export async function getNotifications(limit = 20): Promise<Notification[]> {
 }
 
 // K1 (rehberli analitik) — rol/sektör bazlı başlangıç soruları (küratörlü; yoksa katalog).
-export async function getStarters(): Promise<{ label: string; query: string }[]> {
-  const { data } = await apiClient.get<{ starters: { label: string; query: string }[] }>(
+// `grup` opsiyonel (Faz 4.8) — küratörlü listede departman etiketi, katalog otomatiğinde yok.
+export interface Starter {
+  label: string;
+  query: string;
+  grup?: string;
+}
+export async function getStarters(): Promise<Starter[]> {
+  const { data } = await apiClient.get<{ starters: Starter[] }>(
     "/starters",
   );
   return data.starters ?? [];
@@ -389,6 +454,60 @@ export async function deprecateMeasureCandidate(
   const { data } = await apiClient.post<MeasureCandidate>(
     `/measures/candidates/${id}/deprecate`,
     { reason, superseded_by_measure },
+  );
+  return data;
+}
+
+// Faz 4.10 (1 Ağustos 2026) — dallı kök-neden analizi: her adım (explain/expand/select/
+// related/raw) bu TEK ucu çağırır; backend GERÇEK sorguyu çalıştırır (mock yok) ve kendi
+// Query Contract kaydını üretir (drill.py + ask.py::ask_drill).
+export async function drillAsk(body: DrillRequestInput): Promise<DrillResponse> {
+  const { data } = await apiClient.post<DrillResponse>("/ask/drill", body);
+  return data;
+}
+
+// Faz 4.13c — meta-güven özeti ("bugün %X soru LLM'siz cevaplandı").
+export async function getStatsToday(days = 1): Promise<StatsToday> {
+  const { data } = await apiClient.get<StatsToday>("/stats/today", { params: { days } });
+  return data;
+}
+
+// --- DB bağlama sihirbazı (Faz 4.5) — tenant-kendi-hizmeti ------------------
+export async function testTenantConnection(
+  body: TenantConnectionCreateInput,
+): Promise<ConnectionTestResult> {
+  const { data } = await apiClient.post<ConnectionTestResult>("/connections/test", body);
+  return data;
+}
+
+export async function createTenantConnection(
+  body: TenantConnectionCreateInput,
+): Promise<TenantConnectionOut> {
+  const { data } = await apiClient.post<TenantConnectionOut>("/connections", body);
+  return data;
+}
+
+export async function listTenantConnections(): Promise<TenantConnectionOut[]> {
+  const { data } = await apiClient.get<TenantConnectionOut[]>("/connections");
+  return data;
+}
+
+export async function deleteTenantConnection(id: string): Promise<void> {
+  await apiClient.delete(`/connections/${id}`);
+}
+
+export async function getConnectionDraft(id: string): Promise<ConnectionDraft> {
+  const { data } = await apiClient.get<ConnectionDraft>(`/connections/${id}/draft`);
+  return data;
+}
+
+export async function confirmConnectionDraft(
+  id: string,
+  draft: ConnectionDraft,
+): Promise<ConnectionConfirmResult> {
+  const { data } = await apiClient.post<ConnectionConfirmResult>(
+    `/connections/${id}/confirm`,
+    draft,
   );
   return data;
 }

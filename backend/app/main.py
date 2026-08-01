@@ -14,11 +14,13 @@ from app.auth.dependencies import get_current_principal
 from app.config import get_settings
 from app.llm import build_generator
 from app.routers import ask, health, query
+from app.routers import connections as connections_router
 from app.routers import contracts as contracts_router
 from app.routers import conversations as conversations_router
 from app.routers import dashboards as dashboards_router
 from app.routers import measures as measures_router
 from app.routers import schedules as schedules_router
+from app.routers import stats as stats_router
 from app.vqr import VQR
 from app.wren_service import WrenService
 
@@ -39,6 +41,8 @@ async def lifespan(app: FastAPI):
     replay_spool()  # DB-down sırasında spool'lanan bekleyen audit'leri DB'ye boşalt
     from app.contracts import replay_spool as replay_contract_spool
     replay_contract_spool()  # bekleyen contract kanıtlarını DB'ye boşalt (audit deseni)
+    from app.routers.ask import recover_stale_ask_jobs
+    recover_stale_ask_jobs()  # Faz 4.1: önceki çalıştırmadan yarım kalan AskJob'ları temizle
     ensure_bootstrap_superadmin()
     # ADR-0005: şirket ⊕ sektör paketi ⊕ konu modülleri → wren-project (derlenmiş) + mdl.
     # Önce TenantConfig materializer'ı: admin panelden yazılan sektör/modül seçimi
@@ -136,6 +140,8 @@ def create_app() -> FastAPI:
     app.include_router(conversations_router.router, dependencies=_protected)
     app.include_router(dashboards_router.router, dependencies=_protected)
     app.include_router(measures_router.router, dependencies=_protected)
+    app.include_router(connections_router.router, dependencies=_protected)
+    app.include_router(stats_router.router, dependencies=_protected)
     return app
 
 

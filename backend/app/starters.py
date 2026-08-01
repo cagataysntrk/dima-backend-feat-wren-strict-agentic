@@ -26,8 +26,13 @@ def _curated(settings) -> list:
 
 
 def starter_questions(settings, principal=None) -> list[dict]:
-    """Rol-filtreli küratörlü başlangıç soruları ``[{label, query}]``. Küratör yoksa boş
-    (çağıran katalog otomatiğine düşer)."""
+    """Rol-filtreli küratörlü başlangıç soruları ``[{label, query, grup?}]``. Küratör
+    yoksa boş (çağıran katalog otomatiğine düşer).
+
+    Faz 4.8 (1 Ağustos 2026) — dış yol haritası 1.13 "Ne sorabilirim?" departman haritası:
+    her starter'a opsiyonel ``grup`` (departman) etiketi eklenebilir (ör. "Üretim",
+    "Finans") — frontend (HelpPanel.tsx) bunu sekme/grup gezinmesi olarak gösterir.
+    Etiketsiz starter'lar (``grup`` yok) gruplanmamış kabul edilir — geriye-uyumlu."""
     roles = set(getattr(principal, "roles", None) or [])
     out: list[dict] = []
     for s in _curated(settings):
@@ -36,5 +41,8 @@ def starter_questions(settings, principal=None) -> list[dict]:
         want = set(s.get("roles") or [])
         if want and not (want & roles):
             continue  # role-tagged ama kullanıcı o rolde değil → gösterme
-        out.append({"label": str(s.get("label") or s["query"]), "query": str(s["query"])})
+        item = {"label": str(s.get("label") or s["query"]), "query": str(s["query"])}
+        if s.get("grup"):
+            item["grup"] = str(s["grup"])
+        out.append(item)
     return out

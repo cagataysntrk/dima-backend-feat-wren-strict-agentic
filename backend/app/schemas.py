@@ -239,3 +239,165 @@ class AskResponse(BaseModel):
     # kırılmaz) tek bir `explain` alanı. Frontend YENİ alanı kullanmaya başlayabilir,
     # kademeli geçiş.
     explain: Explain | None = None
+    # Faz 4.1 (31 Temmuz 2026) — yalnız `ask_async_discovery` bayrağı açıkken dolar: Discovery
+    # arka-plan işine kuyruklandığında (result/source HENÜZ yok) client bunu görüp
+    # GET /ask/jobs/{job_id} ile poll eder. Bayrak kapalıyken (varsayılan) HER ZAMAN None —
+    # mevcut senkron akış BİREBİR korunur.
+    job_id: str | None = None
+
+
+class AskJobStatus(BaseModel):
+    """Faz 4.1 — GET /ask/jobs/{id} yanıtı. `response` yalnız status='completed' olunca
+    dolar (tam AskResponse — client bunu normal /ask cevabı gibi işler). `trace` (Faz 4.12,
+    dış yol haritası 2.9 "canlı düşünme adımları") iş HENÜZ tamamlanmadan da BİRİKEREK
+    dolar — client bunu poll ederken göstererek "ne yapıyor" hissi verir."""
+
+    id: str
+    status: str  # pending | running | completed | failed
+    question: str | None = None
+    response: AskResponse | None = None
+    error: str | None = None
+    trace: list[str] = Field(default_factory=list)
+
+
+class TenantConnectionCreate(BaseModel):
+    """Faz 4.5 (31 Temmuz 2026) — tenant-kendi-hizmeti DB bağlama sihirbazı. `admin_app.
+    schemas.ConnectionCreate`'ten FARKI: `tenant_id` request'te YOKTUR — tenant HER ZAMAN
+    principal'dan türetilir (CLAUDE.md kuralı: "Tenant DAİMA token'dan türetilir, request
+    girdisinden asla"). Bu sürümde yalnız Postgres desteklenir (app/db_introspect.py)."""
+
+    datasource: str = "postgres"
+    host: str = Field(min_length=1)
+    port: int = Field(default=5432, ge=1, le=65535)
+    database: str = Field(min_length=1)
+    user: str = Field(min_length=1)
+    password: str = Field(min_length=1)
+
+
+class TenantConnectionOut(BaseModel):
+    id: str
+    datasource: str
+    host: str
+    port: int
+    database: str
+    user: str
+    has_secret: bool
+
+
+class ConnectionTestResult(BaseModel):
+    ok: bool
+    detail: str | None = None
+
+
+class DraftCube(BaseModel):
+    """Bir introspect edilmiş tablonun cube ADAYI — kullanıcı onay ekranında `include`'u
+    kapatabilir ya da ölçü/boyut listesini düzenleyebilir (yanlış sınıflandırılan bir
+    kolonu taşıyabilir) — `POST /connections/{id}/confirm`'e AYNEN geri gönderilir."""
+
+    name: str
+    include: bool = True
+    measures: list[str] = Field(default_factory=list)
+    dimensions: list[str] = Field(default_factory=list)
+    time_dimensions: list[str] = Field(default_factory=list)
+    primary_key: str | None = None
+
+
+class DraftRelationship(BaseModel):
+    name: str
+    join_type: str = "MANY_TO_ONE"
+    models: list[str]
+    condition: str
+
+
+class ConnectionDraft(BaseModel):
+    cubes: list[DraftCube]
+    relationships: list[DraftRelationship]
+
+
+class ConnectionConfirmResult(BaseModel):
+    written_cubes: list[str]
+    written_relationships: int
+
+
+class DrillRequest(BaseModel):
+    """Faz 4.10 (1 Ağustos 2026) — dış yol haritası 2.5+2.15 "dallı kök-neden analizi".
+    GENİŞLETİLMİŞ TASARIM (kullanıcı düzeltmesi): bu uç artık GERÇEK sorgu ÇALIŞTIRIR
+    (`action` alanına göre) — "tüm veri ağacına ulaşabilmeli" gereksinimi salt yorumlama
+    ile karşılanamaz. Her `action` KENDİ Query Contract kaydını üretir (dry_plan+execute
+    /cube ile AYNI ilke).
+
+    action:
+      - "explain": SORGU ÇALIŞTIRMAZ — yalnız ZATEN elde olan `result`i yorumlar (formül
+        açıklaması + dallanma adayları + anomaliler). İLK tıklama burdan başlar.
+      - "expand": `dimension` cube_query.dimensions'a EKLENİR, GERÇEK sorgu çalıştırılır.
+      - "select": `dimension`'daki `filter_value` kategorisi bir FİLTREYE çevrilir
+        (dimensions'tan çıkar), GERÇEK sorgu çalıştırılır — breadcrumb'ın her adımı.
+      - "raw": YAPRAK seviyesi — mevcut filtrelerle cube'un base_object'inden HAM satırlar.
+      - "related": `target_cube`'a GEÇİLİR (mevcut filtrelerden PAYLAŞILAN olanlar taşınır)
+        — kök-neden için İLİŞKİLİ bir cube'un verisine bakma (ör. OEE düşükken duruş
+        nedenlerine geçmek, kullanıcı senaryosu 1 Ağustos 2026)."""
+
+    cube_query: dict[str, Any] | None = None
+    result: QueryResult | None = None
+    kpi: dict[str, Any] | None = None
+    session_id: str | None = None
+    action: str = "explain"  # explain | expand | select | raw | related
+    dimension: str | None = None       # expand: eklenecek boyut; select: filtreye çevrilecek boyut
+    filter_value: str | None = None    # select: seçilen kategori değeri
+    target_cube: str | None = None     # related: geçilecek cube adı
+    limit: int = 50                    # raw: kaç satır getirilsin
+
+
+class DrillDimension(BaseModel):
+    name: str
+    label: str
+
+
+class DrillAnomaly(BaseModel):
+    value: str
+    amount: float
+    direction: str  # above | below
+    z_score: float
+
+
+class DrillRelatedCube(BaseModel):
+    cube: str
+    label: str
+    shared_dimensions: list[str]
+
+
+class RawRow(BaseModel):
+    columns: list[str]
+    rows: list[dict[str, Any]]
+    row_count: int
+
+
+class DrillKpiComponent(BaseModel):
+    name: str | None = None
+    label: str
+    value: float | None = None
+    unit: str | None = None
+
+
+class DrillResponse(BaseModel):
+    """`cube_query` (Faz 4.10 GENİŞLETİLMİŞ): bu adımın SONUCUNDA oluşan yapısal durum —
+    frontend bunu breadcrumb'a ekler VE bir sonraki /ask/drill çağrısına GERİ gönderir
+    (her adım bir öncekinin üstüne inşa edilir). `result` bu adımda GERÇEKTEN çalıştırılan
+    sorgunun (varsa) verisidir — "explain" hariç HER action için doludur."""
+
+    cube_query: dict[str, Any] | None = None
+    formula_explanation: str
+    available_dimensions: list[DrillDimension] = Field(default_factory=list)
+    related_cubes: list[DrillRelatedCube] = Field(default_factory=list)
+    anomalies: list[DrillAnomaly] = Field(default_factory=list)
+    result: QueryResult | None = None
+    raw_rows: RawRow | None = None
+    kpi_components: list[DrillKpiComponent] | None = None
+    contract_id: str | None = None
+    note: str | None = None
+    # Faz 4.10 doğrulama düzeltmesi (1 Ağustos 2026) — dış yol haritası UC-2.18/2.19 "kanıt
+    # paneli": formül açıklamasının YANINDA bu adımı üreten GERÇEK SQL + çalışma süresi de
+    # dönmeli ki kullanıcı SQL'i kopyalayıp DB'de çalıştırabilsin (aynı sonucu görsün).
+    # `_run()` zaten bu SQL'i Query Contract için üretiyordu — burada ayrıca ATILMADAN taşınır.
+    sql: str | None = None
+    duration_ms: float | None = None
