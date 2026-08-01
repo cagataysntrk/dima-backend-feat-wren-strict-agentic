@@ -18,10 +18,58 @@ Kullanım: uygulama başlangıcı (main.lifespan) ya da elle:
 
 from __future__ import annotations
 
+import json
+import os
 import shutil
+import threading
 from pathlib import Path
 
 import yaml
+
+# ---------------------------------------------------------------------------
+# EŞZAMANLILIK (2 Ağustos 2026 — panel P0 "REGISTRY COMPOSE RACE" kök nedeni)
+#
+# İki ayrı yarış vardı:
+#
+#  (1) YAZAR × YAZAR. `compose_and_build()` HİÇ kilit tutmuyordu ve üç yerden çağrılıyor:
+#      `main.py` lifespan, `materialize.py`'nin 60 sn'lik scheduler thread'i ve
+#      `routers/measures.py`'nin onay isteği. Scheduler thread'i ile bir istek thread'i
+#      aynı dizine girdiğinde birinin rmtree'si diğerinin kopyaladığı dosyaları siliyor
+#      → sessizce eksik proje (türev view/KPI yok). `CompanyRegistry`'nin per-slug kilidi
+#      vardı ama `compose_and_build` ondan geçmiyordu; compose.py:75-76'daki
+#      "registry per-slug kilidi eş-zamanlı yazımı zaten engeller" yorumu bu yüzden
+#      VARSAYILAN şirket için YANLIŞTI.
+#
+#  (2) YAZAR × OKUYUCU (daha geniş pencere). `WrenService` `target/mdl.json`'ı HER
+#      motor kurulumunda ve HER cube derlemesinde yeniden okur. Eski akışta dosya, tüm
+#      compose+build boyunca (~130-160 ms) HİÇ YOKTU (rmtree siliyor, save_target en
+#      sonda geri yazıyor). O pencerede gelen bir /ask ya `FileNotFoundError` alıyordu ya
+#      da — daha kötüsü — `_inject_always_filter`'ın okuma hatasını yutup **always_filter'ı
+#      sessizce düşürmesine** yol açıyordu (iptal kayıtları toplama sızar).
+#
+# Çözüm iki parçalı ve birbirini tamamlar: aşağıdaki paylaşılan kilit (1) için,
+# `compose()`'un `target/`'ı KORUMASI + `build()`'in `os.replace` ile ATOMİK yazması
+# (2) için. İkincisi tek başına bile okuyucu yarışını kapatır: okuyucu her an ya ESKİ ya
+# YENİ manifesti görür, asla yok/yarım görmez.
+# ---------------------------------------------------------------------------
+
+_LOCKS_GUARD = threading.Lock()
+_BUILD_LOCKS: dict[str, threading.Lock] = {}
+
+
+def build_lock_for(out: Path) -> threading.Lock:
+    """Bir derleme çıktısı dizini için süreç-genelinde TEK kilit.
+
+    `CompanyRegistry` ve `compose_and_build()` AYNI kilidi kullanmalı — aksi halde
+    varsayılan şirket (demo/wren-project) ile registry tenant'ları (demo/wren-projects/
+    <slug>) farklı kilitler üzerinden aynı ağaca yazabilir.
+    """
+    key = str(Path(out).resolve())
+    with _LOCKS_GUARD:
+        lock = _BUILD_LOCKS.get(key)
+        if lock is None:
+            lock = _BUILD_LOCKS[key] = threading.Lock()
+        return lock
 
 
 def compose(company: str, base: Path, out: Path) -> dict:
@@ -73,17 +121,30 @@ def compose(company: str, base: Path, out: Path) -> dict:
 
     # Çıktıyı sıfırla (derlenmiş artefakt — kaynak değil). rmtree macOS'ta geçici olarak
     # "Directory not empty" verebiliyor (FS gecikmesi/izleyici) — birkaç kez dene, sonra
-    # son çare ignore_errors (registry per-slug kilidi eş-zamanlı yazımı zaten engeller).
+    # son çare ignore_errors. Eşzamanlı yazımı `build_lock_for(out)` engeller (bkz. modül
+    # başı: eskiden bu satırda "registry kilidi zaten engeller" yazıyordu ama varsayılan
+    # şirket registry'den GEÇMİYORDU).
+    #
+    # `target/` KORUNUR (2 Ağustos 2026): içindeki `mdl.json` yeni build bitene kadar
+    # okuyucular için GEÇERLİ kalır. Eskiden rmtree onu da siliyordu ve tüm compose+build
+    # boyunca manifest YOKTU — o pencerede gelen sorgu ya patlıyor ya da always_filter'ı
+    # sessizce kaybediyordu. `target/` bir GİRDİ değildir (`build_json` yalnız models/
+    # views/cubes/relationships okur), dolayısıyla korunması bayat içerik sızdırmaz;
+    # `build()` sonunda `os.replace` ile atomik olarak değiştirilir.
     if out.exists():
         import time as _t
 
-        for _ in range(3):
-            try:
-                shutil.rmtree(out)
-                break
-            except OSError:
-                _t.sleep(0.1)
-        shutil.rmtree(out, ignore_errors=True)
+        for child in sorted(out.iterdir()):
+            if child.name == "target":
+                continue
+            for _ in range(3):
+                try:
+                    shutil.rmtree(child) if child.is_dir() else child.unlink()
+                    break
+                except OSError:
+                    _t.sleep(0.1)
+            if child.is_dir():
+                shutil.rmtree(child, ignore_errors=True)
     out.mkdir(parents=True, exist_ok=True)
 
     skip = {"company.yml", "pack.yml", "schedules.yaml", "gereksinim.yml",
@@ -214,19 +275,44 @@ def _merge_cube_synonyms(layers: list[tuple[Path, str | None]], out: Path) -> No
 
 
 def build(project_dir: Path) -> Path:
-    """Derlenmiş projeden target/mdl.json üretir (wren build, in-process)."""
-    from wren.context import build_json, save_target
+    """Derlenmiş projeden target/mdl.json üretir (wren build, in-process) — ATOMİK.
 
-    manifest = build_json(Path(project_dir))
-    return save_target(manifest, Path(project_dir))
+    Upstream `wren.context.save_target()` düz `out.write_text(...)` yapar; bu, yazım
+    sürerken okuyan bir thread'e YARIM JSON gösterebilir. `WrenService` manifesti her
+    motor kurulumunda ve her cube derlemesinde yeniden okuduğu için bu pencere gerçekti.
+    Burada aynı işi geçici dosya + `os.replace` ile yapıyoruz: POSIX'te rename atomiktir,
+    dolayısıyla okuyucu ya ESKİ ya YENİ manifesti görür — asla yarım.
+
+    (Upstream forklanmıyor: `build_json` aynen kullanılır, yalnız YAZMA adımı bizim.)
+    """
+    from wren.context import build_json
+
+    project_dir = Path(project_dir)
+    manifest = build_json(project_dir)
+    target_dir = project_dir / "target"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    out = target_dir / "mdl.json"
+    # PID'li geçici ad: aynı dizine yazan iki süreç birbirinin tmp'ini ezmesin.
+    tmp = target_dir / f".mdl.json.tmp.{os.getpid()}"
+    try:
+        tmp.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
+        os.replace(tmp, out)  # atomik (aynı dosya sistemi)
+    finally:
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)
+    return out
 
 
 def compose_and_build(settings) -> dict:
     base = Path(settings.demo_root) if getattr(settings, "demo_root", "") else None
     if base is None or not str(base):
         base = settings.resolved_project_dir().parent  # .../demo
-    info = compose(settings.company, base, settings.resolved_project_dir())
-    build(settings.resolved_project_dir())
+    out = settings.resolved_project_dir()
+    # Paylaşılan per-dizin kilidi (bkz. modül başı): scheduler thread'i ile istek thread'i
+    # aynı ağaca AYNI ANDA giremesin. Registry de AYNI kilidi kullanır.
+    with build_lock_for(out):
+        info = compose(settings.company, base, out)
+        build(out)
     return info
 
 

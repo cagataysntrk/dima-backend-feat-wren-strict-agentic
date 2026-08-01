@@ -66,12 +66,42 @@ class WrenService:
     def mdl_path(self) -> Path:
         return self.project_dir / "target" / "mdl.json"
 
-    def _manifest_b64(self) -> str:
-        if not self.mdl_path.exists():
+    def _mdl_bytes(self) -> bytes:
+        """Derlenmiş MDL'in ham baytları — (mtime_ns, size) anahtarlı önbellekle.
+
+        NEDEN ÖNBELLEK (2 Ağustos 2026): manifest her `_engine()` kurulumunda okunuyor ve
+        `_engine()` `dry_plan()` ile `query()` tarafından AYRI AYRI kuruluyor; ayrıca
+        `cube_sql()` ve `_inject_always_filter()` dosyayı kendi başlarına bir kez daha
+        okuyor. Yani tek bir /ask, 117 KB'lık manifesti ≥2 kez okuyup base64'lüyordu.
+        Faz 1'de manifest ilişki-türevi boyutlarla ~%23 büyüyecek; bu okuma trafiği
+        büyümeden önce sabitlensin.
+
+        Anahtar mtime_ns+size: `build()` artık `os.replace` ile ATOMİK yazdığı için yeni
+        dosyanın inode/mtime'ı değişir → önbellek kendiliğinden düşer, elle invalidasyon
+        gerekmez. Bayat manifest servis etme riski yok.
+        """
+        try:
+            st = self.mdl_path.stat()
+        except FileNotFoundError as exc:
             raise FileNotFoundError(
                 f"MDL derlenmemiş: {self.mdl_path}. Önce `wren context build` çalıştırın."
-            )
-        return base64.b64encode(self.mdl_path.read_bytes()).decode()
+            ) from exc
+        key = (st.st_mtime_ns, st.st_size)
+        cached = getattr(self, "_mdl_cache", None)
+        if cached is not None and cached[0] == key:
+            return cached[1]
+        raw = self.mdl_path.read_bytes()
+        self._mdl_cache = (key, raw)
+        return raw
+
+    def _manifest_b64(self) -> str:
+        cached = getattr(self, "_mdl_b64_cache", None)
+        raw = self._mdl_bytes()
+        if cached is not None and cached[0] is raw:
+            return cached[1]
+        enc = base64.b64encode(raw).decode()
+        self._mdl_b64_cache = (raw, enc)
+        return enc
 
     def _engine(self) -> WrenEngine:
         return WrenEngine(self._manifest_b64(), self.datasource, dict(self.connection_info))
@@ -130,7 +160,7 @@ class WrenService:
             else:
                 self._schema_cache["db_online"] = live_ok
                 return self._schema_cache
-        mdl = json.loads(self.mdl_path.read_text())
+        mdl = json.loads(self._mdl_bytes())
         models = [
             {
                 "name": m.get("name"),
@@ -472,14 +502,18 @@ class WrenService:
     def mdl_version(self) -> str:
         """Derlenmiş MDL'in sürüm damgası (ADR-0010): sözleşmede saklanır — replay'de
         "şema değişti mi?" sorusunun deterministik cevabı."""
-        if not hasattr(self, "_mdl_ver"):
-            import hashlib
+        import hashlib
 
-            try:
-                self._mdl_ver = hashlib.sha256(self.mdl_path.read_bytes()).hexdigest()[:12]
-            except Exception:
-                self._mdl_ver = "unknown"
-        return self._mdl_ver
+        # ÖNBELLEK ARTIK DOSYAYA BAĞLI (2 Ağustos 2026). Eskiden `_mdl_ver` bir kez
+        # hesaplanıp NESNE ÖMRÜ boyunca saklanıyordu; `invalidate_schema_cache()` onu
+        # düşürmüyordu. Sonucu: yeniden compose sonrası Query Contract'lar ESKİ MDL
+        # sürümüyle damgalanıyordu — yani "şema değişti mi?" sorusunun cevabı yanlıştı,
+        # ki sözleşmenin tek varlık sebebi budur (ADR-0010). `_mdl_bytes()` (mtime_ns+size
+        # anahtarlı) yeni dosyada kendiliğinden tazelenir.
+        try:
+            return hashlib.sha256(self._mdl_bytes()).hexdigest()[:12]
+        except Exception:
+            return "unknown"
 
     def cube_sql(self, cube_query: dict[str, Any], order=None, limit: int | None = None) -> str:
         """Yapısal CubeQuery → deterministik SQL (Wren `cube_query_to_sql`, LLM'siz).
@@ -504,7 +538,7 @@ class WrenService:
         if limit is None and emb_limit:
             limit = int(emb_limit)
 
-        base = cube_query_to_sql(json.dumps(cq), self.mdl_path.read_text())
+        base = cube_query_to_sql(json.dumps(cq), self._mdl_bytes().decode())
         base = self._inject_always_filter(base, cq.get("cube"))
         if isinstance(emb_having, dict) and emb_having.get("measure") and emb_having.get("op"):
             _op = {">": ">", "<": "<", ">=": ">=", "<=": "<="}.get(emb_having["op"], ">")
@@ -535,7 +569,7 @@ class WrenService:
 
         from wren_core import cube_query_to_sql
 
-        mdl = self.mdl_path.read_text()
+        mdl = self._mdl_bytes().decode()
         parts = [{"cube": cube_query["cube"], "measures": list(cube_query.get("measures") or [])}]
         parts += [{"cube": p["cube"], "measures": list(p.get("measures") or [])}
                   for p in (cube_query.get("blend") or [])]
@@ -596,10 +630,13 @@ class WrenService:
         cube_query_to_sql'den ÖNCE (base lehçesinde) uygulanır."""
         import json as _json
 
-        try:
-            cubes = {c.get("name"): c for c in json.loads(self.mdl_path.read_text()).get("cubes", [])}
-        except Exception:
-            return sql
+        # Manifest okunamıyorsa SESSİZCE geçme (2 Ağustos 2026). Eskiden buradaki
+        # `except Exception: return sql` bir okuma hatasında filtresiz SQL döndürüyordu —
+        # 20 satır aşağıdaki fail-closed bloğun ÖNLEMEK için yazıldığı şeyin ta kendisi.
+        # Somut senaryo: compose penceresinde manifest yokken gelen sorgu `always_filter`
+        # olmadan çalışıp iptal kayıtlarını toplama sızdırıyordu. (Pencere artık atomik
+        # build ile kapatıldı — bkz. app/compose.py — ama koruma yine de fail-closed olmalı.)
+        cubes = {c.get("name"): c for c in json.loads(self._mdl_bytes()).get("cubes", [])}
         cube = cubes.get(cube_name) or {}
         pred = cube.get("always_filter") or cube.get("alwaysFilter")
         if not pred:

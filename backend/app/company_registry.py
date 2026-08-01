@@ -27,7 +27,9 @@ class CompanyRegistry:
         self._services: dict[str, object] = {}
         self._vqrs: dict[str, object] = {}
         self._lock = threading.Lock()
-        self._build_locks: dict[str, threading.Lock] = {}
+        # NOT: build kilitleri artık BURADA DEĞİL — `app.compose.build_lock_for()` süreç
+        # genelinde per-dizin tek kilit tutar. Registry'ye özel bir kayıt bırakmak, aynı
+        # ağaca registry-dışından (compose_and_build) yazan yolları korumasız bırakıyordu.
 
     def _base(self) -> Path:
         return self.settings.resolved_project_dir().parent  # .../demo
@@ -40,19 +42,24 @@ class CompanyRegistry:
             svc = self._services.get(slug)
             if svc is not None:
                 return svc
-            # Per-slug BUILD kilidi: aynı slug'ı AYNI ANDA birden çok istek compose etmesin
-            # (canlı 2026-07-25: eş-zamanlı compose aynı wren-projects/<slug>'a yazıp rmtree'yi
-            # "Directory not empty" ile bozuyor → kısmi/stale proje, türev view/KPI eksik).
-            build_lock = self._build_locks.setdefault(slug, threading.Lock())
-        from app.compose import build, compose
+        from app.compose import build, build_lock_for, compose
         from app.wren_service import WrenService
+
+        # Per-DİZİN BUILD kilidi: aynı çıktı ağacına AYNI ANDA birden çok thread compose
+        # etmesin (canlı 2026-07-25: eş-zamanlı compose aynı wren-projects/<slug>'a yazıp
+        # rmtree'yi "Directory not empty" ile bozuyor → kısmi/stale proje, türev view/KPI
+        # eksik). 2 Ağustos 2026: kilit registry'ye ÖZEL olmaktan çıkıp `app.compose`'a
+        # taşındı — `compose_and_build()` (main lifespan / materializer scheduler /
+        # measures onayı) registry'den GEÇMİYOR ve kendi kilidi YOKTU, dolayısıyla
+        # varsayılan şirket için koruma fiilen mevcut değildi.
+        out = self._base() / "wren-projects" / slug
+        build_lock = build_lock_for(out)
 
         with build_lock:  # yalnız bir thread compose+build eder; diğerleri bekleyip cache'i alır
             with self._lock:
                 svc = self._services.get(slug)
                 if svc is not None:
                     return svc
-            out = self._base() / "wren-projects" / slug
             compose(slug, self._base(), out)
             build(out)
         wp_path = out / "wren_project.yml"
