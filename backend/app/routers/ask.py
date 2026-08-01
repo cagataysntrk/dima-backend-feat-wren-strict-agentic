@@ -1428,7 +1428,15 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             if not sql:
                 return None
             planned = service.dry_plan(sql)
-            result = service.query(sql, limit=limit)
+            # `execute=False` → "yalnız üret + doğrula" (AskRequest.execute sözleşmesi).
+            # 2 Ağustos 2026: bu bayrak ŞEMADA tanımlıydı ama /ask onu HİÇ OKUMUYORDU —
+            # `body.execute` dosyada sıfır kez geçiyordu. Sonucu yalnız ölü bir API
+            # sözleşmesi değildi: ölçüm harness'i `lab/nl_corpus.py` (ki kendi docstring'i
+            # "DB'ye BAĞLANMAZ — execute=False" diyor) DuckDB olmayan HER şirkette
+            # çalıştırma adımında patlıyor, cevap Discovery'ye düşüyor ve yönlendirme
+            # başarısı %0 ölçülüyordu (atiksan/gulteks/gitas). Yani planın ana ölçüm
+            # aracı, ölçtüğünü sandığı şeyi ölçmüyordu.
+            result = service.query(sql, limit=limit) if body.execute else None
         except Exception:
             _log.warning(f"{source}: derleme/çalıştırma başarısız (best-effort)", exc_info=True)
             return None
@@ -2202,6 +2210,18 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # olduğunda "dürüst ret" (502/500 DEĞİL) ilkesini burada da uygula: ÇALIŞTIRMA hatası
         # da dry_plan hatasıyla AYNI self-healing (`llm.repair`) turuna girer; o da başarısız
         # olursa dürüst ret (asla çıplak 500).
+        if not body.execute:
+            # `execute=False`: SQL üretildi ve dry_plan'dan geçti — çalıştırma YOK.
+            # (Aynı sözleşme yapısal yolda da uygulanır, bkz. `_answer_from_cube_query`.)
+            trace.append("Discovery: dry_plan geçti — execute=False, çalıştırılmadı")
+            if on_step:
+                on_step(list(trace))
+            resp = AskResponse(question=body.question, sql=wren_sql, planned_sql=planned,
+                               result=None, source=_llm_source(
+                                   llm, used_rule=isinstance(llm, RuleBasedSqlGenerator)),
+                               trace=trace)
+            resp.contract_id = _record_contract(None, wren_sql, None, resp.source)
+            return _finish(_attach_viz(resp, None))
         trace.append("Discovery: dry_plan geçti, çalıştırılıyor…")
         if on_step:
             on_step(list(trace))
