@@ -19,6 +19,17 @@ import re
 import time
 from typing import Protocol
 
+from app.logging_setup import get_logger
+
+# Kapsamlı istek/hata logu (1 Ağustos 2026, kullanıcı talebi: "llm mi patladı api mi
+# docker mı front mu net şekilde görelim"). ÖNCEDEN bu modülde HİÇ log YOKTU —
+# `FailoverSqlGenerator` bir sağlayıcı hata verip SONRAKİ başarılı olduğunda ARA hatayı
+# SESSİZCE yutuyordu (yalnız `errs` listesine ekleniyor, hiçbir yere yazılmıyordu) — bu
+# yüzden ör. Anthropic anahtarı geçersizken Gemini'ye sessizce düşülüyor, kullanıcı
+# HİÇBİR ZAMAN Anthropic'in patladığını GÖREMİYORDU. Log-and-rethrow deseni: davranış
+# (hangi exception'ın fırlatıldığı/yutulduğu) HİÇ DEĞİŞMEZ, yalnız her deneme GÖRÜNÜR olur.
+_log = get_logger("llm")
+
 _FENCE = re.compile(r"^```[a-zA-Z]*\n?|\n?```$")
 # Diakritik düzleştirme + KESME İŞARETLERİ silinir: "mart'tan"→"marttan", "2026'da"→"2026da"
 # (çekim ekleri kesmeyle ayrılınca desen eşleşmeleri kaçıyordu — canlı log kanıtı).
@@ -260,21 +271,30 @@ class AnthropicSqlGenerator:
     def _ask(self, system: str, user: str, model: str | None = None) -> str:
         use_model = model or self._model
         _t0 = time.monotonic()
-        message = self._client.messages.create(
-            model=use_model,
-            max_tokens=1024,
-            temperature=0,  # OpenAICompatibleSqlGenerator zaten 0 kullanıyor; burada
-                            # eksikti — Anthropic varsayılanı (1.0) aynı soruya farklı
-                            # SQL üretebiliyordu (canlı 2026-07-31 kök neden analizi).
-            system=system,
-            messages=[{"role": "user", "content": user}],
-        )
+        try:
+            message = self._client.messages.create(
+                model=use_model,
+                max_tokens=1024,
+                temperature=0,  # OpenAICompatibleSqlGenerator zaten 0 kullanıyor; burada
+                                # eksikti — Anthropic varsayılanı (1.0) aynı soruya farklı
+                                # SQL üretebiliyordu (canlı 2026-07-31 kök neden analizi).
+                system=system,
+                messages=[{"role": "user", "content": user}],
+            )
+        except Exception as exc:
+            # Log-and-rethrow: davranış (exception'ın FailoverSqlGenerator'a kadar aynen
+            # ULAŞMASI) HİÇ değişmez — yalnız BURADA, kaybolmadan ÖNCE, GÖRÜNÜR olur.
+            _log.warning("Anthropic API çağrısı başarısız (model=%s, %dms): %s",
+                        use_model, int((time.monotonic() - _t0) * 1000), exc, exc_info=True)
+            raise
+        elapsed_ms = int((time.monotonic() - _t0) * 1000)
         try:  # telemetri — asla yanıtı bozmaz
             _u = getattr(message, "usage", None)
             record_llm_usage(use_model, getattr(_u, "input_tokens", None),
-                             getattr(_u, "output_tokens", None), int((time.monotonic() - _t0) * 1000))
+                             getattr(_u, "output_tokens", None), elapsed_ms)
         except Exception:
             pass
+        _log.info("Anthropic API başarılı (model=%s, %dms)", use_model, elapsed_ms)
         text = "".join(b.text for b in message.content if b.type == "text")
         return _FENCE.sub("", text.strip()).strip()
 
@@ -331,15 +351,23 @@ class OpenAICompatibleSqlGenerator:
             ],
         }
         _t0 = time.monotonic()
-        resp = requests.post(self._url, json=payload, headers=headers, timeout=30)
-        resp.raise_for_status()
-        data = resp.json()
+        try:
+            resp = requests.post(self._url, json=payload, headers=headers, timeout=30)
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as exc:
+            # Log-and-rethrow — bkz. AnthropicSqlGenerator._ask (aynı desen). Groq/Ollama/
+            # Gemini/xAI HEPSİ bu sınıftan geçer; `provider` alanı hangisi olduğunu netleştirir.
+            _log.warning("%s API çağrısı başarısız (model=%s, %dms): %s",
+                        self._provider, use_model, int((time.monotonic() - _t0) * 1000), exc, exc_info=True)
+            raise
+        elapsed_ms = int((time.monotonic() - _t0) * 1000)
         try:  # telemetri — asla yanıtı bozmaz
             _u = data.get("usage") or {}
-            record_llm_usage(use_model, _u.get("prompt_tokens"), _u.get("completion_tokens"),
-                             int((time.monotonic() - _t0) * 1000))
+            record_llm_usage(use_model, _u.get("prompt_tokens"), _u.get("completion_tokens"), elapsed_ms)
         except Exception:
             pass
+        _log.info("%s API başarılı (model=%s, %dms)", self._provider, use_model, elapsed_ms)
         content = data["choices"][0]["message"]["content"]
         return _FENCE.sub("", content.strip()).strip()
 
@@ -771,6 +799,10 @@ class FailoverSqlGenerator:
                 return sql
             except Exception as e:
                 errs.append(f"{getattr(g, '_provider', type(g).__name__)}: {e}")
+        # Alt-seviye logs (_ask/_chat) her TEK denemeyi zaten logladı; burası tüm
+        # zincirin TÜKENDİĞİNİ tek bakışta gösteren ÖZET (ERROR seviyesi — "llm mi
+        # patladı" sorusuna kesin cevap).
+        _log.error("FailoverSqlGenerator.generate_sql: TÜM sağlayıcılar başarısız: %s", " | ".join(errs))
         raise RuntimeError("Tüm LLM sağlayıcıları başarısız: " + " | ".join(errs))
 
     def generate_followup_sql(self, question: str, schema: dict, prev_question: str,
@@ -785,6 +817,7 @@ class FailoverSqlGenerator:
                 return sql
             except Exception as e:
                 errs.append(f"{getattr(g, '_provider', type(g).__name__)}: {e}")
+        _log.error("FailoverSqlGenerator.generate_followup_sql: TÜM sağlayıcılar başarısız: %s", " | ".join(errs))
         raise RuntimeError("Tüm LLM sağlayıcıları başarısız (followup): " + " | ".join(errs))
 
     def repair(self, question: str, schema: dict, bad_sql: str, error: str) -> str:
@@ -796,6 +829,7 @@ class FailoverSqlGenerator:
                 return g.repair(question, schema, bad_sql, error)
             except Exception:
                 continue
+        _log.error("FailoverSqlGenerator.repair: TÜM sağlayıcılar başarısız")
         raise RuntimeError("repair: tüm sağlayıcılar başarısız")
 
     def select_cube(self, question: str, catalog: str) -> str:
@@ -808,6 +842,7 @@ class FailoverSqlGenerator:
                 return out
             except Exception:
                 continue
+        _log.error("FailoverSqlGenerator.select_cube: TÜM sağlayıcılar başarısız")
         raise RuntimeError("select_cube: tüm sağlayıcılar başarısız")
 
     def refine_cube(self, prev_cq_json: str, message: str, catalog: str) -> str:
@@ -820,6 +855,7 @@ class FailoverSqlGenerator:
                 return out
             except Exception:
                 continue
+        _log.error("FailoverSqlGenerator.refine_cube: TÜM sağlayıcılar başarısız")
         raise RuntimeError("refine_cube: tüm sağlayıcılar başarısız")
 
 

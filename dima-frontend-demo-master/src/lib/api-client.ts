@@ -49,8 +49,31 @@ export function getAccessToken() {
   return accessToken;
 }
 
+// --- Konsol logu (1 Ağustos 2026, kullanıcı talebi: "her girdiyi net şekilde loglayalım,
+// llm mi patladı api mi docker mı front mu görelim") -------------------------------------
+// TEK entegrasyon noktası: her `apiClient` çağrısı (askCube/ask/uploadDataset/... hepsi bu
+// dosyadan geçer, saka-standards kuralı) otomatik olarak burada loglanır — çağıran
+// fonksiyonların HİÇBİRİNE ayrı log eklemek GEREKMEZ. Hassas alanlar (parola, base64 dosya
+// içeriği) özetlenir, ham haliyle konsola YAZILMAZ.
+type _Timed = InternalAxiosRequestConfig & { _startedAt?: number; _retry?: boolean };
+
+function _summarizePayload(data: unknown): unknown {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return data;
+  const clone: Record<string, unknown> = { ...(data as Record<string, unknown>) };
+  if (typeof clone.password === "string") clone.password = "***";
+  if (typeof clone.content_b64 === "string") {
+    clone.content_b64 = `<base64 ${(clone.content_b64 as string).length} karakter>`;
+  }
+  return clone;
+}
+
 apiClient.interceptors.request.use((config) => {
   if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
+  (config as _Timed)._startedAt = Date.now();
+  console.log(
+    `[dima:api] → ${(config.method ?? "get").toUpperCase()} ${config.url}`,
+    _summarizePayload(config.data),
+  );
   return config;
 });
 
@@ -74,13 +97,40 @@ async function doRefresh(): Promise<string | null> {
 }
 
 apiClient.interceptors.response.use(
-  (r) => r,
+  (r) => {
+    const started = (r.config as _Timed)._startedAt;
+    const ms = started !== undefined ? Date.now() - started : undefined;
+    console.log(
+      `[dima:api] ← ${r.status} ${(r.config.method ?? "get").toUpperCase()} ${r.config.url}` +
+        (ms !== undefined ? ` (${ms}ms)` : ""),
+    );
+    return r;
+  },
   async (error: AxiosError) => {
-    const original = error.config as
-      | (InternalAxiosRequestConfig & { _retry?: boolean })
-      | undefined;
+    const original = error.config as _Timed | undefined;
     const url = original?.url ?? "";
     const isAuthCall = url.includes("/auth/login") || url.includes("/auth/refresh");
+    const started = original?._startedAt;
+    const ms = started !== undefined ? Date.now() - started : undefined;
+    // AYIRT EDİCİ log: `error.response` YOKSA istek backend'e hiç ULAŞMADI (ağ/CORS/Docker
+    // ayakta değil) — VARSA backend cevap verdi ama hata döndü (LLM/uygulama hatası, detay
+    // `error.response.data.detail`'de). Bu ikisi kullanıcının "llm mi api mi docker mı"
+    // sorusunu konsol tek satırdan ayırt etmesini sağlar.
+    if (!error.response) {
+      console.error(
+        `[dima:api] ✗ AĞ HATASI ${(original?.method ?? "?").toUpperCase()} ${url}` +
+          (ms !== undefined ? ` (${ms}ms)` : "") +
+          " — backend'e ulaşılamadı (sunucu/Docker çalışıyor mu, CORS?)",
+        { code: error.code, message: error.message },
+      );
+    } else {
+      console.error(
+        `[dima:api] ✗ ${error.response.status} ${(original?.method ?? "?").toUpperCase()} ${url}` +
+          (ms !== undefined ? ` (${ms}ms)` : ""),
+        { detail: (error.response.data as { detail?: unknown } | undefined)?.detail,
+          data: error.response.data, message: error.message },
+      );
+    }
     if (error.response?.status === 401 && original && !original._retry && !isAuthCall) {
       original._retry = true;
       refreshing = refreshing ?? doRefresh();
@@ -233,6 +283,7 @@ export async function askCube(body: {
   cube_query: CubeQuery;
   label?: string;
   session_id?: string;
+  thread_id?: string | null;
 }): Promise<AskResponse> {
   const { data } = await apiClient.post<AskResponse>("/cube", body);
   return data;

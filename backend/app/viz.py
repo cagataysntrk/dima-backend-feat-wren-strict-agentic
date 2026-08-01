@@ -143,6 +143,14 @@ def analyze(
             else:
                 vals = [r.get(c) for r in rows if r.get(c) is not None]
                 is_measure = len(vals) > 0 and all(_is_num(v) for v in vals)
+        elif c.lower() in _TIME_NAMES:
+            # Otoriter dim_cols YOK (LLM/Discovery yolu, cube_query=None) — ama kolon adı
+            # bilinen bir zaman/dönem adıysa (ay/yıl/çeyrek/...) DEĞER TİPİNDEN BAĞIMSIZ
+            # boyut say. Küp yolunda bu kolonlar HER ZAMAN metin/tarih string'idir; LLM'in
+            # ürettiği SQL aynı anlamı SAYISAL döndürebilir (ör. EXTRACT(MONTH FROM ...) →
+            # 1..12) — isim eşleşmesi olmadan bu, "tüm değerler sayısal" testiyle yanlışlıkla
+            # İKİNCİL bir ölçü sayılır, zaman ekseni tamamen kaybolur (kind "table"a düşer).
+            is_measure = False
         else:
             vals = [r.get(c) for r in rows if r.get(c) is not None]
             is_measure = len(vals) > 0 and all(_is_num(v) for v in vals)
@@ -285,6 +293,7 @@ def recommend(
       • zaman/kategori + orta-kard additive seri → stacked
       • 2+ kategorik boyut grafiklenemiyor → pivot
       • tek boyut + additive ölçü → partition (pie≤6 / treemap) FE toggle olarak sunulur
+      • tek boyut (kard≥4) + tek ölçü → reference_line (ortalama, aynı bar grafiğinde)
     """
     if not result:
         return None
@@ -325,6 +334,7 @@ def recommend(
         "stackable": False,
         "partition": False,
         "dual_axis": False,
+        "reference_line": None,
         "alternatives": [],
         "table_mode": "table",
     })
@@ -359,7 +369,26 @@ def recommend(
             spec["kind"] = kind = "facet_measure"
             spec["facet_measure"] = {"measures": measures, "x": shared_x, "series": None}
         elif unit_count == 2:
-            spec["dual_axis"] = True  # FE combo birincil bar + ikincil çizgi (kabul edilen üst sınır)
+            # BİLİNÇLİ KARAR (Madde 10 değerlendirmesi, 1 Ağustos 2026): bu bayrak FE'de
+            # OKUNMUYOR (chart.ts yalnız parse eder, hiçbir yerde tüketmez) — FE kendi
+            # `comboSeriesDim` sezgisiyle (series_dim YOKKEN) AYNI durumu BAĞIMSIZ tespit
+            # edip birincil-bar+ikincil-çizgi kombosunu ZATEN doğru üretiyor (chart.ts'teki
+            # "KOMBO" bloğu). Bilgi doğru/zararsız — kaldırmak public viz sözleşmesini
+            # (AskResponse.viz) gereksiz kırar; entegre etmek FE'de zaten çalışan combo
+            # mantığını YENİDEN İCAT etmek olurdu. Bilerek dokunulmuyor.
+            spec["dual_axis"] = True
+    elif (
+        kind in ("bar", "line") and shared_x is not None and series_dim is not None
+        and len(measures) >= 2 and unit_count >= 2 and not has_compare
+    ):
+        # Madde 10 (1 Ağustos 2026): kırılım boyutu (series_dim) VARKEN çok-birim ölçüler
+        # ÖNCEDEN HİÇBİR ayırma mekanizmasından geçmiyordu — combo (chart.ts) VE dual_axis
+        # (yukarıdaki dal) İKİSİ de `series_dim is None` şartıyla sınırlıydı; kırılımlı
+        # 2+-birim durumu (ör. "ay VE makine bazında oee ve duruş dakikası") iki farklı
+        # birimi TEK eksende eziyordu. Var olan facet_measure (ölçüye-göre panel) diline
+        # `series` alanını doldurarak GENİŞLETİLİYOR — yeni bir görsel dil İCAT edilmiyor.
+        spec["kind"] = kind = "facet_measure"
+        spec["facet_measure"] = {"measures": measures, "x": shared_x, "series": series_dim}
 
     # (C) STACKED (kompozisyon): x (zaman/kategori) + renk-serisi + TEK additive ölçü.
     #     Az seri (≤4) → gruplu (doğrudan kıyas okunur); orta seri (5..8) additive → yığılı.
@@ -393,6 +422,25 @@ def recommend(
             card = _card(rows, cat_dims[0])
             spec["partition"] = True
             spec["alternatives"] = ["pie"] if card <= 6 else ["treemap"]
+
+    # (F) REFERANS ÇİZGİSİ (Madde 11 kalan kısım, §E, 1 Ağustos 2026): TEK kategorik boyut +
+    #     TEK ölçü + orta-yüksek kardinalite (kişi/varlık bazlı karşılaştırma — "personelin
+    #     OEE üzerindeki etkisi" gibi) → ölçünün ORTALAMASI yatay referans çizgisi olarak AYNI
+    #     bar grafiğinde. Kim ortalamanın üstünde/altında ANINDA görülür — Cleveland-McGill'i
+    #     bozmaz (bar KALIR), yalnız bir ANNOTASYON ekler. `_additive` şartı YOK (yüzde/oran
+    #     ölçülerin de ortalaması anlamlıdır — additive yalnız TOPLAMA/yığma için gerekli, sade
+    #     ORTALAMA için değil). 2+ ölçü durumu (İKİNCİL ölçü referans) mevcut combo (chart.ts)
+    #     mekanizmasınca ZATEN karşılanıyor — bu yalnız TEK-ölçü boşluğunu kapatır.
+    if kind == "bar" and len(cat_dims) == 1 and len(measures) == 1 and series_dim is None:
+        m0 = measures[0]
+        card = _card(rows, cat_dims[0])
+        if card >= 4:
+            vals = [r.get(m0) for r in rows if _is_num(r.get(m0))]
+            if vals:
+                spec["reference_line"] = {
+                    "kind": "average", "measure": m0,
+                    "value": round(sum(float(v) for v in vals) / len(vals), 4),
+                }
 
     # normalize: lower_set'i (FE ısı paleti yönü) taşı
     if lower_set:

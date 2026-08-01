@@ -66,6 +66,25 @@ class AskRequest(BaseModel):
     prev_sql: str | None = None
     # Sohbet oturumu kimliği (client üretir) — kalıcı logda chat'i yeniden kurmak için.
     session_id: str | None = None
+    # §B (1 Ağustos 2026) — konu/thread kimliği (client üretir): PASS-THROUGH, is_followup
+    # mantığına HİÇ KARIŞMAZ (yalnız etiketleme/echo) — frontend'in kendi thread modelini
+    # kurabilmesi için AskResponse'a aynen geri yansıtılır (bkz. AskResponse.thread_id).
+    thread_id: str | None = None
+    # §B düzeltmesi (1 Ağustos 2026) — "bu karta yanıt ver": thread_id ile AYNI PASS-THROUGH
+    # desen, is_followup/structural/raw mantığına HİÇ KARIŞMAZ. Frontend'in seçtiği ÇAPA
+    # kartın kısa insan-okur etiketi — AskResponse'a aynen geri yansıtılır (bkz.
+    # AskResponse.reply_to_label) ki ReportCard "↳ yanıt: {etiket}" breadcrumb'ını resume
+    # sonrası (kalıcı loga _finish() üstünden düşer) da gösterebilsin.
+    reply_to_label: str | None = None
+    # §B düzeltmesi (1 Ağustos 2026) — çoklu-seçim birleşik bağlam: birincil bağlam HÂLÂ
+    # tek `cube_query`/`prev_sql`'dir (kronolojik en-son seçili kart) — bu alan yalnız
+    # DİĞER seçili kartların kısa, tek-satırlık insan-okur özetleridir (frontend üretir,
+    # ör. "{soru} → {N} satır"). YALNIZ Discovery (ham-SQL) LLM promptuna grounding metni
+    # olarak eklenir (bkz. routers/ask.py::_with_extra_context) — resp.question'ı ASLA
+    # değiştirmez, deterministik cube-routing/Intent-JSON yoluna (cube_router.route/
+    # deterministic_refine/select_cube/refine_cube) HİÇ karışmaz — bilinçli kapsam sınırı
+    # (golden-eval hassasiyeti, tests/test_ask_golden.py).
+    extra_context: list[str] | None = None
 
 
 class CubeRequest(BaseModel):
@@ -75,6 +94,10 @@ class CubeRequest(BaseModel):
     label: str | None = None
     limit: int | None = Field(default=None, ge=1)
     session_id: str | None = None
+    # §B (1 Ağustos 2026) — bkz. AskRequest.thread_id: chip-düzenlemesi HER ZAMAN aktif
+    # thread'e etiketlenir (frontend zaten yalnız aktif thread'in kartlarında chip UI'ı
+    # gösterir).
+    thread_id: str | None = None
     # /verify geri bildirimi: verdict "right"|"wrong"; undo=True önceki doğrulamayı geri alır.
     verdict: str | None = None
     undo: bool = False
@@ -209,6 +232,28 @@ class AskResponse(BaseModel):
     # Görünüm isteği ("grafik ver", "tablo olarak") — veri değil sunum: client mevcut
     # raporun görünümünü değiştirir (chart|table|line|bar|pie|heatmap).
     view_hint: str | None = None
+    # §B (Madde 4+6, 1 Ağustos 2026): bu mesaj YENİ bir konu mu (True) yoksa ÖNCEKİ raporun
+    # takibi mi (False)? `/ask`'in ZATEN hesapladığı `is_followup`/`structural_followup`
+    # sinyalinin TERSİ (YENİ mantık İCAT EDİLMEDİ) — frontend'e taşınır ki ReportCard kart
+    # başına bilgilendirici bir breadcrumb gösterebilsin. `/cube` (chip düzenlemesi) HER
+    # ZAMAN bir devam olduğundan varsayılan False doğru kalır (o uç bunu hiç set etmez).
+    # §B DÜZELTMESİ (1 Ağustos 2026): bu alan İLK sürümde YANLIŞLIKLA frontend'in thread
+    # sınırı (yeni panel mi açılsın) kararına da karıştırılmıştı — kullanıcı bunu reddetti
+    # ("thread mantığı yanlış... küp ya da bağlamdan bağımsız bir yapı olmalıydı"). Artık
+    # SADECE bilgilendirici bir kart-başı etikettir, hiçbir frontend thread-mantığına
+    # KARIŞMAZ (thread sınırları artık YALNIZCA kullanıcının hangi komposer'ı kullandığına
+    # bağlı — bkz. frontend page.tsx AskMutationVars).
+    is_new_topic: bool = False
+    # §B (1 Ağustos 2026) — bkz. AskRequest.thread_id: `body.thread_id`'nin AYNEN echo'su
+    # (_finish()'te set edilir). is_followup/is_new_topic mantığına HİÇ KARIŞMAZ — frontend
+    # bunu görüp KENDİ thread modelini (hangi cevabın hangi thread'e ait olduğunu, sıra-dışı
+    # geri-dönüşlerde bile doğru gruplamak için) kurar.
+    thread_id: str | None = None
+    # §B düzeltmesi (1 Ağustos 2026) — bkz. AskRequest.reply_to_label: body'nin AYNEN
+    # echo'su (_finish()'te set edilir). Doluysa ReportCard normal "◆ yeni konu"/"↳ önceki
+    # raporun devamı" breadcrumb'ının YERİNE öncelikli olarak bunu gösterir. None ise
+    # (genel devam / yeni-thread mesajı) eski breadcrumb değişmeden kalır.
+    reply_to_label: str | None = None
     # VİZ ÖNERİSİ (ADR-0024) — grafik/tablo/pivot KARARI backend'de deterministik üretilir
     # (app/viz.py; Show Me + Cleveland-McGill + çok-birim politikası). VizSpec: {kind, measures,
     # dims, time_col, primary_dim, heat, heat_any, facet, facet_measure, scatter, pivot, series_dim,
@@ -216,6 +261,13 @@ class AskResponse(BaseModel):
     # gelince yerel analyze() yerine bunu render eder; view_hint + kullanıcı toggle üstüne biner.
     # Sonuç yoksa None (FE kendi analyze()'ine düşer). İleride: report={blocks:[...]} çok-grafik.
     viz: dict[str, Any] | None = None
+    # DÜZ-DİL HESAPLAMA AÇIKLAMASI (Madde 12, 1 Ağustos 2026): `drill.py::formula_explanation`
+    # KPI-olmayan cube raporları İÇİN de (yalnız `/ask/drill`e değil, normal `/ask`e) çağrılır.
+    # DİKKAT — `explain` (yukarıda) ile KARIŞTIRILMAMALI: `explain` provenance/güven metadata'sı
+    # (kaynak yolu + confidence), bu alan ise ÖLÇÜNÜN NASIL HESAPLANDIĞININ düz-dil anlatımıdır
+    # (KPI'ların `kpi.explain`iyle AYNI amaç, sıradan cube raporları İÇİN). cube_query yoksa
+    # (LLM/Discovery) None kalır — deterministik formül-açıklama üretilemez, dürüstçe boş bırakılır.
+    calculation_explanation: str | None = None
     # Query Contract (ADR-0010): raporun kanıt kaydı — GET /contracts/{id}/replay ile
     # yeniden oynatılıp "veri mi değişti, tanım mı?" teşhisi yapılabilir.
     contract_id: str | None = None

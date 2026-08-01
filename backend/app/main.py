@@ -27,9 +27,10 @@ from app.wren_service import WrenService
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from app.logging_setup import configure_logging
+    from app.logging_setup import configure_logging, get_logger
 
     configure_logging()  # system/app log (ADR-0020) — sessiz-yutma yerine warning
+    _log = get_logger("main")
     settings = get_settings()
     # Control-plane (auth) DB: lokal SQLite'ı hazırla; Postgres'te Alembic devralır (ADR-0015).
     from control_plane.audit import replay_spool
@@ -58,7 +59,18 @@ async def lifespan(app: FastAPI):
         connection_info=settings.connection_dict(),
         company_slug=settings.company,
     )
+    _log.info("Wren motoru hazır: datasource=%s şirket=%s proje=%s",
+              settings.datasource, settings.company, settings.resolved_project_dir())
     app.state.llm = build_generator(settings)
+    # BAŞLANGIÇTA hangi LLM sağlayıcı(lar)ının GERÇEKTEN aktif olduğunu net biçimde logla
+    # (1 Ağustos 2026, kullanıcı talebi: "llm mi patladı" sorusunun İLK adımı — hangi
+    # sağlayıcı yapılandırılmış OLMALI ki sonraki llm.py loglarıyla karşılaştırılabilsin).
+    _gens = getattr(app.state.llm, "_gens", None)
+    if _gens is not None:
+        _providers = [getattr(g, "_provider", type(g).__name__) for g in _gens]
+        _log.info("LLM sağlayıcı zinciri (failover sırasıyla): %s", _providers or "(BOŞ)")
+    else:
+        _log.info("LLM sağlayıcı: %s", type(app.state.llm).__name__)
     # Çok-şirketli runtime v1: varsayılan-dışı tenant'ların projeleri talep üzerine
     # derlenir (require_company → registry). Materializer değişen tenant'ı düşürür.
     from app.company_registry import CompanyRegistry
@@ -89,15 +101,20 @@ async def lifespan(app: FastAPI):
                 try:
                     run_due(app.state)
                 except Exception:
-                    pass
+                    # ÖNCEDEN `except Exception: pass` — TAMAMEN SESSİZ, ADR-0020'nin kendi
+                    # "sessiz yutma yok" ilkesini ihlal ediyordu (1 Ağustos 2026 log-görünürlük
+                    # denetiminde bulundu). Davranış AYNI (döngü devam eder, zamanlanmış görev
+                    # bir sonraki turda tekrar denenir) — yalnız artık İZ bırakıyor.
+                    _log.warning("scheduler: run_due döngü hatası", exc_info=True)
                 try:
                     # Admin panelden gelen tenant sektör/modül değişikliği ≤60 sn'de
                     # diske iner; aktif şirketse yeniden derlenir (TenantConfig).
                     materialize_and_recompose(app.state, settings)
-                except Exception as exc:
-                    import sys
-
-                    print(f"[materialize] döngü hatası: {exc}", file=sys.stderr)
+                except Exception:
+                    # ÖNCEDEN çıplak `print(..., file=sys.stderr)` — yapılandırılmış
+                    # `dima.*` log ağacının DIŞINDA kalıyordu (log seviyesi/format/timestamp
+                    # yok). Aynı hata, artık aynı yapılandırılmış logger üzerinden.
+                    _log.warning("scheduler: materialize_and_recompose döngü hatası", exc_info=True)
 
         threading.Thread(target=_scheduler_loop, daemon=True).start()
 

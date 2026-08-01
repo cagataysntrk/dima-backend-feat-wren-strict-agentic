@@ -68,6 +68,10 @@ export interface Analysis {
   stackable?: boolean;  // additive + seri → yığma toggle sunulabilir
   partition?: boolean;  // tek boyut + additive → pay grafiği (pie/treemap) sunulabilir
   alternatives?: string[]; // kullanıcı-toggle önerileri (ör. ["pie"]/["treemap"])
+  // §E (1 Ağustos 2026, Madde 11 kalan kısım): tek boyut + tek ölçü (kart≥4) → ölçünün
+  // ORTALAMASI yatay referans çizgisi olarak AYNI bar grafiğinde ("kim ortalamanın
+  // üstünde/altında" — kişi/varlık bazlı karşılaştırma, backend hesaplar).
+  referenceLine?: { kind: string; measure: string; value: number } | null;
 }
 
 // Backend VizSpec → FE Analysis adaptörü (ADR-0024). `data.viz` geldiğinde yerel analyze()
@@ -92,6 +96,7 @@ export function analysisFromViz(v: VizSpec): Analysis {
     stackable: v.stackable ?? false,
     partition: v.partition ?? false,
     alternatives: v.alternatives ?? [],
+    referenceLine: v.reference_line ?? null,
   };
 }
 
@@ -384,35 +389,44 @@ function buildOptionInner(result: QueryResult, a: Analysis, o: BuildOpts): EChar
   // -- FACET-BY-MEASURE (çok-birim small multiples): her ÖLÇÜ kendi paneli + kendi birimi/y --
   //    ADR-0024 §3: ≥3 farklı birim tek eksene binmez; ortak x-ekseninde ölçü başına panel.
   if (o.kind === "facet_measure" && a.facetMeasure) {
-    const { measures: ms, x: xDim } = a.facetMeasure;
+    const { measures: ms, x: xDim, series: seriesDim } = a.facetMeasure;
     const isTime = a.timeCol === xDim;
     const xs = orderCats(distinct(rows, xDim).map(fmtCat));
+    // Madde 10 (1 Ağustos 2026): kırılım boyutu (series) VARSA her panelde TEK seri yerine
+    // seri-değeri başına AYRI bar/line üretilir (ör. "ay VE makine bazında oee ve duruş
+    // dakikası" — önceden series HİÇ okunmuyordu, valOf ilk eşleşen satırı alıp diğer
+    // makineleri SESSİZCE kaybediyordu). series YOKKEN davranış BİREBİR korunur.
+    const seriesVals = seriesDim ? orderCats(distinct(rows, seriesDim).map(String)) : null;
     const N = ms.length;
     const cols = N > 3 ? Math.ceil(N / 2) : N;
     const twoRows = N > cols;
     const w = 100 / cols;
     const colOf = (i: number) => i % cols;
     const rowOf = (i: number) => Math.floor(i / cols);
-    const valOf = (m: string, x: string) => {
-      const r = rows.find((rr) => fmtCat(rr[xDim]) === x);
+    const valOf = (m: string, x: string, sv?: string) => {
+      const r = rows.find((rr) =>
+        fmtCat(rr[xDim]) === x && (sv === undefined || String(rr[seriesDim!]) === sv));
       return r ? num(r[m]) : null;
     };
+    // Legend eklenince (yalnız seriesVals varken) panel başlığı/grid'i biraz aşağı kayar.
+    const topPad = seriesVals ? 1 : 0;
     return {
       ...base,
       tooltip: { trigger: "axis", axisPointer: { type: isTime ? "line" : "shadow" } },
+      ...(seriesVals ? { legend: { type: "scroll" as const, top: 0, textStyle: { color: axis } } } : {}),
       title: ms.map((m, i) => ({
         text: `${m}${unitSuffix(m) ? ` (${unitSuffix(m)})` : ""}`,
         left: `${colOf(i) * w + w / 2}%`,
         textAlign: "center" as const,
-        top: twoRows ? (rowOf(i) === 0 ? "6%" : "53%") : 18,
+        top: twoRows ? (rowOf(i) === 0 ? `${6 + topPad * 5}%` : "53%") : 18 + topPad * 18,
         textStyle: { fontSize: 11, color: axis, fontWeight: "normal" as const },
       })),
       grid: ms.map((_, i) => ({
         left: `${colOf(i) * w + 6}%`,
         width: `${w - 10}%`,
         ...(twoRows
-          ? { top: rowOf(i) === 0 ? "13%" : "60%", height: "30%" }
-          : { top: 44, bottom: 28 }),
+          ? { top: rowOf(i) === 0 ? `${13 + topPad * 5}%` : "60%", height: "30%" }
+          : { top: 44 + topPad * 18, bottom: 28 }),
       })),
       xAxis: ms.map((_, i) => ({
         type: "category" as const,
@@ -427,16 +441,27 @@ function buildOptionInner(result: QueryResult, a: Analysis, o: BuildOpts): EChar
         axisLabel: { color: axis, formatter: (v: number) => fmtAxis(v, m) },
         splitLine: { lineStyle: { color: split } },
       })),
-      series: ms.map((m, i) => ({
-        name: m,
-        type: (isTime ? "line" : "bar") as "line" | "bar",
-        xAxisIndex: i,
-        yAxisIndex: i,
-        data: xs.map((x) => valOf(m, x)),
-        ...(isTime
-          ? { smooth: true, showSymbol: false, areaStyle: { opacity: 0.1 }, lineStyle: { color: PALETTE[i % PALETTE.length] }, itemStyle: { color: PALETTE[i % PALETTE.length] } }
-          : { itemStyle: { color: PALETTE[i % PALETTE.length], borderRadius: [3, 3, 0, 0] as [number, number, number, number] }, barMaxWidth: 34 }),
-      })),
+      series: seriesVals
+        ? ms.flatMap((m, i) => seriesVals.map((sv, si) => ({
+            name: sv,
+            type: (isTime ? "line" : "bar") as "line" | "bar",
+            xAxisIndex: i,
+            yAxisIndex: i,
+            data: xs.map((x) => valOf(m, x, sv)),
+            ...(isTime
+              ? { smooth: true, showSymbol: false, lineStyle: { color: PALETTE[si % PALETTE.length] }, itemStyle: { color: PALETTE[si % PALETTE.length] } }
+              : { itemStyle: { color: PALETTE[si % PALETTE.length], borderRadius: [3, 3, 0, 0] as [number, number, number, number] }, barMaxWidth: 34 }),
+          })))
+        : ms.map((m, i) => ({
+            name: m,
+            type: (isTime ? "line" : "bar") as "line" | "bar",
+            xAxisIndex: i,
+            yAxisIndex: i,
+            data: xs.map((x) => valOf(m, x)),
+            ...(isTime
+              ? { smooth: true, showSymbol: false, areaStyle: { opacity: 0.1 }, lineStyle: { color: PALETTE[i % PALETTE.length] }, itemStyle: { color: PALETTE[i % PALETTE.length] } }
+              : { itemStyle: { color: PALETTE[i % PALETTE.length], borderRadius: [3, 3, 0, 0] as [number, number, number, number] }, barMaxWidth: 34 }),
+          })),
     };
   }
 
@@ -752,6 +777,10 @@ function buildOptionInner(result: QueryResult, a: Analysis, o: BuildOpts): EChar
   const isWeekdays = rawCats.length > 0 && rawCats.every((c) => WEEKDAY_ORDER.includes(c));
   const cats = isWeekdays ? orderCats(rawCats) : rawCats;
   const valByCat = new Map(rows.map((r) => [fmtCat(r[dim]), num(r[measure])]));
+  // §E: referans çizgisi yalnız GÖSTERİLEN ölçü İÇİN doluysa uygulanır (kullanıcı ölçü
+  // seçiciden farklı bir ölçüye geçmiş olabilir — backend'in hesapladığı ortalama o zaman
+  // ALAKASIZ olur, sessizce atlanır).
+  const ref = a.referenceLine?.measure === measure ? a.referenceLine : null;
   return {
     ...base,
     tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, valueFormatter: (v: unknown) => fmtValue(v, measure) },
@@ -775,6 +804,20 @@ function buildOptionInner(result: QueryResult, a: Analysis, o: BuildOpts): EChar
         data: cats.map((c) => valByCat.get(c) ?? null),
         itemStyle: { borderRadius: [5, 5, 0, 0], color: PALETTE[0] },
         barMaxWidth: 46,
+        ...(ref
+          ? {
+              markLine: {
+                symbol: "none" as const,
+                silent: true,
+                lineStyle: { color: axis, type: "dashed" as const },
+                label: {
+                  color: axis,
+                  formatter: () => `Ort. ${fmtValue(ref.value, measure)}`,
+                },
+                data: [{ yAxis: ref.value }],
+              },
+            }
+          : {}),
       },
     ],
   };

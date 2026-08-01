@@ -11,7 +11,7 @@ base_object: parti_zengin  # partiler + operatör demografisi (cinsiyet/yaş/eğ
 synonyms: [fire, ciro, gelir, tutar, satış, kar!, kârımız, karımız, kârlı, karlı,
            kazanç, marj, sapma, ağırlık, kilo, tonaj, parti, müşteri, kumaş, renk, aşama,
            boyama, yıkama, apre, kurutma, reddedil, maliyet,
-           operatör, çalışan, cinsiyet, yaş, eğitim, departman]
+           operatör, çalışan, personel, cinsiyet, yaş, eğitim, departman]
 # NOT: "verim/verimlilik/randıman" OEE cube kimliğidir → parti'de TUTULMAZ (routing
 # ambiguity). Kişi-verimliliği parti'ye operatör/cinsiyet/çalışan + ölçü (ilk_seferde_
 # tamam_yuzde / kg) ile ulaşılır; "randıman" tek başına oee'ye gider (golden korunur).
@@ -115,7 +115,8 @@ dimensions:
     expression: operator
     type: VARCHAR
     label: operatör
-    synonyms: [operatör, çalışan baz, çalışana göre, çalışanlara göre, kişi baz, kişiye göre]
+    synonyms: [operatör, çalışan baz, çalışana göre, çalışanlara göre, kişi baz, kişiye göre,
+               personel, personel baz, personele göre]
   - name: cinsiyet
     expression: operator_cinsiyet
     type: VARCHAR

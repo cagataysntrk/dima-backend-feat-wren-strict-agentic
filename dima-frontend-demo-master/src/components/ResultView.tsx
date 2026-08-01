@@ -211,7 +211,7 @@ export function ResultView({
     // 1) AÇIK kullanıcı/hint tercihi (pano widget'ının kayıtlı view_hint'i dahil) her şeyin ÜSTÜNDE.
     if (hintBase === "table") return "table";
     if (hintBase === "pivot") return pivotable ? "pivot" : "table";
-    if (hintKind) return "chart";  // açık grafik tipi (bar/line/pie/heatmap/facet) → grafik
+    if (hintKind || hintBase === "chart") return "chart";  // açık grafik tipi VEYA jenerik "grafik yap"
     // 2) Backend viz kararı (ADR-0024): pivot → pivot, chartable → GRAFİK, none → tablo. Uzun
     //    zaman-serisinde bile viz "line" dediyse GRAFİK gelir (rapor/pano hep pivot'a DÜŞMEZ).
     if (viz) {
@@ -312,14 +312,27 @@ export function ResultView({
   // belirsizleşir. ECharts'ın gösterdiği `name` BİÇİMLENDİRİLMİŞ olabilir (ör. tarih) —
   // ham satırlarda TAM eşleşen değeri ARARIZ; bulunamazsa (biçim farklıysa) SESSİZCE
   // atlanır (yanlış bir filtre göndermektense hiç göndermemek daha güvenlidir).
+  // Madde 2/3 (1 Ağustos 2026, §C1): `onDataPointClick` YOKSA (cube_query yok — Discovery/LLM
+  // yanıtı) önceden tıklama SESSİZCE hiçbir şey yapmıyordu ("tıklasam da açılmıyor" hissi TAM
+  // BURADAN geliyordu). Diğer erken-çıkışlar (facet/scatter şekli, değer eşleşmedi) BİLİNÇLİ
+  // kalır — yanlış bir filtre göndermektense hiç göndermemek DAHA GÜVENLİDİR, onlara DOKUNULMAZ.
+  const [noDrillHint, setNoDrillHint] = useState(false);
   const handleChartDataPointClick = (info: { seriesIndex: number; dataIndex: number; name: string }) => {
-    if (!onDataPointClick) return;
+    if (!onDataPointClick) {
+      setNoDrillHint(true);
+      return;
+    }
     const dim = effA.primaryDim;
     if (!dim || effA.facet || effA.facetMeasure || effA.scatter || effA.heat || effA.heatAny) return;
     const rawValue = effResult.rows.find((r) => String(r[dim] ?? "") === info.name)?.[dim];
     if (rawValue == null) return;
     onDataPointClick(dim, String(rawValue));
   };
+  useEffect(() => {
+    if (!noDrillHint) return;
+    const t = setTimeout(() => setNoDrillHint(false), 3000);
+    return () => clearTimeout(t);
+  }, [noDrillHint]);
 
   // Grafik yalnız çizilebilir + ölçü varsa hesaplanır (0 satır / ölçüsüz → tablo, çökme yok).
   const lowerSet = useLowerSet();
@@ -503,8 +516,14 @@ export function ResultView({
                     }
                   : undefined
               }
-              onDataPointClick={onDataPointClick ? handleChartDataPointClick : undefined}
+              onDataPointClick={handleChartDataPointClick}
             />
+            {noDrillHint && (
+              <p className="mt-1 font-mono text-[11px] text-neutral-400">
+                bu sonuç LLM tarafından üretildi, kırılım için sonuç yok — &quot;+ sql
+                göster&quot;e bakabilirsin
+              </p>
+            )}
           </div>
         ) : (
           <ResultTable result={result} />

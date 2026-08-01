@@ -699,11 +699,16 @@ def upload_dataset(request: Request, body: UploadRequest) -> UploadResponse:
     from app import dataset
 
     t0 = time.monotonic()
+    _log.info("İSTEK /ask/upload: filename=%r session=%s boyut=%dB",
+              body.filename, body.session_id, len(body.content_b64 or ""))
     try:
         raw = base64.b64decode(body.content_b64, validate=True)
     except Exception:
+        _log.warning("/ask/upload: geçersiz base64 (filename=%r)", body.filename, exc_info=True)
         raise HTTPException(status_code=400, detail="Geçersiz base64 içerik")
     if len(raw) > _MAX_UPLOAD:
+        _log.warning("/ask/upload: dosya çok büyük (%dB > %dB, filename=%r)",
+                    len(raw), _MAX_UPLOAD, body.filename)
         raise HTTPException(status_code=413,
                             detail=f"Dosya çok büyük (>{_MAX_UPLOAD // 1024 // 1024} MB)")
     safe = re.sub(r"[^A-Za-z0-9_-]", "_", body.session_id)[:80]
@@ -713,6 +718,10 @@ def upload_dataset(request: Request, body: UploadRequest) -> UploadResponse:
         mdl = dataset.build_mdl(info, cube_name="veri", label=label)
         svc = dataset.build_service(_UPLOAD_DIR / safe, mdl)
     except Exception as exc:  # noqa: BLE001 — kullanıcıya dürüst hata, sunucuyu düşürme
+        # ÖNCEDEN bu blok hiç loglamıyordu — dosya işleme (DuckDB ingest/MDL/servis kurulumu)
+        # patladığında kullanıcı yalnız "Dosya işlenemedi" görürdü, sunucu tarafında İZ YOKTU.
+        _log.warning("/ask/upload: dosya işlenemedi (filename=%r): %s", body.filename, exc,
+                    exc_info=True)
         raise HTTPException(status_code=400, detail=f"Dosya işlenemedi: {str(exc)[:200]}")
     _dataset_store(request)[body.session_id] = {
         "service": svc, "info": info, "filename": body.filename}
@@ -720,6 +729,9 @@ def upload_dataset(request: Request, body: UploadRequest) -> UploadResponse:
     _log_upload(body.session_id, body.filename, label, info["row_count"],
                 len(info["columns"]), int((time.monotonic() - t0) * 1000),
                 principal=getattr(request.state, "principal", None))
+    _log.info("CEVAP /ask/upload: filename=%r satır=%s sütun=%s süre=%dms",
+              body.filename, info["row_count"], len(info["columns"]),
+              int((time.monotonic() - t0) * 1000))
     dims = [c for c in info["columns"] if c["role"] == "dimension"]
     meas = [c for c in info["columns"] if c["role"] == "measure"]
     sug: list[Suggestion] = []
@@ -743,6 +755,8 @@ def cube(request: Request, body: CubeRequest) -> AskResponse:
     import time
 
     t0 = time.monotonic()
+    _log.info("İSTEK /cube: label=%r session=%s thread=%s cube=%s",
+              body.label, body.session_id, body.thread_id, (body.cube_query or {}).get("cube"))
     settings = get_settings()
     service = _service_for(request, body.session_id)  # yüklenen dataset varsa onu sorgular
     schema = service.schema()
@@ -753,6 +767,7 @@ def cube(request: Request, body: CubeRequest) -> AskResponse:
         body.cube_query["cube"] = cube_router.resolve_cube_name(body.cube_query["cube"], schema)
     cq = cube_router.parse_cube_query(json.dumps(body.cube_query, ensure_ascii=False), index)
     if not cq:
+        _log.warning("/cube: geçersiz cube sorgusu, body=%r", body.cube_query)
         raise HTTPException(status_code=400, detail="Geçersiz cube sorgusu (chip düzenlemesi).")
 
     limit = min(body.limit or settings.max_result_rows, settings.max_result_rows)
@@ -796,6 +811,7 @@ def cube(request: Request, body: CubeRequest) -> AskResponse:
         source="cube",
         cube_query=cq,
         trace=[trace_msg],
+        thread_id=body.thread_id,
     )
     # VİZ ÖNERİSİ (ADR-0024): chip düzenlemesi de grafik/tablo/pivot kararı taşır.
     try:
@@ -857,6 +873,9 @@ def cube(request: Request, body: CubeRequest) -> AskResponse:
     audit.record(principal, "query", nl_question=resp.question, generated_sql=sql,
                  rows_returned=result.get("row_count"), contract_id=resp.contract_id,
                  ip=request.client.host if request.client else None)
+    _log.info("CEVAP /cube: label=%r thread=%s satır=%s süre=%dms",
+              resp.question, resp.thread_id, result.get("row_count"),
+              int((time.monotonic() - t0) * 1000))
     return resp
 
 
@@ -1050,6 +1069,20 @@ def recover_stale_ask_jobs() -> int:
         return 0
 
 
+def _with_extra_context(question: str, extra_context: list[str] | None) -> str:
+    """§B düzeltmesi (1 Ağustos 2026) — çoklu-seçim birleşik bağlam: kullanıcının thread
+    içinde seçtiği DİĞER kartların kısa özetlerini YALNIZ Discovery'ye giden LLM prompt
+    metnine ekler (grounding). Çağıranlar (`resp.question`, `vqr.few_shot_block`,
+    `vqr.store`) HİÇBİRİ bunu görmez — yalnız `llm.generate_sql`/`llm.generate_followup_sql`'e
+    VERİLEN argüman değişir; ham `body.question` her yerde OLDUĞU GİBİ kalır. Deterministik
+    cube-routing/Intent-JSON yoluna (route/deterministic_refine/select_cube/refine_cube)
+    BİLEREK karışmaz (golden-eval hassasiyeti). Boşsa/None ise no-op."""
+    if not extra_context:
+        return question
+    grounding = "\n".join(f"- {c}" for c in extra_context)
+    return f"Ek bağlam (kullanıcının seçtiği ilgili önceki sorular/sonuçlar):\n{grounding}\n\nSoru: {question}"
+
+
 def _queue_discovery_job(request: Request, body: AskRequest, principal, runner) -> AskResponse:
     """Faz 4.1 (dış yol haritası 0.1'in BullMQ/Redis'siz karşılığı) — Discovery'yi arka-plan
     işine kuyruklar (yalnız `ask_async_discovery` bayrağı açıkken çağrılır). `CloneJob` ile
@@ -1209,6 +1242,13 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     is_followup = structural_followup or raw_followup
     prev_question = body.history[-1] if body.history else ""
 
+    # İSTEK GELDİ (1 Ağustos 2026, kullanıcı talebi: "her girdiyi net şekilde loglayalım").
+    # Kapsamlı görünürlük için TEK giriş noktası — soru+bağlam sinyalleri (LLM'e mi düşecek,
+    # yapısal takip mi, hangi thread) `_finish()`'teki "cevap gönderildi" logunun eşi.
+    _log.info("İSTEK /ask: q=%r session=%s thread=%s followup=%s(yapısal=%s ham=%s)",
+              body.question, body.session_id, body.thread_id, is_followup,
+              structural_followup, raw_followup)
+
     def _finish(resp: AskResponse) -> AskResponse:
         # EVRENSEL ZENGİNLEŞTİRME (canlı bulgu, 31 Temmuz 2026): bu üçü ÖNCEDEN yalnız
         # `/cube` (chip düzenlemesi) endpoint'inin kendi kapanışında çağrılıyordu — `/ask`'in
@@ -1221,6 +1261,11 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # gibi yanıtları BOZMAZ. Sıra ÖNEMLİ: recommendations interpretation'ın signals'ına
         # bağımlı, ikisi de explain'den ÖNCE (explain bunlara bağımlı değil, sıra onunla
         # ilgili değil ama /cube'daki köklü sırayla TUTARLI tutuldu).
+        # §B (1 Ağustos 2026): mevcut is_followup sinyalinin TERSİ — yeni mantık YOK.
+        resp.is_new_topic = not is_followup
+        resp.thread_id = body.thread_id
+        # §B düzeltmesi (1 Ağustos 2026) — bkz. AskRequest.reply_to_label: salt echo.
+        resp.reply_to_label = body.reply_to_label
         _maybe_interpret(request, resp)
         _attach_next_steps(request, resp)
         _attach_recommendations(request, resp)
@@ -1250,6 +1295,15 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     rows_returned=resp.result.row_count if resp.result else None,
                     contract_id=resp.contract_id,
                     ip=request.client.host if request.client else None)
+        # CEVAP GÖNDERİLDİ — `_finish()` TEK choke-point olduğu için (bkz. fonksiyon docstring'i)
+        # bu log HER `/ask` yanıtını (meta/VQR/yapısal/Discovery/dürüst-ret hepsi) kapsar.
+        # `note` doluysa (dürüst ret / netleştirme chip'i) kısaca eklenir — "LLM mi patladı"
+        # sorusunu `source=None` + not metni ile ayırt etmeye yeter.
+        _log.info("CEVAP /ask: q=%r source=%s thread=%s yeni_konu=%s satır=%s süre=%dms%s",
+                  resp.question, resp.source, resp.thread_id, resp.is_new_topic,
+                  resp.result.row_count if resp.result else None,
+                  int((time.monotonic() - t0) * 1000),
+                  f" not={resp.note!r}" if resp.note else "")
         return resp
 
     def _attach_viz(resp: AskResponse, result: dict | None, cq: dict | None = None) -> AskResponse:
@@ -1272,6 +1326,16 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             if cube_meta:
                 units = cube_meta.get("units") or {}
                 lower_set = cube_meta.get("lower_is_better") or []
+                # Madde 12 (1 Ağustos 2026): KPI-olmayan cube raporları için de düz-dil
+                # hesaplama açıklaması — drill.py'nin ZATEN VAR OLAN saf fonksiyonu
+                # (önceden yalnız /ask/drill'e bağlıydı) normal /ask cevabına taşınır.
+                try:
+                    from app.drill import formula_explanation
+
+                    resp.calculation_explanation = formula_explanation(cq, cube_meta)
+                except Exception:
+                    _log.warning("hesaplama açıklaması üretilemedi (best-effort)",
+                                exc_info=True)
         try:
             resp.viz = viz.recommend(result, units=units, lower_set=lower_set, cube_query=cq)
         except Exception:
@@ -1441,8 +1505,14 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
 
     # 2) VQR: yalnız BAĞIMSIZ (takip olmayan) sorularda kontrol edilir — bir takip mesajı
     # ("aylara göre") bağlamsız haliyle BAŞKA bir konuşmadan gelen alakasız bir VQR kaydını
-    # yanlışlıkla eşleştirip tekrar oynatabilirdi.
-    if not is_followup:
+    # yanlışlıkla eşleştirip tekrar oynatabilirdi. İSTİSNA (Madde 9, 1 Ağustos 2026): kullanıcı
+    # sohbet İÇİNDE bir ÖNCEKİ soruyu (normalize) BİREBİR tekrar ediyorsa bu "takip" DEĞİL,
+    # "aynısını tekrar ver" isteğidir — `prev_sql`/`cube_query` varlığı yüzünden is_followup
+    # True olsa bile VQR ÖNCE denenmeli. VQR'da kayıt YOKSA (miss) hiçbir early-return
+    # OLMADAN mevcut takip mantığına sessizce düşülür — gerçek bir takip sorusu ("aylara
+    # göre kır") ETKİLENMEZ (metin farklı olduğundan is_literal_repeat zaten False kalır).
+    is_literal_repeat = bool(body.history) and q_norm == cube_router._norm(body.history[-1])
+    if not is_followup or is_literal_repeat:
         cached = vqr.near_exact(body.question) if vqr else None
         cached_payload = cached.get("cube_query") if cached else None
         cached_sql = (cached_payload or {}).get("wren_sql") if cached_payload else None
@@ -2026,7 +2096,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         if raw_followup:
             try:
                 wren_sql = llm.generate_followup_sql(
-                    body.question, schema, prev_question, prev_sql, body.history)
+                    _with_extra_context(body.question, body.extra_context),
+                    schema, prev_question, prev_sql, body.history)
             except Exception as exc:
                 # Dürüst ret — NoLlmGenerator'ın vaat ettiği ("routers/ask.py bunu dürüst
                 # redde çevirir") ama strict-agentic göçünde 502'ye dönüşen davranış düzeltildi.
@@ -2044,7 +2115,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 prompt_schema = {**schema, "golden_sql": "\n\n".join(
                     s for s in (schema.get("golden_sql"), few_shot) if s)}
             try:
-                wren_sql = llm.generate_sql(body.question, prompt_schema)
+                wren_sql = llm.generate_sql(
+                    _with_extra_context(body.question, body.extra_context), prompt_schema)
             except Exception as exc:
                 _log.warning("Discovery SQL üretimi başarısız", exc_info=True)
                 return _honest_refusal(

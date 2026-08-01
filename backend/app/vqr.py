@@ -40,9 +40,27 @@ _emb_tried = False
 
 
 def _embedder():
-    """fastembed e5-small (lazy). Kurulu/indirilebilir değilse None → sözlüksel fallback."""
+    """fastembed e5-small (lazy). Kurulu/indirilebilir değilse None → sözlüksel fallback.
+
+    Canlı bulgu (1 Ağustos 2026): ONNX model dosyası ~1GB+ ve HF Hub'dan kimliksiz
+    (HF_TOKEN'sız) indirme YAVAŞ/oranlanmış olabiliyor (bkz. fastembed'in kendi uyarısı).
+    ÖNCEDEN bu fonksiyon `with _emb_lock:` (BLOKLAYAN kilit) kullanıyordu — `main.py`'nin
+    arka-plan ısıtma thread'i (`_warm(_embedder)`) indirme SÜRERKEN gerçek bir kullanıcı
+    isteği de `_embedder()`'ı çağırırsa, o istek thread'i indirme BİTENE KADAR (dakikalarca)
+    SONSUZ BEKLİYORDU — hiçbir zaman timeout/hata OLMADAN (`requests`/`fastembed`'in kendi
+    ağ çağrılarında bir üst-sınır yok). Kullanıcıya "LLM'e istek hiç gitmiyor, internal
+    server hatası" olarak görünüyordu (aslında istek LLM'e ULAŞAMADAN, VQR embedder'da
+    asılı kalıyordu). Düzeltme: kilit NON-BLOCKING denenir — biri ZATEN indiriyorsa
+    (ör. arka-plan ısıtması), bu çağrı BEKLEMEDEN `None` döner (mevcut sözlüksel fallback
+    YOLU zaten buna göre tasarlı, bkz. `_scores()`/`near_exact()`) — model hazır olunca
+    (`_emb_tried` True + `_emb_model` set) sonraki TÜM çağrılar hızlı yoldan (kilitsiz)
+    döner. Tek indiren thread garantisi KORUNUR (yalnız kilidi TUTAN thread indirir)."""
     global _emb_model, _emb_tried
-    with _emb_lock:
+    if _emb_tried:
+        return _emb_model
+    if not _emb_lock.acquire(blocking=False):
+        return None  # başka bir thread (ör. başlangıç ısıtması) zaten indiriyor — BEKLEME
+    try:
         if _emb_tried:
             return _emb_model
         _emb_tried = True
@@ -55,6 +73,8 @@ def _embedder():
         except Exception:
             _emb_model = None
         return _emb_model
+    finally:
+        _emb_lock.release()
 
 
 def _tokens(text: str) -> set[str]:

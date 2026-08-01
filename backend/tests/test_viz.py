@@ -89,6 +89,34 @@ def test_three_units_facet_measure():
     assert s["facet_measure"]["x"] == "ay"
 
 
+def test_two_units_with_series_dim_becomes_facet_measure():
+    # regresyon (Madde 10, 1 Ağustos 2026): kırılım boyutu (makine) VARKEN 2-birimli
+    # ölçüler (% ve dakika) önceden hiçbir ayırma mekanizmasından geçmiyordu (ne combo
+    # ne dual_axis ne facet_measure — hepsi series_dim YOKKEN çalışıyordu) → tek eksende
+    # eziliyordu. Artık facet_measure'a (series alanı dolu) düşmeli.
+    rows = [{"ay": ay, "makine": mk, "oee_yuzde": 70.0, "durus_dk": 30.0}
+            for ay in ("2026-01", "2026-02") for mk in ("M1", "M2", "M3")]
+    s = rec(["ay", "makine", "oee_yuzde", "durus_dk"], rows,
+            units={"oee_yuzde": "%", "durus_dk": "dk"})
+    assert s["kind"] == "facet_measure"
+    assert s["unit_count"] == 2
+    assert s["facet_measure"] == {
+        "measures": ["oee_yuzde", "durus_dk"], "x": "ay", "series": "makine",
+    }
+    assert s["dual_axis"] is False
+
+
+def test_two_units_no_series_dim_stays_dual_axis():
+    # kırılımsız 2-birim durumu (mevcut combo) DOKUNULMADAN kalır — regresyon yok.
+    s = rec(["ay", "ciro", "oee"],
+            [{"ay": "2026-01", "ciro": 10, "oee": 80},
+             {"ay": "2026-02", "ciro": 20, "oee": 82}],
+            units={"ciro": "₺", "oee": "%"})
+    assert s["kind"] == "line"
+    assert s["dual_axis"] is True
+    assert s["facet_measure"] is None
+
+
 # --- yeni mark'lar ----------------------------------------------------------
 
 def test_scatter_two_measures_identity_dim():
@@ -139,6 +167,32 @@ def test_pivot_two_categories_multi_measure():
     assert s["kind"] == "pivot"
     assert s["pivot"]["measures"] == ["ciro", "adet"]
     assert s["table_mode"] == "pivot"
+
+
+def test_reference_line_single_dim_measure_average():
+    # §E (Madde 11 kalan kısım, 1 Ağustos 2026): kişi/varlık bazlı tek-ölçü bar grafiğinde
+    # ortalama referans çizgisi — "kim ortalamanın üstünde/altında" ANINDA görülür.
+    rows = [{"operator": f"P{i}", "ilk_seferde_tamam_yuzde": 70.0 + i} for i in range(6)]
+    s = rec(["operator", "ilk_seferde_tamam_yuzde"], rows, units={"ilk_seferde_tamam_yuzde": "%"})
+    assert s["kind"] == "bar"
+    assert s["reference_line"] == {
+        "kind": "average", "measure": "ilk_seferde_tamam_yuzde", "value": 72.5,
+    }
+
+
+def test_reference_line_requires_min_cardinality():
+    # 3 kategori altı → referans çizgisi anlamsız (trivial), eklenmez.
+    rows = [{"operator": f"P{i}", "ilk_seferde_tamam_yuzde": 70.0 + i} for i in range(3)]
+    s = rec(["operator", "ilk_seferde_tamam_yuzde"], rows, units={"ilk_seferde_tamam_yuzde": "%"})
+    assert s["reference_line"] is None
+
+
+def test_reference_line_coexists_with_partition():
+    # additive ölçüde HEM partition (pie önerisi) HEM reference_line aynı anda dolabilir.
+    rows = [{"operator": f"P{i}", "toplam_agirlik_kg": 100.0 + i * 10} for i in range(6)]
+    s = rec(["operator", "toplam_agirlik_kg"], rows, units={"toplam_agirlik_kg": "kg"})
+    assert s["partition"] is True
+    assert s["reference_line"]["value"] == 125.0
 
 
 def test_partition_single_dim_additive_pie_alt():
@@ -197,6 +251,20 @@ def test_yoy_time_series_stays_line():
     assert s["kind"] == "line"
     assert s["time_col"] == "ay"
     assert s["facet_measure"] is None
+
+
+def test_llm_no_cube_query_numeric_month_stays_time_col():
+    # regresyon (Madde 13, 1 Ağustos 2026): cube_query=None (LLM/Discovery yolu) iken
+    # LLM'in ürettiği SQL "ay"ı SAYISAL (EXTRACT(MONTH...) gibi) döndürürse önceden İKİNCİL
+    # bir ÖLÇÜ sayılıyordu (tüm değerler sayısal testi) → time_col hiç bulunamıyor, kind
+    # "table"a düşüyordu → kategori ekseni/zoom hiç oluşmuyordu. İsim eşleşmesi (_TIME_NAMES)
+    # DEĞER TİPİNDEN bağımsız uygulanmalı.
+    rows = [{"ay": i, "ciro": 100.0 + i * 10} for i in range(1, 6)]
+    s = rec(["ay", "ciro"], rows, units={"ciro": "₺"}, cube_query=None)
+    assert s["dims"] == ["ay"]
+    assert s["measures"] == ["ciro"]
+    assert s["time_col"] == "ay"
+    assert s["kind"] == "line"
 
 
 def test_numeric_dimension_authoritative():

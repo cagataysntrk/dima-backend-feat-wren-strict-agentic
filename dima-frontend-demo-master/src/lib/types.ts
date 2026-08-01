@@ -64,6 +64,21 @@ export interface AskResponse {
   suggestions?: { label: string; query: string }[];
   // Görünüm isteği ("grafik ver") — client mevcut raporun görünümünü değiştirir.
   view_hint?: string | null;
+  // §B (Madde 4+6, 1 Ağustos 2026): bu mesaj YENİ bir konu mu (True) yoksa önceki raporun
+  // takibi mi (False) — backend'in zaten hesapladığı is_followup'ın tersi. SALT
+  // BİLGİLENDİRİCİ bir kart-başı breadcrumb'tır (ReportCard). §B DÜZELTMESİ (1 Ağustos
+  // 2026): İLK sürümde bu alan YANLIŞLIKLA thread sınırı (yeni panel mi açılsın) kararına
+  // da karıştırılmıştı — kullanıcı reddetti. ARTIK hiçbir thread-mantığına KARIŞMAZ; thread
+  // sınırları YALNIZCA kullanıcının hangi komposer'ı kullandığına bağlıdır (bkz. page.tsx
+  // AskMutationVars). `/cube` (chip düzenlemesi) hiç set etmez → varsayılan false doğru kalır.
+  is_new_topic?: boolean;
+  // §B (1 Ağustos 2026) — body.thread_id'nin AYNEN echo'su (bkz. AskRequest.thread_id).
+  // Frontend bunu görüp KENDİ thread modelini (lib/threads.ts::groupIntoThreads) kurar.
+  thread_id?: string | null;
+  // §B düzeltmesi (1 Ağustos 2026) — bkz. backend AskResponse.reply_to_label: body'nin
+  // aynen echo'su. Doluysa ReportCard bunu "◆ yeni konu"/"↳ önceki raporun devamı"
+  // breadcrumb'ının YERİNE öncelikli gösterir ("↳ yanıt: {etiket}").
+  reply_to_label?: string | null;
   // Query Contract (ADR-0010): raporun kanıt kaydı kimliği
   contract_id?: string | null;
   // Cross-cube KPI kartı (CCC / likidite oranları): tek skaler + bileşenleri (DSO/DIO/DPO,
@@ -87,6 +102,10 @@ export interface AskResponse {
   // SİLMEZ (SourceBadge/trace render'ı kırılmaz — kademeli geçiş). Rapor üretmeyen yanıtlarda
   // (netleştirme/chip) null.
   explain?: Explain | null;
+  // Madde 12 (1 Ağustos 2026) — düz-dil hesaplama açıklaması (KPI-olmayan cube raporları için;
+  // KpiCard'ın `card.explain`iyle AYNI amaç). `explain` (yukarıda) ile KARIŞTIRILMAMALI — o
+  // provenance/güven taşır, bu alan ÖLÇÜNÜN NASIL HESAPLANDIĞINI anlatır. cube_query yoksa null.
+  calculation_explanation?: string | null;
   // Faz 4.1 (31 Temmuz 2026) — yalnız backend'de `ask_async_discovery` bayrağı açıkken dolar:
   // Discovery arka-plan işine kuyruklandığında (result/source HENÜZ yok). `api-client.ts::ask()`
   // bunu GÖRÜNMEZ şekilde poll'lar (mutation.isPending zaten doğru davranır) — normal şartlarda
@@ -132,6 +151,7 @@ export interface VizSpec {
   stackable: boolean;
   partition: boolean;
   alternatives: string[]; // kullanıcı-toggle önerileri (ör. ["pie"] / ["treemap"])
+  reference_line: { kind: string; measure: string; value: number } | null;
   table_mode: "table" | "pivot";
   lower_set?: string[];
 }
@@ -274,6 +294,17 @@ export interface AskRequest {
   prev_sql?: string | null;
   // Sohbet oturumu kimliği — kalıcı logda chat'i gruplamak için.
   session_id?: string;
+  // §B (1 Ağustos 2026) — konu/thread kimliği (client üretir, backend salt echo eder,
+  // is_followup mantığına karışmaz). bkz. lib/threads.ts.
+  thread_id?: string | null;
+  // §B düzeltmesi (1 Ağustos 2026) — "bu karta yanıt ver": backend'e AYNEN echo edilmesi
+  // için gönderilen, çapa kartın kısa insan-okur etiketi (bkz. lib/threads.ts::replyAnchorLabel).
+  reply_to_label?: string | null;
+  // §B düzeltmesi (1 Ağustos 2026) — çoklu-seçim birleşik bağlam: DİĞER seçili kartların
+  // kısa özetleri (ör. "{soru} → {N} satır"). Yalnız Discovery LLM promptuna grounding
+  // metni olarak eklenir — deterministik cube-routing'e karışmaz (bkz. backend
+  // AskRequest.extra_context).
+  extra_context?: string[] | null;
 }
 
 // Discovery→Promote (Faz 2d) — Discovery (ham-SQL LLM) yolunun ürettiği bir cevabın

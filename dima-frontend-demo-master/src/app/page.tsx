@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { apiErrorMessage, ask, askCube, getConversation, uploadDataset } from "@/lib/api-client";
 import { AnalysisCanvas } from "@/components/AnalysisCanvas";
 import { ChatPanel } from "@/components/ChatPanel";
@@ -21,6 +21,7 @@ import { SettingsDrawer } from "@/components/SettingsDrawer";
 import { useHistory } from "@/stores/history";
 import { useFeature } from "@/lib/useFeature";
 import { usePermission } from "@/lib/usePermission";
+import { groupIntoThreads, mintThreadId, replyAnchorLabel } from "@/lib/threads";
 import type { AskResponse } from "@/lib/types";
 
 type Drawer = "settings" | "help" | "notifications" | "history" | "dashboards" | null;
@@ -49,7 +50,10 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 export default function Home() {
-  const [active, setActive] = useState<AskResponse | null>(null);
+  // §B (1 Ağustos 2026) — konu/thread modeli: eski tek-rapor `active` state'i YERİNE
+  // `activeThreadId` — sağ panel artık TEK bir AskResponse değil, aktif thread'in TÜM
+  // item dizisini (bkz. `activeThread` altta) gösterir.
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   // Takip bağlamı: bir sonraki mesajla gönderilecek CubeQuery. Rapor VE clarify notu (kısmi
   // cube_query) bunu günceller — "bu ay" chip'i doğru sorguya uygulansın (ADR-0007 Faz C).
   const [contextCq, setContextCq] = useState<AskResponse["cube_query"]>(null);
@@ -71,17 +75,33 @@ export default function Home() {
   const [startedLatch, setStarted] = useState(false);
   const [sessionId, setSessionId] = useState(makeSessionId);
   const qc = useQueryClient();
-  // "✓ doğru" etiketi: raporu üreten SON GERÇEK soru (chip düzenlemeleri soru değildir —
-  // "chip: kova → month" VQR'a yazılamaz; öğrenme orijinal soru metniyle anlamlı).
-  const [verifyLabel, setVerifyLabel] = useState<string | null>(null);
   const items = useHistory((s) => s.items);
   const addHistory = useHistory((s) => s.add);
   const loadHistory = useHistory((s) => s.load);
   const clearHistory = useHistory((s) => s.clear);
+  // §B Adım 1 — `items` store'da YENİ→ESKİ (bkz. stores/history.ts); groupIntoThreads
+  // KRONOLOJİK (eski→yeni) girdi bekler (ChatPanel'in bugün zaten yaptığı AYNI çevirme).
+  const threads = useMemo(() => groupIntoThreads([...items].reverse()), [items]);
+  const activeThread = useMemo(
+    () => threads.find((t) => t.id === activeThreadId) ?? null,
+    [threads, activeThreadId],
+  );
+  // Aktif thread'in EN SON raporlanabilir (result/kpi taşıyan) item'ı — "tuval'e ekrandaki
+  // mevcut raporu ekle" butonunun hedefi (eski tek-rapor `active`'in yerini alır).
+  const latestReportable = useMemo(() => {
+    if (!activeThread) return null;
+    for (let i = activeThread.items.length - 1; i >= 0; i--) {
+      const it = activeThread.items[i];
+      if (it.result || it.kpi) return it;
+    }
+    return null;
+  }, [activeThread]);
 
   // Faz 4.11 — Analiz Tuvali (dış yol haritası 2.6+2.10): EKLEYİCİ, opsiyonel ikinci görünüm.
-  // `active` (tek-rapor akışı) HİÇ değişmiyor; tuval modu açıkken ÜSTÜNE, her yeni gerçek
+  // Thread akışı (activeThread) HİÇ değişmiyor; tuval modu açıkken ÜSTÜNE, her yeni gerçek
   // rapor (soru/chip/sonraki-adım/öneri) `canvasItems`'a da eklenir — üsttekini SİLMEZ.
+  // §B'nin thread'i "AYNI konunun akışı", tuval ise "FARKLI konuları birleştirme" içindir
+  // (kullanıcının kendi ayrımı) — ikisi BAĞIMSIZ, bu dosyada birbirine dokunmaz.
   const [canvasMode, setCanvasMode] = useState(false);
   const [canvasItems, setCanvasItems] = useState<AskResponse[]>([]);
   const addToCanvas = (data: AskResponse) => {
@@ -108,12 +128,18 @@ export default function Home() {
     const msgs = [...det.messages].reverse(); // seq artan → store newest-first
     loadHistory(msgs);
     setSessionId(det.session_id);
-    setContextCq(null);
     // NOT: `note` bir raporun VARLIĞINI dışlamaz (Faz 1.5 — konu-değişimi cevapları hem
     // `note` hem gerçek `result` taşıyabilir, KPI kartlarıyla aynı desen). "Son rapor" =
     // gerçek sonuç taşıyan (ya da KPI) SON mesaj, notu olsun ya da olmasın.
     const lastReport = msgs.find((m) => m.result || m.kpi) ?? null;
-    setActive(lastReport);
+    // §B — "sohbetin en son içinde olduğu thread" (bugünkü "son raporu göster"
+    // mantığının thread-seviyesine genellenmesi). det.messages ZATEN kronolojik (seq artan).
+    // Bağlam (contextCq) ÖNCEDEN hep null'a sıfırlanıyordu (küçük bir tutarsızlık) — artık
+    // "eski bir thread'e yeniden girme" (onSelectThread) ile AYNI ilke: thread'in KENDİ SON
+    // item'ından geri yüklenir, "kaldığı yerden devam" tutarlı çalışır.
+    const resumedThreads = groupIntoThreads(det.messages);
+    setActiveThreadId(resumedThreads.at(-1)?.id ?? null);
+    setContextCq(lastReport?.cube_query ?? null);
     setCanvasItems([]); // tuval sohbet-oturumu kapsamlı — devralınan sohbette sıfırdan başlar
     setViewHint(lastReport?.view_hint ? { kind: lastReport.view_hint, nonce: Date.now() } : null);
     setPrevSql(lastReport?.sql || null);
@@ -124,7 +150,7 @@ export default function Home() {
   const newChat = () => {
     setSessionId(makeSessionId());
     clearHistory();
-    setActive(null);
+    setActiveThreadId(null);
     setContextCq(null);
     setPrevSql(null);
     setCanvasItems([]); // tuval sohbet-oturumu kapsamlı — yeni sohbet sıfırdan başlar
@@ -138,28 +164,94 @@ export default function Home() {
   // yerine SON adımı gösterir. Bayrak kapalıyken (varsayılan) callback hiç tetiklenmez.
   const [liveTrace, setLiveTrace] = useState<string[]>([]);
 
-  const mutation = useMutation<AskResponse, unknown, { question: string }>({
-    mutationFn: ({ question }) => {
+  // §B düzeltmesi (1 Ağustos 2026) — REDDEDİLEN ilk sürümün hatası: `is_new_topic`
+  // (yalnızca "bu cevap bağlam taşıdı mı" anlamına gelen bir backend sinyali) yanlışlıkla
+  // thread sınırı kararına da karıştırılmıştı. ARTIK thread sınırları YALNIZCA kullanıcının
+  // HANGİ komposer'ı kullandığına bağlı — bu discriminated-union bunu somutlaştırır:
+  // "new" (sol komposer, HER ZAMAN taze/bağlamsız — aktif thread olsun ya da olmasın),
+  // "continue" (sağ panelin kendi komposer'ı, aktif thread'in GÜNCEL bağlamıyla devam),
+  // "reply"/"reply-multi" (bir karta/kartlara "yanıtla" — bağlam o ÇAPA kart(lar)dan gelir,
+  // sonuç yine de thread'in SONUNA eklenir, yalnız `reply_to_label` ile hangi karta
+  // bağlandığı görünür kalır — kullanıcı kronolojinin bozulmasını istemedi).
+  type AskMutationVars =
+    | { kind: "new"; question: string }
+    | { kind: "continue"; question: string }
+    | { kind: "reply"; question: string; threadId: string; anchorIndex: number }
+    | { kind: "reply-multi"; question: string; threadId: string; anchorIndex: number; extraIndices: number[] };
+
+  const mutation = useMutation<AskResponse, unknown, AskMutationVars>({
+    mutationFn: (vars) => {
       setLiveTrace([]);
+      if (vars.kind === "new") {
+        // Sol komposer: cube_query/prev_sql/history/thread_id HEPSİ boş — gerçekten taze
+        // bir istek, aktif thread'in bağlamından TAMAMEN bağımsız.
+        return ask(
+          { question: vars.question, cube_query: null, prev_sql: null, history: [],
+            session_id: sessionId, thread_id: null },
+          setLiveTrace,
+        );
+      }
+      if (vars.kind === "continue") {
+        // Sağ panelin kendi komposer'ı — eski TEK komposer'ın bağlamsal davranışının
+        // AYNISI, yalnız artık ayrı bir giriş noktasından tetikleniyor.
+        return ask(
+          {
+            question: vars.question,
+            cube_query: contextCq,
+            prev_sql: prevSql,
+            history: (activeThread?.items ?? []).map((i) => i.question).slice(-8),
+            session_id: sessionId,
+            thread_id: activeThreadId,
+          },
+          setLiveTrace,
+        );
+      }
+      // "reply" | "reply-multi" — bağlam ÇAPA karttan gelir, thread'in GÜNCEL bağlamından
+      // DEĞİL (thread'in son mesajı bambaşka bir konuda olabilir). `history` de anchor'ın
+      // KENDİ index'ine kadar kesilir — backend'in `body.history[-1]`'i "önceki soru" sayan
+      // İKİ noktası (Discovery takip + VQR chip-öğrenme) `prev_sql` ile TUTARLI kalsın diye.
+      const t = threads.find((th) => th.id === vars.threadId) ?? null;
+      const anchor = t?.items[vars.anchorIndex] ?? null;
+      const historyThroughAnchor = (t?.items ?? [])
+        .slice(0, vars.anchorIndex + 1)
+        .map((i) => i.question)
+        .slice(-8);
+      const extraContext =
+        vars.kind === "reply-multi"
+          ? vars.extraIndices
+              .map((idx) => t?.items[idx])
+              .filter((it): it is AskResponse => Boolean(it))
+              .map((it) => `${it.question} → ${it.result?.row_count ?? 0} satır`)
+          : undefined;
       return ask(
         {
-          question,
-          cube_query: contextCq,
-          prev_sql: prevSql,
-          history: items.map((i) => i.question).slice(0, 8),
+          question: vars.question,
+          cube_query: anchor?.cube_query ?? null,
+          prev_sql: anchor?.sql || null,
+          history: historyThroughAnchor,
           session_id: sessionId,
+          thread_id: vars.threadId,
+          reply_to_label: anchor ? replyAnchorLabel(anchor.question) : null,
+          extra_context: extraContext,
         },
         setLiveTrace,
       );
     },
-    onSuccess: (data) => {
+    onSuccess: (data, vars) => {
+      // Thread sınırı ARTIK YALNIZCA `vars.kind`'a bağlı — `data.is_new_topic` burada HİÇ
+      // OKUNMAZ (reddedilen ilk sürümün TAM olarak bu satırdaki hatası düzeltildi).
+      const targetThreadId =
+        vars.kind === "new" ? mintThreadId()
+        : vars.kind === "continue" ? (activeThreadId ?? mintThreadId())
+        : vars.threadId;
+      data.thread_id = targetThreadId;
+      setActiveThreadId(targetThreadId);
       addHistory(data);
-      // Rapor → sağ paneli güncelle; salt-not (result YOK) → mevcut raporu koru. `note`'un
-      // VARLIĞI tek başına raporu göstermeyi engellemez (Faz 1.5 — konu-değişimi cevapları
-      // hem `note` hem gerçek `result` taşır, "Konu değişti: X → Y"; KPI yanıtı da NOT
-      // taşısa bir RAPORDUR — aynı desenin bir örneği, aşağıya genelleştirildi).
-      if (data.result || data.kpi) setActive(data);
-      addToCanvas(data); // Faz 4.11 — tuval modu açıksa üste EKLENİR (active'i değiştirmez)
+      // Rapor paneli artık `activeThread`'den (yukarıda türetilir) OTOMATİK güncellenir —
+      // sayfa-seviyeli AYRI bir "aktif rapor" state'i GEREKMEZ (Faz 1.5'in "note VARLIĞI tek
+      // başına raporu göstermeyi engellemez" ilkesi ReportPanel'in kendi `it.result||it.kpi`
+      // filtresinde zaten KORUNUYOR).
+      addToCanvas(data); // Faz 4.11 — tuval modu açıksa üste EKLENİR (thread akışını değiştirmez)
       // Görünüm ipucu: yeni raporla geldiyse onunla; salt-görünüm yanıtında mevcut rapora.
       if (data.view_hint) setViewHint({ kind: data.view_hint, nonce: Date.now() });
       else if (data.result) setViewHint(null);
@@ -172,19 +264,44 @@ export default function Home() {
     },
   });
 
-  const submit = (q: string) => {
+  const submitNew = (q: string) => {
     setDrawer(null);
     setStarted(true); // ilk sorudan sonra çalışma alanında kal (hata olsa da landing'e dönme)
-    setVerifyLabel(q); // gerçek kullanıcı sorusu — verify etiketi bu olur
-    mutation.mutate({ question: q });
+    mutation.mutate({ kind: "new", question: q });
   };
+  const submitContinue = (q: string) => {
+    setDrawer(null);
+    setStarted(true);
+    mutation.mutate({ kind: "continue", question: q });
+  };
+  const submitReply = (threadId: string, anchorIndex: number, q: string) => {
+    setDrawer(null);
+    setStarted(true);
+    mutation.mutate({ kind: "reply", question: q, threadId, anchorIndex });
+  };
+  const submitReplyMulti = (threadId: string, anchorIndex: number, extraIndices: number[], q: string) => {
+    setDrawer(null);
+    setStarted(true);
+    mutation.mutate({ kind: "reply-multi", question: q, threadId, anchorIndex, extraIndices });
+  };
+  // §B DÜZELTMESİ (1 Ağustos 2026, 2. tur) — öneri-chip'leri ARTIK yalnız sağ panelde
+  // (ReportPanel) render ediliyor, HER ZAMAN aktif thread'in İÇİNDE — bu yüzden ayrı bir
+  // "pasif thread'i bul" dolambacına GEREK KALMADI, ReportPanel doğrudan `onReply`'i
+  // (thread.id zaten elinde) çağırıyor. Eski `submitSuggestionReply`/`threadContaining`
+  // KALDIRILDI (dead code).
 
   // Yorum çubuğu chip düzenlemesi → deterministik /cube (LLM yok); transkripte de düşer.
   const cubeMutation = useMutation<AskResponse, unknown, { cq: NonNullable<AskResponse["cube_query"]>; label: string }>({
-    mutationFn: ({ cq, label }) => askCube({ cube_query: cq, label, session_id: sessionId }),
+    mutationFn: ({ cq, label }) =>
+      askCube({ cube_query: cq, label, session_id: sessionId, thread_id: activeThreadId }),
     onSuccess: (data) => {
+      // §B — chip düzenlemesi HER ZAMAN aktif thread'e etiketlenir (chip UI'ı zaten yalnız
+      // aktif thread'in kartlarında var), asla yeni thread AÇMAZ. `activeThreadId` null
+      // olamayacak durumda (savunmacı) yeni bir thread mint edilir.
+      const targetThreadId = activeThreadId ?? mintThreadId();
+      data.thread_id = targetThreadId;
+      setActiveThreadId(targetThreadId);
       addHistory(data);
-      setActive(data);
       addToCanvas(data); // Faz 4.11 — chip/sonraki-adım/öneri tıklaması da tuvale eklenir
       // chip düzenlemesi RAPOR ŞEKLİNİ küçük değiştirir — mevcut görünüm tercihi
       // (ör. panelli) KORUNUR; yeni ipucu yalnız /ask cevabından gelir.
@@ -207,6 +324,11 @@ export default function Home() {
       setStarted(true);
       setContextCq(null); // yeni veri kaynağı — eski cube bağlamı düşer
       setPrevSql(null); // yeni veri kaynağı — eski wren_sql takip bağlamı da düşer
+      // §B Adım 1 — yeni veri kaynağı = yeni konu: yeni thread mint edilir, pseudo-
+      // AskResponse'a AÇIKÇA is_new_topic+thread_id set edilir (ÖNCEDEN ikisi de set
+      // edilmiyordu — sessizce eski aktif thread'e karışma riski taşıyordu).
+      const newThreadId = mintThreadId();
+      setActiveThreadId(newThreadId);
       const cols = r.columns.map((c) => c.orig).join(", ");
       addHistory({
         question: `📎 ${file.name}`,
@@ -218,13 +340,20 @@ export default function Home() {
           `Kolonlar: ${cols}. Örnek sorularla başlayın:`,
         suggestions: r.suggestions,
         trace: [] as string[],
+        is_new_topic: true,
+        thread_id: newThreadId,
       } as unknown as AskResponse);
     },
   });
   const onUpload = (file: File) => uploadMut.mutate(file);
 
   const started = startedLatch || items.length > 0 || mutation.isPending || uploadMut.isPending;
-  const pendingQuestion = mutation.isPending ? mutation.variables?.question : undefined;
+  // §B DÜZELTMESİ (1 Ağustos 2026, 2. tur) — "pending" ARTIK hangi panelin bunu göstereceğine
+  // göre AYRILIYOR: "new" (sol komposer, YENİ bir panel/thread yaratıyor) solda; "continue"/
+  // "reply"/"reply-multi" (aktif thread'e ekleniyor) sağda (bkz. ReportPanel'in kendi
+  // `pending` kullanımı) — ikisi ASLA aynı anda gerçek olamaz (tek `mutation`).
+  const isPendingNew = mutation.isPending && mutation.variables?.kind === "new";
+  const pendingQuestion = isPendingNew ? mutation.variables?.question : undefined;
 
   return (
     // pr-12: sağdaki kalıcı ikon kolonu (rail) içeriği örtmesin.
@@ -232,32 +361,36 @@ export default function Home() {
       {openDashboard ? (
         <DashboardView id={openDashboard} onClose={() => setOpenDashboard(null)} />
       ) : !started ? (
-        <Landing onSubmit={submit} onUpload={onUpload} uploading={uploadMut.isPending} />
+        <Landing onSubmit={submitNew} onUpload={onUpload} uploading={uploadMut.isPending} />
       ) : (
         <div className="flex h-full min-h-0">
           <section
             data-no-print
-            className="flex w-[38%] min-w-[320px] max-w-[440px] shrink-0 flex-col border-r border-hairline"
+            className={`flex shrink-0 flex-col border-r border-hairline transition-[width] duration-200 ${
+              activeThreadId
+                ? "w-[26%] min-w-[260px] max-w-[340px]"
+                : "w-[38%] min-w-[320px] max-w-[440px]"
+            }`}
           >
             <ChatPanel
-              items={items}
-              active={active}
-              pending={mutation.isPending}
+              threads={threads}
+              activeThreadId={activeThreadId}
+              pending={isPendingNew}
               pendingQuestion={pendingQuestion}
               liveTrace={liveTrace}
-              contextLabel={contextCq ? String(contextCq.cube ?? "rapor") : null}
-              onClearContext={() => setContextCq(null)}
-              onSelect={(item) => {
-                setActive(item);
-                setContextCq(item.cube_query ?? null); // seçilen rapor bağlam olur
-                setPrevSql(item.sql || null); // wren_sql takibi de seçilen rapordan devam eder
-                // Seçilen mesajın KENDİ görünüm ipucunu geri yükle (ör. "facet:kumas_cinsi")
-                // — aksi halde sayfa-seviyesi viewHint eski/başka bir mesajdan kalıp yanlış
-                // görünümü zorlar (Faz 1.5'in "hangi kırılıma göre" chip akışı bunu sıklaştırdı).
-                setViewHint(item.view_hint ? { kind: item.view_hint, nonce: Date.now() } : null);
-                if (!item.question.startsWith("chip:")) setVerifyLabel(item.question);
+              compact={activeThreadId !== null}
+              onSelectThread={(t) => {
+                // §B (Madde 4+6) — bir thread satırına tıklamak O THREAD'İ sağda aktive
+                // eder; bağlam THREAD'İN KENDİ SON item'ından geri yüklenir (tıklanan
+                // tarihsel noktadan DEĞİL) — "istediği zaman tekrar girebilir, kaldığı
+                // yerden devam eder" sözünün en doğal okunuşu.
+                setActiveThreadId(t.id);
+                const last = t.items.at(-1) ?? null;
+                setContextCq(last?.cube_query ?? null);
+                setPrevSql(last?.sql || null);
+                setViewHint(null); // yeniden girişte zorla remount YOK — kartlar kendi view_hint'ini kullanır
               }}
-              onSubmit={submit}
+              onSubmit={submitNew}
               onUpload={onUpload}
               uploading={uploadMut.isPending}
             />
@@ -270,10 +403,12 @@ export default function Home() {
               {/* Kullanıcı tuval moduna GEÇ bir noktada geçmiş olabilir — ekrandaki mevcut
                   raporu (soru/chip/geçmiş-seçimi FARK ETMEKSİZİN) elle de ekleyebilsin, yalnız
                   otomatik-eklemenin (chip/sonraki-adım) başladığı ANDAN sonrasına bağlı kalmasın. */}
-              {canvasMode && active && (active.result || active.kpi) && (
+              {canvasMode && latestReportable && (
                 <button
                   onClick={() =>
-                    setCanvasItems((prev) => (prev[prev.length - 1] === active ? prev : [...prev, active]))
+                    setCanvasItems((prev) =>
+                      prev[prev.length - 1] === latestReportable ? prev : [...prev, latestReportable],
+                    )
                   }
                   title="Ekrandaki mevcut raporu tuvale ekle"
                   className="flex h-[22px] items-center border border-hairline px-2 font-mono text-[11px] text-neutral-400 transition-colors hover:border-accent hover:text-accent"
@@ -303,13 +438,24 @@ export default function Home() {
                 />
               ) : (
                 <ReportPanel
-                  data={active}
-                  pending={mutation.isPending || cubeMutation.isPending}
+                  thread={activeThread}
+                  pending={(mutation.isPending && !isPendingNew) || cubeMutation.isPending}
                   viewHint={viewHint}
                   onCubeEdit={({ cq, label }) => cubeMutation.mutate({ cq, label })}
                   error={mutation.isError ? apiErrorMessage(mutation.error) : null}
-                  verifyLabel={verifyLabel}
                   sessionId={sessionId}
+                  contextLabel={contextCq ? String(contextCq.cube ?? "rapor") : null}
+                  onClearContext={() => {
+                    // §B — "konudan çık": DÖRDÜ BİRLİKTE sıfırlanır → panel BOŞALIR,
+                    // sonraki soru (sol komposer'dan) YENİ bir thread başlatır.
+                    setContextCq(null);
+                    setPrevSql(null);
+                    setActiveThreadId(null);
+                    setViewHint(null);
+                  }}
+                  onContinue={submitContinue}
+                  onReply={submitReply}
+                  onReplyMulti={submitReplyMulti}
                 />
               )}
             </div>
@@ -347,7 +493,7 @@ export default function Home() {
         }
       >
         {drawer === "help" ? (
-          <HelpPanel onPick={submit} />
+          <HelpPanel onPick={submitNew} />
         ) : drawer === "notifications" ? (
           <NotificationsPanel />
         ) : drawer === "history" ? (

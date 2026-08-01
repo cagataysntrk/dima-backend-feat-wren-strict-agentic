@@ -98,12 +98,50 @@ def test_bilinmeyen_kirilim_reddedilir(schema):
     assert route(schema, "tedarikçi bazında oee") is None
 
 
+def test_kirilim_basarisiz_trend_varken_de_reddedilir(schema):
+    """Genel kök-neden düzeltmesi (1 Ağustos 2026, canlı bulgu): SESSİZ-YANLIŞ koruması
+    eskiden `not gran` da şart koşuyordu — "trend"/"aylık" gibi bir zaman-kovası kelimesi
+    `_time_gran()`'ı tetikleyip `gran`'ı dolduruyor, bu da karşılanamayan bir kırılım
+    isteğinin (oee'de "tedarikçi" boyutu yok) SESSİZCE düşmesine yol açıyordu — kardeş
+    testle (yukarıdaki, trend'siz hali) AYNI senaryo, yalnız trend kelimesi eklenmiş."""
+    assert route(schema, "tedarikçi bazında oee trendini göster") is None
+
+
+def test_kirilim_basarisiz_zaman_kelimesiyle_de_reddedilir(schema):
+    """Aynı korumanın yalnız 'trend' kelimesine özgü bir yama olmadığını, diğer JENERİK
+    (birim belirtmeyen) zaman tetikleyicisiyle ('zaman') de tutarlı çalıştığını kilitler."""
+    assert route(schema, "tedarikçi bazında oee zaman içinde nasıl değişti") is None
+
+
+def test_kirilim_acik_birim_ifadesiyle_hala_calisir(schema):
+    """Regresyon kilidi: AÇIK bir zaman-birimi ifadesi ("aylara göre") — jenerik "trend"/
+    "zaman" DEĞİL — kendi başına meşru bir kırılımdır; koruma bunu YANLIŞLIKLA reddetmemeli
+    (bkz. test_time_gran_ceyrek_yil ile aynı sınıf — "göre" kelimesi hem zaman hem boyut
+    ifadelerinde ortak olduğu için ilk taslak düzeltme bunu kırmıştı)."""
+    plan = route(schema, "oee'yi aylara göre göster")
+    assert plan is not None
+    assert plan["cube_query"]["timeDimensions"][0]["granularity"] == "month"
+
+
 # --- typo_correct YANLIŞ-POZİTİF regresyonu (canlı bulgu, 31 Temmuz 2026) ----------
 # Gerçek kullanımda "hesapla" (calculate) katalogdaki "hesap" (mizan/cari boyutu,
 # muhasebe hesap kodu) ile 0.83 benzerlik taşıyor → typo_correct bunu YANLIŞLIKLA
 # "hesap"a düzeltmeye çalışıyordu (iki kelime aynı kökten ama tamamen farklı anlam).
 # "kalemlere" de alakasız bir kelimeye ("bekleme") öneriliyordu — cube'a-daraltma
 # (`only_cube`) + "hesapla" stop-stem ile ikisi de düzeltildi.
+
+def test_iki_ayli_karsilastirma_typo_onerisine_donusmez(schema):
+    # regresyon (Madde 1, 1 Ağustos 2026): _period_hit_words() ay-regex'i re.search
+    # kullanıyordu → yalnız İLK ay ("mayis") yakalanıyor, "nisan" SESSİZCE "unknown"
+    # kalıyor, ardından typo_correct() onu parti cube'unun "egitim" boyutundaki "Lisans"
+    # değerine (difflib 0.727, MID-HIGH arası) "şunu mu demek istedin?" olarak öneriyordu.
+    from app.cube_router import _norm, typo_correct
+
+    q = _norm("mayıs ayı cirosunu nisan ayına göre karşılaştır")
+    corrected, fixes = typo_correct(q, schema)
+    assert corrected == q
+    assert fixes == []
+
 
 def test_hesapla_fiili_typo_onerisine_donusmez(schema):
     from app.cube_router import _norm, typo_correct
@@ -121,6 +159,35 @@ def test_kalemlere_alakasiz_oneriye_donusmez(schema):
     corrected, fixes = typo_correct(q, schema)
     assert corrected == q
     assert fixes == []
+
+
+def test_genis_havuzda_alakasiz_kelime_oneriye_donusmez(schema):
+    """Genel kök-neden düzeltmesi (1 Ağustos 2026, canlı bulgu — "kalem"/"kalite"):
+    cube çözülemediğinde (`_match_cube` None) typo_correct'in havuzu TÜM kataloğa
+    genişliyor — bu rejimde "kalem"(5)/"kalite"(6) 0.7273 skorla eşleşip "'kalem' yerine
+    'kalite' mi demek istedin?" öneriyordu (nisan/lisans ile MATEMATİKSEL AYNI desen:
+    "kalem" hiçbir cube'un sözlüğünde yok, "kalite" TAMAMEN alakasız bir cube'un
+    — oee.ort_kalite — ölçü sinonimi). Geniş havuzda öneri barajı artık _TYPO_HIGH'a
+    çekildi — bu skor artık GEÇMİYOR."""
+    from app.cube_router import _match_cube, _norm, typo_correct
+
+    q = _norm("kalem")
+    assert _match_cube(q, schema) is None  # ön-koşul: gerçekten geniş-havuz rejiminde
+    corrected, fixes = typo_correct(q, schema)
+    assert corrected == q
+    assert fixes == []
+
+
+def test_dar_havuzda_gercek_typo_hala_onerilir(schema):
+    """Regresyon kilidi: cube TEK bir adaya çözülünce (only_cube dolu, havuz DARALIR)
+    davranış eskisi gibi kalmalı — bu düzeltme YALNIZ `resolved is None` dalını etkiler.
+    "vardya"/"vardiya" (0.923) zaten var olan, test edilmiş bir OTOMATİK düzeltmedir."""
+    from app.cube_router import _norm, typo_correct
+
+    q = _norm("vardya bazında oee")
+    corrected, fixes = typo_correct(q, schema)
+    assert "vardiya" in corrected
+    assert any(f["kind"] == "auto" and f["from"] == "vardya" for f in fixes)
 
 
 def test_kirilimsiz_pur_toplam_hala_calisir(schema):
@@ -530,6 +597,34 @@ def test_refine_olcu_degisirse_none(schema):
     assert cube_router.deterministic_refine(prev, _norm("toplam fire ne kadar"), schema) is None
 
 
+def test_refine_karsilanamayan_kirilim_none_doner(schema):
+    """Genel kök-neden düzeltmesi (1 Ağustos 2026, canlı bulgu): önceki cube_query
+    (oee, makine=RAM-2 filtresiyle) içindeyken "personel bazlı verimlilikleri karşılaştır
+    son 6 ay" dendiğinde — oee'de personel/operatör boyutu YOK — eski kod eski makine
+    filtresini SESSİZCE KORUYUP yalnız dönemi güncelleyip "başarılı" bir cevap
+    döndürüyordu (RAM-2'nin OEE trendini, sorulan şeyle HİÇ ilgisi olmadan). Artık None
+    dönerek çağıranın (ask.py) zaten var olan düşme zincirine (cross_cube_add →
+    cross_cube_dim_switch → fresh route() → Discovery) ulaşmasını sağlıyor."""
+    prev = {"cube": "oee", "measures": ["ort_oee"],
+            "filters": [{"dimension": "makine", "operator": "eq", "value": "RAM-2"}]}
+    cq = cube_router.deterministic_refine(
+        prev, _norm("personel bazlı verimlilikleri karşılaştır son 6 ay"), schema)
+    assert cq is None
+
+
+def test_refine_kirilim_acik_zaman_ifadesiyle_hala_calisir(schema):
+    """Regresyon kilidi: yeni koruma yalnız `_time_gran(q) is None` iken devreye girer —
+    AÇIK bir zaman-birimi ifadesi ("aylara göre") kendi başına meşru bir istektir, boyut
+    eşleşmese bile YANLIŞLIKLA reddedilmemeli (route()'un kırılım-koruması düzeltmesinde
+    AYNI yanlış-pozitif sınıfı yakalanmıştı — bkz. test_refine_aylara_gore, bu test onun
+    doğrudan bir regresyon kilidi karşılığıdır)."""
+    prev = {"cube": "oee", "measures": ["toplam_uretim_kg"],
+            "filters": [{"dimension": "tarih", "operator": "gte", "value": "2026-01-20"}]}
+    cq = cube_router.deterministic_refine(prev, _norm("aylara göre toplam üretim"), schema)
+    assert cq is not None
+    assert cq["timeDimensions"][0]["granularity"] == "month"
+
+
 # --- parse_cube_query: LLM çıktısı doğrulaması (halüsinasyon kapısı) ---------
 
 def test_parse_rejects_unknown_measure(schema):
@@ -754,6 +849,60 @@ def test_cube_pin_ambiguity_cozumu():
     tic_only = {**sc, "cubes": [c for c in sc["cubes"] if c["name"] == "ticaret"]}
     plan2 = cube_router.route(_norm("satis tutari"), tic_only)
     assert plan2 is not None and plan2["cube_query"]["cube"] == "ticaret"
+
+
+def _asimetrik_olcu_kaniti_schema() -> dict:
+    """Gerçek demo-boyahane parti/ticaret çakışmasının küçültülmüş, hermetik izomorfu
+    (canlı bulgu, 1 Ağustos 2026): "satis" hem A'nın (ÖLÇÜ sinonimi OLARAK) hem B'nin
+    (YALNIZ cube-kimliği, HİÇ ölçü sinonimi YOK) kimliğidir. B'ye ÖZGÜ bir boyutu var
+    (A'da YOK) — gerçek örnekte bu "tür" (yalnız ticaret'te), burada "tur" olarak."""
+    return {
+        "models": [{"columns": []}],
+        "cubes": [
+            {"name": "b_ticaret_gibi", "synonyms": ["satis", "fatura"],
+             "measures": ["toplam_tutar"], "measure_synonyms": {"toplam_tutar": ["fatura tutari"]},
+             "default_measure": "toplam_tutar",
+             "dimensions": ["tur"], "dimension_synonyms": {"tur": ["tur", "tip"]},
+             "dimension_labels": {}, "time_dimensions": ["tarih"], "semi_additive": []},
+            {"name": "a_parti_gibi", "synonyms": ["satis", "ciro", "fire"],
+             "measures": ["toplam_ciro"], "measure_synonyms": {"toplam_ciro": ["ciro", "satis"]},
+             "dimensions": ["makine"], "dimension_synonyms": {"makine": ["makine"]},
+             "dimension_labels": {}, "time_dimensions": ["tarih"], "semi_additive": []},
+        ],
+    }
+
+
+def test_olcu_kaniti_bos_taraf_kirilim_sahibine_kaybeder():
+    """Genel kök-neden düzeltmesi (1 Ağustos 2026, canlı bulgu — "türlere göre satış
+    trendi" HER ZAMAN parti'ye gidiyordu, "tür" boyutu YALNIZ ticaret'te olmasına
+    rağmen): rakip adayın ölçü-kanıtı SIFIRSA (`snd_syn` boş), eski kod bunu her zaman
+    "spesifik eşleşme" sayıp EZBERE kazandırıyordu — asıl kırılımı karşılayabilen (ama
+    ölçü-kanıtsız) aday KAYBEDİYORDU."""
+    sc = _asimetrik_olcu_kaniti_schema()
+    plan = cube_router.route(_norm("satış trendini tür bazında göster"), sc)
+    assert plan is not None and plan["cube_query"]["cube"] == "b_ticaret_gibi"
+    assert plan["cube_query"]["dimensions"] == ["tur"]
+
+
+def test_olcu_kaniti_kirilim_ipucu_yoksa_degismez():
+    """Kırılım ipucu (`_BREAKDOWN_HINTS`) YOKSA yeni kural HİÇ devreye girmez — bare bir
+    konu kelimesi (gerçek katalogdaki bakım/oee "arıza" çakışması gibi) yanlışlıkla
+    etkilenmesin diye BİLİNÇLİ sınır. Ölçü-kanıtı OLAN aday (a_parti_gibi) kazanmaya
+    devam eder."""
+    sc = _asimetrik_olcu_kaniti_schema()
+    plan = cube_router.route(_norm("satış"), sc)
+    assert plan is not None and plan["cube_query"]["cube"] == "a_parti_gibi"
+
+
+def test_boyut_kaniti_iki_taraf_da_olcu_kaniti_tasiyorsa_degismez():
+    """Regresyon kilidi: rakip adayın ölçü-kanıtı BOŞ DEĞİLSE (iki taraf da ölçü
+    sinonimi taşıyorsa) yeni kural devreye GİRMEZ — mevcut, test edilmiş davranış
+    (test_boyut_kaniti_belirsiz_olcuyu_ayirir ile AYNI iki-cube şeması) korunur."""
+    sc = _two_cube_schema()
+    p1 = cube_router.route(_norm("stok ref bazında satış tutarı"), sc)
+    assert p1 is not None and p1["cube_query"]["cube"] == "mal"
+    p2 = cube_router.route(_norm("cari ref bazında satış tutarı"), sc)
+    assert p2 is not None and p2["cube_query"]["cube"] == "ticaret"
 
 
 def test_refine_gran_ekleyince_row_limit_entity_limite_donusur(schema):

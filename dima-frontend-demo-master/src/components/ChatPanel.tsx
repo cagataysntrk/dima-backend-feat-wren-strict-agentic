@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { AskResponse } from "@/lib/types";
+import type { Thread } from "@/lib/threads";
 import { CaretInput } from "@/components/CaretInput";
 
 // SQL provenance — keskin, monospace "sistem readout" rozeti. "vqr" (VQR birebir/yakın
@@ -84,30 +84,42 @@ export function SourceBadge({
 }
 
 export function ChatPanel({
-  items,
-  active,
+  threads,
+  activeThreadId,
   pending,
   pendingQuestion,
   liveTrace,
-  contextLabel,
-  onClearContext,
-  onSelect,
+  compact,
+  onSelectThread,
   onSubmit,
   onUpload,
   uploading,
 }: {
-  items: AskResponse[];
-  active: AskResponse | null;
+  // §B DÜZELTMESİ (1 Ağustos 2026, 2. tur) — bu panel ARTIK bir "sohbet akışı" DEĞİL, DÜZ
+  // bir PANEL LİSTESİ: her thread TEK, BAĞIMSIZ bir satır (kullanıcının kendi tarifi: "sol
+  // taraf tamamen her yazılan birbirinden bağımsız olacak... eski sol chat sağa geçmiş
+  // olacak"). Eski nested/iç-içe gösterim (her thread'in TÜM item'larını alt alta, girintili
+  // render eden hâl) TAMAMEN kaldırıldı — o akış artık SAĞ panelde (ReportPanel). Burada
+  // yalnız her thread'in KÖK sorusu + kısa bir durum özeti gösterilir; tıklamak o thread'i
+  // sağda açar. `threads` ZATEN kronolojik sırada (bkz. lib/threads.ts::groupIntoThreads).
+  threads: Thread[];
+  activeThreadId: string | null;
   pending: boolean;
   pendingQuestion?: string;
   // Faz 4.12 — Discovery arka-plana kuyruklandığında (ask_async_discovery) biriken canlı
   // adımlar; boş/verilmezse statik "yürütülüyor…" gösterilir (davranış değişmez).
   liveTrace?: string[];
-  // Aktif konuşma bağlamı (takip mesajları bu raporu düzenler) — görünür + sıfırlanabilir,
-  // böylece kasıtlı konu değişimi tahmine kalmaz (ADR-0007).
-  contextLabel?: string | null;
-  onClearContext?: () => void;
-  onSelect: (item: AskResponse) => void;
+  // §B düzeltmesi (1 Ağustos 2026) — bir thread aktifken TRUE: panel daralır, komposer'ın
+  // üstünde "burası her zaman yeni thread açar" ipucu gösterilir (bkz. page.tsx'teki sol
+  // <section> genişlik geçişi).
+  compact?: boolean;
+  // Bir thread satırına tıklamak O THREAD'İ sağda aktive eder (bağlam thread'in KENDİ son
+  // item'ından geri yüklenir — "istediği zaman tekrar girebilir" sözünün en doğal okunuşu).
+  onSelectThread: (thread: Thread) => void;
+  // §B düzeltmesi (1 Ağustos 2026) — KRİTİK: bu komposer HER ZAMAN yeni bir thread açar
+  // (aktif thread olsun ya da olmasın) — ASLA bağlamsal/takip yanıtı üretmez, ÖNCEKİYLE
+  // HİÇBİR BAĞI OLMAZ. Eski bağlamsal davranışın TAMAMI artık sağ panelin kendi
+  // komposer'ına taşındı (bkz. ReportPanel.tsx).
   onSubmit: (q: string) => void;
   // Chat-scoped Excel/CSV yükleme (base modu) — bu sohbete özel veri kaynağı.
   onUpload?: (file: File) => void;
@@ -115,12 +127,11 @@ export function ChatPanel({
 }) {
   const [value, setValue] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-  const threadRef = useRef<HTMLDivElement>(null);
-  const thread = [...items].reverse(); // eski üstte, yeni altta
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" });
-  }, [items.length, pending]);
+    listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
+  }, [threads.length, pending]);
 
   const send = () => {
     const t = value.trim();
@@ -131,76 +142,56 @@ export function ChatPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div ref={threadRef} className="flex-1 overflow-auto px-4 py-5">
-        <div className="space-y-5">
-          {thread.map((item, i) => {
-            const isActive = active === item;
+      <div ref={listRef} className="flex-1 overflow-auto px-3 py-4">
+        <div className="space-y-1.5">
+          {threads.map((t) => {
+            const isActiveThread = t.id === activeThreadId;
+            const root = t.items[0];
+            const last = t.items[t.items.length - 1];
+            let reportable: Thread["items"][number] | null = null;
+            for (let i = t.items.length - 1; i >= 0; i--) {
+              if (t.items[i].result || t.items[i].kpi) { reportable = t.items[i]; break; }
+            }
             return (
-              <div key={`${item.question}-${i}`} className="space-y-1.5">
-                {/* kullanıcı komutu */}
-                <div className="flex items-start gap-2">
-                  <span className="mt-0.5 select-none font-mono text-xs text-accent">›</span>
-                  <span className="font-mono text-[13px] leading-snug text-foreground">
-                    {item.question}
-                  </span>
-                </div>
-                {/* not bandı VE tıklanır sonuç satırı ARTIK BİRBİRİNİ DIŞLAMAZ (Faz 1.5):
-                    konu-değişimi cevapları hem `note` ("Konu değişti: X → Y") hem gerçek
-                    `result` taşıyabilir — KPI'nın NOT taşısa da bir RAPOR olması (canlı
-                    2026-07-25) ile AYNI desen, şimdi source="cube" için de geçerli. İkisi
-                    de varsa İKİSİ DE render edilir (not üstte, tıklanır satır altta). */}
-                {item.note && !item.kpi && (
-                  <div className="border-l-2 border-amber-500/50 py-1 pl-3">
-                    <div className="font-mono text-[12px] leading-snug text-neutral-500">
-                      {item.note}
-                    </div>
-                    {item.suggestions && item.suggestions.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {item.suggestions.map((s) => (
-                          <button
-                            key={s.label}
-                            onClick={() => onSubmit(s.query)}
-                            className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-600 transition-colors hover:border-accent/50 hover:text-foreground dark:text-neutral-300"
-                          >
-                            {s.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {(!item.note || item.kpi || item.result) && (
-                  /* sistem çıktısı satırı — tıklanınca o rapora döner. Salt-netleştirme
-                     (note var, result/kpi yok) TEK istisna — o durumda gösterilecek rapor yok. */
-                  <button
-                    onClick={() => onSelect(item)}
-                    className={`flex w-full items-center gap-2 border-l-2 py-1 pl-3 text-left transition-colors ${
-                      isActive
-                        ? "border-accent bg-accent/[0.06]"
-                        : "border-hairline hover:bg-neutral-500/[0.04]"
-                    }`}
-                  >
-                    <span className="font-mono text-[11px] text-neutral-500">
-                      {item.result ? `${item.result.row_count} satır` : item.kpi ? "KPI kartı" : "sql"}
-                    </span>
-                    <span className="ml-auto">
-                      <SourceBadge source={item.source} confidence={item.explain?.confidence} />
-                    </span>
-                  </button>
-                )}
-              </div>
+              <button
+                key={t.id}
+                onClick={() => onSelectThread(t)}
+                className={`flex w-full flex-col items-start gap-1 border-l-2 px-3 py-2 text-left transition-colors ${
+                  isActiveThread
+                    ? "border-accent bg-accent/[0.04]"
+                    : "border-transparent hover:bg-neutral-500/[0.04]"
+                }`}
+              >
+                <span className="line-clamp-2 font-mono text-[13px] leading-snug text-foreground">
+                  {root.question}
+                </span>
+                <span className="flex w-full items-center gap-2 font-mono text-[11px] text-neutral-500">
+                  {reportable ? (
+                    <>
+                      <span>
+                        {reportable.result
+                          ? `${reportable.result.row_count} satır`
+                          : reportable.kpi ? "KPI kartı" : "sql"}
+                      </span>
+                      <SourceBadge source={reportable.source} confidence={reportable.explain?.confidence} />
+                    </>
+                  ) : last.note ? (
+                    <span className="truncate text-amber-600">{last.note}</span>
+                  ) : null}
+                  {t.items.length > 1 && (
+                    <span className="ml-auto shrink-0 text-neutral-400">{t.items.length} mesaj</span>
+                  )}
+                </span>
+              </button>
             );
           })}
 
           {pendingQuestion && (
-            <div className="space-y-1.5">
-              <div className="flex items-start gap-2">
-                <span className="mt-0.5 select-none font-mono text-xs text-accent">›</span>
-                <span className="font-mono text-[13px] leading-snug text-foreground">
-                  {pendingQuestion}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 border-l-2 border-hairline py-1 pl-3 font-mono text-[11px] text-neutral-400">
+            <div className="space-y-1.5 border-l-2 border-hairline px-3 py-2">
+              <span className="block font-mono text-[13px] leading-snug text-foreground">
+                {pendingQuestion}
+              </span>
+              <div className="flex items-center gap-2 font-mono text-[11px] text-neutral-400">
                 <span className="dima-caret" style={{ height: "0.9em" }} />
                 {liveTrace && liveTrace.length > 0 ? liveTrace[liveTrace.length - 1] : "yürütülüyor…"}
               </div>
@@ -209,20 +200,16 @@ export function ChatPanel({
         </div>
       </div>
 
-      {/* alt komut satırı */}
+      {/* alt komut satırı — §B düzeltmesi: bu komposer ARTIK bağlam TAŞIMIYOR (bkz. onSubmit
+          prop yorumu). "bağlam: X · ×" göstergesi ARTIK burada DEĞİL — sağ panele taşındı
+          (bkz. ReportPanel.tsx başlık çubuğu). `compact` iken bunun YERİNE her zaman görünen
+          bir İPUCU var: bu komposer'a yazmanın HER ZAMAN yeni bir thread açacağını netleştiriyor. */}
       <div className="shrink-0 border-t border-hairline px-4 py-3">
-        {contextLabel && (
-          <div className="mb-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wide text-neutral-400">
-            <span className="text-accent">◆</span>
-            <span>bağlam: {contextLabel}</span>
-            <button
-              onClick={onClearContext}
-              title="Bağlamı sıfırla — sonraki soru yeni konu olarak işlenir"
-              className="border border-hairline px-1 leading-tight transition-colors hover:border-accent/50 hover:text-foreground"
-            >
-              ×
-            </button>
-          </div>
+        {compact && (
+          <p className="mb-2 font-mono text-[10px] leading-snug text-neutral-400">
+            ⓘ buraya yazmak her zaman <span className="text-accent">yeni bir thread</span>{" "}
+            başlatır — devam etmek için sağdaki paneli kullan.
+          </p>
         )}
         <div className="flex items-center gap-2">
           {onUpload && (

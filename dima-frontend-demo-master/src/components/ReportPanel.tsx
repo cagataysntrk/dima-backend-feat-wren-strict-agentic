@@ -1,186 +1,79 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
-import { useClickOutside } from "@/lib/useClickOutside";
-import { useFeature } from "@/lib/useFeature";
-import { usePermission } from "@/lib/usePermission";
-import type { AskResponse, CubeQuery, DashboardListItem } from "@/lib/types";
-import {
-  addDashboardWidget,
-  askVerify,
-  createDashboard,
-  createSchedule,
-  listDashboards,
-  verifyReport,
-} from "@/lib/api-client";
+import { useEffect, useRef, useState } from "react";
+import type { AskResponse, CubeQuery } from "@/lib/types";
+import type { Thread } from "@/lib/threads";
 import { BrandMark } from "@/components/BrandMark";
-import { ContractDetailPanel } from "@/components/ContractDetailPanel";
-import { DrillDownPanel } from "@/components/DrillDownPanel";
-import { InterpretationBar } from "@/components/InterpretationBar";
-import { ResultView } from "@/components/ResultView";
-import { KpiCardView } from "@/components/KpiCard";
-import { OutputInsight } from "@/components/OutputInsight";
-import { SourceBadge } from "@/components/ChatPanel";
+import { CaretInput } from "@/components/CaretInput";
+import { ReportCard } from "@/components/ReportCard";
 
-// Sağ bölme: seçili raporun canlı görünümü (keskin, mono readout).
+// §B Adım 2 (1 Ağustos 2026) — sağ panel artık İNCE bir YIĞIN kapsayıcısı: bir thread'in
+// (aynı konudaki tüm cevaplar) item dizisini alır, her raporlanabilir item için bir
+// <ReportCard> render eder (eski tek-rapor gövdesi ARTIK ReportCard'ta) — yeni cevap
+// ÖNCEKİLERİ SİLMEZ, altına eklenir (kullanıcının "altta biriken akış" tarifi). `fb` (verify
+// geri bildirim map'i) burada TEK, PAYLAŞILAN state olarak tutulur (içerik-anahtarlı olduğu
+// için yığındaki TÜM kartlarda güvenle paylaşılabilir) — `pending`/`error` artık TÜM render'ı
+// DEĞİŞTİRMEZ, yığının ALTINA eklenen bir kuyruk göstergesi/hata kutusu olur.
 export function ReportPanel({
-  data,
+  thread,
   pending,
   viewHint,
   onCubeEdit,
   error,
-  verifyLabel,
   sessionId,
+  contextLabel,
+  onClearContext,
+  onContinue,
+  onReply,
+  onReplyMulti,
 }: {
-  data: AskResponse | null;
+  thread: Thread | null;
   pending: boolean;
-  // "grafik ver" tarzı görünüm isteği — ResultView remount edilip başlangıç görünümü olur.
+  // YALNIZ thread'in EN SON raporlanabilir item'ına geçirilir (bkz. aşağıdaki lastReportableIdx).
   viewHint?: { kind: string; nonce: number } | null;
-  // Yorum çubuğu chip düzenlemeleri (deterministik /cube).
   onCubeEdit?: (edit: { cq: CubeQuery; label: string }) => void;
   error: string | null;
-  // Raporu üreten son GERÇEK soru (chip etiketi değil) — verify bu metinle öğrenir.
-  verifyLabel?: string | null;
   sessionId?: string;
+  // §B DÜZELTMESİ (1 Ağustos 2026, 2. tur) — "bağlam: X" göstergesi ARTIK burada: eski sol
+  // chat'in bu göstergesi kaldırıldı (kullanıcı: "bağlam olarak da mesela oee eklenebiliyor
+  // küp bağlamı olarak vs o da sağda panelde olacak artık") — akış SAĞDA olduğu için bağlam
+  // bilgisi de SAĞDA olmalı.
+  contextLabel?: string | null;
+  onClearContext?: () => void;
+  // §B düzeltmesi (1 Ağustos 2026) — bu panelin KENDİ komposer'ı: aktif thread'in GÜNCEL
+  // bağlamıyla devam eder (eski TEK komposer'ın bağlamsal davranışı, artık burada).
+  onContinue?: (text: string) => void;
+  // Bir karta "yanıtla": bağlam O ÇAPA karttan gelir, sonuç thread'in SONUNA eklenir.
+  onReply?: (threadId: string, anchorIndex: number, text: string) => void;
+  // Birden fazla kart seçip birleşik bağlamla sor: çapa = seçilenlerin EN SONuncusu.
+  onReplyMulti?: (threadId: string, anchorIndex: number, extraIndices: number[], text: string) => void;
 }) {
-  const [showSql, setShowSql] = useState(false);
-  const [showTrace, setShowTrace] = useState(false);
-  // Faz 4.10 — dallı kök-neden analizi paneli (tıkla-dallan, ilişkili cube'lara geçiş,
-  // yaprak seviyesinde ham satırlar).
-  const [drillOpen, setDrillOpen] = useState(false);
-  // Doğrulama turu düzeltmesi (1 Ağustos 2026, P1-2) — grafikte tıklanan tek kategori;
-  // doluysa drill panelini "Başlangıç"tan değil DOĞRUDAN o kategoriye seçili açar.
-  const [drillFilter, setDrillFilter] = useState<{ dimension: string; value: string } | null>(null);
-  const closeDrill = () => { setDrillOpen(false); setDrillFilter(null); };
-  // Query Contract keşif/replay paneli (doğrulama turu düzeltmesi, 1 Ağustos 2026, P1-9).
-  const [contractOpen, setContractOpen] = useState(false);
-  // SQL gösterimi (sql_display bayrağı) — ham şeffaflık özelliği; kapalıysa buton yok.
-  const sqlStage = useFeature("sql_display");
-  // Panoya ekle (dashboards bayrağı, §9) — bu raporun cube_query'si widget olur.
-  const dashStage = useFeature("dashboards");
-  const [dashOpen, setDashOpen] = useState(false);
-  const [dashList, setDashList] = useState<DashboardListItem[]>([]);
-  const [addedTo, setAddedTo] = useState<string | null>(null);
-  // Kullanıcının bu raporda seçtiği CANLI görünüm (tip/görünüm/ölçü) — "panoya ekle" bunu gönderir
-  // ki pano BİRE BİR aynı grafiği göstersin. Ref (re-render yok): rapora göre anahtarlanır (sql),
-  // başka rapordan kalan seçim sızmasın. Tıklama anında okunur.
-  const liveViewRef = useRef<{ sql: string; hint: string } | null>(null);
-  const onLiveView = (hint: string) => {
-    liveViewRef.current = { sql: data?.sql ?? "", hint };
-  };
-  const openDashMenu = () => {
-    if (!dashOpen) listDashboards().then((r) => setDashList(r.dashboards)).catch(() => {});
-    setSchedOpen(false); setWrongOpen(false);  // tek-açık
-    setDashOpen((o) => !o);
-  };
-  const addToDash = async (dashId: string) => {
-    if (!data?.cube_query) return;
-    try {
-      const lv = liveViewRef.current;
-      const liveHint = lv && lv.sql === (data.sql ?? "") ? lv.hint : null;
-      await addDashboardWidget(dashId, {
-        title: data.question,
-        cube_query: data.cube_query, // compare (YoY) dahil — backend add_widget korur
-        // Kullanıcının seçtiği canlı görünüm (tip/ölçü) öncelikli; yoksa /ask'ın ipucu.
-        view_hint: liveHint ?? data.view_hint ?? null,
-      });
-      setAddedTo(dashId);
-      setDashOpen(false);
-    } catch {
-      /* best-effort */
-    }
-  };
-  const createAndAdd = async () => {
-    const title = window.prompt("Yeni pano adı:", "Panom");
-    if (!title) return;
-    try {
-      const d = await createDashboard(title);
-      await addToDash(d.id);
-    } catch {
-      /* best-effort */
-    }
-  };
-  // 🔔 zamanla (ADR-0011, beta bayrağı): raporun CubeQuery'si göreli dönemle zamanlanır.
-  const schedStage = useFeature("scheduled_reports");
-  const canSchedule = usePermission("schedule:create");
-  const canVerify = usePermission("vqr:write");
-  const [schedOpen, setSchedOpen] = useState(false);
-  const [scheduled, setScheduled] = useState<string | null>(null);
-  // #56 alarm + e-posta: preset periyodu + opsiyonel eşik/anomali alarmı + alıcı e-postalar.
-  const measures = ((data?.cube_query?.measures as string[] | undefined) ?? []);
-  const [alarmType, setAlarmType] = useState<"none" | "threshold" | "anomaly">("none");
-  const [alarmMeasure, setAlarmMeasure] = useState<string>("");
-  const [alarmOp, setAlarmOp] = useState<"gt" | "lt">("gt");
-  const [alarmValue, setAlarmValue] = useState<string>("");
-  const [emails, setEmails] = useState<string>("");
-  const schedule = (preset: { every: "hour" | "day" | "week"; at?: string; weekday?: number; period: string; name: string }) => {
-    if (!data?.cube_query) return;
-    const cq = { ...data.cube_query,
-      filters: ((data.cube_query.filters as { dimension: string }[] | undefined) ?? [])
-        .filter((f) => f.dimension !== "tarih") };
-    if (!(cq.filters as unknown[]).length) delete (cq as Record<string, unknown>).filters;
-    const measure = alarmMeasure || measures[0] || "";
-    const threshold =
-      alarmType === "threshold" && measure && alarmValue !== ""
-        ? { measure, op: alarmOp, value: Number(alarmValue) }
-        : alarmType === "anomaly" && measure
-          ? { measure, method: "zscore" as const }
-          : null;
-    const to = emails.split(",").map((e) => e.trim()).filter((e) => e.includes("@"));
-    setActionError(null);
-    createSchedule({ label: vLabel ?? data.question, cube_query: cq,
-      period: preset.period, every: preset.every, at: preset.at, weekday: preset.weekday,
-      threshold, delivery: to.length ? { email: { to } } : null })
-      .then(() => { setScheduled(verifyKey); setSchedOpen(false); })
-      .catch(() => setActionError("Zamanlama kaydedilemedi. Lütfen tekrar dener misin?"));
-  };
-
-  // "✓ doğru" / "✗ yanlış" (beta bayrağı): geri bildirim — doğrulama geri ALINABİLİR.
-  // Durum RAPOR BAŞINA haritada tutulur: oturumda birden çok rapora verilen ✓/✗
-  // işaretleri, raporlar arasında gezerken korunur (tek anahtar son işareti eziyordu).
-  const verifyStage = useFeature("verify_button");
+  // Verify geri bildirimi ("✓ doğru"/"✗ yanlış") İÇERİK-ANAHTARLI (verifyKey = label::sql) —
+  // bu yüzden TÜM kartlar (hatta thread'ler) arasında GÜVENLE paylaşılabilir tek bir map.
   const [fb, setFb] = useState<Record<string, "ok" | "bad">>({});
-  const vLabel =
-    data && data.question.startsWith("chip:") ? (verifyLabel ?? data.question) : data?.question;
-  // Doğrulanabilir iki şekilden biri: deterministik cube_query (eski /verify) YA DA
-  // strict-agentic wren_sql cevabı (yeni /ask/verify) — ikisi de "gerçek bir SQL üretti ve
-  // çalıştırdı" anlamına gelir, yalnız hangi API çağrılacağı farklıdır (bkz. doVerify).
-  const verifiable = Boolean(data?.cube_query) || Boolean(data?.sql);
-  const verifyKey = verifiable && vLabel ? `${vLabel}::${data?.sql ?? ""}` : null;
-  const verified = verifyKey != null && fb[verifyKey] === "ok";
-  const flagged = verifyKey != null && fb[verifyKey] === "bad";
-  // ✗ yanlış → yorum popup'ı: kullanıcı isterse "neden yanlış"ı yazar, isterse yazmadan
-  // yollar. Yorum backend'de note'a düşer → log madencisini (#57) besler.
-  const [wrongOpen, setWrongOpen] = useState(false);
-  const [wrongComment, setWrongComment] = useState("");
-  // Doğrulama turu düzeltmesi (1 Ağustos 2026, P1-12): zamanla/doğrula/yanlış-işaretle
-  // aksiyonları başarısız olursa kullanıcı HİÇBİR geri bildirim almıyordu (popup sessizce
-  // açık kalıyor ya da buton durumu güncellenmiyordu) — tek, paylaşılan bir hata metni.
-  const [actionError, setActionError] = useState<string | null>(null);
-  // Rapor aksiyon menüleri (zamanla / panoya ekle / yanlış) TEK-AÇIK + dışarı-tıklamada kapanır.
-  const closeMenus = () => { setDashOpen(false); setSchedOpen(false); setWrongOpen(false); };
-  const actionsRef = useClickOutside<HTMLDivElement>(dashOpen || schedOpen || wrongOpen, closeMenus);
-  // cube_query varsa deterministik /verify; yoksa (strict-agentic /ask) wren_sql /ask/verify.
-  const doVerify = (opts: { undo?: boolean; verdict?: "wrong"; comment?: string }) => {
-    if (!vLabel) return Promise.reject(new Error("no label"));
-    if (data?.cube_query) {
-      return verifyReport(data.cube_query, vLabel, { session_id: sessionId, ...opts });
-    }
-    if (data?.sql) {
-      return askVerify({ question: vLabel, sql: data.sql, session_id: sessionId, ...opts });
-    }
-    return Promise.reject(new Error("no verifiable payload"));
-  };
-  const submitWrong = () => {
-    if (!verifyKey) return;
-    setActionError(null);
-    doVerify({ verdict: "wrong", comment: wrongComment.trim() || undefined })
-      .then(() => { setFb((m) => ({ ...m, [verifyKey]: "bad" })); setWrongOpen(false); setWrongComment(""); })
-      .catch(() => setActionError("Geri bildirim gönderilemedi. Lütfen tekrar dener misin?"));
-  };
+  const scrollRef = useRef<HTMLDivElement>(null);
+  // §B düzeltmesi (1 Ağustos 2026) — çoklu-seçim bağlam: hangi kartların seçili olduğu
+  // (index'e göre, thread'in KENDİ item dizisindeki konum) + iki alt-komposer'ın metni.
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [continueValue, setContinueValue] = useState("");
+  const [multiValue, setMultiValue] = useState("");
+  // Thread değişince seçim sıfırlanır — React'ın "render sırasında state ayarlama" deseni
+  // (bkz. react.dev "Adjusting state when a prop changes"), `useEffect` içinde setState'in
+  // gereksiz bir ekstra render turuna yol açmasını ÖNLER (eslint react-hooks kuralı).
+  const [selectionResetKey, setSelectionResetKey] = useState(thread?.id);
+  if (thread?.id !== selectionResetKey) {
+    setSelectionResetKey(thread?.id);
+    setSelectionMode(false);
+    setSelected(new Set());
+  }
 
-  if (error) {
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [thread?.id, thread?.items.length, pending]);
+
+  if (error && !thread) {
     return (
       <Center>
         <div className="max-w-sm border border-red-300 bg-red-50 px-4 py-3 font-mono text-[13px] text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
@@ -190,7 +83,7 @@ export function ReportPanel({
     );
   }
 
-  if (pending && !data) {
+  if (pending && !thread) {
     return (
       <Center>
         <div className="flex items-center gap-2 font-mono text-[13px] text-neutral-400">
@@ -201,7 +94,7 @@ export function ReportPanel({
     );
   }
 
-  if (!data) {
+  if (!thread) {
     return (
       <Center>
         <div className="max-w-xs text-center font-mono text-[13px] text-neutral-400">
@@ -211,425 +104,199 @@ export function ReportPanel({
     );
   }
 
+  // "chip:" ile başlayan sentetik chip-düzenleme etiketleri gerçek bir soru DEĞİLDİR (bkz.
+  // vqr.py::store — "chip etiketleri soru değildir") — verify bunlarla değil, GERİYE doğru en
+  // yakın GERÇEK soruyla öğrenir. Sayfa-seviyeli tek `verifyLabel` state'i YERİNE her kart
+  // KENDİ thread'indeki konumundan bunu türetir (thread değiştirmede/geçmişte gezinmede asla
+  // bayatlamaz).
+  const nearestRealQuestion = (items: AskResponse[], index: number): string | null => {
+    for (let i = index; i >= 0; i--) {
+      if (!items[i].question.startsWith("chip:")) return items[i].question;
+    }
+    return null;
+  };
+  let lastReportableIdx = -1;
+  thread.items.forEach((it, i) => { if (it.result || it.kpi) lastReportableIdx = i; });
+
+  // §B düzeltmesi (1 Ağustos 2026) — çoklu-seçim: en-son (en büyük index) seçilen kart
+  // yapısal ÇAPA olur (kendi cube_query/sql'i normal follow-up gibi kullanılır), geri
+  // kalanı `extra_context` olarak (yalnız Discovery grounding'i, backend'de bilinçli
+  // kapsam sınırı — bkz. ask.py::_with_extra_context) eklenir.
+  const submitReplyMulti = () => {
+    const t = multiValue.trim();
+    if (!t || !thread || !onReplyMulti || selected.size === 0) return;
+    const idxs = Array.from(selected).sort((a, b) => a - b);
+    const anchorIndex = idxs[idxs.length - 1];
+    const extraIndices = idxs.slice(0, -1);
+    onReplyMulti(thread.id, anchorIndex, extraIndices, t);
+    setMultiValue("");
+    setSelected(new Set());
+    setSelectionMode(false);
+  };
+
   return (
-    <div className="mx-auto max-w-4xl px-8 py-7">
-      <div className="mb-5 border-b border-hairline pb-4">
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="font-mono text-[15px] leading-snug text-foreground">{data.question}</h2>
-          <div ref={actionsRef} className="flex shrink-0 items-center gap-1.5 pt-0.5">
-            {schedStage && canSchedule && data.cube_query && data.source && (
-              <span className="relative">
-                <button
-                  onClick={() => { setDashOpen(false); setWrongOpen(false); setSchedOpen((o) => !o); }}
-                  title="Bu raporu zamanla — belirlenen aralıkla otomatik koşar, bildirim üretir"
-                  className={`flex h-[20px] items-center border px-1.5 font-mono text-[11px] transition-colors ${
-                    scheduled === verifyKey
-                      ? "border-accent/40 text-accent"
-                      : "border-hairline text-neutral-400 hover:text-foreground"
-                  }`}
-                >
-                  {scheduled === verifyKey ? "🔔 zamanlandı" : "🔔 zamanla"}
-                </button>
-                {schedOpen && (
-                  <span className="absolute right-0 top-full z-30 mt-1 flex w-64 flex-col gap-2 border border-hairline bg-background p-2 shadow-lg">
-                    {/* #56 alarm (opsiyonel) — eşik / anomali; ölçü rapor ölçülerinden. */}
-                    <div className="flex flex-col gap-1">
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">
-                        alarm (opsiyonel)
-                      </span>
-                      <div className="flex gap-1 font-mono text-[11px]">
-                        {(["none", "threshold", "anomaly"] as const).map((t) => (
-                          <button
-                            key={t}
-                            onClick={() => setAlarmType(t)}
-                            className={`border px-1.5 py-0.5 transition-colors ${
-                              alarmType === t
-                                ? "border-accent/40 text-accent"
-                                : "border-hairline text-neutral-400 hover:text-foreground"
-                            }`}
-                          >
-                            {t === "none" ? "yok" : t === "threshold" ? "eşik" : "anomali"}
-                          </button>
-                        ))}
-                      </div>
-                      {alarmType !== "none" && (
-                        <div className="flex items-center gap-1 font-mono text-[11px]">
-                          <select
-                            value={alarmMeasure || measures[0] || ""}
-                            onChange={(e) => setAlarmMeasure(e.target.value)}
-                            className="min-w-0 flex-1 border border-hairline bg-background px-1 py-0.5"
-                          >
-                            {measures.map((m) => (
-                              <option key={m} value={m}>{m}</option>
-                            ))}
-                          </select>
-                          {alarmType === "threshold" ? (
-                            <>
-                              <select
-                                value={alarmOp}
-                                onChange={(e) => setAlarmOp(e.target.value as "gt" | "lt")}
-                                className="border border-hairline bg-background px-1 py-0.5"
-                              >
-                                <option value="gt">&gt;</option>
-                                <option value="lt">&lt;</option>
-                              </select>
-                              <input
-                                value={alarmValue}
-                                onChange={(e) => setAlarmValue(e.target.value)}
-                                inputMode="decimal"
-                                placeholder="değer"
-                                className="w-16 border border-hairline bg-background px-1 py-0.5"
-                              />
-                            </>
-                          ) : (
-                            <span className="text-neutral-400">z-skoru (olağandışı)</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    {/* #56 e-posta teslim (opsiyonel) — in-app bell her zaman düşer. */}
-                    <input
-                      value={emails}
-                      onChange={(e) => setEmails(e.target.value)}
-                      placeholder="e-posta (virgülle, opsiyonel)"
-                      className="border border-hairline bg-background px-1.5 py-1 font-mono text-[11px]"
-                    />
-                    {/* Periyot preset'i — tıklama mevcut alarm+e-posta ile zamanlar. */}
-                    <div className="flex flex-col border-t border-hairline pt-1">
-                      {[
-                        { name: "her sabah 08:00 · dünün verisi", every: "day" as const, at: "08:00", period: "dün" },
-                        { name: "her saat · bugünün verisi", every: "hour" as const, period: "bugün" },
-                        { name: "her pazartesi 08:00 · geçen hafta", every: "week" as const, at: "08:00", weekday: 1, period: "geçen hafta" },
-                      ].map((pr) => (
-                        <button
-                          key={pr.name}
-                          onClick={() => schedule(pr)}
-                          className="px-2 py-1.5 text-left font-mono text-[11px] text-neutral-500 hover:bg-neutral-500/[0.06] hover:text-foreground"
-                        >
-                          {pr.name}
-                        </button>
-                      ))}
-                    </div>
-                  </span>
-                )}
-              </span>
+    <div className="flex h-full min-h-0 flex-col">
+      {/* §B DÜZELTMESİ (1 Ağustos 2026, 2. tur) — üst çubuk: SOLDA aktif bağlam göstergesi
+          (eski sol chat'ten taşındı), SAĞDA seçim modu toggle'ı + sayaç. Thread değişince
+          seçim otomatik sıfırlanır (bkz. yukarıdaki render-sırasında-ayarlama). */}
+      <div className="flex shrink-0 items-center gap-2 border-b border-hairline px-4 py-1.5">
+        {contextLabel && (
+          <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wide text-neutral-400">
+            <span className="text-accent">◆</span>
+            <span>bağlam: {contextLabel}</span>
+            <button
+              onClick={onClearContext}
+              title="Bu thread'i kapat — panel temizlenir, sonraki soru yeni bir thread başlatır"
+              className="border border-hairline px-1 leading-tight transition-colors hover:border-accent/50 hover:text-foreground"
+            >
+              ×
+            </button>
+          </span>
+        )}
+        <button
+          onClick={() => { setSelectionMode((m) => !m); setSelected(new Set()); }}
+          className={`border px-2 py-0.5 font-mono text-[11px] transition-colors ${
+            selectionMode
+              ? "border-accent/40 text-accent"
+              : "border-hairline text-neutral-400 hover:text-foreground"
+          }`}
+        >
+          {selectionMode ? "✕ seçimi bitir" : "☐ kartları seç"}
+        </button>
+        {selectionMode && (
+          <>
+            <span className="font-mono text-[11px] text-neutral-400">{selected.size} seçili</span>
+            {selected.size > 0 && (
+              <button
+                onClick={() => setSelected(new Set())}
+                className="font-mono text-[11px] text-neutral-400 underline-offset-2 transition-colors hover:text-foreground hover:underline"
+              >
+                temizle
+              </button>
             )}
-            {dashStage && data.cube_query && data.source && (
-              <span className="relative">
-                <button
-                  onClick={openDashMenu}
-                  title="Bu grafiği/tabloyu bir panoya ekle — panoda canlı izlenir"
-                  className={`flex h-[20px] items-center border px-1.5 font-mono text-[11px] transition-colors ${
-                    addedTo
-                      ? "border-accent/40 text-accent"
-                      : "border-hairline text-neutral-400 hover:text-foreground"
-                  }`}
-                >
-                  {addedTo ? "✓ panoda" : "+ panoya ekle"}
-                </button>
-                {dashOpen && (
-                  <span className="absolute right-0 top-full z-30 mt-1 flex w-56 flex-col border border-hairline bg-background shadow-lg">
-                    {dashList.length === 0 && (
-                      <span className="px-2 py-1.5 font-mono text-[11px] text-neutral-400">
-                        henüz pano yok
-                      </span>
-                    )}
-                    {dashList.map((d) => (
+          </>
+        )}
+      </div>
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
+        {thread.items.map((it, i) => {
+          if (it.result || it.kpi) {
+            return (
+              <ReportCard
+                key={`${thread.id}-${i}`}
+                item={it}
+                index={i}
+                threadId={thread.id}
+                viewHint={i === lastReportableIdx ? viewHint : null}
+                onCubeEdit={onCubeEdit}
+                precedingLabel={nearestRealQuestion(thread.items, i)}
+                sessionId={sessionId}
+                fb={fb}
+                setFb={setFb}
+                onReply={onReply}
+                selectable={selectionMode}
+                selected={selected.has(i)}
+                onToggleSelect={() =>
+                  setSelected((s) => {
+                    const n = new Set(s);
+                    if (n.has(i)) n.delete(i);
+                    else n.add(i);
+                    return n;
+                  })
+                }
+              />
+            );
+          }
+          // §B DÜZELTMESİ (1 Ağustos 2026, 2. tur) — not-yalnız (result/kpi'siz, ör.
+          // netleştirme/upload bildirimi) item'lar ARTIK burada, hafif bir blok olarak
+          // render edilir — bu akış eskiden SADECE sol chat'te vardı, kullanıcı: "follow
+          // up önerileri artık sağda gelmeli çünkü artık thread sağda akacak". Öneri-chip'i
+          // tıklaması bu SPESİFİK item'a anchor'lı bir "yanıtla" (aynı mekanizma, `onReply`).
+          if (it.note) {
+            return (
+              <div key={`${thread.id}-${i}-note`} className="mx-auto max-w-4xl px-8 py-4">
+                <h3 className="mb-1.5 font-mono text-[13px] leading-snug text-foreground">
+                  {it.question}
+                </h3>
+                <div className="border-l-2 border-amber-500/50 bg-amber-500/[0.04] py-1.5 pl-3 font-mono text-[12px] leading-snug text-neutral-500">
+                  {it.note}
+                </div>
+                {it.suggestions && it.suggestions.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {it.suggestions.map((s) => (
                       <button
-                        key={d.id}
-                        onClick={() => addToDash(d.id)}
-                        className="px-2 py-1.5 text-left font-mono text-[11px] text-neutral-500 hover:bg-neutral-500/[0.06] hover:text-foreground"
+                        key={s.label}
+                        onClick={() => onReply?.(thread.id, i, s.query)}
+                        className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-600 transition-colors hover:border-accent/50 hover:text-foreground dark:text-neutral-300"
                       >
-                        {d.title} · {d.widget_count} widget
+                        {s.label}
                       </button>
                     ))}
-                    <button
-                      onClick={createAndAdd}
-                      className="border-t border-hairline px-2 py-1.5 text-left font-mono text-[11px] text-accent hover:bg-neutral-500/[0.06]"
-                    >
-                      + yeni pano
-                    </button>
-                  </span>
-                )}
-              </span>
-            )}
-            {verifyStage && canVerify && verifiable && data.source && (
-              // tek kutu: ✓/✗ geri bildirim (aşama rozeti gösterilmez — bayrak iç bilgi)
-              <div className="relative inline-flex h-[20px] items-stretch border border-hairline font-mono text-[11px]">
-                <button
-                  onClick={() => {
-                    if (!verifyKey) return;
-                    setActionError(null);
-                    // ikinci tık = GERİ AL (yanlışlıkla doğrulamayı düzeltme yolu)
-                    doVerify({ undo: verified || undefined })
-                      .then(() =>
-                        setFb((m) => {
-                          const n = { ...m };
-                          if (verified) delete n[verifyKey];
-                          else n[verifyKey] = "ok";
-                          return n;
-                        }),
-                      )
-                      .catch(() => setActionError("İşlem gerçekleştirilemedi. Lütfen tekrar dener misin?"));
-                  }}
-                  title={
-                    verified
-                      ? "Doğrulamayı geri al"
-                      : "Bu raporu doğru olarak işaretle — aynı soru bundan sonra LLM'siz cevaplanır"
-                  }
-                  className={`px-1.5 transition-colors ${
-                    verified ? "text-emerald-500" : "text-neutral-400 hover:text-foreground"
-                  }`}
-                >
-                  {verified ? "✓ öğrenildi" : "✓ doğru"}
-                </button>
-                <button
-                  onClick={() => { if (!flagged && verifyKey) { setDashOpen(false); setSchedOpen(false); setWrongOpen((o) => !o); } }}
-                  title="Bu rapor yanlış — isteğe bağlı yorum ekleyip kaydet"
-                  className={`border-l border-hairline px-1.5 transition-colors ${
-                    flagged ? "text-red-500" : "text-neutral-400 hover:text-foreground"
-                  }`}
-                >
-                  {flagged ? "✗ kaydedildi" : "✗ yanlış"}
-                </button>
-                {/* #62 — ✗ yorum popup'ı: neden yanlış (opsiyonel) → note → #57 madenci. */}
-                {wrongOpen && !flagged && (
-                  <span className="absolute right-0 top-full z-30 mt-1 flex w-64 flex-col gap-2 border border-hairline bg-background p-2 text-left shadow-lg">
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">
-                      neden yanlış? (opsiyonel)
-                    </span>
-                    <textarea
-                      value={wrongComment}
-                      onChange={(e) => setWrongComment(e.target.value)}
-                      rows={3}
-                      placeholder="ör. yanlış ölçü / eksik kırılım / dönem hatalı…"
-                      className="resize-none border border-hairline bg-background px-1.5 py-1 font-mono text-[11px]"
-                    />
-                    <div className="flex gap-1">
-                      <button
-                        onClick={submitWrong}
-                        className="flex-1 border border-red-500/40 px-2 py-1 font-mono text-[11px] text-red-500 transition-colors hover:bg-red-500/[0.06]"
-                      >
-                        {wrongComment.trim() ? "yorumla gönder" : "yorumsuz gönder"}
-                      </button>
-                      <button
-                        onClick={() => { setWrongOpen(false); setWrongComment(""); }}
-                        className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-400 transition-colors hover:text-foreground"
-                      >
-                        vazgeç
-                      </button>
-                    </div>
-                  </span>
+                  </div>
                 )}
               </div>
-            )}
-            <SourceBadge source={data.source} confidence={data.explain?.confidence} />
-            {data.cube_query && data.result && (
-              <button
-                onClick={() => setDrillOpen(true)}
-                title="Bu sonucu tıklaya tıklaya incele — kök nedenine in"
-                className="border border-hairline px-2 py-[3px] font-mono text-[11px] text-neutral-400 transition-colors hover:border-accent hover:text-accent"
-              >
-                ⤵ kök neden
-              </button>
-            )}
-            {data.trace && data.trace.length > 0 && (
-              <button
-                onClick={() => setShowTrace((s) => !s)}
-                title="Bu sorgu nasıl çözüldü?"
-                aria-label="Trace"
-                className={`flex h-[20px] w-[20px] items-center justify-center border font-mono text-[11px] transition-colors ${
-                  showTrace ? "border-accent/40 text-accent" : "border-hairline text-neutral-400 hover:text-foreground"
-                }`}
-              >
-                ?
-              </button>
-            )}
-          </div>
-        </div>
-        {actionError && (
-          <p className="mt-2 font-mono text-[11px] text-red-500">{actionError}</p>
-        )}
-        {/* Faz 1.5: konu-değişimi gibi bilgilendirici notlar (ör. "Konu değişti: OEE → parti")
-            artık gerçek bir raporla BİRLİKTE gelebilir (ChatPanel'deki AYNI desen) — rapor
-            açıldığında kullanıcı NEDEN konunun değiştiğini burada da görsün, yalnız sohbet
-            akışına gömülü kalmasın. */}
-        {data.note && !data.kpi && (
-          <div className="mt-3 border-l-2 border-amber-500/50 bg-amber-500/[0.04] py-1.5 pl-3 font-mono text-[12px] leading-snug text-neutral-500">
-            {data.note}
+            );
+          }
+          return null;
+        })}
+        {pending && (
+          <div className="mx-auto flex max-w-4xl items-center gap-2 px-8 py-4 font-mono text-[13px] text-neutral-400">
+            <span className="dima-caret" style={{ height: "0.9em" }} />
+            yürütülüyor…
           </div>
         )}
-        {showTrace && data.trace && (
-          <div className="mt-3 border border-hairline bg-neutral-500/[0.03] p-3">
-            <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
-              nasıl çözüldü
+        {error && (
+          <div className="mx-auto max-w-4xl px-8 py-4">
+            <div className="max-w-sm border border-red-300 bg-red-50 px-4 py-3 font-mono text-[13px] text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
+              {error}
             </div>
-            <ol className="space-y-0.5">
-              {data.trace.map((t, i) => (
-                <li key={i} className="font-mono text-[11px] text-neutral-500">
-                  <span className="mr-1 text-accent">{String(i + 1).padStart(2, "0")}</span>
-                  {t}
-                </li>
-              ))}
-            </ol>
-            {/* Faz 3: `explain` trace'in ÜSTÜNE biner (onu değiştirmez) — yalnız sessizce
-                yapılan gerçek bir varsayım varsa (ör. dönem belirtilmedi) gösterilir. */}
-            {data.explain && data.explain.assumptions.length > 0 && (
-              <div className="mt-2 border-t border-hairline pt-2">
-                <div className="mb-1 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
-                  varsayımlar
-                </div>
-                <ul className="space-y-0.5">
-                  {data.explain.assumptions.map((a, i) => (
-                    <li key={i} className="font-mono text-[11px] text-amber-600">
-                      {a}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
         )}
       </div>
-
-      {data.cube_query && onCubeEdit &&
-        ((data.cube_query as { measures?: unknown[] }).measures?.length ?? 0) > 0 && (
-        <InterpretationBar cq={data.cube_query} onEdit={onCubeEdit} />
-      )}
-
-      {/* Cross-cube KPI kartı (CCC / likidite) — cube tablosu değil bileşke skaler. */}
-      {data.kpi && <KpiCardView card={data.kpi} />}
-
-
-
-      {data.result && (
-        <div className="border border-hairline bg-background p-4">
-          <ResultView
-            key={`${data.question}·${data.sql}·${viewHint?.nonce ?? 0}`}
-            result={data.result}
-            viewHint={viewHint?.kind}
-            viz={data.viz}
-            onViewChange={onLiveView}
-            onDataPointClick={
-              data.cube_query
-                ? (dimension, value) => {
-                    setDrillFilter({ dimension, value });
-                    setDrillOpen(true);
-                  }
-                : undefined
-            }
-          />
-        </div>
-      )}
-
-      {/* Evrensel çıktı yorumu (feature flag'li) — KPI/tablo/grafik altında. */}
-      <OutputInsight interpretation={data.interpretation} />
-
-      {/* K4 öneriler — K3 sinyalinden 'neye bakmalısın' + opsiyonel tıklanır drill. */}
-      {onCubeEdit && (data.recommendations?.length ?? 0) > 0 && (
-        <div className="mt-3 space-y-1.5">
-          {data.recommendations!.map((rec, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between gap-2 border border-hairline bg-accent/[0.04] px-3 py-2"
-            >
-              <p className="text-[12px] leading-relaxed text-neutral-600 dark:text-neutral-300">
-                <span className="mr-1 text-accent" aria-hidden>
-                  →
-                </span>
-                {rec.text}
-              </p>
-              {rec.action && (
-                <button
-                  onClick={() => onCubeEdit({ cq: rec.action!.cube_query, label: rec.action!.label })}
-                  title="Deterministik koşar — LLM yok"
-                  className="shrink-0 border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-500 transition-colors hover:border-foreground/30 hover:text-foreground"
-                >
-                  {rec.action.label}
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* K2 sonraki adım chip'leri (backend 'next_steps' flag'iyle gelir) — kırılım/ölçek/
-          zaman. Tıklama mevcut deterministik /cube yolunu kullanır (LLM yok). */}
-      {onCubeEdit && (data.next_steps?.length ?? 0) > 0 && (
-        <div className="mt-3">
+      {/* §B düzeltmesi (1 Ağustos 2026) — alt komposer(lar): seçim modunda ve ≥1 kart
+          seçiliyken "birleşik bağlam" çubuğu; aksi halde normal "devam et" çubuğu — ikisi
+          karşılıklı dışlayıcı. Bu, eski TEK global komposer'ın bağlamsal davranışının
+          taşındığı YER (bkz. ChatPanel'in kendi komposer'ının artık HER ZAMAN yeni thread
+          açması). */}
+      {selectionMode && selected.size > 0 && onReplyMulti ? (
+        <div className="shrink-0 border-t border-hairline bg-accent/[0.03] px-4 py-3">
           <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
-            sonraki adım
+            {selected.size} kart birleştirilerek soruluyor
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {data.next_steps!.map((step, i) => (
-              <button
-                key={`${step.kind}-${i}`}
-                onClick={() => onCubeEdit({ cq: step.cube_query, label: step.label })}
-                title="Deterministik koşar — LLM yok"
-                className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-500 transition-colors hover:border-foreground/30 hover:text-foreground"
-              >
-                <span className="mr-1 text-neutral-400">
-                  {step.kind === "dimension" ? "⌗" : step.kind === "time" ? "◷" : "∑"}
-                </span>
-                {step.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <span className="select-none font-mono text-sm text-accent">›</span>
+            <div className="flex-1">
+              <CaretInput
+                value={multiValue}
+                onChange={setMultiValue}
+                onSubmit={submitReplyMulti}
+                busy={pending}
+                size="inline"
+              />
+            </div>
           </div>
         </div>
-      )}
-
-      <div className="mt-5 flex items-center justify-between">
-        {sqlStage ? (
-          <button
-            onClick={() => setShowSql((s) => !s)}
-            className="font-mono text-[11px] uppercase tracking-wider text-neutral-400 transition-colors hover:text-foreground"
-          >
-            {showSql ? "— sql gizle" : "+ sql göster"}
-          </button>
-        ) : (
-          <span />
-        )}
-        {data.contract_id && (
-          <button
-            onClick={() => setContractOpen(true)}
-            className="font-mono text-[10px] tracking-wider text-neutral-300 underline-offset-2 transition-colors hover:text-foreground hover:underline dark:text-neutral-600"
-            title="Query Contract — bu raporun kanıt kaydı: soru + sorgu + sonuç özeti mühürlendi; sonradan yeniden oynatılıp doğrulanabilir (tıkla → incele)"
-          >
-            {data.contract_id}
-          </button>
-        )}
-      </div>
-      {sqlStage && showSql && (
-        <pre className="mt-2 overflow-auto border border-hairline bg-neutral-950 p-4 font-mono text-xs leading-relaxed text-neutral-100">
-          {data.sql}
-        </pre>
-      )}
-      {/* Doğrulama turu düzeltmesi (1 Ağustos 2026, P2-22): `planned_sql` (dry-plan çıktısı —
-          backend'de zaten dolduruluyordu, bkz. app/routers/ask.py) hiç GÖSTERİLMİYORDU.
-          Yalnız GERÇEK çalışan SQL'den FARKLIYSA gösterilir (self-healing/repair sonrası
-          "plan neydi, gerçekte ne çalıştı" farkını görünür kılar) — aynıysa gürültü olmasın
-          diye tekrar edilmez. */}
-      {sqlStage && showSql && data.planned_sql && data.planned_sql !== data.sql && (
-        <div className="mt-2">
-          <p className="mb-1 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
-            plan (öz iyileştirme öncesi derlenen SQL)
-          </p>
-          <pre className="overflow-auto border border-hairline bg-neutral-950 p-4 font-mono text-xs leading-relaxed text-neutral-400">
-            {data.planned_sql}
-          </pre>
-        </div>
-      )}
-      {contractOpen && data.contract_id && (
-        <ContractDetailPanel contractId={data.contract_id} onClose={() => setContractOpen(false)} />
-      )}
-      {drillOpen && data.cube_query && data.result && (
-        <DrillDownPanel
-          cubeQuery={data.cube_query}
-          result={data.result}
-          sessionId={sessionId}
-          initialFilter={drillFilter}
-          onClose={closeDrill}
-        />
+      ) : (
+        onContinue && (
+          <div className="shrink-0 border-t border-hairline px-4 py-3">
+            <div className="flex items-center gap-2">
+              <span className="select-none font-mono text-sm text-accent">›</span>
+              <div className="flex-1">
+                <CaretInput
+                  value={continueValue}
+                  onChange={setContinueValue}
+                  onSubmit={() => {
+                    const t = continueValue.trim();
+                    if (!t) return;
+                    onContinue(t);
+                    setContinueValue("");
+                  }}
+                  busy={pending}
+                  size="inline"
+                />
+              </div>
+            </div>
+          </div>
+        )
       )}
     </div>
   );

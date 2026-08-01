@@ -26,6 +26,14 @@ from app.llm import _norm
 # Tek yerde tanımlı → her N-ay/gün/hafta/yıl sorgusu deterministik faydalanır (ADR-0004).
 _REL_DATE = re.compile(r"son\s+(?:(\d+)\s+)?(ay|gun|hafta|yil)")
 
+# DİL ÇAKIŞMASI (bkz. _time_gran'daki aynı isimli not): "son 4 aya göre" / "son 4 ay
+# bazında" gibi ifadeler DÖNEM ifadesidir — buradaki "göre"/"bazında"/"bazlı" bir
+# kırılım isteği DEĞİL, göreli tarih aralığının kendi edatıdır. deterministic_refine'ın
+# sessiz-yanlış koruması (_BREAKDOWN_HINTS taraması) bu deseni ayrı tutmalı, yoksa
+# "son 4 aya göre yap" gibi salt dönem-değişikliği istekleri (log regresyonu:
+# test_son_n_aya_gore_kova_degil) yanlışlıkla "karşılanamayan kırılım" sanılır.
+_PERIOD_RANGE_REF = re.compile(r"son\s+(?:\d+\s+)?(?:ay|gun|hafta|yil)\w*\s+(?:gore|bazinda|bazli)")
+
 
 def _months_ago(d: date, n: int) -> date:
     m = d.month - 1 - n
@@ -506,6 +514,24 @@ def _match_cube(q: str, schema: dict) -> dict | None:
         m_scored = sorted(((c, _match_measure(q, c)[1] or "") for c in hits),
                           key=lambda x: len(x[1]), reverse=True)
         top_syn, snd_syn = m_scored[0][1], m_scored[1][1]
+        # BOYUT-UYUMU ÖNCELİĞİ (canlı bulgu, 1 Ağustos 2026): rakip adayın (2. sırada) HİÇ
+        # ölçü sinonimi eşleşmediği (`snd_syn` boş) durumda, aşağıdaki ölçü-kanıtı testi
+        # (boş string HER string'in alt-dizisidir) DAİMA en-üstteki adayı kazandırır — o
+        # adayın "ölçü kanıtı" yalnız CUBE-KİMLİĞİ kelimesinin PAYLAŞILMASINDAN geliyor
+        # olsa bile. "satış" hem parti (toplam_ciro'nun ölçü sinonimi "satış") hem
+        # ticaret'in (YALNIZ cube-kimliği, HİÇ ölçü sinonimi yok) kimliğiyken "türlere göre
+        # satış trendi" bu yüzden HER ZAMAN parti'ye gidiyordu — ama "tür" boyutu YALNIZ
+        # ticaret'te var, parti kırılımı SAĞLAYAMAZ. Soru AÇIKÇA bir kırılım istiyorsa
+        # (`_BREAKDOWN_HINTS`) VE adaylardan YALNIZ biri o kırılımı karşılayabiliyorsa
+        # (`_match_dims`, aşağıdaki BOYUT-KANITI bloğuyla AYNI mekanizma) ölçü-kanıtı bu
+        # ÖZEL durumda güvenilmez sayılır. YALNIZ zaten-belirsiz dalda çalışır ve YALNIZ
+        # "ölçü kanıtı bir tarafta sıfır" örüntüsünde devreye girer — `snd_syn` DOLUYSA
+        # (iki taraf da ölçü sinonimi taşıyorsa, ör. test_boyut_kaniti_belirsiz_olcuyu_
+        # ayirir) davranış HİÇ DEĞİŞMEZ.
+        if top_syn and not snd_syn and any(w in q for w in _BREAKDOWN_HINTS):
+            dim_owners = [c for c in hits if _match_dims(q, c, None)]
+            if len(dim_owners) == 1 and dim_owners[0] is not m_scored[0][0]:
+                return dim_owners[0]
         # YALNIZ aynı ifade için rekabette uygula: kısa eşleşme uzun eşleşmenin ALT-DİZİSİ
         # ise (ör. "satış" ⊂ "satış miktarı") en spesifik ölçü kazanır. İki AYRI ifade
         # ("verim VE fire oranı") çok-ölçü/çapraz-cube'dur → kırma, None (LLM).
@@ -697,7 +723,8 @@ def deterministic_refine(prev: dict, q: str, schema: dict) -> dict | None:
                 cq.pop("order", None)
 
     dims = list(cq.get("dimensions", []))
-    for d in _match_dims(q, cube_meta, msyn):
+    matched_dims_now = _match_dims(q, cube_meta, msyn)
+    for d in matched_dims_now:
         if d in dims:
             already = True  # ör. "haftanın günleri bazında" — boyut zaten raporda
         else:
@@ -705,6 +732,25 @@ def deterministic_refine(prev: dict, q: str, schema: dict) -> dict | None:
             changed = True
     if dims:
         cq["dimensions"] = dims
+
+    # SESSİZ-YANLIŞ koruması (route()'un AYNI ilkesi — bkz. _BREAKDOWN_HINTS kullanımı
+    # orada — canlı bulgu, 1 Ağustos 2026): mesaj açıkça bir kırılım istiyor ("personel
+    # bazlı verimlilik") ama BU cube'un HİÇBİR boyutu eşleşmediyse (ör. oee'de personel/
+    # operatör boyutu yok — yalnız parti'de var, ama parti'nin "verimlilik" ölçüsü de yok,
+    # gerçekten çapraz-cube bir istek), eski boyutu/filtreyi (ör. önceki "makine=RAM-2")
+    # SESSİZCE KORUYUP yalnız dönemi değiştirip "başarılı" gibi göstermek YANLIŞTIR —
+    # çağıran (ask.py) BUNUN İÇİN zaten bir düşme zinciri kuruyor (cross_cube_add →
+    # cross_cube_dim_switch → fresh route()) ama bu fonksiyon "changed=True" (yalnız
+    # dönem değişti) dönünce o zincire HİÇ ULAŞILMIYORDU. `_time_gran(q) is None` şartı
+    # BİLEREK dar tutuldu: "aylara göre"/"çeyreklere göre" gibi AÇIK zaman-birimi
+    # ifadeleri de "göre"/"bazında" içerir ama KENDİ BAŞINA meşru bir isteklerdir (route()
+    # kırılım-koruması düzeltmesinde AYNI yanlış-pozitif yakalanmıştı) — yalnız hem zaman
+    # HEM boyut sinyali YOKSA (ikisi de boş) gerçekten karşılanamayan bir istek olduğu
+    # kesinleşir. `_PERIOD_RANGE_REF` deseni de aynı gerekçeyle hariç tutulur: "son 4
+    # aya göre yap" gibi ifadelerde "göre" kırılım değil, dönem aralığının edatıdır.
+    if (not matched_dims_now and _time_gran(q) is None
+            and any(w in q for w in _BREAKDOWN_HINTS) and not _PERIOD_RANGE_REF.search(q)):
+        return None
 
     if topn:
         el = dict(topn)
@@ -1086,8 +1132,11 @@ def _period_hit_words(q: str) -> set[str]:
         m = re.search(r"\b" + phrase.replace(" ", r"\s+") + r"\w*", q)
         if m:
             words.update(re.findall(r"[a-z]+", m.group(0)))
-    m = re.search(rf"\b({_MONTH_ALT})\b(\s+ayi\w*)?", q)
-    if m:
+    # re.search DEĞİL re.finditer: "mayıs ayı cirosunu NİSAN ayına göre karşılaştır" gibi
+    # çok-aylı (kıyas) sorularda yalnız İLK ay yakalanırsa ikinci ay adı SESSİZCE "unknown"
+    # kalır ve typo_correct() onu alakasız bir kategorik değere ("nisan"→"Lisans" gibi)
+    # yanlışlıkla önerir (Madde 1, 1 Ağustos 2026 canlı bulgu).
+    for m in re.finditer(rf"\b({_MONTH_ALT})\b(\s+ayi\w*)?", q):
         words.update(re.findall(r"[a-z]+", m.group(0)))
     return words
 
@@ -1193,6 +1242,18 @@ _TYPO_HIGH = 0.82         # bu ve üstü + net aday → OTOMATİK düzelt
 # hepsi 0.65'in ÜSTÜNDE kalıyor — 0.60→0.65 net bir ayrım sağlıyor, regresyon YOK.
 _TYPO_MID = 0.65          # bu ve üstü (HIGH altı) → yalnız "şunu mu demek istedin?" öner
 _TYPO_GAP = 0.08          # en iyi/ikinci-iyi aday arası bu kadar fark olmalı (net aday şartı)
+# GENİŞ HAVUZ (only_cube=None) İÇİN DAHA SIKI "ÖNERİ" BARAJI (canlı bulgu, 1 Ağustos 2026):
+# cube çözülemeyince (`_match_cube` None) havuz TÜM kataloğa genişliyor — bu rejimde
+# alakasız-ama-benzer bir kelime çifti ("kalem"(5)/"kalite"(6) → 0.7273, "nisan"/"lisans"
+# ile MATEMATİKSEL AYNI desen: 5-6 harfli TR kelime çifti, ortak alt-dizi uzun) hâlâ MID
+# barajını (0.65) geçip "şunu mu demek istedin?" öneriyordu — "kalem" hiçbir cube'un
+# sözlüğünde YOKTUR, "kalite" TAMAMEN alakasız bir domain kelimesidir (oee.ort_kalite).
+# Cube ÇÖZÜLMEDİĞİNDE (bağlam belirsiz) fuzzy önerinin güven barajı da YÜKSELMELİ.
+# _TYPO_HIGH'a EŞİTLENDİ (keyfi yeni sayı icat etmek yerine): geniş havuzda bir öneri
+# ancak OTOMATİK-düzelt kalitesindeyse (yalnız ikinci-aday GAP'i yetersiz kaldığı için
+# auto'ya değil suggest'e düştüyse) gösterilir — tek-cube'a-daralmış (mevcut, test
+# edilmiş) davranış bu sabitten ETKİLENMEZ.
+_TYPO_MID_WIDE = _TYPO_HIGH
 # UZUNLUK-ORANI KORUMASI: SequenceMatcher.ratio() ÇOK FARKLI uzunluktaki kelimeler için
 # de yanıltıcı biçimde orta-yüksek çıkabiliyor (gerçek bulgu: "fizibilite"(10)/"fiili"(5)
 # → 0.667, "müterileri"(10)/"musteri"(7) → 0.706 — aradaki fark ince, salt eşik yetmez).
@@ -1241,6 +1302,9 @@ def typo_correct(q: str, schema: dict) -> tuple[str, list[dict]]:
     vocab = _catalog_vocabulary(schema, only_cube=resolved)
     if not vocab:
         return q, []
+    # Cube çözülemediyse (resolved=None → vocab TÜM kataloğa genişledi) "öneri" barajı
+    # da yükselir; tek-cube'a-daralmış durumda eski (test edilmiş) davranış korunur.
+    min_suggest = _TYPO_MID if resolved is not None else _TYPO_MID_WIDE
     corrections: list[dict] = []
     q_out = q
     for w in unknown:
@@ -1251,7 +1315,7 @@ def typo_correct(q: str, schema: dict) -> tuple[str, list[dict]]:
             key=lambda t: t[0], reverse=True,
         )
         best_score, best = scored[0]
-        if best == w or best_score < _TYPO_MID:
+        if best == w or best_score < min_suggest:
             continue
         len_ratio = min(len(w), len(best)) / max(len(w), len(best))
         if len_ratio < _TYPO_LEN_RATIO:
@@ -1418,10 +1482,24 @@ def route(question: str, schema: dict) -> dict | None:
                 filters.append({"dimension": time_dim, "operator": "lte", "value": end["value"]})
 
     # SESSİZ-YANLIŞ koruması: soruda kırılım niyeti var ("bazında/göre/kırılım") ama hiçbir
-    # boyut/zaman kovası eşleşmediyse (ör. typo: "m<kina bazında") dejenere toplam DÖNDÜRME —
-    # cube rozetiyle yanlış cevap, retten kötüdür. Değer filtresi (ör. cinsiyet=Erkek) bunu
+    # boyut eşleşmediyse (ör. typo: "m<kina bazında") dejenere toplam DÖNDÜRME — cube
+    # rozetiyle yanlış cevap, retten kötüdür. Değer filtresi (ör. cinsiyet=Erkek) bunu
     # KURTARMAZ: "erkekler için X bazında" sorusunda X kaçtıysa sonuç yine dejenere olur.
-    if not dims and not gran and any(w in q for w in _BREAKDOWN_HINTS):
+    # DÜZELTME (canlı bulgu, 1 Ağustos 2026): eskiden `not gran` da şart koşuluyordu — ama
+    # "trend"/"zaman" gibi JENERİK (birim belirtmeyen) kelimeler `gran`'ı dolduruyor VE
+    # sorudaki AYRI bir boyut-kırılımı isteğini ("tedarikçi bazında oee TRENDİNİ göster")
+    # sessizce KARŞILANMIŞ SAYDIRIYORDU — X kırılımı sessizce düşüyor, "dimensions" alanı
+    # hiç olmadan "başarılı" görünüyordu (uyarı YOK). AÇIK birim ifadeleri ("aylık/çeyrek/
+    # yıllık/haftalık X'e göre") ise KENDİ BAŞINA meşru bir kırılımdır (bkz. _time_gran) —
+    # bunlar `not gran` GİBİ davranmaya DEVAM ETMELİ (regresyon: `test_time_gran_ceyrek_
+    # yil`, "çeyreklere göre üretim" yanlışlıkla reddediliyordu). Ayrım: yalnız `gran`
+    # SIRF jenerik trend/zaman kelimesiyle dolduysa (hiçbir AÇIK birim ifadesi YOKSA)
+    # koruma `not gran` KOŞULUNU YOK SAYAR.
+    _gran_only_generic_trend = gran is not None and any(w in q for w in ("trend", "zaman")) and not any(
+        w in q for w in ("ceyrek", "uc aylik", "yillik", "yillara", "yila gore", "yil bazinda",
+                         "senelik", "haftalik", "haftalar", "haftaya", "gunluk", "gunler",
+                         "gunlere", "aylik", "aylar", "aya gore", "ay bazinda"))
+    if not dims and (not gran or _gran_only_generic_trend) and any(w in q for w in _BREAKDOWN_HINTS):
         # BOYUT-UYUMU İÇİN YENİDEN YÖNLENDİRME: seçilen cube bu kırılımı sağlayamıyor ama
         # AYNI ölçüye + istenen boyuta sahip başka bir cube olabilir. "stok bazında satış
         # tutarı" → ticaret (cube-sinonim "satış") seçildi ama stok yok; mal'da satis_tutari

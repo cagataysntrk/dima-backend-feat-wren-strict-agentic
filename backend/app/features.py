@@ -92,6 +92,17 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "override edilince devreye girer.",
         "category": "Yönlendirme",
     },
+    "threaded_chat": {
+        "label": "Konu/thread modeli (sohbet+rapor paneli)",
+        "description": "Sohbet panelinde konular (thread) iç-içe gösterilir, rapor paneli "
+                       "aynı konunun cevaplarını alta doğru biriktirir (§B, 1 Ağustos 2026). "
+                       "BİLEREK demo/packs/features.yml'e eklenmedi (ask_async_discovery ile "
+                       "AYNI ilke) — bu, sohbet/rapor panelinin TEMEL render mantığını "
+                       "değiştiren büyük bir UX değişikliği; mevcut tek-rapor davranışı "
+                       "hiçbir tenant'ta değişmeden kalır, yalnız açıkça override edilince "
+                       "devreye girer.",
+        "category": "Analiz",
+    },
 }
 
 

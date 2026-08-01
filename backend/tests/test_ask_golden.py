@@ -59,6 +59,49 @@ def test_cube_makine_oee(client):
     assert d["result"]["row_count"] == 11  # 11 makine (47-tablo şema) — tarihten bağımsız
     assert d["cube_query"]["dimensions"] == ["makine"]
     assert "tüm zamanlar" in " ".join(d["trace"])  # bilinçli, sessiz değil
+    # Madde 12 (1 Ağustos 2026): drill.py::formula_explanation artık normal /ask cevabında
+    # da dolu — önceden yalnız /ask/drill'e bağlıydı (tests/test_drill.py'nin BİREBİR aynı
+    # fonksiyonu, burada uçtan uca /ask akışında).
+    assert d["calculation_explanation"]
+    assert "makine bazında kırılımıdır" in d["calculation_explanation"]
+
+
+def test_thread_id_pass_through_ask_ve_cube(client):
+    """§B (Adım 0, 1 Ağustos 2026): thread_id salt PASS-THROUGH — is_followup/is_new_topic
+    mantığına karışmaz, /ask VE /cube (chip düzenlemesi) yanıtlarına AYNEN echo edilir.
+    Gönderilmezse None kalır (mevcut davranış bozulmaz)."""
+    d0 = ask(client, "makine bazında ortalama oee")
+    assert d0["thread_id"] is None  # gönderilmedi → None
+    d1 = ask(client, "makine bazında ortalama oee", thread_id="t-abc")
+    assert d1["thread_id"] == "t-abc"
+    d2 = ask(client, "tüm zamanlar", cube_query=d1["cube_query"], thread_id="t-abc")
+    assert d2["source"] == "cube"
+    assert d2["thread_id"] == "t-abc"
+    r = client.post("/cube", json={"cube_query": d2["cube_query"], "label": "test",
+                                    "thread_id": "t-xyz"})
+    assert r.status_code == 200 and r.json()["thread_id"] == "t-xyz"
+
+
+def test_is_new_topic_taze_soruda_true_takipte_false(client):
+    """§B (Madde 4+6, 1 Ağustos 2026): is_new_topic — bağımsız (taze) sorularda True, aynı
+    raporun takibinde (cube_query gönderilince) False. Mevcut is_followup sinyalinin
+    TERSİ — yeni mantık YOK, yalnız frontend'e taşınıyor (ChatPanel "yeni konu" ayracı,
+    ReportPanel breadcrumb'ı)."""
+    d1 = ask(client, "makine bazında ortalama oee")
+    assert "dönem" in (d1["note"] or "").lower()
+    assert d1["is_new_topic"] is True  # bağımsız soru, cube_query/prev_sql yok
+    d2 = ask(client, "tüm zamanlar", cube_query=d1["cube_query"])
+    assert d2["source"] == "cube"
+    assert d2["is_new_topic"] is False  # yapısal takip (cube_query gönderildi)
+
+
+def test_cube_query_olmayan_yanitta_calculation_explanation_yok(client):
+    """cube_query YOKSA (ör. Discovery/LLM-kaynaklı ham-SQL cevapları, ya da bu testteki
+    gibi dürüst-ret) deterministik formül-açıklama ÜRETİLEMEZ — dürüstçe None kalır
+    (uydurma YOK, Madde 12'nin bilinçli sınırı — _attach_viz yalnız `cq` doluyken çalışır)."""
+    d = ask(client, "kar oranı fizibilite")
+    assert d["source"] is None  # kısmi anlama, dürüst ret (mevcut davranış)
+    assert d.get("calculation_explanation") is None
 
 
 def test_cube_hafta_gunu_grid(client):
@@ -170,6 +213,23 @@ def test_tumu_chipi_tarih_filtresini_kaldirir(client):
     # tarih FİLTRESİ kalktı ("tarih" kelimesi hafta-günü ifadesinde geçebilir)
     assert "tarih >=" not in d3["sql"] and "tarih <=" not in d3["sql"]
     assert "tüm zamanlar" in " ".join(d3["trace"])
+
+
+def test_personel_sinonimi_operator_boyutuna_coz(client):
+    """Madde 11 (kısmi, 1 Ağustos 2026): "personel" kelimesi route()'un kapsam-kapısında
+    tanınmıyordu (yalnız "operatör/çalışan/kişi baz" sinonimleri vardı) — bu YÜZDEN
+    "personel bazında ..." soruları dürüstçe LLM'e bırakılıyordu (sessiz yanlış değil,
+    ama gereksiz bir LLM turu). Artık operator boyutunun sinonim listesinde — "operatör
+    bazlı" ile AYNI deterministik yola (parti/operator) düşmeli."""
+    d = ask(client, "personel bazında işlenen kg")
+    # "işlenen kg" period_optional DEĞİL → dönem sorulur (test_kirilimli_soru_da_donem_sorar
+    # ile AYNI politika) — asıl kontrol edilen "personel" kelimesinin route()'u LLM'e
+    # DÜŞÜRMEDEN parti/operator'a ÇÖZMESİ (cube_query zaten DOĞRU kurulmuş olmalı).
+    assert "dönem" in (d["note"] or "").lower()
+    assert d["cube_query"]["cube"] == "parti"
+    assert d["cube_query"]["dimensions"] == ["operator"]
+    d2 = ask(client, "bu yıl", cube_query=d["cube_query"])
+    assert d2["source"] == "cube"
 
 
 def test_kirilimli_soru_da_donem_sorar(client):
@@ -458,6 +518,44 @@ def test_vqr_baglam_parcasi_ogrenilmez(client):
     assert any("chip-onaylı" in t for t in d2["trace"])
 
 
+def test_mid_conversation_literal_tekrar_vqr_uzerinden_doner(client):
+    """Madde 9 (1 Ağustos 2026): `is_followup` (cube_query/prev_sql VARLIĞI) ÖNCEDEN VQR
+    kontrolünü HER ZAMAN atlıyordu — sohbet içinde kullanıcı BİREBİR (normalize) aynı soruyu
+    tekrar sorarsa (frontend context'i KORUDUĞU için cube_query/history dolu gelir) bu bir
+    takip DEĞİL, "aynısını tekrar ver" isteğidir → VQR'dan (LLM'siz) dönmeli."""
+    cq = {"cube": "parti", "measures": ["fire_orani_yuzde"], "dimensions": ["kumas_cinsi"],
+          "timeDimensions": [{"dimension": "tarih", "granularity": "month"}]}
+    q = "kumaş türlerine göre aylık fire oranı"
+    r = client.post("/verify", json={"cube_query": cq, "label": q})
+    assert r.status_code == 200 and r.json()["stored"]
+    # is_followup=True (cube_query + history dolu) AMA metin history[-1] ile BİREBİR aynı
+    d = ask(client, q, cube_query=cq, history=[q])
+    assert d["source"] == "vqr", d.get("trace")
+    assert any("VQR" in t for t in d["trace"])
+
+
+def test_gercek_takip_sorusu_vqr_atlamiyor(client):
+    """Negatif regresyon: is_literal_repeat YALNIZ metin history[-1] ile BİREBİR aynıyken
+    devreye girer. Takip metni ("bu yıl") için DECOY bir VQR kaydı olsa bile — metin farklı
+    olduğundan (is_literal_repeat False) VQR'a hiç bakılmaz; gerçek follow-up/period-
+    tamamlama mantığı (test_vqr_baglam_parcasi_ogrenilmez ile AYNI senaryo) bozulmaz."""
+    decoy_cq = {"cube": "oee", "measures": ["ort_oee"], "dimensions": ["makine"],
+                "timeDimensions": [{"dimension": "tarih", "granularity": "month"}]}
+    r = client.post("/verify", json={"cube_query": decoy_cq, "label": "bu yıl"})
+    assert r.status_code == 200 and r.json()["stored"]
+    prev = {"cube": "parti", "measures": ["fire_orani_yuzde"], "dimensions": ["kumas_cinsi"],
+            "timeDimensions": [{"dimension": "tarih", "granularity": "month"}]}
+    d = ask(client, "bu yıl", cube_query=prev, history=["kumaş türlerine göre fire oranı"])
+    assert d["source"] == "cube"
+    assert d["cube_query"]["cube"] == "parti"  # decoy'un "oee"sine KAÇMADI
+    # follow-up REFINE ile çözüldü (VQR-REPLAY DEĞİL) — sonucun kendisi VQR'a chip-onayıyla
+    # YAZILMASI (mevcut, ayrı bir mekanizma, test_vqr_baglam_parcasi_ogrenilmez'de görülen
+    # "chip-onaylı" öğrenme izi) beklenir ve zararsızdır; asıl kontrol edilen "birebir eşleşme
+    # → doğrulanmış SQL/CubeQuery tekrar oynatıldı" REPLAY izinin HİÇ oluşmamasıdır.
+    assert any("refine" in t for t in d["trace"])
+    assert not any("birebir eşleşme" in t for t in d["trace"])
+
+
 def test_kismi_anlama_serbest_sqle_dusmez(client):
     """Log regresyonu (2026-07-20): "kar oranı [tanınmayan kavram]" serbest-SQL'e düşüp
     istenmemiş çok-metrikli rapor uyduruyordu — artık tanınmayan kelime açıkça söylenir,
@@ -507,6 +605,16 @@ def test_grafik_tipi_ipucu_pasta(client):
     d = ask(client, "bu yıl makine bazında ortalama oee, pasta grafik olarak göster")
     assert d["source"] == "cube", d.get("note")
     assert d["view_hint"] == "pie"
+
+
+def test_grafik_tipi_ipucu_jenerik(client):
+    """Madde 8 (1 Ağustos 2026): SPESİFİK grafik-tipi isteği ("pasta grafik") view_hint
+    üretiyordu ama JENERİK istek ("grafik yap"/"görsel göster") de _VIZ_MAP'te "chart"
+    literaline eşleniyor — backend bunu doğru üretiyor (bu test onu kilitler); asıl bug
+    frontend'de (ResultView.tsx defaultView() "chart" hint'ini tanımıyordu, ayrı düzeltme)."""
+    d = ask(client, "bu yıl makine bazında ortalama oee, grafik yap")
+    assert d["source"] == "cube", d.get("note")
+    assert d["view_hint"] == "chart"
 
 
 def test_grafik_tipi_ipucu_tablo(client):
