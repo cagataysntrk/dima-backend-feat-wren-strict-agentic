@@ -493,6 +493,67 @@ yeniden derlenip (`docker-compose build dima-backend`) yeniden başlatıldı; d�
 `None` döner, madde 4'ün regresyon riski taşıyan "son 4 aya göre yap" vakası → hâlâ
 çalışır).
 
+### §RAW-FOLLOWUP — İki thread-tuzağı: raw_followup kilidi + yapısal zincir çıkmazı (1 Ağustos 2026 — DÜZELTİLDİ)
+
+**Kullanıcı talebi**: "raw_followup tuzağını da şimdi düzeltelim" (bkz. proje hafızası
+"llm-cube-architecture-audit") + canlı yeni bulgu: "personel bazlı verimlilikleri
+karşılaştır son 6 ay" bir OEE thread'i içinde YİNE "devam" sanılıp yalnız OEE'de arandı —
+"thread içinde bağlam değiştirebilir, küp değiştirebilir, yeni konuya geçebilir OLMALIDIR
+ve GEÇMELİDİR." Araştırma İKİ AYRI, ilgili ama farklı tuzak ortaya çıkardı — ikisi de
+`app/routers/ask.py`'de:
+
+1. **raw_followup kilidi** (önceden teşhis edilmiş, bu turda DÜZELTİLDİ): bir thread'in İLK
+   turu Discovery'ye (ham-SQL, `cube_query` YOK) düşerse, `raw_followup` o thread'in SONRAKİ
+   HER turunda True kalıyordu ve `_try_fresh_intent()` (route()/typo/YoY/Intent-JSON) BİR
+   DAHA HİÇ ÇAĞRILMIYORDU — konu tamamen değişse, yeni soru route() ile BEDAVA ve kesin
+   çözülebilir olsa BİLE, doğrudan `generate_followup_sql`'e (önceki SQL'i bağlam alan ham-
+   SQL düzenlemesi) gidiyordu. **Düzeltme**: yapısal takibin KENDİ "action==new" kaçış
+   kapısıyla AYNI ilke — Discovery'nin ham-SQL takip üretimine düşmeden ÖNCE
+   `_try_fresh_intent()` bir kez denenir. GÜVENLİ: yalnız KENDİNDEN EMİN olduğunda (route()
+   eşleşmesi/doğrulanmış Intent-JSON) bir şey döner; gerçek bir ham-SQL devamı (ör. "temmuzu
+   çıkar" — cube/ölçü kelimesi taşımayan bir kırpıntı) route()'ta hiç eşleşme bulamaz, None
+   döner, mevcut akış DEĞİŞMEDEN çalışmaya devam eder (regresyon kilidi testiyle doğrulandı).
+
+2. **Yapısal zincir çıkmazı** (bu turda YENİ tespit edildi — canlı `interaction_log` kanıtı):
+   YAPISAL bir takipte (`cube_query` var) deterministik zincir (refine/cross_cube_add/
+   cross_cube_dim_switch/fresh route()) VE LLM'in edit/new kararı TAMAMEN tükenince eskiden
+   BURADA doğrudan dürüst ret dönerdi ("Bu takip mesajını önceki raporla ilişkilendiremedim").
+   Ama AYNI soru ("personel bazlı verimlilikleri karşılaştır son 6 ay") taze/yeni-thread'den
+   sorulunca Discovery (ham-SQL, cube sınırlarının ÖTESİNDE serbest tablo join'i) GERÇEKTEN
+   cevaplayabiliyordu — canlı kanıt: `interaction_log`'da AYNI metin İKİ KEZ, biri (thread
+   içi takip) dürüst ret + "OEE cube'u personel boyutu içermemektedir, parti cube'u ise OEE
+   ölçüsünü barındırmamaktadır" notuyla, biri (taze soru) `source=llm:gemini` ile GERÇEK bir
+   SQL join sonucuyla. **Düzeltme**: zincir tükenince artık `_try_fresh_intent()` bir kez
+   daha denenir (action="new" DIŞINDAki — refine_cube hiç çağrılamadı/hata verdi gibi —
+   durumları da kapsar), o da None dönerse dürüst ret YERİNE §5 Discovery'ye düşülür
+   (`raw_followup` bu noktada hâlâ False — `_run_discovery` bu yüzden STALE prev_sql'e
+   çapalamadan TAZE `generate_sql` üretir, tıpkı sorunun taze-thread halinde çalıştığı gibi).
+   **KRİTİK güvenlik sınırı**: bu fallthrough KOŞULSUZ değil — `cube_router._match_cube(q,
+   schema)` mesajda GERÇEK bir katalog kanıtı (ör. "verim" → oee) arar; bulamazsa (ör.
+   "asdlkj qwerty zxcvb" gibi anlamsız metin) dürüst ret KORUNUR. Bu ayrım olmadan ilk taslak
+   `test_convo_anlasilmayan_takip_serbest_sqle_dusmez`'i (anlamsız metin ASLA Discovery'nin
+   rule-tabanlı sağlayıcısının alakasız varsayılan raporuna düşmemeli) VE eval-gate'in
+   answered-precision'ını (92.9% → 92.0%) KIRDI — tam pytest bunu YAKALADI, `_match_cube`
+   gate'i eklenince ikisi de düzeldi (bkz. "Hatalar ve düzeltmeler" altta).
+
+**Doğrulama**: 3 yeni test (`test_raw_followup_tuzagi_yeni_konu_intent_pathe_doner`,
+`test_raw_followup_gercek_devam_hala_generate_followupa_gider`,
+`test_yapisal_takip_cikmazi_gercek_kelime_varsa_discoverye_duser`) — hepsi geçti. Tam
+`pytest` → 489 passed, AYNI 2 pre-existing hata (regresyon yok). EK güvenlik turu (Bug 3
+ile aynı disiplin — bu değişiklik TÜM tenant'lar için `/ask`'in çekirdek kontrol akışını
+etkiliyor): `DIMA_COMPANY=gulteks` ile tam takım koşuldu, başarısız test listesi `git
+stash` ile alınan taban çizgiyle (157 hata) satır satır karşılaştırıldı — TEK fark BENİM
+yeni eklediğim 2 demo-boyahane-özgü test (gulteks'in cari/muhasebe şemasında "oee"/"makine"
+kavramı yok, beklenen), sıfır davranış regresyonu. Container yeniden derlenip
+(`docker-compose build dima-backend`) yeniden başlatıldı.
+
+**Kapsam dışı (bilinçli, bu turda YAPILMADI)**: yapısal zincir çıkmazının Discovery
+fallback'i, dürüst ret'in SPESİFİK açıklamasını (`reason`, ör. "OEE cube'u personel boyutu
+içermemektedir...") Discovery'nin KENDİ trace/note'una TAŞIMIYOR — Discovery başarılı olursa
+bu zaten önemsizleşiyor (kullanıcı gerçek bir cevap alıyor), ama Discovery de BAŞARISIZ
+olursa kullanıcı yalnız Discovery'nin JENERİK dürüst-retini görür, yapısal zincirin
+SPESİFİK nedenini DEĞİL — küçük bir netlik kaybı, ayrı bir iyileştirme olarak bırakıldı.
+
 ### §E.4 bulgusu (1 Ağustos 2026 — kod okunarak doğrulandı, denendi ve GERİ ALINDI)
 
 Plan, route()'un tek-ölçü sınırlamasını (`cq = {"cube": cube, "measures": [measure]}`)

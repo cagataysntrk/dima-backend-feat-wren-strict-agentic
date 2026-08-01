@@ -282,6 +282,46 @@ def test_convo_anlasilmayan_takip_serbest_sqle_dusmez(client):
     assert d2["note"] and d2["source"] is None
 
 
+def test_yapisal_takip_cikmazi_gercek_kelime_varsa_discoverye_duser(client):
+    """1 Ağustos 2026 canlı bulgu: "personel bazlı verimlilikleri karşılaştır son 6 ay" bir
+    OEE thread'i içinde (structural followup) deterministik zincirin TAMAMI (refine/cross_
+    cube_*/fresh route()) tükeniyordu — OEE'de personel boyutu yok, parti'de OEE ölçüsü yok
+    (bkz. cube_router Bug 4). Eskiden bu doğrudan dürüst ret dönerdi; ama AYNI soru taze/
+    yeni-thread'den sorulunca Discovery (cube sınırlarının ÖTESİNDE serbest join) GERÇEKTEN
+    cevaplayabiliyordu (canlı interaction_log kanıtı). Yukarıdaki gibberish testinin TERSİ:
+    `_match_cube` mesajda GERÇEK katalog kanıtı ("verim" → oee) bulduğu için artık dürüst ret
+    DEĞİL, Discovery'ye düşer."""
+    d1 = ask(client, "makine bazında ortalama oee")
+    d2 = ask(client, "personel bazlı verimlilikleri karşılaştır son 6 ay",
+             cube_query=d1["cube_query"], history=["makine bazında ortalama oee"])
+    assert d2["source"] is not None  # dürüst ret DEĞİL — Discovery bir şey üretti
+    assert d2["source"] != "cube"  # deterministik zincir GERÇEKTEN tükendi (regresyon değil)
+
+
+def test_raw_followup_tuzagi_yeni_konu_intent_pathe_doner(client):
+    """1 Ağustos 2026 — "raw_followup tuzağı": bir thread'in İLK turu Discovery'ye (ham-SQL)
+    düşerse (yalnız prev_sql+history dolu, cube_query YOK) eskiden `_try_fresh_intent()` bir
+    daha ASLA denenmezdi — konu TAMAMEN değişse, yeni soru route() ile kolayca deterministik
+    çözülebilir olsa BİLE, generate_followup_sql'e (ham-SQL "takip düzenlemesi") giderdi.
+    Artık raw takipten önce _try_fresh_intent() bir kez denenir; route() kendinden eminse
+    (Intent-path) o kazanır. Dönem AÇIKÇA belirtilir ("tüm zamanlar") ki route() bir
+    clarification chip'ine (dönem sorusu) DEĞİL, doğrudan source=cube'a düşsün."""
+    d = ask(client, "makine bazında ortalama oee tüm zamanlar",
+            prev_sql="SELECT 1 AS x", history=["alakasız bir önceki soru"])
+    assert d["source"] == "cube"
+    assert any("Intent-path" in t for t in d["trace"])
+
+
+def test_raw_followup_gercek_devam_hala_generate_followupa_gider(client):
+    """Regresyon kilidi: route()'un ÇÖZEMEYECEĞİ, gerçekten prev_sql'e atıfta bulunan bir
+    kırpıntı (cube/ölçü kelimesi taşımıyor) hâlâ mevcut ham-SQL takip akışına gider —
+    _try_fresh_intent() eklenmesi BU akışı bozmaz (route() None döner, sessizce eskisi gibi
+    generate_followup_sql'e düşülür)."""
+    d = ask(client, "temmuzu çıkar",
+            prev_sql="SELECT * FROM oee_vardiya", history=["makine bazında ortalama oee"])
+    assert d["source"] != "cube"
+
+
 # --- /cube: yorum çubuğu (chip) düzenlemeleri — deterministik, LLM'siz --------
 
 def test_cube_endpoint_chip_edit(client):

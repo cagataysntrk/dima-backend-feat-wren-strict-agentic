@@ -1195,8 +1195,16 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
        ürettiyse): `deterministic_refine` (LLM'siz düzenleme: ölçü değişimi/çıkarma,
        kırılım, dönem, sıralama, top-N) → `cross_cube_add` (blend) → `cross_cube_dim_switch`
        (konu değişti notu) → LLM-destekli yapısal düzenleme (`llm.refine_cube`, hâlâ SQL
-       DEĞİL) → hiçbiri olmazsa DÜRÜST RET (Discovery'ye düşülmez — takip bağlamı olmadan
-       ham-SQL üretmek yanıltıcı olurdu).
+       DEĞİL) → hiçbiri olmazsa `_try_fresh_intent()` son kez denenir → HÂLÂ boşsa artık
+       DÜRÜST RET DEĞİL, Discovery'ye (ham-SQL, taze — stale prev_sql'e çapalanmadan) düşülür
+       (1 Ağustos 2026 düzeltmesi: canlı bulgu — aynı soru taze/yeni-thread'den sorulunca
+       Discovery cube sınırlarının ÖTESİNDE serbest join ile gerçekten cevaplayabiliyordu,
+       yapısal takip zinciri eskiden bu noktada köre dürüst ret veriyordu).
+    3b. RAW TAKİP (yalnız body.prev_sql + history dolu, cube_query YOK — önceki tur Discovery
+       ürettiyse): Discovery'nin ham-SQL "takip düzenlemesi"ne (§5, prev_sql bağlamlı) düşmeden
+       ÖNCE `_try_fresh_intent()` bir kez denenir — "raw_followup tuzağı" düzeltmesi (1 Ağustos
+       2026): eskiden bu satır HİÇ çalışmazdı, bir thread'in İLK turu Discovery'ye düşerse o
+       thread SONSUZA KADAR route()/Intent-JSON'a dönemezdi, konu tamamen değişse bile.
     4. FRESH (bağımsız) soru — Intent-first:
        a. `cube_router.route()` — SIFIR-LLM deterministik CubeQuery eşleştirme.
        b. Dönemsel kıyas niyeti (`compare_mode`: "geçen yıla göre") → `strip_compare` +
@@ -2059,22 +2067,62 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             except Exception:
                 _log.warning("LLM yapısal takip düzenlemesi başarısız (best-effort)", exc_info=True)
 
-        return _honest_refusal(
-            note=reason or "Bu takip mesajını önceki raporla ilişkilendiremedim. "
-                          "Yeni bir soru olarak sorar mısın?",
-            trace=migration_trace + ["Takip: deterministik/LLM düzenleme tükendi → dürüst ret"],
-        )
+        # YAPISAL ZİNCİR ÇIKMAZI (canlı bulgu, 1 Ağustos 2026 — "personel bazlı verimlilikleri
+        # karşılaştır son 6 ay" bir OEE thread'i içinde): deterministik refine/cross_cube_*/
+        # fresh-route() VE LLM'in edit/new kararı TÜKENİNCE eskiden BURADA doğrudan dürüst ret
+        # dönerdi — ama AYNI soru taze/yeni-thread'den (is_followup=False) sorulunca Discovery
+        # (ham-SQL, cube sınırlarının ÖTESİNDE serbest join) GERÇEKTEN cevaplayabiliyordu (canlı
+        # kanıt: interaction_log'da aynı metin iki kez — biri dürüst ret, biri source=llm:gemini
+        # başarılı sonuç). `_try_fresh_intent()` bir kez daha denenir (action="new" DIŞINDAki —
+        # refine_cube hiç çağrılamadı/hata verdi/"edit"-ama-geçersiz gibi — durumları da kapsar).
+        fresh = _try_fresh_intent()
+        if fresh:
+            return fresh
 
-    # 4) FRESH (bağımsız) soru — Intent-first (bkz. docstring §4).
-    if not is_followup:
+        # ANLAŞILDI-AMA-TEK-CUBE-YETMİYOR mu, yoksa GERÇEKTEN ANLAŞILAMADI mı ("asdlkj qwerty
+        # zxcvb" gibi) — bu ayrım KRİTİK: `test_convo_anlasilmayan_takip_serbest_sqle_dusmez`
+        # BİLEREK anlamsız metnin Discovery'nin (rule-tabanlı sağlayıcıda özellikle) alakasız
+        # bir varsayılan rapora ("_partiler_sql" son çare şablonu) düşmesini YASAKLAR — "ASLA
+        # alakasız rapor değil". `_match_cube` (katalogda GERÇEK bir sinonim/kelime kanıtı var
+        # mı) bu ayrımı ucuza yapar: eşleşme YOKSA mesaj katalogda hiçbir iz bırakmamıştır →
+        # dürüst ret KORUNUR (ilk taslak bu koruma OLMADAN gibi metni de Discovery'ye
+        # düşürüyordu — tam pytest bunu `test_convo_anlasilmayan_takip_serbest_sqle_dusmez`
+        # ile YAKALADI). Eşleşme VARSA (ör. "verim" → oee) mesaj GERÇEK domain kelimesi taşıyor,
+        # yalnız TEK bir cube'a sığmıyor — bu durumda Discovery'ye (ham-SQL, taze — stale
+        # prev_sql'e çapalanmadan, `raw_followup` BURADA hâlâ False) düşülür.
+        if cube_router._match_cube(q_norm, schema) is not None:
+            _log.info("Takip: yapısal zincir tükendi ama mesajda katalog kanıtı var → "
+                      "Discovery'ye düşülüyor (dürüst ret DEĞİL, önceki reason=%r)", reason)
+        else:
+            return _honest_refusal(
+                note=reason or "Bu takip mesajını önceki raporla ilişkilendiremedim. "
+                              "Yeni bir soru olarak sorar mısın?",
+                trace=migration_trace + ["Takip: deterministik/LLM düzenleme tükendi → dürüst ret"],
+            )
+
+    # 4) FRESH (bağımsız) soru VEYA RAW takip (canlı bulgu, 1 Ağustos 2026 — "raw_followup
+    # tuzağı"): bir thread'in İLK turu Discovery'ye (ham-SQL) düşerse `raw_followup` o thread'in
+    # SONRAKİ HER turunda True kalırdı ve bu satır hiç ÇALIŞMAZDI — o thread bir daha asla
+    # route()/Intent-JSON'a dönemiyordu, konu tamamen değişse (yeni, kolayca çözülebilir bir
+    # soru olsa) BİLE. Yapısal takibin KENDİ "action==new" kaçış kapısıyla AYNI ilke: Discovery'nin
+    # ham-SQL "takip düzenlemesi"ne (önceki SQL'i bağlam alarak) düşmeden ÖNCE, konu GERÇEKTEN
+    # değiştiyse route()/Intent-JSON'un onu deterministik/ucuz çözüp çözemeyeceğine bakılır.
+    # GÜVENLİ: `_try_fresh_intent()` yalnız KENDİNDEN EMİN olduğunda (route() eşleşmesi ya da
+    # doğrulanmış Intent-JSON parse'ı) bir şey döner — gerçek bir ham-SQL devamı (ör. "temmuzu
+    # çıkar", prev_sql'in bir parçasına atıfta bulunan, cube/ölçü kelimesi taşımayan bir kırpıntı)
+    # route()'ta hiçbir eşleşme bulamaz, None döner, mevcut generate_followup_sql akışı DEĞİŞMEDEN
+    # çalışmaya devam eder.
+    if not is_followup or raw_followup:
         fresh = _try_fresh_intent()
         if fresh:
             return fresh
 
     # 5) Discovery: sağlayıcı zinciri (failover + kural-tabanlı/dürüst-ret yedeği —
-    # app/llm.py, app.state.llm). Yalnız RAW takip (önceki tur yapısal cube_query
-    # ÜRETMEMİŞSE, yalnız ham SQL varsa) ya da bağımsız-ama-Intent-path'in kapsamadığı
-    # sorular buraya ulaşır — YAPISAL takip (§3) buraya HİÇ düşmez (kendi dürüst-ret'i var).
+    # app/llm.py, app.state.llm). RAW takip (önceki tur yapısal cube_query ÜRETMEMİŞSE),
+    # bağımsız-ama-Intent-path'in kapsamadığı sorular VE (1 Ağustos 2026'dan beri) kendi
+    # deterministik+LLM zinciri TÜKENMİŞ bir YAPISAL takip buraya ulaşır (§3'ün son çaresi —
+    # `raw_followup` bu durumda hâlâ False, `_run_discovery` bu yüzden taze `generate_sql`
+    # üretir, stale prev_sql'e çapalamaz).
     llm = getattr(request.app.state, "llm", None)
     if llm is None:
         raise HTTPException(status_code=503, detail="LLM sağlayıcısı yapılandırılmamış.")
