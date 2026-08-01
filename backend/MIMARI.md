@@ -301,15 +301,35 @@ diye zaman kaybetmesin.
 | Deterministik tavan | `python lab/nl_corpus.py` (~1000 soru × 4 şirket, LLM'siz) | artan |
 | Doğru cube/ölçü/boyut | `python lab/nl_accuracy.py` | artan |
 
-**Dürüst uyarı — bugünkü durum:**
-- `route-distribution` endpoint'i **var ama sıfır tüketicisi var**; ve `interaction_log` kalıcı
-  olmadan anlamsız. Yani **ana KPI şu an ölçülemez.**
-- `eval/baseline.json` `1.0` diyor, son `eval/report.json` `0,9464` → **CI kapısı kırık durumda**;
-  `report.json` ayrıca bayat (n=129 vs `cases.yaml`'daki 133 adım).
-- `eval/run.py::classify()` `source` dolu olan her şeyi `answer` sayıyor → **Discovery cevabı ile
-  cube cevabı harness'a ayırt edilemiyor.** Eval bir *doğruluk* kapısıdır, *yönlendirme* kapısı
-  değildir.
-- `lab/nl_corpus.py` ve `lab/nl_accuracy.py` **hiç koşmamış** (`lab/reports/` yok).
+**Ölçülen baseline (2026-08-02, `--network none`):**
+
+| Metrik | Değer |
+|---|---|
+| eval `det` dilimi | 129 adım · **answered-precision %100** · **coverage %100** · chip %100 |
+| **deterministik pay** | **%100** — yol dağılımı `intent=111` |
+| pytest | **526 geçti / 0 hata**, 81–96 sn |
+
+> ⚠️ **Bu %100'ü yanlış okuma.** 111 cevabın 111'i intent yolundan geliyor, çünkü eval korpusu
+> **zaten çalışan şeye göre kuratörlenmiş** — çapraz-alan boşluğuna hiç dokunmuyor. Boşluğun bu
+> kadar uzun görünmez kalmasının sebebi de tam olarak budur. Gerçek tavan `lab/nl_corpus.py`
+> (~1000 soru × 4 şirket) ile ölçülür; eval bir *regresyon kilididir*, kapsam ölçüsü değil.
+
+**Düzeltilenler (2026-08-02):**
+- ✅ `eval/run.py` artık **source-farkında**: `expect_source` (vaka başına katman denetimi),
+  `by_path`/`by_source`/`deterministic_share` metrikleri, ve `test_eval_gate.py`'de ikinci bir
+  kapı — *deterministik pay baseline'ın altına düşemez*. Önceden bir soru cube yolundan
+  Discovery'ye kaysa precision ve coverage aynı kalıyordu, yani **regresyon sessiz geçiyordu.**
+- ✅ `eval/run.py` artık `DIMA_VQR_EMBEDDER=off` set ediyor — "ağsız koşum" iddiası embedder
+  indirmesi yüzünden doğru değildi.
+- ❗ **Yanlış alarm düzeltmesi:** "CI kapısı kırık" değildi. `eval/report.json` **bayattı**
+  (31 Tem, precision 0,9464); taze koşum baseline ile birebir örtüşüyor. Bayat artefakta bakıp
+  karar vermeyin — `python -m eval.run` koşun.
+
+**Hâlâ açık:**
+- `route-distribution` endpoint'inin **hâlâ sıfır UI tüketicisi var** (KPI artık endpoint'in
+  kendisinde hesaplanıyor ve testli, ama kimse göstermiyor).
+- Anlamlı bir Intent/Discovery oranı için **gerçek kullanım** gerekiyor; telemetri artık kalıcı
+  (Faz 0.1) ama tablo pratikte hâlâ boş (7 satır).
 
 ---
 
