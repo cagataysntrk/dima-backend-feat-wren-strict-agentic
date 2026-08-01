@@ -138,7 +138,24 @@ def _route_path(source: str | None) -> str:
         return "meta_katalog"
     if s == "statement":
         return "intent"        # GL yapısal rapor — deterministik, sıfır-LLM (Faz 2a)
+    # SORU-DIŞI aksiyonlar (2 Ağustos 2026): bunlar bir NL sorusunun yönlendirilmesi DEĞİL,
+    # zaten verilmiş bir cevabın üstüne yapılan kullanıcı aksiyonlarıdır. Önceden "other"a
+    # düşüyorlardı ve KPI paydasını sessizce şişiriyorlardı (Intent-payı olduğundan düşük
+    # görünür). `_KPI_PATHS` bunları paydadan dışlar; `by_path` yine de göstersin ki
+    # aksiyon hacmi görünür kalsın.
+    if s == "drill":
+        return "drill"         # /ask/drill — deterministik dallanma, cube_query ZORUNLU
+    if s == "upload":
+        return "upload"        # /ask/upload — Excel/CSV oto-cube (ADR-0021)
+    if s == "verify":
+        return "verify"        # /verify + /ask/verify — kullanıcı doğrulama aksiyonu
     return "other"
+
+
+# KPI paydası: bir VERİ cevabı beklenen sorular. meta/katalog (selamlama, "neler
+# sorabilirim") ve soru-dışı aksiyonlar (drill/upload/verify) HARİÇ — aksi halde
+# "Intent ≥%70 / Discovery <%30" hedefi ölçülen şeyden farklı bir şeyi ölçer.
+_KPI_PATHS = ("intent", "cache", "discovery", "rule")
 
 
 @router.get("/route-distribution")
@@ -180,8 +197,33 @@ def route_distribution(
         key=lambda r: -r["count"],
     )
 
+    # KPI'yı BURADA hesapla — çağıranın aritmetik yapmasına bırakma. Strateji belgesinin
+    # hedefi "Intent ≥%70 · Discovery <%30" ve bu, ürünün maliyet/denetlenebilirlik tezinin
+    # tek sayısal ifadesi. Payda = veri cevabı beklenen sorular (`_KPI_PATHS`).
+    kpi_total = sum(path_counts.get(p, 0) for p in _KPI_PATHS)
+
+    def _kpi_pct(p: str) -> float:
+        return round(path_counts.get(p, 0) / kpi_total * 100, 1) if kpi_total else 0.0
+
+    intent_pct, discovery_pct = _kpi_pct("intent"), _kpi_pct("discovery")
     return {
         "since": since.isoformat(timespec="seconds"), "days": days, "total": total,
-        "by_path": by_path,      # {"intent"|"cache"|"discovery"|"rule"|"meta_katalog"|"other", count, pct}
+        "by_path": by_path,      # intent|cache|discovery|rule|meta_katalog|drill|upload|verify|other
         "by_source": by_source,  # ham source kırılımı ("cube" vs "cube+llm" ayrımı dahil)
+        "kpi": {
+            # Payda soru-dışı aksiyonları ve meta/katalogu DIŞLAR (bkz. _KPI_PATHS).
+            "denominator": kpi_total,
+            "intent_pct": intent_pct,
+            "cache_pct": _kpi_pct("cache"),
+            "discovery_pct": discovery_pct,
+            "rule_pct": _kpi_pct("rule"),
+            "intent_target": 70.0,
+            "discovery_target": 30.0,
+            # Yeterli örneklem yokken "hedef tutuyor" demek yanıltıcı olur (n=7 ile %100
+            # Intent görmek mümkün). 30 altı örneklemde karar VERİLMEZ — dürüst None.
+            "meets_target": (
+                None if kpi_total < 30
+                else (intent_pct >= 70.0 and discovery_pct < 30.0)
+            ),
+        },
     }

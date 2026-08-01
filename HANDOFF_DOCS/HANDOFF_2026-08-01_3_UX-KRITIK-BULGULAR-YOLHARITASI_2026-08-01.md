@@ -1,3 +1,7 @@
+> ⚠️ **TARİHSEL KAYIT — NORMATİF DEĞİLDİR.** Bu belge yazıldığı andaki durumu ve o turda alınan
+> kararları anlatır. Mimari otorite `backend/MIMARI.md`'dir; çelişkide o kazanır.
+> Özellikle: bu belgelerdeki JOIN/derleyici teşhisleri `MIMARI.md §3.2`'de **düzeltilmiştir**.
+
 # Dima — 13 Kritik UX/Analitik Bulgu: Kök-Neden Araştırması ve Tam Yol Haritası
 
 ## Uygulama Durumu (1 Ağustos 2026 — canlı güncellenir)

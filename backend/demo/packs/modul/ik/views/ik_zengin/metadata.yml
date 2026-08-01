@@ -1,6 +1,13 @@
 # Zenginleştirilmiş bordro view'ı — maaş + PERSONEL DEMOGRAFİSİ (departman/cinsiyet/yaş/
 # eğitim/pozisyon). bordro.personel_kodu ile personel + personel_ozluk JOIN. Böylece
 # "departman/cinsiyet/yaş bazında maaş/maliyet" DETERMİNİSTİK. tarih: donem'den türetilir.
+#
+# ⚠️ NOT (2026-08-02 — bkz. backend/MIMARI.md §3.2): bu denormalizasyon teknik bir zorunluluk
+#   DEĞİL. Model katmanı (WrenEngine.dry_plan) ilişki üzerinden JOIN'i otomatik üretiyor
+#   (ampirik olarak doğrulandı). Planlanan göç: `ik` cube'unun base_object'i → `bordro`
+#   (+ handle/calc kolonlar). Dikkat: bugün `bordro → personel_ozluk` sıçraması için ayrı bir
+#   ilişki BEYAN EDİLMEMİŞ; ikinci sıçrama `bordro_personel` + `personel`in mevcut calc
+#   kolonları üzerinden gidecek. View, göç doğrulanana kadar KALIR.
 name: ik_zengin
 statement: |
   SELECT b.id, b.donem, b.personel_kodu, b.brut_maas, b.sgk_isci, b.issizlik_isci,

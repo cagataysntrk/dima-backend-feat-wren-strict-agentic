@@ -1,5 +1,11 @@
 # dima-backend — CLAUDE.md
 
+> **Mimari otorite `backend/MIMARI.md`'dir.** Bu dosya kısa bir kural indeksidir. Mimari bir
+> soruda (cevaplama merdiveni, semantik katman, JOIN'in nerede oluştuğu, ne YAPILMAYACAĞI,
+> bilinen kusurlar, ADR listesi) **önce `MIMARI.md`'yi oku** — çelişkide o kazanır.
+> `HANDOFF_DOCS/*` tarihsel kayıttır; `Dima-0-100-Gorev-Takip-Dosyasi (2).md` ürün şartnamesidir,
+> mimari otorite değildir.
+
 ## Rol
 `dima-frontend-demo` ile `dima-wrenai` (Wren semantik SQL motoru) arasındaki **ince HTTP köprüsü**.
 İş mantığı minimum: SQL üretimi (LLM), doğrulama (motor), çalıştırma (motor), guard'lar.
@@ -8,8 +14,11 @@ Ağır semantik iş `dima-wrenai` motorunda; UI `dima-frontend-demo`'de kalır.
 ## Teknoloji
 - Python 3.11+ · FastAPI · Uvicorn
 - `wren.engine.WrenEngine` (in-process; subprocess YOK)
-- NL→SQL sağlayıcıları (pluggable, `DIMA_LLM_PROVIDER=auto|anthropic|groq|ollama|rule`):
-  Anthropic · Groq/Ollama (OpenAI-uyumlu tek istemci) · **kural-tabanlı (anahtarsız)** fallback
+- NL→SQL sağlayıcıları (pluggable,
+  `DIMA_LLM_PROVIDER=auto|anthropic|xai|gemini|groq|ollama|rule`):
+  Anthropic · xAI/Gemini/Groq/Ollama (OpenAI-uyumlu tek istemci) · **kural-tabanlı (anahtarsız)**
+  fallback. `auto` → `FailoverSqlGenerator`, sıra `anthropic → gemini → groq → xai → ollama`,
+  hepsi başarısızsa `rule`. Intent-JSON için ayrı/ucuz model (`*_select_model`).
 - pydantic-settings (env, `DIMA_` öneki)
 
 ## Yapı
@@ -26,8 +35,18 @@ app/
 ├── interpret.py       # evrensel çıktı yorumu (deterministik, flag'li — ADR-0022)
 ├── dataset.py         # chat-scoped Excel/CSV → oturum DuckDB + oto-cube (ADR-0021)
 ├── logging_setup.py   # system/app logger (ADR-0020 — sessiz yutma yok)
-└── routers/           # health(+features), query, ask(+cube/verify/upload), contracts,
-                       #   schedules, conversations (sohbet geçmişi — ADR-0007/0019)
+├── cube_router.py     # SIFIR-LLM deterministik NL→CubeQuery (~1763 satır; içerik YAML'da)
+├── viz.py/report.py/viz_email.py  # deterministik grafik+rapor kararı (ADR-0024)
+├── drill.py           # dallı kök-neden: saf yorum fonksiyonları + CubeQuery dönüşümleri
+├── vqr.py             # doğrulanmış-soru deposu (embedder + leksik yedek)
+├── kpi.py/statements.py/yoy.py    # çapraz-cube KPI · gelir tablosu/bilanço · dönemsel kıyas
+├── contracts.py       # Query Contract (ADR-0010)  ·  pii.py  # maskeleme (tek çıkış noktası)
+├── channels.py        # bildirim/teslim kanalları (ADR-0011)
+├── db_introspect.py/mdl_writer.py # canlı şema keşfi → taslak MDL (ADR-0017)
+├── value_index.py/archetypes.py/synonyms  # bulanık eşleşme + sinonim katmanları (ADR-0018)
+└── routers/           # health(+features), query, ask(+cube/verify/upload/drill/jobs),
+                       #   contracts, schedules, conversations (ADR-0007/0019),
+                       #   connections (bağlantı sihirbazı), dashboards, measures (terfi), stats
 control_plane/         # auth bounded-context: SQLModel entity'ler (Tenant/User/… + CloneJob,
                        # SyncState, Conversation(Message), InteractionLog), authorize() matrisi,
                        # JWT/TOTP/rate-limit, audit, crypto (AES-256-GCM cred, DIMA_CRED_KEK), Alembic
@@ -37,7 +56,11 @@ admin-dev/             # admin-api localtld başlatıcısı (pnpm dev → admin-
 migrations/            # Alembic (control-plane şeması; Postgres'te sahibi admin-api)
 demo/                  # kendi kendine yeten DuckDB boyahane (tekstil) + OEE demosu
 │  ├── packs/kaynak/   # kaynak-sistem pack'leri (ADR-0017): mikro-v16 (modeller pack'te),
-│  │                   #   logo-3 (şablonlu — modeller şirkete üretilir); sektor/ = kesişim
+│  │                   #   logo-3 (şablonlu — modeller şirkete üretilir), netsis;
+│  │                   #   sektor/ = kesişim katmanı
+│  ├── packs/modul/    # ERP-BAĞIMSIZ dikeyler: oee, bakim, ik, enerji, kpi, turev
+│  ├── packs/sektor/   # boyahane (cube'lu), geri-donusum/kumas-ticareti/tarim-ticareti (yalnız
+│  │                   #   terminoloji: cube_synonyms.yml + knowledge/rules)
 │  └── companies/atiksan, gulteks  # lab fixture'ları: mssql, lab/ SQL Server'ına bağlanır
 lab/                   # müşteri DB laboratuvarı: Docker mssql + restore/import/envanter
 ```

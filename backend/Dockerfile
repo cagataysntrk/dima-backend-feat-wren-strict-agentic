@@ -33,6 +33,15 @@ RUN pip install "wren-core-py==0.7.2"
 RUN pip install "wrenai>=0.13,<0.14"
 
 # 3) Backend runtime deps
+#
+# ⚠️ Bu liste `pyproject.toml [project].dependencies`'in ELLE tutulan bir kopyasıdır ve
+#    2 Ağustos 2026'da SAPMIŞ olduğu tespit edildi: `mrml`, `jinja2` ve `ruamel.yaml`
+#    pyproject'te ZORUNLU bildirildiği halde burada yoktu. Sonucu çalışan üründe sessiz
+#    çökmelerdi — `app/email_render.py:48` (her zamanlanmış rapor e-postası, ADR-0011) ve
+#    `app/mdl_writer.py:19` (ölçü terfisi + bağlantı sihirbazının şema yazımı).
+#    Sapmayı bir daha SESSİZCE gönderemeyelim diye iki koruma eklendi: (a) aşağıdaki
+#    import duman testi build'i kırar, (b) `tests/test_dependencies.py` pyproject'teki her
+#    bağımlılığın import edilebildiğini iddia eder (CI'da koşar, Docker'dan bağımsız).
 RUN pip install \
       "fastapi==0.139.2" \
       "uvicorn[standard]==0.51.0" \
@@ -43,7 +52,17 @@ RUN pip install \
       "sqlmodel>=0.0.22" \
       "argon2-cffi>=23.1" \
       "pyjwt>=2.9" \
-      "psycopg[binary]>=3.2"
+      "psycopg[binary]>=3.2" \
+      "mrml>=0.2" \
+      "jinja2>=3.1" \
+      "ruamel.yaml>=0.18" \
+      "alembic>=1.13"
+
+# 3b) Duman testi: bildirilen her runtime bağımlılığı GERÇEKTEN import edilebilmeli.
+#     Eksikse build BURADA kırılır, üretimde ilk e-posta/terfi denemesinde değil.
+RUN python -c "import fastapi, uvicorn, anthropic, openai, pydantic_settings, fastembed, \
+sqlmodel, argon2, jwt, psycopg, mrml, jinja2, ruamel.yaml, alembic, wren, wren_core; \
+print('deps OK')"
 
 # 4) Application code + control-plane (auth) + bundled demo.
 COPY app           /app/app

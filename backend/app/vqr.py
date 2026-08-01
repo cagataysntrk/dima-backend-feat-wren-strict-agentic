@@ -14,8 +14,10 @@ companies/<şirket>/verified/queries.jsonl'daydı ama Railway volume dışı old
 redeploy'da siliniyordu (ADR-0005/0008). Başlangıçta belleğe yüklenir; retrieval RAM'de.
 Dönem filtreleri SAKLANMAZ: sorgu ŞEKLİ öğrenilir, dönem her mesajdan yeniden çözülür.
 
-Embedding: multilingual-e5-small (fastembed/ONNX; TR retrieval'da MiniLM'den +10 puan
-— bkz. docs/research/turkce-llm-embedding-raporu.md). e5 kuralı: simetrik soru→soru
+Embedding: multilingual-e5-LARGE (fastembed/ONNX; TR retrieval'da MiniLM'den +10 puan
+— bkz. docs/research/turkce-llm-embedding-raporu.md; fastembed e5-small'ı desteklemiyor,
+bkz. `_embedder()`). ~2.2 GB indirir → `DIMA_VQR_EMBEDDER=off` ile tamamen kapatılabilir
+(testler bunu kullanır; gerekçe config.py). e5 kuralı: simetrik soru→soru
 eşlemede İKİ tarafa da "query: " öneki. Model yoksa F5-token sözlüksel fallback
 (Can et al.: ilk-5-karakter kökleme ≈ tam lemmatizer) — testler deterministik kalır.
 """
@@ -58,6 +60,17 @@ def _embedder():
     global _emb_model, _emb_tried
     if _emb_tried:
         return _emb_model
+    # AÇIK KAPATMA ANAHTARI (`DIMA_VQR_EMBEDDER=off`, bkz. config.py gerekçesi): indirme
+    # HİÇ denenmez. Testler bunu kullanır — non-blocking kilit yalnız İKİNCİ thread'i korur,
+    # indiren thread'in kendisinde timeout YOKTUR, dolayısıyla ağa bağımlı bir test paketi
+    # süresiz asılabilir (ölçüldü). `_emb_tried` işaretlenir → sonraki çağrılar hızlı yoldan.
+    from app.config import get_settings
+
+    if str(get_settings().vqr_embedder).strip().lower() == "off":
+        _emb_tried = True
+        _emb_model = None
+        _log.info("vqr embedder kapalı (DIMA_VQR_EMBEDDER=off) → sözlüksel fallback")
+        return None
     if not _emb_lock.acquire(blocking=False):
         return None  # başka bir thread (ör. başlangıç ısıtması) zaten indiriyor — BEKLEME
     try:
@@ -70,8 +83,12 @@ def _embedder():
             # fastembed e5-small'ı desteklemiyor; e5-LARGE TR retrieval'da zaten en iyi
             # (TR-MTEB 60.6 nDCG@10). İlk kullanımda ONNX indirir (lazy, thread-safe).
             _emb_model = TextEmbedding("intfloat/multilingual-e5-large")
-        except Exception:
+        except Exception as exc:
+            # ADR-0020: sessiz yutma YOK. Fallback meşru bir yol ama SEBEBİ görünmeli —
+            # "neden benzer sorular eşleşmiyor" sorusunun cevabı çoğu zaman burasıdır.
             _emb_model = None
+            _log.warning("vqr embedder yüklenemedi (%s: %s) → sözlüksel fallback",
+                         type(exc).__name__, exc)
         return _emb_model
     finally:
         _emb_lock.release()

@@ -33,6 +33,22 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-${DIMA_OPENROUTER_API_KEY}}
       - DIMA_OPENROUTER_API_KEY=${DIMA_OPENROUTER_API_KEY}
       - DIMA_OPENROUTER_MODEL=${DIMA_OPENROUTER_MODEL}
+    volumes:
+      # TELEMETRİ KALICILIĞI (2 Ağustos 2026). Önceden bu servisin HİÇ volume'u yoktu
+      # (`docker inspect` → Mounts: []) ve DIMA_DATABASE_URL=sqlite:////app/logs/dima.db
+      # konteyner katmanına yazıyordu → HER `docker compose build` tüm interaction_log'u,
+      # Query Contract kanıtlarını, sohbet geçmişini ve zamanlanmış rapor durumunu SİLİYORDU.
+      # Bulunduğunda tabloda 7 satır kalmıştı, hepsi tek bir 69 saniyelik oturumdan.
+      # Sonuç: ürünün ana KPI'ı ("Intent ≥%70 · Discovery <%30") ölçülemez durumdaydı ve
+      # hiçbir iyileştirmenin işe yarayıp yaramadığı kanıtlanamıyordu.
+      - dima_logs:/app/logs
+      # EMBEDDING MODEL ÖNBELLEĞİ. `vqr._embedder()` ilk kullanımda HF Hub'dan
+      # multilingual-e5-large'ı (~2.2 GB ONNX) indirir. Kimliksiz indirme ORANLANIYOR ve
+      # pratikte duruyor; `fastembed`/`requests` katmanında timeout YOK. Volume olmadan her
+      # yeniden-build bu indirmeyi sıfırdan başlatır ve o süre boyunca VQR sessizce
+      # sözlüksel fallback'e düşer (benzer sorular eşleşmez). HANDOFF #4'ün uygulanmamış
+      # duran önerisiydi. Kapatmak için: DIMA_VQR_EMBEDDER=off (bkz. app/config.py).
+      - dima_hf_cache:/tmp/fastembed_cache
     depends_on:
       - wren-engine
       - qdrant
@@ -40,3 +56,5 @@ services:
 
 volumes:
   qdrant_data:
+  dima_logs:
+  dima_hf_cache:

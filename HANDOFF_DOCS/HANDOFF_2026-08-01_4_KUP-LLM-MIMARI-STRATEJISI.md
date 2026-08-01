@@ -1,3 +1,7 @@
+> ⚠️ **TARİHSEL KAYIT — NORMATİF DEĞİLDİR.** Bu belge yazıldığı andaki durumu ve o turda alınan
+> kararları anlatır. Mimari otorite `backend/MIMARI.md`'dir; çelişkide o kazanır.
+> Özellikle: bu belgelerdeki JOIN/derleyici teşhisleri `MIMARI.md §3.2`'de **düzeltilmiştir**.
+
 # Rapor: LLM ↔ Küp Mimarisi — Sorun, Durum, Çözüm Seçenekleri
 
 *(1 Ağustos 2026 — Dima backend, `wren-bağımsız` dalı — HANDOFF belgesi #4, repo kökünde

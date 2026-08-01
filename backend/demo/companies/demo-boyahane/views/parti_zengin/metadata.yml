@@ -1,6 +1,18 @@
 # Zenginleştirilmiş parti view'ı — üretim + OPERATÖR DEMOGRAFİSİ (cinsiyet/yaş/eğitim).
-# calc field'lar cube_query_to_sql'de JOIN'lenmiyor (düz base-SQL) → demografiyi VIEW'da
-# denormalize ederiz (repo turev/view deseni). Zincir: partiler.operator = personel.ad_soyad
+#
+# ⚠️ DÜZELTME (2026-08-02, ampirik olarak kanıtlandı — bkz. backend/MIMARI.md §3.2):
+#   Aşağıdaki gerekçenin İLK YARISI doğru, ÇIKARILAN SONUÇ yanlıştır. `cube_query_to_sql`
+#   gerçekten JOIN üretmiyor — AMA model katmanı (WrenEngine.dry_plan) is_calculated
+#   kolonlar üzerinden JOIN'i OTOMATİK enjekte ediyor (çok-sıçramalı, join-pruning'li;
+#   partiler→personel→personel_ozluk zinciri çalıştırılarak doğrulandı, toplamlar bu
+#   view'la birebir aynı). Yani bu view teknik bir zorunluluk DEĞİL, düzeltilmiş bir
+#   varsayımın kalıntısıdır. `models_enrich.yml` gerekli calc kolonları (operator_cinsiyet,
+#   operator_departman, operator_egitim, operator_dogum_tarihi) ZATEN üretiyor ama hiçbir
+#   cube onları okumuyor. Planlanan göç: `parti` cube'unun base_object'i → `partiler`.
+#   Bu view, göç tamamlanıp toplamlar birebir doğrulanana kadar KALIR.
+#
+# (özgün gerekçe) calc field'lar cube_query_to_sql'de JOIN'lenmiyor (düz base-SQL) →
+# demografiyi VIEW'da denormalize ederiz (repo turev/view deseni). Zincir: partiler.operator = personel.ad_soyad
 # (1-hop) + personel.personel_kodu = personel_ozluk.personel_kodu (2-hop). LEFT JOIN =
 # operatörsüz/özlüksüz parti düşmez. Böylece "cinsiyet/yaş bazında verimlilik" DETERMİNİSTİK.
 name: parti_zengin

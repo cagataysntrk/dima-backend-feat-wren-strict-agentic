@@ -80,6 +80,24 @@ class Settings(BaseSettings):
     # Testler izolasyon için geçici yola yönlendirir.
     vqr_path: str = ""
 
+    # VQR embedder anahtarı: auto | off. "off" → fastembed HİÇ denenmez, doğrudan
+    # F5-token sözlüksel fallback kullanılır (`_lex_score`, eşik `_LEX_EXACT_THRESHOLD`).
+    #
+    # NEDEN VAR (canlı bulgu, 2 Ağustos 2026): `TextEmbedding("intfloat/multilingual-e5-large")`
+    # ilk kullanımda HF Hub'dan ~2.2 GB ONNX indirir. Kimliksiz (HF_TOKEN'sız) indirme
+    # ORANLANIYOR ve pratikte DURUYOR — ölçüldü: 20 saniyede 0 bayt ilerleme, `.incomplete`
+    # dosyası 67 MB'da takılı. `fastembed`/`requests` katmanında üst-sınır (timeout) YOK.
+    # Sonuç: taze bir konteynerde pytest paketi SAATLERCE asılı kalıyordu (kullanıcı
+    # bildirimi: ~10 saat, hiç bitmedi). `_embedder()`'ın non-blocking kilidi ikinci bir
+    # thread'i korur ama İNDİREN thread'in kendisini korumaz.
+    #
+    # Testler bunu "off" yapar (tests/conftest.py) → hermetik, ağsız, deterministik koşum.
+    # Üretimde "auto" kalır; hava-boşluklu (air-gapped) kurulumda "off" meşru bir seçenektir.
+    # Model önbelleğinin KALICI olması ayrı ve zorunlu bir iş: docker-compose'da
+    # /tmp/fastembed_cache bir named volume olmalı, yoksa her yeniden-build 2.2 GB'ı
+    # sıfırdan indirir (HANDOFF #4'ün uygulanmamış duran önerisi).
+    vqr_embedder: str = "auto"
+
     # Zamanlanmış raporlar (ADR-0011): tanım + koşum durumu (last_run) + bildirim HEPSİ
     # tek-kaynak DB'de (schedule_definition + notification_log). Query Contract kanıtı da
     # DB'de (contract_log, ADR-0010). Dosya-yolu config'leri Faz 3'te kaldırıldı.

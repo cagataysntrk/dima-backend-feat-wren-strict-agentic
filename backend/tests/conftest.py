@@ -17,6 +17,13 @@ os.environ["DIMA_LLM_PROVIDER"] = "rule"
 import tempfile
 
 os.environ["DIMA_VQR_PATH"] = os.path.join(tempfile.mkdtemp(prefix="dima-vqr-"), "queries.jsonl")
+# HERMETİKLİK: VQR embedder KAPALI — testler ağa çıkmaz. `_embedder()` ilk çağrıda HF Hub'dan
+# ~2.2 GB ONNX indirmeye çalışıyor; kimliksiz indirme oranlanıyor ve pratikte DURUYOR (ölçüldü:
+# 20 sn'de 0 bayt, `.incomplete` 67 MB'da takılı) ve `fastembed`/`requests` katmanında timeout
+# YOK → paket saatlerce asılı kalıyordu (canlı bildirim: ~10 saat, hiç bitmedi). Kapalıyken
+# F5-token sözlüksel fallback koşar; VQR testleri zaten bu yola göre eşiklenmiştir
+# (`_LEX_EXACT_THRESHOLD`), dolayısıyla koşum HEM hızlı HEM deterministik olur.
+os.environ["DIMA_VQR_EMBEDDER"] = "off"
 # Testler CANLI etkileşim loguna yazmaz (log→golden döngüsü gerçek oturumları temsil etmeli).
 os.environ["DIMA_INTERACTION_LOG"] = "false"
 # Zamanlanmış rapor tanımı + koşum durumu + bildirim + sözleşme kanıtı HEPSİ tek-kaynak

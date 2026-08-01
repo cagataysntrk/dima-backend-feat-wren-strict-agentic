@@ -1,3 +1,15 @@
+> ⚠️ **ÜRÜN ŞARTNAMESİ — MİMARİ OTORİTE DEĞİLDİR.** Bu dosya ürün kapsamını, ticari modeli ve
+> kabul testlerini tanımlar ve bu haliyle değerlidir. Ancak kodu tanımayan biri tarafından
+> yazılmıştır ve mimari varsayımlarının bir kısmı gerçekle uyuşmuyor:
+> (1) kavramsal çerçevesinde **sorgu-anı JOIN yok** — `1.11c` join'i cube tanımında sabitliyor,
+> `1.11b` çapraz-cube'u aritmetik formül DSL'i sanıyor; oysa `4.8` (kök-neden) tam da bunu
+> gerektiriyor; (2) buradaki **FAZ numaraları ekibin "faz N" ifadeleriyle AYNI ŞEY DEĞİL** —
+> ikisini birlikte okuyup ilerleme yüzdesi çıkarma; (3) **teknoloji yığını gerçekle uyuşmuyor**
+> (NestJS/Redis/Vault/BullMQ/Temporal/LangGraph/Vega-Lite ↔ tek Python-FastAPI + threading +
+> ECharts). Ayrıntılı karşılaştırma ve gerekçeler: **`backend/MIMARI.md §8.3`**.
+> Not: dosyadaki hiçbir kutu işaretli değil (PDF→MD dönüşümünde kayboldu) — gerçek durum
+> `HANDOFF_DOCS/` ve git geçmişindedir.
+
 
 
 ## D İ M A

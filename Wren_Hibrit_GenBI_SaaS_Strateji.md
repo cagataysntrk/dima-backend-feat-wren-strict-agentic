@@ -1,3 +1,9 @@
+> ℹ️ **MİMARİ NİYET BELGESİ — HÂLÂ GEÇERLİ.** Bu belgenin katman 5'i (*"Semantic Compiler:
+> Intent Query → SQL; **join graph**, metric math, RLS inject"*) ve §2.5'i (*"MDL graph'ta
+> measure'ın model'inden dimensions'a **join yolu seçilir**"*) uygulanmadı; devam eden JOIN işi
+> yeni bir yön değil, bu belge ile kod arasındaki boşluğun kapatılmasıdır.
+> Güncel mimari durum: **`backend/MIMARI.md`**.
+
 **Wren Main Temelli Hibrit GenBI Stratejisi** |  Kurumsal Ölçeklenebilir SaaS  |  Gizli — Strateji Dokümanı 
 
 # **KURUMSAL ÖLÇEKLENEBİLİR GenBI SaaS** 

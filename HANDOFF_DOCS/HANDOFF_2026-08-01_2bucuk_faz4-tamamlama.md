@@ -1,3 +1,7 @@
+> ⚠️ **TARİHSEL KAYIT — NORMATİF DEĞİLDİR.** Bu belge yazıldığı andaki durumu ve o turda alınan
+> kararları anlatır. Mimari otorite `backend/MIMARI.md`'dir; çelişkide o kazanır.
+> Özellikle: bu belgelerdeki JOIN/derleyici teşhisleri `MIMARI.md §3.2`'de **düzeltilmiştir**.
+
 # Dima — Faz 4 Tamamlama Raporu (1 Ağustos 2026)
 
 Bu belge `HANDOFF_2026-07-31.md`'nin (commit `8fb3a1f`'e kadar olan durumun devir raporu)
