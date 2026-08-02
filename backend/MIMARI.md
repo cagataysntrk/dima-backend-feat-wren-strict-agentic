@@ -1289,12 +1289,34 @@ yerine değil tamamlayıcısıdır (grafikten okunan değer her zaman yaklaşık
 görünmez taban numarasıdır, yani aynı sayıyı iki seriye bölmek gerekir. Üç-dört adımlık
 bir şelalede bu, okunan değer ile gösterilen değeri ayrıştırma riski taşır.
 
-### 13.6 Henüz YOK (I3–I5)
+### 13.6 Yüzeyler arası SADAKAT kilitlendi (I4/I5) ✅
 
-Kalan dağarcık (pareto · bullet · slope · boxplot · sankey · combo — her biri **kendi
-seçim kuralıyla**), `backend/VIZ_STANDARDS.md` (renk semantiği · eksen kuralları ·
-belirsizliğin görselde görünmesi), tek VizSpec / N oluşturucu **sadakat testi** (ekran ↔
-e-posta ↔ rapor aynı kararı vermeli), ve rapor katmanının anlatı+kanıt zinciri.
+> Aynı `cube_query` için ekran · e-posta · rapor · pano · resume **AYNI VizSpec
+> kararlarını** üretir. `viz.recommend()` **tek** bir karar verir; yüzeyler onu
+> **render eder**, yeniden karar VERMEZ.
+
+Bu sözleşme kodda zaten iddia ediliyordu ama **hiçbir şey onu tutmuyordu** ve **iki kez
+kırılmıştı** (ikisi de kodda kayıtlı): bir çağıran birim sözlüğünü `measure_units` diye
+yanlış anahtarla geçiyordu; `semi_additive` ise hiçbir çağıran tarafından geçirilmiyordu.
+
+Sapma **sessizdir ve bu yüzden tehlikelidir**: kullanıcı ekranda çizgi grafiği görür,
+e-postada aynı sorunun bar grafiğini alır ve hangisinin doğru olduğunu bilemez.
+
+Üç kilit:
+- **Davranış**: aynı girdi → aynı karar; metadata atlanırsa kararın GERÇEKTEN değiştiği
+  gösterilir (testin varlık sebebinin kanıtı).
+- **Yapı**: her `recommend()` çağrısı `meta_args` **ve** `cube_query` geçirmeli.
+  `cube_query` boyut **otoritesidir** (Faz C1) — onsuz kolon rolleri veriden tahmin edilir.
+- **Yüzey**: `viz_email` ve `report` **kendi** `recommend`/`analyze`'ını yazmamalı.
+
+### 13.7 Henüz YOK (I3, VIZ_STANDARDS)
+
+Kalan dağarcık (**pareto** — `interpret._signals` yoğunlaşmayı zaten tespit ediyor ve
+`prescribe.py` onu ölçüyor, ama frontend'in `ChartKind`'ında pareto **yok**: eklemek
+backend kuralı + ECharts oluşturucusu + toggle demek, aksi halde **yetim bir alternatif**
+olurdu; bullet · slope · boxplot · sankey · combo), `backend/VIZ_STANDARDS.md` (renk
+semantiği · eksen kuralları · belirsizliğin görselde görünmesi), ve rapor katmanının
+anlatı+kanıt zinciri.
 
 ---
 
