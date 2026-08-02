@@ -527,6 +527,53 @@ Kazanç 28 birim testiyle kanıtlanıyor. Korpusun bu sınıfı kazanması Faz 0
 Taban artefaktı: `lab/nl_corpus_baseline.json` (`eval/baseline.json` ile aynı disiplin —
 `lab/reports/` gitignore'da olduğu için ham rapor değil **kapı değerleri** saklanır).
 
+### 6.7z FAZ 3b — PROMPT-ENHANCER: LLM metni düzeltir, KARAR hâlâ küpte ✅
+
+T1'in **dördüncü, ayrı** LLM rolü. `llm.select_cube` **alan seçer**; enhancer **yapı
+seçmez**, yalnız **metni** iyileştirir ve **aynı deterministik `route()`'a** geri verir.
+
+**Hata yüzeyi yapısal olarak dardır:** çıktı bir metindir ve `route()` ona sıfırdan karar
+verir. Model uydurma bir terim üretse bile `route()` onu **yine reddeder** — yani enhancer
+en kötü ihtimalle *işe yaramaz*, **yanlış cevap üretemez**. Prompt da bunu pekiştiriyor:
+*"katalogda karşılığı olmayan bir şey isteniyorsa soruyu OLDUĞU GİBİ döndür — uydurma bir
+terime çevirmek, cevapsız kalmaktan KÖTÜDÜR."*
+
+**Planın dört şartı:** (1) yalnız `route()` boş dönünce tetiklenir → sıfır-maliyet çoğunluk
+dokunulmaz; (2) başarı **sessizdir**, iz makbuza `question_original`/`question_normalized`
+olarak yazılır; (3) belirsizlik **mevcut** chip mekanizmasına devreder, **yeni UI yüzeyi
+açılmaz**; (4) ucuz/seçici model.
+
+#### Planın ZORUNLU ⟳ eklemesi: kapısız LLM çağrısı YOK
+
+Çağrı `Planlayici.calistir()` üzerinden. Aksi halde yetkiye bağlanmaz, bütçeye sayılmaz,
+makbuzda adım olarak görünmez — *"LLM ne zaman devreye girdi"* cevaplanamaz olurdu.
+
+**Deterministik-önce kapısı ETİKETLE bağlandı**, kuralla değil: `llm.prompt_enhance`
+`route` ile aynı `sorgu-uretimi` etiketini taşır, dolayısıyla `route` **planlayıcı
+üzerinden** denenmeden seçilemez ve bunu **kapı kendisi zorlar**. Bu yüzden
+`_prompt_enhance_dene` `route`'u planlayıcıya da çağırtır: *"denendi" demek yetmez, kapı
+kendi kaydını görmelidir* — aksi halde kapı bir yorumdan ibaret kalırdı.
+
+**Ön koşul VARSAYILMADI, ölçüldü:** planın *"enhancer belirsizlikte daraltılmış chip'e
+devretmeli, yoksa Faz -1 öncesi 13-cube dump'ına devreder"* şartı bir testle sabitlendi.
+
+> ⚠️ **BU FAZDA KENDİ KODUM AVLADIĞIM KUSUR SINIFINA DÜŞTÜ.**
+>
+> `features.yml`'e `prompt_enhancer: off` yazdım. **YAML 1.1 `off`/`on`/`yes`/`no`'yu
+> BOOLEAN okur** — değer `"off"` string'i değil `False` oldu; `resolve_for`'un filtresi
+> (`if v != "off"`) onu **elemedi** ve bayrak sonuç kümesinde **var** kaldı. İki bayrak
+> (`prompt_enhancer` **ve Faz 5'in `t2_anlatici`**'si) **sessizce AÇIKTI**.
+>
+> Daha kötüsü: **Faz 5'in kendi testi bunu yakalayamamıştı**, çünkü kural-tabanlı
+> sağlayıcıda `anlat` yok — yol zaten kapalıydı, yani *bayrak açık olduğu hâlde davranış
+> doğru görünüyordu*. Tam olarak §6.1'in *"beyan var, kod onu tanımıyor"* sınıfı.
+>
+> Düzeltildi (`"off"` tırnaklandı) ve bir **kapıya** çevrildi: `features.yml`'deki hiçbir
+> bayrak boolean OLAMAZ, hepsi `STAGES` içinden bir string olmak ZORUNDA
+> (`test_YAML_off_TUZAGI_kapali`).
+
+17 test: `tests/test_prompt_enhancer.py` · bayrak `prompt_enhancer` varsayılan `"off"`.
+
 ### 6.6z FAZ 2b — terfi kuyruğu beslendi + ÖLÇÜME BAĞLI İKİ KARAR verildi ✅
 
 #### 2b-1 · Red gerekçesi TRİYAJA girdi (K2-ii)

@@ -227,6 +227,60 @@ def _capture_measure_candidate(question: str, sql: str, result: dict, principal=
         _log.warning("MeasureCandidate yakalaması başarısız (best-effort)", exc_info=True)
 
 
+def _prompt_enhance_dene(request, ham_soru: str, q_norm: str, schema: dict, principal,
+                         *, liste: bool) -> tuple[dict | None, str | None]:
+    """`route()` boş dönünce soruyu katalog terimleriyle yeniden yazıp TEKRAR dener.
+
+    Döner: `(route_hit | None, iz_metni | None)`. Hiçbir koşulda istisna sızdırmaz —
+    enhancer bir **kurtarma** yoludur; kendisi patlarsa cevap bugünkü haliyle döner
+    (gerileme YOK).
+
+    **LLM YAPI SEÇMEZ.** Çıktı bir METİNDİR ve `route()` ona sıfırdan karar verir; model
+    uydurma bir terim üretse bile `route()` onu yine reddeder. Hata yüzeyi bu yüzden
+    yapısal olarak dardır — enhancer en kötü ihtimalle *işe yaramaz*, yanlış cevap
+    üretemez.
+    """
+    llm = getattr(request.app.state, "llm", None)
+    if llm is None or not hasattr(llm, "prompt_enhance"):
+        return None, None                  # kural-tabanlı sağlayıcı: YOL KAPALI, hata değil
+    try:
+        from app import planner as _planner
+
+        service = _service_for(request, None)
+        catalog_text, _idx = cube_router.build_catalog(schema)
+        plan = _planner.Planlayici(
+            principal=principal,
+            butce=_planner.Butce(adim=3, saniye=10.0, sorgu=0),
+            kaynaklar={"servis:llm": llm, "servis:wren": service},
+        )
+        # DETERMİNİSTİK-ÖNCE kapısı: `route` PLANLAYICI ÜZERİNDEN denenmiş olmalı.
+        # Yukarıda zaten çağrıldı ve None döndü; burada aynı çağrıyı planlayıcıya da
+        # yaptırmak kapıyı GERÇEKTEN geçirmek içindir — "denendi" demek yetmez, kapı
+        # kendi kaydını görmelidir (aksi halde kapı bir yorumdan ibaret kalırdı).
+        if plan.calistir("route", ham_soru, schema) is not None:
+            return None, None              # ikinci deneme çözdüyse enhancer gereksiz
+        yeni_metin = plan.calistir("llm.prompt_enhance", ham_soru, catalog_text)
+    except Exception as exc:  # noqa: BLE001 — bütçe/yetki reddi dahil: sessizce geç
+        _log.info("prompt-enhancer atlandı: %s", exc)
+        return None, None
+
+    yeni_metin = (yeni_metin or "").strip().strip('"').splitlines()[0].strip()
+    if not yeni_metin or cube_router._norm(yeni_metin) == q_norm:
+        return None, None                  # değişmedi → yeni bilgi yok
+    try:
+        hit = cube_router.route(yeni_metin, schema, liste_kirilimi=liste)
+    except Exception:
+        _log.warning("enhancer sonrası route() hata verdi (best-effort)", exc_info=True)
+        return None, None
+    if not hit:
+        return None, None                  # iyileştirilmiş metin de çözülemedi → bugünkü yol
+    # MAKBUZ İZİ (planın 2. şartı): kanonik soru SESSİZCE kullanılır ama KAYIT DIŞI
+    # kalmaz — denetçi hangi metnin çözüldüğünü görebilmeli.
+    hit["cube_query"]["provenance_soru"] = {
+        "question_original": ham_soru, "question_normalized": yeni_metin}
+    return hit, f"soru yeniden yazıldı ({ham_soru!r} → {yeni_metin!r})"
+
+
 def _parse_decision(raw: str) -> dict:
     """refine_cube çıktısını (JSON) ayrıştırır: {action, cube_query?, reason?}. Bozuksa {}."""
     import json
@@ -1863,6 +1917,31 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     suggestions=chips,
                     trace=["Intent-path: cube-düzeyi beraberlik → netleştirme (LLM'siz)"],
                 ))
+
+        # FAZ 3b — PROMPT-ENHANCER (§4.3). T1'in DÖRDÜNCÜ, AYRI LLM rolü: Intent-JSON
+        # ALAN SEÇER, bu yalnız METNİ iyileştirir ve AYNI deterministik `route()`'a geri
+        # verir — *"hangi ölçü/boyut"* kararı HÂLÂ KÜPTEDİR.
+        #
+        # Planın dört şartı:
+        #   1. YALNIZ `route()` boş dönünce tetiklenir → %64'lük sıfır-maliyet çoğunluk
+        #      dokunulmadan kalır (her soruda LLM çağrısı YOK).
+        #   2. Başarı SESSİZDİR; iz makbuza `question_original`/`question_normalized`
+        #      olarak yazılır — denetlenebilir ama sohbeti yavaşlatmaz.
+        #   3. Belirsizlik MEVCUT chip mekanizmasına devreder; YENİ UI YÜZEYİ AÇILMAZ.
+        #   4. Ucuz/seçici model (`*_select_model`).
+        #
+        # ⟳ PLANIN ZORUNLU EKLEMESİ: çağrı `Planlayici.calistir()` üzerinden yapılır.
+        # Aksi halde bu, F2'nin tam olarak engellemek için var olduğu **kapısız LLM
+        # çağrısı** olurdu: yetkiye bağlanmaz, bütçeye sayılmaz, makbuzda ADIM olarak
+        # görünmez — yani *"LLM ne zaman devreye girdi"* sorusu cevaplanamaz hale gelirdi.
+        # `sorgu-uretimi` etiketi DETERMİNİSTİK-ÖNCE kapısını da bağlar: `route` planlayıcı
+        # üzerinden denenmeden bu araç seçilemez (kapı bunu KENDİSİ zorlar).
+        if route_hit is None and "prompt_enhancer" in resolve_for(settings, principal):
+            route_hit, _eh_iz = _prompt_enhance_dene(
+                request, body.question, q_norm, schema, principal, liste=_liste)
+            if route_hit:
+                intent_source = "cube"
+                typo_fix_trace = _eh_iz
 
         if route_hit is None and "ask_intent_first" in resolve_for(settings, principal):
             llm_probe = getattr(request.app.state, "llm", None)

@@ -232,6 +232,27 @@ def _anlati_user(soru: str, gercekler: list[str]) -> str:
             + "\n".join(f"- {g}" for g in gercekler))
 
 
+def _enhance_system(catalog: str) -> str:
+    """PROMPT-ENHANCER (§4.3) — T1'in DÖRDÜNCÜ, AYRI LLM rolü.
+
+    Intent-JSON alan **SEÇER**; enhancer **yapı seçmez**, yalnız **METNİ** iyileştirir ve
+    aynı deterministik `route()`'a geri verir. *"Hangi ölçü/boyut"* kararı hâlâ küptedir —
+    bu ayrım fazın varlık sebebidir: LLM'in gücü burada "ifadeyi düzeltmek"le sınırlı kalır.
+    """
+    return (
+        "Kullanıcının veri sorusunu, aşağıdaki katalogda GEÇEN terimlerle YENİDEN YAZ.\n\n"
+        "Katalog:\n" + catalog + "\n\n"
+        "KURALLAR:\n"
+        "- SADECE yeniden yazılmış soruyu döndür. Açıklama, SQL, JSON, tırnak YOK.\n"
+        "- ANLAMI DEĞİŞTİRME. Yeni ölçü/boyut/filtre/dönem EKLEME, var olanı ÇIKARMA.\n"
+        "- Kullanıcının kelimesinin katalogdaki KARŞILIĞI varsa onu kullan "
+        "(ör. 'hasılat' → 'ciro'); yoksa kelimeyi AYNEN bırak.\n"
+        "- Katalogda karşılığı OLMAYAN bir şey isteniyorsa soruyu OLDUĞU GİBİ döndür — "
+        "uydurma bir terime çevirmek, cevapsız kalmaktan KÖTÜDÜR.\n"
+        "- Tek satır, en fazla 15 kelime."
+    )
+
+
 def _cube_select_system(catalog: str) -> str:
     """Soruyu SQL değil, tanımlı bir cube SEÇİMİNE eşleten prompt (kısıtlı → halüsinasyon yok)."""
     return (
@@ -339,6 +360,11 @@ class AnthropicSqlGenerator:
 
     def repair(self, question: str, schema: dict, bad_sql: str, error: str) -> str:
         return self._ask(_build_system(schema, self._dialect), _repair_prompt(question, bad_sql, error))
+
+    def prompt_enhance(self, soru: str, catalog: str) -> str:
+        """PROMPT-ENHANCER (FAZ 3b). Dönüş bir METİNDİR — yapı DEĞİL. Çağıran onu aynı
+        deterministik `route()`'a verir; karar hâlâ küpündür."""
+        return self._ask(_enhance_system(catalog), soru, model=self._select_model)
 
     def anlat(self, soru: str, gercekler: list[str]) -> str:
         """T2 anlatıcı (FAZ 5). Çıktı ÇAĞIRAN tarafından `narration_guard`'tan GEÇİRİLİR —
@@ -458,6 +484,10 @@ class OpenAICompatibleSqlGenerator:
 
     def repair(self, question: str, schema: dict, bad_sql: str, error: str) -> str:
         return self._chat(_build_system(schema, self._dialect), _repair_prompt(question, bad_sql, error))
+
+    def prompt_enhance(self, soru: str, catalog: str) -> str:
+        """PROMPT-ENHANCER (FAZ 3b) — bkz. `AnthropicSqlGenerator.prompt_enhance`."""
+        return self._chat(_enhance_system(catalog), soru, model=self._select_model)
 
     def anlat(self, soru: str, gercekler: list[str]) -> str:
         """T2 anlatıcı (FAZ 5) — bkz. `AnthropicSqlGenerator.anlat`."""
@@ -918,6 +948,18 @@ class FailoverSqlGenerator:
                 continue
         _log.error("FailoverSqlGenerator.repair: TÜM sağlayıcılar başarısız")
         raise RuntimeError("repair: tüm sağlayıcılar başarısız")
+
+    def prompt_enhance(self, soru: str, catalog: str) -> str:
+        for g in self._gens:
+            if not hasattr(g, "prompt_enhance"):
+                continue          # kural-tabanlı sağlayıcıda YOK — yol kapalı, hata değil
+            try:
+                out = g.prompt_enhance(soru, catalog)
+                self._last = g
+                return out
+            except Exception:
+                continue
+        raise RuntimeError("prompt_enhance: tüm sağlayıcılar başarısız")
 
     def anlat(self, soru: str, gercekler: list[str]) -> str:
         for g in self._gens:

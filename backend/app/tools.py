@@ -274,6 +274,22 @@ KAYIT: tuple[Arac, ...] = (
     ),
     # --- LLM araçları (yalnız deterministik yol tükendiğinde) --------------------
     Arac(
+        ad="llm.prompt_enhance",
+        ozet="Soruyu katalog terimleriyle YENİDEN YAZAR (yapı SEÇMEZ) — sonuç route()'a döner.",
+        girdi={"soru": "kullanıcının ham sorusu", "catalog": "cube kataloğu metni"},
+        cikti="düz metin (yeniden yazılmış soru) — DETERMİNİSTİK route()'a geri verilir",
+        determinizm="llm", maliyet="ucuz", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.llm", fonksiyon="prompt_enhance", baglanma="servis:llm",
+        notlar="T1'in DÖRDÜNCÜ, AYRI LLM rolü: `llm.select_cube` ALAN SEÇER, bu yalnız "
+               "METNİ iyileştirir — 'hangi ölçü/boyut' kararı HÂLÂ KÜPTEDİR. "
+               "`sorgu-uretimi` etiketi DETERMİNİSTİK-ÖNCE kapısını bağlar: `route` "
+               "denenmeden bu araç SEÇİLEMEZ (kapının kendisi bunu zorlar, bir kural "
+               "olarak yazılmadı). Çıktı YAPI değil METİNDİR; uydurma bir terim üretse "
+               "bile `route()` onu yine reddeder — yani hata yüzeyi yapısal olarak dar.",
+        etiketler=("sorgu-uretimi", "llm"),
+    ),
+    Arac(
         ad="llm.anlat",
         ozet="Deterministik olguları AKICI Türkçeye çevirir — T2 anlatıcı (FAZ 5).",
         girdi={"soru": "kullanıcının sorusu",
