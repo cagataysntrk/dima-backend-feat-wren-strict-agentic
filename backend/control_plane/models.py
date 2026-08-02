@@ -180,6 +180,13 @@ class InteractionLog(SQLModel, table=True):
     llm_input_tokens: int | None = None
     llm_output_tokens: int | None = None
     llm_latency_ms: int | None = None
+    # RED GEREKÇESİ (Faz 0): `route()` hangi dalda pes etti — R1…R10 (`cube_router.
+    # RED_KODLARI`). AYRI kolon, `note`'a sıkıştırılmadı: `note` serbest METİNDİR ve
+    # `admin_app/routers/synonyms.py::mine_candidates` onu zaten başarısızlık açıklaması
+    # olarak okuyor. Sabit bir kod ayrı kolonda durursa GRUPLANABİLİR — planın Faz 0
+    # çıktısı ("en sık 20 red gerekçesi") tam olarak bunu gerektiriyor.
+    # `route()` pes etmediyse (cevap geldi) NULL kalır.
+    reject_reason: str | None = Field(default=None, index=True)
 
 
 class VerifiedQuery(SQLModel, table=True):

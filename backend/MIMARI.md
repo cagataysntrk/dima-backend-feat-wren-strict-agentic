@@ -527,6 +527,48 @@ Kazanç 28 birim testiyle kanıtlanıyor. Korpusun bu sınıfı kazanması Faz 0
 Taban artefaktı: `lab/nl_corpus_baseline.json` (`eval/baseline.json` ile aynı disiplin —
 `lab/reports/` gitignore'da olduğu için ham rapor değil **kapı değerleri** saklanır).
 
+### 6.1e Red gerekçesi ölçülebilir oldu (Faz 0) ✅
+
+`route()` **on ayrı yerde** `None` döner ve hangisinde pes ettiği yalnız `trace` metninde /
+`source=None`'da görünüyordu — **sayısal olarak gruplanamıyordu**. Deterministik tavanın
+**%64** olduğu ölçülmüştü ama kalan **%36'nın nasıl dağıldığı** bilinmiyordu; hangi
+kaldıraca yatırım yapılacağı (netleştirme chip'i · Intent-JSON · Discovery) o dağılım
+görülmeden karar verilemez.
+
+`cube_router.RED_KODLARI` (**R1…R10**, koddaki dallarla birebir, testle kilitli) +
+`InteractionLog.reject_reason` (**ayrı, indeksli kolon** — `note`'a sıkıştırılmadı; `note`
+serbest metin ve `mine_candidates` onu zaten başka amaçla okuyor). Kolon NULL ise `route()`
+pes ETMEMİŞTİR: **doluluk oranı doğrudan "deterministik yoldan çıkamayan sorular" kümesidir.**
+
+**`route()`'un imzası DEĞİŞMEDİ.** Beş çağıranı var; dönüş tipini `tuple`a çevirmek hepsini
+kırar ve gerekçeyi zincirin her katmanından elle taşıtırdı. Bu deponun **kanıtlanmış**
+çözümü kullanıldı: `app/llm.py`'nin `_llm_usage_var` + `reset/record/get` kalıbı (derin
+fonksiyon kaydeder, sığ fonksiyon okur, aradaki imzalar sabit). Yeni mekanizma icat
+edilmedi.
+
+**Dal SIRASI anlamlıdır ve telemetriyi okuyan bunu bilmeli** (ölçüldü, testte kayıtlı):
+`"zxqw plmk asdf"` → **R1** (hiç cube eşleşmedi), **R10 değil** — kapsam kapısına sıra
+gelmiyor. `"bu yıl ciro zxqwplmk"` → **R10**. R1'in yüksek çıkması *"kapsam kapısı çok
+sıkı"* anlamına gelmez; yanlış kaldıraca yatırım yapmamak için bu ayrım kayıtlı olmalı.
+
+**Faz 0'ın ölçüm çıktısı** `lab/telemetri_envanteri.py` ile üretilir (dağılım · en sık 20
+red gerekçesi · `auto_cube` envanteri). Araç `auto_cube` için **oran hesaplamaz**, denetim
+örneklemi ÇIKARIR — otomatik bir "doğruluk" üretmek §1.7'nin eleştirdiği hatanın (yapısal
+geçerlilik ≠ semantik doğruluk) tekrarı olurdu.
+
+**Bu checkout'ta ölçülen (dürüst kayıt):** yerel DB'de `interaction_log`/`verified_query`
+**tabloları YOK** — migration bu ortamda koşmamış. Bu, telemetrinin akıp akmadığı hakkında
+**hiçbir şey söylemez**; araç iki durumu (`sema_yok` vs boş tablo) bilinçle ayırır, çünkü
+farklı eylem gerektirirler. Raporun *"7 satır"* rakamı **devralınmadı**.
+
+**Faz 0'ın açık kalan tek maddesi ve NEDENİ:** `route-distribution` uç noktasının UI'a
+bağlanması. Uç **admin plane'de** (`/sadmin/*`, ayrı ASGI örneği + ayrı JWT — ADR-0015) ve
+depoda **admin frontend YOK** (`backend/admin-dev/` yalnız bir başlatıcı `package.json`).
+Tenant frontend'i onu çağıramaz. Admin arayüzü inşası ürün-deneyimi planının işidir ve o
+plan ayrı bir belgeye taşındı. **Faz 0'ın ölçüm çıktısı bu panele bağımlı değildir** —
+envanter aracı veriye doğrudan bakar. Telemetri kalıcılığı (`dima_logs` volume) zaten
+yapılmıştı (`docker-compose.yml`).
+
 ### 6.1d Ölü uç kapandı — 13 seçenekli döküm bir cevap değildi (Faz -1) ✅
 
 **Canlı örnek:** *"son 6 ay personel bazlı çalışma süreleri kıyasla"* → sistem **13 cube'un

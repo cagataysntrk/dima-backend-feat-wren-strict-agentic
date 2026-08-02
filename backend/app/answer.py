@@ -162,6 +162,7 @@ def _log_interaction(session_id: str | None, body: AskRequest, resp: AskResponse
         def _j(v):
             return json.dumps(v, ensure_ascii=False) if v else None
 
+        from app.cube_router import red_gerekcesi as _red_gerekcesi
         from app.llm import get_llm_usage
 
         _u = get_llm_usage() or {}  # yalnız LLM yoluna düşen istekte dolu; aksi halde boş
@@ -174,7 +175,11 @@ def _log_interaction(session_id: str | None, body: AskRequest, resp: AskResponse
                 note=resp.note, duration_ms=dur_ms, cube_query_json=_j(resp.cube_query),
                 trace_json=_j(resp.trace), interpretation_json=_j(resp.interpretation),
                 llm_model=_u.get("model"), llm_input_tokens=_u.get("input_tokens"),
-                llm_output_tokens=_u.get("output_tokens"), llm_latency_ms=_u.get("latency_ms")))
+                llm_output_tokens=_u.get("output_tokens"), llm_latency_ms=_u.get("latency_ms"),
+                # RED GEREKÇESİ (Faz 0): `route()` pes ettiyse HANGİ dalda. Deterministik
+                # yol cevabı ürettiyse `None` kalır — yani bu kolonun doluluğu doğrudan
+                # "deterministik yoldan çıkamayan sorular" kümesini verir.
+                reject_reason=_red_gerekcesi()))
             s.commit()
     except Exception:
         _log.warning("interaction log (DB) yazılamadı (best-effort)", exc_info=True)

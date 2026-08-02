@@ -15,6 +15,7 @@ ya-da-ret garantisi, (3) golden test ve mümkünse metadata/synonyms ile olur.
 from __future__ import annotations
 
 import calendar
+import contextvars
 import difflib
 import re
 from datetime import date, timedelta
@@ -1948,31 +1949,96 @@ def _measure_threshold(q: str) -> dict | None:
     return {"op": op, "value": num * mult}
 
 
+# --- RED GEREKÇESİ TELEMETRİSİ (Faz 0) -------------------------------------------
+#
+# `route()` on ayrı yerde `None` döner ve bugün HANGİSİNDE pes ettiği yalnız `trace`
+# metninde/`source=None`'da görünüyor — **sayısal olarak gruplanamıyor**. Plan §2.3'ün
+# tezi tam bu: *"çoğu soru LLM'e gidiyor"* bir HİPOTEZ, ölçüm değil. Hangi kaldıraca
+# yatırım yapılacağı (netleştirme chip'i mi, Intent-JSON mu, Discovery mi) 36'nın nasıl
+# dağıldığı görülmeden karar verilemez.
+#
+# ## Neden ContextVar, neden imza değişmiyor
+#
+# `route()`'un beş çağıranı var (`ask.py`, iki iç sonda `cube_router`'da, `lab/nl_corpus`,
+# `eval/`). Dönüş tipini `tuple`a çevirmek hepsini kırardı ve gerekçe zincirin her
+# katmanından elle taşınırdı. Bu deponun **kanıtlanmış** çözümü var: `app/llm.py:43`
+# (`_llm_usage_var` + `reset/record/get`) tam bu şekli çözüyor — derin bir fonksiyon
+# kaydeder, sığ bir fonksiyon okur, aradaki imzalar sabit kalır. Yeni bir mekanizma
+# İCAT EDİLMEDİ; var olan kalıp ikinci kez kullanıldı.
+#
+# FastAPI sync endpoint'i kendi kopya-context'inde koştuğu için istekler izoledir
+# (`llm.py`'nin aynı gerekçesi).
+_reddi_var: contextvars.ContextVar = contextvars.ContextVar("dima_route_reddi", default=None)
+
+#: Dal kodu → insan-okur gerekçe. Kod SABİT kalır (telemetri gruplaması ona dayanır),
+#: metin değişebilir. `route()`'un `return None` dallarıyla BİREBİR eşleşir.
+RED_KODLARI: dict[str, str] = {
+    "R1": "cube eşleşmedi",
+    "R2": "liste/döküm niyeti (politika: küp üretebilir ama devredildi)",
+    "R3": "kıyas dili (compare) — cube yolu kıyası kurmuyor",
+    "R4": "ölçü eşleşmedi",
+    "R5": "ortalama istendi ama ortalama ölçü tanımlı değil",
+    "R6": "dışlama filtresi kısmen çözüldü (yarım uygulama yapılmaz)",
+    "R7": "boyut adayı tek değil (belirsizlik)",
+    "R8": "yarı-toplanabilir ölçü + zaman kovası (running balance = WINDOW)",
+    "R9": "kırılım istendi ama boyut eşleşmedi",
+    "R10": "kapsam kapısı — tanınmayan kelime (ADR-0008)",
+}
+
+
+def reddi_sifirla() -> None:
+    """İstek başında: bu isteğin red gerekçesini taze bir kovaya al."""
+    _reddi_var.set(None)
+
+
+def _reddet(kod: str) -> None:
+    """`route()`'un bir `return None` dalını etiketler. Kova kurulmadıysa sessizce atlar
+    (eval/test/iç sonda çağrıları — `llm.py`'nin aynı davranışı)."""
+    try:
+        _reddi_var.set(kod)
+    except LookupError:  # pragma: no cover — ContextVar her zaman set edilebilir
+        pass
+
+
+def red_gerekcesi() -> str | None:
+    """`route()` en son hangi dalda pes etti? (`None` = pes etmedi ya da hiç çağrılmadı)"""
+    return _reddi_var.get()
+
+
 def route(question: str, schema: dict) -> dict | None:
     """Soru bir cube metriğine eşlenirse {cube_query, order, limit} döner; yoksa None.
 
     Tamamen GENERIC: cube/ölçü/boyut eşleşmeleri cube metadata'sındaki `synonyms`
-    içeriğinden gelir (ADR-0005) — bu fonksiyon sektör/demo bilgisi içermez."""
+    içeriğinden gelir (ADR-0005) — bu fonksiyon sektör/demo bilgisi içermez.
+
+    **Red gerekçesi (Faz 0):** `None` dönen her dal `_reddet("R…")` ile etiketlenir ve
+    `red_gerekcesi()` ile okunabilir. İmza DEĞİŞMEDİ — beş çağıranın hiçbiri kırılmadı
+    (`app/llm.py`'nin `_llm_usage_var` kalıbı)."""
+    reddi_sifirla()
     q = _norm(question)
 
     cube_meta = _match_cube(q, schema)
     if cube_meta is None:
+        _reddet("R1")
         return None  # eşleşme yok ya da çapraz konu (birden çok cube) → LLM
     cube = cube_meta["name"]
 
     # Liste/döküm istekleri cube'a uymaz → LLM/kural. KELİME-SINIRLI: "dokum" altdizisi
     # "DOKUMa"yı (kumaş!) yakalıyordu; genel "göster" ise liste niyeti DEĞİL (dolgu).
     if re.search(r"\b(listele\w*|liste\b|hangileri|detay\w*|dokum(u|un|unu|ler\w*)?\b)", q):
+        _reddet("R2")
         return None
 
     # Dönemsel karşılaştırma (önceki dönem/LAG) cube'a sığmaz → LLM (golden SQL deseni)
     if any(w in q for w in _COMPARE_HINTS):
+        _reddet("R3")
         return None
 
     measure, msyn = _match_measure(q, cube_meta)
     if measure is None:
         measure = cube_meta.get("default_measure")
     if measure is None:
+        _reddet("R4")
         return None  # ölçü kelimesi yok ve varsayılan tanımlı değil → LLM
 
     # "ORTALAMA" NİTELEYİCİSİ YUTULMASIN (canlı gitas 2026-07): "ortalama satış" bare
@@ -1981,6 +2047,7 @@ def route(question: str, schema: dict) -> dict | None:
     # deterministik dönme — ölçü belirsiz (AOV mı, birim fiyat mı?) → chip/LLM devralsın.
     if ("ortalama" in q or "average" in q) and not (
             measure.startswith("ort_") or "ortalama" in (msyn or "")):
+        _reddet("R5")
         return None
 
     cols = {c["name"]: c for m in schema.get("models", []) for c in m["columns"]}
@@ -2024,6 +2091,7 @@ def route(question: str, schema: dict) -> dict | None:
             # KARMA ("beyaz hariç siyah dahil"): hangi değerin hangi tarafta olduğu
             # metinden güvenle çıkarılamaz. Sessizce bir yorum seçmek yerine dürüst red
             # (ADR-0008) — LLM devralsın.
+            _reddet("R6")
             return None
         if dislanan:
             exclude_words |= {w for w in _EXCLUDE_MARKERS if w in q}
@@ -2058,6 +2126,7 @@ def route(question: str, schema: dict) -> dict | None:
         if len(aday) != 1:
             # 0 → hiçbir gerçek değer bu ifadeye uymuyor; >1 → hangi boyut belirsiz.
             # İkisinde de sessizce bir yorum seçmek yerine dürüst red (ADR-0008).
+            _reddet("R7")
             return None
         dname, vs = next(iter(aday.items()))
         filters.append({"dimension": dname, "operator": "in", "value": vs})
@@ -2087,6 +2156,7 @@ def route(question: str, schema: dict) -> dict | None:
     is_semi = measure in (cube_meta.get("semi_additive") or [])
     if is_semi:
         if gran:
+            _reddet("R8")
             return None  # zaman kovalı bakiye = running balance = WINDOW → cube üretemez → LLM
         # AS-OF DÖNÜŞÜMÜ: bakiye/stok dönem-SONU snapshot'ıdır, dönem-net-hareketi değil.
         # Dönem-aralığı (gte..lte) → tek `lte` (dönem sonu bakiyesi); açık/güncel dönem
@@ -2129,6 +2199,7 @@ def route(question: str, schema: dict) -> dict | None:
         if len(alts) == 1:
             sub = {"models": schema.get("models", []), "cubes": [alts[0]]}
             return route(question, sub)
+        _reddet("R9")
         return None
 
     # KAPSAM KAPISI (ADR-0008): mesajda tanınmayan içerik varsa deterministik cevap
@@ -2158,6 +2229,7 @@ def route(question: str, schema: dict) -> dict | None:
     if having:
         known |= {w for w in _TH_WORDS if w in q}
     if not _coverage_ok(q, known):
+        _reddet("R10")
         return None
 
     cq: dict = {"cube": cube, "measures": [measure]}
