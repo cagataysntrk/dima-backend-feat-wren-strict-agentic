@@ -9,6 +9,7 @@ import type {
   ContributionResponse,
   CubeQuery,
   PvmFinding,
+  WaterfallSpec,
 } from "@/lib/types";
 
 // FAZ H2 — "NEDEN DEĞİŞTİ?" cevabın İÇİNDE bir KATMAN, ayrı bir panel DEĞİL.
@@ -138,6 +139,85 @@ function SegmentRapor({
   );
 }
 
+function Selale({ spec, col }: { spec: WaterfallSpec; col: string }) {
+  // ŞELALE — "bu çubukları üst üste koyarsan sondaki değere varırsın." Backend bu
+  // iddiayı ARTIKSIZLIK kapısıyla garanti eder (viz.waterfall_spec); tutmazsa `viz`
+  // null gelir ve bu bileşen hiç render edilmez.
+  //
+  // Kütüphane KULLANILMADI: üç-dört adımlık bir şelale saf CSS ile çizilir ve
+  // ECharts'ın waterfall'ı yığılmış-bar + görünmez taban numarasıdır (aynı sayıyı iki
+  // seriye bölmek gerekir). Burada sayı BÖLÜNMEZ — okunan değer gösterilen değerdir.
+  // Kümülatif taban: her çubuk bir öncekinin bittiği yerden başlar. `reduce` ile SAF
+  // birikim — dışarıdan bir sayacı `map` içinde mutasyona uğratmak react-compiler'ın
+  // değişmezlik kuralını ihlal ediyordu (eslint yakaladı) ve render sırası değişirse
+  // sessizce yanlış tabanlar üretirdi.
+  const kutular = spec.steps.reduce<
+    { label: string; value: number; taban: number; tepe: number }[]
+  >((acc, a) => {
+    const taban = acc.length ? acc[acc.length - 1].tepe : spec.start.value;
+    return [...acc, { ...a, taban, tepe: taban + a.value }];
+  }, []);
+  const tumDegerler = [spec.start.value, spec.end.value, ...kutular.flatMap((k) => [k.taban, k.tepe])];
+  const enAz = Math.min(...tumDegerler, 0);
+  const enCok = Math.max(...tumDegerler, 0);
+  const aralik = enCok - enAz || 1;
+  const yuzde = (v: number) => ((v - enAz) / aralik) * 100;
+
+  return (
+    <div className="space-y-1">
+      <div className="flex h-28 items-end gap-1 border-b border-hairline">
+        {kutular.map((k, i) => {
+          const alt = Math.min(k.taban, k.tepe);
+          const ust = Math.max(k.taban, k.tepe);
+          return (
+            <div key={`${k.label}-${i}`} className="relative flex flex-1 flex-col justify-end"
+                 style={{ height: "100%" }}
+                 title={`${k.label}: ${fmtValue(k.value, col)}`}>
+              <div
+                className={k.value >= 0 ? "bg-emerald-600/70" : "bg-red-500/70"}
+                style={{
+                  position: "absolute",
+                  bottom: `${yuzde(alt)}%`,
+                  height: `${Math.max(1, yuzde(ust) - yuzde(alt))}%`,
+                  left: 0, right: 0,
+                }}
+              />
+            </div>
+          );
+        })}
+        {/* SONUÇ çubuğu — sıfırdan nete kadar tam yükseklik: "vardığımız yer burası". */}
+        <div className="relative flex flex-1 flex-col justify-end" style={{ height: "100%" }}
+             title={`${spec.end.label}: ${fmtValue(spec.end.value, col)}`}>
+          <div
+            className="bg-foreground/60"
+            style={{
+              position: "absolute",
+              bottom: `${yuzde(Math.min(0, spec.end.value))}%`,
+              height: `${Math.max(1, yuzde(Math.max(0, spec.end.value)) - yuzde(Math.min(0, spec.end.value)))}%`,
+              left: 0, right: 0,
+            }}
+          />
+        </div>
+      </div>
+      <div className="flex gap-1 font-mono text-[10px] text-neutral-400">
+        {kutular.map((k, i) => (
+          <div key={`${k.label}-lbl-${i}`} className="flex-1 truncate text-center">
+            {k.label}
+            <div className={k.value >= 0 ? "text-emerald-600" : "text-red-500"}>
+              {k.value >= 0 ? "+" : ""}
+              {fmtValue(k.value, col)}
+            </div>
+          </div>
+        ))}
+        <div className="flex-1 truncate text-center text-foreground">
+          = {spec.end.label}
+          <div className="tabular-nums">{fmtValue(spec.end.value, col)}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PvmRapor({
   r,
   onCubeEdit,
@@ -151,8 +231,13 @@ function PvmRapor({
       <div className="font-mono text-[10px] uppercase text-neutral-400">
         {r.dimension_label || r.dimension} · {r.price_label}
       </div>
-      {/* ARTIKSIZ AYRIŞMA: fiyat + miktar + birleşik = net (birebir). Bu ürünün iddiası
-          olduğu için üç etki ve toplam YAN YANA gösterilir — okuyan toplayabilsin. */}
+      {/* ŞELALE (Faz I2) — PVM'nin matematiği Faz 5.1'de yazılmıştı, GÖRSELİ YOKTU.
+          Backend artıksızlık kapısını geçirdiyse `viz` dolu gelir; geçmediyse null
+          gelir ve aşağıdaki ızgara TEK BAŞINA kalır (grafik susar, tablo konuşur). */}
+      {r.viz && <Selale spec={r.viz} col={m} />}
+      {/* ARTIKSIZ AYRIŞMA: fiyat + miktar + birleşik = net (birebir). Şelale yolu
+          gösterir, ızgara SAYIYI verir — ikisi birbirinin yerine değil tamamlayıcısıdır
+          (grafikten okunan değer her zaman yaklaşıktır; kesin sayı burada durur). */}
       <div className="grid grid-cols-4 gap-px border border-hairline bg-hairline/40 font-mono text-[11px]">
         {[
           ["fiyat", r.fiyat_etkisi],

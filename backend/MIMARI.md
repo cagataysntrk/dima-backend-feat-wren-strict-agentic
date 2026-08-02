@@ -1225,12 +1225,39 @@ yüzünden doğru kodu yanlış raporluyordu).
 | `lower_is_better` | **renk semantiği** — artış kırmızı/yeşil doğru yönde | ⚠️ `recommend()`'e ULAŞIYOR (`lower_set`) ama renk kararına **henüz dönüşmüyor** |
 | `dimension_labels` / `measure_synonyms_display` | Türkçe başlık/lejant | kısmen |
 
-### 13.5 Henüz YOK (I2–I5)
+### 13.5 İlk yeni tür: ŞELALE (I2) ✅ — ve seçim kuralının ne demek olduğu
 
-Grafik dağarcığı (**waterfall** — PVM'nin matematiği Faz 5.1'de yazıldı, **görseli yok**;
-pareto · bullet · slope · boxplot · sankey · combo), her türün **deterministik seçim
-kuralı**, `backend/VIZ_STANDARDS.md`, tek VizSpec / N oluşturucu sadakat testi, ve rapor
-katmanının anlatı+kanıt zinciri.
+PVM'nin matematiği Faz 5.1'de yazılmış, **görseli yoktu** (`grep -c waterfall app/viz.py`
+→ **0**). Özelliğin görünen yarısı eksikti.
+
+**Seçim kuralı bir tercih değil bir KAPIDIR.** Şelalenin tüm anlamı şudur: *"bu çubukları
+üst üste koyarsan sondaki değere varırsın."* Bileşenler toplamı bitişe varmıyorsa **grafik
+yalan söyler** — çubuklar bir yere çıkar, eksen başka bir yeri gösterir ve okuyan farkı
+**göremez**. Bu yüzden `viz.waterfall_spec()` toplamı denetler ve tutmazsa **`None` döner**:
+grafik susar, tablo konuşur.
+
+PVM bu koşulu tam olarak sağlar (`fiyat + miktar + birleşik = net`, `test_pvm_ARTIKSIZ` ile
+kilitli) — şelalenin ilk gerçek tüketicisi bu yüzden PVM'dir. Kapı geçmediği gün bu bir
+**bozulma sinyalidir** ve grafiğin susması doğrudur.
+
+Tolerans **göreceli**: `0.1 + 0.2 != 0.3` olduğu için birebir eşitlik meşru her ayrışmayı
+reddederdi; mutlak eşik ise ölçek değişince anlamını yitirir (₺15.576.000 ile %2,3 aynı
+eşiği paylaşamaz).
+
+**Karar backend'de** (ADR-0024): frontend grafik türü *seçmez*, `PvmReport.viz` doluysa
+render eder. Şelale **yolu** gösterir, yanındaki ızgara **sayıyı** verir — biri diğerinin
+yerine değil tamamlayıcısıdır (grafikten okunan değer her zaman yaklaşıktır).
+
+**Kütüphane kullanılmadı** ve bu bilinçlidir: ECharts'ın waterfall'ı yığılmış-bar +
+görünmez taban numarasıdır, yani aynı sayıyı iki seriye bölmek gerekir. Üç-dört adımlık
+bir şelalede bu, okunan değer ile gösterilen değeri ayrıştırma riski taşır.
+
+### 13.6 Henüz YOK (I3–I5)
+
+Kalan dağarcık (pareto · bullet · slope · boxplot · sankey · combo — her biri **kendi
+seçim kuralıyla**), `backend/VIZ_STANDARDS.md` (renk semantiği · eksen kuralları ·
+belirsizliğin görselde görünmesi), tek VizSpec / N oluşturucu **sadakat testi** (ekran ↔
+e-posta ↔ rapor aynı kararı vermeli), ve rapor katmanının anlatı+kanıt zinciri.
 
 ---
 

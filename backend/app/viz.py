@@ -33,6 +33,8 @@ bilinçli, dar kapsamlı bir istisna (genel bir "yedek" değil) — bkz. chart.t
 
 from __future__ import annotations
 
+from app.logging_setup import get_logger
+
 import re
 from typing import Any
 
@@ -42,6 +44,8 @@ _TIME_NAMES = {
     "donem", "dönem", "tarih", "ay", "hafta", "period",
     "yil", "yıl", "year", "ceyrek", "çeyrek",
 }
+_log = get_logger("viz")
+
 _DATEISH = re.compile(r"^\d{4}-\d{2}")
 # Sıralı (ordinal) kategori kümeleri — çizgi/sıralama bunlarda anlamlı (N'de değil).
 _WEEKDAY = {"pzt", "sal", "çar", "car", "per", "cum", "cmt", "paz"}
@@ -256,6 +260,53 @@ def _roles_from_cube_query(
         if time_hint:
             break
     return dim_cols, time_hint
+
+
+# Şelale toplam denetiminin GÖRECELİ toleransı. Kayan nokta aritmetiği birebir eşitlik
+# vermez (0.1+0.2 != 0.3); mutlak eşik ise ölçek değişince anlamını yitirir
+# (₺15.576.000 ile %2,3 aynı eşiği paylaşamaz).
+WATERFALL_TOLERANS = 1e-6
+
+
+def waterfall_spec(*, baslangic: float, bilesenler: list[tuple[str, float]],
+                   bitis: float, birim: str = "",
+                   tolerans: float = WATERFALL_TOLERANS) -> dict[str, Any] | None:
+    """ŞELALE grafiği — **yalnız ARTIKSIZ bir ayrışmada doğrudur** (Faz I2).
+
+    ## Seçim kuralı (her yeni tür bir kuralla gelir)
+
+    Şelale, bir başlangıç değerinden bir bitiş değerine giden yolu **bileşenlere** böler.
+    Görselin tüm anlamı şudur: *"bu çubukları üst üste koyarsan sondaki değere varırsın."*
+    Bileşenler toplamı bitişe varmıyorsa **grafik yalan söyler** — çubuklar bir yere
+    çıkar, eksen başka bir yeri gösterir ve okuyan farkı göremez.
+
+    Bu yüzden kural bir tercih değil bir **KAPIDIR**: toplam tutmuyorsa `None` döner ve
+    çağıran tabloya düşer. `viz.py`'nin varlık sebebi (ADR-0024) *"grafik kararı
+    deterministik ve doğrulanabilir olsun"*dur; toplamı denetlemeyen bir şelale o sebebi
+    çürütürdü.
+
+    **PVM tam olarak bu koşulu sağlar** ve `test_pvm_ARTIKSIZ` ile kilitlidir:
+    `fiyat + miktar + birleşik = net_degisim` (birebir). Şelalenin ilk gerçek tüketicisi
+    bu yüzden PVM'dir — matematiği Faz 5.1'de yazılmış ama **görseli olmayan** bir özellik.
+    """
+    if not bilesenler:
+        return None
+    toplam = sum(v for _, v in bilesenler)
+    beklenen = bitis - baslangic
+    olcek = max(abs(beklenen), abs(bitis), abs(baslangic), 1.0)
+    if abs(toplam - beklenen) / olcek > tolerans:
+        _log.info("şelale REDDEDİLDİ: bileşen toplamı %.6g, beklenen %.6g — artık var, "
+                  "grafik yalan söylerdi", toplam, beklenen)
+        return None
+    return {
+        "kind": "waterfall",
+        "start": {"label": "önceki", "value": baslangic},
+        "steps": [{"label": ad, "value": v} for ad, v in bilesenler],
+        "end": {"label": "şimdi", "value": bitis},
+        "unit": birim,
+        # Okuyan toplayabilsin diye net değişim AYRICA yazılır — grafiğin iddiası budur.
+        "net": beklenen,
+    }
 
 
 def meta_args(cube_meta: dict | None) -> dict[str, Any]:

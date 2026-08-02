@@ -460,6 +460,19 @@ export interface PvmFinding {
   cube_query: CubeQuery;
 }
 
+// ŞELALE (Faz I2) — PVM'nin ARTIKSIZ ayrışmasının görseli. Karar BACKEND'de alınır
+// (ADR-0024) ve bileşenler toplamı nete varmıyorsa `null` gelir: grafik SUSAR, tablo
+// konuşur. Toplamı denetlemeyen bir şelale "çubukları üst üste koy, sona varırsın"
+// iddiasını yalanlar.
+export interface WaterfallSpec {
+  kind: "waterfall";
+  start: { label: string; value: number };
+  steps: { label: string; value: number }[];
+  end: { label: string; value: number };
+  unit: string;
+  net: number;
+}
+
 export interface PvmReport {
   dimension: string;
   dimension_label: string;
@@ -474,6 +487,7 @@ export interface PvmReport {
   bulgular: PvmFinding[];
   kirpilan_segment: number;
   kirpilan_esik_yuzde: number;
+  viz?: WaterfallSpec | null;
 }
 
 export interface ContributionResponse {

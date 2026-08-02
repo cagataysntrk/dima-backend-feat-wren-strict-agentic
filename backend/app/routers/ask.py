@@ -2769,7 +2769,28 @@ def ask_contribution(request: Request, body: ContributionRequest) -> Contributio
         measure=measure, mode=mode, kind=kind, taranmayan_boyut=taranmayan,
         contract_ids=contract_ids,
         raporlar=[ContributionReport(**r) for r in contrib.rank_dimensions(raporlar)],
-        pvm_raporlar=[PvmReport(**r) for r in contrib.rank_dimensions(pvm_raporlar)])
+        pvm_raporlar=[PvmReport(**_pvm_seleli(r)) for r in contrib.rank_dimensions(pvm_raporlar)])
+
+
+def _pvm_seleli(r: dict) -> dict:
+    """PVM raporuna ŞELALE grafiğini ekler (Faz I2) — matematiği var, görseli yoktu.
+
+    Karar `viz.waterfall_spec`'te ve **kapılıdır**: bileşenler toplamı net değişime
+    varmıyorsa `None` döner ve frontend tabloya düşer. PVM artıksız olduğu için normalde
+    geçer; geçmediği gün bu bir **bozulma sinyalidir** ve grafiğin susması doğrudur.
+
+    Başlangıç `0` seçildi: PVM bir DEĞİŞİMİN ayrışmasıdır (seviyenin değil). Şelale
+    sıfırdan başlayıp net değişime varır — okuyan "önceki değer neydi" diye sormaz,
+    "değişim neden bu kadar" diye sorar.
+    """
+    spec = viz.waterfall_spec(
+        baslangic=0.0,
+        bilesenler=[("fiyat", r.get("fiyat_etkisi") or 0.0),
+                    ("miktar", r.get("miktar_etkisi") or 0.0),
+                    ("birleşik", r.get("birlesik_etki") or 0.0)],
+        bitis=r.get("net_degisim") or 0.0,
+    )
+    return {**r, "viz": spec}
 
 
 @router.post("/ask/verify", dependencies=[Depends(require("vqr:write")), Depends(require_company)])
