@@ -454,10 +454,10 @@ export function ReportCard({
             {item.cube_query && item.result && (
               <button
                 onClick={() => setDrillOpen(true)}
-                title="Bu sonucu tıklaya tıklaya incele — kök nedenine in"
+                title="Bu sayı hangi kırılımlardan oluşuyor? Tıklaya tıklaya en alt satıra kadar in. (SEVİYE analizi — değişim için «𝚫 neden değişti?»)"
                 className="border border-hairline px-2 py-[3px] font-mono text-[11px] text-neutral-400 transition-colors hover:border-accent hover:text-accent"
               >
-                ⤵ kök neden
+                ⤵ kırılıma in
               </button>
             )}
             {item.trace && item.trace.length > 0 && (
@@ -638,17 +638,21 @@ export function ReportCard({
           tüketici kazandı; `tests/test_uc_yetim_degil.py` onu artık CI'da tutuyor. Yalnız
           gerçek bir sonucu olan cube cevaplarında görünür — dönemsel değişim yoksa uç zaten
           dürüst bir `note` döndürür. */}
-      {item.cube_query && item.result && (
+      {item.cube_query && (item.result || item.contribution) && (
         <ContributionLayer
           cubeQuery={item.cube_query}
           sessionId={sessionId}
           onCubeEdit={onCubeEdit}
+          hazir={item.contribution ?? null}
         />
       )}
 
       {/* K2 sonraki adım chip'leri (backend 'next_steps' flag'iyle gelir) — kırılım/ölçek/
           zaman. Tıklama mevcut deterministik /cube yolunu kullanır (LLM yok). */}
-      {onCubeEdit && (item.next_steps?.length ?? 0) > 0 && (
+      {/* Konuşma cevabında (`contribution` dolu) bu blok GİZLENİR: bulgular cevabın
+          GÖVDESİDİR ve yukarıda zengin haliyle duruyor. Burada da göstermek aynı listeyi
+          İKİ KEZ, üstelik ikincisini YANLIŞ BAŞLIKLA ("sonraki adım") sunardı. */}
+      {!item.contribution && onCubeEdit && (item.next_steps?.length ?? 0) > 0 && (
         <div className="mt-3">
           <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
             sonraki adım

@@ -1202,8 +1202,14 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 if tur != followup.TUR_NE_YAPMALI else
                 "Önce değişimi sürükleyen segmentlere bakmak gerekir; her biri tıklanınca "
                 "tek başına açılır.")
+            # Bulgular CEVABIN GÖVDESİDİR — `next_steps` DEĞİL. `next_steps`e konulduğunda
+            # UI onları "sonraki adım" başlığıyla gösteriyordu (ölçüldü) ve Δ tutarları,
+            # % paylar, kırpma uyarısı kayboluyordu. `contribution` alanı zengin gövdeyi
+            # taşır; `next_steps` yalnız GEZİNME için kalır (kullanıcı bir bulguyu tek
+            # başına açmak isterse) — ikisi farklı şeydir ve UI'da farklı görünmelidir.
             return AskResponse(question=body.question, source=None, note=not_metni,
-                               cube_query=prev_cq, next_steps=adimlar[:8], trace=iz)
+                               cube_query=prev_cq, next_steps=adimlar[:8], trace=iz,
+                               contribution=katki.model_dump())
 
         # NORMAL Mİ → dönemsel kıyas. Yeni bir "normallik" tanımı UYDURULMAZ: elimizdeki
         # tek nesnel zemin geçen dönemle kıyastır ve cevap onu böyle sunar.

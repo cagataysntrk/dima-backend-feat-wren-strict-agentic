@@ -1122,6 +1122,53 @@ kendi makbuzunu üretir.
 | `POST /ask/contribution` | `ReportCard` içinde `ContributionLayer` (katlanır şerit) | *"Neden değişti?"* bir panel sorusu değil, **cevabın devamıdır**. Bulgular tıklanır sorgulardır — ürünün rakiplerden ayrıştığı nokta ancak tıklanabilir olunca görünür. |
 | `POST /measures/candidates/{cid}/preview` | `ReviewPanel`'de "kuru koşum" bloğu; **onay butonu diff görülmeden açılmaz** | Yanlış bir ölçünün blast-radius'u kategorik olarak büyüktür; inceleme ancak **görülen** bir değişiklik üzerinde yapılabilir. Diff bayatlarsa (form değişirse) onay yeniden kilitlenir. |
 
+### 14.3b UI/UX bütünlük denetimi (2026-08-02) — ölçülen iki kusur ve düzeltmeleri
+
+Kullanıcı direktifi: *"arkada geliştirip önde hiç kullanılmayan ucubeler olmasın · UI/UX
+çok karışmamalı · her şey üst üste binmemeli."* Bu turda eklenen her yüzey denetlendi.
+
+**Panel sayısı DEĞİŞMEDİ: 11 → 11.** Eklenen tek bileşen `ContributionLayer` ve o bir
+*Panel* değil bir **Layer** — cevabın kendi kartında katlanır. H3 kuralı korundu.
+
+#### Kusur 1: cevabın gövdesi "sonraki adım" diye etiketleniyordu
+
+Konuşma cevabının (G1) bulguları yalnız `next_steps` üzerinden taşınıyordu ve UI onları
+**"SONRAKİ ADIM"** başlığıyla gösteriyordu. Yani kullanıcı *"bu neden böyle?"* diye
+soruyor, **cevabın kendisi** bir sonraki-adım önerisi gibi etiketleniyordu — üstelik Δ
+tutarları, % paylar ve kırpma uyarısı chip'e sığmadığı için tamamen **kayboluyordu**.
+
+Düzeltme: `AskResponse.contribution` alanı (yeni **panel değil, alan**) cevabın gövdesini
+taşır; `ContributionLayer` **tek render edici** olarak hem buton yolunu (kendi çeker) hem
+konuşma yolunu (hazır alır) besler. İkinci bir render edici yazmak, bu depoda beş kez
+ölçülen sapma desenini (`fmt` ↔ `schedules`, `drill` ↔ `schedules`, `_uncovered` ↔
+`_syn_hit`, `interpret` ↔ `viz`, `test` ↔ `fanout`) altıncı kez üretirdi. Konuşma
+cevabında `next_steps` bloğu **gizlenir** — aynı liste iki kez, ikincisi yanlış başlıkla
+görünürdü. Buton da gizlenir: cevap zaten açıkken *"tıklasam ne olur?"* düşündürmek üst
+üste binmenin ta kendisidir.
+
+#### Kusur 2: iki farklı analiz, aynı adla yan yana
+
+Aynı kartta `⤵ kök neden` (DrillDownPanel) ve `𝚫 neden değişti?` (ContributionLayer)
+yan yana duruyordu. İkisi de Türkçe "neden" diyor ama **farklı sorular** cevaplıyor:
+
+| Buton | Soru | Analiz |
+|---|---|---|
+| `⤵ kırılıma in` | *"Bu sayı hangi kırılımlardan oluşuyor?"* | **SEVİYE** — mevcut durumun yapısı, ham satıra kadar |
+| `𝚫 neden değişti?` | *"Geçen döneme göre ne değişti, kim sürükledi?"* | **DEĞİŞİM** — dönemler arası hareket |
+
+Düzeltme: drill butonu **`⤵ kırılıma in`** olarak yeniden adlandırıldı (yaptığı **eylemi**
+söyler) ve iki tooltip birbirine **açıkça atıf yapar** (*"…değişim için «𝚫 neden
+değişti?»"*). "Kök neden" adı bilinçli olarak **hiçbirine verilmedi**: planın kendi
+tanımında (F3) kök-neden bu ikisinin **kompozisyonudur** — tek bir bileşene o adı vermek
+yanıltıcıdır.
+
+#### Yakınsama kusur DEĞİLDİR
+
+Katkı ayrıştırmasına artık **üç** giriş var: buton · doğal dil (*"bu neden böyle?"*) ·
+bulguya tıklama. Bu **üst üste binme değil yakınsamadır** — aynı yetenek, farklı
+alışkanlıklardaki kullanıcılar için farklı kapılar. Kritik olan **sunumun aynı olması**;
+tek render edici bunu garanti eder.
+
 ### 14.4 Köken ve sertifika UI'da görünür (H5)
 
 `dimension_origin` API'de Faz 1.1'den beri vardı ve UI'da **hiç görünmüyordu**; Faz D2'den

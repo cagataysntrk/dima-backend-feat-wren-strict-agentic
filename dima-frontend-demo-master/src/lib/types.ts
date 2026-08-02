@@ -112,6 +112,12 @@ export interface AskResponse {
   // üretilir (Show Me + Cleveland-McGill + çok-birim politikası). Varsa FE yerel analyze() yerine
   // bunu render eder; view_hint + kullanıcı toggle üstüne biner. Yoksa null (FE analyze()'e düşer).
   viz?: VizSpec | null;
+  // KONUŞMA CEVABININ GÖVDESİ (Faz G1). "bu neden böyle?" gibi bir takip sorusuna verilen
+  // cevabın İÇERİĞİ budur — `next_steps` DEĞİL. Bulgular next_steps'e konulduğunda UI
+  // onları "SONRAKİ ADIM" başlığıyla gösteriyordu ve Δ tutarları / % paylar / kırpma
+  // uyarısı kayboluyordu (ölçüldü). Doluysa ReportCard `ContributionLayer`'ı HAZIR VERİYLE
+  // render eder — aynı bileşen, ikinci bir istek YOK.
+  contribution?: ContributionResponse | null;
   // Faz 3 (31 Temmuz 2026) — birleşik açıklama: `trace`/`source`'un ÜSTÜNE biner, onları
   // SİLMEZ (SourceBadge/trace render'ı kırılmaz — kademeli geçiş). Rapor üretmeyen yanıtlarda
   // (netleştirme/chip) null.
@@ -237,7 +243,13 @@ export interface DashboardDetail {
 export interface DashboardWidgetData {
   id: string;
   result: QueryResult | null;
-  viz?: VizSpec | null; // ADR-0024: backend grafik/tablo/pivot kararı (chat ile aynı)
+  viz?: VizSpec | null;
+  // KONUŞMA CEVABININ GÖVDESİ (Faz G1). "bu neden böyle?" gibi bir takip sorusuna verilen
+  // cevabın İÇERİĞİ budur — `next_steps` DEĞİL. Bulgular next_steps'e konulduğunda UI
+  // onları "SONRAKİ ADIM" başlığıyla gösteriyordu ve Δ tutarları / % paylar / kırpma
+  // uyarısı kayboluyordu (ölçüldü). Doluysa ReportCard `ContributionLayer`'ı HAZIR VERİYLE
+  // render eder — aynı bileşen, ikinci bir istek YOK.
+  contribution?: ContributionResponse | null; // ADR-0024: backend grafik/tablo/pivot kararı (chat ile aynı)
   error: string | null;
 }
 
@@ -250,6 +262,12 @@ export interface ReportBlock {
   view_hint?: string | null; // widget'ın kayıtlı görünümü (rapor onu onurlandırır)
   result: QueryResult | null;
   viz?: VizSpec | null;
+  // KONUŞMA CEVABININ GÖVDESİ (Faz G1). "bu neden böyle?" gibi bir takip sorusuna verilen
+  // cevabın İÇERİĞİ budur — `next_steps` DEĞİL. Bulgular next_steps'e konulduğunda UI
+  // onları "SONRAKİ ADIM" başlığıyla gösteriyordu ve Δ tutarları / % paylar / kırpma
+  // uyarısı kayboluyordu (ölçüldü). Doluysa ReportCard `ContributionLayer`'ı HAZIR VERİYLE
+  // render eder — aynı bileşen, ikinci bir istek YOK.
+  contribution?: ContributionResponse | null;
   error: string | null;
 }
 

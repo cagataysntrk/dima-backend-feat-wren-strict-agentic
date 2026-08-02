@@ -261,6 +261,20 @@ class AskResponse(BaseModel):
     # gelince yerel analyze() yerine bunu render eder; view_hint + kullanıcı toggle üstüne biner.
     # Sonuç yoksa None (FE kendi analyze()'ine düşer). İleride: report={blocks:[...]} çok-grafik.
     viz: dict[str, Any] | None = None
+    # KONUŞMA CEVABININ İÇERİĞİ (Faz G1/H). "bu neden böyle?" gibi bir takip sorusuna
+    # verilen cevabın GÖVDESİ budur — `next_steps` DEĞİL.
+    #
+    # Neden ayrı bir alan: bulgular `next_steps` üzerinden taşındığında UI onları
+    # "SONRAKİ ADIM" başlığıyla gösteriyordu (ölçüldü) — yani CEVABIN KENDİSİ bir
+    # "sonraki adım" gibi etiketleniyor, Δ tutarları / % paylar / kırpma uyarısı ise
+    # tamamen kayboluyordu. Alan aynı zamanda israfı da önler: backend katkıyı zaten
+    # hesapladı; frontend'in aynı ayrıştırmayı ikinci kez istemesi gerekmez.
+    #
+    # Yeni bir PANEL değil bir ALAN (MIMARI §14.2): cevap kendini tanımlar ve mevcut
+    # `ContributionLayer` bileşeni onu render eder — TEK render edici, iki veri kaynağı
+    # (buton yolu kendi çeker, konuşma yolu hazır alır). İki render edici zamanla
+    # ayrışırdı; bu depoda o desen beş kez ölçüldü.
+    contribution: dict[str, Any] | None = None
     # DÜZ-DİL HESAPLAMA AÇIKLAMASI (Madde 12, 1 Ağustos 2026): `drill.py::formula_explanation`
     # KPI-olmayan cube raporları İÇİN de (yalnız `/ask/drill`e değil, normal `/ask`e) çağrılır.
     # DİKKAT — `explain` (yukarıda) ile KARIŞTIRILMAMALI: `explain` provenance/güven metadata'sı

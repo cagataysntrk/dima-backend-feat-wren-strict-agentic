@@ -200,3 +200,42 @@ def test_UCTAN_UCA_yapisal_takip_BOZULMADI(client):
     d = ask(client, "aylık", cube_query=ilk["cube_query"], history=[ilk["question"]])
     assert d.get("result"), f"yapısal takip bozuldu: {d.get('note')!r}"
     assert d.get("source") == "cube"
+
+
+# --- UI SÖZLEŞMESİ: bulgular CEVABIN GÖVDESİDİR, "sonraki adım" değil ------------
+
+def test_konusma_cevabi_ZENGIN_GOVDE_tasir(client):
+    """ÖLÇÜLEN UX KUSURU (2 Ağustos 2026). Bulgular yalnız `next_steps` üzerinden
+    taşınıyordu ve UI onları **"SONRAKİ ADIM"** başlığıyla gösteriyordu — yani kullanıcı
+    *"bu neden böyle?"* diye soruyor, cevabın KENDİSİ bir "sonraki adım" gibi
+    etiketleniyordu. Üstelik Δ tutarları, % paylar ve kırpma uyarısı tamamen
+    kayboluyordu (chip yalnız etiket taşır).
+
+    `contribution` alanı cevabın gövdesini taşır ve frontend onu MEVCUT
+    `ContributionLayer` bileşeniyle render eder — TEK render edici, ikinci istek YOK.
+    """
+    from tests.conftest import ask
+
+    ilk = ask(client, "bu yıl makine bazında işlenen kg")
+    d = ask(client, "bu neden böyle?", cube_query=ilk["cube_query"],
+            history=[ilk["question"]])
+
+    k = d.get("contribution")
+    assert k, "konuşma cevabı zengin gövde taşımıyor — UI chip'e düşer"
+    assert k.get("measure") and k.get("mode") in ("yoy", "mom")
+    # Dürüstlük kayıtları GÖVDEDE olmalı; chip'te taşınamazlar.
+    assert "taranmayan_boyut" in k, "kapsam sınırı kayboldu"
+    for r in k.get("raporlar") or []:
+        assert "net_degisim" in r and "kirpilan_segment" in r
+        for b in r.get("bulgular") or []:
+            assert "delta" in b and "net_pay" in b and b.get("cube_query")
+
+
+def test_yapisal_cevap_contribution_TASIMAZ(client):
+    """Gerileme kilidi: normal bir rapor `contribution` taşımamalı — taşısaydı her
+    cevapta katkı ayrıştırması ZORLA açılır ve kullanıcı istemediği bir analizle
+    karşılaşırdı (kademeli açılım ilkesinin ihlali, MIMARI §14.2)."""
+    from tests.conftest import ask
+
+    d = ask(client, "bu yıl makine bazında işlenen kg")
+    assert not d.get("contribution"), "istenmeden katkı ayrıştırması döndü"

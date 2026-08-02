@@ -198,10 +198,19 @@ export function ContributionLayer({
   cubeQuery,
   sessionId,
   onCubeEdit,
+  hazir,
 }: {
   cubeQuery: CubeQuery;
   sessionId?: string;
   onCubeEdit?: (e: { cq: CubeQuery; label: string }) => void;
+  // HAZIR VERİ (Faz G1): kullanıcı "bu neden böyle?" diye SORDUĞUNDA backend ayrıştırmayı
+  // zaten yapmıştır ve cevabın gövdesi olarak döner. O durumda bu bileşen fetch ETMEZ,
+  // yalnız RENDER eder.
+  //
+  // Neden aynı bileşen: iki render edici (biri buton yolu, biri konuşma yolu) zamanla
+  // AYRIŞIR — bu depoda o desen beş kez ölçüldü (fmt/stats/result_shape/fanout/_syn_hit).
+  // Δ tutarı, % pay, kırpma uyarısı ve "pay tanımsız → —" kuralı tek yerde yaşamalı.
+  hazir?: ContributionResponse | null;
 }) {
   const [acik, setAcik] = useState(false);
   const [mode, setMode] = useState<"yoy" | "mom">("yoy");
@@ -215,8 +224,10 @@ export function ContributionLayer({
       askContribution({ cube_query: cubeQuery, ...v, session_id: sessionId }),
   });
 
-  const d = sor.data;
+  // Hazır veri varsa O otoritedir: kullanıcı zaten sordu, cevabı geldi.
+  const d = hazir ?? sor.data;
   const measure = d?.measure ?? "";
+  const konusmaCevabi = Boolean(hazir);
 
   const calistir = (m: "yoy" | "mom", k: "segment" | "pvm") => {
     setMode(m);
@@ -225,12 +236,17 @@ export function ContributionLayer({
     sor.mutate({ mode: m, kind: k });
   };
 
+  const gorunur = konusmaCevabi || acik;
+
   return (
     <div className="mt-2">
-      <div className="flex flex-wrap items-center gap-1.5">
+      {/* Konuşma cevabında "neden değişti?" butonu GÖSTERİLMEZ: kullanıcı zaten sordu ve
+          cevap açık duruyor. Butonu da göstermek aynı yeteneğe iki giriş noktası koyar
+          ve kullanıcı "tıklasam ne olur?" diye düşünür — üst üste binme tam olarak budur. */}
+      <div className={`flex flex-wrap items-center gap-1.5 ${konusmaCevabi ? "hidden" : ""}`}>
         <button
           onClick={() => (acik ? setAcik(false) : calistir(mode, kind))}
-          title="Bu sayı neden değişti? Değişimi kullanılmayan boyutlara dağıtır."
+          title="Geçen döneme göre NE DEĞİŞTİ ve kim sürükledi? (DEĞİŞİM analizi — mevcut seviyenin kırılımı için «⤵ kırılıma in»)"
           className={`border px-2 py-[3px] font-mono text-[11px] transition-colors ${
             acik
               ? "border-accent/40 text-accent"
@@ -276,7 +292,7 @@ export function ContributionLayer({
         )}
       </div>
 
-      {acik && (
+      {gorunur && (
         <div className="mt-2 space-y-3 border border-hairline p-2">
           {sor.isError && (
             <p className="font-mono text-[11px] text-red-500">
