@@ -11,6 +11,21 @@ relationships:
     join_type: MANY_TO_ONE
     models: [partiler, makineler]
     condition: "partiler.makine = makineler.makine"
+    expose:
+      # DİKKAT: `parti`/`surdurulebilirlik` cube'larında `departman` boyutu var ve onun
+      # sinonimleri arasında "bölüm" GEÇİYOR (personelin departmanı). Makinenin bölümü
+      # FARKLI bir kavramdır; bare "bölüm" verilirse `_match_dims` iki boyutu da eşleştirir
+      # ve bu GERÇEK bir belirsizliktir (eşit eşleşme — Faz 0.5'te bilinçli çözülmedi).
+      # Bu yüzden burada yalnız NİTELİKLİ ifadeler bildirilir.
+      # ETİKET TEK KELİME olmalı:  (ADR-0018) etiketi kelimelerine AYIRIP
+      # sinonim yapar. İlk deneme  idi → sessizce "makine" sinonimi
+      # doğurdu ve mevcut  boyutuyla çakıştı (test_surdurulebilirlik_cube düştü:
+      # ['makine'] yerine ['makine','makine_bolum']). Çok kelimeli ifadeler 
+      # altında GÜVENLİ — onlar bölünmez. Kapı: compose.py::_etiket_carpismasi.
+      - column: bolum
+        as: kisim
+        label: kısım
+        synonyms: [makine bölümü, üretim bölümü, makine kısmı, tezgah bölümü, hangi kısım]
   - name: partiler_musteriler
     join_type: MANY_TO_ONE
     models: [partiler, musteriler]
@@ -29,14 +44,38 @@ relationships:
     join_type: MANY_TO_ONE
     models: [oee_vardiya, makineler]
     condition: "oee_vardiya.makine = makineler.makine"
+    expose:
+      # `makineler.bolum` -> bu modele oturan TÜM cube'lara boyut. Bu cube'larda
+      # `departman` boyutu YOK, dolayısıyla bare "bölüm" güvenlidir (bkz. partiler_makineler:
+      # orada `departman` var ve sinonim çakışması olacağı için daha dar sözlük kullanıldı).
+      - column: bolum
+        as: bolum
+        label: bölüm
+        synonyms: [bölüm, bolum, kısım, ünite, hangi bölüm, bölümlere göre]
   - name: makine_duruslari_makineler
     join_type: MANY_TO_ONE
     models: [makine_duruslari, makineler]
     condition: "makine_duruslari.makine = makineler.makine"
+    expose:
+      # `makineler.bolum` -> bu modele oturan TÜM cube'lara boyut. Bu cube'larda
+      # `departman` boyutu YOK, dolayısıyla bare "bölüm" güvenlidir (bkz. partiler_makineler:
+      # orada `departman` var ve sinonim çakışması olacağı için daha dar sözlük kullanıldı).
+      - column: bolum
+        as: bolum
+        label: bölüm
+        synonyms: [bölüm, bolum, kısım, ünite, hangi bölüm, bölümlere göre]
   - name: ariza_kayitlari_makineler
     join_type: MANY_TO_ONE
     models: [ariza_kayitlari, makineler]
     condition: "ariza_kayitlari.makine = makineler.makine"
+    expose:
+      # `makineler.bolum` -> bu modele oturan TÜM cube'lara boyut. Bu cube'larda
+      # `departman` boyutu YOK, dolayısıyla bare "bölüm" güvenlidir (bkz. partiler_makineler:
+      # orada `departman` var ve sinonim çakışması olacağı için daha dar sözlük kullanıldı).
+      - column: bolum
+        as: bolum
+        label: bölüm
+        synonyms: [bölüm, bolum, kısım, ünite, hangi bölüm, bölümlere göre]
   - name: bakim_planlari_makineler
     join_type: MANY_TO_ONE
     models: [bakim_planlari, makineler]
@@ -59,6 +98,14 @@ relationships:
     join_type: MANY_TO_ONE
     models: [tamir_rework, makineler]
     condition: "tamir_rework.makine = makineler.makine"
+    expose:
+      # `makineler.bolum` -> bu modele oturan TÜM cube'lara boyut. Bu cube'larda
+      # `departman` boyutu YOK, dolayısıyla bare "bölüm" güvenlidir (bkz. partiler_makineler:
+      # orada `departman` var ve sinonim çakışması olacağı için daha dar sözlük kullanıldı).
+      - column: bolum
+        as: bolum
+        label: bölüm
+        synonyms: [bölüm, bolum, kısım, ünite, hangi bölüm, bölümlere göre]
   - name: tamir_rework_partiler
     join_type: MANY_TO_ONE
     models: [tamir_rework, partiler]

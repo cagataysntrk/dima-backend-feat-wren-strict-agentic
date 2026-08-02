@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import threading
 from pathlib import Path
@@ -172,6 +173,10 @@ def compose(company: str, base: Path, out: Path) -> dict:
     # her ERP'nin turev.yml binding'lerinden view+cube olarak ÜRETİR (logo/mikro/netsis
     # bedavaya; yeni ERP sadece binding verir).
     _compose_derived_metrics(base, out, kaynaklar)
+    # İLİŞKİ-TÜREVİ BOYUTLAR (Faz 1.1): `relationships.yml`'deki `expose:` bloklarından
+    # handle + calc kolon + cube boyutu üretir. `_compose_derived_metrics`'ten SONRA
+    # çalışır ki o pass'in ürettiği cube'lar da kapsansın.
+    _compose_relationship_dimensions(out)
     # KPI-KOMPOZİSYON: cross-cube türev KPI'lar (packs/modul/kpi/*.yml). Bileşenleri
     # birden çok türev-view'dan çeker (CCC = cari_finans_src ⊕ karlilik_src). Yalnız
     # gerekli view'ların TAMAMI üretildiyse derlenir (dürüst gate — eksikse KPI yok).
@@ -233,6 +238,261 @@ def _compose_derived_metrics(base: Path, out: Path, kaynaklar: list[str]) -> Non
         cdir.mkdir(parents=True, exist_ok=True)
         (cdir / "metadata.yml").write_text(
             yaml.safe_dump(cube, allow_unicode=True, sort_keys=False))
+
+
+_COND_RE = re.compile(r"^\s*(\w+)\.\"?(\w+)\"?\s*=\s*(\w+)\.\"?(\w+)\"?\s*$")
+
+
+class RelationshipExposeError(ValueError):
+    """`expose:` bildirimi güvenlik kapılarından geçemedi — build KIRILIR.
+
+    Bilinçli olarak sessiz atlama DEĞİL: yanlış bir join, hatasız ve uyarısız şişmiş bir
+    sayı üretir ve `source="cube"` rozetiyle sunulur. Derlemenin patlaması, üretimde
+    yanlış sayı görmekten iyidir.
+    """
+
+
+def _etiket_carpismasi(e: dict, rname: str, src: str, cube_files: list, _load,
+                       kendi_adi: str) -> None:
+    """G5b — ÜRETİLEN BOYUTUN ETİKETİ mevcut bir boyutun sözlüğünü ÇALIYOR mu?
+
+    `WrenService.schema()::_with_label` (ADR-0018 "LABEL ⊆ SYNONYM") bir etiketi hem TAM
+    haliyle hem de KELİMELERİNE AYIRARAK sinonim listesine ekler. Yani `label: makine bölümü`
+    sessizce `makine` sinonimini de doğurur — ve o cube'da zaten bir `makine` boyutu varsa
+    "makine bazında su yoğunluğu" sorusu ARTIK İKİ boyut eşleştirir, GROUP BY bölünür ve
+    her hücredeki sayı değişir.
+
+    Bu tam olarak yaşandı (2 Ağustos 2026): `partiler_makineler` için `label: makine bölümü`
+    verildi, `test_surdurulebilirlik_cube` anında düştü (`['makine'] != ['makine','makine_bolum']`).
+    Faz 0.5'in tahkimi bunu KURTARAMAZ: iki eşleşme de tam kelime `makine`'dir, yani öz
+    alt-dizi ilişkisi yoktur — GERÇEK bir belirsizliktir.
+
+    Kural: etiketin ürettiği tek-kelime token'lar hedef cube'ların MEVCUT boyut adlarıyla ya
+    da sözlükleriyle çakışamaz. Çok kelimeli SİNONİMLER güvenlidir (bölünmezler); yalnız
+    ETİKET bölünür. Pratik sonuç: üretilen boyutun etiketi TEK KELİME olmalı ya da
+    kelimeleri hedef cube'da serbest olmalı.
+    """
+    label = str(e.get("label") or "").strip()
+    if not label:
+        return
+    tr = str.maketrans("ışğüöçİâîû", "isguociaiu", "'’`")
+    tokens = {t for t in label.lower().replace("̇", "").translate(tr).split() if len(t) >= 3}
+    if not tokens:
+        return
+    for cf in cube_files:
+        cm = _load(cf)
+        if cm.get("base_object") != src:
+            continue
+        for d in cm.get("dimensions") or []:
+            ad = str(d.get("name", "")).lower()
+            if ad == kendi_adi.lower():
+                # ÜRETECİN KENDİ ÇIKTISI — bir boyut kendisiyle çakışamaz. Bu, terfi
+                # akışı yüzünden gerçekten oluyor: `mdl_writer.resolve_cube_yaml_for_edit`
+                # DERLENMİŞ cube'u (üretilmiş boyutlar dahil) şirket katmanına kopyalar,
+                # sonraki compose onu kaynak sanır. Üreteç zaten yinelenen boyutu
+                # eklemiyor (elle/önceki tanım kazanır); kapı da aynı şekilde atlamalı.
+                continue
+            sozluk = {ad, *(str(s).lower().replace("̇", "").translate(tr).rstrip("!")
+                            for s in (d.get("synonyms") or []))}
+            if str(d.get("label") or "").lower().translate(tr):
+                sozluk.add(str(d["label"]).lower().replace("̇", "").translate(tr))
+            carpisan = tokens & sozluk
+            if carpisan:
+                raise RelationshipExposeError(
+                    f"{rname}: `label: {label!r}` kelimelerine ayrılınca {sorted(carpisan)} "
+                    f"üretiyor ve bu, `{cm.get('name')}` cube'undaki `{d.get('name')}` "
+                    "boyutunun sözlüğüyle ÇAKIŞIYOR (ADR-0018 LABEL ⊆ SYNONYM). Aynı soru iki "
+                    "boyut eşleştirir, GROUP BY bölünür ve sayılar değişir. TEK KELİMELİK ya da "
+                    "çakışmayan bir `label` verin; çok kelimeli ifadeleri `synonyms:` altına "
+                    "koyun (onlar BÖLÜNMEZ, dolayısıyla güvenlidir).")
+
+
+def _compose_relationship_dimensions(out: Path) -> None:
+    """İLİŞKİ-TÜREVİ BOYUT ÜRETECİ (Faz 1.1) — `relationships.yml`'deki `expose:` blokları.
+
+    Bir cube yalnız TEK bir `base_object`'e bağlanır ve cube derleyicisi JOIN üretmez.
+    Ama MODEL KATMANI (`WrenEngine.dry_plan`) ilişki handle'ı + `is_calculated` kolon
+    üzerinden JOIN'i otomatik ve çok-sıçramalı enjekte eder (bkz. backend/MIMARI.md §3.2,
+    Faz 1.0 pilotuyla 26 noktada birebir doğrulandı). Bu üreteç o mekanizmayı ELLE YAZILMIŞ
+    view'lardan alıp bildirime dayalı hale getirir.
+
+    Tek bir `expose:` girdisinden ÜÇ artefakt üretilir:
+        1. kaynak modele  → ilişki handle kolonu   {name: <hedef>, type: <hedef>, relationship}
+        2. kaynak modele  → is_calculated kolon    {expression: "<hedef>.<kolon>"}
+        3. base_object'i o model olan HER cube'a → boyut (+ provenance)
+
+    Kaldıraç (3) maddesindedir: bir bildirim, o modele oturan tüm cube'lara yayılır.
+
+    NEDEN AÇIK BİLDİRİM, otomatik tarama DEĞİL — ölçülmüş gerekçe: üretilen boyutlar
+    Türkçe `label`/`synonyms` olmadan `cube_router`'a GÖRÜNMEZ. Mekanik kolon adlarıyla
+    router bir ERP şemasında 6 sorudan 1'ini, elle yazılmış etiketlerle 5'ini eşleştirdi.
+    Sözlük kürasyonu işin indirgenemez insan kısmıdır; `expose:` onu görünür ve
+    gözden geçirilebilir kılar.
+
+    Biçim (`relationships.yml`):
+        - name: oee_vardiya_makineler
+          join_type: MANY_TO_ONE
+          models: [oee_vardiya, makineler]
+          condition: "oee_vardiya.makine = makineler.makine"
+          expose:
+            - column: bolum          # HEDEF modeldeki kolon (fiziksel ya da calc → 2. sıçrama)
+              as: bolum              # cube boyut adı (varsayılan: <hedef>_<kolon>)
+              label: bölüm
+              synonyms: [bölüm, birim, kısım]
+    """
+    rel_file = out / "relationships.yml"
+    if not rel_file.is_file():
+        return
+    rels = (yaml.safe_load(rel_file.read_text(encoding="utf-8")) or {}).get("relationships") or []
+    if not any(r.get("expose") for r in rels):
+        return
+
+    models_dir, cubes_dir = out / "models", out / "cubes"
+
+    def _load(p: Path) -> dict:
+        return yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+
+    def _save(p: Path, data: dict) -> None:
+        p.write_text(yaml.safe_dump(data, allow_unicode=True, sort_keys=False),
+                     encoding="utf-8")
+
+    model_files = {d.name: d / "metadata.yml" for d in models_dir.iterdir()
+                   if (d / "metadata.yml").is_file()} if models_dir.is_dir() else {}
+    cube_files = [d / "metadata.yml" for d in cubes_dir.iterdir()
+                  if (d / "metadata.yml").is_file()] if cubes_dir.is_dir() else []
+
+    for rel in rels:
+        expose = rel.get("expose")
+        if not expose:
+            continue
+        rname = rel.get("name") or "(adsız)"
+
+        # --- G6: condition ayrıştırılabilmeli (bileşik/karmaşık join DESTEKLENMEZ) -----
+        # `db_introspect.py` bileşik FK'yi İLK KOLONA KIRPIYOR; öyle bir join semantik
+        # olarak yanlıştır ve tekil olmayan bir anahtar üretir. Sessizce üretmektense reddet.
+        m = _COND_RE.match(str(rel.get("condition") or ""))
+        if not m:
+            raise RelationshipExposeError(
+                f"{rname}: `condition` tek-kolonlu eşitlik değil ({rel.get('condition')!r}). "
+                "Bileşik anahtarlı ilişkiler `expose:` ile üretilemez — elle bir view yazın.")
+        la, lc, ra, rc = m.groups()
+
+        # --- G4: kendine-referanslı ilişki → Rust çekirdeği PANIC atıyor ---------------
+        # `core/src/mdl/lineage.rs:146` `unwrap()` on None. `PanicException` `Exception`
+        # DEĞİLDİR (MRO: PanicException → BaseException), yani `except Exception` onu
+        # YAKALAMAZ ve worker düşer. Hesap planı parent / BOM / org şeması ERP'lerde standart.
+        if la == ra:
+            raise RelationshipExposeError(
+                f"{rname}: kendine-referanslı ilişki ({la}) — motor çekirdeği PANIC atıyor "
+                "(lineage.rs), `except Exception` yakalamaz. `expose:` desteklenmiyor.")
+
+        # --- G1+G2: YÖN, `join_type`'tan DEĞİL, ŞEMADAN türetilir ---------------------
+        # Motor `join_type`'ı OKUMUYOR (ölçüldü: MANY_TO_ONE / ONE_TO_MANY / MANY_TO_MANY
+        # AYNI SQL'i üretir), dolayısıyla o alan bir YORUMDUR. Tek yapısal sinyal: "bir"
+        # tarafının join kolonu o modelin PRIMARY KEY'i olmalı. Bu, Snowflake'in
+        # `REFERENCES <PK/UNIQUE>` kuralının ve Apache Ossie'nin ilişki modelinin aynısıdır.
+        # Yalnız MANY→ONE üretilir; ters yön handle'ı YASAKTIR (join pruning yüzünden bir
+        # ölçünün değeri SELECT'teki DİĞER ölçülere göre değişir — ölçüldü: 3 → 7.038).
+        def _pk(model_name: str) -> str | None:
+            f = model_files.get(model_name)
+            return _load(f).get("primary_key") if f else None
+
+        if _pk(ra) == rc:
+            src, src_col, dst, dst_col = la, lc, ra, rc
+        elif _pk(la) == lc:
+            src, src_col, dst, dst_col = ra, rc, la, lc
+        else:
+            raise RelationshipExposeError(
+                f"{rname}: hiçbir tarafın join kolonu o modelin `primary_key`'i değil "
+                f"({la}.{lc} / {ra}.{rc}). Benzersizlik YAPISAL olarak kanıtlanamıyor → "
+                "üretim reddedildi. Ya modelin primary_key'ini doğru bildirin ya da "
+                "`models_enrich.yml` ile ELLE, bilinçli bir istisna olarak tanımlayın "
+                "(veri düzeyi doğrulama: tests/test_relationship_health.py).")
+
+        src_file = model_files.get(src)
+        if src_file is None:
+            raise RelationshipExposeError(f"{rname}: kaynak model {src!r} bulunamadı")
+        dst_file = model_files.get(dst)
+        if dst_file is None:
+            raise RelationshipExposeError(f"{rname}: hedef model {dst!r} bulunamadı")
+
+        src_meta, dst_meta = _load(src_file), _load(dst_file)
+        src_cols = src_meta.setdefault("columns", [])
+        dst_cols = {c["name"]: c for c in (dst_meta.get("columns") or [])}
+
+        # --- G5: ad çakışması BÜYÜK/KÜÇÜK HARF DUYARSIZ -------------------------------
+        # `MAKINE` ile `makine` yan yana durursa motor TÜM modeli geçersiz kılar
+        # (`[INVALID_MDL] columns that differ only in case`) ve bu SORGU ANINDA patlar,
+        # build'de değil. Logo (`LOGICALREF`) / Netsis (`CARI_KOD`) gibi BÜYÜK harfli ERP
+        # şemalarında kaçınılmaz. Ölçü adlarıyla çakışma da ayrıca ölümcül
+        # (`circular dependency detected in measure expressions`).
+        used = {str(c.get("name", "")).lower() for c in src_cols}
+        for cf in cube_files:
+            cm = _load(cf)
+            if cm.get("base_object") == src:
+                used |= {str(x.get("name", "")).lower() for x in (cm.get("measures") or [])}
+
+        # handle kolonu: adı HEDEF MODEL ADINA EŞİT olmak ZORUNDA (motor kısıtı). Bu yüzden
+        # (kaynak, hedef) çifti başına EN FAZLA BİR ilişki ifade edilebilir — rol-oynayan
+        # boyutlar (fatura-adresi/sevk-adresi) yapısal olarak imkânsızdır, bkz. MIMARI §9.2.
+        if dst.lower() not in used:
+            src_cols.append({"name": dst, "type": dst, "relationship": rname})
+            used.add(dst.lower())
+        elif not any(c.get("name") == dst and c.get("relationship") for c in src_cols):
+            raise RelationshipExposeError(
+                f"{rname}: handle adı {dst!r} {src} üzerinde FİZİKSEL bir kolonla çakışıyor. "
+                "Motor handle adının hedef model adına eşit olmasını şart koşar → bu ilişki "
+                "`expose:` ile üretilemez.")
+
+        yeni_boyutlar = []
+        for e in expose:
+            col = e.get("column")
+            if not col:
+                raise RelationshipExposeError(f"{rname}: `expose` girdisinde `column` yok")
+            if col not in dst_cols:
+                raise RelationshipExposeError(
+                    f"{rname}: {dst}.{col} yok. (2. sıçrama için hedef modelde ZATEN tanımlı "
+                    "bir calc kolonu gösterin — üreteç graf gezmez, hop sınırı 2'dir.)")
+            calc_ad = e.get("calc_name") or f"{dst}_{col}"
+            if calc_ad.lower() in used:
+                raise RelationshipExposeError(
+                    f"{rname}: üretilen kolon adı {calc_ad!r} {src} üzerinde zaten var "
+                    "(büyük/küçük harf duyarsız) — `calc_name:` ile farklı bir ad verin.")
+            src_cols.append({"name": calc_ad, "type": e.get("type") or dst_cols[col].get("type")
+                             or "VARCHAR", "is_calculated": True,
+                             "expression": f"{dst}.{col}"})
+            used.add(calc_ad.lower())
+            _etiket_carpismasi(e, rname, src, cube_files, _load,
+                               e.get("as") or calc_ad)
+            yeni_boyutlar.append({
+                "name": e.get("as") or calc_ad,
+                "expression": calc_ad,
+                "type": e.get("type") or dst_cols[col].get("type") or "VARCHAR",
+                **({"label": e["label"]} if e.get("label") else {}),
+                **({"synonyms": list(e["synonyms"])} if e.get("synonyms") else {}),
+                # PROVENANCE: hangi join'den, kaç sıçrama sonra geldi. `properties` MDL'de
+                # birinci sınıf; wren-core bilinmeyen anahtarları yok sayar → motor değişmez.
+                "properties": {"origin": {"model": dst, "column": col,
+                                          "relationship": rname, "hops": 1}},
+            })
+
+        _save(src_file, src_meta)
+
+        # base_object'i bu model olan HER cube'a boyutları ekle (asıl kaldıraç).
+        for cf in cube_files:
+            cm = _load(cf)
+            if cm.get("base_object") != src:
+                continue
+            dims = cm.setdefault("dimensions", [])
+            mevcut = {str(d.get("name", "")).lower() for d in dims}
+            eklendi = False
+            for d in yeni_boyutlar:
+                if d["name"].lower() in mevcut:
+                    continue  # cube kendi boyutunu ZATEN tanımlamış → elle tanım kazanır
+                dims.append(dict(d))
+                eklendi = True
+            if eklendi:
+                _save(cf, cm)
 
 
 def _merge_cube_synonyms(layers: list[tuple[Path, str | None]], out: Path) -> None:
