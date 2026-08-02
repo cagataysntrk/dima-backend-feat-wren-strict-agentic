@@ -10,7 +10,10 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
+import time as _time
+
 from app import context as app_context
+from app import planner as _planner
 from app import followup
 from app import cube_router, pii, viz, yoy
 from app.answer import (
@@ -1158,6 +1161,17 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                                question=body.question, cube_query=cq, sql=sql,
                                result=result, source=source, baglam=baglam)
 
+    def _plan_izi(plan) -> str:
+        """Ajan koşusunun tek satırlık özeti — iz'de görünür, makbuzda ayrıntısı durur.
+
+        Kısılma **görünür olmalıdır**: kapsamı daraltan her sınır kullanıcıya söylenir
+        (`contribution`'ın `kirpilan_segment`'iyle aynı ilke). Kısılmayan bir koşumda da
+        adım/sorgu sayısı yazılır — maliyet gizli kalmaz.
+        """
+        k = plan.kosum
+        temel = f"Ajan koşusu: {len(k.adimlar)} adım · {k.sorgu_sayisi} sorgu"
+        return f"{temel} · KISILDI ({k.kisilma_nedeni})" if k.kisildi else temel
+
     def _cevap_ustunde_konus(prev_cq: dict, cube_meta: dict | None, niyet,
                              migration_trace: list[str], session_id: str | None):
         """"Cevap üstünde konuşma" (Faz G1) — VAR OLAN araçları KOMPOZE eder.
@@ -1178,10 +1192,21 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         tur = niyet.tur
         iz = migration_trace + [f"Takip: üçüncü sınıf → cevap üstünde konuşma ({tur}, LLM'siz)"]
 
+        # FAZ F3 — KOMPOZİSYON PLANLAYICIDAN GEÇER. F2'nin yönetişimi (bütçe · yetki ·
+        # deterministik-önce · adım makbuzu) yazıldı ama hiçbir yola BAĞLI DEĞİLDİ; bu,
+        # bu turda altı kez ölçtüğüm "beyan var, tüketici yok" sınıfının aynısı olurdu.
+        # Kullanıcının yetkisi planlayıcıya verilir: ajan onu AŞAMAZ.
+        plan = _planner.Planlayici(
+            principal=principal,
+            butce=_planner.Butce(adim=6, saniye=20.0, sorgu=8),
+            kaynaklar={"servis:wren": service},
+        )
+
         # NEDEN / NE YAPMALI → katkı ayrıştırması. `/ask/contribution`'ın gövdesi
         # ÇAĞRILIR, kopyalanmaz (aynı kural iki yerde yaşamasın — bu depoda ölçülmüş
         # desen: drill↔schedules, interpret↔schedules, _uncovered↔_syn_hit).
         if tur in (followup.TUR_NEDEN, followup.TUR_NE_YAPMALI, followup.TUR_ISARET):
+            _t0 = _time.monotonic()
             try:
                 katki = ask_contribution(
                     request, ContributionRequest(cube_query=prev_cq, mode="yoy",
@@ -1190,6 +1215,13 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 _log.warning("konuşma: katkı ayrıştırması başarısız (best-effort)",
                              exc_info=True)
                 return None
+            # Katkı ayrıştırması kayıtlı TEK bir araç değil bir BİLEŞİKTİR (boyut başına
+            # ayrı sorgu koşar). `tools.KAYIT`'a tek araçmış gibi yazmak yalan olurdu:
+            # ne girdisi tipli, ne kapılardan geçiyor. `dis_adim` bunu İTİRAF EDER —
+            # makbuzda `gated: false` ile görünür ve maliyeti yine de bütçeye sayılır.
+            plan.dis_adim("contribution.report", sure_ms=int((_time.monotonic() - _t0) * 1000),
+                          makbuz=(katki.contract_ids or [None])[0],
+                          not_="bileşik: /ask/contribution gövdesi — kayıtlı tek araç değil")
             adimlar: list[NextStep] = []
             for rapor in katki.raporlar:
                 for b in rapor.bulgular[:3]:
@@ -1211,7 +1243,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             # taşır; `next_steps` yalnız GEZİNME için kalır (kullanıcı bir bulguyu tek
             # başına açmak isterse) — ikisi farklı şeydir ve UI'da farklı görünmelidir.
             return AskResponse(question=body.question, source=None, note=not_metni,
-                               cube_query=prev_cq, next_steps=adimlar[:8], trace=iz,
+                               cube_query=prev_cq, next_steps=adimlar[:8],
+                               trace=iz + [_plan_izi(plan)],
                                contribution=katki.model_dump())
 
         # NORMAL Mİ → dönemsel kıyas. Yeni bir "normallik" tanımı UYDURULMAZ: elimizdeki
@@ -1220,8 +1253,13 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             time_dim = yoy.time_dim_of(schema, prev_cq.get("cube"))
             kiyas_cq = {**prev_cq, "compare": "yoy"}
             try:
-                sonuc = yoy.compute(service, prev_cq, "yoy", time_dim,
-                                    limit=settings.max_result_rows)
+                # KAYITLI araç → dört kapıdan geçer (kayıt · yetki · deterministik-önce ·
+                # bütçe) ve adım makbuzu üretir.
+                sonuc = plan.calistir("yoy.compute", service, prev_cq, "yoy", time_dim,
+                                      limit=settings.max_result_rows)
+            except _planner.ButceAsimi:
+                _log.info("konuşma: bütçe tavanı — kısmi cevap")
+                return None
             except Exception:
                 _log.warning("konuşma: dönemsel kıyas başarısız (best-effort)", exc_info=True)
                 return None
@@ -1233,7 +1271,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             return _attach_viz(AskResponse(
                 question=body.question, source="cube", result=r, cube_query=kiyas_cq,
                 note="Geçen dönemle kıyas — \"normal mi\" sorusunun nesnel zemini budur.",
-                trace=iz + ["Kıyas: app/yoy.py (yeni dönem matematiği YAZILMADI)"],
+                trace=iz + ["Kıyas: app/yoy.py (yeni dönem matematiği YAZILMADI)",
+                            _plan_izi(plan)],
             ), sonuc, kiyas_cq)
 
         return None

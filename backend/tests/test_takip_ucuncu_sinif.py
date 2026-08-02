@@ -303,3 +303,61 @@ def test_capasiz_konusma_BOZULMADI(client):
     d = ask(client, "bu neden böyle?", cube_query=ilk["cube_query"], history=[ilk["question"]])
     assert d.get("contribution"), "çapasız konuşma bozuldu"
     assert not any("Çapa" in t for t in (d.get("trace") or []))
+
+
+# --- FAZ F3: kompozisyon PLANLAYICIDAN geçiyor mu? ------------------------------
+
+def test_konusma_AJAN_KOSUSU_izi_tasir(client):
+    """F2'nin yönetişimi (bütçe · yetki · adım makbuzu) yazılmıştı ama HİÇBİR YOLA
+    BAĞLI DEĞİLDİ — bu turda altı kez ölçtüğüm "beyan var, tüketici yok" sınıfının
+    aynısı olurdu. Bu test bağlanmanın GERÇEK olduğunu HTTP yolundan doğrular."""
+    from tests.conftest import ask
+
+    ilk = ask(client, "bu yıl makine bazında işlenen kg")
+    d = ask(client, "bu neden böyle?", cube_query=ilk["cube_query"], history=[ilk["question"]])
+    izler = d.get("trace") or []
+    assert any("Ajan koşusu" in t for t in izler), f"planlayıcı izi yok: {izler}"
+    # Maliyet GİZLİ KALMAZ: adım ve sorgu sayısı izde görünür.
+    kosu = next(t for t in izler if "Ajan koşusu" in t)
+    assert "adım" in kosu and "sorgu" in kosu
+
+
+def test_normal_mi_KAYITLI_araci_planlayicidan_gecirir(client):
+    """`yoy.compute` kayıtlı bir araçtır → dört kapıdan geçmeli ve adım olarak sayılmalı."""
+    from tests.conftest import ask
+
+    ilk = ask(client, "bu yıl makine bazında işlenen kg")
+    d = ask(client, "normal mi?", cube_query=ilk["cube_query"], history=[ilk["question"]])
+    if not d.get("result"):
+        pytest.skip("bu veri setinde dönemsel kıyas üretilemedi")
+    kosu = next((t for t in (d.get("trace") or []) if "Ajan koşusu" in t), "")
+    assert kosu and "1 adım" in kosu, f"yoy.compute adım olarak sayılmadı: {kosu!r}"
+
+
+def test_BILESIK_adim_durustce_isaretlenir():
+    """Katkı ayrıştırması kayıtlı TEK bir araç DEĞİL bir bileşiktir (boyut başına ayrı
+    sorgu koşar). `tools.KAYIT`'a tek araçmış gibi yazmak YALAN olurdu: ne girdisi
+    tipli, ne kapılardan geçiyor.
+
+    `dis_adim` bunu İTİRAF EDER — makbuzda `gated: false` görünür. Kayıtsız bir adımı
+    hiç yazmamak, koşumu olduğundan ucuz ve daha denetlenmiş göstermek olurdu."""
+    from app.planner import Planlayici
+
+    p = Planlayici()
+    p.dis_adim("contribution.report", sure_ms=12, makbuz="c-x", not_="bileşik")
+    adim = p.kosum.makbuza()["agent_run"]["steps"][0]
+    assert adim["gated"] is False and adim["note"] == "bileşik"
+    assert adim["receipt"] == "c-x"
+    # Yönetişim eksik olsa da MALİYET MUHASEBESİ eksik değil.
+    assert p.kosum.sorgu_sayisi == 1, "bileşik adım bütçeye sayılmadı"
+
+
+def test_KAPISIZ_adim_da_butceyi_tuketir():
+    """Bileşik adımlar kapıdan geçmez ama SINIRSIZ da değildir."""
+    from app.planner import Butce, ButceAsimi, Planlayici
+
+    p = Planlayici(butce=Butce(adim=2))
+    p.dis_adim("bilesik.a", sure_ms=1)
+    p.dis_adim("bilesik.b", sure_ms=1)
+    with pytest.raises(ButceAsimi):
+        p.calistir("route", "x", {"cubes": []})

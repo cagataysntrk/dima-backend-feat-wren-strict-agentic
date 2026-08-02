@@ -945,13 +945,30 @@ etiket kümesine karşı sınıyordu ve `route` çalıştıktan **sonra bile** r
 Kapının yanlış-pozitifi, kapının olmamasından **kötüdür**: meşru bir merdiven basamağını
 kapatır ve kural *"işe yaramıyor"* diye sökülür.
 
-### 11.6b Henüz YOK (F3–F4)
+### 11.6c Kompozisyon planlayıcıdan geçiyor (F3) ✅ — ve BİLEŞİK adımlar itiraf ediliyor
 
-Plan **SEÇİMİ** (hangi araç, hangi sırayla — telemetri gerekiyor), belirsizlikte plan
-seviyesinde sorma, ve kompozisyonların planlayıcı üstüne taşınması. Bugünkü kompozisyonlar
-(G1'in *"neden değişti?"* zinciri) doğrudan araçları çağırıyor; planlayıcıdan **geçmiyorlar**
-— yani bütçe/yetki kapıları onlara **henüz uygulanmıyor**. Bu, F3'ün işidir ve dürüstçe
-kaydedilir: yönetişim **var ama her yola bağlı değil**.
+Konuşma yolu (G1) artık bir `Planlayici` kurar (`Butce(adim=6, saniye=20, sorgu=8)`) ve
+**kullanıcının kimliğini** ona verir — ajan yetkiyi aşamaz. Kayıtlı araçlar (`yoy.compute`)
+**dört kapıdan** geçer ve adım makbuzu üretir. Koşumun özeti cevabın **izinde** görünür:
+*"Ajan koşusu: N adım · M sorgu"* (kısıldıysa gerekçesiyle) — maliyet gizli kalmaz.
+
+**Bileşik adımlar itiraf edilir.** Katkı ayrıştırması kayıtlı **tek bir araç değildir**:
+bir uç noktanın gövdesidir ve içinde boyut başına ayrı sorgular koşar. Onu `tools.KAYIT`'a
+tek araçmış gibi yazmak **yalan olurdu** — ne girdisi tipli, ne çıktısı, ne de kapılardan
+geçiyor. `Planlayici.dis_adim()` bunu makbuzda **`gated: false`** ile işaretler:
+
+> Kayıtsız bir adımı hiç yazmamak, koşumu olduğundan **ucuz** ve **daha denetlenmiş**
+> göstermek olurdu. Denetçi hangi adımların kapılardan GEÇMEDİĞİNİ görebilmelidir.
+
+Bileşik adım **bütçeye dahildir** (adım ve sorgu sayılır): yönetişim eksik olsa da
+**maliyet muhasebesi eksik değildir**.
+
+### 11.6d Henüz YOK (F3 kalanı + F4)
+
+Plan **SEÇİMİ** (hangi araç, hangi sırayla — telemetri gerekiyor, Faz E-1), belirsizlikte
+plan seviyesinde sorma, kalan kompozisyonların (rapor · pano · uyarı) planlayıcıya
+taşınması, ve bileşiklerin **kayıtlı araçlara ayrıştırılması** (`contribution.report`
+bugün `gated: false`).
 
 ### 11.6 Özellik = KOMPOZİSYON, endpoint değil
 

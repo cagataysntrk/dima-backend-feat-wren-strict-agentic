@@ -79,11 +79,17 @@ class Adim:
     sure_ms: int
     makbuz: str | None = None
     hata: str | None = None
+    # Kayıtlı bir araç DEĞİL (bileşik/eski yol) → kapılardan geçmedi. Gizlenmez:
+    # denetçi hangi adımların denetlenmediğini görebilmeli.
+    kapisiz: bool = False
+    dis_maliyet: str = ""
+    notlar: str = ""
 
     def ozet(self) -> dict[str, Any]:
         return {"tool": self.arac, "determinism": self.determinizm,
                 "ms": self.sure_ms, "receipt": self.makbuz,
-                **({"error": self.hata} if self.hata else {})}
+                **({"error": self.hata} if self.hata else {}),
+                **({"gated": False, "note": self.notlar} if self.kapisiz else {})}
 
 
 @dataclass
@@ -97,9 +103,16 @@ class Kosum:
 
     @property
     def sorgu_sayisi(self) -> int:
-        """Veriye dokunan adımlar (maliyet sınıfı `sifir` olmayanlar)."""
-        return sum(1 for a in self.adimlar
-                   if tools.get(a.arac).maliyet != "sifir")
+        """Veriye dokunan adımlar (maliyet sınıfı `sifir` olmayanlar).
+
+        Kapısız (bileşik) adımlar kayıtta olmadığı için maliyetlerini KENDİLERİ taşır —
+        aksi halde `tools.get()` patlar ve bütçe muhasebesi bileşikleri hiç saymazdı."""
+        n = 0
+        for a in self.adimlar:
+            maliyet = a.dis_maliyet if a.kapisiz else tools.get(a.arac).maliyet
+            if maliyet != "sifir":
+                n += 1
+        return n
 
     def makbuza(self) -> dict[str, Any]:
         """Kök makbuza yazılacak biçim — adım ağacı + kısılma kaydı.
@@ -230,6 +243,28 @@ class Planlayici:
             if arac.determinizm == "deterministik":
                 self._denenen_araclar.add(arac.ad)
         return sonuc
+
+    def dis_adim(self, ad: str, *, sure_ms: int, makbuz: str | None = None,
+                 maliyet: str = "pahali", not_: str = "") -> None:
+        """Kayıtlı bir araç OLMAYAN bir işi adım ağacına **dürüstçe** kaydeder.
+
+        Neden var: bugünkü kompozisyonların bir kısmı tek bir kayıtlı aracı değil, bir
+        **bileşiği** çağırıyor (ör. katkı ayrıştırması bir uç noktanın gövdesidir ve içinde
+        boyut başına ayrı sorgular koşar). Onu `tools.KAYIT`'a tek bir araçmış gibi yazmak
+        **yalan olurdu**: ne girdisi tipli, ne çıktısı, ne de kapılardan geçiyor.
+
+        Bu metot alternatifi değil **itirafıdır**: adım makbuzda görünür, maliyeti sayılır
+        ve `gated=False` ile işaretlenir — yani denetçi hangi adımların kapılardan
+        GEÇMEDİĞİNİ görebilir. Kayıtsız bir adımı hiç yazmamak, koşumu olduğundan ucuz ve
+        daha denetlenmiş göstermek olurdu.
+
+        Bütçeye **dahildir**: adım sayılır, `maliyet != "sifir"` ise sorgu sayılır. Yani
+        yönetişim eksik olsa da maliyet muhasebesi eksik değildir.
+        """
+        self.kosum.adimlar.append(Adim(
+            arac=ad, determinizm="karma", sure_ms=sure_ms, makbuz=makbuz,
+            hata=None, kapisiz=True, dis_maliyet=maliyet, notlar=not_,
+        ))
 
     def kalan(self) -> dict[str, Any]:
         """Bütçenin kalanı — çağıran bir sonraki adımı göze alıp alamayacağını sorabilir."""
