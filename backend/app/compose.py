@@ -515,9 +515,17 @@ def _compose_relationship_dimensions(out: Path) -> None:
                 raise RelationshipExposeError(
                     f"{rname}: üretilen kolon adı {calc_ad!r} {src} üzerinde zaten var "
                     "(büyük/küçük harf duyarsız) — `calc_name:` ile farklı bir ad verin.")
+            # HASSASİYET MİRAS ALINIR (Faz A1): üretilen calc kolonu hedef kolonun
+            # DEĞERLERİNİ taşır, dolayısıyla onun hassasiyetini de taşımalıdır. Aksi halde
+            # `partiler.operator` (beyanlı `person`) `tamir_rework.partiler_operator` olarak
+            # yeniden doğar ve LLM prompt'una SIZAR — üreteç, beyanı sessizce sıfırlamış olur.
+            from app.sensitivity import classify
+
             src_cols.append({"name": calc_ad, "type": e.get("type") or dst_cols[col].get("type")
                              or "VARCHAR", "is_calculated": True,
-                             "expression": f"{dst}.{col}"})
+                             "expression": f"{dst}.{col}",
+                             **({"sensitivity": s}
+                                if (s := classify(dst_cols[col])) != "normal" else {})})
             used.add(calc_ad.lower())
             # `dimension: false` → YALNIZ calc kolonu üret, cube boyutu ÜRETME.
             # Gerekçe: bazen kolon bir İFADENİN İÇİNDE kullanılır, kendi başına bir

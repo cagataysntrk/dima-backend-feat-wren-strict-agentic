@@ -1968,6 +1968,8 @@ def route(question: str, schema: dict) -> dict | None:
 
 def build_catalog(schema: dict) -> tuple[str, dict]:
     """LLM prompt'u için cube kataloğu metni + doğrulama indeksi döner."""
+    from app.sensitivity import prompt_safe_values
+
     cubes = schema.get("cubes") or []
     cols = {c["name"]: c for m in schema.get("models", []) for c in m["columns"]}
     lines, enum_lines, index = [], [], {}
@@ -1981,8 +1983,12 @@ def build_catalog(schema: dict) -> tuple[str, dict]:
         lines.append(line)
         for dim in c.get("dimensions", []):
             col = cols.get(dim)
-            if col and col.get("values") and len(col["values"]) <= 25:
-                enum_lines.append(f'  {c["name"]}.{dim} ∈ {{{", ".join(map(str, col["values"]))}}}')
+            # HASSAS KOLON DEĞERLERİ PROMPT'A GİRMEZ (Faz A1). Süzgeç `llm._schema_prompt`
+            # ile AYNI kaynaktan (`app/sensitivity.py`) — eskiden iki prompt üreticisi
+            # farklı politika uyguluyordu (burada ≤25 + cube whitelist, orada HER VARCHAR).
+            vals = prompt_safe_values(col) if col else []
+            if vals and len(vals) <= 25:
+                enum_lines.append(f'  {c["name"]}.{dim} ∈ {{{", ".join(map(str, vals))}}}')
     catalog = "\n".join(lines)
     if enum_lines:
         catalog += "\n\nFiltre değerleri (birebir kullan):\n" + "\n".join(enum_lines)

@@ -175,9 +175,32 @@ Türkçe için `COLLATE Latin1_General_CI_AI` enjeksiyonu).
 
 ## 4. DEĞİŞMEZLER — "bunu bozarsan sistem yalan söyler"
 
-1. **LLM ham veri görmez.** Yalnız şema/metrik/boyut *adları* ve (sınırlı) enum değerleri gider.
-   Hücre değeri asla. → *Bu bir CI testi olmalı, niyet beyanı değil.* KVKK'nın yurt-dışına-aktarım
-   sorusunu kökten çözen kontrol budur.
+1. **LLM'e KİŞİSEL VERİ gitmez.** ✅ *CI testi var:* `tests/test_llm_veri_sizintisi.py`.
+
+   > ⚠️ **Bu madde 2 Ağustos 2026'da DÜZELTİLDİ.** Eski metin *"LLM ham veri görmez … hücre
+   > değeri asla"* diyordu ve **doğru değildi**: `llm._schema_prompt` her modelin her VARCHAR
+   > kolonundan örneklenmiş **1391 gerçek değeri** prompt'a yazıyordu — çalışanların tam
+   > ad-soyadı, SGK numaraları, IBAN'lar dahil. `cube_router.build_catalog` ise daha dar bir
+   > politika uyguluyordu (358 değer): **aynı LLM'e iki farklı gizlilik politikası.** Demo'daki
+   > TCKN maskesi de kodda değil **verinin kendisindeydi**. Maddenin kendi cümlesi
+   > (*"bu bir CI testi olmalı"*) yıllardır yerine getirilmemişti.
+
+   Doğru ve uygulanan kural **iki katmanlıdır**:
+
+   | Katman | LLM ne görür | Ne göremez |
+   |---|---|---|
+   | **T1 — sorgu üretimi** (Intent-JSON / Discovery) | Şema/metrik/boyut adları + `sensitivity: normal` kolonların enum değerleri | Hücre verisi, `person`/`special` kolon değerleri, ham satır |
+   | **T2 — yorum/sohbet** (planlı, Faz G) | Kullanıcının zaten yetkiyle sorduğu ve gördüğü, PII maskeli **agrege sonuç** | Ham satır, alttaki tablolar, başka kiracı, **SQL yazma yetkisi** |
+
+   Sınır *"veriyi kim görüyor"* değil **"veri nereye gidiyor"**dur: `cube_router.route()`
+   süreç içinde çalıştığı için değerleri görmeye **devam eder** (*"Aylin Bulut'un firesi"*
+   deterministik çözülebilsin diye); süzgeç **prompt sınırındadır**
+   (`app/sensitivity.py::prompt_safe_values`).
+
+   Sınıflandırma **beyanla** yapılır (`sensitivity: person|special|normal`, model YAML'ında);
+   ad-tabanlı tanıma yalnız bir **emniyet ağıdır** ve `operator`/`sorumlu` gibi şemaya özgü
+   adları yakalayamaz — onlar beyan edilir. Üreteç calc kolonları hassasiyeti **miras alır**
+   (yoksa `partiler.operator` → `tamir_rework.partiler_operator` olarak yeniden doğup sızar).
 2. **Yalnız read-only.** `guard_sql` `SELECT`/`WITH` dışını reddeder; DDL/DML asla çalıştırılmaz.
 3. **LLM SQL yazmaz.** Varsayılan yol Intent-JSON'dur. Ham SQL **yalnız** Discovery'de, son çare.
 4. **Her cevap bir Query Contract üretir**: SQL + `mdl_version` + parametreler + sonuç hash'i +

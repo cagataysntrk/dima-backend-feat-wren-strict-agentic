@@ -105,14 +105,20 @@ Kurallar:
 
 
 def _schema_prompt(schema: dict) -> str:
+    from app.sensitivity import prompt_safe_values
+
     lines = ["Kullanılabilir tablolar:"]
     enum_lines: list[str] = []
     for m in schema.get("models", []):
         cols = ", ".join(f'{c["name"]} {c.get("type", "")}'.strip() for c in m["columns"])
         lines.append(f'- {m["name"]}({cols})')
         for c in m["columns"]:
-            if c.get("values"):
-                vals = ", ".join(str(v) for v in c["values"])
+            # HASSAS KOLON DEĞERLERİ PROMPT'A GİRMEZ (Faz A1) — ölçüldü: bu blok 1391 gerçek
+            # değer gönderiyordu, içinde tam ad-soyad, SGK no ve IBAN. Süzgeç TEK yerde
+            # (`app/sensitivity.py`) ki `cube_router.build_catalog` ile aynı politikayı
+            # uygulasın; eskiden ikisi FARKLI davranıyordu.
+            if vals_ok := prompt_safe_values(c):
+                vals = ", ".join(str(v) for v in vals_ok)
                 enum_lines.append(f'  - {m["name"]}.{c["name"]} ∈ {{{vals}}}')
     if enum_lines:
         lines.append("")

@@ -22,4 +22,8 @@ columns:
   type: DATE
 - name: sorumlu
   type: VARCHAR
+  # BEYAN (Faz A1): sorumlu personel kodu → KİŞİ tanımlar. `mudahale_eden` ile aynı
+  # sınıf; ad-tabanlı emniyet ağı 'sorumlu' kelimesini yakalayamaz (başka şemada
+  # departman/rol olabilir) — beyan şart.
+  sensitivity: person
 primary_key: id

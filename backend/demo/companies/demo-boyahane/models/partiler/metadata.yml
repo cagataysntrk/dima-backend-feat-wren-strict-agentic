@@ -26,6 +26,11 @@ columns:
   type: VARCHAR
 - name: operator
   type: VARCHAR
+  # BEYAN (Faz A1): bu kolon KİŞİ tanımlar → değerleri LLM prompt'una GİRMEZ.
+  # Ad-tabanlı emniyet ağı bunu yakalayamaz (`operator` başka bir şemada makine
+  # tipi olabilir) — bu yüzden BEYAN gerekir. Deterministik `route()` değerleri
+  # görmeye devam eder (süreç içi), yetenek kaybı YOK.
+  sensitivity: person
 - name: musteri_kod
   type: VARCHAR
 - name: musteri_ad

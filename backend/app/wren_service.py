@@ -165,7 +165,13 @@ class WrenService:
             {
                 "name": m.get("name"),
                 "columns": [
-                    {"name": c.get("name"), "type": c.get("type", "")}
+                    # `sensitivity` MANİFESTTEN TAŞINIR (Faz A1). Bu sözlük eskiden yalnız
+                    # name+type kuruyordu; YAML'daki `sensitivity: person` beyanı burada
+                    # DÜŞÜYOR ve aşağıdaki sınıflandırma ad-tabanlı emniyet ağına geri
+                    # düşüyordu — yani beyan hiç işe yaramıyordu (ölçüldü: `operator`
+                    # beyan edilmesine rağmen prompt'a gitmeye devam etti).
+                    {"name": c.get("name"), "type": c.get("type", ""),
+                     **({"sensitivity": c["sensitivity"]} if c.get("sensitivity") else {})}
                     for c in m.get("columns", [])
                 ],
             }
@@ -515,11 +521,26 @@ class WrenService:
         """Düşük kardinaliteli VARCHAR kolonlara `values` ekler (tek engine oturumu).
 
         NL→SQL'in "marmara boya" / "kırmızı" gibi değerlerle WHERE yazabilmesi için.
-        Hata olursa sessizce atlar (şema yine döner)."""
+        Hata olursa sessizce atlar (şema yine döner).
+
+        HASSASİYET BURADA DAMGALANIR, BURADA ELENMEZ (Faz A1). Değerler örneklenmeye devam
+        eder çünkü **iki farklı tüketici** var ve ikisinin hakkı aynı değil:
+          * `cube_router.route()` — SÜREÇ İÇİNDE çalışır, veri kurumdan ÇIKMAZ; "Aylin
+            Bulut'un firesi" gibi bir soruyu deterministik çözebilmesi için değerleri
+            görmesi GEREKİR. Burada eleseydik bu yetenek sessizce ölürdü.
+          * LLM prompt'u — veri **üçüncü tarafa gider**; hassas değer oraya giremez.
+        Sınır bu yüzden kaynakta değil **prompt sınırındadır** (bkz. `app/sensitivity.py`
+        `prompt_safe_values`). Kolona `sensitivity` damgası basılır ki her tüketici
+        hakkını bilsin ve CI tarafı denetlenebilsin.
+        """
+        from app.sensitivity import classify
+
         try:
             with self._engine() as eng:
                 for m in models:
                     for c in m["columns"]:
+                        if (s := classify(c)) != "normal":
+                            c["sensitivity"] = s
                         if not str(c.get("type", "")).upper().startswith("VARCHAR"):
                             continue
                         sql = (
