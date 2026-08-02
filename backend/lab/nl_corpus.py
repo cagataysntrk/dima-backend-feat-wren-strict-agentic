@@ -129,12 +129,13 @@ def gen_single(schema):
         dims = list(dict.fromkeys(dims[:2] + dims[-2:]))
         for m, word in _measure_words(cube):
             for p in PERIODS:
-                out.append((f"{p} {word}".strip(), valid))
-                for dw in dims[:2]:
-                    out.append((f"{p} {dw} bazında {word}".strip(), valid))
+                kaynak = {cube["name"]}   # soruyu HANGİ cube'un sözlüğünden ürettik
+                out.append((f"{p} {word}".strip(), valid, kaynak))
+                for dw in dims:
+                    out.append((f"{p} {dw} bazında {word}".strip(), valid, kaynak))
                 if dims:
-                    out.append((f"en çok {word} yapılan 5 {dims[0]} {p}".strip(), valid))
-                    out.append((f"en düşük {word} olan {dims[0]} {p}".strip(), valid))
+                    out.append((f"en çok {word} yapılan 5 {dims[0]} {p}".strip(), valid, kaynak))
+                    out.append((f"en düşük {word} olan {dims[0]} {p}".strip(), valid, kaynak))
     # ZORLUK KATMANI: gerçek kullanıcı ifadeleri (metadata'da OLMAYAN kelimeler).
     # Beklenti = o ölçüyü içeren cube'lar; sistem arketip/sinonimle tanımalı.
     measure_to_cubes: dict[str, set] = {}
@@ -147,17 +148,17 @@ def gen_single(schema):
             continue
         for ph in phrasings:
             for p in ("", "bu yıl", "geçen ay"):
-                out.append((f"{p} {ph}".strip(), target))
+                out.append((f"{p} {ph}".strip(), target, target))
     for n in NOISE:
-        out.append((n, "NOISE"))
+        out.append((n, "NOISE", None))
     for cap in CAPABILITY:
-        out.append((cap, "CAP"))
+        out.append((cap, "CAP", None))
     # tekilleştir
     seen, uniq = set(), []
-    for q, e in out:
+    for q, e, kaynak in out:
         if q and q not in seen:
             seen.add(q)
-            uniq.append((q, e))
+            uniq.append((q, e, kaynak))
     return uniq
 
 
@@ -216,6 +217,9 @@ def run_company(name, login, pw, slug):
     schema = c.get("/schema").json()
     cats = Counter()
     fails = defaultdict(list)
+    dogru = Counter()          # doğru-cube kanalı (erişimden AYRI)
+    yanlis_ornek: list = []
+    discovery_ornek: list = []
 
     def ask(q, cq=None):
         body = {"question": q, "execute": False}
@@ -226,10 +230,31 @@ def run_company(name, login, pw, slug):
 
     # tekil
     singles = gen_single(schema)
-    for q, exp in singles:
+    for q, exp, kaynak in singles:
         d = ask(q)
         s = _sinif(d, exp)
         cats[f"tekil::{s}"] += 1
+        # DOĞRULUK KANALI (2 Ağustos 2026): `exp` TÜM cube adlarıdır, yani yukarıdaki
+        # sınıflandırma "SQL üretebildi mi"yi (ERİŞİM) ölçer — yanlış cube'a gitmek de
+        # OK sayılır. Kanıt: üreteç "bölüm bazında oee"yi enerji_makine'den oee'ye
+        # taşıdı ve bu metrik yalnız +2 gördü. `kaynak` sorunun HANGİ cube'un
+        # sözlüğünden üretildiğini taşır → gerçek doğruluk ölçülebilir. Eski metrik
+        # KORUNUR (karşılaştırılabilirlik), bu AYRI bir kanaldır.
+        if kaynak and d.get("sql"):
+            secilen = (d.get("cube_query") or {}).get("cube")
+            # ÜÇ AYRI SONUÇ (ikisini birbirine karıştırmak yanıltıcı olur):
+            #   dogru     → beklenen cube'dan yapısal cevap
+            #   yanlis    → BAŞKA bir cube'dan yapısal cevap (asıl belirsizlik sınıfı)
+            #   discovery → hiç cube_query yok (ham SQL) — yanlış cube DEĞİL, cube YOK.
+            #               Deterministik katmanın kapsayamadığı soru; chip/drill de yok.
+            if secilen is None:
+                dogru["discovery"] += 1
+                discovery_ornek.append((q, sorted(kaynak)))
+            elif secilen in kaynak:
+                dogru["dogru"] += 1
+            else:
+                dogru["yanlis"] += 1
+                yanlis_ornek.append((q, sorted(kaynak), secilen))
         # NOTE = duvar (beklenen cube vardı ama route/refine başaramadı) — asıl hedef.
         if any(s.startswith(x) for x in ("CUBE-SAPMA", "YANLIS", "HTTP", "BOŞ", "META-SAPMA", "NOTE")) \
                 and exp not in ("NOISE", "CAP"):
@@ -255,7 +280,9 @@ def run_company(name, login, pw, slug):
 
     c.__exit__(None, None, None)
     return {"company": name, "n_single": len(singles), "n_proc_steps": n_steps,
-            "cats": dict(cats), "fails": {k: v[:12] for k, v in fails.items()}}
+            "cats": dict(cats), "fails": {k: v[:12] for k, v in fails.items()},
+            "dogru_cube": dict(dogru), "yanlis_cube_ornek": yanlis_ornek[:20],
+            "discovery_ornek": discovery_ornek[:20]}
 
 
 def main():
@@ -279,6 +306,17 @@ def main():
             continue
         total = sum(rep["cats"].values())
         lines.append(f"- tekil senaryo: {rep['n_single']} · süreç adımı: {rep['n_proc_steps']} · toplam tur: {total}")
+        dc = rep.get("dogru_cube") or {}
+        n_dc = sum(dc.get(k, 0) for k in ("dogru", "yanlis", "discovery"))
+        if n_dc:
+            lines.append(
+                f"- **DOĞRU CUBE: {dc.get('dogru',0)}/{n_dc} (%{100*dc.get('dogru',0)//n_dc})**"
+                f" · yanlış cube: {dc.get('yanlis',0)} · Discovery'ye düştü:"
+                f" {dc.get('discovery',0)} — sorunun üretildiği cube ile cevabın cube'u aynı"
+                " mı. Yukarıdaki OK oranı ERİŞİMİ ölçer (herhangi bir yoldan SQL üretildi"
+                " mi); bu satır DOĞRULUĞU ölçer.")
+        for q, bekl, secilen in (rep.get("yanlis_cube_ornek") or [])[:10]:
+            lines.append(f"    - `{q}` beklenen={bekl} seçilen={secilen}")
         for k, v in sorted(rep["cats"].items(), key=lambda x: -x[1]):
             lines.append(f"  - {k}: {v} ({100*v//max(total,1)}%)")
         for k, items in rep["fails"].items():
@@ -292,7 +330,14 @@ def main():
             continue
         total = sum(rep["cats"].values())
         ok = sum(v for k, v in rep["cats"].items() if "::OK" in k)
-        print(f"  {rep['company']}: {total} tur, OK={ok} ({100*ok//max(total,1)}%)")
+        dc = rep.get("dogru_cube") or {}
+        n_dc = sum(dc.get(k, 0) for k in ("dogru", "yanlis", "discovery"))
+        dogru_str = (f" · DOĞRU-CUBE={dc.get('dogru',0)}/{n_dc} "
+                     f"({100*dc.get('dogru',0)//n_dc}%) "
+                     f"[yanlış={dc.get('yanlis',0)} discovery={dc.get('discovery',0)}]"
+                     ) if n_dc else ""
+        print(f"  {rep['company']}: {total} tur, erişim OK={ok} "
+              f"({100*ok//max(total,1)}%){dogru_str}")
 
 
 if __name__ == "__main__":

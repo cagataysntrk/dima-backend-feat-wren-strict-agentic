@@ -416,6 +416,31 @@ def _compose_relationship_dimensions(out: Path) -> None:
         if dst_file is None:
             raise RelationshipExposeError(f"{rname}: hedef model {dst!r} bulunamadı")
 
+        # --- G10: FİLTRELİ bir modele join'lemek `always_filter`'ı BAYPAS EDER ----------
+        # `always_filter` (LookML `sql_always_where`) bir CUBE özelliğidir ve
+        # `WrenService._inject_always_filter` onu YALNIZ o cube'un kendi SQL'ine ekler.
+        # Bir başka cube o modele JOIN'lediğinde filtre UYGULANMAZ — join model katmanının
+        # ALTINDA gerçekleşir. Ölçüldü (2 Ağustos 2026): `ticaret.always_filter =
+        # "tur='satis'"` iken `fatura_satirlari` üzerinden `faturalar`'a join edilince
+        # 34 milyon TL'lik `alis` verisi filtreyi GEÇTİ.
+        #
+        # Bu, Discovery'de bilinen bir baypastı; otomatik join onu "handle üretilen HER
+        # cube"a yayar. Sessizce yaymaktansa üretimi reddet: doğru çözüm ya filtreyi model
+        # katmanına taşımak ya da o ilişkiyi elle, bilinçli olarak tanımlamaktır.
+        filtreli = [
+            cm.get("name") for cf in cube_files
+            if (cm := _load(cf)).get("base_object") == dst
+            and (cm.get("always_filter") or cm.get("alwaysFilter"))
+        ]
+        if filtreli:
+            raise RelationshipExposeError(
+                f"{rname}: hedef model {dst!r} `always_filter` taşıyan cube'ların "
+                f"({', '.join(map(str, filtreli))}) tabanı. Join model katmanının ALTINDA "
+                "gerçekleştiği için o filtre UYGULANMAZ ve satırlar sessizce sızar "
+                "(ölçüldü: 34M TL'lik alış verisi `tur='satis'` filtresini geçti). "
+                "Üretim reddedildi — filtreyi model katmanına taşıyın ya da ilişkiyi elle "
+                "tanımlayıp sızıntıyı bilinçli olarak kabul edin.")
+
         src_meta, dst_meta = _load(src_file), _load(dst_file)
         src_cols = src_meta.setdefault("columns", [])
         dst_cols = {c["name"]: c for c in (dst_meta.get("columns") or [])}

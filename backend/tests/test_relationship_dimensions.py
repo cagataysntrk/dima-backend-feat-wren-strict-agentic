@@ -167,3 +167,27 @@ def test_gecerli_expose_SORUNSUZ_derlenir(proje, tmp_path):
 
     cube = yaml.safe_load((out / "cubes" / "oee" / "metadata.yml").read_text(encoding="utf-8"))
     assert any(d["name"] == "bolum" for d in cube["dimensions"]), "cube boyutu üretilmedi"
+
+
+def test_G10_always_filter_tasiyan_modele_join_REDDEDILIR(proje, tmp_path):
+    """`always_filter` bir CUBE özelliğidir ve yalnız o cube'un kendi SQL'ine enjekte
+    edilir. Bir başka cube o modele JOIN'lediğinde filtre UYGULANMAZ — join, model
+    katmanının ALTINDA gerçekleşir.
+
+    Ölçüldü (2 Ağustos 2026): `ticaret.always_filter = "tur='satis'"` iken
+    `fatura_satirlari` üzerinden `faturalar`'a join edilince **34 milyon TL'lik `alis`
+    verisi filtreyi geçti**. Bu, Discovery'de bilinen bir baypastı; otomatik join onu
+    "handle üretilen HER cube"a yayardı. Sessizce yaymaktansa üretimi reddediyoruz.
+    """
+    # `makineler`'i filtreli bir cube'un tabanı yap → ona giden expose reddedilmeli.
+    cube_yolu = proje / "packs" / "modul" / "oee" / "cubes" / "makine_filtreli"
+    cube_yolu.mkdir(parents=True, exist_ok=True)
+    (cube_yolu / "metadata.yml").write_text(yaml.safe_dump({
+        "name": "makine_filtreli", "base_object": "makineler",
+        "always_filter": "bolum <> 'Arşiv'",
+        "measures": [{"name": "adet", "expression": "COUNT(*)", "type": "DOUBLE"}],
+        "dimensions": [{"name": "mk", "expression": "makine", "type": "VARCHAR"}],
+    }, allow_unicode=True, sort_keys=False), encoding="utf-8")
+
+    with pytest.raises(RelationshipExposeError, match="always_filter"):
+        _compose(proje, tmp_path / "out")
