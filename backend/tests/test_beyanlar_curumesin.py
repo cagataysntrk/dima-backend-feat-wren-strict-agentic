@@ -134,3 +134,54 @@ def test_OLU_AUTH_yardimcisi_GERI_gelmesin():
             "ya bağla ya sil (MIMARI §5: ölçülmemiş ihtiyaç için altyapı kurma). Public "
             "plane'de superadmin kontrolü gerekiyorsa önce ADR-0015'i (iki-plane ayrımı) "
             "gözden geçir.")
+
+
+# --- ADR-0007 K3: dönem politikası — beyan var, canlı kapı daha zayıf ------------
+
+def test_DONEM_POLITIKASI_beyani_HALA_dogru():
+    """FAZ -0.5c. `cube_router.needs_period` ve `is_period_only` ADR-0007 K3'ün ("dönem
+    eksikse SOR") **tam doğru politikasını** taşıyor ama **üretimde sıfır çağıranı var**
+    (yalnız testlerde); canlı kapı `_period_gate` daha zayıf bir kural uyguluyor.
+
+    ## Neden ne BAĞLANDI ne SİLİNDİ
+
+    İkisi de bir POLİTİKA kararıdır, bir hata değil:
+      * **Bağlamak** `_period_gate`'in davranışını değiştirir — hangi soruların netleştirme
+        alacağı değişir. Bu, ölçülmeden verilecek bir karar değil (Faz 0.5 → Faz 2b).
+      * **Silmek** 13 testlik bir ŞARTNAMEYİ yok eder. `is_period_only`'nin kendi
+        docstring'i (`cube_router.py`) bunu zaten kaydediyor: *"0 prod referansı, 13 test"*.
+
+    Kalan tek doğru hamle: beyanı **kapıya** çevirmek. Biri bunları üretime bağladığı gün
+    bu test kırılır ve MIMARI §6.2'nin güncellenmesini zorlar — beyan sessizce çürüyemez.
+    """
+    # ÇAĞRI aranır, ANMA değil: her iki ad da `cube_router.py`/`ask.py`'de YORUMLARDA
+    # geçiyor (politikanın neden bağlı olmadığını anlatan notlar) ve bu meşrudur — hatta
+    # istenen şeydir. Düz `ad in kaynak` bu yorumları "bağlandı" sanıp testi ilk koşuşta
+    # yanlış-pozitif verdi; `dis_adim` kapısında da aynı düzeltme yapılmıştı.
+    cagrilar: list[str] = []
+    for satir in _app_kaynagi("cube_router.py").splitlines():
+        s = satir.strip()
+        if s.startswith("#"):
+            continue
+        for ad in ("needs_period", "is_period_only"):
+            if re.search(rf"(?<![\w.]){ad}\s*\(", satir):
+                cagrilar.append(f"{ad}: {s[:90]}")
+    assert not cagrilar, (
+        "Dönem politikası artık üretimde ÇAĞRILIYOR:\n  " + "\n  ".join(cagrilar)
+        + "\nMIMARI §6.2'deki \"beyan var, bağlı değil\" kaydı BAYAT. Beyanı güncelle ve bu "
+          "testi politikanın GERÇEKTEN uygulandığını ölçen bir teste çevir. (ADR-0007 K3 "
+          "canlıya alınıyorsa `_period_gate`'in eski kuralıyla çakışmadığı da gösterilmeli.)")
+
+
+def test_DONEM_POLITIKASI_sartnamesi_KORUNUYOR():
+    """Silme kararının bedeli: 13 test bir şartname olarak duruyor. Sayı düşerse
+    şartname aşınıyor demektir — o zaman "sil" kararı yeniden değerlendirilmeli."""
+    import pathlib
+    import re
+
+    t = (pathlib.Path(__file__).resolve().parents[1] / "tests/test_cube_router.py").read_text(
+        encoding="utf-8")
+    kullanim = len(re.findall(r"\b(needs_period|is_period_only)\s*\(", t))
+    assert kullanim >= 13, (
+        f"dönem politikası şartnamesi {kullanim} çağrıya düşmüş (>=13 bekleniyordu) — "
+        "ya testler siliniyor ya politika taşınıyor; ikisi de bilinçli bir karar olmalı.")

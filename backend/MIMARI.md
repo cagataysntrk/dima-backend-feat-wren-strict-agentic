@@ -476,6 +476,69 @@ diye zaman kaybetmesin.
     ne ölçü). Faz 0.4 sayesinde en azından **sessiz-yanlış değil dürüst red** üretiyorlar:
     `-sIz`/`-mAyAn` ekleri `_covers`ta izinli çekim sayılmadığı için kapsam kapısına takılıyorlar.
 
+### 6.1b Çoklu-ay dönem ayrıştırması KAPANDI (Faz -0.5a/d) ✅
+
+**Ölçülen kusur (canlı örnek):** *"ocak şubat mart ayları için ciro değişim trendi nedir"*
+→ dönem **"tümü"** alındı. Kod okununca **dört bağımsız mekanizmanın** aynı anda kırıldığı
+görüldü. İkisi bu turda kapandı:
+
+**(1) Çözücü tek ay çözüyordu.** `_month_range_filters` `re.search` kullanıyordu — yalnız
+İLK ayı yakalıyordu. Asıl tehlike gözlemlenen "tümü" hatası DEĞİLDİ: kapsam kapısı geçilmiş
+olsaydı sistem **sessizce Ocak-only** bir cevap verirdi, `source="cube"` rozetiyle — §6.1'in
+*"en tehlikeli sınıf"* tanımının aynısı.
+
+**Asimetri kodda kayıtlıydı:** `_period_hit_words` 1 Ağustos'ta `finditer`'a geçirilmişti
+(kendi yorumu bunu yazıyor) — **KAPI** çoklu ay görüyordu, **ÇÖZÜCÜ** görmüyordu. Sonuç:
+*"kullanıcı NE KADAR çok dönem detayı verirse, kapı O KADAR az soru soruyor."*
+
+Bugün: **bitişik** aylar tek bir `gte/lte` aralığına çevrilir (mevcut AND-zinciri
+sözleşmesinde ifade edilebilir); **ayrık** aylar (`"ocak ve mart"`) çözülmez ve
+`cozulemeyen_ay_listesi()` ile dönem kapısına **haber verilir** — kapı sorar, sessizce Ocak
+alınmaz. Ayrık kümenin kendisi bir OR/küme operatörü gerektirir; o bir **sözleşme
+genişletmesidir** ve burada VAAT EDİLMEDİ.
+
+**Netleştirme cevaplanabilir bir soru sorar.** Jenerik dönem chip'leri ("Bugün · Bu hafta ·
+Bu ay") iki belirli ay isteyen kullanıcıya hiçbir şey söylemez. `ay_netlestirme()` onun
+**kendi saydığı ayları** + **kapsayan aralığı** sunar; her chip'in sorgusu gerçekten
+çözülebiliyor (testle kilitli). Yeni yüzey açılmadı — aynı `suggestions` alanı.
+
+**(2) Fresh Intent yolunda dönemi hesaplayan yoktu.** `llm.py`'nin prompt'u LLM'e tarih
+yazmayı AÇIKÇA yasaklıyor (*"sistem hesaplar"*) ama "sistem" o beyanı yalnız İKİ yolda
+uyguluyordu: `route()` kendi içinde, ve takip-düzenleme dalı (`_resolve_period`). **Taze
+Intent-JSON (`cube+llm`) yolunda hesaplayan kimse yoktu** — LLM yazmıyor, sistem de
+hesaplamıyor, sonuç sessizce tüm zamanlar. Bu bir politika değil bir **asimetriydi**: beyan
+verilmiş, bir yol uyguluyor, öteki uygulamıyor. `date_filters` **tek kaynaktır** ve artık üç
+yol da onu çağırır; kural ikinci kez yazılmadı.
+
+`_resolve_period` doğrudan çağrılmadı — o `"tarih"` adını **sabit kodluyor** ve zaman boyutu
+farklı adlı bir cube'da var olmayan bir kolona filtre yazardı. Cube'un kendi beyan ettiği
+zaman boyutu kullanılıyor (`route()` ile aynı).
+
+**Hâlâ AÇIK (§1.6'nın kalan iki maddesi):** `_period_gate`'in dört-yollu ilk baypası
+(`period_confirmed | period_optional | not time_dims | timeDimensions`) ve takip
+düzeltmesinin çapasızlığı (`context.Baglam` kullanıcının **çözülemeyen ham ifadesini**
+saklamıyor). İkisi de POLİTİKA kararıdır ve ölçüme (Faz 0.5) bağlıdır.
+
+**Ölçüm dürüstlüğü:** `lab/nl_corpus.py` korpusunda çoklu-ay sorusu **YOK** (`PERIODS`/
+`STEP_PERIOD` taraması: sıfır ay listesi). Yani korpus bu düzeltmenin **kazancını göremez**;
+gösterdiği tek şey **gerileme olmadığıdır** (6237/7225 = %86,3, dondurulmuş tabana birebir).
+Kazanç 28 birim testiyle kanıtlanıyor. Korpusun bu sınıfı kazanması Faz 0.5'in işidir.
+
+Taban artefaktı: `lab/nl_corpus_baseline.json` (`eval/baseline.json` ile aynı disiplin —
+`lab/reports/` gitignore'da olduğu için ham rapor değil **kapı değerleri** saklanır).
+
+### 6.1c İkiz `match_kpi` silindi (Faz -0.5b) ✅
+
+`cube_router.py`'de **iki** `match_kpi` tanımı vardı (498 ve 510). Python modül seviyesinde
+ikinciyi bağladığı için birincisi **sessizce gölgeleniyor ve ölü kalıyordu**. İkisinin
+semantiği de farklıydı: ölü olan `_syn_hit()` ile **Türkçe ek farkındaydı**, yaşayan çıplak
+`in` kullanıyor. İronik olarak yaşayan tanımın docstring'i fonksiyonun *"HİÇ
+TANIMLANMAMIŞTI"* olduğunu yazıyordu — gölgelenme kazası **yazıya da geçmişti**.
+
+Ölü tanım silindi, yanıltıcı not düzeltildi. **Ek farkındalığının kaybı bilinçli bir kabul
+değil, ölçülmemiş bir borçtur**: KPI sinonimleri bugün tam-alt-dizi eşleşiyor ve `len >= 3`
+tabanıyla korunuyor. Yaşayan semantik testle kilitlendi.
+
 ### 6.2 Yapısal boşluklar
 - **kısmen düzeltildi (2026-08-02, Faz 3.1)** — **`route()`'ta güven skoru yoktu** ve belirsizlik
   en kötü kararı tetikliyordu (en az yönetilen katmana düşüş).

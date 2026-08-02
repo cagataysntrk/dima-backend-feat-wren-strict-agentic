@@ -1,0 +1,25 @@
+{
+  "_aciklama": "NL korpusunun DONDURULMUŞ tabanı (KURAL A). `eval/baseline.json` ile aynı disiplin: ölçüm sürüm kontrolünde durur, kapı ona karşı koşar. `lab/reports/` GITIGNORE'DA olduğu için ham rapor buraya konamaz — burada yalnız KAPI DEĞERLERİ var.",
+  "_neden": "Faz -0.5/-1 düzeltmeleri bu tabana karşı ölçülür. Taban fiks olmazsa 'önce/sonra' kıyası dayanaksız kalır ve bir gerileme 'zaten öyleydi' diye kaybolur.",
+  "_uretim": "python lab/nl_corpus.py  (--network none, DIMA_VQR_EMBEDDER=off)",
+  "olculdu": "2026-08-02T17:53:00+03:00",
+  "commit": "802b8f5",
+  "toplam_tur": 10865,
+  "sirketler": {
+    "boyahane": {"tur": 5306, "erisim_yuzde": 64, "dogru_cube": 2996, "dogru_cube_payda": 3742},
+    "atiksan": {"tur": 1462, "erisim_yuzde": 67, "dogru_cube": 926, "dogru_cube_payda": 944},
+    "gulteks": {"tur": 1618, "erisim_yuzde": 62, "dogru_cube": 910, "dogru_cube_payda": 955},
+    "gitas": {"tur": 2479, "erisim_yuzde": 67, "dogru_cube": 1405, "dogru_cube_payda": 1584}
+  },
+  "toplam_dogru_cube": 6237,
+  "toplam_dogru_cube_payda": 7225,
+  "toplam_dogru_cube_yuzde": 86.3,
+  "_bilinen_kumeler": {
+    "_aciklama": "Faz 2a'nın hedefleri. Düzeltme sonrası bu sayılar DÜŞMELİ; düşmezse düzeltme yanlış kümeyi hedeflemiştir.",
+    "elektrik_yanlis_cube": {"varyant": 10, "beklenen": "enerji_makine", "secilen": "surdurulebilirlik"},
+    "cube_sapma_none": {"tur": 501, "kok": "ortalama duruş ölçüsü tanımsız"},
+    "note": {"tur": 179, "not": "raporun %6,9 iddiası BU KÜMEDE ÜRETİLMİYOR — Faz 2a önce yeniden ölçmeli"},
+    "clarify_konu": {"tur": 421},
+    "clarify_donem": {"tur": 713, "not": "doğru davranış — chip çalışıyor"}
+  }
+}

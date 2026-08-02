@@ -134,26 +134,121 @@ _MONTHS = {"ocak": 1, "subat": 2, "mart": 3, "nisan": 4, "mayis": 5, "haziran": 
            "temmuz": 7, "agustos": 8, "eylul": 9, "ekim": 10, "kasim": 11, "aralik": 12}
 
 
-def _month_range_filters(q: str, time_dim: str) -> list[dict] | None:
-    """Ay adı ("temmuz", "temmuz ayı", "2025 mart") → [gte ay başı, lte ay sonu].
+_AY_ADI_RE = re.compile(
+    r"\b(ocak|subat|mart|nisan|mayis|haziran|temmuz|agustos|eylul|ekim|kasim|aralik)\b(\s+ayi\w*)?"
+)
 
+
+def _adlandirilan_aylar(q: str) -> list[tuple[int, int]]:
+    """Soruda ADI GEÇEN tüm ayları (yıl, ay) olarak, tekrarsız ve sıralı döner.
+
+    FAZ -0.5a — eskiden bu tarama `re.search`'tü ve YALNIZ İLK ayı görüyordu: "ocak şubat
+    mart" sorusu sessizce **yalnız Ocak** filtresine çevriliyordu ve cevap `source="cube"`
+    rozetiyle geliyordu. Kapsam kapısı da bunu göremiyordu, çünkü `_period_hit_words`
+    (1 Ağustos'ta) zaten `finditer`'a geçirilmişti — yani KAPI çoklu ay görüyor,
+    ÇÖZÜCÜ tek ay çözüyordu. Asimetri buradaydı.
+
+    "aralık" tek başına belirsizdir ("tarih aralığı") — yalnız "aralık ayı" sayılır.
     Yıl yoksa: geçmişteki en yakın o ay (gelecek ay adı geçen yıla sarar).
-    "aralık" tek başına belirsizdir ("tarih aralığı") — yalnız "aralık ayı" kabul edilir."""
-    m = re.search(
-        r"\b(ocak|subat|mart|nisan|mayis|haziran|temmuz|agustos|eylul|ekim|kasim|aralik)\b(\s+ayi\w*)?",
-        q,
-    )
-    if not m:
-        return None
-    name = m.group(1)
-    if name == "aralik" and not m.group(2):
-        return None  # "tarih aralığı" ile karışır; "aralık ayı" açıkça istenmeli
-    mon = _MONTHS[name]
+    """
     ym = re.search(r"\b(20\d{2})\b", q)
     today = date.today()
-    year = int(ym.group(1)) if ym else (today.year if mon <= today.month else today.year - 1)
-    start = date(year, mon, 1)
-    end = date(year, mon, calendar.monthrange(year, mon)[1])
+    bulunan: list[tuple[int, int]] = []
+    for m in _AY_ADI_RE.finditer(q):
+        ad = m.group(1)
+        if ad == "aralik" and not m.group(2):
+            continue
+        mon = _MONTHS[ad]
+        year = int(ym.group(1)) if ym else (today.year if mon <= today.month
+                                            else today.year - 1)
+        if (year, mon) not in bulunan:
+            bulunan.append((year, mon))
+    return sorted(bulunan)
+
+
+def _bitisik_mi(aylar: list[tuple[int, int]]) -> bool:
+    """Aylar AYNI YILDA ve ARDIŞIK mı? ("ocak şubat mart" ✓ · "ocak mart" ✗)
+
+    Bitişiklik şartı keyfi değil, **sözleşmenin sınırı**: `date_filters` düz bir
+    `list[dict]` (AND zinciri) döner ve bu biçim ancak TEK bir aralık ifade edebilir.
+    Ayrık aylar bir OR/küme gerektirir — o, sözleşme genişletmesidir (Faz 2a), burada
+    çözülmez. Burada yapılan tek şey, ayrık durumu **sessizce yanlış çözmemek**.
+    """
+    if len(aylar) < 2:
+        return True
+    yillar = {y for y, _ in aylar}
+    if len(yillar) > 1:
+        return False
+    aylar_no = [m for _, m in aylar]
+    return aylar_no == list(range(aylar_no[0], aylar_no[0] + len(aylar_no)))
+
+
+def cozulemeyen_ay_listesi(q: str) -> bool:
+    """Soruda BİRDEN ÇOK ay adı geçiyor ve bunlar tek bir aralığa çevrilemiyor mu?
+
+    `_period_gate`'in bunu bilmesi ZORUNLU: `_period_hit_words` ay adlarını görüp
+    *"kullanıcı dönem belirtti"* diyor ve kapıyı susturuyor — oysa `date_filters` ayrık
+    ayları çözemiyor. O durumda kapı **sormazsa** cevap dönemsiz (tüm zamanlar) gelir ve
+    kullanıcı verdiği dönem detayının yok sayıldığını göremez.
+
+    §1.6'nın çarpıcı asimetrisi tam buydu: *"kullanıcı NE KADAR çok dönem detayı verirse,
+    kapı O KADAR az soru soruyor."*
+    """
+    aylar = _adlandirilan_aylar(q)
+    return len(aylar) > 1 and not _bitisik_mi(aylar)
+
+
+_AY_TR = {1: "Ocak", 2: "Şubat", 3: "Mart", 4: "Nisan", 5: "Mayıs", 6: "Haziran",
+          7: "Temmuz", 8: "Ağustos", 9: "Eylül", 10: "Ekim", 11: "Kasım", 12: "Aralık"}
+_AY_SORGU = {1: "ocak", 2: "şubat", 3: "mart", 4: "nisan", 5: "mayıs", 6: "haziran",
+             7: "temmuz", 8: "ağustos", 9: "eylül", 10: "ekim", 11: "kasım", 12: "aralık"}
+
+
+def ay_netlestirme(q: str) -> list[dict] | None:
+    """Ayrık ay listesi için NETLEŞTİRME seçenekleri — kullanıcının KENDİ saydığı aylar.
+
+    Neden jenerik dönem chip'leri yetmiyor: `_PERIOD_SUGGESTIONS` ("Bugün · Bu hafta ·
+    Bu ay · Bu yıl · Tümü") *"ocak ve mart"* diyen kullanıcıya **hiçbir şey söylemez** —
+    o iki belirli ay istedi, "Bu ay" onun sorduğu şey değil. Belirsizlikte SORMAK
+    (ADR-0008) yalnız soru sormak değil, **cevaplanabilir bir soru** sormaktır.
+
+    Üretilen seçenekler: her ay ayrı ayrı + **kapsayan aralık**. Sonuncusu önemli, çünkü
+    kapsayan aralık mevcut sözleşmede ifade EDİLEBİLİR — kullanıcı çoğu zaman zaten onu
+    kastediyordur ve tek tıkla alır. Ayrık kümenin kendisi (yalnız Ocak + yalnız Mart, arası
+    hariç) bir OR gerektirir; o Faz 2a'nın sözleşme genişletmesidir ve burada VAAT EDİLMEZ.
+    """
+    aylar = _adlandirilan_aylar(q)
+    if len(aylar) < 2 or _bitisik_mi(aylar):
+        return None
+    tek_yil = len({y for y, _ in aylar}) == 1
+    out = [{"label": _AY_TR[m] if tek_yil else f"{_AY_TR[m]} {y}",
+            "query": f"{_AY_SORGU[m]} ayı {y}"} for y, m in aylar]
+    (y0, m0), (y1, m1) = aylar[0], aylar[-1]
+    out.append({
+        "label": f"{_AY_TR[m0]}–{_AY_TR[m1]} arası (tümü)",
+        "query": f"{_AY_SORGU[m0]} {y0} ile {_AY_SORGU[m1]} {y1} arası",
+    })
+    return out
+
+
+def _month_range_filters(q: str, time_dim: str) -> list[dict] | None:
+    """Ay adı/adları → [gte ilk ayın 1'i, lte son ayın sonu].
+
+    Tek ay ("temmuz ayı", "2025 mart") bugünkü davranışını AYNEN korur.
+    Bitişik çoklu ay ("ocak şubat mart") tek bir aralığa çevrilir — bu, mevcut AND-zinciri
+    sözleşmesinde ifade EDİLEBİLİR.
+    Ayrık aylar ("ocak ve mart") `None` döner: yarım bir filtre (sessizce yalnız Ocak)
+    hiç filtreden **kötüdür** — `date_filters`'ın "yarım uygulama yok" disiplininin aynısı.
+    O durumda `cozulemeyen_ay_listesi()` True olur ve dönem kapısı SORAR.
+    """
+    aylar = _adlandirilan_aylar(q)
+    if not aylar:
+        return None
+    if not _bitisik_mi(aylar):
+        return None  # ayrık → çözülemez; kapı soracak (cozulemeyen_ay_listesi)
+    (y0, m0), (y1, m1) = aylar[0], aylar[-1]
+    start = date(y0, m0, 1)
+    end = date(y1, m1, calendar.monthrange(y1, m1)[1])
     return [
         {"dimension": time_dim, "operator": "gte", "value": start.isoformat()},
         {"dimension": time_dim, "operator": "lte", "value": end.isoformat()},
@@ -495,18 +590,6 @@ def cross_cube_dim_switch(prev: dict, q: str, schema: dict) -> dict | None:
     return None
 
 
-def match_kpi(q: str, schema: dict) -> str | None:
-    """Cross-cube KPI sinonim eşleşmesi (CCC/nakit döngüsü…). En UZUN eşleşen sinonimi
-    kazandırır — "nakit dönüşüm döngüsü", "nakit"e gömülü kısa eşleşmelere yenilmez.
-    KPI cube'dan ÖNCE denenir (CCC bir cube ölçüsü değil, bileşke). Yoksa None → cube yolu."""
-    best: tuple[int, str] | None = None
-    for k in schema.get("kpis", []):
-        for s in k.get("synonyms", []):
-            if _syn_hit(q, s) and (best is None or len(s) > best[0]):
-                best = (len(s), k["name"])
-    return best[1] if best else None
-
-
 def match_kpi(q_norm: str, schema: dict) -> str | None:
     """Zaten NORMALİZE edilmiş soru metnini (`_norm(...)` — çağıranın sorumluluğu, `route()`'un
     kendi `q_norm`'uyla TUTARLI kalsın diye burada TEKRAR normalize EDİLMEZ) derlenmiş
@@ -517,9 +600,16 @@ def match_kpi(q_norm: str, schema: dict) -> str | None:
     Doğrulama turu düzeltmesi (1 Ağustos 2026): bu katalog metadata için (`app/wren_
     service.py`) ZATEN hazırlanmıştı ("yönlendirme için ad/etiket/sinonim") ve `tests/
     test_kpi.py` bu fonksiyonun VAR OLMASINI ZATEN BEKLİYORDU (`test_likidite_kpileri_
-    mizan_uzerinde`, `test_match_kpi_en_uzun_sinonim_kazanir`) — ama `cube_router.py`'de
-    HİÇ TANIMLANMAMIŞTI (AttributeError ile başarısız oluyorlardı). Bu fonksiyon o eksik
-    son-kilometre'dir. `schema()["kpis"]` boş olan şirketlerde (demo-boyahane dahil ÇOĞU
+    mizan_uzerinde`, `test_match_kpi_en_uzun_sinonim_kazanir`).
+
+    ⚠️ **DÜZELTME (Faz -0.5b, 2 Ağustos 2026):** yukarıdaki notun ilk hâli *"cube_router.py'de
+    HİÇ TANIMLANMAMIŞTI"* diyordu — **yanlıştı**. 12 satır yukarıda ikinci bir `match_kpi`
+    tanımı duruyordu; Python modül seviyesinde ikinciyi bağladığı için birincisi **sessizce
+    gölgeleniyor ve ölü kalıyordu**. Yani testler bu tanımı çağırıyordu, öteki hiç
+    çağrılmıyordu. İki tanımın semantiği de farklıydı: ölü olan `_syn_hit()` ile **Türkçe ek
+    farkındaydı**, yaşayan bu tanım çıplak `in` kullanıyor. Ölü tanım silindi; **ek
+    farkındalığının kaybı bilinçli bir kabul değil, ölçülmemiş bir borçtur** — KPI sinonimleri
+    bugün tam-alt-dizi eşleşiyor ve `len >= 3` tabanıyla korunuyor (aşağıda). `schema()["kpis"]` boş olan şirketlerde (demo-boyahane dahil ÇOĞU
     demo/tenant) HER ZAMAN None döner — davranış DEĞİŞMEZ, KPI paketi derlenmiş
     şirketlerde (gulteks/gitas gibi) devreye girer.
 

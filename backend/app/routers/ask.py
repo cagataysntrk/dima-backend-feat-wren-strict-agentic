@@ -1365,6 +1365,26 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             return None
         time_dim = time_dims[0]
         has_period_filter = any(f.get("dimension") == time_dim for f in (cq.get("filters") or []))
+        # FAZ -0.5a — ÇÖZÜLEMEYEN AY LİSTESİ kapıyı SUSTURAMAZ. `_period_hit_words` ay
+        # adlarını `finditer` ile görüp "kullanıcı dönem belirtti" diyor, ama `date_filters`
+        # AYRIK ayları ("ocak ve mart") tek bir aralığa çeviremiyor — sözleşme düz bir AND
+        # zinciri. İkisi arasındaki bu asimetri §1.6'nın çarpıcı sonucunu üretiyordu:
+        # "kullanıcı NE KADAR çok dönem detayı verirse, kapı O KADAR az soru soruyor."
+        if cube_router.cozulemeyen_ay_listesi(q_norm) and not has_period_filter:
+            # Seçenekler kullanıcının KENDİ saydığı aylardan üretilir — jenerik dönem
+            # chip'leri ("Bugün · Bu hafta · Bu ay") burada işe YARAMAZ: iki belirli ay
+            # isteyen birine "Bu ay" sunmak, soruyu cevaplamak değil konuyu değiştirmektir.
+            # Belirsizlikte SORMAK (ADR-0008) cevaplanabilir bir soru sormak demektir.
+            # YENİ YÜZEY AÇILMIYOR: aynı `suggestions` alanı, aynı chip bileşeni (§14.1).
+            _ay_secenek = cube_router.ay_netlestirme(q_norm) or _PERIOD_SUGGESTIONS
+            return _finish(AskResponse(
+                question=body.question, source=None, cube_query=cq,
+                note="Saydığın aylar tek bir tarih aralığına sığmıyor — hangisini "
+                     "istiyorsun? (Kapsayan aralığı seçersen aradaki aylar da dahil olur.)",
+                suggestions=[Suggestion(**s) for s in _ay_secenek],
+                trace=[f"{trace_prefix}: ayrık ay listesi tek aralığa çevrilemiyor "
+                       "→ netleştirme (LLM'siz)"],
+            ))
         if has_period_filter or cube_router._period_hit_words(q_norm):
             return None
         return _finish(AskResponse(
@@ -1766,6 +1786,29 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 cq = {**cq, "limit": route_hit["limit"]}
             cube_meta = next((c for c in (schema.get("cubes") or [])
                               if c.get("name") == cq.get("cube")), None)
+            # FAZ -0.5d — DÖNEM ASİMETRİSİ. `llm.py`'nin prompt'u LLM'e tarih filtresi
+            # yazmayı AÇIKÇA YASAKLIYOR ("TARİH filtresi ASLA yazma — sistem hesaplar").
+            # Ama "sistem" o beyanı yalnız İKİ yolda uyguluyordu: `route()` kendi içinde
+            # (`cube_router.py`: `filters.extend(date_filters(...))`) ve takip-düzenleme dalı
+            # (`_resolve_period`). **Taze Intent-JSON yolunda hesaplayan kimse yoktu** — LLM
+            # yazmıyor, sistem de hesaplamıyor, sonuç sessizce TÜM ZAMANLAR.
+            #
+            # Bu bir politika değil bir ASİMETRİDİR: beyan zaten verilmiş, bir yol onu
+            # uyguluyor, öteki uygulamıyor. `date_filters` TEK kaynaktır ve üç yol da onu
+            # çağırır — kural ikinci kez yazılmıyor.
+            #
+            # `_resolve_period` doğrudan çağrılMADI çünkü o "tarih" adını SABİT kodluyor;
+            # zaman boyutu farklı adlı bir cube'da var olmayan bir kolona filtre yazardı.
+            # Burada cube'un KENDİ beyan ettiği zaman boyutu kullanılır (route() ile aynı).
+            if intent_source == "cube+llm":
+                _tds = (cube_meta or {}).get("time_dimensions") or []
+                if _tds and not any(f.get("dimension") == _tds[0]
+                                    for f in (cq.get("filters") or [])):
+                    _dfs = cube_router.date_filters(q_norm, _tds[0])
+                    if _dfs:
+                        cq = {**cq, "filters": [*(cq.get("filters") or []), *_dfs]}
+                        typo_fix_trace = ((f"{typo_fix_trace} · dönem sistemce çözüldü")
+                                          if typo_fix_trace else "dönem sistemce çözüldü")
             gate = _period_gate(cq, cube_meta, route_hit.get("period_optional"), "Intent-path")
             if gate:
                 return gate
