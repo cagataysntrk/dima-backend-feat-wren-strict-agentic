@@ -893,8 +893,17 @@ class WrenService:
         if limit is None and emb_limit:
             limit = int(emb_limit)
 
+        # AYRIK AYLAR ("ocak ve mart") — motor bunu YEREL OLARAK İFADE EDEMİYOR (ölçüldü,
+        # `cube_router.ayrik_ay_kovalari` docstring'i): `in` operatörü kabul ediliyor ama
+        # HAM tarih kolonuna uygulanıyor, ay kovasına değil; çoklu `dateRange` ve
+        # `tarih__month` filtresi de reddediliyor. Çözüm: ay granülerliğinde GRUPLA, sonra
+        # kesilmiş kolona DIŞARIDAN filtre uygula — toplama gruplamadan ÖNCE bittiği için
+        # sonuç kesindir (`measure_having` ile AYNI sarma kalıbı).
+        emb_ayrik = cq.pop("ayrik_aylar", None)
         base = cube_query_to_sql(json.dumps(cq), self._mdl_bytes().decode())
         base = self._inject_always_filter(base, cq.get("cube"))
+        if emb_ayrik:
+            base = self._ayrik_ay_sar(base, cq, emb_ayrik)
         if isinstance(emb_having, dict) and emb_having.get("measure") and emb_having.get("op"):
             _op = {">": ">", "<": "<", ">=": ">=", "<=": "<="}.get(emb_having["op"], ">")
             base = (f"SELECT * FROM ({base}) AS _hv "
@@ -908,6 +917,30 @@ class WrenService:
                     base += f" LIMIT {int(limit)}"
             return base
         return self._dialect_sql(base, order=order, limit=limit)
+
+    @staticmethod
+    def _ayrik_ay_sar(base: str, cq: dict[str, Any], isaret: dict[str, Any]) -> str:
+        """Ay-kovalı sonucu, kullanıcının SAYDIĞI aylara daraltır — FAIL-CLOSED.
+
+        İşaret (`ayrik_aylar`) ve kapsayan aralık filtresi **birlikte** anlamlıdır: aralık
+        tek başına araya giren ayları da içerir. İşaret varken ay granülerliği yoksa sarma
+        yapılamaz ve **sessizce kapsayan aralığa düşmek** cube rozetli bir yanlış cevap
+        üretirdi — bu deponun en tehlikeli sınıfı. O yüzden burada `ValueError` atılır:
+        derlenmeyen bir sorgu, sessizce yanlış bir sorgudan iyidir.
+        """
+        aylar = [str(a) for a in (isaret.get("aylar") or [])]
+        dim = str(isaret.get("dimension") or "")
+        tds = cq.get("timeDimensions") or []
+        if not aylar or not dim:
+            raise ValueError(f"ayrik_aylar işareti eksik/bozuk: {isaret!r}")
+        if not any(t.get("dimension") == dim and t.get("granularity") == "month"
+                   for t in tds):
+            raise ValueError(
+                f"ayrik_aylar işareti var ama '{dim}' üzerinde ay granülerliği YOK "
+                f"(timeDimensions={tds!r}). Sarma uygulanamaz; kapsayan aralığa sessizce "
+                f"düşmek araya giren ayları da katardı.")
+        kume = ", ".join(f"DATE '{a}'" for a in aylar)
+        return f"SELECT * FROM ({base}) AS _ay WHERE {dim}__month IN ({kume})"
 
     def blend_sql(self, cube_query: dict[str, Any]) -> str:
         """CROSS-CUBE BLEND: birden çok cube'un ölçüsünü PAYLAŞILAN gruplama anahtarlarında
@@ -923,6 +956,14 @@ class WrenService:
         import re
 
         from wren_core import cube_query_to_sql
+
+        # FAIL-CLOSED: blend her CTE'yi AÇIK alanlardan yeniden kurar ve `ayrik_aylar`
+        # işaretini KOPYALAMAZ. Sessizce düşerse geriye kapsayan aralık kalır ve cevap
+        # araya giren ayları da içerir — cube rozetli sessiz-yanlış. Reddetmek doğrudur.
+        if cube_query.get("ayrik_aylar"):
+            raise ValueError(
+                "ayrik_aylar + blend birlikte desteklenmiyor: blend CTE'leri işareti "
+                "taşımaz ve sonuç sessizce kapsayan aralığa düşerdi.")
 
         mdl = self._mdl_bytes().decode()
         parts = [{"cube": cube_query["cube"], "measures": list(cube_query.get("measures") or [])}]

@@ -151,8 +151,18 @@ def _adlandirilan_aylar(q: str) -> list[tuple[int, int]]:
 
     "aralık" tek başına belirsizdir ("tarih aralığı") — yalnız "aralık ayı" sayılır.
     Yıl yoksa: geçmişteki en yakın o ay (gelecek ay adı geçen yıla sarar).
+
+    ## Yıl her aya AYRI atanır (Faz 2a-4'te bulundu)
+
+    Eskiden yıl tek bir `re.search` ile bulunup **tüm aylara** uygulanıyordu:
+    *"2025 ocak ve 2026 mart"* → `[2025-01, 2025-03]`. Ayrık aylar o zaman
+    netleştirmeye düştüğü için zararsızdı; 2a-4 onları CEVAPLANABİLİR yapınca aynı hata
+    **kendinden emin yanlış bir sayı** üretirdi. Bu yüzden her ay adının **kendi
+    komşuluğundaki** yıl aranır (önce/sonra), yoksa sorudaki tek yıla, o da yoksa
+    "geçmişteki en yakın" kuralına düşülür.
     """
-    ym = re.search(r"\b(20\d{2})\b", q)
+    global_ym = re.findall(r"\b(20\d{2})\b", q)
+    tek_yil = int(global_ym[0]) if len(set(global_ym)) == 1 else None
     today = date.today()
     bulunan: list[tuple[int, int]] = []
     for m in _AY_ADI_RE.finditer(q):
@@ -160,8 +170,18 @@ def _adlandirilan_aylar(q: str) -> list[tuple[int, int]]:
         if ad == "aralik" and not m.group(2):
             continue
         mon = _MONTHS[ad]
-        year = int(ym.group(1)) if ym else (today.year if mon <= today.month
-                                            else today.year - 1)
+        # KOMŞU yıl: "2025 ocak" (önce) ya da "ocak 2025" (sonra). Pencere dar tutulur —
+        # aradaki başka bir ay adı sahiplenmeyi bozmasın diye eşleşme sınırına bakılır.
+        onceki = re.search(r"\b(20\d{2})\s*$", q[:m.start()])
+        sonraki = re.match(r"\s*(20\d{2})\b", q[m.end():])
+        if onceki:
+            year = int(onceki.group(1))
+        elif sonraki:
+            year = int(sonraki.group(1))
+        elif tek_yil is not None:
+            year = tek_yil
+        else:
+            year = today.year if mon <= today.month else today.year - 1
         if (year, mon) not in bulunan:
             bulunan.append((year, mon))
     return sorted(bulunan)
@@ -230,6 +250,60 @@ def ay_netlestirme(q: str) -> list[dict] | None:
         "query": f"{_AY_SORGU[m0]} {y0} ile {_AY_SORGU[m1]} {y1} arası",
     })
     return out
+
+
+def ayrik_ay_kovalari(q: str) -> list[str] | None:
+    """AYRIK ay listesi ("ocak ve mart") → ay-başı ISO tarihleri; değilse None.
+
+    ## Faz 2a — sözleşme genişletmesi, ÖLÇÜLDÜKTEN sonra
+
+    Plan bu kalemi *"`cube_query_to_sql`'in bu operatörü desteklediği ÖNCE doğrulanmalı"*
+    şartına bağlamıştı. Ölçüldü (2 Ağustos), ve şart **KARŞILANMADI**:
+
+    | deneme | sonuç |
+    |---|---|
+    | `{"operator": "in", "value": ["2026-01", "2026-03"]}` | derleniyor **ama** `WHERE tarih IN (...)` — HAM kolona, yani yalnız o iki GÜN |
+    | çoklu `dateRange` | `invalid type: sequence, expected a string` |
+    | `tarih__month` boyutuna filtre | `Unknown filter dimension` |
+    | `or` bloğu | `missing field 'dimension'` |
+
+    Yani motor ayrık ayı **yerel olarak ifade edemiyor**. `in` operatörünün var olması
+    yanıltıcıydı: kabul ediliyor ama ay KOVASINA değil ham tarihe uygulanıyor.
+
+    ## Seçilen yol: ay granülerliğinde grupla, kesilmiş kolona DIŞARIDAN filtrele
+
+    Toplama gruplamadan ÖNCE bittiği için sonuç matematiksel olarak **kesindir** — bu,
+    `wren_service.cube_sql`'in `measure_having` için zaten kullandığı sarma kalıbının
+    aynısı. Gerçek veriyle doğrulandı: aylık taban ile sarmalı sorgunun Ocak/Mart
+    değerleri **birebir aynı** çıktı.
+
+    ## Fail-closed sözleşme
+
+    Bu işaret `cube_query["ayrik_aylar"]` olarak taşınır ve **kapsayan aralık filtresiyle
+    BİRLİKTE** anlamlıdır. İşaret düşer de aralık kalırsa cevap Şubat'ı da içerir —
+    *sessizce yanlış*, yani bu deponun en korktuğu sınıf. Bu yüzden `cube_sql` işaret
+    varken ay granülerliği YOKSA **derlemeyi reddeder** (`ValueError`), sessizce
+    kapsayan aralığa düşmez.
+    """
+    aylar = _adlandirilan_aylar(q)
+    if len(aylar) < 2 or _bitisik_mi(aylar):
+        return None
+    return [date(y, m, 1).isoformat() for y, m in aylar]
+
+
+def _kapsayan_ay_araligi(aylar_iso: list[str], time_dim: str) -> list[dict]:
+    """Ayrık ayları KAPSAYAN aralık — dış sarmanın üstünde çalışacağı taban.
+
+    Tek başına YANLIŞTIR (araya giren ayları da içerir); yalnız `ayrik_aylar` işaretiyle
+    birlikte kullanılır ve sarma onu tam kümeye daraltır."""
+    ilk = date.fromisoformat(aylar_iso[0])
+    son = date.fromisoformat(aylar_iso[-1])
+    return [
+        {"dimension": time_dim, "operator": "gte", "value": ilk.isoformat()},
+        {"dimension": time_dim, "operator": "lte",
+         "value": date(son.year, son.month,
+                       calendar.monthrange(son.year, son.month)[1]).isoformat()},
+    ]
 
 
 def _month_range_filters(q: str, time_dim: str) -> list[dict] | None:
@@ -1068,6 +1142,22 @@ def deterministic_refine(prev: dict, q: str, schema: dict) -> dict | None:
     known |= rm_verb_words  # ölçü-çıkarma fiilleri (kaldır/sil…) dolgu sayılır, kapsamı delmez
     if not _coverage_ok(q, known):
         return None
+
+    # AYRIK AY İŞARETİ TAKİPTE BAYATLAR (Faz 2a-4). `cq` `prev`'in deep-copy'sidir, yani
+    # `ayrik_aylar` düzenlemeye TAŞINIR. Dönem ya da granülerlik değiştiyse işaret artık
+    # kullanıcının istediğini anlatmıyor ve ikisi de SESSİZCE YANLIŞ üretir:
+    #   * "tüm zamanlar" → dönem filtresi silinir ama sarma hâlâ Ocak+Mart'a daraltır
+    #   * "geçen ay"     → yeni dönem konur, sarma eski aylara daraltır → BOŞ sonuç
+    #   * "yıllık"       → granülerlik ay değil, sarma uygulanamaz → derleme hatası
+    # Bu vakalar bir tahmin anı değil: düzenleme deterministik olarak İFADE EDİLEMİYOR →
+    # `None` dön, zincir dürüst yola (LLM / netleştirme) düşsün. `deterministic_refine`'ın
+    # zaten var olan sözleşmesi bu ("hiçbir düzenleme yoksa None").
+    if cq.get("ayrik_aylar"):
+        _td = lambda d: [dict(t) for t in (d.get("timeDimensions") or [])]  # noqa: E731
+        _pf = lambda d: [dict(f) for f in (d.get("filters") or [])
+                         if f.get("dimension") == cq["ayrik_aylar"].get("dimension")]
+        if _td(cq) != _td(prev) or _pf(cq) != _pf(prev):
+            return None
 
     if changed:
         return cq
@@ -2295,6 +2385,20 @@ def route(question: str, schema: dict) -> dict | None:
     # göreli ("son 3 ay"), içinde bulunulan ("bu ay") veya ay adı ("temmuz ayı" → aralık)
     filters.extend(date_filters(q, time_dim))
 
+    # AYRIK AYLAR ("ocak ve mart") — Faz 2a sözleşme genişletmesi.
+    # Kapsayan aralık ve işaret ATOMİK konur: aralık tek başına Şubat'ı da içerir ve
+    # sessizce yanlış olur. `cube_sql` işaretsiz/granülersiz bir eşleşmede derlemeyi
+    # reddeder (fail-closed) — gerekçe `ayrik_ay_kovalari` docstring'inde.
+    #
+    # YALNIZ BAŞKA HİÇBİR DÖNEM ÇÖZÜLEMEDİYSE. Ölçüldü (eval `tarih-acik-aralik`):
+    # *"1 ocak 31 mart arası"* iki ay ADI taşır ve saf ay-taraması onu "ayrık" sanar —
+    # oysa `_explicit_range_filters` onu zaten SÜREKLİ bir aralık olarak çözmüştür.
+    # Ayrık-ay yolu bir YEDEKTİR, bir üst-katman değil.
+    ayrik = None if any(f.get("dimension") == time_dim for f in filters) \
+        else ayrik_ay_kovalari(q)
+    if ayrik:
+        filters.extend(_kapsayan_ay_araligi(ayrik, time_dim))
+
     gran = _time_gran(q)
 
     # SEMI-ADDITIVE koruması (panel P0, 6 model oybirliği): bakiye/stok ölçüleri zamanda
@@ -2387,10 +2491,18 @@ def route(question: str, schema: dict) -> dict | None:
         cq["measure_having"] = {"measure": measure, **having}  # HAVING → cube_sql uygular
     if dims:
         cq["dimensions"] = dims
+    if ayrik:
+        # AYRIK AYLAR: ay granülerliği ZORUNLU — dış sarma kesilmiş kolona filtre uygular.
+        # Kullanıcı daha kaba bir granülerlik istemiş olamaz (ayları tek tek saydı); daha
+        # ince ("günlük") istemişse onu KORU, sarma ay kovasına değil güne iner diye
+        # ayrıca ay kovası eklenir — bu yüzden gran zorlanır, üstüne yazılmaz.
+        gran = gran if gran in ("month",) else "month"
     if gran:
         cq["timeDimensions"] = [{"dimension": time_dim, "granularity": gran}]
     if filters:
         cq["filters"] = filters
+    if ayrik:
+        cq["ayrik_aylar"] = {"dimension": time_dim, "aylar": ayrik}
 
     # Sıralama/limit (cube SQL'i dışarıdan sarılır — bkz. ask.py)
     direction = _direction(q)

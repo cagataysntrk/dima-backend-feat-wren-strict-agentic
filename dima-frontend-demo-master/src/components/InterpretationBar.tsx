@@ -142,6 +142,7 @@ export function InterpretationBar({
     const next = clone();
     next.filters = filters.filter((f) => f.dimension !== "tarih");
     if (!(next.filters as Filter[]).length) delete next.filters;
+    delete next.ayrik_aylar;   // dönem kalkıyorsa ayrık-ay daraltması da kalkar (bkz. setPeriod)
     onEdit({ cq: next, label: "chip: dönem → tüm zamanlar" });
   };
 
@@ -214,6 +215,22 @@ export function InterpretationBar({
     return `${d} ${MONTHS_TR[m - 1].slice(0, 3)} ${y}`;
   };
   const periodLabel = (): string => {
+    // AYRIK AYLAR ÖNCE OKUNUR. Backend "ocak ve mart" için KAPSAYAN aralık filtresi
+    // (1 Oca – 31 Mar) + `ayrik_aylar` işareti üretir; sonucu o iki aya daraltan sarma
+    // işaretten gelir. Yalnız filtrelere bakan bir etiket burada "1 Oca – 31 Mar" yazar
+    // ve KULLANICIYA YALAN SÖYLER — Şubat cevaba dahil değildir. Etiket, sonucun
+    // gerçekten neyi içerdiğini söylemek zorundadır.
+    const ayrik = (cq.ayrik_aylar as { aylar?: string[] } | undefined)?.aylar;
+    if (ayrik?.length) {
+      const yillar = new Set(ayrik.map((a) => parseIso(a).y));
+      const adlar = ayrik.map((a) => {
+        const { y, m } = parseIso(a);
+        return yillar.size === 1 ? MONTHS_TR[m - 1] : `${MONTHS_TR[m - 1]} ${y}`;
+      });
+      return yillar.size === 1
+        ? `${adlar.join(" · ")} ${[...yillar][0]}`
+        : adlar.join(" · ");
+    }
     // tarih filtreleri her zaman TEK değerdir (liste yalnız kategorik in-filtrede)
     const gte = dateFilters.find((f) => f.operator === "gte")?.value as string | undefined;
     const lte = dateFilters.find((f) => f.operator === "lte")?.value as string | undefined;
@@ -265,6 +282,11 @@ export function InterpretationBar({
     if (end) df.push({ dimension: "tarih", operator: "lte", value: end });
     next.filters = [...rest, ...df];
     if (!(next.filters as Filter[]).length) delete next.filters;
+    // AYRIK AY DARALTMASI DÖNEMLE BİRLİKTE DÜŞER. `ayrik_aylar` backend'de sonucu
+    // kullanıcının SAYDIĞI aylara daraltan bir sarma üretir (bkz. wren_service._ayrik_ay_sar).
+    // Kullanıcı burada YENİ bir dönem seçtiyse eski daraltma artık onun istediğini
+    // anlatmıyor: taşınırsa yeni dönemle SESSİZCE kesişir ve çoğu zaman BOŞ sonuç verir.
+    delete next.ayrik_aylar;
     onEdit({ cq: next, label: `chip: dönem → ${label}` });
   };
 

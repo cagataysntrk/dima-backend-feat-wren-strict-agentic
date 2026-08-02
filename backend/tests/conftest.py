@@ -133,19 +133,27 @@ def client():
 
 
 @pytest.fixture(scope="session")
-def schema():
-    """Gerçek MDL'den türetilen şema (cube kataloğu dahil) — router birim testleri için."""
+def wren():
+    """Gerçek `WrenService` — SQL DERLEME ve ÇALIŞTIRMA gerektiren testler için.
+
+    `schema` fixture'ı ile AYNI servisten gelir: bir test "route bu cq'yu üretti" derken
+    öteki "o cq gerçekten şu satırları döndürüyor" diyebilsin. Derlendi ≠ doğru."""
     from app.config import get_settings
     from app.wren_service import WrenService
 
     get_settings.cache_clear()
     s = get_settings()
-    svc = WrenService(
+    return WrenService(
         project_dir=s.resolved_project_dir(),
         datasource=s.datasource,
         connection_info=s.connection_dict(),
     )
-    return svc.schema()
+
+
+@pytest.fixture(scope="session")
+def schema(wren):
+    """Gerçek MDL'den türetilen şema (cube kataloğu dahil) — router birim testleri için."""
+    return wren.schema()
 
 
 def ask(client, question: str, **kw) -> dict:

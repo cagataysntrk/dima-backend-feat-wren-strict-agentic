@@ -527,6 +527,69 @@ Kazanç 28 birim testiyle kanıtlanıyor. Korpusun bu sınıfı kazanması Faz 0
 Taban artefaktı: `lab/nl_corpus_baseline.json` (`eval/baseline.json` ile aynı disiplin —
 `lab/reports/` gitignore'da olduğu için ham rapor değil **kapı değerleri** saklanır).
 
+### 6.1i AYRIK aylar cevaplanıyor — motor ifade edemiyordu, DIŞ SARMA ile çözüldü (Faz 2a) ✅
+
+§6.1b (-0.5a) **bitişik** ayları tek aralığa çevirmişti; **ayrık** aylar (*"ocak ve mart"*)
+dürüstçe netleştirmeye düşüyordu. Plan bunu bir kapsam kalemi yaptı ve **ön koşul** koydu:
+*"`cube_query_to_sql`'in bu operatörü desteklediği ÖNCE doğrulanmalı."*
+
+**Ön koşul ölçüldü ve KARŞILANMADI:**
+
+| deneme | sonuç |
+|---|---|
+| `{"operator": "in", "value": ["2026-01","2026-03"]}` | derleniyor **ama** `WHERE tarih IN (...)` — **HAM** kolona, yani yalnız o iki *gün* |
+| çoklu `dateRange` | `invalid type: sequence, expected a string` |
+| `tarih__month` boyutuna filtre | `Unknown filter dimension` |
+| `or` bloğu | `missing field 'dimension'` |
+
+`in` operatörünün **var olması yanıltıcıydı**: kabul ediliyor ama ay KOVASINA değil ham
+tarihe uygulanıyor. Motor ayrık ayı yerel olarak ifade **edemiyor**.
+
+**Seçilen yol:** ay granülerliğinde **grupla** → kesilmiş kolona **dışarıdan** filtrele.
+Toplama gruplamadan ÖNCE bittiği için sonuç matematiksel olarak **kesindir** — bu,
+`cube_sql`'in `measure_having` için zaten kullandığı sarma kalıbının aynısı.
+
+```sql
+SELECT * FROM (SELECT DATE_TRUNC('month', tarih) AS tarih__month, SUM(ciro_tl) …
+               WHERE tarih >= '2026-01-01' AND tarih <= '2026-03-31' GROUP BY 1) AS _ay
+WHERE tarih__month IN (DATE '2026-01-01', DATE '2026-03-01')
+```
+
+Gerçek veriyle doğrulandı: sarmalı sorgunun Ocak/Mart değerleri aylık tabanla **birebir**.
+
+**FAIL-CLOSED — bu tasarımın omurgası.** İşaret (`cube_query["ayrik_aylar"]`) ile kapsayan
+aralık **birlikte** anlamlıdır; işaret düşer de aralık kalırsa cevap **Şubat'ı da içerir**
+ve `source=cube` rozetiyle gelir. Dört kapı kuruldu:
+
+1. `cube_sql`: işaret var + ay granülerliği yok → **`ValueError`**. Derlenmeyen sorgu,
+   sessizce yanlış sorgudan iyidir.
+2. `blend_sql`: CTE'leri açık alanlardan yeniden kurar ve işareti **kopyalamaz** → reddeder.
+3. `deterministic_refine`: `prev`'i deep-copy eder, işaret takibe **taşınır**. Dönem ya da
+   granülerlik değiştiyse üç ayrı sessiz-yanlış doğar (*"tüm zamanlar"* → sarma hâlâ
+   daraltır · *"geçen ay"* → boş sonuç · *"yıllık"* → derleme hatası) → **`None`**, zincir
+   dürüst yola düşer.
+4. **Frontend** (`InterpretationBar`): dönem chip'i filtrelerden türetiliyordu ve
+   *"1 Oca – 31 Mar"* yazıyordu — **kullanıcıya yalan**. Artık işaret **önce** okunuyor:
+   *"Ocak · Mart 2026"*. Dönem düzenlemesi (`setPeriod` / dönem ×) işareti **birlikte
+   düşürüyor**; taşınsa yeni dönemle sessizce kesişir ve çoğu zaman boş sonuç verirdi.
+
+**Ayrık-ay yolu bir YEDEKTİR, üst-katman değil.** Ölçülen gerileme (eval precision
+**−0,9%**): *"1 ocak 31 mart arası"* iki ay ADI taşır ve saf ay-taraması onu "ayrık"
+sanıyordu — oysa `_explicit_range_filters` onu zaten sürekli aralık olarak çözmüştü.
+Kural: yalnız **başka hiçbir dönem çözülemediğinde** çalışır.
+
+**Yan bulgu — düzeltme kendi içinden bir sessiz-yanlış çıkardı.** Yıl tek bir `re.search`
+ile bulunup **tüm aylara** uygulanıyordu: *"2025 ocak ve 2026 mart"* → `[2025-01, 2025-03]`.
+Ayrık aylar netleştirmeye düştüğü sürece zararsızdı; onları **cevaplanabilir** yapmak aynı
+hatayı **kendinden emin yanlış bir sayıya** çevirirdi. Yıl artık her ay adının **kendi
+komşuluğundan** okunuyor (önce/sonra), yoksa sorudaki tek yıla, o da yoksa "geçmişteki en
+yakın" kuralına düşülür.
+
+**Ölçüm dürüstlüğü:** korpusta çoklu-ay sorusu **yok**, yani kazanç oradan görülemez
+(§6.1b'nin aynı kaydı) — gösterdiği tek şey **gerileme olmadığıdır**. Kazanç 20 birim
+testiyle kanıtlanıyor: `tests/test_ayrik_ay.py` (SQL'in gerçekten yalnız o ayları
+döndürdüğü, gerçek satır kıyasıyla).
+
 ### 6.1h Kimlik asimetrisi KAPANDI — kural bir dalda vardı, kardeşinde yoktu (Faz 2a) ✅
 
 Bu deponun en sık tekrarlayan kusur sınıfının (*"beyan var, kod onu tanımıyor"*) en pahalı
