@@ -176,7 +176,10 @@ export default function Home() {
   type AskMutationVars =
     | { kind: "new"; question: string }
     | { kind: "continue"; question: string }
-    | { kind: "reply"; question: string; threadId: string; anchorIndex: number }
+    // `hucre` (Faz G2): kullanıcı grafikte BİR HÜCREYE tıklayıp onun hakkında sorduysa
+    // koordinat backend'e gider ve konuşma O hücrenin alt-sorgusu üstünde yürür.
+    | { kind: "reply"; question: string; threadId: string; anchorIndex: number;
+        hucre?: { dimension: string; value: string } }
     | { kind: "reply-multi"; question: string; threadId: string; anchorIndex: number; extraIndices: number[] };
 
   const mutation = useMutation<AskResponse, unknown, AskMutationVars>({
@@ -233,6 +236,7 @@ export default function Home() {
           thread_id: vars.threadId,
           reply_to_label: anchor ? replyAnchorLabel(anchor.question) : null,
           extra_context: extraContext,
+          anchor: vars.kind === "reply" ? (vars.hucre ?? null) : null,
         },
         setLiveTrace,
       );
@@ -274,10 +278,15 @@ export default function Home() {
     setStarted(true);
     mutation.mutate({ kind: "continue", question: q });
   };
-  const submitReply = (threadId: string, anchorIndex: number, q: string) => {
+  const submitReply = (
+    threadId: string,
+    anchorIndex: number,
+    q: string,
+    hucre?: { dimension: string; value: string },
+  ) => {
     setDrawer(null);
     setStarted(true);
-    mutation.mutate({ kind: "reply", question: q, threadId, anchorIndex });
+    mutation.mutate({ kind: "reply", question: q, threadId, anchorIndex, hucre });
   };
   const submitReplyMulti = (threadId: string, anchorIndex: number, extraIndices: number[], q: string) => {
     setDrawer(null);

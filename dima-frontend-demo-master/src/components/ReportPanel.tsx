@@ -45,7 +45,10 @@ export function ReportPanel({
   // bağlamıyla devam eder (eski TEK komposer'ın bağlamsal davranışı, artık burada).
   onContinue?: (text: string) => void;
   // Bir karta "yanıtla": bağlam O ÇAPA karttan gelir, sonuç thread'in SONUNA eklenir.
-  onReply?: (threadId: string, anchorIndex: number, text: string) => void;
+  // `hucre` (Faz G2): grafikte işaret edilen koordinat — ReportCard'dan page.tsx'e
+  // geçirilir, orada `AskRequest.anchor` olur.
+  onReply?: (threadId: string, anchorIndex: number, text: string,
+             hucre?: { dimension: string; value: string }) => void;
   // Birden fazla kart seçip birleşik bağlamla sor: çapa = seçilenlerin EN SONuncusu.
   onReplyMulti?: (threadId: string, anchorIndex: number, extraIndices: number[], text: string) => void;
 }) {

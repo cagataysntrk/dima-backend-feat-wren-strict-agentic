@@ -63,7 +63,8 @@ export function ReportCard({
   // §B düzeltmesi (1 Ağustos 2026) — "bu karta yanıt ver": bağlam BU kartın kendi
   // cube_query/sql'inden gelir, thread'in GÜNCEL durumundan DEĞİL. Sonuç thread'in
   // SONUNA eklenir (araya sokulmaz) — kullanıcının kendi netleştirdiği davranış.
-  onReply?: (threadId: string, anchorIndex: number, text: string) => void;
+  onReply?: (threadId: string, anchorIndex: number, text: string,
+             hucre?: { dimension: string; value: string }) => void;
   // Çoklu-seçim (birleşik bağlam) — yalnız seçim modu açıkken görünür bir checkbox.
   selectable?: boolean;
   selected?: boolean;
@@ -77,6 +78,10 @@ export function ReportCard({
   // Doğrulama turu düzeltmesi (1 Ağustos 2026, P1-2) — grafikte tıklanan tek kategori;
   // doluysa drill panelini "Başlangıç"tan değil DOĞRUDAN o kategoriye seçili açar.
   const [drillFilter, setDrillFilter] = useState<{ dimension: string; value: string } | null>(null);
+  // Faz G2 — grafikte işaret edilen hücre. Panel AÇMAZ; kullanıcıya ne yapmak istediğini
+  // sorar (konuş / kırılıma in). Tek tıklamaya tek yorum dayatmamak için.
+  const [sohbetCapasi, setSohbetCapasi] =
+    useState<{ dimension: string; value: string } | null>(null);
   const closeDrill = () => { setDrillOpen(false); setDrillFilter(null); };
   // Query Contract keşif/replay paneli (doğrulama turu düzeltmesi, 1 Ağustos 2026, P1-9).
   const [contractOpen, setContractOpen] = useState(false);
@@ -583,8 +588,12 @@ export function ReportCard({
             onDataPointClick={
               item.cube_query
                 ? (dimension, value) => {
-                    setDrillFilter({ dimension, value });
-                    setDrillOpen(true);
+                    // FAZ G2 — grafikte bir hücreye tıklamak ARTIK doğrudan panel açmaz.
+                    // Önce bir SOHBET ÇAPASI kurulur: kullanıcı o hücre hakkında
+                    // konuşabilir ("neden böyle?") ya da kırılıma inebilir. Panelin
+                    // hemen açılması tek bir yorumu (gezinme) dayatıyordu; oysa aynı
+                    // tıklama "bunu konuşalım" da demek olabilir.
+                    setSohbetCapasi({ dimension, value });
                   }
                 : undefined
             }
@@ -638,6 +647,50 @@ export function ReportCard({
           tüketici kazandı; `tests/test_uc_yetim_degil.py` onu artık CI'da tutuyor. Yalnız
           gerçek bir sonucu olan cube cevaplarında görünür — dönemsel değişim yoksa uç zaten
           dürüst bir `note` döndürür. */}
+      {/* FAZ G2 — GRAFİĞE ÇAPALI DİYALOG. Kullanıcı bir hücreye tıkladığında tek bir
+          yorum DAYATILMAZ; ne yapmak istediği sorulur. Aynı tıklama "buraya inelim" de
+          olabilir "bunu konuşalım" da — panelin doğrudan açılması ikincisini imkânsız
+          kılıyordu. Şerit yalnız tıklamadan SONRA belirir: boşken hiçbir yer kaplamaz
+          (kademeli açılım, MIMARI §14.2). */}
+      {sohbetCapasi && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 border border-accent/30 bg-accent/[0.04] p-2">
+          <span className="font-mono text-[11px] text-neutral-400">
+            ◎ <span className="text-foreground">{sohbetCapasi.value}</span> seçildi —
+          </span>
+          {onReply && (["bu neden böyle?", "normal mi?"] as const).map((soru) => (
+            <button
+              key={soru}
+              onClick={() => {
+                onReply(threadId, index, soru, sohbetCapasi);
+                setSohbetCapasi(null);
+              }}
+              title="Konuşma YALNIZ bu hücrenin üstünde yürür — koordinat gerçek bir alt-sorguya çevrilir"
+              className="border border-hairline px-2 py-[3px] font-mono text-[11px] text-neutral-400 transition-colors hover:border-accent hover:text-accent"
+            >
+              {soru}
+            </button>
+          ))}
+          <button
+            onClick={() => {
+              setDrillFilter(sohbetCapasi);
+              setDrillOpen(true);
+              setSohbetCapasi(null);
+            }}
+            title="Bu hücrenin altındaki kırılımlara in"
+            className="border border-hairline px-2 py-[3px] font-mono text-[11px] text-neutral-400 transition-colors hover:border-accent hover:text-accent"
+          >
+            ⤵ kırılıma in
+          </button>
+          <button
+            onClick={() => setSohbetCapasi(null)}
+            aria-label="Seçimi kaldır"
+            className="ml-auto font-mono text-[11px] text-neutral-500 hover:text-foreground"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {item.cube_query && (item.result || item.contribution) && (
         <ContributionLayer
           cubeQuery={item.cube_query}

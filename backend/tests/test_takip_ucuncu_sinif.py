@@ -239,3 +239,67 @@ def test_yapisal_cevap_contribution_TASIMAZ(client):
 
     d = ask(client, "bu yıl makine bazında işlenen kg")
     assert not d.get("contribution"), "istenmeden katkı ayrıştırması döndü"
+
+
+# --- G2: GRAFİĞE ÇAPA — "nisandaki sıçrama" yapısal bir SEÇİMDİR ----------------
+
+def test_capa_ALT_SORGUYA_cevrilir(client):
+    """ASIL KAPI. Kullanıcı bir grafik hücresine işaret edip *"bu neden böyle?"* diyorsa
+    konuşma O HÜCRENİN üstünde yürümeli — tüm raporun değil. Çapa bir metin numarası
+    değil YAPISAL bir seçimdir: koordinat gerçek bir `cube_query` filtresine çevrilir."""
+    from tests.conftest import ask
+
+    ilk = ask(client, "bu yıl makine bazında işlenen kg")
+    cq = ilk["cube_query"]
+    dim = (cq.get("dimensions") or ["makine"])[0]
+    deger = str((ilk["result"]["rows"][0])[dim])
+
+    d = ask(client, "bu neden böyle?", cube_query=cq, history=[ilk["question"]],
+            anchor={"dimension": dim, "value": deger})
+
+    assert any("Çapa" in t for t in (d.get("trace") or [])), \
+        f"çapa izde görünmüyor: {d.get('trace')}"
+    kcq = d.get("cube_query") or {}
+    filtreler = {f.get("dimension"): f.get("value") for f in (kcq.get("filters") or [])}
+    assert filtreler.get(dim) == deger, "çapa filtreye çevrilmedi"
+    assert dim not in (kcq.get("dimensions") or []), \
+        "çapalanan boyut kırılımda KALDI — select_cube_query semantiği bozuk"
+
+
+def test_GECERSIZ_capa_sessizce_yok_sayilir(client):
+    """Uydurulmuş bir filtre, filtre olmamasından KÖTÜDÜR: cube'da olmayan bir boyuta
+    çapa atılırsa konuşma tüm rapor üstünde yürür ve kullanıcı yanlış bir daraltmayla
+    karşılaşmaz."""
+    from tests.conftest import ask
+
+    ilk = ask(client, "bu yıl makine bazında işlenen kg")
+    # NOT: yapısal olarak BOZUK bir çapa (sözlük değil) Pydantic tarafından ŞEMA
+    # seviyesinde 422 ile reddedilir ve bu DAHA İYİDİR — istemci hatası sessizce
+    # yutulmaz. Burada sınanan şey farklı: şeması DOĞRU ama anlamı GEÇERSİZ çapa
+    # (olmayan boyut, eksik alan). O sessizce yok sayılır çünkü kullanıcı hatası
+    # değil bir eşleşme başarısızlığıdır.
+    for kotu in ({"dimension": "olmayan_boyut", "value": "x"},
+                 {"dimension": "makine"},          # değer yok
+                 {"value": "M-01"}):               # boyut yok
+        d = ask(client, "bu neden böyle?", cube_query=ilk["cube_query"],
+                history=[ilk["question"]], anchor=kotu)
+        assert not any("Çapa" in t for t in (d.get("trace") or [])), f"geçersiz çapa uygulandı: {kotu}"
+        assert d.get("contribution") or d.get("note"), "cevap tamamen kayboldu"
+
+
+def test_BOZUK_TIPLI_capa_SEMA_seviyesinde_reddedilir(client):
+    """Sözlük olmayan bir çapa `422` alır — sessizce yutulmaz. İstemci hatası ile
+    eşleşme başarısızlığı FARKLI şeylerdir ve farklı davranmalıdırlar."""
+    r = client.post("/ask", json={"question": "bu neden böyle?", "execute": True,
+                                  "session_id": "x", "anchor": "metin degil sozluk"})
+    assert r.status_code == 422
+
+
+def test_capasiz_konusma_BOZULMADI(client):
+    """Gerileme kilidi: çapa opsiyoneldir."""
+    from tests.conftest import ask
+
+    ilk = ask(client, "bu yıl makine bazında işlenen kg")
+    d = ask(client, "bu neden böyle?", cube_query=ilk["cube_query"], history=[ilk["question"]])
+    assert d.get("contribution"), "çapasız konuşma bozuldu"
+    assert not any("Çapa" in t for t in (d.get("trace") or []))

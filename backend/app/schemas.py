@@ -85,6 +85,16 @@ class AskRequest(BaseModel):
     # deterministic_refine/select_cube/refine_cube) HİÇ karışmaz — bilinçli kapsam sınırı
     # (golden-eval hassasiyeti, tests/test_ask_golden.py).
     extra_context: list[str] | None = None
+    # GRAFİĞE ÇAPA (Faz G2) — kullanıcının işaret ettiği HÜCRE: {"dimension": …, "value": …}.
+    # "Nisandaki sıçrama ne?" bir metin numarası değil YAPISAL BİR SEÇİMDİR: koordinat
+    # `drill.select_cube_query` ile GERÇEK bir alt-sorguya çevrilir (o boyut kırılımdan
+    # çıkar, yerine `eq` filtresi girer) ve konuşma O sorgunun üstünde yürür.
+    #
+    # Frontend bunu grafik tıklamasından üretir ve ZATEN doğru korumaları uygular
+    # (yalnız tek birincil kategorili basit şekiller; ECharts'ın BİÇİMLENDİRİLMİŞ
+    # etiketi ham satırlarda tam eşleşmiyorsa SESSİZCE atlanır — yanlış bir filtre
+    # göndermektense hiç göndermemek yeğdir).
+    anchor: dict[str, Any] | None = None
 
 
 class CubeRequest(BaseModel):

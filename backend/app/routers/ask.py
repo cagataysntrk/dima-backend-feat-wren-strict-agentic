@@ -1235,6 +1235,30 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
 
         return None
 
+    def _capayi_uygula(prev_cq: dict, capa, cube_meta: dict | None) -> tuple[dict, list[str]]:
+        """Grafik çapasını (hücre koordinatı) GERÇEK bir alt-sorguya çevirir (Faz G2).
+
+        `drill.select_cube_query` ÇAĞRILIR, yeniden yazılmaz: o boyutu kırılımdan çıkarıp
+        yerine `eq` filtresi koyar — DrillDownPanel'in her adımının kullandığı aynı
+        dönüşüm. İki yol aynı koordinat mantığını ayrı ayrı uygularsa zamanla ayrışır ve
+        "grafikte tıkladığım hücre" ile "sohbette konuştuğum hücre" farklı olur.
+
+        Geçersiz/eksik çapa **sessizce yok sayılır** ve konuşma tüm rapor üstünde yürür:
+        uydurulmuş bir filtre, filtre olmamasından kötüdür.
+        """
+        if not isinstance(capa, dict):
+            return prev_cq, []
+        dim, val = capa.get("dimension"), capa.get("value")
+        if not dim or val is None:
+            return prev_cq, []
+        if cube_meta and dim not in (cube_meta.get("dimensions") or []):
+            _log.info("çapa yok sayıldı: %r bu cube'da boyut değil", dim)
+            return prev_cq, []
+        from app import drill as _drill
+
+        return (_drill.select_cube_query(prev_cq, str(dim), str(val)),
+                [f"Çapa: grafikte «{val}» hücresi → alt-sorgu ({dim})"])
+
     def _honest_refusal(note: str, trace: list[str],
                         suggestions: list[Suggestion] | None = None) -> AskResponse:
         """Dürüst ret — NoLlmGenerator'ın kendi docstring'inin vaat ettiği ama strict-agentic
@@ -1889,8 +1913,13 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # "neden arttı" → `bakim.mudahale_eden` sahte eşleşmesi tam buydu).
         niyet = followup.sinifla(body.question, baglam_var=True)
         if niyet.konusma:
-            resp = _cevap_ustunde_konus(prev_cq, prev_cube_meta, niyet,
-                                        migration_trace, body.session_id)
+            # GRAFİĞE ÇAPA (Faz G2): kullanıcı bir hücreye işaret ettiyse konuşma O
+            # hücrenin üstünde yürür. Çapa bir metin değil KOORDİNATTIR ve burada
+            # gerçek bir alt-sorguya çevrilir — "nisandaki sıçrama ne?" sorusu
+            # nisanı filtreleyen bir cube_query'ye bağlanır.
+            konu_cq, capa_izi = _capayi_uygula(prev_cq, body.anchor, prev_cube_meta)
+            resp = _cevap_ustunde_konus(konu_cq, prev_cube_meta, niyet,
+                                        migration_trace + capa_izi, body.session_id)
             if resp is not None:
                 return _finish(resp)
             # Araç bir şey üretemediyse SESSİZCE düşme: normal zincir devam eder ve

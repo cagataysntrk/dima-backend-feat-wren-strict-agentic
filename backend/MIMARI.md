@@ -1056,11 +1056,41 @@ eder** — gerileme yok.
 LLM üslubu devreye girdiğinde §12.6'nın doğrulayıcısı zorunlu olur; o zamana kadar
 uydurma sayı riski **yapısal olarak yoktur** çünkü metni LLM yazmıyor.
 
-### 12.8 Henüz YOK (G2, G3)
+### 12.8 Grafiğe çapalı diyalog (G2) ✅
 
-Grafiğe çapalı diyalog (G2: kullanıcının işaret ettiği nokta → `drill.select_cube_query`;
-`isaret` türü bugün katkı ayrıştırmasına düşüyor, koordinata **değil**) ve tam reçeteli
-analiz (G3: katkı → `yoy` → hedef kıyası → seçenekler → **karar matrisi**).
+*"Nisandaki sıçrama ne?"* bir **metin numarası değil YAPISAL BİR SEÇİMDİR**: kullanıcının
+işaret ettiği hücrenin koordinatı `drill.select_cube_query` ile **gerçek bir alt-sorguya**
+çevrilir (o boyut kırılımdan çıkar, yerine `eq` filtresi girer) ve konuşma **o sorgunun**
+üstünde yürür.
+
+`AskRequest.anchor = {dimension, value}`. Dönüşüm **yeniden yazılmadı** —
+`DrillDownPanel`'in her adımının kullandığı aynı fonksiyon çağrılır. İki yol aynı
+koordinat mantığını ayrı uygularsa *"grafikte tıkladığım hücre"* ile *"sohbette
+konuştuğum hücre"* zamanla farklılaşırdı.
+
+**Üç davranış ayrımı, üçü de bilinçli:**
+
+| Durum | Davranış | Neden |
+|---|---|---|
+| Şeması bozuk çapa (sözlük değil) | **422** | İstemci hatası sessizce yutulmaz |
+| Şeması doğru, anlamı geçersiz (olmayan boyut, eksik alan) | **sessizce yok sayılır**, konuşma tüm rapor üstünde yürür | Eşleşme başarısızlığı kullanıcı hatası değildir; uydurulmuş bir filtre, filtre olmamasından kötüdür |
+| Çapa yok | bugünkü davranış | Gerileme yok |
+
+**UI kararı — tek tıklamaya tek yorum DAYATILMAZ.** Grafikte bir hücreye tıklamak eskiden
+doğrudan `DrillDownPanel`'i açıyordu; yani tıklama *"buraya inelim"* diye **yorumlanmış**
+oluyordu. Oysa aynı tıklama *"bunu konuşalım"* da demek olabilir. Artık bir **çapa şeridi**
+belirir (*"◎ M-01 seçildi —"*) ve kullanıcı seçer: `bu neden böyle?` · `normal mi?` ·
+`⤵ kırılıma in`. Şerit yalnız tıklamadan **sonra** görünür — boşken hiçbir yer kaplamaz.
+
+Frontend'in mevcut korumaları korundu: yalnız tek birincil kategorili basit şekillerde
+(bar/line/pie) tetiklenir; ECharts'ın **biçimlendirilmiş** etiketi ham satırlarda tam
+eşleşmiyorsa **sessizce atlanır**.
+
+### 12.9 Henüz YOK (G3)
+
+Tam reçeteli analiz: katkı → `yoy` → hedef/eşik kıyası → seçenekler → **karar matrisi** →
+izleme kurulumu. Bugün *"ne yapmalıyız?"* katkı ayrıştırmasına düşüyor — doğru **ilk
+adım** ama reçetenin tamamı değil.
 
 ---
 

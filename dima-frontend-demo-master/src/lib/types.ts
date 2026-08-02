@@ -337,6 +337,10 @@ export interface AskRequest {
   // metni olarak eklenir — deterministik cube-routing'e karışmaz (bkz. backend
   // AskRequest.extra_context).
   extra_context?: string[] | null;
+  // GRAFİĞE ÇAPA (Faz G2) — işaret edilen HÜCRE. "Nisandaki sıçrama ne?" bir metin
+  // numarası değil YAPISAL bir seçimdir: koordinat backend'de `drill.select_cube_query`
+  // ile gerçek bir alt-sorguya çevrilir.
+  anchor?: { dimension: string; value: string } | null;
 }
 
 // Discovery→Promote (Faz 2d) — Discovery (ham-SQL LLM) yolunun ürettiği bir cevabın
