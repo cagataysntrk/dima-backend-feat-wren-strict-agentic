@@ -157,10 +157,15 @@ def resolve_kpi_series(svc, spec: dict, gran: str, period_where: str = "") -> di
     gran: month|quarter|year. period_where: dış dönem sınırı (aralığı daraltır, "bu yıl")."""
     views = spec.get("requires_views") or []
     view = views[0] if views else None
+    # ZAMAN KOLONU SABİT KODLU DEĞİL (Faz C3). Eskiden üç yerde `tarih` yazıyordu; KPI'ın
+    # dayandığı view farklı bir zaman kolonu taşıyorsa (`donem_tarih` gibi) sorgu ya patlar
+    # ya da — kolon adı tesadüfen varsa — SESSİZCE YANLIŞ PENCERE kurardı. Artık KPI
+    # spec'inde beyan edilebilir; beyan yoksa `tarih` (mevcut davranış, geriye uyumlu).
+    tcol = str(spec.get("time_column") or "tarih")
     mn = mx = None
     if view:
         rows = svc.query(
-            f"SELECT MIN(tarih) AS mn, MAX(tarih) AS mx FROM {view} {period_where}".strip(),
+            f"SELECT MIN({tcol}) AS mn, MAX({tcol}) AS mx FROM {view} {period_where}".strip(),
             limit=1).get("rows", [])
         if rows:
             mn, mx = rows[0].get("mn"), rows[0].get("mx")
@@ -171,8 +176,8 @@ def resolve_kpi_series(svc, spec: dict, gran: str, period_where: str = "") -> di
     mode = str(spec.get("series_mode", "flow")).lower()
     series: list[dict] = []
     for bk in buckets:
-        where = (f"WHERE tarih < '{bk['end']}'" if mode == "asof"
-                 else f"WHERE tarih >= '{bk['start']}' AND tarih < '{bk['end']}'")
+        where = (f"WHERE {tcol} < '{bk['end']}'" if mode == "asof"
+                 else f"WHERE {tcol} >= '{bk['start']}' AND {tcol} < '{bk['end']}'")
         card = resolve_kpi(svc, spec, where)
         series.append({"bucket": bk["label"], "value": card["value"],
                        "components": card["components"]})

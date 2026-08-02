@@ -283,6 +283,8 @@ hedef lehçe bekler; aradaki köprüyü wren sunmuyor.
 | **Tenant başına forklanmış MDL'i varsayılan yapma** | N-yollu şema bakımı. Varsayılan: paylaşılan model + motor-seviyesi RLS; fork yalnız istisna. |
 | **Grafik üretimini LLM'e verme** | `viz.py`'nin iki katmanlı deterministik `analyze()`/`recommend()` tasarımı bilinçli bir karardır (Show-Me / Cleveland-McGill, ADR-0024) ve upstream kaynak okunarak doğrulanmıştır. LLM'e Vega üretimi determinizm felsefesiyle çelişir. |
 | **Bir cevabın `source`'unu gizlemek/eşitlemek** | `cube` ile `llm:*` **farklı garantiler** taşır. Rozet UI süsü değil, sözleşmedir. `_llm_source()` bilinmeyen sağlayıcıda bile `:` içeren bir değer döndürür ki LLM cevabı asla deterministik görünmesin. |
+| **Aynı kararı iki motorda ayrı ayrı verme** | Ölçüldü (Faz C): `interpret._classify` ile `viz.analyze` kolon rollerini **bağımsız** çıkarıyordu — `viz` `cube_query`'den otorite alıyor, `interpret` almıyordu; zaman-adı sözlükleri de farklıydı. Aynı cevapta grafik zaman serisi çizerken cümle onu kategori sanabiliyordu ve **ikisi de "deterministik" rozetliydi**. Aynı sınıf: `_is_num` **7 kopya / 3 semantik** (`"1,5"` bir motorda ölçü, diğerinde kategori), Türkçe biçimleme **2 farklı eşik** (`150,5` sohbette `151`, e-postada `150,50`), ay kısaltmaları 3 kopya, z-skoru `drill.py`'de *"yeniden kullanıyorum"* denip elle kopyalanmış. Tek kaynak: `app/result_shape.py` · `app/fmt.py` · `app/stats.py`. |
+| **Zaman kolonunu sabit kodlama** | `kpi.py` üç yerde `"tarih"` yazıyordu, oysa `yoy.time_dim_of` cube'un zaman boyutunu **zaten çözüyor**. `donem_tarih` kullanan cube'da sorgu ya patlar ya — ad tesadüfen varsa — **sessizce yanlış pencere** kurar. Zaman boyutu her zaman **beyandan** okunur. |
 | **`Dima-0-100` dosyasını mimari otorite sayma** | §8. |
 
 ---
@@ -312,6 +314,22 @@ diye zaman kaybetmesin.
   `"önceki ay ile kıyasla"` rapora istenmeyen bir `yas_grubu` GROUP BY ekliyor. **Henüz
   düzeltilmedi** — `_uncovered`'dan daha geniş etki alanı var (her boyut/ölçü eşleşmesi ondan
   geçiyor), ayrı bir tur olarak ele alınacak.
+- ✅ **düzeltildi (2026-08-02, Faz C4)** — **`yoy.py`'nin MoM hizalaması kırıktı.** 93 satır,
+  **sıfır doğrudan test**, dört üretim tüketicisi (`report.py`, `routers/dashboards.py`, `/ask`
+  iki yerde) + `contribution.py` çıktı şekline bağımlı. Şüpheyi doğuran satır tek başına
+  yeterliydi: `shift = 1 if mode == "yoy" else 1` — **iki dal aynı**. `_merge` önceki dönem
+  anahtarının **yılını** kaydırıyordu; YoY'da doğru (2025-03 → 2026-03), MoM'da **imkânsız**
+  (2026-02 → 2027-02, cari 2026-03 ile hiç eşleşmez). Ölçüldü: zaman kolonlu MoM'da `_gecen`
+  **her zaman `None`** — yani *"geçen aya göre aylık ciro"* sessizce **boş kıyas kolonu**
+  döndürüyordu. Boyut kırılımında (zaman kolonu yokken) çalıştığı için kusur gözden kaçmıştı.
+  Yerine mod-farkında dönem aritmetiği (`_ileri`, ay indeksi üzerinden — yıl devrini yönetir).
+  **Önce test yazıldı** (3 kırmızı), sonra dokunuldu: `tests/test_yoy.py`, 15 test.
+- ✅ **düzeltildi (2026-08-02, Faz C3)** — **`kpi.py` zaman kolonunu `"tarih"` diye sabit
+  kodluyordu** (üç yerde: aralık taraması ve iki pencere `WHERE`'i). Artık `spec["time_column"]`
+  beyanından okunur, yoksa `"tarih"` (geriye uyum). **Kapsam sınırı dürüstçe kaydedilir:**
+  `resolve_kpi_series`'in bugün **üretimde çağıranı yok** (`_try_kpi` yalnız skaler kart
+  döndürüyor) ve demo-boyahane'de **KPI tanımı yok** — düzeltme SQL düzeyinde test edildi,
+  uçtan uca gösterilemedi.
 - **Sayılar kapsam kapısına görünmüyor** (`[a-z]+`). Faz 0.4'te bilinçli olarak ele alınmadı:
   düzeltmek için dönem/gran sözlüklerinin sayıları da `known`'a eklemesi gerekir, yoksa
   `"son 3 ay"` gibi çalışan sorular kırılır. Aynı sınıfta 2 harflik kökler (`ay`, `kg`) de

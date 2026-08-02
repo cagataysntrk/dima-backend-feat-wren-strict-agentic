@@ -29,23 +29,43 @@ def _merge(cur: list[dict], prev: list[dict], measures: list[str], dims: list[st
     cols0 = list(cur[0].keys()) if cur else (list(prev[0].keys()) if prev else [])
     timecols = [c for c in cols0 if c not in dims and c not in measures]
 
-    def _ymd(v, dy: int = 0):
-        """(yıl+dy, ay, gün) — datetime ya da ISO string. Hizalama anahtarı."""
+    def _ymd(v):
+        """`(yıl, ay, gün)` — `date`/`datetime` nesnesi ya da ISO metni. Yoksa `None`."""
         yr, mo, d = getattr(v, "year", None), getattr(v, "month", None), getattr(v, "day", None)
         if mo is None and isinstance(v, str):
             m = re.match(r"(\d{4})-(\d{2})-(\d{2})", v)
             if m:
                 yr, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
-        return None if mo is None else ((yr or 0) + dy, mo, d)
+        return None if mo is None else (yr or 0, mo, d)
 
-    def key(row: dict, shift_yr: int) -> tuple:
-        # cari: tam tarih; geçen: +shift_yr yıl kaydır (2024-03 → 2025-03 hizası, YoY konumu).
+    def _ileri(ymd, kac_donem: int):
+        """Önceki dönem anahtarını CARİ döneme taşı — moda göre YIL ya da AY kaydırarak.
+
+        DÜZELTME (2 Ağustos 2026, Faz C4): eskiden HER İKİ modda da YIL kaydırılıyordu
+        (`shift = 1 if mode == "yoy" else 1` — iki dal aynı, birinin unutulduğunun izi).
+        MoM'da önceki ay 2026-02'dir; yılını kaydırmak onu 2027-02 yapar ve cari 2026-03
+        ile **hiçbir zaman** eşleşmez. Sonuç: *"geçen aya göre aylık ciro"* sessizce boş
+        bir kıyas kolonu döndürüyordu — hata yok, uyarı yok, yalnız veri yok. Boyut
+        kırılımında (zaman kolonu olmayan sorgu) anahtar yalnız boyutlardan oluştuğu için
+        çalışıyordu; kusur bu yüzden gözden kaçmıştı.
+        """
+        if ymd is None:
+            return None
+        y, ay, gun = ymd
+        if mode == "mom":
+            toplam = (y * 12 + (ay - 1)) + kac_donem
+            return (toplam // 12, toplam % 12 + 1, gun)
+        return (y + kac_donem, ay, gun)
+
+    def key(row: dict, kaydir: int) -> tuple:
+        # Cari satır olduğu yerde durur (kaydir=0); geçen dönem satırı bir dönem İLERİ
+        # taşınarak cari konuma getirilir.
         k = tuple(row.get(d) for d in dims)
         for tc in timecols:
-            k = k + (_ymd(row.get(tc), shift_yr),)
+            k = k + (_ileri(_ymd(row.get(tc)), kaydir),)
         return k
 
-    shift = 1 if mode == "yoy" else 1  # prev anahtarını cari'ye taşımak için +1 dönem
+    shift = 1  # geçen dönem anahtarını cari'ye taşımak için +1 DÖNEM (yıl ya da ay)
     prev_ix = {key(r, shift): r for r in prev}
     out = []
     for r in cur:
