@@ -290,12 +290,41 @@ def test_yapisal_takip_cikmazi_gercek_kelime_varsa_discoverye_duser(client):
     yeni-thread'den sorulunca Discovery (cube sınırlarının ÖTESİNDE serbest join) GERÇEKTEN
     cevaplayabiliyordu (canlı interaction_log kanıtı). Yukarıdaki gibberish testinin TERSİ:
     `_match_cube` mesajda GERÇEK katalog kanıtı ("verim" → oee) bulduğu için artık dürüst ret
-    DEĞİL, Discovery'ye düşer."""
+    DEĞİL, Discovery'ye düşer.
+
+    GÜNCELLEME (2 Ağustos 2026, Faz 0.4 — kapsam kapısı ek-farkında yapıldı): davranış
+    Discovery'den ÇAPRAZ-KONU NETLEŞTİRMESİNE taşındı ve bu bilinçli bir İYİLEŞTİRMEDİR.
+    Kök neden: eski `_uncovered` herhangi-konum alt-dizi kullandığı için `"son"` (son 6 ay)
+    kelimesi `"personel"`i SAHTE olarak kapsıyordu — yani sistem "personel"i anladığını
+    SANIYOR, kapsam kapısından geçiyor ve nihayetinde Discovery'ye düşüyordu. Artık
+    `personel` gerçekten kapsanmamış sayılıyor ve `partial_unknowns` doğru cevabı veriyor:
+
+        not:   '"personel" başka bir konu gibi görünüyor. Hangisini istiyorsun?'
+        chip'ler: ['oee', 'İK / bordro', 'parti']
+
+    Bu, ölü bir Discovery tablosundan (12,5 sn · 24 bin token · chip yok · drill yok —
+    canlı interaction_log kaydı) kesinlikle daha iyidir: kullanıcı tek tıkla TAM yapısal
+    bir cevaba gider. ADR-0008'in "belirsizlikte SOR" ilkesiyle de örtüşür.
+
+    Testin KORUDUĞU asıl endişe aynı: yapısal zincir tükendiğinde sistem ne SESSİZCE
+    YANLIŞ bir cube cevabı verir ne de ÇIPLAK bir "anlamadım" döner.
+    (Faz 1'de `oee` cube'u ilişki-türevi bir personel boyutu kazanınca bu soru
+    doğrudan `source="cube"` dönmeli — o zaman bu test yeniden değerlendirilecek.)
+    """
     d1 = ask(client, "makine bazında ortalama oee")
     d2 = ask(client, "personel bazlı verimlilikleri karşılaştır son 6 ay",
              cube_query=d1["cube_query"], history=["makine bazında ortalama oee"])
-    assert d2["source"] is not None  # dürüst ret DEĞİL — Discovery bir şey üretti
-    assert d2["source"] != "cube"  # deterministik zincir GERÇEKTEN tükendi (regresyon değil)
+    # (a) SESSİZ-YANLIŞ yok: yanlış bir cube'a zorla oturtulmadı.
+    assert d2["source"] != "cube"
+    # (b) ÇIPLAK RET yok: ya Discovery bir şey üretti ya da netleştirme chip'i sunuldu.
+    chips = [s["label"] for s in (d2.get("suggestions") or [])]
+    assert d2["source"] is not None or chips, (
+        f"çıplak dürüst ret döndü (chip yok, source yok): {d2.get('note')!r}"
+    )
+    # (c) Netleştirme yolundaysa, aday konular GERÇEK katalog kanıtından gelmeli.
+    if d2["source"] is None:
+        assert "personel" in (d2.get("note") or "").lower()
+        assert any("oee" in c.lower() for c in chips), chips
 
 
 def test_raw_followup_tuzagi_yeni_konu_intent_pathe_doner(client):

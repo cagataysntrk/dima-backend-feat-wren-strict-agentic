@@ -1106,6 +1106,39 @@ _STOP_STEMS = (
     "hesapla",
 )
 
+# TAM-KELİME dolgu kökleri (`!` = sinonimlerdeki AYNI disiplin, bkz. `_syn_hit`).
+# Bunlar ÖNEK olarak eşleşirse gerçek iş kelimelerini yutuyorlardı — hepsi doğrulandı:
+#     ver   → veresiye (vadeli satış)      tek  → tekstil
+#     turu  → turuncu (renk değeri)        sana → sanayi
+#     getir → getiri (finansal getiri)     isi  → ısıtma/ısı
+# Yutulan kelime "tanınmış dolgu" sayılınca kapsam kapısı deliniyor ve soru, o kelimeyi
+# HİÇ dikkate almayan bir cube cevabına dönüşüyordu ("veresiye satışlar" → tüm satışlar).
+#
+# DİSİPLİN: buraya YALNIZ kanıtı olan kök girer. İlk denemede "cins" de eklenmişti ve
+# `test_cins_cekimleri_tam_soru` onu anında düşürdü — testin kendi docstring'i
+# *"kök ('cins') tüm çekimleri kapsar"* diyor ("kumaş cinsleri..."). Tahminle liste
+# şişirmek, düzeltmeye çalıştığımız sessiz-yanlışın aynısını ters yönde üretir.
+_STOP_EXACT = frozenset({"ver", "tek", "turu", "sana", "getir", "isi"})
+
+
+def _is_stop_word(w: str) -> bool:
+    """Kelime bir dolgu köküyle başlıyor mu? `_STOP_EXACT` kökleri ÖNEK eşleşmez.
+
+    ÖNEK semantiği BİLEREK korundu. `_STOP_STEMS` girdileri sözcük KÖKÜ değil, ELLE
+    KISALTILMIŞ eşleşme köküdür ("grafi" → grafik/grafiği/grafikte; "turl" → türler/
+    türlerine). Bunlara `_covers()`'ın biçimbirim kuralını uygulamak YANLIŞTIR ve nitekim
+    denendiğinde kırdı: "grafi"+"k" geçerli bir Türkçe ek zinciri değildir, dolayısıyla
+    "grafik" kelimesi dolgu sayılmayı bıraktı ve grafik isteyen her soru kapsam kapısına
+    takıldı (`test_grafik_tipi_ipucu_jenerik` ve 3 test daha).
+
+    Kazayla yutulan gerçek iş kelimeleri (veresiye/tekstil/turuncu/sanayi/getiri) bu yüzden
+    biçimbirimle değil, `_STOP_EXACT` TAM-KELİME listesiyle çözülür — kanıta dayalı ve
+    denetlenebilir. İki mekanizma AYRI tutulur çünkü iki farklı sorunu çözerler.
+    """
+    if w in _STOP_EXACT:
+        return True
+    return any(w.startswith(s) for s in _STOP_STEMS if s not in _STOP_EXACT)
+
 
 def _syn_hit_words(q: str, syns) -> set[str]:
     """Eşleşen sinonimlerin KELİMELERİNİ döndürür (kapsam hesabı için)."""
@@ -1157,17 +1190,89 @@ def _misc_hit_words(q: str) -> set[str]:
     return words
 
 
+# OLUMSUZLUK / YOKSUNLUK EKLERİ — bunlar ÇEKİM DEĞİL, NİYET OPERATÖRÜDÜR.
+# `_norm` Türkçe harfleri düzleştirir (ı→i, ü→u, ş→s...), bu yüzden ASCII biçimleri yeter.
+# "firesiz" = fire YOK demektir; "fire" ile kapsanmış saymak, sorunun anlamını TERSİNE
+# çevirir. Faz 3.3'te bu ekler `neq`/`not_in` üretimine bağlanacak; o zamana kadar
+# kapsanmamış sayılmaları (→ dürüst ret / LLM) tek doğru davranıştır.
+_NEGATION_SUFFIXES = ("siz", "suz", "sizl", "suzl",          # -sIz (yoksunluk)
+                      "mayan", "meyen", "miyen", "muyan",     # -mAyAn (olumsuz sıfat-fiil)
+                      "madan", "meden", "madi", "medi",       # -mAdAn / -mAdI
+                      "mamis", "memis", "maz", "mez")         # -mAmIş / -mAz
+
+
+# Türkçe çekim/türetme eki ATOMLARI (normalize/ASCII — `_norm` ı→i, ü→u, ş→s yapar).
+# Sıra UZUNDAN KISAYA: regex alternasyonu soldan dener, geri-izleme zaten çalışır ama
+# uzun atomların önce denenmesi hem hızlı hem okunaklı bir ayrıştırma verir.
+# Tek-harfli atomlar YALNIZ ünlüler ve tampon ünsüzler (y/n/s/m) — rastgele ünsüz (t, g,
+# l...) atom OLMADIĞI için "iyeti"/"go"/"stil" gibi ek-olmayan kuyruklar ayrışamaz.
+_SUFFIX_ATOMS = (
+    "leri", "lari", "imiz", "iniz", "umuz", "unuz", "deki", "daki", "ligi", "lugu",
+    "nin", "nun", "den", "dan", "ten", "tan", "yle", "yla", "dir", "dur", "tir", "tur",
+    "lik", "luk", "ler", "lar", "mis", "mus",
+    "de", "da", "te", "ta", "le", "la", "ki", "ni", "nu", "ne", "na", "si", "su",
+    "se", "sa", "in", "un", "im", "um", "ye", "ya", "yi", "yu", "li", "lu",
+    "ce", "ca", "ci", "cu",
+    "ir", "ur", "er", "ar",          # geniş zaman: "göster"+"ir"
+    "i", "u", "e", "a", "y", "n", "s", "m",
+)
+# DİKKAT — buraya atom eklerken: "ti"/"tu"/"di"/"du" DENENDİ ve GERİ ALINDI. Onlarla
+# "mal"+"iyeti" = i+ye+ti diye ayrışıp KAPSANIYORDU (maliyet ≠ mal). `-dir/-dur/-tir/-tur`
+# zaten TAM atom olarak listede; parçalarını ayrıca atom yapmak deliği geri açar.
+_SUFFIX_CHAIN_RE = re.compile(r"(?:" + "|".join(_SUFFIX_ATOMS) + r")+")
+
+
+def _covers(known: str, word: str) -> bool:
+    """`known` kelimesi `word`'ü kapsıyor mu? (Türkçe EKLEMELİ dil varsayımı.)
+
+    ÖNCEDEN `known in word` idi — HERHANGİ BİR KONUMDA alt-dizi. Kanıtlanmış sessiz-yanlışlar
+    (hepsi canlı `route()` üzerinde çalıştırılarak doğrulandı, 2 Ağustos 2026):
+
+        kar ⊂ ankara · mal ⊂ imalat · mal ⊂ maliyeti · son ⊂ personel · gun ⊂ uygun
+        fire ⊂ firesiz · sapma ⊂ sapmasiz · reddedil ⊂ reddedilmeyen
+
+    Sonucu yalnız gürültü değildi: `"firesiz partilerin cirosu"` kapsam kapısından GEÇİP
+    **fire toplamını** döndürüyordu — sorulanın TAM TERSİ metrik, üstelik `source="cube"`
+    rozeti ve Query Contract'ıyla. Bu, sistemin üretebileceği en kötü hata sınıfıdır.
+
+    Üç kurallı düzeltme:
+      1. EK BAŞA DEĞİL SONA gelir → `word.startswith(known)`. (ankara/imalat/personel/uygun
+         bu tek kuralla düşer.)
+      2. Ek OLUMSUZLUK eki olamaz → `_NEGATION_SUFFIXES`. (firesiz/sapmasiz/reddedilmeyen.)
+      3. Kalan kısım GEÇERLİ BİR EK ZİNCİRİ olmalı (`_SUFFIX_CHAIN_RE`). Kazayla denk
+         gelen önekler burada elenir: "mal"+"iyeti" (→ i+yet+i, "yet" ek değil) ve
+         "kar"+"go" ("go" ek değil) çekim değildir; buna karşılık "renk"+"lerine"
+         (ler+i+ne), "oee"+"yi", "verim"+"liliği" ve "musteri"+"ninkileri" çekimdir.
+
+    Neden uzunluk sezgisi DEĞİL: ilk iki deneme uzunluk oranıyla ayırmaya çalıştı ve ikisi
+    de meşru çekimleri kesti — "verim"→"verimliliği" ve "renk"→"renklerine" testlerde
+    anında düştü. Ayrım uzunlukta değil BİÇİMDE.
+
+    Zincir kuralının bilinen sınırı: tek-harfli ek atomları yüzünden "esiye" de e+si+ye
+    diye ayrışır, yani "ver"+"esiye" (veresiye) geçerdi — bu yüzden o sınıf kökler
+    `_STOP_EXACT` ile TAM-KELİME olarak işaretlidir. İki mekanizma birbirini tamamlar.
+    """
+    if word == known:
+        return True
+    if not word.startswith(known):
+        return False
+    rest = word[len(known):]
+    if any(rest.startswith(n) for n in _NEGATION_SUFFIXES):
+        return False
+    return bool(_SUFFIX_CHAIN_RE.fullmatch(rest))
+
+
 def _uncovered(q: str, known_words: set[str]) -> list[str]:
     """q'daki tanınan HİÇBİR parçayla örtüşmeyen anlamlı kelimeler.
-    Kelime kapsanır ⇔ kısa (<3) | tanınan bir parça-kelime içinde geçiyor | dolgu kökü."""
+    Kelime kapsanır ⇔ kısa (<3) | tanınan bir parçanın ÇEKİMİ (`_covers`) | dolgu kökü."""
     known = {w for w in known_words if len(w) >= 3}
     out: list[str] = []
     for w in re.findall(r"[a-z]+", q):
         if len(w) < 3:
             continue
-        if any(k in w for k in known):
+        if any(_covers(k, w) for k in known):
             continue
-        if any(w.startswith(s) for s in _STOP_STEMS):
+        if _is_stop_word(w):
             continue
         out.append(w)
     return out
