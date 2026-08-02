@@ -22,6 +22,11 @@ features:
   next_steps: beta        # rehberli analitik K2 — sonraki adım (kırılım/ölçek/zaman) chip'leri
   ask_intent_first: beta  # /ask: route() boşsa LLM'e Intent-JSON doldurttur (Faz 1 canary —
                           # route()'un kendisi bu bayraktan bağımsız her zaman çalışır)
+  t2_anlatici: off        # FAZ 5: guarded LLM anlatıcı — deterministik olguları AKICI
+                          # Türkçeye çevirir. LLM ÜSLUBU yazar, SAYIYI sistem koyar.
+                          # narration_guard ZORUNLU çıkış kapısı (fail-closed: eşleşmeyen
+                          # sayı taşıyan cümle YAYIMLANMAZ). `off` — sıcak yola LLM çağrısı
+                          # ekliyor; açılması bilinçli bir karar olmalı (KURAL B, testli).
   llm_sema_kisitli: beta  # FAZ 3a: Intent-JSON'u sağlayıcının NATIVE tool-use'una taşı —
                           # cube/ölçü/boyut adları o anki kataloğun ENUM'u olarak şemaya
                           # gömülür (enum CUBE'A GÖRE daralır; `cube:null` reddetme dalı

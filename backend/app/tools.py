@@ -274,6 +274,25 @@ KAYIT: tuple[Arac, ...] = (
     ),
     # --- LLM araçları (yalnız deterministik yol tükendiğinde) --------------------
     Arac(
+        ad="llm.anlat",
+        ozet="Deterministik olguları AKICI Türkçeye çevirir — T2 anlatıcı (FAZ 5).",
+        girdi={"soru": "kullanıcının sorusu",
+               "gercekler": "interpret() facts listesi (ZATEN hesaplanmış)"},
+        cikti="düz metin — narration_guard'tan GEÇMEDEN yayımlanamaz",
+        determinizm="llm", maliyet="ucuz", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.llm", fonksiyon="anlat", baglanma="servis:llm",
+        notlar="LLM ÜSLUBU yazar, SAYIYI SİSTEM KOYAR (§4.4). SQL yazmaz, sayı "
+               "hesaplamaz, cube seçmez, HAM SATIR GÖRMEZ — girdisi yalnız "
+               "`interpret()`'in doğrulanmış olgularıdır. Çıktısı `narration_guard` "
+               "kapısından ZORUNLU geçer: eşleşmeyen sayı taşıyan cümle DÜŞER; hiçbir "
+               "cümle sağ kalmazsa anlatı HİÇ EKLENMEZ ve deterministik `summary` "
+               "yerinde kalır. En kötü durum 'süssüz ama doğru', asla 'akıcı ama "
+               "uydurma' DEĞİLDİR. HER SAĞLAYICIDA YOKTUR (kural-tabanlı taşımaz) — "
+               "yokluğu bir hata değil YOL KAPALI sinyalidir.",
+        etiketler=("anlatim", "t2", "guardli"),
+    ),
+    Arac(
         ad="llm.select_cube",
         ozet="Katalogdan ölçü/boyut/filtre SEÇER (SQL YAZMAZ) — Intent-JSON.",
         girdi={"question": "soru", "catalog": "cube kataloğu metni"},

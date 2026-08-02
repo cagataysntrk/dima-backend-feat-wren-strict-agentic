@@ -263,6 +263,71 @@ def _maybe_interpret(request: Request, resp: AskResponse) -> None:
             resp.cube_query, resp.kpi, units, lower_is_better, esikler=esikler)
     except Exception:  # noqa: BLE001 - yorum best-effort (yanıtı düşürmez)
         _log.warning("çıktı yorumu üretilemedi (best-effort)", exc_info=True)
+    _anlati_ekle(request, resp)
+
+
+def _anlati_ekle(request: Request, resp: AskResponse) -> None:
+    """FAZ 5 — T2 GUARDED LLM ANLATICI (§4.4): *"LLM ÜSLUBU yazar, SAYIYI sistem koyar."*
+
+    ## Neden bu faz en sona konuldu
+
+    Önce cevapların DOĞRU gelmesi, sonra GÜZEL anlatılması. "Güzel ama yanlış" bir anlatı,
+    şablon bir doğrudan **kötüdür** — süs, hatayı görünmez yapar.
+
+    ## Ne YAPMAZ
+
+    Girdi olarak **yalnız** `interpret()`'in ZATEN HESAPLADIĞI, deterministik olgular
+    verilir. Model SQL yazmaz, sayı hesaplamaz, cube seçmez, ham satır görmez. İşi salt
+    **üslup**tur.
+
+    ## FAIL-CLOSED — bu fonksiyonun varlık sebebi
+
+    Çıktı `narration_guard.guvenli_anlatim`'dan **zorunlu** geçer: her cümledeki her sayı
+    sonuç kümesiyle eşlenir (±%2, kapalı türetme listesi), eşleşmeyen cümle **düşer**.
+    Hiçbir cümle sağ kalmazsa **anlatı hiç eklenmez** — deterministik `summary` yerinde
+    kalır. Yani en kötü durum "süssüz ama doğru", asla "akıcı ama uydurma" değildir.
+
+    ## ŞABLONU EZMEZ — üstüne biner
+
+    Anlatı `interpretation["narration"]` alanına yazılır; `summary`/`facts` **aynen
+    kalır**. Bu, §4.4'ün kullanıcı tarafından açıkça istenen iki şartının doğrudan
+    karşılığıdır: *"her zaman grafik değil, bazen mesele sadece konuşmaktır"* korunur ve
+    *"o konuşmayı grafiğe çevir"* çalışır, çünkü altındaki yapı (`cube_query`/`result`/
+    `summary`) **hiçbir zaman silinmez**. Faz 0.5 bu şartın bir yerde İHLAL edildiğini
+    ölçüp düzeltmişti (`gorunum_donusumu` 0/5 → 4/5).
+    """
+    yorum = resp.interpretation
+    if not yorum or yorum.get("narration"):
+        return
+    principal = getattr(request.state, "principal", None)
+    try:
+        from app.features import resolve_for
+        if "t2_anlatici" not in resolve_for(get_settings(), principal):
+            return                      # KURAL B — kapalıyken davranış BİREBİR bugünkü
+        llm = getattr(request.app.state, "llm", None)
+        if llm is None or not hasattr(llm, "anlat"):
+            return                      # kural-tabanlı sağlayıcı: YOL KAPALI, hata DEĞİL
+        gercekler = [f["text"] for f in (yorum.get("facts") or [])
+                     if isinstance(f, dict) and f.get("text")]
+        if not gercekler:
+            return
+        from app.narration_guard import guvenli_anlatim
+
+        ham = llm.anlat(resp.question, gercekler)
+        metin, rapor = guvenli_anlatim(
+            ham, resp.result.model_dump() if resp.result else None, yedek=None)
+        if not metin:
+            # Tüm cümleler düştü — sessizce geç. Deterministik `summary` zaten orada.
+            _log.info("T2 anlatı GUARD'DA DÜŞTÜ (yayımlanmadı): reddedilen=%d",
+                      len(getattr(rapor, "reddedilen", []) or []))
+            return
+        yorum["narration"] = metin
+        if getattr(rapor, "reddedilen", None):
+            # Kısmi düşüş de GÖRÜNÜR olmalı — sessiz kırpma yok (bu deponun disiplini).
+            _log.info("T2 anlatı: %d cümle guard'da düştü",
+                      len(rapor.reddedilen))
+    except Exception:  # noqa: BLE001 — anlatı SÜStür, cevabı asla düşürmez
+        _log.warning("T2 anlatı üretilemedi (best-effort)", exc_info=True)
 
 
 def _adhoc_kayit(request: Request, cq: dict | None) -> dict | None:

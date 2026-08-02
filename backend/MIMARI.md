@@ -1798,10 +1798,57 @@ diye bölüyor ve **doğru** bir cümleyi reddediyordu. Bu kapının en tehlikel
 yanlış-pozitif üreten bir kapı kullanılamaz bulunup kapatılır. Gruplama dalı `*` yerine
 `+` ile gerçekten gruplu sayılara sınırlandı.
 
-**Tüketicisi HENÜZ YOK** ve bu açıkça kaydedilir: bugün sistemde LLM-üretimi düz metin
-**hiç yoktur** (`interpret` deterministiktir, sayıları sonuçtan gelir). Doğrulayıcı G1/G3'ün
-ön koşuludur — `cube_query_hash`'in *"primitif, tüketici bekliyor"* beyanıyla aynı sınıf
-(§5). Fark: bu primitifin tüketicisi **bir sonraki adımdır**, belirsiz bir gelecek değil.
+> ⟳⟳ **BEYAN GÜNCELLENDİ — FAZ 5 (2026-08-03): TÜKETİCİ BAĞLANDI.**
+>
+> Eski metin: *"**Tüketicisi HENÜZ YOK** … bugün sistemde LLM-üretimi düz metin **hiç
+> yoktur**"*. Bu beyan `tests/test_beyanlar_curumesin.py`'de bir **tuzağa** çevrilmişti ve
+> Faz 5 landing ettiği gün **kırıldı** — tam olarak kurulduğu iş buydu: düzelten kişiyi ya
+> guard'ı takmaya ya beyanı güncellemeye ZORLAMAK. **Üçüncü seçenek yoktu.** Guard takıldı,
+> beyan burada güncelleniyor, ve test **yönü tersine çevrilerek** korunuyor: artık düz
+> metin üreten her LLM yöntemi için `narration_guard`'ın **gerçekten çağrıldığını** ölçüyor.
+> Ayrıca bir kapı daha eklendi: `llm.anlat(...)` ile `interpretation["narration"]` ataması
+> **arasında** `guvenli_anlatim` bulunmak zorunda — LLM çıktısı guard'a **uğramadan**
+> yayımlanamaz.
+
+### 12.6b T2 ANLATICI (FAZ 5) — "LLM üslubu yazar, SAYIYI sistem koyar" ✅
+
+**Sırası plana kesin yazılmıştı** (`-0.5 · -1 · 0 · 1 · 2a` bitmeden başlamaz) ve gerekçesi
+şuydu: *"güzel ama yanlış"* bir anlatı, şablon bir doğrudan **kötüdür** — süs, hatayı
+görünmez yapar. Önce cevaplar doğru geldi, sonra anlatıldı.
+
+**Girdi DAR.** Model SQL yazmaz, sayı hesaplamaz, cube seçmez, **ham satır görmez** —
+girdisi yalnız `interpret()`'in **zaten hesaplanmış** olgularıdır (`facts[].text`).
+Prompt'ta *"HİÇBİR YENİ SAYI ÜRETME · hesap yapma · uydurma"* açıkça yasaklı.
+
+**Çıkış FAIL-CLOSED.** `guvenli_anlatim` zorunlu kapıdır ve **cerrahi** davranır: her
+cümledeki her sayı sonuç kümesiyle eşlenir (±%2, kapalı türetme listesi), eşleşmeyen
+cümle **düşer**, temiz cümleler kalır (bir uydurma yüzünden üç doğru cümleyi atmak bilgi
+kaybettirir; kullanılamayan kapı kapatılır ve o zaman hiç yoktur). Hiçbir cümle sağ
+kalmazsa anlatı **hiç eklenmez**. **En kötü durum "süssüz ama doğru", asla "akıcı ama
+uydurma" değildir.**
+
+**ŞABLONU EZMEZ — üstüne biner.** Anlatı `interpretation["narration"]`'a yazılır;
+`summary`/`facts` **aynen kalır** (testle kilitli: kaynak kodda `yorum["summary"] =`
+yasak). Bu, kullanıcının §4.4'te açıkça istediği iki şartın doğrudan karşılığı: *"her zaman
+grafik değil, bazen mesele sadece konuşmaktır"* korunur ve *"o konuşmayı grafiğe çevir"*
+çalışır — çünkü altındaki yapı (`cube_query`/`result`/`summary`) **hiçbir zaman silinmez**.
+Faz 0.5 bu şartın bir yerde **ihlal edildiğini** ölçüp düzeltmişti (§6.5z, `gorunum_donusumu`
+0/5 → 4/5).
+
+**Frontend ayrımı GÖRÜNÜR kılar** (`OutputInsight`): deterministik özet kendi kutusunda,
+anlatı **altında, kesikli çerçevede, `✎ ANLATIM` rozetiyle**. İkisini tek bloğa
+karıştırmak, LLM metnine deterministik özetin **otoritesini ödünç verirdi**. Rozet iddialı
+değil, **kaynak bildirir**: *"doğrulanmış sayı"* ile *"doğrulanmış cümle"* aynı şey değildir.
+
+**Araç kaydı (F2'nin dört kapısı).** `llm.anlat` `tools.KAYIT`'ta — planın §4.3 ⟳'sinde
+prompt-enhancer için koştuğu şart (*"kapısız LLM çağrısı olmasın; makbuzda adım olarak
+görünsün"*) anlatıcı için de uygulandı.
+
+**Bayrak `t2_anlatici` varsayılan `off`** (diğerleri `beta`): sıcak yola bir LLM çağrısı
+ekliyor, açılması **bilinçli bir karar** olmalı. Kural-tabanlı sağlayıcı `anlat` taşımaz —
+yokluğu bir hata değil **yol kapalı** sinyalidir.
+
+16 test: `tests/test_t2_anlatici.py` (+ `test_beyanlar_curumesin.py` 4 yeni kapı).
 
 ### 12.7 Takip sorusunun ÜÇ sınıfı (G1 — `app/followup.py`) ✅
 

@@ -207,6 +207,31 @@ def _repair_prompt(question: str, bad_sql: str, error: str) -> str:
     )
 
 
+def _anlati_system() -> str:
+    """T2 ANLATICI (§4.4) — **LLM ÜSLUBU yazar, SAYIYI sistem koyar.**
+
+    Bu prompt bilerek DAR: girdi olarak yalnız ZATEN HESAPLANMIŞ ve DOĞRULANMIŞ gerçekler
+    verilir (`interpret()` çıktısı). Model SQL yazmaz, sayı hesaplamaz, cube seçmez —
+    yalnız verilen cümleleri akıcı Türkçeye çevirir. Çıktı `narration_guard`'ın
+    FAIL-CLOSED kapısından geçer: eşleşmeyen sayı taşıyan cümle YAYIMLANMAZ.
+    """
+    return (
+        "Sana bir veri raporunun DOĞRULANMIŞ bulguları veriliyor. Görevin bunları akıcı, "
+        "kısa ve profesyonel Türkçeyle ANLATMAK.\n\n"
+        "MUTLAK KURALLAR:\n"
+        "- HİÇBİR YENİ SAYI ÜRETME. Yalnız verilen sayıları, verildiği gibi kullan. "
+        "Hesap yapma, yuvarlama, tahmin etme, oran türetme.\n"
+        "- Verilmeyen bir olgu EKLEME (sebep, öngörü, sektör kıyası, tavsiye YOK).\n"
+        "- 2-4 cümle. Madde işareti yok, başlık yok, emoji yok.\n"
+        "- Belirsizlik varsa sus; uydurma."
+    )
+
+
+def _anlati_user(soru: str, gercekler: list[str]) -> str:
+    return ("Soru: " + (soru or "—") + "\n\nDoğrulanmış bulgular:\n"
+            + "\n".join(f"- {g}" for g in gercekler))
+
+
 def _cube_select_system(catalog: str) -> str:
     """Soruyu SQL değil, tanımlı bir cube SEÇİMİNE eşleten prompt (kısıtlı → halüsinasyon yok)."""
     return (
@@ -314,6 +339,12 @@ class AnthropicSqlGenerator:
 
     def repair(self, question: str, schema: dict, bad_sql: str, error: str) -> str:
         return self._ask(_build_system(schema, self._dialect), _repair_prompt(question, bad_sql, error))
+
+    def anlat(self, soru: str, gercekler: list[str]) -> str:
+        """T2 anlatıcı (FAZ 5). Çıktı ÇAĞIRAN tarafından `narration_guard`'tan GEÇİRİLİR —
+        bu metodun dönüşü HAM'dır ve doğrudan yayımlanamaz."""
+        return self._ask(_anlati_system(), _anlati_user(soru, gercekler),
+                         model=self._select_model)
 
     def select_cube(self, question: str, catalog: str, sema: dict | None = None) -> str:
         """FAZ 3a — `sema` verilirse sağlayıcının NATIVE tool-use'u kullanılır: cube/ölçü/
@@ -427,6 +458,11 @@ class OpenAICompatibleSqlGenerator:
 
     def repair(self, question: str, schema: dict, bad_sql: str, error: str) -> str:
         return self._chat(_build_system(schema, self._dialect), _repair_prompt(question, bad_sql, error))
+
+    def anlat(self, soru: str, gercekler: list[str]) -> str:
+        """T2 anlatıcı (FAZ 5) — bkz. `AnthropicSqlGenerator.anlat`."""
+        return self._chat(_anlati_system(), _anlati_user(soru, gercekler),
+                          model=self._select_model)
 
     def select_cube(self, question: str, catalog: str, sema: dict | None = None) -> str:
         """FAZ 3a — `sema` KABUL EDİLİR ama BU SAĞLAYICIDA KULLANILMAZ (bilinçli).
@@ -882,6 +918,18 @@ class FailoverSqlGenerator:
                 continue
         _log.error("FailoverSqlGenerator.repair: TÜM sağlayıcılar başarısız")
         raise RuntimeError("repair: tüm sağlayıcılar başarısız")
+
+    def anlat(self, soru: str, gercekler: list[str]) -> str:
+        for g in self._gens:
+            if not hasattr(g, "anlat"):
+                continue          # kural-tabanlı sağlayıcıda YOK — yol kapalı, hata değil
+            try:
+                out = g.anlat(soru, gercekler)
+                self._last = g
+                return out
+            except Exception:
+                continue
+        raise RuntimeError("anlat: tüm sağlayıcılar başarısız")
 
     def select_cube(self, question: str, catalog: str, sema: dict | None = None) -> str:
         for g in self._gens:

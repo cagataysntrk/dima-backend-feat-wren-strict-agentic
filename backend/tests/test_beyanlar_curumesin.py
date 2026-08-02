@@ -14,6 +14,7 @@ uç seviyesinde ne yapıyorsa, bu dosya **modül seviyesinde** onu yapar.
 
 from __future__ import annotations
 
+import inspect
 import pathlib
 import re
 
@@ -27,44 +28,65 @@ def _app_kaynagi(haric: str) -> str:
 
 # --- G4: anlatım doğrulayıcı --------------------------------------------------
 
-def test_ANLATIM_DOGRULAYICI_beyani_HALA_dogru():
-    """MIMARI §12.6: *"Tüketicisi HENÜZ YOK ve bu açıkça kaydedilir: bugün sistemde
-    LLM-üretimi düz metin HİÇ YOKTUR (`interpret` deterministiktir, sayıları sonuçtan
-    gelir)."*
+def test_ANLATIM_DOGRULAYICI_GERCEKTEN_DEVREDE():
+    """⟳ **FAZ 5 (2026-08-03) — bu test TUZAKTAN KAPIYA dönüştü.**
 
-    Beyan iki şeyi birden iddia eder ve **ikisi de** doğrulanmalı:
-      1. `narration_guard` üretim yolundan çağrılmıyor (yoksa beyan bayat),
-      2. LLM'den düz metin gelen bir yol yok (yoksa beyan YANLIŞ ve **korumasız bir
-         uydurma yüzeyi** var demektir).
+    Eski hâli MIMARI §12.6'nın *"Tüketicisi HENÜZ YOK — bugün sistemde LLM-üretimi düz
+    metin HİÇ YOKTUR"* beyanını koruyordu ve **Faz 5 landing ettiği gün kırıldı** — tam
+    olarak kurulduğu iş buydu: düzelten kişiyi ya guard'ı takmaya ya beyanı güncellemeye
+    ZORLAMAK. Guard takıldı, beyan güncellendi.
 
-    İkincisi asıl tehlikedir: birisi bir gün `/ask` yanıtına LLM-üretimi bir özet
-    eklerse, doğrulayıcı yazılmış ve test edilmiş olduğu hâlde **devrede olmaz**.
+    Artık ölçtüğü şey **tersine döndü**: düz metin üreten her LLM yöntemi için
+    `narration_guard` **gerçekten çağrılıyor mu**. Beyan bir kez daha çürümesin diye
+    kapı yerinde kalıyor, yalnız yönü değişti.
     """
-    kaynak = _app_kaynagi("narration_guard.py")
-    cagriliyor = ("narration_guard" in kaynak or "guvenli_anlatim" in kaynak)
-
-    # LLM sağlayıcısının ürettiği HER ŞEY yapısaldır: SQL ya da CubeQuery JSON.
-    # Düz metin üreten bir yöntem eklenirse bu liste büyür ve test uyarır.
     llm = (APP / "llm.py").read_text(encoding="utf-8")
     uretenler = set(re.findall(r"def (generate_\w+|\w*_?(?:narrate|anlat|prose)\w*)\(", llm))
-    # `sql`/`cube`/`select` içeren adlar YAPISAL çıktı üretir (SQL ya da CubeQuery JSON) —
-    # doğrulayıcının konusu değil. `generate_followup_sql` da bunlardan biridir: takip
-    # sorusundan SQL üretir, cümle değil.
     metin_ureten = {a for a in uretenler
                     if not any(x in a for x in ("sql", "cube", "select", "refine", "repair"))}
+    assert metin_ureten, ("llm.py'de düz metin üreten yöntem KALMADI — T2 anlatıcı geri mi "
+                          "alındı? O hâlde MIMARI §12.6 ve bu test yeniden gözden geçirilmeli.")
 
-    if metin_ureten and not cagriliyor:
-        raise AssertionError(
-            f"LLM'den DÜZ METİN üreten yöntem(ler) belirdi: {sorted(metin_ureten)} — ama "
-            "`narration_guard` hiçbir üretim yolundan çağrılmıyor. Doğrulayıcı yazılmış ve "
-            "test edilmiş olduğu hâlde DEVREDE DEĞİL: korumasız bir uydurma yüzeyi var.\n"
-            "İki seçenek: (1) `guvenli_anlatim`'ı o yola tak, (2) MIMARI §12.6'yı güncelle.")
+    kaynak = _app_kaynagi("narration_guard.py")
+    assert "guvenli_anlatim" in kaynak, (
+        f"düz metin üreten yöntem(ler) VAR ({sorted(metin_ureten)}) ama `narration_guard` "
+        "hiçbir üretim yolundan çağrılmıyor — KORUMASIZ BİR UYDURMA YÜZEYİ.")
 
-    if cagriliyor:
-        raise AssertionError(
-            "`narration_guard` artık ÇAĞRILIYOR — MIMARI §12.6'daki "
-            "\"Tüketicisi HENÜZ YOK\" beyanı BAYAT. Beyanı güncelle ve bu testi "
-            "doğrulayıcının GERÇEKTEN devrede olduğunu ölçen bir teste çevir.")
+
+def test_ANLATI_GUARD_ZORUNLU_kapidir():
+    """Guard'ın *çağrılması* yetmez: LLM çıktısı ona UĞRAMADAN yayımlanabiliyor mu?
+    `_anlati_ekle`'de `llm.anlat(...)` ile `interpretation["narration"]` ataması ARASINDA
+    `guvenli_anlatim` bulunmak ZORUNDA."""
+    from app import answer
+
+    govde = inspect.getsource(answer._anlati_ekle)
+    i_ham = govde.index("llm.anlat(")
+    i_guard = govde.index("guvenli_anlatim(")
+    i_yaz = govde.index('yorum["narration"] =')
+    assert i_ham < i_guard < i_yaz, (
+        "LLM çıktısı guard'a UĞRAMADAN yayımlanabiliyor — fail-closed sözleşme kırık")
+
+
+def test_ANLATI_TUM_CUMLELER_DUSERSE_HIC_EKLENMEZ():
+    """En kötü durum 'süssüz ama doğru' olmalı, asla 'akıcı ama uydurma'."""
+    from app.narration_guard import guvenli_anlatim
+
+    result = {"columns": ["ciro"], "rows": [{"ciro": 100.0}], "row_count": 1}
+    metin, rapor = guvenli_anlatim("Ciro 999999 TL oldu. Kâr 12345 arttı.", result,
+                                   yedek=None)
+    assert metin == "", f"uydurma sayı yayımlandı: {metin!r}"
+    assert rapor.reddedilen
+
+
+def test_ANLATI_SABLONU_EZMEZ():
+    """§4.4'ün kullanıcı tarafından açıkça istenen şartı: anlatı `summary`/`facts`'i
+    SİLMEZ, `narration` alanına biner — yoksa *"o konuşmayı grafiğe çevir"* çalışmazdı."""
+    from app import answer
+
+    govde = inspect.getsource(answer._anlati_ekle)
+    assert 'yorum["narration"]' in govde
+    for alan in ('yorum["summary"] =', 'yorum["facts"] ='):
+        assert alan not in govde, f"anlatı deterministik alanı EZİYOR: {alan}"
 
 
 # --- E-2: cube_query_hash -----------------------------------------------------

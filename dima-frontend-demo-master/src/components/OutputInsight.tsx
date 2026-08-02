@@ -56,6 +56,29 @@ export function OutputInsight({ interpretation }: { interpretation?: Interpretat
         </p>
       </div>
 
+      {/* FAZ 5 — T2 ANLATI. Deterministik özetin YERİNE GEÇMEZ, ALTINA gelir: yukarıdaki
+          kutu "sayı" (sistem koydu), bu kutu "üslup" (LLM yazdı) — ve rozet bu ayrımı
+          GÖRÜNÜR kılar. Kullanıcı hangi cümlenin nereden geldiğini bilmeli; ikisini tek
+          bloğa karıştırmak, LLM metnine deterministik özetin otoritesini ödünç verirdi.
+          Metin backend'de `narration_guard`'tan geçmiştir (uydurma sayı taşıyan cümle
+          düşürülür), ama "doğrulanmış sayı" ile "doğrulanmış cümle" AYNI ŞEY DEĞİLDİR —
+          rozet o yüzden iddialı değil, kaynak bildirir. */}
+      {interpretation.narration && (
+        <div className="flex gap-2 border border-dashed border-hairline px-3 py-2">
+          <span
+            className="mt-0.5 shrink-0 font-mono text-[10px] text-neutral-400"
+            title="Bu metnin ÜSLUBUNU bir dil modeli yazdı; SAYILARI sistem koydu ve her
+biri sonuç kümesiyle eşlendi (eşleşmeyen cümle yayımlanmaz). Üstteki özet
+tamamen deterministiktir."
+          >
+            ✎ ANLATIM
+          </span>
+          <p className="text-[12px] leading-relaxed text-neutral-600 dark:text-neutral-300">
+            {interpretation.narration}
+          </p>
+        </div>
+      )}
+
       {/* Taranabilir bulgu rozetleri (trend/en-yüksek/en-düşük/KPI bileşenleri) — özet
           cümlenin ÜSTÜNE biner (facts zaten summary'nin kaynağıdır), yalnız hızlı-tarama
           için görsel olarak AYRIŞTIRIR. */}

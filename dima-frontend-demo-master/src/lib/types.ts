@@ -193,6 +193,13 @@ export interface Recommendation {
 
 export interface Interpretation {
   summary: string; // deterministik Türkçe özet (en yüksek/düşük, % değişim, trend, pay)
+  // FAZ 5 — T2 GUARDED LLM ANLATICI. `summary`'nin YERİNE GEÇMEZ, ÜSTÜNE biner:
+  // LLM yalnız ÜSLUBU yazar, SAYIYI sistem koyar. Backend'de `narration_guard`'ın
+  // fail-closed kapısından geçmiştir — her cümledeki her sayı sonuç kümesiyle eşlenmiş,
+  // eşleşmeyen cümle DÜŞÜRÜLMÜŞTÜR. Alan YOKSA (bayrak kapalı · sağlayıcı `anlat`
+  // taşımıyor · tüm cümleler guard'da düştü) deterministik `summary` tek başına
+  // gösterilir — "süssüz ama doğru", asla "akıcı ama uydurma".
+  narration?: string | null;
   facts?: { type: string; text: string }[]; // yapısal bulgular (ileride chip/rozet)
   // K3 (rehberli analitik) — PROAKTİF sinyaller: anomali / yön endişesi / yoğunlaşma.
   // Nötr özetten ayrı; önem düzeyine göre vurgulanır (info/warning/critical).
