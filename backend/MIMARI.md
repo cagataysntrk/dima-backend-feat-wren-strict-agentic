@@ -241,8 +241,13 @@ diye zaman kaybetmesin.
   düzeltmek için dönem/gran sözlüklerinin sayıları da `known`'a eklemesi gerekir, yoksa
   `"son 3 ay"` gibi çalışan sorular kırılır. Aynı sınıfta 2 harflik kökler (`ay`, `kg`) de
   `known`'dan eleniyor — `tests/test_coverage_gate_affix.py` bunu bir sınır kaydı olarak tutuyor.
-- **`_match_dims` tahkim yapmıyor** (`:592-637`): `"yaş grubu bazında fire oranı"` →
-  `['ham_grup','yas_grubu']`. Fazla kolon = farklı grain = farklı sayı.
+- ✅ **düzeltildi (2026-08-02, Faz 0.5)** — **`_match_dims` tahkim yapmıyordu**:
+  `"yaş grubu bazında fire oranı"` → `['ham_grup','yas_grubu']`, `"ham grubu…"` → **üç** boyut.
+  Kök neden: `ham_grup` ve `yas_grubu` ortak `"grubu"` sinonimini taşıyor. Fazla kolon GROUP
+  BY'ı böler — satır sayısı da her hücredeki **sayı** da değişir, ve cevap `source="cube"`
+  rozetiyle gelir. `_match_measure`'ın zaten uyguladığı **en-spesifik-eşleşme-kazanır** kuralı
+  boyut tarafına da eklendi. **Eşit eşleşmeler** (iki boyut aynı sinonimle) bilinçli olarak
+  çözülmedi — o gerçek bir belirsizliktir ve Faz 3.1'de `route()`'un chip sorması gerekir.
 - **Olumsuzluk hiç ifade edilemiyor**: Rust **12** filtre operatörü destekliyor
   (`eq neq in not_in gt gte lt lte contains starts_with is_null is_not_null` — çalıştırılarak
   doğrulandı), Python **4** üretiyor (`eq in gte lte`). `"reddedilmeyen partilerin cirosu"` →
@@ -264,11 +269,18 @@ diye zaman kaybetmesin.
   **ürettiği 7 calc kolonu hiçbir cube okumuyor.**
 
 ### 6.3 Güvenlik / doğruluk
-- **`always_filter` baypasları**: Discovery ham SQL'i (`ask.py:2180,2209`), VQR ham-SQL replay'i
-  (`:1529-1530` — cube'a sonradan eklenen filtre öğrenilmiş kayda uygulanmıyor), drill raw leaf
-  (`drill.py:260`), ve manifest okunamadığında `wren_service.py:599-602`'deki
-  `except Exception: return sql` **filtreyi sessizce düşürüyor**. Ayrıca *filtreli bir modele
-  join'lemek* de baypas ediyor (ölçüldü: 34M TL `alis` verisi `tur='satis'` filtresini geçti).
+- **`always_filter` baypasları** — kısmen kapatıldı:
+  - ✅ **manifest okuma yutması** (`wren_service.py`'deki `except Exception: return sql`) —
+    Faz 0.2'de fail-closed yapıldı.
+  - ✅ **VQR ham-SQL replay'i** — Faz 0.6'da şema-sürüm kapısı eklendi: ham-SQL kayıtları
+    `mdl_version` damgalanır; damga bayatsa (ya da yoksa) kısayol atlanır. `dry_plan` bunu
+    yakalayamaz çünkü SQL sözdizimsel olarak hâlâ geçerlidir — değişen anlamdır.
+  - ❌ **Discovery ham SQL'i** (`ask.py`) — açık. Kalıcı çözüm uygulama katmanında değil,
+    motor seviyesindedir (session property / DB RLS); Faz 1'in G10 kapısıyla birlikte planlı.
+  - ❌ **drill raw leaf** (`drill.py`) — açık.
+  - ❌ ***filtreli bir modele join'lemek*** — açık ve Faz 1 için **P0**: ölçüldü, 34M TL
+    `alis` verisi `tur='satis'` filtresini geçti. Auto-join bu baypası "yalnız Discovery"den
+    "handle üretilen her cube"a yayar (bkz. §9 G10).
 - **`compose()` kilitsiz `rmtree` yapıyor** (`compose.py:77-86`). Build boyunca (~130-160 ms)
   `target/mdl.json` **yok**; bu pencerede gelen sorgu ya `FileNotFoundError` alır ya da yukarıdaki
   `always_filter` yutmasına düşer. `company_registry`'nin per-slug kilidi var ama
