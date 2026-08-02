@@ -78,6 +78,87 @@ def _service_for(request: Request, session_id: str | None):
     return wren_for_request(request)
 
 
+def _adhoc_store(request: Request) -> dict:
+    """`adhoc_id` → {service, schema, maskeli_kolonlar, kirpilmis} (in-memory, ephemeral).
+
+    `_dataset_store`'dan **AYRI** olmak zorunda. Oraya yazılsaydı iki şey birden kırılırdı:
+    (a) yüklenmiş bir Excel ezilirdi, (b) `_service_for` o oturumdaki SONRAKİ NORMAL
+    soruları da ad-hoc tabloya yönlendirirdi — yani bir Discovery cevabı, tenant'ın gerçek
+    kataloğunu oturum boyunca **gölgelerdi**. Ad-hoc servis YALNIZ `cube_query.adhoc`
+    işaretini taşıyan bir düzenleme geldiğinde okunur.
+    """
+    store = getattr(request.app.state, "adhoc_cubes", None)
+    if store is None:
+        store = {}
+        request.app.state.adhoc_cubes = store
+    return store
+
+
+def _adhoc_service_for(request: Request, cq: dict | None):
+    """`cube_query` ad-hoc ise onun servisini döner; değilse None (çağıran normal yola gider)."""
+    if not isinstance(cq, dict) or not cq.get("adhoc"):
+        return None
+    kayit = _adhoc_store(request).get(str(cq.get("adhoc_id") or ""))
+    return kayit["service"] if kayit else None
+
+
+def _adhoc_kur(request: Request, body, result: dict | None, sql: str,
+               limit: int | None) -> dict | None:
+    """Discovery sonucundan ad-hoc cube (FAZ 1 / K1). Kurulamazsa **None** — bugünkü davranış.
+
+    Planın dört risk maddesi burada uygulanır:
+
+    * **KILL-SWITCH** — `adhoc_cube` bayrağı kapalıyken hiç çalışmaz (KURAL B).
+    * **KIRPMA** — `row_count == limit` ise sonuç tavana DEĞMİŞ olabilir; o görünüm
+      üzerinde `SUM`/`AVG`/`TOP-N` kendinden emin ama yanlış cevap verir. İşaretlenir
+      (`kirpilmis`) ve toplama chip'leri `answer.py`'de SUNULMAZ.
+    * **MASKELEME SIRASI** — cube MASKELİ satırlardan kurulur (aksi halde oturum `.duckdb`
+      dosyası diskte maskesiz PII taşırdı). Bedeli, maskelenen kolonda filtre chip'inin
+      BOŞ dönmesidir; o kolonlar işaretlenir ve chip üretilmez.
+    * **DONDURULMUŞLUK** — `adhoc_cube.turet()` satırları materyalize eder; sonraki
+      sorgular kaynak DB'ye geri gitmez (testle ölçülür, iddia edilmez).
+    """
+    if not result or not (result.get("rows") or []):
+        return None
+    from app.features import resolve_for
+
+    settings = get_settings()
+    principal = getattr(request.state, "principal", None)
+    if "adhoc_cube" not in resolve_for(settings, principal):
+        return None
+
+    from app import adhoc_cube as _adhoc
+    from app.answer import _UPLOAD_DIR
+    from app.pii import mask_rows
+
+    # MASKELEME ÖNCE: hangi kolonlar maskelendi? (`mask_rows` içerik-tabanlıdır — kolon
+    # meta'sı değil hücre değeri taranır, o yüzden fark ALINARAK bulunur.)
+    ham = list(result.get("rows") or [])
+    maskeli, bulundu = mask_rows(ham)
+    maskeli_kolonlar: set[str] = set()
+    if bulundu:
+        for h, m in zip(ham, maskeli):
+            maskeli_kolonlar.update(k for k, v in h.items() if m.get(k) != v)
+
+    sid = re.sub(r"[^A-Za-z0-9_-]", "_", str(body.session_id or "anon"))[:80]
+    adhoc_id = f"{sid}-{abs(hash(sql)) % (10 ** 10)}"
+    kirpilmis = bool(limit) and int(result.get("row_count") or 0) >= int(limit)
+    try:
+        kurulan = _adhoc.turet(
+            {**result, "rows": maskeli if bulundu else ham},
+            _UPLOAD_DIR / "adhoc" / adhoc_id,
+            cube_adi="adhoc", etiket="geçici model",
+            kirpilmis=kirpilmis, maskeli_kolonlar=frozenset(maskeli_kolonlar))
+    except Exception:  # noqa: BLE001 — yapı VAAT ETMEMEK, 500 atmaktan iyidir
+        _log.warning("ad-hoc cube kurulamadı (best-effort)", exc_info=True)
+        return None
+    if not kurulan:
+        return None
+    kurulan["cube_query"]["adhoc_id"] = adhoc_id
+    _adhoc_store(request)[adhoc_id] = kurulan
+    return kurulan
+
+
 def _uuid_or_none(val):
     """str(uuid) → UUID (InteractionLog aktör kolonları AuditLog gibi UUID). Geçersiz/boş → None."""
     import uuid as _uuid
@@ -587,12 +668,19 @@ def cube(request: Request, body: CubeRequest) -> AskResponse:
     _log.info("İSTEK /cube: label=%r session=%s thread=%s cube=%s",
               body.label, body.session_id, body.thread_id, (body.cube_query or {}).get("cube"))
     settings = get_settings()
-    service = _service_for(request, body.session_id)  # yüklenen dataset varsa onu sorgular
+    # FAZ 1 (K1) — AD-HOC CUBE. Chip'in `cube_query`'si `adhoc: true` taşıyorsa hedef,
+    # tenant kataloğu değil o Discovery cevabından türetilmiş DONDURULMUŞ oturum
+    # görünümüdür. Tenant servisiyle çözmeye çalışmak "cube bulunamadı" (400) verirdi —
+    # yani chip görünür ama tıklanınca çalışmaz olurdu; bu, chip'i hiç sunmamaktan kötüdür
+    # (aynı kural: `olcu_netlestirme` / `ay_netlestirme`).
+    _adhoc_svc = _adhoc_service_for(request, body.cube_query)
+    service = _adhoc_svc or _service_for(request, body.session_id)
     schema = service.schema()
 
     _, index = cube_router.build_catalog(schema)
-    if body.cube_query and body.cube_query.get("cube"):
-        # cube adı göçü (yeniden adlandırma sonrası eski adla gelen chip düzenlemesi)
+    if body.cube_query and body.cube_query.get("cube") and _adhoc_svc is None:
+        # cube adı göçü (yeniden adlandırma sonrası eski adla gelen chip düzenlemesi).
+        # Ad-hoc cube oturumla doğar/ölür — göç edecek bir geçmişi YOKTUR.
         body.cube_query["cube"] = cube_router.resolve_cube_name(body.cube_query["cube"], schema)
     cq = cube_router.parse_cube_query(json.dumps(body.cube_query, ensure_ascii=False), index)
     if not cq:
@@ -2410,6 +2498,17 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             trace=trace,
         )
         resp.contract_id = _record_contract(None, wren_sql, result, resp.source)
+        # FAZ 1 (K1) — UÇURUMU KALDIR. Buraya kadar cevap `cube_query=None` ile gidiyordu
+        # ve `seal()`'in ÜÇ kapısı da (chip · aksiyon · köken) kapanıyordu. Sonuçtan
+        # oturum-scoped bir ad-hoc cube türetilir; YAPI açılır, ROZET dürüst kalır
+        # (`source` hâlâ `llm:*`, `explain.confidence` hâlâ None — `_build_explain` güveni
+        # `source`'tan okur, `cube_query`'nin varlığından DEĞİL).
+        adhoc = _adhoc_kur(request, body, result, wren_sql, limit)
+        if adhoc:
+            resp.cube_query = adhoc["cube_query"]
+            trace.append(f"ad-hoc cube kuruldu ({adhoc['info']['row_count']} satır, "
+                         f"dondurulmuş görünüm) — yapı açıldı, rozet llm:* kaldı")
+            return _finish(_attach_viz(resp, result, adhoc["cube_query"]))
         return _finish(_attach_viz(resp, result))
 
     # Faz 4.1 (31 Temmuz 2026) — bayrak KAPALIYKEN (varsayılan, tüm mevcut testler/tenant'lar)
@@ -2525,13 +2624,25 @@ def ask_drill(request: Request, body: DrillRequest) -> DrillResponse:
                                 "Üretilen SQL'i \"sql göster\" ile inceleyebilirsin.",
         )
 
-    service = _service_for(request, body.session_id)
+    # FAZ 1 (K1) — ad-hoc cube'da drill DONDURULMUŞ görünüm üzerinde çalışır: SQL'in
+    # SEÇTİĞİ kolonlar boyut olur, seçmediği eklenemez (planın açıkça kaydettiği sınır —
+    # "tam kırılım değil, dondurulmuş görünüm üzerinde tam etkileşim").
+    service = _adhoc_service_for(request, body.cube_query) or \
+        _service_for(request, body.session_id)
     settings = get_settings()
     schema = service.schema()
     cubes_by_name = {c.get("name"): c for c in (schema.get("cubes") or [])}
     cube_meta = cubes_by_name.get(body.cube_query.get("cube"))
     if cube_meta is None:
         raise HTTPException(status_code=400, detail="Cube bulunamadı (şema değişmiş olabilir).")
+    if body.cube_query.get("kirpilmis"):
+        # KIRPILMIŞ GÖRÜNÜMDE DRILL YOK (aynı gerekçe `answer._attach_next_steps`'te):
+        # eksik veriden hesaplanmış bir kök-neden analizi, analizsizlikten kötüdür.
+        return DrillResponse(
+            formula_explanation="Bu sonuç satır tavanına ulaştı (kırpılmış görünüm) — "
+                                "üzerinden kök-neden dallanması sunulmuyor, çünkü sayılar "
+                                "eksik veriden hesaplanırdı. Soruyu daraltıp tekrar sor.",
+        )
 
     def _run(cq: dict) -> tuple[dict, str, float]:
         """cube_query'yi GERÇEKTEN çalıştırır (dry_plan+query, /cube ile AYNI adımlar) —

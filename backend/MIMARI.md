@@ -527,6 +527,57 @@ Kazanç 28 birim testiyle kanıtlanıyor. Korpusun bu sınıfı kazanması Faz 0
 Taban artefaktı: `lab/nl_corpus_baseline.json` (`eval/baseline.json` ile aynı disiplin —
 `lab/reports/` gitignore'da olduğu için ham rapor değil **kapı değerleri** saklanır).
 
+### 6.2z FAZ 1 (K1) — Discovery uçurumu kapandı: ad-hoc cube, ama YAPI ≠ GÜVEN ✅
+
+`seal()` üç kapısını da **tek bir alana** bakarak açıyordu: `resp.cube_query`. Discovery
+cevabı onu hiç set etmiyordu → chip · kırılım · zaman granülerliği · aksiyon önerisi ·
+köken · drill · katkı · doğru grafik · rapor · pano · zamanlama · **frontend butonları**
+hepsi birden kapanıyordu. Bu bir hata değil, **tasarlanmış bir uçurumdu**.
+
+**Çözüm:** Discovery'nin **sonucundan** oturum-scoped bir cube türetilir
+(`app/adhoc_cube.py`). Excel yüklemesi için yazılmış hat (`dataset._role` /
+`build_mdl` / `build_service`) **çağrılır, kopyalanmaz**.
+
+**K1'in tek eksiği ölçüldü ve kapatıldı:** `wren_service.query()` Arrow **şemasını
+atıyordu** — yalnız kolon *adları* dönüyordu. Tipsiz bir sonuçtan ölçü/boyut/zaman ayrımı
+yapılamaz. Artık `column_types` taşınıyor (geriye uyumlu ek alan). Tip **gelmezse** cube
+kurulmaz: her kolon VARCHAR olurdu → ölçüsüz cube → yapı rozeti takılmış ama içi boş bir
+cevap. **Tahmin etmektense yapı vaat etmemek doğrudur.**
+
+#### YAPI ≠ GÜVEN — bu fazın en önemli cümlesi
+
+`source` **`llm:<sağlayıcı>` KALIR**, `explain.confidence` **`None` KALIR** (MIMARI §5).
+Bu yapısal olarak garantili: `_build_explain` güveni `source`'tan okur, `cube_query`'nin
+varlığından **değil**. `cube_query` `adhoc: true` + `provenance: "llm_sql'den türetildi"`
+taşır ve frontend `⚡ GEÇİCİ MODEL` rozetiyle gösterir — kullanıcı `◆ CUBE` görmez.
+
+**Kesin sınır dürüstçe:** ad-hoc cube **SQL'in seçmediği bir boyutu ekleyemez**. "Tam
+kırılım" değil, **dondurulmuş görünüm üzerinde tam etkileşim**. B'yi A'nın yerine koymaz.
+
+#### Dört risk — hepsi kapı, hiçbiri beyan
+
+| risk | kapı |
+|---|---|
+| **Dondurulmuşluk** | Satırlar oturum `.duckdb`'sine materyalize edilir; sonraki chip/drill sorguları kaynak DB'ye **geri gitmez** (bu yüzden `always_filter` endişesi yok). Tasarımın tamamı buna dayanıyordu ve **hiçbir yerde yazılı değildi** — artık testle ölçülüyor. |
+| **Kırpılmış görünüm** | `row_count >= limit` → `kirpilmis=true`. O görünüm üzerindeki **her** toplama (ölçü/kırılım/zaman kovası) eksik veriden hesaplanır → chip'lerin **tamamı** kapatılır, drill reddedilir, ve kullanıcı **sebebini görür**. Sessizce eksik chip, chipsizlikten kötüdür. |
+| **Maskeleme sırası** | Cube **maskeli** satırlardan kurulur — aksi halde oturum `.duckdb` dosyası diskte **maskesiz PII** taşırdı. Bedeli: `Ahm** Y***` değerine kırılım kuran chip anlamsız döner → maskelenen kolonlarda chip **üretilmez** (`schedules.uyari_nedeni`'ndeki aynı karar). |
+| **Kill-switch** | `adhoc_cube` bayrağı (KURAL B); kapalıyken davranış **bugünküyle birebir**, testle kilitli. |
+
+#### İki entegrasyon tuzağı — ikisi de sessizce kırardı
+
+1. **Ad-hoc servis AYRI depoda** (`app.state.adhoc_cubes`), `_dataset_store`'da **değil**.
+   Oraya yazılsaydı (a) yüklenmiş bir Excel ezilirdi, (b) `_service_for` o oturumdaki
+   **sonraki normal soruları da** ad-hoc tabloya yönlendirirdi — yani bir Discovery cevabı
+   tenant'ın gerçek kataloğunu oturum boyunca **gölgelerdi**.
+2. **`parse_cube_query` işaretleri korur.** Whitelist `adhoc_id`/`kirpilmis`/`provenance`'ı
+   düşürseydi: `adhoc_id` kaybolur → **ikinci** chip tıklaması servisi bulamaz, zincir
+   **tek adımda** kopardı; `kirpilmis` kaybolur → kırpılmış görünümde toplama chip'i geri
+   gelirdi, yani 2. risk maddesi **sessizce açılırdı**.
+
+**Ölçülen:** `next_steps` Discovery cevabında **0 → kırılım chip'leri** (kırpılmamış
+görünümde, gerçek `build_mdl` şemasından) · `explain.confidence` **None** kaldı · eval
+`deterministik pay` **+0.0%** · 16 test `tests/test_adhoc_cube.py`.
+
 ### 6.1i AYRIK aylar cevaplanıyor — motor ifade edemiyordu, DIŞ SARMA ile çözüldü (Faz 2a) ✅
 
 §6.1b (-0.5a) **bitişik** ayları tek aralığa çevirmişti; **ayrık** aylar (*"ocak ve mart"*)

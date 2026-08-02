@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Thread } from "@/lib/threads";
+import type { CubeQuery } from "@/lib/types";
 import { CaretInput } from "@/components/CaretInput";
 
 // SQL provenance — keskin, monospace "sistem readout" rozeti. "vqr" (VQR birebir/yakın
@@ -23,6 +24,41 @@ function confidenceBadge(
   if (confidence >= 0.9) return { emoji: "🥇", title: `Yüksek güven (${pct}%)` };
   if (confidence >= 0.7) return { emoji: "🥈", title: `Orta güven (${pct}%)` };
   return { emoji: "🥉", title: `Düşük güven (${pct}%) — bir varsayım yapılmış olabilir` };
+}
+
+/** FAZ 1 (K1) — AD-HOC (geçici) model rozeti.
+ *
+ * Discovery cevabı artık `cube_query` taşıyor (chip/kırılım/drill açılıyor) ama o yapı
+ * ham LLM SQL'inden TÜRETİLMİŞTİR ve DONDURULMUŞ bir görünüm üzerinde çalışır. Rozet
+ * bunu söylemek zorunda: `source` hâlâ `llm:*` ve güven hâlâ ölçülemez — **yapı ≠ güven**
+ * (MIMARI §5). Kullanıcı "◆ CUBE" gördüğü an bunu deterministik sanardı; görmüyor.
+ *
+ * `kirpilmis` ayrı ve daha sert bir uyarıdır: sonuç satır tavanına DEĞDİ, yani üzerindeki
+ * her toplama eksik veriden hesaplanır. Backend o durumda chip/drill'i zaten kapatıyor;
+ * rozet kullanıcıya SEBEBİNİ söyler.
+ */
+export function AdhocBadge({ cubeQuery }: { cubeQuery: CubeQuery | null }) {
+  const cq = (cubeQuery ?? {}) as Record<string, unknown>;
+  if (!cq.adhoc) return null;
+  const kirpik = Boolean(cq.kirpilmis);
+  return (
+    <span
+      title={
+        kirpik
+          ? "Geçici model — ham SQL sonucundan türetilmiş dondurulmuş görünüm. " +
+            "Sonuç satır tavanına ULAŞTI: toplama/kırılım önerilmiyor, sayılar eksik " +
+            "veriden hesaplanırdı."
+          : "Geçici model — bu yapı ham SQL sonucundan TÜRETİLDİ ve dondurulmuş bir " +
+            "görünüm üzerinde çalışır. Kırılım/filtre yapılabilir, ama SQL'in seçmediği " +
+            "bir kolon eklenemez. Güven rozeti bu yüzden yükselmez."
+      }
+      className={`inline-flex h-[20px] items-center gap-1 border px-1.5 font-mono text-[10px] tracking-wide ${
+        kirpik ? "border-amber-500/40 text-amber-600" : "border-hairline text-neutral-500"
+      }`}
+    >
+      ⚡ {kirpik ? "GEÇİCİ·KIRPIK" : "GEÇİCİ MODEL"}
+    </span>
+  );
 }
 
 export function SourceBadge({

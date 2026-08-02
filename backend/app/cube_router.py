@@ -2766,4 +2766,18 @@ def parse_cube_query(text: str, index: dict) -> dict | None:
             blend_out.append({"cube": b["cube"], "measures": bms})
     if blend_out:
         out["blend"] = blend_out
+    # AD-HOC İŞARETLERİ KORUNUR (FAZ 1 / K1). Bunlar bir sorgu ALANI değil, cevabın
+    # KÖKENİDİR — `parse_cube_query` yapıyı beyaz-listeliyor ve bu üçünü düşürseydi:
+    # (a) `adhoc_id` kaybolur, İKİNCİ chip tıklaması ad-hoc servisi bulamaz ve zincir
+    #     TEK ADIMDA kopardı; (b) `kirpilmis` kaybolur, kırpılmış görünüm üzerinde
+    #     toplama chip'i geri gelirdi — yani planın 2. risk maddesi sessizce açılırdı;
+    #     (c) `provenance` kaybolur, makbuz yapının nereden geldiğini söyleyemezdi.
+    # Değerler ÜRETİLMEZ, yalnız var olan işaret taşınır (uydurma yüzeyi yok).
+    if cq.get("adhoc"):
+        out["adhoc"] = True
+        for k in ("adhoc_id", "provenance"):
+            if cq.get(k):
+                out[k] = str(cq[k])
+        if cq.get("kirpilmis"):
+            out["kirpilmis"] = True
     return out

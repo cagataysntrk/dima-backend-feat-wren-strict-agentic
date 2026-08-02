@@ -265,6 +265,15 @@ def _maybe_interpret(request: Request, resp: AskResponse) -> None:
         _log.warning("çıktı yorumu üretilemedi (best-effort)", exc_info=True)
 
 
+def _adhoc_kayit(request: Request, cq: dict | None) -> dict | None:
+    """Ad-hoc cube kaydı (FAZ 1 / K1) — yoksa None. `ask.py::_adhoc_store` ile AYNI depo;
+    burada import döngüsü olmasın diye `app.state`'ten doğrudan okunur."""
+    if not isinstance(cq, dict) or not cq.get("adhoc"):
+        return None
+    return (getattr(request.app.state, "adhoc_cubes", None) or {}).get(
+        str(cq.get("adhoc_id") or ""))
+
+
 def _attach_next_steps(request: Request, resp: AskResponse) -> None:
     """K2 (rehberli analitik) — başarılı rapora DETERMİNİSTİK 'sonraki adım' chip'leri ekler
     (feature flag 'next_steps'): kullanılmayan boyut (kırılım) / ölçü (ölçek) / zaman
@@ -280,10 +289,39 @@ def _attach_next_steps(request: Request, resp: AskResponse) -> None:
         from app import cube_router
         from app.company_registry import wren_for_request
         from app.schemas import NextStep
-        cubes = wren_for_request(request).schema().get("cubes") or []
+
+        cq = resp.cube_query
+        # FAZ 1 (K1) — KIRPILMIŞ GÖRÜNÜMDE TOPLAMA CHIP'İ YOK.
+        # Ad-hoc cube `max_result_rows` tavanına DEĞMİŞ bir sonuçtan kurulduysa, o görünüm
+        # üzerindeki HER toplama (ölçü değiştir, kırılım ekle, zaman kovala) eksik veriden
+        # hesaplanır ve **kendinden emin ama yanlış** çıkar — planın kendi *"en tehlikeli
+        # sınıf"* tanımı, yeni bir kapıdan. Kırılım da güvenli DEĞİLDİR: 1000 kırpılmış
+        # satırı gruplamak kısmi toplam verir. Bu yüzden chip'lerin TAMAMI kapatılır ve
+        # kullanıcı sebebini görür (sessizce eksik chip, chipsizlikten kötüdür).
+        if cq.get("kirpilmis"):
+            resp.note = ((resp.note + " ") if resp.note else "") + (
+                "Kırpılmış görünüm (satır tavanına ulaşıldı) — bu sonuç üzerinden "
+                "toplama/kırılım önerilmiyor, sayılar eksik veriden hesaplanırdı.")
+            return
+
+        adhoc = _adhoc_kayit(request, cq)
+        if adhoc is not None:
+            # Ad-hoc cube TENANT KATALOĞUNDA YOK; şemasını kendi servisinden okumak
+            # zorunludur, yoksa index'te bulunamaz ve chip'ler sessizce üretilmez.
+            cubes = adhoc["schema"].get("cubes") or []
+        else:
+            cubes = wren_for_request(request).schema().get("cubes") or []
         index = {c.get("name"): c for c in cubes}
-        resp.next_steps = [NextStep(**s)
-                           for s in cube_router.suggest_next_steps(resp.cube_query, index)]
+        adimlar = cube_router.suggest_next_steps(cq, index)
+        if adhoc is not None and adhoc.get("maskeli_kolonlar"):
+            # MASKELEME SIRASI (planın 3. risk maddesi): cube MASKELİ satırlardan kuruldu,
+            # yani `Ahm** Y***` değerine filtre/kırılım kuran bir chip BOŞ ya da anlamsız
+            # döner. `schedules.uyari_nedeni`'nde verilen aynı karar: boş dönen bir chip
+            # sunmak, hiç sunmamaktan KÖTÜDÜR.
+            gizli = adhoc["maskeli_kolonlar"]
+            adimlar = [s for s in adimlar
+                       if not (set((s.get("cube_query") or {}).get("dimensions") or []) & gizli)]
+        resp.next_steps = [NextStep(**s) for s in adimlar]
     except Exception:  # noqa: BLE001 - best-effort (yanıtı düşürmez)
         _log.warning("sonraki adım önerileri üretilemedi (best-effort)", exc_info=True)
 

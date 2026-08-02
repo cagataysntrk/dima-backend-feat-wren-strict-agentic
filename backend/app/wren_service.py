@@ -1177,4 +1177,10 @@ class WrenService:
             "columns": list(table.column_names),
             "rows": rows,
             "row_count": len(rows),
+            # FAZ 1 (K1): Arrow ŞEMASI eskiden burada ATILIYORDU — yalnız kolon ADLARI
+            # dönüyordu. Tipsiz bir sonuçtan ölçü/boyut/zaman ayrımı yapılamaz, yani
+            # Discovery cevabından ad-hoc cube türetmenin önündeki TEK eksik buydu
+            # (plan §4.1-K1). Geriye uyumlu EK alan: `QueryResult` bunu okumaz
+            # (pydantic fazlalığı yok sayar), yalnız `adhoc_cube.turet()` tüketir.
+            "column_types": [str(f.type) for f in table.schema],
         }

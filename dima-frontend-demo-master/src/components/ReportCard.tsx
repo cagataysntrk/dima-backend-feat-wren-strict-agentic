@@ -21,7 +21,7 @@ import { InterpretationBar } from "@/components/InterpretationBar";
 import { ResultView } from "@/components/ResultView";
 import { KpiCardView } from "@/components/KpiCard";
 import { OutputInsight } from "@/components/OutputInsight";
-import { SourceBadge } from "@/components/ChatPanel";
+import { AdhocBadge, SourceBadge } from "@/components/ChatPanel";
 
 // §B Adım 2 (1 Ağustos 2026) — tek-rapor kartı: bugünkü ReportPanel'in TÜM gövdesi + tüm
 // rapor-başına local state'i (SQL/trace toggle, schedule/dashboard-ekle popover'ları, verify
@@ -457,6 +457,8 @@ export function ReportCard({
               </div>
             )}
             <SourceBadge source={item.source} confidence={item.explain?.confidence} />
+            {/* FAZ 1 (K1): yapı ham SQL'den TÜRETİLDİYSE rozet bunu söyler — yapı ≠ güven. */}
+            <AdhocBadge cubeQuery={item.cube_query} />
             {item.cube_query && item.result && (
               <button
                 onClick={() => setDrillOpen(true)}
