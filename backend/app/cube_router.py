@@ -275,11 +275,6 @@ def date_filters(q: str, time_dim: str = "tarih") -> list[dict]:
     return _month_range_filters(q, time_dim) or []
 
 
-def date_filter(q: str, time_dim: str = "tarih") -> dict | None:
-    """Geriye uyum: tek-filtreli dönem ifadesi (göreli/içinde bulunulan)."""
-    fs = date_filters(q, time_dim)
-    return fs[0] if len(fs) == 1 else None
-
 
 def is_all_time(q: str) -> bool:
     """"Tüm zamanlar" seçimi — bilinçli tüm-veri isteği (chip ya da yazılı)."""
@@ -288,7 +283,21 @@ def is_all_time(q: str) -> bool:
 
 
 def is_period_only(q: str) -> bool:
-    """Mesaj sadece bir dönem ifadesi mi ("bu ay", "son 3 ay", "temmuz ayı", "tümü")?"""
+    """Mesaj sadece bir dönem ifadesi mi ("bu ay", "son 3 ay", "temmuz ayı", "tümü")?
+
+    ⚠️ **ÜRETİMDE ÇAĞRILMIYOR** (2 Ağustos 2026 denetimi: 0 prod referansı, 13 test).
+    Amaçlandığı akış — ADR-0007 K3'ün dönem netleştirme chip'i: kullanıcıya *"hangi dönem?"*
+    sorulur, *"son 3 ay"* yanıtı gelir — **`deterministic_refine` tarafından ZATEN
+    karşılanıyor.** Ölçüldü: `"son 3 ay"` → `gte 2026-05-02`, `"bu yıl"` → `gte 2026-01-01`,
+    `"geçen ay"` → `gte/lte` çifti; üçü de doğru. Takip sınıflandırması da refine'ın
+    başarısını sinyal olarak kullandığı için bu fonksiyona ihtiyaç duymuyor.
+
+    **Neden silinmedi:** 13 testi Türkçe dönem ifadelerinin (çeyrek varyantları, "evvelki
+    ay", "dün için", "tümü") bir **şartnamesidir** ve `deterministic_refine`'ın bunları
+    karşılamaya devam etmesi gerekir. Fonksiyonu silmek o şartnameyi de silerdi. Doğru
+    kapanış: testleri gerçek akışın (refine) şartnamesine çevirip fonksiyonu kaldırmak —
+    ayrı bir tur. O güne kadar bu not, "ölü sanıp silme, önce testleri taşı" uyarısıdır.
+    """
     s = q.strip()
     if s in ("bugun", "bu hafta", "bu ay", "bu yil", "bu sene"):
         return True

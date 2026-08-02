@@ -387,21 +387,28 @@ def test_refine_noop_ayni_boyut(schema):
 
 
 # --- tarih filtreleri (deterministik dönem, ADR-0007 Faz C) ------------------
+#
+# Tekil `date_filter` 2026-08-02'de SİLİNDİ (docstring'i "geriye uyum" diyordu, üretimde
+# 0 çağıran vardı). Aşağıdaki şartname KAYBOLMADI: canlı çoğul `date_filters`'a taşındı —
+# aynı ifadeler, aynı beklentiler. Silinen şey fonksiyondu, kural değil.
+
+def _gte(q: str):
+    """`date_filters` çıktısındaki `gte` filtresi (dönem başlangıcı)."""
+    return next(f for f in cube_router.date_filters(_norm(q), "tarih")
+                if f["operator"] == "gte")
+
 
 def test_date_filter_son_3_ay():
-    f = cube_router.date_filter(_norm("son 3 ay"), "tarih")
-    assert f["operator"] == "gte"
+    f = _gte("son 3 ay")
     assert date.fromisoformat(f["value"]) < date.today()
 
 
 def test_date_filter_bu_ay():
-    f = cube_router.date_filter(_norm("bu ay"), "tarih")
-    assert date.fromisoformat(f["value"]) == date.today().replace(day=1)
+    assert date.fromisoformat(_gte("bu ay")["value"]) == date.today().replace(day=1)
 
 
 def test_date_filter_bu_yil():
-    f = cube_router.date_filter(_norm("bu yıl"), "tarih")
-    assert date.fromisoformat(f["value"]) == date.today().replace(month=1, day=1)
+    assert date.fromisoformat(_gte("bu yıl")["value"]) == date.today().replace(month=1, day=1)
 
 
 def test_is_period_only():
@@ -670,8 +677,8 @@ def test_calisan_bazli_personel_kirilimi(schema):
 
 def test_tum_yil_donem(schema):
     """'tüm yıl' (log-kanıtlı terfi) = yıl başından beri; artık sorulmaz, çözülür."""
-    f = cube_router.date_filter(_norm("tüm yıl için yap"), "tarih")
-    assert f is not None and f["value"] == f"{date.today().year}-01-01"
+    f = _gte("tüm yıl için yap")
+    assert f["value"] == f"{date.today().year}-01-01"
 
 
 def test_son_n_aya_gore_kova_degil(schema):

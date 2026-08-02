@@ -187,9 +187,6 @@ def cube_base_object(yaml_path: Path) -> str | None:
 # ConnectionConfirmResult bunu `written_cubes`'ta göstermez).
 
 
-def _column_type_map(table) -> dict[str, str]:
-    return {c.name: c.type for c in table.columns}
-
 
 def write_model_yaml(base: Path, company: str, table_name: str, columns: list,
                      primary_key: str | None, *, db_schema: str = "public") -> Path:

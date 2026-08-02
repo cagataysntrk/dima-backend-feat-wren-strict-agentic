@@ -99,7 +99,11 @@ cube/ölçü/boyut/zaman-boyutu/filtre-boyutu → tüm sorgu `None`. LLM uydurdu
 ### 2.3 LLM sağlayıcıları
 `DIMA_LLM_PROVIDER = auto | anthropic | xai | gemini | groq | ollama | rule`.
 `auto` → `FailoverSqlGenerator`, sıra: `anthropic → gemini → groq → xai → ollama`, hepsi
-başarısızsa `rule`. Intent-JSON için ayrı ve **daha ucuz** bir model kullanılabilir
+başarısızsa **dürüst red** — zincir tükenince `FailoverSqlGenerator` `RuntimeError` fırlatır
+ve `ask.py` bunu cevapsızlığa çevirir. (⚠️ Bu satır 2026-08-02'de düzeltildi: eskiden
+*"hepsi başarısızsa `rule`"* yazıyordu — **kod belgeden iyiydi**, `rule` zincirde DEĞİL ve
+varsayılanı da artık kapalı, çünkü demo şemasına özel sabit kodlanmış kolon adları başka
+tenant'ta makul-ama-yanlış SQL üretir.) Intent-JSON için ayrı ve **daha ucuz** bir model kullanılabilir
 (`*_select_model`). `rule` yalnız demo/CI içindir; `_llm_source()` onu asla deterministik gibi
 etiketlemez.
 

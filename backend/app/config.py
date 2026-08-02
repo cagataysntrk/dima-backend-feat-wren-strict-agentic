@@ -71,7 +71,14 @@ class Settings(BaseSettings):
     # A#5 (ADR-0008): kural-tabanlı serbest-SQL YEDEĞİ yalnız demo/geliştirme içindir.
     # Üretimde False: LLM yoksa ya da hata verirse TAHMİN yerine dürüst ret döner
     # (kural yedeği yalnız demo şemasını bilir; gerçek şemada sessiz-yanlış üretir).
-    rule_fallback: bool = True
+    #
+    # 2 Ağustos 2026: VARSAYILAN False YAPILDI. Yukarıdaki yorum zaten "üretimde False"
+    # diyordu ama varsayılan True'ydu — yani niyet belgeliydi, kod tersini yapıyordu.
+    # `RuleBasedSqlGenerator` demo-boyahane kolon adlarını (`fire_kg`, `agirlik_kg`,
+    # `tutar`) ve tablo adlarını SABİT KODLAR; bu adlar başka bir tenant'ta da bulunabilir
+    # ve o zaman MAKUL AMA YANLIŞ SQL üretir. Rozeti dürüst (`source="rule"`) olduğu için
+    # silinmedi — demo/geliştirme için `DIMA_RULE_FALLBACK=true` ile açılır.
+    rule_fallback: bool = False
 
     # Self-consistency (ADR-0008 + literatür önerisi #1): LLM cube-seçimi k kez
     # örneklenir, kanonik CubeQuery üzerinde oylanır; uyuşmazlık → chip. 1 = kapalı.

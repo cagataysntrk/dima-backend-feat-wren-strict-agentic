@@ -380,20 +380,6 @@ def _catalog_suggestions(schema: dict) -> list[dict]:
     return sugg[:5]
 
 
-def _starter_suggestions(request: Request, schema: dict) -> list[dict]:
-    """K1 (rehberli analitik) — rol/sektör bazlı KÜRATÖRLÜ başlangıç soruları; küratör
-    yoksa katalog-türevi otomatiğe düşer. "neler yapabilirsin"/selamlama chip'leri."""
-    try:
-        from app.starters import starter_questions
-        principal = getattr(request.state, "principal", None)
-        curated = starter_questions(get_settings(), principal)
-        if curated:
-            return curated[:6]
-    except Exception:  # noqa: BLE001 - best-effort (katalog yedeğine düş)
-        _log.warning("başlangıç soruları çözülemedi (best-effort)", exc_info=True)
-    return _catalog_suggestions(schema)
-
-
 def _is_catalog_query(q: str) -> bool:
     """Katalog KEŞFİ: "hangi kpi/rapor/metrik var", "neler sorabilirim", "ölçüler neler".
     Sistem kendi cube/ölçü/KPI kataloğunu bilir → deterministik listeler (LLM'siz)."""
@@ -837,18 +823,18 @@ def cube(request: Request, body: CubeRequest) -> AskResponse:
     except Exception:
         pass
     # Query Contract (ADR-0010): chip düzenlemesi de rapor üretir → kanıt kaydı.
-    if True:
-        try:
-            store = getattr(request.app.state, "contracts", None)
-            if store is not None:
-                _p = getattr(request.state, "principal", None)
-                resp.contract_id = store.record(
-                    session_id=body.session_id, question=resp.question, cube_query=cq,
-                    sql=sql, result=result, source="cube", schema_version=service.mdl_version,
-                    tenant_id=getattr(_p, "tenant_id", None),
-                )
-        except Exception:
-            pass
+    # (Kaldırılmış bir feature-flag'in `if True:` kalıntısı 2026-08-02'de temizlendi.)
+    try:
+        store = getattr(request.app.state, "contracts", None)
+        if store is not None:
+            _p = getattr(request.state, "principal", None)
+            resp.contract_id = store.record(
+                session_id=body.session_id, question=resp.question, cube_query=cq,
+                sql=sql, result=result, source="cube", schema_version=service.mdl_version,
+                tenant_id=getattr(_p, "tenant_id", None),
+            )
+    except Exception:
+        pass
     _maybe_interpret(request, resp)  # evrensel çıktı yorumu (feature flag'li)
     _attach_next_steps(request, resp)  # K2 sonraki-adım chip'leri (feature flag'li)
     _attach_recommendations(request, resp)  # K4 sinyal→aksiyon önerileri

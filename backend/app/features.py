@@ -106,17 +106,6 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
 }
 
 
-def flag_meta(key: str) -> dict[str, str]:
-    """Bir bayrağın insan-okur metadata'sı. Kayıtta yoksa anahtarın kendisi etiket
-    olur (panel bilinmeyen/DB-only bayrakta da okunur kalır)."""
-    return FLAG_REGISTRY.get(key) or {"label": key, "description": "", "category": "Diğer"}
-
-
-def known_flag_keys(settings) -> set[str]:
-    """Bilinen tüm bayrak anahtarları: kanonik kayıt ⊕ YAML fabrika ayarı. Panel
-    keşfi buradan — kayıtta olup YAML'da olmayan bayrak da (override edilebilsin
-    diye) listelenir."""
-    return set(FLAG_REGISTRY) | set(factory_defaults(settings))
 
 
 def _load_yaml(p: Path) -> dict:

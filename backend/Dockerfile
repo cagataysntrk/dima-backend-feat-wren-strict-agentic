@@ -11,7 +11,7 @@
 # The mirror is the tested code, so we install `core/wren` from source. The Rust engine
 # binding (`wren_core`) is the prebuilt PyPI wheel `wren-core-py` (no Rust build needed).
 
-# amd64'e SABİTLE: wren-core-py 0.7.2'nin manylinux x86_64 abi3 wheel'i var ama linux-arm64
+# amd64'e SABİTLE: wren-core-py'nin manylinux x86_64 abi3 wheel'i var ama linux-arm64
 # wheel'i YOK (arm64'te kaynaktan Rust/maturin derlemesi gerekir, kırılgan ve yavaş). Railway
 # zaten amd64 çalışır; sabitleyince hem lokal (Apple Silicon → emülasyon) hem Railway AYNI
 # artefaktı üretir, wheel kullanılır, Rust derlemesi olmaz.
@@ -27,7 +27,11 @@ WORKDIR /app
 # 1) Pin the Rust engine binding first (prebuilt abi3 Linux wheel — no compiler needed).
 #    Doing this before installing `core/wren` means pip sees `wren-core-py>=0.7.1`
 #    already satisfied by 0.7.2 and will NOT silently pull a newer build.
-RUN pip install "wren-core-py==0.7.2"
+# 2 Ağustos 2026 DÜZELTMESİ: pin `==0.7.2` idi ama KURULU sürüm 0.7.3 çıkıyordu —
+# `wrenai 0.13.2` metadata'sı `wren-core-py>=0.7.3` istiyor ve adım 2 bu pin'i
+# YÜKSELTİYORDU. Yani pin tutmuyor, altındaki gerekçe yorumu da bayattı. Aralık
+# olarak yazıldı: wrenai'nin istediği alt sınır karşılanır, ana sürüm sıçraması engellenir.
+RUN pip install "wren-core-py>=0.7.3,<0.8"
 
 # 2) Install wrenai from PyPI since local mirror is not available
 RUN pip install "wrenai>=0.13,<0.14"
