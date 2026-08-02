@@ -204,7 +204,7 @@ tur aynı keşfi sıfırdan yapıyor. **Yeni bir kontrol/garanti yazmadan önce 
 | **Cube `hierarchies`** | Drill sırasını motora beyan eder | ❌ `app/drill.py` bunu elle yazdı; ajan için tipli gezinme grafiği olurdu |
 | **`type_mapping.parse_type/translate_type`** | sqlglot tam tip grameri + lehçeler arası tip çevirisi | ❌ `db_introspect.classify_column` elle string setleri tutuyor |
 | **17 kullanılmayan konnektör** | BigQuery/Snowflake/Databricks/Trino + `s3_file`/`minio_file` | ❌ yeni müşteri = **kod yazmadan** bağlanma |
-| **`context.validate_project()`** | 9 yapısal kural (PK var mı, `table_reference` XOR `ref_sql`, ilişki hedefi…) | ❌ compose çıktısı bugün **hiç** şema doğrulamasından geçmiyor |
+| **`context.validate_project()`** | 9 yapısal kural (PK var mı, `table_reference` XOR `ref_sql`, ilişki hedefi…) | ✅ **ALINDI** (2026-08-02, Faz B): `compose_and_build` artık `build()`'den **önce** çağırıyor. `error` → **fail-closed**, MDL üretilmez (bozuk zeminden üretilen MDL, hatayı sorgu anında kullanıcının yüzüne çıkarır — `dry_plan` kolon varlığını denetlemez, §5); `warning` → loglanır, akışı durdurmaz. Kendi doğrulayıcımız YAZILMADI, motorunki **çağrıldı** (test kural adlarının gövdeye kopyalanmadığını kilitler). Ölçüldü: dört demo projesinin **dördü de 0 hata / 0 uyarı** — açmak hiçbir meşru yolu kırmıyor. |
 | **`data_source` statement_timeout** | Per-datasource sorgu zaman aşımı | ❌ yerine elle TCP ping (`_db_reachable`) yazılmış |
 | **`migrate_manifest_json` / `is_backward_compatible`** | MDL layout göçü ve geriye uyum | ❌ hiç çağrılmıyor |
 

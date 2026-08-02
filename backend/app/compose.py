@@ -616,6 +616,60 @@ def _merge_cube_synonyms(layers: list[tuple[Path, str | None]], out: Path) -> No
             meta_path.write_text(yaml.safe_dump(meta, allow_unicode=True, sort_keys=False))
 
 
+class ProjectValidationError(RuntimeError):
+    """Compose çıktısı yapısal olarak geçersiz — MDL ÜRETİLMEZ (fail-closed)."""
+
+
+def dogrula(project_dir: Path) -> dict:
+    """Compose çıktısını MOTORUN kendi doğrulayıcısına sokar (Faz B, `context.validate_project`).
+
+    ## Neden bu kapı vardı ama bağlı değildi
+
+    `wren.context.validate_project` motorda **hazır duruyordu** ve dokuz yapısal kuralı
+    denetliyordu (model adı/kolonu, `table_reference` XOR `ref_sql`, ilişkilerin var olan
+    modelleri göstermesi, çift ad, view'ın statement'ı, `primary_key`'in kolonlar arasında
+    olması…). Compose çıktısı bugüne kadar bunların **hiçbirinden geçmiyordu** — yani
+    `build()` bozuk bir ağaca bakıp ya patlıyor ya da anlaşılmaz bir hata veriyordu.
+
+    Kendi kuralımızı yazmadık: **motor zaten yapıyorsa yazma** (MIMARI §5). Bu kapı bir
+    doğrulayıcı değil, var olan doğrulayıcının **çağrıldığı yerdir**.
+
+    ## Neden `error` FAIL-CLOSED
+
+    Yapısal olarak geçersiz bir projeden MDL üretmek, sonraki her katmana bozuk bir zemin
+    verir: `dry_plan` kolon varlığını denetlemez (MIMARI §5), yani hata sorgu anında
+    kullanıcının yüzüne çıkar. Build zamanında durmak, üretim zamanında yanlış cevap
+    vermekten kesinlikle iyidir.
+
+    `warning` seviyesi LOGLANIR ama akışı durdurmaz — uyarılar tanım gereği "çalışır ama
+    dikkat" demektir ve build'i kırmaları gereksiz kırılganlık olurdu.
+
+    Ölçüldü (2 Ağustos 2026): dört demo projesinin **dördü de 0 hata / 0 uyarı** —
+    bu kapıyı bugün açmak hiçbir meşru yolu kırmıyor.
+    """
+    from wren.context import validate_project
+
+    try:
+        bulgular = validate_project(project_dir)
+    except Exception as exc:                      # ADR-0020: sessiz yutma yok
+        # Doğrulayıcının KENDİSİ patlarsa build'i kırmayız: bu bir ek güvencedir,
+        # zorunlu bir bileşen değil. Ama sessiz de kalmaz.
+        print(f"UYARI: proje doğrulaması çalıştırılamadı ({type(exc).__name__}: {exc})")
+        return {"ok": None, "errors": 0, "warnings": 0}
+
+    hatalar = [b for b in bulgular if getattr(b, "level", "") == "error"]
+    uyarilar = [b for b in bulgular if getattr(b, "level", "") != "error"]
+    for u in uyarilar:
+        print(f"compose uyarı: {u}")
+    if hatalar:
+        ozet = "\n  ".join(str(h) for h in hatalar[:20])
+        raise ProjectValidationError(
+            f"Compose çıktısı {len(hatalar)} YAPISAL HATA taşıyor — MDL üretilmedi "
+            f"(bozuk bir zeminden üretilen MDL, hatayı sorgu anında kullanıcının yüzüne "
+            f"çıkarır):\n  {ozet}")
+    return {"ok": True, "errors": 0, "warnings": len(uyarilar)}
+
+
 def build(project_dir: Path) -> Path:
     """Derlenmiş projeden target/mdl.json üretir (wren build, in-process) — ATOMİK.
 
@@ -654,6 +708,7 @@ def compose_and_build(settings) -> dict:
     # aynı ağaca AYNI ANDA giremesin. Registry de AYNI kilidi kullanır.
     with build_lock_for(out):
         info = compose(settings.company, base, out)
+        info["validation"] = dogrula(out)
         build(out)
     return info
 
