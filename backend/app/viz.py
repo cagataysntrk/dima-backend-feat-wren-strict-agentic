@@ -97,8 +97,25 @@ def _unit_of(col: str, units: dict[str, str] | None) -> str:
     return ""
 
 
-def _additive(col: str, unit: str) -> bool:
-    """Ölçü toplanabilir (extensive) mi? Yığma/pay grafiği yalnız additive'de geçerli."""
+def _additive(col: str, unit: str, beyan_edilmeyen: set[str] | None = None) -> bool:
+    """Ölçü toplanabilir (extensive) mi? Yığma/pay grafiği YALNIZ additive'de geçerlidir.
+
+    **BEYAN, SEZGİYİ EZER** (Faz I1). Cube metadata'sı `additive: full|semi|non` bildirir ve
+    `schema()` bunu `semi_additive`/`non_additive` listeleri olarak ZATEN taşıyordu — ama
+    `recommend()` onları hiç ALMIYOR, yerine bir ad/birim regex'i kullanıyordu.
+
+    Ölçülen sessiz-yanlış (2 Ağustos 2026): `bakiye` iki cube'da (`cari`, `mizan`)
+    `additive: semi` beyan edilmiş; birimi `₺` olduğu için regex ona `additive=True` diyor
+    ve **yığılmış grafik öneriliyordu**. Bakiye bir STOK büyüklüğüdür: dönemler arasında
+    toplanamaz (Ocak bakiyesi + Şubat bakiyesi bir şey ifade etmez). Yığma, matematiksel
+    olarak yanlış bir grafiği "deterministik" rozetiyle sunardı.
+
+    Regex YEDEK olarak kalır: beyan edilmemiş ölçüler (henüz `additive:` yazılmamış
+    cube'lar) için bugünkü davranış korunur — beyanı olmayanı yasaklamak, ölçmeden
+    kısıtlama getirmek olurdu.
+    """
+    if beyan_edilmeyen and col in beyan_edilmeyen:
+        return False          # BEYAN: semi/non-additive → yığma/pay YASAK
     if unit == "%":
         return False
     return not bool(_INTENSIVE_NAME.search(col))
@@ -241,11 +258,34 @@ def _roles_from_cube_query(
     return dim_cols, time_hint
 
 
+def meta_args(cube_meta: dict | None) -> dict[str, Any]:
+    """Cube metadata'sından `recommend()`'in beslendiği argümanlar — **TEK KAYNAK** (Faz I1).
+
+    Altı çağrı yeri var (`/ask` iki kez, `/report`, `dashboards`, `schedules`,
+    `conversations`) ve her biri argümanları ELLE topluyordu. Sonuç ölçüldü: `units`
+    anahtarı bir yerde `measure_units` diye yanlış yazılmış ve birim-farkındalığı o yolda
+    HİÇ devreye girmemişti (kod yorumunda kayıtlı). Aynı sınıfın ikinci örneği
+    `semi_additive`/`non_additive` oldu — `schema()` üretiyordu, hiçbir çağıran
+    geçirmiyordu.
+
+    Yeni bir metadata alanı görselleştirmeye bağlandığında **tek bir yer** değişir;
+    beşinci çağıranı unutmak imkânsız hale gelir.
+    """
+    c = cube_meta or {}
+    return {
+        "units": c.get("units") or {},
+        "lower_set": c.get("lower_is_better") or [],
+        # Toplanamaz ölçüler: yığma/pay grafiği matematiksel olarak yanlış olur.
+        "non_additive": (c.get("semi_additive") or []) + (c.get("non_additive") or []),
+    }
+
+
 def recommend(
     result: dict | None,
     units: dict[str, str] | None = None,
     lower_set: list[str] | set[str] | None = None,
     cube_query: dict | None = None,
+    non_additive: list[str] | set[str] | None = None,
 ) -> dict[str, Any] | None:
     """QueryResult ({columns, rows}) → VizSpec. Sonuç yok/boşsa None.
 
@@ -273,6 +313,11 @@ def recommend(
     primary_dim: str | None = spec["primary_dim"]
 
     umap = {m: _unit_of(m, units) for m in measures}
+    # BEYAN EDİLMİŞ toplanamaz ölçüler (semi/non-additive) — yığma ve pay grafiği YASAK.
+    # Türetilmiş kıyas kolonları da (`bakiye_gecen`) aynı kısıtı miras alır: bir stok
+    # büyüklüğünün geçen dönemi de stok büyüklüğüdür.
+    _yasak = {str(m) for m in (non_additive or [])}
+    _yasak |= {f"{m}_gecen" for m in _yasak}
     unit_count = len({u for u in umap.values()})
     cat_dims = [d for d in dims if d != time_col]
     # bar/line'da renk-serisi: ikinci (zaman-dışı) boyut
@@ -357,7 +402,7 @@ def recommend(
     #     Az seri (≤4) → gruplu (doğrudan kıyas okunur); orta seri (5..8) additive → yığılı.
     if kind in ("bar", "line") and series_dim is not None and len(measures) == 1:
         m0 = measures[0]
-        if _additive(m0, umap.get(m0, "")):
+        if _additive(m0, umap.get(m0, ""), _yasak):
             spec["stackable"] = True
             sc_card = _card(rows, series_dim)
             if 4 < sc_card <= 8:
@@ -381,7 +426,7 @@ def recommend(
     #     Tek ölçü şartı: çok-ölçü/YoY bar'da pay grafiği anlamsız (birden çok ölçünün payı olmaz).
     if kind == "bar" and len(cat_dims) == 1 and len(measures) == 1 and series_dim is None:
         m0 = measures[0]
-        if _additive(m0, umap.get(m0, "")):
+        if _additive(m0, umap.get(m0, ""), _yasak):
             card = _card(rows, cat_dims[0])
             spec["partition"] = True
             spec["alternatives"] = ["pie"] if card <= 6 else ["treemap"]

@@ -77,14 +77,11 @@ def _refresh_viz(payload: dict, schema: dict) -> None:
         from app import cube_router, viz
 
         cq = payload.get("cube_query")
-        units: dict = {}
-        lower_set: list = []
-        if cq and cq.get("cube"):
-            cube_meta = cube_router._cube_meta(schema, cq["cube"])
-            if cube_meta:
-                units = cube_meta.get("units") or {}
-                lower_set = cube_meta.get("lower_is_better") or []
-        payload["viz"] = viz.recommend(result, units=units, lower_set=lower_set, cube_query=cq)
+        cmeta = cube_router._cube_meta(schema, cq["cube"]) if cq and cq.get("cube") else None
+        # Metadata argümanları TEK KAYNAKTAN (`viz.meta_args`, Faz I1): resume edilen bir
+        # sohbet, canlı cevapla AYNI grafik kararını almalı. Elle toplanan argüman listeleri
+        # tam olarak burada ayrışırdı — ve ayrışma sessiz olurdu.
+        payload["viz"] = viz.recommend(result, cube_query=cq, **viz.meta_args(cmeta))
     except Exception:
         pass  # best-effort — donmuş (varsa eski) viz korunur, resume kırılmaz
 

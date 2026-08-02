@@ -302,10 +302,7 @@ def dashboard_data(request: Request, did: str, session: Session = Depends(get_se
             # birimlerini "units" adıyla taşıyor (bkz. app/wren_service.py:236); bu yüzden
             # `recommend()`'in birim-farkındalığı burada da HİÇ devreye giremiyordu (`/cube`
             # ve `/ask`'teki AYNI hata sınıfı, bkz. app/routers/ask.py `_attach_viz`).
-            wviz = viz.recommend(
-                result, units=cmeta.get("units") or {},
-                lower_set=cmeta.get("lower_is_better") or [], cube_query=viz_cq,
-            )
+            wviz = viz.recommend(result, cube_query=viz_cq, **viz.meta_args(cmeta))
             # PII maskeleme (doğrulama turu düzeltmesi, 1 Ağustos 2026): panonun CANLI veri
             # ucu daha önce HİÇ maskelemiyordu — `/ask` üzerinden maskeli görülen bir sorgu
             # panoya widget olarak eklenince maskesiz görünüyordu. `/query` ile AYNI paylaşılan

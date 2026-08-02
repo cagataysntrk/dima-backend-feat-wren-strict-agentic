@@ -1094,6 +1094,70 @@ adım** ama reçetenin tamamı değil.
 
 ---
 
+## 13. Görsel dilbilgisi — semantik metadata görselleştirmeyi besler (Faz I1)
+
+### 13.1 Korunan karar
+
+ADR-0024 — *"grafik üretimini LLM'e verme"* — **doğrudur ve korunur**. `viz.py`'nin
+deterministik `analyze()`/`recommend()` tasarımı Show-Me / Cleveland-McGill temellidir.
+Motor/kütüphane eklemek serbesttir; **kararı LLM'e devretmek değil.** İyileştirme LLM'den
+değil **daha zengin girdiden** gelir — ve o girdi zaten elimizdedir.
+
+### 13.2 Ölçülen sessiz-yanlış: beyan var, viz onu görmüyordu
+
+Cube metadata'sı `additive: full | semi | non` **beyan ediyor** ve `schema()` bunu
+`semi_additive`/`non_additive` olarak **zaten taşıyordu**. `recommend()` onları **hiç
+almıyordu**; yerine bir ad/birim regex'i kullanıyordu:
+
+```
+viz._additive("bakiye", "₺")  →  True     ← YIĞMA ÖNERİLİR
+```
+
+`bakiye` iki cube'da (`cari`, `mizan`) `additive: semi` beyan edilmiş. Bakiye bir **STOK**
+büyüklüğüdür: dönemler arasında **toplanamaz** (Ocak bakiyesi + Şubat bakiyesi bir şey
+ifade etmez). Yığılmış grafik, matematiksel olarak yanlış bir görseli *"deterministik"*
+rozetiyle sunardı — `viz.py`'nin varlık sebebine aykırı.
+
+**Kural: BEYAN SEZGİYİ EZER.** Regex **yedek olarak kalır** — beyanı olmayan ölçülerde
+bugünkü davranış korunur; beyanı olmayanı yasaklamak *ölçmeden kısıtlama getirmek* olurdu
+(aynı disiplin `strict_mode` ve `validate_project` açılırken de uygulandı). Türetilmiş
+kıyas kolonu (`bakiye_gecen`) kısıtı **miras alır**: bir stok büyüklüğünün geçen dönemi de
+stok büyüklüğüdür.
+
+Pay grafiği (pie/treemap) de **aynı kapıya tabidir**: dilimlerin toplamı bütünü vermelidir;
+toplanamaz bir ölçüde pasta grafiği aynı yalanı yuvarlak çizer.
+
+### 13.3 İkinci kusur: altı çağıran, altı elle toplanmış argüman listesi
+
+`recommend()`'in **altı** çağıranı vardı (`/ask` ×2, `/report`, `dashboards`, `schedules`,
+`conversations`) ve her biri argümanları **elle** topluyordu. Sonuç kodda zaten kayıtlı:
+bir yerde anahtar `measure_units` diye **yanlış yazılmış** ve birim farkındalığı o yolda
+hiç devreye girmemişti. `semi_additive` aynı sınıfın ikinci örneğiydi.
+
+**`viz.meta_args(cube_meta)` tek kaynaktır.** Yeni bir metadata alanı görselleştirmeye
+bağlandığında **tek bir yer** değişir. Bir test elle toplamanın geri gelmesini engeller
+(parantez eşleyerek her çağrı yerini denetler — sabit pencere, uzun bir açıklama yorumu
+yüzünden doğru kodu yanlış raporluyordu).
+
+### 13.4 Henüz bağlanmayan metadata (dürüst kayıt)
+
+| Metadata | Görselde ne yapmalı | Durum |
+|---|---|---|
+| `units` | eksen/etiket/kısaltma | ✅ |
+| `semi_additive` / `non_additive` | **yığma ve pay YASAK** | ✅ (bu tur) |
+| `dimension_origin` + sertifika | köken rozeti | ✅ (§14.4) |
+| `lower_is_better` | **renk semantiği** — artış kırmızı/yeşil doğru yönde | ⚠️ `recommend()`'e ULAŞIYOR (`lower_set`) ama renk kararına **henüz dönüşmüyor** |
+| `dimension_labels` / `measure_synonyms_display` | Türkçe başlık/lejant | kısmen |
+
+### 13.5 Henüz YOK (I2–I5)
+
+Grafik dağarcığı (**waterfall** — PVM'nin matematiği Faz 5.1'de yazıldı, **görseli yok**;
+pareto · bullet · slope · boxplot · sankey · combo), her türün **deterministik seçim
+kuralı**, `backend/VIZ_STANDARDS.md`, tek VizSpec / N oluşturucu sadakat testi, ve rapor
+katmanının anlatı+kanıt zinciri.
+
+---
+
 ## 14. Arka–ön sözleşmesi — "Tanım Tamamlandı" = arka + ön + test
 
 > Bu bölüm bir denetim bulgusundan doğdu (2026-08-02): **bu turda yazılan iki uç frontend'de

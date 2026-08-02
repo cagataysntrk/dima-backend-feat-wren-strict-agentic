@@ -507,10 +507,7 @@ def run_schedule(state, sched: dict, *, manual: bool = False) -> dict:
         # NOT (31 Temmuz 2026): "measure_units" YANLIŞ anahtardı — schema() dict'i ölçü
         # birimlerini "units" adıyla taşıyor (bkz. app/wren_service.py:236) — AYNI hata
         # sınıfı /ask, /cube, dashboards.py, report.py'de de vardı (hepsi düzeltildi).
-        viz_spec = _viz.recommend(
-            result, units=(_cmeta or {}).get("units") or {},
-            lower_set=(_cmeta or {}).get("lower_is_better") or [], cube_query=cq,
-        )
+        viz_spec = _viz.recommend(result, cube_query=cq, **_viz.meta_args(_cmeta))
     except Exception:
         pass
 

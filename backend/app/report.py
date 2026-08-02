@@ -72,10 +72,8 @@ def compose_report(
                 # birimlerini "units" adıyla taşıyor (bkz. app/wren_service.py:236); bu yüzden
                 # `recommend()`'in birim-farkındalığı burada da HİÇ devreye giremiyordu (`/ask`,
                 # `/cube`, dashboards.py'deki AYNI hata sınıfı, bkz. app/routers/ask.py `_attach_viz`).
-                block["viz"] = viz.recommend(
-                    result, units=cmeta.get("units") or {},
-                    lower_set=cmeta.get("lower_is_better") or [], cube_query=viz_cq,
-                )
+                block["viz"] = viz.recommend(result, cube_query=viz_cq,
+                                             **viz.meta_args(cmeta))
         except Exception as exc:  # noqa: BLE001 — tek blok hatası raporu düşürmesin
             block["error"] = str(exc)[:200]
         blocks.append(block)

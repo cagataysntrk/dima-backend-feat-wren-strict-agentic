@@ -651,9 +651,11 @@ def cube(request: Request, body: CubeRequest) -> AskResponse:
             # farkındalığı (facet_measure/dual_axis/partition rengi) burada da HİÇ
             # devreye giremiyordu — `_attach_viz`'teki AYNI hata sınıfı (bkz. yukarıdaki
             # `_attach_viz` docstring'i).
-            units=(cmeta or {}).get("units") or {},
-            lower_set=(cmeta or {}).get("lower_is_better") or [],
             cube_query=cq,
+            # Metadata argümanları TEK KAYNAKTAN (Faz I1). Elle toplamak bu dosyada
+            # zaten bir kez `measure_units` yazım hatasına yol açmıştı; ikinci örnek
+            # `semi_additive`in hiçbir çağıran tarafından geçirilmemesi oldu.
+            **viz.meta_args(cmeta),
         )
     except Exception:
         # Grafik kararı DEKORATİFTİR — patlaması cevabı düşürmez. Ama SESSİZ de kalmaz
@@ -1098,13 +1100,14 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         okunur, (2) recommend() başarısız olursa ÇIPLAK analyze()'e (birim/karşılaştırma
         farkındalığı yok ama HER ZAMAN bir karar) düşülür — resp.viz sonuç doluyken asla None
         kalmaz."""
-        units: dict = {}
-        lower_set: list = []
+        # Metadata argümanları `viz.meta_args`'tan gelir (Faz I1) — burada elle
+        # toplanmaz. Elle toplama bu dosyada zaten bir `measure_units` yazım hatası
+        # üretmişti ve `semi_additive` hiçbir zaman geçirilmemişti.
+        cube_meta_for_viz: dict | None = None
         if cq and cq.get("cube"):
             cube_meta = cube_router._cube_meta(schema, cq["cube"])
             if cube_meta:
-                units = cube_meta.get("units") or {}
-                lower_set = cube_meta.get("lower_is_better") or []
+                cube_meta_for_viz = cube_meta
                 # Madde 12 (1 Ağustos 2026): KPI-olmayan cube raporları için de düz-dil
                 # hesaplama açıklaması — drill.py'nin ZATEN VAR OLAN saf fonksiyonu
                 # (önceden yalnız /ask/drill'e bağlıydı) normal /ask cevabına taşınır.
@@ -1135,7 +1138,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 except Exception:
                     _log.warning("join soyağacı üretilemedi (best-effort)", exc_info=True)
         try:
-            resp.viz = viz.recommend(result, units=units, lower_set=lower_set, cube_query=cq)
+            resp.viz = viz.recommend(result, cube_query=cq, **viz.meta_args(cube_meta_for_viz))
         except Exception:
             _log.warning("viz önerisi üretilemedi (recommend) — taban analyze()'e düşülüyor",
                         exc_info=True)
