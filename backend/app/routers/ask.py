@@ -1731,6 +1731,37 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                         _log.warning("YoY/MoM hesaplama başarısız (best-effort) — "
                                     "sıradaki adıma düşülüyor", exc_info=True)
 
+        # CUBE-DÜZEYİ BERABERLİK (Faz 3.1) — Intent-JSON'dan ÖNCE, bilerek.
+        # İki cube aynı kelimeleri BİREBİR aynı güçle sahiplendiğinde (ölçülen vaka:
+        # "arıza duruşu" → hem bakim.toplam_durus_dakika hem oee.plansiz_durus_dakika,
+        # ikisi de meşru) metinde ayrım YOKTUR. LLM'e sorulursa TAHMİN eder ve tahminini
+        # `cube+llm` rozetiyle sunar — makul görünen yanlış cevap, merdivenin en pahalı
+        # hata sınıfı. Değişmez (MIMARI.md §4-6): belirsizlikte SOR, tahmin etme.
+        # Chip'lerin metni `cube_router` tarafında route() ile GERÇEKTEN doğrulanır, yani
+        # tıklama kesin bir cevaba çıkar; doğrulanamayan tek bir aday bile varsa liste HİÇ
+        # yayımlanmaz ve akış olağan şekilde Intent-JSON'a düşer.
+        if route_hit is None:
+            try:
+                ties = cube_router.cube_tie_candidates(body.question, schema)
+            except Exception:
+                _log.warning("cube_tie_candidates hata verdi (best-effort)", exc_info=True)
+                ties = []
+            if ties:
+                chips = []
+                for c, netlestirici, hit in ties:
+                    m = (hit.get("cube_query") or {}).get("measures") or [None]
+                    mdisp = (c.get("measure_synonyms_display") or {}).get(m[0]) or m[0] or ""
+                    clabel = c.get("display") or c.get("name") or ""
+                    chips.append(Suggestion(label=f"{clabel}: {mdisp}" if mdisp else clabel,
+                                            query=netlestirici))
+                return _finish(AskResponse(
+                    question=body.question, source=None,
+                    note="Bu ifade birden fazla konuda aynı anlama geliyor, hangisini "
+                         "istiyorsun?",
+                    suggestions=chips,
+                    trace=["Intent-path: cube-düzeyi beraberlik → netleştirme (LLM'siz)"],
+                ))
+
         if route_hit is None and "ask_intent_first" in resolve_for(settings, principal):
             llm_probe = getattr(request.app.state, "llm", None)
             if llm_probe is not None and hasattr(llm_probe, "select_cube"):

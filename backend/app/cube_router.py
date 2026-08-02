@@ -499,6 +499,19 @@ def match_kpi(q_norm: str, schema: dict) -> str | None:
     return best_name
 
 
+def _longest_syn_hit(q: str, cube: dict) -> int:
+    """Bu cube'un q'da eşleşen EN UZUN sinonimin harf sayısı (eşleşme yoksa 0).
+
+    `_match_cube`'un TB4 kırıcısının ölçüsüdür ve `cube_tie_candidates` de AYNI ölçüyü
+    okur — beraberlik tanımı ile beraberliği kıran kural tek kaynaktan gelsin diye modül
+    seviyesine çıkarıldı (ikisi ayrışırsa chip, route'un çözebildiği bir soruya sorulur)."""
+    best = 0
+    for s in cube.get("synonyms") or []:
+        if _syn_hit(q, s):
+            best = max(best, len(s.removesuffix("!")))
+    return best
+
+
 def _match_cube(q: str, schema: dict) -> dict | None:
     """Cube-düzeyi sinonimlerden aday cube. Birden fazla aday → ÖLÇÜ kanıtıyla kırılır:
     yalnız birinde ölçü sinonimi de geçiyorsa ("müşteri bazında SU tüketimi" → su cube'u;
@@ -547,20 +560,14 @@ def _match_cube(q: str, schema: dict) -> dict | None:
         # EN SPESİFİK TERİM kazanır: en uzun eşleşen sinonim ("cari yaşlandırma" →
         # "yaşlandırma" 11 > "cari" 4 → yaslandirma). Genel entity kelimesinin
         # (cari/stok) spesifik rapor kelimesini gölgelemesini önler.
-        def _longest_hit(c) -> int:
-            best = 0
-            for s in c.get("synonyms") or []:
-                plain = s.removesuffix("!")
-                if _syn_hit(q, s):
-                    best = max(best, len(plain))
-            return best
-
-        scored = sorted(hits, key=_longest_hit, reverse=True)
+        scored = sorted(hits, key=lambda c: _longest_syn_hit(q, c), reverse=True)
         # Fark BELİRGİN olmalı (≥4 harf): "yaşlandırma"(11) vs "cari"(4) → yaslandirma;
         # ama "fire"(4) vs "üretim"(6) → gerçek belirsizlik, kırma (çapraz konu → sor).
-        if _longest_hit(scored[0]) - _longest_hit(scored[1]) >= 4:
+        if _longest_syn_hit(q, scored[0]) - _longest_syn_hit(q, scored[1]) >= 4:
             return scored[0]
-        return None  # cube-düzeyi çoklu aday, kırılamadı → çapraz konu → LLM
+        # cube-düzeyi çoklu aday, kırılamadı. Kanıt EŞİTSE bu bir tahmin sorusu değil bir
+        # SORU sorma anıdır → `cube_tie_candidates` netleştirme chip'i üretir (Faz 3.1).
+        return None
     # ÖLÇÜ-KELİMESİYLE CUBE SEÇİMİ (ADR-0018 §2-2 kaldıracı): cube-düzeyi sinonim
     # hiç geçmedi ama bir ÖLÇÜ sinonimi geçiyorsa ("hasılat", "bakiye", "kaç fatura")
     # o cube seçilir — kullanıcı çoğu zaman cube adını değil ÖLÇÜyü söyler. YALNIZ tek
@@ -1080,6 +1087,116 @@ def measure_cube_candidates(q: str, schema: dict) -> list[tuple[dict, str]]:
         if m:
             out.append((c, m))
     return out
+
+
+# Bir adayı ayırt etmek için denenecek EN FAZLA sinonim sayısı. Her deneme tam bir
+# `route()` koşusudur (LLM'siz ama bedava değil); 8 denemede ayırt edilemeyen bir aday
+# pratikte ayırt edilemez.
+_TIE_MAX_DENEME = 8
+
+
+def cube_tie_candidates(question: str, schema: dict) -> list[tuple[dict, str, dict]]:
+    """CUBE-DÜZEYİ BERABERLİK (Faz 3.1): iki cube AYNI kelimeleri AYNI güçle sahiplendi.
+
+    `(cube_meta, netleştirici_soru, cube_query)` listesi; beraberlik yoksa **boş liste**.
+
+    Neden ayrı bir kırıcı değil de SORU: ölçülen vaka (demo-boyahane, 55 soru) *"makine
+    bazında arıza duruşu"* — `bakim.toplam_durus_dakika` ile `oee.plansiz_durus_dakika`
+    İKİSİ DE `"arıza duruşu"` sinonimini taşıyor ve ikisi de MEŞRU: biri bakım
+    perspektifinden arıza süresi, öteki OEE perspektifinden plansız duruş. Metinde ayrım
+    YOK. Burada bir tie-break kuralı icat etmek (alfabetik, manifest sırası, "bakım daha
+    spesifik") denetlenemez bir tercih gömmek olurdu — MIMARI.md §5'in açıkça yasakladığı
+    şey. Kullanıcı bilir; sormak ücretsiz.
+
+    Neden LLM'e de bırakılmıyor: Intent-JSON bu soruda TAHMİN eder ve tahminini `cube+llm`
+    rozetiyle sunar. Yanlış tahmin, makul görünen yanlış cevaptır — merdivenin en pahalı
+    hata sınıfı (MIMARI.md §4 madde 6: *belirsizlikte SORAR, tahmin etmez*). Bu yüzden
+    chip Intent-JSON'dan ÖNCE gelir.
+
+    **YALNIZ kanıt EŞİTKEN** çalışır. Kanıt = (en uzun cube-sinonimi, en uzun ölçü-sinonimi)
+    — `_match_cube`'un kendi kırıcılarının okuduğu iki ölçü. Fark varsa (ölçüldü: 33 soru,
+    `parti` vs `surdurulebilirlik`, fark 1) bu bir beraberlik değil ZAYIF bir sinyaldir ve
+    orta-güven bandına aittir: dokunulmaz, Intent-JSON devralır.
+
+    Netleştirici soru **ÜRETİLİR VE DOĞRULANIR, VARSAYILMAZ.** Her aday için önce REFERANS
+    hesaplanır: `route()`, kataloğu YALNIZ o cube'a daraltılmış bir şemayla koşulur (repo'da
+    zaten kullanılan alt-şema deseni, bkz. `route`'un boyut-uyumu yeniden yönlendirmesi) —
+    yani "bu cube tek aday olsaydı kullanıcı NE alırdı". Sonra aday metinler denenir ve
+    yalnız **cube_query'si referansla BİREBİR AYNI** çıkan metin chip olur.
+
+    Doğrulamanın bu kadar sıkı olması teorik değil: ilk sürüm yalnız `cube`'un doğru
+    çözüldüğüne bakıyordu ve gerçek koşuda İKİ hata üretti — (1) `oee` için ayırt edici
+    kelime `"kullanılabilirlik"` seçildi, ama o kelime AYNI ZAMANDA bir ölçü sinonimi ve
+    eşleşen ifadeden UZUN olduğu için ölçüyü `plansiz_durus_dakika`dan
+    `ort_kullanilabilirlik`e kaydırdı: chip *"OEE: plansız duruş"* yazıp BAŞKA bir sayı
+    getirecekti. (2) `bakim` için `"makine arızası"` seçildi ve içindeki `"arıza"` kelimesi
+    `ariza_tipi` BOYUTUNU tetikleyip kırılımı `makine × arıza_tipi`ye böldü. İkisi de
+    sessiz-yanlıştır; ikisini de tam cube_query eşitliği yakalar.
+
+    İki üretim stratejisi denenir (ikisi de mekanik, kelimeye özel kural YOK):
+      1. **İkame** — eşleşen ölçü ifadesi, adayın KENDİ ölçüsünün başka bir sinonimiyle
+         değiştirilir (`"arıza duruşu"` → `"plansız duruş"`). Sorunun geri kalanı korunur.
+      2. **Önek** — rakiplerde bulunmayan bir cube sinonimi başa eklenir. `_longest_syn_hit`
+         MAKSİMUM aldığı için bu ancak kelime rakibin en iyisinden ≥4 harf uzunsa işe yarar;
+         yaramazsa doğrulama zaten eler.
+
+    Adaylardan BİRİ bile ifade edilemiyorsa **hiçbiri yayımlanmaz**: eksik bir chip listesi
+    bir yorumu sessizce eler — ADR-0008'in tam olarak yasakladığı davranış. O durumda
+    merdiven olağan şekilde Intent-JSON'a düşer.
+    """
+    q = _norm(question)
+    if _match_cube(q, schema) is not None:
+        return []  # beraberlik kırıldı ya da hiç yok → route zaten cevaplıyor
+    hits = [c for c in schema.get("cubes", []) if _any_hit(q, c.get("synonyms"))]
+    if len(hits) < 2:
+        return []
+
+    def _kanit(c: dict) -> tuple[int, int]:
+        return (_longest_syn_hit(q, c), len(_match_measure(q, c)[1] or ""))
+
+    en_iyi = max(_kanit(c) for c in hits)
+    esitler = [c for c in hits if _kanit(c) == en_iyi]
+    if len(esitler) < 2:
+        return []  # kanıt eşit değil → orta güven → Intent-JSON'ın işi
+
+    modeller = schema.get("models", [])
+    out: list[tuple[dict, str, dict]] = []
+    for c in esitler:
+        # REFERANS: bu cube tek aday olsaydı üretilecek cube_query.
+        try:
+            referans = route(question, {"models": modeller, "cubes": [c]})
+        except Exception:  # noqa: BLE001 — netleştirme best-effort'tur, cevabı bozmaz
+            referans = None
+        if not referans:
+            break  # aday tek başına bile cevaplanamıyor → chip listesi eksik kalır
+        hedef_cq = referans.get("cube_query")
+
+        adaylar: list[str] = []
+        # 1) İKAME: eşleşen ölçü ifadesini adayın kendi ölçüsünün başka bir sinonimiyle değiştir.
+        olcu, eslesen = _match_measure(q, c)
+        if olcu and eslesen:
+            digerleri = sorted(
+                {s.removesuffix("!")
+                 for s in (c.get("measure_synonyms") or {}).get(olcu, [])} - {eslesen},
+                key=len, reverse=True)
+            adaylar += [_norm(question).replace(eslesen, alt) for alt in digerleri]
+        # 2) ÖNEK: rakiplerde bulunmayan cube sinonimi.
+        rakip = {s.removesuffix("!")
+                 for o in hits if o is not c
+                 for s in (o.get("synonyms") or [])}
+        adaylar += [f"{kelime} {question}" for kelime in sorted(
+            {s.removesuffix("!") for s in (c.get("synonyms") or [])} - rakip,
+            key=len, reverse=True)]
+
+        for aday_soru in adaylar[:_TIE_MAX_DENEME]:
+            try:
+                r = route(aday_soru, schema)
+            except Exception:  # noqa: BLE001
+                continue
+            if r and r.get("cube_query") == hedef_cq:
+                out.append((c, aday_soru, r))
+                break
+    return out if len(out) == len(esitler) else []
 
 
 def resolve_cube_name(name: str | None, schema: dict) -> str | None:
