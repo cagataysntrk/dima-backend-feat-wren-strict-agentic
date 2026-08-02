@@ -1013,12 +1013,54 @@ yanlış-pozitif üreten bir kapı kullanılamaz bulunup kapatılır. Gruplama d
 ön koşuludur — `cube_query_hash`'in *"primitif, tüketici bekliyor"* beyanıyla aynı sınıf
 (§5). Fark: bu primitifin tüketicisi **bir sonraki adımdır**, belirsiz bir gelecek değil.
 
-### 12.7 Henüz YOK (G1–G3)
+### 12.7 Takip sorusunun ÜÇ sınıfı (G1 — `app/followup.py`) ✅
 
-Takip sorusunun **üçüncü sınıfı** (*"bu neden böyle?"*, *"normal mi?"*, *"ne yapmalıyız?"*
-— bugün Discovery'ye düşüyor ve bağlamsız ham SQL yazıp ölü tablo döndürüyor), grafiğe
-çapalı diyalog (G2: kullanıcının işaret ettiği nokta → `drill.select_cube_query`), ve
-reçeteli analiz (G3: `contribution` → `yoy` → hedef kıyası → seçenekler → karar matrisi).
+Takip soruları **iki** sınıfa ayrılıyordu: *sorguyu düzenle* ya da *yeni ham SQL yaz*.
+*"Verdiğin cevap hakkında konuş"* diye bir sınıf **yoktu**. Ölçüldü — bir `parti` raporu
+üstünde altı sorunun **altısı da** duvara çarpıyordu:
+
+| Soru | Eski cevap |
+|---|---|
+| *"bu neden böyle?"* · *"normal mi?"* · *"ne yapmalıyız?"* · *"sence iyi mi?"* | "Bu takip mesajını önceki raporla ilişkilendiremedim." |
+| *"şu düşüş ne?"* | *"«dusus» kısmını anlayamadım"* |
+| *"bunu nasıl iyileştiririz?"* | *"«bunu» yerine «gunu» mi demek istedin?"* ← anlamsız |
+
+| Sınıf | Örnek | Ne yapar |
+|---|---|---|
+| **yapısal düzenleme** | *"aylık"*, *"makine bazında"* | `deterministic_refine` → yeni sorgu ✅ vardı |
+| **cevap üstünde konuşma** (YENİ) | *"bu neden böyle?"*, *"normal mi?"* | **Sorgu üretmez.** Mevcut makbuza çapalanır, **araç çağırır**, anlatır |
+| **yeni konu** | *"peki ciro?"* | taze soru ✅ vardı |
+
+**Sınıflandırma LLM'siz.** Sınıf kararı bir *niyet tespitidir*, anlama değil. LLM'e
+verilseydi aynı soru farklı turlarda farklı sınıfa düşer ve bağlam sürekliliği (§12.4)
+ölçülemez hale gelirdi. Ayrıca konuşma turları en sık turlardır — **sıfır maliyetli** olmalı.
+
+**Üç tasarım kararı:**
+
+1. **YAPISAL ÖNCELİĞİ.** *"aylık neden düştü?"* hem düzenleme hem konuşma gibi görünür.
+   Öncelik yapısaldadır: kullanıcı yeni sayılar bekliyorsa önce onları vermek gerekir —
+   konuşma bir sonraki turda hâlâ mümkündür, ama **yanlış sayı geri alınamaz**.
+2. **Bağlam kapısı.** Konuşulacak bir cevap yoksa bu sınıf tanımsızdır; *"bu neden böyle?"*
+   diye **başlayan** bir oturum yeni konudur (çapalanacağı makbuz yoktur).
+3. **`deterministic_refine`'dan ÖNCE yakalanır.** Aksi halde *"neden"*/*"düşüş"* kelimeleri
+   onun sözlük eşleşmesine karışır — Faz D3'te *"neden arttı"* → `bakim.mudahale_eden`
+   sahte eşleşmesi tam buydu.
+
+**Özellik = KOMPOZİSYON, endpoint değil** (§11.6): `/ask/konusma` diye bir uç **açılmadı**.
+`neden`/`ne yapmalı` → `contribution` (gövdesi **çağrılır**, kopyalanmaz), `normal mi` →
+`yoy`. Yeni bir "normallik" tanımı **uydurulmaz**: elimizdeki tek nesnel zemin geçen
+dönemle kıyastır ve cevap onu böyle sunar. Araç bir şey üretemezse **normal zincir devam
+eder** — gerileme yok.
+
+**Bilinen sınır:** anlatım bugün **deterministiktir** (katkı bulguları + kıyas tablosu).
+LLM üslubu devreye girdiğinde §12.6'nın doğrulayıcısı zorunlu olur; o zamana kadar
+uydurma sayı riski **yapısal olarak yoktur** çünkü metni LLM yazmıyor.
+
+### 12.8 Henüz YOK (G2, G3)
+
+Grafiğe çapalı diyalog (G2: kullanıcının işaret ettiği nokta → `drill.select_cube_query`;
+`isaret` türü bugün katkı ayrıştırmasına düşüyor, koordinata **değil**) ve tam reçeteli
+analiz (G3: katkı → `yoy` → hedef kıyası → seçenekler → **karar matrisi**).
 
 ---
 

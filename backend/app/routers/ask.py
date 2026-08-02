@@ -11,6 +11,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app import context as app_context
+from app import followup
 from app import cube_router, pii, viz, yoy
 from app.answer import (
     _attach_next_steps,
@@ -1154,6 +1155,80 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                                question=body.question, cube_query=cq, sql=sql,
                                result=result, source=source, baglam=baglam)
 
+    def _cevap_ustunde_konus(prev_cq: dict, cube_meta: dict | None, niyet,
+                             migration_trace: list[str], session_id: str | None):
+        """"Cevap üstünde konuşma" (Faz G1) — VAR OLAN araçları KOMPOZE eder.
+
+        Burada yeni bir analiz motoru İCAT EDİLMEZ; F1'in araç kaydındaki yetenekler
+        çağrılır. MIMARI §11.6: *"özellik = kompozisyon, endpoint değil."* Bu yüzden
+        `/ask/konusma` diye bir uç AÇILMADI — cevap, cevabın kendi turunda gelir.
+
+        Sözgelimi *"bu neden böyle?"*:  `contribution` (katkı) → tıklanır bulgular.
+        *"normal mi?"*:                 `yoy` (dönemsel kıyas) → sinyal.
+        *"ne yapmalıyız?"*:             katkı + öneri chip'leri.
+
+        `None` dönerse çağıran normal zincire devam eder — gerileme YOK: kullanıcı en
+        kötü ihtimalle bugünkü davranışı alır.
+        """
+        import app.contribution as _contrib
+
+        tur = niyet.tur
+        iz = migration_trace + [f"Takip: üçüncü sınıf → cevap üstünde konuşma ({tur}, LLM'siz)"]
+
+        # NEDEN / NE YAPMALI → katkı ayrıştırması. `/ask/contribution`'ın gövdesi
+        # ÇAĞRILIR, kopyalanmaz (aynı kural iki yerde yaşamasın — bu depoda ölçülmüş
+        # desen: drill↔schedules, interpret↔schedules, _uncovered↔_syn_hit).
+        if tur in (followup.TUR_NEDEN, followup.TUR_NE_YAPMALI, followup.TUR_ISARET):
+            try:
+                katki = ask_contribution(
+                    request, ContributionRequest(cube_query=prev_cq, mode="yoy",
+                                                 kind="segment", session_id=session_id))
+            except Exception:
+                _log.warning("konuşma: katkı ayrıştırması başarısız (best-effort)",
+                             exc_info=True)
+                return None
+            adimlar: list[NextStep] = []
+            for rapor in katki.raporlar:
+                for b in rapor.bulgular[:3]:
+                    adimlar.append(NextStep(label=b.label, kind="dimension",
+                                            cube_query=b.cube_query))
+            if not adimlar and not katki.note:
+                return None
+            # DÜRÜST RED birinci sınıf: ayrıştırma yapılamadıysa NEDENİ söylenir
+            # (toplanamayan ölçü, dönem yok) — boş bir "bilmiyorum" değil.
+            not_metni = katki.note or (
+                "Değişimi en çok sürükleyen segmentler aşağıda — her biri tıklanınca "
+                "tek başına açılır ve kendi kanıtını üretir."
+                if tur != followup.TUR_NE_YAPMALI else
+                "Önce değişimi sürükleyen segmentlere bakmak gerekir; her biri tıklanınca "
+                "tek başına açılır.")
+            return AskResponse(question=body.question, source=None, note=not_metni,
+                               cube_query=prev_cq, next_steps=adimlar[:8], trace=iz)
+
+        # NORMAL Mİ → dönemsel kıyas. Yeni bir "normallik" tanımı UYDURULMAZ: elimizdeki
+        # tek nesnel zemin geçen dönemle kıyastır ve cevap onu böyle sunar.
+        if tur == followup.TUR_NORMAL:
+            time_dim = yoy.time_dim_of(schema, prev_cq.get("cube"))
+            kiyas_cq = {**prev_cq, "compare": "yoy"}
+            try:
+                sonuc = yoy.compute(service, prev_cq, "yoy", time_dim,
+                                    limit=settings.max_result_rows)
+            except Exception:
+                _log.warning("konuşma: dönemsel kıyas başarısız (best-effort)", exc_info=True)
+                return None
+            if not (sonuc or {}).get("rows"):
+                return None
+            r = QueryResult(columns=sonuc.get("columns") or [],
+                            rows=sonuc.get("rows") or [],
+                            row_count=len(sonuc.get("rows") or []))
+            return _attach_viz(AskResponse(
+                question=body.question, source="cube", result=r, cube_query=kiyas_cq,
+                note="Geçen dönemle kıyas — \"normal mi\" sorusunun nesnel zemini budur.",
+                trace=iz + ["Kıyas: app/yoy.py (yeni dönem matematiği YAZILMADI)"],
+            ), sonuc, kiyas_cq)
+
+        return None
+
     def _honest_refusal(note: str, trace: list[str],
                         suggestions: list[Suggestion] | None = None) -> AskResponse:
         """Dürüst ret — NoLlmGenerator'ın kendi docstring'inin vaat ettiği ama strict-agentic
@@ -1795,6 +1870,25 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 suggestions=[Suggestion(label=lb, query=lb) for lb in labels[:10]],
                 trace=migration_trace + ["Takip: yetenek sorusu → kırılım chip'leri (LLM'siz)"],
             ))
+
+        # ÜÇÜNCÜ SINIF — "CEVAP ÜSTÜNDE KONUŞMA" (Faz G1). Ölçüldü (2 Ağustos 2026):
+        # "bu neden böyle?" · "normal mi?" · "ne yapmalıyız?" · "şu düşüş ne?" ·
+        # "bunu nasıl iyileştiririz?" · "sence iyi mi?" — ALTISI DA ölü uca çarpıyordu
+        # ("Bu takip mesajını önceki raporla ilişkilendiremedim"), biri de anlamsız bir
+        # yazım önerisi alıyordu ("bunu" → "gunu").
+        #
+        # Bu sınıf YENİ SORGU ÜRETMEZ, var olanı AÇAR: mevcut makbuza çapalanır ve
+        # ARAÇ ÇAĞIRIR. `deterministic_refine`'dan ÖNCE yakalanmalıdır — aksi halde
+        # "neden"/"düşüş" gibi kelimeler onun sözlük eşleşmesine karışır (Faz D3'te
+        # "neden arttı" → `bakim.mudahale_eden` sahte eşleşmesi tam buydu).
+        niyet = followup.sinifla(body.question, baglam_var=True)
+        if niyet.konusma:
+            resp = _cevap_ustunde_konus(prev_cq, prev_cube_meta, niyet,
+                                        migration_trace, body.session_id)
+            if resp is not None:
+                return _finish(resp)
+            # Araç bir şey üretemediyse SESSİZCE düşme: normal zincir devam eder ve
+            # kullanıcı en azından bugünkü davranışı alır (gerileme YOK).
 
         try:
             refined = cube_router.deterministic_refine(prev_cq, q_norm, schema)
