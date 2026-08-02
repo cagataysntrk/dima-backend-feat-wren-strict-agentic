@@ -1,0 +1,337 @@
+"""ARAÇ KAYDI — agentic katmanın omurgası (Faz F1).
+
+## Ne yapar, ne YAPMAZ
+
+Bu modül **hiçbir yeteneği yeniden uygulamaz**. Dima'nın ~15 yeteneği zaten yazılı ve
+testli; eksik olan şey onların **tipli, denetlenebilir, yetkiye bağlı birer araç olarak
+BEYAN EDİLMESİYDİ**. Kayıt bir *bildirimdir*: her araç için kim olduğunu, ne aldığını, ne
+döndürdüğünü, **deterministik mi** olduğunu, ne kadar pahalı olduğunu, yazıp yazmadığını,
+hangi izne bağlı olduğunu ve **hangi makbuzu ürettiğini** söyler.
+
+Sarmalayıcı yazmamanın gerekçesi ölçülmüş bir desendir: bu depoda "aynı kuralı ikinci kez
+yazmak" defalarca sapmayla sonuçlandı (`drill.flag_outliers` ↔ `schedules.detect_anomalies`,
+`interpret._fmt` ↔ `schedules._fmt_deger`, `_uncovered` ↔ `_syn_hit`). Bir aracın gövdesini
+buraya kopyalamak aynı hatanın agentic ölçekteki hâli olurdu.
+
+## Neden bu kayıt agentic katmanın ÖN KOŞULU
+
+> *"Agentic katman, temelin ne ise onu ÇARPAR."*
+
+Bir insan `/ask/drill action="raw"` yolunu yılda bir bulur; 15 araçlı bir planlayıcı onu
+**ilk gün** bulur ve her gün kullanır. Bu yüzden araçlar serbest fonksiyonlar olarak değil,
+**dört değişmeze bağlı** olarak açılır:
+
+1. **Ajan kullanıcının yetkisini AŞAMAZ** — her araç bir `authorize()` aksiyonuna bağlıdır
+   (`izin` alanı). Kayıt, matriste OLMAYAN bir izne bağlanamaz (test bunu kilitler).
+2. **Ajan YAZAMAZ** — `yan_etki="yazar"` olan araçlar bu turda kayda **hiç alınmadı**.
+   Yazma isteyen özellikler ayrı bir mimari karar ister; kayıt onları "ileride" diye
+   içeri almaz, çünkü kayıtta görünen şey planlayıcının erişebildiği şeydir.
+3. **Her adım bir MAKBUZ üretir** — `makbuz` alanı hangi kanıtın doğduğunu söyler.
+   `makbuz=None` bir eksiklik değil bir BEYANDIR: o araç veriye dokunmaz (ör. `interpret`
+   yalnız eldeki sonucu okur).
+4. **Deterministik-önce** — `determinizm` alanı planlayıcının uyacağı kuralın verisidir:
+   bir işi deterministik bir araç yapabiliyorsa LLM aracı SEÇİLEMEZ. Merdivenin felsefesi
+   (MIMARI §2) plan seviyesine böyle taşınır.
+
+## Bu modül üç yüzeyin ORTAK kaynağıdır
+
+- **LLM'e verilen araç listesi** (`llm_araclari()`) — sağlayıcı-bağımsız şema.
+- **MCP adaptörü** — ileride ince bir çevirici; kendi kaydını KURMAZ.
+- **Yetki matrisi bağı** (`izinli_araclar()`) — UI'ın `permissions` listesiyle aynı kaynak.
+
+Üçü ayrı ayrı yazılsaydı zamanla ayrışırlardı; bu depoda o desenin bedeli ölçüldü.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from typing import Any, Literal
+
+Determinizm = Literal["deterministik", "llm", "karma"]
+Maliyet = Literal["sifir", "ucuz", "pahali"]
+YanEtki = Literal["yok", "yazar"]
+
+
+@dataclass(frozen=True)
+class Arac:
+    """Tek bir yeteneğin beyanı. Gövde YOK — `cagir` var olan fonksiyonu gösterir."""
+
+    ad: str
+    ozet: str                       # planlayıcıya/LLM'e giden tek cümlelik tanım
+    girdi: dict[str, str]           # alan → tip/anlam (JSON-Schema'ya çevrilir)
+    cikti: str                      # ne döndürdüğü (tek cümle)
+    determinizm: Determinizm
+    maliyet: Maliyet
+    yan_etki: YanEtki
+    izin: str                       # authorize() aksiyonu — matriste VAR OLMALI
+    makbuz: str | None              # ürettiği kanıt türü; None = veriye dokunmaz
+    modul: str                      # "app.cube_router" ya da servis anahtarı (bkz. `baglanma`)
+    fonksiyon: str                  # "route" · nokta içerebilir ("WrenService.cube_sql")
+    # Çağrılabilir nesnenin NEREDEN geldiği. Bu alan olmadan kayıt yalan söylerdi: bazı
+    # yetenekler modül fonksiyonu DEĞİL, istek-kapsamlı bir servisin metodudur ve onları
+    # "app.x.y" diye bildirmek çözülemeyen bir işaretçi bırakırdı.
+    #   "modul"       → `getattr(import_module(modul), fonksiyon)`
+    #   "servis:wren" → `WrenService` örneğine bağlı metot (istek başına)
+    #   "servis:llm"  → LLM sağlayıcısına bağlı metot (ördek-tipli, sağlayıcı değişir)
+    baglanma: Literal["modul", "servis:wren", "servis:llm"] = "modul"
+    notlar: str = ""                # sınırlar, tuzaklar — planlayıcı bilmeli
+    etiketler: tuple[str, ...] = field(default_factory=tuple)
+
+    def cagir(self, kaynak: Any = None) -> Callable[..., Any]:
+        """Beyan edilen çağrılabiliri ÇÖZER. Kayıt bir **işaretçidir**, bir kopya değil.
+
+        `baglanma != "modul"` olan araçlar istek-kapsamlı bir nesneye bağlıdır ve `kaynak`
+        verilmeden çözülemez — bu bilinçli: bir servis metodunu modül seviyesinde
+        "çözülmüş" göstermek, hangi tenant'ın motoruna gittiğini gizlerdi.
+        """
+        if self.baglanma != "modul":
+            if kaynak is None:
+                raise ValueError(
+                    f"{self.ad}: `{self.baglanma}` bağlı bir araç — çözmek için `kaynak` "
+                    "(servis örneği) gerekir. İstek kapsamı olmadan çağrılamaz.")
+            hedef: Any = kaynak
+        else:
+            import importlib
+
+            hedef = importlib.import_module(self.modul)
+        for parca in self.fonksiyon.split("."):
+            hedef = getattr(hedef, parca)
+        return hedef
+
+
+# --- KAYIT ------------------------------------------------------------------------
+#
+# Sıra ÖNEMLİ DEĞİL ama gruplama okunabilirlik içindir: önce sorgu üretenler (merdivenin
+# basamakları), sonra sorgu DÖNÜŞTÜRENLER, sonra sonuç YORUMLAYANLAR.
+#
+# Bu turda kayda ALINMAYANLAR ve nedenleri:
+#   · `dashboards.create` / `schedules.create` / `measures.approve` → `yan_etki="yazar"`.
+#     Ajanın yazma yetkisi ayrı bir mimari karardır (MIMARI §4: read-only değişmezi).
+#   · `drill.raw` (ham satır) → T1/T2 gizlilik sınırının en hassas yaprağı; ajan yüzeyine
+#     açılması Faz A2'nin kapattığı boşluğu sistematikleştirme riski taşır.
+#   · `vqr.recall` → ham-SQL replay'i; şema-sürüm kapısı var ama ajan için ayrı bir
+#     güven kalibrasyonu gerektirir (Faz E-3'ün hafıza tasarımına bağlı).
+# Bunlar "unutuldu" değil, "beyan edilerek dışarıda bırakıldı" — kayıtta görünmeyen şey
+# planlayıcının erişemediği şeydir ve bu liste onun sınırının kanıtıdır.
+
+KAYIT: tuple[Arac, ...] = (
+    # --- sorgu ÜRETENLER (merdiven) ---------------------------------------------
+    Arac(
+        ad="route",
+        ozet="Türkçe soruyu SIFIR LLM ile bir CubeQuery'ye çözer; çözemezse None döner.",
+        girdi={"question": "kullanıcının sorusu (ham metin)",
+               "schema": "cube kataloğu (WrenService.schema())"},
+        cikti="{cube_query, order, limit} ya da None",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.cube_router", fonksiyon="route",
+        notlar="Merdivenin BİRİNCİ basamağı. Deterministik-önce kuralı gereği planlayıcı "
+               "bir soruyu LLM aracına vermeden ÖNCE bunu denemek ZORUNDADIR. `None` bir "
+               "hata değil bir sinyaldir: kapsam boşluğu.",
+        etiketler=("sorgu-uretimi", "llmsiz"),
+    ),
+    Arac(
+        ad="deterministic_refine",
+        ozet="Var olan bir CubeQuery'yi takip sorusuyla düzenler (granülerlik, kırılım, "
+             "sıralama, dönem) — yeni sorgu üretmez, mevcut olanı değiştirir.",
+        girdi={"prev": "önceki cube_query", "q": "normalize edilmiş takip sorusu",
+               "schema": "cube kataloğu"},
+        cikti="düzenlenmiş cube_query ya da None",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.cube_router", fonksiyon="deterministic_refine",
+        notlar="Takip sorusu EKSİK CÜMLEDİR; bu yol kapsam kapısından GEÇMEZ (geçemez). "
+               "Faz D3'te tam bu yüzden sessiz-yanlış üretiyordu — planlayıcı çıktısını "
+               "körü körüne kabul etmemeli, boyut listesini kullanıcıya göstermeli.",
+        etiketler=("sorgu-duzenleme", "llmsiz"),
+    ),
+    Arac(
+        ad="cube_sql",
+        ozet="CubeQuery'yi çalıştırılabilir SQL'e derler (JOIN YAZMAZ — cube derleyicisi).",
+        girdi={"cube_query": "CubeQuery", "order": "(ölçü, yön) ya da None",
+               "limit": "satır üst sınırı ya da None"},
+        cikti="SQL metni",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.wren_service", fonksiyon="cube_sql", baglanma="servis:wren",
+        notlar="JOIN üretmez; ilişki-türevi boyutlar MDL'de HAZIR olmalıdır (MIMARI §3.2). "
+               "Bir kolonun var olduğunu varsayma — `dry_plan` kolon varlığını denetlemez.",
+        etiketler=("derleme", "llmsiz"),
+    ),
+    # --- sorgu DÖNÜŞTÜRENLER (gezinme) -------------------------------------------
+    Arac(
+        ad="drill.expand",
+        ozet="Bir CubeQuery'ye yeni bir kırılım boyutu ekler (bir seviye aşağı in).",
+        girdi={"cube_query": "CubeQuery", "dimension": "eklenecek boyut adı"},
+        cikti="genişletilmiş CubeQuery",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.drill", fonksiyon="expand_cube_query",
+        notlar="Boyutun HEDEF CUBE'DA var olduğu çağıranın sorumluluğudur. İlişki-türevi "
+               "boyutlarda fan-out sertifikasına bak (`dimension_origin[*].certified`): "
+               "`olculmedi` bir garanti DEĞİLDİR.",
+        etiketler=("gezinme", "llmsiz"),
+    ),
+    Arac(
+        ad="drill.select",
+        ozet="Bir hücreyi/segmenti tek başına gösteren CubeQuery üretir (grafikten seçim).",
+        girdi={"cube_query": "CubeQuery", "dimension": "boyut", "value": "seçilen değer"},
+        cikti="filtrelenmiş CubeQuery",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.drill", fonksiyon="select_cube_query",
+        notlar="Faz G2'nin 'grafiğe çapalı diyalog'unun taşıyıcısı: kullanıcının işaret "
+               "ettiği nokta bir metin değil, GERÇEK bir alt-sorguya çevrilir.",
+        etiketler=("gezinme", "llmsiz"),
+    ),
+    Arac(
+        ad="yoy.compute",
+        ozet="Aynı raporu önceki dönemle (yıl ya da ay) hizalayıp kıyas kolonları ekler.",
+        girdi={"service": "WrenService", "cq": "CubeQuery", "mode": "'yoy' | 'mom'",
+               "time_dim": "zaman boyutu adı", "limit": "satır üst sınırı"},
+        cikti="{rows, columns} — <ölçü>_gecen ve <ölçü>_degisim_yuzde kolonlarıyla",
+        determinizm="deterministik", maliyet="ucuz", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.yoy", fonksiyon="compute",
+        notlar="İKİ sorgu çalıştırır (cari + önceki). Eşleşmeyen satırda `_gecen` None "
+               "kalır — 0 DEĞİL; 0 yazmak 'geçen dönem sıfırdı' demektir ve yüzdeyi "
+               "yanıltıcı yapar. Planlayıcı bunu anlatıma taşımalı.",
+        etiketler=("kiyas", "llmsiz"),
+    ),
+    # --- AÇIKLAYICILAR (neden değişti) -------------------------------------------
+    Arac(
+        ad="contribution.decompose",
+        ozet="Dönemsel değişimi SEGMENTLERE dağıtır: kim ne kadar sürükledi?",
+        girdi={"rows": "kıyas satırları", "dim": "boyut", "measure": "ölçü",
+               "cube_query": "kaynak CubeQuery"},
+        cikti="ContributionReport — her bulgu KENDİ cube_query'siyle",
+        determinizm="deterministik", maliyet="ucuz", yan_etki="yok",
+        izin="query:run", makbuz="ContractLog (bulgu başına)",
+        modul="app.contribution", fonksiyon="decompose",
+        notlar="TOPLANABİLİRLİK KAPISI: katkı payı yalnız toplanabilir ölçülerde "
+               "TANIMLIDIR. AVG/oran/COUNT(DISTINCT) için 'bu segment değişimin %40'ını "
+               "açıklıyor' cümlesi MATEMATİKSEL OLARAK YANLIŞTIR — bu araç o durumda "
+               "dürüst bir `note` döndürür ve planlayıcı onu cümleye çevirmemelidir.",
+        etiketler=("kok-neden", "llmsiz"),
+    ),
+    Arac(
+        ad="contribution.pvm",
+        ozet="Değişimi FİYAT / MİKTAR / BİRLEŞİK etkiye ayrıştırır (artıksız).",
+        girdi={"cube_meta": "cube metadata (pvm: beyanı olmalı)"},
+        cikti="PvmReport listesi — fiyat+miktar+birleşik = net (birebir)",
+        determinizm="deterministik", maliyet="ucuz", yan_etki="yok",
+        izin="query:run", makbuz="ContractLog (bulgu başına)",
+        modul="app.contribution", fonksiyon="pvm_pairs",
+        notlar="Yalnız cube'un `pvm:` BEYANI varsa çalışır — eşleştirme TAHMİN EDİLMEZ. "
+               "Ayrışma artıksızdır; üç etkiyi toplayan okuyucu net değişimi bulmalıdır.",
+        etiketler=("kok-neden", "llmsiz"),
+    ),
+    Arac(
+        ad="interpret",
+        ozet="Eldeki sonuç tablosunu deterministik olarak yorumlar (sinyal/aykırılık/trend).",
+        girdi={"result": "sorgu sonucu", "cube_query": "kaynak CubeQuery"},
+        cikti="Interpretation — flag'li, veri-güdümlü ifadeler",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.interpret", fonksiyon="interpret",
+        notlar="VERİYE DOKUNMAZ — yalnız çağıranın ZATEN aldığı sonucu okur. Bu yüzden "
+               "makbuz üretmez ve T2 (anlatım) katmanının deterministik çekirdeğidir: "
+               "LLM üslubu yazar, SAYIYI bu araç koyar.",
+        etiketler=("anlatim", "llmsiz"),
+    ),
+    Arac(
+        ad="viz.recommend",
+        ozet="Sonucun doğru görselleştirmesini DETERMİNİSTİK seçer (Show-Me/Cleveland-McGill).",
+        girdi={"result": "sorgu sonucu", "cube_query": "CubeQuery",
+               "cube_meta": "semantik metadata (units, lower_is_better…)"},
+        cikti="VizSpec",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.viz", fonksiyon="recommend",
+        notlar="ADR-0024: grafik KARARI LLM'e VERİLMEZ. Planlayıcı bir grafik türü "
+               "'seçemez' — yalnız bu aracı çağırabilir.",
+        etiketler=("gorsellestirme", "llmsiz"),
+    ),
+    # --- LLM araçları (yalnız deterministik yol tükendiğinde) --------------------
+    Arac(
+        ad="llm.select_cube",
+        ozet="Katalogdan ölçü/boyut/filtre SEÇER (SQL YAZMAZ) — Intent-JSON.",
+        girdi={"question": "soru", "catalog": "cube kataloğu metni"},
+        cikti="CubeQuery (JSON) — deterministik derleyiciye gider",
+        determinizm="llm", maliyet="ucuz", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.llm", fonksiyon="select_cube", baglanma="servis:llm",
+        notlar="HER SAĞLAYICIDA YOKTUR (ölçüldü): anahtarsız `RuleBasedSqlGenerator` bu "
+               "metodu taşımaz ve üretim yolu `hasattr` ile denetler — planlayıcı yokluğunu "
+               "bir hata değil bir YOL KAPALI sinyali saymalıdır. "
+               "DETERMİNİSTİK-ÖNCE: `route` bir cevap veriyorsa bu araç SEÇİLEMEZ. "
+               "LLM burada SQL yazmaz, yalnız SEÇER; sayıyı hâlâ derleyici üretir. "
+               "`consistency_k>1` ise k örnek alınıp oylanır (Faz D4) ve uyum oranı "
+               "planlayıcının güven sinyalidir.",
+        etiketler=("sorgu-uretimi", "llm"),
+    ),
+)
+
+_ARACLAR: dict[str, Arac] = {a.ad: a for a in KAYIT}
+
+
+def get(ad: str) -> Arac:
+    """Adıyla araç. Bilinmeyen ad = hata (fail-closed): planlayıcı araç UYDURAMAZ."""
+    try:
+        return _ARACLAR[ad]
+    except KeyError:
+        raise KeyError(
+            f"Kayıtlı olmayan araç: {ad!r}. Kayıtta olmayan bir yetenek ajana AÇIK DEĞİLDİR "
+            f"(bkz. app/tools.py). Mevcut: {sorted(_ARACLAR)}") from None
+
+
+def hepsi() -> tuple[Arac, ...]:
+    return KAYIT
+
+
+def izinli_araclar(principal) -> list[Arac]:
+    """Bu kullanıcının çağırabileceği araçlar — **ajan kullanıcının yetkisini AŞAMAZ**.
+
+    Yetki kaynağı `control_plane.authorize` matrisidir; burada ikinci bir kopya YOKTUR
+    (UI'ın `permissions` listesiyle de aynı kaynak). Planlayıcıya verilen araç listesi
+    bu fonksiyondan geçmelidir — aksi halde ajan, kullanıcının kendi eliyle
+    yapamayacağı bir işi onun adına yapabilir.
+    """
+    from control_plane.authorize import can
+
+    return [a for a in KAYIT if can(principal, a.izin)]
+
+
+def deterministik_olanlar(etiket: str | None = None) -> list[Arac]:
+    """Deterministik araçlar (isteğe bağlı etikete göre) — DETERMİNİSTİK-ÖNCE kuralının
+    veri kaynağı: planlayıcı bir işi bunlardan biriyle yapabiliyorsa LLM aracı seçemez."""
+    return [a for a in KAYIT
+            if a.determinizm == "deterministik" and (etiket is None or etiket in a.etiketler)]
+
+
+def llm_araclari(principal=None) -> list[dict]:
+    """LLM'e verilecek araç listesi — sağlayıcı-bağımsız JSON şeması.
+
+    Anthropic/OpenAI tool-calling biçimlerine çevirmek çağıranın işidir; burada tek bir
+    yansız temsil tutulur ki üç yüzey (LLM · MCP · UI) ayrışmasın.
+    """
+    araclar = izinli_araclar(principal) if principal is not None else list(KAYIT)
+    return [
+        {
+            "name": a.ad,
+            "description": (
+                f"{a.ozet} [determinizm={a.determinizm} · maliyet={a.maliyet}"
+                + (f" · makbuz={a.makbuz}" if a.makbuz else "")
+                + "]"
+                + (f" NOT: {a.notlar}" if a.notlar else "")
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {k: {"type": "string", "description": v}
+                               for k, v in a.girdi.items()},
+                "required": list(a.girdi),
+            },
+        }
+        for a in araclar
+    ]

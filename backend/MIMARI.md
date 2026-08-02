@@ -852,6 +852,75 @@ Rakip araştırması bunları **bulamadı** (satıcı dokümanları taranarak):
 
 ---
 
+## 11. Agentic katman sözleşmesi (Faz F1 — araç kaydı kuruldu)
+
+> **Tez:** *Agentic katman, temelin ne ise onu ÇARPAR.* Bir insan `/ask/drill action="raw"`
+> yolunu yılda bir kez bulur; 15 araçlı bir planlayıcı onu **ilk gün** bulur ve her gün
+> kullanır. Bu yüzden ajan yüzeyi serbest fonksiyonlar üstüne değil, **beyan edilmiş bir
+> kayıt** üstüne kurulur.
+
+### 11.1 Araç kaydı (`app/tools.py`)
+
+Kayıt **hiçbir yeteneği yeniden uygulamaz** — var olan fonksiyonu *işaret eder*. Gövde
+kopyalamak bu depoda defalarca sapmayla sonuçlanmış bir desendir (`drill.flag_outliers` ↔
+`schedules.detect_anomalies`, `interpret._fmt` ↔ `schedules._fmt_deger`, `_uncovered` ↔
+`_syn_hit`); agentic ölçekte aynı hatanın bedeli çarpılırdı.
+
+Her araç şunları **beyan eder**: ad · özet · girdi şeması · çıktı · **determinizm** ·
+maliyet sınıfı · **yan etki** · **izin** (`authorize()` aksiyonu) · **ürettiği makbuz** ·
+bağlanma biçimi (modül fonksiyonu / servis metodu) · sınırlar.
+
+`baglanma` alanı olmasa kayıt yalan söylerdi: bazı yetenekler modül fonksiyonu **değil**,
+istek-kapsamlı bir servisin metodudur (`WrenService.cube_sql`, LLM sağlayıcısının
+`select_cube`'ü). Onları modül seviyesinde "çözülmüş" göstermek hangi tenant'ın motoruna
+gidildiğini gizlerdi.
+
+### 11.2 Planlayıcının uyacağı beş değişmez
+
+| Değişmez | Nasıl uygulanıyor | Nasıl denetleniyor |
+|---|---|---|
+| **Ajan kullanıcının yetkisini AŞAMAZ** | Her araç bir `authorize()` aksiyonuna bağlı; `izinli_araclar(principal)` matristen süzer — kayıt ikinci bir kopya TUTMAZ | `test_ajan_KULLANICININ_yetkisini_asamaz`, `test_izin_MATRISTE_var` |
+| **Ajan YAZAMAZ** | `yan_etki="yazar"` bir araç kayda **hiç alınmadı** | `test_ajan_YAZAMAZ` |
+| **Ajan ham veri GÖRMEZ** | `drill.raw` bilinçle kayıt DIŞI (T1/T2 sınırının en hassas yaprağı) | `test_ham_satir_araci_KAYITTA_YOK` |
+| **DETERMİNİSTİK-ÖNCE** | Her LLM aracının aynı etiketi taşıyan deterministik bir kardeşi olmalı; planlayıcı önce onu denemek zorunda | `test_her_LLM_aracinin_DETERMINISTIK_alternatifi_var` |
+| **Her adım bir MAKBUZ üretir** | `makbuz` alanı; veriye dokunup makbuz üretmeyen aracın gerekçesi zorunlu | `test_makbuz_beyani_TUTARLI` |
+
+**Kayıtta görünmeyen şey, planlayıcının erişemediği şeydir.** Bu yüzden dışarıda
+bırakılanlar da beyan edilir (yazan araçlar · `drill.raw` · `vqr.recall`) — "unutuldu" ile
+"bilinçle kapatıldı" ayrımı kaydın güvenilirliğinin tamamıdır.
+
+### 11.3 Kayıt ÜÇ yüzeyin ortak kaynağıdır
+
+**LLM'e verilen araç listesi** (`llm_araclari`) · **MCP adaptörü** (ileride ince bir
+çevirici; kendi kaydını KURMAZ) · **yetki matrisi bağı**. Üçü ayrı yazılsaydı zamanla
+ayrışırlardı — bu depoda o desenin bedeli ölçüldü.
+
+LLM'e giden **açıklama metni determinizm ve maliyeti İÇERİR**: planlayıcı ucuz/deterministik
+olanı tercih edebilsin diye. Gizlenirse *"önce deterministik"* bir kural değil bir temenni
+olur.
+
+### 11.4 Ölçülen sınır (dürüst kayıt)
+
+`select_cube` **her sağlayıcıda YOKTUR**: anahtarsız `RuleBasedSqlGenerator` onu taşımaz ve
+üretim yolu `hasattr` ile denetler. Planlayıcı bunun yokluğunu bir hata değil bir **yol
+kapalı** sinyali saymalıdır. Bu, kayıt yazılırken keşfedildi ve aracın `notlar`ına yazıldı.
+
+### 11.5 Henüz YOK (F2–F4)
+
+Planlayıcı döngüsü (plan → araç → gözlem → doğrula), **bütçe tavanı** (adım · token · süre;
+aşımda *dürüst kısmi cevap*, sessiz kesme değil), belirsizlikte sorma, ve ajan koşusunun
+**kök makbuz + adım makbuzları ağacı**. F1 bunların taşıyıcısıdır; kendisi bir planlayıcı
+değildir ve öyleymiş gibi anlatılmamalıdır.
+
+### 11.6 Özellik = KOMPOZİSYON, endpoint değil
+
+Kök-neden analizi, karar matrisi, rapor/dashboard üretimi, uyarılar, tahmin — bunlar **ayrı
+endpoint olarak yazılmamalıdır**. Her biri bir araç kompozisyonu olursa: her adım makbuz
+üretir, her adım yetkiye tabidir, her adım tek kapanış zincirinden (`answer.py`) geçer, ve
+yeni bir özellik **yeni bir kompozisyon** demektir — yeni bir baypas yolu değil.
+
+---
+
 ## 14. Arka–ön sözleşmesi — "Tanım Tamamlandı" = arka + ön + test
 
 > Bu bölüm bir denetim bulgusundan doğdu (2026-08-02): **bu turda yazılan iki uç frontend'de
