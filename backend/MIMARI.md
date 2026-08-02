@@ -350,6 +350,25 @@ diye zaman kaybetmesin.
 netleştirmeye gitti. Toplam OK payında net etki **−%0,25** — sessiz-yanlış sınıfını kapatmanın
 bedeli olarak bilinçli kabul edildi (ADR-0008 yönü).
 
+### Ölçüm araçlarının GERÇEKTEN ne ölçtüğü (2026-08-02'de tek tek doğrulandı)
+
+Bu tablo bir uyarıdır: üç aracın adı da "doğruluk" çağrıştırıyor ama üçü farklı şey ölçüyor
+ve **hiçbiri ölçekte "doğru cube'u mu seçti"yi ölçmüyor**.
+
+| Araç | Gerçekte ölçtüğü | Boyut | Kör noktası |
+|---|---|---|---|
+| `eval/run.py` | Şekil doğruluğu (cube/ölçü/boyut beklenen mi) | 129 vaka | Korpus **zaten çalışan şeye göre kuratörlenmiş** — 111 cevabın 111'i intent yolundan |
+| `lab/nl_corpus.py` | **ERİŞİM** — "SQL üretebildi mi" | ~9000 tur | `expected` = **TÜM cube adları** → yanlış cube'a gitmek de OK sayılıyor |
+| `lab/nl_accuracy.py` | Doğru cube/ölçü/boyut | **4 vaka** | Fiilen boş; adı vaat ettiğini yapamaz |
+
+Somut sonuç: Faz 1'in üreteci `"bölüm bazında ortalama oee"` sorusunu **yanlış cube'dan**
+(`enerji_makine`) **doğru cube'a** (`oee`) taşıdı — ve `nl_corpus` bu iyileşmeyi
+**göremedi**, çünkü ikisini de OK sayıyor (boyahane 2543 → 2545, yalnız +2).
+
+`nl_corpus` bunu ölçebilir: `gen_single` her soruyu HANGİ cube'un sözlüğünden ürettiğini
+zaten biliyor; `expected`'ı o tek cube'a daraltmak ~9000 erişim ölçümünü ~9000 **doğruluk**
+ölçümüne çevirir. Yapılacaklar listesinde.
+
 **Ölçüm reçetesi** (üçü de `--network none` ile koşar):
 ```
 docker run --rm --network none -v "$PWD/backend:/app" -w /app dima-test python -m pytest -q
