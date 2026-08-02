@@ -549,6 +549,24 @@ diye zaman kaybetmesin.
   **Ders — ölçüm aracının kendisi de bir bağımlılıktır.** Üretim koduna dokunan her imza
   değişikliği, o kodu taklit eden harness'i de bozabilir; ve harness kırıldığında
   sistem *"ölçemiyorum"* demez, *"her şey hata"* der — ki bu bir süre sonra gürültü sayılır.
+- ✅ **kapatıldı (2026-08-02, Faz E-1)** — **telemetrinin YAZMA yolu hiç test edilmiyordu.**
+  Altyapı tamdı: `InteractionLog` (20 alan), KPI ucu (`route-distribution`), varsayılan
+  **açık**. Ama `test_route_distribution.py` ve `test_candidates.py` satırları **elle
+  ekleyip** yalnız OKUMA tarafını sınıyordu; `conftest.py` ise yazmayı **global olarak
+  kapatıyor** (haklı olarak — testler canlı telemetriyi kirletmemeli). Sonuç: `/ask`'in
+  gerçekten satır yazdığını sınayan **hiçbir test yoktu**.
+  Bu, aynı fazda ölçülen `lab/nl_corpus.py` kusurunun **aynı sınıfıdır**: ölçüm aracı
+  sessizce kırılırsa sistem *"ölçemiyorum"* demez — KPI **sıfır** okur ve herkes
+  *"trafik yok"* sanır. Planın *"Intent ≥%70 / Discovery <%30"* hedefi tam olarak bu
+  satırlara dayanıyor.
+  Düzeltme: `tests/test_telemetri_yazma_yolu.py` yazmayı **yalnız kendi testleri için**
+  açar (conftest'in global kapaması bozulmaz) ve zinciri uçtan uca doğrular — `/ask` yazar
+  → alanlar dolu (`kind`/`source`/`duration_ms`) → `route-distribution`'ın gruplamasında
+  tanınır. Ters yön de kilitli: **kapalıyken yazmamalı**, aksi halde her test koşumu canlı
+  KPI'ı gürültüye boğar.
+  **Ölçülen sonuç: yazma yolu ÇALIŞIYORDU** — bulgu kırıklık değil **denetimsizlikti**.
+  Fark önemli: çalışan ama test edilmeyen bir ölçüm, olmayan bir ölçümden **daha kötüdür**
+  çünkü yanlış bir güven verir.
 - **Test koşum reçetesi** (host'ta bağımlılık yok, prod imajda pytest yok):
   `docker build -t dima-test` = prod imaj + `pytest pyyaml httpx ruff`; sonra
   `docker run --rm --network none -v "$PWD/backend:/app" \
