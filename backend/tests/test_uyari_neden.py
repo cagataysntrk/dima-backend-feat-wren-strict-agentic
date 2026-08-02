@@ -308,3 +308,50 @@ def test_ROUTER_govdeyi_KOPYALAMAZ():
     assert "arastir" in govde, "router gövdeyi çağırmıyor"
     assert "available_dimensions" not in govde, "router kendi boyut taramasını yazmış"
     assert "yoy.compute" not in govde and "_yoy.compute" not in govde
+
+
+# --- BOYUT SIRASI: kesme keyfi değil (Faz B) -------------------------------------
+
+def test_ADAY_SIRASI_maliyet_ve_GUVENE_gore():
+    """ÖLÇÜLDÜ (2026-08-02): `available_dimensions` YAML BEYAN SIRASINDA dönüyordu.
+    Faz F3'e kadar zararsızdı (`/ask/contribution` 6 boyutun hepsini tarıyor); uyarının
+    nedeni ise yalnız 2 tarayabilir ve `parti` cube'unda 15 BOYUT var. Yani beyan sırası
+    kullanıcının gördüğü gerekçeyi BELİRLER hale geldi.
+
+    Sıra açıklayıcılık hakkında bir iddia DEĞİLDİR (onu `rank_dimensions` sorgudan SONRA
+    ölçer) — MALİYET ve GÜVEN hakkındadır: kendi tablosundaki boyut JOIN gerektirmez ve
+    fan-out riski taşımaz. Kesme yapılacaksa denenmeye önce onlar değer.
+    """
+    from app.drill import available_dimensions
+
+    meta = {"dimensions": ["uzak_riskli", "uzak_saglikli", "yerel", "uzak_olculmedi"],
+            "dimension_origin": {
+                "uzak_riskli": {"hops": 1, "certified": "olculdu:riskli"},
+                "uzak_saglikli": {"hops": 1, "certified": "olculdu:saglikli"},
+                "uzak_olculmedi": {"hops": 1, "certified": "olculmedi"}}}
+    sira = [d["name"] for d in available_dimensions(meta, {})]
+    assert sira[0] == "yerel", "kendi tablosundaki boyut önce gelmiyor"
+    # ÖLÇÜLMEDİ, RİSKLİ'nin ÖNÜNDE: ölçülmemiş bir ilişki BİLİNMEZDİR, riskli ölçülmüş
+    # bir ilişki ise BİLİNEN bir sorundur (fan-out toplamları şişirir).
+    assert sira[1:] == ["uzak_saglikli", "uzak_olculmedi", "uzak_riskli"]
+
+
+def test_ADAY_SIRASI_KARARLI():
+    """Eşit maliyette beyan sırası korunur — yoksa aynı soru iki kez sorulduğunda farklı
+    chip'ler görünürdü."""
+    from app.drill import available_dimensions
+
+    meta = {"dimensions": ["c", "a", "b"]}
+    assert [d["name"] for d in available_dimensions(meta, {})] == ["c", "a", "b"]
+
+
+def test_ATLANAN_boyutlar_ADIYLA_raporlanir(yoy_sahte):
+    """Bir SAYI ("3 boyut taranmadı") kullanıcıya hangi soruyu sorabileceğini söylemez;
+    ad söyler ("peki renk bazında?")."""
+    cube = {**_CUBE, "dimensions": ["operator", "renk", "vardiya", "hat", "tarih"]}
+    yoy_sahte(_kiyas_satirlari([("A", 500.0, 100.0)]))
+    _satirlar, not_ = schedules.uyari_nedeni(
+        _SahteServis([], cube), {"cube": "uretim", "measures": ["fire_kg"], "filters": []},
+        {"measure": "fire_kg"})
+    assert not_ and "taranmadı" in not_
+    assert "vardiya" in not_ or "hat" in not_, f"atlananlar adıyla yazılmamış: {not_!r}"

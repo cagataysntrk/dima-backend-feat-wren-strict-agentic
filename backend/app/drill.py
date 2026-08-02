@@ -123,16 +123,62 @@ def flag_outliers(rows: list[dict], dim: str, measure: str, *, k: float = 2.0) -
     return sorted(out, key=lambda o: abs(o["z_score"]), reverse=True)
 
 
+#: Fan-out sertifikası durumları → sıralama ağırlığı (küçük = önce).
+#: "ölçüldü:sağlıklı" > "ölçülmedi" > "ölçüldü:riskli". ORTADAKİ sıra bilinçli: ölçülmemiş
+#: bir ilişki bilinmezdir, RİSKLİ ÖLÇÜLMÜŞ bir ilişki ise BİLİNEN bir sorundur (fan-out
+#: toplamları şişirir) — bilinmeyeni bilinen-bozuğun önüne koymak doğrudur.
+_SERTIFIKA_AGIRLIK = {"olculdu:saglikli": 0, "olculdu:riskli": 2}
+_SERTIFIKA_VARSAYILAN = 1
+
+
+def _boyut_maliyeti(ad: str, kokenler: dict) -> tuple[int, int]:
+    """(sıçrama, sertifika ağırlığı) — küçük olan ÖNCE gelir.
+
+    Kendi tablosundaki bir boyut JOIN gerektirmez: hem ucuzdur hem fan-out riski taşımaz.
+    `dimension_origin` beyanı olmayan boyut kendi tablosundandır (hops=0).
+    """
+    k = (kokenler or {}).get(ad) or {}
+    return (int(k.get("hops") or 0),
+            _SERTIFIKA_AGIRLIK.get(str(k.get("certified") or ""), _SERTIFIKA_VARSAYILAN)
+            if k else 0)
+
+
 def available_dimensions(cube_meta: dict, cube_query: dict) -> list[dict]:
     """Cube'un HENÜZ kullanılmayan boyutları (dimensions'ta ya da filters'ta olmayan) —
     dallanma çipi adayları. Zaman boyutu (time_dimensions) burada AYRI ele alınmaz (zaman
-    granülerliği değişimi farklı, mevcut bir işlemdir — cube_router zaten bunu yönetir)."""
+    granülerliği değişimi farklı, mevcut bir işlemdir — cube_router zaten bunu yönetir).
+
+    ## Sıra neden ÖNEMLİ (2 Ağustos 2026'da ölçüldü)
+
+    Bu liste eskiden **YAML beyan sırasında** dönüyordu — yani hiçbir anlamı yoktu. Faz
+    F3'e kadar bu zararsızdı: `/ask/contribution` zaten 6 boyutun hepsini tarıyordu.
+    **Uyarının nedeni** (`schedules.uyari_nedeni`, arka plan işi) ise yalnız **2** boyut
+    tarayabilir — ve `parti` cube'unda **15 boyut** var. Yani beyan sırası, kullanıcının
+    gördüğü gerekçeyi BELİRLER hale geldi.
+
+    ## Sıra neye göre — ve neye göre DEĞİL
+
+    Hangi boyutun daha AÇIKLAYICI olduğu **önceden bilinemez**; onu `contribution
+    .rank_dimensions` sorguyu koştuktan SONRA ölçer. Bu yüzden buradaki sıra açıklayıcılık
+    hakkında bir iddia DEĞİLDİR — **maliyet ve güven** hakkındadır: kendi tablosundaki
+    boyut JOIN gerektirmez (ucuz) ve fan-out riski taşımaz (güvenilir). Kesme yapılacaksa,
+    denenmeye önce onlar değer.
+
+    Bu bir tahmin değil, **beyan okumasıdır**: `dimension_origin` (hop sayısı) ve fan-out
+    sertifikası (Faz D2) zaten üretiliyordu. `label`ları alfabetik sıralamak gibi bir
+    "düzen" DEĞİL — kararın gerekçesi ölçülebilir.
+
+    Sıra **kararlı**dır: eşit maliyette beyan sırası korunur (`sorted` stabildir), yoksa
+    aynı soru iki kez sorulduğunda farklı chip'ler görünürdü.
+    """
     used = set(cube_query.get("dimensions") or [])
     used |= {f.get("dimension") for f in (cube_query.get("filters") or [])}
     d_labels = cube_meta.get("dimension_labels") or {}
+    kokenler = cube_meta.get("dimension_origin") or {}
+    adaylar = [d for d in (cube_meta.get("dimensions") or []) if d not in used]
     return [
         {"name": d, "label": d_labels.get(d) or d}
-        for d in (cube_meta.get("dimensions") or []) if d not in used
+        for d in sorted(adaylar, key=lambda d: _boyut_maliyeti(d, kokenler))
     ]
 
 

@@ -410,8 +410,11 @@ export function ContributionLayer({
           )}
           {d && d.taranmayan_boyut > 0 && (
             // Kapsam sessizce daraltılmaz (üst sınır bir performans kararıdır, bir cevap değil).
+            // Atlananlar ADIYLA yazılır: kullanıcı böylece eksik kalanı KENDİSİ sorabilir
+            // ("peki renk bazında?") — bir sayı ona bu kapıyı açmaz.
             <p className="font-mono text-[10px] text-neutral-500">
-              {d.taranmayan_boyut} boyut üst sınır nedeniyle taranmadı.
+              {d.taranmayan_boyut} boyut üst sınır nedeniyle taranmadı
+              {d.taranmayan_adlar?.length ? `: ${d.taranmayan_adlar.join(", ")}` : ""}.
             </p>
           )}
           {d && d.contract_ids.length > 0 && (

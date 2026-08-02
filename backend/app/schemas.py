@@ -521,7 +521,8 @@ class ContributionReport(BaseModel):
 class ContributionResponse(BaseModel):
     """`note` ayrıştırma YAPILAMADIĞINDA nedenini taşır (toplanamayan ölçü, dönem yok).
     `taranmayan_boyut` üst sınır yüzünden bakılmayan boyut sayısıdır — kapsam sessizce
-    daraltılmaz."""
+    daraltılmaz. `taranmayan_adlar` onları ADIYLA taşır: bir SAYI ("3 boyut taranmadı")
+    kullanıcıya hangi soruyu sorabileceğini söylemez, ad söyler ("peki renk bazında?")."""
 
     measure: str | None = None
     mode: str = "yoy"
@@ -530,6 +531,7 @@ class ContributionResponse(BaseModel):
     pvm_raporlar: list[PvmReport] = Field(default_factory=list)
     note: str | None = None
     taranmayan_boyut: int = 0
+    taranmayan_adlar: list[str] = Field(default_factory=list)
     contract_ids: list[str] = Field(default_factory=list)
 
 

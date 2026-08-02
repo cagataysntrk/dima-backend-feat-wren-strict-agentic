@@ -557,6 +557,9 @@ export interface ContributionResponse {
   pvm_raporlar: PvmReport[];
   note: string | null; // ayrıştırma YAPILAMADIYSA nedeni
   taranmayan_boyut: number; // üst sınır yüzünden bakılmayan boyut — kapsam sessizce daralmaz
+  // Atlananların ADLARI: bir SAYI ("3 boyut taranmadı") kullanıcıya hangi soruyu
+  // sorabileceğini söylemez, ad söyler ("peki renk bazında?").
+  taranmayan_adlar?: string[];
   contract_ids: string[];
 }
 

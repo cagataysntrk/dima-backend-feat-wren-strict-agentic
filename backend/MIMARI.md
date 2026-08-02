@@ -201,7 +201,7 @@ tur aynı keşfi sıfırdan yapıyor. **Yeni bir kontrol/garanti yazmadan önce 
 | **`WrenConfig` + `wren/policy.py`** | 45 veri-okuyucu TVF'yi her AST konumunda bloklar; MDL-dışı tabloyu reddeder; fonksiyon kara listesi | ✅ **alındı (Faz A3)** — `strict_sql_policy=off\|shadow\|on`, varsayılan `shadow` |
 | **`rowLevelAccessControls` + `SessionProperty` + `dry_plan(properties=)`** | RLS'i **mantıksal planın içine** gömer; SQL'i kim yazarsa yazsın (insan/LLM/ajan) atlatılamaz | ⏳ **sıradaki** — `always_filter`'ın uygulama-katmanı yamasının yerini alır (§6.3'teki üç baypasın kalıcı çözümü) |
 | **`columnLevelAccessControl`** (`requiredProperties`/`operator`/`threshold`) | Kolonu **plandan düşürür**; çıktıya hiç gelmez | ⏳ `app/pii.py` regex maskelemesinin motor karşılığı; PII son savunma olarak KALIR |
-| **Cube `hierarchies`** | Drill sırasını motora beyan eder | ❌ `app/drill.py` bunu elle yazdı; ajan için tipli gezinme grafiği olurdu |
+| **Cube `hierarchies`** | Drill sırasını motora beyan eder | ⏸ **bilinçle beyan EDİLMEDİ** — uydurulmuş bir hiyerarşi güvenle yanlış bir drill yolu üretir; sıra ölçülebilir maliyetten okunuyor, bkz. §3.4c |
 | **`type_mapping.parse_type/translate_type`** | sqlglot tam tip grameri + lehçeler arası tip çevirisi | ✅ **ALINDI** (2026-08-02, Faz B): `classify_column` artık ham tipi `parse_type` ile **kanonikleştirip** öyle sınıflıyor. Ölçüldü — elle küme **17 gerçek yazımın 13'ünü kaçırıyordu** ve hepsi sessizce `dimension`'a düşüyordu: `numeric(18,2)` (bir PARA TUTARI) gruplama anahtarı, `timestamptz` zaman DEĞİL sayılıyordu. Bir müşteri DB'sini introspect ettiğimizde taslak MDL tutarları boyut yapıp tarihleri zaman ekseninden düşürürdü — kullanıcıya *"şemanı çıkardım"* diye sunularak. Kanonik küme ile **geriye uyum kuyruğu AYRI durur** (`_ESKI_YAZIMLAR`): karışık bir küme, hangi adın kanonik hangisinin yama olduğunu gizler. Motor erişilemezse ham değere düşülür — fail-closed değil, çünkü bilinmeyen tip için doğru varsayılan zaten *boyut*tur. `BIT`/`BOOLEAN` bilinçle dışarıda: bayrakların toplamı bir ölçü değildir. |
 | **17 kullanılmayan konnektör** | BigQuery/Snowflake/Databricks/Trino + `s3_file`/`minio_file` | ❌ yeni müşteri = **kod yazmadan** bağlanma |
 | **`context.validate_project()`** | 9 yapısal kural (PK var mı, `table_reference` XOR `ref_sql`, ilişki hedefi…) | ✅ **ALINDI** (2026-08-02, Faz B): `compose_and_build` artık `build()`'den **önce** çağırıyor. `error` → **fail-closed**, MDL üretilmez (bozuk zeminden üretilen MDL, hatayı sorgu anında kullanıcının yüzüne çıkarır — `dry_plan` kolon varlığını denetlemez, §5); `warning` → loglanır, akışı durdurmaz. Kendi doğrulayıcımız YAZILMADI, motorunki **çağrıldı** (test kural adlarının gövdeye kopyalanmadığını kilitler). Ölçüldü: dört demo projesinin **dördü de 0 hata / 0 uyarı** — açmak hiçbir meşru yolu kırmıyor. |
@@ -255,6 +255,40 @@ olurdu.
 
 Birini ötekinin yerine saymak, kapanmamış bir boşluğu kapanmış göstermek olurdu.
 15 test: `tests/test_sorgu_zaman_asimi.py`.
+### 3.4c Boyut sırası: `hierarchies` yerine ÖLÇÜLEBİLİR maliyet (Faz B)
+
+Plan *"`drill.py`'nin ELLE YAZDIĞI drill sırasını motora beyan et (`hierarchies`)"*
+diyordu. Ölçünce görüldü ki **elle yazılmış bir sıra bile yoktu**: `available_dimensions`
+boyutları **YAML beyan sırasında** döndürüyordu — hiçbir anlamı olmayan bir sıra.
+
+Faz F3'e kadar bu zararsızdı (`/ask/contribution` 6 boyutun **hepsini** tarıyor). Uyarının
+nedeni (§11.6e, arka plan işi) ise yalnız **2** tarayabilir — ve `parti` cube'unda **15
+boyut** var (`kalite` 11). Yani beyan sırası, kullanıcının gördüğü gerekçeyi **belirler**
+hale geldi.
+
+**`hierarchies` BEYAN EDİLMEDİ ve bu bilinçlidir.** Demo cube'ları için bir hiyerarşi
+(*"makine → bölüm"*, *"il → ilçe"*) uydurmak, `pvm:` eşleştirmesinde ve `target:` hedefinde
+reddedilen şeyin aynısı olurdu: **yanlış bir hiyerarşi, güvenle yanlış bir drill yolu**
+üretir ve kullanıcı onu sorgulamaz.
+
+Onun yerine sıra **zaten üretilen beyanlardan** okunur — `dimension_origin` (hop sayısı) ve
+**fan-out sertifikası** (Faz D2):
+
+| Öncelik | Kural | Gerekçe |
+|---|---|---|
+| 1 | Kendi tablosundaki boyut (hops=0) | JOIN yok: hem ucuz hem fan-out riski yok |
+| 2 | Az sıçramalı | Her sıçrama bir maliyet ve bir risk |
+| 3 | `olculdu:saglikli` → `olculmedi` → `olculdu:riskli` | **Ölçülmemiş bir ilişki BİLİNMEZDİR; riskli ölçülmüş bir ilişki BİLİNEN bir sorundur** (fan-out toplamları şişirir) — bilinmeyeni bilinen-bozuğun önüne koymak doğrudur |
+
+Bu sıra **açıklayıcılık hakkında bir iddia DEĞİLDİR** — onu `contribution.rank_dimensions`
+sorguyu koştuktan **sonra** ölçer. **Maliyet ve güven** hakkındadır: kesme yapılacaksa,
+denenmeye önce ucuz ve güvenilir olanlar değer. Sıra **kararlıdır** (eşitlikte beyan sırası
+korunur), yoksa aynı soru iki kez sorulduğunda farklı chip'ler görünürdü.
+
+**Atlananlar ADIYLA raporlanır** (`taranmayan_adlar`): bir sayı (*"3 boyut taranmadı"*)
+kullanıcıya hangi soruyu sorabileceğini söylemez; ad söyler (*"peki renk bazında?"*).
+Bildirimde, `/ask/contribution` yanıtında ve `ContributionLayer`'da görünür.
+
 
 ---
 

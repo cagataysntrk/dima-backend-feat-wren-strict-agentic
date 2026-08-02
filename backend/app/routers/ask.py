@@ -1231,6 +1231,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 measure=ham.get("measure"), mode=ham.get("mode") or "yoy",
                 kind=ham.get("kind") or "segment", note=ham.get("note"),
                 taranmayan_boyut=ham.get("taranmayan_boyut") or 0,
+                taranmayan_adlar=ham.get("taranmayan_adlar") or [],
                 contract_ids=ham.get("contract_ids") or [],
                 raporlar=[ContributionReport(**r) for r in (ham.get("raporlar") or [])],
                 pvm_raporlar=[PvmReport(**_pvm_seleli(r))
@@ -2735,6 +2736,7 @@ def ask_contribution(request: Request, body: ContributionRequest) -> Contributio
         measure=out.get("measure"), mode=out.get("mode") or body.mode,
         kind=out.get("kind") or body.kind, note=out.get("note"),
         taranmayan_boyut=out.get("taranmayan_boyut") or 0,
+        taranmayan_adlar=out.get("taranmayan_adlar") or [],
         contract_ids=out.get("contract_ids") or [],
         raporlar=[ContributionReport(**r) for r in (out.get("raporlar") or [])],
         pvm_raporlar=[PvmReport(**_pvm_seleli(r)) for r in (out.get("pvm_raporlar") or [])])

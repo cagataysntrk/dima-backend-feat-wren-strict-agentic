@@ -509,7 +509,11 @@ def uyari_nedeni(svc, cq: dict, threshold: dict | None) -> tuple[list[str], str 
     if kirpilan > 0:
         ek.append(f"+{kirpilan} segment daha (gösterilmedi, yok sayılmadı)")
     if out.get("taranmayan_boyut"):
-        ek.append(f"{out['taranmayan_boyut']} boyut üst sınır nedeniyle taranmadı")
+        # ADIYLA söylenir: bir sayı ("3 boyut taranmadı") kullanıcıya hangi soruyu
+        # sorabileceğini söylemez. Bildirim dar bir yüzey olduğu için ilk üçü yazılır.
+        adlar = out.get("taranmayan_adlar") or []
+        ek.append(f"{out['taranmayan_boyut']} boyut taranmadı"
+                  + (f" ({', '.join(adlar[:3])}{'…' if len(adlar) > 3 else ''})" if adlar else ""))
     return (satirlar, " · ".join(ek) or None)
 
 

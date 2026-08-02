@@ -358,13 +358,20 @@ def arastir(service, schema: dict, cube_query: dict, *, mode: str = "yoy",
     unit = (cube_meta.get("units") or {}).get(measure)
     labels = cube_meta.get("dimension_labels") or {}
 
+    # SIRA ANLAMLIDIR (Faz B): `available_dimensions` adayları maliyet+güvene göre verir
+    # (kendi tablosundaki boyut önce; sonra sıçrama sayısı; sonra fan-out sertifikası).
+    # Kesme yapılacaksa denenmeye önce onlar değer — hangi boyutun daha AÇIKLAYICI olduğu
+    # önceden bilinemez, onu `rank_dimensions` sorgudan SONRA ölçer.
     adaylar = [d["name"] for d in available_dimensions(cube_meta, cq)]
     sinir = max(1, int(max_dimensions or MAX_BOYUT))
-    taranan, taranmayan = adaylar[:sinir], max(0, len(adaylar) - sinir)
+    taranan, atlanan = adaylar[:sinir], adaylar[sinir:]
+    taranmayan = len(atlanan)
     if taranmayan:
         # Sessiz kesme YOK: kapsamı daraltan her sınır loglanır VE yanıtta görünür.
-        _log.info("katkı araması: %d boyuttan %d tanesi taranmadı (sınır=%d, cube=%s)",
-                  len(adaylar), taranmayan, sinir, cq.get("cube"))
+        # Atlananlar ADIYLA taşınır — bir SAYI ("3 boyut taranmadı") kullanıcıya hangi
+        # soruyu sorabileceğini söylemez; ad söyler ("peki renk bazında?").
+        _log.info("katkı araması: %d boyuttan %d tanesi taranmadı (sınır=%d, cube=%s): %s",
+                  len(adaylar), taranmayan, sinir, cq.get("cube"), ", ".join(atlanan))
 
     raporlar: list[dict] = []
     pvm_raporlar: list[dict] = []
@@ -406,12 +413,13 @@ def arastir(service, schema: dict, cube_query: dict, *, mode: str = "yoy",
 
     if not raporlar and not pvm_raporlar:
         return {"measure": measure, "mode": mode, "kind": kind,
-                "taranmayan_boyut": taranmayan,
+                "taranmayan_boyut": taranmayan, "taranmayan_adlar": atlanan,
                 "note": "Bu sorguda değişimi açıklayan bir kırılım bulunamadı — "
                         "kullanılmayan boyut yok ya da hiçbir segment anlamlı bir hareket "
                         "göstermiyor."}
 
     return {"measure": measure, "mode": mode, "kind": kind,
-            "taranmayan_boyut": taranmayan, "contract_ids": contract_ids,
+            "taranmayan_boyut": taranmayan, "taranmayan_adlar": atlanan,
+            "contract_ids": contract_ids,
             "raporlar": rank_dimensions(raporlar),
             "pvm_raporlar": rank_dimensions(pvm_raporlar)}
