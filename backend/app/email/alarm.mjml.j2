@@ -13,6 +13,19 @@
   <mj-text font-size="12px" color="#9ca3af" padding-top="4px">+{{ e.violations|length - 10 }} tespit daha</mj-text>
   {% endif %}
   {% endif %}
+  {# NEDEN (Faz F3): "Tespitler" NE olduğunu söyler, bu blok NİYE olduğunu. İkisi ayrı
+     başlık altında durur — birleştirmek, ölçülen bir değeri bir gerekçeyle aynı listeye
+     koyup ikisini de okunmaz yapardı. Etiketler PII-maskeli; tıklanabilir sorgu YOK
+     (maskeli değere filtre boş döner) — kanıt yolu makbuzdur. #}
+  {% if e.neden or e.neden_not %}
+  <mj-text font-weight="600" padding="12px 0 2px">Neden?</mj-text>
+  {% for n in e.neden %}
+  <mj-text padding="1px 0" font-size="13px" color="#374151">↳ {{ n }}</mj-text>
+  {% endfor %}
+  {% if e.neden_not %}
+  <mj-text font-size="12px" color="#9ca3af" padding-top="4px">{{ e.neden_not }}</mj-text>
+  {% endif %}
+  {% endif %}
   {# VİZ (ADR-0024): backend grafik kararı → email-safe HTML/CSS grafik (varsa; JS yok). #}
   {% if chart_html %}
   <mj-raw>{{ chart_html | safe }}</mj-raw>

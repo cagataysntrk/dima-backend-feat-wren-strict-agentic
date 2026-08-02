@@ -36,6 +36,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.logging_setup import get_logger
+
+_log = get_logger("contribution")
+
 # Bir segmentin "gürültü" sayılacağı eşik: brüt harekete katkısı bunun altındaysa listeye
 # girmez. Amaç UI'ı 200 satırlık bir kuyrukla doldurmamak; kesilen miktar RAPORLANIR
 # (bkz. `decompose` → `kirpilan`), çünkü sessiz kırpma "her şey kapsandı" gibi okunur.
@@ -279,3 +283,135 @@ def rank_dimensions(raporlar: list[dict]) -> list[dict]:
         return (max(abs(b.get("delta") or 0) for b in bulgular) / brut * 100) if brut else 0.0
 
     return sorted(raporlar, key=_skor, reverse=True)
+
+
+# --- ORKESTRASYON: boyut taraması (Faz F3) ---------------------------------------
+#
+# `arastir()` bu modülün ilk BİLEŞİK fonksiyonudur: yukarıdakiler saf matematik, bu ise
+# boyut seçer, dönemsel kıyas koşar, ayrıştırır ve sıralar. Neden burada:
+#
+# Faz 5.2'de bu gövde `/ask/contribution`'ın router fonksiyonuna yazılmıştı ve HTTP'ye
+# yapışıktı (`request`, `_service_for`, `_drill_record_contract`). Sonucu ölçüldü:
+#   * `ask.py` içindeki konuşma katmanı onu ancak router'ı ÇAĞIRARAK kullanabildi ve
+#     planlayıcıya `dis_adim(..., gated: false)` diye İTİRAF olarak girdi — kayıtlı bir
+#     araç değildi, dört kapıdan (kayıt · yetki · deterministik-önce · bütçe) geçmiyordu.
+#   * Zamanlanmış uyarılar (arka plan işi, `request` YOK) onu HİÇ kullanamadı — bu yüzden
+#     uyarı bugün NE olduğunu söylüyor, NEDEN olduğunu söylemiyor.
+#
+# HTTP'den ayrılınca ikisi de düzelir: aynı gövde `tools.KAYIT`'a girer ve arka plan işi
+# de çağırabilir. Kural (MIMARI §5): aynı kural iki yerde yaşamasın.
+
+
+def arastir(service, schema: dict, cube_query: dict, *, mode: str = "yoy",
+            kind: str = "segment", max_dimensions: int | None = None,
+            kaydet=None, satir_donustur=None) -> dict:
+    """Katkı ARAŞTIRMASI — kullanılmayan boyutları tarar, değişimi ayrıştırır, sıralar.
+
+    Saf orkestrasyon: HTTP bilmez, FastAPI bilmez. Dönen sözlük `ContributionResponse`
+    alanlarıyla birebir aynıdır (router onu doğrudan sarar).
+
+    `kaydet(baslik, cube_query, sql, result) -> contract_id | None` — her kıyas sorgusu
+    KENDİ kanıt kaydını üretir. `None` geçilirse makbuz yazılmaz; bu **bilinçli bir
+    seçimdir**, sessiz bir kayıp değil: çağıran (ör. arka plan uyarısı) zaten kendi kök
+    makbuzunu yazmışsa boyut başına ikinci bir kayıt gürültüdür.
+
+    `satir_donustur(rows) -> rows` — ayrıştırmadan ÖNCE satırlara uygulanır. Zamanlanmış
+    teslim bunu PII maskesi için kullanır: orada alıcının kim olduğu önceden bilinemez,
+    bu yüzden fail-closed maskelenir (`schedules.run_schedule`'ın ana sonuçta uyguladığı
+    disiplinin aynısı — ikinci bir sızıntı yüzeyi bırakılmaz).
+    """
+    from app import yoy as _yoy
+    from app.drill import available_dimensions
+
+    cq = dict(cube_query or {})
+    if not cq.get("cube"):
+        return {"note": "Bu sonuç yapısal bir cube_query taşımıyor (Discovery/ham SQL) — "
+                        "katkı ayrıştırması yapılamaz."}
+    cube_meta = next((c for c in (schema.get("cubes") or [])
+                      if c.get("name") == cq.get("cube")), None)
+    if cube_meta is None:
+        return {"note": f"`{cq.get('cube')}` cube'u şemada yok (şema değişmiş olabilir) — "
+                        "katkı ayrıştırması yapılamaz.", "hata": "cube_yok"}
+
+    kind = kind if kind in ("segment", "pvm") else "segment"
+    mode = mode if mode in ("yoy", "mom") else "yoy"
+    measure = (cq.get("measures") or [None])[0]
+
+    if kind == "pvm":
+        # Eşleştirme TAHMİN EDİLMEZ: cube'un `pvm:` beyanı yoksa PVM sunulmaz. Ad kalıbıyla
+        # ("tutar/adet fiyattır") tahmin etmek, yanlış eşleştirmede GÜVENLE YANLIŞ ekonomi
+        # üretirdi — kullanıcı "birim fiyat %12 arttı" cümlesini sorgulamaz.
+        cift = next((p for p in pvm_pairs(cube_meta) if p["value"] == measure), None)
+        if cift is None:
+            return {"measure": measure, "mode": mode, "kind": kind,
+                    "note": (f"`{cq.get('cube')}` cube'u `{measure}` için bir fiyat×miktar "
+                             "eşleştirmesi BEYAN ETMİYOR (cube metadata'sında `pvm:`). Fiyat "
+                             "ayrıştırması ancak beyan edilmiş bir değer/miktar çifti "
+                             "üzerinde anlamlıdır; tahmin edilmez.")}
+    else:
+        ok, neden = ayristirilabilir_mi(measure, cube_meta)
+        if not ok:
+            return {"measure": measure, "mode": mode, "kind": kind, "note": neden}
+        cift = None
+
+    time_dim = _yoy.time_dim_of(schema, cq.get("cube"))
+    unit = (cube_meta.get("units") or {}).get(measure)
+    labels = cube_meta.get("dimension_labels") or {}
+
+    adaylar = [d["name"] for d in available_dimensions(cube_meta, cq)]
+    sinir = max(1, int(max_dimensions or MAX_BOYUT))
+    taranan, taranmayan = adaylar[:sinir], max(0, len(adaylar) - sinir)
+    if taranmayan:
+        # Sessiz kesme YOK: kapsamı daraltan her sınır loglanır VE yanıtta görünür.
+        _log.info("katkı araması: %d boyuttan %d tanesi taranmadı (sınır=%d, cube=%s)",
+                  len(adaylar), taranmayan, sinir, cq.get("cube"))
+
+    raporlar: list[dict] = []
+    pvm_raporlar: list[dict] = []
+    contract_ids: list[str] = []
+    for dim in taranan:
+        # PVM iki ölçüyü BİRLİKTE ister (değer ve miktar aynı kıyas sorgusunda gelsin ki
+        # segment hizalaması kesin olsun; ayrı iki sorgu satır kümesi ayrışabilirdi).
+        olculer = [cift["value"], cift["volume"]] if cift else list(cq.get("measures") or [])
+        alt = {**cq, "measures": olculer, "dimensions": [dim]}
+        try:
+            out = _yoy.compute(service, {**alt, "compare": mode}, mode, time_dim)
+        except Exception:
+            _log.warning("katkı araması: %s boyutu için kıyas başarısız (atlanıyor)",
+                         dim, exc_info=True)
+            continue
+        satirlar = out["rows"]
+        if satir_donustur is not None:
+            satirlar = satir_donustur(satirlar)
+        if cift:
+            rapor = pvm_report(satirlar, dim, cift, alt,
+                               dim_label=labels.get(dim), unit=unit)
+            if not rapor["bulgular"]:
+                continue
+            pvm_raporlar.append(rapor)
+        else:
+            rapor = decompose(satirlar, dim, measure, alt,
+                              dim_label=labels.get(dim), unit=unit)
+            if not rapor["bulgular"]:
+                continue
+            raporlar.append(rapor)
+        # Her katkı sorgusu KENDİ kanıt kaydını üretir — "yeniden çalıştırılıp hash
+        # eşlenebilen makbuz" değişmezi burada da geçerli (drill ile AYNI desen).
+        if kaydet is not None:
+            cid = kaydet(f"katkı araması: {measure} × {dim} ({mode})", {**alt, "compare": mode},
+                         out["base_sql"], {"columns": out["columns"], "rows": satirlar,
+                                           "row_count": out["row_count"]})
+            if cid:
+                contract_ids.append(cid)
+
+    if not raporlar and not pvm_raporlar:
+        return {"measure": measure, "mode": mode, "kind": kind,
+                "taranmayan_boyut": taranmayan,
+                "note": "Bu sorguda değişimi açıklayan bir kırılım bulunamadı — "
+                        "kullanılmayan boyut yok ya da hiçbir segment anlamlı bir hareket "
+                        "göstermiyor."}
+
+    return {"measure": measure, "mode": mode, "kind": kind,
+            "taranmayan_boyut": taranmayan, "contract_ids": contract_ids,
+            "raporlar": rank_dimensions(raporlar),
+            "pvm_raporlar": rank_dimensions(pvm_raporlar)}

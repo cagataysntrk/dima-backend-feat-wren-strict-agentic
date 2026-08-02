@@ -216,6 +216,25 @@ KAYIT: tuple[Arac, ...] = (
         etiketler=("kok-neden", "llmsiz"),
     ),
     Arac(
+        ad="contribution.report",
+        ozet="KULLANILMAYAN boyutları tarar, değişimi ayrıştırır, açıklayıcılığa göre sıralar.",
+        girdi={"service": "WrenService", "schema": "cube kataloğu", "cube_query": "kaynak CubeQuery",
+               "mode": "yoy|mom", "kind": "segment|pvm", "max_dimensions": "tarama sınırı"},
+        cikti="{measure, mode, kind, raporlar[], pvm_raporlar[], taranmayan_boyut, note}",
+        # Boyut başına AYRI bir kıyas sorgusu koşar (cari + geçen dönem) — tek bir
+        # `decompose` çağrısından pahalıdır ve maliyet sınıfı bunu SÖYLEMELİDİR.
+        determinizm="deterministik", maliyet="pahali", yan_etki="yok",
+        izin="query:run", makbuz="ContractLog (boyut başına, `kaydet` verilirse)",
+        # `baglanma="modul"`: servis METODU değil, servisi ARGÜMAN alan bir modül
+        # fonksiyonudur — `route`/`yoy.compute` ile aynı biçim.
+        modul="app.contribution", fonksiyon="arastir",
+        notlar="Faz F3'e kadar bu gövde `/ask/contribution` ROUTER'ININ İÇİNDEYDİ ve HTTP'ye "
+               "yapışıktı: planlayıcıya `dis_adim(gated=false)` diye itiraf olarak giriyor, "
+               "arka plan işleri (zamanlanmış uyarılar) onu hiç çağıramıyordu. Ayrılınca ikisi "
+               "de düzeldi. Tarama sınırı SESSİZ DEĞİLDİR: `taranmayan_boyut` yanıtta döner.",
+        etiketler=("kok-neden", "llmsiz", "bilesik"),
+    ),
+    Arac(
         ad="contribution.pvm",
         ozet="Değişimi FİYAT / MİKTAR / BİRLEŞİK etkiye ayrıştırır (artıksız).",
         girdi={"cube_meta": "cube metadata (pvm: beyanı olmalı)"},

@@ -203,7 +203,11 @@ class ScheduleStore:
                     message=str(rec.get("message") or ""), row_count=rec.get("row_count"),
                     contract_id=rec.get("contract_id"),
                     delivery_json=(json.dumps(rec["delivery"], ensure_ascii=False)
-                                   if rec.get("delivery") else None))
+                                   if rec.get("delivery") else None),
+                    neden_json=(json.dumps({"satirlar": rec.get("neden") or [],
+                                            "not": rec.get("neden_not")},
+                                           ensure_ascii=False)
+                                if (rec.get("neden") or rec.get("neden_not")) else None))
                 s.add(row)
                 s.commit()
                 return row.id
@@ -219,6 +223,16 @@ class ScheduleStore:
         }
         if r.delivery_json:
             d["delivery"] = json.loads(r.delivery_json)
+        # `neden_json` ESKİ satırlarda YOK (Faz F3 öncesi) ve kolonun kendisi de eski bir
+        # şemada bulunmayabilir — `getattr` ikisini de karşılar. Neden yoksa alan hiç
+        # görünmez: "boş neden" ile "neden üretilmedi" karışmasın.
+        ham = getattr(r, "neden_json", None)
+        if ham:
+            n = json.loads(ham)
+            if n.get("satirlar"):
+                d["neden"] = n["satirlar"]
+            if n.get("not"):
+                d["neden_not"] = n["not"]
         return d
 
     def notifications(self, limit: int = 20, tenant_id: str | None = None,
@@ -427,6 +441,78 @@ def _wren_for_schedule(state, sched: dict):
     return registry.service_for(slug)
 
 
+#: Bir uyarının nedeni için taranacak en fazla boyut. `/ask`'in 6'sından DAR: bu bir arka
+#: plan işidir, kullanıcı beklemiyor ama koşum penceresi (60 sn'lik scheduler döngüsü)
+#: paylaşımlı. Her boyut AYRI bir kıyas sorgusu (cari + geçen dönem) demek.
+NEDEN_MAX_BOYUT = 2
+
+#: Bildirimde gösterilecek en fazla bulgu. Bir uyarı bir HABERDİR, bir rapor değil.
+NEDEN_MAX_BULGU = 3
+
+
+def uyari_nedeni(svc, cq: dict, threshold: dict | None) -> tuple[list[str], str | None]:
+    """Bir uyarının NEDENİNİ üretir: *"ne oldu"* değil *"neyin değişmesi bunu getirdi"*.
+
+    Faz F3 kompozisyonu (`check_alert → contribution → dispatch`). Ölçülen boşluk: bugün
+    uyarı ``⚠ fire: eşik ihlali — makine M-07: 45 (> eşik 30)`` diyor ve orada bitiyor.
+    Kullanıcı *"neden 45?"* diye sorabileceği bir yere gitmek zorunda kalıyor — oysa
+    cevabı üretecek motor (`app/contribution.py`) elimizde duruyor.
+
+    Döner: ``(neden_satirlari, aciklama_notu)``. İkisi de boş olabilir ve bu bir HATA
+    DEĞİLDİR: katkı ayrıştırması yalnız TOPLANABİLİR ölçülerde tanımlıdır (bkz.
+    `contribution.ayristirilabilir_mi`) — `AVG`/oran/`COUNT(DISTINCT)` için "bu segment
+    değişimin %40'ını açıklıyor" cümlesi matematiksel olarak yanlış olur. O durumda
+    ayrıştırma YAPILMAZ ve nedeni `not` olarak döner.
+
+    **PII fail-closed.** Segment etiketleri boyut DEĞERLERİNDEN gelir (operatör adı,
+    cari unvanı) ve bir bildirimin kime ulaşacağı ÖNCEDEN BİLİNEMEZ — e-posta dağıtım
+    listesi, in-app bell, push. Bu yüzden `run_schedule`'ın ana sonuçta uyguladığı
+    disiplin burada da geçerlidir: satırlar ayrıştırmadan ÖNCE maskelenir.
+
+    **Tıklanabilir `cube_query` bildirimde TAŞINMAZ.** Maskelenmiş bir değere (`Ahm** Y***`)
+    filtre kuran bir sorgu boş döner; kullanıcıya "tıkla" diyip boş sonuç vermek, hiç
+    tıklatmamaktan kötüdür. Kanıt yolu bildirimdeki `contract_id`'dir.
+    """
+    from app import contribution as _contrib
+    from app.pii import mask_rows
+
+    olcu = (threshold or {}).get("measure")
+    # Uyarı hangi ölçü için kurulduysa ONUN değişimi açıklanır. Sorgunun ilk ölçüsünü
+    # varsaymak, çok-ölçülü bir raporda YANLIŞ ölçüyü açıklardı.
+    acq = dict(cq)
+    if olcu and olcu in (acq.get("measures") or []):
+        acq["measures"] = [olcu]
+
+    try:
+        out = _contrib.arastir(
+            svc, svc.schema(), acq, mode="yoy", kind="segment",
+            max_dimensions=NEDEN_MAX_BOYUT,
+            # Makbuz YAZILMAZ: koşum zaten kendi kök `contract_id`'sini üretti
+            # (aşağıda `contracts.record`) ve boyut başına ikinci bir kayıt, arka plan
+            # işinde gürültüdür. `arastir`'ın imzası bunu bilinçli bir seçim yapar.
+            kaydet=None,
+            satir_donustur=lambda rows: mask_rows(rows)[0])
+    except Exception:
+        # Nedeni üretememek uyarıyı KIRMAZ: haber yine gider, yalnız gerekçesiz.
+        _log.warning("uyarı nedeni üretilemedi (best-effort)", exc_info=True)
+        return ([], None)
+
+    raporlar = out.get("raporlar") or []
+    if not raporlar:
+        return ([], out.get("note"))
+    ilk = raporlar[0]
+    satirlar = [b["label"] for b in (ilk.get("bulgular") or [])[:NEDEN_MAX_BULGU]]
+    # Sessiz kırpma YOK (aynı disiplin `contribution.decompose`'da da var): gösterilmeyen
+    # segment sayısı söylenir, yoksa liste "her şey bu kadar" diye okunur.
+    kirpilan = len(ilk.get("bulgular") or []) - len(satirlar) + int(ilk.get("kirpilan_segment") or 0)
+    ek = []
+    if kirpilan > 0:
+        ek.append(f"+{kirpilan} segment daha (gösterilmedi, yok sayılmadı)")
+    if out.get("taranmayan_boyut"):
+        ek.append(f"{out['taranmayan_boyut']} boyut üst sınır nedeniyle taranmadı")
+    return (satirlar, " · ".join(ek) or None)
+
+
 def run_schedule(state, sched: dict, *, manual: bool = False) -> dict:
     """Bir zamanlanmış raporu KOŞAR: dönem çözülür → sorgu → sözleşme → eşik → bildirim.
 
@@ -474,6 +560,8 @@ def run_schedule(state, sched: dict, *, manual: bool = False) -> dict:
             pass
 
     alert_kind, violations = check_alert(sched.get("threshold"), result)
+    neden: list[str] = []
+    neden_not: str | None = None
     if violations:
         kind = "anomaly" if alert_kind == "anomaly" else "alert"
         lead = "olağandışı değerler" if kind == "anomaly" else "eşik ihlali"
@@ -483,6 +571,10 @@ def run_schedule(state, sched: dict, *, manual: bool = False) -> dict:
             + "; ".join(violations[:3])
             + (f" (+{len(violations) - 3} satır)" if len(violations) > 3 else "")
         )
+        # FAZ F3 — UYARININ NEDENİ. Kompozisyon: `check_alert → contribution → dispatch`.
+        # YALNIZ ihlalde koşar: rutin rapor için boyut taraması, kimsenin sormadığı bir
+        # soruya para ödemek olurdu (`arastir` maliyet sınıfı "pahali" beyanlı).
+        neden, neden_not = uyari_nedeni(svc, cq, sched.get("threshold"))
     else:
         kind = "report"
         severity = "info"
@@ -518,6 +610,7 @@ def run_schedule(state, sched: dict, *, manual: bool = False) -> dict:
         rows=result.get("rows") or [],
         viz=viz_spec,
         violations=violations,
+        neden=neden, neden_not=neden_not,
         contract_id=contract_id,
         schedule_id=sched.get("id"),
         tenant_id=sched.get("tenant_id"),

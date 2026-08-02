@@ -963,30 +963,59 @@ etiket kümesine karşı sınıyordu ve `route` çalıştıktan **sonra bile** r
 Kapının yanlış-pozitifi, kapının olmamasından **kötüdür**: meşru bir merdiven basamağını
 kapatır ve kural *"işe yaramıyor"* diye sökülür.
 
-### 11.6c Kompozisyon planlayıcıdan geçiyor (F3) ✅ — ve BİLEŞİK adımlar itiraf ediliyor
+### 11.6c Kompozisyon planlayıcıdan geçiyor (F3) ✅
 
 Konuşma yolu (G1) artık bir `Planlayici` kurar (`Butce(adim=6, saniye=20, sorgu=8)`) ve
-**kullanıcının kimliğini** ona verir — ajan yetkiyi aşamaz. Kayıtlı araçlar (`yoy.compute`)
-**dört kapıdan** geçer ve adım makbuzu üretir. Koşumun özeti cevabın **izinde** görünür:
+**kullanıcının kimliğini** ona verir — ajan yetkiyi aşamaz. Kayıtlı araçlar **dört kapıdan**
+geçer ve adım makbuzu üretir. Koşumun özeti cevabın **izinde** görünür:
 *"Ajan koşusu: N adım · M sorgu"* (kısıldıysa gerekçesiyle) — maliyet gizli kalmaz.
 
-**Bileşik adımlar itiraf edilir.** Katkı ayrıştırması kayıtlı **tek bir araç değildir**:
-bir uç noktanın gövdesidir ve içinde boyut başına ayrı sorgular koşar. Onu `tools.KAYIT`'a
-tek araçmış gibi yazmak **yalan olurdu** — ne girdisi tipli, ne çıktısı, ne de kapılardan
-geçiyor. `Planlayici.dis_adim()` bunu makbuzda **`gated: false`** ile işaretler:
+**`dis_adim` itirafı kalktı — çünkü sebebi ortadan kalktı.** Önceki tur katkı ayrıştırmasını
+`gated: false` diye işaretliyordu: kayıtlı tek bir araç değildi, çünkü gövdesi
+`/ask/contribution`'ın **router fonksiyonunun içindeydi** ve HTTP'ye yapışıktı (`request`,
+`_service_for`, `_drill_record_contract`). İtiraf doğruydu; asıl çözüm gövdeyi ayırmaktı.
 
-> Kayıtsız bir adımı hiç yazmamak, koşumu olduğundan **ucuz** ve **daha denetlenmiş**
-> göstermek olurdu. Denetçi hangi adımların kapılardan GEÇMEDİĞİNİ görebilmelidir.
+`app/contribution.py::arastir()` ile ayrıldı. Ölçülen iki kazanç:
 
-Bileşik adım **bütçeye dahildir** (adım ve sorgu sayılır): yönetişim eksik olsa da
-**maliyet muhasebesi eksik değildir**.
+1. **Kayda girebildi** (`contribution.report`, `maliyet="pahali"`) — dört kapıdan geçiyor,
+   kendi adım makbuzunu üretiyor. Router **ince bir sarmalayıcıya** düştü ve testle
+   kilitlendi: kendi boyut tarama döngüsünü yazamaz
+   (`test_uyari_neden.py::test_ROUTER_govdeyi_KOPYALAMAZ`).
+2. **Arka plan işleri onu çağırabildi.** `request` olmayan hiçbir yol bu motora
+   erişemiyordu — zamanlanmış uyarının *"neden"* eki tam olarak bu yüzden yoktu (§11.6e).
+
+`dis_adim()` API'si **kalır**: gerçek kayıtsız adımlar için itiraf mekanizması hâlâ doğru
+şeydir. Bugün tüketicisi yok, ve bu bir eksiklik değil bir olgudur.
+
+### 11.6e Uyarı artık NEDENİNİ de söylüyor (F3 kompozisyonu) ✅
+
+Planın F3 tablosundaki son açık satır: `schedules.check_alert → contribution → dispatch`.
+
+**Ölçülen boşluk:** uyarı `⚠ fire takibi: eşik ihlali — M-07: 45 (> eşik 30)` diyordu ve
+orada bitiyordu. **NE olduğunu söylüyor, NİYE olduğunu söylemiyordu** — oysa cevabı üretecek
+motor elimizde duruyor ve `/ask`'te *"bu neden böyle?"* sorusuna zaten cevap veriyordu.
+
+`schedules.uyari_nedeni()` kompozisyonu kurar. Dört karar kayıtlıdır:
+
+| Karar | Gerekçe |
+|---|---|
+| **Yalnız ihlalde koşar** | Rutin raporda boyut taraması, kimsenin sormadığı bir soruya para ödemektir (`arastir` maliyet sınıfı `pahali`) |
+| **PII fail-closed** (`satir_donustur=mask_rows`) | Bildirimin kime ulaşacağı ÖNCEDEN BİLİNEMEZ (dağıtım listesi · bell · push) — `principal` bypass'ı YOK. `run_schedule`'ın ana sonuçta uyguladığı disiplin; atlanırsa Faz A2'de kapatılan sızıntı sınıfı arka kapıdan geri açılırdı |
+| **Tıklanabilir `cube_query` TAŞINMAZ** | Maskelenmiş bir değere (`ahm**@***`) filtre kuran sorgu **boş döner**; "tıkla" deyip boş sonuç vermek hiç tıklatmamaktan kötüdür. Kanıt yolu bildirimin `contract_id`'sidir |
+| **Boyut sınırı `/ask`'ten dar** (6 → 2) | Arka plan işi; 60 sn'lik scheduler penceresi paylaşımlı. Sınır **sessiz değil**: `taranmayan_boyut` bildirimde görünür |
+
+**Dürüst red korunur:** katkı ayrıştırması yalnız TOPLANABİLİR ölçülerde tanımlıdır. `AVG`/
+oran için neden ÜRETİLMEZ ve **nedeni söylenir** — boş bir sessizlik değil.
+
+**Yüzeyler:** `NotificationEvent.neden` → e-posta (HTML **ve düz metin**, ikisi aynı bilgiyi
+taşır) · in-app bell (`notification_log.neden_json`, ayrı kolon — teslim TELEMETRİSİ ile
+cevabın İÇERİĞİ farklı şeylerdir) · `NotificationsPanel`'de katlanır `⤵ neden?` katmanı,
+**yeni panel değil** (§14.1). 16 test: `tests/test_uyari_neden.py`.
 
 ### 11.6d Henüz YOK (F3 kalanı + F4)
 
 Plan **SEÇİMİ** (hangi araç, hangi sırayla — telemetri gerekiyor, Faz E-1), belirsizlikte
-plan seviyesinde sorma, kalan kompozisyonların (rapor · pano · uyarı) planlayıcıya
-taşınması, ve bileşiklerin **kayıtlı araçlara ayrıştırılması** (`contribution.report`
-bugün `gated: false`).
+plan seviyesinde sorma, ve kalan kompozisyonların (rapor · pano) planlayıcıya taşınması.
 
 ### 11.6 Özellik = KOMPOZİSYON, endpoint değil
 

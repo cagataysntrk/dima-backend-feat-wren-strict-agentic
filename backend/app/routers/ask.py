@@ -1208,22 +1208,33 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # desen: drill↔schedules, interpret↔schedules, _uncovered↔_syn_hit).
         if tur in (followup.TUR_NEDEN, followup.TUR_NE_YAPMALI, followup.TUR_ISARET):
             recete_payload: dict | None = None
-            _t0 = _time.monotonic()
             try:
-                katki = ask_contribution(
-                    request, ContributionRequest(cube_query=prev_cq, mode="yoy",
-                                                 kind="segment", session_id=session_id))
+                # FAZ F3 — artık KAYITLI bir araç: dört kapıdan (kayıt · yetki ·
+                # deterministik-önce · bütçe) geçer ve kendi adım makbuzunu üretir.
+                # Önceki tur burada `dis_adim(..., gated: false)` diye İTİRAF ediyordu,
+                # çünkü gövde `/ask/contribution` router'ının içindeydi ve kayda tek
+                # araçmış gibi yazmak yalan olurdu. Gövde `app/contribution.py::arastir`'a
+                # taşındı; itiraf artık gereksiz.
+                ham = plan.calistir(
+                    "contribution.report", service, schema, prev_cq,
+                    mode="yoy", kind="segment",
+                    kaydet=lambda baslik, acq, sql, res: _drill_record_contract(
+                        request, service, session_id, baslik, acq, sql, res))
+            except _planner.ButceAsimi:
+                _log.info("konuşma: bütçe tavanı — katkı ayrıştırması yapılmadı")
+                return None
             except Exception:
                 _log.warning("konuşma: katkı ayrıştırması başarısız (best-effort)",
                              exc_info=True)
                 return None
-            # Katkı ayrıştırması kayıtlı TEK bir araç değil bir BİLEŞİKTİR (boyut başına
-            # ayrı sorgu koşar). `tools.KAYIT`'a tek araçmış gibi yazmak yalan olurdu:
-            # ne girdisi tipli, ne kapılardan geçiyor. `dis_adim` bunu İTİRAF EDER —
-            # makbuzda `gated: false` ile görünür ve maliyeti yine de bütçeye sayılır.
-            plan.dis_adim("contribution.report", sure_ms=int((_time.monotonic() - _t0) * 1000),
-                          makbuz=(katki.contract_ids or [None])[0],
-                          not_="bileşik: /ask/contribution gövdesi — kayıtlı tek araç değil")
+            katki = ContributionResponse(
+                measure=ham.get("measure"), mode=ham.get("mode") or "yoy",
+                kind=ham.get("kind") or "segment", note=ham.get("note"),
+                taranmayan_boyut=ham.get("taranmayan_boyut") or 0,
+                contract_ids=ham.get("contract_ids") or [],
+                raporlar=[ContributionReport(**r) for r in (ham.get("raporlar") or [])],
+                pvm_raporlar=[PvmReport(**_pvm_seleli(r))
+                              for r in (ham.get("pvm_raporlar") or [])])
             adimlar: list[NextStep] = []
             for rapor in katki.raporlar:
                 for b in rapor.bulgular[:3]:
@@ -2700,100 +2711,33 @@ def ask_contribution(request: Request, body: ContributionRequest) -> Contributio
     — burada ayrıştırma yapılmaz ve NEDENİ söylenir (ADR-0008'in ölçü-matematiği karşılığı).
     """
     from app import contribution as contrib
-    from app import yoy as _yoy
-    from app.drill import available_dimensions
 
     cq = dict(body.cube_query or {})
     if not cq.get("cube"):
         return ContributionResponse(note="Bu sonuç yapısal bir cube_query taşımıyor "
                                          "(Discovery/ham SQL) — katkı ayrıştırması yapılamaz.")
     service = _service_for(request, body.session_id)
-    schema = service.schema()
-    cube_meta = next((c for c in (schema.get("cubes") or [])
-                      if c.get("name") == cq.get("cube")), None)
-    if cube_meta is None:
+
+    # FAZ F3 — GÖVDE `app/contribution.py::arastir`'DA. Bu router artık yalnız HTTP
+    # kaygılarını çözer (servis çözümü · makbuz yazıcısı · hata kodu). Ayırmanın ölçülen
+    # sebebi: gövde router'a yapışıkken (a) planlayıcıya `dis_adim(..., gated: false)`
+    # diye İTİRAF olarak giriyordu — kayıtlı bir araç değildi, (b) `request` olmayan arka
+    # plan işleri (zamanlanmış uyarılar) onu HİÇ çağıramıyordu.
+    out = contrib.arastir(
+        service, service.schema(), cq,
+        mode=body.mode, kind=body.kind, max_dimensions=body.max_dimensions,
+        kaydet=lambda baslik, acq, sql, res: _drill_record_contract(
+            request, service, body.session_id, baslik, acq, sql, res))
+    if out.get("hata") == "cube_yok":
         raise HTTPException(status_code=400, detail="Cube bulunamadı (şema değişmiş olabilir).")
 
-    kind = body.kind if body.kind in ("segment", "pvm") else "segment"
-    measure = (cq.get("measures") or [None])[0]
-
-    ciftler = contrib.pvm_pairs(cube_meta)
-    if kind == "pvm":
-        # Eşleştirme TAHMİN EDİLMEZ: cube'un `pvm:` beyanı yoksa PVM sunulmaz. Ad kalıbıyla
-        # (ör. "tutar/adet fiyattır") tahmin etmek, yanlış eşleştirmede GÜVENLE YANLIŞ
-        # ekonomi üretirdi — kullanıcı "birim fiyat %12 arttı" cümlesini sorgulamaz.
-        cift = next((p for p in ciftler if p["value"] == measure), None)
-        if cift is None:
-            return ContributionResponse(
-                measure=measure, mode=body.mode, kind=kind,
-                note=(f"`{cq.get('cube')}` cube'u `{measure}` için bir fiyat×miktar "
-                      "eşleştirmesi BEYAN ETMİYOR (cube metadata'sında `pvm:`). Fiyat "
-                      "ayrıştırması ancak beyan edilmiş bir değer/miktar çifti üzerinde "
-                      "anlamlıdır; tahmin edilmez."))
-    else:
-        ok, neden = contrib.ayristirilabilir_mi(measure, cube_meta)
-        if not ok:
-            return ContributionResponse(measure=measure, mode=body.mode, kind=kind, note=neden)
-        cift = None
-
-    mode = body.mode if body.mode in ("yoy", "mom") else "yoy"
-    time_dim = _yoy.time_dim_of(schema, cq.get("cube"))
-    unit = (cube_meta.get("units") or {}).get(measure)
-    labels = cube_meta.get("dimension_labels") or {}
-
-    adaylar = [d["name"] for d in available_dimensions(cube_meta, cq)]
-    sinir = max(1, int(body.max_dimensions or contrib.MAX_BOYUT))
-    taranan, taranmayan = adaylar[:sinir], max(0, len(adaylar) - sinir)
-    if taranmayan:
-        # Sessiz kesme YOK: kapsamı daraltan her sınır loglanır VE yanıtta görünür.
-        _log.info("katkı araması: %d boyuttan %d tanesi taranmadı (sınır=%d, cube=%s)",
-                  len(adaylar), taranmayan, sinir, cq.get("cube"))
-
-    raporlar, pvm_raporlar, contract_ids = [], [], []
-    for dim in taranan:
-        # PVM iki ölçüyü BİRLİKTE ister (değer ve miktar aynı kıyas sorgusunda gelsin ki
-        # segment hizalaması kesin olsun; ayrı iki sorgu satır kümesi ayrışabilirdi).
-        olculer = [cift["value"], cift["volume"]] if cift else list(cq.get("measures") or [])
-        alt = {**cq, "measures": olculer, "dimensions": [dim]}
-        try:
-            out = _yoy.compute(service, {**alt, "compare": mode}, mode, time_dim)
-        except Exception:
-            _log.warning("katkı araması: %s boyutu için kıyas başarısız (atlanıyor)",
-                         dim, exc_info=True)
-            continue
-        if cift:
-            rapor = contrib.pvm_report(out["rows"], dim, cift, alt,
-                                       dim_label=labels.get(dim), unit=unit)
-            if not rapor["bulgular"]:
-                continue
-            pvm_raporlar.append(rapor)
-        else:
-            rapor = contrib.decompose(out["rows"], dim, measure, alt,
-                                      dim_label=labels.get(dim), unit=unit)
-            if not rapor["bulgular"]:
-                continue
-            raporlar.append(rapor)
-        # Her katkı sorgusu KENDİ kanıt kaydını üretir — "yeniden çalıştırılıp hash
-        # eşlenebilen makbuz" değişmezi burada da geçerli (drill ile AYNI desen).
-        cid = _drill_record_contract(
-            request, service, body.session_id,
-            f"katkı araması: {measure} × {dim} ({mode})", {**alt, "compare": mode},
-            out["base_sql"], {"columns": out["columns"], "rows": out["rows"],
-                              "row_count": out["row_count"]})
-        if cid:
-            contract_ids.append(cid)
-
-    if not raporlar and not pvm_raporlar:
-        return ContributionResponse(
-            measure=measure, mode=mode, kind=kind, taranmayan_boyut=taranmayan,
-            note="Bu sorguda değişimi açıklayan bir kırılım bulunamadı — kullanılmayan "
-                 "boyut yok ya da hiçbir segment anlamlı bir hareket göstermiyor.")
-
     return ContributionResponse(
-        measure=measure, mode=mode, kind=kind, taranmayan_boyut=taranmayan,
-        contract_ids=contract_ids,
-        raporlar=[ContributionReport(**r) for r in contrib.rank_dimensions(raporlar)],
-        pvm_raporlar=[PvmReport(**_pvm_seleli(r)) for r in contrib.rank_dimensions(pvm_raporlar)])
+        measure=out.get("measure"), mode=out.get("mode") or body.mode,
+        kind=out.get("kind") or body.kind, note=out.get("note"),
+        taranmayan_boyut=out.get("taranmayan_boyut") or 0,
+        contract_ids=out.get("contract_ids") or [],
+        raporlar=[ContributionReport(**r) for r in (out.get("raporlar") or [])],
+        pvm_raporlar=[PvmReport(**_pvm_seleli(r)) for r in (out.get("pvm_raporlar") or [])])
 
 
 def _pvm_seleli(r: dict) -> dict:

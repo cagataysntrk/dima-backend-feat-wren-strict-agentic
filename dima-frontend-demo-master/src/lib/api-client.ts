@@ -361,6 +361,13 @@ export interface Notification {
   message: string;
   label?: string;
   contract_id?: string | null;
+  // NEDEN (Faz F3): `message` NE olduğunu söyler ("eşik ihlali — M-07: 45"), bu alan
+  // NİYE olduğunu ("makine: M-07 — 12.400 kg arttı (net değişimin %61'i)"). Etiketler
+  // backend'de PII-maskelidir ve tıklanabilir sorgu TAŞIMAZ: maskeli bir değere filtre
+  // kuran sorgu boş döner, "tıkla" deyip boş sonuç vermek hiç tıklatmamaktan kötüdür.
+  // Kanıt yolu `contract_id`'dir.
+  neden?: string[];
+  neden_not?: string | null;   // kırpma/tarama sınırı ya da dürüst red gerekçesi
 }
 
 // Zamanlanmış rapor kaydı (GET /schedules öğesi) — doğrulama turu düzeltmesi (1 Ağustos

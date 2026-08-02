@@ -72,5 +72,11 @@ def render_email(event: NotificationEvent) -> tuple[str, str, str]:
     text_lines = [event.title, "", event.summary]
     if event.violations:
         text_lines += ["", *[f"• {v}" for v in event.violations[:10]]]
+    # Düz metin yedeği HTML ile AYNI bilgiyi taşımalı: "Neden?" yalnız zengin istemcide
+    # görünseydi, e-postayı metin okuyan kullanıcı gerekçesiz bir uyarı alırdı.
+    if event.neden or event.neden_not:
+        text_lines += ["", "Neden?", *[f"↳ {n}" for n in event.neden]]
+        if event.neden_not:
+            text_lines.append(event.neden_not)
     text = "\n".join(text_lines)
     return subject, html, text

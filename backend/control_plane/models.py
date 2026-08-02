@@ -328,6 +328,11 @@ class NotificationLog(SQLModel, table=True):
     row_count: int | None = None
     contract_id: str | None = None
     delivery_json: str | None = None                        # [{channel, ok, ...}] teslim sonucu
+    # NEDEN (Faz F3): uyarıyı sürükleyen segmentler + kırpma/tarama notu. Ayrı bir kolon,
+    # `delivery_json`'ın içine sıkıştırılmadı: teslim TELEMETRİSİ ile cevabın İÇERİĞİ farklı
+    # şeylerdir ve birini ötekinin içinde saklamak, ikisini de sorgulanamaz yapardı.
+    # Etiketler PII-maskeli ve tıklanabilir sorgu TAŞIMAZ (bkz. `schedules.uyari_nedeni`).
+    neden_json: str | None = None                           # {"satirlar": [...], "not": "..."}
 
 
 class NotificationPreference(SQLModel, table=True):

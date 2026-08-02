@@ -40,6 +40,11 @@ class NotificationEvent:
     rows: list[dict] = field(default_factory=list)   # veri tablosu (email gövdesi)
     viz: dict | None = None                          # VizSpec (ADR-0024) — email grafik kararı
     violations: list[str] = field(default_factory=list)  # eşik/anomali ihlalleri
+    # NEDEN (Faz F3): ihlali sürükleyen segmentler — `violations` NE olduğunu, bu NİYE
+    # olduğunu söyler. Etiketler PII-maskelidir (bildirimin kime ulaşacağı önceden
+    # bilinemez) ve tıklanabilir `cube_query` TAŞIMAZ (maskeli değere filtre boş döner).
+    neden: list[str] = field(default_factory=list)
+    neden_not: str | None = None                     # kırpma/tarama sınırı ya da dürüst red
     contract_id: str | None = None
     schedule_id: str | None = None
     tenant_id: str | None = None
@@ -150,6 +155,8 @@ def _inapp_channel(event: NotificationEvent, target: dict, ctx: DispatchContext)
         "message": event.summary,
         "contract_id": event.contract_id,
         "row_count": event.row_count,
+        "neden": event.neden or None,
+        "neden_not": event.neden_not,
         "cube_query": event.extra.get("cube_query"),
         "manual": event.extra.get("manual", False),
     }

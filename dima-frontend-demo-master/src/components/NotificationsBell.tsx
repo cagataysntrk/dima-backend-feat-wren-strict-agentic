@@ -68,6 +68,16 @@ export function NotificationsPanel() {
   // "hiç bildirim yok" ile AYIRT EDİLEMİYORDU (ikisi de aynı boş listeye düşüyordu).
   const [error, setError] = useState(false);
   const [openContract, setOpenContract] = useState<string | null>(null);
+  // NEDEN katmanı (Faz F3) — KAPALI başlar. Bir uyarı önce bir HABERDİR: liste taranabilir
+  // kalmalı. Gerekçe bir tık uzakta durur ve AYNI kartın içinde açılır — yeni panel DEĞİL
+  // (MIMARI §14.1: "yeni yetenek yeni panel doğurmaz").
+  const [acikNeden, setAcikNeden] = useState<ReadonlySet<string | number>>(new Set());
+  const nedenAcKapa = (id: string | number) =>
+    setAcikNeden((onceki) => {
+      const yeni = new Set(onceki);
+      if (!yeni.delete(id)) yeni.add(id);
+      return yeni;
+    });
 
   useEffect(() => {
     getNotifications(50)
@@ -93,29 +103,67 @@ export function NotificationsPanel() {
   return (
     <>
       <ul>
-        {items.map((n) => (
-          <li key={n.id} className="border-b border-hairline px-1 py-2 last:border-b-0">
-            <div
-              className={`font-mono text-[11px] leading-snug ${
-                n.kind === "alert" ? "text-red-500" : "text-neutral-600 dark:text-neutral-300"
-              }`}
-            >
-              {n.message}
-            </div>
-            <div className="mt-0.5 flex items-center justify-between font-mono text-[9px] text-neutral-400">
-              <span>{n.ts.replace("T", " ").slice(0, 16)}</span>
-              {n.contract_id && (
-                <button
-                  onClick={() => setOpenContract(n.contract_id ?? null)}
-                  title="Kanıt kaydı (Query Contract) — tıkla → incele"
-                  className="underline-offset-2 hover:text-foreground hover:underline"
-                >
-                  {n.contract_id}
-                </button>
+        {items.map((n) => {
+          const nedenVar = (n.neden?.length ?? 0) > 0 || !!n.neden_not;
+          const acik = acikNeden.has(n.id);
+          return (
+            <li key={n.id} className="border-b border-hairline px-1 py-2 last:border-b-0">
+              <div
+                className={`font-mono text-[11px] leading-snug ${
+                  n.kind === "alert" ? "text-red-500" : "text-neutral-600 dark:text-neutral-300"
+                }`}
+              >
+                {n.message}
+              </div>
+              <div className="mt-0.5 flex items-center justify-between gap-2 font-mono text-[9px] text-neutral-400">
+                <span className="flex items-center gap-2">
+                  <span>{n.ts.replace("T", " ").slice(0, 16)}</span>
+                  {nedenVar && (
+                    <button
+                      onClick={() => nedenAcKapa(n.id)}
+                      aria-expanded={acik}
+                      title="Bu uyarıyı hangi segmentler sürükledi?"
+                      className="underline-offset-2 hover:text-foreground hover:underline"
+                    >
+                      {acik ? "⤴" : "⤵"} neden?
+                    </button>
+                  )}
+                </span>
+                {n.contract_id && (
+                  <button
+                    onClick={() => setOpenContract(n.contract_id ?? null)}
+                    title="Kanıt kaydı (Query Contract) — tıkla → incele"
+                    className="shrink-0 underline-offset-2 hover:text-foreground hover:underline"
+                  >
+                    {n.contract_id}
+                  </button>
+                )}
+              </div>
+              {nedenVar && acik && (
+                // Gerekçe kartın İÇİNDE açılır. Satırlar TIKLANABİLİR DEĞİLDİR ve bu
+                // bilinçlidir: backend etiketleri PII-maskeler, maskeli bir değere filtre
+                // kuran sorgu boş dönerdi. Kanıt yolu yukarıdaki makbuz kimliğidir.
+                <div className="mt-1.5 border-l border-hairline pl-2">
+                  {(n.neden ?? []).map((satir, i) => (
+                    <div
+                      key={i}
+                      className="font-mono text-[10px] leading-snug text-neutral-600 dark:text-neutral-300"
+                    >
+                      ↳ {satir}
+                    </div>
+                  ))}
+                  {n.neden_not && (
+                    // Kırpma/tarama sınırı ya da DÜRÜST RED ("bu ölçü toplanabilir değil").
+                    // İkisi de aynı yerde görünür: kapsamı daraltan her karar söylenir.
+                    <div className="mt-0.5 font-mono text-[9px] text-neutral-400">
+                      {n.neden_not}
+                    </div>
+                  )}
+                </div>
               )}
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
       {openContract && (
         <ContractDetailPanel contractId={openContract} onClose={() => setOpenContract(null)} />
