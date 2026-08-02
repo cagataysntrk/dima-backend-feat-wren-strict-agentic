@@ -15,6 +15,7 @@ import {
 } from "@/lib/api-client";
 import { ContractDetailPanel } from "@/components/ContractDetailPanel";
 import { ContributionLayer } from "@/components/ContributionLayer";
+import { PrescriptionLayer } from "@/components/PrescriptionLayer";
 import { DrillDownPanel } from "@/components/DrillDownPanel";
 import { InterpretationBar } from "@/components/InterpretationBar";
 import { ResultView } from "@/components/ResultView";
@@ -689,6 +690,14 @@ export function ReportCard({
             ×
           </button>
         </div>
+      )}
+
+      {/* REÇETE önce gelir: kullanıcı "ne yapmalıyız?" diye sordu — CEVAP budur.
+          Altındaki katkı katmanı o cevabın DAYANAĞIDIR (hangi segment ne kadar
+          hareket etti). Sıra ters olsaydı kullanıcı önce ham ayrışmayı, sonra
+          cevabı görürdü. */}
+      {item.prescription && (
+        <PrescriptionLayer recete={item.prescription} onCubeEdit={onCubeEdit} />
       )}
 
       {item.cube_query && (item.result || item.contribution) && (

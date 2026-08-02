@@ -195,3 +195,41 @@ def test_UCTAN_UCA_neden_boyle_RECETE_uretmez(client):
     assert not any("Reçete:" in t for t in (d.get("trace") or [])), \
         "açıklama sorusuna istenmeyen reçete eklendi"
     assert d.get("contribution"), "açıklama cevabı bozuldu"
+
+
+# --- UI SÖZLEŞMESİ: reçete YAPILI gelir, düz metne çevrilmez -------------------
+
+def test_recete_YAPILI_govde_tasir(client):
+    """ÖLÇÜLEN BOŞLUK. Reçete yalnız `note` metnine çevrilseydi backend'de hesaplanan
+    ÜÇ ŞEY de kaybolurdu: segment başına YÖN (`lower_is_better` beyanından), YOĞUNLAŞMA
+    oranı ve etki/pay sayıları. Chip yalnız etiket taşır; **yön bir RENK kararıdır ve
+    metinden okunmaz** — "fire arttı" kötü haberdir, "ciro arttı" iyi."""
+    from tests.conftest import ask
+
+    ilk = ask(client, "bu yıl makine bazında işlenen kg")
+    d = ask(client, "ne yapmalıyız?", cube_query=ilk["cube_query"], history=[ilk["question"]])
+
+    r = d.get("prescription")
+    assert r, "reçete yapılı gövde taşımıyor — UI düz metne düşer"
+    assert "rationale" in r and "diffuse" in r and "concentration" in r
+    for o in r["options"]:
+        assert o["direction"] in ("kotulesti", "iyilesti"), o
+        assert "impact" in o and "share" in o
+        assert o.get("cube_query"), "öneri tıklanabilir DEĞİL — öneri değil bir cümle olur"
+
+
+def test_aciklama_sorusu_RECETE_tasimaz(client):
+    """Gerileme kilidi: "bu neden böyle?" bir AÇIKLAMA ister. Reçete alanı dolarsa
+    kullanıcı sormadığı bir tavsiyeyi cevabın yerine görür."""
+    from tests.conftest import ask
+
+    ilk = ask(client, "bu yıl makine bazında işlenen kg")
+    d = ask(client, "bu neden böyle?", cube_query=ilk["cube_query"], history=[ilk["question"]])
+    assert not d.get("prescription")
+
+
+def test_normal_rapor_RECETE_tasimaz(client):
+    """Kademeli açılım: istenmeden reçete gösterilmez."""
+    from tests.conftest import ask
+
+    assert not ask(client, "bu yıl makine bazında işlenen kg").get("prescription")

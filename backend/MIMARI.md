@@ -1418,14 +1418,34 @@ değişti?»"*). "Kök neden" adı bilinçli olarak **hiçbirine verilmedi**: pl
 tanımında (F3) kök-neden bu ikisinin **kompozisyonudur** — tek bir bileşene o adı vermek
 yanıltıcıdır.
 
+#### Kusur 3: reçete düz metne çevriliyordu (G3 sonrası ölçüldü)
+
+Reçete yalnız `note` metnine çevriliyordu ve backend'de hesaplanan **üç şey de
+kayboluyordu**: segment başına **yön** (`lower_is_better` beyanından), **yoğunlaşma**
+oranı, ve etki/pay sayıları. Chip yalnız etiket taşır.
+
+**Yön bir RENK kararıdır ve metinden okunmaz**: *"fire arttı"* kötü haberdir, *"ciro
+arttı"* iyi. Ayrımı ad tahmininden değil **metadata beyanından** biliyoruz; UI'ın bunu
+göstermemesi, ölçülmüş bir bilgiyi çöpe atmak olurdu.
+
+Düzeltme: `AskResponse.prescription` (yeni **panel değil, alan**) + `PrescriptionLayer`.
+Dağınık değişimde liste yerine **gerekçe** gösterilir — boş bir liste değil, *neden boş*.
+
 #### Ölçülen sonuç: kartta kaç şerit görünüyor?
+
+
 
 Varsayım değil **ölçüm** (canlı `/ask`, 2026-08-02):
 
-| Cevap türü | Şerit sayısı | Neler |
+| Cevap türü | Şerit | Neler |
 |---|---|---|
-| Normal rapor | **3** | sonuç+grafik · katkı katmanı (**katlı** buton) · sonraki adım |
-| Konuşma cevabı | **1** | yalnız katkı katmanı (**açık**) |
+| Normal rapor | **3** | sonuç+grafik · katkı katmanı (**katlı**) · sonraki adım |
+| *"bu neden böyle?"* | **1** | yalnız katkı katmanı (**açık**) — cevabın kendisi |
+| *"ne yapmalıyız?"* | **2** | **reçete (CEVAP)** → **katkı (DAYANAK)** |
+| *"normal mi?"* | **3** | gerçek kıyas tablosu üretir → normal rapor gibi |
+
+İki katman **üst üste binme değil İKİ KADEME**: kullanıcı önce cevabı, sonra dayanağını
+görür. Sıra ters olsaydı önce ham ayrışmayı, sonra cevabı görürdü.
 
 Konuşma cevabı tam olarak **tek şey** gösterir: cevabın kendisi. Üçüncü bir chip şeridi
 (`recommendations`, K4) orada **hiç doğmaz** çünkü sinyal üretimi `interpretation`'a,

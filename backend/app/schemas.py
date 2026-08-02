@@ -285,6 +285,13 @@ class AskResponse(BaseModel):
     # (buton yolu kendi çeker, konuşma yolu hazır alır). İki render edici zamanla
     # ayrışırdı; bu depoda o desen beş kez ölçüldü.
     contribution: dict[str, Any] | None = None
+    # REÇETE (Faz G3) — "ne yapmalıyız?" cevabının YAPILI gövdesi. Düz metne
+    # çevrilseydi backend'de hesaplanan üç şey kaybolurdu: segment başına YÖN
+    # (`lower_is_better` beyanından: kötüleşti/iyileşti), YOĞUNLAŞMA oranı ve etki/pay
+    # sayıları. Chip yalnız etiket taşır; yön bir renk kararıdır ve metinden okunmaz.
+    #
+    # Yeni bir PANEL değil bir ALAN (MIMARI §14.2): cevabın kendi kartında açılır.
+    prescription: dict[str, Any] | None = None
     # DÜZ-DİL HESAPLAMA AÇIKLAMASI (Madde 12, 1 Ağustos 2026): `drill.py::formula_explanation`
     # KPI-olmayan cube raporları İÇİN de (yalnız `/ask/drill`e değil, normal `/ask`e) çağrılır.
     # DİKKAT — `explain` (yukarıda) ile KARIŞTIRILMAMALI: `explain` provenance/güven metadata'sı

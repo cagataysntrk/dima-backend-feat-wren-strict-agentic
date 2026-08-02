@@ -118,6 +118,10 @@ export interface AskResponse {
   // uyarısı kayboluyordu (ölçüldü). Doluysa ReportCard `ContributionLayer`'ı HAZIR VERİYLE
   // render eder — aynı bileşen, ikinci bir istek YOK.
   contribution?: ContributionResponse | null;
+  // REÇETE (Faz G3) — YALNIZ "ne yapmalıyız?" sorulduğunda dolar. "Bu neden böyle?"
+  // bir AÇIKLAMA ister, reçete değil; ikisini karıştırmak kullanıcının SORMADIĞI bir
+  // tavsiyeyi cevabın yerine koymak olurdu.
+  prescription?: Prescription | null;
   // Faz 3 (31 Temmuz 2026) — birleşik açıklama: `trace`/`source`'un ÜSTÜNE biner, onları
   // SİLMEZ (SourceBadge/trace render'ı kırılmaz — kademeli geçiş). Rapor üretmeyen yanıtlarda
   // (netleştirme/chip) null.
@@ -249,7 +253,11 @@ export interface DashboardWidgetData {
   // onları "SONRAKİ ADIM" başlığıyla gösteriyordu ve Δ tutarları / % paylar / kırpma
   // uyarısı kayboluyordu (ölçüldü). Doluysa ReportCard `ContributionLayer`'ı HAZIR VERİYLE
   // render eder — aynı bileşen, ikinci bir istek YOK.
-  contribution?: ContributionResponse | null; // ADR-0024: backend grafik/tablo/pivot kararı (chat ile aynı)
+  contribution?: ContributionResponse | null;
+  // REÇETE (Faz G3) — YALNIZ "ne yapmalıyız?" sorulduğunda dolar. "Bu neden böyle?"
+  // bir AÇIKLAMA ister, reçete değil; ikisini karıştırmak kullanıcının SORMADIĞI bir
+  // tavsiyeyi cevabın yerine koymak olurdu.
+  prescription?: Prescription | null; // ADR-0024: backend grafik/tablo/pivot kararı (chat ile aynı)
   error: string | null;
 }
 
@@ -268,6 +276,10 @@ export interface ReportBlock {
   // uyarısı kayboluyordu (ölçüldü). Doluysa ReportCard `ContributionLayer`'ı HAZIR VERİYLE
   // render eder — aynı bileşen, ikinci bir istek YOK.
   contribution?: ContributionResponse | null;
+  // REÇETE (Faz G3) — YALNIZ "ne yapmalıyız?" sorulduğunda dolar. "Bu neden böyle?"
+  // bir AÇIKLAMA ister, reçete değil; ikisini karıştırmak kullanıcının SORMADIĞI bir
+  // tavsiyeyi cevabın yerine koymak olurdu.
+  prescription?: Prescription | null;
   error: string | null;
 }
 
@@ -488,6 +500,30 @@ export interface PvmReport {
   kirpilan_segment: number;
   kirpilan_esik_yuzde: number;
   viz?: WaterfallSpec | null;
+}
+
+// REÇETE (Faz G3) — "ne yapmalıyız?" cevabının YAPILI gövdesi.
+// Üç boyutun üçü de ölçülmüş ya da BEYAN EDİLMİŞ: etki (contribution deltası) ·
+// yön (lower_is_better metadata beyanı) · yoğunlaşma (hesaplanmış oran).
+// Kontrol edilebilirlik / maliyet / risk KASTEN YOK — veride bulunmuyorlar ve
+// tahmin edilselerdi sıralama uydurma olurdu.
+export interface PrescriptionOption {
+  segment: string;
+  impact: number;
+  share: number | null;      // net değişime oran; net ~0 ise null — UYDURULMAZ
+  direction: "kotulesti" | "iyilesti";
+  cube_query?: CubeQuery;    // tıklanınca tek başına açılır, kendi makbuzunu üretir
+}
+
+export interface Prescription {
+  options: PrescriptionOption[];
+  concentration: number | null;
+  // true = değişim DAĞINIK → öneri üretilmedi ve NEDEN üretilmediği `rationale`'da.
+  // Bu bir eksiklik değil bir karardır: sorun sistemikse tek segmente odaklanmak
+  // toplamı kayda değer biçimde değiştirmez.
+  diffuse: boolean;
+  rationale: string;
+  measure?: string | null;
 }
 
 export interface ContributionResponse {

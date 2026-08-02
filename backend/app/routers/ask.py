@@ -1207,6 +1207,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # ÇAĞRILIR, kopyalanmaz (aynı kural iki yerde yaşamasın — bu depoda ölçülmüş
         # desen: drill↔schedules, interpret↔schedules, _uncovered↔_syn_hit).
         if tur in (followup.TUR_NEDEN, followup.TUR_NE_YAPMALI, followup.TUR_ISARET):
+            recete_payload: dict | None = None
             _t0 = _time.monotonic()
             try:
                 katki = ask_contribution(
@@ -1248,6 +1249,14 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 # NEDEN üretilmediği söylenir (dürüst red, `contribution`ın
                 # toplanabilirlik kapısıyla aynı disiplin).
                 not_metni = rec.gerekce
+                recete_payload = {
+                    **rec.makbuza()["prescription"],
+                    # UI'ın render edebilmesi için sorgular da taşınır (bulgu tıklanır
+                    # olmalı — ürünün tezi her önerinin doğrulanabilir bir sorgu olması).
+                    "options": [{**o.makbuza(), "cube_query": o.cube_query}
+                                for o in rec.oneriler],
+                    "measure": katki.measure,
+                }
                 if rec.oneriler:
                     adimlar = [NextStep(label=o.segment, kind="dimension",
                                         cube_query=o.cube_query) for o in rec.oneriler]
@@ -1259,7 +1268,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             return AskResponse(question=body.question, source=None, note=not_metni,
                                cube_query=prev_cq, next_steps=adimlar[:8],
                                trace=iz + [_plan_izi(plan)],
-                               contribution=katki.model_dump())
+                               contribution=katki.model_dump(),
+                               prescription=recete_payload)
 
         # NORMAL Mİ → dönemsel kıyas. Yeni bir "normallik" tanımı UYDURULMAZ: elimizdeki
         # tek nesnel zemin geçen dönemle kıyastır ve cevap onu böyle sunar.
