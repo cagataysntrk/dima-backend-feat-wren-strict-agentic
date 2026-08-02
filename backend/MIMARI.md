@@ -1256,6 +1256,24 @@ değişti?»"*). "Kök neden" adı bilinçli olarak **hiçbirine verilmedi**: pl
 tanımında (F3) kök-neden bu ikisinin **kompozisyonudur** — tek bir bileşene o adı vermek
 yanıltıcıdır.
 
+#### Ölçülen sonuç: kartta kaç şerit görünüyor?
+
+Varsayım değil **ölçüm** (canlı `/ask`, 2026-08-02):
+
+| Cevap türü | Şerit sayısı | Neler |
+|---|---|---|
+| Normal rapor | **3** | sonuç+grafik · katkı katmanı (**katlı** buton) · sonraki adım |
+| Konuşma cevabı | **1** | yalnız katkı katmanı (**açık**) |
+
+Konuşma cevabı tam olarak **tek şey** gösterir: cevabın kendisi. Üçüncü bir chip şeridi
+(`recommendations`, K4) orada **hiç doğmaz** çünkü sinyal üretimi `interpretation`'a,
+o da bir `result`'a bağlıdır — konuşma cevabında sonuç tablosu yoktur. Bu, tasarımın
+şans eseri değil **yapısal** sonucudur ve ölçülerek doğrulanmıştır.
+
+Kartın **her** üst-seviye bölümü koşulludur; koşulsuz görünen hiçbir blok yoktur
+(kademeli açılım). Karşılıklı dışlamalar da yapısaldır:
+`contribution` varsa `next_steps` gizlenir, buton gizlenir.
+
 #### Yakınsama kusur DEĞİLDİR
 
 Katkı ayrıştırmasına artık **üç** giriş var: buton · doğal dil (*"bu neden böyle?"*) ·
