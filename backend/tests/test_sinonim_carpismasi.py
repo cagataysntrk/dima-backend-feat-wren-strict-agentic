@@ -64,45 +64,51 @@ import pytest
 from app import cube_router as cr
 
 #: Ölçülen (2026-08-02, bugünkü katalog). Her satır bir ALAN KARARI bekliyor.
-#: `surdurulebilirlik` kümesi (14) burada çünkü onu kapatma denemesi ÖLÇÜMLE REDDEDİLDİ.
+#: ⟳ **Faz 2a-3 sonrası yeniden ölçüldü: 30 → 23.** `_daha_spesifik_olcu_sahibi`
+#: (kimlik asimetrisi düzeltmesi) yedi satırı **kimlik silmeden** kapattı:
+#:   atiksu lt kg · dogalgaz tuketimi · elektrik tuketimi · ortalama sapma ·
+#:   toplam durus · toplam elektrik · toplam tep
+#: Bu, 2a-1'de `surdurulebilirlik` kimliğini SİLEREK denenen ve ölçümle reddedilen
+#: (erişim %64→%56) düzeltmenin **doğru biçimi**: sahipliği spesifiklik çözüyor.
+#: Kalan 23'ün tamamı ÇIPLAK tek kelime (elektrik · kwh · gaz · tep · fire · uretim ·
+#: tahsilat · sapma …) — daha uzun bir ifade YOK, spesifiklikle kırılamaz. Bunlar
+#: gerçek alan kararlarıdır (planın `ortalama duruş` kalemiyle aynı sınıf).
 YANLIS_CUBE = {
-    ("elektrik", "enerji_makine", "surdurulebilirlik"),
-    ("elektrik tuketimi", "enerji_makine", "surdurulebilirlik"),
-    ("kwh", "enerji_makine", "surdurulebilirlik"),
-    ("dogalgaz", "enerji_makine", "surdurulebilirlik"),
-    ("gaz", "enerji_makine", "surdurulebilirlik"),
-    ("dogalgaz tuketimi", "enerji_makine", "surdurulebilirlik"),
-    ("tep", "enerji_makine", "surdurulebilirlik"),
-    ("enerji tep", "enerji_makine", "surdurulebilirlik"),
-    ("spesifik enerji", "enerji_tesis", "surdurulebilirlik"),
-    ("atiksu lt kg", "enerji_tesis", "surdurulebilirlik"),
-    ("toplam elektrik", "enerji_tesis", "surdurulebilirlik"),
-    ("toplam tep", "enerji_tesis", "surdurulebilirlik"),
-    ("tep", "enerji_tesis", "surdurulebilirlik"),
-    ("enerji tep", "enerji_tesis", "surdurulebilirlik"),
-    ("downtime", "bakim", "oee"),
-    ("hesap bakiyesi", "cari", "mizan"),
-    ("sapma", "enerji_sapma", "parti"),
-    ("ortalama sapma", "kalite", "parti"),
-    ("renk sapmasi", "kalite", "parti"),
-    ("toplam durus", "makine_duruslari", "oee"),
-    ("cari borc", "mizan", "cari"),
-    ("tahsilat", "mizan", "cari"),
+    ("ariza durusu", "oee", "bakim"),
+    ("breakdown", "oee", "bakim"),
     ("cari alacak", "mizan", "cari"),
     ("cari bakiye", "mizan", "cari"),
-    ("breakdown", "oee", "bakim"),
-    ("ariza durusu", "oee", "bakim"),
+    ("cari borc", "mizan", "cari"),
+    ("dogalgaz", "enerji_makine", "surdurulebilirlik"),
+    ("downtime", "bakim", "oee"),
+    ("elektrik", "enerji_makine", "surdurulebilirlik"),
+    ("enerji tep", "enerji_makine", "surdurulebilirlik"),
+    ("enerji tep", "enerji_tesis", "surdurulebilirlik"),
     ("fire", "oee", "parti"),
-    ("parti sayisi", "oee", "parti"),
+    ("gaz", "enerji_makine", "surdurulebilirlik"),
+    ("hesap bakiyesi", "cari", "mizan"),
     ("kac parti", "oee", "parti"),
+    ("kwh", "enerji_makine", "surdurulebilirlik"),
+    ("parti sayisi", "oee", "parti"),
+    ("renk sapmasi", "kalite", "parti"),
+    ("sapma", "enerji_sapma", "parti"),
+    ("spesifik enerji", "enerji_tesis", "surdurulebilirlik"),
+    ("tahsilat", "mizan", "cari"),
+    ("tep", "enerji_makine", "surdurulebilirlik"),
+    ("tep", "enerji_tesis", "surdurulebilirlik"),
     ("uretim", "parti", "oee"),
 }
 
 #: Ölçülen cevapsız (`route()` None) red dağılımı. R1 = cube kimliği eşleşmedi.
-CEVAPSIZ_RED = {"R1": 99, "R10": 32, "R4": 14, "R5": 2, "R9": 2}
+#: ⟳ **Faz 2a-3: 149 → 107.** Kapsam kapısı (R10) 32→5, R4 14→1, R5 2→0 — çünkü artık
+#: sorunun TAMAMINI açıklayan cube seçiliyor, kelimeler açıkta kalmıyor.
+#: **R1 = 99 DEĞİŞMEDİ ve değişmemeli**: onlar ÇIPLAK ölçü adının iki cube'da birden
+#: iddia edildiği GERÇEK belirsizliklerdir; `route()` tahmin etmeyi doğru reddediyor,
+#: netleştirme chip'i `olcu_netlestirme` ile üretiliyor (MIMARI §6.1g).
+CEVAPSIZ_RED = {"R1": 99, "R10": 5, "R9": 2, "R4": 1}
 
-#: Toplam ölçü sinonimi ve doğru çözülen sayısı.
-TOPLAM_SINONIM, DOGRU = 470, 291
+#: Toplam ölçü sinonimi ve doğru çözülen sayısı.  ⟳ Faz 2a-3: 291 → 340 (+49).
+TOPLAM_SINONIM, DOGRU = 470, 340
 
 
 def _tara(schema) -> tuple[set[tuple[str, str, str]], Counter, int]:
@@ -222,7 +228,8 @@ def test_ELEKTRIK_iki_cubeda_da_OLCU_sinonimi(schema):
     assert len(sahipler) >= 2, f"çakışma kalktıysa bu testin gerekçesi de değişti: {sahipler}"
 
 
-@pytest.mark.parametrize("kume,adet", [("surdurulebilirlik", 14), ("parti", 6), ("cari", 4)])
+#: ⟳ Faz 2a-3 sonrası yeniden ölçüldü — spesifiklik kuralı kümeleri küçülttü.
+@pytest.mark.parametrize("kume,adet", [("surdurulebilirlik", 9), ("parti", 5), ("cari", 4), ("bakim", 2), ("oee", 2), ("mizan", 1)])
 def test_KUMELER_kayitli(kume, adet):
     """Bir sonraki alan kararının hangi kümeye bakması gerektiği rakamla belli olsun."""
     assert Counter(sec for _, _, sec in YANLIS_CUBE)[kume] == adet

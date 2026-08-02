@@ -955,7 +955,29 @@ def test_durus_nedeni_dogru_cubea_yonlenir(schema):
 
 
 def test_bare_durus_hala_oeeye_gider(schema):
-    """Yeni cube, OEE'nin bare "duruş" sorularını ÇALMAMALI (çakışma koruması regresyonu)."""
-    for q in ["makine bazında toplam duruş bu yıl", "makine bazında duruş bu yıl"]:
-        plan = cube_router.route(_norm(q), schema)
-        assert plan is not None and plan["cube_query"]["cube"] == "oee", q
+    """Yeni cube, OEE'nin bare "duruş" sorularını ÇALMAMALI (çakışma koruması regresyonu).
+
+    ⟳ **2026-08-02 (Faz 2a-3) — vaka listesi DÜZELTİLDİ, kural değil.** Test "bare" diyordu
+    ama listesinde bare OLMAYAN bir vaka vardı: *"makine bazında **toplam duruş**"*.
+    `"toplam durus"` `makine_duruslari.toplam_sure_dk`'nın **kendi sinonimidir** ve aynı
+    ölçünün kardeş sinonimi `"toplam durus dakikasi"` zaten oraya gidiyordu — yani çalınan
+    şey OEE'nin sorusu değil, `makine_duruslari`'nın **kendi** sorusuydu.
+
+    Üç bağımsız kanıt:
+      * bir üstteki test (`..._durus_nedenine_gore`) AYNI çifti *"en-uzun-eşleşme kuralıyla
+        bu cube kazanır"* diyerek zaten `makine_duruslari` lehine çözmüş — bu test onunla
+        çelişiyordu
+      * `tests/test_sinonim_carpismasi.py`'nin ÖLÇÜLEN envanteri `('toplam durus',
+        makine_duruslari → oee)` satırını **YANLIŞ-CUBE** olarak kaydetmişti
+      * `makine_duruslari` `makine` boyutuna **sahip** — kırılım gerçekten karşılanıyor
+        (SQL derlendi: `SELECT makine, SUM(sure_dk) … GROUP BY 1`)
+
+    Testin ASIL koruduğu şey — **çıplak** "duruş" — aynen duruyor ve aşağıda kilitli.
+    """
+    plan = cube_router.route(_norm("makine bazında duruş bu yıl"), schema)
+    assert plan is not None and plan["cube_query"]["cube"] == "oee"
+
+    # ...ve nitelenmiş ifade kendi sahibine gider (yukarıdaki gerekçe).
+    plan = cube_router.route(_norm("makine bazında toplam duruş bu yıl"), schema)
+    assert plan is not None and plan["cube_query"]["cube"] == "makine_duruslari"
+    assert plan["cube_query"]["dimensions"] == ["makine"]

@@ -79,6 +79,56 @@
         "eval": "sapmasız (precision/coverage/deterministik pay +0.0%)",
         "test": "1458 yeşil"
       }
+    },
+    {
+      "faz": "2a-3 · kimlik asimetrisi (_daha_spesifik_olcu_sahibi)",
+      "olculdu": "2026-08-02T22:20:00+03:00",
+      "degisiklik": "_match_cube'un tek-aday dalı ölçü-kanıtını ATLIYORDU; çok-aday dalındaki 'en spesifik kazanır' kuralı buraya da uygulandı.",
+      "sirketler": {
+        "boyahane": {
+          "erisim_yuzde": 68,
+          "dogru_cube": 3266,
+          "dogru_cube_payda": 3517,
+          "discovery": 35
+        },
+        "atiksan": {
+          "erisim_yuzde": 68,
+          "dogru_cube": 937,
+          "dogru_cube_payda": 955
+        },
+        "gulteks": {
+          "erisim_yuzde": 67,
+          "dogru_cube": 993,
+          "dogru_cube_payda": 1038
+        },
+        "gitas": {
+          "erisim_yuzde": 71,
+          "dogru_cube": 1524,
+          "dogru_cube_payda": 1703
+        }
+      },
+      "toplam_dogru_cube": 6720,
+      "toplam_dogru_cube_payda": 7213,
+      "toplam_dogru_cube_yuzde": 93.2,
+      "sinonim_envanteri": {
+        "dogru": 340,
+        "yanlis_cube": 23,
+        "cevapsiz": 107,
+        "yeni_yanlis": 0,
+        "red": {
+          "R1": 99,
+          "R10": 5,
+          "R9": 2,
+          "R4": 1
+        }
+      },
+      "_kapilar": {
+        "erisim (plan: 'artmalı')": "%64 → %68 — İLK KEZ ARTTI (dört şirkette de)",
+        "dogru_cube (plan: '%86,3'ün altına düşmemeli')": "%93,2 ✓",
+        "eval": "sapmasız",
+        "test": "1476 yeşil",
+        "yeni yanlış-cube": "0"
+      }
     }
   ]
 }

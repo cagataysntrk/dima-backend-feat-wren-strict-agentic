@@ -527,6 +527,77 @@ Kazanç 28 birim testiyle kanıtlanıyor. Korpusun bu sınıfı kazanması Faz 0
 Taban artefaktı: `lab/nl_corpus_baseline.json` (`eval/baseline.json` ile aynı disiplin —
 `lab/reports/` gitignore'da olduğu için ham rapor değil **kapı değerleri** saklanır).
 
+### 6.1h Kimlik asimetrisi KAPANDI — kural bir dalda vardı, kardeşinde yoktu (Faz 2a) ✅
+
+Bu deponun en sık tekrarlayan kusur sınıfının (*"beyan var, kod onu tanımıyor"*) en pahalı
+örneği: kural **yazılmış, yorumlanmış, test edilmiş** — ama **yalnız bir dalda** koşuyordu.
+
+`_match_cube` iki dal taşıyor. Çok-aday dalı (`len(hits) > 1`) **ölçü-kanıtı** uyguluyor ve
+kendi yorumu neden var olduğunu anlatıyor: *"Cube-düzeyi kelime uzunluğu yanıltıcıydı:
+jenerik cube-sinonimi ('satış'/'miktar') spesifik ölçüyü **gölgeliyordu**."* Tek-aday dalı
+(`len(hits) == 1`) ise **koşulsuz `return`** ediyordu — yani aynı gölgeleme, kardeş dalda
+hiç kontrol edilmeden yaşıyordu.
+
+**Ölçülen zincir:**
+
+```
+"sapma yüzdesi"  →  `parti` kimliğinde ÇIPLAK "sapma" var          → hits=[parti]
+                 →  tek aday, KOŞULSUZ dönülüyor
+                 →  parti'de "yuzdesi" açıklanamıyor                → R10, cevap YOK
+     oysa `enerji_sapma.sapma_yuzde`'nin sinonimi BİREBİR "sapma yuzdesi"
+```
+
+Sistem **doğru cevabı elinde tutup atıyordu**; boşluğu `typo_correct` dolduruyordu:
+*"sapma yüzdesi → **kar yüzdesi** mi demek istediniz?"* — başka cube, başka ölçü, doğru
+cevabın üstüne kendinden emin bir yönlendirme. Planın §2.1'i bunu *"bulanık eşleştirici
+yanlış düzeltme öneriyor"* diye kaydetmişti; **öneri bir semptomdu**, kök neden bu asimetri.
+
+**Kural (yeni değil — çok-aday dalındaki kuralın AYNISI):** kısa eşleşme uzun eşleşmenin
+**alt-dizisiyse** en spesifik kazanır. Üç şart zorunlu:
+* **alt-dizi** — iki AYRI ifade (*"verim VE fire oranı"*) çapraz-cube'dur, kırılmaz;
+* rakip sinonim soruda **gerçekten geçiyor** (`_syn_hit`) — rakip, kullanıcının yazdığı
+  kelimelerin **kesin olarak daha fazlasını** açıklıyor demektir;
+* rakip **tek** — iki rakip de daha spesifikse bu bir tahmin anı değil belirsizliktir
+  (ADR-0008), bugünkü davranış korunur.
+
+**Bu, §6.1f'te ölçümle REDDEDİLEN düzeltmenin doğru biçimidir.** Orada `surdurulebilirlik`
+kimliğinden ham kaynak adları **silinerek** sahiplik çözülmeye çalışıldı ve erişim
+%64→%56'ya düştü. Silmek sahipliği çözmüyordu; **spesifiklik çözüyor**: kimlik yerinde
+kalıyor, ama `"elektrik tuketimi"` (16) `"elektrik"`i (8) yeniyor.
+
+**Ölçülen sonuç — dört şirketin DÖRDÜNDE de kazanç, sıfır gerileme:**
+
+| şirket | erişim | doğru-cube |
+|---|---|---|
+| boyahane | %64 → **%68** | %89 → **%92** (Discovery 101 → **35**) |
+| atiksan | %67 → **%68** | %98 → %98 |
+| gulteks | %62 → **%67** | %95 → %95 |
+| gitas | %67 → **%71** | %88 → **%89** |
+| **toplam doğru-cube** | | **%91,4 → %93,2** |
+
+Sinonim envanteri (470 ölçü sinonimi × `route()`): doğru **291 → 340** · yanlış-cube
+**30 → 23** · cevapsız **149 → 107** (R10 32→5, R4 14→1, R5 2→0) · **yeni yanlış: 0**.
+
+**Planın *"erişim %64 → artmalı"* kapısı İLK KEZ karşılandı.** Önceki iki tur (2a-1, 2a-2)
+erişimi sabit bırakmıştı; kayıp cevapsız sınıfındaydı ve bu düzeltme onu açtı.
+
+**R1 = 99 DEĞİŞMEDİ ve değişmemeli.** Onlar çıplak bir ölçü adının iki cube'da birden
+iddia edildiği **gerçek** belirsizliklerdir (`bakiye`, `borç`, `fire`); daha uzun bir ifade
+yok, spesifiklikle kırılamaz. `route()` tahmin etmeyi doğru reddediyor, netleştirme
+§6.1g'nin chip'iyle geliyor. Kalan 23 yanlış-cube da aynı sınıf: hepsi **çıplak tek
+kelime** (`elektrik · kwh · gaz · tep · fire · uretim · tahsilat`) ve gerçek **alan
+kararlarıdır**.
+
+**Yan bulgu — iki test birbiriyle çelişiyordu.** `test_bare_durus_hala_oeeye_gider` adında
+*"bare"* derken listesine bare OLMAYAN bir vaka almıştı (*"makine bazında **toplam
+duruş**"*). `"toplam durus"` `makine_duruslari.toplam_sure_dk`'nın **kendi** sinonimidir,
+kardeş sinonimi `"toplam durus dakikasi"` zaten oraya gidiyordu, ve bir üstteki test aynı
+çifti *"en-uzun-eşleşme kuralıyla bu cube kazanır"* diyerek zaten `makine_duruslari` lehine
+çözmüştü. Sinonim envanteri de o satırı **yanlış-cube** olarak kaydetmişti. Vaka listesi
+düzeltildi, kural değil; **çıplak** "duruş" hâlâ `oee`'ye gidiyor ve testle kilitli.
+
+10 test: `tests/test_spesifik_olcu_sahibi.py`.
+
 ### 6.1g Netleştirme SESSİZCE atlanıyordu — belirsizliğin %61'i Discovery'ye düşüyordu (Faz 2a) ✅
 
 §6.1f'in "netleştirme zaten çalışıyor" ara ürünü **eksik ölçülmüş** bir gözlemdi. Chip'in

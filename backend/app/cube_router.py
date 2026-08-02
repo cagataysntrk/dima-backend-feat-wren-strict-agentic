@@ -646,13 +646,69 @@ def _longest_syn_hit(q: str, cube: dict) -> int:
     return best
 
 
+def _en_uzun_kimlik_esi(q: str, cube: dict) -> str:
+    """`_longest_syn_hit`'in METİN döndüren ikizi — alt-dizi karşılaştırması uzunluk değil
+    METİN ister ("sapma" ⊂ "sapma yuzdesi" mi?). İkisi AYNI `_syn_hit` tanımını kullanır."""
+    best = ""
+    for s in cube.get("synonyms") or []:
+        plain = str(s).removesuffix("!")
+        if len(plain) > len(best) and _syn_hit(q, s):
+            best = plain
+    return best
+
+
+def _daha_spesifik_olcu_sahibi(q: str, kazanan: dict, schema: dict) -> dict | None:
+    """TEK cube-kimliği eşleştiğinde bile: BAŞKA bir cube'un ölçü sinonimi kullanıcının
+    kelimelerinden DAHA FAZLASINI açıklıyorsa o kazanır.
+
+    ## Neden var — ölçülmüş kusur (Faz 2a-3)
+
+    `_match_cube` `len(hits) == 1` dalında **koşulsuz** dönüyordu; ölçü-kanıtı mekanizması
+    (aşağıdaki `len(hits) > 1` dalı) hiç çalışmıyordu. Sonuç, kendi yorumunun (*"jenerik
+    cube-sinonimi spesifik ölçüyü GÖLGELİYORDU"*) tarif ettiği hatanın **kardeş daldaki
+    kopyası**:
+
+        "sapma yüzdesi"  →  `parti` kimliğinde ÇIPLAK "sapma" var           → hits=[parti]
+                         →  tek aday, KOŞULSUZ dönülüyor
+                         →  parti'de "yuzdesi" açıklanamıyor                → R10, cevap YOK
+        oysa `enerji_sapma.sapma_yuzde`'nin sinonimi BİREBİR "sapma yuzdesi"
+
+    Yani sistem **doğru cevabı elinde tutup atıyordu** — ve boşluğu `typo_correct`
+    dolduruyordu: *"sapma yüzdesi demek istediniz mi → KAR YÜZDESİ"* (başka cube, başka
+    ölçü). Kendinden emin ve yanlış bir yönlendirme, doğru cevabın üstüne.
+
+    ## Kural (yeni değil — satır ~685'teki kuralın AYNISI)
+
+    Kısa eşleşme uzun eşleşmenin **alt-dizisiyse** en spesifik kazanır. Alt-dizi şartı
+    zorunlu: iki AYRI ifade ("verim VE fire oranı") çapraz-cube'dur, kırılmaz.
+    Rakip sinonim q'da **gerçekten geçiyor** olmalı (`_syn_hit`) — yani rakip, kullanıcının
+    yazdığı kelimelerin **kesin olarak daha fazlasını** açıklıyor demektir.
+
+    Rakip **tek** olmalı: iki rakip de daha spesifikse bu bir tahmin anı değil bir
+    belirsizliktir → bugünkü davranış korunur, uydurulmaz (ADR-0008).
+    """
+    kimlik = _en_uzun_kimlik_esi(q, kazanan)
+    kendi = _match_measure(q, kazanan)[1] or ""
+    kanit = kimlik if len(kimlik) >= len(kendi) else kendi
+    if not kanit:
+        return None
+    adaylar = [c for c in schema.get("cubes") or []
+               if c is not kazanan
+               and (syn := _match_measure(q, c)[1] or "")
+               and len(syn) > len(kanit) and kanit in syn]
+    return adaylar[0] if len(adaylar) == 1 else None
+
+
 def _match_cube(q: str, schema: dict) -> dict | None:
     """Cube-düzeyi sinonimlerden aday cube. Birden fazla aday → ÖLÇÜ kanıtıyla kırılır:
     yalnız birinde ölçü sinonimi de geçiyorsa ("müşteri bazında SU tüketimi" → su cube'u;
     "müşteri" paylaşılan boyut kelimesidir) o kazanır; yoksa None (çapraz konu → LLM)."""
     hits = [c for c in schema.get("cubes", []) if _any_hit(q, c.get("synonyms"))]
     if len(hits) == 1:
-        return hits[0]
+        # ASİMETRİ DÜZELTMESİ (Faz 2a-3): ölçü-kanıtı YALNIZ aşağıdaki çok-aday dalında
+        # uygulanıyordu; tek aday KOŞULSUZ dönüyordu. Aynı kural burada da geçerli —
+        # gerekçe ve ölçüm `_daha_spesifik_olcu_sahibi`'nin docstring'inde.
+        return _daha_spesifik_olcu_sahibi(q, hits[0], schema) or hits[0]
     if len(hits) > 1:
         # ÖLÇÜ-KANITI (en spesifik ölçü kazanır): eşleşen ÖLÇÜ sinonimi EN UZUN olan cube.
         # "satış miktarı" → mal.satis_miktari ("satış miktarı"=13) > ticaret.satis_tutari
