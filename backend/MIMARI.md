@@ -355,19 +355,36 @@ bedeli olarak bilinçli kabul edildi (ADR-0008 yönü).
 Bu tablo bir uyarıdır: üç aracın adı da "doğruluk" çağrıştırıyor ama üçü farklı şey ölçüyor
 ve **hiçbiri ölçekte "doğru cube'u mu seçti"yi ölçmüyor**.
 
-| Araç | Gerçekte ölçtüğü | Boyut | Kör noktası |
+| Araç | Gerçekte ölçtüğü | Boyut | Not |
 |---|---|---|---|
-| `eval/run.py` | Şekil doğruluğu (cube/ölçü/boyut beklenen mi) | 129 vaka | Korpus **zaten çalışan şeye göre kuratörlenmiş** — 111 cevabın 111'i intent yolundan |
-| `lab/nl_corpus.py` | **ERİŞİM** — "SQL üretebildi mi" | ~9000 tur | `expected` = **TÜM cube adları** → yanlış cube'a gitmek de OK sayılıyor |
-| `lab/nl_accuracy.py` | Doğru cube/ölçü/boyut | **4 vaka** | Fiilen boş; adı vaat ettiğini yapamaz |
+| `eval/run.py` | Şekil doğruluğu (cube/ölçü/boyut beklenen mi) | 129 vaka | Korpus **zaten çalışan şeye göre kuratörlenmiş** — 111 cevabın 111'i intent yolundan. *Regresyon kilidi*, kapsam ölçüsü değil. |
+| `lab/nl_corpus.py` | **ERİŞİM** + ✅ **DOĞRULUK** (2026-08-02'de eklendi) | ~10.800 tur | Erişim = "herhangi bir yoldan SQL üretti mi". Doğruluk = "sorunun üretildiği cube'u mu seçti". Üç yollu: doğru / yanlış cube / Discovery'ye düştü. |
+| `lab/nl_accuracy.py` | Doğru cube/ölçü/boyut, etiketli | **4 vaka** | Fiilen boş. `nl_corpus`'un doğruluk kanalı onun yerini büyük ölçüde aldı. |
 
-Somut sonuç: Faz 1'in üreteci `"bölüm bazında ortalama oee"` sorusunu **yanlış cube'dan**
-(`enerji_makine`) **doğru cube'a** (`oee`) taşıdı — ve `nl_corpus` bu iyileşmeyi
-**göremedi**, çünkü ikisini de OK sayıyor (boyahane 2543 → 2545, yalnız +2).
+> **Neden eklendi:** `nl_corpus` `expected` olarak TÜM cube adlarını geçiyordu, yani yanlış
+> cube'a gitmek de OK sayılıyordu. Faz 1'in üreteci `"bölüm bazında ortalama oee"` sorusunu
+> **yanlış cube'dan** (`enerji_makine`) **doğru cube'a** (`oee`) taşıdı ve metrik bunu
+> **göremedi** (+2). Bir araç ölçmesi gereken şeyi ölçmüyorsa, verdiği güven sahtedir.
 
-`nl_corpus` bunu ölçebilir: `gen_single` her soruyu HANGİ cube'un sözlüğünden ürettiğini
-zaten biliyor; `expected`'ı o tek cube'a daraltmak ~9000 erişim ölçümünü ~9000 **doğruluk**
-ölçümüne çevirir. Yapılacaklar listesinde.
+**İLK DOĞRULUK BASELINE'I** (2026-08-02, ~10.800 tur, 4 şirket, `--network none`):
+
+| Şirket | Tur | Erişim | **Doğru cube** |
+|---|---|---|---|
+| boyahane | 5240 | %64 | **3014/3738 (%80)** |
+| atiksan | 1462 | %67 | **926/944 (%98)** |
+| gulteks | 1618 | %62 | **912/957 (%95)** |
+| gitas | 2479 | %67 | **1407/1586 (%88)** |
+| **toplam** | | | **6259/7225 = %86,6** |
+
+**En zengin katalog (boyahane, 13 cube) EN KÖTÜ.** Belirsizlik katalog büyüdükçe artıyor —
+araştırmanın öngördüğü tam buydu (daha çok boyut → daha çok sinonim çakışması). Bu, Faz 1'in
+boyut üretimini yaygınlaştırırken Faz 3.1'in (güven skoru + netleştirme) neden **ön koşul**
+olduğunun sayısal kanıtıdır.
+
+Baskın başarısızlık sınıfı ölçüldü: `"arıza duruşu"` HEM `bakim`'in ölçü sözlüğünde HEM
+`oee.plansiz_durus_dakika` sinonimlerinde — ikisi de meşru. `_match_cube` çoklu-adayı
+kıramıyor ve soru Discovery'ye düşüyor. **Kelimeye özel yama yapılmadı** (§5 disiplini:
+kök nedeni düzelt, örneği değil); doğru çözüm belirsizlikte chip sormaktır.
 
 **Ölçüm reçetesi** (üçü de `--network none` ile koşar):
 ```
