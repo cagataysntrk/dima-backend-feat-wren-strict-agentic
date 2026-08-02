@@ -18,12 +18,54 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+# KANONİK tip kümeleri — motorun `wren.type_mapping.parse_type` çıktısı üstünde tanımlı.
+#
+# ÖNCEDEN ham DB yazımları elle listeleniyordu ve ölçüldü (2 Ağustos 2026): 17 gerçek tip
+# yazımının **13'ü yanlış sınıflanıyordu**. Hepsi sessizce "dimension"a düşüyordu — yani
+# `numeric(18,2)` (bir PARA TUTARI) kategorik boyut, `timestamptz` ise zaman DEĞİL
+# sayılıyordu. Bir müşteri DB'sini introspect ettiğimizde taslak MDL, tutarları gruplama
+# anahtarı yapıp tarihleri zaman ekseninden düşürürdü.
+#
+# Elle liste tutmak kaybedilen bir yarıştır: her lehçenin kendi yazımı var
+# (`int8`/`int4`/`float8` postgres, `datetime2`/`smallmoney`/`tinyint` tsql,
+# `HUGEINT`/`UBIGINT` duckdb) ve liste ancak biri kırılınca büyür. Motor bunu ZATEN
+# çözüyor — MIMARI §5: **motor zaten yapıyorsa yazma.**
 _NUMERIC_TYPES = {
-    "INTEGER", "BIGINT", "SMALLINT", "NUMERIC", "DECIMAL", "FLOAT", "DOUBLE",
-    "DOUBLE PRECISION", "REAL", "MONEY",
+    "INT", "INTEGER", "BIGINT", "SMALLINT", "TINYINT", "INT128", "INT256",
+    "UTINYINT", "USMALLINT", "UINT", "UBIGINT",
+    "DECIMAL", "FLOAT", "DOUBLE", "REAL", "MONEY", "SMALLMONEY",
 }
-_DATE_TYPES = {"DATE", "DATETIME", "TIMESTAMP", "TIMESTAMP WITHOUT TIME ZONE",
-               "TIMESTAMP WITH TIME ZONE"}
+# GERİYE UYUM kuyruğu — kanonik ADLAR DEĞİL, ham lehçe yazımları. Kanonikleştirici
+# erişilemediğinde (import hatası) bugünkü davranış korunsun diye tutulur ve bilinçli
+# olarak AYRI durur: karışık bir küme, hangi adın kanonik hangisinin yama olduğunu
+# gizler ve zamanla "kanonik küme" iddiası çürür.
+_ESKI_YAZIMLAR = {"NUMERIC", "DOUBLE PRECISION", "DATETIME2", "TIMESTAMP WITHOUT TIME ZONE",
+                  "TIMESTAMP WITH TIME ZONE"}
+_ESKI_SAYISAL = {"NUMERIC", "DOUBLE PRECISION"}
+_ESKI_TARIH = {"DATETIME2", "TIMESTAMP WITHOUT TIME ZONE", "TIMESTAMP WITH TIME ZONE"}
+# `BIT`/`BOOLEAN` bilinçli olarak DIŞARIDA: teknik olarak sayısaldır ama toplanması
+# anlamsızdır (bayrakların toplamı bir ölçü değildir) → boyut kalır.
+_DATE_TYPES = {"DATE", "DATETIME", "TIMESTAMP", "TIMESTAMPTZ", "TIMESTAMPLTZ",
+               "TIMESTAMPNTZ", "TIME", "TIMETZ"}
+
+
+def _kanonik_tip(ham: str, dialect: str = "postgres") -> str:
+    """Ham DB tipini motorun kanonik adına çevirir (`int8` → `BIGINT`).
+
+    Parametre kısmı atılır: `DECIMAL(18, 2)` → `DECIMAL`. Sınıflandırma ölçek/hassasiyete
+    bakmaz; `DECIMAL(18,2)` ile `DECIMAL(4,0)` ikisi de ölçüdür.
+
+    Motor çeviremezse **ham değere düşülür** — bugünkü davranış korunur. Fail-closed
+    yapmak, tanımadığı bir tip yüzünden tüm introspection'ı durdurmak olurdu; oysa
+    bilinmeyen tip için doğru varsayılan zaten "boyut"tur (en az iddialı sınıf).
+    """
+    try:
+        from wren.type_mapping import parse_type
+
+        kanon = parse_type(ham, dialect)
+    except Exception:
+        kanon = ham
+    return str(kanon or "").split("(")[0].strip().upper()
 _SUPPORTED_DATASOURCES = ("postgres",)
 
 
@@ -146,15 +188,20 @@ def introspect_schema(url: str, *, max_tables: int = 50) -> list[IntrospectedTab
         engine.dispose()
 
 
-def classify_column(col: IntrospectedColumn) -> str:
+def classify_column(col: IntrospectedColumn, *, dialect: str = "postgres") -> str:
     """Ölçü mü / boyut mu / zaman mı — `app/dataset.py::build_mdl`'in tip-tabanlı
     sezgiseliyle TUTARLI: PK'ler kimlik/gruplama amaçlıdır (toplanmaz) → boyut; tarih/
-    zaman damgası → zaman; sayısal (PK DEĞİLSE) → ölçü; geri kalan her şey → boyut."""
+    zaman damgası → zaman; sayısal (PK DEĞİLSE) → ölçü; geri kalan her şey → boyut.
+
+    Tip adı **motorun kanonikleştiricisinden** geçer (Faz B): ham DB yazımlarını elle
+    listelemek kaybedilen bir yarıştı — ölçüldü, 17 gerçek yazımın 13'ü kaçıyordu.
+    """
     if col.is_primary_key:
         return "dimension"
-    if col.type in _DATE_TYPES:
+    kanon = _kanonik_tip(col.type, dialect)
+    if kanon in _DATE_TYPES or kanon in _ESKI_TARIH:
         return "time"
-    if col.type in _NUMERIC_TYPES:
+    if kanon in _NUMERIC_TYPES or kanon in _ESKI_SAYISAL:
         return "measure"
     return "dimension"
 
