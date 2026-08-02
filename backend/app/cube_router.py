@@ -1369,6 +1369,71 @@ _SUFFIX_ATOMS = (
 # zaten TAM atom olarak listede; parçalarını ayrıca atom yapmak deliği geri açar.
 _SUFFIX_CHAIN_RE = re.compile(r"(?:" + "|".join(_SUFFIX_ATOMS) + r")+")
 
+# --- DIŞLAMA (Faz 3.3): "beyaz HARİÇ", "iptaller DIŞINDA" -----------------------
+# Türkçede dışlama bir SON-ÇEKİM EDATIYLA kurulur ve edat tümlecini İZLER. Kural bu yüzden
+# konumsaldır, kelime listesi değil: edatın eşleşen DEĞERDEN SONRA gelmesi aranır. Böylece
+# "beyaz hariç renk bazında rework" ile "hariç tutulmayan..." gibi ifadeler karışmaz.
+#
+# "disi" (dışı) BİLEREK YOK: `_norm` sonrası "dişi" ile ÇAKIŞIR ve cinsiyet/hayvan
+# bağlamında yanlış dışlama üretirdi. "disinda"/"disindaki" tek başına yeterli.
+_EXCLUDE_MARKERS = ("haric", "disinda", "disindaki", "disindakiler",
+                    "olmayan", "olmayanlar", "degil", "disi birakarak")
+# Değerler arası bağlaçlar: "beyaz VE siyah hariç" ikisini birden dışlar.
+_CONJ = ("ve", "ile", "veya", "ya da", "yada", ",", "-")
+
+# --- ÖNEK / İÇERME (Faz 3.3) ----------------------------------------------------
+# "M10 İLE BAŞLAYAN müşteriler", "ram İÇEREN makineler".
+#
+# Motorun `starts_with`/`contains` operatörleri BÜYÜK/KÜÇÜK HARF DUYARLIDIR (ölçüldü:
+# `starts_with('B')` → ['Beyaz'], `starts_with('b')` → []). Dima'nın NL katmanı ise
+# `_norm` ile küçültüp aksanları düzleştirir. İkisini doğrudan bağlamak, kullanıcı
+# "beyaz" yazdığında GÜVENLE BOŞ sonuç döndürmek demekti — `None`dan kötü.
+#
+# Bu yüzden önek/içerme DEĞER İNDEKSİNDE çözülür ve mevcut `in` operatörüne indirgenir:
+# eşleşen gerçek değerler (özgün yazımlarıyla) bulunur, filtre onlarla kurulur. Hangi
+# boyut olduğu da buradan gelir — boyut KELİMESİNE hiç bakılmaz, dolayısıyla "hangi
+# boyutu kastetti" tahmini yapılmaz. Birden çok boyut eşleşirse belirsizdir → dürüst red.
+_PREFIX_RE = re.compile(r"(\S+)\s+ile\s+baslayan\b")
+_CONTAINS_RE = re.compile(r"(\S+)\s+iceren\b")
+
+
+def _deger_dislaniyor(q: str, deger_norm: str, kardesler: list[str]) -> bool:
+    """Bu değer bir DIŞLAMA edatının kapsamında mı? ("beyaz hariç", "iptaller dışında")
+
+    Türkçe son-çekim edatı tümlecini İZLER, o yüzden kural konumsaldır: eşleşen değerden
+    sonra sırayla (değerin kendi çekim eki | boşluk | bağlaç | AYNI boyutun başka eşleşen
+    değeri) yutulur ve ardından bir dışlama edatı gelmelidir. Böylece "beyaz VE siyah
+    hariç" ikisini birden dışlar, ama "beyaz bazında rework, siyah hariç" ifadesinde
+    "beyaz" dışlanmaz — arada bağlaç olmayan içerik vardır.
+
+    Ek zinciri için `_SUFFIX_CHAIN_RE` YENİDEN KULLANILIR: dışlamanın kendi ek listesini
+    doğurması, aynı dilbilgisi kuralının iki yerde ayrışması demek olurdu (MIMARI.md §5).
+    """
+    def _ek_yut(s: str) -> str:
+        """Baştaki çekim eki zincirini bir kez yutar (`beyazın` → `ın`)."""
+        m = _SUFFIX_CHAIN_RE.match(s)
+        return s[m.end():] if m else s
+
+    for m in re.finditer(re.escape(deger_norm), q):
+        kalan = _ek_yut(q[m.end():])
+        if kalan[:1].isalpha():
+            continue  # kelime ortasında eşleşmiş (ör. "beyaz" ⊂ "beyazlatma") → değer değil
+        ilerledi = True
+        while ilerledi:
+            ilerledi = False
+            kalan = kalan.lstrip(" ,-")
+            for parca in (*_CONJ, *kardesler):
+                if not parca or not kalan.startswith(parca):
+                    continue
+                aday = _ek_yut(kalan[len(parca):])
+                if aday[:1].isalpha():
+                    continue  # bağlaç/kardeş kelimenin ORTASINDA kesildi → geçersiz
+                kalan, ilerledi = aday, True
+                break
+        if any(kalan.lstrip().startswith(w) for w in _EXCLUDE_MARKERS):
+            return True
+    return False
+
 
 def _covers(known: str, word: str) -> bool:
     """`known` kelimesi `word`'ü kapsıyor mu? (Türkçe EKLEMELİ dil varsayımı.)
@@ -1684,21 +1749,80 @@ def route(question: str, schema: dict) -> dict | None:
     filters = []
     filtered = set()
     multi_val_dims: list[str] = []
+    exclude_words: set[str] = set()
+    # 1. GEÇİŞ — hangi boyutta hangi değerler eşleşti. Dışlama kararı İKİNCİ geçişte
+    # verilir çünkü "beyaz ve siyah hariç" ifadesindeki bağlaç zinciri BOYUT SINIRINI
+    # AŞAR: `renk_derinlik`te "Siyah" yoktur ama zinciri yutabilmek için o kelimeyi
+    # tanıması gerekir. Tek geçişte bu bilgi henüz yoktu ve `renk_derinlik` sessizce
+    # `eq Beyaz` alıyordu — yani kullanıcı "beyaz hariç" derken beyazın kendisi
+    # filtreleniyordu (üstelik `renk`teki `not_in` ile ÇELİŞEREK).
+    eslesen: dict[str, list[str]] = {}
     for dname in cube_meta.get("dimensions", []):
         c = cols.get(dname)
         if not c or not c.get("values"):
             continue
         matched = [str(v) for v in c["values"]
                    if (nv := _norm(str(v))) and _value_token_hit(q, nv)]
-        if not matched:
-            continue
-        if len(matched) == 1:
+        if matched:
+            eslesen[dname] = matched
+    tum_norm = {_norm(v) for vs in eslesen.values() for v in vs}
+
+    # 2. GEÇİŞ — DIŞLAMA (Faz 3.3): "beyaz hariç", "iptaller dışında" → neq/not_in.
+    # Motor 12 operatör destekliyor (çalıştırılarak doğrulandı: eq neq in not_in gt gte
+    # lt lte contains starts_with is_null is_not_null; geçersiz operatör Rust'ta gürültülü
+    # reddediliyor), Python bugüne kadar yalnız 4 üretiyordu — eksik olan tek şey
+    # NL→operatör köprüsüydü. Bu, "beyaz hariç rework" sorusuna BEYAZIN rework'ünü
+    # döndüren sessiz-yanlışı kapatır.
+    for dname, matched in eslesen.items():
+        norm_matched = [_norm(v) for v in matched]
+        dislanan = [v for v, nv in zip(matched, norm_matched)
+                    if _deger_dislaniyor(
+                        q, nv, sorted(tum_norm - {nv}, key=len, reverse=True))]
+        if dislanan and len(dislanan) != len(matched):
+            # KARMA ("beyaz hariç siyah dahil"): hangi değerin hangi tarafta olduğu
+            # metinden güvenle çıkarılamaz. Sessizce bir yorum seçmek yerine dürüst red
+            # (ADR-0008) — LLM devralsın.
+            return None
+        if dislanan:
+            exclude_words |= {w for w in _EXCLUDE_MARKERS if w in q}
+            op = "neq" if len(matched) == 1 else "not_in"
+            filters.append({"dimension": dname, "operator": op,
+                            "value": matched[0] if len(matched) == 1 else matched})
+            # Dışlamada boyut KIRILIM olarak anlamlıdır (geriye birden çok değer kalır) —
+            # `eq`in aksine burada boyutu düşürmek bilgiyi yok ederdi.
+            multi_val_dims.append(dname)
+        elif len(matched) == 1:
             filters.append({"dimension": dname, "operator": "eq", "value": matched[0]})
             filtered.add(dname)
         else:
             # "beyaz ve siyah" = KARŞILAŞTIRMA niyeti → in-filtre + boyut kırılım kalır
             filters.append({"dimension": dname, "operator": "in", "value": matched})
             multi_val_dims.append(dname)
+    # ÖNEK / İÇERME (Faz 3.3) — değer indeksinde çözülüp `in`e indirgenir (bkz. _PREFIX_RE).
+    for rx, onek_mi in ((_PREFIX_RE, True), (_CONTAINS_RE, False)):
+        m = rx.search(q)
+        if not m:
+            continue
+        lit = m.group(1)
+        aday: dict[str, list[str]] = {}
+        for dname in cube_meta.get("dimensions", []):
+            c = cols.get(dname)
+            if not c or not c.get("values") or dname in eslesen:
+                continue
+            vs = [str(v) for v in c["values"]
+                  if (nv := _norm(str(v))) and (nv.startswith(lit) if onek_mi else lit in nv)]
+            if vs:
+                aday[dname] = vs
+        if len(aday) != 1:
+            # 0 → hiçbir gerçek değer bu ifadeye uymuyor; >1 → hangi boyut belirsiz.
+            # İkisinde de sessizce bir yorum seçmek yerine dürüst red (ADR-0008).
+            return None
+        dname, vs = next(iter(aday.items()))
+        filters.append({"dimension": dname, "operator": "in", "value": vs})
+        multi_val_dims.append(dname)
+        known_extra = re.findall(r"[a-z]+", m.group(0))
+        exclude_words.add(" ".join(known_extra))
+
     dims = [d for d in dims if d not in filtered]
     for dname in multi_val_dims:
         if dname not in dims:
@@ -1781,6 +1905,10 @@ def route(question: str, schema: dict) -> dict | None:
         known |= _syn_hit_words(q, syns)
     for f in filters:
         known.update(re.findall(r"[a-z]+", _norm(str(f.get("value", "")))))
+    # Dışlama edatı ("hariç"/"dışında") ANLAŞILDI — bir operatöre çevrildi, dolgu değil.
+    # Kapsam kapısına takılırsa doğru üretilmiş `neq`/`not_in` filtresi çöpe giderdi.
+    for w in exclude_words:
+        known.update(re.findall(r"[a-z]+", w))
     known |= _period_hit_words(q)
     known |= _misc_hit_words(q)
     # Ölçü-eşiği ("10 milyon üzeri") kelimeleri: anlaşılıyor → kapsam düşürmesin.
@@ -1886,6 +2014,7 @@ def suggest_next_steps(cube_query: dict, index: dict) -> list[dict]:
     dims, meases, times = [], [], []
 
     # 1) KIRILIM — kullanılmayan boyutlar. İkiden fazla kırılım satırı patlatır → 2'de dur.
+    uretilen = spec.get("dimension_origin") or {}
     if len(dims_used) < 2:
         for d in all_dims:
             if d in dims_used:
@@ -1894,7 +2023,7 @@ def suggest_next_steps(cube_query: dict, index: dict) -> list[dict]:
             if d.endswith("_kodu") and f"{d[:-5]}_adi" in all_dims:
                 continue
             label = dim_labels.get(d) or d.replace("_", " ")
-            dims.append({"label": f"{label} kırılımı", "kind": "dimension",
+            dims.append({"label": f"{label} kırılımı", "kind": "dimension", "_ad": d,
                          "cube_query": {**cube_query, "dimensions": [*dims_used, d]}})
 
     # 2) ÖLÇEK — kullanılmayan ölçüler ("kâr da ekle", "adet de gör").
@@ -1927,7 +2056,33 @@ def suggest_next_steps(cube_query: dict, index: dict) -> list[dict]:
         cmp_steps.append({"label": "Geçen yıla göre kıyasla", "kind": "time",
                           "cube_query": {**cube_query, "compare": "yoy"}})
 
-    return (dims[:2] + meases[:2] + times[:1] + cmp_steps[:1])[:_MAX_NEXT_STEPS]
+    # KIRILIM SEÇİMİ (Faz 3.4) — iki slottan biri İLİŞKİ-TÜREVİ boyuta ayrılır.
+    #
+    # Ölçüldü (2 Ağustos 2026): katalogdaki 7 üretilen boyutun (bakim/kalite/
+    # makine_duruslari/oee `bölüm`, parti/surdurulebilirlik `kısım`, kalite `operatör`)
+    # SIFIRI chip'te görünüyordu. Sebep sıralama değil KESME: `dims[:2]` manifest sırasını
+    # alıyor, üreteç ise boyutları metadata'nın SONUNA ekliyor — `parti`nin 15 boyutundan
+    # yalnız `makine` + `hat` chip oluyordu. Planın önerdiği "hop-derinliğine göre sırala"
+    # TEK BAŞINA ETKİSİZDİR: yerli boyutlar zaten manifest başında, sıralamak çıktıyı hiç
+    # değiştirmez.
+    #
+    # Neden ikinci YERLİ chip feda ediliyor: yerli boyut kullanıcının zaten yazabileceği
+    # bir kelimedir ("hat bazında" → çalışır). Çapraz-model boyut ise VAR OLDUĞU BİLİNMEYEN
+    # bir yetenektir — Faz 1'de açıldı ama kullanıcı ondan haberdar değil. Chip bir KEŞİF
+    # mekanizmasıdır; keşfedilmesi gerekeni göstermelidir.
+    #
+    # Sıçrama derinliği burada (ve pratikte yalnız burada) gerçekten iş görür: iki üretilen
+    # boyut varsa (kalite: bölüm + operatör) yakın olan önce gelir. Bugün hepsi hops=1
+    # olduğu için sıralama manifest sırasına düşer — kural, katalog derinleştiğinde anlam
+    # kazanmak üzere yazıldı ve o güne kadar davranışı değiştirmez.
+    yerli = [x for x in dims if x["_ad"] not in uretilen]
+    turev = sorted((x for x in dims if x["_ad"] in uretilen),
+                   key=lambda x: uretilen[x["_ad"]].get("hops", 1))
+    secilen = (yerli[:1] + turev[:1]) if turev else yerli[:2]
+    for x in secilen:
+        x.pop("_ad", None)
+
+    return (secilen + meases[:2] + times[:1] + cmp_steps[:1])[:_MAX_NEXT_STEPS]
 
 
 def recommend_actions(signals: list[dict], cube_query: dict, spec: dict | None) -> list[dict]:

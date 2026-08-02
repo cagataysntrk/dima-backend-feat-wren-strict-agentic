@@ -255,17 +255,52 @@ diye zaman kaybetmesin.
   rozetiyle gelir. `_match_measure`'ın zaten uyguladığı **en-spesifik-eşleşme-kazanır** kuralı
   boyut tarafına da eklendi. **Eşit eşleşmeler** (iki boyut aynı sinonimle) bilinçli olarak
   çözülmedi — o gerçek bir belirsizliktir ve Faz 3.1'de `route()`'un chip sorması gerekir.
-- **Olumsuzluk hiç ifade edilemiyor**: Rust **12** filtre operatörü destekliyor
-  (`eq neq in not_in gt gte lt lte contains starts_with is_null is_not_null` — çalıştırılarak
-  doğrulandı), Python **4** üretiyor (`eq in gte lte`). `"reddedilmeyen partilerin cirosu"` →
-  reddedilenler **dahil**. `parse_cube_query` operatörü hiç denetlemiyor, `cube_sql` iletiyor,
-  Rust uyguluyor — **eksik olan yalnız NL→operatör köprüsü.**
+- **kısmen düzeltildi (2026-08-02, Faz 3.3)** — **olumsuzluk ifade edilemiyordu**: Rust **12**
+  filtre operatörü destekliyor (`eq neq in not_in gt gte lt lte contains starts_with is_null
+  is_not_null` — çalıştırılarak doğrulandı, geçersiz operatör gürültülü reddediliyor), Python
+  **4** üretiyordu. `parse_cube_query` operatörü denetlemiyor, `cube_sql` iletiyor, Rust
+  uyguluyor — eksik olan yalnız NL→operatör köprüsüydü.
+  - ✅ **DIŞLAMA** (`neq`/`not_in`) açıldı: *"beyaz hariç rework"* artık beyazı **eler**, eskiden
+    beyazın rework'ünü `source="cube"` rozetiyle **döndürüyordu**. Kural kelime listesi değil
+    **konumsaldır**: Türkçe son-çekim edatı tümlecini izler, o yüzden edatın eşleşen değerden
+    SONRA gelmesi aranır; aradaki çekim ekleri (Faz 0.4'ün `_SUFFIX_CHAIN_RE`'si yeniden
+    kullanılır), bağlaçlar ve aynı koordinasyona giren diğer değerler yutulur. Karma ifade
+    (*"beyaz hariç siyah"*) **dürüst red** — hangi değerin hangi tarafta olduğu çıkarılamaz.
+  - ✅ **ÖNEK/İÇERME** açıldı ama **operatöre değil, değer indeksine** bağlandı: motorun
+    `starts_with`/`contains`'i **harf duyarlıdır** (ölçüldü: `starts_with('B')` → `['Beyaz']`,
+    `starts_with('b')` → `[]`) ve Dima'nın NL katmanı `_norm` ile küçültür. Doğrudan bağlamak
+    kullanıcı "beyaz" yazdığında **güvenle boş** sonuç döndürmek olurdu — `None`dan kötü, çünkü
+    boş sonuç "veri yok" gibi okunur. Bunun yerine önek gerçek değerlere çözülüp `in` kurulur;
+    boyut da **kelimesinden değil** değerlerin nerede bulunduğundan gelir.
+  - ❌ **`is_null` / eşik-tabanlı olumsuzluk açık**: *"firesiz partilerin cirosu"*,
+    *"maliyeti girilmemiş partiler"*. Bunlar kategorik DEĞER dışlaması değil, bir ÖLÇÜ ya da
+    var-olmayan bir kolon üzerinde koşuldur; bu katalogda tutamak yoktur (`maliyet` ne boyut
+    ne ölçü). Faz 0.4 sayesinde en azından **sessiz-yanlış değil dürüst red** üretiyorlar:
+    `-sIz`/`-mAyAn` ekleri `_covers`ta izinli çekim sayılmadığı için kapsam kapısına takılıyorlar.
 
 ### 6.2 Yapısal boşluklar
-- **`route()`'ta güven skoru yok.** Dört skor hesaplanıp **atılıyor** (`_match_cube:514-516`,
-  `:550-562` — marj literal `4` ile karşılaştırılıp düşürülüyor; `_match_measure:577-583`;
-  `_match_dims:596-613`). Bugün **belirsizlik en kötü kararı tetikliyor** (en az yönetilen katmana
-  düşüş); tetiklemesi gereken bir netleştirme sorusudur.
+- **kısmen düzeltildi (2026-08-02, Faz 3.1)** — **`route()`'ta güven skoru yoktu** ve belirsizlik
+  en kötü kararı tetikliyordu (en az yönetilen katmana düşüş).
+  - **Önce ölçüldü:** 5011 soruluk korpusta `route()` 1057 soruda `None` dönüyor ama bunların
+    **872'sinde zaten bir netleştirme chip'i vardı** (`cube_only_match` 502,
+    `measure_cube_candidates` 370). Yani tez %82 oranında çoktan çözülmüştü; gerçek boşluk 185.
+  - ✅ En büyük kapsanmayan sınıf kapatıldı: `_match_cube`'un `len(hits)>1` dalında beraberliği
+    kıramaması. `cube_tie_candidates` **yalnız kanıt EŞİTKEN** (cube-sinonim ve ölçü-sinonim
+    uzunlukları birebir aynı) konuşur ve chip Intent-JSON'dan **önce** gelir — iki aday eşit
+    kanıt taşırken LLM'e seçtirmek §4-6'nın ihlalidir. Chip metni **route() ile doğrulanır**:
+    referans, katalog o cube'a daraltılıp yeniden koşularak hesaplanır ve yalnız `cube_query`si
+    birebir eşleşen metin yayımlanır. Adaylardan biri ifade edilemiyorsa **hiçbiri** yayımlanmaz.
+  - Kanıtın eşit OLMADIĞI dal (33 soru) bilinçli olarak **dokunulmadı** — o bir beraberlik değil
+    zayıf sinyaldir ve orta güven bandı Intent-JSON'ındır.
+  - **Skaler bir güven sayısı üretilmedi.** Karar noktaları ayrık ve kanıt karşılaştırması
+    denetlenebilir; kalibre edilmemiş bir float aynı kararı verip gerekçesini gizlerdi.
+- **Sıçrama-derinlikli cube tercihi (plan §3.2) ÖLÇÜLDÜ ve ERTELENDİ.** Planın öngörüsünün ilk
+  yarısı tuttu (`dim_owners>1` artık norm: çok-adaylı soruların %66'sı), ikinci yarısı tutmadı:
+  TB3'ün ölmesi maliyet doğurmuyor, çünkü `_match_cube` o 969 sorunun **%94'ünü** daha önceki
+  kırıcılarla zaten çözüyor. Kalan 55 soru Faz 3.1'de chip'lenen beraberliğin ta kendisi ve
+  derinlik onları **çözemez**: boyut ya iki cube'da da yerli (derinlik 0=0) ya da ikisinde de
+  üretilmiş (1=1). Ayrıca katalogdaki 7 üretilen boyutun hepsi `hops=1` — merdiven iki basamaklı.
+  Yeniden açılma koşulu: yayımlanmış 2-sıçramalı boyut belirmesi.
 - **Çapraz-alan soruları `cube_router.py:1502`'de ölüyor** — `_match_cube`'da değil. 13 probun
   12'si orada; 8'inde cube ve ölçü zaten doğru çözülmüş. (Bu satır `cube["dimensions"]` okuyor.)
 - ✅ **4 cube view-tabanlıydı** (`parti`, `ik`, `mizan`, `enerji_tesis` = kataloğun %31'i, en
@@ -295,10 +330,18 @@ diye zaman kaybetmesin.
   - ❌ ***filtreli bir modele join'lemek*** — açık ve Faz 1 için **P0**: ölçüldü, 34M TL
     `alis` verisi `tur='satis'` filtresini geçti. Auto-join bu baypası "yalnız Discovery"den
     "handle üretilen her cube"a yayar (bkz. §9 G10).
-- **`compose()` kilitsiz `rmtree` yapıyor** (`compose.py:77-86`). Build boyunca (~130-160 ms)
-  `target/mdl.json` **yok**; bu pencerede gelen sorgu ya `FileNotFoundError` alır ya da yukarıdaki
-  `always_filter` yutmasına düşer. `company_registry`'nin per-slug kilidi var ama
-  `compose_and_build` (`main.py:55`, `materialize.py:122`, `measures.py:284`) **onu kullanmıyor**.
+- ✅ **düzeltildi (2026-08-02, Faz 0.2)** — **`compose()` kilitsiz `rmtree` yapıyordu**. Build
+  boyunca (~130-160 ms) `target/mdl.json` **yoktu**; o pencerede gelen sorgu ya `FileNotFoundError`
+  alıyor ya da `always_filter` yutmasına düşüyordu. Üç düzeltme: `build_lock_for(out)` süreç-geneli
+  per-dizin kilidi (`compose_and_build` de artık onu alıyor), `target/` compose sırasında
+  **korunuyor** (eski manifest yeni build bitene kadar geçerli kalıyor), `build()` geçici dosya +
+  `os.replace` ile **atomik**.
+- ⚠️ **Kilit SÜREÇ-İÇİDİR (`threading`), süreçler arası DEĞİL.** İki ayrı süreç aynı çıktı
+  dizinine compose ederse yarış geri döner: `FileNotFoundError: .../models/<x>/metadata.yml`.
+  Bu, 2 Ağustos 2026'da **yeniden üretilerek** teşhis edildi — iki test konteyneri aynı bind
+  mount'a paralel koşturulduğunda. Üretimde tek konteyner olduğu için bugün ısırmıyor; ama
+  çok-süreçli bir dağıtımda (gunicorn worker'ları, ayrı scheduler süreci) dosya kilidine
+  (`fcntl.flock`) yükseltilmesi gerekir. **Testleri paralel iki konteynerde koşturma.**
 - **Telemetri kalıcı değil**: `docker inspect dima-backend-core` → `Mounts: []`,
   `DIMA_DATABASE_URL=sqlite:////app/logs/dima.db` konteyner katmanında. **Her build geçmişi siler.**
   `interaction_log`'da bugün **7 satır** var.
@@ -504,11 +547,11 @@ anlatır, *nasıl*ını değil):
 
 ```
 Soru
- └─▶ route()  →  (CubeQuery, confidence)          ← kalibre skor, binary değil
-        ├─ yüksek  → source=cube            (0 token)
-        ├─ orta    → Intent-JSON, aday setiyle → source=cube+llm
-        ├─ düşük   → NETLEŞTİRME CHIP'İ     ← belirsizlik en İYİ kararı tetikler
-        └─ en düşük→ Discovery              ← istisna, ve her biri bir terfi adayı
+ └─▶ route()  →  CubeQuery, ya da KANITIYLA BİRLİKTE bir red
+        ├─ çözüldü        → source=cube            (0 token)
+        ├─ kanıt EŞİT     → NETLEŞTİRME CHIP'İ     ← belirsizlik en İYİ kararı tetikler
+        ├─ kanıt ZAYIF    → Intent-JSON            → source=cube+llm
+        └─ kanıt YOK      → Discovery              ← istisna, ve her biri bir terfi adayı
                         └─▶ terfi kuyruğu → YAML diff → insan onayı → pack'e PR
 
 Cube boyutları = kendi base_object'i
@@ -519,6 +562,12 @@ Cube boyutları = kendi base_object'i
 
 Her cevap → yeniden çalıştırılıp hash eşlenebilen bir MAKBUZ
 ```
+
+> **Neden skaler bir `confidence` YOK** (bu diyagram Faz 3.1'de düzeltildi): merdivenin karar
+> noktaları ayrıktır ve her biri **karşılaştırılabilir bir kanıta** dayanır (eşleşen sinonimin
+> uzunluğu, adaylar arası fark). Bu kanıtı 0–1 arası bir sayıya sıkıştırmak aynı kararı verir
+> ama **gerekçesini gizler** — ve kalibre edilmediği sürece o sayı bir güven değil bir süstür.
+> Query Contract'ın varlık sebebi denetlenebilirlikse, eşik de denetlenebilir olmalıdır.
 
 Dört ilke:
 1. **Kapsam, zekâdan önemlidir.** Semantic layer'ın tek hata modu kapsamdır (dbt'nin kendi
