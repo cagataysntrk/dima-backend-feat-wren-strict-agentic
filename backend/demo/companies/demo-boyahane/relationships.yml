@@ -34,6 +34,11 @@ relationships:
     join_type: MANY_TO_ONE
     models: [partiler, tedarikciler]
     condition: "partiler.tedarikci_kod = tedarikciler.tedarikci_kodu"
+    # `expose:` BİLİNÇLİ OLARAK YOK (2 Ağustos 2026). `sehir` ve `tur` denendi ve
+    # ÖLÇÜLDÜ: bu veri setinde TÜM partiler Çorlu'daki tedarikçilere ait, yani her iki
+    # boyutun da kardinalitesi 1 — hiçbir şeyi ayırt etmiyorlar, yalnız router'ın arama
+    # uzayını ve sinonim çakışma yüzeyini büyütüyorlar. Gerçek bir müşteride şehir/tür
+    # dağılımı varsa buraya eklenir; kapı: tests/test_relationship_health.py.
   - name: top_stok_partiler
     join_type: MANY_TO_ONE
     models: [top_stok, partiler]
@@ -110,6 +115,14 @@ relationships:
     join_type: MANY_TO_ONE
     models: [tamir_rework, partiler]
     condition: "tamir_rework.parti = partiler.parti_no"
+    expose:
+      # `kalite` cube'unda operatör boyutu YOKTU — "operatör bazında rework" sorusu
+      # cevapsızdı. 1 sıçrama: tamir_rework -> partiler (parti_no, PK).
+      - column: operator
+        as: operator
+        label: operatör
+        synonyms: [operatör, çalışan baz, çalışana göre, kişi baz, kişiye göre,
+                   personel baz, personele göre]
 
   # --- İK (personel → özlük 1:1 demografi köprüsü) ---
   - name: personel_ozluk_personel

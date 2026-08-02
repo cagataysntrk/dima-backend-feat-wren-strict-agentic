@@ -162,3 +162,62 @@ def test_polimorfik_cari_kodu_iliskisi_EKLENMEMIS(rels_and_conn):
             "Satırların yarısı öksüz kalır; `test_kaynak_satirlari_OKSUZ_KALMIYOR` bunu "
             "zaten yakalar. Doğru çözüm UNION'lı bir cari master view'ı ya da cari_tip."
         )
+
+
+def test_uretilen_boyutlar_AYIRT_EDICI_olmali(rels_and_conn):
+    """İlişki-türevi bir boyut, veride EN AZ İKİ farklı değer taşımalı.
+
+    Kardinalitesi 1 olan bir boyut hiçbir şeyi ayırt etmez: kırılım tek satır döner,
+    kullanıcıya bilgi katmaz — ama sinonimleri router'ın arama uzayına GİRER ve başka
+    boyutlarla çakışma yüzeyini büyütür. Yani net etkisi NEGATİFTİR.
+
+    Ölçülmüş vaka (2 Ağustos 2026): `partiler → tedarikciler` üzerinden `sehir`/`tur`
+    yayımlandı; bu veri setinde TÜM partiler Çorlu'daki tedarikçilere ait olduğu için
+    her iki kırılım da TEK SATIR döndürdü. Üretilen SQL doğruydu (ham SQL ile birebir
+    aynı) — sorun doğrulukta değil, YARARDAYDI. `expose:` geri çekildi.
+
+    Cube'un kendi rehberi de aynı yöne bakar: *"Smaller, focused views are easier to
+    navigate and lead to better AI results."* Boyut eklemek bedava değildir.
+    """
+    import yaml
+
+    from app.config import get_settings
+
+    proje = get_settings().resolved_project_dir()
+    _, con, tables = rels_and_conn
+    zayif = []
+    for cd in sorted((proje / "cubes").iterdir()):
+        f = cd / "metadata.yml"
+        if not f.is_file():
+            continue
+        cm = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+        base = cm.get("base_object")
+        if base not in tables:
+            continue  # view tabanlı cube'lar bu taramanın dışında
+        for d in cm.get("dimensions") or []:
+            origin = (d.get("properties") or {}).get("origin")
+            if not origin:
+                continue  # yalnız ÜRETİLEN boyutlar
+            n = con.execute(
+                f'select count(distinct o."{origin["column"]}") '
+                f'from main.{base} s left join main.{origin["model"]} o '
+                f'on s."{_join_col(rels_and_conn, origin["relationship"], base)}" '
+                f'= o."{_hedef_col(rels_and_conn, origin["relationship"])}"').fetchone()[0]
+            if n < 2:
+                zayif.append(f"{cm.get('name')}.{d['name']}: veride {n} farklı değer "
+                             f"({origin['model']}.{origin['column']}) — ayırt edici değil")
+    assert not zayif, "AYIRT EDİCİ OLMAYAN ÜRETİLEN BOYUT:\n  " + "\n  ".join(zayif)
+
+
+def _join_col(rels_and_conn, rel_adi: str, kaynak: str) -> str:
+    rels, _, _ = rels_and_conn
+    r = next(x for x in rels if x["name"] == rel_adi)
+    many, src, _, _ = _parse(r)
+    return src
+
+
+def _hedef_col(rels_and_conn, rel_adi: str) -> str:
+    rels, _, _ = rels_and_conn
+    r = next(x for x in rels if x["name"] == rel_adi)
+    _, _, _, dst = _parse(r)
+    return dst
