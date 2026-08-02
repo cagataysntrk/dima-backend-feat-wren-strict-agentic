@@ -335,7 +335,25 @@ export function ResultView({
   }, [noDrillHint]);
 
   // Grafik yalnız çizilebilir + ölçü varsa hesaplanır (0 satır / ölçüsüz → tablo, çökme yok).
-  const lowerSet = useLowerSet();
+  //
+  // YÖN KAYNAĞI (Faz I): backend'in VizSpec'i `lower_set`'i CUBE KAPSAMINDA taşır ve
+  // bu cevabın otoritesidir. Şemadan okunan küme ise TÜM CUBE'LARIN BİRLEŞİMİDİR ve
+  // ölçüldü (2 Ağustos 2026): `toplam_dogalgaz_sm3` `surdurulebilirlik`'te düşük-iyi,
+  // `enerji_makine`'de DEĞİL — birleşim ikisinde de ısı paletini ters çeviriyordu.
+  // Yani aynı sayı, yanlış cube'da yanlış renkle okunuyordu.
+  //
+  // VizSpec varsa O kazanır; yoksa (grafik kararı FE'nin yerel analyze()'ından geldiyse)
+  // şema birleşimi YEDEK kalır — yönü hiç bilmemekten iyidir.
+  const semaLowerSet = useLowerSet();
+  // `vizLower` ayrı bir değişkene alınır: `useMemo` bağımlılığında `viz?.lower_set`
+  // yazmak react-compiler'ın çıkarımıyla (`viz`) uyuşmuyor ve derleyici komponentin
+  // TAMAMINI optimize etmeyi bırakıyor (eslint yakaladı). Alan önce okunur, bağımlılık
+  // o değişken olur — çıkarım ile kaynak aynı şeyi gösterir.
+  const vizLower = viz?.lower_set;
+  const lowerSet = useMemo(
+    () => (vizLower ? new Set(vizLower) : semaLowerSet),
+    [vizLower, semaLowerSet],
+  );
   const option = useMemo(
     () =>
       chartable && measure

@@ -1309,14 +1309,32 @@ e-postada aynı sorunun bar grafiğini alır ve hangisinin doğru olduğunu bile
   `cube_query` boyut **otoritesidir** (Faz C1) — onsuz kolon rolleri veriden tahmin edilir.
 - **Yüzey**: `viz_email` ve `report` **kendi** `recommend`/`analyze`'ını yazmamalı.
 
-### 13.7 Henüz YOK (I3, VIZ_STANDARDS)
+### 13.7 Görsel dilbilgisi belgelendi (I3) ✅ — `backend/VIZ_STANDARDS.md`
 
-Kalan dağarcık (**pareto** — `interpret._signals` yoğunlaşmayı zaten tespit ediyor ve
-`prescribe.py` onu ölçüyor, ama frontend'in `ChartKind`'ında pareto **yok**: eklemek
-backend kuralı + ECharts oluşturucusu + toggle demek, aksi halde **yetim bir alternatif**
-olurdu; bullet · slope · boxplot · sankey · combo), `backend/VIZ_STANDARDS.md` (renk
-semantiği · eksen kuralları · belirsizliğin görselde görünmesi), ve rapor katmanının
-anlatı+kanıt zinciri.
+Belge **yalnız zorlanan** kararı bağlayıcı sayar; zorlanmayan her madde açıkça
+*"henüz zorlanmıyor"* diye işaretlidir. Gerekçe: denetlenmeyen bir standart, bu depoda
+**sekiz kez ölçülen** desenin (*beyan var, kod tanımaz*) ta kendisi olurdu.
+
+Belge yazılmadan **önce** ölçüldü: beş grafik kararı zaten **49 testle** zorlanıyordu
+(yığma yasağı 9 · şelale kuralı 11 · sadakat 7 · kolon rolü 9 · sayı biçimi 13).
+Zorlanmayan **tek** karar `lower_is_better` → renk idi — ve orada gerçek bir sapma çıktı:
+
+**Ölçülen kusur:** frontend `lower_is_better`'ı `/schema`'dan **tüm cube'ların birleşimi**
+olarak okuyordu ve backend VizSpec'in **cube-kapsamlı** `lower_set`'ini hiç kullanmıyordu.
+Demo'da bir ölçü tam olarak bu şekilde çatışıyor: `toplam_dogalgaz_sm3`
+`surdurulebilirlik`'te düşük-iyi, `enerji_makine`'de **değil**. Birleşim ikisinde de ısı
+paletini ters çeviriyordu — **aynı sayı, yanlış cube'da yanlış renkle** okunuyordu.
+
+Düzeltme: `VizSpec.lower_set` **otoritedir**; şema birleşimi yalnız grafik kararı FE'nin
+yerel `analyze()`'ından geldiğinde **yedek** olarak kullanılır
+(`ResultView.tsx` + `test_viz_sadakat.py::test_CAKISAN_olcu_cube_kapsaminda_ayrisir`).
+
+**Hâlâ YOK ve belgede öyle işaretli:** kalan dağarcık (**pareto** — `interpret._signals`
+yoğunlaşmayı zaten tespit ediyor ve `prescribe.py` onu ölçüyor, ama frontend'in
+`ChartKind`'ında pareto **yok**: eklemek backend kuralı + ECharts oluşturucusu + toggle
+demek, aksi halde **yetim bir alternatif** olurdu; bullet · slope · boxplot · sankey ·
+combo) · renk körlüğü paleti · eksen kuralları (kesme · sıfır tabanı · eksik dönem
+boşluğu) · PDF dışa aktarım · rapor katmanının anlatı+kanıt zinciri.
 
 ---
 

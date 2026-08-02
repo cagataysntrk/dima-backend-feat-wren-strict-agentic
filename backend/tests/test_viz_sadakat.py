@@ -181,3 +181,56 @@ def test_TOPLANAMAZ_olcu_her_yuzeyde_yigilmaz(schema):
           "timeDimensions": [{"dimension": "tarih", "granularity": "month"}], "filters": []}
     spec = viz.recommend(result, cube_query=cq, **viz.meta_args(cube))
     assert spec["stackable"] is False and spec["kind"] != "stacked"
+
+
+# --- YÖN KAYNAĞI: cube kapsamlı, şema birleşimi DEĞİL --------------------------
+
+def test_lower_set_VizSpecte_tasinir(schema):
+    """ÖLÇÜLEN KUSUR (2026-08-02). Frontend `lower_is_better`'ı TÜM CUBE'LARIN
+    BİRLEŞİMİ olarak okuyordu ve VizSpec'in cube-kapsamlı `lower_set`'ini YOK SAYIYORDU.
+
+    Demo'da gerçek bir çakışma var: `toplam_dogalgaz_sm3` `surdurulebilirlik`'te
+    düşük-iyi, `enerji_makine`'de DEĞİL. Birleşim ikisinde de ısı paletini ters
+    çevirirdi — aynı sayı, yanlış cube'da YANLIŞ RENKLE okunurdu.
+    """
+    from app import viz
+
+    cube = next((c for c in schema["cubes"] if c.get("lower_is_better")), None)
+    if not cube:
+        pytest.skip("bu katalogda lower_is_better beyanı yok")
+    olcu = (cube.get("lower_is_better") or [])[0]
+    r = {"columns": ["d", olcu],
+         "rows": [{"d": f"K{i}", olcu: float(i)} for i in range(1, 5)], "row_count": 4}
+    spec = viz.recommend(r, cube_query={"cube": cube["name"], "measures": [olcu],
+                                        "dimensions": ["d"], "filters": []},
+                         **viz.meta_args(cube))
+    assert spec and olcu in (spec.get("lower_set") or []), (
+        "VizSpec yön bilgisini taşımıyor — FE şema birleşimine düşer ve cube "
+        "kapsamı kaybolur")
+
+
+def test_CAKISAN_olcu_cube_kapsaminda_ayrisir(schema):
+    """Aynı ölçü adı bir cube'da düşük-iyi, başkasında değilse VizSpec'ler AYRIŞMALI."""
+    from collections import defaultdict
+
+    from app import viz
+
+    nerede = defaultdict(lambda: [set(), set()])
+    for c in schema["cubes"]:
+        lis = set(c.get("lower_is_better") or [])
+        for m in (c.get("measures") or []):
+            nerede[m][0 if m in lis else 1].add(c["name"])
+    catisan = {m: v for m, v in nerede.items() if v[0] and v[1]}
+    if not catisan:
+        pytest.skip("bu katalogda çakışan ölçü yok")
+
+    olcu, (dusuk_cubes, normal_cubes) = next(iter(catisan.items()))
+    r = {"columns": ["d", olcu], "rows": [{"d": "A", olcu: 1.0}], "row_count": 1}
+    def _spec(cube_adi):
+        cm = next(c for c in schema["cubes"] if c["name"] == cube_adi)
+        return viz.recommend(r, cube_query={"cube": cube_adi, "measures": [olcu],
+                                            "dimensions": ["d"], "filters": []},
+                             **viz.meta_args(cm))
+    assert olcu in (_spec(sorted(dusuk_cubes)[0]).get("lower_set") or [])
+    assert olcu not in (_spec(sorted(normal_cubes)[0]).get("lower_set") or []), (
+        f"{olcu}: yön cube kapsamında ayrışmıyor — birleşim davranışı sürüyor")
