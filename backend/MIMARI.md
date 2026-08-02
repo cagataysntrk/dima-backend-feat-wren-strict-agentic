@@ -527,6 +527,47 @@ Kazanç 28 birim testiyle kanıtlanıyor. Korpusun bu sınıfı kazanması Faz 0
 Taban artefaktı: `lab/nl_corpus_baseline.json` (`eval/baseline.json` ile aynı disiplin —
 `lab/reports/` gitignore'da olduğu için ham rapor değil **kapı değerleri** saklanır).
 
+### 6.1d Ölü uç kapandı — 13 seçenekli döküm bir cevap değildi (Faz -1) ✅
+
+**Canlı örnek:** *"son 6 ay personel bazlı çalışma süreleri kıyasla"* → sistem **13 cube'un
+her birinden 1 ölçü** döküyordu ve **kaç kez denenirse denensin bir daha LLM'e bile
+düşmüyordu**. Zincir: `compare_mode` True · `_period_hit_words` True · ama `partial_unknowns`
+`hits=[]` → "hiç konu yok" dalı → `_finish(...)` **doğrudan return**. `_finish` her zaman
+truthy döner ve **üç** `_try_fresh_intent()` çağrı yeri de `if fresh: return fresh` yapıyor
+→ Discovery'ye (adım 5) hiç sıra gelmiyordu.
+
+**Elde sinyal VARDI, kullanılmıyordu.** "personel" `ik`/`parti`'de zaten bir sinonim. Ama o
+zayıf cube/boyut taraması `if unknown and hits:` bloğunun **İÇİNDEYDİ** — `hits` boşken,
+yani sistemin en çaresiz olduğu anda, **erişilemiyordu**. Tarama
+`cube_router.ilgili_cubelar`'a **taşındı** (kopyalanmadı; iki çağıran da onu kullanır) ve
+dal üç seviyeli bir karara dönüştü:
+
+1. **Daralt** — zayıf sinyal varsa ilgili cube'ların ölçüleri (13 → 2-4), LLM'siz
+2. **Discovery'ye izin ver** — `_match_cube(q, schema) is not None` ise `None` dönülür ve
+   merdivenin 5. basamağı devralır. Bu kapı yapısal-takip zincirinde **zaten vardı**;
+   fresh zincirinde yoktu — asimetri buydu, ikinci bir kural icat edilmedi
+3. **Dürüstçe reddet** — hiçbir kelime tanınmıyorsa katalog dökümü kalır, ama notu artık
+   *nedenini* söylüyor (*"sorunda tanıdığım bir konu geçmiyor"*)
+
+**Bu düzeltmenin KENDİ testi bir kusur yakaladı — ve kaydedilmesi gerekiyor.** İlk sürüm
+*"bu yıl tüm AYLARINI karşılaştır"* sorusunu — adı bile `test_konusuz_soru_tahmin_etmez` olan,
+hiçbir konu taşımayan soruyu — `ik`e bağlıyordu: `ik.donem` boyutunun sinonimleri
+`['donem','ay','periyot','period']` ve `"aylarini"` bunlara ek-uyumlu eşleşiyor. Sonuç
+*"İK / bordro ile ilgili görünüyor"* — **13 seçenekli dökümden DAHA KÖTÜ**, çünkü kendinden
+emin ve yanlış. §6.1'in *"en tehlikeli sınıf"* dediği şeyin bir **düzeltmenin içinden**
+doğmuş hâli.
+
+İki deneme gerekti ve ikisi de kaydedilmeli:
+- **Yetmeyen:** `time_dimensions` beyanını dışlamak. Ölçüldü — `ik`in zaman boyutu
+  `donem_tarih`; sorunu çıkaran boyut **kategorik** `donem`. **Beyan bu ayrımı taşımıyor.**
+- **Çalışan:** dolgu sözlüğü. `_period_hit_words | _misc_hit_words` bu deponun *"bu kelime
+  dönem/granülerlik ifadesidir"* **tek kaynağıdır** ve `_uncovered` zaten onu kullanıyor.
+  Eşleşme yalnız **dolguyla açıklanmayan** kelimeler üzerinde aranır. Yeni liste yazılmadı.
+
+**Dürüst sınır:** çıplak *"dönem"* kelimesi hâlâ `ik`e daraltır — ve bu **savunulabilir**:
+`ik`in `donem` adında gerçek bir boyutu var ve dolgu sözlüğü onu dolgu saymıyor. O kelime
+gerçekten belirsizdir; testin onu "yanlış" ilan etmesi ölçüme değil sezgiye dayanırdı.
+
 ### 6.1c İkiz `match_kpi` silindi (Faz -0.5b) ✅
 
 `cube_router.py`'de **iki** `match_kpi` tanımı vardı (498 ve 510). Python modül seviyesinde

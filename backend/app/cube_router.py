@@ -1664,6 +1664,63 @@ def _coverage_ok(q: str, known_words: set[str]) -> bool:
     return not _uncovered(q, known_words)
 
 
+def ilgili_cubelar(q: str, schema: dict, haric: set[str] | None = None) -> list[dict]:
+    """Soruda cube-düzeyi VEYA boyut-düzeyi sinonimi eşleşen cube'lar (ZAYIF sinyal).
+
+    "Zayıf" çünkü bir (cube, ölçü) çifti kurmuyor — yalnız *"bu soru şu konularla ilgili
+    görünüyor"* diyor. Ama netleştirmeyi **13 seçenekten 2-3'e** indirmeye yeter ve
+    bunun için LLM gerekmez.
+
+    ## Neden ayrı bir fonksiyon (Faz -1)
+
+    Bu tarama `ask.py`'nin `if unknown and hits:` dalının **İÇİNDE** gömülüydü — yani
+    `partial_unknowns` hiçbir (cube, ölçü) çifti bulamadığında (`hits == []`)
+    **erişilemiyordu**. Tam da o durumda, yani sistemin en çaresiz olduğu anda, elindeki
+    tek sinyali kullanamıyordu ve 13 cube'un 1'er örneğini döküyordu — kullanıcının
+    *"bildiğini okuyor"* dediği davranış.
+
+    Canlı örnek: *"son 6 ay personel bazlı çalışma süreleri kıyasla"* — "personel"
+    `ik`/`parti` cube'larında **zaten bir sinonim**; bu sinyal 13'ü 2'ye indirir.
+
+    Gövde kopyalanmadı, **taşındı**: iki çağıran da aynı fonksiyonu kullanır (bu depoda
+    gövde kopyalamanın bedeli altı kez ölçüldü).
+    """
+    # DOLGU KELİMESİ KONU SİNYALİ OLAMAZ. Ölçüldü (2 Ağustos 2026 — bu değişikliğin KENDİ
+    # testi yakaladı): `ik.donem` boyutunun sinonimleri ['donem','ay','periyot','period'] ve
+    # *"bu yıl tüm AYLARINI karşılaştır"* — hiçbir konu taşımayan, testinin adı bile
+    # `test_konusuz_soru_tahmin_etmez` olan soru — `"aylarini"` üzerinden `ik`e eşleşiyordu.
+    # Sonuç *"İK / bordro ile ilgili görünüyor"*: 13 seçenekli dökümden **DAHA KÖTÜ**, çünkü
+    # kendinden emin ve yanlış — bu deponun "en tehlikeli sınıf" dediği şeyin bir DÜZELTMENİN
+    # içinden doğmuş hâli.
+    #
+    # `time_dimensions` beyanı bu ayrımı TAŞIMIYOR (ölçüldü: `ik`'in zaman boyutu
+    # `donem_tarih`; `donem` kategorik bir etikettir). Doğru ayrım kelime listesinde de
+    # değil — **soruyu açıklayan dolgu sözlüğünde**: `_period_hit_words | _misc_hit_words`
+    # bu deponun "bu kelime dönem/granülerlik ifadesidir" TEK KAYNAĞIDIR ve `_uncovered`
+    # zaten onu kullanıyor. Bir kelime dolguyla açıklanıyorsa konu hakkında hiçbir şey
+    # söylemez. Yeni bir liste yazılmadı; var olan kapı yeniden kullanıldı (ADR-0008).
+    dolgu = _period_hit_words(q) | _misc_hit_words(q)
+    anlamli = _uncovered(q, dolgu)
+    if not anlamli:
+        return []   # soruda dolgu dışında hiçbir şey yok → daraltılacak konu da yok
+    # Eşleşme YALNIZ dolgu-dışı kelimeler üzerinde aranır: "aylarini" elenir, "personel" kalır.
+    konu_metni = " ".join(anlamli)
+
+    haric = haric or set()
+    out: list[dict] = []
+    for c in schema.get("cubes") or []:
+        if c.get("name") in haric:
+            continue
+        # Cube-düzeyi VEYA boyut-düzeyi sinonim — "tedarikçi" gibi bir kelime ölçü değil,
+        # BAŞKA bir cube'un BOYUTU olabilir (cari/ticaret'in "tedarikçi" boyutu).
+        # İkisi de "bu konu ilgili" sinyali sayılır.
+        dim_hit = any(_syn_hit_words(konu_metni, syns)
+                      for syns in (c.get("dimension_synonyms") or {}).values())
+        if _syn_hit_words(konu_metni, c.get("synonyms")) or dim_hit:
+            out.append(c)
+    return out
+
+
 def partial_unknowns(q: str, schema: dict) -> tuple[list[str], list[tuple[dict, str]]]:
     """KATALOG-GENELİ kısmi anlama denetimi (dürüstlük kapısı, ADR-0008):
     (hiçbir cube sözlüğünde karşılığı olmayan kelimeler, tanınan (cube, ölçü) çiftleri).

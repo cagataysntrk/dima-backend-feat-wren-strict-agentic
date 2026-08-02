@@ -1895,21 +1895,15 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             # SAYMAZ ama katalogda meşru bir konu). O konu da chip'lenir — kullanıcı iki
             # rakip yorumdan birini seçsin (ADR-0008: sessizce biri seçilip ötekisi
             # yutulmaz).
+            # FAZ -1: tarama `cube_router.ilgili_cubelar`'a TAŞINDI (kopyalanmadı) —
+            # aynı sinyal artık "hiç konu yok" dalında da kullanılabiliyor.
             hit_cube_names = {c["name"] for c, _ in hits}
             other_topic = False
-            for c in schema.get("cubes") or []:
-                if c.get("name") in hit_cube_names:
-                    continue
-                # Cube-düzeyi VEYA boyut-düzeyi sinonim — "tedarikçi" gibi bir kelime
-                # ölçü değil, BAŞKA bir cube'un BOYUTU olabilir (cari/ticaret'in
-                # "tedarikçi" boyutu). İkisi de "başka bir konu" sinyali sayılır.
-                dim_hit = any(cube_router._syn_hit_words(q_norm, syns)
-                             for syns in (c.get("dimension_synonyms") or {}).values())
-                if cube_router._syn_hit_words(q_norm, c.get("synonyms")) or dim_hit:
-                    clabel = c.get("display") or c.get("name") or ""
-                    if clabel and clabel not in labels:
-                        labels.append(clabel)
-                        other_topic = True
+            for c in cube_router.ilgili_cubelar(q_norm, schema, haric=hit_cube_names):
+                clabel = c.get("display") or c.get("name") or ""
+                if clabel and clabel not in labels:
+                    labels.append(clabel)
+                    other_topic = True
             trace_msg = ("Intent-path: çapraz konu (rakip cube kimliği) → netleştirme "
                         "(LLM'siz)" if other_topic else
                         "Intent-path: kısmi anlama → rapor düşülmedi, netleştirme (LLM'siz)")
@@ -1924,10 +1918,42 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             ))
 
         # HİÇ KONU YOK ("bu yıl tüm aylarını karşılaştır" — NEYİ?): dönem/kıyas dili var
-        # ama partial_unknowns HİÇBİR (cube, ölçü) çifti bulamadı (hits boş) — LLM'e
-        # bırakılırsa alakasız bir raporu (ör. personel) uydurabilir (log regresyonu).
-        # Katalogdan örnek ölçülerle "hangisini istiyorsun?" sorulur.
+        # ama partial_unknowns HİÇBİR (cube, ölçü) çifti bulamadı (hits boş).
+        #
+        # FAZ -1 — ÖLÜ UÇ. Bu dal eskiden HİÇBİR DARALTMA DENEMEDEN 13 cube'un 1'er
+        # örneğini döküyordu ve `_finish(...)` truthy döndüğü için Discovery'ye (adım 5)
+        # HİÇ SIRA GELMİYORDU. Canlı örnek: *"son 6 ay personel bazlı çalışma süreleri
+        # kıyasla"* → 13 seçenekli dump, ve kaç kez denenirse denensin hep aynı duvar.
+        # Oysa "personel" `ik`/`parti` cube'larında ZATEN bir sinonim — sistemin elinde
+        # daraltacak sinyal vardı, o sinyal yalnız BAŞKA bir dalın içinde kullanılıyordu.
         if not hits and (cube_router._period_hit_words(q_norm) or cube_router.compare_mode(q_norm)):
+            # (1) UCUZ DETERMİNİSTİK DARALTMA — LLM gerekmez, yeni regex gerekmez;
+            # var olan iki dal artık AYNI sinyali paylaşıyor (ADR-0008: kök neden düzelt).
+            ilgili = cube_router.ilgili_cubelar(q_norm, schema)
+            if ilgili:
+                dar_labels: list[str] = []
+                for c in ilgili[:4]:
+                    for m in (c.get("measures") or [])[:3]:
+                        mdisp = (c.get("measure_synonyms_display") or {}).get(m) or m
+                        if mdisp not in dar_labels:
+                            dar_labels.append(mdisp)
+                konular = ", ".join(c.get("display") or c.get("name") or "" for c in ilgili[:3])
+                return _finish(AskResponse(
+                    question=body.question, source=None,
+                    note=f"{konular} ile ilgili görünüyor ama hangi ölçüyü istediğini "
+                         "anlayamadım. Şunlardan biri mi?",
+                    suggestions=[Suggestion(label=lb, query=lb) for lb in dar_labels[:8]],
+                    trace=["Intent-path: konu daraltıldı (zayıf cube/boyut sinyali, LLM'siz)"],
+                ))
+            # (2) DISCOVERY BİR SEÇENEK OLSUN — ama GÜVENLE. Yapısal-takip zinciri bu
+            # kapıyı zaten doğru kuruyor (`_match_cube is not None` ise Discovery'ye düş);
+            # fresh zincirinde AYNI kapı yoktu, asimetri buydu. Gerçek bir katalog cube'u
+            # tanınıyorsa `None` dönülür ve merdivenin 5. basamağı devralır.
+            if cube_router._match_cube(q_norm, schema) is not None:
+                return None
+            # (3) HİÇBİR kelime tanınmadı → bugünkü dürüst red KORUNUR. Katalog dökümü
+            # burada bir "bildiğini okuma" değil, sistemin NE YAPABİLDİĞİNİ göstermesidir —
+            # ve bu, hiçbir şey anlaşılmadığında yapılabilecek en dürüst şeydir.
             example_labels = []
             for c in schema.get("cubes") or []:
                 for m in (c.get("measures") or [])[:1]:
@@ -1936,13 +1962,10 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                         example_labels.append(mdisp)
             return _finish(AskResponse(
                 question=body.question, source=None,
-                note="Neyi karşılaştırmak/görmek istediğini anlayamadım. Hangi ölçüyü istersin?",
-                # 8 → 14: katalog büyüdükçe (Faz 2b'de `makine_duruslari` eklendi, artık 13
-                # cube var) sabit bir küçük kesim en spesifik/tanıdık örnekleri (ör. OEE)
-                # sessizce dışarıda bırakabiliyordu — kesim kataloğun BUGÜNKÜ boyutunu
-                # rahatça kapsayacak şekilde büyütüldü.
+                note="Neyi karşılaştırmak/görmek istediğini anlayamadım — sorunda tanıdığım "
+                     "bir konu geçmiyor. Şunlardan birini mi demek istedin?",
                 suggestions=[Suggestion(label=lb, query=lb) for lb in example_labels[:14]],
-                trace=["Intent-path: konu belirtilmedi → netleştirme (LLM'siz)"],
+                trace=["Intent-path: hiçbir konu tanınmadı → katalog örnekleri (LLM'siz)"],
             ))
         return None
 
