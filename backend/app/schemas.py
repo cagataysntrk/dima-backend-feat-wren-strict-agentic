@@ -401,13 +401,57 @@ class DrillRequest(BaseModel):
 
 
 class ContributionRequest(BaseModel):
-    """Faz 5.2 — *"neden değişti?"*. Bir `cube_query` alır, kullanılmayan boyutlar üzerinde
-    dönemsel değişimin nereden geldiğini arar. `mode` `yoy` (geçen yıl) ya da `mom`."""
+    """Faz 5.1/5.2 — *"neden değişti?"*. Bir `cube_query` alır, kullanılmayan boyutlar
+    üzerinde dönemsel değişimin nereden geldiğini arar. `mode` `yoy` (geçen yıl) ya da `mom`.
+
+    `kind`:
+      - `segment` (varsayılan) — değişimi SEGMENTLERE dağıtır (Faz 5.2).
+      - `pvm` — değişimi FİYAT / MİKTAR / BİRLEŞİK etkiye ayrıştırır (Faz 5.1). Yalnız
+        cube'un `pvm:` beyanı varsa çalışır; eşleştirme tahmin EDİLMEZ.
+    """
 
     cube_query: dict[str, Any]
     mode: str = "yoy"
+    kind: str = "segment"
     session_id: str | None = None
     max_dimensions: int | None = None
+
+
+class PvmFinding(BaseModel):
+    """Bir segmentin fiyat/miktar ayrışması. `cube_query` onu yalnız başına gösterir."""
+
+    label: str
+    kind: str = "dimension"
+    deger: Any = None
+    delta: float = 0.0
+    fiyat_etkisi: float = 0.0
+    miktar_etkisi: float = 0.0
+    birlesik_etki: float = 0.0
+    baskin_etken: str = "miktar"
+    fiyat_simdi: float | None = None
+    fiyat_onceki: float | None = None
+    miktar_simdi: float = 0.0
+    miktar_onceki: float = 0.0
+    deger_simdi: float = 0.0
+    deger_onceki: float = 0.0
+    cube_query: dict[str, Any]
+
+
+class PvmReport(BaseModel):
+    """Toplam ayrışma ARTIKSIZDIR: fiyat + miktar + birleşik = net_degisim (birebir)."""
+
+    dimension: str
+    dimension_label: str
+    value_measure: str
+    volume_measure: str
+    price_label: str
+    net_degisim: float
+    fiyat_etkisi: float
+    miktar_etkisi: float
+    birlesik_etki: float
+    bulgular: list[PvmFinding] = Field(default_factory=list)
+    kirpilan_segment: int = 0
+    kirpilan_esik_yuzde: float = 0.0
 
 
 class ContributionFinding(BaseModel):
@@ -445,7 +489,9 @@ class ContributionResponse(BaseModel):
 
     measure: str | None = None
     mode: str = "yoy"
+    kind: str = "segment"
     raporlar: list[ContributionReport] = Field(default_factory=list)
+    pvm_raporlar: list[PvmReport] = Field(default_factory=list)
     note: str | None = None
     taranmayan_boyut: int = 0
     contract_ids: list[str] = Field(default_factory=list)

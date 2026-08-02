@@ -206,3 +206,94 @@ def test_her_taranan_boyut_SOZLESME_uretir(client):
     eşlenebilen makbuz" değişmezi burada da geçerli."""
     d = _post(client, _CQ).json()
     assert len(d["contract_ids"]) >= len(d["raporlar"])
+
+
+# --- FAZ 5.1: PVM (fiyat / miktar / birleşik) -------------------------------------
+
+_PVM_SATIR = [
+    # A: fiyat 10→12 (+2), miktar 100→100 → SAF FİYAT etkisi
+    {"m": "A", "v": 1200.0, "v_gecen": 1000.0, "q": 100.0, "q_gecen": 100.0},
+    # B: fiyat 5→5, miktar 100→140 → SAF MİKTAR etkisi
+    {"m": "B", "v": 700.0, "v_gecen": 500.0, "q": 140.0, "q_gecen": 100.0},
+    # C: ikisi de değişti → birleşik terim SIFIR DEĞİL
+    {"m": "C", "v": 660.0, "v_gecen": 400.0, "q": 110.0, "q_gecen": 100.0},
+]
+
+
+def test_pvm_SAF_fiyat_ve_SAF_miktar_ayrisir():
+    k = {x["deger"]: x for x in contrib.pvm(_PVM_SATIR, "m", "v", "q")}
+    assert k["A"]["fiyat_etkisi"] == pytest.approx(200.0)
+    assert k["A"]["miktar_etkisi"] == pytest.approx(0.0)
+    assert k["B"]["miktar_etkisi"] == pytest.approx(200.0)
+    assert k["B"]["fiyat_etkisi"] == pytest.approx(0.0)
+    assert k["C"]["birlesik_etki"] != pytest.approx(0.0)
+
+
+def test_pvm_ARTIKSIZ():
+    """Yöntemin cebirsel olmasının ve bir TAHMİN taşımamasının kanıtı: üç etkinin toplamı
+    her segmentte ve toplamda BİREBİR ΔV'dir. Artık çıkarsa ayrıştırma yanlıştır ve
+    "fiyat %X etkiledi" cümlesi dayanaksız kalır."""
+    kalemler = contrib.pvm(_PVM_SATIR, "m", "v", "q")
+    for k in kalemler:
+        toplam = k["fiyat_etkisi"] + k["miktar_etkisi"] + k["birlesik_etki"]
+        assert toplam == pytest.approx(k["delta"], abs=1e-9), k
+    assert (sum(k["fiyat_etkisi"] for k in kalemler)
+            + sum(k["miktar_etkisi"] for k in kalemler)
+            + sum(k["birlesik_etki"] for k in kalemler)) == pytest.approx(
+        sum(k["delta"] for k in kalemler), abs=1e-9)
+
+
+def test_pvm_SIFIR_MIKTAR_fiyat_uydurmaz():
+    """Miktarı sıfır olan bir segmentte fiyat TANIMSIZDIR. Segment atlanmaz (gerçek bir
+    hacim hareketi var — yeni giren / tamamen duran), ama değişim MİKTAR etkisi sayılır;
+    "fiyat" diye adlandırmak 0'a bölmenin kılık değiştirmiş hali olurdu."""
+    k = contrib.pvm([{"m": "yeni", "v": 500.0, "v_gecen": 0.0,
+                      "q": 50.0, "q_gecen": 0.0}], "m", "v", "q")[0]
+    assert k["fiyat_etkisi"] == 0.0 and k["birlesik_etki"] == 0.0
+    assert k["miktar_etkisi"] == pytest.approx(500.0)
+    assert k["fiyat_onceki"] is None and k["delta"] == pytest.approx(500.0)
+
+
+def test_pvm_esleştirme_BEYAN_edilir_tahmin_EDILMEZ(cubes):
+    """`toplam_ciro / toplam_agirlik_kg` gerçek bir TL/kg fiyatıdır; `toplam_tutar /
+    fatura_sayisi` ise ortalama fatura büyüklüğüdür — fiyat DEĞİL. Ayrım bir İÇERİK
+    bilgisidir ve ad kalıbından çıkarılamaz."""
+    assert contrib.pvm_pairs(cubes["parti"]), "parti PVM beyanı kayboldu"
+    assert contrib.pvm_pairs(cubes["parti"])[0]["value"] == "toplam_ciro"
+    assert "TL/kg" in contrib.pvm_pairs(cubes["parti"])[0]["price_label"], (
+        "price_label varsayılana düştü — build camelCase'e çeviriyor (priceLabel), "
+        "pvm_pairs iki yazımı da okumalı")
+    assert not contrib.pvm_pairs(cubes["ticaret"]), (
+        "ticaret'e PVM beyanı eklenmiş — tutar/fatura_sayisi bir FİYAT değildir")
+
+
+def test_pvm_uc_noktasi_calisir(client):
+    r = _post(client, {**_CQ, "measures": ["toplam_ciro"]}, kind="pvm")
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert d["kind"] == "pvm" and d["pvm_raporlar"], d.get("note")
+    rp = d["pvm_raporlar"][0]
+    assert rp["value_measure"] == "toplam_ciro" and rp["volume_measure"] == "toplam_agirlik_kg"
+    assert rp["bulgular"][0]["baskin_etken"] in ("fiyat", "miktar")
+
+
+def test_pvm_uc_noktasi_GERCEK_veride_artiksiz(client):
+    """Gerçek veri üzerinde de artıksız olmalı — sentetik satırlarda tutması yetmez."""
+    d = _post(client, {**_CQ, "measures": ["toplam_ciro"]}, kind="pvm").json()
+    for rp in d["pvm_raporlar"]:
+        toplam = rp["fiyat_etkisi"] + rp["miktar_etkisi"] + rp["birlesik_etki"]
+        assert toplam == pytest.approx(rp["net_degisim"], rel=1e-9, abs=1e-6), rp["dimension"]
+
+
+def test_pvm_beyansiz_olcude_DURUSTCE_reddeder(client):
+    """`toplam_fire_kg` için bir fiyat×miktar çifti BEYAN EDİLMEMİŞ — tahmin edilmez."""
+    d = _post(client, {**_CQ, "measures": ["toplam_fire_kg"]}, kind="pvm").json()
+    assert not d["pvm_raporlar"]
+    assert d["note"] and "pvm" in d["note"].lower()
+
+
+def test_pvm_bulgusu_TIKLANABILIR(client):
+    d = _post(client, {**_CQ, "measures": ["toplam_ciro"]}, kind="pvm").json()
+    b = d["pvm_raporlar"][0]["bulgular"][0]
+    r = client.post("/cube", json={"cube_query": b["cube_query"]})
+    assert r.status_code == 200 and r.json().get("result", {}).get("rows")

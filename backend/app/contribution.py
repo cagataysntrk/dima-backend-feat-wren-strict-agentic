@@ -147,6 +147,111 @@ def decompose(rows: list[dict], dim: str, measure: str, cube_query: dict,
     }
 
 
+# --- PVM: fiyat / miktar / birleşik (Faz 5.1) ------------------------------------
+#
+# `V = p · q` olan her ölçü çifti için değişim ARTIKSIZ üç parçaya ayrılır:
+#
+#     ΔV  =  (p₁−p₀)·q₀   +   p₀·(q₁−q₀)   +   (p₁−p₀)·(q₁−q₀)
+#            └ fiyat ┘        └ miktar ┘        └ birleşik ┘
+#
+# Toplam **birebir** ΔV'dir (yuvarlama dışında artık YOKTUR) — bu, yöntemin cebirsel
+# olmasının ve bir tahmin taşımamasının kanıtıdır ve `test_pvm_ARTIKSIZ` onu ölçer.
+#
+# Segment başına hesaplanır: her segment kendi fiyat/miktar etkisini taşır ve kendi
+# CubeQuery'siyle döner (Faz 5.2 ile aynı ilke — skor değil, tıklanabilir sorgu).
+#
+# **Eşleştirme TAHMİN EDİLMEZ, BEYAN EDİLİR.** `toplam_ciro / toplam_agirlik_kg` gerçek bir
+# TL/kg fiyatıdır; `toplam_tutar / fatura_sayisi` ise fiyat DEĞİL ortalama fatura
+# büyüklüğüdür. Bu ayrım bir İÇERİK bilgisidir; ad kalıbından çıkarmak MIMARI.md §5'in
+# yasakladığı kelimeye-özel yamadır ve yanlış eşleştirme GÜVENLE YANLIŞ ekonomi üretir
+# (kullanıcı "birim fiyat %12 arttı" cümlesini sorgulamaz). Bu yüzden cube metadata'sında
+# açık `pvm:` bloğu aranır; yoksa PVM sunulmaz.
+
+
+def pvm_pairs(cube_meta: dict | None) -> list[dict]:
+    """Cube'un BEYAN ETTİĞİ (value, volume, price_label) üçlüleri. Beyan yoksa boş liste.
+
+    `price_label` İKİ yazımla da okunur: `build_json` MDL'e yazarken bilinmeyen anahtarları
+    camelCase'e çeviriyor (`always_filter` → `alwaysFilter` ile aynı davranış), dolayısıyla
+    YAML'daki `price_label` manifestte `priceLabel` olarak duruyor. Yalnız birini okumak,
+    etiketin sessizce varsayılana düşmesi demekti.
+    """
+    out = []
+    for p in ((cube_meta or {}).get("pvm") or []):
+        if isinstance(p, dict) and p.get("value") and p.get("volume"):
+            out.append({"value": p["value"], "volume": p["volume"],
+                        "price_label": (p.get("price_label") or p.get("priceLabel")
+                                        or "birim fiyat")})
+    return out
+
+
+def pvm(rows: list[dict], dim: str, value_measure: str, volume_measure: str) -> list[dict]:
+    """Segment başına fiyat/miktar/birleşik etki (`yoy.compute` çıktısından).
+
+    Miktarı sıfır olan bir segmentte fiyat TANIMSIZDIR (0'a bölme). O segment atlanmaz —
+    tüm değişimi MİKTAR etkisi sayılır, çünkü ortada gerçekten bir hacim hareketi vardır
+    (yeni ürün girmiş / tamamen durmuş) ve onu "fiyat" diye adlandırmak yanlış olurdu.
+    """
+    out = []
+    for r in rows or []:
+        v1, v0 = _sayi(r.get(value_measure)), _sayi(r.get(f"{value_measure}_gecen"))
+        q1, q0 = _sayi(r.get(volume_measure)), _sayi(r.get(f"{volume_measure}_gecen"))
+        if q0 and q1:
+            p0, p1 = v0 / q0, v1 / q1
+            fiyat = (p1 - p0) * q0
+            miktar = p0 * (q1 - q0)
+            birlesik = (p1 - p0) * (q1 - q0)
+        else:
+            # Bir tarafta hacim yoksa fiyat karşılaştırması kurulamaz — hepsi miktar.
+            p0 = v0 / q0 if q0 else None
+            p1 = v1 / q1 if q1 else None
+            fiyat = birlesik = 0.0
+            miktar = v1 - v0
+        out.append({"deger": r.get(dim), "deger_simdi": v1, "deger_onceki": v0,
+                    "miktar_simdi": q1, "miktar_onceki": q0,
+                    "fiyat_simdi": p1, "fiyat_onceki": p0,
+                    "fiyat_etkisi": fiyat, "miktar_etkisi": miktar,
+                    "birlesik_etki": birlesik, "delta": v1 - v0})
+    return sorted(out, key=lambda k: abs(k["delta"]), reverse=True)
+
+
+def pvm_report(rows: list[dict], dim: str, pair: dict, cube_query: dict,
+               *, dim_label: str | None = None, unit: str | None = None) -> dict:
+    """PVM raporu + her segment için tıklanabilir CubeQuery."""
+    from app.drill import select_cube_query
+
+    kalemler = pvm(rows, dim, pair["value"], pair["volume"])
+    brut = sum(abs(k["delta"]) for k in kalemler)
+    etiket = dim_label or dim
+    bulgular = []
+    kirpilan = 0
+    for k in kalemler:
+        if brut and abs(k["delta"]) / brut * 100 < _GURULTU_PAYI:
+            kirpilan += 1
+            continue
+        baskin = max(("fiyat", abs(k["fiyat_etkisi"])), ("miktar", abs(k["miktar_etkisi"])),
+                     key=lambda t: t[1])[0]
+        bulgular.append({
+            **k, "baskin_etken": baskin, "kind": "dimension",
+            "label": (f"{etiket}: {k['deger']} — {k['delta']:+,.0f}"
+                      f"{' ' + unit if unit else ''} "
+                      f"(fiyat {k['fiyat_etkisi']:+,.0f} · miktar {k['miktar_etkisi']:+,.0f})"),
+            "cube_query": select_cube_query(cube_query, dim, k["deger"]),
+        })
+    return {
+        "dimension": dim, "dimension_label": etiket,
+        "value_measure": pair["value"], "volume_measure": pair["volume"],
+        "price_label": pair["price_label"],
+        "net_degisim": sum(k["delta"] for k in kalemler),
+        "fiyat_etkisi": sum(k["fiyat_etkisi"] for k in kalemler),
+        "miktar_etkisi": sum(k["miktar_etkisi"] for k in kalemler),
+        "birlesik_etki": sum(k["birlesik_etki"] for k in kalemler),
+        "bulgular": bulgular,
+        "kirpilan_segment": kirpilan,
+        "kirpilan_esik_yuzde": _GURULTU_PAYI,
+    }
+
+
 def rank_dimensions(raporlar: list[dict]) -> list[dict]:
     """Boyutları AÇIKLAYICILIĞA göre sırala: en büyük tek segment payı yüksek olan önce.
 
@@ -156,6 +261,16 @@ def rank_dimensions(raporlar: list[dict]) -> list[dict]:
     gösterilecek gerekçe de bu sayıdır.
     """
     def _skor(r: dict) -> float:
-        return max((abs(b["brut_pay"] or 0) for b in r.get("bulgular") or []), default=0.0)
+        bulgular = r.get("bulgular") or []
+        if not bulgular:
+            return 0.0
+        # Segment raporunda `brut_pay` hazır; PVM raporunda yok (orada bulgular fiyat/miktar
+        # ayrışması taşır) — o durumda aynı büyüklük |delta| paylarından hesaplanır. Tek bir
+        # sıralama kuralı iki rapor türüne de uygulanır ki "hangi boyut daha açıklayıcı"
+        # sorusunun cevabı ayrışmasın.
+        if bulgular[0].get("brut_pay") is not None:
+            return max(abs(b.get("brut_pay") or 0) for b in bulgular)
+        brut = sum(abs(b.get("delta") or 0) for b in bulgular)
+        return (max(abs(b.get("delta") or 0) for b in bulgular) / brut * 100) if brut else 0.0
 
     return sorted(raporlar, key=_skor, reverse=True)

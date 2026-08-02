@@ -27,6 +27,7 @@ from app.schemas import (
     DrillRequest,
     DrillResponse,
     Explain,
+    PvmReport,
     QueryResult,
     RawRow,
     ReportRequest,
@@ -2683,10 +2684,27 @@ def ask_contribution(request: Request, body: ContributionRequest) -> Contributio
     if cube_meta is None:
         raise HTTPException(status_code=400, detail="Cube bulunamadı (şema değişmiş olabilir).")
 
+    kind = body.kind if body.kind in ("segment", "pvm") else "segment"
     measure = (cq.get("measures") or [None])[0]
-    ok, neden = contrib.ayristirilabilir_mi(measure, cube_meta)
-    if not ok:
-        return ContributionResponse(measure=measure, mode=body.mode, note=neden)
+
+    ciftler = contrib.pvm_pairs(cube_meta)
+    if kind == "pvm":
+        # Eşleştirme TAHMİN EDİLMEZ: cube'un `pvm:` beyanı yoksa PVM sunulmaz. Ad kalıbıyla
+        # (ör. "tutar/adet fiyattır") tahmin etmek, yanlış eşleştirmede GÜVENLE YANLIŞ
+        # ekonomi üretirdi — kullanıcı "birim fiyat %12 arttı" cümlesini sorgulamaz.
+        cift = next((p for p in ciftler if p["value"] == measure), None)
+        if cift is None:
+            return ContributionResponse(
+                measure=measure, mode=body.mode, kind=kind,
+                note=(f"`{cq.get('cube')}` cube'u `{measure}` için bir fiyat×miktar "
+                      "eşleştirmesi BEYAN ETMİYOR (cube metadata'sında `pvm:`). Fiyat "
+                      "ayrıştırması ancak beyan edilmiş bir değer/miktar çifti üzerinde "
+                      "anlamlıdır; tahmin edilmez."))
+    else:
+        ok, neden = contrib.ayristirilabilir_mi(measure, cube_meta)
+        if not ok:
+            return ContributionResponse(measure=measure, mode=body.mode, kind=kind, note=neden)
+        cift = None
 
     mode = body.mode if body.mode in ("yoy", "mom") else "yoy"
     time_dim = _yoy.time_dim_of(schema, cq.get("cube"))
@@ -2701,20 +2719,30 @@ def ask_contribution(request: Request, body: ContributionRequest) -> Contributio
         _log.info("katkı araması: %d boyuttan %d tanesi taranmadı (sınır=%d, cube=%s)",
                   len(adaylar), taranmayan, sinir, cq.get("cube"))
 
-    raporlar, contract_ids = [], []
+    raporlar, pvm_raporlar, contract_ids = [], [], []
     for dim in taranan:
-        alt = {**cq, "dimensions": [dim]}
+        # PVM iki ölçüyü BİRLİKTE ister (değer ve miktar aynı kıyas sorgusunda gelsin ki
+        # segment hizalaması kesin olsun; ayrı iki sorgu satır kümesi ayrışabilirdi).
+        olculer = [cift["value"], cift["volume"]] if cift else list(cq.get("measures") or [])
+        alt = {**cq, "measures": olculer, "dimensions": [dim]}
         try:
             out = _yoy.compute(service, {**alt, "compare": mode}, mode, time_dim)
         except Exception:
             _log.warning("katkı araması: %s boyutu için kıyas başarısız (atlanıyor)",
                          dim, exc_info=True)
             continue
-        rapor = contrib.decompose(out["rows"], dim, measure, alt,
-                                  dim_label=labels.get(dim), unit=unit)
-        if not rapor["bulgular"]:
-            continue
-        raporlar.append(rapor)
+        if cift:
+            rapor = contrib.pvm_report(out["rows"], dim, cift, alt,
+                                       dim_label=labels.get(dim), unit=unit)
+            if not rapor["bulgular"]:
+                continue
+            pvm_raporlar.append(rapor)
+        else:
+            rapor = contrib.decompose(out["rows"], dim, measure, alt,
+                                      dim_label=labels.get(dim), unit=unit)
+            if not rapor["bulgular"]:
+                continue
+            raporlar.append(rapor)
         # Her katkı sorgusu KENDİ kanıt kaydını üretir — "yeniden çalıştırılıp hash
         # eşlenebilen makbuz" değişmezi burada da geçerli (drill ile AYNI desen).
         cid = _drill_record_contract(
@@ -2725,16 +2753,17 @@ def ask_contribution(request: Request, body: ContributionRequest) -> Contributio
         if cid:
             contract_ids.append(cid)
 
-    if not raporlar:
+    if not raporlar and not pvm_raporlar:
         return ContributionResponse(
-            measure=measure, mode=mode, taranmayan_boyut=taranmayan,
+            measure=measure, mode=mode, kind=kind, taranmayan_boyut=taranmayan,
             note="Bu sorguda değişimi açıklayan bir kırılım bulunamadı — kullanılmayan "
                  "boyut yok ya da hiçbir segment anlamlı bir hareket göstermiyor.")
 
     return ContributionResponse(
-        measure=measure, mode=mode, taranmayan_boyut=taranmayan,
+        measure=measure, mode=mode, kind=kind, taranmayan_boyut=taranmayan,
         contract_ids=contract_ids,
-        raporlar=[ContributionReport(**r) for r in contrib.rank_dimensions(raporlar)])
+        raporlar=[ContributionReport(**r) for r in contrib.rank_dimensions(raporlar)],
+        pvm_raporlar=[PvmReport(**r) for r in contrib.rank_dimensions(pvm_raporlar)])
 
 
 @router.post("/ask/verify", dependencies=[Depends(require("vqr:write")), Depends(require_company)])

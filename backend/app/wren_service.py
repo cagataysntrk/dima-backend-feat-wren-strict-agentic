@@ -298,6 +298,12 @@ class WrenService:
                     m["name"]: m.get("expression")
                     for m in c.get("measures", []) if m.get("expression")
                 },
+                # PVM (fiyat-miktar-karma) eşleştirmeleri (Faz 5.1) — cube'un AÇIK beyanı.
+                # Tahmin edilmez: `toplam_ciro / toplam_agirlik_kg` gerçek bir TL/kg
+                # fiyatıdır, `toplam_tutar / fatura_sayisi` ise ortalama fatura büyüklüğü.
+                # Ayrım bir İÇERİK bilgisidir; ad kalıbından çıkarmak yanlış eşleştirmede
+                # GÜVENLE YANLIŞ ekonomi üretirdi ("birim fiyat %12 arttı" sorgulanmaz).
+                "pvm": c.get("pvm") or [],
                 # Cube-düzeyi sabit filtre (LookML sql_always_where): her sorguya
                 # otomatik eklenir. CANCELLED=0'ı ölçü ifadelerinden çıkarır — tekrar
                 # ve iptal-kaydı sızıntısını yapısal önler. build camelCase'e çevirir.

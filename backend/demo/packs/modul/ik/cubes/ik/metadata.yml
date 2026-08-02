@@ -57,6 +57,13 @@ measures:
     type: DOUBLE
     synonyms: [personel sayısı, çalışan sayısı, kaç kişi, kadro, headcount, mevcut]
 
+# PVM (Faz 5.1): bordro maliyeti = kişi başı maliyet × kadro. "İşçilik neden arttı"
+# sorusunun klasik ayrımı budur — zam etkisi mi (fiyat), kadro büyümesi mi (miktar).
+pvm:
+  - value: toplam_isveren_maliyeti
+    volume: personel_sayisi
+    price_label: kişi başı maliyet (₺)
+
 dimensions:
   - name: departman
     expression: personel_departman

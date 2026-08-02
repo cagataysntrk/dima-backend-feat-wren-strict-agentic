@@ -89,6 +89,15 @@ measures:
     type: DOUBLE
     synonyms: [parti sayısı, kaç parti, adet]
 
+# PVM (Faz 5.1): ciro = birim fiyat × işlenen kilo. TL/kg boyahanenin GERÇEK birim
+# fiyatıdır (fason boyama kg üzerinden fiyatlanır), dolayısıyla "ciro neden değişti"
+# sorusu fiyat/miktar diye ayrıştırılabilir. `toplam_metre` KASTEN kullanılmıyor:
+# TL/metre gramaja göre değiştiği için tek bir "fiyat" gibi okunamaz.
+pvm:
+  - value: toplam_ciro
+    volume: toplam_agirlik_kg
+    price_label: birim fiyat (TL/kg)
+
 dimensions:
   - name: makine
     expression: makine

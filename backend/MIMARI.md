@@ -597,9 +597,23 @@ Rakip araştırması bunları **bulamadı** (satıcı dokümanları taranarak):
   hash eşleyebileceği bir makbuz vermiyor.
 - **Güven-kapılı merdiven + risk-kapsam eğrisi.** Hiçbir sevk edilmiş BI ürünü abstention kapısı
   ya da risk-kapsam eğrisi yayınlamıyor.
-- **CubeQuery olarak ifade edilmiş katkı/mix ayrıştırması.** Snowflake `TOP_INSIGHTS`, Power BI
-  Key Influencers, Tableau Pulse — hepsi semantic layer'ın **dışında**, dolayısıyla sonuçları
-  yeniden-tarihlenebilir/kırılabilir/sözleşmeli değil.
+- ✅ **CubeQuery olarak ifade edilmiş katkı/mix ayrıştırması** — **uygulandı** (2026-08-02,
+  Faz 5.1+5.2: `app/contribution.py`, `POST /ask/contribution`). Snowflake `TOP_INSIGHTS`,
+  Power BI Key Influencers, Tableau Pulse — hepsi semantic layer'ın **dışında**, dolayısıyla
+  sonuçları yeniden-tarihlenebilir/kırılabilir/sözleşmeli değil. Burada **her bulgu kendi
+  başına bir CubeQuery**: tıklanır, `/cube` ile LLM'siz koşar, kendi Query Contract'ını üretir.
+  Üç kural bunu bir kopya olmaktan çıkarıyor:
+  - **Toplanabilirlik kapısı.** Katkı payı yalnız toplanabilir ölçülerde TANIMLIDIR; `AVG`/oran/
+    `COUNT(DISTINCT)` için parçaların toplamı bütünü vermez ve *"bu segment değişimin %40'ını
+    açıklıyor"* cümlesi **matematiksel olarak yanlış** olur. Bu, bu araç sınıfının klasik sessiz
+    hatasıdır. Kapı ada değil **kanıta** bakar (cube'un `additive:` beyanı → ölçü ifadesi) ve
+    kapının kendisi **veriyle** sınanır (`test_toplanabilirlik_KANITLI`).
+  - **İki ayrı pay.** Segmentler birbirini götürebilir (+100/−100 → net 0 ama hikâye var):
+    `net_pay` net ~0 iken **None** döner (uydurulmaz), `brut_pay` her zaman tanımlıdır.
+  - **PVM eşleştirmesi beyan edilir, tahmin edilmez.** `ciro/kg` gerçek bir TL/kg fiyatıdır;
+    `tutar/fatura_sayısı` fiyat değil ortalama fatura büyüklüğüdür. Ayrım bir **içerik**
+    bilgisidir; ad kalıbından çıkarmak §5'in yasakladığı yamadır ve yanlış eşleştirme
+    **güvenle yanlış ekonomi** üretir. Ayrışma artıksızdır: fiyat+miktar+birleşik = ΔV birebir.
 - **"LLM ham değer görmez"in zorlanmış ve tasdik edilmiş hali** (yalnız sorgu üretiminde değil,
   anlatımda da).
 - **İngilizce olmayan bir dilde ilk yayınlanmış kapsam/doğruluk eğrisi.** Türkçe cezası ölçülmüş
