@@ -85,12 +85,6 @@ def _tenant_active(tenant_id: str) -> bool:
     return active
 
 
-def require_superadmin(principal: Principal = Depends(get_current_principal)) -> Principal:
-    if not principal.is_superadmin:
-        raise HTTPException(status_code=403, detail="Superadmin yetkisi gerekli")
-    return principal
-
-
 def require(action: str):
     """Rol-matrisli endpoint koruması: ``Depends(require("vqr:write"))``.
 
