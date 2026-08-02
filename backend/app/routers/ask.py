@@ -1867,16 +1867,19 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             cands = []
         distinct_cubes = {c["name"]: (c, m) for c, m in cands}
         if len(distinct_cubes) >= 2:
-            m_disp_labels = []
-            for c, m in distinct_cubes.values():
-                mdisp = (c.get("measure_synonyms_display") or {}).get(m) or m
-                if mdisp not in m_disp_labels:
-                    m_disp_labels.append(mdisp)
+            # FAZ 2a — ETİKET ÇAKIŞMASI TUZAĞI. Eskiden chip'ler yalnız ölçünün görünen
+            # adıyla kuruluyordu; iki cube aynı adı taşıdığında (`cari.bakiye` ve
+            # `mizan.bakiye` → ikisi de "bakiye") liste tekilleşip 1'e düşüyor, aşağıdaki
+            # `>= 2` kapısı chip'i SESSİZCE atlıyor ve soru Discovery'ye düşüyordu.
+            # Ölçüldü: 54 belirsiz sinonimin 33'ü (%61) bu tuzaktaydı.
+            # `olcu_netlestirme` çakışan etiketi CUBE ile niteler — ayırt edici bilgi
+            # ölçü adı değil cube'un kendisi.
+            m_disp_labels = cube_router.olcu_netlestirme(list(distinct_cubes.values()), schema)
             if len(m_disp_labels) >= 2:
                 return _finish(AskResponse(
                     question=body.question, source=None,
                     note="Birden fazla konu anlaşıldı, hangisini istiyorsun?",
-                    suggestions=[Suggestion(label=lb, query=lb) for lb in m_disp_labels[:6]],
+                    suggestions=[Suggestion(**s) for s in m_disp_labels[:6]],
                     trace=["Intent-path: çapraz konu → netleştirme (LLM'siz)"],
                 ))
 

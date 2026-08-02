@@ -1223,6 +1223,100 @@ def cube_only_match(q: str, schema: dict) -> dict | None:
     return cube_meta
 
 
+def olcu_netlestirme(adaylar: list[tuple[dict, str]],
+                     schema: dict | None = None) -> list[dict]:
+    """Ölçü belirsizliği için netleştirme seçenekleri — `[{label, query}]`.
+
+    ## Ölçülen kusur (Faz 2a, 2 Ağustos 2026)
+
+    `ask.py` chip'leri yalnız ölçünün GÖRÜNEN ADIYLA kuruyordu. İki cube aynı adı taşıdığında
+    (`cari.bakiye` ve `mizan.bakiye` → ikisi de *"bakiye"*) liste tekilleşip **1'e düşüyor**,
+    `len(...) >= 2` kapısı chip'i **sessizce atlıyor** ve soru **Discovery'ye** düşüyordu —
+    ham SQL, `cube_query=None`, yani §1'in tarif ettiği uçurum, üstelik netleştirme yolundan.
+
+    Ölçüldü: **54 belirsiz sinonimin 33'ü** (%61) bu tuzağa düşüyordu — `bakiye · borç ·
+    alacak · fire · ilk seferde tamam · doğalgaz` aileleri. Üçü de sessizdi: belirsizlik
+    tespit ediliyor, chip atlanıyor, kullanıcı ham bir SQL cevabı alıyor.
+
+    ## Kural
+
+    Ayırt edici bilgi **ölçü adı değil CUBE'un kendisi**. Etiket çakıştığında cube ile
+    nitelenir: *"bakiye (cari)"* / *"bakiye (mizan)"*. Çakışmayan etiket **dokunulmadan**
+    kalır — gereksiz gürültü üretilmez.
+
+    `query` de nitelenir, yoksa chip tıklanınca AYNI belirsizliğe geri döner: kullanıcıyı
+    aynı duvara ikinci kez çarptıran bir chip, chip olmamasından kötüdür (aynı disiplin
+    `ay_netlestirme`'de de uygulandı, Faz -0.5a).
+    """
+    ham: list[tuple[dict, str, str]] = []
+    for c, m in adaylar:
+        etiket = (c.get("measure_synonyms_display") or {}).get(m) or m
+        ham.append((c, m, str(etiket)))
+    sayac: dict[str, int] = {}
+    for _, _, e in ham:
+        sayac[e] = sayac.get(e, 0) + 1
+
+    out: list[dict] = []
+    for c, _m, etiket in ham:
+        cube_ad = str(c.get("display") or c.get("name") or "").strip()
+        # ETİKET: yalnız çakışmada cube ile nitelenir — çakışmayan etikete cube adı
+        # eklemek gereksiz gürültüdür.
+        label = f"{etiket} ({cube_ad})" if (sayac[etiket] > 1 and cube_ad) else etiket
+        # SORGU: HER İKİ dalda da doğrulanır. Çakışma olmasa bile ham etiket tek başına
+        # çözülmeyebiliyor (ölçüldü: "dE", "sapma yüzdesi" → R1/R10) ve tıklanınca
+        # çalışmayan bir chip, çakışmadan bağımsız olarak kötüdür.
+        secenek = {"label": label, "query": _calisan_sorgu(c, etiket, schema)}
+        if not any(o["label"] == secenek["label"] for o in out):
+            out.append(secenek)
+    return out
+
+
+def _calisan_sorgu(cube: dict, etiket: str, schema: dict | None) -> str:
+    """Chip'in `query`'si: `route()` ile DOĞRULANMIŞ bir "cube + ölçü" ifadesi.
+
+    ## Neden `display` yetmiyor (ölçüldü)
+
+    İlk sürüm `f"{cube_display} {etiket}"` üretiyordu ve **39 chip'in sorgusu
+    çözülmüyordu**. İki sebep:
+      * `display` bir İNSAN ETİKETİDİR, sorgu kelimesi değil — `mizan`'ınki
+        *"mizan (hesap bakiyeleri)"*, üretilen sorgu *"mizan (hesap bakiyeleri) borç"*
+        gibi anlamsız bir metin oluyordu;
+      * temiz görünen etiketler bile (*"cari hesap"*) kapsam kapısına takılıyordu (R10).
+
+    Cube'un **sinonimleri** ise tanım gereği `_match_cube`'un TANIDIĞI kelimelerdir.
+    Sırayla denenir ve **`route()` ile doğrulanır** — tıklanınca çalışmayan bir chip,
+    kullanıcıyı aynı duvara ikinci kez çarptırır ve chip olmamasından kötüdür (aynı kural
+    `ay_netlestirme`'de de uygulandı, Faz -0.5a).
+
+    Hiçbiri çalışmazsa ham birleşim döner: chip yine de bir İPUCU taşır ve `label`
+    kullanıcıya hangi cube'u kastettiğini zaten söyler.
+    """
+    if schema is None:
+        return etiket
+    hedef = cube.get("name")
+
+    def _cozuluyor(aday: str) -> bool:
+        hit = route(aday, schema)
+        return bool(hit) and hit.get("cube_query", {}).get("cube") == hedef
+
+    # 1) ÇIPLAK etiket zaten çalışıyorsa ona dokunma — en kısa, en doğal ifade.
+    if _cozuluyor(etiket):
+        return etiket
+    # 2) Cube SİNONİMLERİYLE nitele. Sinonimler tanım gereği `_match_cube`'un TANIDIĞI
+    #    kelimelerdir; `display` ise bir insan etiketidir ve sorgu olarak çalışmaz
+    #    (ölçüldü: "mizan (hesap bakiyeleri) borç" gibi anlamsız sorgular üretiyordu).
+    #    Kısa ad önce: en az gürültülü, kapsam kapısına en az takılan.
+    adlar = [str(s).removesuffix("!") for s in (cube.get("synonyms") or [])]
+    adlar.append(str(hedef or ""))
+    for ad in sorted({a.strip() for a in adlar if a.strip()}, key=len):
+        aday = f"{ad} {etiket}"
+        if _cozuluyor(aday):
+            return aday
+    # 3) Hiçbiri çalışmıyor → ham etiket. Chip yine bir İPUCU taşır ve `label` kullanıcıya
+    #    hangi cube'u kastettiğini zaten söyler; uydurma bir sorgu üretmekten iyidir.
+    return etiket
+
+
 def measure_cube_candidates(q: str, schema: dict) -> list[tuple[dict, str]]:
     """Bir ÖLÇÜ sinonimi geçen ama cube-düzeyi sinonim geçMEyen cube'lar
     (ADR-0018 §2-2 + belirsizlikte-sor): "bu yıl satış" → hem ticaret (satış tutarı)

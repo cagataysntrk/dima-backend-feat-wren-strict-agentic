@@ -527,6 +527,56 @@ Kazanç 28 birim testiyle kanıtlanıyor. Korpusun bu sınıfı kazanması Faz 0
 Taban artefaktı: `lab/nl_corpus_baseline.json` (`eval/baseline.json` ile aynı disiplin —
 `lab/reports/` gitignore'da olduğu için ham rapor değil **kapı değerleri** saklanır).
 
+### 6.1g Netleştirme SESSİZCE atlanıyordu — belirsizliğin %61'i Discovery'ye düşüyordu (Faz 2a) ✅
+
+§6.1f'in "netleştirme zaten çalışıyor" ara ürünü **eksik ölçülmüş** bir gözlemdi. Chip'in
+üretildiği vakaya bakıldığında davranış doğru; üretilmediği vakaya kimse bakmamıştı.
+
+**Ölçülen kusur zinciri — üç adımı da sessiz:**
+
+1. `measure_cube_candidates` belirsizliği **doğru tespit ediyor** (`bakiye` → `cari` +
+   `mizan`).
+2. Chip'ler yalnız ölçünün **görünen adıyla** kuruluyordu; iki cube aynı adı taşıdığında
+   (*"bakiye"* / *"bakiye"*) liste tekilleşip **1'e düşüyor**.
+3. `if len(...) >= 2` kapısı chip'i **sessizce atlıyor** → soru **Discovery'ye** düşüyor →
+   ham SQL, `cube_query=None`, not yok, chip yok.
+
+Yani **netleştirme yolunun kendisi §6.1'in uçurumuna açılıyordu**: kullanıcı bir soru
+yerine yapısız bir cevap alıyordu ve hiçbir sinyal bunu göstermiyordu. Ölçüldü:
+**54 belirsiz sinonimin 33'ü (%61)** bu tuzaktaydı — `bakiye · borç · alacak · fire ·
+ilk seferde tamam · doğalgaz` aileleri.
+
+**Kural:** ayırt edici bilgi **ölçü adı değil CUBE'un kendisi** → *"bakiye (cari hesap)"* /
+*"bakiye (mizan)"*. Çakışmayan etiket **dokunulmaz** — gereksiz niteleme chip'i uzatır ve
+seçimi zorlaştırır.
+
+**İkinci kusur, ilk düzeltmenin İÇİNDEN çıktı.** `query = f"{cube_display} {etiket}"`
+kullanınca **39 chip çözülmüyordu**: `display` bir **insan etiketidir** — `mizan`'ınki
+*"mizan (hesap bakiyeleri)"*, üretilen sorgu *"mizan (hesap bakiyeleri) borç"*. Cube
+**sinonimleri** ise tanım gereği `_match_cube`'un **tanıdığı** kelimelerdir. Sorgu artık
+`route()` ile **doğrulanıyor** (`_calisan_sorgu`): çıplak etiket çalışıyorsa ona
+dokunulmaz, yoksa cube sinonimleri (kısa ad önce) denenir. Tıklanınca çalışmayan bir chip
+kullanıcıyı aynı duvara ikinci kez çarptırır ve **chip olmamasından kötüdür** — aynı kural
+`ay_netlestirme`'de de uygulanmıştı (§6.1b).
+
+**Ölçülen sonuç (korpus, 10.865 tur):**
+
+| ölçüt | önce | sonra | planın kapısı |
+|---|---|---|---|
+| sessiz kalan belirsizlik | 33 | **0** | — |
+| kırık chip sorgusu | 39 | **0** | — |
+| boyahane Discovery'ye düşen | 501 | **101** | — |
+| boyahane doğru-cube | %80 | **%89** | — |
+| **toplam doğru-cube** | **%86,3** | **%91,4** | *"%86,3'ün altına düşmemeli"* ✓ |
+| boyahane erişim | %64 | %64 | *"artmalı"* — sabit |
+
+**400 tur** ham-SQL cevabı yerine **cevaplanabilir bir soru** alıyor. Erişim payının
+sabit kalması beklenen sonuçtur: bu turlar zaten "cevap üretildi" sayılmıyordu, Discovery'ye
+düşüyorlardı — düzeltme *cevapsızı cevaba* değil, *sessiz düşüşü görünür soruya* çeviriyor.
+
+12 test: `tests/test_olcu_netlestirme.py` (uçtan uca chip **tıklama** dahil — chip'in
+`query`'si yeni bir soru olarak koşup yapısal cevap üretiyor mu).
+
 ### 6.1f Katalog sağlığı ÖLÇÜLDÜ — kayıp "yanlış cube"da değil (Faz 2a)
 
 Planın §2.1'i boyahanenin kaybını *"üç isimlendirilmiş YAML düzeltmesine indirgeniyor"*
@@ -576,6 +626,11 @@ dediği sınıfın aynısı.
 `measure_cube_candidates` üzerinden *"Birden fazla konu anlaşıldı, hangisini istiyorsun?"*
 chip'ini üretiyordu. Yani belirsizlik yüzeye çıktığında sistemin davranışı **doğru**;
 sorun belirsizliğin **var olması**.
+
+> ⚠️ **Bu ara ürün yarım doğruydu — §6.1g'ye bakın.** Netleştirme *ateşlendiğinde* doğru
+> çalışıyor; ama ölçüldü ki belirsiz vakaların **%61'inde hiç ateşlenmiyordu** (etiketler
+> çakışınca chip listesi tekilleşip kapının altında kalıyordu). Yani buradaki gözlem,
+> chip'in **üretildiği** vakaya bakarak yapılmış bir genellemeydi.
 
 30 çakışma + red dağılımı **envanter olarak kilitlendi** (`tests/test_sinonim_carpismasi.py`,
 13 test): sessizce büyüyemez, düzelen satır listede kalamaz, doğru-sayısı düşemez.
