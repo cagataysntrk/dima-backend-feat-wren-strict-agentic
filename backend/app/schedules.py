@@ -308,25 +308,17 @@ _AY_KISA = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Ek
 
 
 def _fmt_deger(v: float) -> str:
-    """İnsan-okur sayı — bilimsel gösterim (1.5576e+07) YOK; Türkçe binlik '.'/ondalık ','.
-    15576000 → '15.576.000'; 12.34 → '12,34'."""
-    n = round(float(v), 2)
-    if n == int(n):
-        return f"{int(n):,}".replace(",", ".")
-    whole, frac = f"{n:.2f}".split(".")
-    return f"{int(whole):,}".replace(",", ".") + "," + frac
+    """Gövdesi `app/fmt.py`'de (Faz C2)."""
+    from app.fmt import sayi
+
+    return sayi(v)
 
 
 def _is_sayi(x) -> bool:
-    """x sayısal mı (float'a çevrilebilir)? — anomali tag'inde diğer ölçü/türev kolonları
-    (ör. YoY _gecen / _degisim_yuzde) BOYUT sanılmasın diye eler; tarih/etiket kalır."""
-    if isinstance(x, bool) or x is None:
-        return False
-    try:
-        float(x)
-        return True
-    except (TypeError, ValueError):
-        return False
+    """Gövdesi `app/result_shape.py`'de (Faz C2)."""
+    from app.result_shape import is_num
+
+    return is_num(x)
 
 
 def _fmt_boyut(x) -> str:

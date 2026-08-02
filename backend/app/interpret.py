@@ -19,54 +19,32 @@ _MONTHS_TR = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "
 
 
 def _is_num(v: Any) -> bool:
-    if isinstance(v, bool):
-        return False
-    if isinstance(v, (int, float)):
-        return True
-    if isinstance(v, str):
-        try:
-            float(v.replace(",", "."))
-            return True
-        except ValueError:
-            return False
-    return False
+    """Gövdesi `app/result_shape.py`'de (Faz C2) — yedi kopya, üç farklı semantik vardı."""
+    from app.result_shape import is_num
+
+    return is_num(v)
 
 
 def _num(v: Any) -> float:
-    return float(str(v).replace(",", ".")) if not isinstance(v, (int, float)) else float(v)
-
-
-def _looks_date(v: Any) -> bool:
-    if isinstance(v, (_dt.date, _dt.datetime)):
-        return True
-    if isinstance(v, str) and len(v) >= 7:
-        return bool(v[:4].isdigit() and (v[4] in "-/" or v[:7].isdigit()))
-    return False
+    s = str(v).strip()
+    return float(s.replace(".", "").replace(",", ".") if "," in s else s)
 
 
 def _fmt(v: Any, unit: str | None = None) -> str:
-    """Türkçe biçimli sayı (binlik ayraç, gereksiz ondalık yok) + birim."""
-    if v is None:
-        return "—"
-    try:
-        n = _num(v)
-    except (ValueError, TypeError):
-        return str(v)
-    s = (f"{n:,.0f}" if abs(n) >= 100 or n == int(n) else f"{n:,.2f}").replace(",", "§") \
-        .replace(".", ",").replace("§", ".")
-    if unit:
-        return f"{s} {unit}" if unit not in ("₺", "$", "€") else f"{unit}{s}"
-    return s
+    """Gövdesi `app/fmt.py`'de (Faz C2). Eskiden `abs(n) >= 100` iken ondalığı ATIYORDU —
+    `150,5 → "150"`. Aynı sayı e-postada `150,50` görünüyordu; kullanıcı aynı raporu iki
+    yüzeyde farklı okuyordu. Kesirli kısmı sessizce atmak, "gösterilen sayı gerçek sayıdır"
+    garantisini bozar."""
+    from app.fmt import olcu
+
+    return olcu(v, unit)
 
 
 def _fmt_bucket(v: Any) -> str:
-    """Zaman kovası etiketi — YYYY-MM → 'Şub 2024'."""
-    s = str(v)
-    if len(s) >= 7 and s[:4].isdigit() and s[5:7].isdigit():
-        mi = int(s[5:7])
-        if 1 <= mi <= 12:
-            return f"{_MONTHS_TR[mi - 1]} {s[:4]}"
-    return s[:10]
+    """Gövdesi `app/fmt.py`'de (Faz C2) — ay kısaltmaları üç yerde ayrı tanımlıydı."""
+    from app.fmt import kova
+
+    return kova(v)
 
 
 def _classify(columns: list[str], rows: list[dict],

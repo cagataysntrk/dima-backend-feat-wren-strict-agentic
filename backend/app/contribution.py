@@ -47,7 +47,12 @@ MAX_BOYUT = 6
 
 
 def _sayi(v: Any) -> float:
-    return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else 0.0
+    """Sayısal test `app/result_shape.py`'den (Faz C2); sayı değilse katkı 0'dır."""
+    from app.result_shape import is_num
+
+    return float(v) if is_num(v) and not isinstance(v, str) else (
+        float(str(v).replace(".", "").replace(",", ".")) if is_num(v) else 0.0)
+
 
 
 def ayristirilabilir_mi(measure: str, cube_meta: dict | None) -> tuple[bool, str | None]:

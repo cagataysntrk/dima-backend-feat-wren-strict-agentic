@@ -102,22 +102,24 @@ def flag_outliers(rows: list[dict], dim: str, measure: str, *, k: float = 2.0) -
             agg[str(v)] = agg.get(str(v), 0.0) + float(m)
         except (TypeError, ValueError):
             continue
-    if len(agg) < 4:
-        return []
-    values = list(agg.values())
-    mean = sum(values) / len(values)
-    std = (sum((v - mean) ** 2 for v in values) / len(values)) ** 0.5
-    if std == 0:
+    # İSTATİSTİK ÇEKİRDEĞİ TEK YERDEN (Faz C2). Bu fonksiyonun docstring'i zaten
+    # "`schedules.detect_anomalies` İLE AYNI yöntem … yeni bir istatistik motoru İCAT
+    # EDİLMEZ" diyordu ama formülü ELLE İKİNCİ KEZ yazmıştı. Niyet doğruydu, uygulama
+    # niyeti tanımıyordu.
+    from app.stats import z_skorlari
+
+    anahtarlar = list(agg.keys())
+    bulgular = z_skorlari([agg[a] for a in anahtarlar], k=k)
+    if bulgular is None:
         return []
     out = []
-    for value, amount in agg.items():
-        z = (amount - mean) / std
-        if abs(z) >= k:
-            out.append({
-                "value": value, "amount": round(amount, 2),
-                "direction": "above" if z > 0 else "below",
-                "z_score": round(z, 2),
-            })
+    for _i, z in bulgular:
+        amount = agg[anahtarlar[_i]]
+        out.append({
+            "value": anahtarlar[_i], "amount": round(amount, 2),
+            "direction": "above" if z > 0 else "below",
+            "z_score": round(z, 2),
+        })
     return sorted(out, key=lambda o: abs(o["z_score"]), reverse=True)
 
 

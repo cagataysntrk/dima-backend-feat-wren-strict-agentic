@@ -63,20 +63,12 @@ _UNIT_RX: list[tuple[re.Pattern, str]] = [
 
 
 def _is_num(v: Any) -> bool:
-    if isinstance(v, bool):
-        return False
-    if isinstance(v, (int, float)):
-        return True
-    if isinstance(v, str):
-        s = v.strip()
-        if s == "":
-            return False
-        try:
-            float(s)
-            return True
-        except ValueError:
-            return False
-    return False
+    """Gövdesi `app/result_shape.py`'de (Faz C2). Eskiden Türkçe ondalık virgülünü
+    (`"1,5"`) REDDEDİYORDU; `interpret` kabul ediyordu — yüklenen Türkçe CSV'de aynı kolon
+    bir motorda ölçü, diğerinde kategoriydi."""
+    from app.result_shape import is_num
+
+    return is_num(v)
 
 
 def _looks_date(v: Any) -> bool:
