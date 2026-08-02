@@ -144,10 +144,17 @@ eder.**
 - Dotted path'i **doğrudan** cube boyut ifadesine yazmak (`expression: "personel.cinsiyet"`)
   **çalışmaz** — önceden bildirilmiş calc kolon zorunludur.
 
-> ⚠️ `demo/companies/demo-boyahane/views/parti_zengin/metadata.yml:2`'deki
+> ⚠️ Silinen `parti_zengin` view'ının başlığındaki
 > *"calc field'lar cube_query_to_sql'de JOIN'lenmiyor → demografiyi VIEW'da denormalize ederiz"*
-> yorumunun **ilk yarısı doğru, çıkarılan sonuç yanlıştır.** Bu yanlış inanç 4 cube'u elle bakım
-> gerektiren view'lara mahkûm etti. Bu belge o kaydı düzeltmek için var.
+> yorumunun **ilk yarısı doğru, çıkarılan sonuç yanlıştı.** Bu yanlış inanç 4 cube'u elle bakım
+> gerektiren view'lara mahkûm etti. Bu belge o kaydı düzeltmek için yazıldı.
+>
+> ✅ **Faz 2'de kapatıldı** (2 Ağustos 2026): `parti` → `partiler`, `mizan` → `yevmiye_satirlari`,
+> `ik` → `bordro`. Üç view de silindi. Her göçün kabul kriteri aynıydı ve **uygulamadan önce**
+> ölçüldü: her ölçü × her boyut kombinasyonu view sürümüyle **birebir aynı** sonuç vermeli
+> (sırasıyla 26 / 21 / 73 kombinasyon — hepsi tuttu). Geriye tek meşru view kaldı:
+> `enerji_tesis`, çünkü bileşik `(yil, ay)` anahtarıyla join'liyor ve MDL ilişkileri tek
+> kolonludur. **Bu bir hedef değil, ifade edilemeyen bir şeyin meşru çözümüdür.**
 
 ### 3.3 Compose katman sırası
 
@@ -261,12 +268,19 @@ diye zaman kaybetmesin.
   düşüş); tetiklemesi gereken bir netleştirme sorusudur.
 - **Çapraz-alan soruları `cube_router.py:1502`'de ölüyor** — `_match_cube`'da değil. 13 probun
   12'si orada; 8'inde cube ve ölçü zaten doğru çözülmüş. (Bu satır `cube["dimensions"]` okuyor.)
-- **4 cube view-tabanlı** (`parti`, `ik`, `mizan`, `enerji_tesis` = kataloğun %31'i, en zengin
-  ikisi dahil) → ilişki zenginleştirmesinden **sıfır kazanç** alırlar.
+- ✅ **4 cube view-tabanlıydı** (`parti`, `ik`, `mizan`, `enerji_tesis` = kataloğun %31'i, en
+  zengin ikisi dahil) → ilişki zenginleştirmesinden **sıfır kazanç** alıyorlardı. Faz 2'de üçü
+  modele taşındı; `enerji_tesis` bileşik anahtar nedeniyle **bilinçli olarak** view kaldı (§3.2).
+  Bakım dışında ölçülen ikinci kazanç **join pruning**'dir: `statements.py`'nin gelir tablosu
+  sorgusu 2 join yerine **0**, `ik.personel_sayisi` 3 tablo taraması yerine **0 join**.
 - **3 cube'un hiç giden ilişkisi yok**: `cari`, `ticaret`, `enerji_sapma` — bu bir
-  `relationships.yml` eksiğidir.
-- **`models_enrich.yml` mekanizması var ama öksüz**: 31 ilişkiden 2'sinde kullanılıyor (%6,5) ve
-  **ürettiği 7 calc kolonu hiçbir cube okumuyor.**
+  `relationships.yml` eksiğidir. (Plan 1.4'ün önerdiği `cari_hareketler → musteriler` ilişkisi
+  **veriyle çürütüldü**: `cari_kodu` polimorfiktir, satırların %52,9'u öksüz kalırdı —
+  `tests/test_relationship_health.py` bunu kalıcı olarak kayda geçirir.)
+- ✅ **`models_enrich.yml` mekanizması vardı ama öksüzdü**: 31 ilişkiden 2'sinde kullanılıyordu
+  (%6,5) ve ürettiği 7 calc kolonu hiçbir cube okumuyordu. Faz 1'de `_compose_relationship_
+  dimensions` üreteci yazıldı (`relationships.yml`'de `expose:` bloğu → handle + calc kolon +
+  boyut), Faz 2'de göç eden üç cube o kolonları okumaya başladı.
 
 ### 6.3 Güvenlik / doğruluk
 - **`always_filter` baypasları** — kısmen kapatıldı:

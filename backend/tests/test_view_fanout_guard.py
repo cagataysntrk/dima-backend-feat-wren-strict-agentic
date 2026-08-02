@@ -31,7 +31,22 @@ farklısı (yabancı ana şirkete hizalanmış nadir istisnalar dışında) ola�
 bu ihtiyaç bugün TAMAMEN VARSAYIMSAL — hiçbir gerçek/demo/lab tenant'ında somutlaşmıyor. Bu
 yüzden `TenantConfig`'e mali-yıl alanı eklemek/`cube_router`'ı DEĞİŞTİRMEK bilinçli olarak
 YAPILMADI (4.7b ilkesi: kanıtlanmamış ihtiyaç için altyapı kurulmaz) — bir müşteri GERÇEKTEN
-takvim-dışı bir mali yılla gelirse bu o zaman, somut bir örnekle ele alınmalı."""
+takvim-dışı bir mali yılla gelirse bu o zaman, somut bir örnekle ele alınmalı.
+
+**GÜNCELLEME — FAZ 2 (2 Ağustos 2026): bu testin KAPSAMI daraldı, DEĞERİ değil.**
+4.7a'nın somut bulgusu (`parti_zengin`) artık YOK: `parti`/`mizan`/`ik` cube'ları elle
+yazılmış denormalize view'lardan MODEL tabanına taşındı ve o üç view silindi. Geriye tek
+meşru view kaldı (`enerji_tesis` — bileşik `(yil, ay)` anahtarı, MDL ilişkileri tek kolonlu,
+bkz. MIMARI.md). Bu testin GENEL kuralı hâlâ geçerlidir ve yeni bir view eklendiği anda onu
+da kapsar.
+
+Asıl önemli olan: **risk kaybolmadı, KATMAN DEĞİŞTİRDİ.** `parti_zengin`in tehlikeli join'i
+(`partiler.operator = personel.ad_soyad` — benzersizliği veritabanı seviyesinde GARANTİ
+EDİLMEYEN bir metin alanı) bugün `partiler_personel` İLİŞKİSİ olarak duruyor. Koruma da
+onunla birlikte taşındı ve GENELLEŞTİ: `tests/test_relationship_health.py` bildirilen 31
+ilişkinin HEPSİNİ fan-out/NULL/öksüz açısından gerçek veriye karşı ölçüyor — yani eskiden
+tek bir view'a özel olan kontrol artık her ilişki için otomatik. Aşağıdaki
+`test_ad_soyad_join_anahtari_riski_ILISKIYE_TASINDI` bu devri kayda geçirir."""
 
 from __future__ import annotations
 
@@ -88,14 +103,15 @@ class _Row:
 
 def test_no_view_fans_out_relative_to_its_base_table(duckdb_conn):
     """HER view, KENDİ temel tablosundan DAHA FAZLA satır DÖNDÜRMEMELİ (LEFT JOIN'lerle
-    zenginleştirme satır sayısını korumalı, çoğaltmamalı). Somut kanıtlanmış risk:
-    parti_zengin (personel.ad_soyad üzerinden LEFT JOIN — benzersizliği GARANTİ edilmeyen
-    bir alan) — bu test o riski GENEL bir kural olarak her view için sınar."""
+    zenginleştirme satır sayısını korumalı, çoğaltmamalı).
+
+    Kuralın doğduğu somut vaka (`parti_zengin`) Faz 2'de göç etti ve view silindi; kural
+    kalıcıdır çünkü ne zaman biri yeni bir denormalize view yazsa aynı risk geri gelir."""
     from app.config import get_settings
 
     settings = get_settings()
     views = _view_files(settings.resolved_project_dir())
-    assert views, "beklenen en az bir view (parti_zengin/mizan_kaynak) bulunamadı"
+    assert views, "beklenen en az bir view (enerji_tesis) bulunamadı"
 
     checked = 0
     for vf in views:
@@ -113,24 +129,46 @@ def test_no_view_fans_out_relative_to_its_base_table(duckdb_conn):
             f"çoğaltıyor olabilir (benzersizliği garanti edilmeyen bir anahtar kolonu ara)."
         )
         checked += 1
-    assert checked >= 2  # bugün bilinen 2 view (parti_zengin, mizan_kaynak) mutlaka kapsanmalı
+    # Faz 2 sonrası geriye tek meşru view kaldı (enerji_tesis). Sayı düştü diye eşiği
+    # 0'a indirmiyoruz: 0 olsaydı `_view_files` bir gün sessizce boş dönse (dizin adı
+    # değişti, compose atladı) test yine YEŞİL kalırdı — yani kendini ölçmez hale gelirdi.
+    assert checked >= 1
 
 
-def test_parti_zengin_join_keys_are_currently_unique(duckdb_conn):
-    """4.7a'nın SPESİFİK bulgusu: `parti_zengin`in join anahtarları (personel.ad_soyad,
-    personel_ozluk.personel_kodu) bugün BENZERSİZ (bu YÜZDEN fan-out olmuyor) — ama bu
-    veri-bağımlı bir gerçektir, ŞEMA GARANTİSİ değil. Bu test bunu AÇIKÇA/ayrı ölçer ki
-    "neden bugün güvenli" sorusunun kanıtı `test_no_view_fans_out_...`'tan BAĞIMSIZ okunsun."""
+def test_ad_soyad_join_anahtari_riski_ILISKIYE_TASINDI(duckdb_conn):
+    """4.7a'nın SPESİFİK bulgusunun Faz 2 sonrası hali — risk kaybolmadı, KATMAN DEĞİŞTİRDİ.
+
+    `parti_zengin` view'ı silindi ama tehlikeli join'i `partiler_personel` İLİŞKİSİ olarak
+    duruyor: `partiler.operator = personel.ad_soyad`. `ad_soyad` benzersizliği veritabanı
+    seviyesinde GARANTİ EDİLMEZ — iki çalışan aynı ada sahip olabilir ve o an bu ilişki
+    üzerinden gelen HER kırılım fan-out yapar (kg/ciro toplamları şişer, `source="cube"`
+    rozeti değişmez). Bugün güvenli olması VERİ-BAĞIMLI bir gerçektir, şema garantisi değil.
+
+    Bu tekilliği artık `tests/test_relationship_health.py` 31 ilişkinin hepsi için genel
+    olarak ölçüyor; buradaki test o genel kapıyı DEĞİL, "risk motora taşındı" devrini
+    kaydeder — biri `partiler_personel`i `personel_kodu`ya çevirirse (doğru düzeltme) bu
+    test kendi gerekçesinin ortadan kalktığını söyler.
+    """
+    import yaml
+
+    from app.config import get_settings
+
+    rels = (yaml.safe_load(
+        (get_settings().resolved_project_dir() / "relationships.yml").read_text(encoding="utf-8"))
+        or {}).get("relationships") or []
+    r = next((x for x in rels if x.get("name") == "partiler_personel"), None)
+    assert r, "partiler_personel ilişkisi yok — `parti` cube'unun demografi zinciri koptu"
+    if "ad_soyad" not in (r.get("condition") or ""):
+        pytest.skip("ilişki artık ad_soyad üzerinden gitmiyor — bu testin gerekçesi kalktı, "
+                    "genel kapı tests/test_relationship_health.py'de")
+
     dup_ad_soyad = duckdb_conn.execute(
         "SELECT COUNT(*) FROM (SELECT ad_soyad FROM personel "
         "GROUP BY ad_soyad HAVING COUNT(*) > 1)"
     ).fetchone()[0]
-    dup_personel_kodu = duckdb_conn.execute(
-        "SELECT COUNT(*) FROM (SELECT personel_kodu FROM personel_ozluk "
-        "GROUP BY personel_kodu HAVING COUNT(*) > 1)"
-    ).fetchone()[0]
     assert dup_ad_soyad == 0, (
-        "personel.ad_soyad'da tekrar eden isim bulundu — parti_zengin'in LEFT JOIN'i "
-        "artık fan-out YARATIYOR OLABİLİR (bkz. test_no_view_fans_out_relative_to_its_base_table)."
+        "personel.ad_soyad'da tekrar eden isim bulundu — `partiler_personel` ilişkisi "
+        "artık fan-out YARATIYOR: `parti` cube'unun operatör demografisi kırılımlarında "
+        "kg/ciro toplamları ŞİŞER. Doğru düzeltme: ilişkiyi `personel_kodu` üzerine kurmak "
+        "(bunun için `partiler`da bir personel kodu kolonu gerekir)."
     )
-    assert dup_personel_kodu == 0

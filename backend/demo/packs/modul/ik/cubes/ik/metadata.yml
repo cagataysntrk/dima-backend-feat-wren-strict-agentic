@@ -8,7 +8,8 @@ base_object: bordro
 
 # İK/bordro cube'u (YENİ modül, 2026-07-29) — sektörden bağımsız X-ekseni topic.
 # Maaş/SGK/mesai/prim + personel demografisi (departman/cinsiyet/yaş/eğitim). Eski yapıda
-# İK YOKTU → tümüyle yeni yetenek (logic ileri). Demografi köprüsü = ik_zengin view.
+# İK YOKTU → tümüyle yeni yetenek (logic ileri). Demografi köprüsü = `bordro_personel`
+# ilişkisi (Faz 2.2 öncesi ik_zengin view'ıydı; view silindi).
 # NOT: "personel/çalışan" parti operatör-boyutu + oee ile çakışır → cube kimliğinde
 # TUTULMAZ (personel_sayisi ölçüsünde kalır). İK'ya ik/bordro/maaş/sgk ile ulaşılır.
 synonyms: [ik, insan kaynakları, bordro, maaş, ücret, sgk, mesai, prim, kadro, işçilik,

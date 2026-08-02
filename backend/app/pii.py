@@ -5,7 +5,9 @@ HER BİRİNİN kendi tek çıkış noktasında (Plane Enforcer'ın — 4.6, erte
 çıkış" ilkesi, burada YALNIZ PII'ye uygulanır).
 
 Kanıt: `demo/companies/*/…`'daki GERÇEK şemada `personel_ozluk.tc_kimlik` zaten var —
-bugün hiçbir cube bunu SEÇMİYOR (parti_zengin view'ı bilerek dışarıda bırakıyor) ama
+bugün hiçbir cube bunu SEÇMİYOR (Faz 2 öncesi `parti_zengin` view'ı bilerek dışarıda
+bırakıyordu; view'lar silindikten sonra aynı işi `relationships.yml`'in `expose:` blokları
+görüyor — `personel_ozluk`tan yalnız demografi kolonları yayımlanıyor) ama
 `/query` (ham SQL, `sql:run` yetkisi) VE Discovery (gerçek bir LLM sağlayıcıyla, ham SQL
 üretimi ANY kolonu seçebilir) bu sütuna DOĞRUDAN erişebilir — bu modül olmadan maskesiz
 döner. Rol-duyarlı istisna: `pii:view` yetkisi olan (admin+) rol maskesiz görür (bkz.
