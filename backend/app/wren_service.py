@@ -170,8 +170,15 @@ class WrenService:
                     # DÜŞÜYOR ve aşağıdaki sınıflandırma ad-tabanlı emniyet ağına geri
                     # düşüyordu — yani beyan hiç işe yaramıyordu (ölçüldü: `operator`
                     # beyan edilmesine rağmen prompt'a gitmeye devam etti).
+                    # `is_calculated` / `relationship` de TAŞINIR (Faz A2): bunlar FİZİKSEL
+                    # olmayan kolonlardır (calc ifadesi ya da ilişki handle'ı) ve ham satır
+                    # sorgusuna giremezler — `SELECT personel FROM partiler` binder hatası
+                    # verir. Bayraklar düşürüldüğü için tüketiciler bunu ayırt edemiyordu.
                     {"name": c.get("name"), "type": c.get("type", ""),
-                     **({"sensitivity": c["sensitivity"]} if c.get("sensitivity") else {})}
+                     **({"sensitivity": c["sensitivity"]} if c.get("sensitivity") else {}),
+                     **({"is_calculated": True}
+                        if (c.get("isCalculated") or c.get("is_calculated")) else {}),
+                     **({"relationship": c["relationship"]} if c.get("relationship") else {})}
                     for c in m.get("columns", [])
                 ],
             }

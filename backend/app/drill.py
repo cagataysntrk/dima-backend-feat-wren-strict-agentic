@@ -225,7 +225,8 @@ def sql_literal(value) -> str:
     return f"'{escaped}'"
 
 
-def build_raw_row_sql(base_object: str, filters: list[dict], *, limit: int = 50) -> str:
+def build_raw_row_sql(base_object: str, filters: list[dict], *, limit: int = 50,
+                      columns: list[str] | None = None) -> str:
     """YAPRAK seviyesi (Faz 4.10'un "tüm veri ağacına ulaşabilmeli" gereksinimi, kullanıcı
     talebi 1 Ağustos 2026): daha fazla anlamlı kırılım kalmadığında, mevcut filtre setiyle
     cube'un `base_object`'inden HAM (agregasyonsuz) satırları çeker — kullanıcı GERÇEK kök
@@ -234,9 +235,24 @@ def build_raw_row_sql(base_object: str, filters: list[dict], *, limit: int = 50)
     GÜVENLİK: `base_object` VE her `filters[].dimension` KATI bir tanımlayıcı deseniyle
     doğrulanır (yalnız harf/rakam/alt çizgi) — ikisi de bizim ŞEMA metadata'mızdan gelir,
     kullanıcı serbest metninden ASLA, ama savunma-derinliği ilkesiyle yine de kontrol edilir.
-    Değerler `sql_literal` ile escape edilir (tek tırnak enjeksiyonuna karşı)."""
+    Değerler `sql_literal` ile escape edilir (tek tırnak enjeksiyonuna karşı).
+
+    `columns` (Faz A2): seçilecek kolonların AÇIK listesi. Eskiden `SELECT *` yazılıyordu ve
+    bu, sistemin en riskli yüzeyiydi — ham satır demek **tüm kolonlar** demek, yani
+    `personel_ozluk.tc_kimlik` gibi hiçbir cube'un yayımlamadığı alanlar da geliyordu
+    (`app/pii.py`'nin kendi docstring'i bu kolonu örnek veriyor). Artık çağıran, hassas
+    olmayan kolonları BEYAN eder; liste boşsa hata verilir — `SELECT *`'a sessizce geri
+    düşmek, düzeltmenin kendisini iptal etmek olurdu.
+    """
     if not _SAFE_IDENT_RE.match(base_object):
         raise UnsafeDrillError(f"Güvensiz base_object adı: {base_object!r}")
+    if not columns:
+        raise UnsafeDrillError(
+            "Ham satır sorgusu için seçilebilir kolon listesi BOŞ — `SELECT *` üretilmez "
+            "(hassas kolonlar sızabilir). Çağıran, hassas olmayan kolonları vermelidir.")
+    for c in columns:
+        if not _SAFE_IDENT_RE.match(c):
+            raise UnsafeDrillError(f"Güvensiz kolon adı: {c!r}")
     where_parts: list[str] = []
     for f in filters:
         dim = f.get("dimension")
@@ -257,7 +273,8 @@ def build_raw_row_sql(base_object: str, filters: list[dict], *, limit: int = 50)
             where_parts.append(f"{dim} = {sql_literal(val)}")
     where_sql = (" WHERE " + " AND ".join(where_parts)) if where_parts else ""
     safe_limit = max(1, min(int(limit), 500))
-    return f"SELECT * FROM {base_object}{where_sql} LIMIT {safe_limit}"
+    sel = ", ".join(columns)
+    return f"SELECT {sel} FROM {base_object}{where_sql} LIMIT {safe_limit}"
 
 
 def kpi_components(kpi: dict | None) -> list[dict] | None:

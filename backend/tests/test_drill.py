@@ -174,6 +174,13 @@ def test_jump_to_related_cube_drops_unshared_filter():
 
 
 # --- sql_literal / build_raw_row_sql (GÜVENLİK-KRİTİK: enjeksiyon testleri) ---
+#
+# `columns` Faz A2'de ZORUNLU oldu: eskiden `SELECT *` üretiliyordu ve ham satır demek
+# cube'un yayımlamadığı HER kolon demekti (`personel_ozluk.tc_kimlik` dahil). Aşağıdaki
+# testlerin amacı değişmedi (şekil / IN / enjeksiyon kaçışı / tarih atlama + limit tavanı);
+# yalnız yeni sözleşmeye uyduruldu. Kolon seçiminin KENDİ testleri:
+# `tests/test_drill_raw_guvenlik.py`.
+_KOL = ["makine", "vardiya"]
 
 def test_sql_literal_escapes_single_quote():
     assert sql_literal("it's") == "'it''s'"
@@ -185,13 +192,15 @@ def test_sql_literal_numbers_unquoted():
 
 
 def test_build_raw_row_sql_basic_shape():
-    sql = build_raw_row_sql("oee_vardiya", [{"dimension": "makine", "operator": "eq", "value": "M3"}])
-    assert sql == "SELECT * FROM oee_vardiya WHERE makine = 'M3' LIMIT 50"
+    sql = build_raw_row_sql("oee_vardiya", [{"dimension": "makine", "operator": "eq", "value": "M3"}],
+                            columns=_KOL)
+    assert sql == "SELECT makine, vardiya FROM oee_vardiya WHERE makine = 'M3' LIMIT 50"
 
 
 def test_build_raw_row_sql_in_operator():
     sql = build_raw_row_sql("oee_vardiya",
-                            [{"dimension": "makine", "operator": "in", "value": ["M1", "M2"]}])
+                            [{"dimension": "makine", "operator": "in", "value": ["M1", "M2"]}],
+                            columns=_KOL)
     assert "makine IN ('M1', 'M2')" in sql
 
 
@@ -200,7 +209,7 @@ def test_build_raw_row_sql_injection_attempt_in_value_is_escaped():
     deneyen bir string) asla ham SQL'e sızmamalı — tek tırnak katlanarak escape edilir."""
     malicious = "M3'; DROP TABLE oee_vardiya; --"
     sql = build_raw_row_sql("oee_vardiya", [{"dimension": "makine", "operator": "eq",
-                                             "value": malicious}])
+                                             "value": malicious}], columns=_KOL)
     assert "DROP TABLE" in sql  # literal İÇİNDE zararsızca durur
     assert sql.count("'") % 2 == 0  # tüm tırnaklar dengeli (kaçış çalıştı)
     assert "--" in sql and sql.strip().endswith("LIMIT 50")  # yorum satırı SQL'i KESMEDİ
@@ -208,19 +217,19 @@ def test_build_raw_row_sql_injection_attempt_in_value_is_escaped():
 
 def test_build_raw_row_sql_rejects_unsafe_base_object():
     with pytest.raises(UnsafeDrillError):
-        build_raw_row_sql("oee_vardiya; DROP TABLE x", [])
+        build_raw_row_sql("oee_vardiya; DROP TABLE x", [], columns=_KOL)
 
 
 def test_build_raw_row_sql_rejects_unsafe_dimension_name():
     with pytest.raises(UnsafeDrillError):
         build_raw_row_sql("oee_vardiya", [{"dimension": "makine; DROP TABLE x", "operator": "eq",
-                                           "value": "M3"}])
+                                           "value": "M3"}], columns=_KOL)
 
 
 def test_build_raw_row_sql_skips_date_filters_and_caps_limit():
     sql = build_raw_row_sql("oee_vardiya",
                             [{"dimension": "tarih", "operator": "gte", "value": "2026-01-01"}],
-                            limit=99999)
+                            limit=99999, columns=_KOL)
     assert "tarih" not in sql  # tarih filtresi bu sürümde atlanır (dialect-özel, ayrı ele alınmalı)
     assert "LIMIT 500" in sql  # üst sınıra (500) kırpıldı
 

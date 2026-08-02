@@ -357,7 +357,17 @@ diye zaman kaybetmesin.
       onaylı bir kayıtla **aynı otoriteye** sahip oluyordu. Artık `_TRUSTED_SOURCES`
       izin listesi var: `auto_discovery` **replay'e girmez** (few-shot'ta kalır — orada
       çıktı yeniden doğrulanır, blast radius dolaylıdır).
-  - ❌ **drill raw leaf** (`drill.py`) — açık.
+  - ✅ **drill raw leaf** (`drill.py`) — **kapatıldı (2026-08-02, Faz A2)**. Bu kayıt eskiden
+    yalnız `always_filter` boyutunu anıyordu; denetimde **üç** değişmezin aynı 30 satırda
+    kırıldığı bulundu: (1) `always_filter` uygulanmıyordu, (2) PII maskesi çalışmıyordu,
+    (3) `audit.record` yoktu — yani tenant verisinin **ham satırları iz bırakmadan** dışarı
+    çıkıyordu. Kök neden `SELECT *`'tı: ham satır demek cube'un yayımlamadığı **her** kolon
+    demektir (`app/pii.py`'nin kendi docstring'i `personel_ozluk.tc_kimlik`'i örnek veriyor).
+    Savunma sırası bilinçli: önce **seçme** (hassas kolon sorguya hiç girmez — Faz A1'in
+    sınıflandırması), sonra **maskeleme** (serbest metne gömülü PII), sonra **iz**. Maskeleme
+    ilk savunma olsaydı yakalayamadığı alanlar (ad-soyad regex'le tutulamaz) sızardı.
+    Ayrıca `schema()` artık `is_calculated`/`relationship` bayraklarını taşıyor — calc kolonu
+    ve ilişki handle'ı fiziksel değildir ve ham sorguya giremez.
   - ❌ ***filtreli bir modele join'lemek*** — açık ve Faz 1 için **P0**: ölçüldü, 34M TL
     `alis` verisi `tur='satis'` filtresini geçti. Auto-join bu baypası "yalnız Discovery"den
     "handle üretilen her cube"a yayar (bkz. §9 G10).

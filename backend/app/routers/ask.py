@@ -10,7 +10,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from app import cube_router, viz, yoy
+from app import cube_router, pii, viz, yoy
 from app.auth.dependencies import require, require_company
 from app.config import get_settings
 from app.llm import RuleBasedSqlGenerator
@@ -2618,10 +2618,34 @@ def ask_drill(request: Request, body: DrillRequest) -> DrillResponse:
         for d in (body.cube_query.get("dimensions") or []):
             if body.filter_value is not None and d == body.dimension:
                 filters.append({"dimension": d, "operator": "eq", "value": body.filter_value})
+
+        # KOLON SEÇİMİ (Faz A2) — eskiden `SELECT *`. Ham satır, sistemin en riskli
+        # yüzeyidir: cube'un yayımlamadığı HER kolon (ör. `personel_ozluk.tc_kimlik`) gelir.
+        # Artık yalnız `sensitivity: normal` kolonlar seçilir; hassas olan sorguya HİÇ
+        # girmez (maskelemeye kalmadan — maskeleme son savunma, ilk savunma seçmemektir).
+        from app.sensitivity import is_sensitive
+
+        model = next((m for m in (schema.get("models") or [])
+                      if m.get("name") == base_object), None)
+        # Yalnız FİZİKSEL ve hassas-olmayan kolonlar. Calc kolonu ve ilişki handle'ı
+        # tabloda yoktur (`SELECT personel FROM partiler` → binder hatası); ham satır
+        # sorgusu semantik katmandan değil TABLODAN okur.
+        secilebilir = [c["name"] for c in (model or {}).get("columns", [])
+                       if not is_sensitive(c)
+                       and not c.get("is_calculated") and not c.get("relationship")]
         try:
-            raw_sql = build_raw_row_sql(base_object, filters, limit=body.limit)
+            raw_sql = build_raw_row_sql(base_object, filters, limit=body.limit,
+                                        columns=secilebilir)
         except UnsafeDrillError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
+
+        # ALWAYS_FILTER (Faz A2) — `_inject_always_filter` YALNIZ `cube_sql`/`blend_sql`
+        # yolunda uygulanıyordu; ham yaprak onu tamamen atlıyordu. `always_filter`
+        # fail-closed'dır (MIMARI §4-5) ve sessizce düşmesi bir P0'dır: `ticaret`
+        # cube'unun `tur='satis'` filtresi olmadan ham satır çekmek `alis` verisini
+        # sızdırır (ölçülen vakada 34M TL).
+        raw_sql = service._inject_always_filter(raw_sql, cube_meta.get("name"))
+
         started = _time.perf_counter()
         try:
             service.dry_plan(raw_sql)
@@ -2631,10 +2655,36 @@ def ask_drill(request: Request, body: DrillRequest) -> DrillResponse:
             raise HTTPException(status_code=400,
                                 detail=f"Ham satırlar getirilemedi: {str(exc)[:200]}")
         duration_ms = round((_time.perf_counter() - started) * 1000, 1)
+
+        # PII MASKELEME (Faz A2) — ham satır yolunda hiç çalışmıyordu. Kolon seçimi
+        # yapısal kolonları eler; bu, SERBEST METİN içine gömülü PII'yi (açıklama
+        # alanındaki telefon/IBAN) yakalayan ikinci savunmadır. Rol-duyarlı: `pii:view`
+        # yetkisi olan maskesiz görür ve bu erişim audit'e düşer.
+        _principal_raw = getattr(request.state, "principal", None)
+        raw_result, _pii_acildi = pii.mask_query_result(raw_result, _principal_raw)
         contract_id = _drill_record_contract(
             request, service, body.session_id,
             f"drill: {cube_meta.get('display') or cube_meta['name']} → ham satırlar",
             body.cube_query, raw_sql, raw_result)
+        # AUDIT (Faz A2, ADR-0014 K6) — bu yol tenant verisinin HAM SATIRLARINI dışarı
+        # veriyor ve hiçbir iz bırakmıyordu. Denetlenebilirlik iddiası olan bir sistemde
+        # en çok iz gerektiren yüzey tam da budur. `_pii_acildi` ayrıca kaydedilir:
+        # maskesiz PII görüldüyse KİM gördüğü bilinmelidir.
+        try:
+            from control_plane import audit
+
+            audit.record(
+                _principal_raw,
+                "drill_raw_view" if not _pii_acildi else "drill_raw_view_pii_unmasked",
+                nl_question=f"drill ham satır: {base_object}",
+                generated_sql=raw_sql,
+                rows_returned=raw_result.get("row_count"),
+                contract_id=contract_id,
+                ip=request.client.host if request.client else None,
+            )
+        except Exception:
+            _log.warning("drill ham-satır audit kaydı başarısız (best-effort)", exc_info=True)
+
         return DrillResponse(
             cube_query=body.cube_query,
             formula_explanation=f"{base_object} tablosunun bu dilime ait ham satırları "
