@@ -201,8 +201,16 @@ class VerifiedQuery(SQLModel, table=True):
     question: str
     question_norm: str = Field(index=True)                    # _norm(question) — birebir/dedup
     cube_query_json: str                                      # dönem-filtresiz CubeQuery
-    source: str = "user"                                      # user_verified | chip | user
+    # GÜVEN KAYNAĞI (Faz 4.1) — yalnız GÜVENİLİR olanlar TEKRAR OYNATILIR (app/vqr.py
+    # `_TRUSTED_SOURCES`): user_verified | chip_approved | auto_cube.
+    # `auto_discovery` = incelenmemiş HAM LLM SQL'i → saklanır (terfi kuyruğu + few-shot)
+    # ama replay'e girmez. `auto` = ayrım öncesi eski kayıt, kökeni bilinmiyor → güvenilmez.
+    source: str = "user"
     verified_by: str | None = None                           # kim doğruladı (KVKK izi)
+    verified_at: datetime | None = None                      # NE ZAMAN doğrulandı
+    # Onboarding'de "şunu sorabilirsin" örneği olarak gösterilmeye UYGUN mu. Ayrı bir alan
+    # çünkü "doğru" ile "yeni kullanıcıya gösterilecek kadar temsili" aynı şey değildir.
+    use_as_onboarding_question: bool = Field(default=False)
     created_at: datetime = Field(default_factory=_now)
     updated_at: datetime = Field(default_factory=_now)
     deleted_at: datetime | None = Field(default=None, index=True)  # soft-delete (ADR-0019)

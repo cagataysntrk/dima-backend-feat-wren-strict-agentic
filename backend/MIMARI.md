@@ -210,7 +210,7 @@ Türkçe için `COLLATE Latin1_General_CI_AI` enjeksiyonu).
 | **`dry_plan`'ı doğrulama kapısı sanma** | Dima hiç `WrenConfig` kurmuyor → `strict_mode=False` → `dry_plan` **kolon varlığını denetlemiyor** (ölçüldü: uydurma kolon plandan geçti, çalıştırmada `BinderException`). `CLAUDE.md`'nin *"motor doğrular"* ifadesi **tablo** doğrulaması için geçerlidir, kolon için değil. |
 | **`except Exception` ile motoru sarma** | Kendine-referanslı ilişki + calc kolon → Rust'ta **PANIC** (`lineage.rs:146`, `unwrap() on None`). `PanicException` MRO'su `(PanicException, BaseException, object)` — **`except Exception` yakalamaz.** Hesap planı parent, BOM parent, org şeması: ERP'lerde standart. |
 | **Kelimeye özel regex/keyword yaması** | Kayıtlı desen: aynı kök neden (`_uncovered`'ın substring körlüğü) defalarca kelimeye özel yamayla geçiştirildi, kök neden hiç düzeltilmedi. **Kural: kök nedeni düzelt, örneği değil.** (ADR-0008 disiplini) |
-| **NL-benzerlik cevap cache'i** | Yapısal olarak benzer ama anlamsal olarak farklı Türkçe sorular yanlış cevabı **güvenle** döndürür. Cache anahtarı **kanonik CubeQuery hash'i** olmalı (`tenant ⊕ cube ⊕ ölçü ⊕ boyut ⊕ aralık ⊕ filtre ⊕ RLS ⊕ mdl_version`). |
+| **NL-benzerlik cevap cache'i** | Yapısal olarak benzer ama anlamsal olarak farklı Türkçe sorular yanlış cevabı **güvenle** döndürür. Anahtar `contracts.cube_query_hash()` olmalı (Faz 4.3'te yazıldı: `cq ⊕ mdl_version ⊕ company ⊕ tenant`). **Sonuç cache'inin kendisi bilerek KURULMADI** — tekrar oranı ölçülmedi; ölçülmemiş ihtiyaç için altyapı kurulmaz. Hash'in sözleşmesi *"aynı hash ⇒ aynı ÇIKTI"*dır: `filters` sıraya duyarsız (saf AND), `measures`/`dimensions` sıraya **duyarlı** (kolon ve GROUP BY sırasını belirler), akış bayrakları (`period_confirmed`) düşürülür. `result_hash` ile karıştırma — o *"sayılar değişti mi"* sorar ve satır sırasını umursamaz. |
 | **Simetrik agregat (Looker/Omni deseni)** | Lehçe-bağımlı (Looker 40 lehçelik destek tablosu yayınlıyor), `DECIMAL(38,0)` taşması, yalnız sum/avg/count, ve hata **sorgu anında** kullanıcının yüzüne çıkıyor. Anahtar tekilliği ölçülebiliyorken kalıcı vergi ödemek anlamsız. |
 | **Tenant başına forklanmış MDL'i varsayılan yapma** | N-yollu şema bakımı. Varsayılan: paylaşılan model + motor-seviyesi RLS; fork yalnız istisna. |
 | **Grafik üretimini LLM'e verme** | `viz.py`'nin iki katmanlı deterministik `analyze()`/`recommend()` tasarımı bilinçli bir karardır (Show-Me / Cleveland-McGill, ADR-0024) ve upstream kaynak okunarak doğrulanmıştır. LLM'e Vega üretimi determinizm felsefesiyle çelişir. |
@@ -326,6 +326,14 @@ diye zaman kaybetmesin.
     yakalayamaz çünkü SQL sözdizimsel olarak hâlâ geçerlidir — değişen anlamdır.
   - ❌ **Discovery ham SQL'i** (`ask.py`) — açık. Kalıcı çözüm uygulama katmanında değil,
     motor seviyesindedir (session property / DB RLS); Faz 1'in G10 kapısıyla birlikte planlı.
+    - ✅ **ÖĞRENİLMESİ ise Faz 4.1'de durduruldu.** Bulgu (2026-08-02): başarılı HER bağımsız
+      Discovery cevabı, ham LLM SQL'iyle birlikte incelenmeden VQR'a yazılıyor ve
+      `near_exact` kaynağa **bakmadan**, üstelik yalnızca BENZER (birebir değil — eşik 0,92
+      embedding / 0,85 sözlüksel) bir soru için onu birebir tekrar oynatıyordu. Yani bu
+      baypas kalıcılaşıyor, `source="vqr"` rozetiyle sunuluyor ve LLM'in tahmini insan
+      onaylı bir kayıtla **aynı otoriteye** sahip oluyordu. Artık `_TRUSTED_SOURCES`
+      izin listesi var: `auto_discovery` **replay'e girmez** (few-shot'ta kalır — orada
+      çıktı yeniden doğrulanır, blast radius dolaylıdır).
   - ❌ **drill raw leaf** (`drill.py`) — açık.
   - ❌ ***filtreli bir modele join'lemek*** — açık ve Faz 1 için **P0**: ölçüldü, 34M TL
     `alis` verisi `tur='satis'` filtresini geçti. Auto-join bu baypası "yalnız Discovery"den

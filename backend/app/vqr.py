@@ -131,6 +131,48 @@ def _strip_dates(cq: dict) -> dict:
     return out
 
 
+# --- GÜVEN KAPISI (Faz 4.1) ----------------------------------------------------
+# TEKRAR OYNATMA (`near_exact`) ile ÖRNEK GÖSTERME (`few_shot_block`) AYNI RİSKTE DEĞİLDİR
+# ve bu yüzden aynı kapıdan geçmezler:
+#
+#   replay   → saklanan SQL'i BİREBİR, yeniden doğrulanmadan, üstelik BENZER (birebir değil;
+#              eşik 0,92 embedding / 0,85 sözlüksel) bir soru için çalıştırır. Kullanıcı
+#              cevabı `source="vqr"` rozetiyle görür. Blast radius: TAM.
+#   few-shot → bir ÜRETECE örnek verir; üretecin çıktısı ayrıca doğrulanır. Blast radius:
+#              dolaylı.
+#
+# Bulunan kusur (2 Ağustos 2026, ask.py:2320): başarılı HER bağımsız Discovery cevabı, ham
+# LLM SQL'iyle birlikte incelenmeden VQR'a yazılıyordu ve `near_exact` kaynağa BAKMIYORDU —
+# yani LLM'in kendi tahmini, insan onaylı bir kayıtla AYNI otoriteyle tekrar oynatılıyordu.
+# Ham SQL semantik katmanın yönetmediği kolonlara/filtrelere erişebilir ve `always_filter`
+# baypası (MIMARI.md §6.3) bu yolla ÖĞRENİLMİŞ hale gelir. Planın alıntıladığı Snowflake
+# uyarısı tam bu vakadır: *kötü kayıt doğruluğu aktif olarak düşürür.*
+#
+# `auto_cube` GÜVENİLİRDİR çünkü orada saklanan şey LLM'in serbest metni değil, katalogla
+# doğrulanmış bir CubeQuery'den derlenmiş SQL'dir (`parse_cube_query` + `dry_plan`).
+_TRUSTED_SOURCES = frozenset({
+    "user",            # elle/küratörlü çift (makine yazımı değil)
+    "user_verified",   # insan ✓ verdi
+    "chip_approved",   # insan chip'e tıklayarak onayladı
+    "auto_cube",       # Intent-JSON → katalogla doğrulanmış CubeQuery → derlenmiş SQL
+})
+_UNTRUSTED_SOURCES = frozenset({
+    "auto_discovery",  # ham LLM SQL'i, HİÇ incelenmedi
+    "auto",            # ayrım ÖNCESİ eski kayıt — kökeni kayıtta YOK, bir kısmı ham SQL
+})
+
+# İzin listesi (deny-list değil) BİLİNÇLİ bir güvenlik tercihi: yarın eklenecek bir
+# `auto_<birşey>` kaynağı sessizce GÜVENİLİR sayılmasın. Bedeli, yeni bir kaynak adının
+# sessizce ENGELLENMESİ — `tests/test_vqr_guven_kapisi.py::test_her_kaynak_SINIFLANDIRILMIS`
+# bunu yakalar: koddaki her `source=` literali iki kümeden birinde olmak zorunda.
+KNOWN_SOURCES = _TRUSTED_SOURCES | _UNTRUSTED_SOURCES
+
+
+def is_trusted(source: str | None) -> bool:
+    """Bu kayıt TEKRAR OYNATILABİLİR mi? (Örnek gösterme ayrı kapıdan geçer.)"""
+    return (source or "") in _TRUSTED_SOURCES
+
+
 class VQR:
     def __init__(self, company: str, tenant_id: str | None = None):
         # Kapsam: şirket (settings.company). Çiftler Postgres'te yaşar (verified_query),
@@ -225,6 +267,9 @@ class VQR:
                     VerifiedQuery.company == self.company,
                     VerifiedQuery.question_norm == qn,
                     col(VerifiedQuery.deleted_at).is_(None))).first()
+                # `verified_at` yalnız İNSAN onayında damgalanır (Faz 4.1) — otomatik
+                # yazımlar bir doğrulama DEĞİLDİR ve öyleymiş gibi görünmemelidir.
+                vat = datetime.utcnow() if source in ("user_verified", "chip_approved") else None
                 if row:
                     row.cube_query_json = cj
                     row.source = source
@@ -233,10 +278,12 @@ class VQR:
                         row.verified_by = vby
                     if tid:
                         row.tenant_id = tid
+                    if vat:
+                        row.verified_at = vat
                 else:
                     row = VerifiedQuery(company=self.company, tenant_id=tid, question=question,
                                         question_norm=qn, cube_query_json=cj, source=source,
-                                        verified_by=vby)
+                                        verified_by=vby, verified_at=vat)
                 s.add(row)
                 s.commit()
         except Exception:
@@ -313,17 +360,29 @@ class VQR:
         return [(p, s) for p, s in ranked[:k] if s > 0.3]
 
     def near_exact(self, question: str) -> dict | None:
-        """Birebir (ya da eşik-üstü) eşleşme → LLM'siz tekrar oynatılabilir çift."""
+        """Birebir (ya da eşik-üstü) eşleşme → LLM'siz tekrar oynatılabilir çift.
+
+        YALNIZ GÜVENİLİR kaynaklar (Faz 4.1, bkz. `_TRUSTED_SOURCES`). Güvenilmez bir kayıt
+        depoda KALIR — silinmez, çünkü hem terfi kuyruğunun ham maddesidir hem de
+        `few_shot_block` için değerlidir; yalnız TEKRAR OYNATILMAZ.
+
+        Not: birebir soru eşleşmesi bile güven kapısından muaf DEĞİLDİR. Aynı soruyu ikinci
+        kez soran kullanıcı, ilk seferde LLM'in ürettiği ham SQL'i "doğrulanmış" rozetiyle
+        geri almamalıdır — o cevap hiç incelenmedi.
+        """
         pairs = self._load()
+        guvenilir = [i for i, p in enumerate(pairs) if is_trusted(p.get("source"))]
         qn = _norm(question)
-        for p in pairs:
-            if _norm(p["question"]) == qn:
-                return p
+        for i in guvenilir:
+            if _norm(pairs[i]["question"]) == qn:
+                return pairs[i]
+        if not guvenilir:
+            return None
         scores = self._scores(question)
         if not scores:
             return None
         threshold = _EXACT_THRESHOLD if _embedder() is not None else _LEX_EXACT_THRESHOLD
-        best_i = max(range(len(scores)), key=lambda i: scores[i])
+        best_i = max(guvenilir, key=lambda i: scores[i])
         if scores[best_i] >= threshold:
             return pairs[best_i]
         return None

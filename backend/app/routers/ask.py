@@ -1482,9 +1482,12 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             resp.view_hint = _viz_hint(q_norm)
         if learn and vqr is not None:
             try:
+                # `auto_cube` (Faz 4.1): saklanan SQL, LLM'in serbest metni DEĞİL —
+                # katalogla doğrulanmış bir CubeQuery'den DERLENMİŞ SQL. Tekrar
+                # oynatılabilir (bkz. app/vqr.py `_TRUSTED_SOURCES`).
                 vqr.store(body.question,
                           {"wren_sql": sql, "mdl_version": service.mdl_version},
-                          source="auto")
+                          source="auto_cube")
             except Exception:
                 _log.warning("VQR otomatik kayıt başarısız (best-effort)", exc_info=True)
         resp.contract_id = _record_contract(cq, sql, result, source)
@@ -2317,9 +2320,14 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # bağlamdan bağımsız (kendi başına anlamlı) sorular öğrenilir.
         if vqr is not None and not is_followup:
             try:
+                # `auto_discovery` (Faz 4.1): bu HAM LLM SQL'idir ve HİÇ İNCELENMEDİ.
+                # Saklanır (terfi kuyruğunun ham maddesi + few-shot değeri) ama TEKRAR
+                # OYNATILMAZ — `near_exact` güven kapısından geçmez. Eskiden "auto"
+                # etiketiyle yazılıyor ve insan onaylı bir kayıtla AYNI otoriteyle
+                # benzer sorulara tekrar oynatılıyordu.
                 vqr.store(body.question,
                           {"wren_sql": wren_sql, "mdl_version": service.mdl_version},
-                          source="auto")
+                          source="auto_discovery")
             except Exception:
                 _log.warning("VQR otomatik kayıt başarısız (best-effort)", exc_info=True)
 

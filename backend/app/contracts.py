@@ -111,6 +111,66 @@ def result_hash(result: dict | None) -> str | None:
     return "sha256:" + hashlib.sha256(s.encode()).hexdigest()
 
 
+# CubeQuery'nin AKIŞ bayrakları — sorunun ANLAMINI değiştirmezler, yalnız UI/merdiven
+# durumunu taşırlar. Kimliğe girerlerse "dönem chip'ine tıklamadan önce" ve "tıkladıktan
+# sonra" AYNI sorgu FARKLI hash alır; oysa üretilen SQL birebir aynıdır.
+_NONSEMANTIC_KEYS = frozenset({"period_confirmed"})
+
+
+def _strip_nonsemantic(v):
+    if isinstance(v, dict):
+        return {k: _strip_nonsemantic(x) for k, x in v.items() if k not in _NONSEMANTIC_KEYS}
+    if isinstance(v, list):
+        return [_strip_nonsemantic(x) for x in v]
+    return v
+
+
+def cube_query_hash(cube_query: dict | None, *, mdl_version: str | None = None,
+                    company: str | None = None, tenant_id: str | None = None) -> str:
+    """CubeQuery'nin KANONİK KİMLİĞİ (Faz 4.3).
+
+    Sözleşme: **aynı hash ⇒ aynı ÇIKTI** (aynı sayılar DEĞİL — aynı tablo: kolonlar,
+    sıraları ve satırlar). Bu, `result_hash`ten farklı bir sözleşmedir ve fark bilinçlidir:
+    `result_hash` "sayılar değişti mi" diye sorar ve sunum sırasını umursamaz; bu fonksiyon
+    ise bir CACHE ANAHTARI olabilecek kadar sıkı olmak zorundadır.
+
+    Bundan çıkan kanonikleştirme kuralları:
+      - `filters` **sıraya duyarsız** — saf AND birleşimidir, çıktıya hiçbir etkisi yoktur.
+        `in`/`not_in` değer listeleri de sıralanır (`[Beyaz,Siyah]` ≡ `[Siyah,Beyaz]`).
+      - `measures` / `dimensions` **sıraya DUYARLI** — kolon sırasını ve GROUP BY sırasını
+        (dolayısıyla satır sırasını) belirlerler. Sıralanmış olsalardı `[a,b]` için
+        önbelleğe alınan sonuç `[b,a]` sorgusuna kolonları TERS sırada döndürülürdü.
+      - Akış bayrakları (`period_confirmed`) düşürülür — bkz. `_NONSEMANTIC_KEYS`.
+      - `mdl_version`, `company`, `tenant_id` kimliğe **girer**: şema değişince aynı
+        CubeQuery başka bir şey ifade eder, ve iki kiracının aynı sorgusu ASLA aynı
+        anahtara düşmemelidir.
+
+    Neden bugün bir cevap cache'i KURULMADI: tekrar oranı ÖLÇÜLMEDİ (`interaction_log`
+    telemetrisi yeni kalıcı oldu, veri birikmedi). Ölçülmemiş bir ihtiyaç için altyapı
+    kurulmaz. Bu fonksiyon cache için değil, ZATEN ihtiyaç duyulan yerler için vardır:
+    sözleşme kimliği, terfi kuyruğu tekilleştirmesi, "aynı sorgu mu" karşılaştırması —
+    ve biri cache eklemek isterse doğru anahtar hazır olsun diye.
+    """
+    cq = _strip_nonsemantic(cube_query or {})
+    fs = cq.get("filters")
+    if isinstance(fs, list):
+        duz = []
+        for f in fs:
+            f = dict(f) if isinstance(f, dict) else f
+            if isinstance(f, dict) and isinstance(f.get("value"), list):
+                f["value"] = sorted(
+                    f["value"],
+                    key=lambda x: json.dumps(x, sort_keys=True, ensure_ascii=False, default=str))
+            duz.append(f)
+        cq["filters"] = sorted(
+            duz,
+            key=lambda f: json.dumps(f, sort_keys=True, ensure_ascii=False, default=str))
+    payload = {"cq": cq, "mdl": mdl_version, "company": company, "tenant": tenant_id}
+    s = json.dumps(payload, sort_keys=True, ensure_ascii=False,
+                   separators=(",", ":"), default=str)
+    return "sha256:" + hashlib.sha256(s.encode()).hexdigest()
+
+
 def _norm_sql(sql: str | None) -> str:
     return " ".join((sql or "").split()).rstrip(";").lower()
 

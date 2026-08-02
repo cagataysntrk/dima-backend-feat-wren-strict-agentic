@@ -47,17 +47,25 @@ def _mdl_version(client) -> str:
 
 
 def test_ham_sql_kaydi_mdl_version_ile_damgalanir(client, vqr_store):
-    """Discovery/verify yolundan yazılan her ham-SQL kaydı sürüm damgası taşımalı."""
+    """Discovery/verify yolundan yazılan her ham-SQL kaydı sürüm damgası taşımalı.
+
+    Kaynak `auto_cube`: bu dosya SÜRÜM kapısını ölçer, GÜVEN kapısını (Faz 4.1) değil.
+    İkisi BAĞIMSIZDIR ve replay için İKİSİNİN DE geçmesi gerekir — güvenilir bir kayıt
+    bayat damgayla oynatılmaz, güncel damgalı güvenilmez bir kayıt da oynatılmaz.
+    (Eskiden `source="auto"` yazıyordu; o etiket artık kökeni bilinmeyen eski kayıtları
+    işaretliyor ve güvenilmez sayılıyor, bkz. app/vqr.py.)
+    """
     vqr_store.store(Q, {"wren_sql": SQL, "mdl_version": _mdl_version(client)},
-                    source="auto")
+                    source="auto_cube")
     hit = vqr_store.near_exact(Q)
     assert hit, "kayıt bulunamadı"
     assert hit["cube_query"].get("mdl_version") == _mdl_version(client)
 
 
 def test_guncel_damgali_kayit_replay_EDILIR(client, vqr_store):
+    """Güncel damga + GÜVENİLİR kaynak → oynatılır (iki kapı da açık)."""
     vqr_store.store(Q, {"wren_sql": SQL, "mdl_version": _mdl_version(client)},
-                    source="auto")
+                    source="auto_cube")
     d = ask(client, Q)
     assert d["source"] == "vqr", f"güncel kayıt oynatılmadı: {d.get('source')}"
     assert d["sql"] == SQL
@@ -65,7 +73,8 @@ def test_guncel_damgali_kayit_replay_EDILIR(client, vqr_store):
 
 def test_bayat_damgali_kayit_replay_EDILMEZ(client, vqr_store):
     """MDL değişmişse eski ham SQL 'doğrulanmış' sayılamaz — kısayol atlanır."""
-    vqr_store.store(Q, {"wren_sql": SQL, "mdl_version": "bayat000000"}, source="auto")
+    vqr_store.store(Q, {"wren_sql": SQL, "mdl_version": "bayat000000"},
+                    source="auto_cube")
     d = ask(client, Q)
     assert d.get("source") != "vqr", (
         "bayat VQR kaydı oynatıldı — always_filter/ölçü değişimi sessizce atlanabilir"
@@ -79,7 +88,7 @@ def test_damgasiz_ESKI_kayit_replay_EDILMEZ(client, vqr_store):
     bilinçli tercih: kanıtlanamayan bir cevabı 'doğrulanmış' diye sunmaktansa yeniden
     hesaplamak yeğdir. Kayıtlar sonraki başarılı cevapta damgalı olarak geri gelir.
     """
-    vqr_store.store(Q, {"wren_sql": SQL}, source="auto")
+    vqr_store.store(Q, {"wren_sql": SQL}, source="auto_cube")
     d = ask(client, Q)
     assert d.get("source") != "vqr"
 
