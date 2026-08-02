@@ -697,7 +697,15 @@ export function ReportCard({
           hareket etti). Sıra ters olsaydı kullanıcı önce ham ayrışmayı, sonra
           cevabı görürdü. */}
       {item.prescription && (
-        <PrescriptionLayer recete={item.prescription} onCubeEdit={onCubeEdit} />
+        <PrescriptionLayer
+          recete={item.prescription}
+          onCubeEdit={onCubeEdit}
+          soru={item.question}
+          sessionId={sessionId}
+          // Kanıt bağı: karar, dayandığı makbuza bağlanınca YENİDEN ÇALIŞTIRILABİLİR
+          // bir iddiaya dönüşür. Kanıtsız kayıt da meşrudur ama farklıdır.
+          contractIds={item.contract_id ? [item.contract_id] : []}
+        />
       )}
 
       {item.cube_query && (item.result || item.contribution) && (

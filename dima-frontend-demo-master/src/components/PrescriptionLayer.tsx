@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { saveDecision, verifyDecision } from "@/lib/api-client";
 import { fmtValue } from "@/lib/format";
-import type { CubeQuery, Prescription } from "@/lib/types";
+import type { CubeQuery, DecisionRecord, Prescription } from "@/lib/types";
 
 // FAZ G3/H — REÇETE cevabın İÇİNDE bir katman, ayrı bir panel DEĞİL.
 //
@@ -33,12 +36,42 @@ function Yon({ yon }: { yon: string }) {
 export function PrescriptionLayer({
   recete,
   onCubeEdit,
+  soru,
+  sessionId,
+  contractIds,
 }: {
   recete: Prescription;
   onCubeEdit?: (e: { cq: CubeQuery; label: string }) => void;
+  soru?: string;
+  sessionId?: string;
+  contractIds?: string[];
 }) {
   const olcu = recete.measure ?? "";
   const yogun = recete.concentration;
+  // KARAR KAYDI (Faz E-4): kullanıcı bir seçeneği SEÇTİĞİNDE karar kaydedilir. Seçilenle
+  // birlikte DEĞERLENDİRİLENLERİN TAMAMI da gider — "neden bu?" ancak "hangilerine
+  // karşı?" bilinirse cevaplanabilir.
+  const [kayit, setKayit] = useState<DecisionRecord | null>(null);
+
+  const kaydet = useMutation({
+    mutationFn: (secilen: (typeof recete.options)[number]) =>
+      saveDecision({
+        question: soru ?? null,
+        chosen: secilen,
+        options: recete.options,
+        rationale: recete.rationale,
+        contract_ids: contractIds ?? [],
+        session_id: sessionId ?? null,
+      }),
+    onSuccess: setKayit,
+  });
+
+  // DOĞRULA: makbuzun değeri onu KONTROL EDEBİLMEKTE. Sunucu hash'i yeniden hesaplar;
+  // kayıt sonradan değiştirilmişse `verified=false` döner.
+  const dogrula = useMutation({
+    mutationFn: (id: string) => verifyDecision(id),
+    onSuccess: setKayit,
+  });
 
   return (
     <div className="mt-2 border border-hairline">
@@ -109,6 +142,68 @@ export function PrescriptionLayer({
           <p className="border-t border-hairline px-2 py-1 font-mono text-[10px] leading-relaxed text-neutral-500">
             {recete.rationale}
           </p>
+
+          {/* KARAR KAYDI — rapor kalır, kararın kendisi kaybolur. Altı ay sonra "bunu
+              neden yapmıştık" sorusunun cevabı burada durur. Şerit yalnız öneri VARSA
+              görünür: dağınık değişimde kaydedilecek bir karar yoktur. */}
+          <div className="flex flex-wrap items-center gap-1.5 border-t border-hairline px-2 py-1">
+            {kayit ? (
+              <>
+                <span
+                  className={`font-mono text-[10px] ${
+                    kayit.verified === false
+                      ? "text-red-500"
+                      : kayit.verified === true
+                        ? "text-emerald-600"
+                        : "text-neutral-500"
+                  }`}
+                  title={
+                    kayit.verified === false
+                      ? "KURCALANMIŞ: kayıt sonradan değiştirilmiş, hash tutmuyor"
+                      : kayit.verified === true
+                        ? "Hash doğrulandı — kayıt değişmemiş"
+                        : "Doğrulanamadı (kayıtta hash yok)"
+                  }
+                >
+                  {kayit.verified === false ? "⚠ kurcalanmış" : "✓ karar kaydedildi"} ·{" "}
+                  {kayit.id}
+                </span>
+                <button
+                  onClick={() => dogrula.mutate(kayit.id)}
+                  disabled={dogrula.isPending}
+                  title="Sunucu hash'i yeniden hesaplar — kayıt değişmiş mi?"
+                  className="border border-hairline px-2 py-[2px] font-mono text-[10px] text-neutral-500 transition-colors hover:border-accent hover:text-accent disabled:opacity-40"
+                >
+                  {dogrula.isPending ? "doğrulanıyor…" : "doğrula"}
+                </button>
+                <span className="font-mono text-[10px] text-neutral-500">
+                  {kayit.evidence_count} makbuz kanıt
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="font-mono text-[10px] text-neutral-400">
+                  kararı kaydet:
+                </span>
+                {recete.options.map((o, i) => (
+                  <button
+                    key={`kaydet-${o.segment}-${i}`}
+                    onClick={() => kaydet.mutate(o)}
+                    disabled={kaydet.isPending}
+                    title={`"${o.segment}" seçeneğini seçtiğini, DEĞERLENDİRİLEN TÜM seçeneklerle ve gerekçesiyle birlikte kalıcı kaydet`}
+                    className="border border-hairline px-2 py-[2px] font-mono text-[10px] text-neutral-500 transition-colors hover:border-accent hover:text-accent disabled:opacity-40"
+                  >
+                    {kaydet.isPending ? "…" : o.segment}
+                  </button>
+                ))}
+              </>
+            )}
+            {kaydet.isError && (
+              <span className="font-mono text-[10px] text-red-500">
+                kaydedilemedi — karar KAYBOLDU, tekrar dene
+              </span>
+            )}
+          </div>
         </>
       )}
     </div>

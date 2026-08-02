@@ -79,6 +79,12 @@ _ACTION_MIN_RANK = {
     # hücrelerindeki TCKN/e-posta/telefon/IBAN varsayılan MASKELİ döner; bu aksiyona
     # sahip rol (admin+) maskesiz görür — bu erişim audit'e düşer (app/pii.py).
     "pii:view": 2,
+    # KARAR KAYDI (Faz E-4). Okuma `contract:read` ile aynı seviyede (viewer): bir kararı
+    # GÖRMEK, dayandığı raporu görmekle eşdeğerdir. YAZMA analyst+ — bir karar kaydı
+    # kurumsal bir beyandır ve append-only'dir (silinemez), dolayısıyla rapor okumaktan
+    # kategorik olarak daha ağırdır.
+    "decision:read": 0,
+    "decision:write": 1,
 }
 
 

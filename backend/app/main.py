@@ -18,6 +18,7 @@ from app.routers import connections as connections_router
 from app.routers import contracts as contracts_router
 from app.routers import conversations as conversations_router
 from app.routers import dashboards as dashboards_router
+from app.routers import decisions as decisions_router
 from app.routers import measures as measures_router
 from app.routers import schedules as schedules_router
 from app.routers import stats as stats_router
@@ -159,6 +160,7 @@ def create_app() -> FastAPI:
     app.include_router(measures_router.router, dependencies=_protected)
     app.include_router(connections_router.router, dependencies=_protected)
     app.include_router(stats_router.router, dependencies=_protected)
+    app.include_router(decisions_router.router, dependencies=_protected)
     return app
 
 

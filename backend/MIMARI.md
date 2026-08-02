@@ -1320,6 +1320,57 @@ anlatı+kanıt zinciri.
 
 ---
 
+## 15. KARAR KAYDI — Query Contract'ın bir üstü (Faz E-4)
+
+Query Contract *"bu sayı nasıl hesaplandı"* sorusunu cevaplar ve bu ürünün temel
+değişmezidir. Karar Kaydı **bir üst soruyu** cevaplar:
+
+> *"Bu sayıya bakarak NE KARAR VERDİK, hangi seçenekler arasından, hangi gerekçeyle,
+> kim ve ne zaman?"*
+
+BI ürünlerinde eksik olan halka budur: **rapor kalır, kararın kendisi kaybolur.** Altı ay
+sonra *"bunu neden yapmıştık"* sorusunun cevabı kimsede olmaz — ve o cevabı üretebilen bir
+sistem, rapor üreten bir sistemden **kategorik olarak** daha değerlidir.
+
+### 15.1 Dört tasarım kararı
+
+| Karar | Gerekçe |
+|---|---|
+| **Değerlendirilen TÜM seçenekler saklanır**, yalnız seçilen değil | *"Neden bu?"* ancak *"hangilerine karşı?"* bilinirse cevaplanabilir. Yalnız seçileni saklamak kararı bir **duyuruya** çevirir. |
+| `content_hash` bir **imza DEĞİL, kurcalama tespiti** | Anahtarlı imza = anahtar yönetimi (rotasyon/saklama/iptal). **Ölçülmüş bir tehdide** dayanmadan o karmaşıklığı almak *"ölçülmemiş ihtiyaç için altyapı kurma"* kuralının ihlali olurdu. Tehdit netleşince **şema değişmez**, yalnız hash'i üreten fonksiyon değişir. |
+| **Append-only** | Karar silinmez; revizyon `supersedes` ile yeni kayıt yazar (`ContractLog` disiplini, ADR-0019 ruhu). |
+| **Fail-loud** (Contract'tan farklı) | Makbuz kaybolursa rapor yine döner — kanıt raporun kendisi değildir. Ama bir KARAR kaydedilemiyorsa kullanıcı bunu **bilmelidir**: kaydettiğini sanıp kaydedilmemiş olması en kötü sonuçtur. |
+
+### 15.2 `verified` ÜÇ değerlidir
+
+`True` (hash tutuyor) · `False` (**KURCALANMIŞ**) · `None` (kayıtta hash yok — eski/bozuk
+satır). Üçünü ikiye sıkıştırmak *"doğrulanamadı"*yı *"kurcalanmış"* gibi göstermek olurdu:
+**suçsuzu suçlu göstermek.**
+
+### 15.3 Kanıt bağı zorunlu DEĞİL ama ÖLÇÜLÜR
+
+Bir karar kaydı tek başına bir **cümledir**; Query Contract kimliklerine bağlandığında
+**yeniden çalıştırılabilir bir iddiaya** dönüşür. Kanıtsız kayda izin verilir (kullanıcı
+serbest metinle karar yazabilir) ama `evidence_count` okumada görünür — *"kanıtsız"* ile
+*"kanıtlı"* aynı şey değildir.
+
+### 15.4 UI: kaydet **ve DOĞRULA** (H1)
+
+İki uç, ikisinin de tüketicisi var: `POST /decisions` → `PrescriptionLayer`'daki seçenek
+butonları; `GET /decisions/{id}` → aynı yerdeki **"doğrula"**.
+
+> Makbuzun değeri onu **kontrol edebilmektedir**. Kaydedip bir daha bakmadığın bir kayıt
+> bir tutanak değil bir **temennidir**.
+
+Kurcalanmış kayıt UI'da **kırmızı** ve *"⚠ kurcalanmış"* olarak görünür. Kaydetme
+başarısızsa *"karar KAYBOLDU, tekrar dene"* denir — sessiz yutma yok (ADR-0020).
+
+**Yetki:** okuma `viewer` (bir kararı görmek, dayandığı raporu görmekle eşdeğerdir),
+yazma `analyst+` (karar kaydı kurumsal bir beyandır ve silinemez). Başka tenant'ın kaydı
+**404** döner, 403 değil — *"yetkin yok"* cevabı kaydın **var olduğunu** sızdırır.
+
+---
+
 ## 14. Arka–ön sözleşmesi — "Tanım Tamamlandı" = arka + ön + test
 
 > Bu bölüm bir denetim bulgusundan doğdu (2026-08-02): **bu turda yazılan iki uç frontend'de

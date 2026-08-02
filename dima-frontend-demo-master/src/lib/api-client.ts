@@ -19,6 +19,7 @@ import type {
   DashboardListItem,
   DashboardWidgetData,
   ContributionResponse,
+  DecisionRecord,
   MeasureApproveInput,
   MeasureCandidate,
   MeasurePreview,
@@ -634,6 +635,27 @@ export async function askContribution(body: {
   max_dimensions?: number;
 }): Promise<ContributionResponse> {
   const { data } = await apiClient.post<ContributionResponse>("/ask/contribution", body);
+  return data;
+}
+
+// --- Karar Kaydı (Faz E-4) ---------------------------------------------------------
+// İKİ uç, ikisinin de tüketicisi var (MIMARI §14.1): yaz + DOĞRULA. Makbuzun değeri onu
+// KONTROL EDEBİLMEKTE; kaydedip bir daha bakmadığın bir kayıt tutanak değil temennidir.
+export async function saveDecision(body: {
+  question?: string | null;
+  chosen?: unknown;
+  options?: unknown;
+  rationale?: string | null;
+  note?: string | null;
+  contract_ids?: string[];
+  session_id?: string | null;
+}): Promise<DecisionRecord> {
+  const { data } = await apiClient.post<DecisionRecord>("/decisions", body);
+  return data;
+}
+
+export async function verifyDecision(id: string): Promise<DecisionRecord> {
+  const { data } = await apiClient.get<DecisionRecord>(`/decisions/${id}`);
   return data;
 }
 

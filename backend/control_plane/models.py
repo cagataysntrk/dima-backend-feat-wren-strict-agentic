@@ -272,6 +272,41 @@ class ContractLog(SQLModel, table=True):
     provenance_json: str | None = None
 
 
+class DecisionRecord(SQLModel, table=True):
+    """KARAR KAYDI (Faz E-4) — *"bu kararı şu kanıta dayanarak, şu tarihte aldık."*
+
+    Query Contract *"bu sayı nasıl hesaplandı"* sorusunu cevaplar. Karar Kaydı bir üst
+    soruyu cevaplar: **"bu sayıya bakarak NE KARAR VERDİK ve neden?"** BI ürünlerinde
+    eksik olan halka budur — rapor kalır, kararın kendisi kaybolur ve altı ay sonra
+    *"bunu neden yapmıştık"* sorusunun cevabı kimsede olmaz.
+
+    **İmza = kanonik içeriğin SHA-256'sı.** Gizli anahtarlı bir imza DEĞİL (bu bir
+    kimlik doğrulama değil **kurcalama tespiti**dir): kayıt sonradan değiştirilirse hash
+    tutmaz ve `GET /decisions/{id}` bunu söyler. Append-only — karar silinmez, iptal
+    edilirse yeni bir kayıt yazılır (`supersedes`).
+    """
+
+    __tablename__ = "decision_record"
+    id: str = Field(primary_key=True)                        # "d-<hex>"
+    ts: datetime = Field(default_factory=_now, index=True)
+    tenant_id: str | None = Field(default=None, index=True)  # RLS
+    user_id: str | None = Field(default=None, index=True)    # kararı ALAN kişi
+    session_id: str | None = Field(default=None, index=True)
+    question: str | None = None                              # kararın doğduğu soru
+    # Seçilen seçenek + değerlendirilen TÜM seçenekler (reçetenin gövdesi). Yalnız
+    # seçileni saklamak, kararın GEREKÇESİNİ yok ederdi: "neden bu?" sorusu ancak
+    # "hangilerine karşı?" bilinirse cevaplanır.
+    chosen_json: str | None = None
+    options_json: str | None = None
+    rationale: str | None = None                             # reçetenin gerekçesi
+    note: str | None = None                                  # kullanıcının kendi notu
+    # KANIT: bu kararın dayandığı Query Contract kimlikleri. Karar kaydı tek başına bir
+    # cümledir; makbuzlara bağlı olduğunda YENİDEN ÇALIŞTIRILABİLİR bir iddiaya dönüşür.
+    contract_ids_json: str | None = None
+    content_hash: str | None = Field(default=None, index=True)
+    supersedes: str | None = None                            # iptal/revizyon zinciri
+
+
 class NotificationLog(SQLModel, table=True):
     """Bildirim/teslim LOGU (ADR-0011/0020) — Postgres, TEK-KAYNAK (notifications.jsonl
     dual-write kaldırıldı).

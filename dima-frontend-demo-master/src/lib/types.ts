@@ -526,6 +526,29 @@ export interface Prescription {
   measure?: string | null;
 }
 
+// KARAR KAYDI (Faz E-4) — Query Contract'ın BİR ÜSTÜ. Contract "bu sayı nasıl
+// hesaplandı"ı, bu "bu sayıya bakarak NE KARAR VERDİK"i cevaplar. BI ürünlerinde
+// eksik olan halka budur: rapor kalır, kararın kendisi kaybolur.
+export interface DecisionRecord {
+  id: string;
+  ts: string | null;
+  session_id: string | null;
+  question: string | null;
+  chosen: unknown;
+  // Değerlendirilen TÜM seçenekler — "neden bu?" ancak "hangilerine karşı?" bilinirse
+  // cevaplanabilir. Yalnız seçileni saklamak kararı bir duyuruya çevirirdi.
+  options: unknown;
+  rationale: string | null;
+  note: string | null;
+  contract_ids: string[];
+  content_hash: string | null;
+  // ÜÇ DEĞERLİ: true = hash tutuyor · false = KURCALANMIŞ · null = doğrulanamadı
+  // (eski/hash'siz kayıt). false ile null'u birleştirmek suçsuzu suçlu göstermek olurdu.
+  verified: boolean | null;
+  evidence_count: number;
+  supersedes: string | null;
+}
+
 export interface ContributionResponse {
   measure: string | null;
   mode: string; // "yoy" | "mom"
