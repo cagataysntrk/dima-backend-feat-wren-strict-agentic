@@ -33,6 +33,13 @@ class Settings(BaseSettings):
     datasource: str = "duckdb"
     # JSON object of connection parameters WITHOUT the ``datasource`` key.
     connection_info: str = '{"url": "demo/data", "format": "duckdb"}'
+    # Uzak DB sorgu zaman aşımı, SANİYE (Faz B). 0 = kapalı (motorun kendi varsayılanı).
+    # ÖLÇÜLDÜ: motor `statement_timeout`'u yalnız postgres/clickhouse/trino/bigquery için
+    # enjekte ediyor (180 sn) — `mssql` dalı YOK ve üretim tenant'larımız mssql, yani
+    # kilitlenmiş bir sorgu SÜRESİZ asılabiliyordu. 60 sn seçildi: etkileşimli bir BI
+    # cevabı için 180 fazla, ama `/report` ve zamanlanmış koşumların ağır sorguları için
+    # 15-20 az. duckdb'de UYGULANMAZ (gömülü — ağ yok, kilitlenecek uzak sunucu yok).
+    db_statement_timeout: int = 60
 
     # --- LLM sağlayıcı ---------------------------------------------------
     # auto: anthropic → xai → gemini → groq → ollama (ayakta ise) → kural-tabanlı.

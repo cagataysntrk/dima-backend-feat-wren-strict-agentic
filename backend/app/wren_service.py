@@ -132,6 +132,80 @@ class WrenService:
         return WrenConfig(strict_mode=(mod == "on"),
                           denied_functions=frozenset(denied)), mod
 
+    def _zaman_asimli_baglanti(self) -> dict[str, Any]:
+        """Bağlantı bilgisine SORGU ve BAĞLANTI zaman aşımı ekler (Faz B).
+
+        ## Ölçülen boşluk (2 Ağustos 2026)
+
+        Motorun `DataSource.get_connection_info()`'su `statement_timeout`'u **yalnız dört
+        datasource için** enjekte ediyor: `postgres` · `clickhouse` · `trino` · `bigquery`
+        (varsayılan **180 sn**). **`mssql` dalı YOK** — ve üretimdeki tenant'larımız
+        (gitas, atiksan) tam olarak mssql. Konnektör `kwargs["statement_timeout"]`'u
+        **onurlandırıyor** (`connection.timeout = ...`) ama onu **kimse geçmiyordu**.
+
+        Sonuç: mssql'de ağır ya da kilitlenmiş bir sorgu **süresiz** asılabilir ve isteği
+        de kendisiyle birlikte askıya alır. postgres'te ise 180 sn — bir toplu iş için
+        makul, **etkileşimli bir BI cevabı için değil**.
+
+        ## `_db_reachable`'ın YERİNE GEÇMEZ — tamamlar
+
+        Plan bu maddeyi *"`_db_reachable`'ın elle TCP ping'i yerine gerçek sorgu zaman
+        aşımı"* diye yazmıştı. Ölçünce ikisinin **farklı şeyleri** yakaladığı görüldü:
+
+        | | TCP ping | connect timeout | statement timeout |
+        |---|---|---|---|
+        | Tünel düşmüş (canlı olay 2026-07-25) | ✅ 3 sn'de | ✅ ama daha yavaş | ❌ hiç bağlanamaz |
+        | DB ayakta, sorgu kilitli | ❌ **anında "erişilebilir" der** | ❌ | ✅ |
+
+        Bu yüzden TCP ping **KALIR** (en hızlı ön eleme) ve zaman aşımları onun
+        göremediği durumu kapatır. Birini ötekinin "yerine" saymak, kapanmamış bir
+        boşluğu kapanmış göstermek olurdu.
+
+        ## Neden burada, `company_registry`'de değil
+
+        Her `WrenService` — kayıt defterinden gelen, ayarlardan gelen, testin kurduğu —
+        aynı garantiyi almalı. Bağlantıyı ÜRETEN yere koymak, ikinci bir üretici
+        eklendiği gün sessizce kaçırırdı (bu depoda ölçülmüş desen).
+        """
+        from app.config import get_settings
+
+        info = dict(self.connection_info)
+        sure = int(getattr(get_settings(), "db_statement_timeout", 0) or 0)
+        if sure <= 0 or self.datasource in ("duckdb", "", None):
+            # duckdb gömülüdür: ağ yok, kilitlenecek uzak bir sunucu yok. 0 = kapalı
+            # (acil durumda ayarla geri alınabilir olmalı).
+            return info
+        # BOŞ/HEDEFSİZ bağlantıya DOKUNULMAZ. `dry_plan` DB'ye hiç bağlanmaz ve o yolda
+        # `connection_info={}` geçmek meşrudur (transpile + model CTE'leri yeter). Böyle bir
+        # sözlüğe `kwargs` eklemek onu "eksik bir GERÇEK bağlantı"ya çevirir ve motorun
+        # pydantic doğrulaması patlar — ölçüldü: `test_gitas_calculated_ad_kolonlari`.
+        # Zaten var olmayan bir bağlantıya zaman aşımı koymak anlamsızdır.
+        if not any(info.get(k) for k in ("host", "url", "connectionUrl", "connection_url")):
+            return info
+        kwargs = dict(info.get("kwargs") or {})
+        if self.datasource == "mssql":
+            # Konnektör bunu `connection.timeout`'a yazar (pyodbc sorgu zaman aşımı).
+            kwargs.setdefault("statement_timeout", sure)
+            # ODBC anahtar sözcüğü: bilinmeyen kwargs bağlantı dizesine AYNEN eklenir
+            # (`{key}={value}`), yani bu da konnektöre dokunmadan geçer.
+            kwargs.setdefault("Connect Timeout", str(min(sure, 15)))
+        elif self.datasource == "postgres":
+            # Motor `if "statement_timeout" not in options` diye bakıyor → BİZİMKİ kazanır.
+            opts = str(kwargs.get("options") or "")
+            if "statement_timeout" not in opts:
+                kwargs["options"] = (opts + " " if opts else "") + f"-c statement_timeout={sure}s"
+            # Motorun varsayılanı 120 sn: bir tünel düştüğünde istek o kadar asılırdı.
+            kwargs.setdefault("connect_timeout", min(sure, 15))
+        else:
+            # Diğerleri motorun kendi varsayılanını alır (clickhouse/trino/bigquery: 180 sn;
+            # gerisi: yok). SESSİZ DEĞİL — bilinmeyen bir datasource'a zaman aşımı
+            # UYDURMAK, konnektörün beklemediği bir anahtarla bağlantıyı kırabilirdi.
+            _log.debug("statement_timeout enjekte edilmedi: datasource=%s (motorun "
+                       "varsayılanı geçerli)", self.datasource)
+            return info
+        info["kwargs"] = kwargs
+        return info
+
     def _engine(self, *, strict: bool = False) -> WrenEngine:
         """Motor örneği. `strict=True` yalnız GÖLGE denetimi için kullanılır (bkz.
         `_shadow_policy_check`) — normal akış yapılandırılmış politikayla kurulur."""
@@ -141,7 +215,7 @@ class WrenService:
 
             cfg = WrenConfig(strict_mode=True, denied_functions=cfg.denied_functions)
         return WrenEngine(self._manifest_b64(), self.datasource,
-                          dict(self.connection_info), config=cfg)
+                          self._zaman_asimli_baglanti(), config=cfg)
 
     def _connector(self):
         """Ham DB konnektörü — **semantik katmanı ATLAYARAK** fiziksel sorgu çalıştırmak için.
@@ -154,7 +228,11 @@ class WrenService:
         from wren.model.data_source import DataSource
 
         ds = DataSource(self.datasource)
-        return get_connector(ds, ds.get_connection_info(dict(self.connection_info)))
+        # Zaman aşımı BURADA DA geçerli — hatta en çok burada. Canlı olayda (2026-07-25)
+        # `/schema`'yı asan sorgular tam olarak bu yoldan geçen değer indeksi
+        # sorgularıydı; motor yolunu korurken ham konnektörü korumasız bırakmak, kapıyı
+        # kilitleyip pencereyi açık unutmak olurdu.
+        return get_connector(ds, ds.get_connection_info(self._zaman_asimli_baglanti()))
 
     @staticmethod
     def _physical_name(model: dict) -> str:

@@ -205,7 +205,7 @@ tur aynı keşfi sıfırdan yapıyor. **Yeni bir kontrol/garanti yazmadan önce 
 | **`type_mapping.parse_type/translate_type`** | sqlglot tam tip grameri + lehçeler arası tip çevirisi | ✅ **ALINDI** (2026-08-02, Faz B): `classify_column` artık ham tipi `parse_type` ile **kanonikleştirip** öyle sınıflıyor. Ölçüldü — elle küme **17 gerçek yazımın 13'ünü kaçırıyordu** ve hepsi sessizce `dimension`'a düşüyordu: `numeric(18,2)` (bir PARA TUTARI) gruplama anahtarı, `timestamptz` zaman DEĞİL sayılıyordu. Bir müşteri DB'sini introspect ettiğimizde taslak MDL tutarları boyut yapıp tarihleri zaman ekseninden düşürürdü — kullanıcıya *"şemanı çıkardım"* diye sunularak. Kanonik küme ile **geriye uyum kuyruğu AYRI durur** (`_ESKI_YAZIMLAR`): karışık bir küme, hangi adın kanonik hangisinin yama olduğunu gizler. Motor erişilemezse ham değere düşülür — fail-closed değil, çünkü bilinmeyen tip için doğru varsayılan zaten *boyut*tur. `BIT`/`BOOLEAN` bilinçle dışarıda: bayrakların toplamı bir ölçü değildir. |
 | **17 kullanılmayan konnektör** | BigQuery/Snowflake/Databricks/Trino + `s3_file`/`minio_file` | ❌ yeni müşteri = **kod yazmadan** bağlanma |
 | **`context.validate_project()`** | 9 yapısal kural (PK var mı, `table_reference` XOR `ref_sql`, ilişki hedefi…) | ✅ **ALINDI** (2026-08-02, Faz B): `compose_and_build` artık `build()`'den **önce** çağırıyor. `error` → **fail-closed**, MDL üretilmez (bozuk zeminden üretilen MDL, hatayı sorgu anında kullanıcının yüzüne çıkarır — `dry_plan` kolon varlığını denetlemez, §5); `warning` → loglanır, akışı durdurmaz. Kendi doğrulayıcımız YAZILMADI, motorunki **çağrıldı** (test kural adlarının gövdeye kopyalanmadığını kilitler). Ölçüldü: dört demo projesinin **dördü de 0 hata / 0 uyarı** — açmak hiçbir meşru yolu kırmıyor. |
-| **`data_source` statement_timeout** | Per-datasource sorgu zaman aşımı | ❌ yerine elle TCP ping (`_db_reachable`) yazılmış |
+| **`data_source` statement_timeout** | Per-datasource sorgu zaman aşımı | ✅ alındı — **ama motorun kendisi mssql'i unutmuş**, bkz. §3.4b |
 | **`migrate_manifest_json` / `is_backward_compatible`** | MDL layout göçü ve geriye uyum | ❌ hiç çağrılmıyor |
 
 **Bilerek ALINMAYANLAR** (gerekçeleri kalıcı): `wren.memory` — `app/vqr.py` bu iş için üstün
@@ -214,6 +214,47 @@ Railway'de kalıcı değil). `mcp_server.py` — Dima'nın HTTP API'si işlevsel
 yüzeyi kendi araç kaydımız üstüne kurulur. `genbi`/`dbt`/`osi`/`profile` — bugün müşteri
 senaryosu yok. **`_dialect_sql` duplicate DEĞİL**: `cube_query_to_sql` DuckDB verir, `dry_plan`
 hedef lehçe bekler; aradaki köprüyü wren sunmuyor.
+
+### 3.4b Sorgu zaman aşımı — motorun kendisi MSSQL'i unutmuş (Faz B) ✅
+
+*"Motor zaten yapıyorsa yazma"* (§5) kuralının **sınırının** ölçüldüğü yer. Motorun
+`DataSource.get_connection_info()`'su `statement_timeout`'u **yalnız dört** datasource için
+enjekte ediyor — `match` dalları okundu:
+
+```
+case DataSource.postgres:      # -c statement_timeout=180s
+case DataSource.clickhouse:    # max_execution_time=180
+case DataSource.trino:         # query_max_execution_time=180s
+case DataSource.bigquery:
+```
+
+**`mssql` dalı YOK.** Konnektör onu *onurlandırıyor* (`connector/mssql.py`:
+`connection.timeout = statement_timeout`) ama **kimse geçmiyordu** — ve üretimdeki
+tenant'larımız (gitas, atiksan) tam olarak **mssql**. Yani kilitlenmiş bir sorgu **süresiz**
+asılabiliyor ve isteği de kendisiyle askıya alıyordu. postgres'te ise 180 sn: bir toplu iş
+için makul, **etkileşimli bir BI cevabı için değil**.
+
+`WrenService._zaman_asimli_baglanti()` (`DIMA_DB_STATEMENT_TIMEOUT`, varsayılan **60 sn**):
+mssql → `kwargs.statement_timeout` + ODBC `Connect Timeout`; postgres → `options -c
+statement_timeout` (motorun `if not in options` kapısı bizimkini geçirir) + `connect_timeout`.
+**Diğer datasource'lara zaman aşımı UYDURULMAZ**: konnektörün beklemediği bir anahtar
+bağlantıyı kırabilir — motorun kendi varsayılanı geçerli kalır ve bu **sessiz değil** (log).
+
+**Motor yolu VE ham konnektör** ikisi de alır. Canlı olayda (2026-07-25) `/schema`'yı asan
+sorgular tam olarak `_connector()` üzerinden giden **değer indeksi** sorgularıydı; motor
+yolunu korurken ham konnektörü korumasız bırakmak kapıyı kilitleyip pencereyi açık unutmak
+olurdu.
+
+**`_db_reachable` KALDIRILMADI.** Plan bu maddeyi *"TCP ping'in YERİNE"* diye yazmıştı;
+ölçünce ikisinin farklı şeyleri yakaladığı görüldü:
+
+| | TCP ping (3 sn) | statement timeout |
+|---|---|---|
+| Tünel düşmüş (canlı olay) | ✅ yakalar | ❌ hiç bağlanamaz, bu kapı hiç açılmaz |
+| DB ayakta, sorgu kilitli | ❌ **anında "erişilebilir" der** | ✅ yakalar |
+
+Birini ötekinin yerine saymak, kapanmamış bir boşluğu kapanmış göstermek olurdu.
+15 test: `tests/test_sorgu_zaman_asimi.py`.
 
 ---
 
