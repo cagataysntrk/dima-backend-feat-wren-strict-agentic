@@ -171,6 +171,31 @@ Cube ifadeleri **DuckDB/ANSI** yazılır; DuckDB dışı datasource'ta `WrenServ
 hedef lehçeye çevirir (T-SQL: `GROUP BY` ordinal genişletme, `DATE_TRUNC → DATEADD/DATEDIFF`,
 Türkçe için `COLLATE Latin1_General_CI_AI` enjeksiyonu).
 
+### 3.4 Motorun verdiği ama kullanmadıklarımız (2026-08-02 denetimi)
+
+**Ölçüm:** `wren` paketi 69 dosya / 738 KB; Dima ondan **3 sembol** kullanıyor (`WrenEngine`,
+`context.build_json`, `wren_core.cube_query_to_sql`) — yaklaşık **%4**. Bu tablo olmadan her
+tur aynı keşfi sıfırdan yapıyor. **Yeni bir kontrol/garanti yazmadan önce buraya bakılır.**
+
+| Motor yeteneği | Ne verir | Durum |
+|---|---|---|
+| **`WrenConfig` + `wren/policy.py`** | 45 veri-okuyucu TVF'yi her AST konumunda bloklar; MDL-dışı tabloyu reddeder; fonksiyon kara listesi | ✅ **alındı (Faz A3)** — `strict_sql_policy=off\|shadow\|on`, varsayılan `shadow` |
+| **`rowLevelAccessControls` + `SessionProperty` + `dry_plan(properties=)`** | RLS'i **mantıksal planın içine** gömer; SQL'i kim yazarsa yazsın (insan/LLM/ajan) atlatılamaz | ⏳ **sıradaki** — `always_filter`'ın uygulama-katmanı yamasının yerini alır (§6.3'teki üç baypasın kalıcı çözümü) |
+| **`columnLevelAccessControl`** (`requiredProperties`/`operator`/`threshold`) | Kolonu **plandan düşürür**; çıktıya hiç gelmez | ⏳ `app/pii.py` regex maskelemesinin motor karşılığı; PII son savunma olarak KALIR |
+| **Cube `hierarchies`** | Drill sırasını motora beyan eder | ❌ `app/drill.py` bunu elle yazdı; ajan için tipli gezinme grafiği olurdu |
+| **`type_mapping.parse_type/translate_type`** | sqlglot tam tip grameri + lehçeler arası tip çevirisi | ❌ `db_introspect.classify_column` elle string setleri tutuyor |
+| **17 kullanılmayan konnektör** | BigQuery/Snowflake/Databricks/Trino + `s3_file`/`minio_file` | ❌ yeni müşteri = **kod yazmadan** bağlanma |
+| **`context.validate_project()`** | 9 yapısal kural (PK var mı, `table_reference` XOR `ref_sql`, ilişki hedefi…) | ❌ compose çıktısı bugün **hiç** şema doğrulamasından geçmiyor |
+| **`data_source` statement_timeout** | Per-datasource sorgu zaman aşımı | ❌ yerine elle TCP ping (`_db_reachable`) yazılmış |
+| **`migrate_manifest_json` / `is_backward_compatible`** | MDL layout göçü ve geriye uyum | ❌ hiç çağrılmıyor |
+
+**Bilerek ALINMAYANLAR** (gerekçeleri kalıcı): `wren.memory` — `app/vqr.py` bu iş için üstün
+(Türkçe'de e5-large > MiniLM; depo Postgres'te ve tenant-kapsamlı, LanceDB dosya deposu
+Railway'de kalıcı değil). `mcp_server.py` — Dima'nın HTTP API'si işlevsel üst kümesi; ajan
+yüzeyi kendi araç kaydımız üstüne kurulur. `genbi`/`dbt`/`osi`/`profile` — bugün müşteri
+senaryosu yok. **`_dialect_sql` duplicate DEĞİL**: `cube_query_to_sql` DuckDB verir, `dry_plan`
+hedef lehçe bekler; aradaki köprüyü wren sunmuyor.
+
 ---
 
 ## 4. DEĞİŞMEZLER — "bunu bozarsan sistem yalan söyler"
@@ -230,7 +255,8 @@ Türkçe için `COLLATE Latin1_General_CI_AI` enjeksiyonu).
 | **Join planlayıcı yazma** | `wren_core` "önceden-bildirilmiş adlandırılmış geçiş" ailesinde (Looker explore, Malloy `join_one`, Cube *views*, Snowflake semantic views). Bu ailenin çözümü bir **üreteçtir**, planlayıcı değil. Cube Dijkstra'yı yazdı, sonra kendi dokümanında *"views should be used where possible"* dedi. MetricFlow 2 sıçramada kapattı ve fan-out'u **yasakladı**. Planlayıcı = denetlenemez tie-break = Query Contract'ın varlık sebebine aykırı. |
 | **`join_type`'a güvenme** | Motor onu **okumuyor** (ölçüldü): MANY_TO_ONE / ONE_TO_MANY / ONE_TO_ONE / MANY_TO_MANY → **aynı SQL**. Yön `condition`'dan türetilir, güvenlik **ölçülen anahtar tekilliğinden** gelir. `relationships.yml`'deki cardinality bir **yorumdur**. |
 | **Ters yön (ONE_TO_MANY) handle üretme** | Join pruning kompozisyonelliği bozar: aynı cube, aynı boyut, yalnız ölçü listesi farklı → makine sayısı **3 → 7.038**, kapasite **4.700 → 11.026.200** (ölçüldü). Bir ölçünün değerinin SELECT'teki *diğer* ölçülere bağlı olması, "her cevap kanıtlanabilir" tezi için mümkün en kötü hata sınıfıdır. |
-| **`dry_plan`'ı doğrulama kapısı sanma** | Dima hiç `WrenConfig` kurmuyor → `strict_mode=False` → `dry_plan` **kolon varlığını denetlemiyor** (ölçüldü: uydurma kolon plandan geçti, çalıştırmada `BinderException`). `CLAUDE.md`'nin *"motor doğrular"* ifadesi **tablo** doğrulaması için geçerlidir, kolon için değil. |
+| **`dry_plan`'ı doğrulama kapısı sanma** | `dry_plan` **kolon varlığını denetlemiyor** (ölçüldü: uydurma kolon plandan geçti, çalıştırmada `BinderException`) — `strict_mode` bunu da **çözmez**, o tablo/fonksiyon politikasıdır. *"Motor doğrular"* ifadesi **tablo** için geçerlidir, kolon için değil. Kolon doğrulaması `tests/test_member_sweep.py`'nin build-time `LIMIT 0` taramasıdır; **terfi onayı o taramayı hâlâ çalıştırmıyor** (§6.2). ⚠️ 2026-08-02'de düzeltildi: `WrenConfig` artık kuruluyor (aşağı bak) ama bu, kolon boşluğunu kapatmaz — iki ayrı mesele. |
+| **`guard_sql`'i güvenlik politikası sanma** | O bir **SELECT-only kapısıdır**, iki regex'ten ibarettir ve `SELECT * FROM read_csv('/etc/passwd')`'i **geçirir** (ölçüldü). Politika motoru `wren/policy.py`'dir: 45 veri-okuyucu TVF'yi **her AST konumunda** bloklar + MDL-dışı tabloyu reddeder. 2026-08-02'ye kadar **ölü koddu** çünkü `WrenEngine`'e `config` hiç geçirilmiyordu. Bugün o saldırıların yine de patlaması **DataFusion'ın fonksiyonu tanımamasındandır** — yani savunma **tesadüfi**. Bkz. §3.4. |
 | **`except Exception` ile motoru sarma** | Kendine-referanslı ilişki + calc kolon → Rust'ta **PANIC** (`lineage.rs:146`, `unwrap() on None`). `PanicException` MRO'su `(PanicException, BaseException, object)` — **`except Exception` yakalamaz.** Hesap planı parent, BOM parent, org şeması: ERP'lerde standart. |
 | **Kelimeye özel regex/keyword yaması** | Kayıtlı desen: aynı kök neden (`_uncovered`'ın substring körlüğü) defalarca kelimeye özel yamayla geçiştirildi, kök neden hiç düzeltilmedi. **Kural: kök nedeni düzelt, örneği değil.** (ADR-0008 disiplini) |
 | **NL-benzerlik cevap cache'i** | Yapısal olarak benzer ama anlamsal olarak farklı Türkçe sorular yanlış cevabı **güvenle** döndürür. Anahtar `contracts.cube_query_hash()` olmalı (Faz 4.3'te yazıldı: `cq ⊕ mdl_version ⊕ company ⊕ tenant`). **Sonuç cache'inin kendisi bilerek KURULMADI** — tekrar oranı ölçülmedi; ölçülmemiş ihtiyaç için altyapı kurulmaz. Hash'in sözleşmesi *"aynı hash ⇒ aynı ÇIKTI"*dır: `filters` sıraya duyarsız (saf AND), `measures`/`dimensions` sıraya **duyarlı** (kolon ve GROUP BY sırasını belirler), akış bayrakları (`period_confirmed`) düşürülür. `result_hash` ile karıştırma — o *"sayılar değişti mi"* sorar ve satır sırasını umursamaz. |

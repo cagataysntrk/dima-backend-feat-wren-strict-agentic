@@ -15,6 +15,10 @@ from typing import Any
 
 from wren.engine import WrenEngine
 
+from app.logging_setup import get_logger
+
+_log = get_logger("wren")
+
 # Only read-only statements are allowed through the bridge.
 _ALLOWED_PREFIX = re.compile(r"^\s*(with|select)\b", re.IGNORECASE)
 _FORBIDDEN = re.compile(
@@ -103,8 +107,57 @@ class WrenService:
         self._mdl_b64_cache = (raw, enc)
         return enc
 
-    def _engine(self) -> WrenEngine:
-        return WrenEngine(self._manifest_b64(), self.datasource, dict(self.connection_info))
+    def _sql_policy(self):
+        """Motor SQL politikası (Faz A3) — `(config, mod)`.
+
+        `off`    → politika yok (yalnız `denied_sql_functions` verildiyse o çalışır).
+        `shadow` → motor GEVŞEK kurulur; politika AYRI bir katı motorla PARALEL denenir,
+                   reddetmez, `_shadow_policy_check` loglar.
+        `on`     → motor KATI kurulur; ihlal `WrenError` ile reddedilir.
+        """
+        from wren.config import WrenConfig
+
+        from app.config import get_settings
+
+        try:
+            s = get_settings()
+            mod = str(getattr(s, "strict_sql_policy", "shadow") or "shadow").lower()
+            denied = {f.strip().lower()
+                      for f in str(getattr(s, "denied_sql_functions", "") or "").split(",")
+                      if f.strip()}
+        except Exception:  # noqa: BLE001 — config okunamazsa politika devre dışı, akış sürer
+            return WrenConfig(), "off"
+        if mod not in ("off", "shadow", "on"):
+            mod = "shadow"
+        return WrenConfig(strict_mode=(mod == "on"),
+                          denied_functions=frozenset(denied)), mod
+
+    def _engine(self, *, strict: bool = False) -> WrenEngine:
+        """Motor örneği. `strict=True` yalnız GÖLGE denetimi için kullanılır (bkz.
+        `_shadow_policy_check`) — normal akış yapılandırılmış politikayla kurulur."""
+        cfg, _mod = self._sql_policy()
+        if strict:
+            from wren.config import WrenConfig
+
+            cfg = WrenConfig(strict_mode=True, denied_functions=cfg.denied_functions)
+        return WrenEngine(self._manifest_b64(), self.datasource,
+                          dict(self.connection_info), config=cfg)
+
+    def _shadow_policy_check(self, sql: str) -> None:
+        """GÖLGE MOD: "strict açık olsaydı bu sorgu reddedilir miydi?" — sorar, LOGLAR,
+        akışı DEĞİŞTİRMEZ.
+
+        Amaç, strict'i ölçmeden açmamak. Demo'da ölçüldü ki hiçbir meşru yol kırılmıyor,
+        ama gerçek müşteri şemalarında (binlerce tablo, MDL'de yalnız bir kısmı) Discovery'nin
+        ham SQL'i MDL-dışı bir tabloya dokunabilir. O redde geçmeden önce **kaç sorgunun**
+        etkileneceği bilinmelidir. Log satırı `strict_sql_policy=on` kararının kanıtıdır.
+        """
+        try:
+            with self._engine(strict=True) as eng:
+                eng.dry_plan(sql)
+        except BaseException as exc:  # noqa: BLE001 — Rust PANIC `Exception` DEĞİLDİR
+            _log.warning("SQL POLİTİKASI (gölge): strict açık olsaydı REDDEDİLİRDİ — %s | %s",
+                         str(exc)[:180], " ".join(sql.split())[:220])
 
     def _db_reachable(self, timeout: float = 3.0) -> bool:
         """Uzak DB'ye hızlı TCP erişilebilirlik kontrolü. Amaç: enrichment (best-effort
@@ -805,8 +858,14 @@ class WrenService:
         return tree.sql(dialect=write)
 
     def dry_plan(self, sql: str) -> str:
-        """Transpile SQL through the semantic layer without touching the DB."""
+        """Transpile SQL through the semantic layer without touching the DB.
+
+        Motora giden İKİ kapıdan biri (öteki `query`); SQL politikası bu yüzden burada
+        uygulanır — `guard_sql` ile aynı boğaz noktası."""
         guard_sql(sql)
+        _cfg, _mod = self._sql_policy()
+        if _mod == "shadow":
+            self._shadow_policy_check(sql)
         with self._engine() as eng:
             return eng.dry_plan(sql)
 
@@ -828,6 +887,9 @@ class WrenService:
 
     def query(self, sql: str, limit: int | None = None) -> dict[str, Any]:
         guard_sql(sql)
+        _cfg, _mod = self._sql_policy()
+        if _mod == "shadow":
+            self._shadow_policy_check(sql)
         with self._engine() as eng:
             table = eng.query(sql, limit=limit)
         rows = table.to_pylist()

@@ -98,6 +98,29 @@ class Settings(BaseSettings):
     # sıfırdan indirir (HANDOFF #4'ün uygulanmamış duran önerisi).
     vqr_embedder: str = "auto"
 
+    # MOTOR-SEVİYESİ SQL POLİTİKASI (Faz A3) — `off` | `shadow` | `on`.
+    #
+    # `wren.policy.validate_sql_policy` strict modda iki şey yapar: (1) **45 veri-okuyucu
+    # tablo fonksiyonunu** (`read_csv`, `read_parquet`, `pg_read_file`, `dblink`,
+    # `postgres_scan`, …) SQL'in HER konumunda bloklar — upstream bunu bir güvenlik
+    # açığı olarak kapattı (issue #2409); (2) MDL'de TANIMLI OLMAYAN tabloya referansı
+    # reddeder. Dima'nın `guard_sql`'i (iki regex: `^(with|select)` + yasak kelime)
+    # bunların **hiçbirini** yakalamaz — `SELECT * FROM read_csv('/etc/passwd')` ondan
+    # GEÇER (ölçüldü). Bugün DataFusion o fonksiyonu tanımadığı için planlamada patlıyor;
+    # yani savunma var ama **tesadüfi**, tasarlanmış değil.
+    #
+    # Neden varsayılan `shadow`: ölçüldü ki demo katalogunda strict hiçbir meşru yolu
+    # kırmıyor (cube SQL, `always_filter` sarmalayıcısı, üretilen-boyut join'i — üçü de
+    # aynen geçti; demo'daki 47 tablonun 47'si de MDL'de). Ama MSSQL kiracılarında
+    # Discovery'nin ham SQL'i MDL-dışı bir tabloya dokunuyor olabilir. Bu **istenen**
+    # reddir (semantic-first) ama **ölçülmeden** açılmamalı: `shadow` reddetmez, yalnız
+    # "strict olsaydı reddedilirdi" diye loglar. Telemetri birikince `on`a alınır.
+    strict_sql_policy: str = "shadow"
+
+    # Strict moddan BAĞIMSIZ çalışan fonksiyon kara listesi (`engine._plan` koşulu `or`).
+    # Boş bırakılırsa devre dışı; buraya yazılan her ad `off` modunda bile bloklanır.
+    denied_sql_functions: str = ""
+
     # Zamanlanmış raporlar (ADR-0011): tanım + koşum durumu (last_run) + bildirim HEPSİ
     # tek-kaynak DB'de (schedule_definition + notification_log). Query Contract kanıtı da
     # DB'de (contract_log, ADR-0010). Dosya-yolu config'leri Faz 3'te kaldırıldı.
