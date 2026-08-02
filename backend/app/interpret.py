@@ -69,21 +69,20 @@ def _fmt_bucket(v: Any) -> str:
     return s[:10]
 
 
-def _classify(columns: list[str], rows: list[dict]) -> tuple[list[str], list[str], str | None]:
-    """Kolonları ölçü (sayısal) / boyut (kategorik) / zaman olarak ayır (frontend analyze muadili)."""
-    measures, dims = [], []
-    for c in columns:
-        vals = [r.get(c) for r in rows if r.get(c) is not None]
-        if vals and all(_is_num(v) for v in vals):
-            measures.append(c)
-        else:
-            dims.append(c)
-    time_col = next((d for d in dims if d.lower() in _DATE_NAMES), None)
-    if time_col is None:
-        time_col = next((d for d in dims
-                         if rows and all(r.get(d) is None or _looks_date(r.get(d)) for r in rows)),
-                        None)
-    return measures, dims, time_col
+def _classify(columns: list[str], rows: list[dict],
+              cube_query: dict | None = None) -> tuple[list[str], list[str], str | None]:
+    """Kolon rolleri — gövdesi `app/result_shape.py`'de (Faz C1).
+
+    ÖNEMLİ DEĞİŞİKLİK: artık `cube_query` OTORİTESİNİ kullanıyor. Eskiden saf değer-tabanlıydı
+    ve `interpret()` `cube_query`'yi alıyor olmasına rağmen yalnız `measures` süzgeci için
+    kullanıyordu; `dimensions`/`timeDimensions` bilgisini GÖRMEZDEN geliyordu. Sonuç:
+    sayısal değerli bir boyut (ay numarası, vardiya no, yıl) ÖLÇÜ sanılıyor ve anlatım
+    onun "ortalamasını" bir metrik gibi sunuyordu.
+    """
+    from app.result_shape import authority_from_cube_query, classify as _rol
+
+    dim_cols, time_hint = authority_from_cube_query(cube_query)
+    return _rol(columns, rows, dim_cols=dim_cols, time_col_hint=time_hint)
 
 
 def _tone(pct: float, lib: bool) -> str:
@@ -217,7 +216,9 @@ def interpret(result: dict | None, cube_query: dict | None = None,
     if not result or not result.get("rows"):
         return None
     rows, cols = result["rows"], result.get("columns") or list(result["rows"][0].keys())
-    measures, dims, time_col = _classify(cols, rows)
+    # OTORİTE GEÇİRİLİYOR (Faz C1): `cube_query` zaten elimizdeydi ama yalnız `measures`
+    # süzgeci için kullanılıyordu; `dimensions`/`timeDimensions` görmezden geliniyordu.
+    measures, dims, time_col = _classify(cols, rows, cube_query)
     if cube_query and cube_query.get("measures"):  # cube ipucu ölçü seçimini netleştirir
         measures = [m for m in cube_query["measures"] if m in measures] or measures
     if not measures:

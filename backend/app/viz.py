@@ -133,44 +133,15 @@ def analyze(
     sayısal kolonlar) doğru şekilde ÖLÇÜ sayılır, (c) zaman kovaları (tarih__month) kaçmaz. Boyut
     olmayan sayısal kolon = ölçü; boyut olmayan sayısal-olmayan kolon = boyut (güvenli). Verilmezse
     (yüklenen serbest veri) değer biçiminden çıkarıma düşülür (FE analyze() paritesi)."""
-    measures: list[str] = []
-    dims: list[str] = []
-    for c in columns:
-        if dim_cols is not None:
-            # Otoriter boyut → boyut; değilse sayısalsa ölçü (türetilmiş YoY ölçüleri dahil).
-            if c in dim_cols:
-                is_measure = False
-            else:
-                vals = [r.get(c) for r in rows if r.get(c) is not None]
-                is_measure = len(vals) > 0 and all(_is_num(v) for v in vals)
-        elif c.lower() in _TIME_NAMES:
-            # Otoriter dim_cols YOK (LLM/Discovery yolu, cube_query=None) — ama kolon adı
-            # bilinen bir zaman/dönem adıysa (ay/yıl/çeyrek/...) DEĞER TİPİNDEN BAĞIMSIZ
-            # boyut say. Küp yolunda bu kolonlar HER ZAMAN metin/tarih string'idir; LLM'in
-            # ürettiği SQL aynı anlamı SAYISAL döndürebilir (ör. EXTRACT(MONTH FROM ...) →
-            # 1..12) — isim eşleşmesi olmadan bu, "tüm değerler sayısal" testiyle yanlışlıkla
-            # İKİNCİL bir ölçü sayılır, zaman ekseni tamamen kaybolur (kind "table"a düşer).
-            is_measure = False
-        else:
-            vals = [r.get(c) for r in rows if r.get(c) is not None]
-            is_measure = len(vals) > 0 and all(_is_num(v) for v in vals)
-        (measures if is_measure else dims).append(c)
+    # ROL ATAMASI TEK KAYNAKTAN (Faz C1): `app/result_shape.py`. Eskiden burada ve
+    # `interpret._classify`'de İKİ BAĞIMSIZ uygulama vardı ve ölçülen iki vakada
+    # ayrışıyorlardı (`ay`=1..12 → burada boyut, orada ÖLÇÜ; `gun`="Pzt" → orada zaman
+    # ekseni, burada değil). Aynı cevapta grafik ile altındaki cümle farklı şey anlatıyordu
+    # ve ikisi de "deterministik" rozetliydi.
+    from app.result_shape import classify as _rol
 
-    time_col: str | None = None
-    if time_col_hint and time_col_hint in dims:
-        time_col = time_col_hint
-    if time_col is None:
-        for d in dims:
-            if d.lower() in _TIME_NAMES:
-                time_col = d
-                break
-    if time_col is None:
-        for d in dims:
-            if len(rows) > 0 and all(
-                (r.get(d) is None or _looks_date(r.get(d))) for r in rows
-            ):
-                time_col = d
-                break
+    measures, dims, time_col = _rol(columns, rows, dim_cols=dim_cols,
+                                    time_col_hint=time_col_hint)
 
     heat: dict[str, str] | None = None
     if len(dims) >= 2 and len(measures) >= 1 and len(rows) >= 4:
