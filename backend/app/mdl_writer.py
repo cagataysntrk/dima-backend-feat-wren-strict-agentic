@@ -5,8 +5,13 @@ VAR OLAN bir cube'un `metadata.yml`'ına round-trip-güvenli EKLER.
 biçimlendirmeyi kaybeder — bu repodaki cube YAML'ları (bkz. demo/companies/*/cubes/*/
 metadata.yml) kasıtlı, açıklayıcı yorumlarla dolu (ör. çakışma-koruması gerekçeleri);
 onay akışının bunları silmesi kabul edilemez (`git diff` de dev-inceleme için asgari
-kalmalı). `indent(mapping=2, sequence=4, offset=2)` + `synonyms` listesi flow-style
-zorlanır — reponun mevcut YAML kuralıyla (``synonyms: [a, b, c]``) birebir eşleşir.
+kalmalı). `synonyms` listesi flow-style zorlanır — reponun mevcut YAML kuralıyla
+(``synonyms: [a, b, c]``) birebir eşleşir.
+
+Liste girintisi SABİT DEĞİL, düzenlenen dosyadan SEZİLİR (bkz. `_yaml`): sabit
+`sequence=4, offset=2` ayarı, `- x` biçimindeki repo dosyalarını her yazımda BAŞTAN
+biçimlendiriyordu ve 6 satırlık bir ekleme 500 satırlık bir diff üretiyordu — "git diff
+asgari kalmalı" hedefinin tam tersi. Faz 4.2'nin diff önizlemesi bunu görünür kıldı.
 
 Yalnız MEVCUT bir cube'a ölçü EKLER; yeni cube/model/ilişki icat ETMEZ — `base_object`
 zaten var olmalı (Discovery bir soruyu cevapladıysa, dokunduğu tablo/model zaten MDL'de
@@ -24,12 +29,46 @@ class MeasureWriteError(Exception):
     """Ölçü YAML'a eklenemedi (ad çakışması, cube YAML'ı bulunamadı, vb.)."""
 
 
-def _yaml() -> YAML:
+def _yaml(text: str | None = None) -> YAML:
+    """ruamel round-trip yükleyici/yazıcı — liste girintisi DÜZENLENEN DOSYAYA UYDURULUR.
+
+    Neden sabit değil (2 Ağustos 2026, Faz 4.2'nin diff önizlemesi ortaya çıkardı): girinti
+    `sequence=4, offset=2` olarak sabitti ve liste öğelerini `  - x` diye yazıyordu. Oysa
+    repodaki cube YAML'ları (ve `compose()`'un ürettiği derlenmiş kopyalar) `- x` kullanıyor.
+    Sonuç: bir ölçü eklemek DOSYANIN TAMAMINI yeniden biçimlendiriyordu — 266 satırın 266'sı
+    da değişmiş görünüyordu (içerik aynı, yalnız 2 boşluk kaymış).
+
+    Kimse fark etmemişti çünkü kimse diff'e bakmıyordu. Planın istediği *"checkbox + diff
+    onayı"* akışında ise bu ölümcüldür: 6 satırlık bir eklemeyi 500 satırlık bir gürültünün
+    içinde incelemek, incelememekle aynı şeydir. Git geçmişinde de her onay dosyayı baştan
+    yazmış gibi görünürdü.
+
+    `text` verilirse girinti ondan SEZİLİR, böylece hangi yazıcı üretmiş olursa olsun
+    round-trip byte-kararlı kalır; verilmezse repo geneli varsayılan (`- x`) kullanılır.
+    """
     y = YAML()
     y.preserve_quotes = True
     y.width = 4096  # uzun ifade/sinonim satırları sarılmasın (mevcut dosya biçimiyle tutarlı)
-    y.indent(mapping=2, sequence=4, offset=2)
+    seq, off = _sequence_indent(text or "")
+    y.indent(mapping=2, sequence=seq, offset=off)
     return y
+
+
+def _sequence_indent(text: str) -> tuple[int, int]:
+    """Dosyanın liste girintisi → ruamel `(sequence, offset)`.
+
+    `- x` (kapsayıcı anahtarla aynı sütun) → `(2, 0)`;  `  - x` → `(4, 2)`.
+    Bulunamazsa `(2, 0)` — repo genelindeki biçim.
+    """
+    onceki_girinti = 0
+    for satir in text.splitlines():
+        if not satir.strip() or satir.lstrip().startswith("#"):
+            continue
+        girinti = len(satir) - len(satir.lstrip())
+        if satir.lstrip().startswith("- "):
+            return (4, 2) if girinti > onceki_girinti else (2, 0)
+        onceki_girinti = girinti
+    return (2, 0)
 
 
 def cube_yaml_path(base: Path, company: str, cube: str) -> Path:
@@ -52,8 +91,9 @@ def add_measure_to_cube_yaml(
     kalanını, yorumları ve biçimlendirmeyi korur). Ölçü adı zaten varsa `MeasureWriteError`."""
     if not yaml_path.exists():
         raise MeasureWriteError(f"Cube YAML bulunamadı: {yaml_path}")
-    y = _yaml()
-    data = y.load(yaml_path.read_text(encoding="utf-8"))
+    metin = yaml_path.read_text(encoding="utf-8")
+    y = _yaml(metin)  # girinti DÜZENLENEN dosyadan sezilir (bkz. _yaml)
+    data = y.load(metin)
     if data is None or not isinstance(data, dict):
         raise MeasureWriteError(f"Cube YAML boş/bozuk: {yaml_path}")
 
@@ -106,12 +146,35 @@ def resolve_cube_yaml_for_edit(base: Path, company: str, cube: str,
     return company_path
 
 
+def cube_yaml_source_for_preview(base: Path, company: str, cube: str,
+                                 compiled_project_dir: Path) -> tuple[Path, bool]:
+    """ÖNİZLEME için okunacak YAML yolu + şirket katmanında YENİ mi oluşacağı.
+
+    `resolve_cube_yaml_for_edit`in **yan etkisiz** ikizi. O fonksiyon, cube bir pack'ten
+    geliyorsa derlenmiş içeriği şirket katmanına KOPYALAR — bir önizleme bunu yapamaz:
+    "onaylamadan önce ne değişecek" sorusunun cevabı, sorulmuş olmakla dosya sistemini
+    değiştirmemelidir. İnceleyen kişi vazgeçtiğinde geride yeni bir dosya kalmamalı.
+
+    İkinci dönen değer inceleyene gösterilir: `True` ise bu onay, cube'u bu tenant'ın
+    şirket katmanına **taşıyacak** demektir (paylaşılan pack dosyasına dokunulmaz) — bu,
+    diff'te görünmeyen ama bilinmesi gereken bir sonuçtur.
+    """
+    company_path = cube_yaml_path(base, company, cube)
+    if company_path.exists():
+        return company_path, False
+    compiled_path = compiled_project_dir / "cubes" / cube / "metadata.yml"
+    if not compiled_path.exists():
+        raise MeasureWriteError(f"Cube bulunamadı (derlenmiş projede de yok): {cube}")
+    return compiled_path, True
+
+
 def cube_base_object(yaml_path: Path) -> str | None:
     """Cube'un `base_object`'i (dry-plan doğrulaması için: `SELECT {expr} FROM {base}`)."""
     if not yaml_path.exists():
         return None
-    y = _yaml()
-    data = y.load(yaml_path.read_text(encoding="utf-8")) or {}
+    metin = yaml_path.read_text(encoding="utf-8")
+    y = _yaml(metin)
+    data = y.load(metin) or {}
     return data.get("base_object")
 
 
@@ -224,9 +287,10 @@ def merge_relationships_yaml(base: Path, company: str, relationships: list[dict]
     ADDITIVE ekler: aynı `name` zaten varsa ATLANIR (üstüne yazılmaz — elle düzenlenmiş
     bir ilişkiyi bozmaz). Döner: kaç YENİ ilişki eklendi."""
     path = base / "companies" / company / "relationships.yml"
-    y = _yaml()
-    if path.exists():
-        data = y.load(path.read_text(encoding="utf-8")) or CommentedMap()
+    metin = path.read_text(encoding="utf-8") if path.exists() else ""
+    y = _yaml(metin)
+    if metin:
+        data = y.load(metin) or CommentedMap()
     else:
         data = CommentedMap()
     existing = data.get("relationships")

@@ -221,6 +221,105 @@ def _append_golden_case(case: GoldenCaseIn) -> None:
         f.write(text)
 
 
+class MeasurePreview(BaseModel):
+    """Önizleme, onayın altın-vaka DIŞINDAKİ tüm alanlarını alır — altın vaka MDL'i
+    değiştirmez (`eval/cases.yaml`'a gider), dolayısıyla diff'te görünmez."""
+
+    cube: str
+    measure_name: str
+    expression: str
+    type: str = "DOUBLE"
+    label: str | None = None
+    synonyms: list[str] = []
+    lower_is_better: bool | None = None
+
+
+@router.post("/candidates/{cid}/preview",
+            dependencies=[Depends(require("measure:read")), Depends(require_company)])
+def preview_candidate(cid: str, body: MeasurePreview, request: Request,
+                      session: Session = Depends(get_session)) -> dict:
+    """ONAYIN KURU KOŞUMU (Faz 4.2): YAML'a yazmadan **ne değişeceğini** gösterir.
+
+    Bugüne kadar inceleyen kişi onaylıyor ve MDL değişikliğini ancak OLDU BİTTİ olarak
+    görebiliyordu. Planın istediği *"checkbox + diff onayı"* deseninin eksik yarısı budur:
+    yanlış bir ölçünün blast-radius'u kategorik olarak büyüktür (yeni SQL/join/agregasyon —
+    çift sayım, grain uyuşmazlığı) ve inceleme ancak GÖRÜLEN bir değişiklik üzerinde
+    yapılabilir.
+
+    Diff, üretimdeki yazıcının (`mdl_writer.add_measure_to_cube_yaml`) **kendisi** geçici
+    bir kopya üzerinde çalıştırılarak üretilir — yeniden uygulanmış bir taklit değil.
+    Taklit olsaydı zamanla asıl yazıcıdan ayrışır ve inceleyene yalan söylerdi.
+
+    `measure:read` yeter (`analyst` de görebilir): bu uç nokta hiçbir şey değiştirmez.
+    Bunun için `resolve_cube_yaml_for_edit` DEĞİL yan etkisiz ikizi kullanılır — o
+    fonksiyon pack'ten gelen bir cube'u şirket katmanına kopyalar ve bir önizleme bunu
+    yapamaz: inceleyen vazgeçtiğinde geride yeni bir dosya kalmamalı.
+    """
+    import difflib
+    import shutil
+    import tempfile
+
+    p = _principal(request)
+    c = _get_candidate(session, cid, p)
+
+    service = wren_for_request(request)
+    schema = service.schema()
+    cube_meta = next((x for x in schema.get("cubes", []) if x.get("name") == body.cube), None)
+    if cube_meta is None:
+        raise HTTPException(status_code=400, detail=f"Bilinmeyen cube: {body.cube}")
+    if body.measure_name in (cube_meta.get("measures") or []):
+        raise HTTPException(status_code=409,
+                            detail=f"'{body.measure_name}' ölçüsü '{body.cube}'da ZATEN var")
+
+    from app import mdl_writer
+    from app.config import get_settings
+
+    settings = get_settings()
+    base = service.project_dir.parent
+    company = getattr(service, "company_slug", None) or settings.company
+    try:
+        kaynak, sirket_katmanina_tasinacak = mdl_writer.cube_yaml_source_for_preview(
+            base, company, body.cube, service.project_dir)
+    except mdl_writer.MeasureWriteError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    base_object = mdl_writer.cube_base_object(kaynak)
+    if not base_object:
+        raise HTTPException(status_code=400,
+                            detail=f"Cube base_object bulunamadı: {body.cube}")
+    try:
+        service.dry_plan(f"SELECT {body.expression} AS val FROM {base_object}")
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"expression geçersiz (dry_plan): {exc}")
+
+    onceki = kaynak.read_text(encoding="utf-8")
+    with tempfile.TemporaryDirectory() as td:
+        gecici = Path(td) / "metadata.yml"
+        shutil.copy2(kaynak, gecici)
+        try:
+            mdl_writer.add_measure_to_cube_yaml(
+                gecici, measure_name=body.measure_name, expression=body.expression,
+                type_=body.type, synonyms=body.synonyms,
+                lower_is_better=body.lower_is_better, label=body.label)
+        except mdl_writer.MeasureWriteError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
+        sonraki = gecici.read_text(encoding="utf-8")
+
+    diff = "".join(difflib.unified_diff(
+        onceki.splitlines(keepends=True), sonraki.splitlines(keepends=True),
+        fromfile=f"a/{body.cube}/metadata.yml", tofile=f"b/{body.cube}/metadata.yml"))
+    return {
+        "candidate_id": str(c.id),
+        "cube": body.cube,
+        "yaml_path": str(kaynak),
+        "diff": diff,
+        "changed": bool(diff),
+        # Diff'te GÖRÜNMEYEN ama bilinmesi gereken sonuç: onay, pack'ten gelen cube'u bu
+        # tenant'ın şirket katmanına taşır (paylaşılan pack dosyasına dokunulmaz).
+        "creates_company_override": sirket_katmanina_tasinacak,
+    }
+
+
 @router.post("/candidates/{cid}/approve",
             dependencies=[Depends(require("measure:approve")), Depends(require_company)])
 def approve_candidate(cid: str, body: MeasureApprove, request: Request,
