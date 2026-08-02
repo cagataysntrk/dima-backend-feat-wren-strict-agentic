@@ -611,6 +611,37 @@ def _match_dims(q: str, cube: dict, measure_syn: str | None = None) -> list[str]
         if best is not None:
             dims.append(d)
             matched_via[d] = best
+    # EN SPESİFİK EŞLEŞME KAZANIR (Faz 0.5, 2 Ağustos 2026) — `_match_measure`'ın ZATEN
+    # uyguladığı disiplinin boyut tarafındaki karşılığı. Bir boyut YALNIZCA daha spesifik
+    # bir ifadenin PAYLAŞILAN parçası sayesinde eşleştiyse, o eşleşme kullanıcının niyeti
+    # DEĞİLDİR ve raporun grain'ini bozar.
+    #
+    # Canlı üretilen kanıt (demo-boyahane, `parti` cube'u):
+    #   ham_grup  sinonimleri: [..., "ham grubu",  "grubu", ...]
+    #   yas_grubu sinonimleri: [..., "yas grubu",  "grubu", ...]
+    #   "yas grubu bazinda fire orani" → ['ham_grup', 'yas_grubu']       ← 2 boyut
+    #   "ham grubu bazinda fire orani" → ['kumas_cinsi','ham_grup','yas_grubu'] ← 3 boyut
+    # Her fazla kolon GROUP BY'ı böler: satır sayısı ve her hücredeki SAYI değişir.
+    # Kullanıcı bir kırılım istedi, üçünü birden değil.
+    #
+    # Kural: A'nın eşleştiği sinonim, B'nin eşleştiği sinonimin ÖZ ALT-DİZİSİYSE A düşer
+    # ("grubu" ⊂ "yas grubu" → ham_grup düşer; "ham" ⊂ "ham grubu" → kumas_cinsi düşer).
+    # Eşit eşleşmeler (iki boyut AYNI sinonimle geldiyse) GERÇEK bir belirsizliktir ve
+    # burada çözülmez — dokunulmaz. Bu durum esas olarak ilişki-türevi boyutlar
+    # yayımlanınca (Faz 1) yaygınlaşacak; o zaman `route()`'un bir belirsizlik SİNYALİ
+    # döndürüp chip sorması gerekecek (Faz 3.1), sessizce birini seçmesi değil.
+    _drop = {
+        d for d in dims
+        if any(o != d
+               and matched_via.get(d, "") != matched_via.get(o, "")
+               and matched_via.get(d, "") in matched_via.get(o, "")
+               for o in dims)
+    }
+    if _drop:
+        dims = [d for d in dims if d not in _drop]
+        for d in _drop:
+            matched_via.pop(d, None)
+
     # AD/KOD ÇİFTİ dedup: jenerik entity kelimesi ("stok"/"cari") hem <base>_adi hem
     # <base>_kodu'yu eşliyor → ikisi birden eklenip satırları böler + kod gürültüsü
     # (canlı gitas log 2026-07-24: "stok türlerine göre" → stok_adi+stok_kodu, 271 satır).
