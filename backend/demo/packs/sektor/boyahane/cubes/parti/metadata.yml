@@ -1,6 +1,22 @@
 name: parti
 label: parti
-base_object: parti_zengin  # partiler + operatör demografisi (cinsiyet/yaş/eğitim) JOIN view'ı
+# FAZ 1.0 PİLOTU (2 Ağustos 2026): base_object VIEW'dan MODEL'e taşındı.
+#
+# Önceden `parti_zengin` idi — partiler ⟕ personel ⟕ personel_ozluk'u ELLE düzleştiren bir
+# SQL view. Gerekçesi "calc field'lar cube_query_to_sql'de JOIN'lenmiyor" idi; bu inanç
+# ampirik olarak ÇÜRÜTÜLDÜ (bkz. backend/MIMARI.md §3.2): cube derleyicisi JOIN üretmez ama
+# MODEL KATMANI (WrenEngine.dry_plan) ilişki üzerinden JOIN'i otomatik, çok-sıçramalı enjekte
+# eder. `models_enrich.yml` gerekli calc kolonları (operator_cinsiyet/departman/egitim/
+# dogum_tarihi) ZATEN üretiyordu — hiçbir cube onları okumuyordu, öksüz duruyorlardı.
+#
+# Geçiş için AŞAĞIDA HİÇBİR İFADE DEĞİŞMEDİ: view saf geçişti (kolon adları birebir aynı),
+# demografi kolonları da model üzerinde aynı adlarla mevcut. Tek satırlık değişiklik.
+#
+# DOĞRULAMA (çalıştırıldı, gerçek DuckDB verisi): 26 kontrol — 10 ölçü kırılımsız, 14 boyut
+# × 2 ölçü, demografi × ay kovası, yaş grubu × departman — hepsi view sürümüyle BİREBİR AYNI
+# sonuç verdi ve plan aynı sayıda (2) JOIN üretti. Regresyon kilidi:
+# tests/test_parti_model_base.py.
+base_object: partiler  # operatör demografisi ilişki üzerinden (models_enrich.yml calc kolonları)
 
 # NL yönlendirme içeriği (ADR-0005: içerik Wren'de, kod generic). Eşleşme: varsayılan
 # ALTDİZİ; sonu "!" olan TAM KELİME ("kar!" → "karşılaştır"ı yakalamaz).
