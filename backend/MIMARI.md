@@ -1162,11 +1162,48 @@ Frontend'in mevcut korumaları korundu: yalnız tek birincil kategorili basit ş
 (bar/line/pie) tetiklenir; ECharts'ın **biçimlendirilmiş** etiketi ham satırlarda tam
 eşleşmiyorsa **sessizce atlanır**.
 
-### 12.9 Henüz YOK (G3)
+### 12.9 Reçeteli analiz (G3 — `app/prescribe.py`) ✅ — ve neden DAR olduğu
 
-Tam reçeteli analiz: katkı → `yoy` → hedef/eşik kıyası → seçenekler → **karar matrisi** →
-izleme kurulumu. Bugün *"ne yapmalıyız?"* katkı ayrıştırmasına düşüyor — doğru **ilk
-adım** ama reçetenin tamamı değil.
+Bir "karar matrisi" kolayca uydurulur: seçenekler × kriterler × ağırlıklar tablosu **her
+zaman** bir sayı üretir. Ama o sayıların ölçülmüş bir zemini yoksa ürün, kanıtlanabilir bir
+BI aracından **kanaat üreten** bir araca dönüşür — ve bu depoda kayıtlı en temel değişmez
+*"cevap bir makbuzdur"*dır.
+
+Kullanılan **üç** boyutun üçü de ölçülmüş ya da **beyan edilmiştir**:
+
+| Boyut | Kaynak | Uydurma payı |
+|---|---|---|
+| **Etki** | `contribution` deltası — ölçülmüş | yok |
+| **Yön** (iyi/kötü) | `lower_is_better` — metadata **beyanı** | yok |
+| **Yoğunlaşma** | en büyük segmentin brüt harekete oranı — hesaplanmış | yok |
+
+**Kasten dışarıda:** *kontrol edilebilirlik · uygulama maliyeti · risk*. Hiçbiri veride yok
+ve tahmin edilemez; bir ağırlık tablosuna konsalardı sıralama **uydurma** olurdu — üstelik
+`source="cube"` rozetiyle. Gerçek bir müşteride bu boyutlar **beyan edilerek** eklenebilir
+(metadata), tahmin edilerek değil. Bir test o boyutların sessizce geri gelmesini engeller.
+
+**`lower_is_better` burada ANLAMA dönüşüyor.** §13.4'te *"`recommend()`'e ulaşıyor ama
+karara dönüşmüyor"* diye kayıtlıydı: fire artışı kötüdür, ciro artışı iyidir — ve bunu ad
+tahmininden değil **beyandan** biliyoruz.
+
+#### En önemli çıktı bir öneri değil bir REDDİR
+
+Değişim **dağınıksa** (en büyük segment brüt hareketin ⅓'ünden azını açıklıyorsa),
+*"şu segmente odaklan"* **yanlış tavsiyedir**: sorun sistemiktir ve tek bir segmenti
+düzeltmek toplamı kayda değer biçimde değiştirmez. Modül o durumda öneri **üretmez**,
+**neden üretmediğini söyler** — `contribution`'ın toplanabilirlik kapısıyla (*"AVG'de katkı
+payı TANIMSIZDIR"*) aynı disiplinin reçete seviyesindeki karşılığı.
+
+#### Reçete YALNIZ sorulduğunda üretilir
+
+*"Bu neden böyle?"* bir **açıklama** ister, reçete değil. İkisini karıştırmak, kullanıcının
+**sormadığı** bir tavsiyeyi cevabın yerine koymak olurdu. Test her iki yönü de kilitler.
+
+### 12.10 Henüz YOK (G3 kalanı)
+
+Hedef/eşik kıyası (`schedules.check_threshold` mantığının reçeteye bağlanması), seçeneklerin
+**izleme kurulumuna** dönüşmesi (*"bunu haftalık izle"* → `schedules.create`), ve **imzalı
+Karar Kaydı** (Faz E-4 — ürünün en yüksek fiyat noktası).
 
 ---
 

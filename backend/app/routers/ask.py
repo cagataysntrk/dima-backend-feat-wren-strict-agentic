@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 import time as _time
 
 from app import context as app_context
+from app import prescribe
 from app import planner as _planner
 from app import followup
 from app import cube_router, pii, viz, yoy
@@ -1233,10 +1234,23 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             # (toplanamayan ölçü, dönem yok) — boş bir "bilmiyorum" değil.
             not_metni = katki.note or (
                 "Değişimi en çok sürükleyen segmentler aşağıda — her biri tıklanınca "
-                "tek başına açılır ve kendi kanıtını üretir."
-                if tur != followup.TUR_NE_YAPMALI else
-                "Önce değişimi sürükleyen segmentlere bakmak gerekir; her biri tıklanınca "
-                "tek başına açılır.")
+                "tek başına açılır ve kendi kanıtını üretir.")
+            # REÇETE (Faz G3) — YALNIZ "ne yapmalıyız?" sorulduğunda. "Neden böyle?"
+            # bir AÇIKLAMA ister, reçete değil; ikisini karıştırmak kullanıcının
+            # sormadığı bir tavsiyeyi cevabın yerine koymak olurdu.
+            if tur == followup.TUR_NE_YAPMALI and katki.raporlar:
+                ilk = katki.raporlar[0]
+                dusuk_iyi = (katki.measure or "") in (
+                    (cube_meta or {}).get("lower_is_better") or [])
+                rec = prescribe.recete(ilk.model_dump(), lower_is_better=dusuk_iyi)
+                iz.append(f"Reçete: {'dağınık → öneri YOK' if rec.dagitik else f'{len(rec.oneriler)} öneri'}")
+                # Gerekçe cevabın kendisidir: dağınık değişimde ÖNERİ ÜRETİLMEZ ve
+                # NEDEN üretilmediği söylenir (dürüst red, `contribution`ın
+                # toplanabilirlik kapısıyla aynı disiplin).
+                not_metni = rec.gerekce
+                if rec.oneriler:
+                    adimlar = [NextStep(label=o.segment, kind="dimension",
+                                        cube_query=o.cube_query) for o in rec.oneriler]
             # Bulgular CEVABIN GÖVDESİDİR — `next_steps` DEĞİL. `next_steps`e konulduğunda
             # UI onları "sonraki adım" başlığıyla gösteriyordu (ölçüldü) ve Δ tutarları,
             # % paylar, kırpma uyarısı kayboluyordu. `contribution` alanı zengin gövdeyi
