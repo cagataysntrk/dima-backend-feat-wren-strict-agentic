@@ -487,6 +487,15 @@ def _compose_relationship_dimensions(out: Path) -> None:
                              or "VARCHAR", "is_calculated": True,
                              "expression": f"{dst}.{col}"})
             used.add(calc_ad.lower())
+            # `dimension: false` → YALNIZ calc kolonu üret, cube boyutu ÜRETME.
+            # Gerekçe: bazen kolon bir İFADENİN İÇİNDE kullanılır, kendi başına bir
+            # kırılım ekseni olarak değil. İki gerçek vaka (Faz 2.1):
+            #   * mizan `tarih`: bir ZAMAN boyutudur; üreteç `time_dimensions`'a ekleme
+            #     yapmaz, bağ elle kurulur. Ayrıca normal boyut olarak yayımlanırsa aynı
+            #     kolon iki kez görünür ve router yüzeyi gereksiz büyür.
+            #   * mizan `hesap_adi`: cube onu COALESCE ile sarmalar (boş ad → hesap kodu).
+            if e.get("dimension") is False:
+                continue
             _etiket_carpismasi(e, rname, src, cube_files, _load,
                                e.get("as") or calc_ad)
             yeni_boyutlar.append({

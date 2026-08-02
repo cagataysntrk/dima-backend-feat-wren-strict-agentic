@@ -147,10 +147,22 @@ relationships:
     join_type: MANY_TO_ONE
     models: [yevmiye_satirlari, yevmiye_fisleri]
     condition: "yevmiye_satirlari.fis_no = yevmiye_fisleri.fis_no"
+    expose:
+      # `tarih` mizan'ın ZAMAN boyutudur ve satırda YOKTUR (fişten gelir). Üreteç yalnız
+      # `dimensions`'a ekler, `time_dimensions`'a eklemez (bilinen sınır) — bu yüzden
+      # cube'un time_dimension ifadesi ELLE bu calc kolonuna bağlanır.
+      - column: tarih
+        dimension: false
   - name: yevmiye_satirlari_hesap_plani
     join_type: MANY_TO_ONE
     models: [yevmiye_satirlari, hesap_plani]
     condition: "yevmiye_satirlari.hesap_kodu = hesap_plani.hesap_kodu"
+    expose:
+      # `hesap_adi` cube'da COALESCE ile sarmalanir (bos ad → hesap kodu). Üreteç yalnız
+      # calc kolonu üretir; cube ZATEN bir `hesap_adi` boyutu tanımladığı için üreteç
+      # boyutu ATLAR (elle tanım kazanır) ve o tanımın ifadesi calc kolonu sarmalar.
+      - column: hesap_adi
+        dimension: false
   - name: fatura_satirlari_faturalar
     join_type: MANY_TO_ONE
     models: [fatura_satirlari, faturalar]
