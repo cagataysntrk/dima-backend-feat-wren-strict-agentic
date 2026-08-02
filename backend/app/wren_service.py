@@ -287,6 +287,17 @@ class WrenService:
                     m["name"] for m in c.get("measures", [])
                     if str(m.get("additive") or "").lower() == "non"
                 ],
+                # Ölçü İFADELERİ (Faz 5.2). Yalnız katkı ayrıştırmasının TOPLANABİLİRLİK
+                # kapısı için yayımlanır (`app/contribution.py`): `AVG(...)`/oran/
+                # `COUNT(DISTINCT ...)` bir ölçüde segment katkısı MATEMATİKSEL OLARAK
+                # tanımsızdır ve o kapı ada bakarak değil KANITA bakarak karar vermeli.
+                # `additive:` beyanı öncelikli kalır — bu, beyan YOKSA devreye giren yedek.
+                # LLM'e gitmez (değişmez #1: LLM ham değer görmez; bu şema metadata'sıdır
+                # ama `build_catalog` yalnız ad listesi üretir, ifadeleri taşımaz).
+                "measure_expressions": {
+                    m["name"]: m.get("expression")
+                    for m in c.get("measures", []) if m.get("expression")
+                },
                 # Cube-düzeyi sabit filtre (LookML sql_always_where): her sorguya
                 # otomatik eklenir. CANCELLED=0'ı ölçü ifadelerinden çıkarır — tekrar
                 # ve iptal-kaydı sızıntısını yapısal önler. build camelCase'e çevirir.

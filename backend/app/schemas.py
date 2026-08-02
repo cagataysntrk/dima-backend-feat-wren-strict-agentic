@@ -400,6 +400,57 @@ class DrillRequest(BaseModel):
     limit: int = 50                    # raw: kaç satır getirilsin
 
 
+class ContributionRequest(BaseModel):
+    """Faz 5.2 — *"neden değişti?"*. Bir `cube_query` alır, kullanılmayan boyutlar üzerinde
+    dönemsel değişimin nereden geldiğini arar. `mode` `yoy` (geçen yıl) ya da `mom`."""
+
+    cube_query: dict[str, Any]
+    mode: str = "yoy"
+    session_id: str | None = None
+    max_dimensions: int | None = None
+
+
+class ContributionFinding(BaseModel):
+    """Tek bir segmentin katkısı. `cube_query` ONU YALNIZ BAŞINA gösteren sorgudur —
+    tıklanınca `/cube` ile LLM'siz koşar ve kendi Query Contract'ını üretir. Rakiplerden
+    ayrıştığı nokta budur: skor bir metin değil, doğrulanabilir bir sorgunun etiketi."""
+
+    label: str
+    kind: str = "dimension"
+    deger: Any = None
+    simdi: float = 0.0
+    onceki: float = 0.0
+    delta: float = 0.0
+    net_pay: float | None = None    # net değişime oranı (net ~0 ise None — uydurulmaz)
+    brut_pay: float | None = None   # mutlak hareketlerin toplamına oranı
+    cube_query: dict[str, Any]
+
+
+class ContributionReport(BaseModel):
+    """Tek bir boyut için ayrıştırma. `kirpilan_segment` sessiz kesme OLMADIĞININ kaydıdır."""
+
+    dimension: str
+    dimension_label: str
+    net_degisim: float
+    brut_hareket: float
+    bulgular: list[ContributionFinding] = Field(default_factory=list)
+    kirpilan_segment: int = 0
+    kirpilan_esik_yuzde: float = 0.0
+
+
+class ContributionResponse(BaseModel):
+    """`note` ayrıştırma YAPILAMADIĞINDA nedenini taşır (toplanamayan ölçü, dönem yok).
+    `taranmayan_boyut` üst sınır yüzünden bakılmayan boyut sayısıdır — kapsam sessizce
+    daraltılmaz."""
+
+    measure: str | None = None
+    mode: str = "yoy"
+    raporlar: list[ContributionReport] = Field(default_factory=list)
+    note: str | None = None
+    taranmayan_boyut: int = 0
+    contract_ids: list[str] = Field(default_factory=list)
+
+
 class DrillDimension(BaseModel):
     name: str
     label: str

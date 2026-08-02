@@ -20,6 +20,9 @@ from app.schemas import (
     AskRequest,
     AskResponse,
     AskVerifyRequest,
+    ContributionReport,
+    ContributionRequest,
+    ContributionResponse,
     CubeRequest,
     DrillRequest,
     DrillResponse,
@@ -2642,6 +2645,96 @@ def ask_drill(request: Request, body: DrillRequest) -> DrillResponse:
         )
 
     raise HTTPException(status_code=400, detail=f"Bilinmeyen action: {action!r}")
+
+
+@router.post("/ask/contribution", response_model=ContributionResponse,
+            dependencies=[Depends(require("query:run")), Depends(require_company)])
+def ask_contribution(request: Request, body: ContributionRequest) -> ContributionResponse:
+    """FAZ 5.2 — *"neden değişti?"* KATEGORİ BOŞLUĞU.
+
+    Rakiplerin hepsinde bir karşılığı var (Snowflake `TOP_INSIGHTS`, Power BI Key
+    Influencers, Tableau Pulse) ve hepsi semantic layer'ın DIŞINDA: ürettikleri şey bir
+    metin ya da görsel — yeniden tarihlenemez, kırılamaz, sözleşme taşımaz. Buradaki fark
+    şu: **her bulgu kendi başına bir CubeQuery'dir.** Tıklanır, `/cube` ile LLM'siz koşar,
+    kendi Query Contract'ını üretir, üstüne yeni kırılım eklenebilir.
+
+    Yöntem cebirsel ve deterministik (LLM yok, eğitim yok, rastgelelik yok): kullanılmayan
+    her boyut için dönemsel kıyas (`app/yoy.py` — YENİ bir dönem matematiği YAZILMADI)
+    alınır, değişim segmentlere dağıtılır, boyutlar açıklayıcılığa göre sıralanır.
+
+    **Toplanabilirlik kapısı esastır** (`app/contribution.py::ayristirilabilir_mi`): katkı
+    ayrıştırması yalnız toplanabilir ölçülerde TANIMLIDIR. `AVG`/oran/`COUNT(DISTINCT)`
+    için parçaların toplamı bütünü vermez ve "bu segment değişimin %40'ını açıklıyor"
+    cümlesi matematiksel olarak yanlış olur. Bu, bu araç sınıfının klasik sessiz hatasıdır
+    — burada ayrıştırma yapılmaz ve NEDENİ söylenir (ADR-0008'in ölçü-matematiği karşılığı).
+    """
+    from app import contribution as contrib
+    from app import yoy as _yoy
+    from app.drill import available_dimensions
+
+    cq = dict(body.cube_query or {})
+    if not cq.get("cube"):
+        return ContributionResponse(note="Bu sonuç yapısal bir cube_query taşımıyor "
+                                         "(Discovery/ham SQL) — katkı ayrıştırması yapılamaz.")
+    service = _service_for(request, body.session_id)
+    schema = service.schema()
+    cube_meta = next((c for c in (schema.get("cubes") or [])
+                      if c.get("name") == cq.get("cube")), None)
+    if cube_meta is None:
+        raise HTTPException(status_code=400, detail="Cube bulunamadı (şema değişmiş olabilir).")
+
+    measure = (cq.get("measures") or [None])[0]
+    ok, neden = contrib.ayristirilabilir_mi(measure, cube_meta)
+    if not ok:
+        return ContributionResponse(measure=measure, mode=body.mode, note=neden)
+
+    mode = body.mode if body.mode in ("yoy", "mom") else "yoy"
+    time_dim = _yoy.time_dim_of(schema, cq.get("cube"))
+    unit = (cube_meta.get("units") or {}).get(measure)
+    labels = cube_meta.get("dimension_labels") or {}
+
+    adaylar = [d["name"] for d in available_dimensions(cube_meta, cq)]
+    sinir = max(1, int(body.max_dimensions or contrib.MAX_BOYUT))
+    taranan, taranmayan = adaylar[:sinir], max(0, len(adaylar) - sinir)
+    if taranmayan:
+        # Sessiz kesme YOK: kapsamı daraltan her sınır loglanır VE yanıtta görünür.
+        _log.info("katkı araması: %d boyuttan %d tanesi taranmadı (sınır=%d, cube=%s)",
+                  len(adaylar), taranmayan, sinir, cq.get("cube"))
+
+    raporlar, contract_ids = [], []
+    for dim in taranan:
+        alt = {**cq, "dimensions": [dim]}
+        try:
+            out = _yoy.compute(service, {**alt, "compare": mode}, mode, time_dim)
+        except Exception:
+            _log.warning("katkı araması: %s boyutu için kıyas başarısız (atlanıyor)",
+                         dim, exc_info=True)
+            continue
+        rapor = contrib.decompose(out["rows"], dim, measure, alt,
+                                  dim_label=labels.get(dim), unit=unit)
+        if not rapor["bulgular"]:
+            continue
+        raporlar.append(rapor)
+        # Her katkı sorgusu KENDİ kanıt kaydını üretir — "yeniden çalıştırılıp hash
+        # eşlenebilen makbuz" değişmezi burada da geçerli (drill ile AYNI desen).
+        cid = _drill_record_contract(
+            request, service, body.session_id,
+            f"katkı araması: {measure} × {dim} ({mode})", {**alt, "compare": mode},
+            out["base_sql"], {"columns": out["columns"], "rows": out["rows"],
+                              "row_count": out["row_count"]})
+        if cid:
+            contract_ids.append(cid)
+
+    if not raporlar:
+        return ContributionResponse(
+            measure=measure, mode=mode, taranmayan_boyut=taranmayan,
+            note="Bu sorguda değişimi açıklayan bir kırılım bulunamadı — kullanılmayan "
+                 "boyut yok ya da hiçbir segment anlamlı bir hareket göstermiyor.")
+
+    return ContributionResponse(
+        measure=measure, mode=mode, taranmayan_boyut=taranmayan,
+        contract_ids=contract_ids,
+        raporlar=[ContributionReport(**r) for r in contrib.rank_dimensions(raporlar)])
 
 
 @router.post("/ask/verify", dependencies=[Depends(require("vqr:write")), Depends(require_company)])
