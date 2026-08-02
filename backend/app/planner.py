@@ -2,10 +2,14 @@
 
 ## Ne yapar, ne YAPMAZ
 
-Bu modül **bir LLM döngüsü değildir.** Bir ReAct planlayıcısının *"hangi adımı seçeyim"*
-kısmı henüz yok ve bilinçli olarak yok: o karar telemetriyle kalibre edilmeli (Faz E-1) ve
-bugün telemetri **boş**. Ölçülmemiş bir kararı LLM'e devretmek, bu turda altı kez ölçülen
-*"beyan var, kanıt yok"* sınıfının en pahalı örneği olurdu.
+Bu modül **bir LLM döngüsü değildir.**
+
+> ⟳ **FAZ 4 (2026-08-03) — BEYAN GÜNCELLENDİ.** Eski metin: *"Bir ReAct planlayıcısının
+> 'hangi adımı seçeyim' kısmı henüz YOK ve bilinçli olarak yok: o karar telemetriyle
+> kalibre edilmeli."* Faz 0 telemetriyi (`reject_reason`) kurdu, Faz 2b onu triyaja
+> bağladı; `sec()` artık **var**. Ama tez değişmedi, **güçlendi**: `sec()` bir döngü
+> değil, tek atımlık bir **öneri**dir ve önerinin kendisi hiçbir kapıyı atlamaz. Yani
+> "planlayıcı zekâsı" eklendi ama **yönetişimin ÜSTÜNE**, yerine değil.
 
 Burada olan şey **yürütmenin YÖNETİŞİMİDİR**: bir plan hangi araçları çağırırsa çağırsın,
 her adım bütçeye, yetkiye ve deterministik-önce kuralına **tabidir** ve **makbuz üretir**.
@@ -33,6 +37,7 @@ söylemekle yükümlüdür — `contribution`'ın `kirpilan_segment`'i ve `taran
 
 from __future__ import annotations
 
+import re
 import time
 from dataclasses import dataclass, field
 from typing import Any
@@ -41,6 +46,9 @@ from app import tools
 from app.logging_setup import get_logger
 
 _log = get_logger("planner")
+
+#: `sec()` çıktısındaki kod çiti — model JSON'u ```json ile sarabilir.
+_FENCE_RE = re.compile(r"^```[a-z]*|```$", re.M)
 
 
 class ButceAsimi(RuntimeError):
@@ -132,7 +140,14 @@ class Kosum:
 
 
 class Planlayici:
-    """Araç çağrılarını yöneten yürütücü. **Plan seçmez, planı UYGULAR.**
+    """Araç çağrılarını yöneten yürütücü.
+
+    ⟳ **FAZ 4 (2026-08-03) — BEYAN GÜNCELLENDİ.** Eski metin *"**Plan seçmez**, planı
+    UYGULAR"* diyordu; artık `sec()` ile **plan da önerebiliyor**. Ama ayrım korunuyor ve
+    bu fazın omurgası odur: **`sec()` yalnız ÖNERİR, `calistir()` uygular.** Öneri hiçbir
+    kapıyı atlamaz — LLM'in seçtiği bir araç, insanın seçtiği bir araçla **aynı dört
+    kapıdan** geçer. Yani "LLM garson olur, işi küpler yapar" bir **beyan değil bir
+    KAPIDIR**.
 
     Kullanım:
 
@@ -208,6 +223,73 @@ class Planlayici:
         raise ButceAsimi(neden)
 
     # --- yürütme -----------------------------------------------------------------
+
+    # --- PLAN SEÇİMİ (FAZ 4 / K3) -------------------------------------------------
+
+    def sec(self, soru: str, llm: Any = None, *, ipucu: str = "") -> list[dict]:
+        """Soruyu araç adımlarına ayırma ÖNERİSİ üretir. **Çalıştırmaz.**
+
+        ## Seçim ≠ çalıştırma — bu fazın omurgası
+
+        Dönen liste bir **öneridir**; her adım yine `calistir()`'e verilir ve orada dört
+        kapıdan (kayıt · yetki · deterministik-önce · bütçe) geçer. Bu ayrım şunu garanti
+        eder: **LLM'in uydurduğu bir araç adı KAYIT kapısında ölür**, yetkisiz bir araç
+        YETKİ kapısında ölür, `route` denenmeden seçilen bir LLM aracı DETERMİNİSTİK-ÖNCE
+        kapısında ölür. Yani seçicinin yanılması **yeni bir risk açmaz** — var olan
+        kapılar zaten onu karşılar.
+
+        ## LLM ne GÖRÜR
+
+        `tools.llm_araclari(principal)` — ve o liste **yetkiye göre süzülmüş**tür, ayrıca
+        yazma yan etkili araçları (`dashboards.create` · `schedules.create` ·
+        `measures.approve`) ve gizlilik yapraklarını (`drill.raw` · `vqr.recall`)
+        **beyan edilerek dışarıda bırakır** (`tools.py`). Ajan kullanıcıyı **aşamaz**.
+
+        ## LLM yoksa
+
+        Deterministik yedek: `["route"]`. Merdivenin birinci basamağı zaten her zaman
+        denenmeli — yani sağlayıcı yokluğu bir hata değil, **plan zaten belliydi** demek.
+        """
+        adaylar = tools.llm_araclari(self.principal)
+        gecerli = {a["name"] for a in adaylar}
+        if llm is None or not hasattr(llm, "plan_sec") or not gecerli:
+            return [{"arac": "route", "neden": "deterministik yedek (sağlayıcı yok)"}]
+        try:
+            import json as _json
+
+            ham = llm.plan_sec(soru, _json.dumps(adaylar, ensure_ascii=False), ipucu)
+            onerilen = _json.loads(_FENCE_RE.sub("", (ham or "").strip()))
+        except Exception as exc:  # noqa: BLE001 — seçim başarısızsa merdiven zaten var
+            _log.info("plan seçimi başarısız → deterministik yedek: %s", exc)
+            return [{"arac": "route", "neden": "seçim başarısız → deterministik yedek"}]
+
+        if isinstance(onerilen, dict):
+            onerilen = onerilen.get("adimlar") or onerilen.get("steps") or []
+        temiz: list[dict] = []
+        for x in onerilen if isinstance(onerilen, list) else []:
+            ad = (x or {}).get("arac") or (x or {}).get("tool") if isinstance(x, dict) else x
+            if not isinstance(ad, str):
+                continue
+            if ad not in gecerli:
+                # SESSİZ DÜŞÜRME YOK: uydurulmuş/yetkisiz bir araç adı KAYDA GEÇER.
+                # Sessizce elemek, seçicinin ne kadar yanıldığını ölçülemez yapardı ve
+                # bu deponun "sessiz kırpma yok" disiplinini delerdi.
+                self.kosum.adimlar.append(Adim(
+                    arac=ad, determinizm="llm", sure_ms=0, makbuz=None,
+                    hata="SEÇİM REDDİ: kayıtta yok ya da yetki dışı"))
+                continue
+            if ad not in {a["arac"] for a in temiz}:
+                temiz.append({"arac": ad,
+                              "neden": (x.get("neden") or x.get("why") or "")[:120]
+                              if isinstance(x, dict) else ""})
+        if not temiz:
+            return [{"arac": "route", "neden": "geçerli adım kalmadı → deterministik yedek"}]
+        # DETERMİNİSTİK-ÖNCE, PLAN SEVİYESİNDE: `route` öneride yoksa BAŞA eklenir.
+        # Kapı zaten çalıştırmada bunu zorlar; burada eklemek, planın ilk adımda
+        # ButceAsimi'na girip hiç denememesini önler (kapı ceza değil YÖNLENDİRME).
+        if not any(a["arac"] == "route" for a in temiz):
+            temiz.insert(0, {"arac": "route", "neden": "deterministik-önce (plan seviyesi)"})
+        return temiz
 
     def calistir(self, arac_adi: str, *args: Any, makbuz: str | None = None,
                  **kwargs: Any) -> Any:

@@ -103,13 +103,28 @@ def test_CUBE_QUERY_HASH_beyani_HALA_dogru():
 
 # --- F4: LLM'e verilecek araç listesi -----------------------------------------
 
-def test_LLM_ARAC_LISTESI_beyani_HALA_dogru():
-    """`tools.llm_araclari()` planlayıcının LLM yüzeyi için yazıldı; F4 (plan SEÇİMİ)
-    telemetriye bağlı olduğu için henüz tüketicisi yok. Bağlandığı gün bu test kırılır."""
+def test_LLM_ARAC_LISTESI_GERCEKTEN_TUKETILIYOR():
+    """⟳ **FAZ 4 (2026-08-03) — bu tuzak ATEŞLEDİ ve TUZAKTAN KAPIYA dönüştü.**
+
+    Eski hâli MIMARI §11.6d'nin *"F4 (plan SEÇİMİ) telemetriye bağlı olduğu için henüz
+    tüketicisi yok"* beyanını koruyordu ve **bağlandığı gün kırıldı** — kurulduğu iş
+    tam olarak buydu. Faz 0 telemetriyi kurdu, Faz 2b onu triyaja bağladı, Faz 4 `sec()`
+    ile tüketiciyi taktı. Beyan güncellendi; kapı **yönü tersine çevrilerek** korunuyor.
+
+    Artık ölçtüğü şey: seçici **gerçekten** bu süzülmüş listeyi mi görüyor? Süzgeç
+    atlanırsa ajan yazma yan etkili araçları (`dashboards.create` …) görürdü — yani
+    kullanıcının kendi eliyle yapamayacağı bir işi onun adına yapabilirdi.
+    """
     kaynak = _app_kaynagi("tools.py")
-    assert "llm_araclari" not in kaynak, (
-        "`tools.llm_araclari` artık çağrılıyor — MIMARI §11.6d'deki \"F4 henüz yok\" "
-        "beyanı bayat.")
+    assert "llm_araclari" in kaynak, (
+        "`tools.llm_araclari` artık ÇAĞRILMIYOR — F4'ün seçicisi geri mi alındı? "
+        "O hâlde MIMARI §11.6d ve bu test yeniden gözden geçirilmeli.")
+
+    from app import planner
+
+    govde = inspect.getsource(planner.Planlayici.sec)
+    assert "llm_araclari(self.principal)" in govde, (
+        "seçici SÜZÜLMEMİŞ bir araç listesi görüyor olabilir — yetki/yazma sınırı delik")
 
 
 # --- Planlayıcının itiraf mekanizması -----------------------------------------

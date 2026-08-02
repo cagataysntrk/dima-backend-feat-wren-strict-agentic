@@ -253,6 +253,26 @@ def _enhance_system(catalog: str) -> str:
     )
 
 
+def _plan_sec_system(araclar_json: str, ipucu: str) -> str:
+    """ORKESTRATÖR (FAZ 4 / K3) — *"LLM garson olur, işi küpler yapar."*
+
+    Model **iş yapmaz**, yalnız hangi aracın hangi sırayla çağrılacağını **önerir**.
+    Öneri `Planlayici.calistir()`'in dört kapısından geçer; uydurulmuş bir araç adı
+    KAYIT kapısında ölür. Bu yüzden prompt "doğru seç" demez, "**listeden** seç" der.
+    """
+    return (
+        "Bir veri sorusunu, ELİNDEKİ ARAÇLARLA çözülecek ADIMLARA ayırırsın.\n\n"
+        "Araçlar (JSON):\n" + araclar_json + "\n\n"
+        + (f"Bağlam: {ipucu}\n\n" if ipucu else "")
+        + "KURALLAR:\n"
+        "- SADECE yukarıdaki listede ADI GEÇEN araçları seç. Araç UYDURMA.\n"
+        '- Çıktı SADECE JSON dizisi: [{"arac":"<ad>","neden":"<kısa Türkçe>"}]\n'
+        "- Deterministik araç varsa LLM aracından ÖNCE gelir (`route` her zaman ilk).\n"
+        "- En fazla 4 adım. Gereksiz adım EKLEME — her adım bütçe harcar.\n"
+        "- Soru tek adımda çözülüyorsa TEK adım döndür."
+    )
+
+
 def _cube_select_system(catalog: str) -> str:
     """Soruyu SQL değil, tanımlı bir cube SEÇİMİNE eşleten prompt (kısıtlı → halüsinasyon yok)."""
     return (
@@ -360,6 +380,10 @@ class AnthropicSqlGenerator:
 
     def repair(self, question: str, schema: dict, bad_sql: str, error: str) -> str:
         return self._ask(_build_system(schema, self._dialect), _repair_prompt(question, bad_sql, error))
+
+    def plan_sec(self, soru: str, araclar_json: str, ipucu: str = "") -> str:
+        """ORKESTRATÖR (FAZ 4). Dönüş bir ÖNERİDİR (JSON) — çalıştırmayı `Planlayici` yapar."""
+        return self._ask(_plan_sec_system(araclar_json, ipucu), soru, model=self._select_model)
 
     def prompt_enhance(self, soru: str, catalog: str) -> str:
         """PROMPT-ENHANCER (FAZ 3b). Dönüş bir METİNDİR — yapı DEĞİL. Çağıran onu aynı
@@ -484,6 +508,11 @@ class OpenAICompatibleSqlGenerator:
 
     def repair(self, question: str, schema: dict, bad_sql: str, error: str) -> str:
         return self._chat(_build_system(schema, self._dialect), _repair_prompt(question, bad_sql, error))
+
+    def plan_sec(self, soru: str, araclar_json: str, ipucu: str = "") -> str:
+        """ORKESTRATÖR (FAZ 4) — bkz. `AnthropicSqlGenerator.plan_sec`."""
+        return self._chat(_plan_sec_system(araclar_json, ipucu), soru,
+                          model=self._select_model)
 
     def prompt_enhance(self, soru: str, catalog: str) -> str:
         """PROMPT-ENHANCER (FAZ 3b) — bkz. `AnthropicSqlGenerator.prompt_enhance`."""
@@ -948,6 +977,18 @@ class FailoverSqlGenerator:
                 continue
         _log.error("FailoverSqlGenerator.repair: TÜM sağlayıcılar başarısız")
         raise RuntimeError("repair: tüm sağlayıcılar başarısız")
+
+    def plan_sec(self, soru: str, araclar_json: str, ipucu: str = "") -> str:
+        for g in self._gens:
+            if not hasattr(g, "plan_sec"):
+                continue
+            try:
+                out = g.plan_sec(soru, araclar_json, ipucu)
+                self._last = g
+                return out
+            except Exception:
+                continue
+        raise RuntimeError("plan_sec: tüm sağlayıcılar başarısız")
 
     def prompt_enhance(self, soru: str, catalog: str) -> str:
         for g in self._gens:

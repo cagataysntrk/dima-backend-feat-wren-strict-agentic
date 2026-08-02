@@ -1818,10 +1818,42 @@ taşır) · in-app bell (`notification_log.neden_json`, ayrı kolon — teslim T
 cevabın İÇERİĞİ farklı şeylerdir) · `NotificationsPanel`'de katlanır `⤵ neden?` katmanı,
 **yeni panel değil** (§14.1). 16 test: `tests/test_uyari_neden.py`.
 
-### 11.6d Henüz YOK (F3 kalanı + F4)
+### 11.6d ⟳ FAZ 4: plan SEÇİMİ ARTIK VAR — `Planlayici.sec()` ✅
 
-Plan **SEÇİMİ** (hangi araç, hangi sırayla — telemetri gerekiyor, Faz E-1), belirsizlikte
-plan seviyesinde sorma, ve kalan kompozisyonların (rapor · pano) planlayıcıya taşınması.
+> **BEYAN GÜNCELLENDİ (2026-08-03).** Eski metin: *"Plan **SEÇİMİ** (hangi araç, hangi
+> sırayla — **telemetri gerekiyor**, Faz E-1) … henüz YOK."* Şart karşılandı: Faz 0
+> telemetriyi (`reject_reason`) kurdu, Faz 2b onu triyaja bağladı. Bu beyan
+> `tests/test_beyanlar_curumesin.py`'de bir **tuzaktı** ve Faz 4 landing ettiği gün
+> **kırıldı** — kurulduğu iş buydu. Test yönü tersine çevrilerek korunuyor: artık
+> seçicinin **süzülmüş** listeyi gördüğünü ölçüyor.
+
+**Bu fazın omurgası: SEÇİM ≠ ÇALIŞTIRMA.** `sec()` yalnız **önerir**; her adım yine
+`calistir()`'e verilir ve **aynı dört kapıdan** geçer. Sonuç: **seçicinin yanılması yeni
+bir risk açmaz** — var olan kapılar zaten onu karşılar.
+
+| seçici hatası | hangi kapı öldürür |
+|---|---|
+| uydurulmuş araç adı | **KAYIT** (ve `sec()` onu **kayda geçirerek** eler) |
+| yetkisiz araç | **YETKİ** — ajan kullanıcıyı AŞAMAZ |
+| `route` denenmeden LLM aracı | **DETERMİNİSTİK-ÖNCE** |
+| sonsuz/pahalı plan | **BÜTÇE** |
+| yazma yan etkili araç (`dashboards.create` …) | zaten `llm_araclari` **dışında**, beyan edilerek |
+
+**Sessiz kırpma YOK:** geçersiz bir öneri sessizce elenmez, `Adim(hata="SEÇİM REDDİ…")`
+olarak kayda geçer — sessizce elemek, seçicinin ne kadar yanıldığını **ölçülemez** yapardı.
+
+**`route` öneride yoksa BAŞA eklenir.** Kapı zaten çalıştırmada bunu zorlar; burada eklemek
+planın ilk adımda `AracReddi`'ye çarpıp hiç denememesini önler — **kapı ceza değil
+yönlendirme**.
+
+**Yedek yollar (gerileme YOK):** sağlayıcı yok · `plan_sec` taşımıyor · bozuk JSON · patladı
+· boş liste → hepsi `["route"]`. Sağlayıcı yokluğu bir hata değil, **plan zaten belliydi**
+demektir.
+
+**Kalan (F3):** belirsizlikte plan seviyesinde sorma, ve kalan kompozisyonların
+(rapor · pano) planlayıcıya taşınması.
+
+18 test: `tests/test_orkestrator.py`.
 
 ### 11.6 Özellik = KOMPOZİSYON, endpoint değil
 
