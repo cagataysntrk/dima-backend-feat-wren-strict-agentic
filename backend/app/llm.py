@@ -315,8 +315,48 @@ class AnthropicSqlGenerator:
     def repair(self, question: str, schema: dict, bad_sql: str, error: str) -> str:
         return self._ask(_build_system(schema, self._dialect), _repair_prompt(question, bad_sql, error))
 
-    def select_cube(self, question: str, catalog: str) -> str:
-        return self._ask(_cube_select_system(catalog), question, model=self._select_model)
+    def select_cube(self, question: str, catalog: str, sema: dict | None = None) -> str:
+        """FAZ 3a — `sema` verilirse sağlayıcının NATIVE tool-use'u kullanılır: cube/ölçü/
+        boyut adları o anki kataloğun **enum**'u olarak şemaya gömülür ve model şemanın
+        dışına çıkmadan geçersiz bir ad üretemez. Şema yoksa ya da tool-use yolu herhangi
+        bir nedenle başarısız olursa **bugünkü serbest-JSON yoluna düşülür** — ikisi de
+        aynı `parse_cube_query`'ye varır, yani yedek yol zaten doğrulanmış."""
+        if sema is None:
+            return self._ask(_cube_select_system(catalog), question, model=self._select_model)
+        try:
+            return self._arac_ile(_cube_select_system(catalog), question, sema)
+        except Exception:
+            _log.warning("şema-kısıtlı select_cube başarısız → serbest-JSON yedeği",
+                         exc_info=True)
+            return self._ask(_cube_select_system(catalog), question, model=self._select_model)
+
+    def _arac_ile(self, system: str, user: str, sema: dict) -> str:
+        """Anthropic tool-use ile ŞEMA-KISITLI CubeQuery. Dönüş bugünküyle AYNI sözleşme
+        (JSON metni) — çağıran taraf değişmez, yalnız o metnin ÜRETİLİŞ biçimi değişir."""
+        import json as _json
+
+        _t0 = time.monotonic()
+        message = self._client.messages.create(
+            model=self._select_model or self._model,
+            max_tokens=1024, temperature=0, system=system,
+            messages=[{"role": "user", "content": user}],
+            tools=[{"name": "cube_query", "input_schema": sema,
+                    "description": "Soruyu yapısal bir CubeQuery'ye eşle. Soru TEK bir "
+                                   "cube ile yanıtlanamıyorsa cube=null dalını seç."}],
+            tool_choice={"type": "tool", "name": "cube_query"},
+        )
+        elapsed_ms = int((time.monotonic() - _t0) * 1000)
+        try:
+            _u = getattr(message, "usage", None)
+            record_llm_usage(self._select_model or self._model,
+                             getattr(_u, "input_tokens", None),
+                             getattr(_u, "output_tokens", None), elapsed_ms)
+        except Exception:
+            pass
+        for b in message.content:
+            if getattr(b, "type", None) == "tool_use":
+                return _json.dumps(b.input, ensure_ascii=False)
+        raise RuntimeError("tool_use bloğu dönmedi")
 
     def refine_cube(self, prev_cq_json: str, message: str, catalog: str) -> str:
         return self._ask(_cube_select_system(catalog), _cube_refine_user(prev_cq_json, message),
@@ -388,7 +428,12 @@ class OpenAICompatibleSqlGenerator:
     def repair(self, question: str, schema: dict, bad_sql: str, error: str) -> str:
         return self._chat(_build_system(schema, self._dialect), _repair_prompt(question, bad_sql, error))
 
-    def select_cube(self, question: str, catalog: str) -> str:
+    def select_cube(self, question: str, catalog: str, sema: dict | None = None) -> str:
+        """FAZ 3a — `sema` KABUL EDİLİR ama BU SAĞLAYICIDA KULLANILMAZ (bilinçli).
+        OpenAI-uyumlu uçların `strict` fonksiyon şeması `oneOf`'u desteklemiyor; kısıtı
+        yarım uygulamak, uygulamamaktan **kötüdür** (model geçerli ama yanlış bir dala
+        zorlanabilirdi). Bugünkü serbest-JSON yolu korunur ve `parse_cube_query` zaten
+        doğruluyor. İmza uyumlu kalır ki `FailoverSqlGenerator` ayrım yapmasın."""
         return self._chat(_cube_select_system(catalog), question, model=self._select_model)
 
     def refine_cube(self, prev_cq_json: str, message: str, catalog: str) -> str:
@@ -838,12 +883,18 @@ class FailoverSqlGenerator:
         _log.error("FailoverSqlGenerator.repair: TÜM sağlayıcılar başarısız")
         raise RuntimeError("repair: tüm sağlayıcılar başarısız")
 
-    def select_cube(self, question: str, catalog: str) -> str:
+    def select_cube(self, question: str, catalog: str, sema: dict | None = None) -> str:
         for g in self._gens:
             if not hasattr(g, "select_cube"):
                 continue
             try:
-                out = g.select_cube(question, catalog)
+                # FAZ 3a: şemayı KABUL EDEN sağlayıcıya geçir; etmeyene (eski/üçüncü-parti
+                # üreteç) bugünkü iki-argümanlı çağrıyla git — ikisi de aynı sözleşmeye
+                # (JSON metni) varır, yani karışım güvenlidir.
+                try:
+                    out = g.select_cube(question, catalog, sema)
+                except TypeError:
+                    out = g.select_cube(question, catalog)
                 self._last = g
                 return out
             except Exception:

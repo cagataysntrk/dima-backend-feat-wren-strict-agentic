@@ -459,17 +459,30 @@ def _canon_cq(cq: dict) -> str:
     return json.dumps(c, sort_keys=True, ensure_ascii=False)
 
 
-def _select_consistent(llm, question: str, catalog: str, index: dict, k: int):
+def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
+                       sema: dict | None = None):
     """CubeQuery SELF-CONSISTENCY (literatür #1 / ClarifyGPT deseni): k örnekleme →
     kanonik oylama. Uyuşma = hem doğruluk hem KALİBRE güven sinyali; uyuşmazlık
     tek eksendeyse o eksen chip'e dönüşür.
+
+    `sema` (FAZ 3a): şema-kısıtlı çıktı. `None` = bugünkü serbest-JSON yolu, birebir.
 
     Döner: (kazanan|None, uyum_orani, uyusmazlik_ekseni|None, farklı_adaylar)."""
     import concurrent.futures as cf
 
     def one(_i):
         try:
-            return cube_router.parse_cube_query(llm.select_cube(question, catalog), index)
+            ham = llm.select_cube(question, catalog, sema) if sema is not None \
+                else llm.select_cube(question, catalog)
+            cq = cube_router.parse_cube_query(ham, index)
+            # PLANIN §6 KAPISI: "whitelist reddi oranı ÖLÇÜLÜP DÜŞÜŞÜ doğrulanır."
+            # Bugün bu red SESSİZDİ — LLM bir cevap üretti, `parse_cube_query` onu
+            # düşürdü ve geriye hiçbir iz kalmadı. Şema-kısıtlı çıktının kazancı tam
+            # olarak bu sayının düşmesidir; ölçülemezse doğrulanamaz.
+            if cq is None:
+                _log.info("intent: whitelist REDDİ (sema=%s) — ham=%.200s",
+                          "acik" if sema is not None else "kapali", ham)
+            return cq
         except Exception:
             return None
 
@@ -1852,8 +1865,20 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     # KALİBRE bir güven sinyali verir (Faz F planlayıcısının bütçe/eskalasyon
                     # kararının girdisi). Örnekler paralel koşar → gecikme ~tek çağrı.
                     k = max(1, int(getattr(settings, "consistency_k", 1) or 1))
+                    # FAZ 3a (KURAL B) — ŞEMA-KISITLI ÇIKTI. Bayrak kapalıysa `sema`
+                    # None kalır ve yol BİREBİR bugünküdür. Şema her istekte kataloğun
+                    # O ANKİ hâlinden üretilir: cube yeniden adlandırılırsa/ölçü
+                    # eklenirse enum kendiliğinden güncel kalır (bayat enum, olmayan
+                    # enum'dan kötüdür — modele var olmayan bir adı DAYATIRDI).
+                    _sema = None
+                    if "llm_sema_kisitli" in resolve_for(settings, principal):
+                        try:
+                            _sema = cube_router.cube_query_json_schema(cube_index)
+                        except Exception:
+                            _log.warning("şema üretilemedi → serbest-JSON yolu",
+                                         exc_info=True)
                     parsed, uyum, eksen, adaylar = _select_consistent(
-                        llm_probe, body.question, catalog_text, cube_index, k)
+                        llm_probe, body.question, catalog_text, cube_index, k, _sema)
                     if parsed:
                         route_hit = {"cube_query": parsed, "order": None, "limit": None}
                         intent_source = "cube+llm"

@@ -527,6 +527,54 @@ Kazanç 28 birim testiyle kanıtlanıyor. Korpusun bu sınıfı kazanması Faz 0
 Taban artefaktı: `lab/nl_corpus_baseline.json` (`eval/baseline.json` ile aynı disiplin —
 `lab/reports/` gitignore'da olduğu için ham rapor değil **kapı değerleri** saklanır).
 
+### 6.4z FAZ 3a — ŞEMA-KISITLI ÇIKTI: hatayı sonrasında reddetmek yerine öncesinde engelle ⚠️ (kazanç ÖLÇÜLMEDİ)
+
+Bugünkü Intent-JSON akışı: *"serbest JSON iste, sonra `parse_cube_query` ile **REDDET**"*.
+Reddedilen her sorgu bir **Discovery'ye düşüştür** — yani kayıp, hatanın **sonrasında**
+kapatılıyor. Şema-kısıtlı çıktı hatayı **öncesinde** engellemeyi hedefler: cube/ölçü/boyut
+adları o anki kataloğun **enum**'u olarak sağlayıcının **native tool-use** şemasına
+gömülür (`cube_router.cube_query_json_schema`).
+
+**İki tasarım kararı — ikisi de kısıtın işe yaraması için zorunlu:**
+
+1. **Enum CUBE'A GÖRE daralır (`oneOf`).** Düz bir `{"measures": {"enum": [tüm 81 ölçü]}}`
+   **çapraz sızıntı** üretirdi: model `parti` seçip `oee`'nin ölçüsünü isteyebilirdi —
+   yapısal olarak "geçerli", semantik olarak saçma, `parse_cube_query` yine reddederdi.
+   Yani kısıt **hiçbir işe yaramazdı**. Her cube kendi dalını taşır.
+2. **`cube:null` REDDETME DALI KORUNUR — en önemli madde.** Şema-kısıtlı çıktının klasik
+   tuzağı modeli **geçerli ama yanlış** bir seçime ZORLAMAKtır: seçenekler arasında
+   "hiçbiri" yoksa model illa birini seçer. Bu, sistemin en pahalı hata sınıfını (§6.1
+   sessiz-yanlış) **üretirdi** — yani kısıt, düzeltmeye çalıştığı şeyi büyütürdü. Dal
+   listenin **başında** (sıra modele bir sinyaldir).
+
+**Kapsam yalnız beş çekirdek alan.** `order`/`limit`/`blend` bilerek dışarıda —
+`parse_cube_query` onları zaten **hoşgörüyle sessizce düşürüyor**, enum'lamak kazanç
+getirmez, yalnız şemayı büyütür.
+
+**Sağlayıcı gerçeği dürüstçe:** Anthropic `input_schema` + `tool_choice` ile taşınıyor.
+OpenAI-uyumlu uçlarda şema **kabul ediliyor ama KULLANILMIYOR** — `strict` fonksiyon
+şeması `oneOf`'u desteklemiyor ve **kısıtı yarım uygulamak, uygulamamaktan kötüdür**
+(model geçerli ama yanlış bir dala zorlanabilirdi). İmza uyumlu kalıyor ki
+`FailoverSqlGenerator` ayrım yapmasın; şemayı kabul etmeyen eski üreteçlere `TypeError`
+üzerinden iki-argümanlı çağrıyla düşülüyor. Tool-use yolu herhangi bir nedenle patlarsa
+**bugünkü serbest-JSON yoluna düşülüyor** — ikisi de aynı `parse_cube_query`'ye varır,
+yani yedek yol zaten doğrulanmış.
+
+**Şema her istekte kataloğun O ANKİ hâlinden üretilir** — bayat bir enum, olmayan
+enum'dan kötüdür: modele var olmayan bir adı **dayatırdı**.
+
+> ⚠️ **KABUL KAPISI KARŞILANMADI ve karşılanmış gibi gösterilmiyor.** Planın §6 ölçütü
+> *"whitelist reddi oranı ölçülüp DÜŞÜŞÜ doğrulanır"*. Bu ortamda **gerçek bir LLM
+> sağlayıcı yok** (`RuleBasedSqlGenerator`), dolayısıyla oran ölçülemez. Kilitlenen şey
+> **mekanizmanın kendisi**: şemanın doğruluğu (üretilen her dal `parse_cube_query`'den
+> GEÇİYOR — ikisi ayrışsa model şemaya uyar ama sistem yine reddederdi), yedek yolun
+> çalışması, bayrağın kapatabilmesi. **Yeni:** whitelist reddi artık **loglanıyor**
+> (eskiden SESSİZDİ — LLM cevap üretti, `parse_cube_query` düşürdü, geriye iz kalmadı);
+> ölçülemeyen bir kazanç doğrulanamaz. Oranın önce/sonra kıyası **Faz 0.5'in `--live`
+> modunun** işidir ve o faza girdi olarak taşınmıştır.
+
+15 test: `tests/test_sema_kisitli.py` · bayrak `llm_sema_kisitli` (KURAL B).
+
 ### 6.1j R2 (liste/döküm) — dalın YARISI haklıydı, yarısı kapsam kaybıydı (Faz 2a) ✅
 
 `route()`'un R2 dalı koşulsuz `None` dönüyordu: *"liste/döküm istekleri cube'a uymaz →
