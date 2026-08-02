@@ -39,3 +39,8 @@ personel:
   - name: pozisyon
     type: VARCHAR
     expression: personel_ozluk.pozisyon
+  # medeni_hal (Faz 2.2): `ik` cube'u view'dan modele taşınırken gerekti. Diğer üçüyle
+  # aynı desen — özlükteki demografiyi personel'e taşır ki bordro 2 sıçramada erişsin.
+  - name: medeni_hal
+    type: VARCHAR
+    expression: personel_ozluk.medeni_hal

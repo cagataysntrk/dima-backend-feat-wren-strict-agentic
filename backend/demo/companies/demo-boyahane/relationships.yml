@@ -133,6 +133,18 @@ relationships:
     join_type: MANY_TO_ONE
     models: [bordro, personel]
     condition: "bordro.personel_kodu = personel.personel_kodu"
+    expose:
+      # `ik` cube'u TÜM boyutlarını KENDİ tanımlıyor (etiket/sözlükleriyle), o yüzden
+      # `dimension: false`: üreteç yalnız calc kolonlarını üretir, cube'un elle tanımları
+      # onları ifade olarak gösterir. egitim/pozisyon/dogum_tarihi/medeni_hal `personel`in
+      # KENDİ calc kolonlarıdır → 2 SIÇRAMA (bordro → personel → personel_ozluk).
+      - {column: departman, dimension: false}
+      - {column: cinsiyet, dimension: false}
+      - {column: vardiya, dimension: false}
+      - {column: egitim, dimension: false}
+      - {column: pozisyon, dimension: false}
+      - {column: dogum_tarihi, dimension: false}
+      - {column: medeni_hal, dimension: false}
   - name: puantaj_personel
     join_type: MANY_TO_ONE
     models: [puantaj, personel]

@@ -1,6 +1,10 @@
 name: ik
 label: İK / bordro
-base_object: ik_zengin
+# FAZ 2.2 (2 Ağustos 2026): VIEW → MODEL. TÜM ölçüler zaten `bordro`da; boyutlar
+# `personel` üzerinden 1-2 sıçrama. View `personel_ozluk`a DOĞRUDAN join'liyordu
+# (iki bağımsız 1-sıçrama); göç `personel` ÜZERİNDEN 2 sıçrama yapıyor. Öksüz taraması
+# her yönde SIFIR (bordro→personel, bordro→özlük, özlük→personel) → sonuç birebir aynı.
+base_object: bordro
 
 # İK/bordro cube'u (YENİ modül, 2026-07-29) — sektörden bağımsız X-ekseni topic.
 # Maaş/SGK/mesai/prim + personel demografisi (departman/cinsiyet/yaş/eğitim). Eski yapıda
@@ -54,24 +58,24 @@ measures:
 
 dimensions:
   - name: departman
-    expression: departman
+    expression: personel_departman
     type: VARCHAR
     synonyms: [departman, bölüm, birim]
   - name: cinsiyet
-    expression: cinsiyet
+    expression: personel_cinsiyet
     type: VARCHAR
     synonyms: [cinsiyet, kadın, erkek, cinsiyete göre]
   - name: egitim
-    expression: egitim
+    expression: personel_egitim
     type: VARCHAR
     label: eğitim
     synonyms: [eğitim, öğrenim, okul]
   - name: pozisyon
-    expression: pozisyon
+    expression: personel_pozisyon
     type: VARCHAR
     synonyms: [pozisyon, unvan, görev]
   - name: medeni_hal
-    expression: medeni_hal
+    expression: personel_medeni_hal
     type: VARCHAR
     label: medeni hal
     synonyms: [medeni hal, medeni durum, evli, bekar]
@@ -87,11 +91,13 @@ dimensions:
     synonyms: [dönem, ay, periyot]
   - name: yas_grubu
     label: yaş grubu
-    expression: "CASE WHEN dogum_tarihi IS NULL THEN NULL WHEN date_diff('year', dogum_tarihi, current_date) < 30 THEN '<30' WHEN date_diff('year', dogum_tarihi, current_date) < 40 THEN '30-39' WHEN date_diff('year', dogum_tarihi, current_date) < 50 THEN '40-49' ELSE '50+' END"
+    expression: "CASE WHEN personel_dogum_tarihi IS NULL THEN NULL WHEN date_diff('year', personel_dogum_tarihi, current_date) < 30 THEN '<30' WHEN date_diff('year', personel_dogum_tarihi, current_date) < 40 THEN '30-39' WHEN date_diff('year', personel_dogum_tarihi, current_date) < 50 THEN '40-49' ELSE '50+' END"
     type: VARCHAR
     synonyms: [yaş, yaş grubu, yaşa göre, yaş aralığı]
 
 time_dimensions:
   - name: donem_tarih
-    expression: donem_tarih
+    # View'da türetiliyordu (CAST(donem || '-01' AS DATE)); base MODEL olunca ifade
+    # cube'a taşındı. `bordro.donem` 'YYYY-MM' biçiminde.
+    expression: "CAST(donem || '-01' AS DATE)"
     type: DATE

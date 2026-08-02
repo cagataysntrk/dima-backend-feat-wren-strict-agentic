@@ -33,4 +33,8 @@ columns:
   type: VARCHAR
   is_calculated: true
   expression: personel_ozluk.pozisyon
+- name: medeni_hal
+  type: VARCHAR
+  is_calculated: true
+  expression: personel_ozluk.medeni_hal
 primary_key: personel_kodu
