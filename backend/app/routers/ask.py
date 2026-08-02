@@ -10,6 +10,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
+from app import context as app_context
 from app import cube_router, pii, viz, yoy
 from app.answer import (
     _attach_next_steps,
@@ -1046,6 +1047,25 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     is_followup = structural_followup or raw_followup
     prev_question = body.history[-1] if body.history else ""
 
+    # BAĞLAM ÇÖZÜMÜ (Faz G5) — sunucunun ARTIK bir bağlam modeli var. Bugüne kadar
+    # `thread_id`/`reply_to_label` salt ECHO'ydu ve `is_new_topic` yalnız `not is_followup`
+    # idi; yani hangi soru hangi bağlama ait, sunucu BİLMİYOR, istemciye güveniyordu.
+    # `app/context.py` saf bir fonksiyondur (izole test edilebilir) ve her zaman bir
+    # KURAL döndürür — bağlam sessizce kopmaz, koparsa gerekçesi makbuza yazılır.
+    #
+    # `reply_to_cube_query` HENÜZ istemciden gelmiyor (thread paneli Faz H4'te yeniden
+    # kurulacak); o gelene kadar çapa listesi boş kalır ve çözücü yapısal/ham/taze
+    # dallarını kullanır. Bu bir eksiklik DEĞİL kademeli bir bağlanmadır: sunucu tarafı
+    # bugünden itibaren gerekçe üretiyor ve istemci hazır olduğunda çapa dalı devreye girer.
+    baglam = app_context.coz(
+        cube_query=body.cube_query,
+        prev_sql=prev_sql,
+        history=body.history,
+        capa_etiketi=body.reply_to_label,
+    )
+    _log.info("BAĞLAM /ask: kural=%s cube=%s eksen=%s", baglam.kural,
+              (baglam.cube_query or {}).get("cube"), baglam.kullanilmis_eksenler)
+
     # İSTEK GELDİ (1 Ağustos 2026, kullanıcı talebi: "her girdiyi net şekilde loglayalım").
     # Kapsamlı görünürlük için TEK giriş noktası — soru+bağlam sinyalleri (LLM'e mi düşecek,
     # yapısal takip mi, hangi thread) `_finish()`'teki "cevap gönderildi" logunun eşi.
@@ -1132,7 +1152,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         """Gövde `app/answer.py::record_contract`'ta — TEK uygulama (Faz A4)."""
         return record_contract(request, service=service, session_id=body.session_id,
                                question=body.question, cube_query=cq, sql=sql,
-                               result=result, source=source)
+                               result=result, source=source, baglam=baglam)
 
     def _honest_refusal(note: str, trace: list[str],
                         suggestions: list[Suggestion] | None = None) -> AskResponse:

@@ -316,9 +316,29 @@ def koken(service, cube_query: dict | None) -> dict | None:
     return {"dimensions": kayit} if kayit else None
 
 
+def _provenance(service, cube_query: dict | None, baglam) -> dict | None:
+    """Makbuzun KÖKEN bloğu: *"bu cevap nereden geldi?"* — iki yüzü birlikte.
+
+    **Köken** (Faz D2) hangi kırılımın hangi join'den geldiğini ve o join'in ölçülüp
+    ölçülmediğini söyler. **Bağlam** (Faz G5) cevabın hangi çapaya, hangi KURALA göre
+    bağlandığını söyler. İkisi aynı sorunun yüzleri olduğu için tek blokta durur —
+    ayrı kolonlara bölmek, iki yarısı ayrı yerlerde duran bir kanıt üretirdi.
+
+    İkisi de yoksa `None`: boş bir sözlük yazmak *"bakıldı ve yoktu"* ile *"hiç
+    sorulmadı"*yı karıştırırdı.
+    """
+    blok: dict = {}
+    k = koken(service, cube_query)
+    if k:
+        blok.update(k)
+    if baglam is not None:
+        blok.update(baglam.makbuza())
+    return blok or None
+
+
 def record_contract(request: Request, *, service, session_id: str | None, question: str,
                     cube_query: dict | None, sql: str | None, result: dict | None,
-                    source: str) -> str | None:
+                    source: str, baglam=None) -> str | None:
     """Query Contract kaydı — **tek uygulama** (ADR-0010).
 
     Öncesinde ÜÇ tane vardı: `ask()` içinde bir closure, `/cube` içinde satır-içi
@@ -338,7 +358,7 @@ def record_contract(request: Request, *, service, session_id: str | None, questi
             session_id=session_id, question=question, cube_query=cube_query, sql=sql,
             result=result, source=source, schema_version=service.mdl_version,
             tenant_id=getattr(principal, "tenant_id", None),
-            provenance=koken(service, cube_query),
+            provenance=_provenance(service, cube_query, baglam),
         )
     except Exception:
         _log.warning("Query Contract kaydedilemedi (best-effort) — source=%s", source,

@@ -921,6 +921,76 @@ yeni bir özellik **yeni bir kompozisyon** demektir — yeni bir baypas yolu de�
 
 ---
 
+## 12. Konuşma sözleşmesi — thread bağlamsallığı (Faz G5 kuruldu)
+
+> **Bu bölüm olmadan bir sonraki geliştirici "sohbet"i Discovery'ye bağlar** — bugüne kadar
+> olan tam da budur.
+
+### 12.1 Korunan değişmez (tartışmaya kapalı)
+
+**Thread bir UI GRUPLAMASIDIR, SEMANTİK SINIR DEĞİLDİR.** Bir thread cube/bağlam sınırı
+taşımaz; yeni thread **yalnız açık kullanıcı eylemiyle** doğar. Sunucu bir soruyu *"yeni
+konu"* ilan ederek bağlamı **sessizce koparamaz**.
+
+### 12.2 Ölçülen durum (2026-08-02, düzeltme öncesi)
+
+```
+thread_id, reply_to_label  →  SALT ECHO (sunucu alır, aynen geri verir)
+is_new_topic               →  not is_followup   (tek boolean)
+sınıflandırma              →  structural_followup | raw_followup   (İKİLİ)
+```
+
+Yani **sunucunun bir bağlam modeli yoktu** — hangi soru hangi bağlama ait, istemciye
+güveniliyordu. Ve mantık `ask()` closure'larının içinde olduğu için **izole test
+edilemiyordu**.
+
+### 12.3 `app/context.py` — deterministik, gerekçeli bağlam çözücü
+
+Saf fonksiyon (I/O yok, LLM yok). Bağlam çözümü bir *anlama* işi değil bir **muhasebe**
+işidir: hangi çapa verildi, hangi sorgu taşındı, hangi eksen zaten kullanıldı. LLM'e
+verilseydi aynı girdi farklı turlarda farklı bağlama bağlanabilirdi ve *"kanıtlı"* iddiası
+çökerdi.
+
+**Kural sırası (öncelik BİLİNÇLİ ve test edilir):**
+
+| # | Kural | Ne zaman | Neden bu sırada |
+|---|---|---|---|
+| 1 | `capa:karta-yanit` | kullanıcı bir karta yanıt verdi | **Açık eylem, örtük durumu EZER.** Aksi halde bir karta yanıt verirken en son raporun bağlamına kayardık — ve bu sessizce olurdu. |
+| 2 | `capa:coklu-kesisim` | birden çok kart seçildi, aynı cube | **Kesişim**, birleşim değil: birleşim alsaydık seçilmemiş bir ölçü sessizce rapora girerdi. |
+| 3 | `capa:coklu-celiski` | birden çok kart, **farklı cube** | Farklı cube'lar farklı **grain**lerdir; sessizce birleştirmek fan-out'un diyalog seviyesindeki karşılığı olurdu. → **SOR** (ADR-0008). |
+| 4 | `yapisal:cube_query` | istemci açık `cube_query` taşıdı | bugünkü `structural_followup` |
+| 5 | `ham:onceki-sql` | ham-SQL zinciri | yapısal bağlam YOK — uydurulmaz |
+| 6 | `taze:capa-yok` | hiçbir çapa yok | `taze` dönmek serbest, **gerekçesiz** dönmek değil |
+
+### 12.4 "Kanıtlı olmalı" — somut karşılığı
+
+1. **Gerekçe makbuza yazılır.** `contract_log.provenance_json` içinde `context_rule` +
+   `resolved_context`. Ayrı bir kolon AÇILMADI: köken (hangi join) ile bağlam (hangi çapa)
+   *"bu cevap nereden geldi"* sorusunun iki yüzüdür; ayrı kolonlar iki yarısı ayrı yerlerde
+   duran bir kanıt üretirdi. **Uçtan uca test HTTP yolundan geçip bu alanı okur** — saf ve
+   testli bir modül BAĞLANMAMIŞSA hiçbir şey ifade etmez (bu turda dört kez ölçülen desen).
+2. **İzole test edilebilir.** 19 altın vaka; öncelik sırası, kesişim, çelişki, eksen
+   birikimi, makbuz biçimi ve değişmezlik ayrı ayrı kilitli.
+3. **Süreklilik ÖLÇÜLEBİLİR** (`SureklilikOlcumu`): takip bekleniyorken `taze` dönmek =
+   bağlam **sessizce koptu**. Oran `None` dönebilir — `0.0` *"hep koptu"* demektir,
+   `None` *"bu soru sorulamaz"* (aynı ayrım `stats.z_skorlari`'nda).
+
+### 12.5 Kademeli bağlanma (dürüst kayıt)
+
+`reply_to_cube_query` **henüz istemciden gelmiyor** (thread paneli §14'ün H4 kalemi).
+O gelene kadar çapa listesi boş kalır ve çözücü 4–6. dalları kullanır. Bu bir eksiklik
+değil kademeli bir bağlanmadır: **sunucu bugünden itibaren gerekçe üretiyor** ve istemci
+hazır olduğunda çapa dalı devreye girer.
+
+### 12.6 Henüz YOK (G1–G4)
+
+Takip sorusunun **üçüncü sınıfı** (*"bu neden böyle?"*, *"normal mi?"*, *"ne yapmalıyız?"*
+— bugün Discovery'ye düşüyor), grafiğe çapalı diyalog (G2), reçeteli analiz (G3) ve
+**anlatım doğrulayıcı** (G4: cümledeki her sayı sonuç kümesinde bulunmalı ya da beyan
+edilmiş bir işlemle ondan türetilebilmeli; doğrulanamayan cümle **yayımlanmaz**).
+
+---
+
 ## 14. Arka–ön sözleşmesi — "Tanım Tamamlandı" = arka + ön + test
 
 > Bu bölüm bir denetim bulgusundan doğdu (2026-08-02): **bu turda yazılan iki uç frontend'de
