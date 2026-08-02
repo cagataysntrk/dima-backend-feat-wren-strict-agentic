@@ -19,6 +19,19 @@ export interface RelationshipMeta {
   condition: string;
 }
 
+// Bir kırılımın KÖKENİ (Faz 1.1) + fan-out SERTİFİKASI (Faz D2). Yalnız ilişki-türevi
+// boyutlar için doludur — yerel boyutlarda sözlükte hiç yer almaz ("bu join'den mi geldi"
+// sorusu her boyut için "evet" olmasın diye).
+export interface DimensionOrigin {
+  model: string;         // boyutun geldiği tablo (ör. "makineler")
+  column: string;        // o tablodaki kolon
+  relationship: string;  // hangi ilişki üzerinden
+  hops: number;          // kaç sıçrama
+  // "olculdu:saglikli" | "olculdu:riskli" | "olculmedi".
+  // ÖLÇÜLMEDİ ≠ TEMİZ: sertifika üretilmemişse temiz olduğu İDDİA EDİLMEZ.
+  certified?: string;
+}
+
 export interface CubeMeta {
   name: string;
   measures?: string[];
@@ -26,6 +39,7 @@ export interface CubeMeta {
   time_dimensions?: string[];
   // Türev boyutlar dahil olası değerler (chip alternatifleri): {hafta_gunu: [Pzt..Paz]}
   dimension_values?: Record<string, string[]>;
+  dimension_origin?: Record<string, DimensionOrigin>;
 }
 
 export interface SchemaResponse {
@@ -354,6 +368,101 @@ export interface BlastRadius {
   contract_log_structured: number;
   contract_log_raw_sql_text_match: number;
   note: string;
+}
+
+// Faz 4.2 — ONAYIN KURU KOŞUMU. Onaylayan kişi MDL değişikliğini OLDU BİTTİ olarak
+// görüyordu; bu uç, YAML'a yazmadan ne değişeceğini gösterir. Diff'i üretimdeki
+// yazıcının KENDİSİ geçici bir kopya üzerinde üretir (taklit değil).
+export interface MeasurePreviewInput {
+  cube: string;
+  measure_name: string;
+  expression: string;
+  type?: string;
+  label?: string | null;
+  synonyms?: string[];
+  lower_is_better?: boolean | null;
+}
+
+export interface MeasurePreview {
+  candidate_id: string;
+  cube: string;
+  yaml_path: string;
+  diff: string; // unified diff
+  changed: boolean;
+  // Diff'te GÖRÜNMEYEN ama bilinmesi gereken sonuç: onay, pack'ten gelen cube'u bu
+  // tenant'ın şirket katmanına taşır (paylaşılan pack dosyasına dokunulmaz).
+  creates_company_override: boolean;
+}
+
+// --- Faz 5.1/5.2 — "neden değişti?" (katkı ayrıştırması + PVM) ---------------------
+// Her bulgu KENDİ BAŞINA bir CubeQuery taşır: tıklanınca /cube ile LLM'siz koşar ve
+// kendi Query Contract'ını üretir. Rakiplerden ayrıştığı nokta budur — skor bir metin
+// değil, doğrulanabilir bir sorgunun etiketi.
+export interface ContributionFinding {
+  label: string;
+  kind: string;
+  deger: unknown;
+  simdi: number;
+  onceki: number;
+  delta: number;
+  net_pay: number | null; // net değişime oran (net ~0 ise null — UYDURULMAZ)
+  brut_pay: number | null;
+  cube_query: CubeQuery;
+}
+
+export interface ContributionReport {
+  dimension: string;
+  dimension_label: string;
+  net_degisim: number;
+  brut_hareket: number;
+  bulgular: ContributionFinding[];
+  kirpilan_segment: number; // sessiz kesme OLMADIĞININ kaydı
+  kirpilan_esik_yuzde: number;
+}
+
+export interface PvmFinding {
+  label: string;
+  kind: string;
+  deger: unknown;
+  delta: number;
+  fiyat_etkisi: number;
+  miktar_etkisi: number;
+  birlesik_etki: number;
+  baskin_etken: string;
+  fiyat_simdi: number | null;
+  fiyat_onceki: number | null;
+  miktar_simdi: number;
+  miktar_onceki: number;
+  deger_simdi: number;
+  deger_onceki: number;
+  cube_query: CubeQuery;
+}
+
+export interface PvmReport {
+  dimension: string;
+  dimension_label: string;
+  value_measure: string;
+  volume_measure: string;
+  price_label: string;
+  net_degisim: number;
+  // ARTIKSIZ: fiyat + miktar + birleşik = net_degisim (birebir)
+  fiyat_etkisi: number;
+  miktar_etkisi: number;
+  birlesik_etki: number;
+  bulgular: PvmFinding[];
+  kirpilan_segment: number;
+  kirpilan_esik_yuzde: number;
+}
+
+export interface ContributionResponse {
+  measure: string | null;
+  mode: string; // "yoy" | "mom"
+  kind: string; // "segment" | "pvm"
+  raporlar: ContributionReport[];
+  pvm_raporlar: PvmReport[];
+  note: string | null; // ayrıştırma YAPILAMADIYSA nedeni
+  taranmayan_boyut: number; // üst sınır yüzünden bakılmayan boyut — kapsam sessizce daralmaz
+  contract_ids: string[];
 }
 
 // Faz 4.5 (31 Temmuz 2026) — tenant-kendi-hizmeti DB bağlama sihirbazı.

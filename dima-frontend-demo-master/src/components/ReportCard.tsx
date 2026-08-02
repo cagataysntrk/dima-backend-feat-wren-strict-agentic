@@ -14,6 +14,7 @@ import {
   verifyReport,
 } from "@/lib/api-client";
 import { ContractDetailPanel } from "@/components/ContractDetailPanel";
+import { ContributionLayer } from "@/components/ContributionLayer";
 import { DrillDownPanel } from "@/components/DrillDownPanel";
 import { InterpretationBar } from "@/components/InterpretationBar";
 import { ResultView } from "@/components/ResultView";
@@ -630,6 +631,19 @@ export function ReportCard({
             </div>
           ))}
         </div>
+      )}
+
+      {/* FAZ H2 — "neden değişti?" cevabın İÇİNDE bir katman (yeni panel DEĞİL, H3 kuralı).
+          Backend'de Faz 5.1/5.2'de yazılmış `POST /ask/contribution` bu turda ilk kez bir
+          tüketici kazandı; `tests/test_uc_yetim_degil.py` onu artık CI'da tutuyor. Yalnız
+          gerçek bir sonucu olan cube cevaplarında görünür — dönemsel değişim yoksa uç zaten
+          dürüst bir `note` döndürür. */}
+      {item.cube_query && item.result && (
+        <ContributionLayer
+          cubeQuery={item.cube_query}
+          sessionId={sessionId}
+          onCubeEdit={onCubeEdit}
+        />
       )}
 
       {/* K2 sonraki adım chip'leri (backend 'next_steps' flag'iyle gelir) — kırılım/ölçek/

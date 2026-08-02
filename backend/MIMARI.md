@@ -551,7 +551,12 @@ diye zaman kaybetmesin.
   sistem *"ölçemiyorum"* demez, *"her şey hata"* der — ki bu bir süre sonra gürültü sayılır.
 - **Test koşum reçetesi** (host'ta bağımlılık yok, prod imajda pytest yok):
   `docker build -t dima-test` = prod imaj + `pytest pyyaml httpx ruff`; sonra
-  `docker run --rm --network none -v "$PWD/backend:/app" -w /app dima-test python -m pytest -q`.
+  `docker run --rm --network none -v "$PWD/backend:/app" \
+       -v "$PWD/dima-frontend-demo-master:/dima-frontend-demo-master:ro" \
+       -w /app dima-test python -m pytest -q`.
+  ⚠️ **Frontend mount'u zorunludur** (Faz H): `tests/test_uc_yetim_degil.py` frontend ağacını
+  göremezse **atlar** — yani yalnız `backend/`'i mount eden bir koşumda yetim-uç kapısı
+  sessizce devre dışı kalır ve yeşil bir koşum "kontrol edildi" gibi okunur.
   Bind-mount sayesinde kod değişikliğinde imaj yeniden build edilmez. `--network none`
   hermetikliği garanti eder — testlerin ağa çıkmaya çalışması bir hatadır, yavaşlık değil.
 
@@ -844,6 +849,78 @@ Rakip araştırması bunları **bulamadı** (satıcı dokümanları taranarak):
   olmalıdır.
 - **Bileşik anahtarlı ilişkiler ifade edilemez** (MDL `condition` tek kolonludur) → `enerji_tesis`
   gibi vakalar meşru view kullanımıdır.
+
+---
+
+## 14. Arka–ön sözleşmesi — "Tanım Tamamlandı" = arka + ön + test
+
+> Bu bölüm bir denetim bulgusundan doğdu (2026-08-02): **bu turda yazılan iki uç frontend'de
+> HİÇ kullanılmıyordu** — `POST /ask/contribution` (katkı ayrıştırması + PVM, Faz 5.1/5.2) ve
+> `POST /measures/candidates/{cid}/preview` (diff önizlemesi, Faz 4.2). İkisi de çalışıyordu,
+> ikisinin de testi vardı, ikisini de hiç kimse göremiyordu.
+
+### 14.1 Kural
+
+Hiçbir backend yeteneği şu üçünden biri olmadan **"bitti" sayılmaz**:
+
+1. **Frontend tüketicisi var** (hangi bileşen, hangi etkileşim), ya da
+2. **`api-only` olarak BEYAN EDİLMİŞ** — gerekçesiyle, `tests/test_uc_yetim_degil.py::API_ONLY`
+   sözlüğünde, ya da
+3. **Aynı PR'da UI biletiyle** ve o bilet kapanmadan faz kapanmaz.
+
+Kapı otomatiktir: **yetim uç = kırmızı CI.** OpenAPI'deki her yol frontend kaynağında aranır
+ya da `API_ONLY`'de beyan edilmiş olmalıdır. *"Şimdilik böyle kalsın"* bir seçenek değildir —
+kapı tam olarak onu engellemek için vardır.
+
+**Ölçülen durum (2026-08-02, Faz H):** 47 yolun 5'i yetimdi. İkisi kapatıldı (aşağıda), üçü
+gerekçesiyle `api-only` beyan edildi (`/health`, `/health/ready`, `/dry-plan`).
+
+**Kapının bilinen sınırı:** *"frontend'de string var ama hiçbir kullanıcı etkileşimine bağlı
+değil"* durumunu ayırt edemez — o bir kod okuma işidir. Kapı yalnız **hiç bahsedilmeyeni**
+yakalar. Sınırın kaydedilmesi, olmayan bir garantiyi rozetlememek içindir.
+
+**Koşum notu:** kapı frontend ağacını görmezse **atlar** (backend deposu tek başına da
+klonlanabilir olmalı ve orada "kırmızı" değil "ölçülemedi" demelidir). Bu yüzden test
+komutu depo KÖKÜNÜ mount etmelidir; yalnız `backend/`'i mount eden bir koşumda bu kapı
+sessizce atlanır — §6.4'ün *"ölçüm aracı da bir bağımlılıktır"* dersinin aynısı.
+
+### 14.2 Yeni yetenek yeni PANEL doğurmaz
+
+Bugünkü desen her yetenek için bir `*Panel`'di: `DrillDownPanel`, `DashboardsPanel`,
+`SchedulesPanel`, `ReportPanel`, `SchemaPanel`, `HistoryPanel`, `ContractDetailPanel`,
+`ConnectionReviewPanel`, `ReviewPanel`, `HelpPanel`… Şartnamedeki özelliklerin **onda biri**
+eklense arayüz kullanılamaz hale gelir.
+
+| İlke | Karşılığı |
+|---|---|
+| **Tek cevap yüzeyi + kademeli açılım** | Kök neden, katkı, PVM, köken, makbuz, güven — hepsi cevabın KENDİ kartında açılır/kapanır. Yeni panel değil, yeni **katman**. |
+| **Sohbet birincil, panel ikincil** | Panel yalnız **kalıcı artefaktlar** için (pano, zamanlanmış rapor, bağlantı, inceleme). |
+| **Her sayının yanında kanıt kancası** | Makbuz/köken tek tıkla; `ContractDetailPanel` bir *derinleşme*, giriş noktası değil. |
+| **Chip'ler = keşif** | Yeni yetenekler chip olarak sunulur — menü büyütmeden. |
+| **Boş durum ≠ hata** | Dürüst red ve netleştirme chip'i birinci sınıf UX'tir, "bulunamadı" ekranı değil. |
+
+Uygulanmış örnek: `ContributionLayer` bir **panel değil**, `ReportCard` içinde katlanan bir
+şerittir; her bulgu kendi `cube_query`'sini taşır ve tıklanınca `/cube` ile **LLM'siz** koşup
+kendi makbuzunu üretir.
+
+### 14.3 Kapatılan yetimler ve nasıl kapatıldıkları
+
+| Uç | Nereye bağlandı | Neden oraya |
+|---|---|---|
+| `POST /ask/contribution` | `ReportCard` içinde `ContributionLayer` (katlanır şerit) | *"Neden değişti?"* bir panel sorusu değil, **cevabın devamıdır**. Bulgular tıklanır sorgulardır — ürünün rakiplerden ayrıştığı nokta ancak tıklanabilir olunca görünür. |
+| `POST /measures/candidates/{cid}/preview` | `ReviewPanel`'de "kuru koşum" bloğu; **onay butonu diff görülmeden açılmaz** | Yanlış bir ölçünün blast-radius'u kategorik olarak büyüktür; inceleme ancak **görülen** bir değişiklik üzerinde yapılabilir. Diff bayatlarsa (form değişirse) onay yeniden kilitlenir. |
+
+### 14.4 Köken ve sertifika UI'da görünür (H5)
+
+`dimension_origin` API'de Faz 1.1'den beri vardı ve UI'da **hiç görünmüyordu**; Faz D2'den
+beri yanında fan-out sertifikası da geliyor. `InterpretationBar`'daki her ilişki-türevi
+kırılım chip'i artık bir **köken rozeti** taşır (`⇱✓` / `⇱⚠` / `⇱?`) ve üzerine gelince
+*"bölüm — makineler.bolum tablosundan, 1 sıçrama (oee_vardiya_makineler); fan-out ölçüldü:
+hedef anahtar benzersiz, NULL yok, öksüz satır yok"* der.
+
+Üç durum **ayrı** gösterilir ve bu ayrım pazarlama değil doğruluk meselesidir:
+`olculdu:saglikli` ≠ `olculdu:riskli` ≠ **`olculmedi`**. Ölçülmemiş bir join'i yeşil
+göstermek, olmayan bir garantiyi rozetlemek olurdu.
 
 ---
 

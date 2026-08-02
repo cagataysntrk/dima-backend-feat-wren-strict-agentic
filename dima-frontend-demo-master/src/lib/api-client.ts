@@ -18,8 +18,11 @@ import type {
   DashboardDetail,
   DashboardListItem,
   DashboardWidgetData,
+  ContributionResponse,
   MeasureApproveInput,
   MeasureCandidate,
+  MeasurePreview,
+  MeasurePreviewInput,
   QueryResult,
   Report,
   ReportBlockInput,
@@ -569,6 +572,19 @@ export async function getMeasureBlastRadius(
   return data;
 }
 
+// Faz 4.2 — ONAYIN KURU KOŞUMU: YAML'a yazmadan diff. `measure:read` yeter (bu uç
+// hiçbir şey değiştirmez). ReviewPanel onay butonunu diff GÖRÜLENE kadar kilitler.
+export async function previewMeasureCandidate(
+  id: string,
+  body: MeasurePreviewInput,
+): Promise<MeasurePreview> {
+  const { data } = await apiClient.post<MeasurePreview>(
+    `/measures/candidates/${id}/preview`,
+    body,
+  );
+  return data;
+}
+
 export async function approveMeasureCandidate(
   id: string,
   body: MeasureApproveInput,
@@ -604,6 +620,20 @@ export async function deprecateMeasureCandidate(
 // Query Contract kaydını üretir (drill.py + ask.py::ask_drill).
 export async function drillAsk(body: DrillRequestInput): Promise<DrillResponse> {
   const { data } = await apiClient.post<DrillResponse>("/ask/drill", body);
+  return data;
+}
+
+// Faz 5.1/5.2 — "NEDEN DEĞİŞTİ?": bir cube_query'nin dönemsel değişimini KULLANILMAYAN
+// boyutlara dağıtır (segment), ya da fiyat/miktar/birleşik etkiye ayrıştırır (pvm).
+// Her bulgu kendi cube_query'sini taşır → tıklanınca /cube ile LLM'siz koşar.
+export async function askContribution(body: {
+  cube_query: CubeQuery;
+  mode?: "yoy" | "mom";
+  kind?: "segment" | "pvm";
+  session_id?: string;
+  max_dimensions?: number;
+}): Promise<ContributionResponse> {
+  const { data } = await apiClient.post<ContributionResponse>("/ask/contribution", body);
   return data;
 }
 

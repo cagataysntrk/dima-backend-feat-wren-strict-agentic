@@ -48,6 +48,39 @@ export function InterpretationBar({
   const catFilters = filters.filter((f) => f.dimension !== "tarih");
   const dateFilters = filters.filter((f) => f.dimension === "tarih");
 
+  // FAZ H5 — KÖKEN ROZETİ. Bir kırılımın NEREDEN geldiği bugüne kadar API'de vardı
+  // (`dimension_origin`, Faz 1.1) ama UI'da hiç görünmüyordu; Faz D2'den beri yanında
+  // **fan-out sertifikası** da geliyor. Kullanıcının "bu bölüm bilgisi makineler
+  // tablosundan, 1 sıçrama, ölçülmüş" diyebilmesi güvenin GÖRÜNÜR halidir — ve fan-out
+  // riski tam olarak burada yaşar: beyan yanlışsa sonuç hatasız, uyarısız ve "cube"
+  // rozetiyle ŞİŞMİŞ gelir.
+  const kokenFor = (dim: string) => {
+    const cubeAdi = cq.cube as string | undefined;
+    const c = (schema?.cubes ?? []).find((x) => x.name === cubeAdi);
+    const o = c?.dimension_origin?.[dim];
+    if (!o) return null;  // yerel boyut — köken sorusu anlamsız, rozet YOK
+    const sert =
+      o.certified === "olculdu:saglikli"
+        ? { im: "✓", renk: "text-emerald-600", not: "fan-out ölçüldü: hedef anahtar benzersiz, NULL yok, öksüz satır yok" }
+        : o.certified === "olculdu:riskli"
+          ? { im: "⚠", renk: "text-amber-600", not: "fan-out ÖLÇÜLDÜ ve RİSKLİ — bu kırılımda toplamlar şişmiş olabilir" }
+          : { im: "?", renk: "text-neutral-500", not: "bu join HENÜZ ÖLÇÜLMEDİ (sertifika üretilmemiş) — temiz olduğu iddia EDİLMİYOR" };
+    return {
+      ...sert,
+      baslik: `${dim} — ${o.model}.${o.column} tablosundan, ${o.hops} sıçrama (${o.relationship}). ${sert.not}`,
+    };
+  };
+
+  const KokenRozeti = ({ dim }: { dim: string }) => {
+    const k = kokenFor(dim);
+    if (!k) return null;
+    return (
+      <span className={`ml-1 cursor-help ${k.renk}`} title={k.baslik}>
+        ⇱{k.im}
+      </span>
+    );
+  };
+
   // Boyutun kategorik değerleri (şemadan) — filtre chip'i düzenlenirken seçenek olur.
   const valuesFor = (dim: string): string[] => {
     for (const m of schema?.models ?? []) {
@@ -298,6 +331,7 @@ export function InterpretationBar({
           return (
             <span key={d} className={chip} title="Kırılım">
               kırılım: {d}
+              <KokenRozeti dim={d} />
               <button onClick={() => removeDim(d)} className={xBtn} aria-label={`${d} kırılımını kaldır`}>×</button>
             </span>
           );
@@ -321,6 +355,7 @@ export function InterpretationBar({
             >
               {label} ▾
             </button>
+            <KokenRozeti dim={d} />
             <button onClick={() => removeDim(d)} className={xBtn} aria-label={`${d} kırılımını kaldır`}>×</button>
             {open && (
               <span className="absolute left-0 top-full z-30 mt-1 flex min-w-full flex-col border border-hairline bg-background shadow-lg">

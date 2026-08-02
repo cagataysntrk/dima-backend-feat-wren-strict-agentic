@@ -15,12 +15,13 @@ import {
   approveMeasureCandidate,
   deprecateMeasureCandidate,
   getMeasureBlastRadius,
+  previewMeasureCandidate,
   getMeasureCandidate,
   listMeasureCandidates,
   rejectMeasureCandidate,
 } from "@/lib/api-client";
 import { usePermission } from "@/lib/usePermission";
-import type { MeasureCandidate } from "@/lib/types";
+import type { MeasureCandidate, MeasurePreview } from "@/lib/types";
 
 const STATUS_LABEL: Record<string, string> = {
   draft: "taslak",
@@ -174,6 +175,39 @@ function ApproveForm({ candidate }: { candidate: MeasureCandidate }) {
     cube && measureName ? `{"cube": "${cube}", "measures": ["${measureName}"]}` : "{}",
   );
   const [formError, setFormError] = useState<string | null>(null);
+  // Faz 4.2/H2 — ONAY DIFF GÖRÜLMEDEN AÇILMAZ. Yanlış bir ölçünün blast-radius'u
+  // kategorik olarak büyüktür (yeni SQL/join/agregasyon → çift sayım, grain uyuşmazlığı)
+  // ve inceleme ancak GÖRÜLEN bir değişiklik üzerinde yapılabilir. Backend'de bu uç
+  // Faz 4.2'de yazılmıştı ama HİÇ bağlanmamıştı — onaylayan kişi MDL değişikliğini
+  // yalnız OLDU BİTTİ olarak görebiliyordu.
+  const [preview, setPreview] = useState<MeasurePreview | null>(null);
+  // Diff, formun O ANKİ haline aittir. Form değişince damga bayatlar → yeniden bakılmalı.
+  const previewImzasi = JSON.stringify([cube, measureName, expression, type, label, synonyms,
+                                        lowerIsBetter]);
+  const [previewIcin, setPreviewIcin] = useState<string | null>(null);
+  const previewGuncel = preview !== null && previewIcin === previewImzasi;
+
+  const onizle = useMutation({
+    mutationFn: () =>
+      previewMeasureCandidate(candidate.id, {
+        cube,
+        measure_name: measureName,
+        expression,
+        type,
+        label: label || null,
+        synonyms: synonyms.split(",").map((x) => x.trim()).filter(Boolean),
+        lower_is_better: lowerIsBetter,
+      }),
+    onSuccess: (d) => {
+      setPreview(d);
+      setPreviewIcin(previewImzasi);
+      setFormError(null);
+    },
+    onError: (e) => {
+      setPreview(null);
+      setFormError(apiErrorMessage(e));
+    },
+  });
 
   const approve = useMutation({
     mutationFn: async () => {
@@ -322,10 +356,76 @@ function ApproveForm({ candidate }: { candidate: MeasureCandidate }) {
         </p>
       )}
 
+      {/* KURU KOŞUM — onayın ön koşulu. Diff'i üretimdeki yazıcının KENDİSİ geçici bir
+          kopya üzerinde üretir (taklit değil), böylece incelenen şey gerçekten yazılacak
+          olandır. */}
+      <div className="border border-hairline p-2">
+        <div className="flex items-center justify-between">
+          <span className="font-mono text-[10px] uppercase text-neutral-400">
+            ne değişecek (kuru koşum)
+          </span>
+          <button
+            onClick={() => onizle.mutate()}
+            disabled={onizle.isPending || !cube || !measureName || !expression}
+            className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-500 transition-colors hover:border-foreground/30 hover:text-foreground disabled:opacity-40"
+          >
+            {onizle.isPending ? "hesaplanıyor…" : previewGuncel ? "yenile" : "diff'i göster"}
+          </button>
+        </div>
+        {!previewGuncel && (
+          <p className="mt-2 font-mono text-[11px] text-neutral-400">
+            {preview === null
+              ? "Onay için önce değişikliği görmelisin."
+              : "Form değişti — diff bayat. Yeniden bak."}
+          </p>
+        )}
+        {previewGuncel && preview && (
+          <div className="mt-2 space-y-2">
+            <div className="font-mono text-[10px] text-neutral-400">{preview.yaml_path}</div>
+            {preview.changed ? (
+              <pre className="max-h-64 overflow-auto border border-hairline bg-black/20 p-2 font-mono text-[11px] leading-relaxed">
+                {preview.diff.split("\n").map((satir, i) => (
+                  <div
+                    key={i}
+                    className={
+                      satir.startsWith("+") && !satir.startsWith("+++")
+                        ? "text-emerald-500"
+                        : satir.startsWith("-") && !satir.startsWith("---")
+                          ? "text-red-500"
+                          : satir.startsWith("@@")
+                            ? "text-sky-500"
+                            : "text-neutral-400"
+                    }
+                  >
+                    {satir || " "}
+                  </div>
+                ))}
+              </pre>
+            ) : (
+              <p className="font-mono text-[11px] text-amber-600">
+                Diff BOŞ — bu onay YAML&apos;da hiçbir şey değiştirmiyor.
+              </p>
+            )}
+            {preview.creates_company_override && (
+              <p className="border border-sky-500/40 bg-sky-500/5 p-2 font-mono text-[11px] text-sky-600">
+                Diff&apos;te GÖRÜNMEYEN sonuç: bu onay, pack&apos;ten gelen cube&apos;u bu
+                şirketin katmanına <strong>taşır</strong> (paylaşılan pack dosyasına
+                dokunulmaz). Bundan sonra pack güncellemeleri bu cube&apos;a otomatik
+                yansımaz.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="flex gap-2 pt-1">
         <button
           onClick={() => approve.mutate()}
-          disabled={approve.isPending || !cube || !measureName || !expression || !goldenId}
+          disabled={
+            approve.isPending || !cube || !measureName || !expression || !goldenId ||
+            !previewGuncel
+          }
+          title={previewGuncel ? undefined : "Önce diff'i göster — görülmeden onay yok"}
           className="border border-emerald-600/50 px-3 py-1.5 font-mono text-[12px] text-emerald-600 transition-colors hover:bg-emerald-600/10 disabled:opacity-40"
         >
           {approve.isPending ? "onaylanıyor…" : "✓ onayla"}
