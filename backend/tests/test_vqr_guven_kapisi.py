@@ -195,12 +195,16 @@ def test_her_kaynak_SINIFLANDIRILMIS():
     siniflandirilmamis = bulunan - vqr_mod.KNOWN_SOURCES
     assert not siniflandirilmamis, (
         f"VQR kaynağı sınıflandırılmamış: {sorted(siniflandirilmamis)} — app/vqr.py'de "
-        "_TRUSTED_SOURCES ya da _UNTRUSTED_SOURCES'a eklenmeli. Sınıflandırılmayan bir "
+        "_TRUSTED_SOURCES / _FEW_SHOT_ONLY_SOURCES / _UNTRUSTED_SOURCES'tan birine "
+        "eklenmeli. Sınıflandırılmayan bir "
         "kaynak sessizce tekrar-oynatılamaz hale gelir.")
 
 
 def test_iki_kume_KESISMIYOR():
     assert not (vqr_mod._TRUSTED_SOURCES & vqr_mod._UNTRUSTED_SOURCES)
+    # ⟳ FAZ 2b — üçüncü sınıf: few-shot'ta VAR, replay'de YOK.
+    assert not (vqr_mod._FEW_SHOT_ONLY_SOURCES & vqr_mod._TRUSTED_SOURCES)
+    assert not (vqr_mod._FEW_SHOT_ONLY_SOURCES & vqr_mod._UNTRUSTED_SOURCES)
 
 
 def test_ilgisiz_json_bozulmadi(depo):

@@ -154,8 +154,48 @@ _TRUSTED_SOURCES = frozenset({
     "user",            # elle/küratörlü çift (makine yazımı değil)
     "user_verified",   # insan ✓ verdi
     "chip_approved",   # insan chip'e tıklayarak onayladı
-    "auto_cube",       # Intent-JSON → katalogla doğrulanmış CubeQuery → derlenmiş SQL
 })
+
+#: FAZ 2b — §1.7 KARARI (2026-08-03). `auto_cube` DOĞRUDAN TEKRAR-OYNATMADAN ÇIKARILDI;
+#: few-shot'ta KALIR. Bu, `auto_discovery`'ye uygulanan AYNI kuraldır (MIMARI §6.3).
+#:
+#: ## Planın şartı ve elimizdeki ölçüm
+#:
+#: Plan bunu *"ölçüm olmadan seçilmez"* diye bağlamıştı ve maliyetten korkuyordu:
+#: *"hızlı-öğrenme faydasının %86'sını da götürür"*. Bu korku bir VARSAYIMA dayanıyordu —
+#: `auto_cube` replay'inin gerçekten bir şey KAZANDIRDIĞI varsayımına.
+#:
+#: ## Ölçüm bu varsayımı çürüttü
+#:
+#: `auto_cube` kaydı `_answer_from_cube_query`'de üretilir ve o fonksiyon HEM saf `cube`
+#: (route) HEM `cube+llm` cevaplarına hizmet eder. Saf `cube` cevabının replay'i **sıfır**
+#: kazandırır: `route()` onu zaten LLM'siz, sıfır maliyetle ve **daha doğru** çözer —
+#: çünkü katalog/router İYİLEŞİR, dondurulmuş kayıt İYİLEŞMEZ.
+#:
+#: Bu oturumun kendi ölçümü kanıt: `elektrik tuketimi` · `toplam durus` · `sapma yüzdesi`
+#: · `ortalama sapma` — hepsi bu oturumda **cube DEĞİŞTİRDİ** (§6.1g/h). 2a-3 öncesi
+#: yazılmış bir `auto_cube` kaydı, düzeltilmiş router'ın DOĞRU cevabını **engellerdi** ve
+#: `source="vqr"`, `confidence=0.95` rozetiyle gelirdi. Yani replay yalnız yanlışı
+#: kalıcılaştırmakla kalmaz, **düzeltmeyi de görünmez yapar**.
+#:
+#: Doğru-cube bu oturumda %86,3 → **%93,2** çıktı; dondurulmuş kayıtlar o 7 puanın
+#: tamamını geri alırdı.
+#:
+#: ## Ne KAYBEDİLMEDİ
+#:
+#: `auto_cube` `few_shot_block`'ta KALIYOR — yani Intent-JSON prompt'unu beslemeye devam
+#: ediyor, ama **her seferinde yeniden doğrulanarak** (`parse_cube_query`). Ve insan onayı
+#: yolu açık: `/ask/verify` kaydı `user_verified`'a terfi ettirir → replay'e girer.
+#: Yani kayıp "hızlı öğrenme" değil, **denetimsiz kalıcılaştırma**.
+#:
+#: ## ÖLÇÜLEMEYEN kısım dürüstçe
+#:
+#: Faz 0'ın istediği *"50'lik örneklem denetimi ile ölçülen yanlış-oran"* bu checkout'ta
+#: ÜRETİLEMEDİ (yerel `interaction_log`/`verified_query` boş). Karar, o örneklem yerine
+#: **yukarıdaki yapısal argümana** ve korpus ölçümüne dayanıyor. Canlı örneklem
+#: `auto_cube` replay'inin bir şey kazandırdığını gösterirse karar yeniden açılmalıdır —
+#: `few_shot`'tan çıkarılmadı, geri alma ucuz.
+_FEW_SHOT_ONLY_SOURCES = frozenset({"auto_cube"})
 _UNTRUSTED_SOURCES = frozenset({
     "auto_discovery",  # ham LLM SQL'i, HİÇ incelenmedi
     "auto",            # ayrım ÖNCESİ eski kayıt — kökeni kayıtta YOK, bir kısmı ham SQL
@@ -165,7 +205,7 @@ _UNTRUSTED_SOURCES = frozenset({
 # `auto_<birşey>` kaynağı sessizce GÜVENİLİR sayılmasın. Bedeli, yeni bir kaynak adının
 # sessizce ENGELLENMESİ — `tests/test_vqr_guven_kapisi.py::test_her_kaynak_SINIFLANDIRILMIS`
 # bunu yakalar: koddaki her `source=` literali iki kümeden birinde olmak zorunda.
-KNOWN_SOURCES = _TRUSTED_SOURCES | _UNTRUSTED_SOURCES
+KNOWN_SOURCES = _TRUSTED_SOURCES | _FEW_SHOT_ONLY_SOURCES | _UNTRUSTED_SOURCES
 
 
 def is_trusted(source: str | None) -> bool:

@@ -163,22 +163,23 @@ def mine_candidates(limit: int = 50, session: Session = Depends(get_session)) ->
 
     from sqlmodel import col, or_
 
+    from app.cube_router import RED_KODLARI
     from control_plane.models import InteractionLog
 
     rows = session.exec(
         select(InteractionLog.question, InteractionLog.kind, InteractionLog.cube_query_json,
-               InteractionLog.note)
+               InteractionLog.note, InteractionLog.reject_reason)
         .where(or_(col(InteractionLog.sql).is_(None), InteractionLog.kind == "llm"),
                col(InteractionLog.follow_up).is_(False), col(InteractionLog.kind) != "upload")
         .order_by(col(InteractionLog.ts).desc()).limit(3000)).all()
 
     groups: dict = {}
-    for question, kind, cq_json, note in rows:
+    for question, kind, cq_json, note, red in rows:
         q = (question or "").strip()
         if not q or len(q) > 80 or re.search(r"\b(dima|merhaba|selam)\b", q.lower()):
             continue
         g = groups.setdefault(q.lower(), {"question": q, "count": 0, "cube_query": None,
-                                          "kinds": set(), "note": None})
+                                          "kinds": set(), "note": None, "red": None})
         g["count"] += 1
         if kind:
             g["kinds"].add(kind)
@@ -189,13 +190,46 @@ def mine_candidates(limit: int = 50, session: Session = Depends(get_session)) ->
                 pass
         if note and not g["note"]:
             g["note"] = note
+        if red and not g["red"]:
+            g["red"] = red
 
     ranked = sorted(groups.values(), key=lambda x: -x["count"])[:limit]
     return {"candidates": [{
         "question": g["question"], "count": g["count"],
         "triage": "vqr" if g["cube_query"] else "synonym",
         "kinds": sorted(g["kinds"]), "note": g["note"], "cube_query": g["cube_query"],
+        # FAZ 2b — RED GEREKÇESİ TRİYAJA GİRİYOR. Faz 0 `reject_reason`'ı ölçülebilir
+        # yaptı ama tüketicisi YOKTU; planın K2(ii) şartı ("önceliği Faz 0'ın
+        # red-gerekçesi telemetrisi belirler") bu alanı KULLANMAYI gerektirir.
+        "red_kodu": g["red"], "red_gerekcesi": RED_KODLARI.get(g["red"] or "", None),
+        # "en çok HANGİ KELİME kapıya takıldı" — planın literal cümlesi. Kapsam kapısında
+        # (R10) ve kimlik eşleşmesinde (R1) AÇIKLANAMAYAN kelimeler bir sinonim adayının
+        # ta kendisidir; admin bunu görmeden HANGİ kelimeyi ekleyeceğini bilemez.
+        "takilan_kelimeler": sorted(_takilan_kelimeler(g["question"])),
     } for g in ranked]}
+
+
+def _takilan_kelimeler(soru: str) -> set[str]:
+    """Sorunun katalogca AÇIKLANAMAYAN kelimeleri — sinonim adayının kendisi.
+
+    `cube_router`'ın kapsam kapısıyla **aynı** dolgu sözlüğünü okur (`_period_hit_words` +
+    `_misc_hit_words`); ayrı bir liste tutmak iki tarafı ayrıştırır ve admin'e kapının
+    gerçekte takıldığı kelimeden BAŞKA bir şey gösterirdi.
+
+    Bu, `route()`'un kendi kararını **görünür** kılar: R1/R10 telemetride bir SAYIydı,
+    burada bir EYLEME dönüşür — *"şu kelime şu cube'a sinonim olarak eklensin mi?"*.
+    Boyut/ölçü ayrımını admin yapar (`/sadmin/synonyms/cubes` zaten `field_kind` seçtiriyor)
+    — yani **yeni bir uç/panel AÇILMADI**, var olan onay akışı besleniyor.
+    """
+    try:
+        from app.cube_router import _misc_hit_words, _norm, _period_hit_words, _uncovered
+    except Exception:                      # admin plane Wren'siz koşabilir — sessiz geç
+        return set()
+    q = _norm(soru or "")
+    if not q:
+        return set()
+    return {w for w in _uncovered(q, _period_hit_words(q) | _misc_hit_words(q))
+            if len(w) >= 3}
 
 
 @router.get("/cubes")

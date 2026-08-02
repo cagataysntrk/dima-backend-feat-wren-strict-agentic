@@ -49,14 +49,20 @@ def _mdl_version(client) -> str:
 def test_ham_sql_kaydi_mdl_version_ile_damgalanir(client, vqr_store):
     """Discovery/verify yolundan yazılan her ham-SQL kaydı sürüm damgası taşımalı.
 
-    Kaynak `auto_cube`: bu dosya SÜRÜM kapısını ölçer, GÜVEN kapısını (Faz 4.1) değil.
+    Kaynak `user_verified`: bu dosya SÜRÜM kapısını ölçer, GÜVEN kapısını (Faz 4.1) değil.
     İkisi BAĞIMSIZDIR ve replay için İKİSİNİN DE geçmesi gerekir — güvenilir bir kayıt
     bayat damgayla oynatılmaz, güncel damgalı güvenilmez bir kayıt da oynatılmaz.
-    (Eskiden `source="auto"` yazıyordu; o etiket artık kökeni bilinmeyen eski kayıtları
-    işaretliyor ve güvenilmez sayılıyor, bkz. app/vqr.py.)
+
+    ⟳ Bu dosya kaynak etiketini **ikinci kez** ilerletiyor ve ikisi de aynı sebeple:
+    kullanılan etiket zamanla REPLAY EDİLEMEZ hâle geldi.
+      * `auto`      → kökeni bilinmeyen eski kayıtlar, güvenilmez sayıldı (Faz 4.1)
+      * `auto_cube` → **FAZ 2b / §1.7**: doğrudan replay'den çıkarıldı, few-shot'ta kaldı
+                      (gerekçe: router İYİLEŞİR, dondurulmuş kayıt İYİLEŞMEZ)
+    Sürüm kapısını ölçmek için **gerçekten replay edilebilir** bir kaynak gerekir; artık
+    insan onaylı `user_verified` kullanılıyor. Bu değişim testin ölçtüğü şeyi DEĞİŞTİRMEZ.
     """
     vqr_store.store(Q, {"wren_sql": SQL, "mdl_version": _mdl_version(client)},
-                    source="auto_cube")
+                    source="user_verified")
     hit = vqr_store.near_exact(Q)
     assert hit, "kayıt bulunamadı"
     assert hit["cube_query"].get("mdl_version") == _mdl_version(client)
@@ -65,7 +71,7 @@ def test_ham_sql_kaydi_mdl_version_ile_damgalanir(client, vqr_store):
 def test_guncel_damgali_kayit_replay_EDILIR(client, vqr_store):
     """Güncel damga + GÜVENİLİR kaynak → oynatılır (iki kapı da açık)."""
     vqr_store.store(Q, {"wren_sql": SQL, "mdl_version": _mdl_version(client)},
-                    source="auto_cube")
+                    source="user_verified")
     d = ask(client, Q)
     assert d["source"] == "vqr", f"güncel kayıt oynatılmadı: {d.get('source')}"
     assert d["sql"] == SQL
@@ -74,7 +80,7 @@ def test_guncel_damgali_kayit_replay_EDILIR(client, vqr_store):
 def test_bayat_damgali_kayit_replay_EDILMEZ(client, vqr_store):
     """MDL değişmişse eski ham SQL 'doğrulanmış' sayılamaz — kısayol atlanır."""
     vqr_store.store(Q, {"wren_sql": SQL, "mdl_version": "bayat000000"},
-                    source="auto_cube")
+                    source="user_verified")
     d = ask(client, Q)
     assert d.get("source") != "vqr", (
         "bayat VQR kaydı oynatıldı — always_filter/ölçü değişimi sessizce atlanabilir"
@@ -88,7 +94,7 @@ def test_damgasiz_ESKI_kayit_replay_EDILMEZ(client, vqr_store):
     bilinçli tercih: kanıtlanamayan bir cevabı 'doğrulanmış' diye sunmaktansa yeniden
     hesaplamak yeğdir. Kayıtlar sonraki başarılı cevapta damgalı olarak geri gelir.
     """
-    vqr_store.store(Q, {"wren_sql": SQL}, source="auto_cube")
+    vqr_store.store(Q, {"wren_sql": SQL}, source="user_verified")
     d = ask(client, Q)
     assert d.get("source") != "vqr"
 

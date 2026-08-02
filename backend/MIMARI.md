@@ -527,6 +527,80 @@ Kazanç 28 birim testiyle kanıtlanıyor. Korpusun bu sınıfı kazanması Faz 0
 Taban artefaktı: `lab/nl_corpus_baseline.json` (`eval/baseline.json` ile aynı disiplin —
 `lab/reports/` gitignore'da olduğu için ham rapor değil **kapı değerleri** saklanır).
 
+### 6.6z FAZ 2b — terfi kuyruğu beslendi + ÖLÇÜME BAĞLI İKİ KARAR verildi ✅
+
+#### 2b-1 · Red gerekçesi TRİYAJA girdi (K2-ii)
+
+Faz 0 `reject_reason`'ı ölçülebilir yapmıştı ama **tüketicisi yoktu** — bu deponun en sık
+kusuru. Planın şartı literal: *"önceliği Faz 0'ın red-gerekçesi telemetrisi belirler —
+**en çok hangi kelime kapıya takıldı**"*.
+
+Aday kuyruğu (`/sadmin/synonyms/candidates`) artık her aday için `red_kodu` + insan-okur
+`red_gerekcesi` + **takılan kelimeler** taşıyor. Kelimeler `cube_router`'ın kapsam
+kapısıyla **aynı** dolgu sözlüğünden hesaplanır (`_period_hit_words | _misc_hit_words` →
+`_uncovered`) — ayrı bir liste tutmak iki tarafı ayrıştırır ve admin'e kapının **gerçekte**
+takıldığı kelimeden başka bir şey gösterirdi. R1/R10 telemetride bir **sayıydı**, burada
+bir **eyleme** dönüşüyor: *"şu kelime şu cube'a sinonim olarak eklensin mi?"*
+
+**Sıfır yeni uç açıldı** (`git diff`: 0 satır `@router`) — var olan onay akışı beslendi.
+*"Yeni özellik yeni panel doğurmaz."* Uç sayısı testle sabitlendi (7).
+
+#### 2b-2 · §1.7 KARARI: `auto_cube` replay'den ÇIKTI, few-shot'ta KALDI
+
+Plan bunu *"ölçüm olmadan seçilmez"* diye bağlamış ve maliyetten korkmuştu: *"hızlı-öğrenme
+faydasının %86'sını da götürür"*. **Bu korku bir VARSAYIMA dayanıyordu** — `auto_cube`
+replay'inin gerçekten bir şey kazandırdığı varsayımına.
+
+**Ölçüm varsayımı çürüttü.** `auto_cube` kaydı `_answer_from_cube_query`'de üretilir ve o
+fonksiyon **hem saf `cube` (route) hem `cube+llm`** cevaplarına hizmet eder. Saf `cube`
+cevabının replay'i **sıfır** kazandırır: `route()` onu zaten LLM'siz, sıfır maliyetle ve
+**daha doğru** çözer — çünkü **router iyileşir, dondurulmuş kayıt iyileşmez**.
+
+Bu oturumun kendi ölçümü kanıt: `elektrik tuketimi` · `toplam durus` · `sapma yüzdesi` ·
+`ortalama sapma` — dördü de bu oturumda **cube DEĞİŞTİRDİ** (§6.1g/h). 2a-3 öncesi yazılmış
+bir `auto_cube` kaydı, düzeltilmiş router'ın **doğru** cevabını engellerdi ve `source="vqr"`,
+`confidence=0.95` rozetiyle gelirdi. **Yani replay yalnız yanlışı kalıcılaştırmaz,
+düzeltmeyi de görünmez yapar.** Doğru-cube bu oturumda %86,3 → %93,2 çıktı; dondurulmuş
+kayıtlar o 7 puanın tamamını geri alırdı.
+
+**Ne kaybedilmedi:** kayıt `few_shot_block`'ta **kalıyor** (`recall` güven filtresi
+uygulamıyor — testle kilitli), yani Intent-JSON prompt'unu beslemeye devam ediyor ama
+**her seferinde `parse_cube_query` ile yeniden doğrulanarak**. İnsan onayı yolu açık:
+`/ask/verify` kaydı `user_verified`'a terfi ettirir → replay'e girer. **Kaybedilen "hızlı
+öğrenme" değil, "denetimsiz kalıcılaştırma".**
+
+> ⚠️ **ÖLÇÜLEMEYEN kısım dürüstçe:** Faz 0'ın istediği *"50'lik örneklem denetimiyle
+> ölçülen yanlış-oran"* bu checkout'ta **üretilemedi** (yerel `interaction_log` /
+> `verified_query` boş). Karar o örneklem yerine **yukarıdaki yapısal argümana** ve korpus
+> ölçümüne dayanıyor. Canlı örneklem `auto_cube` replay'inin bir şey kazandırdığını
+> gösterirse karar **yeniden açılmalıdır** — kayıt few-shot'tan çıkarılmadığı için geri
+> alma ucuz.
+
+Ölçülen etki: **eval sapmasız**, korpus dört şirkette de **birebir sabit** (%69/%69/%68/%72).
+`test_vqr_schema_version_gate` kaynak etiketini **ikinci kez** ilerletti (`auto` →
+`auto_cube` → `user_verified`) ve ikisi de aynı sebeple: kullanılan etiket zamanla replay
+edilemez hâle geldi.
+
+#### 2b-3 · §1.6-5 KARAR KAPISI: ölçüldü, **AÇILMADI**
+
+Plan: *"dönem-düzeltme sınıfında başarısızlıkların **≥%20'si** `Baglam`'ın ham ifadeyi
+saklamamasına bağlanıyorsa `ham_ifade` bu fazın maddesi olur; altındaysa §8'in açık-nokta
+kaydı kalır. **Tahminle taahhüt edilmez, ölçümle açılır.**"*
+
+Ölçüldü: 6 senaryonun **5'i geçti**. Tek başarısızlık `cari-daralt` ve kökü `Baglam`
+**değil** — ilk adım (`tüm zamanlar borç`) §6.1g'nin netleştirme chip'ine düşüyor
+(`borç (cari hesap)` / `borç (mizan)`), yani **doğru davranış**; ikinci adımın çapası hiç
+oluşmuyor. → **%0 < %20 → kapı AÇILMIYOR.** `ham_ifade` §8'in dürüst açık-nokta kaydı
+olarak kalıyor.
+
+> **Ölçüm aracının KENDİ hatası bu turda bulundu.** `_daraldi` kontrolü **beklenen**
+> cube'un zaman boyutunu sabitliyordu; `route()` soruyu başka bir cube'a çözünce
+> (`elektrik` → `surdurulebilirlik`, bilinen açık sahiplik kararı) **çalışan** bir
+> düzeltmeyi "başarısız" sayıyordu. MIMARI §6.4'ün dersi bir kez daha: *"ölçüm aracının
+> kendisi de bir bağımlılıktır."* Düzeltildi; sınıf **4/6 → 5/6**.
+
+12 test: `tests/test_terfi_kuyrugu.py`.
+
 ### 6.5z FAZ 0.5 — KONUŞMA SENARYOSU DOĞRULAMA: süit ilk koşumunda İKİ SINIFI KIRIK buldu ✅
 
 `lab/konusma_senaryolari.py` — senaryolar **kataloğa göre üretilir**, elle yazılmaz.

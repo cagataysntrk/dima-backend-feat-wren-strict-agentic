@@ -1569,8 +1569,11 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         if learn and vqr is not None:
             try:
                 # `auto_cube` (Faz 4.1): saklanan SQL, LLM'in serbest metni DEĞİL —
-                # katalogla doğrulanmış bir CubeQuery'den DERLENMİŞ SQL. Tekrar
-                # oynatılabilir (bkz. app/vqr.py `_TRUSTED_SOURCES`).
+                # katalogla doğrulanmış bir CubeQuery'den DERLENMİŞ SQL.
+                # ⟳ FAZ 2b (§1.7 kararı): artık DOĞRUDAN TEKRAR-OYNATILMIYOR, yalnız
+                # few-shot'ta kalıyor — gerekçe `app/vqr.py::_FEW_SHOT_ONLY_SOURCES`.
+                # Kısaca: dondurulmuş kayıt İYİLEŞMEZ, router İYİLEŞİR; bu oturumda
+                # dört sinonim cube DEĞİŞTİRDİ ve replay o düzeltmeleri gizlerdi.
                 vqr.store(body.question,
                           {"wren_sql": sql, "mdl_version": service.mdl_version},
                           source="auto_cube")

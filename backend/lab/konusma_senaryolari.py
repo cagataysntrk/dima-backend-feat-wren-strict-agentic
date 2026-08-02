@@ -144,12 +144,31 @@ def _uret(schema: dict) -> list[dict]:
         ekle("ayrik_ay", f"{ad}-ayrik", [f"ocak ve mart {m_kel}"], _ayrik)
 
         # a2 — DÖNEM DÜZELTME TAKİBİ: kontrollü GENİŞ ilk soru + doğal dilde daraltma.
-        def _daraldi(i, d, _z=zaman):
+        def _daraldi(i, d):
+            """⚠️ ÖLÇÜM ARACININ KENDİ HATASI DÜZELTİLDİ (2026-08-03).
+
+            İlk sürüm beklenen cube'un zaman boyutunu (`_z`) SABİTLİYORDU. Ama `route()`
+            soruyu BAŞKA bir cube'a çözebilir (ör. `elektrik` → `surdurulebilirlik`, bilinen
+            açık sahiplik kararı) ve o cube'un zaman boyutu FARKLIDIR — kontrol, çalışan bir
+            düzeltmeyi "başarısız" sayıyordu. `enerji_makine-daralt` tam olarak böyle YANLIŞ
+            raporlandı; elle koşulduğunda `gte 2026-05-02` üretiyordu.
+
+            MIMARI §6.4'ün dersi: *"ölçüm aracının kendisi de bir bağımlılıktır"* —
+            `lab/nl_corpus.py` aylarca kırıkken kimse fark etmemişti. Artık dönem filtresi
+            CEVABIN KENDİ cube'una göre aranır; hangi boyut olduğu VARSAYILMAZ.
+            """
             if i == 0:
                 return bool(d.get("cube_query")), "ilk soru"
             cq = d.get("cube_query") or {}
-            fs = [f for f in (cq.get("filters") or []) if f.get("dimension") == _z]
-            return (bool(fs), f"düzeltme sonrası dönem filtresi={fs or 'YOK'}")
+            if not cq:
+                return False, f"düzeltme cevabı YOK (not={d.get('note')!r})"
+            gelen = cq.get("cube")
+            zamanlar = {t for c2 in (schema.get("cubes") or [])
+                        if c2.get("name") == gelen
+                        for t in (c2.get("time_dimensions") or [])}
+            fs = [f for f in (cq.get("filters") or [])
+                  if f.get("dimension") in zamanlar]
+            return (bool(fs), f"cube={gelen} dönem filtresi={fs or 'YOK'}")
 
         ekle("donem_duzeltme", f"{ad}-daralt",
              [f"tüm zamanlar {m_kel}", "sadece son 3 ay"], _daraldi)
