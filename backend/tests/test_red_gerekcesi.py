@@ -78,11 +78,29 @@ def test_RED_KODLARI_sozlugu_dallarla_ORTUSUYOR():
 
 def test_IMZA_DEGISMEDI():
     """Beş çağıran var; imza değişseydi hepsi kırılırdı. Kalıp `llm.py`'den alındı —
-    yeni bir mekanizma icat edilmedi."""
+    yeni bir mekanizma icat edilmedi.
+
+    ⟳ **2026-08-03 (Faz 2a-5) — testin İDDİASI keskinleştirildi, gevşetilmedi.**
+    Eskiden `list(sig.parameters) == ["question", "schema"]` deniyordu. Korunmak istenen
+    şey **çağıranların kırılmaması**; varsayılanı olan **anahtar-kelime** argümanı bunu
+    bozmaz ama harfi harfine iddia onu da yasaklıyordu. Artık gerçek değişmez kilitli:
+
+      * konumsal parametreler **aynen** `question, schema` — sırası/adı değişemez
+      * eklenen her parametre **KEYWORD_ONLY** ve **varsayılanı olmalı**
+        (yoksa mevcut çağrılar kırılır — testin asıl derdi buydu)
+    """
     import inspect
 
     sig = inspect.signature(cr.route)
-    assert list(sig.parameters) == ["question", "schema"]
+    konumsal = [a for a, p in sig.parameters.items()
+                if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
+    assert konumsal == ["question", "schema"], f"konumsal imza değişti: {konumsal}"
+    for ad, p in sig.parameters.items():
+        if ad in konumsal:
+            continue
+        assert p.kind is p.KEYWORD_ONLY, f"{ad} konumsal eklenmiş — çağıranlar kırılır"
+        assert p.default is not inspect.Parameter.empty, \
+            f"{ad} varsayılansız — mevcut çağrılar kırılır"
     assert "contextvars" in ROUTER.read_text(encoding="utf-8")
 
 

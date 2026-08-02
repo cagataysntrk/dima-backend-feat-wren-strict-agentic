@@ -22,6 +22,10 @@ features:
   next_steps: beta        # rehberli analitik K2 — sonraki adım (kırılım/ölçek/zaman) chip'leri
   ask_intent_first: beta  # /ask: route() boşsa LLM'e Intent-JSON doldurttur (Faz 1 canary —
                           # route()'un kendisi bu bayraktan bağımsız her zaman çalışır)
+  liste_niyeti: beta      # FAZ 2a-5: "listele/detay/dökümü" niyetini bir CUBE KIRILIMINA
+                          # çevir (R2 dalı). YALNIZ gerçek bir boyut eşleştiğinde — yoksa
+                          # döküm isteyene DEJENERE TEK TOPLAM dönerdi (sessiz-yanlış).
+                          # KAPALIYKEN davranış bugünküyle BİREBİR aynı (KURAL B, testli).
   adhoc_cube: beta        # FAZ 1 / K1: Discovery sonucundan oturum-scoped ad-hoc cube türet —
                           # chip/kırılım/drill/doğru grafik Discovery cevabında da açılsın.
                           # YAPI ≠ GÜVEN: source `llm:*` KALIR, confidence None KALIR.

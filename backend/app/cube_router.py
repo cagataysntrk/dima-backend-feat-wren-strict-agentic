@@ -2245,7 +2245,41 @@ def red_gerekcesi() -> str | None:
     return _reddi_var.get()
 
 
-def route(question: str, schema: dict) -> dict | None:
+#: Liste/döküm niyeti. KELİME-SINIRLI: `dokum` altdizisi "DOKUMa"yı (kumaş!) yakalıyordu;
+#: genel "göster" ise liste niyeti DEĞİL (dolgu). Tek kaynak — hem R2 dalı hem kapsam
+#: kapısı bunu okur; ayrışırlarsa niyet "anlaşıldı" sayılıp kelime yine de kapsamı deler.
+_LISTE_RE = re.compile(r"\b(listele\w*|liste\b|hangileri|detay\w*|dokum(u|un|unu|ler\w*)?\b)")
+
+
+def liste_niyeti(q: str) -> bool:
+    """Soru bir LİSTE/DÖKÜM istiyor mu? ("listele" · "detay" · "dökümü" · "hangileri")
+
+    ## R2 neden vardı, neden yarısı yanlıştı (Faz 2a-5)
+
+    Dal koşulsuz `None` dönüyordu: *"liste/döküm istekleri cube'a uymaz → LLM/kural"*.
+    Ölçüldü ve bu **yalnız yarısı doğru** çıktı:
+
+    | soru | R2 kesince | liste kelimesi SÖKÜLÜNCE |
+    |---|---|---|
+    | `müşteri bazında ciro listele` | cevap YOK | `parti/toplam_ciro dims=[musteri]` ✓ |
+    | `en çok ciro yapan 10 müşteriyi listele` | cevap YOK | `dims=[musteri] limit=10` ✓ |
+    | `makine bazında oee detay` | cevap YOK | `oee/ort_oee dims=[makine]` ✓ |
+    | `renk bazında fire dökümü` | cevap YOK | `parti/toplam_fire_kg dims=[renk]` ✓ |
+    | **`bu yıl ciro dökümü`** | cevap YOK | `dims=None` → **DEJENERE TOPLAM** ⚠ |
+    | **`bu ay ciro detaylı göster`** | cevap YOK | `dims=None` → **DEJENERE TOPLAM** ⚠ |
+
+    Yani cube kırılımı **üretebildiğinde** cevap tam ve doğru; **üretemediğinde** döküm
+    isteyen kullanıcıya **tek bir sayı** dönerdi — `source=cube` rozetiyle. R2'yi tümden
+    kaldırmak bu ikinci sınıfı açardı.
+
+    **Kural:** liste niyeti YALNIZ gerçek bir kırılım eşleştiğinde onurlandırılır; yoksa
+    R2 aynen kalır. Bu, `route()`'un `_BREAKDOWN_HINTS` için zaten uyguladığı sessiz-yanlış
+    korumasının aynısı — yeni bir ilke değil, var olanın buraya da uygulanması.
+    """
+    return bool(_LISTE_RE.search(q))
+
+
+def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict | None:
     """Soru bir cube metriğine eşlenirse {cube_query, order, limit} döner; yoksa None.
 
     Tamamen GENERIC: cube/ölçü/boyut eşleşmeleri cube metadata'sındaki `synonyms`
@@ -2253,7 +2287,12 @@ def route(question: str, schema: dict) -> dict | None:
 
     **Red gerekçesi (Faz 0):** `None` dönen her dal `_reddet("R…")` ile etiketlenir ve
     `red_gerekcesi()` ile okunabilir. İmza DEĞİŞMEDİ — beş çağıranın hiçbiri kırılmadı
-    (`app/llm.py`'nin `_llm_usage_var` kalıbı)."""
+    (`app/llm.py`'nin `_llm_usage_var` kalıbı).
+
+    `liste_kirilimi` (Faz 2a-5, KURAL B): liste/döküm niyetini bir kırılıma çevirme
+    yetkisi. **Varsayılan `False` = bugünkü davranış birebir** — bayrağı çözmek çağıranın
+    işidir (`cube_router` istek/principal görmez), o yüzden anahtar-kelime argümanı
+    olarak taşınır. Bkz. `liste_niyeti`."""
     reddi_sifirla()
     q = _norm(question)
 
@@ -2263,11 +2302,17 @@ def route(question: str, schema: dict) -> dict | None:
         return None  # eşleşme yok ya da çapraz konu (birden çok cube) → LLM
     cube = cube_meta["name"]
 
-    # Liste/döküm istekleri cube'a uymaz → LLM/kural. KELİME-SINIRLI: "dokum" altdizisi
-    # "DOKUMa"yı (kumaş!) yakalıyordu; genel "göster" ise liste niyeti DEĞİL (dolgu).
-    if re.search(r"\b(listele\w*|liste\b|hangileri|detay\w*|dokum(u|un|unu|ler\w*)?\b)", q):
-        _reddet("R2")
-        return None
+    # LİSTE/DÖKÜM NİYETİ (R2). Eskiden koşulsuz `None`'dı: *"cube'a uymaz → LLM/kural"*.
+    # Ölçüldü (Faz 2a-5) ve bu YALNIZ YARISI DOĞRUYDU — ayrıntı `liste_niyeti` docstring'i.
+    # Kırılım gerçekten eşleşiyorsa cube bunu ÜRETEBİLİR; eşleşmiyorsa üretemez ve
+    # denemek DEJENERE BİR TOPLAM döndürürdü (döküm isteyene tek sayı) → o durumda R2 kalır.
+    liste = liste_niyeti(q)
+    liste_dims: list[str] = []
+    if liste:
+        liste_dims = _match_dims(q, cube_meta, None) if liste_kirilimi else []
+        if not liste_dims:
+            _reddet("R2")
+            return None
 
     # Dönemsel karşılaştırma (önceki dönem/LAG) cube'a sığmaz → LLM (golden SQL deseni)
     if any(w in q for w in _COMPARE_HINTS):
@@ -2482,6 +2527,12 @@ def route(question: str, schema: dict) -> dict | None:
     having = _measure_threshold(q)
     if having:
         known |= {w for w in _TH_WORDS if w in q}
+    # LİSTE NİYETİ kelimeleri ("listele"/"detay"/"dökümü") — niyet ANLAŞILDIYSA kapsamı
+    # delmemeli. Yukarıdaki R2 dalı bu soruyu geçirdiyse kırılım gerçekten eşleşmiş
+    # demektir; o hâlde kelime dolgudur. Aynı `_LISTE_RE`'den okunur ki iki taraf
+    # ayrışmasın (ayrışsalar niyet "anlaşıldı" sayılır ama kelime yine R10 verirdi).
+    if liste and liste_dims:
+        known.update(w for m in _LISTE_RE.finditer(q) for w in re.findall(r"[a-z]+", m.group(0)))
     if not _coverage_ok(q, known):
         _reddet("R10")
         return None

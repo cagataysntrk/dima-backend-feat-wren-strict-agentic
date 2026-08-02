@@ -527,6 +527,65 @@ Kazanç 28 birim testiyle kanıtlanıyor. Korpusun bu sınıfı kazanması Faz 0
 Taban artefaktı: `lab/nl_corpus_baseline.json` (`eval/baseline.json` ile aynı disiplin —
 `lab/reports/` gitignore'da olduğu için ham rapor değil **kapı değerleri** saklanır).
 
+### 6.1j R2 (liste/döküm) — dalın YARISI haklıydı, yarısı kapsam kaybıydı (Faz 2a) ✅
+
+`route()`'un R2 dalı koşulsuz `None` dönüyordu: *"liste/döküm istekleri cube'a uymaz →
+LLM/kural"*. Plan bunu *"sıfır maliyetli kapsam kaldıracı"* diye işaretlemişti. Ölçüldü —
+iddia **doğru çıktı ama bir tuzak da gösterdi.** 11 gerçekçi vaka; R2 **9'unu** kesiyordu.
+Liste kelimesi sökülünce:
+
+| soru | R2 kesince | kelime sökülünce |
+|---|---|---|
+| `müşteri bazında ciro listele` | cevap YOK | `parti/toplam_ciro dims=[musteri]` ✓ |
+| `en çok ciro yapan 10 müşteriyi listele` | cevap YOK | `dims=[musteri]` **+ `limit=10`** ✓ |
+| `makine bazında oee detay` | cevap YOK | `oee/ort_oee dims=[makine]` ✓ |
+| `renk bazında fire dökümü` | cevap YOK | `parti/toplam_fire_kg dims=[renk]` ✓ |
+| **`bu yıl ciro dökümü`** | cevap YOK | `dims=None` → **DEJENERE TOPLAM** ⚠ |
+| **`bu ay ciro detaylı göster`** | cevap YOK | `dims=None` → **DEJENERE TOPLAM** ⚠ |
+
+Yani cube kırılımı **üretebildiğinde** cevap tam ve doğru; **üretemediğinde** döküm isteyen
+kullanıcıya **tek bir sayı** dönerdi — `source=cube` rozetiyle, yani §6.1'in *"en tehlikeli
+sınıf"* tanımı. **R2'yi tümden kaldırmak bu ikinci sınıfı açardı** ve plan bunu görmüyordu.
+
+**Kural:** liste niyeti YALNIZ gerçek bir kırılım eşleştiğinde onurlandırılır; yoksa R2
+aynen kalır. Bu yeni bir ilke değil — `route()`'un `_BREAKDOWN_HINTS` için zaten uyguladığı
+sessiz-yanlış korumasının buraya da uygulanması.
+
+**Üç yan kapı, üçü de sessizce kırardı:**
+
+1. **Kapsam kapısı.** R2 geçtikten sonra `listele`/`dökümü` kelimeleri `_uncovered`'a
+   düşüp **R10** verirdi — niyet "anlaşıldı" sayılıp cevap yine kaybolurdu. Kelimeler
+   **aynı `_LISTE_RE`'den** okunup dolgu sayılıyor (iki taraf ayrışamaz, testli).
+2. **Red gerekçesi doğrulaşıyor.** *"müşterileri listele"* (kırılım var, ölçü yok) artık
+   R2 değil **R4** veriyor — Faz 0'ın telemetrisinde doğru kümeye düşsün diye.
+3. **`dokuma` tuzağı korunuyor.** `dokum` altdizisi "DOKUMa"yı (kumaş!) yakalıyordu;
+   kelime sınırı yerinde, `dokuma kumaş cirosu` etkilenmiyor.
+
+**Görünüm niyeti — R2'nin doğal UX sonucu.** *"listele"* diyen kullanıcı **satırları**
+görmek ister; deterministik grafik kararı o sonuca `bar` diyor ve teknik olarak haklı, ama
+kullanıcının **açıkça söylediği** şey bu değil. `view_hint` zaten bu iş için var
+(*"grafik ver"*in tersi yönü) — simetriği kuruldu: liste niyeti → `view_hint="table"`.
+**ADR-0024 ihlal EDİLMİYOR**: `viz` kararı deterministik kalıyor, `view_hint` yalnız açık
+isteği taşıyor ve `_VIZ_MAP`'ten SONRA bakılıyor (*"dökümü pasta grafik yap"* → pasta
+kazanır). Frontend tarafında **yeni tüketici gerekmedi** — `ResultView` `view_hint ===
+"table"`'ı zaten onurlandırıyordu; eksik olan sinyalin kendisiydi.
+
+**KURAL B:** `route(q, schema, *, liste_kirilimi=False)` — **anahtar-kelime** argümanı,
+varsayılanı kapalı. `cube_router` istek/principal görmez, bayrağı çağıran çözer.
+`ask.py`'deki **dört** `route()` çağrısının hepsine geçiriliyor (Faz -1'in *"üç çağrı
+yeri"* dersi: biri atlanırsa aynı soru geldiği yola göre farklı davranır).
+
+`tests/test_red_gerekcesi.py::test_IMZA_DEGISMEDI` **keskinleştirildi, gevşetilmedi**:
+eskiden `list(sig.parameters) == ["question","schema"]` diyordu; korunmak istenen şey
+**çağıranların kırılmaması**, o yüzden artık *konumsal imza aynen* + *eklenen her parametre
+KEYWORD_ONLY ve varsayılanlı* olduğu kilitleniyor.
+
+**Ölçüm dürüstlüğü:** `lab/nl_corpus.py`'nin sorgu şablonlarında **liste niyeti YOK**
+(tarandı: yalnız iki meta-soruda "detay" geçiyor) — korpus bu kazancı **göremez**, tıpkı
+§6.1b/§6.1i gibi. Gösterdiği tek şey **gerileme olmadığıdır** (dört şirket de birebir
+sabit: %68/%68/%67/%71). Kazanç 22 birim testiyle kanıtlanıyor:
+`tests/test_liste_niyeti.py`.
+
 ### 6.2z FAZ 1 (K1) — Discovery uçurumu kapandı: ad-hoc cube, ama YAPI ≠ GÜVEN ✅
 
 `seal()` üç kapısını da **tek bir alana** bakarak açıyordu: `resp.cube_query`. Discovery

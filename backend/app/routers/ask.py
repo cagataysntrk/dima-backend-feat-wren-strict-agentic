@@ -287,6 +287,15 @@ def _viz_hint(q_norm: str) -> str | None:
     for k, v in _VIZ_MAP:
         if k in q_norm:
             return v
+    # FAZ 2a-5 — LİSTE NİYETİ BİR GÖRÜNÜM NİYETİDİR. *"listele"* / *"dökümü"* / *"detay"*
+    # diyen kullanıcı SATIRLARI görmek istiyor; deterministik grafik kararı (ADR-0024) o
+    # sonuca `bar` diyor ve teknik olarak haklı — ama kullanıcının AÇIKÇA söylediği şey
+    # bu değil. `view_hint` zaten bu iş için var ("grafik ver"in tersi yönü); burada
+    # simetriği kuruluyor. ADR-0024 ihlal EDİLMİYOR: `viz` kararı deterministik kalıyor,
+    # `view_hint` yalnız kullanıcının açık isteğini taşıyor ve FE'de üstüne biniyor.
+    # `_VIZ_MAP`'ten SONRA bakılır: "dökümü PASTA grafik yap" derse pasta kazanır.
+    if cube_router.liste_niyeti(q_norm):
+        return "table"
     return None
 
 
@@ -1722,8 +1731,12 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         intent_source: str | None = None
         typo_fix_trace: str | None = None
         typo_suggestion: dict | None = None
+        # FAZ 2a-5 (KURAL B) — liste/döküm niyetini kırılıma çevirme yetkisi. Bir kez
+        # çözülür ve BU FONKSİYONDAKİ HER `route()` çağrısına geçirilir: biri atlanırsa
+        # aynı soru geldiği yola göre farklı davranır (Faz -1'in "üç çağrı yeri" dersi).
+        _liste = "liste_niyeti" in resolve_for(settings, principal)
         try:
-            route_hit = cube_router.route(body.question, schema)
+            route_hit = cube_router.route(body.question, schema, liste_kirilimi=_liste)
             if route_hit:
                 intent_source = "cube"
         except Exception:
@@ -1743,7 +1756,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             autos = [f for f in typo_fixes if f["kind"] == "auto"]
             if autos:
                 try:
-                    retry_hit = cube_router.route(corrected_q, schema)
+                    retry_hit = cube_router.route(corrected_q, schema,
+                                                  liste_kirilimi=_liste)
                 except Exception:
                     retry_hit = None
                     _log.warning("cube_router.route() (typo-düzeltmeli) hata verdi "
@@ -1764,7 +1778,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             if mode:
                 cleaned = cube_router.strip_compare(q_norm)
                 try:
-                    base_hit = cube_router.route(cleaned, schema)
+                    base_hit = cube_router.route(cleaned, schema,
+                                                 liste_kirilimi=_liste)
                 except Exception:
                     base_hit = None
                 if base_hit:
@@ -2222,7 +2237,9 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # bilerek None döner. Mesaj tek başına TAM bağımsız bir rapor tanımlıyorsa
         # route() onu zaten sıfır-LLM çözer — deterministik zincirin son, en genel adımı.
         try:
-            fresh_route = cube_router.route(q_norm, schema)
+            fresh_route = cube_router.route(
+                q_norm, schema,
+                liste_kirilimi="liste_niyeti" in resolve_for(settings, principal))
         except Exception:
             _log.warning("route() (konu değişimi denemesi) hata verdi (best-effort)",
                         exc_info=True)
