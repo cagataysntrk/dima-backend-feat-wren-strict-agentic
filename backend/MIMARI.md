@@ -80,9 +80,24 @@ güncellenmesini gerektirir.
 | 7 | **Discovery** — LLM ham SQL yazar | `llm:<sağlayıcı>` | evet | **tek atımlık düz tablo. Chip YOK, kırılım YOK, drill YOK.** |
 | 8 | dürüst red | `null` | — | "anlamadığını bil" — yanlış öneri, önerisizlikten kötüdür |
 
-**Tek çıkış noktası `_finish()`** — yorum, next_steps, öneriler, `explain`, PII maskesi, sohbet
-kaydı, `interaction_log` ve **fail-closed audit** oradan geçer. *Bilinen sapma: `_try_kpi()` bugün
-`_finish()`'i atlıyor — düzeltilmeli.*
+**Tek çıkış noktası `app/answer.py::seal()`** — yorum, next_steps, öneriler, `explain`,
+PII maskesi (+ görüldüyse ayrı audit), sohbet kaydı, `interaction_log` ve **fail-closed
+audit** oradan geçer. Makbuz kaydı da tek uygulamadır: `answer.record_contract()`.
+
+> ✅ **Faz A4'te (2026-08-02) modül düzeyine çıkarıldı.** Önceden `ask()` içinde bir
+> **closure**'dı ve bu, belgede *"bilinen sapma"* diye tek satırla geçilen şeyin aslında
+> **beş ihlalin ortak kök nedeni** olduğunu gizliyordu: closure `body`/`request`/`principal`/
+> `t0`'a kapandığı için dışarıdan çağrılamıyordu, bu yüzden (a) `/cube` **paralel bir zincir**
+> yazmıştı ve `is_new_topic`/`thread_id`/`reply_to_label` set etmiyordu, (b) contract kaydını
+> `except Exception: pass` ile **sessizce yutuyordu** (ADR-0020 ihlali — 20 satır aşağıda
+> audit *bilerek* sarılmamışken), (c) `_try_kpi()` zinciri **tamamen atlıyordu** (belgede
+> yalnız "yorum" yazıyordu; gerçekte **contract + audit + PII** üçü birden eksikti),
+> (d) üç ayrı contract kaydedici vardı, (e) hiçbiri **izole test edilemiyordu**.
+>
+> `seal()` aynı zamanda **Faz F'nin (agentic araç kaydı) taşıyıcısıdır**: bir ajan aracının
+> çıktısı, kullanıcının bir sorusundan daha az denetlenebilir olamaz. Araç ne üretirse
+> üretsin buradan geçer — makbuz/iz/maskeleme garantisi böyle **yapısal** olur, her araca
+> ayrı ayrı eklenen bir alışkanlık değil. Kilit: `tests/test_kapanis_zinciri.py`.
 
 ### 2.1 Basamak 3 ve 6 neden aynı garantiyi taşıyor
 İkisi de aynı **yapısal `CubeQuery`** üretir ve aynı **deterministik derleyici** SQL'e çevirir.

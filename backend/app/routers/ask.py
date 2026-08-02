@@ -11,6 +11,17 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app import cube_router, pii, viz, yoy
+from app.answer import (
+    _attach_next_steps,
+    _attach_recommendations,
+    _build_explain,
+    _log_interaction,
+    _maybe_interpret,
+    _persist_message,
+    _source_kind,
+    record_contract,
+    seal,
+)
 from app.auth.dependencies import require, require_company
 from app.config import get_settings
 from app.llm import RuleBasedSqlGenerator
@@ -41,91 +52,6 @@ router = APIRouter(tags=["ask"])
 _log = get_logger("ask")  # system/app log (ADR-0020): best-effort bloklar sessizce yutmaz
 
 
-def _source_kind(source: str | None) -> str:
-    """Ham source → normalize tür (interaction_log facet/filtre):
-    cube|llm|rule|upload|vqr|meta|catalog|statement|none|other.
-
-    vqr/meta/catalog LLM'e HİÇ düşmeyen yolları ayırt eder — bu facet olmadan
-    "her soru LLM'e mi düşüyor" sorusu loglardan ölçülemez (ADR: strict-agentic
-    /ask gözlemlenebilirliği)."""
-    s = (source or "").lower()
-    if not s:
-        return "none"
-    if s.startswith("cube"):
-        return "cube"
-    if s.startswith("vqr"):
-        return "vqr"
-    if s.startswith("meta"):
-        return "meta"
-    if s.startswith("catalog"):
-        return "catalog"
-    if s.startswith("statement"):
-        return "statement"
-    if s.startswith("llm"):
-        return "llm"
-    if s.startswith(("rule", "kural")):
-        return "rule"
-    if s.startswith("upload"):
-        return "upload"
-    return "other"
-
-
-# Faz 3 (31 Temmuz 2026) — `explain.path` insan-okur etiketleri, ham `source` ÖNEKİNE göre
-# (cube/cube+llm AYRIMI KORUNUR — _source_kind() bunu "cube"da birleştirir, güvenleri farklı
-# olduğundan burada AYRI tutulur). `confidence`: yalnız deterministik/yarı-deterministik
-# yollarda dolu (LLM/rule'da UYDURMA bir sayı yerine None — "ölçülebilir güven yok" dürüstçe).
-_EXPLAIN_PATH = {
-    "cube": ("cube (route() — LLM'siz, sıfır maliyet)", 1.0),
-    "cube+llm": ("cube + LLM-destekli alan seçimi (SQL değil Intent-JSON)", 0.85),
-    "vqr": ("önceden doğrulanmış sorgu (VQR) — LLM'siz tekrar oynatma", 0.95),
-    "statement": ("yapısal finansal tablo (gelir tablosu/bilanço) — LLM'siz", 1.0),
-    "meta": ("meta/karşılama sorusu — LLM'siz", 1.0),
-    "catalog": ("katalog/kapsam sorusu — LLM'siz", 1.0),
-    "rule": ("kural-tabanlı NL→SQL (anahtarsız LLM yedeği)", None),
-}
-
-
-def _build_explain(resp: AskResponse) -> Explain | None:
-    """`resp` üzerinde ZATEN oturan alanlardan (source/cube_query/trace) EKLEYİCİ bir
-    `Explain` sentezler — yeni bir hesaplama/yan-etki YOK, salt post-hoc özetleme. `source`
-    yoksa (netleştirme/chip/dürüst-ret gibi rapor ÜRETMEYEN yanıtlar) None döner — bu
-    yanıtlarda zaten açıklanacak bir "yol" yok."""
-    s = (resp.source or "").lower()
-    if not s:
-        return None
-    if s.startswith("llm"):
-        path, confidence = f"LLM (ham SQL, Discovery) — {s}", None
-    else:
-        prefix = next((k for k in _EXPLAIN_PATH if s.startswith(k)), None)
-        if prefix is None:
-            return None
-        path, confidence = _EXPLAIN_PATH[prefix]
-
-    assumptions: list[str] = []
-    cq = resp.cube_query or {}
-    if cq.get("period_confirmed") and not any(
-        f.get("dimension") in ("tarih", "donem", "dönem") for f in (cq.get("filters") or [])
-    ):
-        assumptions.append(
-            "Dönem açıkça belirtilmedi — kullanıcı \"tüm zamanlar\"ı seçti/onayladı "
-            "(filtresiz, tüm-zamanlar toplama)."
-        )
-    # Faz 4.13a (1 Ağustos 2026) — dış yol haritası 2.17 "güven rozeti": sessiz bir
-    # varsayım yapıldıysa (yukarıdaki `assumptions`, ör. "tüm zamanlar" otomatik seçildi)
-    # güven bir kademe DÜŞÜRÜLÜR — aynı `source`'tan gelen ama varsayımsız bir yanıttan
-    # daha az kesin kabul edilir (frontend'in 🥇/🥈/🥉 rozetinin ayırt edebileceği somut
-    # bir sinyal). `confidence=None` olan yollarda (LLM/rule — zaten "ölçülemez") dokunulmaz.
-    if assumptions and confidence is not None:
-        confidence = round(max(0.0, confidence - 0.15), 2)
-
-    return Explain(path=path, confidence=confidence, assumptions=assumptions)
-
-
-_LOG_DIR = Path(__file__).resolve().parent.parent.parent / "logs"
-_UPLOAD_DIR = _LOG_DIR / "uploads"  # chat-scoped yüklenen veri (ephemeral, oturum DuckDB'si)
-_MAX_UPLOAD = 25 * 1024 * 1024      # 25 MB — DuckDB bellek-içi ingest sınırı
-
-
 def _dataset_store(request: Request) -> dict:
     """session_id → {service, info, filename} (in-memory, chat-scoped, ephemeral)."""
     store = getattr(request.app.state, "datasets", None)
@@ -153,43 +79,6 @@ def _uuid_or_none(val):
         return _uuid.UUID(val) if val else None
     except (ValueError, TypeError):
         return None
-
-
-def _log_interaction(session_id: str | None, body: AskRequest, resp: AskResponse,
-                     dur_ms: int, principal=None) -> None:
-    """Her etkileşimi `interaction_log` DB tablosuna yazar — TEK KAYNAK (ADR-0020).
-
-    JSONL kaldırıldı (redundancy): admin viewer AYRI servis (ADR-0015) → Postgres ortak store'dan
-    okur (volume çapraz-servis çalışmaz); synonym-madencisi de DB'den okur. Ürün geliştirme +
-    KVKK erişim-izi + log→golden madenciliği tek yerden. Ham SONUÇ satırı TUTULMAZ (yalnız
-    türetilmiş meta). Best-effort — hata yanıtı düşürmez, system-log'a yazar."""
-    try:
-        if not get_settings().interaction_log:
-            return  # test/eval koşumu — canlı log kirletilmez
-        from sqlmodel import Session
-
-        from control_plane.db import engine
-        from control_plane.models import InteractionLog
-
-        def _j(v):
-            return json.dumps(v, ensure_ascii=False) if v else None
-
-        from app.llm import get_llm_usage
-
-        _u = get_llm_usage() or {}  # yalnız LLM yoluna düşen istekte dolu; aksi halde boş
-        with Session(engine) as s:
-            s.add(InteractionLog(
-                session_id=session_id, user_id=_uuid_or_none(getattr(principal, "user_id", None)),
-                tenant_id=_uuid_or_none(getattr(principal, "tenant_id", None)), question=body.question,
-                source=resp.source, kind=_source_kind(resp.source), follow_up=bool(body.cube_query),
-                sql=resp.sql or None, rows=resp.result.row_count if resp.result else None,
-                note=resp.note, duration_ms=dur_ms, cube_query_json=_j(resp.cube_query),
-                trace_json=_j(resp.trace), interpretation_json=_j(resp.interpretation),
-                llm_model=_u.get("model"), llm_input_tokens=_u.get("input_tokens"),
-                llm_output_tokens=_u.get("output_tokens"), llm_latency_ms=_u.get("latency_ms")))
-            s.commit()
-    except Exception:
-        _log.warning("interaction log (DB) yazılamadı (best-effort)", exc_info=True)
 
 
 def _log_upload(session_id: str | None, filename: str, dataset_label: str,
@@ -248,39 +137,6 @@ def _capture_measure_candidate(question: str, sql: str, result: dict, principal=
             s.commit()
     except Exception:
         _log.warning("MeasureCandidate yakalaması başarısız (best-effort)", exc_info=True)
-
-
-def _persist_message(request: Request, resp: AskResponse, session_id: str | None) -> None:
-    """Yanıtı kalıcı sohbete yazar (per-user, tenant-izole). find-or-create Conversation
-    (user_id × session_id) → ConversationMessage(tam AskResponse payload). Best-effort —
-    asla yanıtı düşürmez. Resume: kayıtlı payload'ları yeniden render (yeniden çalıştırma yok)."""
-    principal = getattr(request.state, "principal", None)
-    if principal is None or not session_id or not getattr(principal, "user_id", None):
-        return
-    try:
-        from sqlmodel import Session, select
-
-        from control_plane.db import engine
-        from control_plane.models import Conversation, ConversationMessage
-
-        with Session(engine) as s:
-            conv = s.exec(select(Conversation).where(
-                Conversation.user_id == principal.user_id,
-                Conversation.session_id == session_id)).first()
-            if conv is None:
-                conv = Conversation(tenant_id=getattr(principal, "tenant_id", None),
-                                    user_id=principal.user_id, session_id=session_id)
-                s.add(conv); s.flush()
-            q = resp.question or ""
-            if not conv.title and q and not q.startswith(("chip:", "📎")):
-                conv.title = q[:80]
-            s.add(ConversationMessage(conversation_id=conv.id, seq=conv.message_count,
-                                      question=q, payload_json=resp.model_dump_json()))
-            conv.message_count += 1
-            conv.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-            s.add(conv); s.commit()
-    except Exception:  # noqa: BLE001 - persistence best-effort (yanıtı düşürmez)
-        _log.warning("konuşma kaydı yazılamadı (best-effort)", exc_info=True)
 
 
 def _parse_decision(raw: str) -> dict:
@@ -560,81 +416,6 @@ def _llm_source(llm, used_rule: bool) -> str:
     return f"llm:{type(last).__name__}"
 
 
-def _maybe_interpret(request: Request, resp: AskResponse) -> None:
-    """EVRENSEL ÇIKTI YORUMU — feature flag 'cikti_yorumlama' açıksa resp.interpretation'a
-    DETERMİNİSTİK data-güdümlü yorum ekler (her tablo/grafik/rapor/KPI). Bayrak kapalı →
-    dokunmaz (admin panelden kim görür kararlaştırılır). Ham veri LLM'e GİTMEZ (yerel analiz)."""
-    if resp.interpretation is not None or (resp.result is None and resp.kpi is None):
-        return
-    principal = getattr(request.state, "principal", None)
-    try:
-        from app.features import resolve_for
-        if "cikti_yorumlama" not in resolve_for(get_settings(), principal):
-            return
-        from app.interpret import interpret
-        units: dict[str, str] = {}
-        lower_is_better: set[str] = set()
-        try:
-            from app.company_registry import wren_for_request
-            for c in wren_for_request(request).schema().get("cubes") or []:
-                units.update(c.get("units") or {})
-                lower_is_better.update(c.get("lower_is_better") or [])  # DSO/CCC/fire… yönü
-        except Exception:
-            pass
-        if resp.kpi and resp.kpi.get("lower_is_better"):
-            lower_is_better.add(resp.kpi.get("kpi"))  # KPI ölçüsü (CCC gibi) düşük=iyi
-        resp.interpretation = interpret(
-            resp.result.model_dump() if resp.result else None,
-            resp.cube_query, resp.kpi, units, lower_is_better)
-    except Exception:  # noqa: BLE001 - yorum best-effort (yanıtı düşürmez)
-        _log.warning("çıktı yorumu üretilemedi (best-effort)", exc_info=True)
-
-
-def _attach_next_steps(request: Request, resp: AskResponse) -> None:
-    """K2 (rehberli analitik) — başarılı rapora DETERMİNİSTİK 'sonraki adım' chip'leri ekler
-    (feature flag 'next_steps'): kullanılmayan boyut (kırılım) / ölçü (ölçek) / zaman
-    granülerliği. Katalogdan türetilir (LLM yok); her chip TAM cube_query taşır → FE /cube
-    ile LLM'siz koşar. Bayrak kapalı → dokunmaz."""
-    if not resp.cube_query or resp.result is None:
-        return
-    principal = getattr(request.state, "principal", None)
-    try:
-        from app.features import resolve_for
-        if "next_steps" not in resolve_for(get_settings(), principal):
-            return
-        from app import cube_router
-        from app.company_registry import wren_for_request
-        from app.schemas import NextStep
-        cubes = wren_for_request(request).schema().get("cubes") or []
-        index = {c.get("name"): c for c in cubes}
-        resp.next_steps = [NextStep(**s)
-                           for s in cube_router.suggest_next_steps(resp.cube_query, index)]
-    except Exception:  # noqa: BLE001 - best-effort (yanıtı düşürmez)
-        _log.warning("sonraki adım önerileri üretilemedi (best-effort)", exc_info=True)
-
-
-def _attach_recommendations(request: Request, resp: AskResponse) -> None:
-    """K4 (karar motoru) — K3 sinyallerinden AKSİYON önerileri türetir: her sinyal 'neye
-    bakmalısın'a çevrilir; trend/anomali için 'sürükleyeni bul' drill'i eklenir (K2 reuse).
-    Sinyal yoksa dokunmaz (dolayısıyla cikti_yorumlama flag'ine bağlı). Deterministik."""
-    signals = (resp.interpretation or {}).get("signals") if resp.interpretation else None
-    if not signals or not resp.cube_query:
-        return
-    try:
-        from app import cube_router
-        from app.company_registry import wren_for_request
-        from app.schemas import NextStep, Recommendation
-        cubes = wren_for_request(request).schema().get("cubes") or []
-        spec = next((c for c in cubes if c.get("name") == resp.cube_query.get("cube")), None)
-        resp.recommendations = [
-            Recommendation(text=r["text"],
-                           action=NextStep(**r["action"]) if r.get("action") else None)
-            for r in cube_router.recommend_actions(signals, resp.cube_query, spec)
-        ]
-    except Exception:  # noqa: BLE001 - best-effort (yanıtı düşürmez)
-        _log.warning("öneriler üretilemedi (best-effort)", exc_info=True)
-
-
 def _statement_kind(q: str) -> str | None:
     """GL YAPISAL RAPOR niyeti (§55): gelir tablosu / bilanço. q normalize edilmiş."""
     if re.search(r"gelir tablosu|kar zarar|kar/zarar|k?ar zarar|income statement", q):
@@ -821,52 +602,25 @@ def cube(request: Request, body: CubeRequest) -> AskResponse:
             cube_query=cq,
         )
     except Exception:
-        pass
-    # Query Contract (ADR-0010): chip düzenlemesi de rapor üretir → kanıt kaydı.
-    # (Kaldırılmış bir feature-flag'in `if True:` kalıntısı 2026-08-02'de temizlendi.)
-    try:
-        store = getattr(request.app.state, "contracts", None)
-        if store is not None:
-            _p = getattr(request.state, "principal", None)
-            resp.contract_id = store.record(
-                session_id=body.session_id, question=resp.question, cube_query=cq,
-                sql=sql, result=result, source="cube", schema_version=service.mdl_version,
-                tenant_id=getattr(_p, "tenant_id", None),
-            )
-    except Exception:
-        pass
-    _maybe_interpret(request, resp)  # evrensel çıktı yorumu (feature flag'li)
-    _attach_next_steps(request, resp)  # K2 sonraki-adım chip'leri (feature flag'li)
-    _attach_recommendations(request, resp)  # K4 sinyal→aksiyon önerileri
-    resp.explain = _build_explain(resp)  # Faz 3 — birleşik açıklama (trace/source KIRILMAZ)
-    principal = getattr(request.state, "principal", None)
-    from control_plane import audit
-
-    # PII maskeleme (Faz 4.14) — /ask'in _finish()'iyle AYNI ilke: kalıcı sohbete
-    # yazılmadan ÖNCE uygulanır (bkz. app/pii.py::apply_to_ask_response).
-    from app.pii import apply_to_ask_response
-
-    if apply_to_ask_response(resp, principal):
-        audit.record(principal, "pii_view", nl_question=resp.question,
-                     ip=request.client.host if request.client else None)
-    _persist_message(request, resp, body.session_id)  # kalıcı sohbete yaz
+        # Grafik kararı DEKORATİFTİR — patlaması cevabı düşürmez. Ama SESSİZ de kalmaz
+        # (ADR-0020): 2 Ağustos 2026'ya kadar burada çıplak `pass` vardı ve `viz` sürekli
+        # başarısız olsa kimse fark etmezdi.
+        _log.warning("/cube görselleştirme kararı başarısız (best-effort)", exc_info=True)
+    # KAPANIŞ — `app/answer.py` üzerinden (Faz A4). Burası eskiden `/ask`'in `_finish`'inin
+    # ELLE KOPYALANMIŞ ikiziydi ve iki yerde ayrışmıştı: contract kaydını
+    # `except Exception: pass` ile SESSİZCE yutuyordu (ADR-0020 ihlali) ve
+    # `is_new_topic`/`thread_id`/`reply_to_label` alanlarını HİÇ set etmiyordu.
     from types import SimpleNamespace
 
-    _log_interaction(
-        body.session_id,
-        SimpleNamespace(question=resp.question, cube_query=cq),  # type: ignore[arg-type]
-        resp,
-        int((time.monotonic() - t0) * 1000),
-        principal,
-    )
-    # AUDIT (ADR-0014 Karar 6): her veri erişimi kanıtlanabilir iz bırakır.
-    audit.record(principal, "query", nl_question=resp.question, generated_sql=sql,
-                 rows_returned=result.get("row_count"), contract_id=resp.contract_id,
-                 ip=request.client.host if request.client else None)
-    _log.info("CEVAP /cube: label=%r thread=%s satır=%s süre=%dms",
-              resp.question, resp.thread_id, result.get("row_count"),
-              int((time.monotonic() - t0) * 1000))
-    return resp
+    resp.contract_id = record_contract(
+        request, service=service, session_id=body.session_id, question=resp.question,
+        cube_query=cq, sql=sql, result=result, source="cube")
+    return seal(resp, request=request,
+                principal=getattr(request.state, "principal", None), t0=t0,
+                session_id=body.session_id,
+                log_body=SimpleNamespace(question=resp.question, cube_query=cq),
+                thread_id=body.thread_id, endpoint="cube")
+
 
 
 @router.post("/report", dependencies=[Depends(require("query:run")),
@@ -1248,61 +1002,15 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
               structural_followup, raw_followup)
 
     def _finish(resp: AskResponse) -> AskResponse:
-        # EVRENSEL ZENGİNLEŞTİRME (canlı bulgu, 31 Temmuz 2026): bu üçü ÖNCEDEN yalnız
-        # `/cube` (chip düzenlemesi) endpoint'inin kendi kapanışında çağrılıyordu — `/ask`'in
-        # TEK choke-point'i olan bu fonksiyon (`_build_explain` de burada) hiç çağırmıyordu.
-        # Sonuç: `/ask`'ten gelen HİÇBİR yanıt (ilk mesaj dahil, source="cube" olsa bile)
-        # interpretation/next_steps/recommendations TAŞIMIYORDU — kullanıcı bunları yalnız
-        # BİR SONRAKİ `/cube` isteğinde (ör. bir chip'e tıklayınca) görüyordu ("bazen küpten
-        # gelen yanıttan sonra çalışıyor" — TAM OLARAK bu). Üçü de KENDİ İÇİNDE güvenli
-        # guard'lara sahip (result/kpi ya da cube_query yoksa no-op) — meta/katalog/Discovery
-        # gibi yanıtları BOZMAZ. Sıra ÖNEMLİ: recommendations interpretation'ın signals'ına
-        # bağımlı, ikisi de explain'den ÖNCE (explain bunlara bağımlı değil, sıra onunla
-        # ilgili değil ama /cube'daki köklü sırayla TUTARLI tutuldu).
-        # §B (1 Ağustos 2026): mevcut is_followup sinyalinin TERSİ — yeni mantık YOK.
-        resp.is_new_topic = not is_followup
-        resp.thread_id = body.thread_id
-        # §B düzeltmesi (1 Ağustos 2026) — bkz. AskRequest.reply_to_label: salt echo.
-        resp.reply_to_label = body.reply_to_label
-        _maybe_interpret(request, resp)
-        _attach_next_steps(request, resp)
-        _attach_recommendations(request, resp)
-        resp.explain = _build_explain(resp)
-        from control_plane import audit
+        """`/ask`'in kapanışı — gövdesi `app/answer.py::seal`'dedir (Faz A4).
 
-        # PII maskeleme (Faz 4.14, 1 Ağustos 2026 — dış yol haritası 2.19): `_persist_
-        # message`/`_log_interaction`'dan ÖNCE çağrılır ki ham TCKN/e-posta/telefon/IBAN
-        # kalıcı sohbet geçmişine de düşmesin (bkz. app/pii.py::apply_to_ask_response).
-        # `pii:view` yetkisi olan roller maskesiz görür — bu erişim AYRI bir audit satırı
-        # olarak kayda geçer (KVKK erişim izi, hangi PII'nin kim tarafından görüldüğü).
-        from app.pii import apply_to_ask_response
-
-        if apply_to_ask_response(resp, principal):
-            audit.record(principal, "pii_view", nl_question=resp.question,
-                        ip=request.client.host if request.client else None)
-        _persist_message(request, resp, body.session_id)
-        _log_interaction(body.session_id, body, resp, int((time.monotonic() - t0) * 1000), principal)
-        # Erişim-audit (KVKK izi, ADR-0014/0015): /cube bunu her zaman yapıyordu, strict-agentic
-        # /ask'e HİÇ bağlanmamıştı (gerçek test koşumu bunu ortaya çıkardı —
-        # test_superadmin_public_access_is_allowed_and_logged, Query Contract'tan AYRI bir
-        # boşluk). TEK choke-point'te (her /ask yanıtı buradan geçer) — unutulması imkansız.
-        # BİLEREK try/except'siz — audit.record kendi içinde DB→spool'a düşer, YALNIZ ikisi
-        # BİRLİKTE başarısız olursa fırlatır ("başarı audit'siz raporlanamaz" — /cube ile
-        # AYNI kasıtlı fail-closed davranış, best-effort SARMALANMAZ).
-        audit.record(principal, "query", nl_question=resp.question, generated_sql=resp.sql or None,
-                    rows_returned=resp.result.row_count if resp.result else None,
-                    contract_id=resp.contract_id,
-                    ip=request.client.host if request.client else None)
-        # CEVAP GÖNDERİLDİ — `_finish()` TEK choke-point olduğu için (bkz. fonksiyon docstring'i)
-        # bu log HER `/ask` yanıtını (meta/VQR/yapısal/Discovery/dürüst-ret hepsi) kapsar.
-        # `note` doluysa (dürüst ret / netleştirme chip'i) kısaca eklenir — "LLM mi patladı"
-        # sorusunu `source=None` + not metni ile ayırt etmeye yeter.
-        _log.info("CEVAP /ask: q=%r source=%s thread=%s yeni_konu=%s satır=%s süre=%dms%s",
-                  resp.question, resp.source, resp.thread_id, resp.is_new_topic,
-                  resp.result.row_count if resp.result else None,
-                  int((time.monotonic() - t0) * 1000),
-                  f" not={resp.note!r}" if resp.note else "")
-        return resp
+        Eskiden 55 satırlık bir CLOSURE'dı ve tam da bu yüzden `/cube` kendi kopyasını
+        yazmak, `_try_kpi` de onu atlamak zorunda kalmıştı. Artık tek gövde; buradaki
+        iş yalnız `/ask`'e özgü bağlamı (takip sinyali, thread çapası) geçirmek."""
+        return seal(resp, request=request, principal=principal, t0=t0,
+                    session_id=body.session_id, log_body=body,
+                    thread_id=body.thread_id, reply_to_label=body.reply_to_label,
+                    is_new_topic=not is_followup, endpoint="ask")
 
     def _attach_viz(resp: AskResponse, result: dict | None, cq: dict | None = None) -> AskResponse:
         """Faz 2d+3 (viz.py↔chart.ts birleştirme, 31 Temmuz 2026): ÖNCEDEN `units={}`/
@@ -1368,19 +1076,11 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         return resp
 
     def _record_contract(cq: dict | None, sql: str | None, result: dict | None,
-                         source: str | None) -> str | None:
-        store = getattr(request.app.state, "contracts", None)
-        if store is None:
-            return None
-        try:
-            return store.record(
-                session_id=body.session_id, question=body.question, cube_query=cq, sql=sql,
-                result=result, source=source, schema_version=service.mdl_version,
-                tenant_id=getattr(principal, "tenant_id", None),
-            )
-        except Exception:
-            _log.warning("query contract kaydedilemedi (best-effort)", exc_info=True)
-            return None
+                         source: str) -> str | None:
+        """Gövde `app/answer.py::record_contract`'ta — TEK uygulama (Faz A4)."""
+        return record_contract(request, service=service, session_id=body.session_id,
+                               question=body.question, cube_query=cq, sql=sql,
+                               result=result, source=source)
 
     def _honest_refusal(note: str, trace: list[str],
                         suggestions: list[Suggestion] | None = None) -> AskResponse:
@@ -1635,10 +1335,14 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     if f.get("dimension") == "tarih" and f.get("value")]
             where = ("WHERE " + " AND ".join(conds)) if conds else ""
             card = resolve_kpi(service, spec, where)
-            return AskResponse(
+            # KAPANIŞTAN GEÇ (Faz A4). Buradaki `return` eskiden `_finish`'i ATLIYORDU:
+            # KPI cevabı contract_id'siz, audit'siz ve PII maskesiz dönüyordu. MIMARI §2
+            # bunu "bilinen sapma" olarak kaydetmişti ama kaçağın kapsamı belgede
+            # yazandan genişti (yalnız "yorum" değil, üç garanti birden).
+            return _finish(AskResponse(
                 question=body.question, source="cube", kpi=card,
                 trace=[f"KPI eşleşmesi (LLM'siz, sıfır maliyet): {kpi_meta.get('label', kpi_name)}"],
-            )
+            ))
         except Exception:
             _log.warning("KPI resolver hata verdi (best-effort) — Discovery'ye düşülüyor",
                         exc_info=True)
