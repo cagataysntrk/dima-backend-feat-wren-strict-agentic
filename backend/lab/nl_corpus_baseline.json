@@ -129,6 +129,34 @@
         "test": "1476 yeşil",
         "yeni yanlış-cube": "0"
       }
+    },
+    {
+      "faz": "0.5 · konuşma senaryosu doğrulama (değişim ailesi + saf görünüm değişikliği)",
+      "olculdu": "2026-08-03",
+      "commit": "faz-0.5",
+      "sirketler": {
+        "boyahane": {
+          "erisim_yuzde": 69
+        },
+        "atiksan": {
+          "erisim_yuzde": 69
+        },
+        "gulteks": {
+          "erisim_yuzde": 68
+        },
+        "gitas": {
+          "erisim_yuzde": 72
+        }
+      },
+      "toplam_dogru_cube": 6720,
+      "toplam_dogru_cube_payda": 7213,
+      "toplam_dogru_cube_yuzde": 93.2,
+      "_kapilar": {
+        "erisim": "dört şirkette de +1 puan",
+        "dogru_cube": "sabit (%93,2)",
+        "eval": "sapmasız",
+        "test": "1564 yeşil"
+      }
     }
   ]
 }

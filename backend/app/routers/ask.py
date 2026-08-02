@@ -278,9 +278,20 @@ _VIZ_MAP = (
     ("ayri ayri", "facet"), ("icin ayri", "facet"), ("ayri grafik", "facet"),
     ("grafi", "chart"), ("chart", "chart"), ("gorsel", "chart"),
 )
+#: Görünüm kelimelerini SÖKEN desen. Bir takip mesajı yalnız görünüm istiyorsa
+#: (`"pasta grafik"`) geriye anlamlı kelime kalmaz; `"pasta grafik olarak müşteri
+#: bazında"` gibi bir istek ise YAPISAL bir düzenlemedir ve normal zincire gitmelidir.
+#: `_VIZ_MAP`'ten TÜRETİLİR — iki liste ayrışamaz.
+_VIZ_TEMIZ_RE = None  # aşağıda _VIZ_MAP'ten kurulur
+
 _VIZ_LABELS = {"chart": "grafik", "table": "tablo", "line": "çizgi grafik",
                "bar": "sütun grafik", "pie": "pasta grafik", "heatmap": "ısı haritası",
                "facet": "panelli görünüm"}
+
+
+_VIZ_TEMIZ_RE = re.compile(
+    "|".join(sorted((re.escape(k) for k, _ in _VIZ_MAP), key=len, reverse=True))
+    + r"|\b(grafik|gorunum|olarak|ver|yap|goster|cevir|istiyorum|lutfen)\b")
 
 
 def _viz_hint(q_norm: str) -> str | None:
@@ -2199,6 +2210,32 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 return _finish(resp)
             # Araç bir şey üretemediyse SESSİZCE düşme: normal zincir devam eder ve
             # kullanıcı en azından bugünkü davranışı alır (gerileme YOK).
+
+        # SAF GÖRÜNÜM DEĞİŞİKLİĞİ ("pasta grafik" · "tablo olarak" · "çizgi grafik").
+        #
+        # FAZ 0.5'İN ÖLÇTÜĞÜ BULGU (2026-08-03): plan §4.7-1(e)(i) bu vakayı
+        # *"`_viz_hint`/`_VIZ_MAP` zaten var ama `deterministic_refine`'ın saf görünüm
+        # değişikliğini 'değişti' sayıp saymadığı ÖLÇÜLMEDİ"* diye işaretlemişti.
+        # Ölçüldü: **saymıyor.** `deterministic_refine` yapısal bir değişiklik göremediği
+        # için `None` dönüyor, zincir tükeniyor ve kullanıcı *"Bu takip mesajını önceki
+        # raporla ilişkilendiremedim"* alıyor — yani GRAFİK TİPİ İSTEĞİ TÜM RAPORU
+        # SİLİYOR. `gorunum_donusumu` senaryo sınıfı **0/5** ölçüldü.
+        #
+        # Doğru davranış: rapor AYNEN yeniden verilir, yalnız `view_hint` değişir. Bu
+        # `deterministic_refine`'ın kendi `already` (no-op) sözleşmesinin aynısıdır —
+        # istek mevcut raporu ONAYLIYOR, değiştirmiyor. `cube_router`'a taşınmadı çünkü
+        # `_VIZ_MAP` bir SUNUM sözlüğüdür (router yapı üretir, görünüm üretmez).
+        _sadece_gorunum = _viz_hint(q_norm)
+        if _sadece_gorunum and prev_cq:
+            _kalan = _VIZ_TEMIZ_RE.sub(" ", q_norm).strip()
+            if not cube_router._uncovered(_kalan, cube_router._misc_hit_words(_kalan)):
+                resp = _answer_from_cube_query(
+                    dict(prev_cq), source="cube",
+                    trace=migration_trace + [
+                        f"Takip: saf görünüm değişikliği → {_sadece_gorunum} "
+                        f"(rapor korunur, LLM'siz)"])
+                if resp is not None:
+                    return resp
 
         try:
             refined = cube_router.deterministic_refine(prev_cq, q_norm, schema)

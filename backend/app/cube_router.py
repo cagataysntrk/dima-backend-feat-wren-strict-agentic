@@ -1713,10 +1713,30 @@ def _period_hit_words(q: str) -> set[str]:
 
 
 def _misc_hit_words(q: str) -> set[str]:
-    """Gran/yön/limit ifadelerinin kelimeleri."""
+    """Gran/yön/limit ifadelerinin kelimeleri.
+
+    ## DEĞİŞİM ailesi (Faz 0.5 ölçümü, 2026-08-03)
+
+    `trend` buradaydı ama **kardeşleri yoktu**: `değişim` · `artış` · `azalış` · `gelişim`
+    · `seyir` · `yükseliş` · `düşüş`. Hepsi AYNI sınıf — bir ölçünün zaman içindeki
+    hareketini anlatan **anlatı kelimeleri**, bir ölçü/boyut adı değil.
+
+    Sonuç ölçüldü: *"ocak şubat mart arıza sayısı **değişim** trendi"* kapsam kapısına
+    takılıyordu (`_uncovered = [ariza, degisim, sayisi]`) ve boşluğu `typo_correct`
+    dolduruyordu: ***"'değişim' yerine 'KISIM' mi demek istedin?"*** — başka bir boyuta,
+    kendinden emin ve saçma bir yönlendirme. `coklu_ay_trendli` senaryo sınıfı **0/6**
+    ölçüldü. Bu, 2a-3'ün (`sapma yüzdesi → kar yüzdesi`) **aynı sınıfı**: öneri bir
+    semptomdur, kök neden kelimenin sözlükte olmamasıdır.
+
+    **`fark` BİLEREK EKLENMEDİ** — ölçüldü: `enerji_sapma.toplam_enpg`'nin **gerçek ölçü
+    sinonimi**. Dolgu saymak onu gölgelerdi; 2a-1'in (`elektrik`) tam olarak ölçümle
+    reddedilen hatası. Her aday katalogda tarandı, yalnız **sahipsiz** olanlar eklendi.
+    """
     words: set[str] = set()
     for w in ("haftalik", "haftalar", "haftaya", "gunluk", "gunler", "gunlere",
               "aylik", "aylar", "aya gore", "ay bazinda", "trend", "zaman",
+              "degisim", "degisme", "artis", "azalis", "gelisim", "seyir",
+              "yukselis", "dusus",
               "ceyrek", "uc aylik", "yillik", "yillara", "yila gore", "yil bazinda", "senelik",
               "en dusuk", "en az", "en kotu", "en verimsiz", "en cok", "en yuksek",
               "en fazla", "en verimli", "en iyi", "en buyuk", "hangisi", "her gun"):

@@ -527,6 +527,70 @@ Kazanç 28 birim testiyle kanıtlanıyor. Korpusun bu sınıfı kazanması Faz 0
 Taban artefaktı: `lab/nl_corpus_baseline.json` (`eval/baseline.json` ile aynı disiplin —
 `lab/reports/` gitignore'da olduğu için ham rapor değil **kapı değerleri** saklanır).
 
+### 6.5z FAZ 0.5 — KONUŞMA SENARYOSU DOĞRULAMA: süit ilk koşumunda İKİ SINIFI KIRIK buldu ✅
+
+`lab/konusma_senaryolari.py` — senaryolar **kataloğa göre üretilir**, elle yazılmaz.
+`nl_corpus.py`'ye eklenmedi: o **günlük regresyon kilididir** ve `nl_corpus_baseline.json`
+ona bağlıdır; yeni sınıfları oraya karıştırmak KURAL A'nın yasakladığı taban kirlenmesi
+olurdu. Aynı harness kalıbı **çağrılır**, kopyalanmaz.
+
+**Sınır kuralı (planın ⟳ eklemesi) uygulandı:** vaka raporu **senaryo SINIFI** başına
+(tur başına DEĞİL — `gen_processes` 10.865 tur üretiyor, birebir uygulamak binlerce `.md`
+doğurur ve *"her vaka görünür olsun"* amacının **tam tersi** olurdu). Her sınıf raporu
+**temsilci turun tam adımlarını** taşır ve temsilci **ilk BAŞARISIZ** vakadır (öğretici
+olan odur). `--live` sınıf başına katmanlı örneklem koşar, **sıralı ve hız-sınırlı**
+(`LIVE_BEKLE`), ve **düşürülen tur sayısını raporlar** — sessiz kırpma yok.
+
+**ERİŞİM ve DOĞRULUK ayrı sütun** (§4.7-6): *"cevap geldi mi"* yeterli değil. Bu ayrım
+zorunlu, çünkü bir düzeltmenin *çalıştığı* görünmesi DOĞRU şeyi düzelttiği anlamına
+gelmez — 2a-1'de (`elektrik`) tam olarak bu oldu.
+
+#### İlk koşum iki sınıfı TAMAMEN kırık buldu — ikisi de aynı kusur ailesi
+
+Her ikisinde de `route()` bir boşluk bırakıyor ve boşluğu başka bir mekanizma
+**kendinden emin ve yanlış** dolduruyor.
+
+**Bulgu 1 — `coklu_ay_trendli` 0/6.** *"ocak şubat mart arıza sayısı **değişim** trendi"*
+→ kapsam kapısı `değişim`i tanımıyor → `route()` `None` → `typo_correct` boşluğu
+dolduruyor: ***"'değişim' yerine 'KISIM' mi demek istedin?"***. `trend` dolgu
+sözlüğündeydi ama **kardeşleri yoktu**: `değişim · değişme · artış · azalış · gelişim ·
+seyir · yükseliş · düşüş` — hepsi bir ölçünün zamandaki hareketini anlatan **anlatı
+kelimeleri**. Bu, §6.1h'nin (`sapma yüzdesi → kar yüzdesi`) aynı sınıfı: **öneri bir
+semptom**, kök neden sözlük boşluğu.
+**`fark` BİLEREK EKLENMEDİ** — her aday katalogda tarandı ve `fark`
+`enerji_sapma.toplam_enpg`'nin **gerçek ölçü sinonimi** çıktı; dolgu saymak onu
+gölgelerdi, yani §6.1f'te ölçümle reddedilen hatanın tekrarı olurdu.
+
+**Bulgu 2 — `gorunum_donusumu` 0/5.** *"pasta grafik"* takibi →
+*"Bu takip mesajını önceki raporla ilişkilendiremedim."* **Saf görünüm değişikliği TÜM
+RAPORU siliyordu.** Plan §4.7-1(e)(i) bunu *"`deterministic_refine`'ın saf görünüm
+değişikliğini 'değişti' sayıp saymadığı **ÖLÇÜLMEDİ**"* diye işaretlemişti — ölçüldü:
+**saymıyor.** Bu aynı zamanda §4.4'ün Faz 5 şartının doğrudan ihlaliydi (*"konuşma-modu
+metni SİLMEZ, yalnız ÜSTÜNE biner"*). Düzeltme `deterministic_refine`'ın kendi `already`
+(no-op) sözleşmesinin aynısı: rapor **aynen** yeniden verilir, yalnız `view_hint` değişir.
+Kapı **dar**: görünüm kelimeleri söküldükten sonra geriye anlamlı kelime kalıyorsa
+(*"vardiya bazında pasta grafik"*) istek **yapısaldır** ve normal zincire gider.
+
+| sınıf | önce | sonra |
+|---|---|---|
+| `coklu_ay_trendli` | erişim **0/6** | **5/6** |
+| `gorunum_donusumu` | erişim **0/5** | **4/5** |
+
+**Korpus da gördü** (bu iki düzeltme `nl_corpus`'ta ölçülebilir): erişim boyahane
+%68→**%69** · atiksan %68→**%69** · gulteks %67→**%68** · gitas %71→**%72**;
+doğru-cube dört şirkette de **sabit** (yanlış-cube üretmedi).
+
+**Kalan envanter — bir sonraki turun girdisi (kapatılmadı, gizlenmedi):**
+`konu_degisimi` **2/5** · `netlestirme_cevabi` erişim **0/1** · `donem_duzeltme`,
+`coklu_ay_trendsiz`, `liste_niyeti`, `ayrik_ay` sınıflarında **1'er vaka** başarısız.
+Bunlar Faz 8'in (döngüsel kapanış) ve Faz 2b'nin girdisidir.
+
+**§1.7 VQR-kalıcılık senaryosu koştu:** parafraz `source="vqr"` ile **gelmedi** — yani
+o vakada replay tetiklenmedi. Bu **bir kez** ölçümdür, riski çürütmez (embedder kapalı,
+`DIMA_VQR_EMBEDDER=off`); Faz 2b'nin kararı `--live` + embedder açık koşumu bekler.
+
+18 test: `tests/test_faz05_bulgulari.py`.
+
 ### 6.4z FAZ 3a — ŞEMA-KISITLI ÇIKTI: hatayı sonrasında reddetmek yerine öncesinde engelle ⚠️ (kazanç ÖLÇÜLMEDİ)
 
 Bugünkü Intent-JSON akışı: *"serbest JSON iste, sonra `parse_cube_query` ile **REDDET**"*.
