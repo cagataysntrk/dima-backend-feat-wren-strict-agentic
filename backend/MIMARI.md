@@ -527,6 +527,59 @@ Kazanç 28 birim testiyle kanıtlanıyor. Korpusun bu sınıfı kazanması Faz 0
 Taban artefaktı: `lab/nl_corpus_baseline.json` (`eval/baseline.json` ile aynı disiplin —
 `lab/reports/` gitignore'da olduğu için ham rapor değil **kapı değerleri** saklanır).
 
+### 6.1f Katalog sağlığı ÖLÇÜLDÜ — kayıp "yanlış cube"da değil (Faz 2a)
+
+Planın §2.1'i boyahanenin kaybını *"üç isimlendirilmiş YAML düzeltmesine indirgeniyor"*
+diye çerçeveliyordu ve birincisi `elektrik` çakışmasıydı. O özet `nl_corpus.md`'nin
+**10 satırlık ÖRNEĞİNE** dayanıyordu. Doğrudan ölçüldü (470 ölçü sinonimi × `route()`):
+
+| sonuç | adet | pay |
+|---|---|---|
+| doğru cube | 291 | %62 |
+| yanlış cube | **30** | %6 |
+| **CEVAPSIZ** | **149** | **%32** |
+
+Cevapsızın red dağılımı — **Faz 0'ın `reject_reason` enstrümanı olmadan görülemezdi**:
+**R1: 99** · R10: 32 · R4: 14 · R5: 2 · R9: 2.
+
+**Asıl kayıp yanlış-cube'da değil.** Cevapsız sınıfı beş kat büyük ve en büyük dilimi
+**R1** — katalogda **var olan** bir ölçü sinonimi, düz sorulduğunda cube'unu bile
+tanıtmıyor. Rapor yalnız yanlış-cube örneği bastığı için bu sınıf hiç görünmemişti.
+
+#### `elektrik` düzeltmesi DENENDİ ve ÖLÇÜMLE REDDEDİLDİ
+
+`surdurulebilirlik`'in cube-düzeyi kimliğinden ham kaynak adları (`elektrik · kwh ·
+doğalgaz · gaz · tep · enerji · atıksu`) çıkarıldı. Gerekçe sağlamdı: bu cube **yoğunluk**
+ölçer (su/kg, enerji/kg) ve `_match_cube` ölçü eşleştirmesinden önce koştuğu için adanmış
+enerji cube'larını her seferinde yeniyordu.
+
+| ölçüt | önce | sonra | planın kapısı |
+|---|---|---|---|
+| boyahane erişim | %64 | **%56** | *"artmalı"* ❌ |
+| doğru-cube | %80 | %79 | *"düşmemeli"* ❌ |
+| yanlış cube | 245 | 135 | ✓ |
+| Discovery'ye düşen | 501 | **578** | ↑ |
+| `test_eval_gate` | yeşil | **KIRMIZI** (coverage −%4,5) | ❌ |
+
+**110 sessiz-yanlış kapandı ama 388 cevap kayboldu** — 3,5:1 kötü takas. Sebep: kimliği
+kaldırmak **sahipliği çözmedi**, yalnız zorlamayı kaldırdı. Ölçü düzeyinde
+`enerji_makine.toplam_elektrik_kwh` ile `surdurulebilirlik.toplam_enerji_kwh` **ikisi de**
+`elektrik` iddia ediyor → `_match_cube` hiçbirini seçemiyor → **R1**.
+
+Değişiklik **geri alındı** ve geri alma bir testle korunuyor (`test_SURDURULEBILIRLIK_
+kimligi_KORUNUYOR`) — aynı deneme ikinci kez yapılmasın diye. Doğru çözüm bir **sahiplik
+kararıdır** (çıplak "elektrik" hangi cube'un?), kimlik silmek değil; ve bu bir **alan
+bilgisi** işidir — planın `ortalama duruş` için *"karar kalemi, sahibi ve tarihi olmalı"*
+dediği sınıfın aynısı.
+
+**Ara ürün — netleştirme zaten doğru çalışıyor:** düzeltme uygulandığında `/ask` zinciri
+`measure_cube_candidates` üzerinden *"Birden fazla konu anlaşıldı, hangisini istiyorsun?"*
+chip'ini üretiyordu. Yani belirsizlik yüzeye çıktığında sistemin davranışı **doğru**;
+sorun belirsizliğin **var olması**.
+
+30 çakışma + red dağılımı **envanter olarak kilitlendi** (`tests/test_sinonim_carpismasi.py`,
+13 test): sessizce büyüyemez, düzelen satır listede kalamaz, doğru-sayısı düşemez.
+
 ### 6.1e Red gerekçesi ölçülebilir oldu (Faz 0) ✅
 
 `route()` **on ayrı yerde** `None` döner ve hangisinde pes ettiği yalnız `trace` metninde /
