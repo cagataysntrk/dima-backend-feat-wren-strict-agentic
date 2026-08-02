@@ -434,6 +434,7 @@ class WrenService:
         ]
         self._apply_synonym_overlays(cubes)  # ADR-0018 katman 3 (canlı, deploy'suz)
         self._apply_measure_overrides(cubes)  # Faz 2d: deprecate edilen ölçüleri NL'den gizle
+        self._damgala_fanout(cubes)           # Faz D2: ilişki sertifikası → boyut kökeni
         if db_ok:
             self._enrich_cube_dim_values(cubes, mdl, models)
         # CROSS-CUBE KPI kataloğu (kpis/*.yml): yönlendirme için ad/etiket/sinonim; tam
@@ -458,6 +459,26 @@ class WrenService:
             "db_online": db_ok,  # UI çevrimiçi/çevrimdışı rozeti (TCP erişilebilirlik)
         }
         return self._schema_cache
+
+    def _damgala_fanout(self, cubes: list) -> None:
+        """İlişki sertifikasını (Faz D2) boyut kökenine damgalar: `origin["certified"]`.
+
+        Sertifika bir **build artefaktıdır** (`target/fanout_certificate.json`,
+        `python -m app.fanout`). `schema()` onu yalnız OKUR — ölçmez. Bilerek: ölçüm 62
+        `COUNT` sorgusudur ve `schema()` Faz B1'de 2277 ms'den aşağı çekildi; her istemci
+        çağrısına build-time bir maliyeti geri koymak o kazancı geri verirdi.
+
+        Artefakt yoksa damga `"olculmedi"` olur — **sessiz "sağlıklı" DEĞİL**. Sertifikanın
+        tüm değeri *"ölçülmedi"* ile *"ölçüldü, temiz"* ayrımındadır; ölçülmemişi temiz
+        göstermek, olmayan bir garantiyi rozetlemek olurdu.
+        """
+        from app import fanout
+
+        sert = fanout.oku(self.project_dir)
+        for c in cubes:
+            for origin in (c.get("dimension_origin") or {}).values():
+                if isinstance(origin, dict):
+                    origin["certified"] = fanout.rozet(sert, origin.get("relationship"))
 
     def _apply_synonym_overlays(self, cubes: list) -> None:
         """Control-plane DB'deki ONAYLI sinonim overlay'lerini schema'ya BİRLEŞTİRİR

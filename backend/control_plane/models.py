@@ -266,6 +266,10 @@ class ContractLog(SQLModel, table=True):
     row_count: int | None = None
     schema_version: str | None = None
     source: str | None = None
+    # KÖKEN KANITI (Faz D2). `{"dimensions": {<boyut>: {relationship, model, column, hops,
+    # certified}}}`. "Bu sayı nasıl hesaplandı"ın yanına "bu KIRILIM nereden geldi ve o
+    # join ÖLÇÜLDÜ mü" cevabını koyar. Yalnız ilişki-türevi boyut kullanan cevaplarda dolar.
+    provenance_json: str | None = None
 
 
 class NotificationLog(SQLModel, table=True):

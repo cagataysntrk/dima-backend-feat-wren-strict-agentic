@@ -306,8 +306,24 @@ def test_yapisal_takip_cikmazi_gercek_kelime_varsa_discoverye_duser(client):
     canlı interaction_log kaydı) kesinlikle daha iyidir: kullanıcı tek tıkla TAM yapısal
     bir cevaba gider. ADR-0008'in "belirsizlikte SOR" ilkesiyle de örtüşür.
 
+    GÜNCELLEME 2 (2 Ağustos 2026, Faz D3 — `_syn_hit` de ek-farkında yapıldı): netleştirme
+    artık **doğru kelimeyi** gösteriyor. Değişen üç ölçüm:
+
+      1. `ik` cube'u adaylardan DÜŞTÜ. Kimlik sinonimi `"ik"`, `verimlil**ik**leri`nin
+         içinden sahte eşleşiyordu — 2 harflik bir cube adının kelime ortasında yakalanması
+         `_syn_hit`'in alt-dizi körlüğünün ders kitabı örneğiydi.
+      2. Cube `oee` yerine `parti`ye çözülüyor. Soru AÇIKÇA kırılım istiyor ("personel
+         bazlı") ve o kırılımı adaylardan YALNIZ `parti` sağlayabiliyor (`operator` boyutu,
+         Faz 1.1 ilişki-türevi). Bu, `_match_cube`'un BOYUT-UYUMU ÖNCELİĞİ kuralının
+         tasarlandığı gibi çalışmasıdır — `oee` personel kırılımı YAPAMAZ.
+      3. Bu yüzden işaretlenen kelime `"personel"` DEĞİL `"verimlilikleri"` oldu — ve bu
+         **daha doğrudur**: "personel bazlı" cevaplanabilir bir isteğe karşılık gelir,
+         cevaplanamayan şey `verimlilik` ölçüsüdür (o `oee`'de yaşar).
+
     Testin KORUDUĞU asıl endişe aynı: yapısal zincir tükendiğinde sistem ne SESSİZCE
-    YANLIŞ bir cube cevabı verir ne de ÇIPLAK bir "anlamadım" döner.
+    YANLIŞ bir cube cevabı verir ne de ÇIPLAK bir "anlamadım" döner. Doğrulama artık
+    kelimeyi sabitlemek yerine **DAVRANIŞI** sabitler: işaretlenen kelime soruda GEÇMELİ
+    ve chip'ler gerçek katalog kanıtından gelmeli.
     (Faz 1'de `oee` cube'u ilişki-türevi bir personel boyutu kazanınca bu soru
     doğrudan `source="cube"` dönmeli — o zaman bu test yeniden değerlendirilecek.)
     """
@@ -321,9 +337,13 @@ def test_yapisal_takip_cikmazi_gercek_kelime_varsa_discoverye_duser(client):
     assert d2["source"] is not None or chips, (
         f"çıplak dürüst ret döndü (chip yok, source yok): {d2.get('note')!r}"
     )
-    # (c) Netleştirme yolundaysa, aday konular GERÇEK katalog kanıtından gelmeli.
+    # (c) Netleştirme yolundaysa: işaretlenen kelime UYDURULMAMIŞ olmalı (soruda geçmeli)
+    #     ve aday konular GERÇEK katalog kanıtından gelmeli.
     if d2["source"] is None:
-        assert "personel" in (d2.get("note") or "").lower()
+        note = (d2.get("note") or "").lower()
+        soru_kokleri = ("personel", "verimlilik")
+        assert any(k in note for k in soru_kokleri), (
+            f"netleştirme soruda geçmeyen bir kelimeyi işaretledi: {note!r}")
         assert any("oee" in c.lower() for c in chips), chips
 
 

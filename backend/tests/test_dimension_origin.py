@@ -29,8 +29,20 @@ def _cube(schema, ad):
 def test_iliski_turevi_boyut_origin_TASIR(schema):
     o = _cube(schema, "oee").get("dimension_origin") or {}
     assert "bolum" in o, "üretilen boyut provenance taşımıyor"
-    assert o["bolum"] == {"model": "makineler", "column": "bolum",
-                          "relationship": "oee_vardiya_makineler", "hops": 1}
+    # Compose'un ürettiği DÖRT alan (kaynak modelin beyanı). Tam eşitlik yerine alt-küme:
+    # `schema()` bunun üstüne çalışma-zamanı damgaları ekler (Faz D2'nin `certified`'ı) ve
+    # her yeni damga bu testi kırmamalı — test KÖKENİ korur, sözlüğün boyutunu değil.
+    assert {k: o["bolum"][k] for k in ("model", "column", "relationship", "hops")} == {
+        "model": "makineler", "column": "bolum",
+        "relationship": "oee_vardiya_makineler", "hops": 1}
+
+
+def test_origin_FANOUT_damgasi_tasir(schema):
+    """Faz D2: köken yalnız "nereden geldi"yi değil "o join ÖLÇÜLDÜ mü"yü de söylemeli.
+    Bu, kırılıma duyulan güvenin ölçülmüş halidir (`app/fanout.py`)."""
+    o = _cube(schema, "oee").get("dimension_origin") or {}
+    assert o["bolum"].get("certified") in (
+        "olculdu:saglikli", "olculdu:riskli", "olculmedi")
 
 
 def test_YEREL_boyut_origin_TASIMAZ(schema):

@@ -335,14 +335,48 @@ def is_capability_query(q: str) -> bool:
 
 # --- Generic sinonim eşleştirme (ADR-0005: içerik cube metadata'sında, kod generic) --
 # Sinonimler cube metadata.yml'den gelir (wren_service.schema() normalize eder).
-# Eşleşme kuralı: varsayılan ALTDİZİ ("ciro" → "cirosu"yu yakalar); sonu "!" olan
-# sinonim TAM KELİME eşleşir ("kar!" → "karşılaştır"ı yakalamaz).
+# Eşleşme kuralı: sinonim KELİME BAŞINDA başlar ve arkasında yalnız geçerli bir Türkçe ek
+# zinciri kalabilir ("ciro" → "cirosu" ✓, "kıyasla" içindeki "yas" ✗); sonu "!" olan
+# sinonim hiç ek almadan TAM KELİME eşleşir ("kar!" → "karşılaştır"ı yakalamaz).
+
+
+# KELİME BAŞI — `\b` DEĞİL. Python'da `_` bir KELİME KARAKTERİDİR, dolayısıyla `\b`
+# `yas_grubu` içinde `grubu`'nun önünde sınır GÖRMEZ. Kullanıcılar makine adlarını olduğu
+# gibi yapıştırır ("yas_grubu bazında işlenen kg" — canlı test vakası) ve `_uncovered` o
+# metni `[a-z]+` ile ZATEN iki kelimeye ayırır. İki mekanizma aynı sınırı görmezse kapsam
+# kapısı kendi eşleşmelerini tanımaz hale gelir. Türkçede sınır = harf/rakam OLMAYAN her şey.
+_KELIME_BASI = r"(?<![a-z0-9])"
 
 
 def _syn_hit(q: str, syn: str) -> bool:
+    """Sinonim q'da geçiyor mu? — `_covers` ile AYNI biçimbirim disiplini (Faz D3).
+
+    ÖNCEDEN `syn in q` idi: herhangi bir konumda altdizi. `_uncovered`'ın Faz 0.4'te
+    düzeltilen kusurunun **kardeşi**; MIMARI §6.1'de *"henüz düzeltilmedi, daha geniş etki
+    alanı var"* diye kayıtlıydı. Ölçülen sahte eşleşmeler (2 Ağustos 2026):
+
+        yas ⊂ kıyasla · yas ⊂ kıyaslama · eden ⊂ neden · ay ⊂ detay · ay ⊂ ayrıca
+
+    **`route()`'a bakarak görünmüyordu** çünkü orada kapsam kapısı (`_coverage_ok`) zaten
+    çekiliyor. Zarar, kapsam kapısından GEÇMEYEN takip yollarındaydı — `deterministic_refine`,
+    `cross_cube_add`, `cross_cube_dim_switch` (takip sorusu eksik cümledir, kapsam kapısı
+    uygulanamaz). Ölçüldü: `deterministic_refine(ik raporu, "kıyaslama yap")` rapora
+    **`yas_grubu` GROUP BY'ı** ekliyordu — kullanıcının hiç istemediği bir kırılım, her
+    hücredeki sayıyı değiştiren, `source="cube"` rozetiyle gelen bir cevap.
+
+    Faz 0.5'in `_match_dims` tahkimi bunu kurtaramaz: tahkim *hangi eşleşme kazanır*
+    sorusunu çözer, *bu eşleşme gerçek mi* sorusunu değil.
+
+    Kural `_covers`'ın aynısıdır (Türkçe EKLEMELİ dildir, ek SONA gelir) ve `_ek_gecerli`
+    üzerinden **tek kaynaktan** gelir: kelime başı çapası + olumsuzluk eki reddi + geçerli
+    ek zinciri. Çok kelimeli sinonimlerde çekim son kelimeye gelir ("fire oranını" ✓).
+    """
     if syn.endswith("!"):
-        return re.search(rf"\b{re.escape(syn[:-1])}\b", q) is not None
-    return syn in q
+        return re.search(rf"{_KELIME_BASI}{re.escape(syn[:-1])}(?![a-z0-9])", q) is not None
+    # `_ek_gecerli`/`_SUFFIX_CHAIN_RE` modülün ilerisinde tanımlı (biçimbirim bloğu bir arada
+    # dursun diye); çağrı anında modül tam yüklü olduğundan ileri referans güvenlidir.
+    return any(_ek_gecerli(m.group(1))
+               for m in re.finditer(rf"{_KELIME_BASI}{re.escape(syn)}([a-z]*)", q))
 
 
 def _any_hit(q: str, syns) -> bool:
@@ -1079,6 +1113,22 @@ def cube_only_match(q: str, schema: dict) -> dict | None:
     cube_meta = _match_cube(q, schema)
     if cube_meta is None or _match_measure(q, cube_meta)[0] or cube_meta.get("default_measure"):
         return None
+    # ÇAPRAZ-KONU ÖNCELİĞİ (Faz D3, ölçülmüş vaka). Soruda bu cube'un tanımadığı ama BAŞKA
+    # bir cube'un GERÇEK terimi olan bir kelime varsa *"hangi ölçüyü istiyorsun?"* YANLIŞ
+    # sorudur: kullanıcı ölçüyü zaten SÖYLEDİ, yalnız o ölçü burada yok.
+    #
+    # Ölçüldü: *"personel bazlı verimlilikleri karşılaştır"* → cube `parti` (personel
+    # kırılımını YALNIZ o taşıyor), ama `verimlilik` bir `oee` ölçüsüdür. Bu chip
+    # kullanıcıya parti'nin ölçülerini sıralıyordu — hiçbiri verimlilik değil. Doğru cevap
+    # aşağıdaki çapraz-konu netleştirmesidir ("verimlilik başka bir konu gibi görünüyor").
+    unknown, _hits = partial_unknowns(q, schema)
+    if unknown:
+        for c in schema.get("cubes") or []:
+            if c.get("name") == cube_meta.get("name"):
+                continue
+            vocab = _catalog_vocabulary(schema, only_cube=c)
+            if any(any(_covers(t, w) for t in vocab) for w in unknown):
+                return None
     return cube_meta
 
 
@@ -1378,6 +1428,26 @@ _SUFFIX_ATOMS = (
 # zaten TAM atom olarak listede; parçalarını ayrıca atom yapmak deliği geri açar.
 _SUFFIX_CHAIN_RE = re.compile(r"(?:" + "|".join(_SUFFIX_ATOMS) + r")+")
 
+
+def _ek_gecerli(kalan: str) -> bool:
+    """Bir kökün arkasında kalan `kalan` dizisi GEÇERLİ bir çekim mi? (Faz D3'te tekleştirildi.)
+
+    İki tüketici vardı ve **aynı soruyu farklı cevaplıyorlardı**: `_covers` (kapsam kapısı)
+    bu üç kuralı uyguluyordu, `_syn_hit` (boyut/ölçü/cube eşleşmesi) hiçbirini — düz altdizi
+    bakıyordu. Kural artık tek yerde:
+
+      1. Boş kalan = kökün kendisi.
+      2. Olumsuzluk eki ÇEKİM SAYILMAZ — anlamı tersine çevirir (`fire` ≠ `firesiz`).
+      3. Kalan, ek atomlarının bir zinciri olmalı; kazayla denk gelen devamlar elenir
+         (`mal`+`iyeti`, `kar`+`go`).
+    """
+    if not kalan:
+        return True
+    if any(kalan.startswith(n) for n in _NEGATION_SUFFIXES):
+        return False
+    return bool(_SUFFIX_CHAIN_RE.fullmatch(kalan))
+
+
 # --- DIŞLAMA (Faz 3.3): "beyaz HARİÇ", "iptaller DIŞINDA" -----------------------
 # Türkçede dışlama bir SON-ÇEKİM EDATIYLA kurulur ve edat tümlecini İZLER. Kural bu yüzden
 # konumsaldır, kelime listesi değil: edatın eşleşen DEĞERDEN SONRA gelmesi aranır. Böylece
@@ -1478,10 +1548,8 @@ def _covers(known: str, word: str) -> bool:
         return True
     if not word.startswith(known):
         return False
-    rest = word[len(known):]
-    if any(rest.startswith(n) for n in _NEGATION_SUFFIXES):
-        return False
-    return bool(_SUFFIX_CHAIN_RE.fullmatch(rest))
+    # Kural gövdesi `_ek_gecerli`'de — `_syn_hit` (Faz D3) ile TEK KAYNAK.
+    return _ek_gecerli(word[len(known):])
 
 
 def _uncovered(q: str, known_words: set[str]) -> list[str]:
@@ -1632,10 +1700,21 @@ def typo_correct(q: str, schema: dict) -> tuple[str, list[dict]]:
     # Cube çözülemediyse (resolved=None → vocab TÜM kataloğa genişledi) "öneri" barajı
     # da yükselir; tek-cube'a-daralmış durumda eski (test edilmiş) davranış korunur.
     min_suggest = _TYPO_MID if resolved is not None else _TYPO_MID_WIDE
+    # ÇAPRAZ-KONU TERİMİ YAZIM HATASI DEĞİLDİR (Faz D3, ölçülmüş vaka). Soru bir cube'a
+    # çözüldüğünde `unknown`, YALNIZ O CUBE'a göre bilinmeyenleri içerir; oysa kelime
+    # başka bir cube'un GERÇEK terimi olabilir. Ölçüldü: "personel bazlı verimlilikleri
+    # karşılaştır" → cube `parti`ye çözülüyor (personel kırılımını YALNIZ o taşıyor),
+    # `verimlilikleri` orada bilinmiyor ve bulanık eşleşme onu `renk_derinlik`in
+    # "derinliği"ne çeviriyordu — anlamsız bir "şunu mu demek istedin?".
+    # `verim` tüm katalogda GERÇEK bir terimdir (oee) → düzeltilecek bir yazım hatası
+    # değil, bir ÇAPRAZ-KONU sinyalidir; `partial_unknowns`'ın netleştirmesine bırakılır.
+    tum_katalog = _catalog_vocabulary(schema) if resolved is not None else set()
     corrections: list[dict] = []
     q_out = q
     for w in unknown:
         if len(w) < _TYPO_MIN_WORD_LEN:
+            continue
+        if any(_covers(t, w) for t in tum_katalog):
             continue
         scored = sorted(
             ((difflib.SequenceMatcher(None, w, cand).ratio(), cand) for cand in vocab),
@@ -1666,6 +1745,11 @@ def typo_correct(q: str, schema: dict) -> tuple[str, list[dict]]:
     # (hâlâ tanınmayan) kelimeler için EK bir deneme olarak eklenir — mevcut, %100
     # hassasiyetli tek-kelime kararını asla EZMEZ/DEĞİŞTİRMEZ.
     corrected_words = {c["from"] for c in corrections}
+    # DİKKAT — `leftover` çapraz-konu filtresinden GEÇİRİLMEZ. Denendi ve
+    # `test_value_index_multi_word_value_typo_fallback` anında düştü: `FuzzyIndex` KOMŞU
+    # KELİME İKİLEMESİ dener ("kontinu kasr" → "kontinu kasar") ve doğru yazılmış komşuyu
+    # havuzdan çıkarmak ikilemenin kurulmasını imkânsız kılar. Filtre bu yüzden girdide
+    # değil, ÇIKTIDA uygulanır (aşağıda).
     leftover = [w for w in unknown if w not in corrected_words and len(w) >= _TYPO_MIN_WORD_LEN]
     if leftover:
         from app.value_index import FuzzyIndex
@@ -1682,6 +1766,8 @@ def typo_correct(q: str, schema: dict) -> tuple[str, list[dict]]:
             for c in idx.suggest(q, leftover)[:1]:  # yalnız EN İYİ aday (chip gürültüsü olmasın)
                 if c.surface == c.span:
                     continue
+                if any(_covers(t, c.span) for t in tum_katalog):
+                    continue  # çapraz-konu terimi — yazım hatası değil (bkz. yukarıdaki gerekçe)
                 fixed_q = re.sub(rf"\b{re.escape(c.span)}\b", c.surface, q)
                 corrections.append({"kind": "suggest", "from": c.span, "to": c.surface,
                                     "corrected_q": fixed_q})

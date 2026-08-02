@@ -38,6 +38,7 @@ from app.schemas import (
     DrillRequest,
     DrillResponse,
     Explain,
+    NextStep,
     PvmReport,
     QueryResult,
     RawRow,
@@ -397,6 +398,57 @@ def _select_consistent(llm, question: str, catalog: str, index: dict, k: int):
     ]
     axis = axes[0] if len(axes) == 1 else None
     return None, agreement, axis, distinct_cqs
+
+
+def _intent_uyusmazlik_chipi(question: str, eksen: str, adaylar: list[dict],
+                             schema: dict, uyum: float, k: int) -> AskResponse:
+    """Self-consistency uyuşmazlığı → NETLEŞTİRME (Faz D4). Tahmin etmez, SORAR.
+
+    `_select_consistent` k örneğin kanonik CubeQuery'leri üzerinde oy verir. Uyum 2/3'ün
+    altındaysa kazanan yoktur — ama uyuşmazlık **tek bir eksende** ise (hepsi aynı cube'da
+    ama farklı ölçüde, ya da aynı ölçüde farklı kırılımda) bu, cevaplanabilir bir sorudur.
+    Faz 3.1'in cube-beraberlik chip'iyle aynı felsefe: **belirsizlik bir cevap değil, bir
+    sorudur** (ADR-0008).
+
+    Chip'ler `next_steps` üzerinden taşınır — YENİ BİR ALAN/PANEL AÇILMAZ (mimari kural H3).
+    `next_steps` zaten tam `cube_query` taşıyan ve tıklanınca `/cube` ile **LLM'siz** koşan
+    tek taşıyıcıdır; kullanıcının seçimi ikinci bir LLM turu doğurmaz.
+    """
+    cubes = {c.get("name"): c for c in (schema.get("cubes") or [])}
+
+    def _etiket(cq: dict) -> str:
+        cm = cubes.get(cq.get("cube")) or {}
+        cad = cm.get("display") or cq.get("cube") or "?"
+        if eksen == "cube":
+            return cad
+        if eksen == "measures":
+            disp = cm.get("measure_synonyms_display") or {}
+            return " + ".join(disp.get(m) or m for m in (cq.get("measures") or [])) or cad
+        etiketler = cm.get("dimension_labels") or {}
+        dims = cq.get("dimensions") or []
+        return (" × ".join(etiketler.get(d) or d for d in dims)
+                if dims else "kırılımsız (toplam)")
+
+    gorulen: set[str] = set()
+    adimlar: list[NextStep] = []
+    for cq in adaylar:
+        lb = _etiket(cq)
+        if lb in gorulen:
+            continue
+        gorulen.add(lb)
+        adimlar.append(NextStep(
+            label=lb,
+            kind={"dimensions": "dimension", "measures": "measure"}.get(eksen, "measure"),
+            cube_query=cq,
+        ))
+    soru = {"cube": "Hangi konuyu kastettin?", "measures": "Hangi ölçüyü istiyorsun?",
+            "dimensions": "Hangi kırılımı istiyorsun?"}.get(eksen, "Hangisini istiyorsun?")
+    return AskResponse(
+        question=question, source=None, note=soru,
+        next_steps=adimlar,
+        trace=[f"Intent-path: self-consistency uyuşmazlığı (%{uyum*100:.0f} uyum / {k} "
+               f"örnek, eksen={eksen}) → netleştirme, tahmin YOK"],
+    )
 
 
 def _llm_source(llm, used_rule: bool) -> str:
@@ -1464,11 +1516,34 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             if llm_probe is not None and hasattr(llm_probe, "select_cube"):
                 try:
                     catalog_text, cube_index = cube_router.build_catalog(schema)
-                    raw = llm_probe.select_cube(body.question, catalog_text)
-                    parsed = cube_router.parse_cube_query(raw, cube_index)
+                    # SELF-CONSISTENCY (Faz D4). `_select_consistent` ve `consistency_k=3`
+                    # ayarı ikisi de YAZILMIŞ ama BAĞLANMAMIŞTI: burada tek bir örnek
+                    # alınıyordu, yani ayar bir NİYET BEYANIYDI — `grep consistency_k` bugüne
+                    # kadar TEK bir tüketici bulmuyordu. Belgelenmiş davranışla kodun
+                    # ayrışması, bu depoda tekrar eden en pahalı hata sınıfıdır.
+                    #
+                    # k örnek → kanonik oylama. Uyuşma hem doğruluğu artırır hem de
+                    # KALİBRE bir güven sinyali verir (Faz F planlayıcısının bütçe/eskalasyon
+                    # kararının girdisi). Örnekler paralel koşar → gecikme ~tek çağrı.
+                    k = max(1, int(getattr(settings, "consistency_k", 1) or 1))
+                    parsed, uyum, eksen, adaylar = _select_consistent(
+                        llm_probe, body.question, catalog_text, cube_index, k)
                     if parsed:
                         route_hit = {"cube_query": parsed, "order": None, "limit": None}
                         intent_source = "cube+llm"
+                        if k > 1:
+                            # Uyum oranı TRACE'e yazılır: cevabın yanında "ne kadar emindim"
+                            # görünür olmalı (Faz F'nin kalibrasyon girdisi de bu).
+                            _uyum_notu = f"self-consistency %{uyum*100:.0f} ({k} örnek)"
+                            typo_fix_trace = (f"{typo_fix_trace} · {_uyum_notu}"
+                                              if typo_fix_trace else _uyum_notu)
+                    elif adaylar and eksen:
+                        # UYUŞMAZLIK TEK EKSENDE → tahmin etme, SOR. Faz 3.1'in cube
+                        # beraberlik chip'iyle aynı felsefe: belirsizlik bir cevap değil,
+                        # bir sorudur. Eksen birden çoksa chip anlaşılmaz olur → sessiz
+                        # düşüş (aşağıdaki Discovery merdiveni devralır).
+                        return _finish(_intent_uyusmazlik_chipi(
+                            body.question, eksen, adaylar, schema, uyum, k))
                 except Exception:
                     _log.warning("LLM Intent-JSON seçimi başarısız (best-effort)", exc_info=True)
 

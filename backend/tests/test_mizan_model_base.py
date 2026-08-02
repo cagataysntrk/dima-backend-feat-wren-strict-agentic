@@ -57,8 +57,17 @@ def test_base_object_MODEL_olmali(mizan, schema):
 def test_gereksiz_boyut_YAYINLANMADI(mizan):
     """`tarih` ve `hesap_adi` için `dimension: false` kullanıldı — üreteç yalnız calc
     kolonu üretti. Aksi halde aynı kolon hem boyut hem zaman-boyutu olarak görünür ve
-    router yüzeyi gereksiz büyürdü."""
-    assert set(mizan["dimensions"]) == {"hesap_kodu", "hesap_adi"}, mizan["dimensions"]
+    router yüzeyi gereksiz büyürdü.
+
+    Testin koruduğu şey **`dimension: false` mekanizmasıdır**, katalog büyüklüğü değil:
+    `tarih` boyut listesine SIZMAMALI (zaman-boyutu olarak ayrıca var) ve `hesap_adi`
+    ÇİFTLENMEMELİ (cube'un elle tanımı kazanır, üreteç atlar). Faz D1'de bilinçli olarak
+    iki gerçek kırılım eklendi (`hesap_tipi`, `ana_grup`) — o yüzden liste ARTAR, ama
+    yasak iki durum yine yasaktır."""
+    dims = mizan["dimensions"]
+    assert "tarih" not in dims, "zaman boyutu ayrıca boyut olarak da yayımlanmış"
+    assert len(dims) == len(set(dims)), f"boyut çiftlendi: {dims}"
+    assert {"hesap_kodu", "hesap_adi"} <= set(dims)
     assert mizan["time_dimensions"] == ["tarih"]
 
 

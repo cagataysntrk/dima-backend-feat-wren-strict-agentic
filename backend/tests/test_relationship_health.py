@@ -30,16 +30,15 @@ ya da ayrıştırıcı olarak `cari_tip` boyutu — ki `cari` cube'unda ZATEN va
 
 from __future__ import annotations
 
-import re
-
 import pytest
 import yaml
+
+from app import fanout
 
 # Öksüz oranı için üst sınır. 0'da tutuluyor: bugün ölçülen değer bu ve gevşetmek,
 # testin yakalamak için var olduğu sınıfı (polimorfik/yanlış join) görünmez kılar.
 MAX_ORPHAN_RATE = 0.0
 
-_COND_RE = re.compile(r"^\s*(\w+)\.\"?(\w+)\"?\s*=\s*(\w+)\.\"?(\w+)\"?\s*$")
 
 
 def _relationships(project_dir):
@@ -71,19 +70,11 @@ def rels_and_conn():
         con.close()
 
 
-def _parse(rel: dict):
-    """(kaynak_tablo, kaynak_kolon, hedef_tablo, hedef_kolon) — 'çok' → 'bir' yönünde."""
-    m = _COND_RE.match(rel.get("condition", ""))
-    if not m:
-        return None
-    la, lc, ra, rc = m.groups()
-    models = rel.get("models") or []
-    if len(models) != 2:
-        return None
-    many, one = models[0], models[1]
-    # condition'daki taraf sırası models sırasıyla ters olabilir.
-    src_col, dst_col = (lc, rc) if la == many else (rc, lc)
-    return many, src_col, one, dst_col
+# Ayrıştırma ve ÖLÇÜM `app/fanout.py`'de (Faz D2). Test kendi SQL'ini yazmaz — sertifikayı
+# üreten kodun AYNISINI çağırır. Aksi halde aynı kural iki yerde yaşardı; bu depoda o desen
+# defalarca ölçüldü ve her seferinde sapmayla sonuçlandı (drill↔schedules z-skoru,
+# interpret↔schedules sayı biçimi).
+_parse = fanout.ayristir
 
 
 def test_her_iliski_ayristirilabiliyor(rels_and_conn):
@@ -93,55 +84,46 @@ def test_her_iliski_ayristirilabiliyor(rels_and_conn):
     assert not bozuk, f"condition ayrıştırılamadı (bileşik/karmaşık join?): {bozuk}"
 
 
-def test_hedef_anahtari_BENZERSIZ_ve_NULLSUZ(rels_and_conn):
-    """FAN-OUT KAPISI. Motor `join_type`'ı okumaz — tek gerçek koruma budur."""
+@pytest.fixture(scope="module")
+def sertifika(rels_and_conn):
+    """ÖLÇÜMÜN TEK KAYNAĞI (Faz D2) — build artefaktını üreten fonksiyonun aynısı."""
     rels, con, tables = rels_and_conn
+    return fanout.certify(rels, fanout.duckdb_sorgu(con), tablolar=tables)
+
+
+def test_hedef_anahtari_BENZERSIZ_ve_NULLSUZ(sertifika):
+    """FAN-OUT KAPISI. Motor `join_type`'ı okumaz — tek gerçek koruma budur."""
     sorunlar = []
-    for r in rels:
-        p = _parse(r)
-        if not p:
+    for ad, k in sertifika["relationships"].items():
+        if k.get("durum") != "olculdu":
             continue
-        many, _, one, dst = p
-        if one not in tables:
-            continue
-        n, d, nulls = con.execute(
-            f'select count(*), count(distinct "{dst}"), count(*) filter (where "{dst}" is null) '
-            f"from main.{one}").fetchone()
-        if n != d:
-            sorunlar.append(f"{r['name']}: {one}.{dst} BENZERSİZ DEĞİL ({n} satır / {d} farklı) "
-                            "→ join satırları çoğaltır, SUM'lar şişer")
-        if nulls:
-            sorunlar.append(f"{r['name']}: {one}.{dst} {nulls} NULL içeriyor")
+        if not k["benzersiz"]:
+            sorunlar.append(f"{ad}: {k['bir']}.{k['bir_kolon']} BENZERSİZ DEĞİL "
+                            f"({k['bir_satir']} satır / {k['bir_farkli']} farklı) → join "
+                            "satırları çoğaltır, SUM'lar şişer")
+        if k["bir_null"]:
+            sorunlar.append(f"{ad}: {k['bir']}.{k['bir_kolon']} {k['bir_null']} NULL içeriyor")
     assert not sorunlar, "FAN-OUT RİSKİ:\n  " + "\n  ".join(sorunlar)
 
 
-def test_kaynak_satirlari_OKSUZ_KALMIYOR(rels_and_conn):
+def test_kaynak_satirlari_OKSUZ_KALMIYOR(sertifika):
     """ÖKSÜZ KAPISI — polimorfik/yanlış join'i yakalar.
 
     Öksüz satır kırılımda NULL kovasına düşer ve o kolona konan HER filtre onları
     sessizce eler. Kanıtlanmış vaka: `cari_kodu` hem müşteriyi hem tedarikçiyi gösterir;
     `cari_hareketler → musteriler` eklenirse satırların %53'ü öksüz kalır.
     """
-    rels, con, tables = rels_and_conn
     sorunlar = []
-    for r in rels:
-        p = _parse(r)
-        if not p:
+    for ad, k in sertifika["relationships"].items():
+        if k.get("durum") != "olculdu" or not k["cok_satir"]:
             continue
-        many, src, one, dst = p
-        if many not in tables or one not in tables:
-            continue
-        toplam, eslesen = con.execute(
-            f'select count(*), count(*) filter (where o."{dst}" is not null) '
-            f'from main.{many} s left join main.{one} o on s."{src}" = o."{dst}"').fetchone()
-        if not toplam:
-            continue
-        oran = (toplam - eslesen) / toplam
-        if oran > MAX_ORPHAN_RATE:
+        if k["oksuz_oran"] > MAX_ORPHAN_RATE:
+            eksik = k["cok_satir"] - k["cok_eslesen"]
             sorunlar.append(
-                f"{r['name']}: {many}.{src} satırlarının %{oran*100:.1f}'i {one}.{dst}'de "
-                f"karşılık BULAMIYOR ({toplam - eslesen}/{toplam}) → join semantik olarak "
-                "yanlış olabilir (polimorfik anahtar? yanlış master tablo?)")
+                f"{ad}: {k['cok']}.{k['cok_kolon']} satırlarının %{k['oksuz_oran']*100:.1f}'i "
+                f"{k['bir']}.{k['bir_kolon']}'de karşılık BULAMIYOR ({eksik}/{k['cok_satir']}) "
+                "→ join semantik olarak yanlış olabilir (polimorfik anahtar? yanlış master "
+                "tablo?)")
     assert not sorunlar, "ÖKSÜZ SATIR:\n  " + "\n  ".join(sorunlar)
 
 

@@ -285,6 +285,8 @@ hedef lehçe bekler; aradaki köprüyü wren sunmuyor.
 | **Bir cevabın `source`'unu gizlemek/eşitlemek** | `cube` ile `llm:*` **farklı garantiler** taşır. Rozet UI süsü değil, sözleşmedir. `_llm_source()` bilinmeyen sağlayıcıda bile `:` içeren bir değer döndürür ki LLM cevabı asla deterministik görünmesin. |
 | **Aynı kararı iki motorda ayrı ayrı verme** | Ölçüldü (Faz C): `interpret._classify` ile `viz.analyze` kolon rollerini **bağımsız** çıkarıyordu — `viz` `cube_query`'den otorite alıyor, `interpret` almıyordu; zaman-adı sözlükleri de farklıydı. Aynı cevapta grafik zaman serisi çizerken cümle onu kategori sanabiliyordu ve **ikisi de "deterministik" rozetliydi**. Aynı sınıf: `_is_num` **7 kopya / 3 semantik** (`"1,5"` bir motorda ölçü, diğerinde kategori), Türkçe biçimleme **2 farklı eşik** (`150,5` sohbette `151`, e-postada `150,50`), ay kısaltmaları 3 kopya, z-skoru `drill.py`'de *"yeniden kullanıyorum"* denip elle kopyalanmış. Tek kaynak: `app/result_shape.py` · `app/fmt.py` · `app/stats.py`. |
 | **Zaman kolonunu sabit kodlama** | `kpi.py` üç yerde `"tarih"` yazıyordu, oysa `yoy.time_dim_of` cube'un zaman boyutunu **zaten çözüyor**. `donem_tarih` kullanan cube'da sorgu ya patlar ya — ad tesadüfen varsa — **sessizce yanlış pencere** kurar. Zaman boyutu her zaman **beyandan** okunur. |
+| **Aynı sınır tanımını iki mekanizmada ayrı yazma** | `_uncovered` kelimeleri `[a-z]+` ile ayırıyor, `_syn_hit` ise `\b` kullanıyordu — ve Python'da `_` bir KELİME KARAKTERİDİR. Sonuç: kapsam kapısı kendi eşleşmelerini tanımıyordu (*"yas_grubu bazında işlenen kg"* reddedildi). Kelime sınırı tek tanımdan gelir: `(?<![a-z0-9])`. |
+| **Tanımadığın kelimeyi yazım hatası varsayma** | Soru bir cube'a çözüldüğünde "bilinmeyen" yalnız O CUBE'a görelidir. Kelime BAŞKA bir cube'un gerçek terimiyse bu bir yazım hatası değil **çapraz-konu sinyalidir**; düzeltme önermek anlamsız chip üretir (ölçüldü: *"«verimlilikleri» yerine «derinligi» mi?"*). |
 | **`Dima-0-100` dosyasını mimari otorite sayma** | §8. |
 
 ---
@@ -310,10 +312,45 @@ diye zaman kaybetmesin.
   (b) elle kısaltılmış dolgu köklerine (`grafi`) biçimbirim kuralı uygulamak grafik isteyen
   her soruyu kapıya takıyor. **Ayrım uzunlukta değil biçimde; ve iki farklı sorun iki farklı
   mekanizma ister.**
-- **`_syn_hit` aynı hastalıkta** (`:333-336`) ve **boyut seçimini** bozuyor: `"yas" ⊂ "kıyasla"` →
-  `"önceki ay ile kıyasla"` rapora istenmeyen bir `yas_grubu` GROUP BY ekliyor. **Henüz
-  düzeltilmedi** — `_uncovered`'dan daha geniş etki alanı var (her boyut/ölçü eşleşmesi ondan
-  geçiyor), ayrı bir tur olarak ele alınacak.
+- ✅ **düzeltildi (2026-08-02, Faz D3)** — **`_syn_hit` aynı hastalıktaydı** ve `_uncovered`'dan
+  **daha geniş** bir yüzeyi vardı: her cube/ölçü/boyut eşleşmesi ondan geçiyor.
+  **`route()`'a bakarak görünmüyordu** — orada kapsam kapısı zaten çekiliyordu. Zarar, kapsam
+  kapısından GEÇMEYEN takip yollarındaydı (`deterministic_refine`, `cross_cube_add`,
+  `cross_cube_dim_switch`; takip sorusu eksik cümledir, kapsam kapısı uygulanamaz):
+
+  | Takip sorusu | Eklenen boyut | Kök |
+  |---|---|---|
+  | *"kıyaslama yap"* | `ik.yas_grubu` | `yas` ⊂ `kıyaslama` |
+  | *"önceki ay ile kıyasla"* | `ik.donem` + `ik.yas_grubu` | `ay` ⊂ …, `yas` ⊂ `kıyasla` |
+  | *"neden arttı"* | `bakim.mudahale_eden` | `eden` ⊂ `neden` |
+  | *"detay ver"* | `ik.donem` | `ay` ⊂ `detay` |
+
+  Fazla bir GROUP BY kolonu **her hücredeki sayıyı değiştirir** ve cevap `source="cube"`
+  rozetiyle gelir. Faz 0.5'in `_match_dims` tahkimi bunu kurtaramaz — tahkim *hangi eşleşme
+  kazanır* sorusunu çözer, *bu eşleşme gerçek mi* sorusunu değil.
+  Kural `_covers`'ınkiyle **tek kaynağa** indirildi (`_ek_gecerli`): kelime başı çapası +
+  olumsuzluk eki reddi + geçerli ek zinciri. Ölçülen katalog: 449 boyut sinoniminin 64'ü
+  ≤4 harf ve tam-kelime işaretsizdi.
+  **Sınır `\b` DEĞİL:** Python'da `_` bir kelime karakteridir, dolayısıyla `\b` `yas_grubu`
+  içinde `grubu`'nun önünde sınır görmez — `_uncovered` ise o metni `[a-z]+` ile ZATEN iki
+  kelimeye ayırıyordu. İki mekanizma aynı sınırı görmezse kapsam kapısı **kendi eşleşmelerini
+  tanımaz** hale gelir (canlı test vakası: *"yas_grubu bazında işlenen kg"* reddedildi).
+  Sınır bu yüzden `(?<![a-z0-9])`.
+  **Yan etkiler (ikisi de iyileştirme, ölçülerek doğrulandı):** (a) `ik` cube'u kimlik sinonimi
+  `"ik"` ile `verimlil**ik**leri` içinden eşleşmeyi bıraktı; (b) *"personel bazlı verimlilikleri
+  karşılaştır"* artık `"personel"` yerine **`"verimlilikleri"`** kelimesini işaretliyor — çünkü
+  personel kırılımı `parti`de gerçekten VAR, cevaplanamayan şey `verimlilik` ölçüsüdür.
+- ✅ **düzeltildi (2026-08-02, Faz D3)** — **çapraz-konu terimi "yazım hatası" sanılıyordu.**
+  Soru bir cube'a çözüldüğünde `partial_unknowns` yalnız O CUBE'a göre bilinmeyenleri döndürür;
+  bulanık eşleştirici bunları düzeltilecek yazım hatası sanıyordu. Ölçülen çıktı:
+  *"«verimlilikleri» yerine «derinligi» mi demek istedin?"* — `renk_derinlik` boyutundan gelen
+  anlamsız bir öneri. Artık kelime TÜM katalogda gerçek bir terimin çekimiyse (burada `verim`
+  → `oee`) düzeltme **denenmez**; bu bir yazım hatası değil bir **çapraz-konu sinyalidir**.
+  Aynı gerekçeyle `cube_only_match` da *"hangi ölçüyü istiyorsun?"* demeyi bırakır — kullanıcı
+  ölçüyü zaten söylemiştir, yalnız o ölçü orada yoktur.
+  **Kapı GİRDİDE değil ÇIKTIDA:** `leftover`'ı filtrelemek denendi ve `value_index`in
+  KOMŞU KELİME İKİLEMESİNİ (*"kontinu kasr"* → *"kontinu kasar"*) kırdı — doğru yazılmış
+  komşuyu havuzdan çıkarmak ikilemenin kurulmasını imkânsız kılıyor.
 - ✅ **düzeltildi (2026-08-02, Faz C4)** — **`yoy.py`'nin MoM hizalaması kırıktı.** 93 satır,
   **sıfır doğrudan test**, dört üretim tüketicisi (`report.py`, `routers/dashboards.py`, `/ask`
   iki yerde) + `contribution.py` çıktı şekline bağımlı. Şüpheyi doğuran satır tek başına
@@ -387,6 +424,31 @@ diye zaman kaybetmesin.
   derinlik onları **çözemez**: boyut ya iki cube'da da yerli (derinlik 0=0) ya da ikisinde de
   üretilmiş (1=1). Ayrıca katalogdaki 7 üretilen boyutun hepsi `hops=1` — merdiven iki basamaklı.
   Yeniden açılma koşulu: yayımlanmış 2-sıçramalı boyut belirmesi.
+- ✅ **düzeltildi (2026-08-02, Faz D4)** — **self-consistency yazılmış ama BAĞLANMAMIŞTI.**
+  `app/config.py` *"LLM cube-seçimi k kez örneklenir, kanonik CubeQuery üzerinde oylanır;
+  uyuşmazlık → chip"* diye beyan ediyor ve varsayılanı `3` idi; `grep -rn "consistency_k"`
+  bugüne kadar **tek bir tüketici** bulmuyordu (yalnız tanım satırı). `ask.py` tek örnek
+  alıyordu: oylama yok, uyuşma ölçümü yok, chip yok. `_select_consistent` da üç testi
+  olmasına rağmen üretimde hiç çağrılmıyordu. Artık Intent-JSON yolu k örneği **paralel**
+  alır (gecikme ~tek çağrı), kanonik CubeQuery üzerinde oylar; uyum <2/3 ve uyuşmazlık **tek
+  eksende** ise netleştirme chip'i döner (tahmin YOK), çok eksendeyse merdiven sessizce devam
+  eder — anlaşılmaz bir chip, chip olmamasından kötüdür. Chip'ler `next_steps` üzerinden
+  taşınır: yeni alan/panel açılmaz ve tıklama `/cube` ile **LLM'siz** koşar.
+  **Agentic bağı:** uyum oranı yalnız doğruluk değil **kalibre bir güven sinyalidir** —
+  Faz F planlayıcısının eskalasyon/bütçe kararının girdisi.
+- ✅ **düzeltildi (2026-08-02, Faz D1)** — **`mizan`'ın tek kırılımı hesabın kendisiydi**
+  (`hesap_kodu`/`hesap_adi`: 27/27, aynı grain). *"Gider hesaplarının toplamı"*, *"dönen
+  varlıklar bazında bakiye"* gibi bir muhasebecinin İLK soracağı sorular deterministik yolda
+  cevapsızdı — mizanın asıl ekseni hesap değil hesap SINIFIDIR. `yevmiye_satirlari →
+  hesap_plani` ilişkisi zaten vardı; eksik olan `expose:` bildirimiydi. Ölçülerek iki kolon
+  eklendi: `hesap_tipi` (4 farklı: aktif/pasif/gelir/gider) ve `ana_grup` (5 farklı).
+  Etiketler TEK KELİME — çok kelimeli etiket kelimelerine ayrılıp `hesap` sinonimi doğurur ve
+  mevcut `hesap_kodu`/`hesap_adi` sözlüğünü çalardı (ADR-0018 LABEL ⊆ SYNONYM).
+  **Kalan `expose:`siz 20 ilişki ölçüldü ve bilinçli olarak açılmadı:** hedef cube boyutu
+  zaten elle tanımlamış (`parti.musteri`, `enerji_makine.bolum`), ya da kolon kardinalitesi 1
+  (`tedarikciler.sehir`/`tur` — daha önce denenip GERİ ÇEKİLMİŞ), ya da ilişkinin "bir" tarafı
+  cube'un tabanı (expose oraya boyut üretmez). Boyut eklemek bedava değildir: sinonim çakışma
+  yüzeyini ve router'ın arama uzayını büyütür.
 - **Çapraz-alan soruları `cube_router.py:1502`'de ölüyor** — `_match_cube`'da değil. 13 probun
   12'si orada; 8'inde cube ve ölçü zaten doğru çözülmüş. (Bu satır `cube["dimensions"]` okuyor.)
 - ✅ **4 cube view-tabanlıydı** (`parti`, `ik`, `mizan`, `enerji_tesis` = kataloğun %31'i, en
@@ -472,6 +534,21 @@ diye zaman kaybetmesin.
   `except Exception` yutması da ADR-0020 uyarınca loglanır hale getirildi.
   **Kalan iş (Faz 0.1):** üretimde `/tmp/fastembed_cache` bir named volume olmalı — yoksa her
   yeniden-build 2.2 GB'ı sıfırdan indirir ve ilk sorgular embeddersiz (sözlüksel) koşar.
+- ✅ **düzeltildi (2026-08-02, Faz D)** — **Ölçüm aracının kendisi kırıktı ve bunu kimse
+  görmedi.** `lab/nl_corpus.py` — planın *"asıl metrik"* dediği ve deterministik tavanı
+  (%64) üreten araç — `WrenService`'in üç metodunu monkeypatch'liyordu:
+
+      ws.WrenService._enrich_categorical = lambda self, models: None
+
+  Faz B1 bu metoda **ikinci bir parametre** (fiziksel ad haritası) ekledi; lambda sessizce
+  kırıldı ve araç her şirket için `TypeError` verip `HATA` raporlamaya başladı. Yani
+  **B1'den bu yana deterministik tavan HİÇ ÖLÇÜLEMEDİ** — pytest yeşil, eval sapmasız, ama
+  planın ana metriği ölüydü. Monkeypatch olduğu için ne tip denetimi ne test yakalar.
+  Düzeltme: üç lambda da `(self, *a, **k)` imzasıyla esnetildi (gövdeleri zaten hiçbir
+  argüman kullanmıyor).
+  **Ders — ölçüm aracının kendisi de bir bağımlılıktır.** Üretim koduna dokunan her imza
+  değişikliği, o kodu taklit eden harness'i de bozabilir; ve harness kırıldığında
+  sistem *"ölçemiyorum"* demez, *"her şey hata"* der — ki bu bir süre sonra gürültü sayılır.
 - **Test koşum reçetesi** (host'ta bağımlılık yok, prod imajda pytest yok):
   `docker build -t dima-test` = prod imaj + `pytest pyyaml httpx ruff`; sonra
   `docker run --rm --network none -v "$PWD/backend:/app" -w /app dima-test python -m pytest -q`.
@@ -496,7 +573,7 @@ diye zaman kaybetmesin.
 |---|---|
 | eval `det` dilimi | 129 adım · **answered-precision %100** · **coverage %100** · chip %100 |
 | **deterministik pay** | **%100** — yol dağılımı `intent=111` |
-| pytest | **579 geçti / 0 hata**, ~95 sn |
+| pytest | **1016 geçti / 0 hata**, ~230 sn (2026-08-02, Faz D sonu) |
 | **`lab/nl_corpus.py` — GERÇEK deterministik tavan** | **8984 turda ~%64** (boyahane %64 · atiksan %67 · gulteks %62 · gitas %65) |
 
 > ⚠️ **Eval'in %100'ünü kapsam sanma.** 111 cevabın 111'i intent yolundan geliyor, çünkü eval
@@ -536,6 +613,36 @@ ve **hiçbiri ölçekte "doğru cube'u mu seçti"yi ölçmüyor**.
 | gulteks | 1618 | %62 | **912/957 (%95)** |
 | gitas | 2479 | %67 | **1407/1586 (%88)** |
 | **toplam** | | | **6259/7225 = %86,6** |
+
+**FAZ D SONRASI ÖLÇÜM** (2026-08-02, aynı korpus — araç onarıldıktan sonraki ilk geçerli koşum):
+
+| Şirket | Tur | Erişim | Doğru cube | Δ |
+|---|---|---|---|---|
+| boyahane | 5306 (+66) | %64 | 2996/3742 (%80) | **−18** |
+| atiksan | 1462 | %67 | 926/944 (%98) | 0 |
+| gulteks | 1618 | %62 | 910/955 (%95) | −2 (payda da −2) |
+| gitas | 2479 | %67 | 1405/1584 (%88) | −2 (payda da −2) |
+| **toplam** | | | **6237/7225 = %86,3** | **−%0,3** |
+
+> **Faz D'nin ilan edilen hedefi (%64 → %80 erişim) TUTMADI ve bu açıkça kaydedilir.**
+> Erişim %64'te kaldı. Faz D'nin gerçekte teslim ettiği üç şey başkaydı:
+> (1) **ölçüm aracının kendisi onarıldı** — B1'den beri tavan hiç ölçülemiyordu (§6.4);
+> (2) **sessiz-yanlış bir sınıf kapatıldı** (`_syn_hit`, takip yollarında alakasız GROUP BY);
+> (3) **iki beyan gerçeğe döndü** (fan-out sertifikası artefakt+makbuz oldu, `consistency_k`
+> tüketici kazandı).
+>
+> `−18`'lik düşüş Faz 0.4'te kayda geçen aynı takasın sınıfındandır: sahte alt-dizi
+> eşleşmelerinin bir kısmı **tesadüfen doğru cube'a** düşüyordu. Soru-soru izole
+> EDİLMEDİ — dürüst kayıt budur; nedensellik iddia edilmiyor, korelasyon ve sınıf
+> benzerliği kaydediliyor. Boyahane'nin **+66 turu** Faz D1'in iki yeni mizan
+> kırılımından gelir (hepsi cevaplanabilir).
+>
+> **Sonuç: kapsam tavanı hâlâ %64'tür ve Faz F/G'nin her aracı bu tavanın altında
+> çalışacaktır.** Tavanı yükseltmek `demo-boyahane`'de `expose:` yaymakla olmuyor (ölçüldü:
+> kalan 20 ilişkinin hiçbiri ayırt edici yeni boyut vermiyor); asıl kayıp yerleri korpus
+> raporunda görünüyor — `elektrik` sorularının `enerji_makine` yerine `surdurulebilirlik`e
+> gitmesi (cube-kimliği çakışması) ve `ortalama duruş`un Discovery'ye düşmesi. Bunlar ayrı
+> bir turun konusudur ve **kapsam değil, tahkim/katalog** işidir.
 
 **En zengin katalog (boyahane, 13 cube) EN KÖTÜ.** Belirsizlik katalog büyüdükçe artıyor —
 araştırmanın öngördüğü tam buydu (daha çok boyut → daha çok sinonim çakışması). Bu, Faz 1'in
@@ -685,9 +792,18 @@ Dört ilke:
 
 ### 9.1 Dünyada ilk olacak parçalar — "süs" sanılıp budanmasın
 Rakip araştırması bunları **bulamadı** (satıcı dokümanları taranarak):
-- **Ölçülmüş fan-out güvenlik sertifikası** build artefaktı olarak. Snowflake, Cube, LookML,
-  MetricFlow — hepsi modelciye *beyan ettiriyor*, sonra sonuçlarına karşı savunma yapıyor.
-  Databricks açıkça *"runtime'da doğrulanmaz"* diyor.
+- ✅ **Ölçülmüş fan-out güvenlik sertifikası** build artefaktı olarak — **uygulandı**
+  (2026-08-02, Faz D2: `app/fanout.py`, `target/fanout_certificate.json`, `python -m app.fanout`).
+  Snowflake, Cube, LookML, MetricFlow — hepsi modelciye *beyan ettiriyor*, sonra sonuçlarına
+  karşı savunma yapıyor; Databricks açıkça *"runtime'da doğrulanmaz"* diyor.
+  Ölçüm zaten vardı ama **yalnız test koşumu içinde doğup ölüyordu** — iddia karşılıksızdı.
+  Zincir artık uçtan uca: `relationships.yml` → `certify()` (fan-out · NULL · öksüz) →
+  artefakt → `schema()` `dimension_origin[*].certified` damgası → `contract_log.provenance_json`
+  (makbuz). Regresyon testi de artık kendi SQL'ini yazmaz, **aynı fonksiyonu** çağırır.
+  İki tasarım kararı: (a) `schema()` sertifikayı yalnız **OKUR**, ölçmez — ölçüm 62 `COUNT`
+  sorgusudur ve Faz B1'in `schema()` kazancını geri verirdi; (b) artefakt yokken damga
+  `"olculmedi"`dir, sessiz *"sağlıklı"* değil — ölçülmemişi temiz göstermek olmayan bir
+  garantiyi rozetlemek olurdu. Demo ölçümü: **31 ilişki · 31 ölçüldü · 0 riskli.**
 - **Doğrulanabilir makbuz olarak Query Contract** (SQL + MDL sürümü + parametre + sonuç hash'i +
   join sertifikası + `always_filter` parmak izi). BI'da kimse üçüncü tarafın yeniden çalıştırıp
   hash eşleyebileceği bir makbuz vermiyor.

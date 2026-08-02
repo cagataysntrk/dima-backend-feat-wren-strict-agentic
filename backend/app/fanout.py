@@ -1,0 +1,243 @@
+"""İLİŞKİ SERTİFİKASI — beyan edilen her join'in VERİYLE ölçülmüş sağlık kaydı (Faz D2).
+
+## Neden bir modül, neden bir artefakt
+
+Sektörde standart pratik ilişki kardinalitesini **modelciye beyan ettirmektir**: Cube, LookML,
+MetricFlow ve Snowflake hepsi böyle çalışır; Databricks kendi dokümanında `at_most_one_match`
+için açıkça *"runtime'da doğrulanmaz"* der. Beyan yanlışsa sonuç **hatasız, uyarısız ve
+`source="cube"` rozetiyle şişmiş** bir sayıdır.
+
+Dima bunu ölçüyordu — ama yalnız `tests/test_relationship_health.py` içinde, koşum anında,
+ve ölçümün kendisi **hiçbir yerde saklanmıyordu**. MIMARI §9.1 bu ölçümü *"dünyada ilk"*
+sayan bir iddia taşıyor; **artefakt olmadan iddia karşılıksızdır**: kullanıcı bir kırılıma
+bakıp *"bu join ölçüldü mü"* diye soramaz, cevabın makbuzu da bunu taşıyamaz.
+
+Bu modül üç şeyi ayırır ve tekleştirir:
+
+1. **Ölçüm** (`certify`) — saf; bir `sorgu(sql) -> satırlar` geri-çağrısı alır, bağlantı
+   türü bilmez (DuckDB, MSSQL, WrenService konnektörü — hepsi olur).
+2. **Artefakt** (`yaz` / `oku`) — `<proje>/target/fanout_certificate.json`. Build çıktısıdır;
+   MDL'in yanında durur ve onunla birlikte sürümlenir.
+3. **Tüketiciler** — regresyon testi, `WrenService.schema()` (boyut kökenine `certified`
+   damgası), Query Contract (`provenance_json`), ve ileride UI rozeti (Faz H5).
+
+Test artık kendi SQL'ini yazmaz, bu modülü **çağırır**. Aksi halde aynı kural iki yerde
+yaşardı — bu depoda defalarca ölçülmüş ve her seferinde sapmayla sonuçlanmış bir desen
+(`drill.flag_outliers` ↔ `schedules.detect_anomalies`, `interpret._fmt` ↔ `schedules._fmt_deger`).
+
+## Ölçülen üç şey
+
+| Boyut | Soru | Bozulunca ne olur |
+|---|---|---|
+| **FAN-OUT** | Hedef ("bir" tarafı) anahtarı BENZERSİZ mi? | Join satırları çoğaltır, `SUM`'lar şişer. `wren_core` `join_type`'ı **okumaz** (ölçüldü: MANY_TO_ONE ile MANY_TO_MANY aynı SQL) — motorda hiçbir koruma yoktur. |
+| **NULL** | Hedef anahtarında NULL var mı? | Benzersizlik testini sessizce deler. |
+| **ÖKSÜZ** | Kaynak satırlarının hepsi bir hedef buluyor mu? | Öksüzler kırılımda NULL kovasına düşer ve o kolona konan HER filtre onları eler. Kanıtlanmış vaka: `cari_kodu` polimorfiktir (`M1001` müşteri, `T-204` tedarikçi) — `cari_hareketler → musteriler` eklenirse satırların %53'ü öksüz kalır. |
+
+Sertifika **tanı koymaz, ölçer**. Eşik kararı (`MAX_ORPHAN_RATE` gibi) tüketicinindir.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import re
+from collections.abc import Callable, Iterable
+from pathlib import Path
+
+_log = logging.getLogger("dima.app")
+
+SERTIFIKA_DOSYASI = "fanout_certificate.json"
+SURUM = 1
+
+
+def _simdi() -> str:
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+# `models: [çok, bir]` + `condition: "a.k = b.k"`. Bileşik/karmaşık join'ler ayrıştırılamaz
+# ve bilinçli olarak ölçülmez — `expose:` de onları zaten reddediyor (compose.py).
+_COND_RE = re.compile(r"^\s*(\w+)\.\"?(\w+)\"?\s*=\s*(\w+)\.\"?(\w+)\"?\s*$")
+
+# `sorgu` geri-çağrısının sözleşmesi: SQL al, satır demetlerinin listesini döndür.
+Sorgu = Callable[[str], list[tuple]]
+
+
+def ayristir(rel: dict) -> tuple[str, str, str, str] | None:
+    """`(cok_tablo, cok_kolon, bir_tablo, bir_kolon)` — "çok" → "bir" yönünde.
+
+    `condition`'daki taraf sırası `models` sırasıyla TERS olabilir; yön `models`'ten
+    okunur (ilk eleman "çok" tarafıdır), koşulun yazım sırasından değil.
+    """
+    m = _COND_RE.match(rel.get("condition") or "")
+    if not m:
+        return None
+    la, lc, _ra, rc = m.groups()
+    models = rel.get("models") or []
+    if len(models) != 2:
+        return None
+    cok, bir = models[0], models[1]
+    src, dst = (lc, rc) if la == cok else (rc, lc)
+    return cok, src, bir, dst
+
+
+def certify(rels: Iterable[dict], sorgu: Sorgu, *, tablolar: set[str] | None = None,
+            nitelikli: Callable[[str], str] | None = None,
+            mdl_version: str | None = None) -> dict:
+    """Her ilişki için ölçülmüş sağlık kaydı. Saf: yalnız `sorgu` üzerinden veriye dokunur.
+
+    `tablolar` verilirse mevcut olmayan tabloya dokunan ilişkiler `durum="atlandi"` ile
+    kaydedilir — **sessizce düşürülmez**. "Ölçülmedi" ile "ölçüldü, temiz" ayrı şeylerdir
+    ve sertifikanın tüm değeri bu ayrımdadır.
+
+    `nitelikli` mantıksal tablo adını FİZİKSEL nitelikli ada çevirir. Varsayılan `main.<ad>`
+    yalnız doğrudan DuckDB bağlantısında doğrudur; konnektör üzerinden gidildiğinde katalog
+    adı farklıdır (`boyahane.musteriler` — ölçüldü) ve `WrenService._physical_name`
+    verilmelidir. Sabit kodlanmış şema adı bu modülün taşınabilirliğini bitirirdi.
+    """
+    nitelikli = nitelikli or (lambda t: f"main.{t}")
+    kayit: dict[str, dict] = {}
+    # ÖLÇÜM ZAMANI + ŞEMA SÜRÜMÜ: sertifika bir GEÇMİŞ ölçümdür. "Bu join güvenli" demek
+    # ancak "ne zaman ve hangi şemaya karşı ölçüldü" ile birlikte anlamlıdır — veri
+    # değişince tekillik de değişebilir (`operator = ad_soyad` bugün benzersiz, yarın
+    # aynı adı taşıyan ikinci personelde değil). MIMARI §9'un hedef diyagramı bu alanı
+    # `doğrulama_tarihi` adıyla zaten söz veriyordu.
+    for r in rels:
+        ad = r.get("name") or "?"
+        p = ayristir(r)
+        if p is None:
+            kayit[ad] = {"durum": "ayristirilamadi",
+                         "not": "bileşik/karmaşık condition — ölçülemedi"}
+            continue
+        cok, src, bir, dst = p
+        temel = {"cok": cok, "cok_kolon": src, "bir": bir, "bir_kolon": dst}
+        if tablolar is not None and (cok not in tablolar or bir not in tablolar):
+            eksik = [t for t in (cok, bir) if t not in tablolar]
+            kayit[ad] = {**temel, "durum": "atlandi", "not": f"tablo yok: {', '.join(eksik)}"}
+            continue
+        try:
+            bir_t, cok_t = nitelikli(bir), nitelikli(cok)
+            n, farkli, nulls = sorgu(
+                f'select count(*), count(distinct "{dst}"), '
+                f'count(*) filter (where "{dst}" is null) from {bir_t}')[0]
+            toplam, eslesen = sorgu(
+                f'select count(*), count(*) filter (where o."{dst}" is not null) '
+                f'from {cok_t} s left join {bir_t} o on s."{src}" = o."{dst}"')[0]
+        except Exception as exc:                       # ADR-0020: sessiz yutma yok
+            _log.warning("fan-out sertifikası ölçülemedi (%s): %s", ad, exc)
+            kayit[ad] = {**temel, "durum": "hata", "not": str(exc)[:200]}
+            continue
+        benzersiz = (n == farkli)
+        oksuz = ((toplam - eslesen) / toplam) if toplam else 0.0
+        kayit[ad] = {
+            **temel,
+            "durum": "olculdu",
+            "bir_satir": n, "bir_farkli": farkli, "bir_null": nulls,
+            "cok_satir": toplam, "cok_eslesen": eslesen,
+            "benzersiz": benzersiz, "oksuz_oran": round(oksuz, 6),
+            # `saglikli` = fan-out YOK + NULL YOK + öksüz YOK. Eşik değil, ölçümün özeti.
+            "saglikli": bool(benzersiz and not nulls and oksuz == 0.0),
+        }
+    return {"version": SURUM, "olculme_zamani": _simdi(),
+            "mdl_version": mdl_version, "relationships": kayit}
+
+
+def yaz(project_dir: str | Path, sert: dict) -> Path:
+    """Sertifikayı `<proje>/target/fanout_certificate.json`'a yazar (MDL'in yanına)."""
+    hedef = Path(project_dir) / "target" / SERTIFIKA_DOSYASI
+    hedef.parent.mkdir(parents=True, exist_ok=True)
+    hedef.write_text(json.dumps(sert, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return hedef
+
+
+def oku(project_dir: str | Path) -> dict:
+    """Sertifikayı okur; yoksa/bozuksa **boş** döner — sertifika bir KOLAYLIKTIR, kapı değil.
+
+    Fail-closed yapmak yanlış olurdu: sertifika üretilmemiş bir kurulumda sistem cevap
+    vermeyi bırakmamalı, yalnız *"bu join ölçüldü"* diyememeli.
+    """
+    f = Path(project_dir) / "target" / SERTIFIKA_DOSYASI
+    if not f.exists():
+        return {}
+    try:
+        d = json.loads(f.read_text(encoding="utf-8"))
+    except Exception:
+        _log.warning("fan-out sertifikası okunamadı: %s", f, exc_info=True)
+        return {}
+    return d if isinstance(d, dict) else {}
+
+
+def rozet(sert: dict, rel_adi: str | None) -> str | None:
+    """Tek ilişkinin özeti: `"olculdu:saglikli"` / `"olculdu:riskli"` / `"olculmedi"` / None.
+
+    `dimension_origin` ve Query Contract bunu taşır; UI (Faz H5) bunu rozete çevirir.
+    `None` = ilişki adı yok (yerel boyut — sertifika sorusu anlamsız).
+    """
+    if not rel_adi:
+        return None
+    k = ((sert or {}).get("relationships") or {}).get(rel_adi)
+    if not k:
+        return "olculmedi"
+    if k.get("durum") != "olculdu":
+        return "olculmedi"
+    return "olculdu:saglikli" if k.get("saglikli") else "olculdu:riskli"
+
+
+def duckdb_sorgu(con) -> Sorgu:
+    """DuckDB bağlantısını `Sorgu` sözleşmesine sarar (testlerin doğrudan kullandığı yol)."""
+    return lambda sql: con.execute(sql).fetchall()
+
+
+def konnektor_sorgu(svc) -> Sorgu:
+    """`WrenService._connector()`'ü `Sorgu` sözleşmesine sarar — **datasource-bağımsız**.
+
+    Sertifika ölçümü semantik katmana ihtiyaç duymaz (fiziksel `COUNT`'lar), o yüzden
+    `_connector` doğru seviyedir: DuckDB dizini, MSSQL, Postgres — hepsinde aynı kod.
+    Kullanıcı SQL'i buradan GEÇMEZ; bu yol yalnız build-time ölçüm içindir.
+    """
+    def _q(sql: str) -> list[tuple]:
+        satirlar = svc._connector().query(sql).to_pylist()
+        return [tuple(r.values()) for r in satirlar]
+    return _q
+
+
+def _cli() -> int:
+    """`python -m app.fanout [proje_dizini]` → sertifikayı üretir ve özetini basar."""
+    import sys
+
+    import yaml
+
+    from app.config import get_settings
+    from app.wren_service import WrenService
+
+    s = get_settings()
+    proje = Path(sys.argv[1]) if len(sys.argv) > 1 else s.resolved_project_dir()
+    rels_f = Path(proje) / "relationships.yml"
+    if not rels_f.exists():
+        print(f"relationships.yml yok: {rels_f}")
+        return 1
+    rels = (yaml.safe_load(rels_f.read_text(encoding="utf-8")) or {}).get("relationships") or []
+    svc = WrenService(project_dir=proje, datasource=s.datasource,
+                      connection_info=s.connection_dict())
+    # MDL'de bildirilen modeller = ölçülebilir tablo evreni. Sertifika bunun DIŞINDAKİ bir
+    # tabloya dokunan ilişkiyi `atlandi` diye kaydeder — sessizce düşürmez.
+    import json as _json
+
+    mdl = _json.loads(svc._mdl_bytes())
+    fiziksel = {m.get("name"): WrenService._physical_name(m) for m in (mdl.get("models") or [])}
+    sert = certify(rels, konnektor_sorgu(svc), tablolar=set(fiziksel),
+                   nitelikli=lambda t: fiziksel.get(t, f"main.{t}"),
+                   mdl_version=svc.mdl_version)
+    hedef = yaz(proje, sert)
+    kayit = sert["relationships"]
+    olculdu = [k for k in kayit.values() if k.get("durum") == "olculdu"]
+    riskli = [a for a, k in kayit.items() if k.get("durum") == "olculdu" and not k.get("saglikli")]
+    print(f"{hedef}: {len(kayit)} ilişki · {len(olculdu)} ölçüldü · {len(riskli)} riskli")
+    for a in riskli:
+        k = kayit[a]
+        print(f"  ⚠ {a}: benzersiz={k['benzersiz']} null={k['bir_null']} "
+              f"öksüz=%{k['oksuz_oran']*100:.1f}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(_cli())

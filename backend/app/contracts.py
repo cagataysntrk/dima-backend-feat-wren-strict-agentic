@@ -42,6 +42,7 @@ def _row_from_payload(p: dict):
         question=p.get("question"), cube_query_json=p.get("cube_query_json"),
         sql=p.get("sql"), result_hash=p.get("result_hash"), row_count=p.get("row_count"),
         schema_version=p.get("schema_version"), source=p.get("source"),
+        provenance_json=p.get("provenance_json"),
         ts=datetime.fromisoformat(p["ts"]) if p.get("ts") else datetime.utcnow())
 
 
@@ -201,6 +202,7 @@ class ContractStore:
         source: str | None,
         schema_version: str,
         tenant_id: str | None = None,
+        provenance: dict | None = None,
     ) -> str:
         cid = "c-" + uuid.uuid4().hex[:10]
         # Alanlar bir kez çözülür → DB satırı ve spool payload'ı AYNI kaynaktan (ts + hash
@@ -211,6 +213,10 @@ class ContractStore:
             "sql": sql, "result_hash": result_hash(result),
             "row_count": (result or {}).get("row_count"),
             "schema_version": schema_version, "source": source,
+            # KÖKEN (Faz D2): hangi kırılım hangi join'den geldi ve o join ÖLÇÜLDÜ mü.
+            # `None` ile `{}` farklı: `None` = ilişki-türevi boyut KULLANILMADI.
+            "provenance_json": (json.dumps(provenance, ensure_ascii=False)
+                                if provenance else None),
             "ts": datetime.utcnow().isoformat(),
         }
         try:

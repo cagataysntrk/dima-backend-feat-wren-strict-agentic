@@ -175,6 +175,32 @@ relationships:
       # boyutu ATLAR (elle tanım kazanır) ve o tanımın ifadesi calc kolonu sarmalar.
       - column: hesap_adi
         dimension: false
+      # FAZ D1 — `mizan` cube'unun TEK kırılımı hesabın KENDİSİYDİ (hesap_kodu/hesap_adi:
+      # 27 farklı değer, ikisi de birebir aynı grain). Yani "gider hesaplarının toplamı"
+      # ya da "dönen varlıklar bazında bakiye" gibi bir muhasebecinin İLK soracağı
+      # kırılımlar deterministik yolda CEVAPSIZDI — mizan gibi bir raporun asıl ekseni
+      # hesap değil hesap SINIFIDIR.
+      #
+      # Ölçüldü (2 Ağustos 2026, `hesap_plani` 27 satır):
+      #   hesap_tipi → 4 farklı (aktif · pasif · gelir · gider)
+      #   ana_grup   → 5 farklı (Dönen Varlıklar · Duran Varlıklar · Kısa Vadeli Yab. K. …)
+      # İkisi de "AYIRT EDİCİ" kapısını geçiyor (`test_relationship_health.py`), sertifika
+      # `yevmiye_satirlari_hesap_plani` için `saglikli` (27/27 benzersiz, 0 NULL, 0 öksüz).
+      #
+      # ETİKETLER TEK KELİME: çok kelimeli etiket kelimelerine ayrılıp sinonim doğurur
+      # (ADR-0018 LABEL ⊆ SYNONYM) — `hesap tipi` yazmak `hesap` sinonimini üretir ve
+      # mizan'ın MEVCUT `hesap_kodu`/`hesap_adi` sözlüğüyle çakışırdı. Kapı:
+      # compose.py::_etiket_carpismasi. Çok kelimeli ifadeler `synonyms:` altında güvenli.
+      - column: hesap_tipi
+        as: hesap_tipi
+        label: tipi
+        synonyms: [hesap tipi, hesap türü, hesap tipine göre, hesap türüne göre,
+                   aktif pasif, gelir gider, hangi tip hesap]
+      - column: ana_grup
+        as: ana_grup
+        label: anagrup
+        synonyms: [ana grup, ana gruba göre, hesap grubu, hesap grubuna göre,
+                   bilanço grubu, hangi ana grup]
   - name: fatura_satirlari_faturalar
     join_type: MANY_TO_ONE
     models: [fatura_satirlari, faturalar]

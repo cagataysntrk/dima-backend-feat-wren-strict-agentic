@@ -203,9 +203,14 @@ def run_company(name, login, pw, slug):
     # ROUTING KALİTESİNİ ölçer (icra değil); dry_plan mssql bağlantı nesnesi ister ve
     # tünelsiz patlar, routing başarısını NOTE olarak gizlerdi. Kimlik dönüşü → route
     # başardıysa cube yanıtı üretilir, dört şirket eşit ölçülür.
-    ws.WrenService._enrich_categorical = lambda self, models: None
-    ws.WrenService._enrich_cube_dim_values = lambda self, cubes, mdl, models: None
-    ws.WrenService.dry_plan = lambda self, sql: sql
+    # `*a` BİLİNÇLİ: Faz B1 bu metoda ikinci bir parametre (fiziksel ad haritası) ekledi ve
+    # buradaki iki-argümanlı lambda sessizce KIRILDI — ölçüm aracı `TypeError` verip her
+    # şirketi "HATA" olarak raporluyordu, yani DETERMİNİSTİK TAVAN AYLARCA ÖLÇÜLEMEZDİ.
+    # Bu bir monkeypatch olduğu için hiçbir tip denetimi yakalayamaz; imzayı sabitlemek
+    # yerine esnetmek tek dayanıklı çözümdür (gövde zaten hiçbir argüman kullanmıyor).
+    ws.WrenService._enrich_categorical = lambda self, *a, **k: None
+    ws.WrenService._enrich_cube_dim_values = lambda self, *a, **k: None
+    ws.WrenService.dry_plan = lambda self, sql, *a, **k: sql
 
     make_tenant_user(login, pw, tenant_slug=slug)
     c = TestClient(create_app())

@@ -289,6 +289,33 @@ def _attach_recommendations(request: Request, resp: AskResponse) -> None:
 
 
 
+def koken(service, cube_query: dict | None) -> dict | None:
+    """Cevabın KÖKEN kanıtı (Faz D2): hangi kırılım hangi join'den geldi, o join ölçüldü mü?
+
+    Query Contract bugüne kadar *"hangi sayı, hangi SQL, hangi şema sürümü"* diyordu.
+    Cevaplayamadığı soru **"bu kırılıma neden güveneyim"**dı — oysa fan-out riski tam
+    orada yaşar: beyan yanlışsa sonuç hatasız, uyarısız ve `source="cube"` rozetiyle
+    şişmiş gelir (`wren_core` `join_type`'ı OKUMAZ — ölçüldü).
+
+    `None` döner (ve makbuza kolon yazılmaz) eğer cevap **hiç** ilişki-türevi boyut
+    kullanmıyorsa: köken sorusu o zaman anlamsızdır ve boş bir sözlük yazmak *"köken
+    bakıldı ve yoktu"* ile *"köken hiç sorulmadı"*yı karıştırırdı.
+    """
+    dims = (cube_query or {}).get("dimensions") or []
+    cube_adi = (cube_query or {}).get("cube")
+    if not dims or not cube_adi:
+        return None
+    try:
+        cube = next((c for c in (service.schema().get("cubes") or [])
+                     if c.get("name") == cube_adi), None)
+    except Exception:                       # ADR-0020: sessiz yutma yok
+        _log.warning("köken çözümlenemedi (best-effort) — cube=%s", cube_adi, exc_info=True)
+        return None
+    origins = (cube or {}).get("dimension_origin") or {}
+    kayit = {d: origins[d] for d in dims if d in origins}
+    return {"dimensions": kayit} if kayit else None
+
+
 def record_contract(request: Request, *, service, session_id: str | None, question: str,
                     cube_query: dict | None, sql: str | None, result: dict | None,
                     source: str) -> str | None:
@@ -311,6 +338,7 @@ def record_contract(request: Request, *, service, session_id: str | None, questi
             session_id=session_id, question=question, cube_query=cube_query, sql=sql,
             result=result, source=source, schema_version=service.mdl_version,
             tenant_id=getattr(principal, "tenant_id", None),
+            provenance=koken(service, cube_query),
         )
     except Exception:
         _log.warning("Query Contract kaydedilemedi (best-effort) — source=%s", source,
