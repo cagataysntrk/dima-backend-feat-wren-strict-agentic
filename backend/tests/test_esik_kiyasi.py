@@ -209,3 +209,48 @@ def test_ANSWER_ZINCIRI_esikleri_besliyor():
     assert "kullanicinin_esikleri" in govde
     assert "esikler=esikler" in govde, "eşikler `interpret`e geçirilmiyor"
     assert "tenant_id" in govde, "tenant-RLS eşik kıyasında uygulanmıyor"
+
+
+# --- K4 TUTARLILIĞI: eşik ihlali de aksiyon üretir -------------------------------
+
+def test_ESIK_sinyali_de_AKSIYON_uretir():
+    """BÜTÜNSEL DENETİMDE ÖLÇÜLDÜ (2026-08-02): `recommend_actions` trend/anomali/
+    yoğunlaşmayı işliyor ama `threshold`'u İŞLEMİYORDU. Yani sinyallerin EN AKSİYON
+    ALINABİLİRİ — kullanıcının KENDİ koyduğu sınırın aşılması — aksiyon chip'i üretmeyen
+    TEK sinyaldi. Sistemin kendi bulduğu bir aykırılığa "hangi makine sürüklüyor?" derken
+    kullanıcının kendi alarmına sessiz kalmak tutarsızdı."""
+    from app.cube_router import recommend_actions
+
+    spec = {"name": "uretim", "dimensions": ["makine", "vardiya"],
+            "dimension_labels": {"makine": "makine"}}
+    cq = {"cube": "uretim", "measures": ["fire_kg"], "dimensions": []}
+    out = recommend_actions([{"severity": "critical", "kind": "threshold", "text": "..."}],
+                            cq, spec)
+    assert out and out[0].get("action"), "eşik ihlali aksiyon chip'i üretmiyor"
+    assert out[0]["action"]["cube_query"]["dimensions"] == ["makine"]
+
+
+def test_AYNI_aksiyon_IKI_KEZ_gosterilmez():
+    """Eşik + trend aynı anda ateşlerse ikisi de "makine kırılımına bak" der — `seen`
+    kümesi tekilleştirir, yoksa kullanıcı aynı chip'i iki kez görürdü."""
+    from app.cube_router import recommend_actions
+
+    spec = {"name": "uretim", "dimensions": ["makine"], "dimension_labels": {}}
+    cq = {"cube": "uretim", "measures": ["fire_kg"], "dimensions": []}
+    out = recommend_actions([{"kind": "threshold", "text": "a"}, {"kind": "trend", "text": "b"}],
+                            cq, spec)
+    assert len(out) == 1
+
+
+def test_SURUKLEYEN_boyut_MALIYET_SIRASINDAN_secilir():
+    """`recommend_actions` `spec["dimensions"]`i doğrudan tarasaydı Faz B sıralamasını
+    ATLARDI ve "ilk boyut" yine YAML beyan sırası olurdu — düzeltilen kusurun aynısı,
+    ikinci bir yerde."""
+    from app.cube_router import recommend_actions
+
+    spec = {"name": "uretim", "dimensions": ["uzak", "yerel"], "dimension_labels": {},
+            "dimension_origin": {"uzak": {"hops": 1, "certified": "olculdu:riskli"}}}
+    cq = {"cube": "uretim", "measures": ["fire_kg"], "dimensions": []}
+    out = recommend_actions([{"kind": "threshold", "text": "a"}], cq, spec)
+    assert out[0]["action"]["cube_query"]["dimensions"] == ["yerel"], (
+        "riskli/uzak boyut, yerel boyutun önüne geçmiş")

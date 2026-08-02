@@ -2188,16 +2188,32 @@ def suggest_next_steps(cube_query: dict, index: dict) -> list[dict]:
 
 def recommend_actions(signals: list[dict], cube_query: dict, spec: dict | None) -> list[dict]:
     """K4 (karar motoru) — K3 SİNYALLERİNDEN aksiyon önerileri: her öneri ``{text, action?}``.
-    trend/anomali → 'sürükleyeni bul' drill'i (K2 ``suggest_next_steps`` şekli: kullanılmayan
-    ilk boyuta kır); yoğunlaşma → salt-metin. Deterministik (LLM yok); ilk 3."""
+    trend/anomali/eşik → 'sürükleyeni bul' drill'i (K2 ``suggest_next_steps`` şekli:
+    kullanılmayan ilk boyuta kır); yoğunlaşma → salt-metin. Deterministik (LLM yok); ilk 3.
+
+    **`threshold` neden trend/anomali ile AYNI muameleyi görür** (2 Ağustos 2026, bütünsel
+    denetimde ölçüldü): eşik ihlali sinyallerin **en aksiyon alınabiliridir** — kullanıcının
+    KENDİ koyduğu sınır aşılmıştır — ama aksiyon chip'i üretmeyen **tek** sinyal oydu.
+    Sistemin kendi bulduğu bir aykırılığa *"hangi makine sürüklüyor?"* derken, kullanıcının
+    kendi kurduğu alarma sessiz kalmak tutarsızdı. Sorulacak soru ikisinde de aynı.
+
+    `driver` **Faz B'den beri anlamlı**: `available_dimensions` adayları maliyet+güvene göre
+    sıralar (kendi tablosundaki boyut önce, sonra sıçrama, sonra fan-out sertifikası) —
+    yani "ilk kullanılmayan boyut" artık keyfi değil, **en ucuz ve en güvenilir** olandır.
+    """
     used = list((cube_query or {}).get("dimensions") or [])
-    driver = next((d for d in ((spec or {}).get("dimensions") or []) if d not in used), None)
+    # Aday sırası `drill.available_dimensions`'tan gelir: maliyet+güven sıralı (Faz B).
+    # Burada `spec["dimensions"]`i doğrudan taramak, o sıralamayı ATLARDI ve "ilk boyut"
+    # yine YAML beyan sırası olurdu — düzeltilen kusurun aynısı, ikinci bir yerde.
+    from app.drill import available_dimensions
+
+    driver = next((d["name"] for d in available_dimensions(spec or {}, cube_query or {})), None)
     dim_labels = (spec or {}).get("dimension_labels") or {}
     out: list[dict] = []
     seen: set[str] = set()
     for s in signals or []:
         kind = s.get("kind")
-        if kind in ("trend", "anomaly") and driver:
+        if kind in ("trend", "anomaly", "threshold") and driver:
             dlabel = dim_labels.get(driver) or driver
             text = f"{dlabel} kırılımına bak — hangi {dlabel} bunu sürüklüyor?"
             if text in seen:
