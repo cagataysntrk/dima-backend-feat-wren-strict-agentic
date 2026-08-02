@@ -1228,11 +1228,42 @@ payı TANIMSIZDIR"*) aynı disiplinin reçete seviyesindeki karşılığı.
 *"Bu neden böyle?"* bir **açıklama** ister, reçete değil. İkisini karıştırmak, kullanıcının
 **sormadığı** bir tavsiyeyi cevabın yerine koymak olurdu. Test her iki yönü de kilitler.
 
-### 12.10 Henüz YOK (G3 kalanı)
+### 12.10 Eşik kıyası: hedef UYDURULMAZ, kullanıcının KENDİ sınırı okunur (G3) ✅
 
-Hedef/eşik kıyası (`schedules.check_threshold` mantığının reçeteye bağlanması), seçeneklerin
-**izleme kurulumuna** dönüşmesi (*"bunu haftalık izle"* → `schedules.create`), ve **imzalı
-Karar Kaydı** (Faz E-4 — ürünün en yüksek fiyat noktası).
+Plan bir *"hedef/eşik kıyası"* istiyordu. **Ölçüldü: cube metadata'sında `target:`/`hedef:`
+diye bir beyan HİÇBİR cube'da yok.** Demo için hedef uydurmak, `pvm:` eşleştirmesinde
+bilinçle reddedilen şeyin aynısı olurdu — GÜVENLE YANLIŞ bir sayı (*"hedefin %12
+altındasın"*) ve kullanıcı onu sorgulamaz.
+
+Ama gerçek, **beyan edilmiş** bir eşik kaynağı zaten var: **kullanıcının kendi kurduğu
+alarmlar**. `fire_kg > 30` alarmını kuran kişi *"benim için kritik sınır bu"* demiş olur.
+Bu uydurulmuş bir hedef değil, kullanıcının kendi ifadesidir.
+
+`schedules.kullanicinin_esikleri()` + `schedules.esik_sinyalleri()` →
+`interpret(..., esikler=)`. Dört karar:
+
+| Karar | Gerekçe |
+|---|---|
+| **`_maybe_interpret`'e bağlandı**, ayrı bir uca değil | Tek kapanış zincirinin parçası: `/ask` · `/cube` · `/report` · drill · katkı **hepsi** kıyası bedava alır ve **yeni yüzey açılmaz** (sinyal zaten `OutputInsight`'ta render ediliyor) |
+| **Aynı matematik** (`check_threshold` ÇAĞRILIR) | Ekrandaki uyarı ile e-postadaki alarm ayrışırsa, "e-postada uyarı gelirken ekranda gelmeyen" bir gün gelir — I4'te ölçülen sadakat kusurunun uyarı tarafındaki karşılığı |
+| **Rahat alanda SUSAR** | *"Eşiğin %40 altındasın"* her cevaba eklenirse sinyal gürültüye döner ve ASIL uyarılar okunmaz olur. Sessizlik burada bir karardır |
+| **Anomali alarmı eşik SAYILMAZ** | `method=zscore` bir sınır değil baseline'dan öğrenen bir istatistiktir; `interpret._signals` onu zaten koşuyor — ikisi aynı şeyi iki kez söylerdi |
+
+**Tanımsız sayı üretilmez:** `value <= 0` eşikte "yüzde olarak yaklaşmak" tanımsızdır
+(0'a %90 yaklaşmak nedir?) — yaklaşma hesaplanmaz, ihlal yine bildirilir. `contribution`ın
+`net_pay = None` disiplininin aynısı.
+
+**Tenant-RLS eşik kıyasında da geçerlidir**: başka kiracının koyduğu sınır bu kullanıcının
+cevabında görünemez. 20 test: `tests/test_esik_kiyasi.py`.
+
+**"İzleme kur" zaten vardı** (ReportCard 🔔 → `createSchedule` + `threshold`); halka şimdi
+kapandı: kullanıcı eşiği kurar → **her cevapta** o eşiğe göre uyarılır → ihlalde bildirim
+gelir → bildirim **nedenini** de taşır (§11.6e).
+
+### 12.11 Henüz YOK (G3 kalanı)
+
+Seçeneklerin **doğrudan** izleme kurulumuna dönüşmesi (reçete kartından tek tıkla
+`schedules.create` — bugün kullanıcı 🔔'i kendi açıyor).
 
 ---
 

@@ -236,9 +236,26 @@ def _maybe_interpret(request: Request, resp: AskResponse) -> None:
             pass
         if resp.kpi and resp.kpi.get("lower_is_better"):
             lower_is_better.add(resp.kpi.get("kpi"))  # KPI ölçüsü (CCC gibi) düşük=iyi
+        # EŞİK KIYASI (Faz G3). Kaynak KULLANICININ KENDİ kurduğu alarmlardır — cube
+        # metadata'sında `target:` beyanı hiçbir cube'da yok (ölçüldü) ve demo için hedef
+        # uydurmak GÜVENLE YANLIŞ bir sayı üretirdi. Burada olmasının sebebi: `_maybe_interpret`
+        # TEK kapanış zincirinin parçası, yani /ask · /cube · /report · drill · katkı —
+        # HEPSİ bu kıyası bedava alır ve UI'da YENİ BİR YÜZEY AÇILMAZ (sinyal zaten
+        # InterpretationBar'da render ediliyor).
+        esikler: list[dict] = []
+        try:
+            from app.schedules import kullanicinin_esikleri
+            store = getattr(request.app.state, "schedules", None)
+            if store is not None and resp.cube_query:
+                esikler = kullanicinin_esikleri(
+                    store, (resp.cube_query or {}).get("cube"),
+                    (resp.cube_query or {}).get("measures"),
+                    tenant_id=getattr(principal, "tenant_id", None))
+        except Exception:
+            _log.warning("eşik kıyası okunamadı (best-effort)", exc_info=True)
         resp.interpretation = interpret(
             resp.result.model_dump() if resp.result else None,
-            resp.cube_query, resp.kpi, units, lower_is_better)
+            resp.cube_query, resp.kpi, units, lower_is_better, esikler=esikler)
     except Exception:  # noqa: BLE001 - yorum best-effort (yanıtı düşürmez)
         _log.warning("çıktı yorumu üretilemedi (best-effort)", exc_info=True)
 

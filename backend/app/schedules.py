@@ -651,3 +651,109 @@ def run_due(state) -> int:
         except Exception:
             continue  # tek zamanlama hatası diğerlerini durdurmasın
     return n
+
+
+# --- KULLANICININ EŞİKLERİ (Faz G3) ----------------------------------------------
+#
+# Planın G3 kompozisyonu bir "hedef/eşik kıyası" istiyor. Ölçüldü: cube metadata'sında
+# `target:`/`hedef:` diye bir beyan **hiçbir cube'da YOK**. Demo için hedef uydurmak,
+# `pvm:` eşleştirmesinde reddedilen şeyin aynısı olurdu — GÜVENLE YANLIŞ bir sayı
+# ("hedefin %12 altındasın") ve kimse onu sorgulamaz.
+#
+# Ama gerçek, BEYAN EDİLMİŞ bir eşik kaynağı zaten var: **kullanıcının kendi kurduğu
+# alarmlar**. Kullanıcı `fire_kg > 30` alarmını kurduğunda "benim için kritik sınır bu"
+# demiş olur. Bu, uydurulmuş bir hedef değil, kullanıcının kendi ifadesidir.
+
+#: Eşiğe "yaklaşma" oranı: ihlal yoksa bile bu bandın içindeysek uyarılır.
+YAKLASMA_ORANI = 0.90
+
+
+def kullanicinin_esikleri(store, cube: str | None, olculer: list[str] | None,
+                          *, tenant_id: str | None = None) -> list[dict]:
+    """Bu cube+ölçü için kullanıcının kurduğu SABİT eşikler (anomali alarmları hariç).
+
+    Anomali alarmları (`method=zscore`) dışarıda: onlar bir SINIR değil, baseline'dan
+    öğrenen bir istatistiktir — `interpret._signals`'ın anomali dalı zaten aynı motoru
+    (`detect_anomalies`) koşuyor ve ikisini karıştırmak aynı şeyi iki kez söylerdi.
+    """
+    if not cube or not olculer:
+        return []
+    try:
+        tanimlar = store.list()
+    except Exception:
+        _log.warning("eşik kıyası: zamanlama listesi okunamadı (best-effort)", exc_info=True)
+        return []
+    olcu_kumesi = set(olculer)
+    out: list[dict] = []
+    for s in tanimlar:
+        if not s.get("enabled", True):
+            continue
+        if tenant_id and s.get("tenant_id") and s["tenant_id"] != tenant_id:
+            continue
+        th = s.get("threshold") or {}
+        if not th.get("measure") or th.get("measure") not in olcu_kumesi:
+            continue
+        if str(th.get("method", "")) in ("zscore", "anomali", "anomaly"):
+            continue
+        if (s.get("cube_query") or {}).get("cube") != cube:
+            continue
+        try:
+            float(th.get("value"))
+        except (TypeError, ValueError):
+            continue
+        out.append({"measure": th["measure"], "op": str(th.get("op", "gt")),
+                    "value": float(th["value"]), "label": s.get("label") or s.get("id")})
+    return out
+
+
+def esik_sinyalleri(rows: list[dict], esikler: list[dict],
+                    units: dict[str, str] | None = None) -> list[dict]:
+    """Kullanıcının eşiklerine göre PROAKTİF sinyaller (`interpret._signals` biçiminde).
+
+    İki durum bildirilir, üçüncüsü **bilinçle susar**:
+      * **ihlal** → `critical`. Gövdeyi `check_threshold` üretir (aynı kural iki yerde
+        yaşamasın: alarm koşumu ile ekrandaki uyarı AYNI matematiği kullanmalı, yoksa
+        e-postada uyarı gelirken ekranda gelmeyen bir gün olur).
+      * **yaklaşma** → `warning`. Eşiği aşmadan haber vermek, ürünün "reaktif değil
+        proaktif" vaadinin (öz #6) en ucuz karşılığıdır.
+      * **rahat** → SUSAR. "Eşiğin %40 altındasın" her cevaba eklenirse sinyal gürültüye
+        döner ve asıl uyarılar okunmaz olur.
+
+    Yaklaşma yalnız `value > 0` için hesaplanır. Negatif ya da sıfır eşikte "yüzde olarak
+    yaklaşmak" tanımsızdır (0'a %90 yaklaşmak nedir?) — tanımsız bir sayı üretmektense
+    sinyal verilmez; `contribution`ın `net_pay = None` disiplininin aynısı.
+    """
+    if not rows or not esikler:
+        return []
+    units = units or {}
+    out: list[dict] = []
+    for e in esikler:
+        m, op, val = e["measure"], e["op"], e["value"]
+        ihlaller = check_threshold({"measure": m, "op": op, "value": val}, {"rows": rows})
+        birim = units.get(m)
+        if ihlaller:
+            out.append({
+                "severity": "critical", "kind": "threshold",
+                "text": (f"Kendi eşiğini aşıyor ({e['label']}: {m} "
+                         f"{'>' if op.startswith('g') else '<'} {_ile_birim(_fmt_deger(val), birim)}) — "
+                         + "; ".join(ihlaller[:2])
+                         + (f" (+{len(ihlaller) - 2} satır)" if len(ihlaller) > 2 else ""))})
+            continue
+        if val <= 0:
+            continue
+        degerler = [float(r[m]) for r in rows if _is_sayi(r.get(m))]
+        if not degerler:
+            continue
+        if op.startswith("g"):
+            uc = max(degerler)
+            yakin = uc >= val * YAKLASMA_ORANI
+        else:
+            uc = min(degerler)
+            yakin = uc <= val / YAKLASMA_ORANI
+        if yakin:
+            out.append({
+                "severity": "warning", "kind": "threshold",
+                "text": (f"Eşiğine yaklaşıyor ({e['label']}: {m} "
+                         f"{'>' if op.startswith('g') else '<'} {_ile_birim(_fmt_deger(val), birim)}) — "
+                         f"şu an {_ile_birim(_fmt_deger(uc), birim)}")})
+    return out

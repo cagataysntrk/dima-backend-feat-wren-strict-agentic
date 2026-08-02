@@ -24,6 +24,14 @@ const FACT_ICON: Record<string, string> = {
   trend: "📈", peak: "🏆", bottom: "🔻", kpi_components: "🧮",
 };
 
+// Sinyal türüne özel simge — YALNIZ önem düzeyinden ayrışması gerekenler için.
+// `threshold` (Faz G3) semantik olarak ötekilerden FARKLIDIR: anomali/trend/yoğunlaşma
+// sistemin veriden ÇIKARDIĞI şeylerdir, eşik ise KULLANICININ KENDİ koyduğu sınırdır.
+// Aynı ⛔ ile göstermek, "senin dediğin sınır" ile "bizim bulduğumuz aykırılık" arasındaki
+// farkı silerdi — ve o fark, uyarıya duyulan güvenin kaynağıdır. Listede yoksa önem
+// düzeyinin simgesine düşülür (yeni sinyal türleri sessizce bozulmaz).
+const SIGNAL_ICON: Record<string, string> = { threshold: "🎯" };
+
 export function OutputInsight({ interpretation }: { interpretation?: Interpretation | null }) {
   if (!interpretation?.summary) return null;
   const signals = interpretation.signals ?? [];
@@ -74,7 +82,8 @@ export function OutputInsight({ interpretation }: { interpretation?: Interpretat
           }`}
         >
           <span className="mt-px shrink-0" aria-hidden>
-            {s.severity === "critical" ? "⛔" : s.severity === "warning" ? "⚠" : "◇"}
+            {SIGNAL_ICON[s.kind] ??
+              (s.severity === "critical" ? "⛔" : s.severity === "warning" ? "⚠" : "◇")}
           </span>
           <p>{s.text}</p>
         </div>

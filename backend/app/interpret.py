@@ -181,11 +181,18 @@ def _signals(rows: list[dict], dims: list[str], time_col: str | None,
 
 def interpret(result: dict | None, cube_query: dict | None = None,
               kpi: dict | None = None, units: dict[str, str] | None = None,
-              lower_is_better: set[str] | None = None) -> dict | None:
+              lower_is_better: set[str] | None = None,
+              esikler: list[dict] | None = None) -> dict | None:
     """Evrensel yorum: {facts:[...], summary:"Türkçe"} | None. TAMAMEN deterministik.
 
     result: {columns, rows, row_count}. cube_query/kpi ipucu (opsiyonel). units: ölçü→birim.
-    lower_is_better: yönü DÜŞÜK=İYİ olan ölçü adları (DSO/CCC/fire…) — trend iyi/kötü çerçevesi."""
+    lower_is_better: yönü DÜŞÜK=İYİ olan ölçü adları (DSO/CCC/fire…) — trend iyi/kötü çerçevesi.
+    esikler: KULLANICININ KENDİ kurduğu sabit alarm eşikleri (Faz G3) — bkz.
+      `schedules.kullanicinin_esikleri`. Cube metadata'sında `target:` diye bir beyan
+      HİÇBİR cube'da yok (ölçüldü); demo için hedef uydurmak `pvm:` eşleştirmesinde
+      reddedilen şeyin aynısı olurdu. Kullanıcı `fire_kg > 30` alarmını kurduğunda ise
+      "benim için kritik sınır bu" demiş OLUR — bu uydurulmuş değil, beyan edilmiş bir
+      hedeftir ve cevabın kendisinde görünmelidir."""
     units = units or {}
     lib_set = lower_is_better or set()
     if kpi:
@@ -224,6 +231,16 @@ def interpret(result: dict | None, cube_query: dict | None = None,
         facts.append({"type": "count", "text": f"{len(rows)} satır"})
     out = {"facts": facts, "summary": " ".join(f["text"].rstrip(".") + "." for f in facts)}
     signals = _signals(rows, dims, time_col, m0, unit, m0 in lib_set)  # K3 proaktif sinyaller
+    if esikler:
+        # EŞİK KIYASI (Faz G3) — gövde `schedules.esik_sinyalleri`'nde: alarm koşumuyla
+        # AYNI matematiği (`check_threshold`) kullanır. İkisi ayrı yazılsaydı, e-postada
+        # uyarı gelirken ekranda gelmeyen bir gün gelirdi. Eşiğin ALTINDA kalmak SUSAR:
+        # "eşiğin %40 altındasın" her cevaba eklenirse asıl uyarılar okunmaz olur.
+        try:
+            from app.schedules import esik_sinyalleri
+            signals = esik_sinyalleri(rows, esikler, units) + signals
+        except Exception:  # noqa: BLE001 - sinyal best-effort
+            pass
     if signals:
         out["signals"] = signals
     return out
