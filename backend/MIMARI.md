@@ -905,12 +905,53 @@ olur.
 üretim yolu `hasattr` ile denetler. Planlayıcı bunun yokluğunu bir hata değil bir **yol
 kapalı** sinyali saymalıdır. Bu, kayıt yazılırken keşfedildi ve aracın `notlar`ına yazıldı.
 
-### 11.5 Henüz YOK (F2–F4)
+### 11.5 Planlayıcı çekirdeği (F2 — `app/planner.py`) ✅
 
-Planlayıcı döngüsü (plan → araç → gözlem → doğrula), **bütçe tavanı** (adım · token · süre;
-aşımda *dürüst kısmi cevap*, sessiz kesme değil), belirsizlikte sorma, ve ajan koşusunun
-**kök makbuz + adım makbuzları ağacı**. F1 bunların taşıyıcısıdır; kendisi bir planlayıcı
-değildir ve öyleymiş gibi anlatılmamalıdır.
+**Ölçüldü:** `grep -rn "budget|max_steps|token_limit" app/` → **boş**. Sıfır bütçe tavanı,
+sıfır plan kaydı. Şartname 4.16 bir bütçe istiyordu; hiç yoktu.
+
+> **Bu modül bir ReAct döngüsü DEĞİLDİR** ve bilinçli değildir. *"Hangi adımı seçeyim"*
+> kararı telemetriyle kalibre edilmeli (Faz E-1) ve telemetri bugün **boş**. Ölçülmemiş bir
+> kararı LLM'e devretmek, bu turda altı kez ölçülen *"beyan var, kanıt yok"* sınıfının en
+> pahalı örneği olurdu.
+>
+> **Planlayıcı zekâsı olmadan yönetişim işe yarar. Yönetişim olmadan planlayıcı zekâsı
+> tehlikelidir** — sınırsız bir döngü, denetlenmeyen bir yetki, izlenmeyen bir maliyet.
+> Sıra bu yüzden böyle.
+
+**Dört kapı** — her araç çağrısı sırayla geçer:
+
+| Kapı | Ne yapar |
+|---|---|
+| **Kayıt** | Araç `app/tools.py`'de yoksa red — planlayıcı araç **uyduramaz** |
+| **Yetki** | `izinli_araclar(principal)` dışındaysa red — ajan kullanıcının yetkisini **aşamaz** |
+| **Deterministik-önce** | Deterministik kardeşi **denenmeden** LLM aracı seçilemez |
+| **Bütçe** | adım · süre · sorgu tavanı |
+
+**Bütçe aşımı = DÜRÜST KISMİ CEVAP.** Tavan aşıldığında koşum **sessizce kesilmez**: o ana
+kadarki adımlar geçerlidir ve `truncated` + `truncation_reason` ile makbuza yazılır —
+`contribution`'ın `kirpilan_segment`'iyle **aynı desen**. `truncated` alanı **her zaman**
+yazılır (False olsa bile): *"kısılmadı"* ile *"kısılma sorulmadı"* farklı şeylerdir.
+
+**Başarısız adım da kaydedilir.** Sessizce kaybolan bir adım, yapılmamış bir adım gibi
+okunur ve koşumun maliyeti anlaşılmaz olur; bütçe zaten tüketilmiştir.
+
+`token` ekseni **ölçülemediği için sınırsızdır** (telemetri boş). Ölçülmemiş bir eşik
+koymak, kapsamı gerekçesiz daraltmak olurdu; alan şimdiden var ki telemetri gelince
+**kod değil yalnız değer** değişsin.
+
+**Yazarken kendi testimin yakaladığı kusur:** deterministik-önce kapısı araç **adlarını**
+etiket kümesine karşı sınıyordu ve `route` çalıştıktan **sonra bile** reddediyordu.
+Kapının yanlış-pozitifi, kapının olmamasından **kötüdür**: meşru bir merdiven basamağını
+kapatır ve kural *"işe yaramıyor"* diye sökülür.
+
+### 11.6b Henüz YOK (F3–F4)
+
+Plan **SEÇİMİ** (hangi araç, hangi sırayla — telemetri gerekiyor), belirsizlikte plan
+seviyesinde sorma, ve kompozisyonların planlayıcı üstüne taşınması. Bugünkü kompozisyonlar
+(G1'in *"neden değişti?"* zinciri) doğrudan araçları çağırıyor; planlayıcıdan **geçmiyorlar**
+— yani bütçe/yetki kapıları onlara **henüz uygulanmıyor**. Bu, F3'ün işidir ve dürüstçe
+kaydedilir: yönetişim **var ama her yola bağlı değil**.
 
 ### 11.6 Özellik = KOMPOZİSYON, endpoint değil
 
