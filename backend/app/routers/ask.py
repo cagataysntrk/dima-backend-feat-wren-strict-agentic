@@ -1344,6 +1344,25 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 except Exception:
                     _log.warning("hesaplama açıklaması üretilemedi (best-effort)",
                                 exc_info=True)
+                # JOIN SOYAĞACI (Faz 1.3): kullanılan boyutlardan hangileri cube'un KENDİ
+                # tablosundan DEĞİL, bir ilişki üzerinden geldi? Ürünün tezi "her sayının
+                # kaynağını kanıtlayabilmek"; bir kolon iki tablo öteden geliyorsa bunu
+                # kullanıcı GÖRMELİ. `dimension_origin` yalnız ilişki-türevi boyutlarda
+                # dolu olduğundan (yerel boyutlarda yok) burası doğal olarak sessiz kalır.
+                try:
+                    origin = cube_meta.get("dimension_origin") or {}
+                    satir = [
+                        f"“{cube_meta.get('dimension_labels', {}).get(d, d)}” boyutu "
+                        f"{origin[d]['model']}.{origin[d]['column']} kolonundan, "
+                        f"{origin[d]['relationship']} ilişkisi üzerinden geldi "
+                        f"({origin[d].get('hops', 1)} sıçrama)."
+                        for d in (cq.get("dimensions") or []) if d in origin
+                    ]
+                    if satir:
+                        resp.calculation_explanation = " ".join(
+                            filter(None, [resp.calculation_explanation, *satir]))
+                except Exception:
+                    _log.warning("join soyağacı üretilemedi (best-effort)", exc_info=True)
         try:
             resp.viz = viz.recommend(result, units=units, lower_set=lower_set, cube_query=cq)
         except Exception:

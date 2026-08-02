@@ -120,6 +120,13 @@ def gen_single(schema):
     out = []  # (soru, beklenti)
     for cube in cubes:
         dims = _dim_words(cube)
+        # ÖLÇÜM KÖR NOKTASI DÜZELTMESİ (2 Ağustos 2026): eskiden yalnız `dims[:2]`
+        # sorulurdu. İlişki-türevi boyutlar (Faz 1) cube metadata'sının SONUNA eklendiği
+        # için korpus onları HİÇ sormuyordu — yani planın ana ölçüm aracı, ölçmesi gereken
+        # geliştirmeye YAPISAL OLARAK KÖRDÜ (üreteç 7 cube'a boyut ekledi, korpusun toplam
+        # tur sayısı DEĞİŞMEDİ). Baş + son 2 boyut alınır: hem eski kapsam korunur hem
+        # yeni eklenenler görünür. Tümünü almak korpusu 5-7 katına çıkarırdı.
+        dims = list(dict.fromkeys(dims[:2] + dims[-2:]))
         for m, word in _measure_words(cube):
             for p in PERIODS:
                 out.append((f"{p} {word}".strip(), valid))

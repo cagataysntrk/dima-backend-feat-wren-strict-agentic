@@ -301,6 +301,26 @@ class WrenService:
                         _dim_i18n(d["name"]))  # §7b: yerel (YAML) ⊕ yardımcı-teknik dil
                     for d in c.get("dimensions", [])
                 },
+                # PROVENANCE (Faz 1.3): boyut cube'un KENDİ base_object'inden mi geliyor,
+                # yoksa bir İLİŞKİ üzerinden mi? `_compose_relationship_dimensions`
+                # üretilen boyuta `properties.origin` yazar; burası onu router/UI'a açar.
+                # Yalnız ilişki-türevi boyutlar yer alır — yerel boyutlar sözlükte YOKTUR.
+                #
+                # Bugüne kadar `schema()` boyutun `expression`'ını bile atıyordu, yani
+                # `parti.cinsiyet` ile `parti.makine` router açısından AYIRT EDİLEMEZDİ.
+                # Açtığı dört tüketici:
+                #   (i)   Query Contract: "bu kolon hangi join'den geldi" (ADR-0010).
+                #   (ii)  `_match_cube` tie-break: boyutu YERELİNDE taşıyan cube, 2 sıçrama
+                #         ötesinden ulaşana YEĞ TUTULMALI (Faz 3.2) — bugün böyle bir
+                #         sinyal YOK ve enrichment yayıldıkça belirsizlik artacak.
+                #   (iii) fan-out risk anotasyonu (hangi ilişki, kaç sıçrama).
+                #   (iv)  drill'in `base_object` ötesine inebilmesi.
+                # `base_object` alanı da tam bu gerekçeyle sonradan eklenmişti (bkz. :215).
+                "dimension_origin": {
+                    d["name"]: origin
+                    for d in c.get("dimensions", [])
+                    if (origin := (d.get("properties") or {}).get("origin"))
+                },
             }
             for c in mdl.get("cubes", [])
         ]
