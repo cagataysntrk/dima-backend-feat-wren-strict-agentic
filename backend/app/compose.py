@@ -252,6 +252,21 @@ class RelationshipExposeError(ValueError):
     """
 
 
+def _hop_derinligi(hedef_kolon: dict) -> int:
+    """Üretilen boyutun kaç JOIN uzağında olduğu (G7).
+
+    1 = hedef modelin FİZİKSEL kolonu (tek join).
+    2 = hedef modelin kendi `is_calculated` kolonu → o kolon başka bir modele bakar,
+        yani zincir iki join uzunluğundadır (`bordro → personel → personel_ozluk`).
+
+    Üreteç graf GEZMEZ: 2. sıçrama ancak hedef modelde ZATEN elle tanımlanmış bir calc
+    kolonu üzerinden kurulabilir. Bu, MetricFlow'un "3 tablo / 2 sıçrama" sınırının yapısal
+    karşılığıdır — 3. sıçrama için o ara modelin de calc kolonu olması gerekirdi ve
+    `_hop_sinirini_dogrula` onu reddeder.
+    """
+    return 2 if hedef_kolon.get("is_calculated") or hedef_kolon.get("isCalculated") else 1
+
+
 def _etiket_carpismasi(e: dict, rname: str, src: str, cube_files: list, _load,
                        kendi_adi: str) -> None:
     """G5b — ÜRETİLEN BOYUTUN ETİKETİ mevcut bir boyutun sözlüğünü ÇALIYOR mu?
@@ -478,6 +493,23 @@ def _compose_relationship_dimensions(out: Path) -> None:
                 raise RelationshipExposeError(
                     f"{rname}: {dst}.{col} yok. (2. sıçrama için hedef modelde ZATEN tanımlı "
                     "bir calc kolonu gösterin — üreteç graf gezmez, hop sınırı 2'dir.)")
+            # --- G7: SIÇRAMA SINIRI = 2 (MetricFlow emsali: "3 tablo / 2 sıçrama") -------
+            # Hedefteki kolon bir calc ise zincir 2 sıçramadır (`bordro → personel →
+            # personel_ozluk`). O calc'ın BAKTIĞI kolon da calc ise 3 olurdu. Cube'un kendi
+            # dokümanı "çoklu yol öngörülebilirliği düşürür" diyor; burada sınır SESSİZCE
+            # aşılmasın diye build kırılır. Ölçülmüş bir vaka değil — yapısal bir kilit:
+            # üçüncü sıçrama eklendiğinde bunu fark etmeden yapmak mümkün olmasın.
+            if _hop_derinligi(dst_cols[col]) == 2:
+                ifade = str(dst_cols[col].get("expression") or "")
+                ara_model, _, ara_kolon = ifade.partition(".")
+                ara_file = model_files.get(ara_model)
+                ara_kolonlar = ({c["name"]: c for c in (_load(ara_file).get("columns") or [])}
+                                if ara_file else {})
+                if _hop_derinligi(ara_kolonlar.get(ara_kolon) or {}) == 2:
+                    raise RelationshipExposeError(
+                        f"{rname}: {dst}.{col} → {ifade} zinciri 3 SIÇRAMA uzunluğunda. "
+                        "Sınır 2'dir (MetricFlow emsali: 3 tablo / 2 sıçrama). Ara modelde "
+                        "doğrudan bir kolon tanımlayıp onu gösterin.")
             calc_ad = e.get("calc_name") or f"{dst}_{col}"
             if calc_ad.lower() in used:
                 raise RelationshipExposeError(
@@ -506,8 +538,16 @@ def _compose_relationship_dimensions(out: Path) -> None:
                 **({"synonyms": list(e["synonyms"])} if e.get("synonyms") else {}),
                 # PROVENANCE: hangi join'den, kaç sıçrama sonra geldi. `properties` MDL'de
                 # birinci sınıf; wren-core bilinmeyen anahtarları yok sayar → motor değişmez.
+                #
+                # `hops` ÖLÇÜLÜR, varsayılmaz (2 Ağustos 2026 düzeltmesi — eskiden sabit 1
+                # yazılıyordu): hedefteki kolonun KENDİSİ bir calc kolonuysa zincir bir
+                # sıçrama daha uzundur (`bordro → personel → personel_ozluk`). Sabit 1,
+                # yayımlanmış bir 2-sıçramalı boyutu YAKINMIŞ gibi gösterirdi ve
+                # sıçrama-derinliğini okuyan her tüketici (chip sıralaması, Query Contract,
+                # ileride router tercihi) yanlış bilgiyle çalışırdı.
                 "properties": {"origin": {"model": dst, "column": col,
-                                          "relationship": rname, "hops": 1}},
+                                          "relationship": rname,
+                                          "hops": _hop_derinligi(dst_cols[col])}},
             })
 
         _save(src_file, src_meta)
