@@ -143,6 +143,26 @@ class WrenService:
         return WrenEngine(self._manifest_b64(), self.datasource,
                           dict(self.connection_info), config=cfg)
 
+    def _connector(self):
+        """Ham DB konnektörü — **semantik katmanı ATLAYARAK** fiziksel sorgu çalıştırmak için.
+
+        Yalnız MDL'in bir katkısı olmayan işler için kullanılır: değer indeksi
+        (`SELECT DISTINCT col FROM tablo`). Kullanıcı SQL'i buradan GEÇMEZ — o `dry_plan`/
+        `query`'den, dolayısıyla `guard_sql` + SQL politikasından geçer.
+        """
+        from wren.engine import get_connector
+        from wren.model.data_source import DataSource
+
+        ds = DataSource(self.datasource)
+        return get_connector(ds, ds.get_connection_info(dict(self.connection_info)))
+
+    @staticmethod
+    def _physical_name(model: dict) -> str:
+        """Modelin FİZİKSEL, nitelikli tablo adı (`"katalog"."şema"."tablo"`)."""
+        tr = model.get("tableReference") or model.get("table_reference") or {}
+        parts = [tr.get("catalog"), tr.get("schema"), tr.get("table") or model.get("name")]
+        return ".".join(f'"{x}"' for x in parts if x)
+
     def _shadow_policy_check(self, sql: str) -> None:
         """GÖLGE MOD: "strict açık olsaydı bu sorgu reddedilir miydi?" — sorar, LOGLAR,
         akışı DEĞİŞTİRMEZ.
@@ -242,7 +262,12 @@ class WrenService:
         # müşteri DB'sinde uzun bağlantı-timeout'unda asılmayı önler (canlı 2026-07-25).
         db_ok = self._db_reachable()
         if db_ok:
-            self._enrich_categorical(models)
+            # Fiziksel ad haritası: değer indeksi semantik katmanı ATLAR (Faz B1), bu
+            # yüzden modelin gerçek `tableReference`'ına ihtiyacı var.
+            self._enrich_categorical(
+                models,
+                {m.get("name"): self._physical_name(m) for m in mdl.get("models", [])},
+            )
         relationships = [
             {
                 "name": r.get("name"),
@@ -528,37 +553,60 @@ class WrenService:
             if c.get("values")
         }
         mdl_cubes = {c.get("name"): c for c in mdl.get("cubes", [])}
-        try:
-            with self._engine() as eng:
-                for cube in cubes:
-                    vals: dict[str, list[str]] = {}
-                    mc = mdl_cubes.get(cube["name"]) or {}
-                    base = mc.get("baseObject")
-                    for d in mc.get("dimensions", []):
-                        name = d.get("name")
-                        if name in col_vals:
-                            vals[name] = col_vals[name]
-                            continue
-                        expr = d.get("expression")
-                        if not base or not expr:
-                            continue
-                        sql = (
-                            f"SELECT DISTINCT {expr} AS v FROM {base} "
-                            f"WHERE ({expr}) IS NOT NULL LIMIT {self._MAX_ENUM + 1}"
-                        )
-                        try:
-                            got = [self._fix_tr(str(r["v"])) for r in eng.query(sql).to_pylist()]
-                        except Exception:
-                            continue
-                        if 0 < len(got) <= self._MAX_ENUM:
-                            # ORDER BY'sız DISTINCT: motor satır sırasını garanti etmez
-                            # (_enrich_categorical zaten sorted() kullanıyor — burada
-                            # eksikti, schema() çağrıları arasında dimension_values sırası
-                            # veri değişmeden de kayabiliyordu).
-                            vals[name] = sorted(got)
-                    cube["dimension_values"] = vals
-        except Exception:
-            pass
+
+        # TÜREV boyutları TEK sorguda topla (Faz B1) — aynı gerekçe: maliyet DB'de değil
+        # PLANLAMADA. Boyut başına bir plan yerine hepsi için bir plan.
+        istekler: list[tuple[str, str, str, str]] = []  # (cube, boyut, base, ifade)
+        vals_map: dict[str, dict[str, list[str]]] = {}
+        for cube in cubes:
+            vals_map[cube["name"]] = {}
+            mc = mdl_cubes.get(cube["name"]) or {}
+            base = mc.get("baseObject")
+            for d in mc.get("dimensions", []):
+                name = d.get("name")
+                if name in col_vals:
+                    vals_map[cube["name"]][name] = col_vals[name]
+                    continue
+                expr = d.get("expression")
+                if base and expr:
+                    istekler.append((cube["name"], name, base, expr))
+
+        if istekler:
+            def _parca(i: int, base: str, expr: str) -> str:
+                return (f"SELECT {i} AS _i, CAST(v AS VARCHAR) AS v FROM "
+                        f"(SELECT DISTINCT {expr} AS v FROM {base} "
+                        f"WHERE ({expr}) IS NOT NULL LIMIT {self._MAX_ENUM + 1})")
+            kova: dict[int, list[str]] = {}
+            try:
+                with self._engine() as eng:
+                    tablo = eng.query(" UNION ALL ".join(
+                        _parca(i, b, e) for i, (_, _, b, e) in enumerate(istekler)))
+                for r in tablo.to_pylist():
+                    kova.setdefault(r["_i"], []).append(self._fix_tr(str(r["v"])))
+            except Exception:
+                # Tek bozuk ifade hepsini düşürmesin → boyut-başına yedek.
+                _log.warning("cube türev boyut toplu sorgusu başarısız — boyut-başına",
+                             exc_info=True)
+                try:
+                    with self._engine() as eng:
+                        for i, (_, _, b, e) in enumerate(istekler):
+                            try:
+                                kova[i] = [self._fix_tr(str(r["v"])) for r in eng.query(
+                                    f"SELECT DISTINCT {e} AS v FROM {b} "
+                                    f"WHERE ({e}) IS NOT NULL LIMIT {self._MAX_ENUM + 1}"
+                                ).to_pylist()]
+                            except Exception:
+                                continue
+                except Exception:
+                    _log.warning("cube türev boyut yedek yolu da başarısız", exc_info=True)
+            for i, (cn, dn, _, _) in enumerate(istekler):
+                got = kova.get(i) or []
+                if 0 < len(got) <= self._MAX_ENUM:
+                    # ORDER BY'sız DISTINCT sıra garantisi vermez → deterministik sırala.
+                    vals_map[cn][dn] = sorted(got)
+
+        for cube in cubes:
+            cube["dimension_values"] = vals_map.get(cube["name"], {})
 
     def _load_knowledge(self, sub: str) -> str:
         """knowledge/<sub>/*.md içeriğini prompt'a taşınmak üzere birleştirir (ADR-0005).
@@ -577,7 +625,8 @@ class WrenService:
         except Exception:
             return ""
 
-    def _enrich_categorical(self, models: list[dict[str, Any]]) -> None:
+    def _enrich_categorical(self, models: list[dict[str, Any]],
+                            phys: dict[str, str] | None = None) -> None:
         """Düşük kardinaliteli VARCHAR kolonlara `values` ekler (tek engine oturumu).
 
         NL→SQL'in "marmara boya" / "kırmızı" gibi değerlerle WHERE yazabilmesi için.
@@ -595,26 +644,115 @@ class WrenService:
         """
         from app.sensitivity import classify
 
+        # 1) Hassasiyet damgası + hedef kolonlar (fiziksel, VARCHAR).
+        hedef: list[tuple[str, str, dict]] = []       # fiziksel → konnektör (toplu, hızlı)
+        turev: list[tuple[str, str, dict]] = []       # calc → motor (semantik katman şart)
+        for m in models:
+            fiziksel = (phys or {}).get(m.get("name"))
+            for c in m["columns"]:
+                if (sv := classify(c)) != "normal":
+                    c["sensitivity"] = sv
+                if not str(c.get("type", "")).upper().startswith("VARCHAR"):
+                    continue
+                if c.get("is_calculated") or c.get("relationship"):
+                    # Calc kolon tabloda YOK — ifadesi bir ilişki üzerinden çözülür, yani
+                    # semantik katman ŞART. Konnektöre gönderilirse "kolon bulunamadı" der
+                    # ve o kolon değerlerini SESSİZCE kaybederdi; `route()` ise model
+                    # kolonlarının `values`'ını kategorik filtre için OKUYOR (ör.
+                    # `operator_cinsiyet = 'Kadın'`). Ölçüldü: bu ayrım olmadan 19 kolon
+                    # değerini kaybediyordu. Sayıları az olduğu için motor yolu ucuz.
+                    turev.append((m.get("name"), c["name"], c))
+                    continue
+                if fiziksel:
+                    hedef.append((fiziksel, c["name"], c))
+        if turev:
+            self._enrich_categorical_yavas(turev)
+        if not hedef:
+            return
+
+        # 2) TEK sorgu, KONNEKTÖR üzerinden (Faz B1).
+        #
+        # ÖLÇÜLDÜ (2 Ağustos 2026): eski hâli kolon başına bir `eng.query()` atıyordu —
+        # 183 sorgu, **2188 ms**. Maliyetin **%97'si planlamaydı**, %3'ü DB (aynı sorgu
+        # doğrudan DuckDB'de 0,70 ms, motor üzerinden 22,65 ms). Sebep: her çağrı 118 KB'lık
+        # manifesti yeniden çözüp sqlglot'la ayrıştırıyor ve yeni bir `ManifestExtractor`
+        # kuruyor. Motoru uzun ömürlü tutmak İŞE YARAMADI (ölçüldü: 5,54 → 5,50 ms) çünkü
+        # maliyet motor kurulumunda değil, **her plan çağrısında**.
+        #
+        # Asıl içgörü: bu sorgular `SELECT DISTINCT kolon FROM tablo` — **fiziksel** bir iş.
+        # Semantik katmanın katkısı YOK. Konnektör üzerinden tek `UNION ALL` ile: **98 ms**
+        # (22× hızlı, birebir aynı 2735 satır).
+        #
+        # GÜVENLİK NOTU: bu yol kullanıcı SQL'i taşımaz — sorgu tamamen MDL metadata'sından
+        # (fiziksel tablo + kolon adı) üretilir. Kullanıcı SQL'i `dry_plan`/`query`'den,
+        # dolayısıyla `guard_sql` + SQL politikasından geçmeye devam eder.
+        def _parca(fiz: str, kol: str) -> str:
+            return (f"SELECT '{fiz}' AS _t, '{kol}' AS _c, CAST(v AS VARCHAR) AS v "
+                    f'FROM (SELECT DISTINCT "{kol}" AS v FROM {fiz} '
+                    f'WHERE "{kol}" IS NOT NULL LIMIT {self._MAX_ENUM + 1})')
+
+        try:
+            tablo = self._connector().query(" UNION ALL ".join(_parca(f, k) for f, k, _ in hedef))
+            kova: dict[tuple[str, str], list] = {}
+            for r in tablo.to_pylist():
+                kova.setdefault((r["_t"], r["_c"]), []).append(r["v"])
+        except Exception:
+            # YEDEK YOL: konnektör/nitelikli-ad bu datasource'ta beklendiği gibi çalışmazsa
+            # eski (yavaş ama kanıtlanmış) kolon-başına yol. Hız bir iyileştirmedir;
+            # değer indeksinin KAYBOLMASI bir gerilemedir — o yüzden fail-open.
+            _log.warning("değer indeksi toplu sorgusu başarısız — kolon-başına yola dönülüyor",
+                         exc_info=True)
+            self._enrich_categorical_yavas(hedef)
+            return
+
+        for fiz, kol, c in hedef:
+            vals = kova.get((fiz, kol)) or []
+            if 0 < len(vals) <= self._MAX_ENUM:
+                c["values"] = sorted(self._fix_tr(str(v)) for v in vals)
+
+    def _enrich_categorical_yavas(self, hedef: list) -> None:
+        """Motor üzerinden değer örnekleme — calc kolonlar (semantik katman şart) ve
+        konnektör yolu başarısız olduğunda yedek.
+
+        Burada da TEK sorgu (UNION ALL) kullanılır: maliyet DB'de değil **planlamada**
+        (ölçüldü: aynı sorgu doğrudan 0,70 ms, motor üzerinden 22,65 ms). N kolon için
+        N plan yerine 1 plan. Tek sorgu patlarsa kolon-başına yola düşülür — bir kolonun
+        ifadesi bozuksa hepsini kaybetmemek için.
+        """
+        if not hedef:
+            return
+        def _parca(kaynak: str, kol: str) -> str:
+            return (f"SELECT '{kaynak}' AS _t, '{kol}' AS _c, CAST(v AS VARCHAR) AS v "
+                    f"FROM (SELECT DISTINCT {kol} AS v FROM {kaynak} "
+                    f"WHERE {kol} IS NOT NULL LIMIT {self._MAX_ENUM + 1})")
         try:
             with self._engine() as eng:
-                for m in models:
-                    for c in m["columns"]:
-                        if (s := classify(c)) != "normal":
-                            c["sensitivity"] = s
-                        if not str(c.get("type", "")).upper().startswith("VARCHAR"):
-                            continue
-                        sql = (
-                            f"SELECT DISTINCT {c['name']} AS v FROM {m['name']} "
-                            f"WHERE {c['name']} IS NOT NULL LIMIT {self._MAX_ENUM + 1}"
-                        )
-                        try:
-                            vals = [r["v"] for r in eng.query(sql).to_pylist()]
-                        except Exception:
-                            continue
-                        if 0 < len(vals) <= self._MAX_ENUM:
-                            c["values"] = sorted(self._fix_tr(str(v)) for v in vals)
+                tablo = eng.query(" UNION ALL ".join(_parca(k, c) for k, c, _ in hedef))
+            kova: dict[tuple[str, str], list] = {}
+            for r in tablo.to_pylist():
+                kova.setdefault((r["_t"], r["_c"]), []).append(r["v"])
+            for kaynak, kol, c in hedef:
+                vals = kova.get((kaynak, kol)) or []
+                if 0 < len(vals) <= self._MAX_ENUM:
+                    c["values"] = sorted(self._fix_tr(str(v)) for v in vals)
+            return
         except Exception:
-            pass
+            _log.warning("değer indeksi toplu motor sorgusu başarısız — kolon-başına",
+                         exc_info=True)
+        try:
+            with self._engine() as eng:
+                for kaynak, kol, c in hedef:
+                    try:
+                        vals = [r["v"] for r in eng.query(
+                            f"SELECT DISTINCT {kol} AS v FROM {kaynak} "
+                            f"WHERE {kol} IS NOT NULL LIMIT {self._MAX_ENUM + 1}"
+                        ).to_pylist()]
+                    except Exception:
+                        continue
+                    if 0 < len(vals) <= self._MAX_ENUM:
+                        c["values"] = sorted(self._fix_tr(str(v)) for v in vals)
+        except Exception:
+            _log.warning("değer indeksi yedek yolu da başarısız", exc_info=True)
 
     @property
     def mdl_version(self) -> str:
