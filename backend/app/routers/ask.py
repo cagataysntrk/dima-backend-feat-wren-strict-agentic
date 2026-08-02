@@ -1463,7 +1463,9 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             resp.view_hint = _viz_hint(q_norm)
         if learn and vqr is not None:
             try:
-                vqr.store(body.question, {"wren_sql": sql}, source="auto")
+                vqr.store(body.question,
+                          {"wren_sql": sql, "mdl_version": service.mdl_version},
+                          source="auto")
             except Exception:
                 _log.warning("VQR otomatik kayıt başarısız (best-effort)", exc_info=True)
         resp.contract_id = _record_contract(cq, sql, result, source)
@@ -1532,10 +1534,27 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         cached = vqr.near_exact(body.question) if vqr else None
         cached_payload = cached.get("cube_query") if cached else None
         cached_sql = (cached_payload or {}).get("wren_sql") if cached_payload else None
+        # ŞEMA-SÜRÜM KAPISI (Faz 0.6, 2 Ağustos 2026). Öğrenilmiş HAM SQL, öğrenildiği
+        # andaki cube tanımlarına göre doğruydu; MDL o zamandan beri değiştiyse artık
+        # doğru olmayabilir. En somut hâli: bir cube'a sonradan `always_filter`
+        # (ör. `CANCELLED = 0`) eklenirse, yapısal yol onu HER sorguya enjekte eder ama
+        # bu kayıt ham SQL olduğu için filtreden GEÇMEZ — aynı soru, iki farklı sayı, ve
+        # yanlış olanı `source="vqr"` rozetiyle "doğrulanmış" diye sunulur.
+        # `dry_plan` bunu YAKALAMAZ: SQL sözdizimsel olarak hâlâ geçerlidir.
+        #
+        # Damgası olmayan eski kayıtlar da BAYAT sayılır: geçerliliğini KANITLAYAMADIĞIMIZ
+        # bir kaydı "doğrulanmış" diye sunmak, tam da bu kapının önlemek için var olduğu
+        # şey. Kısayol atlanır, soru normal merdivenden doğru cevabı üretir ve bir sonraki
+        # başarılı cevapta kayıt damgalı olarak yeniden öğrenilir (kendi kendini onarır).
+        cached_mdl = (cached_payload or {}).get("mdl_version") if cached_payload else None
+        if cached_sql and cached_mdl != service.mdl_version:
+            _log.info("VQR ham-SQL kaydı bayat (mdl_version %s ≠ %s) — kısayol atlanıyor",
+                      cached_mdl, service.mdl_version)
+            cached_sql = None
         if cached_sql:
             try:
                 planned = service.dry_plan(cached_sql)
-                result = service.query(cached_sql, limit=limit)
+                result = service.query(cached_sql, limit=limit) if body.execute else None
                 resp = AskResponse(
                     question=body.question, sql=cached_sql, planned_sql=planned,
                     result=QueryResult(**result) if result else None, source="vqr",
@@ -2248,7 +2267,9 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # bağlamdan bağımsız (kendi başına anlamlı) sorular öğrenilir.
         if vqr is not None and not is_followup:
             try:
-                vqr.store(body.question, {"wren_sql": wren_sql}, source="auto")
+                vqr.store(body.question,
+                          {"wren_sql": wren_sql, "mdl_version": service.mdl_version},
+                          source="auto")
             except Exception:
                 _log.warning("VQR otomatik kayıt başarısız (best-effort)", exc_info=True)
 
@@ -2595,7 +2616,9 @@ def ask_verify(request: Request, body: AskVerifyRequest) -> dict:
                 service.dry_plan(body.sql)
             except Exception as exc:
                 raise HTTPException(status_code=400, detail=f"SQL doğrulanamadı: {exc}") from exc
-            stored = vqr.store(body.question, {"wren_sql": body.sql}, source="user_verified",
+            stored = vqr.store(body.question,
+                               {"wren_sql": body.sql, "mdl_version": service.mdl_version},
+                               source="user_verified",
                                extra={"verified_by": getattr(principal, "user_id", None),
                                       "tenant_id": getattr(principal, "tenant_id", None)})
 
