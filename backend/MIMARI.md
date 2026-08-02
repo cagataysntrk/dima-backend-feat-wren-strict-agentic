@@ -982,12 +982,43 @@ O gelene kadar çapa listesi boş kalır ve çözücü 4–6. dalları kullanır
 değil kademeli bir bağlanmadır: **sunucu bugünden itibaren gerekçe üretiyor** ve istemci
 hazır olduğunda çapa dalı devreye girer.
 
-### 12.6 Henüz YOK (G1–G4)
+### 12.6 Anlatım doğrulayıcı (G4 — `app/narration_guard.py`) ✅
+
+T2'nin sert kuralının uygulaması: *"üretilen metindeki her sayı sonuç kümesinde bulunmalı
+ya da **beyan edilmiş** bir işlemle ondan türetilebilmeli; doğrulanamayan sayı içeren cümle
+**YAYIMLANMAZ**."* Bu, *"LLM sayı uydurabilir"* riskini bir **umut meselesi** olmaktan
+çıkarıp **test edilebilir bir kapıya** çevirir — `viz.py`'nin ADR-0024 disipliniyle aynı
+felsefenin metin tarafı: **LLM üslubu yazar, SAYIYI sistem koyar.**
+
+Dört tasarım kararı ve gerekçeleri:
+
+| Karar | Neden |
+|---|---|
+| **Cerrahi**: yalnız kötü CÜMLE düşer, metnin tamamı değil | Bir uydurma yüzünden üç doğru cümleyi atmak bilgi kaybettirir. **Kullanılamayan kapı kapatılır** ve o zaman hiç yoktur. |
+| **Göreceli tolerans** (%2), mutlak değil | LLM `15.576.000`'ı *"15,6 milyon"* diye yuvarlar; bunu uydurma saymak kapıyı kullanılamaz kılardı. |
+| **Türetme listesi KAPALI** (fark · % değişim · toplam · ortalama · pay) | *"Her aritmetik kombinasyon"* serbest bırakılsaydı yeterince sayıyla her şey türetilebilir ve kapı hiçbir şeyi engellemezdi. Çarpım **izinli değildir**. |
+| **Yıl ve küçük sıra sayıları doğrulanmaz** | *"2025'te"*, *"ilk 3"* veri iddiası değildir; doğrulamaya çalışmak gerçek uydurmaları **gürültüye boğardı**. |
+
+Sonuç kümesi yoksa **fail-closed**: sayı içeren hiçbir cümle yayımlanamaz — kanıtsız sayı,
+uydurma sayıdır. Tamamı düşerse deterministik yedeğe (`interpret` çıktısı) geçilir; yedek
+de yoksa **boş** döner (sessizce uydurulmuş bir cümleden iyidir).
+
+**Yazarken ölçülen kusur** (kendi testim yakaladı): ilk regex `15576000`'ı `155` + `760`
+diye bölüyor ve **doğru** bir cümleyi reddediyordu. Bu kapının en tehlikeli hâlidir —
+yanlış-pozitif üreten bir kapı kullanılamaz bulunup kapatılır. Gruplama dalı `*` yerine
+`+` ile gerçekten gruplu sayılara sınırlandı.
+
+**Tüketicisi HENÜZ YOK** ve bu açıkça kaydedilir: bugün sistemde LLM-üretimi düz metin
+**hiç yoktur** (`interpret` deterministiktir, sayıları sonuçtan gelir). Doğrulayıcı G1/G3'ün
+ön koşuludur — `cube_query_hash`'in *"primitif, tüketici bekliyor"* beyanıyla aynı sınıf
+(§5). Fark: bu primitifin tüketicisi **bir sonraki adımdır**, belirsiz bir gelecek değil.
+
+### 12.7 Henüz YOK (G1–G3)
 
 Takip sorusunun **üçüncü sınıfı** (*"bu neden böyle?"*, *"normal mi?"*, *"ne yapmalıyız?"*
-— bugün Discovery'ye düşüyor), grafiğe çapalı diyalog (G2), reçeteli analiz (G3) ve
-**anlatım doğrulayıcı** (G4: cümledeki her sayı sonuç kümesinde bulunmalı ya da beyan
-edilmiş bir işlemle ondan türetilebilmeli; doğrulanamayan cümle **yayımlanmaz**).
+— bugün Discovery'ye düşüyor ve bağlamsız ham SQL yazıp ölü tablo döndürüyor), grafiğe
+çapalı diyalog (G2: kullanıcının işaret ettiği nokta → `drill.select_cube_query`), ve
+reçeteli analiz (G3: `contribution` → `yoy` → hedef kıyası → seçenekler → karar matrisi).
 
 ---
 
