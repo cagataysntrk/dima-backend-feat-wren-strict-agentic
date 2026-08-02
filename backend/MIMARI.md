@@ -218,13 +218,29 @@ Bunlar "belki" değil, **ölçüldü**. Yeni gelen biri bunları keşfedip "acab
 diye zaman kaybetmesin.
 
 ### 6.1 Sessiz-yanlış üretenler (en tehlikeli sınıf — cube rozetiyle geliyorlar)
-- **`_uncovered` herhangi-konum substring kullanıyor** (`cube_router.py:1160-1173`).
-  `kar⊂ankara`, `mal⊂imalat`, `fire⊂firesiz`, `son⊂personel`, `gun⊂uygun`.
-  Sonuç: `"firesiz partilerin cirosu"` → **fire toplamı** döndürüyor (tam tersi metrik).
-  `_STOP_STEMS` prefix'i de yutuyor: `ver→veresiye`, `tek→tekstil`, `turu→turuncu`.
-  `[a-z]+` regex'i yüzünden **sayılar kapsam kapısına görünmüyor**.
+- ✅ **düzeltildi (2026-08-02, Faz 0.4)** — **`_uncovered` herhangi-konum substring kullanıyordu**
+  (`cube_router.py`). `kar⊂ankara`, `mal⊂imalat`, `mal⊂maliyeti`, `fire⊂firesiz`, `son⊂personel`,
+  `gun⊂uygun`, `kar⊂kargo`, `reddedil⊂reddedilmeyen`. Sonuç: `"firesiz partilerin cirosu"`
+  **fire toplamını** döndürüyordu — sorulanın tam tersi metrik, `source="cube"` rozetiyle.
+  Yerine iki ayrı mekanizma: `_covers()` (önek + olumsuzluk-eki reddi + geçerli Türkçe ek
+  zinciri) ve `_STOP_EXACT` (dolgu köklerinden gerçek iş kelimesi yutanlar: `ver→veresiye`,
+  `tek→tekstil`, `turu→turuncu`, `sana→sanayi`, `getir→getiri`). 48 regresyon testi.
+  **Yan etki (iyileştirme):** `"personel bazlı verimlilikleri karşılaştır son 6 ay"` artık
+  Discovery yerine çapraz-konu netleştirmesi veriyor (`oee` / `İK / bordro` / `parti` chip'leri) —
+  çünkü `"son"` kelimesi `"personel"`i sahte kapsıyordu.
+  **Ders:** iki tasarım denemesi test tarafından düşürüldü ve ikisi de kodda kayıtlı —
+  (a) uzunluk-oranı sezgisi meşru çekimleri kesti (`verim→verimliliği`, `renk→renklerine`);
+  (b) elle kısaltılmış dolgu köklerine (`grafi`) biçimbirim kuralı uygulamak grafik isteyen
+  her soruyu kapıya takıyor. **Ayrım uzunlukta değil biçimde; ve iki farklı sorun iki farklı
+  mekanizma ister.**
 - **`_syn_hit` aynı hastalıkta** (`:333-336`) ve **boyut seçimini** bozuyor: `"yas" ⊂ "kıyasla"` →
-  `"önceki ay ile kıyasla"` rapora istenmeyen bir `yas_grubu` GROUP BY ekliyor.
+  `"önceki ay ile kıyasla"` rapora istenmeyen bir `yas_grubu` GROUP BY ekliyor. **Henüz
+  düzeltilmedi** — `_uncovered`'dan daha geniş etki alanı var (her boyut/ölçü eşleşmesi ondan
+  geçiyor), ayrı bir tur olarak ele alınacak.
+- **Sayılar kapsam kapısına görünmüyor** (`[a-z]+`). Faz 0.4'te bilinçli olarak ele alınmadı:
+  düzeltmek için dönem/gran sözlüklerinin sayıları da `known`'a eklemesi gerekir, yoksa
+  `"son 3 ay"` gibi çalışan sorular kırılır. Aynı sınıfta 2 harflik kökler (`ay`, `kg`) de
+  `known`'dan eleniyor — `tests/test_coverage_gate_affix.py` bunu bir sınır kaydı olarak tutuyor.
 - **`_match_dims` tahkim yapmıyor** (`:592-637`): `"yaş grubu bazında fire oranı"` →
   `['ham_grup','yas_grubu']`. Fazla kolon = farklı grain = farklı sayı.
 - **Olumsuzluk hiç ifade edilemiyor**: Rust **12** filtre operatörü destekliyor
@@ -307,12 +323,27 @@ diye zaman kaybetmesin.
 |---|---|
 | eval `det` dilimi | 129 adım · **answered-precision %100** · **coverage %100** · chip %100 |
 | **deterministik pay** | **%100** — yol dağılımı `intent=111` |
-| pytest | **526 geçti / 0 hata**, 81–96 sn |
+| pytest | **579 geçti / 0 hata**, ~95 sn |
+| **`lab/nl_corpus.py` — GERÇEK deterministik tavan** | **8984 turda ~%64** (boyahane %64 · atiksan %67 · gulteks %62 · gitas %65) |
 
-> ⚠️ **Bu %100'ü yanlış okuma.** 111 cevabın 111'i intent yolundan geliyor, çünkü eval korpusu
-> **zaten çalışan şeye göre kuratörlenmiş** — çapraz-alan boşluğuna hiç dokunmuyor. Boşluğun bu
-> kadar uzun görünmez kalmasının sebebi de tam olarak budur. Gerçek tavan `lab/nl_corpus.py`
-> (~1000 soru × 4 şirket) ile ölçülür; eval bir *regresyon kilididir*, kapsam ölçüsü değil.
+> ⚠️ **Eval'in %100'ünü kapsam sanma.** 111 cevabın 111'i intent yolundan geliyor, çünkü eval
+> korpusu **zaten çalışan şeye göre kuratörlenmiş** — çapraz-alan boşluğuna hiç dokunmuyor.
+> Boşluğun bu kadar uzun görünmez kalmasının sebebi de budur. **Gerçek tavan %64'tür**
+> (`lab/nl_corpus.py`, 8984 tur, 4 şirket). Eval bir *regresyon kilididir*, kapsam ölçüsü değil.
+> Aradaki 36 puan, planın tamamının dayandığı "kapsam, zekâ değil" tezinin sayısal karşılığıdır.
+
+**Faz 0.4'ün ölçülen etkisi** (aynı korpus, öncesi/sonrası): OK **+6**, yanlış-cube/Discovery
+(`CUBE-SAPMA`) **−25**, dürüst ret/netleştirme **+15**. Yani kapsam kapısının sıkılaştırılması
+25 soruyu yanlış yerden çıkmaktan alıkoydu; bunların 6'sı doğru cevaba, 15'i dürüst
+netleştirmeye gitti. Toplam OK payında net etki **−%0,25** — sessiz-yanlış sınıfını kapatmanın
+bedeli olarak bilinçli kabul edildi (ADR-0008 yönü).
+
+**Ölçüm reçetesi** (üçü de `--network none` ile koşar):
+```
+docker run --rm --network none -v "$PWD/backend:/app" -w /app dima-test python -m pytest -q
+docker run --rm --network none -v "$PWD/backend:/app" -w /app dima-test python -m eval.run
+docker run --rm --network none -v "$PWD/backend:/app" -w /app dima-test python lab/nl_corpus.py
+```
 
 **Düzeltilenler (2026-08-02):**
 - ✅ `eval/run.py` artık **source-farkında**: `expect_source` (vaka başına katman denetimi),
