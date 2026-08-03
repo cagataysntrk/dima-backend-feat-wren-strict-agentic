@@ -828,6 +828,17 @@ LLM çağrısı yapar → istekler **5 sn aralıkla, tek tek** gönderildi.
 | **9.4** `reject_reason` | ✅ `bu yıl bakiye` → **cevap geldi** (`cube+llm`) ama red **R1** kayıtlı; `personel…kıyasla` → **R4** |
 | **§1.7 VQR kalıcılığı** | ✅ **ÖLÇÜLDÜ** (offline ⊘ olan madde) |
 
+**Faz 8'in `--live` turu da koşuldu** (izole konteyner, gerçek sağlayıcı, ayrı DB —
+kullanıcının canlı verisine fixture yazılmadı): **sekiz ölçülebilir sınıfın sekizi de tam**
+(erişim = doğruluk = 2/2), `vqr_kalicilik` ⊘. Düşürülen turlar raporlandı (sessiz kırpma yok).
+
+**`vqr_kalicilik` neden `--live`'da bile ⊘ kaldı — ve bu neden DOĞRU.** Senaryonun sorusu
+`route()` tarafından **deterministik** çözülüyordu, yani `cube+llm` yoluna hiç düşmüyordu;
+soru artık **katalogdan**, route'un çözemediklerinden seçiliyor. Seçilen soru da cevapsız
+kalırsa senaryo yine ⊘ der — çünkü ön koşulun sağlanmaması bir **ürün hatası değildir**.
+(İlk düzeltmemde bunu `False` sayıyordum: **sahte bir kırmızı, sahte bir yeşil kadar
+yanıltıcıdır.**)
+
 **§1.7 — offline ÖLÇÜLEMEYEN madde, ölçülebildiği tek yerde ölçüldü.** İki `cube+llm`
 cevabı VQR'a **`auto_cube` olarak yazıldı** (ön koşul sağlandı), sonra parafraz soruldu:
 embedder AÇIK ve neredeyse birebir bir kayıt varken **replay EDİLMEDİ** — cevap yine

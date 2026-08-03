@@ -353,12 +353,15 @@ def _uret(schema: dict) -> list[dict]:
         Risk yalnız `--live` + gerçek sağlayıcı + `cube+llm` yolunda görünür.
         """
         if i == 0:
-            if not d.get("sql"):
-                return False, f"ilk cevap ÜRETİLMEDİ (source={d.get('source')})"
+            # ⟳ İKİNCİ TUR: ön koşulun SAĞLANMAMASI bir ürün hatası DEĞİLDİR. Eski sürüm
+            # *"ilk cevap üretilmedi"* durumunda `False` dönüyordu ve senaryo, ölçemediği
+            # bir riski **başarısız** diye raporluyordu — sahte bir kırmızı, sahte bir
+            # yeşil kadar yanıltıcıdır. Her iki durum da artık ⊘ ÖLÇÜLEMEDİ.
             if d.get("source") != "cube+llm":
                 return None, (f"ÖLÇÜLEMEDİ — ilk cevap source={d.get('source')}, "
-                              "VQR'a yazılmadı (learn yalnız cube+llm'de açık)")
-            return True, "ilk cevap cube+llm → VQR'a yazıldı"
+                              "VQR'a YAZILMADI (learn yalnız cube+llm yolunda açık). "
+                              "§1.7 riski bu koşumda DOĞAMAZ.")
+            return True, "ilk cevap cube+llm → VQR'a yazıldı (ön koşul sağlandı)"
         if (d.get("source") or "") == "vqr":
             return False, ("PARAFRAZ VQR'DAN GELDİ — §1.7 riski CANLI "
                            "(insan onayı olmadan tekrar oynatıldı)")
@@ -366,9 +369,32 @@ def _uret(schema: dict) -> list[dict]:
 
     # `bagimsiz=True`: parafraz TAZE bir soru olarak gider. Takip sorusu olarak
     # gönderilseydi `near_exact` hiç çalışmaz, senaryo ölçtüğünü sanırdı.
-    ekle("vqr_kalicilik", "elektrik-parafraz",
-         ["bu yıl elektrik", "bu yılki elektrik tüketimimiz ne kadar"], _vqr,
-         bagimsiz=True)
+    # SORU KATALOGDAN SEÇİLİR — elle yazılmaz. Şart: `route()` çözemeyecek ki soru
+    # Intent (`cube+llm`) yoluna düşsün; §1.7 riski YALNIZ orada doğabilir (VQR'a yazan
+    # tek yol `learn=(intent_source == "cube+llm")`).
+    #
+    # ⟳ FAZ 9.6 (ikinci tur, `--live` ölçümünden sonra): eski sürüm *"bu yıl elektrik"*
+    # sabitliyordu ve o soru **deterministik çözülüyor** → senaryo `cube+llm` yoluna hiç
+    # düşmüyor, ⊘ ÖLÇÜLEMEDİ kalıyordu. Bayrak doğruydu, SORU yanlıştı.
+    _vqr_soru = None
+    for c in cubes:
+        for syns in (c.get("measure_synonyms") or {}).values():
+            for sy in syns:
+                if len(str(sy)) < 5:
+                    continue
+                _cr.reddi_sifirla()
+                if _cr.route(f"bu yil {sy}", schema) is None:
+                    _vqr_soru = str(sy)
+                    break
+            if _vqr_soru:
+                break
+        if _vqr_soru:
+            break
+
+    if _vqr_soru:
+        ekle("vqr_kalicilik", f"{_vqr_soru}-parafraz",
+             [f"bu yıl {_vqr_soru}", f"bu yılki {_vqr_soru} durumumuz ne kadar"], _vqr,
+             bagimsiz=True)
 
     return senaryolar
 
