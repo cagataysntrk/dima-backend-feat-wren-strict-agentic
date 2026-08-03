@@ -1190,6 +1190,43 @@ Kaybedilen tek vaka bir 429 artefaktı **olabilir**; tek koşumla ayırt edileme
 * `t2_anlatici` ve `agent_plan_secimi`'nin kazanç ölçümü **⊘ ÖLÇÜLEMEDİ** — kota.
   Yeşile de kırmızıya da yuvarlanmadı.
 
+#### İKİNCİ SAĞLAYICIYLA TEKRAR — ve ölçümün GERÇEK gürültü kaynağı
+
+Kota duvarını aşmak için **OpenRouter** sağlayıcısı eklendi (anahtar env'de vardı, kodda
+desteği **yoktu**). İkinci ölçüm, `google/gemma-4-31b-it` ile:
+
+| sağlayıcı / model | KAPALI | AÇIK | kurtarılan |
+|---|---|---|---|
+| gemini-flash-lite (2 × 429'lu) | 13/14 | 12/14 | **0** · kaybedilen 1 |
+| openrouter · gemma-4-31b (90 çağrı) | 14/15 | **15/15** | **1** · kaybedilen 0 |
+| openrouter · nemotron-3-ultra | ⊘ | ⊘ | **54 × 429** — ücretsiz katman doydu |
+
+**İki koşum da aynı yöne işaret ediyor:** Intent-JSON, doğal ifadelerin **13–14/15**'ini
+**zaten** cevaplıyor → enhancer'ın hedef nüfusu neredeyse **boş**. Tek kurtarma da
+korpus etiketinden **farklı** bir ölçü seçti (*"ne kadar borçlu"* → `toplam_borc`, etiket
+`bakiye`) — ikisi de savunulabilir, bu yüzden *"yanlış"* değil **"etiketten farklı"**
+diye kaydedildi.
+
+⚠️ **ÖLÇÜMÜN GERÇEK GÜRÜLTÜ KAYNAĞI BULUNDU — ve benimdi.** Arka planda koşan ölçüm
+konteynerleri, istemcileri zaman aşımına uğradıktan **sonra da yaşamaya devam ediyordu**:
+üç konteyner aynı anda API'yi dövüyordu (11 · 23 · 44 dakikalık). 429'ların büyük
+olasılıkla sebebi budur ve Gemini turundaki *"kaybedilen 1"* bir **artefakt** olabilir.
+Durduruldu. **Operasyonel kural:** ölçüm konteynerleri adlandırılmalı ve tur sonunda
+açıkça kapatılmalı — `--rm` istemci ölünce yetmiyor.
+
+#### Karar
+
+**`prompt_enhancer` `off` KALIYOR** — gerekçe: *"kurtarma ≤ 1 ve hedef nüfus zaten kapalı"*.
+Ama karar **kapanmadı**, iki dürüst çekinceyle:
+
+1. **Korpus fazla temiz.** `REAL_PHRASINGS` ekip tarafından yazılmış iş dilidir; gerçek
+   kullanıcı çok daha dağınık yazar. Enhancer'ın değeri orada görünebilir ve bu korpus
+   onu **göremez**. (Kullanıcının kendi hipotezi: *"promptların zaten iyi olduğu için
+   çalışmamış olabilir; gerçek kullanıcı deneyiminde iş yapabilir."*)
+2. **Ölçüm gürültülüydü** (zombi konteynerler + kota). Temiz bir tekrar gerekiyor.
+
+`t2_anlatici` ve `agent_plan_secimi` **hâlâ ⊘** — kota serbest kalınca ölçülecek.
+
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 
 Planın kapanış şartı: *"Faz 0.5'in **aynı** süiti yeniden koşulur — **yeni senaryo
