@@ -18,6 +18,8 @@ import inspect
 import pathlib
 import re
 
+import pytest
+
 APP = pathlib.Path(__file__).resolve().parents[1] / "app"
 
 
@@ -347,3 +349,147 @@ def test_MIMARI_TEST_SAYILARI_gercekle_uyusuyor():
         "MIMARI'nin test sayıları ÇÜRÜMÜŞ:\n  " + "\n  ".join(yanlis)
         + "\nSayıyı düzelt — *'şu kapı N testle kilitli'* cümlesi karşılığı olmayan bir "
           "güven verir.")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════════
+# FAZ −1 / KUTU C · ⟳ YÜRÜRLÜKTE TUZAKLARI
+# ═══════════════════════════════════════════════════════════════════════════════════
+#
+# `MIMARI.md` §0'daki her ⟳ satırı **iki şey birden** iddia eder:
+#   (a) bu başlıkta otorite yol haritasındadır,   (b) ve **HENÜZ UYGULANMADI**.
+#
+# (b) bir GEÇİCİ GERÇEKTİR ve gerçekler bayatlar. Aşağıdaki tuzaklar (b)'yi kilitler:
+# **faz indiği gün test KIRILIR** → geliştirici ⟳ satırını silmek ve yerine ölçümlü bir
+# `✅` yazmak ZORUNDA kalır. Belge güncellemesi böylece bir **CI zorunluluğu** olur.
+#
+# 🔴 **BU TESTLERİN KIRILMASI BİR BAŞARIDIR, BİR HATA DEĞİL.** Kırıldığında yapılacak:
+#   1. `MIMARI.md` §0'dan o satırı SİL
+#   2. İlgili bölüme ölçümlü `✅` yaz (sayı + HEAD damgası + komut — kural D2)
+#   3. Buradaki tuzağı **TERS ÇEVİR** (artık "inmiş olmalı" diye kilitle) — silme
+#
+# Desen kanıtlanmış: bu dosyanın kendi kaydı — *"bu beyan bir TUZAKTI … kurulduğu iş buydu"*
+# (`test_LLM_ARAC_LISTESI_GERCEKTEN_TUKETILIYOR` · `test_DONEM_POLITIKASI_beyani_HALA_dogru`).
+
+def _yazan_arac_sayisi() -> int:
+    """`tools.KAYIT`'ta `yan_etki="yazar"` olan GERÇEK araç sayısı — docstring DEĞİL.
+
+    Alt-dize taraması bu dosyanın kendi açıklamasını yakalıyordu (`tools.py:26`, `:109`);
+    beyan ile beyanın ANLATIMI ayrı şeylerdir."""
+    import ast as _ast
+
+    agac = _ast.parse((APP / "tools.py").read_text(encoding="utf-8"))
+    return sum(1 for n in _ast.walk(agac)
+               if isinstance(n, _ast.Call) and getattr(n.func, "id", "") == "Arac"
+               and any(k.arg == "yan_etki" and getattr(k.value, "value", "") == "yazar"
+                       for k in n.keywords))
+
+
+#: (mimari_bolum, faz, "inmiş" belirteci → çağrılabilir, açıklama)
+#: Belirteç UCUZ olmalı (dosya varlığı / grep) — tuzaklar her süitte koşar.
+_YURURLUKTE_TUZAKLARI = [
+    ("§3·§3.3", "FAZ 2.1",
+     lambda: (APP.parent / "demo/packs/cekirdek").exists()
+             or "_merge_cube_metadata" in _app_kaynagi(""),
+     "çekirdek katman / compose birleştirme semantiği"),
+    ("§3.4-RLS", "FAZ 1.1",
+     lambda: "rowLevelAccessControl" in _app_kaynagi(""),
+     "motor-seviyesi RLS"),
+    ("§3.4-osi", "FAZ 3.4",
+     # ⚠ Belirteç DOSYA varlığına bağlı: ilk sürümü `"ossie" in _app_kaynagi()` idi ve
+     # **yorum satırlarını** yakalayıp tuzağı yanlış-kırmızı yaptı (ölçüm aracı kusuru).
+     lambda: (APP / "ossie_import.py").exists() or (APP / "ossie.py").exists(),
+     "Ossie ithali (karar geri alındı)"),
+    ("§4", "FAZ 6.0→6.2",
+     # ⚠ AST ile bakılır: alt-dize taraması `tools.py`'nin **docstring'indeki**
+     # `yan_etki="yazar"` cümlesini yakalayıp tuzağı yanlış-kırmızı yaptı. Beyan ile
+     # BEYANIN ANLATIMI farklı şeylerdir — bu deponun kendi dersi.
+     lambda: (APP / "onay_akisi.py").exists() or (APP / "yazma_araclari.py").exists()
+             or _yazan_arac_sayisi() > 0,
+     "ajan yazma yasağının kademelenmesi"),
+    ("§5-grain", "FAZ 2.1",
+     lambda: "grain" in (APP / "compose.py").read_text(encoding="utf-8"),
+     "grain sözleşmesi (compose fail-closed)"),
+    ("§5-18.yasak", "§G/AJ0",
+     lambda: "if typo_suggestion:" not in
+             (APP / "routers/ask.py").read_text(encoding="utf-8"),
+     "cevapsız dal cevaplı yolu kesemez (KAT-2)"),
+    ("§7-CI", "FAZ 0.15",
+     lambda: any("kapi.py" in f.read_text(encoding="utf-8", errors="ignore")
+                 for f in (APP.parent.parent / ".github/workflows").glob("*.yml"))
+             if (APP.parent.parent / ".github/workflows").exists() else False,
+     "ölçüm kapıları CI'da"),
+    ("§9-metrik", "FAZ 0.18",
+     lambda: "MetricDefinition" in
+             (APP.parent / "control_plane/models.py").read_text(encoding="utf-8"),
+     "metrik kaydı = hakem"),
+    ("§11-yetki", "FAZ 1.3",
+     lambda: len({s.split('"')[1] for s in
+                  (APP / "tools.py").read_text(encoding="utf-8").splitlines()
+                  if s.strip().startswith("izin=")}) > 1,
+     "yetki granülerliği (bugün 15/15 query:run)"),
+    ("§12-tür", "FAZ 5.1·5.2",
+     lambda: "TUR_TAKIP" in (APP / "followup.py").read_text(encoding="utf-8")
+             or "TUR_PAYLAS" in (APP / "followup.py").read_text(encoding="utf-8"),
+     "6./7. konuşma türü"),
+    ("§13-viz", "FAZ 5.11·5.12",
+     lambda: "list[VizSpec]" in (APP / "viz.py").read_text(encoding="utf-8"),
+     "viz.recommend() çoklu dönüş"),
+    ("§14-kapı", "FAZ 0.14",
+     lambda: (APP.parent / "tests/test_yol_haritasi_butunlugu.py").exists(),
+     "K1/K2'nin kör noktaları"),
+    ("§8.2-ADR", "FAZ 4.6",
+     lambda: (APP.parent / "docs/adr").exists(),
+     "ADR dosyaları"),
+]
+
+
+@pytest.mark.parametrize("bolum,faz,indi_mi,konu",
+                         _YURURLUKTE_TUZAKLARI,
+                         ids=[x[0] for x in _YURURLUKTE_TUZAKLARI])
+def test_YURURLUKTE_satiri_HALA_dogru(bolum, faz, indi_mi, konu):
+    """⟳ satırı *"henüz uygulanmadı"* diyor — hâlâ doğru mu?"""
+    try:
+        indi = bool(indi_mi())
+    except Exception:                       # belirteç kırıldıysa TUZAK DA KIRILIR
+        raise AssertionError(
+            f"{bolum} tuzağının BELİRTECİ çalışmıyor — kod taşınmış olabilir. "
+            f"Tuzak güncellenmeden bu satır korunamaz.") from None
+    assert not indi, (
+        f"🎉 {faz} İNDİ ({konu}) — ve bu tuzak tam da bunun için kuruldu. "
+        f"ŞİMDİ YAPILACAK, SIRAYLA: "
+        f"(1) MIMARI.md §0'dan `{bolum}` satırını SİL · "
+        f"(2) ilgili bölüme ÖLÇÜMLÜ `✅` yaz (sayı + @sha + komut — kural D2) · "
+        f"(3) bu tuzağı TERS ÇEVİR (artık 'inmiş olmalı' diye kilitle) — SİLME")
+
+
+def test_TUZAK_SAYISI_MIMARI_ILE_ORTUSUYOR():
+    """Tuzak sayısı §0'daki ⟳ satır sayısıyla **birebir** olmalı.
+
+    Aksi hâlde biri ⟳ ekleyip tuzağını yazmayı unutur ve o satır **sessizce** bayatlar —
+    tam olarak bu bloğun engellemek için var olduğu şey."""
+    mimari = (APP.parent / "MIMARI.md").read_text(encoding="utf-8")
+    satir = mimari.count("⟳ UYGULANMADI")
+    assert satir == len(_YURURLUKTE_TUZAKLARI), (
+        f"MIMARI §0'da {satir} ⟳ satırı var, tuzak sayısı {len(_YURURLUKTE_TUZAKLARI)}. "
+        "Her ⟳ satırının bir tuzağı OLMALI — yoksa beyan sessizce çürür.")
+
+
+def test_YURURLUKTE_BLOGU_KURAL_BEYAN_ETMIYOR():
+    """🔴 Kutu B'nin bağlayıcı kısıtı: ⟳ bloğu **otorite işaret eder, kural beyan etmez**.
+
+    *"Yeni kural şudur"* diyen bir ⟳ satırı, okuyucuya **yapılmış** olduğunu düşündürür —
+    ve `§10`'un `✅` = *"ölçüldü ve YAPILDI"* tanımını sessizce deler."""
+    mimari = (APP.parent / "MIMARI.md").read_text(encoding="utf-8")
+    bas = mimari.index("## §0 · ⟳ YÜRÜRLÜKTE")
+    son = mimari.index("## 1. Sistem nedir")
+    blok = mimari[bas:son]
+    # ⚠ YALNIZ TABLO SATIRLARI taranır. İlk sürüm bloğun TAMAMINI tarıyordu ve bloğun
+    # kendi AÇIKLAMASINI (*"hiçbir satır «yeni kural şudur» demez"*) bir ihlal sanıp
+    # yanlış-kırmızı verdi. **Yasağı anlatmak, yasağı çiğnemek değildir.**
+    tablo = [s for s in blok.splitlines() if s.lstrip().startswith("|")]
+    for yasak in ("yeni kural şudur", "artık şöyle olacak", "bundan sonra şu kural"):
+        for s in tablo:
+            assert yasak not in s.lower(), (
+                f"⟳ TABLOSUNDA kural beyanı bulundu ({yasak!r}): {s[:90]}\n"
+                "Blok yalnız OTORİTE işaret eder; kuralı yol haritası taşır.")
+    assert blok.count("⟳ UYGULANMADI") == len(_YURURLUKTE_TUZAKLARI)

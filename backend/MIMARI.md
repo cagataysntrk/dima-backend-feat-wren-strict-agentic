@@ -11,6 +11,45 @@
 
 ---
 
+## §0 · ⟳ YÜRÜRLÜKTE — YOL HARİTASININ OTORİTE ALDIĞI BAŞLIKLAR  *(FAZ −1/Kutu B)*
+
+> 🔴 **BU BLOK BİR KURAL BEYAN ETMEZ — YALNIZ OTORİTE İŞARET EDER.**
+> Her satır tek bir şey söyler: *"bu başlıkta `DIMA-V1-YOL-HARITASI.md` §X kazanır,
+> **ve henüz UYGULANMADI**."* Buradaki hiçbir satır *"yeni kural şudur"* demez —
+> aksi hâlde okuyucu **yapılmış zanneder**, ki `§10`'un `✅` = *"ölçüldü ve YAPILDI"*
+> tanımının ihlali olurdu.
+>
+> **Yaşam döngüsü:** ilgili faz indiği gün → satır **silinir**, yerine ilgili bölüme
+> **ölçümlü `✅`** yazılır, ve `tests/test_beyanlar_curumesin.py`'deki **tuzak testi ters
+> çevrilerek** korunur. *Belge güncellemesi böylece bir CI zorunluluğu olur.*
+>
+> **Yol haritası:** `~/.claude/plans/DIMA-V1-YOL-HARITASI.md` · **operasyon:**
+> `OPERASYON.md` (kural seti) + `OPERASYON-DURUM.md` (nerede kaldık)
+
+| MIMARI § | Konu | Otoriteyi alan faz | Durum |
+|---|---|---|---|
+| **§3 · §3.3** | semantik katman · compose **birleştirme semantiği** (çekirdek katman + grain sözleşmesi) | **FAZ 2.1** | ⟳ UYGULANMADI |
+| **§3.4** | `rowLevelAccessControls` — motor-seviyesi RLS | **FAZ 1.1** | ⟳ UYGULANMADI |
+| **§3.4** | *"Bilerek ALINMAYANLAR: `osi`"* — karar **geri alındı** | **FAZ 3.4 · 4.5** | ⟳ UYGULANMADI |
+| **§4** | Değişmez 2/3 (read-only) — ajan yazma yasağının **kademelenmesi** | **FAZ 6.0 → 6.1 → 6.2** | ⟳ UYGULANMADI |
+| **§5** | yapılmayacaklar — hiçbir satır **kaldırılmıyor**; grain sözleşmesi **yeni satır ekler** | **FAZ 2.1** | ⟳ UYGULANMADI |
+| **§5** | **18. yasak**: *"cevapsız bir dal, cevaplı bir yolu KESEMEZ"* (`KAT-2`) | **§G/AJ0** | ⟳ UYGULANMADI |
+| **§7** | ölçüm sözleşmesi — çerçeve (A1) + **CI kapıları** + risk-kapsam eğrisi | **FAZ 0.15 · FAZ 4** | ⟳ UYGULANMADI |
+| **§9** | hedef mimari — **metrik katmanı** merdivene giriyor | **FAZ 0.18 · 2.1** | ⟳ UYGULANMADI |
+| **§11** | agentic — **yetki granülerliği** + onaylı yazma | **FAZ 1.3 · 6.1** | ⟳ UYGULANMADI |
+| **§12** | konuşma — **6./7. tür**; uyuyan **çapa** kuralları | **FAZ 0.5 · 5.1 · 5.2** | ⟳ UYGULANMADI |
+| **§13** | görsel dilbilgisi — `viz.recommend()` yeni dallar + dönüş `VizSpec \| list[VizSpec]` | **FAZ 5.11 · 5.12** | ⟳ UYGULANMADI |
+| **§14** | arka-ön sözleşmesi — **iki kapının kör noktaları** (K1/K2) | **FAZ 0.14** | ⟳ UYGULANMADI |
+| **§8.2** | ADR'ler — **dosyalar üretilecek** (20 kimlik · 252 atıf · 0 dosya) | **FAZ 4.6** | ⟳ UYGULANMADI |
+
+> ⛔ **BU LİSTEDE OLMAYAN ama sorulabilecek bir satır — kayda geçiyor:**
+> *"§9.2 — ölçü + başka cube'un BOYUTU ifade edilemez"* bir ⟳ satırı **DEĞİLDİR**, çünkü
+> öyle bir olmayan-hedef **artık yoktur**: `0a1a087`'de `⟳ FAZ B1` bloğuyla açıkça geri
+> çekildi (*"bu satırla çelişiyordu ve yanlıştı"*). §9.2'de duran madde *"Ölçü-A × Ölçü-B
+> tek CubeQuery'de olamaz"* — **farklı bir şey**. *Var olmayan bir satıra ⟳ konulamaz.*
+
+---
+
 ## 1. Sistem nedir, ne DEĞİLDİR
 
 Dima, bir şirketin kendi veritabanına bağlanıp **Türkçe** soru sorulabilen, cevabı grafik ve
@@ -184,7 +223,10 @@ eder.**
 düzenlenmez. `compose()` sadece kopyalamaz; **zaten semantik YAML sentezler**:
 `_compose_derived_metrics` yeni view+cube üretir, `_merge_cube_synonyms` mevcut cube metadata'sını
 yeniden yazar, `_compose_kpis` çapraz-cube KPI'ları yükler. Yeni bir üretim adımı eklemek bu
-kalıbın dördüncü örneğidir, yeni bir desen değildir.
+kalıbın **beşinci** örneğidir, yeni bir desen değildir.
+> ⟳ **DÜZELTME (FAZ −1/A7, ölçüldü @`81ad10b`):** burada üç üreteç sayılıyordu ama
+> `compose()` **dört** tanesini çağırıyor — `_compose_relationship_dimensions` (`:179`)
+> sayılmamıştı. Ölçüm: `grep -cE '^\s+(_merge_cube_synonyms|_compose_derived_metrics|_compose_relationship_dimensions|_compose_kpis)\(' app/compose.py` → **4**.
 
 Cube ifadeleri **DuckDB/ANSI** yazılır; DuckDB dışı datasource'ta `WrenService._dialect_sql`
 hedef lehçeye çevirir (T-SQL: `GROUP BY` ordinal genişletme, `DATE_TRUNC → DATEADD/DATEDIFF`,
@@ -203,7 +245,7 @@ tur aynı keşfi sıfırdan yapıyor. **Yeni bir kontrol/garanti yazmadan önce 
 | **`columnLevelAccessControl`** (`requiredProperties`/`operator`/`threshold`) | Kolonu **plandan düşürür**; çıktıya hiç gelmez | ⏳ `app/pii.py` regex maskelemesinin motor karşılığı; PII son savunma olarak KALIR |
 | **Cube `hierarchies`** | Drill sırasını motora beyan eder | ⏸ **bilinçle beyan EDİLMEDİ** — uydurulmuş bir hiyerarşi güvenle yanlış bir drill yolu üretir; sıra ölçülebilir maliyetten okunuyor, bkz. §3.4c |
 | **`type_mapping.parse_type/translate_type`** | sqlglot tam tip grameri + lehçeler arası tip çevirisi | ✅ **ALINDI** (2026-08-02, Faz B): `classify_column` artık ham tipi `parse_type` ile **kanonikleştirip** öyle sınıflıyor. Ölçüldü — elle küme **17 gerçek yazımın 13'ünü kaçırıyordu** ve hepsi sessizce `dimension`'a düşüyordu: `numeric(18,2)` (bir PARA TUTARI) gruplama anahtarı, `timestamptz` zaman DEĞİL sayılıyordu. Bir müşteri DB'sini introspect ettiğimizde taslak MDL tutarları boyut yapıp tarihleri zaman ekseninden düşürürdü — kullanıcıya *"şemanı çıkardım"* diye sunularak. Kanonik küme ile **geriye uyum kuyruğu AYRI durur** (`_ESKI_YAZIMLAR`): karışık bir küme, hangi adın kanonik hangisinin yama olduğunu gizler. Motor erişilemezse ham değere düşülür — fail-closed değil, çünkü bilinmeyen tip için doğru varsayılan zaten *boyut*tur. `BIT`/`BOOLEAN` bilinçle dışarıda: bayrakların toplamı bir ölçü değildir. |
-| **17 kullanılmayan konnektör** | BigQuery/Snowflake/Databricks/Trino + `s3_file`/`minio_file` | ❌ yeni müşteri = **kod yazmadan** bağlanma |
+| **12 kullanılmayan konnektör** *(⟳ FAZ −1/A8: «17» idi; backend'de hiç geçmeyen sayı **12**)* | BigQuery/Snowflake/Databricks/Trino + `s3_file`/`minio_file` | ❌ yeni müşteri = **kod yazmadan** bağlanma |
 | **`context.validate_project()`** | 9 yapısal kural (PK var mı, `table_reference` XOR `ref_sql`, ilişki hedefi…) | ✅ **ALINDI** (2026-08-02, Faz B): `compose_and_build` artık `build()`'den **önce** çağırıyor. `error` → **fail-closed**, MDL üretilmez (bozuk zeminden üretilen MDL, hatayı sorgu anında kullanıcının yüzüne çıkarır — `dry_plan` kolon varlığını denetlemez, §5); `warning` → loglanır, akışı durdurmaz. Kendi doğrulayıcımız YAZILMADI, motorunki **çağrıldı** (test kural adlarının gövdeye kopyalanmadığını kilitler). Ölçüldü: dört demo projesinin **dördü de 0 hata / 0 uyarı** — açmak hiçbir meşru yolu kırmıyor. |
 | **`data_source` statement_timeout** | Per-datasource sorgu zaman aşımı | ✅ alındı — **ama motorun kendisi mssql'i unutmuş**, bkz. §3.4b |
 | **`migrate_manifest_json` / `is_backward_compatible`** | MDL layout göçü ve geriye uyum | ❌ hiç çağrılmıyor |
@@ -349,7 +391,7 @@ Bildirimde, `/ask/contribution` yanıtında ve `ContributionLayer`'da görünür
 | **Join planlayıcı yazma** | `wren_core` "önceden-bildirilmiş adlandırılmış geçiş" ailesinde (Looker explore, Malloy `join_one`, Cube *views*, Snowflake semantic views). Bu ailenin çözümü bir **üreteçtir**, planlayıcı değil. Cube Dijkstra'yı yazdı, sonra kendi dokümanında *"views should be used where possible"* dedi. MetricFlow 2 sıçramada kapattı ve fan-out'u **yasakladı**. Planlayıcı = denetlenemez tie-break = Query Contract'ın varlık sebebine aykırı. |
 | **`join_type`'a güvenme** | Motor onu **okumuyor** (ölçüldü): MANY_TO_ONE / ONE_TO_MANY / ONE_TO_ONE / MANY_TO_MANY → **aynı SQL**. Yön `condition`'dan türetilir, güvenlik **ölçülen anahtar tekilliğinden** gelir. `relationships.yml`'deki cardinality bir **yorumdur**. |
 | **Ters yön (ONE_TO_MANY) handle üretme** | Join pruning kompozisyonelliği bozar: aynı cube, aynı boyut, yalnız ölçü listesi farklı → makine sayısı **3 → 7.038**, kapasite **4.700 → 11.026.200** (ölçüldü). Bir ölçünün değerinin SELECT'teki *diğer* ölçülere bağlı olması, "her cevap kanıtlanabilir" tezi için mümkün en kötü hata sınıfıdır. |
-| **`dry_plan`'ı doğrulama kapısı sanma** | `dry_plan` **kolon varlığını denetlemiyor** (ölçüldü: uydurma kolon plandan geçti, çalıştırmada `BinderException`) — `strict_mode` bunu da **çözmez**, o tablo/fonksiyon politikasıdır. *"Motor doğrular"* ifadesi **tablo** için geçerlidir, kolon için değil. Kolon doğrulaması `tests/test_member_sweep.py`'nin build-time `LIMIT 0` taramasıdır; **terfi onayı o taramayı hâlâ çalıştırmıyor** (§6.2). ⚠️ 2026-08-02'de düzeltildi: `WrenConfig` artık kuruluyor (aşağı bak) ama bu, kolon boşluğunu kapatmaz — iki ayrı mesele. |
+| **`dry_plan`'ı doğrulama kapısı sanma** | `dry_plan` **kolon varlığını denetlemiyor** (ölçüldü: uydurma kolon plandan geçti, çalıştırmada `BinderException`) — `strict_mode` bunu da **çözmez**, o tablo/fonksiyon politikasıdır. *"Motor doğrular"* ifadesi **tablo** için geçerlidir, kolon için değil. Kolon doğrulaması `tests/test_member_sweep.py`'nin **üye taramasıdır** — her ölçü/boyut **gerçekten derlenip çalıştırılır** (`LIMIT 0` değil: dosyada öyle bir kısayol yok, sorgular **koşar**; ⟳ FAZ −1/A6'da ölçüldü, 113 satır · 5 test); **terfi onayı o taramayı hâlâ çalıştırmıyor** (§6.2). ⚠️ 2026-08-02'de düzeltildi: `WrenConfig` artık kuruluyor (aşağı bak) ama bu, kolon boşluğunu kapatmaz — iki ayrı mesele. |
 | **`guard_sql`'i güvenlik politikası sanma** | O bir **SELECT-only kapısıdır**, iki regex'ten ibarettir ve `SELECT * FROM read_csv('/etc/passwd')`'i **geçirir** (ölçüldü). Politika motoru `wren/policy.py`'dir: 45 veri-okuyucu TVF'yi **her AST konumunda** bloklar + MDL-dışı tabloyu reddeder. 2026-08-02'ye kadar **ölü koddu** çünkü `WrenEngine`'e `config` hiç geçirilmiyordu. Bugün o saldırıların yine de patlaması **DataFusion'ın fonksiyonu tanımamasındandır** — yani savunma **tesadüfi**. Bkz. §3.4. |
 | **`except Exception` ile motoru sarma** | Kendine-referanslı ilişki + calc kolon → Rust'ta **PANIC** (`lineage.rs:146`, `unwrap() on None`). `PanicException` MRO'su `(PanicException, BaseException, object)` — **`except Exception` yakalamaz.** Hesap planı parent, BOM parent, org şeması: ERP'lerde standart. |
 | **Kelimeye özel regex/keyword yaması** | Kayıtlı desen: aynı kök neden (`_uncovered`'ın substring körlüğü) defalarca kelimeye özel yamayla geçiştirildi, kök neden hiç düzeltilmedi. **Kural: kök nedeni düzelt, örneği değil.** (ADR-0008 disiplini) |
@@ -665,7 +707,7 @@ artık LLM katkısını söylüyor. 13 test (`tests/test_rozet_durustlugu.py`) �
 
 `mdl_writer` bilerek *"TAHMİNİ sinonim UYDURULMAZ"* diyor — **doğru bir karar**, çünkü
 tahmini bir sinonim `route()`'un **canlı** davranışını değiştirir. Ama sonuç **çıplak** bir
-cube: tablo adından başka etiketi yok ve `route()` onu neredeyse hiç eşleştiremez. §2.1'in
+cube: tablo adından başka etiketi yok ve `route()` onu neredeyse hiç eşleştiremez. **plan** §2.1'in
 ölçtüğü darboğaz tam bu — **mekanizma üretiliyor, sözlük üretilmiyor** (`compose.py`'nin
 kendi üreteci de itiraf ediyor: *"sözlük kürasyonu işin indirgenemez insan kısmıdır"*).
 
@@ -818,10 +860,13 @@ sayılarıydı:**
   `parti.toplam_ciro`'nun **zaten** sinonimi. Triyaj kuyruğu, kapsam boşluğu göstermek
   yerine kataloğun var olan sözlüğünü tekrar öneriyor, gerçek boşluklar gürültüde
   kayboluyordu. Düzeltildikten sonra: *"bu yil ciro"* → **[]**,
-  *"personel bazli calisma sureleri"* → **['sureleri']** (§1.5'in gerçek katalog boşluğu).
+  *"personel bazli calisma sureleri"* → **['sureleri']** (**plan** §1.5'in gerçek katalog boşluğu).
 
-**Kapsam dışı (kayıt için):** konuşma belleği (`Baglam.ham_ifade`), sosyal sınıf
-(*"merhaba"*), MCP yüzeyi, Skills/Memories, VQR'yi tümden ipucu yoluna alma. Faz 9 yalnız
+**Kapsam dışı (kayıt için):** MCP yüzeyi, Skills/Memories, VQR'yi tümden ipucu yoluna alma.
+> ⟳ **DÜZELTME (FAZ −1/A2):** bu satır *"sosyal sınıf"* ve *"konuşma belleği
+> (`Baglam.ham_ifade`)"*'ni kapsam dışı sayıyordu — **ikisi de İNDİ**: sosyal sınıf
+> `e1bde3f` (`tests/test_sosyal_sinif.py`), `Baglam.ham_ifade` `71b542e`
+> (`tests/test_atif_baglami.py`). *Kapsam-dışı kaydı, kapsam içine alındığında silinir.* Faz 9 yalnız
 *"yapıldı denen ama yapılmamış/kırık"* olanı kapatır.
 
 #### CANLI DOĞRULAMA (rebuild + seed + gerçek Gemini + embedder AÇIK, 3 Ağustos)
@@ -887,7 +932,7 @@ Testler: `tests/test_gizlilik_muhru.py` (9) · `tests/test_dogrulanmis_chip.py` 
 
 ### 6.14z CANLI THREAD TURU — 10 senaryo, gerçek Gemini, thread mantığı ✅
 
-Rehberin (§3.2) zincir sözleşmesiyle **10 senaryo THREAD olarak** koşuldu: her tur bir
+Rehberin (**plan** §3.2) zincir sözleşmesiyle **10 senaryo THREAD olarak** koşuldu: her tur bir
 öncekinin `cube_query`'sini taşır, tur arası 5 sn. Sekizi ilk denemede temiz:
 
 | # | faz | ölçülen |
@@ -911,7 +956,7 @@ Rehberin (§3.2) zincir sözleşmesiyle **10 senaryo THREAD olarak** koşuldu: h
 * **Faz 4 ⚠️ — KABUL ÖLÇÜTÜ MİMARİYE AYKIRI BİR SORU SEÇMİŞ.** Pilot ateşlemiyordu ve
   **iki** bağımsız sebebi var:
   1. **Sıra**: çapraz-konu netleştirmesi (`other_topic`) pilottan **önce** dönüyordu →
-     bayrak açıkken bile pilot hiç çağrılmıyordu. Bu, §1.5'in dersinin kardeş daldaki
+     bayrak açıkken bile pilot hiç çağrılmıyordu. Bu, **plan** §1.5'in dersinin kardeş daldaki
      hâli (*"truthy bir netleştirme daha yetenekli bir adımı sessizce öldürür"*).
      **Düzeltildi**: `other_topic` dalında pilot önce denenir, `None` dönerse netleştirme
      aynen döner (kapsam kaybı yok, bayrak kapalıyken blok hiç koşmaz).
@@ -1798,7 +1843,10 @@ Planın *"kaç yeni sınıf açığa çıktı"* sorusunun cevabı: **sıfır**. 
 olarak yerinde — bir sonraki tur `--live` moduyla koşulmalı (Faz 3a'nın kazanç ölçümü ve
 §1.7'nin embedder-açık doğrulaması oraya bağlı).
 
-### 6.8z FAZ 7 — ARAŞTIRMA SIÇRAMALARI: ölçüldü, ÜÇÜ DE BENİMSENMEDİ ✅
+### 6.8aa FAZ 7 — ARAŞTIRMA SIÇRAMALARI: ölçüldü, ÜÇÜ DE BENİMSENMEDİ ✅
+> ⟳ *(FAZ −1/A12: bu başlık `### 6.8z` idi ve **1309. satırdaki Faz F2 başlığıyla
+> ÇAKIŞIYORDU**. `6.8u…6.8z` dizisi dolduğu için `6.8aa` ile devam edildi. Hiçbir yerden
+> atıf almadığı ölçüldü → yeniden numaralama güvenli.)*
 
 Planın disiplini: *"kör benimseme YOK — önce **ölçülmüş** gölge-mod spike; **kazanç yoksa
 entegre EDİLMEZ**"*. `lab/golge_spike.py` kazancın **ÜST SINIRINI** ölçer: bir teknoloji
@@ -2008,7 +2056,7 @@ gölgelerdi, yani §6.1f'te ölçümle reddedilen hatanın tekrarı olurdu.
 *"Bu takip mesajını önceki raporla ilişkilendiremedim."* **Saf görünüm değişikliği TÜM
 RAPORU siliyordu.** Plan §4.7-1(e)(i) bunu *"`deterministic_refine`'ın saf görünüm
 değişikliğini 'değişti' sayıp saymadığı **ÖLÇÜLMEDİ**"* diye işaretlemişti — ölçüldü:
-**saymıyor.** Bu aynı zamanda §4.4'ün Faz 5 şartının doğrudan ihlaliydi (*"konuşma-modu
+**saymıyor.** Bu aynı zamanda **plan** §4.4'ün Faz 5 şartının doğrudan ihlaliydi (*"konuşma-modu
 metni SİLMEZ, yalnız ÜSTÜNE biner"*). Düzeltme `deterministic_refine`'ın kendi `already`
 (no-op) sözleşmesinin aynısı: rapor **aynen** yeniden verilir, yalnız `view_hint` değişir.
 Kapı **dar**: görünüm kelimeleri söküldükten sonra geriye anlamlı kelime kalıyorsa
@@ -2652,7 +2700,7 @@ tabanıyla korunuyor. Yaşayan semantik testle kilitlendi.
   12'si orada; 8'inde cube ve ölçü zaten doğru çözülmüş. (Bu satır `cube["dimensions"]` okuyor.)
 - ✅ **4 cube view-tabanlıydı** (`parti`, `ik`, `mizan`, `enerji_tesis` = kataloğun %31'i, en
   zengin ikisi dahil) → ilişki zenginleştirmesinden **sıfır kazanç** alıyorlardı. Faz 2'de üçü
-  modele taşındı; `enerji_tesis` bileşik anahtar nedeniyle **bilinçli olarak** view kaldı (§3.2).
+  modele taşındı; `enerji_tesis` bileşik anahtar nedeniyle **bilinçli olarak** view kaldı (**plan** §3.2).
   Bakım dışında ölçülen ikinci kazanç **join pruning**'dir: `statements.py`'nin gelir tablosu
   sorgusu 2 join yerine **0**, `ik.personel_sayisi` 3 tablo taraması yerine **0 join**.
 - **3 cube'un hiç giden ilişkisi yok**: `cari`, `ticaret`, `enerji_sapma` — bu bir
@@ -2788,7 +2836,7 @@ tabanıyla korunuyor. Yaşayan semantik testle kilitlendi.
 
 | Ne | Nereden | Hedef |
 |---|---|---|
-| Intent / cache / Discovery payı | `GET /sadmin/interactions/route-distribution?days=N` (`admin_app/routers/interactions.py:144`) | **Intent ≥ %70 · Discovery < %30** |
+| Intent / cache / Discovery payı | `GET /sadmin/interactions/route-distribution?days=N` (`admin_app/routers/interactions.py:161`) | **Intent ≥ %70 · Discovery < %30** |
 | LLM'siz cevap oranı (tenant) | `GET /stats/today` (`app/routers/stats.py:39`) | artan |
 | Cevap doğruluğu | `python -m eval.run` → `answered_precision` (Wilson CI) + `coverage` | baseline'ın **altına düşmez** (`tests/test_eval_gate.py`) |
 | Deterministik tavan | `python lab/nl_corpus.py` (~1000 soru × 4 şirket, LLM'siz) | artan |
@@ -2805,9 +2853,17 @@ tabanıyla korunuyor. Yaşayan semantik testle kilitlendi.
 
 > ⚠️ **Eval'in %100'ünü kapsam sanma.** 111 cevabın 111'i intent yolundan geliyor, çünkü eval
 > korpusu **zaten çalışan şeye göre kuratörlenmiş** — çapraz-alan boşluğuna hiç dokunmuyor.
-> Boşluğun bu kadar uzun görünmez kalmasının sebebi de budur. **Gerçek tavan %64'tür**
-> (`lab/nl_corpus.py`, 8984 tur, 4 şirket). Eval bir *regresyon kilididir*, kapsam ölçüsü değil.
-> Aradaki 36 puan, planın tamamının dayandığı "kapsam, zekâ değil" tezinin sayısal karşılığıdır.
+> Boşluğun bu kadar uzun görünmez kalmasının sebebi de budur. Eval bir *regresyon
+> kilididir*, kapsam ölçüsü değil.
+>
+> ⟳ **DÜZELTME (FAZ −1/A1+A9) — «%64» BU SATIRDA BAYAT, ve «36 puan» YANLIŞ ÇERÇEVE.**
+> **(a) Sayı:** o ölçüm `8984 tur`a aitti; sonraki turlarda kapsam **büyüdü** (`2a-3`
+> boyahane `%64 → %68`). ⚠ `D2` gereği **sabit sayı buraya yazılmaz** — güncel değer:
+> `docker run … python lab/nl_corpus.py --kapi`.
+> **(b) Çerçeve:** kalan puanların tamamı *"kapsam boşluğu"* **DEĞİLDİR.** Ölçüldü
+> ([KANIT §11.1]): büyük kısmı **netleştirmedir** ve netleştirme `ADR-0007-K3`'ün
+> **İSTEDİĞİ** davranıştır — bir kusur değil, bir politika. *"Kapsam, zekâ değil"* tezi
+> ayakta kalır; ama o boşluğun **hepsini kapatılabilir sanmak** yanlıştır.
 
 **Faz 0.4'ün ölçülen etkisi** (aynı korpus, öncesi/sonrası): OK **+6**, yanlış-cube/Discovery
 (`CUBE-SAPMA`) **−25**, dürüst ret/netleştirme **+15**. Yani kapsam kapısının sıkılaştırılması
@@ -2864,8 +2920,9 @@ ve **hiçbiri ölçekte "doğru cube'u mu seçti"yi ölçmüyor**.
 > benzerliği kaydediliyor. Boyahane'nin **+66 turu** Faz D1'in iki yeni mizan
 > kırılımından gelir (hepsi cevaplanabilir).
 >
-> **Sonuç: kapsam tavanı hâlâ %64'tür ve Faz F/G'nin her aracı bu tavanın altında
-> çalışacaktır.** Tavanı yükseltmek `demo-boyahane`'de `expose:` yaymakla olmuyor (ölçüldü:
+> **Sonuç: kapsam tavanı Faz F/G'nin her aracını sınırlar.** ⟳ *(FAZ −1/A9: burada
+> «hâlâ %64» yazıyordu — o turun sayısıydı ve **güncellenmemişti**; ölçülen `2a-3`
+> sonrası **%68-72** bandı. `D2`: sabit sayı yerine komut → `lab/nl_corpus.py --kapi`.)* Tavanı yükseltmek `demo-boyahane`'de `expose:` yaymakla olmuyor (ölçüldü:
 > kalan 20 ilişkinin hiçbiri ayırt edici yeni boyut vermiyor); asıl kayıp yerleri korpus
 > raporunda görünüyor — `elektrik` sorularının `enerji_makine` yerine `surdurulebilirlik`e
 > gitmesi (cube-kimliği çakışması) ve `ortalama duruş`un Discovery'ye düşmesi. Bunlar ayrı
@@ -2902,8 +2959,17 @@ docker run --rm --network none -v "$PWD/backend:/app" -w /app dima-test python l
 **Hâlâ açık:**
 - `route-distribution` endpoint'inin **hâlâ sıfır UI tüketicisi var** (KPI artık endpoint'in
   kendisinde hesaplanıyor ve testli, ama kimse göstermiyor).
-- Anlamlı bir Intent/Discovery oranı için **gerçek kullanım** gerekiyor; telemetri artık kalıcı
-  (Faz 0.1) ama tablo pratikte hâlâ boş (7 satır).
+- Anlamlı bir Intent/Discovery oranı için **gerçek kullanım** gerekiyor; telemetri artık
+  kalıcı (Faz 0.1) ama tablo **gerçek kullanıcı trafiği taşımıyor**.
+  > ⟳ **DÜZELTME (FAZ −1/A10+A11) — `D2` UYGULANDI: SABİT SAYI SİLİNDİ.**
+  > Bu belge `interaction_log` için **üç farklı sayı** taşıyordu — *"7 satır"* (burası),
+  > *"93"* (§6.13z) ve *"105"* (§6.3 ⟳) — ve **üçü de bayattı**: ölçüldü @`81ad10b`
+  > → **0 satır** (ortam sıfırlanmış). Bir sayının üç kez yazılıp üçünün de yanlış olması,
+  > `D2`'nin (*"canlı büyüyen sayı sabit yazılmaz, komutla verilir"*) ders kitabı örneğidir.
+  > **Güncel değer:**
+  > `sqlite3 backend/logs/control_plane.db "select count(*) from interaction_log"`
+  > ⚠ **Ve sayı tek başına yeterli değil:** satırların *"gerçek kullanıcı mı, bizim
+  > denememiz mi"* olduğu ayrılmalıdır — bu ayrımın kapısı **FAZ 8.1**'dir.
 
 ---
 
@@ -3122,7 +3188,7 @@ gidildiğini gizlerdi.
 
 | Değişmez | Nasıl uygulanıyor | Nasıl denetleniyor |
 |---|---|---|
-| **Ajan kullanıcının yetkisini AŞAMAZ** | Her araç bir `authorize()` aksiyonuna bağlı; `izinli_araclar(principal)` matristen süzer — kayıt ikinci bir kopya TUTMAZ | `test_ajan_KULLANICININ_yetkisini_asamaz`, `test_izin_MATRISTE_var` |
+| **Ajan kullanıcının yetkisini AŞAMAZ** ⟳ | Her araç bir `authorize()` aksiyonuna bağlı; `izinli_araclar(principal)` matristen süzer — kayıt ikinci bir kopya TUTMAZ. 🔴 **AMA BUGÜN SÜZGEÇ EFEKTİF DEĞİL** (FAZ −1/A3, ölçüldü @`81ad10b`): **15/15 araç** `izin="query:run"` taşıyor ve `authorize.py`'de `"query:run": 0` (**viewer** seviyesi) → hiçbir rol elenmiyor, süzgeç bir **no-op**. Granülerlik **FAZ 1.3**'te kurulur; bu satır o güne kadar bir **YETENEK BEYANI değil, MEKANİZMA BEYANIDIR** | `test_ajan_KULLANICININ_yetkisini_asamaz`, `test_izin_MATRISTE_var` |
 | **Ajan YAZAMAZ** | `yan_etki="yazar"` bir araç kayda **hiç alınmadı** | `test_ajan_YAZAMAZ` |
 | **Ajan ham veri GÖRMEZ** | `drill.raw` bilinçle kayıt DIŞI (T1/T2 sınırının en hassas yaprağı) | `test_ham_satir_araci_KAYITTA_YOK` |
 | **DETERMİNİSTİK-ÖNCE** | Her LLM aracının aynı etiketi taşıyan deterministik bir kardeşi olmalı; planlayıcı önce onu denemek zorunda | `test_her_LLM_aracinin_DETERMINISTIK_alternatifi_var` |
@@ -3401,7 +3467,7 @@ uydurma" değildir.**
 
 **ŞABLONU EZMEZ — üstüne biner.** Anlatı `interpretation["narration"]`'a yazılır;
 `summary`/`facts` **aynen kalır** (testle kilitli: kaynak kodda `yorum["summary"] =`
-yasak). Bu, kullanıcının §4.4'te açıkça istediği iki şartın doğrudan karşılığı: *"her zaman
+yasak). Bu, kullanıcının **plan** §4.4'te açıkça istediği iki şartın doğrudan karşılığı: *"her zaman
 grafik değil, bazen mesele sadece konuşmaktır"* korunur ve *"o konuşmayı grafiğe çevir"*
 çalışır — çünkü altındaki yapı (`cube_query`/`result`/`summary`) **hiçbir zaman silinmez**.
 Faz 0.5 bu şartın bir yerde **ihlal edildiğini** ölçüp düzeltmişti (§6.5z, `gorunum_donusumu`
