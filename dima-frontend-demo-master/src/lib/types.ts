@@ -383,6 +383,12 @@ export interface AskRequest {
   // numarası değil YAPISAL bir seçimdir: koordinat backend'de `drill.select_cube_query`
   // ile gerçek bir alt-sorguya çevrilir.
   anchor?: { dimension: string; value: string } | null;
+  // YOL SINIRI (Faz F2) — "yalnız küpün KANITLADIĞI cevapları göster".
+  // Sayısal güven eşiği DEĞİL (MIMARI: kalibre edilmemiş sayı "güven değil süs"):
+  // merdivenin kendisine bağlı üç ayrık seviye.
+  //   "deterministik" → yalnız route()      · "llm" → route + Intent-JSON
+  //   null/"kesif"    → + Discovery (varsayılan, davranış DEĞİŞMEZ)
+  yol_siniri?: "deterministik" | "llm" | "kesif" | null;
 }
 
 // Discovery→Promote (Faz 2d) — Discovery (ham-SQL LLM) yolunun ürettiği bir cevabın

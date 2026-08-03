@@ -1288,6 +1288,69 @@ silindi, **388 cevap kayboldu**) tekrarlamak olurdu.
 **Ölçüm:** test **1828 → 1841** · eval `+0,0/+0,0/+0,0` · `nl_accuracy` **63/63** · korpus
 kapısı **yeşil** (%93,2 sabit). 6 test: `tests/test_netlestirme_onceligi.py`.
 
+### 6.8z FAZ F2 — YOL SINIRI: "güven eşiği"nin DÜRÜST hâli ✅
+
+Araştırma raporu bir *"güven eşiği ayarı"* önerdi ve bunu **rakiplerin kopyalayamayacağı
+fark** diye işaretledi: *"yalnız şu yüzdenin üstünde güvenilen cevapları göster."*
+
+**Sayısal eşik olarak UYGULANMADI** — bu belgenin kendi kararına aykırı:
+
+> *"…kalibre edilmediği sürece o sayı bir güven değil bir **SÜStür**."*
+
+`_build_explain`'in ürettiği `1.0 / 0.85 / None` **hesaplanmış bir olasılık değildir**; üç
+değerli bir **yol etiketidir**. Bunu bir yüzde gibi sunmak, tam da yasaklanan süs olurdu —
+üstelik kullanıcı onu *kalibre edilmiş* sanacağı için **daha zararlı** bir süs.
+
+#### Kurtarılan hâli: eşik değil, MERDİVENİN KENDİSİ
+
+Kullanıcının gerçekten istediği şey bir sayı değil, bir **güvence sınıfı**dır. Bizde o
+sınıf zaten var ve **deterministik**: cevaplama merdiveninin basamağı.
+
+| `yol_siniri` | İzin verilen | Kesilen |
+|---|---|---|
+| `"deterministik"` | VQR replay · `route()` | Intent-JSON · Discovery |
+| `"llm"` | + Intent-JSON (**katalogdan seçim**) | Discovery (ham SQL) |
+| `null` / `"kesif"` | + Discovery | — (**bugünkü varsayılan**) |
+
+Aynı kullanıcı değeri (güvene göre süzme), **sıfır uydurma kalibrasyon**. Ve bu ayar
+gerçekten kopyalanamaz: rakiplerin **yolu yok** — tek bir kutuları var, süzülecek bir
+basamak üretemezler.
+
+#### Sessiz kesme YOK (bu fazın asıl kuralı)
+
+Bir sınır yüzünden cevapsız kalınırsa **nedeni yazılır** — hem `note` hem `trace`:
+
+> *"Yol sınırınız 'yalnız küp' olduğu için bu soruyu ham SQL ile cevaplayabilirdim ama
+> cevaplamadım."*
+
+Aksi hâlde kullanıcı kendi koyduğu ayarı unutur ve ürünü **yeteneksiz** sanır. Bir ayarın
+kullanıcıyı ürün hakkında yanıltması, ayarın kendisinden büyük kusurdur.
+
+İkinci koruma: **tanınmayan değer sınır SAYILMAZ**. Bir yazım hatasının (`"determinstik"`)
+cevabı sessizce kesmesi, sınırın kendisinden zararlıdır → bilinmeyen değer varsayılana
+düşer.
+
+#### KURAL B ölçüldü — varsayılan **birebir** aynı
+
+    sınır=None           bu yıl makine bazında oee    source=cube   sql=True
+    sınır=None           asdf qwerty zxcv             source=rule   sql=True
+    sınır=llm            asdf qwerty zxcv             source=None   sql=False  + neden
+    sınır=deterministik  asdf qwerty zxcv             source=None   sql=False  + neden
+
+`route()`'un çözdüğü soru **her seviyede** cevaplanır (kapı fazla geniş değil); sınırsız
+yolda hiçbir şey değişmez.
+
+#### Frontend tüketicisi kapıda
+
+`AskRequest`'e eklenen alanın **kullanıcı kontrolü** olmalı, yoksa özellik bitmemiştir —
+bu deponun *"yetim alan"* disiplininin **istek tarafı**. `ChatPanel` üç düğmeli bir seçici
+sunar (*yalnız küp · +LLM · keşif dahil*) ve test kaynakta `yol_siniri` + `onYolSiniri` +
+insan-okur etiketi arar.
+
+**Ölçüm:** test **1841 → 1851** · eval `+0,0/+0,0/+0,0` · korpus kapısı **yeşil** (%93,2
+sabit) · senaryo süiti değişmedi · `tsc --noEmit` temiz. 10 test:
+`tests/test_yol_siniri.py`.
+
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 
 Planın kapanış şartı: *"Faz 0.5'in **aynı** süiti yeniden koşulur — **yeni senaryo

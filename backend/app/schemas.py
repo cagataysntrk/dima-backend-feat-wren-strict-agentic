@@ -85,6 +85,27 @@ class AskRequest(BaseModel):
     # deterministic_refine/select_cube/refine_cube) HİÇ karışmaz — bilinçli kapsam sınırı
     # (golden-eval hassasiyeti, tests/test_ask_golden.py).
     extra_context: list[str] | None = None
+    # ── YOL SINIRI (Faz F2) — "yalnız küpün KANITLADIĞI cevapları göster" ────────────
+    #
+    # Araştırma raporu bunu *"güven eşiği ayarı"* diye önermişti: *"yalnız şu yüzdenin
+    # üstünde güvenilen cevapları göster."* Sayısal eşik olarak **UYGULANMADI**, çünkü
+    # MIMARI'nin açık kararına aykırı: *"kalibre edilmediği sürece o sayı bir güven değil
+    # bir SÜStür."* Bizim `1.0/0.85/None` hesaplanmış bir olasılık değil, **yol etiketidir**.
+    #
+    # Dürüst hâli **merdivenin kendisine** bağlamaktır — üç ayrık seviye, uydurma
+    # kalibrasyon yok:
+    #
+    #   "deterministik" → yalnız `route()` (LLM'e HİÇ gidilmez)
+    #   "llm"           → route + Intent-JSON (katalogdan SEÇİM; ham SQL yok)
+    #   None / "kesif"  → + Discovery (ham SQL) — **bugünkü varsayılan, DEĞİŞMEZ**
+    #
+    # Ve bu, rakiplerin **veremeyeceği** bir ayardır: onların yolu yok, tek bir kutu var.
+    #
+    # ⚠️ Sınırlama yüzünden cevapsız kalınırsa **nedeni yazılır** — sessizce boş dönmek,
+    # kullanıcının kendi koyduğu sınırı unutmasına ve ürünü yeteneksiz sanmasına yol açardı.
+    yol_siniri: str | None = Field(
+        default=None,
+        description="deterministik | llm | kesif (varsayılan: sınır yok = kesif)")
     # GRAFİĞE ÇAPA (Faz G2) — kullanıcının işaret ettiği HÜCRE: {"dimension": …, "value": …}.
     # "Nisandaki sıçrama ne?" bir metin numarası değil YAPISAL BİR SEÇİMDİR: koordinat
     # `drill.select_cube_query` ile GERÇEK bir alt-sorguya çevrilir (o boyut kırılımdan

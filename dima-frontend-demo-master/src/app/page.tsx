@@ -64,6 +64,9 @@ export default function Home() {
   // Görünüm ipucu ("grafik ver") — sağ paneldeki raporun görünümünü değiştirir.
   const [viewHint, setViewHint] = useState<{ kind: string; nonce: number } | null>(null);
   const [drawer, setDrawer] = useState<Drawer>(null);
+  // YOL SINIRI (Faz F2) — oturum boyunca kalıcı bir tercih: "yalnız küpün kanıtladığı
+  // cevapları göster". `null` = sınır yok (bugünkü davranış, hiçbir şey değişmez).
+  const [yolSiniri, setYolSiniri] = useState<"deterministik" | "llm" | null>(null);
   // "Ayarlar" drawer'ı içi iki sekmeli (Faz 4.5): mevcut şema görünümü + DB bağlama
   // sihirbazı — YENİ bir rail ikonu/Drawer değeri EKLEMEDEN, en düşük riskli entegrasyon.
   const [settingsTab, setSettingsTab] = useState<"sema" | "baglanti" | "zamanlamalar">("sema");
@@ -236,6 +239,7 @@ export default function Home() {
           thread_id: vars.threadId,
           reply_to_label: anchor ? replyAnchorLabel(anchor.question) : null,
           extra_context: extraContext,
+          yol_siniri: yolSiniri,
           anchor: vars.kind === "reply" ? (vars.hucre ?? null) : null,
         },
         setLiveTrace,
@@ -388,6 +392,8 @@ export default function Home() {
               pendingQuestion={pendingQuestion}
               liveTrace={liveTrace}
               compact={activeThreadId !== null}
+              yolSiniri={yolSiniri}
+              onYolSiniri={setYolSiniri}
               onSelectThread={(t) => {
                 // §B (Madde 4+6) — bir thread satırına tıklamak O THREAD'İ sağda aktive
                 // eder; bağlam THREAD'İN KENDİ SON item'ından geri yüklenir (tıklanan

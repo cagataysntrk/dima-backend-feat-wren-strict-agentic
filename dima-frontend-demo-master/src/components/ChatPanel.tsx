@@ -128,6 +128,8 @@ export function ChatPanel({
   compact,
   onSelectThread,
   onSubmit,
+  yolSiniri = null,
+  onYolSiniri,
   onUpload,
   uploading,
 }: {
@@ -157,6 +159,11 @@ export function ChatPanel({
   // HİÇBİR BAĞI OLMAZ. Eski bağlamsal davranışın TAMAMI artık sağ panelin kendi
   // komposer'ına taşındı (bkz. ReportPanel.tsx).
   onSubmit: (q: string) => void;
+  // YOL SINIRI (Faz F2) — "yalnız küpün KANITLADIĞI cevapları göster".
+  // Sayısal bir güven eşiği DEĞİL: merdivenin kendisine bağlı üç ayrık seviye.
+  // Rakiplerin veremeyeceği ayar budur — onların yolu yok, tek kutu var.
+  yolSiniri?: "deterministik" | "llm" | null;
+  onYolSiniri?: (s: "deterministik" | "llm" | null) => void;
   // Chat-scoped Excel/CSV yükleme (base modu) — bu sohbete özel veri kaynağı.
   onUpload?: (file: File) => void;
   uploading?: boolean;
@@ -246,6 +253,36 @@ export function ChatPanel({
             ⓘ buraya yazmak her zaman <span className="text-accent">yeni bir thread</span>{" "}
             başlatır — devam etmek için sağdaki paneli kullan.
           </p>
+        )}
+        {/* YOL SINIRI (Faz F2) — soru BAŞINA tercih, o yüzden kompozerde durur.
+            Üç seviye MERDİVENİN kendisidir: küp → +LLM seçimi → +keşif. Sayısal bir
+            güven eşiği DEĞİL; MIMARI'nin kararı gereği kalibre edilmemiş bir sayı
+            "güven değil süstür". Varsayılan (sınırsız) HİÇBİR ŞEYİ değiştirmez. */}
+        {onYolSiniri && (
+          <div className="mb-2 flex items-center gap-1.5">
+            <span className="select-none font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+              yol
+            </span>
+            {([
+              [null, "hepsi", "Küp → LLM seçimi → keşif (varsayılan)"],
+              ["llm", "küp + llm", "Ham SQL YOK — yalnız katalogdan seçim"],
+              ["deterministik", "yalnız küp", "LLM'e HİÇ gidilmez — yalnız kanıtlanmış yol"],
+            ] as const).map(([deger, etiket, ipucu]) => (
+              <button
+                key={etiket}
+                type="button"
+                onClick={() => onYolSiniri(deger)}
+                title={ipucu}
+                className={`border px-1.5 py-0.5 font-mono text-[10px] transition-colors ${
+                  yolSiniri === deger
+                    ? "border-accent/50 text-accent"
+                    : "border-hairline text-neutral-500 hover:text-foreground"
+                }`}
+              >
+                {etiket}
+              </button>
+            ))}
+          </div>
         )}
         <div className="flex items-center gap-2">
           {onUpload && (

@@ -2168,6 +2168,34 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                         exc_info=True)
             return None
 
+    def _yol_izinli(basamak: str) -> bool:
+        """Kullanıcının `yol_siniri` tercihi bu basamağa izin veriyor mu? (Faz F2)
+
+        Üç ayrık seviye, **merdivenin kendisine** bağlı — uydurma bir kalibrasyon değil:
+
+            "deterministik" → yalnız `route()`
+            "llm"           → route + Intent-JSON
+            None / "kesif"  → + Discovery  (**bugünkü varsayılan**)
+
+        Tanınmayan bir değer **sınır saymaz** (varsayılana düşer): bir yazım hatasının
+        kullanıcının cevabını sessizce kesmesi, sınırın kendisinden daha zararlıdır.
+        """
+        sinir = (getattr(body, "yol_siniri", None) or "").strip().lower()
+        if sinir not in ("deterministik", "llm"):
+            return True
+        if basamak == "intent":
+            return sinir == "llm"
+        return False          # discovery: iki sınırda da kapalı
+
+    def _yol_siniri_notu(basamak: str) -> str:
+        """Sessizce boş dönmek YOK: kullanıcı kendi koyduğu sınırı görebilmeli."""
+        sinir = (getattr(body, "yol_siniri", None) or "").lower()
+        ad = {"deterministik": "yalnız deterministik küp",
+              "llm": "küp + LLM alan seçimi"}.get(sinir, sinir)
+        return (f"Bu soruyu {'katalogdan seçimle' if basamak == 'intent' else 'ham SQL ile'} "
+                f"cevaplayabilirdim ama yol sınırın **{ad}** olarak ayarlı. "
+                "Sınırı gevşetirsen deneyebilirim.")
+
     def _olcu_belirsizligi_netlestir(q_norm: str, schema: dict) -> AskResponse | None:
         """Katalog **≥2 SAHİP** biliyorsa netleştirme chip'i — yoksa `None`.
 
@@ -2381,6 +2409,17 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 _bel.trace = ["Intent-path: katalog belirsizliği → netleştirme "
                               "Intent-JSON'u ÖNCELEDİ (LLM'siz)"]
                 return _finish(_bel)
+
+        if route_hit is None and not _yol_izinli("intent"):
+            # FAZ F2 — kullanıcı "yalnız deterministik" dedi ve route çözemedi.
+            return _finish(AskResponse(
+                question=body.question, source=None, note=_yol_siniri_notu("intent"),
+                suggestions=_dogrulanmis_chipler(
+                    [str(c.get("display") or c.get("name") or "")
+                     for c in cube_router.ilgili_cubelar(q_norm, schema)][:4],
+                    schema, en_fazla=4),
+                trace=["Yol sınırı: LLM basamakları kullanıcı tercihiyle KAPALI"],
+            ))
 
         if route_hit is None and "ask_intent_first" in resolve_for(settings, principal):
             llm_probe = getattr(request.app.state, "llm", None)
@@ -2976,6 +3015,15 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     # deterministik+LLM zinciri TÜKENMİŞ bir YAPISAL takip buraya ulaşır (§3'ün son çaresi —
     # `raw_followup` bu durumda hâlâ False, `_run_discovery` bu yüzden taze `generate_sql`
     # üretir, stale prev_sql'e çapalamaz).
+    # FAZ F2 — YOL SINIRI: Discovery ham SQL yazar; kullanıcı "yalnız küp" dediyse buraya
+    # HİÇ gelinmez. Sessizce boş dönmek yerine SINIRIN KENDİSİ söylenir — aksi hâlde
+    # kullanıcı kendi ayarını unutup ürünü yeteneksiz sanır.
+    if not _yol_izinli("discovery"):
+        return _finish(AskResponse(
+            question=body.question, source=None, note=_yol_siniri_notu("discovery"),
+            trace=["Yol sınırı: Discovery (ham SQL) kullanıcı tercihiyle KAPALI"],
+        ))
+
     llm = getattr(request.app.state, "llm", None)
     if llm is None:
         raise HTTPException(status_code=503, detail="LLM sağlayıcısı yapılandırılmamış.")
