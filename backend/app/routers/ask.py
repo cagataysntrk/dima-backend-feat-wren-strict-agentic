@@ -2409,6 +2409,26 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                    "Hangisini istiyorsun?" if other_topic else
                    f"\"{' '.join(unknown)}\" kısmını anlayamadım, bu yüzden rapor "
                    "düşülmedi. Ne demek istediğini biraz daha açar mısın?")
+            # ÇAPRAZ-ALAN PİLOTU BURADA DA DENENİR — canlı turda ölçüldü (3 Ağustos).
+            #
+            # `other_topic=True` demek: soruda **rakip bir cube kimliği** var — yani bu,
+            # katalogdaki en güçlü ÇAPRAZ-ALAN sinyalidir (*"personel bazlı verimlilik"*:
+            # `verimlilik`→oee, `personel`→parti/ik). Pilot ise adım 4b'de, yani bu
+            # `return`'ün **çok sonrasında** duruyordu → bayrak AÇIKKEN bile hiç
+            # ateşlemiyordu ve Faz 4'ün kabul ölçütü (*"çapraz-alan pilotu → 2 adımlı
+            # kompozisyon"*) canlıda **karşılanmıyordu**.
+            #
+            # Bu, §1.5'in dersinin kardeş daldaki hâli: **truthy bir netleştirme, daha
+            # yetenekli bir adımı sessizce öldürür.** Orada Discovery için düzeltilmişti;
+            # kompozisyon için düzeltilmemişti (*"kimlik asimetrisi"*, MIMARI §6.1h).
+            #
+            # KAPSAM KAYBI YOK: pilot `None` dönerse netleştirme aynen döner. Bayrak
+            # (`agent_plan_secimi`, varsayılan **off**) kapalıyken bu blok hiç koşmaz —
+            # KURAL B.
+            if other_topic and "agent_plan_secimi" in resolve_for(settings, principal):
+                _pilot = _capraz_alan_pilotu(request, body, q_norm, schema, principal, [])
+                if _pilot is not None:
+                    return _pilot
             return _finish(AskResponse(
                 question=body.question, source=None, note=note,
                 suggestions=_dogrulanmis_chipler(labels, schema, en_fazla=6),

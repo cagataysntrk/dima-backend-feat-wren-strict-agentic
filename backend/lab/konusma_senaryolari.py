@@ -35,14 +35,65 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+#: ⚠️ **`tests.conftest` IMPORT EDİLİR EDİLMEZ SAĞLAYICIYI SABİTLER.** `conftest.py:15`
+#: koşulsuz `DIMA_LLM_PROVIDER="rule"`, `:26` `DIMA_VQR_EMBEDDER="off"` yazar — testlerin
+#: ağa çıkmaması için DOĞRU bir karardır. Ama bu dosya o modülü **env kurulumu** (JWT
+#: sırları, geçici DB) için import ediyor ve yan etkiyi de devralıyordu.
+#:
+#: **SONUÇ: `--live` modu hiçbir zaman GERÇEK sağlayıcı kullanmadı.** Bayrak yalnız
+#: monkeypatch'leri (dry_plan/enrich) atlıyordu; LLM hâlâ `rule`, embedder hâlâ kapalıydı.
+#: Yani *"gerçek sağlayıcı, sıralı, hız-sınırlı"* beyanı **karşılıksızdı** ve o modla
+#: alınan her ölçüm LLM hakkında hiçbir şey söylemiyordu (MIMARI §6.4: *"ölçüm aracının
+#: kendisi de bir bağımlılıktır"*).
+#:
+#: Düzeltme: gerçek ortam değerleri import'tan **ÖNCE** yakalanır, `--live`'da geri
+#: yüklenir. `--live` gerçek bir sağlayıcı bulamazsa **koşmaz** (fail-closed): sessizce
+#: `rule` ile koşan bir "canlı" tur, hiç koşmamaktan kötüdür — yanlış bir güven verir.
+_GERCEK_ORTAM = {k: os.environ.get(k) for k in
+                 ("DIMA_LLM_PROVIDER", "DIMA_VQR_EMBEDDER", "DIMA_VQR_PATH",
+                  "DIMA_DATABASE_URL", "DIMA_INTERACTION_LOG")}
+
 import tests.conftest as _conf  # noqa: E402,F401  (env kurulumu)
 from tests.conftest import make_tenant_user  # noqa: E402
+
+
+def _canli_ortami_geri_yukle() -> str:
+    """`--live` için gerçek sağlayıcıyı geri koyar. Döner: sağlayıcı adı.
+
+    Fail-closed: gerçek bir sağlayıcı yoksa `SystemExit`. *"Canlı"* diye raporlanan bir
+    koşumun aslında `rule` ile koşması, bu deponun avladığı *"beyan var, karşılığı yok"*
+    sınıfının ta kendisidir."""
+    # HANGİ ANAHTAR GERİ ALINIR — ve neden AYRIM var:
+    #
+    # * `DIMA_LLM_PROVIDER` · `DIMA_VQR_EMBEDDER` · `DIMA_INTERACTION_LOG`:
+    #   conftest'in değeri **canlı-özel yolları SUSTURUR** (`cube+llm` üretilmez, VQR
+    #   benzerliği hiç tetiklenmez, red gerekçesi hiç yazılmaz). Ortamda değer yoksa
+    #   override **silinir** ki üretim varsayılanı geçerli olsun.
+    # * `DIMA_DATABASE_URL` · `DIMA_VQR_PATH`: conftest'in İZOLASYONU **korunur** — canlı
+    #   bir ölçüm, kullanıcının verisini kirletmemelidir. Yalnız ortamda açıkça verilmişse
+    #   ona uyulur.
+    CANLI_YOLU_SUSTURANLAR = ("DIMA_LLM_PROVIDER", "DIMA_VQR_EMBEDDER",
+                              "DIMA_INTERACTION_LOG")
+    for k, v in _GERCEK_ORTAM.items():
+        if v is not None:
+            os.environ[k] = v
+        elif k in CANLI_YOLU_SUSTURANLAR:
+            os.environ.pop(k, None)
+    saglayici = os.environ.get("DIMA_LLM_PROVIDER", "")
+    if saglayici in ("", "rule"):
+        raise SystemExit(
+            "--live GERÇEK bir sağlayıcı ister. `DIMA_LLM_PROVIDER` boş ya da 'rule' — "
+            "bu modda koşmak LLM hakkında HİÇBİR ŞEY ölçmez ve 'canlı' etiketi yanıltır. "
+            "Sağlayıcıyı ve API anahtarını ayarlayıp tekrar deneyin.")
+    return saglayici
 
 RAPOR_DIZINI = Path(__file__).resolve().parent / "reports" / "konusma_senaryolari"
 #: `--live` sınıf başına kaç senaryo koşar (katmanlı örneklem).
@@ -528,6 +579,14 @@ def main() -> None:
         ws.WrenService._enrich_categorical = lambda self, *a, **k: None
         ws.WrenService._enrich_cube_dim_values = lambda self, *a, **k: None
         ws.WrenService.dry_plan = lambda self, sql, *a, **k: sql
+    else:
+        # ⚠️ `tests.conftest` sağlayıcıyı `rule`'a SABİTLEMİŞTİ (bkz. modül başındaki not).
+        # Bu satır olmadan `--live` etiketi yalan söylüyordu.
+        _sag = _canli_ortami_geri_yukle()
+        print(f"CANLI MOD — sağlayıcı: {_sag} · embedder: "
+              f"{os.environ.get('DIMA_VQR_EMBEDDER') or 'AÇIK (varsayılan)'} · "
+              f"telemetri: {os.environ.get('DIMA_INTERACTION_LOG') or 'AÇIK (varsayılan)'}",
+              flush=True)
 
     make_tenant_user("owner@dima.local", "owner-parola-123", tenant_slug=None)
     c = TestClient(create_app())

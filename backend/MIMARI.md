@@ -828,9 +828,26 @@ LLM çağrısı yapar → istekler **5 sn aralıkla, tek tek** gönderildi.
 | **9.4** `reject_reason` | ✅ `bu yıl bakiye` → **cevap geldi** (`cube+llm`) ama red **R1** kayıtlı; `personel…kıyasla` → **R4** |
 | **§1.7 VQR kalıcılığı** | ✅ **ÖLÇÜLDÜ** (offline ⊘ olan madde) |
 
-**Faz 8'in `--live` turu da koşuldu** (izole konteyner, gerçek sağlayıcı, ayrı DB —
-kullanıcının canlı verisine fixture yazılmadı): **sekiz ölçülebilir sınıfın sekizi de tam**
-(erişim = doğruluk = 2/2), `vqr_kalicilik` ⊘. Düşürülen turlar raporlandı (sessiz kırpma yok).
+**Faz 8'in `--live` turu da koşuldu** (izole konteyner, ayrı DB — kullanıcının canlı
+verisine fixture yazılmadı): sekiz ölçülebilir sınıf tam, `vqr_kalicilik` ⊘.
+
+> ⛔ **DÜZELTME — O KOŞUM "CANLI" DEĞİLDİ (canlı thread turunda bulundu, 3 Ağustos).**
+> Yukarıdaki cümlede *"gerçek sağlayıcı"* yazıyordu; **yanlıştı**. `lab/konusma_
+> senaryolari.py` env kurulumu için `tests.conftest`'i import ediyor ve `conftest.py:15`
+> **koşulsuz** `DIMA_LLM_PROVIDER="rule"`, `:26` `DIMA_VQR_EMBEDDER="off"` yazıyor.
+> `--live` bayrağı yalnız monkeypatch'leri (dry_plan/enrich) atlıyordu; **sağlayıcıyı
+> hiç değiştirmiyordu.**
+>
+> Yani `--live` **hiçbir zaman canlı olmadı**: o modda `cube+llm` üretilemez, VQR
+> benzerliği tetiklenemez, red gerekçesi yazılamaz — yani modun var olma sebebi olan
+> yolların **hiçbiri** koşmuyordu. Bu, §6.4'ün dersinin bu turdaki **en pahalı** hâli:
+> ölçüm aracı çalışıyor görünüyor ve ölçtüğünü iddia ettiği şeyi hiç görmüyordu.
+>
+> **Kök neden düzeltildi:** gerçek ortam değerleri conftest import'undan **ÖNCE**
+> yakalanır, `--live`'da geri yüklenir; gerçek sağlayıcı yoksa mod **koşmaz**
+> (fail-closed — sessizce `rule` ile koşan bir "canlı" tur, hiç koşmamaktan kötüdür).
+> DB/VQR izolasyonu **korunur**: canlı bir ölçüm kullanıcının verisini kirletmemelidir.
+> 4 kapı: `tests/test_senaryo_araci_durustlugu.py`.
 
 **`vqr_kalicilik` neden `--live`'da bile ⊘ kaldı — ve bu neden DOĞRU.** Senaryonun sorusu
 `route()` tarafından **deterministik** çözülüyordu, yani `cube+llm` yoluna hiç düşmüyordu;
@@ -853,8 +870,51 @@ hatada da yanlış sonuç **inandırıcıydı** — bu yüzden her canlı iddia 
 (log satırı / tam tablo) doğrulandı.
 
 Testler: `tests/test_gizlilik_muhru.py` (9) · `tests/test_dogrulanmis_chip.py` (16) ·
-`tests/test_korpus_taban_kapisi.py` (10) · `tests/test_senaryo_araci_durustlugu.py` (9) ·
+`tests/test_korpus_taban_kapisi.py` (10) · `tests/test_senaryo_araci_durustlugu.py` (13) ·
 `tests/test_bayrak_kaydi.py` (6).
+
+### 6.14z CANLI THREAD TURU — 10 senaryo, gerçek Gemini, thread mantığı ✅
+
+Rehberin (§3.2) zincir sözleşmesiyle **10 senaryo THREAD olarak** koşuldu: her tur bir
+öncekinin `cube_query`'sini taşır, tur arası 5 sn. Sekizi ilk denemede temiz:
+
+| # | faz | ölçülen |
+|---|---|---|
+| S3 | 2a-4 | ayrık ay → `ayrik_aylar` işareti + `gte/lte` zarfı, 2 satır ✅ |
+| S4 | 2a-5 | liste niyeti → `dims=[musteri]` + `view_hint=table` ✅ |
+| S5 | -0.5a | bitişik çoklu ay → tek `gte 01-01 / lte 03-31`, 3 satır (Ocak-only sessiz-yanlışı KAPALI) ✅ |
+| S6 | -1 | ölü uç → 13 değil **6** daraltılmış chip + dürüst not ✅ |
+| S9 | 5 | bayrak kapalı → `narration` YOK, `summary` sağlam (KURAL B) ✅ |
+| S10 | 0.5/8 | **4 turlu thread**: sor → `renk bazında` → `sadece son 3 ay` → `pasta grafik`; dördü de `source=cube` (**sıfır LLM**), yapı hiç silinmedi ✅ |
+
+**Bayraklar açıldığında (izole kopya, gerçek sağlayıcı):**
+
+* **Faz 3b ✅ CANLI ÇALIŞIYOR** — *"hasılatımız bu yıl ne kadar oldu"* → soru
+  `toplam_ciro bu yıl ne kadar oldu` diye yeniden yazıldı, cevap **`source=cube`**
+  (deterministik!) ve `provenance_soru` makbuza yazıldı. Tasarımın tam karşılığı:
+  **LLM ifadeyi düzeltir, cevabı KÜP verir.**
+* **Faz 5 ✅ CANLI ÇALIŞIYOR** — anlatı üretildi, guard geçti, sayılar sonuçla eşleşti
+  (*"en yüksek OEE 0,65 … ÖRGÜ HAT"*), `agent_run` **2 adım** (`interpret` → `llm.anlat`)
+  — 9.8'in planlayıcı kapısı canlıda görünür.
+* **Faz 4 ⚠️ — KABUL ÖLÇÜTÜ MİMARİYE AYKIRI BİR SORU SEÇMİŞ.** Pilot ateşlemiyordu ve
+  **iki** bağımsız sebebi var:
+  1. **Sıra**: çapraz-konu netleştirmesi (`other_topic`) pilottan **önce** dönüyordu →
+     bayrak açıkken bile pilot hiç çağrılmıyordu. Bu, §1.5'in dersinin kardeş daldaki
+     hâli (*"truthy bir netleştirme daha yetenekli bir adımı sessizce öldürür"*).
+     **Düzeltildi**: `other_topic` dalında pilot önce denenir, `None` dönerse netleştirme
+     aynen döner (kapsam kaybı yok, bayrak kapalıyken blok hiç koşmaz).
+  2. **Soru**: planın pilot örneği (*"personel bazlı verimlilik"*) başka cube'un
+     **BOYUTUNU** istiyor — MIMARI §9.2'nin *"tek CubeQuery'de ifade edilemez"* dediği
+     şey; `cross_cube_add` ise **ölçü** harmanlar ve **ekleme niyeti** ister (kendi
+     sözleşmesi). Yani o soru iki adımda da ifade edilemez.
+
+  **Yetenek YERİNDE ve ÇALIŞIYOR — ama fresh soruda değil, TAKİPTE:** canlı thread
+  ölçümü, `bu yıl makine bazında oee` → *"bir de fire ekle"* zincirinin raporu
+  genişlettiğini gösterdi (`measures=['ort_oee','toplam_fire_kg']`, 11 satır). Whitelist
+  de tuttu: `toplam_fire_kg` **oee cube'unda da tanımlı** — sessiz-yanlış yok.
+
+  → **Üçüncü kez bir KABUL ÖLÇÜTÜNÜN kendisi kusurluydu** (3a'nın metriği · vqr
+  senaryosunun sorusu · 4'ün pilot sorusu). Ders: *ölçüt de bir beyandır ve çürüyebilir.*
 
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 
@@ -1158,7 +1218,7 @@ o vakada replay tetiklenmedi. Bu **bir kez** ölçümdür, riski çürütmez (em
 > için var olduğu **sessiz-yanlış** sınıfına karşı kördü. `_ve_cube` sarmalıyla altı sınıfa
 > bağlandı. `_bitisik` ise beklenen cube'un zaman boyutunu **sabitliyordu** — `_daraldi`'da
 > düzeltilen hatanın aynı dosyadaki ikinci kopyası; artık dönem filtresi **cevabın** cube'una
-> göre aranıyor. 9 test: `tests/test_senaryo_araci_durustlugu.py`.
+> göre aranıyor. 13 test: `tests/test_senaryo_araci_durustlugu.py`.
 
 17 test: `tests/test_faz05_bulgulari.py`.
 

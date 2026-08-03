@@ -154,3 +154,61 @@ def test_BITISIK_beklenen_cubeun_zamanini_SABITLEMIYOR():
     govde_metni = ast.unparse(ast.Module(body=fn.body, type_ignores=[]))
     assert "cq.get('cube')" in govde_metni or 'cq.get("cube")' in govde_metni, \
         "zaman boyutu CEVABIN cube'undan okunmuyor"
+
+
+# --- `--live` HİÇBİR ZAMAN CANLI DEĞİLDİ (canlı thread turunda bulundu) -----------
+#
+# ## Ölçülen kusur (3 Ağustos 2026)
+#
+# `lab/konusma_senaryolari.py` env kurulumu için `tests.conftest`'i import ediyor.
+# `conftest.py:15` **koşulsuz** `DIMA_LLM_PROVIDER="rule"`, `:26` `DIMA_VQR_EMBEDDER="off"`
+# yazar — testlerin ağa çıkmaması için DOĞRU bir karardır. Ama `--live` o yan etkiyi de
+# devralıyordu: bayrak yalnız monkeypatch'leri (dry_plan/enrich) atlıyor, **sağlayıcıyı
+# değiştirmiyordu**.
+#
+# Yani *"GERÇEK sağlayıcı, SIRALI, hız-sınırlı"* beyanı **karşılıksızdı** ve o modda
+# alınan her ölçüm LLM hakkında hiçbir şey söylemiyordu — `cube+llm` üretilmiyor, VQR
+# benzerliği hiç tetiklenmiyor, red gerekçesi hiç yazılmıyordu. MIMARI §6.4'ün dersi
+# (*"ölçüm aracının kendisi de bir bağımlılıktır"*) bu turda **en pahalı** biçimde ısırdı:
+# ölçüm aracı çalışıyor görünüyor ve ölçtüğünü iddia ettiği şeyi hiç görmüyordu.
+
+def test_LIVE_MODU_sagayiciyi_GERI_YUKLUYOR():
+    """`--live` conftest'in `rule` sabitlemesini geri almalı."""
+    kaynak = inspect.getsource(ks)
+    assert "_GERCEK_ORTAM" in kaynak, "gerçek ortam import ÖNCESİ yakalanmıyor"
+    assert "_canli_ortami_geri_yukle" in kaynak
+    i = kaynak.index("_GERCEK_ORTAM = {")
+    j = kaynak.index("import tests.conftest")
+    assert i < j, ("gerçek ortam conftest'ten SONRA yakalanıyor — o noktada değerler "
+                   "zaten EZİLMİŞ olur ve geri yükleme `rule`'u geri yükler")
+
+
+def test_LIVE_gercek_saglayici_YOKSA_KOSMUYOR():
+    """Fail-closed: sessizce `rule` ile koşan bir 'canlı' tur, hiç koşmamaktan KÖTÜDÜR —
+    yanlış bir güven verir ve o güvene dayanarak karar alınır (bu turda alındı)."""
+    govde = inspect.getsource(ks._canli_ortami_geri_yukle)
+    assert "SystemExit" in govde, "sağlayıcı yokken --live yine de koşuyor"
+    assert '"rule"' in govde, "`rule` sağlayıcı geçerli sayılıyor olabilir"
+
+
+def test_CANLI_YOLU_SUSTURAN_anahtarlar_geri_aliniyor():
+    """Yalnız sağlayıcı yetmez: embedder kapalıyken VQR benzerliği, telemetri kapalıyken
+    red gerekçesi HİÇ üretilmez — üçü de canlı-özel yollardır."""
+    govde = inspect.getsource(ks._canli_ortami_geri_yukle)
+    for anahtar in ("DIMA_LLM_PROVIDER", "DIMA_VQR_EMBEDDER", "DIMA_INTERACTION_LOG"):
+        assert anahtar in govde, f"{anahtar} geri alınmıyor"
+    assert "DIMA_DATABASE_URL" not in inspect.getsource(ks._canli_ortami_geri_yukle).split(
+        "CANLI_YOLU_SUSTURANLAR")[1], \
+        "DB izolasyonu bozuluyor olabilir — canlı ölçüm kullanıcının verisini kirletmemeli"
+
+
+def test_YAPISAL_MOD_degismedi():
+    """Düzeltme yalnız `--live`'ı etkilemeli: hızlı mod CI'ın günlük kilididir ve ağsız
+    kalmak ZORUNDADIR."""
+    kaynak = inspect.getsource(ks)
+    i = kaynak.index("if not args.live:")
+    pencere = kaynak[i:i + 500]
+    assert "_enrich_categorical" in pencere and "dry_plan" in pencere, \
+        "yapısal mod monkeypatch'leri kaybolmuş"
+    assert "_canli_ortami_geri_yukle" not in pencere, \
+        "yapısal mod da gerçek sağlayıcıya geçiyor — CI ağa çıkar"
