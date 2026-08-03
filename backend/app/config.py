@@ -43,7 +43,7 @@ class Settings(BaseSettings):
 
     # --- LLM sağlayıcı ---------------------------------------------------
     # auto: anthropic → xai → gemini → groq → ollama (ayakta ise) → kural-tabanlı.
-    # Açık değerler: auto | anthropic | xai | gemini | groq | ollama | rule
+    # Açık değerler: auto | anthropic | xai | gemini | groq | openrouter | ollama | rule
     llm_provider: str = "auto"
     anthropic_api_key: str = ""
     llm_model: str = "claude-sonnet-4-6"
@@ -70,6 +70,19 @@ class Settings(BaseSettings):
     groq_base_url: str = "https://api.groq.com/openai/v1"
     groq_model: str = "openai/gpt-oss-120b"
     groq_select_model: str = ""
+    # OpenRouter (tek anahtarla ONLARCA model — açık kaynak dâhil).
+    #
+    # Neden eklendi: Gemini ücretsiz katmanı ölçüm turlarında **HTTP 429**'a çarpıyor
+    # (kullanıcının uyardığı günlük kota). OpenRouter'ın açık-kaynak modelleri daha yüksek
+    # hacimli A/B ölçümüne izin veriyor. Sağlayıcı OpenAI-uyumlu olduğu için **yeni bir
+    # istemci yazılmadı** — `OpenAICompatibleSqlGenerator` aynen kullanılıyor.
+    #
+    # ⚠️ Zincirdeki YERİ bilinçli: `gemini`/`groq`'tan SONRA. Ölçüm sağlayıcısı, üretimin
+    # varsayılan sağlayıcısını **değiştirmemeli**; yalnız onlar tükendiğinde devreye girer.
+    openrouter_api_key: str = ""
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_model: str = "openai/gpt-oss-120b"
+    openrouter_select_model: str = ""
     # Ollama (tam yerel, anahtarsız: `brew install ollama` + `ollama pull ...`)
     ollama_base_url: str = "http://localhost:11434/v1"
     ollama_model: str = "qwen2.5-coder:7b"

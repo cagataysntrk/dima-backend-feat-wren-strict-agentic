@@ -146,6 +146,29 @@ def test_AB_GERILEME_ve_KAZANC_ayri_olculuyor():
     nüfusu) — iki mod bu yüzden ayrı."""
     assert hasattr(na, "ab_kos") and hasattr(na, "ab_kurtarma_kos")
     govde = inspect.getsource(na.ab_kurtarma_kos)
-    assert "route(f\"bu yil {sy}\", sch) is None" in govde, \
-        "kurtarma korpusu `route()`'un ÇÖZEMEDİĞİ sorulardan üretilmiyor"
+    # ⟳ KORPUS DÜZELTİLDİ: katalog sinonimleri YANLIŞ nüfustu (orada `route()` çoğunlukla
+    # BELİRSİZLİK yüzünden düşer ve yeniden yazmak belirsizliği çözmez). Enhancer'ın
+    # hedefi katalog DIŞI doğal ifadelerdir → `REAL_PHRASINGS`.
+    assert "REAL_PHRASINGS" in govde, \
+        "kurtarma korpusu DOĞAL İFADELERDEN üretilmiyor — yanlış nüfus ölçülür"
+    assert "cr.route(cr._norm(q), sch) is None" in govde, \
+        "korpus `route()`'un ÇÖZEMEDİĞİ sorulardan süzülmüyor"
     assert "time.sleep(5" in govde, "hız sınırı yok — 10 sn/10 istek tavanı aşılabilir"
+
+
+def test_KURTARMA_MODU_gercek_saglayici_ZORUNLU():
+    """⚠️ Bu kapıyı kurup **kullanmayı unuttum**: `--ab-kurtarma`'yı `--live` olmadan
+    koştum, sağlayıcı `rule`'a sabitliydi ve **0/14 kurtarma** çıktı — *"kazanç yok"* gibi
+    okunuyordu, oysa ölçüm *"ölçmedim"* diyordu. Uyarı yeterli değildir; mod kendi ön
+    koşulunu ZORUNLU kılmalı."""
+    govde = inspect.getsource(na.ab_kurtarma_kos)
+    assert "_canli_ortami_geri_yukle()" in govde, \
+        "kurtarma modu `rule` sağlayıcıyla SESSİZCE koşabiliyor — ölçtüğünü sanır"
+
+
+def test_KURTARMA_DOGRULUGU_da_olculuyor():
+    """*"Cevap geldi"* ile *"DOĞRU cevap geldi"* bu depoda ayrı şeylerdir (§4.7-6).
+    `REAL_PHRASINGS` beklenen ölçüyü bildiği için ikisi de ölçülebilir."""
+    govde = inspect.getsource(na.ab_kurtarma_kos)
+    assert "DOĞRU ölçüyle" in govde and "acik[q] == o" in govde, \
+        "kurtarmanın DOĞRU ölçüye gidip gitmediği ölçülmüyor"

@@ -1140,7 +1140,55 @@ düşüyor, açıkken geçiyor), bozulan 0. `--ab t2_anlatici` → 0/0 (kural sa
 yok; beklenen). Alet bu farkı göremeseydi **hiçbir bayrak ölçümüne güvenilemezdi**.
 
 **Ölçüm:** test **1817 → 1827** · eval `+0,0/+0,0/+0,0` · `nl_accuracy` **63/63**.
-10 test: `tests/test_olcum_aleti.py`.
+12 test: `tests/test_olcum_aleti.py`.
+
+### 6.19z FAZ C (kısmi) — `prompt_enhancer` ÖLÇÜLDÜ: kazanç YOK, ama kota sınırına çarpıldı ⚠️
+
+#### Gerileme yarısı — TEMİZ
+
+`--ab prompt_enhancer` (63 etiketli vaka, **gerçek sağlayıcı**): **bozulan 0**, dört
+şirkette de. B2'nin ikinci yarısı (*"doğru-cube gerilemedi"*) karşılandı.
+
+#### Kazanç yarısı — ve KORPUS BİR KEZ YANLIŞ SEÇİLDİ
+
+İlk ölçüm korpusu **katalog sinonimlerinden** üretiyordu ve **0/12 ↔ 0/12** verdi. Bu
+*"kazanç yok"* gibi okunuyordu; oysa **yanlış nüfus** ölçülmüştü:
+
+* Katalog sinonimleri `route()`'ta çoğunlukla **BELİRSİZLİK** (R1) yüzünden düşer
+  (`bakiye` iki cube'da) — **yeniden yazmak belirsizliği çözmez**.
+* Enhancer'ın hedefi **katalog DIŞI** ifadelerdir (*"hasılatımız"* → `ciro`).
+
+Doğru korpus `lab/nl_corpus.py::REAL_PHRASINGS` (doğal iş dili → ölçü) — yeniden
+yazılmadı, **çağrıldı**. Yan kazancı: beklenen ölçü bilindiği için kurtarmanın yalnız
+*oluştuğu* değil **DOĞRU** olduğu da ölçülür.
+
+⚠️ **VE KENDİ KAPIMI KULLANMAYI UNUTTUM.** Düzeltilmiş korpusla koşum yine `0/14 ↔ 0/14`
+verdi — çünkü `--live` **olmadan** çalıştırmıştım: `tests.conftest` sağlayıcıyı `rule`'a
+sabitledi, enhancer'ın LLM'i yoktu. Ölçüm *"kazanç yok"* değil **"ölçmedim"** diyordu.
+Uyarı yeterli değildir: mod artık kendi ön koşulunu **zorunlu kılıyor** (fail-closed).
+
+#### Gerçek ölçüm
+
+| yapılandırma | cevaplanan |
+|---|---|
+| `prompt_enhancer` **KAPALI** | **13/14** |
+| `prompt_enhancer` **AÇIK** | 12/14 |
+| **kurtarılan** | **0** · kaybedilen **1** · ölçü değişen 1 |
+
+**Asıl bulgu: Intent-JSON doğal ifadelerin 13/14'ünü ZATEN cevaplıyor** — yani enhancer'ın
+hedef nüfusu neredeyse **boş**. Bu, Faz 3a'nın birebir tekrarı: mekanizma, başka bir
+mekanizmanın çoktan kapattığı bir boşluğu hedefliyor.
+
+⚠️ **KOTA SINIRINA ÇARPILDI** — koşum sırasında **2 × HTTP 429** (23 çağrı başarılı).
+Kaybedilen tek vaka bir 429 artefaktı **olabilir**; tek koşumla ayırt edilemez. Bu yüzden:
+
+* **Karar: `prompt_enhancer` `off` KALIYOR** — gerekçe *"kurtarma 0, hedef nüfus zaten
+  kapalı"*. Faz 7 ve 3a'nın disiplini: **kazanç yoksa yazılır.**
+* Bu karar **yeniden açılabilir**: kota serbest kaldığında daha büyük örneklemle
+  tekrarlanmalı. *"Kaybedilen 1"* kesin bir gerileme kanıtı **değildir** ve öyle
+  sunulmuyor.
+* `t2_anlatici` ve `agent_plan_secimi`'nin kazanç ölçümü **⊘ ÖLÇÜLEMEDİ** — kota.
+  Yeşile de kırmızıya da yuvarlanmadı.
 
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 

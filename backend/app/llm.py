@@ -1116,6 +1116,12 @@ def _make(provider: str, settings, dialect: str):
             settings.groq_base_url, settings.groq_api_key, settings.groq_model, "groq", dialect,
             select_model=settings.groq_select_model,
         )
+    if provider == "openrouter" and settings.openrouter_api_key:
+        return OpenAICompatibleSqlGenerator(
+            settings.openrouter_base_url, settings.openrouter_api_key,
+            settings.openrouter_model, "openrouter", dialect,
+            select_model=settings.openrouter_select_model,
+        )
     if provider == "ollama" and _reachable(settings.ollama_base_url):
         return OpenAICompatibleSqlGenerator(
             settings.ollama_base_url, "", settings.ollama_model, "ollama", dialect,
@@ -1143,7 +1149,7 @@ def build_generator(settings) -> SqlGenerator:
     çalışan ücretsizler (gemini, groq) önce, sonra xai/ollama; hepsi başarısızsa
     istek anında kural-tabanlıya düşülür (bkz. routers/ask.py — rule_fallback açıksa).
     Hiç sağlayıcı yoksa: demo'da kural-tabanlı, üretimde (rule_fallback=False) dürüst
-    ret üreticisi. Açık değerler: anthropic | xai | gemini | groq | ollama | rule.
+    ret üreticisi. Açık değerler: anthropic | xai | gemini | groq | openrouter | ollama | rule.
     """
     p = (settings.llm_provider or "auto").lower()
     dialect = getattr(settings, "datasource", "") or ""
@@ -1159,7 +1165,9 @@ def build_generator(settings) -> SqlGenerator:
     if p != "auto":
         return _make(p, settings, dialect) or fallback
     # auto: çalışan ücretsizler (gemini, groq) önce; xai kredi bekliyor → sonra.
-    order = ["anthropic", "gemini", "groq", "xai", "ollama"]
+    # `openrouter` xai'den SONRA: ölçüm turları için eklendi (Gemini ücretsiz katmanı
+    # 429'a çarpıyor), ama üretimin varsayılan sağlayıcısını DEĞİŞTİRMEMELİ.
+    order = ["anthropic", "gemini", "groq", "xai", "openrouter", "ollama"]
     gens = [g for g in (_make(name, settings, dialect) for name in order) if g]
     if not gens:
         return fallback

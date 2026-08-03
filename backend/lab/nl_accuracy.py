@@ -377,59 +377,100 @@ def ab_kos(bayrak: str) -> int:
 
 
 def ab_kurtarma_kos(bayrak: str, n: int = 20) -> int:
-    """A/B: `route()`'un ÇÖZEMEDİĞİ sorularda bayrak kaç soruyu KURTARIYOR — **kazanç**.
+    """A/B: `route()`'un ÇÖZEMEDİĞİ **doğal ifadelerde** bayrak kaç soruyu kurtarıyor.
 
-    Korpus **katalogdan** üretilir (elle soru yazmak ölçümü kurgulardı): `route()`'un
-    çözemediği ölçü sinonimleri — LLM yollarının GERÇEK tüketicisi orasıdır.
+    ## ⚠️ KORPUS BİR KEZ YANLIŞ SEÇİLDİ — ve ölçüm bunu gösterdi
 
-    ⚠️ Gerçek sağlayıcı ister (`--live`); `rule` ile koşmak LLM hakkında hiçbir şey
-    ölçmez. Hız sınırı: tur arası bekleme (10 sn'de 10 istek tavanı).
+    İlk sürüm korpusu **katalog sinonimlerinden** üretiyordu (`route()`'un çözemediği
+    ölçü sinonimleri). Sonuç: `prompt_enhancer` için **0/12 ↔ 0/12** — sıfır kurtarma.
+    Ama bu *"kazanç yok"* demek DEĞİLDİ; **yanlış nüfusu** ölçmüştüm:
+
+    * Katalog sinonimleri `route()`'ta çoğunlukla **BELİRSİZLİK** (R1) yüzünden düşer
+      (`bakiye` iki cube'da) — ve **yeniden yazmak belirsizliği çözmez**.
+    * Enhancer'ın hedefi ise **katalog DIŞI** ifadelerdir: *"hasılatımız"* → `ciro`.
+      Canlı turda tam bu şekilde çalıştığı görülmüştü.
+
+    Doğru korpus `lab/nl_corpus.py::REAL_PHRASINGS` — **doğal iş dili → ölçü** eşlemesi.
+    Yeniden yazılmadı, **çağrıldı** (ayrı liste iki tarafı ayrıştırırdı).
+
+    Bunun bir yan kazancı var: beklenen ölçü **bilindiği** için kurtarmanın yalnız
+    *oluştuğu* değil **DOĞRU** olduğu da ölçülür — *"cevap geldi"* ile *"doğru cevap
+    geldi"* bu depoda ayrı şeylerdir (§4.7-6).
     """
     import time
 
     from app import cube_router as cr
+    from lab.nl_corpus import REAL_PHRASINGS
+
+    # ⚠️ **FAIL-CLOSED: BU MOD GERÇEK SAĞLAYICI OLMADAN ANLAMSIZDIR.**
+    #
+    # Ölçüldü ve tam bu tuzağa düştüm: `--ab-kurtarma`'yı `--live` OLMADAN koştum,
+    # `tests.conftest` sağlayıcıyı `rule`'a sabitledi, enhancer'ın LLM'i olmadığı için
+    # **0/14 kurtarma** çıktı — ve bu *"kazanç yok"* gibi okunuyordu. Oysa ölçüm
+    # *"ölçmedim"* diyordu.
+    #
+    # Kendi kurduğum kapıyı kullanmayı unutmak yeterli bir uyarı DEĞİLDİR; mod artık
+    # kendi ön koşulunu **zorunlu kılar**. Bu, `konusma_senaryolari.py --live`'da verilen
+    # kararın aynısı: sessizce `rule` ile koşan bir "kazanç ölçümü", hiç koşmamaktan
+    # kötüdür çünkü bayrak kararı ona dayanır.
+    _canli_ortami_geri_yukle()
 
     login, pw, slug = ACCOUNTS["boyahane"]
     c = _client(login, pw, slug)
     sch = c.get("/schema").json()
-    adaylar, gorulen = [], set()
-    for cube in sch.get("cubes") or []:
-        for syns in (cube.get("measure_synonyms") or {}).values():
-            for sy in syns:
-                nrm = cr._norm(str(sy))
-                if nrm in gorulen or len(nrm) < 4:
-                    continue
-                gorulen.add(nrm)
-                cr.reddi_sifirla()
-                if cr.route(f"bu yil {sy}", sch) is None:
-                    adaylar.append(f"bu yıl {sy}")
-    secilen = adaylar[:n]
-    print(f"A/B KURTARMA — bayrak: {bayrak!r} · korpus: {len(adaylar)} çözülemeyen "
-          f"soru → örneklem {len(secilen)}", flush=True)
 
-    def _kos(acik: bool) -> set[str]:
-        cevaplanan = set()
+    # Katalogdaki ölçüler → hangi cube'a ait (kurtarmanın DOĞRULUĞU için)
+    olcu_cube = {}
+    for cube in sch.get("cubes") or []:
+        for m in cube.get("measures") or []:
+            ad = m if isinstance(m, str) else m.get("name")
+            olcu_cube.setdefault(ad, cube["name"])
+
+    adaylar = []
+    for olcu, ifadeler in REAL_PHRASINGS.items():
+        if olcu not in olcu_cube:
+            continue                      # bu katalogda yok (şirkete özel ölçü)
+        for ifade in ifadeler:
+            q = f"bu yıl {ifade}"
+            cr.reddi_sifirla()
+            if cr.route(cr._norm(q), sch) is None:
+                adaylar.append((q, olcu))
+    secilen = adaylar[:n]
+    print(f"A/B KURTARMA — bayrak: {bayrak!r} · korpus: DOĞAL İFADELER "
+          f"({len(adaylar)} çözülemeyen) → örneklem {len(secilen)}", flush=True)
+
+    def _kos(acik: bool) -> dict[str, str | None]:
+        """soru → cevaplandıysa seçilen ölçü, yoksa None."""
+        out: dict[str, str | None] = {}
         with _BayrakZorla(bayrak, acik=acik):
-            for q in secilen:
+            for q, _ in secilen:
                 d = c.post("/ask", json={"question": q, "execute": False}).json()
-                if d.get("sql") or (d.get("cube_query") or {}).get("cube"):
-                    cevaplanan.add(q)
+                cq = d.get("cube_query") or {}
+                ms = cq.get("measures") or []
+                out[q] = ms[0] if ms else (cq.get("cube") if cq else None)
                 time.sleep(5.0)
-        return cevaplanan
+        return out
 
     kapali = _kos(False)
     acik = _kos(True)
     c.__exit__(None, None, None)
-    kurtarilan = sorted(acik - kapali)
-    kaybedilen = sorted(kapali - acik)
-    print(f"\n  bayrak KAPALI cevaplanan : {len(kapali)}/{len(secilen)}")
-    print(f"  bayrak AÇIK   cevaplanan : {len(acik)}/{len(secilen)}")
-    print(f"  KURTARILAN: {len(kurtarilan)}  ·  kaybedilen: {len(kaybedilen)}")
-    for q in kurtarilan[:8]:
-        print(f"      ✓ {q!r}")
-    for q in kaybedilen[:8]:
+
+    kurtarilan = [(q, o) for q, o in secilen if not kapali[q] and acik[q]]
+    dogru = [(q, o) for q, o in kurtarilan if acik[q] == o]
+    kaybedilen = [(q, o) for q, o in secilen if kapali[q] and not acik[q]]
+    degisen = [(q, kapali[q], acik[q]) for q, _ in secilen
+               if kapali[q] and acik[q] and kapali[q] != acik[q]]
+
+    print(f"\n  bayrak KAPALI cevaplanan : {sum(1 for v in kapali.values() if v)}/{len(secilen)}")
+    print(f"  bayrak AÇIK   cevaplanan : {sum(1 for v in acik.values() if v)}/{len(secilen)}")
+    print(f"  KURTARILAN: {len(kurtarilan)}  (bunun DOĞRU ölçüyle: {len(dogru)})")
+    print(f"  kaybedilen: {len(kaybedilen)}  ·  ölçü DEĞİŞEN: {len(degisen)}")
+    for q, o in kurtarilan[:8]:
+        isaret = "✓" if acik[q] == o else "⚠ YANLIŞ ÖLÇÜ"
+        print(f"      {isaret} {q!r} → {acik[q]} (beklenen {o})")
+    for q, o in kaybedilen[:5]:
         print(f"      ✗ KAYBEDİLDİ: {q!r}")
-    print("\nKABUL ÖLÇÜTÜ (B2): kurtarma > 0 VE etiketli sette bozulan = 0.")
+    print("\nKABUL ÖLÇÜTÜ (B2): DOĞRU kurtarma > 0 VE etiketli sette bozulan = 0.")
     return 0
 
 
@@ -441,7 +482,9 @@ def main() -> int:
     if "--ab" in sys.argv:
         return ab_kos(sys.argv[sys.argv.index("--ab") + 1])
     if "--ab-kurtarma" in sys.argv:
-        return ab_kurtarma_kos(sys.argv[sys.argv.index("--ab-kurtarma") + 1])
+        # Örneklem CLI'dan verilebilir: kota bilinmiyor, ölçüm küçükten başlar.
+        _n = int(sys.argv[sys.argv.index("--n") + 1]) if "--n" in sys.argv else 20
+        return ab_kurtarma_kos(sys.argv[sys.argv.index("--ab-kurtarma") + 1], _n)
     only = None
     if "--company" in sys.argv:
         only = sys.argv[sys.argv.index("--company") + 1]
