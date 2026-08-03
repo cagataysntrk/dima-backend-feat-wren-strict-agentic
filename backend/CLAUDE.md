@@ -94,6 +94,25 @@ uvicorn app.main:app --reload --port 8000   # dev
 - **DB→dosya tek yönlü** (ADR-0016): TenantConfig satırı olan tenant'ın company.yml'i
   TÜRETİLMİŞTİR; elle düzenleme materializer'da ezilir. Kaynak = control-plane DB.
 
+## Test kapısı (ölçüldü — 3 Ağustos 2026)
+
+Tam kapı **~15 dk**: süit 1886 test ≈8,5 dk · `eval` ≈1,5 dk · `nl_corpus` ≈3-4 dk ·
+`konusma_senaryolari` ≈1,5 dk. Fixture'lar zaten `session` kapsamlı, `pytest-xdist` imajda
+yok — süre **gerçek iştir**; israf faz başına 2-3 kez koşturmaktı.
+
+Tek araç: **`lab/kapi.py`** (iki kademe, tek sahip).
+
+- **Geliştirme sırasında:** `python lab/kapi.py --hizli --degisen <değişen dosyalar>` —
+  değişen modüle bağımlı testler + çekirdek duman (~15-40 sn). **Bu bir KAPI DEĞİL,
+  sinyaldir**: seçim `import` bağımlılığına bakar, davranışa dayanan bir test kaçabilir;
+  araç her koşumda kapsanmayan dosya sayısını YAZAR (sessiz kırpma yok).
+- **Faz sonunda, commit'ten HEMEN ÖNCE, TEK SEFER:** `python lab/kapi.py --tam` — süit +
+  `eval` + korpus + senaryo, **tek konteynerde ardışık**. Kapı budur.
+- **Ara koşum YOK.** *"Bir de şuna bakayım"* diye tam süit koşturma.
+- **Kapsam KIRPILMAZ.** Hız tekrarı azaltarak kazanılır, kapıyı gevşeterek değil.
+- **İki test konteyneri ASLA paralel koşmaz** (compose kilidi `metadata.yml`'de çakışır) —
+  bu kural hız için bile esnetilmez.
+
 ## Standartlar
 Kök `saka-standards` submodule'ü bağlayıcıdır (TypeScript tarafı için; Python tarafında
 strict typing + ruff). Commit mesajlarında Claude footer KULLANILMAZ (saka standardı).

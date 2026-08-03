@@ -16,7 +16,7 @@ from app import context as app_context
 from app import prescribe
 from app import planner as _planner
 from app import followup
-from app import cube_router, pii, viz, yoy
+from app import cube_router, eylem, pii, viz, yoy
 from app.answer import (
     _attach_next_steps,
     _attach_recommendations,
@@ -1958,6 +1958,25 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 trace=[f"sosyal sınıf ({_tur}) → deterministik yanıt "
                        "(LLM'siz, sıfır maliyet)"],
             ))
+    # EYLEM SINIFI (FAZ H) — SOSYAL'DAN SONRA, KATALOG'DAN ÖNCE.
+    #
+    # Ölçülen kusur: *"her pazartesi bu raporu bana yolla"* → `source=rule`, **SQL
+    # ÜRETTİ**. Ajan yazmıyordu ama UYDURUYORDU — sorulmayan bir soruyu cevaplıyordu.
+    # Sınıf D1 (sosyal) ve D2 (*"analiz et"*) ile aynı ailedendir: veri sorusu OLMAYAN
+    # bir ifade türünün tanımsızlığı.
+    #
+    # Argümanlar konuşmadaki DOĞRULANMIŞ `cube_query`den gelir — bir LLM'in uydurduğu
+    # sorgu bir zamanlamaya yazılsaydı o uydurma HER HAFTA tekrar koşardı.
+    # `view_hint` BİLEREK boş: istek gövdesinde yoktur ve uydurulmaz. Kullanıcının o
+    # anki CANLI görünümünü (tip/pivot) yalnız frontend bilir — onay çağrısında ekler
+    # (manuel "panoya ekle" düğmesi de tam olarak bunu yapıyor, ReportCard.tsx).
+    _eylem_karar = eylem.degerlendir(q_norm, body.cube_query, schema=schema)
+    if _eylem_karar is not None:
+        return _finish(AskResponse(
+            question=body.question, source="eylem", note=_eylem_karar.not_,
+            cube_query=body.cube_query or None,
+            eylem_onerisi=_eylem_karar.oneri, trace=_eylem_karar.iz,
+        ))
     if _is_catalog_query(q_norm):
         return _finish(AskResponse(
             question=body.question, source="catalog", note=_catalog_listing(schema),

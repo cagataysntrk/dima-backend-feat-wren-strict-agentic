@@ -158,6 +158,11 @@ export interface AskResponse {
   // bunu GÖRÜNMEZ şekilde poll'lar (mutation.isPending zaten doğru davranır) — normal şartlarda
   // bu alan bileşenlere HİÇ ULAŞMAZ, yalnız api-client içinde tüketilir.
   job_id?: string | null;
+  // FAZ H — ONAYLI YAZMA. Ajan yazma aracını ÇALIŞTIRMAZ; bir ÖNERİ üretir ve kullanıcı
+  // onaylar. Alan doluyken `sql`/`result` BOŞTUR (eylem ifadesi veri sorusu değildir).
+  // `izin` alanı UI'ın düğmeyi göstereceği yetkiyi söyler — rol matrisi UI'a KOPYALANMAZ,
+  // /auth/me `permissions` listesiyle karşılaştırılır (CLAUDE.md kuralı).
+  eylem_onerisi?: EylemOnerisi | null;
 }
 
 // Faz 4.1 — GET /ask/jobs/{id} yanıtı (yalnız api-client.ts::ask()'in dahili poll döngüsü kullanır).
@@ -723,4 +728,23 @@ export interface StatsToday {
   llm_free: number;
   llm_free_pct: number | null;
   message: string;
+}
+
+// --- FAZ H · ONAYLI YAZMA AKSİYONLARI ---------------------------------------------
+// Ajan yazamaz; ÖNERİR. Öneri bir yetki taşımaz — onay ucu `authorize()`'ı YENİDEN
+// çağırır ve argümanları var olan uçların kendi doğrulamasından geçirir. Bu yüzden
+// önerinin istemcide taşınması güvenlidir: kurcalanmasından kazanılacak bir şey yoktur.
+export interface EylemOnerisi {
+  eylem: "pano.ekle" | "zamanla.olustur";
+  ozet: string;                 // insan-okur tek cümle — kullanıcı NEYİ onayladığını okur
+  izin: string;                 // authorize() aksiyonu (permissions ile eşleşmeli)
+  geri_alinabilir: boolean;     // false → UI daha ağır bir onay dili kullanır
+  argumanlar: Record<string, unknown>;
+}
+
+export interface EylemOnayResult {
+  ok: boolean;
+  eylem: string;
+  id: string | null;
+  note: string;
 }

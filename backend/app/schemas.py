@@ -353,6 +353,39 @@ class AskResponse(BaseModel):
     # GET /ask/jobs/{job_id} ile poll eder. Bayrak kapalıyken (varsayılan) HER ZAMAN None —
     # mevcut senkron akış BİREBİR korunur.
     job_id: str | None = None
+    # FAZ H — ONAYLI YAZMA. Ajan yazma aracını ÇALIŞTIRMAZ; bir ÖNERİ üretir ve
+    # kullanıcı onaylar. Alan doluyken `sql`/`result` BOŞTUR: eylem ifadesi bir veri
+    # sorusu değildir, merdivene hiç girilmez (0 LLM · 0 SQL).
+    #
+    # Şekil: {eylem, ozet, izin, geri_alinabilir, argumanlar}. `izin` UI'ın düğmeyi
+    # gösterip göstermeyeceğini `/auth/me` permissions listesinden okumasını sağlar —
+    # rol matrisi frontend'e KOPYALANMAZ (CLAUDE.md). `argumanlar` onay ucuna aynen
+    # gider ama ORADA YENİDEN doğrulanır: öneri güvenilir bir girdi DEĞİLDİR.
+    eylem_onerisi: dict[str, Any] | None = None
+
+
+class EylemOnayRequest(BaseModel):
+    """POST /ask/eylem — bir eylem önerisinin ONAYI.
+
+    Öneriyi geri göndermek bir yetki taşımaz: uç, eylemi kayıttan çözer (kayıtta
+    olmayan ad → 400), `authorize()`'ı YENİDEN çağırır (öneri anındaki yetkiye
+    güvenmek TOCTOU olurdu) ve argümanları VAR OLAN handler'a verir — doğrulama
+    ikinci kez YAZILMAZ.
+    """
+
+    eylem: str
+    argumanlar: dict[str, Any] = Field(default_factory=dict)
+    #: `pano.ekle` için hedef pano; boşsa kullanıcının ilk panosu kullanılır
+    #: (hiç yoksa oluşturulur — öneri özeti bunu SÖYLER).
+    dashboard_id: str | None = None
+
+
+class EylemOnayResponse(BaseModel):
+    ok: bool
+    eylem: str
+    #: oluşan kaydın kimliği (widget id / schedule id) — UI derin bağlantı kurar
+    id: str | None = None
+    note: str
 
 
 class AskJobStatus(BaseModel):

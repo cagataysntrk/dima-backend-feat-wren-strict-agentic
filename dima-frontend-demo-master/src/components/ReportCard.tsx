@@ -10,6 +10,7 @@ import {
   askVerify,
   createDashboard,
   createSchedule,
+  onaylaEylem,
   listDashboards,
   verifyReport,
 } from "@/lib/api-client";
@@ -136,6 +137,34 @@ export function ReportCard({
   const schedStage = useFeature("scheduled_reports");
   const canSchedule = usePermission("schedule:create");
   const canVerify = usePermission("vqr:write");
+  // FAZ H — onay kartı. Öneri hangi izne bağlıysa O kontrol edilir; ama hook sırası
+  // sabit kalmalı (React kuralı), bu yüzden KAYITTAKİ izinlerin hepsi baştan çözülür
+  // (`app/eylem.py::EYLEM_KAYIT` → query:run · schedule:create). Kayda üçüncü bir izin
+  // eklenirse buraya da eklenmeli — backend testi (`test_eylem_onayi.py`) bunu kilitler.
+  const canQuery = usePermission("query:run");
+  const izinliMi = (izin: string) =>
+    izin === "schedule:create" ? canSchedule : izin === "query:run" ? canQuery : false;
+  const [eylemBekliyor, setEylemBekliyor] = useState(false);
+  const [eylemSonuc, setEylemSonuc] = useState<string | null>(null);
+  const onaylaEylemi = async () => {
+    const oneri = item.eylem_onerisi;
+    if (!oneri || eylemBekliyor) return;
+    setEylemBekliyor(true);
+    setActionError(null);
+    try {
+      // Kullanıcının o anki CANLI görünümü yalnız burada bilinir (backend uydurmaz).
+      const lv = liveViewRef.current;
+      const liveHint = lv && lv.sql === (item.sql ?? "") ? lv.hint : null;
+      const args = { ...oneri.argumanlar,
+                     ...(liveHint && oneri.eylem === "pano.ekle" ? { view_hint: liveHint } : {}) };
+      const out = await onaylaEylem(oneri.eylem, args);
+      setEylemSonuc(out.note);
+    } catch {
+      setActionError("İşlem tamamlanamadı. Lütfen tekrar dener misin?");
+    } finally {
+      setEylemBekliyor(false);
+    }
+  };
   const [schedOpen, setSchedOpen] = useState(false);
   const [scheduled, setScheduled] = useState<string | null>(null);
   // #56 alarm + e-posta: preset periyodu + opsiyonel eşik/anomali alarmı + alıcı e-postalar.
@@ -534,9 +563,55 @@ export function ReportCard({
             artık gerçek bir raporla BİRLİKTE gelebilir (ChatPanel'deki AYNI desen) — rapor
             açıldığında kullanıcı NEDEN konunun değiştiğini burada da görsün, yalnız sohbet
             akışına gömülü kalmasın. */}
-        {item.note && !item.kpi && (
+        {item.note && !item.kpi && !item.eylem_onerisi && (
           <div className="mt-3 border-l-2 border-amber-500/50 bg-amber-500/[0.04] py-1.5 pl-3 font-mono text-[12px] leading-snug text-neutral-500">
             {item.note}
+          </div>
+        )}
+        {/* FAZ H — ONAY KARTI. Ajan yazma işini ÇALIŞTIRMAZ, önerir; yazma yalnız bu
+            düğmeye basılınca ve KULLANICININ KENDİ kimliğiyle olur.
+            · Düğme yetkiye bağlı: `oneri.izin` /auth/me `permissions` listesinde YOKSA
+              düğme HİÇ çıkmaz (rol matrisi UI'a KOPYALANMAZ — CLAUDE.md).
+            · Geri alınamaz eylemde (zamanlama) dil AĞIRLAŞIR ve bu AÇIKÇA yazılır;
+              kullanıcı neyi onayladığını okumadan basmasın.
+            · `view_hint` burada eklenir: kullanıcının o anki CANLI görünümünü yalnız
+              frontend bilir, backend onu UYDURMAZ. */}
+        {item.eylem_onerisi && (
+          <div className="mt-3 border border-accent/40 bg-accent/[0.04] p-3">
+            <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-accent">
+              onay gerekiyor
+            </div>
+            <p className="font-mono text-[12px] leading-snug text-foreground">
+              {item.eylem_onerisi.ozet}
+            </p>
+            {!item.eylem_onerisi.geri_alinabilir && (
+              <p className="mt-1 font-mono text-[11px] text-amber-500">
+                Bu işlem geri alınamaz: kurulduktan sonra gönderilmiş bildirimler geri çekilemez.
+              </p>
+            )}
+            {eylemSonuc ? (
+              <p className="mt-2 font-mono text-[11px] text-accent">✓ {eylemSonuc}</p>
+            ) : izinliMi(item.eylem_onerisi.izin) ? (
+              <div className="mt-2 flex items-center gap-2">
+                <button
+                  onClick={onaylaEylemi}
+                  disabled={eylemBekliyor}
+                  className="border border-accent/50 px-2 py-0.5 font-mono text-[11px] text-accent transition-colors hover:bg-accent/10 disabled:opacity-50"
+                >
+                  {eylemBekliyor ? "…" : "Onayla"}
+                </button>
+                <button
+                  onClick={() => setEylemSonuc("Vazgeçildi — hiçbir şey kaydedilmedi.")}
+                  className="border border-hairline px-2 py-0.5 font-mono text-[11px] text-neutral-400 transition-colors hover:text-foreground"
+                >
+                  Vazgeç
+                </button>
+              </div>
+            ) : (
+              <p className="mt-2 font-mono text-[11px] text-neutral-400">
+                Bu işlem için yetkiniz yok — bir yöneticiden isteyebilirsiniz.
+              </p>
+            )}
           </div>
         )}
         {showTrace && item.trace && (

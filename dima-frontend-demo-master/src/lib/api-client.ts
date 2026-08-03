@@ -29,6 +29,7 @@ import type {
   ReportBlockInput,
   DrillRequestInput,
   DrillResponse,
+  EylemOnayResult,
   SchemaResponse,
   StatsToday,
   TenantConnectionCreateInput,
@@ -388,6 +389,18 @@ export interface ScheduleListItem {
 export async function createSchedule(spec: ScheduleSpec): Promise<{ id: string }> {
   const { data } = await apiClient.post<{ schedule: { id: string } }>("/schedules", spec);
   return data.schedule;
+}
+// FAZ H — bir eylem ÖNERİSİNİN onayı. Ayrı bir uçtur çünkü onay, kullanıcının kendi
+// kimliğiyle attığı AYRI bir istektir: backend eylemi kayıttan çözer, `authorize()`'ı
+// YENİDEN çağırır (öneri anındaki yetkiye güvenmek TOCTOU olurdu) ve argümanları var
+// olan handler'a verir. `view_hint` burada eklenir: kullanıcının o anki CANLI görünümünü
+// (tip/pivot) yalnız frontend bilir — backend onu uydurmaz.
+export async function onaylaEylem(
+  eylem: string,
+  argumanlar: Record<string, unknown>,
+): Promise<EylemOnayResult> {
+  const { data } = await apiClient.post<EylemOnayResult>("/ask/eylem", { eylem, argumanlar });
+  return data;
 }
 // Query Contract keşif/replay (doğrulama turu düzeltmesi, 1 Ağustos 2026) — `contract_id`
 // ekranda küçük bir metin olarak gösteriliyordu ama TIKLANAMAZ/incelenip yeniden-

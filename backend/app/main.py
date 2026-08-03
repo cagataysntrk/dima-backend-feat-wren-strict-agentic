@@ -19,6 +19,7 @@ from app.routers import contracts as contracts_router
 from app.routers import conversations as conversations_router
 from app.routers import dashboards as dashboards_router
 from app.routers import decisions as decisions_router
+from app.routers import eylem as eylem_router
 from app.routers import measures as measures_router
 from app.routers import schedules as schedules_router
 from app.routers import stats as stats_router
@@ -161,6 +162,9 @@ def create_app() -> FastAPI:
     app.include_router(connections_router.router, dependencies=_protected)
     app.include_router(stats_router.router, dependencies=_protected)
     app.include_router(decisions_router.router, dependencies=_protected)
+    # FAZ H — onaylı yazma: /ask/eylem (öneri ONAY ucu). Yazma yetkisi burada
+    # AÇILMAZ, yalnız var olan uçlara yetkisi yeniden doğrulanmış bir kapı olur.
+    app.include_router(eylem_router.router, dependencies=_protected)
     return app
 
 

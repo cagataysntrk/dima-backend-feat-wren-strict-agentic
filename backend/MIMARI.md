@@ -1351,6 +1351,86 @@ insan-okur etiketi arar.
 sabit) · senaryo süiti değişmedi · `tsc --noEmit` temiz. 10 test:
 `tests/test_yol_siniri.py`.
 
+### 6.8y FAZ H — ONAYLI YAZMA: yasak kaldırılmadı, KADEMELENDİ ✅
+
+`app/tools.py` yazma araçlarını bilerek kayda almamıştı (*"Ajan YAZAMAZ"*). Karar
+doğruydu ama **yarım**: kullanıcı yazma isteğini yine de söylüyor ve sistemde *"eylem
+ifadesi"* diye bir sınıf olmadığı için istek bir **veri sorusu** sanılıyordu.
+
+#### Ölçülen kusur — plandan daha kötü çıktı
+
+    "her pazartesi bu raporu bana yolla"  → source=rule, **SQL ÜRETTİ**, 1 satır
+    "bu raporu her sabah 8'de e-postala"  → source=rule, **SQL ÜRETTİ**, 1 satır
+    "bunu panoya ekle"                    → *"«bunu» yerine «gunu» mi demek istedin?"*
+    "şunu panoya kaydet"                  → *"«kaydet» yerine «adet» mi demek istedin?"*
+
+Yani ajan **yazmıyordu ama UYDURUYORDU**: sorulmayan bir soruya cevap üretiyordu. `prev`
+bağlamı verilmişken bile `yeni_konu=True` — istek hiç çapalanmıyordu. Kök neden D1
+(sosyal) ve D2 (*"analiz et"*) ile **aynı ailedendir**: veri sorusu OLMAYAN bir ifade
+sınıfının tanımsızlığı. `app/eylem.py` o sınıfı tanımlar.
+
+#### Üç değişmez
+
+1. **Argümanlar LLM'den GELMEZ.** Önerinin `cube_query`'si konuşmada **zaten
+   doğrulanmış** sorgudur. Bir LLM'in uydurduğu sorgu bir zamanlamaya yazılsaydı o
+   uydurma **her hafta** tekrar koşardı — sessiz-yanlışın kalıcılaştırılmış hâli.
+2. **Öneri yeni YETKİ yaratmaz.** Onay ucu (`POST /ask/eylem`), kullanıcının kendi
+   eliyle çağırabileceği ucun **ta kendisini** çağırır. Önerinin istemcide taşınması bu
+   yüzden güvenlidir: kurcalanmasından **kazanılacak bir şey yoktur**. Güvenlik bir
+   imzadan değil, **yetki yüzeyinin genişlememesinden** gelir.
+3. **Çapa yoksa öneri de yok.** Rapor yokken *"panoya ekle"* çalıştırılamaz → sistem
+   sınırını **söyler**, uydurmaz.
+
+#### Onay ucunun üç koruması — ve neden bu sırayla
+
+| # | Koruma | Kaçırılırsa |
+|---|---|---|
+| 1 | Eylem **kayıttan** çözülür (`eylem.beyan`, bilinmeyen ad → 400) | istemci eylem uydurur; yazma yüzeyi sınırsızlaşır |
+| 2 | `authorize()` **yeniden** çağrılır | TOCTOU: rol öneriyle onay arasında düşmüş olabilir |
+| 3 | Argümanlar **var olan handler'a** verilir | doğrulama ikinci kez yazılır ve zamanla ayrışır (bu deponun 1 numaralı kusur sınıfı) |
+
+Bir `ast` testi (3)'ü kilitler: onay ucunda `parse_cube_query` **geçmemeli**, buna
+karşılık `add_widget`/`create_schedule` **geçmelidir**.
+
+#### Sessiz kesme yine yasak
+
+*"her ay yolla"* → `ScheduleRequest` yalnız `hour|day|week` destekler. Sessizce
+haftalığa çevirmek **kullanıcının istemediği bir zamanlama kurmak** olurdu; onun yerine
+ne YAPABİLDİĞİMİZ söylenir (*"saatlik, günlük ve haftalık"*).
+
+#### Kapı dar tutuldu — iki kanatlı
+
+Zamanlama sınıfı için **yinelenme VE teslim fiili** birlikte aranır: *"her ay ciro"* bir
+**granülerlik** sorusudur, zamanlama değil. `raporla` fiili bilerek listede **yok**
+(`_syn_hit` çekime toleranslıdır ve *"raporları"* onu eşleştirirdi); çıplak `at` da yok.
+
+#### İki ölçüm aracı kusuru daha (bu turda 11. ve 12.)
+
+* `_norm` **kesme işaretini siler**: `09:00'da` → `09:00da`. Saat deseni dakikadan
+  sonra `\b` istiyordu; kesme gidince ardından harf geldiği için çapa tutmadı ve desen
+  `00da`ya kayarak saati **00:00** okudu. Çapa *"rakam değil"* (`(?!\d)`) yapıldı.
+* Şemadaki `measures`/`dimensions` **dize listesidir**; etiket oradan türetilemez.
+  Etiketler artık `next_step_chips`'in kullandığı **aynı** derlenmiş katalogdan gelir —
+  ikinci bir etiket kaynağı açılmadı.
+
+#### Frontend: onay kartı
+
+`ReportCard` öneriyi bir onay kartı olarak basar (özet · *Onayla* · *Vazgeç*). Düğme
+`oneri.izin` `/auth/me` `permissions` listesinde yoksa **hiç çıkmaz** — rol matrisi UI'a
+kopyalanmaz. React hook sırası sabit kalsın diye kayıttaki izinler baştan çözülür ve bir
+test, **kayıttaki her iznin frontend haritasında bulunduğunu** kilitler (aksi hâlde yeni
+bir eylem eklenince düğme sessizce kaybolurdu).
+
+**Ölçüm:** test **1851 → 1887** · eval `+0,0/+0,0/+0,0` · korpus kapısı **yeşil** (%93,2
+sabit) · senaryo süiti değişmedi · `tsc --noEmit` temiz. 36 test:
+`tests/test_eylem_onayi.py`.
+
+⚠ **Bu turda öğrenilen bir ölçüm kuralı:** kapı konteyneri koşarken **repoya
+yazılmaz**. Mount canlıdır; süit koşarken `MIMARI.md`/`lab/` düzenlediğim koşumda
+`test_measure_preview` iki hata verdi, dokunulmayan koşumda **aynı kod yeşil** çıktı.
+Aynı sınıf: *"ölçüm aracının kendisi de bir bağımlılıktır"* (§6.4) — ölçüm **ortamı** da
+öyle.
+
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 
 Planın kapanış şartı: *"Faz 0.5'in **aynı** süiti yeniden koşulur — **yeni senaryo
