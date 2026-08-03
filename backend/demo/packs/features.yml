@@ -40,6 +40,14 @@ features:
                           # gömülür (enum CUBE'A GÖRE daralır; `cube:null` reddetme dalı
                           # KORUNUR). Desteklenmezse serbest-JSON yedeğine düşer.
                           # KAPALIYKEN davranış bugünküyle BİREBİR aynı (KURAL B, testli).
+  netlestirme_onceligi: "off"  # FAZ F: katalogda ≥2 SAHİP olan bir ölçüde (ör. `bakiye`
+                               # → cari|mizan) netleştirme chip'i Intent-JSON'u ÖNCELER.
+                               # Ölçüldü: canlıda "bu yıl bakiye" → cube+llm/mizan/0.85 ve
+                               # chip HİÇ gelmiyordu — olasılıksal bir oy, deterministik
+                               # olarak BİLİNEN belirsizliği eziyor. Nüfus: 53 sinonim.
+                               # KAPALI çünkü kapsam kaybı ile kazanç kıyası gerçek
+                               # sağlayıcıyla ÖLÇÜLMEDİ (kota). Ölçmeden açmak 2a-1'in
+                               # `elektrik` hatasını tekrarlamak olurdu.
   liste_niyeti: beta      # FAZ 2a-5: "listele/detay/dökümü" niyetini bir CUBE KIRILIMINA
                           # çevir (R2 dalı). YALNIZ gerçek bir boyut eşleştiğinde — yoksa
                           # döküm isteyene DEJENERE TEK TOPLAM dönerdi (sessiz-yanlış).

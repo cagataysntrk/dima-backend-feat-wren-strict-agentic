@@ -144,6 +144,15 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "Seçim ≠ çalıştırma: seçicinin yanılması yeni bir risk açmaz.",
         "category": "Ajan",
     },
+    "netlestirme_onceligi": {
+        "label": "Netleştirme, LLM tahminini önceler",
+        "description": "Katalogda ≥2 cube'un sahiplendiği bir ölçüde (ör. 'bakiye' → "
+                       "cari|mizan) netleştirme chip'i Intent-JSON'dan ÖNCE gelir. "
+                       "Gerçekten belirsiz bir kelimede doğru cevap yoktur; olasılıksal "
+                       "bir seçimi 0.85 rozetiyle sunmak onu daha kötü yapar. "
+                       "AÇILMADAN ÖNCE kapsam kaybı ölçülmeli.",
+        "category": "Doğruluk",
+    },
     "t2_anlatici": {
         "label": "T2 anlatıcı (guarded LLM)",
         "description": "Deterministik olguların ÜSTÜNE akıcı Türkçe anlatı ekler; sayıyı "

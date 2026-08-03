@@ -103,13 +103,20 @@ def test_KPI_cevabi_artik_kapanistan_gecer(client):
     # demo-boyahane'de KPI tanımı YOK (ölçüldü: 0) → uçtan uca gösterilemiyor. Atlanmış bir
     # testle yetinmek yerine BAĞLANTI doğrulanır: `_try_kpi`'nin dönüşü `_finish`'ten
     # geçiyor mu? Eksik olan tam olarak buydu — `return AskResponse(...)` doğrudandı.
+    import ast
     import re
     from pathlib import Path
 
     import app.routers.ask as ask_mod
 
     kaynak = Path(ask_mod.__file__).read_text(encoding="utf-8")
-    govde = kaynak[kaynak.index("def _try_kpi("):kaynak.index("def _try_fresh_intent(")]
+    # ⚠️ DİLİM SINIRI KIRILGANDI: eski sürüm `_try_kpi` ile `_try_fresh_intent`
+    # ARASINI tarıyordu; araya yeni bir yardımcı eklendiği an onun (meşru) mühürsüz
+    # dönüşünü `_try_kpi`'ninmiş gibi gösteriyordu. Faz F'de tam bu oldu.
+    # Ölçülmesi gereken şey `_try_kpi`'NİN KENDİ gövdesidir → AST.
+    _fn = next(d for d in ast.walk(ast.parse(kaynak))
+               if isinstance(d, ast.FunctionDef) and d.name == "_try_kpi")
+    govde = ast.unparse(ast.Module(body=_fn.body, type_ignores=[]))
     ciplak = re.findall(r"return AskResponse\(", govde)
     assert not ciplak, (
         "`_try_kpi` `AskResponse`'u DOĞRUDAN döndürüyor — kapanış zincirini atlıyor "

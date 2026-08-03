@@ -1227,6 +1227,67 @@ Ama karar **kapanmadı**, iki dürüst çekinceyle:
 
 `t2_anlatici` ve `agent_plan_secimi` **hâlâ ⊘** — kota serbest kalınca ölçülecek.
 
+### 6.20z FAZ F — KATALOG BELİRSİZLİĞİ, LLM TAHMİNİNİ ÖNCELER (bayraklı, KAPALI) ✅
+
+**Canlıda ölçülen vaka (3 Ağustos 2026):**
+
+    "bu yıl bakiye" → source=cube+llm · cube=mizan · confidence=0.85 · chip YOK
+
+`bakiye` katalogda **iki** cube'un ölçüsüdür (`cari` · `mizan`) ve §6.1g'nin netleştirme
+chip'i tam bunun için var. CI'da (LLM yok) chip **ateşliyor**; **üretimde Intent-JSON onu
+gölgeliyor** — olasılıksal bir 2/3 oyu, **deterministik olarak BİLİNEN** bir belirsizliği
+eziyor. Sebep sıra: netleştirme dalı `ask.py`'de Intent-JSON bloğundan **sonra** duruyor.
+
+Bu, §1.7'nin dersinin yeni bir kapıdan girişi (*"yapısal geçerlilik ≠ semantik doğruluk"*).
+**Gerçekten belirsiz bir kelimede doğru cevap yoktur**; herhangi bir seçim yazı-turadır ve
+`0.85` rozetiyle sunulması onu **daha kötü** yapar.
+
+#### Nüfus ÖLÇÜLDÜ — LLM'siz, kotaya dokunmadan
+
+384 ölçü sinonimi tarandı:
+
+| durum | adet | anlamı |
+|---|---|---|
+| katalogda **≥2 sahip** + `route()` **çözemiyor** | **53** | bu kapının nüfusu |
+| katalogda ≥2 sahip **ama** `route()` **çözüyor** | **20** | **DOKUNULMAZ** — 2a-3'ün *"en spesifik ölçü kazanır"* kuralı belirsizliği zaten kırmış |
+
+İkinci satır kapının en önemli sınırıdır ve koşul `route_hit is None` ile bağlanmıştır.
+Ölçüldü: `sapma yüzdesi` → `enerji_sapma`, `elektrik tüketimi` → `enerji_makine` — bayrak
+**açıkken bile** dokunulmuyor.
+
+#### Kural TEK YERDE yaşıyor
+
+Netleştirme mantığı ortak bir yardımcıya (`_olcu_belirsizligi_netlestir`) çıkarıldı ve
+**iki** yerden çağrılıyor: bayrak açıkken Intent'ten **önce**, kapalıyken bugünkü yerinde.
+İki kopya yazmak, bu belgenin defalarca ölçtüğü *"kimlik asimetrisi"*ni üretirdi.
+
+#### Kanıt API'ye HİÇ dokunmadan alındı
+
+Kural-tabanlı sağlayıcıda `select_cube` **yoktur** → Intent yolu offline zaten atlanır ve
+bayrak farkı **görünmez**; gerçek sağlayıcıyla ölçmek kota harcar (bu turda kota doldu).
+Çözüm: **çağrıldığını sayan sahte bir seçici**. Ölçüldü:
+
+* bayrak **KAPALI** → Intent-JSON **çağrılıyor** (bugünkü davranış, KURAL B tabanı)
+* bayrak **AÇIK** → Intent-JSON **HİÇ çağrılmıyor**, ayırt edici chip'ler dönüyor
+  (*"bakiye (cari hesap)"* · *"bakiye (mizan…)"*)
+
+*"Yalnız cevabı değiştirmek yetmez — maliyet de doğmamalı"* şartı böylece kilitlendi.
+
+#### KURAL B: varsayılan **KAPALI** ve nedeni yazılı
+
+Kapsam kaybı **gerçektir**: bugün LLM'in cevapladığı 53 sinonimlik nüfus netleştirmeye
+düşer. Kazanç (kapanan sessiz-yanlış) ile kaybın kıyası **gerçek sağlayıcıyla** ölçülmeli;
+o ölçüm bu turda **kotaya takıldı**. Ölçmeden açmak, 2a-1'in `elektrik` hatasını (kimlik
+silindi, **388 cevap kayboldu**) tekrarlamak olurdu.
+
+⚠️ **Bir testim de kırılgan çıktı ve düzeltildi:** `test_kapanis_zinciri` `_try_kpi` ile
+`_try_fresh_intent` **arasını** tarıyordu; araya yeni bir yardımcı eklendiği an onun
+(meşru) mühürsüz dönüşünü `_try_kpi`'ninmiş gibi gösterdi. Ölçülmesi gereken şey
+`_try_kpi`'**nin kendi gövdesi**dir → `ast`'a taşındı.
+
+**Ölçüm:** test **1828 → 1841** · eval `+0,0/+0,0/+0,0` · `nl_accuracy` **63/63** · korpus
+kapısı **yeşil** (%93,2 sabit). 6 test: `tests/test_netlestirme_onceligi.py`.
+
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 
 Planın kapanış şartı: *"Faz 0.5'in **aynı** süiti yeniden koşulur — **yeni senaryo

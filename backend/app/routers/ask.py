@@ -2168,6 +2168,40 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                         exc_info=True)
             return None
 
+    def _olcu_belirsizligi_netlestir(q_norm: str, schema: dict) -> AskResponse | None:
+        """Katalog **≥2 SAHİP** biliyorsa netleştirme chip'i — yoksa `None`.
+
+        ## FAZ 2a'nın etiket çakışması tuzağı (korunuyor)
+
+        Chip'ler eskiden yalnız ölçünün GÖRÜNEN adıyla kuruluyordu; iki cube aynı adı
+        taşıdığında (`cari.bakiye` ve `mizan.bakiye` → ikisi de *"bakiye"*) liste
+        tekilleşip 1'e düşüyor, `>= 2` kapısı chip'i **sessizce** atlıyor ve soru
+        Discovery'ye düşüyordu. Ölçüldü: 54 belirsiz sinonimin **33'ü (%61)** bu
+        tuzaktaydı. `olcu_netlestirme` çakışan etiketi **cube ile** niteler.
+
+        ## Neden ORTAK yardımcı oldu (Faz F)
+
+        Aynı kural artık **iki** yerden çağrılıyor: (a) bayrak açıkken Intent-JSON'dan
+        **ÖNCE**, (b) bayrak kapalıyken bugünkü yerinde (Intent'ten sonra). İki kopya
+        yazmak, bu deponun defalarca ölçtüğü *"kimlik asimetrisi"*ni üretirdi.
+        """
+        try:
+            cands = cube_router.measure_cube_candidates(q_norm, schema)
+        except Exception:
+            return None
+        distinct_cubes = {c["name"]: (c, m) for c, m in cands}
+        if len(distinct_cubes) < 2:
+            return None
+        etiketler = cube_router.olcu_netlestirme(list(distinct_cubes.values()), schema)
+        if len(etiketler) < 2:
+            return None
+        return AskResponse(
+            question=body.question, source=None,
+            note="Birden fazla konu anlaşıldı, hangisini istiyorsun?",
+            suggestions=[Suggestion(**s) for s in etiketler[:6]],
+            trace=["Intent-path: çapraz konu → netleştirme (LLM'siz)"],
+        )
+
     def _try_fresh_intent() -> AskResponse | None:
         """route() → YoY/MoM → LLM-Intent-JSON → neden-özel netleştirme chip'i. Hiçbiri
         cevaplayamazsa None (çağıran Discovery'ye düşer). Yapısal takip zinciri
@@ -2310,6 +2344,44 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 intent_source = "cube"
                 typo_fix_trace = _eh_iz
 
+        # ── FAZ F — KATALOG BELİRSİZLİĞİ INTENT-JSON'U ÖNCELER (bayraklı) ──────────
+        #
+        # ## Canlıda ölçülen vaka (3 Ağustos 2026)
+        #
+        #     "bu yıl bakiye" → source=cube+llm · cube=mizan · confidence=0.85 · chip YOK
+        #
+        # Oysa `bakiye` katalogda **iki** cube'un ölçüsü (`cari` · `mizan`) ve §6.1g'nin
+        # netleştirme chip'i tam bunun için var. CI'da (LLM yok) chip ateşliyor;
+        # **üretimde Intent-JSON onu gölgeliyor** — olasılıksal bir 2/3 oyu,
+        # **deterministik olarak BİLİNEN** bir belirsizliği eziyor.
+        #
+        # Bu, §1.7'nin dersinin yeni bir kapıdan girişi: *"yapısal geçerlilik ≠ semantik
+        # doğruluk"*. Gerçekten belirsiz bir kelimede **doğru cevap yoktur**; herhangi bir
+        # seçim yazı-turadır ve 0.85 rozetiyle sunulması onu daha kötü yapar.
+        #
+        # ## Nüfusu ÖLÇÜLDÜ (LLM'siz, 384 ölçü sinonimi taranarak)
+        #
+        #     katalogda ≥2 SAHİP + route ÇÖZEMİYOR : 53   ← bu kapının nüfusu
+        #     katalogda ≥2 SAHİP ama route ÇÖZÜYOR : 20   ← DOKUNULMAZ (spesiflik kuralı)
+        #
+        # İkinci satır kritik: `route()` çözebiliyorsa belirsizlik **zaten kırılmıştır**
+        # (2a-3'ün "en spesifik ölçü kazanır" kuralı) ve kapı oraya karışmaz — koşul
+        # `route_hit is None` ile bağlı.
+        #
+        # ## KURAL B — varsayılan KAPALI ve nedeni
+        #
+        # Kapsam kaybı gerçektir: bugün LLM'in cevapladığı sorular netleştirmeye düşer.
+        # Kazanç (kapanan sessiz-yanlış) ile kaybın kıyası **gerçek sağlayıcıyla** ölçülmeli
+        # ve o ölçüm bu turda kotaya takıldı. Ölçmeden açmak, 2a-1'in `elektrik` hatasını
+        # (kimlik silindi, 388 cevap kayboldu) tekrarlamak olurdu.
+        if (route_hit is None
+                and "netlestirme_onceligi" in resolve_for(settings, principal)):
+            _bel = _olcu_belirsizligi_netlestir(q_norm, schema)
+            if _bel is not None:
+                _bel.trace = ["Intent-path: katalog belirsizliği → netleştirme "
+                              "Intent-JSON'u ÖNCELEDİ (LLM'siz)"]
+                return _finish(_bel)
+
         if route_hit is None and "ask_intent_first" in resolve_for(settings, principal):
             llm_probe = getattr(request.app.state, "llm", None)
             if llm_probe is not None and hasattr(llm_probe, "select_cube"):
@@ -2449,27 +2521,9 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 trace=["Intent-path: cube belirlendi, ölçü belirsiz → netleştirme (LLM'siz)"],
             ))
 
-        try:
-            cands = cube_router.measure_cube_candidates(q_norm, schema)
-        except Exception:
-            cands = []
-        distinct_cubes = {c["name"]: (c, m) for c, m in cands}
-        if len(distinct_cubes) >= 2:
-            # FAZ 2a — ETİKET ÇAKIŞMASI TUZAĞI. Eskiden chip'ler yalnız ölçünün görünen
-            # adıyla kuruluyordu; iki cube aynı adı taşıdığında (`cari.bakiye` ve
-            # `mizan.bakiye` → ikisi de "bakiye") liste tekilleşip 1'e düşüyor, aşağıdaki
-            # `>= 2` kapısı chip'i SESSİZCE atlıyor ve soru Discovery'ye düşüyordu.
-            # Ölçüldü: 54 belirsiz sinonimin 33'ü (%61) bu tuzaktaydı.
-            # `olcu_netlestirme` çakışan etiketi CUBE ile niteler — ayırt edici bilgi
-            # ölçü adı değil cube'un kendisi.
-            m_disp_labels = cube_router.olcu_netlestirme(list(distinct_cubes.values()), schema)
-            if len(m_disp_labels) >= 2:
-                return _finish(AskResponse(
-                    question=body.question, source=None,
-                    note="Birden fazla konu anlaşıldı, hangisini istiyorsun?",
-                    suggestions=[Suggestion(**s) for s in m_disp_labels[:6]],
-                    trace=["Intent-path: çapraz konu → netleştirme (LLM'siz)"],
-                ))
+        _belirsiz = _olcu_belirsizligi_netlestir(q_norm, schema)
+        if _belirsiz is not None:
+            return _finish(_belirsiz)
 
         try:
             unknown, hits = cube_router.partial_unknowns(q_norm, schema)
