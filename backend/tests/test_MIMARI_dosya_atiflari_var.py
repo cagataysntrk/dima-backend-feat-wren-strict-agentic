@@ -36,12 +36,12 @@ MIMARI = KOK / "MIMARI.md"
 
 #: MIMARI'de anılıp da repoda olmaması MEŞRU olanlar — gerekçesiyle.
 #: ⚠ Liste büyütmek bir çözüm DEĞİLDİR (ADR-0008): her giriş bir KARARDIR.
-MUAF: dict[str, str] = {
-    # Yol haritasının üreteceği, henüz inmemiş kapılar — ⟳ bloğunda otoritesi yazılı.
-    "tests/test_panel_sayisi.py": "FAZ 0.14'te yazılır (§C/11 kendisi kaydediyor)",
-    "tests/test_yol_haritasi_butunlugu.py": "FAZ 0.14'te yazılır (D5'in kapısı)",
-    "tests/test_sayim_yerine_kapanis.py": "FAZ 0.14'te yazılır (KAT-5'in kapısı)",
-}
+#: 🔴 **BOŞ, ve bu BİLİNÇLİ.** İlk sürümde üç girdi vardı (`test_panel_sayisi` ·
+#: `test_yol_haritasi_butunlugu` · `test_sayim_yerine_kapanis`); denetim ölçtü:
+#: **üçü de MIMARI'de HİÇ geçmiyor** → muafiyetleri hiçbir şeyi muaf tutmuyordu.
+#: Ölü muafiyet, kapıyı okunamaz yapar ve *"düşünülmüş"* izlenimi verir. FAZ 0.14 o
+#: dosyaları yazdığında ANILDIKLARI anda buraya gerekçeli girerler — önce değil.
+MUAF: dict[str, str] = {}
 
 
 def _anilan_test_dosyalari() -> set[str]:
@@ -90,6 +90,14 @@ def test_MIMARI_ANILAN_MODULLER_VAR(modul):
 
     Bir modül yeniden adlandırıldığında MIMARI'nin onlarca atfı **sessizce** bayatlar;
     bu kapı o anı yakalar."""
-    if modul not in MIMARI.read_text(encoding="utf-8"):
+    metin = MIMARI.read_text(encoding="utf-8")
+    # ⚠ BİÇİM KÖRLÜĞÜ (denetimde bulundu): ilk sürüm YALNIZ tam yolu (`app/cube_router.py`)
+    # arıyordu; MIMARI ise `cube_router`'ı **18 kez** anıyor ve **hiçbirinde** `app/` öneki
+    # yok → deponun en merkezî modülü sessizce `skip` ediliyordu. Bir kapının atladığı şey,
+    # kapının kapsamının DIŞINDA değil, kapının KUSURUDUR. Bu yüzden çıplak modül adı da
+    # (kelime sınırıyla, `.py` uzantısı olmadan) sayılır.
+    ad = pathlib.Path(modul).stem
+    anildi = modul in metin or re.search(rf"\b{re.escape(ad)}\b", metin) is not None
+    if not anildi:
         pytest.skip(f"{modul} MIMARI'de anılmıyor — kapının konusu değil")
     assert (KOK / modul).exists(), f"MIMARI {modul}'ü anıyor ama dosya YOK"

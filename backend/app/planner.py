@@ -114,10 +114,28 @@ class Kosum:
         """Veriye dokunan adımlar (maliyet sınıfı `sifir` olmayanlar).
 
         Kapısız (bileşik) adımlar kayıtta olmadığı için maliyetlerini KENDİLERİ taşır —
-        aksi halde `tools.get()` patlar ve bütçe muhasebesi bileşikleri hiç saymazdı."""
+        aksi halde `tools.get()` patlar ve bütçe muhasebesi bileşikleri hiç saymazdı.
+
+        ⚠️ **FAZ 0.2 — MAKBUZ KENDİNİ YIKAMAZ.** Bu özellik `agent_run` makbuzunun
+        üretim yolundadır: burada atılan bir istisna **makbuzun tamamını** düşürür ve
+        `_butce_kapisi`'nı sessizce atlatır. Yani *"bilinmeyen araç"* durumunda doğru
+        davranış **çökmek değil, TEMKİNLİ SAYMAK**tır — bir denetim aracı, denetlediği
+        şeyin kusuru yüzünden **susmamalıdır**. Bilinmeyen ad `hata` alanıyla zaten
+        makbuzda görünür; ayrıca `WARNING` yazılır — sessiz yutma YOK (ADR-0020).
+        """
         n = 0
         for a in self.adimlar:
-            maliyet = a.dis_maliyet if a.kapisiz else tools.get(a.arac).maliyet
+            if a.kapisiz:
+                maliyet = a.dis_maliyet
+            else:
+                try:
+                    maliyet = tools.get(a.arac).maliyet
+                except KeyError:
+                    # Kayıtta olmayan bir ad `kapisiz=False` ile kaydedilmiş: bu bir
+                    # KUSURDUR (kaydeden yer düzeltilmeli) ama makbuzu yok etmez.
+                    _log.warning("makbuz: kayıtta olmayan araç adı %r kapisiz=False ile "
+                                 "kaydedilmiş — temkinli sayılıyor", a.arac)
+                    maliyet = "pahali"
             if maliyet != "sifir":
                 n += 1
         return n
@@ -274,8 +292,18 @@ class Planlayici:
                 # SESSİZ DÜŞÜRME YOK: uydurulmuş/yetkisiz bir araç adı KAYDA GEÇER.
                 # Sessizce elemek, seçicinin ne kadar yanıldığını ölçülemez yapardı ve
                 # bu deponun "sessiz kırpma yok" disiplinini delerdi.
+                # ⚠️ FAZ 0.2 — `kapisiz=True` ZORUNLU: bu ad `tools.KAYIT`'ta YOK.
+                # `False` bırakılırsa `Kosum.sorgu_sayisi` (yukarıda) `tools.get(ad)` çağırır
+                # ve **KeyError** atar → `agent_run` makbuzu TAMAMEN düşer (`ask.py`'de
+                # makbuz üretimi try/except içinde), `_butce_kapisi` de aynı yoldan patlayıp
+                # `continue` ile yutulur → **bütçe kapısı SESSİZCE atlanır**. Yani makbuzun
+                # en çok gerektiği anda (model bir araç adı UYDURDU) makbuz kaybolurdu.
+                # `dis_maliyet="sifir"`: reddedilen adım veriye DOKUNMADI, sorgu saymaz —
+                # ama adım olarak sayılır (bütçe muhasebesi eksik kalmaz).
                 self.kosum.adimlar.append(Adim(
                     arac=ad, determinizm="llm", sure_ms=0, makbuz=None,
+                    kapisiz=True, dis_maliyet="sifir",
+                    notlar="seçim aşamasında reddedildi — hiç çalıştırılmadı",
                     hata="SEÇİM REDDİ: kayıtta yok ya da yetki dışı"))
                 continue
             if ad not in {a["arac"] for a in temiz}:

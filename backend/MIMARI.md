@@ -25,6 +25,12 @@
 >
 > **Yol haritası:** `~/.claude/plans/DIMA-V1-YOL-HARITASI.md` · **operasyon:**
 > `OPERASYON.md` (kural seti) + `OPERASYON-DURUM.md` (nerede kaldık)
+>
+> **Bu bloğun kendi kapıları** *(D4: her artefakt kanonik belgede anılır)*:
+> `tests/test_beyanlar_curumesin.py` — her satır için bir **tuzak** + tablonun **yapısal
+> işaretçi biçimi** (dört hücre · `⟳ UYGULANMADI` · otorite fazı) ·
+> `tests/test_MIMARI_dosya_atiflari_var.py` — **bu belgede anılan her `tests/test_*.py`
+> ve omurga modülü gerçekten mevcut** olmalı *(FAZ −1'de kuruldu; ilk avı `A6` oldu)*.
 
 | MIMARI § | Konu | Otoriteyi alan faz | Durum |
 |---|---|---|---|
@@ -2848,8 +2854,8 @@ tabanıyla korunuyor. Yaşayan semantik testle kilitlendi.
 |---|---|
 | eval `det` dilimi | 129 adım · **answered-precision %100** · **coverage %100** · chip %100 |
 | **deterministik pay** | **%100** — yol dağılımı `intent=111` |
-| pytest | **1016 geçti / 0 hata**, ~230 sn (2026-08-02, Faz D sonu) |
-| **`lab/nl_corpus.py` — GERÇEK deterministik tavan** | **8984 turda ~%64** (boyahane %64 · atiksan %67 · gulteks %62 · gitas %65) |
+| pytest | ⟳ **D2 (FAZ −1/A5, denetimde bulundu):** sabit sayı SİLİNDİ — *"1016 geçti"* bugün **iki kat** bayattır. Komut: `python -m pytest -q --collect-only \| tail -1` *(taban ve damga: `OPERASYON-DURUM.md` ölçüm tablosu)* |
+| **`lab/nl_corpus.py` — GERÇEK deterministik tavan** | ⟳ **D2 (FAZ −1/A9, denetimde bulundu):** sabit sayı SİLİNDİ — *"8984 turda ~%64"* bu satırda **bayattı** ve tam yedi satır aşağıda kendi ⟳ notu onu çürütüyordu. Güncel değer **komutla** üretilir: `python lab/nl_corpus.py --kapi` |
 
 > ⚠️ **Eval'in %100'ünü kapsam sanma.** 111 cevabın 111'i intent yolundan geliyor, çünkü eval
 > korpusu **zaten çalışan şeye göre kuratörlenmiş** — çapraz-alan boşluğuna hiç dokunmuyor.
@@ -3338,7 +3344,7 @@ demektir.
 **Kalan (F3):** belirsizlikte plan seviyesinde sorma, ve kalan kompozisyonların
 (rapor · pano) planlayıcıya taşınması.
 
-25 test: `tests/test_orkestrator.py`.
+29 test: `tests/test_orkestrator.py` *(FAZ 0.2 + 0.22 kapıları eklendi)*.
 
 ### 11.6 Özellik = KOMPOZİSYON, endpoint değil
 

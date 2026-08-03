@@ -395,9 +395,17 @@ _YURURLUKTE_TUZAKLARI = [
      lambda: "rowLevelAccessControl" in _app_kaynagi(""),
      "motor-seviyesi RLS"),
     ("§3.4-osi", "FAZ 3.4",
-     # ⚠ Belirteç DOSYA varlığına bağlı: ilk sürümü `"ossie" in _app_kaynagi()` idi ve
-     # **yorum satırlarını** yakalayıp tuzağı yanlış-kırmızı yaptı (ölçüm aracı kusuru).
-     lambda: (APP / "ossie_import.py").exists() or (APP / "ossie.py").exists(),
+     # ⚠ Belirteç İKİ KEZ düzeltildi:
+     #  (1) ilk sürüm `"ossie" in _app_kaynagi()` idi → `compose.py`'nin **YORUM** satırını
+     #      yakalayıp tuzağı yanlış-KIRMIZI yaptı (ölçüm aracı kusuru);
+     #  (2) ikinci sürüm yalnız `app/ossie_import.py` arıyordu → denetim ölçtü: FAZ 3.4'ün
+     #      `NE`'si böyle bir DOSYA vaat etmiyor; vaat ettiği şey **`POST /connections/
+     #      {id}/import-semantic` ucu** + `ossie_ithal` bayrağı + bir çevirici. Yani faz
+     #      indiğinde tuzak **susacaktı** — yanlış-NEGATİF, yanlış-pozitiften DAHA tehlikeli.
+     # Şimdi belirteç fazın KENDİ vaadine bağlı (üçünden biri yeterli: uç · bayrak · modül).
+     lambda: ("import-semantic" in _app_kaynagi("")
+              or "ossie_ithal" in (APP / "features.py").read_text(encoding="utf-8")
+              or any(APP.glob("ossie*.py"))),
      "Ossie ithali (karar geri alındı)"),
     ("§4", "FAZ 6.0→6.2",
      # ⚠ AST ile bakılır: alt-dize taraması `tools.py`'nin **docstring'indeki**
@@ -467,29 +475,85 @@ def test_TUZAK_SAYISI_MIMARI_ILE_ORTUSUYOR():
 
     Aksi hâlde biri ⟳ ekleyip tuzağını yazmayı unutur ve o satır **sessizce** bayatlar —
     tam olarak bu bloğun engellemek için var olduğu şey."""
-    mimari = (APP.parent / "MIMARI.md").read_text(encoding="utf-8")
-    satir = mimari.count("⟳ UYGULANMADI")
+    # ⚠ Sayım TABLO SATIRI üzerinden — alt-dize sayımı bloğun kendi AÇIKLAMASINI da
+    # sayıyordu (ölçüldü: 14 ↔ 13). Bkz. `_yururlukte_satirlari` docstring'i.
+    satir = len(_yururlukte_satirlari())
     assert satir == len(_YURURLUKTE_TUZAKLARI), (
         f"MIMARI §0'da {satir} ⟳ satırı var, tuzak sayısı {len(_YURURLUKTE_TUZAKLARI)}. "
         "Her ⟳ satırının bir tuzağı OLMALI — yoksa beyan sessizce çürür.")
 
 
-def test_YURURLUKTE_BLOGU_KURAL_BEYAN_ETMIYOR():
-    """🔴 Kutu B'nin bağlayıcı kısıtı: ⟳ bloğu **otorite işaret eder, kural beyan etmez**.
-
-    *"Yeni kural şudur"* diyen bir ⟳ satırı, okuyucuya **yapılmış** olduğunu düşündürür —
-    ve `§10`'un `✅` = *"ölçüldü ve YAPILDI"* tanımını sessizce deler."""
+def _yururlukte_blogu() -> str:
     mimari = (APP.parent / "MIMARI.md").read_text(encoding="utf-8")
-    bas = mimari.index("## §0 · ⟳ YÜRÜRLÜKTE")
-    son = mimari.index("## 1. Sistem nedir")
-    blok = mimari[bas:son]
-    # ⚠ YALNIZ TABLO SATIRLARI taranır. İlk sürüm bloğun TAMAMINI tarıyordu ve bloğun
-    # kendi AÇIKLAMASINI (*"hiçbir satır «yeni kural şudur» demez"*) bir ihlal sanıp
-    # yanlış-kırmızı verdi. **Yasağı anlatmak, yasağı çiğnemek değildir.**
-    tablo = [s for s in blok.splitlines() if s.lstrip().startswith("|")]
-    for yasak in ("yeni kural şudur", "artık şöyle olacak", "bundan sonra şu kural"):
-        for s in tablo:
+    return mimari[mimari.index("## §0 · ⟳ YÜRÜRLÜKTE"):mimari.index("## 1. Sistem nedir")]
+
+
+def _yururlukte_satirlari() -> list[list[str]]:
+    r"""§0 tablosunun VERİ satırları, hücrelerine ayrılmış — **tek ayrıştırıcı**.
+
+    🔴 Bu fonksiyon bir kusurdan doğdu ve kusur **benim ölçüm aracımdaydı** (bu turda
+    dördüncü kez). Sayaç `mimari.count("⟳ UYGULANMADI")` idi; §0'a bloğun kendi kapılarını
+    anlatan bir paragraf eklendi ve o paragraf `⟳ UYGULANMADI` **ifadesini** taşıyordu →
+    sayaç **14**, tablo **13**. Yani belge doğruydu, **sayaç yanlıştı** — tam olarak
+    *"testler METNİ ölçtü, davranışı değil"* sınıfı.
+
+    Doğru ölçüm: **tablo satırı** ayrıştırılır; düzyazı hiç sayılmaz. `\|` KAÇIŞLI boru
+    işareti hücre ayracı DEĞİLDİR (§13 satırı `VizSpec \| list[VizSpec]` yazıyor)."""
+    satirlar = [s for s in _yururlukte_blogu().splitlines() if s.lstrip().startswith("|")]
+    veri = [s for s in satirlar[2:] if s.strip().strip("|").strip()]   # başlık + ayraç atlanır
+    return [[c.strip() for c in re.split(r"(?<!\\)\|", s.strip().strip("|"))] for s in veri]
+
+
+def test_YURURLUKTE_SATIRLARI_ISARETCI_bicimini_KORUYOR():
+    """🔴 **Kutu B'nin bağlayıcı kısıtının ASIL kapısı — YAPISAL.**
+
+    Kısıt şudur: ⟳ bloğu **otorite işaret eder, kural beyan etmez**. Bunu *"şu cümle
+    geçmesin"* diye ölçmek **metin ölçmektir** ve bu depo o kusuru altı kez kaydetti.
+    Yapısal karşılığı şudur: **her satır dört hücreli bir İŞARETÇİdir** —
+    `MIMARI §` · konu · **otoriteyi alan faz** · `⟳ UYGULANMADI`. Bir kural beyanı bu
+    şekle sığmaz: ne bir fazı işaret eder, ne *"uygulanmadı"* der.
+
+    Özellikle `Durum` hücresi kritiktir: her satır **UYGULANMADI** demek zorundadır.
+    Bir satır *"uygulandı"* demeye başladığı an artık işaretçi değil **beyandır** — ve
+    §10'un `✅` = *"ölçüldü ve YAPILDI"* tanımını delerdi."""
+    satirlar = _yururlukte_satirlari()
+    assert satirlar, "⟳ tablosu BOŞ"
+    for h in satirlar:
+        s = " | ".join(h)
+        assert len(h) == 4, f"⟳ satırı dört hücreli İŞARETÇİ değil ({len(h)} hücre): {s[:90]}"
+        assert h[3] == "⟳ UYGULANMADI", (
+            f"⟳ satırının `Durum` hücresi {h[3]!r} — işaretçi yalnız «UYGULANMADI» der. "
+            "Başka bir şey diyorsa o bir BEYANDIR ve ilgili bölüme ölçümlü ✅ olarak "
+            "yazılmalıdır (§10).")
+        assert "FAZ" in h[2] or "§" in h[2], (
+            f"⟳ satırı bir OTORİTE işaret etmiyor: {h[2]!r}. İşaretçinin işaret edeceği "
+            "bir yer yoksa satır bir kuraldır.")
+        assert h[0].strip("*` "), f"⟳ satırının MIMARI § hücresi boş: {s[:90]}"
+
+
+def test_YURURLUKTE_BLOGU_KURAL_BEYAN_ETMIYOR():
+    """Yapısal kapının yanındaki **tel tuzağı** (tripwire) — ve sınırı AÇIKÇA yazılıdır.
+
+    Üç birebir ifade taranır. Bu **bir kanıt değildir**: bu kalıpları kullanmayan bir kural
+    beyanı buradan geçer. Kısıtı gerçekten tutan şey yukarıdaki **yapısal** kapı (dört
+    hücreli işaretçi + `⟳ UYGULANMADI`) ve her satırın **kendi tuzak testidir**. Tuzak,
+    faz indiğinde kırılır; kırılmayan bir satır zaten yalan söylüyordur.
+
+    ⚠ Kapsam **TABLO SATIRLARIDIR**, blok düzyazısı değil — ve bu bilinçlidir:
+    bloğun düzyazısı **kendi defter tutma kuralını** (yaşam döngüsü: satır silinir →
+    ölçümlü ✅ → tuzak ters çevrilir) anlatır. O bir MİMARİ kuralı değil, bu bloğun
+    kullanma kılavuzudur; onu yasaklamak bloğu okunamaz yapardı. İlk sürüm blok
+    TAMAMINI tarıyordu ve bloğun *kendi yasağını anlatan cümlesini* ihlal sandı —
+    **yasağı anlatmak, yasağı çiğnemek değildir.**"""
+    blok = _yururlukte_blogu()
+    for yasak in ("yeni kural şudur", "artık şöyle olacak", "bundan sonra şu kural",
+                  "bundan böyle", "yeni davranış şudur"):
+        for h in _yururlukte_satirlari():
+            s = " | ".join(h)
             assert yasak not in s.lower(), (
                 f"⟳ TABLOSUNDA kural beyanı bulundu ({yasak!r}): {s[:90]}\n"
                 "Blok yalnız OTORİTE işaret eder; kuralı yol haritası taşır.")
-    assert blok.count("⟳ UYGULANMADI") == len(_YURURLUKTE_TUZAKLARI)
+    # Bloğun kendi sınırını İLAN ETMESİ de kapının parçası: ilan silinirse okuyucu
+    # satırları "yapılmış" sanabilir ve blok tam da engellemek için var olduğu şeyi doğurur.
+    assert "BU BLOK BİR KURAL BEYAN ETMEZ" in blok, \
+        "bloğun kendi sınır ilanı silinmiş — okuyucu satırları «yapılmış» sanabilir"

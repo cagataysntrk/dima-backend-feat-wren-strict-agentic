@@ -8,6 +8,23 @@ import { BrandMark } from "@/components/BrandMark";
 import { CaretInput } from "@/components/CaretInput";
 import { ReportCard } from "@/components/ReportCard";
 
+// ⚠️ FAZ 0.23 — RAPORLANABİLİRLİK TEK SAHİPTE.
+//
+// Bu kapı eskiden `it.result || it.kpi` idi ve **İKİ YERDE ayrı ayrı** yazılıydı
+// (`lastReportableIdx` hesabı + render dalı). Ama `ask.py`'nin *"cevap üstünde konuş"*
+// dalı **`result` DÖNDÜRMEZ**: gövdeyi `contribution` (+ `prescription`) taşır — kodun
+// kendi yorumu: *"Bulgular CEVABIN GÖVDESİDİR — `next_steps` DEĞİL … UI'da farklı
+// görünmelidir."* Render edici (`ReportCard`) **zaten yazılmış ve doğruydu**
+// (`item.cube_query && (item.result || item.contribution)`); **sırası hiç gelmiyordu.**
+// Sonuç: Faz D2/G1/G3'te ödenmiş üç özellik (katkı ayrıştırması · reçete · chip'ler)
+// ekranda YOKTU; geriye sarı bir not kalıyordu.
+//
+// Tek fonksiyon: *"aynı kuralın iki sahibi"* bu deponun 1 numaralı kusur sınıfı.
+// **Yeni yetenek SIFIR** — çalışan, testli, makbuzlu bir motor görünmezden görünüre geçer.
+export function raporlanabilir(it: AskResponse): boolean {
+  return Boolean(it.result || it.kpi || it.contribution || it.prescription);
+}
+
 // §B Adım 2 (1 Ağustos 2026) — sağ panel artık İNCE bir YIĞIN kapsayıcısı: bir thread'in
 // (aynı konudaki tüm cevaplar) item dizisini alır, her raporlanabilir item için bir
 // <ReportCard> render eder (eski tek-rapor gövdesi ARTIK ReportCard'ta) — yeni cevap
@@ -119,7 +136,9 @@ export function ReportPanel({
     return null;
   };
   let lastReportableIdx = -1;
-  thread.items.forEach((it, i) => { if (it.result || it.kpi) lastReportableIdx = i; });
+  // FAZ 0.23 — aynı kapı (aşağıdaki render dalıyla TEK sahip). Eskiden `it.result || it.kpi`
+  // burada TEKRAR yazılıydı → `lastReportableIdx`/`viewHint` de aynı körlüğü MİRAS ALIYORDU.
+  thread.items.forEach((it, i) => { if (raporlanabilir(it)) lastReportableIdx = i; });
 
   // §B düzeltmesi (1 Ağustos 2026) — çoklu-seçim: en-son (en büyük index) seçilen kart
   // yapısal ÇAPA olur (kendi cube_query/sql'i normal follow-up gibi kullanılır), geri
@@ -182,7 +201,7 @@ export function ReportPanel({
       </div>
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
         {thread.items.map((it, i) => {
-          if (it.result || it.kpi) {
+          if (raporlanabilir(it)) {
             return (
               <ReportCard
                 key={`${thread.id}-${i}`}
@@ -234,6 +253,35 @@ export function ReportPanel({
                         {s.label}
                       </button>
                     ))}
+                  </div>
+                )}
+                {/* ⚠️ FAZ 0.23 — SAF-NOT dalında `next_steps` YOKTU (ölçüldü:
+                    `grep -n "next_steps" ReportPanel.tsx` → 0 isabet). Sonuç:
+                    `_intent_uyusmazlik_chipi` (`ask.py`) *"Hangi ölçüyü istiyorsun?"*
+                    diye soruyordu ve **altında tıklanacak hiçbir şey yoktu.**
+                    Desen `ReportCard.tsx`'in K2 bloğunun AYNISI — `onCubeEdit` →
+                    `/cube`, **0 LLM**. `suggestions`'tan AYRI durur: o yeni bir SORU
+                    sorar (`onReply`), bu ise mevcut sorguyu DÜZENLER (`cube_query` taşır). */}
+                {onCubeEdit && (it.next_steps?.length ?? 0) > 0 && (
+                  <div className="mt-3">
+                    <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+                      sonraki adım
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {it.next_steps!.map((step, si) => (
+                        <button
+                          key={`${step.kind}-${si}`}
+                          onClick={() => onCubeEdit({ cq: step.cube_query, label: step.label })}
+                          title="Deterministik koşar — LLM yok"
+                          className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-500 transition-colors hover:border-foreground/30 hover:text-foreground"
+                        >
+                          <span className="mr-1 text-neutral-400">
+                            {step.kind === "dimension" ? "⌗" : step.kind === "time" ? "◷" : "∑"}
+                          </span>
+                          {step.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

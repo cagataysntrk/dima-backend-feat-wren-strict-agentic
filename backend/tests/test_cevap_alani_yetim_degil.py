@@ -74,3 +74,88 @@ def test_AGENT_RUN_gercekten_render_ediliyor():
         assert beklenen in metin, (
             f"agent_run makbuzunun {beklenen!r} kısmı gösterilmiyor — kısmi render, "
             "denetlenebilirlik iddiasını boşa çıkarır")
+
+
+# --- K2 · (c) BOYUTU: alanın GEÇMESİ yetmez, ULAŞILABİLİR olmalı ------------------
+#
+# 🔴 FAZ 0.23'ün dersi: yukarıdaki kapı `contribution` için **yanlış-pozitif yeşil**
+# veriyordu — alan `ReportCard.tsx`'te geçiyordu ve kapı memnundu. Ama `ReportCard`'a
+# **sıra hiç gelmiyordu**: `ReportPanel`'in kapısı `it.result || it.kpi` idi ve
+# *"cevap üstünde konuş"* dalı `result` DÖNDÜRMEZ. Yani alan **kaynakta vardı,
+# ekranda yoktu**. Faz D2/G1/G3'te ödenmiş üç özellik görünmüyordu.
+#
+# Ders: *"alan FE kaynağında geçiyor"* bir TÜKETİCİ kanıtı değil, bir **METİN** kanıtıdır.
+# Bu deponun altıncı kez tekrarlayan kusuru: **testler METNİ ölçtü, davranışı değil.**
+
+def _yorumsuz_kod(m: str) -> str:
+    """`//` yorum satırlarını atar — kapı KODU ölçmeli, kodun ANLATIMINI değil."""
+    return "\n".join(s for s in m.splitlines()
+                     if not s.lstrip().startswith(("//", "*", "/*", "{/*")))
+
+
+def _panel_metni() -> str:
+    if not FE.exists():
+        pytest.skip("frontend kaynağı mount edilmemiş (CI reçetesinde -v ... :ro gerekir)")
+    return (FE / "components" / "ReportPanel.tsx").read_text(encoding="utf-8")
+
+
+def test_RAPORLANABILIRLIK_kapisi_TEK_SAHIP():
+    """Kapı İKİ yerde ayrı yazılıydı (`lastReportableIdx` + render dalı) → biri düzeltilse
+    diğeri körlüğü miras alırdı. *"Aynı kuralın iki sahibi"* bu deponun 1 numaralı kusuru."""
+    m = _panel_metni()
+    assert "function raporlanabilir(" in m, \
+        "raporlanabilirlik kapısının TEK SAHİBİ yok — kural yine kopyalanmış"
+    assert m.count("raporlanabilir(it)") >= 2, \
+        f"tek sahip yazılmış ama İKİ çağrı yeri de ona bağlanmamış: {m.count('raporlanabilir(it)')}"
+
+    # ⚠ İlk sürümde bu iddia `m.count("it.result || it.kpi") == 0` idi ve KENDİ AÇIKLAMA
+    # YORUMLARIMI sayıp kırmızı verdi — yani tam da eleştirdiğim *"METNİ ölç, davranışı
+    # değil"* kusuruna düştüm (bu turda ikinci kez). Doğru ölçüm: **yorumlar ve tek sahibin
+    # gövdesi çıkarıldıktan sonra** panelde `it.result` okuması KALMAMALI.
+    kod = _yorumsuz_kod(m)
+    bas = kod.index("function raporlanabilir(")
+    sahip_disi = kod[:bas] + kod[kod.index("\n}", bas):]
+    assert "it.result" not in sahip_disi and "it.kpi" not in sahip_disi, (
+        "eski satır-içi kapı hâlâ duruyor (tek sahibin DIŞINDA `it.result`/`it.kpi` okuması "
+        "var). Tek sahip varken ikinci bir kopya, düzeltmenin yarısının kaybolması demektir.")
+
+
+def test_RESULT_YOKKEN_de_ULASILABILIR():
+    """K2/(c): `result=None` iken gövdeyi taşıyan alanlar kapıdan GEÇMELİ.
+
+    `ask.py`'nin *"cevap üstünde konuş"* dalı bilerek `result` döndürmez — kodun kendi
+    yorumu: *"Bulgular CEVABIN GÖVDESİDİR … `contribution` alanı zengin gövdeyi taşır."*"""
+    m = _panel_metni()
+    govde = m[m.index("function raporlanabilir("):]
+    govde = govde[:govde.index("\n}")]
+    for alan in ("result", "kpi", "contribution", "prescription"):
+        assert f"it.{alan}" in govde, (
+            f"`{alan}` raporlanabilirlik kapısında YOK → o alanı taşıyan cevap "
+            "hiçbir zaman render edilmez (backend üretir, ekran göstermez)")
+
+
+def test_SAF_NOT_dalinda_NEXT_STEPS_var():
+    """Netleştirme cevabı (`result=None`, yalnız `note`) *"Hangi ölçüyü istiyorsun?"* diye
+    soruyordu ve **altında tıklanacak hiçbir şey yoktu** — `next_steps` render'ı YALNIZ
+    `ReportCard`'da vardı, not dalında yoktu (ölçüldü: 0 isabet).
+
+    Chip `onCubeEdit` kullanır → `/cube` → **0 LLM**. `suggestions`'tan AYRIDIR: o yeni bir
+    SORU sorar, bu mevcut sorguyu DÜZENLER."""
+    m = _panel_metni()
+    assert "it.next_steps" in m, "saf-not dalında `next_steps` render'ı YOK"
+    assert "onCubeEdit({ cq: step.cube_query" in m, \
+        "`next_steps` chip'i deterministik /cube yolunu kullanmıyor (LLM'e düşer)"
+
+
+def test_REPORTCARD_KONUSMA_dalindaki_BILINCLI_gizleme_KORUNDU():
+    """🔴 **GERİ ALMAYIN uyarısı testle kilitlendi.** `ReportCard.tsx:887`'nin
+    `!item.contribution` koşulu bir EKSİK DEĞİL, tasarımdır: konuşma cevabında gezinme
+    `ContributionLayer`'ın TIKLANABİLİR SEGMENTLERİNDEN gelir; `next_steps`'i orada da
+    göstermek aynı listeyi **İKİ KEZ**, üstelik ikincisini **YANLIŞ BAŞLIKLA**
+    (*"sonraki adım"*) sunardı. 0.23 bu koşula DOKUNMAZ."""
+    if not FE.exists():
+        pytest.skip("frontend kaynağı mount edilmemiş")
+    kart = (FE / "components" / "ReportCard.tsx").read_text(encoding="utf-8")
+    assert "!item.contribution && onCubeEdit && (item.next_steps?.length ?? 0) > 0" in kart, (
+        "ReportCard'ın bilinçli gizlemesi kaldırılmış — konuşma cevabında `next_steps` "
+        "İKİ KEZ görünür (ikincisi yanlış başlıkla). Kodun kendi gerekçesi bunu yasaklar.")

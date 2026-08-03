@@ -2886,6 +2886,15 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             _log.warning("chip-onaylı VQR öğrenme başarısız (best-effort)", exc_info=True)
         return None
 
+    # ⚠️ FAZ 0.22 — `migration_trace` BURADA tanımlanır, `if`in İÇİNDE değil.
+    # Kök neden (satır satır doğrulandı): tanım `if structural_followup:` bloğunun İÇİNDEYDİ,
+    # ama `agent_plan_secimi` dalı (aşağıda, 4b) blok DIŞINDA onu `_capraz_alan_pilotu`'ya
+    # geçiriyor → **bayrak `on` VE `structural_followup=False` → `UnboundLocalError`**.
+    # Bugün dormant çünkü bayrak `off`; yani *"kota serbest kalınca ölçeriz"* iyimserdi —
+    # ölçüm denenseydi ilk taze soruda 500 alınırdı. Kapı:
+    # `tests/test_orkestrator.py::test_agent_plan_secimi_yapisal_olmayan_turda_cokmez`.
+    migration_trace: list[str] = []
+
     # 3) YAPISAL TAKİP — önceki tur GERÇEK bir CubeQuery ürettiyse (route()/LLM-select/
     # YoY/bu zincirin kendisi), deterministik düzenleme zinciri denenir (bkz. docstring §3).
     # cube_router.py'de zaten tam, test edilmiş, LLM'siz bir zincirdi — strict-agentic
@@ -2906,7 +2915,6 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             if _tk is not None:
                 return _tk
 
-        migration_trace: list[str] = []
         _resolved = cube_router.resolve_cube_name(prev_cq.get("cube"), schema)
         if _resolved and _resolved != prev_cq.get("cube"):
             migration_trace = [f"cube adı göçü → {_resolved}"]

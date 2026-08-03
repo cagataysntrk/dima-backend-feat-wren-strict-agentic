@@ -297,3 +297,116 @@ def test_CROSS_CUBE_ADD_kayitli_ve_DETERMINISTIK():
         "`cross_cube_add` sıfırdan sorgu ÜRETMEZ, var olanı GENİŞLETİR — `route` ile aynı "
         "iş için yarışmaz. `sorgu-uretimi` etiketi uygulanamaz bir şart doğurur.")
     assert "kompozisyon" in a.etiketler and "sorgu-uretimi" in rt.etiketler
+
+
+# --- FAZ 0.2 · MAKBUZ KENDİNİ YIKAMAZ --------------------------------------------
+
+def test_uydurma_arac_makbuzu_dusurmez():
+    """🔴 **FAZ 0.2 KAPISI.** Uydurma bir araç adı, `agent_run` makbuzunun TAMAMINI
+    düşürüyordu ve bütçe kapısını SESSİZCE atlatıyordu.
+
+    Zincir (canlı doğrulandı): `sec()` reddi `kapisiz=False` ile kaydedilir →
+    `Kosum.sorgu_sayisi` `tools.get(<uydurma ad>)` çağırır → **KeyError** → makbuz üretimi
+    ve `_butce_kapisi` aynı yoldan patlar; `ask.py` `continue` ile yutar.
+
+    Makbuzun **en çok gerektiği an** modelin yanıldığı andır. O anda kaybolan bir makbuz,
+    bir makbuz değildir."""
+    p = _p()
+    plan = p.sec("x", _LLM('[{"arac":"uydurma.arac","neden":"y"},{"arac":"route","neden":"z"}]'))
+    assert not any(a["arac"] == "uydurma.arac" for a in plan)
+
+    # (1) makbuz ÜRETİLİYOR — eskiden burada KeyError vardı
+    mk = p.kosum.makbuza()
+    adimlar = mk["agent_run"]["steps"]
+    red = next((s for s in adimlar if "SEÇİM REDDİ" in (s.get("error") or "")), None)
+    assert red is not None, f"SEÇİM REDDİ adımı makbuzda YOK: {adimlar}"
+    assert red["tool"] == "uydurma.arac"
+    assert red["gated"] is False, "kayıtta olmayan ad `gated` işaretlenmemiş — denetçi yanılır"
+
+    # (2) reddedilen adım veriye DOKUNMADI → sorgu saymaz (bütçe muhasebesi bozulmaz)
+    assert p.kosum.sorgu_sayisi == 0, "hiç çalıştırılmamış bir red adımı sorgu sayıldı"
+    assert mk["agent_run"]["query_count"] == 0
+
+    # (3) BÜTÇE KAPISI hâlâ çalışıyor — eskiden bu çağrı KeyError ile patlıyor,
+    #     `ask.py`'de `continue` ile yutuluyor ve kapı sessizce atlanıyordu.
+    p._butce_kapisi(tools.get("route"))
+
+
+def test_MAKBUZ_bilinmeyen_arac_adinda_da_AYAKTA_kalir():
+    """Kök neden ikinci katman: `sorgu_sayisi` bir DENETİM aracıdır; denetlediği şeyin
+    kusuru yüzünden **susmamalıdır**. Kayıtta olmayan bir ad `kapisiz=False` ile
+    kaydedilirse (gelecekte başka bir yer aynı hatayı yaparsa) makbuz yine üretilmeli —
+    ad temkinli sayılır, `WARNING` yazılır, ama makbuz yok olmaz."""
+    from app.planner import Adim
+
+    p = _p()
+    p.kosum.adimlar.append(Adim(arac="hic.olmayan", determinizm="llm", sure_ms=1))
+    assert p.kosum.sorgu_sayisi == 1, "bilinmeyen ad temkinli sayılmadı"
+    assert p.kosum.makbuza()["agent_run"]["step_count"] == 1
+
+
+# --- FAZ 0.22 · `migration_trace` UnboundLocalError -------------------------------
+
+def test_agent_plan_secimi_yapisal_olmayan_turda_cokmez(client, monkeypatch):
+    """🔴 **FAZ 0.22 KAPISI.** `migration_trace` YALNIZ `if structural_followup:`
+    bloğunun içinde tanımlıydı; **adım 4b**'nin `agent_plan_secimi` dalı blok DIŞINDA onu
+    okuyordu → **bayrak `on` + `structural_followup=False` → `UnboundLocalError`** (HTTP 500).
+
+    Bugün dormant çünkü bayrak `off` — yani *"kota serbest kalınca ölçeriz"* iyimserdi:
+    ölçüm denenseydi bu soruda **500** alınırdı. Faz C'nin iki bayrağının
+    (`agent_plan_secimi`, `t2_anlatici`) ölçülebilmesi buna bağlı.
+
+    ⚠️ **BU TEST İKİ KEZ YANLIŞ YAZILDI — ikisi de ÖLÇÜLEREK yakalandı:**
+    (1) İlk soru (*"…işten ayrıldı ve neden"*) `route()` ile cevaplanıyordu; pilot hiç
+        çağrılmıyordu → test BOŞA koşuyordu.
+    (2) İkinci soru (*"personel bazında verimlilik"*) pilotu çağırıyordu ama **YANLIŞ
+        ÇAĞRI YERİNDEN**: netleştirme dalındaki ikinci çağrı yeri (`other_topic`) `[]`
+        LİTERALİNİ geçiyor, yani hatalı kodda bile çökmüyor. Hata geri konularak ölçüldü:
+        test **YEŞİL** kaldı. Bir kapı, ölçmediği bir şeyi *"geçti"* diye raporlayamaz.
+    Bu yüzden aşağıda **çağrı YERİ de** iddia edilir — pilotun çağrılmış olması yetmez."""
+    import inspect as _inspect
+    import pathlib
+
+    from lab.nl_accuracy import _BayrakZorla
+
+    from app.routers import ask as ask_mod
+
+    cagri_satirlari: list[str] = []
+    gercek = ask_mod._capraz_alan_pilotu
+
+    def _casus(request, body, q_norm, schema, principal, migration_trace):
+        # Çağrının KENDİSİ kanıttır: argüman değerlendirilebildi → isim BAĞLI.
+        # ⚠ `code_context` TEK satır verir; 4b'deki çağrı İKİ satıra yayılıdır ve
+        # `lineno` ilk satırı gösterir → `migration_trace` o tek satırda GÖRÜNMEZ.
+        # (Bu testin ÜÇÜNCÜ kusuru; yine ölçülerek yakalandı.) Bu yüzden kaynaktan
+        # küçük bir PENCERE okunur.
+        ust = _inspect.stack()[1]
+        kaynak = pathlib.Path(ust.filename).read_text(encoding="utf-8").splitlines()
+        cagri_satirlari.append("\n".join(kaynak[max(0, ust.lineno - 1):ust.lineno + 2]))
+        return gercek(request, body, q_norm, schema, principal, migration_trace)
+
+    monkeypatch.setattr(ask_mod, "_capraz_alan_pilotu", _casus)
+
+    # ⚠ Soru ÖLÇÜLEREK seçildi (27 aday tarandı): 4b dalına ULAŞAN soru azdır — merdivenin
+    # daha erken bir basamağı cevaplarsa ya da netleştirme dalı yakalarsa test boşa koşar.
+    with _BayrakZorla("agent_plan_secimi", acik=True):
+        r = client.post("/ask", json={"question": "stok devir hızımız nedir",
+                                      "execute": False})
+    assert r.status_code == 200, f"taze soruda çöktü: {r.status_code} {r.text[:300]}"
+    assert cagri_satirlari, ("pilot HİÇ çağrılmadı — test boşa koştu. "
+                             "Kapı bir şey ölçmüyorsa kapı değildir.")
+    assert any("migration_trace" in s for s in cagri_satirlari), (
+        "pilot çağrıldı ama YALNIZ `[]` literalini geçen çağrı yerinden — 0.22'nin hatalı "
+        f"dalı (4b) hiç denenmedi: {cagri_satirlari}")
+
+
+def test_MIGRATION_TRACE_blok_disinda_TANIMLI():
+    """Davranış kapısının yanına YAPI kapısı: tanım `if structural_followup:` satırından
+    ÖNCE gelmeli. (Bir gün pilot dalı erken `return` ile korunsa bile isim bağlı kalmalı —
+    bu sınıf bu depoda *"beyan var, kod onu tanımıyor"* olarak üç kez tekrarladı.)"""
+    from app.routers import ask as ask_mod
+
+    govde = inspect.getsource(ask_mod.ask)
+    tanim = govde.index("migration_trace: list[str] = []")
+    blok = govde.index("    if structural_followup:\n")
+    assert tanim < blok, "`migration_trace` hâlâ `if structural_followup` bloğunun İÇİNDE"
