@@ -916,6 +916,72 @@ Rehberin (§3.2) zincir sözleşmesiyle **10 senaryo THREAD olarak** koşuldu: h
   → **Üçüncü kez bir KABUL ÖLÇÜTÜNÜN kendisi kusurluydu** (3a'nın metriği · vqr
   senaryosunun sorusu · 4'ün pilot sorusu). Ders: *ölçüt de bir beyandır ve çürüyebilir.*
 
+### 6.15z FAZ D1 — SOSYAL SINIF: veri niyeti olmayan ifade SQL üretemez ✅
+
+**Ölçülen kusur (3 Ağustos 2026).** Sistemde *"veri niyeti olmayan ifade"* diye bir sınıf
+**yoktu**. 16 sosyal ifade ölçüldü:
+
+| ifade | önce | sonra |
+|---|---|---|
+| `merhaba` · `selam` | `meta` ✅ (`_META_HINTS`'te **tesadüfen** vardı) | `meta` |
+| `teşekkürler` · `sağol` · `günaydın` · `görüşürüz` · `tamam` · `peki` · `ok` · `süper` · `anladım` · `eyvallah` · `iyi çalışmalar` · `çok iyi` | **`rule` → SQL ÜRETTİ** (12 adet) | `meta`, 0 SQL |
+| `teşekkür ederim` | *"«ederim» yerine «**verim**» mi demek istedin?"* | `meta` |
+| `harika` | *"«harika» yerine «**ariza**» mi demek istedin?"* | `meta` |
+
+Üretimde bunların **her biri bir LLM çağrısıdır** (ölçülen sınır: 10 sn'de 10 istek). Son
+iki satır aynı kökün ikinci belirtisi: sınıf olmadığı için boru hattı sosyal kelimeyi
+**yanlış yazılmış bir katalog terimi** sanıyor.
+
+**İKİNCİ, TERS YÖNLÜ KUSUR — kibar kullanıcı cezalandırılıyordu.** Aynı ölçümde çıktı:
+
+    "merhaba bu yıl makine bazında oee"        → R10   (kapsam kapısı)
+    "iyi çalışmalar, geçen ay fire nedir"      → R1    (kimlik çakışması)
+
+İkincisinin kökü daha ince: `oee`'nin cube sinonimlerinden biri **`calisma`**; *"iyi
+çalışmalar"* kalıbı rakip bir kimlik enjekte ediyor ve `_match_cube` iki adayı çözemiyordu.
+
+#### Neden `_META_HINTS`'e kelime EKLENMEDİ
+
+O liste bir **torbaydı** (ürün soruları + selamlaşma karışık). `teşekkür` eklemek
+ADR-0008'in tam olarak yasakladığı şeydir — bir sonraki kelimede kusur tekrarlar. Kök neden
+**sınıfın yokluğudur**. Liste **büyümedi, KÜÇÜLDÜ**: selamlaşma oradan çıkıp sınıfa taşındı
+(18 → 14 girdi) ve bu bir **kapıyla** kilitlendi.
+
+#### Üç mekanizma, TEK sözlük
+
+| Mekanizma | Ne yapar |
+|---|---|
+| `veri_niyeti_var(q, schema)` | **YAPISAL** kapı: cube/boyut ∨ ölçü ∨ dönem ∨ kıyas ∨ liste sinyali. Beşi de **ZATEN VAR** olan fonksiyonlar — yenisi yazılmadı, çağrıldı |
+| `sosyal_edim(q)` | **SINIF**: tür + **tam kaplama** bayrağı |
+| `sosyal_ayikla(q)` | Kalıp ifadenin sözcüklerini **katalog eşleşmesinden çıkarır** |
+
+Sözlüğün **tek sahibi** `cube_router`'dır — **dört** tüketicisi var (sosyal cevap ·
+`route()` kapsam kapısı · `deterministic_refine` · `partial_unknowns`) ve ayrı liste tutmak
+iki tarafı ayrıştırırdı; `_period_hit_words`/`_misc_hit_words` için verilen kararın aynısı.
+
+#### İki ilke — istisna listesi değil
+
+**1 · TAM KAPLAMA.** *"iyi çalışmalar"* bir **kalıp ifadedir**; `çalışma` katalogda gerçek
+bir terim olsa da kalıbın parçasıdır. Ölçüt: eşleşen kalıp ifadenin **tamamını** kaplıyorsa
+sosyaldir.
+
+    "iyi calismalar"            → kalıp = tüm ifade      → SOSYAL
+    "tesekkurler bu yil ciro"   → `ciro` kalıp dışında   → VERİ
+
+**2 · AYIKLAMA ≠ DOLGU.** Dolgu saymak *"bu kelime açıklandı"* der (R10'u çözer);
+**ayıklamak** *"bu kelime konu hakkında hiçbir şey söylemiyor"* der (R1'i çözer). Çakışmada
+gereken ikincisidir ve `route()` girişinde uygulanır. Ayıklama **kalıba** bağlıdır,
+kelimeye değil: `"calismalar bazında oee"` sorusunda kalıp eşleşmez, `calisma` dokunulmadan
+kalır ve `oee` kimliğini korur.
+
+⚠️ **İlk sürüm virgülü hesaba katmıyordu.** `_norm` noktalamayı KORUYOR; `"calismalar,"`
+token'ı ayıklanamıyordu ve kusur virgüllü cümlede aynen sürüyordu. Eleme artık token
+**çekirdeğine** göre (noktalama korunur).
+
+**Ölçüm:** test **1762 → 1795** · eval `+0,0/+0,0/+0,0` · korpus kapısı **yeşil**
+(doğru-cube %93,2 sabit; erişim %69/%69/%69/%73 — dördü de tabanda ya da üstünde).
+32 test: `tests/test_sosyal_sinif.py`.
+
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 
 Planın kapanış şartı: *"Faz 0.5'in **aynı** süiti yeniden koşulur — **yeni senaryo

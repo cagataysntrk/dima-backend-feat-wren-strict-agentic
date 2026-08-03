@@ -1145,6 +1145,12 @@ def deterministic_refine(prev: dict, q: str, schema: dict) -> dict | None:
         known.update(re.findall(r"[a-z]+", _norm(str(f.get("value", "")))))
     known |= _period_hit_words(q)
     known |= _misc_hit_words(q)
+    # SOSYAL EDİM DOLGUDUR (Faz D1). Ölçüldü: *"merhaba bu yıl makine bazında oee"*
+    # → **R10**; kibar kullanıcı cevapsız kalıyordu. Selamlaşma bir ölçü/boyut adı
+    # değildir. Üç tüketicinin ÜÇÜNDE de dolgu sayılır (kapsam kapısı · takip
+    # düzenlemesi · kısmi-anlama) — biri atlanırsa aynı soru geldiği yola göre
+    # farklı davranır (Faz -1'in "üç çağrı yeri" dersi).
+    known |= _sosyal_hit_words(q)
     known |= rm_verb_words  # ölçü-çıkarma fiilleri (kaldır/sil…) dolgu sayılır, kapsamı delmez
     if not _coverage_ok(q, known):
         return None
@@ -1849,6 +1855,119 @@ def _period_hit_words(q: str) -> set[str]:
     return words
 
 
+# --- SOSYAL EDİM SÖZLÜĞÜ (FAZ D1) — TEK SAHİP, İKİ TÜKETİCİ ----------------------
+#
+# Veri niyeti taşımayan ama anlamlı bir insan edimi olan ifadeler: selamlaşma · teşekkür
+# · kapanış. **Kapalı bir dilbilimsel sınıftır** — katalog sözcük dağarcığını KOVALAMAZ
+# (ADR-0008'in yasakladığı şey odur); Türkçede sonlu ve büyümeyen bir kümedir.
+#
+# ## Neden `cube_router`'da, `ask.py`'de değil
+#
+# İki tüketicisi var ve **aynı** sözlüğü okumak zorundalar:
+#   1. `ask.py` — sosyal cevabı üretir (LLM'e hiç gitmez)
+#   2. `route()`'un KAPSAM KAPISI — sosyal sözcük **dolgudur**, bir veri sorusunu
+#      düşürmemelidir
+#
+# İkinci madde ölçülerek bulundu (Faz D1): *"merhaba bu yıl makine bazında oee"* → **R10**.
+# Yani kibar kullanıcı cevapsız kalıyordu. Ayrı liste tutmak iki tarafı ayrıştırırdı —
+# `_misc_hit_words`/`_period_hit_words` için verilen kararın aynısı.
+_SOSYAL_SELAM = ("merhaba", "selam", "gunaydin", "iyi gunler", "iyi aksamlar",
+                 "naber", "napiyorsun", "nasilsin", "hosgeldin")
+_SOSYAL_TESEKKUR = ("tesekkur", "tesekkurler", "sagol", "sag ol", "eyvallah",
+                    "minnettar", "eline saglik", "harika!", "super!", "muhtesem!",
+                    "cok iyi", "cok guzel")
+_SOSYAL_KAPANIS = ("gorusuruz", "hoscakal", "iyi calismalar", "kolay gelsin",
+                   "bay bay", "tamam!", "peki!", "ok!", "anladim", "tamamdir")
+
+#: (tür, kalıplar) — sıra önemli: teşekkür/kapanış selamdan ÖNCE denenir ki
+#: *"iyi günler"* (selam) ile *"iyi çalışmalar"* (kapanış) karışmasın.
+_SOSYAL_SINIFLAR = (("tesekkur", _SOSYAL_TESEKKUR),
+                    ("kapanis", _SOSYAL_KAPANIS),
+                    ("selam", _SOSYAL_SELAM))
+
+
+def _sosyal_hit_words(q: str) -> set[str]:
+    """Sosyal edim kelimeleri — kapsam kapısı için DOLGU sayılırlar.
+
+    `_misc_hit_words` ile aynı sözleşme: eşleşen kalıbın kelimeleri döner. Böylece
+    *"merhaba bu yıl ciro"* sorusunda `merhaba` kapsamı düşürmez.
+    """
+    words: set[str] = set()
+    for _tur, kaliplar in _SOSYAL_SINIFLAR:
+        for k in kaliplar:
+            if _syn_hit(q, k):
+                words.update(re.findall(r"[a-z]+", k))
+    return words
+
+
+def sosyal_edim(q: str) -> tuple[str, bool] | None:
+    """Sosyal edim türü + **TAM KAPLAMA** bayrağı — yoksa `None`.
+
+    ## Tam kaplama neden gerekli (ölçüldü)
+
+    *"iyi çalışmalar"* bir **kalıp ifadedir** ve tamamı sosyaldir — ama `çalışma`
+    katalogda gerçek bir terim (`oee`) ve yapısal kapı haklı olarak *"veri sinyali var"*
+    diyor. İki kanat çelişir.
+
+    Çözüm bir istisna listesi DEĞİL, bir ilke: **eşleşen kalıp ifadenin TAMAMINI
+    kaplıyorsa** parçalarının katalog anlamı geçersizdir (kalıp ifade budur):
+
+        "iyi calismalar"            → kalıp = tüm ifade      → SOSYAL
+        "tesekkurler bu yil ciro"   → `ciro` kalıp dışında   → VERİ
+
+    Kaplama ölçümü `_uncovered` ile — kapsam kapısının **aynı** fonksiyonu.
+    """
+    qn = _norm(q or "")
+    if not qn.strip():
+        return None
+    for tur, kaliplar in _SOSYAL_SINIFLAR:
+        for k in kaliplar:
+            if not _syn_hit(qn, k):
+                continue
+            return tur, not _uncovered(qn, set(re.findall(r"[a-z]+", k)))
+    return None
+
+
+def sosyal_ayikla(q: str) -> str:
+    """Sosyal KALIP İFADENİN sözcüklerini sorudan çıkarır — katalog eşleşmesi görmesin.
+
+    ## Neden dolgu saymak YETMEDİ (ölçüldü, Faz D1)
+
+    Sosyal sözcükleri `known` kümesine eklemek **kapsam kapısını** (R10) düzeltti ama
+    **kimlik eşleşmesini** (R1) düzeltmedi: `_match_cube` ham soruya bakıyor ve `oee`'nin
+    cube sinonimlerinden biri **`calisma`**. Ölçüldü:
+
+        "gecen ay fire"                     → hits=[parti]            ✅
+        "iyi calismalar gecen ay fire"      → hits=[oee, parti] → R1  ❌
+
+    Yani *"iyi çalışmalar"* selamı, cevabı olan bir soruyu **cevapsız** bırakıyordu.
+
+    İlke `sosyal_edim`'inkiyle aynı: **kalıp ifadenin parçaları katalog anlamı taşımaz.**
+    Dolgu saymak *"bu kelime açıklandı"* der; ayıklamak *"bu kelime konu hakkında hiçbir
+    şey söylemiyor"* der — çakışmada gereken ikincisidir.
+
+    ⚠️ Yalnız **tam kalıp** eşleştiğinde ayıklar: `"calismalar bazinda"` sorusunda
+    `iyi calismalar` kalıbı eşleşmez, dolayısıyla `calisma` DOKUNULMADAN kalır ve `oee`
+    kimliğini korur. Ayıklama kalıba bağlıdır, kelimeye değil.
+    """
+    qn = _norm(q or "")
+    atilacak = _sosyal_hit_words(qn)
+    if not atilacak:
+        return qn
+    # TOKEN ÇEKİRDEĞİNE göre elenir: `_norm` noktalamayı KORUYOR ve ilk sürüm
+    # `"calismalar,"` token'ını ayıklayamıyordu (ölçüldü — virgüllü cümlede kusur
+    # aynen sürüyordu). Noktalama korunur; yalnız sosyal sözcük düşer.
+    kalan = []
+    for tok in qn.split():
+        cekirdek = re.sub(r"[^a-z0-9]", "", tok)
+        if cekirdek and cekirdek in atilacak:
+            continue
+        kalan.append(tok)
+    # HEPSİ ayıklanırsa soru sosyaldir; ham hâlini döndür (çağıran zaten sosyal sınıfta
+    # yakalar). Boş dize döndürmek aşağıdaki her kapıyı anlamsız kılardı.
+    return " ".join(kalan) if kalan else qn
+
+
 def _misc_hit_words(q: str) -> set[str]:
     """Gran/yön/limit ifadelerinin kelimeleri.
 
@@ -2097,7 +2216,10 @@ def ilgili_cubelar(q: str, schema: dict, haric: set[str] | None = None) -> list[
     # bu deponun "bu kelime dönem/granülerlik ifadesidir" TEK KAYNAĞIDIR ve `_uncovered`
     # zaten onu kullanıyor. Bir kelime dolguyla açıklanıyorsa konu hakkında hiçbir şey
     # söylemez. Yeni bir liste yazılmadı; var olan kapı yeniden kullanıldı (ADR-0008).
-    dolgu = _period_hit_words(q) | _misc_hit_words(q)
+    # ⟳ FAZ D1: sosyal edim de dolgudur — *"iyi çalışmalar"* bir KALIP İFADEDİR ve
+    # `çalışma` orada bir `oee` boyutu değildir. Ölçüldü: bu satır olmadan
+    # *"iyi çalışmalar, geçen ay fire nedir"* → **R1** (kimlik çakışması).
+    dolgu = _period_hit_words(q) | _misc_hit_words(q) | _sosyal_hit_words(q)
     anlamli = _uncovered(q, dolgu)
     if not anlamli:
         return []   # soruda dolgu dışında hiçbir şey yok → daraltılacak konu da yok
@@ -2117,6 +2239,60 @@ def ilgili_cubelar(q: str, schema: dict, haric: set[str] | None = None) -> list[
         if _syn_hit_words(konu_metni, c.get("synonyms")) or dim_hit:
             out.append(c)
     return out
+
+
+def veri_niyeti_var(q: str, schema: dict) -> bool:
+    """Bu ifade bir VERİ sorusu mu? — yapısal, sıfır maliyet, sıfır LLM.
+
+    ## Ölçülen kusur (FAZ D1, 3 Ağustos 2026)
+
+    Sistemde *"veri niyeti olmayan ifade"* diye bir sınıf **yoktu**. Sonuç ölçüldü — 16
+    sosyal ifadeden **12'si Discovery'ye düşüp SQL üretti**:
+
+        merhaba          → source=meta      ✅  (çünkü `_META_HINTS` listesinde VAR)
+        teşekkürler      → source=rule      ❌  SQL üretti
+        sağol · günaydın · görüşürüz · tamam · peki · ok · süper …  ❌ hepsi SQL
+        teşekkür ederim  → *"«ederim» yerine «verim» mi demek istedin?"*
+        harika           → *"«harika» yerine «ariza» mi demek istedin?"*
+
+    Üretimde bunların her biri **bir LLM çağrısıdır** (ölçülen sınır: 10 sn'de 10 istek).
+    Son iki satır aynı kökün ikinci belirtisi: sınıf olmadığı için boru hattı sosyal
+    kelimeyi **yanlış yazılmış bir katalog terimi** sanıyor.
+
+    ## Neden `_META_HINTS`'e kelime EKLENMEDİ
+
+    O liste elle yazılmış bir alt-dize torbası ve `merhaba`/`selam` tesadüfen içinde.
+    `teşekkür` eklemek ADR-0008'in tam olarak yasakladığı şeydir (*"kelimeye özel yama
+    değil kök neden"*) — bir sonraki kelimede aynı kusur tekrarlar. Kök neden **sınıfın
+    yokluğu**dur; bu fonksiyon o sınıfın **yapısal** yarısıdır.
+
+    ## Ölçüt — sözlük değil SİNYAL
+
+    Soru şu beş sinyalden **birini** taşıyorsa veri sorusudur:
+
+    * cube kimliği **veya boyut** sinonimi (`ilgili_cubelar` — ikisini de tarar)
+    * ölçü sinonimi (`measure_cube_candidates`)
+    * dönem ifadesi (`_period_hit_words`)
+    * kıyas dili (`compare_mode`)
+    * liste/döküm niyeti (`liste_niyeti`)
+
+    Hiçbiri yoksa **veri sorusu değildir**. Hepsi ZATEN VAR olan fonksiyonlardır —
+    yenisi yazılmadı, beşi **çağrıldı**: ayrı bir liste tutmak iki tarafı ayrıştırır ve
+    kapı, `route()`'un gerçekte baktığından başka bir şeye bakmaya başlar.
+
+    ⚠️ Bu fonksiyon **"anlamadım" demez** — yalnız *"bunda veri sinyali yok"* der.
+    Sinyalsiz bir ifade sosyal de olabilir, anlamsız da; ayrımı çağıran yapar. Kapı
+    fazla geniş olsaydı gerçek bir veri sorusunu keserdi; o yüzden **tek bir sinyal
+    yeter** (VEYA), hepsi değil.
+    """
+    qn = _norm(q or "")
+    if not qn.strip():
+        return False
+    if _period_hit_words(qn) or compare_mode(qn) or liste_niyeti(qn):
+        return True
+    if ilgili_cubelar(qn, schema):
+        return True
+    return bool(measure_cube_candidates(qn, schema))
 
 
 def partial_unknowns(q: str, schema: dict) -> tuple[list[str], list[tuple[dict, str]]]:
@@ -2159,6 +2335,12 @@ def partial_unknowns(q: str, schema: dict) -> tuple[list[str], list[tuple[dict, 
                         known.update(re.findall(r"[a-z]+", nv))
     known |= _period_hit_words(q)
     known |= _misc_hit_words(q)
+    # SOSYAL EDİM DOLGUDUR (Faz D1). Ölçüldü: *"merhaba bu yıl makine bazında oee"*
+    # → **R10**; kibar kullanıcı cevapsız kalıyordu. Selamlaşma bir ölçü/boyut adı
+    # değildir. Üç tüketicinin ÜÇÜNDE de dolgu sayılır (kapsam kapısı · takip
+    # düzenlemesi · kısmi-anlama) — biri atlanırsa aynı soru geldiği yola göre
+    # farklı davranır (Faz -1'in "üç çağrı yeri" dersi).
+    known |= _sosyal_hit_words(q)
     return _uncovered(q, known), hits
 
 
@@ -2451,7 +2633,9 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
     işidir (`cube_router` istek/principal görmez), o yüzden anahtar-kelime argümanı
     olarak taşınır. Bkz. `liste_niyeti`."""
     reddi_sifirla()
-    q = _norm(question)
+    # FAZ D1 — sosyal kalıp ifade katalog eşleşmesine GİRMEZ. Ölçüldü: *"iyi çalışmalar,
+    # geçen ay fire nedir"* → **R1**, çünkü `oee`'nin cube sinonimlerinden biri `calisma`.
+    q = sosyal_ayikla(question)
 
     cube_meta = _match_cube(q, schema)
     if cube_meta is None:
@@ -2680,6 +2864,12 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
         known.update(re.findall(r"[a-z]+", w))
     known |= _period_hit_words(q)
     known |= _misc_hit_words(q)
+    # SOSYAL EDİM DOLGUDUR (Faz D1). Ölçüldü: *"merhaba bu yıl makine bazında oee"*
+    # → **R10**; kibar kullanıcı cevapsız kalıyordu. Selamlaşma bir ölçü/boyut adı
+    # değildir. Üç tüketicinin ÜÇÜNDE de dolgu sayılır (kapsam kapısı · takip
+    # düzenlemesi · kısmi-anlama) — biri atlanırsa aynı soru geldiği yola göre
+    # farklı davranır (Faz -1'in "üç çağrı yeri" dersi).
+    known |= _sosyal_hit_words(q)
     # Ölçü-eşiği ("10 milyon üzeri") kelimeleri: anlaşılıyor → kapsam düşürmesin.
     having = _measure_threshold(q)
     if having:

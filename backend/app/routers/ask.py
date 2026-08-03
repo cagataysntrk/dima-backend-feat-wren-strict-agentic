@@ -495,10 +495,15 @@ def _parse_decision(raw: str) -> dict:
 
 # Meta/ürün soruları — veri sorgusu DEĞİL. Bunları SQL'e zorlamak yerine yardım yanıtı ver
 # (yoksa cube tutmaz → kural-tabanlı alakasız tablo döner). Normalize edilmiş metinde aranır.
+#
+# ⟳ FAZ D1 — SELAMLAŞMA BU LİSTEDEN ÇIKARILDI. `merhaba`/`selam`/`naber`/`napiyorsun`
+# burada **tesadüfen** duruyordu ve yalnız onlar çalışıyordu; `teşekkürler`·`sağol`·
+# `günaydın`·`görüşürüz`·`tamam`·`ok`… **SQL üretiyordu** (ölçüldü: 16 ifadenin 12'si).
+# Doğru yer `_SOSYAL` sınıfıdır — liste BÜYÜMEDİ, **küçüldü**.
 _META_HINTS = (
     "dima ne", "dima nedir", "ne yapabil", "neler yapab", "ne ise yar", "ne ise yara",
     "nasil kullan", "nasil calis", "sen kim", "kimsin", "sen nesin", "yardim",
-    "merhaba", "selam", "naber", "napiyorsun", "ornek soru", "ne sorabil",
+    "ornek soru", "ne sorabil",
 )
 _META_TEXT = (
     "dima — verinle doğal dille konuşman için bir analitik motoru "
@@ -512,6 +517,19 @@ _META_SUGGESTIONS = [
     {"label": "Bu ay toplam üretim", "query": "bu ay toplam üretim"},
     {"label": "Vardiya × haftanın günü verimliliği", "query": "vardiya × haftanın günü verimliliği (son 3 ay)"},
 ]
+
+# --- SOSYAL SINIF (FAZ D1) --------------------------------------------------------
+#
+# Sözlüğün SAHİBİ `cube_router`'dır (`_SOSYAL_SINIFLAR` · `sosyal_edim` ·
+# `_sosyal_hit_words`) — çünkü İKİ tüketicisi var ve aynı sözlüğü okumak zorundalar:
+# burası (sosyal cevap) ve `route()`'un kapsam kapısı (sosyal sözcük = dolgu).
+# Burada yalnız **cevabın metni** durur; sınıflandırma orada.
+_SOSYAL_METIN = {
+    "selam": "Merhaba! Verinle ilgili ne bakalım?",
+    "tesekkur": "Rica ederim. Başka neye bakmak istersin?",
+    "kapanis": "Görüşürüz! İstediğin zaman buradayım.",
+}
+
 
 # Görünüm isteği ("grafik ver", "tablo olarak") — VERİ değil SUNUM düzenlemesi.
 # "grafi" kökü grafik/grafiği/grafiğini çekimlerini yakalar. Sıra önemli: özel tür
@@ -1865,6 +1883,28 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             suggestions=[Suggestion(**s) for s in _META_SUGGESTIONS],
             trace=["meta soru → deterministik yanıt (LLM'siz)"],
         ))
+    # SOSYAL SINIF (FAZ D1) — META'DAN SONRA, çünkü *"merhaba, neler yapabilirsin?"*
+    # daha bilgilendirici olan meta cevabını hak eder.
+    #
+    # İKİ KOŞUL BİRDEN: (a) hiçbir veri sinyali yok (YAPISAL kapı) ve (b) tanınan bir
+    # sosyal edim var (SINIF). Yalnız (b) olsaydı *"teşekkürler, bu yıl ciro?"* sosyal
+    # sayılırdı; yalnız (a) olsaydı anlamsız bir dize sosyal cevap alırdı — ikisi de
+    # yanlış olurdu, o yüzden kapı iki kanatlı.
+    _sosyal = cube_router.sosyal_edim(q_norm)
+    if _sosyal:
+        _tur, _tam_kaplama = _sosyal
+        # Sosyal sınıf İKİ yoldan biriyle kazanır:
+        #   (a) hiç veri sinyali yok        → "teşekkürler"
+        #   (b) kalıp ifade TÜM mesajı kaplıyor → "iyi çalışmalar" (`çalışma` katalogda
+        #       gerçek bir terim ama kalıp ifadenin parçası, katalog terimi değil)
+        # Aksi hâlde sosyal sözcük İÇEREN bir veri sorusudur ve kapı AÇILMAZ.
+        if _tam_kaplama or not cube_router.veri_niyeti_var(q_norm, schema):
+            return _finish(AskResponse(
+                question=body.question, source="meta", note=_SOSYAL_METIN[_tur],
+                suggestions=[Suggestion(**s) for s in _META_SUGGESTIONS[:3]],
+                trace=[f"sosyal sınıf ({_tur}) → deterministik yanıt "
+                       "(LLM'siz, sıfır maliyet)"],
+            ))
     if _is_catalog_query(q_norm):
         return _finish(AskResponse(
             question=body.question, source="catalog", note=_catalog_listing(schema),
