@@ -182,45 +182,68 @@ def test_OLU_AUTH_yardimcisi_GERI_gelmesin():
 
 # --- ADR-0007 K3: dönem politikası — beyan var, canlı kapı daha zayıf ------------
 
-def test_DONEM_POLITIKASI_beyani_HALA_dogru():
-    """FAZ -0.5c. `cube_router.needs_period` ve `is_period_only` ADR-0007 K3'ün ("dönem
-    eksikse SOR") **tam doğru politikasını** taşıyor ama **üretimde sıfır çağıranı var**
-    (yalnız testlerde); canlı kapı `_period_gate` daha zayıf bir kural uyguluyor.
+def _donem_politikasi_cagrilari() -> dict[str, list[str]]:
+    """`needs_period` / `is_period_only`'nin ÜRETİMDEKİ çağrıları (tanım ve yorum hariç).
 
-    ## Neden ne BAĞLANDI ne SİLİNDİ
-
-    İkisi de bir POLİTİKA kararıdır, bir hata değil:
-      * **Bağlamak** `_period_gate`'in davranışını değiştirir — hangi soruların netleştirme
-        alacağı değişir. Bu, ölçülmeden verilecek bir karar değil (Faz 0.5 → Faz 2b).
-      * **Silmek** 13 testlik bir ŞARTNAMEYİ yok eder. `is_period_only`'nin kendi
-        docstring'i (`cube_router.py`) bunu zaten kaydediyor: *"0 prod referansı, 13 test"*.
-
-    Kalan tek doğru hamle: beyanı **kapıya** çevirmek. Biri bunları üretime bağladığı gün
-    bu test kırılır ve MIMARI §6.2'nin güncellenmesini zorlar — beyan sessizce çürüyemez.
+    ÇAĞRI aranır, ANMA değil: her iki ad da yorumlarda geçiyor (politikanın nerede
+    bağlı olduğunu anlatan notlar) ve bu meşrudur — hatta istenen şeydir.
     """
-    # ÇAĞRI aranır, ANMA değil: her iki ad da `cube_router.py`/`ask.py`'de YORUMLARDA
-    # geçiyor (politikanın neden bağlı olmadığını anlatan notlar) ve bu meşrudur — hatta
-    # istenen şeydir. Düz `ad in kaynak` bu yorumları "bağlandı" sanıp testi ilk koşuşta
-    # yanlış-pozitif verdi; `dis_adim` kapısında da aynı düzeltme yapılmıştı.
-    cagrilar: list[str] = []
+    bulunan: dict[str, list[str]] = {"needs_period": [], "is_period_only": []}
     for satir in _app_kaynagi("cube_router.py").splitlines():
         s = satir.strip()
         if s.startswith("#"):
             continue
-        for ad in ("needs_period", "is_period_only"):
+        for ad in bulunan:
             # ⟳ FAZ 9.12/9.14 — ESKİ DESEN NOKTALI ÇAĞRIYI GÖRMÜYORDU.
             # `(?<![\w.])` negatif lookbehind'ı `.`'yı da dışlıyordu; oysa bu depoda
-            # kullanılan TEK çağrı biçimi `cube_router.needs_period(...)`. Kapı bugün
-            # yeşildi çünkü çağrı YOK — yani koruma iddiası yanlış, sonuç tesadüfen
-            # doğruydu. Bir kapının doğru sonuç vermesi, doğru şeyi ölçtüğünü göstermez.
-            # Artık TANIM (`def ad(`) hariç her çağrı biçimi yakalanır.
+            # kullanılan TEK çağrı biçimi `cube_router.needs_period(...)`. Artık TANIM
+            # (`def ad(`) hariç her çağrı biçimi yakalanır.
             if re.search(rf"(?<!def )\b{ad}\s*\(", satir):
-                cagrilar.append(f"{ad}: {s[:90]}")
-    assert not cagrilar, (
-        "Dönem politikası artık üretimde ÇAĞRILIYOR:\n  " + "\n  ".join(cagrilar)
-        + "\nMIMARI §6.2'deki \"beyan var, bağlı değil\" kaydı BAYAT. Beyanı güncelle ve bu "
-          "testi politikanın GERÇEKTEN uygulandığını ölçen bir teste çevir. (ADR-0007 K3 "
-          "canlıya alınıyorsa `_period_gate`'in eski kuralıyla çakışmadığı da gösterilmeli.)")
+                bulunan[ad].append(s[:90])
+    return bulunan
+
+
+def test_DONEM_POLITIKASI_beyani_HALA_dogru():
+    """⟳ **FAZ X (3 Ağustos 2026) — bu test TUZAKTAN KAPIYA dönüştü, tıpkı tasarlandığı gibi.**
+
+    Eski hâli *"`needs_period`/`is_period_only`'nin üretimde SIFIR çağıranı var"* beyanını
+    koruyor ve şunu yazıyordu: *"Biri bunları üretime bağladığı gün bu test kırılır ve
+    MIMARI §6.2'nin güncellenmesini zorlar."*
+
+    **O gün geldi.** Faz X'te ölçülen sessiz-yanlış (takip düzenlemesi TABAN soruyu VQR'da
+    değiştiriyordu) düzeltilirken `needs_period` üretime bağlandı — ama **klarifikasyon
+    kapısı olarak DEĞİL**. Ayrım kritik ve beyan artık bunu söylemeli:
+
+    | ad | üretimde | rolü |
+    |---|---|---|
+    | `needs_period` | **1 çağıran** (`ask.py::_learn_chip_completion`) | CEVAPLANABİLİRLİK yordayıcısı — *"önceki mesaj tek başına cevaplanabiliyor muydu?"* |
+    | `is_period_only` | **0 çağıran** | ADR-0007 K3 klarifikasyon politikası hâlâ bağlı DEĞİL |
+
+    Yani `_period_gate`'in davranışı **değişmedi**: hangi soruların netleştirme alacağı
+    aynı. Bağlanan şey politikanın kendisi değil, onun *yordayıcısı*. Bu ayrım kaybolursa
+    biri *"ADR-0007 K3 canlıya alındı"* sanır — alınmadı.
+    """
+    cagrilar = _donem_politikasi_cagrilari()
+    assert not cagrilar["is_period_only"], (
+        "`is_period_only` artık üretimde ÇAĞRILIYOR:\n  "
+        + "\n  ".join(cagrilar["is_period_only"])
+        + "\nMIMARI §6.2'deki kayıt BAYAT — beyanı güncelle.")
+    assert len(cagrilar["needs_period"]) == 1, (
+        f"`needs_period` çağıran sayısı {len(cagrilar['needs_period'])} (1 bekleniyordu):\n  "
+        + "\n  ".join(cagrilar["needs_period"])
+        + "\nHer yeni çağıran bir POLİTİKA kararıdır: yordayıcıyı kullanmak ile ADR-0007 K3'ü "
+          "canlıya almak AYRI şeylerdir. Beyanı (MIMARI §6.2) ve bu kapıyı birlikte güncelle.")
+
+
+def test_DONEM_POLITIKASI_KLARIFIKASYON_KAPISI_DEGISMEDI(client):
+    """Beyanın DAVRANIŞSAL yarısı: `needs_period` üretime bağlandı ama `_period_gate`
+    aynı kaldı — dönemsiz bir soru hâlâ SORULUYOR, sessizce tüm-zaman toplanmıyor."""
+    from tests.conftest import ask
+
+    d = ask(client, "kumaş türlerine göre fire oranı")
+    assert "dönem" in (d.get("note") or "").lower(), (
+        "dönem klarifikasyonu kayboldu — `needs_period`'ı bağlamak `_period_gate`'i "
+        f"DEĞİŞTİRMİŞ olabilir: {d.get('note')!r}")
 
 
 def test_DONEM_POLITIKASI_sartnamesi_KORUNUYOR():

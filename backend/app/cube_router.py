@@ -84,7 +84,12 @@ def _current_period_filter(q: str, time_dim: str) -> dict | None:
     return {"dimension": time_dim, "operator": "gte", "value": start.isoformat()}
 
 
-_PREV_RE = re.compile(r"\b(?:bir\s+)?(?:gecen|onceki|evvelki)\s+(ay|hafta|yil|sene|gun)\b")
+# ⚠ SON `\b` DEĞİL `([a-z]*)` — Türkçe EKLEMELİ dildir ve yer-durum eki en doğal
+# söyleyiştir: *"geçen ayDA fire"*. `\b` ile bu ifade HİÇ eşleşmiyordu (ölçüldü, Faz X) →
+# dönem filtresi üretilmiyor, soru cevapsız kalıyordu. Ek GEÇERLİLİĞİ `_ek_gecerli` ile
+# denetlenir (tek kaynak) — *"geçen aylık"* gibi türetme ekleri dönem sayılmaz.
+_PREV_RE = re.compile(
+    r"\b(?:bir\s+)?(?:gecen|onceki|evvelki)\s+(ay|hafta|yil|sene|gun)([a-z]*)\b")
 
 
 def _prev_period_filters(q: str, time_dim: str) -> list[dict]:
@@ -93,6 +98,13 @@ def _prev_period_filters(q: str, time_dim: str) -> list[dict]:
     DİKKAT: "geçen aya GÖRE" dönemsel KARŞILAŞTIRMADIR (_COMPARE_HINTS) — burada değil."""
     today = date.today()
     m = _PREV_RE.search(q)
+    # Ek GEÇERLİ bir çekim zinciri olmalı — kazara denk gelen devamlar ("geçen ayakkabı")
+    # dönem sayılmaz. NOT (dürüstlük): `_ek_gecerli` türetme eklerini de geçerli sayar,
+    # dolayısıyla *"geçen aylık fire"* hem önceki-ay filtresi hem aylık kova üretir. Bu
+    # ifade nadir ve okunuşu zaten belirsiz; ayrı bir "yalnız hâl ekleri" listesi yazmak
+    # ADR-0008'in yasakladığı elle-sayım olurdu. Sınır burada BEYAN edilir, gizlenmez.
+    if m and m.group(2) and not _ek_gecerli(m.group(2)):
+        m = None
     unit = m.group(1) if m else ("gun" if re.search(r"\bdun\b", q) else None)
     if unit is None:
         return None  # type: ignore[return-value]
@@ -1239,26 +1251,91 @@ _COMPARE_HINTS = ("onceki donem", "onceki aya", "onceki yila", "onceki haftaya",
 # ── DÖNEMSEL KIYAS (YoY/MoM) — çok-yıl veriyle DETERMİNİSTİK (period-shift) ──────
 # "geçen yıla göre" → cari dönem + geçen yıl aynı dönem iki seri + %değişim. Jenerik
 # sorgu-modifier'ı (cube_query["compare"]); metrik DEĞİL — herhangi ölçüye uygulanır.
-_YOY_HINTS = ("gecen yila gore", "onceki yila", "onceki yilla", "onceki yil ile",
-              "gecen yil ile", "gecen seneye gore", "yil oncesine gore", "yoy")
-_MOM_HINTS = ("gecen aya gore", "onceki aya", "onceki ayla", "onceki ay ile",
-              "gecen ay ile", "mom")
+# --- DÖNEMSEL KIYAS (YoY / MoM) — YAPISAL, çekim varyantı SAYILMAZ -----------------
+#
+# ÖNCEDEN elle sayılmış altdize listeleriydi: `("gecen yila gore", "onceki yila",
+# "onceki yilla", "onceki yil ile", …)`. Yani AYNI kökün çekimleri tek tek yazılıyordu —
+# `_syn_hit`'in tam olarak yerine geçmek için var olduğu anti-desen. Faz X'te canlı
+# ölçüldü, listenin deliği bir ürün kusuru üretiyordu:
+#
+#     "geçen yıla göre"         → compare_mode=yoy   ✅ (listede var)
+#     "geçen yılla kıyasla"     → compare_mode=None  ❌ (listede YOK)
+#     "geçen yılla karşılaştır" → compare_mode=None  ❌
+#
+# Liste büyütmek çözüm DEĞİL (ADR-0008). Yapısal kural iki kanatlıdır:
+#
+#   DÖNEM-GERİ ifadesi  +  KIYAS işareti
+#
+# ve kıyas işareti ya **bitişiktir** (edat/araç eki: "geçen yıla GÖRE", "geçen yılLA")
+# ya da cümlede bir **kıyas fiili** vardır ("kıyasla", "karşılaştır").
+#
+# BİTİŞİKLİK ŞARTI KRİTİK — yoksa meşru bir soru kıyas sanılırdı:
+#     "geçen yıl makineye GÖRE fire"  → dönem-geri VAR, `gore` VAR ama BİTİŞİK DEĞİL
+#                                     → kıyas DEĞİL, sıradan bir kırılım sorusu ✅
+_DONEM_GERI_YIL = ("gecen yil", "onceki yil", "gecen sene", "onceki sene", "yil oncesi")
+_DONEM_GERI_AY = ("gecen ay", "onceki ay", "ay oncesi")
+#: Bitişik edat — dönem-geri ifadesinin HEMEN ardında.
+_BITISIK_EDAT = re.compile(r"\s*(?:ile|gore|kadar|karsi)\b|\s*(?:a|e|ya|ye)\s+gore\b")
+#: Araç eki ("geçen yılLA") — edatın kelimeye yapışmış hâli.
+_ARAC_EKI = ("la", "le", "yla", "yle")
+_KIYAS_FIIL = ("kiyasla", "kiyaslama", "kiyas", "karsilastir", "karsilastirma",
+               "mukayese")
+_ACIK_KIYAS = ("yoy", "mom")
+
+
+def _kiyas_spanlari(q: str, kokler) -> list[tuple[int, int]]:
+    """Kıyas OLARAK okunan dönem-geri ifadelerinin aralıkları (bitişik edat dâhil)."""
+    fiil_var = any(_syn_hit(q, f) for f in _KIYAS_FIIL)
+    bulunan: list[tuple[int, int]] = []
+    for kok in kokler:
+        for m in re.finditer(rf"{_KELIME_BASI}{re.escape(kok)}([a-z]*)", q):
+            ek = m.group(1)
+            if ek and not _ek_gecerli(ek):
+                continue
+            son = m.end()
+            edat = _BITISIK_EDAT.match(q, son)
+            if edat:
+                son = edat.end()
+            elif ek not in _ARAC_EKI and not fiil_var:
+                continue        # ne bitişik edat, ne araç eki, ne kıyas fiili → DÖNEM
+            bulunan.append((m.start(), son))
+    return bulunan
 
 
 def compare_mode(q: str) -> str | None:
     """Dönemsel kıyas niyeti: 'yoy' (geçen yıla göre) | 'mom' (geçen aya göre) | None."""
-    if any(h in q for h in _YOY_HINTS):
+    if _syn_hit(q, "yoy"):
         return "yoy"
-    if any(h in q for h in _MOM_HINTS):
+    if _syn_hit(q, "mom"):
+        return "mom"
+    if _kiyas_spanlari(q, _DONEM_GERI_YIL):
+        return "yoy"
+    if _kiyas_spanlari(q, _DONEM_GERI_AY):
         return "mom"
     return None
 
 
 def strip_compare(q: str) -> str:
-    """Kıyas ifadesini söker (yıl/ay kelimesi granularity tetiklemesin) — route için."""
-    for h in _YOY_HINTS + _MOM_HINTS:
-        q = q.replace(h, " ")
-    return re.sub(r"\s+", " ", q).strip()
+    """Kıyas ifadesini söker (yıl/ay kelimesi granularity tetiklemesin) — route için.
+
+    Ayıklama SPAN tabanlıdır (Faz E'de kurulan `span_ayikla` ile aynı disiplin): yalnız
+    kıyas olarak OKUNAN aralık silinir. Kıyas fiili de düşer — o da konu hakkında hiçbir
+    şey söylemez ama `route()`'un kapsam kapısını deler."""
+    spanlar = _kiyas_spanlari(q, _DONEM_GERI_YIL) + _kiyas_spanlari(q, _DONEM_GERI_AY)
+    for f in (*_KIYAS_FIIL, *_ACIK_KIYAS):
+        for m in re.finditer(rf"{_KELIME_BASI}{re.escape(f)}([a-z]*)", q):
+            if _ek_gecerli(m.group(1)):
+                spanlar.append((m.start(), m.end()))
+    if not spanlar:
+        return re.sub(r"\s+", " ", q).strip()
+    spanlar.sort()
+    birlesik = [spanlar[0]]
+    for bas, son in spanlar[1:]:
+        if bas <= birlesik[-1][1]:
+            birlesik[-1] = (birlesik[-1][0], max(birlesik[-1][1], son))
+        else:
+            birlesik.append((bas, son))
+    return span_ayikla(q, birlesik)
 
 
 def shift_period_back(filters: list[dict], mode: str, time_dim: str = "tarih") -> list[dict]:
@@ -1843,13 +1920,43 @@ def _syn_hit_words(q: str, syns) -> set[str]:
     return words
 
 
+def _cekimli_token(q: str, m: "re.Match") -> list[str]:
+    """Eşleşmenin ARDINDAKİ çekim ekini de kapsayan tam token'lar.
+
+    ## Ölçülen kusur (FAZ X, 3 Ağustos 2026)
+
+        "son 6 ay fire"      → route VAR  ✅
+        "son 6 ayDA fire"    → route YOK  ❌     ← Türkçede en doğal söyleyiş
+        "geçen ay fire"      → route VAR  ✅
+        "geçen ayDA fire"    → route YOK  ❌
+
+    Kök neden iki katmanlı ve tek başına hiçbiri görünmüyordu:
+
+    1. `_REL_DATE` **kökü** yakalıyor (`group(0) = "son 6 ay"`), yer-durum ekini değil.
+    2. `_uncovered` bilinen kelimeleri `len(w) >= 3` ile süzüyor → **`ay` elenir** ve
+       kendi çekimini (`ayda`) kapsayamaz. Soru token'ı `ayda` ise 4 harflidir, elenmez
+       → "açıklanamayan kelime" sayılır → kapsam kapısı deterministik yolu keser.
+
+    Yani `ay` — en sık kullanılan dönem birimi — kendi çekimli hâlini asla kapsayamıyordu.
+
+    Düzeltme kökte: dönem ifadesi artık soruda GEÇTİĞİ HÂLİYLE raporlanır. Ek geçerliliği
+    `_ek_gecerli`den gelir (tek kaynak), böylece *"son 6 ayakkabı"* gibi kazara denk gelen
+    devamlar dönem sanılmaz (`akkabi` geçerli bir ek zinciri değildir).
+    """
+    parca = m.group(0)
+    kuyruk = re.match(r"[a-z]+", q[m.end():])
+    if kuyruk and _ek_gecerli(kuyruk.group(0)):
+        parca += kuyruk.group(0)
+    return re.findall(r"[a-z]+", parca)
+
+
 def _period_hit_words(q: str) -> set[str]:
     """Tanınan dönem ifadelerinin kelimeleri (son 3 ay / bu ay / temmuz ayı / aralık…)."""
     words: set[str] = set()
     for rx in (_RANGE_RE, _REL_DATE, _OPEN_START_RE, _OPEN_END_RE, _PREV_RE, _QUARTER_RE):
         m = rx.search(q)
         if m:
-            words.update(re.findall(r"[a-z]+", m.group(0)))
+            words.update(_cekimli_token(q, m))
     if re.search(r"\bdun\b", q):
         words.add("dun")
     for phrase in ("bugun", "bu hafta", "bu ay", "bu yil", "bu sene",

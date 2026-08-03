@@ -118,6 +118,13 @@ def _son_anlamli(cikti: str) -> str:
     return (isaretli[-1] if isaretli else (satirlar[-1] if satirlar else "(çıktı yok)"))[:120]
 
 
+def _dusenler(cikti: str) -> list[str]:
+    """DÜŞEN test adları. Özette olmazsa *"kırmızı"* bilgisi tek başına işe yaramaz:
+    kapı çıktısı `tail` ile okunur, ayrıntı kırpılır ve hangi testin düştüğünü bulmak
+    için süiti YENİDEN koşmak gerekir (bu turda iki kez oldu — 8'er dakika)."""
+    return [s.strip()[:110] for s in cikti.splitlines() if s.strip().startswith("FAILED")]
+
+
 def _kos_yakala(komut: list[str], baslik: str) -> tuple[int, str]:
     """`_kos` gibi ama çıktıyı da döndürür — hem canlı basar hem özet için saklar."""
     print(f"\n{'=' * 78}\n▶ {baslik}\n{'=' * 78}", flush=True)
@@ -159,6 +166,7 @@ def tam() -> int:
     for komut, baslik in adimlar:
         rc, cikti = _kos_yakala(komut, baslik)
         ozet.append(f"  {'✓' if rc == 0 else '✗'} {baslik:22} {_son_anlamli(cikti)}")
+        ozet.extend(f"      ↳ {ad}" for ad in _dusenler(cikti)[:12])
         if rc != 0:
             kotu = rc
     # ÖZET EN SONDA ve TEK BLOK: kapı çıktısı çoğu zaman `tail` ile okunur; sayılar

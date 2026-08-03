@@ -2006,6 +2006,41 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         resp.contract_id = _record_contract(cq, sql, result, source)
         return _finish(_attach_viz(resp, result, cq))
 
+    def _kiyas_cevabi(base_cq: dict, mode: str, iz: str) -> AskResponse | None:
+        """Dönemsel kıyas (YoY/MoM) cevabı — TEK gövde, İKİ çağıran.
+
+        FAZ X'te canlı ölçülen kusur bir **kimlik asimetrisiydi**: mekanizma TAZE dalda
+        vardı, kardeşi olan TAKİP dalında YOKTU. Sonuç:
+
+            "bu yıl makine bazında oee" → rapor ✅
+            takip: "geçen yılla kıyasla" → *"Bu takip mesajını ilişkilendiremedim"* ❌
+
+        …oysa bu bir analistin en doğal ikinci cümlesi. Düzeltirken gövde KOPYALANMADI:
+        iki dal aynı fonksiyonu çağırır, aksi hâlde zamanla ayrışırlardı (bu deponun
+        ölçülmüş bir numaralı kusur sınıfı).
+        """
+        try:
+            from app import yoy as _yoy
+
+            time_dim = _yoy.time_dim_of(schema, base_cq.get("cube"))
+            out = _yoy.compute(service, {**base_cq, "compare": mode}, mode,
+                               time_dim, limit=limit)
+            final_cq = {**out["base_cq"], "compare": mode}
+            result = {"columns": out["columns"], "rows": out["rows"],
+                      "row_count": out["row_count"]}
+            resp = AskResponse(
+                question=body.question, sql=out["base_sql"],
+                planned_sql=service.dry_plan(out["base_sql"]),
+                result=QueryResult(**result), source="cube", cube_query=final_cq,
+                trace=[f"{iz} ({mode}, LLM'siz)"],
+            )
+            resp.contract_id = _record_contract(final_cq, out["base_sql"], result, "cube")
+            return _finish(_attach_viz(resp, result, final_cq))
+        except Exception:
+            _log.warning("YoY/MoM hesaplama başarısız (best-effort) — sıradaki adıma "
+                         "düşülüyor", exc_info=True)
+            return None
+
     # 1) Deterministik ön-kapı — WrenAI'nin intent_classification'ının LLM'siz Dima
     # karşılığı: meta/ürün soruları ve katalog-keşfi SQL üretimine hiç girmez.
     if _is_meta(q_norm):
@@ -2414,28 +2449,10 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 except Exception:
                     base_hit = None
                 if base_hit:
-                    try:
-                        from app import yoy as _yoy
-
-                        base_cq = base_hit["cube_query"]
-                        time_dim = _yoy.time_dim_of(schema, base_cq.get("cube"))
-                        out = _yoy.compute(service, {**base_cq, "compare": mode}, mode,
-                                           time_dim, limit=limit)
-                        final_cq = {**out["base_cq"], "compare": mode}
-                        result = {"columns": out["columns"], "rows": out["rows"],
-                                 "row_count": out["row_count"]}
-                        resp = AskResponse(
-                            question=body.question, sql=out["base_sql"],
-                            planned_sql=service.dry_plan(out["base_sql"]),
-                            result=QueryResult(**result), source="cube", cube_query=final_cq,
-                            trace=[f"Intent-path: dönemsel kıyas ({mode}, LLM'siz)"],
-                        )
-                        resp.contract_id = _record_contract(
-                            final_cq, out["base_sql"], result, "cube")
-                        return _finish(_attach_viz(resp, result, final_cq))
-                    except Exception:
-                        _log.warning("YoY/MoM hesaplama başarısız (best-effort) — "
-                                    "sıradaki adıma düşülüyor", exc_info=True)
+                    _kiyas = _kiyas_cevabi(base_hit["cube_query"], mode,
+                                           "Intent-path: dönemsel kıyas")
+                    if _kiyas is not None:
+                        return _kiyas
 
         # CUBE-DÜZEYİ BERABERLİK (Faz 3.1) — Intent-JSON'dan ÖNCE, bilerek.
         # İki cube aynı kelimeleri BİREBİR aynı güçle sahiplendiğinde (ölçülen vaka:
@@ -2808,6 +2825,40 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             cube_router._match_measure(prev_q_norm, cube_meta)[0] is not None
         if not topical:
             return None
+        # ⚠ TAMAMLAMA ile GENİŞLETME AYRI ŞEYLERDİR (Faz X'te canlı ölçüldü).
+        #
+        # Bu fonksiyonun adı ve docstring'i *"bir raporu TAMAMLADIĞINDA"* diyor; kod ise
+        # yalnız *"önceki mesaj konu taşıyor mu"* diye bakıyordu. Ölçülen sonuç:
+        #
+        #   1) "bu yıl makine bazında oee"  → dim=['makine']            ✅ (zaten TAM)
+        #   2) takip: "vardiya bazında"     → dim=['makine','vardiya']  ✅ (GENİŞLETME)
+        #   3) AYNI taban soru tekrar       → source=vqr, dim=['makine','vardiya']  ❌
+        #
+        # Yani kullanıcının makine kırılımı isteyen sorusu, bir daha sorulduğunda
+        # SORMADIĞI ikinci kırılımı getiriyor ve her hücredeki sayı değişiyor —
+        # sessiz-yanlışın kalıcılaştırılmış hâli, üstelik `source=vqr` rozetiyle.
+        #
+        # Kök neden "beyan var, kod onu tanımıyor": *tamamlama* demek, önceki mesajın
+        # TEK BAŞINA cevaplanamamış olması demektir.
+        #
+        # ⚠ ÖLÇÜT `route()` DEĞİL, **CEVAPLANABİLİRLİK** (ilk düzeltmem fazla genişti ve
+        # iki altın testi düşürdü — kaydı burada duruyor). `route()` bir şekil döndürse
+        # bile dönem eksikse ürün *"hangi dönem?"* diye SORAR; yani soru cevaplanmamıştır
+        # ve kullanıcının onu tamamlaması GERÇEK bir tamamlamadır:
+        #
+        #     "renklerin ortalama sapması nedir" → şekil VAR, dönem YOK  → tamamlama ✅
+        #     "bu yıl makine bazında oee"        → şekil VAR, dönem VAR  → GENİŞLETME ❌
+        #
+        # İkisini ayıran şey `needs_period`'dur ve o zaten tek kaynaktır (ADR-0007 K3).
+        try:
+            _onceki = cube_router.route(prev_q, schema)
+        except Exception:
+            _log.warning("öğrenme kapısı: önceki turun route()'u başarısız (best-effort)",
+                         exc_info=True)
+            return None            # fail-closed: emin değilsek ÖĞRENMEYİZ
+        if _onceki and not cube_router.needs_period(
+                _onceki.get("cube_query") or {}, prev_q_norm):
+            return None            # önceki mesaj TEK BAŞINA cevaplanıyordu → tamamlama YOK
         try:
             if vqr.store(prev_q, cq, source="chip_approved"):
                 return "chip-onaylı → VQR güncellendi (LLM'siz öğrenme)"
@@ -2825,6 +2876,16 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # "fire" → "parti" gibi): /cube ve /report bunu zaten çözüyordu (satır ~658/761),
         # /ask'in yapısal takip zinciri hiç çözmüyordu — eski adla gelen HER takip mesajı
         # sahte "bağlam kopması" (dürüst ret) üretiyordu, oysa ad değişmiş tek bir cube.
+        # DÖNEMSEL KIYAS TAKİPTE (FAZ X) — kimlik asimetrisi kapatılıyor. Mekanizma
+        # taze dalda vardı, burada YOKTU; *"geçen yılla kıyasla"* dürüst rette kalıyordu.
+        # `deterministic_refine`'dan ÖNCE: kıyas bir düzenleme değil AYRI bir eksendir
+        # (refine onu ne tanır ne uygular, kapsam kapısına takılıp zinciri boşa harcar).
+        _tk_mode = cube_router.compare_mode(q_norm)
+        if _tk_mode and (body.cube_query or {}).get("cube"):
+            _tk = _kiyas_cevabi(dict(body.cube_query), _tk_mode, "Takip: dönemsel kıyas")
+            if _tk is not None:
+                return _tk
+
         migration_trace: list[str] = []
         _resolved = cube_router.resolve_cube_name(prev_cq.get("cube"), schema)
         if _resolved and _resolved != prev_cq.get("cube"):

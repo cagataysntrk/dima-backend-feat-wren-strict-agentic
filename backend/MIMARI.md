@@ -801,6 +801,18 @@ sayılarıydı:**
 * **9.14** `-0.5c` tuzağının regex'i noktalı çağrıyı **göremiyordu** (`(?<![\w.])`), oysa bu
   depoda kullanılan tek biçim `cube_router.needs_period(...)`. Kapı yeşildi çünkü çağrı
   yok — **koruma iddiası yanlış, sonuç tesadüfen doğru**.
+  ⟳ **GÜNCELLEME (Faz X, 3 Ağustos 2026): tuzak KAPIYA dönüştü ve tam da tasarlandığı gibi
+  patladı.** `needs_period` artık üretimde **bir** çağırana sahip
+  (`ask.py::_learn_chip_completion`) — ama **klarifikasyon kapısı olarak DEĞİL**:
+
+  | ad | üretimde | rolü |
+  |---|---|---|
+  | `needs_period` | **1 çağıran** | CEVAPLANABİLİRLİK yordayıcısı — *"önceki mesaj tek başına cevaplanabiliyor muydu?"* |
+  | `is_period_only` | **0 çağıran** | ADR-0007 K3 klarifikasyon politikası hâlâ bağlı DEĞİL |
+
+  `_period_gate`'in davranışı **değişmedi** (ayrı bir davranışsal test bunu kilitler:
+  dönemsiz soru hâlâ *"hangi dönem?"* diye sorulur). Bağlanan şey politikanın kendisi
+  değil **yordayıcısı**dır; ayrım kaybolursa biri *"ADR-0007 K3 canlıya alındı"* sanır.
 * **9.15** `_takilan_kelimeler`, `known` kümesine yalnız dolgu sözlüğünü veriyordu; katalog
   sinonimleri **hiç** eklenmiyordu. Ölçüldü: *"bu yil ciro"* → aday **`ciro`** — `ciro`
   `parti.toplam_ciro`'nun **zaten** sinonimi. Triyaj kuyruğu, kapsam boşluğu göstermek
@@ -1511,6 +1523,82 @@ eşleşir, `yeniden islenen` dokunulmaz).
 **Ölçüm:** test **1887 → 1940** · eval `+0,0/+0,0/+0,0` · korpus %93,2 (kapı yeşil) ·
 senaryo süiti değişmedi · `tsc --noEmit` temiz. 53 test: `test_atif_baglami.py` (24) ·
 `test_sunum_tercihi.py` (19) · `test_kalip_sozlugu_carpismiyor.py` (10).
+
+### 6.8w FAZ X — DENEYİM SÜİTİ: bir TURU değil bir KONUŞMAYI ölçmek ✅
+
+`lab/deneyim.py`, var olan üç aracın **sormadığı** soruyu sorar:
+
+| araç | sorduğu soru |
+|---|---|
+| `eval/run.py` | *tek soruda* doğru cube seçildi mi? |
+| `lab/nl_corpus.py` | dört şirkette **regresyon** var mı? |
+| `lab/konusma_senaryolari.py` | bir takip **turu** doğru çözüldü mü? |
+| **`lab/deneyim.py`** | **bir KONUŞMA tatmin edici miydi?** |
+
+13 thread, ürün sözleşmesinin **yedi satırına** karşı ölçülür; her senaryo yalnız
+kendisini ilgilendiren satırları ölçer, gerisi `⊘ ÖLÇÜLEMEDİ`'dir.
+
+#### İlk koşum DÖRT kusur çıkardı — dördü de tek turluk araçların göremeyeceği cinsten
+
+**A · Takip düzenlemesi TABAN soruyu değiştiriyordu** (sessiz-yanlış):
+
+    1) "bu yıl makine bazında oee"  → dim=['makine']                    ✅
+    2) takip: "vardiya bazında"     → dim=['makine','vardiya']          ✅
+    3) AYNI taban soru tekrar       → source=vqr, ['makine','vardiya']  ❌
+
+Kullanıcının makine kırılımı isteyen sorusu, bir daha sorulduğunda **sormadığı** ikinci
+kırılımı getiriyor ve her hücredeki sayı değişiyordu — üstelik `source=vqr` rozetiyle.
+Kök neden *"beyan var, kod onu tanımıyor"*: fonksiyonun adı `_learn_chip_completion` ve
+docstring'i *"bir raporu TAMAMLADIĞINDA"* diyor; kod ise yalnız *"önceki mesaj konu
+taşıyor mu"* diye bakıyordu. **Tamamlama ile genişletme ayrı şeylerdir.**
+
+⚠ İlk düzeltmem fazla genişti (`route()` bir şey döndürdü mü?) ve **iki altın testi
+düşürdü**. Doğru ölçüt `route()` değil **cevaplanabilirlik**tir: şekil üretilse bile dönem
+eksikse ürün *"hangi dönem?"* diye SORAR, yani soru cevaplanmamıştır ve kullanıcının onu
+tamamlaması **gerçek** bir tamamlamadır. Ayıran şey `needs_period` (bkz. §6.2 güncellemesi).
+
+**B · `geçen yılla kıyasla` takipte cevapsız** — kimlik asimetrisi: mekanizma **taze**
+dalda vardı, kardeşi olan **takip** dalında yoktu. Bir analistin en doğal ikinci cümlesi
+dürüst rette kalıyordu. Düzeltirken gövde kopyalanmadı: `_kiyas_cevabi` tek gövde, iki
+çağıran (bir `ast` testi bunu kilitler).
+
+**C · `compare_mode` çekim varyantlarını ELLE sayıyordu** (`onceki yila`, `onceki yilla`,
+`onceki yil ile`…) — `_syn_hit`'in yerine geçmek için var olduğu anti-desen. Listenin
+deliği ürün kusuru üretiyordu (*"geçen yılla kıyasla"* → `None`). Yapısal kural iki
+kanatlı: **dönem-geri ifadesi + kıyas işareti**, işaret ya **bitişik** (edat/araç eki) ya
+da cümlede bir **kıyas fiili**. Bitişiklik şartı kritik: *"geçen yıl makineye GÖRE fire"*
+kıyas DEĞİLDİR ve öyle sayılsaydı sıradan bir kırılım sorusu YoY'a çevrilirdi.
+
+**D · Dönem ifadesinin YER-DURUM eki cevabı öldürüyordu** — Türkçede en doğal söyleyiş:
+
+    "son 6 ay fire"    → route VAR ✅        "geçen ay fire"    → route VAR ✅
+    "son 6 ayDA fire"  → route YOK ❌        "geçen ayDA fire"  → route YOK ❌
+
+Kök neden **iki katmanlı** ve tek başına hiçbiri görünmüyordu: (1) `_REL_DATE`/`_PREV_RE`
+**kökü** yakalıyor, çekimi değil; (2) `_uncovered` bilinen kelimeleri `len >= 3` ile
+süzüyor → **`ay` elenir ve kendi çekimini kapsayamaz**. En sık kullanılan dönem birimi,
+çekimli hâlinde hiçbir zaman kapsanamıyordu.
+
+#### Ölçüt ÜÇ KEZ düzeltildi — ve dersi genelleştirildi
+
+Sözleşmenin *"≥3 olgu"* şartı önce düz kırılımı, sonra düz zaman serisini haksız kırmızı
+gösterdi. `interpret()` deterministiktir: `shape` bir **boyut**, `trend`/`peak` bir **zaman
+ekseni** ister — üçüncü olgu ancak **ikisi birden** varken doğar.
+
+> Ders (§6.4'ün genişletilmiş hâli): bir eşiği **tahminle ayarlama**, **üreten
+> mekanizmadan türet**. Aksi hâlde araç ürünü değil kendi varsayımını ölçer.
+
+#### Bilerek AÇIK bırakılan kırmızı
+
+`o ayı makine bazında aç` — işaret zamirini önceki sonucun bir **satırına** çözmek gerekir.
+Mekanizma var (`drill.select_cube_query`) ama yalnız **tıklamayla**; yazıyla söylenen hâli
+yeni bir bağımlılık sınıfı ister (önceki sorguyu yeniden koşup satır değeri çözmek).
+Kapatılmamış bir bulguyu yeşile boyamak bu süitin varlık nedenine aykırıdır — **kırmızı
+kalıyor ve bir sonraki döngünün girdisidir.**
+
+**Ölçüm:** test **1940 → 1990** · eval `+0,0/+0,0/+0,0` · korpus %93,2 (kapı yeşil) ·
+senaryo süiti değişmedi · deneyim süiti **34 ✅ / 1 ❌ / 56 ⊘** (yapısal duman).
+49 test: `test_faz_x_bulgular.py` (33) · `test_deneyim_araci.py` (16).
 
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 
