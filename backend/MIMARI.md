@@ -812,8 +812,38 @@ sayılarıydı:**
 (*"merhaba"*), MCP yüzeyi, Skills/Memories, VQR'yi tümden ipucu yoluna alma. Faz 9 yalnız
 *"yapıldı denen ama yapılmamış/kırık"* olanı kapatır.
 
+#### CANLI DOĞRULAMA (rebuild + seed + gerçek Gemini + embedder AÇIK, 3 Ağustos)
+
+CI'ın **hiç üretemediği** yolları ölçmek için P0 maddeleri canlı konteynerde koşuldu.
+Hız sınırı **10 sn'de 10 istek** ve bir Intent-yolu `/ask` `consistency_k=3` ile **üç**
+LLM çağrısı yapar → istekler **5 sn aralıkla, tek tek** gönderildi.
+
+| ölçüm | sonuç |
+|---|---|
+| **9.1** `/ask/drill` audit satırı | ✅ `query \| drill:parti` — önceden yalnız `raw` dalı yazıyordu |
+| **9.1** `/ask/contribution` audit satırı | ✅ `query \| contribution:parti` |
+| **9.2/9.3** altı netleştirme chip'i tıklandı | ✅ **6/6 daraltan chip**, **0 çıkmaz sokak** |
+| **canlı tur düzeltmesi** `cube+llm` rozeti | ✅ `confidence=0.85`, yol *"LLM-destekli alan seçimi"* (eskiden `1.0` + *"LLM'siz"*) |
+| **VQR benzerlik kapısı** | ✅ log: *"benzerlik eşleşmesi ATLANDI — route() deterministik cevap üretiyor (kayıt='geçen ay toplam **ciro**', soru='geçen ay toplam **fire**')"* → `source=cube`, `toplam_fire_kg` |
+| **9.4** `reject_reason` | ✅ `bu yıl bakiye` → **cevap geldi** (`cube+llm`) ama red **R1** kayıtlı; `personel…kıyasla` → **R4** |
+| **§1.7 VQR kalıcılığı** | ✅ **ÖLÇÜLDÜ** (offline ⊘ olan madde) |
+
+**§1.7 — offline ÖLÇÜLEMEYEN madde, ölçülebildiği tek yerde ölçüldü.** İki `cube+llm`
+cevabı VQR'a **`auto_cube` olarak yazıldı** (ön koşul sağlandı), sonra parafraz soruldu:
+embedder AÇIK ve neredeyse birebir bir kayıt varken **replay EDİLMEDİ** — cevap yine
+`cube+llm` yolundan geldi. **Faz 2b-2'nin kararı (auto_cube replay'den çıkar, few-shot'ta
+kalır) canlıda doğrulandı.**
+
+⚠️ **Ölçüm aracı bu turda iki kez daha yanıldı** (§6.4'ün dersi, toplam sekiz):
+(a) `/ask`'i **8000** portunda aradım — servis **8001**'de; gelen 401 başka bir servistendi.
+(b) VQR kaydını `order_by(id.desc())` ile aradım — `id` bir **UUID**, sıralaması anlamsız;
+"yazılmamış" sonucunu üretti. Tam liste alınınca **yazılmış** olduğu görüldü. Her iki
+hatada da yanlış sonuç **inandırıcıydı** — bu yüzden her canlı iddia ikinci bir kanıtla
+(log satırı / tam tablo) doğrulandı.
+
 Testler: `tests/test_gizlilik_muhru.py` (9) · `tests/test_dogrulanmis_chip.py` (16) ·
-`tests/test_korpus_taban_kapisi.py` (10) · `tests/test_senaryo_araci_durustlugu.py` (9).
+`tests/test_korpus_taban_kapisi.py` (10) · `tests/test_senaryo_araci_durustlugu.py` (9) ·
+`tests/test_bayrak_kaydi.py` (6).
 
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 
