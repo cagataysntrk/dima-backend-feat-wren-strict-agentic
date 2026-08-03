@@ -308,6 +308,11 @@ class AskResponse(BaseModel):
     # EVRENSEL ÇIKTI YORUMU (feature flag: cikti_yorumlama) — her grafik/tablo/rapor/KPI için
     # DETERMİNİSTİK data-güdümlü yorum {facts:[...], summary:"Türkçe"}. Bayrak kapalıysa None
     # (admin panelden kim görür kararlaştırılır). Ham veri LLM'e gitmez (KVKK).
+    # FAZ 4 (K3) — AJAN KOŞUM MAKBUZU. Planlayıcı bir cevabı NASIL ürettiğini söyleyemezse
+    # "LLM garson oldu" bir BEYAN olarak kalır. `Kosum.makbuza()` bunu YAPISAL kılar:
+    # hangi araçlar · hangi sırayla · kaç ms · hangi adım hata verdi · bütçe kısıldı mı.
+    # Yalnız planlayıcıdan geçen cevaplarda dolu; diğerlerinde None (uydurulmaz).
+    agent_run: dict[str, Any] | None = None
     interpretation: dict[str, Any] | None = None
     # K2 (rehberli analitik) — rapordan DETERMİNİSTİK sonraki adım chip'leri: kullanılmayan
     # boyut (kırılım) / ölçü (ölçek) / zaman granülerliği. Her biri TAM cube_query taşır →

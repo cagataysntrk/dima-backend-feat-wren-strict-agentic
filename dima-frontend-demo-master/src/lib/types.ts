@@ -61,6 +61,27 @@ export interface QueryResult {
 
 export type CubeQuery = Record<string, unknown>;
 
+// FAZ 4 (K3) — AJAN KOŞUM MAKBUZU. Planlayıcı bir cevabı NASIL ürettiğini söyleyemezse
+// "LLM garson oldu" bir BEYAN olarak kalır. Bu yapı onu DENETLENEBİLİR kılar: hangi
+// araçlar, hangi sırayla, kaç ms, hangi adım REDDEDİLDİ, bütçe kısıldı mı.
+// Reddedilen adımlar da listede kalır — bütçe tüketildi ve kullanıcı neyin DENENDİĞİNİ
+// görebilmeli. Yalnız planlayıcıdan geçen cevaplarda dolu; diğerlerinde null (uydurulmaz).
+export interface AgentRun {
+  steps: {
+    tool: string;
+    determinism: string;
+    ms: number;
+    receipt?: string | null;
+    error?: string;      // kapı reddi de dahil — "SEÇİM REDDİ" / "DETERMİNİSTİK-ÖNCE"
+    gated?: boolean;     // false = kayıtsız (bileşik) adım, itiraf edilmiş
+    note?: string;
+  }[];
+  step_count: number;
+  query_count: number;
+  truncated: boolean;
+  truncation_reason?: string | null;
+}
+
 export interface AskResponse {
   question: string;
   sql: string;
@@ -78,6 +99,8 @@ export interface AskResponse {
   suggestions?: { label: string; query: string }[];
   // Görünüm isteği ("grafik ver") — client mevcut raporun görünümünü değiştirir.
   view_hint?: string | null;
+  // FAZ 4 — ajan koşum makbuzu (yalnız planlayıcıdan geçen cevaplarda dolu).
+  agent_run?: AgentRun | null;
   // §B (Madde 4+6, 1 Ağustos 2026): bu mesaj YENİ bir konu mu (True) yoksa önceki raporun
   // takibi mi (False) — backend'in zaten hesapladığı is_followup'ın tersi. SALT
   // BİLGİLENDİRİCİ bir kart-başı breadcrumb'tır (ReportCard). §B DÜZELTMESİ (1 Ağustos

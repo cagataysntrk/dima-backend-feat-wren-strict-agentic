@@ -175,9 +175,16 @@ def test_HER_OKUYAN_ONAY_kapisini_uyguluyor():
             okuyanlar.append((f, metin))
 
     assert okuyanlar, "SynonymOverride'ı okuyan bulunamadı — test bayat"
+    # MUAF OLANLAR ve GEREKÇELERİ — muafiyet listesi kısa ve gerekçeli olmalı, yoksa
+    # kapı kendiliğinden erir.
+    muaf = {
+        "synonyms.py": "admin ONAY EKRANI — adayları GÖRMEK için okur",
+        "seed.py": "idempotans kontrolü — 'bu aday zaten var mı' diye bakar, "
+                   "canlıya bir şey İNDİRMEZ",
+    }
     for f, metin in okuyanlar:
-        if f.name == "synonyms.py":
-            continue          # admin ONAY EKRANI: adayları GÖRMEK için okur, doğru
+        if f.name in muaf:
+            continue
         assert "SynonymOverride.approved" in metin, (
             f"{f.name} SynonymOverride okuyor ama ONAY kapısını uygulamıyor — "
             "onaysız bir LLM önerisi canlıya inebilir")

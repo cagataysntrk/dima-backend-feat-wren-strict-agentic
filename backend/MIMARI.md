@@ -527,6 +527,84 @@ Kazanç 28 birim testiyle kanıtlanıyor. Korpusun bu sınıfı kazanması Faz 0
 Taban artefaktı: `lab/nl_corpus_baseline.json` (`eval/baseline.json` ile aynı disiplin —
 `lab/reports/` gitignore'da olduğu için ham rapor değil **kapı değerleri** saklanır).
 
+### 6.12z CANLI TUR — üç sessiz kırık daha: şema sürüklenmesi · VQR benzerliği · yetim alan ✅
+
+#### (1) ŞEMA SÜRÜKLENMESİ — üç özellik sessizce ölüydü
+
+Çalışan konteynerde `alembic_version` tablosu **hiç yoktu**: migration'lar o DB'de **hiç
+koşmamıştı**. `create_all` yalnız **eksik TABLOYU** yaratır, var olan tabloya **kolon
+eklemez** — ve `docker-compose.yml` 2 Ağustos'ta `dima_logs:/app/logs` **named volume**
+kazandığı için DB rebuild'ler arası **hayatta kalıyor**. Yani `create_all` onu bir daha
+hiç yeniden yaratmadı ve şema, model ilerledikçe geride kaldı. Her yazma yolu bilinçli
+olarak best-effort (`try/except` + WARNING) olduğu için hasar **görünmedi**:
+
+| tablo | eksik kolon | sessiz sonuç |
+|---|---|---|
+| `verified_query` | `verified_at` | **VQR tamamen ölü** (ne okuma ne yazma) |
+| `interaction_log` | `reject_reason` | **Faz 0'ın telemetrisi yazılamıyor** |
+| `contract_log` | `provenance_json` | makbuz DB yerine spool'a |
+| `notification_log` | `neden_json` | uyarı **nedeni** kaydedilemiyor |
+
+**Ve bir düzeltme:** daha önce *"`interaction_log` 0 satır → telemetri akmıyor"* diye
+kaydetmiştim. **Yanlıştı** — o, test konteynerinin boş DB'siydi. Çalışan ortamda **78
+satır** vardı; akmayan telemetri değil, **ölçmek için eklediğim kolondu**.
+
+`init_db()` artık SQLite'ta **modelde olup tabloda olmayan kolonları ekliyor** — yalnız
+`ADD COLUMN`, yalnız SQLite (Postgres'te sahip Alembic, ADR-0015), ve **her eklenen kolon
+WARNING ile loglanıyor**: sessiz bir şema onarımı, onardığı sorunun aynısı olurdu.
+`NOT NULL` + varsayılansız bir kolon eklenemiyorsa **sessizce geçilmiyor**, gürültülü
+uyarı basılıyor.
+
+#### (2) §1.7'NİN RİSKİ GERÇEK ÇIKTI — ve plandakinden DAHA KÖTÜ
+
+Kullanıcı *"geçen ay toplam **FİRE**"* sordu. VQR embedding benzerliğiyle *"geçen ay
+toplam **CİRO**"* kaydını eşleştirdi ve `SELECT SUM(ciro_tl)` döndürdü — `source="vqr"`,
+`confidence=0.95`, *"önceden doğrulanmış sorgu"* rozetiyle. **Sorulanın ZIDDI bir ölçü.**
+
+İki soru **tek kelime** farklıydı ve o kelime **ölçünün kendisiydi**: beş token'ın dördü
+eşleşince kosinüs 0,92 eşiğini aşıyor. Embedding için bu bağlamda "fire" ile "ciro"
+neredeyse aynı; **anlamca zıt** oldukları görülmüyor.
+
+**§6.6z'nin kararı doğruydu ama YETERSİZDİ:** `auto_cube`'u replay'den çıkarmak doğruydu —
+ama bu kayıt **`user_verified`**'dı, yani **insan onaylıydı**. Risk kaynağın güveninde
+değil, **benzerlik eşiğinin kendisinde**. Plan §1.7'yi *"auto_cube güven listesinde"* diye
+çerçevelemişti; ölçüm çerçeveyi genişletti.
+
+**Kural (ADR-0008'in "deterministik-önce"si merdivene uygulanmış):** **birebir** eşleşme
+replay'i **korur** (aynı soruyu tekrar soran kullanıcı tahmin değil aynı cevabı alır);
+**benzerlik** eşleşmesi `route()` bir cevap üretebiliyorsa **ona yenilir**. `route()`
+çözemezse kayıt yine devrededir — **kapsam kaybedilmez, yalnız sıra düzeltilir.**
+
+**Neden hiçbir test yakalamamıştı:** CI `DIMA_VQR_EMBEDDER=off` koşuyor → eşik leksik
+(0,85) ve **seed'siz bir depoda hiç tetiklenmiyor**. Risk yalnız *embedder AÇIK + depoda
+kayıt VARKEN* görünür. Faz 0.5'in VQR senaryosu bu yüzden *"replay tetiklenmedi"* demişti
+ve ben onu **riski çürütmez** diye kaydetmiştim — **doğru kayıtmış.**
+
+#### (3) YETİM CEVAP ALANI — kendi kodumda
+
+Denetimde iki şey çıktı: `Planlayici.sec()` **hiçbir yerden çağrılmıyordu** (Faz 4'ün
+*"çapraz-alan pilotu"* kabul ölçütü karşılanmamıştı) ve `agent_run` alanının **frontend
+tüketicisi yoktu**. İkisi de bu oturumda on bir kez eleştirilen sınıfın kendi kodumdaki
+hâliydi. `sec()` `_capraz_alan_pilotu` ile zincire bağlandı (dört kapı yerinde, makbuz
+üretiliyor); `agent_run` `ReportCard`'ın *"nasıl çözüldü"* bloğunda render ediliyor —
+**reddedilen adımlar dahil**, çünkü sessizce kaybolan bir adım yapılmamış bir adım gibi
+okunur.
+
+Ve bu bir **kapıya** çevrildi: `tests/test_cevap_alani_yetim_degil.py` artık
+`AskResponse`'un **her** alanı için frontend'de bir okuma arıyor; muafiyet listesi **kısa
+ve gerekçeli** (gerekçesiz muafiyet kapıyı eritir).
+
+#### Test ortamı senaryolara göre genişletildi
+
+`seed_demo` artık **senaryo fixture'ları** da kuruyor: eşik alarmı (Faz G3'ün kıyas yolunu
+açar) · **VQR ÇİFTİ** (`user_verified` + `auto_cube`, aynı yapı farklı kaynak — §1.7'nin
+kararını **doğrudan gözlemlenebilir** kılar) · sinonim adayı (terfi kuyruğu boş kalmasın).
+Bu çift olmasaydı yukarıdaki (2) numaralı bulgu **hiç görünmezdi**.
+
+> ⚠️ Fixture'ların ilk sürümü `company` alanını `slug.replace("demo-","")` ile yazıyordu;
+> `settings.company` ise `demo-boyahane`. Kayıtlar **hiç eşleşmiyordu** — fixture "var"
+> görünüyor, hiçbir şey ölçmüyordu. **Kapsam adı TAHMİN EDİLMEZ.**
+
 ### 6.11z CANLI TUR — `cube+llm` cevabı "LLM kullanılmadı" diye rozetleniyordu ✅
 
 **Gerçek bir sağlayıcıyla (Gemini) ilk canlı istekte çıktı.** Test ortamı CI reçetesi

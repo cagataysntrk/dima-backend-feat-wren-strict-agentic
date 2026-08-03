@@ -552,6 +552,51 @@ export function ReportCard({
                 </li>
               ))}
             </ol>
+            {/* FAZ 4 — AJAN KOŞUM MAKBUZU. `trace` insan-okur bir anlatı; bu ise
+                DENETLENEBİLİR bir kayıt: hangi araç, ne kadar sürdü, hangi adım
+                REDDEDİLDİ. Reddedilen adımlar GİZLENMEZ — bütçe tüketildi ve kullanıcı
+                neyin DENENDİĞİNİ görebilmeli (sessizce kaybolan bir adım, yapılmamış bir
+                adım gibi okunur ve koşumun maliyeti anlaşılmaz olur). */}
+            {item.agent_run && item.agent_run.steps.length > 0 && (
+              <div className="mt-2 border-t border-hairline pt-2">
+                <div className="mb-1 flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+                  <span>ajan adımları</span>
+                  <span className="text-neutral-500">
+                    {item.agent_run.step_count} adım · {item.agent_run.query_count} sorgu
+                  </span>
+                  {item.agent_run.truncated && (
+                    <span
+                      className="text-amber-600"
+                      title={item.agent_run.truncation_reason ?? "bütçe tavanı aşıldı"}
+                    >
+                      ⚠ kısıldı
+                    </span>
+                  )}
+                </div>
+                <ul className="space-y-0.5">
+                  {item.agent_run.steps.map((s, i) => (
+                    <li
+                      key={`${s.tool}-${i}`}
+                      className={`font-mono text-[11px] ${s.error ? "text-amber-600" : "text-neutral-500"}`}
+                      title={s.error ?? undefined}
+                    >
+                      <span className="mr-1 text-neutral-400">
+                        {s.determinism === "llm" ? "▚" : "◆"}
+                      </span>
+                      {s.tool}
+                      <span className="ml-1 text-neutral-400">{s.ms}ms</span>
+                      {s.error && <span className="ml-1">— reddedildi</span>}
+                      {s.gated === false && (
+                        <span className="ml-1 text-amber-600" title={s.note}>
+                          — kapısız
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* Faz 3: `explain` trace'in ÜSTÜNE biner (onu değiştirmez) — yalnız sessizce
                 yapılan gerçek bir varsayım varsa (ör. dönem belirtilmedi) gösterilir. */}
             {item.explain && item.explain.assumptions.length > 0 && (

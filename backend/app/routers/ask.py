@@ -281,6 +281,88 @@ def _prompt_enhance_dene(request, ham_soru: str, q_norm: str, schema: dict, prin
     return hit, f"soru yeniden yazıldı ({ham_soru!r} → {yeni_metin!r})"
 
 
+def _capraz_alan_pilotu(request, body, q_norm: str, schema: dict, principal,
+                        migration_trace: list[str]):
+    """FAZ 4 — planlayıcı ÖNERİR, dört kapı DENETLER, makbuz KOŞUMU kaydeder.
+
+    Döner: `AskResponse | None`. `None` = pilot bir şey üretemedi → **bugünkü davranış**
+    (Discovery) aynen devam eder. Gerileme yok.
+
+    ## Ne yapar
+
+    1. `sec()` planı **önerir** (LLM yoksa deterministik yedek: `["route"]`).
+    2. Her adım `calistir()`'den geçer — **kayıt · yetki · deterministik-önce · bütçe**.
+    3. Bir adım cevap üretirse o cevap döner ve **`agent_run` makbuzu** ona iliştirilir:
+       hangi araçlar, hangi sırayla, kaç ms, hangi adım hata verdi.
+
+    ## Neden makbuz zorunlu
+
+    Planlayıcı bir cevabı **nasıl** ürettiğini söyleyemezse, "LLM garson oldu" bir beyan
+    olarak kalır. `Kosum.makbuza()` bunu **yapısal** kılar: `steps` · `step_count` ·
+    `query_count` · `truncated`. Bütçe aşımı da **sessizce kesilmez** — kısmi cevap ve
+    kısılma gerekçesi birlikte döner.
+    """
+    from app import planner as _planner
+
+    llm = getattr(request.app.state, "llm", None)
+    service = _service_for(request, body.session_id)
+    plan = _planner.Planlayici(
+        principal=principal,
+        butce=_planner.Butce(adim=6, saniye=20.0, sorgu=8),   # planın verdiği tavan
+        kaynaklar={"servis:wren": service, "servis:llm": llm},
+    )
+    try:
+        adimlar = plan.sec(body.question, llm)
+    except Exception:  # noqa: BLE001 — seçim bir kurtarma yolu; patlarsa Discovery devam
+        _log.info("çapraz-alan pilotu: plan seçilemedi", exc_info=True)
+        return None
+
+    sonuc = None
+    for adim in adimlar:
+        ad = adim.get("arac")
+        try:
+            if ad == "route":
+                sonuc = plan.calistir("route", body.question, schema)
+                if sonuc:
+                    break
+            elif ad == "llm.select_cube":
+                catalog_text, index = cube_router.build_catalog(schema)
+                ham = plan.calistir("llm.select_cube", body.question, catalog_text)
+                cq = cube_router.parse_cube_query(ham, index)
+                if cq:
+                    sonuc = {"cube_query": cq, "order": None, "limit": None}
+                    break
+            # Diğer araçlar bu pilotta ÇAĞRILMAZ: `sec()` onları önerebilir ve öneri
+            # makbuzda görünür, ama cevabı ÜRETEN yalnız yukarıdaki iki basamaktır.
+            # Sessiz bir genişleme yerine dar ve denetlenebilir bir pilot.
+        except (_planner.AracReddi, _planner.ButceAsimi, KeyError) as red:
+            # Kapılar ÇALIŞTI. Bu bir hata değil, sistemin doğru davranışı — ve
+            # `calistir()` adımı zaten kayda geçirdi (hata alanıyla birlikte).
+            _log.info("çapraz-alan pilotu: adım reddedildi (%s): %s", ad, red)
+            continue
+        except Exception:  # noqa: BLE001
+            _log.warning("çapraz-alan pilotu: adım patladı (%s)", ad, exc_info=True)
+            continue
+
+    if not sonuc:
+        return None                      # pilot bir şey üretemedi → Discovery devam
+
+    iz = migration_trace + [
+        "Ajan: plan seçildi → " + " → ".join(a["arac"] for a in adimlar),
+        "Ajan: her adım dört kapıdan geçti (kayıt · yetki · deterministik-önce · bütçe)",
+    ]
+    resp = _answer_from_cube_query(sonuc["cube_query"], source="cube", trace=iz)
+    if resp is not None:
+        # MAKBUZ: koşumun kendisi cevabın YANINDA taşınır — "hangi araçlar, hangi sırayla,
+        # kaç ms, hangi adım reddedildi" sorusu cevaplanabilir olsun. Reddedilen adımlar
+        # da kayıttadır: bütçe tüketildi ve denetçi neyin DENENDİĞİNİ görmeli.
+        try:
+            resp.agent_run = (plan.kosum.makbuza() or {}).get("agent_run")
+        except Exception:  # noqa: BLE001 — makbuz cevabı düşürmez
+            _log.warning("agent_run makbuzu iliştirilemedi", exc_info=True)
+    return resp
+
+
 def _parse_decision(raw: str) -> dict:
     """refine_cube çıktısını (JSON) ayrıştırır: {action, cube_query?, reason?}. Bozuksa {}."""
     import json
@@ -1697,6 +1779,41 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     is_literal_repeat = bool(body.history) and q_norm == cube_router._norm(body.history[-1])
     if not is_followup or is_literal_repeat:
         cached = vqr.near_exact(body.question) if vqr else None
+        # ⚠️ BENZERLİK EŞLEŞMESİ `route()`'A YENİLİR — birebir tekrar YENİLMEZ.
+        #
+        # **CANLI TURDA ÖLÇÜLDÜ (2026-08-03), §1.7'nin riski gerçek çıktı ve plandakinden
+        # DAHA KÖTÜ:** kullanıcı *"geçen ay toplam **FİRE**"* sordu; VQR embedding
+        # benzerliğiyle *"geçen ay toplam **CİRO**"* kaydını eşleştirdi ve
+        # `SELECT SUM(ciro_tl)` döndürdü — `source="vqr"`, `confidence=0.95`,
+        # *"önceden doğrulanmış sorgu"* rozetiyle. **Sorulan ölçünün ZIDDI bir ölçü.**
+        #
+        # İki soru TEK KELİME farklıydı ve o kelime **ölçünün kendisiydi** — yani beş
+        # token'ın dördü eşleşince kosinüs 0,92 eşiğini aşıyor. Embedding için "fire" ile
+        # "ciro" bu bağlamda neredeyse aynı; **anlamca zıt** oldukları görülmüyor.
+        #
+        # Faz 2b'nin kararı (`auto_cube`'u replay'den çıkarmak) DOĞRUYDU ama **yetersizdi**:
+        # bu kayıt `user_verified`'dı, yani insan onaylıydı. Risk kaynağın güveninde değil,
+        # **benzerlik eşiğinin kendisinde**.
+        #
+        # Kural (ADR-0008'in "deterministik-önce"si merdivene uygulanmış hâli):
+        #   * **BİREBİR** (normalize) eşleşme → replay KALIR. Aynı soruyu ikinci kez soran
+        #     kullanıcı aynı cevabı hak eder; burada tahmin yok.
+        #   * **BENZERLİK** eşleşmesi → `route()` bir cevap üretebiliyorsa **O KAZANIR**.
+        #     Deterministik ve tam bir cevap, olasılıksal ve yaklaşık bir eşleşmeye
+        #     tercih edilir. `route()` çözemezse benzerlik kaydı yine devreye girer —
+        #     yani kapsam KAYBEDİLMEZ, yalnız sıra düzeltilir.
+        if cached and cube_router._norm(cached.get("question") or "") != q_norm:
+            try:
+                _det = cube_router.route(
+                    body.question, schema,
+                    liste_kirilimi="liste_niyeti" in resolve_for(settings, principal))
+            except Exception:  # noqa: BLE001
+                _det = None
+            if _det:
+                _log.info("VQR benzerlik eşleşmesi ATLANDI — route() deterministik cevap "
+                          "üretiyor (kayıt=%r, soru=%r)",
+                          (cached.get("question") or "")[:60], body.question[:60])
+                cached = None
         cached_payload = cached.get("cube_query") if cached else None
         cached_sql = (cached_payload or {}).get("wren_sql") if cached_payload else None
         # ŞEMA-SÜRÜM KAPISI (Faz 0.6, 2 Ağustos 2026). Öğrenilmiş HAM SQL, öğrenildiği
@@ -2510,6 +2627,24 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         fresh = _try_fresh_intent()
         if fresh:
             return fresh
+
+    # 4b) ÇAPRAZ-ALAN PİLOTU — FAZ 4 (K3). `Planlayici.sec()`'in TÜKETİCİSİ.
+    #
+    # ⚠️ **DENETİMDE BULUNDU (canlı tur, 2026-08-03):** `sec()` yazılmış ve 18 testle
+    # kilitlenmişti ama **hiçbir yerden çağrılmıyordu** — yani bu oturumda on bir kez
+    # eleştirdiğim *"beyan var, TÜKETİCİSİ yok"* sınıfına kendim düşmüştüm. Faz 4'ün
+    # kabul ölçütü (*"çapraz-alan pilotu → 2 adımlı kompozisyon"*) karşılanmamıştı.
+    #
+    # Neden BURADA: bu nokta, deterministik zincirin (route · refine · Intent-JSON)
+    # tükendiği ve Discovery'ye (ham SQL, cube sınırlarının ötesinde) düşülmek üzere
+    # olduğu yer. MIMARI §9.2'nin yapısal sınırı da tam burada ısırır: bir cube'un ölçüsü
+    # + başka cube'un boyutu **tek** CubeQuery'de ifade edilemez — ama **iki adımda**
+    # edilebilir. Planlayıcı o iki adımı önerir; **dört kapı** onu denetler.
+    if "agent_plan_secimi" in resolve_for(settings, principal):
+        _agent = _capraz_alan_pilotu(request, body, q_norm, schema, principal,
+                                     migration_trace)
+        if _agent is not None:
+            return _agent
 
     # 5) Discovery: sağlayıcı zinciri (failover + kural-tabanlı/dürüst-ret yedeği —
     # app/llm.py, app.state.llm). RAW takip (önceki tur yapısal cube_query ÜRETMEMİŞSE),

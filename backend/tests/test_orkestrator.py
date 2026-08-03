@@ -206,3 +206,62 @@ def test_FAILOVER_plan_sec_TASIYOR():
 
     assert hasattr(llm_mod.FailoverSqlGenerator, "plan_sec")
     assert not hasattr(llm_mod.RuleBasedSqlGenerator, "plan_sec")
+
+
+# --- TÜKETİCİ: sec() artık gerçekten çağrılıyor -----------------------------------
+
+def test_SEC_TUKETICISI_VAR():
+    """⚠️ **DENETİMDE BULUNDU (canlı tur, 2026-08-03).** `sec()` yazılmış ve 18 testle
+    kilitlenmişti ama **hiçbir yerden çağrılmıyordu** — yani bu oturumda on bir kez
+    eleştirdiğim *"beyan var, TÜKETİCİSİ yok"* sınıfına **kendim düşmüştüm**. Faz 4'ün
+    kabul ölçütü (*"çapraz-alan pilotu → 2 adımlı kompozisyon"*) karşılanmamıştı.
+
+    Bir mekanizmanın testi, o mekanizmanın **kullanıldığını** kanıtlamaz."""
+    from app.routers import ask as ask_mod
+
+    assert hasattr(ask_mod, "_capraz_alan_pilotu")
+    govde = inspect.getsource(ask_mod._capraz_alan_pilotu)
+    assert "plan.sec(" in govde, "pilot planlayıcıdan plan İSTEMİYOR"
+    assert "plan.calistir(" in govde, "adımlar kapılardan GEÇMİYOR"
+
+    zincir = inspect.getsource(ask_mod)
+    assert "_capraz_alan_pilotu(" in zincir.replace(
+        inspect.getsource(ask_mod._capraz_alan_pilotu), ""), \
+        "pilot TANIMLI ama /ask zincirinden ÇAĞRILMIYOR"
+
+
+def test_PILOT_makbuz_URETIYOR():
+    """Planlayıcı bir cevabı NASIL ürettiğini söyleyemezse "LLM garson oldu" bir BEYAN
+    olarak kalır. `agent_run` bunu YAPISAL kılar."""
+    from app.schemas import AskResponse
+
+    assert "agent_run" in AskResponse.model_fields
+    from app.routers import ask as ask_mod
+
+    assert "resp.agent_run" in inspect.getsource(ask_mod._capraz_alan_pilotu)
+
+
+def test_PILOT_URETEMEZSE_bugunku_davranis():
+    """`None` = Discovery aynen devam eder. Gerileme YOK."""
+    from app.routers import ask as ask_mod
+
+    govde = inspect.getsource(ask_mod._capraz_alan_pilotu)
+    assert govde.count("return None") >= 2, "pilot başarısızlıkta bugünkü yola düşmüyor"
+    assert "Discovery" in govde
+
+
+def test_PILOT_BAYRAKLI():
+    """KURAL B — sıcak yola LLM çağrısı ekliyor."""
+    from app.routers import ask as ask_mod
+
+    assert '"agent_plan_secimi" in resolve_for' in inspect.getsource(ask_mod)
+
+
+def test_PILOT_KAPI_REDDINI_yutmuyor():
+    """Kapılar çalıştığında bu bir HATA değil sistemin doğru davranışıdır — ama adım
+    yine de KAYDA GEÇMELİ (calistir() zaten geçirir)."""
+    from app.routers import ask as ask_mod
+
+    govde = inspect.getsource(ask_mod._capraz_alan_pilotu)
+    assert "AracReddi" in govde and "ButceAsimi" in govde
+    assert "Kapılar ÇALIŞTI" in govde
