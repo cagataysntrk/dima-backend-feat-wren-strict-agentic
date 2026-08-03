@@ -2460,6 +2460,27 @@ Rakip araştırması bunları **bulamadı** (satıcı dokümanları taranarak):
   seçmemeli.
 - **Ölçü-A × Ölçü-B tek CubeQuery'de olamaz** — o `blend` işidir. Join, *ölçü-A × boyut-B*'yi
   çözer; *ölçü-A × ölçü-B*'yi değil.
+
+  > ⟳ **FAZ B1 — FAZ 4'ÜN KABUL ÖLÇÜTÜ BU SATIR YÜZÜNDEN YANLIŞ YAZILMIŞTI.** Planın pilot
+  > örneği *"personel bazlı verimlilik"* (ölçü `oee`'den, boyut başka cube'dan) ve ölçüldü:
+  > pilot hiçbir şey üretmiyor. Ama **sebebi yapısal değil KATALOGSAL**: join bu şekli
+  > çözer — `oee`'de **personel boyutu bilinçli olarak YOKTUR** (HANDOFF #4 §3.3). Yani
+  > soru *"ifade edilemez"* değil, *"bu katalogda karşılığı yok"*.
+  >
+  > ⚠️ Planda önce *"ölçü + başka cube'un BOYUTU ne tek CubeQuery'de ne iki adımda ifade
+  > edilebilir"* diye yazmıştım — **bu satırla çelişiyordu ve yanlıştı**; bu turda altıncı
+  > kez kendi beklentim kusurlu çıktı. MIMARI'yi okumadan olmayan-hedef yazmak, tam da bu
+  > belgenin var olma sebebini çiğnemek olurdu.
+  >
+  > **Faz 4'ün DÜZELTİLMİŞ kabul ölçütü** — mimarinin gerçekten desteklediği şekil:
+  > **ölçü + ölçü**, **ekleme niyetiyle**, **TAKİPTE**. `cross_cube_add`'in kendi
+  > sözleşmesi budur (*"q ekleme-niyeti içermeli"*) ve canlıda ölçüldü:
+  > `bu yıl makine bazında oee` → *"bir de fire ekle"* → `measures=['ort_oee',
+  > 'toplam_fire_kg']`, 11 satır, whitelist tuttu.
+  >
+  > **Fresh soruda pilot çalışamaz** ve bu da yapısaldır: pilot `route(tüm soru)`'nun bir
+  > taban üretmesini bekler, iki ölçülü bir fresh soru ise route'ta **R1/R10** verir.
+  > Kompozisyonun doğal evi **takip yolu**dur (`deterministic_refine`), fresh yol değil.
 - **View'lar ilişkilere katılamaz** — bir cube'un join alabilmesi için `base_object`'i **model**
   olmalıdır.
 - **Bileşik anahtarlı ilişkiler ifade edilemez** (MDL `condition` tek kolonludur) → `enerji_tesis`
