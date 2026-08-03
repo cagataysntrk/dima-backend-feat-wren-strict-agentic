@@ -7913,3 +7913,362 @@ Sen “kaçınılmaz olarak” başlarsın, “otorite olarak” büyürsün. Kr
 kılan zincirleri kurandır — pazarlamayla değil, terk-edilemezlikle.
 tek sayfada tüm strateji
 DİMA · 0→100 Görev Takip Dosyası126 / 126
+
+---
+
+# EK · LLM'İN KONUŞMA VE ANLAMA KATMANINDAKİ YERİ
+
+**Değerlendirme · Dış Araştırma · Uygulama Planı — 3 Ağustos 2026**
+Kaynak durum: `d0d3ade` (*"fix(canlı): üç sessiz kırık"*) + kaydedilmemiş çalışma (6 dosya, +258 satır).
+Bu ek **yeni bir yön önermez**; var olan mimarinin üstünde LLM'in **ağırlığını** nereye kaydıracağımızı karara bağlar.
+
+---
+
+## 0 · Karara bağlanan soru ve cevabı
+
+> **Soru:** *"Semantik/konuşma/anlama katmanında LLM'i daha ağır kullanalım mı? Yerel LLM mi, tam PII'lanmış bulut LLM mi? Agentic akışlarda LLM zaten şart — burada da kullanmakta ne sakınca var?"*
+
+**Cevap: Evet, ama tek bir kuralla — ve o kural sezgiden değil, bu oturumda yapılan ölçümlerden çıktı.**
+
+> ### TEK KURAL
+> **LLM'in çıktısı ya doğrulanmış bir kümeden bir SEÇİMDİR, ya da içinde HİÇ SAYI YOKTUR.**
+>
+> Kısası: **LLM anlar ve söyler; küp bilir ve kanıtlar.**
+
+Bu kural üç şeyi aynı anda mümkün kılar: konuşma katmanını LLM'e açmak, sayı üretimini deterministik tutmak, ve *"neden bu sayı?"* sorusunun cevabını kaybetmemek.
+
+---
+
+## 1 · Ölçülen durum — LLM zaten nerede duruyor
+
+*"Yok küp yok intent, LLM'i hiç kullanmıyoruz"* algısı ölçümle uyuşmuyor. LLM'in bugün **beş** işi var:
+
+| # | İş | Modül | LLM ne üretir | Çıkış kapısı | Bayrak |
+|---|---|---|---|---|---|
+| 1 | Alan seçimi (Intent-JSON) | `llm.py` → `cube_router.py` | katalogdan **seçim** | `parse_cube_query` | `ask_intent_first: beta` |
+| 2 | Şema-kısıtlı Intent | `llm.py` | native tool-use, enum'u **katalog** | aynı | `llm_sema_kisitli: beta` |
+| 3 | Prompt zenginleştirme | Faz 3b | **metin**, yapı değil | route tekrar denenir | `prompt_enhancer: "off"` |
+| 4 | Plan seçimi | `planner.py::sec()` | **araç adı** listesi | dört kapı | `agent_plan_secimi: "off"` |
+| 5 | Anlatım | Faz 5 | **üslup**, sayı değil | `narration_guard` (fail-closed) | `t2_anlatici: "off"` |
+
+Beşinin de ortak yanı: **LLM'in çıktısı doğrudan cevap olmuyor.** Ya doğrulanmış bir kümeden seçiyor, ya metni deterministik bir yola geri veriyor, ya sayıları guard'dan geçiyor.
+
+Bu oturumda deterministik doğru-cube oranı **%86,3 → %93,2**'ye çıktı ve bu artışın **tamamı deterministik düzeltmelerden** geldi.
+
+---
+
+## 2 · İki ölçülmüş sessiz-yanlış — "anlama" tek başına neden yetmiyor
+
+### 2.1 · FİRE → ciro *(gerçek konteyner, 3 Ağustos 2026)*
+
+Kullanıcı *"geçen ay toplam **FİRE**"* sordu. VQR embedding benzerliğiyle *"geçen ay toplam **CİRO**"* kaydını eşleştirdi ve `SELECT SUM(ciro_tl)` döndürdü — `source="vqr"`, `confidence=0.95`, *"önceden doğrulanmış sorgu"* rozetiyle. **Sorulanın zıddı bir ölçü.**
+
+İki soru **tek kelime** farklıydı ve o kelime **ölçünün kendisiydi**: beş token'ın dördü eşleşince kosinüs `_EXACT_THRESHOLD = 0.92`'yi aşıyor (`vqr.py:36`). Embedding için o bağlamda *"fire"* ile *"ciro"* neredeyse aynı; **anlamca zıt** oldukları görünmüyor.
+
+Kritik ayrıntı: kayıt **`user_verified`** idi — yani **insan onaylıydı**. Risk kaynağın güveninde değil, **benzerlik eşiğinin kendisindeydi**.
+
+> **Çözüldü (`d0d3ade`), kural:**
+> * **BİREBİR** (normalize) eşleşme → replay **KALIR**.
+> * **BENZERLİK** eşleşmesi → `route()` bir cevap üretebiliyorsa **route kazanır**.
+> * `route()` çözemezse benzerlik kaydı **yine devrede** — kapsam kaybedilmez, yalnız **sıra** düzeltilir.
+
+Bu, bu ekin en önemli tek dersidir: **anlama katmanı en çok, en kritik token'da yanılıyor.** Ve bu bir uygulama hatası değil, kısa alan-sorularında benzerliğin **yapısal** davranışı.
+
+### 2.2 · Gölge spike — embedding'in getirebileceği tek küme
+
+Embedding'in yeni bilgi getirebileceği tek küme **R1** idi (**99 / 470**). Ölçüm: R1'in **tamamı gerçek belirsizlik** çıktı. Embedding belirsizliği çözmez, **aday üretir** — ve o adaylar netleştirme chip'inde zaten var.
+
+### 2.3 · Neden hiçbir test yakalamamıştı
+
+CI `DIMA_VQR_EMBEDDER=off` koşuyor → eşik **leksik** (0,85) ve **seed'siz** bir depoda hiç tetiklenmiyor. Ders kapıya çevrildi: `seed_demo` artık senaryo fixture'ları kuruyor (eşik alarmı · **VQR çifti** · sinonim adayı). **O çift olmasaydı bulgu hiç görünmezdi.**
+
+---
+
+## 3 · Dış araştırma — sektör bu işi nasıl yapıyor
+
+### 3.1 · Ortak desen: LLM SQL yazmaz, yapılandırılmış niyet üretir
+
+| Ürün | LLM'in ürettiği | Derleyen | Veri LLM'e gider mi |
+|---|---|---|---|
+| **Pyramid GenBI** | *"recipe"* — hangi sorgular koşulacak | Pyramid motoru | **Hayır** — yalnız semantic model metadata'sı + placeholder örnek veri |
+| **Cube** | structured request: measures + dimensions + filters + time range | Cube semantic layer | Hayır |
+| **ThoughtSpot** | *"semantic intent"* | governed semantic model | Hayır |
+| **Zenlytic (Zoë)** | Cognitive Layer'ın izin verdiği kümeden metrik seçimi | strongly-typed YAML → runtime SQL | Hayır |
+| **Tellius (Kaiya)** | intent + metric/dimension/filter eşlemesi | Business View motoru | Hayır |
+| **DİMA (bugün)** | Intent-JSON | `parse_cube_query` → cube | PII maskeli |
+
+Pyramid'in kendi cümlesi bizim Intent-JSON'ın tanımı: *"Pyramid LLM'e hiçbir kullanıcı verisi göndermez, yalnız Semantic Model metadata'sını gönderir… mühendislenmiş prompt LLM'in hangi sorguların koşulacağına dair bir **recipe** döndürmesini sağlar."*
+
+**Sonuç:** *"Rakipler LLM'i serbest bırakıyor, biz boşuna zorlanıyoruz"* hipotezi **doğrulanmadı**. Tellius'un kendi blogu semantic layer'ı *"opsiyonel değil, temel altyapı"* diye savunuyor ve serbest öğrenmeyi *"semantik halüsinasyonlar ve açıklanabilirlik kâbusu"* diye reddediyor.
+
+### 3.2 · Ölçülmüş sayılar
+
+| Bulgu | Kurulum | Sonuç |
+|---|---|---|
+| **Semantic layer etkisi** (arXiv 2604.25149) | 3 frontier model, 100 soru, Contoso/ClickHouse, eşli protokol | Yalnız şema **%45,5–50,5** → şema + 4 KB semantic doküman **%67,7–68,7** (**+17…+23 puan**, p<0,01) |
+| **Ara temsil (SMQ)** (arXiv 2606.31041) | Spider2-snow, 547 görev | LLM → SMQ → **deterministik derleyici** → SQL: **%94,15** execution accuracy, leaderboard 3. |
+| **Konuşma belleği** (arXiv 2605.26394) | EnterpriseMem-Bench, 300 oturum / 1.400 tur, 3 kurumsal DB | **Stateless %15–19** (bellek-kritik soruda 3. turda **%0**) → **2 turluk çalışma belleği %74,5–86,4** |
+| Üçüncü taraf (Tellius aktarımı) | — | knowledge graph ile SQL doğruluğunda +%54; dbt'nin semantic layer ile %83 NL doğruluk iddiası |
+
+İki cümle bu ekin omurgasıdır:
+
+> *"Semantic-layer dokümanının varlığı anlamlı varyansın **esasen tamamını** açıklıyor; aynı seviyedeki **model seçimi açıklamıyor**."* → **Daha iyi model almak yerine daha iyi küp yapmak ölçülmüş bir tercihtir.**
+
+> *"Çalışma belleği **zorunludur**, opsiyonel değil"* — ama *"bellek mimarisi **karmaşıklığı** doğruluğu monotonik olarak iyileştirmez"* (episodik + semantik katmanlar **+14 ile −16 puan** arasında salındı). → **Belleği kur, ama basit kur.**
+
+### 3.3 · Yerel LLM için somut sayı
+
+Ortamda `ollama_model: qwen2.5-coder:7b` tanımlı ve yol kurulu (`llm.py:1119`, `_reachable()` probe'lu, `localhost:11434/v1`). Literatür küçük modelde ince-ayarla %36 → %54,5 diyor; bugünkü deterministik doğru-cube **%93,2**.
+
+> **Karar:** Yerel LLM **ölçü/cube seçiminde kullanılmaz** — ciddi gerileme olur. Yerel LLM'in doğru yeri **konuşma/bağlam çözümüdür**; orası bir *sınıflandırma-çözümleme* işidir, NL2SQL değil, ve küçük modeller orada belirgin biçimde daha iyidir.
+
+### 3.4 · Ne yayınlamıyorlar *(dürüstlük)*
+
+Zenlytic ve Cube **hiçbir sayı yayınlamıyor**; iddiaları niteliksel. Tellius'un alıntıladığı sayılar üçüncü taraf. **Hiçbiri kapsam-dışı davranışını yayınlamıyor.** Yani *"onlardan ne kadar geride/ilerideyiz"* sorusunun tam cevabı yok; elimizdeki tek karşılaştırılabilir zemin akademik benchmark'lar.
+
+dbt benchmark'ının cümlesi bu yüzden çerçeveyi belirliyor: *"Text-to-SQL'de başarısızlık **makul ama yanlış bir cevaba** benzer; semantic layer'da **bir hata mesajına**."*
+
+---
+
+## 4 · Karar tablosu — katman katman LLM/küp sınırı
+
+| Katman | Kararı kim verir | LLM'in rolü | Kapı | Sayı riski |
+|---|---|---|---|---|
+| Sosyal (*merhaba, teşekkürler*) | LLM | **tam serbest** | yok (gerekmiyor) | **sıfır** — içinde sayı yok |
+| Prompt kanonikleştirme | LLM | metni yeniden yazar | route tekrar denenir | sıfır — yapı seçmez |
+| Bağlam / niyet takibi | **LLM** | ham ifadeyi çözer | `Baglam.kural` makbuza yazılır | sıfır — sorgu üretmez |
+| Netleştirme sorusu kurma | LLM | soruyu **kurar** | kullanıcı **onaylar** | sıfır — onaysız ilerlemez |
+| Cube/ölçü/boyut seçimi | **küp** | katalogdan seçim **önerir** | `parse_cube_query` | **yüksek → doğrulanır** |
+| Araç seçimi (agentic) | LLM | 15 araçtan **seçim** | dört kapı | orta → kapılar karşılar |
+| Sayı üretimi | **küp** | **hiç** | — | — |
+| Anlatım | LLM | üslup | `narration_guard` fail-closed | eşleşmeyen sayı **yayımlanmaz** |
+| Reçete / karar yorumu | LLM + küp | yorum yarısı | **ölçülebilir yarı ayrı gösterilir** | **en yüksek — guard'ı yok** |
+| Ham SQL (Discovery) | LLM | **SQL'in kendisi** | dry_plan + SELECT-only + PII | **tek istisna → rozeti dürüst olmalı** |
+
+**Discovery, TEK KURAL'ı çiğneyen tek yerdir.** Katalog dışı keşif için var ve kalması gerekir; ama rozeti *"kanıtlanmış"* değil açıkça **"keşif — doğrulanmamış"** demelidir.
+
+---
+
+## 5 · FAZ 3b ve FAZ 4 — bugünkü durum ve nasıl görülecek
+
+### 5.1 · Ne yapıyorlar
+
+**FAZ 3b — `prompt_enhancer`** (`backend/demo/packs/features.yml`)
+`route()` **boş** dönerse soruyu **katalog terimleriyle yeniden yaz** ve `route()`'u **tekrar dene**. LLM **yapı seçmez, yalnız metni iyileştirir**. Planlayıcının dört kapısından geçer (*route denenmeden seçilemez*).
+
+**FAZ 4 — `agent_plan_secimi`**
+Çapraz-alan pilotu: `Planlayici.sec()` planı **ÖNERİR**, dört kapı **DENETLER**, `agent_run` makbuzu **kaydeder**. **Seçim ≠ çalıştırma** — bu fazın omurgası budur.
+
+### 5.2 · Bugünkü durum — kritik güncelleme
+
+`d0d3ade`'de **yetim uç kapatıldı**:
+* `sec()` **hiçbir yerden çağrılmıyordu** → `_capraz_alan_pilotu` ile zincire bağlandı (dört kapı yerinde, makbuz üretiliyor).
+* `agent_run` alanının **frontend tüketicisi yoktu** → `ReportCard`'ın *"nasıl çözüldü"* bloğunda render ediliyor, **reddedilen adımlar dâhil**.
+* Kapıya çevrildi: `test_cevap_alani_yetim_degil.py` artık `AskResponse`'un **her** alanı için frontend'de bir okuma arıyor.
+
+> **Yani Faz 4'ün kabul ölçütü artık karşılanmış durumda — ama bayrak hâlâ `"off"`. Mekanizma hazır, eksik olan ÖLÇÜM.**
+
+### 5.3 · Dört kapı — açmanın neden yeni bir risk yaratmadığı
+
+`planner.py::sec()` docstring'inden:
+
+| Kapı | Neyi öldürür |
+|---|---|
+| **KAYIT** | LLM'in **uydurduğu** araç adı |
+| **YETKİ** | `principal`'ın yetkisi olmayan araç |
+| **DETERMİNİSTİK-ÖNCE** | `route` denenmeden seçilen LLM aracı |
+| **BÜTÇE** | adım / süre / sorgu tavanı → `ButceAsimi` |
+
+Ek güvenceler:
+* LLM'in **gördüğü** liste `tools.llm_araclari(principal)` — **yetkiye göre süzülmüş**; yazma yan etkili araçlar (`dashboards.create`, `schedules.create`, `measures.approve`) ve gizlilik yaprakları (`drill.raw`, `vqr.recall`) **beyan edilerek** dışarıda.
+* Sağlayıcı yoksa → `["route"]`. **Plan zaten belliydi.**
+* Geçersiz araç adı **sessizce düşürülmez**, `Adim(hata="SEÇİM REDDİ")` olarak **kayda geçer** — *"seçicinin ne kadar yanıldığı ölçülebilir kalsın"* diye.
+* `route` öneride yoksa **başa eklenir** (kapı ceza değil **yönlendirme**).
+
+> **Ajan kullanıcıyı aşamaz.** 15 araç, yetki süzgeci, bütçe tavanı, makbuz. Açılan kapı **sınırlıdır**.
+
+### 5.4 · Test protokolü — adım adım, ucuzdan pahalıya
+
+Bütçe gerçeği (`CANLI_TEST_REHBERI.md` §2.2): **tur başına maliyet 1 değil 3** (`consistency_k=3`), sınır 10 sn / 10 istek.
+
+| Adım | Ne | Maliyet | Ölçüt |
+|---|---|---|---|
+| **T0** | `lab/konusma_senaryolari.py` **`--live` OLMADAN** — yapısal mod | **bedava, sınırsız** | regresyon yok |
+| **T1** | `lab/nl_accuracy.py` — bayraklar kapalı taban çizgisi | bedava | **%93,2 teyit** |
+| **T2** | `prompt_enhancer: alpha` (tek kullanıcı scope'u) + `--live` | ~3 çağrı/tur | **route boş dönen** soruların kaçı kurtarıldı |
+| **T3** | T2 + `nl_accuracy` yeniden | | doğru-cube **%93,2'nin altına düşmedi mi** |
+| **T4** | `agent_plan_secimi: alpha` + `--live` | | `agent_run` makbuzunda: kaç adım **SEÇİM REDDİ**, kaç adım bütçeden kısıldı |
+| **T5** | Çapraz-alan senaryoları | | route'un tek başına **çözemediği** soruların kaçı çözüldü |
+| **T6** | Karar | | kazanç varsa `beta`, yoksa `off` **ve nedeni yazılır** |
+
+**Bayrak nasıl açılır:** `features.py` katmanlı çözümleme — *fabrika ayarı* (`pack.yml` → `company.yml`) üstüne *işletme gerçeği* (DB `FeatureOverride`), **en spesifik kazanır** (`user > role > tenant > sector > global > fabrika`). Yani **tek bir test kullanıcısında** `alpha` açılıp herkesin akışına dokunmadan ölçülebilir. Bayrak **yetki değildir** — aksiyon güvenliği her zaman `authorize()`'dan geçer.
+
+### 5.5 · Kabul ölçütü — neye "çalıştı" diyeceğiz
+
+* **3b:** route'un boş döndüğü sorularda **kurtarma oranı > 0** *ve* genel doğru-cube **gerilemedi**.
+* **4:** route'un tek başına çözemediği çapraz-alan sorularında **çözüm oranı > 0** *ve* `SEÇİM REDDİ` oranı ölçülebilir düzeyde *ve* bütçe kısılması **istisna**, kural değil.
+* İkisinde de **başarısızlık da bir sonuçtur**: `off`'a dönülür ve **nedeni yazılır**. Bugün elimizde bu iki fazın kazancına dair **hiçbir ölçüm yok** — `+0,0%` *"işe yaramadı"* değil, **"denenmedi"** demektir.
+
+---
+
+## 6 · Hedef mimari — konuşma, bağlam, niyet nasıl görev alacak
+
+### 6.1 · Bir turun anatomisi
+
+```
+kullanıcı ifadesi
+  │
+  ├─0  SOSYAL SINIF?           → LLM serbest cevap · sayı yok · SON
+  │
+  ├─1  BAĞLAM ÇÖZÜMÜ (context.py)
+  │      girdi: ham ifade + son 2 tur + çapa (kart/çoklu-seçim)
+  │      çıktı: Baglam{kural, cube_query?, ham_ifade*, kok_makbuz, adaylar}
+  │      *YENİ — bugün yok
+  │
+  ├─2  NİYET SINIFI            → yapısal · konuşma · kök-neden · rapor · reçete · keşif
+  │
+  ├─3  ÇELİŞKİ Mİ?             → adaylar boş değilse SOR, SEÇME (Baglam.celiskili)
+  │                              kullanıcı onayı BAĞLAMA YAZILIR
+  │
+  ├─4  MERDİVEN                 route() → [3b enhancer] → Intent-JSON → [4 plan seçimi]
+  │
+  ├─5  YÜRÜTME (planner.py)     dört kapı · bütçe · her adım makbuzlu
+  │
+  ├─6  PII (pii.py)             tek çıkış noktası · TCKN checksum · pii:view istisnası
+  │
+  └─7  ANLATIM                  narration_guard fail-closed · sayı sistemden, üslup LLM'den
+```
+
+Kalın çizgi **1 ve 3**'tedir: bugün ikisinin de **altyapısı var, tamamı yok**.
+
+### 6.2 · Bağlam — tek gerçek mimari boşluk
+
+`app/context.py`'nin `Baglam`'ı bugün şunu taşıyor:
+`kural` · `cube_query` · `kok_makbuz` · `capa_etiketi` · `kullanilmis_eksenler` · `adaylar` · `notlar`
+
+Yani **çözülmüş** bağlamı taşıyor, kullanıcının **çözülemeyen ham ifadesini** taşımıyor. *"Sadece bu üç ayı getir"*, *"peki ya bu?"*, *"az önce dediğin"* — bunlara bağlanacak çapa yok.
+
+EnterpriseMem'in bulgusu tam da bu ikiliği istiyor: bir **context-resolution layer** çözülmüş anahtar-değer çiftlerini **yapılandırılmış blok** olarak verirken, **ham konuşma geçmişi de ayrıca** veriliyor — *"tamamlayıcı modaliteler üzerinden önceki bağlama artıklı erişim."*
+
+> **Bizde çözülmüş taraf var, ham taraf yok. Literatürün "dual presentation" dediği şeyin yarısını yapıyoruz.**
+
+**Yapılacak:** `Baglam`'a `ham_ifade` + **2 turluk** pencere. **Ve daha fazlası değil** — episodik/semantik retrieval eklemek ölçümde monotonik iyileştirmiyor (+14 / −16).
+
+`context.py`'nin *"Neden LLM YOK"* ilkesi **bozulmuyor**: bellek **deterministik** kalır (muhasebe işi), onu **yorumlayan** LLM olur. Gerekçe yine `kural` olarak makbuza yazılır.
+
+### 6.3 · Niyet sınıfları — hepsinin modülü zaten var
+
+| Sınıf | Örnek | Modül | Sayı nereden | LLM'in işi |
+|---|---|---|---|---|
+| **Sosyal** | *"merhaba"* | **yok** | — | **her şey** (risksiz) |
+| **Yapısal** | *"makine bazında"* | `cube_router` | yeni sorgu | alan seçimi |
+| **Konuşma** | *"bu neden böyle?"* | `followup.py` (G1) — *"YENİ CEVAP ÜRETMEZ, VAR OLANI AÇAR"* | mevcut makbuz | anlatmak |
+| **Kök-neden** | *"burası neden düşük?"* | `drill.py` (346 satır) | yeni cube sorguları | hangi dalı açacağını seçmek |
+| **Değişim** | *"neden değişti?"* | `contribution.py` (425 satır) | deterministik ayrıştırma | yorumlamak |
+| **Rapor** | *"sayfalarca rapor üret"* | `report.py` — çok-blok/çok-sayfa | her blok kendi `cube_query`'si | kompozisyon kurmak |
+| **Reçete/Karar** | *"ne yapmalıyız?"* | `prescribe.py` (G3) · `decision.py` (E-4) | ölçülebilir yarı küpten | **istişare** |
+| **Keşif** | katalog dışı | Discovery | LLM SQL | **tek istisna** |
+
+**Sosyal sınıf en ucuz kazançtır**: içinde sayı yok, guard'a ihtiyacı yok, ve ürünün **ilk izlenimi** orası. Bugün muhtemelen *"anlayamadım"* duvarına çarpıyor.
+
+### 6.4 · Netleştirme onaya bağlanır — Kaiya deseni
+
+Tellius Kaiya iki şeyi bizden farklı yapıyor:
+1. **Preamble şeffaflığı** — cevaptan *önce* sorguyu nasıl yorumladığını, hangi metrik/boyut/filtreyi seçtiğini yazıyor.
+2. **Onaylı netleştirme** — *"maliyet"* sorulduğunda **ortalama mı toplam mı** diye soruyor, kullanıcı **onaylamadan ilerlemiyor**, sonra *"isteği onaylanan terimlerle güncelliyor."*
+
+Bizde `Baglam.adaylar` + `KURAL_CELISKI` **zaten var** (*"boş değilse çağıran **sormalı**, seçmemeli"*). Eksik olan: **onayın bağlama kalıcı yazılması** ve preamble'ın kullanıcıya gösterilmesi.
+
+---
+
+## 7 · LLM use-case envanteri — mevcut + planlanan
+
+| # | Use case | Girdi | Çıktı | Kapı | Durum |
+|---|---|---|---|---|---|
+| 1 | Intent-JSON alan seçimi | soru + katalog | cube/ölçü/boyut **seçimi** | `parse_cube_query` | ✅ `beta` |
+| 2 | Şema-kısıtlı Intent (3a) | aynı + enum | native tool-use | aynı | ✅ `beta` |
+| 3 | Prompt kanonikleştirme (3b) | route boş dönen soru | **yeniden yazılmış metin** | route tekrar | 🔒 `off` → **T2'de ölç** |
+| 4 | Plan seçimi (4) | soru + 15 araç şeması | araç adı listesi | dört kapı | 🔒 `off` → **T4'te ölç** |
+| 5 | Anlatım (5) | deterministik olgular | akıcı Türkçe | `narration_guard` | 🔒 `off` |
+| 6 | Discovery SQL | katalog dışı soru | **SQL** | dry_plan + SELECT-only + PII | ✅ açık — **rozeti dürüstleşmeli** |
+| 7 | **Sosyal sınıf** | selam/teşekkür | serbest metin | — | ➕ **yeni, en ucuz** |
+| 8 | **Bağlam çözümü** | ham ifade + 2 tur | çözülmüş çapa | `Baglam.kural` makbuza | ➕ **yeni, en büyük kaldıraç** |
+| 9 | **Netleştirme kurma** | belirsiz soru | **soru** (cevap değil) | kullanıcı onayı | ➕ yeni |
+| 10 | **Kök-neden dal seçimi** | makbuz + drill ağacı | hangi dal | `drill.py` deterministik hesap | ➕ yeni |
+| 11 | **Rapor kompozisyonu** | amaç | blok planı | her blok `cube_query` | ➕ yeni |
+| 12 | **Reçete/karar istişaresi** | makbuz + karar kaydı | yorum | **guard'ı yok → ayrık gösterim** | ⚠️ en riskli |
+
+**Sağlayıcı stratejisi:** 8–9 (bağlam/netleştirme) → **yerel LLM adayı** (`qwen2.5-coder:7b`, sınıflandırma işi, veri hiç çıkmaz). 1–6 → bulut (`claude-sonnet-4-6`, seçim `claude-haiku-4-5`), PII maskeli. Failover zinciri zaten kurulu: `anthropic → gemini → groq → xai → ollama → rule`.
+
+---
+
+## 8 · Agentic parite — WrenAI Commercial / Zenlytic Zoë deltası
+
+**WrenAI'ın OSS'te olmayan kısmı:** agent çok-adımlı analizleri **kendi planlar**, **Knowledge**'dan öğrenir, yeniden kullanılabilir **Skills** çalıştırır, **Memories** ile tercih hatırlar, **GenBI Apps** kurar; araçlar: sorgu · grafik · **PDF çıkarımı** · dashboard · skill kaydı; *"her adım izlenebilir ve tekrar oynatılabilir"*; *"skills, memory, semantic model, instructions hepsi **dosya** — versiyonlu, PR'lanabilir"*; **MCP** ile Claude/ChatGPT ham tabloya değmeden sorgular.
+
+**Zenlytic Zoë / Clarity Engine:** *"planlama + araç kullanma + zamanla iyileşen bellek"*; kümeleme/korelasyon/regresyon/tahmin; **Citations** — *"her sonuç eksiksiz lineage gösterir."*
+
+| Onların yeteneği | Bizde | Durum |
+|---|---|---|
+| Araç seti | `tools.py` — **15 araç**, yetki filtreli, `llm_araclari()` şema üretir | ✅ var |
+| İzlenebilir adımlar | `planner.py` — bütçeli, **makbuzlu**; reddedilen adımlar da render ediliyor | ✅ **daha güçlü** |
+| Citations / lineage | makbuz + `contract_log.provenance_json` + **`Baglam.kural`** | ✅ **daha güçlü** — *"neden bu sayı?"*nın yanında *"neden bu bağlam?"* |
+| Semantic model = versiyonlu dosya | `company.yml` · `relationships.yml` · cube `metadata.yml` · `mdl_writer.py` (round-trip güvenli) | ✅ var |
+| Kök-neden / katkı | `drill.py` · `contribution.py` | ✅ var |
+| İstatistik | `stats.py` (56 satır, tek kaynak) | 🟡 **dar** — anomali var, forecast/regresyon yok |
+| Knowledge (ekipten öğrenme) | `vqr.py` · `sinonim_onerici.py` | 🟡 kısmi |
+| **Çok-adımlı LLM planlama** | `sec()` **zincire bağlandı**, bayrak `off` | 🟡 **hazır, ölçülmedi** |
+| **Skills** (kayıtlı iş akışı) | — | ❌ |
+| **Memories** (tercih) | — | ❌ |
+| **MCP yüzeyi** | kodda `mcp` izi **yok** | ❌ |
+| PDF çıkarımı / GenBI Apps | — | ❌ |
+
+**Parite deltası altı maddedir ve dördü mevcut altyapının üstüne ince katman.** MCP özellikle ucuz: `tools.py` zaten hem şema (`llm_araclari`) hem yetki süzgeci (`izinli_araclar`) üretiyor.
+
+**Ve deltanın hiçbiri "LLM'e sayı ürettir" demiyor** — hepsi ya araç seçimi (sonlu), ya bellek (deterministik), ya yüzey. **İstenen güç, güvenlikten vazgeçmeyi gerektirmiyor.**
+
+---
+
+## 9 · Uygulama sırası — her adım bir kapı ve bir ölçüyle
+
+| Sıra | İş | Neden bu sırada | Kapısı | Ölçüsü |
+|---|---|---|---|---|
+| **S0** | ~~VQR benzerlik kapısı~~ | — | — | ✅ **`d0d3ade`'de yapıldı** |
+| **S1** | **Faz 3b + Faz 4'ü `alpha`'da ölç** (T0→T6) | **mekanizma hazır, ölçüm yok**; *"LLM'i daha çok kullanalım mı"* sorusunun sayısal cevabı burada | dört kapı zaten yerinde | route-kurtarma oranı · doğru-cube gerilemedi mi · `SEÇİM REDDİ` oranı |
+| **S2** | **Sosyal sınıf** | en ucuz, en görünür, **sıfır sayı riski** | gerekmiyor | duvara çarpan selamlama sayısı → 0 |
+| **S3** | **`Baglam.ham_ifade` + 2 tur pencere** | **en büyük kaldıraç** (+60 puan mertebesi) | `kural` makbuza yazılır | çok-turlu altın senaryolarda **kaç turda koptu** |
+| **S4** | **Netleştirme onayı bağlama yazılır** + preamble | altyapı (`adaylar`, `KURAL_CELISKI`) hazır | kullanıcı onayı | onaysız ilerleme = 0 |
+| **S5** | **Memories + Skills** (dosya-tabanlı) | S3 ile **aynı altyapıyı paylaşır** | YAML pack zinciri, PR'lanabilir | tekrarlanan iş akışı sayısı |
+| **S6** | **MCP sunucu yüzeyi** | `tools.py` zaten şema + yetki üretiyor | `izinli_araclar(principal)` | dış ajanın ham tabloya **hiç** değmemesi |
+| **S7** | `stats.py` genişletme · Discovery rozet dürüstlüğü · reçete/karar ayrık gösterimi | parite kuyruğu | her biri kendi kapısı | — |
+
+---
+
+## 10 · Riskler ve karşı-önlemler
+
+| Risk | Neden gerçek | Karşı-önlem |
+|---|---|---|
+| **Benzerlik yeniden cevaba sızar** | FİRE→ciro **ölçüldü**; embedding en kritik token'da yanılıyor | Kural yerinde (`d0d3ade`); **eşiği düşürmek değil, sırayı korumak** |
+| **Sıcak yola LLM çağrısı** | 3b ve 4 açıklaması bunu açıkça söylüyor | `alpha` scope'unda ölç; kazanç yoksa `off`, **nedeni yazılır** |
+| **Bellek karmaşıklığı** | ölçümde **monotonik değil** (+14/−16) | 2 tur pencere + resolved blok. **Retrieval eklemeden önce ölç** |
+| **Reçete/karar guard'sız** | çıktı sayı değil **tavsiye**; `prescribe.py` kendini *"DAR"* ilan ediyor | ölçülebilir yarı ile yorum yarısı **görsel olarak ayrık** |
+| **Discovery rozeti** | LLM SQL'i doğrudan cevap oluyor | rozet *"keşif — doğrulanmamış"* |
+| **CI ile canlı ayrışması** | `DIMA_VQR_EMBEDDER=off` yüzünden hata **testlerden kaçtı** | senaryo fixture'ları (yapıldı); **canlı-yol testleri CI'da temsil edilmeli** |
+| **Yetim uç** | `sec()` çağrılmıyordu, `agent_run` render edilmiyordu | `test_cevap_alani_yetim_degil.py` **kapı** (yapıldı) |
+| **Aşırı-uydurma** | SMQ makalesinin uyarısı: *"grounding–overfitting ödünleşimi"* | küp büyürken **altın vaka seti** eşzamanlı büyümeli |
+
+---
+
+## 11 · Ölçülmemiş olan — dürüstlük bölümü
+
+* **Faz 3b ve Faz 4'ün kazancı hakkında hiçbir sayımız yok.** Bu ekin en somut eylem maddesi budur.
+* **Faz 5 (`t2_anlatici`) de kapalı** — `narration_guard` yazılı ama sahada ölçülmedi.
+* Rakiplerin **kapsam-dışı davranışı ve gerçek doğruluk oranları bilinmiyor**; kıyas akademik benchmark üzerinden yapıldı.
+* Yerel LLM **bağlam çözümünde denenmedi** — literatürden çıkarım yapıldı, bizim veri setimizde ölçülmedi.
+* Bu ek yazılırken **6 dosyada kaydedilmemiş çalışma** vardı (`cube_router.py`, `ask.py`, `tools.py` + 3 test); rakamlar `d0d3ade` anına aittir.
+
+---
+
+## 12 · Tek paragraflık özet
+
+Mimari değişmiyor, **ağırlık kayıyor**. LLM sayı üretme yetkisini almıyor; **bellek, niyet ve dil** yetkisini alıyor. Sektör de tam olarak bunu yapıyor — Pyramid *recipe* döndürüyor, Cube *structured request* alıyor, ThoughtSpot *semantic intent* üretiyor, Zenlytic *Cognitive Layer*'ın izin verdiği kümeden seçiyor. Ölçüm ikisini de destekliyor: semantic layer **+17…+23 puan**, çalışma belleği **+60 puan mertebesi** — bunlar rakip değil **çarpan**. Kurduğumuz kapılar bu açılışın bedeli değil **getirisidir**: kapılar varken LLM'i açmak **ölçülebilir bir deney**, kapılar yokken **bir kumar** olurdu. Ve sıradaki iş yeni bir şey inşa etmek değil — **hazır duran iki bayrağı `alpha`'da açıp sayıyı görmek**.
