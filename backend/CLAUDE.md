@@ -1,5 +1,13 @@
 # dima-backend — CLAUDE.md
 
+> 🔴 **AKTİF OPERASYON: DİMA v1 yol haritası.** Bir geliştirme isteği geldiğinde **önce
+> şunları oku** — bağlam sıfırlansa bile operasyon buradan devam eder:
+> 1. **`OPERASYON.md`** (repo kökü) — kural seti, döngü adımları, test kapısı, denetim
+> 2. **`OPERASYON-DURUM.md`** (repo kökü) — **nerede kaldık**, açık borçlar, ölçüm tabanı
+> 3. **`~/.claude/plans/DIMA-V1-YOL-HARITASI.md`** — ne yapılacak (5213 satır; §10'daki sıra)
+>
+> *Bu üçü + `MIMARI.md` operasyonun tam durumunu taşır; sohbet geçmişine ihtiyaç yoktur.*
+
 > **Mimari otorite `backend/MIMARI.md`'dir.** Bu dosya kısa bir kural indeksidir. Mimari bir
 > soruda (cevaplama merdiveni, semantik katman, JOIN'in nerede oluştuğu, ne YAPILMAYACAĞI,
 > bilinen kusurlar, ADR listesi) **önce `MIMARI.md`'yi oku** — çelişkide o kazanır.
