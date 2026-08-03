@@ -1059,6 +1059,27 @@ arkasındadır (`neden` → katkı · `normal mi` → dönemsel kıyas · `ne ya
 Dala `yoy` eklemek `TUR_NORMAL`'i **tekrarlardı**. Zenginleştirme kararı Faz C'nin
 ölçümüne bırakıldı — bugün *"az ama dürüst"*, uydurma değil.
 
+### 6.17z FAZ D3 + D4 — ÖLÇÜLDÜ: İKİSİ DE ZATEN YAPILMIŞ (araştırma raporu iki kez fazla saydı) ✅
+
+Araştırma ajanının raporu (0-100 dosyası eki) devlerin yedi desenini bizimkiyle
+kıyaslamıştı. Dört maddesi *"bizde yok"* diyordu; **ikisi ölçülünce yanlış çıktı.**
+
+| Rapor iddiası | Ölçüm |
+|---|---|
+| **D3** *"`agent_run` makbuzu **doğrudan** kullanıcıya render ediliyor — geliştirici katmanını son kullanıcıya gösteriyoruz"* | ❌ **Yanlış.** Makbuz `showTrace` arkasında, **varsayılan kapalı**, *"?"* düğmesiyle (*"Bu sorgu nasıl çözüldü?"*) açılıyor. CHI'nin üç katmanı da yerinde: **kullanıcı** = `SourceBadge` (her zaman görünür, `source`+`confidence`) · **geliştirici** = katlanır adım listesi · **yönetişim** = audit + `contract_log` |
+| **D4** *"checkpoint/geri alma **neredeyse bedava**, planda yok"* | ❌ **Yanlış — zaten var.** Her kartta **"↳ yanıtla"**: *"thread'in SONUNA eklenir, **bu kartın bağlamıyla**"*. Yani herhangi bir karta dönüp oradan devam etmek kurulu; `POST /cube` de chip'i LLM'siz yeniden koşuyor |
+| **#2** akış (streaming) | ✅ **Gerçek boşluk** — `StreamingResponse`/SSE/WebSocket kodda **sıfır**; `/ask/jobs` bir **polling job**, akış değil |
+| **#4** onaylı yazma aksiyonları | ✅ **Gerçek boşluk** — yazma araçları bilerek `llm_araclari` dışında; eksik olan **onay akışı** |
+
+**Karar: D3 ve D4 YAPILMADI ve yapılmayacak** — çünkü yapılacak bir şey yok. Var olanı
+"iyileştirmek" adına dokunmak, çalışan bir tasarımı bozma riskidir (2a-1'in `elektrik`
+dersi: ölçmeden dokunma). Rapor **iki kez fazla saydı**; bu, dış bir raporun iddialarının
+**kodla sınanmadan** plana alınmaması gerektiğinin üçüncü kanıtı (birincisi *"`/ask/jobs`
+hazır"*, ikincisi *"güven eşiği ayarı"* — o da MIMARI'nin açık kararına aykırıydı).
+
+> Ders: **bir rapor bir ölçüm değildir.** Bu turda dış rapor üç kez, kendi kabul
+> ölçütlerim dört kez, ölçüm araçlarım on kez yanıldı — hepsi kodla sınanınca çıktı.
+
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 
 Planın kapanış şartı: *"Faz 0.5'in **aynı** süiti yeniden koşulur — **yeni senaryo
