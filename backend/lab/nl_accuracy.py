@@ -18,12 +18,53 @@ Koşum:  .venv/bin/python -m lab.nl_accuracy               # etiketli tüm şirk
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+#: ⚠️ **`tests.conftest` IMPORT EDİLİR EDİLMEZ SAĞLAYICIYI SABİTLER** (`conftest.py:15`
+#: koşulsuz `DIMA_LLM_PROVIDER="rule"`, `:26` `DIMA_VQR_EMBEDDER="off"`) — testlerin ağa
+#: çıkmaması için DOĞRU bir karardır. Ama bu dosya o modülü **env kurulumu** için import
+#: ediyor ve yan etkiyi de devralıyordu.
+#:
+#: Aynı kusur `konusma_senaryolari.py`'de ölçülmüştü: `--live` **hiçbir zaman canlı
+#: değildi**. Bu araç `route()`'un deterministik tavanını ölçer (LLM'siz doğru), ama Faz
+#: 3b/4/5'in **kazancı** yalnız gerçek sağlayıcıyla ölçülebilir — o yüzden `--live` burada
+#: da gerekiyor ve aynı kalıpla kuruldu (kopyalama değil, **aynı sözleşme**).
+_GERCEK_ORTAM = {k: os.environ.get(k) for k in
+                 ("DIMA_LLM_PROVIDER", "DIMA_VQR_EMBEDDER", "DIMA_INTERACTION_LOG",
+                  "DIMA_DATABASE_URL")}
+
 import tests.conftest as _conf  # noqa: E402,F401  (env kurulumu)
 from tests.conftest import make_tenant_user  # noqa: E402
+
+
+def _canli_ortami_geri_yukle() -> str:
+    """`--live` için gerçek sağlayıcıyı geri koyar. Döner: sağlayıcı adı.
+
+    Fail-closed: gerçek sağlayıcı yoksa `SystemExit`. Sessizce `rule` ile koşan bir
+    "canlı" ölçüm, hiç koşmamaktan **kötüdür** — yanlış bir güven verir ve o güvene
+    dayanarak bayrak kararı alınır.
+
+    `DIMA_DATABASE_URL` conftest'in **izolasyonunu korur** (ortamda açıkça verilmişse ona
+    uyulur): canlı bir ölçüm kullanıcının verisini kirletmemelidir.
+    """
+    CANLI_YOLU_SUSTURANLAR = ("DIMA_LLM_PROVIDER", "DIMA_VQR_EMBEDDER",
+                              "DIMA_INTERACTION_LOG")
+    for k, v in _GERCEK_ORTAM.items():
+        if v is not None:
+            os.environ[k] = v
+        elif k in CANLI_YOLU_SUSTURANLAR:
+            os.environ.pop(k, None)
+    saglayici = os.environ.get("DIMA_LLM_PROVIDER", "")
+    if saglayici in ("", "rule"):
+        raise SystemExit(
+            "--live GERÇEK bir sağlayıcı ister. `DIMA_LLM_PROVIDER` boş ya da 'rule' — "
+            "bu modda koşmak LLM yolları hakkında HİÇBİR ŞEY ölçmez ve 'canlı' etiketi "
+            "yanıltır. Sağlayıcıyı ve API anahtarını ayarlayıp tekrar deneyin.")
+    return saglayici
 
 # Şirket → (login, parola, tenant_slug). demo-boyahane aktif şirket (slug=None).
 ACCOUNTS = {
@@ -62,9 +103,19 @@ def _client(login: str, pw: str, slug: str | None):
 
     # DB-bağımsız: canlı değer zenginleştirme + dry_plan no-op (routing kalitesi ölçülür,
     # icra değil). nl_corpus.py ile aynı desen.
-    ws.WrenService._enrich_categorical = lambda self, models: None
-    ws.WrenService._enrich_cube_dim_values = lambda self, cubes, mdl, models: None
-    ws.WrenService.dry_plan = lambda self, sql: sql
+    # ⚠️ **BU ARAÇ SESSİZCE KIRIKTI** (Faz A'da ölçüldü, 3 Ağustos 2026):
+    # `TypeError: <lambda>() takes 2 positional arguments but 3 were given` → **her iki
+    # şirket de yüklenemiyor, 0 vaka koşuyordu.** Sebep: imzalar DAR yazılmıştı ve
+    # `dry_plan` zamanla üçüncü bir argüman kazandı. Kardeş araç
+    # (`konusma_senaryolari.py`) `*a, **k` ile toleranslı yazılmış; bu dosya eski katı
+    # hâlde kalmış ve **CI'da koşmadığı için** kimse fark etmemişti.
+    #
+    # MIMARI §6.4'ün dersi birebir tekrarladı: *"ölçüm aracının kendisi de bir
+    # bağımlılıktır"* — `lab/nl_corpus.py` aylarca kırıkken de kimse fark etmemişti.
+    # Kırık bir alet üstüne vaka seti büyütmek (A2), ölçmediğini ölçtüğünü sanmak olurdu.
+    ws.WrenService._enrich_categorical = lambda self, *a, **k: None
+    ws.WrenService._enrich_cube_dim_values = lambda self, *a, **k: None
+    ws.WrenService.dry_plan = lambda self, sql, *a, **k: sql
 
     make_tenant_user(login, pw, tenant_slug=slug)
     c = TestClient(create_app())
@@ -116,6 +167,10 @@ def run_company(name: str) -> tuple[int, int, list[str]]:
 
 
 def main() -> int:
+    if "--live" in sys.argv:
+        _sag = _canli_ortami_geri_yukle()
+        print(f"CANLI MOD — sağlayıcı: {_sag} · embedder: "
+              f"{os.environ.get('DIMA_VQR_EMBEDDER') or 'AÇIK (varsayılan)'}", flush=True)
     only = None
     if "--company" in sys.argv:
         only = sys.argv[sys.argv.index("--company") + 1]
