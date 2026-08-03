@@ -615,6 +615,7 @@ def cross_cube_add(prev: dict, q: str, schema: dict) -> dict | None:
     ölçüyü mevcut rapora `blend` olarak katar (konu değiştirme değil). Uyum: mevcut kırılım
     boyutları hedef cube'da da bulunmalı (zaman ekseni tüm cube'larda var). q ekleme-niyeti
     içermeli ("ekle/ayrıca/bir de"). Aksi halde None → çağıran normal akışa döner."""
+    q = atif_ayikla(q)          # takip ailesinin kardeşi — bkz. deterministic_refine
     if not _ADD_RE.search(q):
         return None
     prev_cube = prev.get("cube")
@@ -651,6 +652,7 @@ def cross_cube_dim_switch(prev: dict, q: str, schema: dict) -> dict | None:
     fazla "cube değişti" bilgisi verir. Boyut zaten mevcut cube'daysa None (normal refine)."""
     import copy
 
+    q = atif_ayikla(q)          # takip ailesinin kardeşi — bkz. deterministic_refine
     prev_cube = prev.get("cube")
     prev_measures = prev.get("measures") or []
     if not prev_cube or not prev_measures:
@@ -957,6 +959,16 @@ def deterministic_refine(prev: dict, q: str, schema: dict) -> dict | None:
     dönem ("bu ay"). Ölçü değişiyorsa ya da hiçbir düzenleme yoksa None (LLM'e bırak)."""
     import copy
 
+    # ATIF AYIKLAMA (Faz E) — takip yolunun ölçülen kusuru tam BURADAYDI:
+    #   "makine bazında ayır"                      → dim=['makine']  ✅
+    #   "az önce dediğin gibi makine bazında ayır" → None → dürüst ret ❌
+    #   "yukarıdaki raporu vardiya bazında ver"    → Discovery'ye düştü, kırılım KAYBOLDU
+    # Kesen kapı bu fonksiyonun KENDİ `_coverage_ok`'u (aşağıda): atıf sözcükleri
+    # açıklanamayan kelime sayılıyordu. Bu yüzden ayıklama ile dolgu BİRLİKTE uygulanır —
+    # dolgu (`known |= _atif_hit_words`) kapsam kapısını yatıştırır, ayıklama ise
+    # `_match_dims`/`_match_measure`'ün ham metne bakmasını da güvene alır (D1'de aynı
+    # asimetri ölçülmüştü: `iyi calismalar` dolguya rağmen `oee` KİMLİĞİNİ tetikliyordu).
+    q = atif_ayikla(q)
     cube_meta = _cube_meta(schema, prev.get("cube"))
     if cube_meta is None:
         return None
@@ -1150,7 +1162,7 @@ def deterministic_refine(prev: dict, q: str, schema: dict) -> dict | None:
     # değildir. Üç tüketicinin ÜÇÜNDE de dolgu sayılır (kapsam kapısı · takip
     # düzenlemesi · kısmi-anlama) — biri atlanırsa aynı soru geldiği yola göre
     # farklı davranır (Faz -1'in "üç çağrı yeri" dersi).
-    known |= _sosyal_hit_words(q)
+    known |= _sosyal_hit_words(q) | _atif_hit_words(q)
     known |= rm_verb_words  # ölçü-çıkarma fiilleri (kaldır/sil…) dolgu sayılır, kapsamı delmez
     if not _coverage_ok(q, known):
         return None
@@ -1968,6 +1980,142 @@ def sosyal_ayikla(q: str) -> str:
     return " ".join(kalan) if kalan else qn
 
 
+# --- ATIF (referans) SÖZLÜĞÜ — FAZ E ------------------------------------------------
+#
+# Ölçülen kusur (3 Ağustos 2026): AYNI isteğin atıflı hâli ÖLÜYOR.
+#
+#     "makine bazında ayır"                        → source=cube  dim=['makine']   ✅
+#     "az önce dediğin gibi makine bazında ayır"   → source=None  CEVAPSIZ         ❌
+#     "yukarıdaki raporu vardiya bazında ver"      → source=rule  dim=None         ❌❌
+#
+# İkincisi daha kötü: cevap VERDİ ama Discovery'ye düşüp KIRILIMI kaybetti — sessiz
+# yanlış. Beş atıflı ifadenin dördü öldü, atıfsız hâllerinin beşi de çalışıyordu.
+#
+# Sınıf D1'in (`sosyal_ayikla`) KARDEŞİDİR: **kalıp ifadenin parçaları katalog anlamı
+# taşımaz**. Fark şu: sosyal ifade konuşmayı AÇAR/KAPATIR, atıf ifadesi ise ÖNCEKİ TURA
+# İŞARET EDER — yani ayıklandıktan sonra geriye GERÇEK bir istek kalır ve o istek takip
+# yoluna verilmelidir.
+#
+# ⚠ `onceki` TEK BAŞINA ASLA yok: *"önceki ay"* bir DÖNEM ifadesidir. Bu yüzden hem
+# kalıplar çok sözcüklüdür hem de ayıklama **SPAN tabanlıdır** (aşağı bkz.).
+_ATIF_KALIP = (
+    "az once dedigin", "az once soyledigin", "az once sordugum", "az once bahsettigin",
+    "biraz once dedigin", "biraz once sordugum", "az onceki", "biraz onceki",
+    "demin dedigin", "demin sordugum", "demin",
+    "yukaridaki rapor", "yukaridaki tablo", "yukaridaki grafik", "yukaridaki",
+    "yukarida dedigin", "yukarida",
+    "bir onceki soru", "onceki soru", "bir onceki rapor", "onceki rapor",
+    "bahsettigin rapor", "bahsettigin", "soz ettigin",
+    "dedigin gibi", "soyledigin gibi", "verdigin rapor",
+    # TEKRAR ailesi: *"hat bazında TEKRARLA"* — ölçüldü, `deterministic_refine`'ın kendi
+    # `_coverage_ok`'una takılıp cevabı öldürüyordu. Bunlar da atıftır: "aynısını" bir
+    # ölçü/boyut değil, ÖNCEKİ TURA yapılan bir göndermedir.
+    #
+    # ⚠ `tekrar` ve `yeniden` TEK BAŞLARINA ÇIKARILDI — ölçüldü (dört şirket kataloğu
+    # tarandı): `tekrar` bir katalog terimidir ve `yeniden islenen` `kalite` cube'unun
+    # GERÇEK sinonimidir. İlk yazımda bu aileyi taramadan ekledim ve `test_sinonim_
+    # carpismasi` *"YENİ sinonim çakışması doğdu: yeniden islenen: kalite → parti"*
+    # diyerek yakaladı — 2a-1'in (`elektrik`) aynı hatası. Kalıp DARALTILDI:
+    "tekrarla", "yeniden ver", "yeniden goster", "yeniden yap", "yeniden getir",
+    "aynisini", "aynisi", "bir daha", "yine",
+)
+
+
+def kalip_spanlari(q: str, kaliplar) -> list[tuple[int, int]]:
+    """Eşleşen KALIP İFADELERİN aralıkları — birleştirilmiş, sıralı.
+
+    Tek sahip: atıf sözlüğü (`_atif_spanlari`) ve sunum-tercihi işareti
+    (`app/tercih.py`) **aynı** işi ister. İkinci bir kopya yazılsaydı çekim toleransı
+    ya da birleştirme kuralı zamanla ayrışırdı — bu deponun ölçülmüş bir numaralı
+    kusur sınıfı.
+
+    Çekim toleransı `_ek_gecerli` üzerinden gelir (yine tek kaynak): çok sözcüklü
+    kalıpta çekim SON sözcüğe gelir (*"bir önceki soruYU"*).
+    """
+    bulunan: list[tuple[int, int]] = []
+    for kalip in sorted(kaliplar, key=len, reverse=True):
+        for m in re.finditer(rf"{_KELIME_BASI}{re.escape(kalip)}([a-z]*)", q):
+            if _ek_gecerli(m.group(1)):
+                bulunan.append((m.start(), m.end()))
+    if not bulunan:
+        return []
+    bulunan.sort()
+    birlesik = [bulunan[0]]
+    for bas, son in bulunan[1:]:
+        if bas <= birlesik[-1][1]:
+            birlesik[-1] = (birlesik[-1][0], max(birlesik[-1][1], son))
+        else:
+            birlesik.append((bas, son))
+    return birlesik
+
+
+def span_ayikla(q: str, spanlar: list[tuple[int, int]]) -> str:
+    """Verilen aralıkları siler, boşlukları toplar. Hepsi silinirse HAM hâl döner —
+    boş dize aşağıdaki her kapıyı anlamsız kılardı (`sosyal_ayikla` ile aynı karar)."""
+    if not spanlar:
+        return q
+    parcalar, imlec = [], 0
+    for bas, son in spanlar:
+        parcalar.append(q[imlec:bas])
+        imlec = son
+    parcalar.append(q[imlec:])
+    kalan = " ".join(" ".join(parcalar).split())
+    return kalan if kalan else q
+
+
+def _atif_spanlari(q: str) -> list[tuple[int, int]]:
+    """Eşleşen atıf kalıplarının ARALIKLARI (en uzun kalıp önce).
+
+    ## Neden SPAN, neden `sosyal_ayikla`'nın kelime-kümesi DEĞİL
+
+    `sosyal_ayikla` eşleşen kalıbın **kelimelerini** toplar ve o çekirdeğe sahip her
+    token'ı düşürür. Sosyal sözcüklerde zararsızdır (`tesekkurler` ikinci kez anlamlı
+    geçmez) ama atıfta **yıkıcı** olurdu:
+
+        "onceki soruyu onceki aya gore"   → `onceki soru` eşleşir
+                                          → kelime kümesi {onceki, soru}
+                                          → DÖNEM ifadesindeki `onceki` de düşerdi
+
+    Span tabanlı silme bu sınıfı tamamen kapatır: yalnız eşleşen ARALIK silinir, aynı
+    sözcüğün başka yerdeki anlamlı geçişi DOKUNULMADAN kalır.
+
+    Çekim toleransı `_ek_gecerli` üzerinden gelir (tek kaynak): *"bir önceki soruyu"*
+    → `bir onceki soru` + `yu` ✓.
+    """
+    return kalip_spanlari(q, _ATIF_KALIP)
+
+
+def atif_var(q: str) -> bool:
+    """Bu ifade ÖNCEKİ TURA işaret ediyor mu? — deterministik, sıfır maliyet."""
+    return bool(_atif_spanlari(_norm(q or "")))
+
+
+def _atif_hit_words(q: str) -> set[str]:
+    """Atıf kelimeleri — kapsam kapısı için DOLGU (`_sosyal_hit_words` ile aynı sözleşme)."""
+    qn = _norm(q or "")
+    kelimeler: set[str] = set()
+    for bas, son in _atif_spanlari(qn):
+        kelimeler.update(re.findall(r"[a-z]+", qn[bas:son]))
+    return kelimeler
+
+
+def atif_ayikla(q: str) -> str:
+    """Atıf kalıbını sorudan çıkarır — geriye GERÇEK istek kalır.
+
+    Ayıklama neden dolgu saymaktan iyi (Faz D1'de ölçülen aynı gerekçe): dolgu *"bu
+    kelime açıklandı"* der ve yalnız **kapsam kapısını** (R10) yatıştırır; ayıklama
+    *"bu kelime konu hakkında hiçbir şey söylemiyor"* der ve **eşleşmeyi** de düzeltir.
+    Buradaki kusur kapsam kapısında değil `deterministic_refine`'daydı — takip yolunda
+    kapsam kapısı zaten UYGULANMAZ (takip sorusu eksik cümledir), yani dolgu saymak bu
+    kusuru HİÇ çözmezdi.
+
+    Hepsi ayıklanırsa (*"az önce ne dedin?"*) ham hâl döner: çağıran o durumda takip
+    sınıflandırmasına düşer, boş dize ise aşağıdaki her kapıyı anlamsız kılardı.
+    """
+    qn = _norm(q or "")
+    return span_ayikla(qn, _atif_spanlari(qn))
+
+
 def _misc_hit_words(q: str) -> set[str]:
     """Gran/yön/limit ifadelerinin kelimeleri.
 
@@ -2219,7 +2367,8 @@ def ilgili_cubelar(q: str, schema: dict, haric: set[str] | None = None) -> list[
     # ⟳ FAZ D1: sosyal edim de dolgudur — *"iyi çalışmalar"* bir KALIP İFADEDİR ve
     # `çalışma` orada bir `oee` boyutu değildir. Ölçüldü: bu satır olmadan
     # *"iyi çalışmalar, geçen ay fire nedir"* → **R1** (kimlik çakışması).
-    dolgu = _period_hit_words(q) | _misc_hit_words(q) | _sosyal_hit_words(q)
+    dolgu = (_period_hit_words(q) | _misc_hit_words(q) | _sosyal_hit_words(q)
+             | _atif_hit_words(q))
     anlamli = _uncovered(q, dolgu)
     if not anlamli:
         return []   # soruda dolgu dışında hiçbir şey yok → daraltılacak konu da yok
@@ -2340,7 +2489,7 @@ def partial_unknowns(q: str, schema: dict) -> tuple[list[str], list[tuple[dict, 
     # değildir. Üç tüketicinin ÜÇÜNDE de dolgu sayılır (kapsam kapısı · takip
     # düzenlemesi · kısmi-anlama) — biri atlanırsa aynı soru geldiği yola göre
     # farklı davranır (Faz -1'in "üç çağrı yeri" dersi).
-    known |= _sosyal_hit_words(q)
+    known |= _sosyal_hit_words(q) | _atif_hit_words(q)
     return _uncovered(q, known), hits
 
 
@@ -2635,7 +2784,10 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
     reddi_sifirla()
     # FAZ D1 — sosyal kalıp ifade katalog eşleşmesine GİRMEZ. Ölçüldü: *"iyi çalışmalar,
     # geçen ay fire nedir"* → **R1**, çünkü `oee`'nin cube sinonimlerinden biri `calisma`.
-    q = sosyal_ayikla(question)
+    # Sosyal kalıp ifade + ATIF ifadesi (Faz E) — ikisi de kalıp ifadedir ve
+    # parçaları katalog anlamı taşımaz. Sıra önemsiz (kesişmiyorlar), ama ikisi
+    # de route()'un GÖRDÜĞÜ metinden düşmelidir; `_match_cube` ham metne bakar.
+    q = atif_ayikla(sosyal_ayikla(question))
 
     cube_meta = _match_cube(q, schema)
     if cube_meta is None:
@@ -2869,7 +3021,7 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
     # değildir. Üç tüketicinin ÜÇÜNDE de dolgu sayılır (kapsam kapısı · takip
     # düzenlemesi · kısmi-anlama) — biri atlanırsa aynı soru geldiği yola göre
     # farklı davranır (Faz -1'in "üç çağrı yeri" dersi).
-    known |= _sosyal_hit_words(q)
+    known |= _sosyal_hit_words(q) | _atif_hit_words(q)
     # Ölçü-eşiği ("10 milyon üzeri") kelimeleri: anlaşılıyor → kapsam düşürmesin.
     having = _measure_threshold(q)
     if having:

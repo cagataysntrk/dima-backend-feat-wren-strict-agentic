@@ -97,16 +97,30 @@ def eylem_onayla(request: Request, body: EylemOnayRequest,
             detail=f"Bu işlem için yetkiniz yok ({beyan.izin}).")
 
     args = dict(body.argumanlar or {})
-    if not (args.get("cube_query") or {}).get("cube"):
-        # Öneri her zaman DOĞRULANMIŞ bir cube_query taşır; taşımıyorsa bu bir öneri
-        # değildir. Boş/uydurma bir sorguyu kalıcılaştırmak, bu fazın kapatmak için
-        # var olduğu kusurun ta kendisi olurdu.
+    # RAPOR ÇAPASI ŞARTI eyleme ÖZELDİR: pano/zamanlama bir raporu kalıcılaştırır ve
+    # doğrulanmış bir `cube_query` taşımak ZORUNDADIR (uydurma bir sorgu her hafta
+    # koşardı). Sunum tercihi ise bir rapora değil GÖRÜNÜME bağlıdır — ondan cube_query
+    # istemek, şartı anlamından kopuk bir tören hâline getirirdi.
+    if beyan.ad in (_eylem.PANO_EKLE, _eylem.ZAMANLA) and \
+            not (args.get("cube_query") or {}).get("cube"):
         raise HTTPException(status_code=400,
                             detail="Eylem için geçerli bir rapor (cube_query) gerekli.")
 
     from control_plane import audit
 
     ip = request.client.host if request.client else None
+
+    if beyan.ad == _eylem.TERCIH_KAYDET:
+        from app.routers.tercihler import tercih_yaz
+
+        out = tercih_yaz(request, session, str(args.get("anahtar") or ""),
+                         str(args.get("deger") or ""),
+                         kaynak_ifade=args.get("kaynak_ifade"))
+        audit.record(principal, "eylem_onay",
+                     nl_question=f"{beyan.ad} → {json.dumps(args, ensure_ascii=False)[:400]}",
+                     ip=ip)
+        return EylemOnayResponse(ok=True, eylem=beyan.ad, id=out["id"],
+                                 note="Tercihiniz kaydedildi.")
 
     # (3) VAR OLAN handler'a devret — doğrulama İKİNCİ KEZ YAZILMAZ.
     if beyan.ad == _eylem.PANO_EKLE:

@@ -366,6 +366,45 @@ class NotificationPreference(SQLModel, table=True):
     deleted_at: datetime | None = Field(default=None, index=True)  # soft-delete
 
 
+class SunumTercihi(SQLModel, table=True):
+    """Kullanıcının KALICI SUNUM tercihi (Faz E — "Memories"in daraltılmış hâli).
+
+    ## Neden YALNIZ sunum
+
+    Araştırma raporu genel bir *"Memories"* katmanı öneriyordu. Kapsam **bilerek**
+    daraltıldı, çünkü iki yarısından biri **zaten vardı**: terminoloji tercihi
+    (*"biz fire'yi kg konuşuruz"*) `SynonymOverride`'dır ve katalog katmanında yaşar.
+    Eksik olan yalnız **sunum** yarısıydı (*"hep aylık göster"*) ve onun deposu yoktu.
+
+    ## Değişmez: tercih ÖLÇÜ/CUBE SEÇİMİNE KARIŞMAZ
+
+    Saklanan şey bir **görünüm** kararıdır (granülerlik, tablo/grafik). Bir tercihin
+    *hangi ölçü* ya da *hangi cube* sorusuna karışması, kullanıcının sormadığı bir
+    raporu ona kendi ayarı gibi göstermek olurdu — bu deponun kovaladığı sessiz-yanlışın
+    en sinsi hâli, çünkü kaynağı kullanıcının kendi geçmiş cümlesidir.
+
+    ## Değişmez: tercih SESSİZ uygulanmaz
+
+    Uygulandığı her turda cevap bunu SÖYLER. Sessiz uygulanan bir tercih, aylar sonra
+    *"bu rapor neden aylık?"* sorusunu cevapsız bırakır.
+
+    `anahtar` kapalı bir kümedir (`granularity` | `view`); serbest metin DEĞİL —
+    aksi hâlde depo, tanımsız bir *"model belleği"*ne dönüşürdü. (user_id, anahtar)
+    mantıksal olarak benzersizdir. Soft-delete (ADR-0019)."""
+
+    __tablename__ = "sunum_tercihi"
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: str = Field(index=True)
+    tenant_id: str | None = Field(default=None, index=True)   # RLS
+    anahtar: str = Field(index=True)                          # granularity | view
+    deger: str                                                # month | week | table | chart …
+    #: Tercihi doğuran CÜMLE — kullanıcı *"bunu ne zaman söylemişim?"* diye sorabilmeli.
+    kaynak_ifade: str | None = None
+    created_at: datetime = Field(default_factory=_now)
+    updated_at: datetime = Field(default_factory=_now)
+    deleted_at: datetime | None = Field(default=None, index=True)
+
+
 class Dashboard(SQLModel, table=True):
     """Kullanıcı panosu (§9 canlı-izleme) — PER-USER, kullanıcı başı ≤10 (router guard).
 

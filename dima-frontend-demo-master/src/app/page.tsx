@@ -18,6 +18,7 @@ import { ReportPanel } from "@/components/ReportPanel";
 import { SchedulesPanel } from "@/components/SchedulesPanel";
 import { SchemaPanel } from "@/components/SchemaPanel";
 import { SettingsDrawer } from "@/components/SettingsDrawer";
+import TercihlerPanel from "@/components/TercihlerPanel";
 import { useHistory } from "@/stores/history";
 import { useFeature } from "@/lib/useFeature";
 import { usePermission } from "@/lib/usePermission";
@@ -69,7 +70,8 @@ export default function Home() {
   const [yolSiniri, setYolSiniri] = useState<"deterministik" | "llm" | null>(null);
   // "Ayarlar" drawer'ı içi iki sekmeli (Faz 4.5): mevcut şema görünümü + DB bağlama
   // sihirbazı — YENİ bir rail ikonu/Drawer değeri EKLEMEDEN, en düşük riskli entegrasyon.
-  const [settingsTab, setSettingsTab] = useState<"sema" | "baglanti" | "zamanlamalar">("sema");
+  const [settingsTab, setSettingsTab] =
+    useState<"sema" | "baglanti" | "zamanlamalar" | "tercihler">("sema");
   // Açık pano (main-area overlay) — set ise chat/rapor yerine pano grid'i gösterilir (§9).
   const [openDashboard, setOpenDashboard] = useState<string | null>(null);
   const dashStage = useFeature("dashboards");
@@ -545,13 +547,21 @@ export default function Home() {
               >
                 Zamanlamalar
               </button>
+              <button
+                onClick={() => setSettingsTab("tercihler")}
+                className={`px-3 py-2 ${settingsTab === "tercihler" ? "border-b-2 border-accent text-foreground" : "text-muted"}`}
+              >
+                Tercihler
+              </button>
             </div>
             {settingsTab === "sema" ? (
               <SchemaPanel />
             ) : settingsTab === "baglanti" ? (
               <ConnectionReviewPanel />
-            ) : (
+            ) : settingsTab === "zamanlamalar" ? (
               <SchedulesPanel />
+            ) : (
+              <TercihlerPanel />
             )}
           </div>
         )}

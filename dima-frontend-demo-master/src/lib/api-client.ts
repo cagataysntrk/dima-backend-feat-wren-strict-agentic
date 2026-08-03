@@ -30,6 +30,7 @@ import type {
   DrillRequestInput,
   DrillResponse,
   EylemOnayResult,
+  SunumTercihi,
   SchemaResponse,
   StatsToday,
   TenantConnectionCreateInput,
@@ -390,6 +391,17 @@ export async function createSchedule(spec: ScheduleSpec): Promise<{ id: string }
   const { data } = await apiClient.post<{ schedule: { id: string } }>("/schedules", spec);
   return data.schedule;
 }
+// FAZ E — kalıcı sunum tercihleri. YAZMA UCU YOK ve bu bilinçli: tercih yazmak
+// /ask/eylem onay kademesinden geçer (Faz H "onaysız hiçbir yazma" değişmezi).
+export async function listTercihler(): Promise<SunumTercihi[]> {
+  const { data } = await apiClient.get<{ tercihler: SunumTercihi[] }>("/tercihler");
+  return data.tercihler ?? [];
+}
+
+export async function silTercih(anahtar: string): Promise<void> {
+  await apiClient.delete(`/tercihler/${anahtar}`);
+}
+
 // FAZ H — bir eylem ÖNERİSİNİN onayı. Ayrı bir uçtur çünkü onay, kullanıcının kendi
 // kimliğiyle attığı AYRI bir istektir: backend eylemi kayıttan çözer, `authorize()`'ı
 // YENİDEN çağırır (öneri anındaki yetkiye güvenmek TOCTOU olurdu) ve argümanları var

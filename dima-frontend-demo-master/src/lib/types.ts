@@ -748,3 +748,15 @@ export interface EylemOnayResult {
   id: string | null;
   note: string;
 }
+
+// --- FAZ E · KALICI SUNUM TERCİHİ --------------------------------------------------
+// YALNIZ görünüm: zaman kırılımı (granularity) ve tablo/grafik (view). Ölçü/cube
+// seçimine ASLA karışmaz — bir tercihin "hangi ölçü" sorusuna karışması, kullanıcının
+// sormadığı bir raporu onun kendi ayarı gibi göstermek olurdu.
+export interface SunumTercihi {
+  anahtar: "granularity" | "view";
+  deger: string;
+  etiket: string;               // insan-okur ("aylık")
+  kaynak_ifade: string | null;  // tercihi doğuran cümle
+  updated_at: string | null;
+}

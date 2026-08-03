@@ -115,7 +115,11 @@ def test_makbuz_GEREKCEYI_tasir():
     assert m["context_rule"] == ctx.KURAL_CAPA
     assert m["resolved_context"] == {
         "cube": "parti", "root_contract": "c-abc123", "anchor": "mart",
-        "used_axes": ["makine"], "candidates": 0,
+        # FAZ E: makbuz artık İKİ TURLUK HAM PENCEREYİ de taşır. Atıf yolunda
+        # ("az önce dediğin gibi…") *"neden bu bağlam?"* sorusunun cevabı bir
+        # cube_query değil METİNDİR; yazılmasaydı o yolla üretilen her cevap
+        # gerekçesiz kalırdı. Burada `history` verilmediği için boş.
+        "used_axes": ["makine"], "candidates": 0, "raw_window": [],
     }
 
 

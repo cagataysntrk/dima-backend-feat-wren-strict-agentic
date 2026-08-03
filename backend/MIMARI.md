@@ -1431,6 +1431,87 @@ yazılmaz**. Mount canlıdır; süit koşarken `MIMARI.md`/`lab/` düzenlediğim
 Aynı sınıf: *"ölçüm aracının kendisi de bir bağımlılıktır"* (§6.4) — ölçüm **ortamı** da
 öyle.
 
+### 6.8x FAZ E — BAĞLAM ÇAPASI + SUNUM TERCİHİ ✅
+
+#### E1 · Atıf ifadeleri cevabı ÖLDÜRÜYORDU (ölçüldü)
+
+**Aynı** isteğin atıflı hâli ölüyordu:
+
+    "makine bazında ayır"                        → source=cube  dim=['makine']   ✅
+    "az önce dediğin gibi makine bazında ayır"   → source=None  CEVAPSIZ         ❌
+    "yukarıdaki raporu vardiya bazında ver"      → source=rule  dim=None         ❌❌
+
+Üçüncüsü en kötüsü: cevap **verdi** ama Discovery'ye düşüp **kırılımı kaybetti** —
+`source=rule` rozetli sessiz-yanlış. Beş atıflı ifadenin **dördü** ölmüştü; atıfsız
+hâllerinin **beşi de** çalışıyordu, yani kayıp tamamen atıf sözcüklerindendi.
+
+Kesen kapı `deterministic_refine`'ın **kendi** `_coverage_ok`'uydu. Sınıf D1'in
+(`sosyal_ayikla`) kardeşidir: **kalıp ifadenin parçaları katalog anlamı taşımaz.**
+
+#### Ayıklama neden SPAN tabanlı (kelime kümesi DEĞİL)
+
+`sosyal_ayikla` eşleşen kalıbın **kelimelerini** toplayıp o çekirdeğe sahip her token'ı
+düşürür. Sosyal sözcükte zararsızdır; atıfta **yıkıcı** olurdu:
+
+    "önceki soruyu önceki aya göre"  → kalıp `onceki soru` eşleşir
+                                     → kelime kümesi {onceki, soru}
+                                     → DÖNEM ifadesindeki `önceki` de düşerdi
+
+Span tabanlı silme bu sınıfı tamamen kapatır. Makine tek sahiptedir
+(`cube_router.kalip_spanlari` / `span_ayikla`) — atıf sözlüğü ve sunum-tercihi işareti
+**aynı** işi ister, ikinci bir kopya çekim toleransını zamanla ayrıştırırdı.
+
+#### E2 · `history` yalnız BOOLEAN olarak okunuyordu
+
+`context.coz` `prev_sql and history` diye bakıyor, **içeriğine hiç bakmıyordu**. Yapısal
+bağlam yokken atıflı mesaj `KURAL_HAM`'a düşüp **ham SQL** üretiyordu (`source=rule`).
+
+Yeni `KURAL_ATIF` + `Baglam.ham_ifade` (iki turluk pencere, makbuzda `raw_window`):
+önceki turun metni **deterministik `route()`** ile yeniden çözülür ve çıkan sorgu yapısal
+çapa yerine konur. Bundan sonrası zaten var olan takip yoludur — **ikinci bir cevap hattı
+yazılmadı**. `route()` çözemezse hiçbir şey uydurulmaz.
+
+Pencere **iki turdur** ve bu bir sınır değil bir karar: üç ve üzeri tur *"hangi tur
+kastedildi"* sorusunu doğurur, o da bir **retrieval** problemidir — raporun kendi ölçümü
+retrieval'ı reddetti (+14/−16) ve bu modülün kuralı açık: bağlam çözümü bir anlama değil
+bir **muhasebe** işidir.
+
+#### E3 · Kalıcı sunum tercihi — ve neden ONAYDAN geçiyor
+
+    "hep aylık göster"                     → *"Bu takip mesajını ilişkilendiremedim"*
+    "bundan sonra hep tablo olarak göster" → *"«bundan» yerine «unvan» mi demek istedin?"*
+
+Kapsam **bilerek dar**: raporun *"Memories"* önerisinin bir yarısı bu depoda **zaten
+var** (terminoloji → `SynonymOverride`). Yalnız **sunum** yarısı eklendi.
+
+**Tercih yazmak bir yazmadır → Faz H'nin onay kademesinden geçer.** Bir faz önce
+*"onaysız hiçbir yazma"* deyip burada muafiyet açmak, bu deponun tekrar tekrar ölçtüğü
+kusur sınıfı olurdu: **beyan var, kod onu tanımıyor.** `POST /tercihler` ucu **yoktur**
+ve bir test bunu kilitler; yeni UI da gerekmedi — Faz H'nin onay kartı çalıştı.
+
+Üç değişmez testte kilitli: tercih **ölçü/cube seçimine karışmaz** · **sessiz
+uygulanmaz** ve **açık isteği ezmez** · **takipte uygulanmaz** (kullanıcı orada canlı bir
+raporu yönlendiriyordur).
+
+#### ⚠ Kendi ölçüm disiplinim kaydı — ve kapıya çevrildi
+
+Atıf adaylarını katalogda taradım, sonra *"tekrar ailesini"* (`tekrar`, `yeniden`…)
+**taramadan** ekledim. `test_sinonim_carpismasi` yakaladı:
+
+    YENİ sinonim çakışması doğdu: 'yeniden islenen': kalite → parti
+
+`yeniden islenen` `kalite` cube'unun **gerçek sinonimiydi**; `yeniden` sözcüğünü
+ayıklamak o kimliği yok ediyordu — 2a-1'in (`elektrik` silinince **388 cevap kayboldu**)
+aynı hatası. Kural zaten yazılıydı (`_misc_hit_words`: *"`fark` BİLEREK EKLENMEDİ"*) ama
+uygulanmasını **insan dikkatine** bırakmıştım. Artık kapı: `tests/
+test_kalip_sozlugu_carpismiyor.py` — **koşulsuz silinen her TEK SÖZCÜKLÜ kalıp katalogda
+sahipsiz olmak zorunda.** Çok sözcüklü kalıp yapısı gereği güvenlidir (`yeniden ver`
+eşleşir, `yeniden islenen` dokunulmaz).
+
+**Ölçüm:** test **1887 → 1940** · eval `+0,0/+0,0/+0,0` · korpus %93,2 (kapı yeşil) ·
+senaryo süiti değişmedi · `tsc --noEmit` temiz. 53 test: `test_atif_baglami.py` (24) ·
+`test_sunum_tercihi.py` (19) · `test_kalip_sozlugu_carpismiyor.py` (10).
+
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 
 Planın kapanış şartı: *"Faz 0.5'in **aynı** süiti yeniden koşulur — **yeni senaryo

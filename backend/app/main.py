@@ -23,6 +23,7 @@ from app.routers import eylem as eylem_router
 from app.routers import measures as measures_router
 from app.routers import schedules as schedules_router
 from app.routers import stats as stats_router
+from app.routers import tercihler as tercihler_router
 from app.vqr import VQR
 from app.wren_service import WrenService
 
@@ -165,6 +166,9 @@ def create_app() -> FastAPI:
     # FAZ H — onaylı yazma: /ask/eylem (öneri ONAY ucu). Yazma yetkisi burada
     # AÇILMAZ, yalnız var olan uçlara yetkisi yeniden doğrulanmış bir kapı olur.
     app.include_router(eylem_router.router, dependencies=_protected)
+    # FAZ E — kalıcı sunum tercihi: OKUMA/SİLME ucu. Yazma burada YOK;
+    # tercih yazmak /ask/eylem onay kademesinden geçer (Faz H değişmezi).
+    app.include_router(tercihler_router.router, dependencies=_protected)
     return app
 
 

@@ -55,6 +55,9 @@ KURAL_CELISKI = "capa:coklu-celiski"     # birden çok kart seçildi, ÇELİŞİ
 KURAL_YAPISAL = "yapisal:cube_query"     # istemci açık cube_query taşıdı
 KURAL_HAM = "ham:onceki-sql"             # ham-SQL takibi (Discovery zinciri)
 KURAL_TAZE = "taze:capa-yok"             # hiçbir çapa yok — yeni soru
+# FAZ E — kullanıcı ÖNCEKİ TURUN METNİNE işaret etti ("az önce dediğin gibi…",
+# "yukarıdaki raporu…"). Yapısal bağlam (cube_query) YOK ama çapa **ham ifadededir**.
+KURAL_ATIF = "atif:onceki-tur"
 
 
 @dataclass(frozen=True)
@@ -70,6 +73,19 @@ class Baglam:
     kullanilmis_eksenler: tuple[str, ...] = ()
     # Çelişkide SORULACAK adaylar. Boş değilse çağıran **sormalı**, seçmemeli.
     adaylar: tuple[dict[str, Any], ...] = ()
+    # FAZ E — SON İKİ TURUN HAM METNİ. Neden bir alan, neden İKİ tur:
+    #
+    # Ölçüldü: `history` sunucuya geliyordu ama **yalnız boolean olarak** okunuyordu
+    # (`prev_sql and history` → KURAL_HAM). İçeriğine hiç bakılmıyordu; sonuç, atıflı bir
+    # takip mesajının ham SQL üretmesiydi (`source=rule`) — kullanıcının işaret ettiği
+    # rapor DEĞİL, uydurulmuş bir sorgu.
+    #
+    # Pencere **iki turdur** ve bu bir sınır değil bir KARAR: üç ve üzeri tur, "hangi tur
+    # kastedildi" sorusunu doğurur ve o soru bir **retrieval** problemidir. Raporun kendi
+    # ölçümü retrieval'ı reddetti (+14/−16) ve bu modülün kuralı da açık: bağlam çözümü
+    # bir anlama değil bir **muhasebe** işidir. İki tur, muhasebeyle çözülebilen en geniş
+    # penceredir: "az önce" ve "ondan önceki".
+    ham_ifade: tuple[str, ...] = ()
     notlar: str = ""
 
     @property
@@ -95,6 +111,10 @@ class Baglam:
                 "anchor": self.capa_etiketi,
                 "used_axes": list(self.kullanilmis_eksenler),
                 "candidates": len(self.adaylar),
+                # Ham pencere makbuza YAZILIR: *"neden bu bağlam?"* sorusunun cevabı
+                # atıf yolunda METİNDİR, bir cube_query değil. Yazılmasaydı o yolla
+                # üretilen her cevap gerekçesiz kalırdı.
+                "raw_window": list(self.ham_ifade),
             },
         }
 
@@ -142,6 +162,7 @@ def coz(
     capalar: list[dict] | None = None,
     capa_etiketi: str | None = None,
     kok_makbuz: str | None = None,
+    atif: bool = False,
 ) -> Baglam:
     """Bağlamı çözer ve **gerekçesini** birlikte döndürür. Saf fonksiyon — I/O yok.
 
@@ -154,30 +175,41 @@ def coz(
     ile cevabın bağlandığı yer ayrışırdı ve bu **sessizce** olurdu.
     """
     capalar = [c for c in (capalar or []) if c]
+    # İKİ TURLUK PENCERE — her dalda taşınır (çapa dalında da: makbuz *"kullanıcı hangi
+    # cümlelerin üstünde konuşuyordu"* sorusunu her yolda cevaplayabilmeli).
+    pencere = tuple(x for x in (history or [])[-2:] if x)
     if len(capalar) == 1:
         return Baglam(kural=KURAL_CAPA, cube_query=capalar[0], kok_makbuz=kok_makbuz,
-                      capa_etiketi=capa_etiketi,
+                      capa_etiketi=capa_etiketi, ham_ifade=pencere,
                       kullanilmis_eksenler=_eksenler(capalar[0]))
     if len(capalar) > 1:
         ilk = capalar[0]
         if all(_uyumlu(ilk, c) for c in capalar[1:]):
             birlesik = _kesistir(capalar)
             return Baglam(kural=KURAL_COKLU, cube_query=birlesik, kok_makbuz=kok_makbuz,
-                          capa_etiketi=capa_etiketi,
+                          capa_etiketi=capa_etiketi, ham_ifade=pencere,
                           kullanilmis_eksenler=_eksenler(birlesik),
                           notlar=f"{len(capalar)} kart kesiştirildi")
         # ÇELİŞKİ: farklı cube'lar. SESSİZCE BİRİNİ SEÇME — bu, Faz 3.1'in cube-beraberlik
         # chip'inin diyalog seviyesindeki karşılığıdır (ADR-0008: belirsizlikte SOR).
         return Baglam(kural=KURAL_CELISKI, adaylar=tuple(capalar), kok_makbuz=kok_makbuz,
-                      capa_etiketi=capa_etiketi,
+                      capa_etiketi=capa_etiketi, ham_ifade=pencere,
                       notlar="seçilen kartlar farklı cube'lara ait — birleştirilemez")
     if cube_query:
         return Baglam(kural=KURAL_YAPISAL, cube_query=cube_query, kok_makbuz=kok_makbuz,
+                      ham_ifade=pencere,
                       kullanilmis_eksenler=_eksenler(cube_query))
+    # ATIF (Faz E) — yapısal bağlam yok ama kullanıcı ÖNCEKİ TURUN METNİNE işaret etti.
+    # HAM'dan ÖNCE gelir: ham-SQL zinciri *"bağlam yok"* der ve çağıranı Discovery'ye
+    # bırakır; atıf ise *"bağlam VAR, ham ifadededir"* der ve çağıran onu deterministik
+    # olarak yeniden çözebilir. Ölçüldü: atıf HAM'a düştüğünde uydurma SQL üretiliyordu.
+    if atif and pencere:
+        return Baglam(kural=KURAL_ATIF, kok_makbuz=kok_makbuz, ham_ifade=pencere,
+                      notlar="çapa ham ifadede — önceki turun metni yeniden çözülmeli")
     if prev_sql and history:
-        return Baglam(kural=KURAL_HAM, kok_makbuz=kok_makbuz,
+        return Baglam(kural=KURAL_HAM, kok_makbuz=kok_makbuz, ham_ifade=pencere,
                       notlar="ham-SQL zinciri — yapısal bağlam YOK, cube_query taşınmıyor")
-    return Baglam(kural=KURAL_TAZE)
+    return Baglam(kural=KURAL_TAZE, ham_ifade=pencere)
 
 
 # --- Bağlam SÜREKLİLİĞİ ölçümü (G5'in "kanıtlı" iddiasının sayısal karşılığı) -----

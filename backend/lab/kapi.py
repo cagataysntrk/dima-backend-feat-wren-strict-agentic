@@ -51,25 +51,36 @@ CEKIRDEK = (
 )
 
 
-def _modul_adlari(degisen: list[str]) -> set[str]:
-    """Değişen kaynak dosyalardan aranacak modül adları.
+def _desenler(degisen: list[str]) -> list[re.Pattern[str]]:
+    """Değişen kaynak dosya → o modüle BAĞIMLILIĞI gösteren desenler.
 
-    `app/routers/ask.py` → {"ask", "app.routers.ask", "routers.ask"} — üçü de gerçek
-    bir testte geçebilecek biçimlerdir; hangisinin kullanıldığını tahmin etmek yerine
-    hepsi aranır (yanlış-pozitif seçim yalnız biraz daha çok test koşturur, yanlış-
-    negatif ise sessizce kapsam kaybettirir — asimetri seçimi belirler).
+    ## Neden sade ad ARANMAZ (ölçüldü, 3 Ağustos 2026)
+
+    İlk sürüm `\bask\b` gibi sade modül adlarını da arıyordu. Sonuç: `app/routers/ask.py`
+    değişince **67/137 dosya** seçildi (3,4 dk) — çünkü `ask` aynı zamanda
+    `tests/conftest.py`'nin **yardımcı fonksiyonudur** ve neredeyse her testte geçer.
+    Yani sinyal bağımlılık değil, **ad çakışmasıydı**.
+
+    Artık yalnız **import-biçimli** eşleşme sayılır (`app.routers.ask`,
+    `from app.routers import ask`, `from app import ask`). Bir modülü import etmeden
+    yalnız HTTP ucundan tüketen test kaçabilir — bu bilinçli: `--hizli` bir kapı değil
+    sinyaldir ve kapsanmayanı sayısıyla yazar.
     """
-    adlar: set[str] = set()
+    desenler: list[re.Pattern[str]] = []
     for d in degisen:
-        p = pathlib.PurePosixPath(d)
-        if p.suffix != ".py" or p.name == "__init__.py":
+        yol = pathlib.PurePosixPath(d)
+        if yol.suffix != ".py" or yol.name == "__init__.py":
             continue
-        parcalar = [x for x in p.parts if x not in ("backend", ".")]
+        parcalar = [x for x in yol.parts if x not in ("backend", ".")]
         if not parcalar or parcalar[0] not in ("app", "control_plane", "lab"):
             continue
-        adlar.add(p.stem)
-        adlar.add(".".join([*parcalar[:-1], p.stem]))
-    return adlar
+        paket, stem = ".".join(parcalar[:-1]), yol.stem
+        nokta = re.escape(f"{paket}.{stem}")
+        desenler.append(re.compile(
+            rf"{nokta}\b"                                        # app.routers.ask...
+            rf"|from\s+{re.escape(paket)}\s+import\s+[^\n]*\b{re.escape(stem)}\b"
+            rf"|import\s+{nokta}\b"))
+    return desenler
 
 
 def _secim(degisen: list[str]) -> tuple[list[str], int]:
@@ -80,11 +91,11 @@ def _secim(degisen: list[str]) -> tuple[list[str], int]:
         ad = pathlib.PurePosixPath(d).name
         if ad.startswith("test_") and (TESTLER / ad).exists():
             secili.add(ad)
-    adlar = _modul_adlari(degisen)
-    if adlar:
-        desen = re.compile(r"\b(" + "|".join(re.escape(a) for a in sorted(adlar)) + r")\b")
+    desenler = _desenler(degisen)
+    if desenler:
         for ad in hepsi:
-            if desen.search((TESTLER / ad).read_text(encoding="utf-8", errors="ignore")):
+            metin = (TESTLER / ad).read_text(encoding="utf-8", errors="ignore")
+            if any(dsn.search(metin) for dsn in desenler):
                 secili.add(ad)
     return sorted(secili), len(hepsi)
 
@@ -92,6 +103,32 @@ def _secim(degisen: list[str]) -> tuple[list[str], int]:
 def _kos(komut: list[str], baslik: str) -> int:
     print(f"\n{'=' * 78}\n▶ {baslik}\n{'=' * 78}", flush=True)
     return subprocess.call(komut, cwd=KOK)
+
+
+#: Özete girecek satırın seçiciler — her aracın "sonuç" satırı farklı biçimde.
+_OZET_ISARET = ("passed", "failed", "error", "baseline'a göre", "TOPLAM doğru-cube",
+                "ÖLÇÜLEMEDİ", "sınıf ")
+
+
+def _son_anlamli(cikti: str) -> str:
+    """Bir aracın çıktısından ÖZETE girecek satır(lar). Bulunamazsa son dolu satır —
+    sessizce boş bırakmaktan iyidir (boş özet 'ölçüm yok'u 'sorun yok' gibi gösterir)."""
+    satirlar = [s.strip() for s in cikti.splitlines() if s.strip()]
+    isaretli = [s for s in satirlar if any(i in s for i in _OZET_ISARET)]
+    return (isaretli[-1] if isaretli else (satirlar[-1] if satirlar else "(çıktı yok)"))[:120]
+
+
+def _kos_yakala(komut: list[str], baslik: str) -> tuple[int, str]:
+    """`_kos` gibi ama çıktıyı da döndürür — hem canlı basar hem özet için saklar."""
+    print(f"\n{'=' * 78}\n▶ {baslik}\n{'=' * 78}", flush=True)
+    p = subprocess.Popen(komut, cwd=KOK, stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT, text=True, bufsize=1)
+    parcalar: list[str] = []
+    assert p.stdout is not None
+    for satir in p.stdout:
+        print(satir, end="", flush=True)
+        parcalar.append(satir)
+    return p.wait(), "".join(parcalar)
 
 
 def hizli(degisen: list[str]) -> int:
@@ -118,11 +155,19 @@ def tam() -> int:
         ([sys.executable, "lab/konusma_senaryolari.py"], "konuşma senaryoları"),
     )
     kotu = 0
+    ozet: list[str] = []
     for komut, baslik in adimlar:
-        rc = _kos(komut, baslik)
+        rc, cikti = _kos_yakala(komut, baslik)
+        ozet.append(f"  {'✓' if rc == 0 else '✗'} {baslik:22} {_son_anlamli(cikti)}")
         if rc != 0:
-            print(f"✗ {baslik} BAŞARISIZ (rc={rc})")
             kotu = rc
+    # ÖZET EN SONDA ve TEK BLOK: kapı çıktısı çoğu zaman `tail` ile okunur; sayılar
+    # ortada kalırsa kırpılır ve *"yeşil mi?"* sorusu cevaplanır ama *"kaç test, kaç
+    # yüzde?"* cevapsız kalır (bu turda tam olarak bu oldu — ölçüm kaydı kayboldu).
+    print("\n" + "=" * 78)
+    print("FAZ KAPISI ÖZETİ")
+    print("=" * 78)
+    print("\n".join(ozet))
     print("\n" + ("✓ FAZ KAPISI YEŞİL" if kotu == 0 else "✗ FAZ KAPISI KIRMIZI"))
     return kotu
 

@@ -16,7 +16,7 @@ from app import context as app_context
 from app import prescribe
 from app import planner as _planner
 from app import followup
-from app import cube_router, eylem, pii, viz, yoy
+from app import cube_router, eylem, pii, tercih, viz, yoy
 from app.answer import (
     _attach_next_steps,
     _attach_recommendations,
@@ -1472,7 +1472,40 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         prev_sql=prev_sql,
         history=body.history,
         capa_etiketi=body.reply_to_label,
+        atif=cube_router.atif_var(body.question),
     )
+
+    # ATIF ÇÖZÜMÜ (FAZ E) — bağlamın ham ifadeden GERİ KAZANILMASI.
+    #
+    # Ölçülen kusur: yapısal bağlam yokken *"az önce dediğin gibi makine bazında ayır"*
+    # `source=rule` ile **ham SQL üretiyordu** — kullanıcının işaret ettiği rapor değil,
+    # uydurulmuş bir sorgu. `history` sunucuya geliyordu ama yalnız BOOLEAN olarak
+    # okunuyordu (`prev_sql and history`); içeriğine hiç bakılmıyordu.
+    #
+    # Çözüm LLM DEĞİL, muhasebe: önceki turun metnini **deterministik `route()`** ile
+    # yeniden çöz, çıkan sorguyu yapısal çapa yerine koy. Bundan sonrası zaten var olan
+    # takip yoludur — ikinci bir cevap hattı YAZILMAZ (bu deponun bir numaralı kusur
+    # sınıfı). `route()` çözemezse hiçbir şey uydurulmaz: bağlam olduğu gibi kalır.
+    if baglam.kural == app_context.KURAL_ATIF and not body.cube_query:
+        _temel = None
+        try:
+            _temel = cube_router.route(baglam.ham_ifade[-1], schema)
+        except Exception:
+            _log.warning("atıf çözümü: önceki turun route()'u başarısız (best-effort)",
+                         exc_info=True)
+        _temel_cq = (_temel or {}).get("cube_query")
+        if _temel_cq:
+            body.cube_query = _temel_cq
+            structural_followup = True
+            raw_followup = False
+            is_followup = True
+            baglam = app_context.coz(
+                cube_query=_temel_cq, prev_sql=prev_sql, history=body.history,
+                capa_etiketi=body.reply_to_label)
+            _log.info("ATIF /ask: önceki tur %r → cube=%s (deterministik geri kazanım)",
+                      baglam.ham_ifade[-1] if baglam.ham_ifade else "",
+                      _temel_cq.get("cube"))
+
     _log.info("BAĞLAM /ask: kural=%s cube=%s eksen=%s", baglam.kural,
               (baglam.cube_query or {}).get("cube"), baglam.kullanilmis_eksenler)
 
@@ -1482,6 +1515,29 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     _log.info("İSTEK /ask: q=%r session=%s thread=%s followup=%s(yapısal=%s ham=%s)",
               body.question, body.session_id, body.thread_id, is_followup,
               structural_followup, raw_followup)
+
+    # KALICI SUNUM TERCİHİ okuyucu (FAZ E) — istek başına TEK DB okuması; tercih bir
+    # kolaylıktır, cevabın önkoşulu değil (depo düşerse rapor yine gelmeli → boş sözlük).
+    _tercih_onbellek: dict[str, dict[str, str]] = {}
+
+    def _tercihlerim() -> dict[str, str]:
+        if "v" not in _tercih_onbellek:
+            _tercih_onbellek["v"] = {}
+            try:
+                from sqlmodel import Session
+
+                from app.routers.tercihler import oku
+                from control_plane.db import engine
+
+                with Session(engine) as _s:
+                    _tercih_onbellek["v"] = oku(_s, principal) if principal else {}
+            except Exception:
+                _log.warning("sunum tercihi okunamadı (best-effort)", exc_info=True)
+        return _tercih_onbellek["v"]
+
+    def _TERCIH_NOTU_GORUNUM(deger: str) -> str:  # noqa: N802
+        return (f"“{tercih.etiketle(tercih.ANAHTAR_GORUNUM, deger)} göster” tercihiniz "
+                "uygulandı (kaldırmak için: ayarlar › tercihler)")
 
     def _finish(resp: AskResponse) -> AskResponse:
         """`/ask`'in kapanışı — gövdesi `app/answer.py::seal`'dedir (Faz A4).
@@ -1869,6 +1925,20 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         yeni Intent-path kaynağında yeniden yazılmasın (Faz 1'de zaten kopya kod riski
         vardı, Faz 1.5'te dört kaynak daha eklenince tek helper'a çıkarıldı).
         Derleme/doğrulama başarısız olursa None döner (çağıran sıradaki adıma düşer)."""
+        # KALICI GRANÜLERLİK TERCİHİ (FAZ E) — SQL derlenmeden ÖNCE uygulanır ki
+        # cevaptaki sayı ile `cube_query` BİREBİR aynı şeyi anlatsın (sonradan
+        # uygulansaydı makbuz ile rapor ayrışırdı).
+        #
+        # YALNIZ TAZE soruda: takipte kullanıcı var olan bir raporu YÖNLENDİRİYORDUR ve
+        # aylar önce söylenmiş bir tercihin o canlı konuşmayla çekişmesi doğru olmaz.
+        _t_sozluk = {} if is_followup else _tercihlerim()
+        if _t_sozluk:
+            _cq_yeni, _, _t_not = tercih.uygula(
+                cq, q_norm, _t_sozluk, gorunum=None,
+                zaman_boyutu=yoy.time_dim_of(schema, cq.get("cube")))
+            if _t_not:
+                cq = _cq_yeni or cq
+                note = " · ".join(x for x in [note, _t_not] if x)
         try:
             if "entity_limit" in cq:
                 sql = _resolve_entity_limit(service, cq, order, limit_val or limit)
@@ -1912,6 +1982,14 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # TAMAMLAYICI (biri panel-görünümü, diğeri grafik-TİPİ niyeti).
         if not resp.view_hint:
             resp.view_hint = _viz_hint(q_norm)
+        # KALICI GÖRÜNÜM TERCİHİ (FAZ E) — ÜÇÜNCÜ yedek: facet ve açık grafik-tipi
+        # isteği ÖNCE gelir. Tercihin, kullanıcının O TURDA yazdığı isteği ezmesi,
+        # kendi geçmiş cümlesini bugünkü cümlesinin üstüne koymak olurdu.
+        if not resp.view_hint and not is_followup:
+            _g = _tercihlerim().get(tercih.ANAHTAR_GORUNUM)
+            if _g:
+                resp.view_hint = _g
+                resp.note = " · ".join(x for x in [resp.note, _TERCIH_NOTU_GORUNUM(_g)] if x)
         if learn and vqr is not None:
             try:
                 # `auto_cube` (Faz 4.1): saklanan SQL, LLM'in serbest metni DEĞİL —
@@ -1976,6 +2054,30 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             question=body.question, source="eylem", note=_eylem_karar.not_,
             cube_query=body.cube_query or None,
             eylem_onerisi=_eylem_karar.oneri, trace=_eylem_karar.iz,
+        ))
+    # KALICI SUNUM TERCİHİ (FAZ E) — *"bundan sonra hep aylık göster"*.
+    #
+    # Ölçüldü: bu cümle *"Bu takip mesajını ilişkilendiremedim"* ya da
+    # *"«bundan» yerine «unvan» mi demek istedin?"* alıyordu. Kullanıcı tercihini
+    # söylüyor, sistem anlamıyordu.
+    #
+    # Tercih YAZMAK bir yazmadır → Faz H'nin ONAY kademesinden geçer. Muafiyet açmak,
+    # bir faz önce yazdığım değişmezi kodda tanımamak olurdu.
+    _tercih_adayi = tercih.tespit(q_norm, gorunum=_viz_hint(q_norm))
+    if _tercih_adayi is not None:
+        _tb = eylem.beyan(eylem.TERCIH_KAYDET)
+        return _finish(AskResponse(
+            question=body.question, source="eylem", note=tercih.ozet(_tercih_adayi),
+            cube_query=body.cube_query or None,
+            eylem_onerisi={
+                "eylem": _tb.ad, "ozet": tercih.ozet(_tercih_adayi), "izin": _tb.izin,
+                "geri_alinabilir": _tb.geri_alinabilir,
+                "argumanlar": {"anahtar": _tercih_adayi.anahtar,
+                               "deger": _tercih_adayi.deger,
+                               "kaynak_ifade": body.question},
+            },
+            trace=[f"kalıcı sunum tercihi ({_tercih_adayi.anahtar}="
+                   f"{_tercih_adayi.deger}) → onay bekliyor (LLM'siz, SQL'siz)"],
         ))
     if _is_catalog_query(q_norm):
         return _finish(AskResponse(

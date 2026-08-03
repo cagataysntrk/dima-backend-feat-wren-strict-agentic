@@ -55,6 +55,11 @@ from app.cube_router import _syn_hit
 
 PANO_EKLE = "pano.ekle"
 ZAMANLA = "zamanla.olustur"
+#: FAZ E — kalıcı sunum tercihi. Yazma olduğu için ONAY kademesinden geçer: bir faz
+#: önce *"onaysız hiçbir yazma"* deyip burada muafiyet açmak, bu deponun tekrar tekrar
+#: ölçtüğü kusur sınıfı olurdu (**beyan var, kod onu tanımıyor**). Tespiti `app/tercih.py`
+#: yapar; burası yalnız BEYANI tutar — kayıt ile tespit ayrı sahiplerdir.
+TERCIH_KAYDET = "tercih.kaydet"
 
 
 @dataclass(frozen=True)
@@ -92,6 +97,17 @@ EYLEM_KAYIT: tuple[EylemBeyani, ...] = (
         # kaydı silmek geçmişte gönderilmiş bildirimi geri almaz.
         geri_alinabilir=False,
         uc="schedules.create_schedule",
+    ),
+    EylemBeyani(
+        ad=TERCIH_KAYDET,
+        # Özet `app/tercih.py::ozet` tarafından üretilir (hedef etiketi oradan gelir);
+        # kalıp yine de burada durur ki KAYIT tek başına okunabilir olsun.
+        ozet_kalibi="Bundan sonra raporları {rapor} göstereyim mi?",
+        # Sunum tercihi yeni bir veri yüzeyi açmaz — yalnız kullanıcının KENDİ
+        # raporlarının görünümünü değiştirir; eşik sorgunun kendisiyle aynı.
+        izin="query:run",
+        geri_alinabilir=True,       # tek uçla silinir (DELETE /tercihler/{anahtar})
+        uc="tercihler.tercih_yaz",
     ),
 )
 
