@@ -1710,7 +1710,44 @@ test konteyneri açtım → compose çakışması → *"2004 errors in 73s"*. De
 gürültüdür.
 
 **Ölçüm:** test **1990 → 2004** · eval `+0,0/+0,0/+0,0` · korpus %93,2 (kapı yeşil) ·
-senaryo süiti değişmedi · `tsc --noEmit` temiz. 12 test: `tests/test_akis_ve_steering.py`.
+senaryo süiti değişmedi · `tsc --noEmit` temiz. 10 test: `tests/test_akis_ve_steering.py` · 14 test: `tests/test_gercekci_senaryo_bulgulari.py`.
+
+### 6.8u GERÇEKÇİ SENARYO TURU — süit "daha iyi senaryo" isteğiyle zenginleştirildi ✅
+
+Kullanıcı isteği: *"biraz daha canlı test yap daha iyi senaryolarla daha gerçekçi."*
+Senaryo **çoğaltılmadı, İYİLEŞTİRİLDİ** (beyan edilen 12–15 aralığı korundu): ince olanlar
+konuşma diline çekildi, iki **gerçek iş akışı** eklendi —
+`uretim_muduru_sabahi` (7 tur: selam → dünkü durum → en kötüsü → neden → geçen yılla kıyas
+→ haftalık zamanla → teşekkür) ve `yazim_hatali_gercek_kullanici` (yazım hatası, eksik
+cümle, küçük harf).
+
+**Canlı sonuç: 41 ✅ / 1 ❌ / 63 ⊘.** Sabah rutini uçtan uca çalıştı ve merdivenin her
+basamağını tek thread'de gösterdi: sosyal → deterministik cube → sıralama → **dürüst ret**
+(*"`ort_oee` bir ortalama/oran — katkı payı matematiksel olarak tanımsız"*) → YoY kıyas →
+eylem önerisi → sosyal.
+
+#### Ve gerçekçi senaryo İKİ YENİ KUSUR çıkardı
+
+**A · Boş sonuç SESSİZ dönüyordu.** `satır=0 · not=None · yorum=None`. Kullanıcı boş bir
+tablo görüyor, nedenini bilmiyor: soru mu yanlış anlaşıldı, veri mi yok, filtre mi dar?
+Bir *"şirket beyni"*nin verebileceği en kötü cevap sessiz bir boşluktur — okuyucu onu
+**kendi varsayımıyla** doldurur. Not artık deterministik ve **uydurmuyor**: *"veri yok"*
+demiyor, *"bu aralıkta (2026-07-27 – 2026-08-02) kayıt bulunamadı"* diyor. İkisi farklı
+iddialardır ve ikincisi ölçülebilir olandır.
+
+**B · Takvim yılı ifadesi anlaşılmıyordu.** *"2019 yılında makine bazında oee"* →
+***"«yilinda» yerine «yield» mi demek istedin?"*** — D1'in absürt-öneri sınıfının aynısı,
+kökü yine biçimbirim (Faz X'te kapatılan ailenin kaçan üyesi). Çıplak `2019` **bilerek**
+kapsam dışı: dört haneli bir sayı bir hesap/şube/TRCODE **değeri** de olabilir
+(`_value_token_hit`'in kendi notu bu tuzağı kaydediyor) — belirsizde **dönem sormak**,
+uydurmaktan iyidir. En az bir yıl işareti (`yıl`/`sene` ya da hâl eki) aranır.
+
+⚠ Testlerimden biri yine **pencereyle** ölçüyordu (*"koşulun yakınında bir yerde"*); yorum
+bloğu uzadıkça kayan bir pencere, kapının doğru şeyi ölçtüğünü garanti etmez. Koşulun
+**kendisi** aranır hâle getirildi.
+
+**Ölçüm:** test **2004 → 2018** · eval `+0,0/+0,0/+0,0` · korpus %93,2 (kapı yeşil) ·
+senaryo süiti değişmedi · canlı deneyim süiti **41 ✅ / 1 ❌ / 63 ⊘**.
 
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 

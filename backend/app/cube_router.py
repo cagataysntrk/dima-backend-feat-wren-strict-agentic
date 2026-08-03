@@ -435,6 +435,30 @@ def _single_day_filters(q: str, time_dim: str) -> list[dict] | None:
     ]
 
 
+#: TAKVİM YILI — *"2019 yılında"* · *"2019'da"* · *"2019 senesinde"* · *"2019 yılı".
+#:
+#: Faz X'in gerçekçi senaryosu bunu ölçtü: `2019 yılında makine bazında oee` →
+#: ***"«yilinda» yerine «yield» mi demek istedin?"*** — D1'in absürt-öneri sınıfının
+#: aynısı, kökü yine biçimbirim. Çıplak `2019` ise dönem SORUYORDU (sessiz-yanlış YOK,
+#: ama kullanıcı dönemi ZATEN söylemişti).
+#:
+#: ⚠ ÇIPLAK YIL BİLEREK KAPSAM DIŞI: dört haneli bir sayı bir hesap/şube/TRCODE değeri de
+#: olabilir (`_value_token_hit`'in kendi notu bu tuzağı kaydediyor). En az bir YIL İŞARETİ
+#: (`yıl`/`sene` ya da hâl eki) aranır — belirsizde dönem sormak, uydurmaktan iyidir.
+_YEAR_RE = re.compile(r"\b((?:19|20)\d{2})\s*(?:(?:yil|sene)\w*|da\b|de\b|ta\b|te\b)")
+
+
+def _calendar_year_filters(q: str, time_dim: str) -> list[dict]:
+    m = _YEAR_RE.search(q)
+    if not m:
+        return []
+    yil = int(m.group(1))
+    return [
+        {"dimension": time_dim, "operator": "gte", "value": f"{yil}-01-01"},
+        {"dimension": time_dim, "operator": "lte", "value": f"{yil}-12-31"},
+    ]
+
+
 def date_filters(q: str, time_dim: str = "tarih") -> list[dict]:
     """Dönem ifadesini deterministik tarih filtrelerine çevirir: açık aralık
     ("1 ocak 31 mart arası"), göreli ("son 3 ay"), içinde bulunulan ("bu ay") ya da
@@ -452,6 +476,11 @@ def date_filters(q: str, time_dim: str = "tarih") -> list[dict]:
     qp = _quarter_period_filters(q, time_dim)  # "2. çeyrek" / "ikinci çeyrek"
     if qp:
         return qp
+    # TAKVİM YILI — göreli ("geçen yıl") ve çeyrek ifadelerinden SONRA: onlar daha
+    # spesifiktir ve "2. çeyrek 2019" gibi bileşimde çeyrek kazanmalıdır.
+    yil = _calendar_year_filters(q, time_dim)
+    if yil:
+        return yil
     single = _relative_date_filter(q, time_dim) or _current_period_filter(q, time_dim)
     if single:
         return [single]
@@ -1953,7 +1982,8 @@ def _cekimli_token(q: str, m: "re.Match") -> list[str]:
 def _period_hit_words(q: str) -> set[str]:
     """Tanınan dönem ifadelerinin kelimeleri (son 3 ay / bu ay / temmuz ayı / aralık…)."""
     words: set[str] = set()
-    for rx in (_RANGE_RE, _REL_DATE, _OPEN_START_RE, _OPEN_END_RE, _PREV_RE, _QUARTER_RE):
+    for rx in (_RANGE_RE, _REL_DATE, _OPEN_START_RE, _OPEN_END_RE, _PREV_RE, _QUARTER_RE,
+               _YEAR_RE):
         m = rx.search(q)
         if m:
             words.update(_cekimli_token(q, m))

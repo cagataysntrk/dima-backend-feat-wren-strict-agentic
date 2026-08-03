@@ -1990,6 +1990,26 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             if _g:
                 resp.view_hint = _g
                 resp.note = " · ".join(x for x in [resp.note, _TERCIH_NOTU_GORUNUM(_g)] if x)
+        # BOŞ SONUÇ DÜRÜSTÇE SÖYLENİR (Faz X'in gerçekçi senaryosunda ölçüldü).
+        #
+        # *"geçen haftada makine bazında oee"* → **satır=0, not=None, yorum=None**.
+        # Kullanıcı boş bir tablo görüyor ve nedenini bilmiyor: soru mu yanlış anlaşıldı,
+        # veri mi yok, filtre mi fazla dar? Bir "şirket beyni"nin verebileceği en kötü
+        # cevap, sessiz bir boşluktur — çünkü okuyucu boşluğu KENDİ varsayımıyla doldurur.
+        #
+        # Not DETERMİNİSTİKTİR ve UYDURMAZ: yalnız sorgunun KENDİ dönem filtresini okur.
+        # "Veri yok" demez — *"bu aralıkta kayıt bulunamadı"* der; ikisi farklı iddialardır.
+        if (result or {}).get("row_count") == 0 and not resp.note:
+            _dnm = [f for f in (cq.get("filters") or [])
+                    if f.get("operator") in ("gte", "lte")]
+            _aralik = ""
+            if _dnm:
+                _bas = next((f["value"] for f in _dnm if f["operator"] == "gte"), None)
+                _son = next((f["value"] for f in _dnm if f["operator"] == "lte"), None)
+                _aralik = (f" ({str(_bas)[:10]} – {str(_son)[:10]})" if _bas and _son
+                           else (f" ({str(_bas)[:10]} sonrası)" if _bas else ""))
+            resp.note = (f"Bu aralıkta{_aralik} kayıt bulunamadı. Rapor doğru kuruldu — "
+                         "dönemi genişletmek ya da filtreyi gevşetmek ister misin?")
         if learn and vqr is not None:
             try:
                 # `auto_cube` (Faz 4.1): saklanan SQL, LLM'in serbest metni DEĞİL —

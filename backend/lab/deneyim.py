@@ -107,11 +107,14 @@ SENARYOLAR: tuple[dict, ...] = (
     },
     {
         "ad": "donem_duzeltme",
-        "aciklama": "Dönem yanlış anlaşıldı; kullanıcı düzeltiyor. Yapı korunmalı.",
+        "aciklama": "Dönem yanlış anlaşıldı; kullanıcı KONUŞMA DİLİYLE düzeltiyor.",
+        # Gerçek kullanıcı "son 3 ay" demez, "yok ya son 3 ayı ver" der; ve yer-durum
+        # ekini (son 6 ayDA) doğal olarak kullanır — Faz X'te ölçülen kusur tam buydu.
         "turlar": ["makine bazında oee",
                    "bu yıl",
-                   "hayır sadece son 3 ay",
-                   "aylık göster"],
+                   "yok ya sadece son 3 ayda",
+                   "aylık göster",
+                   "en düşük hangisi"],
         "olculen": (S3_SUREKLILIK, S6_MAKBUZ),
     },
     {
@@ -139,8 +142,9 @@ SENARYOLAR: tuple[dict, ...] = (
     },
     {
         "ad": "konu_degisimi",
-        "aciklama": "Kullanıcı konuyu değiştiriyor — sessizce eski bağlama yapışmamalı.",
-        "turlar": ["bu yıl makine bazında oee", "peki bu yıl ciro?", "aylara göre"],
+        "aciklama": "Konu değişiyor, sonra ESKİ konuya dönülüyor — bağlam iki yönde de sağlam mı?",
+        "turlar": ["bu yıl makine bazında oee", "peki bu yıl ciro?", "aylara göre",
+                   "tamam yine oee'ye dönelim", "vardiya bazında"],
         "olculen": (S3_SUREKLILIK, S6_MAKBUZ),
     },
     {
@@ -179,6 +183,30 @@ SENARYOLAR: tuple[dict, ...] = (
         "aciklama": "Cevabı OLMAYAN soru: dürüst ret + NE YAPABİLDİĞİ (proaktif sınır).",
         "turlar": ["bu yıl personel bazında verimlilik", "peki makine bazında?"],
         "olculen": (S3_SUREKLILIK, S6_MAKBUZ),
+    },
+    {
+        "ad": "uretim_muduru_sabahi",
+        "aciklama": "GERÇEK bir sabah rutini: selam → dünkü durum → en kötüsü → neden → "
+                    "geçen haftayla kıyas → haftalık zamanla → teşekkür. Merdivenin HER "
+                    "basamağı tek bir thread'de.",
+        "turlar": ["günaydın",
+                   "geçen haftada makine bazında oee",
+                   "en düşük hangisi",
+                   "bu neden böyle?",
+                   "geçen yılla kıyasla",
+                   "her pazartesi bu raporu bana yolla",
+                   "teşekkürler"],
+        "olculen": (S1_CAPA, S3_SUREKLILIK, S4_SOSYAL, S6_MAKBUZ),
+    },
+    {
+        "ad": "yazim_hatali_gercek_kullanici",
+        "aciklama": "Gerçek kullanıcı düzgün yazmaz: yazım hatası, eksik cümle, küçük "
+                    "harf, konuşma dili. Sistem bunlara da dayanmalı.",
+        "turlar": ["bu yil makina bazinda oee",
+                   "aylik goster",
+                   "en kotusu hangisi",
+                   "bunu yorumla"],
+        "olculen": (S2_ANLAT, S3_SUREKLILIK, S6_MAKBUZ),
     },
     {
         "ad": "kiyas_turu",
