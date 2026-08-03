@@ -527,6 +527,47 @@ Kazanç 28 birim testiyle kanıtlanıyor. Korpusun bu sınıfı kazanması Faz 0
 Taban artefaktı: `lab/nl_corpus_baseline.json` (`eval/baseline.json` ile aynı disiplin —
 `lab/reports/` gitignore'da olduğu için ham rapor değil **kapı değerleri** saklanır).
 
+### 6.10z FAZ 6 — offline sinonim önericisi YAPILDI; dikey modüller ÖLÇÜLDÜ, YAZILMADI ✅
+
+#### Yapılan: offline, insan-onaylı sinonim önericisi (`app/sinonim_onerici.py`)
+
+`mdl_writer` bilerek *"TAHMİNİ sinonim UYDURULMAZ"* diyor — **doğru bir karar**, çünkü
+tahmini bir sinonim `route()`'un **canlı** davranışını değiştirir. Ama sonuç **çıplak** bir
+cube: tablo adından başka etiketi yok ve `route()` onu neredeyse hiç eşleştiremez. §2.1'in
+ölçtüğü darboğaz tam bu — **mekanizma üretiliyor, sözlük üretilmiyor** (`compose.py`'nin
+kendi üreteci de itiraf ediyor: *"sözlük kürasyonu işin indirgenemez insan kısmıdır"*).
+
+**LLM'in meşru olduğu tek yer: offline, insan-onaylı öneri.** Üç değişmez testle kilitli:
+
+1. Öneri **hiçbir `/ask` yolundan** tetiklenmez (tüm `app/` taranıyor).
+2. Çıktı **doğrudan yazılmaz** — `SynonymOverride(approved=False)` kuyruğuna aday düşer.
+3. **`approved=False` SABİTTİR, parametre değil.** Dışarı açılsaydı bir çağıran `True`
+   geçebilir ve LLM önerisi **insan görmeden canlıya inerdi** — modülün tüm gerekçesi
+   çökerdi. `source="llm_oneri"` de ayrı tutuluyor: `manual`/`mined` ile aynı kutuya
+   koymak, onaylayanın önerinin **nereden geldiğini** görmesini engellerdi.
+
+Yalnız **gerçekten çıplak** alanlara öneri üretilir; zaten sinonimi olan bir alana öneri
+küratörlü sözlüğü **gürültüyle sulandırırdı**. En fazla 6 öneri — uzun liste onaylayanı
+*"hepsini kabul et"*e iter ve onay kalitesini düşürür.
+
+> ⚠️ **TESTİM GERÇEK BİR AÇIK ARADI VE KENDİ HATASINI BULDU.** Onay kapısının
+> `compose.py`'de olduğunu **varsaydım**; test kırıldı — kapı orada değil,
+> `materialize.py:103` ve `wren_service.py:578`'de. **Yanlış dosyaya bakan bir kapı, kapı
+> DEĞİLDİR**: yeşil kalır ve hiçbir şeyi korumaz. Test artık `SynonymOverride`'ı **okuyan
+> her dosyayı** tarıyor ve her birinde `approved` filtresi arıyor (admin onay ekranı
+> gerekçesiyle muaf) — kapının **yeri varsayılmıyor**.
+
+#### Yapılmayan: dikey modüller (`packs/modul/muhasebe|satis`) — gerekçesi ÖLÇÜM
+
+Plan: *"Faz 0'ın verisi **sırayı söyler**."* Faz 0 ölçtü: `interaction_log` **0 satır** —
+**sıra girdisi YOK**. Ve muhasebe ailesi demo katalogda **zaten var** (`mizan` · `cari` ·
+`statements`). Sırasız ve kaynak-tablosuz cube yazmak, planın sektör küpleri için açıkça
+yasakladığı **spekülasyonun** aynısı olurdu (*"gerçek müşteri talebi gelene kadar
+ertelenir"*). Altyapı hazır: `db_introspect` → `mdl_writer` → **bu fazın önericisi** →
+insan onayı. Eksik olan **veri**, kod değil.
+
+12 test: `tests/test_sinonim_onerici.py`.
+
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 
 Planın kapanış şartı: *"Faz 0.5'in **aynı** süiti yeniden koşulur — **yeni senaryo

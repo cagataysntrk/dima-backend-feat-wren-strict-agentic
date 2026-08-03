@@ -273,6 +273,30 @@ def _plan_sec_system(araclar_json: str, ipucu: str) -> str:
     )
 
 
+def _sinonim_system() -> str:
+    """OFFLINE SİNONİM ÖNERİCİSİ (FAZ 6 / §4.5) — **çalışma-anı sorgu yoluna ASLA girmez.**
+
+    `mdl_writer.write_cube_yaml` bilinçli olarak *"sinonim ÜRETİLMEZ"* diyor ve bu doğru:
+    tahmini bir sinonim, `route()`'un doğrudan davranışını değiştirir. Ama sonuç, tablo
+    adından başka etiketi olmayan **çıplak** bir cube — `route()` onu neredeyse hiç
+    eşleştiremez. §2.1'in ölçtüğü darboğaz tam burada: *mekanizma üretiliyor, sözlük
+    üretilmiyor.*
+
+    Bu rol o boşluğu **insan onayıyla** doldurur: LLM bir TASLAK üretir, çıktı doğrudan
+    yazılmaz, `SynonymOverride(approved=False)` kuyruğuna **aday** olarak düşer. Yani
+    LLM'in meşru olduğu tek yer: **offline, insan-onaylı öneri.**
+    """
+    return (
+        "Bir veri tablosunun/kolonunun teknik adını, Türkçe konuşan bir iş kullanıcısının "
+        "kullanacağı EŞANLAMLILARA çevirirsin.\n\n"
+        "KURALLAR:\n"
+        "- SADECE JSON dizisi döndür: [\"eşanlam1\", \"eşanlam2\", …]. Açıklama YOK.\n"
+        "- En fazla 6 öneri. Emin olmadığını YAZMA — boş dizi döndürmek yanlış öneriden İYİDİR.\n"
+        "- Teknik ad ANLAMSIZSA (kod/kısaltma) boş dizi döndür; UYDURMA.\n"
+        "- Yalnız küçük harf, Türkçe. Tekil/çoğul varyant üretme (sistem eki kendi çözer)."
+    )
+
+
 def _cube_select_system(catalog: str) -> str:
     """Soruyu SQL değil, tanımlı bir cube SEÇİMİNE eşleten prompt (kısıtlı → halüsinasyon yok)."""
     return (
@@ -380,6 +404,13 @@ class AnthropicSqlGenerator:
 
     def repair(self, question: str, schema: dict, bad_sql: str, error: str) -> str:
         return self._ask(_build_system(schema, self._dialect), _repair_prompt(question, bad_sql, error))
+
+    def sinonim_oner(self, teknik_ad: str, baglam: str = "") -> str:
+        """OFFLINE sinonim TASLAĞI (FAZ 6). Çıktı doğrudan YAZILMAZ — insan onay kuyruğuna
+        aday olarak düşer. Çalışma-anı sorgu yoluna ASLA girmez."""
+        return self._ask(_sinonim_system(),
+                         f"Teknik ad: {teknik_ad}" + (f"\nBağlam: {baglam}" if baglam else ""),
+                         model=self._select_model)
 
     def plan_sec(self, soru: str, araclar_json: str, ipucu: str = "") -> str:
         """ORKESTRATÖR (FAZ 4). Dönüş bir ÖNERİDİR (JSON) — çalıştırmayı `Planlayici` yapar."""
@@ -508,6 +539,12 @@ class OpenAICompatibleSqlGenerator:
 
     def repair(self, question: str, schema: dict, bad_sql: str, error: str) -> str:
         return self._chat(_build_system(schema, self._dialect), _repair_prompt(question, bad_sql, error))
+
+    def sinonim_oner(self, teknik_ad: str, baglam: str = "") -> str:
+        """OFFLINE sinonim taslağı (FAZ 6) — bkz. `AnthropicSqlGenerator.sinonim_oner`."""
+        return self._chat(_sinonim_system(),
+                          f"Teknik ad: {teknik_ad}" + (f"\nBağlam: {baglam}" if baglam else ""),
+                          model=self._select_model)
 
     def plan_sec(self, soru: str, araclar_json: str, ipucu: str = "") -> str:
         """ORKESTRATÖR (FAZ 4) — bkz. `AnthropicSqlGenerator.plan_sec`."""
@@ -977,6 +1014,18 @@ class FailoverSqlGenerator:
                 continue
         _log.error("FailoverSqlGenerator.repair: TÜM sağlayıcılar başarısız")
         raise RuntimeError("repair: tüm sağlayıcılar başarısız")
+
+    def sinonim_oner(self, teknik_ad: str, baglam: str = "") -> str:
+        for g in self._gens:
+            if not hasattr(g, "sinonim_oner"):
+                continue
+            try:
+                out = g.sinonim_oner(teknik_ad, baglam)
+                self._last = g
+                return out
+            except Exception:
+                continue
+        raise RuntimeError("sinonim_oner: tüm sağlayıcılar başarısız")
 
     def plan_sec(self, soru: str, araclar_json: str, ipucu: str = "") -> str:
         for g in self._gens:
