@@ -982,6 +982,55 @@ token'ı ayıklanamıyordu ve kusur virgüllü cümlede aynen sürüyordu. Eleme
 (doğru-cube %93,2 sabit; erişim %69/%69/%69/%73 — dördü de tabanda ya da üstünde).
 32 test: `tests/test_sosyal_sinif.py`.
 
+### 6.16z FAZ D2 — BEŞİNCİ KONUŞMA TÜRÜ: *"bunu analiz et / yorumla / özetle"* ✅
+
+**Ölçülen ölü uç (3 Ağustos 2026), bir `oee` raporu üstünde.** `followup.py` konuşma
+sınıfını **dört** türle tanımlıyordu; kullanıcının **en doğal** cümlesi hiçbirine
+girmiyordu — altı ifadenin **beşi** duvara çarptı:
+
+| ifade | önce | sonra |
+|---|---|---|
+| *"bunu analiz et"* | *"«bunu» yerine «**gunu**» mi demek istedin?"* | `source=cube`, rapor açıldı |
+| *"değerlendir"* | *"«degerlendir» yerine «**degree**» mi?"* | aynı |
+| *"yorumlar mısın"* · *"özetle"* · *"bu grafiği açıkla"* | *"Bu takip mesajını önceki raporla ilişkilendiremedim"* | aynı |
+| *"bu neden böyle?"* | ✅ (`TUR_NEDEN` zaten vardı) | değişmedi |
+
+Yani bu dosyanın **kendi docstring'inde tarif ettiği** ölü uç, bir tür eksik olduğu için
+yaşamaya devam ediyordu.
+
+**Sınıfın tanımı DEĞİŞMEDİ:** *"YENİ CEVAP ÜRETMEZ, VAR OLANI AÇAR."* Dal `prev_cq`'yu
+**aynen** yeniden çalıştırır (`cube_query` değişmez — deneyim sözleşmesi #1) ve `seal()`
+yorumu, `t2_anlatici` açıkken guard'lı anlatıyı, chip'leri kendisi ekler.
+
+**Konuşma kendini besler:** cevaba *"Neden böyle?"* · *"Normal mi?"* · *"Ne yapmalıyız?"*
+chip'leri iliştirilir — üçü de **zaten çalışan** konuşma türleri.
+
+#### Üç kusur ölçülerek bulundu — üçü de göndermeden önce
+
+1. **Konu değişimi çalınıyordu.** `analizini` kalıbı *"fire analizini yap"*ı da yakalıyordu
+   (eldeki raporu açmak değil, YENİ konu). Dosyanın kendi zamir/kısalık disiplini
+   (`TUR_NEDEN`/`TUR_ISARET`) bu türe de uygulandı: yanlış-negatif normal zincire düşer
+   (zarar yok), yanlış-pozitif kullanıcının sorusunu **yutardı**.
+2. **ÇİFT MÜHÜR.** İlk sürüm `_answer_from_cube_query` çağırıyordu; o `_finish`'i **kendi
+   içinde** uygular ve çağıran da uygular → ölçüldü: **tek tur İKİ telemetri satırı**
+   (çift audit · çift PII maskesi · çift yorum). Kardeş dal (`TUR_NORMAL`) mühürsüz
+   `AskResponse` döndürür; bu dal da o sözleşmeye uyduruldu.
+3. **YETİM ALAN (frontend).** `suggestions` yalnız `ReportPanel`'in **NOT** dalında render
+   ediliyordu; bir RAPOR kartı geldiğinde hiç okunmuyordu → üç devam chip'i **ekranda
+   görünmüyordu**. `test_cevap_alani_yetim_degil` bunu **göremez**: alan adı frontend'de
+   bir yerde geçiyor. **Kapının kör noktası *"hangi RENDER YOLUNDA"* sorusudur** — bu,
+   yetim-uç kapısının bugüne kadarki en ince sınırı ve kayda geçti.
+   `ReportCard`'a *"devam sorusu"* bloğu eklendi; `next_steps`ten **ayrı** durur çünkü o
+   sorguyu DÜZENLER (`cube_query` taşır), bu ise bir SORU sorar.
+
+⚠️ **Kabul ölçütü yine ölçülmeden yazılmıştı.** Deneyim sözleşmesine *"≥3 olgu"* koymuştum;
+`interpret()` ölçüldü: tek satırlık toplamda **1**, kırılımlı raporda **2** olgu üretiyor.
+Ölçüt gerçeğe çekildi (özet + kırılımda ≥2 olgu + ≥2 devam chip'i). Bu turda **dördüncü**
+kez ölçütün kendisi kusurlu çıktı.
+
+**Ölçüm:** test **1795 → 1817** · eval `+0,0/+0,0/+0,0` · korpus kapısı **yeşil** (%93,2
+sabit) · senaryo süiti dokuz sınıfta değişmedi. 22 test: `tests/test_anlat_turu.py`.
+
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 
 Planın kapanış şartı: *"Faz 0.5'in **aynı** süiti yeniden koşulur — **yeni senaryo

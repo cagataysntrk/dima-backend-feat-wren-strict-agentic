@@ -66,6 +66,7 @@ TUR_NEDEN = "neden"            # "bu neden böyle?" → katkı ayrıştırması
 TUR_NORMAL = "normal_mi"       # "normal mi?"      → dönemsel kıyas + sinyal
 TUR_NE_YAPMALI = "ne_yapmali"  # "ne yapmalıyız?"  → reçete (G3'ün tohumu)
 TUR_ISARET = "isaret"          # "şu düşüş ne?"    → grafiğe çapa (G2)
+TUR_ANLAT = "anlat"            # "bunu analiz et"  → ELDEKİ cevabı AÇ (Faz D2)
 
 # Kalıplar `_norm` sonrası (ASCII, küçük harf) yazılır. Sonu "!" olanlar TAM KELİME
 # eşleşir — Faz D3'ün `_syn_hit` disiplini; kalanlar geçerli ek zinciri kabul eder.
@@ -88,6 +89,28 @@ _NE_YAPMALI = ("ne yapmali", "ne yapmaliyiz", "ne yapabilir", "ne yapabiliriz",
                "nasil yol al", "nasil yol aliriz", "ne tavsiye")
 _ISARET = ("su dusus", "su artis", "su sicrama", "su kirilma", "bu dusus", "bu artis",
            "sicrama", "dusus", "kirilma", "anomali", "aykiri")
+# ANLAT/ANALİZ — kullanıcının EN DOĞAL cümlesi ve Faz D2'ye kadar HİÇBİR türe girmiyordu.
+#
+# Ölçüldü (3 Ağustos 2026), bir `oee` raporu üstünde — altı ifadenin BEŞİ duvara çarpıyordu:
+#
+#     "bunu analiz et"     → *"«bunu» yerine «gunu» mi demek istedin?"*     (saçma)
+#     "değerlendir"        → *"«degerlendir» yerine «degree» mi?"*          (saçma)
+#     "yorumlar mısın"     → *"Bu takip mesajını önceki raporla ilişkilendiremedim"*
+#     "özetle"             → aynı ölü uç
+#     "bu grafiği açıkla"  → aynı ölü uç
+#     "bu neden böyle?"    → ✅ (TUR_NEDEN zaten vardı)
+#
+# Yani bu dosyanın kendi docstring'inde tarif edilen ölü uç, **bir tür eksik olduğu için**
+# yaşamaya devam ediyordu. Sınıfın tanımı değişmiyor: **yeni cevap üretilmez, var olan
+# AÇILIR** — `interpret()` olguları zaten hesaplanmıştır, LLM yalnız üslup yazar.
+#
+# ⚠️ `ozet!` TAM KELİME: `_syn_hit` ek zincirine izin verdiği için tırnaksız `ozet`
+# "özetle"yi de yakalar ama "özel"i yakalamaz (kelime başı + geçerli ek şartı). Buna
+# rağmen TAM yazıldı ki bir gün eklenen bir `ozet_*` ölçüsü sessizce çalınmasın.
+_ANLAT = ("analiz et", "analiz eder", "analizini", "yorumla", "yorumlar misin",
+          "yorumun", "yorumlasana", "degerlendir", "aciklar misin", "acikla",
+          "ozetle", "ozetler misin", "ne diyor", "ne anlama gel", "okur musun",
+          "anlat", "yorum yap", "incele")
 
 # Konuşma sınıfı YALNIZ bunlarla tetiklenmez: soru aynı zamanda MEVCUT CEVABA işaret
 # etmelidir. "neden" tek başına yeni bir soru da olabilir ("fire neden yüksek olur?").
@@ -154,6 +177,7 @@ def sinifla(soru: str, *, baglam_var: bool) -> Niyet:
     zamir = _hit(q, _ISARET_ZAMIRI)
     for tur, kaliplar in ((TUR_NE_YAPMALI, _NE_YAPMALI),
                           (TUR_NORMAL, _NORMAL),
+                          (TUR_ANLAT, _ANLAT),
                           (TUR_NEDEN, _NEDEN),
                           (TUR_ISARET, _ISARET)):
         k = _hit(q, kaliplar)
@@ -162,7 +186,15 @@ def sinifla(soru: str, *, baglam_var: bool) -> Niyet:
         # "ne yapmalıyız?" ve "normal mi?" zaten ELDEKİ sonuca dairdir — zamir aranmaz.
         # "neden"/"düşüş" ise tek başına yeni bir soru olabilir ("fire neden yüksek olur?"),
         # o yüzden mevcut cevaba bağlayan bir işaret zamiri istenir.
-        if tur in (TUR_NEDEN, TUR_ISARET) and not zamir and not _kisa_soru(q):
+        #
+        # ⟳ FAZ D2 — `TUR_ANLAT` da AYNI disipline tabi ve bu ZORUNLU: *"fire analizini
+        # yap"* eldeki `oee` raporunu açmak DEĞİL, YENİ bir konu istemektir. Zamir/kısalık
+        # şartı olmadan bu tür konu değişimini çalardı (`konu_degisimi` senaryo sınıfı).
+        # Şart sağlanınca doğal biçimlerin hepsi geçiyor: "bunu analiz et" (zamir) ·
+        # "özetle"/"yorumla"/"değerlendir" (tek kelime) · "yorumlar mısın" (iki kelime) ·
+        # "bu grafiği açıkla" (zamir). Yanlış-negatif normal zincire düşer (zarar yok);
+        # yanlış-pozitif kullanıcının yeni sorusunu YUTARDI.
+        if tur in (TUR_NEDEN, TUR_ISARET, TUR_ANLAT) and not zamir and not _kisa_soru(q):
             continue
         return Niyet(sinif=SINIF_KONUSMA, tur=tur, kural=f"konusma:{tur}", kanit=k)
 

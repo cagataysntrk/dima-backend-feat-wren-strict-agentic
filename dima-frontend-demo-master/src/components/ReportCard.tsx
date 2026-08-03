@@ -764,6 +764,37 @@ export function ReportCard({
         />
       )}
 
+      {/* DEVAM SORUSU chip'leri (`suggestions`) — FAZ D2.
+          ⚠️ ÖLÇÜLEN YETİM ALAN: `suggestions` yalnız `ReportPanel`'in NOT dalında
+          render ediliyordu. Bir RAPOR kartı geldiğinde (source=cube + sonuç) bu alan
+          hiç okunmuyordu — yani "bunu analiz et" cevabının ürettiği "Neden böyle?" /
+          "Normal mi?" / "Ne yapmalıyız?" chip'leri EKRANDA GÖRÜNMÜYORDU.
+          `test_cevap_alani_yetim_degil` bunu göremedi çünkü alan adı frontend'de BİR
+          yerde geçiyordu; kapının kör noktası "hangi RENDER YOLUNDA" sorusuydu.
+          `next_steps`ten AYRI durur: o sorguyu DÜZENLER (`cube_query` taşır), bu ise
+          bir SORU sorar — ikisi farklı eylemdir ve aynı kutuya konursa kullanıcı
+          hangisinin yeni sayı getireceğini bilemez. */}
+      {onReply && (item.suggestions?.length ?? 0) > 0 && (
+        <div className="mt-3">
+          <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+            devam sorusu
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {item.suggestions!.map((s, i) => (
+              <button
+                key={`sug-${i}`}
+                onClick={() => onReply(threadId, index, s.query)}
+                title="Bu cevabın üstünde konuşur — yeni sorgu yazılmaz"
+                className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-600 transition-colors hover:border-accent/50 hover:text-foreground dark:text-neutral-300"
+              >
+                <span className="mr-1 text-neutral-400">↳</span>
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* K2 sonraki adım chip'leri (backend 'next_steps' flag'iyle gelir) — kırılım/ölçek/
           zaman. Tıklama mevcut deterministik /cube yolunu kullanır (LLM yok). */}
       {/* Konuşma cevabında (`contribution` dolu) bu blok GİZLENİR: bulgular cevabın

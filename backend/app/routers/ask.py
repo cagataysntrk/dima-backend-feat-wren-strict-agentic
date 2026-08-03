@@ -1725,6 +1725,59 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                             _plan_izi(plan)],
             ), sonuc, kiyas_cq)
 
+        # ANLAT / ANALİZ ET → **ELDEKİ raporu AÇ**. Faz D2.
+        #
+        # ## Ölçülen ölü uç (3 Ağustos 2026), bir `oee` raporu üstünde
+        #
+        #     "bunu analiz et"     → *"«bunu» yerine «gunu» mi demek istedin?"*
+        #     "değerlendir"        → *"«degerlendir» yerine «degree» mi?"*
+        #     "yorumlar mısın" · "özetle" · "bu grafiği açıkla"
+        #                          → *"Bu takip mesajını önceki raporla ilişkilendiremedim"*
+        #
+        # Altı ifadenin BEŞİ duvara çarpıyordu — `followup.py`'nin kendi docstring'inde
+        # tarif edilen ölü uç, **bir tür eksik olduğu için** yaşamaya devam ediyordu.
+        #
+        # ## Bu dal neden YENİ SORGU YAZMAZ
+        #
+        # Sınıfın tanımı: *"YENİ CEVAP ÜRETMEZ, VAR OLANI AÇAR"*. `prev_cq` **aynen**
+        # yeniden çalıştırılır (dolayısıyla `cube_query` DEĞİŞMEZ — sözleşme #1) ve
+        # `seal()` zinciri `interpret()` olgularını, `t2_anlatici` açıksa guard'lı
+        # anlatıyı, `next_steps` chip'lerini kendisi ekler. Yani bu dalın işi **cevabı
+        # yeniden üretmek değil, konuşmayı doğru rapora ÇAPALAMAK**.
+        #
+        # Devam chip'leri konuşmayı KENDİ KENDİNE besler: kullanıcı "analiz et" dedikten
+        # sonra "neden böyle?" · "normal mi?" · "ne yapmalıyız?" bir tık uzakta ve üçü de
+        # ZATEN çalışan türler.
+        if tur == followup.TUR_ANLAT:
+            # ⚠️ `_answer_from_cube_query` KULLANILMAZ — o `_finish`'i KENDİ İÇİNDE
+            # çağırır ve bu fonksiyonun çağıranı da `_finish(resp)` yapar. Ölçüldü:
+            # **tek tur İKİ telemetri satırı** yazıyordu (çift mühür → çift audit, çift
+            # PII maskesi, çift yorum). Kardeş dallar (`TUR_NORMAL`) MÜHÜRSÜZ bir
+            # `AskResponse` döndürür; bu dal da o sözleşmeye uyar.
+            try:
+                _sql = service.cube_sql(prev_cq)
+                service.dry_plan(_sql)
+                _sonuc = service.query(_sql, limit=settings.max_result_rows) \
+                    if body.execute else None
+            except Exception:
+                _log.warning("anlat: rapor yeniden çalıştırılamadı (best-effort)",
+                             exc_info=True)
+                return None
+            resp = _attach_viz(AskResponse(
+                question=body.question, source="cube", sql=_sql,
+                result=QueryResult(**_sonuc) if _sonuc else None,
+                cube_query=prev_cq,
+                trace=iz + ["Anlat: eldeki rapor YENİDEN YORUMLANDI (yeni sorgu YAZILMADI)",
+                            _plan_izi(plan)],
+            ), _sonuc, prev_cq)
+            # Konuşmayı besleyen devam chip'leri — üçü de ZATEN çalışan konuşma türleri.
+            _devam = [("Neden böyle?", "bu neden böyle?"),
+                      ("Normal mi?", "normal mi?"),
+                      ("Ne yapmalıyız?", "ne yapmalıyız?")]
+            resp.suggestions = ([Suggestion(label=lb, query=q) for lb, q in _devam]
+                                + list(resp.suggestions or []))[:8]
+            return resp
+
         return None
 
     def _capayi_uygula(prev_cq: dict, capa, cube_meta: dict | None) -> tuple[dict, list[str]]:
