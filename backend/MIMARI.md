@@ -527,6 +527,39 @@ Kazanç 28 birim testiyle kanıtlanıyor. Korpusun bu sınıfı kazanması Faz 0
 Taban artefaktı: `lab/nl_corpus_baseline.json` (`eval/baseline.json` ile aynı disiplin —
 `lab/reports/` gitignore'da olduğu için ham rapor değil **kapı değerleri** saklanır).
 
+### 6.11z CANLI TUR — `cube+llm` cevabı "LLM kullanılmadı" diye rozetleniyordu ✅
+
+**Gerçek bir sağlayıcıyla (Gemini) ilk canlı istekte çıktı.** Test ortamı CI reçetesi
+gereği `--network none` koşuyor (MIMARI §7), dolayısıyla **`cube+llm` orada HİÇ
+üretilmiyor** — 1651 testin **hiçbiri** bu yolu koşturmuyordu. **Kapsam yüksekti, YOL
+yoktu.**
+
+`_build_explain` `next((k for k in _EXPLAIN_PATH if s.startswith(k)), None)` ile **İLK**
+eşleşen öneki alıyordu. Sözlükteki sıra `cube` → `cube+llm` ve
+`"cube+llm".startswith("cube")` **True**. Sonuç **iki katlı bir yanlış beyan**:
+
+| alan | gösterilen | olması gereken |
+|---|---|---|
+| `explain.confidence` | **1.0** | **0.85** |
+| `explain.path` | *"cube (route() — **LLM'siz, sıfır maliyet**)"* | *"cube + LLM-destekli alan seçimi"* |
+
+Yani Intent-JSON cevabı saf deterministik `route()` cevabıyla **aynı güven rozetini**
+alıyor **ve** kullanıcıya *"LLM kullanılmadı"* deniyordu — oysa `consistency_k=3` ile LLM
+**üç kez** çağrılmıştı. Bu bir sayı hatası değil, **kullanıcıya yanlış bir beyandır** ve
+tam olarak bu planın §1'inde açılış konusu yapılan **rozet dürüstlüğünün** ihlalidir.
+
+Sözlüğün kendi yorumu ayrımı zaten **beyan ediyordu**: *"cube/cube+llm AYRIMI KORUNUR …
+güvenleri farklı olduğundan burada AYRI tutulur."* Kod onu uygulamıyordu — §6.1'in
+*"beyan var, kod onu tanımıyor"* sınıfı, bu oturumda **on birinci** kez.
+
+**Düzeltme: en uzun önek kazanır.** Canlıda doğrulandı: `confidence 1.0 → 0.85`, path
+artık LLM katkısını söylüyor. 13 test (`tests/test_rozet_durustlugu.py`) — biri de önek
+çakışmalarını **görünür** tutuyor: yeni bir önek eklendiğinde tuzak sessizce geri gelmesin.
+
+> **Ders:** bir yolun testi yoksa kapsam sayısı onu göstermez. `--network none` reçetesi
+> doğru bir CI kararıdır ama **LLM yollarını kör bırakır**; `--live` turu bu yüzden
+> planda vardı ve ilk koşusunda kendini amorti etti.
+
 ### 6.10z FAZ 6 — offline sinonim önericisi YAPILDI; dikey modüller ÖLÇÜLDÜ, YAZILMADI ✅
 
 #### Yapılan: offline, insan-onaylı sinonim önericisi (`app/sinonim_onerici.py`)

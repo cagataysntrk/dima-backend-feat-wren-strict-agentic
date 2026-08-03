@@ -103,7 +103,23 @@ def _build_explain(resp: AskResponse) -> Explain | None:
     if s.startswith("llm"):
         path, confidence = f"LLM (ham SQL, Discovery) — {s}", None
     else:
-        prefix = next((k for k in _EXPLAIN_PATH if s.startswith(k)), None)
+        # EN UZUN ÖNEK KAZANIR — `next(...)` İLK eşleşeni alıyordu ve sözlükteki sıra
+        # `cube` → `cube+llm` olduğu için `"cube+llm".startswith("cube")` **True** dönüp
+        # her Intent-JSON cevabı `cube` dalına düşüyordu.
+        #
+        # ⚠️ CANLI LLM İLE BULUNDU (2026-08-03). Sonucu iki KATLI bir yanlış beyandı:
+        #   * `confidence` **1.0** (olması gereken 0.85) — Intent-JSON cevabı, saf
+        #     deterministik `route()` cevabıyla AYNI güven rozetini alıyordu;
+        #   * `path` **"cube (route() — LLM'siz, sıfır maliyet)"** — oysa LLM
+        #     `consistency_k=3` ile ÜÇ KEZ çağrılmıştı. Yani kullanıcıya *"LLM
+        #     kullanılmadı"* deniyordu.
+        #
+        # Bu tam olarak §6.1'in "beyan var, kod onu tanımıyor" sınıfı ve **yalnız gerçek
+        # bir sağlayıcıyla görülebilirdi**: CI reçetesi `--network none` olduğu için
+        # `cube+llm` test ortamında HİÇ üretilmiyor, dolayısıyla hiçbir test bu yolu
+        # koşturmuyordu. Sözlüğün kendi yorumu ayrımı *"güvenleri farklı olduğundan
+        # burada AYRI tutulur"* diye BEYAN ediyordu — kod onu uygulamıyordu.
+        prefix = max((k for k in _EXPLAIN_PATH if s.startswith(k)), key=len, default=None)
         if prefix is None:
             return None
         path, confidence = _EXPLAIN_PATH[prefix]

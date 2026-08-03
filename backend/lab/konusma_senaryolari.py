@@ -48,7 +48,13 @@ RAPOR_DIZINI = Path(__file__).resolve().parent / "reports" / "konusma_senaryolar
 #: `--live` sınıf başına kaç senaryo koşar (katmanlı örneklem).
 LIVE_ORNEKLEM = 3
 #: `--live` turlar arası bekleme (saniye) — API'ye yığılma YOK (planın açık kısıtı).
-LIVE_BEKLE = 1.5
+#:
+#: ⚠️ **ÖLÇÜLEN GERÇEK SINIR (kullanıcı, 2026-08-03): 10 SANİYEDE 10 İSTEK.** Günlük kota
+#: değil, **hız** sınırı. Ve bir `/ask` Intent yolunda `consistency_k=3` ile **ÜÇ** LLM
+#: çağrısı yapar — yani tur başına maliyet 1 değil 3'tür. 1,5 sn'lik ilk değer saniyede
+#: 2 çağrı = 10 sn'de **20 çağrı** demekti, sınırın **iki katı**.
+#: 5 sn → 10 sn'de 6 çağrı: tavanın altında ve kaç örneklem koşulursa koşulsun güvenli.
+LIVE_BEKLE = 5.0
 
 
 # ---------------------------------------------------------------- katalog yardımcıları
