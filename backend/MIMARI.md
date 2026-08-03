@@ -1031,6 +1031,34 @@ kez ölçütün kendisi kusurlu çıktı.
 **Ölçüm:** test **1795 → 1817** · eval `+0,0/+0,0/+0,0` · korpus kapısı **yeşil** (%93,2
 sabit) · senaryo süiti dokuz sınıfta değişmedi. 22 test: `tests/test_anlat_turu.py`.
 
+#### CANLI DOĞRULAMA — analist turu (rebuild + seed + gerçek Gemini)
+
+**D1 canlıda:** dört sosyal ifade → `source=meta`, **0 SQL**, türe uygun sıcak cevap
+(*"Merhaba! Verinle ilgili ne bakalım?"* · *"Rica ederim…"* · *"Görüşürüz!…"*).
+
+**D2 canlıda** — dört turlu thread (`oee` raporu → *"bunu analiz et"* → *"neden böyle?"*
+→ *"normal mi?"*):
+
+| tur | sonuç |
+|---|---|
+| T1 rapor | `source=cube`, 11 satır |
+| T2 *"bunu analiz et"* | `source=cube`, **yapı korundu** (`cube_query` birebir aynı), üç devam chip'i |
+| T3 *"neden böyle?"* | **dürüst red**: *"`ort_oee` bir ortalama/oran — parçaların toplamı bütünü vermez"* (doğru davranış: katkı ayrıştırması ortalamada tanımsız) |
+| T4 *"normal mi?"* | dönemsel kıyas geldi (`compare: yoy`) |
+
+**Anlatım AÇIKKEN** (izole konteyner, `t2_anlatici: beta`): T1 ve T2 akıcı Türkçe anlatı
+üretti, **guard geçti** ve sayılar sonuçla birebir eşleşti (`0,65` · `%10,1` · `0,52` ·
+`11`); makbuz **2 adım** (`interpret` → `llm.anlat`) — Faz 9.8'in planlayıcı kapısı
+canlıda görünür.
+
+⚠️ **DÜRÜST BULGU — *"analiz et"* tek başına YENİ ANALİZ ÜRETMİYOR.** Anlatım kapalıyken
+T2, T1'in **aynısını** döndürüyor; açıkken de anlatı aynı iki olgunun yeniden ifadesi.
+Değeri **çapa + üç devam chip'i**dir. Bu, sınıfın kendi tanımının doğrudan sonucudur
+(*"YENİ CEVAP ÜRETMEZ, VAR OLANI AÇAR"*) ve derin analiz **bilinçli olarak** üç chip'in
+arkasındadır (`neden` → katkı · `normal mi` → dönemsel kıyas · `ne yapmalı` → reçete).
+Dala `yoy` eklemek `TUR_NORMAL`'i **tekrarlardı**. Zenginleştirme kararı Faz C'nin
+ölçümüne bırakıldı — bugün *"az ama dürüst"*, uydurma değil.
+
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 
 Planın kapanış şartı: *"Faz 0.5'in **aynı** süiti yeniden koşulur — **yeni senaryo
