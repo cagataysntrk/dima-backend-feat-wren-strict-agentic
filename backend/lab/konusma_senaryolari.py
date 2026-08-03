@@ -93,7 +93,32 @@ def _canli_ortami_geri_yukle() -> str:
             "--live GERÇEK bir sağlayıcı ister. `DIMA_LLM_PROVIDER` boş ya da 'rule' — "
             "bu modda koşmak LLM hakkında HİÇBİR ŞEY ölçmez ve 'canlı' etiketi yanıltır. "
             "Sağlayıcıyı ve API anahtarını ayarlayıp tekrar deneyin.")
-    return saglayici
+
+    # ⚠⚠ ORTAMI GERİ YÜKLEMEK YETMİYOR — AYAR ÖNBELLEĞİ DE TEMİZLENMELİ.
+    #
+    # `app.config.get_settings` `@lru_cache`'lidir ve **`import app.main` onu DOLDURUR**
+    # (ölçüldü: `import app.main` sonrası `cache_info(currsize=1)`). Bu araçlar
+    # `tests.conftest`'i modül seviyesinde yükler (env kurulumu için) — yani önbelleğe
+    # `provider="rule"` girer ve sonradan yapılan env geri yüklemesi ona HİÇ ULAŞMAZ.
+    #
+    # Sonuç: `--live` bayrağı **ÜÇÜNCÜ KEZ** karşılıksız kaldı. İlk kusur (conftest'in
+    # env'i sabitlemesi) düzeltilmişti; ama o düzeltme ortamı onarıyor, **ayarı** değil.
+    # Log kanıtı: "CANLI MOD" yazarken `LLM sağlayıcı: RuleBasedSqlGenerator`.
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+
+    # …ve BEYAN ARTIK ÖLÇÜLÜYOR. Env'e bakıp *"canlı"* demek yetmez; gerçekten canlı bir
+    # ÜRETİCİ kuruluyor mu, onu sor. Fail-closed: kurulmuyorsa koşma.
+    from app.llm import build_generator
+
+    uretici = type(build_generator(get_settings())).__name__
+    if uretici == "RuleBasedSqlGenerator":
+        raise SystemExit(
+            f"--live: ortam `{saglayici}` diyor ama kurulan üretici {uretici} — "
+            "anahtar yok/geçersiz ya da ayar önbelleği bayat. Bu koşum LLM hakkında "
+            "HİÇBİR ŞEY ölçmez; 'canlı' etiketiyle raporlanması yanıltıcı olurdu.")
+    return f"{saglayici} ({uretici})"
 
 RAPOR_DIZINI = Path(__file__).resolve().parent / "reports" / "konusma_senaryolari"
 #: `--live` sınıf başına kaç senaryo koşar (katmanlı örneklem).

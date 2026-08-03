@@ -1600,6 +1600,58 @@ kalıyor ve bir sonraki döngünün girdisidir.**
 senaryo süiti değişmedi · deneyim süiti **34 ✅ / 1 ❌ / 56 ⊘** (yapısal duman).
 49 test: `test_faz_x_bulgular.py` (33) · `test_deneyim_araci.py` (16).
 
+#### CANLI KOŞUM — ve `--live`'ın ÜÇÜNCÜ kez karşılıksız çıkması
+
+Süit gerçek sağlayıcıyla koşuldu (`gemini → groq → xai → openrouter`): **33 ✅ / 2 ❌ /
+56 ⊘**. Yapısal modda açık olan `grafik_ustunde` kırmızısı canlıda **yeşile döndü** —
+deterministik yolun kapatamadığını Intent-JSON kapatıyor; bu, boşluğun yok olduğu değil
+**LLM'e bağımlı** olduğu anlamına gelir.
+
+Ama asıl bulgu koşumun kendisiydi. Log *"CANLI MOD"* yazarken
+`LLM sağlayıcı: RuleBasedSqlGenerator` diyordu:
+
+> **Ortamı geri yüklemek YETMİYOR — ayar önbelleği de temizlenmeli.**
+> `app.config.get_settings` `@lru_cache`'lidir ve **`import app.main` onu doldurur**.
+> Bu araçlar `tests.conftest`'i modül seviyesinde yükler (env kurulumu için) → önbelleğe
+> `provider="rule"` girer ve sonraki env geri yüklemesi ona **hiç ulaşmaz**.
+
+İlk düzeltme (conftest'in env'i sabitlemesi) **ortamı** onarıyordu, **ayarı** değil.
+Üstelik `nl_accuracy.py` bu fonksiyonun **kendi kopyasını** taşıyordu: sahipteki sözleşme
+güçlendirilirken kopya geride kaldı — yani `nl_accuracy --live` de sessizce `rule` ile
+koşuyordu ve **o koşumlara dayanarak bayrak kararı alınabilirdi**.
+
+Kök neden kapatıldı: kopya silindi (tek sahip), `get_settings.cache_clear()` eklendi ve
+**beyan ölçüme çevrildi** — gerçekten canlı bir üretici kurulmuyorsa `--live` KOŞMAZ
+(fail-closed) ve rapor başlığı üreticinin adını taşır (`auto (FailoverSqlGenerator)`).
+
+#### FAZ F'in AÇIK KARARI KAPANDI — artık ertelenmiş değil ÖLÇÜLMÜŞ
+
+`netlestirme_onceligi` *"kapsam kaybı ile kazanç kıyası gerçek sağlayıcıyla ölçülmeli;
+o ölçüm kotaya takıldı"* diye kapalı bırakılmıştı. Canlı yol açılınca ölçüldü:
+
+| ölçüm | sonuç |
+|---|---|
+| A/B, 63 etiketli vaka | **bozulan 0 · kurtarılan 0** |
+| Kurtarma, 15 gerçek ifade | cevaplanan **12 → 8** · kurtarılan 1 (**doğru ölçüyle 0**) · kaybedilen 5 |
+| Kararlılık, aynı soru ×3 | **5/6 KARARLI** (tek kararsız: *"bu yıl borçları"* → cari×2, mizan×1) |
+
+Kararlılık ölçümü belirleyici oldu ve **kabul ölçütünün göremediğini** gösterdi: araç
+*"cevaplanan"* sayıyor, bir netleştirme cevap sayılmıyor — oysa asıl soru o cevapların
+**doğru olup olmadığıydı**. Ölçülebilir vekil: seçim kararlı mı? Kaybedilecek 5 cevap
+**yazı-tura değil**; model tutarlı ve savunulabilir seçiyor (`cari` = müşteri defteri).
+
+**Karar: KAPALI kalıyor.** B2 ölçütü (doğru kurtarma > 0) karşılanmıyor ve kayıp gerçek.
+
+⚠ Ölçüm sırasında **ayrı** bir bulgu: *"bu yıl bakiye"* **kararlı** biçimde `mizan.bakiye`
+seçiyor ve cevap **₺0** — mizan yapısı gereği sıfıra denkleşir. Bu bir motor kusuru değil
+bir **katalog kararıdır** (çıplak `bakiye` hangi cube'un?) ve katalog sahibine aittir;
+sessizce yamalanmadı, kayda geçti.
+
+⚠ Süitin kendi muhasebesinde de bir kusur bulundu ve düzeltildi: tıklanacak chip yokken
+`__CHIP__` turu boş bir *cevap* gibi listeye giriyor ve MAKBUZ satırını haksız kırmızı
+yapıyordu — **aynı kusur iki satırda sayılıyordu**. Artık `olcum_disi`: bir cevap değil,
+ölçüm önkoşulunun yokluğu.
+
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 
 Planın kapanış şartı: *"Faz 0.5'in **aynı** süiti yeniden koşulur — **yeni senaryo

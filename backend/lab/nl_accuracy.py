@@ -24,47 +24,22 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-#: ⚠️ **`tests.conftest` IMPORT EDİLİR EDİLMEZ SAĞLAYICIYI SABİTLER** (`conftest.py:15`
-#: koşulsuz `DIMA_LLM_PROVIDER="rule"`, `:26` `DIMA_VQR_EMBEDDER="off"`) — testlerin ağa
-#: çıkmaması için DOĞRU bir karardır. Ama bu dosya o modülü **env kurulumu** için import
-#: ediyor ve yan etkiyi de devralıyordu.
+#: ⚠️ CANLI ORTAM GERİ YÜKLEME — **TEK SAHİP**: `lab/konusma_senaryolari`.
 #:
-#: Aynı kusur `konusma_senaryolari.py`'de ölçülmüştü: `--live` **hiçbir zaman canlı
-#: değildi**. Bu araç `route()`'un deterministik tavanını ölçer (LLM'siz doğru), ama Faz
-#: 3b/4/5'in **kazancı** yalnız gerçek sağlayıcıyla ölçülebilir — o yüzden `--live` burada
-#: da gerekiyor ve aynı kalıpla kuruldu (kopyalama değil, **aynı sözleşme**).
-_GERCEK_ORTAM = {k: os.environ.get(k) for k in
-                 ("DIMA_LLM_PROVIDER", "DIMA_VQR_EMBEDDER", "DIMA_INTERACTION_LOG",
-                  "DIMA_DATABASE_URL")}
+#: Burada bir KOPYASI vardı ve kopyanın bedeli ölçüldü (Faz X, 3 Ağustos 2026): tek
+#: sahipteki sözleşme *"ortamı geri yükle"*den *"AYAR ÖNBELLEĞİNİ de temizle ve gerçekten
+#: canlı bir üretici kurulduğunu DOĞRULA"*ya yükseltilirken **bu kopya geride kaldı** —
+#: yani `nl_accuracy --live` hâlâ sessizce `rule` ile koşuyordu ve o koşumlara dayanarak
+#: bayrak kararı alınabilirdi. Bu deponun bir numaralı kusur sınıfının ölçüm katmanındaki
+#: hâli.
+#:
+#: Import SIRASI kritik: `konusma_senaryolari` gerçek ortamı `tests.conftest`'ten ÖNCE
+#: yakalar; buradan (conftest'e dokunmadan önce) import etmek o yakalamayı devralır.
+from lab.konusma_senaryolari import _canli_ortami_geri_yukle  # noqa: E402
 
 import tests.conftest as _conf  # noqa: E402,F401  (env kurulumu)
 from tests.conftest import make_tenant_user  # noqa: E402
 
-
-def _canli_ortami_geri_yukle() -> str:
-    """`--live` için gerçek sağlayıcıyı geri koyar. Döner: sağlayıcı adı.
-
-    Fail-closed: gerçek sağlayıcı yoksa `SystemExit`. Sessizce `rule` ile koşan bir
-    "canlı" ölçüm, hiç koşmamaktan **kötüdür** — yanlış bir güven verir ve o güvene
-    dayanarak bayrak kararı alınır.
-
-    `DIMA_DATABASE_URL` conftest'in **izolasyonunu korur** (ortamda açıkça verilmişse ona
-    uyulur): canlı bir ölçüm kullanıcının verisini kirletmemelidir.
-    """
-    CANLI_YOLU_SUSTURANLAR = ("DIMA_LLM_PROVIDER", "DIMA_VQR_EMBEDDER",
-                              "DIMA_INTERACTION_LOG")
-    for k, v in _GERCEK_ORTAM.items():
-        if v is not None:
-            os.environ[k] = v
-        elif k in CANLI_YOLU_SUSTURANLAR:
-            os.environ.pop(k, None)
-    saglayici = os.environ.get("DIMA_LLM_PROVIDER", "")
-    if saglayici in ("", "rule"):
-        raise SystemExit(
-            "--live GERÇEK bir sağlayıcı ister. `DIMA_LLM_PROVIDER` boş ya da 'rule' — "
-            "bu modda koşmak LLM yolları hakkında HİÇBİR ŞEY ölçmez ve 'canlı' etiketi "
-            "yanıltır. Sağlayıcıyı ve API anahtarını ayarlayıp tekrar deneyin.")
-    return saglayici
 
 # Şirket → (login, parola, tenant_slug). demo-boyahane aktif şirket (slug=None).
 ACCOUNTS = {

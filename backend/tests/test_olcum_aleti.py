@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import inspect
 
+from lab import konusma_senaryolari as ks
 from lab import nl_accuracy as na
 
 
@@ -83,11 +84,51 @@ def test_IKI_YARI_AYRIMI_BELGELI():
 # --- `--live` GERÇEKTEN CANLI ------------------------------------------------------
 
 def test_LIVE_gercek_ortami_conftestTEN_ONCE_yakaliyor():
-    kaynak = inspect.getsource(na)
+    """Yakalama SAHİBİNDE (`konusma_senaryolari`) ve conftest'ten ÖNCE olmalı."""
+    kaynak = inspect.getsource(ks)
     i = kaynak.index("_GERCEK_ORTAM = {")
     j = kaynak.index("import tests.conftest")
     assert i < j, ("gerçek ortam conftest'ten SONRA yakalanıyor — o noktada değerler "
                    "zaten EZİLMİŞ olur ve geri yükleme `rule`'u geri yükler")
+
+
+def test_LIVE_GERI_YUKLEME_TEK_SAHIP():
+    """⟳ FAZ X — KOPYANIN BEDELİ ÖLÇÜLDÜ.
+
+    `nl_accuracy` bu fonksiyonun **kendi kopyasını** taşıyordu. Sahipteki sözleşme
+    *"ortamı geri yükle"*den *"AYAR ÖNBELLEĞİNİ de temizle ve gerçekten canlı bir üretici
+    kurulduğunu DOĞRULA"*ya yükseltilirken kopya geride kaldı — yani `nl_accuracy --live`
+    hâlâ sessizce `rule` ile koşuyordu ve o koşumlara dayanarak **bayrak kararı**
+    alınabilirdi. Bir numaralı kusur sınıfının ölçüm katmanındaki hâli.
+    """
+    assert na._canli_ortami_geri_yukle is ks._canli_ortami_geri_yukle, \
+        "nl_accuracy yeniden KENDİ kopyasını tanımlamış — sözleşme ayrışacak"
+    kaynak = inspect.getsource(na)
+    i = kaynak.index("from lab.konusma_senaryolari import")
+    j = kaynak.index("import tests.conftest")
+    assert i < j, ("sahip conftest'ten SONRA import ediliyor — yakalama o noktada "
+                   "zaten ezilmiş değerleri okur")
+
+
+def test_LIVE_AYAR_ONBELLEGI_TEMIZLENIYOR():
+    """⟳ FAZ X — `--live` ÜÇÜNCÜ KEZ karşılıksız çıktı ve kökü buydu.
+
+    Ortamı geri yüklemek YETMİYOR: `app.config.get_settings` `@lru_cache`'li ve
+    **`import app.main` onu doldurur**. Bu araçlar `tests.conftest`'i modül seviyesinde
+    yüklediği için önbelleğe `provider="rule"` giriyor; sonraki env geri yüklemesi ona
+    HİÇ ULAŞMIYOR. Log kanıtı: "CANLI MOD" yazarken `LLM sağlayıcı: RuleBasedSqlGenerator`.
+    """
+    govde = inspect.getsource(ks._canli_ortami_geri_yukle)
+    assert "cache_clear()" in govde, \
+        "ayar önbelleği temizlenmiyor — env geri yüklemesi AYARA ulaşmaz"
+
+
+def test_LIVE_BEYAN_DEGIL_OLCUM():
+    """Env'e bakıp *"canlı"* demek yetmez: gerçekten canlı bir ÜRETİCİ kuruluyor mu?
+    Fail-closed — kurulmuyorsa koşmamalı."""
+    govde = inspect.getsource(ks._canli_ortami_geri_yukle)
+    assert "build_generator" in govde and "RuleBasedSqlGenerator" in govde, \
+        "canlılık DOĞRULANMIYOR — beyan yine karşılıksız kalabilir"
 
 
 def test_LIVE_saglayici_yoksa_KOSMUYOR():

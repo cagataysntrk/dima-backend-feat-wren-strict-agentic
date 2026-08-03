@@ -193,6 +193,11 @@ def _olc(senaryo: dict, turlar: list[dict]) -> dict[str, bool | None]:
     """Sözleşme satırlarını ölçer. `None` = ⊘ ölçülemedi (ön koşul sağlanmadı)."""
     olcum: dict[str, bool | None] = {}
     ilgili = set(senaryo["olculen"])
+    # ÖLÇÜM DIŞI turlar (ör. tıklanacak chip yokken `__CHIP__`) hiçbir satırda sayılmaz:
+    # onlar bir cevap değil, bir önkoşul yokluğudur.
+    turlar = [t for t in turlar if t["tur_tipi"] != "olcum_disi"]
+    if not turlar:
+        return {s: None for s in ilgili}
 
     def yaz(satir: str, deger: bool | None) -> None:
         if satir in ilgili:
@@ -312,8 +317,13 @@ def kos(c, senaryo: dict, *, live: bool) -> dict:
         elif soru == "__CHIP__":
             chips = turlar[-1]["cevap"].get("suggestions") if turlar else None
             if not chips:
-                turlar.append({"soru": "__CHIP__", "tur_tipi": "veri", "cevap": {},
-                               "hedef_cq": None})
+                # ⚠ Tıklanacak chip YOKSA bu tur bir CEVAP DEĞİLDİR — ölçüm önkoşulu
+                # sağlanmamıştır. İlk sürümde boş bir `{}` cevap gibi listeye giriyordu
+                # ve MAKBUZ satırını (S6) haksız kırmızı yapıyordu: aynı kusur (chip
+                # üretilmedi) İKİ satırda sayılıyordu. Chip'in üretilmemesi zaten
+                # S5'in ölçtüğü şeydir; ikinci kez cezalandırmak sinyali bozar.
+                turlar.append({"soru": "__CHIP__ (tıklanacak chip YOK)",
+                               "tur_tipi": "olcum_disi", "cevap": {}, "hedef_cq": None})
                 continue
             gosterilen = chips[0]["query"]
             rr = c.post("/ask", json={"question": gosterilen, "execute": True,
@@ -383,6 +393,8 @@ def main() -> int:
     ap.add_argument("--live", action="store_true",
                     help="GERÇEK sağlayıcı, sıralı ve hız-sınırlı (asıl ölçüm)")
     ap.add_argument("--senaryo", help="yalnız bu senaryoyu koş")
+    ap.add_argument("--bayrak", help="bir özellik bayrağını AÇIK zorla (ör. "
+                                     "netlestirme_onceligi) — YAML'a DOKUNMAZ")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
 
@@ -411,16 +423,27 @@ def main() -> int:
     assert r.status_code == 200, r.text
     c.headers["Authorization"] = f"Bearer {r.json()['access_token']}"
 
+    # Bayrak zorlaması `lab/nl_accuracy._BayrakZorla`'dan ÇAĞRILIR (kopya değil): ölçüm,
+    # ölçtüğü sistemin YAPILANDIRMASINI kalıcı değiştirmemelidir.
+    from contextlib import nullcontext
+
+    from lab.nl_accuracy import _BayrakZorla
+
+    bayrak_ctx = _BayrakZorla(args.bayrak, True) if args.bayrak else nullcontext()
+
     secili = [s for s in SENARYOLAR if not args.senaryo or s["ad"] == args.senaryo]
     if not secili:
         print(f"Senaryo bulunamadı: {args.senaryo!r}")
         return 2
     sonuclar = []
-    for s in secili:
-        print(f"▶ {s['ad']} ({len(s['turlar'])} tur)", flush=True)
-        sonuc = kos(c, s, live=args.live)
-        _rapor_yaz(sonuc, args.live)
-        sonuclar.append(sonuc)
+    with bayrak_ctx:
+        if args.bayrak:
+            print(f"BAYRAK ZORLANDI: {args.bayrak}=AÇIK (YAML değişmedi)", flush=True)
+        for s in secili:
+            print(f"▶ {s['ad']} ({len(s['turlar'])} tur)", flush=True)
+            sonuc = kos(c, s, live=args.live)
+            _rapor_yaz(sonuc, args.live)
+            sonuclar.append(sonuc)
     c.__exit__(None, None, None)
 
     if args.json:

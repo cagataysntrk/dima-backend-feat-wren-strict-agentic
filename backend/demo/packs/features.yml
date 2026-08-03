@@ -42,12 +42,25 @@ features:
                           # KAPALIYKEN davranış bugünküyle BİREBİR aynı (KURAL B, testli).
   netlestirme_onceligi: "off"  # FAZ F: katalogda ≥2 SAHİP olan bir ölçüde (ör. `bakiye`
                                # → cari|mizan) netleştirme chip'i Intent-JSON'u ÖNCELER.
-                               # Ölçüldü: canlıda "bu yıl bakiye" → cube+llm/mizan/0.85 ve
-                               # chip HİÇ gelmiyordu — olasılıksal bir oy, deterministik
-                               # olarak BİLİNEN belirsizliği eziyor. Nüfus: 53 sinonim.
-                               # KAPALI çünkü kapsam kaybı ile kazanç kıyası gerçek
-                               # sağlayıcıyla ÖLÇÜLMEDİ (kota). Ölçmeden açmak 2a-1'in
-                               # `elektrik` hatasını tekrarlamak olurdu.
+                               # ⟳ FAZ X (3 Ağustos 2026): KARAR ARTIK ÖLÇÜLMÜŞTÜR —
+                               # "kota doldu" gerekçesi kalktı, yerine SAYI geldi.
+                               #
+                               #   A/B (63 etiketli vaka, CANLI): bozulan 0 · kurtarılan 0
+                               #   Kurtarma (15 gerçek ifade, CANLI): cevaplanan 12 → 8
+                               #     KURTARILAN 1 (doğru ölçüyle 0) · KAYBEDİLEN 5
+                               #   Kararlılık (aynı soru ×3, CANLI): 5/6 KARARLI
+                               #     'bu yıl borçları' TEK kararsız (cari×2, mizan×1)
+                               #
+                               # Yani kaybedilecek 5 cevap YAZI-TURA DEĞİL: model tutarlı
+                               # ve savunulabilir seçiyor (`cari` = müşteri defteri).
+                               # Kabul ölçütü (B2: doğru kurtarma > 0) KARŞILANMIYOR ve
+                               # kayıp gerçek → KAPALI KALIYOR.
+                               #
+                               # ⚠ Ölçüm sırasında AYRI bir bulgu: "bu yıl bakiye" KARARLI
+                               # şekilde `mizan.bakiye` seçiyor ve cevap ₺0 — mizan
+                               # yapısı gereği sıfıra denkleşir. Bu bir MOTOR kusuru değil
+                               # KATALOG kararıdır (bare `bakiye` hangi cube'un?) ve
+                               # katalog sahibine aittir; sessizce yamalanmadı.
   liste_niyeti: beta      # FAZ 2a-5: "listele/detay/dökümü" niyetini bir CUBE KIRILIMINA
                           # çevir (R2 dalı). YALNIZ gerçek bir boyut eşleştiğinde — yoksa
                           # döküm isteyene DEJENERE TEK TOPLAM dönerdi (sessiz-yanlış).
