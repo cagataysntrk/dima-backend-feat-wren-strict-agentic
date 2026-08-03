@@ -527,6 +527,57 @@ Kazanç 28 birim testiyle kanıtlanıyor. Korpusun bu sınıfı kazanması Faz 0
 Taban artefaktı: `lab/nl_corpus_baseline.json` (`eval/baseline.json` ile aynı disiplin —
 `lab/reports/` gitignore'da olduğu için ham rapor değil **kapı değerleri** saklanır).
 
+### 6.8z FAZ 7 — ARAŞTIRMA SIÇRAMALARI: ölçüldü, ÜÇÜ DE BENİMSENMEDİ ✅
+
+Planın disiplini: *"kör benimseme YOK — önce **ölçülmüş** gölge-mod spike; **kazanç yoksa
+entegre EDİLMEZ**"*. `lab/golge_spike.py` kazancın **ÜST SINIRINI** ölçer: bir teknoloji
+**en iyi ihtimalle** kaç soruyu kurtarabilirdi? **Üst sınır küçükse teknolojiyi denemenin
+maliyeti bile gereksizdir** — ve bu, kütüphaneyi kurmadan bilinebilir.
+
+#### (1) Türkçe morfoloji (Zeyrek/Zemberek) — **BENİMSENMEDİ**, üst sınır **%0,48**
+
+2511 gerçekçi **isim** çekimi denendi; 228'i çözülemedi. Ama ayrıştırınca:
+
+| kırılım | adet | yorum |
+|---|---|---|
+| olumsuzluk eki (`-sIz`) | **186** | **red DOĞRU** — *"firesiz"* `fire`'ın ZIDDIDIR |
+| zaten `_SUFFIX_ATOMS`'ta olan ek | 30 | kayıp morfoloji değil, belirsizlik |
+| **gerçek morfoloji kaybı** | **12 (%0,48)** | `-cIlIk` · `-lArImIz` · `-lArIndA` |
+
+**Karar: entegre EDİLMEZ.** JVM bağımlılığı (Zemberek) ya da bakımı belirsiz kısmi bir
+port (Zeyrek) **%0,48** için alınmaz. Whitelist gerçekçi çekimlerin **%91'ini** kapsıyor
+**ve olumsuzluğu doğru reddediyor** — bir morfoloji kütüphanesinin garanti *etmediği* şey.
+`lab/panel/findings/003…md:53`'ün 2026 başındaki kararı (*"ek-beyaz-listesi daha
+az-invaziv ve deterministik"*) böylece **ölçümle de doğrulandı**.
+
+> ⚠️ **ÖLÇÜM ARACIM İKİ KEZ YANLIŞ ÖLÇTÜ** (bu oturumda ÜÇÜNCÜ ve DÖRDÜNCÜ kez —
+> MIMARI §6.4'ün dersi):
+> 1. İlk sürüm `-(y)İz`'i **isme** ekliyordu (`agirlik+yiz` = *"agirlikyiz"*) ve **%100
+>    kurtarılabilir** gibi anlamsız bir sonuç veriyordu. `-(y)İz` **fiile** eklenir; bir
+>    kütüphane o diziyi "kurtarsaydı" bu kazanç değil **hata** olurdu.
+> 2. İkinci sürüm `-sIz`'i kayıp sayıyordu ve Zeyrek'in kazancını **16 kat** abartıyordu.
+
+#### (2) Semantik eşleştirme (embedding) — **BENİMSENMEDİ**, hedefi ÇÖZÜLMÜŞ problem
+
+Embedding ancak leksik yolun **tamamen boş** olduğu yerde (R1) yeni bilgi getirebilir:
+**99/470 (%21)** — kulağa büyük geliyor. Ama §6.1h ölçtü: **R1'in TAMAMI gerçek
+ölçü-düzeyi belirsizliğidir** (aynı ad iki cube'da). **Embedding belirsizliği ÇÖZMEZ**,
+yalnız aday üretir — ve o adaylar §6.1g'nin netleştirme chip'inde **zaten var**.
+Yani hedef küme, başka bir fazın **çözdüğü** kümedir.
+
+#### (3) SLM — **spike bile değil**
+
+`verified_query` **0**, `measure_candidate` **0**. Plan zaten *"bugün için erken, yalnız
+gözlem"* diyordu; ölçüm onu doğruladı.
+
+#### Kısıtlar dürüstçe
+
+`pip install zeyrek` **ağ ister** (CI: `--network none`); `DIMA_VQR_EMBEDDER=off`.
+Kütüphanelerin kendisi burada koşturulamadı — ölçülen şey **onların HEDEFİDİR**. Bu bir
+zayıflık değil, spike'ın **doğru biçimi**: hedef küçükse kütüphaneyi kurmak gereksizdir.
+
+7 test: `tests/test_golge_spike.py` (gölge aracın üretimi **değiştirmediği** dahil).
+
 ### 6.7z FAZ 3b — PROMPT-ENHANCER: LLM metni düzeltir, KARAR hâlâ küpte ✅
 
 T1'in **dördüncü, ayrı** LLM rolü. `llm.select_cube` **alan seçer**; enhancer **yapı
