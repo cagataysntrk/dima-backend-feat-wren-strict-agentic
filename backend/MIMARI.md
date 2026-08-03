@@ -1814,10 +1814,14 @@ tabanıyla korunuyor. Yaşayan semantik testle kilitlendi.
   mount'a paralel koşturulduğunda. Üretimde tek konteyner olduğu için bugün ısırmıyor; ama
   çok-süreçli bir dağıtımda (gunicorn worker'ları, ayrı scheduler süreci) dosya kilidine
   (`fcntl.flock`) yükseltilmesi gerekir. **Testleri paralel iki konteynerde koşturma.**
-- **Telemetri kalıcı değil**: `docker inspect dima-backend-core` → `Mounts: []`,
-  `DIMA_DATABASE_URL=sqlite:////app/logs/dima.db` konteyner katmanında. **Her build geçmişi siler.**
-  `interaction_log`'da o an **7 satır** vardı (build sonrası sıfırlanmıştı; 3 Ağustos
-  ölçümü **93** — ortamlar arası uzlaştırma için bkz. §6.3'ün ⟳ FAZ 9.10 bloğu).
+- ~~**Telemetri kalıcı değil**: `docker inspect` → `Mounts: []`~~
+  ⟳ **DÜZELTİLDİ ve BU KAYIT BAYATLAMIŞTI (ölçüldü, 3 Ağustos 2026).** Bugün
+  `docker inspect dima-backend-core` **iki named volume** gösteriyor:
+  `…_dima_logs → /app/logs` (telemetri DB'si) ve `…_dima_hf_cache → /tmp/fastembed_cache`.
+  **Tam rebuild + `docker rm -f` sonrası 105 satır KORUNDU** — yani *"her build geçmişi
+  siler"* artık doğru değil. Kaydın kendisi, bu turda on dört kez avlanan *"beyan var,
+  gerçek başka"* sınıfının bir örneğiydi: doğru yazılmış bir cümle, dünya değişince
+  kaldı. `interaction_log`: o an 7 → 3 Ağustos **105** (ortam uzlaştırması: §6.3 ⟳ FAZ 9.10).
 
 ### 6.4 Dağıtım / test altyapısı (2026-08-02'de bulundu)
 
