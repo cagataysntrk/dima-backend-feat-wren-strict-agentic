@@ -247,12 +247,81 @@ async function pollAskJob(
   );
 }
 
+// FAZ S — AŞAMA AKIŞI. Ölçüldü (canlı): deterministik yol ~100-800 ms (akış gereksiz),
+// LLM yolu 2,8-5,5 sn — sessizlik tam orada. Biriken trace bu aşamaları ZATEN taşıyordu;
+// eksik olan anında iletmekti (poll 1,5 sn'de bir bakıyor, akış adım doğduğu an veriyor).
+//
+// ⚠ `EventSource` KULLANILMADI ve bu bir GÜVENLİK kararıdır: EventSource Authorization
+// başlığı gönderemez, tek yolu token'ı URL'e koymaktır ve o token sunucu loglarına /
+// tarayıcı geçmişine sızar. Bu deponun açık kuralı "access token memory'de, localStorage'a
+// ASLA". Sunucu SSE BİÇİMİ üretir, taşıma `fetch` + ReadableStream'dir → Bearer aynen
+// çalışır, hiçbir değişmez gevşetilmez.
+//
+// Akış KURULAMAZSA (eski tarayıcı, ters vekil tamponlaması, ağ) sessizce POLL'a düşülür —
+// yetenek kaybı yok, yalnız güncelleme gecikmesi eski hâline döner.
+async function streamAskJob(
+  jobId: string,
+  onProgress?: (trace: string[]) => void,
+): Promise<AskResponse | null> {
+  const token = getAccessToken();
+  let r: Response;
+  try {
+    r = await fetch(`${baseURL}/ask/jobs/${jobId}/stream`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: "include",
+    });
+  } catch {
+    return null;                       // ağ/CORS → poll'a düş
+  }
+  if (!r.ok || !r.body) return null;
+
+  const okuyucu = r.body.getReader();
+  const cozucu = new TextDecoder();
+  const birikmis: string[] = [];
+  let tampon = "";
+  try {
+    for (;;) {
+      const { done, value } = await okuyucu.read();
+      if (done) break;
+      tampon += cozucu.decode(value, { stream: true });
+      // SSE çerçevesi: olaylar boş satırla ayrılır. Yarım çerçeve tamponda BEKLER —
+      // yarısını ayrıştırmak "adım" metnini ortadan kesip yanlış gösterirdi.
+      const parcalar = tampon.split("\n\n");
+      tampon = parcalar.pop() ?? "";
+      for (const parca of parcalar) {
+        const ad = /^event:\s*(.+)$/m.exec(parca)?.[1]?.trim();
+        const ham = /^data:\s*(.+)$/m.exec(parca)?.[1];
+        if (!ad || !ham) continue;
+        const veri = JSON.parse(ham);
+        if (ad === "adim") {
+          birikmis.push(veri.metin);
+          onProgress?.([...birikmis]);
+        } else if (ad === "tamam") {
+          return (veri.response as AskResponse) ?? null;
+        } else if (ad === "hata") {
+          return null;                 // dürüst ret üretimini poll yoluna bırak
+        } else if (ad === "zaman_asimi") {
+          return null;
+        }
+      }
+    }
+  } catch {
+    return null;
+  } finally {
+    try { await okuyucu.cancel(); } catch { /* bağlantı zaten kapalı */ }
+  }
+  return null;
+}
+
 export async function ask(
   body: AskRequest,
   onProgress?: (trace: string[]) => void,
 ): Promise<AskResponse> {
   const { data } = await apiClient.post<AskResponse>("/ask", body);
   if (data.job_id) {
+    // Önce AKIŞ; kurulamazsa POLL (yetenek kaybı yok, yalnız gecikme eski hâline döner).
+    const akan = await streamAskJob(data.job_id, onProgress);
+    if (akan) return akan;
     return pollAskJob(data.job_id, onProgress);
   }
   return data;

@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { apiErrorMessage, ask, askCube, getConversation, uploadDataset } from "@/lib/api-client";
 import { AnalysisCanvas } from "@/components/AnalysisCanvas";
 import { ChatPanel } from "@/components/ChatPanel";
@@ -178,14 +178,24 @@ export default function Home() {
   // "reply"/"reply-multi" (bir karta/kartlara "yanıtla" — bağlam o ÇAPA kart(lar)dan gelir,
   // sonuç yine de thread'in SONUNA eklenir, yalnız `reply_to_label` ile hangi karta
   // bağlandığı görünür kalır — kullanıcı kronolojinin bozulmasını istemedi).
+  // FAZ S · STEERING — her isteğe bir SIRA numarası. Komposer koşarken kilitli DEĞİL
+  // (bilerek: "dur, onu değil" diyebilmek ürünün vaadi), dolayısıyla iki istek aynı anda
+  // uçabilir. Ölçülen kusur: YAVAŞ olan SONRA çözülünce `onSuccess` bağlamı/thread'i
+  // GERİ ALIYOR — kullanıcı yön veriyor, sistem sessizce eski cevaba dönüyor.
+  //
+  // Sıra numarası bunu kapatır: geç gelen cevap KAYBOLMAZ (geçmişe yazılır — "sessiz
+  // iptal YOK") ama AKTİF bağlamı ele geçiremez.
+  const istekSirasi = useRef(0);
+
   type AskMutationVars =
-    | { kind: "new"; question: string }
-    | { kind: "continue"; question: string }
+    | { kind: "new"; question: string; sira?: number }
+    | { kind: "continue"; question: string; sira?: number }
     // `hucre` (Faz G2): kullanıcı grafikte BİR HÜCREYE tıklayıp onun hakkında sorduysa
     // koordinat backend'e gider ve konuşma O hücrenin alt-sorgusu üstünde yürür.
     | { kind: "reply"; question: string; threadId: string; anchorIndex: number;
-        hucre?: { dimension: string; value: string } }
-    | { kind: "reply-multi"; question: string; threadId: string; anchorIndex: number; extraIndices: number[] };
+        hucre?: { dimension: string; value: string }; sira?: number }
+    | { kind: "reply-multi"; question: string; threadId: string; anchorIndex: number;
+        extraIndices: number[]; sira?: number };
 
   const mutation = useMutation<AskResponse, unknown, AskMutationVars>({
     mutationFn: (vars) => {
@@ -248,6 +258,17 @@ export default function Home() {
       );
     },
     onSuccess: (data, vars) => {
+      // FAZ S · STEERING KAPISI — bu cevap HÂLÂ güncel mi?
+      // Değilse: geçmişe YAZILIR (kaybolmaz) ama aktif thread/bağlam/görünüm ONUN
+      // eline geçmez. Sessizce yutmak da, bağlamı geri almak da yanlış olurdu.
+      const guncel = (vars.sira ?? 0) >= istekSirasi.current;
+      if (!guncel) {
+        data.steering_golgede = true;
+        data.thread_id = data.thread_id ?? activeThreadId ?? mintThreadId();
+        addHistory(data);
+        qc.invalidateQueries({ queryKey: ["conversations"] });
+        return;
+      }
       // Thread sınırı ARTIK YALNIZCA `vars.kind`'a bağlı — `data.is_new_topic` burada HİÇ
       // OKUNMAZ (reddedilen ilk sürümün TAM olarak bu satırdaki hatası düzeltildi).
       const targetThreadId =
@@ -277,12 +298,12 @@ export default function Home() {
   const submitNew = (q: string) => {
     setDrawer(null);
     setStarted(true); // ilk sorudan sonra çalışma alanında kal (hata olsa da landing'e dönme)
-    mutation.mutate({ kind: "new", question: q });
+    mutation.mutate({ kind: "new", question: q, sira: ++istekSirasi.current });
   };
   const submitContinue = (q: string) => {
     setDrawer(null);
     setStarted(true);
-    mutation.mutate({ kind: "continue", question: q });
+    mutation.mutate({ kind: "continue", question: q, sira: ++istekSirasi.current });
   };
   const submitReply = (
     threadId: string,
@@ -292,12 +313,14 @@ export default function Home() {
   ) => {
     setDrawer(null);
     setStarted(true);
-    mutation.mutate({ kind: "reply", question: q, threadId, anchorIndex, hucre });
+    mutation.mutate({ kind: "reply", question: q, threadId, anchorIndex, hucre,
+                      sira: ++istekSirasi.current });
   };
   const submitReplyMulti = (threadId: string, anchorIndex: number, extraIndices: number[], q: string) => {
     setDrawer(null);
     setStarted(true);
-    mutation.mutate({ kind: "reply-multi", question: q, threadId, anchorIndex, extraIndices });
+    mutation.mutate({ kind: "reply-multi", question: q, threadId, anchorIndex, extraIndices,
+                      sira: ++istekSirasi.current });
   };
   // §B DÜZELTMESİ (1 Ağustos 2026, 2. tur) — öneri-chip'leri ARTIK yalnız sağ panelde
   // (ReportPanel) render ediliyor, HER ZAMAN aktif thread'in İÇİNDE — bu yüzden ayrı bir

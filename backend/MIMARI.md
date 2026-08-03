@@ -1152,7 +1152,7 @@ düşüyor, açıkken geçiyor), bozulan 0. `--ab t2_anlatici` → 0/0 (kural sa
 yok; beklenen). Alet bu farkı göremeseydi **hiçbir bayrak ölçümüne güvenilemezdi**.
 
 **Ölçüm:** test **1817 → 1827** · eval `+0,0/+0,0/+0,0` · `nl_accuracy` **63/63**.
-12 test: `tests/test_olcum_aleti.py`.
+15 test: `tests/test_olcum_aleti.py` (Faz X'te +3: kopya-yok · ayar önbelleği temizleniyor · canlılık BEYAN değil ÖLÇÜM).
 
 ### 6.19z FAZ C (kısmi) — `prompt_enhancer` ÖLÇÜLDÜ: kazanç YOK, ama kota sınırına çarpıldı ⚠️
 
@@ -1651,6 +1651,66 @@ sessizce yamalanmadı, kayda geçti.
 `__CHIP__` turu boş bir *cevap* gibi listeye giriyor ve MAKBUZ satırını haksız kırmızı
 yapıyordu — **aynı kusur iki satırda sayılıyordu**. Artık `olcum_disi`: bir cevap değil,
 ölçüm önkoşulunun yokluğu.
+
+### 6.8v FAZ S — AKIŞ + STEERING: dürüst fiyat ödendi, iki karar ÖLÇÜMLE verildi ✅
+
+#### Karar 1 · Akış İKİNCİ BİR GERÇEKLİK değil, bir TAŞIMA
+
+Plan doğruydu: SSE/WebSocket kodda **0 satır**. Ama *"canlı düşünme adımları"* deneyimi
+**zaten vardı** — `AskJob.trace_json` biriken adımları taşıyor, `pollAskJob(onProgress)`
+onları 1,5 sn'de bir çekiyor, `ChatPanel.liveTrace` gösteriyor. Eksik olan ikinci bir
+olay hattı değil, o gerçekliğin **anında** iletilmesiydi.
+
+Canlı süre ölçümü kararı verdi:
+
+    deterministik yol   ~100–800 ms   → akış GEREKSİZ
+    LLM (Intent) yolu   2,8–5,5 sn    → sessizlik TAM ORADA
+
+`GET /ask/jobs/{id}/stream` poll ucuyla **aynı okuyucuyu** (`_job_durum_oku`) kullanır.
+İki ayrı okuyucu olsaydı tenant izolasyonu iki yerde yazılır, biri unutulurdu — ve
+*"ne yapıyor"* sorusunun iki anlatısı doğardı, biri yalan söylemeye başlardı.
+
+#### Karar 2 · `EventSource` KULLANILMADI — bu bir güvenlik kararıdır
+
+`EventSource` **Authorization başlığı gönderemez**; tek yolu token'ı URL'e koymaktır ve o
+token sunucu loglarına / tarayıcı geçmişine sızar. Deponun açık kuralı: *"access token
+memory'de, localStorage'a ASLA"*. Bu yüzden **SSE BİÇİMİ** korunur ama taşıma `fetch` +
+`ReadableStream`'dir — Bearer aynen çalışır, hiçbir değişmez gevşetilmez. Format aynı
+olduğu için ileride gerçek bir `EventSource` tüketicisi de eklenebilir: **karar geri
+alınabilir kalır.** Akış kurulamazsa (eski tarayıcı, ters vekil tamponlaması, ağ)
+sessizce **poll'a düşülür** — yetenek kaybı yok, yalnız gecikme eski hâline döner.
+
+#### STEERING — ölçülen kusur: geç gelen cevap BAĞLAMI GERİ ALIYORDU
+
+Komposer koşarken kilitli **değil** (bilerek: *"dur, onu değil"* diyebilmek ürünün
+vaadi), dolayısıyla iki istek aynı anda uçabiliyor. Ve **yavaş olan sonra çözülünce**
+`onSuccess` aktif thread'i/bağlamı/görünümü geri alıyordu — kullanıcı yön veriyor, sistem
+sessizce eski cevaba dönüyordu.
+
+Sıra numarası bunu kapattı ve **her iki yanlış çözümden de kaçındı**: geç gelen cevap
+*sessizce yutulmaz* (geçmişe yazılır — plan: *"sessiz iptal YOK"*) ama aktif bağlamı da
+*ele geçiremez*. Kart bunun **nedenini** söyler; söylemeseydi *"neden eski rapor geri
+geldi?"* sorusu cevapsız kalırdı. `steering_golgede` **istemci kararıdır** ve backend'e
+sızmadığı testle kilitlidir — sunucu, sahip olmadığı bir zamanlama bilgisini iddia etmez.
+
+#### Kapının yakaladığı iki şey
+
+* `StreamingResponse` yanıtı üretici çalışmadan **başlatır**; doğrulamayı üreticinin
+  içinde yapmak istemciye temiz bir 400 yerine **bozuk akış** veriyordu → doğrulama
+  akıştan öne alındı.
+* Eklediğim davranışsal test **sıraya bağımlıydı**: *"dönem sorulmalı"* diyordu ama
+  `test_ask_golden` o soruyu VQR'a öğretiyor ve dönem kapısı sonrasında **meşru biçimde**
+  atlanıyor. Tek başına yeşil, süitte kırmızıydı — yani bir davranışı değil bir SIRAYI
+  ölçüyordu. Sıradan bağımsız değişmez: **ya sorulur ya cevap açık dönem taşır**; yasak
+  olan üçüncü ihtimal, dönemi sormadan sessizce tüm zamanları toplamaktır.
+
+⚠ **Kendi kuralımı çiğnedim ve bedelini ölçtüm:** kapı koşarken teşhis için ikinci bir
+test konteyneri açtım → compose çakışması → *"2004 errors in 73s"*. Depo kuralı
+(*"iki test konteyneri ASLA paralel"*) hız için bile esnetilmez; o koşum bir ölçüm değil,
+gürültüdür.
+
+**Ölçüm:** test **1990 → 2004** · eval `+0,0/+0,0/+0,0` · korpus %93,2 (kapı yeşil) ·
+senaryo süiti değişmedi · `tsc --noEmit` temiz. 12 test: `tests/test_akis_ve_steering.py`.
 
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 

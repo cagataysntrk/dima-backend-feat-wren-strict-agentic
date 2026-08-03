@@ -3376,6 +3376,24 @@ def ask_job_status(job_id: str, request: Request) -> AskJobStatus:
     """Faz 4.1 — arka-plan Discovery işinin durumu (istemci bunu poll eder). Tamamlanmışsa
     `response` tam bir AskResponse'tur — client bunu normal /ask cevabı gibi işler (job_id
     alanı boş kalır, tekrar poll edilmez)."""
+    durum, trace, resp, hata, soru = _job_durum_oku(job_id, request)
+    return AskJobStatus(id=job_id, status=durum, question=soru,
+                        response=resp, error=hata, trace=trace)
+
+
+#: FAZ S — akış sabitleri. Poll ucunun `ASK_JOB_POLL_MS=1500` / `MAX_POLLS=240`
+#: sınırlarıyla AYNI disiplin: akış da sonsuz açık bağlantı bırakmaz.
+_AKIS_ARALIK_SANIYE = 0.25      # adım doğduğu an ≈ anında iletilir (poll'da 1,5 sn)
+_AKIS_AZAMI_SANIYE = 360.0      # 6 dk — poll ucunun üst sınırıyla aynı
+
+
+def _job_durum_oku(job_id: str, request: Request) -> tuple[str, list[str], "AskResponse | None", str | None, str | None]:
+    """Bir işin ANLIK durumu: (status, trace, response, error, question).
+
+    `GET /ask/jobs/{id}` ile akış ucunun **ORTAK** okuyucusu — iki uç aynı satırı iki
+    farklı biçimde okusaydı zamanla ayrışırlardı (tenant izolasyonu iki yerde yazılırdı,
+    biri unutulurdu). Akış bir TAŞIMADIR, ikinci bir gerçeklik değil.
+    """
     import uuid as _uuid
 
     from sqlmodel import Session
@@ -3402,8 +3420,77 @@ def ask_job_status(job_id: str, request: Request) -> AskJobStatus:
         trace = json.loads(job.trace_json) if job.trace_json else []
         if resp is not None and resp.trace:
             trace = resp.trace
-        return AskJobStatus(id=str(job.id), status=job.status, question=job.question,
-                            response=resp, error=job.error, trace=trace)
+        # `question` iş satırından gelir: iş HENÜZ bitmemişken de dolu olmalı
+        # (poll ucunun eski davranışı — bekleyen işte soru gösteriliyordu).
+        return job.status, trace, resp, job.error, job.question
+
+
+@router.get("/ask/jobs/{job_id}/stream",
+            dependencies=[Depends(require("query:run")), Depends(require_company)])
+def ask_job_stream(job_id: str, request: Request):
+    """FAZ S — AŞAMA AKIŞI (SSE biçimi). *"Ne yapıyor?"* sorusunun anlık cevabı.
+
+    ## Neden bu uç var — ve neden İKİNCİ BİR GERÇEKLİK DEĞİL
+
+    Ölçüldü (canlı): deterministik yol ~100–800 ms (akış gereksiz), **LLM yolu 2,8–5,5 sn**
+    — sessizlik tam orada. Biriken `AskJob.trace` bu aşamaları ZATEN taşıyor; eksik olan
+    onu **anında** iletmekti. Poll 1,5 sn'de bir bakıyor; akış adımı doğduğu an veriyor.
+
+    Bu uç yeni bir olay hattı UYDURMAZ: `_job_durum_oku` ile poll ucunun **aynı** satırını
+    okur. Aksi hâlde iki farklı "ne yapıyor" anlatısı doğar ve biri yalan söylemeye başlar.
+
+    ## Neden `EventSource` DEĞİL — güvenlik değişmezi
+
+    `EventSource` **Authorization başlığı gönderemez**; tek yolu token'ı URL'e koymaktır ve
+    o token sunucu loglarına/tarayıcı geçmişine sızar. Bu deponun açık kuralı: *"access
+    token memory'de, localStorage'a ASLA"* (frontend/CLAUDE.md). Bu yüzden **SSE BİÇİMİ**
+    korunur ama taşıma `fetch` + `ReadableStream`'dir: Bearer başlığı aynen çalışır, hiçbir
+    değişmez gevşetilmez. Format aynı olduğu için ileride gerçek bir `EventSource`
+    tüketicisi de eklenebilir — karar geri alınabilir kalır.
+
+    ## Sonlanma
+
+    Akış `completed`/`failed` olayıyla KAPANIR. Üst sınır: iş bitmezse `_AKIS_AZAMI_SANIYE`
+    sonunda `timeout` olayıyla kapanır — sonsuz açık bağlantı bırakmaz (poll ucunun
+    `ASK_JOB_MAX_POLLS` sınırıyla aynı disiplin).
+    """
+    from fastapi.responses import StreamingResponse
+
+    # ⚠ DOĞRULAMA AKIŞTAN ÖNCE. `StreamingResponse` yanıtı üretici çalışmadan BAŞLATIR;
+    # `HTTPException`'ı üreticinin içinde atmak *"response already started"* üretir ve
+    # istemci temiz bir 400/404 yerine **bozuk bir akış** alır (testle yakalandı).
+    # Bu çağrı kimlik/varlık/tenant kontrolünün üçünü de yapar.
+    _job_durum_oku(job_id, request)
+
+    def _olay(ad: str, veri: dict) -> str:
+        return f"event: {ad}\ndata: {json.dumps(veri, ensure_ascii=False)}\n\n"
+
+    def _uret():
+        gonderilen = 0
+        gecen = 0.0
+        while gecen < _AKIS_AZAMI_SANIYE:
+            durum, trace, resp, hata, _ = _job_durum_oku(job_id, request)
+            # YALNIZ YENİ adımlar gönderilir — istemci listeyi biriktirir, tam listeyi
+            # her turda yeniden yollamak akışı bir poll'a çevirirdi.
+            for adim in trace[gonderilen:]:
+                yield _olay("adim", {"metin": adim})
+            gonderilen = max(gonderilen, len(trace))
+            if durum == "completed":
+                yield _olay("tamam", {"response": json.loads(resp.model_dump_json())
+                                      if resp else None})
+                return
+            if durum == "failed":
+                yield _olay("hata", {"error": hata or "bilinmeyen hata"})
+                return
+            _time.sleep(_AKIS_ARALIK_SANIYE)
+            gecen += _AKIS_ARALIK_SANIYE
+        yield _olay("zaman_asimi", {"saniye": _AKIS_AZAMI_SANIYE})
+
+    return StreamingResponse(_uret(), media_type="text/event-stream", headers={
+        "Cache-Control": "no-cache",
+        # Ters vekil tamponlaması akışı ANLAMSIZ kılar (her şey sonda tek parça gelir).
+        "X-Accel-Buffering": "no",
+    })
 
 
 def _drill_record_contract(request: Request, service, session_id: str | None,

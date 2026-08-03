@@ -276,6 +276,15 @@ export function ReportCard({
                 ? `↳ yanıt: "${item.reply_to_label}"`
                 : item.is_new_topic ? "◆ yeni konu" : "↳ önceki raporun devamı"}
             </span>
+            {/* FAZ S · STEERING — kullanıcı bu cevap hazırlanırken yeni bir soru sordu.
+                Cevap KAYBOLMADI (sessiz iptal yok) ama aktif bağlamı ele geçirmedi.
+                Bunu söylememek "neden eski rapor geri geldi?" sorusunu doğururdu. */}
+            {item.steering_golgede && (
+              <span className="mb-1 block font-mono text-[10px] text-amber-500">
+                ↺ bu cevap siz yeni bir soru sorarken hazırlanıyordu — bağlam yeni
+                sorunuzda kaldı
+              </span>
+            )}
             <h2 className="font-mono text-[15px] leading-snug text-foreground">{item.question}</h2>
           </div>
           <div ref={actionsRef} className="flex shrink-0 items-center gap-1.5 pt-0.5">

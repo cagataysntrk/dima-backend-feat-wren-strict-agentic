@@ -163,6 +163,11 @@ export interface AskResponse {
   // `izin` alanı UI'ın düğmeyi göstereceği yetkiyi söyler — rol matrisi UI'a KOPYALANMAZ,
   // /auth/me `permissions` listesiyle karşılaştırılır (CLAUDE.md kuralı).
   eylem_onerisi?: EylemOnerisi | null;
+  // FAZ S · STEERING — **İSTEMCİ TARAFINDA** set edilir (backend BU ALANI GÖNDERMEZ).
+  // Kullanıcı, bu cevap hazırlanırken yeni bir soru sordu: cevap KAYBOLMAZ (geçmişe
+  // yazılır) ama aktif bağlamı ele geçirmez. Kart bunu okur ve okuyucuya söyler —
+  // sessizce göstermek "neden eski rapor geri geldi?" sorusunu doğururdu.
+  steering_golgede?: boolean;
 }
 
 // Faz 4.1 — GET /ask/jobs/{id} yanıtı (yalnız api-client.ts::ask()'in dahili poll döngüsü kullanır).

@@ -237,13 +237,28 @@ def test_DONEM_POLITIKASI_beyani_HALA_dogru():
 
 def test_DONEM_POLITIKASI_KLARIFIKASYON_KAPISI_DEGISMEDI(client):
     """Beyanın DAVRANIŞSAL yarısı: `needs_period` üretime bağlandı ama `_period_gate`
-    aynı kaldı — dönemsiz bir soru hâlâ SORULUYOR, sessizce tüm-zaman toplanmıyor."""
+    aynı kaldı — dönemsiz bir soru sessizce TÜM-ZAMAN toplanmıyor.
+
+    ⚠ İlk yazımım SIRAYA BAĞIMLIYDI: *"dönem sorulmalı"* diye sabitlemiştim, ama
+    `test_ask_golden` o soruyu VQR'a öğretiyor ve sonrasında dönem kapısı **meşru
+    biçimde** atlanıyor (doğrulanmış şekil dönemi zaten taşır). Tek başına yeşil, süitte
+    kırmızıydı — yani test bir davranışı değil bir SIRAYI ölçüyordu.
+
+    Sıradan bağımsız gerçek değişmez: **ya SORULUR ya da cevap AÇIK bir dönem taşır.**
+    Yasak olan üçüncü ihtimaldir: dönemi sorulmadan, sessizce tüm zamanları toplamak.
+    """
     from tests.conftest import ask
 
     d = ask(client, "kumaş türlerine göre fire oranı")
-    assert "dönem" in (d.get("note") or "").lower(), (
-        "dönem klarifikasyonu kayboldu — `needs_period`'ı bağlamak `_period_gate`'i "
-        f"DEĞİŞTİRMİŞ olabilir: {d.get('note')!r}")
+    cq = d.get("cube_query") or {}
+    if d.get("sql"):
+        donem_var = bool(cq.get("timeDimensions")) or any(
+            f.get("dimension") == "tarih" for f in (cq.get("filters") or []))
+        assert donem_var, (
+            "dönem SORULMADAN ve AÇIK dönem OLMADAN cevap üretildi — sessiz tüm-zaman "
+            f"toplama: {cq}")
+    else:
+        assert "dönem" in (d.get("note") or "").lower(), d.get("note")
 
 
 def test_DONEM_POLITIKASI_sartnamesi_KORUNUYOR():
