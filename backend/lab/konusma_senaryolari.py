@@ -87,6 +87,29 @@ def _uret(schema: dict) -> list[dict]:
     cubes = [c for c in (schema.get("cubes") or []) if _olculer(c)]
     senaryolar: list[dict] = []
 
+    from app import cube_router as _cr
+
+    def _net_olcu(cube: dict) -> tuple[str, str] | None:
+        """Cube'un BELİRSİZ OLMAYAN ilk ölçüsü — yoksa None.
+
+        ⚠️ **FAZ 8'İN KENDİ BULGUSU (2026-08-03).** İlk sürüm `_olculer(c)[0]`'ı körlemesine
+        alıyordu. `bakim` için bu `borç`a, `cari` için yine `borç`a denk geliyordu — ve
+        `borç` GERÇEKTEN belirsizdir (`cari` + `mizan`), yani §6.1g'nin netleştirme chip'i
+        **doğru şekilde** ateşliyordu. Senaryo o zaman *niyet ettiği şeyi* (konu değişimi ·
+        dönem daraltma) değil, **netleştirme yolunu** test ediyor ve "başarısız" raporluyordu.
+
+        `konu_degisimi` **2/5** ve `donem_duzeltme`'nin kalan başarısızlığı bu yüzdendi —
+        ikisi de ÜRÜN HATASI DEĞİL, ölçüm aracının hatası. Bu oturumda **beşinci kez**
+        aracın kendisi yanlış ölçtü (MIMARI §6.4: *"ölçüm aracının kendisi de bir
+        bağımlılıktır"*).
+        """
+        for m_ad, m_kel in _olculer(cube):
+            _cr.reddi_sifirla()
+            hit = _cr.route(_cr._norm(f"bu yil {m_kel}"), schema)
+            if hit and (hit.get("cube_query") or {}).get("cube") == cube["name"]:
+                return (m_ad, m_kel)
+        return None
+
     def ekle(sinif, ad, adimlar, bekle):
         senaryolar.append({"sinif": sinif, "ad": ad, "adimlar": adimlar, "bekle": bekle})
 
@@ -102,7 +125,10 @@ def _uret(schema: dict) -> list[dict]:
 
     for c in cubes[:6]:                      # katmanlı: ilk 6 cube yeter, hepsi değil
         ad = c["name"]
-        (m_ad, m_kel) = _olculer(c)[0]
+        _net = _net_olcu(c)
+        if _net is None:
+            continue          # bu cube'un HİÇBİR ölçüsü tek başına çözülmüyor → senaryo kurulamaz
+        (m_ad, m_kel) = _net
         dims = _boyutlar(c)
         d_kel = dims[0][1] if dims else None
         zaman = (c.get("time_dimensions") or [None])[0]
@@ -200,9 +226,16 @@ def _uret(schema: dict) -> list[dict]:
                  [f"bu yıl {d_kel} bazında {m_kel} listele"], _liste)
 
         # a4 — KONU DEĞİŞİMİ ORTASINDA (başka cube'un ölçüsüne atla).
-        digeri = next((x for x in cubes if x["name"] != ad and _olculer(x)), None)
-        if digeri and d_kel:
-            o_kel = _olculer(digeri)[0][1]
+        digeri, o_net = None, None
+        for x in cubes:
+            if x["name"] == ad:
+                continue
+            o_net = _net_olcu(x)
+            if o_net:
+                digeri = x
+                break
+        if digeri and d_kel and o_net:
+            o_kel = o_net[1]
 
             def _konu(i, d, _hedef=digeri["name"]):
                 if i < 2:
@@ -243,6 +276,12 @@ def _uret(schema: dict) -> list[dict]:
                     f"chip tıklanınca cube_query={(d.get('cube_query') or {}).get('cube')}")
 
         # 2. adım çalışma anında ilk chip'in `query`'siyle DOLDURULUR (aşağıda).
+        # ⚠️ ERİŞİM MUHASEBESİ NOTU: bu sınıfın İLK adımı BİLEREK `cube_query` üretmez —
+        # netleştirme chip'i **geçerli ve doğru** bir cevaptır (§6.1g). `erisim` sayacı
+        # "sql/cube_query geldi mi" diye baktığı için bu sınıf **0/1** görünür. Bu bir
+        # kusur DEĞİL bir muhasebe artefaktıdır; `dogruluk` kanalı (1/1) gerçeği söyler.
+        # Sayacı bu sınıf için gevşetmek metriği ZAYIFLATIRDI (her netleştirme "erişim"
+        # sayılırdı) — o yüzden sayaç değil, KAYIT düzeltiliyor.
         ekle("netlestirme_cevabi", f"belirsiz:{belirsiz}",
              [f"bu yıl {belirsiz}", "__CHIP__"], _chip)
 

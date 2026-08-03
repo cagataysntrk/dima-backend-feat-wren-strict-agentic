@@ -527,6 +527,55 @@ Kazanç 28 birim testiyle kanıtlanıyor. Korpusun bu sınıfı kazanması Faz 0
 Taban artefaktı: `lab/nl_corpus_baseline.json` (`eval/baseline.json` ile aynı disiplin —
 `lab/reports/` gitignore'da olduğu için ham rapor değil **kapı değerleri** saklanır).
 
+### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
+
+Planın kapanış şartı: *"Faz 0.5'in **aynı** süiti yeniden koşulur — **yeni senaryo
+YAZILMAZ**, önce/sonra kıyaslanır. Kaç vaka OK'e döndü, kaç **yeni sınıf** açığa çıktı
+raporlanır; yeni sınıflar bir sonraki döngüye girdi olur — **döngüsel** bir kapı."*
+
+| sınıf | Faz 0.5 (ilk) | Faz 0.5 (düzeltme sonrası) | **Faz 8** |
+|---|---|---|---|
+| `coklu_ay_trendli` | **0/6** | 5/6 | **5/5** |
+| `gorunum_donusumu` | **0/5** | 4/5 | **4/4** |
+| `konu_degisimi` | 2/5 | 2/5 | **4/4** |
+| `donem_duzeltme` | 4/6 | 5/6 | **5/5** |
+| `ayrik_ay` · `coklu_ay_trendsiz` · `liste_niyeti` | 4–5/5–6 | aynı | **hepsi tam** |
+
+**Dokuz sınıfın dokuzunda da erişim = doğruluk = tam** (tek istisna aşağıda açıklanan
+muhasebe artefaktı).
+
+#### Kalan iki "kusur"un ikisi de ÜRÜN HATASI DEĞİLDİ
+
+`konu_degisimi` **2/5** ve `donem_duzeltme`'nin kalan başarısızlığı **aynı köke** çıktı:
+senaryo üreteci cube'un **ilk** ölçüsünü körlemesine alıyordu ve o ölçü `borç`a denk
+geliyordu — `borç` **gerçekten belirsizdir** (`cari` + `mizan`), yani §6.1g'nin netleştirme
+chip'i **doğru şekilde** ateşliyordu. Senaryo o zaman *niyet ettiği şeyi* (konu değişimi ·
+dönem daraltma) değil **netleştirme yolunu** test ediyor ve "başarısız" raporluyordu.
+
+Üreteç artık **belirsiz olmayan** ilk ölçüyü seçiyor (`route()` ile doğrulayarak); hiçbiri
+yoksa o cube için senaryo **kurulmuyor** (sessizce yanlış vaka üretmektense hiç üretmemek).
+
+> ⚠️ **BU OTURUMDA BEŞİNCİ KEZ ÖLÇÜM ARACININ KENDİSİ YANLIŞ ÖLÇTÜ.**
+> (1) `nl_corpus` sinonim taraması yanlış→cevapsız dönüşümünü "iyileşme" saydı ·
+> (2) `_daraldi` beklenen cube'un zaman boyutunu sabitledi · (3) `-(y)İz`'i isme ekledi ·
+> (4) `-sIz`'i kayıp saydı · (5) belirsiz ölçüyle senaryo kurdu.
+> MIMARI §6.4'ün dersi (*"ölçüm aracının kendisi de bir bağımlılıktır"*) bu oturumun en
+> çok tekrarlanan bulgusu oldu. **Hepsi yakalandı çünkü her sayı bir vaka raporuna
+> bağlıydı** — sınıf-başına rapor olmasaydı beşi de "ürün kusuru" diye kayda geçerdi.
+
+#### Muhasebe artefaktı dürüstçe
+
+`netlestirme_cevabi` erişim **0/1** görünüyor: o sınıfın ilk adımı **bilerek** `cube_query`
+üretmez — netleştirme chip'i **geçerli ve doğru** bir cevaptır. `dogruluk` kanalı **1/1**
+gerçeği söylüyor. **Sayaç bu sınıf için gevşetilmedi**: her netleştirmeyi "erişim" saymak
+metriği zayıflatırdı. Sayaç değil **kayıt** düzeltildi.
+
+#### Yeni sınıf açığa çıkmadı
+
+Planın *"kaç yeni sınıf açığa çıktı"* sorusunun cevabı: **sıfır**. Süit döngüsel kapı
+olarak yerinde — bir sonraki tur `--live` moduyla koşulmalı (Faz 3a'nın kazanç ölçümü ve
+§1.7'nin embedder-açık doğrulaması oraya bağlı).
+
 ### 6.8z FAZ 7 — ARAŞTIRMA SIÇRAMALARI: ölçüldü, ÜÇÜ DE BENİMSENMEDİ ✅
 
 Planın disiplini: *"kör benimseme YOK — önce **ölçülmüş** gölge-mod spike; **kazanç yoksa
