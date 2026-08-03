@@ -304,10 +304,21 @@ def test_ROUTER_govdeyi_KOPYALAMAZ():
     import pathlib
 
     kaynak = (pathlib.Path(__file__).resolve().parents[1] / "app/routers/ask.py").read_text()
-    govde = kaynak.split("def ask_contribution")[1].split("\ndef ")[0]
+
+    # ⟳ FAZ 9.1 — gövde `_ask_contribution_govde`'ye ALINDI (gizlilik mührü sarmalı).
+    # Test GEVŞETİLMEDİ, KESKİNLEŞTİRİLDİ: hem sarmal hem gövde ayrı ayrı denetleniyor.
+    # Yalnız `def ask_contribution`'a bakan eski sürüm, ince sarmalı görüp "çağırmıyor"
+    # diyordu — doğru kuralı YANLIŞ yerde ölçüyordu.
+    sarmal = kaynak.split("def ask_contribution(")[1].split("\ndef ")[0]
+    govde = kaynak.split("def _ask_contribution_govde(")[1].split("\ndef ")[0]
+
+    assert "_ask_contribution_govde(" in sarmal, "sarmal gövdeyi çağırmıyor"
+    assert "muhurle(" in sarmal, "sarmal gizlilik mührünü uygulamıyor (Faz 9.1)"
     assert "arastir" in govde, "router gövdeyi çağırmıyor"
-    assert "available_dimensions" not in govde, "router kendi boyut taramasını yazmış"
-    assert "yoy.compute" not in govde and "_yoy.compute" not in govde
+    for yer, metin in (("sarmal", sarmal), ("gövde", govde)):
+        assert "available_dimensions" not in metin, f"{yer} kendi boyut taramasını yazmış"
+        assert "yoy.compute" not in metin and "_yoy.compute" not in metin, \
+            f"{yer} YoY'u kendi hesaplıyor"
 
 
 # --- BOYUT SIRASI: kesme keyfi değil (Faz B) -------------------------------------

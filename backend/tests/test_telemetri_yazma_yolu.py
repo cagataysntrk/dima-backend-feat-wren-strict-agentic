@@ -152,3 +152,92 @@ def test_telemetri_KAPALIYKEN_yazmaz(client):
     with Session(engine) as s:
         sonraki = len(s.exec(select(InteractionLog)).all())
     assert sonraki == onceki, "telemetri KAPALIYKEN yazdı — testler canlı veriyi kirletir"
+
+
+# --- FAZ 9.4: `reject_reason` GERÇEKTEN DB'ye yazılıyor mu? ------------------------
+#
+# ## Ölçülen boşluk (denetim, Faz 9)
+#
+# Faz 0'ın kolonunun **tek kapısı** `tests/test_red_gerekcesi.py`'ydi ve o
+# `inspect.getsource` ile **kaynak metninde string arıyor** — yani "kod bu satırı
+# içeriyor" diyor, "veritabanında bu değer var" demiyor. Gerçek yazmayı koşan tek dosya
+# bu dosyaydı ve bu alana **hiç bakmıyordu**.
+#
+# Canlı tur farkı gösterdi: kolon şema sürüklenmesi yüzünden **yoktu**, `answer.py`'nin
+# best-effort `except`'i hatayı **yuttu** ve telemetri sessizce boş kaldı. İki kapı da
+# yeşildi. Faz 2b'nin triyajı, Faz 6'nın sıra kararı ve §1.6-5'in %20 eşiği bu kolondan
+# besleniyor — boş bir kolon üstüne kurulan her karar dayanaksızdır.
+
+def test_REJECT_REASON_veritabanina_YAZILIYOR(client, telemetri_acik):
+    """ASIL KAPI: kaynak metni değil, **satırın kendisi**."""
+    from tests.conftest import ask
+
+    d = ask(client, "son 6 ay personel bazlı çalışma süreleri kıyasla")
+    assert not d.get("sql"), "ön koşul: bu soru gerçekten cevapsız kalmalı"
+    satir = _yeni_satirlar(telemetri_acik)[-1]
+    assert satir.reject_reason, (
+        "CEVAPSIZ soru DB'ye red gerekçesiz yazıldı — Faz 0'ın kolonu boş kalıyor ve "
+        "Faz 2b'nin triyajı ölçüm yerine TAHMİNE dayanır")
+    assert satir.reject_reason.startswith("R"), f"beklenmeyen kod: {satir.reject_reason!r}"
+
+
+def test_LLM_YOLUNDAN_gelen_cevap_da_RED_gerekcesi_tasir(client, telemetri_acik):
+    """Kolonun ASIL değeri burada. Cevap **geldi** ama deterministik yoldan gelmedi:
+    `route()` pes etti, soru LLM/Discovery'ye düştü. Kolon yalnız *"cevapsız"* soruları
+    kaydetseydi, Faz 2b'nin triyajı **kapsam boşluğunun en büyük kümesini kaçırırdı** —
+    ölçülen R1 kümesi (99/470) tam olarak bu sınıftır.
+
+    ⚠️ Ön koşul test ortamına bağlı: kural-tabanlı sağlayıcı saçma soruyu bile
+    cevaplıyor (ölçüldü) — bu, kapıyı zayıflatmıyor, tam da ölçmek istediğimiz durumu
+    ücretsiz üretiyor."""
+    from tests.conftest import ask
+
+    d = ask(client, "asdf qwerty zxcv olmayan bir sey")
+    if d.get("source") == "cube":
+        pytest.skip("bu soru deterministik yoldan cevaplandı — bu testin konusu değil")
+    satir = _yeni_satirlar(telemetri_acik)[-1]
+    assert satir.reject_reason, (
+        f"LLM yoluna düşen soru (source={satir.source}) red gerekçesiz kaydedildi — "
+        "kapsam boşluğunun EN BÜYÜK kümesi telemetride görünmez kalır")
+
+
+def test_KOLON_VARLIGI_dogrulaniyor():
+    """Canlı turda kolon ŞEMADA YOKTU ve best-effort `except` hatayı yuttu: iki kapı da
+    yeşil kaldı. Kolonun kendisi bir değişmezdir, varlığı ölçülür."""
+    from sqlalchemy import inspect as sa_inspect
+
+    kolonlar = {c["name"] for c in sa_inspect(engine).get_columns("interaction_log")}
+    assert "reject_reason" in kolonlar, (
+        f"`interaction_log.reject_reason` kolonu YOK → yazma sessizce yutulur. "
+        f"Mevcut kolonlar: {sorted(kolonlar)}")
+
+
+def test_DETERMINISTIK_cevapta_reject_reason_BOS(client, telemetri_acik):
+    """Kapı fazla geniş olmamalı: kolonun doluluğu *"deterministik yoldan çıkamayan
+    sorular"* kümesini vermeli. Başarılı bir cube cevabı da doldurursa kolon anlamını
+    yitirir ve triyaj gürültüye boğulur."""
+    from tests.conftest import ask
+
+    # ⚠️ Bu dosyadaki BAŞKA hiçbir testin sormadığı bir soru: aynı soru ikinci kez
+    # sorulduğunda VQR tekrar-oynatması devreye girer ve `source="vqr"` olur — kapı o
+    # zaman sessizce `skip`'e düşer, yani hiçbir şey ölçmez. (Ölçüldü: kardeş iki test
+    # tam olarak bu yüzden atlanıyordu.)
+    d = ask(client, "bu yıl fire")
+    assert d.get("source") == "cube", f"ön koşul: cube yolundan gelmeli (geldi: {d.get('source')})"
+    satir = _yeni_satirlar(telemetri_acik)[-1]
+    assert satir.reject_reason is None, (
+        f"deterministik cevapta red gerekçesi yazıldı: {satir.reject_reason!r} — "
+        "muhtemelen bir chip SONDASI ContextVar'ı ezdi (bkz. test_dogrulanmis_chip.py)")
+
+
+def test_NETLESTIRMEYE_dusen_soru_da_gerekce_tasiyor(client, telemetri_acik):
+    """Netleştirme chip'i **geçerli bir cevaptır** ama `route()` yine de pes etmiştir —
+    o red, kapsam boşluğunun en doğrudan sinyalidir ve kaydedilmeli. Chip üretimi
+    sırasında yapılan `route()` SONDALARI bu değeri EZMEMELİ (Faz 9.2'nin tuzağı)."""
+    from tests.conftest import ask
+
+    d = ask(client, "son 6 ay personel bazlı çalışma süreleri kıyasla")
+    if d.get("sql"):
+        pytest.skip("bu soru bu veri setinde cevaplanabildi")
+    satir = _yeni_satirlar(telemetri_acik)[-1]
+    assert satir.reject_reason, "netleştirmeye düşen soru red gerekçesiz kaydedildi"

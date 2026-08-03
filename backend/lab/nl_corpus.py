@@ -290,6 +290,89 @@ def run_company(name, login, pw, slug):
             "discovery_ornek": discovery_ornek[:20]}
 
 
+
+# ---------------------------------------------------------------- FAZ 9.5: GERİLEME KAPISI
+
+TABAN = Path(__file__).resolve().parent / "nl_corpus_baseline.json"
+#: Erişim yüzdesinde kabul edilen sapma (puan). Korpus üretimi deterministiktir ama
+#: yüzdeler tam sayıya yuvarlanır; 1 puan tek bir turun kenar durumundan gelebilir.
+TOLERANS_PUAN = 1
+#: Toplam doğru-cube oranında kabul edilen sapma (puan). ZORUNLU olarak daha DAR:
+#: doğruluk bu planın ana metriğidir ve *"sessiz-yanlış"* tam olarak burada görünür.
+TOLERANS_DOGRULUK = 0.5
+
+
+def _taban_beklenen() -> dict:
+    """Tabanın **en son turunu** döndürür — kök değerleri değil.
+
+    Kök alanlar 2 Ağustos'un dondurulmuş *"önce"* fotoğrafıdır (KURAL A) ve önce/sonra
+    kıyası için oradadır. Bir **gerileme kapısı** ise bugünkü seviyeyi korumalıdır:
+    %93,2'den %86,3'e düşmek, köke bakan bir kapıda **yeşil** görünürdü — yani kapı tam
+    da korumak için var olduğu şeyi kaçırırdı.
+    """
+    d = json.loads(TABAN.read_text())
+    turlar = d.get("_turlar") or []
+    son = turlar[-1] if turlar else {}
+    sirketler = {}
+    for ad, v in (d.get("sirketler") or {}).items():
+        sirketler[ad] = dict(v)
+    for ad, v in (son.get("sirketler") or {}).items():
+        sirketler.setdefault(ad, {}).update(v)
+    return {
+        "kaynak": son.get("faz") or "kök taban",
+        "sirketler": sirketler,
+        "dogru_cube_yuzde": son.get("toplam_dogru_cube_yuzde",
+                                    d.get("toplam_dogru_cube_yuzde")),
+    }
+
+
+def kapi_degerlendir(reports: list[dict]) -> tuple[bool, list[str]]:
+    """Taze koşumu dondurulmuş tabanla kıyaslar. Döner: (gecti, satırlar).
+
+    ## Neden bu kapı var (denetim, Faz 9.5)
+
+    `nl_corpus_baseline.json` sürüm kontrolündeydi ve **hiçbir tüketicisi yoktu**: KURAL
+    A'nın *"taban dondurulur"* maddesi bir **not**tu, kapı değil. `eval` tarafı kapılı
+    (`test_eval_gate.py`), korpus tarafı değildi — yani bu planın **ana metriğinin**
+    (doğru-cube %) gerilemesi sessizce kaybolabilirdi.
+
+    Kapı fail-closed DEĞİL bilerek: korpus koşumu dakikalar sürer ve CI reçetesinin
+    dışındadır. Ama koşulduğunda **kararı kendisi verir**, insan gözüne bırakmaz.
+    """
+    beklenen = _taban_beklenen()
+    satirlar = [f"TABAN: {beklenen['kaynak']}"]
+    gecti = True
+    toplam_d = toplam_p = 0
+    for rep in reports:
+        if rep.get("error"):
+            satirlar.append(f"  {rep['company']}: HATA — kıyaslanamadı")
+            gecti = False
+            continue
+        total = sum(rep["cats"].values())
+        ok = sum(v for k, v in rep["cats"].items() if "::OK" in k)
+        erisim = 100 * ok / max(total, 1)
+        dc = rep.get("dogru_cube") or {}
+        toplam_d += dc.get("dogru", 0)
+        toplam_p += sum(dc.get(k, 0) for k in ("dogru", "yanlis", "discovery"))
+        b = (beklenen["sirketler"].get(rep["company"]) or {}).get("erisim_yuzde")
+        if b is None:
+            satirlar.append(f"  {rep['company']}: erişim %{erisim:.0f} (tabanda YOK)")
+            continue
+        fark = erisim - b
+        isaret = "✅" if fark >= -TOLERANS_PUAN else "❌ GERİLEME"
+        satirlar.append(f"  {rep['company']}: erişim %{erisim:.0f} (taban %{b}) {isaret}")
+        if fark < -TOLERANS_PUAN:
+            gecti = False
+    if toplam_p:
+        yuzde = 100 * toplam_d / toplam_p
+        b = beklenen["dogru_cube_yuzde"]
+        isaret = "✅" if yuzde >= b - TOLERANS_DOGRULUK else "❌ GERİLEME"
+        satirlar.append(f"  TOPLAM doğru-cube: %{yuzde:.1f} (taban %{b}) {isaret}")
+        if yuzde < b - TOLERANS_DOGRULUK:
+            gecti = False
+    return gecti, satirlar
+
+
 def main():
     reports = []
     for name, login, pw, slug in COMPANIES:
@@ -343,6 +426,14 @@ def main():
                      ) if n_dc else ""
         print(f"  {rep['company']}: {total} tur, erişim OK={ok} "
               f"({100*ok//max(total,1)}%){dogru_str}")
+
+    # FAZ 9.5 — DONDURULMUŞ TABANA KARŞI GERİLEME KAPISI. `--kapi` ile çıkış kodu da
+    # gerilemeyi taşır (betikten koşulabilsin); onsuz yalnız raporlar.
+    gecti, satirlar = kapi_degerlendir(reports)
+    print("\n" + "\n".join(satirlar))
+    if "--kapi" in sys.argv and not gecti:
+        print("\nKAPI KIRMIZI — dondurulmuş tabana göre gerileme var.")
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

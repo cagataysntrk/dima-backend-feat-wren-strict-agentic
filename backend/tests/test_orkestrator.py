@@ -265,3 +265,35 @@ def test_PILOT_KAPI_REDDINI_yutmuyor():
     govde = inspect.getsource(ask_mod._capraz_alan_pilotu)
     assert "AracReddi" in govde and "ButceAsimi" in govde
     assert "Kapılar ÇALIŞTI" in govde
+
+
+def test_PILOT_CAPRAZ_ALAN_kompozisyonu_DENIYOR():
+    """⚠️ **DENETİMDE BULUNDU:** pilotun ilk sürümü yalnız `route` ve `llm.select_cube`
+    deniyordu; `blend` **hiç** çağrılmıyordu. Yani Faz 4'ün kabul ölçütü (*"Discovery
+    yerine 2 adımlı kompozisyon"*) karşılanmamış, pilot yalnız *"planlayıcı çalışıyor"*u
+    kanıtlıyordu — `route()`'a **ek bir şey getirmiyordu**. Kazanç belirsiz değildi, YOKTU.
+
+    MIMARI §9.2'nin yapısal sınırı: bir cube'un ölçüsü + BAŞKA cube'un boyutu **tek**
+    CubeQuery'de ifade edilemez; iki adımda edilebilir ve ikinci adım **deterministiktir**."""
+    from app.routers import ask as ask_mod
+
+    govde = inspect.getsource(ask_mod._capraz_alan_pilotu)
+    assert 'plan.calistir("cross_cube_add"' in govde, "çapraz-alan adımı ÇAĞRILMIYOR"
+    assert "cross_cube_add" in govde and "adimlar = list(adimlar)" in govde, \
+        "LLM yokken plan `route`'ta biter ve kompozisyon HİÇ denenmez"
+
+
+def test_CROSS_CUBE_ADD_kayitli_ve_DETERMINISTIK():
+    a = next((x for x in tools.KAYIT if x.ad == "cross_cube_add"), None)
+    assert a is not None, "kapısız çağrı — araç kaydında YOK (calistir KeyError verirdi)"
+    assert a.determinizm == "deterministik" and a.maliyet == "sifir"
+    # ETİKET AİLESİ AYRI ve bu BİLİNÇLİ. İlk sürümde `sorgu-uretimi` verdim; deterministik-
+    # önce kapısı onu HER LLM aracından önce zorunlu kıldı ve `prompt_enhancer` testleri
+    # KIRILDI — çünkü bu araç `prev` bir CubeQuery ister ve o yokken UYGULANAMAZ. Kapı,
+    # uygulanamaz bir aracı şart koşup meşru yolları kapatıyordu.
+    # (Kendi kapım kendi değişikliğimi yakaladı — kapının doğru çalıştığının kanıtı.)
+    rt = next(x for x in tools.KAYIT if x.ad == "route")
+    assert "sorgu-uretimi" not in a.etiketler, (
+        "`cross_cube_add` sıfırdan sorgu ÜRETMEZ, var olanı GENİŞLETİR — `route` ile aynı "
+        "iş için yarışmaz. `sorgu-uretimi` etiketi uygulanamaz bir şart doğurur.")
+    assert "kompozisyon" in a.etiketler and "sorgu-uretimi" in rt.etiketler

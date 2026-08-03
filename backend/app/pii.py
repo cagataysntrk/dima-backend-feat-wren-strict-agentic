@@ -155,3 +155,97 @@ def mask_rows(rows: list[dict]) -> tuple[list[dict], bool]:
             new_row[k] = masked
         out.append(new_row)
     return out, found
+
+
+def muhurle(resp, request, principal, *, ad: str) -> None:
+    """`/ask` DIŞINDAKİ veri döndüren uçlar için gizlilik + iz mührü — YERİNDE uygular.
+
+    ## Neden ayrı bir fonksiyon
+
+    `answer.py::seal()` `AskResponse`'a özeldir (chip · aksiyon · köken · yorum zinciri
+    ona bağlı). Ama `seal`'in **üç garantisi** cevabın TÜRÜNE değil, **veri döndürüyor
+    olmasına** bağlıdır: PII maskesi · erişim audit'i · etkileşim logu.
+
+    ## Ne kapatıyor — DENETİMDE ÖLÇÜLDÜ (Faz 9.1)
+
+    `answer.py`'nin modül değişmezi *"**her** yanıt buradan geçer"* diyordu; iki uçta
+    **geçerli değildi**:
+
+    | uç | dönüş noktası | audit | PII maskesi |
+    |---|---|---|---|
+    | `POST /ask/drill` | **8** | yalnız `raw` dalında | **hiçbirinde** |
+    | `POST /ask/contribution` | 2 | yok | yok |
+
+    Ve taşıdıkları veri hassas: `DrillResponse.result` **satır**, `.anomalies` ve
+    `ContributionResponse.raporlar` **boyut değerleri** — bu katalogda `musteri` ·
+    `operator` · `calisan` gerçek boyutlardır. Yani `/ask` maskeliyor, bu iki uç
+    **maskelemiyordu**. Kodun kendi yorumu `raw` dalı için bunun *"önceden hiç
+    çalışmadığını"* kaydetmişti; **kardeş dallar açık kalmıştı** (deponun kendi
+    "kimlik asimetrisi" sınıfı, MIMARI §6.1h).
+
+    ## Sözleşme
+
+    Bilinen taşıyıcı alanlar (`result.rows` · `raw_rows.rows` · `anomalies` ·
+    `raporlar`/`pvm_raporlar` içindeki segment etiketleri) maskelenir; `pii:view` yetkisi
+    olan **maskesiz görür** ve bu AYRI bir audit satırıdır (KVKK: hangi PII'yi kim gördü).
+    Maskeleme **best-effort DEĞİL**: bir alan tanınmıyorsa sessizce geçilir ama tanınan
+    her alan mutlaka geçer — ve audit `try/except`'siz atılır (*"başarı audit'siz
+    raporlanamaz"*).
+    """
+    from control_plane import audit
+    from control_plane.authorize import can
+
+    goruldu = False
+
+    def _satirlari_maskele(satirlar):
+        nonlocal goruldu
+        if not satirlar:
+            return satirlar
+        maskeli, bulundu = mask_rows(satirlar)
+        if not bulundu:
+            return satirlar
+        if can(principal, "pii:view") if principal is not None else False:
+            goruldu = True
+            return satirlar
+        return maskeli
+
+    for alan in ("result", "raw_rows"):
+        tasiyici = getattr(resp, alan, None)
+        if tasiyici is not None and getattr(tasiyici, "rows", None):
+            tasiyici.rows = _satirlari_maskele(tasiyici.rows)
+
+    # BOYUT DEĞERİ TAŞIYAN ETİKETLER de maskelenir. `musteri`/`operator` kırılımında
+    # bunlar **doğrudan kişi adıdır**. Satır maskelenip etiket maskelenmeseydi kapı yarım
+    # kalırdı ve tam da en GÖRÜNÜR yerden sızardı (anomali listesi, katkı bulgusu).
+    #
+    # Alan adları ŞEMADAN doğrulandı, tahmin edilmedi: `DrillAnomaly.value` ·
+    # `ContributionFinding.label`/`deger` — ilk sürümde uydurduğum `segment` alanı
+    # `ContributionReport`'ta YOKTU ve test onu yakaladı.
+    def _etiket_maskele(oge, anahtarlar):
+        nonlocal goruldu
+        for k in anahtarlar:
+            v = getattr(oge, k, None)
+            if not isinstance(v, str) or not v:
+                continue
+            yeni = mask_text(v)
+            if yeni == v:
+                continue
+            if principal is not None and can(principal, "pii:view"):
+                goruldu = True
+            else:
+                setattr(oge, k, yeni)
+
+    for oge in (getattr(resp, "anomalies", None) or []):
+        _etiket_maskele(oge, ("value",))
+    for alan in ("raporlar", "pvm_raporlar"):
+        for rapor in (getattr(resp, alan, None) or []):
+            for bulgu in (getattr(rapor, "bulgular", None) or []):
+                _etiket_maskele(bulgu, ("label", "deger"))
+
+    if goruldu:
+        audit.record(principal, "pii_view", nl_question=ad,
+                     ip=request.client.host if request.client else None)
+    audit.record(principal, "query", nl_question=ad,
+                 rows_returned=getattr(getattr(resp, "result", None), "row_count", None),
+                 contract_id=getattr(resp, "contract_id", None),
+                 ip=request.client.host if request.client else None)

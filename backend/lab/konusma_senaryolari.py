@@ -116,17 +116,48 @@ def _uret(schema: dict) -> list[dict]:
                 return (m_ad, m_kel)
         return None
 
-    def ekle(sinif, ad, adimlar, bekle):
-        senaryolar.append({"sinif": sinif, "ad": ad, "adimlar": adimlar, "bekle": bekle})
+    def ekle(sinif, ad, adimlar, bekle, *, bagimsiz=False):
+        """`bagimsiz=True` → adımlar TAKİP sorusu olarak gönderilmez.
 
-    def _cube_dogru(hedef):
+        ⚠️ FAZ 9.6 — `vqr_kalicilik` bu bayrak olmadan **yapısal olarak ölçemiyordu**:
+        koşum her 2. adıma önceki `cube_query`'yi iliştiriyor, `ask.py` de takip
+        sorularında `near_exact`'i **tümden atlıyor**. Yani senaryo, ölçmek için var
+        olduğu replay yolunu hiç çalıştırmadan *"replay YOK"* diye ✅ raporluyordu.
+        Yeşil bir kapı, ölçmediğini ölçmüş gibi göstermek kırmızıdan kötüdür.
+        """
+        senaryolar.append({"sinif": sinif, "ad": ad, "adimlar": adimlar, "bekle": bekle,
+                           "bagimsiz": bagimsiz})
+
+    def _ve_cube(kontrol, hedef):
+        """FAZ 9.7 — DOĞRULUK kanalına **cube kimliği** de dâhil edilir.
+
+        ## Ölçülen kusur
+
+        Bu dosyanın rapor başlığı *"**DOĞRULUK** (doğru cube/dönem/yapı)"* diyordu, ama
+        `_cube_dogru` **hiçbir yerden çağrılmıyordu** (denetim, Faz 9). Dokuz sınıftan
+        yalnız `konu_degisimi` cevabın cube'una bakıyordu; kalanlarda cevap **yanlış
+        cube'dan** gelse bile — dönem filtresi ve `view_hint` doğruysa — vaka **✅ DOĞRU**
+        raporlanıyordu. Yani araç, ölçtüğünü iddia ettiği şeyin bir parçasını hiç ölçmüyordu.
+
+        Bu, planın §4.7-6'da *zorunlu* kıldığı ayrımın (erişim ≠ doğruluk) yarım kalması
+        demekti: **sessiz-yanlış**, tam da bu aracın görünür kılmak için var olduğu sınıf.
+
+        ## Neden SARMAL, yeni bir kontrol değil
+
+        Hedef cube **inşa gereği** bellidir: `_net_olcu` yalnız `bu yil {m_kel}` sorusunu
+        **bu cube'a** çözen bir ölçü seçer. Sarmal, var olan kontrolü bozmadan üstüne biner;
+        her sınıfın kendi kontrolünü yeniden yazmak, aynı kuralın dokuz kopyasını doğururdu
+        — bu dosyanın az önce `_bitisik`/`_daraldi` ile ödediği bedelin ta kendisi.
+        """
         def f(i, d):
+            gecti, aciklama = kontrol(i, d)
+            if not gecti:
+                return gecti, aciklama
             cq = d.get("cube_query") or {}
-            if not cq:
-                return False, f"cube_query YOK (source={d.get('source')}, not={d.get('note')!r})"
-            if cq.get("cube") != hedef:
-                return False, f"cube={cq.get('cube')} beklenen={hedef}"
-            return True, f"cube={hedef}"
+            gelen = cq.get("cube")
+            if gelen and gelen != hedef:
+                return False, f"YANLIŞ CUBE: {gelen} (beklenen {hedef}) — {aciklama}"
+            return True, aciklama
         return f
 
     for c in cubes[:6]:                      # katmanlı: ilk 6 cube yeter, hepsi değil
@@ -143,9 +174,22 @@ def _uret(schema: dict) -> list[dict]:
 
         # a1/a2 — ÇOKLU AY (bitişik). İki alt-vaka: §1.6'nın gözlemlenen "tümü" hatası
         # ("trend" kapsam kapısını kırıyor) ve DAHA KÖTÜ olan sessiz "Ocak-only".
-        def _bitisik(i, d, _z=zaman):
+        def _bitisik(i, d):
+            """⚠️ FAZ 9.7 — `_daraldi`'da düzeltilen hatanın AYNI DOSYADAKİ İKİNCİ KOPYASI.
+
+            Eski sürüm beklenen cube'un zaman boyutunu (`_z=zaman`) **sabitliyordu**. Ama
+            `route()` soruyu BAŞKA bir cube'a çözebilir ve o cube'un zaman boyutu farklıdır
+            → çalışan bir dönem filtresi "YOK" diye raporlanırdı. Düzeltme `_daraldi`'ya
+            yazıldı, kardeşine yazılmadı: bu deponun kendi *"kimlik asimetrisi"* sınıfı,
+            bu kez **ölçüm aracının içinde**.
+
+            MIMARI §6.4: *"ölçüm aracının kendisi de bir bağımlılıktır."*
+            """
             cq = d.get("cube_query") or {}
-            fs = [f for f in (cq.get("filters") or []) if f.get("dimension") == _z]
+            zamanlar = {t for c2 in (schema.get("cubes") or [])
+                        if c2.get("name") == cq.get("cube")
+                        for t in (c2.get("time_dimensions") or [])}
+            fs = [f for f in (cq.get("filters") or []) if f.get("dimension") in zamanlar]
             if not fs:
                 return False, "dönem filtresi YOK — 'tüm zamanlar'a düştü (§1.6 hatası)"
             gte = next((f["value"] for f in fs if f["operator"] == "gte"), None)
@@ -157,9 +201,9 @@ def _uret(schema: dict) -> list[dict]:
             return True, f"{gte}..{lte}"
 
         ekle("coklu_ay_trendli", f"{ad}-trendli",
-             [f"ocak şubat mart {m_kel} değişim trendi"], _bitisik)
+             [f"ocak şubat mart {m_kel} değişim trendi"], _ve_cube(_bitisik, ad))
         ekle("coklu_ay_trendsiz", f"{ad}-trendsiz",
-             [f"ocak şubat mart {m_kel}"], _bitisik)
+             [f"ocak şubat mart {m_kel}"], _ve_cube(_bitisik, ad))
 
         # a7 — AYRIK AY (2a-4). Yeni yetenek; tabanı BURADA alınır.
         def _ayrik(i, d):
@@ -173,7 +217,7 @@ def _uret(schema: dict) -> list[dict]:
             aylar = isaret.get("aylar") or []
             return (len(aylar) == 2, f"aylar={aylar}")
 
-        ekle("ayrik_ay", f"{ad}-ayrik", [f"ocak ve mart {m_kel}"], _ayrik)
+        ekle("ayrik_ay", f"{ad}-ayrik", [f"ocak ve mart {m_kel}"], _ve_cube(_ayrik, ad))
 
         # a2 — DÖNEM DÜZELTME TAKİBİ: kontrollü GENİŞ ilk soru + doğal dilde daraltma.
         def _daraldi(i, d):
@@ -203,7 +247,7 @@ def _uret(schema: dict) -> list[dict]:
             return (bool(fs), f"cube={gelen} dönem filtresi={fs or 'YOK'}")
 
         ekle("donem_duzeltme", f"{ad}-daralt",
-             [f"tüm zamanlar {m_kel}", "sadece son 3 ay"], _daraldi)
+             [f"tüm zamanlar {m_kel}", "sadece son 3 ay"], _ve_cube(_daraldi, ad))
 
         # a5 — GÖRÜNÜM DÖNÜŞÜMÜ: yapı SİLİNMEMELİ (Faz 5'in şartının doğrudan testi).
         if d_kel:
@@ -216,7 +260,7 @@ def _uret(schema: dict) -> list[dict]:
                         f"view_hint={d.get('view_hint')}")
 
             ekle("gorunum_donusumu", f"{ad}-pasta",
-                 [f"bu yıl {d_kel} bazında {m_kel}", "pasta grafik"], _gorunum)
+                 [f"bu yıl {d_kel} bazında {m_kel}", "pasta grafik"], _ve_cube(_gorunum, ad))
 
             # a6 — LİSTE NİYETİ (2a-5). Yeni yetenek; tabanı BURADA alınır.
             def _liste(i, d, _hedef=ad):
@@ -229,7 +273,7 @@ def _uret(schema: dict) -> list[dict]:
                         f"dims={cq.get('dimensions')} view_hint={d.get('view_hint')}")
 
             ekle("liste_niyeti", f"{ad}-listele",
-                 [f"bu yıl {d_kel} bazında {m_kel} listele"], _liste)
+                 [f"bu yıl {d_kel} bazında {m_kel} listele"], _ve_cube(_liste, ad))
 
         # a4 — KONU DEĞİŞİMİ ORTASINDA (başka cube'un ölçüsüne atla).
         digeri, o_net = None, None
@@ -294,16 +338,37 @@ def _uret(schema: dict) -> list[dict]:
     # B — §1.7 VQR KALICILIK: bilerek yanlış çözülen bir soru öğrenilip PARAFRAZINDA
     # aynı yanlış cevabı `source="vqr"` ile geri veriyor mu? Planın ZORUNLU çıktısı.
     def _vqr(i, d):
+        """⚠️ FAZ 9.6 — ÜÇÜNCÜ DURUM: `None` = **ÖLÇÜLEMEDİ**.
+
+        §1.7'nin riski yalnız VQR'a bir kayıt YAZILDIYSA doğabilir. `ask.py:2306`
+        `learn=(intent_source == "cube+llm")` — yani **saf `cube` yolu VQR'a hiç
+        yazmaz**. Bu bir kusur değil, Faz 2b-2'nin ölçülmüş kararıdır: deterministik
+        bir cevabı dondurmak kazanç getirmez, router iyileşir ama kayıt iyileşmez.
+
+        Sonuç: LLM'siz (CI) modda bu senaryo **yapısal olarak** replay üretemez.
+        Eski sürüm bunu *"parafraz replay YOK ✅"* diye raporluyordu — **ölçmediği bir
+        şeyi ölçmüş gibi**. MIMARI §6.5z'nin *"embedder kapalı"* teşhisi de bu yüzden
+        eksikti: embedder açılsa bile yazan kimse yok.
+
+        Risk yalnız `--live` + gerçek sağlayıcı + `cube+llm` yolunda görünür.
+        """
         if i == 0:
-            return bool(d.get("sql")), f"ilk cevap source={d.get('source')}"
-        kaynak = d.get("source") or ""
-        if kaynak == "vqr":
+            if not d.get("sql"):
+                return False, f"ilk cevap ÜRETİLMEDİ (source={d.get('source')})"
+            if d.get("source") != "cube+llm":
+                return None, (f"ÖLÇÜLEMEDİ — ilk cevap source={d.get('source')}, "
+                              "VQR'a yazılmadı (learn yalnız cube+llm'de açık)")
+            return True, "ilk cevap cube+llm → VQR'a yazıldı"
+        if (d.get("source") or "") == "vqr":
             return False, ("PARAFRAZ VQR'DAN GELDİ — §1.7 riski CANLI "
                            "(insan onayı olmadan tekrar oynatıldı)")
-        return True, f"parafraz source={kaynak} (replay YOK)"
+        return True, f"parafraz source={d.get('source')} (replay YOK)"
 
+    # `bagimsiz=True`: parafraz TAZE bir soru olarak gider. Takip sorusu olarak
+    # gönderilseydi `near_exact` hiç çalışmaz, senaryo ölçtüğünü sanırdı.
     ekle("vqr_kalicilik", "elektrik-parafraz",
-         ["bu yıl elektrik", "bu yılki elektrik tüketimimiz ne kadar"], _vqr)
+         ["bu yıl elektrik", "bu yılki elektrik tüketimimiz ne kadar"], _vqr,
+         bagimsiz=True)
 
     return senaryolar
 
@@ -327,6 +392,10 @@ def kos(schema, c, senaryolar, *, live: bool, orneklem: int) -> tuple[list[dict]
         cq = None
         adimlar_raporu = []
         erisim_ok = dogruluk_ok = True
+        #: FAZ 9.6 — ÜÇÜNCÜ DURUM. `bekle` `None` dönerse vaka ne GEÇTİ ne KALDI:
+        #: **ölçülemedi**. İkisinden birine yuvarlamak bilgi yok eder — yeşile
+        #: yuvarlamak *"risk yok"* yalanını, kırmızıya yuvarlamak sahte alarm üretir.
+        olculemedi = False
         for i, adim in enumerate(sen["adimlar"]):
             if adim == "__CHIP__":
                 chips = (adimlar_raporu[-1]["cevap"].get("suggestions") or []) if adimlar_raporu else []
@@ -337,14 +406,16 @@ def kos(schema, c, senaryolar, *, live: bool, orneklem: int) -> tuple[list[dict]
                     break
                 adim = chips[0]["query"]
             body = {"question": adim, "execute": False}
-            if cq is not None and i:
+            if cq is not None and i and not sen.get("bagimsiz"):
                 body["cube_query"], body["history"] = cq, ["önceki"]
             rr = c.post("/ask", json=body)
             d = rr.json() if rr.status_code == 200 else {"_http": rr.status_code}
             gecti, aciklama = sen["bekle"](i, d)
             if not d.get("sql") and not d.get("cube_query"):
                 erisim_ok = False
-            if not gecti:
+            if gecti is None:
+                olculemedi = True
+            elif not gecti:
                 dogruluk_ok = False
             adimlar_raporu.append({"soru": adim, "cevap": d, "gecti": gecti,
                                    "aciklama": aciklama})
@@ -353,7 +424,9 @@ def kos(schema, c, senaryolar, *, live: bool, orneklem: int) -> tuple[list[dict]
             if live:
                 time.sleep(LIVE_BEKLE)      # API'ye yığılma YOK
         sonuclar.append({"sinif": s, "ad": sen["ad"], "adimlar": adimlar_raporu,
-                         "erisim": erisim_ok, "dogruluk": dogruluk_ok})
+                         "erisim": erisim_ok,
+                         "dogruluk": (None if olculemedi else dogruluk_ok),
+                         "olculemedi": olculemedi})
     return sonuclar, dict(dusurulen)
 
 
@@ -368,14 +441,16 @@ def _rapor_yaz(sonuclar: list[dict], dusurulen: dict, live: bool) -> None:
 
     for sinif, rs in gruplar.items():
         erisim = sum(1 for r in rs if r["erisim"])
-        dogru = sum(1 for r in rs if r["dogruluk"])
+        dogru = sum(1 for r in rs if r["dogruluk"] is True)
+        olculemez = sum(1 for r in rs if r.get("olculemedi"))
         # TEMSİLCİ TUR: başarısız varsa İLK BAŞARISIZ (öğretici olan odur), yoksa ilki.
-        temsilci = next((r for r in rs if not r["dogruluk"]), rs[0])
+        temsilci = next((r for r in rs if r["dogruluk"] is False), rs[0])
         satirlar = [
             f"# Senaryo sınıfı: `{sinif}`", "",
             f"- senaryo sayısı: **{len(rs)}**",
             f"- **ERİŞİM** (cevap üretildi): **{erisim}/{len(rs)}**",
-            f"- **DOĞRULUK** (doğru cube/dönem/yapı): **{dogru}/{len(rs)}**",
+            f"- **DOĞRULUK** (doğru cube/dönem/yapı): **{dogru}/{len(rs) - olculemez}**"
+            + (f"  · **ÖLÇÜLEMEDİ: {olculemez}**" if olculemez else ""),
             f"- düşürülen tur (örneklem sınırı): **{dusurulen.get(sinif, 0)}**"
             + ("" if live else "  _(hızlı modda örneklem uygulanmaz)_"),
             "",
@@ -383,14 +458,16 @@ def _rapor_yaz(sonuclar: list[dict], dusurulen: dict, live: bool) -> None:
             "> DOĞRU şeyi düzelttiği anlamına gelmez (2a-1 `elektrik` dersi — yanlış→cevapsız",
             "> dönüşümü 'iyileşme' gibi görünmüştü).", "",
             f"## Temsilci tur — `{temsilci['ad']}`"
-            + ("  ⚠️ (ilk BAŞARISIZ vaka)" if not temsilci["dogruluk"] else ""), "",
+            + ("  ⚠️ (ilk BAŞARISIZ vaka)" if temsilci["dogruluk"] is False
+               else "  ⚠️ (ÖLÇÜLEMEDİ)" if temsilci.get("olculemedi") else ""), "",
         ]
         for i, a in enumerate(temsilci["adimlar"]):
             d = a["cevap"]
             cq = d.get("cube_query") or {}
             satirlar += [
                 f"### adım {i + 1}: `{a['soru']}`", "",
-                f"- sonuç: {'✅' if a['gecti'] else '❌'} — {a['aciklama']}",
+                f"- sonuç: {'✅' if a['gecti'] else ('⊘ ÖLÇÜLEMEDİ' if a['gecti'] is None else '❌')}"
+                f" — {a['aciklama']}",
                 f"- source: `{d.get('source')}`",
                 f"- cube_query: `{json.dumps(cq, ensure_ascii=False) if cq else 'YOK'}`",
                 f"- not: {d.get('note') or '—'}",
@@ -401,7 +478,8 @@ def _rapor_yaz(sonuclar: list[dict], dusurulen: dict, live: bool) -> None:
             satirlar += ["## Sınıfın tüm vakaları", "",
                          "| senaryo | erişim | doğruluk |", "|---|---|---|"]
             satirlar += [f"| `{r['ad']}` | {'✅' if r['erisim'] else '❌'} "
-                         f"| {'✅' if r['dogruluk'] else '❌'} |" for r in rs]
+                         f"| {'✅' if r['dogruluk'] is True else ('⊘' if r.get('olculemedi') else '❌')} |"
+                         for r in rs]
         (RAPOR_DIZINI / f"{sinif}.md").write_text("\n".join(satirlar) + "\n",
                                                   encoding="utf-8")
 
@@ -441,12 +519,13 @@ def main() -> None:
     _rapor_yaz(sonuclar, dusurulen, args.live)
 
     from collections import defaultdict
-    ozet: dict = defaultdict(lambda: {"n": 0, "erisim": 0, "dogruluk": 0})
+    ozet: dict = defaultdict(lambda: {"n": 0, "erisim": 0, "dogruluk": 0, "olculemedi": 0})
     for s in sonuclar:
         o = ozet[s["sinif"]]
         o["n"] += 1
         o["erisim"] += int(s["erisim"])
-        o["dogruluk"] += int(s["dogruluk"])
+        o["dogruluk"] += int(s["dogruluk"] is True)
+        o["olculemedi"] += int(bool(s.get("olculemedi")))
     cikti = {"mod": "live" if args.live else "yapisal",
              "sinif_sayisi": len(ozet), "senaryo_sayisi": len(sonuclar),
              "dusurulen_tur": dusurulen, "siniflar": dict(ozet),
@@ -457,10 +536,14 @@ def main() -> None:
     print("=" * 74)
     print(f"FAZ 0.5 — KONUŞMA SENARYOSU DOĞRULAMA  ·  mod={cikti['mod']}")
     print("=" * 74)
-    print(f"{'sınıf':<24}{'n':>4}{'ERİŞİM':>9}{'DOĞRULUK':>11}   düşürülen")
+    print(f"{'sınıf':<24}{'n':>4}{'ERİŞİM':>9}{'DOĞRULUK':>11}{'ÖLÇÜLEMEDİ':>12}   düşürülen")
     for s, o in sorted(ozet.items()):
         print(f"  {s:<22}{o['n']:>4}{o['erisim']:>9}{o['dogruluk']:>11}"
-              f"{dusurulen.get(s, 0):>12}")
+              f"{o['olculemedi']:>12}{dusurulen.get(s, 0):>12}")
+    if any(o["olculemedi"] for o in ozet.values()):
+        print("⊘ ÖLÇÜLEMEDİ: vaka ne geçti ne kaldı — ölçüm ön koşulu sağlanmadı "
+              "(ör. VQR kalıcılığı için `cube+llm` yolu gerekir; CI'da LLM yok). "
+              "Yeşile yuvarlamak 'risk yok' YALANI üretirdi.")
     print(f"\nVaka raporları (SINIF başına): {RAPOR_DIZINI}")
     if dusurulen:
         print(f"⚠ örneklem sınırıyla DÜŞÜRÜLEN tur: {dusurulen} — sessiz kırpma yok")

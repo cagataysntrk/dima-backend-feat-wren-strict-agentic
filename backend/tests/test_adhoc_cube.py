@@ -274,3 +274,125 @@ def test_QUERY_arrow_TIPLERINI_tasiyor(wren):
     r = wren.query("SELECT 1 AS a, 'x' AS b")
     assert r["column_types"] and len(r["column_types"]) == len(r["columns"])
     assert any("int" in t for t in r["column_types"])
+
+
+def test_ROZET_IKINCI_TURDA_da_durust():
+    """⚠️ **DENETİMDE ÖLÇÜLDÜ.** `/cube` `source="cube"` SABİTİNİ yazıyordu; ad-hoc bir
+    cube üzerinde yapılan chip düzenlemesi de `confidence=1.0` + *"LLM'siz, sıfır
+    maliyet"* + frontend'de `◆ CUBE` 🥇 alıyordu. Oysa veri hâlâ **incelenmemiş LLM
+    SQL'inden** türetilmiş dondurulmuş bir görünüm.
+
+    MIMARI §6.2z'nin *"kullanıcı `◆ CUBE` görmez"* beyanı **birinci turda doğru, ikinci
+    turda çürüktü**. YAPI taşınabilir, GÜVEN taşınamaz."""
+    import inspect
+
+    from app.answer import _build_explain
+    from app.routers import ask as ask_mod
+    from app.schemas import AskResponse
+
+    govde = inspect.getsource(ask_mod.cube)
+    assert '_kaynak = "llm:adhoc" if (cq or {}).get("adhoc") else "cube"' in govde, \
+        "/cube ad-hoc cevaba hâlâ `cube` rozeti veriyor"
+
+    r = AskResponse(question="x", sql="SELECT 1", planned_sql=None, result=None,
+                    source="llm:adhoc")
+    e = _build_explain(r)
+    assert e.confidence is None, f"ad-hoc chip cevabı ölçülemez güven taşımalı: {e.confidence}"
+    assert "LLM'siz" not in e.path
+
+
+# --- FAZ 9.9: ad-hoc cube TEK tüketiciye değil, ÜÇÜNE de öğretildi ----------------
+#
+# ## Ölçülen uyuşmazlık (denetim, Faz 9)
+#
+# MIMARI §6.2z *"aksiyon önerisi · köken · doğru grafik **hepsi açıldı**"* diyordu. Ama
+# `_adhoc_kayit` YALNIZ `_attach_next_steps`'te çağrılıyordu; `_attach_recommendations`
+# (`answer.py`) ve `_attach_viz` (`ask.py`) cube'u **tenant kataloğunda** arıyordu ve
+# ad-hoc cube orada **yoktur** → `spec`/`cube_meta` her Discovery cevabında `None`.
+#
+# Yani kapı yeşildi ve **hiçbir şey açmıyordu**: aynı kural bir tüketiciye öğretilmiş,
+# iki kardeşine öğretilmemişti — bu deponun kendi *"kimlik asimetrisi"* sınıfı (§6.1h),
+# bu turda dördüncü kez.
+
+def test_AKSIYON_ONERISI_adhoc_cubeu_TANIYOR(tmp_path):
+    """`spec=None` ile `recommend_actions` boyut-farkında öneri üretemez: 'sürükleyeni
+    bul' drill'i tam da cube meta'sından gelir."""
+    from app.answer import _attach_recommendations
+    from app.schemas import AskResponse, QueryResult
+
+    kurulan = adhoc_cube.turet(
+        _sonuc(n=3, kolon_tip=(("bolge", "string"), ("ciro", "double"))), tmp_path)
+    assert kurulan is not None
+    kurulan["cube_query"]["adhoc_id"] = "t-9"
+
+    resp = AskResponse(question="x", sql="SELECT 1", source="llm:test",
+                       result=QueryResult(columns=["bolge"], rows=[{"bolge": "a"}],
+                                          row_count=1))
+    resp.cube_query = kurulan["cube_query"]
+    resp.interpretation = {"signals": [{"kind": "trend", "measure": "ciro"}],
+                           "facts": [], "summary": "x"}
+
+    gorulen: dict = {}
+
+    class _R:
+        class state:  # noqa: N801
+            principal = None
+
+        class app:  # noqa: N801
+            class state:  # noqa: N801
+                adhoc_cubes = {"t-9": kurulan}
+
+    import app.answer as _ans
+
+    gercek = _ans.cube_router.recommend_actions if hasattr(_ans, "cube_router") else None
+    assert gercek is None or callable(gercek)
+
+    from app import cube_router as _cr
+
+    asil = _cr.recommend_actions
+
+    def _casus(signals, cq, spec):
+        gorulen["spec"] = spec
+        return asil(signals, cq, spec)
+
+    _cr.recommend_actions = _casus
+    try:
+        _attach_recommendations(_R, resp)
+    finally:
+        _cr.recommend_actions = asil
+
+    assert gorulen.get("spec") is not None, (
+        "aksiyon önerisi ad-hoc cube'u TENANT kataloğunda aradı → spec=None. "
+        "MIMARI §6.2z'nin 'aksiyon önerisi açıldı' iddiası karşılıksız kalıyor.")
+    assert gorulen["spec"].get("name") == resp.cube_query.get("cube")
+
+
+def test_VIZ_adhoc_semasina_DUSUYOR():
+    """`_attach_viz` bir kapanış (closure); davranışı KAYNAKTAN denetlenir. Ölçülen
+    kusur buydu: `cube_router._cube_meta(schema, ...)` — yani YALNIZ tenant şeması."""
+    import inspect
+
+    from app.routers import ask as ask_mod
+
+    govde = inspect.getsource(ask_mod.ask)
+    i = govde.index("def _attach_viz(")
+    # Sabit karakter penceresi KIRILGAN (ilk sürüm 2200'de kesti ve yanlış rapor verdi);
+    # sınır bir SONRAKİ iç fonksiyon tanımıdır.
+    j = govde.index("\n    def ", i + 10)
+    pencere = govde[i:j]
+    assert '_adhoc_store(request).get(' in pencere, (
+        "`_attach_viz` ad-hoc kaydı okumuyor — Discovery cevabında `cube_meta` her zaman "
+        "None kalır ve 'doğru grafik/köken açıldı' iddiası karşılıksızdır")
+    assert "_cube_meta(_sema," in pencere, "cube meta hâlâ SABİT tenant şemasından okunuyor"
+
+
+def test_UC_TUKETICININ_hepsi_adhoc_kaydini_okuyor():
+    """Kapı: dördüncü bir tüketici eklendiğinde de aynı sorunun sorulmasını sağlar."""
+    import inspect
+
+    from app import answer as ans
+
+    for fn in (ans._attach_next_steps, ans._attach_recommendations):
+        govde = inspect.getsource(fn)
+        assert "_adhoc_kayit(" in govde, (
+            f"{fn.__name__} ad-hoc cube'u tanımıyor — tenant kataloğunda arar ve BULAMAZ")

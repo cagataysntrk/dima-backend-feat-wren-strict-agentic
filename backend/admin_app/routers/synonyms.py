@@ -205,11 +205,14 @@ def mine_candidates(limit: int = 50, session: Session = Depends(get_session)) ->
         # "en çok HANGİ KELİME kapıya takıldı" — planın literal cümlesi. Kapsam kapısında
         # (R10) ve kimlik eşleşmesinde (R1) AÇIKLANAMAYAN kelimeler bir sinonim adayının
         # ta kendisidir; admin bunu görmeden HANGİ kelimeyi ekleyeceğini bilemez.
+        # `slug=None` → AKTİF şirketin kataloğu. Bu uç tenant-kapsamlı DEĞİL
+        # (`interaction_log` çok-tenantlıdır ama gruplama soru metnine göredir);
+        # kapsamı burada uydurmak, yanlış katalogla "tanınıyor" demek olurdu.
         "takilan_kelimeler": sorted(_takilan_kelimeler(g["question"])),
     } for g in ranked]}
 
 
-def _takilan_kelimeler(soru: str) -> set[str]:
+def _takilan_kelimeler(soru: str, slug: str | None = None) -> set[str]:
     """Sorunun katalogca AÇIKLANAMAYAN kelimeleri — sinonim adayının kendisi.
 
     `cube_router`'ın kapsam kapısıyla **aynı** dolgu sözlüğünü okur (`_period_hit_words` +
@@ -220,16 +223,44 @@ def _takilan_kelimeler(soru: str) -> set[str]:
     burada bir EYLEME dönüşür — *"şu kelime şu cube'a sinonim olarak eklensin mi?"*.
     Boyut/ölçü ayrımını admin yapar (`/sadmin/synonyms/cubes` zaten `field_kind` seçtiriyor)
     — yani **yeni bir uç/panel AÇILMADI**, var olan onay akışı besleniyor.
+
+    ## ⚠️ FAZ 9.15 — KATALOGDA TANINAN KELİMELER ADAY LİSTELENİYORDU
+
+    İlk sürüm `known` kümesine YALNIZ dolgu sözlüğünü veriyordu; cube/ölçü/boyut
+    sinonimleri **hiç eklenmiyordu**. Sonuç: admin'e *"`ciro`'yu sinonim olarak ekle"*
+    deniyordu — oysa `ciro`, `parti.toplam_ciro`'nun **zaten** sinonimi. Aynı şey
+    `borc` ve `musteri` için de ölçüldü.
+
+    Bu, aracın kendi amacını tersine çeviriyordu: triyaj kuyruğu *"kapsam boşluğu"*
+    göstermek yerine kataloğun **var olan** sözlüğünü tekrar öneriyor, gerçek boşluklar
+    gürültünün içinde kayboluyordu. `route()`'un kapsam kapısı `known`'a cube/ölçü/boyut
+    eşleşmelerini ekler (`cube_router.py:~2670`); burada aynı şey yapılmazsa iki taraf
+    ayrışır — bu dosyanın kendi docstring'inin *"ayrı liste tutmak iki tarafı ayrıştırır"*
+    uyarısı, tam da kendisi için geçerliydi.
     """
     try:
-        from app.cube_router import _misc_hit_words, _norm, _period_hit_words, _uncovered
+        from app.cube_router import (
+            _misc_hit_words, _norm, _period_hit_words, _syn_hit_words, _uncovered,
+        )
     except Exception:                      # admin plane Wren'siz koşabilir — sessiz geç
         return set()
     q = _norm(soru or "")
     if not q:
         return set()
-    return {w for w in _uncovered(q, _period_hit_words(q) | _misc_hit_words(q))
-            if len(w) >= 3}
+    known = _period_hit_words(q) | _misc_hit_words(q)
+    # KATALOG SÖZLÜĞÜ: cube kimliği + ölçü + boyut sinonimleri. Kapsam kapısıyla AYNI
+    # kaynak; `slug` verilmezse aktif şirketin kataloğu okunur.
+    try:
+        for _ad, c in (_known_cubes(slug) or {}).items():
+            known |= _syn_hit_words(q, [_ad, *(c.get("synonyms") or []),
+                                        str(c.get("display") or "")])
+            for syns in (c.get("measure_synonyms") or {}).values():
+                known |= _syn_hit_words(q, syns)
+            for syns in (c.get("dimension_synonyms") or {}).values():
+                known |= _syn_hit_words(q, syns)
+    except Exception:                      # katalog okunamıyorsa dolgu sözlüğüyle devam
+        pass
+    return {w for w in _uncovered(q, known) if len(w) >= 3}
 
 
 @router.get("/cubes")

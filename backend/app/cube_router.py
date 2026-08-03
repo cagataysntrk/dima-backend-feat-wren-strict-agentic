@@ -17,10 +17,16 @@ from __future__ import annotations
 import calendar
 import contextvars
 import difflib
+import logging
 import re
 from datetime import date, timedelta
 
 from app.llm import _norm
+
+#: FAZ 9.3 — bu modül bugüne kadar hiç log ATMIYORDU; `route()` saf bir fonksiyon olduğu
+#: için doğruydu. Ama chip DÜŞÜRMEK bir karardır ve sessiz kalırsa "kaç chip yutuldu"
+#: sorusu cevapsız kalır — deponun kendi *"sessiz kırpma yok"* disiplini (§0.5 sınır kuralı).
+_log = logging.getLogger("dima.cube_router")
 
 # Göreli tarih aralığı: "son 3 ay / son 30 gun / son 2 hafta / son yil" → time dim `gte` filtresi.
 # Cube'da granularity'siz saf WHERE üretir (ay kovası eklemez) → haftanın-günü vb. bozulmaz.
@@ -1411,13 +1417,125 @@ def olcu_netlestirme(adaylar: list[tuple[dict, str]],
         # SORGU: HER İKİ dalda da doğrulanır. Çakışma olmasa bile ham etiket tek başına
         # çözülmeyebiliyor (ölçüldü: "dE", "sapma yüzdesi" → R1/R10) ve tıklanınca
         # çalışmayan bir chip, çakışmadan bağımsız olarak kötüdür.
-        secenek = {"label": label, "query": _calisan_sorgu(c, etiket, schema)}
+        sorgu = _calisan_sorgu(c, etiket, schema)
+        if sorgu is None:
+            # FAZ 9.3: çözülemeyen chip HİÇ ÜRETİLMEZ. Tıklanınca kullanıcıyı aynı duvara
+            # ikinci kez çarptıran bir chip, chip olmamasından kötüdür. Sessiz değil:
+            _log.info("netleştirme chip'i DÜŞÜRÜLDÜ (hiçbir aday çözülmedi) — etiket=%r "
+                      "cube=%s", etiket, c.get("name"))
+            continue
+        secenek = {"label": label, "query": sorgu}
         if not any(o["label"] == secenek["label"] for o in out):
             out.append(secenek)
     return out
 
 
-def _calisan_sorgu(cube: dict, etiket: str, schema: dict | None) -> str:
+def _sonda_reddi_korur(fn):
+    """`route()` SONDASI yapan yardımcıları sarar: kullanıcının red gerekçesini EZMEZ.
+
+    ⚠️ **DENETİMDE ÖLÇÜLDÜ.** `red_gerekcesi()` bir ContextVar'dır ve **her** `route()`
+    çağrısı girişte `reddi_sifirla()` yapar. Chip doğrulaması (`_calisan_sorgu`) `route()`'u
+    defalarca SONDA olarak çağırıyordu → kullanıcının gerçek kodu (`R1`) son sondanınkiyle
+    ya da `None` ile **eziliyordu**. Ölçüm:
+
+        kullanıcının gerçek red kodu : R1
+        netleştirmeden SONRA         : None   ← `answer.py` BUNU logluyordu
+
+    Yani Faz 0'ın telemetrisi, Faz 2b'nin beslediği kolon, tam da hedeflediği
+    **belirsizlik sınıfında boş** geliyordu. Sonda bir ölçüm aracıdır; ölçtüğü şeyi
+    değiştirmemeli.
+    """
+    import functools
+
+    @functools.wraps(fn)
+    def sarmal(*a, **k):
+        onceki = _reddi_var.get()
+        try:
+            return fn(*a, **k)
+        finally:
+            _reddi_var.set(onceki)
+    return sarmal
+
+
+@_sonda_reddi_korur
+def chip_kullanisli_mi(etiket: str, schema: dict | None) -> bool:
+    """Bir chip tıklandığında BİR YERE varıyor mu — **red gerekçesini ezmeden**.
+
+    ## ⚠️ İLK SÜRÜM YANLIŞ ŞEYİ ÖLÇTÜ (ölçülerek bulundu, Faz 9.2)
+
+    İlk hâli `route(etiket) is not None` diyordu. Denetim raporunun öncülü buydu: kardeş
+    netleştirme dalları `display` etiketini doğrulamadan chip yapıyor, `_calisan_sorgu`'nun
+    docstring'i bunun **R1/R10** verdiğini ölçmüştü.
+
+    **Ölçüm öncülü çürüttü.** Katalogdan türeyen **85 benzersiz etiketin hepsi** tıklanınca
+    bir yere varıyor:
+
+        tıklanınca doğrudan CEVAP : 2
+        DARALTAN chip üretti      : 83
+        ÇIKMAZ SOKAK              : 0
+
+    `route()` = `None` bir chip'i **kırık yapmaz**: *"sürdürülebilirlik"* R4 verir ama
+    `/ask` *"hangi ölçüyü istiyorsun?"* + **6 çalışan chip** döndürür — duvar değil **huni**.
+    *"makine"* ise route'suz olduğu hâlde doğrudan cevaplanıyor. `route()`'u tek ölçüt
+    saymak, çalışan üç yolu sessizce kesiyordu (üç golden test bunu yakaladı).
+
+    ## O zaman 2a-2'deki 39 kırık chip neydi?
+
+    Onlar katalog etiketi DEĞİL, **sentezlenmiş** dizelerdi (`f"{cube_display} {etiket}"` →
+    *"mizan (hesap bakiyeleri) borç"*). Kural bu ayrımda: **katalogun TANIDIĞI bir terim
+    geçerli bir huni girişidir; SENTEZLENMİŞ bir sorgu doğrulanmak zorundadır.**
+
+    Ölçüt bu yüzden dört kollu — biri bile tutarsa chip bir yere varır.
+    """
+    if schema is None:
+        return True          # doğrulama İMKÂNSIZ ≠ doğrulandı-ve-kırık
+    try:
+        if route(etiket, schema) is not None:
+            return True                                   # 1) tam cevap
+        n = _norm(etiket)
+        if _match_cube(n, schema) is not None:
+            return True                                   # 2) konu hunisi ("hangi ölçü?")
+        if measure_cube_candidates(n, schema):
+            return True                                   # 3) ölçü hunisi ("hangi cube?")
+        for c in schema.get("cubes") or []:               # 4) boyut hunisi ("hangi dönem?")
+            if _match_dims(n, c):
+                return True
+    except Exception:        # noqa: BLE001 — doğrulama chip'i düşürmez, yalnız eler
+        return False
+    return False
+
+
+@_sonda_reddi_korur
+def chip_cozuluyor_mu(etiket: str, schema: dict | None) -> bool:
+    """Bir chip etiketi `route()` ile TAM ÇÖZÜLÜYOR mu — **red gerekçesini ezmeden**.
+
+    ⚠️ Bu ölçüt **sentezlenmiş** sorgular içindir (`_calisan_sorgu`). Katalog etiketleri
+    için `chip_kullanisli_mi` kullanılır — gerekçesi orada ölçümle yazılı.
+
+    ## Neden bu fonksiyon MODÜL DIŞINA açıldı (Faz 9.2/9.3)
+
+    Sonda-yalıtımı (`_sonda_reddi_korur`) bu modülde kuruldu ama **yalnız `_calisan_sorgu`ya**
+    takılıydı. Faz 9.2 `ask.py`'de kardeş dallara aynı doğrulamayı eklerken `route()`'u
+    **doğrudan** çağırdı ve kusur ölçülerek geri geldi:
+
+        kullanıcının red gerekçesi ÖNCE : R4
+        chip sondalarından SONRA        : R1   ← `answer.py:198` BUNU yazacaktı
+
+    Yani düzeltmenin kendisi, düzelttiği kusuru başka bir kapıdan yeniden açtı — bu oturumun
+    *"kimlik asimetrisi"* sınıfının kendi kodumdaki hâli. **Yama değil kapı:** doğrulamayı
+    isteyen herkes bu fonksiyonu çağırır, sarmalı kendi eklemez; sarmalı unutmak artık
+    mümkün değil (`tests/test_dogrulanmis_chip.py` bunu ölçüyor).
+    """
+    if schema is None:
+        return True          # doğrulama İMKÂNSIZ ≠ doğrulandı-ve-kırık (bkz. `_calisan_sorgu`)
+    try:
+        return route(etiket, schema) is not None
+    except Exception:        # noqa: BLE001 — doğrulama chip'i düşürmez, yalnız eler
+        return False
+
+
+@_sonda_reddi_korur
+def _calisan_sorgu(cube: dict, etiket: str, schema: dict | None) -> str | None:
     """Chip'in `query`'si: `route()` ile DOĞRULANMIŞ bir "cube + ölçü" ifadesi.
 
     ## Neden `display` yetmiyor (ölçüldü)
@@ -1434,8 +1552,19 @@ def _calisan_sorgu(cube: dict, etiket: str, schema: dict | None) -> str:
     kullanıcıyı aynı duvara ikinci kez çarptırır ve chip olmamasından kötüdür (aynı kural
     `ay_netlestirme`'de de uygulandı, Faz -0.5a).
 
-    Hiçbiri çalışmazsa ham birleşim döner: chip yine de bir İPUCU taşır ve `label`
-    kullanıcıya hangi cube'u kastettiğini zaten söyler.
+    ## Hiçbiri çalışmazsa: `None` (FAZ 9.3 — eskiden ham etiket dönerdi)
+
+    Eski gerekçe *"chip yine bir İPUCU taşır"*dı. Ama tıklanınca çalışmayan chip, yukarıda
+    yazılı olan kuralın **kendisini** çiğniyor: kullanıcıyı aynı duvara ikinci kez
+    çarptırır. *"39 → 0"* bir **ölçümdü**, yapısal garanti değil.
+
+    Değişiklik ölçülerek yapıldı: bugün 116 netleştirme chip'inin **116'sı** çözülüyor,
+    yani bu dala **hiç düşülmüyor** → gerileme riski yok, kazanç ölçümün garantiye
+    dönüşmesi. Çağıran (`olcu_netlestirme`) `None`'ı eler ve **loglar**.
+
+    ⚠️ `schema is None` AYRI bir durumdur: doğrulama **imkânsızdır**, başarısız değildir.
+    Orada ham etiket dönmek dürüsttür — "doğrulayamadım" ile "doğruladım, kırık" aynı şey
+    değil ve ikincisiymiş gibi davranmak chip'i gerekçesiz keserdi.
     """
     if schema is None:
         return etiket
@@ -1458,9 +1587,17 @@ def _calisan_sorgu(cube: dict, etiket: str, schema: dict | None) -> str:
         aday = f"{ad} {etiket}"
         if _cozuluyor(aday):
             return aday
-    # 3) Hiçbiri çalışmıyor → ham etiket. Chip yine bir İPUCU taşır ve `label` kullanıcıya
-    #    hangi cube'u kastettiğini zaten söyler; uydurma bir sorgu üretmekten iyidir.
-    return etiket
+    # 3) Hiçbiri çalışmıyor → **chip ÜRETİLMEZ** (`None`).
+    #
+    # ⟳ FAZ 9.3: eskiden ham etiket dönüyordu, gerekçesi *"chip yine bir İPUCU taşır"*.
+    # Ama tıklanınca çalışmayan bir chip, kullanıcıyı aynı duvara **ikinci kez** çarptırır
+    # ve chip olmamasından **kötüdür** — bu deponun `ay_netlestirme`/`olcu_netlestirme`'de
+    # iki kez uyguladığı kural. *"39 → 0"* bir **ölçümdü**, yapısal garanti değil.
+    #
+    # Değişiklik ÖNCE ölçüldü: bugün 116 netleştirme chip'inin **116'sı** çözülüyor,
+    # yani bu dala **hiç düşülmüyor** → gerileme riski sıfır, kazanç ölçümün garantiye
+    # dönüşmesi. Düşen olursa `olcu_netlestirme` onu eler ve sayıyı loglar.
+    return None
 
 
 def measure_cube_candidates(q: str, schema: dict) -> list[tuple[dict, str]]:
@@ -2926,6 +3063,19 @@ def parse_cube_query(text: str, index: dict) -> dict | None:
     #     toplama chip'i geri gelirdi — yani planın 2. risk maddesi sessizce açılırdı;
     #     (c) `provenance` kaybolur, makbuz yapının nereden geldiğini söyleyemezdi.
     # Değerler ÜRETİLMEZ, yalnız var olan işaret taşınır (uydurma yüzeyi yok).
+    # PROMPT-ENHANCER İZİ (Faz 3b) — makbuzun soru kökeni. Beyaz liste bunu düşürseydi
+    # chip tıklandığı an (`/cube`) iz KOPARDI ve *"hangi metin çözüldü"* sorusu ikinci
+    # adımdan itibaren cevapsız kalırdı. `adhoc_id` için düzeltilen kusurun AYNISI.
+    # AYRIK AYLAR (Faz 2a-4) — **SESSİZ-YANLIŞ KAPISI.** İşaret düşer de kapsayan aralık
+    # kalırsa cevap ARAYA GİREN AYLARI da içerir ve `source=cube` rozetiyle gelir.
+    # Ölçüldü (denetim): `['2026-01','2026-03']` → `['2026-01','2026-02','2026-03']`.
+    # Tetikleyici tek tık: `suggest_next_steps` chip'i işareti taşıyor, chip `/cube`'a
+    # gidiyor, orada düşüyordu. Panoya ekleme ve zamanlanmış rapor bunu KALICI da yapardı.
+    # `adhoc_id`/`provenance_soru` için yamalanan liste, bunu ATLAMIŞTI.
+    if isinstance(cq.get("ayrik_aylar"), dict) and cq["ayrik_aylar"].get("aylar"):
+        out["ayrik_aylar"] = cq["ayrik_aylar"]
+    if isinstance(cq.get("provenance_soru"), dict):
+        out["provenance_soru"] = cq["provenance_soru"]
     if cq.get("adhoc"):
         out["adhoc"] = True
         for k in ("adhoc_id", "provenance"):

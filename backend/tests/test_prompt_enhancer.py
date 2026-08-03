@@ -217,9 +217,6 @@ def test_YAML_off_TUZAGI_kapali():
 
     import yaml
 
-    yol = pathlib.Path(__file__).resolve().parents[1] / "demo" / "packs" / "features.yml"
-    veri = yaml.safe_load(yol.read_text(encoding="utf-8")) or {}
-
     from app.features import STAGES
 
     def _tara(d, yol_=""):
@@ -233,4 +230,26 @@ def test_YAML_off_TUZAGI_kapali():
                     f'`{k}: "off"`')
                 assert v in STAGES, f"{yol_}{k} = {v!r} — geçerli aşama değil {STAGES}"
 
-    _tara(veri.get("features") or veri)
+    # ⟳ FAZ 9.12 — KAPI YARIM KAPALIYDI. Yalnız `demo/packs/features.yml` taranıyordu;
+    # ama `features.py` AYNI dönüşümü sektör pack'lerine ve şirket dosyalarına da
+    # uyguluyor (`resolve_for` katman katman birleştirir). Bugün oralar boş → tuzak
+    # ısırmıyor; yarın `oee_ozel: off` yazan **aynı sessiz-AÇIK** kapanına düşer ve CI
+    # yeşil kalır. Bir kapının "bugün ısırmıyor" olması, kapsamının doğru olduğunu
+    # göstermez — bu oturumda ölçülen `-0.5c` kusuruyla aynı sınıf.
+    kok = pathlib.Path(__file__).resolve().parents[1]
+    adaylar = [kok / "demo" / "packs" / "features.yml",
+               *sorted((kok / "demo" / "packs" / "sektor").glob("*/pack.yml")),
+               *sorted((kok / "demo" / "companies").glob("*/company.yml"))]
+    tarandi = 0
+    for yol in adaylar:
+        if not yol.exists():
+            continue
+        veri = yaml.safe_load(yol.read_text(encoding="utf-8")) or {}
+        blok = veri.get("features") if isinstance(veri, dict) else None
+        if blok is None and yol.name == "features.yml":
+            blok = veri
+        if not blok:
+            continue
+        tarandi += 1
+        _tara(blok, f"{yol.name}:")
+    assert tarandi >= 1, "hiçbir features bloğu taranmadı — kapı BOŞA koşuyor"

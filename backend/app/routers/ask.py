@@ -317,24 +317,50 @@ def _capraz_alan_pilotu(request, body, q_norm: str, schema: dict, principal,
         _log.info("çapraz-alan pilotu: plan seçilemedi", exc_info=True)
         return None
 
+    # ÇAPRAZ-ALAN ADIMI PLANA EKLENİR. `sec()` LLM yoksa yalnız `["route"]` döner ve o
+    # hâlde pilot `route()`'un zaten yaptığını TEKRARLARDI — hiçbir kazanç üretmezdi.
+    # `cross_cube_add` DETERMİNİSTİKTİR: LLM olsun olmasın denenmeli.
+    if not any(a["arac"] == "cross_cube_add" for a in adimlar):
+        adimlar = list(adimlar) + [{"arac": "cross_cube_add",
+                                    "neden": "çapraz-alan kompozisyonu (deterministik)"}]
+
     sonuc = None
     for adim in adimlar:
         ad = adim.get("arac")
         try:
             if ad == "route":
-                sonuc = plan.calistir("route", body.question, schema)
-                if sonuc:
-                    break
-            elif ad == "llm.select_cube":
+                # BREAK YOK — bu, pilotun ASIL noktası. `route` bir TABAN üretir ve
+                # kompozisyon adımı o tabanı genişletir. İlk sürüm burada `break`
+                # ediyordu, dolayısıyla `cross_cube_add`'e HİÇ ULAŞILMIYORDU: pilot
+                # `route()`'un zaten yaptığını tekrarlayıp duruyordu — Faz 4'ün kazancının
+                # "yok" olmasının ikinci sebebi buydu (birincisi aracın hiç çağrılmaması).
+                sonuc = plan.calistir("route", body.question, schema) or sonuc
+            elif ad == "llm.select_cube" and not sonuc:
                 catalog_text, index = cube_router.build_catalog(schema)
                 ham = plan.calistir("llm.select_cube", body.question, catalog_text)
                 cq = cube_router.parse_cube_query(ham, index)
                 if cq:
                     sonuc = {"cube_query": cq, "order": None, "limit": None}
                     break
-            # Diğer araçlar bu pilotta ÇAĞRILMAZ: `sec()` onları önerebilir ve öneri
-            # makbuzda görünür, ama cevabı ÜRETEN yalnız yukarıdaki iki basamaktır.
-            # Sessiz bir genişleme yerine dar ve denetlenebilir bir pilot.
+            elif ad == "cross_cube_add" and sonuc:
+                # ÇAPRAZ-ALAN KOMPOZİSYONU — planın somut pilotu ve fazın ASIL kazancı.
+                # MIMARI §9.2'nin yapısal sınırı: bir cube'un ölçüsü + BAŞKA cube'un
+                # boyutu **tek** CubeQuery'de ifade edilemez. İki adımda edilebilir:
+                # `route` bir taban üretir, bu araç öteki cube'un ölçüsünü `blend` olarak
+                # katar. **Deterministik** — LLM gerekmiyor, yalnız SIRA gerekiyordu.
+                #
+                # ⚠️ DENETİMDE BULUNDU: pilotun ilk sürümü yalnız `route` ve
+                # `llm.select_cube` deniyordu; `blend` HİÇ çağrılmıyordu. Yani Faz 4'ün
+                # kabul ölçütü (*"Discovery yerine 2 adımlı kompozisyon"*) karşılanmamış,
+                # pilot yalnız "planlayıcı çalışıyor"u kanıtlıyordu — `route()`'a EK bir
+                # şey getirmiyordu. Kazanç belirsiz değildi, **YOKTU**.
+                genis = plan.calistir("cross_cube_add", sonuc["cube_query"],
+                                      q_norm, schema)
+                if genis:
+                    sonuc = {"cube_query": genis, "order": None, "limit": None}
+                    break
+            # Kalan araçlar bu pilotta ÇAĞRILMAZ: `sec()` onları önerebilir ve öneri
+            # makbuzda görünür, ama cevabı ÜRETEN yalnız yukarıdaki basamaklardır.
         except (_planner.AracReddi, _planner.ButceAsimi, KeyError) as red:
             # Kapılar ÇALIŞTI. Bu bir hata değil, sistemin doğru davranışı — ve
             # `calistir()` adımı zaten kayda geçirdi (hata alanıyla birlikte).
@@ -361,6 +387,89 @@ def _capraz_alan_pilotu(request, body, q_norm: str, schema: dict, principal,
         except Exception:  # noqa: BLE001 — makbuz cevabı düşürmez
             _log.warning("agent_run makbuzu iliştirilemedi", exc_info=True)
     return resp
+
+
+def _vqr_olcu_tutarli(q_norm: str, cached: dict, schema: dict) -> bool:
+    """Benzerlik eşleşmesinin ÖLÇÜSÜ, sorunun kendi ölçüsüyle tutarlı mı?
+
+    **Canlı turda ölçülen vaka:** *"geçen ay toplam FİRE"* → kayıt *"geçen ay toplam
+    CİRO"* → `SELECT SUM(ciro_tl)`, `confidence=0.95`. Beş token'ın dördü eşleştiği için
+    kosinüs 0,92'yi aştı; farklı olan **tek** kelime ise **ölçünün kendisiydi**.
+
+    Bu yüzden kapı **eşik değil SEMANTİK**: eşiği yükseltmek yanlış çözümdü — sorun
+    benzerliğin ne kadar YÜKSEK olduğu değil, **hangi kelimede** olduğu.
+
+    Kural: soru bir ölçüyü **açıkça adlandırıyorsa**, kaydın `cube_query`'si de **o
+    ölçüyü** taşımalı. Soru ölçü adlandırmıyorsa (ör. *"geçen ayki durum"*) kapı
+    **karışmaz** — orada tutarsızlık iddia edilemez ve fazla dar bir kapı, kapsamı
+    gerekçesiz keserdi.
+    """
+    cq = (cached or {}).get("cube_query") or {}
+    kayit_olculeri = {m for m in (cq.get("measures") or []) if isinstance(m, str)}
+    if not kayit_olculeri:
+        return True                       # ham SQL kaydı — ölçü iddiası yok, karışma
+    cube_meta = next((c for c in (schema.get("cubes") or [])
+                      if c.get("name") == cq.get("cube")), None)
+    if cube_meta is None:
+        return True                       # şema değişmiş; başka kapı (sürüm) ilgilenir
+    sorunun_olcusu, _syn = cube_router._match_measure(q_norm, cube_meta)
+    if sorunun_olcusu is None:
+        return True                       # soru ölçü ADLANDIRMIYOR → tutarsızlık iddia edilemez
+    return sorunun_olcusu in kayit_olculeri
+
+
+def _dogrulanmis_chipler(labels, schema, *, en_fazla: int) -> list[Suggestion]:
+    """Etiketleri chip'e çevirir — ama **yalnız `route()`'un çözebildiklerini**.
+
+    ## Neden (Faz 9.2, denetimde bulundu)
+
+    `olcu_netlestirme` (2a-2) chip sorgusunu `route()` ile **doğruluyor** ve gerekçesi
+    ölçülmüştü: `display` bir **insan etiketidir** (`mizan`'ınki *"mizan (hesap
+    bakiyeleri)"*), sorgu kelimesi değil — o turda **39 chip kırıktı**.
+
+    Ama **kardeş netleştirme dalları** (`cube_only_match` · `partial_unknowns` ·
+    daraltma · katalog örnekleri · beraberlik) hâlâ `Suggestion(label=lb, query=lb)`
+    üretiyordu: aynı kural bir dalda uygulanıyor, kardeşinde uygulanmıyor —
+    deponun kendi *"kimlik asimetrisi"* sınıfı (MIMARI §6.1h), üçüncü kez.
+
+    **Tıklanınca hiçbir yere varmayan bir chip, kullanıcıyı aynı duvara ikinci kez
+    çarptırır ve chip olmamasından KÖTÜDÜR.** Bu yüzden kullanışsız etiket **düşürülür**;
+    kaç tanesinin düştüğü **loglanır** (sessiz kırpma yok).
+
+    ## ⚠️ ÖLÇÜT DÜZELTİLDİ — ilk sürüm çalışan chip'leri kesiyordu
+
+    İlk hâl `route()`'u tek ölçüt aldı. Ölçüm bunu **çürüttü**: katalogdan türeyen 85
+    etiketin **hepsi** bir yere varıyor (2 doğrudan cevap · 83 daraltan chip · **0 çıkmaz
+    sokak**). `route()`=`None` olan *"sürdürülebilirlik"* bile *"hangi ölçüyü istiyorsun?"*
+    + 6 çalışan chip döndürüyor — **duvar değil huni**. Üç golden test bu gerilemeyi yakaladı.
+
+    Denetim raporunun 9.2 öncülü (*"bu beş dal kırık chip üretiyor"*) böylece **ölçülerek
+    reddedildi** — 2a-1'in `elektrik` kararıyla aynı disiplin. Kapı yine de KALIYOR, çünkü
+    ölçüt artık doğru şeyi ölçüyor: **sentezlenmiş** bir sorgu (2a-2'nin 39 kırık chip'i
+    gibi) hâlâ elenebilir. Ayrıntı: `cube_router.chip_kullanisli_mi`.
+    """
+    tutulan: list[Suggestion] = []
+    dusen: list[str] = []
+    for lb in labels:
+        etiket = str(lb).strip()
+        if not etiket:
+            continue
+        # ⚠️ `route()` DOĞRUDAN çağrılmaz: her çağrı `reddi_sifirla()` yapar ve kullanıcının
+        # gerçek red kodunu EZER (ölçüldü: R4 → R1; `answer.py:198` onu yazacaktı). Sonda
+        # yalıtımı `chip_kullanisli_mi`'nin İÇİNDE — burada tekrarlanmaz ki unutulamasın.
+        #
+        # Ölçüt `route()` DEĞİL: bu daldaki etiketler KATALOGDAN gelir ve ölçüldü ki
+        # route'suz olanlar bile bir yere varıyor (huni). Ayrıntı: `chip_kullanisli_mi`.
+        if cube_router.chip_kullanisli_mi(etiket, schema):
+            tutulan.append(Suggestion(label=etiket, query=etiket))
+        else:
+            dusen.append(etiket)
+        if len(tutulan) >= en_fazla:
+            break
+    if dusen:
+        _log.info("netleştirme: %d chip ÇÖZÜLMEDİĞİ için düşürüldü: %s",
+                  len(dusen), dusen[:8])
+    return tutulan
 
 
 def _parse_decision(raw: str) -> dict:
@@ -813,12 +922,24 @@ def upload_dataset(request: Request, body: UploadRequest) -> UploadResponse:
               int((time.monotonic() - t0) * 1000))
     dims = [c for c in info["columns"] if c["role"] == "dimension"]
     meas = [c for c in info["columns"] if c["role"] == "measure"]
-    sug: list[Suggestion] = []
+    # FAZ 9.2 — yükleme chip'leri de DOĞRULANIR, ama **veri setinin KENDİ şemasıyla**:
+    # bu chip'ler tıklandığında `/ask` aynı `session_id` ile gelir ve `_service_for` tenant
+    # servisini değil YÜKLENEN dataset'i seçer (`:71-78`). Tenant şemasıyla doğrulamak
+    # hepsini gerekçesiz düşürürdü — doğrulama, chip'in GERÇEKTEN gideceği şemaya karşı
+    # yapılmazsa bir kapı değil bir gürültü kaynağıdır.
+    ham = []
     if dims and meas:
-        q = f"{dims[0]['orig']} bazında {meas[0]['orig']}"
-        sug.append(Suggestion(label=q, query=q))
+        ham.append(f"{dims[0]['orig']} bazında {meas[0]['orig']}")
     if meas:
-        sug.append(Suggestion(label=f"toplam {meas[0]['orig']}", query=f"toplam {meas[0]['orig']}"))
+        ham.append(f"toplam {meas[0]['orig']}")
+    try:
+        veri_semasi = svc.schema()
+    except Exception:  # noqa: BLE001 — şema alınamıyorsa doğrulama İMKÂNSIZ, chip kesilmez
+        _log.warning("/ask/upload: chip doğrulaması için şema alınamadı", exc_info=True)
+        veri_semasi = None
+    sug: list[Suggestion] = _dogrulanmis_chipler(ham, veri_semasi, en_fazla=2)
+    # META chip: `route()`'a değil `_is_catalog_query` (`:579`) katalog yoluna gider —
+    # doğrulama kapısı ona UYGULANMAZ, çünkü kapı yanlış mekanizmayı ölçerdi.
     sug.append(Suggestion(label="neler sorabilirim", query="neler sorabilirim"))
     return UploadResponse(dataset=label, row_count=info["row_count"],
                           columns=info["columns"], suggestions=sug)
@@ -889,12 +1010,19 @@ def cube(request: Request, body: CubeRequest) -> AskResponse:
         _log.warning("chip düzenleme derleme/çalıştırma başarısız", exc_info=True)
         raise HTTPException(status_code=400,
                             detail=f"Bu düzenleme çalıştırılamadı: {str(exc)[:200]}")
+    # ⚠️ ROZET DÜRÜSTLÜĞÜ İKİNCİ TURDA DA GEÇERLİ OLMALI (denetimde ölçüldü).
+    # `source="cube"` SABİTİ, ad-hoc bir cube üzerinde yapılan chip düzenlemesini de
+    # deterministik gösteriyordu: `confidence=1.0`, path *"LLM'siz, sıfır maliyet"*,
+    # frontend `◆ CUBE` + 🥇. Oysa veri hâlâ **incelenmemiş LLM SQL'inden** türetilmiş
+    # DONDURULMUŞ bir görünümdür — MIMARI §6.2z'nin *"kullanıcı `◆ CUBE` görmez"* beyanı
+    # tam olarak burada çürüyordu. Yapı taşınabilir, GÜVEN taşınamaz.
+    _kaynak = "llm:adhoc" if (cq or {}).get("adhoc") else "cube"
     resp = AskResponse(
         question=body.label or "(chip düzenleme)",
         sql=sql,
         planned_sql=planned,
         result=QueryResult(**result),
-        source="cube",
+        source=_kaynak,
         cube_query=cq,
         trace=[trace_msg],
         thread_id=body.thread_id,
@@ -1366,7 +1494,18 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # üretmişti ve `semi_additive` hiçbir zaman geçirilmemişti.
         cube_meta_for_viz: dict | None = None
         if cq and cq.get("cube"):
-            cube_meta = cube_router._cube_meta(schema, cq["cube"])
+            # FAZ 9.9 — AD-HOC CUBE TENANT KATALOĞUNDA YOKTUR. Eskiden yalnız `schema`'ya
+            # bakılıyordu → Discovery cevabında `cube_meta` **her zaman None** kalıyordu ve
+            # MIMARI §6.2z'nin *"doğru grafik · köken hepsi açıldı"* iddiası **karşılıksız**
+            # oluyordu: kapı yeşil, hiçbir şey açılmıyor. `_attach_next_steps` bunu zaten
+            # doğru yapıyordu — kural bir tüketiciye öğretilmiş, kardeşine öğretilmemişti
+            # (*"kimlik asimetrisi"*, MIMARI §6.1h).
+            _sema = schema
+            if cq.get("adhoc"):
+                _kayit = _adhoc_store(request).get(str(cq.get("adhoc_id") or ""))
+                if _kayit and _kayit.get("schema"):
+                    _sema = _kayit["schema"]
+            cube_meta = cube_router._cube_meta(_sema, cq["cube"])
             if cube_meta:
                 cube_meta_for_viz = cube_meta
                 # Madde 12 (1 Ağustos 2026): KPI-olmayan cube raporları için de düz-dil
@@ -1814,6 +1953,24 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                           "üretiyor (kayıt=%r, soru=%r)",
                           (cached.get("question") or "")[:60], body.question[:60])
                 cached = None
+            elif not _vqr_olcu_tutarli(q_norm, cached, schema):
+                # ⚠️ İKİNCİ KAPI — `route()` çözemediğinde de gerekli.
+                #
+                # Yukarıdaki "deterministik-önce" kuralı bir HAFİFLETMEDİR: yalnız
+                # `route()` bir cevap üretebildiğinde korur. Ölçülen boşluğun (~%31)
+                # içinde `route()` çözemez ve benzerlik kaydı **yine** cevap olur —
+                # canlı turda görülen *"fire → ciro"* vakasının tam olarak mümkün kaldığı
+                # yer burasıdır.
+                #
+                # Kapı SEMANTİK, eşik değil: kullanıcının sorusu bir ölçüyü AÇIKÇA
+                # adlandırıyorsa (`_match_measure`), kaydın ölçüsü de o olmalı. Eşiği
+                # yükseltmek yanlış çözümdü — asıl sorun benzerliğin ne kadar YÜKSEK
+                # olduğu değil, **hangi kelimede** olduğu: beş token'ın dördü eşleşiyor
+                # ama farklı olan tek kelime ÖLÇÜNÜN KENDİSİ.
+                _log.info("VQR benzerlik eşleşmesi ATLANDI — ölçü TUTARSIZ "
+                          "(kayıt=%r, soru=%r)",
+                          (cached.get("question") or "")[:60], body.question[:60])
+                cached = None
         cached_payload = cached.get("cube_query") if cached else None
         cached_sql = (cached_payload or {}).get("wren_sql") if cached_payload else None
         # ŞEMA-SÜRÜM KAPISI (Faz 0.6, 2 Ağustos 2026). Öğrenilmiş HAM SQL, öğrenildiği
@@ -2195,7 +2352,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             return _finish(AskResponse(
                 question=body.question, source=None,
                 note=f"{cube_label} için hangi ölçüyü istiyorsun?",
-                suggestions=[Suggestion(label=lb, query=lb) for lb in labels[:8]],
+                suggestions=_dogrulanmis_chipler(labels, schema, en_fazla=8),
                 trace=["Intent-path: cube belirlendi, ölçü belirsiz → netleştirme (LLM'siz)"],
             ))
 
@@ -2254,7 +2411,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                    "düşülmedi. Ne demek istediğini biraz daha açar mısın?")
             return _finish(AskResponse(
                 question=body.question, source=None, note=note,
-                suggestions=[Suggestion(label=lb, query=lb) for lb in labels[:6]],
+                suggestions=_dogrulanmis_chipler(labels, schema, en_fazla=6),
                 trace=[trace_msg],
             ))
 
@@ -2283,7 +2440,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     question=body.question, source=None,
                     note=f"{konular} ile ilgili görünüyor ama hangi ölçüyü istediğini "
                          "anlayamadım. Şunlardan biri mi?",
-                    suggestions=[Suggestion(label=lb, query=lb) for lb in dar_labels[:8]],
+                    suggestions=_dogrulanmis_chipler(dar_labels, schema, en_fazla=8),
                     trace=["Intent-path: konu daraltıldı (zayıf cube/boyut sinyali, LLM'siz)"],
                 ))
             # (2) DISCOVERY BİR SEÇENEK OLSUN — ama GÜVENLE. Yapısal-takip zinciri bu
@@ -2305,7 +2462,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 question=body.question, source=None,
                 note="Neyi karşılaştırmak/görmek istediğini anlayamadım — sorunda tanıdığım "
                      "bir konu geçmiyor. Şunlardan birini mi demek istedin?",
-                suggestions=[Suggestion(label=lb, query=lb) for lb in example_labels[:14]],
+                suggestions=_dogrulanmis_chipler(example_labels, schema, en_fazla=14),
                 trace=["Intent-path: hiçbir konu tanınmadı → katalog örnekleri (LLM'siz)"],
             ))
         return None
@@ -2382,7 +2539,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             return _finish(AskResponse(
                 question=body.question, source=None,
                 note="Bu raporu hangi kırılıma göre detaylandırmak istersin?",
-                suggestions=[Suggestion(label=lb, query=lb) for lb in labels[:10]],
+                suggestions=_dogrulanmis_chipler(labels, schema, en_fazla=10),
                 trace=migration_trace + ["Takip: yetenek sorusu → kırılım chip'leri (LLM'siz)"],
             ))
 
@@ -2875,6 +3032,22 @@ def _drill_record_contract(request: Request, service, session_id: str | None,
 @router.post("/ask/drill", response_model=DrillResponse,
             dependencies=[Depends(require("query:run")), Depends(require_company)])
 def ask_drill(request: Request, body: DrillRequest) -> DrillResponse:
+    """FAZ 9.1 — GİZLİLİK MÜHRÜ. Gövde SARMALANIYOR, sekiz dönüş noktası tek tek
+    yamanmıyor: yamamak, dokuzuncu dönüş noktasını ekleyen kişinin unutmasına açık
+    kalırdı — tam olarak bu kusurun doğuş biçimi (`raw` dalı düzeltilmiş, kardeşleri
+    unutulmuştu). Sarmal, **yeni dallar dahil** hepsini kapsar."""
+    resp = _ask_drill_govde(request, body)
+    try:
+        from app.pii import muhurle
+
+        muhurle(resp, request, getattr(request.state, "principal", None),
+                ad=f"drill:{(body.cube_query or {}).get('cube') or '-'}")
+    except Exception:  # noqa: BLE001 — mühür cevabı DÜŞÜRMEZ ama sessiz de kalmaz
+        _log.warning("drill gizlilik mührü uygulanamadı", exc_info=True)
+    return resp
+
+
+def _ask_drill_govde(request: Request, body: DrillRequest) -> DrillResponse:
     """Faz 4.10 (1 Ağustos 2026) — dış yol haritası 2.5+2.15 "dallı kök-neden analizi
     temeli", kullanıcı talebiyle GENİŞLETİLMİŞ: yalnız "açıkla" değil, `action`'a göre
     GERÇEK sorgu çalıştırır (expand/select/raw/related) — kullanıcının "tüm veri ağacına
@@ -3169,6 +3342,21 @@ def ask_drill(request: Request, body: DrillRequest) -> DrillResponse:
 @router.post("/ask/contribution", response_model=ContributionResponse,
             dependencies=[Depends(require("query:run")), Depends(require_company)])
 def ask_contribution(request: Request, body: ContributionRequest) -> ContributionResponse:
+    """FAZ 9.1 — GİZLİLİK MÜHRÜ (bkz. `ask_drill`). `raporlar[].segment` bir BOYUT
+    DEĞERİDİR: `musteri`/`operator` kırılımında doğrudan kişi adıdır."""
+    resp = _ask_contribution_govde(request, body)
+    try:
+        from app.pii import muhurle
+
+        muhurle(resp, request, getattr(request.state, "principal", None),
+                ad=f"contribution:{(body.cube_query or {}).get('cube') or '-'}")
+    except Exception:  # noqa: BLE001
+        _log.warning("contribution gizlilik mührü uygulanamadı", exc_info=True)
+    return resp
+
+
+def _ask_contribution_govde(request: Request,
+                            body: ContributionRequest) -> ContributionResponse:
     """FAZ 5.2 — *"neden değişti?"* KATEGORİ BOŞLUĞU.
 
     Rakiplerin hepsinde bir karşılığı var (Snowflake `TOP_INSIGHTS`, Power BI Key

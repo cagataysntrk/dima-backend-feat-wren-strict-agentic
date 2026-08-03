@@ -216,3 +216,81 @@ def test_VARSAYILAN_KAPALI_ask_zincirinde_narration_YOK(client):
     d = client.post("/ask", json={"question": "bu yıl toplam ciro",
                                   "session_id": "t2", "execute": True}).json()
     assert not (d.get("interpretation") or {}).get("narration")
+
+
+# --- FAZ 9.8: kapısız LLM çağrısı YOK, makbuzda ADIM olarak görünüyor -------------
+#
+# ## Ölçülen uyuşmazlık (denetim, Faz 9)
+#
+# MIMARI §12.6b: *"`llm.anlat` `tools.KAYIT`'ta — prompt-enhancer için koştuğu şart
+# (**kapısız LLM çağrısı olmasın; makbuzda ADIM olarak görünsün**) anlatıcı için de
+# uygulandı."* Kaydın ilk yarısı doğruydu; **ikinci yarısı karşılıksızdı**: `answer.py`
+# `llm.anlat(...)`'ı DOĞRUDAN çağırıyordu. Karşılaştır: enhancer gerçekten geçiyordu.
+#
+# Bu, bu oturumun on dört kez avladığı *"beyan var, kod onu tanımıyor"* sınıfının
+# MIMARI'nin kendi metnindeki hâliydi.
+
+def test_ANLATICI_PLANLAYICIDAN_geciyor():
+    import inspect
+
+    from app import answer
+
+    govde = inspect.getsource(answer._anlati_ekle)
+    assert 'calistir("llm.anlat"' in govde, "kapısız LLM çağrısı"
+    assert 'calistir("interpret"' in govde, (
+        "DETERMİNİSTİK-ÖNCE kapısı kendi kaydını görmüyor — `interpret` (aynı `anlatim` "
+        "etiketinin LLM'siz kardeşi) planlayıcı üzerinden denenmeli")
+
+
+def test_ANLATI_MAKBUZU_ajan_kosumunu_EZMIYOR():
+    """Makbuz *"LLM ne zaman devreye girdi"* sorusunu cevaplamak için var; ajan
+    koşumunun adımlarını silip yerine tek bir anlatı adımı yazmak, o soruyu cevaplamak
+    yerine YANILTIRDI."""
+    from app.answer import _anlati_makbuzu
+    from app.schemas import AskResponse
+
+    class _Kosum:
+        def makbuza(self):
+            return {"agent_run": {"steps": [{"arac": "llm.anlat"}], "step_count": 1}}
+
+    class _Plan:
+        kosum = _Kosum()
+
+    resp = AskResponse(question="x")
+    resp.agent_run = {"steps": [{"arac": "route"}], "step_count": 1, "truncated": False}
+    _anlati_makbuzu(resp, _Plan())
+    araclar = [s["arac"] for s in resp.agent_run["steps"]]
+    assert araclar == ["route", "llm.anlat"], f"ajan adımı EZİLDİ: {araclar}"
+    assert resp.agent_run["step_count"] == 2, "step_count birleşimden sonra düzeltilmedi"
+    assert resp.agent_run["truncated"] is False, "mevcut makbuzun alanları kayboldu"
+
+
+def test_ANLATI_MAKBUZU_yoksa_KURAR():
+    from app.answer import _anlati_makbuzu
+    from app.schemas import AskResponse
+
+    class _Kosum:
+        def makbuza(self):
+            return {"agent_run": {"steps": [{"arac": "llm.anlat"}], "step_count": 1}}
+
+    class _Plan:
+        kosum = _Kosum()
+
+    resp = AskResponse(question="x")
+    _anlati_makbuzu(resp, _Plan())
+    assert resp.agent_run and resp.agent_run["step_count"] == 1
+
+
+def test_MAKBUZ_HATASI_cevabi_DUSURMEZ():
+    """Makbuz bir denetim kolaylığıdır; kullanıcının cevabını rehin alamaz."""
+    from app.answer import _anlati_makbuzu
+    from app.schemas import AskResponse
+
+    class _Patlak:
+        @property
+        def kosum(self):
+            raise RuntimeError("patladı")
+
+    resp = AskResponse(question="x")
+    _anlati_makbuzu(resp, _Patlak())      # patlamamalı
+    assert resp.agent_run is None

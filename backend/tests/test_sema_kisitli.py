@@ -223,3 +223,74 @@ def test_WHITELIST_REDDI_artik_LOGLANIYOR():
 
     govde = inspect.getsource(ask_mod._select_consistent)
     assert "whitelist REDD" in govde
+
+
+# --- FAZ 9.13: KURAL B testi EKSİKTİ (bayraklı altı fazın tek istisnası) ----------
+#
+# ## Ölçülen boşluk (denetim, Faz 9)
+#
+# KURAL B: *"canlı cevap yolunu değiştiren her faz kendi kapatma bayrağını taşır; bayrak
+# kapalıyken davranış BUGÜNKÜYLE BİREBİR AYNI olmalı ve bu TESTLE KİLİTLENMELİ."*
+#
+# Bayraklı altı fazın beşinde bu test vardı; **3a'da yoktu** — üstelik varsayılanı
+# `beta`, yani **AÇIK**. En az korunan bayrak, en geniş açık olandı.
+
+def test_BAYRAK_KAPALIYKEN_sema_URETILMIYOR(monkeypatch):
+    """KURAL B'nin doğrudan ölçümü: kapalıyken `cube_query_json_schema` ÇAĞRILMAMALI —
+    yalnız "sonuç aynı" değil, **yol da aynı** olmalı. Şema üretilip kullanılmasaydı
+    bayrak kapalıyken de maliyet doğardı ve 'birebir aynı' iddiası çürürdü."""
+    import inspect
+
+    from app.routers import ask as ask_mod
+
+    govde = inspect.getsource(ask_mod.ask)
+    i = govde.index('"llm_sema_kisitli" in resolve_for')
+    onceki = govde[max(0, i - 400):i]
+    assert "_sema = None" in onceki, (
+        "bayrak KAPALIYKEN `_sema` None kalmıyor olabilir — kill-switch yarım")
+    # Şema üretimi bayrağın İÇİNDE olmalı; dışında olsaydı kapalıyken de koşardı.
+    sonraki = govde[i:i + 500]
+    assert "cube_query_json_schema(" in sonraki, "şema üretimi bayrağa BAĞLI değil"
+
+
+def test_BAYRAK_KAPALIYKEN_SELECT_CONSISTENT_semasiz_cagriliyor():
+    """`_select_consistent` şemayı SON argüman olarak alır; kapalıyken `None` gitmeli ve
+    o yol bugünkü serbest-JSON yoludur (zaten `parse_cube_query`'ye varır)."""
+    import inspect
+
+    from app.routers import ask as ask_mod
+
+    imza = inspect.signature(ask_mod._select_consistent)
+    assert len(imza.parameters) >= 6, f"imza değişmiş: {list(imza.parameters)}"
+    son = list(imza.parameters.values())[-1]
+    assert son.default in (None, inspect.Parameter.empty), (
+        "şema parametresi VARSAYILAN OLARAK DOLU — bayrak kapalıyken de kısıt uygulanır")
+
+
+def test_VARSAYILAN_ASAMA_bilincli_bir_KARAR(monkeypatch):
+    """Bayrak `beta` (açık) — bu meşru olabilir ama **kayıtlı** olmalı. `t2_anlatici`
+    `off` çünkü sıcak yola LLM EKLİYOR; 3a ise var olan bir LLM çağrısını KISITLIYOR,
+    yani riski azaltıyor. Ayrım burada yazılı kalsın ki bir sonraki okuyan tahmin etmesin.
+
+    Kapı: aşama `off`/`alpha`/`beta`/`prod` dışına kayarsa ya da bayrak YAML'dan silinirse
+    kırılır — sessiz bir varsayılan değişikliği olmaz."""
+    import pathlib
+
+    import yaml
+
+    yol = pathlib.Path(__file__).resolve().parents[1] / "demo" / "packs" / "features.yml"
+    veri = yaml.safe_load(yol.read_text(encoding="utf-8")) or {}
+    blok = veri.get("features") or veri
+    assert "llm_sema_kisitli" in blok, "bayrak YAML'dan silinmiş — kill-switch kayboldu"
+    assert blok["llm_sema_kisitli"] == "beta", (
+        f"varsayılan aşama değişmiş: {blok['llm_sema_kisitli']!r}. Bu bilinçli bir karar "
+        "olmalı ve MIMARI §6.4z'de gerekçesiyle yazılmalı.")
+
+
+def test_BAYRAK_ADMIN_PANELINDE_adli(monkeypatch):
+    """FAZ 9.11 ile birlikte: bir kill-switch'i açacak kişi ne yaptığını OKUYABİLMELİ."""
+    from app.features import FLAG_REGISTRY
+
+    kayit = FLAG_REGISTRY.get("llm_sema_kisitli")
+    assert kayit, "bayrak admin panelinde ADSIZ (`snake_case`, kategori 'Diğer')"
+    assert kayit["label"] and kayit["description"] and kayit["category"] != "Diğer"

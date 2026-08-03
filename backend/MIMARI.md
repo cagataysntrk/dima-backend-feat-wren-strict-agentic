@@ -254,7 +254,7 @@ olurdu.
 | DB ayakta, sorgu kilitli | ❌ **anında "erişilebilir" der** | ✅ yakalar |
 
 Birini ötekinin yerine saymak, kapanmamış bir boşluğu kapanmış göstermek olurdu.
-15 test: `tests/test_sorgu_zaman_asimi.py`.
+17 test: `tests/test_sorgu_zaman_asimi.py`.
 ### 3.4c Boyut sırası: `hierarchies` yerine ÖLÇÜLEBİLİR maliyet (Faz B)
 
 Plan *"`drill.py`'nin ELLE YAZDIĞI drill sırasını motora beyan et (`hierarchies`)"*
@@ -549,6 +549,27 @@ olarak best-effort (`try/except` + WARNING) olduğu için hasar **görünmedi**:
 kaydetmiştim. **Yanlıştı** — o, test konteynerinin boş DB'siydi. Çalışan ortamda **78
 satır** vardı; akmayan telemetri değil, **ölçmek için eklediğim kolondu**.
 
+> ⟳ **FAZ 9.10 — ÜÇ ÇELİŞKİLİ SAYININ UZLAŞTIRILMASI (2026-08-03).** Bu belgede
+> `interaction_log` için **üç ayrı sayı** duruyordu ve hiçbiri hangi ORTAMI ölçtüğünü
+> söylemiyordu: **78** (burası) · **7** (§6.4 dağıtım notu) · **0** (§6.10z, dikey
+> modüllerin ertelenme gerekçesi). Üçü de kendi anında doğruydu; birlikte okunduklarında
+> **çelişkili** görünüyorlardı — ve bir okuyucu hangisine dayanacağını bilemezdi.
+>
+> | ortam | ne zaman | satır |
+> |---|---|---|
+> | test konteyneri (`--network none`, boş DB) | her koşum | **0** — beklenen |
+> | çalışan konteyner (`dima-backend-core`) | 2 Ağustos | 78 |
+> | çalışan konteyner | 2 Ağustos, dağıtım notu yazılırken | 7 (build sonrası sıfırlanmıştı) |
+> | **çalışan konteyner** | **3 Ağustos, ölçüldü** | **93** · `reject_reason` **dolu: 1** |
+>
+> **Kural:** bu belgedeki her telemetri sayısı **ortamıyla birlikte** yazılır. Ortamsız bir
+> sayı, sayı değildir — bu oturumda beş kez ölçüm aracının kendisi yanlış ölçtü ve hepsi
+> "hangi ortamda?" sorusu sorulmadığı için gözden kaçmıştı.
+>
+> `reject_reason`'ın **1** satırda dolu olması beklenen davranıştır: kolon 3 Ağustos'ta
+> eklendi, ondan önceki 92 satır NULL kalır ve cevaplanan sorularda zaten NULL olmalıdır
+> (kolonun doluluğu = *"deterministik yoldan çıkamayan sorular"* kümesi).
+
 `init_db()` artık SQLite'ta **modelde olup tabloda olmayan kolonları ekliyor** — yalnız
 `ADD COLUMN`, yalnız SQLite (Postgres'te sahip Alembic, ADR-0015), ve **her eklenen kolon
 WARNING ile loglanıyor**: sessiz bir şema onarımı, onardığı sorunun aynısı olurdu.
@@ -670,14 +691,129 @@ küratörlü sözlüğü **gürültüyle sulandırırdı**. En fazla 6 öneri �
 
 #### Yapılmayan: dikey modüller (`packs/modul/muhasebe|satis`) — gerekçesi ÖLÇÜM
 
-Plan: *"Faz 0'ın verisi **sırayı söyler**."* Faz 0 ölçtü: `interaction_log` **0 satır** —
-**sıra girdisi YOK**. Ve muhasebe ailesi demo katalogda **zaten var** (`mizan` · `cari` ·
+Plan: *"Faz 0'ın verisi **sırayı söyler**."* Faz 0 ölçtü: `interaction_log` **0 satır**
+(⚠️ **test konteynerinde** — çalışan ortamda 93; bkz. §6.3 ⟳ FAZ 9.10). Karar değişmiyor:
+93 satırın tamamı bu oturumun kendi denemeleridir, **gerçek kullanıcı trafiği değildir** —
+**sıra girdisi hâlâ YOK**. Ve muhasebe ailesi demo katalogda **zaten var** (`mizan` · `cari` ·
 `statements`). Sırasız ve kaynak-tablosuz cube yazmak, planın sektör küpleri için açıkça
 yasakladığı **spekülasyonun** aynısı olurdu (*"gerçek müşteri talebi gelene kadar
 ertelenir"*). Altyapı hazır: `db_introspect` → `mdl_writer` → **bu fazın önericisi** →
 insan onayı. Eksik olan **veri**, kod değil.
 
 12 test: `tests/test_sinonim_onerici.py`.
+
+### 6.13z FAZ 9 — DENETİM ONARIMI: "yapıldı" denen ama yapılmamış/kırık olanı kapatmak ✅
+
+On dört faz bittikten **sonra** iki şey oldu: (1) sistem ilk kez **gerçek bir LLM
+sağlayıcıyla** koşuldu, (2) üç bağımsız ajan fazları bölüşüp denetledi. İkisi birden
+**1678 testin göremediği** kusurlar buldu. Ortak sebep tek cümle: **CI reçetesi
+`--network none` + `DIMA_VQR_EMBEDDER=off` koşuyor** — yani `cube+llm`, VQR benzerliği ve
+LLM yolları test ortamında **hiç üretilmiyor**. Kapsam yüksekti, **yol yoktu**.
+
+Her madde için disiplin aynıydı: **(1) önce ÖLÇ** (mevcut davranışı göster), (2) düzelt,
+(3) **kapıya çevir**, (4) tam süit + `eval` + `nl_corpus` gerilemesin.
+
+#### Ölçüm iddiayı ÇÜRÜTTÜĞÜNDE: 9.2
+
+Denetim *"beş kardeş netleştirme dalı **kırık** chip üretiyor"* dedi ve gerekçesi
+inandırıcıydı (2a-2'de gerçekten **39 chip kırıktı**). Düzelttim: `route()` çözemeyen
+etiketi düşürdüm. **Üç golden test kırıldı** ve haklıydılar. Ölçüm:
+
+| katalogdan türeyen 85 benzersiz etiket | adet |
+|---|---|
+| tıklanınca **doğrudan cevap** | 2 |
+| **daraltan chip** üretti (huni) | 83 |
+| **çıkmaz sokak** | **0** |
+
+`route()` = `None` bir chip'i **kırık yapmıyor**: *"sürdürülebilirlik"* R4 verir ama `/ask`
+*"hangi ölçüyü istiyorsun?"* + **6 çalışan chip** döndürür — duvar değil **huni**.
+*"makine"* ise route'suz olduğu hâlde doğrudan cevaplanıyor.
+
+**2a-2'deki 39 kırık chip neydi?** Katalog etiketi değil, **sentezlenmiş** dizeler
+(*"mizan (hesap bakiyeleri) borç"*). Kural bu ayrımda ve artık iki ayrı ölçüt var:
+
+* `chip_kullanisli_mi` — **katalog etiketi** için: route ∨ cube hunisi ∨ ölçü hunisi ∨
+  boyut hunisi (dördünden biri tutarsa chip bir yere varır).
+* `chip_cozuluyor_mu` — **sentezlenmiş sorgu** için: tam çözüm şartı.
+
+Kapı KALDI (sentezlenmiş sorgu hâlâ elenebilir), ama **doğru şeyi ölçüyor**. Denetim
+iddiası 2a-1'in `elektrik` kararıyla aynı disiplinle **ölçülerek reddedildi**.
+
+**Ve düzeltmenin kendisi bir kusur açtı:** ilk sürüm `route()`'u `ask.py`'den doğrudan
+çağırdı; her `route()` girişte `reddi_sifirla()` yapar ve `answer.py` red gerekçesini
+**seal anında** — chip'ler kurulduktan SONRA — okur. Ölçüldü: **R4 → R1**. Yani bu turda
+bir kez kapatılan kusur başka bir kapıdan yeniden açıldı. Çözüm yama değil **kapı**:
+sonda yalıtımı `chip_kullanisli_mi`'nin **içinde**; çağıran sarmalı hatırlamak zorunda değil.
+
+#### Gizlilik: 9.1
+
+`answer.py`'nin modül değişmezi *"**her** yanıt buradan geçer"* iki uçta **geçerli
+değildi**: `/ask/drill` (**9** dönüş noktası, yalnız `raw` dalı audit'li, **hiçbirinde PII
+maskesi yok**) ve `/ask/contribution` (ikisi de yok). Taşıdıkları veri hassas —
+`musteri` · `operator` · `calisan` bu katalogda **gerçek boyutlardır**. Aynı kırılım
+`/ask`'ten maskeli, `/ask/drill`'den **maskesiz** dönüyordu.
+
+**Gövde SARMALANDI, sekiz dönüş noktası yamanmadı**: yamamak, dokuzuncuyu ekleyenin
+unutmasına açık kalırdı — tam olarak bu kusurun doğuş biçimi. `pii.muhurle(...)` satırları
+ve boyut değerlerini maskeler, `pii:view` yetkilisi maskesiz görür ve bu **ayrı bir audit
+satırıdır**; `query` audit'i **her zaman** yazılır (*"başarı audit'siz raporlanamaz"*).
+
+#### Ölçüm bütünlüğü: 9.4 · 9.5 · 9.6 · 9.7
+
+* **9.4** `reject_reason`'ın DB'ye yazıldığı hiç doğrulanmamıştı: tek kapı kaynak
+  METNİNDE string arıyordu. Canlı tur kolonun **yok olduğunu** ve best-effort `except`'in
+  hatayı **yuttuğunu** ölçtü — iki kapı da yeşildi. Artık satırın kendisi ölçülüyor;
+  ayrıca *"cevap geldi ama deterministik yoldan gelmedi"* sınıfı da (R1 kümesi, 99/470)
+  kapıya bağlandı — kolon yalnız cevapsızları kaydetseydi **en büyük küme** görünmezdi.
+* **9.5** `nl_corpus_baseline.json` sürüm kontrolündeydi ve **hiçbir tüketicisi yoktu**:
+  KURAL A'nın *"taban dondurulur"* maddesi bir **nottu**, kapı değil. `eval` tarafı kapılı,
+  korpus tarafı değildi — yani bu planın **ana metriği** geriler ve kimse fark etmezdi.
+  `lab/nl_corpus.py --kapi` eklendi. **En ince tuzak:** kapı **son tura** bakmalı, köke
+  değil — köke bakan bir kapı %93,2 → %86,3 düşüşünü **yeşil** raporlardı.
+* **9.6 / 9.7** ölçüm aracının kendisi (§6.5z'nin ⟳ bloğu).
+
+#### Beyan/kod uyuşmazlığı: 9.8 · 9.9 · 9.10
+
+9.8 (§12.6b ⟳) ve 9.9 (§6.2z ⟳) kendi bölümlerinde. **9.10 bu belgenin kendi
+sayılarıydı:**
+
+* `interaction_log` için **üç çelişkili sayı** (78 · 7 · 0) — hiçbiri hangi ORTAMI
+  ölçtüğünü söylemiyordu. Uzlaştırıldı (§6.3 ⟳) ve kural yazıldı: **ortamsız bir sayı,
+  sayı değildir.**
+* **Test sayıları çürümüştü.** Denetim bir satırı (*"18 test"* → 17) buldu; hepsi ölçüldü:
+  **13 iddianın 10'u yanlıştı** (15→17 · 18→25 · 16→20 …). Tek tek düzeltmek yetmez —
+  sebep yapısal: test eklemek doğal, belgeyi güncellemek unutulur. **Kapıya çevrildi**
+  (`test_MIMARI_TEST_SAYILARI_gercekle_uyusuyor`).
+  ⚠️ Kapının **ilk sürümü yanlış birimi saydı** (yalnız `def test_*`; pytest
+  `parametrize` genişlemelerini ayrı sayar) ve **çalışan** dört satırı "çürük" raporladı.
+  Ölçüm birimi tanımlanmadan yapılan kıyas, kıyas değildir — bu turda ölçüm aracının
+  kendisi **altıncı** kez yanlış ölçtü (§6.4).
+
+#### Kapı eksikleri: 9.11 · 9.12 · 9.13 · 9.14 · 9.15
+
+* **9.11** Bu oturumun **altı fazı** `FLAG_REGISTRY`'de yoktu → admin panelde açıklamasız
+  `snake_case`, kategori *"Diğer"*. Bir kill-switch yalnız KOD'da varsa **yarım**dır.
+* **9.12** YAML boolean tuzağının kapısı yalnız `demo/packs/features.yml`'yi tarıyordu;
+  `features.py` aynı dönüşümü sektör/şirket dosyalarına da uygular. Bugün boş → ısırmıyor;
+  yarın `oee_ozel: off` yazan **aynı sessiz-AÇIK** kapanına düşer ve CI yeşil kalır.
+* **9.13** `llm_sema_kisitli` bayraklı altı fazın **KURAL B testi olmayan tek istisnasıydı**
+  — üstelik varsayılanı `beta` (**açık**). En az korunan bayrak, en geniş açık olandı.
+* **9.14** `-0.5c` tuzağının regex'i noktalı çağrıyı **göremiyordu** (`(?<![\w.])`), oysa bu
+  depoda kullanılan tek biçim `cube_router.needs_period(...)`. Kapı yeşildi çünkü çağrı
+  yok — **koruma iddiası yanlış, sonuç tesadüfen doğru**.
+* **9.15** `_takilan_kelimeler`, `known` kümesine yalnız dolgu sözlüğünü veriyordu; katalog
+  sinonimleri **hiç** eklenmiyordu. Ölçüldü: *"bu yil ciro"* → aday **`ciro`** — `ciro`
+  `parti.toplam_ciro`'nun **zaten** sinonimi. Triyaj kuyruğu, kapsam boşluğu göstermek
+  yerine kataloğun var olan sözlüğünü tekrar öneriyor, gerçek boşluklar gürültüde
+  kayboluyordu. Düzeltildikten sonra: *"bu yil ciro"* → **[]**,
+  *"personel bazli calisma sureleri"* → **['sureleri']** (§1.5'in gerçek katalog boşluğu).
+
+**Kapsam dışı (kayıt için):** konuşma belleği (`Baglam.ham_ifade`), sosyal sınıf
+(*"merhaba"*), MCP yüzeyi, Skills/Memories, VQR'yi tümden ipucu yoluna alma. Faz 9 yalnız
+*"yapıldı denen ama yapılmamış/kırık"* olanı kapatır.
+
+Testler: `tests/test_gizlilik_muhru.py` (9) · `tests/test_dogrulanmis_chip.py` (16) ·
+`tests/test_korpus_taban_kapisi.py` (10) · `tests/test_senaryo_araci_durustlugu.py` (9).
 
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 
@@ -824,7 +960,7 @@ devretmeli, yoksa Faz -1 öncesi 13-cube dump'ına devreder"* şartı bir testle
 > bayrak boolean OLAMAZ, hepsi `STAGES` içinden bir string olmak ZORUNDA
 > (`test_YAML_off_TUZAGI_kapali`).
 
-17 test: `tests/test_prompt_enhancer.py` · bayrak `prompt_enhancer` varsayılan `"off"`.
+16 test: `tests/test_prompt_enhancer.py` · bayrak `prompt_enhancer` varsayılan `"off"`.
 
 ### 6.6z FAZ 2b — terfi kuyruğu beslendi + ÖLÇÜME BAĞLI İKİ KARAR verildi ✅
 
@@ -898,7 +1034,7 @@ olarak kalıyor.
 > düzeltmeyi "başarısız" sayıyordu. MIMARI §6.4'ün dersi bir kez daha: *"ölçüm aracının
 > kendisi de bir bağımlılıktır."* Düzeltildi; sınıf **4/6 → 5/6**.
 
-12 test: `tests/test_terfi_kuyrugu.py`.
+16 test: `tests/test_terfi_kuyrugu.py`.
 
 ### 6.5z FAZ 0.5 — KONUŞMA SENARYOSU DOĞRULAMA: süit ilk koşumunda İKİ SINIFI KIRIK buldu ✅
 
@@ -962,7 +1098,28 @@ Bunlar Faz 8'in (döngüsel kapanış) ve Faz 2b'nin girdisidir.
 o vakada replay tetiklenmedi. Bu **bir kez** ölçümdür, riski çürütmez (embedder kapalı,
 `DIMA_VQR_EMBEDDER=off`); Faz 2b'nin kararı `--live` + embedder açık koşumu bekler.
 
-18 test: `tests/test_faz05_bulgulari.py`.
+> ⟳ **FAZ 9.6 — YUKARIDAKİ TEŞHİS EKSİKTİ ve senaryo ✅ RAPORLUYORDU.** *"Embedder kapalı"*
+> tek sebep değildi; senaryo **yapısal olarak** replay üretemiyordu:
+>
+> 1. **Koşum** her 2. adıma önceki `cube_query`'yi iliştiriyordu → `ask.py` takip
+>    sorularında `near_exact`'i **tümden atlar**. Yani senaryo, ölçmek için var olduğu
+>    yolu **hiç çalıştırmadan** *"replay YOK"* diyordu. → `bagimsiz=True` eklendi.
+> 2. `ask.py` `learn=(intent_source == "cube+llm")` — **saf `cube` yolu VQR'a hiç yazmaz**
+>    (Faz 2b-2'nin ölçülmüş kararı). Embedder açılsa bile **yazan kimse yok**.
+>
+> Yani LLM'siz modda §1.7 riski **doğamaz** ve *"risk yok"* çıkarımı dayanaksızdır. Araç
+> artık **üçüncü bir durum** taşıyor: `⊘ ÖLÇÜLEMEDİ` (ne geçti ne kaldı). Yeşile
+> yuvarlamak *"risk yok"* yalanı, kırmızıya yuvarlamak sahte alarm üretirdi.
+>
+> **FAZ 9.7 — aynı dosyada iki kalıntı daha.** `_cube_dogru` **hiçbir yerden
+> çağrılmıyordu**: rapor başlığı *"DOĞRULUK (doğru **cube**/dönem/yapı)"* diyordu ama
+> dokuz sınıftan yalnız `konu_degisimi` cevabın cube'una bakıyordu — araç, görünür kılmak
+> için var olduğu **sessiz-yanlış** sınıfına karşı kördü. `_ve_cube` sarmalıyla altı sınıfa
+> bağlandı. `_bitisik` ise beklenen cube'un zaman boyutunu **sabitliyordu** — `_daraldi`'da
+> düzeltilen hatanın aynı dosyadaki ikinci kopyası; artık dönem filtresi **cevabın** cube'una
+> göre aranıyor. 9 test: `tests/test_senaryo_araci_durustlugu.py`.
+
+17 test: `tests/test_faz05_bulgulari.py`.
 
 ### 6.4z FAZ 3a — ŞEMA-KISITLI ÇIKTI: hatayı sonrasında reddetmek yerine öncesinde engelle ⚠️ (kazanç ÖLÇÜLMEDİ)
 
@@ -1010,7 +1167,7 @@ enum'dan kötüdür: modele var olmayan bir adı **dayatırdı**.
 > ölçülemeyen bir kazanç doğrulanamaz. Oranın önce/sonra kıyası **Faz 0.5'in `--live`
 > modunun** işidir ve o faza girdi olarak taşınmıştır.
 
-15 test: `tests/test_sema_kisitli.py` · bayrak `llm_sema_kisitli` (KURAL B).
+19 test: `tests/test_sema_kisitli.py` · bayrak `llm_sema_kisitli` (KURAL B).
 
 ### 6.1j R2 (liste/döküm) — dalın YARISI haklıydı, yarısı kapsam kaybıydı (Faz 2a) ✅
 
@@ -1081,6 +1238,23 @@ hepsi birden kapanıyordu. Bu bir hata değil, **tasarlanmış bir uçurumdu**.
 **Çözüm:** Discovery'nin **sonucundan** oturum-scoped bir cube türetilir
 (`app/adhoc_cube.py`). Excel yüklemesi için yazılmış hat (`dataset._role` /
 `build_mdl` / `build_service`) **çağrılır, kopyalanmaz**.
+
+> ⟳ **FAZ 9.9 — "hepsi birden açıldı" İDDİASI YARIM KARŞILIKSIZDI (denetimde bulundu).**
+> Ad-hoc cube **tenant kataloğunda yoktur**; onu bulmak için `_adhoc_kayit`'tan geçmek
+> gerekir. Bu YALNIZ `_attach_next_steps`'e öğretilmişti. İki kardeş tüketici cube'u hâlâ
+> tenant kataloğunda arıyordu:
+>
+> | tüketici | ne arıyordu | sonuç |
+> |---|---|---|
+> | `_attach_next_steps` | ad-hoc kaydı | ✅ çalışıyordu |
+> | `_attach_recommendations` (`answer.py`) | tenant kataloğu | `spec=None` → **aksiyon önerisi YOK** |
+> | `_attach_viz` (`ask.py`) | tenant kataloğu | `cube_meta=None` → **birim/köken/grafik YOK** |
+>
+> Yani kapı yeşildi ve **hiçbir şey açmıyordu**: aynı kural bir tüketiciye öğretilmiş,
+> iki kardeşine öğretilmemişti — bu belgenin kendi *"kimlik asimetrisi"* sınıfı (§6.1h),
+> bu turda dördüncü kez. Üçü de artık ad-hoc kaydını okuyor ve **dördüncü bir tüketici
+> eklendiğinde aynı soruyu soran bir kapı** kondu
+> (`tests/test_adhoc_cube.py::test_UC_TUKETICININ_hepsi_adhoc_kaydini_okuyor`).
 
 **K1'in tek eksiği ölçüldü ve kapatıldı:** `wren_service.query()` Arrow **şemasını
 atıyordu** — yalnız kolon *adları* dönüyordu. Tipsiz bir sonuçtan ölçü/boyut/zaman ayrımı
@@ -1254,7 +1428,7 @@ kardeş sinonimi `"toplam durus dakikasi"` zaten oraya gidiyordu, ve bir üsttek
 çözmüştü. Sinonim envanteri de o satırı **yanlış-cube** olarak kaydetmişti. Vaka listesi
 düzeltildi, kural değil; **çıplak** "duruş" hâlâ `oee`'ye gidiyor ve testle kilitli.
 
-10 test: `tests/test_spesifik_olcu_sahibi.py`.
+15 test: `tests/test_spesifik_olcu_sahibi.py`.
 
 ### 6.1g Netleştirme SESSİZCE atlanıyordu — belirsizliğin %61'i Discovery'ye düşüyordu (Faz 2a) ✅
 
@@ -1568,7 +1742,8 @@ tabanıyla korunuyor. Yaşayan semantik testle kilitlendi.
   (`fcntl.flock`) yükseltilmesi gerekir. **Testleri paralel iki konteynerde koşturma.**
 - **Telemetri kalıcı değil**: `docker inspect dima-backend-core` → `Mounts: []`,
   `DIMA_DATABASE_URL=sqlite:////app/logs/dima.db` konteyner katmanında. **Her build geçmişi siler.**
-  `interaction_log`'da bugün **7 satır** var.
+  `interaction_log`'da o an **7 satır** vardı (build sonrası sıfırlanmıştı; 3 Ağustos
+  ölçümü **93** — ortamlar arası uzlaştırma için bkz. §6.3'ün ⟳ FAZ 9.10 bloğu).
 
 ### 6.4 Dağıtım / test altyapısı (2026-08-02'de bulundu)
 
@@ -2068,7 +2243,7 @@ oran için neden ÜRETİLMEZ ve **nedeni söylenir** — boş bir sessizlik değ
 **Yüzeyler:** `NotificationEvent.neden` → e-posta (HTML **ve düz metin**, ikisi aynı bilgiyi
 taşır) · in-app bell (`notification_log.neden_json`, ayrı kolon — teslim TELEMETRİSİ ile
 cevabın İÇERİĞİ farklı şeylerdir) · `NotificationsPanel`'de katlanır `⤵ neden?` katmanı,
-**yeni panel değil** (§14.1). 16 test: `tests/test_uyari_neden.py`.
+**yeni panel değil** (§14.1). 19 test: `tests/test_uyari_neden.py`.
 
 ### 11.6d ⟳ FAZ 4: plan SEÇİMİ ARTIK VAR — `Planlayici.sec()` ✅
 
@@ -2105,7 +2280,7 @@ demektir.
 **Kalan (F3):** belirsizlikte plan seviyesinde sorma, ve kalan kompozisyonların
 (rapor · pano) planlayıcıya taşınması.
 
-18 test: `tests/test_orkestrator.py`.
+25 test: `tests/test_orkestrator.py`.
 
 ### 11.6 Özellik = KOMPOZİSYON, endpoint değil
 
@@ -2249,11 +2424,24 @@ değil, **kaynak bildirir**: *"doğrulanmış sayı"* ile *"doğrulanmış cüml
 prompt-enhancer için koştuğu şart (*"kapısız LLM çağrısı olmasın; makbuzda adım olarak
 görünsün"*) anlatıcı için de uygulandı.
 
+> ⟳ **FAZ 9.8 — BU CÜMLENİN İKİNCİ YARISI KARŞILIKSIZDI (denetimde bulundu).** Kayıt
+> doğruydu, **çağrı değildi**: `answer.py` `llm.anlat(...)`'ı **doğrudan** çağırıyordu.
+> Karşılaştır: enhancer gerçekten `Planlayici.calistir` üzerinden geçiyordu. Yani *"kapısız
+> LLM çağrısı olmasın"* şartı yalnız **beyan** düzeyinde vardı — bu belgenin on dört kez
+> avladığı *"beyan var, kod onu tanımıyor"* sınıfının **kendi metnindeki** hâli.
+>
+> Düzeltildi: çağrı `plan.calistir("llm.anlat", …)`'a alındı ve **deterministik-önce**
+> kapısı kendi kaydını görsün diye `interpret` (aynı `anlatim` etiketinin LLM'siz kardeşi,
+> maliyeti **sıfır**) planlayıcı üzerinden önce çalıştırılıyor. Kapıların buradaki gerçek
+> karşılığı **bütçe** (sıcak yola giren LLM çağrısı sayılır) ve **makbuz**: adım
+> `agent_run`'a **eklenir**, ajan koşumunun adımlarını **ezmez** — makbuz *"LLM ne zaman
+> devreye girdi"* sorusunu cevaplamak için var; onu silmek yanıltmak olurdu.
+
 **Bayrak `t2_anlatici` varsayılan `off`** (diğerleri `beta`): sıcak yola bir LLM çağrısı
 ekliyor, açılması **bilinçli bir karar** olmalı. Kural-tabanlı sağlayıcı `anlat` taşımaz —
 yokluğu bir hata değil **yol kapalı** sinyalidir.
 
-16 test: `tests/test_t2_anlatici.py` (+ `test_beyanlar_curumesin.py` 4 yeni kapı).
+20 test: `tests/test_t2_anlatici.py` (+ `test_beyanlar_curumesin.py` 4 yeni kapı).
 
 ### 12.7 Takip sorusunun ÜÇ sınıfı (G1 — `app/followup.py`) ✅
 
@@ -2391,7 +2579,7 @@ Bu uydurulmuş bir hedef değil, kullanıcının kendi ifadesidir.
 `net_pay = None` disiplininin aynısı.
 
 **Tenant-RLS eşik kıyasında da geçerlidir**: başka kiracının koyduğu sınır bu kullanıcının
-cevabında görünemez. 20 test: `tests/test_esik_kiyasi.py`.
+cevabında görünemez. 23 test: `tests/test_esik_kiyasi.py`.
 
 **"İzleme kur" zaten vardı** (ReportCard 🔔 → `createSchedule` + `threshold`); halka şimdi
 kapandı: kullanıcı eşiği kurar → **her cevapta** o eşiğe göre uyarılır → ihlalde bildirim

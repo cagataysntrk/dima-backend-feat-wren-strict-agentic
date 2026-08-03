@@ -166,3 +166,60 @@ def test_INSAN_ONAYI_yolu_ACIK():
 
     for s in ("user_verified", "chip_approved"):
         assert vqr_mod.is_trusted(s), f"{s} replay'e giremiyor — terfi yolu kapalı"
+
+
+# --- FAZ 9.15: TANINAN kelimeler aday listelenmemeli ------------------------------
+#
+# ## Ölçülen kusur (denetim, Faz 9)
+#
+# `_takilan_kelimeler`, `known` kümesine YALNIZ dolgu sözlüğünü veriyordu
+# (`_period_hit_words | _misc_hit_words`); cube/ölçü/boyut sinonimleri **hiç
+# eklenmiyordu**. Ölçüldü — admin'e şunlar aday olarak gösteriliyordu:
+#
+#     "bu yil ciro"           → ['ciro']      ← `parti.toplam_ciro`'nun ZATEN sinonimi
+#     "musteri bazinda borc"  → ['borc', 'musteri']
+#
+# Yani triyaj kuyruğu, kapsam boşluğu göstermek yerine kataloğun **var olan sözlüğünü**
+# tekrar öneriyordu ve gerçek boşluklar bu gürültünün içinde kayboluyordu. Dosyanın kendi
+# docstring'i *"ayrı liste tutmak iki tarafı ayrıştırır"* diye uyarıyordu — uyarı tam da
+# kendisi için geçerliydi.
+
+def test_TANINAN_kelime_ADAY_LISTELENMIYOR(client):
+    from admin_app.routers.synonyms import _takilan_kelimeler
+
+    for soru in ("bu yil ciro", "musteri bazinda borc"):
+        adaylar = _takilan_kelimeler(soru)
+        assert not adaylar, (
+            f"{soru!r} → {sorted(adaylar)}: katalogda TANINAN kelime sinonim adayı "
+            "olarak gösteriliyor; admin'e zaten var olan sözlük öneriliyor")
+
+
+def test_GERCEK_bosluk_YINE_yakalaniyor(client):
+    """Kapı fazla geniş olmamalı: düzeltme, aracın ASIL işini bozmamalı."""
+    from admin_app.routers.synonyms import _takilan_kelimeler
+
+    assert _takilan_kelimeler("zzz qwerty flimflam ciro") >= {"qwerty", "flimflam"}
+    # §1.5'in canlı vakası: gerçek katalog boşluğu "çalışma süresi"dir.
+    assert "sureleri" in _takilan_kelimeler("personel bazli calisma sureleri")
+
+
+def test_KAPSAM_KAPISIYLA_ayni_kaynak(client):
+    """İki taraf ayrışırsa admin, kapının gerçekte takıldığından BAŞKA bir kelime görür."""
+    import inspect
+
+    from admin_app.routers import synonyms
+
+    govde = inspect.getsource(synonyms._takilan_kelimeler)
+    assert "_syn_hit_words" in govde, "katalog sözlüğü kapsam kapısıyla aynı yoldan okunmuyor"
+    for kaynak in ("measure_synonyms", "dimension_synonyms", "_known_cubes("):
+        assert kaynak in govde, f"{kaynak} okunmuyor — kapsam kapısıyla ayrışma sürüyor"
+
+
+def test_KATALOG_OKUNAMAZSA_arac_CALISMAYA_devam(client, monkeypatch):
+    """Admin plane Wren'siz koşabilir; katalog yoksa araç susmamalı, dolgu sözlüğüyle
+    devam etmeli — eski davranış, düzeltmenin ALTINDA korunuyor."""
+    from admin_app.routers import synonyms
+
+    monkeypatch.setattr(synonyms, "_known_cubes",
+                        lambda slug=None: (_ for _ in ()).throw(RuntimeError("yok")))
+    assert synonyms._takilan_kelimeler("zzz qwerty flimflam") >= {"qwerty", "flimflam"}

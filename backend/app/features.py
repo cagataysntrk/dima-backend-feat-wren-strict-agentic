@@ -103,6 +103,54 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "devreye girer.",
         "category": "Analiz",
     },
+    # ── FAZ 9.11 — bu oturumun ALTI FAZI yönetim yüzeyinde ADSIZDI ────────────────
+    # Denetimde ölçüldü: `demo/packs/features.yml`'de 13 bayrak, kayıtta 9. Eksik altısı
+    # admin panelde açıklamasız `snake_case` ve kategori *"Diğer"* olarak görünüyordu —
+    # yani bayrağı açacak/kapatacak kişi ne yaptığını okuyamıyordu. Bir kill-switch
+    # (KURAL B) yalnız KOD'da varsa yarım bir kill-switch'tir.
+    "adhoc_cube": {
+        "label": "Ad-hoc cube (Discovery cevabına yapı)",
+        "description": "LLM'in yazdığı SQL'in SONUCUNDAN oturum-scoped geçici bir cube "
+                       "türetir; chip/kırılım/tarih/grafik Discovery cevabında da açılır "
+                       "(FAZ 1/K1). Rozet DÜRÜST kalır: source hâlâ llm:*, confidence "
+                       "hâlâ None — yapı ≠ güven.",
+        "category": "Analiz",
+    },
+    "liste_niyeti": {
+        "label": "Liste/döküm niyeti",
+        "description": "'listele'/'dökümü' gibi sorular boyut kırılımına çevrilir (R2 "
+                       "yerine cevap). YALNIZ gerçek bir kırılım eşleşirse onurlandırılır "
+                       "— aksi hâlde döküm isteyene dejenere tek toplam dönerdi.",
+        "category": "Analiz",
+    },
+    "llm_sema_kisitli": {
+        "label": "Şema-kısıtlı LLM çıktısı",
+        "description": "Intent-JSON seçimi sağlayıcının native tool-use'una taşınır; "
+                       "cube/ölçü/boyut adları o anki kataloğun ENUM'u olur → model var "
+                       "olmayan bir adı ÜRETEMEZ. 'hiçbiri' (cube:null) dalı korunur.",
+        "category": "Doğruluk",
+    },
+    "prompt_enhancer": {
+        "label": "Soru iyileştirici (LLM)",
+        "description": "route() boş dönerse ucuz model soruyu kanonik Türkçeye çevirir ve "
+                       "AYNI deterministik yol tekrar denenir. YAPI SEÇMEZ, yalnız metni "
+                       "düzeltir; planlayıcının dört kapısından geçer.",
+        "category": "Anlama",
+    },
+    "agent_plan_secimi": {
+        "label": "Ajan plan seçimi",
+        "description": "LLM hangi aracın hangi sırayla çalışacağını ÖNERİR; her adım yine "
+                       "dört kapıdan (kayıt·yetki·deterministik-önce·bütçe) geçer. "
+                       "Seçim ≠ çalıştırma: seçicinin yanılması yeni bir risk açmaz.",
+        "category": "Ajan",
+    },
+    "t2_anlatici": {
+        "label": "T2 anlatıcı (guarded LLM)",
+        "description": "Deterministik olguların ÜSTÜNE akıcı Türkçe anlatı ekler; sayıyı "
+                       "SİSTEM koyar. narration_guard fail-closed: eşleşmeyen sayı taşıyan "
+                       "cümle DÜŞER. Varsayılan KAPALI — sıcak yola LLM ekler.",
+        "category": "Anlatım",
+    },
 }
 
 

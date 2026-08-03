@@ -282,6 +282,26 @@ def _maybe_interpret(request: Request, resp: AskResponse) -> None:
     _anlati_ekle(request, resp)
 
 
+def _anlati_makbuzu(resp: AskResponse, plan) -> None:
+    """T2 anlatıcının adımını `agent_run` makbuzuna **ekler** — varsa EZMEZ.
+
+    FAZ 9.8. Makbuzun tek amacı *"LLM ne zaman devreye girdi"* sorusunu cevaplamaktır;
+    ajan koşumunun adımlarını silip yerine tek bir anlatı adımı yazmak, o soruyu
+    cevaplamak yerine **yanıltırdı**. Bu yüzden birleştirme yapılır ve `step_count`
+    yeniden hesaplanır.
+    """
+    try:
+        yeni = (plan.kosum.makbuza() or {}).get("agent_run") or {}
+        mevcut = resp.agent_run
+        if not mevcut:
+            resp.agent_run = yeni
+            return
+        adimlar = [*(mevcut.get("steps") or []), *(yeni.get("steps") or [])]
+        resp.agent_run = {**mevcut, "steps": adimlar, "step_count": len(adimlar)}
+    except Exception:  # noqa: BLE001 — makbuz cevabı DÜŞÜRMEZ
+        _log.warning("T2 anlatı makbuzu iliştirilemedi", exc_info=True)
+
+
 def _anlati_ekle(request: Request, resp: AskResponse) -> None:
     """FAZ 5 — T2 GUARDED LLM ANLATICI (§4.4): *"LLM ÜSLUBU yazar, SAYIYI sistem koyar."*
 
@@ -329,7 +349,30 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
             return
         from app.narration_guard import guvenli_anlatim
 
-        ham = llm.anlat(resp.question, gercekler)
+        # FAZ 9.8 — ÇAĞRI PLANLAYICIDAN GEÇER. MIMARI §12.6b *"prompt-enhancer için
+        # koşulan şart (kapısız LLM çağrısı olmasın; makbuzda ADIM olarak görünsün)
+        # anlatıcı için de uygulandı"* diyordu; kayıt (`tools.KAYIT`) doğruydu ama
+        # ÇAĞRI doğrudandı — yani beyanın ikinci yarısı **karşılıksızdı**. Denetimde
+        # bulundu; bu deponun on dört kez avladığı *"beyan var, kod onu tanımıyor"* sınıfı.
+        #
+        # Kapıların burada gerçek karşılığı: **bütçe** (sıcak yola giren LLM çağrısı
+        # sayılır) ve **makbuz** (*"LLM ne zaman devreye girdi"* cevaplanabilir olur).
+        from app import planner as _planner
+
+        plan = _planner.Planlayici(
+            principal=principal,
+            butce=_planner.Butce(adim=2, saniye=15.0, sorgu=0),
+            kaynaklar={"servis:llm": llm},
+        )
+        # DETERMİNİSTİK-ÖNCE kapısı: `interpret` (aynı `anlatim` etiketinin LLM'siz
+        # kardeşi) planlayıcı ÜZERİNDEN denenmiş olmalı. Zaten çalıştı — çıktısı bu
+        # fonksiyonun GİRDİSİ — ama kapı **kendi kaydını** görmelidir; "denendi" demek
+        # yetmez, yoksa kapı bir yorumdan ibaret kalır (enhancer'da verilen aynı karar).
+        # Maliyeti sıfır: `interpret` veriye dokunmaz, eldeki sonucu okur.
+        plan.calistir("interpret", resp.result.model_dump() if resp.result else None,
+                      resp.cube_query)
+        ham = plan.calistir("llm.anlat", resp.question, gercekler)
+        _anlati_makbuzu(resp, plan)
         metin, rapor = guvenli_anlatim(
             ham, resp.result.model_dump() if resp.result else None, yedek=None)
         if not metin:
@@ -418,7 +461,16 @@ def _attach_recommendations(request: Request, resp: AskResponse) -> None:
         from app import cube_router
         from app.company_registry import wren_for_request
         from app.schemas import NextStep, Recommendation
-        cubes = wren_for_request(request).schema().get("cubes") or []
+
+        # FAZ 9.9 — AD-HOC CUBE TENANT KATALOĞUNDA YOK. Eskiden `spec` her Discovery
+        # cevabında **None** kalıyordu; §6.2z'nin *"aksiyon önerisi açıldı"* iddiası
+        # karşılıksızdı. `_attach_next_steps` bunu zaten doğru yapıyordu — aynı kural,
+        # kardeş dalda uygulanmamıştı.
+        adhoc = _adhoc_kayit(request, resp.cube_query)
+        if adhoc is not None:
+            cubes = adhoc["schema"].get("cubes") or []
+        else:
+            cubes = wren_for_request(request).schema().get("cubes") or []
         spec = next((c for c in cubes if c.get("name") == resp.cube_query.get("cube")), None)
         resp.recommendations = [
             Recommendation(text=r["text"],

@@ -272,6 +272,28 @@ KAYIT: tuple[Arac, ...] = (
                "'seçemez' — yalnız bu aracı çağırabilir.",
         etiketler=("gorsellestirme", "llmsiz"),
     ),
+    Arac(
+        ad="cross_cube_add",
+        ozet="Mevcut rapora BAŞKA bir cube'un ölçüsünü `blend` olarak katar (LLM'siz).",
+        girdi={"prev": "mevcut CubeQuery", "q": "kullanıcının sorusu",
+               "schema": "cube kataloğu"},
+        cikti="genişletilmiş CubeQuery (`blend` alanı dolu) ya da None",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.cube_router", fonksiyon="cross_cube_add",
+        notlar="MIMARI §9.2'nin yapısal sınırının İKİ ADIMLI çözümü: bir cube'un ölçüsü + "
+               "başka cube'un boyutu TEK CubeQuery'de ifade EDİLEMEZ, ama önce `route` "
+               "sonra bu araç ile İKİ ADIMDA edilebilir. Uyum ŞARTLIDIR: hedef cube "
+               "mevcut kırılımı taşımıyorsa `None` döner — o grain'de blend YANLIŞ olurdu. "
+               "Deterministik: planlayıcı bunu bir LLM aracından ÖNCE denemek zorundadır.",
+        # ETİKET AİLESİ AYRI ve bu bilinçli: bu araç sıfırdan sorgu ÜRETMEZ, var olan bir
+        # sorguyu GENİŞLETİR — yani `route`/`llm.select_cube` ile AYNI İŞ İÇİN yarışmaz.
+        # `sorgu-uretimi` verilseydi deterministik-önce kapısı onu her LLM aracından önce
+        # ZORUNLU kılardı; ama `prev` bir CubeQuery ister ve o yokken uygulanamaz —
+        # yani kapı, uygulanamaz bir aracı şart koşup meşru yolları kapatırdı.
+        # (Kendi kapım bunu yakaladı: `prompt_enhancer` testleri kırıldı.)
+        etiketler=("kompozisyon", "llmsiz"),
+    ),
     # --- LLM araçları (yalnız deterministik yol tükendiğinde) --------------------
     Arac(
         ad="llm.prompt_enhance",

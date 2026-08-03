@@ -104,3 +104,53 @@ def test_SEED_senaryo_fixtureleri_VAR():
     assert atama == ["sirket = tenant.slug"], (
         f"şirket kapsamı TAHMİN ediliyor ({atama}) — fixture'lar `settings.company` ile "
         "eşleşmez ve replay yolu sessizce hiç koşmaz")
+
+
+# --- İKİNCİ KAPI: route() çözemediğinde de koru ----------------------------------
+
+def test_OLCU_TUTARLILIK_kapisi_VAR(schema):
+    """Deterministik-önce kuralı bir HAFİFLETMEDİR: yalnız `route()` cevap üretebildiğinde
+    korur. Ölçülen boşluğun (~%31) içinde `route()` çözemez ve benzerlik kaydı YİNE cevap
+    olur — *"fire → ciro"* vakasının mümkün kaldığı yer tam orası."""
+    kayit = {"question": "geçen ay toplam ciro",
+             "cube_query": {"cube": "parti", "measures": ["toplam_ciro"]}}
+    # Soru ölçüyü AÇIKÇA adlandırıyor ve kayıt BAŞKA ölçü taşıyor → replay REDDEDİLMELİ
+    assert not ask_mod._vqr_olcu_tutarli(
+        cr_norm := __import__("app.cube_router", fromlist=["x"])._norm("gecen ay toplam fire"),
+        kayit, schema), "ölçü tutarsız bir kayıt replay edilebiliyor"
+    # Aynı ölçü → replay SERBEST
+    assert ask_mod._vqr_olcu_tutarli(
+        __import__("app.cube_router", fromlist=["x"])._norm("gecen ay toplam ciro"),
+        kayit, schema)
+    assert cr_norm
+
+
+def test_OLCU_ADLANDIRILMAMISSA_kapi_KARISMAZ(schema):
+    """Fazla dar bir kapı kapsamı gerekçesiz keserdi: soru ölçü adlandırmıyorsa
+    tutarsızlık İDDİA EDİLEMEZ."""
+    kayit = {"question": "geçen ay toplam ciro",
+             "cube_query": {"cube": "parti", "measures": ["toplam_ciro"]}}
+    from app import cube_router as cr
+
+    assert ask_mod._vqr_olcu_tutarli(cr._norm("gecen ayki durum nedir"), kayit, schema)
+
+
+def test_HAM_SQL_kaydina_KARISMAZ(schema):
+    """Ham SQL kaydının ölçü İDDİASI yoktur — kapı ona karışmaz (sürüm kapısı ilgilenir)."""
+    assert ask_mod._vqr_olcu_tutarli(
+        "x", {"cube_query": {"wren_sql": "SELECT 1"}}, schema)
+
+
+def test_PROVENANCE_SORU_chip_tiklamada_KORUNUYOR():
+    """Faz 3b'nin makbuz izi. Beyaz liste bunu düşürseydi chip tıklandığı an iz KOPARDI —
+    `adhoc_id` için düzeltilen kusurun AYNISI, farklı alanda."""
+    import json
+
+    from app import cube_router as cr
+
+    index = {"parti": {"measures": ["toplam_ciro"], "dimensions": [], "time_dimensions": []}}
+    cq = cr.parse_cube_query(json.dumps({
+        "cube": "parti", "measures": ["toplam_ciro"],
+        "provenance_soru": {"question_original": "hasılatımız",
+                            "question_normalized": "ciro"}}), index)
+    assert cq.get("provenance_soru", {}).get("question_original") == "hasılatımız"

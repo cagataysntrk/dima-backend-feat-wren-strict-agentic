@@ -60,7 +60,14 @@ def test_ANLATI_GUARD_ZORUNLU_kapidir():
     from app import answer
 
     govde = inspect.getsource(answer._anlati_ekle)
-    i_ham = govde.index("llm.anlat(")
+    # ⟳ FAZ 9.8 — çapa KAYDI: çağrı artık `plan.calistir("llm.anlat", ...)`. Kapı
+    # GEVŞETİLMEDİ, iki yönde KESKİNLEŞTİRİLDİ: (1) guard hâlâ arada olmalı,
+    # (2) çağrının PLANLAYICIDAN geçtiği ayrıca ölçülüyor (MIMARI §12.6b'nin
+    # *"kapısız LLM çağrısı olmasın"* şartı, denetimde karşılıksız çıkmıştı).
+    assert 'calistir("llm.anlat"' in govde, (
+        "T2 anlatıcı planlayıcıyı ATLIYOR — kapısız LLM çağrısı: bütçeye sayılmaz, "
+        "makbuzda adım olarak görünmez (MIMARI §12.6b'nin beyanı karşılıksız kalır)")
+    i_ham = govde.index('calistir("llm.anlat"')
     i_guard = govde.index("guvenli_anlatim(")
     i_yaz = govde.index('yorum["narration"] =')
     assert i_ham < i_guard < i_yaz, (
@@ -201,7 +208,13 @@ def test_DONEM_POLITIKASI_beyani_HALA_dogru():
         if s.startswith("#"):
             continue
         for ad in ("needs_period", "is_period_only"):
-            if re.search(rf"(?<![\w.]){ad}\s*\(", satir):
+            # ⟳ FAZ 9.12/9.14 — ESKİ DESEN NOKTALI ÇAĞRIYI GÖRMÜYORDU.
+            # `(?<![\w.])` negatif lookbehind'ı `.`'yı da dışlıyordu; oysa bu depoda
+            # kullanılan TEK çağrı biçimi `cube_router.needs_period(...)`. Kapı bugün
+            # yeşildi çünkü çağrı YOK — yani koruma iddiası yanlış, sonuç tesadüfen
+            # doğruydu. Bir kapının doğru sonuç vermesi, doğru şeyi ölçtüğünü göstermez.
+            # Artık TANIM (`def ad(`) hariç her çağrı biçimi yakalanır.
+            if re.search(rf"(?<!def )\b{ad}\s*\(", satir):
                 cagrilar.append(f"{ad}: {s[:90]}")
     assert not cagrilar, (
         "Dönem politikası artık üretimde ÇAĞRILIYOR:\n  " + "\n  ".join(cagrilar)
@@ -222,3 +235,77 @@ def test_DONEM_POLITIKASI_sartnamesi_KORUNUYOR():
     assert kullanim >= 13, (
         f"dönem politikası şartnamesi {kullanim} çağrıya düşmüş (>=13 bekleniyordu) — "
         "ya testler siliniyor ya politika taşınıyor; ikisi de bilinçli bir karar olmalı.")
+
+
+# --- FAZ 9.10: MIMARI'nin SAYILARI da bir beyandır --------------------------------
+#
+# ## Ölçülen kusur (denetim, Faz 9)
+#
+# Denetim MIMARI'de *"18 test"* diyen bir satırın gerçekte **17** olduğunu buldu. Tek tek
+# düzeltmek yerine HEPSİ ölçüldü: **13 iddianın 10'u yanlıştı** (15→17, 18→25, 16→20 …).
+#
+# Sebep yapısal: test eklemek doğal, MIMARI'yi güncellemek unutulur. Bir sayı sessizce
+# çürür ve *"şu kapı N testle kilitli"* cümlesi bir güven verir ki karşılığı yoktur.
+# Bu dosyanın kurduğu disiplinin (beyan → kapı) sayılara uygulanmış hâli.
+
+
+def _toplanan_test_sayisi(yol) -> int | None:
+    """Bir test dosyasının `pytest -q` ile TOPLANACAK test sayısı — pytest çağırmadan.
+
+    `@pytest.mark.parametrize` her parametre için ayrı bir test üretir; sayı bu
+    genişlemeyi içerir. Bir parametre listesi statik olarak çözülemiyorsa (değişken,
+    fonksiyon çağrısı…) `None` döner: **tahmin etmek yerine ölçemediğini söyler**.
+    """
+    import ast
+
+    agac = ast.parse(pathlib.Path(yol).read_text(encoding="utf-8"))
+    toplam = 0
+    for d in agac.body:
+        if not (isinstance(d, (ast.FunctionDef, ast.AsyncFunctionDef))
+                and d.name.startswith("test_")):
+            continue
+        carpan = 1
+        for dek in d.decorator_list:
+            if not (isinstance(dek, ast.Call) and "parametrize" in ast.unparse(dek.func)):
+                continue
+            if len(dek.args) < 2 or not isinstance(dek.args[1], (ast.List, ast.Tuple)):
+                return None                       # statik değil → ÖLÇÜLEMEDİ
+            carpan *= len(dek.args[1].elts)
+        toplam += carpan
+    return toplam
+
+
+def test_MIMARI_TEST_SAYILARI_gercekle_uyusuyor():
+    """`N test: \\`tests/X.py\\`` biçimindeki her iddia ÖLÇÜLÜR."""
+    import ast
+
+    kok = pathlib.Path(__file__).resolve().parents[1]
+    metin = (kok / "MIMARI.md").read_text(encoding="utf-8")
+    iddialar = re.findall(r"(\d+) test: `tests/([a-z0-9_]+\.py)`", metin)
+    assert len(iddialar) >= 10, f"iddia bulunamadı ({len(iddialar)}) — desen mi değişti?"
+
+    yanlis = []
+    for beyan, dosya in iddialar:
+        yol = kok / "tests" / dosya
+        if not yol.exists():
+            yanlis.append(f"{dosya}: DOSYA YOK (MIMARI {beyan} test diyor)")
+            continue
+        # pytest çağırmak yerine AST: hızlı, ağsız ve toplama sırasından bağımsız.
+        #
+        # ⚠️ İLK SÜRÜM YANLIŞ BİRİMİ SAYDI. Yalnız `def test_*` sayıyordu; pytest ise
+        # `@pytest.mark.parametrize` GENİŞLEMELERİNİ ayrı test sayar. Dört dosyada iki
+        # sayı ayrıştı (17↔8, 15↔9 …) ve kapı ÇALIŞAN bir MIMARI satırını "çürük"
+        # raporladı. Ölçüm birimi tanımlanmadan yapılan kıyas, kıyas değildir — bu
+        # oturumda ölçüm aracının kendisi altıncı kez yanlış ölçtü (MIMARI §6.4).
+        #
+        # BİRİM: `pytest -q tests/X.py`'nin bastığı sayı — okuyucunun yeniden
+        # üretebileceği tek sayı odur.
+        adet = _toplanan_test_sayisi(yol)
+        if adet is None:
+            continue          # statik olarak çözülemeyen parametrize → SESSİZCE geçme
+        if int(beyan) != adet:
+            yanlis.append(f"{dosya}: MIMARI={beyan} gerçek={adet}")
+    assert not yanlis, (
+        "MIMARI'nin test sayıları ÇÜRÜMÜŞ:\n  " + "\n  ".join(yanlis)
+        + "\nSayıyı düzelt — *'şu kapı N testle kilitli'* cümlesi karşılığı olmayan bir "
+          "güven verir.")
