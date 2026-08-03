@@ -1151,7 +1151,7 @@ o vakada replay tetiklenmedi. Bu **bir kez** ölçümdür, riski çürütmez (em
 
 17 test: `tests/test_faz05_bulgulari.py`.
 
-### 6.4z FAZ 3a — ŞEMA-KISITLI ÇIKTI: hatayı sonrasında reddetmek yerine öncesinde engelle ⚠️ (kazanç ÖLÇÜLMEDİ)
+### 6.4z FAZ 3a — ŞEMA-KISITLI ÇIKTI: hatayı sonrasında reddetmek yerine öncesinde engelle ✅ (kazanç ÖLÇÜLDÜ: YOK; mekanizma YAPISAL gerekçeyle kalıyor)
 
 Bugünkü Intent-JSON akışı: *"serbest JSON iste, sonra `parse_cube_query` ile **REDDET**"*.
 Reddedilen her sorgu bir **Discovery'ye düşüştür** — yani kayıp, hatanın **sonrasında**
@@ -1198,6 +1198,39 @@ enum'dan kötüdür: modele var olmayan bir adı **dayatırdı**.
 > modunun** işidir ve o faza girdi olarak taşınmıştır.
 
 19 test: `tests/test_sema_kisitli.py` · bayrak `llm_sema_kisitli` (KURAL B).
+
+> ⟳ **KAZANÇ ÖLÇÜLDÜ (3 Ağustos 2026, gerçek Gemini) — VE KAZANÇ YOK.**
+>
+> Faz 3a'nın kabul kapısı (*"whitelist reddi oranı ölçülüp **düşüşü** doğrulanır"*)
+> landing anında karşılanamamıştı: o ortamda gerçek sağlayıcı yoktu. Kapatıldı.
+>
+> **Önce kapının kendisi yanlış tanımlanmıştı.** *"Red oranı düşmeli"* iki farklı olayı
+> tek kefeye koyuyor: **dürüst red** (`cube:null` — *"bunların hiçbiri"*, Faz 3a'nın
+> KENDİ tasarım kararı, düşürmek ZARARDIR) ve **geçersiz alan** (mekanizmanın hedefi).
+> Doğru ölçüt: *"geçersiz alan üretimi düşmeli, dürüst red düşmemeli."*
+>
+> | koşum | yapılandırma | toplam red | dürüst | **GEÇERSİZ** | doğru cube |
+> |---|---|---|---|---|---|
+> | 8 soru | şemasız | 3 | 3 | **0** | 5/8 |
+> | 8 soru | şema-kısıtlı | 2 | 2 | **0** | 4/8 |
+> | 16 soru | şemasız | 6 | 6 | **0** | 6/16 |
+> | 16 soru | şema-kısıtlı | 6 | 6 | **0** | 6/16 |
+>
+> **Şemasız yol, bugünkü prompt'uyla, ölçülen 24 soruda hiç geçersiz alan üretmedi** —
+> kısıtın kaldıracağı bir şey yoktu. Faz 7 (üç sıçrama, üçü de benimsenmedi) ve 2a-1
+> (`elektrik`) ile aynı disiplin: **kazanç yoksa yazılır.**
+>
+> **Mekanizma KALIYOR, gerekçesi ölçüm değil YAPI:** kısıtlı yolda geçersiz ad üretmek
+> *"24 soruda görülmedi"* değil **imkânsızdır**. Bu, 9.3'ün kararının aynısı — *"bir
+> ÖLÇÜM, yapısal garanti değildir."* Maliyeti ölçüldü: **sıfır** (red bileşimi ve
+> doğru-cube iki koşumda da eşit).
+>
+> ⚠️ **İlk ölçümüm yanlıştı ve inandırıcıydı** (bu turda **dokuzuncu**; §6.4). Teşhis
+> için reddedilen çıktıyı sınıflandırmak yerine **LLM'i yeniden çağırıyordum** — yani
+> başka bir üretimi ölçüyordum ve *"3 geçersiz → 0"* diye bir kazanç raporlayacaktım.
+> Araç artık sınıflamayı **aynı ham çıktı üzerinde, aynı döngüde** yapıyor; tekrar
+> koşumu farkı ortaya çıkardı. Ölçüm aracı sürüm kontrolünde:
+> `lab/faz3a_sema_kazanci.py`.
 
 ### 6.1j R2 (liste/döküm) — dalın YARISI haklıydı, yarısı kapsam kaybıydı (Faz 2a) ✅
 
