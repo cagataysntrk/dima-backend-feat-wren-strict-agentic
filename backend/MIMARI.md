@@ -1080,6 +1080,68 @@ hazır"*, ikincisi *"güven eşiği ayarı"* — o da MIMARI'nin açık kararın
 > Ders: **bir rapor bir ölçüm değildir.** Bu turda dış rapor üç kez, kendi kabul
 > ölçütlerim dört kez, ölçüm araçlarım on kez yanıldı — hepsi kodla sınanınca çıktı.
 
+### 6.18z FAZ A — ÖLÇÜM ALETİ: kırıktı, onarıldı, kendini kanıtladı ✅
+
+Planın sırası **ALET → ÖLÇÜT → ÖLÇÜM → KARAR**. Gerekçesi ilk adımda doğrulandı.
+
+#### A1 · Alet SESSİZCE KIRIKMIŞ
+
+`lab/nl_accuracy.py` — iki doğruluk aletinden biri — çalıştırıldığında:
+
+    TypeError: <lambda>() takes 2 positional arguments but 3 were given
+    === TOPLAM: 0 geçti · 2 kaldı ===
+
+**Sıfır vaka koşuyordu.** Sebep: monkeypatch imzaları DAR yazılmıştı ve `dry_plan`
+zamanla üçüncü bir argüman kazandı. Kardeş araç (`konusma_senaryolari.py`) `*a, **k` ile
+toleranslı yazılmış; bu dosya eski katı hâlde kalmış ve **CI'da koşmadığı için** aylardır
+görünmemişti — `lab/nl_corpus.py`'nin aylarca kırık kalmasıyla **aynı sınıf** (§6.4).
+Onarıldı: **0 → 4/4**.
+
+Ayrıca `--live` eklendi (`konusma_senaryolari.py` ile **aynı sözleşme**, kopyalama değil):
+gerçek ortam conftest import'undan **önce** yakalanır, gerçek sağlayıcı yoksa **koşmaz**;
+DB izolasyonu **korunur**.
+
+#### A2 · Vaka seti 4 → **63**, dört şirket
+
+Set bilinçli olarak **iki yarıdır** ve ayrım belgelendi:
+
+* **Katalogdan üretilen (48):** üretilirken `route()`'un o cube'a çözdüğü doğrulandı →
+  **inşa gereği** geçerler. Değeri *yargı* değil **regresyon**dur. ⚠️ Bunların %100
+  geçmesi bir başarı göstergesi **değildir, tautolojidir** — bu cümle dosyaya yazıldı.
+* **Zor kazanılmış (15):** bu oturumda ölçülerek düzeltilmiş kusurlar — 2a-3 (spesifik
+  ölçü) · 2a-1 (`elektrik`) · 2a-5 (liste niyeti) · 2a-4 (ayrık ay) · -0.5a (bitişik ay)
+  · **D1 (sosyal önek R10/R1 vermemeli)** · 1b (sızıntı kapanı). Kapının gücü buradan gelir.
+
+⚠️ **Etiketi ÖNCE YANLIŞ YAZDIM ve alet yakaladı:** `elektrik tüketimi` için
+`enerji_tesis` demiştim; katalogdan doğrulandı — `enerji_makine.toplam_elektrik_kwh`'nin
+**birebir** sinonimi, `enerji_tesis`'inki **nitelikli**. Sistem doğru, beklentim yanlıştı
+(bu turda **beşinci** kez). Etiketli setin değeri tam da bu: beklentiyi yazmak onu
+**sınanabilir** yapar.
+
+#### A3 · A/B koşucusu — ve aletin KENDİNİ KANITLAMASI
+
+İki mod, çünkü **gerileme** ve **kazanç** farklı korpuslar ister:
+
+| mod | korpus | soru |
+|---|---|---|
+| `--ab <bayrak>` | etiketli 63 vaka | *"bayrak çalışan bir vakayı BOZUYOR mu?"* (B2'nin ikinci yarısı) |
+| `--ab-kurtarma <bayrak>` | `route()`'un **çözemediği** sorular (katalogdan üretilir) | *"kaç soruyu KURTARIYOR?"* (B2'nin birinci yarısı) |
+
+Etiketli vakalar `route()`'un zaten çözdüğü sorulardır; bir LLM bayrağı orada kazanç
+**üretemez** ama **bozabilir**. İkisini tek korpusla ölçmek, birini görünmez kılardı.
+
+Bayrak zorlama YAML'a **dokunmaz**: `features.resolve_for` her tüketicide fonksiyon içinde
+import edildiği için modül düzeyinde yamalanır ve çıkışta **geri alınır** — ölçüm,
+ölçtüğü sistemi kalıcı olarak değiştirmemelidir.
+
+**Planın A-kapısı karşılandı** (*"alet bilinen bir farkı yeniden üretebilmeli"*):
+`--ab liste_niyeti` → **kurtarılan 1** (*"…10 müşteriyi listele"* bayrak kapalıyken
+düşüyor, açıkken geçiyor), bozulan 0. `--ab t2_anlatici` → 0/0 (kural sağlayıcıda `anlat`
+yok; beklenen). Alet bu farkı göremeseydi **hiçbir bayrak ölçümüne güvenilemezdi**.
+
+**Ölçüm:** test **1817 → 1827** · eval `+0,0/+0,0/+0,0` · `nl_accuracy` **63/63**.
+10 test: `tests/test_olcum_aleti.py`.
+
 ### 6.9z FAZ 8 — SÜİT YENİDEN KOŞULDU: kalan iki "kusur"un ikisi de ÖLÇÜM ARACININDI ✅
 
 Planın kapanış şartı: *"Faz 0.5'in **aynı** süiti yeniden koşulur — **yeni senaryo
