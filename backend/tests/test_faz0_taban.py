@@ -57,9 +57,21 @@ def test_TIP_BEYANI_TUKETICI_DEGIL():
     types = (ft.FE / "src" / "lib" / "types.ts").read_text(encoding="utf-8")
     ad = next((a for a in ("supersedes", "receipt") if a in types), None)
     assert ad, "test çapası kaybolmuş: types.ts'te beklenen alan yok"
-    # types.ts'te GEÇİYOR ama sayaç onu saymamalı
-    assert ft._fe_tuketici(ad) == 0 or "types.ts" not in str(ft.FE), \
-        f"`{ad}` yalnız tip beyanında geçiyor ama TÜKETİCİ sayıldı — kapı kandırılıyor"
+    # ⚠ İlk sürüm `assert ... == 0 or "types.ts" not in str(ft.FE)` diyordu; ikinci koşul
+    # **her zaman False** (`ft.FE` bir dizin yolu) — yani iddia aslında *"bugün 0 olsun"*
+    # idi ve **FAZ 0.11 `supersedes`'i UI'a bağladığı gün yanlış-kırmızı verecekti**:
+    # sayacın DAVRANIŞINI ölçmesi gereken kapı, projenin HEDEFİNİ yasaklıyordu.
+    # Doğru iddia davranışsaldır: sayaç `types.ts`'i **saymamalı** — bunu, alanı yalnız
+    # `types.ts`'te geçen sentetik bir adla değil, sayacın kendi kapsamıyla ölçeriz.
+    import re as _re
+
+    types_isabet = len(_re.findall(_re.escape(ad), types))
+    assert types_isabet >= 1, f"`{ad}` types.ts'te geçmiyor — çapa kaymış"
+    tum = sum(len(_re.findall(_re.escape(ad), f.read_text(encoding="utf-8", errors="ignore")))
+              for f in (ft.FE / "src").rglob("*.ts*"))
+    assert ft._fe_tuketici(ad) == tum - types_isabet, (
+        f"`{ad}`: sayaç `types.ts`'i dışlamıyor — bir TİP BEYANI tüketici değildir "
+        f"(tüm={tum} · types.ts={types_isabet} · sayaç={ft._fe_tuketici(ad)})")
 
 
 def test_12_KUSUR_hepsi_RAPORLANIYOR():
@@ -86,6 +98,24 @@ def test_RAPOR_VARSA_HER_SAYI_DAMGALI():
         pytest.skip("artefakt bu HEAD'de üretilmemiş — kanonik koşum konteynerdedir")
     m = ft.RAPOR.read_text(encoding="utf-8")
     assert re.search(r"@`[0-9a-f]{7,40}`", m), "raporda SHA damgası yok"
+
+    # 🔴 A/E3 — TAZELİK: eski sürüm *herhangi* bir sha kabul ediyordu; altı ay önceki bir
+    # artefakt yeşil geçerdi. Artefakt VARSA HEAD'i göstermek ZORUNDA.
+    # ⚠ Kapının bilinen sınırı: `lab/reports/` **gitignore**'lu (artefakt bir yerel ölçüm
+    # ürünüdür), o yüzden VARLIĞI şart koşulamaz — temiz bir checkout'ta atlanır. Sayının
+    # kendisi `OPERASYON-DURUM.md`'de commit'li durur.
+    import subprocess
+
+    try:
+        head = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ft.KOK,
+                              capture_output=True, text=True, timeout=20).stdout.strip()
+    except Exception:                                          # noqa: BLE001
+        head = ""
+    if head:
+        damga = re.search(r"@`([0-9a-f]{7,40})(-kirli)?`", m)
+        assert damga and damga.group(1) == head, (
+            f"artefakt BAYAT: damga {damga.group(0) if damga else '—'} ↔ HEAD `{head}`. "
+            "Bayat bir taban ölçümü, yanlış bir tabana dayanan bir plan demektir (D2).")
 
     kesim = m.find("## [KANIT §0.1]")
     olcum, kusur = (m[:kesim], m[kesim:]) if kesim > 0 else (m, "")

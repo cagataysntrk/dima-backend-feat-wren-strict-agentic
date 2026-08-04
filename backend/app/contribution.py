@@ -59,37 +59,92 @@ def _sayi(v: Any) -> float:
 
 
 
-def ayristirilabilir_mi(measure: str, cube_meta: dict | None) -> tuple[bool, str | None]:
-    """(ayrıştırılabilir?, ayrıştırılamıyorsa NEDENİ).
+#: Toplanabilirlik sınıfları. 🔴 Bu bir **SAYILAN KÜME değil**, OLAP literatürünün
+#: kapalı cebirsel taksonomisidir (additive / semi-additive / non-additive) — kullanıcıya
+#: dönük bir anlam ekseni değil, ölçünün **matematiksel davranışı**. `KAT-5` anlam
+#: eksenlerinin literal listelenmesini yasaklar; bu onlardan biri değildir.
+TAM, YARI, YOK, BILINMIYOR = "tam", "yari", "yok", "bilinmiyor"
 
-    Toplanabilirlik sezgiyle değil, cube metadata'sının KENDİ beyanıyla belirlenir
-    (`non_additive` / `semi_additive`) — bu listeler zaten `is_period_optional` tarafından
-    da okunuyor, yani ikinci bir doğruluk kaynağı YARATILMIYOR.
 
-    Metadata sessizse ifadeye bakılır: `AVG`/`COUNT(DISTINCT`/oran kalıpları toplanabilir
-    DEĞİLDİR. Emin olunamayan durumda ayrıştırma YAPILMAZ — yanlış bir yüzde, hiç yüzde
-    olmamasından kötüdür.
+def toplanabilirlik(measure: str, cube_meta: dict | None) -> tuple[str, str]:
+    """(sınıf, gerekçe) — ölçü **hangi eksende** toplanabilir. **TEK OKUYUCU.**
+
+    Cube metadata'sının `non_additive` / `semi_additive` / `measure_expressions`
+    alanlarını yorumlayan tek yer burasıdır. Üç ayrı tüketici bu sınıftan **kendi
+    politikasını** çıkarır — çünkü üçü **ayrı soru** sorar:
+
+    | Tüketici | Sorusu | Kabul ettiği sınıf |
+    |---|---|---|
+    | `ayristirilabilir_mi` (katkı payı) | *"Δ segmentlere dağıtılabilir mi?"* | yalnız `TAM` |
+    | `viz._additive` (yığma/pay grafiği) | *"ZAMAN ekseninde yığılabilir mi?"* | yalnız `TAM` |
+    | `interpret` (dönem trendi) | *"ZAMAN-DIŞI eksende toplanabilir mi?"* | `TAM` + **`YARI`** |
+
+    🔴 **Bu ayrım bir denetim bulgusundan doğdu.** `interpret` bir süre
+    `ayristirilabilir_mi`'yi çağırdı ve **yarı-toplanabilir yedi ölçünün** trendini
+    (`bakiye` · `acik_bakiye` · `acik_borc` · `net_bakiye` · `net_miktar` · `stok_deger` ·
+    `vadesi_gecen`) **haksız yere** susturdu — üstelik gerekçe olarak katkı-ayrıştırmasına
+    ait bir cümle bastı. Bir stok ölçüsü **müşteriler arasında pekâlâ toplanır**;
+    toplanamadığı eksen **zamandır**. *"Aynı kuralın iki sahibi"*nin kardeşi:
+    **aynı sahibe iki farklı soru sordurmak.**
+
+    `BILINMIYOR`: metadata sessiz **ve** ad kalıbı da bir şey söylemiyor. Bu bir sınıf
+    değil, bir **bilgi eksikliğidir** — politikayı çağıran belirler (trend tarafı
+    **fail-closed**: yanlış bir trend, hiç trend olmamasından kötüdür).
     """
-    if not measure:
-        return False, "ölçü belirtilmemiş"
     meta = cube_meta or {}
+    if not measure:
+        return YOK, "ölçü belirtilmemiş"
+    # ⚠ GEREKÇELER DÜZ METİNDİR: `interpret` bunları `summary`'ye koyuyor ve
+    # `OutputInsight` onu düz metin basıyor — canlı kullanıcı ekranda backtick/yıldız
+    # karakterlerini **harfi harfine** gördü. Biçimlendirme, metnin gideceği yeri bilmeyen
+    # bir katmanda üretilmez.
     if measure in (meta.get("non_additive") or []):
-        return False, (f"`{measure}` toplanabilir değil (cube metadata'sında `non_additive`) — "
-                       "segmentlerin değişimleri toplamı, toplamın değişimini VERMEZ")
+        return YOK, (f"{measure} toplanabilir değil (cube metadata'sında non_additive)")
     if measure in (meta.get("semi_additive") or []):
-        return False, (f"`{measure}` yarı-toplanabilir bir stok/bakiye ölçüsü — dönem içi "
-                       "değişimi segmentlere dağıtmak anlamlı değil")
+        return YARI, (f"{measure} yarı-toplanabilir bir stok/bakiye ölçüsü — zaman-dışı "
+                      "eksende toplanır, zaman ekseninde toplanmaz")
     ifade = ((meta.get("measure_expressions") or {}).get(measure) or "").upper()
     if ifade:
         if "AVG(" in ifade or "COUNT(DISTINCT" in ifade or "/" in ifade:
-            return False, (f"`{measure}` bir ortalama/oran — parçaların toplamı bütünü "
-                           "vermez, katkı payı matematiksel olarak tanımsız olur")
-        return True, None
-    # Metadata ifadeyi yayımlamıyorsa ad kalıbına düşülür (son çare, muhafazakâr).
+            return YOK, (f"{measure} bir ortalama/oran — parçaların toplamı bütünü vermez")
+        if "MIN(" in ifade or "MAX(" in ifade:
+            # Denetimde bulundu: eski sürüm MIN/MAX'ı hiç kontrol etmiyordu; eklenecek
+            # ilk `MAX(...)` ölçüsü SESSİZCE toplanırdı.
+            return YOK, (f"{measure} bir uç-değer ölçüsü (MIN/MAX) — parçaların toplamı "
+                         "bütünü vermez")
+        return TAM, ""
     ad = measure.lower()
     if ad.startswith("ort_") or ad.endswith(("_yuzde", "_orani", "_pct")):
-        return False, (f"`{measure}` bir ortalama/oran gibi görünüyor — parçaların toplamı "
-                       "bütünü vermez, katkı payı tanımsız olur")
+        return YOK, (f"{measure} bir ortalama/oran gibi görünüyor — parçaların toplamı "
+                     "bütünü vermez")
+    return BILINMIYOR, (f"{measure} için toplanabilirlik beyanı YOK (cube metadata'sı "
+                        "ifadeyi yayımlamıyor) — sınıf bilinmiyor")
+
+
+def ayristirilabilir_mi(measure: str, cube_meta: dict | None) -> tuple[bool, str | None]:
+    """(ayrıştırılabilir?, ayrıştırılamıyorsa NEDENİ).
+
+    Sınıflandırma `toplanabilirlik()`'te (tek okuyucu); burada yalnız **politika** var:
+    katkı payı **yalnız `TAM`** sınıfında tanımlıdır. Yarı-toplanabilir bir stok ölçüsünün
+    dönem-içi değişimini segmentlere dağıtmak anlamlı değildir.
+
+    ⚠ **Bilinen borç:** `BILINMIYOR` sınıfında bu fonksiyon **fail-OPEN**tir (ayrıştırır).
+    Denetimde işaretlendi; davranış değişikliği kendi ölçümünü ister ve açık borç olarak
+    kayıtlıdır. Trend tarafı (`interpret`) aynı sınıfta **fail-closed** davranır.
+    """
+    sinif, gerekce = toplanabilirlik(measure, cube_meta)
+    if sinif == TAM:
+        return True, None
+    if sinif == YARI:
+        return False, (f"`{measure}` yarı-toplanabilir bir stok/bakiye ölçüsü — dönem içi "
+                       "değişimi segmentlere dağıtmak anlamlı değil")
+    if sinif == YOK:
+        return False, (gerekce + " — katkı payı matematiksel olarak tanımsız olur")
+    # ⚠ `BILINMIYOR` → bugünkü davranış KORUNUYOR (ayrıştırılabilir sayılır).
+    # Denetim bunu bir RİSK olarak işaretledi: docstring "emin olunamayan durumda
+    # ayrıştırma YAPILMAZ" diyor ama kod **fail-OPEN**. Davranışı burada değiştirmek
+    # bu turun kapsamı dışıdır (katkı yolunun kendi ölçümü gerekir) → `OPERASYON-DURUM.md`
+    # açık borçlarına yazıldı. Trend tarafı ise `BILINMIYOR`'da **fail-closed**tir.
     return True, None
 
 

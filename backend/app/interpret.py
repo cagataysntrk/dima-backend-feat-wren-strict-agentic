@@ -120,14 +120,27 @@ def _donem_bazinda_topla(rows: list[dict], time_col: str, measure: str) -> list[
 
 
 def _rank_facts(rows: list[dict], dim: str, measure: str, unit: str | None,
-                pay_yaz: bool = True) -> list[dict]:
-    """Kategorik top-N: en yüksek varlık + (toplanabilirse) payı, en düşük, kalem sayısı."""
-    agg: dict[str, float] = {}
+                toplanabilir: bool = True) -> list[dict]:
+    """Kategorik top-N: en yüksek varlık + (toplanabilirse) payı, en düşük, kalem sayısı.
+
+    🔴 **Toplanamayan ölçüde TOPLAMA YAPILMAZ.** İlk düzeltme yalnız *"toplamın %X'i"*
+    payını susturmuştu ama gövde **hâlâ topluyordu**: bir dim değeri için birden fazla
+    satır varsa (ör. `makine × renk`, `dims[0]="makine"`) ekrana basılan
+    *"En yüksek makine: RAM-1 (…)"* bir **oranlar toplamıydı** — payı susturulmuş ama
+    kendisi yanlış bir sayı. Denetimde bulundu. Artık: toplanamayan ölçüde dim başına
+    birden fazla satır varsa **sıralama hiç yazılmaz**, nedeni yazılır."""
+    ham: dict[str, list[float]] = {}
     for r in rows:
         if r.get(dim) is not None and r.get(measure) is not None:
-            agg[str(r[dim])] = agg.get(str(r[dim]), 0.0) + _num(r[measure])
-    if not agg:
+            ham.setdefault(str(r[dim]), []).append(_num(r[measure]))
+    if not ham:
         return []
+    if not toplanabilir and any(len(v) > 1 for v in ham.values()):
+        return [{"type": "shape",
+                 "text": f"{len(ham)} {dim} için birden fazla satır var — sıralama "
+                         f"YAZILMADI: {measure} bu kırılım boyunca TOPLANAMAZ, "
+                         "parçaların toplamı bütünü vermez"}]
+    agg: dict[str, float] = {k: sum(v) for k, v in ham.items()}
     total = sum(agg.values())
     ranked = sorted(agg.items(), key=lambda kv: kv[1], reverse=True)
     # `pay_yaz=False` ise "toplamın %X'i" YAZILMAZ: yüzdeler/ortalamalar toplanmaz.
@@ -135,7 +148,12 @@ def _rank_facts(rows: list[dict], dim: str, measure: str, unit: str | None,
     # matematiksel olarak anlamsız. Payı susturmak, yanlış pay yazmaktan iyidir.
     top, bot = ranked[0], ranked[-1]
     share = (top[1] / total * 100) if total else 0
-    pay = f", toplamın %{round(share, 1)}'i)" if (total and pay_yaz) else ")"
+    # ⚠ TEK KALEMDE PAY YAZILMAZ: canlı kullanıcı *"toplamın %100.0'i"* cümlesini gördü
+    # ve *"boş laf — tek yıl tabii ki %100"* dedi. Bilgi taşımayan bir cümle, güveni
+    # aşındırır: okuyan kişi cümlenin hesaplanmış mı yoksa doldurma mı olduğunu ayırt
+    # edemez hâle gelir.
+    pay = (f", toplamın %{round(share, 1)}'i)"
+           if (total and toplanabilir and len(ranked) > 1) else ")")
     facts = [{"type": "top", "dim": dim, "measure": measure, "entity": top[0],
               "text": f"En yüksek {dim}: {top[0]} ({_fmt(top[1], unit)}" + pay}]
     if len(ranked) > 1:
@@ -226,7 +244,7 @@ def interpret(result: dict | None, cube_query: dict | None = None,
     # tanımıyordu (*"kimlik asimetrisi"*): katkı yolu *"`fire_orani_yuzde` bir ortalama/
     # oran — katkı payı tanımsız"* diye dürüstçe reddederken, aynı ölçü için yorum satırı
     # hem **toplamın payını** hem de toplanmış bir **trendi** yayımlıyordu.
-    from app.contribution import ayristirilabilir_mi
+    from app.contribution import BILINMIYOR, TAM, YARI, YOK, toplanabilirlik
     if kpi:
         facts = _kpi_facts(kpi)
         return {"facts": facts, "summary": " · ".join(f["text"] for f in facts)}
@@ -252,6 +270,12 @@ def interpret(result: dict | None, cube_query: dict | None = None,
     elif time_col and len(rows) > 1:              # zaman serisi → trend
         entity = next((d for d in dims if d != time_col), None)
         if entity is None:
+            # ⚠ KIRILIMSIZ seri: dönem başına ZATEN tek satır var → **hiç toplama yok**,
+            # dolayısıyla toplanabilirlik sorusu da yok. Bir oran serisinin trendi
+            # (fire oranı Oca %10 → Haz %20) **tamamen meşrudur**. Denetim bu dalın
+            # pivot dalıyla "asimetrik" göründüğünü işaretledi; asimetri gerçek ama
+            # **doğru** — farkı yaratan şey toplama ihtiyacıdır, ölçünün kendisi değil.
+            # (MIMARI metni bir süre bunu koşulsuz yasak gibi anlatıyordu; daraltıldı.)
             facts += _series_facts(rows, time_col, m0, unit, m0 in lib_set)
         else:
             # 🔴 PİVOT (varlık × dönem). Ham satırlarda *"ilk→son"* İKİ FARKLI VARLIĞI
@@ -259,20 +283,53 @@ def interpret(result: dict | None, cube_query: dict | None = None,
             # ifadesidir: önce döneme göre toplanır. Ölçü toplanamıyorsa (oran/ortalama)
             # trend **hiç yayımlanmaz** — susmak, yanlış bir yüzdeden iyidir.
             n = len({str(r.get(entity)) for r in rows})
-            eklenebilir, neden = ayristirilabilir_mi(m0, cube_meta)
-            if eklenebilir:
+            # POLİTİKA: dönem trendi ZAMAN-DIŞI eksende toplama ister → `TAM` **ve `YARI`**
+            # kabul edilir (bir bakiye müşteriler arasında toplanır; toplanamadığı eksen
+            # zamandır). `BILINMIYOR` → **FAIL-CLOSED**: yanlış bir trend, hiç trend
+            # olmamasından kötüdür. Bkz. `contribution.toplanabilirlik` tablosu.
+            sinif, neden = toplanabilirlik(m0, cube_meta)
+            # 🔴 GEREKÇE, TANIMSIZLIĞI DEĞİL **BU GÖRÜNÜMÜN** SINIRINI ANLATIR.
+            # Canlı kullanıcı iki ekranı yan yana gördü: kırılımsız ekranda
+            # *"%3,1 azaldı — iyileşti"*, kırılımlı ekranda *"bu ölçüde trend
+            # matematiksel olarak TANIMSIZ"*. Kullanıcı: *"İkisi aynı anda doğru olamaz —
+            # hangisine inanacağım?"* Haklı: mantık doğruydu ama **cümle yanlıştı**.
+            # Tanımsız olan trend değil, **kırılım boyunca TOPLAMA**. Cümle artık bunu
+            # söyler ve kullanıcıyı **çalışan görünüme** yönlendirir.
+            if sinif == BILINMIYOR:
+                neden = (f"{m0} için toplanabilirlik beyanı yok — bu kırılımlı görünümde "
+                         "dönem trendi hesaplanamaz (yanlış bir yüzde, hiç yüzdeden kötüdür)")
+            elif sinif not in (TAM, YARI):
+                neden = (f"{neden.rstrip('. ')} — yani {entity} kırılımı boyunca "
+                         "TOPLANAMAZ, bu yüzden dönem trendi BU GÖRÜNÜMDE hesaplanamıyor. "
+                         "Kırılımsız (yalnız dönem) görünümde trend hesaplanır.")
+            if sinif in (TAM, YARI):
                 facts += _series_facts(_donem_bazinda_topla(rows, time_col, m0),
                                        time_col, m0, unit, m0 in lib_set)
+                # ⚠ MARKDOWN YOK: `OutputInsight.tsx` `summary`'yi DÜZ METİN basar
+                # (`shape` bilinçli olarak rozet sözlüğünün dışında). Canlı kullanıcı
+                # ekranda `**dönem toplamları**` yıldızlarını **harfi harfine** gördü.
                 facts.append({"type": "shape",
-                              "text": f"{n} {entity} × dönem kırılımı — trend **dönem "
-                                      "toplamları** üzerinden"})
+                              "text": f"{n} {entity} × dönem kırılımı — trend dönem "
+                                      "toplamları üzerinden"})
             else:
                 facts.append({"type": "shape",
                               "text": f"{n} {entity} × dönem kırılımı — dönem trendi "
                                       f"YAZILMADI: {neden}"})
     elif dims:                                     # kategorik → sıralama/pay
-        eklenebilir, _ = ayristirilabilir_mi(m0, cube_meta)
-        facts += _rank_facts(rows, dims[0], m0, unit, pay_yaz=eklenebilir)
+        # 🔴 **ASİMETRİ BİLİNÇLİDİR ve iki farklı riske dayanır.**
+        # · **Trend (yukarıda)** `BILINMIYOR`'da **FAIL-CLOSED**: orada kanıtlanmış bir
+        #   sessiz-yanlış vardı (aynı veriye üç farklı yüzde) ve yanlış bir trend
+        #   doğrudan yanlış karar ürettiriyordu.
+        # · **Sıralama/pay (burada)** `BILINMIYOR`'da **toplanabilir sayılır**, çünkü:
+        #   (a) baskın yol `cube_meta=None`'dır (Discovery/LLM cevaplarında `cube_query`
+        #       yoktur) — fail-close etmek kapsamı geniş biçimde kırpardı;
+        #   (b) asıl riskli sınıf olan oran/ortalama adları **ad kalıbıyla** zaten
+        #       yakalanıyor (`ort_` · `_yuzde` · `_orani` · `_pct` → `YOK`);
+        #   (c) `_rank_facts` toplanamayan ölçüde **çok satırlı** durumda zaten
+        #       sıralama yapmıyor.
+        # Kapı bu asimetriyi iki yönlü kilitler; kaldırılırsa kapsam sessizce kırpılır.
+        _sinif, _ = toplanabilirlik(m0, cube_meta)
+        facts += _rank_facts(rows, dims[0], m0, unit, toplanabilir=_sinif != YOK)
     if len(measures) > 1:
         facts.append({"type": "measures", "text": f"{len(measures)} ölçü: " + ", ".join(measures)})
     if not facts:

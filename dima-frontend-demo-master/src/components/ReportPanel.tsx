@@ -38,11 +38,21 @@ import { ReportCard } from "@/components/ReportCard";
 // Listenin yönü de bilinçli: buraya bir **taşıma/meta** alanı eklemeyi unutmak, saf-not
 // cevabının kart olarak render edilmesine yol açar — **görünür** bir gerileme. Tersi
 // (gövde alanını saymayı unutmak) **sessiz** bir kayıptı; bu tam da yaşandı.
+// ⚠️ 🔴 **KÜME `AskResponse`'a göre değil, EKRANDAKİ NESNEYE göre kurulur.**
+// İlk sürüm yalnız backend'in `app/schemas.py::AskResponse` alanlarını düşünüyordu; ama
+// istemci cevaba **kendi alanını ekliyor**: `steering_golgede` (`types.ts`, `page.tsx`'te
+// set edilir, backend bu alanı GÖNDERMEZ). O alan kümede olmadığı için, yönlendirme
+// gölgesindeki **her saf-not cevabı** kart olarak render ediliyordu — hem gövdesiz bir
+// kart, hem de `lastReportableIdx` olduğu için `viewHint`'i üstüne çekiyordu.
+// Denetimde bulundu; kapı `test_SAF_NOT_ISTEMCI_ALANLARINI_da_KAPSIYOR` ile kilitli:
+// **backend şemasında OLMAYAN her istemci alanı bu kümede OLMAK ZORUNDA.**
 const SAF_NOT_ALANLARI = new Set<keyof AskResponse | string>([
   "question", "note", "suggestions", "next_steps", "trace", "source", "sql",
   "planned_sql", "cube_query", "view_hint", "is_new_topic", "thread_id",
   "reply_to_label", "explain", "job_id", "contract_id", "agent_run",
   "calculation_explanation",
+  // — istemci-tarafı alanlar (backend göndermez, `page.tsx` ekler) —
+  "steering_golgede",
 ]);
 
 export function raporlanabilir(it: AskResponse): boolean {

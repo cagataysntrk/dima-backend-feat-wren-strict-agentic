@@ -3346,15 +3346,36 @@ demektir.
 
 29 test: `tests/test_orkestrator.py` *(FAZ 0.2 + 0.22 kapıları eklendi)*.
 
-> ⟳ **TOPLANABİLİRLİK TEK SAHİPTE (FAZ 0/canlı denetim, 2026-08-04).**
-> Bir ölçünün toplanabilir olup olmadığını **yalnız** `contribution.ayristirilabilir_mi`
-> bilir. `interpret.py` onu tanımıyordu ve bu bir **sessiz-yanlış** üretiyordu: canlı bir
-> kullanıcı turunda `makine × ay` kırılımlı fire raporu için aynı veriye **üç ayrı yüzde**
-> basıldı (`+%88,1` · `−%72,3 «iyileşti»` · `+%98,3`), çünkü *"ilk→son"* iki **farklı
-> makinenin** değeriydi. Kural: **trend bir DÖNEM ifadesidir** — pivot önce döneme göre
-> toplanır; ölçü toplanamıyorsa (oran/ortalama) trend **hiç yazılmaz**, nedeni yazılır.
-> Aynı kapı *"toplamın %X'i"* payını da yalnız toplanabilir ölçüde yayımlar.
-> Kapı: `tests/test_pivot_trend_yanlis_degil.py`.
+> ⟳ **TOPLANABİLİRLİK: TEK SINIFLANDIRICI, ÜÇ POLİTİKA** *(FAZ 0 / canlı denetim + bütünlük denetimi, 2026-08-04)*
+>
+> **Sınıflandırma tek yerdedir:** `contribution.toplanabilirlik(measure, cube_meta)` →
+> `TAM` · `YARI` · `YOK` · `BILINMIYOR`. Metadata (`non_additive`/`semi_additive`/
+> `measure_expressions`) **yalnız orada** okunur. Ama **politika üçe ayrılır**, çünkü üç
+> tüketici **ayrı soru** sorar:
+>
+> | Tüketici | Sorusu | Kabul |
+> |---|---|---|
+> | `contribution.ayristirilabilir_mi` | Δ segmentlere dağıtılabilir mi? | yalnız `TAM` |
+> | `viz._additive` | **zaman** ekseninde yığılabilir mi? | yalnız `TAM` |
+> | `interpret` dönem trendi | **zaman-DIŞI** eksende toplanabilir mi? | `TAM` + **`YARI`** |
+>
+> **Neden bu ayrım:** canlı bir kullanıcı turunda `makine × ay` kırılımlı fire raporunda
+> aynı veriye **üç ayrı yüzde** basıldı (`+%88,1` · `−%72,3 «iyileşti»` · `+%98,3`) —
+> çünkü *"ilk→son"* iki **farklı makinenin** değeriydi. **Trend bir DÖNEM ifadesidir:**
+> pivot önce **döneme göre toplanır**. İlk düzeltme bu toplamayı `ayristirilabilir_mi`'ye
+> sordu ve **yarı-toplanabilir yedi ölçünün** (`bakiye` · `acik_bakiye` · `acik_borc` ·
+> `net_bakiye` · `net_miktar` · `stok_deger` · `vadesi_gecen`) trendini **haksız yere**
+> susturdu: bir stok ölçüsü **müşteriler arasında toplanır**, toplanamadığı eksen zamandır.
+>
+> ⚠ **Yasak KOŞULSUZ DEĞİLDİR** *(bir denetim bu satırın koddan geniş olduğunu ölçtü)*:
+> **kırılımsız** bir seride dönem başına zaten tek satır vardır, toplama yapılmaz →
+> bir **oran serisinin trendi meşrudur** (*fire oranı Oca %10 → Haz %20*). Trend yalnız
+> **toplama gerektiğinde** ve sınıf `YOK`/`BILINMIYOR` iken yazılmaz — nedeni yazılır.
+> `BILINMIYOR` **fail-closed**tir: yanlış bir yüzde, hiç yüzdeden kötüdür.
+>
+> Aynı sınıflandırma *"toplamın %X'i"* payını da yönetir; **toplanamayan ölçüde
+> sıralama da yapılmaz** (payı susturup gövdeyi toplamak, sayının kendisini yanlış bırakırdı).
+> Kapı: `tests/test_pivot_trend_yanlis_degil.py` · ölçüm: `git show e22b2b9`.
 
 ### 11.6 Özellik = KOMPOZİSYON, endpoint değil
 

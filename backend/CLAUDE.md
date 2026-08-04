@@ -4,7 +4,8 @@
 > şunları oku** — bağlam sıfırlansa bile operasyon buradan devam eder:
 > 1. **`OPERASYON.md`** (repo kökü) — kural seti, döngü adımları, test kapısı, öz-denetim
 > 2. **`OPERASYON-DURUM.md`** (repo kökü) — **nerede kaldık**, açık borçlar, ölçüm tabanı
-> 3. **`~/.claude/plans/DIMA-V1-YOL-HARITASI.md`** — ne yapılacak (5239 satır; §10'daki sıra)
+> 3. **`~/.claude/plans/DIMA-V1-YOL-HARITASI.md`** — ne yapılacak (**5256** satır @`e22b2b9`
+>    · `wc -l`; §10'daki bağlayıcı sıra)
 >
 > *Bu üçü + `MIMARI.md` operasyonun tam durumunu taşır; sohbet geçmişine ihtiyaç yoktur.*
 >
@@ -109,7 +110,7 @@ uvicorn app.main:app --reload --port 8000   # dev
 
 ## Test kapısı (ölçüldü — 3 Ağustos 2026)
 
-Tam kapı **~15 dk**: süit 1886 test ≈8,5 dk · `eval` ≈1,5 dk · `nl_corpus` ≈3-4 dk ·
+Tam kapı **~15 dk**: süit **2068** test @`e22b2b9` (`pytest -q --collect-only`) ≈8,5 dk · `eval` ≈1,5 dk · `nl_corpus` ≈3-4 dk ·
 `konusma_senaryolari` ≈1,5 dk. Fixture'lar zaten `session` kapsamlı, `pytest-xdist` imajda
 yok — süre **gerçek iştir**; israf faz başına 2-3 kez koşturmaktı.
 

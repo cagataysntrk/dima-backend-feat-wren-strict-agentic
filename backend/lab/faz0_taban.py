@@ -161,7 +161,15 @@ def olcut_7_yetim() -> Olcum:
 
 def olcut_8_ci() -> Olcum:
     wf = KOK / ".github" / "workflows"
-    dosyalar = sorted(p.name for p in wf.glob("*.yml")) if wf.exists() else []
+    if not wf.exists():
+        # 🔴 DENETİMDE BULUNDU: eski sürüm dizin yokken **sert `0`** yazıyordu ve artefakt
+        # *"0 workflow"* dedi — gerçek **1** (`backend-ci.yml`). Kanonik koşum konteynerde
+        # ve orada `KOK = /`, yani `/.github` yoktur. Yani D2 damgalı bir tabloya
+        # **uydurulmuş bir sayı** girdi. Ölçülemeyen bir şeyin doğru cevabı `⊘`dir.
+        return Olcum.yok("ls .github/workflows/",
+                         f"{wf} görünmüyor (konteynerde repo kökü mount edilmez) — "
+                         "sayı UYDURULMAZ; host'tan koş")
+    dosyalar = sorted(p.name for p in wf.glob("*.yml"))
     kapili = [n for n in dosyalar
               if re.search(r"kapi\.py|nl_corpus|eval\.run", _oku(wf / n))]
     return Olcum(f"{len(dosyalar)} workflow · ölçüm kapısı taşıyan: {len(kapili)}",
@@ -385,8 +393,16 @@ def _sha(arg: str | None) -> str:
     if arg:
         return arg
     try:
-        return subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=KOK,
-                              capture_output=True, text=True, timeout=20).stdout.strip()
+        sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=KOK,
+                             capture_output=True, text=True, timeout=20).stdout.strip()
+        if not sha:
+            return ""
+        # 🔴 KİRLİ AĞAÇ DAMGAYA YAZILIR (denetimde bulundu): araç bir kez `@0619bfd`
+        # damgalı bir tablo üretti ama ölçtüğü dosyaların hepsi **commit'siz**di —
+        # yani damga, o commit'te olmayan koddan alınan sayıları işaret ediyordu.
+        kirli = subprocess.run(["git", "status", "--porcelain"], cwd=KOK,
+                               capture_output=True, text=True, timeout=20).stdout.strip()
+        return f"{sha}-kirli" if kirli else sha
     except Exception:                                          # noqa: BLE001
         return ""
 

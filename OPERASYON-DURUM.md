@@ -215,15 +215,29 @@ VK-1…VK-6 **yapısal ve canlı** (gemini) ölçüldü. `§G.6e`'nin *"Bugün"*
 | 14 | `R5` **`_yururlukte_satirlari` biçime bağlı** — `satirlar[2:]` §0'da tek tablo + tam iki başlık satırı varsayıyor; başlık metni değişirse `str.index` **ValueError**. *(Yön fail-closed, sessiz-yanlış değil)* | **FAZ 0.14** |
 | 15 | `R8` **Chip'ler maskeli-boyut süzgecini paylaşmıyor** — `answer.py:441-447` maskeli kolona filtre kuran chip'leri eliyor; `_intent_uyusmazlik_chipi` kendi chip'lerini kuruyor ve `_attach_next_steps` `result is None` diye erken dönüyor. 0.23 bu chip'leri **görünür yaptı**, süzgeci paylaşmadı → *"boş dönen chip"* riski | **FAZ 0.14** |
 | 16 | 🔴 **Canlı turun kalan beş bulgusu** *(C)*: (a) çelişki sorulduğunda cevap yok, aynı rapor yeniden çiziliyor → **5.0/5.3** · (b) *"ne yapmalıyız"* çıkmaz sokak, `prescription` hiç dolmuyor ve kullanıcının *"o zaman kg üzerinden bak"* düzeltmesi **yok sayılıyor** → **FAZ 5** · (c) tek kelimelik düzeltme (*"yok haziran olsun"*) arkada `Unknown filter dimension 'tarih' in cube 'enerji_tesis'` **iç hatası** + konu kaybı → **hata, 0.x'e alınmalı** · (d) chip'e tıklayınca küp değişti (`enerji_tesis` → `surdurulebilirlik`) — iki *"elektrik"* iki farklı sayı → **0.4 netleştirme** · (e) **veri sonu tarihi hiç söylenmiyor**; kullanıcı üç turunu bunu keşfetmeye harcadı → **§C ölçüt 12 (tazelik), bugün 0** |
+| 17 | 🔴 **SESSİZ-YANLIŞ: *"değişim"* istendi, **TOPLAM** verildi.** Canlı tur t14: *"ocak ile haziran arasında makine bazında fire değişimi"* → `compare=None`, kıyas yok, ay yok, **uyarı da yok**; kendinden emin bir toplam tablosu. Kullanıcı: *"veri doğru, **cevap yanlış soruya**"*. Kök neden `cube_router.compare_mode` bu ifadeyi tanımıyor | **FAZ 0.5b / cube_router** *(kıyas ekseni)* |
+| 18 | 🔴 **AJ0 canlıda DOĞRULANDI — çıkışsız yazım düzeltmesi.** t12/t13: *"…fire ne kadar arttı"* → *"«artti» yerine «parti» mi demek istedin?"*, **doğru yazınca da aynı**, ve sunulan tek şık gramersiz bir cümle (*"…fire ne kadar parti"*). Kullanıcı: *"Ben «artti» yazmadım ki… düzeltmenin yolu yok, çıkış kapısı kapalı."* VK ölçümü *"13 turun dördü buradan ölüyor"* demişti — **canlıda tekrar üretildi** | **§G/AJ0** *(operasyonun en yüksek kaldıraçlı maddesi)* |
+| 19 | 🔴 **`bakiye` iki cube'ta, seçim SESSİZ — ve fark ₺11,86 MİLYON.** t11 `cari` → **₺11.859.052,65**; t15 `mizan` → **₺0**. Sistem birini kura ile seçti, sormadı, seçtiğini yazmadı; `next_steps`'in 6 şıkkının hiçbiri *"cari mi mizan mı?"* demiyor. Ayrıca mizan sorgusunda *"bu yıl"* filtresi **sessizce düştü** | **FAZ 0.4** *(netleştirme önceliği — bayrak `off`)* |
+| 20 | **Üstünlük ifadesi cevaplanmıyor:** t06 *"hangi makinenin fire oranı en yüksek bu yıl"* → `source=catalog`, **satır yok**, ürün kataloğu dökümü. Ama t07 *"makine bazında fire oranı bu yıl"* → 11 satır, doğru cevap. Kullanıcı: *"Sistem kendi bildiği şeyi bana yasaklıyor… kendimi aptal hissettim"* | **cube_router** *(liste/üstünlük niyeti)* |
+| 21 | **Onay kartına SÖZLE «evet» işlemiyor:** t08 kart *"…panona ekleyeyim mi?"* diye **cümleyle** soruyor; t09 *"evet ekle"* → *"geçerli bir alan veya değişiklik belirtmemektedir"*. Halka yalnız **fareyle** kapanıyor. *(Düğme yolu ✅ çalışıyor: t10 «Rapor panona eklendi».)* | **FAZ 6** *(eylem/onay akışı)* |
+| 22 | **Ham kolon adı + saat damgası ekranda:** `tarih__year: 2026-01-01 00:00:00`. Kullanıcı: *"Ben yıl sordum, bana veritabanı sütun adı ve saat 00:00 gösteriliyor."* | **FAZ 0.10b** *(görünen adlar)* |
+| 23 | **330 satır, sıfır içgörü:** t05'te kırılıma tıklamanın sebebi *"hangi makine kötü"* idi; dönen tek cümle sistemin **yapmadığı** işi anlatıyor. Kırılımlı oran görünümünde en azından **sıralama** verilebilmeli *(bugün toplanamadığı için susuyor — doğru ama yetersiz)* | **FAZ 5** *(anlatı) + 0.10b* |
 
 ---
 
-## ⛔ DENETİM — **AJAN KULLANIMI KALDIRILDI** *(2026-08-04, kullanıcı kararı)*
+## ✅ DENETİM — **AJANLAR KULLANILIR** *(yanlış teşhis geri alındı, 2026-08-04)*
 
-> 🔴 **OLAY:** Arka plan ajanları çalışmanın ortasında **ana sohbeti sildi.** Bağlam
-> geri getirilemedi. → **Alt-ajan kullanımı KESİN OLARAK YASAK**; `OPERASYON-DENETIM.md`
-> **silindi**; `OPERASYON.md §7` **öz-denetime** çevrildi (`Ö1` plan · `Ö2` bütünlük ·
-> `Ö3` kullanıcı — **aynı oturumda, sırayla, elle**).
+> 🔴 **DÜZELTİLMİŞ TEŞHİS.** Bir süre burada *"arka plan ajanları ana sohbeti sildi →
+> alt-ajan KESİN YASAK, `OPERASYON-DENETIM.md` silindi"* yazıyordu. **O teşhis YANLIŞTI**
+> ve dosya da **silinmemişti** (`git status`: ` M`, duruyor). Olayı inceleyen kişi ölçtü:
+> sebep başarısız bir **daemon yükseltmesiydi**, arka plan işçilerini öksüz bıraktı.
+> Kullanıcı: *"ben yanlış anlamışım, en güçlü yanımız olan ajanlarmış."*
+>
+> **Ders — teşhisin kendisi de kanıt ister.** Bir olayla **aynı anda** olmak, o olayın
+> sebebi olmak değildir. Bu depo tam bu sınıfı avlıyor (`A6`'nın düşme gerekçesi) ve aynı
+> hata **kural setinin kendisine** uygulandı: ölçülmemiş bir nedenle çalışan bir mekanizma
+> kapatıldı. **Denetim `OPERASYON.md §7`'ye göre üç ajanla koşar** (`A` plan · `B` bütünlük ·
+> `C` canlı kullanıcı); görev metinleri `OPERASYON-DENETIM.md`'de.
 
 **Disiplin korunuyor** — çünkü değeri ölçüldü: o turlar belgede **15 kusur** buldu, ölçüm
 aracı **12+ kez** yanlış çıktı, ve iki **P0 sessiz-yanlış** (pivot trend · `eylem_onerisi`
