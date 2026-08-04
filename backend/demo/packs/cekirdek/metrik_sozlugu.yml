@@ -33,8 +33,15 @@ grain_sozlesmeleri:
   # Ölçülen: mikro-v16 `ticaret` → `stok_hareketleri`; logo-3 · netsis `ticaret` →
   # `faturalar`. Aynı ad, aynı sinonim, KARŞILAŞTIRILAMAZ sayı.
   fatura:
-    aciklama: "bir satır = bir fatura kalemi/başlığı"
-    base_object_adlari: [faturalar, fatura, invoice, INVOICE, fatura_kalem]
+    # ⚠ **DÜZELTİLDİ:** ilk yazımda `fatura_kalem` de bu listedeydi — yani *"fatura"* ile
+    # *"fatura kalemi"* AYNI grain sayılıyordu. Değiller: bir faturanın **çok** kalemi
+    # olur. İkisini aynı saymak, tam olarak bu sözleşmenin engellemek için var olduğu
+    # hatadır — üstelik sözleşmenin **kendi içinde**.
+    aciklama: "bir satır = bir FATURA (başlık)"
+    base_object_adlari: [faturalar, fatura, invoice, INVOICE]
+  fatura_kalem:
+    aciklama: "bir satır = bir fatura KALEMİ (bir faturanın çok kalemi olur)"
+    base_object_adlari: [fatura_satirlari, fatura_kalem, fatura_kalemleri, invoice_line]
   stok_hareketi:
     aciklama: "bir satır = bir stok hareketi (giriş/çıkış)"
     base_object_adlari: [stok_hareketleri, stok_hareket, sth, STOK_HAREKETLERI]
@@ -51,15 +58,64 @@ grain_sozlesmeleri:
     base_object_adlari: [partiler, parti]
 
 metrikler:
-  # ── SATIŞ ──────────────────────────────────────────────────────────────────
-  # ⚠ `satis_tutari` bugün ÜÇ ERP'de de bu adı taşıyor ama grain'i AYRIŞIYOR.
-  # Sözleşme fatura grain'ini kanonik ilan ETMİYOR — o karar adım (c)'ye ait ve
-  # `ticaret` göçünün kendisi. Burada yalnız SÖZLÜK birleşiyor.
+  # ── SATIŞ — adım (c): KARAR KALEMİ ─────────────────────────────────────────
+  #
+  # 🔴 **ÖLÇÜLDÜ (2026-08-04) ve yol haritasının teşhisinden AĞIR çıktı.** Yol haritası
+  # *"`ticaret` üç ERP'de farklı grain"* diyordu; sayım **ÜÇ grain / BEŞ cube** gösterdi:
+  #
+  #   logo-3/mal        fatura_satirlari    → fatura KALEMİ
+  #   logo-3/ticaret    faturalar           → fatura
+  #   mikro-v16/ticaret stok_hareketleri    → stok hareketi
+  #   netsis/mal        stok_hareketleri    → stok hareketi
+  #   netsis/ticaret    faturalar           → fatura
+  #
+  # ⚠ **Ve ayrışma ŞİRKET İÇİNDE:** `gitas` (netsis) tek başına `satis_tutari`'yi HEM
+  # `ticaret`@fatura HEM `mal`@stok_hareketi olarak taşıyor — aynı ad, aynı sinonim
+  # (`satış`, `ciro`), **iki farklı sayı**, **aynı şirkette**. Yani *"bu yıl satış"*
+  # sorusunun cevabı yönlendiricinin hangi cube'u seçtiğine bağlı. Bu, şirketler arası
+  # sürüklenmeden **daha kötüdür**: kullanıcı iki sayıyı yan yana bile göremez.
+  #
+  # ## KARAR — kalem · sahip · tarih
+  #
+  # | | |
+  # |---|---|
+  # | **Karar** | `satis_tutari` **kanonik grain'i = `fatura`** |
+  # | **Gerekçe** | Satış, ticari olarak **faturayla** doğar; stok hareketi bir *sonuçtur* (ve iptal/iade faturada görünür, hareket kaydında her zaman değil) |
+  # | **Karşı grain'ler** | `satis_tutari_hareket` @stok_hareketi · `satis_tutari_kalem` @fatura_kalem — **ikisi de meşru**, tek metrik iki anlama BÜKÜLMEZ |
+  # | **Sahip** | FAZ 2.1(c) · ad göçü **ayrı** bir turda (NL yönlendirmesini değiştirir, kendi korpus ölçümünü ister) |
+  # | **Tarih** | 2026-08-04 |
+  #
+  # 🔴 **Bu beyan BUGÜN kapıyı ateşliyor:** `cekirdek_katman=on` iken üç cube (mikro/ticaret,
+  # netsis/mal, logo-3/mal) `compose()`'u **reddettirir** — ve bu **istenen** davranıştır.
+  # Bayrak `off` kaldığı için bugünkü derleme etkilenmez; ad göçü inene kadar `on`
+  # AÇILAMAZ ve bu bir **eksiklik değil, kilidin kendisidir**.
+  # *Bir sözleşmeyi, ihlal edildiği için yazmamak, ihlali sözleşme yapmaktır.*
   - name: satis_tutari
     label: satış tutarı
     unit: "₺"
     additive: full
+    grain: fatura
     synonyms: [satış, satis, ciro, gelir, satış tutarı, hasılat, hasilat]
+
+  # Karşı grain'ler — henüz hiçbir cube bu adları taşımıyor (ad göçü ayrı tur).
+  # ⚠ Sözlükte durmaları **ölü girdi değil**: `test_SOZLUK_GIRDILERI_OLU_DEGIL`
+  # muafiyeti aşağıda gerekçesiyle yazılı — bunlar bir KARARIN kaydıdır, bir eşleşme
+  # beklentisi değil.
+  - name: satis_tutari_hareket
+    label: satış tutarı (stok hareketi)
+    unit: "₺"
+    additive: full
+    grain: stok_hareketi
+    karar_kaydi: true
+    synonyms: [satış, satis, ciro, satış tutarı]
+
+  - name: satis_tutari_kalem
+    label: satış tutarı (fatura kalemi)
+    unit: "₺"
+    additive: full
+    grain: fatura_kalem
+    karar_kaydi: true
+    synonyms: [satış, satis, ciro, satış tutarı]
 
   - name: satis_miktari
     label: satış miktarı

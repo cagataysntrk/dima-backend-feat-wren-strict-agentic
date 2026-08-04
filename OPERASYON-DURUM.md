@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 2 · SEMANTİK ÇEKİRDEK** *(FAZ 1 ✅ bitti — 19 adım)* |
-| **Sıradaki madde** | 🔴 `2.1(c)` **`ticaret` GRAIN KARARI** *(iki metrik mi, tek kanonik mi — karar kalemi + sahip + tarih)* → `2.1(d)` demo kopyaları |
+| **Sıradaki madde** | `2.1(c2)` **ad göçü** *(`satis_tutari` → `_hareket`/`_kalem`; NL yönlendirmesini değiştirir, kendi korpus ölçümü)* → `2.1(d)` demo kopyaları |
 | **Demet** | ✅ **`1.12` kapısı 4/4 YEŞİL** (süit **2477**) — risk sınırı olduğu için demete girmedi · demet 13 açık: `1.10`+`1.11` (o kapıya da dahil oldular) |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
@@ -420,6 +420,52 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 2 · adım 3 — `2.1(c)` **`ticaret` GRAIN KARARI** — karar kalemi · sahip · tarih *(2026-08-04)*
+
+Kapı: **31 test**. 🔴 **Risk sınırı** (`demo/packs`) → kendi korpus kapısını koştu.
+
+> 🔴 **ÖLÇÜM, YOL HARİTASININ TEŞHİSİNDEN AĞIR ÇIKTI.** Yol haritası *"`ticaret` üç ERP'de
+> farklı grain"* diyordu. Sayım **üç grain / beş cube** gösterdi:
+>
+> | cube | `base_object` | grain |
+> |---|---|---|
+> | `logo-3/mal` | `fatura_satirlari` | **fatura kalemi** |
+> | `logo-3/ticaret` | `faturalar` | fatura |
+> | `mikro-v16/ticaret` | `stok_hareketleri` | stok hareketi |
+> | `netsis/mal` | `stok_hareketleri` | stok hareketi |
+> | `netsis/ticaret` | `faturalar` | fatura |
+>
+> ⚠ **Ve ayrışma ŞİRKET İÇİNDE:** `gitas` (netsis) tek başına `satis_tutari`'yi hem
+> `ticaret`@fatura hem `mal`@stok_hareketi olarak taşıyor — aynı ad, aynı sinonim
+> (`satış`, `ciro`), **iki farklı sayı, aynı şirkette**. *"Bu yıl satış"* sorusunun cevabı
+> yönlendiricinin hangi cube'u seçtiğine bağlı. Bu, şirketler arası sürüklenmeden **daha
+> kötüdür**: kullanıcı iki sayıyı yan yana bile göremez.
+
+> **KARAR** — `satis_tutari` **kanonik grain = `fatura`**. *Gerekçe:* satış ticari olarak
+> **faturayla doğar**; stok hareketi bir **sonuçtur** (ve iptal/iade faturada görünür,
+> hareket kaydında her zaman değil). Karşı grain'ler **ayrı metrik** olarak kayıtlı —
+> `satis_tutari_hareket` @stok_hareketi · `satis_tutari_kalem` @fatura_kalem. *Tek metrik
+> iki anlama BÜKÜLMEZ.* **Sahip:** ad göçü ayrı bir tur (NL yönlendirmesini değiştirir,
+> kendi korpus ölçümünü ister). **Tarih:** 2026-08-04.
+
+> 🔴 **SÖZLEŞMENİN KENDİ İÇİNDEKİ HATA — ölçümle bulundu.** İlk yazımda `fatura_kalem`,
+> `fatura` grain'inin **takma adları** arasındaydı: yani *"fatura"* ile *"fatura kalemi"*
+> aynı sayılıyordu. Değiller — bir faturanın **çok** kalemi olur ve kalem düzeyinde
+> toplanan tutar, fatura düzeyindekinden farklı olabilir (satır bazlı iskonto/iade).
+> *Bu, sözleşmenin engellemek için var olduğu hatanın, sözleşmenin kendi içindeki hâliydi.*
+
+> ✅ **KARAR BUGÜN KAPIYI ATEŞLİYOR — ve bu istenen davranış.** `cekirdek_katman=on` iken
+> üç şirketin üçünde de `compose()` **reddediyor** ve **hangi cube** olduğunu tek tek
+> söylüyor (`gitas: mal.satis_tutari` · `atiksan: ticaret.satis_tutari` · `gulteks:
+> mal.satis_tutari`). Bayrak `off` olduğu için bugünkü derleme etkilenmiyor; **ad göçü
+> inene kadar `on` AÇILAMAZ** ve bu bir eksiklik değil, **kilidin kendisidir**.
+> *Bir sözleşmeyi, ihlal edildiği için yazmamak, ihlali sözleşme yapmaktır.*
+
+> ⟳ Kabul ölçütü **anlam değiştirdi, gevşemedi**: *"`on`'da sayı-etkisi 0"* ölçütü
+> `demo-boyahane`'de (ERP pack'i yok) **aynen duruyor**; üç ERP şirketinde ise ölçüt artık
+> *"sözleşme ateşliyor mu"*. Gölge diff aracı `GrainIhlali`'yi **ölçüm hatasından ayırıyor**
+> — çalışan bir kapıyı *"ölçülemedi"* diye raporlamak, onu bir arıza gibi gösterirdi.
 
 ### FAZ 2 · adım 2 — `2.1(b)` **`cari`: grain sözleşmesi GERÇEK pack'lerde ateşliyor** *(2026-08-04)*
 

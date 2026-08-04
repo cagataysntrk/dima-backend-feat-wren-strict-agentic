@@ -117,6 +117,14 @@ def main() -> int:
         try:
             sayi, sozluk = diff(s)
         except Exception as exc:             # noqa: BLE001
+            # 🔴 GRAIN İHLALİ ≠ ÖLÇÜM HATASI. Sözleşmenin **ateşlemesi** beklenen bir
+            # sonuçtur (ad göçü inene kadar `on` açılamaz) ve onu *"ölçülemedi"* diye
+            # raporlamak, çalışan bir kapıyı bir arıza gibi göstermek olurdu.
+            if type(exc).__name__ == "GrainIhlali":
+                print(f"  {s}: ⛔ SÖZLEŞME ATEŞLEDİ (beklenen) — `on` açılamaz:")
+                for satir in str(exc).splitlines()[1:4]:
+                    print(f"      {satir.strip()}")
+                continue
             print(f"  {s}: ⊘ ÖLÇÜLEMEDİ — {exc}")
             kirmizi += 1                     # ölçülemeyeni yeşil saymak YALAN üretir
             continue

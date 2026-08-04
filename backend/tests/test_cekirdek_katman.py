@@ -254,7 +254,32 @@ def test_MDL_DIFF_OLCULEMEYENI_YESIL_SAYMIYOR():
     assert "kirmizi += 1" in kaynak[i:i + 200]
 
 
-@pytest.mark.parametrize("sirket", ["demo-boyahane", "gitas", "atiksan", "gulteks"])
+@pytest.mark.parametrize("sirket", ["gitas", "atiksan", "gulteks"])
+def test_SOZLESME_ATESLIYOR_ve_ON_ACILAMIYOR(sirket):
+    """⟳ **ADIM (c) İNDİ — kabul ölçütü ANLAM DEĞİŞTİRDİ, gevşemedi.**
+
+    `satis_tutari`'nın kanonik grain'i **`fatura`** ilan edildi. Üç ERP şirketinin üçünde
+    de sözleşmeye **uymayan** bir cube var (`mikro/ticaret` @stok_hareketi ·
+    `netsis/mal` @stok_hareketi · `logo-3/mal` @fatura_kalem), dolayısıyla
+    `cekirdek_katman=on` **compose'u reddeder** — ve bu **istenen** davranıştır:
+    *bayrak, ad göçü inene kadar AÇILAMAZ ve bu bir eksiklik değil, kilidin kendisidir.*
+
+    🔴 Eski ölçüt (*"`on`'da sayı-etkisi 0"*) **silinmedi**, `demo-boyahane` üstünde
+    aynen duruyor (ERP pack'i yok → sözleşme ateşlemez → diff hâlâ anlamlı).
+    """
+    if not (DEMO / "companies" / sirket).is_dir():
+        pytest.skip(f"{sirket} bu koşumda mount edilmemiş")
+    import sys
+
+    sys.path.insert(0, str(KOK / "lab"))
+    from mdl_diff import diff                                    # noqa: PLC0415
+
+    with pytest.raises(cekirdek.GrainIhlali) as red:
+        diff(sirket)
+    assert "satis_tutari" in str(red.value)
+
+
+@pytest.mark.parametrize("sirket", ["demo-boyahane"])
 def test_OLCULDU_SAYI_ETKISI_SIFIR(sirket):
     """🔴 **KABUL ÖLÇÜTÜ — göç reçetesinin 1. maddesi.** Ölçüldü (2026-08-04,
     `python lab/mdl_diff.py`): dört şirketin **dördünde de sayı-etkisi 0 fark**; sözlük
@@ -309,7 +334,58 @@ def test_CARI_GRAIN_SOZLESMESI_ATESLIYOR():
         assert cekirdek.grain_denetle("cari", meta, SOZLUK) == [], f"{pack}/cari İHLAL"
 
 
-def test_TICARET_SOZLESMESI_BILEREK_YOK():
+def test_TICARET_KARARI_KAYITLI():
+    """⟳ **TUZAKTAN KAPIYA — adım (c) kararı verildi (2026-08-04).**
+
+    Eski yön: *"`satis_tutari` grain beyan etmiyor; karar adım (c)'nin"*. Karar verildi:
+    **kanonik grain = `fatura`**, karşı grain'ler ayrı metrik olarak kayıtlı
+    (`satis_tutari_hareket` @stok_hareketi · `satis_tutari_kalem` @fatura_kalem) —
+    *tek metrik iki anlama BÜKÜLMEZ.*
+
+    🔴 Ve karar **kalem · sahip · tarih** taşımak zorunda: gerekçesiz bir karar, bir
+    sonraki tur tarafından *"neden böyle?"* diye yeniden açılır ve aynı ölçüm yeniden
+    yapılır.
+    """
+    h = cekirdek.metrik_haritasi(SOZLUK)
+    assert h["satis_tutari"]["grain"] == "fatura"
+    assert h["satis_tutari_hareket"]["grain"] == "stok_hareketi"
+    assert h["satis_tutari_kalem"]["grain"] == "fatura_kalem"
+    kaynak = (DEMO / "packs" / "cekirdek" / "metrik_sozlugu.yml").read_text(encoding="utf-8")
+    for gereken in ("**Karar**", "**Gerekçe**", "**Sahip**", "**Tarih**", "2026-08-04"):
+        assert gereken in kaynak, f"karar kaydında `{gereken}` YOK"
+
+
+def test_FATURA_ile_FATURA_KALEMI_AYRI_GRAIN():
+    """🔴 **Sözleşmenin kendi içindeki hata — ölçümle bulundu.** İlk yazımda `fatura_kalem`
+    `fatura` grain'inin takma adları arasındaydı: yani *"fatura"* ile *"fatura kalemi"*
+    aynı sayılıyordu. Değiller — bir faturanın **çok** kalemi olur ve kalem düzeyinde
+    toplanan bir tutar, fatura düzeyinde toplanandan **farklı** olabilir (satır bazlı
+    iskonto/iade). *Bu, sözleşmenin engellemek için var olduğu hatanın sözleşmenin kendi
+    içindeki hâliydi.*"""
+    assert cekirdek.grain_adi(SOZLUK, "faturalar") == "fatura"
+    assert cekirdek.grain_adi(SOZLUK, "fatura_satirlari") == "fatura_kalem"
+
+
+def test_UC_GRAIN_BES_CUBE_OLCUMU_KAYITLI():
+    """⚠ **Yol haritasının teşhisinden AĞIR çıktı ve ölçüm yazıldı.** Yol haritası
+    *"`ticaret` üç ERP'de farklı grain"* diyordu; sayım **üç grain / beş cube** gösterdi —
+    ve ayrışma **şirket içinde**: `gitas` (netsis) `satis_tutari`'yi hem `ticaret`@fatura
+    hem `mal`@stok_hareketi olarak taşıyor. *Aynı şirkette aynı soruya iki sayı.*"""
+    bulunan: dict[str, str] = {}
+    for yol in (DEMO / "packs").rglob("cubes/*/metadata.yml"):
+        meta = yaml.safe_load(yol.read_text(encoding="utf-8")) or {}
+        adlar = {m.get("name") for m in (meta.get("measures") or [])}
+        if "satis_tutari" in adlar:
+            bulunan[f"{yol.parts[-4]}/{meta.get('name')}"] = (
+                cekirdek.grain_adi(SOZLUK, meta.get("base_object")) or "?")
+    assert len(bulunan) == 5, f"beş cube bekleniyordu, {len(bulunan)} bulundu: {bulunan}"
+    assert len(set(bulunan.values())) == 3, f"üç grain bekleniyordu: {bulunan}"
+    netsis = {k: v for k, v in bulunan.items() if k.startswith("netsis/")}
+    assert len(set(netsis.values())) == 2, (
+        f"netsis içi ayrışma KAPANMIŞ ({netsis}) — ad göçü indiyse bu test GÜNCELLENMELİ")
+
+
+def _KULLANILMIYOR_test_TICARET_SOZLESMESI_BILEREK_YOK():
     """⚠ `satis_tutari`'nın kanonik grain'i (fatura mı, stok hareketi mi) bir **karardır**
     ve göç reçetesinin **adım (c)**'sine aittir: *"ikisi de meşru olabilir → çekirdekte
     İKİ ayrı metrik"*. Bugün beyan etmek, üç ERP'den ikisini **derleme zamanında
@@ -337,7 +413,12 @@ def test_SOZLUK_GIRDILERI_OLU_DEGIL():
     for yol in (DEMO / "packs").rglob("cubes/*/metadata.yml"):
         meta = yaml.safe_load(yol.read_text(encoding="utf-8")) or {}
         gercek |= {str(m.get("name")) for m in (meta.get("measures") or [])}
-    olu = [m["name"] for m in (SOZLUK.get("metrikler") or []) if m["name"] not in gercek]
+    # ⚠ `karar_kaydi: true` MUAF — ve gerekçesi yazılı: bunlar bir **kararın kaydıdır**
+    # (`satis_tutari_hareket` · `satis_tutari_kalem`), bir eşleşme beklentisi değil.
+    # Ad göçü inene kadar hiçbir cube bu adları taşımaz; muafiyeti yazmamak, kararı
+    # "ölü satır" diye sildirirdi — yani kararın kendisini kaybettirirdi.
+    olu = [m["name"] for m in (SOZLUK.get("metrikler") or [])
+           if m["name"] not in gercek and not m.get("karar_kaydi")]
     assert not olu, f"ÖLÜ sözlük girdisi (hiçbir cube ölçüsüyle eşleşmiyor): {olu}"
 
 
