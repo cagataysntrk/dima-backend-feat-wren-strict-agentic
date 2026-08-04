@@ -3122,7 +3122,15 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     return resp
 
         try:
-            refined = cube_router.deterministic_refine(prev_cq, q_norm, schema)
+            # 🔴 FAZ 4.3 BORCU — bayrak **çağıranda** çözülür; `deterministic_refine`
+            # saf kalır (test edilebilirlik + `lab/` A/B koşumu).
+            #
+            # Ölçüldü @bu commit (`lab/sharding.py`, `demo-boyahane`, 44 konuşmalık
+            # sabit kohort): tur 1 %63,6 → tur 5 **%45,5 → %59,1**, düşüş
+            # **−%18,2 → −%4,5**, karar **`kaldi` → `gecti`**.
+            refined = cube_router.deterministic_refine(
+                prev_cq, q_norm, schema,
+                olcu_ekle="olcu_ekleme_takibi" in resolve_for(settings, principal))
         except Exception:
             _log.warning("deterministic_refine hata verdi (best-effort)", exc_info=True)
             refined = None

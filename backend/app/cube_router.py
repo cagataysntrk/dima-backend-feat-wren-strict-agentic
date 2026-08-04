@@ -1030,10 +1030,31 @@ _RM_VERB_RE = re.compile(
     r"\b(gosterme\w*|gizle\w*|kaldir\w*|cikar\w*|sil|silelim|silsin|istemiyorum|istemem|olmasin)\b")
 
 
-def deterministic_refine(prev: dict, q: str, schema: dict) -> dict | None:
+def deterministic_refine(prev: dict, q: str, schema: dict,
+                         *, olcu_ekle: bool = False) -> dict | None:
     """Yaygın konuşmasal düzenlemeleri LLM'SİZ uygular (deterministik-önce, ADR-0004):
     granularity ("aylara göre"), boyut ekle ("makine kırılımı"), sıralama ("en düşük"),
-    dönem ("bu ay"). Ölçü değişiyorsa ya da hiçbir düzenleme yoksa None (LLM'e bırak)."""
+    dönem ("bu ay"). Ölçü değişiyorsa ya da hiçbir düzenleme yoksa None (LLM'e bırak).
+
+    ## 🔴 `olcu_ekle` — FAZ 4.3'ün ÖLÇÜLMÜŞ borcu (bayrak: `olcu_ekleme_takibi`)
+
+    Çok-turlu benchmark (`lab/sharding.py`) hedefini **tutturamadı**: `demo-boyahane`,
+    44 konuşmalık sabit kohort, tur 1 **%63,6** → tur 5 **%45,5** = **−%18,2** (hedef
+    −%10). Kayıp turların **tamamı** aynı şekle sahipti: takip mesajı **çıplak bir
+    ikinci ölçü adı** (*"fire orani yuzde"*, *"ort brut maas"*).
+
+    Kök neden **tam olarak aşağıdaki `return None`**: aynı cube'un başka bir ölçüsü
+    eşleşince *"farklı metrik açıkça isteniyor"* varsayılıp zincir terk ediliyor. Oysa
+    *"bir de fire ekle"* çalışıyordu — yani mekanizma vardı, **ipuçsuz hâli** yoktu.
+
+    ⚠ **Bayrak parametrede, `get_settings()` çağrısında DEĞİL.** Bu fonksiyon **saf**
+    kalmalı: içine bir ayar okuması koymak, onu test edilebilirlikten ve `lab/`
+    araçlarının A/B koşabilmesinden ederdi. Bayrağı çağıran çözer.
+
+    ⚠ **EKLER, DEĞİŞTİRMEZ.** Kullanıcı yer değiştirme isterse (*"fire değil kâr"*)
+    `değil`/`yerine` kalıbı zaten var. Eklemek **geri alınabilir** bir yanlış anlamadır
+    (kullanıcı ikisini de görür); değiştirmek **veri kaybıdır**.
+    """
     import copy
 
     # ATIF AYIKLAMA (Faz E) — takip yolunun ölçülen kusuru tam BURADAYDI:
@@ -1067,6 +1088,24 @@ def deterministic_refine(prev: dict, q: str, schema: dict) -> dict | None:
     topn = None
     if prev.get("timeDimensions") or _time_gran(q):
         topn = _top_n_entity(q, cube_meta)
+    # 🔴 FAZ 4.3 BORCU — **ÇIPLAK İKİNCİ ÖLÇÜ ADI.** Benchmark'ın ölçtüğü tek kayıp
+    # şekli buydu ve kök neden aşağıdaki `return None`du.
+    #
+    # ⚠ **Üç şart birden** aranır, üçü de kaybı dar tutmak için:
+    #   1. `olcu_ekle` bayrağı açık (çağıran çözer — bu fonksiyon saf kalır),
+    #   2. ölçü **aynı cube'un** ölçüsü (`_match_measure` zaten cube_meta'ya bakıyor),
+    #   3. **düzeltme kalıbı YOK** (`değil`/`yerine`) — varsa kullanıcı yer değiştirme
+    #      istiyordur ve `swap` onu zaten yakalar.
+    #
+    # ⚠ **Zamir/işaret şartı ARANMAZ** ve bu bilinçli: makalenin shard senaryosunda
+    # takip mesajı **tek bir atomdur** (*"fire oranı"*), zamir taşımaz. Şart konsaydı
+    # düzeltme, düzelttiği kusurun aynısını bir kat aşağıda tekrarlardı (5.2'nin dersi).
+    if (em and em not in prev.get("measures", []) and swap is None and topn is None
+            and olcu_ekle and not corr):
+        cq_ek = copy.deepcopy(prev)
+        cq_ek["measures"] = [*prev.get("measures", []), em]
+        del msyn
+        return cq_ek
     if em and em not in prev.get("measures", []) and swap is None and topn is None:
         return None  # farklı metrik açıkça isteniyor → yeni sorgu, LLM sınıflandırsın
     time_dims = cube_meta.get("time_dimensions") or ["tarih"]

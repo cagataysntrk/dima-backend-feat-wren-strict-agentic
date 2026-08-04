@@ -46,6 +46,21 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "yanıt BAYT BAYT bugünküyle aynıdır (KURAL B — FAZ 2.5).",
         "category": "dogruluk",
     },
+    "olcu_ekleme_takibi": {
+        "label": "Takipte çıplak ikinci ölçü adını EKLEME olarak tanı",
+        "description": "🔴 FAZ 4.3'ün ÖLÇÜLMÜŞ borcu. Çok-turlu benchmark hedefini "
+                       "tutturamadı (−%18,2 vs hedef −%10) ve kaybedilen turların "
+                       "TAMAMI aynı şekle sahipti: takip mesajı çıplak bir ikinci ölçü "
+                       "adı («fire oranı»). Kök neden `deterministic_refine`'ın «farklı "
+                       "metrik açıkça isteniyor» varsayıp zinciri terk etmesiydi — oysa "
+                       "«bir de fire ekle» ÇALIŞIYORDU, yani mekanizma vardı, ipuçsuz "
+                       "hâli yoktu. ⚠ EKLER, DEĞİŞTİRMEZ: yer değiştirme isteniyorsa "
+                       "«değil»/«yerine» kalıbı zaten var. Eklemek GERİ ALINABİLİR bir "
+                       "yanlış anlamadır (kullanıcı ikisini de görür); değiştirmek VERİ "
+                       "KAYBIDIR. Açıkken ölçüldü: düşüş −%18,2 → −%4,5, karar "
+                       "`kaldi` → `gecti`, korpus SABİT.",
+        "category": "konusma",
+    },
     "hizli_derin": {
         "label": "Hızlı ↔ Derin anahtarı",
         "description": "Ürünün «LLM'siz cevap» tezinin KULLANICIYA VERİLEN KONTROLÜ. "

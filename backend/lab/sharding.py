@@ -174,7 +174,7 @@ def turlara_dagit(atom: list[str], tur: int, rnd: random.Random) -> list[str]:
     return turlar[:tur]
 
 
-def konusma_kos(sema: dict, turlar: list[str]) -> dict:
+def konusma_kos(sema: dict, turlar: list[str], *, olcu_ekle: bool = False) -> dict:
     """Turları **sırayla** koşar; her turda `cube_query` taşınır (deterministik recap).
 
     Döner: `{cevaplanan, yapi_kaybi, cq_surekliligi, son_cube}`
@@ -191,7 +191,7 @@ def konusma_kos(sema: dict, turlar: list[str]) -> dict:
             yeni = cube_query_ac(cr.route(qn, sema)) or None
         else:
             # 🔴 DETERMİNİSTİK RECAP: yapının kendisi taşınıyor, bir metin özeti değil.
-            duz = cr.deterministic_refine(cq, qn, sema)
+            duz = cr.deterministic_refine(cq, qn, sema, olcu_ekle=olcu_ekle)
             yeni = duz or (cube_query_ac(cr.route(qn, sema)) or None)
             if yeni is None:
                 # Makalenin "kayboldu" hâli: takip mesajı bağlama BAĞLANAMADI.
@@ -211,7 +211,8 @@ def konusma_kos(sema: dict, turlar: list[str]) -> dict:
     }
 
 
-def kos(sema: dict, *, azami_tur: int = 5, ornek: int = 200) -> dict:
+def kos(sema: dict, *, azami_tur: int = 5, ornek: int = 200,
+        olcu_ekle: bool = False) -> dict:
     """Korpusun sorularını shard'layıp **tur derinliği ↔ doğruluk** eğrisini ölçer."""
     from app import cube_router as cr
 
@@ -243,7 +244,7 @@ def kos(sema: dict, *, azami_tur: int = 5, ornek: int = 200) -> dict:
             # gibi gösterirdi. Kısa konuşma bu satıra **girmez**.
             if len(t) != tur:
                 continue
-            r = konusma_kos(sema, t)
+            r = konusma_kos(sema, t, olcu_ekle=olcu_ekle)
             toplam += 1
             kayip += r["yapi_kaybi"]
             surek += r["cq_surekliligi"]
@@ -270,7 +271,7 @@ def kos(sema: dict, *, azami_tur: int = 5, ornek: int = 200) -> dict:
             t = turlara_dagit(atomlar(cq), tur, random.Random(TOHUM + i))
             if len(t) != tur:
                 continue
-            r = konusma_kos(sema, t)
+            r = konusma_kos(sema, t, olcu_ekle=olcu_ekle)
             toplam += 1
             kayip += r["yapi_kaybi"]
             tam += 1 if r["cevaplanan"] == r["tur"] else 0
@@ -362,12 +363,16 @@ def main() -> int:
     ap.add_argument("--tur", type=int, default=5)
     ap.add_argument("--ornek", type=int, default=120)
     ap.add_argument("--json", action="store_true")
+    #: 🔴 A/B — FAZ 4.3 borcunun kapanışı **ölçülerek** kanıtlanır, iddia edilerek değil.
+    ap.add_argument("--olcu-ekle", action="store_true",
+                    help="çıplak ikinci ölçü adını EKLEME olarak tanı (bayrak açık hâli)")
     a = ap.parse_args()
 
     veri: dict[str, dict] = {}
     for s in a.sirket:
         try:
-            veri[s] = kos(_sema(s), azami_tur=a.tur, ornek=a.ornek)
+            veri[s] = kos(_sema(s), azami_tur=a.tur, ornek=a.ornek,
+                          olcu_ekle=a.olcu_ekle)
         except Exception as exc:                             # noqa: BLE001
             print(f"  {s}: ⊘ ÖLÇÜLEMEDİ — {exc}")
     if a.json:
