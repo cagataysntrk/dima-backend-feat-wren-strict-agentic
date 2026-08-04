@@ -81,6 +81,34 @@ def taslak_uret(schema: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
+def sahiplikle_birlestir(kayit: list[dict[str, Any]],
+                         sahiplik: dict[str, str | None]) -> list[dict[str, Any]]:
+    """Taslak kayda **kalıcı sahiplik kararlarını** işler. FAZ 2.2b.
+
+    🔴 **0.18 KENDİ KENDİNE ATILDI ve bu fonksiyon onu besliyor.** Taslak katalogdan
+    üretiliyordu ve `sahiplenilen_terimler` **boş** başlıyordu; boşu dolduracak bir yol
+    olmadığı için `hakem()` **hiçbir zaman** karar veremezdi. *Kurulmuş ama beslenemeyen
+    bir hakem, kurulmamış bir hakemdir.*
+
+    ⚠ **Sahiplik yalnız ADAYLAR arasından seçilebilir.** Kayıtta aday olmayan bir cube'u
+    sahip yazmak, katalogda olmayan bir kararı kataloğa dayatmak olurdu — ve o karar
+    sessizce **hiçbir şey yapmazdı** (hakem adayı olmayan cube'u döndürse `_match_cube`
+    onu bulamazdı). Aday dışı sahiplik **yok sayılır**, kayda `gecersiz_sahip` düşülür:
+    *sessizce yok saymak, kullanıcının kararını çöpe atıp ona söylememektir.*
+    """
+    out: list[dict[str, Any]] = []
+    for k in kayit:
+        yeni = dict(k)
+        sahip = sahiplik.get(str(k.get("terim")))
+        if sahip and sahip in (k.get("adaylar") or []):
+            yeni["sahiplenilen_terimler"] = [sahip]
+            yeni["olusturulma_yontemi"] = "insan_karari"
+        elif sahip:
+            yeni["gecersiz_sahip"] = sahip     # aday değil → görünür kalır, uygulanmaz
+        out.append(yeni)
+    return out
+
+
 def cift_sahiplik_denetle(kayit: list[dict[str, Any]]) -> list[str]:
     """**Çift sahiplik ihlalleri** — bir terimi birden fazla cube *sahiplenmişse*.
 

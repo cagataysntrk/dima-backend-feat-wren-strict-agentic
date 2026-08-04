@@ -364,6 +364,39 @@ export async function ask(
   return data;
 }
 
+// FAZ 2.2b — METRİK SAHİPLİĞİ. Bir terimi ("satış") birden fazla cube sinonim olarak
+// iddia ediyorsa yönlendirici hangisini seçeceğini bilemez; kayıt bunu GÖRÜNÜR kılar,
+// sahiplik kararı ise hakemi BESLER. 0.18 hakemi kurmuştu ama kaydı katalogdan taslak
+// üretiyordu ve sahiplik boş başlıyordu — yani hakem hiçbir zaman karar veremiyordu.
+export interface MetrikKaydiSatiri {
+  terim: string;
+  adaylar: string[];
+  sahiplenilen_terimler: string[];
+  olusturulma_yontemi?: string;
+  /** Aday olmayan bir cube sahip yazılmışsa: sessizce yutulmaz, GÖRÜNÜR kalır. */
+  gecersiz_sahip?: string;
+}
+
+export interface MetrikKaydi {
+  kayit: MetrikKaydiSatiri[];
+  aktif: boolean;
+  cakisan_terim_sayisi: number;
+  cakisanlar: { terim: string; adaylar: string[] }[];
+}
+
+export async function getMetrics(): Promise<MetrikKaydi> {
+  const { data } = await apiClient.get<MetrikKaydi>("/metrics");
+  return data;
+}
+
+/** `sahipCube = null` → sahiplik KALDIRILIR (kayıt silinmez: kararın geri alındığı da
+ *  bir kayıttır). Yetki `metric:certify` — backend zorlar, UI yalnız düğmeyi gizler. */
+export async function setMetrikSahibi(terim: string, sahipCube: string | null) {
+  const { data } = await apiClient.patch<{ terim: string; sahip_cube: string | null }>(
+    `/metrics/${encodeURIComponent(terim)}`, { sahip_cube: sahipCube });
+  return data;
+}
+
 // FAZ 1.12 · AI Act Md.13 — DENETLEYİCİ-OKUNABİLİR İHRAÇ. `AuditLog` zaten her erişimi
 // tutuyordu; eksik olan DIŞA AKTARILABİLİR, standart adlı bir görünümdü — bir kanıt
 // defteri yalnız onu yazan sistemin okuyabildiği bir biçimdeyse denetlenebilir değildir.

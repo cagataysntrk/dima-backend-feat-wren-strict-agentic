@@ -8,7 +8,9 @@ Her tenant-scoped satır ``tenant_id`` taşır; tenant DAİMA token'dan türetil
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
+
+from sqlalchemy import UniqueConstraint
 
 from sqlmodel import Field, SQLModel
 
@@ -528,6 +530,46 @@ class ConversationMessage(SQLModel, table=True):
     question: str = ""
     payload_json: str = "{}"                                  # tam AskResponse (JSON)
     created_at: datetime = Field(default_factory=_now)
+
+
+class MetrikSahipligi(SQLModel, table=True):
+    """FAZ 2.2b — bir **çakışan terimin** sahibi hangi cube'dur.
+
+    ## 🔴 Neden bu tablo var — 0.18 KENDİ KENDİNE ATILDI
+
+    `0.18` hakemi kurdu (`metrik_kaydi.hakem`) ama kaydı **katalogdan taslak** olarak
+    üretiyor ve `sahiplenilen_terimler` **boş** başlıyor. Boşu dolduracak bir yol
+    olmadığı için hakem **hiçbir zaman** karar veremezdi: mekanizma yapısal olarak
+    **atıldı**. *Kurulmuş ama beslenemeyen bir hakem, kurulmamış bir hakemdir.*
+
+    ## ⚠ Neden yalnız SAHİPLİK — yol haritasının alan listesi BİLEREK daraltıldı
+
+    Yol haritası `display_name · unit · rounding · description · target_ref` da sayıyor.
+    Bunların hepsi **cube YAML'ında zaten var** ve oradan şemaya akıyor; DB'ye kopyalamak
+    *"aynı kuralın iki sahibi"* olurdu — biri güncellenir, öteki unutulur ve kullanıcı
+    hangi birimin doğru olduğunu bilemez. **DB'nin eklediği tek yeni bilgi SAHİPLİKTİR:**
+    çakışan bir terimi hangi cube'un sahiplendiği bir **karardır**, katalogdan türetilemez.
+
+    🔴 Bir terimi **iki** cube sahiplenemez: `(tenant_id, terim)` tekildir. Çift sahiplik
+    `metrik_kaydi.cift_sahiplik_denetle` ile de ayrıca denetlenir — veri tabanı kısıtı
+    ile mantık kapısı **aynı kuralı iki yerden** korur ve bu bilinçlidir: kısıt yazma
+    anını, kapı okuma anını kollar.
+    """
+
+    __tablename__ = "metrik_sahipligi"
+    __table_args__ = (UniqueConstraint("tenant_id", "terim", name="uq_metrik_terim"),)
+    id: uuid.UUID = Field(default_factory=_uuid, primary_key=True)
+    tenant_id: uuid.UUID = Field(foreign_key="tenant.id", index=True)
+    terim: str = Field(index=True)
+    #: Sahiplenen cube. `None` → sahiplik **kaldırıldı** (kayıt silinmez: kararın
+    #: geri alındığı da bir kayıttır — kim, ne zaman geri aldı görülebilsin).
+    sahip_cube: str | None = None
+    # ⚠ Tablo adı `app_user` — `user` PostgreSQL'de ayrılmış sözcüktür ve bu depo
+    # onu bilerek yeniden adlandırmış. `foreign_key="user.id"` yazmak 222 testi
+    # birden düşürdü: FK çözülemeyince TÜM metadata kurulumu patlıyor.
+    karar_veren_user_id: uuid.UUID | None = Field(default=None,
+                                                  foreign_key="app_user.id")
+    guncellendi: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class TenantConfig(SQLModel, table=True):

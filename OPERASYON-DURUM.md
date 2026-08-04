@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 2 · SEMANTİK ÇEKİRDEK** *(FAZ 1 ✅ bitti — 19 adım)* |
-| **Sıradaki madde** | `cekirdek_katman` **gölge turu → açma kararı** *(dört şirkette de sözleşme uyuyor)* → `2.2b` yüzey |
+| **Sıradaki madde** | `2.3` semantik çekirdeğin kalanı → FAZ 2'nin geri kalan maddeleri |
 | **Demet** | ✅ **`1.12` kapısı 4/4 YEŞİL** (süit **2477**) — risk sınırı olduğu için demete girmedi · demet 13 açık: `1.10`+`1.11` (o kapıya da dahil oldular) |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
@@ -420,6 +420,44 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 2 · adım 8 — `2.2b` **metrik kaydının YÜZEYİ: hakem artık BESLENEBİLİYOR** *(2026-08-04)*
+
+Kapı: **11 test** (`tests/test_metrik_sahipligi.py` — 2.2b'nin **kendi** kapısı, 0.18'inki
+değil), hızlı sinyal **592**. Bayrak: `metric:certify` yetkisi (yeni bayrak **yok**).
+
+> 🔴 **0.18 KENDİ KENDİNE ATILDI — ölçüldü.** Hakem (`metrik_kaydi.hakem`) kurulmuştu ama
+> kayıt katalogdan **taslak** üretiliyor ve `sahiplenilen_terimler` **boş** başlıyordu;
+> boşu dolduracak bir yol **yoktu**, yani hakem **hiçbir zaman** karar veremezdi.
+> *Kurulmuş ama beslenemeyen bir hakem, kurulmamış bir hakemdir.*
+
+> **NE indi:** `MetrikSahipligi` (kalıcı sahiplik) · göç `a1d7f4c8e250` ·
+> `metrik_kaydi.sahiplikle_birlestir` · `PATCH /metrics/{terim}` ·
+> ekran (**yeni panel YOK** — `SchemaPanel`'in içinde bir bölüm).
+
+> ⚠ **ALAN LİSTESİ BİLEREK DARALTILDI.** Yol haritası `display_name · unit · rounding ·
+> description · target_ref` da sayıyor; hepsi **cube YAML'ında zaten var** ve oradan
+> şemaya akıyor. DB'ye kopyalamak *"aynı kuralın iki sahibi"* olurdu — biri güncellenir,
+> öteki unutulur ve kullanıcı hangi birimin doğru olduğunu bilemez. **DB'nin eklediği tek
+> yeni bilgi SAHİPLİKTİR:** çakışan bir terimi hangi cube'un sahiplendiği bir **karardır**,
+> katalogdan türetilemez. Kapı bu daraltmayı ve gerekçesini kilitliyor.
+
+> 🔴 **ADAY OLMAYAN SAHİP SESSİZCE YUTULMUYOR.** Kayıtta aday olmayan bir cube'u sahip
+> yazmak **hiçbir şey yapmazdı** (hakem onu döndürse `_match_cube` bulamazdı). Karar
+> **kaydedilir ama uygulanmaz** ve ekranda `⚠ geçersiz` olarak **görünür**.
+> *Sessizce yok saymak, kullanıcının kararını çöpe atıp ona söylememektir.*
+
+> ⚠ **Sahiplik kaldırılınca kayıt SİLİNMİYOR** — *kararın geri alındığı da bir kayıttır*:
+> kim, ne zaman geri aldı görülebilmeli. Her karar ayrıca **audit'e** yazılıyor.
+
+> 🔴 **YENİ PANEL AÇILMADI** (K5 tavanı **13/13**, ölçüldü): sahiplik bir **katalog**
+> bilgisidir (*"şu terim hangi cube'a ait"*) ve yeri kataloğun kendisi. Ayrı bir ekran,
+> kullanıcıyı aynı soruyu **iki yerde** aramaya iterdi.
+
+> ⚠ **ÖLÇÜLEN KUSUR — 222 test birden düştü.** FK'yi `user.id` yazmıştım; tablo adı
+> **`app_user`** (`user` PostgreSQL'de ayrılmış sözcük ve bu depo onu bilerek yeniden
+> adlandırmış). FK çözülemeyince **tüm** metadata kurulumu patlıyor — yani tek bir yanlış
+> ad, ilgisiz 222 testi düşürüyor. Model ve göç düzeltildi; gerekçe modelin yanında yazılı.
 
 ### FAZ 2 · adım 7 — **BORÇ #11 KAPANDI**: grain-farkında çapraz-cube geçişi *(2026-08-04)*
 
