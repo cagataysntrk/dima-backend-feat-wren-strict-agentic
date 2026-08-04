@@ -1,0 +1,80 @@
+name: nightly-kapi
+
+# FAZ 0.15 — DÖRT ÖLÇÜM KAPISI GECELİK KOŞAR.
+#
+# 🔴 SIRALAMA HATASI DÜZELTİLİYOR. Bu madde başta FAZ 4.1'di — yani regresyon ağı,
+# belgenin kendi ifadesiyle "en yüksek etki alanlı faz" olan FAZ 2'nin semantik
+# ameliyatından SONRA kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
+# %64 → %56'ya düşürmüştü. Doktrin ("düzelt → kapıya çevir") burada tersine işliyordu:
+# ağ, en riskli ameliyattan ÖNCE kurulmalı.
+#
+# ⚠ YENİ KOD YOK. Koşucu (`backend/lab/kapi.py --tam`) ZATEN YAZILMIŞTI ve dört kapıyı
+# sırayla koşuyordu (~15 dk); eksik olan tek şey onu ÇAĞIRAN workflow'du
+# (ölçüldü: `grep -rn "kapi.py" .github/workflows/` → boş).
+#
+# ── CI'DA NE ZATEN VARDI (ölçüldü, FAZ 0.1'de düzeltildi) ──────────────────────
+# `backend-ci.yml` her push'ta `pytest -q` koşuyor ve `tests/test_eval_gate.py` SÜİTİN
+# İÇİNDE — yani **eval + süit kapıları CI'da ZATEN VARDI** (2/4). Bir önceki ölçüm
+# "ölçüm kapısı taşıyan 0 workflow" demişti; o probe kapıyı ÇAĞIRAN KOMUTA göre
+# arıyordu ve başka yoldan koştuğunu göremiyordu — ölçüm aracının kusuruydu.
+# Bu workflow eksik ikisini (KORPUS + SENARYO) da ekleyerek 4/4 yapar.
+#
+# ── NEDEN GECELİK, HER PUSH'TA DEĞİL ──────────────────────────────────────────
+# Tam kapı ~15 dk. Her push'ta koşmak geliştirmeyi boğar (bu operasyonun kendi ölçümü:
+# sürenin %75'i kapıda değil, madde başına tekrarlanan döngüdeydi). Gecelik koşum +
+# `workflow_dispatch` (elle tetikleme) ikisini birden verir: yavaşlatmayan bir ağ.
+
+"on":
+  schedule:
+    # Her gün 02:30 UTC (TR 05:30) — geliştirme saatlerinin dışında.
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  kapi:
+    runs-on: ubuntu-latest
+    # Tam kapı ~15 dk; ağ/kurulum payıyla 40 dk tavan. Süresiz koşum, kırmızıyı
+    # geciktirmekten başka bir şey yapmaz.
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      # Kurulum sırası `backend-ci.yml` ve `backend/Dockerfile` ile BİREBİR aynı:
+      # Rust motor binding'i ÖNCE sabitlenir, yoksa `wrenai`nin gevşek bağımlılığı
+      # pip'i test edilmemiş bir sürüme yükseltebilir. İkinci bir kurulum reçetesi
+      # yazmak, bu deponun "aynı kuralın iki sahibi" kusurunun CI tarafındaki hâli olurdu.
+      - name: Wren Rust engine binding'i sabitle
+        run: pip install "wren-core-py==0.7.2"
+
+      - name: Backend paketini + test bağımlılıklarını kur
+        run: pip install -e ".[dev]"
+
+      # 🔴 DÖRT KAPI TEK KOŞUCUDAN: süit · eval · korpus · senaryo.
+      # Eşikler EK D'de yazılı ve koşucunun İÇİNDE uygulanıyor — burada tekrarlanmaz.
+      # `DIMA_VQR_EMBEDDER=off`: embedder soğuk başlangıcı turu kilitler (ölçüldü,
+      # `project_vqr_embedder_blocking_bug`), ve CI'da anlamlı bir şey ölçmez.
+      - name: Dört ölçüm kapısı (lab/kapi.py --tam)
+        env:
+          DIMA_VQR_EMBEDDER: "off"
+        run: python lab/kapi.py --tam
+
+      # Kırmızıda ham kütük LAZIM: "korpus %92,8'e düştü" bilgisi, HANGİ soruların
+      # kaydığı bilinmeden düzeltilemez. Sessiz kırpma yok.
+      - name: Kapı raporlarını yükle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kapi-raporlari
+          path: backend/lab/reports/
+          retention-days: 14
+          if-no-files-found: warn

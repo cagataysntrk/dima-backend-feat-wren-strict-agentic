@@ -177,12 +177,20 @@ def olcut_8_ci() -> Olcum:
     # `tests/test_eval_gate.py` süitin İÇİNDE — yani **eval kapısı CI'da ZATEN VAR**,
     # yalnız `eval.run` adıyla değil. Bir kapıyı ÇAĞIRAN KOMUTA göre aramak, kapının
     # başka bir yoldan koştuğunu görmez. (Denetim düzeltmesi; ölçüm aracının kusuru.)
-    suit = "pytest" in metin
+    # 🔴 **BİR KAPI, ONU KOŞAN KOMUTA GÖRE ARANMAZ.** Bu probe iki kez yanıldı:
+    #  (1) yalnız `eval.run|nl_corpus|kapi.py` dizelerini arıyordu → `pytest -q` içinde
+    #      koşan `test_eval_gate.py`'yi göremedi ve *"0 kapı"* dedi;
+    #  (2) düzeltilince bu kez `kapi.py --tam`'ın **dördünü birden** koştuğunu göremedi
+    #      ve *"korpus eksik"* dedi — oysa `--tam` korpusu da koşuyor.
+    # Doğru ölçüm: **koşucunun NE KAPSADIĞINI** bilmek. `--tam` dört kapının tek sahibidir.
+    tam_kosucu = bool(re.search(r"kapi\.py\s+--tam", metin))
+    suit = tam_kosucu or "pytest" in metin
     kapilar = {
-        "eval": bool(re.search(r"eval\.run", metin)) or (suit and (BE / "tests" / "test_eval_gate.py").exists()),
+        "eval": tam_kosucu or bool(re.search(r"eval\.run", metin))
+                or (suit and (BE / "tests" / "test_eval_gate.py").exists()),
         "süit": suit,
-        "korpus": bool(re.search(r"nl_corpus", metin)),
-        "senaryo": bool(re.search(r"konusma_senaryolari|kapi\.py", metin)),
+        "korpus": tam_kosucu or bool(re.search(r"nl_corpus", metin)),
+        "senaryo": tam_kosucu or bool(re.search(r"konusma_senaryolari", metin)),
     }
     var = [k for k, v in kapilar.items() if v]
     return Olcum(f"{len(var)}/4 kapı CI'da ({len(dosyalar)} workflow)",

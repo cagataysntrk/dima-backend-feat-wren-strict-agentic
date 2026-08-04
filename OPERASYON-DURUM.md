@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 0** — temizlik ve kapılar *(25 madde; sıra **numara DEĞİL**, FAZ 0 girişindeki bağlayıcı koşum sırası)* |
-| **Sıradaki madde** | `0.15` CI kapıları · `0.17` gecikme bütçesi · `0.20` bayrak profilleri |
+| **Sıradaki madde** | `0.17` gecikme bütçesi · `0.20` bayrak profilleri |
 | **Ondan sonra** | `0.4` *(canlı A/B — demet sınırı)* → `0.21` **EN SON** *(tavanı FAZ 0 ÖNCESİ ölçümden alır)* |
 | **Demet** | `0.10`/`0.10b` risk sınırı — kendi kapısını koştu |
 | **Tempo** | 🔴 **DEMET disiplini yürürlükte** (`OPERASYON.md §3`): commit ≠ kapı; tam kapı **demet sonunda bir kez**. Risk sınırındaki dosyalara dokunan madde demete girmez |
@@ -390,6 +390,33 @@ kullanıcı: *"Ben yıl sordum, bana **veritabanı sütun adı** ve **saat 00:00
 
 > ⚠ **Geriye uyum testle kilitli:** `etiketler=None` iken metin **birebir bugünkü**.
 > Bir iyileştirme, kendi yokluğunda davranışı değiştirmemelidir.
+
+### FAZ 0 · adım 11 — `0.15` CI KAPILARI · **§C/8 hedefine ulaştı** *(2026-08-04)*
+
+🔴 **Sıralama hatası düzeltildi.** Bu madde başta **FAZ 4.1**'di: regresyon ağı,
+belgenin kendi ifadesiyle *"en yüksek etki alanlı faz"* olan **FAZ 2**'nin semantik
+ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
+**%64 → %56** düşürmüştü — doktrin (*"düzelt → kapıya çevir"*) **tersine** işliyordu.
+
+**Yeni kod YOK.** Koşucu (`lab/kapi.py --tam`) zaten yazılmıştı; eksik olan onu
+**çağıran workflow**du. `.github/workflows/nightly.yml`: gecelik + elle tetik, raporlar
+`if: always()` ile yükleniyor *(kırmızıda kanıt kaybolmaz)*.
+
+| §C/8 | Önce | Sonra |
+|---|---|---|
+| Ölçüm kapıları CI'da | **2/4** *(eval + süit — `pytest -q` içinde)* | ✅ **4/4** |
+
+> 🔴 **Bu maddenin en öğretici kısmı ölçüm aracının kendisiydi.** `olcut_8_ci` probe'u
+> **iki kez** yanıldı ve ikisi de aynı sınıftan: *"bir kapıyı, onu ÇAĞIRAN KOMUTA göre
+> aramak."*
+> · İlk sürüm yalnız `eval.run|nl_corpus|kapi.py` dizelerini arıyordu → `pytest -q`
+>   içinde koşan `test_eval_gate.py`'yi göremedi, **"0 kapı"** dedi.
+> · Düzeltilince bu kez `kapi.py --tam`'ın **dördünü birden** koştuğunu göremedi,
+>   **"korpus eksik"** dedi.
+> Doğru ölçüm: **koşucunun NE KAPSADIĞINI** bilmek. `--tam` dört kapının **tek sahibidir**.
+
+> ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
+> bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
 
 ### Taban ölçümü · `lab/vk_taban.py` *(commit `8f87e40`)*
 VK-1…VK-6 **yapısal ve canlı** (gemini) ölçüldü. `§G.6e`'nin *"Bugün"* sütunu artık
