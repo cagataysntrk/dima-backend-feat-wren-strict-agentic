@@ -738,8 +738,42 @@ export function ReportCard({
       {/* Cross-cube KPI kartı (CCC / likidite) — cube tablosu değil bileşke skaler. */}
       {item.kpi && <KpiCardView card={item.kpi} />}
 
-      {item.result && (
+      {/* ⚠️ FAZ 1.7 — TAZELİK MERDİVENİ, ÜÇ GÖRSEL HÂL.
+          🔴 `hata` VE `bilinmiyor` kademelerinde SAYI GÖSTERİLMEZ; yerine AÇIKLAMA gelir.
+          B4: **bilinmeyen tazelik TAZE DEĞİLDİR** — ölçemediğimiz bir şeyi iyi varsaymak,
+          `⊘ ÖLÇÜLEMEDİ` üçüncü hâlinin tam tersi olurdu. Kaynak planlar bunun TERSİNİ
+          yazıyordu; yol haritası "bugünkü davranıştan KASITLI BİR SERTLEŞME" diye düzeltti.
+          Sekiz gün eski bir sayıyı normal gibi göstermek, kullanıcıyı YANLIŞ BİR KARARA
+          götürür — ve o karar geri alınamaz. Sayının yerine NEDEN gösterilmediği gelir. */}
+      {item.result && (item.freshness === "hata" || item.freshness === "bilinmiyor") && (
+        <div className="border border-amber-600/60 bg-amber-950/20 p-4">
+          <p className="mb-1 font-mono text-[10px] uppercase tracking-wider text-amber-500">
+            {item.freshness === "hata" ? "veri bayat — sayı gösterilmiyor"
+                                       : "tazelik bilinmiyor — sayı gösterilmiyor"}
+          </p>
+          <p className="text-[13px] leading-relaxed text-amber-200/90">
+            {item.tazelik_aciklama}
+          </p>
+          {item.son_veri_ts && (
+            <p className="mt-1.5 font-mono text-[10px] text-neutral-400">
+              son senkron: {new Date(item.son_veri_ts).toLocaleString("tr-TR")}
+            </p>
+          )}
+        </div>
+      )}
+
+      {item.result && item.freshness !== "hata" && item.freshness !== "bilinmiyor" && (
         <div className="border border-hairline bg-background p-4">
+          {/* `uyari` → rakamın ALTINA ince turuncu dalgalı çizgi. Rozetten FARKLI bir
+              görsel kanal (renk+alt çizgi vs. emoji) — ikisi yarışmaz, üst üste binmez. */}
+          {item.freshness === "uyari" && (
+            <p
+              className="mb-2 font-mono text-[10px] text-amber-500 decoration-amber-500 decoration-wavy underline underline-offset-4"
+              title={item.tazelik_aciklama ?? undefined}
+            >
+              veri eskimiş olabilir
+            </p>
+          )}
           <ResultView
             key={`${item.question}·${item.sql}·${viewHint?.nonce ?? 0}`}
             result={item.result}

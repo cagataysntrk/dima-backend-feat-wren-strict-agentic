@@ -97,6 +97,15 @@ export interface AskResponse {
   trace?: string[];
   // Tıklanır chip'ler — meta örnek sorgular / dönem clarification seçenekleri.
   suggestions?: { label: string; query: string }[];
+  /** FAZ 1.7 — tazelik kademesi: `taze | uyari | hata | bilinmiyor`.
+   *
+   * 🔴 `hata` VE `bilinmiyor`'da SAYI GÖSTERİLMEZ (B4: bilinmeyen tazelik TAZE DEĞİLDİR).
+   * Kademe kararı BACKEND'de (`app/tazelik.py`); burada ikinci bir eşik kümesi yazmak
+   * "aynı kuralın iki sahibi" olurdu ve ikisi ayrışınca kullanıcı bayat bir sayıyı
+   * normal görürdü. `undefined` = bayrak kapalı → davranış birebir bugünkü. */
+  freshness?: "taze" | "uyari" | "hata" | "bilinmiyor" | null;
+  son_veri_ts?: string | null;
+  tazelik_aciklama?: string | null;
   // Görünüm isteği ("grafik ver") — client mevcut raporun görünümünü değiştirir.
   view_hint?: string | null;
   // FAZ 4 — ajan koşum makbuzu (yalnız planlayıcıdan geçen cevaplarda dolu).

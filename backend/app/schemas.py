@@ -261,6 +261,14 @@ class Explain(BaseModel):
 
 class AskResponse(BaseModel):
     question: str
+    # FAZ 1.7 — TAZELİK MERDİVENİ. `taze | uyari | hata | bilinmiyor`.
+    # 🔴 `hata` VE `bilinmiyor` kademelerinde SAYI GÖSTERİLMEZ (B4: bilinmeyen tazelik
+    # TAZE DEĞİLDİR). Kaynak planlar bunun TERSİNİ yazıyordu; yol haritası bunu
+    # "bugünkü davranıştan KASITLI BİR SERTLEŞME" diye düzeltti.
+    # Bayrak kapalıyken `None` → davranış birebir bugünkü (KURAL B).
+    freshness: str | None = None
+    son_veri_ts: str | None = None
+    tazelik_aciklama: str | None = None
     sql: str = ""
     planned_sql: str | None = None
     result: QueryResult | None = None

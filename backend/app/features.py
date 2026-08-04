@@ -52,6 +52,15 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "çapa listesi boş kalır ve davranış birebir bugünküdür (FAZ 0.5).",
         "category": "Konuşma",
     },
+    "tazelik": {
+        "label": "Tazelik merdiveni",
+        "description": "\"Bu sayı ne kadar eski?\" — dört kademe (taze/uyarı/hata/"
+                       "bilinmiyor). 🔴 `hata` VE `bilinmiyor` kademelerinde SAYI "
+                       "GÖSTERİLMEZ: bilinmeyen tazelik TAZE DEĞİLDİR (B4). Eşikler tek "
+                       "bir sayıdan (beklenen periyot) türer — çelişebilen iki ayar "
+                       "çelişecek demektir. Kapalıyken alanlar None (GERİ AL).",
+        "category": "Kanıt",
+    },
     "metrik_sertifikasi": {
         "label": "Metrik sertifikası",
         "description": "Bir metriğin tanımını KİM onayladı ve o onaydan beri tanım ya da "

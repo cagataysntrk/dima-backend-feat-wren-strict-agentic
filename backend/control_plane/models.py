@@ -519,6 +519,11 @@ class TenantConfig(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=_uuid, primary_key=True)
     tenant_id: uuid.UUID = Field(foreign_key="tenant.id", index=True, unique=True)
     sektorler_json: str = "[]"        # JSON listesi; sırada önce gelen kazanır
+    # FAZ 1.7 — TAZELİK. Yapılandırılan TEK sayı: beklenen senkron periyodu (saat).
+    # Eşikler ondan TÜRER (uyarı 2× · hata 5×) ve ayrı ayrı ayarlanamaz — `warn=10g,
+    # error=3g` gibi bir çelişki mümkün olsaydı kullanıcı `uyari`'yı hiç görmeden
+    # `hata`'ya düşerdi. ÇELİŞEBİLEN İKİ AYAR, ÇELİŞECEK DEMEKTİR.
+    tazelik_periyot_saat: int | None = None   # None → app/tazelik.VARSAYILAN_PERIYOT_SAAT
     moduller_json: str | None = None  # None = sektör paketlerinin varsayılanları
     # ADR-0017 kaynak faseti: kaynak pack anahtarları (None = kaynak seçilmemiş,
     # demo DuckDB akışı) + önekli şemalarda (Logo LG_FFF_PP_*) firma/dönem kapsamı.

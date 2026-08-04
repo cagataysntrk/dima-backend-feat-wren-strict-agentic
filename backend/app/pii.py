@@ -124,7 +124,7 @@ def mask_query_result(result: dict, principal=None) -> tuple[dict, bool]:
 #: **maskelemektir**; muaf tutmak **açık bir karar** ister ve karar burada durur.
 #:
 #: ⚠ Ölçüldü (2026-08-04): `apply_to_ask_response` yalnız `result.rows` · `facts[].text` ·
-#: `summary` maskeliyordu. `AskResponse`'un **26** alanı var; geri kalanı — `narration`
+#: `summary` maskeliyordu. `AskResponse`'un **29** alanı var; geri kalanı — `narration`
 #: (LLM metni, olgulardan üretilir) · `contribution` (**cevabın gövdesi**, bkz. `0.23`) ·
 #: `next_steps` · `suggestions` · `prescription` — **hiç maskelenmiyordu**.
 MUAF_ALANLAR: dict[str, str] = {
@@ -201,7 +201,7 @@ def apply_to_ask_response(resp, principal) -> bool:
             else:
                 resp.result.rows = masked_rows
     # ⟳ **FAZ 1.2c — SAYMA, KAPAT.** Eskiden burada yalnız `facts[].text` ve `summary`
-    # maskeleniyordu; `AskResponse`'un 26 alanının geri kalanı — `narration` (LLM metni,
+    # maskeleniyordu; `AskResponse`'un 29 alanının geri kalanı — `narration` (LLM metni,
     # olgulardan üretilir) · `contribution` (**cevabın gövdesi**) · `next_steps` ·
     # `suggestions` · `prescription` — **hiç** maskelenmiyordu. Sayılan bir liste, yeni
     # alanı sessizce dışarıda bırakır; tümleyen bırakmaz.

@@ -54,6 +54,12 @@ features:
   sosyal_sinif: prod
   capa_zinciri: "off"
   metrik_kaydi: "off"
+  tazelik: "off"          # FAZ 1.7: "bu sayı ne kadar eski?" — dört kademe.
+                          # 🔴 `hata` VE `bilinmiyor` kademelerinde SAYI GÖSTERİLMEZ.
+                          # Kapalıyken alanlar `None` → davranış birebir bugünkü.
+                          # ⚠ Açmadan önce: demo/DuckDB tenant'larında `SyncState` YOK,
+                          # yani hepsi `bilinmiyor` → sayı gizlenir. Açılması bir ÜRÜN
+                          # kararıdır ve tenant başına ölçülmelidir.
   metrik_sertifikasi: "off"  # FAZ 1.5: metriğin tanımını KİM onayladı + o onaydan beri
                           # tanım/köken DEĞİŞTİ Mİ. Kapalıyken rozet gösterilmez ama
                           # ⚠ TANIM-HASH ÇÜRÜMESİ KAPALIYKEN DE İŞLER — aksi hâlde

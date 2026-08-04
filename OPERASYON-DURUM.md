@@ -17,8 +17,8 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
-| **Sıradaki madde** | `1.7` tazelik merdiveni · `1.8`-`1.12` · `1.13` **EN SON** |
-| **Demet** | demet 11: `1.6` · `1.5` — kapı sırada |
+| **Sıradaki madde** | `1.8` audit şeması · `1.9` numeric fidelity · `1.10`-`1.12` · `1.13` **EN SON** |
+| **Demet** | demet 11: `1.6` · `1.5` · `1.7` — **dolu**, kapı sırada |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
 | **Demet** | ✅ **demet 7 kapandı** — FAZ 0 kapanış kapısı **4/4 YEŞİL** (süit **2199**) · demet 8 açık: `1.3c` · `1.3` |
@@ -420,6 +420,46 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 12 — `1.7` **tazelik merdiveni** *(2026-08-04)*
+
+`grep -rl freshness backend/app/` → **0** idi. `SyncState.last_synced_at` yalnız admin
+klon yolundaydı ve `/ask`'e **hiç ulaşmıyordu**: kullanıcı *"8 gündür veri gelmiyor"*u
+**göremiyordu** — ve *"bu sayı neden düşük?"* sorusunun **en sık gerçek cevabı** budur.
+Kapı: **25 test**, hızlı sinyal **677**.
+
+| kademe | sayı gösterilir mi |
+|---|---|
+| `taze` | ✅ işaret bile yok |
+| `uyari` | ✅ **ama** dalgalı turuncu çizgiyle |
+| `hata` | 🔴 **HAYIR** — yerine açıklama kartı |
+| `bilinmiyor` | 🔴 **HAYIR** — `hata` ile **aynı** muamele |
+
+> 🔴 **B4 — BİLİNMEYEN TAZELİK, TAZE DEĞİLDİR.** Kaynak planlar bunun **tersini**
+> yazıyordu; yol haritası *"bugünkü davranıştan **kasıtlı bir sertleşme**"* diye
+> düzeltti ve burada o düzeltme uygulandı. Ölçemediğimiz bir şeyi **iyi** varsaymak,
+> `⊘ ÖLÇÜLEMEDİ` üçüncü hâlinin tam tersi olurdu. *Sekiz gün eski bir sayıyı normal gibi
+> göstermek, kullanıcıyı yanlış bir karara götürür — ve o karar geri alınamaz.*
+
+> 🔴 **TEK SAYI YAPILANDIRILIR, İKİ EŞİK TÜRETİLİR.** `warn_after` ve `error_after` ayrı
+> ayrı ayarlanabilseydi biri ötekini geçebilirdi (`warn=10g`, `error=3g`) ve kullanıcı
+> `uyari`'yı **hiç görmeden** `hata`'ya düşerdi. *Çelişebilen iki ayar, çelişecek
+> demektir.* `TenantConfig.tazelik_periyot_saat` tek sayı; eşikler **2×** ve **5×**.
+
+> ⚠ **`son_veri_ts` son BAŞARILI SENKRONdur, verinin kendi damgası DEĞİL** — ve ayrım
+> yazılı, çünkü boru hattı çalışıp **boş** dönebilir. Keskin sinyal (zaman boyutunun
+> `max()`'ı) **her soruda ek bir DB sorgusu** ister; FAZ 0.17'nin gecikme bütçesi tam
+> bunun için kurulmuştu ve karar **ölçülmeden alınmadı**.
+
+> ⚠ **Gelecekteki bir zaman damgası → `bilinmiyor`**: saat kayması bir tazelik kanıtı
+> değildir; *"çok taze"* diye okumak bozuk bir saati **güvence** yapardı.
+> ⚠ **`uyari` farklı bir görsel kanal** kullanıyor (dalgalı alt çizgi), güven rozetinin
+> emoji kanalıyla **yarışmıyor** — iki uyarı üst üste binerse ikisi de okunmaz.
+
+> ✅ **`1.2c`'NİN TÜMLEYEN KAPISI ATEŞLEDİ VE İŞ GÖRDÜ.** `AskResponse` **26 → 29** alana
+> çıkınca `test_ASKRESPONSE_ALAN_SAYISI_KAYITLI` kırmızı verdi. Üç yeni alan **varsayılan
+> olarak maskeleniyor** (doğru sınıf); tek yapılan ölçüm notunu güncellemek oldu.
+> *Sayma-değil-kapat deseninin bedeli bir satır, kazancı bir sessiz sızıntı.*
 
 ### FAZ 1 · adım 11 — `1.5` **metrik sertifikasyonu** *(2026-08-04)*
 
