@@ -3356,10 +3356,40 @@ def suggest_next_steps(cube_query: dict, index: dict) -> list[dict]:
 
     # 4) DÖNEMSEL KIYAS (YoY) — zaman boyutu varsa "geçen yıla göre" öner. compare modifier'ı
     #    taşıyan cube_query → FE /cube ile period-shift koşar (LLM'siz; çok-yıl veri gerekir).
+    # 🔴 FAZ 5.4 — `mom` MOTORU VARDI, CHİP'İ YOKTU. `_ACIK_KIYAS = ("yoy", "mom")` ve
+    # `compare_mode()` ikisini de çözüyor; chip yalnız `yoy` üretiyordu — yani **çalışan
+    # bir yetenek keşfedilemez**di.
+    #
+    # ⚠ **İkisini birden basmak ÇÖZÜM DEĞİLDİ:** chip tavanı (`_MAX_NEXT_STEPS`) altıdır
+    # ve ölçüldü — eklenen ikinci kıyas chip'i **hiç görünmüyordu**. *Görünmeyen bir chip,
+    # olmayan bir chiptir.* Doğru cevap ikisini yan yana koymak değil, **bağlama göre
+    # doğru olanı** seçmek: aylık/haftalık bir raporda doğal kıyas **geçen aydır**,
+    # yıllıkta ya da granülersizde **geçen yıl**.
     cmp_steps = []
     if time_dims and not cube_query.get("compare"):
-        cmp_steps.append({"label": "Geçen yıla göre kıyasla", "kind": "time",
-                          "cube_query": {**cube_query, "compare": "yoy"}})
+        _tds = cube_query.get("timeDimensions") or []
+        _gran = (_tds[0].get("granularity") if _tds else None)
+        if _gran in ("month", "week", "day"):
+            cmp_steps.append({"label": "Geçen aya göre kıyasla", "kind": "time",
+                              "cube_query": {**cube_query, "compare": "mom"}})
+        else:
+            cmp_steps.append({"label": "Geçen yıla göre kıyasla", "kind": "time",
+                              "cube_query": {**cube_query, "compare": "yoy"}})
+
+
+    # 5) TOP-N (FAZ 5.4) — **NL'i tam, chip'i yoktu**. `order`/`limit` router tarafından
+    # doğal dilden çözülüyor (*"en çok satan 5 müşteri"*) ama `suggest_next_steps` hiç
+    # üretmiyordu. Bir kırılım raporunda *"en yükseği hangisi"* en sık ikinci sorudur.
+    #
+    # ⚠ **Yalnız kırılımlı ve sıralamasız raporda** önerilir: sıralaması olan bir rapora
+    # "sırala" demek, kullanıcının zaten yaptığı şeyi tekrar teklif etmektir. Ve kırılım
+    # yoksa tek satır döner — sıralanacak bir şey yoktur.
+    topn_steps = []
+    if dims_used and meas_used and not cube_query.get("order"):
+        topn_steps.append({
+            "label": "En yüksek 5", "kind": "order",
+            "cube_query": {**cube_query, "order": [{"id": meas_used[0], "desc": True}],
+                           "limit": 5}})
 
     # KIRILIM SEÇİMİ (Faz 3.4) — iki slottan biri İLİŞKİ-TÜREVİ boyuta ayrılır.
     #
@@ -3387,7 +3417,24 @@ def suggest_next_steps(cube_query: dict, index: dict) -> list[dict]:
     for x in secilen:
         x.pop("_ad", None)
 
-    return (secilen + meases[:2] + times[:1] + cmp_steps[:1])[:_MAX_NEXT_STEPS]
+    # 🔴 FAZ 5.4 — **KATEGORİLER SIRAYLA TEMSİL EDİLİR.** Eski sıra (`dims + meases +
+    # times + cmp + topn`) düz bir birleştirmeydi ve tavan (6) her zaman **son
+    # kategorileri kesiyordu**: `Top-N` chip'i eklenir eklenmez ölçüldü — hiç görünmedi.
+    #
+    # *Bir chip listesi bir KEŞİF mekanizmasıdır; keşfedilmesi gerekeni göstermelidir.*
+    # Düz birleştirme, kullanıcının zaten bildiği şeyi (kırılım) tekrar teklif edip
+    # bilmediğini (sıralama, kıyas) hiç göstermiyordu. Round-robin her kategoriye **bir**
+    # slot verir, artan slotlar sıraya göre dağılır.
+    #
+    # ⚠ Tavan **DEĞİŞTİRİLMEDİ**: sorun chip sayısı değil **çeşitliliğiydi**. Tavanı
+    # yükseltmek, ölçülmemiş bir UI kararı olurdu.
+    kovalar = [secilen, meases[:2], times[:1], cmp_steps[:1], topn_steps[:1]]
+    sirali: list[dict] = []
+    for i in range(max((len(k) for k in kovalar), default=0)):
+        for kova in kovalar:
+            if i < len(kova):
+                sirali.append(kova[i])
+    return sirali[:_MAX_NEXT_STEPS]
 
 
 def recommend_actions(signals: list[dict], cube_query: dict, spec: dict | None) -> list[dict]:

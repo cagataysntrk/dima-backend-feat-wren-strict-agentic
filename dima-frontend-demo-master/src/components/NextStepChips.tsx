@@ -8,7 +8,12 @@ import type { CubeQuery, NextStep } from "@/lib/types";
 // sahip doğurduğunu gösterdi. İkonların (`⌗ ◷ ∑`) iki dosyada olması ayrıca şu riski
 // taşıyordu: backend `NextStep.kind` alanını **kısıtlamıyor**; dördüncü bir tür sessizce
 // `∑` olurdu — **iki yerde birden**, ve ayrışmayı ölçen hiçbir kapı yoktu.
-const IKON: Record<string, string> = { dimension: "⌗", time: "◷" };
+// ⚠️ **VE O RİSK GERÇEKLEŞTİ (FAZ 5.4).** Yukarıdaki yorum *"dördüncü bir tür sessizce
+// `∑` olurdu"* diye uyarıyordu; `order` (Top-N) türü tam olarak öyle doğdu. Tek sahip
+// olduğu için düzeltmesi **tek satır** — ikinci sahip yaşasaydı iki yerde birden
+// unutulabilirdi. *Bir uyarının değeri, gerçekleştiğinde ne kadar ucuza kapandığıdır.*
+const IKON: Record<string, string> = { dimension: "⌗", time: "◷", measure: "∑",
+                                       order: "↓" };
 
 export function NextStepChips({
   steps,
