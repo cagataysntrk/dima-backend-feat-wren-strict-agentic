@@ -252,6 +252,50 @@ def _rank_facts(rows: list[dict], dim: str, measure: str, unit: str | None,
     return facts
 
 
+def _segment_delta(rows: list[dict], dim: str, measure: str, unit: str | None,
+                   lib: bool = False, _ad=lambda k: k) -> list[dict]:
+    """🔴 FAZ 5.7 — **SEGMENT A↔B FARKI.**
+
+    ## Ölçülen boşluk
+
+    `in` filtresi **vardı** (*"RAM-2 ve RAM-3"* → `{"operator": "in", "value": [...]}`)
+    ve iki segment **yan yana çiziliyordu** — ama *"aradaki fark ne?"* sorusunun cevabı
+    hiçbir yerde **yazılı değildi**. Kullanıcı iki çubuğa bakıp farkı **kafadan
+    çıkarıyordu**.
+
+    ## ⚠ Neden bir KOLON değil, bir FACT
+
+    Yol haritası *"Δ kolonu"* diyordu; ölçüldü ve şekil **yanlış** çıktı: `A − B` satır
+    başına bir değer **değil**, iki satırın **arasındaki tek bir skalerdir**. Kolon
+    olarak basmak, her satıra aynı sayıyı yazmak (ya da birine yazıp ötekini boş
+    bırakmak) demekti. *Bir sayının şekli, onu nereye koyacağını belirler.*
+
+    ## 🔴 TAM İKİ segmentte üretilir
+
+    Üç segmentte *"A−B"* **hangi ikisi** olduğunu söylemez ve üç ayrı fark yazmak
+    kullanıcının sormadığı bir tabloyu doğurur. Tek segmentte kıyaslanacak bir şey yok.
+    *Belirsiz bir fark, farkın kendisinden kötüdür.*
+    """
+    ikili = [r for r in rows if r.get(dim) is not None and _is_num(r.get(measure))]
+    if len(ikili) != 2:
+        return []
+    a, b = ikili[0], ikili[1]
+    va, vb = _num(a[measure]), _num(b[measure])
+    fark = va - vb
+    pct = (fark / abs(vb) * 100) if vb else None
+    return [{
+        "type": "segment_delta", "dim": dim, "measure": measure,
+        "a": str(a[dim]), "b": str(b[dim]),
+        "mutlak": round(fark, 4),
+        "pct": round(pct, 1) if pct is not None else None,
+        # ⚠ `favorable` yalnız `lower_is_better` BEYAN EDİLMİŞSE yazılır — aksi hâlde
+        # *"A daha yüksek"*in iyi mi kötü mü olduğunu **uydurmuş** olurduk.
+        "favorable": (None if not lib else fark < 0),
+        "text": f"{_ad(measure)}: {a[dim]} − {b[dim]} = {_fmt(fark, unit)}"
+                + (f" (%{abs(round(pct, 1))})" if pct is not None else ""),
+    }]
+
+
 def _kpi_facts(kpi: dict) -> list[dict]:
     """KPI kartı: değer + iyi/kötü yönü + bileşen dökümü."""
     val, unit = kpi.get("value"), kpi.get("unit")
@@ -449,6 +493,11 @@ def interpret(result: dict | None, cube_query: dict | None = None,
         _sinif, _ = toplanabilirlik(m0, cube_meta)
         facts += _rank_facts(rows, dims[0], m0, unit,
                              toplanabilir=_sinif != YOK, _ad=_ad)
+        # 🔴 FAZ 5.7 — SEGMENT A↔B FARKI. `in` filtresi ve yan yana çizim vardı; aradaki
+        # farkın **sayısı** hiçbir yerde yazılı değildi ve kullanıcı onu kafadan
+        # çıkarıyordu. Yalnız **tam iki** segmentte üretilir.
+        facts += _segment_delta(rows, dims[0], m0, unit,
+                               lib=m0 in (lower_is_better or set()), _ad=_ad)
     if len(measures) > 1:
         facts.append({"type": "measures", "text": f"{len(measures)} ölçü: " + ", ".join(measures)})
     if not facts:

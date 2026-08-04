@@ -34,6 +34,10 @@ const FACT_ICON: Record<string, string> = {
   // verdirir. `streak` bir **kalıp** taşır: *"3 aydır düşüyor"* ilk↔son kıyasının
   // göremediği zikzağı kapatır.
   delta: "Δ", streak: "⛓",
+  // ⚠️ FAZ 5.7 — `segment_delta`. Aynı ders, dördüncü kez: backend üretir, sözlükte
+  // yoksa filtre sessizce eler. *"RAM-2 − RAM-3 = 40 kg"* iki çubuğa bakan kullanıcının
+  // kafadan çıkardığı sayıdır; yazmak onu **kanıta** çevirir.
+  segment_delta: "⇄",
 };
 
 // Sinyal türüne özel simge — YALNIZ önem düzeyinden ayrışması gerekenler için.
