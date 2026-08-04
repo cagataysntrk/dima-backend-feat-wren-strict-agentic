@@ -1463,14 +1463,27 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     # `app/context.py` saf bir fonksiyondur (izole test edilebilir) ve her zaman bir
     # KURAL döndürür — bağlam sessizce kopmaz, koparsa gerekçesi makbuza yazılır.
     #
-    # `reply_to_cube_query` HENÜZ istemciden gelmiyor (thread paneli Faz H4'te yeniden
-    # kurulacak); o gelene kadar çapa listesi boş kalır ve çözücü yapısal/ham/taze
-    # dallarını kullanır. Bu bir eksiklik DEĞİL kademeli bir bağlanmadır: sunucu tarafı
-    # bugünden itibaren gerekçe üretiyor ve istemci hazır olduğunda çapa dalı devreye girer.
+    # ✅ FAZ 0.5 — ÇAPA ZİNCİRİ BAĞLANDI. *(Bu yorum eskiden "reply_to_cube_query HENÜZ
+    # istemciden gelmiyor; thread paneli Faz H4'te yeniden kurulacak" diyordu. Panel
+    # 2026-08-01'de kuruldu ve istemci çapayı ZATEN biliyordu — onu genel `cube_query`
+    # yuvasına DÜZLEŞTİRİYORDU, bu yüzden hep `KURAL_YAPISAL` çalışıyor, `KURAL_CAPA`
+    # hiç ateşlenmiyordu. Bayat bir gerekçe kodda kilitli kalmasın diye güncellendi.)*
+    #
+    # Çapa listesi: **kullanıcının AÇIK eylemi** (bir karta yanıt / kart seçimi) —
+    # istemcinin taşıdığı örtük duruma (`cube_query`) **baskın** gelir. Çok kart →
+    # kesişim; farklı cube'lar → **SOR** (`KURAL_CELISKI`, ADR-0008: belirsizlikte tahmin
+    # etme). Bayrak kapalıyken liste boş kalır → davranış **birebir bugünkü** (GERİ AL).
+    _capalar: list[dict] = []
+    if "capa_zinciri" in resolve_for(settings, principal):
+        if body.reply_to_cube_query:
+            _capalar.append(body.reply_to_cube_query)
+        _capalar.extend(c for c in (body.reply_to_extra_cube_queries or []) if c)
+
     baglam = app_context.coz(
         cube_query=body.cube_query,
         prev_sql=prev_sql,
         history=body.history,
+        capalar=_capalar,
         capa_etiketi=body.reply_to_label,
         atif=cube_router.atif_var(body.question),
     )
@@ -1486,6 +1499,21 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     # yeniden çöz, çıkan sorguyu yapısal çapa yerine koy. Bundan sonrası zaten var olan
     # takip yoludur — ikinci bir cevap hattı YAZILMAZ (bu deponun bir numaralı kusur
     # sınıfı). `route()` çözemezse hiçbir şey uydurulmaz: bağlam olduğu gibi kalır.
+    # ✅ FAZ 0.5 — ÇÖZÜLEN ÇAPA **UYGULANIR**. Kapı bunu yakaladı: `coz()` doğru kuralı
+    # (`capa:karta-yanit`) üretiyordu ama takip zinciri hâlâ `body.cube_query`'yi okuyordu
+    # → çapa **çözülüp yok sayılıyordu**. Tam olarak *"beyan var, kod onu tanımıyor"*
+    # sınıfı; ve kullanıcı için sonucu şuydu: işaret ettiği karta yanıt verirken cevap
+    # **başka bir raporun** bağlamına kayıyor, üstelik **sessizce**.
+    #
+    # `KURAL_CELISKI`'de ÇAPA UYGULANMAZ: `cube_query` `None`'dır ve aşağıdaki zincir
+    # dürüst reddine düşer — ADR-0008'in *"belirsizlikte tahmin etme"* kuralı. Sessizce
+    # birini seçmek, kullanıcının görmediği bir karar vermek olurdu.
+    if baglam.kural in (app_context.KURAL_CAPA, app_context.KURAL_COKLU) and baglam.cube_query:
+        body.cube_query = baglam.cube_query
+        structural_followup = True
+        raw_followup = False
+        is_followup = True
+
     if baglam.kural == app_context.KURAL_ATIF and not body.cube_query:
         _temel = None
         try:

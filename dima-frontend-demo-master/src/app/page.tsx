@@ -23,7 +23,7 @@ import { useHistory } from "@/stores/history";
 import { useFeature } from "@/lib/useFeature";
 import { usePermission } from "@/lib/usePermission";
 import { groupIntoThreads, mintThreadId, replyAnchorLabel } from "@/lib/threads";
-import type { AskResponse } from "@/lib/types";
+import type { AskResponse, CubeQuery} from "@/lib/types";
 
 type Drawer = "settings" | "help" | "notifications" | "history" | "dashboards" | null;
 
@@ -241,6 +241,16 @@ export default function Home() {
               .filter((it): it is AskResponse => Boolean(it))
               .map((it) => `${it.question} → ${it.result?.row_count ?? 0} satır`)
           : undefined;
+      // FAZ 0.5 — ÇAPA KİMLİĞİYLE: `extra_context` insan-okur ÖZETLER taşır (Discovery
+      // grounding'i), bu ise KESİŞTİRİLECEK yapısal sorgulardır. İkisi farklı iştir ve
+      // ayrı alanlarda durur — birini ötekinin yerine kullanmak, sunucunun "kesişim mi
+      // yoksa metin bağlamı mı" sorusunu belirsiz bırakırdı.
+      const extraCubeQueries =
+        vars.kind === "reply-multi"
+          ? vars.extraIndices
+              .map((idx) => t?.items[idx]?.cube_query)
+              .filter((cq): cq is CubeQuery => Boolean(cq))
+          : undefined;
       return ask(
         {
           question: vars.question,
@@ -250,6 +260,9 @@ export default function Home() {
           session_id: sessionId,
           thread_id: vars.threadId,
           reply_to_label: anchor ? replyAnchorLabel(anchor.question) : null,
+          // Çapa KİMLİĞİ — `cube_query` alanı yukarıda AYNEN duruyor (GERİ AL).
+          reply_to_cube_query: anchor?.cube_query ?? null,
+          reply_to_extra_cube_queries: extraCubeQueries ?? null,
           extra_context: extraContext,
           yol_siniri: yolSiniri,
           anchor: vars.kind === "reply" ? (vars.hucre ?? null) : null,

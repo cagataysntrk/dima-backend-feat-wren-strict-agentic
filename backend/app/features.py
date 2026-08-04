@@ -37,6 +37,13 @@ _SCOPE_ORDER = ("global", "sector", "tenant", "role", "user")
 #   3) Tüketen yüzeyi `useFeature("<key>")` ile geçitle (frontend).
 #   4) Gerekiyorsa admin panelden tenant/rol/kullanıcı override'ı ile aç.
 FLAG_REGISTRY: dict[str, dict[str, str]] = {
+    "capa_zinciri": {
+        "label": "Çapa zinciri (karta yanıt)",
+        "description": "Bir karta yanıt verirken çapa KİMLİĞİYLE taşınır: tek kart → o "
+                       "karta yanıt, çok kart → kesişim, farklı cube'lar → SOR. Kapalıyken "
+                       "çapa listesi boş kalır ve davranış birebir bugünküdür (FAZ 0.5).",
+        "category": "Konuşma",
+    },
     "metrik_kaydi": {
         "label": "Metrik kaydı (hakem)",
         "description": "Bir iş terimini birden fazla cube sahipleniyorsa HAKEM kaydı "

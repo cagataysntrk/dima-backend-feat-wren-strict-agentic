@@ -17,9 +17,9 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 0** — temizlik ve kapılar *(25 madde; sıra **numara DEĞİL**, FAZ 0 girişindeki bağlayıcı koşum sırası)* |
-| **Sıradaki madde** | **adım 7:** `0.5` — çapa zincirini uyandır *(karta-yanıt + çok-kart kesişimi)* |
-| **Ondan sonra** | `0.4` · `0.5b` → kalan *(0.3 · 0.6–0.13 · 0.15 dâhil)* → `0.21` |
-| **Demet** | ⚠ `0.5` `routers/ask.py`'ye dokunur → **risk sınırı**, kendi kapısını koşar |
+| **Sıradaki madde** | **adım 8:** `0.4` netleştirme önceliği *(ölçüm kararı)* · `0.5b` |
+| **Ondan sonra** | kalan *(0.3 · 0.6–0.13 · 0.15 · 0.20 dâhil)* → `0.21` |
+| **Demet** | yeni demet açık: `0.19` · `0.18` · `0.5` indi *(ikisi risk sınırı, kendi kapılarını koştu)* |
 | **Tempo** | 🔴 **DEMET disiplini yürürlükte** (`OPERASYON.md §3`): commit ≠ kapı; tam kapı **demet sonunda bir kez**. Risk sınırındaki dosyalara dokunan madde demete girmez |
 | **v1 bitiş ölçütü** | §C'nin **16 ölçütü** yeşil |
 
@@ -295,6 +295,32 @@ varyantla bir sahiplik hatasını **gizlerdi**.
 
 > 🔴 **K1 yeni ucu KURULDUĞU ANDA yakaladı:** `GET /metrics` tüketicisiz → `api-only`
 > beyanı gerekçesiyle yazıldı. Kapı, kurulmasının üzerinden bir madde geçmeden iş gördü.
+
+### FAZ 0 · adım 7 — `0.5` ÇAPA ZİNCİRİ UYANDI *(2026-08-04)*
+
+**19 altın vakalı, testli bir modül üretimde ÖLÜYDÜ.** `KURAL_CAPA`/`COKLU`/`CELISKI`
+hiç ateşlenmiyordu; ölçüldü: `grep -n "capalar=" routers/ask.py` → **0 isabet**.
+
+🔴 **Kök neden engel değil, DÜZLEŞTİRMEYDİ.** `ask.py`'nin yorumu *"thread paneli Faz
+H4'te yeniden kurulacak"* diyordu — panel **2026-08-01'de kuruldu**. İstemci çapayı
+**zaten biliyordu**, onu **genel `cube_query` yuvasına düzleştiriyordu**; sunucu bu yüzden
+hep `KURAL_YAPISAL` görüyordu. *Bayat bir gerekçe kodda kilitli kalmıştı* — madde inerken
+yorum da güncellendi ve bu **testle kilitlendi**.
+
+| Parça | Ne indi |
+|---|---|
+| **sözleşme** | `AskRequest.reply_to_cube_query` + `reply_to_extra_cube_queries` — çapa **kimliğiyle** taşınır; `cube_query` DEĞİŞMEDEN durur |
+| **backend** | `coz(..., capalar=…)` bağlandı; tek kart → yanıt, çok kart → **kesişim**, farklı cube → **SOR** |
+| **frontend** | `page.tsx` çapayı ve çok-kart seçimini gönderiyor *(`extra_context` insan-okur özet; bu ise **yapısal** sorgu — ayrı alanlar, ayrı iş)* |
+| **bayrak** | `capa_zinciri = off` → liste boş → **birebir bugünkü** |
+
+> 🔴 **KAPI KENDİ BOŞLUĞUNU YAKALADI.** İlk koşumda log `kural=capa:karta-yanit` yazıyordu
+> ama cevap *"bu takip mesajını ilişkilendiremedim"* diyordu: `coz()` doğru kuralı
+> üretiyor, **takip zinciri hâlâ `body.cube_query`'yi okuyordu** — yani çapa **çözülüp
+> yok sayılıyordu**. Kullanıcı için sonucu: işaret ettiği karta yanıt verirken cevap
+> **başka bir raporun** bağlamına kayıyor, üstelik **sessizce**. Düzeltildi: çözülen çapa
+> `KURAL_CAPA`/`KURAL_COKLU`'da **uygulanıyor**; `KURAL_CELISKI`'de **uygulanmıyor** —
+> ADR-0008, belirsizlikte tahmin yok.
 
 ### Taban ölçümü · `lab/vk_taban.py` *(commit `8f87e40`)*
 VK-1…VK-6 **yapısal ve canlı** (gemini) ölçüldü. `§G.6e`'nin *"Bugün"* sütunu artık

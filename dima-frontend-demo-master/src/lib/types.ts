@@ -384,6 +384,14 @@ export interface AskRequest {
   // §B düzeltmesi (1 Ağustos 2026) — "bu karta yanıt ver": backend'e AYNEN echo edilmesi
   // için gönderilen, çapa kartın kısa insan-okur etiketi (bkz. lib/threads.ts::replyAnchorLabel).
   reply_to_label?: string | null;
+  // ⚠️ FAZ 0.5 — ÇAPA ZİNCİRİ. İstemci çapanın `cube_query`'sini bugüne kadar GENEL
+  // `cube_query` yuvasına DÜZLEŞTİRİYORDU; sunucu bu yüzden hep `KURAL_YAPISAL`
+  // görüyor, `KURAL_CAPA`/`COKLU`/`CELISKI` (19 altın vakalı, testli bir modül)
+  // ÜRETİMDE HİÇ ateşlenmiyordu. Bu iki alan çapayı KİMLİĞİYLE taşır.
+  // `cube_query` DEĞİŞMEDEN gönderilir — bayrak kapalıyken sunucu bu alanları hiç
+  // okumaz ve davranış birebir bugünküdür (GERİ AL).
+  reply_to_cube_query?: CubeQuery | null;
+  reply_to_extra_cube_queries?: CubeQuery[] | null;
   // §B düzeltmesi (1 Ağustos 2026) — çoklu-seçim birleşik bağlam: DİĞER seçili kartların
   // kısa özetleri (ör. "{soru} → {N} satır"). Yalnız Discovery LLM promptuna grounding
   // metni olarak eklenir — deterministik cube-routing'e karışmaz (bkz. backend

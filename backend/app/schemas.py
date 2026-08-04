@@ -76,6 +76,17 @@ class AskRequest(BaseModel):
     # AskResponse.reply_to_label) ki ReportCard "↳ yanıt: {etiket}" breadcrumb'ını resume
     # sonrası (kalıcı loga _finish() üstünden düşer) da gösterebilsin.
     reply_to_label: str | None = None
+    # ⚠️ FAZ 0.5 — ÇAPA ZİNCİRİ. `reply_to_label` bugüne kadar salt ETİKETTİ; istemci
+    # çapanın `cube_query`'sini **genel `cube_query` yuvasına düzleştiriyordu** ve bu
+    # yüzden `context.coz()` hep `KURAL_YAPISAL` görüyordu — `KURAL_CAPA`/`COKLU`/
+    # `CELISKI` kuralları (19 altın vakalı, testli bir modül) **üretimde HİÇ
+    # ateşlenmiyordu**. Ölçüldü: `grep -n "capalar=" routers/ask.py` → **0 isabet**.
+    #
+    # Bu iki alan çapayı **kimliğiyle** taşır: hangi karta yanıt veriliyor, ve çok-kart
+    # seçiminde hangi kartlar kesiştiriliyor. `cube_query` alanı DEĞİŞMEDEN durur —
+    # bayrak kapalıyken davranış birebir bugünküdür (GERİ AL).
+    reply_to_cube_query: dict[str, Any] | None = None
+    reply_to_extra_cube_queries: list[dict[str, Any]] | None = None
     # §B düzeltmesi (1 Ağustos 2026) — çoklu-seçim birleşik bağlam: birincil bağlam HÂLÂ
     # tek `cube_query`/`prev_sql`'dir (kronolojik en-son seçili kart) — bu alan yalnız
     # DİĞER seçili kartların kısa, tek-satırlık insan-okur özetleridir (frontend üretir,

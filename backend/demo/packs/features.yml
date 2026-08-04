@@ -44,6 +44,9 @@ features:
   # `cube_router._match_cube` onu görmez → davranış BİREBİR bugünkü (GERİ AL).
   # Açıldığında bile taslak kayıt `sahiplenilen_terimler: []` ile gelir: yani "bu terim
   # çakışıyor" der, "sahibi şudur" DEMEZ. Sahiplik kararı FAZ 3.1'in turudur.
+  # FAZ 0.5 — ÇAPA ZİNCİRİ. Kapalıyken `capalar` listesi BOŞ kalır → `context.coz()`
+  # bugünkü yapısal/ham/taze dallarını kullanır → davranış BİREBİR bugünkü (GERİ AL).
+  capa_zinciri: "off"
   metrik_kaydi: "off"
   netlestirme_onceligi: "off"  # FAZ F: katalogda ≥2 SAHİP olan bir ölçüde (ör. `bakiye`
                                # → cari|mizan) netleştirme chip'i Intent-JSON'u ÖNCELER.
