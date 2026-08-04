@@ -17,8 +17,8 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
-| **Sıradaki madde** | `1.10` eskalasyon matrisi · `1.12` yasal · `1.13` **EN SON** |
-| **Demet** | demet 12: `1.8` · `1.9` · `1.11` — **dolu**, kapı sırada |
+| **Sıradaki madde** | `1.12` AI Act/NIST/ISO çerçevesi · `1.3b/2` Discovery çağrı yolu · `1.13` **EN SON** |
+| **Demet** | ✅ **demet 12 kapandı** — kapı **4/4 YEŞİL** (süit **2426**) · demet 13 açık: `1.10` |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
 | **Demet** | ✅ **demet 7 kapandı** — FAZ 0 kapanış kapısı **4/4 YEŞİL** (süit **2199**) · demet 8 açık: `1.3c` · `1.3` |
@@ -420,6 +420,39 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 16 — `1.10` **eskalasyon matrisi** *(2026-08-04)*
+
+**Demet 12 kapısı: 4/4 YEŞİL** — süit **2426** · eval ±%0 · korpus **%93,1**.
+Kapı: **23 test**, hızlı sinyal **564**.
+
+> **Neden:** bir eşik aşıldığında bildirim gider — ve orada **biter**. Kimse bakmazsa
+> sistem *"haber verdim"* der ve susar. Ama bir uyarının **işlevi** haber vermek değil,
+> **bir karara yol açmaktır**: *on iki saat kimsenin bakmadığı bir alarm, hiç
+> gönderilmemiş bir alarmla aynı sonucu üretir.*
+
+> ✅ **YENİ CRON YOK** (yol haritası birebir). Değerlendirici **mevcut 60 sn** döngüsüne
+> bindi. İkinci bir zamanlayıcı iki ayrı *"şimdi saat kaç"* sahibi yaratırdı ve ikisi
+> kaydığında hangi kuralın ne zaman koştuğu **bilinemezdi**. Kapı bunu **AST ile**
+> ölçüyor: `_scheduler_loop` **bir tane** ve eskalasyon onun **içinden** çağrılıyor.
+
+> 🔴 **KİLİTLEME UYGULANMIYOR — KARAR ÜRETİLİYOR.** Bir hesabı otomatik kilitlemek
+> **geri alınamaz** bir kullanıcı etkisidir ve FAZ 6'nın *"onaysız hiçbir yazma"*
+> değişmezine bağlıdır. Kararı üretip **uygulamamak** bir eksiklik değil, o değişmezin
+> **korunmasıdır** — ve karar `AuditLog`'a yazıldığı için **görünürdür**.
+> *Uygulanmayan ama kaydedilen bir karar, uygulanan ama kaydedilmeyen bir karardan her
+> zaman daha iyidir.* Kapı, modülde `suspend`/`lock`/`delete` gibi bir **eylem**
+> olmadığını da doğruluyor; kararın **sahibi** (FAZ 6.1) yazılı.
+
+> ⚠ **Üç fail-safe dal, üçü de gerekçeli:** `ilk_asim=None` → tetiklenmez (`None`'ı
+> *"çok eski"* saymak hiç tetiklenmemiş bir kuralı **anında ve her 60 sn'de** yükseltirdi)
+> · gelecekteki zaman → tetiklenmez (saat kayması bir gerekçe değildir) · `sure_dakika=0`
+> → varsayılana düşer (kural **sürekli** tetiklenirdi).
+> ⚠ **`owner`'da yükselme YOK:** kendisine yükseltmek bir **döngü** ve sonsuz audit satırı
+> üretirdi; orada artık **insan kararı** bekler.
+> ⚠ **Eşik mantığı bu modülün işi DEĞİL** — `asim_zamani` bir **çağrılabilir**; buraya bir
+> sorgu koymak eşik mantığının **ikinci bir sahibini** doğururdu. Rol merdiveni de
+> `authorize.ROLE_RANK`'ten **türetiliyor**, kopyalanmıyor (kapı ikisini karşılaştırıyor).
 
 ### FAZ 1 · adım 15 — `1.11` **kademeli düşüş: kayıt + gösterge** *(2026-08-04)*
 

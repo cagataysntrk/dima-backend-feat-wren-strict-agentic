@@ -110,6 +110,16 @@ async def lifespan(app: FastAPI):
                     # bir sonraki turda tekrar denenir) — yalnız artık İZ bırakıyor.
                     _log.warning("scheduler: run_due döngü hatası", exc_info=True)
                 try:
+                    # FAZ 1.10 — ESKALASYON. 🔴 YENİ CRON YOK: değerlendirici MEVCUT
+                    # 60 sn döngüsüne bindi. İkinci bir zamanlayıcı, iki ayrı "şimdi saat
+                    # kaç" sahibi yaratırdı ve ikisi kaydığında hangi kuralın ne zaman
+                    # koştuğu BİLİNEMEZDİ.
+                    from app.eskalasyon import dongude_degerlendir
+
+                    dongude_degerlendir(app.state)
+                except Exception:
+                    _log.warning("scheduler: eskalasyon döngü hatası", exc_info=True)
+                try:
                     # Admin panelden gelen tenant sektör/modül değişikliği ≤60 sn'de
                     # diske iner; aktif şirketse yeniden derlenir (TenantConfig).
                     materialize_and_recompose(app.state, settings)

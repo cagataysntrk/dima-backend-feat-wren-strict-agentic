@@ -85,6 +85,30 @@ class ModelPermission(SQLModel, table=True):
     action: str = "read"  # dima read-only; ileride export/approve
 
 
+class EskalasyonKurali(SQLModel, table=True):
+    """FAZ 1.10 — bir uyarı, GÖRÜLMEZSE yükselir.
+
+    Bir eşik aşıldığında bildirim gider ve orada BİTER. Kimse bakmazsa sistem "haber
+    verdim" der ve susar — ama bir uyarının İŞLEVİ haber vermek değil, BİR KARARA YOL
+    AÇMAKTIR: on iki saat kimsenin bakmadığı bir alarm, hiç gönderilmemiş bir alarmla
+    AYNI SONUCU üretir.
+
+    ⚠ `otomatik_kilitle` bir ÖNERİ üretir, bir eylem DEĞİL: bir hesabı otomatik
+    kilitlemek GERİ ALINAMAZ ve FAZ 6'nın "onaysız hiçbir yazma" değişmezine bağlıdır.
+    """
+
+    __tablename__ = "eskalasyon_kurali"
+    id: uuid.UUID = Field(default_factory=_uuid, primary_key=True)
+    tenant_id: uuid.UUID = Field(index=True)
+    ad: str
+    tetikleyici_esik: str                    # hangi eşik/uyarı sınıfı
+    sure_dakika: int = 60                    # bu süre YANITSIZ kalırsa yükselir
+    hedef_rol: str = "analyst"               # şu an kimde; bir ÜSTÜNE yükselir
+    otomatik_kilitle: bool = False           # ÖNERİ üretir — eylem FAZ 6.1'e bağlı
+    enabled: bool = True
+    created_at: datetime = Field(default_factory=_now)
+
+
 class MetrikSertifikasi(SQLModel, table=True):
     """FAZ 1.5 — bir metriğin tanımını KİM onayladı, ve o onaydan beri ne değişti?
 
