@@ -17,8 +17,8 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
-| **Sıradaki madde** | `1.2b` `llm_guard.safe_call()` · `1.2c` redactor (grafik/dışa aktarım) |
-| **Demet** | demet 9: `1.1b` · `1.2a` — kapı sırada |
+| **Sıradaki madde** | `1.2c` redactor (grafik/dışa aktarım) · `1.4` süreç-arası kilit |
+| **Demet** | demet 9: `1.1b` · `1.2a` · `1.2b` · `AJ0/1` — **dolu**, kapı koşuyor |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
 | **Demet** | ✅ **demet 7 kapandı** — FAZ 0 kapanış kapısı **4/4 YEŞİL** (süit **2199**) · demet 8 açık: `1.3c` · `1.3` |
@@ -420,6 +420,47 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 7 — `1.2b` LLM tek kapı · `AJ0/1` yazım önerisi *(2026-08-04)*
+
+> 🔴 **DEMET 9'UN İLK KAPI KOŞUMU KIRMIZIYDI VE İKİ AYRI ŞEY ÇIKTI.**
+> Korpus **%94,3** (taban %93,2) — yani doğruluk **ARTTI** — ama kapı **kırmızı**, çünkü
+> `gitas` korpustan **tamamen düşmüştü**: `FileNotFoundError: demo/wren-project/cubes/
+> enerji_makine/metadata.yml`. Dosya **şimdi var** ve dizin **gitignore'da** (derlenmiş
+> çıktı) → bu bir **COMPOSE YARIŞI**. `1.4`'ün gerekçesi 2026-08-02'de bir kez
+> üretilmişti; artık **bir kapıyı kırdığı** ikinci bir gözlem var.
+> ⚠ **Payda 445 → 342 düştü ve yüzde YÜKSELDİ.** Bir metriğin iyileşmesi, ölçülemeyenlerin
+> denklemden çıkmasıyla da olur — *"sayı arttı"* tek başına bir haber değildir.
+
+`1.2b` · **LLM'e giden tek kapı.** *"Ham veri LLM'e gitmez"* kuralının **üç sahibi** vardı
+(`sensitivity.prompt_safe_values` · `cube_router.build_catalog` · `ask.py`) ve üçü de
+**girdi** tarafındaydı. `app/llm_guard.py::safe_call` **çıkış** tarafında durur: üç
+gönderim noktası (`anthropic._ask` · `anthropic._arac_ile` · `openai-uyumlu._chat`)
+artık ondan geçiyor. Kapı: **9 test** + mevcut 11.
+
+> ⚠ **Girdi süzgeçleri KALIYOR.** `safe_call` onların **yerine** değil **arkalarına**
+> durur. Ateşlerse bu bir **BULGUDUR**: üç süzgecin kapsamadığı bir yol açılmış demektir.
+> ⚠ Tespit `pii.py`'den — **dördüncü bir desen sözlüğü yazılmadı**. Ve ihlalde **değerin
+> kendisi loglanmaz**: bir sızıntıyı raporlarken sızdırmak, kapıyı sızıntı yüzeyi yapardı.
+
+`AJ0/1` · **yazım önerisi cevaplı yolu kesemez.** Arka plan ölçüm turunun bıraktığı
+düzeltme incelendi ve **tutuldu**: öneri artık `route()` ile doğrulanıyor (sıfır-LLM).
+Ölçüldü — düzeltmeden önce **doğru yazılmış** sorular kesiliyordu (`arttı`→`parti`),
+korpusun **+1,1 puanı** buradan.
+
+> 🔴 **AMA BİR İDDİA ÇÜRÜTÜLDÜ.** O tur *"gerçek hatalar 0,833–0,909, saçmalar 0,667;
+> bantlar **AYRIK**"* demiş ve *"eşiği yükselt"* sonucunu çıkarmıştı. Bağımsız ölçüm
+> (geniş örneklem): saçma **0,600–0,769**, gerçek **0,714–0,923** → **ÇAKIŞIYORLAR**.
+> Eşiği yükseltmek `fıre→fire` (0,750) ve `musteri→müşteri` (0,714) gibi **gerçek**
+> hataları kaybettirirdi. **Kanıtlanmamış bir düzeltme sevk edilmedi**; ölçüm
+> `test_BANTLAR_AYRIK_DEGIL_olculdu` ile donduruldu — *çürütülmüş bir gerekçe, yazılı
+> değilse tekrar edilir.*
+
+> ⚠ **KUSUR KAPANMADI, GÖRÜNÜR BIRAKILDI.** Saçma düzeltme de route ediyor
+> (`"…parti iplik"` katalog terimlerinden oluşuyor). Üç uçtan uca vaka
+> **`xfail(strict=True)`** — düzeldiği gün test **kırılır** ve işareti kaldırmaya zorlar.
+> Gerçek ayırıcı sinyal benzerlik oranı değil **Türkçe fiil çekimi** (saçmaların hepsi
+> fiil→isim); o iş AJ0'ın morfoloji kalemine ait.
 
 ### FAZ 1 · adım 6 — `1.2a` **kolon düzeyi erişim denetimi** *(2026-08-04)*
 

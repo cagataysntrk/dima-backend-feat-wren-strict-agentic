@@ -2490,7 +2490,38 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     fixes_text = ", ".join(f'"{f["from"]}"→"{f["to"]}"' for f in autos)
                     typo_fix_trace = f"yazım düzeltme ({fixes_text})"
             if route_hit is None:
-                typo_suggestion = next((f for f in typo_fixes if f["kind"] == "suggest"), None)
+                _aday = next((f for f in typo_fixes if f["kind"] == "suggest"), None)
+                # 🔴 **BİR ÖNERİ, ANCAK CEVAP AÇIYORSA ÖNERİDİR.**
+                #
+                # Ölçüldü (12 gerçekçi soru, 2026-08-04): **5'i** bu dalda ölüyordu ve
+                # önerilerin hepsi saçmaydı — çünkü aday, düzeltmenin **işe yarayıp
+                # yaramadığına bakılmadan** üretiliyordu:
+                #   "arttı"  → "parti mi demek istedin?"
+                #   "veren"  → "renk mi demek istedin?"
+                #   "işledik"→ "iplik mi demek istedin?"
+                #   "sattık" → "hatti mi demek istedin?"
+                # Hepsi sıradan Türkçe **fiil**; katalog **isimlerine** benzetiliyordu.
+                #
+                # Kök neden: bir kelimenin **katalogda olmaması**, onun yazım hatası
+                # olduğunun kanıtı DEĞİLDİR — bir cümledeki kelimelerin çoğu zaten
+                # katalog dışıdır (fiiller, edatlar, gündelik dil). Bulanık eşleştirici
+                # bunu bilmiyordu ve her bilinmeyen kelimeyi bir "hata" sanıyordu.
+                #
+                # Düzeltme **ucuz ve kesin**: öneriyi uygulayınca soru GERÇEKTEN
+                # cevaplanabilir hâle geliyor mu? `route()` sıfır-LLM ve deterministik;
+                # cevap açmıyorsa öneri **gürültüdür ve bastırılır**. Kullanıcıyı
+                # cevapsız bir soruya ikinci kez çarptıran bir chip, chip olmamasından
+                # kötüdür (aynı disiplin `olcu_netlestirme`'de de yazılı).
+                if _aday:
+                    try:
+                        _acar_mi = cube_router.route(
+                            cube_router._norm(_aday.get("corrected_q") or ""), schema,
+                            liste_kirilimi=_liste)
+                    except Exception:
+                        _acar_mi = None
+                        _log.warning("typo önerisi doğrulaması hata verdi (best-effort)",
+                                     exc_info=True)
+                    typo_suggestion = _aday if _acar_mi else None
 
         # Dönemsel kıyas (YoY/MoM) — route() _COMPARE_HINTS nedeniyle BİLEREK None döner;
         # ayrı, YİNE deterministik bir mekanizma var (/cube'un compare chip'iyle AYNI —

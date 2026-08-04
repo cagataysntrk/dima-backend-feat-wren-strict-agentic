@@ -19,6 +19,7 @@ import re
 import time
 from typing import Protocol
 
+from app.llm_guard import safe_call
 from app.logging_setup import get_logger
 
 # Kapsamlı istek/hata logu (1 Ağustos 2026, kullanıcı talebi: "llm mi patladı api mi
@@ -368,15 +369,20 @@ class AnthropicSqlGenerator:
         use_model = model or self._model
         _t0 = time.monotonic()
         try:
-            message = self._client.messages.create(
-                model=use_model,
-                max_tokens=1024,
-                temperature=0,  # OpenAICompatibleSqlGenerator zaten 0 kullanıyor; burada
-                                # eksikti — Anthropic varsayılanı (1.0) aynı soruya farklı
-                                # SQL üretebiliyordu (canlı 2026-07-31 kök neden analizi).
-                system=system,
-                messages=[{"role": "user", "content": user}],
-            )
+            # FAZ 1.2b — SAĞLAYICIYA GİDEN TEK KAPI. Çağrı bir closure olarak geçilir:
+            # üç sağlayıcının imzaları farklı ve ortak bir imza uydurmak, onların
+            # DÖRDÜNCÜ bir temsilini yaratırdı.
+            message = safe_call(
+                lambda: self._client.messages.create(
+                    model=use_model,
+                    max_tokens=1024,
+                    temperature=0,  # OpenAICompatibleSqlGenerator zaten 0 kullanıyor;
+                                    # burada eksikti — Anthropic varsayılanı (1.0) aynı
+                                    # soruya farklı SQL üretebiliyordu (canlı 2026-07-31).
+                    system=system,
+                    messages=[{"role": "user", "content": user}],
+                ),
+                yuk=f"{system}\n{user}", ad="anthropic._ask")
         except Exception as exc:
             # Log-and-rethrow: davranış (exception'ın FailoverSqlGenerator'a kadar aynen
             # ULAŞMASI) HİÇ değişmez — yalnız BURADA, kaybolmadan ÖNCE, GÖRÜNÜR olur.
@@ -448,15 +454,17 @@ class AnthropicSqlGenerator:
         import json as _json
 
         _t0 = time.monotonic()
-        message = self._client.messages.create(
-            model=self._select_model or self._model,
-            max_tokens=1024, temperature=0, system=system,
-            messages=[{"role": "user", "content": user}],
-            tools=[{"name": "cube_query", "input_schema": sema,
-                    "description": "Soruyu yapısal bir CubeQuery'ye eşle. Soru TEK bir "
-                                   "cube ile yanıtlanamıyorsa cube=null dalını seç."}],
-            tool_choice={"type": "tool", "name": "cube_query"},
-        )
+        message = safe_call(
+            lambda: self._client.messages.create(
+                model=self._select_model or self._model,
+                max_tokens=1024, temperature=0, system=system,
+                messages=[{"role": "user", "content": user}],
+                tools=[{"name": "cube_query", "input_schema": sema,
+                        "description": "Soruyu yapısal bir CubeQuery'ye eşle. Soru TEK bir "
+                                       "cube ile yanıtlanamıyorsa cube=null dalını seç."}],
+                tool_choice={"type": "tool", "name": "cube_query"},
+            ),
+            yuk=f"{system}\n{user}", ad="anthropic._arac_ile")
         elapsed_ms = int((time.monotonic() - _t0) * 1000)
         try:
             _u = getattr(message, "usage", None)
@@ -510,7 +518,10 @@ class OpenAICompatibleSqlGenerator:
         }
         _t0 = time.monotonic()
         try:
-            resp = requests.post(self._url, json=payload, headers=headers, timeout=30)
+            resp = safe_call(
+                lambda: requests.post(self._url, json=payload, headers=headers,
+                                      timeout=30),
+                yuk=f"{system}\n{user}", ad=f"{self._provider}._chat")
             resp.raise_for_status()
             data = resp.json()
         except Exception as exc:
