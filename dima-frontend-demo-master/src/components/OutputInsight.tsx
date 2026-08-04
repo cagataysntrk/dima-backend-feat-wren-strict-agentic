@@ -26,6 +26,14 @@ const FACT_ICON: Record<string, string> = {
   // "En yüksek makine: RAM-2" bir raporun en çok işe yarayan cümlesidir ve rozet
   // listesinde hiç görünmüyordu.
   trend: "📈", peak: "🏆", bottom: "🔻", kpi_components: "🧮", top: "🥇",
+  // ⚠️ FAZ 5.5 — `delta` ve `streak` EKLENDİ. Yukarıdaki `top` notunun **aynısı**:
+  // backend üretir, sözlükte yoksa `:42` filtresi SESSİZCE ELER. İki üretici, UI birini
+  // tanır — ve bu depo bu kusuru şimdi ÜÇÜNCÜ kez görüyor (`top` · `order` chip'i · bu).
+  //
+  // `delta` bir **büyüklük** taşır: *"%12 arttı"* yön verir, *"+1,4 milyon ₺"* karar
+  // verdirir. `streak` bir **kalıp** taşır: *"3 aydır düşüyor"* ilk↔son kıyasının
+  // göremediği zikzağı kapatır.
+  delta: "Δ", streak: "⛓",
 };
 
 // Sinyal türüne özel simge — YALNIZ önem düzeyinden ayrışması gerekenler için.

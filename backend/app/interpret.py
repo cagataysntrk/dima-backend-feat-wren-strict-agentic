@@ -95,7 +95,97 @@ def _series_facts(rows: list[dict], time_col: str, measure: str, unit: str | Non
     facts.append({"type": "peak", "measure": measure,
                   "text": f"En yüksek {_fmt_bucket(hi[0])} ({_fmt(hi[1], unit)}), "
                           f"en düşük {_fmt_bucket(lo[0])} ({_fmt(lo[1], unit)})"})
+
+    # 🔴 FAZ 5.5 — **DELTA (mutlak + %)**. `trend` yalnız **yüzde** taşıyordu; mutlak
+    # fark başlıkta hiç görünmüyordu. *"%12 arttı"* bir yön verir, **"+1,4 milyon ₺"**
+    # bir büyüklük verir — ve iş kararı büyüklükle alınır. İkisi ayrı fact'tir çünkü
+    # `trend` bir **anlatı** cümlesidir, `delta` bir **başlık kartıdır**.
+    facts.append({"type": "delta", "measure": measure,
+                  "mutlak": round(last[1] - first[1], 4),
+                  "pct": round((last[1] - first[1]) / abs(first[1]) * 100, 1)
+                         if first[1] else None,
+                  "favorable": (None if not lib else (last[1] - first[1]) < 0),
+                  "text": f"Δ {_ad(measure)}: {_fmt(last[1] - first[1], unit)}"
+                          + (f" (%{abs(round((last[1] - first[1]) / abs(first[1]) * 100, 1))})"
+                             if first[1] else "")})
+
+    st = _streak(pts, lib)
+    if st:
+        facts.append(st | {"measure": measure})
     return facts
+
+
+def _streak(pts: list[tuple[str, float]], lib: bool = False) -> dict | None:
+    """🔴 FAZ 5.5 — **ARDIŞIK AYNI-YÖNLÜ DÖNEM (streak).**
+
+    ## Ölçülen boşluk
+
+    `_series_facts` yalnız **ilk↔son** kıyaslıyordu; **aradaki zikzak görünmüyordu**.
+    *"Ocak 100 → Haziran 110"* ile *"Ocak 100 → beş ay boyunca düşüş → Haziran 110"*
+    aynı fact'i üretiyordu. Oysa ikincisi **bambaşka bir hikâyedir**: *"3 aydır
+    düşüyor"* bir yön değil bir **kalıptır** ve iş kararını o kalıp verir.
+
+    ## 🔴 `n < 3` → ÜRETİLMEZ
+
+    İki dönemlik bir "seri" bir kalıp değildir, bir **farktır** — ve onu `delta` zaten
+    söylüyor. Üçün altında streak yazmak, gürültüyü kalıp diye satmak olurdu.
+
+    ## ⚠ KISMİ SON DÖNEM DIŞLANIR (Tableau *"Ignore Last"*)
+
+    İçinde bulunduğumuz ay **henüz bitmedi**: 5 Ağustos'ta Ağustos kovası ayın yalnız
+    beşte birini taşır ve **her zaman düşük** görünür. Onu seriye katmak, her raporda
+    sahte bir *"düşüyor"* streak'i üretirdi — **sistematik ve sessiz** bir yanlış.
+    Bu yüzden son nokta, seri **bugünü içeren dönemdeyse** düşürülür.
+
+    ⚠ Dışlama **son noktayı silmez, streak'ten çıkarır**: `trend`/`peak`/`delta` onu
+    görmeye devam eder. *Bir kuralı bir fact'e uygulamak, hepsine uygulamak demek
+    değildir.*
+    """
+    seri = _kismi_donemi_dus(pts)
+    if len(seri) < 3:
+        return None
+    # ⚠ **SONDAN GERİYE** sayılır, baştan değil: kullanıcı **şu anki** kalıbı sorar
+    # (*"3 aydır düşüyor"*), tarihin başındakini değil. Baştan saymak, altı ay önce
+    # bitmiş bir eğilimi bugünün hikâyesi gibi anlatırdı.
+    uzunluk, son_yon = 1, 0
+    for onceki, simdi in zip(reversed(seri[:-1]), reversed(seri[1:])):
+        d = simdi[1] - onceki[1]
+        adim = 1 if d > 0 else -1 if d < 0 else 0
+        # ⚠ Düz (`d == 0`) bir adım zinciri **kırar**: *"3 dönemdir düşüyor"* derken
+        # aradaki yatay bir dönemi saymak, olmayan bir kalıp anlatmaktır.
+        if adim == 0 or (son_yon and adim != son_yon):
+            break
+        son_yon = adim
+        uzunluk += 1
+    # 🔴 `n < 3` → üretilmez: iki dönemlik bir "seri" bir kalıp değil bir **farktır**
+    # ve onu `delta` zaten söylüyor.
+    if uzunluk < 3 or son_yon == 0:
+        return None
+    artiyor = son_yon > 0
+    return {
+        "type": "streak", "donem": uzunluk, "artiyor": artiyor,
+        "favorable": (None if not lib else not artiyor),
+        "text": f"{uzunluk} dönemdir aralıksız "
+                + ("artıyor" if artiyor else "düşüyor"),
+    }
+
+
+def _kismi_donemi_dus(pts: list[tuple[str, float]]) -> list[tuple[str, float]]:
+    """⚠ **Tableau *"Ignore Last"*.** Son kova **bugünü içeriyorsa** düşürülür.
+
+    🔴 Karşılaştırma **metin öneki** üzerinden yapılır (`2026-08` ⊂ `2026-08-05`) çünkü
+    kova etiketi granülerliğe göre değişir (`2026`, `2026-08`, `2026-08-05`, `2026-W32`).
+    Tarih ayrıştırmak, ay/hafta kovasını **gün** sanmaya açık olurdu.
+    """
+    from datetime import date
+
+    if not pts:
+        return []
+    bugun = date.today().isoformat()
+    son = str(pts[-1][0])[:10]
+    if son and bugun.startswith(son[:len(son)]):
+        return pts[:-1]
+    return pts
 
 
 def _donem_bazinda_topla(rows: list[dict], time_col: str, measure: str) -> list[dict]:

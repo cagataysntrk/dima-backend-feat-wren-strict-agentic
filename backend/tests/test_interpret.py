@@ -136,3 +136,99 @@ def test_FAZ_0_10b_IKINCI_ETIKET_KAYNAGI_ACILMADI():
     src = inspect.getsource(__import__("app.interpret", fromlist=["x"]))
     assert "measure_synonyms_display" not in src, \
         "`interpret.py` KENDİ etiket kaynağını kurmuş — ikinci sahip"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FAZ 5.5 — Δ kartı + streak
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _seri(degerler, ay_baslangic=1, yil=2025):
+    return [{"t": f"{yil}-{ay_baslangic + i:02d}", "m": v}
+            for i, v in enumerate(degerler)]
+
+
+def test_FAZ_5_5_DELTA_mutlak_VE_yuzde_tasir():
+    """🔴 `trend` yalnız **yüzde** taşıyordu; mutlak fark başlıkta hiç görünmüyordu.
+
+    *"%12 arttı"* bir **yön** verir, *"+1,4 milyon ₺"* bir **büyüklük** — ve iş kararı
+    büyüklükle alınır.
+    """
+    from app.interpret import _series_facts
+
+    f = {x["type"]: x for x in _series_facts(_seri([100, 120, 140]), "t", "m", None)}
+    assert "delta" in f, "🔴 `delta` fact'i üretilmiyor"
+    assert f["delta"]["mutlak"] == 40
+    assert f["delta"]["pct"] == 40.0
+
+
+def test_FAZ_5_5_STREAK_yalniz_UC_ARDISIK_donemde():
+    """🔴 `n < 3` → üretilmez. İki dönemlik bir "seri" bir kalıp değil bir **farktır**."""
+    from app.interpret import _streak
+
+    assert _streak([("2025-01", 10), ("2025-02", 5)]) is None
+    st = _streak([("2025-01", 10), ("2025-02", 8), ("2025-03", 6)])
+    assert st and st["donem"] == 3 and st["artiyor"] is False
+
+
+def test_FAZ_5_5_STREAK_zikzakta_URETILMEZ():
+    """*İlk↔son kıyasının göremediği şey tam olarak buydu* — ama zikzak bir kalıp değildir."""
+    from app.interpret import _streak
+
+    assert _streak([("2025-01", 10), ("2025-02", 5),
+                    ("2025-03", 9), ("2025-04", 4)]) is None
+
+
+def test_FAZ_5_5_STREAK_duz_adimda_KIRILIR():
+    """*"3 dönemdir düşüyor"* derken aradaki **yatay** bir dönemi saymak, olmayan bir
+    kalıp anlatmaktır."""
+    from app.interpret import _streak
+
+    assert _streak([("2025-01", 10), ("2025-02", 8),
+                    ("2025-03", 8), ("2025-04", 6)]) is None
+
+
+def test_FAZ_5_5_STREAK_SONDAN_geriye_sayilir():
+    """Kullanıcı **şu anki** kalıbı sorar; altı ay önce bitmiş bir eğilimi bugünün
+    hikâyesi gibi anlatmak yanlış olurdu."""
+    from app.interpret import _streak
+
+    # Baştaki 4'lü düşüş + sondaki 3'lü artış → **artış** raporlanmalı.
+    st = _streak([("2025-01", 40), ("2025-02", 30), ("2025-03", 20), ("2025-04", 10),
+                  ("2025-05", 20), ("2025-06", 30), ("2025-07", 40)])
+    assert st and st["artiyor"] is True and st["donem"] == 4
+
+
+def test_FAZ_5_5_KISMI_SON_DONEM_DISLANIR():
+    """⚠ **Tableau *"Ignore Last"***.
+
+    İçinde bulunduğumuz ay **henüz bitmedi** ve her zaman düşük görünür. Onu seriye
+    katmak, her raporda **sahte bir "düşüyor" streak'i** üretirdi — sistematik ve sessiz.
+    """
+    from datetime import date
+
+    from app.interpret import _kismi_donemi_dus, _streak
+
+    bu_ay = date.today().strftime("%Y-%m")
+    pts = [("2026-04", 10), ("2026-05", 11), ("2026-06", 12), (bu_ay, 1)]
+    assert len(_kismi_donemi_dus(pts)) == 3, "kısmi son dönem düşürülmedi"
+    st = _streak(pts)
+    assert st and st["artiyor"] is True, (
+        "🔴 Kısmi son dönem seriye katılmış — her raporda sahte bir 'düşüyor' streak'i "
+        "üretilir ve bu, sistematik ve SESSİZ bir yanlıştır.")
+
+
+def test_FAZ_5_5_kismi_donem_DIGER_factlerden_dusurulmez():
+    """⚠ *Bir kuralı bir fact'e uygulamak, hepsine uygulamak demek değildir.*
+
+    `trend`/`peak`/`delta` son noktayı **görmeye devam eder** — kullanıcının ekranındaki
+    tabloda o satır **duruyor** ve fact'in onu yok sayması tutarsızlık üretirdi.
+    """
+    from datetime import date
+
+    from app.interpret import _series_facts
+
+    bu_ay = date.today().strftime("%Y-%m")
+    rows = [{"t": "2026-04", "m": 10}, {"t": "2026-05", "m": 11},
+            {"t": "2026-06", "m": 12}, {"t": bu_ay, "m": 1}]
+    f = {x["type"]: x for x in _series_facts(rows, "t", "m", None)}
+    assert f["delta"]["mutlak"] == -9, "delta kısmi dönemi GÖRMELİ (tabloda duruyor)"
