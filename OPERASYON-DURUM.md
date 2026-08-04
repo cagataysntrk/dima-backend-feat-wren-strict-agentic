@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 2 · SEMANTİK ÇEKİRDEK** *(FAZ 1 ✅ bitti — 19 adım)* |
-| **Sıradaki madde** | `2.1(c2)` **ad göçü** *(`satis_tutari` → `_hareket`/`_kalem`; NL yönlendirmesini değiştirir, kendi korpus ölçümü)* → `2.1(d)` demo kopyaları |
+| **Sıradaki madde** | `2.1(d)` **demo kopyaları** → `cekirdek_katman` **shadow turu** (açma kararı) → `2.2b` |
 | **Demet** | ✅ **`1.12` kapısı 4/4 YEŞİL** (süit **2477**) — risk sınırı olduğu için demete girmedi · demet 13 açık: `1.10`+`1.11` (o kapıya da dahil oldular) |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
@@ -420,6 +420,33 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 2 · adım 4 — `2.1(c2)` **AD GÖÇÜ** — sözleşme artık dört şirkette de uyuyor *(2026-08-04)*
+
+Kapı: **31 test** · korpus **%93,1** (taban %93,2) ✅. 🔴 Risk sınırı (`demo/packs`).
+
+> **Göç (tek atomik adım):** `mikro-v16/ticaret.satis_tutari` → `satis_tutari_hareket` ·
+> `netsis/mal.satis_tutari` → `satis_tutari_hareket` · `logo-3/mal.satis_tutari` →
+> `satis_tutari_kalem`. `ticaret`@fatura (logo-3 · netsis) **dokunulmadı** — sözleşmeye
+> zaten uyuyordu.
+
+> 🔴 **SİNONİMLER DEĞİŞMEDİ.** Kullanıcı hâlâ *"satış"* / *"ciro"* / *"satış tutarı"* diye
+> sorabiliyor; değişen yalnız metriğin **kimliği**. *Bir kullanıcıyı kendi kelimesinden
+> etmek, sözleşmenin amacı değildir.* Kapı bunu ölçüyor: göç edilen her ölçünün sinonim
+> listesi **boşalmamış** olmalı.
+
+> ✅ **Sözleşme artık DÖRT şirkette de uyuyor** — `cekirdek_katman=on` açılabilir hâle
+> geldi (gölge diff: dördünde de **sayı-etkisi 0 fark**). Bayrak yine de `off` kalıyor:
+> açma kararı ayrı bir maddedir ve `shadow` turu görülmeden açılmaz.
+
+> ⚠ **ÖLÇÜLEN YAN ETKİ — gizlenmiyor.** `gitas` (netsis) korpusunda payda **1703 → 1694**
+> (−9 soru) ve erişim **%73 → %72**; semantik vaka paydası **445 → 446**, doğruluk
+> **%91,7 → %91,5**. Sebep yapısal: `netsis`'te `satis_tutari` **iki cube'da** vardı
+> (`ticaret` ve `mal`) ve korpus üreteci soruları katalogdan türetiyor — ad ayrışınca
+> üretilen soru kümesi değişti. **Kapı yeşil** (her şirket kendi tabanında ya da üstünde,
+> TOPLAM %93,1 sabit) ama bu bir *"hiçbir şey olmadı"* değil: **9 soru yer değiştirdi** ve
+> bunu yazmamak, paydanın sessizce oynamasına göz yummak olurdu — korpusun var olma
+> sebebinin ta kendisi.
 
 ### FAZ 2 · adım 3 — `2.1(c)` **`ticaret` GRAIN KARARI** — karar kalemi · sahip · tarih *(2026-08-04)*
 

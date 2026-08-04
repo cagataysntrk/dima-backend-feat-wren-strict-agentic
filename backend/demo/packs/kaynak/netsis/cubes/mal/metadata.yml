@@ -8,6 +8,14 @@ base_object: stok_hareketleri
 synonyms: [miktar, kilo, kg, ton!, tonaj, sevk, mal hareketi, stok hareketi, kaç kilo,
            ürün, urun, satılan, satilan]
 
+
+# ⟳ FAZ 2.1(c2) AD GÖÇÜ (2026-08-04): `satis_tutari` → `satis_tutari_hareket`.
+# Gerekçe: çekirdek sözleşmesi `satis_tutari` için kanonik grain'i **fatura** ilan etti
+# (karar kalemi: `packs/cekirdek/metrik_sozlugu.yml`). Bu cube başka bir grain'de,
+# dolayısıyla AYNI ADI TAŞIYAMAZ — aynı ad, karşılaştırılamaz iki sayı demekti.
+# ⚠ SİNONİMLER DEĞİŞMEDİ: kullanıcı hâlâ 'satış'/'ciro' diye sorabilir; değişen
+# yalnız metriğin KİMLİĞİ. Bir kullanıcıyı kendi kelimesinden etmek, sözleşmenin
+# amacı değildir.
 measures:
   - name: satis_miktari
     expression: "SUM(CASE WHEN STHAR_GCKOD = 'C' THEN STHAR_GCMIK ELSE 0 END)"
@@ -17,7 +25,7 @@ measures:
     expression: "SUM(CASE WHEN STHAR_GCKOD = 'G' THEN STHAR_GCMIK ELSE 0 END)"
     type: DOUBLE
     synonyms: [alım miktarı, alınan, toplanan, giriş]
-  - name: satis_tutari
+  - name: satis_tutari_hareket
     expression: "SUM(CASE WHEN STHAR_GCKOD = 'C' THEN STHAR_GCMIK * STHAR_NF ELSE 0 END)"
     type: DOUBLE
     unit: "₺"

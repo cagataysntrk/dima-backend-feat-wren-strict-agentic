@@ -99,6 +99,9 @@ def test_kesisim_katmani_yalniz_eslesen_sektorle_biner(tmp_path: Path):
     assert "packs/kaynak/k1/sektor/s1" in " ".join(info["layers"])
 
 
+# ⟳ FAZ 2.1(c2) AD GÖÇÜ: aşağıdaki İKİ test `atiksan` (mikro-v16) fixture'ını kullanır ve
+# oradaki ölçü `satis_tutari` → `satis_tutari_hareket` oldu (grain: stok hareketi).
+# Öteki testler logo-3/netsis `ticaret`'ini kullanıyor — orada ad DEĞİŞMEDİ (grain: fatura).
 def test_dialect_sql_mssql_donusumu(atiksan_project: Path):
     from app.wren_service import WrenService
 
@@ -106,7 +109,7 @@ def test_dialect_sql_mssql_donusumu(atiksan_project: Path):
     sql = svc.cube_sql(
         {
             "cube": "ticaret",
-            "measures": ["satis_tutari"],
+            "measures": ["satis_tutari_hareket"],
             "timeDimensions": [{"dimension": "tarih", "granularity": "month"}],
         }
     )
@@ -145,7 +148,7 @@ def test_dialect_sql_duckdb_noop(atiksan_project: Path):
     sql = svc.cube_sql(
         {
             "cube": "ticaret",
-            "measures": ["satis_tutari"],
+            "measures": ["satis_tutari_hareket"],
             "timeDimensions": [{"dimension": "tarih", "granularity": "month"}],
         }
     )

@@ -8,6 +8,14 @@ base_object: fatura_satirlari
 always_filter: "CANCELLED = 0"
 synonyms: [miktar, kilo, kg, sevk, mal hareketi, stok hareketi, kaç kilo]
 
+
+# ⟳ FAZ 2.1(c2) AD GÖÇÜ (2026-08-04): `satis_tutari` → `satis_tutari_kalem`.
+# Gerekçe: çekirdek sözleşmesi `satis_tutari` için kanonik grain'i **fatura** ilan etti
+# (karar kalemi: `packs/cekirdek/metrik_sozlugu.yml`). Bu cube başka bir grain'de,
+# dolayısıyla AYNI ADI TAŞIYAMAZ — aynı ad, karşılaştırılamaz iki sayı demekti.
+# ⚠ SİNONİMLER DEĞİŞMEDİ: kullanıcı hâlâ 'satış'/'ciro' diye sorabilir; değişen
+# yalnız metriğin KİMLİĞİ. Bir kullanıcıyı kendi kelimesinden etmek, sözleşmenin
+# amacı değildir.
 measures:
   - name: satis_miktari
     expression: "SUM(CASE WHEN IOCODE IN (3, 4) THEN AMOUNT ELSE 0 END)"
@@ -17,7 +25,7 @@ measures:
     expression: "SUM(CASE WHEN IOCODE IN (1, 2) THEN AMOUNT ELSE 0 END)"
     type: DOUBLE
     synonyms: [alım miktarı, alınan, giriş]
-  - name: satis_tutari
+  - name: satis_tutari_kalem
     expression: "SUM(CASE WHEN IOCODE IN (3, 4) THEN TOTAL ELSE 0 END)"
     type: DOUBLE
     unit: "₺"

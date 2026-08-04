@@ -7,8 +7,16 @@ base_object: stok_hareketleri
 synonyms: [satış, satis, ciro, gelir, alım, alim, alış, alis, sevk, sevkiyat,
            miktar, tonaj, stok hareketi, mal]
 
+
+# ⟳ FAZ 2.1(c2) AD GÖÇÜ (2026-08-04): `satis_tutari` → `satis_tutari_hareket`.
+# Gerekçe: çekirdek sözleşmesi `satis_tutari` için kanonik grain'i **fatura** ilan etti
+# (karar kalemi: `packs/cekirdek/metrik_sozlugu.yml`). Bu cube başka bir grain'de,
+# dolayısıyla AYNI ADI TAŞIYAMAZ — aynı ad, karşılaştırılamaz iki sayı demekti.
+# ⚠ SİNONİMLER DEĞİŞMEDİ: kullanıcı hâlâ 'satış'/'ciro' diye sorabilir; değişen
+# yalnız metriğin KİMLİĞİ. Bir kullanıcıyı kendi kelimesinden etmek, sözleşmenin
+# amacı değildir.
 measures:
-  - name: satis_tutari
+  - name: satis_tutari_hareket
     expression: "SUM(CASE WHEN sth_tip = 1 THEN sth_tutar ELSE 0 END)"
     type: DOUBLE
     unit: "₺"

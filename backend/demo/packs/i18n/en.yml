@@ -22,6 +22,8 @@ measures:
   enerji_yogunlugu_kwh_kg: [energy intensity, specific energy]
   su_yogunlugu_lt_kg: [water intensity]
   satis_tutari: [revenue, sales, turnover]
+  satis_tutari_hareket: [revenue, sales, turnover]
+  satis_tutari_kalem: [revenue, sales, turnover]
   toplam_ciro: [revenue, sales, turnover]
   kar: [profit, earnings]
   kar_marji_yuzde: [margin, profit margin, profitability]

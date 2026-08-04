@@ -254,32 +254,7 @@ def test_MDL_DIFF_OLCULEMEYENI_YESIL_SAYMIYOR():
     assert "kirmizi += 1" in kaynak[i:i + 200]
 
 
-@pytest.mark.parametrize("sirket", ["gitas", "atiksan", "gulteks"])
-def test_SOZLESME_ATESLIYOR_ve_ON_ACILAMIYOR(sirket):
-    """⟳ **ADIM (c) İNDİ — kabul ölçütü ANLAM DEĞİŞTİRDİ, gevşemedi.**
-
-    `satis_tutari`'nın kanonik grain'i **`fatura`** ilan edildi. Üç ERP şirketinin üçünde
-    de sözleşmeye **uymayan** bir cube var (`mikro/ticaret` @stok_hareketi ·
-    `netsis/mal` @stok_hareketi · `logo-3/mal` @fatura_kalem), dolayısıyla
-    `cekirdek_katman=on` **compose'u reddeder** — ve bu **istenen** davranıştır:
-    *bayrak, ad göçü inene kadar AÇILAMAZ ve bu bir eksiklik değil, kilidin kendisidir.*
-
-    🔴 Eski ölçüt (*"`on`'da sayı-etkisi 0"*) **silinmedi**, `demo-boyahane` üstünde
-    aynen duruyor (ERP pack'i yok → sözleşme ateşlemez → diff hâlâ anlamlı).
-    """
-    if not (DEMO / "companies" / sirket).is_dir():
-        pytest.skip(f"{sirket} bu koşumda mount edilmemiş")
-    import sys
-
-    sys.path.insert(0, str(KOK / "lab"))
-    from mdl_diff import diff                                    # noqa: PLC0415
-
-    with pytest.raises(cekirdek.GrainIhlali) as red:
-        diff(sirket)
-    assert "satis_tutari" in str(red.value)
-
-
-@pytest.mark.parametrize("sirket", ["demo-boyahane"])
+@pytest.mark.parametrize("sirket", ["demo-boyahane", "gitas", "atiksan", "gulteks"])
 def test_OLCULDU_SAYI_ETKISI_SIFIR(sirket):
     """🔴 **KABUL ÖLÇÜTÜ — göç reçetesinin 1. maddesi.** Ölçüldü (2026-08-04,
     `python lab/mdl_diff.py`): dört şirketin **dördünde de sayı-etkisi 0 fark**; sözlük
@@ -366,7 +341,44 @@ def test_FATURA_ile_FATURA_KALEMI_AYRI_GRAIN():
     assert cekirdek.grain_adi(SOZLUK, "fatura_satirlari") == "fatura_kalem"
 
 
-def test_UC_GRAIN_BES_CUBE_OLCUMU_KAYITLI():
+def test_AD_GOCU_INDI_AYRISMA_KAPANDI():
+    """⟳ **TUZAKTAN KAPIYA — adım (c2) indi (2026-08-04).**
+
+    Eski yön: *"`satis_tutari` üç grain / beş cube; `gitas` içinde iki grain"*. Ad göçü
+    indi ve ayrışma **kapandı**: artık `satis_tutari` **yalnız `fatura`** grain'inde;
+    öteki grain'ler kendi adlarını taşıyor (`_hareket` · `_kalem`).
+
+    🔴 **Sinonimler DEĞİŞMEDİ** — kullanıcı hâlâ *"satış"*/*"ciro"* diye sorabiliyor.
+    Değişen yalnız metriğin **kimliği**. *Bir kullanıcıyı kendi kelimesinden etmek,
+    sözleşmenin amacı değildir.*
+    """
+    grainler: dict[str, str] = {}
+    sinonimli: list[str] = []
+    for yol in (DEMO / "packs").rglob("cubes/*/metadata.yml"):
+        meta = yaml.safe_load(yol.read_text(encoding="utf-8")) or {}
+        for m in meta.get("measures") or []:
+            ad = str(m.get("name") or "")
+            if not ad.startswith("satis_tutari"):
+                continue
+            g = cekirdek.grain_adi(SOZLUK, meta.get("base_object")) or "?"
+            anahtar = f"{yol.parts[-4]}/{meta.get('name')}.{ad}"
+            grainler[anahtar] = g
+            # ⚠ **ÖLÇÜLDÜ, varsayılmadı:** `mal` cube'larının ölçüleri `satış tutarı`
+            # taşıyor, çıplak `satış` değil (o cube-düzeyinde duruyor). Doğru değişmez
+            # "şu token var mı" değil, **sinonim listesi BOŞALMADI mı** — göç yalnız
+            # KİMLİĞİ değiştirmeliydi.
+            if m.get("synonyms"):
+                sinonimli.append(anahtar)
+    kanonik = {k: v for k, v in grainler.items() if k.endswith(".satis_tutari")}
+    assert set(kanonik.values()) == {"fatura"}, (
+        f"`satis_tutari` hâlâ birden çok grain'de: {kanonik}")
+    assert len(grainler) == 5, f"beş ölçü bekleniyordu: {grainler}"
+    assert len(sinonimli) == len(grainler), (
+        f"bir ölçünün sinonimleri göçte KAYBOLMUŞ ({sorted(set(grainler) - set(sinonimli))}) "
+        "— kullanıcı kendi kelimesinden edilmiş olur")
+
+
+def _KULLANILMIYOR_test_UC_GRAIN_BES_CUBE_OLCUMU_KAYITLI():
     """⚠ **Yol haritasının teşhisinden AĞIR çıktı ve ölçüm yazıldı.** Yol haritası
     *"`ticaret` üç ERP'de farklı grain"* diyordu; sayım **üç grain / beş cube** gösterdi —
     ve ayrışma **şirket içinde**: `gitas` (netsis) `satis_tutari`'yi hem `ticaret`@fatura
