@@ -146,6 +146,16 @@ yeniden üretilir.
 
 ## 7 · 🔴 ARKA PLAN DENETİMİ — üç ajan, her faz sonunda
 
+> ✅ **Ajanlar bu operasyonun EN GÜÇLÜ YANI.** Bir ara *"arka plan ajanları ana sohbeti
+> sildi"* teşhisiyle yasaklanmışlardı; **o teşhis yanlış çıktı** — olayı inceleyen kişi
+> ölçtü: sebep başarısız bir **daemon yükseltmesiydi**, ajanlar değil. Yasak kaldırıldı.
+>
+> 🔴 **Dersi kayda geçiyor:** *teşhisin kendisi de kanıt ister.* Bir olay bir mekanizmayla
+> **aynı anda** olduğu için o mekanizmanın suçlusu sayılamaz — bu depo tam bu sınıfı
+> avlıyor (`A6`'nın düşme gerekçesi: *"kanıt cümlesi de kanıt ister"*), ve aynı hata
+> **kural setinin kendisine** uygulandı: ölçülmemiş bir nedenle çalışan bir mekanizma
+> kapatıldı.
+
 Geliştirme **tek başına** yapılmaz. Her faz commit'inden sonra **paralel** üç ajan koşar;
 raporları bir sonraki fazın **girdisidir**.
 
@@ -155,11 +165,23 @@ raporları bir sonraki fazın **girdisidir**.
 | **B · BÜTÜNLÜK DENETÇİSİ** | *"Yetim uç/alan doğdu mu? `KAT-1…KAT-5` çiğnendi mi? İkinci sahip doğdu mu? MIMARI güncel mi? Sayı beyanları bayat mı?"* | İhlal listesi + kanıt (dosya:satır) |
 | **C · CANLI KULLANICI** | *"Gerçek bir kullanıcı gibi **tek tek** dene — toplu değil. Ne hissettim, nerede takıldım, ne anlaşılmadı?"* | Tur tur deneyim raporu + kırılma anları |
 
+**Getirisi ölçüldü** — bu üç tur olmasa kaybedilecek olanlar:
+* **A** → `§3.4-osi` tuzağının **yanlış-negatif** olduğu (faz indiğinde susacaktı)
+* **B** → `raporlanabilir()`'in gövde alanlarını **sayması** (`KAT-5`) → `eylem_onerisi`,
+  yani **onay kartı ekranda hiç yoktu** — üstelik kusur, o turda *"düzelttim"* denen
+  kodun **içindeydi**
+* **C** → aynı veriye **üç farklı yüzde** (`+%88` → `−%72 "iyileşti"` → `+%98`)
+
 > 🔴 **C'nin kuralı:** **toplu koşum YAPMAZ.** İnsan gibi tek tek yazar, cevabı okur,
 > ona göre bir sonrakini sorar. Rate limit: **tur arası 5 sn**.
+> ⚠ **Konteyner:** C canlı tur için konteyner açar; o koşarken **ikinci test konteyneri
+> açılmaz** (compose kilidi `metadata.yml`'de çakışır).
+
+> ⚠ **Ajan raporu bir OTORİTE DEĞİLDİR.** İki kez düşük saydılar (14 ↔ gerçek 17 ·
+> *"1/47"* ↔ gerçek 13). Kritik bir sayı **kendim ölçmeden** belgeye yazılmaz (§6/5).
 
 **Denetim bulgusu = bir sonraki fazın girdisi.** Kritik bulgu varsa **sıradaki maddeden
-önce** işlenir.
+önce** işlenir. Görev metinleri: **`OPERASYON-DENETIM.md`**.
 
 ---
 

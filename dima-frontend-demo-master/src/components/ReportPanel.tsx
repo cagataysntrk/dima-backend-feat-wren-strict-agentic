@@ -6,6 +6,7 @@ import type { AskResponse, CubeQuery } from "@/lib/types";
 import type { Thread } from "@/lib/threads";
 import { BrandMark } from "@/components/BrandMark";
 import { CaretInput } from "@/components/CaretInput";
+import { NextStepChips } from "@/components/NextStepChips";
 import { ReportCard } from "@/components/ReportCard";
 
 // ⚠️ FAZ 0.23 — RAPORLANABİLİRLİK TEK SAHİPTE.
@@ -21,8 +22,37 @@ import { ReportCard } from "@/components/ReportCard";
 //
 // Tek fonksiyon: *"aynı kuralın iki sahibi"* bu deponun 1 numaralı kusur sınıfı.
 // **Yeni yetenek SIFIR** — çalışan, testli, makbuzlu bir motor görünmezden görünüre geçer.
+//
+// 🔴 **SAYMA — KAPAT (KAT-5).** İlk sürüm gövde alanlarını SAYIYORDU
+// (`result|kpi|contribution|prescription`) ve denetim bunun bedelini ölçtü: listede
+// olmayan **beşinci** gövde alanı `eylem_onerisi` — yani FAZ H'nin *"Onayla"* kartı,
+// ürünün manşet vaadi — kapının dışında kalıyordu. `ReportCard`'ın TEK tüketicisi bu
+// kapının arkasında olduğu için kullanıcı *"bundan sonra hep aylık göster"* dediğinde
+// sarı bir not görüyor, **Onayla düğmesi hiç çıkmıyordu**. Yani 0.23'ün düzelttiği
+// hatanın birebir aynısı, düzeltmenin KENDİ İÇİNE kodlanmıştı.
+//
+// Doğru biçim: **gövdeyi sayma, gövdesizliği kapat.** *"Saf not"* = yalnız açıklama/
+// yönlendirme taşıyan cevap. Bunun dışında değeri olan HER alan bir gövdedir → yeni bir
+// gövde alanı eklendiğinde bu liste güncellenmek zorunda DEĞİLDİR.
+//
+// Listenin yönü de bilinçli: buraya bir **taşıma/meta** alanı eklemeyi unutmak, saf-not
+// cevabının kart olarak render edilmesine yol açar — **görünür** bir gerileme. Tersi
+// (gövde alanını saymayı unutmak) **sessiz** bir kayıptı; bu tam da yaşandı.
+const SAF_NOT_ALANLARI = new Set<keyof AskResponse | string>([
+  "question", "note", "suggestions", "next_steps", "trace", "source", "sql",
+  "planned_sql", "cube_query", "view_hint", "is_new_topic", "thread_id",
+  "reply_to_label", "explain", "job_id", "contract_id", "agent_run",
+  "calculation_explanation",
+]);
+
 export function raporlanabilir(it: AskResponse): boolean {
-  return Boolean(it.result || it.kpi || it.contribution || it.prescription);
+  return Object.entries(it).some(([alan, deger]) => {
+    if (SAF_NOT_ALANLARI.has(alan)) return false;
+    if (deger === null || deger === undefined || deger === false) return false;
+    if (Array.isArray(deger)) return deger.length > 0;
+    if (typeof deger === "object") return Object.keys(deger).length > 0;
+    return deger !== "";
+  });
 }
 
 // §B Adım 2 (1 Ağustos 2026) — sağ panel artık İNCE bir YIĞIN kapsayıcısı: bir thread'in
@@ -262,27 +292,15 @@ export function ReportPanel({
                     Desen `ReportCard.tsx`'in K2 bloğunun AYNISI — `onCubeEdit` →
                     `/cube`, **0 LLM**. `suggestions`'tan AYRI durur: o yeni bir SORU
                     sorar (`onReply`), bu ise mevcut sorguyu DÜZENLER (`cube_query` taşır). */}
-                {onCubeEdit && (it.next_steps?.length ?? 0) > 0 && (
-                  <div className="mt-3">
-                    <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
-                      sonraki adım
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {it.next_steps!.map((step, si) => (
-                        <button
-                          key={`${step.kind}-${si}`}
-                          onClick={() => onCubeEdit({ cq: step.cube_query, label: step.label })}
-                          title="Deterministik koşar — LLM yok"
-                          className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-500 transition-colors hover:border-foreground/30 hover:text-foreground"
-                        >
-                          <span className="mr-1 text-neutral-400">
-                            {step.kind === "dimension" ? "⌗" : step.kind === "time" ? "◷" : "∑"}
-                          </span>
-                          {step.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                {onCubeEdit && (
+                  <NextStepChips
+                    steps={it.next_steps}
+                    onCubeEdit={onCubeEdit}
+                    // ⚠ Bu dal bir NETLEŞTİRME cevabıdır ("Hangi ölçüyü istiyorsun?").
+                    // Buradaki liste bir SORUNUN ŞIKLARIDIR; "sonraki adım" başlığı
+                    // `ReportCard`'ın kendi gerekçesiyle YANLIŞ BAŞLIK olurdu.
+                    baslik="şunlardan biri mi?"
+                  />
                 )}
               </div>
             );

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useClickOutside } from "@/lib/useClickOutside";
 import { useFeature } from "@/lib/useFeature";
 import { usePermission } from "@/lib/usePermission";
+import { NextStepChips } from "@/components/NextStepChips";
 import type { AskResponse, CubeQuery, DashboardListItem } from "@/lib/types";
 import {
   addDashboardWidget,
@@ -884,27 +885,8 @@ export function ReportCard({
       {/* Konuşma cevabında (`contribution` dolu) bu blok GİZLENİR: bulgular cevabın
           GÖVDESİDİR ve yukarıda zengin haliyle duruyor. Burada da göstermek aynı listeyi
           İKİ KEZ, üstelik ikincisini YANLIŞ BAŞLIKLA ("sonraki adım") sunardı. */}
-      {!item.contribution && onCubeEdit && (item.next_steps?.length ?? 0) > 0 && (
-        <div className="mt-3">
-          <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
-            sonraki adım
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {item.next_steps!.map((step, i) => (
-              <button
-                key={`${step.kind}-${i}`}
-                onClick={() => onCubeEdit({ cq: step.cube_query, label: step.label })}
-                title="Deterministik koşar — LLM yok"
-                className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-500 transition-colors hover:border-foreground/30 hover:text-foreground"
-              >
-                <span className="mr-1 text-neutral-400">
-                  {step.kind === "dimension" ? "⌗" : step.kind === "time" ? "◷" : "∑"}
-                </span>
-                {step.label}
-              </button>
-            ))}
-          </div>
-        </div>
+      {!item.contribution && onCubeEdit && (
+        <NextStepChips steps={item.next_steps} onCubeEdit={onCubeEdit} />
       )}
 
       <div className="mt-5 flex items-center justify-between">

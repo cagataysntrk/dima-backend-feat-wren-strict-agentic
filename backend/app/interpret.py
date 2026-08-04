@@ -98,8 +98,30 @@ def _series_facts(rows: list[dict], time_col: str, measure: str, unit: str | Non
     return facts
 
 
-def _rank_facts(rows: list[dict], dim: str, measure: str, unit: str | None) -> list[dict]:
-    """Kategorik top-N: en yüksek varlık + toplam içindeki payı, en düşük, kalem sayısı."""
+def _donem_bazinda_topla(rows: list[dict], time_col: str, measure: str) -> list[dict]:
+    """Pivot satırlarını **döneme göre** toplar → dönem başına TEK satır.
+
+    🔴 Bu fonksiyon canlı bir kullanıcı turunda bulunan bir **sessiz-yanlıştan** doğdu.
+    `_series_facts` satır başına bir nokta alıyordu; `makine × ay` pivotunda aynı ay
+    onlarca kez tekrarlanıyor ve *"ilk→son"* aslında **rastgele iki makinenin** değerini
+    kıyaslıyordu. Sonuç: aynı veri için üç ayrı tur → **+%88,1 · −%72,3 «iyileşti» ·
+    +%98,3**. Kullanıcının kendi cümlesi: *"o andan sonra özet satırını okumayı bıraktım,
+    ki bu ürünün en değerli parçası olmalıydı."*
+
+    Trend bir **dönem** ifadesidir; dönemin içindeki kırılım önce toplanmalıdır.
+    """
+    toplam: dict[str, float] = {}
+    for r in rows:
+        d = r.get(time_col)
+        if d is None or r.get(measure) is None:
+            continue
+        toplam[str(d)] = toplam.get(str(d), 0.0) + _num(r[measure])
+    return [{time_col: d, measure: v} for d, v in sorted(toplam.items())]
+
+
+def _rank_facts(rows: list[dict], dim: str, measure: str, unit: str | None,
+                pay_yaz: bool = True) -> list[dict]:
+    """Kategorik top-N: en yüksek varlık + (toplanabilirse) payı, en düşük, kalem sayısı."""
     agg: dict[str, float] = {}
     for r in rows:
         if r.get(dim) is not None and r.get(measure) is not None:
@@ -108,11 +130,14 @@ def _rank_facts(rows: list[dict], dim: str, measure: str, unit: str | None) -> l
         return []
     total = sum(agg.values())
     ranked = sorted(agg.items(), key=lambda kv: kv[1], reverse=True)
+    # `pay_yaz=False` ise "toplamın %X'i" YAZILMAZ: yüzdeler/ortalamalar toplanmaz.
+    # Canlı turda ölçüldü: bir oran ölçüsünde *"toplamın %10,2'si"* basılıyordu — sayı
+    # matematiksel olarak anlamsız. Payı susturmak, yanlış pay yazmaktan iyidir.
     top, bot = ranked[0], ranked[-1]
     share = (top[1] / total * 100) if total else 0
+    pay = f", toplamın %{round(share, 1)}'i)" if (total and pay_yaz) else ")"
     facts = [{"type": "top", "dim": dim, "measure": measure, "entity": top[0],
-              "text": f"En yüksek {dim}: {top[0]} ({_fmt(top[1], unit)}"
-                      + (f", toplamın %{round(share, 1)}'i)" if total else ")")}]
+              "text": f"En yüksek {dim}: {top[0]} ({_fmt(top[1], unit)}" + pay}]
     if len(ranked) > 1:
         facts.append({"type": "bottom", "dim": dim,
                       "text": f"En düşük: {bot[0]} ({_fmt(bot[1], unit)}); {len(ranked)} kalem"})
@@ -182,7 +207,8 @@ def _signals(rows: list[dict], dims: list[str], time_col: str | None,
 def interpret(result: dict | None, cube_query: dict | None = None,
               kpi: dict | None = None, units: dict[str, str] | None = None,
               lower_is_better: set[str] | None = None,
-              esikler: list[dict] | None = None) -> dict | None:
+              esikler: list[dict] | None = None,
+              cube_meta: dict | None = None) -> dict | None:
     """Evrensel yorum: {facts:[...], summary:"Türkçe"} | None. TAMAMEN deterministik.
 
     result: {columns, rows, row_count}. cube_query/kpi ipucu (opsiyonel). units: ölçü→birim.
@@ -195,6 +221,12 @@ def interpret(result: dict | None, cube_query: dict | None = None,
       hedeftir ve cevabın kendisinde görünmelidir."""
     units = units or {}
     lib_set = lower_is_better or set()
+    # 🔴 TOPLANABİLİRLİK — kural ZATEN TEK SAHİPTE: `contribution.ayristirilabilir_mi`.
+    # Burada ikinci bir kopya YAZILMAZ, o sahip ÇAĞRILIR. `interpret` bugüne kadar onu
+    # tanımıyordu (*"kimlik asimetrisi"*): katkı yolu *"`fire_orani_yuzde` bir ortalama/
+    # oran — katkı payı tanımsız"* diye dürüstçe reddederken, aynı ölçü için yorum satırı
+    # hem **toplamın payını** hem de toplanmış bir **trendi** yayımlıyordu.
+    from app.contribution import ayristirilabilir_mi
     if kpi:
         facts = _kpi_facts(kpi)
         return {"facts": facts, "summary": " · ".join(f["text"] for f in facts)}
@@ -218,13 +250,29 @@ def interpret(result: dict | None, cube_query: dict | None = None,
         facts.append({"type": "single", "measure": m0,
                       "text": f"{m0}: {_fmt(rows[0].get(m0), unit)}"})
     elif time_col and len(rows) > 1:              # zaman serisi → trend
-        facts += _series_facts(rows, time_col, m0, unit, m0 in lib_set)
         entity = next((d for d in dims if d != time_col), None)
-        if entity:  # varlık × zaman (pivot şekli) → kısa not
+        if entity is None:
+            facts += _series_facts(rows, time_col, m0, unit, m0 in lib_set)
+        else:
+            # 🔴 PİVOT (varlık × dönem). Ham satırlarda *"ilk→son"* İKİ FARKLI VARLIĞI
+            # kıyaslar — canlı turda ölçülen sessiz-yanlış tam buydu. Trend bir DÖNEM
+            # ifadesidir: önce döneme göre toplanır. Ölçü toplanamıyorsa (oran/ortalama)
+            # trend **hiç yayımlanmaz** — susmak, yanlış bir yüzdeden iyidir.
             n = len({str(r.get(entity)) for r in rows})
-            facts.append({"type": "shape", "text": f"{n} {entity} × dönem kırılımı"})
+            eklenebilir, neden = ayristirilabilir_mi(m0, cube_meta)
+            if eklenebilir:
+                facts += _series_facts(_donem_bazinda_topla(rows, time_col, m0),
+                                       time_col, m0, unit, m0 in lib_set)
+                facts.append({"type": "shape",
+                              "text": f"{n} {entity} × dönem kırılımı — trend **dönem "
+                                      "toplamları** üzerinden"})
+            else:
+                facts.append({"type": "shape",
+                              "text": f"{n} {entity} × dönem kırılımı — dönem trendi "
+                                      f"YAZILMADI: {neden}"})
     elif dims:                                     # kategorik → sıralama/pay
-        facts += _rank_facts(rows, dims[0], m0, unit)
+        eklenebilir, _ = ayristirilabilir_mi(m0, cube_meta)
+        facts += _rank_facts(rows, dims[0], m0, unit, pay_yaz=eklenebilir)
     if len(measures) > 1:
         facts.append({"type": "measures", "text": f"{len(measures)} ölçü: " + ", ".join(measures)})
     if not facts:

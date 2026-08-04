@@ -3346,6 +3346,16 @@ demektir.
 
 29 test: `tests/test_orkestrator.py` *(FAZ 0.2 + 0.22 kapıları eklendi)*.
 
+> ⟳ **TOPLANABİLİRLİK TEK SAHİPTE (FAZ 0/canlı denetim, 2026-08-04).**
+> Bir ölçünün toplanabilir olup olmadığını **yalnız** `contribution.ayristirilabilir_mi`
+> bilir. `interpret.py` onu tanımıyordu ve bu bir **sessiz-yanlış** üretiyordu: canlı bir
+> kullanıcı turunda `makine × ay` kırılımlı fire raporu için aynı veriye **üç ayrı yüzde**
+> basıldı (`+%88,1` · `−%72,3 «iyileşti»` · `+%98,3`), çünkü *"ilk→son"* iki **farklı
+> makinenin** değeriydi. Kural: **trend bir DÖNEM ifadesidir** — pivot önce döneme göre
+> toplanır; ölçü toplanamıyorsa (oran/ortalama) trend **hiç yazılmaz**, nedeni yazılır.
+> Aynı kapı *"toplamın %X'i"* payını da yalnız toplanabilir ölçüde yayımlar.
+> Kapı: `tests/test_pivot_trend_yanlis_degil.py`.
+
 ### 11.6 Özellik = KOMPOZİSYON, endpoint değil
 
 Kök-neden analizi, karar matrisi, rapor/dashboard üretimi, uyarılar, tahmin — bunlar **ayrı

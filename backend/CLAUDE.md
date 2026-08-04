@@ -2,11 +2,16 @@
 
 > 🔴 **AKTİF OPERASYON: DİMA v1 yol haritası.** Bir geliştirme isteği geldiğinde **önce
 > şunları oku** — bağlam sıfırlansa bile operasyon buradan devam eder:
-> 1. **`OPERASYON.md`** (repo kökü) — kural seti, döngü adımları, test kapısı, denetim
+> 1. **`OPERASYON.md`** (repo kökü) — kural seti, döngü adımları, test kapısı, öz-denetim
 > 2. **`OPERASYON-DURUM.md`** (repo kökü) — **nerede kaldık**, açık borçlar, ölçüm tabanı
-> 3. **`~/.claude/plans/DIMA-V1-YOL-HARITASI.md`** — ne yapılacak (5213 satır; §10'daki sıra)
+> 3. **`~/.claude/plans/DIMA-V1-YOL-HARITASI.md`** — ne yapılacak (5239 satır; §10'daki sıra)
 >
 > *Bu üçü + `MIMARI.md` operasyonun tam durumunu taşır; sohbet geçmişine ihtiyaç yoktur.*
+>
+> ✅ **DENETİM AJANLARI KULLANILIR** — her faz commit'inden sonra **üç ajan paralel**
+> (`OPERASYON.md §7`, görev metinleri `OPERASYON-DENETIM.md`): **A** plan · **B** bütünlük ·
+> **C** canlı kullanıcı. *(Bir ara «ajanlar sohbeti sildi» diye yasaklanmıştı; teşhis
+> **yanlış** çıktı — sebep başarısız bir **daemon yükseltmesiydi**, ajanlar değil.)*
 
 > **Mimari otorite `backend/MIMARI.md`'dir.** Bu dosya kısa bir kural indeksidir. Mimari bir
 > soruda (cevaplama merdiveni, semantik katman, JOIN'in nerede oluştuğu, ne YAPILMAYACAĞI,

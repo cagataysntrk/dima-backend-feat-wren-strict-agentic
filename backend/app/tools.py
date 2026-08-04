@@ -352,6 +352,15 @@ KAYIT: tuple[Arac, ...] = (
 _ARACLAR: dict[str, Arac] = {a.ad: a for a in KAYIT}
 
 
+def kayitli_mi(ad: str) -> bool:
+    """Ad `KAYIT`'ta var mı — `get()`'i istisna kontrolü için kullanmaya gerek yok.
+
+    Denetim kaynaklı: makbuz üretimi *"bu ad kayıtlı mı"* sorusunu soruyor ve bunu
+    `try/except KeyError` ile sormak, sorunun kendisini bir hata gibi gösteriyordu.
+    """
+    return ad in _ARACLAR
+
+
 def get(ad: str) -> Arac:
     """Adıyla araç. Bilinmeyen ad = hata (fail-closed): planlayıcı araç UYDURAMAZ."""
     try:

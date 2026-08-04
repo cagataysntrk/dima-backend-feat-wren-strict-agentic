@@ -248,11 +248,18 @@ def _maybe_interpret(request: Request, resp: AskResponse) -> None:
         from app.interpret import interpret
         units: dict[str, str] = {}
         lower_is_better: set[str] = set()
+        # Cevabın KENDİ cube'unun metadata'sı: `interpret` toplanabilirliği buradan
+        # okur (`non_additive`/`semi_additive`/`measure_expressions`). AYNI döngüden
+        # alınır — ikinci bir şema arama mekanizması AÇILMAZ (KAT-1).
+        cube_meta: dict | None = None
+        aranan = (resp.cube_query or {}).get("cube")
         try:
             from app.company_registry import wren_for_request
             for c in wren_for_request(request).schema().get("cubes") or []:
                 units.update(c.get("units") or {})
                 lower_is_better.update(c.get("lower_is_better") or [])  # DSO/CCC/fire… yönü
+                if aranan and c.get("name") == aranan:
+                    cube_meta = c
         except Exception:
             pass
         if resp.kpi and resp.kpi.get("lower_is_better"):
@@ -276,7 +283,8 @@ def _maybe_interpret(request: Request, resp: AskResponse) -> None:
             _log.warning("eşik kıyası okunamadı (best-effort)", exc_info=True)
         resp.interpretation = interpret(
             resp.result.model_dump() if resp.result else None,
-            resp.cube_query, resp.kpi, units, lower_is_better, esikler=esikler)
+            resp.cube_query, resp.kpi, units, lower_is_better, esikler=esikler,
+            cube_meta=cube_meta)
     except Exception:  # noqa: BLE001 - yorum best-effort (yanıtı düşürmez)
         _log.warning("çıktı yorumu üretilemedi (best-effort)", exc_info=True)
     _anlati_ekle(request, resp)

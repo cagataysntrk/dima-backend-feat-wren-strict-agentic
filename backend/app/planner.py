@@ -94,10 +94,18 @@ class Adim:
     notlar: str = ""
 
     def ozet(self) -> dict[str, Any]:
+        # ⚠️ DENETİM DÜZELTMESİ — bilinmeyen ad MAKBUZDA GÖRÜNÜR.
+        # `Kosum.sorgu_sayisi` kayıtta olmayan bir adı "temkinli" sayıyor (çökmemek için,
+        # bkz. oradaki gerekçe) ve WARNING yazıyor; ama makbuza HİÇBİR İZ düşmüyordu →
+        # `query_count` işaretsiz bir tahmin taşıyordu. *"Kapsamı daraltan ya da tahmine
+        # dayanan her sınır GÖRÜNÜR olur"* — bu deponun kendi kuralı.
+        bilinmeyen = not self.kapisiz and not tools.kayitli_mi(self.arac)
+        not_ = self.notlar or ("kayıtta olmayan ad — maliyeti TEMKİNLİ sayıldı"
+                               if bilinmeyen else "")
         return {"tool": self.arac, "determinism": self.determinizm,
                 "ms": self.sure_ms, "receipt": self.makbuz,
                 **({"error": self.hata} if self.hata else {}),
-                **({"gated": False, "note": self.notlar} if self.kapisiz else {})}
+                **({"gated": False, "note": not_} if (self.kapisiz or bilinmeyen) else {})}
 
 
 @dataclass

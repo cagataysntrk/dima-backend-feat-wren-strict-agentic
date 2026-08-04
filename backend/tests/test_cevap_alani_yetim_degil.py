@@ -88,9 +88,34 @@ def test_AGENT_RUN_gercekten_render_ediliyor():
 # Bu deponun altıncı kez tekrarlayan kusuru: **testler METNİ ölçtü, davranışı değil.**
 
 def _yorumsuz_kod(m: str) -> str:
-    """`//` yorum satırlarını atar — kapı KODU ölçmeli, kodun ANLATIMINI değil."""
-    return "\n".join(s for s in m.splitlines()
-                     if not s.lstrip().startswith(("//", "*", "/*", "{/*")))
+    """Yorumları atar — kapı KODU ölçmeli, kodun ANLATIMINI değil.
+
+    ⚠ İlk sürüm yalnız **tek satırlık** yorumları atıyordu; denetim ölçtü: çok satırlı
+    `{/* … */}` bloklarının **devam satırları koda sızıyordu** (`ReportPanel.tsx`'te 8
+    satır). Bugün zararsızdı, ama o satırlardan birine `it.result` geçen bir açıklama
+    yazıldığı gün kapı **yanlış-kırmızı** verirdi — bu turda dört kez düşülen sınıfın
+    yarısı açık kalmıştı."""
+    out, blokta = [], False
+    for s in m.splitlines():
+        d = s.strip()
+        if blokta:
+            if "*/" in d:
+                blokta = False
+                d = d.split("*/", 1)[1]
+                if not d.strip():
+                    continue
+                out.append(d)
+            continue
+        if d.startswith("//"):
+            continue
+        if ("/*" in d) and ("*/" not in d.split("/*", 1)[1]):
+            blokta = True
+            bas = d.split("/*", 1)[0]
+            if bas.strip():
+                out.append(bas)
+            continue
+        out.append(s)
+    return "\n".join(out)
 
 
 def _panel_metni() -> str:
@@ -120,18 +145,36 @@ def test_RAPORLANABILIRLIK_kapisi_TEK_SAHIP():
         "var). Tek sahip varken ikinci bir kopya, düzeltmenin yarısının kaybolması demektir.")
 
 
-def test_RESULT_YOKKEN_de_ULASILABILIR():
-    """K2/(c): `result=None` iken gövdeyi taşıyan alanlar kapıdan GEÇMELİ.
+def test_RAPORLANABILIRLIK_SAYMIYOR_KAPATIYOR():
+    """🔴 **KAT-5.** İlk sürüm gövde alanlarını SAYIYORDU
+    (`result|kpi|contribution|prescription`) ve denetim bedelini ölçtü: listede olmayan
+    **beşinci** gövde alanı `eylem_onerisi` — FAZ H'nin *"Onayla"* kartı, ürünün manşet
+    vaadi — kapının dışında kalıyordu. `ReportCard`'ın TEK tüketicisi bu kapının
+    arkasında; yani onay kartı **hiç render edilmiyordu**. 0.23'ün düzelttiği hatanın
+    birebir aynısı, düzeltmenin KENDİ İÇİNE kodlanmıştı.
 
-    `ask.py`'nin *"cevap üstünde konuş"* dalı bilerek `result` döndürmez — kodun kendi
-    yorumu: *"Bulgular CEVABIN GÖVDESİDİR … `contribution` alanı zengin gövdeyi taşır."*"""
-    m = _panel_metni()
-    govde = m[m.index("function raporlanabilir("):]
-    govde = govde[:govde.index("\n}")]
-    for alan in ("result", "kpi", "contribution", "prescription"):
-        assert f"it.{alan}" in govde, (
-            f"`{alan}` raporlanabilirlik kapısında YOK → o alanı taşıyan cevap "
-            "hiçbir zaman render edilmez (backend üretir, ekran göstermez)")
+    Doğru biçim: **gövdeyi sayma, gövdesizliği kapat.** Bu test o yönü kilitler."""
+    kod = _yorumsuz_kod(_panel_metni())
+    assert "SAF_NOT_ALANLARI" in kod, \
+        "kapı hâlâ gövde SAYIYOR — yeni her gövde alanı sessizce görünmez kalır"
+    i = kod.index("SAF_NOT_ALANLARI = new Set")
+    kume = kod[i:kod.index("]", i)]
+    for govde in ("result", "kpi", "contribution", "prescription", "eylem_onerisi",
+                  "interpretation", "recommendations", "viz"):
+        assert f'"{govde}"' not in kume, (
+            f"`{govde}` bir GÖVDE alanı ama «saf not» kümesine konmuş → o alanı taşıyan "
+            "cevap hiçbir zaman render edilmez (backend üretir, ekran göstermez)")
+
+
+def test_ONAY_KARTI_ULASILABILIR():
+    """`eylem_onerisi` cevabı (`result`/`kpi`/`contribution`/`prescription` HEPSİ None)
+    kapıdan GEÇMELİ — yoksa *"onayla iş yapabilen meslektaş"* vaadi ekranda yoktur."""
+    kart = (FE / "components" / "ReportCard.tsx").read_text(encoding="utf-8")
+    assert "eylem_onerisi" in kart, "onay kartı ReportCard'da YOK"
+    kod = _yorumsuz_kod(_panel_metni())
+    i = kod.index("SAF_NOT_ALANLARI = new Set")
+    assert '"eylem_onerisi"' not in kod[i:kod.index("]", i)], \
+        "onay kartı «saf not» sayılıyor → Onayla düğmesi HİÇ ÇIKMAZ (denetimde bulundu)"
 
 
 def test_SAF_NOT_dalinda_NEXT_STEPS_var():
@@ -141,9 +184,22 @@ def test_SAF_NOT_dalinda_NEXT_STEPS_var():
 
     Chip `onCubeEdit` kullanır → `/cube` → **0 LLM**. `suggestions`'tan AYRIDIR: o yeni bir
     SORU sorar, bu mevcut sorguyu DÜZENLER."""
-    m = _panel_metni()
-    assert "it.next_steps" in m, "saf-not dalında `next_steps` render'ı YOK"
-    assert "onCubeEdit({ cq: step.cube_query" in m, \
+    # ⚠ İlk sürüm dosyanın TAMAMINDA `"it.next_steps"` arıyordu, üstelik yorumları
+    # ayıklamadan: dal silinse bile bir YORUM SATIRI testi yeşil tutardı. Aynı dosyanın
+    # 80-88. satırlarındaki kendi eleştirisi (*"alan FE kaynağında geçiyor bir TÜKETİCİ
+    # kanıtı değil, METİN kanıtıdır"*) bir ekran aşağıda çiğneniyordu. (Denetim buldu.)
+    kod = _yorumsuz_kod(_panel_metni())
+    i = kod.find("if (it.note)")
+    assert i > 0, "saf-not dalı (`if (it.note)`) bulunamadı — kapı çapası kaymış"
+    dal = kod[i:]
+    assert "it.next_steps" in dal or "steps={it.next_steps}" in dal, \
+        "saf-not dalında `next_steps` render'ı YOK"
+
+    # Chip'in kendisi TEK SAHİPTEDİR (`NextStepChips`) — deterministik /cube yolunu
+    # kullandığı orada kilitlenir, burada tekrar aranmaz (ikinci sahip doğmasın).
+    chip = (FE / "components" / "NextStepChips.tsx")
+    assert chip.exists(), "`NextStepChips` tek sahibi YOK — blok yine kopyalanmış olabilir"
+    assert "onCubeEdit({ cq: step.cube_query" in chip.read_text(encoding="utf-8"), \
         "`next_steps` chip'i deterministik /cube yolunu kullanmıyor (LLM'e düşer)"
 
 
@@ -155,7 +211,13 @@ def test_REPORTCARD_KONUSMA_dalindaki_BILINCLI_gizleme_KORUNDU():
     (*"sonraki adım"*) sunardı. 0.23 bu koşula DOKUNMAZ."""
     if not FE.exists():
         pytest.skip("frontend kaynağı mount edilmemiş")
-    kart = (FE / "components" / "ReportCard.tsx").read_text(encoding="utf-8")
-    assert "!item.contribution && onCubeEdit && (item.next_steps?.length ?? 0) > 0" in kart, (
+    # ⚠ İlk sürüm BİREBİR bir ifadeyi arıyordu ve chip bloğu tek sahibe (`NextStepChips`)
+    # taşınınca **yanlış-kırmızı** verdi — kural yerindeydi, kapı metni ölçüyordu (bu
+    # turda beşinci kez). Doğru ölçüm: chip kullanımını BULup KORUYUCUSUNA bakmak.
+    kart = _yorumsuz_kod((FE / "components" / "ReportCard.tsx").read_text(encoding="utf-8"))
+    i = kart.find("<NextStepChips")
+    assert i > 0, "ReportCard chip'leri tek sahip üzerinden render etmiyor"
+    koruyucu = kart[max(0, i - 200):i]
+    assert "!item.contribution" in koruyucu, (
         "ReportCard'ın bilinçli gizlemesi kaldırılmış — konuşma cevabında `next_steps` "
         "İKİ KEZ görünür (ikincisi yanlış başlıkla). Kodun kendi gerekçesi bunu yasaklar.")
