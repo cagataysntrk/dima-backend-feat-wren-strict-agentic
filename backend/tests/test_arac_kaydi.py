@@ -100,6 +100,67 @@ def test_izin_MATRISTE_var(arac):
         "düzeltin. Uydurma izin, aracı sessizce erişilemez kılar.")
 
 
+def test_IZIN_GRANULER_tek_anahtar_DEGIL():
+    """🔴 **FAZ 1.3 — ölçülen kusur: 15 aracın 15'i `query:run` taşıyordu.**
+
+    Tek izin, granülerlik değil bir **anahtardır**: `izinli_araclar()` ya **hepsini**
+    döndürür ya **hiçbirini**. §11.2'nin *"ajan kullanıcının yetkisini AŞAMAZ"* değişmezi
+    o hâlde aşılmıyordu ama **sınırlanamıyordu** da — bir değişmez, uygulanamıyorsa bir
+    beyandır.
+
+    ⚠ Kapı *"kaç aksiyon"* diye sormaz (sayı bir hedef olurdu, bölünme teşvik ederdi);
+    **tek bir anahtara indirgenmemiş** olmasını ister.
+    """
+    izinler = {a.izin for a in tools.hepsi()}
+    assert len(izinler) > 1, (
+        f"tüm araçlar tek izinde: {izinler}. Yetki matrisi 16 aksiyon tanımlıyor ama "
+        "kayıt bir tanesini kullanıyor — granülerlik BEYAN düzeyinde kalmış.")
+
+
+def test_PAHALI_ARAC_VIEWER_RUTBESINDE_DEGIL():
+    """🔴 **Yol haritasının 1.3 KAPI'sının adıyla istediği tek davranış değişikliği.**
+
+    Ölçüldü: `contribution.report` maliyet sınıfı **`pahali`** (6 boyut tarama) ve
+    `query:run` (rütbe 0) taşıyordu — yani **viewer** rolündeki bir kullanıcının ajanı
+    onu çağırabiliyordu. Okuma tarafında bir **maliyet/yetki ayrımı yoktu**.
+
+    ⚠ **Erişilebilirlik dürüstçe yazılıyor:** bugün üründe yalnız `owner` kullanılıyor
+    (`CLAUDE.md`: *"rol matrisi uykuda"*), yani bu düzeltmenin **bugünkü kullanıcıya
+    etkisi sıfırdır**. Kapatılan şey bir açık değil, bir **değişmezin uygulanabilirliği**:
+    roller açıldığı gün ayrım **zaten** yerinde olur — sonradan eklenen bir sınır, o güne
+    kadar üretilmiş her alışkanlığı geriye dönük kırar.
+    """
+    from control_plane.authorize import can
+
+    viewer = _p("viewer")
+    pahalilar = [a for a in tools.hepsi() if a.maliyet == "pahali"]
+    assert pahalilar, "kayıtta `pahali` araç yok — testin ön koşulu düştü"
+    for a in pahalilar:
+        assert not can(viewer, a.izin), (
+            f"{a.ad}: maliyet `pahali` ama viewer çağırabiliyor (`{a.izin}`). "
+            "Okuma tarafında da maliyet/yetki ayrımı olmalı.")
+        assert a not in tools.izinli_araclar(viewer)
+
+
+def test_RUTBE_0_ARACLARDA_DAVRANIS_BIREBIR_AYNI():
+    """**KURAL B'nin bu maddedeki karşılığı.** `drill:run` · `contribution:run` ·
+    `llm:invoke` bilinçle **rütbe 0**: `query:run`'ı olan herkes onlara da sahip, yani
+    granülerlik eklendi ama **davranış kıpırdamadı**. Tek istisna `contribution:scan`.
+
+    Bu test o niyeti kilitler: yeni aksiyonlardan biri sessizce rütbe kazanırsa
+    (ör. `llm:invoke` → 1) bugünkü kullanıcı **sessizce yetenek kaybederdi**.
+    """
+    from control_plane.authorize import can
+
+    viewer = _p("viewer")
+    beklenen_kisitli = {"contribution:scan"}
+    kisitli = {a.izin for a in tools.hepsi() if not can(viewer, a.izin)}
+    assert kisitli == beklenen_kisitli, (
+        f"viewer'a kapalı izinler {kisitli}, beklenen {beklenen_kisitli}. "
+        "Bir aksiyonun rütbesi değiştiyse bu bir ÜRÜN kararıdır ve gerekçesiyle "
+        "`authorize.py`'ye yazılmalıdır — sessizce yapılamaz.")
+
+
 # --- 3. READ-ONLY DEĞİŞMEZİ ------------------------------------------------------
 
 def test_ajan_YAZAMAZ():
@@ -167,7 +228,12 @@ def test_ajan_KULLANICININ_yetkisini_asamaz():
 
 def test_yetkisiz_kullanici_ARACI_GORMEZ():
     """Rol matrisinde `sql:run` analyst+; bir viewer o izne bağlı bir aracı görmemeli.
-    (Bugün kayıtta öyle bir araç yok — test yine de mekanizmayı kilitler.)"""
+
+    ⟳ **Bu testin yorumu 2026-08-04'te GÜNCELLENDİ.** Eskiden *"bugün kayıtta öyle bir
+    araç yok — test yine de mekanizmayı kilitler"* diyordu. **FAZ 1.3 ile artık var:**
+    `contribution.report` → `contribution:scan` (rütbe 1). Yani bu test bir varsayımı
+    değil **gerçek bir elemeyi** ölçüyor. Bayat bir *"bugün yok"* notu, kapının ne
+    kadarının canlı olduğunu gizler."""
     from control_plane.authorize import can
 
     viewer = _p("viewer")

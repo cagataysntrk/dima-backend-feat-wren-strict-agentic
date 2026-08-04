@@ -57,7 +57,7 @@
 | **§5** | **18. yasak**: *"cevapsız bir dal, cevaplı bir yolu KESEMEZ"* (`KAT-2`) | **§G/AJ0** | ⟳ UYGULANMADI |
 | **§7** | ölçüm sözleşmesi — çerçeve (A1) + **risk-kapsam eğrisi** | **FAZ 4.2** | ⟳ UYGULANMADI |
 | **§9** | hedef mimari — **metrik katmanı** merdivene giriyor | **FAZ 0.18 · 2.1** | ⟳ UYGULANMADI |
-| **§11** | agentic — **yetki granülerliği** + onaylı yazma | **FAZ 1.3 · 6.1** | ⟳ UYGULANMADI |
+| **§11** | agentic — **onaylı yazma aksiyonları** | **FAZ 6.1** | ⟳ UYGULANMADI |
 | **§12** | konuşma — **6./7. tür**; uyuyan **çapa** kuralları | **FAZ 0.5 · 5.1 · 5.2** | ⟳ UYGULANMADI |
 | **§13** | görsel dilbilgisi — `viz.recommend()` yeni dallar + dönüş `VizSpec \| list[VizSpec]` | **FAZ 5.11 · 5.12** | ⟳ UYGULANMADI |
 | **§8.2** | ADR'ler — **dosyalar üretilecek** (20 kimlik · 252 atıf · 0 dosya) | **FAZ 4.6** | ⟳ UYGULANMADI |
@@ -260,7 +260,7 @@ tur aynı keşfi sıfırdan yapıyor. **Yeni bir kontrol/garanti yazmadan önce 
 
 | Motor yeteneği | Ne verir | Durum |
 |---|---|---|
-| **`WrenConfig` + `wren/policy.py`** | 45 veri-okuyucu TVF'yi her AST konumunda bloklar; MDL-dışı tabloyu reddeder; fonksiyon kara listesi | ✅ **alındı (Faz A3)** — `strict_sql_policy=off\|shadow\|on`, varsayılan `shadow` |
+| **`WrenConfig` + `wren/policy.py`** | **Kaynak konumunda (`FROM`/`JOIN`) fail-closed:** MDL-dışı ya da bilinmeyen HER TVF reddedilir. **Kaynak-DIŞI konumlarda** (projeksiyon · alt sorgu · iç argüman) **adlandırılmış 45 okuyucu** bloklanır — bu bir **blocklist**tir, fail-closed bir allowlist DEĞİL (§5, 1.3c) | ✅ **alındı (Faz A3)** — `strict_sql_policy=off\|shadow\|on`, varsayılan `shadow`. 🔴 **Güvenlik SINIRI olarak yazılmaz/satılmaz** |
 | **`rowLevelAccessControls` + `SessionProperty` + `dry_plan(properties=)`** | RLS'i **mantıksal planın içine** gömer; SQL'i kim yazarsa yazsın (insan/LLM/ajan) atlatılamaz | ⏳ **sıradaki** — `always_filter`'ın uygulama-katmanı yamasının yerini alır (§6.3'teki üç baypasın kalıcı çözümü) |
 | **`columnLevelAccessControl`** (`requiredProperties`/`operator`/`threshold`) | Kolonu **plandan düşürür**; çıktıya hiç gelmez | ⏳ `app/pii.py` regex maskelemesinin motor karşılığı; PII son savunma olarak KALIR |
 | **Cube `hierarchies`** | Drill sırasını motora beyan eder | ⏸ **bilinçle beyan EDİLMEDİ** — uydurulmuş bir hiyerarşi güvenle yanlış bir drill yolu üretir; sıra ölçülebilir maliyetten okunuyor, bkz. §3.4c |
@@ -412,7 +412,8 @@ Bildirimde, `/ask/contribution` yanıtında ve `ContributionLayer`'da görünür
 | **`join_type`'a güvenme** | Motor onu **okumuyor** (ölçüldü): MANY_TO_ONE / ONE_TO_MANY / ONE_TO_ONE / MANY_TO_MANY → **aynı SQL**. Yön `condition`'dan türetilir, güvenlik **ölçülen anahtar tekilliğinden** gelir. `relationships.yml`'deki cardinality bir **yorumdur**. |
 | **Ters yön (ONE_TO_MANY) handle üretme** | Join pruning kompozisyonelliği bozar: aynı cube, aynı boyut, yalnız ölçü listesi farklı → makine sayısı **3 → 7.038**, kapasite **4.700 → 11.026.200** (ölçüldü). Bir ölçünün değerinin SELECT'teki *diğer* ölçülere bağlı olması, "her cevap kanıtlanabilir" tezi için mümkün en kötü hata sınıfıdır. |
 | **`dry_plan`'ı doğrulama kapısı sanma** | `dry_plan` **kolon varlığını denetlemiyor** (ölçüldü: uydurma kolon plandan geçti, çalıştırmada `BinderException`) — `strict_mode` bunu da **çözmez**, o tablo/fonksiyon politikasıdır. *"Motor doğrular"* ifadesi **tablo** için geçerlidir, kolon için değil. Kolon doğrulaması `tests/test_member_sweep.py`'nin **üye taramasıdır** — her ölçü/boyut **gerçekten derlenip çalıştırılır** (`LIMIT 0` değil: dosyada öyle bir kısayol yok, sorgular **koşar**; ⟳ FAZ −1/A6'da ölçüldü, 113 satır · 5 test); **terfi onayı o taramayı hâlâ çalıştırmıyor** (§6.2). ⚠️ 2026-08-02'de düzeltildi: `WrenConfig` artık kuruluyor (aşağı bak) ama bu, kolon boşluğunu kapatmaz — iki ayrı mesele. |
-| **`guard_sql`'i güvenlik politikası sanma** | O bir **SELECT-only kapısıdır**, iki regex'ten ibarettir ve `SELECT * FROM read_csv('/etc/passwd')`'i **geçirir** (ölçüldü). Politika motoru `wren/policy.py`'dir: 45 veri-okuyucu TVF'yi **her AST konumunda** bloklar + MDL-dışı tabloyu reddeder. 2026-08-02'ye kadar **ölü koddu** çünkü `WrenEngine`'e `config` hiç geçirilmiyordu. Bugün o saldırıların yine de patlaması **DataFusion'ın fonksiyonu tanımamasındandır** — yani savunma **tesadüfi**. Bkz. §3.4. |
+| **`guard_sql`'i güvenlik politikası sanma** | O bir **SELECT-only kapısıdır**, iki regex'ten ibarettir ve `SELECT * FROM read_csv('/etc/passwd')`'i **geçirir** (ölçüldü). Politika motoru `wren/policy.py`'dir. 2026-08-02'ye kadar **ölü koddu** çünkü `WrenEngine`'e `config` hiç geçirilmiyordu. Bugün o saldırıların yine de patlaması **DataFusion'ın fonksiyonu tanımamasındandır** — yani savunma **tesadüfi**. Bkz. §3.4. |
+| 🔴 **`strict_sql_policy=on`'u bir GÜVENLİK SINIRI sanma** *(FAZ 1.3c — motorun **kendi kaynağından** doğrulandı)* | Motor iki ayrı rejim uyguluyor ve ikisi aynı şey değil: **kaynak konumu (`FROM`/`JOIN`) gerçekten fail-closed** (`_check_tables` bilinmeyen HER TVF'yi reddeder), ama **kaynak-dışı konumlarda** (projeksiyon · alt sorgu · iç argüman) güvenlik sınırı **adlandırılmış bir listedir** (`_DATA_READER_NAMES`, **45** ad). `wren/policy.py`'nin kendi yorumu: *"you cannot allowlist every scalar function that may appear in a projection or WHERE clause… a reader that is **not enumerated** here **will pass**… The list must therefore be **MAINTAINED PER-CONNECTOR**."* → **Sınır şudur:** `motor_rls` (1.1) **+** `enforce_query` (1.3b) **+** `denied_functions`. 🔴 **ÖLÇÜLDÜ (2026-08-04):** 45 adın **0'ı** SQL Server okuyucusu — ve `wren_service.py:143` *"üretimdeki tenant'larımız (gitas, atiksan) tam olarak **mssql**"* diyor. Yani motorun *"konnektör başına bakımlı tutulmalı"* uyarısı **ana konnektörümüzde hiç uygulanmamış**. Kapı: `tests/test_blocklist_tazeligi.py`. |
 | **`except Exception` ile motoru sarma** | Kendine-referanslı ilişki + calc kolon → Rust'ta **PANIC** (`lineage.rs:146`, `unwrap() on None`). `PanicException` MRO'su `(PanicException, BaseException, object)` — **`except Exception` yakalamaz.** Hesap planı parent, BOM parent, org şeması: ERP'lerde standart. |
 | **Kelimeye özel regex/keyword yaması** | Kayıtlı desen: aynı kök neden (`_uncovered`'ın substring körlüğü) defalarca kelimeye özel yamayla geçiştirildi, kök neden hiç düzeltilmedi. **Kural: kök nedeni düzelt, örneği değil.** (ADR-0008 disiplini) |
 | **NL-benzerlik cevap cache'i** | Yapısal olarak benzer ama anlamsal olarak farklı Türkçe sorular yanlış cevabı **güvenle** döndürür. Anahtar `contracts.cube_query_hash()` olmalı (Faz 4.3'te yazıldı: `cq ⊕ mdl_version ⊕ company ⊕ tenant`). **Sonuç cache'inin kendisi bilerek KURULMADI** — tekrar oranı ölçülmedi; ölçülmemiş ihtiyaç için altyapı kurulmaz. Hash'in sözleşmesi *"aynı hash ⇒ aynı ÇIKTI"*dır: `filters` sıraya duyarsız (saf AND), `measures`/`dimensions` sıraya **duyarlı** (kolon ve GROUP BY sırasını belirler), akış bayrakları (`period_confirmed`) düşürülür. `result_hash` ile karıştırma — o *"sayılar değişti mi"* sorar ve satır sırasını umursamaz. |
@@ -3333,7 +3334,7 @@ gidildiğini gizlerdi.
 
 | Değişmez | Nasıl uygulanıyor | Nasıl denetleniyor |
 |---|---|---|
-| **Ajan kullanıcının yetkisini AŞAMAZ** ⟳ | Her araç bir `authorize()` aksiyonuna bağlı; `izinli_araclar(principal)` matristen süzer — kayıt ikinci bir kopya TUTMAZ. 🔴 **AMA BUGÜN SÜZGEÇ EFEKTİF DEĞİL** (FAZ −1/A3, ölçüldü @`81ad10b`): **15/15 araç** `izin="query:run"` taşıyor ve `authorize.py`'de `"query:run": 0` (**viewer** seviyesi) → hiçbir rol elenmiyor, süzgeç bir **no-op**. Granülerlik **FAZ 1.3**'te kurulur; bu satır o güne kadar bir **YETENEK BEYANI değil, MEKANİZMA BEYANIDIR** | `test_ajan_KULLANICININ_yetkisini_asamaz`, `test_izin_MATRISTE_var` |
+| **Ajan kullanıcının yetkisini AŞAMAZ** ✅ | Her araç bir `authorize()` aksiyonuna bağlı; `izinli_araclar(principal)` matristen süzer — kayıt ikinci bir kopya TUTMAZ. ✅ **FAZ 1.3 İNDİ (2026-08-04):** 15/15 `query:run` → **beş aksiyon** (`query:run` 7 · `drill:run` 2 · `contribution:run` 2 · **`contribution:scan` 1** · `llm:invoke` 3). Süzgeç artık **no-op değil**: `contribution.report` (maliyet **`pahali`**, 6 boyut tarama) viewer rütbesinin **dışında**. ⚠ Diğer dördü bilinçle **rütbe 0** — granülerlik eklendi, **davranış kıpırdamadı** (KURAL B) | `test_izin_MATRISTE_var`, `test_IZIN_GRANULER_tek_anahtar_DEGIL`, `test_PAHALI_ARAC_VIEWER_RUTBESINDE_DEGIL`, `test_RUTBE_0_ARACLARDA_DAVRANIS_BIREBIR_AYNI` |
 | **Ajan YAZAMAZ** | `yan_etki="yazar"` bir araç kayda **hiç alınmadı** | `test_ajan_YAZAMAZ` |
 | **Ajan ham veri GÖRMEZ** | `drill.raw` bilinçle kayıt DIŞI (T1/T2 sınırının en hassas yaprağı) | `test_ham_satir_araci_KAYITTA_YOK` |
 | **DETERMİNİSTİK-ÖNCE** | Her LLM aracının aynı etiketi taşıyan deterministik bir kardeşi olmalı; planlayıcı önce onu denemek zorunda | `test_her_LLM_aracinin_DETERMINISTIK_alternatifi_var` |
@@ -3352,6 +3353,37 @@ ayrışırlardı — bu depoda o desenin bedeli ölçüldü.
 LLM'e giden **açıklama metni determinizm ve maliyeti İÇERİR**: planlayıcı ucuz/deterministik
 olanı tercih edebilsin diye. Gizlenirse *"önce deterministik"* bir kural değil bir temenni
 olur.
+
+### 11.3b Yetki granülerliği — FAZ 1.3 ✅ *(2026-08-04, `f847e33` sonrası)*
+
+| İzin | Rütbe | Araçlar | Neden bu rütbe |
+|---|---|---|---|
+| `query:run` | 0 | `route` · `deterministic_refine` · `cube_sql` · `interpret` · `viz.recommend` · `cross_cube_add` · `yoy.compute` | ürünün kalbi; maliyet `sifir`/`ucuz` |
+| `drill:run` | 0 | `drill.expand` · `drill.select` | çekirdek okuma, maliyet `sifir` |
+| `contribution:run` | 0 | `contribution.decompose` · `contribution.pvm` | deterministik, maliyet `ucuz` |
+| **`contribution:scan`** | **1** | **`contribution.report`** | 🔴 maliyet **`pahali`** — 6 boyut tarama |
+| `llm:invoke` | 0 | `llm.prompt_enhance` · `llm.anlat` · `llm.select_cube` | ⚠ aşağıdaki karara bakınız |
+
+🔴 **TEK BİR DAVRANIŞ DEĞİŞİKLİĞİ, ve o da yol haritasının KAPI'sının adıyla istediği:**
+*"viewer rolü `contribution.report` (maliyet `pahali`) çağıramıyor."* Diğer dördü **rütbe 0**,
+yani `query:run`'ı olan herkes onlara da sahip → **birebir aynı davranış** (KURAL B).
+
+⚠ **`llm:invoke` neden 0 — ve bu bir karar, bir ihmal değil.** LLM araçlarını analyst+
+yapmak bir **güvenlik** değil bir **ÜRÜN** kararıdır (viewer'ın cevabı küple sınırlanır) ve
+bu madde onu vermek için kurulmadı. Aksiyonun **var olması** yeter: ajan araç listesi artık
+dürüst ve sıkılaştırma **tek satırlık** bir karara indi. Rütbe, LLM maliyeti ölçüldüğünde
+(FAZ 0.17 gecikme bütçesi + kota telemetrisi) yeniden ele alınır.
+
+⚠ **ERİŞİLEBİLİRLİK DÜRÜSTÇE:** üründe bugün yalnız `owner` kullanılıyor (`CLAUDE.md`:
+*"rol matrisi uykuda"*), yani bu düzeltmenin **bugünkü kullanıcıya etkisi sıfırdır**.
+Kapatılan şey bir açık değil, bir **değişmezin uygulanabilirliğidir** — roller açıldığı gün
+ayrım **zaten** yerinde olur. Sonradan eklenen bir sınır, o güne kadar üretilmiş her
+alışkanlığı geriye dönük kırar.
+
+⚠ **`metric:certify` bilinçle EKLENMEDİ.** Yol haritası onu 1.3'ün `NE`'sinde anıyor ama
+sertifikasyon **FAZ 1.5**'in işi ve henüz yok. Karşılığı olmayan bir aksiyonu matrise
+yazmak, bu deponun avladığı *"beyan var, kod onu tanımıyor"* sınıfını **kapanın kendi
+içinde** üretirdi.
 
 ### 11.4 Ölçülen sınır (dürüst kayıt)
 

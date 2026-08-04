@@ -166,7 +166,7 @@ KAYIT: tuple[Arac, ...] = (
         girdi={"cube_query": "CubeQuery", "dimension": "eklenecek boyut adı"},
         cikti="genişletilmiş CubeQuery",
         determinizm="deterministik", maliyet="sifir", yan_etki="yok",
-        izin="query:run", makbuz=None,
+        izin="drill:run", makbuz=None,
         modul="app.drill", fonksiyon="expand_cube_query",
         notlar="Boyutun HEDEF CUBE'DA var olduğu çağıranın sorumluluğudur. İlişki-türevi "
                "boyutlarda fan-out sertifikasına bak (`dimension_origin[*].certified`): "
@@ -179,7 +179,7 @@ KAYIT: tuple[Arac, ...] = (
         girdi={"cube_query": "CubeQuery", "dimension": "boyut", "value": "seçilen değer"},
         cikti="filtrelenmiş CubeQuery",
         determinizm="deterministik", maliyet="sifir", yan_etki="yok",
-        izin="query:run", makbuz=None,
+        izin="drill:run", makbuz=None,
         modul="app.drill", fonksiyon="select_cube_query",
         notlar="Faz G2'nin 'grafiğe çapalı diyalog'unun taşıyıcısı: kullanıcının işaret "
                "ettiği nokta bir metin değil, GERÇEK bir alt-sorguya çevrilir.",
@@ -207,7 +207,7 @@ KAYIT: tuple[Arac, ...] = (
                "cube_query": "kaynak CubeQuery"},
         cikti="ContributionReport — her bulgu KENDİ cube_query'siyle",
         determinizm="deterministik", maliyet="ucuz", yan_etki="yok",
-        izin="query:run", makbuz="ContractLog (bulgu başına)",
+        izin="contribution:run", makbuz="ContractLog (bulgu başına)",
         modul="app.contribution", fonksiyon="decompose",
         notlar="TOPLANABİLİRLİK KAPISI: katkı payı yalnız toplanabilir ölçülerde "
                "TANIMLIDIR. AVG/oran/COUNT(DISTINCT) için 'bu segment değişimin %40'ını "
@@ -224,7 +224,7 @@ KAYIT: tuple[Arac, ...] = (
         # Boyut başına AYRI bir kıyas sorgusu koşar (cari + geçen dönem) — tek bir
         # `decompose` çağrısından pahalıdır ve maliyet sınıfı bunu SÖYLEMELİDİR.
         determinizm="deterministik", maliyet="pahali", yan_etki="yok",
-        izin="query:run", makbuz="ContractLog (boyut başına, `kaydet` verilirse)",
+        izin="contribution:scan", makbuz="ContractLog (boyut başına, `kaydet` verilirse)",
         # `baglanma="modul"`: servis METODU değil, servisi ARGÜMAN alan bir modül
         # fonksiyonudur — `route`/`yoy.compute` ile aynı biçim.
         modul="app.contribution", fonksiyon="arastir",
@@ -240,7 +240,7 @@ KAYIT: tuple[Arac, ...] = (
         girdi={"cube_meta": "cube metadata (pvm: beyanı olmalı)"},
         cikti="PvmReport listesi — fiyat+miktar+birleşik = net (birebir)",
         determinizm="deterministik", maliyet="ucuz", yan_etki="yok",
-        izin="query:run", makbuz="ContractLog (bulgu başına)",
+        izin="contribution:run", makbuz="ContractLog (bulgu başına)",
         modul="app.contribution", fonksiyon="pvm_pairs",
         notlar="Yalnız cube'un `pvm:` BEYANI varsa çalışır — eşleştirme TAHMİN EDİLMEZ. "
                "Ayrışma artıksızdır; üç etkiyi toplayan okuyucu net değişimi bulmalıdır.",
@@ -301,7 +301,7 @@ KAYIT: tuple[Arac, ...] = (
         girdi={"soru": "kullanıcının ham sorusu", "catalog": "cube kataloğu metni"},
         cikti="düz metin (yeniden yazılmış soru) — DETERMİNİSTİK route()'a geri verilir",
         determinizm="llm", maliyet="ucuz", yan_etki="yok",
-        izin="query:run", makbuz=None,
+        izin="llm:invoke", makbuz=None,
         modul="app.llm", fonksiyon="prompt_enhance", baglanma="servis:llm",
         notlar="T1'in DÖRDÜNCÜ, AYRI LLM rolü: `llm.select_cube` ALAN SEÇER, bu yalnız "
                "METNİ iyileştirir — 'hangi ölçü/boyut' kararı HÂLÂ KÜPTEDİR. "
@@ -318,7 +318,7 @@ KAYIT: tuple[Arac, ...] = (
                "gercekler": "interpret() facts listesi (ZATEN hesaplanmış)"},
         cikti="düz metin — narration_guard'tan GEÇMEDEN yayımlanamaz",
         determinizm="llm", maliyet="ucuz", yan_etki="yok",
-        izin="query:run", makbuz=None,
+        izin="llm:invoke", makbuz=None,
         modul="app.llm", fonksiyon="anlat", baglanma="servis:llm",
         notlar="LLM ÜSLUBU yazar, SAYIYI SİSTEM KOYAR (§4.4). SQL yazmaz, sayı "
                "hesaplamaz, cube seçmez, HAM SATIR GÖRMEZ — girdisi yalnız "
@@ -336,7 +336,7 @@ KAYIT: tuple[Arac, ...] = (
         girdi={"question": "soru", "catalog": "cube kataloğu metni"},
         cikti="CubeQuery (JSON) — deterministik derleyiciye gider",
         determinizm="llm", maliyet="ucuz", yan_etki="yok",
-        izin="query:run", makbuz=None,
+        izin="llm:invoke", makbuz=None,
         modul="app.llm", fonksiyon="select_cube", baglanma="servis:llm",
         notlar="HER SAĞLAYICIDA YOKTUR (ölçüldü): anahtarsız `RuleBasedSqlGenerator` bu "
                "metodu taşımaz ve üretim yolu `hasattr` ile denetler — planlayıcı yokluğunu "

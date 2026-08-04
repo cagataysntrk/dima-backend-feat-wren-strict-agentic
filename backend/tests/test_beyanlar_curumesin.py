@@ -435,11 +435,13 @@ _YURURLUKTE_TUZAKLARI = [
      lambda: "MetricDefinition" in
              (APP.parent / "control_plane/models.py").read_text(encoding="utf-8"),
      "metrik kaydı = hakem"),
-    ("§11-yetki", "FAZ 1.3",
-     lambda: len({s.split('"')[1] for s in
-                  (APP / "tools.py").read_text(encoding="utf-8").splitlines()
-                  if s.strip().startswith("izin=")}) > 1,
-     "yetki granülerliği (bugün 15/15 query:run)"),
+    # ⟳ `§11-yetki` **TERS ÇEVRİLDİ** — FAZ 1.3 indi (5 aksiyon), tuzak
+    # `test_TERS_TUZAK_FAZ_1_3_YETKI_GRANULERLIGI_AYAKTA`'ya taşındı (silinmedi).
+    # §0'ın `§11` satırı DARALDI: geriye **onaylı yazma aksiyonları** (FAZ 6.1) kaldı ve
+    # belirteç ona yeniden nişanlandı — `yan_etki="yazar"` bir araç kayda girdiği gün.
+    ("§11-yazma", "FAZ 6.1",
+     lambda: _yazan_arac_sayisi() > 0,
+     "onaylı yazma aksiyonları (ajan bugün YAZAMAZ)"),
     ("§12-tür", "FAZ 5.1·5.2",
      lambda: "TUR_TAKIP" in (APP / "followup.py").read_text(encoding="utf-8")
              or "TUR_PAYLAS" in (APP / "followup.py").read_text(encoding="utf-8"),
@@ -496,6 +498,42 @@ def test_TERS_TUZAK_FAZ_0_14_KAPILARI_AYAKTA():
         f"FAZ 0.14 KAPISI SİLİNMİŞ: {eksik}\n"
         "Kapı testi geri alınmaz — `xfail` işaretlenir ve gerekçesi buraya yazılır. "
         "Bir kapının kırmızısı bir BİLGİDİR; silindiğinde o bilgi de kaybolur.")
+
+
+def test_TERS_TUZAK_FAZ_1_3_YETKI_GRANULERLIGI_AYAKTA():
+    """⟳ **TUZAKTAN KAPIYA — FAZ 1.3 indi, tuzak TERS ÇEVRİLDİ.**
+
+    Eski yön: *"15/15 araç tek izinde"*. FAZ 1.3 indiği gün **kırıldı** — kurulduğu iş
+    buydu. Yeni yön: **granülerlik ayakta kalmalı ve `pahali` araç viewer'ın dışında**.
+
+    Neden ikisi birden: yalnız *"birden çok izin var"* demek yetmez — biri
+    `contribution.report`'u tekrar `query:run`'a çekip ötekileri bırakabilir; sayı
+    **yeşil** kalır, ölçülen kusur **geri döner**. Kapı, granülerliğin **işe yaradığı**
+    noktayı tutar.
+    """
+    import ast as _ast
+
+    from control_plane.authorize import _ACTION_MIN_RANK
+
+    agac = _ast.parse((APP / "tools.py").read_text(encoding="utf-8"))
+    araclar = []
+    for n in _ast.walk(agac):
+        if isinstance(n, _ast.Call) and getattr(n.func, "id", "") == "Arac":
+            k = {a.arg: getattr(a.value, "value", None) for a in n.keywords}
+            araclar.append((k.get("ad"), k.get("izin"), k.get("maliyet")))
+    assert araclar, "araç kaydı okunamadı — kapı GÜNCELLENMELİ, silinmemeli"
+
+    izinler = {i for _a, i, _m in araclar}
+    assert len(izinler) > 1, (
+        f"🔴 FAZ 1.3 GERİ ALINMIŞ: tüm araçlar tek izinde ({izinler}). Tek izin "
+        "granülerlik değil bir ANAHTARDIR: süzgeç ya hepsini döndürür ya hiçbirini.")
+
+    for ad, izin, maliyet in araclar:
+        if maliyet == "pahali":
+            assert _ACTION_MIN_RANK.get(izin, 0) > 0, (
+                f"🔴 {ad}: maliyet `pahali` ama izni `{izin}` **viewer rütbesinde** "
+                f"({_ACTION_MIN_RANK.get(izin)}). FAZ 1.3'ün ölçülen kusuru tam buydu — "
+                "okuma tarafında maliyet/yetki ayrımı olmaması.")
 
 
 def test_TERS_TUZAK_FAZ_0_15_CI_KAPILARI_AYAKTA():

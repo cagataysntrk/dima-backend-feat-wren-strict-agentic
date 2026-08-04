@@ -16,10 +16,10 @@
 
 | | |
 |---|---|
-| **Aktif faz** | ✅ **FAZ 0 TAMAMLANDI** — 25 madde · temizlik ve kapılar |
-| **Sıradaki madde** | **FAZ 1** |
-| **Ondan sonra** | FAZ 2 → 8 *(§10'un bağlayıcı sırası)* |
-| **Demet** | ✅ **demet 6 kapandı** (`0.15`·`0.17`·`0.20`, kapı 3/4 + kasıtlı tuzak) · demet 7 açık: `§7-CI` yaşam döngüsü · `0.4` |
+| **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
+| **Sıradaki madde** | `1.1` · `1.3b` · `1.1b` **birlikte** *(motor RLS turu — 1.3b'nin kendi `NASIL`'ı «1.1 ile AYNI TURDA» diyor)* |
+| **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
+| **Demet** | ✅ **demet 7 kapandı** — FAZ 0 kapanış kapısı **4/4 YEŞİL** (süit **2199**) · demet 8 açık: `1.3c` · `1.3` |
 | 🔴 **Kota** | **GÜNLÜK KOTA DOLDU** (2026-08-04 ~11:40; `429`/`503`, tüm sağlayıcılar). Bugün başka **canlı** koşum YOK — LLM'siz ölçümler serbest |
 | **Tempo** | 🔴 **DEMET disiplini yürürlükte** (`OPERASYON.md §3`): commit ≠ kapı; tam kapı **demet sonunda bir kez**. Risk sınırındaki dosyalara dokunan madde demete girmez |
 | **v1 bitiş ölçütü** | §C'nin **16 ölçütü** yeşil |
@@ -418,6 +418,57 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 1 — `1.3c` sahte güvenlik sınırı · `1.3` yetki granülerliği *(2026-08-04)*
+
+**FAZ 0 kapanış kapısı: 4/4 YEŞİL.** süit **2199 geçti** (2 atlandı · 1 xfail) · eval
+precision/coverage **±%0** · korpus **%93,2** (taban %93,2) · senaryo dokuz sınıf tabanda.
+
+> 🔴 **`1.3c` — MIMARI İKİ YERDE OLMAYAN BİR GARANTİ SATIYORDU.** `§3.4` tablosu ve `§5`
+> *"yapılmayacaklar"* satırı ikisi de *"45 veri-okuyucu TVF'yi **her AST konumunda**
+> bloklar"* diyordu. Motorun **kendi kaynağı** (`wren/policy.py`) tam tersini söylüyor ve
+> alıntı birebir MIMARI'ye geçti: *"for non-source positions this named list **is** the
+> security boundary: a reader that is **not enumerated** here **will pass** in a
+> projection / subquery / nested-arg position. The list must therefore be **MAINTAINED
+> PER-CONNECTOR**."* Kaynak konumu (`FROM`/`JOIN`) **gerçekten** fail-closed; kaynak-dışı
+> konumlar **blocklist**. İkisi aynı cümle değil ve fark **güvenlik kararı** doğuruyor.
+
+> 🔴 **VE «KONNEKTÖR BAŞINA BAKIM» ANA KONNEKTÖRÜMÜZDE HİÇ YAPILMAMIŞ.** Ölçüldü: 45 adın
+> **0'ı** SQL Server okuyucusu — ve `wren_service.py:143`'ün kendi notu *"üretimdeki
+> tenant'larımız (gitas, atiksan) tam olarak **mssql**"* diyor.
+> ⚠ **Bu bir «sömürülebiliriz» iddiası DEĞİL ve öyle yazılmadı:** mssql'in tehlikeli
+> okuyucuları ya **kaynak konumundadır** (`OPENROWSET`/`OPENQUERY` → `FROM` → zaten
+> fail-closed) ya da `SELECT` bile değildir (`xp_cmdshell` → `EXEC` → `guard_sql` zaten
+> reddeder). Ölçülen şey bir **kapsama boşluğudur**, bir açık değil. Boşluğu *"açık"*
+> yazmak da *"yok"* yazmak kadar yanlış olurdu. Kapı: `tests/test_blocklist_tazeligi.py`
+> — muafiyet **gerekçesiz olamaz** ve **bitiş koşulu** taşımak zorunda.
+
+> ✅ **`1.3` — 15/15 `query:run` → BEŞ AKSİYON.** `query:run` 7 · `drill:run` 2 ·
+> `contribution:run` 2 · **`contribution:scan` 1** · `llm:invoke` 3.
+> **Tek davranış değişikliği** ve o da yol haritasının KAPI'sının adıyla istediği:
+> *"viewer rolü `contribution.report` (maliyet **`pahali`**, 6 boyut tarama) çağıramıyor."*
+> Diğer dördü bilinçle **rütbe 0** → birebir aynı davranış (KURAL B).
+> ⚠ **`llm:invoke` = 0 bir KARARDIR:** LLM araçlarını analyst+ yapmak **güvenlik** değil
+> **ÜRÜN** kararıdır (viewer'ın cevabı küple sınırlanır) ve bu madde onu vermek için
+> kurulmadı. ⚠ **`metric:certify` bilinçle EKLENMEDİ** — sertifikasyon FAZ 1.5'in işi ve
+> henüz yok; karşılığı olmayan bir aksiyon, kapanın kendi içinde *"beyan var, kod tanımıyor"*
+> üretirdi.
+> ⚠ **Erişilebilirlik dürüstçe:** üründe bugün yalnız `owner` var → **bugünkü kullanıcıya
+> etkisi sıfır**. Kapatılan şey bir açık değil, bir **değişmezin uygulanabilirliği**.
+
+> ⟳ **`§11-yetki` TUZAĞI ATEŞLEDİ ve TERS ÇEVRİLDİ** (ikinci kez bu operasyonda). §0'ın
+> `§11` satırı **daraltıldı** (geriye FAZ 6.1 · onaylı yazma kaldı), belirteç
+> `_yazan_arac_sayisi() > 0`'a nişanlandı, ⟳ sayısı **13'te** kaldı. Yeni kapı yalnız
+> *"birden çok izin var"* demiyor — biri `contribution.report`'u `query:run`'a geri
+> çekerse sayı **yeşil** kalır, kusur **geri döner**; kapı granülerliğin **işe yaradığı**
+> noktayı tutuyor.
+
+> 🔴 **FAZ 1'DE BİR SIRA İHLALİ BULDUM (`KAT-3`, FAZ 0'da dört kez çıkan sınıf):**
+> `1.5` metrik sertifikasyonu alanları arasında **`lineage_set_hash`** var ve KAPI'sı
+> *"**üst-akış kolon kümesi** değişince sertifika düşer"* diyor — ama o kümeyi **`1.6`
+> column-level lineage** üretiyor. Bugünkü sırayla `1.5` inerse `lineage_set_hash` ya
+> **uydurulur** ya **hep `None`** olur; ikisi de *"beyan var, karşılığı yok"*.
+> → **`1.6` ÖNCE, `1.5` SONRA.** *(Madde numaraları D5 gereği DEĞİŞMEZ, yalnız sıra yazılır.)*
 
 ### FAZ 0 · adım 14 — `0.21` modül büyüme kapısı **(FAZ 0'IN SON MADDESİ)** *(2026-08-04)*
 

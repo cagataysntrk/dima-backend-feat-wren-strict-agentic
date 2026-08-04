@@ -85,6 +85,25 @@ _ACTION_MIN_RANK = {
     # kategorik olarak daha ağırdır.
     "decision:read": 0,
     "decision:write": 1,
+    # ── FAZ 1.3 · AJAN ARAÇ AKSİYONLARI (2026-08-04) ────────────────────────────
+    # Ölçüldü: 15 aracın **15'i** `query:run` taşıyordu → `izinli_araclar()` ya 15'ini
+    # döndürüyor ya hiçbirini. §11.2'nin *"ajan kullanıcının yetkisini AŞAMAZ"* değişmezi
+    # aşılmıyordu ama **sınırlanamıyordu** da: tek bir izin, granülerlik değil bir anahtardır.
+    #
+    # 🔴 **RÜTBELER BİLİNÇLE SEÇİLDİ — TEK BİR DAVRANIŞ DEĞİŞİKLİĞİ.** İkisi `0`, yani
+    # bugün `query:run`'ı olan herkes onlara da sahip → **birebir aynı davranış** (KURAL B).
+    # Yalnız `contribution:scan` `1`'e çıkar ve bu, yol haritasının KAPI'sının **adıyla
+    # istediği** düzeltmedir: *"viewer rolü `contribution.report` (maliyet `pahali`)
+    # çağıramıyor."*
+    "drill:run": 0,          # drill.expand/select — maliyet `sifir`, çekirdek okuma
+    "contribution:run": 0,   # decompose/pvm — maliyet `ucuz`, deterministik
+    "contribution:scan": 1,  # 🔴 contribution.report — maliyet **`pahali`** (6 boyut tarama)
+    # ⚠ `llm:invoke` **0** ve bu bir KARAR: LLM araçlarını analyst+ yapmak bir GÜVENLİK
+    # değil bir ÜRÜN kararıdır (viewer'ın cevabı küple sınırlanır) ve bu madde onu vermek
+    # için kurulmadı. Aksiyonun **var olması** yeter: ajan araç listesi artık dürüst ve
+    # sıkılaştırma tek satırlık bir karara indi. Rütbe, LLM maliyeti ölçüldüğünde
+    # (FAZ 0.17'nin gecikme bütçesi + kota telemetrisi) yeniden ele alınır.
+    "llm:invoke": 0,
 }
 
 
