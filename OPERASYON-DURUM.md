@@ -17,8 +17,8 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
-| **Sıradaki madde** | `1.9` numeric fidelity · `1.10`/`1.11` eskalasyon · `1.12` yasal · `1.13` **EN SON** |
-| **Demet** | ✅ **demet 11 kapandı** — kapı **4/4 YEŞİL** (süit **2376**) · demet 12 açık: `1.8` |
+| **Sıradaki madde** | `1.10`/`1.11` eskalasyon + kademeli düşüş · `1.12` yasal · `1.13` **EN SON** |
+| **Demet** | demet 12: `1.8` · `1.9` — kapı sırada |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
 | **Demet** | ✅ **demet 7 kapandı** — FAZ 0 kapanış kapısı **4/4 YEŞİL** (süit **2199**) · demet 8 açık: `1.3c` · `1.3` |
@@ -420,6 +420,40 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 14 — `1.9` **numeric fidelity zorlaması** *(2026-08-04)*
+
+Kapı: **13 test**, hızlı sinyal **508**.
+
+> 🔴 **YOL HARİTASININ SAYDIĞI ÜÇ YÜZEY BUGÜN YOK — ölçüldü.** Madde *"`izinli_degerler()`
+> yeni türevleri kapsar (MASE · kırılma-noktası % · karar rozeti %)"* diyor;
+> `grep` → **0 isabet**. Olmayan metrikler için türetme eklemek, bu deponun avladığı
+> *"beyan var, karşılığı yok"* sınıfının **kendisi** olurdu: kapı genişler, koruduğu bir
+> şey olmaz, ve genişlemenin **doğru olup olmadığı hiç ölçülemez**.
+> → İnen şey maddenin **kalıcı** yarısı: **zorlama mekanizması**. Üç yüzey birer **tuzak**
+> olarak dondu — doğdukları gün test **kırılır** ve beyan edilmelerini zorlar.
+
+> ✅ `narration_guard.dogrula` **araç kaydına girdi** (`makbuz=None`, **kapıdır**).
+> Kayıtta **görünmeyen** bir kapı, planlayıcının **bilmediği** bir kapıdır: yeni bir
+> anlatı yüzeyi onu atladığında bu bir *"unutma"* değil, *"kaydın söylemediği bir şeyi
+> bilmemek"* olur.
+
+> 🔴 **MEVCUT KAPI GERÇEK BİR ANLAM HATASI YAKALADI.** Guard'ı `anlatim` etiketiyle
+> kaydettim; planlayıcının **DETERMİNİSTİK-ÖNCE** kuralı onu `llm.anlat`'ın **alternatifi**
+> sandı ve LLM aracını **reddetti** (`AracReddi: llm.anlat: DETERMİNİSTİK-ÖNCE ihlali`).
+> Üç T2 testi anında kırmızı verdi. **BİR KAPI, BİR ALTERNATİF DEĞİLDİR:** guard anlatı
+> **üretmez**, üretileni **doğrular**. Aynı etiketi paylaşmak `KAT-1`'in (*bir mekanizma =
+> bir iş*) ihlaliydi → etiket `dogrulama` oldu.
+
+> ⚠ **KD-21 sınırı ölçüldü ve donduruldu:** guard **rakamsız** cümlede **yetkisizdir**.
+> Yeni yüzeyler **sayı taşıyan** cümleler üretmelidir, yoksa kapı onları **görmez** ve
+> *"guard'dan geçti"* cümlesi **karşılıksız** kalır.
+
+> ⚠ **Beyan kanalı iki adla anılıyor** (`izinli_degerler(ek=)` · `dogrula(ek_degerler=)`)
+> — ilk yazımda yanlış adı kullandım ve test takıldı. Yeniden adlandırmak ölçülmüş bir
+> kazanç getirmiyor (churn); farkın **yazılı olması** yeterli. Kanal artık **uçtan uca**
+> sınanıyor (`guvenli_anlatim` → `dogrula`): yalnız iç fonksiyonu test etmek, dışa açık
+> yolun kanalı **geçirdiğini** kanıtlamazdı.
 
 ### FAZ 1 · adım 13 — `1.8` **audit zinciri** *(2026-08-04)*
 

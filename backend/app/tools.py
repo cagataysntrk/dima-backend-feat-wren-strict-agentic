@@ -331,6 +331,36 @@ KAYIT: tuple[Arac, ...] = (
         etiketler=("anlatim", "t2", "guardli"),
     ),
     Arac(
+        ad="narration_guard.dogrula",
+        ozet="Bir anlatı metnindeki HER sayıyı sonuç kümesine karşı doğrular — KAPIDIR.",
+        girdi={"metin": "yayımlanmak istenen düz metin",
+               "result": "cevabın sonuç kümesi (rows/columns)",
+               "ek": "beyan edilmiş ek türetmeler (ör. yeni bir metriğin ara değerleri)"},
+        cikti="Rapor{gecti, temiz_metin, reddedilen, dogrulanamayan_sayilar}",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.narration_guard", fonksiyon="dogrula",
+        notlar="⟳ FAZ 1.9 — KAYDA GİRDİ ve gerekçesi: kayıtta GÖRÜNMEYEN bir kapı, "
+               "planlayıcının bilmediği bir kapıdır; yeni bir anlatı yüzeyi eklendiğinde "
+               "onu ATLAMAK bir 'unutma' değil, 'kaydın söylemediği bir şeyi bilmemek' "
+               "olur. `makbuz=None` bir eksiklik DEĞİL bir BEYANDIR: bu araç veriye "
+               "dokunmaz, eldeki metni okur. "
+               "🔴 KD-21 SINIRI: guard RAKAMSIZ bir cümlede YETKİSİZDİR — doğrulayacak "
+               "sayı yoksa cümle geçer. Yeni anlatı yüzeyleri SAYI TAŞIYAN cümleler "
+               "üretmelidir, yoksa kapı onları GÖRMEZ ve 'guard'dan geçti' cümlesi "
+               "karşılıksız kalır. "
+               "⚠ Yeni türetmeler `ek=` ile BEYAN EDİLİR; `izinli_degerler`'in KAPALI "
+               "listesi genişletilmez — 'her aritmetik kombinasyon' serbest bırakılsaydı "
+               "yeterince sayıyla her şey türetilebilir ve kapı hiçbir şeyi engellemezdi.",
+        # 🔴 ETİKET "anlatim" DEĞİL — ve bu ölçülmüş bir düzeltme. İlk yazımda öyleydi
+        # ve planlayıcının DETERMİNİSTİK-ÖNCE kuralı guard'ı `llm.anlat`'ın
+        # ALTERNATİFİ sandı: `AracReddi: llm.anlat: DETERMİNİSTİK-ÖNCE ihlali — önce
+        # ['narration_guard.dogrula'] denenmeli`. BİR KAPI, BİR ALTERNATİF DEĞİLDİR:
+        # guard anlatı ÜRETMEZ, üretileni DOĞRULAR. Aynı etiketi paylaşmak "bir mekanizma
+        # = bir iş" kuralının (KAT-1) ihlaliydi ve üç T2 testi anında kırmızı verdi.
+        etiketler=("dogrulama", "kapi", "llmsiz"),
+    ),
+    Arac(
         ad="llm.select_cube",
         ozet="Katalogdan ölçü/boyut/filtre SEÇER (SQL YAZMAZ) — Intent-JSON.",
         girdi={"question": "soru", "catalog": "cube kataloğu metni"},
