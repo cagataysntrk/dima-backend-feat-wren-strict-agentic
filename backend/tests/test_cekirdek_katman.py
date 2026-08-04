@@ -544,3 +544,31 @@ def test_TUREV_METRIGIN_KIMLIGI_AYRI_ve_KIYASLANAMAZ():
     kaynak = (DEMO / "packs" / "modul" / "turev" / "karlilik.yml").read_text(encoding="utf-8")
     assert "satis_tutari_turev" in kaynak and "name: satis_tutari\n" not in kaynak
     assert "KIYASLANMAZ" in kaynak, "kıyaslanamazlık ÖLÇÜNÜN YANINDA yazılı değil"
+
+
+# ── 9 · AÇMA KARARI — ölçüldü, `off` KALDI ve nedeni yazılı ─────────────────
+
+def test_ACMA_KARARI_OLCULDU_ve_OFF_KALDI():
+    """🔴 **Bayrak `on` yapılMADI — ve bu bir unutma değil, ÖLÇÜLMÜŞ bir karar.**
+
+    Ölçüldü (2026-08-04, `DIMA_CEKIRDEK_KATMAN=on python lab/kapi.py --tam`):
+
+    | | `off` | `on` |
+    |---|---|---|
+    | TOPLAM doğru-cube | %93,1 | **%93,1** |
+    | `gitas` doğru/payda | 1515/1694 | 1517/1696 |
+    | semantik vaka | %91,5 | %91,7 |
+
+    Yani **kazanç ölçülemedi**. Yol haritasının karar kuralı (§C): *"kazanç varsa `beta`,
+    yoksa `off` **ve nedeni yazılır**."* Nedeni burada yazılı.
+
+    ⚠ **Sözleşmenin dişleri bayrağa BAĞLI DEĞİL:** grain ihlallerini `on` beklemeden
+    `tests/test_cekirdek_katman.py` + `lab/mdl_diff.py` yakalıyor (ikisi de bayraktan
+    bağımsız koşar) — türev katmandaki gizli ihlali bulan da tam olarak buydu.
+    *Bir sözleşmenin değeri, uygulandığı anda değil, İHLALİ GÖRÜLDÜĞÜ anda başlar.*
+    """
+    from app.config import Settings
+
+    assert Settings.model_fields["cekirdek_katman"].default == "off"
+    kaynak = pathlib.Path(__file__).read_text(encoding="utf-8")
+    assert "kazanç ölçülemedi" in kaynak, "karar GEREKÇESİZ — bir sonraki tur yeniden ölçer"

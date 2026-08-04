@@ -421,6 +421,24 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
 
+### FAZ 2 · adım 6 — `2.1` **AÇMA KARARI: `off` KALDI, ölçümle** — 🔴 **`2.1` BİTTİ** *(2026-08-04)*
+
+> **Ölçüldü** (`DIMA_CEKIRDEK_KATMAN=on python lab/kapi.py --tam`):
+>
+> | | `off` | `on` |
+> |---|---|---|
+> | TOPLAM doğru-cube | %93,1 | **%93,1** |
+> | `gitas` doğru/payda | 1515/1694 | 1517/1696 |
+> | semantik vaka | %91,5 | %91,7 |
+>
+> **Kazanç ölçülemedi** → yol haritasının karar kuralı (§C) gereği bayrak **`off` kalıyor
+> ve nedeni yazılıyor**. Bu bir unutma değil, ölçülmüş bir karar; kapıyla kilitli.
+
+> ⚠ **SÖZLEŞMENİN DİŞLERİ BAYRAĞA BAĞLI DEĞİL.** Grain ihlallerini `on` beklemeden
+> `tests/test_cekirdek_katman.py` (**34 test**) + `lab/mdl_diff.py` yakalıyor — ikisi de
+> bayraktan **bağımsız** koşar ve türev katmandaki **gizli ihlali bulan da tam olarak
+> buydu**. *Bir sözleşmenin değeri, uygulandığı anda değil, İHLALİ GÖRÜLDÜĞÜ anda başlar.*
+
 ### FAZ 2 · adım 5 — `2.1(d)` **türev katman: sürüklenme BİR KAT YUKARIDA tekrar üretiliyordu** *(2026-08-04)*
 
 Kapı: **35 test**, hızlı sinyal **328**. 🔴 Risk sınırı (`demo/packs`).
