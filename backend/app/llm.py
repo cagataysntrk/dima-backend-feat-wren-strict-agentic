@@ -984,11 +984,38 @@ class FailoverSqlGenerator:
         self._gens = list(generators)
         self._last = None  # son başarılı sağlayıcı (repair önce onu dener)
 
+    def _dususu_kaydet(self, gen, sira: int) -> None:
+        """FAZ 1.11 — bir SEVİYE düşüşünü `AuditLog`'a yazar.
+
+        ⚠ Sağlayıcı geçişi değil **seviye** değişimi kaydedilir: gemini→groq kullanıcı
+        için bir olay DEĞİLDİR (ikisi de seviye 2) ve her denemeyi audit'e yazmak kaydı
+        **gürültüye** boğardı — gürültüyle dolan bir kanıt defteri okunmaz olur.
+
+        🔴 Audit yazımı başarısız olursa **cevap düşürülmez**: kademeli düşüş bir
+        DAYANIKLILIK mekanizmasıdır; onu kayıt yüzünden kırmak, amacının tam tersi olurdu.
+        """
+        try:
+            from app.kademeli_dusus import dusus_kaydi
+
+            # Taban her zaman seviye 1: "normal" durum birincil LLM'dir. Önceki
+            # ÜRETİCİYİ geçmek, "önceki her zaman listenin başıdır" gizli varsayımını
+            # taşırdı (bkz. `dusus_kaydi` belgesi).
+            olay = dusus_kaydi(gen, yeni_sira=sira, onceki_seviye=1)
+            if not olay:
+                return
+            from control_plane import audit
+
+            audit.record(None, "llm_kademeli_dusus", generated_sql=olay["ozet"])
+        except Exception:  # noqa: BLE001 — kayıt, dayanıklılığı KIRAMAZ
+            _log.warning("kademeli düşüş audit'e yazılamadı", exc_info=True)
+
     def generate_sql(self, question: str, schema: dict) -> str:
         errs = []
-        for g in self._gens:
+        for sira, g in enumerate(self._gens):
             try:
                 sql = g.generate_sql(question, schema)
+                if sira:
+                    self._dususu_kaydet(g, sira)
                 self._last = g
                 return sql
             except Exception as e:

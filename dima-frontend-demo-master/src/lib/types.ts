@@ -49,6 +49,18 @@ export interface SchemaResponse {
   relationships: RelationshipMeta[];
   cubes?: CubeMeta[];
   db_online?: boolean; // veri kaynağı TCP erişilebilir mi → çevrimiçi/çevrimdışı rozeti
+  /** FAZ 1.11 — kademeli düşüş: 1=birincil LLM · 2=yedek · 3=LLM YOK (kural tabanlı).
+   *
+   * ⚠ Seviye 3 bir HATA DEĞİL bir DURUMDUR: sistem çalışıyor ama cevaplar KATEGORİK
+   * OLARAK farklı bir yoldan geliyor. Rozet bunu "çevrimdışı" gibi göstermemeli —
+   * "çalışıyor ama LLM yok" ile "hiç çalışmıyor" AYNI ŞEY DEĞİLDİR.
+   *
+   * 🔴 Seviye kararı BACKEND'de (`app/kademeli_dusus.py`); burada ikinci bir
+   * sınıflandırma yazmak rozet ile audit'in AYRIŞMASI demekti. `undefined` = bilgi yok,
+   * rozet bugünküyle birebir aynı. */
+  llm_seviye?: 1 | 2 | 3 | null;
+  llm_seviye_etiket?: string | null;
+  llm_uretici?: string | null;
 }
 
 export type Row = Record<string, unknown>;

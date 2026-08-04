@@ -21,11 +21,27 @@ export function ConnectionBadge() {
   if (pathname === "/login") return null;
 
   const online = !isError && data?.db_online !== false;
+  // ⚠️ FAZ 1.11 — KADEMELİ DÜŞÜŞ GÖSTERGESİ (üç seviye).
+  //
+  // 🔴 Seviye 3 bir HATA DEĞİL bir DURUMDUR: sistem çalışıyor ama cevaplar KATEGORİK
+  // OLARAK farklı bir yoldan (LLM'siz, kural tabanlı) geliyor. Bu yüzden kırmızı DEĞİL
+  // amber gösterilir ve "çevrimdışı" DEMEZ — "çalışıyor ama LLM yok" ile "hiç
+  // çalışmıyor" aynı şey değildir; ikisini aynı renkte göstermek kullanıcıyı yanlış
+  // eyleme (sistemi yeniden başlatmaya) iterdi.
+  //
+  // ⚠ Seviye kararı BACKEND'de (`app/kademeli_dusus.py`); burada ikinci bir eşik/etiket
+  // kümesi yazmak rozet ile audit'in AYRIŞMASI demekti. Etiket de backend'den gelir.
+  const seviye = data?.llm_seviye ?? null;
+  const dusuk = online && (seviye === 2 || seviye === 3);
   const label = isLoading
     ? "Veri kaynağı denetleniyor…"
-    : online
-      ? "Veri kaynağı çevrimiçi"
-      : "Veri kaynağına ulaşılamıyor — çevrimdışı";
+    : !online
+      ? "Veri kaynağına ulaşılamıyor — çevrimdışı"
+      : seviye === 3
+        ? `Sistem çalışıyor ama LLM YOK — cevaplar kural tabanlı (${data?.llm_uretici ?? "?"})`
+        : seviye === 2
+          ? `Birincil sağlayıcı yanıt vermiyor — yedekten koşuyor (${data?.llm_uretici ?? "?"})`
+          : "Veri kaynağı çevrimiçi";
   return (
     <div
       title={label}
@@ -37,9 +53,13 @@ export function ConnectionBadge() {
         className={`inline-block h-2.5 w-2.5 rounded-full ${
           isLoading
             ? "bg-neutral-400"
-            : online
-              ? "bg-emerald-500"
-              : "animate-pulse bg-red-500"
+            : !online
+              ? "animate-pulse bg-red-500"
+              : seviye === 3
+                ? "bg-amber-500 ring-2 ring-amber-500/30"
+                : dusuk
+                  ? "bg-amber-400"
+                  : "bg-emerald-500"
         }`}
       />
     </div>

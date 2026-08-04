@@ -209,6 +209,14 @@ class SchemaResponse(BaseModel):
     # Veri kaynağı erişilebilir mi (TCP): UI çevrimiçi/çevrimdışı rozeti. Ulaşılamazsa
     # şema yine döner (yapı) ama değerler zenginleşmez; badge kullanıcıyı uyarır.
     db_online: bool = True
+    # FAZ 1.11 — KADEMELİ DÜŞÜŞ göstergesi. 1=birincil LLM · 2=yedek · 3=LLM YOK (kural).
+    # ⚠ Seviye 3 bir HATA DEĞİL bir DURUMDUR: sistem çalışıyor ama cevaplar KATEGORİK
+    # OLARAK farklı bir yoldan geliyor. Rozet bunu "çevrimdışı" gibi göstermemeli —
+    # "çalışıyor ama LLM yok" ile "hiç çalışmıyor" aynı şey değildir.
+    # 🔴 Yeni bir UÇ AÇILMADI: rozet `/schema`'yı ZATEN yokluyor.
+    llm_seviye: int | None = None
+    llm_seviye_etiket: str | None = None
+    llm_uretici: str | None = None
 
 
 class QueryResult(BaseModel):

@@ -18,7 +18,10 @@ def get_schema(request: Request) -> SchemaResponse:
     try:
         from app.company_registry import wren_for_request
 
-        return SchemaResponse(**wren_for_request(request).schema())
+        from app.kademeli_dusus import istekten_rapor
+
+        return SchemaResponse(**{**wren_for_request(request).schema(),
+                                 **istekten_rapor(request)})
     except FileNotFoundError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 

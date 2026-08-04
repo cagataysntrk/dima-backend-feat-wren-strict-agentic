@@ -17,8 +17,8 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
-| **Sıradaki madde** | `1.10`/`1.11` eskalasyon + kademeli düşüş · `1.12` yasal · `1.13` **EN SON** |
-| **Demet** | demet 12: `1.8` · `1.9` — kapı sırada |
+| **Sıradaki madde** | `1.10` eskalasyon matrisi · `1.12` yasal · `1.13` **EN SON** |
+| **Demet** | demet 12: `1.8` · `1.9` · `1.11` — **dolu**, kapı sırada |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
 | **Demet** | ✅ **demet 7 kapandı** — FAZ 0 kapanış kapısı **4/4 YEŞİL** (süit **2199**) · demet 8 açık: `1.3c` · `1.3` |
@@ -420,6 +420,50 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 15 — `1.11` **kademeli düşüş: kayıt + gösterge** *(2026-08-04)*
+
+Kapı: **16 test**, hızlı sinyal **699**.
+
+> ✅ **YOL HARİTASI HAKLIYDI: «yeni kod YOK».** `FailoverSqlGenerator` **zaten** sırayla
+> deniyordu. Eksik olan iki şeydi: **kayıt** (bir düşüş `AuditLog`'a **hiç** yazılmıyordu,
+> yalnız bir `WARNING` kütüğü vardı — *kütük aranabilir değildir*; *"dün kaç kez ikinci
+> seviyeye düştük"* sorusu **cevapsızdı**) ve **gösterge** (kullanıcı hangi seviyede cevap
+> aldığını **göremiyordu**).
+
+| seviye | ne | kullanıcıya |
+|---|---|---|
+| **1** | birincil LLM | normal (yeşil) |
+| **2** | yedek LLM | *"birincil yanıt vermiyor"* (amber) |
+| **3** | `rule` — **LLM YOK** | 🔴 **kategorik olarak farklı** cevap (amber + halka) |
+
+> 🔴 **SEVİYE 3 BİR HATA DEĞİL BİR DURUMDUR.** Sistem **çalışıyor**, ama cevaplar
+> **kategorik olarak farklı** bir yoldan geliyor. Kırmızı göstermek kullanıcıyı **yanlış
+> eyleme** (sistemi yeniden başlatmaya) iterdi — *"çalışıyor ama LLM yok"* ile *"hiç
+> çalışmıyor"* aynı şey değildir ve aynı renk kanalını paylaşamazlar.
+
+> ⚠ **ÜÇ SEVİYE, sağlayıcı sayısı DEĞİL.** Failover beş sağlayıcı taşıyabilir; *beş
+> seviyeli bir gösterge, kullanıcının kararını değiştirmeyen bir ayrımı ekrana taşırdı.*
+> Seviye 2↔3 farkı **kararı değiştirir**; gemini↔groq farkı **değiştirmez** — ve o yüzden
+> gemini→groq geçişi audit'e **yazılmaz**: *gürültüyle dolan bir kanıt defteri okunmaz olur.*
+
+> ⚠ **Sıra 0 her zaman seviye 1 DEĞİLDİR:** anahtarsız bir kurulumda `rule` **birinci**
+> sıradadır ve zaten seviye **3**'tür. Sırayı seviyeyle karıştırmak, LLM'siz bir kurulumu
+> *"normal"* gösterirdi.
+
+> 🔴 **KENDİ SINAMAM GİZLİ BİR VARSAYIM BULDU.** `dusus_kaydi` önceki **üreticiyi** alıp
+> seviyesini `sira=0` ile hesaplıyordu — *"önceki her zaman listenin başıdır"*. Aynı
+> üretici, aynı seviye, yine de bir **olay** üretiyordu. *Gizli bir varsayım, doğru olduğu
+> sürece görünmez; yanlış olduğu gün açıklanamaz bir kayıt bırakır.* Taban seviye artık
+> **açıkça** veriliyor.
+
+> ⚠ **Yeni bir UÇ AÇILMADI:** rozet `/schema`'yı **zaten** yokluyor. İkinci bir poll, aynı
+> bilgiyi iki kanaldan taşımak ve ikisinin **ayrışması** demekti.
+> ⚠ **Kayıt hatası cevabı DÜŞÜRMÜYOR:** kademeli düşüş bir **dayanıklılık** mekanizmasıdır;
+> onu **kayıt** yüzünden kırmak amacının tam tersi olurdu.
+
+> ⚠ **Metin ölçme kusuru BEŞİNCİ kez** — bu kez `seviye === 3`'ün **ilk** geçişi (etiket
+> dalı) ölçüldü, renk dalı değil. Kapı artık **renk bloğunu** soruyor.
 
 ### FAZ 1 · adım 14 — `1.9` **numeric fidelity zorlaması** *(2026-08-04)*
 
