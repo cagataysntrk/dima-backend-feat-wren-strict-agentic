@@ -361,3 +361,93 @@ def test_KAPISIZ_adim_da_butceyi_tuketir():
     p.dis_adim("bilesik.b", sure_ms=1)
     with pytest.raises(ButceAsimi):
         p.calistir("route", "x", {"cubes": []})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FAZ 5.0 — K3: konuşma türleri thread'lerin bir sınıfına YAPISAL OLARAK kapalıydı
+# ─────────────────────────────────────────────────────────────────────────────
+
+def test_FAZ_5_0_sinifla_STRUCTURAL_BLOGUN_DISINDA():
+    """🔴 **Kusurun kendisi yapısaldı** — ve düzeltmesi de yapısal olarak kilitlenmeli.
+
+    `followup.sinifla`'nın TEK çağrısı `if structural_followup:` bloğunun **İÇİNDEYDİ**:
+    istemci `cube_query` göndermiyorsa (Discovery / ham thread) beş konuşma türü de
+    **erişilemezdi**. Bir gün biri çağrıyı yine bir `if`in içine taşırsa, bu kapı kırmızı
+    olur.
+
+    ⚠ Belirteç **AST**: `ask.py` 1.900+ satır ve bu kusurun kendi gerekçesi *"bir çağrının
+    yanlış `if`in içinde olduğu görünmüyor"*. Alt-dize taraması onu da göremezdi.
+    """
+    import ast as _ast
+    from pathlib import Path
+
+    kaynak = (Path(__file__).resolve().parents[1] / "app/routers/ask.py").read_text(
+        encoding="utf-8")
+    agac = _ast.parse(kaynak)
+
+    def _sinifla_cagrilari(dugum, kosul_icinde: bool):
+        out = []
+        for c in _ast.iter_child_nodes(dugum):
+            icinde = kosul_icinde or isinstance(dugum, _ast.If)
+            if (isinstance(c, _ast.Call)
+                    and getattr(c.func, "attr", "") == "sinifla"
+                    and getattr(getattr(c.func, "value", None), "id", "") == "followup"):
+                out.append((c.lineno, kosul_icinde))
+            out += _sinifla_cagrilari(c, icinde)
+        return out
+
+    cagrilar = _sinifla_cagrilari(agac, False)
+    assert cagrilar, "🔴 `followup.sinifla` HİÇ çağrılmıyor — beş konuşma türü ölü."
+    assert len(cagrilar) == 1, (
+        f"🔴 `followup.sinifla` {len(cagrilar)} yerde çağrılıyor. Aynı kuralın iki "
+        f"sahibi olursa ikisi AYRIŞIR — sınıflandırma tek yerde yapılmalı.")
+    satir, if_icinde = cagrilar[0]
+    assert not if_icinde, (
+        f"🔴 `followup.sinifla` çağrısı (satır {satir}) yine bir `if` bloğunun İÇİNDE. "
+        f"FAZ 5.0'ın düzelttiği kusur tam olarak buydu: `cube_query` göndermeyen "
+        f"thread'lerde beş konuşma türü de ERİŞİLEMEZ olur.")
+
+
+def test_FAZ_5_0_baglam_var_SABIT_TRUE_degil():
+    """🔴 `baglam_var=True` sabitti → *"bağlam-yok"* kuralı **üretimde hiç ateşlenmiyordu**.
+
+    *Sabit bir `True`, bir bayrak değil bir yalandır:* fonksiyonun imzası bir soru
+    soruyor ve çağıran her seferinde aynı cevabı veriyorsa, o parametre yoktur.
+    """
+    import ast as _ast
+    from pathlib import Path
+
+    agac = _ast.parse((Path(__file__).resolve().parents[1] / "app/routers/ask.py")
+                      .read_text(encoding="utf-8"))
+    for c in _ast.walk(agac):
+        if (isinstance(c, _ast.Call) and getattr(c.func, "attr", "") == "sinifla"):
+            for kw in c.keywords:
+                if kw.arg == "baglam_var":
+                    assert not (isinstance(kw.value, _ast.Constant)
+                                and kw.value.value is True), (
+                        "🔴 `baglam_var=True` yine SABİT. `followup.py`'nin 'bağlam-yok' "
+                        "kuralı üretimde hiç ateşlenmez ve yalnız birim testinde yaşar.")
+
+
+def test_FAZ_5_0_baglam_YOKKEN_konusma_sinifi_ACILMAZ():
+    """Bağlam gerçekten yoksa *"bu neden böyle?"* bir **yeni konudur** — çapalanacak
+    bir makbuz yoktur."""
+    from app import followup
+
+    n = followup.sinifla("bu neden böyle?", baglam_var=False)
+    assert n.sinif == followup.SINIF_YENI
+    assert n.kural == "baglam-yok"
+
+
+def test_FAZ_5_0_baglam_VARKEN_konusma_sinifi_ACILIR():
+    """Bağlam varsa — **`cube_query` olmasa bile** — tür tanınır.
+
+    Ham thread'de (Discovery ile başlamış bir sohbet) kullanıcı *"bu neden böyle?"*
+    dediğinde artık sınıf **biliniyor**. Bu, 5.1/5.2'nin doğduğu andan itibaren her
+    thread sınıfında çalışmasının ön koşulu.
+    """
+    from app import followup
+
+    n = followup.sinifla("bu neden böyle?", baglam_var=True)
+    assert n.sinif == followup.SINIF_KONUSMA
+    assert n.tur == followup.TUR_NEDEN

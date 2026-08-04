@@ -2940,6 +2940,24 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     # `tests/test_orkestrator.py::test_agent_plan_secimi_yapisal_olmayan_turda_cokmez`.
     migration_trace: list[str] = []
 
+    # 🔴 **FAZ 5.0 — K3 DÜZELTMESİ.** `followup.sinifla()`'nın TEK çağrısı
+    # `if structural_followup:` bloğunun **İÇİNDEYDİ** ve `baglam_var=` sabit **`True`**
+    # geçiliyordu. İki sonucu vardı ve ikisi de ölçüldü:
+    #   (1) İstemci `cube_query` göndermiyorsa (Discovery / ham thread) *"bu neden
+    #       böyle?"* · *"normal mi?"* · *"analiz et"* — **hiçbiri sınıflanmıyordu**.
+    #       Beş konuşma türü de o thread sınıfında **erişilemezdi**.
+    #   (2) `baglam_var` sabit `True` olduğu için `followup.py`'nin *"bağlam-yok"* kuralı
+    #       **üretimde hiç ateşlenmiyordu** — yalnız birim testinde yaşıyordu.
+    #
+    # ⚠ **Çağrı yukarı taşındı, DAVRANIŞ KESİLMEDİ (KAT-2):** sınıflandırma artık her
+    # thread sınıfında yapılıyor ama *"cevapsız bir dal, cevaplı bir yolu KESEMEZ"* —
+    # ham thread'de konuşma sınıfı bir cevabı **engellemez**, yalnız zincir zaten
+    # tükendiğinde daha **isabetli** bir not üretir (aşağıda).
+    #
+    # 🔴 `baglam_var` artık **gerçek bağlam durumundan**: yapısal takip **ya da** ham
+    # takip (önceki SQL + geçmiş). *Sabit bir `True`, bir bayrak değil bir yalandır.*
+    niyet = followup.sinifla(body.question, baglam_var=bool(is_followup))
+
     # 3) YAPISAL TAKİP — önceki tur GERÇEK bir CubeQuery ürettiyse (route()/LLM-select/
     # YoY/bu zincirin kendisi), deterministik düzenleme zinciri denenir (bkz. docstring §3).
     # cube_router.py'de zaten tam, test edilmiş, LLM'siz bir zincirdi — strict-agentic
@@ -3014,7 +3032,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # ARAÇ ÇAĞIRIR. `deterministic_refine`'dan ÖNCE yakalanmalıdır — aksi halde
         # "neden"/"düşüş" gibi kelimeler onun sözlük eşleşmesine karışır (Faz D3'te
         # "neden arttı" → `bakim.mudahale_eden` sahte eşleşmesi tam buydu).
-        niyet = followup.sinifla(body.question, baglam_var=True)
+        # ⚠ `niyet` YUKARIDA hesaplandı (FAZ 5.0) — burada yeniden çağırmak, aynı kuralın
+        # ikinci bir sahibini yaratırdı ve iki sahip **ayrışır**.
         if niyet.konusma:
             # GRAFİĞE ÇAPA (Faz G2): kullanıcı bir hücreye işaret ettiyse konuşma O
             # hücrenin üstünde yürür. Çapa bir metin değil KOORDİNATTIR ve burada
@@ -3224,6 +3243,20 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             _log.info("Takip: yapısal zincir tükendi ama mesajda katalog kanıtı var → "
                       "Discovery'ye düşülüyor (dürüst ret DEĞİL, önceki reason=%r)", reason)
         else:
+            # 🔴 FAZ 5.0 — ZİNCİR ZATEN TÜKENDİ (Discovery'ye de düşülmedi: katalogda
+            # kanıt yok). Burada bir yol **kesilmiyor**; yalnız verilecek not, artık
+            # bilinen konuşma sınıfıyla **isabetli** hâle geliyor. Kullanıcı *"bu neden
+            # böyle?"* diye sorduysa ona *"yeni bir soru olarak sorar mısın"* demek,
+            # sorduğu şeyin ne olduğunu **anlamadığımızı** söylemektir — oysa anladık,
+            # yalnız **çapalanacak bir rapor** yok.
+            if niyet.konusma:
+                return _honest_refusal(
+                    note="Bunu hangi rapor üstünde konuşalım? Önce bir soru sor, sonra "
+                         "cevabın üstünde konuşabiliriz.",
+                    trace=migration_trace + [
+                        f"Takip: konuşma sınıfı ({niyet.tur}) ama çapalanacak rapor YOK "
+                        f"→ dürüst ret (FAZ 5.0)"],
+                )
             return _honest_refusal(
                 note=reason or "Bu takip mesajını önceki raporla ilişkilendiremedim. "
                               "Yeni bir soru olarak sorar mısın?",
