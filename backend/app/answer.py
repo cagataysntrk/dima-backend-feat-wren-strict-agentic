@@ -550,6 +550,27 @@ def _provenance(service, cube_query: dict | None, baglam) -> dict | None:
     k = koken(service, cube_query)
     if k:
         blok.update(k)
+    # ⚠️ FAZ 1.6 — KOLON düzeyi köken, **ilişki düzeyinin YANINA** (yerine değil).
+    # İkisi farklı sorulardır: `koken()` *"hangi kırılım hangi join'den"*, `kolon_kokeni`
+    # *"bu sayı hangi kolondan, hangi dönüşümle"*. Birini ötekinin adıyla sunmak, bir
+    # kanıtı başka bir kanıt gibi göstermek olurdu.
+    #
+    # 🔴 CÜMLELERİ **BACKEND** ÜRETİR. Şablonları frontend'e kopyalamak, bu deponun
+    # defalarca ölçtüğü *"aynı kuralın iki sahibi"* deseni olurdu — ve iki şablon kümesi
+    # zamanla ayrışır, kullanıcı aynı kanıtı iki farklı cümleyle görürdü.
+    try:
+        from app.features import resolve_for
+
+        from app.config import get_settings as _gs
+
+        if "lineage" in resolve_for(_gs(), getattr(baglam, "principal", None)):
+            from app import lineage as _lin
+
+            kk = _lin.kolon_kokeni(service.schema(), cube_query) if cube_query else None
+            blok["kolon_kokeni"] = kk or _lin.BILINMIYOR
+            blok["koken_cumleleri"] = _lin.cumleler(kk or _lin.BILINMIYOR)
+    except Exception:  # noqa: BLE001 — makbuz zenginleştirmesi cevabı DÜŞÜRMEZ
+        _log.warning("kolon kökeni üretilemedi (best-effort)", exc_info=True)
     if baglam is not None:
         blok.update(baglam.makbuza())
     return blok or None

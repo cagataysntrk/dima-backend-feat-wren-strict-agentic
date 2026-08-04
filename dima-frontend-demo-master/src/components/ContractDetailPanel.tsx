@@ -119,6 +119,32 @@ export function ContractDetailPanel({
               </pre>
             )}
 
+            {/* FAZ 1.6 — KOLON KÖKENİ. Cümleler BACKEND'de üretilir (`app/lineage.py::
+                cumleler`); burada ikinci bir şablon kümesi yazmak "aynı kuralın iki
+                sahibi" olurdu. Teknik GRAF gösterilmez (KD-13): kullanıcının sorusu
+                "bu sayı nereden geldi"dir ve cevabı bir CÜMLEDİR. */}
+            {Array.isArray(
+              (contractQ.data as { provenance?: { koken_cumleleri?: string[] } })
+                .provenance?.koken_cumleleri,
+            ) && (
+              <div className="border-t border-hairline pt-3">
+                <p className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+                  bu sayı nereden geldi
+                </p>
+                <ul className="space-y-1">
+                  {(
+                    contractQ.data as unknown as {
+                      provenance: { koken_cumleleri: string[] };
+                    }
+                  ).provenance.koken_cumleleri.map((c, i) => (
+                    <li key={i} className="text-[12px] leading-relaxed text-neutral-300">
+                      {c}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div className="border-t border-hairline pt-3">
               <button
                 onClick={() => replay.mutate()}

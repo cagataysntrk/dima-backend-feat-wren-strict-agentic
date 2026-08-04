@@ -17,8 +17,8 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
-| **Sıradaki madde** | `1.6` column-level lineage *(🔴 `1.5`'ten ÖNCE — sıra düzeltmesi)* |
-| **Demet** | demet 10: `1.2c` · `0.21/modül çıkarma` · `1.4` — kapı sırada |
+| **Sıradaki madde** | `1.5` metrik sertifikasyonu *(artık `lineage_set_hash` üretilebilir)* · `1.7` tazelik |
+| **Demet** | ✅ **demet 10 kapandı** — kapı **4/4 YEŞİL** (süit **2308**) · demet 11 açık: `1.6` |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
 | **Demet** | ✅ **demet 7 kapandı** — FAZ 0 kapanış kapısı **4/4 YEŞİL** (süit **2199**) · demet 8 açık: `1.3c` · `1.3` |
@@ -420,6 +420,51 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 10 — `1.6` **kolon kökeni** *(2026-08-04)*
+
+**Demet 10 kapısı: 4/4 YEŞİL** — süit **2308** · eval ±%0 · korpus **%93,1** (taban %93,2) ·
+senaryo dokuz sınıf tabanda. Kapı: **26 test**, hızlı sinyal **577**.
+
+> 🔴 **KİLİT İŞE YARADI — VE BİR SAYIYI DÜZELTTİ.** `gitas` korpusa **geri döndü**
+> (semantik payda **342 → 445**). Bu, bir önceki turda yazdığım bir cümleyi **çürütüyor**:
+> *"korpusun +1,1 puanı AJ0 düzeltmesinden"* demiştim. **Yanlış.** O artış `gitas`'ın
+> düşmesinin **yarattığı şişmeydi**; `gitas` dönünce sayı %94,3 → **%93,1**'e indi.
+> AJ0 düzeltmesinin korpus etkisi **≈0** (gürültü içinde) — çünkü **korpus typo yolunu
+> yapısal olarak göremez** (soruları katalogdan üretilir, hepsi doğru yazılmıştır).
+> *Bir sayının yükselmesi, ölçülen kümenin değişmediğini kanıtlamaz.*
+
+`1.6` · **kolon düzeyi köken.** `answer.koken()` **ilişki** düzeyindeydi (*hangi kırılım
+hangi join'den*); bu **kolon** düzeyi: *"bu sayı hangi tablonun hangi kolonundan, hangi
+DÖNÜŞÜMLE geldi?"* İkisi farklı sorulardır ve biri ötekinin **yerine geçmez**.
+
+> ✅ **YENİ BİR BEYAN YAZILMADI.** Dönüşüm tipi **manifestten türüyor** — ölçü `expression`'ı
+> zaten oradaydı, yalnız **sorulmuyordu**: `SUM`/`COUNT`→`toplam` · `AVG`/bölme/`*100`→
+> `oran` · `CASE WHEN`/`FILTER`→`filtre` · düz kolon→`dogrudan` · ilişki→`birlestirme`.
+> Bir `lineage:` alanı beyan ettirmek **ikinci bir kaynak açmak** olurdu.
+
+> 🔴 **«BİLİNMİYOR» ≠ «HİÇ SORULMADI».** Discovery ham SQL'inde `cube_query` yoktur;
+> köken türetilemez. `"bilinmiyor"` bir eksiklik değil bir **beyandır** — `⊘ ÖLÇÜLEMEDİ`
+> üçüncü hâliyle aynı disiplin.
+
+> 🔴 **ŞABLONLARIN TEK SAHİBİ BACKEND.** Cümleleri frontend'de üretmek *"aynı kuralın iki
+> sahibi"* olurdu ve ikisi ayrışıp kullanıcıya **aynı kanıtı farklı cümlelerle** gösterirdi.
+> Kapı frontend'de şablon **kopyası** aramıyor — **olmadığını** doğruluyor.
+> **KD-13:** ham köken **yapısı** (graf) frontend'e **basılmıyor** — kullanıcının sorusu
+> *"bu sayı nereden geldi"*dir ve cevabı bir **cümledir**; graf bir geliştirici artefaktıdır
+> (`D3`'ün *"geliştirici katmanı son kullanıcıda"* kusurunun tekrarı olurdu).
+
+> ⚠ **ÜÇÜNCÜ CÜMLE BİLİNÇLE GELMEDİ.** *"Bir üst-akış tablo N gün önce değişti"* **FAZ
+> 1.7**'nin verisini ister (`SyncState.last_synced_at`) ve o veri `/ask`'e **hiç ulaşmıyor**
+> (`grep -rl freshness backend/app/` → **0**). Uydurma bir gün sayısı, `pvm:`/`target:`
+> eşleştirmesinde **reddedilen** şeyin aynısı olurdu: **güvenle yanlış** bir sayı.
+
+> ✅ **SIRA DÜZELTMESİ İŞE YARADI:** `1.6` önce indiği için `1.5`'in `lineage_set_hash`'i
+> artık **üretilebilir**. Bugünkü sırayla `1.5` inseydi o alan ya **uydurulur** ya **hep
+> `None`** olurdu.
+
+> ⚠ Bayrak kaydını yanlış şemayla yazdım (`stage`/`owner`/`note` yerine
+> `label`/`description`/`category`) — `test_bayrak_kaydi` **anında** yakaladı.
 
 ### FAZ 1 · adım 9 — `1.4` **süreç-arası derleme kilidi** *(2026-08-04)*
 

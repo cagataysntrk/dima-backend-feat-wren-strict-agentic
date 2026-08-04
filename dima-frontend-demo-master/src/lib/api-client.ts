@@ -539,6 +539,16 @@ export async function listContracts(limit = 20): Promise<{ contracts: ContractRe
   return data;
 }
 
+/** FAZ 1.6 — kolon kökeni cümleleri. **Şablonlar BACKEND'de** üretilir; burada
+ * ikinci bir şablon kümesi yazmak "aynı kuralın iki sahibi" olurdu ve ikisi zamanla
+ * ayrışıp kullanıcıya AYNI kanıtı FARKLI cümlelerle gösterirdi.
+ *
+ * Discovery ham SQL'inde tek bir cümle döner: köken **bilinmiyor** — ve bu `undefined`
+ * ile AYNI ŞEY DEĞİLDİR (`undefined` = hiç sorulmadı, "bilinmiyor" = soruldu, cevap yok).
+ * ⚠ Teknik köken GRAFİĞİ gösterilmez (KD-13): kullanıcının sorusu "bu sayı nereden
+ * geldi"dir ve cevabı bir CÜMLEDİR — graf bir geliştirici artefaktıdır. */
+export type KokenCumlesi = string;
+
 export async function getContract(cid: string): Promise<ContractRecord> {
   const { data } = await apiClient.get<ContractRecord>(`/contracts/${cid}`);
   return data;

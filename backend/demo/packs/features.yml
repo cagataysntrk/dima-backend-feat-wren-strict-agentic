@@ -54,6 +54,12 @@ features:
   sosyal_sinif: prod
   capa_zinciri: "off"
   metrik_kaydi: "off"
+  lineage: "off"          # FAZ 1.6: KOLON düzeyi köken — "bu sayı hangi tablonun hangi
+                          # kolonundan, hangi DÖNÜŞÜMLE geldi?" `answer.koken()` İLİŞKİ
+                          # düzeyindedir (hangi kırılım hangi join'den); bu ondan FARKLI
+                          # bir sorudur ve yerine geçmez.
+                          # KAPALIYKEN makbuz bugünküyle BİREBİR aynı (KURAL B, testli).
+                          # Toplanan geçmiş SİLİNMEZ (ADR-0019).
   netlestirme_onceligi: "off"  # FAZ F: katalogda ≥2 SAHİP olan bir ölçüde (ör. `bakiye`
                                # → cari|mizan) netleştirme chip'i Intent-JSON'u ÖNCELER.
                                # ⟳ FAZ X (3 Ağustos 2026): KARAR ARTIK ÖLÇÜLMÜŞTÜR —

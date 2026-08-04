@@ -52,6 +52,17 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "çapa listesi boş kalır ve davranış birebir bugünküdür (FAZ 0.5).",
         "category": "Konuşma",
     },
+    "lineage": {
+        "label": "Kolon kökeni",
+        "description": "\"Bu sayı hangi tablonun hangi kolonundan, hangi DÖNÜŞÜMLE "
+                       "geldi?\" — LLM'siz şablon cümleler (FAZ 1.6). Teknik köken GRAFİĞİ "
+                       "gösterilmez (KD-13): kullanıcının cevabı bir cümledir, graf bir "
+                       "geliştirici artefaktıdır. Discovery ham SQL'inde `bilinmiyor` "
+                       "yazılır — `None` ile aynı şey DEĞİL: `None` \"hiç sorulmadı\", "
+                       "`bilinmiyor` \"soruldu, cevap yok\". Kapalıyken makbuz birebir "
+                       "bugünkü (GERİ AL).",
+        "category": "Kanıt",
+    },
     "metrik_kaydi": {
         "label": "Metrik kaydı (hakem)",
         "description": "Bir iş terimini birden fazla cube sahipleniyorsa HAKEM kaydı "
