@@ -45,6 +45,17 @@ class Settings(BaseSettings):
     # auto: anthropic → xai → gemini → groq → ollama (ayakta ise) → kural-tabanlı.
     # Açık değerler: auto | anthropic | xai | gemini | groq | openrouter | ollama | rule
     llm_provider: str = "auto"
+    # ⚠️ FAZ 0.16 — **AYRILMIŞ ÖLÇÜM ANAHTARI.** Ürün anahtarından **ayrıdır**: ölçüm
+    # turları (`lab/*.py --live`) ile üretim trafiği aynı kotayı paylaşırsa, ölçüm
+    # üretimi boğar ya da üretim ölçümü boğar — ikisi de sessizce olur. Ölçüldü
+    # (`50402d3`): *"gemini-flash-lite 2×429 … nemotron-ultra ⊘ 54×429 — ücretsiz katman
+    # doydu"* ve *"ölçümün gerçek gürültü kaynağı BENİMDİ: üç konteyner aynı anda API'yi
+    # dövüyordu."* Bu belgenin **151 maddesinin her «önce ölç» kapısı** o kotaya bağlı.
+    #
+    # Tanımsızsa davranış **bugünküyle birebir aynıdır** (GERİ AL): ürün anahtarı kullanılır.
+    # YALNIZ `lab/` araçları okur; üretim yolu bu alana **hiç bakmaz**.
+    measure_api_key: str = ""
+    measure_provider: str = ""
     anthropic_api_key: str = ""
     llm_model: str = "claude-sonnet-4-6"
     # Faz 4.2 (dış yol haritası 2.11 "model sınıfı seçimi" karşılığı, 31 Temmuz 2026):

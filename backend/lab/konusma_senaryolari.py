@@ -87,7 +87,17 @@ def _canli_ortami_geri_yukle() -> str:
             os.environ[k] = v
         elif k in CANLI_YOLU_SUSTURANLAR:
             os.environ.pop(k, None)
+    # ⚠️ FAZ 0.16 — AYRILMIŞ ÖLÇÜM ANAHTARI, **tek sahipte**. Burada olması bilinçli:
+    # `--live` koşan dört aracın dördü de bu fonksiyondan geçer (`deneyim` · `vk_taban` ·
+    # `nl_accuracy` · `konusma_senaryolari`), yani anahtar seçimi **bir kez** yazılır.
+    # Tanımsızsa hiçbir şey değişmez — bugünkü davranış aynen korunur.
+    _olcum_anahtari = os.environ.get("DIMA_MEASURE_KEY", "").strip()
+    _olcum_saglayici = os.environ.get("DIMA_MEASURE_PROVIDER", "").strip()
+    if _olcum_saglayici:
+        os.environ["DIMA_LLM_PROVIDER"] = _olcum_saglayici
     saglayici = os.environ.get("DIMA_LLM_PROVIDER", "")
+    if _olcum_anahtari and saglayici not in ("", "rule", "auto"):
+        os.environ[f"DIMA_{saglayici.upper()}_API_KEY"] = _olcum_anahtari
     if saglayici in ("", "rule"):
         raise SystemExit(
             "--live GERÇEK bir sağlayıcı ister. `DIMA_LLM_PROVIDER` boş ya da 'rule' — "
@@ -112,13 +122,53 @@ def _canli_ortami_geri_yukle() -> str:
     # ÜRETİCİ kuruluyor mu, onu sor. Fail-closed: kurulmuyorsa koşma.
     from app.llm import build_generator
 
-    uretici = type(build_generator(get_settings())).__name__
+    _uretici_nesnesi = build_generator(get_settings())
+    uretici = type(_uretici_nesnesi).__name__
     if uretici == "RuleBasedSqlGenerator":
         raise SystemExit(
             f"--live: ortam `{saglayici}` diyor ama kurulan üretici {uretici} — "
             "anahtar yok/geçersiz ya da ayar önbelleği bayat. Bu koşum LLM hakkında "
             "HİÇBİR ŞEY ölçmez; 'canlı' etiketiyle raporlanması yanıltıcı olurdu.")
-    return f"{saglayici} ({uretici})"
+
+    _kota_on_ucusu(_uretici_nesnesi)
+    kaynak = "ÖLÇÜM anahtarı (ayrılmış)" if _olcum_anahtari else "ürün anahtarı (PAYLAŞIMLI)"
+    return f"{saglayici} ({uretici}) · {kaynak}"
+
+
+def _kota_on_ucusu(uretici) -> None:
+    """🔴 FAZ 0.16 KAPISI — **kota tükendiyse KOŞMA.**
+
+    *"Sağlayıcı kuruldu"* ile *"sağlayıcı cevap veriyor"* farklı şeylerdir. Ücretsiz
+    katman doyduğunda üretici **kurulur** ama her çağrı `429` döner; koşum yine de
+    ilerler ve sonuçta ya boş ya `rule` cevapları ölçülür. Bu operasyonun kendi kaydı:
+    *"nemotron-ultra ⊘ **54×429** — ücretsiz katman doydu."*
+
+    Bir **tek** ucuz çağrıyla ön uçuş yapılır. Başarısızsa `SystemExit`: yarım kotayla
+    üretilmiş bir sayı, hiç sayı olmamasından **kötüdür** — çünkü ona bakılıp bayrak
+    kararı verilir.
+
+    ⚠ Ön uçuş **bir çağrı harcar** ve bu bilinçlidir: bir turun 12-15 çağrısını boşa
+    harcamaktansa bir çağrıyla durmak ucuzdur.
+    """
+    import os as _os
+
+    if _os.environ.get("DIMA_KOTA_ON_UCUSU", "").lower() in ("0", "off", "kapali"):
+        print("⚠ kota ön uçuşu ATLANDI (DIMA_KOTA_ON_UCUSU kapalı) — koşum kotanın "
+              "tükenmiş olması ihtimaline karşı KORUMASIZ", flush=True)
+        return
+    try:
+        cikti = uretici.generate_sql("kaç kayıt var", {"cubes": []})
+    except Exception as exc:                                   # noqa: BLE001
+        raise SystemExit(
+            f"--live KOTA ÖN UÇUŞU BAŞARISIZ: {type(exc).__name__}: {str(exc)[:200]}\n"
+            "Kota tükenmiş ya da anahtar geçersiz olabilir. Yarım kotayla üretilmiş bir "
+            "ölçüm, bayrak kararına dayanak yapılamaz — koşum DURDURULDU (fail-closed).\n"
+            "Ayrılmış ölçüm anahtarı için: DIMA_MEASURE_KEY (+ DIMA_MEASURE_PROVIDER)."
+        ) from exc
+    if not (cikti or "").strip():
+        raise SystemExit(
+            "--live KOTA ÖN UÇUŞU BOŞ DÖNDÜ: üretici kuruldu ama cevap üretmiyor. "
+            "Koşum DURDURULDU (fail-closed) — bkz. DIMA_MEASURE_KEY.")
 
 RAPOR_DIZINI = Path(__file__).resolve().parent / "reports" / "konusma_senaryolari"
 #: `--live` sınıf başına kaç senaryo koşar (katmanlı örneklem).

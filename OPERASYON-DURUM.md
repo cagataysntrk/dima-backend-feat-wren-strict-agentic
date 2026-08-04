@@ -17,8 +17,9 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 0** — temizlik ve kapılar *(25 madde; sıra **numara DEĞİL**, FAZ 0 girişindeki bağlayıcı koşum sırası)* |
-| **Sıradaki madde** | **adım 3:** `0.16` — ölçüm bütçesi + koşum hijyeni *(ayrılmış kota anahtarı; her «önce ölç» kapısının ön koşulu)* |
-| **Ondan sonra** | `0.14` → `0.19` → `0.18` → `0.4/0.5/0.5b` → kalan *(0.3 · 0.6–0.13 dâhil)* → `0.21` |
+| **Sıradaki madde** | **adım 4:** `0.14` — beş entegrasyon kapısı (K1…K5) |
+| **Ondan sonra** | `0.19` → `0.18` → `0.4/0.5/0.5b` → kalan *(0.3 · 0.6–0.13 · 0.15 dâhil)* → `0.21` |
+| **Tempo** | 🔴 **DEMET disiplini yürürlükte** (`OPERASYON.md §3`): commit ≠ kapı; tam kapı **demet sonunda bir kez**. Risk sınırındaki dosyalara dokunan madde demete girmez |
 | **v1 bitiş ölçütü** | §C'nin **16 ölçütü** yeşil |
 
 ---
@@ -181,6 +182,41 @@ güncellenmek zorunda değil. Hata yönü de tersine çevrildi: unutulan bir *ta
 `R4` 0.22 kapısının metin penceresi · `R5` `_yururlukte_satirlari` biçim bağımlılığı ·
 `R8` chip'lerin maskeli-boyut süzgecini paylaşmaması · `R10` `page.tsx:100`/`ChatPanel:196`.
 
+### FAZ 0 · adım 3 — `0.16` ölçüm bütçesi + koşum hijyeni *(2026-08-04)*
+
+| Parça | Ne indi | Kapı |
+|---|---|---|
+| **Ayrılmış anahtar** | `DIMA_MEASURE_KEY` (+ `DIMA_MEASURE_PROVIDER`) — ürün trafiğiyle **kota rekabeti biter**. Tanımsızsa davranış **birebir bugünkü** *(GERİ AL)* | `test_OLCUM_ANAHTARI_AYARDA_var` · `test_TANIMSIZSA_BUGUNKU_DAVRANIS` |
+| **Kota ön uçuşu** | *"Sağlayıcı kuruldu"* ≠ *"cevap veriyor"*. Tek ucuz çağrı; **429 ya da boş cevap → KOŞMAZ** (fail-closed), hata mesajı çözümü gösterir | `test_KOTA_DOLUYSA_KOSMAZ` · `test_BOS_CEVAP_da_KOSMAZ` |
+| **Kaçış kapağı** | Ağ arızası bir turu kilitlemesin diye kapatılabilir — ama **sessiz değil**, *"KORUMASIZ"* diye bağırır | `test_ON_UCUS_KAPATILABILIR_ama_SESSIZ_DEGIL` |
+| **Koşum hijyeni** | `--rm` **yasak**, `-d` + `--name` + `docker wait` + `docker rm -f`. *Ölçüldü: `--rm` kütüğü siler ve kabuk ölürse özet **tamamen kaybolur** — bu operasyonda **iki kapı özeti böyle kayboldu*** | `test_KOSUM_HIJYENI_KURALI_YAZILI` |
+
+**Tek sahip:** üçü de `konusma_senaryolari._canli_ortami_geri_yukle`'de — `--live` koşan
+**dört aracın dördü de** oradan geçiyor (`deneyim` · `vk_taban` · `nl_accuracy` · kendisi);
+tüketicilere tek tek yazmak, dördüncüsünü unutmak demekti. *(Ölçüldü: `faz3a_sema_kazanci`
+`--live` yalnız docstring'de geçiyor — içi boş bir canlı mod **yok**.)*
+
+> ⚠ **Kapının kendi kusuru da düzeltildi:** hijyen testi `OPERASYON.md`'yi repo kökünde
+> arıyordu ve kapı konteynerine kök **mount edilmediği** için her koşumda `skip` oluyordu.
+> **Atlanan bir kapı, kapı değildir** → kural `backend/CLAUDE.md`'ye de yazıldı (her zaman
+> mount edilir) ve test iki kaynağı da okuyor.
+
+### 🔵 TEMPO KARARI — **commit ≠ kapı** *(ölçülerek benimsendi)*
+
+Bir turda FAZ 0'ın ~4 maddesi indi ve tam kapı **6 kez** koştu (~90 dk). Ama sürenin
+**%75'i kapıda değildi**; madde başına tekrarlanan 10 adımlık döngüdeydi. Ve `--tam`'ın
+**dört bileşeninin üçü** o turda **hiç kıpırdamadı**, çünkü onları besleyen dosyalara
+dokunulmamıştı. → **Her madde kendi commit'ini alır; tam kapı demet sonunda bir kez.**
+**Risk sınırı** (`cube_router · interpret · answer · followup · routers/ask · contribution ·
+demo/packs`) demete girmez, kendi kapısını hemen koşar.
+
+**İkinci ağ ölçüldü:** `.github/workflows/backend-ci.yml` her push'ta `pytest -q` koşuyor
+ve `tests/test_eval_gate.py` süitin içinde → **eval + süit kapıları CI'da ZATEN VAR**
+(`2/4`). 🔴 Bu, önceki turun *"ölçüm kapısı taşıyan 0 workflow"* ölçümünü **çürütür** —
+o probe kapıyı **çağıran komuta göre** arıyordu ve başka yoldan koştuğunu göremiyordu
+*(ölçüm aracının kusuru, düzeltildi)*. `FAZ 0.15`'in gerçek kapsamı: sıfırdan kurulum
+**değil**, mevcut workflow'a **korpus + senaryo** eklemek.
+
 ### Taban ölçümü · `lab/vk_taban.py` *(commit `8f87e40`)*
 VK-1…VK-6 **yapısal ve canlı** (gemini) ölçüldü. `§G.6e`'nin *"Bugün"* sütunu artık
 **yeniden üretilebilir**. Üç satır düzeltilmesi gerekti (VK-4 · VK-5 · VK-6).
@@ -222,6 +258,7 @@ VK-1…VK-6 **yapısal ve canlı** (gemini) ölçüldü. `§G.6e`'nin *"Bugün"*
 | 21 | **Onay kartına SÖZLE «evet» işlemiyor:** t08 kart *"…panona ekleyeyim mi?"* diye **cümleyle** soruyor; t09 *"evet ekle"* → *"geçerli bir alan veya değişiklik belirtmemektedir"*. Halka yalnız **fareyle** kapanıyor. *(Düğme yolu ✅ çalışıyor: t10 «Rapor panona eklendi».)* | **FAZ 6** *(eylem/onay akışı)* |
 | 22 | **Ham kolon adı + saat damgası ekranda:** `tarih__year: 2026-01-01 00:00:00`. Kullanıcı: *"Ben yıl sordum, bana veritabanı sütun adı ve saat 00:00 gösteriliyor."* | **FAZ 0.10b** *(görünen adlar)* |
 | 23 | **330 satır, sıfır içgörü:** t05'te kırılıma tıklamanın sebebi *"hangi makine kötü"* idi; dönen tek cümle sistemin **yapmadığı** işi anlatıyor. Kırılımlı oran görünümünde en azından **sıralama** verilebilmeli *(bugün toplanamadığı için susuyor — doğru ama yetersiz)* | **FAZ 5** *(anlatı) + 0.10b* |
+| 24 | 🔴 **`pytest-xdist` ÖLÇÜLDÜ: 100 sn ↔ 510 sn — ama 360 hata.** Paralel koşum süiti **5 kat** hızlandırıyor, ancak `session` fixture'ları ve compose kilidi (`metadata.yml`) worker'lar arasında çakışıyor. **Bedava değil**; benimsenmeden önce izolasyon işi gerekir *(muhtemelen worker başına ayrı `DIMA_DATABASE_URL`/pack dizini)*. Kazanç büyük olduğu için borç olarak duruyor | **FAZ 0.15** *(CI kapıları — aynı izolasyon işi orada da lazım)* |
 
 ---
 

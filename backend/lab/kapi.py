@@ -10,8 +10,18 @@ bir fazda üç kez koşturuldu → 45 dakika, ve üçünün ikisi hiçbir şey b
 
 | Seviye | Ne koşar | Ne zaman |
 |---|---|---|
-| `--hizli` | değişen modüle **bağımlı** test dosyaları + çekirdek duman | geliştirme sırasında |
-| `--tam` | süit + `eval` + korpus + senaryo | **faz sonunda, bir kez** |
+| `--hizli` | değişen modüle **bağımlı** test dosyaları + çekirdek duman | her maddede, commit'le |
+| `--tam` | süit + `eval` + korpus + senaryo | **demet sonunda, bir kez** |
+
+## DEMET kuralı — commit ≠ kapı (4 Ağustos 2026)
+
+Ölçüldü: FAZ 0'ın 6 saatinde kapı ~6 kez koştu (≈90 dk) ama **asıl kayıp** madde
+başına koşan 10 adımlık döngüydü. Karar: **commit ucuz, kapı pahalı — ikisi ayrılır.**
+4-6 madde bir **demet**tir; `--hizli` her maddede, `--tam` demet sonunda BİR kez koşar.
+
+**Demet sınırı = risk sınırı.** `RISKLI_MODULLER`e dokunan madde demete GİRMEZ, kendi
+kapısını hemen koşar; `--hizli` bunu ekrana yazar. Belge/frontend/test turu maddeleri
+serbestçe demetlenir.
 
 ## `--hizli` bir KAPI DEĞİLDİR — bir SİNYALDİR
 
@@ -26,12 +36,14 @@ Yalnız `--tam` bir kapıdır. Commit öncesi o koşar.
 
     # host'ta değişen dosyaları git verir, konteyner yalnız koşar
     python lab/kapi.py --hizli --degisen app/eylem.py tests/test_eylem_onayi.py
-    python lab/kapi.py --tam
+    python lab/kapi.py --tam            # süit paralel (-n), demet sonunda
+    python lab/kapi.py --tam --seri     # düşen testi ayıklarken: seri, temiz çıktı
 """
 
 from __future__ import annotations
 
 import argparse
+import os
 import pathlib
 import re
 import subprocess
@@ -39,6 +51,36 @@ import sys
 
 KOK = pathlib.Path(__file__).resolve().parents[1]
 TESTLER = KOK / "tests"
+
+#: DEMETE GİRMEYEN dosyalar — yönlendirme/semantik yüzeyi. Bu turda ölçüldü: kapının
+#: dört bileşeninden üçü (`eval` · korpus · senaryo) FAZ 0 boyunca HİÇ kıpırdamadı,
+#: çünkü bu dosyalara dokunulmadı. Kıpırdadıklarında sebep hep buradan çıktı.
+RISKLI_MODULLER = (
+    "app/cube_router.py", "app/interpret.py", "app/answer.py", "app/llm.py",
+    "app/routers/ask.py", "app/followup.py", "app/vqr.py", "app/drill.py",
+)
+#: Katalog/pack içeriği de yönlendirmeyi değiştirir (cube adı, sinonim, ifade).
+RISKLI_DIZINLER = ("demo/packs/", "backend/demo/packs/", "eval/")
+
+
+def riskli_olanlar(degisen: list[str]) -> list[str]:
+    """Demete GİREMEYEN değişen dosyalar. Boşsa madde demetlenebilir."""
+    bulunan = []
+    for d in degisen:
+        n = pathlib.PurePosixPath(d).as_posix().removeprefix("backend/")
+        if n in RISKLI_MODULLER or any(k.removeprefix("backend/") in n
+                                       for k in RISKLI_DIZINLER):
+            bulunan.append(d)
+    return bulunan
+
+
+def _isci_sayisi() -> int:
+    """Paralel worker sayısı. Her worker KENDİ `WrenService` + app + control-plane
+    DB'sini kurar → çekirdek sayısı değil, BELLEK sınırlar; 8'de kapatılır."""
+    ozel = os.environ.get("KAPI_ISCI", "").strip()
+    if ozel.isdigit() and int(ozel) > 0:
+        return int(ozel)
+    return min(8, max(1, (os.cpu_count() or 2) - 2))
 
 #: ÇEKİRDEK DUMAN — değişiklik neye dokunursa dokunsun koşan, ucuz ve geniş kapsamlı
 #: dosyalar. Merdivenin her basamağından en az bir tanık: deterministik route, takip
@@ -146,17 +188,33 @@ def hizli(degisen: list[str]) -> int:
     for s in secili:
         print(f"  · {s}")
     print(f"\n⚠ KAPSANMADI: {atlanan} test dosyası. Bu bir KAPI DEĞİL, bir SİNYALDİR — "
-          f"seçim import bağımlılığına bakar, davranışa değil.\n"
-          f"  Kapı: python lab/kapi.py --tam   (faz sonunda, commit'ten önce)")
+          f"seçim import bağımlılığına bakar, davranışa değil.")
+    riskli = riskli_olanlar(degisen)
+    if riskli:
+        print("\n🔴 BU MADDE DEMETE GİRMEZ — yönlendirme/semantik yüzeyine dokunuldu:")
+        for r in riskli:
+            print(f"  · {r}")
+        print("  Kapı ŞİMDİ koşar: python lab/kapi.py --tam")
+    else:
+        print("\n✓ Demetlenebilir — riskli yüzeye dokunulmadı. Commit et, devam et.\n"
+              "  Kapı DEMET SONUNDA koşar: python lab/kapi.py --tam")
     if not secili:
         return 0
     return _kos([sys.executable, "-m", "pytest", "-q", "-p", "no:warnings",
                  *[f"tests/{s}" for s in secili]], "pytest (seçili)")
 
 
-def tam() -> int:
+def tam(seri: bool = False) -> int:
+    # `--dist loadfile`: bir test DOSYASININ tüm testleri AYNI worker'da kalır. Dosya-içi
+    # sıra bağımlılığı olan testler (modül düzeyi durum, sırayla yazan fixture) bozulmaz;
+    # `loadscope`/varsayılan `load` bunu garanti etmez. Paylaşılan derlenmiş ağacın
+    # süreçler-arası kilidi `tests/conftest.py::_composed`de (threading.Lock YETMEZ).
+    isci = _isci_sayisi()
+    pytest_komut = [sys.executable, "-m", "pytest", "-q", "-p", "no:warnings"]
+    if not seri and isci > 1:
+        pytest_komut += ["-n", str(isci), "--dist", "loadfile"]
     adimlar = (
-        ([sys.executable, "-m", "pytest", "-q", "-p", "no:warnings"], "tam süit"),
+        (pytest_komut, f"tam süit ({'seri' if seri or isci == 1 else f'-n {isci}'})"),
         ([sys.executable, "-m", "eval.run"], "eval.run"),
         ([sys.executable, "lab/nl_corpus.py", "--kapi"], "korpus kapısı"),
         ([sys.executable, "lab/konusma_senaryolari.py"], "konuşma senaryoları"),
@@ -184,11 +242,13 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--hizli", action="store_true")
     ap.add_argument("--tam", action="store_true")
+    ap.add_argument("--seri", action="store_true",
+                    help="süiti PARALEL değil seri koş (düşen testi ayıklarken)")
     ap.add_argument("--degisen", nargs="*", default=[],
                     help="değişen dosya yolları (host'ta `git status` verir)")
     a = ap.parse_args()
     if a.tam:
-        return tam()
+        return tam(seri=a.seri)
     if a.hizli:
         return hizli(a.degisen)
     ap.print_help()

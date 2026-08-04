@@ -170,11 +170,26 @@ def olcut_8_ci() -> Olcum:
                          f"{wf} görünmüyor (konteynerde repo kökü mount edilmez) — "
                          "sayı UYDURULMAZ; host'tan koş")
     dosyalar = sorted(p.name for p in wf.glob("*.yml"))
-    kapili = [n for n in dosyalar
-              if re.search(r"kapi\.py|nl_corpus|eval\.run", _oku(wf / n))]
-    return Olcum(f"{len(dosyalar)} workflow · ölçüm kapısı taşıyan: {len(kapili)}",
-                 "ls .github/workflows/ + içerik taraması",
-                 f"dosyalar: {', '.join(dosyalar) or '—'}; hedef: 4 kapı GECELİK")
+    metin = "\n".join(_oku(wf / n) for n in dosyalar)
+    # 🔴 DÖRT KAPI TEK TEK SORULUR — "workflow sayısı" bir ölçüt DEĞİLDİR.
+    # Eski sürüm yalnız `kapi.py|nl_corpus|eval.run` dizelerini arıyordu ve *"ölçüm
+    # kapısı taşıyan: 0"* diyordu. **Yanlış:** `backend-ci.yml` `pytest -q` koşuyor ve
+    # `tests/test_eval_gate.py` süitin İÇİNDE — yani **eval kapısı CI'da ZATEN VAR**,
+    # yalnız `eval.run` adıyla değil. Bir kapıyı ÇAĞIRAN KOMUTA göre aramak, kapının
+    # başka bir yoldan koştuğunu görmez. (Denetim düzeltmesi; ölçüm aracının kusuru.)
+    suit = "pytest" in metin
+    kapilar = {
+        "eval": bool(re.search(r"eval\.run", metin)) or (suit and (BE / "tests" / "test_eval_gate.py").exists()),
+        "süit": suit,
+        "korpus": bool(re.search(r"nl_corpus", metin)),
+        "senaryo": bool(re.search(r"konusma_senaryolari|kapi\.py", metin)),
+    }
+    var = [k for k, v in kapilar.items() if v]
+    return Olcum(f"{len(var)}/4 kapı CI'da ({len(dosyalar)} workflow)",
+                 "ls .github/workflows/ + dört kapının HER BİRİ ayrı ayrı",
+                 f"CI'da: {', '.join(var) or '—'} · eksik: "
+                 f"{', '.join(k for k, v in kapilar.items() if not v) or '—'}"
+                 f" · dosyalar: {', '.join(dosyalar) or '—'}; hedef: 4 kapı GECELİK")
 
 
 def olcut_9_turler() -> Olcum:

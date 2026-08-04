@@ -8,6 +8,7 @@ bağımlı yollar ayrıca işaretlenir. Demo DuckDB + derlenmiş MDL (repo'da) k
 from __future__ import annotations
 
 import os
+import time
 
 import pytest
 
@@ -105,13 +106,48 @@ def _ensure_test_users() -> None:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def _composed():
-    """ADR-0005: testler derlenmiş wren-project üzerinde koşar — önce compose+build."""
+def _composed(tmp_path_factory):
+    """ADR-0005: testler derlenmiş wren-project üzerinde koşar — önce compose+build.
+
+    ## `pytest-xdist` altında neden ek kilit gerekir (4 Ağustos 2026)
+
+    `compose_and_build()` kendi içinde `build_lock_for(out)` alır ama o bir
+    **`threading.Lock`** — yani **süreç-içi**. `-n 8` ile 8 AYRI SÜREÇ aynı
+    `demo/wren-project` ağacını aynı anda `rmtree` edip yeniden derlerdi; kilit
+    hiçbirini görmezdi. Sonuç yarı-silinmiş ağaç ve rastgele `FileNotFoundError`.
+
+    Çözüm: derlenmiş ağaç TEK ve PAYLAŞIMLI kalır, ama **tam olarak bir worker**
+    derler; ötekiler bayrak dosyasını bekler. Kilit `O_CREAT|O_EXCL` ile atomik
+    kurulur (yeni bağımlılık yok). Derleyen worker çökerse bayrak hiç düşmez ve
+    bekleyenler **zaman aşımıyla patlar** — sessizce derlenmemiş ağaçla koşmazlar
+    (fail-closed).
+    """
     from app.compose import compose_and_build
     from app.config import get_settings
 
     get_settings.cache_clear()
-    compose_and_build(get_settings())
+    if not os.environ.get("PYTEST_XDIST_WORKER"):
+        compose_and_build(get_settings())
+        return
+
+    # `getbasetemp()` worker'a özeldir; `.parent` tüm worker'larda AYNI dizindir.
+    ortak = tmp_path_factory.getbasetemp().parent
+    bayrak, kilit = ortak / "compose.done", ortak / "compose.lock"
+    try:
+        fd = os.open(kilit, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        for _ in range(900):  # ≤180 sn — soğuk derleme + yavaş disk payı
+            if bayrak.exists():
+                return
+            time.sleep(0.2)
+        raise RuntimeError(
+            "compose kilidi 180 sn'de açılmadı — derleyen worker çökmüş olabilir. "
+            "Derlenmemiş ağaçla koşmak yerine durduruldu (fail-closed).")
+    try:
+        compose_and_build(get_settings())
+        bayrak.write_text("ok", encoding="utf-8")
+    finally:
+        os.close(fd)
 
 
 @pytest.fixture(scope="session")

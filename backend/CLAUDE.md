@@ -120,12 +120,25 @@ Tek araç: **`lab/kapi.py`** (iki kademe, tek sahip).
   değişen modüle bağımlı testler + çekirdek duman (~15-40 sn). **Bu bir KAPI DEĞİL,
   sinyaldir**: seçim `import` bağımlılığına bakar, davranışa dayanan bir test kaçabilir;
   araç her koşumda kapsanmayan dosya sayısını YAZAR (sessiz kırpma yok).
-- **Faz sonunda, commit'ten HEMEN ÖNCE, TEK SEFER:** `python lab/kapi.py --tam` — süit +
-  `eval` + korpus + senaryo, **tek konteynerde ardışık**. Kapı budur.
-- **Ara koşum YOK.** *"Bir de şuna bakayım"* diye tam süit koşturma.
+- **DEMET sonunda (4-6 madde), TEK SEFER:** `python lab/kapi.py --tam` — süit + `eval` +
+  korpus + senaryo, **tek konteynerde ardışık**. Kapı budur. *(Eskiden «her faz sonunda»
+  yazıyordu ve uygulamada **madde başına** koşuluyordu; ölçüldü — sürenin %75'i kapıda
+  değil, madde başına tekrarlanan 10 adımlık döngüdeydi.)*
+- **Demet içinde ara `--tam` YOK.** *"Bir de şuna bakayım"* diye tam süit koşturma.
 - **Kapsam KIRPILMAZ.** Hız tekrarı azaltarak kazanılır, kapıyı gevşeterek değil.
 - **İki test konteyneri ASLA paralel koşmaz** (compose kilidi `metadata.yml`'de çakışır) —
   bu kural hız için bile esnetilmez.
+- 🔴 **KOŞUM HİJYENİ:** kapı `--rm` ile değil **`-d` ile** koşturulur, `--name` verilir,
+  `docker wait` + `docker logs` ile okunur, sonda `docker rm -f` ile kapatılır.
+  Ölçüldü: `--rm` konteyner çıkınca **kütüğü siler** ve kabuk sarmalayıcısı ölürse özet
+  **tamamen kaybolur** — bu operasyonda **iki kapı koşumunun özeti böyle kayboldu**.
+- 🔴 **Kapı koşarken repoya YAZILMAZ** — mount canlıdır; süit bitmiş olsa bile sonraki
+  aşamalar yeni kodu import eder ve ölçüm **karışır**. (Bu operasyonda bir kez yaşandı,
+  koşum iptal edilip temiz tekrarlandı.)
+- **DEMET disiplini** (`OPERASYON.md §3`): **commit ≠ kapı**. Her madde kendi commit'ini
+  alır (seviye 0+1); **tam kapı demet sonunda bir kez** koşar. `cube_router · interpret ·
+  answer · followup · routers/ask · contribution · demo/packs` dosyalarına dokunan madde
+  **demete girmez**, kendi kapısını hemen koşar.
 
 ## Standartlar
 Kök `saka-standards` submodule'ü bağlayıcıdır (TypeScript tarafı için; Python tarafında

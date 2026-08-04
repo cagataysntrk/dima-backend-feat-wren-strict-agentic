@@ -67,15 +67,47 @@ her düzenlemeden **önce** zaman damgalı yedek alınır ve `md5sum` ile doğru
 |---|---|---|---|
 | **0 · anlık** | `pytest tests/test_<dokunulan>.py` | her düzenlemeden sonra | 5–15 sn |
 | **1 · hızlı kapı** | `python lab/kapi.py --hizli --degisen <dosyalar>` | geliştirme sırasında | ~40 sn |
-| **2 · faz kapısı** | `python lab/kapi.py --tam` | **faz sonu, commit'ten hemen önce, TEK sefer** | ~15 dk |
+| **2 · DEMET kapısı** | `python lab/kapi.py --tam` | **demet sonu** *(4-6 madde)*, commit'lerden sonra, **TEK sefer** | ~15 dk |
+
+### 🔴 COMMIT ≠ KAPI — demet disiplini *(ölçülerek benimsendi)*
+
+**Ölçüldü:** bir turda FAZ 0'ın ~4 maddesi indi ve tam kapı **6 kez** koştu (~90 dk).
+Ama sürenin **%75'i kapıda değildi**; madde başına koşan 10 adımlık döngüdeydi
+(ölç → düzelt → kapı → MIMARI → commit → DURUM → denetim). Ve `--tam`'ın **dört
+bileşeninin üçü** (`eval` · korpus · senaryo) o turda **hiç kıpırdamadı**, çünkü
+onları besleyen dosyalara dokunulmamıştı.
+
+**Karar:** *commit ucuzdur, kapı pahalıdır.* Geri alınabilirlik **commit'ten** gelir,
+kapıdan değil — ikisini ayırmak **hiçbir güvenlik kaybettirmez**.
+Her madde kendi commit'ini alır (seviye 0+1 ile); **tam kapı demet sonunda bir kez** koşar.
+
+🔴 **RİSK SINIRI — demete GİRMEYEN maddeler.** Aşağıdakilere dokunan bir madde
+**kendi tam kapısını hemen koşar** (demet beklemez), çünkü kapının üç sessiz bileşenini
+besleyen yollar bunlardır:
+
+```
+app/cube_router.py · app/interpret.py · app/answer.py · app/followup.py
+app/routers/ask.py · app/contribution.py · demo/packs/**   (katalog/metadata)
+```
+
+Belge · frontend · test-aracı · `lab/` maddeleri **serbestçe demetlenir**.
 
 **Bağlayıcı kurallar:**
-* **Ara koşum YOK.** *"Bir de şuna bakayım"* diye tam süit koşturulmaz.
+* **Demet içinde ara `--tam` YOK.** *"Bir de şuna bakayım"* diye tam süit koşturulmaz.
 * **Kapsam KIRPILMAZ.** Hız **tekrarı azaltarak** kazanılır, kapıyı gevşeterek değil.
 * 🔴 **İki test konteyneri ASLA paralel koşmaz** (compose kilidi `metadata.yml`'de çakışır).
 * 🔴 **Kapı konteyneri koşarken repoya YAZILMAZ** — mount canlıdır; bu turda iki sahte hata üretti.
 * **Konteyner ADLANDIRILIR** (`--name`) ve bitmeden ikincisi açılmaz.
 * `--hizli` bir **KAPI DEĞİL, SİNYALDİR** — kapsanmayan dosya sayısını kendisi yazar.
+* 🔴 **Kapı `--rm` ile koşturulmaz, `-d` ile koşturulur.** Ölçüldü: `--rm` konteyner
+  çıkınca kütüğü **siler** ve kabuk sarmalayıcısı ölürse özet **tamamen kaybolur** —
+  bu turda iki koşum böyle kayboldu. Doğrusu: `docker run -d --name dima-kapi<N> …`,
+  sonra `docker wait` + `docker logs`, en sonda `docker rm -f`.
+* **İKİNCİ AĞ — CI.** `.github/workflows/backend-ci.yml` her push'ta `pytest -q` koşar
+  ve `tests/test_eval_gate.py` süitin içindedir → **eval + süit kapıları CI'da ZATEN VAR**
+  *(ölçüldü: `2/4`; eksik olan **korpus + senaryo**, `FAZ 0.15`'in gerçek kapsamı budur —
+  sıfırdan kurulum DEĞİL, mevcut workflow'a iki aşama eklemek)*. Demet sonunda push →
+  yerelde kaçan bir kırmızıyı CI **eşzamansız ve bedava** yakalar.
 
 **Canlı ortam nasıl üretilir** *(anahtarlar repoda DEĞİL — çalışan servisten alınır):*
 ```bash
