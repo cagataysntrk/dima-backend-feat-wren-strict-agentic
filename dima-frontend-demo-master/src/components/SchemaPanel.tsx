@@ -163,6 +163,23 @@ function MetrikSahipligi() {
         bilemez. Sahibini seçmek, o belirsizliği <span className="text-accent">kalıcı</span>{" "}
         olarak çözer.
       </p>
+      {/* FAZ 3.2 — SAHİPSİZ TERİM SAYACI. 🔴 *"Kalan sahipsiz terimler bir LİSTE olur —
+          'bilinmeyen' olmaktan çıkıp İŞ KALEMİ hâline gelir."* Bir sayıyı göstermek,
+          onu görünmez bir borç olmaktan çıkarır. */}
+      {(() => {
+        const sahipsiz = data.kayit.filter((k) => k.sahiplenilen_terimler.length === 0);
+        const onerili = sahipsiz.filter((k) => k.onerilen_sahip).length;
+        return sahipsiz.length > 0 ? (
+          <p className="mb-3 border-l-2 border-hairline pl-2 font-mono text-[10px] leading-snug text-neutral-400">
+            <span className="text-foreground">{sahipsiz.length}</span> terimin sahibi yok
+            {onerili > 0 && (
+              <> · <span className="text-foreground">{onerili}</span> tanesi için öneri var</>
+            )}
+            . Sahipsiz bir terim, yönlendiricinin her seferinde <em>tahmin</em> ettiği bir
+            terimdir.
+          </p>
+        ) : null;
+      })()}
       <ul className="space-y-2">
         {data.kayit.map((k) => {
           const sahip = k.sahiplenilen_terimler[0] ?? null;

@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 3 · KAPSAM** — `3.1` indi *(kararlar yazıldı, uygulama tenant kapsamını bekliyor)* |
-| **Sıradaki madde** | `3.2` **R1'i kapat (99 vaka)** → `3.3` terfi kuyruğu kapanış oranı |
+| **Sıradaki madde** | `3.3` terfi kuyruğu kapanış oranı → `3.4` Ossie ithali · ⚠ R1'in gövdesi **modelleme borcu** (ayrı tur) |
 | **Demet** | ✅ **`1.12` kapısı 4/4 YEŞİL** (süit **2477**) — risk sınırı olduğu için demete girmedi · demet 13 açık: `1.10`+`1.11` (o kapıya da dahil oldular) |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
@@ -422,6 +422,41 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
 
 ## FAZ 3 · KAPSAM
+
+### FAZ 3 · adım 3 — `3.2` **R1 ENVANTERİ** — ölçüm teşhisi DÜZELTTİ *(2026-08-04)*
+
+Kapı: **6 test** (`tests/test_r1_envanteri.py`), hızlı sinyal **917**. Yeni araç:
+`lab/r1_envanteri.py`.
+
+> **ÖLÇÜLDÜ — R1 = 170** (dört şirket, 470+ sonda). Yol haritası tabanı 99; payda farklı
+> (o bir sonda kümesiydi, bu **şirket başına tüm ölçü sinonimleri**).
+
+> 🔴 **ÖLÇÜM, YOL HARİTASININ TEŞHİSİNİ DÜZELTTİ.** §6.1h *"R1'in **TAMAMI** gerçek
+> ölçü-düzeyi belirsizliğidir"* diyor. Dağılım bunu **çürütüyor**:
+>
+> | aday kümesi | n | gerçekte ne? |
+> |---|---|---|
+> | `cari` ↔ `mizan` | **42** | 🔴 gerçek belirsizlik → chip (`bakiye` kararı) |
+> | `mal` ↔ `ticaret` | **30** | **grain ikizi** (fatura ↔ stok hareketi, 2.1c) |
+> | `oee` ↔ `parti` | **20** | grain/kapsam ikizi |
+> | `cari` ↔ `cari_finans` | **16** | **türev ikiz** — aynı kavram, iki kimlik |
+> | üçlü/altılı kümeler | **18** | jenerik terim (`adet`) |
+> | tek sahipli | **18** | sahiplik kararı **kapatır** |
+>
+> Yani R1'in gövdesi **kullanıcı belirsizliği değil, KATALOG İKİZLİĞİDİR**. *Bir kullanıcı
+> "debt" derken iki şey arasında kalmıyor — katalog iki kez aynı şeyi söylüyor.*
+
+> 🔴 **SONUÇ: hedefe (≤30) SAHİPLİK KARARLARIYLA ULAŞILAMAZ** — yalnız **18**'i tek
+> sahipli. Kalanın büyük kısmı **modelleme borcudur** (2.4 sınıfı) ve ayrı bir tur.
+> *Ölçüm, hedefin yolunu değiştirdi; hedefi düşürmedi.*
+
+> ✅ **ARAÇ KARAR VERMİYOR, RAPOR ÜRETİYOR** — `3.1`'in dersi taze: kararı araç verirse
+> bir tenant'ın alan bilgisi hepsine dayatılır ve korpus geriler. Kapı bunu da kilitliyor
+> (araçta yazma yolu **yok**).
+
+> ✅ **Sahipsiz terimler artık EKRANDA bir İŞ KALEMİ:** *"N terimin sahibi yok · M tanesi
+> için öneri var"*. *Sahipsiz bir terim, yönlendiricinin her seferinde **tahmin** ettiği
+> bir terimdir* — sayıyı göstermek onu **görünmez bir borç** olmaktan çıkarır.
 
 ### FAZ 3 · adım 2 — `3.1b` **PACK ÖNERİR, TENANT UYGULAR** — bayrak güvenle açıldı *(2026-08-04)*
 
