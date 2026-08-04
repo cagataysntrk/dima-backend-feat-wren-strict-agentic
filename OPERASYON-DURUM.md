@@ -17,9 +17,9 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 0** — temizlik ve kapılar *(25 madde; sıra **numara DEĞİL**, FAZ 0 girişindeki bağlayıcı koşum sırası)* |
-| **Sıradaki madde** | **adım 6:** `0.18` — **metrik kaydı = HAKEM** *(belgenin tek en büyük ölçülmüş kazancı: turların ~%18'i)* |
-| **Ondan sonra** | `0.4/0.5/0.5b` → kalan *(0.3 · 0.6–0.13 · 0.15 dâhil)* → `0.21` |
-| **Demet** | ⚠ `0.18` `cube_router.py`'ye dokunur → **risk sınırı**, kendi kapısını hemen koşar |
+| **Sıradaki madde** | **adım 7:** `0.5` — çapa zincirini uyandır *(karta-yanıt + çok-kart kesişimi)* |
+| **Ondan sonra** | `0.4` · `0.5b` → kalan *(0.3 · 0.6–0.13 · 0.15 dâhil)* → `0.21` |
+| **Demet** | ⚠ `0.5` `routers/ask.py`'ye dokunur → **risk sınırı**, kendi kapısını koşar |
 | **Tempo** | 🔴 **DEMET disiplini yürürlükte** (`OPERASYON.md §3`): commit ≠ kapı; tam kapı **demet sonunda bir kez**. Risk sınırındaki dosyalara dokunan madde demete girmez |
 | **v1 bitiş ölçütü** | §C'nin **16 ölçütü** yeşil |
 
@@ -267,6 +267,34 @@ varyantla bir sahiplik hatasını **gizlerdi**.
 > uçtu"* yanılsamasının kapanı: tek bir terimi düzeltmek ham yüzdeyi birkaç puan
 > zıplatabilir, **hiçbir yeni semantik vaka kazanılmadan**. **Kanıtlandı:** taban
 > ayrıştırıldığında `ÇIKIŞ KODU 1`.
+
+### FAZ 0 · adım 6 — `0.18` METRİK KAYDI = HAKEM *(2026-08-04)*
+
+🔴 **Belgenin tek en büyük ölçülmüş kazancı.** `CLARIFY:konu` %11,5 + yanlış-cube %6,8
+≈ **turların ~%18'i**, ve ikisinin de **kanıtlanmış baskın kökü aynı**: bir iş terimi
+**iki cube tarafından sahiplenilmiş, hakem yok**. Korpus: boyahane yanlış-cube listesinin
+**ilk 10'unun 10'u** `elektrik`; atiksan'ın (**%98, en iyi şirket**) **ilk 9'unun 9'u**
+`satış`. Canlı tur aynı sınıfı **bağımsız** buldu: *"bu yıl bakiye"* → `cari` **₺11,86M**,
+`mizan` **₺0**.
+
+| Parça | Ne indi |
+|---|---|
+| **Sınıflandırma** | `app/metrik_kaydi.py` — çakışma envanteri · taslak üretimi · hakem · çift-sahiplik denetimi. **Tek sahip.** |
+| **`_match_cube`'un İLK SATIRI** | Paralel yol **değil**: kayıt bir sahip beyan etmişse o kazanır, etmemişse bugünkü zincir **aynen** koşar |
+| **Çift sahiplik reddi** | **fail-closed** — iki sahip, hakemsizlikten *daha kötüdür*: hakem yine yoktur ama üstüne *"hakem var"* beyanı eklenir |
+| **Sözleşme** | `GET /metrics` — kayıt + çakışan terim envanteri. *(Sahiplik **ekranı** 2.2b'de)* |
+| **Bayrak** | `metrik_kaydi = off` → kayıt şemaya **hiç yazılmaz** → `cube_router` görmez → **birebir bugünkü** |
+
+> 🔴 **`cube_router` SAF kaldı.** Bayrak, ayarların erişilebilir olduğu **derleme
+> sınırında** (`wren_service.schema()`) durur; sıcak yolda değil. `cube_router` hiçbir
+> bayrak okumaz ve bu testle kilitli — sıcak yola bayrak sızarsa determinizm iddiası çürür.
+
+> ✅ **Madde kendi kendine güvenli:** taslak `sahiplenilen_terimler: []` ile gelir, yani
+> *"bu terim çakışıyor"* der ama *"sahibi şudur"* **demez**. Karar **FAZ 3.1'in sahiplik
+> turudur**. Bu madde **çakışmayı görünür kılar** — görünmeyen bir çakışma düzeltilemez.
+
+> 🔴 **K1 yeni ucu KURULDUĞU ANDA yakaladı:** `GET /metrics` tüketicisiz → `api-only`
+> beyanı gerekçesiyle yazıldı. Kapı, kurulmasının üzerinden bir madde geçmeden iş gördü.
 
 ### Taban ölçümü · `lab/vk_taban.py` *(commit `8f87e40`)*
 VK-1…VK-6 **yapısal ve canlı** (gemini) ölçüldü. `§G.6e`'nin *"Bugün"* sütunu artık

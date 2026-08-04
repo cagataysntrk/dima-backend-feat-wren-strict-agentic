@@ -53,6 +53,11 @@ SARMALAYICI_MUAF: dict[str, str] = {
 }
 
 API_ONLY: dict[str, str] = {
+    "/metrics": "FAZ 0.18 — metrik kaydının OKUNABİLİR yüzeyi. Yol haritasının kendi "
+                "beyanı: *«frontend: — (sahiplik ekranı 2.2b'de kalır)»*. Uç bugün "
+                "kayıt + çakışan terim envanterini döner; **sahiplik EKRANI** (terimi "
+                "bir cube'a atama) II-B/2.2b'nin işidir. Kapı bu ucu kurulduğu ANDA "
+                "yakaladı — beyan o yüzden burada, sessizce değil.",
     "/contracts": "🔴 FAZ 0.14/K1'İN İLK AVI. Alt-dize taraması bu ucu YEŞİL sanıyordu: "
                   "`/contracts` dizesi `` `/contracts/${cid}` `` içinde VE bir yorum "
                   "satırında geçiyor. Tam-yol + yorumsuz tarama onu açığa çıkardı — "

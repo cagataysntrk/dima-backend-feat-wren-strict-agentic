@@ -153,6 +153,9 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(auth_router.router)
     _protected = [Depends(get_current_principal)]
+    from app.routers import metrics
+
+    app.include_router(metrics.router, dependencies=_protected)
     app.include_router(query.router, dependencies=_protected)
     app.include_router(ask.router, dependencies=_protected)
     app.include_router(contracts_router.router, dependencies=_protected)

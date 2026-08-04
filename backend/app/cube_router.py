@@ -826,6 +826,33 @@ def _match_cube(q: str, schema: dict) -> dict | None:
     """Cube-düzeyi sinonimlerden aday cube. Birden fazla aday → ÖLÇÜ kanıtıyla kırılır:
     yalnız birinde ölçü sinonimi de geçiyorsa ("müşteri bazında SU tüketimi" → su cube'u;
     "müşteri" paylaşılan boyut kelimesidir) o kazanır; yoksa None (çapraz konu → LLM)."""
+    # ⚠️ FAZ 0.18 — **METRİK KAYDI, `_match_cube`'UN İLK SATIRI.**
+    #
+    # Bir iş terimi birden fazla cube tarafından sahiplenildiğinde bugün karar **ölçü
+    # sinonimi uzunluğuyla** veriliyor: deterministik ama **keyfi**, çünkü hangi cube'un
+    # doğru olduğu bir **iş kararıdır**. Ölçüldü: `CLARIFY:konu` %11,5 + yanlış-cube %6,8
+    # ≈ **turların ~%18'i**, ve baskın kök bu. (boyahane yanlış-cube ilk 10'un 10'u
+    # `elektrik`; atiksan'ın ilk 9'un 9'u `satış`.)
+    #
+    # 🔴 Bu bir **paralel yol DEĞİL**, ilk satırdır: kayıt bir sahip **beyan etmişse**
+    # o kazanır; etmemişse aşağıdaki bugünkü zincir **aynen** koşar. `schema`'da anahtar
+    # yoksa (bayrak `off`) davranış **birebir bugünkü** — `cube_router` bayrak okumaz,
+    # okumamalı da; karar derleme sınırında verilir (`metrik_kaydi.semaya_yaz`).
+    _kayit = schema.get("metrik_kaydi")
+    if _kayit:
+        from app.metrik_kaydi import hakem
+
+        for _c in schema.get("cubes", []):
+            _hit = _match_measure(q, _c)[1]
+            if not _hit:
+                continue
+            _sahip = hakem(_hit, _kayit)
+            if _sahip:
+                _cube = next((x for x in schema.get("cubes", [])
+                              if x.get("name") == _sahip), None)
+                if _cube is not None:
+                    return _cube
+
     hits = [c for c in schema.get("cubes", []) if _any_hit(q, c.get("synonyms"))]
     if len(hits) == 1:
         # ASİMETRİ DÜZELTMESİ (Faz 2a-3): ölçü-kanıtı YALNIZ aşağıdaki çok-aday dalında

@@ -40,6 +40,11 @@ features:
                           # gömülür (enum CUBE'A GÖRE daralır; `cube:null` reddetme dalı
                           # KORUNUR). Desteklenmezse serbest-JSON yedeğine düşer.
                           # KAPALIYKEN davranış bugünküyle BİREBİR aynı (KURAL B, testli).
+  # FAZ 0.18 — METRİK KAYDI = HAKEM. Kapalıyken kayıt ŞEMAYA HİÇ YAZILMAZ ve
+  # `cube_router._match_cube` onu görmez → davranış BİREBİR bugünkü (GERİ AL).
+  # Açıldığında bile taslak kayıt `sahiplenilen_terimler: []` ile gelir: yani "bu terim
+  # çakışıyor" der, "sahibi şudur" DEMEZ. Sahiplik kararı FAZ 3.1'in turudur.
+  metrik_kaydi: "off"
   netlestirme_onceligi: "off"  # FAZ F: katalogda ≥2 SAHİP olan bir ölçüde (ör. `bakiye`
                                # → cari|mizan) netleştirme chip'i Intent-JSON'u ÖNCELER.
                                # ⟳ FAZ X (3 Ağustos 2026): KARAR ARTIK ÖLÇÜLMÜŞTÜR —

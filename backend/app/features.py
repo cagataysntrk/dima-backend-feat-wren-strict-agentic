@@ -37,6 +37,13 @@ _SCOPE_ORDER = ("global", "sector", "tenant", "role", "user")
 #   3) Tüketen yüzeyi `useFeature("<key>")` ile geçitle (frontend).
 #   4) Gerekiyorsa admin panelden tenant/rol/kullanıcı override'ı ile aç.
 FLAG_REGISTRY: dict[str, dict[str, str]] = {
+    "metrik_kaydi": {
+        "label": "Metrik kaydı (hakem)",
+        "description": "Bir iş terimini birden fazla cube sahipleniyorsa HAKEM kaydı "
+                       "karar verir (FAZ 0.18). Kapalıyken kayıt şemaya hiç yazılmaz "
+                       "ve davranış birebir bugünküdür — GERİ AL mekanizması budur.",
+        "category": "Semantik",
+    },
     "cikti_yorumlama": {
         "label": "Çıktı yorumu",
         "description": "Her tablo/grafik/rapor/KPI için deterministik doğal-dil "

@@ -536,6 +536,22 @@ class WrenService:
             "golden_sql": self._load_knowledge("sql"),
             "db_online": db_ok,  # UI çevrimiçi/çevrimdışı rozeti (TCP erişilebilirlik)
         }
+        # ⚠️ FAZ 0.18 — METRİK KAYDI şemaya BURADA yazılır (bayrak açıksa).
+        # Neden burada: `cube_router` hiçbir bayrak okumaz ve okumamalı — deterministik
+        # olması bilinçli bir karardır. Bayrak, ayarların erişilebilir olduğu **derleme
+        # sınırında** durur; sıcak yolda değil. Kapalıysa anahtar HİÇ yazılmaz →
+        # `_match_cube` kaydı görmez → davranış **birebir bugünkü** (GERİ AL).
+        try:
+            from app.config import get_settings
+            from app.features import resolve_for
+            from app.metrik_kaydi import semaya_yaz
+
+            semaya_yaz(self._schema_cache,
+                       acik="metrik_kaydi" in resolve_for(get_settings(), None))
+        except Exception:                                      # noqa: BLE001
+            # Kayıt bir **iyileştirmedir**, bir ön koşul değil: üretilemezse şema
+            # eksiksiz döner ve sistem bugünkü yolunu izler. Sessiz yutma YOK:
+            _log.warning("metrik kaydı şemaya yazılamadı (best-effort)", exc_info=True)
         return self._schema_cache
 
     def _damgala_fanout(self, cubes: list) -> None:
