@@ -29,8 +29,14 @@ features:
   kpi_pin: "off"
   # FAZ 5.14 — Hızlı ↔ Derin. `off`: `mod` alanı yok sayılır, bugünkü davranış birebir.
   hizli_derin: "off"
-  # FAZ 4.3 borcu — takipte çıplak ikinci ölçü adı. `off`: bugünkü davranış birebir.
-  olcu_ekleme_takibi: "off"
+  # 🔴 FAZ 4.3 borcu — takipte çıplak ikinci ölçü adı. **AÇILDI (beta)** — ve açış
+  # ölçüme dayanıyor, iyimserliğe değil:
+  #   · çok-turlu düşüş  −%18,2 → **−%4,5** (hedef −%10) · karar `kaldi` → **`gecti`**
+  #   · korpus doğru-cube **%93,1 → %93,1** (birebir, A/B ölçüldü)
+  # Denetimin §4/risk-1 korkusu ("boyut sanılan kelimeler ölçüye çekilir") ÖLÇÜLDÜ ve
+  # gerçekleşmedi. ⚠ `beta`: fabrika varsayılanı açık ama tenant/rol override'ı hâlâ
+  # mümkün — geri alma tek satır.
+  olcu_ekleme_takibi: beta
   # FAZ 5.2 — 7. konuşma türü ("paylaş"). `off`: kalıplar eşleşmez, TUR_ANLAT birebir.
   tur_paylas: "off"
   # ⚠ AŞAĞIDAKİ ÜÇÜ FAZ 4.6'DA EKLENDİ — bir denetim ölçtü: `FLAG_REGISTRY`'de kayıtlı
