@@ -231,6 +231,37 @@ def import_semantic(cid: str, body: dict, request: Request) -> dict:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@router.get("/{cid}/export-semantic",
+            dependencies=[Depends(require("connection:read")), Depends(require_company)])
+def export_semantic(cid: str, request: Request) -> dict:
+    """FAZ 4.4 — **Apache Ossie ihracı**: `packs/` modelimiz standart YAML olarak dışarı.
+
+    ## 🔴 FARKIMIZ `Custom Extensions` İÇİNDE
+
+    Ossie `metrics`/`fields`/`ai_context`'i taşır ama **sessiz-yanlışı önleyen
+    alanlarımızın hiçbirini** taşımaz. Onlar `x-dima` altında gider: **fan-out
+    sertifikası** · `always_filter` · `additive:` · `dimension_origin`. *Standarda uyarken
+    farkımızı kaybetmek, ithal/ihracın bedeli olamaz.*
+
+    ⚠ **İhraç bir OKUMA işlemidir** — `packs/` hiç etkilenmez, hiçbir dosya yazılmaz.
+    Geri alma (`ossie_ihrac=off`) yalnız bu ucu kapatır.
+
+    🔴 **Round-trip kapısı bu bayraktan BAĞIMSIZDIR** (`tests/test_ossie_ihrac.py`): ihraç
+    edilen model geri ithal edildiğinde **birebir aynı SQL**'i vermiyorsa bayrak açılmaz.
+    """
+    from app.company_registry import wren_for_request
+    from app.config import get_settings
+    from app.features import resolve_for
+    from app.ossie import belge
+
+    p = getattr(request.state, "principal", None)
+    if "ossie_ihrac" not in resolve_for(get_settings(), p):
+        raise HTTPException(status_code=404, detail="Ossie ihracı bu kurulumda kapalı.")
+    sema = wren_for_request(request).schema()
+    return {"baglanti_id": cid,
+            **belge(sema.get("cubes") or [], iliskiler=sema.get("relationships") or [])}
+
+
 @router.post("/{cid}/confirm", response_model=ConnectionConfirmResult,
             dependencies=[Depends(require("connection:write")), Depends(require_company)])
 def confirm_draft(cid: str, body: ConnectionDraft, request: Request) -> ConnectionConfirmResult:

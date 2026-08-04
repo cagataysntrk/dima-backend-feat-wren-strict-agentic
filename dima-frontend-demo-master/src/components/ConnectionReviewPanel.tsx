@@ -15,6 +15,7 @@ import {
   createTenantConnection,
   deleteTenantConnection,
   getConnectionDraft,
+  exportSemantic,
   importSemantic,
   listTenantConnections,
   testTenantConnection,
@@ -94,6 +95,72 @@ function OssieIthal({ id }: { id: string }) {
         </div>
       )}
     </details>
+  );
+}
+
+/** FAZ 4.4 — Ossie **ihracı**. Aynı `details` bölümünün ikinci yarısı; yeni PANEL değil
+ *  (K5 tavanı 13/13 — bir yetenek bir panel doğurmaz).
+ *
+ *  🔴 Farkımız `x-dima` içinde gider ve kullanıcıya **söylenir**: sessiz-yanlışı önleyen
+ *  dört alan (fan-out sertifikası · `always_filter` · `additive:` · `dimension_origin`)
+ *  Ossie'nin kendi şemasında yoktur. Kullanıcı belgeyi başka bir araca taşırken bunu
+ *  bilmelidir — *aksi hâlde "standart bir dosya" sanıp farkı sessizce kaybeder.*
+ *
+ *  ⚠ 404 bir **hata değil, bir yokluktur**: bayrak kapalıysa özellik bu kurulumda yok. */
+function OssieIhrac({ id }: { id: string }) {
+  const ihrac = useMutation({ mutationFn: () => exportSemantic(id) });
+  const kapali = (ihrac.error as { response?: { status?: number } } | null)
+    ?.response?.status === 404;
+  return (
+    <div className="mt-3 border-t border-hairline pt-2">
+      <button
+        type="button"
+        disabled={ihrac.isPending}
+        onClick={() => ihrac.mutate()}
+        className="border border-hairline px-2 py-[3px] font-mono text-[11px] text-neutral-500 transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
+      >
+        {ihrac.isPending ? "…" : "⇫ semantik modeli dışa aktar (Ossie)"}
+      </button>
+      {kapali && (
+        <p className="mt-2 font-mono text-[11px] text-neutral-500">
+          Bu kurulumda kapalı.
+        </p>
+      )}
+      {ihrac.isError && !kapali && (
+        <p className="mt-2 font-mono text-[11px] text-red-500">
+          {apiErrorMessage(ihrac.error)}
+        </p>
+      )}
+      {ihrac.data && (
+        <div className="mt-2 space-y-1 font-mono text-[11px]">
+          <p className="text-amber-600">
+            ⚠ Farkımız <span className="text-foreground">x-dima</span> uzantısında:
+            fan-out sertifikası · always_filter · additive · dimension_origin. Ossie
+            şemasında karşılıkları <span className="text-foreground">yok</span> — başka
+            bir araca taşırken bu alanlar okunmayabilir.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              const bag = new Blob([JSON.stringify(ihrac.data, null, 2)],
+                                   { type: "application/json" });
+              const url = URL.createObjectURL(bag);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `ossie-${id}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="border border-hairline px-2 py-[3px] text-neutral-500 transition-colors hover:border-accent hover:text-accent"
+          >
+            ↓ indir
+          </button>
+          <pre className="max-h-40 overflow-auto border border-hairline p-2 text-[10px] text-neutral-400">
+            {JSON.stringify(ihrac.data, null, 2).slice(0, 1200)}
+          </pre>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -276,7 +343,12 @@ export function ConnectionReviewPanel() {
               ⚠ İthal ilişkiler `olculmedi` damgasıyla gelir ve bu EKRANDA söylenir:
               bir başkasının modelinin doğru olduğunu VARSAYMAK, sessiz-yanlışın ithal
               edilmiş hâli olurdu. */}
-          {ossieAcik && activeConnId && <OssieIthal id={activeConnId} />}
+          {ossieAcik && activeConnId && (
+            <>
+              <OssieIthal id={activeConnId} />
+              <OssieIhrac id={activeConnId} />
+            </>
+          )}
           <div className="max-h-[50vh] space-y-2 overflow-auto">
             {draft.cubes.map((c) => (
               <DraftCubeRow key={c.name} cube={c} onToggle={() => toggleInclude(c.name)} />

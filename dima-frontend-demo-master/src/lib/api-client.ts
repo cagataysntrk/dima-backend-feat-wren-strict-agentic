@@ -961,6 +961,21 @@ export async function importSemantic(id: string, belge: unknown): Promise<OssieI
   return data;
 }
 
+/** FAZ 4.4 — Ossie **ihracı**: `packs/` modelimiz standart YAML olarak dışarı.
+ *
+ * 🔴 Farkımız `x-dima` (Custom Extensions) içinde gider: fan-out sertifikası ·
+ * `always_filter` · `additive:` · `dimension_origin`. Standarda uyarken sessiz-yanlışı
+ * önleyen alanları kaybetmek ihracın bedeli olamaz.
+ *
+ * ⚠ İhraç bir **okuma** işlemidir — hiçbir şey yazılmaz. Bayrak (`ossie_ihrac`) kapalıysa
+ * uç 404 döner ve çağıran taraf bunu bir hata değil bir **yokluk** olarak göstermeli.
+ */
+export async function exportSemantic(id: string): Promise<Record<string, unknown>> {
+  const { data } = await apiClient.get<Record<string, unknown>>(
+    `/connections/${id}/export-semantic`);
+  return data;
+}
+
 export async function getConnectionDraft(id: string): Promise<ConnectionDraft> {
   const { data } = await apiClient.get<ConnectionDraft>(`/connections/${id}/draft`);
   return data;

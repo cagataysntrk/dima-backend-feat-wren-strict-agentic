@@ -639,13 +639,23 @@ def seal(resp: AskResponse, *, request: Request, principal, t0: float,
     # `narration_guard` eşleşmeyeni düşürür. Md.50'nin istediği tam olarak budur.
     # FAZ 2.5 — HEDEF KIYASI. Beyan yoksa `None` kalır ve grafikteki çizgi bugünkü
     # anlamını (ortalama) korur — *hedef UYDURULMAZ*.
+    # 🔴 **BAYRAĞA BAĞLI (KURAL B).** Yol haritası 2.5'i `[bayrak: hedef_kiyasi]` diye
+    # ilan ediyordu ama kod bayrağı TANIMIYORDU — bu deponun tekrar eden kusur sınıfı:
+    # *"beyan var, kod onu tanımıyor"*. Bayraksız bir özellik GERİ ALINAMAZ; geri
+    # alınamayan bir özelliğin `GERİ AL` satırı bir temenniden ibarettir.
+    # Kapalıyken `resp.hedef` HİÇ üretilmez → yanıt bayt bayt bugünküyle aynıdır.
     try:
         from app import hedef as _hedef
-
         from app.company_registry import wren_for_request
+        from app.config import get_settings
+        from app.features import resolve_for
 
-        resp.hedef = _hedef.blok(wren_for_request(request).schema(), resp.cube_query,
-                                 resp.result.model_dump() if resp.result else None)
+        if "hedef_kiyasi" in resolve_for(get_settings(),
+                                         getattr(request.state, "principal", None)):
+            resp.hedef = _hedef.blok(wren_for_request(request).schema(), resp.cube_query,
+                                     resp.result.model_dump() if resp.result else None)
+        else:
+            resp.hedef = None
     except Exception:                       # noqa: BLE001 — hedef cevabı DÜŞÜRMEZ
         resp.hedef = None
     # FAZ 2.6 — mali yıl penceresi. `seal()` HER yanıtın geçtiği kapanıştır; başka bir

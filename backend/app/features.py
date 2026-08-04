@@ -37,6 +37,28 @@ _SCOPE_ORDER = ("global", "sector", "tenant", "role", "user")
 #   3) Tüketen yüzeyi `useFeature("<key>")` ile geçitle (frontend).
 #   4) Gerekiyorsa admin panelden tenant/rol/kullanıcı override'ı ile aç.
 FLAG_REGISTRY: dict[str, dict[str, str]] = {
+    "hedef_kiyasi": {
+        "label": "Hedef kıyası (`target:` beyanı)",
+        "description": "Grafikteki referans çizgisi bugün HEDEF DEĞİL, ortalamadır — kod "
+                       "bunu `interpret.py`'de itiraf ediyor. Bu bayrak, cube'da `target:` "
+                       "BEYAN EDİLMİŞSE çizgiyi hedefe çevirir. 🔴 HEDEF UYDURULMAZ: beyan "
+                       "yoksa blok `None` kalır ve çizgi bugünkü anlamını korur. Kapalıyken "
+                       "yanıt BAYT BAYT bugünküyle aynıdır (KURAL B — FAZ 2.5).",
+        "category": "dogruluk",
+    },
+    "ossie_ihrac": {
+        "label": "Apache Ossie semantik model ihracı",
+        "description": "`packs/` modelimiz Ossie YAML olarak dışa aktarılır. 🔴 FARKIMIZ "
+                       "`Custom Extensions` (`x-dima`) İÇİNDE: fan-out sertifikası · "
+                       "`always_filter` · `additive:` · `dimension_origin` — dördü de "
+                       "sessiz-yanlışı önleyen alanlar ve hiçbirinin Ossie'de karşılığı "
+                       "yok; standarda uyarken onları kaybetmek ihracın bedeli olamaz. "
+                       "İhraç bir OKUMA işlemidir: `packs/` hiç etkilenmez. Kapalıyken uç "
+                       "404 döner. ⚠ Round-trip kapısı bu bayraktan BAĞIMSIZDIR — ihraç "
+                       "edilen model geri ithal edildiğinde birebir aynı SQL vermiyorsa "
+                       "bayrak AÇILMAZ (FAZ 4.4).",
+        "category": "genisleme",
+    },
     "ossie_ithal": {
         "label": "Apache Ossie semantik model ithali",
         "description": "Müşterinin var olan semantik modeli (Apache Ossie — eski adı OSI, "

@@ -19,6 +19,11 @@ features:
   kapsam_mercegi: "off"   # ⚠ TIRNAK ŞART: YAML 1.1 çıplak `off`u BOOLEAN okur
   # FAZ 3.4 — Ossie ithali. `off`: uç 404 döner (GERİ AL).
   ossie_ithal: "off"
+  # FAZ 4.4 — Ossie ihracı. `off`: uç 404 döner. İhraç OKUMA işlemidir, `packs/` etkilenmez.
+  ossie_ihrac: "off"
+  # FAZ 2.5 — hedef kıyası. `off`: `resp.hedef` HİÇ üretilmez → yanıt bayt bayt bugünküyle
+  # aynı (KURAL B). 🔴 Açıkken bile hedef UYDURULMAZ: `target:` beyanı yoksa `None`.
+  hedef_kiyasi: "off"
   cikti_yorumlama: beta   # evrensel çıktı yorumu — her tablo/grafik/rapor/KPI
   sql_display: beta       # üretilen SQL'i kullanıcıya göster ('+ sql göster')
   verify_button: beta     # ✓/✗ doğrulama — VQR öğrenme (eskiden boyahane sektöründe)
