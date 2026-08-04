@@ -182,6 +182,10 @@ class Settings(BaseSettings):
     # `shadow` hesaplar ama YAZMAZ (yazan bir gölge, gölge değildir — FAZ 1.1'de ölçüldü);
     # `on` yazar ve grain sözleşmesi ihlalinde compose'u REDDEDER (fail-closed).
     cekirdek_katman: str = "off"
+    #: FAZ 5.9 — Slack webhook. ⚠ **SIR**: depoya değil ortama yazılır
+    #: (`DIMA_SLACK_WEBHOOK`). Bir webhook URL'si, onu bilen herkese o kanala yazma
+    #: yetkisi verir; bu yüzden tercih/`delivery` gövdesinde **taşınmaz**.
+    slack_webhook: str = ""
 
     # Strict moddan BAĞIMSIZ çalışan fonksiyon kara listesi (`engine._plan` koşulu `or`).
     # Boş bırakılırsa devre dışı; buraya yazılan her ad `off` modunda bile bloklanır.

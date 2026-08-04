@@ -186,6 +186,48 @@ def _send_email(to: list[str], subject: str, html: str, text: str) -> dict:
     return {"id": resp.json().get("id")}
 
 
+# -- slack ----------------------------------------------------------------
+#
+# 🔴 FAZ 5.9 — **DESEN HAZIRDI, KANAL YOKTU.** Dosyanın kendi girişi (`:3-4`) Slack'i bir
+# **plan** olarak yazıyordu ve `@register("slack")` grep'i **sıfırdı**. Yani bir kayıt
+# mekanizması vardı, ona kayıtlı üç kanaldan biri yoktu.
+#
+# ⚠ **Webhook URL'si bir SIR'dır** ve tercih/`delivery` içinde **taşınmaz**: bir webhook
+# URL'si, onu bilen herkese o kanala yazma yetkisi verir. Kaynağı `Settings`'tir
+# (`DIMA_SLACK_WEBHOOK`) — yani depoya değil **ortama** yazılır.
+#
+# ⚠ Anahtar yoksa kanal **atlanır, patlamaz** (`email`in aynı deseni): bir kanalın
+# yapılandırılmamış olması, ötekilerin teslimini durdurmamalı.
+@register("slack")
+def _slack_channel(event: NotificationEvent, target: dict, ctx: DispatchContext) -> dict:
+    import json as _json
+    import urllib.request
+
+    url = str(getattr(get_settings(), "slack_webhook", "") or "").strip()
+    if not url:
+        return {"channel": "slack", "ok": False, "skipped": True,
+                "detail": "slack webhook yok"}
+    # 🔴 Gövde **maskeli**: Slack bir dış sistemdir ve kanal üyeleri raporun kendi
+    # yetki sınırı içinde olmayabilir. `pii.py` tek çıkış noktasıdır — burada ikinci bir
+    # maskeleyici YAZILMAZ.
+    from app import pii
+
+    metin = pii.mask_text(f"*{event.title}*\n{event.message}"
+                          if getattr(event, "title", None) else str(event.message))
+    try:
+        istek = urllib.request.Request(
+            url, data=_json.dumps({"text": metin}).encode("utf-8"),
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(istek, timeout=10) as y:      # noqa: S310
+            ok = 200 <= y.status < 300
+        return {"channel": "slack", "ok": ok}
+    except Exception as exc:                                      # noqa: BLE001
+        # ⚠ Sessiz yutma YOK (ADR-0020): başarısızlık teslim kaydına YAZILIR ve
+        # kullanıcı "gönderildi" sanmaz.
+        return {"channel": "slack", "ok": False,
+                "detail": f"{type(exc).__name__}: {exc}"[:120]}
+
+
 @register("email")
 def _email_channel(event: NotificationEvent, target: dict, ctx: DispatchContext) -> dict:
     to = [str(x).strip() for x in (target.get("to") or []) if str(x).strip()]
