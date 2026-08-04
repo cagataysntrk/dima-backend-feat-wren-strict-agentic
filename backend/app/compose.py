@@ -348,7 +348,17 @@ def _compose_derived_metrics(base: Path, out: Path, kaynaklar: list[str]) -> Non
         (vdir / "metadata.yml").write_text(yaml.safe_dump(
             {"name": vname, "statement": spec["view_statement"].format(**render),
              "columns": spec["view_columns"]}, allow_unicode=True, sort_keys=False))
-        cube = spec["cube"]
+        cube = dict(spec["cube"])
+        # 🔴 FAZ 2.1(d) — TÜREV KÜPÜN GRAIN'İ DAMGALANIR.
+        # Ölçüldü: `karlilik` türev küpü aynı sürüklenmeyi BİR KAT YUKARIDA tekrar
+        # üretiyor — `base_model` mikro'da `stok_hareketleri`, logo-3'te
+        # `fatura_satirlari`, netsis'te `stok_hareketleri`. Yani `karlilik.satis_tutari`
+        # ERP'ye göre FARKLI grain'de ve grain kapısı bunu GÖREMİYORDU: küpün
+        # `base_object`'i `karlilik_src` (türetilmiş görünüm adı) ve o ad hiçbir grain
+        # sözleşmesinde geçmiyor → "bilinmeyen grain SERBEST" kuralı, gerçek bir ihlali
+        # koruyordu. *Bir kapıyı kör eden şey çoğu zaman onun kendi güvenli varsayımıdır.*
+        if binding.get("base_model"):
+            cube["grain_kaynak"] = binding["base_model"]
         cdir = out / "cubes" / cube["name"]
         cdir.mkdir(parents=True, exist_ok=True)
         (cdir / "metadata.yml").write_text(

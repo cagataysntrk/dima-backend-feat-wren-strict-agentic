@@ -217,7 +217,11 @@ def grain_denetle(cube_adi: str, meta: dict[str, Any],
     🔴 Saf fonksiyon — DB'siz, dosyasız test edilebilir (`context.py` felsefesi).
     """
     metrikler = metrik_haritasi(sozluk)
-    cube_grain = grain_adi(sozluk, meta.get("base_object"))
+    # ⚠ `grain_kaynak` ÖNCE: türev küplerin `base_object`'i türetilmiş görünüm adıdır
+    # (`karlilik_src`) ve hiçbir sözleşmede geçmez — yani kapı, kendi "bilinmeyen grain
+    # serbest" kuralı yüzünden KÖR kalırdı. `compose` türev küpe kaynağın gerçek
+    # `base_model`'ini damgalar (FAZ 2.1(d)); grain kararı ONDAN türer.
+    cube_grain = grain_adi(sozluk, meta.get("grain_kaynak") or meta.get("base_object"))
     if cube_grain is None:
         return []                            # bilinmeyen grain SERBEST (yukarıdaki gerekçe)
     ihlaller: list[str] = []

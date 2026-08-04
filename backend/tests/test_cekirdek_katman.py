@@ -494,3 +494,53 @@ def test_ADDITIVE_BIRLESTIRILMIYOR():
         "bakmadan karara bağlanmış olur")
     assert cekirdek.metrik_haritasi(SOZLUK)["bakiye"].get("additive") == "semi", (
         "sözlükteki BEYAN silinmiş — beyan kalır, yazma yapılmaz (adım c'nin girdisi)")
+
+
+# ── 8 · TÜREV KATMAN — sürüklenme BİR KAT YUKARIDA tekrar üretiliyordu ──────
+
+def test_TUREV_KUPUN_GRAINI_DAMGALANIYOR():
+    """🔴 **KAPIYI KÖR EDEN ŞEY, ONUN KENDİ GÜVENLİ VARSAYIMIYDI.**
+
+    `karlilik` türev küpü aynı sürüklenmeyi bir kat yukarıda tekrar üretiyordu:
+    `base_model` mikro'da `stok_hareketleri`, logo-3'te `fatura_satirlari`, netsis'te
+    `stok_hareketleri`. Ama küpün `base_object`'i türetilmiş görünüm adıdır
+    (`karlilik_src`) ve o ad hiçbir sözleşmede geçmez → *"bilinmeyen grain SERBEST"*
+    kuralı **gerçek bir ihlali koruyordu**.
+
+    `compose` artık türev küpe kaynağın `base_model`'ini damgalıyor (`grain_kaynak`) ve
+    grain kararı ondan türüyor.
+    """
+    kaynak = (KOK / "app" / "compose.py").read_text(encoding="utf-8")
+    assert 'cube["grain_kaynak"] = binding["base_model"]' in kaynak, \
+        "türev küpe grain damgası VURULMUYOR — kapı türev katmanda kör"
+    ck = (KOK / "app" / "cekirdek.py").read_text(encoding="utf-8")
+    assert 'meta.get("grain_kaynak") or meta.get("base_object")' in ck, \
+        "grain kararı damgayı OKUMUYOR"
+
+    # Damga gerçekten karar değiştiriyor mu — yapısal değil DAVRANIŞSAL kontrol.
+    sozluk = {"grain_sozlesmeleri": {
+                  "fatura": {"base_object_adlari": ["faturalar"]},
+                  "stok_hareketi": {"base_object_adlari": ["stok_hareketleri"]}},
+              "metrikler": [{"name": "satis_tutari", "grain": "fatura"}]}
+    meta = {"name": "karlilik", "base_object": "karlilik_src",
+            "grain_kaynak": "stok_hareketleri",
+            "measures": [{"name": "satis_tutari", "expression": "X"}]}
+    assert cekirdek.grain_denetle("karlilik", meta, sozluk), \
+        "damgalı küpte ihlal GÖRÜLMÜYOR — kapı hâlâ kör"
+
+
+def test_TUREV_METRIGIN_KIMLIGI_AYRI_ve_KIYASLANAMAZ():
+    """⚠ `karlilik.satis_tutari` → `satis_tutari_turev`. Kanonik ad OLAMAZ (hiçbir ERP'de
+    fatura grain'inde değil), `_hareket`/`_kalem` de olamaz (grain'i SABİT değil).
+    Dördüncü kimlik, grain'i **bilinçli olarak beyan edilmemiş** — ve bu bir eksiklik
+    değil, **ölçülen gerçeğin kaydıdır**.
+
+    🔴 `kiyaslanamaz: true` bir SÜS değil, bir uyarıdır: iki şirketin bu sayısını yan yana
+    koymak, iki farklı şeyi karşılaştırmaktır."""
+    h = cekirdek.metrik_haritasi(SOZLUK)
+    t = h["satis_tutari_turev"]
+    assert not t.get("grain"), "türev metriğe SABİT grain dayatılmış — üç ERP'den ikisi düşer"
+    assert t.get("kiyaslanamaz") is True, "kıyaslanamazlık BEYAN EDİLMEMİŞ"
+    kaynak = (DEMO / "packs" / "modul" / "turev" / "karlilik.yml").read_text(encoding="utf-8")
+    assert "satis_tutari_turev" in kaynak and "name: satis_tutari\n" not in kaynak
+    assert "KIYASLANMAZ" in kaynak, "kıyaslanamazlık ÖLÇÜNÜN YANINDA yazılı değil"

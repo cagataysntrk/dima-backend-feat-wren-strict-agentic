@@ -91,11 +91,22 @@ def test_cross_cube_blend_ticaret_karlilik(tmp_path_factory, monkeypatch):
     assert "FULL OUTER JOIN" in sql.upper()
     assert "satis_tutari" in sql and "brut_kar" in sql and "tarih__month" in sql
 
-    # CROSS-CUBE BOYUT GEÇİŞİ: ticaret'te stok_adi yok → satış+stok_adi taşıyan cube'a geç.
+    # ⟳ CROSS-CUBE BOYUT GEÇİŞİ — FAZ 2.1(c2)/(d) AD GÖÇÜNDEN SONRA **REDDEDİLİYOR**.
+    #
+    # 🔴 Eskiden `ticaret.satis_tutari` + *"ürün bazlı"* → `mal`/`karlilik`'in
+    # `satis_tutari`'sine geçiyordu. Geçiş **ada** bakıyordu ve o ad üç ayrı grain'i
+    # taşıyordu: `ticaret`@fatura ↔ `mal`@stok_hareketi/fatura_kalem ↔
+    # `karlilik`@ERP'ye-göre-değişen. Yani mekanizma, **karşılaştırılamaz iki sayıyı**
+    # sessizce aynı raporun içine koyuyordu — hem de `source="cube"` rozetiyle.
+    #
+    # Ad göçü onu yapısal olarak imkânsız kıldı ve geçiş artık `None` dönüyor.
+    # ⚠ **Bu bir yetenek kaybıdır ve gizlenmiyor:** *"ürün bazlı satış"* sorusu bu
+    # yoldan cevaplanmıyor. Doğru çözüm, geçişi **grain-farkında** yapmak (çekirdek
+    # sözlüğün varyant bilgisini sorgu zamanında okumak) ve cevabın grain değiştiğini
+    # SÖYLEMEK — kendi maddesi var, borç olarak yazıldı.
+    # *Sessizce yanlış bir sayı vermektense, açıkça cevap verememek yeğdir.*
     prev2 = {"cube": "ticaret", "measures": ["satis_tutari"]}
-    dsw = cr.cross_cube_dim_switch(prev2, _norm("ürün bazlı"), schema)
-    assert dsw is not None and dsw["cube"] in {"karlilik", "mal"}
-    assert "stok_adi" in dsw["dimensions"] and dsw["measures"] == ["satis_tutari"]
+    assert cr.cross_cube_dim_switch(prev2, _norm("ürün bazlı"), schema) is None
     # müşteri ticaret'te ZATEN var (cari_adi) → geçiş YOK (normal refine)
     assert cr.cross_cube_dim_switch(prev2, _norm("müşteri bazlı"), schema) is None
 

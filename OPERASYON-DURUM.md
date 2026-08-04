@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 2 · SEMANTİK ÇEKİRDEK** *(FAZ 1 ✅ bitti — 19 adım)* |
-| **Sıradaki madde** | `2.1(d)` **demo kopyaları** → `cekirdek_katman` **shadow turu** (açma kararı) → `2.2b` |
+| **Sıradaki madde** | `cekirdek_katman` **gölge turu → açma kararı** *(dört şirkette de sözleşme uyuyor)* → `2.2b` yüzey |
 | **Demet** | ✅ **`1.12` kapısı 4/4 YEŞİL** (süit **2477**) — risk sınırı olduğu için demete girmedi · demet 13 açık: `1.10`+`1.11` (o kapıya da dahil oldular) |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
@@ -420,6 +420,34 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 2 · adım 5 — `2.1(d)` **türev katman: sürüklenme BİR KAT YUKARIDA tekrar üretiliyordu** *(2026-08-04)*
+
+Kapı: **35 test**, hızlı sinyal **328**. 🔴 Risk sınırı (`demo/packs`).
+
+> 🔴 **KAPIYI KÖR EDEN ŞEY, ONUN KENDİ GÜVENLİ VARSAYIMIYDI.** `karlilik` türev küpü aynı
+> sürüklenmeyi bir kat yukarıda tekrar üretiyordu — `base_model` mikro'da
+> `stok_hareketleri`, logo-3'te `fatura_satirlari`, netsis'te `stok_hareketleri`. Ama
+> küpün `base_object`'i **türetilmiş görünüm adıdır** (`karlilik_src`) ve o ad hiçbir
+> sözleşmede geçmez → *"bilinmeyen grain SERBEST"* kuralı **gerçek bir ihlali koruyordu**.
+> `compose` artık türev küpe kaynağın `base_model`'ini **damgalıyor** (`grain_kaynak`).
+
+> **KARAR:** `karlilik.satis_tutari` → **`satis_tutari_turev`** — dördüncü kimlik.
+> Kanonik ad **olamaz** (hiçbir ERP'de fatura grain'inde değil), `_hareket`/`_kalem` de
+> olamaz (grain'i **sabit değil**, ERP'nin bağlamasına bağlı). Grain **bilinçli olarak
+> beyan edilmiyor** ve bu bir eksiklik değil, **ölçülen gerçeğin kaydı**.
+> 🔴 `kiyaslanamaz: true` — *iki şirketin bu sayısını yan yana koymak, iki farklı şeyi
+> karşılaştırmaktır.* Kârlılık hesabının **girdisidir**, bir satış cirosu değil.
+
+> ⚠ **ÖLÇÜLEN YETENEK KAYBI — gizlenmiyor.** `cross_cube_dim_switch` **ada** bakıyordu:
+> `ticaret.satis_tutari` + *"ürün bazlı"* → `mal`/`karlilik`'in `satis_tutari`'sine
+> geçiyordu. O ad **üç ayrı grain** taşıyordu; yani mekanizma **karşılaştırılamaz iki
+> sayıyı** sessizce aynı raporun içine koyuyordu — üstelik `source="cube"` rozetiyle.
+> Ad göçü bunu **yapısal olarak imkânsız** kıldı: geçiş artık `None` dönüyor ve *"ürün
+> bazlı satış"* bu yoldan cevaplanmıyor.
+> *Sessizce yanlış bir sayı vermektense, açıkça cevap verememek yeğdir.*
+> **Borç:** geçişi **grain-farkında** yap (çekirdek sözlüğün varyant bilgisini sorgu
+> zamanında oku) ve cevabın grain değiştirdiğini **SÖYLE**.
 
 ### FAZ 2 · adım 4 — `2.1(c2)` **AD GÖÇÜ** — sözleşme artık dört şirkette de uyuyor *(2026-08-04)*
 
@@ -1524,6 +1552,7 @@ VK-1…VK-6 **yapısal ve canlı** (gemini) ölçüldü. `§G.6e`'nin *"Bugün"*
 | 7 | **`A11` yarım indi:** uzlaştırma bloğu yazıldı ama **sabit sayılar yerinde** — `93` → `MIMARI.md:605 · 737 · 738`, `105` → `2762 · 2765`. Bir kısmı **tarihli olay kaydı** (meşru), bir kısmı **bugünü anlatıyor** (D2 ihlali); ayrımı madde sırası gelince yap | FAZ 0.1 *(yeniden ölçüm turu)* |
 | 8 | **`D1` beyanı FAZ −1'in üç maddesinde YOK** — `backend·sözleşme·frontend` üçlüsü de `api-only`/`belge` muafiyeti de yazılmamış *(muafiyet meşru, **beyan** eksik)* | FAZ 0.14 |
 | 10 | 🔴 **Korpus kapısı 13 dk 18 sn** — ilan edilen *"3,5 dk"* yanlıştı (düzeltildi). Duvar saatinin **%71'i `boyahane`** (5306 soru / 8'49"). ⚠ **Seyreltme YAPILMAMALI:** `nl_corpus.py:141` *"ham tur paydası KORUNUR (KURAL A)"* diyor ve korpusun tek yakalaması **paydanın değişmesiydi**. Doğru yol **paralelleştirme** (şirketler ayrı süreç) — payda birebir aynı kalır | Kullanıcı kararı bekliyor *(kapsam: ölçüm aracı)* |
+| 11 | 🔴 **`cross_cube_dim_switch` grain-KÖR** — ada bakıyordu, ad göçüyle geçiş kapandı: *"ürün bazlı satış"* artık bu yoldan cevaplanmıyor. Çözüm: çekirdek sözlüğün **varyant** bilgisini sorgu zamanında oku (`satis_tutari` ↔ `_kalem`/`_hareket`) ve cevabın **grain değiştirdiğini SÖYLE** | **FAZ 2.2b** *(yüzey)* |
 | 9 | **Yol haritası `−1.2` tablosu (12 satır) ↔ `MIMARI §0` (13 satır) ayrıştı**, D5 kütüğü bırakılmadan: MIMARI'de **eklenen** `§5/18. yasak → §G/AJ0`; **değişen otoriteler** §8.2 `4.7→4.6` · §9 `2.2→0.18·2.1` · §12 `6./7./8.→6./7.` · §7 `FAZ 4→0.15·FAZ 4` · §4 `6.1→6.0→6.1→6.2`. 🔴 **Beşinde de MIMARI DOĞRU, yol haritası bayat** | FAZ 0.14 |
 | 10 | **`A9`/`A12`'nin kanıt satır numaraları bayat** — `A9` *"2567·2571·2630"* diyor, gerçek `2804·2808·2867`; `A12` notu *"1309. satır"* diyor, bugün `1348`. *(A6'nın düştüğü hatanın aynısı; ikisi de **zararsız** çünkü düzeltmeler indi)* | FAZ 0.1 |
 | 11 | 🔴 **KENDİ BULGUM (0.23'ü koşarken ölçüldü): raporlanabilirlik kuralının BEŞ sahibi varmış, 0.23 yalnız İKİSİNİ kapatıyor.** Kalan üç sahip: `page.tsx:100` (`latestReportable` — tuvale ekle hedefi) · `page.tsx:114` (`addToCanvas`) · `page.tsx:139` (`lastReport` — **resume çapası**) · `ChatPanel.tsx:196` (thread listesi önizlemesi). **Neden AYNI TURDA kapatılmadı:** ikisi (tuval) `AnalysisCanvas.tsx:82`'nin `it.cube_query && it.result` kapısına bağlı — genişletmek **sessizce boş bir tuval kartı** doğururdu; o yüzey **`0.3`'ün konusu** (K4 `test_yuzey_sadakati.py`). Diğer ikisi (`page.tsx:139` · `ChatPanel.tsx:196`) **serbest ve güvenli**, ama `0.23`'ün `NE`'si açıkça yalnız `ReportPanel` diyor → kapsam sessizce genişletilmedi. `raporlanabilir()` **export edildi**, üçü de ona bağlanacak | **FAZ 0.3** *(aynı fazda, «kalan» adımı)* |

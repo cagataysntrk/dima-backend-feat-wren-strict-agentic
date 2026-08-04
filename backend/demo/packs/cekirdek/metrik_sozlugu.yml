@@ -109,6 +109,21 @@ metrikler:
     karar_kaydi: true
     synonyms: [satış, satis, ciro, satış tutarı]
 
+  # ⚠ **GRAIN BİLİNÇLİ OLARAK BEYAN EDİLMEZ** — ve bu bir eksiklik değil, ölçülen
+  # gerçeğin kaydıdır: türev kârlılık görünümünün `base_model`'i ERP'ye göre değişiyor
+  # (mikro `stok_hareketleri` · logo-3 `fatura_satirlari` · netsis `stok_hareketleri`).
+  # Sabit bir grain dayatmak, üç ERP'den ikisini derleme zamanında reddetmek olurdu;
+  # kanonik `satis_tutari` adını taşımasına izin vermek ise sürüklenmeyi geri getirirdi.
+  # 🔴 **ŞİRKETLER ARASI KIYASLANMAZ:** kârlılık hesabının GİRDİSİDİR (marj/SMM ile aynı
+  # satırdan gelir, o yüzden kendi içinde anlamlıdır), bir satış cirosu değil.
+  - name: satis_tutari_turev
+    label: satış tutarı (kârlılık girdisi)
+    unit: "₺"
+    additive: full
+    karar_kaydi: true
+    kiyaslanamaz: true
+    synonyms: [satış, ciro, satış tutarı]
+
   - name: satis_tutari_kalem
     label: satış tutarı (fatura kalemi)
     unit: "₺"

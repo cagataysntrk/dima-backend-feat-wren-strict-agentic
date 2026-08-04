@@ -54,7 +54,22 @@ cube:
   synonyms: [kar, kâr, brüt kar, brüt kâr, karlilik, kârlılık, marj, kar marjı, smm,
              satılan malın maliyeti, stok değeri, envanter değeri]
   measures:
-    - name: satis_tutari
+    # ⟳ FAZ 2.1(d) AD GÖÇÜ (2026-08-04): `satis_tutari` → `satis_tutari_turev`.
+    #
+    # 🔴 ÖLÇÜLDÜ: bu küpün grain'i ERP'ye göre DEĞİŞİYOR — `base_model` mikro'da
+    # `stok_hareketleri`, logo-3'te `fatura_satirlari`, netsis'te `stok_hareketleri`.
+    # Yani `karlilik.satis_tutari` şirketten şirkete FARKLI bir şeyi sayıyordu ve
+    # kaynak katmanda kapatılan sürüklenmeyi TÜREV katmanda aynen tekrar üretiyordu.
+    #
+    # ⚠ Bu ölçü kanonik `satis_tutari` (grain: fatura) OLAMAZ — hiçbir ERP'de fatura
+    # grain'inde değil. Ama `_hareket`/`_kalem` de olamaz: grain'i SABİT değil,
+    # ERP'nin bağlamasına bağlı. O yüzden DÖRDÜNCÜ bir kimlik: grain'i bilinçli olarak
+    # BEYAN EDİLMEZ ve bu bir eksiklik değil, ölçülen gerçeğin kaydıdır.
+    #
+    # 🔴 SONUÇ: `satis_tutari_turev` ŞİRKETLER ARASI KIYASLANMAZ. Kârlılık hesabının
+    # GİRDİSİDİR — marj/SMM ile aynı satırdan gelir, o yüzden anlamlıdır; ama iki
+    # şirketin bu sayısını yan yana koymak, iki farklı şeyi karşılaştırmaktır.
+    - name: satis_tutari_turev
       expression: "SUM(sale_amount)"
       type: DOUBLE
       unit: "₺"
