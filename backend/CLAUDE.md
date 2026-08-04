@@ -108,41 +108,64 @@ uvicorn app.main:app --reload --port 8000   # dev
 - **DB→dosya tek yönlü** (ADR-0016): TenantConfig satırı olan tenant'ın company.yml'i
   TÜRETİLMİŞTİR; elle düzenleme materializer'da ezilir. Kaynak = control-plane DB.
 
-## Test kapısı (ölçüldü — 3 Ağustos 2026)
+## 🔴 TEST KAPISI — **YENİ POLİTİKA (kullanıcı kararı, 2026-08-04)**
 
-Tam kapı **~15 dk**: süit **2068** test @`e22b2b9` (`pytest -q --collect-only`) ≈8,5 dk · `eval` ≈1,5 dk · `nl_corpus` ≈3-4 dk ·
-`konusma_senaryolari` ≈1,5 dk. Fixture'lar zaten `session` kapsamlı, `pytest-xdist` imajda
-yok — süre **gerçek iştir**; israf faz başına 2-3 kez koşturmaktı.
+> *"Kapı testlerini iptal edelim, sadece korpus koşsun — o da sadece en gerekli
+> zamanlarda, sıklığı düşük, demet sonu gibi. Çok daha hızlı geliştirmeliyiz;
+> fazları hızlıca ama mükemmelce tamamlamalıyız."*
 
-Tek araç: **`lab/kapi.py`** (iki kademe, tek sahip).
+### Kural — üç seviye, başka seviye YOK
 
-- **Geliştirme sırasında:** `python lab/kapi.py --hizli --degisen <değişen dosyalar>` —
-  değişen modüle bağımlı testler + çekirdek duman (~15-40 sn). **Bu bir KAPI DEĞİL,
-  sinyaldir**: seçim `import` bağımlılığına bakar, davranışa dayanan bir test kaçabilir;
-  araç her koşumda kapsanmayan dosya sayısını YAZAR (sessiz kırpma yok).
-- **DEMET sonunda (4-6 madde), TEK SEFER:** `python lab/kapi.py --tam` — süit + `eval` +
-  korpus + senaryo, **tek konteynerde ardışık**. Kapı budur. *(Eskiden «her faz sonunda»
-  yazıyordu ve uygulamada **madde başına** koşuluyordu; ölçüldü — sürenin %75'i kapıda
-  değil, madde başına tekrarlanan 10 adımlık döngüdeydi.)*
-- **Demet içinde ara `--tam` YOK.** *"Bir de şuna bakayım"* diye tam süit koşturma.
-- 🔴🔴 **TESTİN TESTİ DE YASAK.** *"Yeni kapıyı yazdım, çalışıyor mu bakayım"* bir gerekçe
-  **değildir** — en çok kullanılan kaçamak budur. Yeni bir kapı **yalnız kendi dosyasıyla**
-  doğrulanır (`pytest tests/test_<yeni>.py`, saniyeler); *"önce ölç"* de aynı tek dosyayla
-  yapılır. Uzun koşum **demet harici, ne sebeple olursa olsun YASAK**.
-- **Kapsam KIRPILMAZ.** Hız tekrarı azaltarak kazanılır, kapıyı gevşeterek değil.
-- **İki test konteyneri ASLA paralel koşmaz** (compose kilidi `metadata.yml`'de çakışır) —
-  bu kural hız için bile esnetilmez.
-- 🔴 **KOŞUM HİJYENİ:** kapı `--rm` ile değil **`-d` ile** koşturulur, `--name` verilir,
-  `docker wait` + `docker logs` ile okunur, sonda `docker rm -f` ile kapatılır.
-  Ölçüldü: `--rm` konteyner çıkınca **kütüğü siler** ve kabuk sarmalayıcısı ölürse özet
-  **tamamen kaybolur** — bu operasyonda **iki kapı koşumunun özeti böyle kayboldu**.
-- 🔴 **Kapı koşarken repoya YAZILMAZ** — mount canlıdır; süit bitmiş olsa bile sonraki
-  aşamalar yeni kodu import eder ve ölçüm **karışır**. (Bu operasyonda bir kez yaşandı,
-  koşum iptal edilip temiz tekrarlandı.)
-- **DEMET disiplini** (`OPERASYON.md §3`): **commit ≠ kapı**. Her madde kendi commit'ini
-  alır (seviye 0+1); **tam kapı demet sonunda bir kez** koşar. `cube_router · interpret ·
-  answer · followup · routers/ask · contribution · demo/packs` dosyalarına dokunan madde
-  **demete girmez**, kendi kapısını hemen koşar.
+| # | Ne zaman | Komut | Ne koşar | Süre |
+|---|---|---|---|---|
+| **1** | **her düzenlemeden sonra** | `python lab/kapi.py --hizli --degisen <dosyalar>` | değişen modüle bağımlı testler + çekirdek duman | **~15-60 sn** |
+| **2** | **DEMET SONUNDA, bir kez** | `python lab/kapi.py --tam` | 🔴 **YALNIZ KORPUS** | **13 dk 18 sn** *(ölçüldü — bkz. aşağıdaki düzeltme)* |
+| **3** | **gecelik CI** *(insan beklemez)* | `python lab/kapi.py --hepsi` | korpus + süit + `eval` + senaryo | ~15 dk |
+
+🔴 **Seviye 3 YEREL OLARAK KOŞULMAZ.** Ne demet sonunda, ne commit öncesi, ne
+*"bir de şuna bakayım"* diye. Onun yeri gecelik CI'dır ve orada **bedava**dır —
+kimsenin beklediği zamandan ödenmez.
+
+### Neden bu üçü — ve neden korpus KALDI
+
+Ölçüldü, tahmin değil:
+
+| Adım | Bu operasyonda kaç kez **kırmızı** verdi | Madde başına maliyeti |
+|---|---|---|
+| `eval.run` | **0** *(her koşum `+0,0 / +0,0 / +0,0`)* | ~1,5 dk |
+| konuşma senaryoları | **0** *(dokuz sınıf tabanda sabit)* | ~1,5 dk |
+| tam süit | birkaç kez — **aynı kusurları `--hizli` de yakaladı** | ~8,5 dk |
+| **korpus** | 🔴 **1 kez — ve BAŞKA HİÇBİR ŞEYİN göremeyeceği bir kusuru** | **13 dk 18 sn** |
+
+Korpusun o tek yakalaması, neden onun kaldığının **tamamıdır**: `gitas` bir compose
+yarışıyla korpustan **tamamen düştü**, payda **445 → 342** indi, doğruluk **%93,2 →
+%94,3'e ÇIKTI**. Sistem bozulurken **sayı iyileşti** — süit, `eval` ve senaryolar
+üçü de **yeşildi**, çünkü hiçbiri *"kaç soru cevaplanabiliyor"* sorusunu sormuyor.
+*Bir metriğin iyileşmesi, ölçülemeyenlerin denklemden çıkmasıyla da olur.*
+
+Korpus ayrıca **LLM'siz ve kotasızdır** (~1000 soru × 4 şirket): günlük kota dolsa
+bile koşar.
+
+### ⚠ Korpusun BİLİNEN körlüğü — yazılı, gizli değil
+
+Korpus soruları **katalogdan üretiliyor**, yani hepsi **doğru yazılmış**. Typo yolu
+korpusta **hiç sorulmuyor**. Yani `%93,1` yeşilken gerçek kullanıcı deneyimi kırık
+olabilir — sayı **yalan söylemiyor, o yolu GÖRMÜYOR**. Kullanıcı-deneyimi kusurları
+korpustan değil, **canlı turlardan** (`lab/deneyim.py --live`) çıkar.
+
+### Değişmeyen üç kural
+
+- 🔴 **Kapı koşarken repoya YAZILMAZ** — mount canlıdır, ölçüm karışır.
+- 🔴 **İki test konteyneri ASLA paralel koşmaz** (compose kilidi `metadata.yml`'de çakışır).
+- 🔴 **KOŞUM HİJYENİ:** `--rm` değil **`-d`**, `--name` ver, `docker wait` + `docker logs`
+  ile oku, sonda `docker rm -f`. (`--rm` konteyner çıkınca kütüğü siler; bu operasyonda
+  **iki koşumun özeti böyle kayboldu**.)
+
+### Silinen bir şey YOK
+
+Süit · `eval` · senaryo **yerel kapıdan çıkarıldı, kaldırılmadı** (MIMARI §10:
+*"kapananlar işaretlenir, silinmez"*). `--hepsi` her an koşar, gecelik CI zaten koşuyor.
+Geri alma tek bayrak — bir kod değişikliği değil.
 
 ## Standartlar
 Kök `saka-standards` submodule'ü bağlayıcıdır (TypeScript tarafı için; Python tarafında

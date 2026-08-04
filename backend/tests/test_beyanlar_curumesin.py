@@ -610,7 +610,13 @@ def test_TERS_TUZAK_FAZ_0_15_CI_KAPILARI_AYAKTA():
     Eski yön: *"CI'da ölçüm kapısı YOK"*. FAZ 0.15 indiği gün **kırıldı** — kurulduğu iş
     buydu. Yeni yön: **dört kapı CI'da ayakta kalmalı**.
 
-    Neden `--tam` de aranıyor: bir workflow `kapi.py`'yi **çağırıp** yalnız `--hizli`
+    ⟳ **GÜNCELLEME (kullanıcı kararı, 2026-08-04):** aranan bayrak `--tam` değil
+    **`--hepsi`**. Yerel demet kapısı **yalnız korpusa** indirildi; süit · `eval` ·
+    senaryo **silinmedi**, gecelik CI'ya taşındı. Yani bu kapı artık **daha da
+    kritiktir**: o üç adımın koştuğu **tek yer** burasıdır. Workflow `--tam` koşarsa
+    yalnız korpus ölçülür ve üç adım **hiçbir yerde** koşmamış olur.
+
+    Neden bir bayrak aranıyor: bir workflow `kapi.py`'yi **çağırıp** yalnız `--hizli`
     koşarsa dosya adı yerinde durur ama ölçülen şey **kapı değil sinyaldir**
     (`CLAUDE.md`: *"Bu bir KAPI DEĞİL, sinyaldir"*). Yalnız dosya adını aramak, tam
     olarak bir önceki ölçümün düştüğü **çağıran-komuta-bakma** kusurunun aynadaki hâli
@@ -629,10 +635,11 @@ def test_TERS_TUZAK_FAZ_0_15_CI_KAPILARI_AYAKTA():
     assert kosanlar, (
         "Hiçbir workflow `lab/kapi.py` çağırmıyor — FAZ 0.15 GERİ ALINMIŞ.\n"
         "Kapı testi geri alınmaz; gerekçesi buraya yazılır ve satır `xfail` işaretlenir.")
-    assert any("--tam" in t for t in kosanlar.values()), (
-        f"`kapi.py` çağrılıyor ({sorted(kosanlar)}) ama `--tam` YOK. `--hizli` bir KAPI "
-        "değil, bir SİNYALDİR (seçim import bağımlılığına bakar; davranışa dayanan test "
-        "kaçar). Dört kapı yalnız `--tam` ile koşar.")
+    assert any("--hepsi" in t for t in kosanlar.values()), (
+        f"`kapi.py` çağrılıyor ({sorted(kosanlar)}) ama `--hepsi` YOK.\n"
+        "🔴 Süit · `eval` · senaryo yerel kapıdan ÇIKARILDI (2026-08-04) — koştukları "
+        "TEK yer bu workflow. `--tam` yalnız korpus koşar; burada `--tam` yazmak o üç "
+        "adımı HİÇBİR YERDE koşmamak demektir.")
     assert any("if: always()" in t for t in kosanlar.values()), (
         "Kapı workflow'u raporları `if: always()` ile YÜKLEMİYOR. Kırmızıda ham kütük "
         "lazım: *'korpus %92,8'e düştü'* bilgisi, HANGİ soruların kaydığı bilinmeden "

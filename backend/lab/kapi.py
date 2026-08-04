@@ -1,17 +1,39 @@
 """KAPI — doğrulama maliyetini işin boyutuna göre ölçekler.
 
-## Neden bu araç var
+## 🔴 KULLANICI KARARI (2026-08-04): **YEREL KAPI = YALNIZ KORPUS**
 
-Tam süit + `eval` + korpus + senaryo ≈ **15 dakika**. Bu bir faz kapısı olarak doğru,
-ama her düzenlemeden sonra koşturulunca geliştirmenin kendisini yavaşlatıyor (ölçüldü:
-bir fazda üç kez koşturuldu → 45 dakika, ve üçünün ikisi hiçbir şey bulmadı).
+*"Kapı testlerini iptal edelim, sadece korpus koşsun — o da sadece en gerekli
+zamanlarda, sıklığı düşük, demet sonu gibi. Çok daha hızlı geliştirmeliyiz."*
 
-Çözüm **daha az doğrulama** değil, **doğru zamanda doğru doğrulama**:
+Karar **ölçümle uyumlu** ve gerekçesi burada duruyor ki bir sonraki tur onu
+*"unutulmuş"* sanmasın:
 
-| Seviye | Ne koşar | Ne zaman |
+| Adım | Bu operasyonda kaç kez kırmızı verdi | Süre |
 |---|---|---|
-| `--hizli` | değişen modüle **bağımlı** test dosyaları + çekirdek duman | geliştirme sırasında |
-| `--tam` | süit + `eval` + korpus + senaryo | **faz sonunda, bir kez** |
+| `eval.run` | **0** — her koşumda `+0,0 / +0,0 / +0,0` | ~1,5 dk |
+| konuşma senaryoları | **0** — dokuz sınıf tabanda sabit | ~1,5 dk |
+| tam süit | birkaç kez — ama aynı kusurları **`--hizli` de yakaladı** | ~8,5 dk |
+| **korpus** | 🔴 **1 kez — ve kimsenin göremeyeceği bir kusuru yakaladı** | **13 dk 18 sn** |
+
+Korpusun o tek yakalaması, neden **onun kaldığının** tamamıdır: `gitas` bir compose
+yarışıyla korpustan **tamamen düştü**, payda **445 → 342**'ye indi ve doğruluk
+**%93,2 → %94,3'e ÇIKTI**. Yani sistem bozulurken **sayı iyileşti**. Süit yeşildi,
+`eval` yeşildi, senaryolar yeşildi — çünkü hiçbiri *"kaç soru cevaplanabiliyor"*
+sorusunu sormuyor. *Bir metriğin iyileşmesi, ölçülemeyenlerin denklemden çıkmasıyla
+da olur.*
+
+## Seviyeler
+
+| Seviye | Ne koşar | Ne zaman | Süre |
+|---|---|---|---|
+| `--hizli` | değişen modüle **bağımlı** testler + çekirdek duman | geliştirme sırasında | ~15-60 sn |
+| `--tam` | **YALNIZ korpus** — *"kaç soru cevaplanabiliyor"* | **demet sonunda, bir kez** | **13 dk 18 sn** |
+| `--hepsi` | korpus + süit + `eval` + senaryo | **gecelik CI** (geliştirme saatine mal olmaz) | ~15 dk |
+
+⚠ **Üç adım SİLİNMEDİ, yerel kapıdan ÇIKARILDI** (MIMARI §10: *"kapananlar işaretlenir,
+silinmez"*). `--hepsi` ile hâlâ koşarlar ve **gecelik CI** onları koşmaya devam eder —
+yani ağ hâlâ var, yalnız artık **geliştirmenin saatinden** ödenmiyor. Geri alma tek
+bayrak: `--hepsi`.
 
 ## `--hizli` bir KAPI DEĞİLDİR — bir SİNYALDİR
 
@@ -20,13 +42,12 @@ dayanan bir test kaçabilir. Bu yüzden araç her koşumda **kapsanmayan dosya s
 yazar** — bu deponun *"sessiz kırpma yok"* disiplini ölçüm aracının kendisine de
 uygulanır (MIMARI §6.4: *"ölçüm aracının kendisi de bir bağımlılıktır"*).
 
-Yalnız `--tam` bir kapıdır. Commit öncesi o koşar.
-
 ## Kullanım
 
     # host'ta değişen dosyaları git verir, konteyner yalnız koşar
     python lab/kapi.py --hizli --degisen app/eylem.py tests/test_eylem_onayi.py
-    python lab/kapi.py --tam
+    python lab/kapi.py --tam        # demet sonu — korpus
+    python lab/kapi.py --hepsi      # gecelik CI — dört adım
 """
 
 from __future__ import annotations
@@ -154,12 +175,20 @@ def hizli(degisen: list[str]) -> int:
                  *[f"tests/{s}" for s in secili]], "pytest (seçili)")
 
 
-#: `--tam`'ın adımları — anahtar, `--sadece` ile seçmek için.
-ADIM_ANAHTARLARI = ("suit", "eval", "korpus", "senaryo")
+#: Tüm adımlar — anahtar, `--sadece` ile seçmek için. **Sıra anlamlıdır:** korpus
+#: BAŞTA, çünkü yerel kapının tek adımı odur ve `--hepsi`'de de önce o konuşmalıdır.
+ADIM_ANAHTARLARI = ("korpus", "suit", "eval", "senaryo")
+
+#: 🔴 **YEREL DEMET KAPISI = YALNIZ KORPUS** (kullanıcı kararı, 2026-08-04).
+#: Öteki üç adım **silinmedi**, yerel kapıdan **çıkarıldı**: `--hepsi` ve gecelik CI
+#: onları koşmaya devam eder. Gerekçe ve ölçüm modül belgesinde.
+YEREL_KAPI = ("korpus",)
 
 
-def tam(sadece: tuple[str, ...] = ()) -> int:
-    """Dört kapı adımı. `sadece` verilirse **yalnız o adımlar** koşar.
+def tam(sadece: tuple[str, ...] = (), *, hepsi: bool = False) -> int:
+    """Demet kapısı. **Varsayılan: yalnız korpus.** `hepsi=True` → dört adım (CI).
+
+    `sadece` verilirse **yalnız o adımlar** koşar.
 
     🔴 **KIRMIZI DOĞRULAMASI TÜM KAPIYI TEKRAR KOŞMAZ.** Kullanıcı kararı (2026-08-04):
     *"demette kapı kırmızı verince neden sadece kırmızı veren kısım tekrar çalışmıyor?"*
@@ -177,14 +206,25 @@ def tam(sadece: tuple[str, ...] = ()) -> int:
     Bu ayrımı araç bilemez, **koşan kişi beyan eder**.
     """
     adimlar = (
+        ([sys.executable, "lab/nl_corpus.py", "--kapi"], "korpus kapısı"),
         ([sys.executable, "-m", "pytest", "-q", "-p", "no:warnings"], "tam süit"),
         ([sys.executable, "-m", "eval.run"], "eval.run"),
-        ([sys.executable, "lab/nl_corpus.py", "--kapi"], "korpus kapısı"),
         # 🔴 `--kapi` ZORUNLU: bayraksız koşumda `main()` her yolda 0 döner ve bu adım
         # **hiçbir koşulda kırmızı veremez** (ölçüldü: `returncode == 0`, senaryo tümden
         # çökse bile). Dört bileşenli bir kapının dörtte biri sessizce **dekordu**.
         ([sys.executable, "lab/konusma_senaryolari.py", "--kapi"], "konuşma senaryoları"),
     )
+    # 🔴 Yerel kapı **daraltılmış**: `--sadece` verilmediyse ve `--hepsi` denmediyse
+    # YALNIZ korpus koşar. Bu bir kırpma DEĞİL, ilan edilmiş bir kapsam — ve aşağıda
+    # **yazılır**: sessizce atlanan bir adım, atlanmamış gibi okunur.
+    if not sadece and not hepsi:
+        sadece = YEREL_KAPI
+        print("▶ YEREL DEMET KAPISI — yalnız KORPUS (kullanıcı kararı 2026-08-04).\n"
+              "  Süit · eval · senaryo SİLİNMEDİ: `--hepsi` ve gecelik CI onları koşar.\n"
+              "  Geliştirme sırasındaki kontrol: `--hizli --degisen <dosyalar>`.\n")
+        adimlar = tuple(k for k, ad in zip(adimlar, ADIM_ANAHTARLARI, strict=True)
+                        if ad in YEREL_KAPI)
+        sadece = ()
     if sadece:
         gecersiz = [a for a in sadece if a not in ADIM_ANAHTARLARI]
         if gecersiz:
@@ -217,23 +257,31 @@ def tam(sadece: tuple[str, ...] = ()) -> int:
     if sadece:
         print("\n" + ("✓ KISMİ KOŞUM YEŞİL — ama bu bir DEMET KAPISI DEĞİL"
                       if kotu == 0 else "✗ KISMİ KOŞUM KIRMIZI"))
+    elif hepsi:
+        print("\n" + ("✓ TAM KAPI (dört adım) YEŞİL" if kotu == 0
+                      else "✗ TAM KAPI (dört adım) KIRMIZI"))
     else:
-        print("\n" + ("✓ FAZ KAPISI YEŞİL" if kotu == 0 else "✗ FAZ KAPISI KIRMIZI"))
+        print("\n" + ("✓ DEMET KAPISI (korpus) YEŞİL" if kotu == 0
+                      else "✗ DEMET KAPISI (korpus) KIRMIZI"))
     return kotu
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--hizli", action="store_true")
-    ap.add_argument("--tam", action="store_true")
+    ap.add_argument("--tam", action="store_true",
+                    help="DEMET KAPISI — yalnız korpus (ölçüldü: 13 dk 18 sn)")
+    ap.add_argument("--hepsi", action="store_true",
+                    help="korpus + süit + eval + senaryo (~15 dk) — GECELİK CI içindir, "
+                         "yerel geliştirmede koşulmaz")
     ap.add_argument("--sadece", nargs="+", default=[], metavar="ADIM",
                     help="kırmızı doğrulaması: YALNIZ bu adımlar koşar "
                          f"({' | '.join(ADIM_ANAHTARLARI)}). Demet kapısı DEĞİLDİR.")
     ap.add_argument("--degisen", nargs="*", default=[],
                     help="değişen dosya yolları (host'ta `git status` verir)")
     a = ap.parse_args()
-    if a.tam:
-        return tam(tuple(a.sadece))
+    if a.tam or a.hepsi:
+        return tam(tuple(a.sadece), hepsi=a.hepsi)
     if a.hizli:
         return hizli(a.degisen)
     ap.print_help()

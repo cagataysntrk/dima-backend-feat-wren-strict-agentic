@@ -8,7 +8,7 @@ name: nightly-kapi
 # %64 → %56'ya düşürmüştü. Doktrin ("düzelt → kapıya çevir") burada tersine işliyordu:
 # ağ, en riskli ameliyattan ÖNCE kurulmalı.
 #
-# ⚠ YENİ KOD YOK. Koşucu (`backend/lab/kapi.py --tam`) ZATEN YAZILMIŞTI ve dört kapıyı
+# ⚠ YENİ KOD YOK. Koşucu (`backend/lab/kapi.py --hepsi`) ZATEN YAZILMIŞTI ve dört kapıyı
 # sırayla koşuyordu (~15 dk); eksik olan tek şey onu ÇAĞIRAN workflow'du
 # (ölçüldü: `grep -rn "kapi.py" .github/workflows/` → boş).
 #
@@ -63,10 +63,14 @@ jobs:
       # Eşikler EK D'de yazılı ve koşucunun İÇİNDE uygulanıyor — burada tekrarlanmaz.
       # `DIMA_VQR_EMBEDDER=off`: embedder soğuk başlangıcı turu kilitler (ölçüldü,
       # `project_vqr_embedder_blocking_bug`), ve CI'da anlamlı bir şey ölçmez.
-      - name: Dört ölçüm kapısı (lab/kapi.py --tam)
+      # 🔴 KULLANICI KARARI (2026-08-04): dört adım YEREL kapıdan çıkarıldı, BURADA
+      # kaldı. Gerekçe: süit/eval/senaryo bu operasyonda hiç kırmızı vermedi ama madde
+      # başına ~11,5 dk GELİŞTİRME saatinden ödendi. Gecelik koşum aynı ağı kurar,
+      # bedelini kimsenin beklediği zamandan ödemez. Yerel demet kapısı: `--tam` (korpus).
+      - name: Dört ölçüm kapısı (lab/kapi.py --hepsi)
         env:
           DIMA_VQR_EMBEDDER: "off"
-        run: python lab/kapi.py --tam
+        run: python lab/kapi.py --hepsi
 
       # Kırmızıda ham kütük LAZIM: "korpus %92,8'e düştü" bilgisi, HANGİ soruların
       # kaydığı bilinmeden düzeltilemez. Sessiz kırpma yok.
