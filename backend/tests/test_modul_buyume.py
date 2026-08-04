@@ -68,6 +68,21 @@ MUAFIYET_CUBE_ROUTER_KOD = [
     ("9164806", 13, "0.18 · metrik kaydı = hakem — `_match_cube`'un İLK satırı "
                     "`schema['metrik_kaydi']`'na bakar; kayıt yoksa davranış birebir bugünkü"),
 ]
+#: 🔴 **AYRI LİSTE — ve bu bir ÖLÇÜM ARACI DÜZELTMESİDİR.** İlk tasarımda dosya tavanı
+#: `TAVAN_ASK_KOD + 1259` idi; yani **modül düzeyine** eklenen bir satır için `MUAFIYET_
+#: ASK_KOD`'a yazmak gerekirdi ve o liste **aynı anda `ask()` gövdesinin tavanını da**
+#: yükseltirdi. `ask()` bugün tam tavanında (1147/1147) duruyor — modül düzeyindeki bir
+#: uç kaydı ona **bedava pay** açardı. *Bir tavanı yanlışlıkla yükselten muafiyet, muafiyet
+#: değil sessiz bir tavan artışıdır* (bu dosyanın kendi cümlesi). Dosya muafiyeti bu yüzden
+#: **ayrı** sayılır ve `ask()` tavanına **dokunmaz**.
+MUAFIYET_ASK_DOSYA = [
+    ("faz-1.12", 9, "AI Act Md.14 durdurma ucu — karar+yazma `app/ask_jobs.py`'de; `ask.py`'de "
+                "kalan yalnız UÇ KAYDI (dekoratör 2 + imza 1 + delege 1 + `ask_jobs` "
+                "importu 1), `_bg`'nin iki dalındaki iptal kontrolü (2) ve akışın `iptal` "
+                "olayı (3 — durdurma `hata` değildir ve dalsız akış 6 dk açık kalırdı). "
+                "Bir HTTP uç kaydı router modülünden çıkarılamaz; çıkarmak `/ask/jobs` "
+                "kaynağını iki dosyaya bölerdi"),
+]
 #: 🔴 `0619bfd` (0.22 · `migration_trace` `UnboundLocalError`) ham satırda **+8** getirdi
 #: ama **kod satırında 0**: bildirim `if` bloğundan gövde başına **TAŞINDI**. Bir taşıma
 #: borç değildir ve muafiyet listesinde yeri yoktur — burada yazılı olması, *"neden bu
@@ -76,6 +91,9 @@ MUAFIYET_CUBE_ROUTER_KOD = [
 TAVAN_ASK_KOD = TABAN_ASK_KOD + sum(d for _s, d, _g in MUAFIYET_ASK_KOD)
 TAVAN_CUBE_ROUTER_KOD = (TABAN_CUBE_ROUTER_KOD
                          + sum(d for _s, d, _g in MUAFIYET_CUBE_ROUTER_KOD))
+#: Dosya tavanı: FAZ 0 ÖNCESİ dosya kodu (2394) − o günkü `ask()` kodu (1135) = 1259 taşınabilir
+#: pay, artı `ask()` muafiyetleri (taşınabilir), artı **modül düzeyi** muafiyetleri (ayrı liste).
+TAVAN_ASK_DOSYA = TAVAN_ASK_KOD + 1259 + sum(d for _s, d, _g in MUAFIYET_ASK_DOSYA)
 
 
 # ── ÖLÇÜM ARACI ──────────────────────────────────────────────────────────────
@@ -185,11 +203,9 @@ def test_ASK_PY_DOSYASI_ASK_DISINDA_SESSIZCE_SISMIYOR():
     kaynak, n = _ask_dugumu()
     toplam, icinde = kod_satiri(kaynak), kod_satiri(kaynak, n.lineno, n.end_lineno)
     disinda = toplam - icinde
-    # Tavan: FAZ 0 ÖNCESİ dosya kodu (2394) − o günkü ask() kodu (1135) = 1259, artı
-    # `ask()`'in bugün taşıdığı muafiyetler taşınabilir olduğu için toplam kapısına yazılır.
-    assert toplam <= TAVAN_ASK_KOD + 1259, (
+    assert toplam <= TAVAN_ASK_DOSYA, (
         f"🔴 `ask.py` toplam {toplam} kod satırı (`ask()` {icinde} · dışı {disinda}) — "
-        f"tavan {TAVAN_ASK_KOD + 1259}.\n"
+        f"tavan {TAVAN_ASK_DOSYA}.\n"
         "`ask()`'ten modül düzeyine TAŞIMAK bu sayıyı artırmaz (yer değiştirir); "
         "artıyorsa gerçekten YENİ kod eklenmiş demektir → ayrı bir modüle çıkar.")
 
@@ -225,19 +241,37 @@ def test_KAPI_SAHTE_DEGIL_bir_satir_eklenince_KIRMIZI():
 def test_MUAFIYETLER_GEREKCELI_ve_TOPLAMI_TUTUYOR():
     """🔴 **Gerekçesiz bir sayı muafiyet değil, sessiz bir tavan artışıdır.**
 
-    Kapı burada kendi listesini denetler: her muafiyet bir **sha**, bir **Δ** ve bir
-    **gerekçe** taşımalı; toplamları da ilan edilen tavanla birebir tutmalı. Aksi hâlde
-    biri listeye bakmadan `TAVAN_*` sabitini büyütür ve kapı, kendi kendini çürütür.
+    Kapı burada kendi listesini denetler: her muafiyet bir **kaynak** (sha — ya da henüz
+    commit'lenmemiş bir madde için `faz-N.M` kimliği), bir **Δ** ve bir **gerekçe**
+    taşımalı; toplamları da ilan edilen tavanla birebir tutmalı. Aksi hâlde biri listeye
+    bakmadan `TAVAN_*` sabitini büyütür ve kapı, kendi kendini çürütür.
     """
     for ad, liste, taban, tavan in (
             ("ASK", MUAFIYET_ASK_KOD, TABAN_ASK_KOD, TAVAN_ASK_KOD),
             ("CUBE_ROUTER", MUAFIYET_CUBE_ROUTER_KOD,
-             TABAN_CUBE_ROUTER_KOD, TAVAN_CUBE_ROUTER_KOD)):
+             TABAN_CUBE_ROUTER_KOD, TAVAN_CUBE_ROUTER_KOD),
+            ("ASK_DOSYA", MUAFIYET_ASK_DOSYA, TAVAN_ASK_KOD + 1259, TAVAN_ASK_DOSYA)):
         for sha, delta, gerekce in liste:
             assert len(sha) >= 7 and delta > 0 and len(gerekce) > 25, \
                 f"{ad}: muafiyet eksik/gerekçesiz: {(sha, delta, gerekce)}"
         assert taban + sum(d for _s, d, _g in liste) == tavan, \
             f"{ad}: muafiyet toplamı ilan edilen tavanla TUTMUYOR"
+
+
+def test_DOSYA_MUAFIYETI_ASK_TAVANINI_YUKSELTMIYOR():
+    """🔴 **Ölçüm aracının kendi kusuru — ve düzeltmesi.**
+
+    `ask()` bugün tam tavanında (1147/1147). Modül düzeyine eklenen bir uç kaydı için
+    `MUAFIYET_ASK_KOD`'a yazmak, **aynı anda** `ask()` gövdesine de o kadar pay açardı —
+    yani *"fonksiyonu büyütme"* kuralı, dosyaya eklenen her satırla **sessizce** gevşerdi.
+    *Bir tavanı yanlışlıkla yükselten muafiyet, muafiyet değil sessiz bir tavan artışıdır.*
+    """
+    assert TAVAN_ASK_KOD == TABAN_ASK_KOD + sum(d for _s, d, _g in MUAFIYET_ASK_KOD), \
+        "dosya muafiyeti `ask()` tavanına sızmış"
+    # ⚠ Karşılaştırma bilinçli olarak **sabit adı taşımıyor**: `test_KAPI_BIR_TAVAN_BIR_
+    # HEDEF_DEGIL` tavan sabitiyle yapılan her karşılaştırmanın `<=` olmasını arar ve bu
+    # satır `>` olduğu için onu **yanlışlıkla** kırmızı yapardı (kapının kapıyı yakalaması).
+    assert sum(d for _s, d, _g in MUAFIYET_ASK_DOSYA) > 0, "dosya muafiyeti hiç uygulanmamış"
 
 
 def test_KAPI_BIR_TAVAN_BIR_HEDEF_DEGIL():
@@ -256,7 +290,8 @@ def test_KAPI_BIR_TAVAN_BIR_HEDEF_DEGIL():
     AST'ten okunur. Bir dizi değil, bir **düğüm**.
     """
     agac = ast.parse(pathlib.Path(__file__).read_text(encoding="utf-8"))
-    tavanlar = {"TAVAN_ASK_KOD", "TAVAN_CUBE_ROUTER_KOD", "TABAN_ASK_IC_FN"}
+    tavanlar = {"TAVAN_ASK_KOD", "TAVAN_ASK_DOSYA", "TAVAN_CUBE_ROUTER_KOD",
+                "TABAN_ASK_IC_FN"}
     bulunan = 0
     for n in ast.walk(agac):
         if not isinstance(n, ast.Compare):

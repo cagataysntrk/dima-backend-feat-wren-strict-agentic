@@ -2862,8 +2862,9 @@ tabanıyla korunuyor. Yaşayan semantik testle kilitlendi.
 | Cevap doğruluğu | `python -m eval.run` → `answered_precision` (Wilson CI) + `coverage` | baseline'ın **altına düşmez** (`tests/test_eval_gate.py`) |
 | Deterministik tavan | `python lab/nl_corpus.py` (~1000 soru × 4 şirket, LLM'siz) | artan |
 | **Dört kapının CI koşumu** | `.github/workflows/nightly.yml` → `python lab/kapi.py --tam` | gecelik `30 2 * * *` + `workflow_dispatch`; 40 dk tavan |
-| **Modül büyüme tavanı** | `9 test: `tests/test_modul_buyume.py`` | `ask()` **1147 kod satırı / 19 iç fonksiyon** · `cube_router.py` **1736** — dördünde de **boşluk 0** |
+| **Modül büyüme tavanı** | `10 test: `tests/test_modul_buyume.py`` | `ask()` **1147 kod satırı / 19 iç fonksiyon** · `cube_router.py` **1736** — dördünde de **boşluk 0**. ⚠ FAZ 1.12: dosya tavanı **ayrı** bir muafiyet listesine bağlandı (`MUAFIYET_ASK_DOSYA`) — modül düzeyine eklenen bir satır, `ask()` gövdesinin tavanını **yükseltmiyordu** ama eski tasarımda yükseltirdi |
 | Doğru cube/ölçü/boyut | `python lab/nl_accuracy.py` | artan |
+| **AI Act / NIST RMF / ISO 42001 karşılığı** | `31 test: `tests/test_ai_act_uyumu.py`` | Md.50 işareti **her** yanıtta (`ai_generated_prose` · `kanit_sinifi`) · Md.13 ihracı (`GET /audit/export`, zincir bütünlüğüyle) · Md.14 durdurma (`DELETE /ask/jobs/{id}`) · Md.12/19 saklama **beyanı**. ⚠ Yürürlük **tarihi** kapıya çevrilmedi: yol haritası onu `[DOĞRULANMADI]` işaretlemiş, kapı yükümlülüğün **kod karşılığını** ölçer |
 
 **Ölçülen baseline (2026-08-02, `--network none`):**
 

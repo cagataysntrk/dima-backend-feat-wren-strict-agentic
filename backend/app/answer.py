@@ -633,6 +633,18 @@ def seal(resp: AskResponse, *, request: Request, principal, t0: float,
     _attach_recommendations(request, resp)
     resp.explain = _build_explain(resp)
 
+    # ⚠️ FAZ 1.12 — AI ACT İŞARETLEMESİ. `_maybe_interpret` ANLATIYI ürettikten SONRA
+    # okunur: `narration` varsa bu yanıtta LLM üretimi düz metin VAR demektir.
+    # 🔴 SAYI DEĞİL, ÜSLUP işaretlenir — sayıyı her zaman sistem koyar ve
+    # `narration_guard` eşleşmeyeni düşürür. Md.50'nin istediği tam olarak budur.
+    resp.ai_generated_prose = bool((resp.interpretation or {}).get("narration"))
+    # `probabilistik` YALNIZ LLM yolunda: `cube` deterministiktir, `cube+llm`'de ALAN
+    # SEÇİMİ olasılıksaldır ama SAYI yine küpten gelir → yine `olculmus` DEĞİL.
+    # ⚠ Skaler bir güven puanı UYDURULMAZ; bu bir KATEGORİDİR.
+    _src = str(resp.source or "")
+    resp.kanit_sinifi = "probabilistik" if (_src.startswith("llm") or "+llm" in _src) \
+        else "olculmus"
+
     # PII maskesi kalıcı yazımlardan ÖNCE — ham TCKN/e-posta/telefon/IBAN sohbet
     # geçmişine de düşmesin. `pii:view` yetkisi olan maskesiz görür; o erişim AYRI bir
     # audit satırıdır (KVKK: hangi PII'yi kim gördü).

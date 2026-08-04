@@ -274,6 +274,20 @@ class AskResponse(BaseModel):
     # TAZE DEĞİLDİR). Kaynak planlar bunun TERSİNİ yazıyordu; yol haritası bunu
     # "bugünkü davranıştan KASITLI BİR SERTLEŞME" diye düzeltti.
     # Bayrak kapalıyken `None` → davranış birebir bugünkü (KURAL B).
+    # FAZ 1.12 — AI ACT UYUMU (Md.50 · Md.13).
+    #
+    # `ai_generated_prose`: bu yanıtta **LLM üretimi DÜZ METİN** var mı? 🔴 SAYI DEĞİL,
+    # ANLATI: sayıyı her zaman sistem koyar (§4.4) ve `narration_guard` eşleşmeyen sayı
+    # taşıyan cümleyi DÜŞÜRÜR. İşaretlenen şey ÜSLUP'un makine üretimi olmasıdır.
+    # Md.50 "AI içerik işaretleme" yükümlülüğü tam olarak bunu ister.
+    #
+    # `kanit_sinifi`: `olculmus` (deterministik küp) | `probabilistik` (LLM yolu).
+    # 🔴 BUGÜNDEN eklenir ki SONRADAN GERİYE DÖNÜK eklenmesin: geçmiş kayıtlarda bu alan
+    # boş kalırsa, "ölçülmüş" mü "tahmin" mi olduğu BİR DAHA bilinemez.
+    # ⚠ Skaler bir `confidence` UYDURULMAZ (MIKARI §5): sınıf bir KATEGORİDİR, bir puan
+    # değil — kalibre edilmemiş bir sayı güven değil SÜStür.
+    ai_generated_prose: bool = False
+    kanit_sinifi: str = "olculmus"
     freshness: str | None = None
     son_veri_ts: str | None = None
     tazelik_aciklama: str | None = None

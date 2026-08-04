@@ -8,7 +8,7 @@
 
 import { useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { getContract, listContracts, replayContract } from "@/lib/api-client";
+import { exportAudit, getContract, listContracts, replayContract } from "@/lib/api-client";
 
 export function ContractDetailPanel({
   contractId,
@@ -43,10 +43,52 @@ export function ContractDetailPanel({
   });
   const replay = useMutation({ mutationFn: () => replayContract(contractId) });
 
+  // FAZ 1.12 · AI ACT Md.13 — DENETLEYİCİ-OKUNABİLİR İHRAÇ.
+  //
+  // 🔴 YENİ PANEL AÇILMADI (tavan 13/13, pay 0) ve bu yer TESADÜF DEĞİL: ihracın yetkisi
+  // `contract:read` — yani tam olarak bu panelin yetkisi. Kanıt kaydının incelendiği yüzey,
+  // kanıt defterinin indirildiği yüzeydir; ayrı bir yere koymak denetçiyi ikinci bir
+  // ekranda aratırdı.
+  //
+  // ⚠ İndirilen dosya `zincir_bulgulari` (bütünlük raporu) TAŞIR — bir kanıt defterini
+  // bütünlük raporu olmadan teslim etmek, "işte kayıtlarım" deyip EKSİK OLUP OLMADIĞINI
+  // söylememektir. Kırpma da sessiz değildir (`kirpildi`/`toplam`).
+  const ihrac = useMutation({
+    mutationFn: () => exportAudit(500),
+    onSuccess: (veri) => {
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(veri, null, 2)], { type: "application/ld+json" }),
+      );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "dima-denetim-kaydi.jsonld";
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+  });
+
   const gecmisGorunumu = !contractId && (
     <div>
       {gecmisQ.isLoading && (
         <p className="font-mono text-[12px] text-neutral-400">yükleniyor…</p>
+      )}
+      <div className="mb-2 flex items-center justify-between gap-2 border-b border-hairline pb-2">
+        <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+          son 20 kayıt
+        </span>
+        <button
+          onClick={() => ihrac.mutate()}
+          disabled={ihrac.isPending}
+          title="Tüm denetim kaydını JSON-LD / PROV-O biçiminde indir (AB Yapay Zekâ Yasası Md.13). Dosya, kaydın kopuk/bozuk olup olmadığını söyleyen bütünlük raporunu da taşır."
+          className="border border-hairline px-2 py-[3px] font-mono text-[11px] text-neutral-500 transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
+        >
+          {ihrac.isPending ? "hazırlanıyor…" : "⇩ denetim kaydı (JSON-LD)"}
+        </button>
+      </div>
+      {ihrac.isError && (
+        <p className="mb-2 font-mono text-[11px] text-red-500">
+          İhraç edilemedi — bu kayda erişim yetkiniz olmayabilir.
+        </p>
       )}
       {gecmisQ.data?.contracts?.length === 0 && (
         <p className="font-mono text-[12px] text-neutral-400">

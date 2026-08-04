@@ -189,13 +189,28 @@ export interface AskResponse {
   // yazılır) ama aktif bağlamı ele geçirmez. Kart bunu okur ve okuyucuya söyler —
   // sessizce göstermek "neden eski rapor geri geldi?" sorusunu doğururdu.
   steering_golgede?: boolean;
+  /** FAZ 1.12 · AI Act Md.50 — bu cevabın ANLATISI makine üretimi mi?
+   *
+   * 🔴 SAYI DEĞİL, ÜSLUP işaretlenir: sayıyı her zaman küp koyar ve `narration_guard`
+   * eşleşmeyen sayı taşıyan cümleyi DÜŞÜRÜR. İşaretlenen şey, metnin makine tarafından
+   * yazıldığıdır. `false` (varsayılan) → gösterilecek bir şey yok. */
+  ai_generated_prose?: boolean;
+  /** FAZ 1.12 — KANIT SINIFI: `olculmus` | `probabilistik`.
+   *
+   * ⚠ Skaler bir "güven" DEĞİL (MIMARI §5: kalibre edilmemiş sayı güven değil süstür);
+   * bir KATEGORİ. `cube+llm`'de sayı küpten gelse bile alan SEÇİMİ olasılıksaldır —
+   * seçim yanlışsa doğru sayı YANLIŞ SORUYA cevap olur. Karar backend'de (`answer.seal`);
+   * burada ikinci bir sınıflandırma yazmak "aynı kuralın iki sahibi" olurdu. */
+  kanit_sinifi?: "olculmus" | "probabilistik";
 }
 
 // Faz 4.1 — GET /ask/jobs/{id} yanıtı (yalnız api-client.ts::ask()'in dahili poll döngüsü kullanır).
 // `trace` (Faz 4.12) iş HENÜZ tamamlanmadan da (pending/running) BİRİKEREK dolar.
 export interface AskJobStatus {
   id: string;
-  status: "pending" | "running" | "completed" | "failed";
+  // `cancelled` (FAZ 1.12, AI Act Md.14) — kullanıcı DURDURDU. `failed` DEĞİLDİR:
+  // kendi bastığı düğmenin sonucunu "sorun oluştu" diye okumak yanlış olurdu.
+  status: "pending" | "running" | "completed" | "failed" | "cancelled";
   question?: string | null;
   response?: AskResponse | null;
   error?: string | null;

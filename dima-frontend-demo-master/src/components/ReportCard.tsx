@@ -641,6 +641,27 @@ export function ReportCard({
                 <span className="text-foreground">{item.explain.path}</span>
               </div>
             )}
+            {/* FAZ 1.12 — KANIT SINIFI. ⚠ Skaler bir "güven yüzdesi" DEĞİL: MIMARI §5'in
+                kararı gereği kalibre edilmemiş bir sayı "güven değil SÜStür". Bu bir
+                KATEGORİ ve ayrıntı katmanında durur (D3: makbuz katmanlı) — üst satırda
+                gösterilseydi rozetin söylediğini ikinci kez, başka kelimelerle söylerdi.
+                `cube+llm`'de sayı küpten gelse bile ALAN SEÇİMİ olasılıksaldır: seçim
+                yanlışsa doğru sayı YANLIŞ SORUYA cevap olur. */}
+            {item.kanit_sinifi && (
+              <div className="mb-2 font-mono text-[11px] text-neutral-500">
+                <span className="mr-1 text-neutral-400">kanıt sınıfı:</span>
+                <span
+                  className={item.kanit_sinifi === "probabilistik" ? "text-amber-600" : "text-foreground"}
+                  title={
+                    item.kanit_sinifi === "probabilistik"
+                      ? "Bu cevabın üretiminde olasılıksal bir adım var (SQL yazımı ya da alan/ölçü SEÇİMİ). Sayı doğru hesaplanmış olsa bile SORUNUN karşılığı olmayabilir."
+                      : "Cevap uçtan uca deterministik yoldan üretildi — aynı soru aynı sonucu verir."
+                  }
+                >
+                  {item.kanit_sinifi === "probabilistik" ? "olasılıksal" : "ölçülmüş"}
+                </span>
+              </div>
+            )}
             <ol className="space-y-0.5">
               {item.trace.map((t, i) => (
                 <li key={i} className="font-mono text-[11px] text-neutral-500">
@@ -798,6 +819,28 @@ export function ReportCard({
 
       {/* Evrensel çıktı yorumu (feature flag'li) — KPI/tablo/grafik altında. */}
       <OutputInsight interpretation={item.interpretation} />
+
+      {/* FAZ 1.12 · AI ACT Md.50 — **AI İÇERİK İŞARETLEME.**
+
+          🔴 İşaretlenen şey SAYI DEĞİL, ÜSLUP'tur. Sayıyı bu üründe her zaman küp koyar ve
+          `narration_guard` eşleşmeyen sayı taşıyan cümleyi DÜŞÜRÜR — yani sayı zaten makine
+          üretimi bir metnin insafına bırakılmaz. Md.50'nin istediği, METNİN makine tarafından
+          yazıldığının okuyucuya söylenmesidir.
+
+          ⚠ İşaret ANLATININ YANINDA durur, kartın tepesinde değil: tepede duran bir rozet
+          "bu cevabın TAMAMI yapay zekâ ürünü" diye okunurdu ve bu YANLIŞ olurdu — tablo,
+          sayı ve kırılım deterministik küpten gelir.
+
+          Karar backend'de (`answer.seal`); burada ikinci bir çıkarım yapılmaz. */}
+      {item.ai_generated_prose && (
+        <p
+          className="mx-auto mt-1 flex max-w-4xl items-center gap-1.5 px-8 font-mono text-[10px] tracking-wide text-neutral-400"
+          title="Yukarıdaki AÇIKLAMA METNİ yapay zekâ tarafından yazıldı (AB Yapay Zekâ Yasası Md.50). Sayılar ve tablo bu metinden DEĞİL, doğrudan semantik küpten gelir; metindeki eşleşmeyen sayılar yayımlanmadan önce düşürülür."
+        >
+          <span aria-hidden>✎</span>
+          açıklama metni yapay zekâ ürünü — sayılar küpten gelir
+        </p>
+      )}
 
       {/* Madde 12 (1 Ağustos 2026): düz-dil "nasıl hesaplandı?" — KpiCard'ın card.explain'iyle
           AYNI amaç, sıradan (KPI-olmayan) cube raporları için. SQL okumayan kullanıcı için

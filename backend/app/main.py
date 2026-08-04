@@ -169,6 +169,10 @@ def create_app() -> FastAPI:
     app.include_router(query.router, dependencies=_protected)
     app.include_router(ask.router, dependencies=_protected)
     app.include_router(contracts_router.router, dependencies=_protected)
+    # FAZ 1.12 — AI Act Md.13: denetleyici-okunabilir kayıt ihracı.
+    from app.routers import audit_export as _audit_export
+
+    app.include_router(_audit_export.router, dependencies=_protected)
     app.include_router(schedules_router.router, dependencies=_protected)
     app.include_router(conversations_router.router, dependencies=_protected)
     app.include_router(dashboards_router.router, dependencies=_protected)

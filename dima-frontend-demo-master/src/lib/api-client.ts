@@ -227,6 +227,23 @@ async function pollAskJob(
     if (data.status === "completed" && data.response) {
       return data.response;
     }
+    // FAZ 1.12 (AI Act Md.14) — KULLANICI DURDURDU. Bu bir hata DEĞİLDİR ve "başarısız"
+    // diye gösterilmez: kendi bastığı düğmenin sonucunu "sorun oluştu" diye okumak,
+    // kullanıcıya kendi eylemini bir arıza gibi anlatmak olurdu. Durdurma metninin
+    // TEK sahibi burasıdır (akış yolu `iptal` olayında null döner ve buraya düşer) —
+    // iki yerde yazmak, ikisinin ayrışması demekti.
+    if (data.status === "cancelled") {
+      return {
+        question: data.question ?? "",
+        sql: "",
+        planned_sql: null,
+        result: null,
+        source: null,
+        cube_query: null,
+        note: "Durdurdun — bu sorunun sonucu yayımlanmadı.",
+        trace: [...(data.trace ?? []), "kullanıcı durdurdu (AI Act Md.14) — sonuç yayımlanmadı"],
+      };
+    }
     if (data.status === "failed") {
       // Dürüst ret — arka-plan işi çökse bile kullanıcıya çıplak hata yerine mevcut
       // "note" desenine uyan bir AskResponse döner (ChatPanel bunu normal notmuş gibi gösterir).
@@ -298,8 +315,11 @@ async function streamAskJob(
           onProgress?.([...birikmis]);
         } else if (ad === "tamam") {
           return (veri.response as AskResponse) ?? null;
-        } else if (ad === "hata") {
-          return null;                 // dürüst ret üretimini poll yoluna bırak
+        } else if (ad === "hata" || ad === "iptal") {
+          // `iptal` de buraya düşer: durdurma metninin tek sahibi `pollAskJob`'tır
+          // (orada `status === "cancelled"` görülür). İkinci bir metin, iki farklı
+          // cümlenin aynı olayı anlatması demekti.
+          return null;
         } else if (ad === "zaman_asimi") {
           return null;
         }
@@ -313,17 +333,46 @@ async function streamAskJob(
   return null;
 }
 
+// FAZ 1.12 (AI Act Md.14) — DURDURMA. İş ÖLDÜRÜLMEZ, sonucu YAYIMLANMAZ (gerekçe:
+// backend `app/ask_jobs.py`). Uç yalnız `queued` bir iş için anlamlıdır; senkron yolda
+// (bayrak kapalı, bugünkü varsayılan) `job_id` HİÇ dolmaz → düğme de HİÇ görünmez.
+export async function cancelAskJob(jobId: string): Promise<{ durum: string; not: string }> {
+  const { data } = await apiClient.delete<{ durum: string; not: string }>(`/ask/jobs/${jobId}`);
+  return data;
+}
+
 export async function ask(
   body: AskRequest,
   onProgress?: (trace: string[]) => void,
+  // FAZ 1.12 — iş kuyruklandığında job_id'yi DIŞARI verir; UI durdurma düğmesini ancak
+  // böyle gösterebilir. Bugüne kadar job_id "görünmez" tutuluyordu (yorum: "bileşenlere
+  // HİÇ ULAŞMAZ") — durdurulamayan bir otomasyonun bedeli tam olarak buydu.
+  onJob?: (jobId: string | null) => void,
 ): Promise<AskResponse> {
   const { data } = await apiClient.post<AskResponse>("/ask", body);
   if (data.job_id) {
-    // Önce AKIŞ; kurulamazsa POLL (yetenek kaybı yok, yalnız gecikme eski hâline döner).
-    const akan = await streamAskJob(data.job_id, onProgress);
-    if (akan) return akan;
-    return pollAskJob(data.job_id, onProgress);
+    onJob?.(data.job_id);
+    try {
+      // Önce AKIŞ; kurulamazsa POLL (yetenek kaybı yok, yalnız gecikme eski hâline döner).
+      const akan = await streamAskJob(data.job_id, onProgress);
+      if (akan) return akan;
+      return await pollAskJob(data.job_id, onProgress);
+    } finally {
+      onJob?.(null);   // iş bitti/durduruldu → düğme KALKAR (hata yolunda da)
+    }
   }
+  return data;
+}
+
+// FAZ 1.12 · AI Act Md.13 — DENETLEYİCİ-OKUNABİLİR İHRAÇ. `AuditLog` zaten her erişimi
+// tutuyordu; eksik olan DIŞA AKTARILABİLİR, standart adlı bir görünümdü — bir kanıt
+// defteri yalnız onu yazan sistemin okuyabildiği bir biçimdeyse denetlenebilir değildir.
+// ⚠ Yanıt `zincir_bulgulari` (bütünlük raporu) ve `kirpildi` de taşır: sessizce kırpılmış
+// bir kanıt defteri, eksik bir kanıt defteridir. Yetki backend'de (`contract:read`).
+export async function exportAudit(limit = 500): Promise<Record<string, unknown>> {
+  const { data } = await apiClient.get<Record<string, unknown>>("/audit/export", {
+    params: { limit },
+  });
   return data;
 }
 

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Thread } from "@/lib/threads";
 import type { CubeQuery } from "@/lib/types";
 import { CaretInput } from "@/components/CaretInput";
+import { DurdurDugmesi } from "@/components/DurdurDugmesi";
 
 // SQL provenance — keskin, monospace "sistem readout" rozeti. "vqr" (VQR birebir/yakın
 // eşleşme tekrar oynatma) ve "meta"/"catalog" (deterministik, veri sorgusu değil) da
@@ -161,6 +162,7 @@ export function ChatPanel({
   pending,
   pendingQuestion,
   liveTrace,
+  aktifJobId,
   compact,
   onSelectThread,
   onSubmit,
@@ -183,6 +185,9 @@ export function ChatPanel({
   // Faz 4.12 — Discovery arka-plana kuyruklandığında (ask_async_discovery) biriken canlı
   // adımlar; boş/verilmezse statik "yürütülüyor…" gösterilir (davranış değişmez).
   liveTrace?: string[];
+  // FAZ 1.12 · AI Act Md.14 — arka-plana kuyruklanan işin kimliği; yalnız o zaman
+  // (uzun Discovery) dolar ve durdurma düğmesi ancak o zaman görünür.
+  aktifJobId?: string | null;
   // §B düzeltmesi (1 Ağustos 2026) — bir thread aktifken TRUE: panel daralır, komposer'ın
   // üstünde "burası her zaman yeni thread açar" ipucu gösterilir (bkz. page.tsx'teki sol
   // <section> genişlik geçişi).
@@ -273,6 +278,11 @@ export function ChatPanel({
               <div className="flex items-center gap-2 font-mono text-[11px] text-neutral-400">
                 <span className="dima-caret" style={{ height: "0.9em" }} />
                 {liveTrace && liveTrace.length > 0 ? liveTrace[liveTrace.length - 1] : "yürütülüyor…"}
+                {/* FAZ 1.12 · Md.14 — durdurma, BEKLEMENİN yanında durur: kullanıcı
+                    beklerken aradığı düğme burasıdır. `aktifJobId` yoksa hiç görünmez. */}
+                <span className="ml-auto">
+                  <DurdurDugmesi jobId={aktifJobId ?? null} />
+                </span>
               </div>
             </div>
           )}

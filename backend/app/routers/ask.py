@@ -15,7 +15,7 @@ import time as _time
 from app import context as app_context
 from app import prescribe
 from app import planner as _planner
-from app import followup, typo_onerisi
+from app import ask_jobs, followup, typo_onerisi
 from app import cube_router, eylem, pii, tercih, viz, yoy
 from app.answer import (
     _attach_next_steps,
@@ -1355,8 +1355,12 @@ def _queue_discovery_job(request: Request, body: AskRequest, principal, runner) 
             resp = runner(on_step=_on_step)
             with Session(engine) as s:
                 j = s.get(AskJob, job_id)
-                j.status = "completed"
-                j.result_json = resp.model_dump_json()
+                # FAZ 1.12 (AI Act Md.14) — kullanıcı DURDURDUYSA sonuç YAYIMLANMAZ.
+                # İptal işi öldürmez, sonucunu yayımlatmaz (gerekçe: app/ask_jobs.py):
+                # yarım bir sonucu yayımlamamak, hızlı öldürmekten daha güvenlidir.
+                if ask_jobs.yayimlanabilir_mi(j.status):
+                    j.status = "completed"
+                    j.result_json = resp.model_dump_json()
                 j.finished_at = datetime.utcnow()
                 s.add(j)
                 s.commit()
@@ -1364,8 +1368,9 @@ def _queue_discovery_job(request: Request, body: AskRequest, principal, runner) 
             _log.warning("AskJob arka-plan çalıştırması başarısız", exc_info=True)
             with Session(engine) as s:
                 j = s.get(AskJob, job_id)
-                j.status = "failed"
-                j.error = str(exc)[:500]
+                if ask_jobs.yayimlanabilir_mi(j.status):   # durduruldu → `failed` DEMEZ
+                    j.status = "failed"
+                j.error = str(exc)[:500]                   # tanı yine de yazılır
                 j.finished_at = datetime.utcnow()
                 s.add(j)
                 s.commit()
@@ -3438,6 +3443,22 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     return _queue_discovery_job(request, body, principal, _run_discovery)
 
 
+@router.delete("/ask/jobs/{job_id}",
+               dependencies=[Depends(require("query:run")), Depends(require_company)])
+def ask_job_iptal(job_id: str, request: Request) -> dict:
+    """FAZ 1.12 — **İNSAN GÖZETİMİ / DURDURMA** (AI Act Md.14).
+
+    🔴 **Md.14 bir DURDURMA DÜĞMESİ istiyor** ve `/ask/jobs` bugüne kadar yalnız
+    **okunabiliyordu**: başlattığınız uzun bir Discovery sorgusunu **durduramıyordunuz**.
+    *Durdurulamayan bir otomasyon, üzerinde insan denetimi olmayan bir otomasyondur.*
+
+    ⚠ **İptal, işi ÖLDÜRMEZ — sonucu YAYIMLATMAZ** (gerekçe: `app/ask_jobs.py`). Karar ve
+    yazma orada; burada kalan yalnız **uç kaydı** — durumu okuyan tek yer `_job_durum_oku`
+    (tenant izolasyonunu **o** uygular), ikinci bir okuyucu izolasyonun ikinci sahibi olurdu.
+    """
+    return ask_jobs.iptal_et(job_id, _job_durum_oku(job_id, request)[0])
+
+
 @router.get("/ask/jobs/{job_id}", response_model=AskJobStatus,
             dependencies=[Depends(require("query:run")), Depends(require_company)])
 def ask_job_status(job_id: str, request: Request) -> AskJobStatus:
@@ -3549,6 +3570,12 @@ def ask_job_stream(job_id: str, request: Request):
                 return
             if durum == "failed":
                 yield _olay("hata", {"error": hata or "bilinmeyen hata"})
+                return
+            # FAZ 1.12 — DURDURMA `hata` DEĞİLDİR. Ayrı olay: aksi hâlde kullanıcı kendi
+            # durdurduğu iş için "bir sorun oluştu" görürdü; ve dalı hiç eklememek akışı
+            # 6 dk açık bırakırdı (durdurma düğmesi UI'yi DÖNER hâlde bırakırdı).
+            if durum == ask_jobs.DURUM_IPTAL:
+                yield _olay("iptal", {"job_id": job_id})
                 return
             _time.sleep(_AKIS_ARALIK_SANIYE)
             gecen += _AKIS_ARALIK_SANIYE

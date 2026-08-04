@@ -548,6 +548,13 @@ class TenantConfig(SQLModel, table=True):
     # error=3g` gibi bir çelişki mümkün olsaydı kullanıcı `uyari`'yı hiç görmeden
     # `hata`'ya düşerdi. ÇELİŞEBİLEN İKİ AYAR, ÇELİŞECEK DEMEKTİR.
     tazelik_periyot_saat: int | None = None   # None → app/tazelik.VARSAYILAN_PERIYOT_SAAT
+    # FAZ 1.12 — AI Act Md.12/19: otomatik kayıt SAKLAMA süresi (gün). Yasal taban 6 ay
+    # (180 gün) ve varsayılan ONUN ALTINA İNMEZ; `None` → 180.
+    # ⚠ Bu alan SİLME YAPMAZ, POLİTİKAYI BEYAN EDER: bir saklama süresini uygulamak
+    # (retention job) geri alınamaz bir SİLME eylemidir ve FAZ 6'nın onay değişmezine
+    # bağlıdır. Beyan edilmiş ama uygulanmamış bir politika, beyan edilmemiş bir
+    # politikadan iyidir: DENETLEYİCİ ne beklediğimizi okuyabilir.
+    audit_saklama_gun: int | None = None
     moduller_json: str | None = None  # None = sektör paketlerinin varsayılanları
     # ADR-0017 kaynak faseti: kaynak pack anahtarları (None = kaynak seçilmemiş,
     # demo DuckDB akışı) + önekli şemalarda (Logo LG_FFF_PP_*) firma/dönem kapsamı.

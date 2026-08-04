@@ -17,8 +17,8 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
-| **Sıradaki madde** | `1.12` AI Act/NIST/ISO çerçevesi · `1.3b/2` Discovery çağrı yolu · `1.13` **EN SON** |
-| **Demet** | ✅ **demet 12 kapandı** — kapı **4/4 YEŞİL** (süit **2426**) · demet 13 açık: `1.10` |
+| **Sıradaki madde** | `1.3b/2` Discovery çağrı yolu (risk sınırı → kendi kapısı) · `1.13` **EN SON** |
+| **Demet** | ✅ **`1.12` kapısı 4/4 YEŞİL** (süit **2477**) — risk sınırı olduğu için demete girmedi · demet 13 açık: `1.10`+`1.11` (o kapıya da dahil oldular) |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
 | **Demet** | ✅ **demet 7 kapandı** — FAZ 0 kapanış kapısı **4/4 YEŞİL** (süit **2199**) · demet 8 açık: `1.3c` · `1.3` |
@@ -420,6 +420,78 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 17 — `1.12` **AI Act / NIST RMF / ISO 42001 karşılığı** *(2026-08-04)*
+
+**Kendi tam kapısı: 4/4 YEŞİL** — süit **2477** (7 atlanan · 3 xfail, 8 dk 42 sn) ·
+eval **±%0** · korpus **%93,1** (taban %93,2) · senaryolar **düşürülen 0** · 1 ⊘ (`vqr_kalicilik`).
+Kapı: **31 test** (`tests/test_ai_act_uyumu.py`), hızlı sinyal **949**.
+🔴 **Risk sınırı** (`answer.py` · `routers/ask.py`) → demete girmedi, **kendi kapısını hemen** koştu.
+
+> ⚠ **Yürürlük TARİHİ kapıya çevrilmedi.** Yol haritası *"Md.50 2 Ağustos 2026'dan
+> yürürlükte"* derken yanına **kendi eliyle** `[DOĞRULANMADI — birincil kaynak EK F'ye
+> eklenecek]` yazmış. Kapı **tarihi doğrulamaz**, yükümlülüğün **kod karşılığının var
+> olduğunu** doğrular ve bunu **kendi içinde** yazılı tutar. *Doğrulanmamış bir tarihi
+> kapıya çevirmek, ölçmediğimiz bir şeyi ölçtük gibi göstermek olurdu.*
+
+> **Md.50 · içerik işareti:** `ai_generated_prose` — 🔴 **sayı değil, ÜSLUP.** Sayıyı bu
+> üründe her zaman küp koyar ve `narration_guard` eşleşmeyen sayı taşıyan cümleyi
+> **düşürür**; işaretlenmesi gereken şey **metnin makine yazımı olduğudur**. Ekranda
+> **anlatının yanında** durur, kartın tepesinde değil — tepedeki bir rozet *"bu cevabın
+> TAMAMI yapay zekâ ürünü"* diye okunurdu ve tablo/sayı/kırılım küpten gelirken bu
+> **yanlış** olurdu.
+
+> **Kanıt sınıfı:** `kanit_sinifi ∈ {olculmus, probabilistik}` — ⚠ skaler bir *"güven"*
+> **uydurulmadı** (MIMARI §5: *kalibre edilmediği sürece o sayı güven değil **süstür***).
+> `cube+llm` **probabilistik** sayılıyor: sayı küpten gelse bile **alan seçimi**
+> olasılıksaldır ve seçim yanlışsa **doğru sayı yanlış soruya cevap** olur. **Bugünden**
+> eklendi ki geçmiş kayıtlarda *"ölçülmüş mü tahmin mi"* sorusu cevapsız kalmasın.
+
+> **Md.14 · durdurma:** `DELETE /ask/jobs/{id}` + `DurdurDugmesi` (sol **ve** sağ panel).
+> 🔴 **İptal işi ÖLDÜRMEZ, sonucunu YAYIMLATMAZ** — thread'i zorla sonlandırmak yarım
+> yazılmış bir sonuç/kayıt bırakabilirdi. Koşucunun **iki dalı da** (başarı ve hata)
+> durumu yazmadan önce soruyor; durduğu için `failed` **demiyor**. Akışa ayrı bir `iptal`
+> olayı eklendi: dalsız bırakılsaydı düğme UI'yi **6 dk dönerken** bırakırdı.
+
+> 🔴 **KENDİ SINAMAM KENDİ KUSURUMU GÖREMEDİ — ve bu düzeltildi.** İlk sürüm iptali
+> süreç-içi bir `set()`'te tutuyor, durumu `request.app.state.ask_jobs`'tan okuyordu:
+> **öyle bir depo yok** (işler `AskJob` tablosunda). Uç *"böyle bir iş yok"* demekten
+> başka bir şey yapamazdı — ve sınama bunu göremezdi çünkü **o olmayan deponun sahtesini
+> kuruyordu**. İki tanıdık sınıf birden: *"beyan var, kod onu tanımıyor"* + *"testler
+> METNİ ölçtü, davranışı değil"*. Depo artık `AskJob` satırıdır; durum adları (`completed`
+> /`failed`) modelin **kendi sözlüğünden** doğrulanıyor.
+
+> **Md.13 · denetleyici-okunabilir ihraç:** `GET /audit/export` (JSON-LD/PROV-O) —
+> ⚠ **ikinci bir eşleme yazılmadı**: standart adlara çeviri `1.8`'in `otel_nitelikleri`'nde
+> zaten vardı, ikincisi iki ihracın **farklı adlar** kullanması demekti. İhraç
+> `zincir_bulgulari`'yı **birlikte** taşır — *bir kanıt defterini bütünlük raporu olmadan
+> teslim etmek, "işte kayıtlarım" deyip **eksik olup olmadığını söylememektir**.* Kırpma
+> da sessiz değil (`toplam`/`kirpildi`). Ekran tüketicisi **yeni panel açmadan**
+> `ContractDetailPanel`'e kondu — ihracın yetkisi (`contract:read`) o panelin yetkisiyle
+> **aynı**; K5 tavanı 13/13, pay 0.
+
+> **Md.12/19 · saklama:** `TenantConfig.audit_saklama_gun` — ⚠ **SİLME YAPMIYOR, POLİTİKA
+> BEYAN EDİYOR.** Bir saklama süresini uygulamak geri alınamaz bir **silme** eylemidir ve
+> FAZ 6'nın onay değişmezine bağlıdır. *Beyan edilmiş ama uygulanmamış bir politika,
+> beyan edilmemiş bir politikadan iyidir: denetleyici ne beklediğimizi okuyabilir.*
+> Göç `f8c1e3a7d259` (tek head).
+
+> ✅ **ÖLÇÜM ARACININ KENDİSİ DÜZELTİLDİ (`0.21`).** `ask.py` dosya tavanı `TAVAN_ASK_KOD
+> + 1259` idi; yani **modül düzeyine** eklenen bir satır için muafiyet yazmak `ask()`
+> **gövdesinin** tavanını da yükseltirdi — ve `ask()` tam tavanında (1147/1147) duruyor.
+> Dosya muafiyeti artık **ayrı liste** (`MUAFIYET_ASK_DOSYA`, Δ=9, gerekçesi satır satır
+> yazılı) ve `ask()` tavanına **dokunmuyor**; yeni kapı bunu doğruluyor.
+> *Bir tavanı yanlışlıkla yükselten muafiyet, muafiyet değil sessiz bir tavan artışıdır.*
+
+> ✅ **`1.2c`'nin tümleyeni kendini kanıtladı:** `AskResponse` 29 → **31** alan oldu ve iki
+> yeni alan için maskeleme tarafına **hiçbir şey yazılmadı** — yine de kapsandılar. Sayılan
+> bir liste olsaydı ikisi de sessizce dışarıda kalırdı. (`pii.py`'nin ölçüm notu güncellendi;
+> kapı bayat sayıyı yakaladı.)
+
+> ⚠ **Metin tarayan kapı, kendi belgesini yakaladı — bu oturumda 6. ve 7. kez.** `"_IPTAL"
+> not in kaynak` sınaması `DURUM_IPTAL` **sabitinin adını**, `"state.ask_jobs"` sınaması
+> ise modülün **kendi hata anlatısını** yakaladı. İkisi de **AST'ye** çevrildi.
+> *Belgeyi tarayan bir kapı, hatayı ANLATMAYI cezalandırır.*
 
 ### FAZ 1 · adım 16 — `1.10` **eskalasyon matrisi** *(2026-08-04)*
 

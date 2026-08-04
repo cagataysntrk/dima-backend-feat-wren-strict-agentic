@@ -168,6 +168,10 @@ export default function Home() {
   // bunu poll ederken biriken adımları BURAYA iletir; ChatPanel statik "yürütülüyor…"
   // yerine SON adımı gösterir. Bayrak kapalıyken (varsayılan) callback hiç tetiklenmez.
   const [liveTrace, setLiveTrace] = useState<string[]>([]);
+  // FAZ 1.12 · AI Act Md.14 — DURDURMA. Yalnız arka-plana kuyruklanan (uzun Discovery)
+  // işlerde dolar; senkron yolda `job_id` hiç gelmez → düğme de hiç görünmez. `ask()`
+  // bunu iş bitince/hata alınca `null`'a çeker (finally) — düğme asılı kalmaz.
+  const [aktifJobId, setAktifJobId] = useState<string | null>(null);
 
   // §B düzeltmesi (1 Ağustos 2026) — REDDEDİLEN ilk sürümün hatası: `is_new_topic`
   // (yalnızca "bu cevap bağlam taşıdı mı" anlamına gelen bir backend sinyali) yanlışlıkla
@@ -207,6 +211,7 @@ export default function Home() {
           { question: vars.question, cube_query: null, prev_sql: null, history: [],
             session_id: sessionId, thread_id: null },
           setLiveTrace,
+          setAktifJobId,
         );
       }
       if (vars.kind === "continue") {
@@ -222,6 +227,7 @@ export default function Home() {
             thread_id: activeThreadId,
           },
           setLiveTrace,
+          setAktifJobId,
         );
       }
       // "reply" | "reply-multi" — bağlam ÇAPA karttan gelir, thread'in GÜNCEL bağlamından
@@ -268,6 +274,7 @@ export default function Home() {
           anchor: vars.kind === "reply" ? (vars.hucre ?? null) : null,
         },
         setLiveTrace,
+        setAktifJobId,
       );
     },
     onSuccess: (data, vars) => {
@@ -429,6 +436,7 @@ export default function Home() {
               pending={isPendingNew}
               pendingQuestion={pendingQuestion}
               liveTrace={liveTrace}
+              aktifJobId={aktifJobId}
               compact={activeThreadId !== null}
               yolSiniri={yolSiniri}
               onYolSiniri={setYolSiniri}
@@ -493,6 +501,7 @@ export default function Home() {
                 <ReportPanel
                   thread={activeThread}
                   pending={(mutation.isPending && !isPendingNew) || cubeMutation.isPending}
+                  aktifJobId={isPendingNew ? null : aktifJobId}
                   viewHint={viewHint}
                   onCubeEdit={({ cq, label }) => cubeMutation.mutate({ cq, label })}
                   error={mutation.isError ? apiErrorMessage(mutation.error) : null}

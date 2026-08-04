@@ -6,6 +6,7 @@ import type { AskResponse, CubeQuery } from "@/lib/types";
 import type { Thread } from "@/lib/threads";
 import { BrandMark } from "@/components/BrandMark";
 import { CaretInput } from "@/components/CaretInput";
+import { DurdurDugmesi } from "@/components/DurdurDugmesi";
 import { NextStepChips } from "@/components/NextStepChips";
 import { ReportCard } from "@/components/ReportCard";
 
@@ -75,6 +76,7 @@ export function raporlanabilir(it: AskResponse): boolean {
 export function ReportPanel({
   thread,
   pending,
+  aktifJobId,
   viewHint,
   onCubeEdit,
   error,
@@ -87,6 +89,9 @@ export function ReportPanel({
 }: {
   thread: Thread | null;
   pending: boolean;
+  // FAZ 1.12 · AI Act Md.14 — arka-plan işinin kimliği (yalnız uzun Discovery'de dolar);
+  // durdurma düğmesi ancak bu doluyken görünür.
+  aktifJobId?: string | null;
   // YALNIZ thread'in EN SON raporlanabilir item'ına geçirilir (bkz. aşağıdaki lastReportableIdx).
   viewHint?: { kind: string; nonce: number } | null;
   onCubeEdit?: (edit: { cq: CubeQuery; label: string }) => void;
@@ -321,6 +326,12 @@ export function ReportPanel({
           <div className="mx-auto flex max-w-4xl items-center gap-2 px-8 py-4 font-mono text-[13px] text-neutral-400">
             <span className="dima-caret" style={{ height: "0.9em" }} />
             yürütülüyor…
+            {/* FAZ 1.12 · AI Act Md.14 — durdurma BEKLEMENİN yanında durur. Yalnız
+                arka-plana kuyruklanan (uzun Discovery) işte görünür; senkron yolda
+                `aktifJobId` hiç dolmaz ve düğme hiç çizilmez. */}
+            <span className="ml-auto">
+              <DurdurDugmesi jobId={aktifJobId ?? null} />
+            </span>
           </div>
         )}
         {error && (
