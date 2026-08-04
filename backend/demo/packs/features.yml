@@ -46,6 +46,12 @@ features:
   # çakışıyor" der, "sahibi şudur" DEMEZ. Sahiplik kararı FAZ 3.1'in turudur.
   # FAZ 0.5 — ÇAPA ZİNCİRİ. Kapalıyken `capalar` listesi BOŞ kalır → `context.coz()`
   # bugünkü yapısal/ham/taze dallarını kullanır → davranış BİREBİR bugünkü (GERİ AL).
+  # FAZ 0.13 — SOSYAL SINIF. ⚠ Bayrak bu maddede EKLENDİ: teslim borcunun asıl parçası
+  # buydu (MIMARI §6.13z/9.11: "bir kill-switch yalnız KOD'da varsa YARIMDIR" — sınıf
+  # kod olarak vardı, geri alma yolu YOKTU). Varsayılan `on`: sınıf ölçülmüş ve
+  # kanıtlanmış bir kusuru kapatıyor (`teşekkürler` → uydurma SQL); kapatma yolu artık
+  # VAR ama gerekçesiz kapatılmaz.
+  sosyal_sinif: prod
   capa_zinciri: "off"
   metrik_kaydi: "off"
   netlestirme_onceligi: "off"  # FAZ F: katalogda ≥2 SAHİP olan bir ölçüde (ör. `bakiye`

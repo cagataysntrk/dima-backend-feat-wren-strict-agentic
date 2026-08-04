@@ -118,8 +118,17 @@ def test_TAM_KAPLAMA_veri_sorusunda_KAPANIR():
     assert tur == "tesekkur" and tam is False, "sosyal sözcük İÇEREN veri sorusu sosyal sayıldı"
 
 
-def test_SOSYAL_EDIM_veri_sorusunda_None_DEGIL_ama_TAM_degil():
-    """Sınıf bulunur (sözcük var) ama kaplama yoktur — karar çağıranın."""
+def test_SOSYAL_EDIM_veri_sorusunda_None_DONER():
+    """⚠️ **FAZ 0.13 — AD ↔ İDDİA ÇELİŞKİSİ DÜZELTİLDİ.** Testin adı
+    `..._None_DEGIL_ama_TAM_degil` idi, iddiası ise `is None`. Bir testin **adı** onun
+    ne koruduğunu söyler; ad ile iddia ayrıştığında okuyan kişi **yanlış şeyi korunmuş
+    sanır** — bu deponun avladığı *"beyan var, kod başka"* sınıfının test tarafındaki
+    hâli.
+
+    Doğrusu: veri sinyali taşıyan bir soruda `sosyal_edim` **`None` döner** — yani
+    sosyal sınıf hiç kurulmaz. `tesekkur` gibi bir sözcük GEÇİYORSA ama soru veri
+    soruyorsa, sınıf `(tur, tam=False)` ile döner (bir üstteki test) ve karar çağırana
+    kalır. `bu yil ciro`'da ise sosyal sözcük **hiç yok** → `None`."""
     assert cr.sosyal_edim("bu yil ciro") is None
 
 
@@ -179,3 +188,53 @@ def test_SOSYAL_SOZCUK_kapsam_kapisinda_DOLGU():
         "sosyal dolgu tüm kapsam kapılarına bağlı değil"
     assert "_sosyal_hit_words(q)" in inspect.getsource(cr.ilgili_cubelar), \
         "konu daraltmasında sosyal sözcük hâlâ konu sinyali sayılıyor"
+
+
+# --- FAZ 0.13 · TESLİM BORCU: kill-switch GERÇEK olmalı --------------------------
+
+def test_FAZ_0_13_BAYRAK_KAYITTA_ve_YAMLDE():
+    """🔴 MIMARI §6.13z/9.11: *"bir kill-switch yalnız KOD'da varsa **YARIMDIR**."*
+
+    Sosyal sınıf kod olarak vardı ve **çalışıyordu**, ama **geri alma yolu yoktu** —
+    yani bir gerileme çıktığında tek seçenek kodu geri almaktı. Teslim borcunun asıl
+    parçası buydu."""
+    from app.features import FLAG_REGISTRY
+
+    assert "sosyal_sinif" in FLAG_REGISTRY, "bayrak KAYITTA yok"
+    import pathlib
+
+    import yaml
+
+    yml = yaml.safe_load(
+        (pathlib.Path(__file__).resolve().parents[1] / "demo/packs/features.yml")
+        .read_text(encoding="utf-8"))
+    bayraklar = yml.get("features") or yml.get("bayraklar") or {}
+    assert "sosyal_sinif" in str(yml), "bayrak YAML'de yok — kayıt tek başına yarımdır"
+    _ = bayraklar
+
+
+def test_FAZ_0_13_KILL_SWITCH_GERCEK():
+    """Bayrağın **kayıtta olması** yetmez: kapalıyken sınıf gerçekten **devre dışı**
+    kalmalı. Aksi hâlde bayrak bir **süs**tür — ve bu deponun `⟳` bloğunun tam olarak
+    yasakladığı şey: *"beyan var, kod onu tanımıyor."*"""
+    import inspect
+
+    from app.routers import ask as ask_mod
+
+    govde = inspect.getsource(ask_mod.ask)
+    i = govde.index("cube_router.sosyal_edim(q_norm)")
+    pencere = govde[max(0, i - 400):i + 200]
+    assert '"sosyal_sinif" in resolve_for' in pencere, (
+        "sosyal sınıf bayrağa BAĞLI DEĞİL — `off` yapmak hiçbir şeyi değiştirmez, "
+        "yani kill-switch bir süstür")
+
+
+def test_FAZ_0_13_KAPI_CAGIRANDA_cube_router_SAF():
+    """Kapı **çağırandadır**, `cube_router`'da değil — FAZ 0.18'in değişmezi.
+    Deterministik saflık, sıcak yola bayrak sızarsa çürür."""
+    import inspect
+
+    from app import cube_router as cr_mod
+
+    assert "resolve_for" not in inspect.getsource(cr_mod), \
+        "cube_router bayrak okumaya başlamış — 0.18'in değişmezi kırıldı"

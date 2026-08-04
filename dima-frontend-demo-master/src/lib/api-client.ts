@@ -518,6 +518,20 @@ export interface ContractReplayResult {
   };
 }
 
+// ⚠️ FAZ 0.6 — `GET /contracts` (liste) TÜKETİCİSİZDİ [KANIT §0.1-5] ve uç kapısı onu
+// **yeşil sanıyordu**: `/contracts` dizesi hem `` `/contracts/${cid}` `` içinde hem bir
+// yorum satırında geçiyordu. FAZ 0.14/K1'in tam-yol + yorumsuz taraması onu açığa
+// çıkardı — kapı, kurulmasının üzerinden bir madde geçmeden iş gördü.
+//
+// 🔴 **YENİ PANEL AÇILMADI** (panel tavanı 13/13, pay 0 — `PK-23`): liste
+// `ContractDetailPanel`'in **giriş görünümü** olur. *"Yeni özellik yeni panel doğurmaz."*
+export async function listContracts(limit = 20): Promise<{ contracts: ContractRecord[] }> {
+  const { data } = await apiClient.get<{ contracts: ContractRecord[] }>("/contracts", {
+    params: { limit },
+  });
+  return data;
+}
+
 export async function getContract(cid: string): Promise<ContractRecord> {
   const { data } = await apiClient.get<ContractRecord>(`/contracts/${cid}`);
   return data;

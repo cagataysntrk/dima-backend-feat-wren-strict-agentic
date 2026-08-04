@@ -61,13 +61,6 @@ API_ONLY: dict[str, str] = {
                 "kayıt + çakışan terim envanterini döner; **sahiplik EKRANI** (terimi "
                 "bir cube'a atama) II-B/2.2b'nin işidir. Kapı bu ucu kurulduğu ANDA "
                 "yakaladı — beyan o yüzden burada, sessizce değil.",
-    "/contracts": "🔴 FAZ 0.14/K1'İN İLK AVI. Alt-dize taraması bu ucu YEŞİL sanıyordu: "
-                  "`/contracts` dizesi `` `/contracts/${cid}` `` içinde VE bir yorum "
-                  "satırında geçiyor. Tam-yol + yorumsuz tarama onu açığa çıkardı — "
-                  "[KANIT §0.1-5] kapı tarafından yeniden üretildi. **FAZ 0.6**'nın "
-                  "konusu: ya kanıt-geçmişi görünümüne bağlanacak (yeni panel DEĞİL, "
-                  "`ContractDetailPanel`'in giriş listesi) ya da kalıcı `API_ONLY` "
-                  "gerekçesi yazılacak. Bu satır o karara kadar geçerlidir.",
     "/health": "altyapı canlılık probu (Docker/Railway healthcheck) — UI tüketicisi olamaz",
     "/health/ready":
         "altyapı hazırlık probu (motor + DB erişimi); UI aynı bilgiyi ConnectionBadge'de "
@@ -210,3 +203,27 @@ def test_bu_turda_KAPATILAN_iki_yetim(client):
         assert yol in set(_yollar(client)), f"{yol} kayboldu"
         assert _aranan(yol).search(fe), (
             f"{yol} yeniden yetim kaldı — Faz H2'de kapatılmıştı")
+
+
+def test_FAZ_0_6_KANIT_GECMISI_BAGLANDI():
+    """✅ **FAZ 0.6.** `GET /contracts` (liste) tüketicisizdi [KANIT §0.1-5] ve uç kapısı
+    onu **yeşil sanıyordu**: `/contracts` dizesi hem `` `/contracts/${cid}` `` içinde hem
+    bir **yorum satırında** geçiyordu. FAZ 0.14/K1'in tam-yol + yorumsuz taraması onu
+    açığa çıkardı — kapı, kurulmasının üzerinden **bir madde geçmeden** iş gördü.
+
+    🔴 **YENİ PANEL AÇILMADI.** Panel tavanı **13/13, pay 0** (`PK-23`) ve yol haritası
+    zaten *"yeni panel değil"* diyordu: liste `ContractDetailPanel`'in **giriş
+    görünümü** oldu. *"Yeni özellik yeni panel doğurmaz."*
+
+    Kanıt kaydı ancak **bulunabiliyorsa** bir kanıttır: tek tek `contract_id` bilmek
+    gereken bir arşiv, arşiv değildir."""
+    from tests.kapi_ortak import fe_dosyalari
+
+    dosyalar = fe_dosyalari()
+    istemci = dosyalar.get("lib/api-client.ts", "")
+    assert "listContracts" in istemci, "`GET /contracts` sarmalayıcısı YOK"
+    panel = dosyalar.get("components/ContractDetailPanel.tsx", "")
+    assert "listContracts" in panel, "kanıt geçmişi hiçbir yüzeyden çağrılmıyor"
+    # Yeni panel AÇILMADIĞI ayrıca K5'te (tavan 13) kilitli; burada niyeti kaydediyoruz.
+    assert "function ContractGecmisPanel" not in panel, \
+        "yeni bir panel açılmış — tavan 13/13 dolu, 'yeni özellik yeni panel doğurmaz'"

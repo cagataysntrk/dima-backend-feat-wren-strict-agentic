@@ -1227,7 +1227,7 @@ def deterministic_refine(prev: dict, q: str, schema: dict) -> dict | None:
     known |= _misc_hit_words(q)
     # SOSYAL EDİM DOLGUDUR (Faz D1). Ölçüldü: *"merhaba bu yıl makine bazında oee"*
     # → **R10**; kibar kullanıcı cevapsız kalıyordu. Selamlaşma bir ölçü/boyut adı
-    # değildir. Üç tüketicinin ÜÇÜNDE de dolgu sayılır (kapsam kapısı · takip
+    # değildir. DÖRT tüketicinin DÖRDÜNDE de dolgu sayılır (kapsam kapısı · takip
     # düzenlemesi · kısmi-anlama) — biri atlanırsa aynı soru geldiği yola göre
     # farklı davranır (Faz -1'in "üç çağrı yeri" dersi).
     known |= _sosyal_hit_words(q) | _atif_hit_words(q)
@@ -2650,7 +2650,7 @@ def partial_unknowns(q: str, schema: dict) -> tuple[list[str], list[tuple[dict, 
     known |= _misc_hit_words(q)
     # SOSYAL EDİM DOLGUDUR (Faz D1). Ölçüldü: *"merhaba bu yıl makine bazında oee"*
     # → **R10**; kibar kullanıcı cevapsız kalıyordu. Selamlaşma bir ölçü/boyut adı
-    # değildir. Üç tüketicinin ÜÇÜNDE de dolgu sayılır (kapsam kapısı · takip
+    # değildir. DÖRT tüketicinin DÖRDÜNDE de dolgu sayılır (kapsam kapısı · takip
     # düzenlemesi · kısmi-anlama) — biri atlanırsa aynı soru geldiği yola göre
     # farklı davranır (Faz -1'in "üç çağrı yeri" dersi).
     known |= _sosyal_hit_words(q) | _atif_hit_words(q)
@@ -3182,7 +3182,7 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
     known |= _misc_hit_words(q)
     # SOSYAL EDİM DOLGUDUR (Faz D1). Ölçüldü: *"merhaba bu yıl makine bazında oee"*
     # → **R10**; kibar kullanıcı cevapsız kalıyordu. Selamlaşma bir ölçü/boyut adı
-    # değildir. Üç tüketicinin ÜÇÜNDE de dolgu sayılır (kapsam kapısı · takip
+    # değildir. DÖRT tüketicinin DÖRDÜNDE de dolgu sayılır (kapsam kapısı · takip
     # düzenlemesi · kısmi-anlama) — biri atlanırsa aynı soru geldiği yola göre
     # farklı davranır (Faz -1'in "üç çağrı yeri" dersi).
     known |= _sosyal_hit_words(q) | _atif_hit_words(q)

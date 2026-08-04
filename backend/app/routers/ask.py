@@ -2104,7 +2104,15 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     # sosyal edim var (SINIF). Yalnız (b) olsaydı *"teşekkürler, bu yıl ciro?"* sosyal
     # sayılırdı; yalnız (a) olsaydı anlamsız bir dize sosyal cevap alırdı — ikisi de
     # yanlış olurdu, o yüzden kapı iki kanatlı.
-    _sosyal = cube_router.sosyal_edim(q_norm)
+    # ⚠️ FAZ 0.13 — KILL-SWITCH BURADA, `cube_router`'DA DEĞİL.
+    # MIMARI §6.13z/9.11: *"bir kill-switch yalnız KOD'da varsa YARIMDIR"* — sınıf kod
+    # olarak vardı ama **geri alma yolu yoktu**; teslim borcunun asıl parçası buydu.
+    # Kapı çağırandadır çünkü `cube_router` **hiçbir bayrak okumaz** ve okumamalı
+    # (FAZ 0.18'in değişmezi, `test_CUBE_ROUTER_BAYRAK_OKUMUYOR` ile kilitli):
+    # deterministik saflık, bayrak sızarsa çürür.
+    # `off` → sınıf hiç sorulmaz → cevap bugünkü merdivenden iner (GERİ AL).
+    _sosyal = (cube_router.sosyal_edim(q_norm)
+               if "sosyal_sinif" in resolve_for(settings, principal) else None)
     if _sosyal:
         _tur, _tam_kaplama = _sosyal
         # Sosyal sınıf İKİ yoldan biriyle kazanır:

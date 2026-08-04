@@ -37,6 +37,14 @@ _SCOPE_ORDER = ("global", "sector", "tenant", "role", "user")
 #   3) Tüketen yüzeyi `useFeature("<key>")` ile geçitle (frontend).
 #   4) Gerekiyorsa admin panelden tenant/rol/kullanıcı override'ı ile aç.
 FLAG_REGISTRY: dict[str, dict[str, str]] = {
+    "sosyal_sinif": {
+        "label": "Sosyal sınıf (veri-niyeti kapısı)",
+        "description": "Veri niyeti taşımayan ifadeler (selam/teşekkür) LLM'e ve SQL'e "
+                       "HİÇ gitmez. Kapalıyken `sosyal_ayikla` `route()` girişine "
+                       "müdahale etmez ve davranış birebir bugünküdür (FAZ 0.13). "
+                       "MIMARI §6.13z/9.11: bir kill-switch yalnız KOD'da varsa YARIMDIR.",
+        "category": "Konuşma",
+    },
     "capa_zinciri": {
         "label": "Çapa zinciri (karta yanıt)",
         "description": "Bir karta yanıt verirken çapa KİMLİĞİYLE taşınır: tek kart → o "

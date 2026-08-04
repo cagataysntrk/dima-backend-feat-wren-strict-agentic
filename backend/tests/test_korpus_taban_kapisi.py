@@ -142,3 +142,72 @@ def test_EVAL_KAPISIYLA_ayni_disiplin():
     assert (kok / "eval" / "baseline.json").exists()
     if not (kok / "lab" / "nl_corpus_baseline.json").exists():
         pytest.fail("korpus tabanı yok")
+
+
+
+# --- FAZ 0.12 · TABAN TAZELİĞİ ---------------------------------------------------
+
+def test_TABANIN_YASI_RAPORLANIYOR():
+    """🔴 **Bir taban ne kadar eskiyse, kıyas o kadar az şey söyler.**
+
+    Kapı bugüne kadar *"gerileme var mı"* diye soruyordu ama *"neye göre"* sorusunun
+    **yaşını** hiç sormuyordu. Altı ay önceki bir tabana karşı yeşil olmak, altı aydır
+    ölçülmemiş olmak demektir — ve bu, kapının **sessizce** verdiği yanlış bir güvendir.
+
+    ⚠ Bu test bir **eşik** koymaz (kaç gün *çok*, bir iş kararıdır ve yol haritası onu
+    belirlememiş); yaptığı şey **yaşı GÖRÜNÜR kılmak** ve tabanın tarihinin okunabilir
+    kalmasını garanti etmek. Ölçülmeyen bir bayatlama, düzeltilemez bir bayatlamadır.
+    """
+    import datetime as _dt
+
+    d = json.loads(TABAN.read_text())
+    turlar = d.get("_turlar") or []
+    assert turlar, "tabanda hiç TUR yok — kapı kökle kıyaslar ve KURAL A'yı yanlış okur"
+    son = turlar[-1]
+    ham = str(son.get("olculdu") or "")
+    assert ham, f"son turun `olculdu` tarihi YOK: {son.get('faz')!r}"
+
+    # `2026-08-03` ya da `2026-08-02T22:20:00+03:00` — ikisi de kabul.
+    tarih = _dt.date.fromisoformat(ham[:10])
+    assert tarih.year >= 2026, f"taban tarihi anlamsız: {ham}"
+    # Yaş HESAPLANABİLİR olmalı; değeri bir eşik DEĞİL, bir rapordur.
+    yas = (_dt.date.today() - tarih).days
+    assert yas >= 0, f"taban GELECEKTE ölçülmüş görünüyor ({ham}) — saat/tarih hatası"
+
+
+def test_SON_TURDA_IKI_PAYDA_da_var():
+    """FAZ 0.19 iki paydayı yan yana raporluyor; **taban da ikisini birden dondurmalı**,
+    yoksa ters-yön kapısı *"tabanda YOK"* deyip **sessizce devre dışı** kalır."""
+    d = json.loads(TABAN.read_text())
+    son = (d.get("_turlar") or [{}])[-1]
+    assert son.get("toplam_dogru_cube_yuzde") is not None, "ham payda tabanda YOK"
+    assert d.get("vaka_dogru_yuzde") is not None or son.get("vaka_dogru_yuzde") is not None, (
+        "SEMANTİK payda tabanda YOK — `kapi_degerlendir`'in ters-yön kontrolü "
+        "sessizce atlanır (bilinen, yazılı sınır ama dondurulması gerekiyordu)")
+
+
+def test_TUR_EKLEMEK_TABANI_GERILETMEZ():
+    """🔴 **Kapı bunu KENDİ yakaladı (FAZ 0.12).** Tabana **şirket rakamı taşımayan**
+    bir tur eklendiğinde `_taban_beklenen()` şirket değerlerini **köke** (%64)
+    düşürüyordu — yani bir tur eklemek, tabanı **sessizce geriletiyordu** ve sonraki
+    kapı 5 puanlık bir gerilemeyi **yeşil** görürdü.
+
+    Kök neden: yalnız **son** tur birleştiriliyordu. Bir turun bir şirketi yeniden
+    ölçmemiş olması, o şirketin **önceki ölçümünü silmez**. Artık tüm turlar sırayla
+    birleşir (son BEYAN EDEN kazanır)."""
+    import json as _json
+
+    d = _json.loads(TABAN.read_text())
+    turlar = list(d.get("_turlar") or [])
+    turlar.append({"faz": "sentetik boş tur", "olculdu": "2026-08-04"})
+    orij = TABAN.read_text()
+    try:
+        TABAN.write_text(_json.dumps({**d, "_turlar": turlar}, ensure_ascii=False, indent=2))
+        b = _taban_beklenen()
+        assert b["sirketler"]["boyahane"]["erisim_yuzde"] >= 69, (
+            "boş bir tur eklemek şirket tabanını KÖKE düşürdü — bir tur eklemek "
+            "tabanı geriletemez")
+        assert b["dogru_cube_yuzde"] and b["dogru_cube_yuzde"] >= 93, (
+            "boş bir tur eklemek toplam doğruluk tabanını düşürdü")
+    finally:
+        TABAN.write_text(orij)

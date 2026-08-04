@@ -342,20 +342,33 @@ def _taban_beklenen() -> dict:
     d = json.loads(TABAN.read_text())
     turlar = d.get("_turlar") or []
     son = turlar[-1] if turlar else {}
+    # 🔴 **TÜM TURLAR SIRAYLA BİRLEŞTİRİLİR** — yalnız sonuncusu değil.
+    # Kapı bunu kendi yakaladı: FAZ 0.12'de tabana **şirket rakamı taşımayan** bir tur
+    # eklendi ve `_taban_beklenen()` şirket değerlerini **köke** (%64) düşürdü — yani
+    # bir tur eklemek tabanı **SESSİZCE GERİLETİYORDU**. Bir turun bir şirketi yeniden
+    # ölçmemiş olması, o şirketin önceki ölçümünü **silmez**.
     sirketler = {}
     for ad, v in (d.get("sirketler") or {}).items():
         sirketler[ad] = dict(v)
-    for ad, v in (son.get("sirketler") or {}).items():
-        sirketler.setdefault(ad, {}).update(v)
+    for tur in turlar:
+        for ad, v in (tur.get("sirketler") or {}).items():
+            sirketler.setdefault(ad, {}).update(v)
     return {
         "kaynak": son.get("faz") or "kök taban",
         # FAZ 0.19 — semantik taban: en son turda varsa o, yoksa kök. Kapı bunu
         # bulamazsa *"tabanda YOK"* der ve ters-yön kontrolünü **atlar** — yani
         # dondurulmadığı sürece kapı sessizce devre dışıdır (bilinen, yazılı sınır).
-        "vaka_dogru_yuzde": son.get("vaka_dogru_yuzde", d.get("vaka_dogru_yuzde")),
+        "vaka_dogru_yuzde": next(
+            (tur["vaka_dogru_yuzde"] for tur in reversed(turlar)
+             if tur.get("vaka_dogru_yuzde") is not None),
+            d.get("vaka_dogru_yuzde")),
         "sirketler": sirketler,
-        "dogru_cube_yuzde": son.get("toplam_dogru_cube_yuzde",
-                                    d.get("toplam_dogru_cube_yuzde")),
+        # Aynı gerekçe: toplam doğruluk da **son BEYAN EDEN** turdan gelir. Sonuncusu
+        # bu alanı taşımıyorsa bir öncekine bakılır — köke düşmek bir gerileme gizlerdi.
+        "dogru_cube_yuzde": next(
+            (tur["toplam_dogru_cube_yuzde"] for tur in reversed(turlar)
+             if tur.get("toplam_dogru_cube_yuzde") is not None),
+            d.get("toplam_dogru_cube_yuzde")),
     }
 
 

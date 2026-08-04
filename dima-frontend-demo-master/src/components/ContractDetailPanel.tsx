@@ -8,14 +8,19 @@
 
 import { useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { getContract, replayContract } from "@/lib/api-client";
+import { getContract, listContracts, replayContract } from "@/lib/api-client";
 
 export function ContractDetailPanel({
   contractId,
   onClose,
+  onSelect,
 }: {
+  // ⚠️ FAZ 0.6 — BOŞ dize = **kanıt geçmişi** giriş görünümü (yeni panel DEĞİL).
+  // Kanıt kaydı ancak **bulunabiliyorsa** bir kanıttır: tek tek `contract_id` bilmek
+  // gereken bir arşiv, arşiv değildir.
   contractId: string;
   onClose: () => void;
+  onSelect?: (cid: string) => void;
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -28,8 +33,46 @@ export function ContractDetailPanel({
   const contractQ = useQuery({
     queryKey: ["contract", contractId],
     queryFn: () => getContract(contractId),
+    enabled: Boolean(contractId),
+  });
+  // FAZ 0.6 — kanıt geçmişi: yalnız `contractId` YOKKEN çekilir (gereksiz istek yok).
+  const gecmisQ = useQuery({
+    queryKey: ["contracts", "gecmis"],
+    queryFn: () => listContracts(20),
+    enabled: !contractId,
   });
   const replay = useMutation({ mutationFn: () => replayContract(contractId) });
+
+  const gecmisGorunumu = !contractId && (
+    <div>
+      {gecmisQ.isLoading && (
+        <p className="font-mono text-[12px] text-neutral-400">yükleniyor…</p>
+      )}
+      {gecmisQ.data?.contracts?.length === 0 && (
+        <p className="font-mono text-[12px] text-neutral-400">
+          Henüz kanıt kaydı yok — bir rapor üretildiğinde burada belirir.
+        </p>
+      )}
+      <ul className="divide-y divide-hairline">
+        {(gecmisQ.data?.contracts ?? []).map((c) => (
+          <li key={c.id}>
+            <button
+              onClick={() => onSelect?.(c.id)}
+              className="w-full px-1 py-2 text-left transition-colors hover:bg-neutral-500/[0.06]"
+            >
+              <div className="truncate font-mono text-[12px] text-foreground">
+                {c.question || "(soru yok)"}
+              </div>
+              <div className="mt-0.5 font-mono text-[10px] text-neutral-400">
+                {c.ts ?? "—"} · {c.row_count ?? 0} satır · {c.source ?? "—"}
+                <span className="ml-2 text-accent">{c.id}</span>
+              </div>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 
   return (
     <div
@@ -43,15 +86,20 @@ export function ContractDetailPanel({
         className="max-h-[85vh] w-[min(640px,92vw)] overflow-auto border border-hairline bg-background p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* ⚠️ FAZ 0.6 — KANIT GEÇMİŞİ (giriş görünümü). `GET /contracts` tüketicisizdi:
+            kayıtlar vardı ama **bulunamıyordu** — tek tek `contract_id` bilmek gereken
+            bir arşiv, arşiv değildir. YENİ PANEL AÇILMADI (tavan 13/13, pay 0): liste
+            bu panelin girişidir. */}
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-mono text-[13px] uppercase tracking-wide text-muted">
-            Kanıt kaydı — {contractId}
+            {contractId ? `Kanıt kaydı — ${contractId}` : "Kanıt geçmişi"}
           </h2>
           <button onClick={onClose} aria-label="Kapat" className="text-muted hover:text-foreground">
             ✕
           </button>
         </div>
 
+        {gecmisGorunumu}
         {contractQ.isLoading && <p className="font-mono text-[12px] text-neutral-400">…</p>}
         {contractQ.isError && (
           <p className="font-mono text-[12px] text-red-500">Kayıt bulunamadı ya da erişim yok.</p>

@@ -17,9 +17,9 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 0** — temizlik ve kapılar *(25 madde; sıra **numara DEĞİL**, FAZ 0 girişindeki bağlayıcı koşum sırası)* |
-| **Sıradaki madde** | `0.6` *(kanıt geçmişi)* · `0.10`/`0.10b` *(görünen adlar — risk sınırı)* · `0.12` · `0.13` |
-| **Ondan sonra** | `0.4` *(canlı A/B — demet sınırı)* · `0.15` · `0.20` → `0.21` **EN SON** |
-| **Demet** | 🔴 **DOLDU (6 madde):** `0.19` · `0.18` · `0.5` · `0.3` · `0.7` · `0.8/0.9/0.11` |
+| **Sıradaki madde** | `0.10`/`0.10b` **görünen adlar** *(risk sınırı — kendi kapısını koşar)* |
+| **Ondan sonra** | `0.4` *(canlı A/B)* · `0.15` · `0.17` · `0.20` → `0.21` **EN SON** |
+| **Demet** | `0.12` · `0.13` · `0.6` indi — demet kapanışa hazır |
 | **Tempo** | 🔴 **DEMET disiplini yürürlükte** (`OPERASYON.md §3`): commit ≠ kapı; tam kapı **demet sonunda bir kez**. Risk sınırındaki dosyalara dokunan madde demete girmez |
 | **v1 bitiş ölçütü** | §C'nin **16 ölçütü** yeşil |
 
@@ -341,6 +341,30 @@ sildi**. *Yaşayan bir muafiyet, kapının kendisini eritir.*
 > kırardı. 🔴 Ve K2/(b) burada bir **ölçüm hatası** açığa çıkardı: ham alt-dize taraması
 > `AskRequest.limit`'i *"tüketiliyor"* sanmıştı — tek isabet `DrillDownPanel`'deki
 > `limit: 50`, yani **DrillRequest**. Sayaç **sınıf ayrımı yapmıyordu**.
+
+### FAZ 0 · adım 9 — `0.12` · `0.13` · `0.6` *(2026-08-04)*
+
+| Madde | Ne indi | Kalkan muafiyet |
+|---|---|---|
+| **0.12** taban tazeliği | Bugünkü tur tabana eklendi *(kök **dokunulmadı** — KURAL A)* · kapı artık tabanın **yaşını** ve **iki paydayı** kontrol ediyor | — |
+| **0.13** sosyal sınıf | 🔴 **Kill-switch GERÇEK oldu:** bayrak `FLAG_REGISTRY` + `features.yml` (`prod`) **ve** `ask.py` gerçekten ona bakıyor. Ad↔iddia çelişkisi + tüketici sayısı (3→**4**) düzeltildi | — |
+| **0.6** kanıt geçmişi | `GET /contracts` bağlandı — **`ContractDetailPanel`'in giriş görünümü**, yeni panel **DEĞİL** *(tavan 13/13, pay 0)* | **K1** `/contracts` |
+
+> 🔴 **`0.12` kurulurken KAPI KENDİ KUSURUNU BULDU.** Tabana **şirket rakamı taşımayan**
+> bir tur eklenince `_taban_beklenen()` şirket değerlerini **köke (%64)** düşürüyordu —
+> yani *bir tur eklemek tabanı SESSİZCE geriletiyordu* ve sonraki kapı 5 puanlık bir
+> gerilemeyi **yeşil** görürdü. Kök neden: yalnız **son** tur birleştiriliyordu.
+> Artık **tüm turlar sırayla** birleşir (son **beyan eden** kazanır) ve bu
+> `test_TUR_EKLEMEK_TABANI_GERILETMEZ` ile kilitli.
+
+> 🔴 **`0.13`'ün asıl borcu bayrağın KENDİSİYDİ.** MIMARI §6.13z/9.11: *"bir kill-switch
+> yalnız KOD'da varsa **YARIMDIR**."* Sınıf çalışıyordu ama **geri alma yolu yoktu**.
+> Kapı `cube_router`'a değil **çağırana** kondu — `cube_router` hiçbir bayrak okumaz
+> (FAZ 0.18'in değişmezi); sıcak yola bayrak sızarsa determinizm iddiası çürür.
+
+> ✅ **Dört muafiyetin dördü de kalktı** (`K1` × 2 · `K4` · `IC_ICE` × 3). Bir muafiyetin
+> metni *"…'de KALKAR"* diyorsa, o faz indiğinde **silinmesi** gerekir; yaşayan muafiyet
+> kapının kendisini eritir.
 
 ### Taban ölçümü · `lab/vk_taban.py` *(commit `8f87e40`)*
 VK-1…VK-6 **yapısal ve canlı** (gemini) ölçüldü. `§G.6e`'nin *"Bugün"* sütunu artık
