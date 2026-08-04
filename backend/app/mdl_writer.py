@@ -336,8 +336,27 @@ def write_introspected_schema(base: Path, company: str, tables: list, draft: dic
         model_path = base / "companies" / company / "models" / name / "metadata.yml"
         if cube_path.exists() or model_path.exists():
             continue  # var olan bir isimle çakışıyor — üstüne YAZILMAZ
-        write_model_yaml(base, company, name, table.columns, cube.get("primary_key"),
+        # 🔴 FAZ 3.6 — GÖRÜNMEZ KOLON. Kapatılan kolon **MDL'ye HİÇ YAZILMAZ**:
+        # "gösterme" ile "yazma" arasındaki fark bu satırın bütün değeridir — gizlenen
+        # ama yazılan bir kolon, bir prompt sızıntısında ya da Discovery sorgusunda
+        # GERİ GELİR. `pii.py` maskeler (veri çıkışında), burası hiç ÜRETMEZ (şema
+        # girişinde); iki farklı katman, biri ötekinin yerine geçmez.
+        from app.coldstart import gorunur_kolonlar
+
+        kolonlar = gorunur_kolonlar(table.columns, cube.get("gizli_kolonlar"))
+        write_model_yaml(base, company, name, kolonlar, cube.get("primary_key"),
                          db_schema=db_schema)
+        # ⚠ Cube tarafı da süzülür: gizli bir kolon ölçü/boyut listesinde kalırsa MDL
+        # var olmayan bir kolona bakar ve `validate_project()` haklı olarak patlar.
+        gizli = {str(x).strip().lower() for x in (cube.get("gizli_kolonlar") or [])}
+        if gizli:
+            cube = {**cube,
+                    "measures": [m for m in (cube.get("measures") or [])
+                                 if str(m).strip().lower() not in gizli],
+                    "dimensions": [d for d in (cube.get("dimensions") or [])
+                                   if str(d).strip().lower() not in gizli],
+                    "time_dimensions": [t for t in (cube.get("time_dimensions") or [])
+                                        if str(t).strip().lower() not in gizli]}
         write_cube_yaml(base, company, cube)
         written.append(name)
     rels = [r for r in (draft.get("relationships") or [])

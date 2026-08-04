@@ -508,6 +508,15 @@ class DraftCube(BaseModel):
     dimensions: list[str] = Field(default_factory=list)
     time_dimensions: list[str] = Field(default_factory=list)
     primary_key: str | None = None
+    # FAZ 3.6 — GÖRÜNMEZ KOLON (Plane Enforcer'ın UI karşılığı). 🔴 Buradaki kolon
+    # MDL'ye **HİÇ YAZILMAZ**, dolayısıyla LLM onu **asla göremez**.
+    # ⚠ "Gösterme" ile "yazma" arasındaki fark bu alanın bütün değeridir: gizlenen ama
+    # yazılan bir kolon, bir prompt sızıntısında ya da Discovery sorgusunda GERİ GELİR.
+    # `pii.py` maskeler (veri çıkışında); burası HİÇ ÜRETMEZ (şema girişinde) — iki farklı
+    # katman, biri ötekinin yerine geçmez.
+    gizli_kolonlar: list[str] = Field(default_factory=list)
+    # FAZ 3.6 — cold-start önem puanı (0..1). ⚠ SIRALAMA için, gizleme için DEĞİL.
+    onem: float | None = None
 
 
 class DraftRelationship(BaseModel):

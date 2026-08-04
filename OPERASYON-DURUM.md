@@ -16,8 +16,8 @@
 
 | | |
 |---|---|
-| **Aktif faz** | **FAZ 3 · KAPSAM** — `3.1` indi *(kararlar yazıldı, uygulama tenant kapsamını bekliyor)* |
-| **Sıradaki madde** | `3.5` yeni kaynak sistemler · `3.6` cold-start metrik önerisi → FAZ 4 |
+| **Aktif faz** | ✅ **FAZ 3 BİTTİ** (7 adım) → **FAZ 4 · ÖLÇÜM ve KANIT** |
+| **Sıradaki madde** | 🔴 **FAZ 4 · ÖLÇÜM ve KANIT** |
 | **Demet** | ✅ **`1.12` kapısı 4/4 YEŞİL** (süit **2477**) — risk sınırı olduğu için demete girmedi · demet 13 açık: `1.10`+`1.11` (o kapıya da dahil oldular) |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
@@ -422,6 +422,47 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
 
 ## FAZ 3 · KAPSAM
+
+### FAZ 3 · adım 7 — `3.6` **COLD-START + GÖRÜNMEZ KOLON** — 🔴 **FAZ 3 BİTTİ** *(2026-08-04)*
+
+Kapı: **12 test** (`tests/test_coldstart.py`), hızlı sinyal **532**.
+
+> 🔴 **GÖRÜNMEZ KOLON — maddenin kapısı birebir:** *"kapatılan kolon üretilen MDL'de
+> **YOK**."* Kolon **hiç yazılmaz**, dolayısıyla **LLM onu asla göremez**.
+> *"Gösterme" ile "yazma" arasındaki fark bu maddenin bütün değeridir:* gizlenen **ama
+> yazılan** bir kolon, bir prompt sızıntısında ya da Discovery sorgusunda **geri gelir**.
+> ⚠ `pii.py` maskeler (veri **çıkışında**), burası hiç **üretmez** (şema **girişinde**) —
+> iki farklı katman ve **biri ötekinin yerine geçmez**.
+
+> 🔴 **KAPI GERÇEK BİR KUSURUMU YAKALADI.** `gorunur_kolonlar` ilk sürümde
+> `ad = ... else k` yazıyordu: kolon bir **nesne** ise (`IntrospectedColumn` — yazıcının
+> gerçekte aldığı tip) `str(nesne)` bir ad değil bir **repr** üretiyor, hiçbir zaman
+> eşleşmiyor ve **gizleme sessizce çalışmıyordu**. *Çalıştığı sanılan bir kapı, olmayan
+> bir kapıdan tehlikelidir* — ve o satır tam olarak bu cümlenin **kendi koduna düşmüş
+> hâliydi**. Kullanıcı gizlediğini sanar, kolon MDL'ye yazılırdı.
+
+> ⚠ **AĞIRLIK UYDURULMADI:** önem puanı iki sinyalin **eşit ortalaması**. `0.7 × satır +
+> 0.3 × sinyal` gibi **kalibre edilmemiş** bir ağırlık, *"kalibre edilmemiş bir sayı güven
+> değil süstür"* kuralının sıralama tarafındaki hâli olurdu. **Eşit ağırlık, bilmediğimizi
+> beyan eden ağırlıktır.**
+> ⚠ **Sıralama ELEMEZ:** düşük puanlı tabloyu listeden düşürmek, müşterinin **kendi
+> verisini göremediği** bir onboarding üretirdi. *Sıralama bir öneridir; gizleme bir
+> karardır ve kararı kullanıcı verir.*
+
+### FAZ 3 · adım 6 — `3.5` **YENİ KAYNAK SİSTEMLER** — ⊘ **ÖLÇÜLEMEDİ** *(2026-08-04)*
+
+Kapı: **3 test** (`tests/test_yeni_kaynak_sistemler.py`).
+
+> 🔴 **⊘ ÖLÇÜLEMEDİ olarak kapandı ve nedeni yazılı.** Maddenin kapısı birebir *"zincir
+> **gerçek bir müşteri DB'sinde** uçtan uca koşulur"* diyor; bu koşum **canlı bir müşteri
+> veri tabanı** ister ve `--network none` altında yapılamaz. *Ölçülemeyeni yeşil saymak,
+> "risk yok" yalanı üretir.* Kapı boşluğu **tutuyor**: koşum yapıldığında **ters çevrilir**.
+
+> ⚠ **YOL HARİTASININ SAYISI DÜZELTİLDİ.** Madde *"17 değil, hiç geçmeyen **12**
+> konnektör"* diyor. Ölçüldü: motor **15** konnektör taşıyor (`base`/`factory` **altyapı**,
+> konnektör değil), backend **4**'ünü kullanıyor → **11** hiç geçmiyor.
+> *Bir sayıyı düzeltmek onu küçültmek değildir: 11 konnektör hâlâ "kod yazmadan yeni
+> müşteri" demektir.*
 
 ### FAZ 3 · adım 5 — `3.4` **APACHE OSSIE İTHALİ** *(2026-08-04)*
 
