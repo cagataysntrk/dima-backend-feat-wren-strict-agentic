@@ -170,6 +170,12 @@ Kapı **20 çekirdekli makinede tek çekirdeği %91'de** tutup 19'unu boş bıra
 koşumla **birebir aynı**: boyahane 5306 · atiksan 1462 · gulteks 1618 · gitas 2479 tur,
 semantik vaka paydası **445**, doğru-cube **%93,1**. KURAL A geçerli.
 
+> ⚠ **YUKARIDAKİ TUR SAYILARI 2026-08-04 FOTOĞRAFIDIR — bugün atiksan `1447`, payda `444`.**
+> Fark FAZ 3.x kataloğundan geliyor, paralelleştirmeden **değil**: A/B koşuldu (aynı kod,
+> **eski** `features.yml`) ve atiksan yine **1447** çıktı. *Bir belgeye yazılmış sayı,
+> yazıldığı anın fotoğrafıdır; taban diye okunursa yanlış bir gerileme alarmı üretir.*
+> Güncel taban her zaman **`lab/reports/nl_corpus.md`**'dedir.
+
 🔴 **SEYRELTME YASAK.** *"Korpus uzunsa soru azaltalım"* ölçülüp **reddedildi**: payda
 kırpılırsa korpusun tek gerçek yakalaması (`gitas` düştü, payda 445→342, doğruluk
 **YÜKSELDİ**) görünmez olur — o sinyal payda **sabitliğine** dayanır. Hız kapsamdan
