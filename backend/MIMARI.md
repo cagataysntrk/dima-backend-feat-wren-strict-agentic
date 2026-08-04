@@ -26,7 +26,22 @@
 > **Yol haritası:** `~/.claude/plans/DIMA-V1-YOL-HARITASI.md` · **operasyon:**
 > `OPERASYON.md` (kural seti) + `OPERASYON-DURUM.md` (nerede kaldık)
 >
-> **Bu bloğun kendi kapıları** *(D4: her artefakt kanonik belgede anılır)*:
+> > ✅ **§14 İNDİ — BEŞ ENTEGRASYON KAPISI** *(`45b5c6a`, FAZ 0.14)*. Ortak iskelet
+> **tek sahipte**: `tests/kapi_ortak.py` (yorum ayıklayıcı · tam-yol deseni · tüketim
+> kontrolü). **K1** `test_uc_yetim_degil` — tam yol + yorumsuz tarama + ölü sarmalayıcı ·
+> **K2** `test_cevap_alani_yetim_degil` — iç içe alan · diğer sözleşmeler · **erişilebilirlik** ·
+> **K3** `test_ters_yetim` — FE'nin beklediği ama backend'in vermediği alan ·
+> **K4** `test_yuzey_sadakati` — aynı `source` her yüzeyde aynı rozet (§5) ·
+> **K5** `test_panel_sayisi` — **export 13 / tavan 13, pay 0** ·
+> **D5** `test_yol_haritasi_butunlugu` — belge kapısı.
+>
+> 🔴 **İkisi kurulduğu gün av yaptı:** K1 `GET /contracts`'ı yakaladı — alt-dize taraması
+> onu hem `` `/contracts/${cid}` `` içinde hem bir **yorum satırında** buluyordu
+> ([KANIT §0.1-5] kapı tarafından **yeniden üretildi**); D5 ise 130 maddenin **birinde**
+> `NE`/`KAPI` eksiği buldu. Kapıların **kendi premisleri iki kez kusurlu** çıktı
+> (referans ≠ çağrı · plan ≠ envanter) — ikisi de **ölçülerek** düzeltildi.
+
+**Bu bloğun kendi kapıları** *(D4: her artefakt kanonik belgede anılır)*:
 > `tests/test_beyanlar_curumesin.py` — her satır için bir **tuzak** + tablonun **yapısal
 > işaretçi biçimi** (dört hücre · `⟳ UYGULANMADI` · otorite fazı) ·
 > `tests/test_MIMARI_dosya_atiflari_var.py` — **bu belgede anılan her `tests/test_*.py`
@@ -45,7 +60,6 @@
 | **§11** | agentic — **yetki granülerliği** + onaylı yazma | **FAZ 1.3 · 6.1** | ⟳ UYGULANMADI |
 | **§12** | konuşma — **6./7. tür**; uyuyan **çapa** kuralları | **FAZ 0.5 · 5.1 · 5.2** | ⟳ UYGULANMADI |
 | **§13** | görsel dilbilgisi — `viz.recommend()` yeni dallar + dönüş `VizSpec \| list[VizSpec]` | **FAZ 5.11 · 5.12** | ⟳ UYGULANMADI |
-| **§14** | arka-ön sözleşmesi — **iki kapının kör noktaları** (K1/K2) | **FAZ 0.14** | ⟳ UYGULANMADI |
 | **§8.2** | ADR'ler — **dosyalar üretilecek** (20 kimlik · 252 atıf · 0 dosya) | **FAZ 4.6** | ⟳ UYGULANMADI |
 
 > ⛔ **BU LİSTEDE OLMAYAN ama sorulabilecek bir satır — kayda geçiyor:**

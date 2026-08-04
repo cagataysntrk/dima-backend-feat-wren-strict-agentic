@@ -442,9 +442,6 @@ _YURURLUKTE_TUZAKLARI = [
     ("§13-viz", "FAZ 5.11·5.12",
      lambda: "list[VizSpec]" in (APP / "viz.py").read_text(encoding="utf-8"),
      "viz.recommend() çoklu dönüş"),
-    ("§14-kapı", "FAZ 0.14",
-     lambda: (APP.parent / "tests/test_yol_haritasi_butunlugu.py").exists(),
-     "K1/K2'nin kör noktaları"),
     ("§8.2-ADR", "FAZ 4.6",
      lambda: (APP.parent / "docs/adr").exists(),
      "ADR dosyaları"),
@@ -468,6 +465,32 @@ def test_YURURLUKTE_satiri_HALA_dogru(bolum, faz, indi_mi, konu):
         f"(1) MIMARI.md §0'dan `{bolum}` satırını SİL · "
         f"(2) ilgili bölüme ÖLÇÜMLÜ `✅` yaz (sayı + @sha + komut — kural D2) · "
         f"(3) bu tuzağı TERS ÇEVİR (artık 'inmiş olmalı' diye kilitle) — SİLME")
+
+
+def test_TERS_TUZAK_FAZ_0_14_KAPILARI_AYAKTA():
+    """⟳ **TUZAKTAN KAPIYA — FAZ 0.14 indi (`45b5c6a`), tuzak TERS ÇEVRİLDİ.**
+
+    `⟳` yaşam döngüsü: *"faz indiği gün satır **silinir**, yerine **ölçümlü ✅** yazılır,
+    ve tuzak **ters çevrilerek** korunur."* Eski tuzak *"bu dosya HENÜZ YOK"* diyordu ve
+    FAZ 0.14 landing ettiği gün **kırıldı** — kurulduğu iş buydu.
+
+    Yeni yönü: beş kapı **ayakta kalmalı**. Bir kapının sessizce silinmesi, bu belgenin
+    100+ maddesinin dayandığı zemini yok eder — ve `GERİ AL` kuralı bunu zaten yasaklıyor:
+    *"kapı testi geri alınmaz, `xfail` işaretlenir."*"""
+    kapilar = {
+        "tests/kapi_ortak.py": "ortak iskelet (TEK SAHİP)",
+        "tests/test_uc_yetim_degil.py": "K1 uç yetimi",
+        "tests/test_cevap_alani_yetim_degil.py": "K2 alan yetimi",
+        "tests/test_ters_yetim.py": "K3 ters yetim",
+        "tests/test_yuzey_sadakati.py": "K4 yüzey sadakati",
+        "tests/test_panel_sayisi.py": "K5 panel sayısı",
+        "tests/test_yol_haritasi_butunlugu.py": "D5 belge kapısı",
+    }
+    eksik = {y: ad for y, ad in kapilar.items() if not (APP.parent / y).exists()}
+    assert not eksik, (
+        f"FAZ 0.14 KAPISI SİLİNMİŞ: {eksik}\n"
+        "Kapı testi geri alınmaz — `xfail` işaretlenir ve gerekçesi buraya yazılır. "
+        "Bir kapının kırmızısı bir BİLGİDİR; silindiğinde o bilgi de kaybolur.")
 
 
 def test_TUZAK_SAYISI_MIMARI_ILE_ORTUSUYOR():
