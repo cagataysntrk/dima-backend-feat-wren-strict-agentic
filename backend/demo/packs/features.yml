@@ -25,6 +25,8 @@ features:
   mcp_yuzeyi: "off"
   # FAZ 5.1 — 6. konuşma türü ("bunu takip et"). `off`: tür tanınmaz, davranış birebir.
   tur_takip: "off"
+  # FAZ 5.10 — KPI pin. `off`: pano bugünkü davranışında, pinler SİLİNMEZ görünmez olur.
+  kpi_pin: "off"
   # FAZ 5.2 — 7. konuşma türü ("paylaş"). `off`: kalıplar eşleşmez, TUR_ANLAT birebir.
   tur_paylas: "off"
   # ⚠ AŞAĞIDAKİ ÜÇÜ FAZ 4.6'DA EKLENDİ — bir denetim ölçtü: `FLAG_REGISTRY`'de kayıtlı

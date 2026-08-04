@@ -46,6 +46,21 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "yanıt BAYT BAYT bugünküyle aynıdır (KURAL B — FAZ 2.5).",
         "category": "dogruluk",
     },
+    "kpi_pin": {
+        "label": "KPI pin (panoda sabitleme)",
+        "description": "Pano VARDI ama KPI-pin semantiği ayrı DEĞİLDİ ve NL yolu YOKTU: "
+                       "kullanıcı «bunu panoya sabitle» diyemiyor, düğmeyi fareyle "
+                       "aramak zorunda kalıyordu. 🔴 PİN BİR KATMAN, BİR PANEL DEĞİL "
+                       "(PK-1/K5): panel tavanı 13/13 dolu ve bu madde onu ARTIRMAZ — "
+                       "pin, var olan pano widget'ının bir işaretidir. 🔴 YENİ SINIR "
+                       "İCAT EDİLMEZ: `dashboards`'ın 10/kullanıcı sınırına tabidir; "
+                       "ikinci bir tavan aynı kuralın iki sahibi olurdu. Sınır dolunca "
+                       "SESSİZCE eskisi düşürülmez — bir pin bir KARARDIR ve haber "
+                       "vermeden kaldırmak, ürünün kullanıcı yerine karar vermesidir. "
+                       "Kapalıyken pano bugünkü davranışında; pinler SİLİNMEZ, görünmez "
+                       "olur (FAZ 5.10).",
+        "category": "arayuz",
+    },
     "tur_takip": {
         "label": "6. konuşma türü: “bunu takip et”",
         "description": "Ölçüldü: *«bunu takip et»* → SINIF_YENI → kapsam kapısı R10 → "
