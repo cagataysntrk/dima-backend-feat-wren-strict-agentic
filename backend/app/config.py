@@ -155,6 +155,20 @@ class Settings(BaseSettings):
     # "strict olsaydı reddedilirdi" diye loglar. Telemetri birikince `on`a alınır.
     strict_sql_policy: str = "shadow"
 
+    # FAZ 1.1 — MOTOR-SEVİYESİ RLS. `off|shadow|on`, varsayılan `shadow`:
+    # `strict_sql_policy`'nin AYNI disiplini — bir güvenlik katmanı önce ÖLÇÜLÜR, sonra
+    # açılır. Cube `always_filter`'ları motorun `rowLevelAccessControls`'una çevrilir ve
+    # koşul HER model referansına iner.
+    #
+    # 🔴 NEDEN: `always_filter` bir UYGULAMA KATMANI yamasıdır ve iki yol onu ATLIYOR,
+    # ikisi de ölçüldü: (1) JOIN — `compose.py:434` (G10) birebir yazıyor: "filtreli bir
+    # modele join'lemek always_filter'ı BAYPAS EDER"; (2) Discovery HAM SQL —
+    # `_inject_always_filter` yalnız `cube_sql()` yolundan çağrılır, ham SQL o fonksiyona
+    # HİÇ uğramaz (MIMARI §6.3'ün ❌ maddesi).
+    #
+    # `off` → manifest'e HİÇ dokunulmaz, davranış birebir bugünkü (testle kilitli).
+    motor_rls: str = "shadow"
+
     # Strict moddan BAĞIMSIZ çalışan fonksiyon kara listesi (`engine._plan` koşulu `or`).
     # Boş bırakılırsa devre dışı; buraya yazılan her ad `off` modunda bile bloklanır.
     denied_sql_functions: str = ""

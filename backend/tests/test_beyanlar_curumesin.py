@@ -15,6 +15,7 @@ uç seviyesinde ne yapıyorsa, bu dosya **modül seviyesinde** onu yapar.
 from __future__ import annotations
 
 import inspect
+import json
 import pathlib
 import re
 
@@ -391,9 +392,25 @@ _YURURLUKTE_TUZAKLARI = [
      lambda: (APP.parent / "demo/packs/cekirdek").exists()
              or "_merge_cube_metadata" in _app_kaynagi(""),
      "çekirdek katman / compose birleştirme semantiği"),
-    ("§3.4-RLS", "FAZ 1.1",
-     lambda: "rowLevelAccessControl" in _app_kaynagi(""),
-     "motor-seviyesi RLS"),
+    # ⟳ `§3.4-RLS` **TERS ÇEVRİLDİ** — FAZ 1.1 indi (`always_filter` → RLAC), tuzak
+    # `test_TERS_TUZAK_FAZ_1_1_MOTOR_RLS_AYAKTA`'ya taşındı (silinmedi).
+    # §0'ın `§3.4` satırı DARALDI: geriye **kimliğe bağlı** RLS (`SessionProperty`, FAZ 1.2)
+    # kaldı ve belirteç ona nişanlandı. `1.1` SABİT yüklemi çevirdi; session'a bağlı kural
+    # doğmadan `oturum_ozellikleri()` yazmak K3 (ters yetim) ihlali olurdu.
+    # ⚠ Belirteç **YAPISAL**, alt-dize DEĞİL — ve bu bir düzeltme: ilk sürüm
+    # `"SessionProperty" in _app_kaynagi("")` idi ve `app/rls.py`'nin **YORUMUNU** yakalayıp
+    # tuzağı yanlış-KIRMIZI yaptı (o yorum, session tesisatının NEDEN ertelendiğini
+    # anlatıyor). `§3.4-osi` aynı yere iki kez düşmüştü; üçüncüsü olmasın diye artık
+    # **tanımın kendisi** aranıyor: bir fonksiyon var mı, bir çağrı yapılıyor mu.
+    # ⚠ `_app_kaynagi(x)` bir dosyayı **DIŞLAR**, seçmez — ilk yazımımda imzayı ters
+    # kullandım ve tuzak yine yanlış yeri ölçtü. Dosya doğrudan okunuyor.
+    ("§3.4-session", "FAZ 1.2",
+     lambda: bool(re.search(
+         r"^def oturum_ozellikleri\b",
+         (APP / "rls.py").read_text(encoding="utf-8") if (APP / "rls.py").exists() else "",
+         re.M))
+     or "properties=" in (APP / "wren_service.py").read_text(encoding="utf-8"),
+     "kimliğe bağlı RLS (SessionProperty)"),
     ("§3.4-osi", "FAZ 3.4",
      # ⚠ Belirteç İKİ KEZ düzeltildi:
      #  (1) ilk sürüm `"ossie" in _app_kaynagi()` idi → `compose.py`'nin **YORUM** satırını
@@ -498,6 +515,34 @@ def test_TERS_TUZAK_FAZ_0_14_KAPILARI_AYAKTA():
         f"FAZ 0.14 KAPISI SİLİNMİŞ: {eksik}\n"
         "Kapı testi geri alınmaz — `xfail` işaretlenir ve gerekçesi buraya yazılır. "
         "Bir kapının kırmızısı bir BİLGİDİR; silindiğinde o bilgi de kaybolur.")
+
+
+def test_TERS_TUZAK_FAZ_1_1_MOTOR_RLS_AYAKTA():
+    """⟳ **TUZAKTAN KAPIYA — FAZ 1.1 indi, tuzak TERS ÇEVRİLDİ.**
+
+    Eski yön: *"motor RLS'i kodda HİÇ geçmiyor"*. FAZ 1.1 indiği gün **kırıldı**.
+    Yeni yön: **çeviri ayakta kalmalı ve `off` birebir kalmalı**.
+
+    Neden ikisi birden: yalnız *"`app/rls.py` var"* demek yetmez — biri `manifeste_yaz`'ı
+    `off`'ta da yazar hâle getirirse dosya **yerinde durur**, `GERİ AL` mekanizması
+    **sessizce kaybolur** ve KURAL B çürür. Kapı, çevirinin **iki ucunu** birden tutar.
+    """
+    rls = pytest.importorskip("app.rls")
+    assert "off" in rls.KADEMELER and "shadow" in rls.KADEMELER and "on" in rls.KADEMELER
+
+    man = {"models": [{"name": "m"}],
+           "cubes": [{"name": "c", "baseObject": "m", "alwaysFilter": "x = 0"}]}
+    ham = json.dumps(man).encode()
+
+    for kademe in ("off", "shadow"):
+        yeni, n = rls.manifeste_yaz(ham, kademe=kademe)
+        assert (yeni, n) == (ham, 0), (
+            f"🔴 `{kademe}` manifesti DEĞİŞTİRİYOR — `off` GERİ AL'ı, `shadow` ise "
+            "*'gölge ölçer, davranmaz'* kuralını çiğner.")
+
+    yeni, n = rls.manifeste_yaz(ham, kademe="on")
+    assert n == 1 and rls.MODEL_ANAHTARI in json.loads(yeni)["models"][0], (
+        "🔴 FAZ 1.1 GERİ ALINMIŞ: `on` kademesinde RLAC yazılmıyor.")
 
 
 def test_TERS_TUZAK_FAZ_1_3_YETKI_GRANULERLIGI_AYAKTA():

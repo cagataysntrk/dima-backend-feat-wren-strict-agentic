@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
-| **Sıradaki madde** | `1.1` **uygulaması** *(ön koşulu ÖLÇÜLDÜ ve kapıya çevrildi — 7 test)* · sonra `1.3b` · `1.1b` |
+| **Sıradaki madde** | `1.3b` `enforce_query` *(beyan edilmiş ama BOŞ katman)* · `1.1b` arka plan kimliği |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
 | **Demet** | ✅ **demet 7 kapandı** — FAZ 0 kapanış kapısı **4/4 YEŞİL** (süit **2199**) · demet 8 açık: `1.3c` · `1.3` |
 | 🔴 **Kota** | **GÜNLÜK KOTA DOLDU** (2026-08-04 ~11:40; `429`/`503`, tüm sağlayıcılar). Bugün başka **canlı** koşum YOK — LLM'siz ölçümler serbest |
@@ -418,6 +418,55 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 3 — `1.1` **MOTOR RLS İNDİ** *(2026-08-04)*
+
+`always_filter` → `rowLevelAccessControls` çevirisi. Bayrak **`motor_rls=off|shadow|on`**,
+varsayılan **`shadow`**. Kapı: **15 test** (`test_motor_rls.py`) + **7** ön koşul.
+Hızlı sinyal: **803 geçti**.
+
+| kademe | manifest | servis edilen cevap |
+|---|---|---|
+| `off` | dokunulmaz | bugünkü |
+| **`shadow`** *(varsayılan)* | **dokunulmaz** | **bugünkü** — gölge yalnız **ÖLÇER** |
+| `on` | RLAC yazılır | motor filtreliyor; `_inject_always_filter` o cube'da **elini çeker** |
+
+> 🔴 **KENDİ TASARIMIMDA TUTARSIZLIK BULDUM VE DÜZELTTİM.** İlk sürüm `shadow`'da da
+> manifeste RLAC yazıyordu — o hâlde motor filtreyi **uygular** ve **ham-SQL yolundaki
+> cevap DEĞİŞİRDİ**. Yani *"gölge"* adı altında **canlı bir davranış değişikliği** sevk
+> edilecekti. Doğru desen **komşuda zaten yazılıydı**: `_sql_policy`'nin gölgesi motoru
+> gevşek kurar, katı politikayı **AYRI bir motorla PARALEL** dener.
+> ⚠ **803 yeşil test bunu YAKALAMADI** ve nedeni kayda değer: `alwaysFilter` yalnız
+> **gulteks**'te var (3 cube, logo-3 tenant'ı) ve süit o tenant'ın **ham SQL** yolunu
+> ölçmüyor. **Yeşil bir süit, ölçmediği bir davranış hakkında hiçbir şey söylemez.**
+
+> 🔴 **`SessionProperty` BİLİNÇLE GELMEDİ.** `always_filter` **sabit** yüklemdir
+> (`CANCELLED = 0`) ve ölçüldü ki motor sabit koşullu kuralı `requiredProperties`
+> **olmadan** da uyguluyor. Session tesisatını şimdi yazmak **çağıranı olmayan bir
+> yetenek** üretirdi — `K3` (ters yetim) kapısının avladığı sınıf. İlk session'a bağlı
+> kural doğduğunda (`1.2`) `sql_literal()` ile birlikte gelecek; gerekçe `rls.py`'nin
+> başında yazılı ki *"unutuldu"* sanılmasın.
+
+> 🔴 **ÖLÇÜLMÜŞ BİR FAIL-OPEN YASAKLANDI:** `required=False` + `defaultExpr` verilirse
+> property **hiç gönderilmese bile** sorgu **varsayılanla** koşar (`WHERE tenant =
+> 'HERKES'`). Kimlik enjeksiyonunu unuttuğumuz gün sistem **hata vermez**, başka bir
+> filtreyle cevap verir — filtresiz cevaptan **daha sinsi**, çünkü sonuç makul görünür.
+
+> ⚠ **Gecikme bütçesi (0.17) gölgeye uygulandı:** gölge denetimi HER sorguda koşar ve
+> `json.loads` 117 KB'lık manifesti her turda ayrıştırırdı. **Beş tenant'ın dördünde**
+> hiç `alwaysFilter` yok → ucuz bayt taraması onları ayrıştırmadan eliyor.
+
+> ⚠ **JSONL'dan sapma bilinçli:** yol haritası `logs/rls_shadow.jsonl` diyordu; gölge
+> bulgularının bu depoda **zaten bir sahibi var** (`_shadow_policy_check` →
+> `_log.warning`). İkinci bir kayıt mekanizması *"aynı kuralın iki sahibi"* olurdu; 7
+> günlük ölçüt aynı greple ölçülür (`RLS (gölge)`).
+
+> ⟳ **`§3.4-RLS` TUZAĞI ATEŞLEDİ ve TERS ÇEVRİLDİ** (bu operasyonda **üçüncü** kez).
+> §0 satırı **daraltıldı** (geriye `SessionProperty` · FAZ 1.2 kaldı), ⟳ sayısı **13**.
+> 🔴 **Yeni belirteç iki kez yanlış yazıldı ve ikisi de kayıtlı sınıf:** (1) alt-dize
+> taraması `rls.py`'nin **YORUMUNU** yakaladı — `§3.4-osi`'nin iki kez düştüğü yer;
+> (2) `_app_kaynagi(x)` bir dosyayı **DIŞLAR**, seçmez — imzayı ters kullandım. Şimdi
+> **tanımın kendisi** aranıyor (`^def oturum_ozellikleri`).
 
 ### FAZ 1 · adım 2 — `1.1` **ÖN KOŞUL ÖLÇÜMÜ** *(2026-08-04)*
 

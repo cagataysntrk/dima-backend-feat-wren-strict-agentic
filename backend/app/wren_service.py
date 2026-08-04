@@ -15,6 +15,7 @@ from typing import Any
 
 from wren.engine import WrenEngine
 
+from app import rls
 from app.logging_setup import get_logger
 
 _log = get_logger("wren")
@@ -98,13 +99,40 @@ class WrenService:
         self._mdl_cache = (key, raw)
         return raw
 
+    def _rls_kademesi(self) -> str:
+        """`motor_rls` ∈ `off|shadow|on` — `_sql_policy` ile **aynı okuma deseni**.
+
+        Config okunamazsa `off`: ölçülemeyen bir yapılandırmada **davranışı değiştirmek**,
+        bu maddenin engellemek için var olduğu şeyin ta kendisi olurdu.
+        """
+        from app.config import get_settings
+
+        try:
+            mod = str(getattr(get_settings(), "motor_rls", "shadow") or "shadow").lower()
+        except Exception:  # noqa: BLE001 — config yoksa bugünkü davranış aynen sürer
+            return "off"
+        return mod if mod in rls.KADEMELER else "shadow"
+
     def _manifest_b64(self) -> str:
+        """MDL → base64. **FAZ 1.1'in derleme sınırı burasıdır.**
+
+        `_engine()`'in her kurulumu buradan geçer, yani RLAC'ı buraya yazmak onu **her
+        yola** (cube · ham SQL · dry-plan · query) tek noktadan uygular. Sıcak yola bayrak
+        koymak iki kod yolu ve her sorguda bir yapılandırma okuması demekti; `metrik_kaydi.
+        semaya_yaz` ile **aynı desen** bilinçle tekrarlanıyor.
+
+        🔴 **Önbellek anahtarı kademeyi İÇERİR.** İçermeseydi bayrak çevrildiği an
+        **bayat** bir manifest servis edilirdi — ve bu, bir güvenlik katmanının
+        *"açtım ama çalışmıyor"* hâli olurdu, üstelik sessiz.
+        """
+        kademe = self._rls_kademesi()
         cached = getattr(self, "_mdl_b64_cache", None)
         raw = self._mdl_bytes()
-        if cached is not None and cached[0] is raw:
+        if cached is not None and cached[0] is raw and cached[2] == kademe:
             return cached[1]
-        enc = base64.b64encode(raw).decode()
-        self._mdl_b64_cache = (raw, enc)
+        islenmis, _n = rls.manifeste_yaz(raw, kademe=kademe)
+        enc = base64.b64encode(islenmis).decode()
+        self._mdl_b64_cache = (raw, enc, kademe)
         return enc
 
     def _sql_policy(self):
@@ -256,6 +284,47 @@ class WrenService:
         except BaseException as exc:  # noqa: BLE001 — Rust PANIC `Exception` DEĞİLDİR
             _log.warning("SQL POLİTİKASI (gölge): strict açık olsaydı REDDEDİLİRDİ — %s | %s",
                          str(exc)[:180], " ".join(sql.split())[:220])
+
+    def _rls_golge_denetimi(self, sql: str) -> None:
+        """GÖLGE MOD: *"`motor_rls=on` olsaydı bu sorgu farklı mı planlanırdı?"* — sorar,
+        LOGLAR, akışı **DEĞİŞTİRMEZ**.
+
+        Amaç `on`'a ölçmeden geçmemek. Fark **beklenen** bir yerde olabilir (ham SQL yolu:
+        kapatılmak istenen baypas tam orası) ya da **beklenmedik** bir yerde (cube yolu:
+        orada `_inject_always_filter` zaten filtreliyor, fark çıkarsa iki mekanizma
+        **ayrışmış** demektir). Log satırı `motor_rls=on` kararının kanıtıdır.
+
+        🔴 **KARDEŞ DESENLE AYNI, ve JSONL'dan SAPMA BİLİNÇLİ.** Yol haritası
+        `logs/rls_shadow.jsonl` diyordu; bu depoda gölge bulgularının **zaten bir sahibi
+        var** (`_shadow_policy_check` → `_log.warning`) ve ikinci bir kayıt mekanizması
+        açmak *"aynı kuralın iki sahibi"* olurdu. Kapının 7 günlük ölçütü (*"0 satır"*)
+        aynı greple ölçülebilir: `RLS (gölge)` etiketi.
+        """
+        try:
+            ham = self._mdl_bytes()
+            # ⚠️ UCUZ ÖN ELEME — FAZ 0.17'nin gecikme bütçesi gereği. Gölge denetimi HER
+            # sorguda koşar; `json.loads` 117 KB'lık bir manifesti her turda ayrıştırırdı
+            # ve **beş tenant'ın dördünde** hiç `alwaysFilter` YOK (ölçüldü: yalnız
+            # gulteks taşıyor, 3 cube). Bayt taraması o dördünü ayrıştırmadan eler.
+            if b"alwaysFilter" not in ham and b"always_filter" not in ham:
+                return
+            golge, kural_sayisi = rls.rlac_manifesti(ham)
+            if not kural_sayisi:
+                return                      # çevrilecek kural yok → ölçülecek fark da yok
+            cfg, _mod = self._sql_policy()
+            with WrenEngine(base64.b64encode(golge).decode(), self.datasource,
+                            self._zaman_asimli_baglanti(), config=cfg) as eng:
+                rls_li = eng.dry_plan(sql)
+            with self._engine() as eng:
+                bugunku = eng.dry_plan(sql)
+        except BaseException as exc:  # noqa: BLE001 — Rust PANIC `Exception` DEĞİLDİR
+            _log.warning("RLS (gölge): kıyas KOŞULAMADI — %s | %s",
+                         str(exc)[:180], " ".join(sql.split())[:180])
+            return
+        if rls_li != bugunku:
+            _log.warning(
+                "RLS (gölge): motor_rls=on olsaydı plan DEĞİŞİRDİ (%d kural) | %s",
+                kural_sayisi, " ".join(sql.split())[:220])
 
     def _db_reachable(self, timeout: float = 3.0) -> bool:
         """Uzak DB'ye hızlı TCP erişilebilirlik kontrolü. Amaç: enrichment (best-effort
@@ -1048,7 +1117,19 @@ class WrenService:
         # Somut senaryo: compose penceresinde manifest yokken gelen sorgu `always_filter`
         # olmadan çalışıp iptal kayıtlarını toplama sızdırıyordu. (Pencere artık atomik
         # build ile kapatıldı — bkz. app/compose.py — ama koruma yine de fail-closed olmalı.)
-        cubes = {c.get("name"): c for c in json.loads(self._mdl_bytes()).get("cubes", [])}
+        ham = self._mdl_bytes()
+
+        # ⚠️ FAZ 1.1 — `on` kademesinde SAHİP MOTORDUR, uygulama katmanı elini çeker.
+        # İki sahip olursa yüklem iki kez yazılır; `CANCELLED = 0` için zararsızdır ama
+        # kural genel olmalı: bu depoda *"aynı kuralın iki sahibi"* birinci kusur sınıfı.
+        #
+        # 🔴 `shadow`'da sahip BURADA KALIR. Gölgenin işi ÖLÇMEK, davranmak değil: servis
+        # edilen cevap `off` ile birebir aynı olmalı ki ölçüm bir kıyas olabilsin. Bu,
+        # `strict_sql_policy`'nin gölge deseniyle aynı karar.
+        if cube_name in rls.motorun_devraldigi_cubelar(ham, kademe=self._rls_kademesi()):
+            return sql
+
+        cubes = {c.get("name"): c for c in json.loads(ham).get("cubes", [])}
         cube = cubes.get(cube_name) or {}
         pred = cube.get("always_filter") or cube.get("alwaysFilter")
         if not pred:
@@ -1160,6 +1241,10 @@ class WrenService:
         _cfg, _mod = self._sql_policy()
         if _mod == "shadow":
             self._shadow_policy_check(sql)
+        # FAZ 1.1 — RLS gölgesi SQL politikasından AYRI bir kademedir (`motor_rls`);
+        # ikisini tek bayrağa bağlamak, birinin ölçümünü ötekinin kararına bağlardı.
+        if self._rls_kademesi() == "shadow":
+            self._rls_golge_denetimi(sql)
         with self._engine() as eng:
             return eng.dry_plan(sql)
 
@@ -1184,6 +1269,10 @@ class WrenService:
         _cfg, _mod = self._sql_policy()
         if _mod == "shadow":
             self._shadow_policy_check(sql)
+        # FAZ 1.1 — RLS gölgesi SQL politikasından AYRI bir kademedir (`motor_rls`);
+        # ikisini tek bayrağa bağlamak, birinin ölçümünü ötekinin kararına bağlardı.
+        if self._rls_kademesi() == "shadow":
+            self._rls_golge_denetimi(sql)
         with self._engine() as eng:
             table = eng.query(sql, limit=limit)
         rows = table.to_pylist()

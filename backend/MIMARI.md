@@ -50,7 +50,7 @@
 | MIMARI § | Konu | Otoriteyi alan faz | Durum |
 |---|---|---|---|
 | **§3 · §3.3** | semantik katman · compose **birleştirme semantiği** (çekirdek katman + grain sözleşmesi) | **FAZ 2.1** | ⟳ UYGULANMADI |
-| **§3.4** | `rowLevelAccessControls` — motor-seviyesi RLS | **FAZ 1.1** | ⟳ UYGULANMADI |
+| **§3.4** | **`SessionProperty`** — kimliğe bağlı RLS *(sabit yüklem `1.1`'de indi)* | **FAZ 1.2** | ⟳ UYGULANMADI |
 | **§3.4** | *"Bilerek ALINMAYANLAR: `osi`"* — karar **geri alındı** | **FAZ 3.4 · 4.5** | ⟳ UYGULANMADI |
 | **§4** | Değişmez 2/3 (read-only) — ajan yazma yasağının **kademelenmesi** | **FAZ 6.0 → 6.1 → 6.2** | ⟳ UYGULANMADI |
 | **§5** | yapılmayacaklar — hiçbir satır **kaldırılmıyor**; grain sözleşmesi **yeni satır ekler** | **FAZ 2.1** | ⟳ UYGULANMADI |
@@ -261,7 +261,7 @@ tur aynı keşfi sıfırdan yapıyor. **Yeni bir kontrol/garanti yazmadan önce 
 | Motor yeteneği | Ne verir | Durum |
 |---|---|---|
 | **`WrenConfig` + `wren/policy.py`** | **Kaynak konumunda (`FROM`/`JOIN`) fail-closed:** MDL-dışı ya da bilinmeyen HER TVF reddedilir. **Kaynak-DIŞI konumlarda** (projeksiyon · alt sorgu · iç argüman) **adlandırılmış 45 okuyucu** bloklanır — bu bir **blocklist**tir, fail-closed bir allowlist DEĞİL (§5, 1.3c) | ✅ **alındı (Faz A3)** — `strict_sql_policy=off\|shadow\|on`, varsayılan `shadow`. 🔴 **Güvenlik SINIRI olarak yazılmaz/satılmaz** |
-| **`rowLevelAccessControls` + `SessionProperty` + `dry_plan(properties=)`** | RLS'i **mantıksal planın içine** gömer; SQL'i kim yazarsa yazsın (insan/LLM/ajan) atlatılamaz | ⏳ **sıradaki** — `always_filter`'ın uygulama-katmanı yamasının yerini alır (§6.3'teki üç baypasın kalıcı çözümü) |
+| **`rowLevelAccessControls` + `SessionProperty` + `dry_plan(properties=)`** | RLS'i **mantıksal planın içine** gömer; SQL'i kim yazarsa yazsın (insan/LLM/ajan) atlatılamaz | ◐ **FAZ 1.1 İNDİ (2026-08-04)** — `always_filter` → RLAC çevirisi, `motor_rls=off\|shadow\|on` (varsayılan **`shadow`**). `15 test: `tests/test_motor_rls.py`` + `7 test: `tests/test_motor_rls_onkosul.py``. ⏳ **SessionProperty henüz YOK** ve bu bilinçli: `always_filter` **sabit** yüklemdir, session'a bağlı bir kural doğmadan `oturum_ozellikleri()` yazmak **çağıranı olmayan bir yetenek** (K3 · ters yetim) olurdu — bkz. §6.3b |
 | **`columnLevelAccessControl`** (`requiredProperties`/`operator`/`threshold`) | Kolonu **plandan düşürür**; çıktıya hiç gelmez | ⏳ `app/pii.py` regex maskelemesinin motor karşılığı; PII son savunma olarak KALIR |
 | **Cube `hierarchies`** | Drill sırasını motora beyan eder | ⏸ **bilinçle beyan EDİLMEDİ** — uydurulmuş bir hiyerarşi güvenle yanlış bir drill yolu üretir; sıra ölçülebilir maliyetten okunuyor, bkz. §3.4c |
 | **`type_mapping.parse_type/translate_type`** | sqlglot tam tip grameri + lehçeler arası tip çevirisi | ✅ **ALINDI** (2026-08-02, Faz B): `classify_column` artık ham tipi `parse_type` ile **kanonikleştirip** öyle sınıflıyor. Ölçüldü — elle küme **17 gerçek yazımın 13'ünü kaçırıyordu** ve hepsi sessizce `dimension`'a düşüyordu: `numeric(18,2)` (bir PARA TUTARI) gruplama anahtarı, `timestamptz` zaman DEĞİL sayılıyordu. Bir müşteri DB'sini introspect ettiğimizde taslak MDL tutarları boyut yapıp tarihleri zaman ekseninden düşürürdü — kullanıcıya *"şemanı çıkardım"* diye sunularak. Kanonik küme ile **geriye uyum kuyruğu AYRI durur** (`_ESKI_YAZIMLAR`): karışık bir küme, hangi adın kanonik hangisinin yama olduğunu gizler. Motor erişilemezse ham değere düşülür — fail-closed değil, çünkü bilinmeyen tip için doğru varsayılan zaten *boyut*tur. `BIT`/`BOOLEAN` bilinçle dışarıda: bayrakların toplamı bir ölçü değildir. |
@@ -3016,6 +3016,57 @@ gibi yazmak, bu maddenin engellemek için var olduğu şeyin ta kendisi olurdu.
 denkleşir. Aynı soru `cari`'de **₺11,86 milyon** verir. Bu bir **motor kusuru değil
 KATALOG kararıdır** (*bare `bakiye` hangi cube'un?*) ve sahibi **FAZ 3.1'in sahiplik
 turudur** — `metrik_kaydi` (FAZ 0.18) çakışmayı **görünür** kılar, kararı vermez.
+
+### 6.3b · FAZ 1.1 · Motor RLS — `always_filter`'ın iki baypası kapanıyor
+
+`always_filter` (LookML `sql_always_where`) bir **uygulama katmanı** yamasıdır:
+`WrenService._inject_always_filter` onu **yalnız o cube'un kendi SQL'ine** ekler. İki yol
+onu atlıyordu ve ikisi de **ölçülmüştü**:
+
+1. **JOIN** — `compose.py:434` (**G10**) birebir: *"filtreli bir modele join'lemek
+   `always_filter`'ı **BAYPAS EDER**"*; join `__source` seviyesinde gerçekleşir.
+2. **Discovery ham SQL** — `_inject_always_filter` yalnız `cube_sql()` yolundan çağrılır;
+   ham SQL o fonksiyona **hiç uğramaz**.
+
+Motor RLS'inde koşul **her model referansına** iner. Ölçüldü (uçtan uca, `wren_core`):
+join'de filtre **iki tarafa da** iniyor · ham SQL'de de uygulanıyor · property zorunluyken
+eksikse **fail-closed** · kötücül değer *"allow only literal value"* ile reddediliyor.
+
+| kademe | manifest | servis edilen cevap |
+|---|---|---|
+| `off` | dokunulmaz | bugünkü |
+| **`shadow`** *(varsayılan)* | **dokunulmaz** | **bugünkü** — gölge yalnız **ÖLÇER** |
+| `on` | RLAC yazılır | motor filtreliyor; `_inject_always_filter` o cube'da **elini çeker** |
+
+🔴 **`shadow` MANİFESTE YAZMAZ — ve bu bir DÜZELTMEDİR.** İlk sürüm yazıyordu; o hâlde
+motor filtreyi **uygular** ve ham-SQL yolundaki cevap **değişirdi** — *"gölge"* adı altında
+canlı bir davranış değişikliği. Doğru desen komşuda zaten yazılıydı (`_sql_policy`'nin
+gölgesi motoru gevşek kurar, katı politikayı **AYRI** motorla paralel dener).
+⚠ **803 yeşil test bunu YAKALAMADI:** `alwaysFilter` yalnız **gulteks**'te var (3 cube,
+logo-3 tenant'ı) ve süit o tenant'ın **ham SQL** yolunu ölçmüyor. Yeşil bir süit,
+**ölçmediği** bir davranış hakkında hiçbir şey söylemez.
+
+⚠ **`SessionProperty` bu turda GELMEDİ ve bu "unutuldu" DEĞİL.** `always_filter` **sabit**
+bir yüklemdir (`CANCELLED = 0`); ölçüldü ki motor sabit koşullu kuralı `requiredProperties`
+**olmadan** da uyguluyor. Session tesisatını şimdi yazmak, **çağıranı olmayan bir yetenek**
+üretirdi — `K3` (ters yetim) kapısının avladığı sınıf. İlk **session'a bağlı** kural
+doğduğunda (`1.2` · tek DB'de çok tenant · rol bazlı daraltma) `sql_literal()` ile birlikte
+gelecek.
+
+🔴 **`required=False` + `defaultExpr` YASAK — ölçülmüş bir FAIL-OPEN.** O yapılandırmada
+property **hiç gönderilmese bile** sorgu **varsayılanla** koşar (`WHERE tenant = 'HERKES'`).
+Kimlik enjeksiyonunu unuttuğumuz gün sistem hata vermez, **başka bir filtreyle** cevap
+verir — filtresiz cevaptan **daha sinsi**, çünkü sonuç makul görünür. `kurallari_denetle()`
+onu fail-closed reddeder.
+
+⚠ **Gölge kaydı JSONL değil LOGGER — sapma bilinçli.** Yol haritası `logs/rls_shadow.jsonl`
+diyordu; bu depoda gölge bulgularının **zaten bir sahibi var** (`_shadow_policy_check` →
+`_log.warning`) ve ikinci bir kayıt mekanizması *"aynı kuralın iki sahibi"* olurdu.
+7 günlük ölçüt (*"0 satır"*) aynı greple ölçülür: `RLS (gölge)` etiketi.
+
+⚠ **`app/pii.py` KALIYOR** — RLS **satır** düşürür, PII **hücre** maskeler. İki savunmadan
+birini ötekinin gerekçesiyle kaldırmak, *"aynı kuralın iki sahibi"*nin tersi kadar
+tehlikelidir: **hiç sahibi olmayan bir kural**.
 
 ### Ölçüm araçlarının GERÇEKTEN ne ölçtüğü (2026-08-02'de tek tek doğrulandı)
 
