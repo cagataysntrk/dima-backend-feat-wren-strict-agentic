@@ -64,10 +64,9 @@
 > Tuzaklar **silinmedi, TERS ÇEVRİLDİ**: `test_TERS_TUZAK_FAZ_2_1_CEKIRDEK_KATMAN_AYAKTA`.
 
 | **§3.4** | **`SessionProperty` TÜM çağrı sitelerinde** — bugün 36 `query`/`dry_plan` çağrısı kimlik geçmiyor *(CLS `off`, bkz. §6.3c)* | **FAZ 1.2 kuyruğu** | ⟳ UYGULANMADI |
-| **§3.4** | *"Bilerek ALINMAYANLAR: `osi`"* — karar **geri alındı** | **FAZ 3.4 · 4.5** | ⟳ UYGULANMADI |
+| **§3.4** | *"Bilerek ALINMAYANLAR: `osi`"* — **ithal İNDİ** (FAZ 3.4), satır **MCP yüzeyine DARALDI** | **FAZ 4.5** | ⟳ UYGULANMADI |
 | **§4** | Değişmez 2/3 (read-only) — ajan yazma yasağının **kademelenmesi** | **FAZ 6.0 → 6.1 → 6.2** | ⟳ UYGULANMADI |
 | **§5** | **18. yasak**: *"cevapsız bir dal, cevaplı bir yolu KESEMEZ"* (`KAT-2`) | **§G/AJ0** | ⟳ UYGULANMADI |
-| **§7** | ölçüm sözleşmesi — çerçeve (A1) + **risk-kapsam eğrisi** | **FAZ 4.2** | ⟳ UYGULANMADI |
 | **§9** | hedef mimari — **metrik katmanı** merdivene giriyor | **FAZ 0.18 · 2.1** | ⟳ UYGULANMADI |
 | **§11** | agentic — **onaylı yazma aksiyonları** | **FAZ 6.1** | ⟳ UYGULANMADI |
 | **§12** | konuşma — **6./7. tür**; uyuyan **çapa** kuralları | **FAZ 0.5 · 5.1 · 5.2** | ⟳ UYGULANMADI |
@@ -285,7 +284,7 @@ tur aynı keşfi sıfırdan yapıyor. **Yeni bir kontrol/garanti yazmadan önce 
 **Bilerek ALINMAYANLAR** (gerekçeleri kalıcı): `wren.memory` — `app/vqr.py` bu iş için üstün
 (Türkçe'de e5-large > MiniLM; depo Postgres'te ve tenant-kapsamlı, LanceDB dosya deposu
 Railway'de kalıcı değil). `mcp_server.py` — Dima'nın HTTP API'si işlevsel üst kümesi; ajan
-yüzeyi kendi araç kaydımız üstüne kurulur. `genbi`/`dbt`/`osi`/`profile` — bugün müşteri
+yüzeyi kendi araç kaydımız üstüne kurulur. `genbi`/`dbt`/`profile` — bugün müşteri
 senaryosu yok. **`_dialect_sql` duplicate DEĞİL**: `cube_query_to_sql` DuckDB verir, `dry_plan`
 hedef lehçe bekler; aradaki köprüyü wren sunmuyor.
 
@@ -3388,6 +3387,13 @@ Rakip araştırması bunları **bulamadı** (satıcı dokümanları taranarak):
   hash eşleyebileceği bir makbuz vermiyor.
 - **Güven-kapılı merdiven + risk-kapsam eğrisi.** Hiçbir sevk edilmiş BI ürünü abstention kapısı
   ya da risk-kapsam eğrisi yayınlamıyor.
+  ✅ **EĞRİ YAYIMLANDI** (FAZ 4.2 @`71c1da5` · `python lab/risk_kapsam.py`): dört şirket,
+  `lab/reports/risk_kapsam.md`. Eğri **skaler bir `confidence` üstünde DEĞİL**, ayrık
+  kapılarımız üstünde tanımlı (`route → tie_chip → intent → discovery`) ve her nokta bir
+  **determinizm sınıfı** taşır. ⚠ `hata_orani` **bilerek YOK** — bir kapının hata oranını
+  bu araç ölçemez, yazsaydık uydurma olurdu. ⚠ `intent`/`discovery` LLM'siz koşumda
+  **ölçülemez** ve `llm_gerekli` kovasında toplanır: *ölçülmeyeni bir kapıya yazmak, eğriyi
+  olduğundan iyimser gösterirdi.*
 - ✅ **CubeQuery olarak ifade edilmiş katkı/mix ayrıştırması** — **uygulandı** (2026-08-02,
   Faz 5.1+5.2: `app/contribution.py`, `POST /ask/contribution`). Snowflake `TOP_INSIGHTS`,
   Power BI Key Influencers, Tableau Pulse — hepsi semantic layer'ın **dışında**, dolayısıyla

@@ -432,7 +432,12 @@ _YURURLUKTE_TUZAKLARI = [
     ("§3.4-kuyruk", "FAZ 1.2 kuyruğu",
      lambda: not _principalsiz_cagri_var(),
      "SessionProperty TÜM çağrı sitelerinde"),
-    ("§3.4-osi", "FAZ 3.4",
+    # ⟳ `§3.4-osi` **DARALDI** — FAZ 3.4 (Ossie **ithali**) İNDİ; tuzak
+    # `test_TERS_TUZAK_FAZ_3_4_OSSIE_ITHALI_AYAKTA`'ya taşındı (SİLİNMEDİ). §0'ın satırı
+    # geriye **MCP yüzeyini** (FAZ 4.5) bıraktı ve belirteç ona nişanlandı. Eski belirteç
+    # (uç ∨ bayrak ∨ modül) bugün DOĞRU olduğu için tuzağı kalıcı-kırmızı bırakırdı; oysa
+    # satırın inmemiş yarısı hâlâ bir işaretçiye muhtaç.
+    ("§3.4-mcp", "FAZ 4.5",
      # ⚠ Belirteç İKİ KEZ düzeltildi:
      #  (1) ilk sürüm `"ossie" in _app_kaynagi()` idi → `compose.py`'nin **YORUM** satırını
      #      yakalayıp tuzağı yanlış-KIRMIZI yaptı (ölçüm aracı kusuru);
@@ -441,10 +446,9 @@ _YURURLUKTE_TUZAKLARI = [
      #      {id}/import-semantic` ucu** + `ossie_ithal` bayrağı + bir çevirici. Yani faz
      #      indiğinde tuzak **susacaktı** — yanlış-NEGATİF, yanlış-pozitiften DAHA tehlikeli.
      # Şimdi belirteç fazın KENDİ vaadine bağlı (üçünden biri yeterli: uç · bayrak · modül).
-     lambda: ("import-semantic" in _app_kaynagi("")
-              or "ossie_ithal" in (APP / "features.py").read_text(encoding="utf-8")
-              or any(APP.glob("ossie*.py"))),
-     "Ossie ithali (karar geri alındı)"),
+     lambda: (APP / "mcp.py").exists() or (APP / "routers/mcp.py").exists()
+             or "mcp" in (APP / "features.py").read_text(encoding="utf-8"),
+     "MCP yüzeyi (araç kaydı DIŞARI açılmıyor)"),
     ("§4", "FAZ 6.0→6.2",
      # ⚠ AST ile bakılır: alt-dize taraması `tools.py`'nin **docstring'indeki**
      # `yan_etki="yazar"` cümlesini yakalayıp tuzağı yanlış-kırmızı yaptı. Beyan ile
@@ -464,10 +468,9 @@ _YURURLUKTE_TUZAKLARI = [
     # belirteç ona yeniden nişanlandı. Eski belirteç (`.github/workflows`'ta `kapi.py`)
     # bugün DOĞRU olduğu için tuzağı kalıcı-kırmızı bırakırdı; oysa satırın inmemiş
     # yarısı hâlâ bir işaretçiye muhtaç.
-    ("§7-risk", "FAZ 4.2",
-     lambda: (APP.parent / "lab/risk_kapsam.py").exists()
-             or (APP.parent / "lab/reports/risk_kapsam.md").exists(),
-     "risk-kapsam eğrisi (ayrık kapılar üzerinde)"),
+    # ⟳ `§7-risk` **TERS ÇEVRİLDİ** — FAZ 4.2 indi (risk-kapsam eğrisi yayımlandı); tuzak
+    # `test_TERS_TUZAK_FAZ_4_2_RISK_KAPSAM_AYAKTA`'ya taşındı (SİLİNMEDİ). §0'ın `§7` satırı
+    # tamamen kapandı: ölçüm sözleşmesinin çerçevesi (A1) zaten `lab/kapi.py` ile inmişti.
     ("§9-metrik", "FAZ 0.18",
      lambda: "MetricDefinition" in
              (APP.parent / "control_plane/models.py").read_text(encoding="utf-8"),
@@ -509,6 +512,76 @@ def test_YURURLUKTE_satiri_HALA_dogru(bolum, faz, indi_mi, konu):
         f"(1) MIMARI.md §0'dan `{bolum}` satırını SİL · "
         f"(2) ilgili bölüme ÖLÇÜMLÜ `✅` yaz (sayı + @sha + komut — kural D2) · "
         f"(3) bu tuzağı TERS ÇEVİR (artık 'inmiş olmalı' diye kilitle) — SİLME")
+
+
+def test_TERS_TUZAK_FAZ_4_2_RISK_KAPSAM_AYAKTA():
+    """⟳ `§7-risk` ters çevrildi: eğri **inmiş olmalı** ve *skaler güven* taşımamalı.
+
+    🔴 Kapı yalnız *"dosya var mı"* demiyor — MIMARI'nin **yasağını** da kilitliyor:
+    *"kalibre edilmediği sürece o sayı bir güven değil bir SÜSTÜR."* Eğri bir gün bir
+    `confidence` alanı üretmeye başlarsa, bu kapı **kırmızı** olur.
+
+    ⚠ Belirteç **YAPISAL** (AST), alt-dize değil: modülün kendi docstring'i `confidence`
+    kelimesini *yasağı anlatmak için* kullanıyor. Bu deponun on kez ödediği ders —
+    **beyan ile beyanın anlatımı farklı şeylerdir.**
+    """
+    import ast as _a
+
+    yol = APP.parent / "lab/risk_kapsam.py"
+    assert yol.exists(), (
+        "🔴 FAZ 4.2 GERİ ALINDI: `lab/risk_kapsam.py` yok. MIMARI §9.1'in ölçümlü `✅` "
+        "beyanı artık DOĞRULANAMIYOR — beyan ya geri alınmalı ya da araç geri gelmeli.")
+    agac = _a.parse(yol.read_text(encoding="utf-8"))
+    adlar = {n.id for n in _a.walk(agac) if isinstance(n, _a.Name)}
+    adlar |= {n.attr for n in _a.walk(agac) if isinstance(n, _a.Attribute)}
+    sabitler = {n.value for n in _a.walk(agac)
+                if isinstance(n, _a.Constant) and isinstance(n.value, str)}
+    # `confidence`/`consistency` KODDA geçmez (docstring bir Constant'tır ama modül
+    # docstring'i hariç tutulur: aşağıda yalnız ad ve ANAHTAR sabitleri denetlenir).
+    anahtarlar = {v for v in sabitler if len(v) < 40 and " " not in v}
+    for yasak in ("confidence", "consistency_k", "auroc"):
+        assert yasak not in adlar, (
+            f"🔴 `risk_kapsam.py` artık `{yasak}` KULLANIYOR. MIMARI: *kalibre edilmediği "
+            f"sürece o sayı bir güven değil bir SÜSTÜR.* Eğri ayrık kapılar üstünde kalır.")
+        assert yasak not in anahtarlar, (
+            f"🔴 `risk_kapsam.py` çıktısına `{yasak}` anahtarı girmiş — skaler güven "
+            f"puanı UYDURULMAZ.")
+    # Determinizm sınıfı taşınıyor mu — eğrinin ASIL taahhüdü bu.
+    from lab.risk_kapsam import DETERMINIZM, KAPILAR, egri
+
+    assert set(KAPILAR) >= {"route", "discovery"}
+    nokta = egri({"route": 10, "tie_chip": 5, "llm_gerekli": 5})
+    assert [n["kapi"] for n in nokta] == ["route", "tie_chip", "llm_gerekli"]
+    assert all("determinizm" in n for n in nokta), "her nokta determinizm sınıfı taşımalı"
+    assert all("hata_orani" not in n for n in nokta), (
+        "🔴 `hata_orani` GERİ GELMİŞ — bu araç bir kapının hata oranını ÖLÇEMEZ; "
+        "yazmak uydurma olurdu (MIMARI §9.1).")
+    # Kapsam MONOTON artmalı: her kapı bir öncekinin cevaplayamadığını devralır.
+    kapsamlar = [n["kapsam"] for n in nokta]
+    assert kapsamlar == sorted(kapsamlar), "kapsam monoton artmalı"
+    assert DETERMINIZM["route"] == "deterministik"
+
+
+def test_TERS_TUZAK_FAZ_3_4_OSSIE_ITHALI_AYAKTA():
+    """⟳ `§3.4-osi` daraldı: **ithal indi** ve `olculmedi` damgası ZORUNLU kalmalı.
+
+    🔴 Asıl kilit dosya varlığı değil, **damgadır**: *ithal bir ilişki, sessiz "sağlıklı"
+    DEĞİLDİR.* Bir gün biri `certified: "ok"` yazarsa, bu deponun en pahalı hatası
+    (sessiz-yanlış) **ithal edilmiş** olur — ve o an bu kapı kırmızıya döner.
+    """
+    from app.ossie import SERTIFIKA_OLCULMEDI, OssieIthalHatasi, cevir
+
+    r = cevir({"version": "0.1",
+               "datasets": [{"name": "d", "metrics": [{"name": "m"}]}],
+               "relationships": [{"name": "r", "datasets": ["a", "b"]}]})
+    assert r["relationships"][0]["certified"] == SERTIFIKA_OLCULMEDI, (
+        "🔴 İTHAL DAMGASI DÜŞTÜ: fan-out sertifikası ölçülmeden `olculmedi` DIŞINDA bir "
+        "değer taşıyamaz. Başkasının modelinin doğru olduğunu VARSAYMAK, sessiz-yanlışı "
+        "ithal etmektir.")
+    assert r["cubes"][0]["ithal_kaynak"] == "ossie", "kaynak damgası kaybolmamalı"
+    # Fail-closed: adsız kayıt ATLANMAZ, REDDEDİLİR.
+    with pytest.raises(OssieIthalHatasi):
+        cevir({"datasets": [{"name": "", "metrics": []}]})
 
 
 def test_TERS_TUZAK_FAZ_2_1_CEKIRDEK_KATMAN_AYAKTA():

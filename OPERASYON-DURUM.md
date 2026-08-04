@@ -2110,3 +2110,26 @@ ve silinmez** (ADR-0019).
 | Bayrak | `FLAG_REGISTRY` **16** ↔ `features.yml` **14** | `8f87e40` | — |
 | Panel export | **13** *(tavan DOLU)* | `88bde2a` | `grep -rE "export (default )?function [A-Za-z]+Panel" src/ \| wc -l` |
 | Konuşma türü | **5** *(v1 hedefi 7)* | `8f87e40` | `grep -cE "^TUR_[A-Z_]+ = " backend/app/followup.py` |
+
+### 🔴 FAZ 4.3'ün ÖLÇTÜĞÜ BORÇ — `deterministic_refine`'ın ölçü-ekleme kapısı DAR
+
+**Ölçüm** (`python lab/sharding.py`, `demo-boyahane`, 44 konuşmalık sabit kohort):
+tur 1 **%63,6** → tur 5 **%45,5** = **−%18,2**. Hedef **−%10** idi → **KALDI**.
+*(Makalenin ölçtüğü −%39'un yarısından az; ama kendi hedefimizi tutturmadık.)*
+
+**Kök neden isimlendirildi** — kayıp turlar tek tek okundu, hepsi **aynı şekilde**:
+takip mesajı **çıplak bir ikinci ölçü adı** (*"fire orani yuzde"*, *"ort brut maas"*).
+`deterministic_refine` ölçü eklemeyi *"bir de … ekle"* ipucuyla tanıyor (FAZ B1'de
+canlıda doğrulanmıştı); **ipuçsuz çıplak ölçü adı** bir yenileme sayılmıyor, tur
+`route()`'a düşüyor ve orada tek başına bir ölçü adı taban üretmiyor (R1/R10).
+
+⚠ **Bu turda DÜZELTİLMEDİ, bilerek.** FAZ 4.3'ün `GERİ AL` şartı: *"ölçüm harness'i —
+davranış değiştirmez"*. Ölçtüğü kusuru aynı turda düzelten bir alet, bir dahaki sefere
+neyi ölçtüğünü bilemez — taban kaybolur.
+
+**Kapatma şartı:** `deterministic_refine` çıplak ölçü adını *"aynı cube'un ikinci
+ölçüsü"* olarak tanıdığında `lab/sharding.py` yeniden koşulur ve karar `gecti` olmalı.
+⚠ Aynı turda `nl_corpus` gerilememeli — ölçü-ekleme kapısını genişletmek, bugün
+**boyut** sanılan kelimeleri ölçüye çekebilir.
+
+**Diğer üç şirket `⊘`:** kohortları 7–10; hedef o çözünürlükte ayırt edilemez.
