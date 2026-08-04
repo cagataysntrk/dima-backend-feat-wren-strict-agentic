@@ -23,6 +23,61 @@ def get_schema(request: Request) -> SchemaResponse:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
+def _katman_b(request: Request, wren, sql: str) -> None:
+    """FAZ 1.3b — **Katman B'nin İLK GERÇEK ÇAĞRI YOLU.**
+
+    Ölçüldü: `enforce_query` bir stub'dı **ve çağıranı yoktu**. Bir stub'ı doldurmak
+    yetmez; katman ancak **çağrıldığı yerde** vardır.
+
+    ## Neden ham SQL ucu
+
+    `POST /query` semantik katmanı **atlayarak** kullanıcı SQL'i alan yoldur — Katman B'nin
+    en doğrudan hedefi. `/ask`'in Discovery dalı **ikinci** çağrı yoludur ve ayrı bir
+    turda bağlanır: `routers/ask.py` **risk sınırındadır** (`OPERASYON.md §3`), yani
+    dokunan madde demete girmez, kendi kapısını koşar. Sessizce atlanmadı — **sırası
+    yazıldı**.
+
+    ## Neden burada, `WrenService`'te değil
+
+    `WrenService` **şirket** kapsamlıdır, **kullanıcı** kapsamlı değil: `principal`'ı
+    bilmez. Yetki kararını oraya taşımak, servise kimlik bilgisi sızdırmak ve iki farklı
+    kapsamı tek nesnede bindirmek olurdu.
+    """
+    from control_plane.authorize import enforce_query
+
+    # `get_current_principal` onu isteğe **zaten** iliştiriyor (`request.state.principal`);
+    # bağımlılığı ikinci kez çözmek, aynı token'ı iki kez doğrulamak olurdu.
+    principal = getattr(request.state, "principal", None)
+    if principal is None or getattr(principal, "is_superadmin", False):
+        return                       # superadmin: ADR-0015 K7 — ENGEL değil GÖRÜNÜRLÜK
+    izinliler = _allowlist(request, principal)
+    if izinliler is None:
+        return                       # Katman B yapılandırılmamış — Katman A yönetir
+    from app.katman_b import referans_modeller
+
+    adlar = {m.get("name") for m in (wren.schema().get("models") or []) if m.get("name")}
+    enforce_query(principal, sorted(referans_modeller(sql, adlar)), izinliler)
+
+
+def _allowlist(request: Request, principal) -> set[str] | None:
+    """`ModelPermission` allowlist'i — oturum yoksa **None** (yapılandırılmamış).
+
+    ⚠ `None` ile `set()` farkı burada da korunur: DB'ye ulaşamamak *"izin yok"* demek
+    değildir. Ulaşılamayan bir yetki deposunu **boş allowlist** saymak, bir altyapı
+    arızasını **tam kesintiye** çevirirdi.
+    """
+    try:
+        from app.katman_b import izinli_modeller
+        from control_plane.db import get_session
+    except ImportError:
+        return None
+    try:
+        with next(get_session()) as oturum:                  # type: ignore[call-overload]
+            return izinli_modeller(principal, oturum)
+    except Exception:                                        # noqa: BLE001
+        return None
+
+
 @router.post("/query", response_model=QueryResult,
              dependencies=[Depends(require("sql:run")), Depends(require_company)])
 def run_query(request: Request, body: QueryRequest) -> QueryResult:
@@ -31,7 +86,9 @@ def run_query(request: Request, body: QueryRequest) -> QueryResult:
     try:
         from app.company_registry import wren_for_request
 
-        result = wren_for_request(request).query(body.sql, limit=limit)
+        wren = wren_for_request(request)
+        _katman_b(request, wren, body.sql)
+        result = wren.query(body.sql, limit=limit)
     except UnsafeSqlError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:  # engine / DB errors

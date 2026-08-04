@@ -17,7 +17,8 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
-| **Sıradaki madde** | `1.3b` `enforce_query` *(beyan edilmiş ama BOŞ katman)* · `1.1b` arka plan kimliği |
+| **Sıradaki madde** | `1.1b` arka plan kimliği · sonra `1.2`/`1.2b` |
+| **Demet** | demet 8: `1.3c` · `1.3` · `1.1` · `1.3b` — **dolu**, kapı sırada |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
 | **Demet** | ✅ **demet 7 kapandı** — FAZ 0 kapanış kapısı **4/4 YEŞİL** (süit **2199**) · demet 8 açık: `1.3c` · `1.3` |
 | 🔴 **Kota** | **GÜNLÜK KOTA DOLDU** (2026-08-04 ~11:40; `429`/`503`, tüm sağlayıcılar). Bugün başka **canlı** koşum YOK — LLM'siz ölçümler serbest |
@@ -418,6 +419,54 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 4 — `1.3b` **Katman B artık var** *(2026-08-04)*
+
+`enforce_query` bir **stub**'dı (gövde tek satır `return`, üstünde `# TODO(faz-2)`) —
+ve **çağıranı da yoktu**. Yani ADR-0014 Karar 5'in beyan ettiği katman ne iş yapıyordu
+ne de bağlıydı. Kapı: **12 test**. Hızlı sinyal: **407 geçti**.
+
+> 🔴 **BEYAN VAR, KATMAN YOK — üstelik İKİ KATLI.** Bir stub'ı doldurmak yetmez; katman
+> ancak **çağrıldığı yerde** vardır. `grep enforce_query app/` → **0 isabet**. Bu,
+> `0.5`'in *"19 altın vakalı ölü modül"* bulgusunun **güvenlik katmanındaki** hâli.
+
+> 🔴 **«Boş allowlist geçer» düzeltmesi göründüğü kadar basit DEĞİL.** Yol haritası
+> *"fail-open → fail-closed"* diyor ve **yön doğru**; ama `ModelPermission` **her
+> tenant'ta boş** — harfi harfine uygulanırsa **her sorgu reddedilir**, yani bir güvenlik
+> katmanı adına **tam kesinti**. Ayrım kurtarıyor:
+> **«yapılandırılmamış» ile «boş allowlist» AYNI ŞEY DEĞİL.**
+>
+> | tenant'ın satırı | anlamı | karar |
+> |---|---|---|
+> | **hiç yok** | Katman B kurulmamış | Katman A yönetir |
+> | **var, model listede yok** | allowlist **aktif** | 🔴 **RED** (fail-closed) |
+>
+> Böylece şart **anlamlı hâliyle** sağlanır: bir kez yapılandırıldığında eksik allowlist
+> **artık geçmez** — ve bugün **hiçbir davranış değişmez**, yani madde `bayraksız`
+> kalabiliyor (yol haritasının sınıflandırması korunuyor).
+
+> ⚠ **Rol köprüsü:** `Principal` rol **ANAHTARI** taşır (`["owner"]`), `ModelPermission`
+> rol **KİMLİĞİ** (UUID FK). Köprü `Role` tablosundan kuruluyor. Çevirmeden tenant
+> genelinde birleştirmek, allowlist'i **rol ayrımı olmadan** uygulamak olurdu — istenenden
+> **geniş** bir izin, sessizce. Rol çözülemezse `None` döner: **kısmen anlaşılmış** bir
+> yetki kuralını uygulamak, yanlış yönde hata yapma riskini ikiye katlar.
+
+> ⚠ **DB ulaşılamazsa tam kesinti YOK:** ulaşılamayan bir **yetki deposunu** boş allowlist
+> saymak, bir altyapı arızasını tam kesintiye çevirirdi.
+
+> ⚠ **Model çözümü motorun KENDİ fonksiyonuyla** (`wren.policy.resolve_model_name`).
+> Yetkilendirdiğimiz küme, motorun **gerçekten planladığı** küme olmalı; ikisi ayrışırsa
+> *"izin verdik"* ile *"dokunuldu"* farklı şeyler olur — bir güvenlik katmanının **en
+> sessiz** kırılma biçimi.
+
+> ⚠ **İKİNCİ ÇAĞRI YOLUNUN SIRASI YAZILI:** `/ask`'in Discovery dalı ayrı turda bağlanır
+> çünkü `routers/ask.py` **risk sınırındadır** (demete girmez, kendi kapısını koşar).
+> Sessizce atlanmadı; kapı bunu **test ediyor** ki bir sonraki tur *"zaten bağlı"* sanmasın.
+
+> 🔴 **METİN ÖLÇME KUSURUNA BU OTURUMDA ÜÇÜNCÜ KEZ DÜŞTÜM** (`⟳` sayacı · `0.21` tavan
+> operatörü · burada `TODO(faz-2)`): kapı, fonksiyonun **kendi tarihçe yorumunu** yakalayıp
+> doğru yazılmış kodu kırmızı ilan etti. Üçü de **AST**'e çevrildi. Doğru soru *"şu dizi
+> geçiyor mu"* değil, **"gövde ne yapıyor"**.
 
 ### FAZ 1 · adım 3 — `1.1` **MOTOR RLS İNDİ** *(2026-08-04)*
 

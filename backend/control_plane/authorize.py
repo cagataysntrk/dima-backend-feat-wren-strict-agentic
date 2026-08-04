@@ -155,10 +155,29 @@ def authorize(principal: Principal, action: str, resource: str) -> None:
         raise AuthzError("Bu işlem için yetkiniz yok")
 
 
-def enforce_query(principal: Principal, referenced_models: list[str]) -> None:
-    """Katman B kancası (stub): üretilen SQL'in dokunduğu MDL modelleri, principal'ın
-    ModelPermission allowlist'ine karşı doğrulanır. Zorlama dry-plan çıktısı üstünde,
-    LLM prompt'unda DEĞİL (ADR-0014 Karar 5). Day-1: allowlist boşsa geçer; sonraki
-    fazda ModelPermission'dan doldurulur ve reddeder."""
-    # TODO(faz-2): ModelPermission + branch predicate + column mask.
-    return
+def enforce_query(principal: Principal, referenced_models: list[str],
+                  izinliler: set[str] | None = None) -> None:
+    """Katman B: SQL'in dokunduğu MDL modelleri `ModelPermission` allowlist'ine karşı
+    doğrulanır. Zorlama **dry-plan yolunda**, LLM prompt'unda DEĞİL (ADR-0014 Karar 5).
+
+    ⟳ **FAZ 1.3b (2026-08-04) — STUB DOLDURULDU.** Eski gövde tek satırdı (`return`) ve
+    üstünde `# TODO(faz-2)` vardı; yani **ADR-0014 Karar 5'in beyan ettiği katman hiçbir
+    şey yapmıyordu**. Ölçüldü ki **çağıranı da yoktu** — katman boş değil, **bağlı bile
+    değildi**.
+
+    🔴 **«Yapılandırılmamış» ile «boş allowlist» AYNI ŞEY DEĞİL** — ve bu ayrım, yol
+    haritasının *"fail-open → fail-closed"* şartını **kesinti üretmeden** sağlar:
+
+    * `izinliler is None` → tenant'ta hiç `ModelPermission` satırı yok → Katman B
+      **kurulmamış** → Katman A yönetir.
+    * `izinliler` bir küme → allowlist **aktif**; içinde olmayan model **REDDEDİLİR**,
+      küme boş olsa bile. *Bir kez yapılandırıldığında eksik allowlist artık geçmez.*
+
+    Karar `app/katman_b.py::karar`'da (saf fonksiyon, DB'siz test edilebilir); burası
+    yalnız onu **fırlatan** kabuktur — `context.py` felsefesi.
+    """
+    from app.katman_b import ModelErisimReddi, karar
+
+    gecer, gerekce = karar(set(referenced_models or []), izinliler)
+    if not gecer:
+        raise ModelErisimReddi(f"Katman B: {gerekce}")
