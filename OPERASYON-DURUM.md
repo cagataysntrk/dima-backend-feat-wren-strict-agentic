@@ -16,9 +16,9 @@
 
 | | |
 |---|---|
-| **Aktif faz** | **FAZ 0** — temizlik ve kapılar *(25 madde; sıra **numara DEĞİL**, FAZ 0 girişindeki bağlayıcı koşum sırası)* |
-| **Sıradaki madde** | `0.21` **EN SON** *(tavanı FAZ 0 ÖNCESİ ölçümden alır; FAZ 0'ın eklediği satırlar madde-madde MUAF)* |
-| **Ondan sonra** | **FAZ 1** |
+| **Aktif faz** | ✅ **FAZ 0 TAMAMLANDI** — 25 madde · temizlik ve kapılar |
+| **Sıradaki madde** | **FAZ 1** |
+| **Ondan sonra** | FAZ 2 → 8 *(§10'un bağlayıcı sırası)* |
 | **Demet** | ✅ **demet 6 kapandı** (`0.15`·`0.17`·`0.20`, kapı 3/4 + kasıtlı tuzak) · demet 7 açık: `§7-CI` yaşam döngüsü · `0.4` |
 | 🔴 **Kota** | **GÜNLÜK KOTA DOLDU** (2026-08-04 ~11:40; `429`/`503`, tüm sağlayıcılar). Bugün başka **canlı** koşum YOK — LLM'siz ölçümler serbest |
 | **Tempo** | 🔴 **DEMET disiplini yürürlükte** (`OPERASYON.md §3`): commit ≠ kapı; tam kapı **demet sonunda bir kez**. Risk sınırındaki dosyalara dokunan madde demete girmez |
@@ -418,6 +418,42 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 0 · adım 14 — `0.21` modül büyüme kapısı **(FAZ 0'IN SON MADDESİ)** *(2026-08-04)*
+
+| Ölçüt | FAZ 0 ÖNCESİ (`c3fcfe7`) | Muafiyet | Tavan | Bugün | Boşluk |
+|---|---|---|---|---|---|
+| `ask()` kod satırı | 1135 | `9a138a9` **+11** *(0.5)* · `98a5071` **+1** *(0.12/0.13/0.6)* | **1147** | 1147 | **0** |
+| `ask()` iç fonksiyon | 19 | **yok** | **19** | 19 | **0** |
+| `ask.py` toplam kod | 2394 | *(taşınabilir pay)* | **2406** | 2406 | **0** |
+| `cube_router.py` kod | 1723 | `9164806` **+13** *(0.18)* | **1736** | 1736 | **0** |
+
+> 🔴 **BİRİMİ ÖLÇÜM SEÇTİ, TERCİH DEĞİL.** İlk niyet *"ham satır"*dı. Ölçüldü: FAZ 0
+> `ask.py`'ye **+44 ham** satır kattı ama yalnız **+12 kod** — **%73'ü belgeleme**. Ham
+> satır sayan bir kapı, bu deponun **ölçülmüş kusurları kaydettiği mekanizmayı**
+> vergilendirir ve geliştiriciyi *"yorumu silersem yeşile döner"* diye **ödüllendirirdi**.
+> Kapı, korumaya çalıştığı bilgiyi yok ederdi. *(`cube_router.py` **%52 belge**.)*
+
+> 🔴 **`ask()` FONKSİYONU, `ask.py` DOSYASI DEĞİL.** Zarar dosyada değil gövdede: 19 iç
+> fonksiyon **aynı kapsamı paylaşıyor**. Kodu `ask()`'ten çıkarıp aynı dosyada modül
+> düzeyine almak **istenen** yöndür — dosya kapısı onu **cezalandırırdı**. Yine de dosya
+> bütünü ayrıca sınırlı, yoksa `ask()` küçülürken gerisi sessizce şişerdi.
+
+> ⚠ **`0619bfd` (0.22) muafiyet listesinde YOK ve bu bir karar:** ham satırda **+8**,
+> kod satırında **0** — bildirim `if` bloğundan gövde başına **taşındı**. Bir taşıma borç
+> değildir. *Neden listede olmadığı* kapının içinde yazılı, yoksa bir sonraki okuyucu
+> eksiklik sanır.
+
+> 🔴 **KAPI KENDİ KIRMIZISINI KANITLIYOR.** Bu operasyonda bir kapı **üç kez** yanlış
+> yazıldı ve *"yeşil"* kaldığı için kusuru **taşıyarak** geçti. `test_KAPI_SAHTE_DEGIL_*`
+> gerçek kaynağa **bellekte** tek bir kod satırı enjekte edip tavanın aşıldığını
+> gösteriyor — ve aynı satır **yorum** olsaydı kapının **sessiz** kaldığını da. Birim
+> kararının davranıştaki karşılığı budur, bir niyet beyanı değil.
+
+> ⚠ **İki kendi kusurum daha, ikisi de metin ölçmekten:** (1) *"tavan `==` ile kilitlenmiş
+> mi"* testi **kendi assert satırını** yakaladı → AST'e çevrildi (⟳ sayacının 14↔13
+> kusuruyla aynı sınıf). (2) MIMARI'ye *"14 test"* yazdım, dosyada **9** vardı — 14 iki
+> dosyanın toplamıydı; `test_MIMARI_TEST_SAYILARI` onu **anında** yakaladı.
 
 ### FAZ 0 · adım 13 — `§7-CI` yaşam döngüsü · `0.4` netleştirme önceliği *(2026-08-04)*
 

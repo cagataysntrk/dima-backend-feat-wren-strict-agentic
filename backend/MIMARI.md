@@ -2861,6 +2861,7 @@ tabanıyla korunuyor. Yaşayan semantik testle kilitlendi.
 | Cevap doğruluğu | `python -m eval.run` → `answered_precision` (Wilson CI) + `coverage` | baseline'ın **altına düşmez** (`tests/test_eval_gate.py`) |
 | Deterministik tavan | `python lab/nl_corpus.py` (~1000 soru × 4 şirket, LLM'siz) | artan |
 | **Dört kapının CI koşumu** | `.github/workflows/nightly.yml` → `python lab/kapi.py --tam` | gecelik `30 2 * * *` + `workflow_dispatch`; 40 dk tavan |
+| **Modül büyüme tavanı** | `9 test: `tests/test_modul_buyume.py`` | `ask()` **1147 kod satırı / 19 iç fonksiyon** · `cube_router.py` **1736** — dördünde de **boşluk 0** |
 | Doğru cube/ölçü/boyut | `python lab/nl_accuracy.py` | artan |
 
 **Ölçülen baseline (2026-08-02, `--network none`):**
@@ -2915,6 +2916,39 @@ haritasının FAZ 0.4'ü DEĞİL)* (aynı korpus, öncesi/sonrası): OK **+6**, 
 25 soruyu yanlış yerden çıkmaktan alıkoydu; bunların 6'sı doğru cevaba, 15'i dürüst
 netleştirmeye gitti. Toplam OK payında net etki **−%0,25** — sessiz-yanlış sınıfını kapatmanın
 bedeli olarak bilinçli kabul edildi (ADR-0008 yönü).
+
+### FAZ 0.21 · Modül büyüme kapısı — **TAVAN, HEDEF DEĞİL**
+
+`ask()` **tek fonksiyon**, 19 iç fonksiyon **aynı kapsamı paylaşıyor**, ve depo paylaşılan
+bir dizinde: bu gövde aynı zamanda bir **çakışma jeneratörü**. `K3`'ün kusuru tam buradan
+doğdu — iki bin satırlık bir gövdede bir çağrının **yanlış `if`in içinde** olduğu görünmüyor.
+Kapı refactor'ü **zorlamaz** (kazancı ölçülmedi); yalnız **büyümeyi durdurur**.
+
+🔴 **BİRİM: ham satır DEĞİL, KOD satırı** (yorum/docstring hariç) — ve bunu bir ölçüm
+belirledi (`c3fcfe7` → `a41f981`): FAZ 0 `ask.py`'ye **+44 ham** satır kattı ama yalnız
+**+12 kod**; %73'ü **belgeleme**. Ham satır sayan bir kapı, bu deponun **ölçülmüş kusurları
+kaydettiği mekanizmayı** vergilendirir ve geliştiriciyi *"yorumu silersem yeşile döner"*
+diye ödüllendirirdi. *(`cube_router.py` bugün **%52 belge**: 3592 ham ↔ 1736 kod.)*
+
+**Tavan FAZ 0 ÖNCESİNDEN alınır** (`c3fcfe7`), FAZ 0'ın eklediği her satır **gerekçeli
+muafiyet** olarak yazılır — bugünkü sayıyı doğrudan tavan yapmak **şişmiş bir tavanı**
+kilitlerdi ve kapı hiç iş görmezdi:
+
+| Ölçüt | FAZ 0 ÖNCESİ | Muafiyet | Tavan | Bugün | Boşluk |
+|---|---|---|---|---|---|
+| `ask()` kod satırı | 1135 | `9a138a9` +11 *(0.5 çapa zinciri)* · `98a5071` +1 *(0.12/0.13/0.6)* | **1147** | 1147 | **0** |
+| `ask()` iç fonksiyon | 19 | **yok** — FAZ 0 hiç eklemedi | **19** | 19 | **0** |
+| `ask.py` toplam kod | 2394 | *(yukarıdakinin taşınabilir payı)* | **2406** | 2406 | **0** |
+| `cube_router.py` kod | 1723 | `9164806` +13 *(0.18 metrik kaydı)* | **1736** | 1736 | **0** |
+
+⚠ `0619bfd` (**0.22** · `migration_trace` `UnboundLocalError`) ham satırda **+8** getirdi
+ama **kod satırında 0**: bildirim `if` bloğundan gövde başına **TAŞINDI**. Bir taşıma borç
+değildir ve muafiyet listesinde yeri yoktur — *neden listede olmadığı* kapıda yazılı.
+
+⚠ Yol haritası bu maddeyi *"~1.930 satır / **20 closure** @`c4b14d1`"* diye ilan etmişti;
+buradaki sayılar `c3fcfe7`'ye ve farklı bir birime ait. İkisi **çelişmiyor**, farklı şey
+sayıyorlar — ve fark **sessizce benimsenmedi**, kapıda yazılı (*"ölçüm birimi tanımlanmadan
+yapılan kıyas, kıyas değildir"*).
 
 ### FAZ 0.4 (v1) · `netlestirme_onceligi` — **ÖLÇÜM KARARI: `off` KALIYOR**
 
