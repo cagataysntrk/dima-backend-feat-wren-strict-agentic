@@ -154,7 +154,28 @@ def hizli(degisen: list[str]) -> int:
                  *[f"tests/{s}" for s in secili]], "pytest (seçili)")
 
 
-def tam() -> int:
+#: `--tam`'ın adımları — anahtar, `--sadece` ile seçmek için.
+ADIM_ANAHTARLARI = ("suit", "eval", "korpus", "senaryo")
+
+
+def tam(sadece: tuple[str, ...] = ()) -> int:
+    """Dört kapı adımı. `sadece` verilirse **yalnız o adımlar** koşar.
+
+    🔴 **KIRMIZI DOĞRULAMASI TÜM KAPIYI TEKRAR KOŞMAZ.** Kullanıcı kararı (2026-08-04):
+    *"demette kapı kırmızı verince neden sadece kırmızı veren kısım tekrar çalışmıyor?"*
+    — haklı: dört adımın biri kırmızıysa diğer üçü **zaten yeşil ölçüldü** ve kod o
+    aşamalardan sonra değişmediyse tekrar koşmaları **saf israftır** (~13 dk).
+
+    Doğru döngü:
+    ```
+    python lab/kapi.py --tam                  # demet kapısı (dört adım)
+    #  ✗ korpus kapısı  →  düzelt  →
+    python lab/kapi.py --tam --sadece korpus  # YALNIZ kırmızı olan
+    ```
+    ⚠ **Sınır:** düzeltme **başka bir adımı besleyen** bir dosyaya dokunduysa
+    (`OPERASYON.md §3` risk listesi) kısmi koşum yetmez — tüm kapı tekrar koşar.
+    Bu ayrımı araç bilemez, **koşan kişi beyan eder**.
+    """
     adimlar = (
         ([sys.executable, "-m", "pytest", "-q", "-p", "no:warnings"], "tam süit"),
         ([sys.executable, "-m", "eval.run"], "eval.run"),
@@ -164,6 +185,20 @@ def tam() -> int:
         # çökse bile). Dört bileşenli bir kapının dörtte biri sessizce **dekordu**.
         ([sys.executable, "lab/konusma_senaryolari.py", "--kapi"], "konuşma senaryoları"),
     )
+    if sadece:
+        gecersiz = [a for a in sadece if a not in ADIM_ANAHTARLARI]
+        if gecersiz:
+            print(f"🔴 bilinmeyen adım: {gecersiz} — geçerli: {list(ADIM_ANAHTARLARI)}")
+            return 2
+        secili = [(k, b) for (k, b), anahtar in zip(adimlar, ADIM_ANAHTARLARI, strict=True)
+                  if anahtar in sadece]
+        atlanan = [a for a in ADIM_ANAHTARLARI if a not in sadece]
+        print(f"⚠ KISMİ KOŞUM — yalnız: {list(sadece)} · ATLANAN: {atlanan}\n"
+              "  Bu bir DEMET KAPISI DEĞİL, bir kırmızı doğrulamasıdır. Atlanan adımlar\n"
+              "  son tam koşumdaki sonuçlarını korur; düzeltme onları besleyen bir dosyaya\n"
+              "  dokunduysa TÜM kapı tekrar koşmalıdır (sessiz kırpma yok).\n")
+        adimlar = tuple(secili)
+
     kotu = 0
     ozet: list[str] = []
     for komut, baslik in adimlar:
@@ -179,7 +214,11 @@ def tam() -> int:
     print("FAZ KAPISI ÖZETİ")
     print("=" * 78)
     print("\n".join(ozet))
-    print("\n" + ("✓ FAZ KAPISI YEŞİL" if kotu == 0 else "✗ FAZ KAPISI KIRMIZI"))
+    if sadece:
+        print("\n" + ("✓ KISMİ KOŞUM YEŞİL — ama bu bir DEMET KAPISI DEĞİL"
+                      if kotu == 0 else "✗ KISMİ KOŞUM KIRMIZI"))
+    else:
+        print("\n" + ("✓ FAZ KAPISI YEŞİL" if kotu == 0 else "✗ FAZ KAPISI KIRMIZI"))
     return kotu
 
 
@@ -187,11 +226,14 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--hizli", action="store_true")
     ap.add_argument("--tam", action="store_true")
+    ap.add_argument("--sadece", nargs="+", default=[], metavar="ADIM",
+                    help="kırmızı doğrulaması: YALNIZ bu adımlar koşar "
+                         f"({' | '.join(ADIM_ANAHTARLARI)}). Demet kapısı DEĞİLDİR.")
     ap.add_argument("--degisen", nargs="*", default=[],
                     help="değişen dosya yolları (host'ta `git status` verir)")
     a = ap.parse_args()
     if a.tam:
-        return tam()
+        return tam(tuple(a.sadece))
     if a.hizli:
         return hizli(a.degisen)
     ap.print_help()

@@ -107,6 +107,11 @@ Belge · frontend · test-aracı · `lab/` maddeleri **serbestçe demetlenir**.
 **Demet kapanış listesi** *(sırayla, TEK sefer)*:
 ```
 1. python lab/kapi.py --tam        → ~15 dk   (yeşil değilse buradan çıkılmaz)
+   ⤷ KIRMIZI ÇIKARSA: düzelt, sonra **YALNIZ kırmızı adımı** koş —
+     python lab/kapi.py --tam --sadece <suit|eval|korpus|senaryo>
+     Diğer üçü zaten yeşil ölçüldü; tekrar koşmaları ~13 dk saf israftır.
+     ⚠ Düzeltme BAŞKA bir adımı besleyen dosyaya dokunduysa TÜM kapı tekrar koşar —
+       bunu araç bilemez, koşan kişi BEYAN eder. Kısmi koşum bir DEMET KAPISI DEĞİLDİR.
 2. MIMARI.md + OPERASYON-DURUM.md  → demetin TAMAMI için tek pas, tek commit
 3. git push                        → CI ikinci ağ olarak eşzamansız koşar
 4. Ajan C canlı turu               → AŞAĞIDAKİ SIKLIKLA (her demette DEĞİL)
