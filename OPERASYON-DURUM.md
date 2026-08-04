@@ -17,8 +17,9 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 0** — temizlik ve kapılar *(25 madde; sıra **numara DEĞİL**, FAZ 0 girişindeki bağlayıcı koşum sırası)* |
-| **Sıradaki madde** | **adım 5:** `0.19` — semantik-vaka paydası *(eşik ilan eden her madde bundan SONRA)* |
-| **Ondan sonra** | `0.18` → `0.4/0.5/0.5b` → kalan *(0.3 · 0.6–0.13 · 0.15 dâhil)* → `0.21` |
+| **Sıradaki madde** | **adım 6:** `0.18` — **metrik kaydı = HAKEM** *(belgenin tek en büyük ölçülmüş kazancı: turların ~%18'i)* |
+| **Ondan sonra** | `0.4/0.5/0.5b` → kalan *(0.3 · 0.6–0.13 · 0.15 dâhil)* → `0.21` |
+| **Demet** | ⚠ `0.18` `cube_router.py`'ye dokunur → **risk sınırı**, kendi kapısını hemen koşar |
 | **Tempo** | 🔴 **DEMET disiplini yürürlükte** (`OPERASYON.md §3`): commit ≠ kapı; tam kapı **demet sonunda bir kez**. Risk sınırındaki dosyalara dokunan madde demete girmez |
 | **v1 bitiş ölçütü** | §C'nin **16 ölçütü** yeşil |
 
@@ -245,6 +246,27 @@ Ortak iskelet **tek sahipte** (`tests/kapi_ortak.py`) — `0.14`'ün `NASIL`'ı 
 >   olmalı"* diyordu ve **metni kovalamaya** başladı (73 → 5 yanlış-pozitif). Ölçülemeyen
 >   bir iddiayı zorlamak, kapıyı **yanlış-kırmızı üretecine** çevirir → iddia
 >   *"sessizce ARTMAZ"*a daraltıldı.
+
+### FAZ 0 · adım 5 — `0.19` semantik-vaka paydası *(2026-08-04)*
+
+🔴 **ŞİŞME ÖLÇÜLDÜ: 16,2×.** Ham tur paydası bir **kartezyen üründür**
+(`ölçü × 11 dönem × boyut`) — yani `elektrik`in **TEK** sahiplik hatası ham paydada
+**16 ayrı başarısızlık** olarak sayılıyor. Semantik vaka `(cube, ölçü, niyet)`; dönem ve
+boyut çarpımı **tek vakaya çöker**.
+
+| Payda | Değer @`f1050e6` | Not |
+|---|---|---|
+| **Ham tur** | **%93,2** (6720/7213) | `KURAL A`: **korunur**, geçmiş tabanlar ona bağlı |
+| **Semantik vaka** | **%92,1** (410/445) | 🔴 ham sayı **iyimserdi** |
+
+**Sayım KATI (AND):** bir vakanın varyantlarından biri bile yanlış cube'a giderse vaka
+**yanlıştır**; Discovery'ye düşmek de bir başarısızlıktır. Gevşek sayım, tek doğru
+varyantla bir sahiplik hatasını **gizlerdi**.
+
+> 🔴 **ASIL KAPI — iki payda TERS YÖNE giderse KIRMIZI.** *"Birkaç terimi düzelttim, sayı
+> uçtu"* yanılsamasının kapanı: tek bir terimi düzeltmek ham yüzdeyi birkaç puan
+> zıplatabilir, **hiçbir yeni semantik vaka kazanılmadan**. **Kanıtlandı:** taban
+> ayrıştırıldığında `ÇIKIŞ KODU 1`.
 
 ### Taban ölçümü · `lab/vk_taban.py` *(commit `8f87e40`)*
 VK-1…VK-6 **yapısal ve canlı** (gemini) ölçüldü. `§G.6e`'nin *"Bugün"* sütunu artık

@@ -130,12 +130,25 @@ def gen_single(schema):
         for m, word in _measure_words(cube):
             for p in PERIODS:
                 kaynak = {cube["name"]}   # soruyu HANGİ cube'un sözlüğünden ürettik
-                out.append((f"{p} {word}".strip(), valid, kaynak))
+                # ⚠️ FAZ 0.19 — **SEMANTİK VAKA ANAHTARI** `(cube, ölçü, niyet)`.
+                # Bu üçlü döngü bir **KARTEZYEN ÜRÜNDÜR** ve iki yönde çarpıtır:
+                #  · YUKARI: `elektrik`in TEK sahiplik hatası, 11 dönem × boyut =
+                #    **10+ ayrı başarısızlık** olarak sayılır → yanlış-cube yüzdesinin içi
+                #    birkaç terimin **çarpımıdır**.
+                #  · AŞAĞI: üreteç yalnız **kataloğun bildiği** ifadeleri kurar; bir kusur
+                #    sınıfı korpusta **yapısal olarak görünmez** olabilir.
+                # Anahtar **dönem ve boyutu İÇERMEZ** — çarpım tek vakaya çöker. Ham tur
+                # paydası **korunur** (KURAL A: geçmiş tabanlar ona bağlı).
+                _c = cube["name"]
+                out.append((f"{p} {word}".strip(), valid, kaynak, (_c, m, "düz")))
                 for dw in dims:
-                    out.append((f"{p} {dw} bazında {word}".strip(), valid, kaynak))
+                    out.append((f"{p} {dw} bazında {word}".strip(), valid, kaynak,
+                                (_c, m, "kırılım")))
                 if dims:
-                    out.append((f"en çok {word} yapılan 5 {dims[0]} {p}".strip(), valid, kaynak))
-                    out.append((f"en düşük {word} olan {dims[0]} {p}".strip(), valid, kaynak))
+                    out.append((f"en çok {word} yapılan 5 {dims[0]} {p}".strip(), valid,
+                                kaynak, (_c, m, "üstünlük")))
+                    out.append((f"en düşük {word} olan {dims[0]} {p}".strip(), valid,
+                                kaynak, (_c, m, "üstünlük")))
     # ZORLUK KATMANI: gerçek kullanıcı ifadeleri (metadata'da OLMAYAN kelimeler).
     # Beklenti = o ölçüyü içeren cube'lar; sistem arketip/sinonimle tanımalı.
     measure_to_cubes: dict[str, set] = {}
@@ -148,17 +161,20 @@ def gen_single(schema):
             continue
         for ph in phrasings:
             for p in ("", "bu yıl", "geçen ay"):
-                out.append((f"{p} {ph}".strip(), target, target))
+                out.append((f"{p} {ph}".strip(), target, target, (None, mn, "gerçek-ifade")))
     for n in NOISE:
-        out.append((n, "NOISE", None))
+        # Gürültü/kapasite turlarının **semantik vakası yoktur** — `(cube, ölçü, niyet)`
+        # üçlüsüne oturmazlar. `None` ile işaretlenir ve semantik paydaya GİRMEZLER;
+        # ham payda onları saymaya devam eder (KURAL A).
+        out.append((n, "NOISE", None, None))
     for cap in CAPABILITY:
-        out.append((cap, "CAP", None))
+        out.append((cap, "CAP", None, None))
     # tekilleştir
     seen, uniq = set(), []
-    for q, e, kaynak in out:
+    for q, e, kaynak, vaka in out:
         if q and q not in seen:
             seen.add(q)
-            uniq.append((q, e, kaynak))
+            uniq.append((q, e, kaynak, vaka))
     return uniq
 
 
@@ -235,7 +251,11 @@ def run_company(name, login, pw, slug):
 
     # tekil
     singles = gen_single(schema)
-    for q, exp, kaynak in singles:
+    # FAZ 0.19 — vaka → {tüm varyantları doğru mu}. **KATI (AND):** bir vakanın
+    # varyantlarından biri bile yanlış cube'a giderse vaka **yanlıştır**. Gevşek (OR/
+    # çoğunluk) sayım, tek bir doğru varyantla bir sahiplik hatasını gizlerdi.
+    vaka_sonuc: dict[tuple, bool] = {}
+    for q, exp, kaynak, vaka in singles:
         d = ask(q)
         s = _sinif(d, exp)
         cats[f"tekil::{s}"] += 1
@@ -254,11 +274,17 @@ def run_company(name, login, pw, slug):
             #               Deterministik katmanın kapsayamadığı soru; chip/drill de yok.
             if secilen is None:
                 dogru["discovery"] += 1
+                if vaka is not None:
+                    vaka_sonuc[vaka] = False
                 discovery_ornek.append((q, sorted(kaynak)))
             elif secilen in kaynak:
                 dogru["dogru"] += 1
+                if vaka is not None:
+                    vaka_sonuc.setdefault(vaka, True)
             else:
                 dogru["yanlis"] += 1
+                if vaka is not None:
+                    vaka_sonuc[vaka] = False
                 yanlis_ornek.append((q, sorted(kaynak), secilen))
         # NOTE = duvar (beklenen cube vardı ama route/refine başaramadı) — asıl hedef.
         if any(s.startswith(x) for x in ("CUBE-SAPMA", "YANLIS", "HTTP", "BOŞ", "META-SAPMA", "NOTE")) \
@@ -287,6 +313,9 @@ def run_company(name, login, pw, slug):
     return {"company": name, "n_single": len(singles), "n_proc_steps": n_steps,
             "cats": dict(cats), "fails": {k: v[:12] for k, v in fails.items()},
             "dogru_cube": dict(dogru), "yanlis_cube_ornek": yanlis_ornek[:20],
+            # FAZ 0.19 — İKİNCİ PAYDA. Ham tur paydası yukarıda AYNEN duruyor.
+            "vaka_toplam": len(vaka_sonuc),
+            "vaka_dogru": sum(1 for v in vaka_sonuc.values() if v),
             "discovery_ornek": discovery_ornek[:20]}
 
 
@@ -320,6 +349,10 @@ def _taban_beklenen() -> dict:
         sirketler.setdefault(ad, {}).update(v)
     return {
         "kaynak": son.get("faz") or "kök taban",
+        # FAZ 0.19 — semantik taban: en son turda varsa o, yoksa kök. Kapı bunu
+        # bulamazsa *"tabanda YOK"* der ve ters-yön kontrolünü **atlar** — yani
+        # dondurulmadığı sürece kapı sessizce devre dışıdır (bilinen, yazılı sınır).
+        "vaka_dogru_yuzde": son.get("vaka_dogru_yuzde", d.get("vaka_dogru_yuzde")),
         "sirketler": sirketler,
         "dogru_cube_yuzde": son.get("toplam_dogru_cube_yuzde",
                                     d.get("toplam_dogru_cube_yuzde")),
@@ -368,6 +401,39 @@ def kapi_degerlendir(reports: list[dict]) -> tuple[bool, list[str]]:
         b = beklenen["dogru_cube_yuzde"]
         isaret = "✅" if yuzde >= b - TOLERANS_DOGRULUK else "❌ GERİLEME"
         satirlar.append(f"  TOPLAM doğru-cube: %{yuzde:.1f} (taban %{b}) {isaret}")
+
+        # ═══ FAZ 0.19 — İKİ PAYDA TERS YÖNE GİDERSE **KIRMIZI** ═══════════════
+        #
+        # 🔴 *"Birkaç terimi düzelttim, sayı uçtu"* yanılsamasının kapanı. Ham tur paydası
+        # bir **kartezyen üründür**: `elektrik`in TEK sahiplik hatası 11 dönem × boyut =
+        # 10+ ayrı başarısızlık olarak sayılır. Yani **tek bir terimi** düzeltmek ham
+        # yüzdeyi birkaç puan zıplatabilir — hiçbir yeni semantik vaka kazanılmadan.
+        #
+        # Ters yön daha da tehlikeli: semantik vaka sayısı **düşerken** ham yüzde
+        # **artıyorsa**, kapsam daralmış ama şişme onu gizlemiştir.
+        #
+        # Kural: iki payda **aynı yöne** gitmeli. Ayrışma bir **yorum farkı değil,
+        # bir KIRMIZIDIR** — çünkü ikisinden biri artık ölçtüğünü sanmadığı şeyi ölçüyordur.
+        v_top = sum((r.get("vaka_toplam") or 0) for r in reports)
+        v_dog = sum((r.get("vaka_dogru") or 0) for r in reports)
+        b_vak = beklenen.get("vaka_dogru_yuzde")
+        if v_top:
+            v_yuzde = 100 * v_dog / v_top
+            sisme = toplam_p / v_top if v_top else 0
+            satirlar.append(
+                f"  SEMANTİK VAKA: {v_dog}/{v_top} = %{v_yuzde:.1f}"
+                + (f" (taban %{b_vak})" if b_vak is not None else " (tabanda YOK)")
+                + f" · şişme katsayısı {sisme:.1f}×")
+            if b_vak is not None:
+                ham_yon = (yuzde > b + 0.05) - (yuzde < b - 0.05)
+                vak_yon = (v_yuzde > b_vak + 0.05) - (v_yuzde < b_vak - 0.05)
+                if ham_yon and vak_yon and ham_yon != vak_yon:
+                    gecti = False
+                    satirlar.append(
+                        "  🔴 İKİ PAYDA TERS YÖNE GİDİYOR — ham "
+                        f"%{yuzde:.1f} (taban %{b}) ↔ semantik %{v_yuzde:.1f} "
+                        f"(taban %{b_vak}). Bu bir YORUM FARKI DEĞİL: biri kartezyen "
+                        "şişmeyi, öteki gerçek kapsamı ölçüyor ve ikisi ayrıştı.")
         if yuzde < b - TOLERANS_DOGRULUK:
             gecti = False
     return gecti, satirlar
@@ -394,6 +460,17 @@ def main():
             continue
         total = sum(rep["cats"].values())
         lines.append(f"- tekil senaryo: {rep['n_single']} · süreç adımı: {rep['n_proc_steps']} · toplam tur: {total}")
+        # FAZ 0.19 — **İKİ PAYDA YAN YANA.** Ham tur paydası kartezyen şişmeyi taşır
+        # (11 dönem × boyut aynı semantik vakayı defalarca sayar); semantik vaka paydası
+        # `(cube, ölçü, niyet)` üçlüsüne çöker. İkisi **birlikte** okunur: biri artıp
+        # öteki azalıyorsa *"birkaç terimi düzelttim, sayı uçtu"* yanılsaması vardır.
+        vt, vd = rep.get("vaka_toplam") or 0, rep.get("vaka_dogru") or 0
+        if vt:
+            lines.append(
+                f"- **SEMANTİK VAKA: {vd}/{vt} (%{100 * vd // vt})** — `(cube, ölçü, niyet)`; "
+                f"dönem/boyut çarpımı TEK vakaya çöker. Ham tur paydası ({total}) "
+                f"**korunur** (KURAL A): geçmiş tabanlar ona bağlı. "
+                f"Şişme katsayısı: **{total / vt:.1f}×**")
         dc = rep.get("dogru_cube") or {}
         n_dc = sum(dc.get(k, 0) for k in ("dogru", "yanlis", "discovery"))
         if n_dc:

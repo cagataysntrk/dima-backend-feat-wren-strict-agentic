@@ -158,5 +158,8 @@
         "test": "1564 yeşil"
       }
     }
-  ]
+  ],
+  "vaka_dogru_yuzde": 92.1,
+  "vaka_toplam": 445,
+  "_faz_0_19": "FAZ 0.19 — İKİNCİ PAYDA. Ham payda bir KARTEZYEN ÜRÜNDÜR (ölçü × 11 dönem × boyut); ölçüldü: şişme katsayısı 16,2×. Semantik vaka = (cube, ölçü, niyet). KATI sayım: bir varyant bile yanlışsa vaka yanlıştır. 🔴 İki payda TERS YÖNE giderse KIRMIZI. Ham payda KURAL A gereği KORUNUR — geçmiş tabanlar ona bağlı."
 }
