@@ -152,7 +152,7 @@ def test_HAKEM_MATCH_CUBEIN_ILK_SATIRINDA():
                for n in ast.walk(fn)), "`_match_cube` hakemi ÇAĞIRMIYOR — kararlar ölü"
 
 
-def test_BAYRAK_OLCUMLE_GERI_ALINDI():
+def test_GERILEME_OLCUMU_ve_COZUMU_YAZILI():
     """🔴 **ÖLÇÜM GERİ ALDIRDI — ve iki kez ölçmek zorunda kaldım.**
 
     **Birinci ölçüm HİÇBİR ŞEY ÖLÇMEDİ.** `DIMA_METRIK_KAYDI=on` ile korpus koştum ve
@@ -181,14 +181,14 @@ def test_BAYRAK_OLCUMLE_GERI_ALINDI():
     """
     import yaml
 
-    d = yaml.safe_load((DEMO / "packs" / "features.yml").read_text(encoding="utf-8"))
-    bayraklar = d.get("features") or d
-    assert bayraklar.get("metrik_kaydi") == "off", (
-        "bayrak açılmış — ÖLÇÜM onu geri aldırdı (%93,2 → %92,6). Açmadan önce kararları "
-        "TENANT KAPSAMLI yap; pack düzeyi her şirkete dayatıyor.")
+    # ⟳ **TUZAK TERS ÇEVRİLDİ — FAZ 3.1b indi.** Eski yön: *"bayrak `off` kalmalı,
+    # ölçüm geri aldırdı"*. Çözüm geldi (pack **önerir**, tenant **uygular**) ve bayrak
+    # **güvenle** açıldı — korpusla doğrulandı (%93,1 ✅). Yeni yön: **gerileme ölçümü
+    # ve çözümü SİLİNMEDEN yazılı kalmalı**, yoksa bir sonraki tur pack kararlarını
+    # yeniden dayatmayı dener.
     ham = (DEMO / "packs" / "features.yml").read_text(encoding="utf-8")
     assert "%92,6" in ham, "gerileme ÖLÇÜMÜ yazılı değil — bir sonraki tur yeniden dener"
-    assert "TENANT KAPSAMLI" in ham, "çözüm yolu yazılı değil"
+    assert "ÖNERİR" in ham and "UYGULAYAN" in ham, "öneri/uygulama ayrımı yazılı değil"
 
 
 def _KULLANILMIYOR_test_BAYRAK_KARARI_OLCUMLE_VERILDI():
@@ -215,3 +215,63 @@ def _KULLANILMIYOR_test_BAYRAK_KARARI_OLCUMLE_VERILDI():
     ham = (DEMO / "packs" / "features.yml").read_text(encoding="utf-8")
     assert "korpus bu kazancı GÖREMİYOR" in ham.lower() or "GÖREMİYOR" in ham, \
         "ölçüm körlüğü YAZILI DEĞİL — bir sonraki tur sayıyı kazanç sanar"
+
+
+# ── 6 · FAZ 3.1b — PACK ÖNERİR, TENANT UYGULAR ────────────────────────────
+
+def test_PACK_KARARI_TEK_BASINA_UYGULANMIYOR():
+    """🔴 **ÖLÇÜM BUNU ZORLADI.** FAZ 3.1'de pack kararları doğrudan uygulanıyordu ve
+    korpus **geriledi** (%93,2→%92,6 · `gitas` %72→%69). Artık pack yalnız **önerir**;
+    uygulayan tek şey **tenant'ın kendi kararıdır**.
+
+    *Bir tenant'ın alan bilgisini bütün tenant'lara dayatmak, alan bilgisi olmaktan çıkıp
+    varsayım olur.*
+    """
+    taslak = [{"terim": "elektrik", "adaylar": ["enerji_makine", "surdurulebilirlik"],
+               "sahiplenilen_terimler": []}]
+    b = mk.onerilerle_birlestir(taslak, {"elektrik": "enerji_makine"})
+    assert b[0]["onerilen_sahip"] == "enerji_makine", "öneri GÖRÜNMÜYOR"
+    assert b[0]["sahiplenilen_terimler"] == [], "pack kararı UYGULANMIŞ — dayatma"
+    assert mk.hakem("elektrik", b) is None, "hakem pack önerisiyle KARAR VERİYOR"
+
+
+def test_TENANT_KARARI_UYGULUYOR():
+    """Zincir tamam: öneri görünür → tenant kabul eder → hakem karar verir."""
+    taslak = [{"terim": "elektrik", "adaylar": ["enerji_makine", "surdurulebilirlik"],
+               "sahiplenilen_terimler": []}]
+    b = mk.sahiplikle_birlestir(mk.onerilerle_birlestir(
+        taslak, {"elektrik": "enerji_makine"}), {"elektrik": "enerji_makine"})
+    assert mk.hakem("elektrik", b) == "enerji_makine"
+
+
+def test_ADAY_OLMAYAN_ONERI_GOSTERILMIYOR():
+    """⚠ Aday olmayan bir öneri gösterilse kullanıcı tıklar ve **hiçbir şey olmazdı** —
+    çalışmayan bir şeyi teklif etmek, hiç teklif etmemekten kötüdür."""
+    taslak = [{"terim": "elektrik", "adaylar": ["surdurulebilirlik"],
+               "sahiplenilen_terimler": []}]
+    b = mk.onerilerle_birlestir(taslak, {"elektrik": "enerji_makine"})
+    assert "onerilen_sahip" not in b[0]
+
+
+def test_BAYRAK_ONERI_MODUNDA_ACIK():
+    """✅ Öneri modunda bayrak **güvenle açılabildi** ve korpusla doğrulandı: bayrak açık
+    ama tenant kararı yokken davranış **birebir bugünkü** (%93,1 ✅)."""
+    import yaml
+
+    d = yaml.safe_load((DEMO / "packs" / "features.yml").read_text(encoding="utf-8"))
+    assert (d.get("features") or d).get("metrik_kaydi") == "beta"
+    ham = (DEMO / "packs" / "features.yml").read_text(encoding="utf-8")
+    assert "ÖNERİR" in ham and "%92,6" in ham, "öneri kararının ölçümü yazılı değil"
+
+
+def test_ONERI_EKRANDA_GORUNUYOR():
+    """🔴 **K2.** Alan bilgisi **kaybolmaz, yalnız dayatılmaz** — öneri ekranda görünmeli
+    ve tek tıkla kabul edilebilmeli."""
+    import pytest
+
+    fe = KOK.parent / "dima-frontend-demo-master" / "src"
+    if not fe.exists():
+        pytest.skip("frontend mount edilmemiş")
+    panel = (fe / "components" / "SchemaPanel.tsx").read_text(encoding="utf-8")
+    assert "onerilen_sahip" in panel and "öneri:" in panel
+    assert "onerilen_sahip" in (fe / "lib" / "api-client.ts").read_text(encoding="utf-8")

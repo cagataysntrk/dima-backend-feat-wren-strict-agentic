@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 3 · KAPSAM** — `3.1` indi *(kararlar yazıldı, uygulama tenant kapsamını bekliyor)* |
-| **Sıradaki madde** | `3.1b` **kararları TENANT KAPSAMLI yap** *(ölçüm bunu istedi)* → `3.2` R1'i kapat |
+| **Sıradaki madde** | `3.2` **R1'i kapat (99 vaka)** → `3.3` terfi kuyruğu kapanış oranı |
 | **Demet** | ✅ **`1.12` kapısı 4/4 YEŞİL** (süit **2477**) — risk sınırı olduğu için demete girmedi · demet 13 açık: `1.10`+`1.11` (o kapıya da dahil oldular) |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
@@ -422,6 +422,29 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
 
 ## FAZ 3 · KAPSAM
+
+### FAZ 3 · adım 2 — `3.1b` **PACK ÖNERİR, TENANT UYGULAR** — bayrak güvenle açıldı *(2026-08-04)*
+
+Kapı: **17 test**, hızlı sinyal **277** · korpus **%93,1** (taban %93,2) ✅.
+Bayrak: `metrik_kaydi` → **`beta`** *(öneri modunda güvenli — ölçüldü)*.
+
+> 🔴 **ÖLÇÜM BU ÇÖZÜMÜ ZORLADI.** `3.1`'de pack kararları doğrudan **uygulanıyordu** ve
+> korpus geriledi (%93,2→%92,6 · `gitas` %72→%69). Artık pack yalnız **ÖNERİR**
+> (`onerilen_sahip`); **uygulayan** tek şey **tenant'ın kendi kararıdır**
+> (`MetrikSahipligi`, FAZ 2.2b — zaten tenant kapsamlıydı).
+
+> ✅ **Alan bilgisi KAYBOLMADI, yalnız DAYATILMIYOR.** Öneri ekranda `○ öneri: …` olarak
+> görünüyor ve ilgili küpe **tek tıkla** kabul ediliyor — o andan itibaren **tenant**
+> kararı olur. ⚠ Aday olmayan bir öneri **hiç gösterilmiyor**: çalışmayan bir şeyi teklif
+> etmek, hiç teklif etmemekten kötüdür.
+
+> ✅ **Bayrak güvenle açıldı ve korpusla DOĞRULANDI:** bayrak açık ama tenant kararı
+> yokken davranış **birebir bugünkü** (%93,1). Yani `0.18` + `2.2b` + `3.1` zinciri artık
+> **atıl değil** — çalışıyor ama **kimseye dayatmıyor**.
+
+> ⟳ **Tuzak ters çevrildi (silinmedi):** *"bayrak `off` kalmalı"* → *"gerileme ölçümü ve
+> çözümü yazılı kalmalı"*. Bir sonraki tur pack kararlarını yeniden dayatmayı denerse,
+> `%92,6` sayısı orada duruyor.
 
 ### FAZ 3 · adım 1 — `3.1` **SAHİPLİK TURU** — kararlar yazıldı, **ÖLÇÜM geri aldırdı** *(2026-08-04)*
 

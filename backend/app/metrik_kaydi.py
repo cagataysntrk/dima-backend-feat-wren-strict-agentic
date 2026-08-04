@@ -121,6 +121,36 @@ def pack_kararlari(base: Any) -> dict[str, str | None]:
     return out
 
 
+def onerilerle_birlestir(kayit: list[dict[str, Any]],
+                         oneriler: dict[str, str | None]) -> list[dict[str, Any]]:
+    """Pack karar kaydını **ÖNERİ olarak** işler — **uygulamaz**. FAZ 3.1b.
+
+    ## 🔴 NEDEN ÖNERİ — ölçüm bunu ZORLADI
+
+    FAZ 3.1'de pack kararları doğrudan **uygulanıyordu** ve korpus **geriledi**:
+    `%93,2 → %92,6`, `gitas` erişim `%72 → %69`. Teşhis: kararlar `boyahane`/`atiksan`'ın
+    **ölçülen** kusurları için yazılmıştı ama pack düzeyinde **her şirkete** dayatılıyordu.
+    `gitas` (netsis) için `satis → ticaret` yanlış olabilir — orada `mal` da meşru bir sahip.
+
+    *Bir tenant'ın alan bilgisini bütün tenant'lara dayatmak, alan bilgisi olmaktan çıkıp
+    **varsayım** olur.*
+
+    → Pack artık yalnız **önerir** (`onerilen_sahip`); **uygulayan** tek şey tenant'ın
+    kendi kararıdır (`MetrikSahipligi`, FAZ 2.2b). Öneri ekranda görünür ve **tek tıkla**
+    kabul edilir — yani alan bilgisi **kaybolmaz**, yalnız **dayatılmaz**.
+    """
+    out: list[dict[str, Any]] = []
+    for k in kayit:
+        yeni = dict(k)
+        oneri = oneriler.get(str(k.get("terim")))
+        # ⚠ Öneri de yalnız ADAYLAR arasından anlamlıdır; aday olmayan bir öneri
+        # gösterilse kullanıcı tıklar ve hiçbir şey olmazdı.
+        if oneri and oneri in (k.get("adaylar") or []):
+            yeni["onerilen_sahip"] = oneri
+        out.append(yeni)
+    return out
+
+
 def sahiplikle_birlestir(kayit: list[dict[str, Any]],
                          sahiplik: dict[str, str | None]) -> list[dict[str, Any]]:
     """Taslak kayda **kalıcı sahiplik kararlarını** işler. FAZ 2.2b.
@@ -197,7 +227,10 @@ def semaya_yaz(schema: dict[str, Any], *, acik: bool, base: Any = None) -> dict[
     # işlenir; tenant'ın kendi kararı (FAZ 2.2b) uçta bunun ÜSTÜNE biner — en spesifik
     # kazanır (`compose`'un katman sırasıyla aynı ilke).
     if base is not None:
-        kayit = sahiplikle_birlestir(kayit, pack_kararlari(base))
+        # 🔴 FAZ 3.1b — pack kararı **ÖNERİDİR, UYGULAMA DEĞİL**. Uygulasaydı korpus
+        # gerilerdi (ölçüldü: %93,2 → %92,6) çünkü bir tenant'ın alan bilgisi bütün
+        # tenant'lara dayatılmış olurdu. Uygulayan tek şey **tenant'ın kendi kararıdır**.
+        kayit = onerilerle_birlestir(kayit, pack_kararlari(base))
 
     # 🔴 ÇİFT SAHİPLİK REDDİ — **fail-closed**. Bir terimi iki cube birden sahiplenmişse
     # hakem yine YOKTUR, ama artık bir de *"hakem var"* beyanı vardır. Beyan ile kodun

@@ -175,6 +175,16 @@ function MetrikSahipligi() {
                     ◉ {sahip}
                   </span>
                 )}
+                {/* FAZ 3.1b — PACK ÖNERİSİ. Alan bilgisi kaybolmaz, yalnız DAYATILMAZ:
+                    tek tıkla kabul edilir ve o andan itibaren TENANT kararı olur. */}
+                {!sahip && k.onerilen_sahip && (
+                  <span
+                    title="Karar kaydının önerisi — HENÜZ UYGULANMADI. Kabul etmek için ilgili küpe tıkla."
+                    className="border border-hairline px-1.5 font-mono text-[10px] text-neutral-500"
+                  >
+                    ○ öneri: {k.onerilen_sahip}
+                  </span>
+                )}
                 {k.gecersiz_sahip && (
                   <span
                     title="Bu cube o terimin adayı değil — karar KAYDEDİLDİ ama UYGULANMIYOR."
@@ -194,7 +204,9 @@ function MetrikSahipligi() {
                     className={`border px-1.5 py-[2px] font-mono text-[10px] transition-colors disabled:opacity-50 ${
                       c === sahip
                         ? "border-accent/40 text-accent"
-                        : "border-hairline text-neutral-500 hover:border-accent hover:text-accent"
+                        : c === k.onerilen_sahip
+                          ? "border-neutral-400 text-foreground hover:border-accent hover:text-accent"
+                          : "border-hairline text-neutral-500 hover:border-accent hover:text-accent"
                     }`}
                   >
                     {c}

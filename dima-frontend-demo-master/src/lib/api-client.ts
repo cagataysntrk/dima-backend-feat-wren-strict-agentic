@@ -377,6 +377,10 @@ export interface MetrikKaydiSatiri {
   adaylar: string[];
   sahiplenilen_terimler: string[];
   olusturulma_yontemi?: string;
+  /** FAZ 3.1b — pack karar kaydının ÖNERİSİ. 🔴 UYGULANMIŞ DEĞİL: uygulayan tek şey
+   *  tenant'ın kendi kararıdır. Pack kararları doğrudan uygulandığında korpus GERİLEDİ
+   *  (%93,2→%92,6) — bir tenant'ın alan bilgisi bütün tenant'lara dayatılmış oluyordu. */
+  onerilen_sahip?: string;
   /** Aday olmayan bir cube sahip yazılmışsa: sessizce yutulmaz, GÖRÜNÜR kalır. */
   gecersiz_sahip?: string;
 }
