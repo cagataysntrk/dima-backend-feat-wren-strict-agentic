@@ -942,6 +942,25 @@ export async function deleteTenantConnection(id: string): Promise<void> {
   await apiClient.delete(`/connections/${id}`);
 }
 
+// FAZ 3.4 — APACHE OSSIE İTHALİ. Müşterinin VAR OLAN semantik modeli bir `packs/`
+// katmanı olarak okunur (datasets→models · metrics→measures · fields→dimensions ·
+// ai_context→synonyms). 🔴 Uç bir EŞLEME döner, YAZMAZ: yarım ithal edilmiş bir model,
+// ithal edilmemiş bir modelden kötüdür. Yazma, sihirbazın `confirm` adımının işi.
+export interface OssieIthalSonuc {
+  baglanti_id: string;
+  cubes: { name: string; base_object: string; ithal_kaynak: string;
+           measures: { name: string }[]; dimensions: { name: string }[] }[];
+  /** 🔴 Her ithal ilişki `certified: "olculmedi"` gelir — sessiz "sağlıklı" DEĞİL. */
+  relationships: { name: string; certified: string }[];
+  uyarilar: string[];
+}
+
+export async function importSemantic(id: string, belge: unknown): Promise<OssieIthalSonuc> {
+  const { data } = await apiClient.post<OssieIthalSonuc>(
+    `/connections/${id}/import-semantic`, belge);
+  return data;
+}
+
 export async function getConnectionDraft(id: string): Promise<ConnectionDraft> {
   const { data } = await apiClient.get<ConnectionDraft>(`/connections/${id}/draft`);
   return data;

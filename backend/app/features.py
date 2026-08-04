@@ -37,6 +37,18 @@ _SCOPE_ORDER = ("global", "sector", "tenant", "role", "user")
 #   3) Tüketen yüzeyi `useFeature("<key>")` ile geçitle (frontend).
 #   4) Gerekiyorsa admin panelden tenant/rol/kullanıcı override'ı ile aç.
 FLAG_REGISTRY: dict[str, dict[str, str]] = {
+    "ossie_ithal": {
+        "label": "Apache Ossie semantik model ithali",
+        "description": "Müşterinin var olan semantik modeli (Apache Ossie — eski adı OSI, "
+                       "Haziran 2026'da ASF'e bağışlandı) bir `packs/` katmanı olarak "
+                       "okunur: datasets→models · metrics→measures · fields→dimensions · "
+                       "ai_context→synonyms. 🔴 ÇEVİRİCİ yazılır, MOTOR yazılmaz — hedef "
+                       "şekil zaten bizimki. İthal edilen her ilişki `certified: "
+                       "'olculmedi'` damgasıyla gelir: bir başkasının modelinin doğru "
+                       "olduğunu VARSAYMAK, sessiz-yanlışın ithal edilmiş hâli olurdu. "
+                       "Kapalıyken uç 404 döner (FAZ 3.4).",
+        "category": "genisleme",
+    },
     "ayni_grain_gocu": {
         "label": "Aynı-grain çiftlerini merceğe indir",
         "description": "`surdurulebilirlik` ≡ `parti` (ikisi de `partiler` grain'inde): "

@@ -17,6 +17,8 @@ features:
   # FAZ 2.3 — kapsam merceği. `off`: her kullanıcı bugünkü TAM katalogu görür.
   # 🔴 Mercek bir GÖRÜNÜRLÜK aracıdır, GÜVENLİK SINIRI DEĞİL — kapatmak yetki AÇMAZ.
   kapsam_mercegi: "off"   # ⚠ TIRNAK ŞART: YAML 1.1 çıplak `off`u BOOLEAN okur
+  # FAZ 3.4 — Ossie ithali. `off`: uç 404 döner (GERİ AL).
+  ossie_ithal: "off"
   cikti_yorumlama: beta   # evrensel çıktı yorumu — her tablo/grafik/rapor/KPI
   sql_display: beta       # üretilen SQL'i kullanıcıya göster ('+ sql göster')
   verify_button: beta     # ✓/✗ doğrulama — VQR öğrenme (eskiden boyahane sektöründe)

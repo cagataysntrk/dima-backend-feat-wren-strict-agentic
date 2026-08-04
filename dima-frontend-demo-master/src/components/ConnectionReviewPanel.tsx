@@ -10,13 +10,16 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  apiErrorMessage,
   confirmConnectionDraft,
   createTenantConnection,
   deleteTenantConnection,
   getConnectionDraft,
+  importSemantic,
   listTenantConnections,
   testTenantConnection,
 } from "@/lib/api-client";
+import { useFeature } from "@/lib/useFeature";
 import { usePermission } from "@/lib/usePermission";
 import type { ConnectionDraft, DraftCube } from "@/lib/types";
 
@@ -38,6 +41,62 @@ function FormField({
   );
 }
 
+/** FAZ 3.4 — Ossie semantik model ithali (önizleme). Yeni PANEL değil: bağlantı
+ *  sihirbazının `review` adımının bir bölümü (K5 tavanı 13/13). */
+function OssieIthal({ id }: { id: string }) {
+  const [metin, setMetin] = useState("");
+  const ithal = useMutation({
+    mutationFn: () => importSemantic(id, JSON.parse(metin || "{}")),
+  });
+  return (
+    <details className="mb-3 border border-hairline px-2.5 py-2">
+      <summary className="cursor-pointer font-mono text-[11px] text-neutral-500">
+        ⇪ mevcut semantik modelini içe aktar (Apache Ossie)
+      </summary>
+      <p className="mt-2 font-mono text-[10px] leading-snug text-neutral-400">
+        Ossie YAML/JSON belgeni yapıştır. Bu adım <span className="text-foreground">yalnız
+        önizleme</span> üretir — kalıcı hale gelmesi için aşağıdaki onay adımından geçer.
+      </p>
+      <textarea
+        value={metin}
+        onChange={(e) => setMetin(e.target.value)}
+        rows={4}
+        placeholder='{"version": "0.1.1", "datasets": [...]}'
+        className="mt-2 w-full border border-hairline bg-transparent p-2 font-mono text-[11px]"
+      />
+      <button
+        type="button"
+        disabled={!metin.trim() || ithal.isPending}
+        onClick={() => ithal.mutate()}
+        className="mt-1 border border-hairline px-2 py-[3px] font-mono text-[11px] text-neutral-500 transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
+      >
+        {ithal.isPending ? "…" : "önizle"}
+      </button>
+      {ithal.isError && (
+        <p className="mt-2 font-mono text-[11px] text-red-500">
+          {apiErrorMessage(ithal.error)}
+        </p>
+      )}
+      {ithal.data && (
+        <div className="mt-2 space-y-1 font-mono text-[11px]">
+          <p className="text-foreground">
+            {ithal.data.cubes.length} cube · {ithal.data.relationships.length} ilişki
+          </p>
+          {ithal.data.uyarilar.map((u) => (
+            <p key={u} className="text-amber-600">⚠ {u}</p>
+          ))}
+          {ithal.data.relationships.some((r) => r.certified === "olculmedi") && (
+            <p className="text-amber-600">
+              ⚠ İthal ilişkiler <span className="text-foreground">ÖLÇÜLMEDİ</span> damgasıyla
+              gelir — sessiz &quot;sağlıklı&quot; değildir. Fan-out sertifikası onay adımında ölçülür.
+            </p>
+          )}
+        </div>
+      )}
+    </details>
+  );
+}
+
 export function ConnectionReviewPanel() {
   const qc = useQueryClient();
   // Doğrulama turu düzeltmesi (1 Ağustos 2026): bu panel HİÇ izin kontrolü YAPMIYORDU —
@@ -48,6 +107,7 @@ export function ConnectionReviewPanel() {
   // (ReportPanel/SettingsDrawer) AYNI paylaşılan `usePermission` hook'u kullanılır.
   const canWrite = usePermission("connection:write");
   const [step, setStep] = useState<Step>("form");
+  const ossieAcik = useFeature("ossie_ithal") !== "off";
   const [form, setForm] = useState({
     host: "", port: "5432", database: "", user: "", password: "",
   });
@@ -209,6 +269,14 @@ export function ConnectionReviewPanel() {
             {draft.cubes.length} tablo bulundu. Analiz edilecekleri seç, gerekirse hariç
             bırak — onayladığında yalnız işaretli olanlar kalıcı hale gelir.
           </p>
+          {/* FAZ 3.4 — MEVCUT SEMANTİK MODELİ İÇE AKTAR (Apache Ossie).
+              🔴 Bu adım YAZMAZ, ÖNİZLEME üretir: yarım ithal edilmiş bir model, ithal
+              edilmemiş bir modelden kötüdür — katalogda görünür ama sayılarını kimse
+              denetlememiştir. Yazma yine `confirm` adımının işi.
+              ⚠ İthal ilişkiler `olculmedi` damgasıyla gelir ve bu EKRANDA söylenir:
+              bir başkasının modelinin doğru olduğunu VARSAYMAK, sessiz-yanlışın ithal
+              edilmiş hâli olurdu. */}
+          {ossieAcik && activeConnId && <OssieIthal id={activeConnId} />}
           <div className="max-h-[50vh] space-y-2 overflow-auto">
             {draft.cubes.map((c) => (
               <DraftCubeRow key={c.name} cube={c} onToggle={() => toggleInclude(c.name)} />

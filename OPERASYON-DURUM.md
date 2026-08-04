@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 3 · KAPSAM** — `3.1` indi *(kararlar yazıldı, uygulama tenant kapsamını bekliyor)* |
-| **Sıradaki madde** | `3.4` Apache Ossie ithali · `3.5` yeni kaynak sistemler · `3.6` cold-start metrik önerisi |
+| **Sıradaki madde** | `3.5` yeni kaynak sistemler · `3.6` cold-start metrik önerisi → FAZ 4 |
 | **Demet** | ✅ **`1.12` kapısı 4/4 YEŞİL** (süit **2477**) — risk sınırı olduğu için demete girmedi · demet 13 açık: `1.10`+`1.11` (o kapıya da dahil oldular) |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
@@ -422,6 +422,39 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
 
 ## FAZ 3 · KAPSAM
+
+### FAZ 3 · adım 5 — `3.4` **APACHE OSSIE İTHALİ** *(2026-08-04)*
+
+Kapı: **21 test** (`tests/test_ossie_ithal.py`), hızlı sinyal **420**.
+Bayrak: `ossie_ithal` = **`off`** (kapalıyken uç **404**).
+
+> **Neden:** sektörün fiili standardı (eski adı OSI, Haziran 2026'da **ASF**'e bağışlandı).
+> YAML üst-yapıları **bizim `packs/` yapımızla neredeyse birebir** — ve ithal tarafı,
+> kapsam tavanına **küratörlük emeği olmadan** saldıran tek kaldıraç.
+> ⚠ MIMARI §3.4'ün *"Bilerek ALINMAYANLAR: `osi`"* kararı **bilinçli olarak geri alındı**.
+
+> 🔴 **ÇEVİRİCİ YAZILDI, MOTOR YAZILMADI.** Hedef şekil zaten bizimki:
+> `datasets→models` · `metrics→measures` · `fields→dimensions` · **`ai_context→synonyms`**.
+> Son eşleme standardın **en değerli** alanı: kullanıcı kelimeleri küratörlük emeği
+> olmadan geliyor.
+
+> 🔴 **İTHAL İLİŞKİ `olculmedi` DAMGASIYLA GELİYOR** — ve bu **ekranda söyleniyor**.
+> *Bir başkasının modelinin doğru olduğunu **varsaymak**, bu deponun en pahalı hatasının
+> (sessiz-yanlış) **ithal edilmiş hâli** olurdu.*
+
+> 🔴 **UÇ YAZMIYOR, ÖNİZLEME ÜRETİYOR.** *Yarım ithal edilmiş bir model, ithal edilmemiş
+> bir modelden kötüdür:* katalogda görünür ama sayılarını kimse denetlememiştir. Yazma
+> yine sihirbazın `confirm` adımının işi ve oradaki fail-closed kapılardan geçiyor.
+
+> ⚠ **SERBEST METİN SİNONİM SAYILMIYOR:** *"bu bizim aylık toplam sipariş tutarımızdır"*
+> bir sinonim değildir. Katalogu cümlelerle şişirmek `_uncovered` kapısını her soruda
+> çektirir — yani ithal, **kapsamı artırmak yerine düşürürdü**.
+
+> ⚠ **ADSIZ KAYIT REDDEDİLİYOR** (fail-closed): adsız bir şeyi *"varsayılan"* bir adla
+> içeri almak, katalogda **kimsenin arayamayacağı** bir kayıt bırakırdı — ve o kayıt bir
+> gün bir soruya cevap olurdu.
+> ⚠ **Bilinmeyen sürüm REDDEDİLMİYOR, UYARIYOR:** bir standardın ilerlemesini ithal
+> kapısını kapatarak karşılamak kapsamı **dondururdu**.
 
 ### FAZ 3 · adım 4 — `3.3` **TERFİ KUYRUĞU KAPANIŞ ORANI** *(2026-08-04)*
 

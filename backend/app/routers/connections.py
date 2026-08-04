@@ -199,6 +199,38 @@ def get_draft(cid: str, request: Request) -> ConnectionDraft:
     )
 
 
+@router.post("/{cid}/import-semantic",
+             dependencies=[Depends(require("connection:write")), Depends(require_company)])
+def import_semantic(cid: str, body: dict, request: Request) -> dict:
+    """FAZ 3.4 — **Apache Ossie ithali**: müşterinin semantik modeli bir `packs/` katmanı.
+
+    🔴 **ÇEVİRİCİ, MOTOR DEĞİL.** Hedef şekil zaten bizimki (`datasets→models` ·
+    `metrics→measures` · `fields→dimensions` · **`ai_context→synonyms`**). Bu uç bir
+    **eşleme** döner — YAZMAZ. Yazma, sihirbazın `confirm` adımının işidir ve oradaki
+    fail-closed kapılardan (`validate_project()` + üye taraması) geçer.
+
+    ⚠ **Neden yazmıyor:** ithal edilmiş ama doğrulanmamış bir cube, katalogda görünüp
+    sayıları kimsenin denetlemediği bir kayıt olurdu. *Yarım ithal edilmiş bir model,
+    ithal edilmemiş bir modelden kötüdür.*
+
+    🔴 İthal edilen her ilişki **`certified: "olculmedi"`** damgasıyla gelir — bir
+    başkasının modelinin doğru olduğunu **varsaymak**, bu deponun en pahalı hatasının
+    (sessiz-yanlış) ithal edilmiş hâli olurdu.
+    """
+    from app.config import get_settings
+    from app.features import resolve_for
+    from app.ossie import OssieIthalHatasi, cevir
+
+    p = getattr(request.state, "principal", None)
+    if "ossie_ithal" not in resolve_for(get_settings(), p):
+        raise HTTPException(status_code=404, detail="Ossie ithali bu kurulumda kapalı.")
+    try:
+        return {"baglanti_id": cid, **cevir(body or {})}
+    except OssieIthalHatasi as exc:
+        # 400: gönderilen belge geçersiz — istemcinin düzeltebileceği bir durum.
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @router.post("/{cid}/confirm", response_model=ConnectionConfirmResult,
             dependencies=[Depends(require("connection:write")), Depends(require_company)])
 def confirm_draft(cid: str, body: ConnectionDraft, request: Request) -> ConnectionConfirmResult:
