@@ -657,6 +657,14 @@ export interface DecisionRecord {
   verified: boolean | null;
   evidence_count: number;
   supersedes: string | null;
+  // 🔴 FAZ 5.8 — ŞABLON. `contract_ids` *"o gün hangi sayıya baktık"* der (donmuş
+  // kanıt); şablon *"aynı analizi BUGÜN koşsak ne çıkar"* der. Biri ötekinin yerine
+  // geçmez ve bu yüzden iki ayrı düğme: `doğrula` geçmişe, `bugün koş` bugüne bakar.
+  sablon?: { cube_query: CubeQuery; parametreler?: string[] } | null;
+  // Hangi hash sürümüyle doğrulandı — `v1` bir kayıt `sablon` alanını KORUYAMAZ
+  // (alan yokken yazılmış bir imza, olmayan bir alanı koruyamaz) ve okuyucu bunu
+  // bilmelidir.
+  hash_surumu?: string | null;
 }
 
 export interface ContributionResponse {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { saveDecision, verifyDecision } from "@/lib/api-client";
+import { runDecisionTemplate, saveDecision, verifyDecision } from "@/lib/api-client";
 import { fmtValue } from "@/lib/format";
 import type { CubeQuery, DecisionRecord, Prescription } from "@/lib/types";
 
@@ -39,12 +39,17 @@ export function PrescriptionLayer({
   soru,
   sessionId,
   contractIds,
+  cubeQuery,
 }: {
   recete: Prescription;
   onCubeEdit?: (e: { cq: CubeQuery; label: string }) => void;
   soru?: string;
   sessionId?: string;
   contractIds?: string[];
+  // FAZ 5.8 — kararın dayandığı analiz. ⚠ Opsiyonel: taşımayan bir çağrı şablonsuz
+  // kaydeder ve backend bunu **409 ile dürüstçe söyler** (yeniden koşulamaz). Uydurma
+  // bir şablon yazmak, o kararın bugün de aynı analizle alınacağını **varsaymak** olurdu.
+  cubeQuery?: CubeQuery | null;
 }) {
   const olcu = recete.measure ?? "";
   const yogun = recete.concentration;
@@ -68,6 +73,11 @@ export function PrescriptionLayer({
         // olurdu ve *"bu karar neyin yerine geçti?"* sorusu cevapsız kalırdı.
         // (II-E.7 bu zincire dayanıyor — alan silinemez, BAĞLANIR.)
         supersedes: kayit?.id ?? null,
+        // 🔴 FAZ 5.8 — ŞABLON. Kararın dayandığı analiz **yeniden koşulabilir** olarak
+        // saklanır: `contract_ids` o günün sayısını dondurur, şablon *"aynı analizi
+        // bugün koşsak ne çıkar"* sorusunu açar. `period` ezilebilir çünkü bir kararın
+        // en sık tekrarı **başka bir dönemde** olur.
+        sablon: cubeQuery ? { cube_query: cubeQuery, parametreler: ["period"] } : null,
       }),
     onSuccess: setKayit,
   });
@@ -77,6 +87,16 @@ export function PrescriptionLayer({
   const dogrula = useMutation({
     mutationFn: (id: string) => verifyDecision(id),
     onSuccess: setKayit,
+  });
+
+  // 🔴 FAZ 5.8 — **ŞABLONU YENİDEN KOŞ.** *"Aynı analizi bugün koşsak ne çıkar?"*
+  //
+  // Makbuz o günün sayısını **dondurur**; şablon onu **tekrarlanabilir** kılar. İkisi
+  // farklı sorular cevaplar ve bu yüzden iki ayrı düğme: `doğrula` geçmişe bakar,
+  // `bugün koş` bugüne. ⚠ 0 LLM — dönen `cube_query` `/cube` yolundan geçer.
+  const sablonuKos = useMutation({
+    mutationFn: (id: string) => runDecisionTemplate(id),
+    onSuccess: (r) => onCubeEdit?.({ cq: r.cube_query, label: "karar şablonu · bugün" }),
   });
 
   return (
@@ -182,6 +202,18 @@ export function PrescriptionLayer({
                 >
                   {dogrula.isPending ? "doğrulanıyor…" : "doğrula"}
                 </button>
+                {/* ⚠ Yalnız şablonlu kayıtta: şablonsuz bir kararı "koş" diye teklif
+                    etmek, backend'in 409'unu bir hata gibi göstermek olurdu. */}
+                {kayit.sablon?.cube_query && onCubeEdit && (
+                  <button
+                    onClick={() => sablonuKos.mutate(kayit.id)}
+                    disabled={sablonuKos.isPending}
+                    title="Kararın dayandığı analizi BUGÜNKÜ veriyle yeniden koş (0 LLM)"
+                    className="border border-hairline px-2 py-[2px] font-mono text-[10px] text-neutral-500 transition-colors hover:border-accent hover:text-accent disabled:opacity-40"
+                  >
+                    {sablonuKos.isPending ? "koşuluyor…" : "↻ bugün koş"}
+                  </button>
+                )}
                 <span className="font-mono text-[10px] text-neutral-500">
                   {kayit.evidence_count} makbuz kanıt
                 </span>

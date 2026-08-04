@@ -365,6 +365,16 @@ class DecisionRecord(SQLModel, table=True):
     contract_ids_json: str | None = None
     content_hash: str | None = Field(default=None, index=True)
     supersedes: str | None = None                            # iptal/revizyon zinciri
+    # 🔴 FAZ 5.8 — **ŞABLON**: kararın dayandığı analizi **yeniden koşulabilir** kılar.
+    #
+    # `contract_ids` *"o gün hangi sayıya baktık"* der (donmuş kanıt). Şablon bir üst
+    # soruyu cevaplar: **"aynı analizi BUGÜN koşsak ne çıkar?"** İkisi farklı şeylerdir
+    # ve biri ötekinin yerine geçmez — makbuz **geçmişi**, şablon **tekrarı** taşır.
+    #
+    # ⚠ `{"cube_query": {...}, "parametreler": ["period", ...]}`. `cube_query` taşınır
+    # çünkü yeniden koşum **0 LLM**'dir (`POST /cube` yolu); `sql` taşınmaz — donmuş bir
+    # SQL, şema değişince sessizce yanlış çalışır.
+    sablon_json: str | None = None
 
 
 class NotificationLog(SQLModel, table=True):

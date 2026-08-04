@@ -159,7 +159,12 @@ def test_gocler_TEK_HEAD(monkeypatch):
         t = f.read_text(encoding="utf-8")
         if m := re.search(r"^revision(?::\s*str)?\s*=\s*[\"']([^\"']+)", t, re.M):
             revs.add(m.group(1))
-        if m := re.search(r"^down_revision(?::[^=]+)?=\s*[\"']([^\"']+)", t, re.M):
+        # ⚠ **REGEX ASİMETRİSİ DÜZELTİLDİ (FAZ 5.8).** `revision` deseni `\s*=` ile
+        # boşuğu kabul ediyordu, `down_revision` etmiyordu: `down_revision = "x"` (tip
+        # ek'siz, boşluklu) yazılmış bir göçün ATASI HİÇ OKUNMUYOR ve o ata **sahte bir
+        # head** gibi görünüyordu. Kapı kırmızı verdi ama gösterdiği sebep yanlıştı —
+        # *ölçüm aracının kendisi de bir bağımlılıktır.*
+        if m := re.search(r"^down_revision(?::[^=]+)?\s*=\s*[\"']([^\"']+)", t, re.M):
             downs.add(m.group(1))
     head = revs - downs
     assert len(head) == 1, f"birden fazla alembic head: {sorted(head)}"

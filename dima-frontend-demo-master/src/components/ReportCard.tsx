@@ -1018,6 +1018,9 @@ export function ReportCard({
           // Kanıt bağı: karar, dayandığı makbuza bağlanınca YENİDEN ÇALIŞTIRILABİLİR
           // bir iddiaya dönüşür. Kanıtsız kayıt da meşrudur ama farklıdır.
           contractIds={item.contract_id ? [item.contract_id] : []}
+          // FAZ 5.8 — ŞABLON: `contract_ids` o günün sayısını DONDURUR, `cube_query`
+          // aynı analizi BUGÜN koşulabilir kılar. İkisi farklı sorular cevaplar.
+          cubeQuery={item.cube_query ?? null}
         />
       )}
 

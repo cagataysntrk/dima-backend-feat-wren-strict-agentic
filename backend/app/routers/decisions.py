@@ -37,6 +37,10 @@ class DecisionIn(BaseModel):
     contract_ids: list[str] | None = None
     session_id: str | None = None
     supersedes: str | None = None
+    #: 🔴 FAZ 5.8 — **ŞABLON**: `{"cube_query": {...}, "parametreler": [...]}`.
+    #: `contract_ids` *"o gün hangi sayıya baktık"* der; şablon *"aynı analizi bugün
+    #: koşsak ne çıkar"* der. Biri ötekinin yerine geçmez.
+    sablon: dict | None = None
 
 
 def _principal(request: Request):
@@ -55,7 +59,51 @@ def create_decision(request: Request, body: DecisionIn) -> dict:
         tenant_id=str(getattr(p, "tenant_id", "") or "") or None,
         user_id=str(getattr(p, "user_id", "") or "") or None,
         session_id=body.session_id, supersedes=body.supersedes,
+        sablon=body.sablon,
     )
+
+
+@router.post("/decisions/{did}/kos",
+             dependencies=[Depends(require("decision:read")), Depends(require_company)])
+def kos_sablon(request: Request, did: str, body: dict | None = None) -> dict:
+    """FAZ 5.8 — **ŞABLONU YENİDEN KOŞ.** *"Aynı analizi bugün koşsak ne çıkar?"*
+
+    🔴 **0 LLM.** Şablon `cube_query` taşır ve o sorgu `/cube` yolunun aynısından geçer —
+    yeni bir SQL **üretilmez**. ⚠ `sql` **hiç taşınmaz**: donmuş bir SQL, şema değişince
+    **sessizce yanlış** çalışır; `cube_query` ise güncel MDL'de derlenir ve uyuşmazlık
+    **patlar**.
+
+    ## ⚠ Parametre ezmesi DAR TUTULUR
+
+    Yalnız şablonun **kendi beyan ettiği** parametreler ezilebilir (`parametreler`
+    listesi). Serbest ezme, kaydedilmiş bir kararı **başka bir analize** çevirip yine
+    o kararın kimliğiyle sunmak olurdu — *bir şablon, bir imzanın altını doldurmaz.*
+    """
+    import json as _json
+
+    p = _principal(request)
+    with Session(engine) as s:
+        kayit = s.exec(select(DecisionRecord).where(DecisionRecord.id == did)).first()
+    if kayit is None:
+        raise HTTPException(status_code=404, detail="Karar kaydı bulunamadı")
+    benim = str(getattr(p, "tenant_id", "") or "") or None
+    if not getattr(p, "is_superadmin", False) and kayit.tenant_id != benim:
+        raise HTTPException(status_code=404, detail="Karar kaydı bulunamadı")
+    try:
+        sablon = _json.loads(kayit.sablon_json or "null")
+    except Exception:                                        # noqa: BLE001
+        sablon = None
+    if not (sablon or {}).get("cube_query"):
+        # ⚠ 404 değil **409**: kayıt VAR ama şablonsuz. Bunu "bulunamadı" demek,
+        # kullanıcıya yanlış bir teşhis verirdi.
+        raise HTTPException(status_code=409,
+                            detail="Bu karar bir şablon taşımıyor — yeniden koşulamaz.")
+    cq = dict(sablon["cube_query"])
+    izinli = set(sablon.get("parametreler") or ())
+    for k, v in (body or {}).items():
+        if k in izinli:
+            cq[k] = v
+    return {"karar_id": did, "cube_query": cq, "parametreler": sorted(izinli)}
 
 
 @router.get("/decisions/{did}",

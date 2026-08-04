@@ -902,6 +902,11 @@ export async function saveDecision(body: {
   // eskisini `supersedes` ile işaret eder. Bu alan olmadan revizyon zinciri kurulamaz
   // ve "karar geçmişi" bir yığın kopuk kayda dönerdi.
   supersedes?: string | null;
+  // 🔴 FAZ 5.8 — ŞABLON: `contract_ids` *"o gün hangi sayıya baktık"* der (donmuş kanıt);
+  // şablon *"aynı analizi BUGÜN koşsak ne çıkar"* der. Biri ötekinin yerine geçmez.
+  // `{cube_query, parametreler}` — `sql` TAŞINMAZ: donmuş bir SQL, şema değişince
+  // sessizce yanlış çalışır.
+  sablon?: { cube_query: unknown; parametreler?: string[] } | null;
 }): Promise<DecisionRecord> {
   const { data } = await apiClient.post<DecisionRecord>("/decisions", body);
   return data;
@@ -991,6 +996,21 @@ export async function createShareLink(
 export async function exportSemantic(id: string): Promise<Record<string, unknown>> {
   const { data } = await apiClient.get<Record<string, unknown>>(
     `/connections/${id}/export-semantic`);
+  return data;
+}
+
+/** FAZ 5.8 — kaydedilmiş bir kararın şablonunu **yeniden koşulabilir** hâle getirir.
+ *
+ * 🔴 **0 LLM**: dönen `cube_query`, `/cube` yolunun aynısından geçer. Yalnız şablonun
+ * **kendi beyan ettiği** parametreler ezilebilir — serbest ezme, kaydedilmiş bir kararı
+ * başka bir analize çevirip yine o kararın kimliğiyle sunmak olurdu.
+ */
+export async function runDecisionTemplate(
+  id: string, parametreler?: Record<string, unknown>,
+): Promise<{ karar_id: string; cube_query: CubeQuery; parametreler: string[] }> {
+  const { data } = await apiClient.post<{
+    karar_id: string; cube_query: CubeQuery; parametreler: string[];
+  }>(`/decisions/${id}/kos`, parametreler ?? {});
   return data;
 }
 
