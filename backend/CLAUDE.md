@@ -125,6 +125,10 @@ Tek araç: **`lab/kapi.py`** (iki kademe, tek sahip).
   yazıyordu ve uygulamada **madde başına** koşuluyordu; ölçüldü — sürenin %75'i kapıda
   değil, madde başına tekrarlanan 10 adımlık döngüdeydi.)*
 - **Demet içinde ara `--tam` YOK.** *"Bir de şuna bakayım"* diye tam süit koşturma.
+- 🔴🔴 **TESTİN TESTİ DE YASAK.** *"Yeni kapıyı yazdım, çalışıyor mu bakayım"* bir gerekçe
+  **değildir** — en çok kullanılan kaçamak budur. Yeni bir kapı **yalnız kendi dosyasıyla**
+  doğrulanır (`pytest tests/test_<yeni>.py`, saniyeler); *"önce ölç"* de aynı tek dosyayla
+  yapılır. Uzun koşum **demet harici, ne sebeple olursa olsun YASAK**.
 - **Kapsam KIRPILMAZ.** Hız tekrarı azaltarak kazanılır, kapıyı gevşeterek değil.
 - **İki test konteyneri ASLA paralel koşmaz** (compose kilidi `metadata.yml`'de çakışır) —
   bu kural hız için bile esnetilmez.

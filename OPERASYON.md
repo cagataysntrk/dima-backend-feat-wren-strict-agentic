@@ -47,12 +47,16 @@ her düzenlemeden **önce** zaman damgalı yedek alınır ve `md5sum` ile doğru
 3. ÖLÇ      → kusuru ÖNCE ölç (sayıyla, HEAD damgasıyla). Ölçülmemiş kusur düzeltilmez
 4. GELİŞTİR → backend + sözleşme + frontend BİRLİKTE (yetim bırakma yasağı)
 5. KAPI     → düzeltmeyi TESTE çevir; kapısız inen madde "bitti" DEĞİLDİR
-6. DOĞRULA  → hızlı kapı (geliştirme) → tam kapı (faz sonu, TEK sefer)
+6. DOĞRULA  → seviye 0 + `--hizli` YALNIZCA. 🔴 UZUN TEST BU ADIMDA KOŞMAZ
 7. BELGELE  → MIMARI.md'yi AYNI commit'te güncelle (⟳ → ✅, ölçümle)
 8. COMMIT   → açıklayıcı mesaj: kusur · kök neden · düzeltme · ölçüm
-9. DURUM    → OPERASYON-DURUM.md güncelle + commit
-10. DENETİM → arka plan ajanları raporunu oku, bulguları işle
+9. DURUM    → OPERASYON-DURUM.md'ye TEK SATIR ekle (tam tur demet sonunda)
+10. → bir sonraki maddeye geç. DEMET KAPANDIYSA §3'ün demet kapanış listesini koş
 ```
+
+🔴 **HER COMMIT'TE UZUN TEST KOŞMAZ.** `--tam` · `eval` · korpus · senaryo · Ajan C
+bu döngünün **hiçbir adımında** yer almaz — hepsi **demet kapanışına** aittir (§3).
+Madde başına doğrulama tavanı **~1 dakikadır**; aşıyorsa kural çiğneniyordur.
 
 **Bir sonraki maddeye geçmek için izin İSTENMEZ.** Döngü v1 bitene kadar sürer.
 
@@ -92,7 +96,65 @@ app/routers/ask.py · app/contribution.py · demo/packs/**   (katalog/metadata)
 
 Belge · frontend · test-aracı · `lab/` maddeleri **serbestçe demetlenir**.
 
+### 🔴 DEMET NE ZAMAN KAPANIR — üç sınırdan hangisi ÖNCE gelirse
+
+| # | Sınır | Neden bu sınır |
+|---|---|---|
+| **D-a** | **6 madde** doldu | Kırmızı çıkarsa şüpheli küme 6 commit'le sınırlı — `git bisect` ucuz kalır |
+| **D-b** | **Risk dosyasına** dokunuldu *(yukarıdaki liste)* | O madde demeti **hemen kapatır**; kapı onunla birlikte koşar |
+| **D-c** | **~2 saat** geliştirme geçti | Kırmızıyı 6 saat sonra öğrenmek, 6 madde geri sarmak demektir |
+
+**Demet kapanış listesi** *(sırayla, TEK sefer)*:
+```
+1. python lab/kapi.py --tam        → ~15 dk   (yeşil değilse buradan çıkılmaz)
+2. MIMARI.md + OPERASYON-DURUM.md  → demetin TAMAMI için tek pas, tek commit
+3. git push                        → CI ikinci ağ olarak eşzamansız koşar
+4. Ajan C canlı turu               → AŞAĞIDAKİ SIKLIKLA (her demette DEĞİL)
+```
+
+### 🔴 AJAN C — canlı kullanıcı turu, sabit sıklıkla
+
+C **pahalıdır** (~10 dk + LLM kotası) ama bu operasyonun **en verimli kusur kaynağıdır**:
+*"değişim istendi, TOPLAM verildi"* · *"`bakiye` iki cube'ta, fark ₺11,86M"* · *"ham kolon
+adı ekranda"* — üçünü de süit değil, **C** buldu. Bu yüzden azaltılır, **kaldırılmaz**.
+
+| Demet türü | C koşar mı |
+|---|---|
+| Risk dosyasına dokunan demet *(D-b)* | ✅ **Zorunlu** — kullanıcıya dönen anlam değişti |
+| Kullanıcı yüzeyi *(frontend · chip · `next_steps` · görünen ad)* değişen demet | ✅ **Zorunlu** |
+| Yalnız belge · test-aracı · `lab/` demeti | ⛔ **Koşmaz** — ölçecek davranış yok |
+| Yukarıdakilerin hiçbiri | **Her 2. demette bir** |
+| **Faz sonu** | ✅ **Her hâlükârda zorunlu**, atlanamaz |
+
+C atlandığında **gerekçesi `OPERASYON-DURUM.md`'ye yazılır** — sessiz atlama, *"koşuldu ve
+temizdi"* gibi okunur. Atlama kaydı bunu imkânsız kılar.
+
 **Bağlayıcı kurallar:**
+* 🔴 **PLANSIZ KAPI YASAKTIR.** `--tam` · `eval` · korpus · senaryo · Ajan C **yalnız**
+  `D-a` · `D-b` · `D-c` · faz sonu · **kırmızı doğrulama** anlarında koşar. Bu beş
+  andan **herhangi biri dışında** koşturmak — *"bir de şuna bakayım"*, *"emin olayım"*,
+  *"nasılsa değiştirdim"* — **kural ihlalidir**, iyi niyetli olması durumu değiştirmez.
+  Ölçüldü: bu turda kaybedilen sürenin **çoğu** tam bu plansız tekrar koşumlardandı.
+* 🔴🔴 **TESTİN TESTİ DE YASAKTIR — en çok kullanılan kaçamak budur.**
+  *"Yeni bir kapı yazdım, çalışıyor mu diye tam süiti koşturayım"* · *"kapıyı kırmızıya
+  düşürüp doğrulayacağım"* · *"kapının kapsamını göreyim"* — **hiçbiri** uzun koşum
+  gerekçesi değildir. Kullanıcı kararı (2026-08-04): *"kapı testlerini çalıştığını
+  kontrol etmek için sürekli uzun test koşuyorsun; bu da yasak. **Uzun test kesinlikle
+  demet harici, ne sebeple olursa olsun yasak.**"*
+
+  **Bir kapı nasıl doğrulanır (tek yol):**
+  ```
+  pytest tests/test_<yeni_kapi>.py        # saniyeler — TEK dosya
+  # "önce ölç": kusuru geri koy → AYNI tek dosyayı koş → kırmızı gör → düzelt
+  ```
+  *"Önce ölç"* disiplini **korunur**, ama tam süitle değil **tek dosyayla** yapılır;
+  kusuru geri koyup bir dosya koşmak ~3 saniyedir. Yeni kapının süitin geri kalanıyla
+  etkileşimi **demet kapısında** ölçülür — orası zaten koşacak.
+* **Gerekçe BEYAN EDİLİR.** Her `--tam` koşumu, yukarıdaki beş andan **hangisi** olduğunu
+  söyleyerek başlar ve bu `OPERASYON-DURUM.md`'ye yazılır. Beyansız koşum plansız kapıdır.
+  ⟳ **YÜRÜRLÜKTE değil:** kuralı araca gömecek `kapi.py --tam --neden <D-a|D-b|D-c|
+  faz-sonu|kirmizi>` kapısı **henüz yazılmadı** — bugün kural yalnız belgede, yani
+  unutulabilir. Araca gömülene kadar bu satır bir **niyet**, bir kapı değil.
 * **Demet içinde ara `--tam` YOK.** *"Bir de şuna bakayım"* diye tam süit koşturulmaz.
 * **Kapsam KIRPILMAZ.** Hız **tekrarı azaltarak** kazanılır, kapıyı gevşeterek değil.
 * 🔴 **İki test konteyneri ASLA paralel koşmaz** (compose kilidi `metadata.yml`'de çakışır).
