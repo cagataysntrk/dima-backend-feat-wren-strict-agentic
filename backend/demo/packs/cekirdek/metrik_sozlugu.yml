@@ -39,8 +39,13 @@ grain_sozlesmeleri:
     aciklama: "bir satır = bir stok hareketi (giriş/çıkış)"
     base_object_adlari: [stok_hareketleri, stok_hareket, sth, STOK_HAREKETLERI]
   cari_hareket:
+    # ⚠ Adlar ÖLÇÜLDÜ, tahmin edilmedi: logo-3 · netsis → `cari_hareketleri`,
+    # mikro-v16 → `cari_hesap_hareketleri`. İlk yazımda ikisi de listede YOKTU ve
+    # `grain_adi()` üçünde de `None` dönüyordu — yani kapı ARMED görünüp hiç ateşlemiyordu.
+    # *Tanımadığı bir tabloyu "serbest" sayan bir kapı, sessizce kapalı bir kapıdır.*
     aciklama: "bir satır = bir cari hesap hareketi (borç/alacak)"
-    base_object_adlari: [cari_hareketler, cari_hareket, cha, CLFLINE, cari_kartlar]
+    base_object_adlari: [cari_hareketleri, cari_hesap_hareketleri, cari_hareketler,
+                         cari_hareket, cha, CLFLINE]
   parti:
     aciklama: "bir satır = bir üretim partisi"
     base_object_adlari: [partiler, parti]
@@ -68,24 +73,45 @@ metrikler:
     additive: full
     synonyms: [alım, alim, alış, alis, alım tutarı, satın alma]
 
-  # ── CARİ ───────────────────────────────────────────────────────────────────
-  # 🔴 `bakiye` SEMI-ADDITIVE: dönem boyunca TOPLANMAZ, dönem SONU alınır. Bunu
-  # sözlükte beyan etmek, `1.9`'un numeric-fidelity kapısıyla aynı sınıftır —
-  # bir bakiyeyi net-hareket gibi toplamak, sistemin verebileceği en sessiz yanlıştır.
+  # ── CARİ — adım (b): GRAIN SÖZLEŞMESİ BEYAN EDİLDİ ──────────────────────────
+  #
+  # 🔴 `cari` üç ERP'de de AYNI grain'de (cari hareket) ve ölçü adları da aynı; farklı
+  # olan yalnız İFADE (`SUM(CASE WHEN cha_tip=0…)` ↔ `SUM(BORC)`). Yani burada
+  # sözleşmeyi beyan etmek RİSKSİZ: üçü de uyuyor ve kapı bunu doğruluyor.
+  # `ticaret` ise UYMUYOR — o yüzden onun sözleşmesi adım (c)'ye bırakıldı.
+  #
+  # ⚠ **AD UYUŞMAZLIĞI DÜZELTİLDİ:** ilk yazımda `borc_toplami`/`alacak_toplami`
+  # yazmıştım; cube'lardaki gerçek adlar `toplam_borc`/`toplam_alacak`. Eşleşme ADLA
+  # olduğu için o iki girdi HİÇBİR ŞEYE dokunmuyordu — sessizce ölü sözlük satırları.
+  # *Kimseyle eşleşmeyen bir sözlük girdisi, yazılmamış bir girdiyle aynı şeydir.*
+  #
+  # ⚠ `additive` burada BEYANDIR, yazılmaz (bkz. `app/cekirdek.py::cube_birlestir`):
+  # doğru değeri İFADEYE bağlıdır ve merkezî olarak dayatmak, bu maddenin engellemek
+  # için var olduğu hatanın ta kendisi olurdu.
   - name: bakiye
     label: bakiye
     unit: "₺"
     additive: semi
+    grain: cari_hareket
     synonyms: [bakiye, borç bakiyesi, hesap bakiyesi, kalan]
 
-  - name: borc_toplami
+  - name: toplam_borc
     label: borç toplamı
     unit: "₺"
     additive: full
-    synonyms: [borç, borc, borç toplamı]
+    grain: cari_hareket
+    synonyms: [borç, borc, borç toplamı, toplam borç]
 
-  - name: alacak_toplami
+  - name: toplam_alacak
     label: alacak toplamı
     unit: "₺"
     additive: full
-    synonyms: [alacak, alacak toplamı]
+    grain: cari_hareket
+    synonyms: [alacak, alacak toplamı, toplam alacak]
+
+  - name: hareket_sayisi
+    label: hareket sayısı
+    unit: adet
+    additive: full
+    grain: cari_hareket
+    synonyms: [hareket sayısı, kaç hareket, işlem sayısı]

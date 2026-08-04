@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 2 · SEMANTİK ÇEKİRDEK** *(FAZ 1 ✅ bitti — 19 adım)* |
-| **Sıradaki madde** | `2.1(b)` **`cari` ifade eşlemesi** → `2.1(c)` **`ticaret` GRAIN KARARI** → `2.1(d)` demo kopyaları |
+| **Sıradaki madde** | 🔴 `2.1(c)` **`ticaret` GRAIN KARARI** *(iki metrik mi, tek kanonik mi — karar kalemi + sahip + tarih)* → `2.1(d)` demo kopyaları |
 | **Demet** | ✅ **`1.12` kapısı 4/4 YEŞİL** (süit **2477**) — risk sınırı olduğu için demete girmedi · demet 13 açık: `1.10`+`1.11` (o kapıya da dahil oldular) |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
@@ -420,6 +420,32 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 2 · adım 2 — `2.1(b)` **`cari`: grain sözleşmesi GERÇEK pack'lerde ateşliyor** *(2026-08-04)*
+
+Kapı: **29 test**, hızlı sinyal **262**. Gölge diff: **sayı-etkisi 0** · sözlük **7·14·9·11**.
+
+> **Neden `cari` ile başlandı:** üç ERP'de de **aynı grain** (cari hareket), **aynı ölçü
+> adları**; farklı olan yalnız **ifade**. Yani sözleşmeyi burada beyan etmek **risksiz** ve
+> kapı gerçek veri üstünde **çalıştığını** kanıtlıyor. `ticaret` uymuyor — bilerek adım (c).
+
+> 🔴 **KAPI SESSİZCE KAPALIYDI — ve ölçüm onu gösterdi.** `cari_hareket` sözleşmesinin
+> `base_object` listesinde gerçek adlar (`cari_hareketleri` · `cari_hesap_hareketleri`)
+> **yoktu**; `grain_adi()` üçünde de `None` dönüyordu, yani kapı **ARMED görünüp hiç
+> ateşlemiyordu**. *Tanımadığı bir tabloyu "serbest" sayan bir kapı, sessizce kapalı bir
+> kapıdır.* Adlar **ölçülerek** eklendi, tahmin edilmedi.
+
+> 🔴 **ÖLÜ SÖZLÜK GİRDİLERİ.** İlk sözlükte `borc_toplami`/`alacak_toplami` yazıyordu;
+> cube'lardaki gerçek adlar `toplam_borc`/`toplam_alacak`. Eşleşme **adla** olduğu için o
+> iki girdi **hiçbir şeye dokunmuyordu**. *Kimseyle eşleşmeyen bir sözlük girdisi,
+> yazılmamış bir girdiyle aynı şeydir.* Yeni kapı: her çekirdek metrik **en az bir**
+> gerçek cube ölçüsüyle eşleşmek zorunda.
+
+> ⟳ **Tuzak ters çevrildi (silinmedi):** *"hiçbir metrik grain beyan etmiyor, kapı
+> ateşlemiyor"* → *"`cari` metrikleri beyan ediyor ve üç ERP'nin üçü de uyuyor"*.
+> `satis_tutari`'nın beyan **etmediği** ise ayrı bir kapıyla korunuyor: bugün beyan etmek,
+> üç ERP'den ikisini **derleme zamanında reddetmek** demekti. *Yazılmamış bir kararı kapıya
+> çevirmek, kararı vermiş gibi yapmaktır.*
 
 ### FAZ 2 · adım 1 — `2.1(a)` **çekirdek katman + grain sözleşmesi kapısı** *(2026-08-04)*
 

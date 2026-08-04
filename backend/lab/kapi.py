@@ -53,10 +53,12 @@ uygulanır (MIMARI §6.4: *"ölçüm aracının kendisi de bir bağımlılıktı
 from __future__ import annotations
 
 import argparse
+import os
 import pathlib
 import re
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 
 KOK = pathlib.Path(__file__).resolve().parents[1]
 TESTLER = KOK / "tests"
@@ -207,7 +209,9 @@ def tam(sadece: tuple[str, ...] = (), *, hepsi: bool = False) -> int:
     """
     adimlar = (
         ([sys.executable, "lab/nl_corpus.py", "--kapi"], "korpus kapısı"),
-        ([sys.executable, "-m", "pytest", "-q", "-p", "no:warnings"], "tam süit"),
+        # ⚡ `-n 8`: süit 8 dk 30 sn → 2 dk 15 sn (ölçüldü, 2499 test, SIFIR yeni kırmızı).
+        # İzolasyon `tests/conftest.py`'de: her worker kendi derlenmiş proje ağacına yazar.
+        ([sys.executable, "-m", "pytest", "-q", "-p", "no:warnings", "-n", "8"], "tam süit"),
         ([sys.executable, "-m", "eval.run"], "eval.run"),
         # 🔴 `--kapi` ZORUNLU: bayraksız koşumda `main()` her yolda 0 döner ve bu adım
         # **hiçbir koşulda kırmızı veremez** (ölçüldü: `returncode == 0`, senaryo tümden
@@ -241,8 +245,20 @@ def tam(sadece: tuple[str, ...] = (), *, hepsi: bool = False) -> int:
 
     kotu = 0
     ozet: list[str] = []
-    for komut, baslik in adimlar:
-        rc, cikti = _kos_yakala(komut, baslik)
+    # ⚡ Adımlar BİRBİRİNDEN bağımsız (ayrı süreç, ayrı proje ağacı) → aynı anda koşarlar.
+    # Sıralı koşumda toplam = adımların TOPLAMI; paralelde = EN UZUNU. Dört adım için
+    # 7 dk 05 sn yerine ~2 dk 20 sn. Tek adım varsa havuz kurmaya değmez.
+    if len(adimlar) > 1:
+        # 🔴 ÇEKİRDEK BÜTÇESİ. Adımlar paralelken korpus (16 süreç) ile süit (8 worker)
+        # aynı anda 24 çekirdek ister; makinede 20 var. Aşırı abone olmak İKİSİNİ birden
+        # yavaşlatır — kullanıcı kısıtı: *"aşırıya kaçma, PC zarar görmesin"*. Korpus tek
+        # başına koştuğunda (yerel kapı) tavanını kendi seçer; burada geri çekilir.
+        os.environ.setdefault("DIMA_KORPUS_PARALEL", "10")
+        with ThreadPoolExecutor(max_workers=len(adimlar)) as havuz:
+            sonuclar = list(havuz.map(lambda a: _kos_yakala(a[0], a[1]), adimlar))
+    else:
+        sonuclar = [_kos_yakala(k, b) for k, b in adimlar]
+    for (rc, cikti), (_komut, baslik) in zip(sonuclar, adimlar, strict=True):
         ozet.append(f"  {'✓' if rc == 0 else '✗'} {baslik:22} {_son_anlamli(cikti)}")
         ozet.extend(f"      ↳ {ad}" for ad in _dusenler(cikti)[:12])
         if rc != 0:

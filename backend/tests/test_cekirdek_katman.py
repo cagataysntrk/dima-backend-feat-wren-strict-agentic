@@ -282,23 +282,63 @@ def test_OLCULDU_SAYI_ETKISI_SIFIR(sirket):
 
 # ── 7 · ⚠ GRAIN SÖZLEŞMESİ BUGÜN HİÇBİR METRİKTE BEYAN EDİLMEDİ ────────────
 
-def test_GRAIN_BEYANI_HENUZ_YOK_ve_GEREKCESI_YAZILI():
-    """🔴 **Kapı ARMED ama gerçek pack'lerde henüz ATEŞLEMİYOR — ve bu bilinçli.**
+def test_CARI_GRAIN_SOZLESMESI_ATESLIYOR():
+    """⟳ **TUZAKTAN KAPIYA — adım (b) indi, kapı TERS ÇEVRİLDİ.**
 
-    `satis_tutari`'nın kanonik grain'i **hangisi** (fatura mı, stok hareketi mi) bir
-    **karardır** ve o karar göç reçetesinin **adım (c)**'sine aittir: *"ikisi de meşru
-    olabilir → çekirdekte İKİ ayrı metrik"*. Adım (a) yalnız **sözlüğü** birleştirir.
+    Eski yön: *"hiçbir metrik henüz `grain:` beyan etmiyor; kapı ARMED ama ateşlemiyor"*.
+    Adım (b) geldi. Yeni yön: **`cari` metrikleri sözleşme beyan ediyor ve üç ERP'nin
+    üçü de ona UYUYOR** — yani kapı artık gerçek veri üstünde **çalışıyor**.
 
-    ⚠ Bunu **yazmadan** bırakmak, bir sonraki turun kapıyı *"ihlal bulmadı, demek ki
-    temiz"* diye okumasına yol açardı — oysa kapı **hiç sorulmamış** bir soruya cevap
-    vermiyor. *Ateşlemeyen bir kapıyı «yeşil» sanmak, kapının olmamasından beterdir.*
+    🔴 `cari` sözleşmeyi beyan etmek için **doğru yerdi**: üç ERP'de de aynı grain (cari
+    hareket), aynı ölçü adları; farklı olan yalnız **ifade**. `ticaret` ise **uymuyor** —
+    onun sözleşmesi bilerek adım (c)'ye bırakıldı.
     """
-    beyan_edenler = [m.get("name") for m in (SOZLUK.get("metrikler") or []) if m.get("grain")]
-    assert beyan_edenler == [], (
-        f"grain beyan eden metrik VAR ({beyan_edenler}) — o hâlde bu test ve adım (c) "
-        "kararı GÜNCELLENMELİ, silinmemeli")
+    beyan = {m["name"]: m["grain"] for m in (SOZLUK.get("metrikler") or []) if m.get("grain")}
+    assert beyan, "adım (b) geri mi alındı? hiçbir metrik grain beyan etmiyor"
+    for ad in ("bakiye", "toplam_borc", "toplam_alacak", "hareket_sayisi"):
+        assert beyan.get(ad) == "cari_hareket", f"{ad} sözleşmesi YOK"
+
+    # ⚠ Ve sözleşme GERÇEK pack'lerde ateşliyor: üç ERP'nin `cari` cube'u da tanınmalı,
+    # yoksa `grain_adi()` None döner ve kapı SESSİZCE kapalı kalırdı.
+    for pack in ("mikro-v16", "logo-3", "netsis"):
+        yol = DEMO / "packs" / "kaynak" / pack / "cubes" / "cari" / "metadata.yml"
+        meta = yaml.safe_load(yol.read_text(encoding="utf-8")) or {}
+        assert cekirdek.grain_adi(SOZLUK, meta.get("base_object")) == "cari_hareket", (
+            f"{pack}/cari `base_object`'i ({meta.get('base_object')}) sözleşmede TANINMIYOR — "
+            "kapı ARMED görünüp hiç ateşlemez")
+        assert cekirdek.grain_denetle("cari", meta, SOZLUK) == [], f"{pack}/cari İHLAL"
+
+
+def test_TICARET_SOZLESMESI_BILEREK_YOK():
+    """⚠ `satis_tutari`'nın kanonik grain'i (fatura mı, stok hareketi mi) bir **karardır**
+    ve göç reçetesinin **adım (c)**'sine aittir: *"ikisi de meşru olabilir → çekirdekte
+    İKİ ayrı metrik"*. Bugün beyan etmek, üç ERP'den ikisini **derleme zamanında
+    reddetmek** demekti.
+
+    *Yazılmamış bir kararı kapıya çevirmek, kararı vermiş gibi yapmaktır.*
+    """
+    beyan = {m["name"]: m.get("grain") for m in (SOZLUK.get("metrikler") or [])}
+    assert not beyan.get("satis_tutari"), (
+        "`satis_tutari` grain beyan ediyor — adım (c) kararı VERİLDİYSE bu test "
+        "GÜNCELLENMELİ, silinmemeli (ve iki ayrı metrik yazılmalı)")
     kaynak = (DEMO / "packs" / "cekirdek" / "metrik_sozlugu.yml").read_text(encoding="utf-8")
     assert "adım (c)" in kaynak, "kararın SAHİBİ yazılı değil — bir sonraki tur unutur"
+
+
+def test_SOZLUK_GIRDILERI_OLU_DEGIL():
+    """🔴 **Ölçülen kusur:** ilk sözlükte `borc_toplami`/`alacak_toplami` yazıyordu;
+    cube'lardaki gerçek adlar `toplam_borc`/`toplam_alacak`. Eşleşme **adla** olduğu için
+    o iki girdi **hiçbir şeye dokunmuyordu** — sessizce ölü sözlük satırları.
+    *Kimseyle eşleşmeyen bir sözlük girdisi, yazılmamış bir girdiyle aynı şeydir.*
+
+    Kapı: her çekirdek metrik, **en az bir** gerçek cube ölçüsüyle eşleşmeli.
+    """
+    gercek: set[str] = set()
+    for yol in (DEMO / "packs").rglob("cubes/*/metadata.yml"):
+        meta = yaml.safe_load(yol.read_text(encoding="utf-8")) or {}
+        gercek |= {str(m.get("name")) for m in (meta.get("measures") or [])}
+    olu = [m["name"] for m in (SOZLUK.get("metrikler") or []) if m["name"] not in gercek]
+    assert not olu, f"ÖLÜ sözlük girdisi (hiçbir cube ölçüsüyle eşleşmiyor): {olu}"
 
 
 def test_UC_ERPNIN_GRAIN_AYRISMASI_HALA_DURUYOR():
