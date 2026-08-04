@@ -68,7 +68,7 @@
 | **§5** | **18. yasak**: *"cevapsız bir dal, cevaplı bir yolu KESEMEZ"* (`KAT-2`) | **§G/AJ0** | ⟳ UYGULANMADI |
 | **§9** | hedef mimari — **metrik katmanı** merdivene giriyor | **FAZ 0.18 · 2.1** | ⟳ UYGULANMADI |
 | **§11** | agentic — **onaylı yazma aksiyonları** | **FAZ 6.1** | ⟳ UYGULANMADI |
-| **§12** | konuşma — **6./7. tür**; uyuyan **çapa** kuralları | **FAZ 0.5 · 5.1 · 5.2** | ⟳ UYGULANMADI |
+| **§12** | konuşma — **6./7. tür İNDİ** (5.1/5.2); satır uyuyan **çapa** kurallarına DARALDI (`capa_zinciri=off`) | **FAZ 0.5 kuyruğu** | ⟳ UYGULANMADI |
 | **§13** | görsel dilbilgisi — `viz.recommend()` **çoklu dönüş** (`VizSpec \| list[VizSpec]`); *"ne zaman çizilmez"* **İNDİ** (5.11) | **FAZ 5.12** | ⟳ UYGULANMADI |
 
 > ⛔ **BU LİSTEDE OLMAYAN ama sorulabilecek bir satır — kayda geçiyor:**

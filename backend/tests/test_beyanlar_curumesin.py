@@ -469,10 +469,14 @@ _YURURLUKTE_TUZAKLARI = [
     ("§11-yazma", "FAZ 6.1",
      lambda: _yazan_arac_sayisi() > 0,
      "onaylı yazma aksiyonları (ajan bugün YAZAMAZ)"),
-    ("§12-tür", "FAZ 5.1·5.2",
-     lambda: "TUR_TAKIP" in (APP / "followup.py").read_text(encoding="utf-8")
-             or "TUR_PAYLAS" in (APP / "followup.py").read_text(encoding="utf-8"),
-     "6./7. konuşma türü"),
+    # ⟳ `§12-tür` **DARALDI** — FAZ 5.1 (`TUR_TAKIP`) ve 5.2 (`TUR_PAYLAS`) İNDİ; tuzak
+    # `test_TERS_TUZAK_FAZ_5_1_5_2_YENI_TURLER_AYAKTA`'ya taşındı (SİLİNMEDİ). §0'ın
+    # `§12` satırı geriye **uyuyan çapa kurallarını** bıraktı (`capa_zinciri=off`) ve
+    # belirteç ona nişanlandı: bayrak açıldığı gün `_capalar` dolmaya başlar.
+    ("§12-çapa", "FAZ 0.5 kuyruğu",
+     lambda: "capa_zinciri" in
+             _yaml_bayraklari() and _yaml_bayraklari().get("capa_zinciri") != "off",
+     "çapa zinciri üretimde AÇIK"),
     ("§13-viz", "FAZ 5.11·5.12",
      lambda: "list[VizSpec]" in (APP / "viz.py").read_text(encoding="utf-8"),
      "viz.recommend() çoklu dönüş"),
@@ -498,6 +502,34 @@ def test_YURURLUKTE_satiri_HALA_dogru(bolum, faz, indi_mi, konu):
         f"(1) MIMARI.md §0'dan `{bolum}` satırını SİL · "
         f"(2) ilgili bölüme ÖLÇÜMLÜ `✅` yaz (sayı + @sha + komut — kural D2) · "
         f"(3) bu tuzağı TERS ÇEVİR (artık 'inmiş olmalı' diye kilitle) — SİLME")
+
+
+def _yaml_bayraklari() -> dict:
+    """`demo/packs/features.yml` fabrika varsayılanları — tuzak belirteçleri için."""
+    import yaml as _y
+
+    d = _y.safe_load((APP.parent / "demo/packs/features.yml").read_text(encoding="utf-8"))
+    return dict((d or {}).get("features") or {})
+
+
+def test_TERS_TUZAK_FAZ_5_1_5_2_YENI_TURLER_AYAKTA():
+    """⟳ `§12-tür` ters çevrildi: 6. ve 7. tür **inmiş olmalı** ve **her thread sınıfında**
+    çalışmalı.
+
+    🔴 İkinci şart birincisinden önemli: 5.0 tam olarak *"yeni türler de aynı bloğun
+    içine doğar"* riskini kapatmak için indi. Bir gün biri sınıflandırmayı yine bir
+    `if`in içine taşırsa, `test_FAZ_5_0_sinifla_STRUCTURAL_BLOGUN_DISINDA` kırmızı olur
+    ve bu tuzak onun **niçin** kurulduğunu anlatır.
+    """
+    from app import followup
+
+    assert hasattr(followup, "TUR_TAKIP") and hasattr(followup, "TUR_PAYLAS"), (
+        "🔴 FAZ 5.1/5.2 GERİ ALINDI — MIMARI §12'nin daraltılmış satırı artık yanlış.")
+    for ifade, tur in (("bunu takip et", followup.TUR_TAKIP),
+                       ("mudure 3 cumle yaz", followup.TUR_PAYLAS)):
+        n = followup.sinifla(ifade, baglam_var=True)
+        assert n.sinif == followup.SINIF_KONUSMA and n.tur == tur, (
+            f"🔴 `{ifade}` artık tanınmıyor — ölçülmüş bir ERİŞİLEMEZLİK geri geldi.")
 
 
 def test_TERS_TUZAK_FAZ_4_6_ADR_DOSYALARI_AYAKTA():
