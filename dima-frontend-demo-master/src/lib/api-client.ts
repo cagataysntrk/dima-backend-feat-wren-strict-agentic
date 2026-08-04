@@ -198,8 +198,12 @@ export async function getMe(): Promise<AuthUser> {
 }
 
 // --- Data endpoints --------------------------------------------------------
-export async function getSchema(): Promise<SchemaResponse> {
-  const { data } = await apiClient.get<SchemaResponse>("/schema");
+// FAZ 2.3 — KAPSAM MERCEĞİ. `scope` KATALOĞA gider, /ask'e DEĞİL: bir görünürlük
+// tercihini cevaplama yoluna bağlamak, aynı sorunun kapsam değişince farklı sayı
+// döndürmesi demekti. Kullanıcının GÖRDÜĞÜ küme değişir, ALDIĞI sayı değişmez.
+export async function getSchema(scope?: string | null): Promise<SchemaResponse> {
+  const { data } = await apiClient.get<SchemaResponse>("/schema",
+    scope ? { params: { scope } } : undefined);
   return data;
 }
 

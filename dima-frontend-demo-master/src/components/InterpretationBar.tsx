@@ -30,7 +30,7 @@ export function InterpretationBar({
   cq: CubeQuery;
   onEdit: (edit: Edit) => void;
 }) {
-  const { data: schema } = useQuery({ queryKey: ["schema"], queryFn: getSchema });
+  const { data: schema } = useQuery({ queryKey: ["schema"], queryFn: () => getSchema() });
   const [openFilter, setOpenFilter] = useState<string | null>(null);
   const [cStart, setCStart] = useState("");  // özel tarih aralığı (gte)
   const [cEnd, setCEnd] = useState("");      // özel tarih aralığı (lte)

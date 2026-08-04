@@ -5,10 +5,12 @@ import { getMetrics, getSchema, setMetrikSahibi } from "@/lib/api-client";
 import { usePermission } from "@/lib/usePermission";
 
 // Veri modeli (şema) — artık ana yüzeyde değil, Ayarlar drawer'ı içinde gösterilir (ADR-0007 K7).
-export function SchemaPanel() {
+export function SchemaPanel({ kapsam }: { kapsam?: string | null } = {}) {
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["schema"],
-    queryFn: getSchema,
+    // ⚠ `kapsam` sorgu ANAHTARINDA: olmasaydı mercek değişince React Query önbellekten
+    // ESKİ katalogu döndürürdü — kullanıcı seçim yapar, hiçbir şey değişmezdi.
+    queryKey: ["schema", kapsam ?? "genel"],
+    queryFn: () => getSchema(kapsam),
   });
 
   return (

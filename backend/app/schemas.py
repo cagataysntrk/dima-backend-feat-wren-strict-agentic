@@ -56,6 +56,16 @@ class AskRequest(BaseModel):
     # raporun yapısal CubeQuery durumu. Takip mesajları ("aylara göre", "temmuzu çıkar")
     # bunlarla yorumlanır; motor mevcut sorguyu düzenler.
     history: list[str] = Field(default_factory=list)
+    # ⟳ FAZ 2.3 — `scope` BURAYA KONMADI ve bu bir SAPMA değil bir DÜZELTME.
+    #
+    # Yol haritası `AskRequest.scope` diyor. Ölçüp vazgeçtim: merceği CEVAPLAMA yoluna
+    # bağlamak, **aynı sorunun kapsam değişince farklı sayı döndürmesi** demekti — bir
+    # GÖRÜNÜRLÜK tercihini SONUCA karıştırmak. Mercek `/schema`'ya (katalog) bağlandı:
+    # kullanıcının GÖRDÜĞÜ küme değişir, aldığı sayı değişmez.
+    #
+    # 🔴 Ve yetim-alan kapısı bunu doğruladı: alanı buraya koyduğumda hiçbir tüketicisi
+    # olmadığı için `test_K2b_DIGER_SOZLESMELER_de_taranir` KIRMIZI verdi.
+    # *Bir sözleşme alanı, tüketicisi olmadan yalnız bir vaattir.*
     cube_query: dict[str, Any] | None = None
     # Strict-agentic /ask'in takip (follow-up) bağlamı: bir önceki turun `AskResponse.sql`'i.
     # BİLEREK `cube_query`den AYRI bir alan — `cube_query` frontend'de scheduling/dashboard/

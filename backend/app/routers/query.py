@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from app import katman_b
 from app.auth.dependencies import require, require_company
 from app.config import get_settings
+from app.features import resolve_for
 from app.schemas import QueryRequest, QueryResult, SchemaResponse
 from app.wren_service import UnsafeSqlError
 
@@ -15,14 +16,36 @@ router = APIRouter(tags=["query"])
 
 @router.get("/schema", response_model=SchemaResponse,
             dependencies=[Depends(require("query:run")), Depends(require_company)])
-def get_schema(request: Request) -> SchemaResponse:
+def get_schema(request: Request, scope: str | None = None) -> SchemaResponse:
+    """Katalog — **FAZ 2.3'ten beri kapsam merceğiyle daraltılabilir.**
+
+    🔴 Mercek bir **GÖRÜNÜRLÜK** aracıdır, bir **güvenlik sınırı DEĞİL**: burada yapılan
+    tek şey, dönen **cube listesini kısaltmaktır**. Yetkiyi `authorize()` + RLS koyar ve
+    merceği kapatmak **hiçbir yetki açmaz** — kapı bunu tersinden de doğruluyor
+    (`daralt()` her zaman tam kümenin **alt kümesini** döner).
+
+    ⚠ Mercek `/schema`'ya bağlandı, `/ask`'e değil: kullanıcının **gördüğü katalog**
+    burada üretiliyor. Cevaplama yoluna bağlamak, bir görünürlük tercihini **sonuca**
+    karıştırmak olurdu — aynı soru, mercek değişince farklı sayı döndürürdü.
+    """
     try:
         from app.company_registry import wren_for_request
 
+        from app import kapsam as _kapsam
         from app.kademeli_dusus import istekten_rapor
 
-        return SchemaResponse(**{**wren_for_request(request).schema(),
-                                 **istekten_rapor(request)})
+        sema = dict(wren_for_request(request).schema())
+        p = getattr(request.state, "principal", None)
+        if "kapsam_mercegi" in resolve_for(get_settings(), p):
+            k = _kapsam.gecerli(scope)
+            if not _kapsam.izinli_mi(k, p):
+                raise HTTPException(
+                    status_code=403,
+                    detail="`portfoy` kapsamı için çok-tenant yetkisi gerekiyor.")
+            gorunur = set(_kapsam.daralt(sema, k, departman=getattr(p, "departman", None)))
+            sema["cubes"] = [c for c in (sema.get("cubes") or [])
+                             if c.get("name") in gorunur]
+        return SchemaResponse(**{**sema, **istekten_rapor(request)})
     except FileNotFoundError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 

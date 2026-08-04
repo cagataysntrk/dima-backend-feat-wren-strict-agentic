@@ -421,6 +421,42 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
 
+### FAZ 2 · adım 12 — `2.3` **DEPARTMAN = MERCEK, KÜP DEĞİL** *(2026-08-04)*
+
+Kapı: **16 test** (`tests/test_kapsam_mercegi.py`), hızlı sinyal **520**.
+Bayrak: `kapsam_mercegi` = **`off`** (varsayılan: bugünkü tam katalog).
+
+> **Neden küp değil mercek:** *"Bize bir satış küpü lazım"* isteğinin meşru karşılığı bir
+> **kapsam parametresidir** (Plan 3 §7.8). Bir departmanı küp yapmak, o departmanın **tüm
+> sözlüğünü** kimliğe yapıştırır — `surdurulebilirlik` felaketinin kökü buydu (%64→%56).
+
+> 🔴 **MERCEK GÜVENLİK SINIRI DEĞİL** — maddenin en kritik değişmezi. Kapı bunu
+> **tersinden** ölçüyor: her kapsam × her departman kombinasyonunun çıktısı, mercek
+> kapalıyken görünen kümenin **alt kümesi** olmak zorunda. *Merceği bir güvenlik katmanı
+> gibi kullanmak, "kapsamı genişlet" düğmesini bir YETKİ YÜKSELTME aracına çevirirdi.*
+
+> 🔴 **YOL HARİTASINDAN SAPMA — ve gerekçesi ölçüldü.** Yol haritası `AskRequest.scope`
+> diyor; merceği **cevaplama yoluna** bağlamak, *aynı sorunun kapsam değişince farklı sayı
+> döndürmesi* demekti. Mercek **`/schema`**'ya (katalog) bağlandı: kullanıcının **gördüğü
+> küme** değişir, **aldığı sayı** değişmez. Ve **yetim-alan kapısı bunu doğruladı** —
+> alanı `AskRequest`'e koyduğumda tüketicisi olmadığı için kırmızı verdi.
+> *Bir sözleşme alanı, tüketicisi olmadan yalnız bir vaattir.*
+
+> 🔴 **UYDURMA İZİN ADI — kapı yakaladı.** `portfoy` için `"tenant:read_all"` diye bir
+> izin **uydurmuştum**; matriste öyle bir eylem yok. *Var olmayan bir izne dayanan kontrol,
+> hiç yapılmayan bir kontroldür:* `izinli_mi` her zaman `False` döner, `portfoy` **hiç
+> kimseye** açılmazdı. Deponun çok-tenant sınırı `is_superadmin`'dir (ADR-0015 K7).
+
+> ⚠ **Ataması olmayan küp GİZLENMİYOR:** atanmamışlık bir *"gizle"* kararı değildir —
+> sessizce gizlemek, kullanıcının katalogdan **haberi olmamasına** yol açardı.
+
+> ⚠ **Bayrak kapalıyken anahtar HİÇ ÇİZİLMİYOR:** *bir görünürlük aracı, kapalıyken
+> kullanıcıya var olduğunu bile söylememelidir.* Ve kapsam React Query **anahtarında** —
+> olmasaydı mercek değişince önbellekten **eski katalog** dönerdi.
+
+> ⚠ **YAML tuzağı:** `kapsam_mercegi: off` çıplak yazılınca YAML 1.1 onu **boolean**
+> okuyor; bayrak kaydı kapısı yakaladı, tırnak eklendi.
+
 ### FAZ 2 · adım 11 — `2.5` **HEDEF KIYASI** — hedef UYDURULMAZ *(2026-08-04)*
 
 Kapı: **14 test** (`tests/test_hedef_kiyasi.py`), hızlı sinyal **1148**.

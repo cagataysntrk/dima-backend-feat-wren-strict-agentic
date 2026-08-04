@@ -37,6 +37,17 @@ _SCOPE_ORDER = ("global", "sector", "tenant", "role", "user")
 #   3) Tüketen yüzeyi `useFeature("<key>")` ile geçitle (frontend).
 #   4) Gerekiyorsa admin panelden tenant/rol/kullanıcı override'ı ile aç.
 FLAG_REGISTRY: dict[str, dict[str, str]] = {
+    "kapsam_mercegi": {
+        "label": "Kapsam merceği (departman | genel | portföy)",
+        "description": "Departman bir MERCEKTİR, küp değil (Plan 3 §7.8: 'kapsam "
+                       "parametresi, yeni motor değil'). Bir departmanı küp yapmak, o "
+                       "departmanın TÜM sözlüğünü kimliğe yapıştırır — surdurulebilirlik "
+                       "felaketinin kökü buydu (%64→%56 ölçüldü). 🔴 Mercek bir "
+                       "GÖRÜNÜRLÜK aracıdır, GÜVENLİK SINIRI DEĞİL: kapatmak yetki "
+                       "AÇMAZ, sınır her zaman authorize() + RLS'tir. Kapalıyken her "
+                       "kullanıcı bugünkü tam katalogu görür (FAZ 2.3).",
+        "category": "semantik",
+    },
     "cekirdek_katman": {
         "label": "Çekirdek katman (evrensel metrik sözlüğü + grain sözleşmesi)",
         "description": "Evrensel metrikler (`satis_tutari`, `bakiye`…) tek yerde "

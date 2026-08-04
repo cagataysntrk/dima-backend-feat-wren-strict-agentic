@@ -14,6 +14,9 @@
 # yalnız burada tanımlı; admin panelden tenant/rol/kullanıcı override'ı ile açılır.
 # Metadata (etiket/açıklama/kategori) app/features.py FLAG_REGISTRY'de — tek kaynak.
 features:
+  # FAZ 2.3 — kapsam merceği. `off`: her kullanıcı bugünkü TAM katalogu görür.
+  # 🔴 Mercek bir GÖRÜNÜRLÜK aracıdır, GÜVENLİK SINIRI DEĞİL — kapatmak yetki AÇMAZ.
+  kapsam_mercegi: "off"   # ⚠ TIRNAK ŞART: YAML 1.1 çıplak `off`u BOOLEAN okur
   cikti_yorumlama: beta   # evrensel çıktı yorumu — her tablo/grafik/rapor/KPI
   sql_display: beta       # üretilen SQL'i kullanıcıya göster ('+ sql göster')
   verify_button: beta     # ✓/✗ doğrulama — VQR öğrenme (eskiden boyahane sektöründe)

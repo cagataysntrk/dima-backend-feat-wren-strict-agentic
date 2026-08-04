@@ -167,6 +167,9 @@ export function ChatPanel({
   onSelectThread,
   onSubmit,
   yolSiniri = null,
+  kapsam = null,
+  onKapsam,
+  superadmin = false,
   onYolSiniri,
   onUpload,
   uploading,
@@ -204,6 +207,11 @@ export function ChatPanel({
   // Sayısal bir güven eşiği DEĞİL: merdivenin kendisine bağlı üç ayrık seviye.
   // Rakiplerin veremeyeceği ayar budur — onların yolu yok, tek kutu var.
   yolSiniri?: "deterministik" | "llm" | null;
+  // FAZ 2.3 — kapsam merceği. `undefined` onKapsam → anahtar HİÇ çizilmez (bayrak kapalı).
+  kapsam?: "departman" | "genel" | "portfoy" | null;
+  onKapsam?: (k: "departman" | "genel" | "portfoy") => void;
+  // `portfoy` yalnız superadmin'e TEKLİF edilir — sınır backend'de, bu yalnız nezaket.
+  superadmin?: boolean;
   onYolSiniri?: (s: "deterministik" | "llm" | null) => void;
   // Chat-scoped Excel/CSV yükleme (base modu) — bu sohbete özel veri kaynağı.
   onUpload?: (file: File) => void;
@@ -304,6 +312,40 @@ export function ChatPanel({
             Üç seviye MERDİVENİN kendisidir: küp → +LLM seçimi → +keşif. Sayısal bir
             güven eşiği DEĞİL; MIMARI'nin kararı gereği kalibre edilmemiş bir sayı
             "güven değil süstür". Varsayılan (sınırsız) HİÇBİR ŞEYİ değiştirmez. */}
+        {/* FAZ 2.3 — KAPSAM MERCEĞİ. `yol` anahtarıyla AYNI desen: yeni bir panel/ekran
+            DEĞİL, komposerin üstünde üç seviyeli bir seçim.
+            🔴 Bir GÖRÜNÜRLÜK aracıdır, GÜVENLİK SINIRI DEĞİL: `genel`e dönmek hiçbir
+            yetki AÇMAZ — sınırı backend (`authorize()` + RLS) koyar. `portfoy` yalnız
+            superadmin'e görünür; görünürlük bir sınır değil, YAPAMAYACAĞI bir şeyi
+            kullanıcıya teklif etmeme nezaketidir. */}
+        {onKapsam && (
+          <div className="mb-2 flex items-center gap-1.5">
+            <span className="select-none font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+              kapsam
+            </span>
+            {([
+              ["genel", "genel", "Bugünkü tam katalog (varsayılan)"],
+              ["departman", "departmanım", "Yalnız departmanıma atanmış metrikler — atanmamışlar da görünür"],
+              ...(superadmin
+                ? [["portfoy", "portföy", "Çok-tenant birleşik görünüm (yalnız superadmin)"] as const]
+                : []),
+            ] as const).map(([deger, etiket, ipucu]) => (
+              <button
+                key={etiket}
+                type="button"
+                onClick={() => onKapsam(deger)}
+                title={ipucu}
+                className={`border px-1.5 py-0.5 font-mono text-[10px] transition-colors ${
+                  (kapsam ?? "genel") === deger
+                    ? "border-accent/50 text-accent"
+                    : "border-hairline text-neutral-500 hover:text-foreground"
+                }`}
+              >
+                {etiket}
+              </button>
+            ))}
+          </div>
+        )}
         {onYolSiniri && (
           <div className="mb-2 flex items-center gap-1.5">
             <span className="select-none font-mono text-[10px] uppercase tracking-wider text-neutral-400">

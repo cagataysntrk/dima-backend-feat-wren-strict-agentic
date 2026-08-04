@@ -68,6 +68,10 @@ export default function Home() {
   // YOL SINIRI (Faz F2) — oturum boyunca kalıcı bir tercih: "yalnız küpün kanıtladığı
   // cevapları göster". `null` = sınır yok (bugünkü davranış, hiçbir şey değişmez).
   const [yolSiniri, setYolSiniri] = useState<"deterministik" | "llm" | null>(null);
+  // FAZ 2.3 — KAPSAM MERCEĞİ. Bayrak kapalıysa anahtar HİÇ çizilmez (onKapsam verilmez):
+  // bir görünürlük aracı, kapalıyken kullanıcıya var olduğunu bile söylememelidir.
+  const [kapsam, setKapsam] = useState<"departman" | "genel" | "portfoy">("genel");
+  const kapsamAcik = useFeature("kapsam_mercegi") !== "off";
   // "Ayarlar" drawer'ı içi iki sekmeli (Faz 4.5): mevcut şema görünümü + DB bağlama
   // sihirbazı — YENİ bir rail ikonu/Drawer değeri EKLEMEDEN, en düşük riskli entegrasyon.
   const [settingsTab, setSettingsTab] =
@@ -437,6 +441,8 @@ export default function Home() {
               pendingQuestion={pendingQuestion}
               liveTrace={liveTrace}
               aktifJobId={aktifJobId}
+              kapsam={kapsam}
+              onKapsam={kapsamAcik ? setKapsam : undefined}
               compact={activeThreadId !== null}
               yolSiniri={yolSiniri}
               onYolSiniri={setYolSiniri}
@@ -600,7 +606,7 @@ export default function Home() {
               </button>
             </div>
             {settingsTab === "sema" ? (
-              <SchemaPanel />
+              <SchemaPanel kapsam={kapsamAcik ? kapsam : null} />
             ) : settingsTab === "baglanti" ? (
               <ConnectionReviewPanel />
             ) : settingsTab === "zamanlamalar" ? (

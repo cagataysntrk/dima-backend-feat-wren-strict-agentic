@@ -13,7 +13,7 @@ export function ConnectionBadge() {
   const pathname = usePathname();
   const { data, isError, isLoading } = useQuery({
     queryKey: ["schema"],
-    queryFn: getSchema,
+    queryFn: () => getSchema(),   // ⚠ doğrudan geçmek React Query context'ini `scope` sanardı
     refetchInterval: 30_000,
     retry: false,
     enabled: pathname !== "/login",
