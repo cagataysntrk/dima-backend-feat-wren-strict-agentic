@@ -8,7 +8,12 @@
 >
 > Bu dört dosya operasyonun **tam durumunu** taşır. Sohbet geçmişine ihtiyaç YOKTUR.
 
-**Son güncelleme:** 2026-08-04 · HEAD → **FAZ 0 · adım 1** *(0.22 · 0.2 · 0.23)*
+**Son güncelleme:** 2026-08-05 · HEAD → **FAZ 4 · adım 4.6 bitti** @`5d2f37b`
+
+⚠ **Bu başlık BİR KEZ BAYATLADI ve bir denetim onu yakaladı:** *"HEAD → FAZ 0 · adım 1"*
+yazıyordu, gerçek HEAD **FAZ 4.4**'teydi. Bu dosya *"bağlam sıfırlanırsa buradan başla"*
+diye ilan edilmiş olduğu için bayat bir başlık, sıfırlanan bir ajanı **yanlış fazdan**
+devam ettirir. 🔴 **Kural: her faz commit'inden sonra bu blok güncellenir.**
 
 ---
 
@@ -16,14 +21,15 @@
 
 | | |
 |---|---|
-| **Aktif faz** | **FAZ 4 · ÖLÇÜM ve KANIT** *(FAZ 3 ✅ bitti — 7 adım)* |
-| **Sıradaki madde** | `4.3` çok-turlu Türkçe benchmark · `4.4` Ossie ihracı · `4.5` MCP yüzeyi · `4.6` ADR · `4.8` uçtan uca doğruluk aleti |
-| **Demet** | ✅ **`1.12` kapısı 4/4 YEŞİL** (süit **2477**) — risk sınırı olduğu için demete girmedi · demet 13 açık: `1.10`+`1.11` (o kapıya da dahil oldular) |
-| 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
-| **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
-| **Demet** | ✅ **demet 7 kapandı** — FAZ 0 kapanış kapısı **4/4 YEŞİL** (süit **2199**) · demet 8 açık: `1.3c` · `1.3` |
-| 🔴 **Kota** | **GÜNLÜK KOTA DOLDU** (2026-08-04 ~11:40; `429`/`503`, tüm sağlayıcılar). Bugün başka **canlı** koşum YOK — LLM'siz ölçümler serbest |
-| **Tempo** | 🔴 **DEMET disiplini yürürlükte** (`OPERASYON.md §3`): commit ≠ kapı; tam kapı **demet sonunda bir kez**. Risk sınırındaki dosyalara dokunan madde demete girmez |
+| **Aktif faz** | **FAZ 4 · ÖLÇÜM ve KANIT** *(FAZ 0·1·2·3 ✅ bitti)* |
+| **Biten** | `4.1` `4.2` risk-kapsam eğrisi · `4.3` çok-turlu benchmark · `4.4` Ossie ihracı + round-trip · `4.5` MCP yüzeyi · `4.6` ADR dosyaları |
+| **Sıradaki madde** | 🔴 **`4.8` uçtan uca doğruluk aleti ÖNCE** → `4.7` teknik rapor *(4.7, §C/16 ölçülmeden **YAYIMLANAMAZ** — bağımlılık sırası bu)* |
+| **Sonraki faz** | FAZ 5 (konuşma ve deneyim, 18 madde — `5.0` diyalog yöneticisinin yapısal kapalılığı **ilk madde**) |
+| 🔴 **Açık borç 1** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ |
+| 🔴 **Açık borç 2** | **FAZ 4.3 hedefi TUTMADI** — `deterministic_refine`'ın ölçü-ekleme kapısı dar (−%18,2 vs hedef −%10). Bilerek düzeltilmedi (harness davranış değiştirmez) |
+| 🔴 **Açık borç 3** | **13 bayrak `off`** — ödenmiş, testli, kullanıcıya kapalı. Üçü FAZ 1'in ana teslimatı (`tazelik` · `lineage` · `metrik_sertifikasi`) |
+| 🔴 **Açık borç 4** | **ADR kaydı kodun ~2 faz gerisinde** — `ADR-0024` sonrası inen faz-düzeyi kararların ADR'si yok (grain sözleşmesi · çekirdek katman · kapsam merceği · mali takvim · sahiplik hakemi · Ossie · MCP) |
+| **Tempo** | 🔴 **YENİ TEST POLİTİKASI** (`backend/CLAUDE.md`): geliştirmede `--hizli --degisen` (~1 dk) · demet sonunda `--tam` = **yalnız korpus** (1 dk 50 sn) · `--hepsi` **yalnız gecelik CI** |
 | **v1 bitiş ölçütü** | §C'nin **16 ölçütü** yeşil |
 
 ---

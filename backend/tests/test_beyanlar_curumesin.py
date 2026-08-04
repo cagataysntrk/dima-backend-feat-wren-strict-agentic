@@ -476,9 +476,8 @@ _YURURLUKTE_TUZAKLARI = [
     ("§13-viz", "FAZ 5.11·5.12",
      lambda: "list[VizSpec]" in (APP / "viz.py").read_text(encoding="utf-8"),
      "viz.recommend() çoklu dönüş"),
-    ("§8.2-ADR", "FAZ 4.6",
-     lambda: (APP.parent / "docs/adr").exists(),
-     "ADR dosyaları"),
+    # ⟳ `§8.2-ADR` **TERS ÇEVRİLDİ** — FAZ 4.6 indi (20 dosya + kapı); tuzak
+    # `test_TERS_TUZAK_FAZ_4_6_ADR_DOSYALARI_AYAKTA`'ya taşındı (SİLİNMEDİ).
 ]
 
 
@@ -499,6 +498,25 @@ def test_YURURLUKTE_satiri_HALA_dogru(bolum, faz, indi_mi, konu):
         f"(1) MIMARI.md §0'dan `{bolum}` satırını SİL · "
         f"(2) ilgili bölüme ÖLÇÜMLÜ `✅` yaz (sayı + @sha + komut — kural D2) · "
         f"(3) bu tuzağı TERS ÇEVİR (artık 'inmiş olmalı' diye kilitle) — SİLME")
+
+
+def test_TERS_TUZAK_FAZ_4_6_ADR_DOSYALARI_AYAKTA():
+    """⟳ `§8.2` ters çevrildi: ADR dosyaları **var olmalı** ve **rekonstrüksiyon** kalmalı.
+
+    🔴 İkinci şart birincisinden önemli: dosyalar bir gün *"orijinal karar kaydı"* gibi
+    okunmaya başlarsa, uydurulmuş bir tarihle doldurulmuş bir arşive dönüşürler.
+    """
+    kok = APP.parent / "docs/adr"
+    dosyalar = sorted(kok.glob("[0-9][0-9][0-9][0-9]-*.md"))
+    assert len(dosyalar) >= 20, (
+        f"🔴 FAZ 4.6 GERİ ALINDI: `docs/adr/` {len(dosyalar)} dosya. MIMARI §8.2'nin "
+        f"ölçümlü `✅` beyanı DOĞRULANAMIYOR — ve `ADR-0007-K3`'e dayanan §C/3 çıkış "
+        f"ölçütü yine var olmayan bir belgeye dayanır.")
+    for p in dosyalar:
+        metin = p.read_text(encoding="utf-8")
+        assert "REKONSTRÜKSİYON" in metin.upper() and "kod kazanır" in metin, (
+            f"🔴 `{p.name}` artık rekonstrüksiyon olduğunu ilan ETMİYOR — orijinal bir "
+            f"karar kaydı gibi okunur.")
 
 
 def test_TERS_TUZAK_FAZ_4_5_MCP_AYAKTA():

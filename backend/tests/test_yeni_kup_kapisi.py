@@ -1,5 +1,12 @@
 """FAZ 2.7 — **ADLANDIRMA SÖZLEŞMESİ: yalnız YENİ küplere.** [bayraksız: kural]
 
+> Bu dosya **ADR-0023**'ün (*yeni cube kapısı: yazılı gerekçe + başka modülün grain'ini
+> çalmama*) kapı tarafıdır. ⚠ Atıf FAZ 4.6'da eklendi: karar `packs/modul/enerji/`
+> yorumlarında ve bu testte **yaşıyordu** ama kimliğiyle hiçbir yerde **anılmıyordu** —
+> yani `docs/adr/0023-*.md` kodda karşılığı olmayan bir kayıt gibi görünüyordu.
+> *Bir kararın kimliği, kararın yaşadığı yerde yazılı olmalı; yoksa kayıt ile kod
+> birbirini doğrulayamaz.*
+
 ## 🔴 VAR OLAN ADLAR KALIR — ve bu ölçülmüş bir karardır
 
 Toplu yeniden adlandırma **denendi ve reddedildi**: `surdurulebilirlik` kimliğinden ham

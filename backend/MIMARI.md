@@ -70,7 +70,6 @@
 | **§11** | agentic — **onaylı yazma aksiyonları** | **FAZ 6.1** | ⟳ UYGULANMADI |
 | **§12** | konuşma — **6./7. tür**; uyuyan **çapa** kuralları | **FAZ 0.5 · 5.1 · 5.2** | ⟳ UYGULANMADI |
 | **§13** | görsel dilbilgisi — `viz.recommend()` yeni dallar + dönüş `VizSpec \| list[VizSpec]` | **FAZ 5.11 · 5.12** | ⟳ UYGULANMADI |
-| **§8.2** | ADR'ler — **dosyalar üretilecek** (20 kimlik · 252 atıf · 0 dosya) | **FAZ 4.6** | ⟳ UYGULANMADI |
 
 > ⛔ **BU LİSTEDE OLMAYAN ama sorulabilecek bir satır — kayda geçiyor:**
 > *"§9.2 — ölçü + başka cube'un BOYUTU ifade edilemez"* bir ⟳ satırı **DEĞİLDİR**, çünkü
@@ -3278,7 +3277,29 @@ docker run --rm --network none -v "$PWD/backend:/app" -w /app dima-test python l
 | `backend/lab/panel/` | 4-model düşman denetimi. **⟳ FAZ 1.13 (2026-08-04) yeniledi:** aksiyon sayısı **47** ölçüldü (beyan doğru); durum **✅ 6 kapandı · ◐ 3 kısmen · ⊘ 2 · ⬜ 36 açık** ve her ✅ **kodla doğrulanıyor** (`tests/test_panel_tazeligi.py`, 19 test — yanlış bir *«kapandı»* iddiası KIRMIZI verir). Durumun **tek sahibi** `index.md`; `findings/*.md` **tarihsel kayıttır**, bilerek güncellenmez. Çürütülmüş iddialar da listelidir — **tekrar açma**. |
 | `Dima-0-100-Gorev-Takip-Dosyasi (2).md` | **ÜRÜN şartnamesi. Mimari otorite DEĞİL** — §8.3. |
 
-### 8.2 ADR'ler fiziksel olarak YOK
+### 8.2 ADR'ler ~~fiziksel olarak YOK~~ — **DOSYALAR ÜRETİLDİ (FAZ 4.6)**
+
+✅ **`backend/docs/adr/` İNDİ** — 20 dosya, kapı `tests/test_adr_dosyalari.py` (25 test).
+Kodda anılan **her** kimliğin dosyası var ve **yeni bir kimlik dosyasız merge edilemez**.
+Ters yön de kapalı: kodda **hiç anılmayan** bir kimliğe dosya yazmak da reddediliyor
+(kapının kendisi bir kayıt-uydurma aracına dönüşmesin diye).
+
+🔴 **Dosyalar REKONSTRÜKSİYONDUR ve her biri bunu kendi başında İLAN EDER.** Çelişkide
+**kod kazanır**. *Var olmayan bir belgeye atıf yapmak bir eksiklikti; onu uydurulmuş bir
+tarihle doldurmak bir sahtekârlık olurdu.*
+
+⚠ **ADR-0023 atıfsızdı** ve bu ölçüldü: karar `packs/modul/enerji/` yorumlarında ve
+`test_yeni_kup_kapisi.py`'de **yaşıyordu** ama kimliğiyle hiçbir yerde anılmıyordu. Atıf,
+kararın **yaşadığı yere** eklendi — kaydı meşrulaştırmak için değil, kayıt ile kodun
+birbirini doğrulayabilmesi için.
+
+⚠ **Kayıt kodun ~2 faz gerisinde:** en yüksek kimlik `ADR-0024` ve ondan sonra inen
+faz-düzeyi kararların (grain sözleşmesi · çekirdek katman · kapsam merceği · mali takvim
+· sahiplik hakemi · Ossie · MCP) ADR'si **yok**. Bu bir borçtur, `OPERASYON-DURUM.md`'de.
+
+<details><summary>Rekonstrüksiyonun kaynağı (aşağıdaki tablo) — dosyalar buradan türetildi</summary>
+
+#### ~~8.2 ADR'ler fiziksel olarak YOK~~ *(FAZ 4.6 öncesi ölçüm — kayıt için korundu)*
 Kodda **20 farklı ADR kimliği** ~250 kez atıf alıyor (0003, 0004, 0005, 0007–0012, 0014–0024;
 0001, 0002, 0006, 0013 hiç kullanılmamış). `docs/adr/` dizini **ne diskte ne git geçmişinde var**.
 Bir ADR'ye atıf gördüğünde kaynağı arama — **kodun kendisi ve bu belge tek kanıttır.**
@@ -3307,6 +3328,8 @@ Rekonstrüksiyon (atıf bağlamlarından türetildi; başlıklar alıntı değil
 | 0022 | **Deterministik evrensel çıktı yorumu** — LLM aritmetik yapmaz | `app/interpret.py` |
 | 0023 | **Yeni cube kapısı**: yazılı gerekçe + başka modülün grain'ini çalmama | `packs/modul/enerji/` yorumları |
 | **0024** | **Görselleştirme kararı deterministik ve backend'e ait** (Show-Me / Cleveland-McGill) | `app/viz.py`, `app/report.py` |
+
+</details>
 
 ### 8.3 `Dima-0-100` dosyasının sınırları
 

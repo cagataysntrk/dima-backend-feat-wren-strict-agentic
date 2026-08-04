@@ -23,6 +23,15 @@ features:
   ossie_ihrac: "off"
   # FAZ 4.5 — MCP yüzeyi. `off`: /mcp/* 404 döner, HTTP yolu ETKİLENMEZ.
   mcp_yuzeyi: "off"
+  # ⚠ AŞAĞIDAKİ ÜÇÜ FAZ 4.6'DA EKLENDİ — bir denetim ölçtü: `FLAG_REGISTRY`'de kayıtlı
+  # ama bu dosyada YOKLARDI, yani varsayılanları hiçbir yerde YAZILI DEĞİLDİ. Yokluk ile
+  # `"off"` çözümlemede aynı sonucu verir (`resolve_for` `off`u kümeden düşürür), bu
+  # yüzden ekleme DAVRANIŞ DEĞİŞTİRMEZ — ama *"bu bayrak var ve kapalı"* ile *"böyle bir
+  # bayrak yok"* okuyucu için aynı şey değildir. 🔴 Yazılı olmayan bir varsayılan,
+  # tartışılamayan bir varsayılandır.
+  ask_async_discovery: "off"   # Discovery'yi arka plana al (/ask/jobs kuyruğu)
+  cekirdek_katman: "off"       # FAZ 2.1 — çekirdek katman derlemeye girer
+  threaded_chat: "off"         # thread'li sohbet UI'ı
   # FAZ 2.5 — hedef kıyası. `off`: `resp.hedef` HİÇ üretilmez → yanıt bayt bayt bugünküyle
   # aynı (KURAL B). 🔴 Açıkken bile hedef UYDURULMAZ: `target:` beyanı yoksa `None`.
   hedef_kiyasi: "off"
