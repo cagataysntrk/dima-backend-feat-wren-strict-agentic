@@ -274,6 +274,10 @@ class AskResponse(BaseModel):
     # soruya cevap yapar — kullanıcı hangi pencereyi gördüğünü bilmeli. Takvim yılı
     # kullanan tenant'ta `None` kalır: gürültü üretmez, yalnız fark varken konuşur.
     mali_donem: str | None = None
+    # FAZ 2.5 — HEDEF KIYASI. 🔴 Beyan yoksa `None` ve bayrak açık olsa bile hedef
+    # ÇİZİLMEZ: "hedef yok" ile "hedef 0" asla karıştırılmaz. Hedef UYDURULMAZ —
+    # kullanıcının KENDİ sınırı okunur (MIMARI Faz G3).
+    hedef: dict | None = None
     # FAZ 1.7 — TAZELİK MERDİVENİ. `taze | uyari | hata | bilinmiyor`.
     # 🔴 `hata` VE `bilinmiyor` kademelerinde SAYI GÖSTERİLMEZ (B4: bilinmeyen tazelik
     # TAZE DEĞİLDİR). Kaynak planlar bunun TERSİNİ yazıyordu; yol haritası bunu

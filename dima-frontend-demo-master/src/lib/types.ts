@@ -208,6 +208,20 @@ export interface AskResponse {
    * soruya cevap yapar. Takvim yılı kullanan tenant'ta `null`: gürültü üretmez, yalnız
    * fark varken konuşur. Pencere kararı backend'de (`app/mali_takvim.py`). */
   mali_donem?: string | null;
+  /** FAZ 2.5 — HEDEF KIYASI. Yalnız cube'da `target:` BEYAN EDİLMİŞSE dolar.
+   *
+   * 🔴 **HEDEF UYDURULMAZ:** beyan yoksa `null` ve grafikteki çizgi bugünkü anlamını
+   * (ortalama) korur. "Hedef yok" ile "hedef 0" asla karıştırılmaz — sıfır hedef
+   * ULAŞILMIŞ bir hedeftir, hedefsizlik ise ÖLÇÜLEMEZLİKTİR.
+   * `sapma_yuzde` sıfır hedefte `null`: tanımsızlığı ölçüm gibi göstermeyiz. */
+  hedef?: {
+    olcu: string;
+    hedef: number;
+    gerceklesen: number;
+    yon: "yuksek_iyi" | "dusuk_iyi";
+    ulasildi: boolean;
+    sapma_yuzde: number | null;
+  } | null;
 }
 
 // Faz 4.1 — GET /ask/jobs/{id} yanıtı (yalnız api-client.ts::ask()'in dahili poll döngüsü kullanır).

@@ -421,6 +421,50 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
 
+### FAZ 2 · adım 11 — `2.5` **HEDEF KIYASI** — hedef UYDURULMAZ *(2026-08-04)*
+
+Kapı: **14 test** (`tests/test_hedef_kiyasi.py`), hızlı sinyal **1148**.
+
+> ⚠ **NEYİN KUSUR OLMADIĞI ÖNCE ÖLÇÜLDÜ.** Yol haritası *"grafikteki referans çizgisi
+> hedef değil ORTALAMA"* diyor. Ölçtüm: `viz.py` çizgiyi `{"kind": "average"}` üretiyor ve
+> `chart.ts` onu **`Ort.`** diye etiketliyor — yani **yanlış etiketleme YOK**, sistem
+> bugün dürüst. Eksik olan **mekanizmanın kendisiydi**: `target:` beyanı hiçbir cube'da
+> yoktu, kullanıcı *"hedefimin altında mıyım"* diye **soramıyordu**.
+
+> 🔴 **DEĞİŞMEZ: HEDEF UYDURULMAZ.** Beyan yoksa bayrak açık olsa bile hedef çizilmez ve
+> etiket `Ort.` kalır. *"Hedef yok"* ile *"hedef 0"* asla karıştırılmaz — **sıfır hedef
+> ULAŞILMIŞ bir hedeftir**, hedefsizlik ise **ölçülemezliktir**. Bozuk bir beyan da
+> **beyan yok** sayılır; `0` kabul etmek o ayrımı yok ederdi.
+
+> ⚠ **Sıfır hedefte sapma yüzdesi `None`** — `inf`/`0` yazmak, bir **tanımsızlığı** bir
+> ölçüm gibi gösterirdi.
+
+> 🔴 **BELİRSİZLİK SESSİZCE ÇÖZÜLMÜYOR:** iki ölçülü bir raporda *"hangi hedef"* sorusunun
+> cevabı **yoktur** → blok `None`. Birini seçmek, kullanıcının **sormadığı** bir kıyası
+> cevabın yerine koymak olurdu.
+
+> ✅ **YÖN İKİNCİ KEZ BEYAN EDİLMİYOR:** `lower_is_better`'dan **türüyor** — ikinci bir
+> yön beyanı, biri *"85 iyi"* derken ötekinin *"85 kötü"* göstermesi demekti.
+
+> ✅ **ALTI ÇAĞRI YERİNE DOKUNULMADI:** hedefler `viz.meta_args`'a eklendi — o fonksiyonun
+> var olma sebebi tam olarak bu (bir alanın beşinci çağıranını unutmak imkânsız olsun diye).
+
+> ⚠ **KAPSAM SINIRI YAZILI:** yol haritası `MetricTarget`'ı SCD-2 tanımlıyor (kapsam ·
+> tarih · `as_of` yeniden oynatma). Bu dilim **yalnız beyan yolunu** açtı; kişi/şube
+> kapsamlı ve tarihli hedefler **ayrı bir dilim** ve o gelene kadar **uydurulmuyor**.
+> *Yarım inmiş bir mekanizmayı tam gibi göstermek, hiç indirmemekten kötüdür.*
+
+### FAZ 2 · adım 10 — `2.7` **adlandırma sözleşmesi** *(2026-08-04)*
+
+Kapı: **8 test**. Var olan adlar **kalıyor** — toplu yeniden adlandırma **ölçümle
+reddedildi** (%64→%56, 388 cevap kaybı). Kural yalnız **yeni** küplere: olayla + tekil;
+departman adı küp adı **olamaz** (departman bir **mercektir**).
+
+> ⚠ **Taban kümesini elle TAHMİN etmiştim ve kapı beni yakaladı:** listem `personel`/
+> `stok`/`satis` gibi **var olmayan** küpler içeriyor, `enerji_*` üçlüsünü ise
+> **kaçırıyordu** — kapı onları *"yeni doğmuş"* ilan etti. *Beyan var, sayım yok.*
+> Liste artık **ölçümden** geliyor (16 küp).
+
 ### FAZ 2 · adım 9 — `2.6` **MALİ TAKVİM** — ölçülen sessiz-yanlış kapandı *(2026-08-04)*
 
 Kapı: **18 test** (`tests/test_mali_takvim.py`), hızlı sinyal **1483**. **Bayraksız.**

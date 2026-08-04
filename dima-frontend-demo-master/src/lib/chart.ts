@@ -812,7 +812,12 @@ function buildOptionInner(result: QueryResult, a: Analysis, o: BuildOpts): EChar
                 lineStyle: { color: axis, type: "dashed" as const },
                 label: {
                   color: axis,
-                  formatter: () => `Ort. ${fmtValue(ref.value, measure)}`,
+                  // 🔴 FAZ 2.5 — ETİKET `kind`'a BAĞLI. Bir hedef çizgisini "Ort."
+                  // diye etiketlemek (ya da tersi) kullanıcıya YANLIŞ bir kıyas
+                  // yaptırırdı: kendi ortalamasının üstünde olmakla hedefinin üstünde
+                  // olmak aynı şey değildir. Karar backend'de (`app/hedef.py`).
+                  formatter: () =>
+                    `${ref.kind === "target" ? "Hedef" : "Ort."} ${fmtValue(ref.value, measure)}`,
                 },
                 data: [{ yAxis: ref.value }],
               },

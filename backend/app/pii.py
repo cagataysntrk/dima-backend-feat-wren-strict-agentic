@@ -125,8 +125,8 @@ def mask_query_result(result: dict, principal=None) -> tuple[dict, bool]:
 #:
 #: ⚠ Ölçüldü (2026-08-04): `apply_to_ask_response` yalnız `result.rows` · `facts[].text` ·
 #: `summary` maskeliyordu. `AskResponse`'un o gün **29**, bugün **31** alanı var (FAZ 1.12
-#: `ai_generated_prose` + `kanit_sinifi`, FAZ 2.6 `mali_donem` ekledi) — ve bu
-#: **tümleyenin işe yaradığının kanıtıdır**: ÜÇ yeni alan için buraya hiçbir şey
+#: `ai_generated_prose` + `kanit_sinifi`, FAZ 2.6 `mali_donem`, FAZ 2.5 `hedef`
+#: ekledi) — ve bu **tümleyenin işe yaradığının kanıtıdır**: DÖRT yeni alan için hiçbir şey
 #: yazılmadı, yine de kapsandılar. Kapı her seferinde bayat notu yakaladı.
 #: Sayılan bir liste olsaydı ikisi de sessizce dışarıda kalırdı. Geri kalanı — `narration`
 #: (LLM metni, olgulardan üretilir) · `contribution` (**cevabın gövdesi**, bkz. `0.23`) ·
@@ -205,7 +205,7 @@ def apply_to_ask_response(resp, principal) -> bool:
             else:
                 resp.result.rows = masked_rows
     # ⟳ **FAZ 1.2c — SAYMA, KAPAT.** Eskiden burada yalnız `facts[].text` ve `summary`
-    # maskeleniyordu; `AskResponse`'un (o gün 29, bugün 32) alanının geri kalanı — `narration` (LLM metni,
+    # maskeleniyordu; `AskResponse`'un (o gün 29, bugün 33) alanının geri kalanı — `narration` (LLM metni,
     # olgulardan üretilir) · `contribution` (**cevabın gövdesi**) · `next_steps` ·
     # `suggestions` · `prescription` — **hiç** maskelenmiyordu. Sayılan bir liste, yeni
     # alanı sessizce dışarıda bırakır; tümleyen bırakmaz.

@@ -637,6 +637,17 @@ def seal(resp: AskResponse, *, request: Request, principal, t0: float,
     # okunur: `narration` varsa bu yanıtta LLM üretimi düz metin VAR demektir.
     # 🔴 SAYI DEĞİL, ÜSLUP işaretlenir — sayıyı her zaman sistem koyar ve
     # `narration_guard` eşleşmeyeni düşürür. Md.50'nin istediği tam olarak budur.
+    # FAZ 2.5 — HEDEF KIYASI. Beyan yoksa `None` kalır ve grafikteki çizgi bugünkü
+    # anlamını (ortalama) korur — *hedef UYDURULMAZ*.
+    try:
+        from app import hedef as _hedef
+
+        from app.company_registry import wren_for_request
+
+        resp.hedef = _hedef.blok(wren_for_request(request).schema(), resp.cube_query,
+                                 resp.result.model_dump() if resp.result else None)
+    except Exception:                       # noqa: BLE001 — hedef cevabı DÜŞÜRMEZ
+        resp.hedef = None
     # FAZ 2.6 — mali yıl penceresi. `seal()` HER yanıtın geçtiği kapanıştır; başka bir
     # yere koymak onu BAZI yanıtlarda eksik bırakırdı (1.12'nin aynı gerekçesi).
     try:

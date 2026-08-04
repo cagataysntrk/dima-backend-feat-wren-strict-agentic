@@ -32,6 +32,20 @@ class UnsafeSqlError(ValueError):
     """Raised when a statement is not a read-only SELECT."""
 
 
+
+#: FAZ 2.5 — hedef beyanının anahtarı. Tek ad, tek yer (`app/hedef.py::BEYAN_ANAHTARI`).
+BEYAN = "target"
+
+
+def _sayi_mi(v) -> bool:
+    """Beyan sayıya çevrilebiliyor mu? Çevrilemiyorsa beyan **yok** sayılır — bozuk bir
+    hedefi `0` kabul etmek, *"hedef yok"* ile *"hedef 0"* ayrımını yok ederdi."""
+    try:
+        float(v)
+        return True
+    except (TypeError, ValueError):
+        return False
+
 def guard_sql(sql: str) -> str:
     """Reject anything that is not a single read-only SELECT/CTE query."""
     stripped = sql.strip().rstrip(";")
@@ -536,6 +550,13 @@ class WrenService:
                 # 🔴 KIYASLANAMAZ ölçüler: grain'i ERP'ye göre DEĞİŞEN türev metrikler
                 # (`satis_tutari_turev`). Çapraz-cube geçişi bunlara ASLA geçmez —
                 # iki şirketin bu sayısını yan yana koymak iki farklı şeyi karşılaştırmaktır.
+                # FAZ 2.5 — HEDEF BEYANI (`units` deseni). 🔴 Beyan YOKSA anahtar da yok:
+                # "hedef yok" ile "hedef 0" asla karıştırılmaz — sıfır hedef ULAŞILMIŞ bir
+                # hedeftir, hedefsizlik ise ÖLÇÜLEMEZLİKTİR.
+                "hedefler": {
+                    m["name"]: float(m[BEYAN]) for m in c.get("measures", [])
+                    if m.get(BEYAN) is not None and _sayi_mi(m.get(BEYAN))
+                },
                 "kiyaslanamaz": [
                     m["name"] for m in c.get("measures", [])
                     if m.get("kiyaslanamaz")

@@ -499,6 +499,20 @@ export function ReportCard({
             {/* FAZ 2.6 — MALİ YIL. Yalnız takvim yılından FARKLIYSA görünür.
                 🔴 "Bu yıl" dediğinde Nisan–Mart penceresi gelen bir kullanıcı, hangi
                 pencereyi gördüğünü BİLMELİ: doğru sayı, yanlış soruya cevap olabilir. */}
+            {/* FAZ 2.5 — HEDEF. Yalnız BEYAN varsa görünür; hedef UYDURULMAZ. */}
+            {item.hedef && (
+              <span
+                title={`Hedef ${item.hedef.hedef} · gerçekleşen ${item.hedef.gerceklesen}` +
+                  (item.hedef.sapma_yuzde !== null ? ` · sapma %${item.hedef.sapma_yuzde}` : "")}
+                className={`inline-flex h-[20px] items-center gap-1 border px-1.5 font-mono text-[10px] tracking-wide ${
+                  item.hedef.ulasildi
+                    ? "border-accent/40 text-accent"
+                    : "border-amber-500/40 text-amber-600"
+                }`}
+              >
+                {item.hedef.ulasildi ? "◉" : "◎"} hedef {item.hedef.hedef}
+              </span>
+            )}
             {item.mali_donem && (
               <span
                 title={`Bu şirketin mali yılı takvim yılından farklı. Gösterilen pencere: ${item.mali_donem}`}

@@ -328,6 +328,10 @@ def meta_args(cube_meta: dict | None) -> dict[str, Any]:
         "lower_set": c.get("lower_is_better") or [],
         # Toplanamaz ölçüler: yığma/pay grafiği matematiksel olarak yanlış olur.
         "non_additive": (c.get("semi_additive") or []) + (c.get("non_additive") or []),
+        # FAZ 2.5 — hedef beyanları. Buraya eklemek, ALTI çağrı yerinin hiçbirine
+        # dokunmadan hepsinin hedefi görmesini sağlar; bu fonksiyonun var olma sebebi
+        # tam olarak budur (bir alanın beşinci çağıranını unutmak imkânsız olsun diye).
+        "hedefler": c.get("hedefler") or {},
     }
 
 
@@ -337,6 +341,9 @@ def recommend(
     lower_set: list[str] | set[str] | None = None,
     cube_query: dict | None = None,
     non_additive: list[str] | set[str] | None = None,
+    # FAZ 2.5 — `{ölçü: hedef}`. `units`/`lower_set` ile **aynı** parametre deseni:
+    # şema burada okunmaz, çağıran verir (viz saf kalır, test edilebilirliği bozulmaz).
+    hedefler: dict[str, float] | None = None,
 ) -> dict[str, Any] | None:
     """QueryResult ({columns, rows}) → VizSpec. Sonuç yok/boşsa None.
 
@@ -496,9 +503,14 @@ def recommend(
         if card >= 4:
             vals = [r.get(m0) for r in rows if _is_num(r.get(m0))]
             if vals:
+                # 🔴 FAZ 2.5 — HEDEF UYDURULMAZ. Beyan varsa çizgi **hedeftir**; yoksa
+                # bugünkü davranış BİREBİR korunur (ortalama, `Ort.` etiketiyle).
+                # *"Hedef yok" ile "hedef 0" asla karıştırılmaz.*
+                _h = (hedefler or {}).get(m0)
                 spec["reference_line"] = {
-                    "kind": "average", "measure": m0,
-                    "value": round(sum(float(v) for v in vals) / len(vals), 4),
+                    "kind": "target" if _h is not None else "average", "measure": m0,
+                    "value": _h if _h is not None
+                    else round(sum(float(v) for v in vals) / len(vals), 4),
                 }
 
     # normalize: lower_set'i (FE ısı paleti yönü) taşı
