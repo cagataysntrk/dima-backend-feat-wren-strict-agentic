@@ -72,8 +72,14 @@ TUR_PAYLAS = "paylas"          # "müdüre 3 cümle"  → PAYLAŞILABİLİR LİN
 
 # Kalıplar `_norm` sonrası (ASCII, küçük harf) yazılır. Sonu "!" olanlar TAM KELİME
 # eşleşir — Faz D3'ün `_syn_hit` disiplini; kalanlar geçerli ek zinciri kabul eder.
+# ⚠ **FAZ 5.3 EKLERİ — ölçümle geldi, refleksle değil.** `lab/konusma_ifadeleri.py`
+# gerçek kullanıcı ifadelerini koşturdu ve aşağıdaki dördü `sozlukte-yok` çıktı. Bu,
+# ADR-0008'in yasakladığı *"kelimeye özel yama"* DEĞİLDİR: yama bir **örneği** düzeltir,
+# bu ise kalıp sözlüğünü **kullanıcının kelimeleriyle besler** (5.3'ün tanımı). Fark,
+# eklemeyi neyin tetiklediğidir — bir şikâyet mi, bir **ölçüm** mü.
 _NEDEN = ("neden", "nicin", "niye", "sebebi", "sebep", "kaynaklan", "yol acan",
-          "nereden geliyor", "niden")
+          "nereden geliyor", "niden",
+          "ne etkiledi", "ne oldu", "yol acti", "neye bagli")
 _NORMAL = ("normal mi", "olagan", "beklenen", "beklenir", "iyi mi", "kotu mu",
            "sorun var mi", "endise", "endiselenmeli", "alarm", "makul mu")
 # DİKKAT — 1. ÇOĞUL ŞAHIS EKİ `-(y)İz` ÇEKİMLİ HÂLLERİYLE YAZILIR ("yapmaliyiz",
@@ -89,8 +95,11 @@ _NE_YAPMALI = ("ne yapmali", "ne yapmaliyiz", "ne yapabilir", "ne yapabiliriz",
                "nasil iyilestir", "nasil iyilestiririz", "nasil duzelt", "nasil duzeltiriz",
                "nasil azalt", "nasil azaltiriz", "nasil artir", "nasil artiririz",
                "nasil yol al", "nasil yol aliriz", "ne tavsiye")
+# ⚠ FAZ 5.3 ekleri (aynı gerekçe): kullanıcı bir grafikteki noktayı **coğrafi** kelimelerle
+# gösteriyor — *tepe · çukur · zirve · dip*. Sözlük bunları hiç bilmiyordu.
 _ISARET = ("su dusus", "su artis", "su sicrama", "su kirilma", "bu dusus", "bu artis",
-           "sicrama", "dusus", "kirilma", "anomali", "aykiri")
+           "sicrama", "dusus", "kirilma", "anomali", "aykiri",
+           "tepe", "cukur", "zirve", "dip noktasi")
 # ANLAT/ANALİZ — kullanıcının EN DOĞAL cümlesi ve Faz D2'ye kadar HİÇBİR türe girmiyordu.
 #
 # Ölçüldü (3 Ağustos 2026), bir `oee` raporu üstünde — altı ifadenin BEŞİ duvara çarpıyordu:
@@ -145,7 +154,8 @@ _PAYLAS = ("paylas", "paylasabilir", "link ver", "link olustur", "linkini",
 
 _ANLAT = ("analiz et", "analiz eder", "analizini", "yorumla", "yorumlar misin",
           "yorumun", "yorumlasana", "degerlendir", "aciklar misin", "acikla",
-          "ozetle", "ozetler misin", "ne diyor", "ne anlama gel", "okur musun",
+          "ozetle", "ozetler misin", "ne diyor", "ne anlama gel", "ne anlama geliyor",
+          "okur musun",
           "anlat", "yorum yap", "incele")
 
 # Konuşma sınıfı YALNIZ bunlarla tetiklenmez: soru aynı zamanda MEVCUT CEVABA işaret
