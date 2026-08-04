@@ -600,6 +600,16 @@ class TenantConfig(SQLModel, table=True):
     # error=3g` gibi bir çelişki mümkün olsaydı kullanıcı `uyari`'yı hiç görmeden
     # `hata`'ya düşerdi. ÇELİŞEBİLEN İKİ AYAR, ÇELİŞECEK DEMEKTİR.
     tazelik_periyot_saat: int | None = None   # None → app/tazelik.VARSAYILAN_PERIYOT_SAAT
+    # 🔴 FAZ 5.16 — **NETLEŞTİRME DÜZEYİ** ∈ `kapali | normal | yuksek`.
+    # `None`/`normal` → **bugünkü davranış BİREBİR** (GERİ AL bedava).
+    #
+    # ⚠ **`kapali` bir sessiz-yanlış kapısı DEĞİLDİR** ve üç sertleştirmeyle bağlanır:
+    #   1. Varsayım **cevabın GÖVDESİNDE** görünür (*"Dönem belirtilmedi — bu yıl
+    #      varsayıldı."*), bir rozette/tooltip'te değil. MIMARI'nin avladığı sınıf tam
+    #      olarak *"varsayımı kenara yazmak"*tır.
+    #   2. Ayar **tenant-admin'e kilitli** ve her değişiklik `AuditLog`'a **ayrı satır**.
+    #   3. `kapali` düzeyinde üretilen her cevap `kanit_sinifi="probabilistik"` taşır.
+    netlestirme_duzeyi: str | None = None
     # FAZ 1.12 — AI Act Md.12/19: otomatik kayıt SAKLAMA süresi (gün). Yasal taban 6 ay
     # (180 gün) ve varsayılan ONUN ALTINA İNMEZ; `None` → 180.
     # ⚠ Bu alan SİLME YAPMAZ, POLİTİKAYI BEYAN EDER: bir saklama süresini uygulamak
