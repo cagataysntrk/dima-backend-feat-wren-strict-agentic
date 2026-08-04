@@ -19,6 +19,7 @@ import re
 import uuid
 from datetime import datetime, timezone
 
+from app.arkaplan_kimlik import KimliksizArkaPlanIsi
 from app.logging_setup import get_logger
 
 _log = get_logger("schedules")
@@ -517,11 +518,29 @@ def uyari_nedeni(svc, cq: dict, threshold: dict | None) -> tuple[list[str], str 
     return (satirlar, " · ".join(ek) or None)
 
 
-def run_schedule(state, sched: dict, *, manual: bool = False) -> dict:
-    """Bir zamanlanmış raporu KOŞAR: dönem çözülür → sorgu → sözleşme → eşik → bildirim.
+def run_schedule(state, sched: dict, *, manual: bool = False, principal=None) -> dict:
+    """Bir zamanlanmış raporu KOŞAR: **kimlik** → dönem → sorgu → sözleşme → eşik → bildirim.
 
-    `state` = FastAPI app.state (wren, contracts, schedules)."""
+    `state` = FastAPI app.state (wren, contracts, schedules).
+
+    ⟳ **FAZ 1.1b (2026-08-04) — KİMLİKSİZ KOŞMAZ.** Önceden zamanlayıcı döngüsü bunu
+    `principal` olmadan çağırıyordu; `authorize()` **hiç çalışmıyordu** ve zamanlanmış bir
+    rapor, sahibinin yetkisi **alındıktan sonra da** koşmaya devam ediyordu. `1.1` yalnız
+    **istek yolunu** kapatmıştı — bu, *"istek yolu güvenli, zamanlayıcı yolu açık"*
+    asimetrisinin kapanışı.
+
+    `principal` verilmezse kayıttan çözülür (`run_as_user_id` → `created_by`); çözülemezse
+    **fail-closed**: iş **koşmaz**. Elle koşumda (`manual=True`) uç kendi principal'ını
+    geçer — orada canlı kullanıcı zaten yetkilendirilmiştir.
+    """
     from app import cube_router
+    from app.arkaplan_kimlik import yetkilendir
+
+    if principal is None:
+        from control_plane.db import get_session
+
+        with next(get_session()) as _oturum:                  # type: ignore[call-overload]
+            principal = yetkilendir(sched, _oturum)
 
     svc = _wren_for_schedule(state, sched)
     store: ScheduleStore = state.schedules
@@ -652,6 +671,12 @@ def run_due(state) -> int:
                 if store.try_claim(sched["id"], now, prev):
                     run_schedule(state, sched)
                     n += 1
+        except KimliksizArkaPlanIsi as exc:
+            # 🔴 FAZ 1.1b — SAHİPSİZ İŞ BİR "ESKİ VERİ" DEĞİL, BİR BULGUDUR.
+            # Genel `except`e düşürmek onu "tek zamanlama hatası" diye meşrulaştırır ve
+            # delik sessizce açık kalırdı. Zamanlamanın adıyla loglanır.
+            _log.warning("ARKA PLAN KİMLİĞİ: %s", exc)
+            continue
         except Exception:
             continue  # tek zamanlama hatası diğerlerini durdurmasın
     return n

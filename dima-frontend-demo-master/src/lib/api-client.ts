@@ -460,6 +460,13 @@ export interface ScheduleListItem {
   weekday?: number | null;
   threshold?: Record<string, unknown> | null;
   enabled?: boolean;
+  /** FAZ 1.1b — bu arka plan işi KİMİN ADINA koşuyor (`run_as_user_id` → `created_by`).
+   *
+   * `null` = SAHİPSİZ. O kayıt artık KOŞMAZ (backend fail-closed): kimliksiz bir arka
+   * plan işi `authorize()`'ı hiç çağırmaz ve sahibinin yetkisi alındıktan sonra da
+   * koşardı. Arayüz bunu GÖSTERMEK ZORUNDA — yoksa kullanıcı sessizce durmuş bir
+   * raporu beklemeye devam eder. */
+  run_as?: string | null;
 }
 export async function createSchedule(spec: ScheduleSpec): Promise<{ id: string }> {
   const { data } = await apiClient.post<{ schedule: { id: string } }>("/schedules", spec);

@@ -72,6 +72,23 @@ export function SchedulesPanel() {
                     {s.at ? ` · ${s.at}` : ""}
                     {s.period ? ` · ${s.period}` : ""}
                     {s.threshold ? " · alarmlı" : ""}
+                    {/* FAZ 1.1b — "kimin adına koşuyor". Sahipsiz kayıt KOŞMAZ ve bunu
+                        sessizce yapmak, kullanıcıyı durmuş bir raporu beklemeye
+                        bırakırdı: yetki devri görülemiyorsa devredilmemiş sayılır. */}
+                    {s.run_as ? (
+                      <span title={`Bu rapor ${s.run_as} adına koşuyor`}>
+                        {" · "}
+                        <span className="font-mono">{s.run_as.slice(0, 8)}</span>
+                        {" adına"}
+                      </span>
+                    ) : (
+                      <span
+                        className="text-amber-600"
+                        title="Bu zamanlamanın sahibi yok; kimliksiz arka plan işi çalıştırılmaz (fail-closed). Düzeltmek için raporu yeniden oluşturun."
+                      >
+                        {" · ⚠ sahipsiz — koşmuyor"}
+                      </span>
+                    )}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">

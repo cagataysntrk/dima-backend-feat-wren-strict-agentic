@@ -46,7 +46,14 @@ class ScheduleRequest(BaseModel):
 @router.get("/schedules", dependencies=[Depends(require("schedule:read"))])
 def list_schedules(request: Request) -> dict:
     principal = getattr(request.state, "principal", None)
-    return {"schedules": [s for s in request.app.state.schedules.list()
+    # FAZ 1.1b — SÖZLEŞME: her kayıt "kimin adına koşuyor"u taşır. Kullanıcı bir arka
+    # plan işinin kendi yetkisiyle koştuğunu GÖREBİLMELİ; göremediği bir yetki devri,
+    # devredilmemiş sayılır. `None` = sahipsiz → o kayıt artık KOŞMAZ (fail-closed) ve
+    # arayüz bunu göstermek zorunda, yoksa kullanıcı sessizce durmuş bir raporu bekler.
+    from app.arkaplan_kimlik import sahip_kimligi
+
+    return {"schedules": [{**s, "run_as": sahip_kimligi(s)}
+                          for s in request.app.state.schedules.list()
                           if _visible(s, principal)]}
 
 
@@ -117,7 +124,11 @@ def run_now(request: Request, sid: str) -> dict:
     if sched is None or not _visible(sched, getattr(request.state, "principal", None)):
         raise HTTPException(status_code=404, detail="Zamanlama bulunamadı.")
     try:
-        note = run_schedule(request.app.state, sched, manual=True)
+        # FAZ 1.1b — elle koşumda kimlik ZATEN doğrulanmıştır (uç `require(...)`'dan
+        # geçti); onu geçmek, aynı yetkiyi ikinci kez DB'den çözmekten hem ucuz hem
+        # dürüst: iş gerçekten O kullanıcının adına koşuyor.
+        note = run_schedule(request.app.state, sched, manual=True,
+                            principal=getattr(request.state, "principal", None))
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Koşum hatası: {exc}") from exc
     return {"notification": note}

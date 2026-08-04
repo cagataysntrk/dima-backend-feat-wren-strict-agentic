@@ -17,8 +17,8 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
-| **Sıradaki madde** | `1.1b` arka plan kimliği · sonra `1.2`/`1.2b` |
-| **Demet** | demet 8: `1.3c` · `1.3` · `1.1` · `1.3b` — **dolu**, kapı sırada |
+| **Sıradaki madde** | `1.2` kolon düzeyi + redactor · `1.2b` `llm_guard.safe_call()` |
+| **Demet** | ✅ **demet 8 kapandı** — kapı **4/4 YEŞİL** (süit **2243**) · demet 9 açık: `1.1b` |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
 | **Demet** | ✅ **demet 7 kapandı** — FAZ 0 kapanış kapısı **4/4 YEŞİL** (süit **2199**) · demet 8 açık: `1.3c` · `1.3` |
 | 🔴 **Kota** | **GÜNLÜK KOTA DOLDU** (2026-08-04 ~11:40; `429`/`503`, tüm sağlayıcılar). Bugün başka **canlı** koşum YOK — LLM'siz ölçümler serbest |
@@ -419,6 +419,40 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 5 — `1.1b` **arka plan işi kimliksiz koşmaz** *(2026-08-04)*
+
+**Demet 8 kapısı: 4/4 YEŞİL** — süit **2243 geçti** · eval ±%0 · korpus **%93,2** (taban
+%93,2) · senaryo dokuz sınıf tabanda.
+
+`1.1` yalnız **istek yolunu** kapatmıştı. Zamanlayıcı döngüsü `run_schedule`'ı **kimliksiz**
+çağırıyordu → `authorize()` **hiç çalışmıyordu**. Kapı: **11 test**, hızlı sinyal **325**.
+
+> 🔴 **ZAMANLANMIŞ RAPOR, YETKİ İPTALİNİ ATLATAN KALICI BİR KANALDI.** Kullanıcı `viewer`'a
+> düşürülse, hatta **silinse** bile raporu koşmaya devam ediyordu. Üç fail-closed kapısı
+> kuruldu, üçü de ayrı gerekçeli: **sahip yok** · **sahip çözülemiyor** (silinmiş/pasif) ·
+> **sahip artık yetkili değil**. Sonuncusunun kuralı: *yetki, verildiği an değil
+> **KULLANILDIĞI AN** geçerli olmalıdır.*
+
+> 🔴 **FAIL-CLOSED KESİNTİ ÜRETMEDEN — çünkü cevap zaten kayıttaydı.** Yol haritası
+> *"`principal=None` reddedilir"* diyor; harfi harfine uygulanırsa **her zamanlanmış rapor
+> durur**. Ölçüldü: kayıt **`created_by`'ı zaten taşıyor** — yani *"bu iş kimin adına
+> koşuyor"* sorusunun cevabı **duruyordu, hiç sorulmuyordu**. `run_as_user_id` → yoksa
+> `created_by`; ikisi de yoksa **red**. Bu bir gevşetme değil, **geriye doldurma**.
+
+> ⚠ **Kimlik SAKLANMIYOR, her koşumda KAYNAKTAN kuruluyor** (`app_user` + `membership` +
+> `role`). Token saklamak bir **sır** saklamaktır ve süresi dolar; saklanmış bir yetki,
+> **iptal edilemeyen** bir yetkidir. Böylece rol değişikliği **bir sonraki koşumda** etkili.
+
+> ⚠ **Sahipsiz kayıt bir «eski veri» DEĞİL, bir BULGUDUR.** Genel `except`e düşürmek onu
+> *"tek zamanlama hatası"* diye meşrulaştırır ve delik **sessizce** açık kalırdı — özel
+> yakalayıcı genel olandan **önce** duruyor ve zamanlamanın **adıyla** logluyor
+> (kapı sıranın doğruluğunu da ölçüyor: sonra gelseydi hiç ateşlenmezdi).
+
+> ✅ **ÜÇ PARÇA DA İNDİ (K1/K2):** backend *(kimlik kapısı)* · sözleşme *(`GET /schedules`
+> → `run_as`)* · **frontend** *(`SchedulesPanel`: *"… adına"* / **"⚠ sahipsiz — koşmuyor"**)*.
+> Sahipsiz kayıt artık **koşmuyor**; bunu göstermemek kullanıcıyı **sessizce durmuş** bir
+> raporu beklemeye bırakırdı. **Görülemeyen bir yetki devri, devredilmemiş sayılır.**
 
 ### FAZ 1 · adım 4 — `1.3b` **Katman B artık var** *(2026-08-04)*
 
