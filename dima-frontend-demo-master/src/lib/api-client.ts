@@ -775,6 +775,25 @@ export async function postReport(body: {
 }
 
 // --- Discovery→Promote (Faz 2d) — ölçü onay iş akışı --------------------------------
+// FAZ 3.3 — TERFİ KUYRUĞU KAPANIŞ ORANI. "Her Discovery cevabı bir kapsam boşluğunun
+// belgesidir" (MIMARI §9) — ama kaçının KAPANDIĞINI kimse ölçmüyordu.
+// 🔴 REDDEDİLEN DE KAPANIŞTIR: "bu bir metrik değil" kararı boşluğun kapandığı anlamına
+// gelir. Yalnız onayları saymak, doğru reddi bir başarısızlık gibi gösterir ve
+// incelemeciyi ONAYLAMAYA iterdi.
+export interface TerfiKapanis {
+  toplam: number;
+  acik: number;
+  kapali: number;
+  /** `null` = hiç aday yok (⊘ ÖLÇÜLEMEDİ). `0` DEĞİL: yokluk bir başarısızlık değildir. */
+  kapanis_orani: number | null;
+  dagilim: Record<string, number>;
+}
+
+export async function getTerfiKapanis(): Promise<TerfiKapanis> {
+  const { data } = await apiClient.get<TerfiKapanis>("/measures/candidates/kapanis");
+  return data;
+}
+
 export async function listMeasureCandidates(status?: string): Promise<MeasureCandidate[]> {
   const { data } = await apiClient.get<{ candidates: MeasureCandidate[] }>(
     "/measures/candidates",

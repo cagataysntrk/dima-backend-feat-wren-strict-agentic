@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 3 · KAPSAM** — `3.1` indi *(kararlar yazıldı, uygulama tenant kapsamını bekliyor)* |
-| **Sıradaki madde** | `3.3` terfi kuyruğu kapanış oranı → `3.4` Ossie ithali · ⚠ R1'in gövdesi **modelleme borcu** (ayrı tur) |
+| **Sıradaki madde** | `3.4` Apache Ossie ithali · `3.5` yeni kaynak sistemler · `3.6` cold-start metrik önerisi |
 | **Demet** | ✅ **`1.12` kapısı 4/4 YEŞİL** (süit **2477**) — risk sınırı olduğu için demete girmedi · demet 13 açık: `1.10`+`1.11` (o kapıya da dahil oldular) |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
@@ -422,6 +422,35 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
 
 ## FAZ 3 · KAPSAM
+
+### FAZ 3 · adım 4 — `3.3` **TERFİ KUYRUĞU KAPANIŞ ORANI** *(2026-08-04)*
+
+Kapı: **14 test** (`tests/test_terfi_kapanis.py`), hızlı sinyal **247**.
+Yeni: `app/terfi_kapanis.py` · `GET /measures/candidates/kapanis` · `ReviewPanel` satırı.
+
+> **Ölçülen boşluk:** MIMARI §9 ilke 4 *"her Discovery cevabı bir kapsam boşluğunun
+> belgesidir"* diyor ve o belge `MeasureCandidate` olarak kuyruğa giriyor — ama **kaçının
+> kapandığını kimse ölçmüyordu**. *Ölçülmeyen bir kuyruk, kuyruk değil bir çöp kutusudur.*
+
+> 🔴 **REDDEDİLEN DE KAPANIŞTIR** — maddenin en kritik kararı. *"Bu bir metrik değil"*
+> kararı boşluğun kapandığı anlamına gelir; aday kuyruktan **çıkmıştır**. Yalnız onayları
+> saymak, **doğru reddi bir başarısızlık gibi** gösterir ve incelemeciyi **onaylamaya**
+> iterdi. Etiket bunu ekranda da söylüyor.
+
+> 🔴 **HİÇ ADAY YOKKEN ORAN `None`, `0.0` DEĞİL.** *"%0 kapanış"* demek, çalışmayan bir
+> kuyruğu **başarısız** gibi gösterirdi — *yokluk bir başarısızlık değildir.* Ekran da
+> ayırıyor: `⊘ henüz aday yok`.
+
+> ⚠ **Bilinmeyen durum toplama GİRİYOR** ama ne açık ne kapalı sayılıyor — sessizce
+> düşürmek oranı **olduğundan yüksek** gösterirdi.
+
+> ⚠ **EŞİK BU TURDA KONMADI ve nedeni yazılı:** eşik bir **iş kararıdır** (haftada kaç
+> aday kapatılmalı?) ve **veri olmadan konulamaz**. Ölçüm bugün başlıyor; taban oluştuktan
+> sonra eşik bir sonraki turun işi. *Ölçülmemiş bir eşik, uydurulmuş bir hedeftir.*
+
+> ⚠ **Yol sırası tuzağı:** `/candidates/kapanis` uç kaydı `/candidates/{cid}`'den **önce**
+> tanımlı — ters olsaydı FastAPI `kapanis`'i bir aday **kimliği** sanardı (ilk eşleşen
+> kazanır) ve uç **hiç çalışmazdı**. Kapı sırayı da doğruluyor.
 
 ### FAZ 3 · adım 3 — `3.2` **R1 ENVANTERİ** — ölçüm teşhisi DÜZELTTİ *(2026-08-04)*
 

@@ -17,6 +17,7 @@ import {
   getMeasureBlastRadius,
   previewMeasureCandidate,
   getMeasureCandidate,
+  getTerfiKapanis,
   listMeasureCandidates,
   rejectMeasureCandidate,
 } from "@/lib/api-client";
@@ -552,12 +553,47 @@ function CandidateDetail({ id }: { id: string }) {
   );
 }
 
+/** FAZ 3.3 — TERFİ KUYRUĞU KAPANIŞ ORANI.
+ *
+ * 🔴 *"Her Discovery cevabı bir kapsam boşluğunun belgesidir"* (MIMARI §9) — ama kaçının
+ * **kapandığını** kimse ölçmüyordu. *Ölçülmeyen bir kuyruk, kuyruk değil bir çöp kutusudur.*
+ *
+ * ⚠ **REDDEDİLEN DE KAPANIŞTIR** ve etiket bunu söyler: yalnız onayları saymak, **doğru
+ * reddi bir başarısızlık gibi** gösterir ve incelemeciyi onaylamaya iterdi.
+ */
+function KapanisOrani() {
+  const { data } = useQuery({ queryKey: ["terfi-kapanis"], queryFn: getTerfiKapanis });
+  if (!data) return null;
+  // 🔴 `null` = hiç aday yok (⊘). "%0" göstermek, çalışmayan bir kuyruğu BAŞARISIZ gibi
+  // gösterirdi — yokluk bir başarısızlık değildir.
+  const oran = data.kapanis_orani;
+  return (
+    <div className="border-b border-hairline px-3 py-2 font-mono text-[10px] text-neutral-400">
+      {oran === null ? (
+        <span>⊘ henüz aday yok — kapanış oranı ölçülemez</span>
+      ) : (
+        <>
+          kapanış <span className="text-foreground">%{(oran * 100).toFixed(0)}</span>
+          {" · "}açık <span className="text-foreground">{data.acik}</span>
+          {" · "}kapalı <span className="text-foreground">{data.kapali}</span>
+          <span className="ml-1" title="Reddedilen de KAPANIŞTIR: 'bu bir metrik değil' kararı boşluğun kapandığı anlamına gelir.">
+            ⓘ
+          </span>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function ReviewPanel() {
   const [status, setStatus] = useState("draft");
   const [selected, setSelected] = useState<string | null>(null);
 
   return (
-    <div className="grid h-full grid-cols-[minmax(280px,1fr)_2fr]">
+    <div className="grid h-full grid-cols-[minmax(280px,1fr)_2fr] grid-rows-[auto_1fr]">
+      <div className="col-span-2">
+        <KapanisOrani />
+      </div>
       <CandidateList status={status} setStatus={setStatus} selected={selected} onSelect={setSelected} />
       {selected ? (
         <CandidateDetail id={selected} />

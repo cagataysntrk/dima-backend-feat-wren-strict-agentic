@@ -62,6 +62,26 @@ def _out(c: MeasureCandidate) -> dict:
     }
 
 
+@router.get("/candidates/kapanis",
+           dependencies=[Depends(require("measure:read")), Depends(require_company)])
+def kapanis_orani(request: Request, session: Session = Depends(get_session)) -> dict:
+    """FAZ 3.3 — **terfi kuyruğu kapanış oranı.** *Ölçülmeyen bir kuyruk, kuyruk değil
+    bir çöp kutusudur.*
+
+    🔴 **Reddedilen de KAPANIŞTIR:** *"bu bir metrik değil"* kararı boşluğun kapandığı
+    anlamına gelir. Yalnız onayları saymak, **doğru reddi bir başarısızlık gibi** gösterir
+    ve incelemeciyi onaylamaya iterdi.
+
+    ⚠ Uç **`/candidates/{cid}`'den ÖNCE** tanımlı: `kapanis` bir UUID değildir ve sıra
+    ters olsaydı yol eşleşmesi onu bir aday kimliği sanardı (FastAPI ilk eşleşeni alır).
+    """
+    from app.terfi_kapanis import oran, sayimlari_topla
+
+    p = _principal(request)
+    tid = None if getattr(p, "is_superadmin", False) else getattr(p, "tenant_id", None)
+    return oran(sayimlari_topla(session, tenant_id=tid))
+
+
 @router.get("/candidates",
            dependencies=[Depends(require("measure:read")), Depends(require_company)])
 def list_candidates(request: Request, status: str | None = None, limit: int = 100,
