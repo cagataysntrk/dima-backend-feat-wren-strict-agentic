@@ -50,7 +50,7 @@
 | MIMARI § | Konu | Otoriteyi alan faz | Durum |
 |---|---|---|---|
 | **§3 · §3.3** | semantik katman · compose **birleştirme semantiği** (çekirdek katman + grain sözleşmesi) | **FAZ 2.1** | ⟳ UYGULANMADI |
-| **§3.4** | **`SessionProperty`** — kimliğe bağlı RLS *(sabit yüklem `1.1`'de indi)* | **FAZ 1.2** | ⟳ UYGULANMADI |
+| **§3.4** | **`SessionProperty` TÜM çağrı sitelerinde** — bugün 36 `query`/`dry_plan` çağrısı kimlik geçmiyor *(CLS `off`, bkz. §6.3c)* | **FAZ 1.2 kuyruğu** | ⟳ UYGULANMADI |
 | **§3.4** | *"Bilerek ALINMAYANLAR: `osi`"* — karar **geri alındı** | **FAZ 3.4 · 4.5** | ⟳ UYGULANMADI |
 | **§4** | Değişmez 2/3 (read-only) — ajan yazma yasağının **kademelenmesi** | **FAZ 6.0 → 6.1 → 6.2** | ⟳ UYGULANMADI |
 | **§5** | yapılmayacaklar — hiçbir satır **kaldırılmıyor**; grain sözleşmesi **yeni satır ekler** | **FAZ 2.1** | ⟳ UYGULANMADI |
@@ -262,7 +262,7 @@ tur aynı keşfi sıfırdan yapıyor. **Yeni bir kontrol/garanti yazmadan önce 
 |---|---|---|
 | **`WrenConfig` + `wren/policy.py`** | **Kaynak konumunda (`FROM`/`JOIN`) fail-closed:** MDL-dışı ya da bilinmeyen HER TVF reddedilir. **Kaynak-DIŞI konumlarda** (projeksiyon · alt sorgu · iç argüman) **adlandırılmış 45 okuyucu** bloklanır — bu bir **blocklist**tir, fail-closed bir allowlist DEĞİL (§5, 1.3c) | ✅ **alındı (Faz A3)** — `strict_sql_policy=off\|shadow\|on`, varsayılan `shadow`. 🔴 **Güvenlik SINIRI olarak yazılmaz/satılmaz** |
 | **`rowLevelAccessControls` + `SessionProperty` + `dry_plan(properties=)`** | RLS'i **mantıksal planın içine** gömer; SQL'i kim yazarsa yazsın (insan/LLM/ajan) atlatılamaz | ◐ **FAZ 1.1 İNDİ (2026-08-04)** — `always_filter` → RLAC çevirisi, `motor_rls=off\|shadow\|on` (varsayılan **`shadow`**). `15 test: `tests/test_motor_rls.py`` + `7 test: `tests/test_motor_rls_onkosul.py``. ⏳ **SessionProperty henüz YOK** ve bu bilinçli: `always_filter` **sabit** yüklemdir, session'a bağlı bir kural doğmadan `oturum_ozellikleri()` yazmak **çağıranı olmayan bir yetenek** (K3 · ters yetim) olurdu — bkz. §6.3b |
-| **`columnLevelAccessControl`** (`requiredProperties`/`operator`/`threshold`) | Kolonu **plandan düşürür**; çıktıya hiç gelmez | ⏳ `app/pii.py` regex maskelemesinin motor karşılığı; PII son savunma olarak KALIR |
+| **`columnLevelAccessControl`** (`requiredProperties`/`operator`/`threshold`) | Kolonu **plandan düşürür**; çıktıya hiç gelmez | ◐ **FAZ 1.2 İNDİ (2026-08-04)** — `sensitivity` → eşik eşlemesi + `motor_cls=off\|shadow\|on` (varsayılan **`off`**, gerekçesi §6.3c). `16 test: `tests/test_motor_cls.py``. ⏳ **`on` KİLİTLİ:** 36 çağrı sitesi hâlâ kimlik geçmiyor; kapı bayrağın o güne kadar açılmasını **engelliyor**. `app/pii.py` son savunma olarak KALIR |
 | **Cube `hierarchies`** | Drill sırasını motora beyan eder | ⏸ **bilinçle beyan EDİLMEDİ** — uydurulmuş bir hiyerarşi güvenle yanlış bir drill yolu üretir; sıra ölçülebilir maliyetten okunuyor, bkz. §3.4c |
 | **`type_mapping.parse_type/translate_type`** | sqlglot tam tip grameri + lehçeler arası tip çevirisi | ✅ **ALINDI** (2026-08-02, Faz B): `classify_column` artık ham tipi `parse_type` ile **kanonikleştirip** öyle sınıflıyor. Ölçüldü — elle küme **17 gerçek yazımın 13'ünü kaçırıyordu** ve hepsi sessizce `dimension`'a düşüyordu: `numeric(18,2)` (bir PARA TUTARI) gruplama anahtarı, `timestamptz` zaman DEĞİL sayılıyordu. Bir müşteri DB'sini introspect ettiğimizde taslak MDL tutarları boyut yapıp tarihleri zaman ekseninden düşürürdü — kullanıcıya *"şemanı çıkardım"* diye sunularak. Kanonik küme ile **geriye uyum kuyruğu AYRI durur** (`_ESKI_YAZIMLAR`): karışık bir küme, hangi adın kanonik hangisinin yama olduğunu gizler. Motor erişilemezse ham değere düşülür — fail-closed değil, çünkü bilinmeyen tip için doğru varsayılan zaten *boyut*tur. `BIT`/`BOOLEAN` bilinçle dışarıda: bayrakların toplamı bir ölçü değildir. |
 | **12 kullanılmayan konnektör** *(⟳ FAZ −1/A8: «17» idi; backend'de hiç geçmeyen sayı **12**)* | BigQuery/Snowflake/Databricks/Trino + `s3_file`/`minio_file` | ❌ yeni müşteri = **kod yazmadan** bağlanma |
@@ -3067,6 +3067,46 @@ diyordu; bu depoda gölge bulgularının **zaten bir sahibi var** (`_shadow_poli
 ⚠ **`app/pii.py` KALIYOR** — RLS **satır** düşürür, PII **hücre** maskeler. İki savunmadan
 birini ötekinin gerekçesiyle kaldırmak, *"aynı kuralın iki sahibi"*nin tersi kadar
 tehlikelidir: **hiç sahibi olmayan bir kural**.
+
+### 6.3c · FAZ 1.2 · Kolon düzeyi erişim — **maskelemez, PLANDAN DÜŞÜRÜR**
+
+Motor `columnLevelAccessControl`'ü **etiketle değil EŞİKLE** tanımlıyor
+(`requiredProperties` + `operator` + `threshold`, kolon başına **tek**), yani
+`sensitivity` → eşik eşlemesi **beyan edilmesi gereken yeni bir iştir**. Ölçüldü
+(uçtan uca, boyahane manifesti üzerinde **20 kolon**):
+
+| seviye | sonuç |
+|---|---|
+| `session_gizlilik = 0` | 🔴 kolon **plandan tamamen DÜŞER** — `SELECT *` onu döndürmez |
+| `session_gizlilik = 2` | gelir |
+| property **yok** | **fail-closed** (planlama hatası) |
+
+🔴 **VARSAYILAN `off` — ve `motor_rls`'ten farklı olması ölçüme dayanıyor.** CLS
+`pii.py`'den **kategorik olarak farklıdır**: maskeleme kolonu **gösterir** (`123****89`),
+CLS onu **yok eder** — ve yok etme **sessizdir**. Kullanıcı sorduğu kırılımın neden
+gelmediğini **öğrenemez**. *Sessizce eksik bir tablo, maskeli bir tablodan daha kötüdür,
+çünkü eksiklik fark edilmez.*
+
+🔴 **`on` KADEMESİ BİR KAPIYLA KİLİTLİ.** CLS session property'yi **zorunlu** kılar;
+bugün **36** `query`/`dry_plan` çağrı sitesi kimlik **geçmiyor** ve `on` açılırsa her biri
+fail-closed **patlar**. `test_MOTOR_CLS_ON_OLAMAZ_TESISAT_EKSIKKEN` bayrağı ancak tesisat
+tamamlandığında açılabilir kılar — *"açtım ama yarısı çalışmıyor"*, bir güvenlik katmanının
+en pahalı hatasıdır. Kalan çağrı siteleri **sayıyla** raporlanır (sessiz kırpma yok).
+
+⚠ **SEVİYELER UYDURULMADI.** `authorize.py` zaten `"pii:view": 2` (admin+) diyor;
+`gizlilik_seviyesi()` o kararı **okur**. Yeni bir gizlilik merdiveni icat etmek, aynı
+kuralın **ikinci sahibini** doğururdu. Ara seviye **1** eşik yapısında **yer tutuyor**
+ama kimseye atanmıyor.
+
+⚠ **HASSASİYET SINIFI TEK SAHİPTEN** (`app/sensitivity.py::classify`). `pii.py` ile CLS
+farklı sözlükler okusaydı aynı kolon bir katmanda maskeli, ötekinde **görünür** olurdu.
+
+🔴 **İKİ KATMAN, İKİ BİÇİM — ve karıştırmak üç PII testini kırmızıya düşürdü.**
+`wren_core.SessionContext(properties=…)` **`frozenset`** ister; `wren.engine.WrenEngine.
+dry_plan/query(properties=…)` **`dict`** ister ve dönüşümü **kendi** yapar. Ön ölçüm
+probe'u `SessionContext`'i doğrudan kullandığı için `frozenset` görüldü ve **bir katman
+yukarıya** taşındı → `'frozenset' object has no attribute 'items'`. *Belgelenmiş bir tuzak,
+yanlış katmanda uygulanınca yine tuzaktır.* Ayrım artık `test_HANGI_KATMAN_HANGI_BICIM`'de.
 
 ### Ölçüm araçlarının GERÇEKTEN ne ölçtüğü (2026-08-02'de tek tek doğrulandı)
 

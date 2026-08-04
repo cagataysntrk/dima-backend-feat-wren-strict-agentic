@@ -113,6 +113,16 @@ class WrenService:
             return "off"
         return mod if mod in rls.KADEMELER else "shadow"
 
+    def _cls_kademesi(self) -> str:
+        """`motor_cls` ∈ `off|shadow|on` — varsayılan **`off`** (bkz. `config.py`)."""
+        from app.config import get_settings
+
+        try:
+            mod = str(getattr(get_settings(), "motor_cls", "off") or "off").lower()
+        except Exception:  # noqa: BLE001
+            return "off"
+        return mod if mod in rls.KADEMELER else "off"
+
     def _manifest_b64(self) -> str:
         """MDL → base64. **FAZ 1.1'in derleme sınırı burasıdır.**
 
@@ -125,12 +135,13 @@ class WrenService:
         **bayat** bir manifest servis edilirdi — ve bu, bir güvenlik katmanının
         *"açtım ama çalışmıyor"* hâli olurdu, üstelik sessiz.
         """
-        kademe = self._rls_kademesi()
+        kademe = (self._rls_kademesi(), self._cls_kademesi())
         cached = getattr(self, "_mdl_b64_cache", None)
         raw = self._mdl_bytes()
         if cached is not None and cached[0] is raw and cached[2] == kademe:
             return cached[1]
-        islenmis, _n = rls.manifeste_yaz(raw, kademe=kademe)
+        islenmis, _n = rls.manifeste_yaz(raw, kademe=kademe[0])
+        islenmis, _m = rls.cls_manifeste_yaz(islenmis, kademe=kademe[1])
         enc = base64.b64encode(islenmis).decode()
         self._mdl_b64_cache = (raw, enc, kademe)
         return enc
@@ -1232,7 +1243,28 @@ class WrenService:
                     inn.set("this", _collate(inn.this))
         return tree.sql(dialect=write)
 
-    def dry_plan(self, sql: str) -> str:
+    def _oturum_ozellikleri(self, principal):
+        """FAZ 1.2 — motor session property'leri. **`WrenEngine` SÖZLÜK ister.**
+
+        🔴 **İKİ KATMAN, İKİ BİÇİM — ve ilk yazımımda karıştırdım.**
+
+        * `wren_core.SessionContext(..., properties=…)` → **`frozenset`** ister; düz sözlük
+          `TypeError: 'dict' object is not an instance of 'frozenset'` verir.
+        * `wren.engine.WrenEngine.dry_plan/query(..., properties=…)` → **`dict`** ister ve
+          dönüşümü **kendi** yapar (`_plan`: `frozenset(properties.items())`).
+
+        Ön ölçüm probe'u `SessionContext`'i doğrudan kullandığı için `frozenset` gördüm ve
+        onu **bir katman yukarıya** taşıdım → `'frozenset' object has no attribute 'items'`
+        ile üç PII testi kırmızı verdi. Yani belgelediğim tuzağa **yanlış katmanda**
+        düştüm; süit yakaladı. `test_motor_cls.py::test_HANGI_KATMAN_HANGI_BICIM` artık
+        ikisini birden kilitliyor.
+
+        `principal` yoksa `None` döner (boş sözlük değil): motorun *"property yok"* dalı
+        ile *"boş property kümesi"* dalı aynı şey değildir.
+        """
+        return rls.oturum_ozellikleri(principal) or None
+
+    def dry_plan(self, sql: str, *, principal=None) -> str:
         """Transpile SQL through the semantic layer without touching the DB.
 
         Motora giden İKİ kapıdan biri (öteki `query`); SQL politikası bu yüzden burada
@@ -1246,7 +1278,7 @@ class WrenService:
         if self._rls_kademesi() == "shadow":
             self._rls_golge_denetimi(sql)
         with self._engine() as eng:
-            return eng.dry_plan(sql)
+            return eng.dry_plan(sql, self._oturum_ozellikleri(principal))
 
     # Türkçe kod sayfası onarımı (Gitaş bulgusu 2026-07-24): yerli ERP DB'lerinde
     # kolon collation'ı CP1252 iken uygulama CP1254 baytları yazar; ODBC sürücüsü
@@ -1264,7 +1296,7 @@ class WrenService:
                 return v
         return v
 
-    def query(self, sql: str, limit: int | None = None) -> dict[str, Any]:
+    def query(self, sql: str, limit: int | None = None, *, principal=None) -> dict[str, Any]:
         guard_sql(sql)
         _cfg, _mod = self._sql_policy()
         if _mod == "shadow":
@@ -1274,7 +1306,8 @@ class WrenService:
         if self._rls_kademesi() == "shadow":
             self._rls_golge_denetimi(sql)
         with self._engine() as eng:
-            table = eng.query(sql, limit=limit)
+            table = eng.query(sql, limit=limit,
+                              properties=self._oturum_ozellikleri(principal))
         rows = table.to_pylist()
         if self.datasource in ("mssql", "sqlserver"):
             rows = [{k: self._fix_tr(v) for k, v in r.items()} for r in rows]

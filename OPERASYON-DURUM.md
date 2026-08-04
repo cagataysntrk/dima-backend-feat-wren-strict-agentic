@@ -17,8 +17,9 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
-| **Sıradaki madde** | `1.2` kolon düzeyi + redactor · `1.2b` `llm_guard.safe_call()` |
-| **Demet** | ✅ **demet 8 kapandı** — kapı **4/4 YEŞİL** (süit **2243**) · demet 9 açık: `1.1b` |
+| **Sıradaki madde** | `1.2b` `llm_guard.safe_call()` · `1.2c` redactor (grafik/dışa aktarım) |
+| **Demet** | demet 9: `1.1b` · `1.2a` — kapı sırada |
+| 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
 | **Demet** | ✅ **demet 7 kapandı** — FAZ 0 kapanış kapısı **4/4 YEŞİL** (süit **2199**) · demet 8 açık: `1.3c` · `1.3` |
 | 🔴 **Kota** | **GÜNLÜK KOTA DOLDU** (2026-08-04 ~11:40; `429`/`503`, tüm sağlayıcılar). Bugün başka **canlı** koşum YOK — LLM'siz ölçümler serbest |
@@ -419,6 +420,48 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 6 — `1.2a` **kolon düzeyi erişim denetimi** *(2026-08-04)*
+
+`sensitivity` → CLAC **eşik** eşlemesi + `motor_cls=off|shadow|on` (varsayılan **`off`**).
+Kapı: **16 test**, hızlı sinyal **850**.
+
+| seviye | sonuç *(boyahane, 20 kolon)* |
+|---|---|
+| `session_gizlilik = 0` | 🔴 kolon **plandan tamamen DÜŞER** — `SELECT *` onu döndürmez |
+| `session_gizlilik = 2` | gelir |
+| property **yok** | **fail-closed** |
+
+> 🔴 **VARSAYILAN `off` — ve `motor_rls`'ten farkı ölçüme dayanıyor.** CLS `pii.py`'den
+> **kategorik olarak farklıdır**: maskeleme kolonu **gösterir** (`123****89`), CLS onu
+> **yok eder** — ve yok etme **sessizdir**. *Sessizce eksik bir tablo, maskeli bir
+> tablodan daha kötüdür, çünkü eksiklik fark edilmez.*
+
+> 🔴 **`on` KADEMESİ BİR KAPIYLA KİLİTLİ — bayrak kendi ön koşulunu biliyor.** CLS session
+> property'yi **zorunlu** kılar; bugün **36** `query`/`dry_plan` çağrı sitesi kimlik
+> geçmiyor ve `on` açılırsa her biri **fail-closed patlar**. Kapı bayrağı ancak tesisat
+> tamamlandığında açılabilir kılıyor ve kalanı **sayıyla** raporluyor.
+
+> ⚠ **`1.1`'de ERTELENEN session tesisatı GELDİ** — çünkü artık **gerçek tüketicisi var**.
+> `1.1`'de yazsaydım `K3` (ters yetim) ihlali olurdu; sırayı doğru tutmanın karşılığı bu.
+
+> ⚠ **Seviyeler UYDURULMADI:** `authorize.py` zaten `"pii:view": 2` diyor,
+> `gizlilik_seviyesi()` o kararı **okuyor**. Hassasiyet sınıfı da tek sahipten
+> (`sensitivity.classify`) — `pii.py` ile CLS ayrı sözlük okusaydı aynı kolon bir katmanda
+> maskeli, ötekinde **görünür** olurdu.
+
+> 🔴 **KENDİ BELGELEDİĞİM TUZAĞA YANLIŞ KATMANDA DÜŞTÜM.**
+> `wren_core.SessionContext(properties=…)` **`frozenset`** ister;
+> `wren.engine.WrenEngine.dry_plan/query(properties=…)` **`dict`** ister ve dönüşümü
+> **kendi** yapar. Probe `SessionContext`'i doğrudan kullandığı için `frozenset` gördüm ve
+> onu **bir katman yukarı** taşıdım → `'frozenset' object has no attribute 'items'`, **üç
+> PII testi kırmızı**. *Belgelenmiş bir tuzak, yanlış katmanda uygulanınca yine tuzaktır.*
+> Süit yakaladı; ayrım artık `test_HANGI_KATMAN_HANGI_BICIM`'de kilitli.
+
+> ⟳ **`§3.4-session` TUZAĞI ATEŞLEDİ** (bu operasyonda **dördüncü** kez) ve satır
+> **kuyruğa** nişanlandı: `§3.4-kuyruk` → *"SessionProperty **TÜM** çağrı sitelerinde"*.
+> 36 sıfıra indiği gün yine kırılacak ve `motor_cls=on` açılabilir hâle gelecek. Sayaç
+> `test_motor_cls.py`'nin sahibinde; tuzak onu **çağırıyor**, ikinci bir sayaç yazmadı.
 
 ### FAZ 1 · adım 5 — `1.1b` **arka plan işi kimliksiz koşmaz** *(2026-08-04)*
 

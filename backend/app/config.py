@@ -169,6 +169,15 @@ class Settings(BaseSettings):
     # `off` → manifest'e HİÇ dokunulmaz, davranış birebir bugünkü (testle kilitli).
     motor_rls: str = "shadow"
 
+    # FAZ 1.2 — KOLON DÜZEYİ ERİŞİM DENETİMİ. `off|shadow|on`, varsayılan **`off`**.
+    #
+    # 🔴 VARSAYILAN `motor_rls`'ten FARKLI ve nedeni ÖLÇÜLDÜ: CLS kolonu MASKELEMEZ,
+    # PLANDAN DÜŞÜRÜR — seviye yetersizken `SELECT *` o kolonu HİÇ döndürmüyor. Düşme
+    # SESSİZDİR: kullanıcı sorduğu kırılımın neden gelmediğini öğrenemez. Sessizce eksik
+    # bir tablo, maskeli bir tablodan DAHA KÖTÜDÜR çünkü eksiklik fark edilmez.
+    # `on` kademesi "hangi kolonlar esirgendi" yüzeyi kurulmadan AÇILAMAZ (kapı kilitli).
+    motor_cls: str = "off"
+
     # Strict moddan BAĞIMSIZ çalışan fonksiyon kara listesi (`engine._plan` koşulu `or`).
     # Boş bırakılırsa devre dışı; buraya yazılan her ad `off` modunda bile bloklanır.
     denied_sql_functions: str = ""

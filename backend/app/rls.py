@@ -21,23 +21,32 @@ ikisi farklı katman ve MIMARI *"PII son savunma olarak KALIR"* diyor. İki savu
 ötekinin gerekçesiyle kaldırmak, bu deponun avladığı *"aynı kuralın iki sahibi"* kusurunun
 tersi kadar tehlikelidir: **hiç sahibi olmayan bir kural**.
 
-## 🔴 SESSION PROPERTY BU TURDA GELMEDİ — ve bu "unutuldu" DEĞİL
+## ⟳ SESSION PROPERTY — `1.1`'de ERTELENDİ, `1.2`'de GELDİ
 
-`always_filter` **sabit** bir yüklemdir (`CANCELLED = 0`); session'a **bağlı değildir** ve
-ölçüldü ki motor sabit koşullu kuralı `requiredProperties` **olmadan** da uyguluyor. Yani
-bu turda `oturum_ozellikleri(principal)` yazmak, **çağıranı olmayan bir yetenek** üretirdi —
-bu deponun `K3` kapısının (**ters yetim**) tam olarak avladığı sınıf.
+`1.1`'de `always_filter` **sabit** bir yüklemdi (`CANCELLED = 0`) ve session'a bağlı
+değildi; o turda `oturum_ozellikleri()` yazmak **çağıranı olmayan bir yetenek** üretirdi
+(`K3` · ters yetim). **`1.2` ile gerçek tüketici doğdu:** kolon düzeyi erişim denetimi
+(`columnLevelAccessControl`) **zorunlu** bir session property ister.
 
-**Ne zaman gelecek:** ilk **session'a bağlı** kural doğduğunda (`1.2` kolon düzeyi ·
-tek DB'de çok tenant · rol bazlı daraltma). O turda birlikte gelecek iki şey:
 * `sql_literal()` — motor değerleri **SQL literali** olarak alır ve tek literal dışındaki
   her şeyi reddeder (ölçüldü: `'x' OR '1'='1'` → *"allow only literal value"*). Bu
-  **ikinci** savunmadır; **birinci** savunma tırnak kaçışını yapan bizim fonksiyonumuz
-  olmalı — motora güvenip kaçışı atlamak, savunmayı **tesadüfe** bırakmak olurdu
-  (MIMARI §5'in `guard_sql` eleştirisinin aynısı).
-* `WrenService._session_properties(principal)` + `properties=` geçişi.
-  ⚠ `wren.engine._plan` `frozenset(dict.items())` bekler; düz `dict` `TypeError` verir
+  **ikinci** savunmadır; **birinci** savunma tırnak kaçışını yapan bu fonksiyondur —
+  motora güvenip kaçışı atlamak, savunmayı **tesadüfe** bırakmak olurdu (MIMARI §5'in
+  `guard_sql` eleştirisinin aynısı).
+* ⚠ `wren.engine._plan` `frozenset(dict.items())` bekler; düz `dict` `TypeError` verir
   (ölçüldü, `test_motor_rls_onkosul.py::test_5_*` ile kilitli).
+
+## 🔴 FAZ 1.2 — CLS kolonu MASKELEMEZ, PLANDAN DÜŞÜRÜR
+
+Ölçüldü: seviye yetersizken `SELECT *` o kolonu **hiç döndürmüyor**. Bu `pii.py`'den
+**kategorik olarak farklı** bir davranıştır: maskeleme kolonu **gösterir** (`123****89`),
+CLS onu **yok eder**. Ve yok etme **sessizdir** — kullanıcı sorduğu kırılımın neden
+gelmediğini **öğrenemez**.
+
+Bu yüzden `motor_cls` varsayılanı **`off`**'tur (`motor_rls`'ten farklı olarak — orada
+gölge davranışı değiştirmiyordu). `on` kademesi, *"hangi kolonlar esirgendi"* yüzeyi
+kurulmadan **açılamaz**: sessizce eksik bir tablo, maskeli bir tablodan **daha kötüdür**,
+çünkü kullanıcı eksikliği **fark etmez**. Kapı bunu kilitler.
 
 ## 🔴 `defaultExpr` YASAK — ölçülmüş bir FAIL-OPEN
 
@@ -59,6 +68,25 @@ MODEL_ANAHTARI = "rowLevelAccessControls"
 #: Geçerli bayrak kademeleri. `shadow` **varsayılandır**: `strict_sql_policy`'nin aynı
 #: disiplini — bir güvenlik katmanı önce **ölçülür**, sonra açılır.
 KADEMELER = ("off", "shadow", "on")
+
+#: Kolon düzeyi erişim seviyesini taşıyan session property.
+OTURUM_GIZLILIK = "session_gizlilik"
+
+#: `sensitivity` sınıfı → CLAC **eşiği**. Motor `operator`+`threshold` istiyor (etiket
+#: değil), yani eşleme **beyan edilmesi gereken yeni bir iştir** — yol haritası D13a
+#: düzeltmesi bunu açıkça söylüyor.
+#:
+#: 🔴 **SEVİYELER UYDURULMADI, VAR OLAN KARARDAN TÜRETİLDİ.** `authorize.py` zaten
+#: `"pii:view": 2` (admin+) diyor ve gerekçesi yazılı: *"bu aksiyona sahip rol maskesiz
+#: görür"*. Yeni bir gizlilik merdiveni icat etmek, aynı kuralın **ikinci sahibini**
+#: doğururdu. Bugün iki seviye var (**0** = `pii:view` yok · **2** = var); ara seviye
+#: **1** eşik yapısında **yer tutuyor** ama kimseye atanmıyor — ihtiyaç doğduğunda
+#: eşleme değil yalnız `gizlilik_seviyesi()` değişir.
+SENSITIVITY_ESIGI: dict[str, str] = {
+    "person": "0",     # seviye > 0 gerekir
+    "special": "1",    # seviye > 1 gerekir
+    # "normal" → CLAC YOK (herkese görünür); sözlükte olmaması bilinçli.
+}
 
 
 def _kural(ad: str, kosul: str) -> dict[str, Any]:
@@ -204,3 +232,114 @@ def motorun_devraldigi_cubelar(manifest_json: bytes | str, *, kademe: str) -> se
         if (c.get("always_filter") or c.get("alwaysFilter"))
         and (c.get("base_object") or c.get("baseObject")) in modeller
     }
+
+
+# ══ FAZ 1.2 · SESSION PROPERTY + KOLON DÜZEYİ ERİŞİM ═════════════════════════
+
+def sql_literal(deger: Any) -> str:
+    """Değeri **SQL string literaline** çevirir — tırnak kaçışıyla.
+
+    🔴 **Birinci savunma budur.** Motor ikinci savunmayı koyuyor (tek literal dışındakini
+    reddediyor, ölçüldü) ama ona güvenip kaçışı atlamak, savunmayı **tesadüfe**
+    bırakmaktır — MIMARI §5'in `guard_sql` eleştirisinin aynısı.
+
+    `None`/boş → `NULL` **DEĞİL**: `ValueError`. Bir kimlik alanının boş olması bir değer
+    değil bir **hatadır**; `NULL` üretmek `x = NULL` gibi **hiçbir satırla eşleşmeyen ama
+    hata da vermeyen** bir koşul doğururdu — sessiz bir boş sonuç, sessiz bir sızıntı
+    kadar kötüdür çünkü ikisi de fark edilmez.
+    """
+    if deger is None or deger == "":
+        raise ValueError(
+            "session property değeri BOŞ — bir kimlik alanı boşsa bu bir değer değil bir "
+            "HATADIR. `NULL` üretmek, hiçbir satırla eşleşmeyen ama hata da vermeyen bir "
+            "koşul doğururdu (sessiz boş sonuç).")
+    if isinstance(deger, bool) or not isinstance(deger, (str, int)):
+        raise TypeError(
+            f"session property değeri `str` ya da `int` olmalı, {type(deger).__name__} "
+            "geldi. Yapılandırılmış bir değeri literale çevirmek, kaçışın nerede "
+            "yapıldığını belirsizleştirir.")
+    if isinstance(deger, int):
+        return str(deger)
+    return "'" + str(deger).replace("'", "''") + "'"
+
+
+def gizlilik_seviyesi(principal: Any) -> int:
+    """Principal'ın kolon gizlilik seviyesi. **Var olan karardan türetilir.**
+
+    `authorize.py` zaten *"`pii:view` (admin+) maskesiz görür"* diyor; bu fonksiyon o
+    kararı **okur**, yeni bir merdiven **icat etmez**. İkinci bir gizlilik kuralı yazmak,
+    bu deponun 1 numaralı kusuru olurdu.
+    """
+    if getattr(principal, "is_superadmin", False):
+        return 2
+    try:
+        from control_plane.authorize import can
+    except ImportError:                                      # pragma: no cover
+        return 0
+    return 2 if can(principal, "pii:view") else 0
+
+
+def oturum_ozellikleri(principal: Any) -> dict[str, str]:
+    """`Principal` → motor session property'leri (**SQL literali** olarak).
+
+    ⚠ `frozenset(dict.items())`'e çevirmek **çağıranın** işidir (`wren.engine._plan` onu
+    öyle bekliyor); burada sözlük döner ki test edilebilir ve loglanabilir olsun.
+
+    `principal` yoksa **boş sözlük** döner — ve bu bilinçli: eksik bir property motorun
+    **fail-closed** dalını ateşler (ölçüldü). Uydurma bir varsayılan koymak, o kapıyı
+    sessizce açardı.
+    """
+    if principal is None:
+        return {}
+    return {OTURUM_GIZLILIK: sql_literal(gizlilik_seviyesi(principal))}
+
+
+def _clac(kolon_adi: str, sinif: str) -> dict[str, Any]:
+    """Bir kolon için CLAC kuralı. `requiredProperties` **`required=True`** — `1.1`'de
+    ölçülen `defaultExpr`/`required=False` fail-open deseni burada da yasak."""
+    return {
+        "name": f"clac_{kolon_adi}",
+        "requiredProperties": [{"name": OTURUM_GIZLILIK, "required": True}],
+        "operator": "GREATER_THAN",
+        "threshold": SENSITIVITY_ESIGI[sinif],
+    }
+
+
+def clac_manifesti(manifest_json: bytes | str) -> tuple[bytes, int]:
+    """Hassas kolonlara CLAC yazar. Döner: `(baytlar, yazılan_kural_sayısı)`.
+
+    Sınıflandırma `app/sensitivity.py::classify`'dan gelir — **tek sahip**. İkinci bir
+    hassasiyet kuralı yazmak, `pii.py` ile CLS'in **ayrışması** demekti: aynı kolon bir
+    katmanda maskeli, ötekinde görünür olurdu.
+    """
+    from app.sensitivity import classify
+
+    ham = manifest_json if isinstance(manifest_json, bytes) else manifest_json.encode()
+    manifest = json.loads(ham)
+    toplam = 0
+    for model in manifest.get("models") or []:
+        for kolon in model.get("columns") or []:
+            sinif = classify(kolon)
+            if sinif not in SENSITIVITY_ESIGI:
+                continue
+            kolon["columnLevelAccessControl"] = _clac(str(kolon.get("name")), sinif)
+            toplam += 1
+    if not toplam:
+        return ham, 0
+    return json.dumps(manifest, ensure_ascii=False).encode(), toplam
+
+
+def cls_manifeste_yaz(manifest_json: bytes | str, *, kademe: str) -> tuple[bytes, int]:
+    """**Servis edilen** manifest — `on` dışında **dokunulmaz**.
+
+    🔴 `motor_rls` ile **aynı gölge disiplini**: gölge ölçer, davranmaz. Ama varsayılan
+    farklı ve nedeni ölçülmüş: CLS kolonu **maskelemez, plandan DÜŞÜRÜR** ve düşme
+    **sessizdir**. Kullanıcı sorduğu kırılımın neden gelmediğini öğrenemez → varsayılan
+    **`off`** (bkz. modül belgesi).
+    """
+    if kademe not in KADEMELER:
+        raise ValueError(f"`motor_cls` kademesi geçersiz: {kademe!r} — {KADEMELER}")
+    ham = manifest_json if isinstance(manifest_json, bytes) else manifest_json.encode()
+    if kademe != "on":
+        return ham, 0
+    return clac_manifesti(ham)

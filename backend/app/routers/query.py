@@ -88,7 +88,10 @@ def run_query(request: Request, body: QueryRequest) -> QueryResult:
 
         wren = wren_for_request(request)
         _katman_b(request, wren, body.sql)
-        result = wren.query(body.sql, limit=limit)
+        # FAZ 1.2 — kimlik motora GEÇER: kolon düzeyi erişim denetimi (`motor_cls`)
+        # zorunlu bir session property ister ve o property principal'dan türer.
+        result = wren.query(body.sql, limit=limit,
+                            principal=getattr(request.state, "principal", None))
     except UnsafeSqlError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:  # engine / DB errors
@@ -122,7 +125,8 @@ def dry_plan(request: Request, body: QueryRequest) -> dict:
     try:
         from app.company_registry import wren_for_request
 
-        return {"planned_sql": wren_for_request(request).dry_plan(body.sql)}
+        return {"planned_sql": wren_for_request(request).dry_plan(
+            body.sql, principal=getattr(request.state, "principal", None))}
     except UnsafeSqlError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:

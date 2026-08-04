@@ -371,6 +371,29 @@ def test_MIMARI_TEST_SAYILARI_gercekle_uyusuyor():
 # Desen kanıtlanmış: bu dosyanın kendi kaydı — *"bu beyan bir TUZAKTI … kurulduğu iş buydu"*
 # (`test_LLM_ARAC_LISTESI_GERCEKTEN_TUKETILIYOR` · `test_DONEM_POLITIKASI_beyani_HALA_dogru`).
 
+def _principalsiz_cagri_var() -> bool:
+    """`WrenService.query`/`dry_plan` çağrılarından **kimlik geçmeyen** var mı?
+
+    Ölçüm `test_motor_cls.py`'nin sahibinde; burada yalnız **çağrılır** — iki ayrı
+    sayaç yazmak, birinin sessizce bayatlaması demekti.
+    """
+    import ast as _ast
+
+    for yol in sorted(APP.rglob("*.py")):
+        if yol.name in ("wren_service.py", "rls.py"):
+            continue
+        try:
+            agac = _ast.parse(yol.read_text(encoding="utf-8"))
+        except SyntaxError:
+            continue
+        for n in _ast.walk(agac):
+            if (isinstance(n, _ast.Call) and isinstance(n.func, _ast.Attribute)
+                    and n.func.attr in ("query", "dry_plan")
+                    and not any(k.arg == "principal" for k in n.keywords)):
+                return True
+    return False
+
+
 def _yazan_arac_sayisi() -> int:
     """`tools.KAYIT`'ta `yan_etki="yazar"` olan GERÇEK araç sayısı — docstring DEĞİL.
 
@@ -404,13 +427,13 @@ _YURURLUKTE_TUZAKLARI = [
     # **tanımın kendisi** aranıyor: bir fonksiyon var mı, bir çağrı yapılıyor mu.
     # ⚠ `_app_kaynagi(x)` bir dosyayı **DIŞLAR**, seçmez — ilk yazımımda imzayı ters
     # kullandım ve tuzak yine yanlış yeri ölçtü. Dosya doğrudan okunuyor.
-    ("§3.4-session", "FAZ 1.2",
-     lambda: bool(re.search(
-         r"^def oturum_ozellikleri\b",
-         (APP / "rls.py").read_text(encoding="utf-8") if (APP / "rls.py").exists() else "",
-         re.M))
-     or "properties=" in (APP / "wren_service.py").read_text(encoding="utf-8"),
-     "kimliğe bağlı RLS (SessionProperty)"),
+    # ⟳ `§3.4-session` **TERS ÇEVRİLDİ** — FAZ 1.2 ile `oturum_ozellikleri()` ve
+    # `properties=` geçişi indi. Ama iş BİTMEDİ: 36 çağrı sitesi hâlâ kimlik geçmiyor
+    # (`test_motor_cls.py::_principalsiz_cagrilar`). Satır o KUYRUĞA nişanlandı: sıfıra
+    # indiği gün tuzak yine kırılır ve `motor_cls=on` açılabilir hâle gelir.
+    ("§3.4-kuyruk", "FAZ 1.2 kuyruğu",
+     lambda: not _principalsiz_cagri_var(),
+     "SessionProperty TÜM çağrı sitelerinde"),
     ("§3.4-osi", "FAZ 3.4",
      # ⚠ Belirteç İKİ KEZ düzeltildi:
      #  (1) ilk sürüm `"ossie" in _app_kaynagi()` idi → `compose.py`'nin **YORUM** satırını
