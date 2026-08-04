@@ -59,7 +59,32 @@ def _row_from_payload(p: dict) -> AuditLog:
 
 
 def _persist(row: AuditLog) -> None:
+    """Kaydı yazar ve **zincire ekler** (FAZ 1.8).
+
+    Son kaydın hash'i aynı oturumda okunur; yoksa `genesis`. ⚠ Bu okuma eşzamanlı
+    yazımları **serileştirmez** — iki istek aynı *"son kayıt"*ı görüp **çatal**
+    üretebilir. Kilitle serileştirmek her audit yazımına bir kilit maliyeti bindirirdi ve
+    *"başarı audit yazılmadan raporlanmaz"* değişmezi için takas bilinçle ters yönde
+    yapıldı: **çatal da tespit edilir** (`zinciri_dogrula`).
+
+    🔴 Zincir hesaplanamazsa kayıt **yine yazılır**, hash'siz. Bir kanıt kaydını
+    *"zincir kurulamadı"* diye DÜŞÜRMEK, korumaya çalıştığı şeyi yok etmek olurdu —
+    ve eksik hash zaten `zinciri_dogrula`'da **görünür**.
+    """
+    from sqlmodel import col, select
+
+    from app.audit_zinciri import GENESIS, ZINCIR_ALANLARI, kayit_hash
+
     with Session(engine) as session:
+        try:
+            son = session.exec(
+                select(AuditLog).order_by(col(AuditLog.ts).desc()).limit(1)).first()
+            row.onceki_kayit_hash = (son.kayit_hash if son and son.kayit_hash else GENESIS)
+            row.kayit_hash = kayit_hash(
+                {a: getattr(row, a, None) for a in ZINCIR_ALANLARI},
+                row.onceki_kayit_hash)
+        except Exception:  # noqa: BLE001 — kanıt kaydı zincir yüzünden DÜŞÜRÜLMEZ
+            pass
         session.add(row)
         session.commit()
 

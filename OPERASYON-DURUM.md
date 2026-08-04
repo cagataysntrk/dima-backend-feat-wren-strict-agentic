@@ -17,8 +17,8 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
-| **Sıradaki madde** | `1.8` audit şeması · `1.9` numeric fidelity · `1.10`-`1.12` · `1.13` **EN SON** |
-| **Demet** | demet 11: `1.6` · `1.5` · `1.7` — **dolu**, kapı sırada |
+| **Sıradaki madde** | `1.9` numeric fidelity · `1.10`/`1.11` eskalasyon · `1.12` yasal · `1.13` **EN SON** |
+| **Demet** | ✅ **demet 11 kapandı** — kapı **4/4 YEŞİL** (süit **2376**) · demet 12 açık: `1.8` |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
 | **Demet** | ✅ **demet 7 kapandı** — FAZ 0 kapanış kapısı **4/4 YEŞİL** (süit **2199**) · demet 8 açık: `1.3c` · `1.3` |
@@ -420,6 +420,40 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 13 — `1.8` **audit zinciri** *(2026-08-04)*
+
+**Demet 11 kapısı: 4/4 YEŞİL** — süit **2376** · eval ±%0 · korpus **%93,1** (taban %93,2).
+Kapı: **18 test**, hızlı sinyal **562**.
+
+> 🔴 **«APPEND-ONLY» BİR BEYANDIR, BİR MEKANİZMA DEĞİL.** `AuditLog`'un docstring'i
+> *"append-only erişim kanıtı"* diyordu; ama bir satır `DELETE` edilirse geriye **hiçbir
+> iz** kalmıyordu. *Bir kanıt kaydı, eksildiğini **kendisi** söyleyemiyorsa kanıt değildir.*
+> Her kayıt artık bir öncekinin hash'ini taşıyor (ilki `genesis`).
+
+> ✅ **ÜÇ BULGU SINIFI, ÜÇÜ DE ADIYLA:** `KOPUK` (silme/değiştirme) · `BOZULMUŞ` (içerik
+> hash'iyle uyuşmuyor) · `ÇATAL` (eşzamanlı yazım). Üçünü tek bir *"zincir bozuk"*
+> mesajına indirmek **hangi** olayın yaşandığını gizlerdi — ve **silme** ile
+> **eşzamanlılık** çok farklı şeylerdir.
+
+> 🔴 **ZİNCİRİN ETMEDİKLERİ DE YAZILI — ve testle kilitli.**
+> · Eşzamanlı yazımları **sıralamaz** (çatal mümkün) — ama çatal **tespit edilir**.
+> Kilitle serileştirmek her audit yazımına kilit maliyeti bindirirdi.
+> · **Son** kaydı silmek zinciri **koparmaz** (ondan sonra kimse yok). Bunu *"tespit
+> ediliyor"* diye yazmak **olmayan bir garanti satmak** olurdu; harici bir çıpa (dış zaman
+> damgası / WORM) gerekir ve bu maddede **yok** — o yüzden *"korunuyoruz"* denmiyor.
+> Sınırın kendisi bir **testle** dondurdu.
+
+> 🔴 **OTel GenAI: YENİ KOLON YAZILMADI, EŞLEME YAPILDI.** Ölçüldü — veri **zaten**
+> oradaydı (`llm_model` · `llm_input_tokens` · `llm_output_tokens` · `llm_latency_ms` ·
+> `source`). OTel adlarıyla ikinci bir kolon kümesi açmak aynı gerçeğin **iki kopyası**
+> olurdu ve ikisi zamanla ayrışırdı. `otel_nitelikleri()` bir **çeviricidir**, bir depo
+> değil — ve yalnız **dolu** alanları yayınlar: OTel'de eksik bir nitelik **yokluktur**,
+> `gen_ai.usage.input_tokens=null` *"ölçüldü ve sıfırdı"* gibi okunur.
+
+> ⚠ **Zincir hatası kaydı DÜŞÜRMÜYOR.** Bir kanıt kaydını *"zincir kurulamadı"* diye
+> düşürmek, korumaya çalıştığı şeyi **yok etmek** olurdu — ve eksik hash zaten
+> doğrulamada **görünür**.
 
 ### FAZ 1 · adım 12 — `1.7` **tazelik merdiveni** *(2026-08-04)*
 

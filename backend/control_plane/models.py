@@ -711,4 +711,12 @@ class AuditLog(SQLModel, table=True):
     rows_returned: int | None = None
     masked_columns_json: str | None = None
     ip: str | None = None
+    # FAZ 1.8 — AUDIT ZİNCİRİ. "Append-only" bir BEYANDIR, bir mekanizma değil: bir satır
+    # DELETE edilirse geriye HİÇBİR İZ kalmaz. Her kayıt bir öncekinin hash'ini taşır;
+    # ilki `genesis`. Silme ya da değiştirme zinciri KOPARIR ve `app/audit_zinciri.py::
+    # zinciri_dogrula` onu ADIYLA gösterir.
+    # ⚠ Zincir eşzamanlı yazımları SIRALAMAZ (çatal mümkün) — ama çatal da TESPİT EDİLİR;
+    # sınır gizlenmiyor, raporlanıyor.
+    onceki_kayit_hash: str | None = None
+    kayit_hash: str | None = None
     contract_id: str | None = None  # ADR-0010 contract'a bağ
