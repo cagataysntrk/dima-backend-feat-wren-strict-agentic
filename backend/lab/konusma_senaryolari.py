@@ -149,6 +149,21 @@ def _kota_on_ucusu(uretici) -> None:
 
     ⚠ Ön uçuş **bir çağrı harcar** ve bu bilinçlidir: bir turun 12-15 çağrısını boşa
     harcamaktansa bir çağrıyla durmak ucuzdur.
+
+    ## 🔴 ÖN UÇUŞ BİR KEZ YANLIŞ ÇAĞRIYI ÖLÇTÜ — ve bir koşumu yanlış-yeşil yaptı
+
+    İlk sürüm yalnız `generate_sql`'i deniyordu. Ölçüldü (2026-08-04, `faz0_4_netlestirme
+    --live`): ön uçuş **GEÇTİ**, sonra koşumun her turu *"TÜM sağlayıcılar başarısız"*
+    (`429` · `503`) verdi ve alet, LLM hiç cevap vermediği hâlde bir **KARAR** bastı.
+
+    Sebep **kimlik asimetrisi**: Intent yolu `generate_sql`'i değil **`select_cube`**'u
+    çağırır, ve o **ayrı bir modele** gider (`*_select_model` — ucuz katman). İki çağrının
+    **kotası da ayrıdır**. Yani ön uçuş, koşumun kullanmadığı bir yolu sertifikalıyordu:
+    *"ölçüm aracının kendisi de bir bağımlılıktır"* (MIMARI §6.4) sınıfının ön-koşul hâli.
+
+    ⚠ **Ve ön uçuş TEK BAŞINA yetmez:** kota koşumun **ortasında** da tükenebilir. Ön
+    koşul bir son koşulun yerini tutmaz — canlı ölçüm yapan alet, LLM'in **gerçekten
+    katıldığını** kendi verisinden de doğrulamalıdır (bkz. `faz0_4_netlestirme.karar_ver`).
     """
     import os as _os
 
@@ -169,6 +184,26 @@ def _kota_on_ucusu(uretici) -> None:
         raise SystemExit(
             "--live KOTA ÖN UÇUŞU BOŞ DÖNDÜ: üretici kuruldu ama cevap üretmiyor. "
             "Koşum DURDURULDU (fail-closed) — bkz. DIMA_MEASURE_KEY.")
+
+    # ── İKİNCİ AYAK: Intent yolunun GERÇEKTEN kullandığı çağrı ────────────────
+    # `select_cube` ayrı bir modele gider ve kotası ayrıdır; `generate_sql`'in yeşili
+    # onun adına konuşamaz. Üreticide yoksa (eski/dar sağlayıcı) sessizce atlanır —
+    # olmayan bir yeteneği zorunlu kılmak, ölçülemeyeni kırmızı göstermek olurdu.
+    if not hasattr(uretici, "select_cube"):
+        return
+    try:
+        secim = uretici.select_cube("kaç kayıt var", "", {})
+    except Exception as exc:                                   # noqa: BLE001
+        raise SystemExit(
+            f"--live KOTA ÖN UÇUŞU (select_cube) BAŞARISIZ: {type(exc).__name__}: "
+            f"{str(exc)[:200]}\n"
+            "`generate_sql` çalışıyor ama Intent yolunun kullandığı `select_cube` "
+            "çalışmıyor — İKİSİ AYRI MODELE ve AYRI KOTAYA gider. Bu asimetri bir kez "
+            "yanlış-yeşil üretti (2026-08-04). Koşum DURDURULDU (fail-closed).")
+    if secim is None:
+        raise SystemExit(
+            "--live KOTA ÖN UÇUŞU (select_cube) BOŞ DÖNDÜ: Intent yolu cevap üretmiyor. "
+            "Koşum DURDURULDU (fail-closed) — Intent'e dayanan her ölçüm anlamsız olurdu.")
 
 RAPOR_DIZINI = Path(__file__).resolve().parent / "reports" / "konusma_senaryolari"
 #: `--live` sınıf başına kaç senaryo koşar (katmanlı örneklem).

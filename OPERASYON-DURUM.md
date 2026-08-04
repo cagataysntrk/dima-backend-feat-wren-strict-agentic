@@ -17,9 +17,10 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 0** — temizlik ve kapılar *(25 madde; sıra **numara DEĞİL**, FAZ 0 girişindeki bağlayıcı koşum sırası)* |
-| **Sıradaki madde** | `0.4` netleştirme önceliği *(**canlı A/B** — demet sınırında)* |
-| **Ondan sonra** | `0.21` **EN SON** *(tavanı FAZ 0 ÖNCESİ ölçümden alır; FAZ 0'ın eklediği satırlar madde-madde MUAF)* → **FAZ 1** |
-| **Demet** | `0.15` · `0.17` · `0.20` indi — demet kapanışa hazır |
+| **Sıradaki madde** | `0.21` **EN SON** *(tavanı FAZ 0 ÖNCESİ ölçümden alır; FAZ 0'ın eklediği satırlar madde-madde MUAF)* |
+| **Ondan sonra** | **FAZ 1** |
+| **Demet** | ✅ **demet 6 kapandı** (`0.15`·`0.17`·`0.20`, kapı 3/4 + kasıtlı tuzak) · demet 7 açık: `§7-CI` yaşam döngüsü · `0.4` |
+| 🔴 **Kota** | **GÜNLÜK KOTA DOLDU** (2026-08-04 ~11:40; `429`/`503`, tüm sağlayıcılar). Bugün başka **canlı** koşum YOK — LLM'siz ölçümler serbest |
 | **Tempo** | 🔴 **DEMET disiplini yürürlükte** (`OPERASYON.md §3`): commit ≠ kapı; tam kapı **demet sonunda bir kez**. Risk sınırındaki dosyalara dokunan madde demete girmez |
 | **v1 bitiş ölçütü** | §C'nin **16 ölçütü** yeşil |
 
@@ -418,6 +419,59 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
 
+### FAZ 0 · adım 13 — `§7-CI` yaşam döngüsü · `0.4` netleştirme önceliği *(2026-08-04)*
+
+**Demet 6 kapandı.** Kapı: **3/4 yeşil**, tek kırmızı **kasten kurulmuş bir tuzağın
+ateşlemesi** (`test_YURURLUKTE_satiri_HALA_dogru[§7-CI]` — FAZ 0.15 indi). Korpus
+**%93,2** (taban %93,2) · semantik vaka **%92,1** · eval precision/coverage **%100** ·
+senaryo dokuz sınıf tabanda · süit **2167 geçti**.
+
+| İş | Ne indi |
+|---|---|
+| **`§7-CI`** | Tuzağın üç adımı: §0 satırı **daraltıldı** · MIMARI §7'ye **ölçümlü ✅** · tuzak **ters çevrildi** |
+| **`0.4`** | Karar **`off` KALIYOR** — gerekçesi MIMARI'ye yazıldı · ölçüm aleti + 23 test |
+
+> ⚠ **`§7-CI` talimatı harfi harfine uygulanmadı — ve nedeni ölçüldü.** Tuzak *"§0 satırını
+> **SİL**"* diyor; ama o satır **üç şey birden** işaret ediyordu (*çerçeve · CI kapıları ·
+> risk-kapsam*) ve **yalnız CI kapıları** indi. Bütünüyle silmek, **inmemiş** bir maddenin
+> işaretçisini de silerdi — yani tuzağın engellemek için var olduğu şeyi, **tuzağa uyarak**
+> yapardım. Satır daraltıldı, tuzak daralan iddiaya (**FAZ 4.2 · risk-kapsam**) yeniden
+> nişanlandı; ⟳ sayısı **13'te** kaldı. Yol haritasının kendi §0 tablosu zaten bu satırı
+> yalnız `FAZ 4` ile eşliyordu — daraltma MIMARI'yi yol haritasıyla **hizaladı**.
+
+> 🔴 **`0.4`: İŞ ZATEN ÖLÇÜLMÜŞTÜ, ama KARARIN EVİ YOKTU.** Canlı ölçüm 2026-08-03'te
+> yapılmış ve sonucu `features.yml`'nin **YORUMUNDA** duruyordu. Yol haritasının KAPI'sı
+> birebir *"nedeni **`MIMARI.md`'ye yazılır**"* diyor — ve MIMARI'de bu maddeden **hiç söz
+> edilmiyordu**. Bir YAML yorumu mimari otorite değildir; çelişkide MIMARI kazanır.
+> Bir sonraki tur *"ölçülmemiş"* sanıp **kotayı yeniden yakardı**.
+
+> 🔴 **AD ÇAKIŞMASI — MIMARI'de İKİ AYRI «Faz 0.4» varmış.** Eski olan 2026-08-02'nin
+> **kapsam kapısı** fazı (`475e691`) ve *"OK **+6** · CUBE-SAPMA **−25**"* taşıyor — yani
+> **sıkılaştırma lehine** sayılar. Yeni 0.4'ün kararı **tam tersi**. Ayrıştırılmasaydı
+> okuyucu yanlış sayıya bakıp **bayrağı açardı**. Kimlik asimetrisi bu kez **ad düzeyinde**.
+
+> 🔴 **İLAN EDİLEN KAPI BOŞ ÇIKTI — ölçüldü, tahmin edilmedi.** Yol haritası 0.4'ün
+> kapısını `lab/nl_corpus.py --kapi` öncesi/sonrası diye yazmıştı. **LLM'siz A/B farkı:
+> `0`/41.** Sebep yapısal: `ask.py:2601` ile `:2757` **aynı** netleştiriciyi çağırır,
+> ikincisi Intent'ten sonradır ve LLM yoksa Intent dalı hiç koşmaz. Üstelik korpus bu
+> nüfusa **hakemlik edemez**: beklenen cube'u soruyu üreten cube'dur, oysa nüfus tam
+> olarak *"aynı terimi ≥2 cube sahiplenmiş"* kümesidir — yer gerçeğinin **kendisi
+> yazı-turadır**. → Ölçüt **doğruluk değil KARARLILIK**.
+
+> 🔴🔴 **ALETİM YANLIŞ-YEŞİL BASTI — ve kök neden ön uçuşun kendisiydi.** Canlı doğrulamada
+> sağlayıcıların **hepsi** `429`/`503` verdi, ama alet **«B · bağlamdan çözüyor»** kararı
+> bastı: her tur aynı deterministik düşüşe uğradığı için sonuç *"kararlı"* göründü.
+> Ölçülen kararlılık, LLM'in değil **BAŞARISIZLIĞIN** kararlılığıydı.
+> **Kök neden:** `_kota_on_ucusu` `generate_sql` ile ön uçuş yapıyor, koşum ise
+> **`select_cube`** çağırıyor — **ayrı model, ayrı kota**. Ön uçuş, koşumun kullanmadığı
+> yolu sertifikalıyordu. İki düzeltme, ikisi de tek sahipte: (a) ön uçuş artık
+> `select_cube`'u **da** deniyor · (b) `karar_ver` LLM katılımını **son koşul** olarak
+> arıyor (`self-consistency` izi yoksa `⊘`) — çünkü kota koşumun **ortasında** da tükenir.
+
+> ⚠ **41 ≠ `ask.py`'nin 53'ü — ve ikisi de doğru.** `ask.py` *"≥2 sahip + route çözemiyor"*
+> sayıyor; **41** ise chip'in **gerçekten kurulabildiği** küme. *"Belirsiz"* ile
+> *"belirsizliği SORULABİLİR"* aynı sayı değil.
+
 ### FAZ 0 · adım 12 — `0.17` gecikme bütçesi · `0.20` bayrak profilleri *(2026-08-04)*
 
 | Madde | Ne indi | Ölçüm |
@@ -478,7 +532,8 @@ VK-1…VK-6 **yapısal ve canlı** (gemini) ölçüldü. `§G.6e`'nin *"Bugün"*
 | 16 | 🔴 **Canlı turun kalan beş bulgusu** *(C)*: (a) çelişki sorulduğunda cevap yok, aynı rapor yeniden çiziliyor → **5.0/5.3** · (b) *"ne yapmalıyız"* çıkmaz sokak, `prescription` hiç dolmuyor ve kullanıcının *"o zaman kg üzerinden bak"* düzeltmesi **yok sayılıyor** → **FAZ 5** · (c) tek kelimelik düzeltme (*"yok haziran olsun"*) arkada `Unknown filter dimension 'tarih' in cube 'enerji_tesis'` **iç hatası** + konu kaybı → **hata, 0.x'e alınmalı** · (d) chip'e tıklayınca küp değişti (`enerji_tesis` → `surdurulebilirlik`) — iki *"elektrik"* iki farklı sayı → **0.4 netleştirme** · (e) **veri sonu tarihi hiç söylenmiyor**; kullanıcı üç turunu bunu keşfetmeye harcadı → **§C ölçüt 12 (tazelik), bugün 0** |
 | 17 | 🔴 **SESSİZ-YANLIŞ: *"değişim"* istendi, **TOPLAM** verildi.** Canlı tur t14: *"ocak ile haziran arasında makine bazında fire değişimi"* → `compare=None`, kıyas yok, ay yok, **uyarı da yok**; kendinden emin bir toplam tablosu. Kullanıcı: *"veri doğru, **cevap yanlış soruya**"*. Kök neden `cube_router.compare_mode` bu ifadeyi tanımıyor | **FAZ 0.5b / cube_router** *(kıyas ekseni)* |
 | 18 | 🔴 **AJ0 canlıda DOĞRULANDI — çıkışsız yazım düzeltmesi.** t12/t13: *"…fire ne kadar arttı"* → *"«artti» yerine «parti» mi demek istedin?"*, **doğru yazınca da aynı**, ve sunulan tek şık gramersiz bir cümle (*"…fire ne kadar parti"*). Kullanıcı: *"Ben «artti» yazmadım ki… düzeltmenin yolu yok, çıkış kapısı kapalı."* VK ölçümü *"13 turun dördü buradan ölüyor"* demişti — **canlıda tekrar üretildi** | **§G/AJ0** *(operasyonun en yüksek kaldıraçlı maddesi)* |
-| 19 | 🔴 **`bakiye` iki cube'ta, seçim SESSİZ — ve fark ₺11,86 MİLYON.** t11 `cari` → **₺11.859.052,65**; t15 `mizan` → **₺0**. Sistem birini kura ile seçti, sormadı, seçtiğini yazmadı; `next_steps`'in 6 şıkkının hiçbiri *"cari mi mizan mı?"* demiyor. Ayrıca mizan sorgusunda *"bu yıl"* filtresi **sessizce düştü** | **FAZ 0.4** *(netleştirme önceliği — bayrak `off`)* |
+| 19 | 🔴 **`bakiye` iki cube'ta, seçim SESSİZ — ve fark ₺11,86 MİLYON.** t11 `cari` → **₺11.859.052,65**; t15 `mizan` → **₺0**. Sistem birini kura ile seçti, sormadı, seçtiğini yazmadı; `next_steps`'in 6 şıkkının hiçbiri *"cari mi mizan mı?"* demiyor. ⚠ **SAHİP DEĞİŞTİ (2026-08-04):** `0.4` ölçüldü ve bayrak **`off` kaldı** — yani bu borcu `0.4` **KAPATMIYOR**. Ölçüm ayrıca gösterdi ki model *"bu yıl bakiye"*de **kararlı** biçimde `mizan`'ı seçiyor: bu bir motor kusuru değil **katalog kararıdır** (*bare `bakiye` hangi cube'un?*). Kapalı bir bayrağı borcun sahibi göstermek, borcu **görünmez** kılardı | **FAZ 3.1** *(sahiplik turu; `metrik_kaydi` çakışmayı görünür kılar, KARARI VERMEZ)* |
+| 19b | 🔴 **AYRIŞTIRILDI (#19'dan):** mizan sorgusunda *"bu yıl"* filtresi **sessizce düştü**. Bu bir katalog kararı DEĞİL, bir **kusurdur** — ve #19 ile aynı satırda durduğu sürece sahibi `bakiye` tartışmasının altında kalıyordu. Dönem filtresinin bir cube'ta uygulanıp ötekinde düşmesi, `0.10`'un dönem ekseni işiyle aynı sınıf | **`cube_router` / dönem ekseni** *(sahip atanacak — FAZ 1 girişinde)* |
 | 20 | **Üstünlük ifadesi cevaplanmıyor:** t06 *"hangi makinenin fire oranı en yüksek bu yıl"* → `source=catalog`, **satır yok**, ürün kataloğu dökümü. Ama t07 *"makine bazında fire oranı bu yıl"* → 11 satır, doğru cevap. Kullanıcı: *"Sistem kendi bildiği şeyi bana yasaklıyor… kendimi aptal hissettim"* | **cube_router** *(liste/üstünlük niyeti)* |
 | 21 | **Onay kartına SÖZLE «evet» işlemiyor:** t08 kart *"…panona ekleyeyim mi?"* diye **cümleyle** soruyor; t09 *"evet ekle"* → *"geçerli bir alan veya değişiklik belirtmemektedir"*. Halka yalnız **fareyle** kapanıyor. *(Düğme yolu ✅ çalışıyor: t10 «Rapor panona eklendi».)* | **FAZ 6** *(eylem/onay akışı)* |
 | 22 | **Ham kolon adı + saat damgası ekranda:** `tarih__year: 2026-01-01 00:00:00`. Kullanıcı: *"Ben yıl sordum, bana veritabanı sütun adı ve saat 00:00 gösteriliyor."* | **FAZ 0.10b** *(görünen adlar)* |

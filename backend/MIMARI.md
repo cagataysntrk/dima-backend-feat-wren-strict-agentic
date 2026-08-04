@@ -55,7 +55,7 @@
 | **§4** | Değişmez 2/3 (read-only) — ajan yazma yasağının **kademelenmesi** | **FAZ 6.0 → 6.1 → 6.2** | ⟳ UYGULANMADI |
 | **§5** | yapılmayacaklar — hiçbir satır **kaldırılmıyor**; grain sözleşmesi **yeni satır ekler** | **FAZ 2.1** | ⟳ UYGULANMADI |
 | **§5** | **18. yasak**: *"cevapsız bir dal, cevaplı bir yolu KESEMEZ"* (`KAT-2`) | **§G/AJ0** | ⟳ UYGULANMADI |
-| **§7** | ölçüm sözleşmesi — çerçeve (A1) + **CI kapıları** + risk-kapsam eğrisi | **FAZ 0.15 · FAZ 4** | ⟳ UYGULANMADI |
+| **§7** | ölçüm sözleşmesi — çerçeve (A1) + **risk-kapsam eğrisi** | **FAZ 4.2** | ⟳ UYGULANMADI |
 | **§9** | hedef mimari — **metrik katmanı** merdivene giriyor | **FAZ 0.18 · 2.1** | ⟳ UYGULANMADI |
 | **§11** | agentic — **yetki granülerliği** + onaylı yazma | **FAZ 1.3 · 6.1** | ⟳ UYGULANMADI |
 | **§12** | konuşma — **6./7. tür**; uyuyan **çapa** kuralları | **FAZ 0.5 · 5.1 · 5.2** | ⟳ UYGULANMADI |
@@ -2860,6 +2860,7 @@ tabanıyla korunuyor. Yaşayan semantik testle kilitlendi.
 | LLM'siz cevap oranı (tenant) | `GET /stats/today` (`app/routers/stats.py:39`) | artan |
 | Cevap doğruluğu | `python -m eval.run` → `answered_precision` (Wilson CI) + `coverage` | baseline'ın **altına düşmez** (`tests/test_eval_gate.py`) |
 | Deterministik tavan | `python lab/nl_corpus.py` (~1000 soru × 4 şirket, LLM'siz) | artan |
+| **Dört kapının CI koşumu** | `.github/workflows/nightly.yml` → `python lab/kapi.py --tam` | gecelik `30 2 * * *` + `workflow_dispatch`; 40 dk tavan |
 | Doğru cube/ölçü/boyut | `python lab/nl_accuracy.py` | artan |
 
 **Ölçülen baseline (2026-08-02, `--network none`):**
@@ -2871,6 +2872,20 @@ tabanıyla korunuyor. Yaşayan semantik testle kilitlendi.
 | pytest | ⟳ **D2 (FAZ −1/A5, denetimde bulundu):** sabit sayı SİLİNDİ — *"1016 geçti"* bugün **iki kat** bayattır. Komut: `python -m pytest -q --collect-only \| tail -1` *(taban ve damga: `OPERASYON-DURUM.md` ölçüm tablosu)* |
 | **`lab/nl_corpus.py` — GERÇEK deterministik tavan** | ⟳ **D2 (FAZ −1/A9, denetimde bulundu):** sabit sayı SİLİNDİ — *"8984 turda ~%64"* bu satırda **bayattı** ve tam yedi satır aşağıda kendi ⟳ notu onu çürütüyordu. Güncel değer **komutla** üretilir: `python lab/nl_corpus.py --kapi` |
 
+> ✅ **FAZ 0.15 İNDİ — ölçüm kapıları CI'da.** §0'ın `§7-CI` işaretçisi bu yüzden
+> kaldırıldı (satır **daraltıldı**: risk-kapsam eğrisi hâlâ ⟳, FAZ 4.2).
+> **4/4 kapı** — süit · eval · korpus · senaryo — **tek koşucudan**:
+> `.github/workflows/nightly.yml` @`1732e1b` · `python lab/kapi.py --tam`.
+> Ölçüm: `grep -rln "kapi.py" .github/workflows/` → **1** dosya · koşucunun kapsadığı
+> kapı **4/4**.
+>
+> 🔴 **2/4'ü ZATEN VARDI ve bir önceki ölçüm bunu GÖREMEDİ.** `backend-ci.yml` her push'ta
+> `pytest -q` koşuyor ve `tests/test_eval_gate.py` **süitin İÇİNDE** — yani süit + eval
+> kapıları CI'da koşuyordu. *"Ölçüm kapısı taşıyan **0** workflow"* diyen probe, kapıyı
+> **çağıran komuta** göre arıyordu ve başka yoldan koştuğunu göremiyordu. Kusur belgede
+> değil **ölçüm aracındaydı** — bu turda o sınıfın kaçıncı tekrarı olduğu `OPERASYON-DURUM`'da
+> yazılı. Yeni workflow eksik ikisini (korpus + senaryo) ekleyerek **4/4** yapar.
+>
 > ⚠️ **Eval'in %100'ünü kapsam sanma.** 111 cevabın 111'i intent yolundan geliyor, çünkü eval
 > korpusu **zaten çalışan şeye göre kuratörlenmiş** — çapraz-alan boşluğuna hiç dokunmuyor.
 > Boşluğun bu kadar uzun görünmez kalmasının sebebi de budur. Eval bir *regresyon
@@ -2885,11 +2900,87 @@ tabanıyla korunuyor. Yaşayan semantik testle kilitlendi.
 > **İSTEDİĞİ** davranıştır — bir kusur değil, bir politika. *"Kapsam, zekâ değil"* tezi
 > ayakta kalır; ama o boşluğun **hepsini kapatılabilir sanmak** yanlıştır.
 
-**Faz 0.4'ün ölçülen etkisi** (aynı korpus, öncesi/sonrası): OK **+6**, yanlış-cube/Discovery
+> 🔴 **AD ÇAKIŞMASI — bu belgede İKİ AYRI «Faz 0.4» var ve biri ötekinin kararını
+> TERS gösteriyor.** Aşağıdaki paragraf **2026-08-02'nin kapsam kapısı** fazıdır
+> (`475e691`; `_uncovered` alt-dizi onarımı, `_SUFFIX_CHAIN_RE`). v1 yol haritasının
+> **FAZ 0.4**'ü ise bambaşka bir şeydir: `netlestirme_onceligi` bayrağının **ölçüm
+> kararı** (hemen aşağıda, ayrı başlık). Sayıları karıştıran bir okuyucu, *"OK +6,
+> CUBE-SAPMA −25"*e bakıp bayrağın **açılması** gerektiği sonucuna varırdı — gerçek karar
+> bunun **tam tersi**. Kimlik asimetrisi bu belgenin altı kez kaydettiği sınıftır;
+> burada da ad düzeyinde tekrarlamış.
+
+**Faz 0.4 · KAPSAM KAPISI'nın ölçülen etkisi** *(2026-08-02, `475e691` — v1 yol
+haritasının FAZ 0.4'ü DEĞİL)* (aynı korpus, öncesi/sonrası): OK **+6**, yanlış-cube/Discovery
 (`CUBE-SAPMA`) **−25**, dürüst ret/netleştirme **+15**. Yani kapsam kapısının sıkılaştırılması
 25 soruyu yanlış yerden çıkmaktan alıkoydu; bunların 6'sı doğru cevaba, 15'i dürüst
 netleştirmeye gitti. Toplam OK payında net etki **−%0,25** — sessiz-yanlış sınıfını kapatmanın
 bedeli olarak bilinçli kabul edildi (ADR-0008 yönü).
+
+### FAZ 0.4 (v1) · `netlestirme_onceligi` — **ÖLÇÜM KARARI: `off` KALIYOR**
+
+Yol haritası bu maddeyi bir **karar** olarak yazdı: *"Kayıp > kazanç ise `off` kalır ve
+nedeni `MIMARI.md`'ye yazılır."* Karar **ölçüldü ve `off` çıktı**; gerekçe burada.
+
+**Ne yapar:** katalogda **≥2 SAHİBİ** olan bir ölçüde (ör. `bakiye` → `cari`|`mizan`)
+netleştirme chip'ini **Intent-JSON'dan ÖNCE** koyar (`ask.py:2601`). Kapalıyken aynı
+netleştirici Intent'ten **sonra** çağrılır (`ask.py:2757`) — mekanizma `ff987eb`'de indi.
+
+**Ölçüldü — CANLI sağlayıcıyla, 2026-08-03:**
+
+| Ölçüm | Sonuç |
+|---|---|
+| A/B, 63 etiketli vaka *(negatif kontrol)* | **bozulan 0** · kurtarılan 0 |
+| Kurtarma, 15 gerçek ifade | cevaplanan 12 → 8 · kurtarılan **1** *(doğru ölçüyle **0**)* · **kaybedilen 5** |
+| Kararlılık, aynı soru ×3 | **5/6 KARARLI** — tek kararsız: *"bu yıl borçları"* (`cari`×2, `mizan`×1) |
+
+**Karar ve gerekçesi:** kaybedilecek 5 cevap **yazı-tura değil**. Model tutarlı **ve
+savunulabilir** seçiyor (`cari` = müşteri defteri). B2 kabul ölçütü (*"DOĞRU kurtarma
+> 0"*) **karşılanmıyor** (0), kayıp ise **gerçek** (5). → **`off` KALIR.**
+
+🔴 **İLAN EDİLEN KAPI BU KARARI VEREMEZDİ — ve nedeni ilkesel.** Yol haritası kapıyı
+`lab/nl_corpus.py --kapi` öncesi/sonrası diye yazmıştı. İki bağımsız sebeple çalışmaz:
+
+1. **LLM'siz koşumda A/B farkı YAPISAL OLARAK SIFIRDIR.** `:2601` ile `:2757` **aynı**
+   netleştiriciyi çağırır; ikincisi Intent-JSON'dan sonradır ve LLM yoksa Intent dalı
+   hiç koşmaz → iki yol **aynı cevaba** çıkar. Fark 0 çıkar ve *"gerileme yok"* diye
+   okunurdu. Ölçüldü: `python lab/faz0_4_netlestirme.py` @`1732e1b`.
+2. **Korpus bu nüfusa HAKEMLİK EDEMEZ.** Korpusun *"beklenen cube"*u, soruyu hangi
+   cube'un sözlüğünden ürettiğidir; bu bayrağın nüfusu ise tam olarak **aynı terimi ≥2
+   cube'un sahiplendiği** kümedir. Orada korpusun yer gerçeği **kendisi bir yazı-turadır**:
+   LLM'in şanslı tahmini *"doğru"*, netleştirme sorusu *"kayıp"* sayılırdı — ürün
+   niyetinin **tam tersi**. `ask.py`'nin kendi yorumu: *"Gerçekten belirsiz bir kelimede
+   **doğru cevap yoktur**."*
+
+→ Yer gerçeği olmayan bir nüfusta ölçülebilecek şey **doğruluk değil KARARLILIKTIR**, ve
+kararlılık yer gerçeği istemez. Karar bu ölçütle verildi (5/6 kararlı → *bağlamdan
+çözüyor*), ve alet karar kuralını **ölçümden ÖNCE** yazılı taşıyor (`A · kararsız` /
+`B · bağlamdan çözüyor` / `C · sistematik yanlılık`): `lab/faz0_4_netlestirme.py` ·
+kapı `23 test: `tests/test_faz0_4_netlestirme.py``.
+
+**Bugün yeniden ölçülen (LLM'siz, 2026-08-04 @`1732e1b` · `python lab/faz0_4_netlestirme.py`):**
+
+| Ölçüm | Değer |
+|---|---|
+| katalogda ≥2 sahibi olan terim | **62** |
+| bayrak AÇIKKEN gerçekten netleştirmeye ULAŞAN | **41** |
+| LLM'siz A/B farkı | **0**/41 — *ilan edilen kapının boş olduğunun kanıtı* |
+| negatif kontrol (`ab_kos`, 63 etiketli vaka) | **bozulan 0** · kurtarılan 0 |
+
+⚠ **41 ≠ `ask.py`'nin 53'ü — ve ikisi de doğru olabilir.** `ask.py:2588` *"≥2 SAHİP +
+route ÇÖZEMİYOR"* sayar; buradaki 41 ise **chip'in gerçekten kurulabildiği** kümedir.
+`olcu_netlestirme` iki ayırt edilebilir etiket üretemezse (`len(etiketler) < 2`) kapı
+sessizce atlanır. *"Belirsiz"* ile *"belirsizliği SORULABİLİR"* aynı sayı değildir.
+
+⚠ **Bugünkü CANLI doğrulama `⊘ ÖLÇÜLEMEDİ`** — sağlayıcıların hepsi `429`/`503` verdi
+(günlük kota). Karar **2026-08-03'ün canlı turuna** dayanır; yaşı bir gündür ve LLM'siz
+yapısal ölçümler (nüfus · negatif kontrol) bugün **doğrulandı**. Ölçmediğimizi ölçtük
+gibi yazmak, bu maddenin engellemek için var olduğu şeyin ta kendisi olurdu.
+
+⚠ **AYRI BULGU — katalog sahibine devredildi, sessizce yamalanmadı.** *"bu yıl bakiye"*
+**kararlı** biçimde `mizan.bakiye` seçiyor ve cevap **₺0**; mizan yapısı gereği sıfıra
+denkleşir. Aynı soru `cari`'de **₺11,86 milyon** verir. Bu bir **motor kusuru değil
+KATALOG kararıdır** (*bare `bakiye` hangi cube'un?*) ve sahibi **FAZ 3.1'in sahiplik
+turudur** — `metrik_kaydi` (FAZ 0.18) çakışmayı **görünür** kılar, kararı vermez.
 
 ### Ölçüm araçlarının GERÇEKTEN ne ölçtüğü (2026-08-02'de tek tek doğrulandı)
 

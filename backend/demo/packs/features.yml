@@ -70,6 +70,13 @@ features:
                                # Kabul ölçütü (B2: doğru kurtarma > 0) KARŞILANMIYOR ve
                                # kayıp gerçek → KAPALI KALIYOR.
                                #
+                               # 🔴 KARARIN EVİ ARTIK `MIMARI.md` §7 — "FAZ 0.4 (v1) ·
+                               # netlestirme_onceligi". Bir YAML yorumu mimari otorite
+                               # DEĞİLDİR ve yol haritasının KAPI'sı birebir "nedeni
+                               # MIMARI.md'ye yazılır" diyordu; buradaki sayılar orada
+                               # ölçüt+damgayla duruyor ve `test_faz0_4_netlestirme.py`
+                               # bu iki yerin AYRIŞMASINI kapıya çevirdi.
+                               #
                                # ⚠ Ölçüm sırasında AYRI bir bulgu: "bu yıl bakiye" KARARLI
                                # şekilde `mizan.bakiye` seçiyor ve cevap ₺0 — mizan
                                # yapısı gereği sıfıra denkleşir. Bu bir MOTOR kusuru değil

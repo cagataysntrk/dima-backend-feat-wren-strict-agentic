@@ -421,11 +421,16 @@ _YURURLUKTE_TUZAKLARI = [
      lambda: "if typo_suggestion:" not in
              (APP / "routers/ask.py").read_text(encoding="utf-8"),
      "cevapsız dal cevaplı yolu kesemez (KAT-2)"),
-    ("§7-CI", "FAZ 0.15",
-     lambda: any("kapi.py" in f.read_text(encoding="utf-8", errors="ignore")
-                 for f in (APP.parent.parent / ".github/workflows").glob("*.yml"))
-             if (APP.parent.parent / ".github/workflows").exists() else False,
-     "ölçüm kapıları CI'da"),
+    # ⟳ `§7-CI` **TERS ÇEVRİLDİ** — FAZ 0.15 indi, tuzak
+    # `test_TERS_TUZAK_FAZ_0_15_CI_KAPILARI_AYAKTA`'ya taşındı (silinmedi).
+    # §0'ın `§7` satırı DARALDI: geriye **risk-kapsam eğrisi** (FAZ 4.2) kaldı ve
+    # belirteç ona yeniden nişanlandı. Eski belirteç (`.github/workflows`'ta `kapi.py`)
+    # bugün DOĞRU olduğu için tuzağı kalıcı-kırmızı bırakırdı; oysa satırın inmemiş
+    # yarısı hâlâ bir işaretçiye muhtaç.
+    ("§7-risk", "FAZ 4.2",
+     lambda: (APP.parent / "lab/risk_kapsam.py").exists()
+             or (APP.parent / "lab/reports/risk_kapsam.md").exists(),
+     "risk-kapsam eğrisi (ayrık kapılar üzerinde)"),
     ("§9-metrik", "FAZ 0.18",
      lambda: "MetricDefinition" in
              (APP.parent / "control_plane/models.py").read_text(encoding="utf-8"),
@@ -491,6 +496,41 @@ def test_TERS_TUZAK_FAZ_0_14_KAPILARI_AYAKTA():
         f"FAZ 0.14 KAPISI SİLİNMİŞ: {eksik}\n"
         "Kapı testi geri alınmaz — `xfail` işaretlenir ve gerekçesi buraya yazılır. "
         "Bir kapının kırmızısı bir BİLGİDİR; silindiğinde o bilgi de kaybolur.")
+
+
+def test_TERS_TUZAK_FAZ_0_15_CI_KAPILARI_AYAKTA():
+    """⟳ **TUZAKTAN KAPIYA — FAZ 0.15 indi, tuzak TERS ÇEVRİLDİ.**
+
+    Eski yön: *"CI'da ölçüm kapısı YOK"*. FAZ 0.15 indiği gün **kırıldı** — kurulduğu iş
+    buydu. Yeni yön: **dört kapı CI'da ayakta kalmalı**.
+
+    Neden `--tam` de aranıyor: bir workflow `kapi.py`'yi **çağırıp** yalnız `--hizli`
+    koşarsa dosya adı yerinde durur ama ölçülen şey **kapı değil sinyaldir**
+    (`CLAUDE.md`: *"Bu bir KAPI DEĞİL, sinyaldir"*). Yalnız dosya adını aramak, tam
+    olarak bir önceki ölçümün düştüğü **çağıran-komuta-bakma** kusurunun aynadaki hâli
+    olurdu.
+
+    Neden `if: always()` de aranıyor: workflow'un kendi yorumu *"kırmızıda ham kütük
+    LAZIM"* diyor — *"korpus %92,8'e düştü"* bilgisi, **hangi** soruların kaydığı
+    bilinmeden düzeltilemez. Kırmızıda artefaktı yüklemeyen bir kapı, kırmızısını
+    **okunamaz** hâle getirir.
+    """
+    wf = APP.parent.parent / ".github/workflows"
+    assert wf.exists(), "`.github/workflows` YOK — FAZ 0.15 geri alınmış"
+    metinler = {f.name: f.read_text(encoding="utf-8", errors="ignore")
+                for f in sorted(wf.glob("*.yml"))}
+    kosanlar = {ad: t for ad, t in metinler.items() if "kapi.py" in t}
+    assert kosanlar, (
+        "Hiçbir workflow `lab/kapi.py` çağırmıyor — FAZ 0.15 GERİ ALINMIŞ.\n"
+        "Kapı testi geri alınmaz; gerekçesi buraya yazılır ve satır `xfail` işaretlenir.")
+    assert any("--tam" in t for t in kosanlar.values()), (
+        f"`kapi.py` çağrılıyor ({sorted(kosanlar)}) ama `--tam` YOK. `--hizli` bir KAPI "
+        "değil, bir SİNYALDİR (seçim import bağımlılığına bakar; davranışa dayanan test "
+        "kaçar). Dört kapı yalnız `--tam` ile koşar.")
+    assert any("if: always()" in t for t in kosanlar.values()), (
+        "Kapı workflow'u raporları `if: always()` ile YÜKLEMİYOR. Kırmızıda ham kütük "
+        "lazım: *'korpus %92,8'e düştü'* bilgisi, HANGİ soruların kaydığı bilinmeden "
+        "düzeltilemez.")
 
 
 def test_TUZAK_SAYISI_MIMARI_ILE_ORTUSUYOR():
