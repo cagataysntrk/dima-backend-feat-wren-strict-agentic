@@ -16,8 +16,8 @@
 
 | | |
 |---|---|
-| **Aktif faz** | ✅ **FAZ 3 BİTTİ** (7 adım) → **FAZ 4 · ÖLÇÜM ve KANIT** |
-| **Sıradaki madde** | 🔴 **FAZ 4 · ÖLÇÜM ve KANIT** |
+| **Aktif faz** | **FAZ 4 · ÖLÇÜM ve KANIT** *(FAZ 3 ✅ bitti — 7 adım)* |
+| **Sıradaki madde** | `4.3` çok-turlu Türkçe benchmark · `4.4` Ossie ihracı · `4.5` MCP yüzeyi · `4.6` ADR · `4.8` uçtan uca doğruluk aleti |
 | **Demet** | ✅ **`1.12` kapısı 4/4 YEŞİL** (süit **2477**) — risk sınırı olduğu için demete girmedi · demet 13 açık: `1.10`+`1.11` (o kapıya da dahil oldular) |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
@@ -422,6 +422,38 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
 
 ## FAZ 3 · KAPSAM
+
+## FAZ 4 · ÖLÇÜM ve KANIT
+
+### FAZ 4 · adım 1 — `4.2` **RİSK-KAPSAM EĞRİSİ** — iddia sayıya döndü *(2026-08-04)*
+
+Kapı: **8 test** (`tests/test_risk_kapsam.py`). Yeni araç: `lab/risk_kapsam.py` →
+`lab/reports/risk_kapsam.md`.
+
+> **MIMARI §9.1** *"hiçbir sevk edilmiş BI ürünü risk-kapsam eğrisi yayınlamıyor"* diyordu.
+> Artık bir **sayı**: deterministik kapsam `gulteks %97,4 · gitas %96,9 · atiksan %94,1`.
+
+> 🔴 **SKALER `confidence` UYDURULMADI.** Eğri kara-kutu bir puan üzerinde değil, **ayrık
+> kapılarımız** üzerinde: `route → tie-chip → intent → discovery`. Literatürün kara-kutu
+> sinyalleri **0,61–0,68 AUROC**'ta platoluyor; bizimki bir **tahmin değil, mimari
+> beyandır** — hangi yoldan geçildiği **ölçülür**.
+
+> 🔴 **`hata_orani` BİLEREK YOK.** Bir kapının hata oranını bu araç **ölçemez** (doğruluk
+> korpusun işi); yazsaydık **uydurma** olurdu — ve uydurma bir risk sayısı, risk-kapsam
+> eğrisinin **tam tersini** yapardı. Her nokta bunun yerine **determinizm sınıfını** taşır.
+
+> 🔴 **BAĞLAYICI YAN KURAL uygulandı:** `consistency_k` uyumu bir güven eşiğine
+> **dönüştürülmedi** — *"bir model son derece self-consistent olup yine de **tutarlı
+> biçimde YANLIŞ** olabilir."* Kapı bunu **AST ile** doğruluyor.
+
+> ⚠ **Ölçülemeyen kapıya yazılmadı:** `intent`/`discovery` LLM'siz koşumda ölçülemez →
+> `llm_gerekli` kovası. *Ölçülmeyeni bir kapıya yazmak, eğriyi olduğundan iyimser
+> gösterirdi.*
+
+> ⚠ **Onuncu kez metin taraması kendi belgemi yakaladı:** `consistency` dizisini arayan
+> kapı, onu **kendi yan-kural açıklamasında** buldu → AST'ye çevrildi.
+
+---
 
 ### FAZ 3 · adım 7 — `3.6` **COLD-START + GÖRÜNMEZ KOLON** — 🔴 **FAZ 3 BİTTİ** *(2026-08-04)*
 
