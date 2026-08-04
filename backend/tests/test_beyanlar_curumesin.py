@@ -411,10 +411,8 @@ def _yazan_arac_sayisi() -> int:
 #: (mimari_bolum, faz, "inmiş" belirteci → çağrılabilir, açıklama)
 #: Belirteç UCUZ olmalı (dosya varlığı / grep) — tuzaklar her süitte koşar.
 _YURURLUKTE_TUZAKLARI = [
-    ("§3·§3.3", "FAZ 2.1",
-     lambda: (APP.parent / "demo/packs/cekirdek").exists()
-             or "_merge_cube_metadata" in _app_kaynagi(""),
-     "çekirdek katman / compose birleştirme semantiği"),
+    # ⟳ `§3·§3.3` **TERS ÇEVRİLDİ** — FAZ 2.1(a) indi (çekirdek katman + beşinci üreteç);
+    # tuzak `test_TERS_TUZAK_FAZ_2_1_CEKIRDEK_KATMAN_AYAKTA`'ya taşındı (SİLİNMEDİ).
     # ⟳ `§3.4-RLS` **TERS ÇEVRİLDİ** — FAZ 1.1 indi (`always_filter` → RLAC), tuzak
     # `test_TERS_TUZAK_FAZ_1_1_MOTOR_RLS_AYAKTA`'ya taşındı (silinmedi).
     # §0'ın `§3.4` satırı DARALDI: geriye **kimliğe bağlı** RLS (`SessionProperty`, FAZ 1.2)
@@ -454,9 +452,8 @@ _YURURLUKTE_TUZAKLARI = [
      lambda: (APP / "onay_akisi.py").exists() or (APP / "yazma_araclari.py").exists()
              or _yazan_arac_sayisi() > 0,
      "ajan yazma yasağının kademelenmesi"),
-    ("§5-grain", "FAZ 2.1",
-     lambda: "grain" in (APP / "compose.py").read_text(encoding="utf-8"),
-     "grain sözleşmesi (compose fail-closed)"),
+    # ⟳ `§5-grain` **TERS ÇEVRİLDİ** — FAZ 2.1(a)/(b) indi (grain sözleşmesi fail-closed
+    # ve `cari`'de gerçek pack'ler üstünde ateşliyor); aynı ters-tuzağa taşındı.
     ("§5-18.yasak", "§G/AJ0",
      lambda: "if typo_suggestion:" not in
              (APP / "routers/ask.py").read_text(encoding="utf-8"),
@@ -512,6 +509,36 @@ def test_YURURLUKTE_satiri_HALA_dogru(bolum, faz, indi_mi, konu):
         f"(1) MIMARI.md §0'dan `{bolum}` satırını SİL · "
         f"(2) ilgili bölüme ÖLÇÜMLÜ `✅` yaz (sayı + @sha + komut — kural D2) · "
         f"(3) bu tuzağı TERS ÇEVİR (artık 'inmiş olmalı' diye kilitle) — SİLME")
+
+
+def test_TERS_TUZAK_FAZ_2_1_CEKIRDEK_KATMAN_AYAKTA():
+    """⟳ **TUZAKTAN KAPIYA — FAZ 2.1 indi, İKİ tuzak birden TERS ÇEVRİLDİ.**
+
+    Eski yön (iki satır): *"`§3·§3.3` çekirdek katman / compose birleştirme semantiği
+    HENÜZ UYGULANMADI"* ve *"`§5-grain` grain sözleşmesi HENÜZ UYGULANMADI"*. FAZ 2.1(a)
+    indiği gün **ikisi de kırıldı** — kuruldukları iş buydu.
+
+    Yeni yön: **dördü de ayakta kalmalı.** Bu bir belge iddiası değil, **yapısal** bir
+    kontrol: çekirdek pack'i, beşinci üreteç, fail-closed grain kapısı ve gölge diff aracı.
+
+    🔴 Bir üretecin sessizce kaldırılması, `compose()`'un `copy2` ile **dosya düzeyinde**
+    ezmesine geri dönmek demektir — yani bir çekirdek katmanın ERP katmanı tarafından
+    **sessizce silinmesi**. Ölçülen kusur buydu ([KANIT §10.2]).
+    """
+    import ast as _ast
+
+    assert (APP.parent / "demo" / "packs" / "cekirdek" / "metrik_sozlugu.yml").is_file(), \
+        "çekirdek metrik sözlüğü SİLİNMİŞ"
+    kaynak = (APP / "compose.py").read_text(encoding="utf-8")
+    fn = next(n for n in _ast.walk(_ast.parse(kaynak))
+              if isinstance(n, _ast.FunctionDef) and n.name == "compose")
+    cagrilar = {getattr(n.func, "id", "") for n in _ast.walk(fn) if isinstance(n, _ast.Call)}
+    assert "_merge_cube_metadata" in cagrilar, \
+        "beşinci üreteç compose()'tan ÇIKARILMIŞ — çekirdek katman ölü"
+    assert "GrainIhlali" in (APP / "cekirdek.py").read_text(encoding="utf-8"), \
+        "grain sözleşmesinin fail-closed reddi KALDIRILMIŞ"
+    assert (APP.parent / "lab" / "mdl_diff.py").is_file(), \
+        "gölge diff aracı silinmiş — göçün kabul ölçütü ÖLÇÜLEMEZ olur"
 
 
 def test_TERS_TUZAK_FAZ_0_14_KAPILARI_AYAKTA():

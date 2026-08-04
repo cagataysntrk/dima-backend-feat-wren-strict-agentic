@@ -119,8 +119,8 @@ uvicorn app.main:app --reload --port 8000   # dev
 | # | Ne zaman | Komut | Ne koşar | Süre |
 |---|---|---|---|---|
 | **1** | **her düzenlemeden sonra** | `python lab/kapi.py --hizli --degisen <dosyalar>` | değişen modüle bağımlı testler + çekirdek duman | **~15-60 sn** |
-| **2** | **DEMET SONUNDA, bir kez** | `python lab/kapi.py --tam` | 🔴 **YALNIZ KORPUS** | **13 dk 18 sn** *(ölçüldü — bkz. aşağıdaki düzeltme)* |
-| **3** | **gecelik CI** *(insan beklemez)* | `python lab/kapi.py --hepsi` | korpus + süit + `eval` + senaryo | ~15 dk |
+| **2** | **DEMET SONUNDA, bir kez** | `python lab/kapi.py --tam` | 🔴 **YALNIZ KORPUS** | **1 dk 50 sn** *(ölçüldü)* |
+| **3** | **gecelik CI** *(insan beklemez)* | `python lab/kapi.py --hepsi` | korpus + süit + `eval` + senaryo | **4 dk 06 sn** *(ölçüldü)* |
 
 🔴 **Seviye 3 YEREL OLARAK KOŞULMAZ.** Ne demet sonunda, ne commit öncesi, ne
 *"bir de şuna bakayım"* diye. Onun yeri gecelik CI'dır ve orada **bedava**dır —
@@ -135,7 +135,7 @@ kimsenin beklediği zamandan ödenmez.
 | `eval.run` | **0** *(her koşum `+0,0 / +0,0 / +0,0`)* | ~1,5 dk |
 | konuşma senaryoları | **0** *(dokuz sınıf tabanda sabit)* | ~1,5 dk |
 | tam süit | birkaç kez — **aynı kusurları `--hizli` de yakaladı** | ~8,5 dk |
-| **korpus** | 🔴 **1 kez — ve BAŞKA HİÇBİR ŞEYİN göremeyeceği bir kusuru** | **13 dk 18 sn** |
+| **korpus** | 🔴 **1 kez — ve BAŞKA HİÇBİR ŞEYİN göremeyeceği bir kusuru** | **1 dk 57 sn** |
 
 Korpusun o tek yakalaması, neden onun kaldığının **tamamıdır**: `gitas` bir compose
 yarışıyla korpustan **tamamen düştü**, payda **445 → 342** indi, doğruluk **%93,2 →
@@ -153,10 +153,42 @@ korpusta **hiç sorulmuyor**. Yani `%93,1` yeşilken gerçek kullanıcı deneyim
 olabilir — sayı **yalan söylemiyor, o yolu GÖRMÜYOR**. Kullanıcı-deneyimi kusurları
 korpustan değil, **canlı turlardan** (`lab/deneyim.py --live`) çıkar.
 
+### ⚡ HIZ KURALI — *"12 dakika bekleme"* bitti (2026-08-04, ölçüldü)
+
+> Kullanıcı kararı: *"5 dk'dan uzun teste ayıracak kesinlikle vaktimiz yok."*
+
+Kapı **20 çekirdekli makinede tek çekirdeği %91'de** tutup 19'unu boş bırakıyordu
+(167 MB / 38 GB). Darboğaz soru sayısı değildi, **paralellik yokluğuydu**:
+
+| | önce | **sonra** | nasıl |
+|---|---|---|---|
+| korpus (`--tam`) | 13 dk 18 sn | **1 dk 50 sn** | şirket × dilim → 16 süreç (`spawn`) |
+| süit | ~8 dk 30 sn | **2 dk 15 sn** | `pytest -n 8` |
+| tam kapı (`--hepsi`) | ~15 dk | **4 dk 06 sn** | iki dalga |
+
+🔴 **KAPSAM KIRPILMADI — payda BÖLÜNDÜ, azaltılmadı.** Paralel koşumun sayıları seri
+koşumla **birebir aynı**: boyahane 5306 · atiksan 1462 · gulteks 1618 · gitas 2479 tur,
+semantik vaka paydası **445**, doğru-cube **%93,1**. KURAL A geçerli.
+
+🔴 **SEYRELTME YASAK.** *"Korpus uzunsa soru azaltalım"* ölçülüp **reddedildi**: payda
+kırpılırsa korpusun tek gerçek yakalaması (`gitas` düştü, payda 445→342, doğruluk
+**YÜKSELDİ**) görünmez olur — o sinyal payda **sabitliğine** dayanır. Hız kapsamdan
+değil, **çekirdekten** satın alınır.
+
+⚠ **Dört adımı aynı anda koşma** — denendi: korpus + süit eş zamanlı compose yapınca
+derleme kilidi 60 sn'de zaman aşımına uğradı, süit **934 hata** verdi. `--hepsi` bu
+yüzden **iki dalga**: önce korpus tek başına, sonra süit ‖ eval ‖ senaryo → 0 hata.
+
+Geri alma tek env: `DIMA_KORPUS_PARALEL=1`.
+
 ### Değişmeyen üç kural
 
 - 🔴 **Kapı koşarken repoya YAZILMAZ** — mount canlıdır, ölçüm karışır.
-- 🔴 **İki test konteyneri ASLA paralel koşmaz** (compose kilidi `metadata.yml`'de çakışır).
+- ⟳ ~~**İki test konteyneri ASLA paralel koşmaz**~~ — **KAPANDI 2026-08-04.** Yasağın
+  sebebi paylaşılan `demo/wren-project` üzerindeki compose yarışıydı. Artık her süreç
+  kendi derlenmiş ağacına yazıyor (`lab/izolasyon.py`) → yarış **yapısal olarak** yok.
+  Yasak, doğruluğu hız feda ederek satın alıyordu; izolasyon ikisini birden verdi.
+  **Sınır korundu:** aynı ağaca iki süreç hâlâ giremez, kilit hâlâ dizin başına.
 - 🔴 **KOŞUM HİJYENİ:** `--rm` değil **`-d`**, `--name` ver, `docker wait` + `docker logs`
   ile oku, sonda `docker rm -f`. (`--rm` konteyner çıkınca kütüğü siler; bu operasyonda
   **iki koşumun özeti böyle kayboldu**.)

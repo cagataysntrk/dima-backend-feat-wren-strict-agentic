@@ -182,14 +182,22 @@ def olcut_8_ci() -> Olcum:
     #      koşan `test_eval_gate.py`'yi göremedi ve *"0 kapı"* dedi;
     #  (2) düzeltilince bu kez `kapi.py --tam`'ın **dördünü birden** koştuğunu göremedi
     #      ve *"korpus eksik"* dedi — oysa `--tam` korpusu da koşuyor.
-    # Doğru ölçüm: **koşucunun NE KAPSADIĞINI** bilmek. `--tam` dört kapının tek sahibidir.
-    tam_kosucu = bool(re.search(r"kapi\.py\s+--tam", metin))
+    # Doğru ölçüm: **koşucunun NE KAPSADIĞINI** bilmek.
+    # ⟳ **ÜÇÜNCÜ KEZ AYNI SINIF (2026-08-04).** Test politikası değişince dört kapının
+    # sahibi `--tam`'dan **`--hepsi`**'ye geçti (`--tam` artık YALNIZ korpus) ve bu probe
+    # yine *"korpus/senaryo eksik"* dedi — çünkü bir **bayrak adına** bakıyordu.
+    # *Bir kapıyı onu koşan komutun ADINA göre aramak, adın değişebileceğini unutmaktır.*
+    # Bugünkü ölçüm hâlâ ada bakıyor ama artık **her iki adı da** tanıyor ve hangisinin
+    # neyi kapsadığını AYIRIYOR: `--hepsi` dört kapı, `--tam` yalnız korpus.
+    dort_kapi = bool(re.search(r"kapi\.py\s+--hepsi", metin))
+    korpus_kosucu = dort_kapi or bool(re.search(r"kapi\.py\s+--tam", metin))
+    tam_kosucu = dort_kapi
     suit = tam_kosucu or "pytest" in metin
     kapilar = {
         "eval": tam_kosucu or bool(re.search(r"eval\.run", metin))
                 or (suit and (BE / "tests" / "test_eval_gate.py").exists()),
         "süit": suit,
-        "korpus": tam_kosucu or bool(re.search(r"nl_corpus", metin)),
+        "korpus": korpus_kosucu or bool(re.search(r"nl_corpus", metin)),
         "senaryo": tam_kosucu or bool(re.search(r"konusma_senaryolari", metin)),
     }
     var = [k for k, v in kapilar.items() if v]

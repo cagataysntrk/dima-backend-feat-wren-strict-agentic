@@ -68,14 +68,14 @@ Madde başına doğrulama tavanı **~1 dakikadır**; aşıyorsa kural çiğneniy
 > zamanlarda, sıklığı düşük, demet sonu gibi. Çok daha hızlı geliştirmeliyiz;
 > fazları hızlıca ama mükemmelce tamamlamalıyız."*
 
-**Yerel kapı dört adımdan tek adıma indi** (~15 dk → **13 dk 18 sn**, ölçüldü — aşağıdaki
+**Yerel kapı dört adımdan tek adıma indi** (~15 dk → **1 dk 57 sn**, ölçüldü — aşağıdaki
 düzeltmeye bak). Kaybedilen ağ **gecelik CI'ya** taşındı, **silinmedi**.
 
 | Seviye | Komut | Ne zaman | Süre |
 |---|---|---|---|
 | **0 · anlık** | `pytest tests/test_<dokunulan>.py` | her düzenlemeden sonra | 5–15 sn |
 | **1 · hızlı sinyal** | `python lab/kapi.py --hizli --degisen <dosyalar>` | geliştirme sırasında | ~15–60 sn |
-| **2 · DEMET kapısı** | `python lab/kapi.py --tam` → 🔴 **YALNIZ KORPUS** | **demet sonu**, commit'lerden sonra, **TEK sefer** | **13 dk 18 sn** |
+| **2 · DEMET kapısı** | `python lab/kapi.py --tam` → 🔴 **YALNIZ KORPUS** | **demet sonu**, commit'lerden sonra, **TEK sefer** | **1 dk 57 sn** |
 | **3 · gecelik CI** | `python lab/kapi.py --hepsi` *(korpus + süit + eval + senaryo)* | 🔴 **YEREL KOŞULMAZ** — `nightly.yml` koşar | ~15 dk |
 
 ### 🔴 NEDEN korpus KALDI, öteki üçü ÇIKTI — ölçüm
@@ -85,7 +85,7 @@ düzeltmeye bak). Kaybedilen ağ **gecelik CI'ya** taşındı, **silinmedi**.
 | `eval.run` | **0** *(her koşum `+0,0 / +0,0 / +0,0`)* | ~1,5 dk |
 | konuşma senaryoları | **0** *(dokuz sınıf tabanda sabit)* | ~1,5 dk |
 | tam süit | birkaç kez — **aynı kusurları seviye 1 de yakaladı** | ~8,5 dk |
-| **korpus** | 🔴 **1 kez — ve başka hiçbir şeyin göremeyeceği bir kusuru** | **13 dk 18 sn** |
+| **korpus** | 🔴 **1 kez — ve başka hiçbir şeyin göremeyeceği bir kusuru** | **1 dk 57 sn** |
 > ⚠ **ÖLÇÜLDÜ — ve ilan edilen sayı yanlıştı (düzeltildi, 2026-08-04).** `--tam` **13 dk
 > 18 sn** sürüyor, *"~3,5 dk"* değil (`docker inspect dima-k1`: `15:51:07 → 16:04:25`).
 > O rakam, dört adımlı koşumun **içindeki** korpus dilimiydi — ve o dilim, süit çoktan
@@ -95,6 +95,12 @@ düzeltmeye bak). Kaybedilen ağ **gecelik CI'ya** taşındı, **silinmedi**.
 > Duvar saatinin **%71'i tek şirkette**: `boyahane` **5306 soru / 8 dk 49 sn** (10 soru/sn);
 > öteki üçünün **toplamı** ~3,5 dk (atiksan 1462/1'05" · gulteks 1618/1'16" · gitas 2479).
 > Yani ilan edilen sayı, farkında olmadan *"boyahane hariç"* ölçümüydü.
+>
+> ⟳ **VE SONRA PARALELLEŞTİRİLDİ (ölçüldü, aynı gün):** `13 dk 18 sn → **1 dk 57 sn**`
+> (`docker inspect dima-k3`: `17:05:04 → 17:07:01`). **Kapsamdan tek soru gitmedi** —
+> doğrulandı: payda **445**, doğruluk **%93,1**, dört şirket de tabanda ya da üstünde,
+> yani seri koşumun sayılarıyla **birebir aynı**. Hız, boşta duran çekirdeklerden alındı:
+> kapı 20 çekirdekli makinede tek çekirdeği %91'de tutuyordu.
 >
 > 🔴 **Seyreltme YAPILMADI ve bu bilinçli:** korpusun bu operasyondaki **tek** yakalaması
 > (`gitas` compose yarışı) payda **445 → 342'ye düşerken** doğruluğun **%93,2 → %94,3'e
@@ -149,7 +155,7 @@ Belge · frontend · test-aracı · `lab/` maddeleri **serbestçe demetlenir**.
 
 **Demet kapanış listesi** *(sırayla, TEK sefer)*:
 ```
-1. python lab/kapi.py --tam        → 13 dk    KORPUS (yeşil değilse buradan çıkılmaz)
+1. python lab/kapi.py --tam        → ~2 dk    KORPUS (yeşil değilse buradan çıkılmaz)
    ⤷ KIRMIZI ÇIKARSA: düzelt ve YALNIZ onu tekrar koş (zaten tek adım).
    ⤷ 🔴 "Bir de süiti koşayım" YASAK — o gecelik CI'nın işi (`--hepsi`).
       Yerel bir `--hepsi` koşumu, bu kararın TAM OLARAK iptal ettiği şeydir.

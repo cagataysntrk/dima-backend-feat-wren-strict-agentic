@@ -13,7 +13,7 @@ Karar **ölçümle uyumlu** ve gerekçesi burada duruyor ki bir sonraki tur onu
 | `eval.run` | **0** — her koşumda `+0,0 / +0,0 / +0,0` | ~1,5 dk |
 | konuşma senaryoları | **0** — dokuz sınıf tabanda sabit | ~1,5 dk |
 | tam süit | birkaç kez — ama aynı kusurları **`--hizli` de yakaladı** | ~8,5 dk |
-| **korpus** | 🔴 **1 kez — ve kimsenin göremeyeceği bir kusuru yakaladı** | **13 dk 18 sn** |
+| **korpus** | 🔴 **1 kez — ve kimsenin göremeyeceği bir kusuru yakaladı** | **1 dk 57 sn** |
 
 Korpusun o tek yakalaması, neden **onun kaldığının** tamamıdır: `gitas` bir compose
 yarışıyla korpustan **tamamen düştü**, payda **445 → 342**'ye indi ve doğruluk
@@ -27,13 +27,44 @@ da olur.*
 | Seviye | Ne koşar | Ne zaman | Süre |
 |---|---|---|---|
 | `--hizli` | değişen modüle **bağımlı** testler + çekirdek duman | geliştirme sırasında | ~15-60 sn |
-| `--tam` | **YALNIZ korpus** — *"kaç soru cevaplanabiliyor"* | **demet sonunda, bir kez** | **13 dk 18 sn** |
-| `--hepsi` | korpus + süit + `eval` + senaryo | **gecelik CI** (geliştirme saatine mal olmaz) | ~15 dk |
+| `--tam` | **YALNIZ korpus** — *"kaç soru cevaplanabiliyor"* | **demet sonunda, bir kez** | **1 dk 50 sn** |
+| `--hepsi` | korpus + süit + `eval` + senaryo | **gecelik CI** (geliştirme saatine mal olmaz) | **4 dk 06 sn** |
 
 ⚠ **Üç adım SİLİNMEDİ, yerel kapıdan ÇIKARILDI** (MIMARI §10: *"kapananlar işaretlenir,
 silinmez"*). `--hepsi` ile hâlâ koşarlar ve **gecelik CI** onları koşmaya devam eder —
 yani ağ hâlâ var, yalnız artık **geliştirmenin saatinden** ödenmiyor. Geri alma tek
 bayrak: `--hepsi`.
+
+## ⚡ PARALELLİK — kapsam kırpılmadan 7× (2026-08-04, ölçüldü)
+
+Süreler yukarıda **düştü ama tek bir soru/test bile silinmedi**. Sebep basit ve utanç
+vericiydi: kapı 20 çekirdekli makinede **tek çekirdeği %91'de** tutup 19'unu boş
+bırakıyordu (167 MB / 38 GB kullanım). Darboğaz soru sayısı değil, **paralellik
+yokluğuydu**.
+
+| | önce | sonra | nasıl |
+|---|---|---|---|
+| korpus | 13 dk 18 sn | **1 dk 50 sn** | şirket × dilim → 16 süreç (`spawn`) |
+| süit | ~8 dk 30 sn | **2 dk 15 sn** | `pytest -n 8` + worker başına izole proje ağacı |
+| tam kapı | ~15 dk | **4 dk 06 sn** | iki dalga (aşağıda) |
+
+🔴 **PAYDA BÖLÜNDÜ, KIRPILMADI.** Doğrulandı — paralel koşumun sayıları seri koşumla
+**birebir aynı**: boyahane 5306 · atiksan 1462 · gulteks 1618 · gitas 2479 tur,
+semantik vaka paydası **445**, toplam doğru-cube **%93,1**. KURAL A geçerli, donmuş
+tabanlar kıyaslanabilir kaldı.
+
+🔴 **SEYRELTME YASAK.** *"Korpus uzun sürüyorsa soruları azaltalım"* önerisi ölçülüp
+**reddedildi**: paydayı kırpmak korpusun tek gerçek yakalamasını (`gitas` düştü, payda
+445→342 indi, doğruluk **%93,2→%94,3 YÜKSELDİ**) görünmez kılardı — o sinyal tamamen
+payda **sabitliğine** dayanır. Hız, kapsamdan değil **çekirdekten** satın alınır.
+
+⚠ **"Dördünü aynı anda koş" YANLIŞTIR — denendi, KIRMIZI üretti.** Eş zamanlı koşumda
+korpus (10 süreç) ile süit (8 worker) aynı anda compose yaptı, 20 çekirdek yetmedi,
+derleme kilidi **60 sn zaman aşımına** uğradı → süit **934 hata**. Bu yüzden `--hepsi`
+**iki dalga** koşar: önce korpus tek başına (tüm çekirdekler onun), sonra
+süit ‖ eval ‖ senaryo. Aynı ölçüm iki dalgada: **0 hata, 2528 test geçti.**
+
+Geri alma tek env: `DIMA_KORPUS_PARALEL=1` → eski seri davranış.
 
 ## `--hizli` bir KAPI DEĞİLDİR — bir SİNYALDİR
 
@@ -248,16 +279,33 @@ def tam(sadece: tuple[str, ...] = (), *, hepsi: bool = False) -> int:
     # ⚡ Adımlar BİRBİRİNDEN bağımsız (ayrı süreç, ayrı proje ağacı) → aynı anda koşarlar.
     # Sıralı koşumda toplam = adımların TOPLAMI; paralelde = EN UZUNU. Dört adım için
     # 7 dk 05 sn yerine ~2 dk 20 sn. Tek adım varsa havuz kurmaya değmez.
-    if len(adimlar) > 1:
-        # 🔴 ÇEKİRDEK BÜTÇESİ. Adımlar paralelken korpus (16 süreç) ile süit (8 worker)
-        # aynı anda 24 çekirdek ister; makinede 20 var. Aşırı abone olmak İKİSİNİ birden
-        # yavaşlatır — kullanıcı kısıtı: *"aşırıya kaçma, PC zarar görmesin"*. Korpus tek
-        # başına koştuğunda (yerel kapı) tavanını kendi seçer; burada geri çekilir.
-        os.environ.setdefault("DIMA_KORPUS_PARALEL", "10")
-        with ThreadPoolExecutor(max_workers=len(adimlar)) as havuz:
-            sonuclar = list(havuz.map(lambda a: _kos_yakala(a[0], a[1]), adimlar))
-    else:
-        sonuclar = [_kos_yakala(k, b) for k, b in adimlar]
+    # ⚡ İKİ DALGA — hepsi birden DEĞİL.
+    #
+    # Dört adımı aynı anda koşmak denendi ve ÖLÇÜLDÜ: korpus (10 süreç) ile süit
+    # (8 worker) eş zamanlı compose yapınca 20 çekirdek yetmedi, derleme kilidi
+    # 60 sn zaman aşımına uğradı ve süit **934 hata** verdi. Yani "hepsini paralel
+    # koş" saf hızlanma değil, aşırı abone olunca KIRMIZI ÜRETİR.
+    #
+    # Dalga 1: korpus TEK BAŞINA (tüm çekirdekler onun; 1 dk 50 sn)
+    # Dalga 2: süit ‖ eval ‖ senaryo (süit 8 worker; ötekiler tek çekirdek, 2 dk 20 sn)
+    # Toplam ~4 dk 10 sn — sıralı 15 dk yerine. Yerel kapı zaten yalnız dalga 1'dir.
+    _AGIR_ADIM = "korpus kapısı"
+    dalga1 = [a for a in adimlar if a[1] == _AGIR_ADIM]
+    dalga2 = [a for a in adimlar if a[1] != _AGIR_ADIM]
+    sonuclar_map: dict[str, tuple[int, str]] = {}
+    for dalga in (dalga1, dalga2):
+        if not dalga:
+            continue
+        if len(dalga) == 1:
+            komut, baslik = dalga[0]
+            sonuclar_map[baslik] = _kos_yakala(komut, baslik)
+        else:
+            with ThreadPoolExecutor(max_workers=len(dalga)) as havuz:
+                for (_k, baslik), sonuc in zip(
+                        dalga, havuz.map(lambda a: _kos_yakala(a[0], a[1]), dalga),
+                        strict=True):
+                    sonuclar_map[baslik] = sonuc
+    sonuclar = [sonuclar_map[baslik] for _komut, baslik in adimlar]
     for (rc, cikti), (_komut, baslik) in zip(sonuclar, adimlar, strict=True):
         ozet.append(f"  {'✓' if rc == 0 else '✗'} {baslik:22} {_son_anlamli(cikti)}")
         ozet.extend(f"      ↳ {ad}" for ad in _dusenler(cikti)[:12])
@@ -286,7 +334,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--hizli", action="store_true")
     ap.add_argument("--tam", action="store_true",
-                    help="DEMET KAPISI — yalnız korpus (ölçüldü: 13 dk 18 sn)")
+                    help="DEMET KAPISI — yalnız korpus (ölçüldü: 1 dk 57 sn, paralel)")
     ap.add_argument("--hepsi", action="store_true",
                     help="korpus + süit + eval + senaryo (~15 dk) — GECELİK CI içindir, "
                          "yerel geliştirmede koşulmaz")

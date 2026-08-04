@@ -50,9 +50,13 @@ def test_GECELIK_WORKFLOW_VAR_ve_TAM_KAPIYI_kosuyor():
     d = _workflow("nightly.yml")
     adimlar = d["jobs"]["kapi"]["steps"]
     komutlar = " ".join(str(s.get("run", "")) for s in adimlar)
-    assert "kapi.py --tam" in komutlar, (
-        "gecelik workflow TAM kapıyı koşmuyor — dört kapının biri bile eksikse "
-        "FAZ 2'nin semantik ameliyatı ağsız kalır")
+    # ⟳ **AD DEĞİŞTİ, KAPI DEĞİŞMEDİ (2026-08-04 politika değişikliği).** Dört kapıyı
+    # koşan bayrak artık `--hepsi`; `--tam` **yalnız korpus** koşuyor (yerel demet kapısı).
+    # 🔴 Kabul edilen tek dize `--hepsi`: `--tam`'ı da kabul etmek, gecelik CI'nın **tek
+    # kapıya düşmesine** sessizce izin vermek olurdu — kapı gevşetilmedi, ADI güncellendi.
+    assert "kapi.py --hepsi" in komutlar, (
+        "gecelik workflow DÖRT kapıyı koşmuyor — `--tam` artık yalnız korpustur; "
+        "dört kapının biri bile eksikse FAZ 2'nin semantik ameliyatı ağsız kalır")
 
 
 def test_GECELIK_TETIK_hem_ZAMANLI_hem_ELLE():

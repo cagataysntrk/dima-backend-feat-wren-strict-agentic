@@ -49,11 +49,23 @@
 
 | MIMARI § | Konu | Otoriteyi alan faz | Durum |
 |---|---|---|---|
-| **§3 · §3.3** | semantik katman · compose **birleştirme semantiği** (çekirdek katman + grain sözleşmesi) | **FAZ 2.1** | ⟳ UYGULANMADI |
+> ⟳ **FAZ 2.1 İNDİ — iki satır buradan ÇIKTI, ölçümleri aşağıda (2026-08-04).**
+>
+> * **`§3 · §3.3`** — çekirdek katman + compose **birleştirme semantiği**: `packs/cekirdek/`
+>   metrik sözlüğü + `compose._merge_cube_metadata` (**beşinci** üreteç, anahtar düzeyinde).
+>   Ölçüldü `@f263820`: `python lab/mdl_diff.py` → **dört şirkette de sayı-etkisi 0 fark**,
+>   sözlük zenginleşmesi **7 · 14 · 9 · 11**.
+> * **`§5-grain`** — grain sözleşmesi **fail-closed**: `cekirdek.grain_denetle` +
+>   `compose` reddi. `cari` metrikleri sözleşme beyan ediyor ve **üç ERP'nin üçü de uyuyor**
+>   (`python -m pytest tests/test_cekirdek_katman.py` → **29 test**). ⚠ `ticaret` **bilerek
+>   uymuyor**: `satis_tutari`'nın kanonik grain'i (fatura ↔ stok hareketi) **adım (c)**'nin
+>   kararıdır ve bugün beyan etmek üç ERP'den ikisini derleme zamanında reddetmek olurdu.
+>
+> Tuzaklar **silinmedi, TERS ÇEVRİLDİ**: `test_TERS_TUZAK_FAZ_2_1_CEKIRDEK_KATMAN_AYAKTA`.
+
 | **§3.4** | **`SessionProperty` TÜM çağrı sitelerinde** — bugün 36 `query`/`dry_plan` çağrısı kimlik geçmiyor *(CLS `off`, bkz. §6.3c)* | **FAZ 1.2 kuyruğu** | ⟳ UYGULANMADI |
 | **§3.4** | *"Bilerek ALINMAYANLAR: `osi`"* — karar **geri alındı** | **FAZ 3.4 · 4.5** | ⟳ UYGULANMADI |
 | **§4** | Değişmez 2/3 (read-only) — ajan yazma yasağının **kademelenmesi** | **FAZ 6.0 → 6.1 → 6.2** | ⟳ UYGULANMADI |
-| **§5** | yapılmayacaklar — hiçbir satır **kaldırılmıyor**; grain sözleşmesi **yeni satır ekler** | **FAZ 2.1** | ⟳ UYGULANMADI |
 | **§5** | **18. yasak**: *"cevapsız bir dal, cevaplı bir yolu KESEMEZ"* (`KAT-2`) | **§G/AJ0** | ⟳ UYGULANMADI |
 | **§7** | ölçüm sözleşmesi — çerçeve (A1) + **risk-kapsam eğrisi** | **FAZ 4.2** | ⟳ UYGULANMADI |
 | **§9** | hedef mimari — **metrik katmanı** merdivene giriyor | **FAZ 0.18 · 2.1** | ⟳ UYGULANMADI |
