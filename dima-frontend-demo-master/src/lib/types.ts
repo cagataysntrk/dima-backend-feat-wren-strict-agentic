@@ -95,6 +95,13 @@ export interface AgentRun {
 }
 
 export interface AskResponse {
+  // 🔴 FAZ 5.17 — TEK SES. `app/soz.py` katalogundan gelen metin: tek hitap kipinde,
+  // jargonsuz ve *"önce ne anladığını söyle, sonra sor"* şeklinde.
+  //
+  // ⚠ `note` YENİDEN KULLANILMADI: bugün DÖRT anlam taşıyor (dürüst ret · netleştirme ·
+  // kırpılma uyarısı · upload bildirimi) ve kalıcı `payload_json` geçmişi ona bağlı.
+  // Okuma her zaman `soz ?? note` → **eski kayıtlar aynen çalışır**.
+  soz?: string | null;
   question: string;
   sql: string;
   planned_sql: string | null;

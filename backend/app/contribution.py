@@ -380,8 +380,13 @@ def arastir(service, schema: dict, cube_query: dict, *, mode: str = "yoy",
 
     cq = dict(cube_query or {})
     if not cq.get("cube"):
-        return {"note": "Bu sonuç yapısal bir cube_query taşımıyor (Discovery/ham SQL) — "
-                        "katkı ayrıştırması yapılamaz."}
+        # 🔴 FAZ 5.17 — **JARGON SIZINTISI ÖLÇÜLDÜ.** Eski metin kullanıcıya
+        # *"yapısal bir `cube_query` taşımıyor (Discovery/ham SQL)"* diyordu — yani
+        # **bizim sorunumuzu** ona anlatıyordu. Kullanıcı bu cümleden ne yapması
+        # gerektiğini çıkaramaz; yalnız bir şeyin bozuk olduğunu sanır.
+        from app import soz as _soz
+
+        return {"note": _soz.soz("bilgi.yapisal_sorgu_yok")}
     cube_meta = next((c for c in (schema.get("cubes") or [])
                       if c.get("name") == cq.get("cube")), None)
     if cube_meta is None:

@@ -603,9 +603,12 @@ export function ReportCard({
             artık gerçek bir raporla BİRLİKTE gelebilir (ChatPanel'deki AYNI desen) — rapor
             açıldığında kullanıcı NEDEN konunun değiştiğini burada da görsün, yalnız sohbet
             akışına gömülü kalmasın. */}
-        {item.note && !item.kpi && !item.eylem_onerisi && (
+        {/* FAZ 5.17 — `soz ?? note`: yeni metin varsa o, yoksa bugünkü davranış
+            BİREBİR. Geri alma bedava; eski kayıtlar (yalnız `note` taşıyan
+            `payload_json` geçmişi) aynen çalışır. */}
+        {(item.soz ?? item.note) && !item.kpi && !item.eylem_onerisi && (
           <div className="mt-3 border-l-2 border-amber-500/50 bg-amber-500/[0.04] py-1.5 pl-3 font-mono text-[12px] leading-snug text-neutral-500">
-            {item.note}
+            {item.soz ?? item.note}
           </div>
         )}
         {/* FAZ H — ONAY KARTI. Ajan yazma işini ÇALIŞTIRMAZ, önerir; yazma yalnız bu

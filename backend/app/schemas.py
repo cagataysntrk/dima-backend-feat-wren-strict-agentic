@@ -279,6 +279,16 @@ class Explain(BaseModel):
 
 class AskResponse(BaseModel):
     question: str
+    #: 🔴 **FAZ 5.17 — TEK SES.** `app/soz.py` katalogundan gelen, **tek hitap kipinde**,
+    #: jargonsuz ve *"önce ne anladığını söyle, sonra sor"* şeklinde metin.
+    #:
+    #: ⚠ **`note` YENİDEN KULLANILMADI** ve bu bilinçli: `note` bugün **dört** anlam
+    #: taşıyor (dürüst ret · netleştirme · kırpılma uyarısı · upload bildirimi) **ve
+    #: kalıcı `payload_json` geçmişi ona bağlı**. Yeni bir anlam yüklemek, geçmişteki
+    #: her kaydı yeniden yorumlamak olurdu.
+    #:
+    #: Frontend `soz ?? note` okur → **eski kayıtlar aynen çalışır** (GERİ AL bedava).
+    soz: str | None = None
     # FAZ 2.6 — MALİ YIL PENCERESİ. Yalnız mali yıl takvim yılından **farklıysa** dolar.
     # 🔴 Takvim yılından farklı bir pencereyi *"bu yıl"* diye sunmak, DOĞRU sayıyı YANLIŞ
     # soruya cevap yapar — kullanıcı hangi pencereyi gördüğünü bilmeli. Takvim yılı

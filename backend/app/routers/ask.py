@@ -16,6 +16,7 @@ from app import context as app_context
 from app import prescribe
 from app import planner as _planner
 from app import ask_jobs, cekirdek, followup, katman_b, typo_onerisi
+from app import soz as _soz
 from app import cube_router, eylem, pii, tercih, viz, yoy
 from app.answer import (
     _attach_next_steps,
@@ -1894,14 +1895,17 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 [f"Çapa: grafikte «{val}» hücresi → alt-sorgu ({dim})"])
 
     def _honest_refusal(note: str, trace: list[str],
-                        suggestions: list[Suggestion] | None = None) -> AskResponse:
+                        suggestions: list[Suggestion] | None = None,
+                        soz: str | None = None) -> AskResponse:
         """Dürüst ret — NoLlmGenerator'ın kendi docstring'inin vaat ettiği ama strict-agentic
         göçünde hiç uygulanmayan dönüşüm ("routers/ask.py bunu dürüst redde çevirir").
         ÖNCEDEN generate_sql/generate_followup_sql/refine_cube başarısızlığı 502 fırlatıyordu
         — kullanıcıya çökme gibi görünen bir hata. "Anlaşılmadı" bir SİSTEM HATASI değil,
         dürüstçe söylenecek bir sonuçtur (source=None, sql yok, çökme yok)."""
+        # FAZ 5.17 — `soz` opsiyonel: verilmeyen yollarda frontend `soz ?? note` ile
+        # bugünkü metni gösterir (GERİ AL bedava).
         return _finish(AskResponse(question=body.question, source=None, note=note,
-                                   suggestions=suggestions or [], trace=trace))
+                                   suggestions=suggestions or [], trace=trace, soz=soz))
 
     def _period_gate(cq: dict, cube_meta: dict | None, period_optional: bool | None,
                      trace_prefix: str) -> AskResponse | None:
@@ -2471,6 +2475,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         return AskResponse(
             question=body.question, source=None,
             note="Birden fazla konu anlaşıldı, hangisini istiyorsun?",
+            soz=_soz.soz("netlestirme.konu"),
             suggestions=[Suggestion(**s) for s in etiketler[:6]],
             trace=["Intent-path: çapraz konu → netleştirme (LLM'siz)"],
         )
@@ -3046,6 +3051,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             return _finish(AskResponse(
                 question=body.question, source=None,
                 note="Bu raporu hangi kırılıma göre detaylandırmak istersin?",
+                soz=_soz.soz("netlestirme.kirilim"),
                 suggestions=_dogrulanmis_chipler(labels, schema, en_fazla=10),
                 trace=migration_trace + ["Takip: yetenek sorusu → kırılım chip'leri (LLM'siz)"],
             ))
@@ -3279,8 +3285,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             # yalnız **çapalanacak bir rapor** yok.
             if niyet.konusma:
                 return _honest_refusal(
-                    note="Bunu hangi rapor üstünde konuşalım? Önce bir soru sor, sonra "
-                         "cevabın üstünde konuşabiliriz.",
+                    note=_soz.soz("ret.konusma_capasiz"),
+                    soz=_soz.soz("ret.konusma_capasiz"),
                     trace=migration_trace + [
                         f"Takip: konuşma sınıfı ({niyet.tur}) ama çapalanacak rapor YOK "
                         f"→ dürüst ret (FAZ 5.0)"],
@@ -3288,6 +3294,10 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             return _honest_refusal(
                 note=reason or "Bu takip mesajını önceki raporla ilişkilendiremedim. "
                               "Yeni bir soru olarak sorar mısın?",
+                # 🔴 FAZ 5.17 — eski metin bir FORM HATASIYDI. `soz` katalogdan gelir ve
+                # *"önce ne anladığını söyle, sonra sor"* şeklindedir; `note` geçmiş
+                # kayıtlarla uyum için AYNEN korunur (frontend `soz ?? note` okur).
+                soz=_soz.soz("ret.takip_baglanamadi"),
                 trace=migration_trace + ["Takip: deterministik/LLM düzenleme tükendi → dürüst ret"],
             )
 
@@ -3410,6 +3420,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 _log.warning("Discovery self-healing başarısız", exc_info=True)
                 return _honest_refusal(
                     note="Bu soru için güvenilir bir sorgu üretemedim.",
+                    soz=_soz.soz("ret.sorgu_uretilemedi"),
                     trace=trace + [f"self-healing başarısız ({exc2}) → dürüst ret"],
                 )
 
@@ -3452,6 +3463,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 _log.warning("Discovery çalıştırma + self-healing başarısız", exc_info=True)
                 return _honest_refusal(
                     note="Bu soru için güvenilir bir sorgu üretemedim.",
+                    soz=_soz.soz("ret.sorgu_uretilemedi"),
                     trace=trace + [f"self-healing (çalıştırma) başarısız ({exc2}) → dürüst ret"],
                 )
 

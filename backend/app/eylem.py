@@ -296,11 +296,14 @@ def degerlendir(q_norm: str, cube_query: dict | None, *,
 
     # ÇAPA KAPISI — argümanlar konuşmadaki DOĞRULANMIŞ sorgudan gelir, uydurulmaz.
     if not (cube_query or {}).get("cube"):
-        return Karar(eylem=ad, iz=[*iz, "çapa yok → dürüst sınır beyanı"], not_=(
-            "Bunun için önce bir rapor gerekiyor — hangi raporu kastettiğinizi "
-            "bilmiyorum. Önce sorunuzu sorun (örn. *“bu yıl makine bazında OEE”*), "
-            "sonra cevabın altından bu isteği tekrarlayın; raporu birebir o hâliyle "
-            "kaydederim."))
+        # 🔴 FAZ 5.17 — **HİTAP ÖLÇÜLEN KUSURDU.** Bu metin *"siz"* kipindeydi
+        # (*"kastettiğinizi"*, *"sorunuzu"*, *"tekrarlayın"*) ama `ask.py` 15 isabetle
+        # *"sen"* kipindeydi: ikisi aynı oturumda karşılaşınca ürün **iki kişi gibi**
+        # konuşuyordu. Metin artık katalogdan geliyor ve kip **tek yerde** kararlı.
+        from app import soz as _soz
+
+        return Karar(eylem=ad, iz=[*iz, "çapa yok → dürüst sınır beyanı"],
+                     not_=_soz.soz("ret.capa_yok"))
 
     rapor = _rapor_adi(cube_query or {}, schema)
     b = beyan(ad)
@@ -322,10 +325,11 @@ def degerlendir(q_norm: str, cube_query: dict | None, *,
     if y is None:
         # Tanındı ama YETENEK YOK. Sessizce haftalığa çevirmek, kullanıcının
         # istemediği bir zamanlama kurmak olurdu → dürüstçe ne YAPABİLDİĞİMİZİ söyle.
+        from app import soz as _soz
+
+        # ⚠ Aynı kusur: *"söylerseniz"* → *"söylersen"* (katalog kipi).
         return Karar(eylem=ad, iz=[*iz, "desteklenmeyen periyot → dürüst sınır beyanı"],
-                     not_=("Bu sıklıkta zamanlama henüz kuramıyorum. Şu an **saatlik, "
-                           "günlük ve haftalık** gönderim yapabiliyorum — bunlardan "
-                           "birini söylerseniz hemen hazırlarım."))
+                     not_=_soz.soz("bilgi.periyot_desteklenmiyor"))
     every, weekday, _kalip = y
     saat = _saat_bul(q_norm) or next(
         (s for k, s in _SAAT_IMASI if _syn_hit(q_norm, k)), "08:00")
