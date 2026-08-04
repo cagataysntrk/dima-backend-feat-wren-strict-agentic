@@ -16,8 +16,8 @@
 
 | | |
 |---|---|
-| **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
-| **Sıradaki madde** | `1.13` düşman denetim paneli — **FAZ 1'in SON maddesi**, sonra FAZ 2 |
+| **Aktif faz** | ✅ **FAZ 1 · GÜVENCE BİTTİ** (17 madde) → **FAZ 2 · SEMANTİK ÇEKİRDEK** başlıyor |
+| **Sıradaki madde** | 🔴 **FAZ 2 · SEMANTİK ÇEKİRDEK** — `2.1` çekirdek katman + grain sözleşmesi *(en yüksek etki alanlı faz)* |
 | **Demet** | ✅ **`1.12` kapısı 4/4 YEŞİL** (süit **2477**) — risk sınırı olduğu için demete girmedi · demet 13 açık: `1.10`+`1.11` (o kapıya da dahil oldular) |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
@@ -420,6 +420,40 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 19 — `1.13` **düşman denetim paneli yenilendi** *(2026-08-04)* — 🔴 **FAZ 1 BİTTİ**
+
+Kapı: **19 test** (`tests/test_panel_tazeligi.py`). Kod değişikliği **yok** (belge + kapı).
+
+> **Neden:** panel `2026-07-24`'te dondu ve o tarihten sonra en az altı madde kapandı —
+> ama panel bunu **bilmiyordu**. *Bayat bir denetim paneli iki yönde birden yalan söyler:*
+> kapanmış maddeler *"hâlâ açık"* görünür (boşa iş), açık maddeler **kalabalıkta kaybolur**.
+
+> ✅ **Beyan ölçüldü ve DOĞRU çıktı:** *"47 açık aksiyon"* — dosyalardaki gerçek sayım da
+> **47** (`9+10+9+10+9`). Bu deponun *"beyan var, sayım yok"* sınıfı burada **yakalanmadı**.
+
+> **Durum: ✅ 6 kapandı · ◐ 3 kısmen · ⊘ 2 · ⬜ 36 açık.** Kapananların **hepsi kaynak
+> koddan** doğrulandı: `R5-1` scheduler tenant motoru · `R5-2` compose yarışı ·
+> `R3-1` ek-farkında kapsam (`firesiz` ⊄ `fire`) · `R3-2` `neq`/`not_in` üretimi ·
+> `R4-4` tablo-allowlist (**bu turun `1.3b/2`'si kapattı**) · `R2-8` `period_optional`.
+
+> 🔴 **HER «KAPANDI» İDDİASI KAPIYA ÇEVRİLDİ.** *Yanlış bir «kapandı» işareti, hiç
+> işaretlenmemiş bir maddeden daha tehlikelidir: kimse ona bir daha bakmaz.* Her ✅ satırı
+> çalıştırılabilir bir yükleme bağlı ve **mutasyon testiyle** kırmızı olabildiği
+> kanıtlandı (boş kaynak → yüklem `False`).
+
+> ⚠ **Kod okumakla ölçülemeyen iddialar «kapandı» İŞARETLENMEDİ.** `R2-6` (top-N
+> monotonluğu) bir **davranış** iddiasıdır → `⊘ ÖLÇÜLEMEDİ`. `R3-3` ise **karar değişti**:
+> panelin önerdiği çözüm denendi ve **kırdı** (`grafi`+`k` geçerli ek zinciri değil →
+> grafik soruları kapsam kapısına takıldı, 4 test); sorun `_STOP_EXACT` tam-kelime
+> listesiyle **başka yoldan** kapandı.
+
+> 🔴 **DURUMUN TEK SAHİBİ `index.md`.** `findings/*.md`'ye durum sütunu **eklenmedi**:
+> *tarihsel kayıt, güncellenmediği için değerlidir* — ve iki sahip ayrışırdı.
+
+> ⚠ **Kapı kendi metnimi yakaladı:** özet satırına *"38 açık"* yazmıştım, tablodaki gerçek
+> sayım **36**'ydı. Yani panelin teşhis ettiği kusur sınıfı, panelin **kendi özet
+> satırında** yaşıyordu. Toplam artık `6+3+2+36 = 47`'ye **eşit olmak zorunda**.
 
 ### FAZ 1 · adım 18 — `1.3b/2` **Katman B'nin İKİNCİ çağrı yolu: `/ask` Discovery** *(2026-08-04)*
 
@@ -1325,6 +1359,7 @@ VK-1…VK-6 **yapısal ve canlı** (gemini) ölçüldü. `§G.6e`'nin *"Bugün"*
 | 6 | **`A13` yarım indi:** `§1.5 · §2.1 · §3.2 · §4.4` düzeltildi, **`§1.6` + `§1.7` atıfları duruyor** — `MIMARI.md` satır **559 · 621 · 663 · 886 · 916 · 1298 · 1844 · 1965 · 2001 · 2079 · 2092 · 2582** *(denetim A/(a)1 · kendi ölçümüm doğruladı)* | FAZ 0.14'ün belge kapısı |
 | 7 | **`A11` yarım indi:** uzlaştırma bloğu yazıldı ama **sabit sayılar yerinde** — `93` → `MIMARI.md:605 · 737 · 738`, `105` → `2762 · 2765`. Bir kısmı **tarihli olay kaydı** (meşru), bir kısmı **bugünü anlatıyor** (D2 ihlali); ayrımı madde sırası gelince yap | FAZ 0.1 *(yeniden ölçüm turu)* |
 | 8 | **`D1` beyanı FAZ −1'in üç maddesinde YOK** — `backend·sözleşme·frontend` üçlüsü de `api-only`/`belge` muafiyeti de yazılmamış *(muafiyet meşru, **beyan** eksik)* | FAZ 0.14 |
+| 10 | 🔴 **Korpus kapısı 13 dk 18 sn** — ilan edilen *"3,5 dk"* yanlıştı (düzeltildi). Duvar saatinin **%71'i `boyahane`** (5306 soru / 8'49"). ⚠ **Seyreltme YAPILMAMALI:** `nl_corpus.py:141` *"ham tur paydası KORUNUR (KURAL A)"* diyor ve korpusun tek yakalaması **paydanın değişmesiydi**. Doğru yol **paralelleştirme** (şirketler ayrı süreç) — payda birebir aynı kalır | Kullanıcı kararı bekliyor *(kapsam: ölçüm aracı)* |
 | 9 | **Yol haritası `−1.2` tablosu (12 satır) ↔ `MIMARI §0` (13 satır) ayrıştı**, D5 kütüğü bırakılmadan: MIMARI'de **eklenen** `§5/18. yasak → §G/AJ0`; **değişen otoriteler** §8.2 `4.7→4.6` · §9 `2.2→0.18·2.1` · §12 `6./7./8.→6./7.` · §7 `FAZ 4→0.15·FAZ 4` · §4 `6.1→6.0→6.1→6.2`. 🔴 **Beşinde de MIMARI DOĞRU, yol haritası bayat** | FAZ 0.14 |
 | 10 | **`A9`/`A12`'nin kanıt satır numaraları bayat** — `A9` *"2567·2571·2630"* diyor, gerçek `2804·2808·2867`; `A12` notu *"1309. satır"* diyor, bugün `1348`. *(A6'nın düştüğü hatanın aynısı; ikisi de **zararsız** çünkü düzeltmeler indi)* | FAZ 0.1 |
 | 11 | 🔴 **KENDİ BULGUM (0.23'ü koşarken ölçüldü): raporlanabilirlik kuralının BEŞ sahibi varmış, 0.23 yalnız İKİSİNİ kapatıyor.** Kalan üç sahip: `page.tsx:100` (`latestReportable` — tuvale ekle hedefi) · `page.tsx:114` (`addToCanvas`) · `page.tsx:139` (`lastReport` — **resume çapası**) · `ChatPanel.tsx:196` (thread listesi önizlemesi). **Neden AYNI TURDA kapatılmadı:** ikisi (tuval) `AnalysisCanvas.tsx:82`'nin `it.cube_query && it.result` kapısına bağlı — genişletmek **sessizce boş bir tuval kartı** doğururdu; o yüzey **`0.3`'ün konusu** (K4 `test_yuzey_sadakati.py`). Diğer ikisi (`page.tsx:139` · `ChatPanel.tsx:196`) **serbest ve güvenli**, ama `0.23`'ün `NE`'si açıkça yalnız `ReportPanel` diyor → kapsam sessizce genişletilmedi. `raporlanabilir()` **export edildi**, üçü de ona bağlanacak | **FAZ 0.3** *(aynı fazda, «kalan» adımı)* |

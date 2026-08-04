@@ -3258,7 +3258,7 @@ docker run --rm --network none -v "$PWD/backend:/app" -w /app dima-test python l
 | `Wren_Hibrit_GenBI_SaaS_Strateji.md` | **Mimari niyet belgesi — hâlâ geçerli.** Katman 5'i kelimesi kelimesine *"Semantic Compiler: Intent Query → SQL; **join graph**, metric math, RLS inject"*, §2.5 *"MDL graph'ta measure'ın model'inden dimensions'a **join yolu seçilir**"*. Yani join işi yeni bir yön değil, **strateji ile kod arasındaki boşluğun kapatılmasıdır.** |
 | `HANDOFF_DOCS/*` | **Tarihsel kayıt. Normatif DEĞİL.** Ne zaman ne yapıldığını anlatır; #4 (küp-LLM stratejisi) bu belgeyle çelişen §3.1/§6.C teşhisleri içerir — **bu belge kazanır.** |
 | `legacy/*` | Yeniden yazım öncesi. Yalnız `mimari-akis.md`'nin özdeyişi hâlâ doğru: *"LLM anlar (yapısal, kısıtlı) · Python doğrular+hesaplar · Motor sayıyı üretir · Chip'ler kullanıcıya son sözü verir."* |
-| `backend/lab/panel/` | 4-model düşman denetimi (2026-07-24), 47 açık aksiyon. **Bulguları hâlâ büyük ölçüde geçerli** (§6). Çürütülmüş iddiaları da listeliyor — tekrar açma. |
+| `backend/lab/panel/` | 4-model düşman denetimi. **⟳ FAZ 1.13 (2026-08-04) yeniledi:** aksiyon sayısı **47** ölçüldü (beyan doğru); durum **✅ 6 kapandı · ◐ 3 kısmen · ⊘ 2 · ⬜ 36 açık** ve her ✅ **kodla doğrulanıyor** (`tests/test_panel_tazeligi.py`, 19 test — yanlış bir *«kapandı»* iddiası KIRMIZI verir). Durumun **tek sahibi** `index.md`; `findings/*.md` **tarihsel kayıttır**, bilerek güncellenmez. Çürütülmüş iddialar da listelidir — **tekrar açma**. |
 | `Dima-0-100-Gorev-Takip-Dosyasi (2).md` | **ÜRÜN şartnamesi. Mimari otorite DEĞİL** — §8.3. |
 
 ### 8.2 ADR'ler fiziksel olarak YOK

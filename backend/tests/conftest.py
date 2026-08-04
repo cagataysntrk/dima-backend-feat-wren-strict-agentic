@@ -44,6 +44,27 @@ import base64 as _b64
 # Müşteri DB sırrı şifrelemesi (ADR-0017): sabit test KEK'i (32 bayt).
 os.environ["DIMA_CRED_KEK"] = _b64.b64encode(b"test-kek-32-byte-0123456789abcd!").decode()
 
+# ⚡ PARALEL KOŞUM (pytest-xdist) — her worker KENDİ derlenmiş proje ağacına yazar.
+#
+# Paylaşılan `demo/wren-project` üzerinde EŞZAMANLI compose, korpusun yakaladığı
+# 445→342 vakasını doğuran YARIŞIN ta kendisidir (CLAUDE.md test kapısı: *"iki test
+# konteyneri ASLA paralel koşmaz — compose kilidi metadata.yml'de çakışır"*). O kural
+# **paylaşılan çıktı dizini** varsayımına dayanır: `compose.build_lock_for()` yalnız
+# DİZİN BAŞINA kilitler → her worker'a ayrı dizin verilirse yarış **yapısal olarak**
+# ortadan kalkar, kilit beklemesi de olmaz.
+#
+# `compose_and_build()` packs/companies tabanını `project_dir`'in EBEVEYNİNDEN türetir
+# (`app/compose.py:814`; `demo_root` ayarı YOK). Bu yüzden geçici tabana `packs`/
+# `companies` **sembolik bağ** kurulur — repoya tek bayt yazılmaz (kapı kuralı:
+# *"kapı koşarken repoya YAZILMAZ"*), taban salt-okunur tüketilir.
+_XDIST_WORKER = os.environ.get("PYTEST_XDIST_WORKER")
+if _XDIST_WORKER:
+    _demo = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "demo")
+    _base = tempfile.mkdtemp(prefix=f"dima-wp-{_XDIST_WORKER}-")
+    for _link in ("packs", "companies"):
+        os.symlink(os.path.join(_demo, _link), os.path.join(_base, _link))
+    os.environ["DIMA_PROJECT_DIR"] = os.path.join(_base, "wren-project")
+
 TEST_USER = {"email": "test@dima.local", "password": "test-parola-123"}
 TEST_SUPERADMIN = {"email": "root@dima.local", "password": "root-parola-123"}
 
