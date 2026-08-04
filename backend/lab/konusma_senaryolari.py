@@ -642,6 +642,14 @@ def main() -> None:
                     help="GERÇEK sağlayıcı, SIRALI ve hız-sınırlı (ağ ister; CI dışı)")
     ap.add_argument("--orneklem", type=int, default=LIVE_ORNEKLEM)
     ap.add_argument("--json", action="store_true")
+    # 🔴 FAZ 0.16 — SAHTE KAPI KAPATILDI. Bu iki bayrak olmadan `main()` her yolda
+    # `None` dönüyordu ve süreç **her zaman 0** ile çıkıyordu; yani `lab/kapi.py`'nin
+    # dördüncü adımı hiçbir koşulda kırmızı veremiyordu (ölçüldü: `returncode == 0`).
+    ap.add_argument("--kapi", action="store_true",
+                    help="dondurulmuş tabana göre gerileme varsa ÇIKIŞ KODU 1")
+    ap.add_argument("--kapi-guncelle", action="store_true",
+                    help="mevcut sonucu taban yapar — BİLİNÇLİ bir karardır, "
+                         "tabanı düşürmek gerilemeyi kalıcılaştırır")
     args = ap.parse_args()
 
     from fastapi.testclient import TestClient
@@ -707,6 +715,77 @@ def main() -> None:
     print(f"\nVaka raporları (SINIF başına): {RAPOR_DIZINI}")
     if dusurulen:
         print(f"⚠ örneklem sınırıyla DÜŞÜRÜLEN tur: {dusurulen} — sessiz kırpma yok")
+
+    if args.kapi_guncelle:
+        _tabani_dondur(ozet, kaynak=" ".join(sys.argv[1:]) or "elle")
+    if args.kapi:
+        gecti, satirlar = kapi_degerlendir(ozet, dusurulen)
+        print("\n" + "\n".join(satirlar))
+        if not gecti:
+            print("\nKAPI KIRMIZI — dondurulmuş tabana göre gerileme var.")
+            raise SystemExit(1)
+        print("\nKAPI YEŞİL")
+
+
+#: Dondurulmuş taban — `nl_corpus.py`'nin deseniyle **aynı**, ayrı dosyada.
+KAPI_TABANI = Path(__file__).resolve().parent / "konusma_senaryolari_baseline.json"
+
+
+def kapi_degerlendir(ozet: dict, dusurulen: dict) -> tuple[bool, list[str]]:
+    """Taze koşumu **dondurulmuş tabanla** kıyaslar. Döner: (geçti, satırlar).
+
+    🔴 **BU FONKSİYON BİR SAHTE KAPIDAN DOĞDU.** `main()` her yolda `None` dönüyordu →
+    süreç **her zaman 0** ile çıkıyordu → `lab/kapi.py`'nin dördüncü adımı *"konuşma
+    senaryoları"* **hiçbir koşulda kırmızı veremiyordu**. Kapının *"düşürülen 0"* satırı
+    bir **rapor**du, bir kapı değil; ve kıpırdamamasının sebebi de buydu. Ölçüldü:
+    `subprocess.run(...).returncode == 0` — senaryo tümden çökse bile.
+
+    *"Ölçüm aracının kendisi de bir bağımlılıktır"* (MIMARI §6.4) — bu, o sınıfın
+    **kapının kendi içindeki** örneğidir ve en pahalısıdır: dört bileşenli bir kapının
+    dörtte biri sessizce dekordu.
+
+    İki şart, ikisi de **sessiz kırpma yasağının** doğrudan uygulanması:
+    1. **Düşürülen tur = kırmızı.** Örneklem sınırı bir turu düşürdüyse ölçüm eksiktir.
+    2. **Sınıf başına DOĞRULUK tabanın altına düşemez.** `⊘ ÖLÇÜLEMEDİ` bir gerileme
+       DEĞİLDİR (üçüncü durum) ama **taban da onu doğru saymaz** — ayrı raporlanır.
+    """
+    import json as _json
+
+    if not KAPI_TABANI.exists():
+        return True, [f"TABAN YOK ({KAPI_TABANI.name}) — kapı ilk koşumda ÖĞRENİR. "
+                      "`--kapi-guncelle` ile dondur."]
+    taban = _json.loads(KAPI_TABANI.read_text(encoding="utf-8"))
+    beklenen = taban.get("siniflar") or {}
+    satirlar = [f"TABAN: {taban.get('kaynak', '—')}"]
+    gecti = True
+
+    if dusurulen:
+        gecti = False
+        satirlar.append(f"  🔴 DÜŞÜRÜLEN TUR: {dusurulen} — sessiz kırpma yasağı ihlali")
+
+    for sinif, o in sorted(ozet.items()):
+        b = beklenen.get(sinif)
+        if b is None:
+            satirlar.append(f"  {sinif}: doğruluk {o['dogruluk']}/{o['n']} (tabanda YOK)")
+            continue
+        isaret = "✅" if o["dogruluk"] >= b else "🔴"
+        if o["dogruluk"] < b:
+            gecti = False
+        satirlar.append(f"  {sinif}: doğruluk {o['dogruluk']}/{o['n']} (taban {b}) {isaret}"
+                        + (f" · ⊘ {o['olculemedi']}" if o["olculemedi"] else ""))
+    return gecti, satirlar
+
+
+def _tabani_dondur(ozet: dict, kaynak: str) -> None:
+    """`--kapi-guncelle`: mevcut sonucu taban yapar. **Bilinçli bir karardır** —
+    tabanı düşürmek, gerilemeyi kalıcılaştırmaktır; gerekçesi commit mesajına yazılır."""
+    import json as _json
+
+    KAPI_TABANI.write_text(_json.dumps(
+        {"kaynak": kaynak,
+         "siniflar": {s: o["dogruluk"] for s, o in sorted(ozet.items())}},
+        ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"\ntaban donduruldu → {KAPI_TABANI}")
 
 
 if __name__ == "__main__":
