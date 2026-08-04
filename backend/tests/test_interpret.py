@@ -72,3 +72,67 @@ def test_neutral_measure_no_value_judgment():
 def test_deterministic_same_input_same_output():
     r = _r(["ay", "satis"], [{"ay": "2024-01", "satis": 50}, {"ay": "2024-02", "satis": 40}])
     assert interpret(r) == interpret(r)  # aynı girdi → aynı çıktı (LLM yok)
+
+
+# --- FAZ 0.10b · GÖRÜNEN ADLAR ---------------------------------------------------
+
+def test_FAZ_0_10b_HAM_KOLON_ADI_BASILMAZ():
+    """🔴 **Canlı kullanıcı turunda ölçüldü.** Ekranda şu görünüyordu:
+
+        *"En yüksek tarih__year: 2026-01-01 00:00:00 (454.477,90, toplamın %100.0'i)"*
+
+    Kullanıcının tepkisi: *"Ben yıl sordum, bana **veritabanı sütun adı** ve **saat
+    00:00** gösteriliyor."*
+
+    🔴 **Kritik yan etki:** bu metin `answer.py::_anlati_ekle`'de LLM'e `gercekler`
+    **GİRDİSİ** oluyor → `t2_anlatici` açılırsa model `toplam_fire_kg` **etrafında cümle
+    kurar**. Akıcı ama iç adlı bir cümle robotikliği kaldırmaz, **üstüne para ödetir** —
+    bu yüzden `0.10b`, `t2_anlatici`'nin **sert ön koşuludur**."""
+    r = _r(["makine", "toplam_fire_kg"],
+           [{"makine": "RAM-1", "toplam_fire_kg": 700},
+            {"makine": "RAM-2", "toplam_fire_kg": 300}])
+    out = interpret(r, {"measures": ["toplam_fire_kg"], "dimensions": ["makine"]},
+                    etiketler={"makine": "Makine", "toplam_fire_kg": "Fire (kg)"})
+    assert "toplam_fire_kg" not in out["summary"], \
+        f"HAM KOLON ADI ekrana basıldı: {out['summary']}"
+    assert "Makine" in out["summary"], f"görünen ad kullanılmadı: {out['summary']}"
+
+
+def test_FAZ_0_10b_ETIKET_YOKSA_BIREBIR_BUGUNKU():
+    """**Geriye uyum:** `etiketler=None` iken metin **birebir bugünkü**. Bir iyileştirme,
+    kendi yokluğunda davranışı değiştirmemelidir."""
+    r = _r(["makine", "toplam_fire_kg"],
+           [{"makine": "RAM-1", "toplam_fire_kg": 700},
+            {"makine": "RAM-2", "toplam_fire_kg": 300}])
+    eski = interpret(r, {"measures": ["toplam_fire_kg"], "dimensions": ["makine"]})
+    assert "toplam_fire_kg" in eski["summary"] or "makine" in eski["summary"], \
+        "etiketsiz çağrıda davranış DEĞİŞMİŞ — geriye uyum kırıldı"
+
+
+def test_FAZ_0_10b_ETIKET_YOKSA_ALT_CIZGI_BOSLUGA():
+    """Sözlükte olmayan bir ad için de ham hâli basmak yerine **okunabilir** hâli
+    basılır: `tarih__year` → `tarih · year`. Kullanıcıya veritabanı şeması okutulmaz."""
+    r = _r(["tarih__year", "toplam_fire_kg"],
+           [{"tarih__year": "2026", "toplam_fire_kg": 700},
+            {"tarih__year": "2025", "toplam_fire_kg": 300}])
+    out = interpret(r, {"measures": ["toplam_fire_kg"], "dimensions": ["tarih__year"]},
+                    etiketler={"toplam_fire_kg": "Fire (kg)"})
+    assert "tarih__year" not in out["summary"], \
+        f"ham çift-alt-çizgili kolon adı basıldı: {out['summary']}"
+
+
+def test_FAZ_0_10b_IKINCI_ETIKET_KAYNAGI_ACILMADI():
+    """🔴 `eylem.py:241`'in kendi uyarısı: *"bu depoda «ikinci bir etiket kaynağı» deseni
+    **beş kez** ayrışmayla sonuçlandı."* Etiketler `build_catalog`'dan gelir — aynı
+    kaynak `eylem._rapor_adi` ve `cube_router.next_step_chips` tarafından da kullanılır."""
+    import inspect
+
+    from app import answer as answer_mod
+
+    govde = inspect.getsource(answer_mod._maybe_interpret)
+    assert "build_catalog" in govde, "etiketler tek kaynaktan (build_catalog) GELMİYOR"
+    assert "measure_synonyms_display" in govde and "dimension_labels" in govde, \
+        "etiket sözlüğü kataloğun KENDİ alanlarından kurulmuyor"
+    src = inspect.getsource(__import__("app.interpret", fromlist=["x"]))
+    assert "measure_synonyms_display" not in src, \
+        "`interpret.py` KENDİ etiket kaynağını kurmuş — ikinci sahip"

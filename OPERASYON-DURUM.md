@@ -17,9 +17,9 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 0** — temizlik ve kapılar *(25 madde; sıra **numara DEĞİL**, FAZ 0 girişindeki bağlayıcı koşum sırası)* |
-| **Sıradaki madde** | `0.10`/`0.10b` **görünen adlar** *(risk sınırı — kendi kapısını koşar)* |
-| **Ondan sonra** | `0.4` *(canlı A/B)* · `0.15` · `0.17` · `0.20` → `0.21` **EN SON** |
-| **Demet** | `0.12` · `0.13` · `0.6` indi — demet kapanışa hazır |
+| **Sıradaki madde** | `0.15` CI kapıları · `0.17` gecikme bütçesi · `0.20` bayrak profilleri |
+| **Ondan sonra** | `0.4` *(canlı A/B — demet sınırı)* → `0.21` **EN SON** *(tavanı FAZ 0 ÖNCESİ ölçümden alır)* |
+| **Demet** | `0.10`/`0.10b` risk sınırı — kendi kapısını koştu |
 | **Tempo** | 🔴 **DEMET disiplini yürürlükte** (`OPERASYON.md §3`): commit ≠ kapı; tam kapı **demet sonunda bir kez**. Risk sınırındaki dosyalara dokunan madde demete girmez |
 | **v1 bitiş ölçütü** | §C'nin **16 ölçütü** yeşil |
 
@@ -365,6 +365,31 @@ sildi**. *Yaşayan bir muafiyet, kapının kendisini eritir.*
 > ✅ **Dört muafiyetin dördü de kalktı** (`K1` × 2 · `K4` · `IC_ICE` × 3). Bir muafiyetin
 > metni *"…'de KALKAR"* diyorsa, o faz indiğinde **silinmesi** gerekir; yaşayan muafiyet
 > kapının kendisini eritir.
+
+### FAZ 0 · adım 10 — `0.10` + `0.10b` GÖRÜNEN ADLAR *(2026-08-04)*
+
+🔴 **Canlı kullanıcı turunun şikâyeti kapandı.** Ekranda şu görünüyordu:
+*"En yüksek **tarih__year: 2026-01-01 00:00:00** (454.477,90, toplamın %100,0'i)"* —
+kullanıcı: *"Ben yıl sordum, bana **veritabanı sütun adı** ve **saat 00:00** gösteriliyor."*
+
+| Parça | Ne indi |
+|---|---|
+| **0.10** | `FACT_ICON`'a **`top`** — `interpret` bu fact'i üretiyordu ama sözlükte olmadığı için filtre onu **sessizce eliyordu**. *"En yüksek makine: RAM-2"* bir raporun en çok işe yarayan cümlesidir ve rozet listesinde hiç görünmüyordu |
+| **0.10b** | `interpret(..., etiketler=…)` — fact metinleri **görünen ad** basıyor; sözlükte yoksa `tarih__year` → `tarih · year` |
+
+> 🔴 **İKİNCİ ETİKET KAYNAĞI AÇILMADI.** Etiketler `build_catalog`'dan gelir —
+> `eylem._rapor_adi` ve `cube_router.next_step_chips` ile **aynı kaynak**.
+> `eylem.py:241`'in kendi uyarısı: *"bu depoda «ikinci bir etiket kaynağı» deseni
+> **beş kez** ayrışmayla sonuçlandı."* Testle kilitli: `interpret.py` kendi etiket
+> kaynağını kuramaz.
+
+> ✅ **`t2_anlatici`'nin SERT ÖN KOŞULU karşılandı.** Bu metin `answer._anlati_ekle`'de
+> LLM'e `gercekler` **girdisi** oluyor; `0.10b` inmeden bayrak açılsaydı model
+> `toplam_fire_kg` **etrafında cümle kurardı** — akıcı ama iç adlı bir cümle robotikliği
+> kaldırmaz, **üstüne para ödetir**.
+
+> ⚠ **Geriye uyum testle kilitli:** `etiketler=None` iken metin **birebir bugünkü**.
+> Bir iyileştirme, kendi yokluğunda davranışı değiştirmemelidir.
 
 ### Taban ölçümü · `lab/vk_taban.py` *(commit `8f87e40`)*
 VK-1…VK-6 **yapısal ve canlı** (gemini) ölçüldü. `§G.6e`'nin *"Bugün"* sütunu artık

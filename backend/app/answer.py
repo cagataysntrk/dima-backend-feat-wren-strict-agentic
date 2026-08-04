@@ -252,6 +252,7 @@ def _maybe_interpret(request: Request, resp: AskResponse) -> None:
         # okur (`non_additive`/`semi_additive`/`measure_expressions`). AYNI döngüden
         # alınır — ikinci bir şema arama mekanizması AÇILMAZ (KAT-1).
         cube_meta: dict | None = None
+        etiketler: dict[str, str] = {}
         aranan = (resp.cube_query or {}).get("cube")
         try:
             from app.company_registry import wren_for_request
@@ -262,6 +263,23 @@ def _maybe_interpret(request: Request, resp: AskResponse) -> None:
                     cube_meta = c
         except Exception:
             pass
+
+        # ⚠️ FAZ 0.10b — ETİKETLER **TEK KAYNAKTAN**: `build_catalog` →
+        # `measure_synonyms_display` / `dimension_labels`. `eylem._rapor_adi` ve
+        # `cube_router.next_step_chips` ile **aynı** kaynak. `eylem.py`'nin kendi
+        # uyarısı: *"bu depoda «ikinci bir etiket kaynağı» deseni **beş kez**
+        # ayrışmayla sonuçlandı"* — burada da açılmaz. Yeni I/O yok: döngü zaten
+        # `units`/`lower_is_better` için dönüyordu.
+        if aranan:
+            try:
+                from app.cube_router import build_catalog
+
+                _, _idx = build_catalog(wren_for_request(request).schema())
+                _spec = _idx.get(aranan) or {}
+                etiketler = {**(_spec.get("measure_synonyms_display") or {}),
+                             **(_spec.get("dimension_labels") or {})}
+            except Exception:                              # noqa: BLE001
+                _log.warning("etiket sözlüğü kurulamadı (best-effort)", exc_info=True)
         if resp.kpi and resp.kpi.get("lower_is_better"):
             lower_is_better.add(resp.kpi.get("kpi"))  # KPI ölçüsü (CCC gibi) düşük=iyi
         # EŞİK KIYASI (Faz G3). Kaynak KULLANICININ KENDİ kurduğu alarmlardır — cube
@@ -284,7 +302,7 @@ def _maybe_interpret(request: Request, resp: AskResponse) -> None:
         resp.interpretation = interpret(
             resp.result.model_dump() if resp.result else None,
             resp.cube_query, resp.kpi, units, lower_is_better, esikler=esikler,
-            cube_meta=cube_meta)
+            cube_meta=cube_meta, etiketler=etiketler)
     except Exception:  # noqa: BLE001 - yorum best-effort (yanıtı düşürmez)
         _log.warning("çıktı yorumu üretilemedi (best-effort)", exc_info=True)
     _anlati_ekle(request, resp)

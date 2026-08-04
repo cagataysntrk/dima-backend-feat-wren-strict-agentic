@@ -73,7 +73,7 @@ def _tone(pct: float, lib: bool) -> str:
 
 
 def _series_facts(rows: list[dict], time_col: str, measure: str, unit: str | None,
-                  lib: bool = False) -> list[dict]:
+                  lib: bool = False, _ad=lambda k: k) -> list[dict]:
     """Zaman serisi: ilk→son % değişim, yön (+lower_is_better ise iyi/kötü çerçeve), tepe/dip."""
     pts = [(str(r[time_col]), _num(r[measure])) for r in rows
            if r.get(time_col) is not None and r.get(measure) is not None]
@@ -89,7 +89,7 @@ def _series_facts(rows: list[dict], time_col: str, measure: str, unit: str | Non
         yon = "arttı" if pct > 1 else "azaldı" if pct < -1 else "yatay seyretti"
         facts.append({"type": "trend", "measure": measure, "pct": round(pct, 1),
                       "favorable": (None if not lib or -1 <= pct <= 1 else pct < -1),
-                      "text": f"{measure}: {_fmt_bucket(first[0])}→{_fmt_bucket(last[0])} "
+                      "text": f"{_ad(measure)}: {_fmt_bucket(first[0])}→{_fmt_bucket(last[0])} "
                               f"%{abs(round(pct, 1))} {yon} "
                               f"({_fmt(first[1], unit)} → {_fmt(last[1], unit)}){_tone(pct, lib)}"})
     facts.append({"type": "peak", "measure": measure,
@@ -120,7 +120,7 @@ def _donem_bazinda_topla(rows: list[dict], time_col: str, measure: str) -> list[
 
 
 def _rank_facts(rows: list[dict], dim: str, measure: str, unit: str | None,
-                toplanabilir: bool = True) -> list[dict]:
+                toplanabilir: bool = True, _ad=lambda k: k) -> list[dict]:
     """Kategorik top-N: en yüksek varlık + (toplanabilirse) payı, en düşük, kalem sayısı.
 
     🔴 **Toplanamayan ölçüde TOPLAMA YAPILMAZ.** İlk düzeltme yalnız *"toplamın %X'i"*
@@ -155,7 +155,7 @@ def _rank_facts(rows: list[dict], dim: str, measure: str, unit: str | None,
     pay = (f", toplamın %{round(share, 1)}'i)"
            if (total and toplanabilir and len(ranked) > 1) else ")")
     facts = [{"type": "top", "dim": dim, "measure": measure, "entity": top[0],
-              "text": f"En yüksek {dim}: {top[0]} ({_fmt(top[1], unit)}" + pay}]
+              "text": f"En yüksek {_ad(dim)}: {top[0]} ({_fmt(top[1], unit)}" + pay}]
     if len(ranked) > 1:
         facts.append({"type": "bottom", "dim": dim,
                       "text": f"En düşük: {bot[0]} ({_fmt(bot[1], unit)}); {len(ranked)} kalem"})
@@ -226,7 +226,8 @@ def interpret(result: dict | None, cube_query: dict | None = None,
               kpi: dict | None = None, units: dict[str, str] | None = None,
               lower_is_better: set[str] | None = None,
               esikler: list[dict] | None = None,
-              cube_meta: dict | None = None) -> dict | None:
+              cube_meta: dict | None = None,
+              etiketler: dict[str, str] | None = None) -> dict | None:
     """Evrensel yorum: {facts:[...], summary:"Türkçe"} | None. TAMAMEN deterministik.
 
     result: {columns, rows, row_count}. cube_query/kpi ipucu (opsiyonel). units: ölçü→birim.
@@ -239,6 +240,33 @@ def interpret(result: dict | None, cube_query: dict | None = None,
       hedeftir ve cevabın kendisinde görünmelidir."""
     units = units or {}
     lib_set = lower_is_better or set()
+    # ⚠️ FAZ 0.10b — **GÖRÜNEN ADLAR.** Bu fonksiyon fact metnine **ham küp kolon adı**
+    # koyuyordu (`toplam_fire_kg` · `tarih__year`) ve `OutputInsight` onu **aynen**
+    # basıyordu. Canlı bir kullanıcı turu şunu gördü:
+    #   *"En yüksek tarih__year: 2026-01-01 00:00:00 (454.477,90 …)"*
+    # ve şöyle dedi: *"Ben yıl sordum, bana veritabanı sütun adı ve saat 00:00
+    # gösteriliyor."*
+    #
+    # 🔴 **Kritik yan etki:** bu metin `answer.py::_anlati_ekle`'de LLM'e `gercekler`
+    # **GİRDİSİ** oluyor → `t2_anlatici` açılırsa model `toplam_fire_kg` **etrafında
+    # cümle kurar**. Akıcı ama iç adlı bir cümle robotikliği kaldırmaz, **üstüne para
+    # ödetir**. Bu yüzden `0.10b`, `t2_anlatici`'nin **sert ön koşuludur**.
+    #
+    # 🔴 **İKİNCİ ETİKET KAYNAĞI AÇILMAZ.** Etiketler `build_catalog`'dan gelir —
+    # `eylem._rapor_adi` ve `cube_router.next_step_chips` ile **aynı kaynak**.
+    # `eylem.py`'nin kendi uyarısı: *"bu depoda «ikinci bir etiket kaynağı» deseni
+    # **beş kez** ayrışmayla sonuçlandı."*
+    #
+    # `etiketler=None` → metin **birebir bugünkü** (geriye uyum, testle kilitli).
+    _etiket = dict(etiketler or {})
+
+    def _ad(k: str) -> str:
+        """İç ad → görünen ad. Sözlükte yoksa **alt çizgiler boşluğa** çevrilir:
+        `toplam_fire_kg` → `toplam fire kg`. Ham adı olduğu gibi basmak, kullanıcıya
+        veritabanı şemasını okutmaktır."""
+        if not _etiket:
+            return k                                   # geriye uyum: BİREBİR bugünkü
+        return _etiket.get(k) or k.replace("__", " · ").replace("_", " ")
     # 🔴 TOPLANABİLİRLİK — kural ZATEN TEK SAHİPTE: `contribution.ayristirilabilir_mi`.
     # Burada ikinci bir kopya YAZILMAZ, o sahip ÇAĞRILIR. `interpret` bugüne kadar onu
     # tanımıyordu (*"kimlik asimetrisi"*): katkı yolu *"`fire_orani_yuzde` bir ortalama/
@@ -266,7 +294,7 @@ def interpret(result: dict | None, cube_query: dict | None = None,
     # Tek satır tek ölçü → tek değer.
     if len(rows) == 1 and not dims:
         facts.append({"type": "single", "measure": m0,
-                      "text": f"{m0}: {_fmt(rows[0].get(m0), unit)}"})
+                      "text": f"{_ad(m0)}: {_fmt(rows[0].get(m0), unit)}"})
     elif time_col and len(rows) > 1:              # zaman serisi → trend
         entity = next((d for d in dims if d != time_col), None)
         if entity is None:
@@ -276,7 +304,7 @@ def interpret(result: dict | None, cube_query: dict | None = None,
             # pivot dalıyla "asimetrik" göründüğünü işaretledi; asimetri gerçek ama
             # **doğru** — farkı yaratan şey toplama ihtiyacıdır, ölçünün kendisi değil.
             # (MIMARI metni bir süre bunu koşulsuz yasak gibi anlatıyordu; daraltıldı.)
-            facts += _series_facts(rows, time_col, m0, unit, m0 in lib_set)
+            facts += _series_facts(rows, time_col, m0, unit, m0 in lib_set, _ad)
         else:
             # 🔴 PİVOT (varlık × dönem). Ham satırlarda *"ilk→son"* İKİ FARKLI VARLIĞI
             # kıyaslar — canlı turda ölçülen sessiz-yanlış tam buydu. Trend bir DÖNEM
@@ -304,16 +332,16 @@ def interpret(result: dict | None, cube_query: dict | None = None,
                          "Kırılımsız (yalnız dönem) görünümde trend hesaplanır.")
             if sinif in (TAM, YARI):
                 facts += _series_facts(_donem_bazinda_topla(rows, time_col, m0),
-                                       time_col, m0, unit, m0 in lib_set)
+                                       time_col, m0, unit, m0 in lib_set, _ad)
                 # ⚠ MARKDOWN YOK: `OutputInsight.tsx` `summary`'yi DÜZ METİN basar
                 # (`shape` bilinçli olarak rozet sözlüğünün dışında). Canlı kullanıcı
                 # ekranda `**dönem toplamları**` yıldızlarını **harfi harfine** gördü.
                 facts.append({"type": "shape",
-                              "text": f"{n} {entity} × dönem kırılımı — trend dönem "
+                              "text": f"{n} {_ad(entity)} × dönem kırılımı — trend dönem "
                                       "toplamları üzerinden"})
             else:
                 facts.append({"type": "shape",
-                              "text": f"{n} {entity} × dönem kırılımı — dönem trendi "
+                              "text": f"{n} {_ad(entity)} × dönem kırılımı — dönem trendi "
                                       f"YAZILMADI: {neden}"})
     elif dims:                                     # kategorik → sıralama/pay
         # 🔴 **ASİMETRİ BİLİNÇLİDİR ve iki farklı riske dayanır.**
@@ -329,7 +357,8 @@ def interpret(result: dict | None, cube_query: dict | None = None,
         #       sıralama yapmıyor.
         # Kapı bu asimetriyi iki yönlü kilitler; kaldırılırsa kapsam sessizce kırpılır.
         _sinif, _ = toplanabilirlik(m0, cube_meta)
-        facts += _rank_facts(rows, dims[0], m0, unit, toplanabilir=_sinif != YOK)
+        facts += _rank_facts(rows, dims[0], m0, unit,
+                             toplanabilir=_sinif != YOK, _ad=_ad)
     if len(measures) > 1:
         facts.append({"type": "measures", "text": f"{len(measures)} ölçü: " + ", ".join(measures)})
     if not facts:

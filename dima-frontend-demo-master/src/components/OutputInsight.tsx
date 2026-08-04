@@ -21,7 +21,11 @@ const SIGNAL_TONE: Record<string, string> = {
 // rozetler olarak (tür-simgesiyle) ayrıca sunuyoruz; mundane türler (count/shape/measures/
 // single, zaten summary'de yeterince açık) rozete DÖNÜŞTÜRÜLMEZ, gürültü olmasın.
 const FACT_ICON: Record<string, string> = {
-  trend: "📈", peak: "🏆", bottom: "🔻", kpi_components: "🧮",
+  // ⚠️ FAZ 0.10 — `top` EKLENDİ. `interpret.py` bu fact'i ÜRETİYORDU ama sözlükte
+  // olmadığı için `:38` filtresi onu SESSİZCE ELİYORDU: iki üretici, UI birini tanıyor.
+  // "En yüksek makine: RAM-2" bir raporun en çok işe yarayan cümlesidir ve rozet
+  // listesinde hiç görünmüyordu.
+  trend: "📈", peak: "🏆", bottom: "🔻", kpi_components: "🧮", top: "🥇",
 };
 
 // Sinyal türüne özel simge — YALNIZ önem düzeyinden ayrışması gerekenler için.
