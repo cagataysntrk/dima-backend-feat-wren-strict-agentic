@@ -17,8 +17,8 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
-| **Sıradaki madde** | `1.2c` redactor (grafik/dışa aktarım) · `1.4` süreç-arası kilit |
-| **Demet** | demet 9: `1.1b` · `1.2a` · `1.2b` · `AJ0/1` — **dolu**, kapı koşuyor |
+| **Sıradaki madde** | `1.4` süreç-arası kilit *(compose yarışı canlıda GÖZLENDİ)* · `1.6` lineage |
+| **Demet** | demet 10 açık: `1.2c` · `0.21/modül çıkarma` — kapı sırada |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
 | **Demet** | ✅ **demet 7 kapandı** — FAZ 0 kapanış kapısı **4/4 YEŞİL** (süit **2199**) · demet 8 açık: `1.3c` · `1.3` |
@@ -420,6 +420,46 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 8 — `1.2c` redactor TÜMLEYENİ *(2026-08-04)*
+
+**Demet 9b kapısı: süit 2282 geçti, 2 kırmızı — ikisi de `0.21` modül büyüme kapısı.**
+Kapı **tam da kurulduğu işi** yaptı: AJ0 düzeltmesi `ask()`'e **10 kod satırı** eklemişti.
+
+> ✅ **KAPI DOĞRU MİMARİYİ ZORLADI.** Kendi talimatı (*"yeni davranışı **modüle çıkar**,
+> tavanı yükseltme"*) uygulandı: mantık `app/typo_onerisi.py`'ye taşındı, `ask()` **tek
+> satırlık** bir çağrıya indi. Sonuç: `ask()` **1147/1147** · `ask.py` **2406/2406** —
+> **boşluk 0**, yani fonksiyon **hiç büyümedi**. *Tavanı yükseltmek kapıyı kapının
+> kendisiyle çürütürdü.*
+
+`1.2c` · **redactor tümleyene çevrildi.** Ölçüldü: `apply_to_ask_response` yalnız **üç**
+yeri maskeliyordu (`result.rows` · `facts[].text` · `summary`) — `AskResponse`'un **26**
+alanı var.
+
+> 🔴 **MASKELENMEYENLER:** `interpretation.narration` (LLM metni, **olgulardan** üretilir)
+> · `contribution` (**cevabın gövdesi**, `0.23`'ün ölçtüğü alan) · `next_steps` ·
+> `suggestions` (chip **etiketleri**, boyut değeri taşır) · `prescription` ·
+> `recommendations` · `kpi` · `note` · `calculation_explanation`.
+> **Sayılan bir liste, yeni alanı sessizce dışarıda bırakır** — `KAT-5`: *SAYMA, KAPAT*.
+> Artık varsayılan **maskelemek**; muaf tutmak **açık ve gerekçeli** bir karar
+> (`MUAF_ALANLAR`, `ReportPanel`'in `SAF_NOT_ALANLARI` tümleyeniyle aynı desen).
+
+> 🔴 **YOL HARİTASININ VARSAYIMI ÖLÇÜLDÜ VE DOĞRU ÇIKTI** — ama kilitlenmemişti.
+> *"Grafik etiketleri maskelenmezse §D.2/2 doğru değil"* deniyordu. Ölçüm: grafik
+> `option`'ı `buildOption(effResult, …)` ile **maskeli sonuçtan** türüyor; CSV
+> `exportTableCsv(result, …)` **aynı** satırlardan; PNG/SVG **aynı option**'dan; `VizSpec`
+> yalnız **kolon adları** taşıyor. → **Dışa aktarım zinciri zaten maskeliydi**; asıl boşluk
+> **yanıt gövdesindeydi**. Zincir yine de kapıya çevrildi: *bir doğru varsayım,
+> kilitlenmemişse bir sonraki turda yanlış olabilir.*
+
+> ⚠ **Pydantic modelleri de geziliyor:** `suggestions` bir `list[Suggestion]`'dır, sözlük
+> değil. Yalnız `str`/`dict`/`list` gezen bir maskeleyici onu **sessizce** atlar ve chip
+> etiketleri maskesiz kalırdı.
+
+> ⚠ **Muafiyetler gerekçeli:** `cube_query` **yapısal bir kanıttır** (`POST /cube` onu
+> birebir yeniden koşar) — maskelemek checkpoint'i (D4) kırardı: *bir kanıt,
+> değiştirilirse kanıt değildir*. `sql`/`planned_sql` maskelenirse **çalıştırılamaz** olur.
+> `question` kullanıcının **kendi** metnidir.
 
 ### FAZ 1 · adım 7 — `1.2b` LLM tek kapı · `AJ0/1` yazım önerisi *(2026-08-04)*
 

@@ -17,6 +17,10 @@ from __future__ import annotations
 
 import re
 
+from app.logging_setup import get_logger
+
+_log = get_logger("pii")
+
 # TCKN: 11 hane, ilk hane 0 olamaz — checksum algoritması ile GERÇEK bir TCKN'i rastgele
 # 11 haneli bir sayıdan (ör. sipariş no) ayırt eder (false-positive'i büyük ölçüde önler).
 _TCKN_RE = re.compile(r"\b[1-9]\d{10}\b")
@@ -112,6 +116,73 @@ def mask_query_result(result: dict, principal=None) -> tuple[dict, bool]:
     return {**result, "rows": masked_rows}, False
 
 
+#: 🔴 **MASKELENMEYECEK ALANLAR — ve her biri GEREKÇELİ.**
+#:
+#: `KAT-5`'in kuralı: *"SAYMA — KAPAT."* Maskelenecek alanları saymak, yeni bir alan
+#: eklendiğinde onu **sessizce dışarıda** bırakır; bu depoda o desen defalarca ölçüldü
+#: (`ReportPanel`'in `SAF_NOT_ALANLARI` tümleyeni aynı sebeple yazıldı). Varsayılan
+#: **maskelemektir**; muaf tutmak **açık bir karar** ister ve karar burada durur.
+#:
+#: ⚠ Ölçüldü (2026-08-04): `apply_to_ask_response` yalnız `result.rows` · `facts[].text` ·
+#: `summary` maskeliyordu. `AskResponse`'un **26** alanı var; geri kalanı — `narration`
+#: (LLM metni, olgulardan üretilir) · `contribution` (**cevabın gövdesi**, bkz. `0.23`) ·
+#: `next_steps` · `suggestions` · `prescription` — **hiç maskelenmiyordu**.
+MUAF_ALANLAR: dict[str, str] = {
+    "result": "AYRI ele alınıyor (`mask_rows`) — derin gezinti onu ikinci kez tarayıp "
+              "büyük sonuçlarda gereksiz maliyet üretirdi",
+    "sql": "SQL maskelemek onu ÇALIŞTIRILAMAZ kılar ve makbuzun yeniden üretilebilirliğini "
+           "bozar; erişim zaten `sql:run` (analyst+) ile sınırlı",
+    "planned_sql": "aynı gerekçe — motorun ürettiği plan, maskelenirse kanıt olmaktan çıkar",
+    "cube_query": "YAPISAL alan; `POST /cube` onu birebir yeniden koşar. Maskelemek "
+                  "checkpoint'i (D4) kırardı — bir kanıt, değiştirilirse kanıt değildir",
+    "question": "kullanıcının KENDİ yazdığı metin; kendisine geri gösterilmesi bir sızıntı "
+                "değildir (bilgi zaten onda) ve maskelemek soruyu tanınmaz kılardı",
+    "thread_id": "kimlik", "contract_id": "kimlik", "job_id": "kimlik",
+    "source": "sabit küme (enum)", "view_hint": "sabit küme (enum)",
+    "is_new_topic": "bool", "reply_to_label": "istemcinin kendi etiketi",
+    "viz": "yalnız KOLON ADLARI ve yapı taşır — ölçüldü, veri değeri içermez",
+}
+
+
+def muhurle_derin(deger, _derinlik: int = 0):
+    """Yuvalanmış yapıdaki **tüm** metinleri maskeler. Saf fonksiyon.
+
+    Sözlük/liste/metin dışındaki her şey (sayı, bool, None) **dokunulmadan** döner —
+    `mask_rows`'un aynı kararı: bir ölçü değerini maskelemek veriyi bozar.
+
+    ⚠ Derinlik sınırı **yok** ve bu bilinçli: sınır koymak, sınırın ötesindeki bir alanı
+    **sessizce** muaf tutardı. Yanıt gövdeleri sonlu ve küçüktür (satırlar hariç, onlar
+    muaf).
+
+    🔴 **PYDANTİC MODELLERİ DE GEZİLİR.** `suggestions` bir `list[Suggestion]`'dır —
+    sözlük değil. Yalnız `str`/`dict`/`list` gezen bir maskeleyici onu **sessizce**
+    atlardı ve chip etiketleri maskesiz kalırdı. Model **yerinde** güncellenir; yeniden
+    kurmak, doğrulama kurallarına takılıp isteği düşürebilirdi.
+    """
+    if isinstance(deger, str):
+        return mask_text(deger)
+    if isinstance(deger, dict):
+        return {k: muhurle_derin(v, _derinlik + 1) for k, v in deger.items()}
+    if isinstance(deger, (list, tuple)):
+        tur = type(deger)
+        return tur(muhurle_derin(v, _derinlik + 1) for v in deger)
+    alanlar = getattr(type(deger), "model_fields", None)
+    if alanlar:                                   # pydantic modeli — YERİNDE güncelle
+        for ad in alanlar:
+            ic = getattr(deger, ad, None)
+            if ic is None or isinstance(ic, (int, float, bool)):
+                continue
+            yeni_ic = muhurle_derin(ic, _derinlik + 1)
+            if yeni_ic != ic:
+                try:
+                    setattr(deger, ad, yeni_ic)
+                except Exception:                 # noqa: BLE001
+                    _log.warning("PII: iç alan maskelenemedi: %s.%s",
+                                 type(deger).__name__, ad)
+        return deger
+    return deger
+
+
 def apply_to_ask_response(resp, principal) -> bool:
     """`resp`'i YERİNDE (in-place) maskeler — `result.rows` + `interpretation` metni.
     `pii:view` yetkisi olan principal (admin+, control_plane/authorize.py) İÇİN dokunulmaz.
@@ -129,13 +200,26 @@ def apply_to_ask_response(resp, principal) -> bool:
                 unmasked_pii_shown = True
             else:
                 resp.result.rows = masked_rows
-    if resp.interpretation and not has_pii_view:
-        facts = resp.interpretation.get("facts") or []
-        for f in facts:
-            if isinstance(f, dict) and isinstance(f.get("text"), str):
-                f["text"] = mask_text(f["text"])
-        if isinstance(resp.interpretation.get("summary"), str):
-            resp.interpretation["summary"] = mask_text(resp.interpretation["summary"])
+    # ⟳ **FAZ 1.2c — SAYMA, KAPAT.** Eskiden burada yalnız `facts[].text` ve `summary`
+    # maskeleniyordu; `AskResponse`'un 26 alanının geri kalanı — `narration` (LLM metni,
+    # olgulardan üretilir) · `contribution` (**cevabın gövdesi**) · `next_steps` ·
+    # `suggestions` · `prescription` — **hiç** maskelenmiyordu. Sayılan bir liste, yeni
+    # alanı sessizce dışarıda bırakır; tümleyen bırakmaz.
+    if not has_pii_view:
+        for alan in type(resp).model_fields:
+            if alan in MUAF_ALANLAR:
+                continue
+            eski = getattr(resp, alan, None)
+            if eski is None or isinstance(eski, (int, float, bool)):
+                continue
+            yeni = muhurle_derin(eski)
+            if yeni != eski:
+                try:
+                    setattr(resp, alan, yeni)
+                except Exception:  # noqa: BLE001 — pydantic doğrulaması reddederse
+                    # Sessizce geçme: maskelenemeyen bir alan bir BULGUDUR. Ama isteği de
+                    # düşürme — maskelenmemiş hâli zaten bugünkü davranış.
+                    _log.warning("PII: `%s` alanı maskelenemedi (tip kısıtı)", alan)
     return unmasked_pii_shown
 
 

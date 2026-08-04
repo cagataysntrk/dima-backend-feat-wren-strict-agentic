@@ -43,50 +43,54 @@ import pytest
 KOK = pathlib.Path(__file__).resolve().parents[1]
 
 
-def _ask_govdesi() -> ast.FunctionDef:
-    agac = ast.parse((KOK / "app" / "routers" / "ask.py").read_text(encoding="utf-8"))
-    fn = next((n for n in ast.walk(agac)
-               if isinstance(n, ast.FunctionDef) and n.name == "ask"), None)
-    assert fn is not None, "`ask()` bulunamadı"
-    return fn
-
-
 def test_ONERI_ROUTE_ILE_DOGRULANIYOR():
     """🔴 **Ölçüm YAPISAL.** Bu oturumda metin taraması üç kez kendi yorumunu yakaladı;
-    burada AST ile soruluyor: `typo_suggestion` atanmadan **önce** `route()` çağrılıyor mu?
+    burada AST ile soruluyor: `typo_suggestion` doğrulanmış bir çağrıdan mı geliyor?
 
-    Bir öneriyi doğrulamadan sunmak, kullanıcıyı **ikinci kez** cevapsız bırakır.
+    ⟳ **KONUM DEĞİŞTİ (2026-08-04):** karar `ask()` içindeyken `0.21`'in modül büyüme
+    kapısı tavanı aştığını gösterdi ve kendi talimatını uygulattı — *"yeni davranışı
+    MODÜLE ÇIKAR, tavanı yükseltme."* Mantık `app/typo_onerisi.py`'de; `ask()` yalnız
+    çağırıyor ve **hiç büyümedi** (kod satırı 1147, boşluk 0). Kapı güncellendi, silinmedi.
     """
-    fn = _ask_govdesi()
-    atamalar = [n for n in ast.walk(fn)
+    agac = ast.parse((KOK / "app" / "routers" / "ask.py").read_text(encoding="utf-8"))
+    atamalar = [n for n in ast.walk(agac)
                 if isinstance(n, ast.Assign)
                 and any(getattr(t, "id", "") == "typo_suggestion" for t in n.targets)]
     assert atamalar, "`typo_suggestion` ataması YOK — dal silinmiş olabilir"
-
-    kosullu = [n for n in atamalar if isinstance(n.value, ast.IfExp)]
-    assert kosullu, (
-        "🔴 `typo_suggestion` KOŞULSUZ atanıyor: öneri, cevabı açıp açmadığına "
+    dogrulanmis = [
+        n for n in atamalar
+        if any(isinstance(c, ast.Call) and getattr(c.func, "attr", "") == "gecerli_oneri"
+               for c in ast.walk(n))
+        or isinstance(n.value, ast.IfExp)
+    ]
+    assert dogrulanmis, (
+        "🔴 `typo_suggestion` DOĞRULANMADAN atanıyor: öneri, cevabı açıp açmadığına "
         "bakılmadan sunuluyor. Ölçüldü — 12 gerçekçi sorunun 5'i bu dalda ölüyordu.")
 
 
 def test_DOGRULAMA_SIFIR_LLM():
     """Doğrulama `route()` ile yapılır: **sıfır-LLM ve deterministik**. Bir öneriyi
     doğrulamak için LLM çağırmak, gürültüyü **paralı** hâle getirirdi."""
-    kaynak = (KOK / "app" / "routers" / "ask.py").read_text(encoding="utf-8")
-    i = kaynak.index("_acar_mi")
-    pencere = kaynak[i:i + 500]
-    assert "cube_router.route(" in pencere, "doğrulama `route()` ile yapılmıyor"
-    assert "llm" not in pencere.lower(), "doğrulama LLM'e gidiyor — gürültü paralı olurdu"
+    kaynak = (KOK / "app" / "typo_onerisi.py").read_text(encoding="utf-8")
+    i = kaynak.index("def cevap_aciyor_mu")
+    govde = kaynak[i:]
+    assert "cube_router.route(" in govde, "doğrulama `route()` ile yapılmıyor"
+    assert "llm" not in govde.lower().split('"""')[-1], \
+        "doğrulama LLM'e gidiyor — gürültü paralı olurdu"
 
 
 def test_DOGRULAMA_HATASI_ONERIYI_BASTIRIYOR():
     """`route()` patlarsa öneri **sunulmaz** (fail-closed): doğrulanamayan bir öneri,
     doğrulanmamış bir öneridir."""
-    kaynak = (KOK / "app" / "routers" / "ask.py").read_text(encoding="utf-8")
-    i = kaynak.index("_acar_mi")
-    pencere = kaynak[i:i + 700]
-    assert "_acar_mi = None" in pencere, \
-        "hata dalında `_acar_mi` sıfırlanmıyor — doğrulanamayan öneri sunulabilir"
+    from app import typo_onerisi
+
+    class _Patlak(dict):
+        def get(self, *a, **k):
+            raise RuntimeError("şema okunamadı")
+
+    assert typo_onerisi.cevap_aciyor_mu({"corrected_q": "bu yıl ciro"}, _Patlak()) is False
+    assert typo_onerisi.cevap_aciyor_mu(None, {}) is False
+    assert typo_onerisi.gecerli_oneri([], {}) is None
 
 
 def test_BANTLAR_AYRIK_DEGIL_olculdu():
