@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
-| **Sıradaki madde** | `1.1` · `1.3b` · `1.1b` **birlikte** *(motor RLS turu — 1.3b'nin kendi `NASIL`'ı «1.1 ile AYNI TURDA» diyor)* |
+| **Sıradaki madde** | `1.1` **uygulaması** *(ön koşulu ÖLÇÜLDÜ ve kapıya çevrildi — 7 test)* · sonra `1.3b` · `1.1b` |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
 | **Demet** | ✅ **demet 7 kapandı** — FAZ 0 kapanış kapısı **4/4 YEŞİL** (süit **2199**) · demet 8 açık: `1.3c` · `1.3` |
 | 🔴 **Kota** | **GÜNLÜK KOTA DOLDU** (2026-08-04 ~11:40; `429`/`503`, tüm sağlayıcılar). Bugün başka **canlı** koşum YOK — LLM'siz ölçümler serbest |
@@ -418,6 +418,41 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 2 — `1.1` **ÖN KOŞUL ÖLÇÜMÜ** *(2026-08-04)*
+
+Bir katmanı **kanıtlanmamış** bir yeteneğin üstüne kurmak `KAT-3` ihlalidir. `1.1` motorun
+`rowLevelAccessControls` + `SessionProperty` yeteneğine dayanacak — o yüzden yetenek
+**önce ölçüldü**, sonra `tests/test_motor_rls_onkosul.py` ile **donduruldu** (7 test).
+
+| # | Soru | Ölçüm |
+|---|---|---|
+| **1** | Koşul SQL'e enjekte oluyor mu? | ✅ modelin alt sorgusuna `WHERE … = 'değer'` |
+| **2** | **JOIN** ile baypas edilebiliyor mu? | ✅ **HAYIR** — filtre join'in **iki tarafına da** iniyor |
+| **3** | Property verilmezse? | ✅ **fail-closed** (planlama hatası, filtresiz sorgu DEĞİL) |
+| **4** | Kötücül/kaçışsız değer? | ✅ reddediliyor — *"allow only literal value"* |
+| **5** | Manifest daraltmasında RLAC düşüyor mu? | ✅ **hayır**, round-trip'te korunuyor |
+| **6** | `dry_plan`/`query`/`dry_run` üçü de `properties` alıyor mu? | ✅ **üçü de** |
+
+> 🔴 **(2) MADDENİN VARLIK SEBEBİ.** `always_filter` bir **uygulama katmanı** yamasıdır ve
+> `compose.py:434` (**G10**) onun **join altında baypas edildiğini** zaten ölçmüştü: filtre
+> yalnız o cube'un kendi SQL'ine ekleniyor, join `__source` seviyesinde gerçekleşiyor.
+> Motor RLS'i o deliği **yapısal olarak** kapatıyor — ve bu artık bir umut değil, bir ölçüm.
+
+> 🔴 **MOTOR HAZIR, TESİSAT YOK.** `wren_core` `RowLevelAccessControl` · `SessionProperty` ·
+> `validate_rlac_rule` **taşıyor** ve `wren.engine`'in üç yolu da `properties` parametresi
+> **kabul ediyor**. Ama `grep -c rowLevelAccessControl backend/app/` → **0** ve
+> `WrenService.dry_plan(self, sql)` `properties`'i **hiç geçmiyor**. Yani eksik olan
+> **yetenek değil, onu çağıran satırlar**.
+
+> ⚠ **(4) BİR GÜVENLİK YÜZEYİNİ KONUMLANDIRIYOR:** session property değerleri **SQL
+> literali** olarak veriliyor → tırnaklama/kaçış **bizim tarafımızda**. Motor tek literal
+> dışındaki her şeyi reddederek **ikinci** savunmayı koyuyor; `1.1`'in
+> `oturum_ozellikleri()`'si **birinci** savunma olacak.
+
+> ⚠ **Ölçüm sırasında bir tuzağa düşüldü ve kilitlendi:** `properties` düz `dict` kabul
+> etmiyor, `frozenset(dict.items())` istiyor (`wren.engine._plan` onu böyle kuruyor).
+> Düz sözlük `TypeError` verir — ve bu hata **çalışma anında, kimlik yolunda** patlardı.
 
 ### FAZ 1 · adım 1 — `1.3c` sahte güvenlik sınırı · `1.3` yetki granülerliği *(2026-08-04)*
 
