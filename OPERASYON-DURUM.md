@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
-| **Sıradaki madde** | `1.3b/2` Discovery çağrı yolu (risk sınırı → kendi kapısı) · `1.13` **EN SON** |
+| **Sıradaki madde** | `1.13` düşman denetim paneli — **FAZ 1'in SON maddesi**, sonra FAZ 2 |
 | **Demet** | ✅ **`1.12` kapısı 4/4 YEŞİL** (süit **2477**) — risk sınırı olduğu için demete girmedi · demet 13 açık: `1.10`+`1.11` (o kapıya da dahil oldular) |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
@@ -420,6 +420,61 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 18 — `1.3b/2` **Katman B'nin İKİNCİ çağrı yolu: `/ask` Discovery** *(2026-08-04)*
+
+**Demet kapısı (korpus): YEŞİL** — TOPLAM doğru-cube **%93,1** (taban %93,2) ·
+boyahane %69 · atiksan %69 · gulteks %69 · gitas %73, dördü de tabanda ya da üstünde.
+Kapı: **19 test** (`tests/test_katman_b.py`), hızlı sinyal **498**.
+
+> 🔴 **YENİ TEST POLİTİKASI YÜRÜRLÜKTE** (kullanıcı kararı, 2026-08-04): yerel demet
+> kapısı **yalnız korpus**; süit · `eval` · senaryo **silinmedi**, gecelik CI'ya
+> (`--hepsi`) taşındı. Bu madde o politikayla kapatıldı.
+
+> ⚠ **İLAN EDİLEN SÜRE YANLIŞTI — ölçüldü ve düzeltildi.** `--tam` **13 dk 18 sn**
+> sürüyor (`docker inspect`: `15:51:07 → 16:04:25`), *"~3,5 dk"* değil: o rakam dört
+> adımlı koşumun **içindeki** korpus dilimiydi ve süit compose'u çoktan yaptığı için
+> **ısınmış** sistemde ölçülmüştü. Duvar saatinin **%71'i `boyahane`** (5306 soru /
+> 8 dk 49 sn); öteki üçünün toplamı ~3,5 dk — yani ilan edilen sayı farkında olmadan
+> *"boyahane hariç"* ölçümüydü. **Seyreltme YAPILMADI:** korpusun tek yakalaması
+> paydanın değişmesiydi; soru matrisini seyreltmek tam da paydayı değiştirmektir.
+
+> **Neden:** `1.3b` ilk turda `enforce_query`'yi doldurdu ve `/query`'ye bağladı, ama
+> `/ask`'in Discovery dalı **bağlanmamıştı** — ve bu, sessizce atlanmış değildi: sırası
+> `query.py`'ye **yazılmıştı** ve bir kapı onu bekliyordu. Bu tur o sırayı kapattı.
+> Discovery, ham SQL'in **ikinci** yolu ve **kataloğun dışına çıkabilen tek** yol.
+
+> 🔴 **SARMAL, YAMA DEĞİL.** Discovery dalında SQL'in motora gittiği **beş** nokta var
+> (üretim · onarım · çalıştırma · onarımlı çalıştırma · plan tekrarı). Beşini tek tek
+> yamamak, **altıncısını ekleyen kişinin unutmasına** açık kalırdı — bu deponun
+> `pii.muhurle` kararında birebir yaşadığı şey (*"`raw` dalı düzeltilmiş, kardeşleri
+> unutulmuştu"*). Motor **bir kez** sarılıyor; kapı, kapsamı **yapıyla** ölçüyor
+> (`_run_discovery` içinde çıplak `service.dry_plan/query` kalmışsa kırmızı).
+
+> 🔴 **TEK SAHİP.** Zorlama gövdesi `query.py`'den `app/katman_b.py`'ye **taşındı**,
+> kopyalanmadı: iki kopya zamanla ayrışırdı ve bir güvenlik katmanı için bu **en sessiz**
+> kırılma biçimidir. `query.py` artık aynı fonksiyonu çağırıyor.
+
+> 🔴 **ÖLÇÜLEN KUSUR — yetki reddi `422` dönüyordu.** `/query`'de Katman B reddi genel
+> `except Exception`'a düşüp **422 "engine / DB errors"** oluyordu: istemci bunu *"sorgum
+> bozuk"* diye okur, geliştirici motorda arar. **403**'e çevrildi. *Bir yetki sınırının
+> kendini ARIZA gibi göstermesi, sınırın kendisini görünmez kılar.*
+
+> ⚠ **Yetki reddi ONARIMA düşmüyor.** Discovery'nin `dry_plan` hatası `llm.repair`'e
+> gider; bir yetki reddi ise **onarılamaz** — yalnız bir LLM çağrısı harcar ve sonunda
+> *"güvenilir bir sorgu üretemedim"* der. Ayrı bir dal eklendi: dürüst ret + gerekçe
+> `trace`'te. **Tavan 2 satır ucuza gelirdi ama dürüst olmayan bir mesajı SATIN ALMAZ.**
+
+> ⚠ **Ret notu allowlist içeriğini SIZDIRMIYOR:** *"`personel_ozluk`'a erişemezsin"*
+> cümlesi, erişilemeyen şeyin **varlığını** sızdırır. Gerekçenin tamamı `trace`'e ve
+> audit'e yazılır — **kaybolmaz**, yalnız yetkili olan yerde durur.
+
+> ⟳ **İKİ KAPI TERS ÇEVRİLDİ (silinmedi):** *"Discovery'nin sırası yazılı olmalı"* →
+> *"Discovery gerçekten BAĞLI olmalı"* (yapısal, AST). Ve `enforce_query`'nin yetimlik
+> kapısı **kendi taşımamdan kırmızı oldu**: *"`katman_b.py` dışında bir dosyada geçiyor
+> mu"* diye bakıyordu, zorlama tek sahibe taşınınca kapı bağın **güçlendiği** yerde
+> kırmızı verdi. Doğru soru bir dosya adı değil, **zincirin kendisi**: `zorla` →
+> `enforce_query` **ve** en az **iki uç** → `zorla`/`sarmala`.
 
 ### FAZ 1 · adım 17 — `1.12` **AI Act / NIST RMF / ISO 42001 karşılığı** *(2026-08-04)*
 

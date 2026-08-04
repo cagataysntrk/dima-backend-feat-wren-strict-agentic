@@ -7,6 +7,7 @@ bağlıydı — *"beyan var, kod onu tanımıyor"* sınıfının güvenlik katma
 
 from __future__ import annotations
 
+import ast
 import pathlib
 import re
 
@@ -124,33 +125,190 @@ def test_ENFORCE_QUERY_NIN_GERCEK_BIR_CAGIRANI_VAR():
     """🔴 **Bir stub'ı doldurmak yetmez.** Ölçüldü: `enforce_query`'nin çağıranı **yoktu**
     — katman boş değil, **bağlı bile değildi** (`0.5`'in *"ölü modül"* bulgusunun güvenlik
     katmanındaki hâli). Bu test o bağı kilitler."""
-    cagiranlar = [
-        p for p in (KOK / "app").rglob("*.py")
-        if "enforce_query" in p.read_text(encoding="utf-8", errors="ignore")
-        and p.name != "katman_b.py"
-    ]
-    assert cagiranlar, "`enforce_query` yine YETİM — çağıran bir yol yok"
+    # ⟳ **FAZ 1.3b/2 düzeltmesi.** Eski ölçüm *"`katman_b.py` DIŞINDA bir dosyada
+    # `enforce_query` geçiyor mu"* diye bakıyordu; zorlama tek sahibe taşınınca kapı
+    # **yanlışlıkla kırmızı** oldu — oysa bağ **güçlendi**. Doğru soru bir dosya adı değil,
+    # **zincirin kendisi**: `zorla` → `enforce_query` **ve** bir uç → `zorla`/`sarmala`.
+    agac = ast.parse((KOK / "app" / "katman_b.py").read_text(encoding="utf-8"))
+    fn = next(n for n in ast.walk(agac)
+              if isinstance(n, ast.FunctionDef) and n.name == "zorla")
+    assert any(isinstance(n, ast.Call) and getattr(n.func, "id", "") == "enforce_query"
+               for n in ast.walk(fn)), "`zorla` `enforce_query`'yi ÇAĞIRMIYOR"
+
+    uclar = [p for p in (KOK / "app" / "routers").rglob("*.py")
+             if re.search(r"katman_b\.(zorla|sarmala)\(",
+                          p.read_text(encoding="utf-8", errors="ignore"))]
+    assert len(uclar) >= 2, (
+        f"Katman B yalnız {len(uclar)} uçtan çağrılıyor ({[p.name for p in uclar]}) — "
+        "ham SQL'in İKİ yolu var: `/query` (kullanıcı SQL'i) ve `/ask` (Discovery)")
 
 
 def test_SUPERADMIN_KATMAN_B_DEN_MUAF_ve_GEREKCESI_YAZILI():
     """ADR-0015 K7: superadmin için doktrin **ENGEL değil GÖRÜNÜRLÜK** — her erişim
     audit'e düşer. Katman B'yi ona uygulamak, `authorize()`'ın kendi kararıyla çelişirdi."""
-    kaynak = (KOK / "app" / "routers" / "query.py").read_text(encoding="utf-8")
+    kaynak = (KOK / "app" / "katman_b.py").read_text(encoding="utf-8")
     assert "is_superadmin" in kaynak and "K7" in kaynak
 
 
 def test_DB_ULASILAMAZSA_TAM_KESINTI_OLMUYOR():
     """⚠ Ulaşılamayan bir **yetki deposunu** boş allowlist saymak, bir altyapı arızasını
     **tam kesintiye** çevirirdi. `None` (yapılandırılmamış) döner ve Katman A yönetir."""
-    kaynak = (KOK / "app" / "routers" / "query.py").read_text(encoding="utf-8")
-    i = kaynak.index("def _allowlist")
+    kaynak = (KOK / "app" / "katman_b.py").read_text(encoding="utf-8")
+    i = kaynak.index("def allowlist")
     assert "return None" in kaynak[i:i + 1400]
 
 
-def test_DISCOVERY_YOLUNUN_SIRASI_YAZILI():
-    """`/ask`'in Discovery dalı **ikinci** çağrı yoludur ve ayrı turda bağlanır:
-    `routers/ask.py` **risk sınırındadır** (demete girmez, kendi kapısını koşar).
-    Sessizce atlanmadı — sırası **yazılı** olmalı, yoksa bir sonraki tur onu *"zaten
-    bağlı"* sanır."""
+def test_DISCOVERY_YOLU_ARTIK_BAGLI():
+    """⟳ **TUZAKTAN KAPIYA — `1.3b/2` indi, tuzak TERS ÇEVRİLDİ.**
+
+    Eski yön: *"Discovery **ikinci** çağrı yoludur, ayrı turda bağlanacak — sırası yazılı
+    olmalı ki bir sonraki tur onu «zaten bağlı» sanmasın"*. O tur geldi. Yeni yön:
+    **gerçekten bağlı olmalı** — ve bu, metinle değil **yapıyla** ölçülür.
+
+    🔴 Kapı `sarmala`'yı arar, bir yorum satırını değil: bu oturumda **yedi kez** bir metin
+    taraması yanlış yeri ölçtü. Bir güvenlik katmanının bağlı olup olmadığı, ancak
+    **çağrının kendisi** görülerek bilinir.
+    """
+    agac = ast.parse((KOK / "app" / "routers" / "ask.py").read_text(encoding="utf-8"))
+    kesif = next(n for n in ast.walk(agac)
+                 if isinstance(n, ast.FunctionDef) and n.name == "_run_discovery")
+    assert any(isinstance(n, ast.Call) and getattr(n.func, "attr", "") == "sarmala"
+               for n in ast.walk(kesif)), \
+        "Discovery dalı Katman B'den GEÇMİYOR — katman bağlı değil"
+
+
+def test_DISCOVERY_MOTORA_KAPISIZ_DOKUNMUYOR():
+    """🔴 **Sarmal varken bile çıplak `service.` kalırsa kapı DELİKTİR.** Sarmalın değeri
+    *"yeni dallar dâhil hepsini kapsar"* olmasıdır; kapsam dışında kalan tek bir çağrı,
+    o değeri **tamamen** yok eder — ve gözle görülmez."""
+    kaynak = (KOK / "app" / "routers" / "ask.py").read_text(encoding="utf-8")
+    agac = ast.parse(kaynak)
+    kesif = next(n for n in ast.walk(agac)
+                 if isinstance(n, ast.FunctionDef) and n.name == "_run_discovery")
+    kacaklar = [n.lineno for n in ast.walk(kesif)
+                if isinstance(n, ast.Attribute) and n.attr in ("dry_plan", "query")
+                and getattr(n.value, "id", "") == "service"]
+    assert not kacaklar, f"Discovery içinde KAPISIZ motor çağrısı: satır {kacaklar}"
+
+
+def test_YETKI_REDDI_ONARIMA_DUSMUYOR():
+    """🔴 Bir yetki reddi **onarılamaz**: `llm.repair` onu düzeltemez, yalnız bir LLM
+    çağrısı harcar ve sonunda *"güvenilir bir sorgu üretemedim"* der. Kullanıcı **neden**
+    cevap alamadığını öğrenemez; sınır kendini bir **arıza** gibi gösterir."""
+    kaynak = (KOK / "app" / "routers" / "ask.py").read_text(encoding="utf-8")
+    i = kaynak.index("planned = motor.dry_plan(wren_sql)")
+    blok = kaynak[i:i + 400]
+    assert "ModelErisimReddi" in blok, "ret, self-healing dalına düşüyor"
+    assert blok.index("ModelErisimReddi") < blok.index("except Exception"), \
+        "genel `except` önce geliyor — özel dal HİÇ çalışmaz"
+
+
+def test_RET_NOTU_ALLOWLIST_ICERIGINI_SIZDIRMIYOR():
+    """⚠ *"`personel_ozluk`'a erişemezsin"* cümlesi, erişilemeyen şeyin **varlığını**
+    sızdırır. Gerekçenin tamamı `trace`'e ve audit'e yazılır — **kaybolmaz**, yalnız
+    yetkili olan yerde durur."""
+    assert "allowlist" not in katman_b.RED_NOTU.lower()
+    assert "model" not in katman_b.RED_NOTU.lower()
+    assert "yetki" in katman_b.RED_NOTU.lower()
+
+
+def test_SARMAL_GERCEKTEN_REDDEDIYOR(monkeypatch):
+    """🔴 **Kapı, kırmızı olabildiğini kanıtlayana kadar kapı değildir.** Yukarıdaki
+    yapısal testler *"çağrı var"* der; bu test **davranışı** ölçer: allowlist'i
+    yapılandırılmış bir principal, listede olmayan bir modele dokunan SQL'i motora
+    **geçiremez** — ve red `dry_plan`'dan **ÖNCE** olur (yani sorgu hiç planlanmaz)."""
+    plan_edildi: list[str] = []
+
+    class _Sahte:
+        def schema(self):
+            return {"models": [{"name": "faturalar"}, {"name": "personel_ozluk"}]}
+
+        def dry_plan(self, sql, *a, **kw):
+            plan_edildi.append(sql)
+            return "plan"
+
+        def query(self, sql, *a, **kw):
+            plan_edildi.append(sql)
+            return {}
+
+    class _P:
+        tenant_id = "t1"
+        is_superadmin = False
+        roles = ("owner",)
+
+    class _Istek:
+        class state:
+            principal = _P()
+
+    monkeypatch.setattr(katman_b, "allowlist", lambda *_a, **_k: {"faturalar"})
+    kapili = katman_b.sarmala(_Sahte(), _Istek())
+
+    assert kapili.dry_plan("select 1 from faturalar") == "plan"      # izinli → geçer
+    with pytest.raises(katman_b.ModelErisimReddi):
+        kapili.dry_plan("select tc_kimlik from personel_ozluk")
+    with pytest.raises(katman_b.ModelErisimReddi):
+        kapili.query("select tc_kimlik from personel_ozluk")         # query de kapılı
+    assert plan_edildi == ["select 1 from faturalar"], \
+        "reddedilen SQL yine de motora GİTMİŞ — kapı red'i geç veriyor"
+
+
+def test_YAPILANDIRILMAMIS_TENANT_ENGELLENMIYOR(monkeypatch):
+    """⚠ `ModelPermission` tablosu bugün **her tenant'ta boş**. Sarmal, yapılandırılmamış
+    bir tenant'ta hiçbir şeyi engellememeli — aksi hâlde bir güvenlik katmanı adına
+    **tam kesinti** olurdu."""
+    class _Sahte:
+        def schema(self):
+            return {"models": [{"name": "faturalar"}]}
+
+        def dry_plan(self, sql, *a, **kw):
+            return "plan"
+
+    class _P:
+        tenant_id = "t1"
+        is_superadmin = False
+        roles = ("owner",)
+
+    class _Istek:
+        class state:
+            principal = _P()
+
+    monkeypatch.setattr(katman_b, "allowlist", lambda *_a, **_k: None)
+    assert katman_b.sarmala(_Sahte(), _Istek()).dry_plan("select 1 from her_ne") == "plan"
+
+
+def test_SARMAL_SEFFAF():
+    """Sarmal bir **kapıdır**, ikinci bir motor değil: öteki her nitelik olduğu gibi
+    görünür. Görünmeseydi `mdl_version` gibi alanlar sessizce kaybolurdu."""
+    class _Sahte:
+        mdl_version = "v42"
+
+        def dry_plan(self, sql, *a, **kw):
+            return f"plan:{sql}"
+
+        def query(self, sql, *a, **kw):
+            return {"sql": sql}
+
+        def schema(self):
+            return {"models": []}
+
+    class _Istek:
+        class state:
+            principal = None
+
+    kapili = katman_b.sarmala(_Sahte(), _Istek())
+    assert kapili.mdl_version == "v42"
+    assert kapili.dry_plan("select 1") == "plan:select 1"
+    assert kapili.query("select 1") == {"sql": "select 1"}
+
+
+def test_YETKI_REDDI_422_DEGIL_403():
+    """🔴 **Ölçülen kusur:** `/query`'de Katman B reddi `except Exception`'a düşüp **422**
+    ("engine / DB errors") dönüyordu. İstemci bunu *"sorgum bozuk"* diye okur, geliştirici
+    motorda arar. *Bir yetki sınırının kendini ARIZA gibi göstermesi, sınırın kendisini
+    görünmez kılar.*"""
     kaynak = (KOK / "app" / "routers" / "query.py").read_text(encoding="utf-8")
-    assert "risk sınırında" in kaynak and "Discovery" in kaynak
+    i = kaynak.index("except katman_b.ModelErisimReddi")
+    blok = kaynak[i:i + 700]
+    assert "status_code=403" in blok
+    assert i < kaynak.index("except Exception as exc:  # engine / DB errors"), \
+        "genel `except` önce geliyor — 403 dalı HİÇ çalışmaz"

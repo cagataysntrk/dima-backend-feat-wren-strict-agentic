@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
+from app import katman_b
 from app.auth.dependencies import require, require_company
 from app.config import get_settings
 from app.schemas import QueryRequest, QueryResult, SchemaResponse
@@ -26,59 +27,13 @@ def get_schema(request: Request) -> SchemaResponse:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
-def _katman_b(request: Request, wren, sql: str) -> None:
-    """FAZ 1.3b — **Katman B'nin İLK GERÇEK ÇAĞRI YOLU.**
-
-    Ölçüldü: `enforce_query` bir stub'dı **ve çağıranı yoktu**. Bir stub'ı doldurmak
-    yetmez; katman ancak **çağrıldığı yerde** vardır.
-
-    ## Neden ham SQL ucu
-
-    `POST /query` semantik katmanı **atlayarak** kullanıcı SQL'i alan yoldur — Katman B'nin
-    en doğrudan hedefi. `/ask`'in Discovery dalı **ikinci** çağrı yoludur ve ayrı bir
-    turda bağlanır: `routers/ask.py` **risk sınırındadır** (`OPERASYON.md §3`), yani
-    dokunan madde demete girmez, kendi kapısını koşar. Sessizce atlanmadı — **sırası
-    yazıldı**.
-
-    ## Neden burada, `WrenService`'te değil
-
-    `WrenService` **şirket** kapsamlıdır, **kullanıcı** kapsamlı değil: `principal`'ı
-    bilmez. Yetki kararını oraya taşımak, servise kimlik bilgisi sızdırmak ve iki farklı
-    kapsamı tek nesnede bindirmek olurdu.
-    """
-    from control_plane.authorize import enforce_query
-
-    # `get_current_principal` onu isteğe **zaten** iliştiriyor (`request.state.principal`);
-    # bağımlılığı ikinci kez çözmek, aynı token'ı iki kez doğrulamak olurdu.
-    principal = getattr(request.state, "principal", None)
-    if principal is None or getattr(principal, "is_superadmin", False):
-        return                       # superadmin: ADR-0015 K7 — ENGEL değil GÖRÜNÜRLÜK
-    izinliler = _allowlist(request, principal)
-    if izinliler is None:
-        return                       # Katman B yapılandırılmamış — Katman A yönetir
-    from app.katman_b import referans_modeller
-
-    adlar = {m.get("name") for m in (wren.schema().get("models") or []) if m.get("name")}
-    enforce_query(principal, sorted(referans_modeller(sql, adlar)), izinliler)
-
-
-def _allowlist(request: Request, principal) -> set[str] | None:
-    """`ModelPermission` allowlist'i — oturum yoksa **None** (yapılandırılmamış).
-
-    ⚠ `None` ile `set()` farkı burada da korunur: DB'ye ulaşamamak *"izin yok"* demek
-    değildir. Ulaşılamayan bir yetki deposunu **boş allowlist** saymak, bir altyapı
-    arızasını **tam kesintiye** çevirirdi.
-    """
-    try:
-        from app.katman_b import izinli_modeller
-        from control_plane.db import get_session
-    except ImportError:
-        return None
-    try:
-        with next(get_session()) as oturum:                  # type: ignore[call-overload]
-            return izinli_modeller(principal, oturum)
-    except Exception:                                        # noqa: BLE001
-        return None
+# FAZ 1.3b — Katman B'nin **TEK SAHİBİ** `app/katman_b.py::zorla`'dır.
+#
+# ⟳ **FAZ 1.3b/2 (2026-08-04): gövde BURADAN TAŞINDI.** İlk turda bu dosyada özel bir
+# `_katman_b`/`_allowlist` çifti vardı ve gerekçesi yazılıydı (*"`/ask`'in Discovery dalı
+# İKİNCİ çağrı yoludur ve ayrı bir turda bağlanır"*). O tur geldi — ve ikinci bir kopya
+# yazmak *"aynı kuralın iki sahibi"* olurdu: biri güncellenir, öteki unutulurdu ve bir
+# güvenlik katmanı için bu **en sessiz** kırılma biçimidir. Taşındı, kopyalanmadı.
 
 
 @router.post("/query", response_model=QueryResult,
@@ -90,11 +45,17 @@ def run_query(request: Request, body: QueryRequest) -> QueryResult:
         from app.company_registry import wren_for_request
 
         wren = wren_for_request(request)
-        _katman_b(request, wren, body.sql)
+        katman_b.zorla(request, wren, body.sql)
         # FAZ 1.2 — kimlik motora GEÇER: kolon düzeyi erişim denetimi (`motor_cls`)
         # zorunlu bir session property ister ve o property principal'dan türer.
         result = wren.query(body.sql, limit=limit,
                             principal=getattr(request.state, "principal", None))
+    except katman_b.ModelErisimReddi as exc:
+        # 🔴 FAZ 1.3b/2 — **YETKİ REDDİ BİR SORGU HATASI DEĞİLDİR.** Bugüne kadar aşağıdaki
+        # `except Exception` onu yakalayıp **422** ("engine / DB errors") döndürüyordu:
+        # istemci bunu *"sorgum bozuk"* diye okur, geliştirici motorda arar. Bir yetki
+        # sınırının kendini bir ARIZA gibi göstermesi, sınırın kendisini görünmez kılar.
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     except UnsafeSqlError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:  # engine / DB errors

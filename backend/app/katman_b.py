@@ -122,6 +122,95 @@ def izinli_modeller(principal: Any, oturum: Any) -> set[str] | None:
     return {s.model for s in satirlar if s.role_id in kimlikler}
 
 
+#: Kullanıcıya gösterilen ret notu. ⚠ **Hangi modelin yasak olduğunu SÖYLEMEZ**: bir
+#: allowlist'in içeriği de bir bilgidir ve *"`personel_ozluk`'a erişemezsin"* cümlesi,
+#: erişilemeyen şeyin **varlığını** sızdırır. Gerekçenin tamamı `trace`'e ve audit'e yazılır
+#: — yani **kaybolmaz**, yalnız yetkili olan yerde durur.
+RED_NOTU = ("Bu soruyu yanıtlamak için erişim yetkin olmayan bir veri kümesine "
+            "dokunmak gerekiyordu. Yöneticinden bu veriye erişim isteyebilirsin.")
+
+
+def allowlist(request: Any, principal: Any) -> set[str] | None:
+    """`ModelPermission` allowlist'i — oturum yoksa **None** (yapılandırılmamış).
+
+    ⚠ `None` ile `set()` farkı burada da korunur: DB'ye ulaşamamak *"izin yok"* demek
+    değildir. Ulaşılamayan bir yetki deposunu **boş allowlist** saymak, bir altyapı
+    arızasını **tam kesintiye** çevirirdi.
+    """
+    try:
+        from control_plane.db import get_session
+    except ImportError:
+        return None
+    try:
+        with next(get_session()) as oturum:                  # type: ignore[call-overload]
+            return izinli_modeller(principal, oturum)
+    except Exception:                                        # noqa: BLE001
+        return None
+
+
+def zorla(request: Any, wren: Any, sql: str) -> None:
+    """Katman B'yi **bu SQL üstünde** zorlar. Reddederse `ModelErisimReddi` fırlatır.
+
+    🔴 **TEK SAHİP.** Bu gövde `routers/query.py`'de özel bir yardımcıydı; `/ask` de aynı
+    şeye ihtiyaç duyunca ikinci bir kopya yazmak *"aynı kuralın iki sahibi"* olurdu ve
+    ikisi zamanla ayrışırdı — bir güvenlik katmanı için bu en sessiz kırılma biçimidir.
+
+    ## Neden burada, `WrenService`'te değil
+
+    `WrenService` **şirket** kapsamlıdır, **kullanıcı** kapsamlı değil. Yetki kararını
+    oraya taşımak, servise kimlik bilgisi sızdırmak ve iki farklı kapsamı tek nesnede
+    bindirmek olurdu.
+    """
+    from control_plane.authorize import enforce_query
+
+    # `get_current_principal` onu isteğe **zaten** iliştiriyor (`request.state.principal`);
+    # bağımlılığı ikinci kez çözmek, aynı token'ı iki kez doğrulamak olurdu.
+    principal = getattr(getattr(request, "state", None), "principal", None)
+    if principal is None or getattr(principal, "is_superadmin", False):
+        return                       # superadmin: ADR-0015 K7 — ENGEL değil GÖRÜNÜRLÜK
+    izinliler = allowlist(request, principal)
+    if izinliler is None:
+        return                       # Katman B yapılandırılmamış — Katman A yönetir
+    adlar = {m.get("name") for m in (wren.schema().get("models") or []) if m.get("name")}
+    enforce_query(principal, sorted(referans_modeller(sql, adlar)), izinliler)
+
+
+class _Kapili:
+    """`WrenService`'in **yetki kapılı** görünümü: `dry_plan`/`query` önce Katman B'yi sorar.
+
+    🔴 **SARMAL, YAMA DEĞİL — ve bu bir desen tercihidir.** Discovery dalında SQL'in
+    motora gittiği **beş** nokta var (üretim · onarım · çalıştırma · onarımlı çalıştırma ·
+    plan tekrarı). Beşini tek tek yamamak, **altıncısını ekleyen kişinin unutmasına** açık
+    kalırdı — bu deponun `pii.muhurle` kararında birebir yaşadığı şey (*"`raw` dalı
+    düzeltilmiş, kardeşleri unutulmuştu"*). Sarmal, **yeni dallar dâhil** hepsini kapsar.
+
+    ⚠ Öteki her nitelik **olduğu gibi** iletilir (`__getattr__`): sarmal bir **kapıdır**,
+    ikinci bir motor değil. `mdl_version` gibi alanlar aynen görünür.
+    """
+
+    def __init__(self, motor: Any, istek: Any) -> None:
+        self._motor = motor
+        self._istek = istek
+
+    def dry_plan(self, sql: str, *a: Any, **kw: Any) -> Any:
+        zorla(self._istek, self._motor, sql)
+        return self._motor.dry_plan(sql, *a, **kw)
+
+    def query(self, sql: str, *a: Any, **kw: Any) -> Any:
+        # ⚠ `dry_plan` her yolda önce çağrılıyor olsa da burada **tekrar** sorulur:
+        # "önce hep dry_plan çağrılır" bir **bugünkü doğrudur**, bir değişmez değil.
+        zorla(self._istek, self._motor, sql)
+        return self._motor.query(sql, *a, **kw)
+
+    def __getattr__(self, ad: str) -> Any:
+        return getattr(self._motor, ad)
+
+
+def sarmala(motor: Any, istek: Any) -> Any:
+    """Motoru Katman B kapısıyla sarar. Çağıran **tek satır** yazar, kapsam **tam** olur."""
+    return _Kapili(motor, istek)
+
+
 def karar(referanslar: set[str], izinliler: set[str] | None) -> tuple[bool, str]:
     """`(geçer_mi, gerekçe)` — **saf fonksiyon**, DB'siz test edilebilir.
 

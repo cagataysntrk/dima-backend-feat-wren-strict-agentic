@@ -15,7 +15,7 @@ import time as _time
 from app import context as app_context
 from app import prescribe
 from app import planner as _planner
-from app import ask_jobs, followup, typo_onerisi
+from app import ask_jobs, followup, katman_b, typo_onerisi
 from app import cube_router, eylem, pii, tercih, viz, yoy
 from app.answer import (
     _attach_next_steps,
@@ -3296,6 +3296,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         `_queue_discovery_job` bunu AskJob.trace_json'a ANINDA yazmak için kullanır, iş
         HENÜZ tamamlanmadan istemci hangi aşamada olunduğunu poll'layarak görebilir.
         Senkron yolda (bayrak kapalı) `on_step=None` — sıfır davranış değişikliği."""
+        motor = katman_b.sarmala(service, request)
         prompt_schema = schema
         if raw_followup:
             try:
@@ -3333,14 +3334,16 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 on_step(list(trace))
 
         try:
-            planned = service.dry_plan(wren_sql)
+            planned = motor.dry_plan(wren_sql)
+        except katman_b.ModelErisimReddi as red:
+            return _honest_refusal(note=katman_b.RED_NOTU, trace=trace + [str(red)])
         except Exception as e:
             trace.append(f"dry_plan hatası → kendi kendini onarma: {e}")
             if on_step:
                 on_step(list(trace))
             try:
                 wren_sql = llm.repair(body.question, prompt_schema, wren_sql, str(e))
-                planned = service.dry_plan(wren_sql)
+                planned = motor.dry_plan(wren_sql)
             except Exception as exc2:
                 _log.warning("Discovery self-healing başarısız", exc_info=True)
                 return _honest_refusal(
@@ -3374,15 +3377,15 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         if on_step:
             on_step(list(trace))
         try:
-            result = service.query(wren_sql, limit=limit)
+            result = motor.query(wren_sql, limit=limit)
         except Exception as e:
             trace.append(f"çalıştırma hatası → kendi kendini onarma: {e}")
             if on_step:
                 on_step(list(trace))
             try:
                 wren_sql = llm.repair(body.question, prompt_schema, wren_sql, str(e))
-                planned = service.dry_plan(wren_sql)
-                result = service.query(wren_sql, limit=limit)
+                planned = motor.dry_plan(wren_sql)
+                result = motor.query(wren_sql, limit=limit)
             except Exception as exc2:
                 _log.warning("Discovery çalıştırma + self-healing başarısız", exc_info=True)
                 return _honest_refusal(
@@ -3402,7 +3405,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 # etiketiyle yazılıyor ve insan onaylı bir kayıtla AYNI otoriteyle
                 # benzer sorulara tekrar oynatılıyordu.
                 vqr.store(body.question,
-                          {"wren_sql": wren_sql, "mdl_version": service.mdl_version},
+                          {"wren_sql": wren_sql, "mdl_version": motor.mdl_version},
                           source="auto_discovery")
             except Exception:
                 _log.warning("VQR otomatik kayıt başarısız (best-effort)", exc_info=True)

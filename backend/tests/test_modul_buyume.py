@@ -63,6 +63,13 @@ MUAFIYET_ASK_KOD = [
     ("9a138a9", 11, "0.5 · çapa zinciri — `coz(..., capalar=…)` bağlandı; "
                     "bayrak `capa_zinciri`, varsayılan `off`"),
     ("98a5071", 1, "0.12/0.13/0.6 · gerçek kill-switch + kanıt geçmişi"),
+    ("faz-1.3b/2", 3, "Katman B'nin Discovery çağrı yolu — TAŞINABİLİR OLAN HER ŞEY "
+                      "`app/katman_b.py`'ye taşındı (zorlama · allowlist okuma · ret notu "
+                      "· sarmal sınıf). `ask()`'te kalan üç satır taşınamaz: motoru bir kez "
+                      "saran bağlama (1) + yetki reddini onarım yoluna DÜŞÜRMEYEN `except` "
+                      "(2). Reddi onarıma bırakmak 2 satır kazandırırdı ama bir yetki "
+                      "sınırını 'güvenilir bir sorgu üretemedim' diye raporlardı — tavan, "
+                      "dürüst olmayan bir mesajı SATIN ALMAZ"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
     ("9164806", 13, "0.18 · metrik kaydı = hakem — `_match_cube`'un İLK satırı "
