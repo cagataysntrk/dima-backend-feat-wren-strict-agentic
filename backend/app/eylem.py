@@ -191,6 +191,10 @@ class Karar:
     not_: str
     oneri: dict[str, Any] | None = None
     iz: list[str] = field(default_factory=list)
+    #: FAZ 5.1 — netleştirme chip'leri. *"Bunu takip et"* bir **sıklık söylemez** ve
+    #: sessizce haftalığa çevirmek, kullanıcının **istemediği** bir zamanlama kurmak
+    #: olurdu (zamanlama `geri_alinabilir=False`). Periyot yoksa **sorulur**.
+    chipler: list[str] = field(default_factory=list)
 
 
 def _saat_bul(q: str) -> str | None:
@@ -340,3 +344,41 @@ def degerlendir(q_norm: str, cube_query: dict | None, *,
     return Karar(eylem=ad, iz=iz, not_=ozet,
                  oneri={"eylem": ad, "ozet": ozet, "izin": b.izin,
                         "geri_alinabilir": b.geri_alinabilir, "argumanlar": args})
+
+
+def takip_karari(q_norm: str, cube_query: dict | None, *,
+                 schema: dict | None = None,
+                 period: str | None = None) -> Karar | None:
+    """FAZ 5.1 — **6. tür (`TUR_TAKIP`) → `zamanla.olustur` ÖNERİSİ.**
+
+    🔴 **Yeni motor YAZILMADI.** `degerlendir()`'in `ZAMANLA` dalı, `EYLEM_KAYIT`, onay
+    ucu ve `schedules.create_schedule` **zaten vardı**; eksik olan tek şey **erişimdi**:
+    *"bunu takip et"* hiçbir kalıba uymadığı için `SINIF_YENI` → **R10** → dürüst red
+    alıyordu. Bu fonksiyon o boşluğu kapatır, ikinci bir zamanlama yolu **açmaz**.
+
+    ## 🔴 PERİYOT UYDURULMAZ
+
+    *"Bunu takip et"* bir **sıklık söylemez**. Sessizce haftalığa çevirmek, kullanıcının
+    **istemediği** bir zamanlama kurmak olurdu — ve zamanlama `geri_alinabilir=False`'tır
+    (kurulmuş bir gönderim geçmişe dönük silinemez). Periyot yoksa **sorulur**.
+
+    ⚠ Bu, `ADR-0007-K3`'ün (*dönem eksikse SOR*) yazma tarafındaki karşılığıdır.
+    """
+    if not (cube_query or {}).get("cube"):
+        return Karar(eylem=ZAMANLA,
+                     iz=["takip niyeti (TUR_TAKIP) → çapa yok → dürüst sınır beyanı"],
+                     not_=("Neyi takip edeyim? Önce sorunuzu sorun (örn. *“bu yıl makine "
+                           "bazında OEE”*), sonra cevabın altından *“bunu takip et”* "
+                           "deyin — raporu birebir o hâliyle zamanlarım."))
+    if _yinelenme_bul(q_norm) is None and not any(
+            _syn_hit(q_norm, z) for z in _ZAMAN_DISI):
+        rapor = _rapor_adi(cube_query or {}, schema)
+        return Karar(
+            eylem=ZAMANLA,
+            iz=["takip niyeti (TUR_TAKIP) → periyot YOK → netleştirme (periyot "
+                "UYDURULMAZ; zamanlama geri alınamaz)"],
+            not_=(f"“{rapor}” raporunu ne sıklıkta göndereyim? Şu an **saatlik, günlük "
+                  f"ve haftalık** gönderim yapabiliyorum."),
+            chipler=["her gün gönder", "her hafta gönder", "her saat gönder"])
+    # Periyot VAR → var olan `ZAMANLA` dalını AYNEN kullan (ikinci bir yol yok).
+    return degerlendir(q_norm, cube_query, schema=schema, period=period)

@@ -67,6 +67,7 @@ TUR_NORMAL = "normal_mi"       # "normal mi?"      → dönemsel kıyas + sinyal
 TUR_NE_YAPMALI = "ne_yapmali"  # "ne yapmalıyız?"  → reçete (G3'ün tohumu)
 TUR_ISARET = "isaret"          # "şu düşüş ne?"    → grafiğe çapa (G2)
 TUR_ANLAT = "anlat"            # "bunu analiz et"  → ELDEKİ cevabı AÇ (Faz D2)
+TUR_TAKIP = "takip"            # "bunu takip et"   → ZAMANLA ÖNERİSİ (FAZ 5.1)
 
 # Kalıplar `_norm` sonrası (ASCII, küçük harf) yazılır. Sonu "!" olanlar TAM KELİME
 # eşleşir — Faz D3'ün `_syn_hit` disiplini; kalanlar geçerli ek zinciri kabul eder.
@@ -107,6 +108,23 @@ _ISARET = ("su dusus", "su artis", "su sicrama", "su kirilma", "bu dusus", "bu a
 # ⚠️ `ozet!` TAM KELİME: `_syn_hit` ek zincirine izin verdiği için tırnaksız `ozet`
 # "özetle"yi de yakalar ama "özel"i yakalamaz (kelime başı + geçerli ek şartı). Buna
 # rağmen TAM yazıldı ki bir gün eklenen bir `ozet_*` ölçüsü sessizce çalınmasın.
+#: FAZ 5.1 — **6. TÜR: *"bunu takip et"***.
+#:
+#: 🔴 **Ölçülen erişilemezlik:** `sinifla` koşuldu, *"bunu takip et"* → `SINIF_YENI` →
+#: kapsam kapısı **R10** → dürüst red. `takip et` grep'i `followup.py` ve
+#: `cube_router.py`'de **sıfırdı**. Yani panoya/zamanlamaya giden **hiçbir doğal-dil
+#: yolu yoktu**: kullanıcı 🔔 ve *"+ panoya ekle"* düğmelerini **fareyle bulmak
+#: zorundaydı**. MIMARI §12.11 bunu kendisi de itiraf ediyor.
+#:
+#: ⚠ **Kalıplar tasarımcının değil kullanıcının kelimeleri** (5.3 disiplini): *"takip
+#: et"* kadar *"izle"*, *"haberim olsun"*, *"bildir"* de gerçek ifadeler. Bir kelime
+#: eklemek ADR-0008'in yasakladığı yamadır; bir **ifade ailesini** beyan etmek değildir.
+_TAKIP = ("takip et", "takip ede", "takibe al", "takip etmek",
+          "izle", "izlemeye al", "izlemek",
+          "haberim olsun", "haber ver", "bildir", "bilgilendir",
+          "duzenli gonder", "surekli gonder", "her seferinde gonder",
+          "gozunu ayirma", "takipte kal", "gundemde tut")
+
 _ANLAT = ("analiz et", "analiz eder", "analizini", "yorumla", "yorumlar misin",
           "yorumun", "yorumlasana", "degerlendir", "aciklar misin", "acikla",
           "ozetle", "ozetler misin", "ne diyor", "ne anlama gel", "okur musun",
@@ -175,7 +193,8 @@ def sinifla(soru: str, *, baglam_var: bool) -> Niyet:
         return Niyet(sinif=SINIF_YAPISAL, kural="yapisal-sinyal", kanit=yapisal)
 
     zamir = _hit(q, _ISARET_ZAMIRI)
-    for tur, kaliplar in ((TUR_NE_YAPMALI, _NE_YAPMALI),
+    for tur, kaliplar in ((TUR_TAKIP, _TAKIP),
+                          (TUR_NE_YAPMALI, _NE_YAPMALI),
                           (TUR_NORMAL, _NORMAL),
                           (TUR_ANLAT, _ANLAT),
                           (TUR_NEDEN, _NEDEN),
@@ -194,7 +213,11 @@ def sinifla(soru: str, *, baglam_var: bool) -> Niyet:
         # "özetle"/"yorumla"/"değerlendir" (tek kelime) · "yorumlar mısın" (iki kelime) ·
         # "bu grafiği açıkla" (zamir). Yanlış-negatif normal zincire düşer (zarar yok);
         # yanlış-pozitif kullanıcının yeni sorusunu YUTARDI.
-        if tur in (TUR_NEDEN, TUR_ISARET, TUR_ANLAT) and not zamir and not _kisa_soru(q):
+        # ⚠ `TUR_TAKIP` de AYNI disipline tabi ve bu ZORUNLU: *"fire takibi nasıl
+        # yapılır"* eldeki raporu zamanlamak DEĞİL, yeni bir konudur. Zamir/kısalık şartı
+        # olmadan bu tür **konu değişimini çalardı** (`konu_degisimi` senaryo sınıfı).
+        if (tur in (TUR_NEDEN, TUR_ISARET, TUR_ANLAT, TUR_TAKIP)
+                and not zamir and not _kisa_soru(q)):
             continue
         return Niyet(sinif=SINIF_KONUSMA, tur=tur, kural=f"konusma:{tur}", kanit=k)
 

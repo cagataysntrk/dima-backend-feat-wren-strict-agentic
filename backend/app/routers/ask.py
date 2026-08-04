@@ -2144,11 +2144,39 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     # `view_hint` BİLEREK boş: istek gövdesinde yoktur ve uydurulmaz. Kullanıcının o
     # anki CANLI görünümünü (tip/pivot) yalnız frontend bilir — onay çağrısında ekler
     # (manuel "panoya ekle" düğmesi de tam olarak bunu yapıyor, ReportCard.tsx).
+    # 🔴 **FAZ 5.0 — K3 DÜZELTMESİ (tek çağrı, hiçbir `if`in içinde değil).**
+    # `followup.sinifla()`'nın TEK çağrısı `if structural_followup:` bloğunun İÇİNDEYDİ ve
+    # `baglam_var=` sabit **`True`** geçiliyordu. İki ölçülmüş sonucu vardı:
+    #   (1) İstemci `cube_query` göndermiyorsa (Discovery / ham thread) *"bu neden
+    #       böyle?"* · *"normal mi?"* · *"analiz et"* — **hiçbiri sınıflanmıyordu**;
+    #       beş konuşma türü de o thread sınıfında **erişilemezdi**.
+    #   (2) Sabit `True` yüzünden `followup.py`'nin *"bağlam-yok"* kuralı **üretimde hiç
+    #       ateşlenmiyordu** — yalnız birim testinde yaşıyordu.
+    # ⚠ Çağrı yukarı taşındı ama **hiçbir yol kesilmedi** (KAT-2).
+    niyet = followup.sinifla(body.question, baglam_var=bool(is_followup))
+
     _eylem_karar = eylem.degerlendir(q_norm, body.cube_query, schema=schema)
+    # 🔴 FAZ 5.1 — **6. TÜR: *"bunu takip et"***. `degerlendir()` bunu tanımaz (teslim
+    # fiili yok, yinelenme yok) → `SINIF_YENI` → kapsam kapısı **R10** → dürüst red.
+    # Ölçüldü: panoya/zamanlamaya giden **hiçbir doğal-dil yolu yoktu**; kullanıcı 🔔 ve
+    # *"+ panoya ekle"* düğmelerini **fareyle bulmak zorundaydı**.
+    #
+    # ⚠ **Yeni motor YAZILMADI:** periyot varsa `degerlendir()`'in KENDİ `ZAMANLA` dalı
+    # çağrılır. Bu dal yalnız **erişimi** açar — ikinci bir zamanlama yolu değil.
+    # ⚠ Bayrak `off` iken bu blok HİÇ çalışmaz → bugünkü davranış birebir (KURAL B).
+    # ⚠ `niyet` YUKARIDA **bir kez** hesaplandı (FAZ 5.0). İkinci bir `sinifla()` çağrısı
+    # açmak, aynı kuralın ikinci sahibini yaratırdı — ve `test_FAZ_5_0_sinifla_
+    # STRUCTURAL_BLOGUN_DISINDA` bunu ilk denemede **yakaladı**.
+    if (_eylem_karar is None and niyet.tur == followup.TUR_TAKIP
+            and "tur_takip" in resolve_for(settings, principal)):
+        _eylem_karar = eylem.takip_karari(q_norm, body.cube_query, schema=schema)
     if _eylem_karar is not None:
         return _finish(AskResponse(
             question=body.question, source="eylem", note=_eylem_karar.not_,
             cube_query=body.cube_query or None,
+            # ⚠ `or None` DEĞİL: `AskResponse.suggestions` bir listedir ve `None`
+            # kabul etmez — ilk yazımım 21 testi kırdı ve hızlı kapı bunu yakaladı.
+            suggestions=list(_eylem_karar.chipler),
             eylem_onerisi=_eylem_karar.oneri, trace=_eylem_karar.iz,
         ))
     # KALICI SUNUM TERCİHİ (FAZ E) — *"bundan sonra hep aylık göster"*.
@@ -2954,9 +2982,9 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     # ham thread'de konuşma sınıfı bir cevabı **engellemez**, yalnız zincir zaten
     # tükendiğinde daha **isabetli** bir not üretir (aşağıda).
     #
-    # 🔴 `baglam_var` artık **gerçek bağlam durumundan**: yapısal takip **ya da** ham
-    # takip (önceki SQL + geçmiş). *Sabit bir `True`, bir bayrak değil bir yalandır.*
-    niyet = followup.sinifla(body.question, baglam_var=bool(is_followup))
+    # 🔴 `baglam_var` **gerçek bağlam durumundan**: yapısal takip **ya da** ham takip.
+    # *Sabit bir `True`, bir bayrak değil bir yalandır.* (Çağrının kendisi daha yukarıda,
+    # eylem kapısından ÖNCE — bkz. `niyet = followup.sinifla(...)`.)
 
     # 3) YAPISAL TAKİP — önceki tur GERÇEK bir CubeQuery ürettiyse (route()/LLM-select/
     # YoY/bu zincirin kendisi), deterministik düzenleme zinciri denenir (bkz. docstring §3).

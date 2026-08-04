@@ -46,6 +46,20 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "yanıt BAYT BAYT bugünküyle aynıdır (KURAL B — FAZ 2.5).",
         "category": "dogruluk",
     },
+    "tur_takip": {
+        "label": "6. konuşma türü: “bunu takip et”",
+        "description": "Ölçüldü: *«bunu takip et»* → SINIF_YENI → kapsam kapısı R10 → "
+                       "dürüst red. `takip et` grep'i `followup.py`/`cube_router.py`'de "
+                       "SIFIRDI — yani panoya/zamanlamaya giden HİÇBİR doğal-dil yolu "
+                       "yoktu; kullanıcı 🔔 ve «+ panoya ekle» düğmelerini fareyle bulmak "
+                       "zorundaydı. 🔴 YENİ MOTOR YAZILMADI: `zamanla.olustur` eylemi, "
+                       "onay ucu ve `schedules.create_schedule` zaten vardı; bu bayrak "
+                       "yalnız ERİŞİMİ açar. 🔴 PERİYOT UYDURULMAZ — sıklık söylenmemişse "
+                       "SORULUR (zamanlama geri alınamaz: kurulmuş bir gönderim geçmişe "
+                       "dönük silinemez). Kapalıyken tür tanınmaz, davranış birebir "
+                       "bugünkü (FAZ 5.1).",
+        "category": "konusma",
+    },
     "mcp_yuzeyi": {
         "label": "MCP yüzeyi (Model Context Protocol)",
         "description": "Kararlı spec 2025-11-25, Linux Foundation / Agentic AI Foundation "
