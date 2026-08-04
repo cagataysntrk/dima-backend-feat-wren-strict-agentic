@@ -496,6 +496,17 @@ export function ReportCard({
               </div>
             )}
             <SourceBadge source={item.source} confidence={item.explain?.confidence} />
+            {/* FAZ 2.6 — MALİ YIL. Yalnız takvim yılından FARKLIYSA görünür.
+                🔴 "Bu yıl" dediğinde Nisan–Mart penceresi gelen bir kullanıcı, hangi
+                pencereyi gördüğünü BİLMELİ: doğru sayı, yanlış soruya cevap olabilir. */}
+            {item.mali_donem && (
+              <span
+                title={`Bu şirketin mali yılı takvim yılından farklı. Gösterilen pencere: ${item.mali_donem}`}
+                className="inline-flex h-[20px] items-center gap-1 border border-hairline px-1.5 font-mono text-[10px] tracking-wide text-neutral-500"
+              >
+                <span aria-hidden>◷</span> {item.mali_donem}
+              </span>
+            )}
             {/* FAZ 1 (K1): yapı ham SQL'den TÜRETİLDİYSE rozet bunu söyler — yapı ≠ güven. */}
             <AdhocBadge cubeQuery={item.cube_query} />
             {item.cube_query && item.result && (

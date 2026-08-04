@@ -94,7 +94,13 @@ def compute(service, cq: dict, mode: str, time_dim: str, limit: int | None = Non
         # AGREGAT / kırılım (zaman ekseni YOK): kıyas için TANIMLI dönem gerekir — dönem yoksa
         # cari = bu yıl (YTD); açık-uçlu dönem de bugüne sınırlanır (simetrik pencere).
         if not has_tf:
-            flt.append({"dimension": time_dim, "operator": "gte", "value": f"{date.today().year}-01-01"})
+            # 🔴 FAZ 2.6 — MALİ YIL (tek sahip: `app/mali_takvim.py`). Buradaki
+            # `{yıl}-01-01` sabiti, `cube_router`'ınkiyle AYNI sessiz-yanlışın ikinci
+            # kopyasıydı — ve iki kopya, kusurun doğuş biçiminin ta kendisiydi.
+            from app import mali_takvim
+
+            flt.append({"dimension": time_dim, "operator": "gte",
+                        "value": mali_takvim.yil_basi(date.today()).isoformat()})
             has_tf = True
         if not has_lte:
             flt.append({"dimension": time_dim, "operator": "lte", "value": date.today().isoformat()})

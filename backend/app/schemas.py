@@ -269,6 +269,11 @@ class Explain(BaseModel):
 
 class AskResponse(BaseModel):
     question: str
+    # FAZ 2.6 — MALİ YIL PENCERESİ. Yalnız mali yıl takvim yılından **farklıysa** dolar.
+    # 🔴 Takvim yılından farklı bir pencereyi *"bu yıl"* diye sunmak, DOĞRU sayıyı YANLIŞ
+    # soruya cevap yapar — kullanıcı hangi pencereyi gördüğünü bilmeli. Takvim yılı
+    # kullanan tenant'ta `None` kalır: gürültü üretmez, yalnız fark varken konuşur.
+    mali_donem: str | None = None
     # FAZ 1.7 — TAZELİK MERDİVENİ. `taze | uyari | hata | bilinmiyor`.
     # 🔴 `hata` VE `bilinmiyor` kademelerinde SAYI GÖSTERİLMEZ (B4: bilinmeyen tazelik
     # TAZE DEĞİLDİR). Kaynak planlar bunun TERSİNİ yazıyordu; yol haritası bunu

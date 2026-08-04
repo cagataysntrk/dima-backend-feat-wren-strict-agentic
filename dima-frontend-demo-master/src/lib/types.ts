@@ -202,6 +202,12 @@ export interface AskResponse {
    * seçim yanlışsa doğru sayı YANLIŞ SORUYA cevap olur. Karar backend'de (`answer.seal`);
    * burada ikinci bir sınıflandırma yazmak "aynı kuralın iki sahibi" olurdu. */
   kanit_sinifi?: "olculmus" | "probabilistik";
+  /** FAZ 2.6 — MALİ YIL PENCERESİ. Yalnız mali yıl takvim yılından FARKLIYSA dolar.
+   *
+   * 🔴 Takvim yılından farklı bir pencereyi "bu yıl" diye sunmak, DOĞRU sayıyı YANLIŞ
+   * soruya cevap yapar. Takvim yılı kullanan tenant'ta `null`: gürültü üretmez, yalnız
+   * fark varken konuşur. Pencere kararı backend'de (`app/mali_takvim.py`). */
+  mali_donem?: string | null;
 }
 
 // Faz 4.1 — GET /ask/jobs/{id} yanıtı (yalnız api-client.ts::ask()'in dahili poll döngüsü kullanır).

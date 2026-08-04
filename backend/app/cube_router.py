@@ -21,7 +21,7 @@ import logging
 import re
 from datetime import date, timedelta
 
-from app import cekirdek
+from app import cekirdek, mali_takvim
 from app.llm import _norm
 
 #: FAZ 9.3 — bu modül bugüne kadar hiç log ATMIYORDU; `route()` saf bir fonksiyon olduğu
@@ -78,8 +78,11 @@ def _current_period_filter(q: str, time_dim: str) -> dict | None:
     elif "bu ay" in q:
         start = today.replace(day=1)
     # "bu sene" = "bu yıl"; "tüm yıl" (log-kanıtlı terfi) = yıl başından beri
+    # 🔴 FAZ 2.6 — MALİ YIL. `today.replace(month=1, day=1)` **takvim** yılıydı ve mali
+    # yılı Ocak'ta başlamayan her müşteride SESSİZ-YANLIŞ üretiyordu: rozet `◆ CUBE`,
+    # güven 1.0, makbuz tam — ve sayı yanlış. Hesap tek sahipte (`app/mali_takvim.py`).
     elif "bu yil" in q or "bu sene" in q or "tum yil" in q:
-        start = today.replace(month=1, day=1)
+        start = mali_takvim.yil_basi(today)
     else:
         return None
     return {"dimension": time_dim, "operator": "gte", "value": start.isoformat()}
@@ -113,8 +116,9 @@ def _prev_period_filters(q: str, time_dim: str) -> list[dict]:
         end = today.replace(day=1) - timedelta(days=1)
         start = end.replace(day=1)
     elif unit in ("yil", "sene"):
-        start = date(today.year - 1, 1, 1)
-        end = date(today.year - 1, 12, 31)
+        # 🔴 FAZ 2.6 — "geçen yıl" da MALİ yıldır. `12-31` sabiti, Ocak'ta başlamayan
+        # bir mali yılda pencereyi bir çeyrek KAYDIRIRDI.
+        start, end = mali_takvim.yil_penceresi(today, kac_yil_once=1)
     elif unit == "hafta":
         start = today - timedelta(days=today.weekday() + 7)  # önceki Pazartesi
         end = start + timedelta(days=6)

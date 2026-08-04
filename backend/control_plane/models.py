@@ -597,6 +597,11 @@ class TenantConfig(SQLModel, table=True):
     # bağlıdır. Beyan edilmiş ama uygulanmamış bir politika, beyan edilmemiş bir
     # politikadan iyidir: DENETLEYİCİ ne beklediğimizi okuyabilir.
     audit_saklama_gun: int | None = None
+    # FAZ 2.6 — MALİ YIL BAŞLANGIÇ AYI (1–12). Varsayılan `1` = takvim yılı, yani
+    # yapılandırılmamış her tenant BUGÜNKÜ davranışı görür.
+    # 🔴 Bu alan bir SESSİZ-YANLIŞI kapatıyor: `"bu yıl"` takvim yılı varsayılıyordu ve
+    # mali yılı Nisan'da başlayan bir müşteride cevap yanlış ama rozet YEŞİLDİ.
+    mali_yil_baslangic_ay: int = 1
     moduller_json: str | None = None  # None = sektör paketlerinin varsayılanları
     # ADR-0017 kaynak faseti: kaynak pack anahtarları (None = kaynak seçilmemiş,
     # demo DuckDB akışı) + önekli şemalarda (Logo LG_FFF_PP_*) firma/dönem kapsamı.

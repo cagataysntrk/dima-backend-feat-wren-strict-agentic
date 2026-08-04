@@ -637,6 +637,16 @@ def seal(resp: AskResponse, *, request: Request, principal, t0: float,
     # okunur: `narration` varsa bu yanıtta LLM üretimi düz metin VAR demektir.
     # 🔴 SAYI DEĞİL, ÜSLUP işaretlenir — sayıyı her zaman sistem koyar ve
     # `narration_guard` eşleşmeyeni düşürür. Md.50'nin istediği tam olarak budur.
+    # FAZ 2.6 — mali yıl penceresi. `seal()` HER yanıtın geçtiği kapanıştır; başka bir
+    # yere koymak onu BAZI yanıtlarda eksik bırakırdı (1.12'nin aynı gerekçesi).
+    try:
+        from datetime import date as _date
+
+        from app import mali_takvim
+
+        resp.mali_donem = mali_takvim.etiket(_date.today()) or None
+    except Exception:                       # noqa: BLE001 — etiket cevabı DÜŞÜRMEZ
+        resp.mali_donem = None
     resp.ai_generated_prose = bool((resp.interpretation or {}).get("narration"))
     # `probabilistik` YALNIZ LLM yolunda: `cube` deterministiktir, `cube+llm`'de ALAN
     # SEÇİMİ olasılıksaldır ama SAYI yine küpten gelir → yine `olculmus` DEĞİL.

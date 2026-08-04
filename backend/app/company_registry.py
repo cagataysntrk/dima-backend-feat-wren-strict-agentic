@@ -138,8 +138,60 @@ def wren_for_request(request):
     """İsteğin şirketine bağlı WrenService.
 
     ``require_company`` varsayılan-dışı tenant için servisi ``request.state.wren``'e
-    bağlar; yoksa süreç varsayılanı (settings.company) kullanılır."""
+    bağlar; yoksa süreç varsayılanı (settings.company) kullanılır.
+
+    🔴 **FAZ 2.6 — mali yıl BURADA kurulur.** Bu fonksiyon, veriye giden **her** yolun
+    geçtiği tek nokta: dönem çözümünü besleyen ayarı başka bir yere koymak, bazı yolların
+    onu **görmemesi** demekti — ve görmeyen yol sessizce **takvim yılına** düşerdi, yani
+    tam olarak bu maddenin kapattığı sessiz-yanlışa.
+    """
+    from app import mali_takvim
+
+    mali_takvim.kur(_mali_yil_ayi(request))
     return getattr(request.state, "wren", None) or request.app.state.wren
+
+
+#: Tenant → mali yıl başlangıç ayı. ⚠ Önbellek **bilinçli**: bu değer bir yapılandırmadır,
+#: istek başına DB'ye gitmek dönem çözümüne bir sorgu maliyeti eklerdi. Değişince
+#: `mali_yil_onbellegini_temizle()` çağrılır (materializer'ın `invalidate` deseni).
+_MALI_AY_ONBELLEK: dict[str, int] = {}
+
+
+def mali_yil_onbellegini_temizle(tenant_id: str | None = None) -> None:
+    _MALI_AY_ONBELLEK.pop(str(tenant_id), None) if tenant_id else _MALI_AY_ONBELLEK.clear()
+
+
+def _mali_yil_ayi(request) -> int:
+    """Tenant'ın mali yıl başlangıç ayı — okunamıyorsa **takvim yılı** (bugünkü davranış).
+
+    ⚠ DB'ye ulaşamamak bir *"mali yıl yok"* kararı değildir; ama burada takvim yılına
+    düşmek **doğru** olandır: alternatif, bir altyapı arızasını *"bu yıl"* sorusunun
+    cevapsız kalmasına çevirmekti (`katman_b`'nin tersi durum — orada yokluk bir GÜVENLİK
+    kararıydı, burada yalnız bir dönem tercihi).
+    """
+    from app import mali_takvim
+
+    try:
+        p = getattr(getattr(request, "state", None), "principal", None)
+        tenant = str(getattr(p, "tenant_id", "") or "")
+        if not tenant:
+            return mali_takvim.VARSAYILAN_BASLANGIC_AY
+        if tenant in _MALI_AY_ONBELLEK:
+            return _MALI_AY_ONBELLEK[tenant]
+        from sqlmodel import select
+
+        from control_plane.db import get_session
+        from control_plane.models import TenantConfig
+
+        with next(get_session()) as oturum:
+            cfg = oturum.exec(select(TenantConfig).where(
+                TenantConfig.tenant_id == p.tenant_id)).first()
+        ay = int(getattr(cfg, "mali_yil_baslangic_ay", 0) or 0) or \
+            mali_takvim.VARSAYILAN_BASLANGIC_AY
+        _MALI_AY_ONBELLEK[tenant] = ay
+        return ay
+    except Exception:                                        # noqa: BLE001
+        return mali_takvim.VARSAYILAN_BASLANGIC_AY
 
 
 def vqr_for_request(request):

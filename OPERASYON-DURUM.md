@@ -421,6 +421,47 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
 
+### FAZ 2 · adım 9 — `2.6` **MALİ TAKVİM** — ölçülen sessiz-yanlış kapandı *(2026-08-04)*
+
+Kapı: **18 test** (`tests/test_mali_takvim.py`), hızlı sinyal **1483**. **Bayraksız.**
+
+> 🔴 **NEDEN BAYRAKSIZ:** ölçülen şey bir **sessiz-yanlış**. `"bu yıl"` iki yerde birden
+> takvim yılı varsayılıyordu — `cube_router._current_period_filter`
+> (`today.replace(month=1, day=1)`) ve `yoy.compute` (`f"{yıl}-01-01"`). Mali yılı
+> Ocak'ta başlamayan her müşteride cevap **yanlış**, ama rozet `◆ CUBE`, güven `1.0`,
+> makbuz **tam**. *Sessiz-yanlışın tanımı budur: sistem emin, sayı yanlış.* Bir bayrağın
+> arkasına koymak, **yanlışı varsayılan yapmak** olurdu.
+
+> 🔴 **İKİ KOPYA, KUSURUN DOĞUŞ BİÇİMİYDİ.** Hesap tek sahibe alındı
+> (`app/mali_takvim.py::yil_penceresi`); iki çağıran da onu **çağırıyor**.
+> ⚠ Bitiş `12-31` **sabiti değil**, *"bir sonraki mali yılın ilk gününden bir gün önce"* —
+> sabit yazmak, Ocak'ta başlamayan bir mali yılda pencereyi **bir çeyrek kaydırırdı**.
+
+> ⚠ **YENİ MEKANİZMA İCAT EDİLMEDİ.** `date_filters(q, time_dim)` imzası beş çağıran
+> taşıyor; mali ayı parametre yapmak hepsini kırardı. Bu deponun **iki kez kanıtlanmış**
+> kalıbı (`llm._llm_usage_var` · `cube_router._reddi_var`) **üçüncü kez** kullanıldı:
+> derin fonksiyon okur, sığ fonksiyon kurar, imzalar sabit kalır.
+
+> 🔴 **AYAR `wren_for_request`'te KURULUYOR** — veriye giden **her** yolun geçtiği tek
+> nokta. Başka bir yere koymak, bazı yolların onu **görmemesi** ve sessizce takvim yılına
+> düşmesi demekti; yani tam olarak kapatılan kusura.
+
+> ✅ **VARSAYILAN `1` = takvim yılı:** yapılandırılmamış her tenant **bugünkü** davranışı
+> görüyor. *Bir düzeltme, düzeltmediği kurulumları değiştirmemelidir.*
+
+> 🔴 **KULLANICI PENCEREYİ GÖRÜYOR:** `AskResponse.mali_donem` (yalnız takvimden
+> **farklıysa** dolar) → `ReportCard`'da `◷ mali yıl: … → …`. *Takvim yılından farklı bir
+> pencereyi "bu yıl" diye sunmak, doğru sayıyı yanlış soruya cevap yapar.*
+
+> ⚠ **§C/3 kesişimi korundu:** bu madde dönem **çözümünü** değiştirir, **netleştirme
+> oranını değil** — kapı `_current_period_filter`'ın `return None` dalının durduğunu ve
+> mali takvimin o **karara** karışmadığını AST'ten doğruluyor.
+
+> ⚠ **Kendi yorumum kendi kapımı yakaladı (8. kez):** `f"{date.today().year}-01-01"`
+> dizisini arayan kapı, onu **kendi açıklama yorumumun içinde** buldu. AST'ye çevrildi.
+> Ve `1.2c` tümleyeni yine iş gördü: `AskResponse` **31 → 32** alan oldu, maskeleme
+> tarafına **hiçbir şey yazılmadı**, yine de kapsandı.
+
 ### FAZ 2 · adım 8 — `2.2b` **metrik kaydının YÜZEYİ: hakem artık BESLENEBİLİYOR** *(2026-08-04)*
 
 Kapı: **11 test** (`tests/test_metrik_sahipligi.py` — 2.2b'nin **kendi** kapısı, 0.18'inki
