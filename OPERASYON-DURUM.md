@@ -17,8 +17,8 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 0** — temizlik ve kapılar *(25 madde; sıra **numara DEĞİL**, FAZ 0 girişindeki bağlayıcı koşum sırası)* |
-| **Sıradaki madde** | **adım 4:** `0.14` — beş entegrasyon kapısı (K1…K5) |
-| **Ondan sonra** | `0.19` → `0.18` → `0.4/0.5/0.5b` → kalan *(0.3 · 0.6–0.13 · 0.15 dâhil)* → `0.21` |
+| **Sıradaki madde** | **adım 5:** `0.19` — semantik-vaka paydası *(eşik ilan eden her madde bundan SONRA)* |
+| **Ondan sonra** | `0.18` → `0.4/0.5/0.5b` → kalan *(0.3 · 0.6–0.13 · 0.15 dâhil)* → `0.21` |
 | **Tempo** | 🔴 **DEMET disiplini yürürlükte** (`OPERASYON.md §3`): commit ≠ kapı; tam kapı **demet sonunda bir kez**. Risk sınırındaki dosyalara dokunan madde demete girmez |
 | **v1 bitiş ölçütü** | §C'nin **16 ölçütü** yeşil |
 
@@ -216,6 +216,35 @@ ve `tests/test_eval_gate.py` süitin içinde → **eval + süit kapıları CI'da
 o probe kapıyı **çağıran komuta göre** arıyordu ve başka yoldan koştuğunu göremiyordu
 *(ölçüm aracının kusuru, düzeltildi)*. `FAZ 0.15`'in gerçek kapsamı: sıfırdan kurulum
 **değil**, mevcut workflow'a **korpus + senaryo** eklemek.
+
+### FAZ 0 · adım 4 — `0.14` beş entegrasyon kapısı *(2026-08-04)*
+
+Kapılar artık **güvenilir**: bu belgenin 100+ maddesi onlara dayanacak.
+Ortak iskelet **tek sahipte** (`tests/kapi_ortak.py`) — `0.14`'ün `NASIL`'ı zaten
+*"ikinci tarayıcı yazılmaz"* diyordu.
+
+| Kapı | Ne indi | İlk av |
+|---|---|---|
+| **K1** uç yetimi | **tam yol** eşleştirme (`(?![\w/-])`) + **yorumsuz** tarama + *"sarmalayıcı var, çağıranı yok"* | 🔴 **`GET /contracts`** — alt-dize taraması onu `` `/contracts/${cid}` `` içinde VE bir **yorum satırında** buluyordu. `[KANIT §0.1-5]` kapı tarafından **yeniden üretildi** → FAZ 0.6 |
+| **K2** alan yetimi | **(a)** iç içe alanlar · **(b)** `DrillResponse`/`ContributionResponse`/`DecisionIn`/`AskRequest` · **(c)** 🔴 **erişilebilirlik** — *"geçiyor mu"* değil *"ULAŞILABİLİR mi"* | `AskRequest.limit`'in *"tüketiliyor"* sanılması: tek isabet `DrillDownPanel`'deki `limit: 50` = **DrillRequest**; sayaç **sınıf ayrımı yapmıyordu** |
+| **K3** ters yetim | **YENİ** — FE'nin okuduğu ama backend'in **vermediği** alan; TypeScript bunu yakalamaz (`types.ts` elle yazılmış bir **beyandır**) | bugün temiz — *kapı temiz kalsın diye kuruldu* |
+| **K4** yüzey sadakati | **YENİ** — aynı cevap her yüzeyde **aynı rozeti** basar (MIMARI §5: `source` gizlenemez) | `AnalysisCanvas` rozetsiz → **FAZ 0.3** *(muafiyet SAHİBİYLE, «KALKAR» tarihiyle)* |
+| **K5** panel sayısı | **YENİ** — 🔴 **önce TANIM** (export sayımı, `export default` dâhil), sonra sayı, sonra test | **export 13 / tavan 13 · pay 0** — bir panel daha eklenirse anında kırılır |
+| **D5** belge kapısı | **YENİ** — `NE`/`KAPI` zorunluluğu · bayraklı maddede `GERİ AL` · *"zaten var"* denen dosya · planlanan kapı sayısı **73** dondurdu | 🔴 **130 maddenin biri** (`−1.2`) `NE`/`KAPI` taşımıyordu — düzeltildi |
+
+> 🔴 **D5'in `GERİ AL` testi `xfail(strict=True)`** — 54 bayraklı maddenin **17'sinde**
+> `GERİ AL` yok, **hepsi `II-*`** (v2/v3, bu döngünün dışında). `0.14`'ün kendi kuralı:
+> *"Kapı testi geri alınmaz — `xfail` işaretlenir. Bir kapının kırmızısı bir **bilgidir**;
+> kaldırıldığında o bilgi de kaybolur."* `strict=True`: 17'si kapandığı gün test
+> **beklenmedik geçiş** verir ve işaret kaldırılır.
+
+> ⚠ **Kapı kurarken kapının kendi premisi iki kez kusurluydu** — ikisi de ölçülerek yakalandı:
+> · `test_SARMALAYICI_VAR_CAGIRANI_YOK` `ad(` arıyordu → `queryFn: listConversations` gibi
+>   **referans** kullanımlarını göremedi, **dört canlı** sarmalayıcıyı *"ölü"* ilan etti.
+> · `test_D5_PLANLANAN_DOSYALAR_SAHIPSIZ_DEGIL` *"her planlanan dosyanın bir `KAPI` satırı
+>   olmalı"* diyordu ve **metni kovalamaya** başladı (73 → 5 yanlış-pozitif). Ölçülemeyen
+>   bir iddiayı zorlamak, kapıyı **yanlış-kırmızı üretecine** çevirir → iddia
+>   *"sessizce ARTMAZ"*a daraltıldı.
 
 ### Taban ölçümü · `lab/vk_taban.py` *(commit `8f87e40`)*
 VK-1…VK-6 **yapısal ve canlı** (gemini) ölçüldü. `§G.6e`'nin *"Bugün"* sütunu artık

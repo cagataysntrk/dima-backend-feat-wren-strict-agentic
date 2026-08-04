@@ -26,6 +26,9 @@ import pathlib
 
 import pytest
 
+from tests.kapi_ortak import fe_dosyalari
+from tests.kapi_ortak import yorumsuz as _ortak_yorumsuz
+
 from app.schemas import AskResponse
 
 FE = pathlib.Path(__file__).resolve().parents[2] / "dima-frontend-demo-master" / "src"
@@ -88,34 +91,12 @@ def test_AGENT_RUN_gercekten_render_ediliyor():
 # Bu deponun altıncı kez tekrarlayan kusuru: **testler METNİ ölçtü, davranışı değil.**
 
 def _yorumsuz_kod(m: str) -> str:
-    """Yorumları atar — kapı KODU ölçmeli, kodun ANLATIMINI değil.
+    """→ `tests/kapi_ortak.yorumsuz` (**TEK SAHİP**). Ad geriye dönük uyum için duruyor.
 
-    ⚠ İlk sürüm yalnız **tek satırlık** yorumları atıyordu; denetim ölçtü: çok satırlı
-    `{/* … */}` bloklarının **devam satırları koda sızıyordu** (`ReportPanel.tsx`'te 8
-    satır). Bugün zararsızdı, ama o satırlardan birine `it.result` geçen bir açıklama
-    yazıldığı gün kapı **yanlış-kırmızı** verirdi — bu turda dört kez düşülen sınıfın
-    yarısı açık kalmıştı."""
-    out, blokta = [], False
-    for s in m.splitlines():
-        d = s.strip()
-        if blokta:
-            if "*/" in d:
-                blokta = False
-                d = d.split("*/", 1)[1]
-                if not d.strip():
-                    continue
-                out.append(d)
-            continue
-        if d.startswith("//"):
-            continue
-        if ("/*" in d) and ("*/" not in d.split("/*", 1)[1]):
-            blokta = True
-            bas = d.split("/*", 1)[0]
-            if bas.strip():
-                out.append(bas)
-            continue
-        out.append(s)
-    return "\n".join(out)
+    İkinci bir ayıklayıcı yaşatmak, bu deponun 1 numaralı kusurunu (aynı kuralın iki
+    sahibi) kapının **içine** koymak olurdu — ve ilk sürümü zaten yarımdı (çok satırlı
+    blokların devam satırları sızıyordu, 8 satır ölçüldü)."""
+    return _ortak_yorumsuz(m)
 
 
 def _panel_metni() -> str:
@@ -221,3 +202,87 @@ def test_REPORTCARD_KONUSMA_dalindaki_BILINCLI_gizleme_KORUNDU():
     assert "!item.contribution" in koruyucu, (
         "ReportCard'ın bilinçli gizlemesi kaldırılmış — konuşma cevabında `next_steps` "
         "İKİ KEZ görünür (ikincisi yanlış başlıkla). Kodun kendi gerekçesi bunu yasaklar.")
+
+
+# ═══ FAZ 0.14 / K2 — ÜÇ KÖR NOKTA KAPATILIYOR ════════════════════════════════════
+#
+# Kapı bugüne kadar yalnız `AskResponse.model_fields`'in **1. seviyesine** ve yalnız
+# alanın FE kaynağında **geçip geçmediğine** bakıyordu. Üç körlük ölçüldü:
+#   (a) İÇ İÇE alanlar görünmüyor  — `agent_run.steps[].receipt` bir `dict` içinde saklı
+#   (b) YALNIZ `AskResponse`       — `DrillResponse`/`ContributionResponse`/`DecisionIn`/`AskRequest`
+#   (c) *"geçiyor mu"* ≠ *"ULAŞILABİLİR mi"* — bu deponun en pahalı kusur sınıfı
+
+#: K2/(b) — taranacak diğer sözleşme sınıfları. `AskRequest` **istek** tarafıdır:
+#: backend okuyor ama FE hiç GÖNDERMİYORSA o da bir yetimdir.
+DIGER_SOZLESMELER = ("DrillResponse", "ContributionResponse", "DecisionIn", "AskRequest")
+
+#: K2/(a)+(b) muafiyetleri — **her biri bir SAHİP gösterir**, gerekçesiz giriş YOK.
+IC_ICE_MUAF: dict[str, str] = {
+    "agent_run.steps[].receipt": "ÖLÇÜLDÜ yetim [KANIT §0.1-7] — FAZ 0.8: adım satırına "
+                                 "makbuz kimliği, tıklanınca /contracts/{id}. 0.8'de KALKAR.",
+    "explain.path": "ÖLÇÜLDÜ yetim [KANIT §0.1-7] — FAZ 0.9: trace bloğuna eklenir ya da "
+                    "modelden çıkarılır. 0.9'da KALKAR.",
+    "DecisionIn.supersedes": "ÖLÇÜLDÜ yetim — FAZ 0.11: BAĞLANIR (silinmez, II-E.7 ona "
+                             "dayanıyor). 0.11'de KALKAR.",
+    "AskRequest.execute": "ÖLÇÜLDÜ yetim — FAZ 0.11: bağlanır ya da modelden çıkar.",
+    "AskRequest.limit": "ÖLÇÜLDÜ yetim — FAZ 0.11. ⚠ Ham alt-dize taraması bunu YANLIŞLIKLA "
+                        "'tüketiliyor' saymıştı: tek isabet DrillDownPanel'deki `limit: 50`, "
+                        "yani DrillRequest — AskRequest.limit DEĞİL. Sayaç sınıf ayrımı yapmıyordu.",
+}
+
+
+def _fe_yorumsuz() -> str:
+    return "\n".join(fe_dosyalari().values())
+
+
+def test_K2a_IC_ICE_ALANLAR_da_taranir():
+    """🔴 **(a) İÇ İÇE ALAN KÖRLÜĞÜ.** Kapı yalnız `AskResponse.model_fields`'e bakıyordu;
+    `agent_run` bir `dict[str, Any]` olduğu için içindeki `steps[].receipt` **hiç
+    sorulmuyordu**. Bir alanın tipinin `dict` olması onu güvenli yapmaz — tersine,
+    yetimler tam orada saklanır."""
+    metin = _fe_yorumsuz()
+    for ad in ("agent_run.steps[].receipt", "explain.path"):
+        yaprak = ad.split(".")[-1].rstrip("[]")
+        if ad in IC_ICE_MUAF:
+            continue
+        assert yaprak in metin, f"İÇ İÇE YETİM ALAN (muafiyetsiz): {ad}"
+    for ad, gerekce in IC_ICE_MUAF.items():
+        assert "FAZ" in gerekce, f"`{ad}` muafiyeti bir SAHİP göstermiyor: {gerekce[:60]}"
+
+
+def test_K2b_DIGER_SOZLESMELER_de_taranir():
+    """🔴 **(b) TEK SINIF KÖRLÜĞÜ.** `AskResponse` dışındaki sözleşmelerin alanları hiç
+    sorulmuyordu — oysa ölçülmüş yetimlerin üçü tam orada."""
+    import app.schemas as S
+
+    metin = _fe_yorumsuz()
+    bulunan = [s for s in DIGER_SOZLESMELER if hasattr(S, s)]
+    assert bulunan, f"beklenen sözleşme sınıflarının hiçbiri yok: {DIGER_SOZLESMELER}"
+    yetim = [f"{sinif}.{alan}"
+             for sinif in bulunan
+             for alan in getattr(S, sinif).model_fields
+             if f"{sinif}.{alan}" not in IC_ICE_MUAF and alan not in MUAF
+             and alan not in metin]
+    assert not yetim, (
+        "YETİM SÖZLEŞME ALANI (AskResponse DIŞINDAKİ sınıflarda):\n  "
+        + "\n  ".join(sorted(yetim))
+        + "\n\nYa bir tüketici bağla, ya IC_ICE_MUAF'a SAHİBİYLE ekle.")
+
+
+def test_K2c_ERISILEBILIRLIK_kapisi_SILINEMEZ():
+    """🔴 **(c) EN PAHALI KÖRLÜK — *«geçiyor mu»* ≠ *«ULAŞILABİLİR mi»*.**
+
+    `contribution` alanı `ReportCard.tsx`'te **geçiyordu** → kapı yeşildi. Ama o alanı
+    üreten cevapta (`result=None`) `ReportPanel` kartı **hiç render etmiyordu** → alan
+    kullanıcıya **ulaşamıyordu**. Kapı *"var mı"* soruyordu; sorması gereken
+    ***"ulaşılabilir mi"***. Aynı körlük **ikinci, bağımsız bir kapıda** da vardı
+    (`lab/deneyim.py` API cevabını ölçüyor, render'ı değil) — yani körlük **sınıfsal**.
+
+    Bu test erişilebilirlik iddialarının **silinemez** olmasını sağlar."""
+    kendi = pathlib.Path(__file__).read_text(encoding="utf-8")
+    zorunlu = ("test_RAPORLANABILIRLIK_SAYMIYOR_KAPATIYOR", "test_ONAY_KARTI_ULASILABILIR")
+    eksik = [z for z in zorunlu if z not in kendi]
+    assert not eksik, (
+        f"K2/(c) ERİŞİLEBİLİRLİK kapısı EKSİK: {eksik}. Alanın FE kaynağında geçmesi bir "
+        "TÜKETİCİ kanıtı değil, bir METİN kanıtıdır — 0.23'te üç ödenmiş özellik tam bu "
+        "yüzden ekranda yoktu.")
