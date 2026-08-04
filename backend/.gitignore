@@ -14,6 +14,9 @@ venv/
 # başlangıçta otomatik compose+build edilir (ADR-0005 kompozisyon).
 demo/wren-project/
 demo/wren-projects/
+# FAZ 1.4 — süreç-arası derleme kilidi. Çıktı dizininin KARDEŞİdir (içeride olsaydı
+# `compose()` onu silerdi; bkz. `compose.kilit_dosyasi`), o yüzden ayrıca yazılır.
+*.compose.lock
 
 # Node (localtld manifest only — no real node deps)
 node_modules/

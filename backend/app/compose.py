@@ -27,6 +27,10 @@ from pathlib import Path
 
 import yaml
 
+from app.logging_setup import get_logger
+
+_log = get_logger("compose")
+
 # ---------------------------------------------------------------------------
 # EŞZAMANLILIK (2 Ağustos 2026 — panel P0 "REGISTRY COMPOSE RACE" kök nedeni)
 #
@@ -55,21 +59,126 @@ import yaml
 # ---------------------------------------------------------------------------
 
 _LOCKS_GUARD = threading.Lock()
-_BUILD_LOCKS: dict[str, threading.Lock] = {}
+_BUILD_LOCKS: dict[str, "DerlemeKilidi"] = {}
+
+#: Süreç-arası kilit için bekleme tavanı. Aşımda **`RuntimeError`** — sessiz geçiş YOK:
+#: kilidi alamadan derlemeye girmek, kilidin var olmamasıyla aynı şeydir ama üstüne bir de
+#: *"korunuyoruz"* beyanı ekler.
+KILIT_ZAMAN_ASIMI_SN = 60.0
 
 
-def build_lock_for(out: Path) -> threading.Lock:
-    """Bir derleme çıktısı dizini için süreç-genelinde TEK kilit.
+def kilit_dosyasi(out: Path) -> Path:
+    """Çıktı dizininin kilit dosyası — **dizinin İÇİNDE DEĞİL, KARDEŞİ**.
+
+    🔴 **Ölçülmüş bir tuzak.** `compose()` çıktı dizinindeki `target` **dışındaki her
+    çocuğu siler** (yukarıdaki `for child in sorted(out.iterdir())` döngüsü). İçeriye
+    konan bir kilit dosyası, tutulurken **unlink edilirdi**: kilidi tutan süreç silinmiş
+    inode üzerinde beklemeye devam eder, ikinci süreç ise **YENİ bir inode** açıp
+    `flock`'u anında alır. Yani kilit **sessizce çalışmaz** hâle gelirdi — ve bu, hiç
+    kilit olmamasından kötüdür, çünkü üstüne bir garanti beyanı gelir.
+
+    ⚠ Yol haritası `<slug>/.compose.lock` (içeride) diyordu; sapma **ölçüye dayanıyor**.
+    Alternatif — dosyayı `target` gibi koruma listesine eklemek — kilidi bir listenin
+    bakımına bağlardı; kardeş konum **yapısal olarak** bağışıktır.
+    """
+    p = Path(out).resolve()
+    return p.parent / f"{p.name}.compose.lock"
+
+
+class DerlemeKilidi:
+    """**İki kademeli** derleme kilidi: süreç-İÇİ (`threading`) + süreç-ARASI (`flock`).
+
+    ## Neden iki kademe
+
+    `threading.Lock` yalnız **bu süreçteki** thread'leri sıraya sokar. MIMARI §6.3'ün ⚠
+    maddesi: *"iki süreç aynı çıktı dizinine compose ederse yarış geri döner"* — ve
+    2026-08-02'de **yeniden üretilerek** teşhis edilmişti. 🔴 **2026-08-04'te ikinci kez,
+    kendiliğinden gözlendi:** demet 9 kapısında `gitas` korpustan tamamen düştü
+    (`FileNotFoundError: demo/wren-project/cubes/enerji_makine/metadata.yml`) — dosya
+    sonradan **yerindeydi**, yani okuyucu compose'un ortasına denk gelmişti.
+
+    İç kademe korunuyor çünkü **ucuz ve hızlı**: aynı süreçteki ikinci thread `flock`
+    sistem çağrısına hiç gitmez.
+
+    ## `fcntl` yoksa
+
+    Süreç-arası kademe **düşer** ve bu **gürültülü** biçimde loglanır. Sessizce düşürmek,
+    kilidin var olmadığı bir ortamda *"korunuyoruz"* sanmak olurdu. Süreci reddetmek ise
+    orantısız: tek süreçli bir kurulumda iç kademe **doğru** ve **yeterlidir**.
+    """
+
+    def __init__(self, out: Path):
+        self._out = Path(out).resolve()
+        self._yerel = threading.Lock()
+        self._fd: int | None = None
+
+    def __enter__(self) -> "DerlemeKilidi":
+        self._yerel.acquire()
+        try:
+            self._fd = self._flock_al()
+        except BaseException:
+            self._yerel.release()
+            raise
+        return self
+
+    def __exit__(self, *_exc) -> None:
+        try:
+            if self._fd is not None:
+                import fcntl
+                import os as _os
+
+                fcntl.flock(self._fd, fcntl.LOCK_UN)
+                _os.close(self._fd)
+                self._fd = None
+        finally:
+            self._yerel.release()
+
+    def _flock_al(self) -> int | None:
+        try:
+            import fcntl
+        except ImportError:                                  # pragma: no cover — POSIX dışı
+            _log.warning("SÜREÇ-ARASI KİLİT YOK (`fcntl` bulunamadı): yalnız süreç-içi "
+                         "koruma var. Çok-süreçli bir dağıtımda compose yarışı MÜMKÜN.")
+            return None
+        import os as _os
+        import time as _t
+
+        yol = kilit_dosyasi(self._out)
+        yol.parent.mkdir(parents=True, exist_ok=True)
+        fd = _os.open(str(yol), _os.O_CREAT | _os.O_RDWR, 0o644)
+        son = _t.monotonic() + KILIT_ZAMAN_ASIMI_SN
+        while True:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                return fd
+            except OSError:
+                if _t.monotonic() >= son:
+                    _os.close(fd)
+                    raise RuntimeError(
+                        f"compose kilidi {KILIT_ZAMAN_ASIMI_SN:.0f} sn'de alınamadı "
+                        f"({yol}). Başka bir süreç aynı çıktı dizinine derliyor olabilir. "
+                        "Kilitsiz devam ETMİYORUZ: yarım bir manifest, okuyucuya "
+                        "`FileNotFoundError` ya da — daha kötüsü — sessizce eksik bir "
+                        "katman olarak döner.") from None
+                _t.sleep(0.05)
+
+
+def build_lock_for(out: Path) -> DerlemeKilidi:
+    """Bir derleme çıktısı dizini için süreç-genelinde TEK kilit nesnesi.
 
     `CompanyRegistry` ve `compose_and_build()` AYNI kilidi kullanmalı — aksi halde
     varsayılan şirket (demo/wren-project) ile registry tenant'ları (demo/wren-projects/
     <slug>) farklı kilitler üzerinden aynı ağaca yazabilir.
+
+    ⟳ **FAZ 1.4 (2026-08-04):** dönen nesne artık `threading.Lock` değil, iki kademeli
+    `DerlemeKilidi`. **Kimlik sözleşmesi korundu** (aynı yol → aynı nesne), çünkü
+    `test_compose_atomicity.py` onu davranışsal olarak kilitliyor ve o kapı doğru.
     """
     key = str(Path(out).resolve())
     with _LOCKS_GUARD:
         lock = _BUILD_LOCKS.get(key)
         if lock is None:
-            lock = _BUILD_LOCKS[key] = threading.Lock()
+            lock = _BUILD_LOCKS[key] = DerlemeKilidi(Path(out))
         return lock
 
 

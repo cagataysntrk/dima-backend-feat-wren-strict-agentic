@@ -17,8 +17,8 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
-| **Sıradaki madde** | `1.4` süreç-arası kilit *(compose yarışı canlıda GÖZLENDİ)* · `1.6` lineage |
-| **Demet** | demet 10 açık: `1.2c` · `0.21/modül çıkarma` — kapı sırada |
+| **Sıradaki madde** | `1.6` column-level lineage *(🔴 `1.5`'ten ÖNCE — sıra düzeltmesi)* |
+| **Demet** | demet 10: `1.2c` · `0.21/modül çıkarma` · `1.4` — kapı sırada |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
 | **Demet** | ✅ **demet 7 kapandı** — FAZ 0 kapanış kapısı **4/4 YEŞİL** (süit **2199**) · demet 8 açık: `1.3c` · `1.3` |
@@ -420,6 +420,35 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 9 — `1.4` **süreç-arası derleme kilidi** *(2026-08-04)*
+
+Kilit **süreç-içiydi** (`threading.Lock`). Artık **iki kademeli**: `threading` (ucuz,
+süreç-içi) **+** `fcntl.flock` (süreç-arası), zaman aşımı **60 sn**, aşımda
+**`RuntimeError`**. Kapı: **10 test**, hızlı sinyal **303**.
+
+> 🔴 **GEREKÇESİ BU TURDA CANLIDA GÖZLENDİ — ve bir KAPIYI KIRDI.** Demet 9 kapısında
+> `gitas` korpustan **tamamen düştü**; dosya sonradan **yerindeydi**, yani okuyucu
+> compose'un **ortasına** denk gelmişti. `1.4`'ün gerekçesi 2026-08-02'de bir kez
+> üretilmişti; bu **ikinci ve kendiliğinden** gelen gözlem.
+
+> 🔴 **KİLİT DOSYASI DİZİNİN İÇİNDE DEĞİL, KARDEŞİ — ölçülmüş bir tuzak.** `compose()`
+> çıktı dizinindeki `target` **dışındaki her çocuğu siler**. İçeriye konan bir kilit
+> dosyası **tutulurken unlink edilirdi**: kilidi tutan süreç silinmiş inode üzerinde
+> bekler, ikinci süreç **YENİ bir inode** açıp `flock`'u **anında** alır — kilit
+> **sessizce çalışmaz** hâle gelirdi. ⚠ Yol haritası içeriyi (`<slug>/.compose.lock`)
+> söylüyordu; sapma **ölçüye dayanıyor**. *Dosyayı koruma listesine eklemek kilidi bir
+> listenin bakımına bağlardı; kardeş konum **yapısal olarak** bağışıktır.*
+
+> ⚠ **Zaman aşımında süreç-içi kilit de bırakılıyor** — yoksa ilk aşım o dizini bu süreçte
+> **kalıcı olarak** kilitlerdi (deadlock). Ayrı testle kilitli.
+> ⚠ **Sessiz geçiş YOK:** kilidi alamadan derlemeye girmek, kilidin olmamasıyla aynı
+> şeydir — üstüne bir de *"korunuyoruz"* beyanı ekler.
+> ⚠ **`fcntl` yoksa** süreç-arası kademe düşer ama **gürültülü**: uyarı loglanır. Sessizce
+> düşürmek, kilidin var olmadığı bir ortamda *"korunuyoruz"* sanmak olurdu; süreci
+> reddetmek ise orantısız (tek süreçli kurulumda iç kademe doğru ve yeterli).
+
+> ✅ **gunicorn/çok-worker dağıtımının ön koşulu kapandı** (→ II-G.7).
 
 ### FAZ 1 · adım 8 — `1.2c` redactor TÜMLEYENİ *(2026-08-04)*
 

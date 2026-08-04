@@ -3017,6 +3017,42 @@ denkleşir. Aynı soru `cari`'de **₺11,86 milyon** verir. Bu bir **motor kusur
 KATALOG kararıdır** (*bare `bakiye` hangi cube'un?*) ve sahibi **FAZ 3.1'in sahiplik
 turudur** — `metrik_kaydi` (FAZ 0.18) çakışmayı **görünür** kılar, kararı vermez.
 
+### 6.3d · FAZ 1.4 · Süreç-arası derleme kilidi
+
+Kilit **süreç-içiydi** (`threading.Lock`): yalnız bu süreçteki thread'leri sıraya sokuyordu.
+*"İki süreç aynı çıktı dizinine compose ederse yarış geri döner"* — 2026-08-02'de yeniden
+üretilerek teşhis edilmişti.
+
+🔴 **2026-08-04'te İKİNCİ KEZ, kendiliğinden gözlendi ve bir KAPIYI KIRDI.** Demet 9
+kapısında `gitas` korpustan **tamamen düştü** (`FileNotFoundError: demo/wren-project/
+cubes/enerji_makine/metadata.yml`); dosya sonradan **yerindeydi** — okuyucu compose'un
+**ortasına** denk gelmişti. Kapı **%94,3 doğruluk** raporlarken kırmızıydı çünkü payda
+**445 → 342** düşmüştü: *bir metriğin iyileşmesi, ölçülemeyenlerin denklemden çıkmasıyla
+da olur.*
+
+**Çözüm — iki kademeli kilit** (`app/compose.py::DerlemeKilidi`):
+`threading.Lock` (ucuz, süreç-içi) **+** `fcntl.flock` (süreç-arası), zaman aşımı **60 sn**,
+aşımda **`RuntimeError`** — *kilitsiz devam etmek, kilidin olmamasıyla aynı şeydir ama
+üstüne bir "korunuyoruz" beyanı ekler.*
+
+🔴 **KİLİT DOSYASI ÇIKTI DİZİNİNİN İÇİNDE DEĞİL, KARDEŞİ — ve bu ölçülmüş bir tuzak.**
+`compose()` çıktı dizinindeki `target` **dışındaki her çocuğu siler**. İçeriye konan bir
+kilit dosyası **tutulurken unlink edilirdi**: kilidi tutan süreç silinmiş inode üzerinde
+beklemeye devam eder, ikinci süreç **YENİ bir inode** açıp `flock`'u **anında** alır —
+kilit **sessizce çalışmaz** hâle gelirdi. ⚠ Yol haritası `<slug>/.compose.lock` (içeride)
+diyordu; sapma ölçüye dayanıyor. *Dosyayı `target` gibi bir koruma listesine eklemek,
+kilidi bir listenin bakımına bağlardı; kardeş konum **yapısal olarak** bağışıktır.*
+
+⚠ **Zaman aşımında süreç-içi kilit de bırakılır** — yoksa ilk aşım o dizini bu süreçte
+**kalıcı olarak** kilitlerdi (deadlock). Ayrı bir testle kilitli.
+
+⚠ **`fcntl` yoksa süreç-arası kademe düşer ama SESSİZCE DEĞİL:** uyarı loglanır. Sessizce
+düşürmek, kilidin var olmadığı bir ortamda *"korunuyoruz"* sanmak olurdu; süreci reddetmek
+ise orantısız — tek süreçli bir kurulumda iç kademe doğru ve yeterlidir.
+
+`10 test: `tests/test_compose_kilidi.py``. **gunicorn/çok-worker dağıtımının ön koşulu**
+kapandı (→ II-G.7).
+
 ### 6.3b · FAZ 1.1 · Motor RLS — `always_filter`'ın iki baypası kapanıyor
 
 `always_filter` (LookML `sql_always_where`) bir **uygulama katmanı** yamasıdır:
