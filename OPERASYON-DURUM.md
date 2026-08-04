@@ -22,8 +22,9 @@ devam ettirir. 🔴 **Kural: her faz commit'inden sonra bu blok güncellenir.**
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 4 · ÖLÇÜM ve KANIT** *(FAZ 0·1·2·3 ✅ bitti)* |
-| **Biten** | `4.1` `4.2` risk-kapsam eğrisi · `4.3` çok-turlu benchmark · `4.4` Ossie ihracı + round-trip · `4.5` MCP yüzeyi · `4.6` ADR dosyaları |
-| **Sıradaki madde** | 🔴 **`4.8` uçtan uca doğruluk aleti ÖNCE** → `4.7` teknik rapor *(4.7, §C/16 ölçülmeden **YAYIMLANAMAZ** — bağımlılık sırası bu)* |
+| **Biten** | 🎉 **FAZ 4 KAPANDI** — `4.1` … `4.8` *(4.8 önce, 4.7 sonra: rapor §C/16 olmadan yayımlanamazdı)* |
+| **§C/16 ÖLÇÜLDÜ** | **%76,1** doğru · netleştirme **%16,8 ayrı satırda** · n=**155** · `demo-boyahane`. Üç şirket `⊘` (mssql fixture, altın cevap üretilemedi) |
+| **Sıradaki madde** | **FAZ 5.0** — diyalog yöneticisinin yapısal kapalılığı *(`followup.sinifla`'nın tek çağrısı `if structural_followup:` dalının İÇİNDE)* |
 | **Sonraki faz** | FAZ 5 (konuşma ve deneyim, 18 madde — `5.0` diyalog yöneticisinin yapısal kapalılığı **ilk madde**) |
 | 🔴 **Açık borç 1** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ |
 | 🔴 **Açık borç 2** | **FAZ 4.3 hedefi TUTMADI** — `deterministic_refine`'ın ölçü-ekleme kapısı dar (−%18,2 vs hedef −%10). Bilerek düzeltilmedi (harness davranış değiştirmez) |
