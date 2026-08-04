@@ -52,6 +52,15 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "çapa listesi boş kalır ve davranış birebir bugünküdür (FAZ 0.5).",
         "category": "Konuşma",
     },
+    "metrik_sertifikasi": {
+        "label": "Metrik sertifikası",
+        "description": "Bir metriğin tanımını KİM onayladı ve o onaydan beri tanım ya da "
+                       "üst-akış kolon kümesi DEĞİŞTİ Mİ (FAZ 1.5, B8). Çürüyen sertifika "
+                       "SİLİNMEZ: seviyesi korunur, üstüne `yeniden_dogrulama_gerekli` "
+                       "bayrağı düşer — \"hiç sertifikalanmamış\" ile \"sertifikalanmış "
+                       "ama tanım değişmiş\" farklı şeylerdir. TTL 90 gün.",
+        "category": "Kanıt",
+    },
     "lineage": {
         "label": "Kolon kökeni",
         "description": "\"Bu sayı hangi tablonun hangi kolonundan, hangi DÖNÜŞÜMLE "

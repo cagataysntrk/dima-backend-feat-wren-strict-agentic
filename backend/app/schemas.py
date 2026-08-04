@@ -251,6 +251,12 @@ class Explain(BaseModel):
     path: str
     confidence: float | None = None
     assumptions: list[str] = Field(default_factory=list)
+    # FAZ 1.5 — METRİK SERTİFİKASI. `confidence` *"bu YOL ne kadar deterministik"* der;
+    # `sertifika` *"bu METRİĞİN TANIMINI kim onayladı ve o onaydan beri ne değişti"* der.
+    # İkisi FARKLI sorulardır: bir metrik DOĞRU hesaplanıp YANLIŞ tanımlanmış olabilir ve
+    # determinizm onu yakalamaz. `None` = metrik hiç sertifikalanmamış (bayrak kapalıysa
+    # da `None` — rozet kademesi gösterilmez, davranış birebir bugünkü).
+    sertifika: dict[str, Any] | None = None
 
 
 class AskResponse(BaseModel):

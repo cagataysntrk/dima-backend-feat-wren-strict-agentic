@@ -85,6 +85,33 @@ class ModelPermission(SQLModel, table=True):
     action: str = "read"  # dima read-only; ileride export/approve
 
 
+class MetrikSertifikasi(SQLModel, table=True):
+    """FAZ 1.5 — bir metriğin tanımını KİM onayladı, ve o onaydan beri ne değişti?
+
+    `source=cube` rozeti *"deterministik bir yoldan geldi"* der; bu tablo *"tanımı kim
+    onayladı"* der. Bir metrik DOĞRU hesaplanıp YANLIŞ tanımlanmış olabilir ve determinizm
+    onu yakalamaz.
+
+    🔴 **Çürüme kaydı SİLİNMEZ** — `app/certification.py::durum` seviyeyi korur ve üstüne
+    bayrak düşürür: *"hiç sertifikalanmamış"* ile *"sertifikalanmış ama tanım değişmiş"*
+    farklı şeylerdir ve ikincisi kullanıcı için daha bilgilendiricidir.
+    """
+
+    __tablename__ = "metrik_sertifikasi"
+    id: uuid.UUID = Field(default_factory=_uuid, primary_key=True)
+    tenant_id: uuid.UUID = Field(index=True)
+    metric_ref: str = Field(index=True)      # "<cube>.<olcu>"
+    seviye: str = "onerilen"                 # onerilen | sertifikali | master_veri
+    sertifikalayan_id: uuid.UUID | None = None
+    sertifika_notu: str | None = None
+    # Parmak izleri: tanımın KENDİSİ saklanmaz — aynı gerçeğin ikinci kopyası olurdu.
+    definition_hash: str | None = None
+    lineage_set_hash: str | None = None      # FAZ 1.6'nın kolon kökeninden
+    son_gecerlilik: datetime | None = None   # TTL 90 gün (certification.GECERLILIK_GUN)
+    otomatik_iptal_nedeni: str | None = None
+    created_at: datetime = Field(default_factory=_now)
+
+
 class DbConnection(SQLModel, table=True):
     """Müşteri DB bağlantısı (ADR-0017 Faz 2 ile aktif): sır AES-256-GCM
     (control_plane/crypto.py, KEK yalnız admin ortamında), meta düz JSON."""

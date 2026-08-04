@@ -26,6 +26,42 @@ function confidenceBadge(
   return { emoji: "🥉", title: `Düşük güven (${pct}%) — bir varsayım yapılmış olabilir` };
 }
 
+/** FAZ 1.5 — SERTİFİKA KADEMESİ. **Yeni bir panel DEĞİL**: var olan güven rozetinin
+ * yanında duran bir kademe (yol haritası birebir: *"güven rozetinin kademesi (yeni panel
+ * DEĞİL)"*; K5 panel tavanı 13/13, boşluk 0).
+ *
+ * `confidence` *"bu YOL ne kadar deterministik"* der; sertifika *"bu METRİĞİN TANIMINI
+ * kim onayladı"* der. İkisi farklı sorulardır — bir metrik DOĞRU hesaplanıp YANLIŞ
+ * tanımlanmış olabilir ve determinizm onu yakalamaz.
+ *
+ * 🔴 **Çürümüş bir sertifika kademe VERMEZ**, ⚠ döner: çürük bir onayı "sertifikalı" diye
+ * göstermek rozeti bir SÜSE çevirirdi (MIMARI'nin kalibre edilmemiş güven sayısına
+ * itirazının aynısı). Kademe kararı BACKEND'de (`certification.rozet_kademesi`);
+ * burada yalnız GÖSTERİLİR — ikinci bir eşik kümesi yazmak "aynı kuralın iki sahibi" olurdu. */
+export function sertifikaRozeti(
+  sertifika: { kademe?: string | null; otomatik_iptal_nedeni?: string[] | null } | null | undefined,
+): { emoji: string; title: string } | null {
+  const kademe = sertifika?.kademe;
+  if (!kademe) return null;
+  if (kademe === "uyari") {
+    const neden = (sertifika?.otomatik_iptal_nedeni ?? []).join(", ");
+    return {
+      emoji: "⚠",
+      title: `Sertifika YENİDEN DOĞRULAMA gerektiriyor${neden ? ` (${neden})` : ""} — `
+        + "onay hâlâ kayıtlı ama dayandığı tanım/köken değişmiş.",
+    };
+  }
+  const etiket: Record<string, string> = {
+    onerilen: "Önerilen — bir sahip önerdi, henüz onaylanmadı",
+    sertifikali: "Sertifikalı — tanımı bir sahip onayladı",
+    master_veri: "Master veri — kurumsal referans tanım",
+  };
+  const simge: Record<string, string> = {
+    onerilen: "○", sertifikali: "◉", master_veri: "★",
+  };
+  return { emoji: simge[kademe] ?? "○", title: etiket[kademe] ?? kademe };
+}
+
 /** FAZ 1 (K1) — AD-HOC (geçici) model rozeti.
  *
  * Discovery cevabı artık `cube_query` taşıyor (chip/kırılım/drill açılıyor) ama o yapı

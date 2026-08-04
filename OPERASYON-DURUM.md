@@ -17,8 +17,8 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 1 · GÜVENCE** — *"temel neyse ajan onu çarpar"* (17 madde) |
-| **Sıradaki madde** | `1.5` metrik sertifikasyonu *(artık `lineage_set_hash` üretilebilir)* · `1.7` tazelik |
-| **Demet** | ✅ **demet 10 kapandı** — kapı **4/4 YEŞİL** (süit **2308**) · demet 11 açık: `1.6` |
+| **Sıradaki madde** | `1.7` tazelik merdiveni · `1.8`-`1.12` · `1.13` **EN SON** |
+| **Demet** | demet 11: `1.6` · `1.5` — kapı sırada |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
 | **Demet** | ✅ **demet 7 kapandı** — FAZ 0 kapanış kapısı **4/4 YEŞİL** (süit **2199**) · demet 8 açık: `1.3c` · `1.3` |
@@ -420,6 +420,45 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 1 · adım 11 — `1.5` **metrik sertifikasyonu** *(2026-08-04)*
+
+`source=cube` rozeti *"deterministik bir yoldan geldi"* der — doğru ama yetersiz.
+Cevaplamadığı soru: *"bu metriğin tanımını **kim onayladı**, ve o onaydan beri **tanım
+değişti mi**?"* Bir metrik **doğru hesaplanıp yanlış tanımlanmış** olabilir; determinizm
+onu yakalamaz. Kapı: **17 test**, hızlı sinyal **883**.
+
+> ✅ **B8 üç kapıdan da düşüyor:** tanım (`definition_hash`) · **üst-akış kolon kümesi**
+> (`lineage_set_hash`, `1.6`'dan) · TTL **90 gün**. Birden fazla neden varsa **hepsi**
+> yazılır — bir kapının düşmesi ötekini gizlemez.
+
+> 🔴 **ÇÜRÜYEN SERTİFİKA SİLİNMEZ:** seviyesi **korunur**, üstüne bayrak düşer. Silmek,
+> *"hiç sertifikalanmamış"* ile *"sertifikalanmış ama tanım değişmiş"*i karıştırırdı — ve
+> ikincisi kullanıcı için **daha bilgilendiricidir** (biri bu metriğe bakmış, sonra dünya
+> değişmiş). Çürümüş sertifika **kademe vermez**, `⚠` verir: çürük bir onayı
+> *"sertifikalı"* diye göstermek rozeti bir **süse** çevirirdi.
+
+> ⚠ **TANIMIN KENDİSİ SAKLANMIYOR** — hash bir **parmak izidir**: değişip değişmediğini
+> söyler, neyin değiştiğini değil, ve sertifikanın sorduğu soru tam olarak *"değişti mi"*.
+> Tanımı kopyalamak aynı gerçeğin **ikinci bir kaynağı** olurdu.
+> ⚠ **Sinonim eklemek sertifikayı DÜŞÜRMEZ:** bir eşanlamlı **tanımı** değiştirmez, yalnız
+> **bulunabilirliği** artırır — hash'e katmak sertifikayı katalog bakımının **her turunda**
+> düşürürdü ve *gürültüyle ateşleyen bir kapı kapatılır*.
+
+> ⚠ **Frontend: rozetin KADEMESİ, yeni panel DEĞİL** (K5 tavanı **13/13**, boşluk 0).
+> Kademe kararı **backend'de**; frontend'de ikinci bir eşik kümesi *"aynı kuralın iki
+> sahibi"* olurdu — kapı frontend'de `definition_hash`/`90` gibi **sızıntı** arıyor.
+
+> 🔴 **BİR KAPI, KENDİ ÖLÇÜM HATAMDAN DOĞDU.** `down_revision`'ları **tek tırnak**
+> varsayan bir betikle **iki Alembic head'i** ölçtüm ve *"canlı bir göç engeli"* ilan
+> ettim. Alembic'in **kendisine** sorunca **tek head** çıktı (`a4d8f2c6e903` çift tırnak
+> kullanıyor). *Olmayan bir soruna yama yazmaktan, aracın kendisine sormak kurtardı.*
+> Kapı artık Alembic'in **kendi grafiğini** kullanıyor: iki head gerçekten oluşursa
+> `alembic upgrade head` patlar ve Postgres dağıtımı **göç edemez**.
+
+> ⚠ **Metin ölçme kusuru bu oturumda DÖRDÜNCÜ kez** (`⟳` sayacı · `0.21` tavan operatörü ·
+> `TODO(faz-2)` · burada *"yeni panel DEĞİL"* cümlesinin **satır sonuna bölünmesi**).
+> Dördü de yapısal ölçüme çevrildi.
 
 ### FAZ 1 · adım 10 — `1.6` **kolon kökeni** *(2026-08-04)*
 

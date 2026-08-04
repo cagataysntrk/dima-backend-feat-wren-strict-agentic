@@ -104,6 +104,10 @@ _ACTION_MIN_RANK = {
     # sıkılaştırma tek satırlık bir karara indi. Rütbe, LLM maliyeti ölçüldüğünde
     # (FAZ 0.17'nin gecikme bütçesi + kota telemetrisi) yeniden ele alınır.
     "llm:invoke": 0,
+    # FAZ 1.5 — metrik sertifikalama. `measure:approve` ile AYNI rütbe (admin+): bir
+    # metriği "sertifikalı" ilan etmek, bir Discovery adayını kalıcı ölçüye yükseltmekle
+    # aynı ağırlıkta bir KURUMSAL BEYANDIR ve geri alınması aynı ölçüde pahalıdır.
+    "metric:certify": 2,
 }
 
 

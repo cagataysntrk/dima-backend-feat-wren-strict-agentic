@@ -54,6 +54,10 @@ features:
   sosyal_sinif: prod
   capa_zinciri: "off"
   metrik_kaydi: "off"
+  metrik_sertifikasi: "off"  # FAZ 1.5: metriğin tanımını KİM onayladı + o onaydan beri
+                          # tanım/köken DEĞİŞTİ Mİ. Kapalıyken rozet gösterilmez ama
+                          # ⚠ TANIM-HASH ÇÜRÜMESİ KAPALIYKEN DE İŞLER — aksi hâlde
+                          # bayrak açıldığında BAYAT sertifikalar "geçerli" görünürdü.
   lineage: "off"          # FAZ 1.6: KOLON düzeyi köken — "bu sayı hangi tablonun hangi
                           # kolonundan, hangi DÖNÜŞÜMLE geldi?" `answer.koken()` İLİŞKİ
                           # düzeyindedir (hangi kırılım hangi join'den); bu ondan FARKLI
