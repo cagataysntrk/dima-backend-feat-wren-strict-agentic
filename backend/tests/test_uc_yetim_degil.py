@@ -52,6 +52,13 @@ from tests.kapi_ortak import fe_kaynak, tam_yol_deseni, tuketiliyor
 SARMALAYICI_MUAF: dict[str, str] = {}
 
 API_ONLY: dict[str, str] = {
+    "/stats/gecikme": "FAZ 0.17 — yol başına p50/p95. Yol haritasının kendi beyanı: "
+                      "*«frontend: `ui_gelisim_paneli`'nin bir satırı (7.7)»* — yani "
+                      "tüketici **FAZ 7.7**'de gelir. Uç şimdi iniyor çünkü ölçüm, "
+                      "onu gösterecek ekrandan ÖNCE gelmeli: FAZ 2'nin semantik "
+                      "ameliyatı gecikmeyi değiştirirse, o değişimi görebilmek için "
+                      "verinin ZATEN birikiyor olması gerekir. Kapı bu ucu kurulduğu "
+                      "ANDA yakaladı — beyan o yüzden burada, sessizce değil.",
     "/query": "FAZ 0.7 — ham-SQL yürütme yüzeyi kullanıcıya **bilinçli olarak** "
               "açılmamıştır (MIMARI §5: *«yüklenen dosyaya serbest Python»* ile aynı "
               "gerekçe — uydurma sayının kapısı). Uç duruyor: `/ask/verify` ve lab "

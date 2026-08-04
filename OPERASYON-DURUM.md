@@ -17,9 +17,9 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 0** — temizlik ve kapılar *(25 madde; sıra **numara DEĞİL**, FAZ 0 girişindeki bağlayıcı koşum sırası)* |
-| **Sıradaki madde** | `0.17` gecikme bütçesi · `0.20` bayrak profilleri |
-| **Ondan sonra** | `0.4` *(canlı A/B — demet sınırı)* → `0.21` **EN SON** *(tavanı FAZ 0 ÖNCESİ ölçümden alır)* |
-| **Demet** | `0.10`/`0.10b` risk sınırı — kendi kapısını koştu |
+| **Sıradaki madde** | `0.4` netleştirme önceliği *(**canlı A/B** — demet sınırında)* |
+| **Ondan sonra** | `0.21` **EN SON** *(tavanı FAZ 0 ÖNCESİ ölçümden alır; FAZ 0'ın eklediği satırlar madde-madde MUAF)* → **FAZ 1** |
+| **Demet** | `0.15` · `0.17` · `0.20` indi — demet kapanışa hazır |
 | **Tempo** | 🔴 **DEMET disiplini yürürlükte** (`OPERASYON.md §3`): commit ≠ kapı; tam kapı **demet sonunda bir kez**. Risk sınırındaki dosyalara dokunan madde demete girmez |
 | **v1 bitiş ölçütü** | §C'nin **16 ölçütü** yeşil |
 
@@ -417,6 +417,30 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 0 · adım 12 — `0.17` gecikme bütçesi · `0.20` bayrak profilleri *(2026-08-04)*
+
+| Madde | Ne indi | Ölçüm |
+|---|---|---|
+| **0.17** | Yol başına **p50/p95** + ilan edilen bütçe (`GET /stats/gecikme`) — **yeni enstrümantasyon YOK**, `duration_ms` zaten `interaction_log`'da | EK D'de 60+ eşik vardı, **tek gecikme eşiği yoktu** |
+| **0.20** | Üç profil: **`taban`** (hepsi off) · **`v1-varsayilan`** · **`v1-tam`** + **yaşam döngüsü** borç ölçümü | `taban` 0 açık · `v1-varsayilan` **11/17** · `v1-tam` **19/19** · **ölü bayrak 2** |
+
+> 🔴 **`0.17`'nin çerçevesi DIŞ KANITLA tersine çevrildi.** 240 katılımcılı bir çalışma
+> (TTFT 2s/9s/20s): **2 saniyede gelen cevap, 9 saniyede gelenden DAHA AZ** faydalı
+> bulundu; **9s en faydalı** koşuldu. *"Streaming algılanan kaliteyi artırır"* iddiasının
+> **hakemli çalışması yok**. → Bütçe bir **hız yarışı değil, bir SÜRPRİZ KAPANI**:
+> `t2_anlatici`'yi kapalı tutan asıl soru gecikme değil **KAZANÇ** olmalı. Bütçe yalnız
+> *"30-85× fark, fark edilmeden büyümesin"* diye var.
+
+> 🔴 **`0.20`'nin asıl işi YAŞAM DÖNGÜSÜ.** `v1-varsayilan`'da **iki sürüm** açık kalan
+> bayrak **silinir** (kod kalıcılaşır, bayrak gider) — yoksa §C/10'un *"ölü bayrak 0"*
+> hedefi, sayı büyüdükçe **matematiksel olarak** tutturulamaz: her yeni özellik bir
+> bayrak ekler, hiçbiri kaldırılmaz. **Bir bayrak bir KARAR ANIDIR, bir mülk değil.**
+> ⚠ *"Sürüm"* bu depoda bir **karardır**, otomatik türetilebilir bir sayı değil —
+> uydurmak, **ölçüm gibi görünen bir tahmin** üretirdi. Ölçülmemiş borç, borç değildir (`⊘`).
+
+> 🔴 **K1 üçüncü kez yeni bir ucu kurulduğu ANDA yakaladı** (`/metrics` · `/stats/gecikme`).
+> Her seferinde `api-only` beyanı **sahibiyle** yazıldı, sessizce değil.
 
 ### Taban ölçümü · `lab/vk_taban.py` *(commit `8f87e40`)*
 VK-1…VK-6 **yapısal ve canlı** (gemini) ölçüldü. `§G.6e`'nin *"Bugün"* sütunu artık
