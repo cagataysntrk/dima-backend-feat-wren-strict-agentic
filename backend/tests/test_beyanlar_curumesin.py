@@ -432,23 +432,10 @@ _YURURLUKTE_TUZAKLARI = [
     ("§3.4-kuyruk", "FAZ 1.2 kuyruğu",
      lambda: not _principalsiz_cagri_var(),
      "SessionProperty TÜM çağrı sitelerinde"),
-    # ⟳ `§3.4-osi` **DARALDI** — FAZ 3.4 (Ossie **ithali**) İNDİ; tuzak
-    # `test_TERS_TUZAK_FAZ_3_4_OSSIE_ITHALI_AYAKTA`'ya taşındı (SİLİNMEDİ). §0'ın satırı
-    # geriye **MCP yüzeyini** (FAZ 4.5) bıraktı ve belirteç ona nişanlandı. Eski belirteç
-    # (uç ∨ bayrak ∨ modül) bugün DOĞRU olduğu için tuzağı kalıcı-kırmızı bırakırdı; oysa
-    # satırın inmemiş yarısı hâlâ bir işaretçiye muhtaç.
-    ("§3.4-mcp", "FAZ 4.5",
-     # ⚠ Belirteç İKİ KEZ düzeltildi:
-     #  (1) ilk sürüm `"ossie" in _app_kaynagi()` idi → `compose.py`'nin **YORUM** satırını
-     #      yakalayıp tuzağı yanlış-KIRMIZI yaptı (ölçüm aracı kusuru);
-     #  (2) ikinci sürüm yalnız `app/ossie_import.py` arıyordu → denetim ölçtü: FAZ 3.4'ün
-     #      `NE`'si böyle bir DOSYA vaat etmiyor; vaat ettiği şey **`POST /connections/
-     #      {id}/import-semantic` ucu** + `ossie_ithal` bayrağı + bir çevirici. Yani faz
-     #      indiğinde tuzak **susacaktı** — yanlış-NEGATİF, yanlış-pozitiften DAHA tehlikeli.
-     # Şimdi belirteç fazın KENDİ vaadine bağlı (üçünden biri yeterli: uç · bayrak · modül).
-     lambda: (APP / "mcp.py").exists() or (APP / "routers/mcp.py").exists()
-             or "mcp" in (APP / "features.py").read_text(encoding="utf-8"),
-     "MCP yüzeyi (araç kaydı DIŞARI açılmıyor)"),
+    # ⟳ `§3.4-osi`/`§3.4-mcp` **TAMAMEN KAPANDI** — FAZ 3.4 (Ossie ithali) ve FAZ 4.5
+    # (MCP yüzeyi) indi; §0'ın `§3.4` *"bilerek alınmayanlar"* satırı SİLİNDİ ve gövdeye
+    # ölçümlü `✅` yazıldı. İki ters tuzak (SİLİNMEDİ, çevrildi):
+    # `test_TERS_TUZAK_FAZ_3_4_OSSIE_ITHALI_AYAKTA` · `test_TERS_TUZAK_FAZ_4_5_MCP_AYAKTA`.
     ("§4", "FAZ 6.0→6.2",
      # ⚠ AST ile bakılır: alt-dize taraması `tools.py`'nin **docstring'indeki**
      # `yan_etki="yazar"` cümlesini yakalayıp tuzağı yanlış-kırmızı yaptı. Beyan ile
@@ -512,6 +499,22 @@ def test_YURURLUKTE_satiri_HALA_dogru(bolum, faz, indi_mi, konu):
         f"(1) MIMARI.md §0'dan `{bolum}` satırını SİL · "
         f"(2) ilgili bölüme ÖLÇÜMLÜ `✅` yaz (sayı + @sha + komut — kural D2) · "
         f"(3) bu tuzağı TERS ÇEVİR (artık 'inmiş olmalı' diye kilitle) — SİLME")
+
+
+def test_TERS_TUZAK_FAZ_4_5_MCP_AYAKTA():
+    """⟳ `§3.4-mcp` ters çevrildi: MCP **inmiş olmalı** ve **ince çevirici** kalmalı.
+
+    🔴 Asıl kilit dosya varlığı değil, **ayrışmamaktır**: MCP kendi araç kaydını kurduğu
+    gün üç yüzey (LLM · MCP · UI) ayrışır ve bir araç bir yüzeyde açık, ötekinde kapalı
+    olur — hangisinin doğru olduğunu kimse bilemez. O gün bu kapı kırmızıya döner.
+    """
+    from app import mcp, tools
+
+    assert (APP / "mcp.py").exists() and (APP / "routers/mcp.py").exists(), (
+        "🔴 FAZ 4.5 GERİ ALINDI: MIMARI §3.4'ün ölçümlü `✅` beyanı DOĞRULANAMIYOR.")
+    assert {a["name"] for a in mcp.araclar(None)} == {
+        a["name"] for a in tools.llm_araclari(None)}, (
+        "🔴 MCP ve LLM araç kümeleri AYRIŞTI — MCP kendi kaydını kurmuş olabilir.")
 
 
 def test_TERS_TUZAK_FAZ_4_2_RISK_KAPSAM_AYAKTA():

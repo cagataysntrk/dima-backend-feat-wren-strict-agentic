@@ -52,6 +52,17 @@ from tests.kapi_ortak import fe_kaynak, tam_yol_deseni, tuketiliyor
 SARMALAYICI_MUAF: dict[str, str] = {}
 
 API_ONLY: dict[str, str] = {
+    "/mcp/tools": "FAZ 4.5 — MCP bir **MAKİNE YÜZEYİDİR**: tüketicisi kendi UI'ımız "
+                  "değil, kullanıcının kendi ajanıdır (Claude Desktop · dbt · Cube MCP "
+                  "istemcileri). Bunu bir panele bağlamak, *«bizim UI'ımızdan bizim "
+                  "araçlarımızı çağır»* gibi bir tur atmaktan ibaret olurdu — kullanıcıya "
+                  "sıfır değer, ekran tavanına (K5 13/13) bir satır. ⚠ Yüzeyin AÇIK olup "
+                  "olmadığı kullanıcıya zaten görünüyor: `mcp_yuzeyi` bayrağı admin "
+                  "bayrak panelinde listeleniyor (FLAG_REGISTRY tek kaynak).",
+    "/mcp/call": "FAZ 4.5 — aynı gerekçe (`/mcp/tools`). Çağrıyı UI'dan yapmak, HTTP "
+                 "yolunun MCP'ye çevrilip geri çevrilmesi demek olurdu; oysa madde tam "
+                 "tersini söylüyor: MCP, HTTP'nin YANINA değil İÇİNE bağlanır ve "
+                 "`Planlayici.calistir()`'in AYNI dört kapısından geçer.",
     "/stats/gecikme": "FAZ 0.17 — yol başına p50/p95. Yol haritasının kendi beyanı: "
                       "*«frontend: `ui_gelisim_paneli`'nin bir satırı (7.7)»* — yani "
                       "tüketici **FAZ 7.7**'de gelir. Uç şimdi iniyor çünkü ölçüm, "
@@ -63,11 +74,10 @@ API_ONLY: dict[str, str] = {
               "açılmamıştır (MIMARI §5: *«yüklenen dosyaya serbest Python»* ile aynı "
               "gerekçe — uydurma sayının kapısı). Uç duruyor: `/ask/verify` ve lab "
               "araçları onu kullanır. Ölü olan **sarmalayıcıydı** ve silindi.",
-    "/metrics": "FAZ 0.18 — metrik kaydının OKUNABİLİR yüzeyi. Yol haritasının kendi "
-                "beyanı: *«frontend: — (sahiplik ekranı 2.2b'de kalır)»*. Uç bugün "
-                "kayıt + çakışan terim envanterini döner; **sahiplik EKRANI** (terimi "
-                "bir cube'a atama) II-B/2.2b'nin işidir. Kapı bu ucu kurulduğu ANDA "
-                "yakaladı — beyan o yüzden burada, sessizce değil.",
+    # ⟳ `/metrics` **BEYANDAN ÇIKARILDI** — FAZ 3.1b sahiplik bölümünü `SchemaPanel`'e
+    # bağladı (`getMetrics`/`setMetrikSahibi`), yani *"UI tüketicisi olamaz"* artık
+    # DOĞRU DEĞİL. Kapı bunu bir sonraki uç eklenirken yakaladı: **bayat bir muafiyet,
+    # muafiyeti olmayan bir uçtan tehlikelidir** — çünkü sessizce doğru görünür.
     "/health": "altyapı canlılık probu (Docker/Railway healthcheck) — UI tüketicisi olamaz",
     "/health/ready":
         "altyapı hazırlık probu (motor + DB erişimi); UI aynı bilgiyi ConnectionBadge'de "

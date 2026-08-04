@@ -186,6 +186,12 @@ def create_app() -> FastAPI:
     # FAZ E — kalıcı sunum tercihi: OKUMA/SİLME ucu. Yazma burada YOK;
     # tercih yazmak /ask/eylem onay kademesinden geçer (Faz H değişmezi).
     app.include_router(tercihler_router.router, dependencies=_protected)
+    # FAZ 4.5 — MCP yüzeyi. 🔴 Ayrı bir YOL DEĞİL, bir ÇEVİRİ: çağrı
+    # `Planlayici.calistir()`'in aynı dört kapısından geçer ve aynı makbuzu üretir.
+    # Bayrak kapalıyken uçlar 404 döner; HTTP yolunda tek bayt değişmez (KURAL B).
+    from app.routers import mcp as _mcp
+
+    app.include_router(_mcp.router, dependencies=_protected)
     return app
 
 

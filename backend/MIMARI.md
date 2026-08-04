@@ -64,7 +64,6 @@
 > Tuzaklar **silinmedi, TERS ÇEVRİLDİ**: `test_TERS_TUZAK_FAZ_2_1_CEKIRDEK_KATMAN_AYAKTA`.
 
 | **§3.4** | **`SessionProperty` TÜM çağrı sitelerinde** — bugün 36 `query`/`dry_plan` çağrısı kimlik geçmiyor *(CLS `off`, bkz. §6.3c)* | **FAZ 1.2 kuyruğu** | ⟳ UYGULANMADI |
-| **§3.4** | *"Bilerek ALINMAYANLAR: `osi`"* — **ithal İNDİ** (FAZ 3.4), satır **MCP yüzeyine DARALDI** | **FAZ 4.5** | ⟳ UYGULANMADI |
 | **§4** | Değişmez 2/3 (read-only) — ajan yazma yasağının **kademelenmesi** | **FAZ 6.0 → 6.1 → 6.2** | ⟳ UYGULANMADI |
 | **§5** | **18. yasak**: *"cevapsız bir dal, cevaplı bir yolu KESEMEZ"* (`KAT-2`) | **§G/AJ0** | ⟳ UYGULANMADI |
 | **§9** | hedef mimari — **metrik katmanı** merdivene giriyor | **FAZ 0.18 · 2.1** | ⟳ UYGULANMADI |
@@ -284,7 +283,14 @@ tur aynı keşfi sıfırdan yapıyor. **Yeni bir kontrol/garanti yazmadan önce 
 **Bilerek ALINMAYANLAR** (gerekçeleri kalıcı): `wren.memory` — `app/vqr.py` bu iş için üstün
 (Türkçe'de e5-large > MiniLM; depo Postgres'te ve tenant-kapsamlı, LanceDB dosya deposu
 Railway'de kalıcı değil). `mcp_server.py` — Dima'nın HTTP API'si işlevsel üst kümesi; ajan
-yüzeyi kendi araç kaydımız üstüne kurulur. `genbi`/`dbt`/`profile` — bugün müşteri
+yüzeyi kendi araç kaydımız üstüne kurulur.
+✅ **MCP YÜZEYİ İNDİ** (FAZ 4.5 · `app/mcp.py` + `app/routers/mcp.py`, bayrak
+`mcp_yuzeyi=off`): **ince çevirici**, kendi kaydını kurmuyor — `tools.llm_araclari()`'yi
+ve `authorize()` süzgecini okuyor. 🔴 Değişmez kapıyla kilitlendi
+(`tests/test_mcp.py`, 9 test): MCP'den çağrılan araç `Planlayici.calistir()`'in **aynı
+dört kapısından** (`KAYIT · yetki · deterministik-önce · bütçe`) geçiyor ve **aynı
+`Adim` makbuzunu** üretiyor; `importlib`/`arac.cagir` MCP'de **AST ile yasak**.
+`genbi`/`dbt`/`profile` — bugün müşteri
 senaryosu yok. **`_dialect_sql` duplicate DEĞİL**: `cube_query_to_sql` DuckDB verir, `dry_plan`
 hedef lehçe bekler; aradaki köprüyü wren sunmuyor.
 

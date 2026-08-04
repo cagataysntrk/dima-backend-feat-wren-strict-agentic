@@ -46,6 +46,19 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "yanıt BAYT BAYT bugünküyle aynıdır (KURAL B — FAZ 2.5).",
         "category": "dogruluk",
     },
+    "mcp_yuzeyi": {
+        "label": "MCP yüzeyi (Model Context Protocol)",
+        "description": "Kararlı spec 2025-11-25, Linux Foundation / Agentic AI Foundation "
+                       "yönetiminde; dbt · Cube · AtScale kendi sunucularını yayımlıyor. "
+                       "🔴 İNCE ÇEVİRİCİ — kendi araç kaydını KURMAZ: `app/tools.py`'nin "
+                       "kaydını ve `authorize()` süzgecini okur, ikinci bir kopya yoktur "
+                       "(üç yüzey — LLM · MCP · UI — ayrışmaz). 🔴 DEĞİŞMEZ: MCP'den "
+                       "çağrılan araç HTTP'den çağrılanla AYNI dört kapıdan (KAYIT · "
+                       "yetki · deterministik-önce · bütçe) geçer ve AYNI makbuzu üretir "
+                       "— jenerik MCP sunucularında olmayan fark budur. Kapalıyken uçlar "
+                       "404 döner, HTTP yolu etkilenmez (FAZ 4.5).",
+        "category": "genisleme",
+    },
     "ossie_ihrac": {
         "label": "Apache Ossie semantik model ihracı",
         "description": "`packs/` modelimiz Ossie YAML olarak dışa aktarılır. 🔴 FARKIMIZ "
