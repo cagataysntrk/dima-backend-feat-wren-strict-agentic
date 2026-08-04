@@ -1,0 +1,86 @@
+# FAZ 3.1 — SAHİPLİK TURU · **karar kaydı** (kalem · sahip · tarih · gerekçe)
+#
+# 🔴 BU BİR YAML İŞİ DEĞİL, BİR ALAN-BİLGİSİ İŞİDİR — ve çıktısı **veridir**, yorum değil.
+# Her satır `metrik_kaydi.hakem`'i besler; hakem `_match_cube`'un İLK satırında sorulur.
+#
+# ## Ölçülen kusur
+#
+# Çakışan terim sayısı (2026-08-04, `metrik_kaydi.cakisan_terimler`):
+# `demo-boyahane` **62** · `gitas` **48** · `gulteks` **39** · `atiksan` **25**.
+# Ve dağılım rastgele değil: boyahane yanlış-cube listesinin ilk 10'unun 10'u `elektrik`,
+# atiksan'ın ilk 9'unun 9'u `satış` — **aynı hastalık, iki tenant, iki terim**.
+#
+# ## 🔴 ÜÇ KUTU — ve her terim yalnız BİRİNE girer
+#
+# | kutu | ne demek | ne yapılır |
+# |---|---|---|
+# | **(1) tek sahip** | terim aslında **bir** cube'un | `sahip:` yazılır, hakem karar verir |
+# | **(2) gerçek belirsizlik** | kullanıcı hangisini kastettiği **belli değil** | `chip` — sahip YAZILMAZ |
+# | **(3) grain hatası** | iki cube **aynı grain**'de | modelleme borcu (2.4), sahiplik ÇÖZMEZ |
+#
+# ⚠ **KUTU (2) BİR EKSİKLİK DEĞİL, BİR KARARDIR.** `bakiye` (cari ↔ mizan) ders kitabı
+# örneğidir ve **korunur**: cari bakiyesi ile mizan bakiyesi **farklı sorulardır** ve
+# birini seçmek, kullanıcının sormadığı soruya cevap vermek olur. *Gerçek belirsizliği
+# tahminle kapatmak, belirsizliği yok etmez — yalnız görünmez kılar.*
+#
+# ## GERİ AL
+#
+# Her karar **tek tek** geri alınabilir: satırı sil → hakem `None` döner → bugünkü yol.
+# Toplu geri alma bayrağı `metrik_kaydi`'dir (FAZ 0.18).
+
+kararlar:
+  # ── KUTU (1) · TEK SAHİP ────────────────────────────────────────────────
+  - terim: elektrik
+    kutu: tek_sahip
+    sahip: enerji_makine
+    tarih: 2026-08-04
+    gerekce: >-
+      `enerji_makine` elektrik tüketimini MAKİNE grain'inde ölçer ve `elektrik` onun
+      birincil ölçüsüdür. `surdurulebilirlik` ise elektriği bir SÜRDÜRÜLEBİLİRLİK
+      göstergesi olarak taşır — yani türev bir mercek. Ölçüldü: boyahane yanlış-cube
+      listesinin ilk 10'unun 10'u bu terim. ⚠ `surdurulebilirlik`'in KİMLİĞİ SİLİNMEDİ
+      (FAZ 2.4); yalnız çıplak `elektrik` teriminin sahibi belirlendi.
+
+  - terim: satis
+    kutu: tek_sahip
+    sahip: ticaret
+    tarih: 2026-08-04
+    gerekce: >-
+      Satış ticari olarak FATURAYLA doğar ve `ticaret` fatura grain'indedir (FAZ 2.1(c)
+      karar kalemi: kanonik `satis_tutari` grain'i = fatura). `mal` stok hareketi,
+      `karlilik` ise türev bir hesabın girdisidir — ikisi de satışın KENDİSİ değil.
+      Ölçüldü: atiksan yanlış-cube listesinin ilk 9'unun 9'u bu terim.
+
+  # ── KUTU (2) · GERÇEK BELİRSİZLİK → CHIP (sahip YAZILMAZ) ───────────────
+  # 🔴 Bu satırlar bilinçli olarak `sahip:` TAŞIMAZ. Varlıkları bir karardır: "bu terim
+  # incelendi ve belirsizliğinin GERÇEK olduğuna karar verildi". Satırı hiç yazmamak,
+  # "henüz bakılmadı" ile "bakıldı, belirsiz" arasındaki farkı yok ederdi.
+  - terim: bakiye
+    kutu: belirsiz
+    tarih: 2026-08-04
+    gerekce: >-
+      🔴 DERS KİTABI ÖRNEĞİ, KORUNUR. Cari bakiyesi (müşteri/tedarikçi hesabı) ile mizan
+      bakiyesi (muhasebe hesap planı) FARKLI SORULARDIR; birini seçmek kullanıcının
+      sormadığı soruya cevap vermektir. Netleştirme chip'i doğru davranıştır.
+
+  - terim: borc
+    kutu: belirsiz
+    tarih: 2026-08-04
+    gerekce: "`bakiye` ile aynı gerekçe: cari borcu ↔ mizan borç bakiyesi."
+
+  - terim: ariza durusu
+    kutu: belirsiz
+    tarih: 2026-08-04
+    gerekce: >-
+      `bakim.ariza_suresi` (bakım kaydı) ile `oee.plansiz_durus_dakika` (üretim duruşu)
+      farklı ölçüm noktalarıdır: biri bakım ekibinin kaydı, öteki hattın kaybı. Aynı
+      arıza ikisinde farklı süre üretebilir — hangisinin sorulduğu KULLANICIYA aittir.
+
+  # ── KUTU (3) · GRAIN HATASI → modelleme borcu (sahiplik ÇÖZMEZ) ────────
+  - terim: yogunluk
+    kutu: grain_hatasi
+    tarih: 2026-08-04
+    gerekce: >-
+      `surdurulebilirlik` ≡ `parti` (ikisi de `partiler` grain'inde — FAZ 2.4 beyanı).
+      Yoğunluk ölçüleri `parti` grain'ine ait METRİKLERDİR. Bu bir sahiplik sorunu değil
+      bir MODELLEME borcudur; sahip yazmak kusuru gizlerdi.

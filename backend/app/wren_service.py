@@ -37,6 +37,22 @@ class UnsafeSqlError(ValueError):
 BEYAN = "target"
 
 
+def _pack_koku(proje: Path) -> Path | None:
+    """Proje dizininden `packs/` köküne çık — pack karar kaydı orada yaşar.
+
+    ⚠ Derleme çıktısı geçici bir dizinde de olabilir (gölge diff, testler); o durumda
+    depo içindeki `demo/` aranır. Bulunamazsa `None` → karar kaydı **yok** sayılır ve
+    davranış bugünküdür. *Bulunamayan bir kararı uydurmak, kararın kendisinden kötüdür.*
+    """
+    for aday in (proje.parent.parent, proje.parent, Path(__file__).resolve().parents[1] / "demo"):
+        try:
+            if (aday / "packs" / "cekirdek").is_dir():
+                return aday
+        except Exception:                                    # noqa: BLE001
+            continue
+    return None
+
+
 def _sayi_mi(v) -> bool:
     """Beyan sayıya çevrilebiliyor mu? Çevrilemiyorsa beyan **yok** sayılır — bozuk bir
     hedefi `0` kabul etmek, *"hedef yok"* ile *"hedef 0"* ayrımını yok ederdi."""
@@ -664,8 +680,12 @@ class WrenService:
             from app.features import resolve_for
             from app.metrik_kaydi import semaya_yaz
 
+            # FAZ 3.1 — `base`: pack karar kaydının kökü. `demo/` dizini, projenin
+            # iki üstü (`<demo>/wren-projects/<slug>` ya da geçici derleme dizini).
+            _base = get_settings().demo_dir if hasattr(get_settings(), "demo_dir") else None
             semaya_yaz(self._schema_cache,
-                       acik="metrik_kaydi" in resolve_for(get_settings(), None))
+                       acik="metrik_kaydi" in resolve_for(get_settings(), None),
+                       base=_base or _pack_koku(self.project_dir))
         except Exception:                                      # noqa: BLE001
             # Kayıt bir **iyileştirmedir**, bir ön koşul değil: üretilemezse şema
             # eksiksiz döner ve sistem bugünkü yolunu izler. Sessiz yutma YOK:

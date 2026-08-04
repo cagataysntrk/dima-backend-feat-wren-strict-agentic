@@ -39,7 +39,12 @@ turudur**. Yani bu madde **çakışmayı görünür kılar**, kararı vermez —
 
 from __future__ import annotations
 
+import pathlib
 from typing import Any
+
+from app.logging_setup import get_logger
+
+_log = get_logger("metrik_kaydi")
 
 #: Şemadaki anahtar. `cube_router` bunu okur; yoksa bugünkü davranış aynen sürer.
 SEMA_ANAHTARI = "metrik_kaydi"
@@ -79,6 +84,41 @@ def taslak_uret(schema: dict[str, Any]) -> list[dict[str, Any]]:
         }
         for terim, adaylar in cakisan_terimler(schema).items()
     ]
+
+
+#: FAZ 3.1 — pack ile gelen **karar kaydı** dosyası (alan bilgisi, tenant'tan bağımsız).
+KARAR_DOSYASI = "sahiplik_kararlari.yml"
+
+
+def pack_kararlari(base: Any) -> dict[str, str | None]:
+    """`packs/cekirdek/sahiplik_kararlari.yml` → `{terim: sahip|None}`.
+
+    🔴 **Üç kutu, tek dosya.** `sahip` **yalnız** `kutu: tek_sahip` satırlarında vardır;
+    `belirsiz` ve `grain_hatasi` satırları bilinçli olarak sahipsizdir ve **yine de
+    kayıtta dururlar**: *"henüz bakılmadı"* ile *"bakıldı, belirsiz olduğuna karar
+    verildi"* aynı şey değildir ve bu ayrım kaybolursa aynı terim her turda yeniden
+    tartışılır.
+
+    ⚠ Bu **pack** kararıdır (alan bilgisi, her tenant'ta aynı); tenant'ın kendi kararı
+    (FAZ 2.2b `MetrikSahipligi`) onu **ezer** — en spesifik kazanır, `compose`'un katman
+    sırasıyla aynı ilke.
+    """
+    import yaml
+
+    yol = pathlib.Path(str(base)) / "packs" / "cekirdek" / KARAR_DOSYASI
+    if not yol.is_file():
+        return {}
+    try:
+        d = yaml.safe_load(yol.read_text(encoding="utf-8")) or {}
+    except Exception:                                        # noqa: BLE001
+        _log.warning("sahiplik karar kaydı okunamadı: %s", yol, exc_info=True)
+        return {}
+    out: dict[str, str | None] = {}
+    for k in d.get("kararlar") or []:
+        terim = str((k or {}).get("terim") or "").strip()
+        if terim:
+            out[terim] = str(k["sahip"]) if k.get("sahip") else None
+    return out
 
 
 def sahiplikle_birlestir(kayit: list[dict[str, Any]],
@@ -142,7 +182,7 @@ def hakem(terim: str, kayit: list[dict[str, Any]] | None) -> str | None:
     return None
 
 
-def semaya_yaz(schema: dict[str, Any], *, acik: bool) -> dict[str, Any]:
+def semaya_yaz(schema: dict[str, Any], *, acik: bool, base: Any = None) -> dict[str, Any]:
     """Bayrak açıksa kaydı **şemaya** koyar. Kapalıysa **hiç dokunmaz**.
 
     `GERİ AL` mekanizması budur: bayrak `off` → anahtar yok → `cube_router` kaydı hiç
@@ -153,6 +193,11 @@ def semaya_yaz(schema: dict[str, Any], *, acik: bool) -> dict[str, Any]:
         schema.pop(SEMA_ANAHTARI, None)
         return schema
     kayit = taslak_uret(schema)
+    # 🔴 FAZ 3.1 — SAHİPLİK TURU. Pack ile gelen **karar kaydı** (alan bilgisi) taslağa
+    # işlenir; tenant'ın kendi kararı (FAZ 2.2b) uçta bunun ÜSTÜNE biner — en spesifik
+    # kazanır (`compose`'un katman sırasıyla aynı ilke).
+    if base is not None:
+        kayit = sahiplikle_birlestir(kayit, pack_kararlari(base))
 
     # 🔴 ÇİFT SAHİPLİK REDDİ — **fail-closed**. Bir terimi iki cube birden sahiplenmişse
     # hakem yine YOKTUR, ama artık bir de *"hakem var"* beyanı vardır. Beyan ile kodun

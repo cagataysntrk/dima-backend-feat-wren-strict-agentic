@@ -16,8 +16,8 @@
 
 | | |
 |---|---|
-| **Aktif faz** | ✅ **FAZ 2 BİTTİ** (13 adım) → **FAZ 3 · KAPSAM** başlıyor |
-| **Sıradaki madde** | 🔴 **FAZ 3 · KAPSAM** — `3.1` sahiplik turu *(hakem kuruldu, şimdi doldurulacak)* |
+| **Aktif faz** | **FAZ 3 · KAPSAM** — `3.1` indi *(kararlar yazıldı, uygulama tenant kapsamını bekliyor)* |
+| **Sıradaki madde** | `3.1b` **kararları TENANT KAPSAMLI yap** *(ölçüm bunu istedi)* → `3.2` R1'i kapat |
 | **Demet** | ✅ **`1.12` kapısı 4/4 YEŞİL** (süit **2477**) — risk sınırı olduğu için demete girmedi · demet 13 açık: `1.10`+`1.11` (o kapıya da dahil oldular) |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
@@ -420,6 +420,49 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+## FAZ 3 · KAPSAM
+
+### FAZ 3 · adım 1 — `3.1` **SAHİPLİK TURU** — kararlar yazıldı, **ÖLÇÜM geri aldırdı** *(2026-08-04)*
+
+Kapı: **13 test** (`tests/test_sahiplik_turu.py`), hızlı sinyal **674**.
+Bayrak: `metrik_kaydi` **`off` KALDI** — ölçüm öyle dedi.
+
+> **ÖLÇÜLDÜ — çakışan terim sayısı:** `demo-boyahane` **62** · `gitas` **48** ·
+> `gulteks` **39** · `atiksan` **25**. Yol haritasının adlandırdığı vakaların hepsi
+> doğrulandı (`bakiye` → cari↔mizan · `arıza duruşu` → bakim↔oee · `alim` → mal↔ticaret).
+
+> **NE indi:** `packs/cekirdek/sahiplik_kararlari.yml` — her karar **kalem · sahip ·
+> tarih · gerekçe · kutu** taşıyor. Üç kutu: **(1) tek sahip** (`elektrik`→`enerji_makine`,
+> `satis`→`ticaret`) · **(2) gerçek belirsizlik → chip** (`bakiye`, `borc`, `arıza duruşu`
+> — sahip **YAZILMAZ**) · **(3) grain hatası** (`yogunluk` → 2.4'ün borcu).
+
+> 🔴 **`bakiye` KORUNDU** — ders kitabı örneği: cari bakiyesi ile mizan bakiyesi **farklı
+> sorulardır**; birini seçmek kullanıcının **sormadığı** soruya cevap vermektir.
+> ⚠ Ve belirsiz kararı **kayıtta duruyor**: *"henüz bakılmadı"* ile *"bakıldı, belirsiz
+> olduğuna karar verildi"* aynı şey değildir — kaybolursa terim her turda yeniden tartışılır.
+
+> 🔴 **BİRİNCİ ÖLÇÜMÜM HİÇBİR ŞEY ÖLÇMEDİ.** `DIMA_METRIK_KAYDI=on` ile korpus koştum,
+> *"etki sıfır"* aldım — oysa `metrik_kaydi` bir **YAML bayrağı**, env değil: bayrak hiç
+> açılmamıştı. Zinciri doğrudan yoklayınca göründü (`kayıt şemada: False`).
+> *Açılmadığını bilmediğin bir bayrağın altında ölçüm yapmak, ölçüm değil varsayımdır.*
+
+> 🔴 **İKİNCİ ÖLÇÜM (bayrak GERÇEKTEN açık) GERİLEME GÖSTERDİ:**
+> TOPLAM doğru-cube **%93,2 → %92,6** ❌ · `gitas` erişim **%72 → %69** ❌.
+> Yol haritasının kuralı: *"erişim düşerse **GERİ ALINIR**."* **Geri alındı** ve taban
+> doğrulandı (%93,1 ✅). Bu bir başarısızlık değil, **kuralın çalışması**.
+
+> 🔴 **TEŞHİS:** kararlar `boyahane`/`atiksan`'ın **ölçülen** kusurları için yazıldı ama
+> **pack düzeyinde her şirkete** uygulanıyor. `gitas` (netsis) için `satis → ticaret`
+> kararı yanlış olabilir — orada `mal` da meşru bir sahip. *Bir tenant'ın alan bilgisini
+> bütün tenant'lara dayatmak, alan bilgisi olmaktan çıkıp **varsayım** olur.*
+> → **Çözüm:** kararlar **tenant kapsamlı** olmalı — `2.2b`'nin `MetrikSahipligi` tablosu
+> bunu **zaten destekliyor**; pack düzeyi yalnız **taslak** önerir. Ayrı bir tur.
+
+> ✅ **Mekanizma DOĞRU çalışıyor** (bağımsız doğrulandı): `_match_cube("elektrik")` →
+> `enerji_makine` (önce belirsizdi). Kusur mekanizmada değil, **kapsamda**.
+
+---
 
 ### FAZ 2 · adım 13 — `2.4` **aynı-grain çifti beyan edildi** — 🔴 **FAZ 2 BİTTİ** *(2026-08-04)*
 

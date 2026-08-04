@@ -56,6 +56,23 @@ features:
   # VAR ama gerekçesiz kapatılmaz.
   sosyal_sinif: prod
   capa_zinciri: "off"
+  # 🔴 FAZ 3.1 — SAHİPLİK TURU indi ama BAYRAK `off` KALDI: ÖLÇÜM GERİ ALDIRDI.
+  #
+  # Karar kaydı (`packs/cekirdek/sahiplik_kararlari.yml`) hakemi besliyor ve mekanizma
+  # DOĞRU çalışıyor: `_match_cube("elektrik")` → `enerji_makine` (önce belirsizdi).
+  # AMA korpus `beta` ile ÖLÇÜLDÜ ve GERİLEDİ:
+  #     TOPLAM doğru-cube  %93,2 → %92,6   ❌
+  #     gitas erişim       %72   → %69     ❌
+  #
+  # Yol haritasının kendi kuralı: *"her karar için nl_corpus öncesi/sonrası; ERİŞİM
+  # DÜŞERSE GERİ ALINIR."* Geri alındı.
+  #
+  # 🔴 TEŞHİS: kararlar `boyahane`/`atiksan`'ın ÖLÇÜLEN kusurları için yazıldı ama pack
+  # düzeyinde **her şirkete** uygulanıyor. `gitas` (netsis) için `satis → ticaret` kararı
+  # yanlış olabilir — orada `mal` da meşru bir sahip. *Bir tenant'ın alan bilgisini bütün
+  # tenant'lara dayatmak, alan bilgisi olmaktan çıkıp varsayım olur.*
+  # → ÇÖZÜM: kararlar TENANT KAPSAMLI olmalı (FAZ 2.2b'nin `MetrikSahipligi` tablosu bunu
+  #   zaten destekliyor); pack düzeyi yalnız TASLAK önerir. Ayrı bir tur.
   metrik_kaydi: "off"
   tazelik: "off"          # FAZ 1.7: "bu sayı ne kadar eski?" — dört kademe.
                           # 🔴 `hata` VE `bilinmiyor` kademelerinde SAYI GÖSTERİLMEZ.
