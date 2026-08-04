@@ -26,7 +26,7 @@ da olur.*
 
 | Seviye | Ne koşar | Ne zaman | Süre |
 |---|---|---|---|
-| `--hizli` | değişen modüle **bağımlı** testler + çekirdek duman | geliştirme sırasında | ~15-60 sn |
+| `--hizli` | değişen modüle **bağımlı** testler + çekirdek duman | geliştirme sırasında | **~30 sn – 2 dk** |
 | `--tam` | **YALNIZ korpus** — *"kaç soru cevaplanabiliyor"* | **demet sonunda, bir kez** | **1 dk 50 sn** |
 | `--hepsi` | korpus + süit + `eval` + senaryo | **gecelik CI** (geliştirme saatine mal olmaz) | **4 dk 06 sn** |
 
@@ -65,6 +65,37 @@ derleme kilidi **60 sn zaman aşımına** uğradı → süit **934 hata**. Bu y�
 süit ‖ eval ‖ senaryo. Aynı ölçüm iki dalgada: **0 hata, 2528 test geçti.**
 
 Geri alma tek env: `DIMA_KORPUS_PARALEL=1` → eski seri davranış.
+
+## ⚡ `--hizli` PARALEL KOŞAR (2026-08-05) — kapsamdan tek test gitmeden
+
+Ölçüldü, `app/wren_service.py` değişimi (635 test seçiliyor):
+
+| | süre |
+|---|---|
+| seri (eski) | **2 dk 51 sn** |
+| `-n 8` | 1 dk 16 sn |
+| **`-n 12`** | **1 dk 09 sn** |
+
+Seçim büyüklüğüne göre bugünkü tablo:
+
+| değişen dosya | seçilen | test | süre |
+|---|---|---|---|
+| `app/coldstart.py` | 5/192 | 245 | **33 sn** |
+| `app/wren_service.py` | ~30/192 | 635 | **1 dk 09 sn** |
+| `cube_router.py` + `routers/ask.py` | 51/192 | 991 | **2 dk 05 sn** |
+
+🔴 **Aynı dosya kümesi, aynı testler — yalnız aynı anda.** Seri ve paralel koşum **635
+test** ile birebir aynı sonucu verdi; hız boşta duran çekirdeklerden alındı.
+
+⚠ **İşçi sayısı seçim büyüklüğüne bağlı** (`len(secili) // 2`, tavan 12): xdist işçi
+başına oturum-kapsamlı fikstürleri (compose + Wren + login) **yeniden kurar**. Üç
+dosyalık bir seçimde on iki işçi açmak, kurulum maliyetini testin kendisinden pahalı
+yapardı — *paralelliğin bedeli, işin kendisinden büyükse paralellik bir yavaşlatmadır.*
+
+⚠ **Kalan darboğaz yazılı:** en ağır seçimde (51 dosya) süre 2 dk 05 sn ve bunun büyük
+kısmı **işçi başına compose**'dur (12 × ~5 sn). Onu kırmak, işçilerin derlenmiş ağacı
+**paylaşması** demektir ve test izolasyonuna dokunur (`lab/izolasyon.py`'nin çözdüğü
+compose yarışı geri gelebilir) — **ayrı bir iş**, ölçülmeden yapılmaz.
 
 ## `--hizli` bir KAPI DEĞİLDİR — bir SİNYALDİR
 
@@ -204,7 +235,21 @@ def hizli(degisen: list[str]) -> int:
           f"  Kapı: python lab/kapi.py --tam   (faz sonunda, commit'ten önce)")
     if not secili:
         return 0
-    return _kos([sys.executable, "-m", "pytest", "-q", "-p", "no:warnings",
+    # ⚡ PARALEL (2026-08-04) — ölçüldü: `app/wren_service.py` değişiminde 635 test
+    # **2 dk 51 sn** sürüyordu ve bu, demet kapısının kendisinden (korpus, 1 dk 47 sn)
+    # PAHALIYDI. Süit adımı `-n 8`'i zaten kullanıyordu; hızlı sinyal SERİ kalmıştı.
+    #
+    # 🔴 KAPSAMDAN TEK TEST GİTMEDİ: aynı dosya kümesi, aynı testler — yalnız aynı anda.
+    # Hız, boşta duran çekirdeklerden alındı (`lab/izolasyon.py` her worker'a kendi
+    # derlenmiş ağacını verdiği için compose yarışı yapısal olarak yok).
+    #
+    # ⚠ İŞÇİ SAYISI DOSYA SAYISINA GÖRE: xdist işçi başına oturum-kapsamlı fikstürleri
+    # (compose + Wren + login) YENİDEN kurar. Üç dosyalık bir seçimde sekiz işçi açmak,
+    # kurulum maliyetini testin kendisinden pahalı yapardı — *paralelliğin bedeli, işin
+    # kendisinden büyükse paralellik bir yavaşlatmadır.*
+    isci = min(12, max(1, len(secili) // 2))
+    paralel = ["-n", str(isci), "--dist", "loadfile"] if isci > 1 else []
+    return _kos([sys.executable, "-m", "pytest", "-q", "-p", "no:warnings", *paralel,
                  *[f"tests/{s}" for s in secili]], "pytest (seçili)")
 
 
