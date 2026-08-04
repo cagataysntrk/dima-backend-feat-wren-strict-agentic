@@ -25,6 +25,8 @@ features:
   mcp_yuzeyi: "off"
   # FAZ 5.1 — 6. konuşma türü ("bunu takip et"). `off`: tür tanınmaz, davranış birebir.
   tur_takip: "off"
+  # FAZ 5.2 — 7. konuşma türü ("paylaş"). `off`: kalıplar eşleşmez, TUR_ANLAT birebir.
+  tur_paylas: "off"
   # ⚠ AŞAĞIDAKİ ÜÇÜ FAZ 4.6'DA EKLENDİ — bir denetim ölçtü: `FLAG_REGISTRY`'de kayıtlı
   # ama bu dosyada YOKLARDI, yani varsayılanları hiçbir yerde YAZILI DEĞİLDİ. Yokluk ile
   # `"off"` çözümlemede aynı sonucu verir (`resolve_for` `off`u kümeden düşürür), bu

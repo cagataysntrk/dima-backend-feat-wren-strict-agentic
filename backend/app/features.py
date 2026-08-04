@@ -60,6 +60,22 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "bugünkü (FAZ 5.1).",
         "category": "konusma",
     },
+    "tur_paylas": {
+        "label": "7. konuşma türü: “paylaş / müdüre 3 cümle”",
+        "description": "🔴 En öğretici ölçüm: *«müdüre 3 cümle yaz»* niyet olarak "
+                       "`TUR_ANLAT`'a ÇOK YAKIN ama sözlükte «yaz»/«3 cümle» olmadığı "
+                       "için yakalanmıyordu — çalışan, testli bir yetenek BİR KELİME "
+                       "yüzünden kullanıcıya kapalıydı. `share|public` uç sayısı da "
+                       "sıfırdı. Bu bayrak yeni bir anlatı motoru AÇMAZ; erişim ve "
+                       "taşınabilirlik ekler. Link ÜÇ DEĞİŞMEZ taşır: imzalı (HMAC, "
+                       "control-plane secret'ı — ikinci bir sır üretilmez) · süreli "
+                       "(varsayılan 7 gün, azami 30; SONSUZ SEÇENEĞİ YOK) · maskeli "
+                       "(`pii.py` çağrılır, ikinci maskeleyici yazılmaz). `cube_query` "
+                       "TAŞINIR AMA ÇALIŞTIRILMAZ ve `sql` hiç taşınmaz: bir paylaşım "
+                       "linki bir OTURUM DEĞİLDİR. Kapalıyken kalıplar eşleşmez, "
+                       "`TUR_ANLAT`'ın bugünkü erişimi birebir korunur (FAZ 5.2).",
+        "category": "konusma",
+    },
     "mcp_yuzeyi": {
         "label": "MCP yüzeyi (Model Context Protocol)",
         "description": "Kararlı spec 2025-11-25, Linux Foundation / Agentic AI Foundation "

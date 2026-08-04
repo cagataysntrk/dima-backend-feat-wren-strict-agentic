@@ -14,6 +14,7 @@ import {
   onaylaEylem,
   listDashboards,
   verifyReport,
+  createShareLink,
 } from "@/lib/api-client";
 import { ContractDetailPanel } from "@/components/ContractDetailPanel";
 import { ContributionLayer } from "@/components/ContributionLayer";
@@ -146,6 +147,10 @@ export function ReportCard({
   const izinliMi = (izin: string) =>
     izin === "schedule:create" ? canSchedule : izin === "query:run" ? canQuery : false;
   const [eylemBekliyor, setEylemBekliyor] = useState(false);
+  // FAZ 5.2 — paylaşılabilir link. `null` = henüz istenmedi; string = link ya da hata.
+  const [paylasimLink, setPaylasimLink] = useState<string | null>(null);
+  const [paylasimHata, setPaylasimHata] = useState<string | null>(null);
+  const paylasimAcik = useFeature("tur_paylas");
   const [eylemSonuc, setEylemSonuc] = useState<string | null>(null);
   const onaylaEylemi = async () => {
     const oneri = item.eylem_onerisi;
@@ -646,6 +651,52 @@ export function ReportCard({
               <p className="mt-2 font-mono text-[11px] text-neutral-400">
                 Bu işlem için yetkiniz yok — bir yöneticiden isteyebilirsiniz.
               </p>
+            )}
+          </div>
+        )}
+        {/* FAZ 5.2 — PAYLAŞILABİLİR LİNK. Yeni panel DEĞİL: kartın kendi şeridinde bir
+            satır (K5 tavanı 13/13). Dört değişmez sunucuda uygulanır ve kullanıcıya
+            **söylenir**: link süreli ve maskeli, ve bir OTURUM DEĞİLDİR — çalıştırılabilir
+            bir sorgu taşımaz. *Kullanıcı neyi paylaştığını bilmeden paylaşamaz.* */}
+        {paylasimAcik && item.result && (
+          <div className="mt-3 border-t border-hairline pt-2">
+            <button
+              type="button"
+              onClick={async () => {
+                setPaylasimHata(null);
+                try {
+                  const r = await createShareLink(item);
+                  // 🔴 Link **frontend** yoluna gider, API yoluna değil: `r.share_url`
+                  // (`/share/{token}`) bir API ucudur ve açan kişi ham JSON görürdü.
+                  // Yetim-uç kapısı bunu commit'ten ÖNCE yakaladı.
+                  const tok = r.share_url.split("/").pop() ?? "";
+                  setPaylasimLink(`${window.location.origin}/paylasim/${tok}`);
+                } catch {
+                  setPaylasimHata("Paylaşım linki oluşturulamadı.");
+                }
+              }}
+              className="font-mono text-[11px] text-neutral-400 transition-colors hover:text-accent"
+            >
+              ⇗ paylaşılabilir link
+            </button>
+            {paylasimHata && (
+              <p className="mt-1 font-mono text-[11px] text-red-500">{paylasimHata}</p>
+            )}
+            {paylasimLink && (
+              <div className="mt-1.5 space-y-1">
+                <input
+                  readOnly
+                  value={paylasimLink}
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="w-full border border-hairline bg-transparent px-2 py-1 font-mono text-[11px] text-foreground"
+                />
+                <p className="font-mono text-[10px] leading-snug text-neutral-400">
+                  Link <span className="text-foreground">7 gün</span> geçerli, içerik{" "}
+                  <span className="text-foreground">maskelenmiş</span> ve yalnız{" "}
+                  <span className="text-foreground">aynı şirketten</span> giriş yapmış
+                  biri açabilir. Sorgu taşımaz — bir rapor görüntüsüdür, bir oturum değil.
+                </p>
+              </div>
             )}
           </div>
         )}

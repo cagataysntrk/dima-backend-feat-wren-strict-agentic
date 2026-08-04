@@ -68,6 +68,7 @@ TUR_NE_YAPMALI = "ne_yapmali"  # "ne yapmalıyız?"  → reçete (G3'ün tohumu)
 TUR_ISARET = "isaret"          # "şu düşüş ne?"    → grafiğe çapa (G2)
 TUR_ANLAT = "anlat"            # "bunu analiz et"  → ELDEKİ cevabı AÇ (Faz D2)
 TUR_TAKIP = "takip"            # "bunu takip et"   → ZAMANLA ÖNERİSİ (FAZ 5.1)
+TUR_PAYLAS = "paylas"          # "müdüre 3 cümle"  → PAYLAŞILABİLİR LİNK (FAZ 5.2)
 
 # Kalıplar `_norm` sonrası (ASCII, küçük harf) yazılır. Sonu "!" olanlar TAM KELİME
 # eşleşir — Faz D3'ün `_syn_hit` disiplini; kalanlar geçerli ek zinciri kabul eder.
@@ -124,6 +125,23 @@ _TAKIP = ("takip et", "takip ede", "takibe al", "takip etmek",
           "haberim olsun", "haber ver", "bildir", "bilgilendir",
           "duzenli gonder", "surekli gonder", "her seferinde gonder",
           "gozunu ayirma", "takipte kal", "gundemde tut")
+
+#: FAZ 5.2 — **7. TÜR: *"paylaş / müdüre 3 cümle"***.
+#:
+#: 🔴 **En öğretici bulgu:** *"müdüre 3 cümle yaz"* niyet olarak `TUR_ANLAT`'a **çok
+#: yakın** (aşağıdaki `_ANLAT` sözlüğü), ama sözlükte *"yaz"* / *"3 cümle"* olmadığı için
+#: **yakalanmıyordu** → *çalışan, testli bir yetenek bir kelime yüzünden kullanıcıya
+#: kapalı*. Bu tür yeni bir motor açmaz; `TUR_ANLAT`'ın zaten ürettiği şeye **erişim** ve
+#: **taşınabilirlik** ekler.
+#:
+#: ⚠ Kalıplar **kullanıcının kelimeleri** (5.3): *"müdüre yaz"*, *"maille"*, *"link ver"*,
+#: *"iki cümleyle özetle"*. Bir kelime eklemek ADR-0008'in yasakladığı yamadır; bir
+#: **ifade ailesini** beyan etmek değildir.
+_PAYLAS = ("paylas", "paylasabilir", "link ver", "link olustur", "linkini",
+           "mudure yaz", "mudure gonder", "yoneticiye yaz", "patrona yaz",
+           "maille", "mail at", "mail olarak",
+           "uc cumle", "3 cumle", "iki cumle", "2 cumle", "bir paragraf",
+           "kisaca yaz", "kisa bir ozet yaz", "sunuma koy")
 
 _ANLAT = ("analiz et", "analiz eder", "analizini", "yorumla", "yorumlar misin",
           "yorumun", "yorumlasana", "degerlendir", "aciklar misin", "acikla",
@@ -193,7 +211,8 @@ def sinifla(soru: str, *, baglam_var: bool) -> Niyet:
         return Niyet(sinif=SINIF_YAPISAL, kural="yapisal-sinyal", kanit=yapisal)
 
     zamir = _hit(q, _ISARET_ZAMIRI)
-    for tur, kaliplar in ((TUR_TAKIP, _TAKIP),
+    for tur, kaliplar in ((TUR_PAYLAS, _PAYLAS),
+                          (TUR_TAKIP, _TAKIP),
                           (TUR_NE_YAPMALI, _NE_YAPMALI),
                           (TUR_NORMAL, _NORMAL),
                           (TUR_ANLAT, _ANLAT),
@@ -216,6 +235,10 @@ def sinifla(soru: str, *, baglam_var: bool) -> Niyet:
         # ⚠ `TUR_TAKIP` de AYNI disipline tabi ve bu ZORUNLU: *"fire takibi nasıl
         # yapılır"* eldeki raporu zamanlamak DEĞİL, yeni bir konudur. Zamir/kısalık şartı
         # olmadan bu tür **konu değişimini çalardı** (`konu_degisimi` senaryo sınıfı).
+        # ⚠ `TUR_PAYLAS` **zamir şartından MUAF**: *"müdüre 3 cümle yaz"* eldeki cevaba
+        # dair olduğunu **hedefiyle** söyler (*müdüre*, *3 cümle*) ve bir işaret zamiri
+        # taşımak zorunda değildir. Şart konsaydı en doğal ifade yine kapalı kalırdı —
+        # yani düzeltilen kusurun aynısı, bir kat aşağıda tekrarlanırdı.
         if (tur in (TUR_NEDEN, TUR_ISARET, TUR_ANLAT, TUR_TAKIP)
                 and not zamir and not _kisa_soru(q)):
             continue

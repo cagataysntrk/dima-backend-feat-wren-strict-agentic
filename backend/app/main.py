@@ -186,6 +186,14 @@ def create_app() -> FastAPI:
     # FAZ E — kalıcı sunum tercihi: OKUMA/SİLME ucu. Yazma burada YOK;
     # tercih yazmak /ask/eylem onay kademesinden geçer (Faz H değişmezi).
     app.include_router(tercihler_router.router, dependencies=_protected)
+    # FAZ 5.2 — paylaşım (KURUM İÇİ). ⚠ İlk tasarımım `GET /share/{token}`'ı KİMLİKSİZ
+    # yapıyordu; iki yerden yanlıştı: (1) *"Auth HER ZAMAN zorunlu"* değişmezini delerdi,
+    # (2) A tenant'ının token'ını B tenant'ından biri açabilirdi — imza token'ın
+    # GERÇEKLİĞİNİ kanıtlar, okuyanın HAKKINI değil. Uç artık korumalı ve token'daki
+    # tenant okuyanınkiyle eşleşmek zorunda.
+    from app.routers import paylasim as _paylasim
+
+    app.include_router(_paylasim.router, dependencies=_protected)
     # FAZ 4.5 — MCP yüzeyi. 🔴 Ayrı bir YOL DEĞİL, bir ÇEVİRİ: çağrı
     # `Planlayici.calistir()`'in aynı dört kapısından geçer ve aynı makbuzu üretir.
     # Bayrak kapalıyken uçlar 404 döner; HTTP yolunda tek bayt değişmez (KURAL B).

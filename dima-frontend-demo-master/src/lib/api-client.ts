@@ -970,6 +970,24 @@ export async function importSemantic(id: string, belge: unknown): Promise<OssieI
  * ⚠ İhraç bir **okuma** işlemidir — hiçbir şey yazılmaz. Bayrak (`ossie_ihrac`) kapalıysa
  * uç 404 döner ve çağıran taraf bunu bir hata değil bir **yokluk** olarak göstermeli.
  */
+/** FAZ 5.2 — bir cevabı **paylaşılabilir** hâle getirir (kurum içi).
+ *
+ * 🔴 Dört değişmez sunucuda: **imzalı** (HMAC) · **süreli** (7 gün, azami 30; sonsuz
+ * seçeneği YOK) · **maskeli** (`pii.py` tek çıkış noktası) · **tenant-eşleşmeli**.
+ *
+ * ⚠ Yük **çalıştırılabilir bir sorgu taşımaz** (`cube_query`/`sql` yok): paylaşılan şey
+ * bir **rapor görüntüsüdür**. *Bir paylaşım linki bir oturum değildir.*
+ *
+ * ⚠ Bayrak (`tur_paylas`) kapalıysa uç **404** döner — bu bir hata değil bir **yokluk**.
+ */
+export async function createShareLink(
+  cevap: unknown, ttl?: number,
+): Promise<{ share_url: string; ttl: number }> {
+  const { data } = await apiClient.post<{ share_url: string; ttl: number }>(
+    "/share", { cevap, ...(ttl ? { ttl } : {}) });
+  return data;
+}
+
 export async function exportSemantic(id: string): Promise<Record<string, unknown>> {
   const { data } = await apiClient.get<Record<string, unknown>>(
     `/connections/${id}/export-semantic`);
