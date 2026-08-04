@@ -8,7 +8,7 @@
 >
 > Bu dört dosya operasyonun **tam durumunu** taşır. Sohbet geçmişine ihtiyaç YOKTUR.
 
-**Son güncelleme:** 2026-08-05 · HEAD → **FAZ 5 · 5.8 bitti** @`7d0048f` @`7d0048f`
+**Son güncelleme:** 2026-08-05 · HEAD → **FAZ 5 · 5.17 bitti** @`ec90530` @`7d0048f`
 
 ⚠ **Bu başlık BİR KEZ BAYATLADI ve bir denetim onu yakaladı:** *"HEAD → FAZ 0 · adım 1"*
 yazıyordu, gerçek HEAD **FAZ 4.4**'teydi. Bu dosya *"bağlam sıfırlanırsa buradan başla"*
@@ -22,10 +22,11 @@ devam ettirir. 🔴 **Kural: her faz commit'inden sonra bu blok güncellenir.**
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 5 · KONUŞMA ve DENEYİM** *(FAZ 0·1·2·3·4 ✅ bitti)* |
-| **Biten** | 🎉 **FAZ 4 KAPANDI** (`4.1`…`4.8`) · **FAZ 5**: `5.0` `5.1` `5.2` `5.3` `5.4` `5.5` `5.7` `5.8` |
+| **Biten** | 🎉 **FAZ 4 KAPANDI** (`4.1`…`4.8`) · **FAZ 5**: `5.0` `5.1` `5.2` `5.3` `5.4` `5.5` `5.7` `5.8` `5.9a` `5.11` `5.17` |
 | ⏸ **5.6 BLOKE** | peer kıyası **AJ2**'ye bağlı (`compare` enum→ALAN). AJ2 inmeden 5.6 üçüncü bir enum değeri çakar ve dördüncüsü aynı konuşmayı yeniden doğurur |
 | **§C/16 ÖLÇÜLDÜ** | **%76,1** doğru · netleştirme **%16,8 ayrı satırda** · n=**155** · `demo-boyahane`. Üç şirket `⊘` (mssql fixture, altın cevap üretilemedi) |
-| **Sıradaki madde** | **FAZ 5.9** kanal genişlemesi + bildirim kapısı → `5.10`…`5.17` |
+| **Sıradaki madde** | `5.9b` digest + `NotificationPreference` router · `5.10` KPI pin · `5.12` içgörü paketi · `5.13`/`5.13b` · `5.14` · `5.15` · `5.16` |
+| **Korpus** | **%93,1** — dokuz FAZ 5 maddesi boyunca **sabit** (taban %93,2) |
 | **Sonraki faz** | FAZ 6 (agentic — onaylı yazma, 7 madde) → FAZ 7 (arayüz, 11) → FAZ 8 (3) |
 | 🔴 **Açık borç 1** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ |
 | 🔴 **Açık borç 2** | **FAZ 4.3 hedefi TUTMADI** — `deterministic_refine`'ın ölçü-ekleme kapısı dar (−%18,2 vs hedef −%10). Bilerek düzeltilmedi (harness davranış değiştirmez) |
