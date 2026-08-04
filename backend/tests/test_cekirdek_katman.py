@@ -572,3 +572,65 @@ def test_ACMA_KARARI_OLCULDU_ve_OFF_KALDI():
     assert Settings.model_fields["cekirdek_katman"].default == "off"
     kaynak = pathlib.Path(__file__).read_text(encoding="utf-8")
     assert "kazanç ölçülemedi" in kaynak, "karar GEREKÇESİZ — bir sonraki tur yeniden ölçer"
+
+
+# ── 10 · BORÇ #11 — GRAIN-FARKINDA ÇAPRAZ-CUBE GEÇİŞİ ──────────────────────
+
+def _sema():
+    """Ad göçü sonrası gerçekçi mini şema: `ticaret`@fatura ↔ `mal`@stok_hareketi."""
+    return {"cubes": [
+        {"name": "ticaret", "display": "satış", "measures": ["satis_tutari"],
+         "dimensions": ["cari_adi"], "synonyms": ["satış"],
+         "dimension_synonyms": {"cari_adi": ["musteri", "müşteri", "cari"]},
+         "measure_synonyms": {"satis_tutari": ["satış", "ciro"]},
+         "measure_synonyms_display": {"satis_tutari": "satış tutarı"},
+         "cekirdek_metrik": {}},
+        {"name": "mal", "display": "stok", "measures": ["satis_tutari_hareket"],
+         "dimensions": ["stok_adi"], "synonyms": ["stok", "ürün"],
+         "dimension_synonyms": {"stok_adi": ["urun", "ürün", "stok adi"]},
+         "measure_synonyms": {"satis_tutari_hareket": ["satış tutarı"]},
+         "measure_synonyms_display": {"satis_tutari_hareket": "satış tutarı (hareket)"},
+         "cekirdek_metrik": {"satis_tutari_hareket": "satis_tutari"}},
+        {"name": "karlilik", "display": "kârlılık", "measures": ["satis_tutari_turev"],
+         "dimensions": ["stok_adi"], "synonyms": ["kâr"],
+         "dimension_synonyms": {"stok_adi": ["urun", "ürün", "stok adi"]},
+         "measure_synonyms": {"satis_tutari_turev": ["satış"]},
+         "measure_synonyms_display": {"satis_tutari_turev": "satış (kârlılık girdisi)"},
+         "cekirdek_metrik": {"satis_tutari_turev": "satis_tutari"},
+         "kiyaslanamaz": ["satis_tutari_turev"]},
+    ]}
+
+
+def test_KIYASLANAMAZ_OLCUYE_GECILMIYOR():
+    """🔴 `satis_tutari_turev`'in grain'i ERP'ye göre **değişir**. Oraya geçmek,
+    kullanıcıya *"aynı şeyin kırılımı"* diye **başka bir şeyi** göstermek olurdu —
+    ve `karlilik` de `stok_adi` taşıdığı için geçiş oraya **düşebilirdi**."""
+    from app import cube_router as cr
+
+    dsw = cr.cross_cube_dim_switch({"cube": "ticaret", "measures": ["satis_tutari"]},
+                                   "urun bazli", _sema())
+    assert dsw is not None and dsw["cube"] == "mal", \
+        f"kıyaslanamaz küpe geçilmiş ya da geçiş bulunamamış: {dsw}"
+
+
+def test_BELIRSIZ_VARYANT_SESSIZCE_COZULMUYOR():
+    """🔴 Aynı kavramın **iki** varyantını taşıyan bir hedefte geçiş **reddedilir**.
+    Belirsizliği sessizce çözmek — birini seçip ötekini yok saymak — tam olarak bu
+    maddenin engellemek için var olduğu şeydir. *Gerçek belirsizlik chip'e gider,
+    tahmine değil.*"""
+    from app import cube_router as cr
+
+    sema = _sema()
+    sema["cubes"][1]["measures"].append("satis_tutari_kalem")
+    sema["cubes"][1]["cekirdek_metrik"]["satis_tutari_kalem"] = "satis_tutari"
+    assert cr.cross_cube_dim_switch({"cube": "ticaret", "measures": ["satis_tutari"]},
+                                    "urun bazli", sema) is None
+
+
+def test_UYARI_CEVABIN_NOTUNA_GIRIYOR():
+    """🔴 **K2 — yetim uç yok.** Bir uyarı, kullanıcıya ULAŞMIYORSA yoktur.
+    `ask.py` konu-değişimi notunu `grain_uyarisi` ile birleştiriyor."""
+    kaynak = (KOK / "app" / "routers" / "ask.py").read_text(encoding="utf-8")
+    i = kaynak.index('note=f"Konu değişti:')
+    assert "grain_uyarisi" in kaynak[i:i + 300], \
+        "tanelik uyarısı cevabın notuna GİRMİYOR — kullanıcı göremez"

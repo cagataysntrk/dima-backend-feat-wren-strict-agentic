@@ -15,7 +15,7 @@ import time as _time
 from app import context as app_context
 from app import prescribe
 from app import planner as _planner
-from app import ask_jobs, followup, katman_b, typo_onerisi
+from app import ask_jobs, cekirdek, followup, katman_b, typo_onerisi
 from app import cube_router, eylem, pii, tercih, viz, yoy
 from app.answer import (
     _attach_next_steps,
@@ -3105,7 +3105,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             new_label = (new_meta or {}).get("display") or switched.get("cube") or ""
             resp = _answer_from_cube_query(
                 switched, source="cube",
-                note=f"Konu değişti: {prev_label} → {new_label}",
+                note=f"Konu değişti: {prev_label} → {new_label}"
+                     f"{cekirdek.grain_uyarisi(prev_cq, switched, schema)}",
                 trace=migration_trace + ["Takip: çapraz-cube konu geçişi (LLM'siz)"])
             if resp:
                 return resp

@@ -21,6 +21,7 @@ import logging
 import re
 from datetime import date, timedelta
 
+from app import cekirdek
 from app.llm import _norm
 
 #: FAZ 9.3 — bu modül bugüne kadar hiç log ATMIYORDU; `route()` saf bir fonksiyon olduğu
@@ -705,10 +706,14 @@ def cross_cube_dim_switch(prev: dict, q: str, schema: dict) -> dict | None:
         if cm.get("name") == prev_cube:
             continue
         dims = _match_dims(q, cm)
-        if not dims or any(m not in (cm.get("measures") or []) for m in prev_measures):
-            continue  # bu cube ya boyutu ya da mevcut ölçüleri taşımıyor
+        if not dims:
+            continue
+        esleme = cekirdek.olcu_eslemesi(prev_measures, prev_meta, cm)
+        if esleme is None:
+            continue  # bu cube mevcut ölçüleri (varyantlarıyla bile) taşımıyor
         cq = copy.deepcopy(prev)
         cq["cube"] = cm["name"]
+        cq["measures"] = [esleme[m] for m in prev_measures]
         cq["dimensions"] = list(dict.fromkeys((cq.get("dimensions") or []) + dims))
         return cq
     return None

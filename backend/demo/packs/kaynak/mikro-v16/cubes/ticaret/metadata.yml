@@ -17,6 +17,7 @@ synonyms: [satış, satis, ciro, gelir, alım, alim, alış, alis, sevk, sevkiya
 # amacı değildir.
 measures:
   - name: satis_tutari_hareket
+    cekirdek_metrik: satis_tutari
     expression: "SUM(CASE WHEN sth_tip = 1 THEN sth_tutar ELSE 0 END)"
     type: DOUBLE
     unit: "₺"

@@ -63,6 +63,10 @@ MUAFIYET_ASK_KOD = [
     ("9a138a9", 11, "0.5 · çapa zinciri — `coz(..., capalar=…)` bağlandı; "
                     "bayrak `capa_zinciri`, varsayılan `off`"),
     ("98a5071", 1, "0.12/0.13/0.6 · gerçek kill-switch + kanıt geçmişi"),
+    ("faz-2.2b/borc11", 1, "grain-farkında çapraz-cube geçişi — kullanıcıya gösterilen "
+                          "notun içine tanelik uyarısı giriyor (`grain_uyarisi`). Uyarıyı "
+                          "cevaba TAŞIYAN satır `ask()` içinde olmak zorunda: notu üreten "
+                          "yer orası. Karar ve metin `app/cekirdek.py`'de"),
     ("faz-1.3b/2", 3, "Katman B'nin Discovery çağrı yolu — TAŞINABİLİR OLAN HER ŞEY "
                       "`app/katman_b.py`'ye taşındı (zorlama · allowlist okuma · ret notu "
                       "· sarmal sınıf). `ask()`'te kalan üç satır taşınamaz: motoru bir kez "
@@ -72,6 +76,11 @@ MUAFIYET_ASK_KOD = [
                       "dürüst olmayan bir mesajı SATIN ALMAZ"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("faz-2.2b/borc11", 5, "grain-farkında çapraz-cube geçişi — ölçü eşlemesi ADLA değil "
+                           "KAVRAMLA yapılıyor. 🔴 Taşınabilir olan HER ŞEY taşındı: "
+                           "`olcu_eslemesi` + `grain_uyarisi` `app/cekirdek.py`'ye "
+                           "(varyant bilgisi ÇEKİRDEK KATMANIN sorusudur, router'ın "
+                           "değil); burada kalan yalnız çağrı ve döngünün yeni şekli"),
     ("9164806", 13, "0.18 · metrik kaydı = hakem — `_match_cube`'un İLK satırı "
                     "`schema['metrik_kaydi']`'na bakar; kayıt yoksa davranış birebir bugünkü"),
 ]

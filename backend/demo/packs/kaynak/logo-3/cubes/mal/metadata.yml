@@ -26,6 +26,7 @@ measures:
     type: DOUBLE
     synonyms: [alım miktarı, alınan, giriş]
   - name: satis_tutari_kalem
+    cekirdek_metrik: satis_tutari
     expression: "SUM(CASE WHEN IOCODE IN (3, 4) THEN TOTAL ELSE 0 END)"
     type: DOUBLE
     unit: "₺"

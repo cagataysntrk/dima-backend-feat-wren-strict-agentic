@@ -26,6 +26,7 @@ measures:
     type: DOUBLE
     synonyms: [alım miktarı, alınan, toplanan, giriş]
   - name: satis_tutari_hareket
+    cekirdek_metrik: satis_tutari
     expression: "SUM(CASE WHEN STHAR_GCKOD = 'C' THEN STHAR_GCMIK * STHAR_NF ELSE 0 END)"
     type: DOUBLE
     unit: "₺"

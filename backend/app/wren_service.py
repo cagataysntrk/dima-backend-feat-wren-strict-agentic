@@ -523,6 +523,23 @@ class WrenService:
                     m["name"]: str(m["unit"]) for m in c.get("measures", [])
                     if m.get("unit")
                 },
+                # ÇEKİRDEK METRİK BAĞI (FAZ 2.1/2.2b) — `units`/`lower_is_better` ile AYNI
+                # desen: ölçü YAML'ında bir kez bildirilir, buradan okunur. Ad göçünden
+                # sonra (`satis_tutari` → `_kalem`/`_hareket`) çapraz-cube geçişinin
+                # "bu ikisi AYNI kavramın farklı grain'i mi" sorusunu cevaplayan tek yer.
+                # ⚠ İkinci bir sözlük DEĞİL: kaynak hâlâ cube YAML'ı.
+                "cekirdek_metrik": {
+                    m["name"]: str(m["cekirdekMetrik"] or m.get("cekirdek_metrik"))
+                    for m in c.get("measures", [])
+                    if m.get("cekirdekMetrik") or m.get("cekirdek_metrik")
+                },
+                # 🔴 KIYASLANAMAZ ölçüler: grain'i ERP'ye göre DEĞİŞEN türev metrikler
+                # (`satis_tutari_turev`). Çapraz-cube geçişi bunlara ASLA geçmez —
+                # iki şirketin bu sayısını yan yana koymak iki farklı şeyi karşılaştırmaktır.
+                "kiyaslanamaz": [
+                    m["name"] for m in c.get("measures", [])
+                    if m.get("kiyaslanamaz")
+                ],
                 # Additivite (cube-katalog 2026-07 §3, lower_is_better deseni): zaman
                 # kovasında toplanamayan ölçüler. semi = zaman DIŞINDA toplanır ama
                 # zamanda dönem-SONU değeridir (bakiye/stok — düz SUM sessiz-yanlış);

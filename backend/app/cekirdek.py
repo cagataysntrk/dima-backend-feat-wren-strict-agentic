@@ -233,3 +233,68 @@ def grain_denetle(cube_adi: str, meta: dict[str, Any],
                 f"`{cube_adi}.{ad}`: çekirdek `grain: {beklenen}` beyan ediyor, cube "
                 f"`{meta.get('base_object')}` (grain: {cube_grain}) üstünde tanımlı")
     return ihlaller
+
+
+# ── VARYANT ÇÖZÜMLEMESİ — ad göçünün sorgu-zamanı karşılığı ─────────────────
+#
+# 🔴 **Neden BURADA, `cube_router`'da DEĞİL.** *"Bu iki ölçü aynı kavramın farklı
+# grain'i mi"* sorusu **çekirdek katmanın** sorusudur; router'a koymak, sözleşme
+# bilgisini iki eve bölerdi. Router **çağırır**, bilmez.
+
+def olcu_eslemesi(prev_measures: list, prev_meta: dict, cm: dict) -> dict | None:
+    """`{eski ölçü: hedef cube'daki karşılığı}` — ya da `None` (karşılığı yok).
+
+    ## 🔴 Neden ADA bakmak YETMİYOR — ölçülen kusur (FAZ 2.1 ad göçü)
+
+    Bu fonksiyon eskiden `m not in cm["measures"]` diyordu, yani **ada** bakıyordu. Ad
+    göçünden **önce** o ad üç ayrı grain taşıyordu (`ticaret.satis_tutari`@fatura ↔
+    `mal.satis_tutari`@stok_hareketi ↔ `karlilik.satis_tutari`@ERP'ye-göre) ve geçiş
+    **karşılaştırılamaz iki sayıyı** sessizce aynı raporun içine koyuyordu — üstelik
+    `source="cube"` rozetiyle. Ad göçü onu kırdı; bu eşleme onu **doğru** biçimde geri
+    getiriyor: eşleşme **kavram** düzeyinde (`cekirdek_metrik`), ve grain değişiyorsa
+    çağıran bunu **söylemek zorunda** (`grain_uyarisi`).
+
+    🔴 **`kiyaslanamaz` ölçülere ASLA geçilmez.** `satis_tutari_turev`'in grain'i ERP'ye
+    göre değişir; oraya geçmek, kullanıcıya *"aynı şeyin kırılımı"* diye **başka bir şeyi**
+    göstermek olurdu.
+    """
+    hedef = set(cm.get("measures") or [])
+    if not hedef:
+        return None
+    yasak = set(cm.get("kiyaslanamaz") or [])
+    kaynak_bag = (prev_meta or {}).get("cekirdek_metrik") or {}
+    hedef_bag = cm.get("cekirdek_metrik") or {}
+    out: dict[str, str] = {}
+    for m in prev_measures:
+        if m in hedef and m not in yasak:
+            out[m] = m                                   # birebir ad — en güçlü eşleşme
+            continue
+        kavram = kaynak_bag.get(m) or m                   # bağ yoksa ADIN KENDİSİ kavramdır
+        aday = [h for h, k in hedef_bag.items()
+                if k == kavram and h in hedef and h not in yasak]
+        if len(aday) != 1:
+            return None      # 0 → karşılığı yok · >1 → BELİRSİZ; belirsizliği sessizce
+        out[m] = aday[0]     # çözmek, bu maddenin engellemek için var olduğu şeydir
+    return out
+
+
+def grain_uyarisi(prev: dict, yeni: dict, schema: dict) -> str:
+    """Geçişte ölçü **varyantı değiştiyse** kullanıcıya söylenecek ek — yoksa boş dize.
+
+    🔴 *Sessiz bir grain değişimi, sessiz bir yanlıştır.* Kullanıcı *"ürün bazlı satış"*
+    dediğinde cevabı alabilmeli, ama aldığı sayının **başka bir taneliğe** ait olduğunu da
+    görmeli: fatura başına satış ile fatura KALEMİ başına satış aynı şey değildir.
+    """
+    eski = list(prev.get("measures") or [])
+    yeni_m = list(yeni.get("measures") or [])
+    degisen = [(a, b) for a, b in zip(eski, yeni_m) if a != b]
+    if not degisen:
+        return ""
+    # ⚠ `cube_router._cube_meta` ÇAĞRILMIYOR ve bu bilinçli: `cube_router` bu modülü
+    # import ediyor (varyant bilgisi çekirdeğin işi) — tersi **döngüsel import** olurdu.
+    # Aranan şey tek satırlık bir sözlük taraması; ikinci bir "meta bulucu" değil.
+    yeni_meta = next((c for c in (schema.get("cubes") or [])
+                      if c.get("name") == yeni.get("cube")), {}) or {}
+    etiket = (yeni_meta.get("measure_synonyms_display") or {})
+    parca = " · ".join(f"{a} → {etiket.get(b, b)}" for a, b in degisen)
+    return f" — ⚠ ölçünün TANELİĞİ değişti ({parca}); iki sayı doğrudan kıyaslanamaz"

@@ -39,6 +39,7 @@ def test_likidite_kpileri_mizan_uzerinde(tmp_path_factory):
     """gitas (netsis): TBLMUHFIS bağlanınca mizan_src üretilir → 4 likidite KPI'sı
     (cari oran/asit-test/nakit oranı/net işletme sermayesi) derlenir. Bileşen SQL'i
     Tekdüzen hesap-aralıklarını (1xx/3xx/15x/10x) mizan_src kanonik kolonlarından toplar."""
+    from app import cekirdek
     from app import cube_router as cr
     from app.llm import _norm
 
@@ -68,6 +69,7 @@ def test_cross_cube_blend_ticaret_karlilik(tmp_path_factory, monkeypatch):
     mevcut cube'da olmayan (karlilik.brut_kar) ölçüyü blend olarak katar; blend_sql
     paylaşılan zaman kovasında FULL OUTER JOIN üretir. Aynı-cube ekleme blend DEĞİL."""
     import app.wren_service as ws
+    from app import cekirdek
     from app import cube_router as cr
     from app.llm import _norm
     from app.wren_service import WrenService
@@ -99,14 +101,20 @@ def test_cross_cube_blend_ticaret_karlilik(tmp_path_factory, monkeypatch):
     # `karlilik`@ERP'ye-göre-değişen. Yani mekanizma, **karşılaştırılamaz iki sayıyı**
     # sessizce aynı raporun içine koyuyordu — hem de `source="cube"` rozetiyle.
     #
-    # Ad göçü onu yapısal olarak imkânsız kıldı ve geçiş artık `None` dönüyor.
-    # ⚠ **Bu bir yetenek kaybıdır ve gizlenmiyor:** *"ürün bazlı satış"* sorusu bu
-    # yoldan cevaplanmıyor. Doğru çözüm, geçişi **grain-farkında** yapmak (çekirdek
-    # sözlüğün varyant bilgisini sorgu zamanında okumak) ve cevabın grain değiştiğini
-    # SÖYLEMEK — kendi maddesi var, borç olarak yazıldı.
-    # *Sessizce yanlış bir sayı vermektense, açıkça cevap verememek yeğdir.*
+    # Ad göçü onu kırdı; **borç #11** onu DOĞRU biçimde geri getirdi: eşleşme artık
+    # ad düzeyinde değil **KAVRAM** düzeyinde (`cekirdek_metrik`) ve grain değişiyorsa
+    # cevap bunu **söylüyor**. *Sessiz bir grain değişimi, sessiz bir yanlıştır.*
     prev2 = {"cube": "ticaret", "measures": ["satis_tutari"]}
-    assert cr.cross_cube_dim_switch(prev2, _norm("ürün bazlı"), schema) is None
+    dsw = cr.cross_cube_dim_switch(prev2, _norm("ürün bazlı"), schema)
+    assert dsw is not None and dsw["cube"] == "mal"
+    assert "stok_adi" in dsw["dimensions"]
+    # 🔴 Ölçü VARYANTA çevrildi — `mal`'da `satis_tutari` YOK, `satis_tutari_hareket` var.
+    assert dsw["measures"] == ["satis_tutari_hareket"]
+    # 🔴 Ve kullanıcı bunu GÖRÜYOR: tanelik değişimi cevabın notuna giriyor.
+    uyari = cekirdek.grain_uyarisi(prev2, dsw, schema)
+    assert "TANELİĞİ değişti" in uyari and "kıyaslanamaz" in uyari
+    # ⚠ Aynı ölçü aynı kalırsa uyarı YOK — gürültü üretmez.
+    assert cekirdek.grain_uyarisi(prev2, {"cube": "mal", "measures": ["satis_tutari"]}, schema) == ""
     # müşteri ticaret'te ZATEN var (cari_adi) → geçiş YOK (normal refine)
     assert cr.cross_cube_dim_switch(prev2, _norm("müşteri bazlı"), schema) is None
 

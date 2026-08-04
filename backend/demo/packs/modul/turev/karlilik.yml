@@ -70,6 +70,8 @@ cube:
     # GİRDİSİDİR — marj/SMM ile aynı satırdan gelir, o yüzden anlamlıdır; ama iki
     # şirketin bu sayısını yan yana koymak, iki farklı şeyi karşılaştırmaktır.
     - name: satis_tutari_turev
+      cekirdek_metrik: satis_tutari
+      kiyaslanamaz: true
       expression: "SUM(sale_amount)"
       type: DOUBLE
       unit: "₺"
