@@ -513,7 +513,119 @@ def recommend(
                     else round(sum(float(v) for v in vals) / len(vals), 4),
                 }
 
+    # 🔴 FAZ 5.11 — **NE ZAMAN GRAFİK ÇİZİLMEZ** (§15.6). Dört kural, **en sonda**.
+    _cizme_kurallari(spec, rows, cat_dims, measures, time_col, cube_query)
+
     # normalize: lower_set'i (FE ısı paleti yönü) taşı
     if lower_set:
         spec["lower_set"] = sorted(lower_set)
     return spec
+
+
+#: 🔴 FAZ 5.11 — finans/muhasebe kapsamı. Karar-vericiler ve finans profesyonelleri
+#: **tablo tercih ediyor** (~50.000 yanıtlık çalışma, arXiv:2411.07451: genel kullanıcı
+#: grafiği %41,7 vs tablo %36,3 tercih ederken bu iki grup **tersini** yapıyor).
+#: `[DOĞRULANMADI — birincil kaynak okunmadı; oran bir gerekçedir, bir hedef değil]`
+_FINANS_CUBELARI = ("mizan", "cari", "cari_finans", "kpi", "gelir_tablosu", "bilanco")
+
+#: Sıralanmamış bir boyutta kaç kategoriden sonra grafik **okunamaz** hâle gelir.
+#: ⚠ Sıralanmışsa kural **uygulanmaz**: 50 kategorili bir Top-N çubuğu okunabilir,
+#: 21 kategorili alfabetik bir çubuk okunamaz. *Sorun sayı değil, SIRA.*
+_KATEGORI_TAVANI = 20
+
+
+def _daralt(spec: dict[str, Any], yeni_kind: str, gerekce: str) -> None:
+    """Kararı daraltır **ve teklifleri kapatır**.
+
+    🔴 Çizmemeye karar verip yine de bir pasta grafiği **teklif etmek**, kararı kendi
+    içinde çelişkili yapardı: kullanıcı *"grafik uygun değil"* yazısının yanında bir
+    grafik düğmesi görürdü. *Bir karar, kendi alternatifini önermez.*
+    """
+    spec["kind"] = yeni_kind
+    if yeni_kind == "table":
+        spec["table_mode"] = "table"
+    spec["partition"] = False
+    spec["stackable"] = False
+    spec["alternatives"] = []
+    spec["cizilmedi"] = gerekce
+
+
+def _cizme_kurallari(spec: dict[str, Any], rows: list[dict], cat_dims: list[str],
+                     measures: list[str], time_col: str | None,
+                     cube_query: dict | None) -> None:
+    """§15.6 — **grafik ÇİZİLMEZ** dalları. `spec`i yerinde günceller.
+
+    ## 🔴 Mevcut kararları BOZMAZ
+
+    Dört kuralın hepsi **daraltıcıdır**: bir grafiği tabloya/cümleye çevirirler, tersi
+    asla olmaz. Bir kural ateşlemezse bugünkü karar **birebir** kalır.
+
+    ## Dört kural
+
+    | # | koşul | sonuç | neden |
+    |---|---|---|---|
+    | 1 | tek skaler, boyut yok | *(zaten `kpi`)* | Bir sayı zaten grafik değil |
+    | 2 | ≤2 satır **veya** ≤3 kategori | `cumle` | Üç çubuk, üç kelimeden daha az anlatır |
+    | 3 | >20 kategori **ve sıralanmamış** | `table` | Okunamayan bir grafik, tablodan kötüdür |
+    | 4 | finans/muhasebe kapsamı | `table` | Karar-verici **tabloyu** tercih ediyor |
+
+    ⚠ **Kural 3'ün şartı SIRA, sayı değil.** 50 kategorili bir Top-N çubuğu okunabilir;
+    21 kategorili alfabetik bir çubuk okunamaz. Yalnız sayıya bakmak, kullanıcının
+    kendi sıraladığı bir raporu **cezalandırırdı**.
+
+    ⚠ **Zaman serisi hiçbir kuralda tabloya çevrilmez** (kural 3/4): bir trend,
+    tablo hâlinde **görülemez** — grafiğin tek gerçek üstünlüğü tam olarak orada.
+    """
+    kind = spec.get("kind")
+    # 🔴 **KURALLAR YALNIZ VARSAYILAN `bar`'A UYGULANIR — ve bu bir düzeltmedir.**
+    #
+    # İlk yazımda kural her karara uygulanıyordu ve `test_viz.py`'nin **yedi testi**
+    # kırmızı verdi: `kpi` · `heatmap` · `table` · `partition`'lı `bar` — dördü de
+    # **bilinçli** kararlardı ve daraltmak onların gerekçesini siliyordu. Yani maddenin
+    # kendi şartını (*"mevcut kararları BOZMAZ"*) **ben çiğnedim** ve kapı yakaladı.
+    #
+    # Doğru kapsam: yalnız **varsayılan bar** — yani "başka bir kural konuşmadı, o hâlde
+    # çubuk çizelim" kararı. §15.6'nın anlattığı boşluk tam olarak orada: *bir grafiğin
+    # varsayılan olması, doğru olduğu anlamına gelmez.*
+    #
+    # ⚠ `kpi` zaten bir grafik **değildir** — kural 1 orada **zaten sağlanmış**tır ve
+    # onu `cumle`ye çevirmek bir kazanç değil, bir yeniden adlandırmadır.
+    # ⚠ **`partition`/`stackable` bir KARAR DEĞİL, bir TEKLİFTİR** (FE'de pie/treemap
+    # toggle'ı). İlk yazımda onları muhafıza koydum ve kural **tam hedefinde** bloke
+    # oldu: tek boyut + tek additive ölçü neredeyse her zaman `partition=True` alır,
+    # yani *"3 kategori"* vakasının kendisi hiç ateşlemiyordu. *Bir teklifi bir karar
+    # sanmak, kuralı sessizce ölü bırakır.*
+    if kind != "bar" or not measures:
+        return
+    kategori_sayisi = 0
+    if cat_dims:
+        d = cat_dims[0]
+        kategori_sayisi = len({str(r.get(d)) for r in rows if r.get(d) is not None})
+
+    # (2) ≤2 satır VEYA ≤3 kategori → CÜMLE / KPI kartı
+    #
+    # ⚠ **TEK ÖLÇÜ şartı — ve bu da kapıdan geldi.** İlk yazımda şart yoktu ve iki
+    # regresyon testi kırmızı verdi: 3 vardiya × 3 YoY ölçüsü **dokuz çubuktur**, üç
+    # değil. *"Üç çubuk üç kelimeden az anlatır"* gerekçesi orada **geçersizdir** —
+    # kıyaslanacak birden fazla seri varsa grafik gerçekten iş görür.
+    if (not time_col and cat_dims and len(measures) == 1
+            and (len(rows) <= 2 or kategori_sayisi <= 3)):
+        _daralt(spec, "cumle",
+                f"{max(len(rows), kategori_sayisi)} kalem — üç çubuk, üç kelimeden "
+                f"daha az anlatır")
+        return
+
+    # (3) >20 kategori VE SIRALANMAMIŞ → TABLO
+    sirali = bool((cube_query or {}).get("order"))
+    if not time_col and kategori_sayisi > _KATEGORI_TAVANI and not sirali:
+        _daralt(spec, "table",
+                f"{kategori_sayisi} sıralanmamış kategori — okunamayan bir grafik, "
+                f"tablodan kötüdür")
+        return
+
+    # (4) FİNANS/MUHASEBE kapsamı → varsayılan TABLO + metin
+    cube = str((cube_query or {}).get("cube") or "")
+    if not time_col and cube in _FINANS_CUBELARI:
+        _daralt(spec, "table",
+                "finans/muhasebe kapsamı — karar-vericiler ve finans profesyonelleri "
+                "tabloyu tercih ediyor")

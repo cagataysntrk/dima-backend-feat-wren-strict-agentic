@@ -246,6 +246,10 @@ export interface Explain {
 
 // VizSpec — backend viz.recommend() çıktısı (ADR-0024). FE `chart.ts` Analysis'ine adapte edilir.
 export interface VizSpec {
+  // 🔴 FAZ 5.11 (§15.6) — grafik ÇİZİLMEDİYSE **neden** çizilmediği. *Çizilmeyen bir
+  // grafik, neden çizilmediğini söylemeli* — aksi hâlde kullanıcı ürünün onu
+  // BECEREMEDİĞİNİ sanar. Dolu olduğunda `kind` `cumle` ya da `table`dır.
+  cizilmedi?: string | null;
   kind: string; // kpi|bar|line|pie|heatmap|facet|facet_measure|scatter|stacked|treemap|pivot|table
   measures: string[];
   dims: string[];

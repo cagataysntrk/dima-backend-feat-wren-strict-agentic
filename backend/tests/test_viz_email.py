@@ -14,13 +14,17 @@ def _viz(columns, rows, units, cq):
 
 
 def test_bar_renders_horizontal_bars():
+    # ⟳ FAZ 5.11 — örnek **4 kaleme** çıkarıldı. Testin amacı *"bar → yatay çubuk HTML'i"*
+    # ve o amaç aynen duruyor; 3 kategoride backend artık grafik ÇİZMİYOR (§15.6 kural 2)
+    # ve `render_chart_html` doğru davranıp `None` dönüyor. *Bir testin örneği
+    # değişebilir; ölçtüğü şey değişmemeli.*
     rows = [{"musteri": "A", "ciro": 120}, {"musteri": "B", "ciro": 80},
-            {"musteri": "C", "ciro": 45}]
+            {"musteri": "C", "ciro": 45}, {"musteri": "D", "ciro": 30}]
     spec = _viz(["musteri", "ciro"], rows, {"ciro": "₺"},
                 {"cube": "x", "measures": ["ciro"], "dimensions": ["musteri"]})
     html = viz_email.render_chart_html(spec, rows)
     assert html and "<table" in html
-    assert html.count("<tr>") == 3          # üç bar satırı
+    assert html.count("<tr>") == 4          # dört bar satırı
     assert "background:" in html and "width:100%" in html
     assert "₺" in html                        # birimli değer
 
@@ -73,7 +77,10 @@ def test_empty_none():
 
 
 def test_label_html_escaped():
-    rows = [{"ad": "<script>x</script>", "v": 5}, {"ad": "B", "v": 3}]
+    # ⟳ FAZ 5.11 — aynı gerekçe: örnek 4 kaleme çıkarıldı. Testin amacı **enjeksiyon
+    # koruması**dır ve o amaç kategori sayısından bağımsızdır.
+    rows = [{"ad": "<script>x</script>", "v": 5}, {"ad": "B", "v": 3},
+            {"ad": "C", "v": 2}, {"ad": "D", "v": 1}]
     spec = _viz(["ad", "v"], rows, {"v": ""},
                 {"cube": "x", "measures": ["v"], "dimensions": ["ad"]})
     html = viz_email.render_chart_html(spec, rows)

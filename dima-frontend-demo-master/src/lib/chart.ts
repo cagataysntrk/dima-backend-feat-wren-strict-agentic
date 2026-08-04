@@ -78,8 +78,16 @@ export interface Analysis {
 // yerine bu kullanılır → grafik/tablo/pivot KARARI backend'de tek kaynaktan gelir. Kind eşlemesi:
 // "table"/"pivot" grafik değil → "none" (FE view state pivot/tablo'yu ayrıca yönetir).
 export function analysisFromViz(v: VizSpec): Analysis {
+  // ⚠️ **FAZ 5.11 — `cumle` EKLENDİ.** Backend §15.6'nın dört kuralıyla artık bazı
+  // raporlarda *"grafik çizilmez"* diyor ve `kind: "cumle"` döndürüyor. Bu değer
+  // eşlemede olmasaydı `as ChartKind` ile sessizce geçer, ECharts tanımadığı bir tip
+  // görür ve kullanıcı **boş bir kart** alırdı — *yani "çizmeme kararı" bir arıza gibi
+  // görünürdü.* Bu depo aynı sınıfı beşinci kez görüyor (top · order · delta/streak ·
+  // segment_delta · bu): **backend bir tür üretir, FE sözlüğünde yoksa sessizce bozulur.**
   const kind: ChartKind =
-    v.kind === "table" || v.kind === "pivot" ? "none" : (v.kind as ChartKind);
+    v.kind === "table" || v.kind === "pivot" || v.kind === "cumle"
+      ? "none"
+      : (v.kind as ChartKind);
   return {
     kind,
     measures: v.measures ?? [],

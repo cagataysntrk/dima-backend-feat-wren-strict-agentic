@@ -422,6 +422,18 @@ export function ResultView({
               )}
             </>
           )}
+          {/* 🔴 FAZ 5.11 (§15.6) — **ÇİZİLMEME GEREKÇESİ**. *Çizilmeyen bir grafik, neden
+              çizilmediğini söylemeli* — aksi hâlde kullanıcı ürünün bunu BECEREMEDİĞİNİ
+              sanar ve deterministik bir karar bir arıza gibi görünür. Gerekçe backend'de
+              üretilir (tek sahip); burada yalnız gösterilir. */}
+          {viz?.cizilmedi && (
+            <span
+              className="font-mono text-[10px] text-neutral-400"
+              title="Görsel dilbilgisi kararı (deterministik, §15.6)"
+            >
+              ⓘ grafik yerine {viz.kind === "table" ? "tablo" : "özet"} — {viz.cizilmedi}
+            </span>
+          )}
           {(a.kind !== "none" || pivotable) && (
             <div className="inline-flex border border-hairline">
               {chartable && (

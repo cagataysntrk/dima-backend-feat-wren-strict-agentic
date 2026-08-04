@@ -25,9 +25,14 @@ def test_single_row_measures_kpi():
 
 
 def test_category_measure_bar():
+    # ⟳ FAZ 5.11 — örnek **4 kategoriye** çıkarıldı. Testin amacı *"kategori + ölçü →
+    # bar"*dır ve o amaç aynen duruyor; 3 kategori artık `cumle` (§15.6 kural 2) ve
+    # örneği sınırın üstüne taşımak, testi **amacına** geri döndürür. *Bir testin
+    # örneği değişebilir; ölçtüğü şey değişmemeli.*
     s = rec(["musteri", "ciro"],
             [{"musteri": "A", "ciro": 10}, {"musteri": "B", "ciro": 20},
-             {"musteri": "C", "ciro": 5}], units={"ciro": "₺"})
+             {"musteri": "C", "ciro": 5}, {"musteri": "D", "ciro": 8}],
+            units={"ciro": "₺"})
     assert s["kind"] == "bar"
 
 
@@ -196,9 +201,14 @@ def test_reference_line_coexists_with_partition():
 
 
 def test_partition_single_dim_additive_pie_alt():
+    # ⟳ FAZ 5.11 — örnek **4 kategoriye** çıkarıldı (aynı gerekçe): testin amacı
+    # *"≤6 kategoride pie ALTERNATİFİ önerilir"*dir. 3 kategoride artık grafik hiç
+    # çizilmiyor ve bir alternatif de önerilmiyor — *bir karar, kendi alternatifini
+    # önermez*.
     s = rec(["urun", "ciro"],
             [{"urun": "a", "ciro": 10}, {"urun": "b", "ciro": 20},
-             {"urun": "c", "ciro": 5}], units={"ciro": "₺"})
+             {"urun": "c", "ciro": 5}, {"urun": "d", "ciro": 12}],
+            units={"ciro": "₺"})
     assert s["kind"] == "bar"  # Cleveland-McGill: bar varsayılan kalır
     assert s["partition"] is True
     assert s["alternatives"] == ["pie"]  # ≤6 kategori → pie önerisi
@@ -274,7 +284,13 @@ def test_numeric_dimension_authoritative():
     s = rec(["vardiya", "ort_oee"], rows, units={"ort_oee": "%"},
             cube_query={"cube": "oee", "measures": ["ort_oee"], "dimensions": ["vardiya"]})
     assert s["dims"] == ["vardiya"] and s["measures"] == ["ort_oee"]
-    assert s["kind"] == "bar"
+    # ⟳ **FAZ 5.11 — GÖRSEL DİLBİLGİSİ DEĞİŞTİ** (§15.6, MIMARI §13 ⟳ satırı).
+    # Bu testin ASIL amacı sayısal bir boyutun **ölçü sanılmaması**dır (üstteki satır) ve
+    # o amaç aynen duruyor. `kind` beklentisi güncellendi: **3 kategori × 1 ölçü** artık
+    # `cumle` — *üç çubuk, üç kelimeden daha az anlatır*. Beklentiyi değiştirmek bir
+    # gerileme değil, **maddenin kendisidir**; değiştirmeseydik kural hiç ateşlemezdi.
+    assert s["kind"] == "cumle"
+    assert "3 kalem" in s["cizilmedi"]
 
 
 # --- güvenlik / determinizm -------------------------------------------------
@@ -297,3 +313,101 @@ def test_lower_set_passthrough():
             [{"makine": "M1", "fire": 3}, {"makine": "M2", "fire": 5}],
             units={"fire": "kg"}, lower=["fire"])
     assert s["lower_set"] == ["fire"]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FAZ 5.11 — *"Ne zaman grafik ÇİZİLMEZ"* (§15.6) · SINIR DEĞERLERİ
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# ~50.000 yanıtlık çalışma (arXiv:2411.07451): genel kullanıcı grafiği tercih ediyor
+# (%41,7 vs %36,3) **ama karar-vericiler ve finans profesyonelleri TABLO tercih ediyor**.
+# `[DOĞRULANMADI — birincil kaynak okunmadı; oran bir gerekçedir, bir hedef değil]`
+#
+# 🔴 Dört kuralın hepsi **daraltıcıdır**: bir grafiği tabloya/cümleye çevirirler, tersi
+# asla olmaz. Ve yalnız **varsayılan `bar`**'a uygulanırlar — `kpi`/`heatmap`/`partition`/
+# `pivot` bilinçli kararlardır ve daraltmak onların gerekçesini silerdi.
+
+def _kat(n, olcu_sayisi=1, cq=None):
+    rows = []
+    for i in range(n):
+        r = {"urun": f"u{i}", "ciro": i + 1}
+        if olcu_sayisi > 1:
+            r["adet"] = i + 2
+        rows.append(r)
+    kolonlar = ["urun", "ciro"] + (["adet"] if olcu_sayisi > 1 else [])
+    return rec(kolonlar, rows, units={"ciro": "₺"}, cube_query=cq)
+
+
+def test_5_11_UC_kategori_CUMLE_dort_kategori_GRAFIK():
+    """Sınır değeri: **3 → cümle**, **4 → grafik**."""
+    assert _kat(3)["kind"] == "cumle"
+    assert _kat(4)["kind"] != "cumle"
+
+
+def test_5_11_IKI_satir_CUMLE():
+    assert _kat(2)["kind"] == "cumle"
+
+
+def test_5_11_COK_OLCULU_uc_kategori_GRAFIK_kalir():
+    """⚠ 3 kategori × 2 ölçü **altı çubuktur**, üç değil.
+
+    *"Üç çubuk üç kelimeden az anlatır"* gerekçesi orada **geçersizdir** — kıyaslanacak
+    birden fazla seri varsa grafik gerçekten iş görür. (Bu şartı **kapı** öğretti: iki
+    regresyon testi kırmızı verdi.)
+    """
+    assert _kat(3, olcu_sayisi=2)["kind"] != "cumle"
+
+
+def test_5_11_YIRMI_kategori_GRAFIK_yirmi_bir_TABLO():
+    """Sınır değeri: **20 → grafik**, **21 → tablo** (sıralanmamışsa)."""
+    assert _kat(20)["kind"] != "table"
+    s = _kat(21)
+    assert s["kind"] == "table"
+    assert "sıralanmamış" in s["cizilmedi"]
+
+
+def test_5_11_SIRALANMIS_ise_yirmi_bir_kategori_GRAFIK_kalir():
+    """🔴 **Şart SIRA, sayı değil.**
+
+    50 kategorili bir Top-N çubuğu **okunabilir**; 21 kategorili alfabetik bir çubuk
+    okunamaz. Yalnız sayıya bakmak, kullanıcının **kendi sıraladığı** bir raporu
+    cezalandırırdı.
+    """
+    cq = {"cube": "parti", "measures": ["ciro"], "dimensions": ["urun"],
+          "order": [{"id": "ciro", "desc": True}]}
+    assert _kat(21, cq=cq)["kind"] != "table"
+
+
+def test_5_11_FINANS_kapsami_TABLO():
+    """Karar-vericiler ve finans profesyonelleri **tabloyu** tercih ediyor."""
+    cq = {"cube": "mizan", "measures": ["ciro"], "dimensions": ["urun"]}
+    s = _kat(8, cq=cq)
+    assert s["kind"] == "table"
+    assert "finans" in s["cizilmedi"]
+
+
+def test_5_11_ZAMAN_SERISI_hicbir_kuralda_TABLOYA_cevrilmez():
+    """⚠ Bir trend, tablo hâlinde **görülemez** — grafiğin tek gerçek üstünlüğü orada."""
+    rows = [{"tarih": f"2026-{i:02d}", "ciro": i} for i in range(1, 26)]
+    s = rec(["tarih", "ciro"], rows, units={"ciro": "₺"},
+            cube_query={"cube": "mizan", "measures": ["ciro"],
+                        "timeDimensions": [{"dimension": "tarih",
+                                            "granularity": "month"}]})
+    assert s["kind"] != "table" and "cizilmedi" not in s
+
+
+def test_5_11_BILINCLI_kararlar_DARALTILMAZ():
+    """`partition`/`heatmap`/`pivot`/`kpi` **bilinçli** kararlardır."""
+    s = rec(["urun", "ciro"], [{"urun": f"u{i}", "ciro": i + 1} for i in range(3)],
+            units={"ciro": "₺"})
+    # 3 kategori + partition adayı: partition işaretliyse daraltma YAPILMAZ.
+    if s.get("partition"):
+        assert s["kind"] != "cumle"
+
+
+def test_5_11_CIZILMEDI_gerekcesi_HER_ZAMAN_yazili():
+    """*Çizilmeyen bir grafik, neden çizilmediğini söylemeli* — aksi hâlde kullanıcı
+    ürünün onu **beceremediğini** sanar."""
+    for s in (_kat(2), _kat(21), _kat(8, cq={"cube": "cari", "measures": ["ciro"],
+                                             "dimensions": ["urun"]})):
+        assert s.get("cizilmedi"), f"gerekçesiz daraltma: {s['kind']}"
