@@ -23,13 +23,13 @@ from tests.kapi_ortak import fe_dosyalari
 CEVAP_YUZEYLERI = ("components/ReportCard.tsx", "components/AnalysisCanvas.tsx")
 
 #: Rozetsiz kalması KABUL EDİLEN yüzeyler — her biri bir SAHİP gösterir.
-ROZETSIZ_MUAF: dict[str, str] = {
-    "components/AnalysisCanvas.tsx":
-        "🔴 ÖLÇÜLDÜ ihlal [KANIT §0.1-2]: `SourceBadge` 0, `explain` 0 — aynı cevap "
-        "sohbette `▚ LLM` rozetli, tuvalde ROZETSİZ. **FAZ 0.3**'ün konusu: "
-        "`ChatPanel.SourceBadge` YENİDEN KULLANILIR, ikinci render edici yazılmaz. "
-        "Muafiyet 0.3'te KALKAR.",
-}
+#: 🔴 **BOŞ — ve bu bir KAZANIMDIR.** Burada `AnalysisCanvas` vardı: `SourceBadge` 0,
+#: `explain` 0 ([KANIT §0.1-2]) — aynı cevap sohbette `▚ LLM` rozetli, tuvalde
+#: **rozetsiz**. Muafiyetin metni *"**FAZ 0.3**'te KALKAR"* diyordu ve **kalktı**:
+#: `ChatPanel.SourceBadge` yeniden kullanıldı, ikinci render edici yazılmadı.
+#: Bir muafiyetin süresi dolduğunda **silinmesi** gerekir; yaşayan muafiyet, kapının
+#: kendisini eritir.
+ROZETSIZ_MUAF: dict[str, str] = {}
 
 
 def test_K4_HER_CEVAP_YUZEYI_SOURCE_ROZETI_BASAR():

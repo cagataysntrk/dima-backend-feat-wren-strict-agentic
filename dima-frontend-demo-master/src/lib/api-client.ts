@@ -364,10 +364,15 @@ export async function askCube(body: {
   return data;
 }
 
-export async function runQuery(sql: string, limit?: number): Promise<QueryResult> {
-  const { data } = await apiClient.post<QueryResult>("/query", { sql, limit });
-  return data;
-}
+// ⚠️ FAZ 0.7 — `runQuery()` SİLİNDİ. Ölçüldü [KANIT §0.1-6]: sarmalayıcı vardı, **çağıranı
+// yoktu** (sıfır tüketici). Uç kapısı bunu YEŞİL sanıyordu çünkü `/query` dizesi
+// sarmalayıcının KENDİ içinde geçiyordu — kapının "ölü sarmalayıcı" boyutu (FAZ 0.14/K1)
+// tam bunun için eklendi ve bu satırı o yakaladı.
+//
+// Uç (`POST /query`) backend'de DURUYOR ve `API_ONLY` beyanı taşıyor: ham-SQL yürütme
+// yüzeyi bilinçli olarak kullanıcıya açılmamıştır (MIMARI §5: "yüklenen dosyaya serbest
+// Python" ile aynı gerekçe — uydurma sayının kapısı). Sarmalayıcının kendisi ise ölü
+// koddu: silinmesi, "bir gün lazım olur" diye bekleyen bir yalanı ortadan kaldırır.
 
 // Özellik bayrakları (ADR-0009): sektör ⊕ şirket katmanlı; değerler alpha|beta|prod.
 export async function getFeatures(): Promise<Record<string, string>> {
@@ -750,6 +755,13 @@ export async function saveDecision(body: {
   note?: string | null;
   contract_ids?: string[];
   session_id?: string | null;
+  // ⚠️ FAZ 0.11 — `supersedes` YETİMDİ: backend `DecisionIn`'de VARDI, istemci onu
+  // **hiç gönderemiyordu** ([KANIT §0.1-7]). Yol haritası açık: *"`supersedes`
+  // **BAĞLANIR** (silinmez — **II-E.7 ona dayanıyor**)"*.
+  // Karar **silinmez** (`decision.py:35`): iptal/revizyon YENİ bir kayıt yazar ve
+  // eskisini `supersedes` ile işaret eder. Bu alan olmadan revizyon zinciri kurulamaz
+  // ve "karar geçmişi" bir yığın kopuk kayda dönerdi.
+  supersedes?: string | null;
 }): Promise<DecisionRecord> {
   const { data } = await apiClient.post<DecisionRecord>("/decisions", body);
   return data;

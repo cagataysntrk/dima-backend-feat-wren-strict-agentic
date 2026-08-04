@@ -20,6 +20,7 @@
 // kullanılır (yeni bir rapor-render mantığı İCAT edilmedi, mevcut mekanizmanın YENİ bir
 // giriş noktası).
 
+import { SourceBadge } from "@/components/ChatPanel";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
@@ -264,6 +265,15 @@ function CanvasCard({
           </span>
         </span>
         <span className="relative flex shrink-0 items-center gap-2">
+          {/* ⚠️ FAZ 0.3 — ROZET SÜS DEĞİL SÖZLEŞMEDİR (MIMARI §5: bir cevabın `source`'unu
+              gizlemek ya da eşitlemek YASAKTIR). Ölçüldü [KANIT §0.1-2]: bu dosyada
+              `SourceBadge` 0, `explain` 0 — aynı cevap sohbette `▚ LLM` rozetli, tuvalde
+              ROZETSİZ görünüyordu. Kullanıcı iki yüzeyde AYNI cevaba bakıp FARKLI garanti
+              görüyordu ve bunu fark etmesinin hiçbir yolu yoktu.
+              🔴 `ChatPanel.SourceBadge` YENİDEN KULLANILIYOR — ikinci bir render edici
+              yazmak, aynı kuralın iki sahibi demekti (bu deponun 1 numaralı kusuru) ve
+              iki yüzeyin rozetleri zamanla AYRIŞIRDI. */}
+          <SourceBadge source={item.source ?? null} confidence={item.explain?.confidence} />
           {item.cube_query && (
             <span className="relative">
               <button

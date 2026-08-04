@@ -62,6 +62,12 @@ export function PrescriptionLayer({
         rationale: recete.rationale,
         contract_ids: contractIds ?? [],
         session_id: sessionId ?? null,
+        // ⚠️ FAZ 0.11 — REVİZYON ZİNCİRİ. Karar **silinmez** (`decision.py:35`):
+        // fikir değiştiğinde YENİ bir kayıt yazılır ve eskisi `supersedes` ile
+        // işaret edilir. Bu alan bağlanmadan revizyon, birbirinden kopuk iki kayıt
+        // olurdu ve *"bu karar neyin yerine geçti?"* sorusu cevapsız kalırdı.
+        // (II-E.7 bu zincire dayanıyor — alan silinemez, BAĞLANIR.)
+        supersedes: kayit?.id ?? null,
       }),
     onSuccess: setKayit,
   });

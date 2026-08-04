@@ -45,14 +45,17 @@ from tests.kapi_ortak import fe_kaynak, tam_yol_deseni, tuketiliyor
 #: ⚠ Boş başlar ve **öyle kalmalı**: her giriş bir KARARDIR, gerekçesiz muafiyet kapıyı
 #: kendiliğinden eritir. `POST /query` + `runQuery()` ölü sarmalayıcısı **FAZ 0.7**'nin
 #: konusudur — buraya muafiyet yazılarak değil, **silinerek ya da bağlanarak** kapanır.
-SARMALAYICI_MUAF: dict[str, str] = {
-    "runQuery": "🔴 ÖLÇÜLDÜ ve KAYITLI ölü sarmalayıcı ([KANIT §0.1-6]): `POST /query`'nin "
-                "sarmalayıcısı var, çağıranı yok. **FAZ 0.7**'nin konusu — orada ya "
-                "silinecek ya bağlanacak ve bu muafiyet KALDIRILACAK. Muafiyet burada "
-                "kusuru gizlemiyor, SAHİBİNE işaret ediyor.",
-}
+#: 🔴 **BOŞ — ve bu bir KAZANIMDIR.** Burada `runQuery` vardı ([KANIT §0.1-6]: sarmalayıcı
+#: var, çağıranı yok). Muafiyetin metni *"**FAZ 0.7**'de … bu muafiyet KALDIRILACAK"*
+#: diyordu ve **kaldırıldı**: sarmalayıcı **silindi**. Süresi dolmuş bir muafiyet
+#: silinmezse kapının kendisini eritir.
+SARMALAYICI_MUAF: dict[str, str] = {}
 
 API_ONLY: dict[str, str] = {
+    "/query": "FAZ 0.7 — ham-SQL yürütme yüzeyi kullanıcıya **bilinçli olarak** "
+              "açılmamıştır (MIMARI §5: *«yüklenen dosyaya serbest Python»* ile aynı "
+              "gerekçe — uydurma sayının kapısı). Uç duruyor: `/ask/verify` ve lab "
+              "araçları onu kullanır. Ölü olan **sarmalayıcıydı** ve silindi.",
     "/metrics": "FAZ 0.18 — metrik kaydının OKUNABİLİR yüzeyi. Yol haritasının kendi "
                 "beyanı: *«frontend: — (sahiplik ekranı 2.2b'de kalır)»*. Uç bugün "
                 "kayıt + çakışan terim envanterini döner; **sahiplik EKRANI** (terimi "

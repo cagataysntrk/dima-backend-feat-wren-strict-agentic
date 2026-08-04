@@ -217,22 +217,73 @@ def test_REPORTCARD_KONUSMA_dalindaki_BILINCLI_gizleme_KORUNDU():
 DIGER_SOZLESMELER = ("DrillResponse", "ContributionResponse", "DecisionIn", "AskRequest")
 
 #: K2/(a)+(b) muafiyetleri — **her biri bir SAHİP gösterir**, gerekçesiz giriş YOK.
+#: ✅ **ÜÇÜ KAPANDI (FAZ 0.8 · 0.9 · 0.11)** — muafiyetleri **silindi**, çünkü metinleri
+#: *"…'de KALKAR"* diyordu ve o faz indi. Yaşayan bir muafiyet kapıyı eritir.
 IC_ICE_MUAF: dict[str, str] = {
-    "agent_run.steps[].receipt": "ÖLÇÜLDÜ yetim [KANIT §0.1-7] — FAZ 0.8: adım satırına "
-                                 "makbuz kimliği, tıklanınca /contracts/{id}. 0.8'de KALKAR.",
-    "explain.path": "ÖLÇÜLDÜ yetim [KANIT §0.1-7] — FAZ 0.9: trace bloğuna eklenir ya da "
-                    "modelden çıkarılır. 0.9'da KALKAR.",
-    "DecisionIn.supersedes": "ÖLÇÜLDÜ yetim — FAZ 0.11: BAĞLANIR (silinmez, II-E.7 ona "
-                             "dayanıyor). 0.11'de KALKAR.",
-    "AskRequest.execute": "ÖLÇÜLDÜ yetim — FAZ 0.11: bağlanır ya da modelden çıkar.",
-    "AskRequest.limit": "ÖLÇÜLDÜ yetim — FAZ 0.11. ⚠ Ham alt-dize taraması bunu YANLIŞLIKLA "
-                        "'tüketiliyor' saymıştı: tek isabet DrillDownPanel'deki `limit: 50`, "
-                        "yani DrillRequest — AskRequest.limit DEĞİL. Sayaç sınıf ayrımı yapmıyordu.",
+    "AskRequest.execute": "FAZ 0.11 — istemci bu alanı GÖNDERMİYOR; backend varsayılanı "
+                          "(`True`) her zaman doğru davranışı veriyor. Alan `lab/` "
+                          "araçları ve `/ask/verify` için duruyor (SQL üretip "
+                          "ÇALIŞTIRMADAN doğrulama). Kaldırmak o yolu kırardı.",
+    "AskRequest.limit": "FAZ 0.11 — istemci göndermiyor; backend `settings.max_result_rows` "
+                        "tavanını uyguluyor. ⚠ Ham alt-dize taraması bunu YANLIŞLIKLA "
+                        "'tüketiliyor' saymıştı: tek isabet DrillDownPanel'deki "
+                        "`limit: 50`, yani **DrillRequest** — `AskRequest.limit` DEĞİL. "
+                        "Sayaç SINIF AYRIMI yapmıyordu; K2/(b) bunu açığa çıkardı.",
 }
 
 
 def _fe_yorumsuz() -> str:
     return "\n".join(fe_dosyalari().values())
+
+
+def test_FAZ_0_8_MAKBUZ_KIMLIGI_render_ediliyor():
+    """✅ **FAZ 0.8.** `agent_run.steps[].receipt` yalnız `types.ts`'te geçiyordu —
+    yani bir **tip beyanıydı**, tüketici değil. Makbuz kimliği bir adımın ürettiği
+    KANITIN kimliğidir; görünmezse *"her sayının kaynağını kanıtlayabilen"* vaadi
+    adım seviyesinde **beyandan ibaret** kalır."""
+    kart = _yorumsuz_kod((FE / "components" / "ReportCard.tsx").read_text(encoding="utf-8"))
+    assert "s.receipt" in kart, "adım makbuzu render EDİLMİYOR"
+    assert "/contracts/${s.receipt}" in kart, \
+        "makbuz kimliği KANITIN KENDİSİNE gitmiyor — tıklanamayan bir kimlik, kimlik değildir"
+
+
+def test_FAZ_0_9_EXPLAIN_PATH_render_ediliyor():
+    """✅ **FAZ 0.9.** Rozet *"ne"* der, `explain.path` *"nereden"* der — ikisi birlikte
+    MIMARI §5'in `source` sözleşmesini tamamlar."""
+    kart = _yorumsuz_kod((FE / "components" / "ReportCard.tsx").read_text(encoding="utf-8"))
+    assert "item.explain?.path" in kart or "explain.path" in kart, \
+        "`explain.path` HÂLÂ render edilmiyor — tip var, tüketici yok"
+
+
+def test_FAZ_0_11_SUPERSEDES_BAGLANDI_silinmedi():
+    """✅ **FAZ 0.11.** Yol haritası açık: *"`supersedes` **BAĞLANIR** (silinmez —
+    II-E.7 ona dayanıyor)"*. Karar **silinmez** (`decision.py:35`): revizyon YENİ bir
+    kayıt yazar ve eskisini işaret eder. Bu alan olmadan revizyon zinciri kurulamaz."""
+    from app.routers.decisions import DecisionIn
+
+    assert "supersedes" in DecisionIn.model_fields, "backend alanı SİLİNMİŞ"
+    istemci = _yorumsuz_kod((FE / "lib" / "api-client.ts").read_text(encoding="utf-8"))
+    assert "supersedes" in istemci, "istemci `supersedes` GÖNDEREMİYOR — yetim sürüyor"
+    katman = _yorumsuz_kod(
+        (FE / "components" / "PrescriptionLayer.tsx").read_text(encoding="utf-8"))
+    assert "supersedes:" in katman, "revizyon zinciri UI'da bağlanmamış"
+
+
+def test_FAZ_0_7_OLU_SARMALAYICI_SILINDI():
+    """✅ **FAZ 0.7.** `runQuery()` sarmalayıcısı vardı, **çağıranı yoktu**. Uç kapısı
+    onu yeşil sanıyordu çünkü `/query` dizesi sarmalayıcının KENDİ içinde geçiyordu."""
+    istemci = _yorumsuz_kod((FE / "lib" / "api-client.ts").read_text(encoding="utf-8"))
+    assert "export async function runQuery" not in istemci, \
+        "ölü sarmalayıcı HÂLÂ duruyor — 'bir gün lazım olur' bir gerekçe değildir"
+
+
+def test_FAZ_0_3_TUVAL_ROZETI_var():
+    """✅ **FAZ 0.3.** MIMARI §5: bir cevabın `source`'unu **gizlemek ya da eşitlemek**
+    yasaktır. Aynı cevap sohbette rozetli, tuvalde rozetsizdi."""
+    tuval = _yorumsuz_kod((FE / "components" / "AnalysisCanvas.tsx").read_text(encoding="utf-8"))
+    assert "SourceBadge" in tuval, "tuval HÂLÂ rozetsiz (§5 ihlali)"
+    assert "function SourceBadge" not in tuval, \
+        "tuvale İKİNCİ bir rozet render edici yazılmış — tek sahip `ChatPanel.SourceBadge`"
 
 
 def test_K2a_IC_ICE_ALANLAR_da_taranir():

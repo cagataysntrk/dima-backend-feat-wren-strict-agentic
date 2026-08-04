@@ -17,9 +17,9 @@
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 0** — temizlik ve kapılar *(25 madde; sıra **numara DEĞİL**, FAZ 0 girişindeki bağlayıcı koşum sırası)* |
-| **Sıradaki madde** | **adım 8:** `0.4` netleştirme önceliği *(ölçüm kararı)* · `0.5b` |
-| **Ondan sonra** | kalan *(0.3 · 0.6–0.13 · 0.15 · 0.20 dâhil)* → `0.21` |
-| **Demet** | yeni demet açık: `0.19` · `0.18` · `0.5` indi *(ikisi risk sınırı, kendi kapılarını koştu)* |
+| **Sıradaki madde** | `0.6` *(kanıt geçmişi)* · `0.10`/`0.10b` *(görünen adlar — risk sınırı)* · `0.12` · `0.13` |
+| **Ondan sonra** | `0.4` *(canlı A/B — demet sınırı)* · `0.15` · `0.20` → `0.21` **EN SON** |
+| **Demet** | 🔴 **DOLDU (6 madde):** `0.19` · `0.18` · `0.5` · `0.3` · `0.7` · `0.8/0.9/0.11` |
 | **Tempo** | 🔴 **DEMET disiplini yürürlükte** (`OPERASYON.md §3`): commit ≠ kapı; tam kapı **demet sonunda bir kez**. Risk sınırındaki dosyalara dokunan madde demete girmez |
 | **v1 bitiş ölçütü** | §C'nin **16 ölçütü** yeşil |
 
@@ -321,6 +321,26 @@ yorum da güncellendi ve bu **testle kilitlendi**.
 > **başka bir raporun** bağlamına kayıyor, üstelik **sessizce**. Düzeltildi: çözülen çapa
 > `KURAL_CAPA`/`KURAL_COKLU`'da **uygulanıyor**; `KURAL_CELISKI`'de **uygulanmıyor** —
 > ADR-0008, belirsizlikte tahmin yok.
+
+### FAZ 0 · adım 8 — **ÖLÇÜLMÜŞ YETİMLER KAPANDI** *(0.3 · 0.7 · 0.8 · 0.9 · 0.11)*
+
+[KANIT §0.1]'in envanterinden **beş yetim** kapandı — ve her biri bir **muafiyeti
+sildi**. *Yaşayan bir muafiyet, kapının kendisini eritir.*
+
+| Madde | Yetim | Ne yapıldı | Kalkan muafiyet |
+|---|---|---|---|
+| **0.3** | `AnalysisCanvas` rozetsiz *(SourceBadge 0)* — aynı cevap sohbette `▚ LLM`, tuvalde **rozetsiz** (§5 ihlali) | `ChatPanel.SourceBadge` **yeniden kullanıldı**, ikinci render edici yazılmadı | **K4** `ROZETSIZ_MUAF` → **boş** |
+| **0.7** | `runQuery()` sarmalayıcı var, **çağıranı yok** | **Silindi.** Uç duruyor + `api-only` *(ham-SQL yürütme bilinçli olarak kullanıcıya kapalı)* | **K1** `SARMALAYICI_MUAF` → **boş** |
+| **0.8** | `agent_run.steps[].receipt` yalnız `types.ts`'te | Adım satırına **⛓ makbuz** — tıklanınca `/contracts/{id}` | `IC_ICE_MUAF` |
+| **0.9** | `explain.path` tip var, render yok | Trace bloğuna **yol:** satırı *(rozet «ne» der, yol «nereden»)* | `IC_ICE_MUAF` |
+| **0.11** | `DecisionIn.supersedes` **yazılamıyor** | **BAĞLANDI** (silinmedi — II-E.7 ona dayanıyor): revizyon zinciri `PrescriptionLayer`'da | `IC_ICE_MUAF` |
+
+> ⚠ **`AskRequest.execute`/`limit` muafiyeti KALDI — ama gerekçesi DEĞİŞTİ.** Artık
+> *"yetim, 0.11'de bağlanacak"* değil: ikisi de `lab/` araçları ve `/ask/verify` için
+> **gerçekten kullanılıyor** (SQL üretip **çalıştırmadan** doğrulama). Kaldırmak o yolu
+> kırardı. 🔴 Ve K2/(b) burada bir **ölçüm hatası** açığa çıkardı: ham alt-dize taraması
+> `AskRequest.limit`'i *"tüketiliyor"* sanmıştı — tek isabet `DrillDownPanel`'deki
+> `limit: 50`, yani **DrillRequest**. Sayaç **sınıf ayrımı yapmıyordu**.
 
 ### Taban ölçümü · `lab/vk_taban.py` *(commit `8f87e40`)*
 VK-1…VK-6 **yapısal ve canlı** (gemini) ölçüldü. `§G.6e`'nin *"Bugün"* sütunu artık

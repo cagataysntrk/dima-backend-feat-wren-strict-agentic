@@ -629,6 +629,18 @@ export function ReportCard({
             <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
               nasıl çözüldü
             </div>
+            {/* ⚠️ FAZ 0.9 — `explain.path` YETİMDİ: tip `types.ts`'te vardı, hiçbir yerde
+                RENDER EDİLMİYORDU ([KANIT §0.1-7]). Backend her cevapta hangi YOLDAN
+                geçildiğini yazıyor (cube · cube+llm · llm:*) ve bu, rozetin taşıdığı
+                garantiyi TAMAMLAYAN bilgidir: rozet "ne" der, yol "nereden" der.
+                Trace bloğunun ÜSTÜNE konur çünkü adımların bağlamıdır — MIMARI §5'in
+                "source gizlenemez" kuralının ayrıntı katmanı. */}
+            {item.explain?.path && (
+              <div className="mb-2 font-mono text-[11px] text-neutral-500">
+                <span className="mr-1 text-neutral-400">yol:</span>
+                <span className="text-foreground">{item.explain.path}</span>
+              </div>
+            )}
             <ol className="space-y-0.5">
               {item.trace.map((t, i) => (
                 <li key={i} className="font-mono text-[11px] text-neutral-500">
@@ -675,6 +687,22 @@ export function ReportCard({
                         <span className="ml-1 text-amber-600" title={s.note}>
                           — kapısız
                         </span>
+                      )}
+                      {/* ⚠️ FAZ 0.8 — `agent_run.steps[].receipt` YETİMDİ: yalnız
+                          `types.ts:74`'te geçiyordu, hiçbir yerde render edilmiyordu
+                          ([KANIT §0.1-7]). Makbuz kimliği, bir adımın ürettiği KANITIN
+                          kimliğidir: tıklanınca o kanıtın kendisine (`/contracts/{id}`)
+                          gider. Bu, "her sayının kaynağını kanıtlayabilen" vaadinin
+                          ADIM SEVİYESİNDEKİ karşılığıdır — makbuz görünmezse vaat bir
+                          beyandan ibarettir. */}
+                      {s.receipt && (
+                        <a
+                          href={`/contracts/${s.receipt}`}
+                          title="Bu adımın ürettiği kanıt (Query Contract)"
+                          className="ml-1 text-accent underline-offset-2 hover:underline"
+                        >
+                          ⛓ makbuz
+                        </a>
                       )}
                     </li>
                   ))}
