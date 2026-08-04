@@ -367,19 +367,34 @@ def detect_anomalies(result: dict, measure: str, k: float = 2.0, unit: str | Non
             vals.append(float(row.get(measure)))
         except (TypeError, ValueError):
             vals.append(None)
+    # 🔴 **FAZ 5.15 — KOPYA SİLİNDİ.** Bu blok kendi ortalama/std/z-skorunu satır içi
+    # hesaplıyordu; `app/stats.py` tam da bu kopyayı ortadan kaldırmak için yazılmıştı
+    # ve dosyanın kendi docstring'i *"yeni bir istatistik motoru İCAT EDİLMEZ"* diyordu.
+    # Yani niyet üç yerde yazılıydı ve **bir yerde uygulanmıyordu**.
+    #
+    # ⚠ Bu, bu deponun **altı kez ölçülmüş** hastalığı: *"anomali işine dokunan her faz
+    # bunu tekilleştirmekle yükümlüdür."*
+    #
+    # ⚠ Şekil farkı korunuyor: `stats` **sayısal kararı** verir (indeks + z), etiket
+    # üretimi burada kalır — *paylaşılan şey karar, sunum değil.*
+    from app.stats import z_skorlari
+
     nums = [v for v in vals if v is not None]
-    if len(nums) < 4:
+    aykiri = z_skorlari(nums, k=k)
+    if not aykiri:
+        # ⚠ `None` (soru sorulamaz) ile `[]` (soruldu, yok) burada **aynı** sonucu verir
+        # ve bu doğrudur: ikisinde de bildirilecek bir ihlal yoktur.
         return []
-    mean = sum(nums) / len(nums)
-    std = (sum((v - mean) ** 2 for v in nums) / len(nums)) ** 0.5
-    if std == 0:
-        return []
+    # `z_skorlari` **nums** üzerindeki indeksleri döner; satır eşlemesi için `None`
+    # atlanan konumlar geri haritalanır.
+    ham_indeks = [i for i, v in enumerate(vals) if v is not None]
+    z_haritasi = {ham_indeks[i]: z for i, z in aykiri}
     bad: list[str] = []
-    for row, v in zip(rows, vals):
-        if v is None:
+    for satir_i, (row, v) in enumerate(zip(rows, vals)):
+        if v is None or satir_i not in z_haritasi:
             continue
-        z = (v - mean) / std
-        if abs(z) >= k:
+        z = z_haritasi[satir_i]
+        if True:
             # Tag = yalnız BOYUT/tarih değerleri; diğer ölçü/türev kolonları (YoY _gecen/
             # _degisim_yuzde, blend ölçüleri) sayısaldır → tag'e girmez (kirlenme önlenir).
             dims = [_fmt_boyut(x) for kk, x in row.items() if kk != measure and not _is_sayi(x)]
