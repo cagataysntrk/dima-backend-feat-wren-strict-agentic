@@ -16,8 +16,8 @@
 
 | | |
 |---|---|
-| **Aktif faz** | **FAZ 2 · SEMANTİK ÇEKİRDEK** *(FAZ 1 ✅ bitti — 19 adım)* |
-| **Sıradaki madde** | `2.3` semantik çekirdeğin kalanı → FAZ 2'nin geri kalan maddeleri |
+| **Aktif faz** | ✅ **FAZ 2 BİTTİ** (13 adım) → **FAZ 3 · KAPSAM** başlıyor |
+| **Sıradaki madde** | 🔴 **FAZ 3 · KAPSAM** — `3.1` sahiplik turu *(hakem kuruldu, şimdi doldurulacak)* |
 | **Demet** | ✅ **`1.12` kapısı 4/4 YEŞİL** (süit **2477**) — risk sınırı olduğu için demete girmedi · demet 13 açık: `1.10`+`1.11` (o kapıya da dahil oldular) |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
@@ -420,6 +420,44 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 2 · adım 13 — `2.4` **aynı-grain çifti beyan edildi** — 🔴 **FAZ 2 BİTTİ** *(2026-08-04)*
+
+Kapı: **6 test** · korpus **%93,1** (taban %93,2) ✅. Bayrak: `ayni_grain_gocu`.
+
+> **Ölçüldü:** `surdurulebilirlik` ile `parti` **aynı `base_object`** üstünde (`partiler`)
+> — iki cube, tek grain. Yoğunluk ölçüleri `parti` grain'ine ait **metriklerdir**.
+
+> 🔴 **KİMLİK SİLİNMEDİ — ve bu ölçülmüş bir karardır.** Ham kaynak adlarını kimlikten
+> çıkarmak *"yanlış cube 245→135"* getirdi **ama** erişimi **%64→%56** düşürdü ve
+> `test_eval_gate`'i kırdı: iki cube da `elektrik` iddia ediyor → `_match_cube` hiçbirini
+> seçemiyor → `R1`. *Doğru çözüm bir **SAHİPLİK KARARIDIR**, kimlik silmek değil.*
+
+> ✅ **VE O HAKEM ARTIK VAR** — `2.2b`'de indi (`MetrikSahipligi` + `hakem`). Bu madde
+> yalnız **çifti beyan ediyor** (`ayni_grain: parti` + `departman:` mercek işareti);
+> `elektrik`'in sahibini seçmek bir **iş kararıdır** (hangi cube'un metriği?), bir kod
+> kararı değil. Sahiplik **boş** olduğu sürece davranış **bugünküyle birebir aynı**.
+> *Kullanıcının vermesi gereken bir kararı sistemin vermesi, bu maddenin ölçülmüş kusuru.*
+
+> ⚠ **AYRI BAYRAK** (denetim düzeltmesi): sürüm 1'de `cekirdek_katman`'ı paylaşıyordu →
+> `2.4`'ü geri almak `2.1`'i de geri alırdı.
+
+---
+
+## 🎯 FAZ 2 · SEMANTİK ÇEKİRDEK — **BİTTİ** (13 adım, 2026-08-04)
+
+| Madde | Ne indi |
+|---|---|
+| `2.1` (a·b·c·c2·d + açma kararı) | Çekirdek katman · grain sözleşmesi (fail-closed) · `mdl_diff` · ad göçü · türev katman damgası |
+| `2.2b` | Metrik kaydının yüzeyi — **hakem artık beslenebiliyor** |
+| `2.3` | Departman = **mercek**, küp değil |
+| `2.4` | Aynı-grain çifti **beyan edildi**, kimlik korundu |
+| `2.5` | Hedef kıyası — **hedef uydurulmaz** |
+| `2.6` | Mali takvim — **sessiz-yanlış kapandı** (bayraksız) |
+| `2.7` | Adlandırma sözleşmesi — yalnız yeni küplere |
+| borç #11 | Çapraz-cube geçişi **grain-farkında** |
+
+**Korpus tüm faz boyunca sabit: %93,1** (taban %93,2). Hiçbir madde erişimi düşürmedi.
 
 ### FAZ 2 · adım 12 — `2.3` **DEPARTMAN = MERCEK, KÜP DEĞİL** *(2026-08-04)*
 

@@ -1,6 +1,20 @@
 name: surdurulebilirlik
 label: sürdürülebilirlik
 base_object: partiler
+# ⟳ FAZ 2.4 — AYNI-GRAIN ÇİFTİ BEYAN EDİLDİ: `surdurulebilirlik` ≡ `parti` (ikisi de
+# `partiler` grain'inde). Yoğunluk ölçüleri `parti` grain'ine ait METRİKLERDİR;
+# `surdurulebilirlik` bir MERCEK olarak yaşar.
+#
+# 🔴 KİMLİK SİLİNMEDİ ve bu ölçülmüş bir karardır: ham kaynak adlarını bu cube'un
+# kimliğinden çıkarmak "yanlış cube 245→135" getirdi AMA erişimi %64→%56 düşürdü ve
+# test_eval_gate'i kırdı — çünkü ölçü düzeyinde SAHİPLİK ÇÖZÜLMEDİ (iki cube da
+# `elektrik` iddia ediyor → _match_cube hiçbirini seçemiyor → R1).
+# `test_SURDURULEBILIRLIK_kimligi_KORUNUYOR` o denemeyi ikinci kez yapmayı ENGELLİYOR.
+#
+# ⚠ Doğru çözüm bir SAHİPLİK KARARIDIR (FAZ 2.2b `MetrikSahipligi` + `metrik_kaydi.hakem`),
+# kimlik silmek değil. Bu satır yalnız ÇİFTİ BEYAN EDER; çözüm hakemin işidir.
+ayni_grain: parti
+departman: surdurulebilirlik
 
 # Boyahane sürdürülebilirlik/kaynak KPI'ları (ZDHC/Higg + ISO 22400 6.23 E/PQ deseni).
 # YOĞUNLUKLAR = TOPLAM/TOPLAM (satır-AVG değil). 47-tablo rebind (2026-07-29): eski su/

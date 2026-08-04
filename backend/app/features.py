@@ -37,6 +37,19 @@ _SCOPE_ORDER = ("global", "sector", "tenant", "role", "user")
 #   3) Tüketen yüzeyi `useFeature("<key>")` ile geçitle (frontend).
 #   4) Gerekiyorsa admin panelden tenant/rol/kullanıcı override'ı ile aç.
 FLAG_REGISTRY: dict[str, dict[str, str]] = {
+    "ayni_grain_gocu": {
+        "label": "Aynı-grain çiftlerini merceğe indir",
+        "description": "`surdurulebilirlik` ≡ `parti` (ikisi de `partiler` grain'inde): "
+                       "yoğunluk ölçüleri `parti` grain'ine ait METRİKLERDİR ve "
+                       "`surdurulebilirlik` bir MERCEK olarak yaşar. 🔴 KİMLİK SİLİNMEZ — "
+                       "ham kaynak adlarını kimlikten çıkarmak ÖLÇÜLDÜ ve erişimi %64→%56 "
+                       "düşürdü; doğru çözüm bir SAHİPLİK kararıdır (FAZ 2.2b hakemi), "
+                       "kimlik silmek değil. ⚠ `kapsam_mercegi`den AYRI bayrak: aynı "
+                       "bayrağı paylaşsalardı 2.4'ü geri almak 2.1/2.3'ü de geri alırdı. "
+                       "features.yml'e BİLEREK eklenmedi: bu bir DERLEME-ZAMANI/katalog "
+                       "beyanıdır, tenant-kapsamlı bir rollout bayrağı değil (FAZ 2.4).",
+        "category": "semantik",
+    },
     "kapsam_mercegi": {
         "label": "Kapsam merceği (departman | genel | portföy)",
         "description": "Departman bir MERCEKTİR, küp değil (Plan 3 §7.8: 'kapsam "
