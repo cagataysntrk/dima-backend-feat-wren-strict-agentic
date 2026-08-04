@@ -474,6 +474,13 @@ export interface AskRequest {
   //   "deterministik" → yalnız route()      · "llm" → route + Intent-JSON
   //   null/"kesif"    → + Discovery (varsayılan, davranış DEĞİŞMEZ)
   yol_siniri?: "deterministik" | "llm" | "kesif" | null;
+  // 🔴 FAZ 5.14 — HIZLI ↔ DERİN. Ürünün *"LLM'siz cevap"* tezinin kullanıcıya verilen
+  // kontrolü. `hizli` sunucuda `yol_siniri="deterministik"` ile AYNI kapıdan geçer —
+  // aynı davranışa iki AD vermek meşrudur, iki UYGULAMA vermek değildir.
+  //
+  // ⚠ Seçim **thread'e değil SORUYA** bağlıdır ve her mesajda sıfırlanır: yapışkan bir
+  // ayar, unutulmuş bir ayardır.
+  mod?: "hizli" | "derin" | null;
 }
 
 // Discovery→Promote (Faz 2d) — Discovery (ham-SQL LLM) yolunun ürettiği bir cevabın

@@ -2429,6 +2429,20 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         Tanınmayan bir değer **sınır saymaz** (varsayılana düşer): bir yazım hatasının
         kullanıcının cevabını sessizce kesmesi, sınırın kendisinden daha zararlıdır.
         """
+        # 🔴 **FAZ 5.14 — `mod="hizli"` AYNI KAPIDAN GEÇER.** İkinci bir "LLM'i kapat"
+        # yolu açmak, aynı kuralın iki sahibi olurdu ve ikisi ayrışırdı: biri Discovery'yi
+        # keser, öteki kesmez ve hangisinin kazandığı çağrı sırasına bağlı kalırdı.
+        #
+        # ⚠ `hizli`, `yol_siniri="deterministik"` ile **birebir aynı** anlama gelir —
+        # yalnız kullanıcıya **daha anlaşılır bir adla** sunulur. *Aynı davranışa iki ad
+        # vermek meşrudur; iki UYGULAMA vermek değildir.*
+        # ⚠ Bayrak kapalıysa alan **yok sayılır** (bugünkü davranış birebir).
+        from app.features import resolve_for as _rf
+
+        _mod = str(getattr(body, "mod", None) or "").strip().lower()
+        if _mod == "hizli" and "hizli_derin" in _rf(settings, principal):
+            return False if basamak in ("intent", "discovery") else True
+
         sinir = (getattr(body, "yol_siniri", None) or "").strip().lower()
         if sinir not in ("deterministik", "llm"):
             return True

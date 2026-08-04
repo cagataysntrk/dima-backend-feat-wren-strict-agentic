@@ -56,6 +56,18 @@ class AskRequest(BaseModel):
     # raporun yapısal CubeQuery durumu. Takip mesajları ("aylara göre", "temmuzu çıkar")
     # bunlarla yorumlanır; motor mevcut sorguyu düzenler.
     history: list[str] = Field(default_factory=list)
+    #: 🔴 **FAZ 5.14 — HIZLI ↔ DERİN.** Ürünün *"LLM'siz cevap"* tezinin **kullanıcıya
+    #: verilen kontrolü**: `"hizli"` = yalnız `route()` + VQR birebir + `/cube`, **LLM
+    #: yolu kapalı**; `"derin"` = tam merdiven.
+    #:
+    #: ⚠ Seçim **thread'e değil SORUYA bağlıdır** ve her mesajda **sıfırlanır**. Bir
+    #: mod'u thread'e yapıştırmak, kullanıcının bir kez verdiği kararı ona sormadan
+    #: **her turda yeniden uygulamak** olurdu — ve o karar bir sonraki soruda yanlış
+    #: olabilir. *Yapışkan bir ayar, unutulmuş bir ayardır.*
+    #:
+    #: ⚠ `None` → bayrak kapalıysa da açıksa da **bugünkü davranış** (tam merdiven).
+    #: Varsayılanı `hizli` yapmak bir ÜRÜN kararıdır ve bayrağın işi değildir.
+    mod: str | None = Field(default=None, description="hizli | derin")
     # ⟳ FAZ 2.3 — `scope` BURAYA KONMADI ve bu bir SAPMA değil bir DÜZELTME.
     #
     # Yol haritası `AskRequest.scope` diyor. Ölçüp vazgeçtim: merceği CEVAPLAMA yoluna

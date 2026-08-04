@@ -68,6 +68,12 @@ export default function Home() {
   // YOL SINIRI (Faz F2) — oturum boyunca kalıcı bir tercih: "yalnız küpün kanıtladığı
   // cevapları göster". `null` = sınır yok (bugünkü davranış, hiçbir şey değişmez).
   const [yolSiniri, setYolSiniri] = useState<"deterministik" | "llm" | null>(null);
+  // 🔴 FAZ 5.14 — HIZLI ↔ DERİN. ⚠ Seçim **thread'e değil SORUYA** bağlıdır ve her
+  // mesajda **sıfırlanır** (aşağıda `onSettled`): bir mod'u yapıştırmak, kullanıcının
+  // bir kez verdiği kararı ona sormadan her turda yeniden uygulamak olurdu — ve o karar
+  // bir sonraki soruda yanlış olabilir. *Yapışkan bir ayar, unutulmuş bir ayardır.*
+  const [mod, setMod] = useState<"hizli" | "derin" | null>(null);
+  const hizliDerinAcik = useFeature("hizli_derin");
   // FAZ 2.3 — KAPSAM MERCEĞİ. Bayrak kapalıysa anahtar HİÇ çizilmez (onKapsam verilmez):
   // bir görünürlük aracı, kapalıyken kullanıcıya var olduğunu bile söylememelidir.
   const [kapsam, setKapsam] = useState<"departman" | "genel" | "portfoy">("genel");
@@ -275,12 +281,17 @@ export default function Home() {
           reply_to_extra_cube_queries: extraCubeQueries ?? null,
           extra_context: extraContext,
           yol_siniri: yolSiniri,
+          mod: hizliDerinAcik ? mod : null,
           anchor: vars.kind === "reply" ? (vars.hucre ?? null) : null,
         },
         setLiveTrace,
         setAktifJobId,
       );
     },
+    // 🔴 FAZ 5.14 — **SEÇİM HER MESAJDA SIFIRLANIR.** Başarı da hata da olsa: bir
+    // sonraki soru yeni bir karardır. Yapışkan bırakmak, kullanıcının unuttuğu bir
+    // ayarın onun cevabını sessizce kesmesi demekti.
+    onSettled: () => setMod(null),
     onSuccess: (data, vars) => {
       // FAZ S · STEERING KAPISI — bu cevap HÂLÂ güncel mi?
       // Değilse: geçmişe YAZILIR (kaybolmaz) ama aktif thread/bağlam/görünüm ONUN
@@ -446,6 +457,8 @@ export default function Home() {
               compact={activeThreadId !== null}
               yolSiniri={yolSiniri}
               onYolSiniri={setYolSiniri}
+              mod={hizliDerinAcik ? mod : null}
+              onMod={setMod}
               onSelectThread={(t) => {
                 // §B (Madde 4+6) — bir thread satırına tıklamak O THREAD'İ sağda aktive
                 // eder; bağlam THREAD'İN KENDİ SON item'ından geri yüklenir (tıklanan

@@ -167,6 +167,8 @@ export function ChatPanel({
   onSelectThread,
   onSubmit,
   yolSiniri = null,
+  mod = null,
+  onMod,
   kapsam = null,
   onKapsam,
   superadmin = false,
@@ -207,6 +209,10 @@ export function ChatPanel({
   // Sayısal bir güven eşiği DEĞİL: merdivenin kendisine bağlı üç ayrık seviye.
   // Rakiplerin veremeyeceği ayar budur — onların yolu yok, tek kutu var.
   yolSiniri?: "deterministik" | "llm" | null;
+  // 🔴 FAZ 5.14 — HIZLI ↔ DERİN. ⚠ Seçim SORUYA bağlıdır ve her mesajda sıfırlanır
+  // (`page.tsx` `onSettled`). *Yapışkan bir ayar, unutulmuş bir ayardır.*
+  mod?: "hizli" | "derin" | null;
+  onMod?: (m: "hizli" | "derin" | null) => void;
   // FAZ 2.3 — kapsam merceği. `undefined` onKapsam → anahtar HİÇ çizilmez (bayrak kapalı).
   kapsam?: "departman" | "genel" | "portfoy" | null;
   onKapsam?: (k: "departman" | "genel" | "portfoy") => void;
@@ -365,6 +371,32 @@ export function ChatPanel({
                   yolSiniri === deger
                     ? "border-accent/50 text-accent"
                     : "border-hairline text-neutral-500 hover:text-foreground"
+                }`}
+              >
+                {etiket}
+              </button>
+            ))}
+          </div>
+        )}
+        {/* 🔴 FAZ 5.14 — HIZLI ↔ DERİN. Soru kutusunun yanında **iki konumlu** anahtar.
+            `yol_siniri` üç konumlu bir UZMAN ayarıdır; bu ise günlük kullanım için
+            **tek soruluk** bir karardır ve her mesajda sıfırlanır. İkisi aynı sunucu
+            kapısından geçer — aynı davranışa iki AD, iki uygulama değil. */}
+        {onMod && (
+          <div className="mb-1.5 inline-flex border border-hairline">
+            {([
+              ["hizli", "hızlı", "Yalnız kanıtlanmış küp yolu — LLM'e HİÇ gidilmez"],
+              ["derin", "derin", "Tam merdiven: küp → LLM seçimi → keşif"],
+            ] as const).map(([deger, etiket, ipucu], i) => (
+              <button
+                key={deger}
+                type="button"
+                title={ipucu}
+                onClick={() => onMod(mod === deger ? null : deger)}
+                className={`${i ? "border-l border-hairline " : ""}px-2 py-0.5 font-mono text-[10px] transition-colors ${
+                  mod === deger
+                    ? "bg-accent/10 text-accent"
+                    : "text-neutral-500 hover:text-foreground"
                 }`}
               >
                 {etiket}

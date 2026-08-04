@@ -46,6 +46,20 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "yanıt BAYT BAYT bugünküyle aynıdır (KURAL B — FAZ 2.5).",
         "category": "dogruluk",
     },
+    "hizli_derin": {
+        "label": "Hızlı ↔ Derin anahtarı",
+        "description": "Ürünün «LLM'siz cevap» tezinin KULLANICIYA VERİLEN KONTROLÜ. "
+                       "`mod=\"hizli\"` → yalnız `route()` + VQR birebir + `/cube`; LLM "
+                       "yolu KAPALI. `derin` → tam merdiven. 🔴 `hizli`, var olan "
+                       "`yol_siniri=\"deterministik\"` kapısından geçer — ikinci bir "
+                       "«LLM'i kapat» yolu açmak aynı kuralın iki sahibi olurdu ve "
+                       "hangisinin kazandığı çağrı sırasına bağlı kalırdı. Aynı davranışa "
+                       "iki AD vermek meşrudur; iki UYGULAMA vermek değildir. ⚠ Seçim "
+                       "thread'e değil SORUYA bağlıdır ve her mesajda sıfırlanır: "
+                       "yapışkan bir ayar, unutulmuş bir ayardır. Kapalıyken alan yok "
+                       "sayılır (FAZ 5.14).",
+        "category": "konusma",
+    },
     "kpi_pin": {
         "label": "KPI pin (panoda sabitleme)",
         "description": "Pano VARDI ama KPI-pin semantiği ayrı DEĞİLDİ ve NL yolu YOKTU: "
