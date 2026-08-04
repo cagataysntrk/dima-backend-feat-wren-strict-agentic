@@ -16,8 +16,8 @@
 
 | | |
 |---|---|
-| **Aktif faz** | ✅ **FAZ 1 · GÜVENCE BİTTİ** (17 madde) → **FAZ 2 · SEMANTİK ÇEKİRDEK** başlıyor |
-| **Sıradaki madde** | 🔴 **FAZ 2 · SEMANTİK ÇEKİRDEK** — `2.1` çekirdek katman + grain sözleşmesi *(en yüksek etki alanlı faz)* |
+| **Aktif faz** | **FAZ 2 · SEMANTİK ÇEKİRDEK** *(FAZ 1 ✅ bitti — 19 adım)* |
+| **Sıradaki madde** | `2.1(b)` **`cari` ifade eşlemesi** → `2.1(c)` **`ticaret` GRAIN KARARI** → `2.1(d)` demo kopyaları |
 | **Demet** | ✅ **`1.12` kapısı 4/4 YEŞİL** (süit **2477**) — risk sınırı olduğu için demete girmedi · demet 13 açık: `1.10`+`1.11` (o kapıya da dahil oldular) |
 | 🔴 **Açık borç** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ (kapı engelliyor) |
 | **Ondan sonra** | `1.2`·`1.2b` → `1.4` → 🔴 **`1.6` ÖNCE, `1.5` SONRA** *(sıra düzeltmesi, aşağıda)* → `1.7` → `1.8`-`1.12` → `1.13` **EN SON** |
@@ -420,6 +420,71 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
+
+### FAZ 2 · adım 1 — `2.1(a)` **çekirdek katman + grain sözleşmesi kapısı** *(2026-08-04)*
+
+Kapı: **25 test** (`tests/test_cekirdek_katman.py`), hızlı sinyal **929**.
+Bayrak: `cekirdek_katman` = `off|shadow|on`, **varsayılan `off`**.
+🔴 **Risk sınırı** (`demo/packs`) → kendi korpus kapısını koştu.
+
+> **Ölçülen kusur — ve doğrulandı:** `ticaret` cube'u **üç ERP'de** aynı adı, aynı
+> sinonimi ve aynı ölçü adını (`satis_tutari`) taşıyor ama **farklı grain**'de:
+> mikro-v16 → `stok_hareketleri`, logo-3 · netsis → `faturalar`. Yani *"bu yıl satış"*
+> üç şirkette **karşılaştırılamaz üç sayı** döndürüyor ve **hiçbir yerde beyan yok**.
+> *Aynı adı taşıyan iki sayının farklı şeyler olduğunu söylemeyen bir semantik katman,
+> semantik katman değildir.*
+
+> ✅ **KABUL ÖLÇÜTÜ ÖNCE — ve tuttu.** `lab/mdl_diff.py` (yeni) gölge derleme yapıyor:
+> `off` ↔ `on` iki MDL, karşılaştırma birimi **cube × ölçü × boyut × ifade × `additive`**.
+> Ölçüldü
+> (`python lab/mdl_diff.py`): **dört şirketin dördünde de sayı-etkisi 0 fark**; sözlük
+> zenginleşmesi `demo-boyahane 2 · gitas 8 · atiksan 5 · gulteks 7`. Ölçüm **teste
+> gömüldü** — çekirdek katman bir gün bir ifadeye dokunursa kapı kırmızı verir.
+
+> 🔴 **ÖLÇÜM ARACI, GÖNDERMEK ÜZERE OLDUĞUM DAVRANIŞ DEĞİŞİKLİĞİNİ YAKALADI.** İlk
+> sürüm `additive`'i de birleştiriyordu (yol haritası onu *"sözlük"* diye sayıyor) ve
+> gölge diff **0 fark** diyordu — çünkü **aracın kendisi** `additive`'i *sözlük*
+> (zararsız) kovasına koymuştu. Kovayı düzeltir düzeltmez **beş gerçek fark** göründü:
+> `mal` ve `ticaret` cube'ları `additive` beyan etmiyor ve çekirdek onlara `additive:
+> full` **yazıyordu** — yani *"hiçbir sayıya dokunmuyor"* diye ilan edilen bir göç,
+> motorun **toplama semantiğini** değiştiriyordu. `additive` artık **birleştirilmiyor**:
+> doğru değeri **ifadeye** bağlıdır (`cari.bakiye` üç ERP'de `SUM(borç − alacak)`, yani
+> hareket toplamı; stok anlık görüntüsü olsaydı `semi` olurdu) ve karar **adım (c)**'nin.
+> *Ölçüm aracının kendisi de bir bağımlılıktır* — bu turda **ikinci kez** kanıtlandı.
+
+> 🔴 **SÖZLÜK ile İFADE AYRI — fazın en kritik kararı.** Adım (a) yalnız *anlamı*
+> birleştirir (sinonim · birim · `additive` · grain). Yol haritasının kendi denetim
+> düzeltmesi: `cari` *"saf tekrar"* **DEĞİL** — ölçü **adları** aynı ama **ifadeleri
+> farklı** (`SUM(CASE WHEN cha_tip=0…)` ↔ `SUM(BORC)`), `base_object`'leri dört ayrı tablo.
+> *Aynı ada sahip iki ifadeyi "saf tekrar" sanıp birleştirmek, bu fazın üretebileceği en
+> sessiz hatadır.*
+
+> ⚠ **Çekirdek EKSİK olanı tamamlar, VAR OLANI DÜZELTMEZ:** `unit`/`additive` yalnız
+> **yoksa** yazılır. ERP bir birimi bilerek farklı yazmış olabilir (miktar `kg` ↔ `adet`);
+> ezmek **sessizce yanlış birim** demekti — `1.9`'un numeric-fidelity kapısının tam olarak
+> engellediği şey.
+
+> 🔴 **BEŞİNCİ ÜRETEÇ, yeni desen DEĞİL.** `compose()` zaten dört YAML üreteci taşıyordu
+> (`_merge_cube_synonyms` · `_compose_derived_metrics` · `_compose_relationship_dimensions`
+> · `_compose_kpis`); `_merge_cube_metadata` beşincisi. **Anahtar düzeyinde** birleştiriyor
+> çünkü `copy2` **dosya düzeyinde** eziyor — bir çekirdek katman yazılsaydı ERP katmanı onu
+> **sessizce silerdi** ([KANIT §10.2]).
+
+> 🔴 **GRAIN İHLALİ = COMPOSE REDDİ** (fail-closed, `G5`/`G10` sınıfı). Uyarı **değil**:
+> bir uyarı derlenmiş ve dağıtılmış bir MDL bırakır, o MDL'yi kimse geri almaz ve yanlış
+> sayı **üretimde** çıkar. ⚠ **Bilinmeyen grain SERBEST** — sözleşmede sayılmamış bir
+> tabloyu ihlal saymak, sözlük büyümeden **her yeni ERP'yi reddederdi**.
+
+> ⚠ **KAPI ARMED AMA GERÇEK PACK'LERDE HENÜZ ATEŞLEMİYOR — ve bu yazılı.** Hiçbir metrik
+> henüz `grain:` beyan etmiyor: `satis_tutari`'nın kanonik grain'i bir **karardır** ve
+> göç reçetesinin **adım (c)**'sine ait (*"ikisi de meşru olabilir → çekirdekte İKİ ayrı
+> metrik"*). Bunu yazmadan bırakmak, bir sonraki turun *"ihlal bulmadı, demek ki temiz"*
+> diye okumasına yol açardı. *Ateşlemeyen bir kapıyı «yeşil» sanmak, kapının olmamasından
+> beterdir.* Kapı ayrıca **ayrışmanın hâlâ durduğunu** da ölçüyor (2 farklı grain).
+
+> ⚠ **Gölge YAZMIYOR** — FAZ 1.1'in birebir dersi: *yazan bir gölge, gölge değildir.*
+> **SİLME YOK:** üç ERP'nin `ticaret/metadata.yml` dosyaları **yerinde**; geri alma =
+> bayrağı kapatmak (kapı dosyaların varlığını da doğruluyor).
 
 ### FAZ 1 · adım 19 — `1.13` **düşman denetim paneli yenilendi** *(2026-08-04)* — 🔴 **FAZ 1 BİTTİ**
 

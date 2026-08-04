@@ -57,13 +57,17 @@ os.environ["DIMA_CRED_KEK"] = _b64.b64encode(b"test-kek-32-byte-0123456789abcd!"
 # (`app/compose.py:814`; `demo_root` ayarı YOK). Bu yüzden geçici tabana `packs`/
 # `companies` **sembolik bağ** kurulur — repoya tek bayt yazılmaz (kapı kuralı:
 # *"kapı koşarken repoya YAZILMAZ"*), taban salt-okunur tüketilir.
+# ⚡ PARALEL SÜİT (pytest-xdist): her worker KENDİ derlenmiş proje ağacına yazar, böylece
+# `demo/wren-project` üzerindeki compose yarışı YAPISAL olarak ortadan kalkar. Gerekçenin
+# tamamı ve neden düz `mkdtemp`'in yetmediği `lab/izolasyon.py` başında.
 _XDIST_WORKER = os.environ.get("PYTEST_XDIST_WORKER")
 if _XDIST_WORKER:
-    _demo = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "demo")
-    _base = tempfile.mkdtemp(prefix=f"dima-wp-{_XDIST_WORKER}-")
-    for _link in ("packs", "companies"):
-        os.symlink(os.path.join(_demo, _link), os.path.join(_base, _link))
-    os.environ["DIMA_PROJECT_DIR"] = os.path.join(_base, "wren-project")
+    import sys as _sys
+
+    _sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from lab.izolasyon import izole_proje_ayna
+
+    os.environ["DIMA_PROJECT_DIR"] = izole_proje_ayna(_XDIST_WORKER)
 
 TEST_USER = {"email": "test@dima.local", "password": "test-parola-123"}
 TEST_SUPERADMIN = {"email": "root@dima.local", "password": "root-parola-123"}

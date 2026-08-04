@@ -177,6 +177,11 @@ class Settings(BaseSettings):
     # bir tablo, maskeli bir tablodan DAHA KÖTÜDÜR çünkü eksiklik fark edilmez.
     # `on` kademesi "hangi kolonlar esirgendi" yüzeyi kurulmadan AÇILAMAZ (kapı kilitli).
     motor_cls: str = "off"
+    # FAZ 2.1 — ÇEKİRDEK KATMAN (`off|shadow|on`). Varsayılan `off` ve nedeni KURAL B:
+    # bayrak kapalıyken compose çıktısı BİREBİR bugünküdür ve bu testle kilitlidir.
+    # `shadow` hesaplar ama YAZMAZ (yazan bir gölge, gölge değildir — FAZ 1.1'de ölçüldü);
+    # `on` yazar ve grain sözleşmesi ihlalinde compose'u REDDEDER (fail-closed).
+    cekirdek_katman: str = "off"
 
     # Strict moddan BAĞIMSIZ çalışan fonksiyon kara listesi (`engine._plan` koşulu `or`).
     # Boş bırakılırsa devre dışı; buraya yazılan her ad `off` modunda bile bloklanır.

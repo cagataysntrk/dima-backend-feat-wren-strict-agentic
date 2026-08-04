@@ -1,0 +1,91 @@
+# ÇEKİRDEK METRİK SÖZLÜĞÜ — FAZ 2.1 · adım (a)
+#
+# 🔴 BU DOSYA İFADEYE DOKUNMAZ. Adım (a) yalnız **sözlüğü** birleştirir: sinonim ·
+# birim · `additive` · **grain sözleşmesi**. İfade eşlemesi (adım b/c) ayrı bir turdur
+# ve ayrı bir karar gerektirir — `cari`'nin ölçü ADLARI aynı ama İFADELERİ farklı
+# (`SUM(CASE WHEN cha_tip=0…)` ↔ `SUM(BORC)`), `base_object`'leri dört ayrı tablo.
+# *Aynı ada sahip iki ifadeyi "saf tekrar" sanıp birleştirmek, bu fazın üretebileceği
+# en sessiz hatadır.*
+#
+# ## Alanların anlamı
+#
+# | alan | ne | kim sahibi |
+# |---|---|---|
+# | `grain` | ölçünün **bir satırının** ne demek olduğu | 🔴 **ÇEKİRDEK** — sözleşme |
+# | `synonyms` | kullanıcının o metriği çağırdığı kelimeler | çekirdek + sektör (additive) |
+# | `unit` | birim (`₺`, `kg`, `adet`, `%`) | çekirdek |
+# | `additive` | `full` \| `semi` \| `none` | çekirdek |
+# | `expression` | SQL | ⛔ **ERP KATMANI** — burada YOK |
+# | `base_object` | fiziksel tablo | ⛔ **ERP KATMANI** — burada YOK |
+#
+# ## 🔴 GRAIN SÖZLEŞMESİ — fail-closed
+#
+# Bir metrik burada `grain: fatura` diyorsa, onu `stok_hareketi` grain'li bir cube'a
+# bağlayan ERP katmanı `compose()`'u **REDDETTİRİR**. Uyarı değil **ret**: uyarı,
+# derlenmiş ve dağıtılmış bir MDL bırakır ve o MDL'yi kimse geri almaz.
+#
+# ⚠ **İki grain de meşru olabilir** — o zaman **iki ayrı metrik** yazılır (`satis_tutari`
+# @fatura ve `satis_tutari_hareket` @stok_hareketi), tek metrik iki anlama BÜKÜLMEZ.
+# Hangi metriğin `satış` sinonimini taşıdığı `0.18`'in metrik kaydına yazılır: karar
+# kalemi, **sahibi ve tarihi** olur.
+
+grain_sozlesmeleri:
+  # Ölçülen: mikro-v16 `ticaret` → `stok_hareketleri`; logo-3 · netsis `ticaret` →
+  # `faturalar`. Aynı ad, aynı sinonim, KARŞILAŞTIRILAMAZ sayı.
+  fatura:
+    aciklama: "bir satır = bir fatura kalemi/başlığı"
+    base_object_adlari: [faturalar, fatura, invoice, INVOICE, fatura_kalem]
+  stok_hareketi:
+    aciklama: "bir satır = bir stok hareketi (giriş/çıkış)"
+    base_object_adlari: [stok_hareketleri, stok_hareket, sth, STOK_HAREKETLERI]
+  cari_hareket:
+    aciklama: "bir satır = bir cari hesap hareketi (borç/alacak)"
+    base_object_adlari: [cari_hareketler, cari_hareket, cha, CLFLINE, cari_kartlar]
+  parti:
+    aciklama: "bir satır = bir üretim partisi"
+    base_object_adlari: [partiler, parti]
+
+metrikler:
+  # ── SATIŞ ──────────────────────────────────────────────────────────────────
+  # ⚠ `satis_tutari` bugün ÜÇ ERP'de de bu adı taşıyor ama grain'i AYRIŞIYOR.
+  # Sözleşme fatura grain'ini kanonik ilan ETMİYOR — o karar adım (c)'ye ait ve
+  # `ticaret` göçünün kendisi. Burada yalnız SÖZLÜK birleşiyor.
+  - name: satis_tutari
+    label: satış tutarı
+    unit: "₺"
+    additive: full
+    synonyms: [satış, satis, ciro, gelir, satış tutarı, hasılat, hasilat]
+
+  - name: satis_miktari
+    label: satış miktarı
+    unit: adet
+    additive: full
+    synonyms: [satış miktarı, satılan, sevk edilen, satis miktari]
+
+  - name: alim_tutari
+    label: alım tutarı
+    unit: "₺"
+    additive: full
+    synonyms: [alım, alim, alış, alis, alım tutarı, satın alma]
+
+  # ── CARİ ───────────────────────────────────────────────────────────────────
+  # 🔴 `bakiye` SEMI-ADDITIVE: dönem boyunca TOPLANMAZ, dönem SONU alınır. Bunu
+  # sözlükte beyan etmek, `1.9`'un numeric-fidelity kapısıyla aynı sınıftır —
+  # bir bakiyeyi net-hareket gibi toplamak, sistemin verebileceği en sessiz yanlıştır.
+  - name: bakiye
+    label: bakiye
+    unit: "₺"
+    additive: semi
+    synonyms: [bakiye, borç bakiyesi, hesap bakiyesi, kalan]
+
+  - name: borc_toplami
+    label: borç toplamı
+    unit: "₺"
+    additive: full
+    synonyms: [borç, borc, borç toplamı]
+
+  - name: alacak_toplami
+    label: alacak toplamı
+    unit: "₺"
+    additive: full
+    synonyms: [alacak, alacak toplamı]

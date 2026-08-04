@@ -286,6 +286,12 @@ def compose(company: str, base: Path, out: Path) -> dict:
     # handle + calc kolon + cube boyutu üretir. `_compose_derived_metrics`'ten SONRA
     # çalışır ki o pass'in ürettiği cube'lar da kapsansın.
     _compose_relationship_dimensions(out)
+    # ÇEKİRDEK KATMAN (FAZ 2.1) — evrensel metrik SÖZLÜĞÜ + GRAIN SÖZLEŞMESİ.
+    # 🔴 Beşinci üreteç. Dosya düzeyinde ezme YERİNE anahtar düzeyinde birleştirme:
+    # `copy2` bir çekirdek katmanı yazsak bile ERP katmanının onu SESSİZCE silmesine
+    # yol açardı (ölçülen kusur, [KANIT §10.2]).
+    # ⚠ Bayrak `off` iken bu satır HİÇBİR ŞEY yapmaz — çıktı birebir bugünkü (KURAL B).
+    _merge_cube_metadata(base, out)
     # KPI-KOMPOZİSYON: cross-cube türev KPI'lar (packs/modul/kpi/*.yml). Bileşenleri
     # birden çok türev-view'dan çeker (CCC = cari_finans_src ⊕ karlilik_src). Yalnız
     # gerekli view'ların TAMAMI üretildiyse derlenir (dürüst gate — eksikse KPI yok).
@@ -723,6 +729,65 @@ def _merge_cube_synonyms(layers: list[tuple[Path, str | None]], out: Path) -> No
                     if d.get("name") == dname:
                         _add(d, "synonyms", syns)
             meta_path.write_text(yaml.safe_dump(meta, allow_unicode=True, sort_keys=False))
+
+
+def _merge_cube_metadata(base: Path, out: Path) -> None:
+    """FAZ 2.1 — compose()'un **BEŞİNCİ** üreteci: çekirdek metrik sözlüğünü işler.
+
+    Dördü zaten vardı (`_merge_cube_synonyms` · `_compose_derived_metrics` ·
+    `_compose_relationship_dimensions` · `_compose_kpis`); bu **yeni bir desen değil**,
+    o dördün beşincisi.
+
+    ## 🔴 Neden dosya-düzeyi ezme YETMİYORDU
+
+    `compose()` katmanları `shutil.copy2` ile **dosya düzeyinde** üst üste yazıyor. Yani
+    bir çekirdek katman yazılsaydı, ERP katmanının aynı adlı dosyası onu **sessizce
+    silerdi**. Birleştirme **anahtar düzeyinde** olmak zorundaydı.
+
+    ## Kademeler
+
+    * `off` → **hiçbir şey** (bugünkü çıktı birebir)
+    * `shadow` → birleştirme hesaplanır, **YAZILMAZ**; grain ihlali **loglanır**
+    * `on` → yazılır; grain ihlali `GrainIhlali` ile **compose'u REDDEDER**
+
+    ⚠ `shadow`'un yazmaması bilinçli: **yazan bir gölge, gölge değildir** — FAZ 1.1'de
+    ölçülen kusurun aynısı (`motor_rls` gölgesi manifeste RLAC yazıyordu ve *"shadow"*
+    adı altında **servis edilen cevabı** değiştirecekti).
+    """
+    from app import cekirdek
+
+    kademe = cekirdek.kademe()
+    if kademe == "off":
+        return
+    sozluk = cekirdek.sozluk_yukle(base)
+    if not sozluk:
+        return                               # çekirdek pack yok — durum, hata değil
+
+    ihlaller: list[str] = []
+    yazilan = 0
+    for meta_path in sorted((out / "cubes").glob("*/metadata.yml")):
+        try:
+            meta = yaml.safe_load(meta_path.read_text(encoding="utf-8")) or {}
+        except Exception:                    # noqa: BLE001
+            continue                         # bozuk YAML'ı `dogrula()` zaten yakalar
+        cube_adi = str(meta.get("name") or meta_path.parent.name)
+        ihlaller.extend(cekirdek.grain_denetle(cube_adi, meta, sozluk))
+        yeni, degisti = cekirdek.cube_birlestir(meta, sozluk)
+        if degisti and kademe == "on":
+            meta_path.write_text(
+                yaml.safe_dump(yeni, allow_unicode=True, sort_keys=False), encoding="utf-8")
+            yazilan += 1
+
+    if ihlaller:
+        # 🔴 FAIL-CLOSED. Uyarı bir MDL bırakır ve o MDL'yi kimse geri almaz; yanlış sayı
+        # ÜRETİMDE çıkar. Build zamanında durmak, üretim zamanında yanlış cevap vermekten
+        # kesinlikle iyidir (`dogrula()`'nın aynı gerekçesi).
+        mesaj = "GRAIN SÖZLEŞMESİ İHLALİ:\n  - " + "\n  - ".join(ihlaller)
+        if kademe == "on":
+            raise cekirdek.GrainIhlali(mesaj)
+        _log.warning("çekirdek katman (shadow) — %s", mesaj)
+    if kademe == "shadow":
+        _log.info("çekirdek katman (shadow): %d cube birleşecekti, YAZILMADI", yazilan)
 
 
 class ProjectValidationError(RuntimeError):

@@ -16,11 +16,27 @@ Koşum:  .venv/bin/python lab/nl_corpus.py            # dört şirket
 from __future__ import annotations
 
 import json
+import multiprocessing as mp
+import os
 import sys
 from collections import Counter, defaultdict
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
+#: PC'yi boğmadan kullanılacak süreç sayısı. Çekirdek sayısından **4 eksik** —
+#: kullanıcı kısıtı: *"aşırıya kaçma, PC zarar görmesin"*. `DIMA_KORPUS_PARALEL`
+#: ile ezilir; `1` seri (eski) davranışı geri getirir, yani geri alma tek env'dir.
+_VARSAYILAN_TAVAN = 16
+
+
+def _paralel_sayisi() -> int:
+    ayar = os.environ.get("DIMA_KORPUS_PARALEL")
+    if ayar:
+        return max(1, int(ayar))
+    return max(1, min(_VARSAYILAN_TAVAN, (os.cpu_count() or 4) - 4))
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lab.izolasyon import izole_proje_ayna  # noqa: E402
 import tests.conftest as _conf  # noqa: E402,F401  (env kurulumu)
 from tests.conftest import make_tenant_user  # noqa: E402
 
@@ -209,7 +225,15 @@ def gen_processes(schema):
     return procs, valid
 
 
-def run_company(name, login, pw, slug):
+def run_company(name, login, pw, slug, pay: int = 0, pay_sayisi: int = 1):
+    """Bir şirketin korpusunu koşar. `pay_sayisi > 1` ise soruların YALNIZ `pay`.
+    dilimini koşar (`liste[pay::pay_sayisi]`).
+
+    🔴 **PAYDA BÖLÜNÜR, KIRPILMAZ.** Dilimler soru kümesini **örtüşmeden ve boşluksuz**
+    parçalar; `birlestir()` sayaçları topladığında ham tur paydası **birebir aynı**
+    çıkar (doğrulandı: 8977 = 8977). KURAL A korunur, geçmiş tabanlar geçerli kalır.
+    Bu bir ÖRNEKLEME DEĞİL, aynı işin paralel koşulmasıdır.
+    """
     from fastapi.testclient import TestClient
 
     import app.wren_service as ws
@@ -251,6 +275,8 @@ def run_company(name, login, pw, slug):
 
     # tekil
     singles = gen_single(schema)
+    if pay_sayisi > 1:
+        singles = singles[pay::pay_sayisi]
     # FAZ 0.19 — vaka → {tüm varyantları doğru mu}. **KATI (AND):** bir vakanın
     # varyantlarından biri bile yanlış cube'a giderse vaka **yanlıştır**. Gevşek (OR/
     # çoğunluk) sayım, tek bir doğru varyantla bir sahiplik hatasını gizlerdi.
@@ -293,6 +319,10 @@ def run_company(name, login, pw, slug):
 
     # süreç
     procs, valid = gen_processes(schema)
+    # Bir sürecin adımları BİRBİRİNE bağlıdır (`cq` bağlamı ileri taşınır) → süreç
+    # BÖLÜNMEZ, süreçler arasında bölünür. Adım sırası her dilimde korunur.
+    if pay_sayisi > 1:
+        procs = procs[pay::pay_sayisi]
     n_steps = 0
     for pname, steps in procs:
         cq = None
@@ -316,6 +346,11 @@ def run_company(name, login, pw, slug):
             # FAZ 0.19 — İKİNCİ PAYDA. Ham tur paydası yukarıda AYNEN duruyor.
             "vaka_toplam": len(vaka_sonuc),
             "vaka_dogru": sum(1 for v in vaka_sonuc.values() if v),
+            # Dilim birleştirmesi için HAM vaka tablosu. Vaka sayısı dilimler arasında
+            # TOPLANAMAZ: aynı vaka birden çok dilime düşebilir ve KATI (AND) kural
+            # gereği bir dilimde yanlışsa vaka yanlıştır. Toplama, o vakayı iki kez
+            # sayıp payda'yı şişirirdi. `birlestir()` bu tabloyu AND ile katlar.
+            "_vaka": [(list(k), v) for k, v in vaka_sonuc.items()],
             "discovery_ornek": discovery_ornek[:20]}
 
 
@@ -452,15 +487,114 @@ def kapi_degerlendir(reports: list[dict]) -> tuple[bool, list[str]]:
     return gecti, satirlar
 
 
-def main():
-    reports = []
+#: Dilim sayıları **soru sayısına değil, İŞ YÜKÜNE** orantılı. Ölçüldü (2026-08-04):
+#:
+#:   şirket    soru   seri süre   hız        → iş payı
+#:   boyahane  5306   8 dk 49 sn  10,0 q/sn    %68
+#:   gitas     2479   ~1 dk 53    ~22 q/sn     %14
+#:   gulteks   1618   1 dk 16     21,3 q/sn    %10
+#:   atiksan   1462   1 dk 05     22,5 q/sn     %8
+#:
+#: boyahane hem 3,6× fazla soru üretiyor HEM DE soru başına 2,2× yavaş — bu ikisi
+#: çarpılınca duvar saatinin üçte ikisi tek şirkete gidiyor. Yalnız şirketleri
+#: paralelleştirmek bu yüzden YETMEZ (duvar = boyahane = 8 dk 49 sn); ağır şirket
+#: kendi içinde bölünmeli.
+#:
+#: Dilim sayısı serbestçe artırılamaz: her dilim kendi aynasını kurup compose+build
+#: yapar (~25 sn sabit maliyet). Çok ince dilim = bootstrap baskın. Aşağıdaki dağılım
+#: 16 süreci tam doldurur ve en uzun dilimi ~60 sn'de tutar.
+_AGIR = {"boyahane": 9, "gitas": 3, "gulteks": 2, "atiksan": 2}
+
+
+def _is_listesi(paralel: int) -> list[tuple]:
+    """(şirket, pay, pay_sayısı) görev listesi — ağır şirket daha çok dilime bölünür."""
+    isler = []
     for name, login, pw, slug in COMPANIES:
-        try:
-            reports.append(run_company(name, login, pw, slug))
+        n = min(_AGIR.get(name, 1), max(1, paralel)) if paralel > 1 else 1
+        isler.extend((name, login, pw, slug, i, n) for i in range(n))
+    return isler
+
+
+def _calis(is_: tuple) -> dict:
+    """Alt süreç girişi. Her süreç KENDİ derlenmiş proje ağacını kurar → compose yarışı yok."""
+    name, login, pw, slug, pay, n = is_
+    if n > 1 or os.environ.get("DIMA_KORPUS_IZOLE") == "1":
+        os.environ["DIMA_PROJECT_DIR"] = izole_proje_ayna(f"{name}-{pay}")
+    try:
+        return run_company(name, login, pw, slug, pay, n)
+    except Exception as exc:
+        return {"company": name, "error": f"{type(exc).__name__}: {exc}"}
+
+
+def birlestir(dilimler: list[dict]) -> dict:
+    """Bir şirketin dilim raporlarını TEK rapora katlar.
+
+    🔴 Payda burada **toplanır**, kırpılmaz — `run_company` docstring'i (KURAL A).
+    Örnek listeleri (`fails`, `yanlis_cube_ornek`, `discovery_ornek`) dilimlerin BİTİŞ
+    SIRASINA göre değil, **dilim sırasına** göre birleştirilir; yoksa hiçbir gerileme
+    olmadığı halde rapor her koşumda farklı diff üretirdi.
+    """
+    hatali = [d for d in dilimler if d.get("error")]
+    if hatali:
+        return hatali[0]
+    ilk = dilimler[0]
+    cats, dogru = Counter(), Counter()
+    fails = defaultdict(list)
+    vaka: dict[tuple, bool] = {}
+    yanlis, disc = [], []
+    for d in dilimler:
+        cats.update(d["cats"])
+        dogru.update(d.get("dogru_cube") or {})
+        for k, v in (d.get("fails") or {}).items():
+            fails[k].extend(v)
+        for k, v in d.get("_vaka") or []:
+            anahtar = tuple(k)
+            # KATI (AND): bir dilimde bile yanlışsa vaka YANLIŞ.
+            vaka[anahtar] = vaka.get(anahtar, True) and v
+        yanlis.extend(d.get("yanlis_cube_ornek") or [])
+        disc.extend(d.get("discovery_ornek") or [])
+    return {"company": ilk["company"],
+            "n_single": sum(d["n_single"] for d in dilimler),
+            "n_proc_steps": sum(d["n_proc_steps"] for d in dilimler),
+            "cats": dict(cats), "fails": {k: v[:12] for k, v in fails.items()},
+            "dogru_cube": dict(dogru), "yanlis_cube_ornek": yanlis[:20],
+            "vaka_toplam": len(vaka),
+            "vaka_dogru": sum(1 for v in vaka.values() if v),
+            "discovery_ornek": disc[:20]}
+
+
+def main():
+    # ⚡ PARALEL KORPUS. Seri koşum 13 dk 18 sn sürüyordu ve tek çekirdeği %91'de
+    # tutup 19 çekirdeği boş bırakıyordu (ölçüldü). Sorular birbirinden bağımsız
+    # (`session=None thread=None`), şirketler de öyle → iş utanç verici derecede
+    # paralel. GİL yüzünden THREAD işe yaramaz (yönlendirme saf Python CPU işi),
+    # bu yüzden SÜREÇ kullanılır.
+    paralel = _paralel_sayisi()
+    isler = _is_listesi(paralel)
+    reports = []
+    if paralel <= 1:
+        for is_ in isler:
+            reports.append(_calis(is_))
+            print(f"[{is_[0]}] tamam")
+    else:
+        print(f"⚡ paralel korpus: {len(isler)} dilim, {paralel} süreç")
+        gruplar = defaultdict(list)
+        # 🔴 `spawn`, `fork` DEĞİL. `fork` ile alt süreçler ebeveynin ortamını ve
+        # açık nesnelerini miras alır — `tests/conftest.py` control-plane SQLite'ını
+        # **import anında** `mkdtemp` ile kurduğu için dokuz dilim AYNI dosyaya girip
+        # `table tenant already exists` ile çöküyordu (ölçüldü: boyahane 9 dilimde
+        # düştü, payda 445→255 indi ve kapı doğru şekilde KIRMIZI verdi).
+        # `spawn` her süreçte conftest'i BAŞTAN içe aktarır → her dilim kendi
+        # control-plane DB'sini, kendi VQR yolunu ve kendi aynasını alır.
+        with ProcessPoolExecutor(max_workers=paralel,
+                                 mp_context=mp.get_context("spawn")) as pool:
+            for is_, rapor in zip(isler, pool.map(_calis, isler)):
+                gruplar[is_[0]].append(rapor)
+                print(f"[{is_[0]}#{is_[4]}] tamam", flush=True)
+        # Şirket sırası COMPANIES'ten gelir — rapor sırası koşumdan koşuma sabit.
+        for name, *_ in COMPANIES:
+            reports.append(birlestir(gruplar[name]))
             print(f"[{name}] tamam")
-        except Exception as exc:
-            print(f"[{name}] HATA: {type(exc).__name__}: {exc}")
-            reports.append({"company": name, "error": str(exc)})
 
     Path("lab/reports").mkdir(exist_ok=True)
     Path("lab/reports/nl_corpus.json").write_text(json.dumps(reports, ensure_ascii=False, indent=1))

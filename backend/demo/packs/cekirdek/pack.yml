@@ -1,0 +1,17 @@
+# ÇEKİRDEK KATMAN — evrensel iş varlıkları ve METRİK SÖZLÜĞÜ (FAZ 2.1).
+#
+# 🔴 BU KATMAN `base_object` TAŞIMAZ ve cube ÜRETMEZ. Yalnız *anlamı* söyler:
+# bir metriğin adı, sinonimi, birimi, toplanabilirliği ve **hangi grain'e ait olduğu**.
+# Fiziksel bağlama (hangi tablo, hangi kolon) ERP katmanının işidir — o bilgi ERP'den
+# ERP'ye gerçekten değişir, anlam ise değişmez.
+#
+# ⚠ Bu ayrım keyfi değil, ÖLÇÜLEN bir kusurun karşılığı: `ticaret` cube'u üç ERP'de
+# AYNI ada, AYNI sinonime ve AYNI ölçü adına (`satis_tutari`) sahip — ama mikro'da
+# `stok_hareketleri`, logo/netsis'te `faturalar` grain'inde. Yani "satış" kelimesi üç
+# şirkette KARŞILAŞTIRILAMAZ üç sayı döndürüyor ve bunu hiçbir yerde beyan eden yok.
+# Cube'un *semantic drift* diye adlandırdığı hata modunun kendi pack'lerimizdeki hâli.
+ad: cekirdek
+tur: cekirdek
+aciklama: >-
+  Evrensel metrik sözlüğü. Sinonim · birim · additive · GRAIN sözleşmesi.
+  base_object YOK — fiziksel bağlama ERP katmanının işidir.

@@ -37,6 +37,21 @@ _SCOPE_ORDER = ("global", "sector", "tenant", "role", "user")
 #   3) Tüketen yüzeyi `useFeature("<key>")` ile geçitle (frontend).
 #   4) Gerekiyorsa admin panelden tenant/rol/kullanıcı override'ı ile aç.
 FLAG_REGISTRY: dict[str, dict[str, str]] = {
+    "cekirdek_katman": {
+        "label": "Çekirdek katman (evrensel metrik sözlüğü + grain sözleşmesi)",
+        "description": "Evrensel metrikler (`satis_tutari`, `bakiye`…) tek yerde "
+                       "tanımlanır; sinonim/birim/`additive` compose'ta ANAHTAR "
+                       "düzeyinde birleşir ve grain sözleşmesi ihlali compose'u "
+                       "REDDEDER. Ölçülen kusur: `ticaret` üç ERP'de aynı ad + aynı "
+                       "sinonim ama FARKLI GRAIN (mikro `stok_hareketleri` ↔ logo/netsis "
+                       "`faturalar`) — karşılaştırılamaz sayı, hiçbir yerde beyan yok. "
+                       "Kapalıyken compose çıktısı BİREBİR bugünkü (FAZ 2.1). "
+                       "⚠ `features.yml`'e BİLEREK eklenmedi: bu bir DERLEME-ZAMANI "
+                       "kademesidir (`motor_rls`/`motor_cls` gibi ayarlardan okunur) — "
+                       "compose'un principal'ı yoktur, tenant-kapsamlı bir rollout "
+                       "bayrağı olarak sunmak onu KİŞİYE göre çözülebilir gösterirdi.",
+        "category": "semantik",
+    },
     "sosyal_sinif": {
         "label": "Sosyal sınıf (veri-niyeti kapısı)",
         "description": "Veri niyeti taşımayan ifadeler (selam/teşekkür) LLM'e ve SQL'e "
