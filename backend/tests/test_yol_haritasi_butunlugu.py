@@ -133,3 +133,97 @@ def test_D5_SAYI_BEYANLARI_DAMGALI():
         "§C'nin sayılarını üreten komut kutusu (`A5-KOMUT`) YOK — sayılar elle yazılıyor "
         "demektir ve bayatlamaları kaçınılmazdır (D2).")
     assert re.search(r"@`[0-9a-f]{7,40}`", metin), "belgede hiç SHA damgası yok"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FAZ 7.0 — planın **kendi 5 iç boşluğu** kapatılır
+#
+# 🔴 *Bu, planın kendi boşluklarını kapatan maddenin kendi kapısıdır — kapısız
+# bırakılırsa boşluklar **sessizce geri döner**.*
+# ─────────────────────────────────────────────────────────────────────────────
+
+def test_7_0_PK_KD_A11Y_atiflari_TANIMLI():
+    """🔴 Tanımsız bir atıf, **karşılığı olmayan bir kurala** güven verir.
+
+    *"PK-7'ye uyuyor"* diyen bir madde, `PK-7` hiç tanımlanmamışsa hiçbir şey söylememiş
+    olur — ama söylemiş **gibi** okunur.
+    """
+    import re as _re
+
+    metin = _belge()
+    for onek in ("PK", "KD", "A11Y"):
+        kullanilan = {int(n) for n in _re.findall(rf"\b{onek}-(\d+)\b", metin)}
+        if not kullanilan:
+            continue
+        aralik = _re.search(rf"{onek}-1\s*[…\-–]+\s*{onek}-(\d+)", metin)
+        assert aralik, f"🔴 `{onek}-n` atıfları var ama TANIM ARALIĞI yazılı değil."
+        ust = int(aralik.group(1))
+        fazla = sorted(n for n in kullanilan if n > ust or n < 1)
+        assert not fazla, (
+            f"🔴 Tanım dışı `{onek}` atfı: {fazla} (tanımlı: 1…{ust}). Karşılığı olmayan "
+            f"bir atıf, olmayan bir kurala güven verir.")
+
+
+def test_7_0_TASINAN_maddeler_KUTUK_birakmis():
+    """*"Kapananlar işaretlenir, silinmez"* — taşınan bir madde yerinde bir iz bırakmalı.
+
+    ⚠ Ölçü **sayı değil varlık**: belge büyüdükçe sayı değişir, ama *hiç iz olmaması*
+    taşımaların **sessizce** yapıldığı anlamına gelir.
+    """
+    import re as _re
+
+    izler = _re.findall(r"kaçmıştı|taşındı|SİLİNMEDİ|geri alındı|DARALDI", _belge())
+    assert len(izler) >= 10, (
+        f"🔴 Yalnız {len(izler)} taşıma/kapanış izi — maddeler sessizce taşınıyor "
+        f"olabilir ve *kapananlar işaretlenir, silinmez* kuralı çürümüş demektir.")
+
+
+def test_7_0_DOGRULANMADI_damgasi_KULLANILIYOR():
+    """🔴 Doğrulanmamış bir iddia **gizlenemez**.
+
+    Bu kapı bir üst sınır koymaz (araştırma sürüyor), **varlığını** ölçer: damga hiç
+    yoksa ya her şey doğrulanmıştır (iddialı) ya da **damga kullanılmıyordur** ve
+    doğrulanmamışlar doğrulanmış gibi okunur.
+    """
+    import re as _re
+
+    n = len(_re.findall(r"\[DOĞRULANMADI", _belge()))
+    assert n >= 3, f"🔴 Yalnız {n} `[DOĞRULANMADI]` damgası — damga kullanılmıyor olabilir."
+
+
+def test_7_0_YURURLUKTE_indeksinin_HER_satirinin_TUZAGI_var():
+    """⚠ ⟳ satırlarının bir tuzağa bağlanması bir **plan kuralıdır**, yalnız bir test
+    detayı değil — ve bu yüzden plan kapısında da ölçülür.
+
+    (Aynı şart `test_beyanlar_curumesin.py`'de kod tarafından da kilitli; iki yerden
+    ölçülmesi **çift kayıt değil**, iki farklı sorunun cevabıdır: *"beyan çürüdü mü"* ve
+    *"plan kuralı uygulanıyor mu"*.)
+    """
+    import re as _re
+    from pathlib import Path as _P
+
+    kok = _P(__file__).resolve().parents[1]
+    mimari = (kok / "MIMARI.md").read_text(encoding="utf-8")
+    tuzaklar = (kok / "tests/test_beyanlar_curumesin.py").read_text(encoding="utf-8")
+    satirlar = [ln for ln in mimari.splitlines()
+                if ln.startswith("| **§") and "⟳ UYGULANMADI" in ln]
+    for ln in satirlar:
+        bolum = _re.match(r"\|\s*\*\*(§[0-9.]+)\*\*", ln)
+        assert bolum, f"⟳ satırı bölüm kimliği taşımıyor: {ln[:60]}"
+        assert bolum.group(1) in tuzaklar, (
+            f"🔴 `{bolum.group(1)}` ⟳ satırının bir TUZAĞI yok — beyan sessizce çürür.")
+
+
+def test_7_0_FAZ_SIRASI_bagimliliklari_YAZILI():
+    """Bir maddenin ön koşulu varsa **yazılı** olmalı: sırayı bilmeyen bir uygulayıcı
+    onu bozar.
+
+    Ölçülen üç bilinen bağımlılık: `4.7←4.8` · `5.6←AJ2` · `6.5/embed←motor-RLS`.
+    """
+    metin = _belge()
+    # ⚠ Belirteç **gerçek metne** göre yazıldı: ilk yazımda
+    # `"always_filter tek başına yeterli"` aradım ama belgede araya bir backtick giriyor
+    # (`` `always_filter` tek başına yeterli sayılmaz ``). *Bir kapının aradığı dize,
+    # aradığı belgeden okunmalıdır — hatırlanandan değil.*
+    for ifade in ("ÖN KOŞUL: 4.8", "ÖN KOŞUL: AJ2", "tek başına yeterli sayılmaz"):
+        assert ifade in metin, f"🔴 Bağımlılık beyanı kayıp: {ifade!r}"
