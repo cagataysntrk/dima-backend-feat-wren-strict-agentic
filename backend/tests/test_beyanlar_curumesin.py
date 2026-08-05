@@ -101,14 +101,36 @@ def test_ANLATI_SABLONU_EZMEZ():
 
 # --- E-2: cube_query_hash -----------------------------------------------------
 
-def test_CUBE_QUERY_HASH_beyani_HALA_dogru():
-    """MIMARI §5: *"primitif, tüketici bekliyor"* (sonuç cache'i, Faz E-2 — plan onu
-    ölçülen tekrar oranı eşiği aşmadan kurmamayı söylüyor). Cache kurulduğu gün bu
-    test kırılır ve beyanın güncellenmesini zorlar."""
+def test_CUBE_QUERY_HASH_TUKETILIYOR_ama_CACHE_KURULMADI():
+    """⟳ **BU TUZAK ATEŞLEDİ ve TUZAKTAN KAPIYA dönüştü (FAZ 5.13a).**
+
+    Eski hâli MIMARI'nin *"primitif, tüketici bekliyor"* beyanını koruyordu ve
+    **tüketici geldiği gün kırıldı** — kurulduğu iş buydu. Tüketici: `find_previous()`
+    (**hayalet seri**).
+
+    🔴 **Yeni kilit iki yönlü:** primitif **kullanılıyor** olmalı (yetim değil) **ama
+    sonuç cache'i HÂLÂ KURULMAMIŞ** olmalı. İkincisi bilinçli: *tekrar oranı ölçülmedi
+    ve ölçülmemiş bir ihtiyaç için altyapı kurulmaz.*
+
+    ⚠ Hayalet seri bir cache **değildir**: bir sonucu **döndürmez**, bir öncekinin
+    **var olduğunu** söyler. Aradaki fark, cevabın nereden geldiğidir.
+    """
     kaynak = _app_kaynagi("contracts.py")
-    assert "cube_query_hash" not in kaynak, (
-        "`cube_query_hash` artık kullanılıyor — MIMARI'deki \"tüketici bekliyor\" "
-        "beyanı bayat. Beyanı güncelle.")
+    assert "cube_query_hash" in kaynak, (
+        "🔴 `cube_query_hash` artık HİÇ kullanılmıyor — hayalet seri (FAZ 5.13a) geri "
+        "alınmış olabilir ve primitif yine yetim kaldı.")
+    assert "find_previous" in kaynak
+    # 🔴 Sonuç cache'i HÂLÂ kurulmamış olmalı: `find_previous` ham sonuç DÖNMEZ.
+    import ast as _a
+
+    agac = _a.parse((APP / "contracts.py").read_text(encoding="utf-8"))
+    fn = next(n for n in _a.walk(agac)
+              if isinstance(n, _a.FunctionDef) and n.name == "find_previous")
+    donen = {c.value for c in _a.walk(fn)
+             if isinstance(c, _a.Constant) and isinstance(c.value, str)}
+    assert "result" not in donen and "rows" not in donen, (
+        "🔴 `find_previous` ham SONUÇ döndürüyor — bu bir CACHE'tir ve tekrar oranı "
+        "ÖLÇÜLMEDEN cache kurulmaz (MIMARI §5'in kendi kararı).")
 
 
 # --- F4: LLM'e verilecek araç listesi -----------------------------------------
@@ -451,13 +473,20 @@ _YURURLUKTE_TUZAKLARI = [
     # (MCP yüzeyi) indi; §0'ın `§3.4` *"bilerek alınmayanlar"* satırı SİLİNDİ ve gövdeye
     # ölçümlü `✅` yazıldı. İki ters tuzak (SİLİNMEDİ, çevrildi):
     # `test_TERS_TUZAK_FAZ_3_4_OSSIE_ITHALI_AYAKTA` · `test_TERS_TUZAK_FAZ_4_5_MCP_AYAKTA`.
-    ("§4", "FAZ 6.0→6.2",
+    # ⟳ `§4` **DARALDI** — FAZ 6.0 (D9 geri alma) ve 6.1 (onay akışı) İNDİ; tuzak
+    # `test_TERS_TUZAK_FAZ_6_1_ONAY_AKISI_AYAKTA`'ya taşındı (SİLİNMEDİ). §0'ın satırı
+    # geriye **6.2'yi** (yazma araçlarının araç kaydına girmesi) bıraktı ve belirteç
+    # ona nişanlandı.
+    #
+    # 🔴 Ayrım **maddenin kendisi**: onay akışı **kademelendirmedir**, yazma araçları
+    # **yüzey genişlemesidir**. İkisini tek satırda saymak, yüzey büyümeden de tuzağın
+    # ateşlemesine yol açtı — ve tam olarak öyle oldu.
+    ("§4", "FAZ 6.2",
      # ⚠ AST ile bakılır: alt-dize taraması `tools.py`'nin **docstring'indeki**
      # `yan_etki="yazar"` cümlesini yakalayıp tuzağı yanlış-kırmızı yaptı. Beyan ile
      # BEYANIN ANLATIMI farklı şeylerdir — bu deponun kendi dersi.
-     lambda: (APP / "onay_akisi.py").exists() or (APP / "yazma_araclari.py").exists()
-             or _yazan_arac_sayisi() > 0,
-     "ajan yazma yasağının kademelenmesi"),
+     lambda: (APP / "yazma_araclari.py").exists() or _yazan_arac_sayisi() > 0,
+     "yazma araçları araç kaydına girdi (YÜZEY genişlemesi)"),
     # ⟳ `§5-grain` **TERS ÇEVRİLDİ** — FAZ 2.1(a)/(b) indi (grain sözleşmesi fail-closed
     # ve `cari`'de gerçek pack'ler üstünde ateşliyor); aynı ters-tuzağa taşındı.
     ("§5-18.yasak", "§G/AJ0",
@@ -521,6 +550,32 @@ def _yaml_bayraklari() -> dict:
 
     d = _y.safe_load((APP.parent / "demo/packs/features.yml").read_text(encoding="utf-8"))
     return dict((d or {}).get("features") or {})
+
+
+def test_TERS_TUZAK_FAZ_6_1_ONAY_AKISI_AYAKTA():
+    """⟳ `§4` daraldı: onay akışı **inmiş olmalı** ve **yüzey büyümemiş** olmalı.
+
+    🔴 İkinci şart birincisinden önemli. Bu maddenin tamamı şu cümleye dayanıyor:
+    *"güvenlik imzadan değil, **yetki yüzeyinin genişlememesinden** geliyor."* Onay
+    akışı bir **kademelendirmedir**; bir gün araç kaydına `yan_etki="yazar"` bir araç
+    girerse, kademelendirme bir **genişlemeye** dönüşür ve o gün bu kapı kırmızı olur.
+    """
+    from app import onay_akisi as oa
+    from app import tools
+
+    assert (APP / "onay_akisi.py").exists(), (
+        "🔴 FAZ 6.1 GERİ ALINDI: `app/onay_akisi.py` yok.")
+    # Durum makinesi KAPALI kalmalı — serbest bir durum alanı bir dilektir.
+    assert set(oa.DURUMLAR) == {"taslak", "onay_bekliyor", "onaylandi", "reddedildi",
+                                "geri_alindi"}
+    assert oa.GECISLER["reddedildi"] == ()
+    # Süre aşımı KORUNUR: dün verilmiş bir "evet", bugünün dünyasına verilmemiştir.
+    assert oa.VARSAYILAN_OMUR_SN > 0
+    # 🔴 YÜZEY BÜYÜMEDİ.
+    assert _yazan_arac_sayisi() == 0, (
+        "🔴 Araç kaydına yazan araç girmiş — onay akışı bir KADEMELENDİRMEDİR, bir "
+        "yüzey genişlemesi değil.")
+    assert not [a.ad for a in tools.hepsi() if a.yan_etki == "yazar"]
 
 
 def test_TERS_TUZAK_FAZ_5_12_COKLU_DONUS_AYAKTA():
