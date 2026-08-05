@@ -10,6 +10,9 @@
 // kaldırır.
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { HataSeridi } from "@/components/HataSeridi";
+import { hataMetni } from "@/lib/mutasyonHatasi";
 
 import {
   deleteBildirimTercihi,
@@ -29,12 +32,18 @@ const ANAHTAR_ETIKET: Record<string, string> = {
 };
 
 export default function TercihlerPanel() {
+  // 🔴 Denetim F3: mutasyonlar hata yüzeyi taşımıyordu — başarısız bir işlem
+  // ekranda hiçbir iz bırakmıyordu. *Sessizce başarısız olan bir eylem,
+  // kullanıcıya ürünün bozuk olduğunu değil KENDİSİNİN yanlış yaptığını
+  // düşündürür.*
+  const [hata, setHata] = useState<string | null>(null);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["tercihler"],
     queryFn: listTercihler,
   });
   const sil = useMutation({
+    onError: (e) => setHata(hataMetni(e, "Tercih silme")),
     mutationFn: (anahtar: string) => silTercih(anahtar),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tercihler"] }),
   });
@@ -44,6 +53,7 @@ export default function TercihlerPanel() {
 
   return (
     <div className="flex flex-col gap-3">
+      <HataSeridi metin={hata} onKapat={() => setHata(null)} />
       <p className="font-mono text-[11px] leading-snug text-muted">
         Sohbette <span className="text-foreground">“bundan sonra hep aylık göster”</span> gibi
         bir şey söylediğinizde onay isteriz; onayladıklarınız burada durur. Tercihler
@@ -93,16 +103,23 @@ export default function TercihlerPanel() {
 }
 
 function BildirimTercihleri() {
+  // 🔴 Denetim F3: mutasyonlar hata yüzeyi taşımıyordu — başarısız bir işlem
+  // ekranda hiçbir iz bırakmıyordu. *Sessizce başarısız olan bir eylem,
+  // kullanıcıya ürünün bozuk olduğunu değil KENDİSİNİN yanlış yaptığını
+  // düşündürür.*
+  const [bHata, setBHata] = useState<string | null>(null);
   const qc = useQueryClient();
   const { data } = useQuery({
     queryKey: ["bildirim-tercihleri"],
     queryFn: getBildirimTercihleri,
   });
   const yaz = useMutation({
+    onError: (e) => setBHata(hataMetni(e, "Bildirim tercihi kaydetme")),
     mutationFn: setBildirimTercihi,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["bildirim-tercihleri"] }),
   });
   const sil = useMutation({
+    onError: (e) => setBHata(hataMetni(e, "Bildirim tercihi silme")),
     mutationFn: (v: { category: string; channel: string }) =>
       deleteBildirimTercihi(v.category, v.channel),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["bildirim-tercihleri"] }),
@@ -115,6 +132,7 @@ function BildirimTercihleri() {
 
   return (
     <div className="mt-6 border-t border-hairline pt-3">
+      <HataSeridi metin={bHata} onKapat={() => setBHata(null)} />
       <h3 className="font-mono text-[11px] uppercase tracking-wider text-muted">
         bildirim tercihleri
       </h3>

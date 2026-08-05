@@ -6,15 +6,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createDashboard, deleteDashboard, listDashboards, patchDashboard } from "@/lib/api-client";
 import { useAdSor } from "@/components/AdSor";
+import { useState } from "react";
+import { HataSeridi } from "@/components/HataSeridi";
+import { hataMetni } from "@/lib/mutasyonHatasi";
 
 export function DashboardsPanel({ onOpen }: { onOpen: (id: string) => void }) {
+  // 🔴 Denetim F3: bu panelde mutasyonların **hiçbiri** hata yüzeyi taşımıyordu —
+  // 403 dönen bir silme ekranda hiçbir iz bırakmıyordu. *Sessizce başarısız olan
+  // bir eylem, kullanıcıya ürünün bozuk olduğunu değil KENDİSİNİN yanlış yaptığını
+  // düşündürür.*
+  const [hata, setHata] = useState<string | null>(null);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["dashboards"], queryFn: listDashboards });
   const create = useMutation({
+    onError: (e) => setHata(hataMetni(e, "Pano oluşturma")),
     mutationFn: (title: string) => createDashboard(title),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["dashboards"] }),
   });
   const del = useMutation({
+    onError: (e) => setHata(hataMetni(e, "Pano silme")),
     mutationFn: (id: string) => deleteDashboard(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["dashboards"] }),
   });
@@ -23,6 +33,7 @@ export function DashboardsPanel({ onOpen }: { onOpen: (id: string) => void }) {
   // değiştiremiyordu.
   const { sor: adSor, alan: adSorAlani } = useAdSor();
   const patch = useMutation({
+    onError: (e) => setHata(hataMetni(e, "Pano güncelleme")),
     mutationFn: ({ id, body }: { id: string; body: Parameters<typeof patchDashboard>[1] }) =>
       patchDashboard(id, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["dashboards"] }),
@@ -46,6 +57,7 @@ export function DashboardsPanel({ onOpen }: { onOpen: (id: string) => void }) {
 
   return (
     <div className="space-y-3">
+      <HataSeridi metin={hata} onKapat={() => setHata(null)} />
       {adSorAlani}
       <button
         onClick={newDash}

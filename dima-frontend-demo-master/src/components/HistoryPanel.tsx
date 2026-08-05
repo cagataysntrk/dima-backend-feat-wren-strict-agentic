@@ -2,6 +2,9 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteConversation, listConversations } from "@/lib/api-client";
+import { useState } from "react";
+import { HataSeridi } from "@/components/HataSeridi";
+import { hataMetni } from "@/lib/mutasyonHatasi";
 
 // Sohbet geçmişi (per-user, backend kalıcı). Liste → tıkla=resume, × = soft-delete.
 // Minimal: demo sağ sheet içinde render edilir (SettingsDrawer). dima-frontend'in
@@ -25,18 +28,24 @@ export function HistoryPanel({
   onNewChat: () => void;
   activeSessionId?: string | null;
 }) {
+  // 🔴 Denetim F3: mutasyonlar hata yüzeyi taşımıyordu — başarısız bir işlem
+  // ekranda hiçbir iz bırakmıyordu. *Sessizce başarısız olan bir eylem,
+  // kullanıcıya ürünün bozuk olduğunu değil KENDİSİNİN yanlış yaptığını düşündürür.*
+  const [hata, setHata] = useState<string | null>(null);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["conversations"],
     queryFn: listConversations,
   });
   const del = useMutation({
+    onError: (e) => setHata(hataMetni(e, "Sohbet silme")),
     mutationFn: (id: string) => deleteConversation(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["conversations"] }),
   });
 
   return (
     <div className="space-y-3">
+      <HataSeridi metin={hata} onKapat={() => setHata(null)} />
       <button
         onClick={onNewChat}
         className="w-full border border-hairline px-3 py-1.5 text-left font-mono text-[12px] text-neutral-600 transition-colors hover:border-accent/50 hover:text-foreground dark:text-neutral-300"
