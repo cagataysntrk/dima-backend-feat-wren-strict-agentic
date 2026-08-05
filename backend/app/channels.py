@@ -74,11 +74,66 @@ def register(name: str) -> Callable:
     return deco
 
 
+#: 🔴 **FAZ 5.9 — BİLDİRİM KAPISI BAĞLANDI.** `app/bildirim_kapisi.py` (146 satır, 14
+#: test) üretim kodunda **hiç import edilmiyordu**: dört sıralı adım (tekilleştirme →
+#: bastırma → gruplama → tercih) yazılmış, **hiçbir bildirim ondan geçmiyordu**.
+#: Denetimin *"12 yetim modül"* bulgusunun beşinci kalemi.
+#:
+#: ⚠ Süreç-içi bellek: bir yeniden başlatma geçmişi sıfırlar ve **bir tekrar bildirim
+#: geçer**. Kalıcı depo doğru çözümdür ama `NotificationEvent`'in kendi tablosu yok;
+#: *sessizce süresiz bir bellek uydurmak yerine sınır yazılıyor.*
+_GONDERIM_GECMISI: dict[str, float] = {}
+
+
 def dispatch(event: NotificationEvent, targets: list[dict],
              ctx: DispatchContext | None = None) -> list[dict]:
     """event'i çözülmüş kanallara fan-out eder. ``targets``: ``[{"channel":..., ...cfg}]``.
-    Kanal başına durum listesi döner. Bir kanal patlarsa İZOLE (diğerleri devam eder)."""
+    Kanal başına durum listesi döner. Bir kanal patlarsa İZOLE (diğerleri devam eder).
+
+    ## 🔴 Bildirim kapısı (FAZ 5.9)
+
+    Aynı kaynaktan gelen bir sinyal kısa aralıkla tekrarlanıyorsa **bastırılır** —
+    `critical` önem hariç. Bastırma bir **görünürlük** kararıdır: olay kaydı yine
+    yazılır ve dönüşte `bastirildi=True` ile bildirilir.
+
+    > *Kayıt silinirse "neden bana haber verilmedi" sorusunun cevabı kimsede olmaz —
+    > ve o soru bir olaydan SONRA sorulur.*
+    """
+    import time as _t
+
+    from app import bildirim_kapisi
+
     ctx = ctx or DispatchContext()
+
+    # ⚠ Kapı **hedeflerden önce** koşar: bastırılmış bir olay hiçbir kanala gitmemeli,
+    # yoksa "bastırıldı" yalnız bir etiket olur.
+    try:
+        # 🔴 **ALAN ADLARI OKUNARAK DOĞRULANDI — ve ilk yazımım YANLIŞTI.**
+        # `source_id`/`direction` diye alanlar **yok**; `getattr(..., "")` ile onları
+        # varsaymak, anahtarı **her olayda aynı** yapardı ve kapı aynı kategorideki
+        # **her ikinci bildirimi** bastırırdı. *Bir varsayılan, olmayan bir alanı
+        # sessizce sabite çevirir.*
+        #
+        # Gerçek kimlik: kaynak = zamanlama (yoksa sözleşme, yoksa başlık); yön =
+        # ihlalin kendisi. `dedup_key`'in kendi gerekçesi: *"fire yükseldi" ile "fire
+        # normale döndü" aynı kaynaktan gelir ama FARKLI haberlerdir* — yön anahtardan
+        # çıkarılırsa iyi haber kötü haberin penceresinde bastırılır ve kullanıcı sorunun
+        # **çözüldüğünü hiç öğrenmez**.
+        _kaynak = (getattr(event, "schedule_id", None)
+                   or getattr(event, "contract_id", None)
+                   or getattr(event, "title", "") or "")
+        _olay = {"kaynak_tip": str(getattr(event, "category", "") or ""),
+                 "kaynak_id": str(_kaynak),
+                 "yon": "|".join(sorted(getattr(event, "violations", []) or [])),
+                 "onem": str(getattr(event, "severity", "") or "")}
+        _karar = bildirim_kapisi.kapidan_gecir([_olay], _GONDERIM_GECMISI, _t.time())
+        if not _karar["gonderilecek"]:
+            return [{"channel": t.get("channel"), "ok": True, "bastirildi": True,
+                     "detail": "aynı sinyal kısa aralıkla tekrarlandı — bastırıldı "
+                               "(kayıt tutuldu)"} for t in targets]
+    except Exception:                       # noqa: BLE001 — kapı bildirimi DÜŞÜRMEZ
+        _log.warning("bildirim kapısı koşulamadı — olay geçirildi (fail-open)",
+                     exc_info=True)
     out: list[dict] = []
     for target in targets:
         name = target.get("channel")
