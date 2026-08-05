@@ -154,3 +154,45 @@ def test_KAPI_kirmizi_VEREBILIR_dekor_degil():
             assert kod2 == 0, "gerileme yokken kırmızı verdi"
         finally:
             G.TABAN_YOLU = eski
+
+
+def test_TABAN_yazildiginda_COMMIT_uyarisi_verir():
+    """🔴 **Dekor tuzağının ikinci kılığı** — kapının kendisinden daha sinsi.
+
+    Taban dosyası commit edilmezse her koşum onu yeniden yazar ve kıyaslama her
+    seferinde **kendisiyle** yapılır: kapı hiçbir zaman kırmızı veremez ama yeşil
+    görünür. *Kendi yazdığı tabanla kıyaslanan bir kapı, aynadaki kendine bakıp
+    "değişmemiş" diyen bir ölçümdür.*
+
+    Dosyanın **var olması** yetmez; paylaşılıyor olması gerekir — ve bunu kullanıcıya
+    söyleyen tek şey bu uyarıdır."""
+    import json
+    import tempfile
+
+    from lab import gercek_dunya as G
+
+    with tempfile.TemporaryDirectory() as d:
+        eski = G.TABAN_YOLU
+        try:
+            G.TABAN_YOLU = pathlib.Path(d) / "yok.json"
+            kod, mesaj = G.kapi({"sayac": {"K1": {"toplam": 5, "kabul": 3, G.DOGRU: 1}}})
+            assert kod == 0, "ilk koşum taban yazmalı, kırmızı vermemeli"
+            assert "COMMIT ET" in mesaj, "🔴 commit uyarısı yok — sessiz dekor riski"
+            assert json.loads(G.TABAN_YOLU.read_text())["kabul"] == 3
+        finally:
+            G.TABAN_YOLU = eski
+
+
+def test_TABAN_yolu_gitignore_disinda():
+    """Taban `lab/` altında ve `lab/reports/` DIŞINDA olmalı ki commit'lenebilsin.
+    ⚠ `.gitignore` `lab/data/` · `lab/backups/` · `lab/reports/` · `lab/generated/*.jsonl`
+    yok sayıyor; taban bunların hiçbirinde değil."""
+    from lab.gercek_dunya import TABAN_YOLU
+
+    gi = (_KOK / ".gitignore").read_text(encoding="utf-8")
+    yasakli = [x.strip() for x in gi.splitlines()
+               if x.strip().startswith("lab/") and not x.strip().startswith("#")]
+    yol = f"lab/{TABAN_YOLU.name}"
+    carpisan = [y for y in yasakli if yol.startswith(y.rstrip("*").rstrip("/"))
+                and y.rstrip("*").rstrip("/") != "lab"]
+    assert not carpisan, f"🔴 taban gitignore'lu yolda: {carpisan} — commit edilemez"

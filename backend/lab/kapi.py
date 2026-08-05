@@ -27,7 +27,7 @@ da olur.*
 | Seviye | Ne koşar | Ne zaman | Süre |
 |---|---|---|---|
 | `--hizli` | değişen modüle **bağımlı** testler + çekirdek duman | geliştirme sırasında | **~30 sn – 2 dk** |
-| `--tam` | **YALNIZ korpus** — *"kaç soru cevaplanabiliyor"* | **demet sonunda, bir kez** | **1 dk 50 sn** |
+| `--tam` | **İKİ KORPUS** — kataloğun sözlüğü *ve* kullanıcının sözlüğü | **demet sonunda, bir kez** | **~3 dk** |
 | `--hepsi` | korpus + süit + `eval` + senaryo | **gecelik CI** (geliştirme saatine mal olmaz) | **4 dk 06 sn** |
 
 ⚠ **Üç adım SİLİNMEDİ, yerel kapıdan ÇIKARILDI** (MIMARI §10: *"kapananlar işaretlenir,
@@ -108,7 +108,7 @@ uygulanır (MIMARI §6.4: *"ölçüm aracının kendisi de bir bağımlılıktı
 
     # host'ta değişen dosyaları git verir, konteyner yalnız koşar
     python lab/kapi.py --hizli --degisen app/eylem.py tests/test_eylem_onayi.py
-    python lab/kapi.py --tam        # demet sonu — korpus
+    python lab/kapi.py --tam        # demet sonu — iki korpus (katalog + gerçek-dünya)
     python lab/kapi.py --hepsi      # gecelik CI — dört adım
 """
 
@@ -320,16 +320,38 @@ def hizli(degisen: list[str]) -> int:
 
 #: Tüm adımlar — anahtar, `--sadece` ile seçmek için. **Sıra anlamlıdır:** korpus
 #: BAŞTA, çünkü yerel kapının tek adımı odur ve `--hepsi`'de de önce o konuşmalıdır.
-ADIM_ANAHTARLARI = ("korpus", "suit", "eval", "senaryo")
+ADIM_ANAHTARLARI = ("korpus", "gercek", "suit", "eval", "senaryo")
 
-#: 🔴 **YEREL DEMET KAPISI = YALNIZ KORPUS** (kullanıcı kararı, 2026-08-04).
-#: Öteki üç adım **silinmedi**, yerel kapıdan **çıkarıldı**: `--hepsi` ve gecelik CI
-#: onları koşmaya devam eder. Gerekçe ve ölçüm modül belgesinde.
-YEREL_KAPI = ("korpus",)
+#: 🔴 **YEREL DEMET KAPISI = KORPUS + GERÇEK-DÜNYA** (2026-08-05'te ikinciyle genişledi).
+#:
+#: ## Neden ikinci bir korpus adımı — ve neden yereldeki tek ekleme bu
+#:
+#: `nl_corpus` soruları **katalogdan** üretir; yani sistemin **kendi kelimeleriyle**
+#: sorar ve bu yüzden hep yüksek çıkar (%93,1). `gercek_dunya` ise **kullanıcının
+#: kelimeleriyle** sorar — katalog sızıntısı yasağıyla (kural 1) katalog kelimeleri
+#: **elenir**.
+#:
+#: > ⚠ İkisi aynı sistemi ölçüp **farklı sayı** verir, ve fark ölçümün kendisidir:
+#: > *bir ürünün kendi sözlüğündeki başarısı, kullanıcının sözlüğündeki başarısı
+#: > değildir.* Yalnız birincisini kapıya koymak, ikincisini görmemeyi kural hâline
+#: > getirirdi.
+#:
+#: Maliyet: `route()` çağrıları koşut dağıtılıyor (`lab/kosut.py`), korpus paydasına
+#: dokunmuyor. **Ölçüldü: ~1 dk 10 sn** — `nl_corpus`'un yanına eklenebilir bir bütçe.
+#:
+#: 🔴 **`--kapi` bayrağı ZORUNLU** — `konusma_senaryolari` tuzağı: o adım bayraksız
+#: koşumda `main()` her yolda `0` döndüğü için **hiçbir koşulda kırmızı veremiyordu**
+#: ve *"dört bileşenli bir kapının dörtte biri sessizce dekordu"*. Aynı hata burada
+#: tekrarlanmasın diye bayrak açıkça verilir ve `gercek_dunya.kapi()` gerilemede
+#: **mutlaka** sıfırdan farklı döner.
+#:
+#: ⚠ Metamorfik ölçüm ve konuşma korpusu **yerel kapıda YOK**: ikisi de teşhis
+#: aletidir, kapı değil. Yerleri `--hepsi` ve gecelik CI.
+YEREL_KAPI = ("korpus", "gercek")
 
 
 def tam(sadece: tuple[str, ...] = (), *, hepsi: bool = False) -> int:
-    """Demet kapısı. **Varsayılan: yalnız korpus.** `hepsi=True` → dört adım (CI).
+    """Demet kapısı. **Varsayılan: iki korpus.** `hepsi=True` → beş adım (CI).
 
     `sadece` verilirse **yalnız o adımlar** koşar.
 
@@ -340,7 +362,7 @@ def tam(sadece: tuple[str, ...] = (), *, hepsi: bool = False) -> int:
 
     Doğru döngü:
     ```
-    python lab/kapi.py --tam                  # demet kapısı (dört adım)
+    python lab/kapi.py --tam                  # demet kapısı (iki korpus)
     #  ✗ korpus kapısı  →  düzelt  →
     python lab/kapi.py --tam --sadece korpus  # YALNIZ kırmızı olan
     ```
@@ -350,6 +372,10 @@ def tam(sadece: tuple[str, ...] = (), *, hepsi: bool = False) -> int:
     """
     adimlar = (
         ([sys.executable, "lab/nl_corpus.py", "--kapi"], "korpus kapısı"),
+        # 🔴 GERÇEK-DÜNYA KORPUSU — kullanıcının kelimeleriyle, katalogun değil.
+        # `--kapi` bayrağı ZORUNLU (yukarıdaki dekor tuzağı). Gerileme kapısıdır,
+        # eşik değil: *dün ne kadardıysa bugün ondan az olmasın.*
+        ([sys.executable, "lab/gercek_dunya.py", "--kapi"], "gerçek-dünya korpusu"),
         # ⚡ `-n 8`: süit 8 dk 30 sn → 2 dk 15 sn (ölçüldü, 2499 test, SIFIR yeni kırmızı).
         # İzolasyon `tests/conftest.py`'de: her worker kendi derlenmiş proje ağacına yazar.
         ([sys.executable, "-m", "pytest", "-q", "-p", "no:warnings", "-n", "8"], "tam süit"),
@@ -396,19 +422,31 @@ def tam(sadece: tuple[str, ...] = (), *, hepsi: bool = False) -> int:
     # 60 sn zaman aşımına uğradı ve süit **934 hata** verdi. Yani "hepsini paralel
     # koş" saf hızlanma değil, aşırı abone olunca KIRMIZI ÜRETİR.
     #
-    # Dalga 1: korpus TEK BAŞINA (tüm çekirdekler onun; 1 dk 50 sn)
+    # Dalga 1: İKİ KORPUS, sırayla (ikisi de tüm çekirdekleri ister)
     # Dalga 2: süit ‖ eval ‖ senaryo (süit 8 worker; ötekiler tek çekirdek, 2 dk 20 sn)
-    # Toplam ~4 dk 10 sn — sıralı 15 dk yerine. Yerel kapı zaten yalnız dalga 1'dir.
-    _AGIR_ADIM = "korpus kapısı"
-    dalga1 = [a for a in adimlar if a[1] == _AGIR_ADIM]
-    dalga2 = [a for a in adimlar if a[1] != _AGIR_ADIM]
+    # Toplam ~5 dk 20 sn — sıralı 15+ dk yerine. Yerel kapı yalnız dalga 1'dir.
+    #
+    # 🔴 GERÇEK-DÜNYA KORPUSU DA DALGA 1'DE — ve bunun sebebi ölçülmüş bir tuzak:
+    # `lab/kosut.py` `route()` çağrılarını **16 sürece** dağıtıyor. Süitle aynı anda
+    # koşarsa iki taraf da çekirdek için yarışır ve **ikisi de yavaşlar** — üstelik
+    # `--hepsi`'nin kendi belgesinde kayıtlı bir yarış var: *"korpus + süit eş zamanlı
+    # compose yapınca derleme kilidi 60 sn'de zaman aşımına uğradı, süit 934 hata verdi"*.
+    #
+    # ⚠ İki korpus **birbiriyle de paralel koşmaz**: ikisi de tüm çekirdekleri ister,
+    # yan yana koymak toplam süreyi kısaltmaz — yalnız ikisini birden yavaşlatır.
+    # *Paralellik, kaynak boştayken kazanç; doluyken kuyruk üretir.*
+    _AGIR_ADIMLAR = ("korpus kapısı", "gerçek-dünya korpusu")
+    dalga1 = [a for a in adimlar if a[1] in _AGIR_ADIMLAR]
+    dalga2 = [a for a in adimlar if a[1] not in _AGIR_ADIMLAR]
     sonuclar_map: dict[str, tuple[int, str]] = {}
-    for dalga in (dalga1, dalga2):
+    for _sira, dalga in enumerate((dalga1, dalga2)):
         if not dalga:
             continue
-        if len(dalga) == 1:
-            komut, baslik = dalga[0]
-            sonuclar_map[baslik] = _kos_yakala(komut, baslik)
+        # ⚠ Dalga 1 **SIRAYLA** koşar (her adım tüm çekirdekleri ister); dalga 2
+        # paralel. Bu ayrım olmadan iki korpus birbirinin çekirdeğini yer.
+        if len(dalga) == 1 or _sira == 0:
+            for komut, baslik in dalga:
+                sonuclar_map[baslik] = _kos_yakala(komut, baslik)
         else:
             with ThreadPoolExecutor(max_workers=len(dalga)) as havuz:
                 for (_k, baslik), sonuc in zip(

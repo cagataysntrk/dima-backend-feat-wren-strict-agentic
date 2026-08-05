@@ -593,7 +593,19 @@ def kapi(sonuc: dict[str, Any], *, yaz: bool = False) -> tuple[int, str]:
     if yaz or not TABAN_YOLU.exists():
         TABAN_YOLU.write_text(json.dumps(yeni, ensure_ascii=False, indent=1),
                               encoding="utf-8")
-        return 0, f"TABAN YAZILDI → {yeni}"
+        # 🔴 DEKOR TUZAĞININ İKİNCİ KILIĞI — ve bu, kapının kendisinden daha sinsi.
+        #
+        # Taban dosyası **commit edilmezse** her koşum onu yeniden yazar ve kıyaslama
+        # her seferinde kendisiyle yapılır: kapı **hiçbir zaman** kırmızı veremez ama
+        # yeşil görünür. Dosyanın var olması yetmez, **paylaşılıyor** olması gerekir.
+        #
+        # > ⚠ *Kendi yazdığı tabanla kıyaslanan bir kapı, aynadaki kendine bakıp
+        # > "değişmemiş" diyen bir ölçümdür.*
+        return 0, (
+            f"TABAN YAZILDI → {yeni}\n"
+            f"  🔴 BU DOSYAYI COMMIT ET: {TABAN_YOLU.name}\n"
+            "     Commit edilmezse her koşum yeni taban yazar ve gerileme "
+            "HİÇBİR ZAMAN yakalanmaz — kapı yeşil görünür, hiçbir şey sınamaz.")
     eski = json.loads(TABAN_YOLU.read_text(encoding="utf-8"))
     dusen = []
     for anahtar in ("kabul", "dogru"):
