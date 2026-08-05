@@ -475,27 +475,35 @@ def kos(persona: str | None = None, kademe: str | None = None,
     sayac: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
     ayrinti: list[dict] = []
 
+    # ⚡ PARALEL DEĞERLENDİRME — korpusta ölçülmüş desen (`lab/kosut.py`).
+    #
+    # Seri koşumda 10 589 vaka tek çekirdeği doldurup ötekileri boş bırakıyordu.
+    # 🔴 Kapsam **birebir aynı**: payda bölünüyor, azaltılmıyor — sorular birbirinden
+    # bağımsız (durumsuz `route()`), sonuçlar giriş sırasına göre birleşiyor.
+    # *Hız kapsamdan değil, çekirdekten satın alınır.*
+    from lab import kosut
+
+    # KURAL 1 kapısı önce koşar: sızıntılı vaka `route()`e HİÇ gitmez (boşuna iş).
+    degerlendirilecek: list[dict] = []
     for v in secili:
-        # KURAL 1 — mekanik kapı, **sessiz değil**.
         s_kelime = katalog_sizintisi(v["soru"], etiketler, hamlar)
         if s_kelime:
             sizinti.append({"soru": v["soru"], "kelimeler": s_kelime})
             continue
-        try:
-            # 🔴 HAM METİN — ve bu bilinçli, ölçülmüş bir karar.
-            #
-            # Bir tur **normalize ederek** ölçtüm; sonra `ask.py:2473`'ü okudum:
-            # `route_hit = cube_router.route(body.question, ...)` — ürün de **ham**
-            # soruyu geçiyor. Yani normalize etmek aracı ürüne yaklaştırmıyor,
-            # **uzaklaştırıyordu**: ürünün hiç görmediği bir girdiyle ürün ölçülürdü.
-            #
-            # ⚠ Bir denetim ajanı önce *"araç ham veriyor, ürün normalize ediyor"*
-            # dedi; ikinci turda kendi bulgusunu düzeltti. İkisini de kaynağa bakarak
-            # doğruladım. *Bir aracın ürünle aynı yolu izlediği, iddia edilmez —
-            # çağrı satırı okunarak görülür.*
-            sonuc = cube_router.route(v["soru"], schema)
-        except Exception as exc:                              # noqa: BLE001
-            ayrinti.append({**v, "sinif": "hata", "not": str(exc)[:120]})
+        degerlendirilecek.append(v)
+
+    # 🔴 HAM METİN — ve bu bilinçli, ölçülmüş bir karar.
+    #
+    # Bir tur **normalize ederek** ölçtüm; sonra `ask.py:2473`'ü okudum:
+    # `route_hit = cube_router.route(body.question, ...)` — ürün de **ham** soruyu
+    # geçiyor. Normalize etmek aracı ürüne yaklaştırmıyor, **uzaklaştırıyordu**.
+    # *Bir aracın ürünle aynı yolu izlediği iddia edilmez — çağrı satırı okunarak
+    # görülür.*
+    sonuclar = kosut.degerlendir([v["soru"] for v in degerlendirilecek], hangi="ham")
+
+    for v, sonuc in zip(degerlendirilecek, sonuclar):
+        if isinstance(sonuc, dict) and "__hata__" in sonuc:
+            ayrinti.append({**v, "sinif": "hata", "not": sonuc["__hata__"]})
             sayac[v["kademe"]]["hata"] += 1
             continue
         sinif = _sinifla(sonuc, v)
@@ -547,11 +555,69 @@ def rapor(sonuc: dict[str, Any]) -> str:
     return "\n".join(sat) + "\n"
 
 
+#: Gerileme tabanı. ⚠ Bir **eşik** değil: kural 6 hâlâ geçerli, *"taban hedef değildir"*.
+#: Bu dosya yalnız **düşüşü** yakalar — yüzde hedefi koymaz.
+TABAN_YOLU = pathlib.Path(__file__).resolve().parent / "gercek_dunya_baseline.json"
+
+
+def _ozet(sonuc: dict[str, Any]) -> dict[str, int]:
+    """Tabanla kıyaslanacak **anlam taşıyan** sayılar."""
+    t = {"vaka": 0, "kabul": 0, "dogru": 0, "sessiz_yanlis": 0}
+    for kademe in sonuc.get("sayac", {}).values():
+        t["vaka"] += kademe.get("toplam", 0)
+        t["kabul"] += kademe.get("kabul", 0)
+        t["dogru"] += kademe.get(DOGRU, 0)
+        t["sessiz_yanlis"] += kademe.get(SESSIZ_YANLIS, 0)
+    return t
+
+
+def kapi(sonuc: dict[str, Any], *, yaz: bool = False) -> tuple[int, str]:
+    """Gerileme kapısı. Dönen: `(çıkış kodu, mesaj)`.
+
+    ## 🔴 `konusma_senaryolari` tuzağı burada TEKRARLANMAZ
+
+    `lab/kapi.py` kendi yorumunda kayıtlı: o adım bayraksız koşumda **her yolda `0`**
+    döndüğü için *"dört bileşenli bir kapının dörtte biri sessizce **dekordu**"*.
+    Yani kapı yeşil görünüyordu ve hiçbir şey sınamıyordu.
+
+    > ⚠ *Kırmızı veremeyen bir kapı, kapı değildir — bir dekordur.* Bu fonksiyon
+    > gerileme varsa **mutlaka** sıfırdan farklı döner ve neyin düştüğünü yazar.
+
+    ## Neden EŞİK değil GERİLEME
+
+    Bir eşik (*"%80'in altına düşmesin"*) bugünkü sayıyı bir söze çevirir ve ilk
+    ölçümü hedefe dönüştürür (kural 6'nın yasakladığı şey). Gerileme kapısı ise
+    hiçbir hedef koymaz: *dün ne kadardıysa bugün ondan az olmasın* der.
+    """
+    yeni = _ozet(sonuc)
+    if yaz or not TABAN_YOLU.exists():
+        TABAN_YOLU.write_text(json.dumps(yeni, ensure_ascii=False, indent=1),
+                              encoding="utf-8")
+        return 0, f"TABAN YAZILDI → {yeni}"
+    eski = json.loads(TABAN_YOLU.read_text(encoding="utf-8"))
+    dusen = []
+    for anahtar in ("kabul", "dogru"):
+        if yeni[anahtar] < eski.get(anahtar, 0):
+            dusen.append(f"{anahtar}: {eski[anahtar]} → {yeni[anahtar]}")
+    # 🔴 Sessiz-yanlış ARTIŞI da gerilemedir — ve en ağırıdır: *yanlış cevap veren
+    # bir sistem, sustuğunu bilen bir sistemden tehlikelidir.*
+    if yeni["sessiz_yanlis"] > eski.get("sessiz_yanlis", 0):
+        dusen.append(f"🔴 sessiz_yanlis ARTTI: "
+                     f"{eski.get('sessiz_yanlis', 0)} → {yeni['sessiz_yanlis']}")
+    if dusen:
+        return 1, "KAPI KIRMIZI — gerileme:\n  " + "\n  ".join(dusen)
+    return 0, f"kapı yeşil · {yeni}"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Gerçek-dünya korpusu (denetim §9.6)")
     ap.add_argument("--persona", choices=sorted(PERSONALAR))
     ap.add_argument("--kademe", choices=KADEMELER)
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--kapi", action="store_true",
+                    help="gerileme kapısı — düşüş varsa çıkış kodu 1")
+    ap.add_argument("--taban-yaz", action="store_true",
+                    help="mevcut ölçümü YENİ taban olarak yaz (bilinçli kabul)")
     a = ap.parse_args()
 
     sonuc = kos(a.persona, a.kademe)
@@ -564,9 +630,15 @@ def main() -> int:
     hedef = pathlib.Path(__file__).resolve().parent / "reports" / "gercek_dunya.md"
     hedef.parent.mkdir(parents=True, exist_ok=True)
     hedef.write_text(metin, encoding="utf-8")
-    print(f"Rapor: {hedef.relative_to(pathlib.Path.cwd()) if hedef.is_relative_to(pathlib.Path.cwd()) else hedef}")
-    # 🔴 **Hedef yüzde DEĞİL ilerleme** (kural 6): ilk koşum **tabandır** ve bu araç bir
-    # eşikte kırmızı vermez. *Bir tabanı hedefe çevirmek, ilk ölçümü bir söze dönüştürür.*
+    print(f"Rapor: {hedef}")
+
+    if a.kapi or a.taban_yaz:
+        kod, mesaj = kapi(sonuc, yaz=a.taban_yaz)
+        print(f"\n{mesaj}")
+        return kod
+    # 🔴 **Hedef yüzde DEĞİL ilerleme** (kural 6): bayraksız koşum **tabandır** ve bu
+    # araç bir eşikte kırmızı vermez. *Bir tabanı hedefe çevirmek, ilk ölçümü bir söze
+    # dönüştürür.* Kırmızı yalnız `--kapi` ile ve yalnız **gerilemede** gelir.
     return 0
 
 

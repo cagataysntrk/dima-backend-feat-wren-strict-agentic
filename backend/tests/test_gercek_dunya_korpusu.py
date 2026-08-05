@@ -162,7 +162,12 @@ _DURAK = {
     "ve", "ile", "için", "gibi", "kadar", "daha", "çok", "az", "en", "göre", "peki",
     "ya", "ama", "nasıl", "kaç", "hangi", "nerede", "neden", "niye", "kim", "biz",
     "bize", "bizi", "bizim", "miyiz", "mıyız", "müyüz", "miydi", "mıydı", "oldu",
-    "olur", "var mı", "the", "a",
+    "olur", "the", "a",
+    # ⚠ `"var mı"` BURADAN ÇIKARILDI: `soru.split()` tek kelimeler üretir, yani iki
+    # kelimelik bir girdi **hiçbir zaman** eşleşemezdi — ölü satır. Zararsızdı ama
+    # bir durak listesinin okunduğu gibi davranmadığı yerdi.
+    # *Çalışmayan bir kural, olmayan bir kuraldan daha kötüdür: varlığı denetimi durdurur.*
+
 }
 
 

@@ -344,13 +344,41 @@ KAPALI_AILELER = frozenset({"ad_cekimi", "iyelik", "fiil", "donem"})
 ACIK_AILELER = frozenset({"soylem", "semantik", "yazim", "jargon"})
 
 
-def kapsam_olc(sorular: list[str], *, zayif_esik: int = 5) -> dict:
+def kapsam_olc(sorular: list[str], *, zayif_esik: int = 5,
+               onbellek: bool = True) -> dict:
     """Bir soru kümesinin dilsel kapsamını ölçer.
 
     Dönen sözlükteki **`bos`** listesi, test ortamının deliğidir: o özelliği taşıyan
     **hiçbir** vaka üretilmiyor demektir — yani o sınıftaki bir kusur, korpus ne kadar
     büyürse büyüsün **görünmez** kalır.
+
+    ## ⚡ ÖNBELLEK — *yavaş bir kapı, atlanan bir kapıya dönüşür*
+
+    10 700 soru × 71 dedektör = **760 000** regex koşumu. Ölçüm **deterministik**
+    (aynı sorular → aynı kapsam), yani her test koşumunda tekrarlamak saf israftır.
+
+    ⚠ Anahtar soruların **kendisinden** türetilir: bir soru değişirse önbellek
+    kendiliğinden geçersizleşir. *Bir önbelleğin güvenli olması, anahtarının
+    ölçtüğü şeyi tam olarak temsil etmesine bağlıdır.*
+
+    🔴 Kapsamdan ödün YOK: önbellek aynı ölçümü döndürür, örneklenmiş bir kısmını değil.
     """
+    import hashlib
+    import json as _json
+    import pathlib as _pl
+
+    _yol = None
+    if onbellek and sorular:
+        _iz = hashlib.sha256(
+            ("\u0000".join(sorular) + f"|{len(OZELLIKLER)}|{zayif_esik}").encode("utf-8")
+        ).hexdigest()[:16]
+        _yol = _pl.Path(__file__).resolve().parent / "reports" / f".kapsam_{_iz}.json"
+        if _yol.exists():
+            try:
+                return _json.loads(_yol.read_text(encoding="utf-8"))
+            except Exception:                            # noqa: BLE001
+                _yol.unlink(missing_ok=True)
+
     sayac: Counter = Counter()
     for q in sorular:
         for o in OZELLIKLER:
@@ -361,7 +389,7 @@ def kapsam_olc(sorular: list[str], *, zayif_esik: int = 5) -> dict:
                 pass                                     # dedektör kusuru ölçümü durdurmaz
     bos = [o for o in OZELLIKLER if sayac[o.kod] == 0]
     zayif = [o for o in OZELLIKLER if 0 < sayac[o.kod] < zayif_esik]
-    return {
+    _sonuc = {
         "toplam_soru": len(sorular),
         "ozellik_sayisi": len(OZELLIKLER),
         "kapsanan": len(OZELLIKLER) - len(bos),
@@ -380,6 +408,13 @@ def kapsam_olc(sorular: list[str], *, zayif_esik: int = 5) -> dict:
             for aile in sorted({o.aile for o in OZELLIKLER})
         },
     }
+    if _yol:
+        try:
+            _yol.parent.mkdir(parents=True, exist_ok=True)
+            _yol.write_text(_json.dumps(_sonuc, ensure_ascii=False), encoding="utf-8")
+        except Exception:                                # noqa: BLE001
+            pass                                         # yazılamazsa ölçüm yine doğru
+    return _sonuc
 
 
 def rapor(k: dict) -> str:

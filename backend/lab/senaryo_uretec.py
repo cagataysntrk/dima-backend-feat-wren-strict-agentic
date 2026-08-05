@@ -474,27 +474,35 @@ def pairwise(eksenler: dict[str, list], rng: random.Random) -> list[dict]:
                 hedef.add(((adlar[i], vi), (adlar[j], vj)))
     toplam_ikili = len(hedef)
 
+    # ⚡ HIZ: eksen ikilileri **bir kez** hesaplanır. Eskiden her aday için
+    # `itertools.combinations` yeniden koşuyordu — 10 589 tur × 60 aday × 15 ikili
+    # = ~9,5 milyon gereksiz üretim. Kapsam **birebir aynı**, yalnız aynı sonucu
+    # daha az işle üretiyoruz. *Hız kapsamdan değil, tekrardan kısılır.*
+    ikili_indeks = tuple(itertools.combinations(range(len(adlar)), 2))
+
+    def _kapatilan(aday: dict) -> set:
+        return {((adlar[i], aday[adlar[i]]), (adlar[j], aday[adlar[j]]))
+                for i, j in ikili_indeks} & hedef
+
     secilen: list[dict] = []
     HAVUZ = 60                       # tur başına aday sayısı — kalite/hız dengesi
     while hedef:
         en_iyi, en_iyi_kazanc, en_iyi_kapanan = None, -1, None
         for _ in range(HAVUZ):
             aday = {ad: rng.choice(eksenler[ad]) for ad in adlar}
-            kapanan = {
-                ((adlar[i], aday[adlar[i]]), (adlar[j], aday[adlar[j]]))
-                for i, j in itertools.combinations(range(len(adlar)), 2)
-            } & hedef
+            kapanan = _kapatilan(aday)
             if len(kapanan) > en_iyi_kazanc:
                 en_iyi, en_iyi_kazanc, en_iyi_kapanan = aday, len(kapanan), kapanan
+                # ⚡ Erken çıkış: bir aday **tüm** ikililerini kapatıyorsa daha
+                # iyisi yok — kalan 59 adayı denemek boşa iş.
+                if en_iyi_kazanc == len(ikili_indeks):
+                    break
         if not en_iyi_kazanc:        # havuz hiç yeni ikili bulamadı → kalanları tara
             eksik = next(iter(hedef))
             en_iyi = {ad: rng.choice(eksenler[ad]) for ad in adlar}
             for (eksen, deger) in eksik:
                 en_iyi[eksen] = deger
-            en_iyi_kapanan = {
-                ((adlar[i], en_iyi[adlar[i]]), (adlar[j], en_iyi[adlar[j]]))
-                for i, j in itertools.combinations(range(len(adlar)), 2)
-            } & hedef
+            en_iyi_kapanan = _kapatilan(en_iyi)
         hedef -= en_iyi_kapanan or set()
         secilen.append(en_iyi)
     return secilen, toplam_ikili
@@ -615,12 +623,62 @@ def _beklenti(niyet: str, olcu_ifade: str, sahipler: dict[str, list[str]],
     return [DOGRU, NETLESTIRME], "yanlış cube ya da yanlış ölçü seçmek"
 
 
+def _katalog_parmak_izi(schema: dict, tohum: int) -> str:
+    """Kataloğun **anlam taşıyan** özeti — önbellek anahtarı.
+
+    ⚠ Tüm şemayı hash'lemek yanlış olurdu: içinde koşumdan koşuma değişen alanlar
+    (yol, zaman damgası) olabilir ve önbellek **hiç tutmazdı**. Yalnız üretimi
+    etkileyen alanlar alınır: cube adı · ölçüler · boyutlar · sinonimler.
+    """
+    import hashlib
+    import json as _json
+
+    ozet = []
+    for c in sorted(schema.get("cubes") or [], key=lambda x: str(x.get("name"))):
+        ozet.append([
+            c.get("name"),
+            sorted(str(m) for m in (c.get("measures") or [])),
+            sorted(str(d) for d in (c.get("dimensions") or [])),
+            {k: sorted(v or []) for k, v in sorted((c.get("measure_synonyms") or {}).items())},
+            {k: sorted(v or []) for k, v in sorted((c.get("dimension_synonyms") or {}).items())},
+        ])
+    ham = _json.dumps([ozet, tohum, SURUM], ensure_ascii=False, sort_keys=True)
+    return hashlib.sha256(ham.encode("utf-8")).hexdigest()[:16]
+
+
+#: ⚠ Üreteç değiştiğinde önbellek **bayatlar**. Bu sayı elle artırılır; artırılmazsa
+#: eski korpus sessizce yeniden kullanılır ve *"değişikliğim neden bir şey yapmadı"*
+#: diye saatler harcanır. *Bir önbelleğin en tehlikeli hâli, doğru görünen bayat hâlidir.*
+SURUM = 3
+
+
 def uret(schema: dict, *, tohum: int = 20260805,
-         azami: int | None = None) -> tuple[list[dict], dict]:
+         azami: int | None = None, onbellek: bool = True) -> tuple[list[dict], dict]:
     """Kataloğa bağlı, pairwise-kapsamlı senaryo korpusu üretir.
 
     Dönen: (vakalar, kapsam_raporu)
+
+    ## ⚡ ÖNBELLEK — üretim deterministik olduğu için güvenli
+
+    Aynı katalog + aynı tohum → **birebir aynı** korpus. Dolayısıyla her testte
+    yeniden üretmek saf tekrardır. Anahtar kataloğun parmak izidir: katalog
+    değişirse önbellek **kendiliğinden** geçersizleşir.
+
+    🔴 Kapsamdan ödün YOK: önbellek aynı vakaları döndürür, azını değil.
+    `onbellek=False` ile kapatılır (üretecin kendisini sınayan testler için).
     """
+    import json as _json
+    import pathlib as _pl
+
+    _anahtar = _katalog_parmak_izi(schema, tohum) if onbellek else None
+    _yol = (_pl.Path(__file__).resolve().parent / "reports" /
+            f".senaryo_{_anahtar}.json") if _anahtar else None
+    if _yol and _yol.exists() and not azami:
+        try:
+            _v = _json.loads(_yol.read_text(encoding="utf-8"))
+            return _v["vakalar"], _v["kapsam"]
+        except Exception:                                  # noqa: BLE001
+            _yol.unlink(missing_ok=True)                   # bozuk önbellek → yeniden üret
     rng = random.Random(tohum)
     cubes = [c for c in (schema.get("cubes") or []) if c.get("measures")]
     sahipler = _olcu_sahipleri(schema)
@@ -716,4 +774,11 @@ def uret(schema: dict, *, tohum: int = 20260805,
         "dolgu": dict(Counter(v["dolgu"] or "yok" for v in vakalar)),
         "bicim": dict(Counter(v["bicim"] or "düz" for v in vakalar)),
     }
+    if _yol and not azami:
+        try:
+            _yol.parent.mkdir(parents=True, exist_ok=True)
+            _yol.write_text(_json.dumps({"vakalar": vakalar, "kapsam": kapsam},
+                                        ensure_ascii=False), encoding="utf-8")
+        except Exception:                                  # noqa: BLE001
+            pass                                           # önbellek yazılamazsa ölçüm yine doğru
     return vakalar, kapsam
