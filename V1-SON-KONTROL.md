@@ -46,12 +46,13 @@
 
 | # | Borç | Neden kapanmadı | Etkisi |
 |---|---|---|---|
-| **1** | ◐ **YARISI KAPANDI** — giriş noktaları kimliği kuruyor, ama `motor_cls=on` hâlâ **39 test kırmızı** | Aşağıda | ölçüt 4 kırmızı, `6.5/embed` bloke |
+| **1** | ✅ **TESİSAT TAMAM** — `motor_cls=on` ile **3319 yeşil / 0 kırmızı** (39'du). Bayrak yine de **açılmıyor** | §7 — üç ölçülmüş sebep | ölçüt 4 kırmızı *(artık tesisat yüzünden değil)* |
 | **2** | **26 bayrak `off`** | Ödenmiş, testli, kullanıcıya **kapalı**. Üçü FAZ 1'in ana teslimatı (`tazelik` · `lineage` · `metrik_sertifikasi`) | Ölçüt 12 sarı; *bedeli ödenmiş ama teslim edilmemiş* yetenek |
 | **3** | **FAZ 7.3'ün 11 alt maddesi** | a(kısmi) · c · d · f · g · h · i · j · k · l · m + **altı yeni rota** | `OPERASYON-DURUM.md`'de **madde madde** yazılı |
 | **4** | **FAZ 7.7'nin `/settings` yarısı** | 8 sekmeli tam sayfa + `admin_app`'in **13 router** tüketicisi | `V-1` o router'lar için **kırmızı kalıyor** — kapının **beyan edilmiş** kırmızısı |
 | **5** | **5.6 · peer kıyası** | **AJ2**'ye bağlı (`compare` enum→ALAN) | AJ2 inmeden üçüncü bir enum değeri çakardı |
 | **6** | `route-distribution` **UI tüketicisi yok** | Tüketicisi 7.7'nin paneli | Pencere açılınca veri **birikir**, ekranda **görünmez** |
+| **7** 🆕 | **`ask.py` modül tavanı**: `ask()` **1206/1151** (+55) · dosya **2498/2419** (+79) | Bir taşıma denendi, **geri alındı**: bağımlılık ölçümü import adlarını ve `ask()` closure'larını kaçırdı → 119 kırmızı. *Yarım bir taşıma, taşınmamış olmaktan kötüdür* | `test_modul_buyume` **kırmızı**; `cube_router` yarısı ✅ kapandı (1749→1703) |
 
 > 🔴 Borç 3 ve 4 için kritik ayrım: **v1 kapanmadı, v1'in FAZ 7'si kısmen kapandı.**
 > *Bir fazı "bitti" ilan edip yarısını söylememek, bitmemiş olmaktan kötüdür.*
@@ -129,7 +130,7 @@ kullanıcının kimliğiyle koşardı — **çapraz-kullanıcı sızıntı**.
 ⚠ `run_in_executor` bağlamı **kopyalamaz**; `kimlik_kopyala()` tam olarak onun için var ve
 sınır **yazılı**, gizli değil.
 
-### 🔴 Kalan yarı — ve neden BİLEREK açılmadı
+### ✅ Tesisat tamam — ve neden bayrak YİNE DE açılmadı
 
 `DIMA_MOTOR_CLS=on` ile ölçüldü: **39 kırmızı / 428 yeşil** (`ask|cube|query|schedule`
 dilimi). Hata her seferinde aynı:
