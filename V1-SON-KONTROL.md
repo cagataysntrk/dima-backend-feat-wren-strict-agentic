@@ -97,8 +97,10 @@ Hiçbiri varsayımdan gelmedi; sekizi de bir komutla bulundu.
 **Satılabilir/denetlenebilir çekirdek ayakta:** korpus %93,1 sabit · 3347 test · onay akışı ·
 kanıt zinciri · katmanlı makbuz · a11y · responsive · DCM · çok-worker.
 
-**Kapanması gereken tek kırmızı:** ölçüt 4 — ve o, **borç 1'e** (36 çağrı sitesi) bağlı.
-Onun ardından borç 3-4 (FAZ 7.3/7.7'nin kalanı) v1'in **arayüz yüzeyini** tamamlar.
+**Kapanması gereken tek kırmızı:** ölçüt 4 — ve borcu bu turda **yarıya indi** (§7):
+tesisat kuruldu, kalan iş test/lab fixture'larına açık kimlik vermek ve **ürün kodunda
+sıfır değişiklik** gerektiriyor. Onun ardından borç 3-4 (FAZ 7.3/7.7'nin kalanı) v1'in
+**arayüz yüzeyini** tamamlar.
 
 ---
 
