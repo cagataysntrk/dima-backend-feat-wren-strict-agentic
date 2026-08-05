@@ -2078,12 +2078,41 @@ def _cekimli_token(q: str, m: "re.Match") -> list[str]:
 
 
 def _period_hit_words(q: str) -> set[str]:
-    """Tanınan dönem ifadelerinin kelimeleri (son 3 ay / bu ay / temmuz ayı / aralık…)."""
+    """Tanınan dönem ifadelerinin kelimeleri (son 3 ay / bu ay / temmuz ayı / aralık…).
+
+    ## 🔴 KÖK-7c — **ÇOK-GEÇİŞ**: ikinci dönem sessizce kaybolmaz
+
+    Bu fonksiyon yedi dönem kalıbını **`.search`** ile tarıyordu — yani *ilk eşleşme
+    kazanır, ikincisi yok sayılır*. Ay adları için bu hata **bir kez** bulunup
+    `finditer`'a çevrilmişti (aşağıdaki 1 Ağustos notu); kalan **altı** kalıpta
+    düzeltilmemişti. Ölçüldü:
+
+    | soru | `.search` | `.finditer` |
+    |---|---|---|
+    | `son 3 ay ve son 6 ay ciro` | `son 3 ay` | `son 3 ay` · **`son 6 ay`** |
+    | `ilk ceyrek ve ikinci ceyrek ciro` | `ilk ceyrek` | `ilk ceyrek` · **`ikinci ceyrek`** |
+    | `gecen ay ve gecen yil ciro` | `gecen ay` | `gecen ay` · **`gecen yil`** |
+
+    ⊙ İkinci ifadenin kelimeleri (`ikinci`, `6`) kapsam kapısında **"açıklanamayan
+    kelime"** sayılıyordu → soru **R10** ile reddediliyordu. Yani kullanıcı NE KADAR
+    çok dönem detayı verirse, cevap alma şansı O KADAR düşüyordu.
+
+    ## ⚠ Görmek, çözebilmek DEĞİLDİR — ve bu kasıtlıdır
+
+    `CubeQuery`'nin filtreleri **VE**'lenir; iki ayrık dönem tek bir sorguda ifade
+    **edilemez**. Bu fonksiyon *"gördüm"* der, `date_filters` yine **tek** aralık çözer.
+    Farkı beyan etmek `app.uyum`'un işidir (KÖK-2, `cok_donem` ihlali) ve o **önce**
+    indi — sırası buydu: kapsamı açan iş, beyan kapısından **sonra** inmeliydi.
+
+    🔴 *Bir kapının "anlamadım" demesi, anladığını söyleyip yarısını yutmasından iyidir —
+    ama en iyisi, gördüğünü söyleyip taşıyamadığını da söylemektir.*
+    """
     words: set[str] = set()
     for rx in (_RANGE_RE, _REL_DATE, _OPEN_START_RE, _OPEN_END_RE, _PREV_RE, _QUARTER_RE,
                _YEAR_RE):
-        m = rx.search(q)
-        if m:
+        # 🔴 `.search` DEĞİL `.finditer` — yukarıdaki tablo. Varlık tarayan hiçbir kalıp
+        # ilk eşleşmede durmaz; bir soruda kaç dönem varsa o kadar görülür.
+        for m in rx.finditer(q):
             words.update(_cekimli_token(q, m))
     if re.search(r"\bdun\b", q):
         words.add("dun")
@@ -2113,8 +2142,12 @@ def _period_hit_words(q: str) -> set[str]:
         if not _ek_gecerli(m.group("ek") or ""):
             continue
         words.update(re.findall(r"[a-z]+", m.group(0)))
-    for m in re.finditer(rf"\b({_MONTH_ALT})\b(\s+ayi\w*)?", q):
-        words.update(re.findall(r"[a-z]+", m.group(0)))
+    # ⟳ KÖK-7c: burada `\b({_MONTH_ALT})\b(\s+ayi\w*)?` diye **ikinci bir ay taraması**
+    # duruyordu. 7e `_AY_ADI_RE`yi çekim-duyarlı yapınca o kalıbın eşleştiği her şey
+    # (eksiz ay adı) üsttekinin **öz alt kümesi** oldu — yani ölü, ama *sahipsiz değil*:
+    # `_ek_gecerli` süzgecini ATLAYARAK eşleşiyordu. Bir gün `_ek_gecerli` sıkılaştırılsa
+    # bu satır sessizce onu **delerdi**. *Ölü kod zararsız değildir; canlandığında yanlış
+    # olur.* Silindi — ay çekiminin tek sahibi `_AY_ADI_RE` + `_ek_gecerli`.
     return words
 
 

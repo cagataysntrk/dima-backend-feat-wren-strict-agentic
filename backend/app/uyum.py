@@ -89,21 +89,44 @@ _GORELI_DONEM = re.compile(
 def _cok_donem(q: str) -> int:
     """Soruda kaç **AYRI** dönem geçiyor.
 
-    Üç biçim sayılır ve üçü de ölçülerek eklendi:
+    Dört biçim sayılır ve dördü de **ölçülerek** eklendi:
       · ay adı  — `ocak ve haziran`
       · yıl     — `2025 ve 2026`
-      · göreli  — `son 3 ay ve son 6 ay`   ← 🔴 ilk yazımda EKSİKTİ
+      · göreli  — `son 3 ay ve son 6 ay`        ← 🔴 ilk yazımda EKSİKTİ
+      · çeyrek  — `ilk çeyrek ve ikinci çeyrek` ← 🔴 KÖK-7c açınca EKSİK ÇIKTI
 
     ⚠ Üçüncüsü kapıyı ölçerken yakalandı: `son 3 ay ve son 6 ay ciro` hiçbir ihlal
     vermiyordu, oysa `route()` ikisini **tek bir filtreye** (`gte 2026-05-05`) çöküyor
     ve altı ayın üçü sessizce yutuluyordu. *Bir sayacın saymadığı biçim, o sayaç için
     var olmayan bir dünyadır.*
+
+    🔴 **Dördüncüsü, KÖK-7c'nin kendi açtığı kapıydı.** `_period_hit_words` çok-geçişe
+    geçince `ilk ceyrek ve ikinci ceyrek ciro` **R10'dan kurtuldu** — ama `route()` yine
+    yalnız **ilk** çeyreği çözüyor (`_quarter_period_filters` tek `.search`). Sayaç
+    çeyreği saymasaydı, bu soru **R10 reddinden SESSİZ-YANLIŞA terfi** ederdi.
+
+    *Bir kapsamı açan değişiklik, açtığı kapsamın beyan sayacını da beslemek zorundadır;
+    yoksa dürüst bir "anlamadım"ı sessiz bir yanlışa çevirir.*
+
+    ⚠ Çeyrek sözlüğü **yazılmadı, ödünç alındı**: `cube_router._QUARTER_RE` çeyreğin tek
+    sahibidir. Buraya ikinci bir sıra-sayı listesi yazmak, deponun ölçülmüş *"aynı kuralın
+    iki sahibi"* sınıfını yeniden doğururdu.
     """
+    from app.cube_router import _PREV_RE, _QUARTER_ORD, _QUARTER_RE
+
     qn = _norm(q)
     aylar = {a for a in _AY if re.search(rf"(?<![a-z0-9]){a}", qn)}
     yillar = set(re.findall(r"(?<!\d)(20\d{2})(?!\d)", qn))
     goreli = {f"{n}{b}" for n, b in _GORELI_DONEM.findall(qn)}
-    return len(aylar) + len(yillar) + len(goreli)
+    # Çeyreğin KİMLİĞİ numarasıdır: `ilk çeyrek` ile `1. çeyrek` **aynı** dönemdir ve iki
+    # kez sayılmamalıdır (*"1. çeyrek yani ilk çeyrek"* tek istektir).
+    ceyrek = {str(m.group(1) or _QUARTER_ORD[m.group(2)])
+              for m in _QUARTER_RE.finditer(qn)}
+    # 🔴 Beşinci biçim, KAPININ KENDİSİ yakaladı: `gecen ay ve gecen yil ciro` →
+    # `route()` yalnız **Temmuz 2026**'yı çözüyor, "geçen yıl" sessizce yutuluyor.
+    # Kimlik BİRİMDİR (`ay` ≠ `yil`); *"geçen ay"* iki kez geçse tek dönemdir.
+    onceki = {b for b, _ek in _PREV_RE.findall(qn)}
+    return len(aylar) + len(yillar) + len(goreli) + len(ceyrek) + len(onceki)
 
 
 def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
