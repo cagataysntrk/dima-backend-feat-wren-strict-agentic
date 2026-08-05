@@ -8,7 +8,7 @@
 >
 > Bu dört dosya operasyonun **tam durumunu** taşır. Sohbet geçmişine ihtiyaç YOKTUR.
 
-**Son güncelleme:** 2026-08-05 · HEAD → **FAZ 5.13b + denetim D1–D5** @`123b82e` @`7d0048f`
+**Son güncelleme:** 2026-08-05 · HEAD → 🎉 **FAZ 5 KAPANDI** @`71a6784` @`7d0048f`
 
 ⚠ **Bu başlık BİR KEZ BAYATLADI ve bir denetim onu yakaladı:** *"HEAD → FAZ 0 · adım 1"*
 yazıyordu, gerçek HEAD **FAZ 4.4**'teydi. Bu dosya *"bağlam sıfırlanırsa buradan başla"*
@@ -21,13 +21,13 @@ devam ettirir. 🔴 **Kural: her faz commit'inden sonra bu blok güncellenir.**
 
 | | |
 |---|---|
-| **Aktif faz** | **FAZ 5 · KONUŞMA ve DENEYİM** *(FAZ 0·1·2·3·4 ✅ bitti)* |
-| **Biten** | 🎉 **FAZ 4 KAPANDI** (`4.1`…`4.8`) · **FAZ 5**: `5.0` `5.1` `5.2` `5.3` `5.4` `5.5` `5.7` `5.8` `5.9a` `5.10` `5.11` `5.13b` `5.14` `5.15` `5.16` `5.17` · **denetim D1–D5** |
+| **Aktif faz** | **FAZ 6 · AGENTIC — onaylı yazma** *(FAZ 0·1·2·3·4·5 ✅ bitti)* |
+| **Biten** | 🎉 **FAZ 4 ve FAZ 5 KAPANDI** — FAZ 5'in **17 maddesi** indi (`5.0`…`5.17`, **5.6 hariç**) + denetimin **D1–D5**'i |
 | ⏸ **5.6 BLOKE** | peer kıyası **AJ2**'ye bağlı (`compare` enum→ALAN). AJ2 inmeden 5.6 üçüncü bir enum değeri çakar ve dördüncüsü aynı konuşmayı yeniden doğurur |
 | **§C/16 ÖLÇÜLDÜ** | **%76,1** doğru · netleştirme **%16,8 ayrı satırda** · n=**155** · `demo-boyahane`. Üç şirket `⊘` (mssql fixture, altın cevap üretilemedi) |
-| **Sıradaki madde** | `5.12` içgörü paketi · `5.13` hayalet seri + kural motoru · `5.9b` digest+tercih router → sonra **FAZ 6** (agentic, 7 madde) |
+| **Sıradaki madde** | **FAZ 6.0** — *"D9 bugün ters uygulanmış — yapılanı GERİ AL"* (ilk madde) → `6.1`…`6.6` |
 | **Korpus** | **%93,1** — dokuz FAZ 5 maddesi boyunca **sabit** (taban %93,2) |
-| **Sonraki faz** | FAZ 6 (agentic — onaylı yazma, 7 madde) → FAZ 7 (arayüz, 11) → FAZ 8 (3) |
+| **Sonraki faz** | FAZ 7 (arayüz, 11 madde — panel tavanı **13/13 DOLU**) → FAZ 8 (3 madde) |
 | 🔴 **Açık borç 1** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ |
 | ✅ **Borç 2 KAPANDI** | FAZ 4.3 — çıplak ikinci ölçü adı: **−%18,2 → −%4,5**, `kaldi` → `gecti`, korpus sabit. Bayrak `olcu_ekleme_takibi` **beta** |
 | 🔴 **Açık borç 3** | **11 bayrak `off`** — ödenmiş, testli, kullanıcıya kapalı. Üçü FAZ 1'in ana teslimatı (`tazelik` · `lineage` · `metrik_sertifikasi`). ⚠ `capa_zinciri` ve `olcu_ekleme_takibi` bu turda **ölçümle açıldı** |
