@@ -28,7 +28,12 @@ alınır** — ve üçü de bu ortamda kurulu:
 |---|---|---|
 | **çekirdek** | `route()` çağrıları 16 sürece dağıtılır (`lab/kosut.py`) | korpus **13:18 → 1:50**, sayılar **birebir aynı** |
 | **tekrar** | deterministik üretim ve kapsam ölçümü önbelleklenir | soğuk → sıcak koşum farkı |
-| **anlamsız kombinasyon** | etkileşmeyen eksenler çaprazlanmaz (dönem **sınıfı**) | pairwise ikilisi **11 070 → 945** |
+| **anlamsız kombinasyon** | etkileşmeyen eksenler çaprazlanmaz (dönem **sınıfı**) | pairwise ikilisi **11 070 → 945**, korpus **10 732 → 2 311** |
+
+⚠ Korpusun küçülmesi bir **kırpma değil, doyma**: pairwise tüm ikilileri kapattığında
+kendiliğinden durur. 82 dönem değeriyle 10,7 bin vakaya şişen şey, 7 dönem **sınıfıyla**
+2,3 binde doyuyor — ve `dil_ozellikleri` kapısı 71 dilsel özelliğin hâlâ hepsinin
+üretildiğini her koşumda sınıyor.
 
 > ⚠ **Kapsamdan ödün verilen tek bir yer yok.** Payda **bölünür**, azaltılmaz.
 > `dil_ozellikleri` kapısı 71 dilsel özelliğin **hepsinin** hâlâ üretildiğini her
@@ -49,8 +54,13 @@ güvence sanılır.
 | # | ne zaman | komut | süre |
 |---|---|---|---|
 | **1** | 🟢 **bir dosya düzenledikten sonra** | `pytest tests/test_<o_dosya>.py` | **3-15 sn** |
-| **2** | 🟡 **demet sonunda, BİR KEZ** | `python lab/kapi.py --tam` | **~3 dk** |
-| **3** | 🔴 **gecelik CI** *(insan beklemez)* | `python lab/kapi.py --hepsi` | **~5 dk** |
+| **1b** | 🟢 **ortam kapılarının tamamı** | `pytest tests/test_gercek_dunya_korpusu.py tests/test_metamorfik.py tests/test_konusma_uretec.py tests/test_ekili_olaylar.py tests/test_kosut_deseni.py tests/test_ortam_butunlugu.py tests/test_belge_duzeni.py -q` | 🟢 **7 sn soğuk · 6 sn sıcak** *(ölçüldü)* |
+| **2** | 🟡 **demet sonunda, BİR KEZ** | `python lab/kapi.py --tam` | **~2 dk 10 sn** |
+| **3** | 🔴 **gecelik CI** *(insan beklemez)* | `python lab/kapi.py --hepsi` | **~4-5 dk** |
+
+> 🟢 **Seviye 1b, kullanıcının 1-2 dakikalık bütçesinin çok altında** — yedi kapı
+> dosyası, 94 test, **7 saniye**. Soğuk/sıcak farkı **1 saniye**: önbellek kurulumu
+> artık ölçülebilir bir maliyet değil.
 
 🔴 **Seviye 3 YEREL OLARAK KOŞULMAZ.** Ne demet sonunda, ne commit öncesi, ne
 *"bir de şuna bakayım"* diye.
@@ -99,6 +109,15 @@ Elle vaka yazımı burada bitti. Kataloğa bağlı, **pairwise covering array**.
 | `niyet` | 17 | değer·kırılım·üstünlük·kıyas·trend·katkı·neden·eşik·karar·tahmin·yetenek·gürültü·**etki**·**kompozisyon**·**olumsuz**·**çoklu soru**·**çok kırılım** |
 | `kayit` | 6 | resmî · konuşma · kısaltma · **yazım hatası** · eksiltili · **saha argosu** |
 | `donem_sinifi` | 7 | yok · göreli · ay yalın · **ay çekimli** · çeyrek · yıl · aralık |
+
+📊 **Üretilen korpus: 2 311 vaka** *(kapı bunun tamamını kullanır; `KAPI_ORNEK=2500`
+üst sınırı katalog büyüdüğünde devreye girecek bir emniyet valfidir)*.
+
+⚠ **Dönem ekseni neden SINIF:** *"`şubata` çekimi tanınıyor mu"* sorusu hangi ölçüyle
+sorulduğuna **bağlı değildir** — dönem çözümlemesi ölçü eşleştirmesinden **ayrı bir
+mekanizmadır**. 135 ölçünün her biriyle 60 ay çekimini denemek, aynı mekanizmayı 8 100
+kez sınamaktı. Somut biçimler sınıf içinden **döngüsel** seçilir, yani 60 çekimin
+**hepsi** yine üretilir.
 | `dolgu` | 4 | yok · önek (`yani`,`peki`) · **emir kipi** (`ölç`) · ikisi |
 | `bicim` | 5 | düz · boşluk hatası · büyük harf · noktalama · sayı biçimi |
 
@@ -167,8 +186,11 @@ yoktur → **ÖLÇÜLEMEDİ**, kusur sayılmaz, paydadan çıkar. *(İlk koşum 
 ### 3.4 · `lab/konusma_uretec.py` — **çok turlu sohbet**
 
 17 tur türü × 8 tur = **~7 milyar** dizi. Tekli soruda çözüm pairwise idi; dizide
-karşılığı **geçiş kapsamı**: her ardışık tur çifti en az bir sohbette görünür
-(17×17 = **289** geçişin %100'ü).
+karşılığı **geçiş kapsamı**: her ardışık tur çifti en az bir sohbette görünür.
+
+📊 **Ölçüldü:** **169 sohbet · 810 tur · 289/289 geçiş (%100) · 2 saniye.**
+Yani yedi milyarlık uzay, iki saniyede ve yüz altmış dokuz sohbetle **kanıtlı** biçimde
+kapsanıyor.
 
 **Tur türleri:** açılış · daraltma · genişletme · kırılım ekle · ölçü ekle · dönem değiş ·
 atıf · neden · normal mi · ne yapmalı · anlat · konu değiş · geri dönüş · sosyal ·
@@ -255,14 +277,22 @@ yoksa *"genişleme mi gerileme mi"* ayırt edilemezdi. Bir kapı bunu sınıyor
 
 ## 5 · KAPILAR — *ne kırmızı verir*
 
-| dosya | kaç | neyi korur |
-|---|---|---|
-| `test_gercek_dunya_korpusu.py` | 61 | kopya yok · kapsam tam · zayıf özellik yok · kapalı aileler tam · canlı iki kusur sınıfı üretilir |
-| `test_metamorfik.py` | 7 | zıt aile var · dilsel aile var · Türkçe klavye · imza doğru · **üçüncü hâl** |
-| `test_konusma_uretec.py` | 8 | geçiş kapsamı tam · derinlik · negatif bağıntı · iç içe istek |
-| `test_ekili_olaylar.py` | 6 | büyüklük eşiği · çakışma yok · SQL kanıtı · zincir senaryosu |
-| `test_ortam_butunlugu.py` | 7 | **yetim cube** · **payda** · **kaynak yanlılığı** · taban commit'lenebilir · **kapı dekor değil** |
-| `test_kosut_deseni.py` | 5 | koşut desen uygulanmış · muafiyetler gerekçeli · spawn |
+📊 **Ölçüldü: 94 test geçiyor, 7 atlanıyor, 0 kalıyor — 7 saniyede.**
+
+| dosya | neyi korur |
+|---|---|
+| `test_gercek_dunya_korpusu.py` | kopya yok · **71 dilsel özelliğin hepsi üretiliyor** · zayıf (<5) yok · kapalı aileler tam · canlı iki kusur sınıfı üretilir |
+| `test_metamorfik.py` | zıt aile var · dilsel aile var · Türkçe klavye · imza doğru · **⊘ üçüncü hâl** |
+| `test_konusma_uretec.py` | geçiş kapsamı tam · derinlik · negatif bağıntı · iç içe istek |
+| `test_ekili_olaylar.py` | büyüklük eşiği · çakışma yok · SQL kanıtı · zincir senaryosu |
+| `test_ortam_butunlugu.py` | **yetim cube** · **payda** · **kaynak yanlılığı** · taban commit'lenebilir · **kapı dekor değil** |
+| `test_kosut_deseni.py` | koşut desen uygulanmış · muafiyetler gerekçeli · spawn |
+| `test_belge_duzeni.py` | kök üç dosyalık · denetim adları tarih damgalı · her belge git'te · indeks bağları sağlam |
+
+⚠ **7 atlama beklenen davranıştır, kusur değil:** `test_belge_duzeni.py` **repo kökünü**
+denetliyor ama test konteynerine yalnız `backend/` bağlanıyor ve imajda `git` yok.
+Atlamalar **sessiz değil** — her biri neden ölçülemediğini ve nerede koşulması
+gerektiğini yazıyor (bkz. §7).
 
 ### 🔴 İki "dekor" tuzağı — ikisi de kapılı
 
@@ -288,11 +318,21 @@ docker run -d --name t1 --user "$(id -u):$(id -g)" --network none \
   python -m pytest tests/test_<dosya>.py -q -p no:warnings
 docker wait t1 && docker logs t1 && docker rm -f t1
 
-# 2 · demet bitti → KAPI, bir kez                   (~3 dk)
+# 1b · ortam kapılarının TAMAMI                     (ölçüldü: 7 sn soğuk)
+... python -m pytest tests/test_gercek_dunya_korpusu.py tests/test_metamorfik.py \
+      tests/test_konusma_uretec.py tests/test_ekili_olaylar.py \
+      tests/test_kosut_deseni.py tests/test_ortam_butunlugu.py \
+      tests/test_belge_duzeni.py -q -p no:warnings
+
+# 2 · demet bitti → KAPI, bir kez                   (~2 dk 10 sn)
+#     İKİ korpus koşar: nl_corpus (kataloğun sözlüğü) + gercek_dunya (kullanıcının)
 ... python lab/kapi.py --tam
 
-# 3 · gecelik CI (yerelde KOŞMA)                    (~5 dk)
+# 3 · gecelik CI (yerelde KOŞMA)                    (~4-5 dk)
 ... python lab/kapi.py --hepsi
+
+# ⚠ Belge düzeni denetimi REPO KÖKÜNDEN koşulur (konteynerde ⊘ atlanır):
+cd backend && python -m pytest tests/test_belge_duzeni.py -q
 ```
 
 ### Yeni bir test yazacaksan
@@ -319,6 +359,7 @@ docker wait t1 && docker logs t1 && docker rm -f t1
 | Sohbet bağıntıları **koşulmuyor** | üreteç ve bağıntılar kurulu; ürüne karşı koşum takip yolunu (`/ask` + bağlam) gerektirir |
 | *"Cevap doğru mu"* ölçülmüyor | onu ancak LLM yolu ölçer: **10 istek/10 sn** kota → örneklemli, gecelik |
 | `lab/reports/` **gitignore'da** | rapor yerel; **taban** commit'lenir (`lab/gercek_dunya_baseline.json`) |
+| `test_belge_duzeni.py` **konteynerde ölçemez** | repo kökü + `git` ister; standart konteynerde **⊘ atlanır**, sebebiyle. Repo kökünden koşulmalı |
 
 > *Bir ölçüm aracının değeri, ölçtüğü şey kadar **ölçmediğini söylemesindedir**.*
 
@@ -326,5 +367,69 @@ docker wait t1 && docker logs t1 && docker rm -f t1
 
 ## 8 · ÖLÇÜLEN SÜRELER
 
-> ⏳ Bu bölüm bir ölçüm koşumuyla dolduruluyor — sayılar geldiğinde işlenecek.
-> Tahmin yazılmaz: *bir belgeye yazılmış sayı, yazıldığı anın fotoğrafıdır.*
+> 📷 **2026-08-05 · `@6760241` · 20 çekirdek.** *Bir belgeye yazılmış sayı, yazıldığı
+> anın fotoğrafıdır* — yeniden ölçmeden taban diye okuma.
+
+| # | ne | süre | hedef | sonuç |
+|---|---|---|---|---|
+| **A** | 7 kapı dosyası, hepsi bir arada, **SOĞUK** | 🟢 **7 sn** | ≤30 | 94 geçti · 7 atlandı · **0 kaldı** |
+| **B** | aynısı **SICAK** | 🟢 **6 sn** | ≤15 | aynı |
+| **C** | `lab/gercek_dunya.py --kapi` | 🟢 **20 sn** | ≤40 | kapı yeşil · **2 311 vaka** |
+| **D** | `lab/metamorfik.py --ornek 300` | 🟢 **32 sn** | ≤40 | 342 soru · 3 823 türev · %98,0 |
+| **E** | `lab/konusma_uretec.py` | 🟢 **2 sn** | ≤15 | 169 sohbet · 810 tur · 289/289 |
+| | **TOPLAM** | 🟢 **67 sn** | | zaman aşımı **yok** |
+
+**Kıyas için:** `nl_corpus --kapi` **1 dk 50 sn** (16 süreç; seri hâli 13 dk 18 sn idi).
+`--tam` ikisini birlikte koşar → **~2 dk 10 sn**.
+
+### Soğuk/sıcak farkı: **1 saniye**
+
+Önbellek artık ölçülebilir bir maliyet değil. ⚠ Bu **her zaman böyle değildi**:
+önbellek `lab/reports/` altındayken (o dizin `.gitignore`'da) her yeni makinede ve her
+CI koşumunda **soğuk** başlıyordu. *Her koşumda silinen bir önbellek, önbellek değildir.*
+
+### 🔴 Ve bir sayı: **180 saniyenin 174'ü tek bir bozuk testteydi**
+
+İlk doğrulama koşumu 180 saniyede **zaman aşımına uğradı**. Düzeltme sonrası aynı küme
+**7 saniye**. Aradaki fark bir optimizasyon değil, **bir kusurun kaldırılmasıydı** —
+ayrıntısı §9'da.
+
+---
+
+## 9 · 🔴 KAPILARIN KENDİSİ DE DENETLENİR
+
+Bu turda **üç kusur** bulundu. Üçü de **ölçüm aracının kendisindeydi** — ürün kodunda
+değil. Ve üçü de sessizdi: koşulsa bile ya hiç bitmiyor ya da yanlış sonuç veriyordu.
+
+| kusur | nerede | belirti | sınıf |
+|---|---|---|---|
+| **sonsuz döngü** | `gecis_kapsami()` | 6+ dk tek çekirdekte asılı | ilerleme garantisi yok |
+| **determinizm kaybı** | `pairwise()` | *(sessiz)* — aynı tohum, farklı korpus | küme sırasına dayanan karar |
+| **felaket geri-izleme** | `test_kosut_deseni.py` | test **hiç bitmiyor** | iç içe niceleyici |
+
+> 🔴 Sonuncusunun acı yanı: *"yavaş test kalmasın"* diye yazdığım kapı, ortamın **en
+> yavaş şeyi** oldu. **Bir kuralı uygulayan aracın, o kurala uyması gerekir.**
+
+### Üç denetim sorusu — yeni bir araç yazarken
+
+| # | soru | neden |
+|---|---|---|
+| **1** | Her `while` döngüsünün ilerlemesi **inşa gereği** garanti mi? | *Rastgele arama, aradığına ulaşacağını garanti etmez; yalnız ulaşabileceğini gösterir.* Bir kapsam algoritması ihtimalle değil, inşayla ilerlemeli — ve bir **üst sınırı** olmalı. |
+| **2** | Hiçbir karar **küme sırasına** dayanmıyor mu? | `next(iter(küme))` Python'un karma tohumuna bağlıdır (`PYTHONHASHSEED` rastgele). Sabit RNG tohumuna rağmen sonuç her süreçte değişir → önbellek anahtarı yalan söyler, *"dün geçti bugün kaldı"* teşhis edilemez. **`sorted()` kullan.** |
+| **3** | Hiçbir regex'te **iç içe niceleyici** var mı? | `(\s+.*){0,12}?` gibi desenler üstel patlar. Metin taraması gerekiyorsa **satır tabanlı** yaz: O(n), geri-izleme yok. |
+
+### Ve bir dördüncüsü — koşum hijyeni
+
+Yavaşlığın **ilk** sebebi hiçbir koda ait değildi: **dört pytest konteyneri aynı anda**
+koşuyordu, ikisi 52 ve 58 dakikadır asılı kalmış öksüzlerdi.
+
+```bash
+# 🔴 DOĞRU: -d + --name + docker wait + docker rm -f
+docker run -d --name t1 --user "$(id -u):$(id -g)" --network none \
+  -v "$PWD:/app" -w /app -e DIMA_VQR_EMBEDDER=off dima-test <komut>
+docker wait t1 && docker logs t1 && docker rm -f t1
+```
+
+⚠ `--rm` **kullanma**: konteyner çıkınca kütüğü siler ve bu operasyonda **iki koşumun
+özeti böyle kayboldu**. Ve **iki ajanı aynı repo üzerinde** koşturma — biri önbelleği
+silerken öteki onu kullanır.
