@@ -718,6 +718,32 @@ def _tazelik_blogu(request, principal) -> tuple[str | None, str | None, str | No
                         "alınamaz.")
 
 
+def _kural_baglami(request, principal, cube_query) -> str | None:
+    """Yapısal iş kuralları → **anlatı notu**. *(FAZ 5.13b, bayrak `ui_knowledge_center`)*
+
+    🔴 `app/rules.py` — 124 satır, 14 test — üretim kodunda **hiç import edilmiyordu** ve
+    `AskResponse.kural_baglami` alanının **hiçbir dolduranı** yoktu. Denetimin *"12 yetim
+    modül"* bulgusunun altıncı kalemi.
+
+    ⚠ **Veri kaynağı da eksikti** ve bu ayrı bir kusurdu: `knowledge/rules/*.md` düz
+    metindir (LLM prompt'una gider); `rules.py` yapısal `{id, metin, kapsam}` bekler.
+    Kaynak (`knowledge/kurallar.yml`) mevcut metnin **kendi başlıklarından**
+    yapılandırıldı — *yeni bir alan iddiası yok.*
+
+    🔴 **Kural SQL'e DOKUNMAZ**: `rules.YASAK_ALANLAR` bunu şemada yasaklıyor ve
+    `dogrula()` fail-closed reddediyor. *Bir kural SQL'i değiştirebilseydi, kullanıcının
+    görmediği bir yerde sayıyı değiştirirdi.*
+    """
+    from app import rules
+    from app.company_registry import wren_for_request
+
+    ham = (wren_for_request(request).schema() or {}).get("kurallar")
+    kurallar = rules.yukle(ham)
+    if not kurallar:
+        return None
+    return rules.ek_baglam(kurallar, cube_query)
+
+
 def seal(resp: AskResponse, *, request: Request, principal, t0: float,
          session_id: str | None, log_body: Any = None, thread_id: str | None = None,
          reply_to_label: str | None = None, is_new_topic: bool | None = None,
@@ -770,6 +796,20 @@ def seal(resp: AskResponse, *, request: Request, principal, t0: float,
             resp.hedef = None
     except Exception:                       # noqa: BLE001 — hedef cevabı DÜŞÜRMEZ
         resp.hedef = None
+
+    # 🔴 **FAZ 5.13b — KURAL MOTORU BAĞLANDI.** Modül 124 satır + 14 testti ve
+    # `kural_baglami` alanının **hiçbir dolduranı yoktu**; üstelik yapısal veri kaynağı
+    # da eksikti (düz metin ≠ `{id, metin, kapsam}`).
+    # ⚠ Bayrak kapalıyken alan **hiç üretilmez** → yanıt bugünküyle birebir (KURAL B).
+    try:
+        from app.config import get_settings as _gs2
+        from app.features import resolve_for as _rf2
+
+        _p2 = getattr(request.state, "principal", None)
+        if "ui_knowledge_center" in _rf2(_gs2(), _p2):
+            resp.kural_baglami = _kural_baglami(request, _p2, resp.cube_query)
+    except Exception:                       # noqa: BLE001 — kural cevabı DÜŞÜRMEZ
+        resp.kural_baglami = None
 
     # 🔴 **FAZ 1.7 / §C ÖLÇÜT 12 — TAZELİK ZİNCİRİ BAĞLANDI.**
     #

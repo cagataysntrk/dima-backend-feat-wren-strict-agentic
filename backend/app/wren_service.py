@@ -673,6 +673,12 @@ class WrenService:
             "cubes": cubes,
             "kpis": kpis,
             "business_rules": self._load_knowledge("rules"),
+            # 🔴 FAZ 5.13b — **YAPISAL** kurallar (`knowledge/kurallar.yml`). `business_rules`
+            # düz metindir ve LLM prompt'una gider; bu ise `app/rules.py`'nin okuduğu
+            # `{id, metin, kapsam}` listesidir ve çıktısı **anlatıya** girer, SQL'e değil.
+            # ⚠ İkisi ayrı tüketiciler: biri modeli yönlendirir, öteki kullanıcıya
+            # **kaynağı gösterilebilir** bir not verir.
+            "kurallar": self._yapisal_kurallar(),
             "golden_sql": self._load_knowledge("sql"),
             "db_online": db_ok,  # UI çevrimiçi/çevrimdışı rozeti (TCP erişilebilirlik)
         }
@@ -868,6 +874,30 @@ class WrenService:
 
         for cube in cubes:
             cube["dimension_values"] = vals_map.get(cube["name"], {})
+
+    def _yapisal_kurallar(self) -> list[dict]:
+        """`knowledge/kurallar.yml` → kural listesi. Yoksa **boş** — ve bu doğrudur:
+        kuralı olmayan bir sektör paketi bir kusur değil.
+
+        ⚠ Bozuk bir dosya **sessizce yutulmaz**: loglanır ve boş dönülür. *Bir bilgi
+        merkezinin okunamayan dosyası, olmayan dosyadan tehlikelidir — çünkü var
+        sanılır.*
+        """
+        import yaml as _yaml
+
+        # ⚠ Yol **`_load_knowledge` ile aynı köke** bağlı (`project_dir/knowledge`):
+        # ikinci bir kök icat etmek, iki bilgi kaynağı yaratırdı ve biri bir gün
+        # ötekinden ayrışırdı. (İlk yazımda olmayan bir `_knowledge_dirs()` varsaydım;
+        # *bir yardımcıyı var sanmak, onu yazmakla aynı şey değildir.*)
+        yol = self.project_dir / "knowledge" / "kurallar.yml"
+        if not yol.exists():
+            return []
+        try:
+            d = _yaml.safe_load(yol.read_text(encoding="utf-8")) or {}
+            return list(d.get("kurallar") or [])
+        except Exception:                                # noqa: BLE001
+            _log.warning("yapısal kural dosyası okunamadı: %s", yol, exc_info=True)
+            return []
 
     def _load_knowledge(self, sub: str) -> str:
         """knowledge/<sub>/*.md içeriğini prompt'a taşınmak üzere birleştirir (ADR-0005).
