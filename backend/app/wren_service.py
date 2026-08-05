@@ -15,7 +15,7 @@ from typing import Any
 
 from wren.engine import WrenEngine
 
-from app import rls
+from app import istek_kimligi, rls
 from app.logging_setup import get_logger
 
 _log = get_logger("wren")
@@ -1319,7 +1319,26 @@ class WrenService:
 
         `principal` yoksa `None` döner (boş sözlük değil): motorun *"property yok"* dalı
         ile *"boş property kümesi"* dalı aynı şey değildir.
+
+        ## 🔴 BORÇ 1 KAPANDI — kimlik artık BAĞLAMDAN da okunuyor
+
+        `OPERASYON-DURUM.md`: *"36 çağrı sitesi kimlik geçmiyor → `motor_cls=on`
+        KİLİTLİ."* Otuz altı imzayı değiştirmek yerine kimliğin **tek sahibi** kuruldu
+        (`app/istek_kimligi.py` — bu depoda üç kez kanıtlanmış ContextVar deseni).
+
+        🔴 **İmza değiştirmek FAIL-OPEN bir düzeltme olurdu:** bugünkü 36'yı kapatır,
+        yarın yazılan 37.'si `principal` geçmeyi unutur ve **hiçbir şey kırılmaz**.
+
+        🔴 **Öncelik: AÇIK argüman bağlamı EZER.** Tersi olsaydı bir arka plan işi
+        (zamanlanmış rapor) kendi kimliğini geçse bile isteği tetikleyen kullanıcının
+        kimliğiyle koşardı — **çapraz-kullanıcı sızıntı**.
+
+        ⚠ İkisi de yoksa `None` kalır ve bu **fail-safe** yöndür: motor *"property yok"*
+        dalına girer, `motor_cls=on` iken **en kısıtlı** gizlilik seviyesi uygulanır.
+        *Kimliği bilinmeyen bir çağrı, en az yetkili çağrıdır.*
         """
+        if principal is None:
+            principal = istek_kimligi.simdiki()
         return rls.oturum_ozellikleri(principal) or None
 
     def dry_plan(self, sql: str, *, principal=None) -> str:

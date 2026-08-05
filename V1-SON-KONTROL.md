@@ -46,7 +46,7 @@
 
 | # | Borç | Neden kapanmadı | Etkisi |
 |---|---|---|---|
-| **1** | **36 çağrı sitesi `principal` geçmiyor** | Kimlik taşımayan bir çağrı, RLS'i **sessizce** atlar | `motor_cls=on` **kilitli** → ölçüt 4 kırmızı, `6.5/embed` bloke |
+| **1** | ◐ **YARISI KAPANDI** — giriş noktaları kimliği kuruyor, ama `motor_cls=on` hâlâ **39 test kırmızı** | Aşağıda | ölçüt 4 kırmızı, `6.5/embed` bloke |
 | **2** | **26 bayrak `off`** | Ödenmiş, testli, kullanıcıya **kapalı**. Üçü FAZ 1'in ana teslimatı (`tazelik` · `lineage` · `metrik_sertifikasi`) | Ölçüt 12 sarı; *bedeli ödenmiş ama teslim edilmemiş* yetenek |
 | **3** | **FAZ 7.3'ün 11 alt maddesi** | a(kısmi) · c · d · f · g · h · i · j · k · l · m + **altı yeni rota** | `OPERASYON-DURUM.md`'de **madde madde** yazılı |
 | **4** | **FAZ 7.7'nin `/settings` yarısı** | 8 sekmeli tam sayfa + `admin_app`'in **13 router** tüketicisi | `V-1` o router'lar için **kırmızı kalıyor** — kapının **beyan edilmiş** kırmızısı |
@@ -99,6 +99,65 @@ kanıt zinciri · katmanlı makbuz · a11y · responsive · DCM · çok-worker.
 
 **Kapanması gereken tek kırmızı:** ölçüt 4 — ve o, **borç 1'e** (36 çağrı sitesi) bağlı.
 Onun ardından borç 3-4 (FAZ 7.3/7.7'nin kalanı) v1'in **arayüz yüzeyini** tamamlar.
+
+---
+
+## 7. 🔴 Borç 1 — YARISI KAPANDI, ve kalan yarının sebebi DEĞİŞTİ
+
+### Kapanan yarı: kimliğin **tek sahibi**
+
+Borç *"36 çağrı sitesi `principal` geçmiyor"* diye yazılıydı. **36 imza değiştirilmedi** —
+ve bu bir kısayol değil, bir karar:
+
+> 🔴 **İmza değiştirmek FAIL-OPEN bir düzeltmedir**: bugünkü 36'yı kapatır, yarın yazılan
+> **37.'si** `principal` geçmeyi unutur ve **hiçbir şey kırılmaz**.
+
+Yerine kimliğin tek sahibi kuruldu — `app/istek_kimligi.py`, bu depoda **üçüncü kez**
+kullanılan ContextVar deseni (`mali_takvim._ay_var` · `cube_router._reddi_var`). Üç giriş
+noktası artık kimliği **kendisi** kuruyor:
+
+| giriş | nerede |
+|---|---|
+| HTTP | `get_current_principal` — kimlik **orada doğar** |
+| zamanlayıcı | `run_schedule` — `run_as_user_id` → `created_by`, çözülemezse **koşmaz** |
+| MCP | `Planlayici` — `cagir()` planlayıcıyı **zorunlu** ister |
+
+⚠ Açık argüman bağlamı **ezer**: tersi olsaydı zamanlanmış bir rapor, isteği tetikleyen
+kullanıcının kimliğiyle koşardı — **çapraz-kullanıcı sızıntı**.
+⚠ `run_in_executor` bağlamı **kopyalamaz**; `kimlik_kopyala()` tam olarak onun için var ve
+sınır **yazılı**, gizli değil.
+
+### 🔴 Kalan yarı — ve neden BİLEREK açılmadı
+
+`DIMA_MOTOR_CLS=on` ile ölçüldü: **39 kırmızı / 428 yeşil** (`ask|cube|query|schedule`
+dilimi). Hata her seferinde aynı:
+
+```
+session property session_gizlilik is required for `clac_mudahale_eden` rule
+but not found in headers
+```
+
+Yani sorun **artık 36 çağrı sitesi değil**: HTTP ve zamanlayıcı yolları kimliği taşıyor.
+Kırmızılar, `WrenService`'i **doğrudan** kuran test/lab yollarından geliyor — orada bir
+istek yok, dolayısıyla kimlik de yok.
+
+**Açık bir düzeltme vardı ve REDDEDİLDİ:** `oturum_ozellikleri(None)` boş sözlük yerine
+en kısıtlı seviyeyi (`session_gizlilik = 0`) döndürebilirdi; 39 test yeşile dönerdi ve
+bayrak açılabilirdi. Reddedilme sebebi `test_motor_cls.py`'nin kendi ölçtüğü gerçek:
+
+> 🔴 *CLS `pii.py`'den kategorik olarak farklıdır: maskeleme kolonu **gösterir**
+> (`123****89`), CLS onu **yok eder** — ve yok etme **sessizdir**. Sessizce eksik bir
+> tablo, maskeli bir tablodan **daha kötüdür**, çünkü kullanıcı eksikliği fark etmez.*
+
+Bir varsayılan koymak, kimlik tesisatı **bozulduğunda** bunu gürültüsüz hâle getirirdi:
+üretimde kullanıcı sessizce eksik kolonlar görür ve kimse tesisatın koptuğunu bilmez.
+*Bir kapıyı açılabilir yapmak için, kapının kendisini gevşetmek çözüm değildir.*
+
+**Kalan iş net ve dar:** `WrenService`'i doğrudan kuran test/lab yollarına **açık** bir
+kimlik vermek (fixture düzeyinde), sonra bayrağı açmak. Bu, ürün kodunda **sıfır**
+değişiklik demektir.
+
+---
 
 > *Bir ürünü "hazır" ilan etmek için ölçmek gerekir; ölçtük ve hazır değil.*
 > *Ama ne kadar hazır olmadığı da ölçüldü — ve bu, hazır sanmaktan iyidir.*

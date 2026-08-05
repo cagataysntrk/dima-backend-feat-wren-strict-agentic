@@ -19,6 +19,7 @@ import re
 import uuid
 from datetime import datetime, timezone
 
+from app import istek_kimligi
 from app.arkaplan_kimlik import KimliksizArkaPlanIsi
 from app.logging_setup import get_logger
 
@@ -556,6 +557,30 @@ def run_schedule(state, sched: dict, *, manual: bool = False, principal=None) ->
 
         with next(get_session()) as _oturum:                  # type: ignore[call-overload]
             principal = yetkilendir(sched, _oturum)
+
+    # 🔴 **BORÇ 1** — kimlik burada **çözüldü** ama aşağıdaki `svc.query()` onu görmüyordu:
+    # `principal` bir yerel değişkendi ve `WrenService` onu okuyacak bir yol bulamıyordu.
+    # Zamanlayıcı **HTTP dışı bir giriş noktasıdır**; `get_current_principal` burada hiç
+    # koşmaz, yani bağlamı **kendisi** kurmak zorundadır.
+    #
+    # ⚠ `with` bloğu **tüm işi** sarar, yalnız sorguyu değil: rapor üretimi ve teslim de
+    # motora gidebilir ve yarısı kimlikli yarısı kimliksiz bir koşum, ikisinden de kötüdür.
+    with istek_kimligi.IstekKimligi(principal):
+        return _run_schedule_kimlikli(state, sched, principal, manual=manual)
+
+
+def _run_schedule_kimlikli(state, sched: dict, principal, *, manual: bool = False) -> dict:
+    """`run_schedule`'ın gövdesi — kimlik bağlamı **kurulmuş** hâlde koşar.
+
+    ⚠ Ayrı bir fonksiyon, `with` girintisini gövdenin tamamına yaymamak için: yüz satırı
+    bir seviye içeri kaydırmak, bu turda değişmemiş kodu diff'te **değişmiş** gösterirdi.
+
+    ⚠ **Gövde taşınırken yerel import da taşınmalı** — ve ilk yazımda taşınmadı:
+    `cube_router` `run_schedule`'ın içindeydi, gövde onu **göremedi** ve `NameError`
+    uç tarafından yutulup `KeyError: 'notification'` olarak göründü. Yani kusur
+    **sebebinden uzakta** patladı; `test_ask_golden` onu yakaladı.
+    """
+    from app import cube_router
 
     svc = _wren_for_schedule(state, sched)
     store: ScheduleStore = state.schedules

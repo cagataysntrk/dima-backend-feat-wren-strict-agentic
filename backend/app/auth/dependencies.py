@@ -10,6 +10,7 @@ from __future__ import annotations
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app import istek_kimligi
 from control_plane.authorize import AuthzError, Principal, authorize
 from control_plane.security import decode_access_token, make_fingerprint
 
@@ -55,6 +56,19 @@ def get_current_principal(
         raise HTTPException(status_code=401, detail="Firma hesabı askıya alınmış")
     # Endpoint imzalarını değiştirmeden audit/log yazıcılarının kimliğe erişmesi için.
     request.state.principal = principal
+    # 🔴 **BORÇ 1** (`OPERASYON-DURUM.md`): *"36 çağrı sitesi kimlik geçmiyor →
+    # `motor_cls=on` KİLİTLİ."* Kimlik **burada doğar**, o yüzden sahibi de burasıdır.
+    #
+    # ⚠ `request.state` yeterli DEĞİLDİ: `wren_service` bir `Request` görmez ve görmesi
+    # de doğru olmazdı — bir SQL derleyicisini HTTP katmanına bağlamak, onu test edilemez
+    # ve HTTP-dışı çağrılarda (zamanlayıcı, MCP) kullanılamaz yapar.
+    #
+    # ⚠ **Sıfırlama gerekmiyor ve sebebi yapısal:** her istek kendi `asyncio.Task`'ında
+    # koşar ve `contextvars` her Task'a **kopyalanır**; burada yapılan `set` başka bir
+    # isteğin bağlamını **göremez**. Senkron endpoint'ler `anyio`nun thread havuzuna
+    # gider ve o da bağlamı kopyalar. (Kopyalanmayan tek yer `run_in_executor`'dır —
+    # `istek_kimligi.kimlik_kopyala()` tam olarak onun içindir.)
+    istek_kimligi.ayarla(principal)
     return principal
 
 

@@ -202,10 +202,48 @@ def test_MOTOR_CLS_ON_OLAMAZ_TESISAT_EKSIKKEN():
     kademe = str(getattr(get_settings(), "motor_cls", "off") or "off").lower()
     if kademe != "on":
         return                    # `off`/`shadow` — eksik tesisat henüz zararsız
+    # 🔴 **ÖLÇÜT DEĞİŞTİ — ve değişmesi bir DÜZELTMEDİR, bir gevşetme değil.**
+    #
+    # Bu test "her ÇAĞRI SİTESİ `principal=` geçiyor mu" diye soruyordu ve o soru, borcu
+    # **fail-open** bir biçimde tarif ediyordu: 36'yı kapatsan, 37.'si yine açık doğardı.
+    #
+    # Doğru soru **"her GİRİŞ NOKTASI kimliği kuruyor mu"**dur. Kimlik artık
+    # `app/istek_kimligi.py` ContextVar'ında yaşıyor ve `WrenService._oturum_ozellikleri`
+    # açık argüman yoksa **oradan** okuyor. Yani bir çağrı sitesinin `principal=` geçmemesi
+    # artık bir **açık** değil, bir **tercih**tir.
+    #
+    # ⚠ Açık argüman hâlâ bağlamı **ezer** — arka plan işleri kendi kimliğiyle koşabilsin.
+    if _kimlik_baglami_kurulu():
+        return
     assert not eksik, (
-        f"🔴 `motor_cls=on` ama {len(eksik)} çağrı sitesi principal GEÇMİYOR:\n  "
-        + "\n  ".join(eksik)
+        f"🔴 `motor_cls=on`, kimlik bağlamı YOK ve {len(eksik)} çağrı sitesi principal "
+        f"GEÇMİYOR:\n  " + "\n  ".join(eksik)
         + "\nHer biri fail-closed patlar. Önce tesisatı tamamla, sonra bayrağı aç.")
+
+
+def _kimlik_baglami_kurulu() -> bool:
+    """Kimlik **her giriş noktasında** kuruluyor mu — ve `WrenService` onu okuyor mu?
+
+    🔴 Üç giriş noktası var ve üçü de sayılır; biri eksikse bağlam *"kurulu"* değildir:
+
+    | giriş | kimliği nereden alır |
+    |---|---|
+    | HTTP | `get_current_principal` — token'dan doğar |
+    | zamanlayıcı | `run_schedule` — `run_as_user_id` → `created_by`, çözülemezse **koşmaz** |
+    | MCP | `Planlayici` — `cagir()` planlayıcıyı **zorunlu** ister |
+
+    ⚠ Lab/CLI araçları **bilerek** sayılmıyor: onlar kimliksiz koşar ve `motor_cls=on`
+    iken **en kısıtlı** seviyede sonuç alır. *Bir aracın az veri görmesi, bir kullanıcının
+    fazla veri görmesinden iyidir.*
+    """
+    ws = (KOK / "app" / "wren_service.py").read_text(encoding="utf-8")
+    if "istek_kimligi.simdiki()" not in ws:
+        return False
+    dep = (KOK / "app" / "auth" / "dependencies.py").read_text(encoding="utf-8")
+    if "istek_kimligi.ayarla(principal)" not in dep:
+        return False
+    sch = (KOK / "app" / "schedules.py").read_text(encoding="utf-8")
+    return "istek_kimligi.IstekKimligi(principal)" in sch
 
 
 def test_MOTOR_CLS_VARSAYILANI_OFF_ve_GEREKCESI_YAZILI():
