@@ -334,6 +334,24 @@ def test_PAIRWISE_kopya_uretmez():
 _ONBELLEK: dict = {}
 
 
+#: 🔴 KAPI ile LAB'ın AYRIMI — ve neden bu ayrım şart.
+#:
+#: Kapı 10 732 vakayı **üretiyordu**. Üretim bir **lab** işidir: pairwise algoritması
+#: tek çekirdekli ve soğuk koşumda dakikalar sürer. Bir geliştirme kapısının bütçesi
+#: **1-2 dakikadır** (kullanıcı kararı) ve bu bütçe üretime harcanamaz.
+#:
+#: > ⚠ *Uzun bir kapı, atlanan bir kapıya dönüşür* — ve atlanan bir kapı, olmayan
+#: > bir kapıdan daha kötüdür, çünkü varlığı güvence sanılır.
+#:
+#: **Ayrım:** kapı üretecin **doğruluğunu** deterministik bir örnekle sınar
+#: (aynı tohum → aynı örnek, yani kopya/kapsam iddiaları hâlâ geçerli). **Tam
+#: kapsam ölçümü** demet sonu lab koşumuna aittir (`lab/gercek_dunya.py --kapi`).
+#:
+#: ⚠ Örnek **kapsamı düşürmez, ölçüm anını değiştirir**: aynı 71 dilsel özellik
+#: hâlâ sınanıyor — yalnız daha az vakayla, ve yetmezse test bunu **söyler**.
+KAPI_ORNEK = 2500
+
+
 def _uretilmis_vakalar() -> list[dict]:
     if "vakalar" not in _ONBELLEK:
         from app.config import get_settings
@@ -343,7 +361,7 @@ def _uretilmis_vakalar() -> list[dict]:
         s = get_settings()
         svc = WrenService(project_dir=s.resolved_project_dir(), datasource=s.datasource,
                           connection_info=s.connection_dict())
-        _ONBELLEK["vakalar"] = senaryo_uretec.uret(svc.schema())[0]
+        _ONBELLEK["vakalar"] = senaryo_uretec.uret(svc.schema(), azami=KAPI_ORNEK)[0]
     return _ONBELLEK["vakalar"]
 
 

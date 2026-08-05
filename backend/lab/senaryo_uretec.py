@@ -520,7 +520,8 @@ def _sablon(niyet: str, olcu: str, boyut: str | None, donem: str,
 # 🔴 PAIRWISE COVERING ARRAY — kapsamı kanıtlı, boyu küçük
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def pairwise(eksenler: dict[str, list], rng: random.Random) -> list[dict]:
+def pairwise(eksenler: dict[str, list], rng: random.Random,
+             azami: int | None = None) -> list[dict]:
     """Her **ikili** değer kombinasyonunu en az bir kez içeren vaka listesi.
 
     ## Algoritma — açgözlü IPO benzeri, ve neden bu
@@ -574,6 +575,18 @@ def pairwise(eksenler: dict[str, list], rng: random.Random) -> list[dict]:
             en_iyi_kapanan = _kapatilan(en_iyi)
         hedef -= en_iyi_kapanan or set()
         secilen.append(en_iyi)
+        # 🔴 ERKEN KESME — ve neden **baştan** kesmek doğru.
+        #
+        # Açgözlü algoritma her turda **en çok yeni ikili kapatan** adayı seçer;
+        # yani dizinin **başı en çeşitli** kısmıdır ve çeşitlilik sona doğru azalır.
+        # Bu yüzden ilk N vaka, rastgele N vakadan **ölçülebilir biçimde** daha
+        # geniş kapsar.
+        #
+        # ⚠ İkili kapsam kısmi kalır (ve `kapsam` raporu bunu **söyler**); ama
+        # kapının sorduğu soru *"üreteç 71 dilsel özelliği üretebiliyor mu"*dur,
+        # *"her ikili kapsandı mı"* değil. İkincisi lab koşumunun işi.
+        if azami and len(secilen) >= azami:
+            break
     return secilen, toplam_ikili
 
 
@@ -692,7 +705,7 @@ def _beklenti(niyet: str, olcu_ifade: str, sahipler: dict[str, list[str]],
     return [DOGRU, NETLESTIRME], "yanlış cube ya da yanlış ölçü seçmek"
 
 
-def _katalog_parmak_izi(schema: dict, tohum: int) -> str:
+def _katalog_parmak_izi(schema: dict, tohum: int, azami: int | None = None) -> str:
     """Kataloğun **anlam taşıyan** özeti — önbellek anahtarı.
 
     ⚠ Tüm şemayı hash'lemek yanlış olurdu: içinde koşumdan koşuma değişen alanlar
@@ -711,7 +724,10 @@ def _katalog_parmak_izi(schema: dict, tohum: int) -> str:
             {k: sorted(v or []) for k, v in sorted((c.get("measure_synonyms") or {}).items())},
             {k: sorted(v or []) for k, v in sorted((c.get("dimension_synonyms") or {}).items())},
         ])
-    ham = _json.dumps([ozet, tohum, SURUM], ensure_ascii=False, sort_keys=True)
+    # ⚠ `azami` anahtara **girer**: 2 500'lük kapı korpusu ile 10 700'lük lab korpusu
+    # farklı kümelerdir; aynı anahtarı paylaşırlarsa biri ötekinin yerine geçer ve
+    # kapı, lab'ın sonucunu kendi sonucu sanar.
+    ham = _json.dumps([ozet, tohum, SURUM, azami], ensure_ascii=False, sort_keys=True)
     return hashlib.sha256(ham.encode("utf-8")).hexdigest()[:16]
 
 
@@ -739,10 +755,16 @@ def uret(schema: dict, *, tohum: int = 20260805,
     import json as _json
     import pathlib as _pl
 
-    _anahtar = _katalog_parmak_izi(schema, tohum) if onbellek else None
-    _yol = (_pl.Path(__file__).resolve().parent / "reports" /
-            f".senaryo_{_anahtar}.json") if _anahtar else None
-    if _yol and _yol.exists() and not azami:
+    _anahtar = _katalog_parmak_izi(schema, tohum, azami) if onbellek else None
+    # 🔴 ÖNBELLEK `reports/` ALTINDA DEĞİL — orası `.gitignore`'da ve o yüzden
+    # **her yeni makinede, her CI koşumunda soğuk** başlıyordu. Bir önbelleğin
+    # değeri kalıcılığındadır; her koşumda silinen bir önbellek, önbellek değildir.
+    #
+    # ⚠ `lab/.onbellek/` de commit'lenmez (türetilmiş veri repoya girmez) ama
+    # **koşumlar arasında yaşar** — asıl kazanç zaten oradaydı.
+    _yol = (_pl.Path(__file__).resolve().parent / ".onbellek" /
+            f"senaryo_{_anahtar}.json") if _anahtar else None
+    if _yol and _yol.exists():
         try:
             _v = _json.loads(_yol.read_text(encoding="utf-8"))
             return _v["vakalar"], _v["kapsam"]
@@ -791,7 +813,7 @@ def uret(schema: dict, *, tohum: int = 20260805,
         "dolgu": list(DOLGULAR),
         "bicim": list(BICIMLER),
     }
-    kombinasyonlar, toplam_ikili = pairwise(eksenler, rng)
+    kombinasyonlar, toplam_ikili = pairwise(eksenler, rng, azami)
     sayac_donem = _SinifSayaci()
 
     vakalar: list[dict] = []
@@ -850,7 +872,7 @@ def uret(schema: dict, *, tohum: int = 20260805,
         "donem_sinifi": dict(Counter(v["donem_sinifi"] for v in vakalar)),
         "donem_bicimi_sayisi": len({v["donem"] for v in vakalar}),
     }
-    if _yol and not azami:
+    if _yol:
         try:
             _yol.parent.mkdir(parents=True, exist_ok=True)
             _yol.write_text(_json.dumps({"vakalar": vakalar, "kapsam": kapsam},

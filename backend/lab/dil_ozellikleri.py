@@ -372,7 +372,7 @@ def kapsam_olc(sorular: list[str], *, zayif_esik: int = 5,
         _iz = hashlib.sha256(
             ("\u0000".join(sorular) + f"|{len(OZELLIKLER)}|{zayif_esik}").encode("utf-8")
         ).hexdigest()[:16]
-        _yol = _pl.Path(__file__).resolve().parent / "reports" / f".kapsam_{_iz}.json"
+        _yol = _pl.Path(__file__).resolve().parent / ".onbellek" / f"kapsam_{_iz}.json"
         if _yol.exists():
             try:
                 return _json.loads(_yol.read_text(encoding="utf-8"))
