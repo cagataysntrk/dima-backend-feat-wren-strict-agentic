@@ -62,6 +62,14 @@ DOGRU = "dogru"              # doğru cube + doğru ölçü
 NETLESTIRME = "netlestirme"  # belirsizliği fark etti, sordu
 DURUST_RET = "durust_ret"    # cevaplayamayacağını söyledi
 SESSIZ_YANLIS = "sessiz_yanlis"  # 🔴 **tek gerçek başarısızlık**
+#: 🔴 KÖK-3 (2026-08-06) — **BEYANLI KISMİ CEVAP.** Sorunun bir parçası sorguya
+#: taşınamadı **ama ürün bunu SÖYLÜYOR** (`eksik_niyet` alanı + "sayı doğru ama eksik"
+#: notu). Bu bir **sessiz** yanlış DEĞİLDİR ve öyle sayılırsa ölçüm, kapatılmış bir
+#: kusuru açıkmış gibi raporlar.
+#:
+#: ⚠ Ama bir başarı da değil: ayrı sayılır, gizlenmez. *Bir kusuru kapatmak onu
+#: yok etmek değildir; sessizliğini almaktır — ve ölçüm bu farkı görmelidir.*
+BEYANLI_KISMI = "beyanli_kismi"
 
 KADEMELER = ("K1", "K2", "K3", "K4", "K5")
 
@@ -396,39 +404,37 @@ def _sinifla(sonuc: dict | None, vaka: dict) -> str:
     cq = (sonuc or {}).get("cube_query") or {}
     if vaka.get("cube") and cq.get("cube") != vaka["cube"]:
         return SESSIZ_YANLIS
-    if _niyet_karsiligi_yok(cq, vaka.get("niyet")):
-        return SESSIZ_YANLIS
+    if _niyet_karsiligi_yok(cq, vaka.get("niyet"), vaka.get("soru", "")):
+        # 🔴 KÖK-3 — bu artık **SESSİZ** bir yanlış DEĞİL: `/ask` cevabı `eksik_niyet`
+        # alanıyla ve *"sayı doğru ama eksik"* notuyla gönderiyor. Ayrı sayılır,
+        # gizlenmez. *Bir kusuru kapatmak onu yok etmek değildir; sessizliğini almaktır.*
+        return BEYANLI_KISMI
     return DOGRU
 
 
-def _niyet_karsiligi_yok(cq: dict, niyet: str | None) -> bool:
-    """Niyetin sorgu şeklinde karşılığı **var mı**.
+def _niyet_karsiligi_yok(cq: dict, niyet: str | None, soru: str = "") -> bool:
+    """Niyetin sorgu şeklinde karşılığı **var mı** — kararı `app.uyum` verir.
 
-    ⚠ Yalnız **elle yazılmış** vakalarda `niyet` yoktur (onlarda `None` gelir) —
-    o durumda bu denetim **atlanır**, çünkü niyeti bilmeden şekil beklenemez.
-    *Bilinmeyen bir beklentiyi bir başarısızlık saymak, ölçümü gürültüye çevirir.*
+    ## 🔴 İKİNCİ SAHİP KAPANDI (2026-08-06)
+
+    Bu fonksiyon kendi niyet denetimini yazıyordu (`kiyas_var` · `boyut_var` ·
+    `sira_var`). Sonra `app/uyum.py` **aynı soruyu** ürün tarafında yedi değişmezle
+    cevaplayan bir modül olarak indi — yani aynı kural iki yerde yaşamaya başladı ve
+    biri güncellenince öteki bayatlayacaktı.
+
+    ⚠ Ve bu, ölçüm aracında **özellikle tehlikeli**: ürün bir niyeti taşımaya
+    başladığında ölçüm onu hâlâ *"taşınmadı"* diye sayarsa, kapanmış bir kusur **açık
+    görünür** — ve tersi de doğru.
+
+    *Bir ölçüm aracının kuralı, ölçtüğü ürünün kuralından ayrı yaşayamaz.*
     """
     if not niyet:
+        # ⚠ Elle yazılmış vakalarda `niyet` yok → denetim ATLANIR. Bilinmeyen bir
+        # beklentiyi başarısızlık saymak, ölçümü gürültüye çevirir.
         return False
-    from lab import senaryo_uretec as SU
+    from app.uyum import denetle
 
-    boyut_var = bool(cq.get("dimensions"))
-    kiyas_var = bool(cq.get("compare_mode") or cq.get("compare") or cq.get("yoy"))
-    sira_var = bool(cq.get("order_by") or cq.get("limit") or cq.get("top"))
-    olcu_sayisi = len(cq.get("measures") or [])
-
-    if niyet == SU.NIYET_KIYAS:
-        # 🔴 CANLI SESSİZ-YANLIŞ: iki ay adı **aralık** okunuyor, kıyas değil.
-        return not kiyas_var
-    if niyet == SU.NIYET_KIRILIM:
-        return not boyut_var
-    if niyet == SU.NIYET_USTUNLUK:
-        return not (sira_var and boyut_var)
-    if niyet in (SU.NIYET_KOMPOZISYON, SU.NIYET_ETKI):
-        # İki ölçü istendi; tek ölçü dönmesi **istenmeyen bir cevabı** doğru sanmaktır.
-        return olcu_sayisi < 2
-    return False
-
+    return bool(denetle(soru or "", {"cube_query": cq}))
 
 def kos(persona: str | None = None, kademe: str | None = None,
         *, uretilmis: bool = True) -> dict[str, Any]:
@@ -536,15 +542,16 @@ def rapor(sonuc: dict[str, Any]) -> str:
     sat.append(f"Vaka: **{sonuc['toplam_vaka']}** · katalog sızıntısı: "
                f"**{len(sonuc['sizinti'])}**")
     sat.append("")
-    sat.append("| Kademe | toplam | kabul | doğru | netleştirme | dürüst ret | 🔴 sessiz-yanlış |")
-    sat.append("|---|---|---|---|---|---|---|")
+    sat.append("| Kademe | toplam | kabul | doğru | netleştirme | dürüst ret | "
+               "🔴 sessiz-yanlış | ⚠ beyanlı kısmi |")
+    sat.append("|---|---|---|---|---|---|---|---|")
     for k in KADEMELER:
         c = sonuc["sayac"].get(k)
         if not c:
             continue
         sat.append(f"| {k} | {c.get('toplam',0)} | **{c.get('kabul',0)}** | "
                    f"{c.get(DOGRU,0)} | {c.get(NETLESTIRME,0)} | {c.get(DURUST_RET,0)} | "
-                   f"**{c.get(SESSIZ_YANLIS,0)}** |")
+                   f"**{c.get(SESSIZ_YANLIS,0)}** | {c.get(BEYANLI_KISMI,0)} |")
     if sonuc["sizinti"]:
         sat += ["", "## ⚠ KURAL 1 İHLALİ — katalog sızıntısı (vaka korpusa GİRMEDİ)", ""]
         for z in sonuc["sizinti"]:
@@ -566,12 +573,13 @@ TABAN_YOLU = pathlib.Path(__file__).resolve().parent / "gercek_dunya_baseline.js
 
 def _ozet(sonuc: dict[str, Any]) -> dict[str, int]:
     """Tabanla kıyaslanacak **anlam taşıyan** sayılar."""
-    t = {"vaka": 0, "kabul": 0, "dogru": 0, "sessiz_yanlis": 0}
+    t = {"vaka": 0, "kabul": 0, "dogru": 0, "sessiz_yanlis": 0, "beyanli_kismi": 0}
     for kademe in sonuc.get("sayac", {}).values():
         t["vaka"] += kademe.get("toplam", 0)
         t["kabul"] += kademe.get("kabul", 0)
         t["dogru"] += kademe.get(DOGRU, 0)
         t["sessiz_yanlis"] += kademe.get(SESSIZ_YANLIS, 0)
+        t["beyanli_kismi"] += kademe.get(BEYANLI_KISMI, 0)
     return t
 
 

@@ -158,8 +158,23 @@ _MONTHS = {"ocak": 1, "subat": 2, "mart": 3, "nisan": 4, "mayis": 5, "haziran": 
            "temmuz": 7, "agustos": 8, "eylul": 9, "ekim": 10, "kasim": 11, "aralik": 12}
 
 
+# 🔴 KÖK-7e — AY ÇEKİMİ. Eski kalıbın ay adından SONRA `\b` şartı vardı ve Türkçenin
+# en doğal söyleyişlerini **görmüyordu**:
+#
+#     ocak       ✅        ocakta     ❌
+#     mart       ✅        martta     ❌  marttan ❌  marttaki ❌
+#
+# ⊙ Ölçüldü (2026-08-06): 60 çekimin **11'i** eşleşiyordu (%18).
+#
+# ⚠ Çözüm bir ek LİSTESİ eklemek DEĞİL (ADR-0008 tam onu yasaklar): kuyruk `_ek_gecerli`
+# ile doğrulanıyor — bu deponun **tek** çekim sahibi (`_covers` ve `_syn_hit` de onu
+# kullanır). Kalıp yalnız kuyruğu YAKALAR; geçerli olup olmadığına o karar verir.
+#
+# *Bir kökün arkasındaki dizinin çekim olup olmadığı bir sözlük sorusu değil, bir
+# biçimbilim sorusudur — ve bu depoda onun bir sahibi zaten vardı.*
 _AY_ADI_RE = re.compile(
-    r"\b(ocak|subat|mart|nisan|mayis|haziran|temmuz|agustos|eylul|ekim|kasim|aralik)\b(\s+ayi\w*)?"
+    r"\b(ocak|subat|mart|nisan|mayis|haziran|temmuz|agustos|eylul|ekim|kasim|aralik)"
+    r"(?P<ek>[a-z]*)\b(\s+ayi\w*)?"
 )
 
 
@@ -190,7 +205,12 @@ def _adlandirilan_aylar(q: str) -> list[tuple[int, int]]:
     bulunan: list[tuple[int, int]] = []
     for m in _AY_ADI_RE.finditer(q):
         ad = m.group(1)
-        if ad == "aralik" and not m.group(2):
+        # 🔴 KÖK-7e — kuyruk GEÇERLİ bir çekim mi? Karar `_ek_gecerli`nin (tek sahip).
+        # `martta`/`marttan` ✅ · `martı`? → ek atomu; `mart`+`go` gibi kazara denk
+        # gelen devamlar `_ek_gecerli`de zaten eleniyor.
+        if not _ek_gecerli(m.group("ek") or ""):
+            continue
+        if ad == "aralik" and not m.group(3):
             continue
         mon = _MONTHS[ad]
         # KOMŞU yıl: "2025 ocak" (önce) ya da "ocak 2025" (sonra). Pencere dar tutulur —
@@ -2077,6 +2097,22 @@ def _period_hit_words(q: str) -> set[str]:
     # çok-aylı (kıyas) sorularda yalnız İLK ay yakalanırsa ikinci ay adı SESSİZCE "unknown"
     # kalır ve typo_correct() onu alakasız bir kategorik değere ("nisan"→"Lisans" gibi)
     # yanlışlıkla önerir (Madde 1, 1 Ağustos 2026 canlı bulgu).
+    # 🔴 KÖK-7e — AY ÇEKİMİ **TEK SAHİPTEN**.
+    #
+    # Ölçülen çelişki (denetim raporu, §3.2a'nın 60-çekim ölçütü): tarih ÇÖZÜCÜSÜ
+    # (`_adlandirilan_aylar`) `ocakta`yı doğru çözüyordu — `[2026-01-01, 2026-01-31]` —
+    # ama KAPSAM KAPISI onu görmüyordu ve soru **R10** ile reddediliyordu. Yani sistem
+    # tarihi biliyor, ama bildiğini bilmiyordu.
+    #
+    #     ⊙ 60 ay çekiminin **11'i** geçiyordu (%18).
+    #
+    # ⚠ Kalıp artık `_AY_ADI_RE`nin **kendisi** — iki ayrı ay kalıbı tutmak, bu deponun
+    # ölçülmüş *"aynı kuralın iki sahibi"* sınıfıydı ve tam olarak bu asimetriyi üretti.
+    # Kuyruğun geçerliliğine `_ek_gecerli` karar verir (çekimin tek sahibi).
+    for m in _AY_ADI_RE.finditer(q):
+        if not _ek_gecerli(m.group("ek") or ""):
+            continue
+        words.update(re.findall(r"[a-z]+", m.group(0)))
     for m in re.finditer(rf"\b({_MONTH_ALT})\b(\s+ayi\w*)?", q):
         words.update(re.findall(r"[a-z]+", m.group(0)))
     return words

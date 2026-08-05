@@ -29,7 +29,19 @@ measures:
     expression: "ROUND(AVG(kar_marji_yuzde),2)"
     type: DOUBLE
     unit: "%"
-    synonyms: [kâr marjı, karlılık, marj, kar oranı, kârlılık oranı, brüt marj]
+    # 🔴 KN-2 ÇAKIŞMASI — çıplak `kâr marjı`·`karlılık`·`marj`·`kar oranı` KALDIRILDI.
+    #
+    # Aynı gerekçe, üçüncü kez (bkz. `toplam üretim`, `kimyasal/enerji maliyeti`):
+    # `parti.kar_marji_yuzde` marjı **PARTİ grain'inde ve TOPLAM/TOPLAM** hesaplar
+    # (ISO tarzı: SUM(ciro−maliyet)/SUM(ciro)). Buradaki ise AYLIK maliyetlendirme
+    # tablosunun satır-AVG'sidir — **farklı bir sayı**, üstelik farklı bir tanım.
+    # ⊙ Ölçüldü: `karlılık` → R1 (iki sahip, kimse kazanamıyor) ve
+    # `test_DEGISMEMESI_gerekenler[karlılık-parti-kar_marji_yuzde]` kırmızı.
+    # ⚠ Nitelenmiş hâller KALDI: *"ortalama kâr marjı"* hâlâ buraya gelir.
+    #
+    # *İki farklı tanımı tek isme bağlamak, hangisinin geldiğini kullanıcıya
+    # sordurur — ve o soruyu soramaz, çünkü iki tanım olduğunu bilmez.*
+    synonyms: [ortalama kâr marjı, ortalama karlılık, aylık marj, brüt marj]
   - name: ort_birim_kar
     expression: "ROUND(AVG(birim_kar_tl_kg),3)"
     type: DOUBLE
@@ -46,14 +58,19 @@ measures:
     # KG BAŞINA birim maliyetin (₺/kg) adıdır; ikisi farklı ölçülerdir.
     # *Bir birim maliyeti, toplam maliyetin adıyla çağırmak, iki farklı sayıyı tek isme
     # bağlamaktır — ve hangisinin geldiğini kullanıcı göremez.*
-    synonyms: [kimyasal birim maliyet, kg başına kimyasal, birim boya maliyeti]
+    # ⚠ `kg başına kimyasal` KALDIRILDI — o `surdurulebilirlik.kimyasal_yogunlugu_tl_kg`in
+    # ZATEN sinonimiydi; nitelendirirken **yeni bir çakışma** yaratmışım ve sinonim
+    # envanteri kapısı onu yakaladı. *Bir çakışmayı çözerken ikincisini doğurmamak,
+    # çözümün kendisi kadar önemlidir.*
+    synonyms: [kimyasal birim maliyet, birim boya maliyeti, maliyet tablosu kimyasal]
   - name: enerji_maliyet_kg
     expression: "ROUND(AVG(elektrik_tl_kg + dogalgaz_tl_kg),3)"
     type: DOUBLE
     unit: "₺/kg"
     # 🔴 Aynı gerekçe (eval `ny-enerji-maliyet-asama`): çıplak `enerji maliyeti`
     # `surdurulebilirlik.toplam_enerji_tl`in; burası ₺/kg birim maliyettir.
-    synonyms: [enerji birim maliyet, kg başına enerji, elektrik gaz birim maliyeti]
+    # ⚠ `kg başına enerji` KALDIRILDI — `surdurulebilirlik.enerji_yogunlugu_kwh_kg`in.
+    synonyms: [enerji birim maliyet, elektrik gaz birim maliyeti, maliyet tablosu enerji]
   - name: iscilik_maliyet_kg
     expression: "ROUND(AVG(iscilik_tl_kg),3)"
     type: DOUBLE

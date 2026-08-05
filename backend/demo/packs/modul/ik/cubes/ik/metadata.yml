@@ -33,7 +33,10 @@ measures:
     unit: "₺"
     # ⚠ `işçilik maliyeti` KALDIRILDI → `maliyet.iscilik_maliyet_kg`in (kg başına birim
     # maliyet, ürün maliyetlendirmesinin parçası). Burası BORDRO toplamıdır.
-    synonyms: [işveren maliyeti, toplam maliyet, bordro maliyeti, kadro maliyeti]
+    # ⚠ `toplam maliyet` KALDIRILDI — fazla jenerik: `maliyet` cube'unun kimliğiyle
+    # çakışıyor ve envanter kapısı çözümün `ik`ten `maliyet`e kaydığını ölçtü.
+    # İK'nın toplamı BORDRO toplamıdır; adı da onu söylemeli.
+    synonyms: [işveren maliyeti, bordro maliyeti, kadro maliyeti, personel maliyeti]
   - name: toplam_mesai_ucreti
     expression: SUM(mesai_ucreti)
     type: DOUBLE

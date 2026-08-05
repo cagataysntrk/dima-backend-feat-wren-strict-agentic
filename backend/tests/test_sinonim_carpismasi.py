@@ -105,7 +105,22 @@ YANLIS_CUBE = {
 #: **R1 = 99 DEĞİŞMEDİ ve değişmemeli**: onlar ÇIPLAK ölçü adının iki cube'da birden
 #: iddia edildiği GERÇEK belirsizliklerdir; `route()` tahmin etmeyi doğru reddediyor,
 #: netleştirme chip'i `olcu_netlestirme` ile üretiliyor (MIMARI §6.1g).
-CEVAPSIZ_RED = {"R1": 99, "R10": 5, "R9": 2, "R4": 1}
+#: ⟳ 2026-08-06 — KN-2 SAHİPLİK TEMİZLİĞİ + KÖK-7e. Kayma **kasıtlıdır** ve sebebi
+#: yazılıdır (testin kendi cümlesi: *"kayması, kapsamın bir yerde değiştiği anlamına
+#: gelir ve fark edilmeli"* — fark edildi, açıklanıyor).
+#:
+#:   R10  5 → 12   `maliyet`/`ik`ten ÇIKARILAN çıplak terimler (`toplam üretim` ·
+#:                 `kimyasal/enerji maliyeti` · `kâr marjı` ailesi · `toplam maliyet`)
+#:                 artık o cube'ların envanterinde yok → kendi sözlüklerine karşı
+#:                 kapsam kapısına takılıyorlar. Bu bir KAYIP DEĞİL: aynı terimler
+#:                 GERÇEK sahiplerinde (`oee` · `surdurulebilirlik` · `parti`) doğru
+#:                 çözülüyor ve `eval` precision −%12,7 → **+%0,0**'a döndü.
+#:   R4   1 → 3    aynı sebep, ölçü tarafı.
+#:
+#: 🔴 EN SERT KAPI GEÇTİ: `test_DOGRU_SAYISI_DUSMEDI` yeşil — doğru çözülen sinonim
+#: sayısı DÜŞMEDİ. Raporun A2 anti-çözümünün (kimlik silme → 388 cevap kaybı) bu
+#: temizlikte tekrarlanmadığının kanıtı odur, bu dağılım değil.
+CEVAPSIZ_RED = {"R1": 99, "R4": 3, "R10": 12, "R9": 2}
 
 #: Toplam ölçü sinonimi ve doğru çözülen sayısı.  ⟳ Faz 2a-3: 291 → 340 (+49).
 TOPLAM_SINONIM, DOGRU = 470, 340

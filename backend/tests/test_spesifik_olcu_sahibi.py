@@ -76,9 +76,18 @@ def test_DEGISMEMESI_gerekenler(schema, soru, beklenen_cube, beklenen_olcu):
 
 
 def test_KATALOG_DISI_terim_hala_DURUST_reddediliyor(schema):
-    """`bütçe sapması` katalogda YOK. Düzeltme "her sapma sorusunu bir yere yolla"
-    demek DEĞİLDİR — uydurmak, cevapsız kalmaktan kötüdür."""
-    for soru in ("bütçe sapması", "hedef sapması"):
+    """Katalogda **olmayan** bir terim bir cube'a bağlanmamalı — uydurmak, cevapsız
+    kalmaktan kötüdür.
+
+    ⟳ VAKA GÜNCELLENDİ (2026-08-06): `bütçe sapması` artık katalogda **VAR**.
+    `butce` cube'u çıplak `sapma`yı sahipleniyordu (dört sahipli bir terim: bütçe ·
+    enerji · renk · kur) ve KN-2 temizliğinde **nitelenmiş** hâline çevrildi —
+    `bütçe sapması`. Yani bu terim artık meşru bir katalog terimi.
+
+    ⚠ Vakanın **ölçtüğü şey** değişmedi: katalogda gerçekten olmayan bir terim hâlâ
+    reddedilmeli. Yalnız örnek tazelendi. *Bir kapının vakası bayatladığında kapıyı
+    değil vakayı değiştirmek gerekir — ama ölçtüğü şeyi koruyarak.*"""
+    for soru in ("zombixyz sapması", "hedef sapması"):
         cr.reddi_sifirla()
         assert cr.route(f"bu yil {soru}", schema) is None, (
             f"{soru!r} katalogda yokken bir cube'a bağlandı — uydurma")

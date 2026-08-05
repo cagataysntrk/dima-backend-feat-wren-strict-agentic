@@ -137,6 +137,19 @@ MUAFIYET_ASK_KOD = [
                       "dürüst olmayan bir mesajı SATIN ALMAZ"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("KÖK-7e/ay-cekimi", 7,
+     "🔴 AY ÇEKİMİ TEK SAHİPTEN (denetim raporu KÖK-7e). Ölçüldü: `_AY_ADI_RE` ay "
+     "adından SONRA `\\b` istiyordu ve Türkçenin en doğal söyleyişlerini GÖRMÜYORDU — "
+     "60 çekimin 11'i (%18) geçiyordu (`ocakta`·`martta`·`subattan` hepsi kaçıyordu). "
+     "🔴 Ve asıl kusur kalıpta değil İKİ SAHİPTE: tarih ÇÖZÜCÜSÜ `ocakta`yı doğru "
+     "çözüyordu ([2026-01-01, 2026-01-31]) ama KAPSAM KAPISI kendi ay kalıbını taşıyor "
+     "ve görmüyordu → soru R10 ile reddediliyordu. Sistem tarihi biliyor ama bildiğini "
+     "bilmiyordu. "
+     "Bu yedi satır TAŞINAMAZ: kalıbın kendisi (2) ve İKİ tüketicideki çekim denetimi "
+     "(5). Denetimin kararı zaten `_ek_gecerli`de — çekimin TEK sahibi; buraya giren "
+     "yalnız ÇAĞRI. Yeni ek listesi YAZILMADI (ADR-0008). "
+     "⊙ Sonuç: %18 → **%100 (60/60)**, üç yanlış-pozitif kapısı temiz "
+     "(`mart ayakkabi` · `kargo` · `ekim ekipmani`)"),
     ("faz-2.2b/borc11", 5, "grain-farkında çapraz-cube geçişi — ölçü eşlemesi ADLA değil "
                            "KAVRAMLA yapılıyor. 🔴 Taşınabilir olan HER ŞEY taşındı: "
                            "`olcu_eslemesi` + `grain_uyarisi` `app/cekirdek.py`'ye "
