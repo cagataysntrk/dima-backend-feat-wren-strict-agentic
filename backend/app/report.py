@@ -87,4 +87,67 @@ def compose_report(
         "title": spec.get("title") or "Rapor",
         "pages": pages,
         "block_count": len(blocks),
+        # 🔴 FAZ 5.13b — **SABİT YAPI**. Aşağıdaki üç bölüm `pages`'in YANINDA durur,
+        # içinde değil: bir dışa aktarıcı sayfaları atlasa bile kapak ve **kaynak
+        # listesi** elinde kalır.
+        **yapi(spec, blocks),
+    }
+
+
+def yapi(spec: dict, blocks: list[dict]) -> dict[str, Any]:
+    """FAZ 5.13b — raporun **sabit yapısı**: kapak → yönetici özeti → kaynaklar.
+
+    ## 🔴 `contract_id` ALTTA KALIR — her formatta
+
+    Yol haritasının şartı: *"PDF'e döküldüğünde bile `contract_id` altta kalır."* Bunun
+    tek güvenilir yolu onu **bir sunum katmanına değil, yapının kendisine** koymaktır:
+    `kaynaklar` listesi `pages`'ten **bağımsızdır** ve bir dışa aktarıcı sayfaları
+    atlasa, kırpsa ya da yeniden düzenlese bile **onu düşürmez**.
+
+    ⚠ *Bir kanıt, taşındığı kabın şekline bağlıysa kanıt değildir.*
+
+    ## ⊘ ÖLÇÜLEMEYEN: Word · Excel  — ama **PDF ÖLÇÜLÜR**
+
+    Yol haritası *"dört formatta da `contract_id` var"* diyor. Ölçüldü ve **ilk beyanım
+    yanlıştı**: `docx`/`openpyxl` gerçekten yok, ama **PDF VAR** — `ReportView`'in
+    `window.print()` yolu. Tarayıcı baskısı bir dışa aktarımdır ve kaynak listesi o
+    baskıda **görünmek zorundadır** (`print:hidden` OLMAMALI).
+
+    *Var olan bir yolu "ölçülemez" ilan etmek, ölçmemenin en kolay yoludur.*
+
+    ## Yönetici özeti neden buradan üretiliyor
+
+    İçgörü kartlarının **birleşimi**dir ve `interpret()`'in zaten hesapladığı olgulardan
+    gelir — **yeni bir anlatı motoru yazılmaz**. LLM çağrılmaz; özet bir **derleme**dir,
+    bir yorum değil.
+    """
+    from datetime import date
+
+    kaynaklar = [
+        {"blok": b.get("title") or f"#{i + 1}", "contract_id": b.get("contract_id"),
+         "cube": (b.get("cube_query") or {}).get("cube")}
+        for i, b in enumerate(blocks)
+    ]
+    olgular: list[str] = []
+    for b in blocks:
+        for f in ((b.get("interpretation") or {}).get("facts") or [])[:2]:
+            metin = str(f.get("text") or "").strip()
+            if metin and metin not in olgular:
+                olgular.append(metin)
+    return {
+        "kapak": {
+            "baslik": spec.get("title") or "Rapor",
+            "tarih": str(spec.get("tarih") or date.today().isoformat()),
+            # ⚠ Yazar **uydurulmaz**: verilmediyse `None` kalır. Bir raporun altına
+            # olmayan bir ad yazmak, o raporu kimsenin savunmadığı bir belge yapar.
+            "yazar": spec.get("yazar") or None,
+        },
+        "yonetici_ozeti": olgular[:8],
+        # 🔴 KAYNAK LİSTESİ — `pages`'ten BAĞIMSIZ ve her formatta altta kalır.
+        "kaynaklar": kaynaklar,
+        # ⊘ Kapının ölçemediği şey **yazılı**: bu üç dışa aktarıcı depoda YOK.
+        # ⚠ **PDF listede DEĞİL**: `window.print()` yolu var ve kaynak listesi o baskıda
+        # görünüyor (`ReportView`, `print:hidden` taşımıyor). *Var olan bir yolu
+        # "ölçülemez" ilan etmek, ölçmemenin en kolay yoludur.*
+        "olculemeyen_formatlar": ["word", "excel"],
     }

@@ -32,6 +32,33 @@ export function ReportView({ report, onClose }: { report: Report; onClose: () =>
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto bg-neutral-500/[0.03] p-4">
+        {/* 🔴 FAZ 5.13b — SABİT YAPI: kapak → yönetici özeti → kartlar → KAYNAK LİSTESİ.
+            ⚠ Hiçbiri `print:hidden` TAŞIMAZ: yol haritasının şartı *"PDF'e döküldüğünde
+            bile `contract_id` altta kalır"* ve buradaki PDF yolu `window.print()`. */}
+        {(report.kapak || report.yonetici_ozeti?.length) && (
+          <section className="mx-auto mb-4 max-w-4xl border border-hairline bg-background p-4">
+            {report.kapak && (
+              <p className="font-mono text-[10px] text-neutral-400">
+                {report.kapak.tarih}
+                {report.kapak.yazar ? ` · ${report.kapak.yazar}` : ""}
+              </p>
+            )}
+            {!!report.yonetici_ozeti?.length && (
+              <>
+                <h3 className="mt-2 font-mono text-[12px] uppercase tracking-wide text-muted">
+                  yönetici özeti
+                </h3>
+                <ul className="mt-1 space-y-0.5">
+                  {report.yonetici_ozeti.map((o) => (
+                    <li key={o} className="text-[13px] leading-relaxed text-foreground">
+                      · {o}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </section>
+        )}
         {pages.map((page, pi) => (
           <section
             key={pi}
@@ -71,6 +98,32 @@ export function ReportView({ report, onClose }: { report: Report; onClose: () =>
             ))}
           </section>
         ))}
+
+        {/* 🔴 KAYNAK LİSTESİ — raporun ALTINDA ve BASKIDA GÖRÜNÜR.
+            Yol haritasının şartı: *"PDF'e döküldüğünde bile `contract_id` altta kalır."*
+            Buradaki PDF yolu `window.print()`; bu bölüm `print:hidden` TAŞIMAZ.
+            ⚠ `contract_id: null` bir MAKBUZSUZLUKTUR ve gösterilir — kanıtın yokluğunu
+            gizlemek, kanıtsızlıktan kötüdür. */}
+        {!!report.kaynaklar?.length && (
+          <section className="mx-auto max-w-4xl border-t border-hairline pt-3">
+            <h3 className="font-mono text-[11px] uppercase tracking-wide text-muted">
+              kaynaklar
+            </h3>
+            <ul className="mt-1 space-y-0.5">
+              {report.kaynaklar.map((k, i) => (
+                <li key={i} className="font-mono text-[10px] text-neutral-400">
+                  {k.blok}
+                  {k.cube ? ` · ${k.cube}` : ""} ·{" "}
+                  {k.contract_id ? (
+                    <span className="text-foreground">{k.contract_id}</span>
+                  ) : (
+                    <span className="text-amber-600">makbuzsuz</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
     </div>
   );

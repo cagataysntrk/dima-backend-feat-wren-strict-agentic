@@ -394,6 +394,18 @@ export interface Report {
   title: string;
   pages: ReportBlock[][];
   block_count: number;
+  // 🔴 FAZ 5.13b — SABİT YAPI. Üçü de `pages`'in YANINDA durur, içinde değil: bir dışa
+  // aktarıcı sayfaları atlasa/kırpsa/yeniden düzenlese bile kapak ve KAYNAK LİSTESİ
+  // elinde kalır. *Bir kanıt, taşındığı kabın şekline bağlıysa kanıt değildir.*
+  kapak?: { baslik: string; tarih: string; yazar: string | null };
+  // Yönetici özeti `interpret()`'in olgularından DERLENİR — yeni bir anlatı motoru yok,
+  // LLM çağrılmaz. Özet bir derlemedir, bir yorum değil.
+  yonetici_ozeti?: string[];
+  // 🔴 "PDF'e döküldüğünde bile `contract_id` altta kalır." `contract_id: null` bir
+  // makbuzsuzluktur ve GÖSTERİLİR — kanıtın yokluğunu gizlemek, kanıtsızlıktan kötüdür.
+  kaynaklar?: { blok: string; contract_id: string | null; cube: string | null }[];
+  // ⊘ Bu formatlar depoda YOK; kapı onları ölçemiyor ve bunu ilan ediyor.
+  olculemeyen_formatlar?: string[];
 }
 
 export interface ReportBlockInput {

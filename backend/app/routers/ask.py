@@ -1134,6 +1134,41 @@ def report(request: Request, body: ReportRequest) -> dict:
 
         audit.record(principal, "pii_view", nl_question=f"rapor · {body.title or 'Rapor'}",
                     ip=request.client.host if request.client else None)
+
+    # 🔴 FAZ 5.13b — **HER BLOK BİR MAKBUZ YAZAR, KAYNAK LİSTESİ ONU TAŞIR.**
+    #
+    # Yol haritasının şartı: *"PDF'e döküldüğünde bile `contract_id` altta kalır."*
+    # Makbuz **maskelemeden SONRA** yazılır: rapora giren sonuç maskeliyse, kanıt da
+    # maskelenmiş sonucun hash'i olmalı — aksi hâlde `result_hash` kullanıcının hiç
+    # görmediği bir tabloyu damgalardı.
+    #
+    # ⚠ Makbuz yazılamazsa rapor **düşmez** (`contract_id: None` kalır ve kaynak
+    # listesinde **öyle görünür**): kanıtın yokluğunu gizlemek, kanıtsızlıktan kötüdür.
+    try:
+        from app.contracts import ContractStore
+
+        _store = ContractStore()
+        _sv = str(schema.get("version") or "")
+        for _page in rep.get("pages") or []:
+            for _blk in _page:
+                if not _blk.get("result"):
+                    continue
+                try:
+                    _blk["contract_id"] = _store.record(
+                        session_id=None,
+                        question=str(_blk.get("title") or body.title or "Rapor"),
+                        cube_query=_blk.get("cube_query"), sql=None,
+                        result=_blk.get("result"), source="report",
+                        schema_version=_sv,
+                        tenant_id=str(getattr(principal, "tenant_id", "") or "") or None,
+                    )
+                except Exception:                            # noqa: BLE001, PERF203
+                    _log.warning("rapor bloğu makbuzsuz kaldı", exc_info=True)
+        # Yapı bloklardan SONRA yeniden hesaplanır ki kaynak listesi makbuzları görsün.
+        rep.update(report_mod.yapi(
+            {"title": body.title}, [b for pg in (rep.get("pages") or []) for b in pg]))
+    except Exception:                                        # noqa: BLE001
+        _log.warning("rapor yapısı üretilemedi (best-effort)", exc_info=True)
     return rep
 
 
