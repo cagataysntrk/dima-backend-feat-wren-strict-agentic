@@ -41,9 +41,45 @@ _MUAF = {
     "sharding.py": "compose/build ağırlıklı — derleme kilidi paralelliği engeller",
 }
 
-#: Bir dosyayı "ağır koşucu" yapan eşik: `route()`/`svc.` çağrısı bir DÖNGÜ içinde.
-_AGIR_DESEN = re.compile(r"for\s+\w+.*:\s*(\n\s+.*){0,12}?(cube_router\.route\(|svc\.cube_sql\()",
-                         re.MULTILINE)
+#: Bir dosyayı "ağır koşucu" yapan ölçüt: `route()`/`cube_sql()` çağrısı bir DÖNGÜ içinde.
+#:
+#: 🔴 BURASI BİR KUSURUN ANISI. İlk hâli çok satırlı bir regex'ti:
+#:
+#:     r"for\s+\w+.*:\s*(\n\s+.*){0,12}?(cube_router\.route\(|svc\.cube_sql\()"
+#:
+#: İç içe niceleyiciler (`\s+` ve `.*`, bir tekrar grubunun içinde, üstüne tembel
+#: `{0,12}?`) büyük kaynak dosyalarında **felaket geri-izlemeye** giriyordu: test
+#: 180 saniyede de, 90 saniyede de **bitmedi**.
+#:
+#: > ⚠ Acı olan yanı: *"yavaş test kalmasın"* diye yazdığım kapı, ortamın **en yavaş
+#: > şeyi** oldu. *Bir kuralı uygulayan aracın, o kurala uyması gerekir.*
+#:
+#: Yerine **satır tabanlı** tarama: girinti takibiyle O(n), geri-izleme yok.
+_AGIR_CAGRI = ("cube_router.route(", "svc.cube_sql(")
+
+
+def _dongude_agir_cagri(src: str) -> bool:
+    """Bir `for`/`while` gövdesinin içinde ağır çağrı var mı — **girintiye bakarak**.
+
+    ⚠ Regex değil: kaynak kodu satır satır gezilir, döngü satırının girintisi
+    hatırlanır, daha derin girintili satırlarda ağır çağrı aranır. Döngüden
+    çıkıldığında (girinti geri düştüğünde) takip biter.
+    """
+    dongu_girintisi: int | None = None
+    for satir in src.splitlines():
+        soyulmus = satir.lstrip()
+        if not soyulmus or soyulmus.startswith("#"):
+            continue
+        girinti = len(satir) - len(soyulmus)
+        if dongu_girintisi is not None:
+            if girinti <= dongu_girintisi:          # döngüden çıkıldı
+                dongu_girintisi = None
+            elif any(c in satir for c in _AGIR_CAGRI):
+                return True
+        if dongu_girintisi is None and (
+                soyulmus.startswith("for ") or soyulmus.startswith("while ")):
+            dongu_girintisi = girinti
+    return False
 
 
 def test_AGIR_KOSUCULAR_kosut_deseni_kullanir():
@@ -58,7 +94,7 @@ def test_AGIR_KOSUCULAR_kosut_deseni_kullanir():
         if f.name in _MUAF:
             continue
         src = f.read_text(encoding="utf-8")
-        if not _AGIR_DESEN.search(src):
+        if not _dongude_agir_cagri(src):
             continue
         if "kosut" in src or "ProcessPoolExecutor" in src:
             continue

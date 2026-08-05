@@ -26,10 +26,41 @@ from __future__ import annotations
 
 import pathlib
 import re
+import shutil
 import subprocess
+
+import pytest
 
 _KOK = pathlib.Path(__file__).resolve().parents[2]
 _BELGELER = _KOK / "belgeler"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ⊘ ÖLÇÜLEMEDİĞİNDE **ATLA**, KALMA — ölçülmüş bir kusurun düzeltmesi
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# 🔴 Bu dosya `backend/tests/` altında yaşıyor ama **repo kökünü** denetliyor.
+# Standart test konteynerine yalnız `backend/` bağlanıyor (`-v "$PWD:/app"`) ve
+# imajda `git` **yok**. Sonuç: dört test `FileNotFoundError` ve *"belgeler yok"*
+# diye **KALIYORDU** — oysa belgeler yerinde, konteyner onları **göremiyor**.
+#
+# > ⚠ *Göremediği bir şeyi "yok" diye raporlayan bir test, ölçüm değil gürültü
+# > üretir.* Ve gürültü üreten bir kapı, ilk kırmızısında güvenilirliğini kaybeder:
+# > insan onu *"zaten hep kırmızı"* diye okumaya başlar.
+#
+# Doğrusu bu deponun kendi üçüncü hâli: **⊘ ÖLÇÜLEMEDİ** — geçmek de kalmak da
+# değil. `pytest.skip` sebebiyle birlikte atlar; kapı sessizce yeşil görünmez,
+# **atlandığını söyler**.
+_KOK_GORUNUR = (_KOK / "belgeler").is_dir() and (_KOK / "OPERASYON.md").exists()
+_GIT_VAR = shutil.which("git") is not None
+
+_kok_gerekli = pytest.mark.skipif(
+    not _KOK_GORUNUR,
+    reason="⊘ ÖLÇÜLEMEDİ — repo kökü bu ortamda görünmüyor (konteynere yalnız "
+           "`backend/` bağlı). Bu denetim repo kökünden koşulmalı: "
+           "`cd backend && python -m pytest tests/test_belge_duzeni.py`")
+_git_gerekli = pytest.mark.skipif(
+    not (_KOK_GORUNUR and _GIT_VAR),
+    reason="⊘ ÖLÇÜLEMEDİ — `git` bu ortamda yok (test imajında kurulu değil)")
 
 #: 🔴 Kökte durabilecek **tek** belge kümesi — operasyonun giriş noktası.
 #: `backend/CLAUDE.md` doğrudan bunlara işaret ediyor: bağlam sıfırlansa bile
@@ -44,6 +75,7 @@ def _kok_md() -> list[str]:
     return sorted(p.name for p in _KOK.glob("*.md"))
 
 
+@_kok_gerekli
 def test_KOKTE_yalniz_operasyon_uclusu():
     """🔴 Kök üç dosyalıktır.
 
@@ -60,6 +92,7 @@ def test_KOKTE_yalniz_operasyon_uclusu():
     )
 
 
+@_kok_gerekli
 def test_KOK_UCLUSU_yerinde():
     """Üçü de **var olmalı**: biri taşınırsa `backend/CLAUDE.md`'nin işaret ettiği
     giriş noktası kırılır ve bağlam sıfırlandığında operasyon **nereden devam
@@ -68,6 +101,7 @@ def test_KOK_UCLUSU_yerinde():
     assert not eksik, f"🔴 operasyon giriş dosyası kayıp: {sorted(eksik)}"
 
 
+@_kok_gerekli
 def test_DENETIM_raporlari_tarih_damgali():
     """`denetim/` **kronolojik bir arşivdir**: ad `YYYY-AA-GG_` ile başlar.
 
@@ -82,6 +116,7 @@ def test_DENETIM_raporlari_tarih_damgali():
         "ad `YYYY-AA-GG_KONU.md` olmalı")
 
 
+@_git_gerekli
 def test_HER_BELGE_git_tarafindan_izleniyor():
     """⚠ İzlenmeyen bir belge **yalnız bu makinede vardır**.
 
@@ -97,6 +132,7 @@ def test_HER_BELGE_git_tarafindan_izleniyor():
     assert not kayip, f"🔴 git'in görmediği belge: {kayip} — `git add` et"
 
 
+@_kok_gerekli
 def test_INDEKS_var_ve_her_dizini_anlatiyor():
     """İndeks olmadan bir dizin ağacı yalnız bir yığındır: hangi dosyanın **neden**
     orada olduğunu söyleyen tek şey odur."""
@@ -107,6 +143,7 @@ def test_INDEKS_var_ve_her_dizini_anlatiyor():
         assert f"{d}/" in m, f"🔴 «{d}/» dizini indekste anlatılmıyor"
 
 
+@_kok_gerekli
 def test_INDEKS_kirik_bag_tasimaz():
     """⚠ İndeksteki kırık bir bağ, indeksi **olduğundan güvenilir** gösterir:
     okuyucu dosyanın var olduğunu sanır."""
@@ -120,6 +157,7 @@ def test_INDEKS_kirik_bag_tasimaz():
     assert not kirik, f"🔴 indekste kırık bağ: {kirik}"
 
 
+@_kok_gerekli
 def test_TASINAN_BELGELERE_atif_kirilmadi():
     """🔴 **Taşımanın asıl bedeli**: bir belgeyi taşımak, ona atıf yapan her dosyayı
     kırar. Bu test eski (kök) yolların kodda/belgede **kalmadığını** sınar.
