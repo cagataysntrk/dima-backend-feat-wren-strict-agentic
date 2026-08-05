@@ -214,6 +214,32 @@ Kullanıcı iki kez uyardı (*"yine yarım saattir test yapılıyor"*). Ölçüm
 *Bir kapıyı beş kez koşmak, onu bir kez koşmaktan daha güvenli değildir; yalnız beş kat
 pahalıdır.* Ve pahalı bir kapı, atlanan bir kapıya dönüşür.
 
+#### Ölçülen tur (2026-08-05) — yarım saatin dökümü
+
+| ne | kaç kez | not |
+|---|---|---|
+| hızlı kapı | **7** (517·741·755·812·930·1026·1390 test) | asıl maliyet |
+| tam süit (`motor_cls` sorusu için) | **3** (~7 dk) | 🔴 **hiç gerekmiyordu** |
+| korpus | **2** | ikincisi yeni bilgi vermedi (%93,1 sabit) |
+
+🔴 **Altyapı masum:** konteyner + toplama **1 sn**; korpus 1:50, süit 2:15, `--hepsi`
+4:06. Bu depoda hiçbir şey 4 dakikadan uzun sürmüyor. **Alet doğru, kullanım sıklığı
+yanlıştı** — ve en pahalı koşum, **hiç gerekmeyen** koşumdu.
+
+#### Üç kural daha
+
+**K2 · Düzelt-koş döngüsünde YALNIZ hedef dosya koşulur.**
+`pytest tests/test_x.py` ≈ **3-15 sn**. Geniş seçim **commit'ten önce bir kez**.
+*Beş kez 1000 test yerine, beş kez 20 test + bir kez 1000.*
+
+**K3 · Merkezî dosyalarda hızlı sinyal, kapının kendisinden pahalıdır → doğrudan `--tam`.**
+Ölçüldü: `ask.py` **30/238** · `cube_router.py` **54/238** · `ReportCard.tsx` **45/238**
+dosya seçiyor ≈ 1-1,5 dk. Korpus **1:50** ve **daha çok şey görüyor**.
+⚠ Bu seçimler bilerek genişletildi (iki kapı-seçim kör noktası kapatıldı; bir gerileme
+dört demet gizlenmişti). Genişletme doğruydu — **koşum sıklığı** yanlıştı.
+
+**K4 · Demet başına BİR korpus.**
+
 ⚠ Ve `--hizli` merkezî dosyalarda (`ask.py` · `wren_service.py` · `cube_router.py`)
 29-53 dosya seçer; paralelken bile 1-2 dakika. **Beş kez koşulursa kapının kendisinden
 pahalı olur.**
