@@ -8,7 +8,7 @@
 >
 > Bu dört dosya operasyonun **tam durumunu** taşır. Sohbet geçmişine ihtiyaç YOKTUR.
 
-**Son güncelleme:** 2026-08-05 · HEAD → 🎉 **FAZ 5 KAPANDI** @`71a6784` @`7d0048f`
+**Son güncelleme:** 2026-08-05 · HEAD → **FAZ 6.0 + 6.1** @`e3b6a00`
 
 ⚠ **Bu başlık BİR KEZ BAYATLADI ve bir denetim onu yakaladı:** *"HEAD → FAZ 0 · adım 1"*
 yazıyordu, gerçek HEAD **FAZ 4.4**'teydi. Bu dosya *"bağlam sıfırlanırsa buradan başla"*
@@ -22,10 +22,10 @@ devam ettirir. 🔴 **Kural: her faz commit'inden sonra bu blok güncellenir.**
 | | |
 |---|---|
 | **Aktif faz** | **FAZ 6 · AGENTIC — onaylı yazma** *(FAZ 0·1·2·3·4·5 ✅ bitti)* |
-| **Biten** | 🎉 **FAZ 4 ve FAZ 5 KAPANDI** — FAZ 5'in **17 maddesi** indi (`5.0`…`5.17`, **5.6 hariç**) + denetimin **D1–D5**'i |
+| **Biten** | 🎉 **FAZ 4 ve FAZ 5 KAPANDI** + denetim **D1–D5** · **FAZ 6**: `6.0` (D9 geri alma) `6.1` (onay akışı) |
 | ⏸ **5.6 BLOKE** | peer kıyası **AJ2**'ye bağlı (`compare` enum→ALAN). AJ2 inmeden 5.6 üçüncü bir enum değeri çakar ve dördüncüsü aynı konuşmayı yeniden doğurur |
 | **§C/16 ÖLÇÜLDÜ** | **%76,1** doğru · netleştirme **%16,8 ayrı satırda** · n=**155** · `demo-boyahane`. Üç şirket `⊘` (mssql fixture, altın cevap üretilemedi) |
-| **Sıradaki madde** | **FAZ 6.0** — *"D9 bugün ters uygulanmış — yapılanı GERİ AL"* (ilk madde) → `6.1`…`6.6` |
+| **Sıradaki madde** | `6.2` yazma araçları *(🔴 YÜZEY genişlemesi — `§4` tuzağı ona nişanlı)* · `6.3` araç kaydı · `6.4` planlayıcı sertleştirmesi · `6.5` public API · `6.6` kanal kimliği |
 | **Korpus** | **%93,1** — dokuz FAZ 5 maddesi boyunca **sabit** (taban %93,2) |
 | **Sonraki faz** | FAZ 7 (arayüz, 11 madde — panel tavanı **13/13 DOLU**) → FAZ 8 (3 madde) |
 | 🔴 **Açık borç 1** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ |
