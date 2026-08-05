@@ -89,7 +89,19 @@ features:
   # kanıtlanmış bir kusuru kapatıyor (`teşekkürler` → uydurma SQL); kapatma yolu artık
   # VAR ama gerekçesiz kapatılmaz.
   sosyal_sinif: prod
-  capa_zinciri: "off"
+  # 🔴 **AÇILDI (beta)** — denetim raporunun §6 üçlüsünün son ayağı. Kapalıyken `_capalar`
+  # hep boş kalıyordu, yani `KURAL_CAPA` (*"karta yanıt"*) **üretimde hiç ateşlemiyordu**:
+  # mekanizma vardı, **yolu kapalıydı**.
+  #
+  # Açış ölçüme dayanıyor (§4/risk-2: *"çapa zincirini açmak YOL DEĞİŞTİRİR"*):
+  #   · konuşma senaryoları **dokuz sınıf tabanda** (bayrak açıkken koşuldu)
+  #   · `test_capa_zinciri` + `test_baglam_cozucu` + `test_atif_baglami` **52 yeşil**
+  #   · kural gerçekten ateşliyor: tek çapa → `capa:karta-yanit`; farklı cube'lar →
+  #     `capa:coklu-celiski` ve **SORUYOR** (ADR-0008: belirsizlikte tahmin etme)
+  #
+  # ⚠ Etki **sınırlı ve kasıtlı**: yalnız istemcinin `reply_to_cube_query` gönderdiği
+  # turlar — yani kullanıcının **bilerek bir karta yanıt verdiği** turlar.
+  capa_zinciri: beta
   # FAZ 3.1b — SAHİPLİK TURU + TENANT KAPSAMI. Karar kaydı
   # (`packs/cekirdek/sahiplik_kararlari.yml`) artık yalnız **ÖNERİR**, uygulamaz.
   #
