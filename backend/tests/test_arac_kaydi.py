@@ -154,22 +154,93 @@ def test_RUTBE_0_ARACLARDA_DAVRANIS_BIREBIR_AYNI():
 
     viewer = _p("viewer")
     beklenen_kisitli = {"contribution:scan"}
-    kisitli = {a.izin for a in tools.hepsi() if not can(viewer, a.izin)}
+    # ⟳ **KAPSAM DARALTILDI (FAZ 6.2) — ve bu bir GÜÇLENDİRMEDİR.**
+    #
+    # Testin amacı *"rütbe 0 OKUMA araçlarında davranış kıpırdamadı"*dır. Yazma araçları
+    # (FAZ 6.2) kayda girdiğinde `schedule:create`/`measure:approve` da viewer'a kapalı
+    # çıkıyor — ama bu **doğru davranıştır**, bir gerileme değil: bir izleyici zamanlama
+    # kuramamalı.
+    #
+    # 🔴 Aşağıda ayrıca **tersini** de ölçüyoruz: yazma araçları kayıttaysa viewer'a
+    # **KAPALI OLMAK ZORUNDA**. Yani kapsam daralmadı, **ikiye ayrıldı**.
+    okuma = [a for a in tools.hepsi() if a.yan_etki != "yazar"]
+    kisitli = {a.izin for a in okuma if not can(viewer, a.izin)}
     assert kisitli == beklenen_kisitli, (
         f"viewer'a kapalı izinler {kisitli}, beklenen {beklenen_kisitli}. "
         "Bir aksiyonun rütbesi değiştiyse bu bir ÜRÜN kararıdır ve gerekçesiyle "
         "`authorize.py`'ye yazılmalıdır — sessizce yapılamaz.")
 
+    # 🔴 YAZMA araçları viewer'a **KAPALI** olmalı — açık olsaydı, bir izleyici ajan
+    # üzerinden kendi eliyle yapamayacağı bir işi yaptırabilirdi.
+    for a in tools.hepsi():
+        if a.yan_etki == "yazar" and a.izin != "query:run":
+            assert not can(viewer, a.izin), (
+                f"🔴 `{a.ad}` viewer'a AÇIK ({a.izin}) — ajan, kullanıcının kendi "
+                f"eliyle yapamayacağı bir işi onun adına yapabilir.")
+
 
 # --- 3. READ-ONLY DEĞİŞMEZİ ------------------------------------------------------
 
 def test_ajan_YAZAMAZ():
-    """MIMARI §4: yalnızca read-only. Kayıtta görünen şey planlayıcının erişebildiği
-    şeydir; yazan bir araç eklemek ajanın yazma yetkisini SESSİZCE açardı."""
-    yazanlar = [a.ad for a in tools.hepsi() if a.yan_etki != "yok"]
-    assert not yazanlar, (
-        f"Kayıtta YAZAN araç var: {yazanlar}. Ajanın yazma yetkisi ayrı bir mimari "
-        "karardır (FAZ 8B) ve bu değişmez sessizce gevşetilemez.")
+    """⟳ **TERS ÇEVRİLDİ (FAZ 6.2)** — ama değişmez **gevşemedi, KADEMELENDİ**.
+
+    Eski hâli *"kayıtta HİÇ yazan araç olmasın"* diyordu. `yazma_araclari` bayrağı o
+    kararı **verdi**; ama üç şartla ve bu test artık **üçünü birden** kilitliyor:
+
+    1. 🔴 **Bayrak KAPALIYKEN kayda HİÇ GİRMEZ** — bir filtreyle gizlenmiş değil, **var
+       olmayan**. *Geri alma "kapatmak" değil **hiç açmamaktır**: bir aracı kayda alıp
+       sonra engellemek, o engelin bir gün unutulabileceği anlamına gelir.*
+    2. Bayrak açıkken **yalnız beyan edilmiş üç araç** girer — dördüncüsü sessizce
+       giremez.
+    3. Her yazan araç `geri_alma_ref` **taşır ya da `None`'la geri alınamazlığını
+       AÇIKÇA söyler**.
+
+    > *"Güvenlik imzadan değil, **yetki yüzeyinin genişlememesinden** geliyor."*
+    """
+    from app.config import get_settings
+
+    acik = str(getattr(get_settings(), "yazma_araclari", "") or "").lower() in (
+        "1", "true", "on", "yes")
+    yazanlar = [a for a in tools.hepsi() if a.yan_etki == "yazar"]
+
+    if not acik:
+        assert not yazanlar, (
+            f"🔴 Bayrak KAPALI ama kayıtta yazan araç var: {[a.ad for a in yazanlar]}. "
+            f"Geri alma «kapatmak» değil «hiç açmamak»tır — kayda giren bir araç, bir "
+            f"gün unutulacak bir engelin arkasında durur.")
+        return
+
+    beyan = {"dashboards.create", "schedules.create", "measures.approve"}
+    assert {a.ad for a in yazanlar} == beyan, (
+        f"🔴 Beyan EDİLMEMİŞ bir yazma aracı kayda girmiş: "
+        f"{sorted({a.ad for a in yazanlar} - beyan)}. Yazma yüzeyi bir LİSTEDİR ve o "
+        f"liste okunabilir olmalı.")
+    for a in yazanlar:
+        # `None` meşrudur — ama **beyan edilmiş** olmalı: `notlar` geri alınamazlığı
+        # söylemek zorunda.
+        if a.geri_alma_ref is None:
+            assert "GERİ ALINAMAZ" in a.notlar.upper(), (
+                f"🔴 `{a.ad}` geri alınamaz ama bunu SÖYLEMİYOR. *Geri alınamazlığı "
+                f"gizlemek, onu geri alınabilir sanmaktan kötüdür: kullanıcı bir daha "
+                f"hiç sormaz.*")
+
+
+def test_YAZMA_ARACLARI_yalniz_ONAY_AKISI_uzerinden():
+    """🔴 Doğrudan çağrı, onayı bir **SÜS** yapardı.
+
+    ⚠ Belirteç yapısal: her yazma aracının `notlar`ı onay şartını **beyan etmeli** ve
+    hiçbiri `llm_araclari()`'na **serbestçe** girmemelidir — planlayıcı onu bir okuma
+    aracı gibi seçemez.
+    """
+    from app.config import get_settings
+
+    if str(getattr(get_settings(), "yazma_araclari", "") or "").lower() not in (
+            "1", "true", "on", "yes"):
+        return                                    # bayrak kapalı → araç yok
+    for a in (x for x in tools.hepsi() if x.yan_etki == "yazar"):
+        assert "ONAY" in a.notlar.upper() or "istem" in a.notlar, (
+            f"🔴 `{a.ad}` onay şartını beyan etmiyor — planlayıcı onu sıradan bir araç "
+            f"sanabilir.")
 
 
 def test_ham_satir_araci_KAYITTA_YOK():

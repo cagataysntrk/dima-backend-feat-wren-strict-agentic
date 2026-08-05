@@ -64,7 +64,6 @@
 > Tuzaklar **silinmedi, TERS ÇEVRİLDİ**: `test_TERS_TUZAK_FAZ_2_1_CEKIRDEK_KATMAN_AYAKTA`.
 
 | **§3.4** | **`SessionProperty` TÜM çağrı sitelerinde** — bugün 36 `query`/`dry_plan` çağrısı kimlik geçmiyor *(CLS `off`, bkz. §6.3c)* | **FAZ 1.2 kuyruğu** | ⟳ UYGULANMADI |
-| **§4** | Değişmez 2/3 (read-only) — **kademelenme İNDİ** (6.0 D9 + 6.1 onay akışı); satır **yazma araçlarına DARALDI** | **FAZ 6.2** | ⟳ UYGULANMADI |
 | **§5** | **18. yasak**: *"cevapsız bir dal, cevaplı bir yolu KESEMEZ"* (`KAT-2`) | **§G/AJ0** | ⟳ UYGULANMADI |
 | **§9** | hedef mimari — **metrik katmanı** merdivene giriyor | **FAZ 0.18 · 2.1** | ⟳ UYGULANMADI |
 | **§11** | agentic — **onaylı yazma aksiyonları** | **FAZ 6.1** | ⟳ UYGULANMADI |
@@ -3328,6 +3327,24 @@ Rekonstrüksiyon (atıf bağlamlarından türetildi; başlıklar alıntı değil
 | **0024** | **Görselleştirme kararı deterministik ve backend'e ait** (Show-Me / Cleveland-McGill) | `app/viz.py`, `app/report.py` |
 
 </details>
+
+✅ **§4 KAPANDI — ajan yazma yasağı KADEMELENDİ** (FAZ 6.0 · 6.1 · 6.2 @`8bc2be2`):
+
+| adım | ne indi |
+|---|---|
+| **6.0** | 🔴 `D9` **ters uygulanmıştı**: kapsam içi + geri alınabilir iş artık **istemsiz** koşuyor (`eylem.d9_istemsiz_mi`) |
+| **6.1** | `app/onay_akisi.py` — kapalı durum makinesi · **30 dk** süre aşımı · riske göre yönlendirme · **istem oranı telemetrisi** |
+| **6.2** | `app/yazma_araclari.py` — `yan_etki="yazar"` ile kayıtlı **ilk üç** araç |
+
+🔴 **DEĞİŞMEZ GEVŞEMEDİ, KADEMELENDİ.** Üç şart birden: (a) bayrak kapalıyken araçlar
+kayda **HİÇ GİRMEZ** (*geri alma "kapatmak" değil **hiç açmamaktır**;* kayda giren bir
+araç, bir gün unutulacak bir engelin arkasında durur), (b) her yazma aracı
+`geri_alma_ref` **taşır ya da geri alınamazlığını AÇIKÇA söyler**, (c) yalnız
+**onay akışı** üzerinden çağrılabilir. `tests/test_arac_kaydi.py::test_ajan_YAZAMAZ`
+**ters çevrildi** ve üçünü birden kilitliyor.
+
+⚠ `schedules.create` **geri alınamaz** ve bu **gizlenmiyor**: kayıt silinse bile
+gönderilmiş bildirim geri çekilemez.
 
 ### 8.3 `Dima-0-100` dosyasının sınırları
 

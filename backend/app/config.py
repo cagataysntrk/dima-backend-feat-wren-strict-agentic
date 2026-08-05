@@ -186,6 +186,14 @@ class Settings(BaseSettings):
     #: (`DIMA_SLACK_WEBHOOK`). Bir webhook URL'si, onu bilen herkese o kanala yazma
     #: yetkisi verir; bu yüzden tercih/`delivery` gövdesinde **taşınmaz**.
     slack_webhook: str = ""
+    #: 🔴 FAZ 6.2 — YAZMA ARAÇLARI. `off` (varsayılan) → araçlar araç kaydına **HİÇ
+    #: GİRMEZ**. Geri alma *"kapatmak"* değil **hiç açmamaktır**: bir aracı kayda alıp
+    #: sonra engellemek, o engelin bir gün unutulabileceği anlamına gelir.
+    #:
+    #: ⚠ Feature-flag değil **Settings**: araç kaydı **import zamanında** kurulur ve o an
+    #: bir tenant/principal bağlamı yoktur. Bir kurulum kararını istek bağlamına
+    #: bağlamak, *"ajan neyi çağırabilir"* sorusunun tek bir cevabı olmaması demekti.
+    yazma_araclari: str = "off"
 
     # Strict moddan BAĞIMSIZ çalışan fonksiyon kara listesi (`engine._plan` koşulu `or`).
     # Boş bırakılırsa devre dışı; buraya yazılan her ad `off` modunda bile bloklanır.

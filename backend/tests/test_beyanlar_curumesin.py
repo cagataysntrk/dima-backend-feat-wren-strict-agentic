@@ -473,20 +473,9 @@ _YURURLUKTE_TUZAKLARI = [
     # (MCP yüzeyi) indi; §0'ın `§3.4` *"bilerek alınmayanlar"* satırı SİLİNDİ ve gövdeye
     # ölçümlü `✅` yazıldı. İki ters tuzak (SİLİNMEDİ, çevrildi):
     # `test_TERS_TUZAK_FAZ_3_4_OSSIE_ITHALI_AYAKTA` · `test_TERS_TUZAK_FAZ_4_5_MCP_AYAKTA`.
-    # ⟳ `§4` **DARALDI** — FAZ 6.0 (D9 geri alma) ve 6.1 (onay akışı) İNDİ; tuzak
-    # `test_TERS_TUZAK_FAZ_6_1_ONAY_AKISI_AYAKTA`'ya taşındı (SİLİNMEDİ). §0'ın satırı
-    # geriye **6.2'yi** (yazma araçlarının araç kaydına girmesi) bıraktı ve belirteç
-    # ona nişanlandı.
-    #
-    # 🔴 Ayrım **maddenin kendisi**: onay akışı **kademelendirmedir**, yazma araçları
-    # **yüzey genişlemesidir**. İkisini tek satırda saymak, yüzey büyümeden de tuzağın
-    # ateşlemesine yol açtı — ve tam olarak öyle oldu.
-    ("§4", "FAZ 6.2",
-     # ⚠ AST ile bakılır: alt-dize taraması `tools.py`'nin **docstring'indeki**
-     # `yan_etki="yazar"` cümlesini yakalayıp tuzağı yanlış-kırmızı yaptı. Beyan ile
-     # BEYANIN ANLATIMI farklı şeylerdir — bu deponun kendi dersi.
-     lambda: (APP / "yazma_araclari.py").exists() or _yazan_arac_sayisi() > 0,
-     "yazma araçları araç kaydına girdi (YÜZEY genişlemesi)"),
+    # ⟳ `§4` **TAMAMEN KAPANDI** — FAZ 6.0 (D9) · 6.1 (onay akışı) · 6.2 (yazma
+    # araçları) indi. §0'ın `§4` satırı SİLİNDİ; ters tuzak:
+    # `test_TERS_TUZAK_FAZ_6_2_YAZMA_ARACLARI_AYAKTA`.
     # ⟳ `§5-grain` **TERS ÇEVRİLDİ** — FAZ 2.1(a)/(b) indi (grain sözleşmesi fail-closed
     # ve `cari`'de gerçek pack'ler üstünde ateşliyor); aynı ters-tuzağa taşındı.
     ("§5-18.yasak", "§G/AJ0",
@@ -550,6 +539,35 @@ def _yaml_bayraklari() -> dict:
 
     d = _y.safe_load((APP.parent / "demo/packs/features.yml").read_text(encoding="utf-8"))
     return dict((d or {}).get("features") or {})
+
+
+def test_TERS_TUZAK_FAZ_6_2_YAZMA_ARACLARI_AYAKTA():
+    """⟳ `§4` ters çevrildi: yazma araçları **var olmalı** ve **kapalıyken kayda hiç
+    girmemeli**.
+
+    🔴 İkinci şart birincisinden önemli ve maddenin tamamı odur: *geri alma "kapatmak"
+    değil **hiç açmamaktır**.* Bir aracı kayda alıp sonra engellemek, o engelin bir gün
+    **unutulabileceği** anlamına gelir; kayda hiç almamak unutulamaz.
+    """
+    from app.yazma_araclari import YAZMA_KAYIT, geri_alinamaz_olanlar
+
+    assert (APP / "yazma_araclari.py").exists(), "🔴 FAZ 6.2 GERİ ALINDI."
+    assert {a.ad for a in YAZMA_KAYIT} == {"dashboards.create", "schedules.create",
+                                           "measures.approve"}
+    assert all(a.yan_etki == "yazar" for a in YAZMA_KAYIT)
+
+    # 🔴 GERİ ALINAMAZLIK GİZLENMİYOR.
+    assert geri_alinamaz_olanlar() == ["schedules.create"], (
+        "🔴 Geri alınamaz araç listesi değişti — *geri alınamazlığı gizlemek, onu geri "
+        "alınabilir sanmaktan kötüdür: kullanıcı bir daha hiç sormaz.*")
+    for a in YAZMA_KAYIT:
+        assert a.geri_alma_ref or "GERİ ALINAMAZ" in a.notlar.upper()
+
+    # 🔴 Kayda giriş **bayrağa** bağlı: `tools.py` onu `Settings`'ten çözmeli.
+    kaynak = (APP / "tools.py").read_text(encoding="utf-8")
+    assert "yazma_araclari" in kaynak and "_yazma_araclari()" in kaynak, (
+        "🔴 Yazma araçları KOŞULSUZ kayda giriyor — bayrak kapalıyken de yüzey açık "
+        "demektir.")
 
 
 def test_TERS_TUZAK_FAZ_6_1_ONAY_AKISI_AYAKTA():

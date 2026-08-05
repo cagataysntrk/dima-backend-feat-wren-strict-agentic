@@ -76,6 +76,15 @@ class Arac:
     #   "servis:llm"  → LLM sağlayıcısına bağlı metot (ördek-tipli, sağlayıcı değişir)
     baglanma: Literal["modul", "servis:wren", "servis:llm"] = "modul"
     notlar: str = ""                # sınırlar, tuzaklar — planlayıcı bilmeli
+    # 🔴 FAZ 6.2 — **GERİ ALMA REFERANSI.** `yan_etki="yazar"` bir araç bunu **taşımak
+    # zorundadır**; `None` ise eylem **geri alınamaz** demektir ve bu **açıkça** böyle
+    # işaretlenir. *Geri alınamazlığı gizlemek, onu geri alınabilir sanmaktan kötüdür:
+    # kullanıcı bir daha hiç sormaz.*
+    #
+    # ⚠ Bir **metin referanstır**, çağrılabilir değil — çağrılabiliri kayda koymak onu
+    # serileştirilemez ve **denetlenemez** yapardı (`onay_akisi.OnayTalebi` ile aynı
+    # gerekçe).
+    geri_alma_ref: str | None = None
     etiketler: tuple[str, ...] = field(default_factory=tuple)
 
     def cagir(self, kaynak: Any = None) -> Callable[..., Any]:
@@ -378,6 +387,42 @@ KAYIT: tuple[Arac, ...] = (
         etiketler=("sorgu-uretimi", "llm"),
     ),
 )
+
+def _yazma_araclari() -> tuple[Arac, ...]:
+    """🔴 **FAZ 6.2 — YAZMA ARAÇLARI.** [bayrak: `yazma_araclari`]
+
+    ## GERİ ALMA *"kapatmak"* DEĞİL, **HİÇ AÇMAMAK**
+
+    Bayrak kapalıyken bu araçlar **kayda HİÇ girmez** — bir filtreyle gizlenmez, bir
+    yetki kontrolüyle engellenmez, **var olmaz**.
+
+    > *"Güvenlik imzadan değil, **yetki yüzeyinin genişlememesinden** geliyor."*
+
+    Bir aracı kayda alıp sonra engellemek, o engelin bir gün unutulabileceği anlamına
+    gelir. Kayda **hiç almamak** unutulamaz.
+
+    ⚠ Bayrak `Settings`'ten okunur (`DIMA_YAZMA_ARACLARI`), feature-flag katmanından
+    **değil**: araç kaydı **import zamanında** kurulur ve o an bir tenant/principal
+    bağlamı **yoktur**. Bir kurulum kararını istek bağlamına bağlamak, kaydın istekten
+    isteğe **değişmesi** demekti — ve o an *"ajan neyi çağırabilir"* sorusunun tek bir
+    cevabı kalmazdı.
+    """
+    from app.config import get_settings
+
+    try:
+        acik = str(getattr(get_settings(), "yazma_araclari", "") or "").lower() in (
+            "1", "true", "on", "yes")
+    except Exception:                                        # noqa: BLE001
+        acik = False
+    if not acik:
+        return ()
+
+    from app.yazma_araclari import YAZMA_KAYIT
+
+    return YAZMA_KAYIT
+
+
+KAYIT = KAYIT + _yazma_araclari()
 
 _ARACLAR: dict[str, Arac] = {a.ad: a for a in KAYIT}
 
