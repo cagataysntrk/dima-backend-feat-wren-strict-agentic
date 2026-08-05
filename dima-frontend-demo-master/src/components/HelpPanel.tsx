@@ -47,6 +47,13 @@ export function HelpPanel({ onPick }: { onPick: (q: string) => void }) {
 
   return (
     <div className="space-y-6 text-sm">
+      {/* 🔴 FAZ 8.1 — bildirim kapatılmış olsa da metin BURADA kalır: *bir bildirimi
+          kapatmak, onu geri alınamaz biçimde silmek olmamalı.* */}
+      <p className="border-l-2 border-hairline pl-2 font-mono text-[10px] leading-snug text-neutral-400">
+        Sorularınız ürünü geliştirmek için kaydediliyor (soru metni, seçilen yol, süre).
+        Sonuç satırlarınız kaydedilmez. Kaydı tamamen durdurmak kurulum ayarıdır
+        (<code>DIMA_INTERACTION_LOG=false</code>).
+      </p>
       <Link
         href="/brand"
         className="inline-flex opacity-90 transition-opacity hover:opacity-100"

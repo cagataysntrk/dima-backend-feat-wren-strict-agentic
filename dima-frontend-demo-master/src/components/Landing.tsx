@@ -6,6 +6,7 @@ import { BrandMark } from "@/components/BrandMark";
 import { CaretInput } from "@/components/CaretInput";
 import { useQuery } from "@tanstack/react-query";
 import { getStarters } from "@/lib/api-client";
+import { KayitBildirimi } from "@/components/KayitBildirimi";
 
 // Maksimum-minimalist açılış: boş sayfa, ortada yanıp sönen imleç + ince input çizgisi.
 // Header/logo/başlık YOK. Chrome yalnızca sağ üstteki floatlar (page verir) ve
@@ -41,6 +42,10 @@ export function Landing({
         size="hero"
         ipucu="bir soru yaz — örneğin: bu yıl ciro nedir?"
       />
+
+      {/* FAZ 8.1 — kayıt bildirimi ilk karşılaşmada, yani **soru sorulmadan önce**.
+          *Bir veriyi toplamaya başladığın an, toplandığını söylemen gereken andır.* */}
+      <KayitBildirimi />
 
       {/* 🔴 FAZ 7.3/b — **boş durum bir yön göstermeli.** Bugüne kadar landing yalnız bir
           imleç gösteriyordu: kullanıcı ne sorabileceğini **tahmin etmek** zorundaydı ve
