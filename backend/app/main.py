@@ -186,6 +186,13 @@ def create_app() -> FastAPI:
     # FAZ E — kalıcı sunum tercihi: OKUMA/SİLME ucu. Yazma burada YOK;
     # tercih yazmak /ask/eylem onay kademesinden geçer (Faz H değişmezi).
     app.include_router(tercihler_router.router, dependencies=_protected)
+    # FAZ 5.9b — bildirim tercihleri. `NotificationPreference` YETİM bir tabloydu
+    # (0 satır, router yok): kullanıcı bir kategoriyi kapatabileceğini sanıyordu ama
+    # onu yazacağı hiçbir yüzey yoktu. *Beyan edilmiş ama yazılamayan bir tercih,
+    # verilmemiş bir sözden kötüdür.*
+    from app.routers import bildirim_tercihleri as _btercih
+
+    app.include_router(_btercih.router, dependencies=_protected)
     # FAZ 5.2 — paylaşım (KURUM İÇİ). ⚠ İlk tasarımım `GET /share/{token}`'ı KİMLİKSİZ
     # yapıyordu; iki yerden yanlıştı: (1) *"Auth HER ZAMAN zorunlu"* değişmezini delerdi,
     # (2) A tenant'ının token'ını B tenant'ından biri açabilirdi — imza token'ın

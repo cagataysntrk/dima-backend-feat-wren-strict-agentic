@@ -11,7 +11,17 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { listTercihler, silTercih } from "@/lib/api-client";
+import {
+  deleteBildirimTercihi,
+  getBildirimTercihleri,
+  listTercihler,
+  setBildirimTercihi,
+  silTercih,
+} from "@/lib/api-client";
+
+const KATEGORI_ETIKET: Record<string, string> = {
+  report: "Rapor", alert: "Alarm", anomaly: "Anomali", system: "Sistem",
+};
 
 const ANAHTAR_ETIKET: Record<string, string> = {
   granularity: "Zaman kırılımı",
@@ -72,6 +82,89 @@ export default function TercihlerPanel() {
           ))}
         </ul>
       )}
+
+      {/* 🔴 FAZ 5.9b — BİLDİRİM TERCİHLERİ. Yeni bir PANEL DEĞİL: var olan tercih
+          panelinin ikinci bölümü (K5 tavanı 13/13 — *bir yetenek bir panel doğurmaz*).
+          `NotificationPreference` YETİM bir tabloydu: kullanıcı bir kategoriyi
+          kapatabileceğini sanıyordu ama onu yazacağı hiçbir yüzey yoktu. */}
+      <BildirimTercihleri />
+    </div>
+  );
+}
+
+function BildirimTercihleri() {
+  const qc = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ["bildirim-tercihleri"],
+    queryFn: getBildirimTercihleri,
+  });
+  const yaz = useMutation({
+    mutationFn: setBildirimTercihi,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["bildirim-tercihleri"] }),
+  });
+  const sil = useMutation({
+    mutationFn: (v: { category: string; channel: string }) =>
+      deleteBildirimTercihi(v.category, v.channel),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["bildirim-tercihleri"] }),
+  });
+  if (!data?.length) return null;
+
+  // ⚠ Yalnız DIŞ kanallar gösterilir: `inapp` bu fazda her zaman açıktır ve onu
+  // kapatılabilir göstermek, tutulamayacak bir söz vermek olurdu.
+  const satirlar = data.filter((t) => t.channel !== "inapp");
+
+  return (
+    <div className="mt-6 border-t border-hairline pt-3">
+      <h3 className="font-mono text-[11px] uppercase tracking-wider text-muted">
+        bildirim tercihleri
+      </h3>
+      <p className="mt-1 font-mono text-[10px] leading-snug text-neutral-400">
+        Kaydı olmayan bir satır <span className="text-foreground">varsayılan</span>dır:
+        açık. “Kaldır” kapatmaz — tercihi <span className="text-foreground">hiç
+        verilmemiş</span> hâline döndürür.
+      </p>
+      <ul className="mt-2 space-y-1">
+        {satirlar.map((t) => (
+          <li
+            key={`${t.category}-${t.channel}`}
+            className="flex items-center justify-between gap-3 border border-hairline px-2 py-1"
+          >
+            <span className="font-mono text-[11px] text-foreground">
+              {KATEGORI_ETIKET[t.category] ?? t.category}
+              <span className="ml-1 text-neutral-400">· {t.channel}</span>
+              {t.varsayilan && (
+                <span className="ml-1 text-[10px] text-neutral-500">(varsayılan)</span>
+              )}
+            </span>
+            <span className="flex shrink-0 items-center gap-1">
+              <button
+                onClick={() =>
+                  yaz.mutate({ category: t.category, channel: t.channel,
+                               enabled: !t.enabled })
+                }
+                disabled={yaz.isPending}
+                className={`border px-2 py-0.5 font-mono text-[11px] transition-colors disabled:opacity-50 ${
+                  t.enabled
+                    ? "border-accent/50 text-accent"
+                    : "border-hairline text-neutral-500"
+                }`}
+              >
+                {t.enabled ? "açık" : "kapalı"}
+              </button>
+              {!t.varsayilan && (
+                <button
+                  onClick={() => sil.mutate({ category: t.category, channel: t.channel })}
+                  disabled={sil.isPending}
+                  title="Tercihi kaldır — varsayılana (açık) döner"
+                  className="border border-hairline px-2 py-0.5 font-mono text-[11px] text-neutral-400 transition-colors hover:text-foreground disabled:opacity-50"
+                >
+                  kaldır
+                </button>
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

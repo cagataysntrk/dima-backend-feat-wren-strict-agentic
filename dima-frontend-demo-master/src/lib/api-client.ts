@@ -1014,6 +1014,44 @@ export async function runDecisionTemplate(
   return data;
 }
 
+/** FAZ 5.9b — bildirim tercihleri (SELF).
+ *
+ * 🔴 `NotificationPreference` YETİM bir tabloydu: 0 satır, router yok. Kullanıcı bir
+ * kategoriyi kapatabileceğini sanıyordu ama onu yazacağı hiçbir yüzey yoktu.
+ * *Beyan edilmiş ama yazılamayan bir tercih, verilmemiş bir sözden kötüdür.*
+ *
+ * ⚠ Liste EKSİKLERİ de anlatır: kaydı olmayan çiftler `varsayilan: true` ile döner —
+ * *bir listede görünmeyen ayar, kullanıcının olmadığını sandığı ayardır.*
+ */
+export type BildirimTercihi = {
+  category: string;
+  channel: string;
+  enabled: boolean;
+  address: string | null;
+  varsayilan: boolean;
+};
+
+export async function getBildirimTercihleri(): Promise<BildirimTercihi[]> {
+  const { data } = await apiClient.get<{ tercihler: BildirimTercihi[] }>(
+    "/bildirim-tercihleri");
+  return data.tercihler;
+}
+
+export async function setBildirimTercihi(
+  body: { category: string; channel: string; enabled: boolean; address?: string | null },
+): Promise<BildirimTercihi> {
+  const { data } = await apiClient.put<BildirimTercihi>("/bildirim-tercihleri", body);
+  return data;
+}
+
+/** ⚠ Silmek KAPATMAK DEĞİLDİR: tercih "hiç verilmemiş" olur → varsayılan AÇIK.
+ *  "Kapalı" demek için `setBildirimTercihi({enabled:false})` kullanılır. */
+export async function deleteBildirimTercihi(
+  category: string, channel: string,
+): Promise<void> {
+  await apiClient.delete(`/bildirim-tercihleri/${category}/${channel}`);
+}
+
 export async function getConnectionDraft(id: string): Promise<ConnectionDraft> {
   const { data } = await apiClient.get<ConnectionDraft>(`/connections/${id}/draft`);
   return data;
