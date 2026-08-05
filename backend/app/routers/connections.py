@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import uuid as _uuid
 
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 
@@ -78,7 +79,11 @@ def _get_own(session: Session, request: Request, cid: str) -> DbConnection:
         conn = session.get(DbConnection, _uuid.UUID(cid))
     except ValueError:
         raise HTTPException(status_code=400, detail="Geçersiz bağlantı id")
-    if conn is None or conn.tenant_id != tenant_uuid:
+    # ⚠ `deleted_at` **burada** süzülür, çağıranlarda değil: tek bir sahiplik kapısı var
+    # ve silinmişliği ona eklemek, üç çağrı yerinde üç kez unutulma riskini sıfırlar.
+    # 🔴 Silinmiş bir bağlantı **404** döner, 410 değil: varlığını söylemek, silinmiş bir
+    # kaydın var olduğunu sızdırırdı ve bu fonksiyonun tüm amacı o sızıntıyı kapatmak.
+    if conn is None or conn.tenant_id != tenant_uuid or conn.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Bağlantı bulunamadı")
     return conn
 
@@ -159,7 +164,8 @@ def list_connections(request: Request) -> list[TenantConnectionOut]:
     tenant_uuid = _tenant_uuid(request)
     with Session(engine) as s:
         conns = s.exec(select(DbConnection).where(
-            DbConnection.tenant_id == tenant_uuid)).all()
+            DbConnection.tenant_id == tenant_uuid,
+            DbConnection.deleted_at.is_(None))).all()          # type: ignore[union-attr]
     return [_out(c) for c in conns]
 
 
@@ -168,7 +174,13 @@ def list_connections(request: Request) -> list[TenantConnectionOut]:
 def delete_connection(cid: str, request: Request) -> None:
     with Session(engine) as s:
         conn = _get_own(s, request, cid)
-        s.delete(conn)
+        # 🔴 **SOFT DELETE** — `s.delete(conn)` bir hard-delete'ti ve `conversations.py`'nin
+        # birebir yazdığı proje kuralını (*"hard-delete YOK"*) ihlal ediyordu. Üstelik en
+        # pahalı nesnede: satır **AES-256-GCM ile şifrelenmiş kimlik bilgisi** taşıyor.
+        # ⚠ Şifreli sır **silinmiyor**: kurtarma onsuz imkânsız olurdu. Erişim `deleted_at`
+        # süzgeciyle kapanır — *erişimi kapatmak ile veriyi yok etmek aynı şey değildir.*
+        conn.deleted_at = datetime.utcnow()
+        s.add(conn)
         s.commit()
 
     from control_plane import audit

@@ -153,6 +153,12 @@ class DbConnection(SQLModel, table=True):
     # (fn_my_permissions + rol üyeliği — ADR-0017; control-plane-sema garanti listesi).
     read_only_verified: bool = False
     created_at: datetime = Field(default_factory=_now)
+    #: 🔴 **SOFT DELETE** (proje kuralı: hard-delete YOK). Bu alan bir ihlal kapatıyor:
+    #: `delete_connection` `s.delete(conn)` yapıyordu ve satır **şifreli kimlik bilgisi**
+    #: taşıyor — silindiğinde geri getirilemez, ve `audit`'in `connection_delete` kaydı
+    #: **konusu olmayan bir kimliğe** işaret ederdi.
+    #: *Bir silme kaydı, sildiği şeye artık ulaşamıyorsa, bir kayıt değil bir dipnottur.*
+    deleted_at: datetime | None = Field(default=None, index=True)
 
 
 class CloneJob(SQLModel, table=True):
