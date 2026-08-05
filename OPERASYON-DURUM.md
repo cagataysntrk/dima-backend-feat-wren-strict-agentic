@@ -433,6 +433,35 @@ ameliyatından **SONRA** kurulacaktı. Oysa `elektrik` deneyi tam orada erişimi
 > ⚠ **Gecelik, her push'ta DEĞİL** — ve bu testle kilitli. Tam kapı ~15 dk; her commit'e
 > bağlamak, demet disiplinini **araç seviyesinde** çiğnemek olurdu.
 
+
+### 🔴 FAZ 7.3 — **ON ÜÇ ALT MADDENİN DURUMU, MADDE MADDE** *(2026-08-05)*
+
+> *Bir fazı "bitti" ilan edip yarısını söylememek, bitmemiş olmaktan kötüdür.*
+> 7.3 tek bir madde değil, **kendi başına bir faz**: on üç alt madde + **altı yeni rota**.
+
+| # | Madde | Durum | Gerekçe / ölçüm |
+|---|---|---|---|
+| **b** | Landing / boş-durum | ✅ **KAPANDI** | `placeholder` **hiç yoktu** ve sebebi bir unutma değil bir **yapıydı**: `<textarea>` `text-transparent`, ipucu kaplamada çizilmeliydi. Örnekler `/starters`'tan — `HelpPanel`'in **aynı kaynağı** |
+| **e** | Her grafik tipinden drill | ✅ **KAPANDI (ayrıştırılarak)** | Üç şekil **aynı sınıf değil**: `scatter` çapası tekil → **kısıt kalktı**; `facet`/`heatmap` **İKİ filtre** ister ve `DrillRequest` tekil → kısıt kalır, ama artık **sebep söylüyor**. Beş erken-çıkışın dördü **sessizdi** |
+| **a** | Cevap kartının kanonik anatomisi | ◐ **KISMİ** | 10 katmanlı sıra fiilen var; **üç şeritli İçgörü Kartı** (`NE OLUYOR/NEDEN/NE YAPMALI`) ölçüldü → `OutputInsight`'ta **yok**. Şerit ayrımı `interpret.py`'nin olgu türlerine bir **sınıflandırma** ister |
+| **c** | Capability Explorer + komut paleti | ⊘ **YAPILMADI** | Paletin **kendisi yok**; MDL + `MetricDefinition`'dan katalog üretimi + arama motoru — kendi başına bir madde |
+| **d** | Kök Neden ön-skorlama | ⊘ **YAPILMADI** | `drill.flag_outliers` z-skoru uzantısı (backend, sıfır-LLM). **PK-13'ün sinyal kaynağı**: koyu/soluk ayrımı bugün *hangi sinyale* dayandığını söyleyemiyor |
+| **f** | Yol diyagramlı düğüm notu | ⊘ **YAPILMADI** | Kök-neden yolunun mini diyagramı + reply-to-card iliştirmesi |
+| **g** | Kurulum sonu = anında değer | ⊘ **BLOKE** | `/kurulum` rotası yok; **h**'ye bağlı |
+| **h** | E-posta doğrulama · şifre sıfırlama · davet uçları | ⊘ **YAPILMADI** | `/register`·`/invite` **backend uçları**. ⚠ Rota yazılıp uç yazılmazsa **mock riski** (7.9) doğar — bu yüzden ikisi birlikte inmeli |
+| **i** | Analiz Tuvali iki sabit düğme | ⊘ **YAPILMADI** | Küçük; `AnalysisCanvas`'ta düğmeler koşullu |
+| **j** | Pano genişlemesi | ⊘ **YAPILMADI** | Global filtre şeridi + filtre durumunun paylaşılabilir bağlantıya gömülmesi + widget'tan kök-neden |
+| **k** | Sarı drift uyarı bandı | ⊘ **YAPILMADI** | **B8'in TEK kullanıcı-görünür yüzeyi** — arkası kurulu, önü yok |
+| **l** | 5 grafik tipi | ⊘ **YAPILMADI** | Sankey · Pareto · Bubble · Gauge · **Harita** (harita **yeni veri gereksinimi**: il/ilçe sınırı + koordinat eşleme) |
+| **m** | Embed paketi + portföy ekranı | ⊘ **BLOKE** | `6.5/embed` P0'ına bağlı: `motor_cls=off` |
+| — | **Altı yeni rota** | ⊘ | `/register` · `/invite/[token]` · `/kurulum` · `/settings` · `/karar-memosu` · `/decisions`. Bugün **5** rota var; PK-22 tavanı 12 |
+
+**FAZ 7.7'nin durumu da ikiye ayrıldı:** kimlik yarısı ✅ (`/auth/me` + `KimlikSeridi`,
+ve **tip yalanı** düzeltildi); `/settings` **8 sekmeli tam sayfa** + `admin_app`'in
+**13 router'ının** tüketicisi + üç sekme içeriği (sinonim onayı · *"Dima kendini nasıl
+geliştiriyor"* · sağlık skoru) ⊘ **YAPILMADI** — `V-1` o 13 router için **kırmızı kalıyor**
+ve bu, kapının **beyan edilmiş kırmızısıdır** (0.14/K1 disiplini), gizlenen bir eksik değil.
+
 ## FAZ 3 · KAPSAM
 
 ## FAZ 4 · ÖLÇÜM ve KANIT

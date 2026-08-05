@@ -316,21 +316,66 @@ export function ResultView({
   // yanıtı) önceden tıklama SESSİZCE hiçbir şey yapmıyordu ("tıklasam da açılmıyor" hissi TAM
   // BURADAN geliyordu). Diğer erken-çıkışlar (facet/scatter şekli, değer eşleşmedi) BİLİNÇLİ
   // kalır — yanlış bir filtre göndermektense hiç göndermemek DAHA GÜVENLİDİR, onlara DOKUNULMAZ.
-  const [noDrillHint, setNoDrillHint] = useState(false);
+  const [noDrillHint, setNoDrillHint] = useState<string | null>(null);
+  /** 🔴 FAZ 7.3/e — **sessiz ret bitti; her ret bir SEBEP söyler.**
+   *
+   * Yol haritası *"facet/scatter/heatmap kısıtı kaldırılır"* diyor. Kısıt **ölçüldü** ve
+   * üçü aynı sınıf değil:
+   *
+   * | şekil | çapa türetilebilir mi | karar |
+   * |---|---|---|
+   * | `scatter` | ✅ nokta = `primaryDim`'in bir değeri (x/y **ölçüdür**, boyut değil) | **kısıt KALKTI** |
+   * | `facet` | ❌ panel = facet değeri **ve** çubuk = birincil boyut → **İKİ filtre** | kısıt kalır |
+   * | `heatmap` | ❌ hücre = satır boyutu **ve** sütun boyutu → **İKİ filtre** | kısıt kalır |
+   *
+   * 🔴 Facet/heatmap'te tek bir çapa göndermek, kullanıcının tıkladığından **daha geniş**
+   * bir kırılım açardı — *"bu hücreye tıkladım, bana tüm satırı gösterdi"*. Ve drill
+   * sözleşmesi (`DrillRequest`: `dimension` + `filter_value`, **tekil**) iki filtreyi
+   * taşıyamıyor: bu bir **sözleşme değişikliğidir**, bir UI ayarı değil.
+   *
+   * ⚠ **Ama sessizlik bir karar değildi, bir kusurdu.** Kodun kendi yorumu kullanıcının
+   * şikâyetini yazıyordu: *"tıklasam da açılmıyor" hissi TAM BURADAN geliyordu.* Artık
+   * her erken-çıkış **neden** olduğunu söylüyor — *bir sınırı söylemek, onu bir kusur
+   * olmaktan çıkarır.*
+   */
   const handleChartDataPointClick = (info: { seriesIndex: number; dataIndex: number; name: string }) => {
     if (!onDataPointClick) {
-      setNoDrillHint(true);
+      setNoDrillHint(
+        "bu sonuç LLM tarafından üretildi, kırılım için cube sorgusu yok — \"+ sql göster\"e bakabilirsin",
+      );
       return;
     }
     const dim = effA.primaryDim;
-    if (!dim || effA.facet || effA.facetMeasure || effA.scatter || effA.heat || effA.heatAny) return;
+    if (!dim) {
+      setNoDrillHint("bu grafikte kırılacak tek bir kategorik boyut yok");
+      return;
+    }
+    if (effA.facet || effA.facetMeasure) {
+      setNoDrillHint(
+        "panelli grafikte bir tıklama İKİ filtre demek (panel + kategori); tek filtre göndermek istediğinden daha geniş bir kırılım açardı — tabloya geçip satıra tıklayabilirsin",
+      );
+      return;
+    }
+    if (effA.heat || effA.heatAny) {
+      setNoDrillHint(
+        "ısı haritasında bir hücre İKİ boyutun kesişimidir; tek filtre tüm satırı açardı — tabloya geçip satıra tıklayabilirsin",
+      );
+      return;
+    }
     const rawValue = effResult.rows.find((r) => String(r[dim] ?? "") === info.name)?.[dim];
-    if (rawValue == null) return;
+    if (rawValue == null) {
+      // ⚠ ECharts'ın gösterdiği `name` BİÇİMLENDİRİLMİŞ olabilir (ör. tarih). Ham satırda
+      // tam eşleşme yoksa yanlış bir filtre göndermektense hiç göndermemek doğrudur —
+      // ama artık **sessiz değil**.
+      setNoDrillHint("tıklanan etiket ham veriyle eşleşmedi — yanlış bir filtre göndermek yerine durduk");
+      return;
+    }
     onDataPointClick(dim, String(rawValue));
   };
   useEffect(() => {
     if (!noDrillHint) return;
-    const t = setTimeout(() => setNoDrillHint(false), 3000);
+    // ⚠ 3 sn → 6 sn: sebep artık bir cümle, ve okunamayan bir açıklama yok sayılır.
+    const t = setTimeout(() => setNoDrillHint(null), 6000);
     return () => clearTimeout(t);
   }, [noDrillHint]);
 
@@ -549,9 +594,8 @@ export function ResultView({
               onDataPointClick={handleChartDataPointClick}
             />
             {noDrillHint && (
-              <p className="mt-1 font-mono text-[11px] text-neutral-400">
-                bu sonuç LLM tarafından üretildi, kırılım için sonuç yok — &quot;+ sql
-                göster&quot;e bakabilirsin
+              <p role="status" className="mt-1 font-mono text-[11px] text-neutral-400">
+                {noDrillHint}
               </p>
             )}
           </div>

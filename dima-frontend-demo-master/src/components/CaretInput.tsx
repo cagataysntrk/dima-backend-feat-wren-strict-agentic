@@ -14,6 +14,7 @@ export function CaretInput({
   autoFocus,
   busy = false,
   size = "hero",
+  ipucu,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -21,6 +22,17 @@ export function CaretInput({
   autoFocus?: boolean;
   busy?: boolean;
   size?: "hero" | "inline";
+  /** 🔴 FAZ 7.3/b — **boş durumda ne yazılacağını söyleyen ipucu.**
+   *
+   * Ölçüldü: `placeholder` deponun **hiçbir yerinde** yoktu. Ve bunun sebebi bir unutma
+   * değil, bir **yapı**: gerçek `<textarea>` `text-transparent`tır (yazı, sahte imleçli
+   * bir kaplama `<div>`'de çizilir), yani ona konan bir `placeholder` **görünmezdi**.
+   * Bu yüzden ipucu **kaplamada** çizilir.
+   *
+   * ⚠ Erişilebilirlik için gerçek `placeholder` da yazılır: bir ekran okuyucu kaplama
+   * `<div>`'ini değil, girdiyi okur. *Görsel bir ipucu, ekran okuyucuya bir ipucu değildir.*
+   */
+  ipucu?: string;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -53,6 +65,11 @@ export function CaretInput({
       {/* kaydırılabilir alan: ayna + textarea aynı grid hücresinde üst üste (birlikte kayar) */}
       <div ref={scrollRef} className={`grid ${cap} overflow-y-auto`}>
         <div className={`col-start-1 row-start-1 ${textCls} ${align} ${wrap} text-foreground`}>
+          {/* İpucu YALNIZ boşken: yazmaya başlayınca kaybolur, çünkü o bir metin değil
+              bir **davettir** ve davet, kabul edildikten sonra yerinde durmaz. */}
+          {value === "" && ipucu ? (
+            <span className="text-[var(--muted)] opacity-[var(--opacity-soluk)]">{ipucu}</span>
+          ) : null}
           {value}
           <span
             className="dima-caret ml-[2px]"
@@ -71,6 +88,8 @@ export function CaretInput({
           }}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
+          placeholder={ipucu}
+          aria-label={ipucu ?? "Soru"}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
