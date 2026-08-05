@@ -318,6 +318,12 @@ class AskResponse(BaseModel):
     #: FAZ 5.13b — kural motorunun **ek bağlamı**. 🔴 Bu metin SQL'e HİÇ dokunmaz;
     #: `narration_guard` eşleşmeyen **sayı** taşıyan cümleyi düşürmeye devam eder.
     kural_baglami: str | None = None
+    #: 🔴 **FAZ 6.0 — D9: YAPILDI BİLDİRİMİ.** Kapsam içi + geri alınabilir bir eylem
+    #: **istemsiz** koştuğunda dolar: `{eylem, id, not, geri_al}`.
+    #:
+    #: ⚠ `eylem_onerisi` ile **AYNI ANDA DOLAMAZ**: bir iş ya **yapıldı** ya **onay
+    #: bekliyor**. İkisini birden göstermek, kullanıcıya *"hem oldu hem olmadı"* demektir.
+    eylem_sonucu: dict[str, Any] | None = None
     # FAZ 2.6 — MALİ YIL PENCERESİ. Yalnız mali yıl takvim yılından **farklıysa** dolar.
     # 🔴 Takvim yılından farklı bir pencereyi *"bu yıl"* diye sunmak, DOĞRU sayıyı YANLIŞ
     # soruya cevap yapar — kullanıcı hangi pencereyi gördüğünü bilmeli. Takvim yılı

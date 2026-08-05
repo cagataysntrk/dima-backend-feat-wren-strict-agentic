@@ -280,6 +280,50 @@ def _rapor_adi(cq: dict, schema: dict | None) -> str:
 _NE_ZAMAN = {"hour": "her saat", "day": "her gün", "week": "her hafta"}
 
 
+#: 🔴 **FAZ 6.0 — D9 SINAMASI.** `D9` şunu hükme bağlıyor: *"kapsam **içi** ve **geri
+#: alınabilir** bir eylem **İSTEMSİZ** koşar; varsayılan **SINIR**'dır, **istem** değil."*
+#:
+#: Ama `H` fazı **her yazmaya istem** desenini uyguladı — yani tam olarak `D9`'un
+#: *"ölçülmüş bir hata"* dediği şey. Ölçüldü: `pano.ekle` (`geri_alinabilir=True`,
+#: kullanıcının **kendi** panosu) ve `tercih.kaydet` (tek uçla silinir) **her zaman
+#: istem üretiyordu**; `zamanla.olustur` (`geri_alinabilir=False`, dışarıya e-posta
+#: çıkar) doğru davranıyordu.
+#:
+#: 🔴 **YAZMA YÜZEYİ BÜYÜMÜYOR.** Ajan hâlâ yazma aracı **çağırmıyor**; değişen tek şey
+#: **kullanıcının KENDİ eyleminin kaç tıkla tamamlandığı**. `test_ajan_YAZAMAZ` yeşil
+#: kalır ve kapı bunu ölçer.
+def d9_istemsiz_mi(ad: str, principal: Any = None) -> bool:
+    """Bu eylem **istemsiz** koşabilir mi? (D9)
+
+    İki şart **birlikte**:
+      1. `geri_alinabilir=True` — yanlışlık **geri alınabilir** (soft-delete/tek uç),
+      2. **kapsam içi** — kullanıcı bunu **kendi yetkisiyle, kendi nesnesine** yapıyor.
+
+    ⚠ İkincisi olmadan birincisi yetmez: geri alınabilir bir eylem **başkasının**
+    nesnesine uygulanıyorsa, geri alma hakkı da o başkasınındır ve kullanıcı onu geri
+    alamaz. *Geri alınabilirlik, geri alacak kişinin elinde olmalıdır.*
+
+    ⚠ Yetki **`authorize.can()`'den** okunur — ikinci bir kopya yazmak, matrisin iki
+    sahibi olması demekti.
+    """
+    try:
+        b = beyan(ad)
+    except KeyError:
+        return False
+    if not b.geri_alinabilir:
+        return False
+    # Kapsam: kullanıcının **kendi** yetkisi. `principal` yoksa **istemsiz KOŞMAZ** —
+    # kimliği bilinmeyen bir eylem, kapsam içi sayılamaz (fail-closed).
+    if principal is None:
+        return False
+    try:
+        from control_plane.authorize import can
+
+        return bool(can(principal, b.izin))
+    except Exception:                                        # noqa: BLE001
+        return False
+
+
 def degerlendir(q_norm: str, cube_query: dict | None, *,
                 schema: dict | None = None,
                 view_hint: str | None = None,

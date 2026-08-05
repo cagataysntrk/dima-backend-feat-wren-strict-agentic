@@ -79,6 +79,43 @@ def _hedef_pano(session: Session, principal) -> Dashboard:
     return d
 
 
+def _uygula_dogrudan(request: Request, ad: str, argumanlar: dict) -> dict:
+    """🔴 **FAZ 6.0 — D9: istemsiz koşum.** Kapsam içi + geri alınabilir bir eylemi
+    kullanıcının **onay tıklamasını beklemeden** çalıştırır.
+
+    ## 🔴 KAPILAR ATLANMIYOR — YALNIZ TIKLAMA ATLANIYOR
+
+    Bu fonksiyon **kendi uygulamasını yazmaz**: `eylem_onayla`'yı **olduğu gibi** çağırır.
+    Yani kayıt kapısı, `authorize()` **yeniden doğrulaması**, çapa şartı ve `eylem_onay`
+    audit satırı **aynen** işler.
+
+    *"İstemsiz koşmak", kapıları atlamak değil **kullanıcının kendi eylemi için ikinci
+    kez tıklamasını** atlamaktır.* İkinci bir uygulama yazmak, o kapıların bir gün
+    ayrışması demekti — ve ayrışan taraf her zaman daha gevşek olanıdır.
+
+    Döner: `{"eylem", "id", "not", "geri_al"}` — `geri_al` kullanıcıya **nasıl geri
+    alacağını** söyler; geri alınabilirliği ilan edip yolunu göstermemek, onu bir
+    temenniye çevirirdi.
+    """
+    from app.schemas import EylemOnayRequest
+
+    ses = next(get_session())
+    try:
+        cevap = eylem_onayla(request, EylemOnayRequest(eylem=ad, argumanlar=argumanlar),
+                             ses)
+    finally:
+        ses.close()
+    return {
+        "eylem": cevap.eylem, "id": cevap.id, "not": cevap.note,
+        # ⚠ Geri alma yolu **eyleme özgü** ve kayıttan türer — burada bir metin
+        # uydurulmaz.
+        "geri_al": ("Pano widget'ını panodan kaldırabilirsin."
+                    if ad == _eylem.PANO_EKLE else
+                    "Tercihi «tercihler» panelinden kaldırabilirsin."
+                    if ad == _eylem.TERCIH_KAYDET else None),
+    }
+
+
 @router.post("/ask/eylem", dependencies=[Depends(require_company)])
 def eylem_onayla(request: Request, body: EylemOnayRequest,
                  session: Session = Depends(get_session)) -> EylemOnayResponse:

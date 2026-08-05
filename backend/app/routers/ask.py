@@ -2237,13 +2237,43 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             and "tur_takip" in resolve_for(settings, principal)):
         _eylem_karar = eylem.takip_karari(q_norm, body.cube_query, schema=schema)
     if _eylem_karar is not None:
+        # 🔴 **FAZ 6.0 — D9: KAPSAM İÇİ + GERİ ALINABİLİR İŞ İSTEMSİZ KOŞAR.**
+        #
+        # `D9` şunu hükme bağlıyor: *"varsayılan SINIR'dır, İSTEM değil."* `H` fazı bunun
+        # tersini uyguladı — her yazmaya istem — ve `pano.ekle`/`tercih.kaydet` her turda
+        # bir tıklama daha istiyordu. Bu blok o kararı **geri alır**.
+        #
+        # ⚠ **YAZMA YÜZEYİ BÜYÜMÜYOR**: ajan hâlâ yazma aracı çağırmıyor. Değişen tek şey
+        # **kullanıcının KENDİ eyleminin kaç tıkla tamamlandığı**.
+        # ⚠ Bayrak kapalıyken bu blok HİÇ çalışmaz → bugünkü *"her yazmaya istem"*
+        # davranışına **birebir** dönülür.
+        _oneri = _eylem_karar.oneri
+        _sonuc = None
+        if (_oneri and "onay_akisi" in resolve_for(settings, principal)
+                and eylem.d9_istemsiz_mi(_eylem_karar.eylem, principal)):
+            try:
+                from app.routers.eylem import _uygula_dogrudan
+
+                _sonuc = _uygula_dogrudan(request, _eylem_karar.eylem,
+                                          _oneri.get("argumanlar") or {})
+                # 🔴 İkisi **AYNI ANDA DOLAMAZ**: bir iş ya yapıldı ya onay bekliyor.
+                # İkisini birden göstermek, kullanıcıya "hem oldu hem olmadı" demektir.
+                _oneri = None
+            except Exception:                                # noqa: BLE001
+                # ⚠ Doğrudan koşum başarısızsa **öneriye DÜŞÜLÜR** (sessizce kaybolmaz):
+                # kullanıcı yine onaylayıp yapabilir. *Bir kolaylık, yeteneği yok etmez.*
+                _log.warning("D9 doğrudan koşum başarısız → öneriye düşüldü",
+                             exc_info=True)
         return _finish(AskResponse(
-            question=body.question, source="eylem", note=_eylem_karar.not_,
+            question=body.question, source="eylem",
+            note=(_sonuc or {}).get("not") or _eylem_karar.not_,
             cube_query=body.cube_query or None,
             # ⚠ `or None` DEĞİL: `AskResponse.suggestions` bir listedir ve `None`
             # kabul etmez — ilk yazımım 21 testi kırdı ve hızlı kapı bunu yakaladı.
             suggestions=list(_eylem_karar.chipler),
-            eylem_onerisi=_eylem_karar.oneri, trace=_eylem_karar.iz,
+            eylem_onerisi=_oneri, eylem_sonucu=_sonuc,
+            trace=_eylem_karar.iz + (["D9: kapsam içi + geri alınabilir → istemsiz koştu"]
+                                     if _sonuc else []),
         ))
     # KALICI SUNUM TERCİHİ (FAZ E) — *"bundan sonra hep aylık göster"*.
     #

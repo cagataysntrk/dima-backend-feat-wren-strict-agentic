@@ -31,6 +31,8 @@ features:
   ui_icgoru_paketi: "off"
   # FAZ 5.13 — bilgi merkezi (hayalet seri + kural motoru). `off`: /ask cevabı DEĞİŞMEZ.
   ui_knowledge_center: "off"
+  # FAZ 6.0/6.1 — onay akışı + D9. `off`: bugünkü "her yazmaya istem" davranışı birebir.
+  onay_akisi: "off"
   # FAZ 5.14 — Hızlı ↔ Derin. `off`: `mod` alanı yok sayılır, bugünkü davranış birebir.
   hizli_derin: "off"
   # 🔴 FAZ 4.3 borcu — takipte çıplak ikinci ölçü adı. **AÇILDI (beta)** — ve açış

@@ -122,6 +122,18 @@ export interface AskResponse {
   // FAZ 5.13b — kural motorunun EK BAĞLAMI. 🔴 Bu metin SQL'e HİÇ dokunmaz; kullanıcının
   // kendi yazdığı bilgidir ve öyle GÖSTERİLİR (sistemin hesabı gibi değil).
   kural_baglami?: string | null;
+  // 🔴 FAZ 6.0 — D9: YAPILDI BİLDİRİMİ. Kapsam içi + geri alınabilir bir eylem İSTEMSİZ
+  // koştuğunda dolar.
+  //
+  // ⚠ `eylem_onerisi` ile AYNI ANDA DOLAMAZ: bir iş ya YAPILDI ya ONAY BEKLİYOR. İkisini
+  // birden göstermek, kullanıcıya "hem oldu hem olmadı" demektir.
+  eylem_sonucu?: {
+    eylem: string;
+    id: string | null;
+    not: string | null;
+    // Geri alınabilirliği ilan edip YOLUNU göstermemek, onu bir temenniye çevirir.
+    geri_al: string | null;
+  } | null;
   question: string;
   sql: string;
   planned_sql: string | null;

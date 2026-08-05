@@ -923,6 +923,22 @@ export function ReportCard({
         </div>
       )}
 
+      {/* 🔴 FAZ 6.0 — D9: YAPILDI BİLDİRİMİ. Onay kartı YERİNE bir bilgi satırı.
+          Kapsam içi + geri alınabilir bir iş, kullanıcının ikinci kez tıklamasını
+          beklemeden koştu. ⚠ Geri alma YOLU gösteriliyor: geri alınabilirliği ilan edip
+          yolunu göstermemek, onu bir temenniye çevirirdi. */}
+      {item.eylem_sonucu && (
+        <p className="mt-2 border-l-2 border-accent/40 pl-2 font-mono text-[11px] leading-snug text-neutral-400">
+          <span className="text-accent">✓ yapıldı</span>
+          {item.eylem_sonucu.not ? ` · ${item.eylem_sonucu.not}` : ""}
+          {item.eylem_sonucu.geri_al && (
+            <span className="block text-[10px] text-neutral-500">
+              ↩ {item.eylem_sonucu.geri_al}
+            </span>
+          )}
+        </p>
+      )}
+
       {/* 🔴 FAZ 5.13a — HAYALET SERİ. Aynı sorgu daha önce koşulduysa **bir satır**.
           ⚠ Grafik DEĞİL: ham sonuç taşınmıyor (KVKK + boyut) ve olmayan bir veriyi
           çizmek, kullanıcıya hiç var olmamış bir seriyi göstermek olurdu.

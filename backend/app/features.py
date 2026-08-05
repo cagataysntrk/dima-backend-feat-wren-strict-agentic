@@ -75,6 +75,22 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "sayılır (FAZ 5.14).",
         "category": "konusma",
     },
+    "onay_akisi": {
+        "label": "Onay akışı + D9 (kapsam içi iş istemsiz koşar)",
+        "description": "🔴 D9: «kapsam İÇİ ve GERİ ALINABİLİR bir eylem İSTEMSİZ koşar; "
+                       "varsayılan SINIR'dır, İSTEM değil.» Yürüyen planın H fazı bunun "
+                       "TERSİNİ uyguladı (her yazmaya istem) — ve `pano.ekle` / "
+                       "`tercih.kaydet` her turda bir tıklama daha istiyordu. Bu bayrak "
+                       "o kararı GERİ ALIR. ⚠ YAZMA YÜZEYİ BÜYÜMEZ: ajan hâlâ yazma "
+                       "aracı ÇAĞIRMIYOR; değişen tek şey kullanıcının KENDİ eyleminin "
+                       "kaç tıkla tamamlandığı. ⚠ Kapılar ATLANMAZ — istemsiz koşum "
+                       "`/ask/eylem`'in KENDİSİNİ çağırır: kayıt kapısı, `authorize()` "
+                       "yeniden doğrulaması ve audit satırı aynen işler. `zamanla."
+                       "olustur` (geri alınamaz, dışarıya e-posta çıkar) HÂLÂ istem "
+                       "üretir. Kapalıyken bugünkü «her yazmaya istem» davranışına "
+                       "BİREBİR dönülür (FAZ 6.0/6.1).",
+        "category": "agentic",
+    },
     "ui_knowledge_center": {
         "label": "Bilgi merkezi (hayalet seri + kural motoru)",
         "description": "İki yarım: (a) HAYALET SERİ — aynı sorgunun BİR ÖNCEKİ koşumu "
