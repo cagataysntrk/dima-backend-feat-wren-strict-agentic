@@ -32,3 +32,4 @@ lab/backups/
 lab/reports/
 # Üretilmiş NL korpusu (harness çıktısı, ~56MB): script + stats izlenir, ham korpus değil
 lab/generated/*.jsonl
+lab/.onbellek/
