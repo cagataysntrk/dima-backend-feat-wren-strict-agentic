@@ -52,7 +52,7 @@
 | **4** | **FAZ 7.7'nin `/settings` yarısı** | 8 sekmeli tam sayfa + `admin_app`'in **13 router** tüketicisi | `V-1` o router'lar için **kırmızı kalıyor** — kapının **beyan edilmiş** kırmızısı |
 | **5** | **5.6 · peer kıyası** | **AJ2**'ye bağlı (`compare` enum→ALAN) | AJ2 inmeden üçüncü bir enum değeri çakardı |
 | **6** | `route-distribution` **UI tüketicisi yok** | Tüketicisi 7.7'nin paneli | Pencere açılınca veri **birikir**, ekranda **görünmez** |
-| **7** 🆕 | **`ask.py` modül tavanı**: `ask()` **1206/1151** (+55) · dosya **2498/2419** (+79) | Bir taşıma denendi, **geri alındı**: bağımlılık ölçümü import adlarını ve `ask()` closure'larını kaçırdı → 119 kırmızı. *Yarım bir taşıma, taşınmamış olmaktan kötüdür* | `test_modul_buyume` **kırmızı**; `cube_router` yarısı ✅ kapandı (1749→1703) |
+| ~~**7**~~ | ✅ **KAPANDI** — `ask()` **1206→1150** · dosya **2498→2377** · `cube_router` **1749→1703** | Önce **ölçüm aracı** onarıldı (kapsam zincirinde ad çözümü), sonra taşıma: `_attach_viz` → `gorsel_ekleme.py`, `_queue_discovery_job` → `discovery_kuyrugu.py`. *Bir bloğu taşınabilir yapan şey bağların sayısı değil **yönüdür*** | üç tavan da yeşil, hızlı kapı **517 passed** |
 
 > 🔴 Borç 3 ve 4 için kritik ayrım: **v1 kapanmadı, v1'in FAZ 7'si kısmen kapandı.**
 > *Bir fazı "bitti" ilan edip yarısını söylememek, bitmemiş olmaktan kötüdür.*
