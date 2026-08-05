@@ -75,6 +75,32 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "sayılır (FAZ 5.14).",
         "category": "konusma",
     },
+    "public_api": {
+        "label": "Dış geliştirici API'si (idempotent async iş)",
+        "description": "🔴 YENİ KUYRUK KURULMAZ — `AskJob` genellendi. Idempotency "
+                       "benzersizliği `(client_idempotency_key, tenant_id)` üstünde: tek "
+                       "başına anahtar DEĞİL, çünkü iki kiracının aynı anahtarı seçmesi "
+                       "mümkündür ve o an biri ÖTEKİNİN İŞİNİ görürdü. Kısıt PARTIAL — "
+                       "anahtar göndermeyen çağrılar idempotency İSTEMEMİŞTİR ve hepsini "
+                       "tek bir NULL'a çarpıştırmak onları birbirinin işi yapardı. "
+                       "Kapalıyken dış uç yok (FAZ 6.5).",
+        "category": "genisleme",
+    },
+    "embed": {
+        "label": "Gömülü pano (embed token)",
+        "description": "🔴 **BU TURDA AÇILAMAZ — P0 ÖLÇÜLDÜ.** Yol haritasının bağlayıcı "
+                       "şartı: «Wren RLS'i gömülü pano grafiklerini kapsamıyorsa `embed` "
+                       "AÇILMAZ; `always_filter` tek başına yeterli sayılmaz.» Ölçüm: "
+                       "`motor_cls = off` — motor-RLS HİÇ AÇIK DEĞİL ve açılması 36 "
+                       "çağrı sitesinin kimlik geçirmesine bağlı (açık borç #1). Yani "
+                       "şartın «kapsıyor mu» sorusu bile SORULAMIYOR: kapsayacak "
+                       "mekanizma ÇALIŞMIYOR. *Bir güvenlik sınırını ölçmeden açmak, onu "
+                       "hiç kurmamaktan kötüdür: kurulduğu sanılır.* ⚠ `1.1`'in inmiş "
+                       "olması `6.5`'i güvenli YAPMAZ. 🔴 Looker'ın imzalı-URL modeli "
+                       "REDDEDİLDİ: kapsam bir KAYITTIR ve `iptal_edildi` ANINDA düşer — "
+                       "dağıtılmış bir URL geri çağrılamaz (FAZ 6.5).",
+        "category": "genisleme",
+    },
     "onay_akisi": {
         "label": "Onay akışı + D9 (kapsam içi iş istemsiz koşar)",
         "description": "🔴 D9: «kapsam İÇİ ve GERİ ALINABİLİR bir eylem İSTEMSİZ koşar; "

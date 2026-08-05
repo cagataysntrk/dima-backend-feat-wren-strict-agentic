@@ -33,6 +33,13 @@ features:
   ui_knowledge_center: "off"
   # FAZ 6.0/6.1 — onay akışı + D9. `off`: bugünkü "her yazmaya istem" davranışı birebir.
   onay_akisi: "off"
+  # FAZ 6.5 — dış geliştirici API'si. `off`: dış uç yok.
+  public_api: "off"
+  # 🔴 FAZ 6.5 — gömülü pano. **AÇILAMAZ**: `motor_cls=off` (motor-RLS hiç açık değil) ve
+  # yol haritası `always_filter`ı tek başına yeterli SAYMIYOR. Ölçüm `app/embed_kapsam.py::
+  # p0_engeli()`de bir KAPI olarak duruyor — belgeye yazıp koda yazmamak, ilan edip
+  # uygulamamaktır.
+  embed: "off"
   # FAZ 5.14 — Hızlı ↔ Derin. `off`: `mod` alanı yok sayılır, bugünkü davranış birebir.
   hizli_derin: "off"
   # 🔴 FAZ 4.3 borcu — takipte çıplak ikinci ölçü adı. **AÇILDI (beta)** — ve açış

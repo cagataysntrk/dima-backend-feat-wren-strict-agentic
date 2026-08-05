@@ -788,6 +788,44 @@ class AskJob(SQLModel, table=True):
     created_at: datetime = Field(default_factory=_now)
     started_at: datetime | None = None
     finished_at: datetime | None = None
+    # 🔴 FAZ 6.5 — **IDEMPOTENCY.** *Yeni kuyruk KURULMAZ*: `AskJob` genellenir.
+    #
+    # Benzersizlik `(client_idempotency_key, tenant_id)` üstündedir — **tek başına anahtar
+    # DEĞİL**: iki kiracının aynı anahtarı seçmesi mümkündür ve o an biri ötekinin işini
+    # görürdü. *Bir idempotency anahtarı, kiracı sınırının içinde benzersizdir.*
+    #
+    # ⚠ `None` bırakılabilir: anahtar **göndermeyen** bir çağrı, idempotency **istememiş**
+    # demektir ve her seferinde yeni iş üretir. Boş dizeyi anahtar saymak, anahtarsız
+    # bütün çağrıları **aynı işe** düşürürdü.
+    client_idempotency_key: str | None = Field(default=None, index=True)
+
+
+class EmbedToken(SQLModel, table=True):
+    """FAZ 6.5 — **gömme token'ı**. [bayrak: `embed`]
+
+    🔴 **Looker'ın imzalı-URL modeli DEĞİL**: kapsam bir **kayıttır**, bir URL parametresi
+    değil. İmzalı URL'de kapsamı değiştirmek imzayı bozar ama **iptal etmek imkânsızdır**
+    — dağıtılmış bir URL geri çağrılamaz. Kayıt `iptal_edildi` ile **anında** düşer.
+
+    🔴 **P0 — `embed` BAYRAĞI BU TURDA AÇILAMAZ.** Yol haritasının şartı: *"Wren RLS'i
+    gömülü pano grafiklerini kapsamıyorsa `embed` AÇILMAZ; `always_filter` tek başına
+    yeterli sayılmaz."* Ölçüldü: **`motor_cls = "off"`** — motor-RLS **hiç açık değil**
+    ve açılması 36 çağrı sitesinin kimlik geçirmesine bağlı (açık borç). Yani şart
+    **karşılanmıyor** ve tablo **kurulur ama bayrak kapalı kalır**.
+    """
+
+    __tablename__ = "embed_token"
+    id: uuid.UUID = Field(default_factory=_uuid, primary_key=True)
+    tenant_id: uuid.UUID = Field(index=True)
+    #: `ModelPermission` şeması — hangi cube/boyut/ölçü görünür.
+    scope_json: str = "{}"
+    #: Günlük çağrı kotası. ⚠ `None` **sınırsız DEĞİL**, *"kota belirtilmedi"* demektir
+    #: ve uç onu **reddeder**: sınırsız bir gömme token'ı, faturayı bilinmez yapar.
+    kota: int | None = None
+    son_kullanim: datetime | None = None
+    #: 🔴 **ANINDA DÜŞER.** Bir imzalı URL'nin yapamadığı tek şey budur.
+    iptal_edildi: bool = Field(default=False, index=True)
+    created_at: datetime = Field(default_factory=_now)
 
 
 class AuditLog(SQLModel, table=True):
