@@ -55,7 +55,23 @@ APP = pathlib.Path(__file__).resolve().parents[1] / "app"
 # ── TAVAN: FAZ 0 ÖNCESİ ölçüm (@`c3fcfe7`) ───────────────────────────────────
 TABAN_ASK_KOD = 1135          # ask() gövdesi, yorum/docstring hariç
 TABAN_ASK_IC_FN = 19          # iç fonksiyon (closure) sayısı
-TABAN_CUBE_ROUTER_KOD = 1723  # modül bütünü, yorum/docstring hariç
+#: 🔴 **1723 → 1703 (2026-08-05): TAVAN İNDİ, ve inmesi bir KURAL GEREĞİDİR.**
+#:
+#: `cube_query_json_schema` `app/intent_semasi.py`'ye taşındığında modül 1749'dan 1703'e
+#: düştü ve tavanda **38 satır boşluk** kaldı. Meta-kapı (`test_TAVAN_KAPISI_GERCEKTEN
+#: _KIRMIZI_VERIYOR`) bunu **kırmızı** verdi ve haklıydı: *boşluklu bir tavan büyümeyi
+#: durdurmaz — bir kod satırı eklenir, kapı yine yeşil der.*
+#:
+#: ⚠ Taban **ölçülen değere** indirildi, muafiyetler **korundu**: muafiyetler geçmiş
+#: kararların kaydıdır ve bir taşıma onları geçersiz kılmaz. *Bir tavanı indirmek bir
+#: iyileşmedir; muafiyet listesini silmek bir hafıza kaybıdır.*
+#: ⚠ **VE TABAN, MUAFİYETLERİN DÜŞÜLDÜĞÜ HÂLDİR — ilk düzeltmem yanlıştı.**
+#: `TAVAN = TABAN + Σmuafiyet` olduğu için tabanı ölçülen değere (1703) koymak, tavanı
+#: 1721'e çıkarıp **18 satır boşluk** bıraktı; meta-kapı yine kırmızı verdi. Muafiyetler
+#: ölçülen değerin **İÇİNDE** zaten var — onları bir kez daha eklemek **çifte sayımdır**.
+#: Doğru taban: `ölçülen (1703) − Σmuafiyet (18) = 1685`, ve tavan yine tam 1703.
+#: *Bir formülü düzeltmeden bir sayıyı düzeltmek, sayıyı ikinci kez yanlış yapar.*
+TABAN_CUBE_ROUTER_KOD = 1685  # 1703 ölçüldü − 18 muafiyet = taban; tavan tam 1703
 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
