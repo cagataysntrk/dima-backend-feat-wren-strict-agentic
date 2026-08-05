@@ -1,7 +1,11 @@
 # Boyahane (tekstil terbiye) sektör paketi — yeniden kullanılabilir içerik:
 # fire cube + boyahane kuralları/golden SQL. Varsayılan konu modülleri:
 name: boyahane
-moduller: [oee, bakim, ik, enerji]
+# 🔴 2026-08-05 — ERP genişletmesiyle **altı yeni modül**. Bu satır olmadan yeni
+# cube'lar diskte durur ama katalogda **görünmez**: hiçbir soru onlara ulaşamaz.
+# *Bir cube yazmak onu bağlamak değildir* — bu deponun "yetim modül" sınıfının
+# veri katmanındaki hâli, ve bir denetim ajanı tam da burada yakaladı.
+moduller: [oee, bakim, ik, enerji, butce, satis, maliyet, finans, lojistik]
 
 # Özellik bayrakları (ADR-0009): burası YALNIZ SEKTÖRE-ÖZEL bayrak taşır. Platform
 # geneli bayraklar (verify_button, scheduled_reports, sql_display, cikti_yorumlama)

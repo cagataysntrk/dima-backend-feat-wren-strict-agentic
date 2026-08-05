@@ -1,0 +1,70 @@
+name: bakim_is_emri
+label: Bakım iş emri (planlı / plansız)
+base_object: bakim_is_emirleri
+
+# BAKIM İŞ EMRİ CUBE'U (2026-08-05).
+#
+# 🔴 ÖLÇÜLEN KUSUR: `bakim_planlari` tablosunda **11 satır** vardı ve son tarihi
+# **2024-02-16**'ydı. Yani 29 aylık verinin **27 ayında planlı bakım kaydı yok**.
+# Katalogda görünen ama veride olmayan bir tablo, *"planlı bakım nasıl gidiyor"*
+# sorusuna boş cevap verir.
+#
+# > ⚠ Ve **boş cevap, yanlış cevaptan daha az fark edilir**: kullanıcı sayıyı görmez,
+# > hata da görmez — sistemin cevabı yokmuş gibi değil, *cevap sıfırmış* gibi okur.
+#
+# 🔴 PLANLI/PLANSIZ AYRIMI bu cube'un varlık sebebidir. Bakımın tek anlamlı yönetim
+# ölçüsü **planlı bakım oranı**dır; ikisini tek "bakım" sütununda toplamak, bakım
+# olgunluğunu ölçülemez yapar. *Çok bakım yapmak iyi değildir — çok PLANSIZ bakım
+# yapmak kötüdür, ve fark yalnız bu ayrımla görünür.*
+synonyms: [bakım, bakım iş emri, onarım, arıza müdahalesi, planlı bakım,
+           plansız bakım, bakım emri, iş emri]
+
+measures:
+  - name: is_emri_adedi
+    expression: "COUNT(DISTINCT is_emri_no)"
+    type: DOUBLE
+    synonyms: [iş emri adedi, bakım adedi, kaç bakım, müdahale sayısı]
+  - name: toplam_bakim_suresi
+    expression: SUM(sure_dk)
+    type: DOUBLE
+    unit: "dk"
+    synonyms: [bakım süresi, toplam süre, müdahale süresi, kaç dakika]
+  - name: bakim_maliyeti
+    expression: SUM(maliyet)
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [bakım maliyeti, onarım maliyeti, bakım gideri, yedek parça maliyeti]
+  - name: planli_bakim_yuzde
+    expression: "ROUND(100.0 * SUM(CASE WHEN tur = 'PLANLI' THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1)"
+    type: DOUBLE
+    unit: "%"
+    synonyms: [planlı bakım oranı, planlı oran, önleyici bakım oranı, bakım olgunluğu]
+  - name: ort_mudahale_suresi
+    expression: "ROUND(AVG(sure_dk),1)"
+    type: DOUBLE
+    unit: "dk"
+    synonyms: [ortalama müdahale, mttr, ortalama onarım süresi, ne kadar sürüyor]
+
+dimensions:
+  - name: makine
+    expression: makine
+    type: VARCHAR
+    synonyms: [makine, tezgah, hat, makina, ekipman]
+  - name: tur
+    expression: tur
+    type: VARCHAR
+    label: tür
+    synonyms: [tür, tip, planlı mı, bakım türü]
+  - name: konu
+    expression: konu
+    type: VARCHAR
+    synonyms: [konu, arıza tipi, iş konusu, ne yapıldı]
+  - name: ekip
+    expression: ekip
+    type: VARCHAR
+    synonyms: [ekip, kim yaptı, servis, bakım ekibi]
+
+time_dimensions:
+  - name: tarih
+    expression: tarih
+    type: DATE

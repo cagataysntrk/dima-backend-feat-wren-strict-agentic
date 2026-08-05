@@ -1,0 +1,108 @@
+name: sikayet
+label: Müşteri şikâyeti / kalite geri bildirimi
+base_object: musteri_sikayetleri
+
+# ŞİKÂYET CUBE'U (2026-08-05) — sektöre-özel (tekstil terbiye: renk sapması dE).
+#
+# ═══ 🔴 BU CUBE'UN VARLIK SEBEBİ: GROUND TRUTH ═══
+#
+# Şikâyetler UYDURULMADI. `partiler` her partide İKİ sayı taşıyor: `uretim_dE`
+# (ölçülen renk sapması) ve `musteri_tolerans_dE` (o müşterinin kabul sınırı).
+# Şikâyetler TOLERANSI AŞAN GERÇEK PARTİLERDEN türetildi.
+#
+# Bunun testlere kazandırdığı şey, bu deponun en önemli ölçüm kazanımı olabilir:
+#
+# > Bugüne kadar bir senaryo testi *"çökmedi mi"* diye sorabiliyordu. Artık
+# > **"doğru sebebi buldu mu"** diye sorulabilir — çünkü doğru sebep veride
+# > **SQL ile doğrulanabilir**: o ay toleransı aşan partiler hangi makinede,
+# > hangi operatörde, hangi reçetede toplandı, sorgu söyler.
+#
+# *Rastgele üretilmiş bir şikâyet tablosu bu soruyu cevaplanamaz yapardı: sistem
+# doğru cevabı üretse bile veri onu doğrulamazdı. Ground truth artık bir yorum
+# değil, bir sorgu.*
+#
+# ⚠ `makine` · `operator` · `recete_kod` bu cube'da BOYUTTUR — kök-neden sorusu
+# ("şikâyet neden arttı") ancak bu kırılımlar varsa cevaplanabilir. Yalnız müşteri
+# ve tarih taşıyan bir şikâyet tablosu, şikâyeti sayar ama açıklayamaz.
+synonyms: [şikayet, şikâyet, müşteri şikayeti, geri bildirim, iade, reklamasyon,
+           müşteri itirazı, kalite şikayeti, memnuniyetsizlik]
+
+measures:
+  - name: sikayet_adedi
+    expression: "COUNT(DISTINCT sikayet_no)"
+    type: DOUBLE
+    synonyms: [şikayet adedi, şikayet sayısı, kaç şikayet, reklamasyon sayısı]
+  - name: iade_kg
+    expression: SUM(iade_kg)
+    type: DOUBLE
+    unit: "kg"
+    synonyms: [iade, iade miktarı, iade kilosu, geri gelen, iade edilen]
+  - name: ort_cozum_suresi
+    expression: "ROUND(AVG(cozum_suresi_gun),1)"
+    type: DOUBLE
+    unit: "gün"
+    synonyms: [çözüm süresi, kapanma süresi, kaç günde çözülüyor, yanıt süresi]
+  - name: acik_sikayet
+    expression: "SUM(CASE WHEN durum = 'AÇIK' THEN 1 ELSE 0 END)"
+    type: DOUBLE
+    synonyms: [açık şikayet, çözülmemiş, bekleyen şikayet, kapanmamış]
+  - name: agir_sikayet_yuzde
+    expression: "ROUND(100.0 * SUM(CASE WHEN siddet = 'AĞIR' THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1)"
+    type: DOUBLE
+    unit: "%"
+    synonyms: [ağır şikayet oranı, ciddi şikayet oranı, kritik şikayet]
+  - name: ort_sapma_dE
+    expression: "ROUND(AVG(sapma_dE),3)"
+    type: DOUBLE
+    unit: "dE"
+    synonyms: [sapma, renk sapması, ortalama sapma, dE, delta e]
+
+dimensions:
+  - name: musteri_kod
+    expression: musteri_kod
+    type: VARCHAR
+    label: müşteri
+    synonyms: [müşteri, müşteriler, cari, şikayetçi]
+  - name: konu
+    expression: konu
+    type: VARCHAR
+    synonyms: [konu, şikayet konusu, sebep, tür, şikayet türü]
+  - name: siddet
+    expression: siddet
+    type: VARCHAR
+    label: şiddet
+    synonyms: [şiddet, ciddiyet, ağırlık, seviye, kritiklik]
+  - name: makine
+    expression: makine
+    type: VARCHAR
+    synonyms: [makine, tezgah, hat, makina]
+  - name: operator
+    expression: operator
+    type: VARCHAR
+    label: operatör
+    # BEYAN: kişi tanımlar → değerleri LLM prompt'una GİRMEZ (Faz A1 deseni).
+    sensitivity: person
+    synonyms: [operatör, çalışan, kim yaptı, sorumlu operatör]
+  - name: recete_kod
+    expression: recete_kod
+    type: VARCHAR
+    label: reçete
+    synonyms: [reçete, reçete kodu, boya reçetesi]
+  - name: renk
+    expression: renk
+    type: VARCHAR
+    synonyms: [renk, renkler, renge göre]
+  - name: cozum_sekli
+    expression: cozum_sekli
+    type: VARCHAR
+    label: çözüm şekli
+    synonyms: [çözüm, nasıl çözüldü, çözüm şekli, karar]
+  - name: durum
+    expression: durum
+    type: VARCHAR
+    synonyms: [durum, statü, açık kapalı]
+
+time_dimensions:
+  - name: acilis_tarihi
+    expression: acilis_tarihi
+    type: DATE

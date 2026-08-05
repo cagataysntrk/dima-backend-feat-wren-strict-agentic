@@ -142,3 +142,88 @@ def test_HEDEF_YUZDE_DEGIL_ilerleme():
     Araç bir eşikte **kırmızı vermez**."""
     src = (_KOK / "lab/gercek_dunya.py").read_text(encoding="utf-8")
     assert "Hedef yüzde DEĞİL ilerleme" in src or "hedef DEĞİL" in src or "tabandır" in src
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🔴 KOPYA KAPISI — "15 az; ve birbirinin aynısı kesinlikle olmayacak"
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# ## Neden mekanik bir kapı, "dikkat ederim" değil
+#
+# Bir korpus **kendi tekrarıyla** şişer: yazarın gözünde iki soru farklıdır ("biri
+# müşteri, biri cari"), ölçüm gözünde aynıdır. *Paydayı şişiren bir vaka, ölçümü
+# iyileştirmez — yalnız pahalılaştırır ve gerçek kapsamı gizler.*
+#
+# ⚠ Ölçü **kelime kümesi**, cümle değil: *"en çok kim alıyor"* ile *"kim en çok
+# alıyor"* farklı cümlelerdir, **aynı** vakadır.
+
+_DURAK = {
+    "ne", "mi", "mı", "mu", "mü", "bu", "şu", "o", "bir", "var", "yok", "de", "da",
+    "ve", "ile", "için", "gibi", "kadar", "daha", "çok", "az", "en", "göre", "peki",
+    "ya", "ama", "nasıl", "kaç", "hangi", "nerede", "neden", "niye", "kim", "biz",
+    "bize", "bizi", "bizim", "miyiz", "mıyız", "müyüz", "miydi", "mıydı", "oldu",
+    "olur", "var mı", "the", "a",
+}
+
+
+def _anlamli(soru: str) -> frozenset:
+    """Durak kelimeler **atılır**: iki soruyu benzer yapan şey `mi`/`bu` değil,
+    taşıdıkları **iş kelimeleridir**."""
+    return frozenset(k for k in soru.lower().split() if k not in _DURAK and len(k) > 1)
+
+
+def _ortusme(a: frozenset, b: frozenset) -> float:
+    """Jaccard: kesişim / birleşim. ⚠ **Kapsama değil** — kapsama kullanılsaydı
+    tek kelimelik bir vaka her uzun vakaya %100 benzerdi."""
+    if not a or not b:
+        return 0.0
+    return len(a & b) / len(a | b)
+
+
+def test_KOPYA_YOK_hicbir_vaka_cifti_yuzde_70_ustu_ortusmez():
+    """🔴 Kullanıcı kuralı: *"birbirinin aynısı kesinlikle olmadan"*.
+
+    Eşik **%70**: altında kalan çiftler *aynı alanı* paylaşabilir (fire/fire) ama
+    **farklı davranış** ölçer (miktar-oran karışması vs eşanlam tanıma). Üstünde
+    kalan çift, kılık değiştirmiş **tek** vakadır."""
+    from lab.gercek_dunya import VAKALAR
+
+    kume = [(v["soru"], _anlamli(v["soru"])) for v in VAKALAR]
+    cakisan = [
+        (kume[i][0], kume[j][0], round(o, 2))
+        for i in range(len(kume))
+        for j in range(i + 1, len(kume))
+        if (o := _ortusme(kume[i][1], kume[j][1])) > 0.70
+    ]
+    assert not cakisan, f"kopya vaka çifti: {cakisan}"
+
+
+def test_AYNI_SORU_IKI_KEZ_yazilmamis():
+    """⚠ Jaccard'ın **kaçırdığı** hâl: birebir aynı metin zaten %100 verir, ama bu
+    kapı hata mesajını okunur kılar — *bir kapının teşhisi, yakalaması kadar
+    değerlidir.*"""
+    from lab.gercek_dunya import VAKALAR
+
+    sorular = [v["soru"] for v in VAKALAR]
+    tekrar = {s for s in sorular if sorular.count(s) > 1}
+    assert not tekrar, f"birebir tekrar: {tekrar}"
+
+
+def test_KAPSAM_her_persona_ve_her_kademe_temsil_edilir():
+    """🔴 *Bir korpusun büyüklüğü kapsamı değil, **dağılımı** kapsamı gösterir.*
+    42 vakanın 40'ı tek personada olsaydı sayı büyük, ölçüm dar olurdu."""
+    from lab.gercek_dunya import KADEMELER, PERSONALAR, VAKALAR
+
+    for p in PERSONALAR:
+        assert any(v["persona"] == p for v in VAKALAR), f"persona boş: {p}"
+    for k in KADEMELER:
+        assert any(v["kademe"] == k for v in VAKALAR), f"kademe boş: {k}"
+
+
+def test_VAKA_SAYISI_ondan_fazla_persona_basina():
+    """⚠ Alt sınır **yazılı**: kullanıcı 15'i az buldu. Bu kapı bir daha 15'e
+    düşmeyi **hata** yapar. *Bir kararın kapıya çevrilmemiş hâli, bir sonraki turda
+    unutulur.*"""
+    from lab.gercek_dunya import VAKALAR
+
+    assert len(VAKALAR) >= 40, f"vaka sayısı geriledi: {len(VAKALAR)}"

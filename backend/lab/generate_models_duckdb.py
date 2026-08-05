@@ -44,6 +44,49 @@ PK_MAP = {
 }
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🔴 KİŞİ BEYANI — tek sahip (Faz A1 · ADR gizlilik)
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Bu kolonların DEĞERLERİ bir insanı tanımlar → LLM prompt'una **girmez**.
+# Deterministik `route()` onları görmeye devam eder (süreç içi), yetenek kaybı yok.
+#
+# ⚠ NEDEN AD-TABANLI EMNİYET AĞI YETMEZ: `operator` başka bir şemada makine tipi
+# olabilir, `ekip` bir bölüm adıdır. *Bir kolonun kişi taşıyıp taşımadığı adından
+# çıkarılamaz — beyan edilmesi gerekir.*
+#
+# 🔴 VE NEDEN BURADA, DOSYALARDA DEĞİL: beyanlar üretilmiş dosyalarda yaşarsa
+# üretecin her koşumunda kaybolma riski taşırlar (bir kez **kayboldular** da).
+# Burada tek sahip var; aşağıdaki taşıma mekanizması yalnız **emniyet ağıdır**.
+KISI_KOLONLARI: dict[str, tuple[str, ...]] = {
+    "partiler": ("operator",),
+    "personel": ("ad_soyad",),
+    "personel_ozluk": ("tc_kimlik", "sgk_no"),
+    "ariza_kayitlari": ("mudahale_eden",),
+    "bakim_planlari": ("sorumlu",),
+    # --- ERP genişletmesi (2026-08-05) ---
+    "is_emirleri": ("operator",),
+    "uygunsuzluklar": ("operator",),
+    "musteri_sikayetleri": ("operator",),
+    "duzeltici_faaliyetler": ("sorumlu",),
+    "satis_siparisleri": ("satis_temsilcisi",),
+    "firsatlar": ("satis_temsilcisi",),
+    "musteri_temaslari": ("personel",),
+    "egitim_katilim": ("ad_soyad",),
+    "performans_degerlendirme": ("ad_soyad",),
+    "is_kazalari": ("ad_soyad",),
+    "personel_hareketleri": ("ad_soyad",),
+    "donem_kapanis": ("kapatan",),
+    # ⚠ `bordro` · `puantaj` · `izinler` BEYAN EDİLMEZ — ve bu bir eksiklik değil,
+    # bir konvansiyon: onlar `personel_kodu` taşır, **ad taşımaz**. Beyan **adın**
+    # üzerindedir (`personel.ad_soyad`), çünkü prompt'a sızması anlamlı olan şey addır.
+    # Bir kodu maskelemek gizlilik üretmez, yalnız `route()`in join'ini kırardı.
+    #
+    # 🔴 Bu üçünü ilk turda ben `ad_soyad` sanıp beyan ettim; yukarıdaki denetim
+    # kapısı **ilk koşumunda kendi yazarını yakaladı**. Kapının değeri tam da budur.
+}
+
+
 def introspect(con, table: str) -> list[tuple[str, str]]:
     """(kolon, mdl_tipi) — fiziksel sıra korunur."""
     rows = con.execute(
@@ -86,14 +129,52 @@ def main() -> None:
         "SELECT table_name FROM information_schema.tables "
         "WHERE table_schema = 'main' ORDER BY table_name").fetchall()]
 
-    # Eski/bayat modelleri temizle (yeniden üretim = tam ayna): out altındaki tüm
-    # model dizinlerini kaldır, sonra güncel tablolardan yeniden yaz.
-    if args.out.is_dir():
-        for d in args.out.iterdir():
-            if d.is_dir() and (d / "metadata.yml").exists():
-                (d / "metadata.yml").unlink()
-                d.rmdir()
+    # 🔴 ÖLÇÜLEN GERİLEME (2026-08-05) — bu üreteç **PII beyanlarını siliyordu**.
+    #
+    # `partiler.operator` · `personel.*` · `ariza_kayitlari.mudahale_eden` ve
+    # `bakim_planlari` üzerindeki **`sensitivity: person`** beyanları (Faz A1) elle
+    # eklenmişti. Üreteç dosyanın tamamını yeniden yazdığı için **dördü de düştü** —
+    # yani operatör ve personel ADLARI yeniden LLM prompt'una akacaktı.
+    #
+    # > ⚠ Başlıktaki *"elle düzenleme yeniden üretimde ezilir"* uyarısı bunu
+    # > **meşrulaştırmıyor**: bir gizlilik beyanı bir biçim tercihi değildir, ve
+    # > sessizce kaybolan bir beyan **hiç yazılmamış** beyandan daha tehlikelidir —
+    # > çünkü kimse onu bir daha aramaz.
+    #
+    # *Bir üretecin "kaynak dosyayı ezerim" hakkı, ezdiği şeyin ne olduğunu bilmesini
+    # gerektirir.* Artık kolon-başı **koruma listesi** var: fiziksel katman türetilir,
+    # BEYANLAR taşınır.
+    KORUNAN_KOLON_ANAHTARLARI = ("sensitivity", "label", "description", "not_null")
 
+    onceki: dict[str, dict[str, dict]] = {}
+    if args.out.is_dir():
+        for d in sorted(args.out.iterdir()):
+            f = d / "metadata.yml"
+            if not (d.is_dir() and f.exists()):
+                continue
+            eski = yaml.safe_load(f.read_text()) or {}
+            onceki[d.name] = {
+                str(c.get("name")): {k: c[k] for k in KORUNAN_KOLON_ANAHTARLARI if k in c}
+                for c in (eski.get("columns") or []) if isinstance(c, dict)
+            }
+            f.unlink()
+            d.rmdir()
+
+    # 🔴 BEYAN DENETİMİ — *karşılığı olmayan bir beyan, sessizce hiçbir şey yapmaz.*
+    # Bu deponun defterindeki **"beyan var, kod onu tanımıyor"** sınıfı: harita bir
+    # kolonu korunmuş sanır, o kolon aslında yoktur (adı değişmiş, tablo yeniden
+    # adlandırılmış) ve kimse fark etmez — gizlilik beyanı **var görünüp yok** olur.
+    _mevcut = {t: {c for c, _ in introspect(con, t)} for t in tables}
+    _hayalet = [f"{t}.{c}" for t, cols in KISI_KOLONLARI.items()
+                for c in cols if c not in _mevcut.get(t, set())]
+    if _hayalet:
+        raise SystemExit(
+            "🔴 KİŞİ BEYANI karşılıksız — bu kolonlar veritabanında YOK:\n  "
+            + "\n  ".join(_hayalet)
+            + "\n\nHaritayı düzelt ya da satırı kaldır; sessiz bir beyan beyan değildir."
+        )
+
+    tasinan = beyan = 0
     for table in tables:
         live = introspect(con, table)
         colnames = [c for c, _ in live]
@@ -104,6 +185,16 @@ def main() -> None:
             if c == pk:
                 col["is_primary_key"] = True
                 col["not_null"] = True
+            # 1) BEYAN (tek sahip) — kişi kolonları yukarıdaki haritadan.
+            if c in KISI_KOLONLARI.get(table, ()):
+                col["sensitivity"] = "person"
+                beyan += 1
+            # 2) Emniyet ağı: önceki dosyadaki elle beyanları taşı. ⚠ `not_null`
+            # PK'dan geliyorsa üzerine yazılmaz — türetilmiş olan günceldir.
+            for k, v in (onceki.get(table, {}).get(c) or {}).items():
+                if k not in col:
+                    col[k] = v
+                    tasinan += 1
             columns.append(col)
         # Cross-model calculated/relationship kolonları (models_enrich.yml) — ADR-0017 §5:
         # `handle` → ilişki kolonu (type = hedef MODEL adı); diğerleri is_calculated ifade.
@@ -132,7 +223,8 @@ def main() -> None:
         print(f"{out}: {len(columns)} kolon" + (f" (pk={pk})" if pk else ""))
 
     con.close()
-    print(f"\n{len(tables)} model üretildi → {args.out}")
+    print(f"\n{len(tables)} model üretildi → {args.out}"
+          f"  ·  {beyan} kişi-beyanı UYGULANDI  ·  {tasinan} elle-beyan taşındı")
 
 
 if __name__ == "__main__":

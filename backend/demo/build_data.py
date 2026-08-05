@@ -1158,6 +1158,15 @@ def build() -> None:
         tablo_sayisi += 1
         print(f"  {t:24s} {n:>7d} satır")
     print(f"\n  {'TOPLAM':24s} {toplam_satir:>7d} satır  ({tablo_sayisi} tablo)")
+    # 🔴 ERP GENİŞLETMESİ — `build()` başta `DB.unlink()` yapar, yani bu çağrı
+    # OLMAZSA genişletmenin 32 tablosu her yeniden üretimde **sessizce yok olur**.
+    # *Bir üretecin çağrılmaması, onun yazılmamasıyla aynı sonucu verir — ama teşhisi
+    # çok daha zordur, çünkü dosya yerinde durur.*
+    from genisletme import genislet
+    print("\n=== ERP GENİŞLETMESİ ===")
+    for ad, adet in genislet(con).items():
+        print(f"  {ad:28s} {adet:>8d} satır")
+
     con.close()
     print(f"OK → {DB}")
 

@@ -1,0 +1,18 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.araclar
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: araclar
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: araclar
+columns:
+- name: plaka
+  type: VARCHAR
+- name: arac_turu
+  type: VARCHAR
+- name: kapasite_kg
+  type: INTEGER
+- name: model_yili
+  type: INTEGER
+- name: durum
+  type: VARCHAR

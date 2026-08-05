@@ -1,0 +1,24 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.ise_alim
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: ise_alim
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: ise_alim
+columns:
+- name: basvuru_no
+  type: VARCHAR
+- name: pozisyon
+  type: VARCHAR
+- name: departman
+  type: VARCHAR
+- name: asama
+  type: VARCHAR
+- name: basvuru_tarihi
+  type: DATE
+- name: sonuc_tarihi
+  type: DATE
+- name: kaynak
+  type: VARCHAR
+- name: mulakat_sayisi
+  type: INTEGER

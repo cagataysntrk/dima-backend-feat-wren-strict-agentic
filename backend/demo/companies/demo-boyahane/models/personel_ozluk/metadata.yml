@@ -12,12 +12,14 @@ columns:
   not_null: true
 - name: tc_kimlik
   type: VARCHAR
+  sensitivity: person
 - name: ise_giris
   type: DATE
 - name: dogum_tarihi
   type: DATE
 - name: sgk_no
   type: VARCHAR
+  sensitivity: person
 - name: pozisyon
   type: VARCHAR
 - name: brut_maas

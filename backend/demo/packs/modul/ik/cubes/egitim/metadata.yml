@@ -1,0 +1,64 @@
+name: egitim
+label: Eğitim / gelişim
+base_object: egitim_katilim
+
+# EĞİTİM CUBE'U (2026-08-05) — İK modülünün ikinci cube'u.
+#
+# ⚠ NEDEN `egitim_katilim` TABAN, `egitimler` DEĞİL: eğitim başlığı bir OLAY, katılım
+# ise ÖLÇÜLEBİLİR birimdir. "Kişi başı eğitim saati" — İK'nın en çok raporladığı
+# sayı — ancak katılım satırından hesaplanır. *Eğitimi sayan bir tablo, kaç kişinin
+# eğitildiğini söylemez; ikisini karıştırmak bir kurumu on kat fazla eğitimli gösterir.*
+synonyms: [eğitim, eğitimler, kurs, gelişim, sertifikasyon, eğitim programı,
+           eğitim saati, yetkinlik]
+
+measures:
+  - name: toplam_egitim_saati
+    expression: SUM(saat)
+    type: DOUBLE
+    unit: "saat"
+    synonyms: [eğitim saati, toplam eğitim, kaç saat eğitim, eğitim süresi]
+  - name: kisi_basi_egitim_saati
+    # ⚠ Payda DISTINCT personel — aynı kişinin iki eğitimi paydayı iki saymamalı.
+    expression: "ROUND(SUM(saat) * 1.0 / NULLIF(COUNT(DISTINCT personel_kodu),0), 1)"
+    type: DOUBLE
+    unit: "saat/kişi"
+    synonyms: [kişi başı eğitim, kişi başına eğitim saati, ortalama eğitim saati]
+  - name: egitim_alan_kisi
+    expression: "COUNT(DISTINCT personel_kodu)"
+    type: DOUBLE
+    synonyms: [eğitim alan, kaç kişi eğitildi, katılımcı sayısı, eğitilen personel]
+  - name: katilim_adedi
+    expression: "COUNT(*)"
+    type: DOUBLE
+    synonyms: [katılım, katılım adedi, kaç katılım]
+  - name: ort_sinav_puani
+    expression: "ROUND(AVG(sinav_puani),1)"
+    type: DOUBLE
+    synonyms: [sınav puanı, başarı puanı, ortalama puan, eğitim başarısı]
+  - name: basari_orani_yuzde
+    expression: "ROUND(100.0 * SUM(CASE WHEN sonuc = 'BAŞARILI' THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1)"
+    type: DOUBLE
+    unit: "%"
+    synonyms: [başarı oranı, geçme oranı, eğitim başarı oranı]
+
+dimensions:
+  - name: departman
+    expression: departman
+    type: VARCHAR
+    synonyms: [departman, bölüm, birim]
+  - name: personel_kodu
+    expression: personel_kodu
+    type: VARCHAR
+    label: personel
+    sensitivity: person
+    synonyms: [personel, çalışan, kişi]
+  - name: sonuc
+    expression: sonuc
+    type: VARCHAR
+    label: sonuç
+    synonyms: [sonuç, başarılı, başarısız, durum]
+
+time_dimensions:
+  - name: tarih
+    expression: tarih
+    type: DATE

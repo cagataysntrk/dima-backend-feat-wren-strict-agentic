@@ -12,7 +12,6 @@ columns:
   not_null: true
 - name: ad_soyad
   type: VARCHAR
-  # BEYAN (Faz A1): personel kodu bir KİŞİYİ tanımlar (dolaylı kimlik).
   sensitivity: person
 - name: vardiya
   type: VARCHAR

@@ -1,0 +1,74 @@
+name: maliyet
+label: Birim maliyet / kârlılık
+base_object: urun_maliyetleri
+
+# MALİYET CUBE'U (2026-08-05) — ERP-bağımsız dikey.
+#
+# 🔴 TÜRETME: maliyet UYDURULMADI. `partiler` her partide `kimyasal_tl` · `elektrik_tl` ·
+# `dogalgaz_tl` · `su_tl` · `imalat_suresi_dk` · `kg` taşıyor; birim maliyet bunların
+# GERÇEK toplamından çıkarıldı.
+#
+# *Bağımsız üretilmiş bir maliyet tablosu, "maliyet neden arttı" sorusunu enerji
+# verisinden kopuk — yani cevaplanamaz — yapardı.* Burada zincir gerçektir: enerji
+# tüketimi artınca bu cube'daki maliyet DE artar, çünkü ikisi aynı satırdan gelir.
+#
+# ⚠ BEŞ BİLEŞEN AYRI AYRI görünür (kimyasal/elektrik/gaz/su/işçilik/genel). Tek bir
+# "toplam maliyet" sütunu, "maliyet neden arttı" sorusunu ayrıştırılamaz yapardı —
+# ve bu sorunun tüm değeri ayrıştırmasındadır.
+synonyms: [maliyet, birim maliyet, kârlılık, karlılık, kâr marjı, marj, maliyetler,
+           maliyet analizi, birim kâr]
+
+measures:
+  - name: ort_birim_maliyet
+    expression: "ROUND(AVG(toplam_maliyet_tl_kg),3)"
+    type: DOUBLE
+    unit: "₺/kg"
+    synonyms: [birim maliyet, kilo maliyeti, maliyet, ortalama maliyet, kg maliyeti,
+               birim maliyetimiz]
+  - name: ort_kar_marji_yuzde
+    expression: "ROUND(AVG(kar_marji_yuzde),2)"
+    type: DOUBLE
+    unit: "%"
+    synonyms: [kâr marjı, karlılık, marj, kar oranı, kârlılık oranı, brüt marj]
+  - name: ort_birim_kar
+    expression: "ROUND(AVG(birim_kar_tl_kg),3)"
+    type: DOUBLE
+    unit: "₺/kg"
+    synonyms: [birim kâr, kilo başına kâr, birim kazanç]
+  - name: kimyasal_maliyet_kg
+    expression: "ROUND(AVG(kimyasal_tl_kg),3)"
+    type: DOUBLE
+    unit: "₺/kg"
+    synonyms: [kimyasal maliyeti, boya maliyeti, kimyasal birim maliyet]
+  - name: enerji_maliyet_kg
+    expression: "ROUND(AVG(elektrik_tl_kg + dogalgaz_tl_kg),3)"
+    type: DOUBLE
+    unit: "₺/kg"
+    synonyms: [enerji maliyeti, elektrik gaz maliyeti, enerji birim maliyet]
+  - name: iscilik_maliyet_kg
+    expression: "ROUND(AVG(iscilik_tl_kg),3)"
+    type: DOUBLE
+    unit: "₺/kg"
+    synonyms: [işçilik maliyeti, işçilik birim maliyet, emek maliyeti]
+  - name: toplam_uretim_kg
+    expression: SUM(uretim_kg)
+    type: DOUBLE
+    unit: "kg"
+    synonyms: [üretim miktarı, üretilen kilo, toplam üretim]
+
+# PVM: birim maliyet × üretim miktarı → "maliyet neden arttı: birim mi, hacim mi?"
+pvm:
+  - value: ort_birim_maliyet
+    volume: toplam_uretim_kg
+    price_label: birim maliyet (₺/kg)
+
+dimensions:
+  - name: makine
+    expression: makine
+    type: VARCHAR
+    synonyms: [makine, tezgah, hat, makina, ekipman]
+
+time_dimensions:
+  - name: donem_tarih
+    expression: "make_date(yil, ay, 1)"
+    type: DATE

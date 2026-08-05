@@ -1,0 +1,26 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.butce_hedefleri
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: butce_hedefleri
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: butce_hedefleri
+columns:
+- name: yil
+  type: INTEGER
+- name: ay
+  type: INTEGER
+- name: bolum
+  type: VARCHAR
+- name: hesap_kodu
+  type: VARCHAR
+- name: kalem
+  type: VARCHAR
+- name: hedef_tutar
+  type: DOUBLE
+- name: hedef_miktar
+  type: DOUBLE
+- name: para_birimi
+  type: VARCHAR
+- name: durum
+  type: VARCHAR

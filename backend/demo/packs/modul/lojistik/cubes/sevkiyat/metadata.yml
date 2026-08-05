@@ -1,0 +1,71 @@
+name: sevkiyat
+label: Sevkiyat / nakliye
+base_object: sevkiyat_emirleri
+
+# LOJİSTİK CUBE'U (2026-08-05) — ERP-bağımsız dikey.
+#
+# 🔴 TÜRETME ÇAPASI: GERÇEK `irsaliyeler`. Her sevkiyat emri gerçekten çıkmış bir
+# irsaliyeye bağlıdır — böylece *"sevk ettiğimizin nakliyesi ne tuttu"* sorusu
+# uydurma bir tablo üzerinde değil, gerçek çıkış üzerinde cevaplanır.
+#
+# ⚠ NEDEN AYRI BİR CUBE: `irsaliyeler` **neyin** çıktığını biliyordu, **nasıl** ve
+# **ne maliyetle** çıktığını bilmiyordu. Nakliye, tekstilde birim kârın %3-6'sını
+# yiyen bir kalemdir; onu ölçmeyen bir maliyet tablosu kârı olduğundan yüksek gösterir.
+synonyms: [sevkiyat, nakliye, lojistik, taşıma, sevk, gönderi, dağıtım, araç]
+
+measures:
+  - name: sevkiyat_adedi
+    expression: "COUNT(DISTINCT sevkiyat_no)"
+    type: DOUBLE
+    synonyms: [sevkiyat adedi, sevkiyat sayısı, kaç sevkiyat, gönderi sayısı]
+  - name: nakliye_maliyeti
+    expression: SUM(nakliye_tutar)
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [nakliye maliyeti, taşıma maliyeti, nakliye gideri, kargo maliyeti]
+  - name: toplam_mesafe
+    expression: SUM(mesafe_km)
+    type: DOUBLE
+    unit: "km"
+    synonyms: [mesafe, kilometre, toplam km, kat edilen yol]
+  - name: km_basi_maliyet
+    expression: "ROUND(SUM(nakliye_tutar) / NULLIF(SUM(mesafe_km),0), 2)"
+    type: DOUBLE
+    unit: "₺/km"
+    synonyms: [km başı maliyet, kilometre maliyeti, birim nakliye]
+  - name: gecikmeli_sevkiyat_yuzde
+    expression: "ROUND(100.0 * SUM(CASE WHEN gecikme_gun > 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1)"
+    type: DOUBLE
+    unit: "%"
+    synonyms: [gecikme oranı, geç sevkiyat oranı, gecikmeli sevkiyat]
+
+dimensions:
+  - name: varis_il
+    expression: varis_il
+    type: VARCHAR
+    label: varış ili
+    synonyms: [il, şehir, varış, nereye, bölge, destinasyon]
+  - name: arac_turu
+    expression: arac_turu
+    type: VARCHAR
+    label: araç türü
+    synonyms: [araç, araç türü, tır, kamyon, vasıta]
+  - name: tasima_sekli
+    expression: tasima_sekli
+    type: VARCHAR
+    label: taşıma şekli
+    synonyms: [taşıma şekli, kendi filo, sözleşmeli, spot, nakliye tipi]
+  - name: musteri_kod
+    expression: musteri_kod
+    type: VARCHAR
+    label: müşteri
+    synonyms: [müşteri, müşteriler, cari, alıcı]
+  - name: plaka
+    expression: plaka
+    type: VARCHAR
+    synonyms: [plaka, araç plakası, hangi araç]
+
+time_dimensions:
+  - name: tarih
+    expression: tarih
+    type: DATE

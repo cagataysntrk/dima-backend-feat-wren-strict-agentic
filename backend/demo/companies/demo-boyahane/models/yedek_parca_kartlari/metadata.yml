@@ -1,0 +1,22 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.yedek_parca_kartlari
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: yedek_parca_kartlari
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: yedek_parca_kartlari
+columns:
+- name: parca_kodu
+  type: VARCHAR
+- name: parca_adi
+  type: VARCHAR
+- name: grup
+  type: VARCHAR
+- name: kritik_stok
+  type: INTEGER
+- name: guncel_stok
+  type: INTEGER
+- name: birim_fiyat
+  type: DOUBLE
+- name: tedarik_suresi_gun
+  type: INTEGER

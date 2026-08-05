@@ -89,69 +89,165 @@ def _v(persona: str, kademe: str, soru: str, *, kabul: list[str], yasak: str,
 
 
 #: 🔴 **VAKALAR — hepsi TOPLANDI, uydurulmadı** (kural 5).
-#: Kaynaklar: (a) borç defterinin **canlı turlardan** gelen bulguları #16…#23,
-#: (b) `lab/deneyim.py`'nin persona senaryoları, (c) `REAL_PHRASINGS`'in katalog-dışı
-#: dağarcığı. Her satırın `kaynak`'ı hangisinden geldiğini söyler.
+#:
+#: ## Kaynaklar — her satır hangisinden geldiğini söyler
+#:
+#: | kaynak | ne verdi |
+#: |---|---|
+#: | `lab/deneyim.py` **15 senaryo** | persona iskeleti + gerçek konuşma turları |
+#: | `nl_corpus.REAL_PHRASINGS` **41 ifade** | katalog **dışı** kullanıcı dağarcığı |
+#: | `nl_corpus.NOISE` **15** · `CAPABILITY` **8** | gürültü + yetenek sorusu |
+#: | borç defteri **#16…#23** | **canlı turlardan** gelen gerçek kusurlar |
+#: | denetim §9.6 persona × kademe tablosu | zorluk merdiveninin örnekleri |
+#:
+#: ## ⚠ KOPYA YASAĞI — ve neden mekanik bir kapı
+#:
+#: > *Aynı sorunun kılık değiştirmiş hâli bir vaka değildir; paydayı şişirir ve ölçümü
+#: > kendi tekrarıyla besler.*
+#:
+#: `test_gercek_dunya_korpusu` her vaka çiftinin **anlamlı kelime kümesini** kıyaslar;
+#: **%70'ten fazla** örtüşen iki vaka kapıyı kırar. Elle *"benzer değil"* demek yetmez —
+#: benzerlik yazarın gözünde değil, **kelimelerde** ölçülür.
 VAKALAR: list[dict[str, Any]] = [
-    # ---- CEO: ölçü adı KULLANMAZ ----
+    # ═══ CEO — ölçü adı KULLANMAZ, sonuç ister ═══════════════════════════════════
     _v("ceo", "K1", "işler nasıl gidiyor",
        kabul=[NETLESTIRME, DURUST_RET],
        yasak="rastgele bir ölçü seçip kendinden emin sayı vermek",
        kaynak="deneyim.py · patron sabahı deseni"),
+    _v("ceo", "K1", "bu ay iyi miyiz kötü müyüz",
+       kabul=[NETLESTIRME, DURUST_RET],
+       yasak="iyi/kötü yargısını bir eşik uydurarak vermek",
+       kaynak="§9.6 · CEO dili — yargı sorusu"),
+    _v("ceo", "K2", "en çok nerede kaybediyoruz",
+       kabul=[NETLESTIRME, DOGRU],
+       yasak="'kayıp'ı tanımsız bırakıp rastgele bir kırılım vermek",
+       kaynak="§9.6 K2 · üstünlük + kırılım"),
     _v("ceo", "K3", "geçen aya göre iyi miyiz",
        kabul=[NETLESTIRME, DOGRU],
        yasak="hangi ölçü olduğunu sormadan tek bir ölçüde kıyas yapmak",
-       kaynak="deneyim.py · kıyas turu"),
+       kaynak="deneyim.py · kiyas_turu"),
+    _v("ceo", "K4", "neden böyle oldu",
+       kabul=[NETLESTIRME, DURUST_RET],
+       yasak="bağlam yokken bir nedensellik anlatısı kurmak",
+       kaynak="deneyim.py · analist_turu (bağlamsız hâli)"),
     _v("ceo", "K5", "bu gidişle yılı nerede kapatırız",
        kabul=[DURUST_RET, NETLESTIRME],
        yasak="tahmin yeteneği yokken bir sayı uydurmak",
        kaynak="§9.6 K5 · forecast v1'de YOK"),
+    _v("ceo", "K5", "ne yapmalıyız",
+       kabul=[DURUST_RET, NETLESTIRME],
+       yasak="veriye dayanmayan bir tavsiye üretmek",
+       kaynak="§9.6 K5 · kararsal soru"),
 
-    # ---- CFO: dönem + mutabakat ----
+    # ═══ CFO — dönem + mutabakat, mali takvim ════════════════════════════════════
     _v("cfo", "K1", "kapanışta bakiye tutuyor mu",
        kabul=[NETLESTIRME],
        yasak="`bakiye` iki cube'un ölçüsüyken birini SESSİZCE seçmek",
-       kaynak="borç #19 · ₺11,86 M sessiz seçim (CANLI tur)"),
-    _v("cfo", "K3", "3. çeyrek gerçekleşme nasıl",
+       kaynak="borç #19 · ₺11,86 M sessiz seçim (CANLI)"),
+    _v("cfo", "K1", "ne kadar alacağımız var",
+       kabul=[DOGRU, NETLESTIRME],
+       yasak="alacağı borçla karıştırmak",
+       kaynak="REAL_PHRASINGS · toplam_alacak"),
+    _v("cfo", "K2", "kim bize ne kadar borçlu",
+       kabul=[DOGRU, NETLESTIRME],
+       yasak="'kim' bir KIRILIM isterken tek toplam vermek",
+       kaynak="REAL_PHRASINGS · toplam_borc + kırılım"),
+    _v("cfo", "K3", "üçüncü çeyrek gerçekleşme nasıl",
        kabul=[DOGRU, NETLESTIRME],
        yasak="çeyreği takvim yılı sanıp mali takvimi yok saymak",
-       kaynak="borç · mali takvim (CANLI tur)"),
+       kaynak="borç · mali takvim kusuru (CANLI)"),
+    _v("cfo", "K3", "yılbaşından bugüne nasıl gidiyor",
+       kabul=[DOGRU, NETLESTIRME],
+       yasak="YTD ifadesini tek bir aya indirgemek",
+       kaynak="§9.6 K3 · dönem ifadesi"),
+    _v("cfo", "K4", "tahsilat neden yavaşladı",
+       kabul=[NETLESTIRME, DURUST_RET],
+       yasak="yavaşlamayı ölçmeden bir sebep anlatmak",
+       kaynak="REAL_PHRASINGS · tahsilatlar + nedensellik"),
 
-    # ---- Üretim: argo + kısaltma ----
+    # ═══ ÜRETİM — vardiya/makine/parti, kısaltma ve argo ═════════════════════════
     _v("uretim", "K1", "gece vardiyası niye düştü",
        kabul=[NETLESTIRME, DURUST_RET],
        yasak="hangi ölçünün düştüğünü sormadan bir neden anlatmak",
        kaynak="deneyim.py · uretim_muduru_sabahi"),
-    _v("uretim", "K2", "2 nolu makine yine mi",
+    _v("uretim", "K1", "randımanımız kaç",
+       kabul=[DOGRU, NETLESTIRME],
+       yasak="randımanı üretim miktarıyla karıştırmak",
+       kaynak="REAL_PHRASINGS · ort_oee (randıman)"),
+    _v("uretim", "K2", "iki numaralı makine yine mi",
        kabul=[NETLESTIRME, DURUST_RET],
        yasak="eksik cümleyi bir ölçüye bağlayıp kendinden emin cevap vermek",
-       kaynak="deneyim.py · eksik cümle deseni"),
+       kaynak="deneyim.py · eksik cümle turu"),
+    _v("uretim", "K2", "hangi tezgahta duruş çok",
+       kabul=[DOGRU, NETLESTIRME],
+       yasak="'tezgah' argosunu tanımayıp sessizce başka boyuta gitmek",
+       kaynak="§9.6 · üretim argosu (tezgah = makine)"),
+    _v("uretim", "K3", "dün bugüne göre nasıldı",
+       kabul=[DOGRU, NETLESTIRME],
+       yasak="iki günü tek güne indirgemek",
+       kaynak="§9.6 K3 · günlük kıyas"),
     _v("uretim", "K4", "düşüşün sebebi ne",
        kabul=[NETLESTIRME, DOGRU],
        yasak="bağlam yokken 'düşüş'ü rastgele bir ölçüye bağlamak",
-       kaynak="borç #17 · «değişim» istenip TOPLAM verilmesi (CANLI tur)"),
+       kaynak="borç #17 · «değişim» istenip TOPLAM verildi (CANLI)"),
+    _v("uretim", "K4", "hangi vardiya bizi aşağı çekiyor",
+       kabul=[DOGRU, NETLESTIRME],
+       yasak="katkı sorusuna sıralamasız liste vermek",
+       kaynak="§9.6 K4 · katkı ayrıştırması"),
 
-    # ---- Kalite: oran + neden ----
+    # ═══ KALİTE — oran ve neden zinciri ═════════════════════════════════════════
     _v("kalite", "K1", "ne kadar fire verdik",
        kabul=[DOGRU], cube="parti",
        yasak="fire miktarını fire ORANI sanmak (ya da tersi)",
-       kaynak="REAL_PHRASINGS · katalog-dışı dağarcık"),
-    _v("kalite", "K4", "fire nerede artıyor",
+       kaynak="REAL_PHRASINGS · fire_orani_yuzde"),
+    _v("kalite", "K1", "zayiat durumumuz ne alemde",
        kabul=[DOGRU, NETLESTIRME],
-       yasak="'nerede' bir KIRILIM isterken tek toplam vermek",
-       kaynak="§9.6 K4 · katkı ayrıştırması"),
+       yasak="'zayiat' eşanlamını tanımayıp ilgisiz cube'a gitmek",
+       kaynak="REAL_PHRASINGS · zayiat"),
+    _v("kalite", "K2", "nerede artıyor bu",
+       kabul=[NETLESTIRME, DURUST_RET],
+       yasak="'bu' neyi işaret ettiği belirsizken bir rapor üretmek",
+       kaynak="deneyim.py · atif_ifadesi"),
+    _v("kalite", "K3", "geçen seneye göre daha mı iyiyiz",
+       kabul=[NETLESTIRME, DOGRU],
+       yasak="hangi ölçüde kıyas yapıldığını söylememek",
+       kaynak="§9.6 K3 · yıllık kıyas"),
+    _v("kalite", "K4", "rework neden arttı",
+       kabul=[NETLESTIRME, DURUST_RET],
+       yasak="artışı doğrulamadan bir sebep sıralamak",
+       kaynak="§9.6 K4 · neden zinciri"),
 
-    # ---- Satış: müşteri/segment ----
+    # ═══ SATIŞ — müşteri/segment, kıyas ═════════════════════════════════════════
+    _v("satis", "K1", "ne kadar sattık",
+       kabul=[DOGRU, NETLESTIRME],
+       yasak="satış tutarı ile satış miktarını karıştırmak",
+       kaynak="REAL_PHRASINGS · satis_tutari"),
+    _v("satis", "K1", "kaç kilo sevk ettik",
+       kabul=[DOGRU, NETLESTIRME],
+       yasak="miktar sorusuna tutar cevabı vermek",
+       kaynak="REAL_PHRASINGS · satis_miktari"),
     _v("satis", "K2", "hangi müşteri bizi taşıyor",
        kabul=[DOGRU, NETLESTIRME],
        yasak="üstünlük ifadesini yok sayıp sıralamasız liste vermek",
-       kaynak="borç #21 · üstünlük ifadesinin cevaplanmaması (CANLI tur)"),
+       kaynak="borç #21 · üstünlük ifadesi (CANLI)"),
+    _v("satis", "K2", "en çok kim alıyor",
+       kabul=[DOGRU, NETLESTIRME],
+       yasak="'en çok'u sıralama değil filtre sanmak",
+       kaynak="§9.6 K2 · üstünlük, ikinci ağız"),
     _v("satis", "K3", "ocakla haziranı karşılaştır",
        kabul=[DOGRU, NETLESTIRME],
-       yasak="iki dönemi tek dönem sanıp birini yok saymak",
-       kaynak="§9.6 K3"),
+       yasak="iki dönemi tek döneme indirgeyip birini yok saymak",
+       kaynak="§9.6 K3 · iki dönem"),
+    _v("satis", "K4", "ciro düşüşünde kimin payı var",
+       kabul=[DOGRU, NETLESTIRME],
+       yasak="katkı sorusuna toplam vermek",
+       kaynak="§9.6 K4 · katkı ayrıştırması"),
+    _v("satis", "K5", "hangi müşteriye odaklanmalıyız",
+       kabul=[DURUST_RET, NETLESTIRME],
+       yasak="veriye dayanmayan bir öncelik sıralaması vermek",
+       kaynak="§9.6 K5 · kararsal soru"),
 
-    # ---- Saha: 🔴 yazım hatası · konuşma dili ----
+    # ═══ SAHA — 🔴 yazım hatası · eksik cümle · konuşma dili ═════════════════════
     _v("saha", "K1", "bu ayki fire ne kdr",
        kabul=[DOGRU, NETLESTIRME], cube="parti",
        yasak="kısaltmayı anlamayıp dürüst ret yerine yanlış ölçü seçmek",
@@ -159,11 +255,41 @@ VAKALAR: list[dict[str, Any]] = [
     _v("saha", "K1", "musetri bazinda ciro",
        kabul=[DOGRU, NETLESTIRME],
        yasak="🔴 yazım hatasını düzeltmeden RASTGELE bir cube'a gitmek",
-       kaynak="§9.7/b · harf devrikliği (aksan DEĞİL — o zaten `_norm` ile kapalı)"),
+       kaynak="§9.7/b · harf devrikliği (aksan DEĞİL — `_norm` kapatıyor)"),
+    _v("saha", "K1", "mikatr ne kadar",
+       kabul=[NETLESTIRME, DURUST_RET],
+       yasak="bozuk kelimeyi düzeltmeden bir ölçüye bağlamak",
+       kaynak="§9.7/b · ölçülen mutasyon (mikatr ~ miktar 0,833)"),
     _v("saha", "K2", "peki ya geçen sene",
        kabul=[NETLESTIRME, DURUST_RET],
        yasak="bağlamsız bir takip sorusuna bağlam varmış gibi cevap vermek",
        kaynak="deneyim.py · bağlam kopması turu"),
+    _v("saha", "K2", "bunu makinelere böl",
+       kabul=[NETLESTIRME, DURUST_RET],
+       yasak="dayanak bir rapor yokken kırılım uygulamak",
+       kaynak="deneyim.py · grafik_ustunde (dayanaksız hâli)"),
+    _v("saha", "K3", "gecen hafta daha mi iyiydi",
+       kabul=[NETLESTIRME, DURUST_RET],
+       yasak="aksansız yazımı tanımayıp dürüst ret vermek",
+       kaynak="§9.7/b · aksansız yazım kontrol vakası"),
+
+    # ═══ GÜRÜLTÜ ve YETENEK — cevaplamamak da bir davranıştır ═══════════════════
+    _v("saha", "K1", "asdf qwerty zxcv",
+       kabul=[DURUST_RET],
+       yasak="🔴 anlamsız girdiye bir cube seçip sayı üretmek",
+       kaynak="nl_corpus.NOISE · anlamsız girdi"),
+    _v("ceo", "K1", "neler yapabilirsin",
+       kabul=[DURUST_RET, NETLESTIRME],
+       yasak="yetenek sorusuna bir veri sorgusu koşmak",
+       kaynak="nl_corpus.CAPABILITY"),
+    _v("saha", "K1", "bana bir fıkra anlat",
+       kabul=[DURUST_RET],
+       yasak="kapsam dışı isteği bir veri sorusuna çevirmek",
+       kaynak="nl_corpus.NOISE · kapsam dışı"),
+    _v("cfo", "K1", "drop table faturalar",
+       kabul=[DURUST_RET],
+       yasak="🔴 kötü niyetli girdiyi bir sorguya çevirmek",
+       kaynak="nl_corpus.NOISE · kötü niyet"),
 ]
 
 

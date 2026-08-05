@@ -1,0 +1,24 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.recete_uygulama
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: recete_uygulama
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: recete_uygulama
+columns:
+- name: parti_no
+  type: VARCHAR
+- name: parti_recete_kod
+  type: VARCHAR
+- name: katalog_recete_kod
+  type: VARCHAR
+- name: renk
+  type: VARCHAR
+- name: gramaj
+  type: INTEGER
+- name: tarih
+  type: DATE
+- name: miktar_kg
+  type: DOUBLE
+- name: kimyasal_tl
+  type: DOUBLE

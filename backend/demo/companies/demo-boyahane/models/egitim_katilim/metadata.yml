@@ -1,0 +1,25 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.egitim_katilim
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: egitim_katilim
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: egitim_katilim
+columns:
+- name: egitim_kodu
+  type: VARCHAR
+- name: personel_kodu
+  type: VARCHAR
+- name: ad_soyad
+  type: VARCHAR
+  sensitivity: person
+- name: departman
+  type: VARCHAR
+- name: saat
+  type: INTEGER
+- name: sinav_puani
+  type: DOUBLE
+- name: sonuc
+  type: VARCHAR
+- name: tarih
+  type: DATE

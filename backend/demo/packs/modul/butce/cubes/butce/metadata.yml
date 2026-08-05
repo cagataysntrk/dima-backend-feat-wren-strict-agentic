@@ -1,0 +1,71 @@
+name: butce
+label: Bütçe / hedef
+base_object: butce_hedefleri
+
+# BÜTÇE MODÜLÜ (2026-08-05) — ERP-bağımsız dikey, sektörden bağımsız.
+#
+# 🔴 ÖLÇÜLEN BOŞLUK: 47 tablonun hiçbiri bir HEDEF taşımıyordu. CFO korpusundaki
+# "üçüncü çeyrek gerçekleşme nasıl" ve "hedefin neresindeyiz" sorularının cevabı
+# veride YOKTU — sistem doğru davransa bile cevaplayacağı bir sayı yoktu.
+#
+# *Gerçekleşme tek başına bir gerçekleşme değildir; bir hedefe göre gerçekleşmedir.*
+# Hedefsiz bir ERP'de bütçe sorusu sorulamaz — ve bütçe sorusu bir CFO'nun sorduğu
+# ilk üç sorudan biridir.
+#
+# ⚠ CUBE KİMLİĞİ ÇAKIŞMASI: "ciro"/"maliyet" bu cube'un KALEM DEĞERLERİdir, ölçüsü
+# değil. Cube kimliğinde tutulmaz — yoksa "bu ay ciro" sorusu parti yerine buraya
+# düşer ve kullanıcı GERÇEKLEŞEN yerine HEDEFİ görür (sessiz-yanlış). Bütçeye
+# "bütçe/hedef/plan/gerçekleşme" kelimeleriyle ulaşılır.
+synonyms: [bütçe, hedef, plan, planlanan, bütçelenen, gerçekleşme, sapma, bütçe hedefi]
+
+measures:
+  - name: toplam_hedef
+    expression: SUM(hedef_tutar)
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [hedef, bütçe, planlanan tutar, bütçelenen, hedef tutar, plan]
+  - name: ort_hedef
+    expression: "ROUND(AVG(hedef_tutar),0)"
+    type: DOUBLE
+    unit: "₺"
+    synonyms: [ortalama hedef, aylık ortalama bütçe, hedef ortalaması]
+  - name: hedef_miktar_toplam
+    expression: SUM(hedef_miktar)
+    type: DOUBLE
+    unit: "ton"
+    synonyms: [hedef miktar, planlanan miktar, miktar hedefi]
+  - name: kalem_sayisi
+    expression: "COUNT(DISTINCT kalem)"
+    type: DOUBLE
+    synonyms: [kalem sayısı, kaç kalem, bütçe kalemi]
+
+dimensions:
+  - name: kalem
+    expression: kalem
+    type: VARCHAR
+    synonyms: [kalem, bütçe kalemi, gider kalemi, hesap adı]
+  - name: bolum
+    expression: bolum
+    type: VARCHAR
+    label: bölüm
+    synonyms: [bölüm, departman, birim, sorumlu bölüm]
+  - name: hesap_kodu
+    expression: hesap_kodu
+    type: VARCHAR
+    label: hesap kodu
+    synonyms: [hesap kodu, hesap, muhasebe kodu]
+  - name: durum
+    expression: durum
+    type: VARCHAR
+    synonyms: [durum, onay durumu, taslak, onaylı]
+  - name: para_birimi
+    expression: para_birimi
+    type: VARCHAR
+    label: para birimi
+    synonyms: [para birimi, döviz cinsi, kur cinsi]
+
+time_dimensions:
+  - name: donem_tarih
+    # yil/ay ayrı sütunlarda tutuluyor → dönem ekseni burada kurulur.
+    expression: "make_date(yil, ay, 1)"
+    type: DATE
