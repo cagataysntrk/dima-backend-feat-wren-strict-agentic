@@ -75,6 +75,23 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "sayılır (FAZ 5.14).",
         "category": "konusma",
     },
+    "kanal_kimlik": {
+        "label": "Mesajlaşma kimlik eşlemesi (Slack/Teams/WhatsApp)",
+        "description": "🔴 Araştırmanın EN NET uyarısı: hiçbir satıcı sağlam bir "
+                       "«sohbet-kimliği → BI-kimliği → RLS» eşlemesi yayımlamamış ve "
+                       "Microsoft'un kendi belgesi Slack e-postasının Teams hesabına "
+                       "GÜVENİLİR EŞLENEMEYECEĞİNİ söylüyor [DOĞRULANMADI]. 🔴 "
+                       "`onaylayan_admin_id` ZORUNLU ve e-postadan ÇIKARILAMAZ: bir "
+                       "e-posta adresi bir İDDİADIR, kimlik kanıtı değil — kanal "
+                       "yöneticisi onu değiştirebilir, bir takma hesap aynı adresi "
+                       "gösterebilir, ve bir kez yanlış eşlenen kimlik o kişinin "
+                       "GÖREMEYECEĞİ VERİYİ ona açar. *Bir kimliği çıkarımla kurmak, "
+                       "RLS'i çıkarımla kurmaktır.* Eşlemesi olmayan kanal "
+                       "kullanıcısının sorusuna YANIT VERİLMEZ. Kapalıyken bildirimler "
+                       "bugünkü adresleme ile gider; eşleme kayıtları SİLİNMEZ "
+                       "(FAZ 6.6).",
+        "category": "genisleme",
+    },
     "public_api": {
         "label": "Dış geliştirici API'si (idempotent async iş)",
         "description": "🔴 YENİ KUYRUK KURULMAZ — `AskJob` genellendi. Idempotency "

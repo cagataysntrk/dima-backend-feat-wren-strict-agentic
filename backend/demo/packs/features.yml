@@ -35,6 +35,8 @@ features:
   onay_akisi: "off"
   # FAZ 6.5 — dış geliştirici API'si. `off`: dış uç yok.
   public_api: "off"
+  # FAZ 6.6 — kanal kimlik eşlemesi. `off`: bildirimler bugünkü adresleme ile gider.
+  kanal_kimlik: "off"
   # 🔴 FAZ 6.5 — gömülü pano. **AÇILAMAZ**: `motor_cls=off` (motor-RLS hiç açık değil) ve
   # yol haritası `always_filter`ı tek başına yeterli SAYMIYOR. Ölçüm `app/embed_kapsam.py::
   # p0_engeli()`de bir KAPI olarak duruyor — belgeye yazıp koda yazmamak, ilan edip

@@ -828,6 +828,46 @@ class EmbedToken(SQLModel, table=True):
     created_at: datetime = Field(default_factory=_now)
 
 
+class KanalKimlikEslemesi(SQLModel, table=True):
+    """FAZ 6.6 — **sohbet kimliği → DİMA kimliği**. [bayrak: `kanal_kimlik`]
+
+    ## 🔴 ARAŞTIRMANIN EN NET UYARISI
+
+    Hiçbir satıcı sağlam bir *"sohbet-kimliği → BI-kimliği → RLS"* eşlemesi yayımlamamış;
+    **Microsoft'un kendi belgesi Slack e-postasının Teams hesabına güvenilir
+    eşlenemeyeceğini** söylüyor `[DOĞRULANMADI — birincil kaynak okunmadı]`.
+
+    ## 🔴 `onaylayan_admin_id` ZORUNLU — e-postadan ÇIKARILAMAZ
+
+    En cazip kısayol şudur: *"Slack e-postası `ali@x.com`, DİMA'da da `ali@x.com` var,
+    demek ki aynı kişi."* **Değildir.** Bir e-posta adresi bir **iddiadır**, bir kimlik
+    kanıtı değil: kanal yöneticisi onu değiştirebilir, bir takma hesap aynı adresi
+    gösterebilir, ve bir kez yanlış eşlenen kimlik **o kişinin göremeyeceği veriyi**
+    ona açar.
+
+    > *Bir kimliği çıkarımla kurmak, RLS'i çıkarımla kurmaktır.*
+
+    Bu yüzden eşleme **bir insan tarafından onaylanır** ve onaylayanın kimliği **kayda
+    girer**: bir gün *"bu kişi bu veriyi neden gördü"* sorulduğunda cevabı olan tek şey
+    o satırdır.
+
+    ⚠ Soft-delete (ADR-0019): eşleme kaldırılır, **silinmez** — kaldırılmış bir eşleme
+    de bir kayıttır.
+    """
+
+    __tablename__ = "kanal_kimlik_eslemesi"
+    id: uuid.UUID = Field(default_factory=_uuid, primary_key=True)
+    #: `slack | teams | whatsapp`
+    kanal: str = Field(index=True)
+    kanal_kullanici_id: str = Field(index=True)
+    dima_user_id: str = Field(index=True)
+    tenant_id: uuid.UUID | None = Field(default=None, index=True)   # RLS
+    #: 🔴 **ZORUNLU** — e-postadan çıkarılamaz. Bir insan onayladı ve **kim olduğu** yazılı.
+    onaylayan_admin_id: str
+    created_at: datetime = Field(default_factory=_now)
+    deleted_at: datetime | None = Field(default=None, index=True)
+
+
 class AuditLog(SQLModel, table=True):
     """Append-only erişim kanıtı — contracts.py genişletmesi + KVKK (ADR-0014 Karar 6).
     Başarı, audit yazılmadan raporlanmaz (mamut invariant #4)."""
