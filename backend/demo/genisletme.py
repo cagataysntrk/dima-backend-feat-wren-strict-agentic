@@ -62,6 +62,8 @@ from pathlib import Path
 
 import duckdb
 
+import olaylar as OL
+
 DB = Path(__file__).resolve().parent / "data" / "boyahane.duckdb"
 
 #: Bağımsız tabloların geniş penceresi — YoY'nin YoY'si için **dört buçuk yıl**.
@@ -298,7 +300,11 @@ def _satis(con) -> dict[str, int]:
             mk, _ad = RNG.choice(musteriler)
             acilis = _tarih(y, a, RNG.randint(1, 28))
             kapanis = acilis + timedelta(days=RNG.randint(14, 120))
-            kazandi = RNG.random() < 0.34
+            # 🔴 EKİLİ OLAY: müşteri kaybı. Pencere içindeki o müşterinin fırsatları
+            # **kaybedilir** ve kayıp nedeni kayda geçer → "hangi müşteriyi kaybettik"
+            # sorusunun cevabı SQL ile bulunabilir olur.
+            _kayip_carp = OL.carpan("musteri_kaybi", acilis, str(mk))
+            kazandi = RNG.random() < 0.34 and _kayip_carp <= 1.0
             asama = "Kazanıldı" if kazandi else (
                 "Kaybedildi" if kapanis < date(2026, 7, 1) else RNG.choice(_HUNI_ASAMALARI[:4]))
             bagli = kazanan_sip.pop() if (kazandi and kazanan_sip) else None
@@ -370,9 +376,15 @@ def _kalite(con) -> dict[str, int]:
     sikayet, capa, uygunsuz = [], [], []
     for i, (pno, trh, mk, mak, opr, rcp, renk, kg, de, tol, tdk) in enumerate(sapan):
         asim = de - tol
+        # 🔴 EKİLİ OLAY — `demo/olaylar.py`. Ground truth **ekilen olayın kendisidir**:
+        # bir testin *"doğru sebebi buldu mu"* diye sorabilmesi için sebebin veride
+        # **kayıtlı ve SQL ile bulunabilir** olması gerekir.
+        carp = OL.carpan("makine_degradasyonu", trh, mak)
+        if carp > 1.0:
+            asim *= carp          # sapma büyür → şikâyet kesinleşir, şiddeti artar
         # ⚠ Her sapma şikâyete dönmez — küçük sapmayı müşteri fark etmez. Eşik
         # **sapmanın büyüklüğüne** bağlı: gerçek hayatta da böyle.
-        if asim < 0.15 and RNG.random() > 0.22:
+        elif asim < 0.15 and RNG.random() > 0.22:
             continue
         agir = asim > 0.55
         acilis = trh + timedelta(days=RNG.randint(3, 21))
@@ -389,14 +401,30 @@ def _kalite(con) -> dict[str, int]:
                         RNG.choice(["İade", "Fiyat indirimi", "Yeniden üretim", "Kabul"])))
         # CAPA — yalnız AĞIR şikâyetlerde. *Her şikâyete kök-neden analizi açan bir
         # sistem, hiçbirine açmayan kadar işe yaramaz: sinyal gürültüde kaybolur.*
-        if agir:
+        # 🔴 EKİLİ OLAY: tedarikçi kalite düşüşü → CAPA'nın kök-neden kategorisi
+        # o pencerede **Malzeme**'ye kayar. Ground truth: hangi tedarikçi.
+        _tedarik_carp = OL.carpan("tedarikci_bozulmasi", trh, str(tdk))
+        if agir or _tedarik_carp > 1.0:
             capa.append((f"CAPA-{trh.year}-{len(capa) + 1:04d}", sno, acilis + timedelta(days=2),
+                         "Hammadde tedarikçi değişimi" if _tedarik_carp > 1.0 else
                          RNG.choice(["Makine kalibrasyonu", "Reçete revizyonu", "Operatör eğitimi",
                                      "Hammadde tedarikçi değişimi", "Lab ölçüm prosedürü"]),
+                         "Malzeme" if _tedarik_carp > 1.0 else
                          RNG.choice(["Makine", "Yöntem", "İnsan", "Malzeme", "Ölçüm"]),
                          mak, tdk, "KAPALI" if kapandi else "AÇIK",
                          acilis + timedelta(days=sure + 10) if kapandi else None,
                          RNG.choice(["Kalite Md.", "Üretim Md.", "Ar-Ge Uzmanı"])))
+        # Olay penceresinde EK satırlar: çarpan kadar şikâyet doğar. ⚠ Satır çoğaltmak
+        # yerine yalnız sapmayı büyütmek yetmezdi — *bir olayın izi ADETTE de
+        # görünmeli*, çünkü kullanıcı "şikâyet arttı" diye fark eder, "sapma büyüdü"
+        # diye değil.
+        for _ek in range(int(carp) - 1):
+            sikayet.append((f"{sno}-E{_ek}", mk, pno, acilis,
+                            acilis + timedelta(days=sure) if kapandi else None,
+                            "Renk sapması", round(asim, 3), "AĞIR",
+                            "KAPALI" if kapandi else "AÇIK", sure if kapandi else None,
+                            round(float(kg) * RNG.uniform(0.05, 0.6), 1),
+                            mak, opr, rcp, renk, "İade"))
         if asim > 0.25:
             uygunsuz.append((f"UYG-{trh.year}-{len(uygunsuz) + 1:05d}", pno, trh,
                              "Proses", RNG.choice(["Renk", "Haslık", "Gramaj", "En", "Yüzey"]),
@@ -536,6 +564,14 @@ def _uretim(con) -> dict[str, int]:
     mal_rows = []
     for y, a, mak, kg, kim, elk, gaz, su, dk, ciro in mal:
         kg = float(kg or 0) or 1.0
+        # 🔴 EKİLİ OLAY: enerji fiyat şoku. ⚠ Yalnız **fiyat** çarpılır, üretim
+        # miktarı DEĞİŞMEZ — böylece PVM ayrıştırması *"artış hacimden mi fiyattan
+        # mı"* sorusuna doğru cevap verebilir. *İkisini birden oynatmak, ayrıştırmayı
+        # ölçülemez yapardı.*
+        _enerji_carp = OL.carpan("maliyet_soku", date(y, a, 1), f"{y}Q{(a - 1) // 3 + 1}")
+        if _enerji_carp > 1.0:
+            elk = float(elk or 0) * _enerji_carp
+            gaz = float(gaz or 0) * _enerji_carp
         # İşçilik: dakika × saatlik ücret / 60, ücret yıllara göre yürür.
         iscilik = float(dk or 0) / 60.0 * (95.0 * (1.42 ** (y - 2024)))
         genel = (float(kim or 0) + float(elk or 0) + float(gaz or 0)) * 0.18
@@ -671,8 +707,13 @@ def _ik(con) -> dict[str, int]:
 
     # İSG — kaza. *Sıklık ve ağırlık oranı olmadan bir üretim tesisinin İK tablosu eksiktir.*
     for y, a in _aylar(GENIS_BAS, GENIS_SON):
-        for _ in range(RNG.choices([0, 0, 1, 1, 2, 3], weights=[30, 25, 20, 12, 8, 5])[0]):
+        # 🔴 EKİLİ OLAY: gece vardiyası personel devri → kaza sayısı o pencerede artar.
+        _isg_carp = OL.carpan("personel_devri", _tarih(y, a, 15), "Gece")
+        _taban = RNG.choices([0, 0, 1, 1, 2, 3], weights=[30, 25, 20, 12, 8, 5])[0]
+        for _k in range(_taban + (int(_isg_carp * 2) if _isg_carp > 1.0 else 0)):
             pk, ad, dep, vrd, _g, _p, _e = RNG.choice(personel)
+            if _isg_carp > 1.0 and _k >= _taban:
+                vrd = "Gece"           # ekilen olay **gece vardiyasına** yazılır
             kayip = RNG.choices([0, 1, 2, 3, 5, 8, 15, 30], weights=[35, 20, 12, 10, 8, 7, 5, 3])[0]
             kaza.append((f"ISG-{y}{a:02d}-{len(kaza) + 1:04d}", _tarih(y, a, RNG.randint(1, 28)),
                          pk, ad, dep, vrd,
@@ -835,10 +876,38 @@ ZINCIRLER = (_butce, _finans, _satis, _kalite, _uretim, _ik, _bakim_tedarik)
 
 
 def genislet(con) -> dict[str, int]:
-    """Tüm zincirleri koşar. `build_data.build()` sonunda çağrılır."""
+    """Tüm zincirleri koşar. `build_data.build()` sonunda çağrılır.
+
+    🔴 Sonunda **ekili olaylar doğrulanır**: her olayın veride gerçekten görünür
+    olduğu SQL ile sınanır. *Ekilemeyen bir olay, ölçülemeyen bir ground truth'tur* —
+    ve sessizce ekilmemiş bir olay, testi *"sistem bulamadı"* diye kırmızıya çevirir.
+    Oysa bulunacak bir şey yoktur. **Bu ayrımı yapmayan bir ölçüm, ürünü kendi kusuru
+    için suçlar.**
+    """
     toplam: dict[str, int] = {}
     for fn in ZINCIRLER:
         toplam.update(fn(con))
+
+    # Ekili olayların manifesti — testler bunu okur, elle altın cevap yazılmaz.
+    _yaz(con, "ekili_olaylar",
+         "kod VARCHAR, tur VARCHAR, baslangic DATE, bitis DATE, hedef_alan VARCHAR, "
+         "hedef_deger VARCHAR, buyukluk DOUBLE, belirti VARCHAR, kok_neden VARCHAR, "
+         "dogrulama_sql VARCHAR",
+         [(o.kod, o.tur, o.baslangic, o.bitis, o.hedef_alan, o.hedef_deger,
+           o.buyukluk, o.belirti, o.kok_neden, " ".join(o.dogrulama_sql.split()))
+          for o in OL.OLAYLAR])
+    toplam["ekili_olaylar"] = len(OL.OLAYLAR)
+
+    sorunlar = OL.dogrula(con)
+    if sorunlar:
+        print("\n🔴 EKİLİ OLAY DOĞRULAMASI BAŞARISIZ:")
+        for x in sorunlar:
+            print(f"   - {x}")
+        print("   ⚠ Bu olaylar için ground truth YOK — ilgili testler ölçüm "
+              "kuramaz, ürünü suçlayamaz.")
+    else:
+        print(f"\n✅ {len(OL.OLAYLAR)} ekili olayın hepsi veride doğrulandı "
+              "(ground truth SQL ile bulunabiliyor)")
     return toplam
 
 
