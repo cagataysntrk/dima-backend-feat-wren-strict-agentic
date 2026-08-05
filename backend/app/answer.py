@@ -652,6 +652,72 @@ def _sertifika_blogu(request, resp: AskResponse, principal) -> dict | None:
     return sertifika_okuma.blok(kayit, tanim=tanim, koken=koken)
 
 
+def _tazelik_blogu(request, principal) -> tuple[str | None, str | None, str | None]:
+    """`SyncState` → *(kademe, son_veri_ts, açıklama)*. *(FAZ 1.7 / §C ölçüt 12)*
+
+    ## 🔴 Zincirin yalnız ORTASI eksikti
+
+    | halka | vardı | bağlıydı |
+    |---|---|---|
+    | `SyncState.last_synced_at` (veri) | ✅ | — |
+    | `app/tazelik.py` (`kademe`, `sayi_gosterilir_mi`) | ✅ | 🔴 **hiçbir çağıran yok** |
+    | `AskResponse.freshness` + `son_veri_ts` + `tazelik_aciklama` | ✅ | 🔴 **hiçbir dolduran yok** |
+    | `ReportCard` üç görsel hâli | ✅ **4 atıf** | 🔴 **hiç veri gelmiyor** |
+
+    Denetimin adlandırdığı kör nokta buydu: *bir şema alanı üretici değildir* —
+    `freshness` şemada vardı, ekran onu tüketiyordu, **dolduran kod yoktu**.
+
+    ## ⚠ En yeni değil, EN ESKİ senkron
+
+    Bir cevap birden çok tabloya dokunabilir ve tazelik **en zayıf halkadır**: bir tablo
+    dün, biri sekiz gün önce senkronlandıysa cevap **sekiz gün eskidir**. En yeniyi
+    almak, bayat bir sayıyı taze göstermenin en kolay yoludur.
+
+    ## 🔴 Bulunamazsa `"bilinmiyor"` — `"taze"` DEĞİL
+
+    B4: *ölçemediğimiz bir şeyi iyi varsaymak*, `⊘ ÖLÇÜLEMEDİ` üçüncü hâlinin tam
+    tersidir. Ve `sayi_gosterilir_mi("bilinmiyor")` **False** → ekran sayıyı gizler.
+    """
+    from datetime import timezone
+
+    from sqlmodel import select
+
+    from app import tazelik
+    from control_plane.db import get_session
+    from control_plane.models import DbConnection, SyncState
+
+    tenant_id = getattr(principal, "tenant_id", None)
+    if not tenant_id:
+        return None, None, None
+
+    with next(get_session()) as oturum:                      # type: ignore[call-overload]
+        # ⚠ Bağlantı üzerinden tenant'a bağlanır: `SyncState`in kendi `tenant_id`'si yok
+        # ve onu varsaymak, **başka bir şirketin** tazeliğini göstermek olurdu.
+        satirlar = oturum.exec(
+            select(SyncState.last_synced_at)
+            .join(DbConnection, DbConnection.id == SyncState.connection_id)  # type: ignore[arg-type]
+            .where(DbConnection.tenant_id == tenant_id)
+            .where(DbConnection.deleted_at.is_(None))        # type: ignore[union-attr]
+        ).all()
+
+    if not satirlar:
+        return "bilinmiyor", None, ("Veri kaynağının en son ne zaman senkronlandığı "
+                                    "bilinmiyor — bu yüzden sayı gösterilmiyor.")
+
+    en_eski = min(satirlar)
+    kademe = tazelik.kademe(en_eski)
+    ts = (en_eski.replace(tzinfo=timezone.utc) if en_eski.tzinfo is None
+          else en_eski).isoformat()
+    if kademe == "taze":
+        return kademe, ts, None
+    if kademe == "uyari":
+        return kademe, ts, ("Veri beklenenden eski — sayı gösteriliyor ama tazeliği "
+                            "kontrol edin.")
+    return kademe, ts, ("Veri bayat: en son senkron beklenen aralığın çok dışında. "
+                        "Sayı gösterilmiyor — bayat bir sayıya dayanan karar geri "
+                        "alınamaz.")
+
+
 def seal(resp: AskResponse, *, request: Request, principal, t0: float,
          session_id: str | None, log_body: Any = None, thread_id: str | None = None,
          reply_to_label: str | None = None, is_new_topic: bool | None = None,
@@ -704,6 +770,27 @@ def seal(resp: AskResponse, *, request: Request, principal, t0: float,
             resp.hedef = None
     except Exception:                       # noqa: BLE001 — hedef cevabı DÜŞÜRMEZ
         resp.hedef = None
+
+    # 🔴 **FAZ 1.7 / §C ÖLÇÜT 12 — TAZELİK ZİNCİRİ BAĞLANDI.**
+    #
+    # Ölçüldü: `app/tazelik.py`'nin **hiçbir çağıranı**, `AskResponse.freshness`'in
+    # **hiçbir dolduranı** yoktu — oysa `ReportCard` onu **dört yerde** okuyor ve üç
+    # görsel hâli (`taze`/`uyari`/`hata`+`bilinmiyor`) çizili duruyordu.
+    # *Bir şema alanı üretici değildir:* alan vardı, ekran tüketiyordu, **üreten yoktu**.
+    #
+    # ⚠ Yeri `seal()` — sertifikayla aynı sahip: tazelik de bir **mühürleme** kararıdır
+    # ve `ask()` tavanı 1150/1151.
+    # ⚠ Bayrak kapalıyken alanlar **HİÇ üretilmez** → yanıt bugünküyle birebir (KURAL B).
+    try:
+        from app.config import get_settings as _gs
+        from app.features import resolve_for as _rf
+
+        _p = getattr(request.state, "principal", None)
+        if "tazelik" in _rf(_gs(), _p):
+            resp.freshness, resp.son_veri_ts, resp.tazelik_aciklama = \
+                _tazelik_blogu(request, _p)
+    except Exception:                       # noqa: BLE001 — tazelik cevabı DÜŞÜRMEZ
+        resp.freshness = None
 
     # 🔴 **ONAY BİLETİ — §C ölçüt 6'nın "süre aşımı 30 dk" şartı, TEK SAHİPTEN.**
     #
