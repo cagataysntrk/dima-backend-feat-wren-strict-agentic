@@ -151,9 +151,42 @@ def client():
     app = create_app()
     with TestClient(app) as c:
         _ensure_test_users()
-        r = c.post("/auth/login", json=TEST_USER)
-        assert r.status_code == 200, f"test login başarısız: {r.text}"
-        c.headers["Authorization"] = f"Bearer {r.json()['access_token']}"
+
+        def _giris() -> str:
+            r = c.post("/auth/login", json=TEST_USER)
+            assert r.status_code == 200, f"test login başarısız: {r.text}"
+            return r.json()["access_token"]
+
+        c.headers["Authorization"] = f"Bearer {_giris()}"
+
+        # 🔴 KÖK-8d — ÖLÇÜM OTURUMU ÜRÜNÜN TOKEN ÖMRÜNÜ AŞMAMALI.
+        #
+        # Ölçülen (denetim raporu KN-4): `access_ttl_seconds = 15 * 60`. Süit tek
+        # süreçte **19 dk 15 sn** koşuyor → 15. dakikadan sonraki **90 test** `401
+        # "Geçersiz veya süresi dolmuş token"` alıyor ve **KIRMIZI** raporlanıyor.
+        # Aynı testler `-n 8` ile 6 dakikada koşunca **0 hata** veriyor.
+        #
+        # 🔴 Bu bir ÜRÜN kusuru değil, ÖLÇÜM ARACI kusurudur — ve tehlikesi tam olarak
+        # bu: rapor **112 hata** gösterdi, gerçek **22**'ydi. *Bir kapı, ölçemediği şeyi
+        # "başarısız" diye raporlarsa ölçüm aracının kendisi bir kusur kaynağıdır.*
+        #
+        # ⚠ Çözüm ürünün kendi desenini AYNALAR: `api-client.ts` de 401'de tek uçuşta
+        # yenileyip isteği tekrarlar. Ölçüm aracı, ölçtüğü ürünün oturum davranışını
+        # taklit etmelidir — yoksa ölçtüğü şey ürün değil, kendi kurulumudur.
+        #
+        # ⚠ Bilinen sınır (yazılı): isteğe ELLE `Authorization` başlığı geçen bir test
+        # yenilemeden yararlanmaz — orada başlık `c.headers`i ezer. Bugün öyle bir
+        # çağıran yok; olursa bu yorum onu yakalar.
+        _ham_request = c.request
+
+        def _yenileyen_request(method, url, *a, **kw):
+            r = _ham_request(method, url, *a, **kw)
+            if r.status_code == 401 and "/auth/" not in str(url):
+                c.headers["Authorization"] = f"Bearer {_giris()}"
+                r = _ham_request(method, url, *a, **kw)
+            return r
+
+        c.request = _yenileyen_request
         yield c
 
 

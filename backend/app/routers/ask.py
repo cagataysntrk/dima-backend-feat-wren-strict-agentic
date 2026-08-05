@@ -1947,16 +1947,11 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # Not DETERMİNİSTİKTİR ve UYDURMAZ: yalnız sorgunun KENDİ dönem filtresini okur.
         # "Veri yok" demez — *"bu aralıkta kayıt bulunamadı"* der; ikisi farklı iddialardır.
         if (result or {}).get("row_count") == 0 and not resp.note:
-            _dnm = [f for f in (cq.get("filters") or [])
-                    if f.get("operator") in ("gte", "lte")]
-            _aralik = ""
-            if _dnm:
-                _bas = next((f["value"] for f in _dnm if f["operator"] == "gte"), None)
-                _son = next((f["value"] for f in _dnm if f["operator"] == "lte"), None)
-                _aralik = (f" ({str(_bas)[:10]} – {str(_son)[:10]})" if _bas and _son
-                           else (f" ({str(_bas)[:10]} sonrası)" if _bas else ""))
-            resp.note = (f"Bu aralıkta{_aralik} kayıt bulunamadı. Rapor doğru kuruldu — "
-                         "dönemi genişletmek ya da filtreyi gevşetmek ister misin?")
+            # 🔴 KÖK-8b (denetim KN-5) — not VARDI ama YOL yoktu: veri 30.06.2026'da
+            # bitiyor, bugün 05.08.2026. Metin ve aralık ölçümü `app/veri_araligi.py`de
+            # (tek sahip); buraya kalan çağrı ve atama.
+            from app import veri_araligi as _va
+            resp.note = _va.bos_sonuc_notu(service, cq, schema)
         if learn and vqr is not None:
             try:
                 # `auto_cube` (Faz 4.1): saklanan SQL, LLM'in serbest metni DEĞİL —
