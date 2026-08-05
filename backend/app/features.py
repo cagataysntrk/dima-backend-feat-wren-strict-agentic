@@ -75,6 +75,22 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "sayılır (FAZ 5.14).",
         "category": "konusma",
     },
+    "ui_knowledge_center": {
+        "label": "Bilgi merkezi (hayalet seri + kural motoru)",
+        "description": "İki yarım: (a) HAYALET SERİ — aynı sorgunun BİR ÖNCEKİ koşumu "
+                       "(`cube_query_hash()` zaten vardı, sıfır yeni motor). Ham sonuç "
+                       "TAŞINMAZ: sonuç zaten spool'lanmıyor (KVKK + boyut) ve onu "
+                       "uydurmak olmayan bir veriyi varmış gibi göstermek olurdu — "
+                       "hayalet seri bir KARŞILAŞTIRMA sinyalidir, ikinci bir cevap "
+                       "değil. (b) KURAL MOTORU — 🔴 kural `route()`'a DEĞİL, "
+                       "`narration`/`prescribe`'a EK BAĞLAM olarak girer ve SQL'i ASLA "
+                       "değiştirmez (ADR-0008 sınırı). Bir kural YAML'ında bir sorgu "
+                       "alanı görünürse yükleme FAIL-CLOSED durur: sessizce yok sayılan "
+                       "bir kural, yazan kişiye çalıştığını düşündürür ve o kişi bir gün "
+                       "ona güvenerek karar verir. Kapalıyken `/ask` cevabı DEĞİŞMEZ; "
+                       "kayıtlı bilgi girdileri SİLİNMEZ (FAZ 5.13).",
+        "category": "arayuz",
+    },
     "ui_icgoru_paketi": {
         "label": "İçgörü paketi (aynı sonucun birden çok ekseni)",
         "description": "`viz.recommend()` dönüşü artık `VizSpec | list[VizSpec]`; paket "

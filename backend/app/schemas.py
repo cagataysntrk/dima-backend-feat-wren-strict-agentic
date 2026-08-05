@@ -308,6 +308,16 @@ class AskResponse(BaseModel):
     #: kapalıyken bu alan `None` kalır ve tekil kart **bugünkü hâliyle** görünür.
     #: *Tekil dönüş her zaman geçerlidir.*
     viz_paketi: list[dict[str, Any]] | None = None
+    #: 🔴 **FAZ 5.13a — HAYALET SERİ.** Aynı sorgunun **bir önceki** koşumu:
+    #: `{contract_id, ts, row_count, result_hash}`.
+    #:
+    #: ⚠ **Ham sonuç TAŞIMAZ** ve bu bilinçli: sonuç zaten spool'lanmıyor (KVKK + boyut)
+    #: ve onu burada uydurmak, olmayan bir veriyi varmış gibi göstermek olurdu.
+    #: *Hayalet seri bir KARŞILAŞTIRMA sinyalidir, ikinci bir cevap değil.*
+    previous_result: dict[str, Any] | None = None
+    #: FAZ 5.13b — kural motorunun **ek bağlamı**. 🔴 Bu metin SQL'e HİÇ dokunmaz;
+    #: `narration_guard` eşleşmeyen **sayı** taşıyan cümleyi düşürmeye devam eder.
+    kural_baglami: str | None = None
     # FAZ 2.6 — MALİ YIL PENCERESİ. Yalnız mali yıl takvim yılından **farklıysa** dolar.
     # 🔴 Takvim yılından farklı bir pencereyi *"bu yıl"* diye sunmak, DOĞRU sayıyı YANLIŞ
     # soruya cevap yapar — kullanıcı hangi pencereyi gördüğünü bilmeli. Takvim yılı

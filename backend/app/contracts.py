@@ -287,3 +287,54 @@ class ContractStore:
         except Exception:
             _log.warning("contract listesi okunamadı", exc_info=True)
             return []
+
+    def find_previous(self, cube_query: dict | None, *, tenant_id: str | None = None,
+                      mdl_version: str | None = None,
+                      company: str | None = None) -> dict | None:
+        """FAZ 5.13a — **HAYALET SERİ**: aynı sorgunun **bir önceki** koşumu.
+
+        🔴 **Sıfır yeni motor.** `cube_query_hash()` zaten var ve sözleşmesi tam da
+        buydu: *aynı hash ⇒ aynı ÇIKTI*. Bu metot o anahtarla geçmişe bakar.
+
+        ⚠ **`result` DÖNMEZ, `result_hash` ve `row_count` döner.** Ham sonuç zaten
+        spool'lanmıyor (KVKK + boyut, `record`'un kendi kararı) ve onu burada uydurmak
+        olmayan bir veriyi varmış gibi göstermek olurdu. *Hayalet seri bir
+        KARŞILAŞTIRMA sinyalidir, ikinci bir cevap değil.*
+
+        ⚠ Tenant-RLS: başka bir kiracının koşumu **hiç görünmez** — `cube_query_hash`
+        `tenant_id`yi kimliğe katıyor, ama filtre yine de **açıkça** uygulanır.
+        *Bir gizlilik sınırını tek bir hash'in içine gömmek, onu görünmez kılar.*
+        """
+        if not cube_query:
+            return None
+        try:
+            from sqlmodel import select
+
+            from control_plane.models import QueryContract
+        except Exception:                                    # noqa: BLE001
+            return None
+        anahtar = cube_query_hash(cube_query, mdl_version=mdl_version,
+                                  company=company, tenant_id=tenant_id)
+        try:
+            with self._session() as ses:
+                sorgu = select(QueryContract).order_by(QueryContract.ts.desc())
+                if tenant_id is not None:
+                    sorgu = sorgu.where(QueryContract.tenant_id == tenant_id)
+                for r in ses.exec(sorgu.limit(200)):
+                    cq = None
+                    try:
+                        cq = json.loads(getattr(r, "cube_query_json", None) or "null")
+                    except Exception:                        # noqa: BLE001
+                        continue
+                    if not cq:
+                        continue
+                    if cube_query_hash(cq, mdl_version=mdl_version, company=company,
+                                       tenant_id=tenant_id) == anahtar:
+                        return {"contract_id": r.id,
+                                "ts": r.ts.isoformat() if r.ts else None,
+                                "row_count": getattr(r, "row_count", None),
+                                "result_hash": getattr(r, "result_hash", None)}
+        except Exception:                                    # noqa: BLE001
+            # ⚠ Hayalet seri bir **ek**tir: bulunamaması cevabı düşürmez.
+            return None
+        return None

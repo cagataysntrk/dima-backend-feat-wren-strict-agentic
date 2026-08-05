@@ -923,6 +923,38 @@ export function ReportCard({
         </div>
       )}
 
+      {/* 🔴 FAZ 5.13a — HAYALET SERİ. Aynı sorgu daha önce koşulduysa **bir satır**.
+          ⚠ Grafik DEĞİL: ham sonuç taşınmıyor (KVKK + boyut) ve olmayan bir veriyi
+          çizmek, kullanıcıya hiç var olmamış bir seriyi göstermek olurdu.
+          *Hayalet seri bir KARŞILAŞTIRMA sinyalidir, ikinci bir cevap değil.* */}
+      {item.previous_result && (
+        <p
+          className="mt-2 font-mono text-[10px] text-neutral-400"
+          title={`Önceki koşum · makbuz ${item.previous_result.contract_id}`}
+        >
+          ⟲ bu sorgu daha önce koşuldu
+          {item.previous_result.ts ? ` · ${item.previous_result.ts.slice(0, 10)}` : ""}
+          {item.previous_result.row_count != null
+            ? ` · ${item.previous_result.row_count} satır`
+            : ""}
+          {item.previous_result.result_hash && item.contract_id ? (
+            <span className="ml-1 text-foreground">
+              {/* Sonuç DEĞİŞTİ mi — hash'ler kıyaslanır, sayılar değil (sayı taşınmıyor). */}
+              (makbuz {item.previous_result.contract_id})
+            </span>
+          ) : null}
+        </p>
+      )}
+
+      {/* FAZ 5.13b — KURAL BAĞLAMI: kullanıcının KENDİ yazdığı bilgi.
+          🔴 Sistemin hesabı gibi görünmemeli — ayrı bir işaret ve ayrı bir renk taşır.
+          Bu metin SQL'e HİÇ dokunmadı; bir cevabın yanındaki dipnottur. */}
+      {item.kural_baglami && (
+        <p className="mt-2 border-l-2 border-hairline pl-2 font-mono text-[11px] leading-snug text-neutral-400">
+          ⓘ <span className="text-neutral-500">bilgi merkezi:</span> {item.kural_baglami}
+        </p>
+      )}
+
       {/* Evrensel çıktı yorumu (feature flag'li) — KPI/tablo/grafik altında. */}
       <OutputInsight interpretation={item.interpretation} />
 

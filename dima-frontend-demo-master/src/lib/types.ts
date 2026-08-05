@@ -108,6 +108,20 @@ export interface AskResponse {
   // ⚠ `viz` alanı DEĞİŞMEZ ve paket ayrı durur: bayrak kapalıyken bu alan `null` kalır
   // ve tekil kart BUGÜNKÜ hâliyle görünür. *Tekil dönüş her zaman geçerlidir.*
   viz_paketi?: (VizSpec & { neden?: string })[] | null;
+  // 🔴 FAZ 5.13a — HAYALET SERİ: aynı sorgunun BİR ÖNCEKİ koşumu.
+  //
+  // ⚠ Ham sonuç TAŞIMAZ (sonuç zaten spool'lanmıyor — KVKK + boyut) ve onu uydurmak
+  // olmayan bir veriyi varmış gibi göstermek olurdu. *Hayalet seri bir KARŞILAŞTIRMA
+  // sinyalidir, ikinci bir cevap değil* — bu yüzden UI'da bir grafik değil, bir SATIR.
+  previous_result?: {
+    contract_id: string;
+    ts: string | null;
+    row_count: number | null;
+    result_hash: string | null;
+  } | null;
+  // FAZ 5.13b — kural motorunun EK BAĞLAMI. 🔴 Bu metin SQL'e HİÇ dokunmaz; kullanıcının
+  // kendi yazdığı bilgidir ve öyle GÖSTERİLİR (sistemin hesabı gibi değil).
+  kural_baglami?: string | null;
   question: string;
   sql: string;
   planned_sql: string | null;

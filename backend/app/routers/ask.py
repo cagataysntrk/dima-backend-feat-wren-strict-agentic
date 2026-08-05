@@ -1690,6 +1690,18 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             # daha "temiz" görünürdü — ama o an tekil dönüşün bayt-bayt aynılığı **bir
             # varsayıma** dönerdi. *Geriye uyumluluk, ikinci bir çağrının maliyetinden
             # ucuzdur.*
+            # 🔴 FAZ 5.13a — HAYALET SERİ. Aynı sorgunun bir önceki koşumu.
+            # ⚠ Bulunamaması cevabı DÜŞÜRMEZ: hayalet seri bir **ek**tir, bir cevap değil.
+            if "ui_knowledge_center" in resolve_for(settings, principal):
+                try:
+                    from app.contracts import ContractStore
+
+                    resp.previous_result = ContractStore().find_previous(
+                        cq,
+                        tenant_id=str(getattr(principal, "tenant_id", "") or "") or None,
+                        mdl_version=str(schema.get("version") or ""))
+                except Exception:                            # noqa: BLE001
+                    _log.warning("hayalet seri okunamadı (best-effort)", exc_info=True)
             if "ui_icgoru_paketi" in resolve_for(settings, principal):
                 try:
                     _pk = viz.recommend(result, cube_query=cq, paket=True,
