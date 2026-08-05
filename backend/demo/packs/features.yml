@@ -27,6 +27,8 @@ features:
   tur_takip: "off"
   # FAZ 5.10 — KPI pin. `off`: pano bugünkü davranışında, pinler SİLİNMEZ görünmez olur.
   kpi_pin: "off"
+  # FAZ 5.12 — içgörü paketi. `off`: `viz_paketi` None, tekil kart birebir bugünkü hâlde.
+  ui_icgoru_paketi: "off"
   # FAZ 5.14 — Hızlı ↔ Derin. `off`: `mod` alanı yok sayılır, bugünkü davranış birebir.
   hizli_derin: "off"
   # 🔴 FAZ 4.3 borcu — takipte çıplak ikinci ölçü adı. **AÇILDI (beta)** — ve açış

@@ -75,6 +75,21 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "sayılır (FAZ 5.14).",
         "category": "konusma",
     },
+    "ui_icgoru_paketi": {
+        "label": "İçgörü paketi (aynı sonucun birden çok ekseni)",
+        "description": "`viz.recommend()` dönüşü artık `VizSpec | list[VizSpec]`; paket "
+                       "her üyesiyle birlikte *«neden bu eksende»* gerekçesini taşır. "
+                       "🔴 YENİ MOTOR YAZILMADI: paketin her üyesi `recommend()`'in ZATEN "
+                       "hesapladığı bir karardan doğar (partition · pivot · facet · "
+                       "zaman ekseni) — ikinci bir görsel dilbilgisi, birincinin "
+                       "kararlarını sessizce ezerdi. ⚠ Paket §15.6'nın «grafik çizilmez» "
+                       "kararını EZMEZ: `cizilmedi` doluysa paket tek üyeli kalır, aksi "
+                       "hâlde «bu veri grafiğe uygun değil» diyen bir karar üç grafik "
+                       "önererek kendini çürütürdü. ⚠ Azami 3 üye: üçten fazlası bir "
+                       "paket değil bir YIĞINDIR. Kapalıyken `viz_paketi` None kalır ve "
+                       "tekil kart birebir bugünkü hâliyle görünür (FAZ 5.12).",
+        "category": "arayuz",
+    },
     "kpi_pin": {
         "label": "KPI pin (panoda sabitleme)",
         "description": "Pano VARDI ama KPI-pin semantiği ayrı DEĞİLDİ ve NL yolu YOKTU: "

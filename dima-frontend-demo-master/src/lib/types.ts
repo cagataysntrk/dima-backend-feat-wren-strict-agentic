@@ -102,6 +102,12 @@ export interface AskResponse {
   // kırpılma uyarısı · upload bildirimi) ve kalıcı `payload_json` geçmişi ona bağlı.
   // Okuma her zaman `soz ?? note` → **eski kayıtlar aynen çalışır**.
   soz?: string | null;
+  // 🔴 FAZ 5.12 — İÇGÖRÜ PAKETİ: aynı sonucun BİRDEN ÇOK EKSENİ; her üye "neden bu
+  // eksende" gerekçesini (`neden`) taşır.
+  //
+  // ⚠ `viz` alanı DEĞİŞMEZ ve paket ayrı durur: bayrak kapalıyken bu alan `null` kalır
+  // ve tekil kart BUGÜNKÜ hâliyle görünür. *Tekil dönüş her zaman geçerlidir.*
+  viz_paketi?: (VizSpec & { neden?: string })[] | null;
   question: string;
   sql: string;
   planned_sql: string | null;

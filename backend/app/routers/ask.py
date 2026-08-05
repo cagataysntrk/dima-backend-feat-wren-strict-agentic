@@ -1682,6 +1682,21 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     _log.warning("join soyağacı üretilemedi (best-effort)", exc_info=True)
         try:
             resp.viz = viz.recommend(result, cube_query=cq, **viz.meta_args(cube_meta_for_viz))
+            # 🔴 FAZ 5.12 — İÇGÖRÜ PAKETİ. **`resp.viz` DEĞİŞMEZ**: paket AYRI bir alanda
+            # (`viz_paketi`) taşınır ve bayrak kapalıyken `None` kalır → tekil kart bugünkü
+            # hâliyle görünür (V-5/E-3: **birebir eski davranış**).
+            #
+            # ⚠ `recommend`i iki kez çağırmak yerine paketin İLK üyesini `resp.viz` yapmak
+            # daha "temiz" görünürdü — ama o an tekil dönüşün bayt-bayt aynılığı **bir
+            # varsayıma** dönerdi. *Geriye uyumluluk, ikinci bir çağrının maliyetinden
+            # ucuzdur.*
+            if "ui_icgoru_paketi" in resolve_for(settings, principal):
+                try:
+                    _pk = viz.recommend(result, cube_query=cq, paket=True,
+                                        **viz.meta_args(cube_meta_for_viz))
+                    resp.viz_paketi = _pk if isinstance(_pk, list) and len(_pk) > 1 else None
+                except Exception:                            # noqa: BLE001
+                    _log.warning("içgörü paketi üretilemedi (best-effort)", exc_info=True)
         except Exception:
             _log.warning("viz önerisi üretilemedi (recommend) — taban analyze()'e düşülüyor",
                         exc_info=True)

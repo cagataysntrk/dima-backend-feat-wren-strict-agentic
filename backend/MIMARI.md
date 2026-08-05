@@ -68,8 +68,6 @@
 | **§5** | **18. yasak**: *"cevapsız bir dal, cevaplı bir yolu KESEMEZ"* (`KAT-2`) | **§G/AJ0** | ⟳ UYGULANMADI |
 | **§9** | hedef mimari — **metrik katmanı** merdivene giriyor | **FAZ 0.18 · 2.1** | ⟳ UYGULANMADI |
 | **§11** | agentic — **onaylı yazma aksiyonları** | **FAZ 6.1** | ⟳ UYGULANMADI |
-| **§12** | konuşma — **6./7. tür İNDİ** (5.1/5.2); satır uyuyan **çapa** kurallarına DARALDI (`capa_zinciri=off`) | **FAZ 0.5 kuyruğu** | ⟳ UYGULANMADI |
-| **§13** | görsel dilbilgisi — `viz.recommend()` **çoklu dönüş** (`VizSpec \| list[VizSpec]`); *"ne zaman çizilmez"* **İNDİ** (5.11) | **FAZ 5.12** | ⟳ UYGULANMADI |
 
 > ⛔ **BU LİSTEDE OLMAYAN ama sorulabilecek bir satır — kayda geçiyor:**
 > *"§9.2 — ölçü + başka cube'un BOYUTU ifade edilemez"* bir ⟳ satırı **DEĞİLDİR**, çünkü
@@ -3353,6 +3351,15 @@ Rekonstrüksiyon (atıf bağlamlarından türetildi; başlıklar alıntı değil
 | NestJS/TypeScript ana backend + Python/FastAPI Wren sarmalayıcı | **Tek Python/FastAPI** |
 | Redis · Vault · BullMQ · Temporal · Debezium · LangGraph · Novu | **Hiçbiri yok** |
 | Vega-Lite (backend chart spec üretir, gerekirse LLM) | **ECharts + deterministik `viz.py`** (ADR-0024; kod okunarak alınmış bilinçli ters karar) |
+
+✅ **§13 KAPANDI** (FAZ 5.11 · 5.12 @`9006e66`): görsel dilbilgisi iki yönden
+genişledi. **5.11** — *"ne zaman grafik ÇİZİLMEZ"*: dört **daraltıcı** kural (≤2 satır
+veya ≤3 kategori → cümle · >20 sıralanmamış kategori → tablo · finans cube'u → tablo),
+yalnız **varsayılan `bar`**'a uygulanır ve gerekçesi (`cizilmedi`) **kullanıcıya
+gösterilir**. **5.12** — dönüş sözleşmesi **`VizSpec | list[VizSpec]`**: paket her
+üyesiyle *"neden bu eksende"* gerekçesini taşır, azami **3** üye, ve §15.6'nın
+*"çizilmez"* kararını **ezmez**. 🔴 **Tekil dönüş her zaman geçerli** — kapı bunu
+kilitliyor (`tests/test_icgoru_paketi.py`, 12 test).
 | Kimlik bilgisi için Vault | **AES-256-GCM + `DIMA_CRED_KEK` env** |
 | WebSocket | **`threading.Thread` + HTTP polling** (WebSocket bilinçli ertelendi) |
 

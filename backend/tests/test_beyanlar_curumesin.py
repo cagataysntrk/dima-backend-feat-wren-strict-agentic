@@ -265,16 +265,31 @@ def test_DONEM_POLITIKASI_KLARIFIKASYON_KAPISI_DEGISMEDI(client):
 
 
 def test_DONEM_POLITIKASI_sartnamesi_KORUNUYOR():
-    """Silme kararının bedeli: 13 test bir şartname olarak duruyor. Sayı düşerse
-    şartname aşınıyor demektir — o zaman "sil" kararı yeniden değerlendirilmeli."""
+    """Silme kararının bedeli: 13 vakalık bir şartname duruyor. Sayı düşerse şartname
+    **aşınıyor** demektir.
+
+    ⟳ **ÖLÇÜM YENİDEN NİŞANLANDI (denetim D3).** `is_period_only` KALDIRILDI ve şartnamesi
+    **gerçek akışa** (`deterministic_refine`) taşındı — ama bu tuzak hâlâ **fonksiyon
+    çağrısı** sayıyordu ve 13 → 3'e düştüğünü görüp kırmızı verdi.
+    *Tuzak haklıydı: kaldırma gerçekten şartnameyi tehdit ediyordu.* Ama ölçtüğü şey
+    yanlış yerdeydi: şartname artık **parametrik vakalardır**, çağrılar değil.
+
+    🔴 Yeni belirteç **davranış vakalarını** sayar. Böylece şartname yalnız *"kaç kez
+    çağrıldı"*yı değil, *"kaç Türkçe dönem ifadesi gerçek akıştan geçiyor"*u kilitler —
+    ve bu, silinen fonksiyonun asla veremediği bir güvencedir.
+    """
     import pathlib
     import re
 
     t = (pathlib.Path(__file__).resolve().parents[1] / "tests/test_cube_router.py").read_text(
         encoding="utf-8")
+    # (a) eski yüzey (varsa) + (b) yeni parametrik şartname vakaları
     kullanim = len(re.findall(r"\b(needs_period|is_period_only)\s*\(", t))
+    m = re.search(r"@pytest\.mark\.parametrize\(\s*\"ifade\",\s*\[(.*?)\]\s*\)",
+                  t, re.S)
+    kullanim += len(re.findall(r'"[^"]+"', m.group(1))) if m else 0
     assert kullanim >= 13, (
-        f"dönem politikası şartnamesi {kullanim} çağrıya düşmüş (>=13 bekleniyordu) — "
+        f"dönem politikası şartnamesi {kullanim} vakaya düşmüş (>=13 bekleniyordu) — "
         "ya testler siliniyor ya politika taşınıyor; ikisi de bilinçli bir karar olmalı.")
 
 
@@ -469,17 +484,13 @@ _YURURLUKTE_TUZAKLARI = [
     ("§11-yazma", "FAZ 6.1",
      lambda: _yazan_arac_sayisi() > 0,
      "onaylı yazma aksiyonları (ajan bugün YAZAMAZ)"),
-    # ⟳ `§12-tür` **DARALDI** — FAZ 5.1 (`TUR_TAKIP`) ve 5.2 (`TUR_PAYLAS`) İNDİ; tuzak
-    # `test_TERS_TUZAK_FAZ_5_1_5_2_YENI_TURLER_AYAKTA`'ya taşındı (SİLİNMEDİ). §0'ın
-    # `§12` satırı geriye **uyuyan çapa kurallarını** bıraktı (`capa_zinciri=off`) ve
-    # belirteç ona nişanlandı: bayrak açıldığı gün `_capalar` dolmaya başlar.
-    ("§12-çapa", "FAZ 0.5 kuyruğu",
-     lambda: "capa_zinciri" in
-             _yaml_bayraklari() and _yaml_bayraklari().get("capa_zinciri") != "off",
-     "çapa zinciri üretimde AÇIK"),
-    ("§13-viz", "FAZ 5.11·5.12",
-     lambda: "list[VizSpec]" in (APP / "viz.py").read_text(encoding="utf-8"),
-     "viz.recommend() çoklu dönüş"),
+    # ⟳ `§12` **TAMAMEN KAPANDI** — 6./7. tür (5.1/5.2) İNDİ ve çapa zinciri
+    # (`capa_zinciri`) **beta'ya AÇILDI** (denetim D4). İki ters tuzak (SİLİNMEDİ):
+    # `test_TERS_TUZAK_FAZ_5_1_5_2_YENI_TURLER_AYAKTA` ·
+    # `test_TERS_TUZAK_CAPA_ZINCIRI_ACIK`.
+    # ⟳ `§13-viz` **TERS ÇEVRİLDİ** — FAZ 5.11 (*"ne zaman çizilmez"*) ve 5.12 (çoklu
+    # dönüş) indi; tuzak `test_TERS_TUZAK_FAZ_5_12_COKLU_DONUS_AYAKTA`'ya taşındı
+    # (SİLİNMEDİ). §0'ın `§13` satırı tamamen kapandı.
     # ⟳ `§8.2-ADR` **TERS ÇEVRİLDİ** — FAZ 4.6 indi (20 dosya + kapı); tuzak
     # `test_TERS_TUZAK_FAZ_4_6_ADR_DOSYALARI_AYAKTA`'ya taşındı (SİLİNMEDİ).
 ]
@@ -510,6 +521,51 @@ def _yaml_bayraklari() -> dict:
 
     d = _y.safe_load((APP.parent / "demo/packs/features.yml").read_text(encoding="utf-8"))
     return dict((d or {}).get("features") or {})
+
+
+def test_TERS_TUZAK_FAZ_5_12_COKLU_DONUS_AYAKTA():
+    """⟳ `§13-viz` ters çevrildi: çoklu dönüş **inmiş olmalı** ve **tekil dönüş
+    KIRILMAMALI**.
+
+    🔴 İkinci şart birincisinden önemli: `recommend()` her zaman liste dönmeye başlarsa
+    on küsur çağıran sessizce bozulur. *Geriye uyumluluk bir vaat değil, imzanın
+    kendisidir.*
+    """
+    from app import viz
+
+    assert "list[VizSpec]" in (APP / "viz.py").read_text(encoding="utf-8"), (
+        "🔴 FAZ 5.12 GERİ ALINDI: `viz.recommend()` çoklu dönüş sözleşmesini taşımıyor.")
+    r = {"columns": ["makine", "fire"],
+         "rows": [{"makine": f"M{i}", "fire": i + 1} for i in range(5)]}
+    assert isinstance(viz.recommend(r, {"fire": "kg"}), dict), (
+        "🔴 TEKİL DÖNÜŞ KIRILDI — on küsur çağıran sessizce bozulur.")
+    assert isinstance(viz.recommend(r, {"fire": "kg"}, paket=True), list)
+
+
+def test_TERS_TUZAK_CAPA_ZINCIRI_ACIK():
+    """⟳ `§12-çapa` ters çevrildi: çapa zinciri **açık kalmalı** ve kural **ateşlemeli**.
+
+    🔴 Asıl kilit bayrağın değeri değil, **kuralın çalışması**: bayrak açık ama
+    `KURAL_CAPA` hiç ateşlemiyorsa, açılış bir **kâğıt üstü kazanç** olur.
+
+    ⚠ Ve çelişkide **SORULMALI** (ADR-0008): farklı cube'lardan iki çapa geldiğinde
+    sistemin birini seçmesi, tam da bu deponun avladığı sessiz-yanlış sınıfıdır.
+    """
+    from app import context as ctx
+
+    assert _yaml_bayraklari().get("capa_zinciri") not in (None, "off"), (
+        "🔴 `capa_zinciri` yine kapalı — `_capalar` boş kalır ve karta yanıt verme kuralı "
+        "üretimde HİÇ ateşlemez. Mekanizma var, yolu kapalı demektir.")
+    cq = {"cube": "parti", "measures": ["fire_orani_yuzde"], "dimensions": ["makine"]}
+    b = ctx.coz(cube_query=None, prev_sql=None, history=[], capalar=[cq],
+                capa_etiketi="fire raporu", atif=False)
+    assert b.kural == ctx.KURAL_CAPA and (b.cube_query or {}).get("cube") == "parti"
+    b2 = ctx.coz(cube_query=None, prev_sql=None, history=[],
+                 capalar=[cq, {"cube": "oee", "measures": ["ort_oee"]}],
+                 capa_etiketi=None, atif=False)
+    assert (b2.adaylar or []), (
+        "🔴 Farklı cube'lardan iki çapada sistem SORMUYOR — belirsizlikte tahmin etmek "
+        "(ADR-0008) bu deponun avladığı sessiz-yanlış sınıfıdır.")
 
 
 def test_TERS_TUZAK_FAZ_5_1_5_2_YENI_TURLER_AYAKTA():

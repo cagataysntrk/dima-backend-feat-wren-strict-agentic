@@ -344,7 +344,13 @@ def recommend(
     # FAZ 2.5 — `{ölçü: hedef}`. `units`/`lower_set` ile **aynı** parametre deseni:
     # şema burada okunmaz, çağıran verir (viz saf kalır, test edilebilirliği bozulmaz).
     hedefler: dict[str, float] | None = None,
-) -> dict[str, Any] | None:
+    # 🔴 FAZ 5.12 — İÇGÖRÜ PAKETİ. Dönüş sözleşmesi artık **`VizSpec | list[VizSpec]`**:
+    # `paket=False` (varsayılan) → **bugünkü sözlük, bayt bayt**; `paket=True` →
+    # `list[VizSpec]`. *Tekil dönüş her zaman geçerlidir* — geriye uyumluluk bir vaat
+    # değil, imzanın kendisidir.
+    # ⚠ Bayrak burada çözülmez: `viz` saf kalır ve `lab/` araçları iki hâli de koşabilir.
+    paket: bool = False,
+) -> dict[str, Any] | list[dict[str, Any]] | None:
     """QueryResult ({columns, rows}) → VizSpec. Sonuç yok/boşsa None.
 
     analyze() taban kararını alır, üstüne Show Me + çok-birim politikasını (§3) uygular:
@@ -519,7 +525,95 @@ def recommend(
     # normalize: lower_set'i (FE ısı paleti yönü) taşı
     if lower_set:
         spec["lower_set"] = sorted(lower_set)
-    return spec
+    # 🔴 FAZ 5.12 — **`VizSpec | list[VizSpec]`**. Tekil dönüş **her zaman geçerli**:
+    # `paket=False` (varsayılan) bugünkü sözlüğü **bayt bayt** döndürür.
+    return paket_ac(spec, rows, cat_dims, time_col, measures) if paket else spec
+
+
+#: FAZ 5.12 — paketteki azami görsel. ⚠ Üçten fazlası bir **paket** değil bir **yığın**dır:
+#: kullanıcı hangisine bakacağını bilemez ve paket, tek kartın yaptığı işi de bozar.
+_MAX_PAKET = 3
+
+
+def paket_ac(spec: dict[str, Any], rows: list[dict], cat_dims: list[str],
+             time_col: str | None, measures: list[str]) -> list[dict[str, Any]]:
+    """FAZ 5.12 — **İÇGÖRÜ PAKETİ**: aynı sonucun **birden çok ekseni**. [bayrak: `ui_icgoru_paketi`]
+
+    ## 🔴 YENİ MOTOR YAZILMAZ
+
+    Paketin her üyesi `recommend()`'in **zaten hesapladığı** bir karardan doğar
+    (`partition` · `pivot` · `facet_measure` · `reference_line`). Bu fonksiyon bir
+    **seçim** yapar, bir analiz değil — *ikinci bir görsel dilbilgisi yazmak, birincinin
+    kararlarını sessizce ezerdi.*
+
+    ## "Neden bu eksende" — her üye kendi gerekçesini taşır
+
+    `neden` alanı bir **süs değil bir sözleşmedir**: bir paket üyesi neden orada
+    olduğunu söyleyemiyorsa, o üye **gürültüdür**. Kapı her üyenin `neden` taşımasını
+    zorlar.
+
+    ## ⚠ Paket ASLA daraltılmış kararı ezmez
+
+    §15.6 (FAZ 5.11) *"grafik çizilmez"* dediyse (`cizilmedi` dolu), paket **tek üyeli**
+    kalır: aksi hâlde *"bu veri grafiğe uygun değil"* diyen bir karar, üç grafik
+    önererek kendi kendini çürütürdü.
+    """
+    ilk = {**spec, "neden": _neden(spec, cat_dims, time_col, measures)}
+    if spec.get("cizilmedi"):
+        return [ilk]
+    paket: list[dict[str, Any]] = [ilk]
+
+    # (1) PAY GRAFİĞİ — `partition` zaten hesaplandı; paket onu ayrı bir üye yapar.
+    if spec.get("partition") and spec.get("alternatives"):
+        alt = str(spec["alternatives"][0])
+        paket.append({**spec, "kind": alt, "partition": False, "alternatives": [],
+                      "neden": f"Payları görmek için: tek boyut, toplanabilir ölçü "
+                               f"({len(rows)} kalem)."})
+
+    # (2) ZAMAN EKSENİ — kategori kararı verilmişse ve zaman da varsa, ikinci eksen
+    # gerçekten **başka bir soruyu** cevaplar ("kim" ↔ "ne zaman").
+    if time_col and cat_dims and spec.get("kind") in ("bar", "stacked"):
+        paket.append({**spec, "kind": "line", "primary_dim": time_col,
+                      "partition": False, "alternatives": [],
+                      "neden": "Zaman ekseni ayrı bir soruyu cevaplar: *kim* değil "
+                               "*ne zaman*."})
+
+    # (3) PİVOT — iki kategorik boyut varken tablo, grafiğin göremediğini gösterir.
+    if len(cat_dims) >= 2 and spec.get("pivot"):
+        paket.append({**spec, "kind": "pivot", "table_mode": "pivot",
+                      "partition": False, "alternatives": [],
+                      "neden": "İki kırılım birlikte: grafik ikisini aynı anda "
+                               "okunur kılamaz, çapraz tablo kılar."})
+    return paket[:_MAX_PAKET]
+
+
+def _neden(spec: dict[str, Any], cat_dims: list[str], time_col: str | None,
+           measures: list[str]) -> str:
+    """*"Neden bu eksende"* — **karardan türetilir, uydurulmaz**.
+
+    ⚠ Metin `recommend()`'in kendi dallarının gerekçesidir; yeni bir açıklama motoru
+    yazmak, gerekçeyi kararın kendisinden **ayırırdı** ve ikisi zamanla ayrışırdı.
+    """
+    kind = spec.get("kind")
+    if spec.get("cizilmedi"):
+        return str(spec["cizilmedi"])
+    if kind == "line" or (time_col and kind in ("bar", "stacked")):
+        return "Zaman serisi: eğilim, tek tek değerlerden daha çok şey söyler."
+    if kind == "scatter":
+        return "İki ölçü, tek varlık ekseni: ilişki ancak serpme ile görülür."
+    if kind in ("facet_measure", "facet"):
+        return "Farklı birimler: aynı eksende üst üste koymak ölçekleri yalan söyletir."
+    if kind == "pivot":
+        return "İki kırılım birlikte: çapraz tablo, grafiğin göremediğini gösterir."
+    if kind == "heatmap":
+        return "İki kategorik eksen + tek ölçü: yoğunluk en hızlı ısı haritasında okunur."
+    if kind == "kpi":
+        return "Tek sayı: bir grafik ondan daha az şey anlatır."
+    if kind == "table":
+        return "Okunabilirlik: bu şekil grafikte kaybolur, tabloda kalır."
+    if cat_dims and len(measures) == 1:
+        return "Tek ölçü, kategori kırılımı: uzunluk karşılaştırması en doğru okunandır."
+    return "Varsayılan: başka bir kural bu veriye daha uygun bir eksen önermedi."
 
 
 #: 🔴 FAZ 5.11 — finans/muhasebe kapsamı. Karar-vericiler ve finans profesyonelleri

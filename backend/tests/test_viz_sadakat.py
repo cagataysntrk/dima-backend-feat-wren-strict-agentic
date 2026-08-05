@@ -28,6 +28,8 @@ from __future__ import annotations
 
 import pytest
 
+import ast as ast_mod
+
 from app import viz
 
 # Karar üreten alanlar — sadakat bunların üstünde tanımlıdır. `alternatives` de dahil:
@@ -58,6 +60,31 @@ def ornek(schema):
 
 # --- ASIL KAPI: aynı girdi → aynı karar ------------------------------------------
 
+def _recommend_cagrilari() -> list[tuple[str, ast_mod.Call]]:
+    """`viz.recommend(...)` **gerçek çağrıları** — AST ile.
+
+    ⚠ **Belirteç AST'ye çevrildi (FAZ 5.12).** Regex taraması `features.py`'nin bayrak
+    **açıklama metnini** yakalayıp yanlış-kırmızı verdi: o metin `viz.recommend()`
+    ifadesini *anlatmak* için içeriyordu. Bu deponun **on ikinci kez** ödediği ders —
+    *beyan ile beyanın anlatımı farklı şeylerdir.*
+    """
+    import pathlib
+
+    kok = pathlib.Path(__file__).resolve().parents[1] / "app"
+    out: list[tuple[str, ast_mod.Call]] = []
+    for f in kok.rglob("*.py"):
+        if f.name == "viz.py":
+            continue
+        agac = ast_mod.parse(f.read_text(encoding="utf-8"))
+        for n in ast_mod.walk(agac):
+            if (isinstance(n, ast_mod.Call)
+                    and getattr(n.func, "attr", "") == "recommend"
+                    and getattr(getattr(n.func, "value", None), "id", "")
+                    in ("viz", "_viz")):
+                out.append((str(f.relative_to(kok)), n))
+    return out
+
+
 def test_AYNI_girdi_AYNI_karar(ornek):
     """`recommend()` saf olmalı: aynı girdi her çağrıda aynı kararı vermeli. Aksi halde
     "tek VizSpec" iddiası zaten çöker."""
@@ -86,58 +113,26 @@ def test_TUM_YUZEYLER_ayni_yardimciyi_kullanir():
     """Yapısal kilit (Faz I1'in tamamlayıcısı). Argümanları elle toplayan bir yüzey
     geri gelirse sadakat davranış testleriyle YAKALANMAYABİLİR — o yüzey belki hiç
     test edilmiyordur. Kaynak taraması bu boşluğu kapatır."""
-    import pathlib
-    import re
-
-    kok = pathlib.Path(__file__).resolve().parents[1] / "app"
-    cagrilar: list[str] = []
-    for f in kok.rglob("*.py"):
-        if f.name == "viz.py":
-            continue
-        metin = f.read_text(encoding="utf-8")
-        for m in re.finditer(r"(?:_?viz)\.recommend\(", metin):
-            # Eşleşen kapanış parantezine kadar (sabit pencere uzun yorumlarda yanılır).
-            derinlik, i = 0, m.end() - 1
-            while i < len(metin):
-                if metin[i] == "(":
-                    derinlik += 1
-                elif metin[i] == ")":
-                    derinlik -= 1
-                    if derinlik == 0:
-                        break
-                i += 1
-            cagrilar.append(f"{f.relative_to(kok)}::{metin[m.end() - 1:i]}")
+    cagrilar = _recommend_cagrilari()
     assert cagrilar, "hiç çağrı bulunamadı — test bir şey korumuyor"
-    eksik = [c for c in cagrilar if "meta_args" not in c]
+    eksik = [
+        dosya for dosya, c in cagrilar
+        if not any(k.arg is None                      # `**viz.meta_args(...)`
+                   and getattr(getattr(k.value, "func", None), "attr", "") == "meta_args"
+                   for k in c.keywords)
+    ]
     assert not eksik, ("`viz.recommend` argümanları elle toplanmış:\n  "
-                       + "\n  ".join(x.split("::")[0] for x in eksik))
+                       + "\n  ".join(sorted(set(eksik))))
 
 
 def test_CUBE_QUERY_her_yuzeyde_geciriliyor():
     """`cube_query` boyut OTORİTESİDİR (Faz C1): onsuz `recommend()` kolon rollerini
     veriden TAHMİN eder ve zaman/kategori ayrımı yanlış çıkabilir. Bir yüzey onu
     geçirmezse aynı sorunun grafiği o yüzeyde farklı olur."""
-    import pathlib
-    import re
-
-    kok = pathlib.Path(__file__).resolve().parents[1] / "app"
-    eksik: list[str] = []
-    for f in kok.rglob("*.py"):
-        if f.name == "viz.py":
-            continue
-        metin = f.read_text(encoding="utf-8")
-        for m in re.finditer(r"(?:_?viz)\.recommend\(", metin):
-            derinlik, i = 0, m.end() - 1
-            while i < len(metin):
-                if metin[i] == "(":
-                    derinlik += 1
-                elif metin[i] == ")":
-                    derinlik -= 1
-                    if derinlik == 0:
-                        break
-                i += 1
-            if "cube_query" not in metin[m.end() - 1:i]:
-                eksik.append(str(f.relative_to(kok)))
+    eksik = [
+        dosya for dosya, c in _recommend_cagrilari()
+        if not any(k.arg == "cube_query" for k in c.keywords)
+    ]
     assert not eksik, f"`cube_query` geçirmeyen yüzey(ler): {sorted(set(eksik))}"
 
 

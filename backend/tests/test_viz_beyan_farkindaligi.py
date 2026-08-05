@@ -110,31 +110,30 @@ def test_TUM_cagiranlar_meta_args_kullaniyor():
     import pathlib
     import re
 
-    def _arguman_blogu(metin: str, baslangic: int) -> str:
-        """Açılış parantezinden EŞLEŞEN kapanışa kadar. Sabit pencere (ör. 220 karakter)
-        güvenilmez: çağrı yerlerinden birinde argümanlardan önce uzun bir açıklama yorumu
-        var ve pencere `meta_args`'ı kesiyordu — test doğru kodu yanlış raporlardı."""
-        derinlik, i = 0, baslangic
-        while i < len(metin):
-            if metin[i] == "(":
-                derinlik += 1
-            elif metin[i] == ")":
-                derinlik -= 1
-                if derinlik == 0:
-                    return metin[baslangic + 1:i]
-            i += 1
-        return metin[baslangic:baslangic + 400]
+    # ⚠ **BELİRTEÇ AST'YE ÇEVRİLDİ (FAZ 5.12).** Regex taraması `features.py`'nin bayrak
+    # **açıklama metnini** yakalayıp yanlış-kırmızı verdi: o metin `viz.recommend()`
+    # ifadesini *anlatmak* için içeriyordu. Bu deponun **on ikinci kez** ödediği ders —
+    # *beyan ile beyanın anlatımı farklı şeylerdir*, ve bir ölçüm aracının kendisi de bir
+    # bağımlılıktır.
+    import ast
 
     kok = pathlib.Path(__file__).resolve().parents[1] / "app"
     elle = []
     for f in kok.rglob("*.py"):
         if f.name == "viz.py":
             continue
-        metin = f.read_text(encoding="utf-8")
-        for m in re.finditer(r"(?:_?viz)\.recommend\(", metin):
-            arg = _arguman_blogu(metin, m.end() - 1)
-            if "meta_args" not in arg:
-                elle.append(f"{f.relative_to(kok)}: {' '.join(arg.split())[:90]}")
+        agac = ast.parse(f.read_text(encoding="utf-8"))
+        for n in ast.walk(agac):
+            if not (isinstance(n, ast.Call)
+                    and getattr(n.func, "attr", "") == "recommend"
+                    and getattr(getattr(n.func, "value", None), "id", "")
+                    in ("viz", "_viz")):
+                continue
+            if not any(k.arg is None
+                       and getattr(getattr(k.value, "func", None), "attr", "")
+                       == "meta_args"
+                       for k in n.keywords):
+                elle.append(f"{f.name}:{n.lineno}")
     assert not elle, ("`viz.recommend` argümanları ELLE toplanmış:\n  " + "\n  ".join(elle)
                       + "\n`viz.meta_args(cube_meta)` kullanın — tek kaynak.")
 

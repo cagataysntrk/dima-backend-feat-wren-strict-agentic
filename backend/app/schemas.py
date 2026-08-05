@@ -301,6 +301,13 @@ class AskResponse(BaseModel):
     #:
     #: Frontend `soz ?? note` okur → **eski kayıtlar aynen çalışır** (GERİ AL bedava).
     soz: str | None = None
+    #: 🔴 **FAZ 5.12 — İÇGÖRÜ PAKETİ.** Aynı sonucun **birden çok ekseni**; her üye
+    #: *"neden bu eksende"* gerekçesini (`neden`) taşır.
+    #:
+    #: ⚠ `viz` alanı **DEĞİŞMEZ** ve paket ayrı durur: bayrak (`ui_icgoru_paketi`)
+    #: kapalıyken bu alan `None` kalır ve tekil kart **bugünkü hâliyle** görünür.
+    #: *Tekil dönüş her zaman geçerlidir.*
+    viz_paketi: list[dict[str, Any]] | None = None
     # FAZ 2.6 — MALİ YIL PENCERESİ. Yalnız mali yıl takvim yılından **farklıysa** dolar.
     # 🔴 Takvim yılından farklı bir pencereyi *"bu yıl"* diye sunmak, DOĞRU sayıyı YANLIŞ
     # soruya cevap yapar — kullanıcı hangi pencereyi gördüğünü bilmeli. Takvim yılı

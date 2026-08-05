@@ -896,6 +896,33 @@ export function ReportCard({
         </div>
       )}
 
+      {/* 🔴 FAZ 5.12 — İÇGÖRÜ PAKETİ: aynı sonucun **birden çok ekseni**, 1-2 sütun ızgara.
+          ⚠ İlk üye YUKARIDAKİ tekil kartın kendisidir ve burada TEKRAR ÇİZİLMEZ — aynı
+          grafiği iki kez göstermek, paketi bir kazanç değil bir gürültü yapardı.
+          ⚠ Her üye "neden bu eksende" gerekçesini taşır: *bir paket üyesi neden orada
+          olduğunu söyleyemiyorsa, o üye gürültüdür.*
+          ⚠ Bayrak kapalıyken `viz_paketi` null → bu blok HİÇ render edilmez ve kart
+          birebir bugünkü hâlinde kalır (GERİ AL bedava). */}
+      {item.result && (item.viz_paketi?.length ?? 0) > 1 && (
+        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+          {item.viz_paketi!.slice(1).map((vp, i) => (
+            <figure key={`${vp.kind}-${i}`} className="border border-hairline p-2">
+              <ResultView
+                key={`paket-${i}-${item.sql}`}
+                result={item.result!}
+                viz={vp}
+                viewHint={vp.kind}
+              />
+              {vp.neden && (
+                <figcaption className="mt-1 font-mono text-[10px] leading-snug text-neutral-400">
+                  ⓘ {vp.neden}
+                </figcaption>
+              )}
+            </figure>
+          ))}
+        </div>
+      )}
+
       {/* Evrensel çıktı yorumu (feature flag'li) — KPI/tablo/grafik altında. */}
       <OutputInsight interpretation={item.interpretation} />
 
