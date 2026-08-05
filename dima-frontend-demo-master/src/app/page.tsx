@@ -9,15 +9,14 @@ import { ChatPanel } from "@/components/ChatPanel";
 import { ConnectionReviewPanel } from "@/components/ConnectionReviewPanel";
 import { DashboardsPanel } from "@/components/DashboardsPanel";
 import { DashboardView } from "@/components/DashboardView";
-import { FloatingControls } from "@/components/FloatingControls";
 import { HelpPanel } from "@/components/HelpPanel";
-import { HistoryPanel } from "@/components/HistoryPanel";
 import { Landing } from "@/components/Landing";
 import { NotificationsPanel } from "@/components/NotificationsBell";
 import { ReportPanel } from "@/components/ReportPanel";
 import { SchedulesPanel } from "@/components/SchedulesPanel";
 import { SchemaPanel } from "@/components/SchemaPanel";
 import { SettingsDrawer } from "@/components/SettingsDrawer";
+import { YanCubuk } from "@/components/YanCubuk";
 import TercihlerPanel from "@/components/TercihlerPanel";
 import { useHistory } from "@/stores/history";
 import { useFeature } from "@/lib/useFeature";
@@ -26,7 +25,10 @@ import { groupIntoThreads, mintThreadId, replyAnchorLabel } from "@/lib/threads"
 import type { AskResponse, CubeQuery} from "@/lib/types";
 import { DcmAkisi } from "@/components/DcmAkisi";
 
-type Drawer = "settings" | "help" | "notifications" | "history" | "dashboards" | null;
+// 🔴 FAZ 7.13 — `"history"` DÜŞTÜ: geçmiş artık bir çekmece değil, **çubuğun
+// kendisi**. Bir listeyi görmek için bir çekmece açmak, listeyi *ikinci sınıf* bir
+// yüzey yapar — oysa geçmiş bu üründe birincil gezinme yüzeyidir.
+type Drawer = "settings" | "help" | "notifications" | "dashboards" | null;
 
 // Oturum kimliği — crypto.randomUUID yalnız güvenli bağlamda (https/localhost) var;
 // http://*.localtld'de yok, bu yüzden fallback.
@@ -438,8 +440,20 @@ export default function Home() {
   const pendingQuestion = isPendingNew ? mutation.variables?.question : undefined;
 
   return (
-    // pr-12: sağdaki kalıcı ikon kolonu (rail) içeriği örtmesin.
-    <div className="h-full pr-12 max-md:pb-12 max-md:pr-0">
+    // 🔴 FAZ 7.13 — sağdaki `pr-12` payı KALKTI: ikon şeridi kaldırıldı, yerini
+    // **sol yan çubuk** aldı. Düzen artık yatay: çubuk | içerik.
+    <div className="flex h-full">
+      <YanCubuk
+        aktifSessionId={sessionId}
+        onYeniSohbet={newChat}
+        onResume={resumeConversation}
+        acikBolum={drawer as never}
+        onBolum={(b) => setDrawer(b as never)}
+        panolarVar={Boolean(dashStage)}
+        incelemeVar={Boolean(canReview)}
+        onInceleme={() => router.push("/review")}
+      />
+      <div className="min-w-0 flex-1">
       {/* 🔴 FAZ 7.11 — DCM. Bayrak açıkken sohbet yüzeyine **hiç girilmez**: serbest
           metni gizlemek bir görünüm kararıdır, akışı hiç kurmamak bir GARANTİDİR. */}
       {dcmModu ? (
@@ -599,20 +613,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Aynı ikona ikinci tıklama sheet'i KAPATIR (toggle); farklıysa içerik değişir. */}
-      <FloatingControls
-        onHistory={() => setDrawer((d) => (d === "history" ? null : "history"))}
-        onNotifications={() => setDrawer((d) => (d === "notifications" ? null : "notifications"))}
-        onDashboards={
-          dashStage
-            ? () => setDrawer((d) => (d === "dashboards" ? null : "dashboards"))
-            : undefined
-        }
-        onReview={canReview ? () => router.push("/review") : undefined}
-        onHelp={() => setDrawer((d) => (d === "help" ? null : "help"))}
-        onSettings={() => setDrawer((d) => (d === "settings" ? null : "settings"))}
-      />
-
       <SettingsDrawer
         open={drawer !== null}
         onClose={() => setDrawer(null)}
@@ -621,8 +621,7 @@ export default function Home() {
             ? "dima · yardım"
             : drawer === "notifications"
               ? "Bildirimler"
-              : drawer === "history"
-                ? "Sohbet Geçmişi"
+
                 : drawer === "dashboards"
                   ? "Panolar"
                   : "Ayarlar · Veri Modeli"
@@ -632,12 +631,7 @@ export default function Home() {
           <HelpPanel onPick={submitNew} />
         ) : drawer === "notifications" ? (
           <NotificationsPanel />
-        ) : drawer === "history" ? (
-          <HistoryPanel
-            onResume={resumeConversation}
-            onNewChat={newChat}
-            activeSessionId={sessionId}
-          />
+
         ) : drawer === "dashboards" ? (
           <DashboardsPanel
             onOpen={(id) => {
@@ -685,6 +679,7 @@ export default function Home() {
           </div>
         )}
       </SettingsDrawer>
+      </div>
     </div>
   );
 }

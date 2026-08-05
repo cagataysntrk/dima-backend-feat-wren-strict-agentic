@@ -106,9 +106,13 @@ def _erisilebilir(bilesen: str, *, isaret: str | None = None) -> tuple[bool, str
 # 1 · ON ÜÇ PANEL — tavan dolu, hiçbiri kaybolamaz
 # ═══════════════════════════════════════════════════════════════════════════════
 
+#: ⚠ `HistoryPanel` bu listeden ÇIKTI ve bu bir **kayıp değil, erime**: geçmiş artık
+#: bir çekmece değil **`YanCubuk`'un kendisi**. Bir listeyi görmek için çekmece açmak,
+#: onu ikinci sınıf bir yüzey yapardı — oysa geçmiş bu üründe **birincil gezinme
+#: yüzeyidir**. İşlevleri aşağıda `TEK_GIRISLI`'de yeni evinde izleniyor.
 PANELLER = (
     "ChatPanel", "ConnectionReviewPanel", "ContractDetailPanel", "DashboardsPanel",
-    "DrillDownPanel", "HelpPanel", "HistoryPanel", "NotificationsBell", "ReportPanel",
+    "DrillDownPanel", "HelpPanel", "NotificationsBell", "ReportPanel",
     "ReviewPanel", "SchedulesPanel", "SchemaPanel", "TercihlerPanel",
 )
 
@@ -131,11 +135,13 @@ def test_ON_UC_PANELIN_HEPSI_ULASILABILIR():
 # Bunlar `app/layout.tsx`'te sabit duruyor. *"Rail'i taşıdım"* diyen biri dördünü de
 # atlar — çünkü rail'e bakar, `layout.tsx`'e bakmaz.
 
+#: ⚠ `FloatingControls` → `YanCubuk`: ikon şeridi kaldırıldı, **tema anahtarı çubuğa
+#: taşındı**. Kapı bunu FAZ 2'de doğru şekilde kırmızı verdi — yani taşımayı izliyor.
 SINSI_DORTLU = {
     "ConnectionBadge": "bağlantı rozeti — çevrimdışı · yedek LLM · kural-tabanlı · çevrimiçi",
     "KimlikSeridi": "kimlik şeridi — e-posta · rol · süperadmin rozeti",
     "LogoutButton": "çıkış",
-    "FloatingControls": "tema anahtarı (3 durumlu) burada yaşıyor",
+    "YanCubuk": "tema anahtarı (3 durumlu) — FloatingControls'tan buraya taşındı",
 }
 
 
@@ -153,10 +159,11 @@ def test_TEMA_ANAHTARI_UC_DURUMLU_KALDI():
 
     ⚠ İki duruma indirmek sessiz bir yetenek kaybıdır: *"sistemi izle"* seçeneği
     kaybolursa kullanıcı işletim sistemi temasını takip edemez."""
-    ok, t = _erisilebilir("FloatingControls")
+    ok, t = _erisilebilir("YanCubuk")
     assert ok, t
-    src = _kaynaklar()[_modul("FloatingControls")]
-    assert "tema" in src.lower(), "tema anahtarı FloatingControls'tan kaybolmuş"
+    src = _kaynaklar()[_modul("YanCubuk")]
+    assert "sistem" in src and "light" in src and "dark" in src, \
+        "🔴 tema üç durumlu değil — «sistemi izle» hâli kaybolmuş"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -169,9 +176,16 @@ def test_TEMA_ANAHTARI_UC_DURUMLU_KALDI():
 
 TEK_GIRISLI: tuple[tuple[str, str, str], ...] = (
     # (bileşen, ayırt edici işaret, ne olduğu)
-    ("HistoryPanel", "yeni sohbet", "+ yeni sohbet — TEK giriş noktası"),
-    ("HistoryPanel", "restoreConversation", "sohbet geri alma (soft-delete'in görünen yarısı)"),
-    ("HistoryPanel", "deleteConversation", "sohbet silme"),
+    # 🔴 Geçmiş işlevleri `HistoryPanel`'den `YanCubuk`'a TAŞINDI (FAZ 2).
+    # ⚠ Kapı **dosyayı** değil **işlevi** izler: bileşen adı değişebilir, işlev
+    # kaybolamaz. *Bir envanterin görevi taşınanı takip etmektir.*
+    ("YanCubuk", "Yeni sohbet", "+ yeni sohbet — TEK giriş noktası"),
+    ("YanCubuk", "restoreConversation", "sohbet geri alma (soft-delete'in görünen yarısı)"),
+    ("YanCubuk", "deleteConversation", "sohbet silme"),
+    ("YanCubuk", "sidebar_state", "çubuk durumu ÇEREZDE — localStorage'da değil (zıplama)"),
+    ("YanCubuk", "isContentEditable", "Ctrl+B composer odaktayken DEVRE DIŞI"),
+    ("YanCubuk", "Son 7 gün", "geçmiş gruplaması — göreli yakın, mutlak uzak"),
+    ("YanCubuk", "updated_at", "sıralama updated_at ile (created_at DEĞİL)"),
     ("SchedulesPanel", "schedule", "zamanlama yönetimi — yalnız Ayarlar→Zamanlamalar"),
     ("TercihlerPanel", "tercih", "tercihler + bildirim tercihleri"),
     ("SchemaPanel", "sahip", "metrik sahipliği atama/kaldırma"),
