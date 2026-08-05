@@ -31,8 +31,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { ConnectionBadge } from "@/components/ConnectionBadge";
 import { GeriAlSeridi } from "@/components/GeriAlSeridi";
 import { HataSeridi } from "@/components/HataSeridi";
+import { KimlikSeridi } from "@/components/KimlikSeridi";
+import { LogoutButton } from "@/components/LogoutButton";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { deleteConversation, listConversations, restoreConversation } from "@/lib/api-client";
 import { hataMetni } from "@/lib/mutasyonHatasi";
@@ -178,13 +181,65 @@ export function YanCubuk({
     "transition-colors hover:bg-[var(--surface-3)] hover:text-foreground";
 
   return (
+    <>
+      {/* ── 📱 MOBİL ÜST ŞERİT — 🔴 ÇUBUK KÜÇÜK EKRANDA ÇUBUK DEĞİLDİR ─────────
+          375px'lik bir ekranda 256px'lik bir çubuk **ekranın üçte ikisidir**;
+          56px'lik bir ray ise %15'ini yer ve başparmakla en zor ulaşılan kenardadır.
+          Küçük ekranda çubuk bir **katmana** dönüşür ve yerini her zaman görünen
+          iki düğme tutar: ☰ ve ✏.
+
+          ⚠ Bu düzeltme bir gerilemenin karşılığı: FAZ 2'de çubuğa `max-md:hidden`
+          koymuştum ve mobilde **yeni sohbet/geçmiş/ayarlara hiçbir giriş
+          kalmamıştı**. Eski ikon şeridi mobilde alt çubuğa dönüşüyordu; onu
+          kaldırırken karşılığını koymamıştım.
+          *Bir yüzeyi kaldırmak, onun taşıdığı girişleri de kaldırmaktır — yerine
+          bir şey konmadıysa.* */}
+      <div
+        data-no-print
+        className="fixed inset-x-0 top-0 z-40 hidden h-12 items-center gap-1 border-b border-[var(--surface-kenar)] bg-[var(--surface-1)]/95 px-2 backdrop-blur-sm max-md:flex"
+      >
+        <button
+          onClick={degistir}
+          aria-expanded={acik}
+          aria-controls="yan-cubuk-govde"
+          aria-label="Menü"
+          title="Menü"
+          className={ikonBtn}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <path d="M3 6h18M3 12h18M3 18h18" />
+          </svg>
+        </button>
+        <button onClick={onYeniSohbet} aria-label="Yeni sohbet" title="Yeni sohbet" className={ikonBtn}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+          </svg>
+        </button>
+        <span className="ml-1 flex-1 truncate font-mono text-[var(--text-meta)] text-muted">dima</span>
+        <ConnectionBadge gomulu />
+        <LogoutButton gomulu />
+      </div>
+
+      {/* Mobil perde — katman açıkken arkaya dokunmak kapatır. ⚠ Yalnız mobilde:
+          masaüstünde çubuk **reflow** yapar, perde gerekmez. */}
+      {acik && (
+        <div
+          onClick={degistir}
+          aria-hidden
+          className="fixed inset-0 z-40 hidden bg-black/40 max-md:block"
+        />
+      )}
+
     <nav
       data-no-print
       data-kayan-cubuk
       role="navigation"
       aria-label="Sohbet geçmişi ve ayarlar"
       style={{ width: acik ? CUBUK_GENIS : CUBUK_RAY }}
-      className="flex h-full shrink-0 flex-col border-r border-[var(--surface-kenar)] bg-[var(--surface-1)] transition-[width] duration-[var(--motion-md)] ease-[var(--ease-standard)] max-md:hidden"
+      className={`flex h-full shrink-0 flex-col border-r border-[var(--surface-kenar)] bg-[var(--surface-1)] transition-[width] duration-[var(--motion-md)] ease-[var(--ease-standard)] max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-50 max-md:!w-[18rem] max-md:transition-transform ${
+        acik ? "max-md:translate-x-0" : "max-md:-translate-x-full"
+      }`}
     >
       {/* ── ÜST: aç/kapa + yeni sohbet — ikisi de rayda GÖRÜNÜR ────────────────
           🔴 Aç/kapa düğmesi **görünür**: Claude Desktop'ta pin durumu yalnız bir
@@ -375,9 +430,36 @@ export function YanCubuk({
               ikon={<><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></>}
             />
           </div>
+
+          {/* ── KİMLİK · DURUM · ÇIKIŞ — 🔴 SİNSİ ÜÇLÜ, artık kabuğun İÇİNDE ────
+              Bunlar `layout.tsx`'te **sabit konumlu** duruyordu ve `right-2`
+              değeriyle **ikon şeridinin içini** işaret ediyordu. FAZ 2 şeridi
+              kaldırınca öksüz kaldılar: kaybolmadılar ama **dayandıkları yüzey
+              gitti**.
+
+              ⚠ *Sabit konumlu bir öge, dayandığı yüzey kaldırıldığında kaybolmaz —
+              öksüz kalır. Ve öksüz bir öge, hatalı bir öğeden daha zor fark edilir,
+              çünkü hâlâ görünür.*
+
+              Öteki sayfalarda (`/review`, `/brand`) sabit kopyaları çizmeye devam
+              ediyor; ana sayfada susuyorlar (`gomulu` kipi). */}
+          <div className="mt-2 flex items-center gap-1 border-t border-[var(--surface-kenar)] pt-2">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center">
+              <ConnectionBadge gomulu />
+            </div>
+            {acik && (
+              <div className="min-w-0 flex-1 truncate">
+                <KimlikSeridi gomulu />
+              </div>
+            )}
+            <div className="shrink-0">
+              <LogoutButton gomulu />
+            </div>
+          </div>
         </div>
       </div>
     </nav>
+    </>
   );
 }
 

@@ -33,7 +33,21 @@ import { usePathname } from "next/navigation";
 
 import { getMe } from "@/lib/api-client";
 
-export function KimlikSeridi() {
+/** ⚠ `gomulu` — **FAZ 3.** Bu öge iki yerde yaşayabilir:
+ *
+ * | yer | ne zaman |
+ * |---|---|
+ * | `YanCubuk` içinde, **gömülü** | ana sayfada (`/`) — kabuk artık çubuktur |
+ * | `layout.tsx`'te, **sabit konumlu** | öteki sayfalarda (`/review`, `/brand`) |
+ *
+ * 🔴 Neden iki yer değil de **tek yer, iki kip**: ikisini ayrı ayrı render etmek
+ * ana sayfada **çift gösterim** üretirdi. `gomulu` olmayan kopya `/` yolunda
+ * **susar** — böylece her sayfada tam olarak bir tane çizilir.
+ *
+ * ⚠ Ve konum düzeltmesi zorunluydu: `fixed right-2` değeri artık **var olmayan**
+ * ikon şeridinin içini işaret ediyordu (FAZ 2'de şerit kalktı). Sabit konumlu bir
+ * ögenin dayandığı yüzey kaldırılınca, öge kaybolmaz — **öksüz kalır**. */
+export function KimlikSeridi({ gomulu = false }: { gomulu?: boolean } = {}) {
   const pathname = usePathname();
   // ⚠ `/login`'de kimlik **yoktur** ve sormak 401 üretirdi — bir hata gibi görünen bir
   // gürültü. `ConnectionBadge`/`LogoutButton` ile aynı desen.
@@ -51,11 +65,12 @@ export function KimlikSeridi() {
   // ⚠ Hata **gizlenmiyor** ama alarma da çevrilmiyor: kimlik okunamıyorsa kullanıcı
   // bunu bilmeli, çünkü ekrandaki verinin **kime ait** olduğu da belirsizdir.
   if (girisSayfasi) return null;
+  if (!gomulu && pathname === "/") return null;
   if (isError) {
     return (
       <span
         data-no-print
-        className="fixed right-14 top-3 z-40 font-mono text-[10px] text-neutral-400 max-md:right-3"
+        className={`${gomulu ? "" : "fixed right-14 top-3 z-40 max-md:right-3"} font-mono text-[10px] text-neutral-400`}
         title="/auth/me okunamadı"
       >
         kimlik okunamadı
@@ -69,7 +84,7 @@ export function KimlikSeridi() {
   return (
     <span
       data-no-print
-      className="fixed right-14 top-3 z-40 flex max-w-[min(22rem,55vw)] min-w-0 items-center gap-1.5 font-mono text-[10px] text-neutral-400 max-md:right-3"
+      className={`${gomulu ? "" : "fixed right-14 top-3 z-40 max-md:right-3"} flex max-w-[min(22rem,55vw)] min-w-0 items-center gap-1.5 font-mono text-[10px] text-neutral-400`}
     >
       {/* 🔴 E-posta `null` olabilir ve o hâl **yazılır**, boş bırakılmaz: boş bir alan
           "yüklenmedi" gibi okunur, oysa burada bilgi **yok**. */}

@@ -453,7 +453,8 @@ export default function Home() {
         incelemeVar={Boolean(canReview)}
         onInceleme={() => router.push("/review")}
       />
-      <div className="min-w-0 flex-1">
+      {/* max-md:pt-12 — mobil üst şerit (h-12) içeriği örtmesin. */}
+      <div className="min-w-0 flex-1 max-md:pt-12">
       {/* 🔴 FAZ 7.11 — DCM. Bayrak açıkken sohbet yüzeyine **hiç girilmez**: serbest
           metni gizlemek bir görünüm kararıdır, akışı hiç kurmamak bir GARANTİDİR. */}
       {dcmModu ? (
@@ -540,6 +541,10 @@ export default function Home() {
               uploading={uploadMut.isPending}
             />
           </section>
+          {/* 🔴 FAZ 3 — SOHBET SÜTUNU maks 720px (~68 karakter) ve ORTALI.
+              75+ karakter/satırda göz satır başını kaybeder; 45-75 bandının
+              optimumu ~66. Geniş ekranda tam genişliğe yayılan bir sohbet,
+              okunabilirliği ekran boyutuna teslim eder. */}
           <section
             className={`flex min-w-0 flex-1 flex-col overflow-auto ${
               darSekme === "sohbet" ? "max-lg:hidden" : ""

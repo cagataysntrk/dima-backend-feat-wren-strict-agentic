@@ -9,7 +9,21 @@ import { getSchema } from "@/lib/api-client";
 // SchemaPanel ile AYNI ["schema"] query'sini paylaşır (çift-fetch yok); 30sn'de bir
 // tazelenir → DB tekrar açıldığında rozet kendiliğinden yeşile döner. db_online backend'in
 // TCP erişilebilirlik kontrolünden gelir (ulaşılamaz DB → /schema asılmaz).
-export function ConnectionBadge() {
+/** ⚠ `gomulu` — **FAZ 3.** Bu öge iki yerde yaşayabilir:
+ *
+ * | yer | ne zaman |
+ * |---|---|
+ * | `YanCubuk` içinde, **gömülü** | ana sayfada (`/`) — kabuk artık çubuktur |
+ * | `layout.tsx`'te, **sabit konumlu** | öteki sayfalarda (`/review`, `/brand`) |
+ *
+ * 🔴 Neden iki yer değil de **tek yer, iki kip**: ikisini ayrı ayrı render etmek
+ * ana sayfada **çift gösterim** üretirdi. `gomulu` olmayan kopya `/` yolunda
+ * **susar** — böylece her sayfada tam olarak bir tane çizilir.
+ *
+ * ⚠ Ve konum düzeltmesi zorunluydu: `fixed right-2` değeri artık **var olmayan**
+ * ikon şeridinin içini işaret ediyordu (FAZ 2'de şerit kalktı). Sabit konumlu bir
+ * ögenin dayandığı yüzey kaldırılınca, öge kaybolmaz — **öksüz kalır**. */
+export function ConnectionBadge({ gomulu = false }: { gomulu?: boolean } = {}) {
   const pathname = usePathname();
   const { data, isError, isLoading } = useQuery({
     queryKey: ["schema"],
@@ -19,6 +33,8 @@ export function ConnectionBadge() {
     enabled: pathname !== "/login",
   });
   if (pathname === "/login") return null;
+  // Ana sayfada kabuk `YanCubuk`'tur; oradaki **gömülü** kopya çizer.
+  if (!gomulu && pathname === "/") return null;
 
   const online = !isError && data?.db_online !== false;
   // ⚠️ FAZ 1.11 — KADEMELİ DÜŞÜŞ GÖSTERGESİ (üç seviye).
@@ -47,7 +63,7 @@ export function ConnectionBadge() {
       title={label}
       aria-label={label}
       role="status"
-      className="fixed bottom-14 right-2 z-50 flex h-8 w-8 items-center justify-center"
+      className={`${gomulu ? "" : "fixed bottom-14 right-2 z-50"} flex h-8 w-8 items-center justify-center`}
     >
       <span
         className={`inline-block h-2.5 w-2.5 rounded-full ${

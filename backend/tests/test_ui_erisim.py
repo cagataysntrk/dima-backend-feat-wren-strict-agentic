@@ -186,6 +186,13 @@ TEK_GIRISLI: tuple[tuple[str, str, str], ...] = (
     ("YanCubuk", "isContentEditable", "Ctrl+B composer odaktayken DEVRE DIŞI"),
     ("YanCubuk", "Son 7 gün", "geçmiş gruplaması — göreli yakın, mutlak uzak"),
     ("YanCubuk", "updated_at", "sıralama updated_at ile (created_at DEĞİL)"),
+    # 🔴 FAZ 3 — mobil giriş noktaları. Çubuğa `max-md:hidden` koymak, küçük ekranda
+    # yeni sohbet/geçmiş/ayarlara **hiçbir giriş bırakmamıştı**; eski ikon şeridi
+    # mobilde alt çubuğa dönüşüyordu ve karşılığını koymadan kaldırmıştım.
+    # *Bir yüzeyi kaldırmak, onun taşıdığı girişleri de kaldırmaktır.*
+    ("YanCubuk", "max-md:flex", "mobil üst şerit — ☰ + ✏ her zaman görünür"),
+    ("YanCubuk", "translate-x-full", "mobilde çubuk KATMAN olur (reflow değil)"),
+    ("YanCubuk", "gomulu", "kimlik · bağlantı · çıkış çubuğa gömüldü"),
     ("SchedulesPanel", "schedule", "zamanlama yönetimi — yalnız Ayarlar→Zamanlamalar"),
     ("TercihlerPanel", "tercih", "tercihler + bildirim tercihleri"),
     ("SchemaPanel", "sahip", "metrik sahipliği atama/kaldırma"),
