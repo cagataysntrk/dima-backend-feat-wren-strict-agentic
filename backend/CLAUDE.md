@@ -187,6 +187,25 @@ yüzden **iki dalga**: önce korpus tek başına, sonra süit ‖ eval ‖ senar
 
 Geri alma tek env: `DIMA_KORPUS_PARALEL=1`.
 
+### 🔴 DÖRDÜNCÜ KURAL — *bir tasarım gerçeği KOŞULARAK değil, OKUNARAK bulunur*
+
+**Ölçülen israf (2026-08-05):** `motor_cls=on` sorusu için **üç ayrı tam süit** koşuldu
+(~7 dk) — `--hepsi`'yi bir buçuk kez koşmaya bedel. Çıkan cevap tek satırdı:
+`rls.cls_manifeste_yaz` `shadow` kademesinde manifesti **dokunmadan** döndürüyor, yani
+`shadow ≡ off`. Bu, **okunacak** bir gerçekti; koşulacak değil.
+
+> Süit *"kod ne yapıyor?"* sorusunun cevabı **değildir**; *"değişiklik bir şeyi bozdu
+> mu?"* sorusunun cevabıdır. İkincinin aletini birincinin sorusuna tutmak, hem yavaş hem
+> güvenilmezdir — çünkü bir davranışın **neden** öyle olduğunu süit söylemez.
+
+**Pratik sonuç:** demet başına **bir** `--tam` (1:50), gerekirse gecelik `--hepsi` (4:06).
+Ara koşum yok, *"bir de şuna bakayım"* yok. Bir soru *"bu kod ne yapıyor / neden böyle"*
+biçimindeyse **önce kaynağı oku**.
+
+⚠ Ve `--hizli` merkezî dosyalarda (`ask.py` · `wren_service.py` · `cube_router.py`)
+29-53 dosya seçer; paralelken bile 1-2 dakika. **Beş kez koşulursa kapının kendisinden
+pahalı olur.**
+
 ### Değişmeyen üç kural
 
 - 🔴 **Kapı koşarken repoya YAZILMAZ** — mount canlıdır, ölçüm karışır.
