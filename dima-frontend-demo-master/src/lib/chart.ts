@@ -518,13 +518,25 @@ function buildOptionInner(result: QueryResult, a: Analysis, o: BuildOpts): EChar
     const R = rowKeys.length;
     const C = colKeys.length;
     const marginStyle = { borderColor: axis, borderWidth: 1, borderType: "dashed" as const };
-    type Cell = { value: [number, number, number]; itemStyle?: object };
+    // 🔴 FAZ 4B (D.3) — HÜCRE KENDİ ÇAPALARINI TAŞIR. Isı haritasında bir hücre
+    // satır **ve** sütun boyutunun kesişimidir; tek çapa göndermek tıklanandan daha
+    // GENİŞ bir kırılım açardı (*"bu hücreye tıkladım, bana tüm satırı gösterdi"*).
+    // ⚠ Kenar ortalaması hücrelerinde `capalar` **YOK** ve olmaması doğrudur: onlar
+    // bir kesişim değil bir **özet**tir, kırılacak tek bir satır kümesi yoktur.
+    type Cell = { value: [number, number, number]; itemStyle?: object;
+                  capalar?: { dimension: string; value: string }[] };
     const data: Cell[] = [];
 
     for (let ri = 0; ri < R; ri++)
       for (let ci = 0; ci < C; ci++) {
         const v = val.get(`${ri}|${ci}`);
-        if (v != null) data.push({ value: [ci, ri, v] });
+        if (v != null) {
+          data.push({
+            value: [ci, ri, v],
+            capalar: [{ dimension: row, value: rowKeys[ri] },
+                      { dimension: col, value: colKeys[ci] }],
+          });
+        }
       }
     // satır ortalamaları (sağ kenar sütunu)
     for (let ri = 0; ri < R; ri++) {
@@ -657,11 +669,22 @@ function buildOptionInner(result: QueryResult, a: Analysis, o: BuildOpts): EChar
           type: "bar" as const,
           xAxisIndex: i,
           yAxisIndex: i,
+          // 🔴 FAZ 4B (D.3) — panelli grafikte bir çubuk ÜÇ boyutun kesişimidir
+          // (panel · x · seri). Çapalar veri ögesine iliştirilir: `seriesIndex`ten
+          // geri hesaplamak panel sarma/sıra kurallarına bağımlı olurdu ve o kurallar
+          // değiştiğinde **sessizce** yanlışlanırdı.
           data: xs.map((x) => {
             const r = rows.find(
               (rr) => String(rr[fDim]) === p && fmtCat(rr[xDim]) === x && fmtCat(rr[sDim]) === g,
             );
-            return r ? num(r[measure]) : null;
+            return {
+              value: r ? num(r[measure]) : null,
+              capalar: r
+                ? [{ dimension: fDim, value: String(r[fDim]) },
+                   { dimension: xDim, value: String(r[xDim]) },
+                   { dimension: sDim, value: String(r[sDim]) }]
+                : undefined,
+            };
           }),
           itemStyle: { borderRadius: [2, 2, 0, 0] as [number, number, number, number] },
           barMaxWidth: 18,

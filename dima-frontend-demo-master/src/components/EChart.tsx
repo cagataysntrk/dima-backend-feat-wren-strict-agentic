@@ -31,7 +31,14 @@ export function EChart({
   // tıklamayı da taşır: `dataIndex` (serideki konum) + `name` (ECharts'ın x-ekseni/dilim
   // etiketi olarak zaten gösterdiği KATEGORİ DEĞERİ — ayrı bir satır-eşleme İCAT ETMEDEN
   // doğrudan kullanılabilir). `onSeriesClick`'in YANINDA, GERİYE-UYUMLU ek bir callback.
-  onDataPointClick?: (info: { seriesIndex: number; dataIndex: number; name: string }) => void;
+  /** ⚠ `data` **eklendi** (FAZ 4B): panelli grafik ve ısı haritasında bir tıklama
+   *  İKİ boyutun kesişimidir ve o ikisi **indis aritmetiğiyle** geri hesaplanamaz
+   *  (panel sırası, sarma, kenar ortalamaları…). Çözüm çapaları **veri ögesine
+   *  iliştirmek**: nokta kendi kimliğini taşır, tüketici hiçbir şey tahmin etmez.
+   *  *Bir grafiğin iç kurgusundan geriye doğru anlam çıkarmak, o kurgu değiştiğinde
+   *  sessizce yanlışlanır.* */
+  onDataPointClick?: (info: { seriesIndex: number; dataIndex: number; name: string;
+                              data?: unknown }) => void;
 }) {
   const el = useRef<HTMLDivElement>(null);
   const chart = useRef<echarts.ECharts | null>(null);
@@ -51,10 +58,12 @@ export function EChart({
     const c = echarts.init(el.current, undefined, { renderer: "canvas" });
     chart.current = c;
     c.on("click", (params) => {
-      const p = params as { seriesIndex?: number; dataIndex?: number; name?: string };
+      const p = params as { seriesIndex?: number; dataIndex?: number; name?: string;
+                            data?: unknown };
       if (typeof p.seriesIndex === "number") clickRef.current?.(p.seriesIndex);
       if (typeof p.seriesIndex === "number" && typeof p.dataIndex === "number" && p.name) {
-        pointClickRef.current?.({ seriesIndex: p.seriesIndex, dataIndex: p.dataIndex, name: p.name });
+        pointClickRef.current?.({ seriesIndex: p.seriesIndex, dataIndex: p.dataIndex,
+                                  name: p.name, data: p.data });
       }
     });
     const applySize = () => {

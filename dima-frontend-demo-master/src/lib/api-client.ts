@@ -29,6 +29,7 @@ import type {
   ReportBlockInput,
   DrillRequestInput,
   DrillResponse,
+  KokNedenResponse,
   EylemOnayResult,
   SunumTercihi,
   SchemaResponse,
@@ -935,6 +936,16 @@ export async function deprecateMeasureCandidate(
 // Faz 4.10 (1 Ağustos 2026) — dallı kök-neden analizi: her adım (explain/expand/select/
 // related/raw) bu TEK ucu çağırır; backend GERÇEK sorguyu çalıştırır (mock yok) ve kendi
 // Query Contract kaydını üretir (drill.py + ask.py::ask_drill).
+// 🌳 FAZ 4B — kök-neden haritasının İLK KATI. `/ask/drill` ile aynı girdiyi alır ama
+// farklı bir soruya cevap verir: o "değişimi kim sürükledi?", bu "hangi yola bakmaya
+// değer — ve neye BAKMADIM?". Farkı taşıyan alan `durum`dur (app/kok_neden.py).
+export async function kokNedenHaritasi(
+  body: { cube_query: CubeQuery; mode?: string; session_id?: string; max_dimensions?: number },
+): Promise<KokNedenResponse> {
+  const { data } = await apiClient.post<KokNedenResponse>("/ask/kok-neden", body);
+  return data;
+}
+
 export async function drillAsk(body: DrillRequestInput): Promise<DrillResponse> {
   const { data } = await apiClient.post<DrillResponse>("/ask/drill", body);
   return data;

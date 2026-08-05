@@ -615,6 +615,15 @@ class DrillRequest(BaseModel):
     action: str = "explain"  # explain | expand | select | raw | related
     dimension: str | None = None       # expand: eklenecek boyut; select: filtreye çevrilecek boyut
     filter_value: str | None = None    # select: seçilen kategori değeri
+    #: 🔴 FAZ 4B (D.3) — **ÇOK-ÇAPALI seçim.** `dimension`+`filter_value` **tekil**di ve
+    #: bu bir UI ayarı değil bir **sözleşme sınırıydı**: panelli grafikte bir tıklama
+    #: (panel değeri **ve** kategori) ve ısı haritasında bir hücre (satır boyutu **ve**
+    #: sütun boyutu) **İKİ** filtre demek. Tek çapa göndermek, kullanıcının tıkladığından
+    #: **daha geniş** bir kırılım açardı — *"bu hücreye tıkladım, bana tüm satırı gösterdi"*.
+    #: Sözleşme genişleyince kısıt kalkar: artık **her grafik türü** bir giriş noktasıdır.
+    #: ⚠ Tekil alanlar KORUNDU (silinmedi): eski çağıranlar kırılmasın diye ikisi de
+    #: kabul edilir ve `select` eylemi ikisini **birleştirir**.
+    ek_filtreler: list[dict[str, Any]] | None = None  # [{dimension, value}] — ikinci ve sonraki çapalar
     target_cube: str | None = None     # related: geçilecek cube adı
     limit: int = 50                    # raw: kaç satır getirilsin
 
@@ -634,6 +643,55 @@ class ContributionRequest(BaseModel):
     kind: str = "segment"
     session_id: str | None = None
     max_dimensions: int | None = None
+
+
+class KokNedenRequest(BaseModel):
+    """🌳 FAZ 4B — kök-neden haritasının **ilk katı**.
+
+    `/ask/contribution` ile aynı girdiyi alır ama farklı bir soruya cevap verir:
+    o *"değişimi kim sürükledi?"* der, bu *"hangi yola bakmaya değer — ve neye
+    BAKMADIM?"* der. Farkı taşıyan alan `durum`dur."""
+
+    cube_query: dict[str, Any]
+    mode: str = "yoy"
+    session_id: str | None = None
+    max_dimensions: int | None = None
+
+
+class KokNedenDugum(BaseModel):
+    """Bir **hipotez** — veri yığını değil.
+
+    🔴 `sinyal` ve `durum` **backend'de** hesaplanır: insanın tıklayarak verdiği karar
+    (*"hangi boyutta dallanayım"*) ile bir ajanın vereceği karar aynı karardır ve
+    frontend'e gömülü bir mantık **çağrılamaz**. Arayüz bunları gösterir, hesaplamaz.
+
+    ⚠ `gerekce` isteğe bağlı bir süs değil: *bir ağırlık, sebebi okunmadıkça bir
+    süstür* — bu deponun sayısal güven rozeti hakkındaki kararının aynısı."""
+
+    boyut: str
+    etiket: str
+    deger: Any = None
+    olcu: str | None = None
+    #: En büyük tek segmentin brüt değişimdeki payı (%) — `rank_dimensions` ile AYNI büyüklük.
+    sinyal: float = 0.0
+    #: `kanitli` | `zayif` | `olculemedi` | `kapsam_disi`
+    durum: str = "olculemedi"
+    gerekce: str | None = None
+    makbuz: str | None = None
+    cube_query: dict[str, Any] | None = None
+    cocuklar: list["KokNedenDugum"] = Field(default_factory=list)
+
+
+class KokNedenResponse(BaseModel):
+    """⚠ `taranmayan_adlar` **sessiz değildir** ve düğüm listesinde de `⊘ olculemedi`
+    olarak görünür: *yalnız bulduğunu gösteren bir ağaç, bakmadığını gizler.*"""
+
+    cube: str | None = None
+    olcu: str | None = None
+    mode: str = "yoy"
+    dugumler: list[KokNedenDugum] = Field(default_factory=list)
+    taranmayan_adlar: list[str] = Field(default_factory=list)
+    note: str | None = None
 
 
 class PvmFinding(BaseModel):

@@ -3705,7 +3705,9 @@ def _ask_drill_govde(request: Request, body: DrillRequest) -> DrillResponse:
     import time as _time
 
     from app.drill import (
+        aktif_boyutlar,
         available_dimensions,
+        secim_uygula,
         expand_cube_query,
         flag_outliers,
         formula_explanation,
@@ -3793,8 +3795,7 @@ def _ask_drill_govde(request: Request, body: DrillRequest) -> DrillResponse:
         anomalies = []
         if body.result and body.result.rows:
             anomalies = _anomalies_for(body.cube_query, body.result.model_dump())
-        active_dims = set(body.cube_query.get("dimensions") or [])
-        active_dims |= {f.get("dimension") for f in (body.cube_query.get("filters") or [])}
+        active_dims = aktif_boyutlar(body.cube_query)
         # UC-2.18 kanıt paneli: "explain" YENİ bir sorgu ÇALIŞTIRMAZ (mevcut result yeniden
         # kullanılır) ama SQL METNİ yine de üretilebilir (derleme, ÇALIŞTIRMA değil) — kullanıcı
         # ilk tıklamada bile formülün YANINDA gerçek SQL'i görsün. Başarısız olursa sessizce None
@@ -3821,8 +3822,7 @@ def _ask_drill_govde(request: Request, body: DrillRequest) -> DrillResponse:
             request, service, body.session_id,
             f"drill: {cube_meta.get('display') or cube_meta['name']} → {body.dimension}",
             new_cq, sql, result)
-        active_dims = set(new_cq.get("dimensions") or [])
-        active_dims |= {f.get("dimension") for f in (new_cq.get("filters") or [])}
+        active_dims = aktif_boyutlar(new_cq)
         return DrillResponse(
             cube_query=new_cq,
             formula_explanation=formula_explanation(new_cq, cube_meta),
@@ -3836,19 +3836,21 @@ def _ask_drill_govde(request: Request, body: DrillRequest) -> DrillResponse:
         )
 
     if action == "select":
-        if not body.dimension or body.filter_value is None:
-            raise HTTPException(status_code=400,
-                                detail="'select' için 'dimension' ve 'filter_value' gerekli.")
-        new_cq = _with_all_measures(
-            select_cube_query(body.cube_query, body.dimension, body.filter_value), cube_meta)
+        # 🔴 FAZ 4B (D.3) — ÇOK-ÇAPALI SEÇİM; gövde `drill.py`de (bir `cube_query`
+        # dönüşümünün evi orası) — router yalnız HTTP kaygısını çözer.
+        try:
+            secili, capalar = secim_uygula(body.cube_query, body.dimension,
+                                           body.filter_value, body.ek_filtreler)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        new_cq = _with_all_measures(secili, cube_meta)
         result, sql, duration_ms = _run(new_cq)
         contract_id = _drill_record_contract(
             request, service, body.session_id,
             f"drill: {cube_meta.get('display') or cube_meta['name']} → "
-            f"{body.dimension}={body.filter_value}",
+            + " ∧ ".join(f"{d}={v}" for d, v in capalar),
             new_cq, sql, result)
-        active_dims = set(new_cq.get("dimensions") or [])
-        active_dims |= {f.get("dimension") for f in (new_cq.get("filters") or [])}
+        active_dims = aktif_boyutlar(new_cq)
         return DrillResponse(
             cube_query=new_cq,
             formula_explanation=formula_explanation(new_cq, cube_meta),
@@ -3874,8 +3876,7 @@ def _ask_drill_govde(request: Request, body: DrillRequest) -> DrillResponse:
             f"drill: {cube_meta.get('display') or cube_meta['name']} → "
             f"{target_meta.get('display') or body.target_cube} (ilişkili veri)",
             new_cq, sql, result)
-        active_dims = set(new_cq.get("dimensions") or [])
-        active_dims |= {f.get("dimension") for f in (new_cq.get("filters") or [])}
+        active_dims = aktif_boyutlar(new_cq)
         return DrillResponse(
             cube_query=new_cq,
             formula_explanation=formula_explanation(new_cq, target_meta),

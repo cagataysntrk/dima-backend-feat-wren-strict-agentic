@@ -20,6 +20,7 @@ from app.routers import conversations as conversations_router
 from app.routers import dashboards as dashboards_router
 from app.routers import decisions as decisions_router
 from app.routers import eylem as eylem_router
+from app.routers import kok_neden as kok_neden_router
 from app.routers import measures as measures_router
 from app.routers import schedules as schedules_router
 from app.routers import stats as stats_router
@@ -168,6 +169,9 @@ def create_app() -> FastAPI:
     app.include_router(metrics.router, dependencies=_protected)
     app.include_router(query.router, dependencies=_protected)
     app.include_router(ask.router, dependencies=_protected)
+    # 🌳 FAZ 4B — `ask.py`nin büyüme kapısı bu ucu içeri almadı ve DOĞRU yaptı:
+    # yeni bir YETENEK `ask()` akışının parçası değildir (bkz. routers/kok_neden.py).
+    app.include_router(kok_neden_router.router, dependencies=_protected)
     app.include_router(contracts_router.router, dependencies=_protected)
     # FAZ 1.12 — AI Act Md.13: denetleyici-okunabilir kayıt ihracı.
     from app.routers import audit_export as _audit_export

@@ -89,11 +89,16 @@ export function ReportCard({
   const [drillOpen, setDrillOpen] = useState(false);
   // Doğrulama turu düzeltmesi (1 Ağustos 2026, P1-2) — grafikte tıklanan tek kategori;
   // doluysa drill panelini "Başlangıç"tan değil DOĞRUDAN o kategoriye seçili açar.
-  const [drillFilter, setDrillFilter] = useState<{ dimension: string; value: string } | null>(null);
+  /** ⚠ FAZ 4B — `ek`: panelli grafik ve ısı haritasında bir tıklama İKİ/ÜÇ boyutun
+   *  kesişimidir. Tek çapa taşımak, kullanıcının tıkladığından **daha geniş** bir
+   *  kırılım açardı; sözleşme genişleyince (`DrillRequest.ek_filtreler`) o kısıt kalktı. */
+  const [drillFilter, setDrillFilter] =
+    useState<{ dimension: string; value: string; ek?: { dimension: string; value: string }[] } | null>(null);
   // Faz G2 — grafikte işaret edilen hücre. Panel AÇMAZ; kullanıcıya ne yapmak istediğini
   // sorar (konuş / kırılıma in). Tek tıklamaya tek yorum dayatmamak için.
   const [sohbetCapasi, setSohbetCapasi] =
-    useState<{ dimension: string; value: string } | null>(null);
+    useState<{ dimension: string; value: string;
+               ek?: { dimension: string; value: string }[] } | null>(null);
   const closeDrill = () => { setDrillOpen(false); setDrillFilter(null); };
   // Query Contract keşif/replay paneli (doğrulama turu düzeltmesi, 1 Ağustos 2026, P1-9).
   const [contractOpen, setContractOpen] = useState(false);
@@ -731,13 +736,13 @@ export function ReportCard({
             onViewChange={onLiveView}
             onDataPointClick={
               item.cube_query
-                ? (dimension, value) => {
+                ? (dimension, value, ek) => {
                     // FAZ G2 — grafikte bir hücreye tıklamak ARTIK doğrudan panel açmaz.
                     // Önce bir SOHBET ÇAPASI kurulur: kullanıcı o hücre hakkında
                     // konuşabilir ("neden böyle?") ya da kırılıma inebilir. Panelin
                     // hemen açılması tek bir yorumu (gezinme) dayatıyordu; oysa aynı
                     // tıklama "bunu konuşalım" da demek olabilir.
-                    setSohbetCapasi({ dimension, value });
+                    setSohbetCapasi({ dimension, value, ek });
                   }
                 : undefined
             }
@@ -954,7 +959,14 @@ export function ReportCard({
         </button>
       )}
       {!makineGizli && (
-        <KartMakinesi item={item} onCubeEdit={onCubeEdit} sessionId={sessionId} />
+        <KartMakinesi
+          item={item}
+          onCubeEdit={onCubeEdit}
+          sessionId={sessionId}
+          // Vaka kaydı bu karta ÇAPALI bir yanıt olarak sohbete düşer — yani
+          // notun kökeni yalnız yolu değil, **hangi cevap üstünde** alındığını da taşır.
+          onNot={onReply ? (metin) => onReply(threadId, index, metin) : undefined}
+        />
       )}
 
       {/* DEVAM SORUSU chip'leri (`suggestions`) — FAZ D2.

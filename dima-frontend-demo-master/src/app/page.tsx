@@ -686,6 +686,10 @@ export default function Home() {
             item={activeThread.items[panelKart]}
             onCubeEdit={({ cq, label }) => cubeMutation.mutate({ cq, label })}
             sessionId={sessionId}
+            // ⚠ Panelde de AYNI zincir: makine iki yerde yaşıyor ama not yolu tek.
+            // Yalnız kartta çalışan bir not, panelde çalışmayan bir not demektir —
+            // ve kullanıcı hangisinde olduğunu hatırlamak zorunda kalırdı.
+            onNot={(metin) => submitReply(activeThread.id, panelKart, metin)}
           />
         </AnalizPaneli>
       )}

@@ -415,6 +415,46 @@ denildiğinde ajan **aynı ağacı** üretip sohbete rapor olarak koyabilir.
 - Responsive testi: <768px'te ağaç **çizilmiyor**, çip+liste çiziliyor
 - `test_panel_sayisi.py` ≤13
 
+### ✅ YAPILDI
+
+| # | ne | nerede |
+|---|---|---|
+| 1 | Düğüm şeması + `sinyal`/`durum` — **backend'de**, ajan çağrılabilir | `app/kok_neden.py` · `tools.KAYIT` (23→**24** araç) |
+| 2 | Uç `POST /ask/kok-neden` | `app/routers/kok_neden.py` |
+| 3 | `KokNedenHaritasi.tsx` — 🔴 `…Panel` **değil** (K1), panel sayısı sabit | panelde (`KartMakinesi` içinde) |
+| 4 | Yol + **bir** kat; kardeşler yok, `cocuklar` çizilmiyor | boğulmama kuralı |
+| 5 | Her düğüm kendi mikro grafiği (sinyal çubuğu) · açılan kat `ResultView` | çıplak tablo asla |
+| 6 | Düğümde not → sohbete **yol diyagramıyla** vaka kaydı | kart **ve** panel — tek zincir |
+| 7 | Üç izdüşüm (`md:` `xl:` ızgara + kaydırılabilir yol) | responsive-first |
+| 8 | `ResultView` facet/ısı tıklama kısıtı **kalktı** | ⬇ aşağıdaki not |
+
+🔴 **Kısıt bir UI tercihi değil, SÖZLEŞMENİN TEKİLLİĞİYDİ.** `DrillRequest` yalnız
+`dimension`+`filter_value` taşıyordu; oysa panelli grafikte bir tıklama (panel + kategori)
+ve ısı haritasında bir hücre (satır + sütun) **iki** filtre demek. Tek çapa göndermek
+kullanıcının tıkladığından **daha geniş** bir kırılım açardı — *"bu hücreye tıkladım,
+bana tüm satırı gösterdi"*. Sözleşme `ek_filtreler` ile genişledi, tekil alanlar
+**korundu**. ⚠ Çapalar **veri ögesine iliştirildi**, `seriesIndex`ten geri hesaplanmadı:
+*bir grafiğin iç kurgusundan geriye doğru anlam çıkarmak, o kurgu değiştiğinde sessizce
+yanlışlanır.* Ve kalan tek red **dürüst**: kenar ortalaması hücresi bir kesişim değil
+bir özettir; orada kırılacak tek bir satır kümesi yoktur ve bunu **söyler**.
+
+🔴 **Üç kusur bu fazda ortaya çıktı:**
+
+1. **`ask.py` büyüme kapısı kırmızı verdi** (2395 → 2431) ve **doğru yaptı**: bu yeni bir
+   **yetenek**, `ask()` akışının parçası değil. Uç kendi router'ına çıktı; çapa mantığı
+   `drill.py`ye taşındı (*bir `cube_query` dönüşümünün evi orası*). Bonus: `active_dims`
+   iki satırı `ask.py`de **dört kez** tekrar ediyordu → `drill.aktif_boyutlar()`.
+   *Dört kopyanın hepsini düzeltmek birini düzeltmekten kolay değildir — imkânsızdır,
+   çünkü dördüncüsü unutulur.*
+2. **`test_TERS_TUZAK_FAZ_0_15_CI_KAPILARI_AYAKTA` yalan alarm veriyordu:** konteynere
+   yalnız `backend/` bağlı, `.github/` o ortamda **yok** — kapı bunu *"CI kapıları geri
+   alındı"* diye okuyordu. ⊘ ÖLÇÜLEMEDİ üçüncü hâline çevrildi (sebep yazılı, komut
+   verili, atlama **sayılır**). *Bu kapının kendi konusu tam da buydu.*
+3. **`test_ACIKKEN_de_ROUTE_cozdugune_DOKUNMUYOR` kırmızı — ama BİZDEN DEĞİL.** İzole bir
+   worktree'de `HEAD`'de koşuldu: orada da kırmızı. Ayrı bir borç olarak kaydedildi
+   (yol haritası **FAZ F** · netleştirme önceliği); bu fazın kapsamına **karıştırılmadı**.
+   *Bir kırmızıyı sahiplenmek, onu ölçmeden üstlenmek değildir.*
+
 ---
 
 ## FAZ 5 · GÖRSEL DİLİN UYGULANMASI

@@ -38,7 +38,11 @@ export function DrillDownPanel({
   // tıklanınca panel BOŞTAN (action:"explain") değil, DOĞRUDAN o kategoriye filtrelenmiş
   // (action:"select") açılsın diye. Ekstra bir effect/ikinci-adım GEREKMEZ — ilk sorgunun
   // KENDİSİ koşullu seçilir (aşağıdaki queryFn).
-  initialFilter?: { dimension: string; value: string } | null;
+  initialFilter?: { dimension: string; value: string;
+                    /** 🔴 FAZ 4B — panelli grafik/ısı haritasında bir tıklama İKİ/ÜÇ
+                     *  boyutun kesişimidir. Bu alan olmadan o şekiller tıklanamıyordu
+                     *  ve sebebi bir UI tercihi değil, **sözleşmenin tekilliğiydi**. */
+                    ek?: { dimension: string; value: string }[] } | null;
 }) {
   // İlk adım — useQuery ile getirilir (mevcut SchemaPanel/HelpPanel deseniyle TUTARLI).
   // `initialFilter` verilmişse İLK adımın KENDİSİ zaten "select" olur (explain+ayrı bir
@@ -52,7 +56,8 @@ export function DrillDownPanel({
     queryFn: () =>
       initialFilter
         ? drillAsk({ cube_query: cubeQuery, session_id: sessionId, action: "select",
-                    dimension: initialFilter.dimension, filter_value: initialFilter.value })
+                    dimension: initialFilter.dimension, filter_value: initialFilter.value,
+                    ek_filtreler: initialFilter.ek })
         : drillAsk({ cube_query: cubeQuery, result, session_id: sessionId, action: "explain" }),
   });
 

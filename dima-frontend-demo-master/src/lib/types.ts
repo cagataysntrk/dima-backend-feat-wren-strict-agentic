@@ -872,8 +872,49 @@ export interface DrillRequestInput {
   action: DrillAction;
   dimension?: string | null;
   filter_value?: string | null;
+  /** 🔴 FAZ 4B (D.3) — ÇOK-ÇAPALI seçim. `dimension`+`filter_value` **tekil**di ve bu
+   *  bir UI ayarı değil bir **sözleşme sınırıydı**: panelli grafikte bir tıklama
+   *  (panel + kategori) ve ısı haritasında bir hücre (satır + sütun) İKİ filtre demek.
+   *  ⚠ Tekil alanlar KORUNDU — eski çağıranlar kırılmasın; sunucu ikisini birleştirir. */
+  ek_filtreler?: { dimension: string; value: string }[] | null;
   target_cube?: string | null;
   limit?: number;
+}
+
+/** 🌳 FAZ 4B — kök-neden haritasının düğüm durumları.
+ *
+ * 🔴 Bu birlik **backend'in sözleşmesidir**, arayüzün bir görsel tercihi değil:
+ * `kanitli`/`zayif` bir ÖLÇÜM sonucu, `olculemedi` bir TARAMA olgusu,
+ * `kapsam_disi` bir KATALOG olgusudur. Arayüz onları *gösterir*, hesaplamaz —
+ * çünkü *"hangi boyutta dallanayım"* sorusuna insanın ve bir ajanın verdiği
+ * cevap aynı cevaptır ve frontend'e gömülü bir mantık **çağrılamaz**. */
+export type KokNedenDurum = "kanitli" | "zayif" | "olculemedi" | "kapsam_disi";
+
+/** Bir **hipotez** — veri yığını değil. */
+export interface KokNedenDugum {
+  boyut: string;
+  etiket: string;
+  deger?: unknown;
+  olcu: string | null;
+  /** En büyük tek segmentin brüt değişimdeki payı (%). */
+  sinyal: number;
+  durum: KokNedenDurum;
+  /** ⚠ Süs değil: *bir ağırlık, sebebi okunmadıkça bir süstür.* */
+  gerekce: string | null;
+  makbuz: string | null;
+  /** 🔴 `olculemedi` düğümde de DOLUDUR — **silik ≠ kapalı**. */
+  cube_query: CubeQuery | null;
+  cocuklar: KokNedenDugum[];
+}
+
+export interface KokNedenResponse {
+  cube: string | null;
+  olcu: string | null;
+  mode: string;
+  dugumler: KokNedenDugum[];
+  /** ⚠ Sessiz değil: bunlar düğüm listesinde de `⊘ olculemedi` olarak görünür. */
+  taranmayan_adlar: string[];
+  note: string | null;
 }
 
 export interface DrillResponse {

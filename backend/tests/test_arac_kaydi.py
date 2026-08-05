@@ -436,14 +436,19 @@ def test_KAYITSIZ_OLANLAR_sifir_yeni_kod():
 def test_ARAC_SAYISI_KAYITLI():
     """Sayı **belgede** yazılı; kayıt büyürse beyan da güncellenmeli.
 
-    Bugün: **16** (taban) + **7** (kayıtsız olanlar) = **23**; `yazma_araclari` açıkken
-    **+3** = 26.
+    Bugün: **16** (taban) + **8** (kayıtsız olanlar) = **24**; `yazma_araclari` açıkken
+    **+3** = 27.
+
+    ⟳ FAZ 4B (+1) — `kok_neden.harita`. Bir ÜRÜN kararıdır: kök-neden ağacının
+    **puanlaması** arayüzde değil kayıtta yaşar, çünkü *"hangi boyutta dallanayım"*
+    sorusuna insanın ve ajanın verdiği cevap **aynı cevaptır** ve frontend'e gömülü
+    bir mantık **çağrılamaz**.
     """
     from app.config import get_settings
 
     acik = str(getattr(get_settings(), "yazma_araclari", "") or "").lower() in (
         "1", "true", "on", "yes")
-    beklenen = 26 if acik else 23
+    beklenen = 27 if acik else 24
     assert len(tools.hepsi()) == beklenen, (
         f"araç sayısı {len(tools.hepsi())}, beklenen {beklenen} — kayıt değiştiyse bu "
         f"bir ÜRÜN kararıdır ve beyanı da değişmeli.")

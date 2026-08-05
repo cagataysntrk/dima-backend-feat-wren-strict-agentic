@@ -29,7 +29,10 @@
  * garantisidir.*
  */
 
+import { useState } from "react";
+
 import { ContributionLayer } from "@/components/ContributionLayer";
+import { KokNedenHaritasi } from "@/components/KokNedenHaritasi";
 import { InterpretationBar } from "@/components/InterpretationBar";
 import { PrescriptionLayer } from "@/components/PrescriptionLayer";
 import type { AskResponse } from "@/lib/types";
@@ -38,11 +41,17 @@ export function KartMakinesi({
   item,
   onCubeEdit,
   sessionId,
+  onNot,
 }: {
   item: AskResponse & { question?: string };
   onCubeEdit?: (a: { cq: Record<string, unknown>; label: string }) => void;
   sessionId?: string;
+  /** 🔴 Vaka kaydı → sohbet. Not **yoluyla birlikte** gider: *bir not, kökeni olmadan
+   *  bir kanaattir.* Verilmezse harita not almayı hiç TEKLİF ETMEZ — çalışmayan bir
+   *  düğme göstermek, olmayan bir yeteneği vaat etmektir. */
+  onNot?: (metin: string) => void;
 }) {
+  const [haritaAcik, setHaritaAcik] = useState(false);
   const olcuVar =
     ((item.cube_query as { measures?: unknown[] } | null)?.measures?.length ?? 0) > 0;
 
@@ -73,6 +82,42 @@ export function KartMakinesi({
           // BUGÜN koşulabilir kılar. İkisi farklı sorular cevaplar.
           cubeQuery={item.cube_query ?? null}
         />
+      )}
+
+      {/* 🌳 KÖK-NEDEN HARİTASI (FAZ 4B) — *"hangi yola bakmaya değer?"*
+          ⚠ Katkı katmanının ALTERNATİFİ değil, ÖNÜ: katkı *"değişimi kim sürükledi"*yi
+          ayrıştırır; harita **hangi boyutta dallanmanın değdiğini** ve 🔴 **neye
+          BAKILMADIĞINI** söyler. Kullanıcının şikâyeti (*"çok karışık, çözemiyor"*)
+          eksik veriden değil, eksik **öncelikten** doğuyordu.
+          ⚠ VARSAYILAN KAPALI: panel zaten yoğun; harita bir **araç**tır, bir katman değil.
+          Açık gelseydi, tam da düzeltmeye çalıştığı boğulmayı üretirdi. */}
+      {item.cube_query && olcuVar && (
+        <div className="mt-3 border-t border-[var(--surface-kenar)] pt-3">
+          <button
+            type="button"
+            onClick={() => setHaritaAcik((a) => !a)}
+            aria-expanded={haritaAcik}
+            className="rounded-[var(--radius-btn)] px-2 py-1 font-mono text-[var(--text-etiket)] text-neutral-500 transition-colors hover:text-accent"
+          >
+            🌳 kök neden haritası {haritaAcik ? "▾" : "▸"}
+          </button>
+          {haritaAcik && (
+            <div className="mt-2">
+              <KokNedenHaritasi
+                cubeQuery={item.cube_query}
+                sessionId={sessionId}
+                onNot={
+                  onNot
+                    ? ({ yol, not: metin }) =>
+                        // 🔴 YOL GÖRSELLEŞTİRİLİR: `fire ↑ ── makine: RAM-2 ── ✎ "…"`.
+                        // Yol olmadan not yeniden üretilemez, doğrulanamaz, tartışılamaz.
+                        onNot(`${yol.join(" ── ")} ── ✎ ${metin}`)
+                    : undefined
+                }
+              />
+            </div>
+          )}
+        </div>
       )}
 
       {/* KATKI AYRIŞTIRMASI — şelale + PVM. *"Neden değişti"* sorusunun ham dayanağı. */}

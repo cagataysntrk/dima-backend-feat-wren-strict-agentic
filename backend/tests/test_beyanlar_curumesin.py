@@ -917,7 +917,16 @@ def test_TERS_TUZAK_FAZ_0_15_CI_KAPILARI_AYAKTA():
     **okunamaz** hâle getirir.
     """
     wf = APP.parent.parent / ".github/workflows"
-    assert wf.exists(), "`.github/workflows` YOK — FAZ 0.15 geri alınmış"
+    if not wf.exists():
+        # ⊘ ÖLÇÜLEMEDİ — **kırmızı değil, üçüncü hâl.** Test konteynerine yalnız
+        # `backend/` bağlanıyor; depo kökü (dolayısıyla `.github/`) o ortamda **yok**.
+        # 🔴 Bunu `assert` ile kırmızı vermek, *"CI kapıları geri alındı"* diye bir
+        # **yalan alarm** üretiyordu — ve bu kapının kendi konusu tam da budur:
+        # *ölçülemeyen bir şeyi ölçülmüş gibi raporlamak.*
+        # ⚠ Sessizce geçmek de yanlış olurdu: sebep yazılı, komut verili, atlama SAYILIR.
+        pytest.skip("⊘ ÖLÇÜLEMEDİ — depo kökü bu ortamda görünmüyor (konteynere yalnız "
+                    "`backend/` bağlı). Depo kökünden koşulmalı: "
+                    "`cd backend && python -m pytest tests/test_beyanlar_curumesin.py`")
     metinler = {f.name: f.read_text(encoding="utf-8", errors="ignore")
                 for f in sorted(wf.glob("*.yml"))}
     kosanlar = {ad: t for ad, t in metinler.items() if "kapi.py" in t}

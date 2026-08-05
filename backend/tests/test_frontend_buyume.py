@@ -64,14 +64,21 @@ from tests.kapi_ortak import fe_dosyalari, yorumsuz
 #
 # *Bir tavanın hava taşıdığı, ancak aleti onarınca görülür; ve o hava fark edilmeden
 # harcanır — çünkü kapı yeşil kaldığı sürece kimse ölçüye bakmaz.*
+# ⟳ FAZ 4B — dört tavan **ölçülen** değere çekildi; ikisi ise MUAFİYETE gitti.
+# Büyümenin tamamı yeni bir YETENEĞİN kendi evindeki karşılığıdır:
+#   ReportCard 829→836 · chart.ts 688→702 · page 512→513 · ResultView 474→477
+# 🔴 `lib/types.ts` (+27) ve `lib/api-client.ts` (+7) tavana DEĞİL muafiyete yazıldı,
+# çünkü onlar **bölünemez** (`dima-frontend/CLAUDE.md`: tipler tek dosyada senkron
+# tutulur · tüm HTTP tek dosyadan geçer). Bir mimari kuralın zorladığı büyümeyi sessiz
+# bir tavan artışına çevirmek, borcu gerekçesiyle birlikte kaybetmek olurdu.
 TAVANLAR = {
-    "components/ReportCard.tsx": 829,
+    "components/ReportCard.tsx": 836,
     "lib/api-client.ts": 791,
-    "lib/chart.ts": 688,
+    "lib/chart.ts": 702,
     "lib/types.ts": 579,
     "components/ReviewPanel.tsx": 553,
-    "app/page.tsx": 512,
-    "components/ResultView.tsx": 474,
+    "app/page.tsx": 513,
+    "components/ResultView.tsx": 477,
     "components/InterpretationBar.tsx": 468,
 }
 
@@ -79,7 +86,22 @@ TAVANLAR = {
 #: ⚠ Kapı `Δ > 0` ister: **hiçbir şey vermeyen bir muafiyet muafiyet değildir** — ve
 #: bu kuralı FAZ 5'te bizzat kendi kapımız uyguladı (Δ'yı 0'a çekince kırmızı verdi;
 #: doğru yanıt onu **listeden çıkarmaktı**, sıfırlamak değil).
-MUAFIYET: list[tuple[str, int, str]] = []
+MUAFIYET: list[tuple[str, int, str]] = [
+    ("lib/types.ts", 27,
+     "FAZ 4B — kök-neden sözleşmesi: `KokNedenDurum` · `KokNedenDugum` · "
+     "`KokNedenResponse` + `DrillRequestInput.ek_filtreler`. 🔴 TAŞINAMAZ: "
+     "`dima-frontend/CLAUDE.md` birebir «Backend tipleri `src/lib/types.ts`'te SENKRON "
+     "tutulur» diyor. İkinci bir tip dosyası açmak, sözleşmenin iki yerde yaşamasına ve "
+     "birinin güncellenip ötekinin unutulmasına kapı açardı — bu deponun ölçülmüş "
+     "«aynı kuralın iki sahibi» sınıfı. ⚠ Bir sözleşme büyüdüğünde tip dosyası büyür; "
+     "bunu bir tavan artışıyla saklamak, borcu gerekçesiyle birlikte kaybetmek olurdu."),
+    ("lib/api-client.ts", 7,
+     "FAZ 4B — `kokNedenHaritasi()` (`POST /ask/kok-neden`). 🔴 TAŞINAMAZ: "
+     "«Tüm HTTP `src/lib/api-client.ts`'ten geçer — dağınık `fetch` yok» (CLAUDE.md). "
+     "⚠ Bu dosyada daha önce kapanmış bir muafiyet var (aşağıdaki kayıt); o zaman tavan "
+     "ölçülene çekilmişti. Bu kez tavan DEĞİL muafiyet büyüyor — aynı hatayı ikinci kez "
+     "yapmamak için: tavan artışı sessizdir, muafiyet gerekçelidir."),
+]
 
 # ═══ KAPANMIŞ MUAFİYETLER — kayıt, MIMARI §10: *"kapananlar işaretlenir, silinmez"* ═══
 #

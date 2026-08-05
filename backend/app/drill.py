@@ -233,6 +233,59 @@ def select_cube_query(cube_query: dict, dimension: str, value: str) -> dict:
     return new_cq
 
 
+def aktif_boyutlar(cube_query: dict) -> set:
+    """Bir `cube_query`'de **kullanımda olan** boyutlar: kırılımdakiler ∪ filtredekiler.
+
+    ⚠ Bu iki satır `ask.py`de **dört kez** birebir tekrar ediyordu — bu deponun kendi
+    defterindeki *"aynı kuralın iki sahibi"* sınıfının küçük hâli. Bir gün biri filtreli
+    boyutu da saymayı unutursa, `related_cubes` sessizce **fazla** cube önerir ve kimse
+    bunun neden olduğunu bilmez. *Dört kopyanın hepsini birden düzeltmek, birini
+    düzeltmekten kolay değildir — imkânsızdır, çünkü dördüncüsü unutulur.*
+
+    ⚠ Ve burada, `ask.py`de değil: bir `cube_query` **okumasının** evi `drill.py`dir.
+    """
+    return set(cube_query.get("dimensions") or []) | {
+        f.get("dimension") for f in (cube_query.get("filters") or [])}
+
+
+def secim_uygula(cube_query: dict, dimension: str | None, filter_value: str | None,
+                 ek_filtreler: list[dict] | None) -> tuple[dict, list[tuple[str, str]]]:
+    """(boyut, değer) çiftleri — tekil alanlar **ve** çoklu liste birlikte.
+
+    🔴 FAZ 4B (D.3) — `dimension`+`filter_value` **tekil**di ve bu bir UI tercihi değil
+    bir **sözleşme sınırıydı**: panelli grafikte bir tıklama (panel + kategori) ve ısı
+    haritasında bir hücre (satır + sütun) **iki** filtre demek. Tek çapa göndermek,
+    kullanıcının tıkladığından **daha geniş** bir kırılım açardı — *"bu hücreye tıkladım,
+    bana tüm satırı gösterdi"*.
+
+    ⚠ Tekil alanlar KORUNDU, silinmedi: eski çağıranlar kırılmasın diye ikisi de kabul
+    edilir ve burada **birleştirilir**. *Bir sözleşmeyi genişletmek, eskisini kaldırmak
+    zorunda değildir.*
+
+    ⚠ Ve bu **router'da değil burada**: bir `cube_query` dönüşümünün evi `drill.py`dir
+    (`expand`/`select`/`jump` üçü de burada). Router'a yazılsaydı arka plan işleri ve
+    ajan onu çağıramazdı — bu deponun `contribution.arastir` ile bir kez ödediği ders.
+    """
+    capalar: list[tuple[str, str]] = []
+    if dimension and filter_value is not None:
+        capalar.append((str(dimension), str(filter_value)))
+    for ek in (ek_filtreler or []):
+        d, v = ek.get("dimension"), ek.get("value")
+        if not d or v is None:
+            raise ValueError("'ek_filtreler' her ögede 'dimension' ve 'value' ister.")
+        capalar.append((str(d), str(v)))
+    if not capalar:
+        # ⚠ Boşluk kontrolü **burada**, router'da değil: *bir sözleşmenin şartını
+        # taşıyıcı katmana yazmak, o şartı ikinci bir çağıranda unutmanın garantisidir.*
+        raise ValueError("'select' için 'dimension'+'filter_value' ya da 'ek_filtreler' gerekli.")
+    # Çapalar **sırayla** filtreye çevrilir. `select_cube_query` saf ve yan-etkisiz
+    # olduğu için zincirlenebilir — yeni bir birleştirme mantığı YAZILMADI.
+    out = cube_query
+    for d, v in capalar:
+        out = select_cube_query(out, d, v)
+    return out, capalar
+
+
 def jump_to_related_cube(cube_query: dict, target_cube: str, target_meta: dict) -> dict:
     """`related_cubes`ile bulunan bir cube'a GEÇİŞ — kaynak cube_query'nin dimensions/
     filters/timeDimensions'ından yalnız HEDEF cube'da da GERÇEKTEN var olan boyutlar

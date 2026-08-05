@@ -140,7 +140,10 @@ export function ResultView({
   // TEK bir birincil kategorik boyutlu, basit grafik biçimlerinde (bar/line/pie; facet/
   // scatter/heatmap HARİÇ) — bu şekillerde "hangi kategori tıklandı" belirsizleşir,
   // yanlış bir dallanma UYDURMAKTANSA hiç tetiklenmemesi tercih edilir.
-  onDataPointClick?: (dimension: string, value: string) => void;
+  /** ⚠ `ek` (FAZ 4B): ÇOK-ÇAPALI seçim. Panelli grafik ve ısı haritası tam olarak
+   *  bunun yokluğu yüzünden kapalıydı. */
+  onDataPointClick?: (dimension: string, value: string,
+                      ek?: { dimension: string; value: string }[]) => void;
 }) {
   // Yüzdelik oranların (0-1) dinamik olarak 0-100 ölçeğine çekilmesi.
   // Bu sayede 0.8 (Kullanılabilirlik) ve 60 (OEE) aynı grafikte patlamadan çizilir.
@@ -338,11 +341,24 @@ export function ResultView({
    * her erken-çıkış **neden** olduğunu söylüyor — *bir sınırı söylemek, onu bir kusur
    * olmaktan çıkarır.*
    */
-  const handleChartDataPointClick = (info: { seriesIndex: number; dataIndex: number; name: string }) => {
+  const handleChartDataPointClick = (info: { seriesIndex: number; dataIndex: number;
+                                             name: string; data?: unknown }) => {
     if (!onDataPointClick) {
       setNoDrillHint(
         "bu sonuç LLM tarafından üretildi, kırılım için cube sorgusu yok — \"+ sql göster\"e bakabilirsin",
       );
+      return;
+    }
+    // 🔴 FAZ 4B (D.3) — **KISIT KALKTI: her grafik türü bir giriş noktasıdır.**
+    // Nokta kendi çapalarını taşıyorsa (panelli grafik · ısı haritası) onları
+    // OLDUĞU GİBİ göndeririz; sözleşme artık çoklu çapa kabul ediyor
+    // (`DrillRequest.ek_filtreler`). ⚠ Bu bir UI ayarı değil, bir SÖZLEŞME
+    // genişlemesiydi — eski kısıt bir tercih değil bir sınırdı.
+    const capalar = (info.data as { capalar?: { dimension: string; value: string }[] } | undefined)
+      ?.capalar;
+    if (capalar?.length) {
+      const [ilk, ...kalan] = capalar;
+      onDataPointClick(ilk.dimension, ilk.value, kalan);
       return;
     }
     const dim = effA.primaryDim;
@@ -350,15 +366,12 @@ export function ResultView({
       setNoDrillHint("bu grafikte kırılacak tek bir kategorik boyut yok");
       return;
     }
-    if (effA.facet || effA.facetMeasure) {
+    // ⚠ Çapasız bir panelli/ısı noktası **kenar özetidir** (satır/sütun ortalaması) —
+    // bir kesişim değil. Orada kırılacak tek bir satır kümesi YOKTUR ve bunu söylemek,
+    // yanlış bir filtre göndermekten dürüsttür.
+    if (effA.facet || effA.facetMeasure || effA.heat || effA.heatAny) {
       setNoDrillHint(
-        "panelli grafikte bir tıklama İKİ filtre demek (panel + kategori); tek filtre göndermek istediğinden daha geniş bir kırılım açardı — tabloya geçip satıra tıklayabilirsin",
-      );
-      return;
-    }
-    if (effA.heat || effA.heatAny) {
-      setNoDrillHint(
-        "ısı haritasında bir hücre İKİ boyutun kesişimidir; tek filtre tüm satırı açardı — tabloya geçip satıra tıklayabilirsin",
+        "bu nokta bir kesişim değil bir ÖZET (satır/sütun ortalaması) — kırılacak tek bir satır kümesi yok; bir hücreye tıklayabilirsin",
       );
       return;
     }

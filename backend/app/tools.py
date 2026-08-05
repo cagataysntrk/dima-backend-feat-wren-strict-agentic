@@ -244,6 +244,27 @@ KAYIT: tuple[Arac, ...] = (
         etiketler=("kok-neden", "llmsiz", "bilesik"),
     ),
     Arac(
+        ad="kok_neden.harita",
+        ozet="Kök-neden ağacının İLK KATI: her dallanma adayını sinyal+durum ile puanlar — ve BAKILMAYANI da gösterir. [Erişim: kullanılmayan boyutlar + ilişkili cube'lar] [Ne zaman: 'neden' sorusunda kullanıcı YOLU SEÇECEKSE] [NE ZAMAN KULLANILMAZ: cevabı doğrudan üretmek gerekiyorsa — bu araç bir HARİTA döner, bir cevap değil]",
+        girdi={"service": "WrenService", "schema": "cube kataloğu", "cube_query": "kaynak CubeQuery",
+               "mode": "yoy|mom", "max_dimensions": "tarama sınırı"},
+        cikti="{cube, olcu, dugumler[{boyut, sinyal, durum, gerekce, cube_query}], taranmayan_adlar}",
+        # `contribution.report`ı SARAR → maliyeti ondan düşük olamaz.
+        determinizm="deterministik", maliyet="pahali", yan_etki="yok",
+        izin="contribution:scan", makbuz="ContractLog (boyut başına, `kaydet` verilirse)",
+        modul="app.kok_neden", fonksiyon="harita",
+        notlar="🔴 PUANLAMA ARAYÜZDE DEĞİL, BURADA — çünkü insanın tıklayarak verdiği "
+               "karar ('hangi boyutta dallanayım') ile bir ajanın vereceği karar AYNI "
+               "karardır ve frontend'e gömülü bir mantık ÇAĞRILAMAZ. "
+               "⊘ ÜÇÜNCÜ HÂL: `contribution.report` bulgusuz boyutu sessizce düşürür ve "
+               "MAX_BOYUT ötesini hiç taramaz — ikisi de doğru kararlar ama kullanıcıya "
+               "'baktım, yok' gibi okunuyordu. Bu araç 'baktım, yok' (zayif) ile "
+               "'bakmadım' (olculemedi) ayrımını GÖRÜNÜR kılar. Yeni istatistik motoru "
+               "YOK: sinyal `rank_dimensions` ile aynı büyüklük, aday sırası "
+               "`available_dimensions`tan, hayalet düğümler `related_cubes`tan.",
+        etiketler=("kok-neden", "llmsiz"),
+    ),
+    Arac(
         ad="contribution.pvm",
         ozet="Değişimi FİYAT / MİKTAR / BİRLEŞİK etkiye ayrıştırır (artıksız). [Erişim: fiyat/miktar çifti BEYAN EDİLMİŞ cube] [Ne zaman: ciro/tutar değişimi ekonomik olarak ayrıştırılacaksa] [NE ZAMAN KULLANILMAZ: `pvm` beyanı yoksa — ad kalıbından çıkarmak GÜVENLE YANLIŞ ekonomi üretir]",
         girdi={"cube_meta": "cube metadata (pvm: beyanı olmalı)"},
