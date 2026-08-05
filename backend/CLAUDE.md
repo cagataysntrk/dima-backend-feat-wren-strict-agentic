@@ -202,6 +202,18 @@ Geri alma tek env: `DIMA_KORPUS_PARALEL=1`.
 Ara koşum yok, *"bir de şuna bakayım"* yok. Bir soru *"bu kod ne yapıyor / neden böyle"*
 biçimindeyse **önce kaynağı oku**.
 
+🔴 **VE `--hizli` DE BİR ARA KOŞUMDUR — kural yazıldığı turda ihlal edildi.**
+Kullanıcı iki kez uyardı (*"yine yarım saattir test yapılıyor"*). Ölçüm: tek bir turda
+`--hizli` **dört kez** koşuldu (her biri 1-2 dk) + `--tam`. Doğru ritim:
+
+| ne zaman | ne koşulur |
+|---|---|
+| bir dosya düzenledikten sonra | **yalnız o dosyanın hedefli testi** (`pytest tests/test_x.py`, ~3-15 sn) |
+| demet sonunda, **bir kez** | `lab/kapi.py --hizli --degisen <tüm değişenler>` → sonra `--tam` |
+
+*Bir kapıyı beş kez koşmak, onu bir kez koşmaktan daha güvenli değildir; yalnız beş kat
+pahalıdır.* Ve pahalı bir kapı, atlanan bir kapıya dönüşür.
+
 ⚠ Ve `--hizli` merkezî dosyalarda (`ask.py` · `wren_service.py` · `cube_router.py`)
 29-53 dosya seçer; paralelken bile 1-2 dakika. **Beş kez koşulursa kapının kendisinden
 pahalı olur.**

@@ -31,7 +31,7 @@
 | 3 | `CLARIFY:dönem` | %13,6 | ±0,5 içinde | 🟢 |
 | 4 | **Motor-seviyesi RLS** | 0 | `app/rls.py` **var**, `motor_cls=off` | 🔴 **AÇIK BORÇ** — aşağıda |
 | 5 | Yetki granülerliği | 15 araç · **15/15 `query:run`** | **23 araç · 5 ayrı izin** (`query:run` 13 · `contribution:scan` 3 · `llm:invoke` 3 · `contribution:run` 2 · `drill:run` 2) | 🟡 **iyileşti, tamamlanmadı** |
-| 6 | Onaysız yazma | onay akışı **YOK** | `onay_akisi` + `test_onay_akisi.py` (22) | 🟢 |
+| 6 | Onaysız yazma | onay akışı **YOK** | ✅ imkânsız · ✅ audit satırı · ✅ **süre aşımı 30 dk** *(bu turda eklendi — yoktu)* | 🟢 |
 | 7 | Yetim uç / alan | ⊘ ölçülemedi | **3 kapı** (`uc_yetim` · `cevap_alani_yetim` · `ters_yetim`) | 🟡 `admin_app`'in 13 router'ı **beyan edilmiş kırmızı** |
 | 8 | Ölçüm kapıları CI'da | 1 workflow · ölçüm kapısı **0** | `backend-ci.yml` + **`nightly.yml`** | 🟢 |
 | 9 | **Konuşma türleri** | 5 | **7** *(v1 hedefi 7)* | 🟢 **hedefe ulaştı** |
@@ -47,7 +47,7 @@
 | # | Borç | Neden kapanmadı | Etkisi |
 |---|---|---|---|
 | **1** | ✅ **TESİSAT TAMAM** — `motor_cls=on` ile **3319 yeşil / 0 kırmızı** (39'du). Bayrak yine de **açılmıyor** | §7 — üç ölçülmüş sebep | ölçüt 4 kırmızı *(artık tesisat yüzünden değil)* |
-| **2** | **26 bayrak `off`** | Ödenmiş, testli, kullanıcıya **kapalı**. Üçü FAZ 1'in ana teslimatı (`tazelik` · `lineage` · `metrik_sertifikasi`) | Ölçüt 12 sarı; *bedeli ödenmiş ama teslim edilmemiş* yetenek |
+| **2** | 🔴 **DÜZELTİLDİ: 9'u "ödenmiş" DEĞİL, YARIM** | Denetim ölçtü: `app/`'in 86 modülünden **12'si** üretim kodunda hiç import edilmiyor (~1.470 satır). Bu bayrakları açmak **hiçbir şey yapmaz**. İkisi kapandı (`certification` · `onay_akisi`), **10** kaldı | Borç *"açılmayı bekleyen özellik"* değil, **"bağlanmamış özellik"** |
 | **3** | **FAZ 7.3'ün 11 alt maddesi** | a(kısmi) · c · d · f · g · h · i · j · k · l · m + **altı yeni rota** | `OPERASYON-DURUM.md`'de **madde madde** yazılı |
 | **4** | **FAZ 7.7'nin `/settings` yarısı** | 8 sekmeli tam sayfa + `admin_app`'in **13 router** tüketicisi | `V-1` o router'lar için **kırmızı kalıyor** — kapının **beyan edilmiş** kırmızısı |
 | **5** | **5.6 · peer kıyası** | **AJ2**'ye bağlı (`compare` enum→ALAN) | AJ2 inmeden üçüncü bir enum değeri çakardı |
