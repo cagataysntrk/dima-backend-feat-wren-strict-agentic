@@ -71,17 +71,17 @@ def _relative_date_filter(q: str, time_dim: str) -> dict | None:
 def _current_period_filter(q: str, time_dim: str) -> dict | None:
     """İçinde bulunulan dönem: "bugün / bu hafta / bu ay / bu yıl" → gte filtresi (Python hesaplar)."""
     today = date.today()
-    if "bugun" in q:
+    if _syn_hit(q, "bugun"):
         start = today
-    elif "bu hafta" in q:
+    elif _syn_hit(q, "bu hafta"):
         start = today - timedelta(days=today.weekday())  # Pazartesi
-    elif "bu ay" in q:
+    elif _syn_hit(q, "bu ay"):
         start = today.replace(day=1)
     # "bu sene" = "bu yıl"; "tüm yıl" (log-kanıtlı terfi) = yıl başından beri
     # 🔴 FAZ 2.6 — MALİ YIL. `today.replace(month=1, day=1)` **takvim** yılıydı ve mali
     # yılı Ocak'ta başlamayan her müşteride SESSİZ-YANLIŞ üretiyordu: rozet `◆ CUBE`,
     # güven 1.0, makbuz tam — ve sayı yanlış. Hesap tek sahipte (`app/mali_takvim.py`).
-    elif "bu yil" in q or "bu sene" in q or "tum yil" in q:
+    elif _herhangi(q, ("bu yil", "bu sene", "tum yil")):
         start = mali_takvim.yil_basi(today)
     else:
         return None
@@ -92,6 +92,14 @@ def _current_period_filter(q: str, time_dim: str) -> dict | None:
 # söyleyiştir: *"geçen ayDA fire"*. `\b` ile bu ifade HİÇ eşleşmiyordu (ölçüldü, Faz X) →
 # dönem filtresi üretilmiyor, soru cevapsız kalıyordu. Ek GEÇERLİLİĞİ `_ek_gecerli` ile
 # denetlenir (tek kaynak) — *"geçen aylık"* gibi türetme ekleri dönem sayılmaz.
+#: 🔴 KÖK-7a — `dün` KAPALI SINIF bir zaman zarfıdır ve tek çekimi `dünkü`dür.
+#: ⚠ Burada `_syn_hit` KULLANILAMAZ, ve sebebi ölçüldü: `dun`+`ya` biçimbirim tablosunda
+#: GEÇERLİ bir zincirdir (`-ya` yönelme eki) → **`dünya geneli ciro`** soruya dün filtresi
+#: takıyordu. Genel bir çekim denetimi, kapalı sınıf bir kelimede FAZLA cömerttir.
+#: *Bir kuralı her yere uygulamak, onu hiç uygulamamak kadar yanlış olabilir; kapalı sınıf
+#: kelimeler kendi sınırlarını taşır.*
+_DUN_RE = re.compile(r"\bdun(?:ku)?\b")
+
 _PREV_RE = re.compile(
     r"\b(?:bir\s+)?(?:gecen|onceki|evvelki)\s+(ay|hafta|yil|sene|gun)([a-z]*)\b")
 
@@ -109,7 +117,7 @@ def _prev_period_filters(q: str, time_dim: str) -> list[dict]:
     # ADR-0008'in yasakladığı elle-sayım olurdu. Sınır burada BEYAN edilir, gizlenmez.
     if m and m.group(2) and not _ek_gecerli(m.group(2)):
         m = None
-    unit = m.group(1) if m else ("gun" if re.search(r"\bdun\b", q) else None)
+    unit = m.group(1) if m else ("gun" if _DUN_RE.search(q) else None)
     if unit is None:
         return None  # type: ignore[return-value]
     if unit == "ay":
@@ -594,6 +602,37 @@ def _syn_hit(q: str, syn: str) -> bool:
                for m in re.finditer(rf"{_KELIME_BASI}{re.escape(syn)}([a-z]*)", q))
 
 
+def _herhangi(q: str, kelimeler) -> bool:
+    """Sözlükteki kelimelerden **herhangi biri** soruda geçiyor mu — biçimbirim disipliniyle.
+
+    ## 🔴 KÖK-7a — `in q` YASAĞI (denetim raporu KN-1 · YENİ-4 · YENİ-5)
+
+    Modülde **25 yerde** `w in q` düz alt-dize taraması vardı. `_syn_hit`/`_covers` iki kez
+    (Faz 0.4 · D3) bu kusurdan kurtarıldı, ama **sözlük taramaları** dışarıda kaldı — yani
+    kural tanındı, iki tüketicide uygulandı, **zorunlu kılınmadı**. Ölçülen sahte eşleşmeler:
+
+    | soru | sözlük kelimesi | `in q` | biçimbirim |
+    |---|---|---|---|
+    | `trendyol satislari` | `trend` *(granülerlik)* | 🔴 **aylık kova** | — |
+    | `bu ayrica onemli` | `bu ay` *(dönem)* | 🔴 **bu ay filtresi** | — |
+    | `uygun fiyat` | `gun` | 🔴 günlük | — |
+    | `kodlama hatasi` | `kod` | 🔴 kod sütunu tutulur | — |
+
+    🔴 En zararlısı `trendyol`: bir **müşteri adı** soruyu zaman serisine çeviriyordu ve
+    kullanıcı bunu **cevabın şeklinden** anlayamıyordu.
+
+    ⚠ Bu iki yardımcı **yeni bir kural taşımaz** — kararı `_syn_hit` → `_ek_gecerli` verir
+    (çekimin tek sahibi). Var olma sebepleri, kuralı **zorunlu** kılmak ve grep kapısının
+    (`test_kok7a_in_q_yasagi.py`) tarayabileceği tek bir çağrı biçimi bırakmaktır.
+    """
+    return any(_syn_hit(q, w) for w in kelimeler)
+
+
+def _gecenler(q: str, kelimeler) -> set[str]:
+    """`_herhangi`'nin küme dönen ikizi — *hangileri* geçiyor. Aynı sahip, aynı kural."""
+    return {w for w in kelimeler if _syn_hit(q, w)}
+
+
 def _any_hit(q: str, syns) -> bool:
     return any(_syn_hit(q, s) for s in syns or [])
 
@@ -883,7 +922,7 @@ def _match_cube(q: str, schema: dict) -> dict | None:
         # "ölçü kanıtı bir tarafta sıfır" örüntüsünde devreye girer — `snd_syn` DOLUYSA
         # (iki taraf da ölçü sinonimi taşıyorsa, ör. test_boyut_kaniti_belirsiz_olcuyu_
         # ayirir) davranış HİÇ DEĞİŞMEZ.
-        if top_syn and not snd_syn and any(w in q for w in _BREAKDOWN_HINTS):
+        if top_syn and not snd_syn and _herhangi(q, _BREAKDOWN_HINTS):
             dim_owners = [c for c in hits if _match_dims(q, c, None)]
             if len(dim_owners) == 1 and dim_owners[0] is not m_scored[0][0]:
                 return dim_owners[0]
@@ -995,7 +1034,7 @@ def _match_dims(q: str, cube: dict, measure_syn: str | None = None) -> list[str]
     # <base>_kodu'yu eşliyor → ikisi birden eklenip satırları böler + kod gürültüsü
     # (canlı gitas log 2026-07-24: "stok türlerine göre" → stok_adi+stok_kodu, 271 satır).
     # Soru açıkça "kod" demiyorsa yalnız ADI kalır (kullanıcı "türleri/isimleri" ister).
-    if "kod" not in q:
+    if not _syn_hit(q, "kod"):
         for d in list(dims):
             if d.endswith("_kodu") and f"{d[:-5]}_adi" in dims:
                 dims.remove(d)
@@ -1208,7 +1247,7 @@ def deterministic_refine(prev: dict, q: str, schema: dict,
     # kesinleşir. `_PERIOD_RANGE_REF` deseni de aynı gerekçeyle hariç tutulur: "son 4
     # aya göre yap" gibi ifadelerde "göre" kırılım değil, dönem aralığının edatıdır.
     if (not matched_dims_now and _time_gran(q) is None
-            and any(w in q for w in _BREAKDOWN_HINTS) and not _PERIOD_RANGE_REF.search(q)):
+            and _herhangi(q, _BREAKDOWN_HINTS) and not _PERIOD_RANGE_REF.search(q)):
         return None
 
     if topn:
@@ -1494,25 +1533,25 @@ def _time_gran(q: str) -> str | None:
     # gran=month → semi bloğu None → sessiz kayıp). All-time sökülür; "zamana göre" (trend) kalır.
     q = re.sub(r"\btum\s+zaman\w*", " ", q)
     # Tam kova seti (motor destekli): day | week | month | quarter | year
-    if "ceyrek" in q or "uc aylik" in q:
+    if _herhangi(q, ("ceyrek", "uc aylik")):
         return "quarter"
-    if any(w in q for w in ["yillik", "yillara", "yila gore", "yil bazinda", "senelik"]):
+    if _herhangi(q, ["yillik", "yillara", "yila gore", "yil bazinda", "senelik"]):
         return "year"
-    if any(w in q for w in ["haftalik", "haftalar", "haftaya"]):
+    if _herhangi(q, ["haftalik", "haftalar", "haftaya"]):
         return "week"
     # DİL TUZAĞI: "haftanın günleri" hafta-günü BOYUTUdur (Pzt..Paz), günlük zaman
     # kovası değil — "günler" eşleşmesi yalnız hafta-günü ifadesi YOKKEN geçerli.
-    if (not any(w in q for w in ("haftanin gun", "hafta gunu"))
-            and any(w in q for w in ["gunluk", "gunler", "gunlere"])):
+    if (not _herhangi(q, ("haftanin gun", "hafta gunu"))
+            and _herhangi(q, ["gunluk", "gunler", "gunlere"])):
         return "day"
-    if any(w in q for w in ["aylik", "aylar", "aya gore", "ay bazinda", "trend", "zaman"]):
+    if _herhangi(q, ["aylik", "aylar", "aya gore", "ay bazinda", "trend", "zaman"]):
         return "month"
     return None
 
 
 def _direction(q: str):
-    asc = any(w in q for w in ["en dusuk", "en az", "en kotu", "en verimsiz"])
-    desc = any(w in q for w in ["en cok", "en yuksek", "en fazla", "en verimli", "en iyi", "en buyuk", "hangisi"])
+    asc = _herhangi(q, ["en dusuk", "en az", "en kotu", "en verimsiz"])
+    desc = _herhangi(q, ["en cok", "en yuksek", "en fazla", "en verimli", "en iyi", "en buyuk", "hangisi"])
     if asc:
         return "ASC"
     if desc:
@@ -2114,8 +2153,11 @@ def _period_hit_words(q: str) -> set[str]:
         # ilk eşleşmede durmaz; bir soruda kaç dönem varsa o kadar görülür.
         for m in rx.finditer(q):
             words.update(_cekimli_token(q, m))
-    if re.search(r"\bdun\b", q):
-        words.add("dun")
+    # KÖK-7a — `dunku` de dönem kelimesidir. ⚠ `finditer`: `dün` için ikinci eşleşme
+    # anlamsız olsa da kural MUTLAK tutulur — belgelenmiş bir istisna, bir sonraki
+    # kalıpta *"benimki de istisna"* diye okunur ve kapı sızıntı yapmaya başlar.
+    for md in _DUN_RE.finditer(q):
+        words.add(md.group(0))
     for phrase in ("bugun", "bu hafta", "bu ay", "bu yil", "bu sene",
                    "tum zamanlar", "tumu", "hepsi", "tum veriler"):
         # son kelime ÇEKİMLİ olabilir ("bu AYKİ satışlar", "bu seneki") → \w* toleransı
@@ -2428,7 +2470,7 @@ def _misc_hit_words(q: str) -> set[str]:
               "ceyrek", "uc aylik", "yillik", "yillara", "yila gore", "yil bazinda", "senelik",
               "en dusuk", "en az", "en kotu", "en verimsiz", "en cok", "en yuksek",
               "en fazla", "en verimli", "en iyi", "en buyuk", "hangisi", "her gun"):
-        if w in q:
+        if _syn_hit(q, w):
             words.update(w.split())
     m = re.search(r"\b(?:ilk|top|en\s+\w+)\s+(\d+)", q)
     if m:
@@ -2458,10 +2500,18 @@ _SUFFIX_ATOMS = (
     "lik", "luk", "ler", "lar", "mis", "mus",
     "de", "da", "te", "ta", "le", "la", "ki", "ni", "nu", "ne", "na", "si", "su",
     "se", "sa", "in", "un", "im", "um", "ye", "ya", "yi", "yu", "li", "lu",
+    "ku",                            # 🔴 `-ki`nin YUVARLAK ünlü biçimi: bugün+KÜ, dün+KÜ
     "ce", "ca", "ci", "cu",
     "ir", "ur", "er", "ar",          # geniş zaman: "göster"+"ir"
     "i", "u", "e", "a", "y", "n", "s", "m",
 )
+# 🔴 `ku` KÖK-7a'da eklendi ve **ölçüyle zorunlu oldu**: `in q` yasağı uygulanınca
+# `bugunku ciro` **dönem filtresini kaybetti** (`bugun` alt-dize olarak geçiyordu ama
+# `bugun`+`ku` geçerli bir çekim SAYILMIYORDU). Yani düz alt-dize taraması, biçimbirim
+# tablosundaki bir **boşluğu gizliyordu** — kusuru kapatan şey, onu görünür de kılmıştı.
+# *Bir yanlışın ikinci bir yanlışı örtmesi, ikisini birden düzeltmeyi zorunlu kılar.*
+# ⚠ Dar ve doğru: `-ki` Türkçede yalnız yuvarlak-arka ünlüden sonra `-kü` olur
+# (bugünkü · dünkü); katalog köklerinde `ku` ile başlayan sahte zincir ölçülmedi.
 # DİKKAT — buraya atom eklerken: "ti"/"tu"/"di"/"du" DENENDİ ve GERİ ALINDI. Onlarla
 # "mal"+"iyeti" = i+ye+ti diye ayrışıp KAPSANIYORDU (maliyet ≠ mal). `-dir/-dur/-tir/-tur`
 # zaten TAM atom olarak listede; parçalarını ayrıca atom yapmak deliği geri açar.
@@ -3092,7 +3142,7 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
             return None
 
     # Dönemsel karşılaştırma (önceki dönem/LAG) cube'a sığmaz → LLM (golden SQL deseni)
-    if any(w in q for w in _COMPARE_HINTS):
+    if _herhangi(q, _COMPARE_HINTS):
         _reddet("R3")
         return None
 
@@ -3107,7 +3157,7 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
     # "satış" ile satis_tutari'ye (TOPLAM) düşüyordu → "ortalama" göz ardı. Soru ortalama
     # isterken eşleşen ölçü ortalama DEĞİLSE (adı ort_ değil ve sinonim "ortalama" içermiyor)
     # deterministik dönme — ölçü belirsiz (AOV mı, birim fiyat mı?) → chip/LLM devralsın.
-    if ("ortalama" in q or "average" in q) and not (
+    if _herhangi(q, ("ortalama", "average")) and not (
             measure.startswith("ort_") or "ortalama" in (msyn or "")):
         _reddet("R5")
         return None
@@ -3156,7 +3206,7 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
             _reddet("R6")
             return None
         if dislanan:
-            exclude_words |= {w for w in _EXCLUDE_MARKERS if w in q}
+            exclude_words |= _gecenler(q, _EXCLUDE_MARKERS)
             op = "neq" if len(matched) == 1 else "not_in"
             filters.append({"dimension": dname, "operator": op,
                             "value": matched[0] if len(matched) == 1 else matched})
@@ -3260,11 +3310,11 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
     # yil`, "çeyreklere göre üretim" yanlışlıkla reddediliyordu). Ayrım: yalnız `gran`
     # SIRF jenerik trend/zaman kelimesiyle dolduysa (hiçbir AÇIK birim ifadesi YOKSA)
     # koruma `not gran` KOŞULUNU YOK SAYAR.
-    _gran_only_generic_trend = gran is not None and any(w in q for w in ("trend", "zaman")) and not any(
-        w in q for w in ("ceyrek", "uc aylik", "yillik", "yillara", "yila gore", "yil bazinda",
-                         "senelik", "haftalik", "haftalar", "haftaya", "gunluk", "gunler",
-                         "gunlere", "aylik", "aylar", "aya gore", "ay bazinda"))
-    if not dims and (not gran or _gran_only_generic_trend) and any(w in q for w in _BREAKDOWN_HINTS):
+    _gran_only_generic_trend = gran is not None and _herhangi(q, ("trend", "zaman")) and not _herhangi(
+        q, ("ceyrek", "uc aylik", "yillik", "yillara", "yila gore", "yil bazinda",
+            "senelik", "haftalik", "haftalar", "haftaya", "gunluk", "gunler",
+            "gunlere", "aylik", "aylar", "aya gore", "ay bazinda"))
+    if not dims and (not gran or _gran_only_generic_trend) and _herhangi(q, _BREAKDOWN_HINTS):
         # BOYUT-UYUMU İÇİN YENİDEN YÖNLENDİRME: seçilen cube bu kırılımı sağlayamıyor ama
         # AYNI ölçüye + istenen boyuta sahip başka bir cube olabilir. "stok bazında satış
         # tutarı" → ticaret (cube-sinonim "satış") seçildi ama stok yok; mal'da satis_tutari
@@ -3309,7 +3359,7 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
     # Ölçü-eşiği ("10 milyon üzeri") kelimeleri: anlaşılıyor → kapsam düşürmesin.
     having = _measure_threshold(q)
     if having:
-        known |= {w for w in _TH_WORDS if w in q}
+        known |= _gecenler(q, _TH_WORDS)
     # LİSTE NİYETİ kelimeleri ("listele"/"detay"/"dökümü") — niyet ANLAŞILDIYSA kapsamı
     # delmemeli. Yukarıdaki R2 dalı bu soruyu geçirdiyse kırılım gerçekten eşleşmiş
     # demektir; o hâlde kelime dolgudur. Aynı `_LISTE_RE`'den okunur ki iki taraf

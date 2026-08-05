@@ -137,6 +137,22 @@ MUAFIYET_ASK_KOD = [
                       "dürüst olmayan bir mesajı SATIN ALMAZ"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("KÖK-7a/in-q-yasagi", 6,
+     "🔴 `in q` YASAĞI (denetim raporu KÖK-7a). Modülde **25 yerde** sözlükler düz "
+     "alt-dize (`w in q`) ile taranıyordu; `_covers` (Faz 0.4) ve `_syn_hit` (Faz D3) "
+     "aynı kusurdan AYRI AYRI kurtarılmış, ama kural ZORUNLU KILINMAMIŞTI. Ölçülen "
+     "sahte eşleşmeler: `trendyol satislari`→`trend` (müşteri adı soruyu ZAMAN SERİSİNE "
+     "çeviriyordu) · `bu ayrica`→`bu ay` (dönem filtresi) · `uygun fiyat`→`gun`. "
+     "Bu 6 satır TAŞINAMAZ: `_herhangi`+`_gecenler` (4) — 25 çağrı yerini tek bir "
+     "biçime indirger ve grep/AST kapısının tarayabileceği yüzeyi oluşturur; "
+     "`_DUN_RE` (1) ve `ku` atomu (1). "
+     "⚠ Yardımcılar YENİ KURAL TAŞIMAZ — kararı `_syn_hit`→`_ek_gecerli` verir "
+     "(çekimin tek sahibi); var olma sebepleri kuralı ZORUNLU kılmaktır. "
+     "⊙ `ku` atomu ölçüyle zorunlu oldu: yasak uygulanınca `bugunku ciro` dönem "
+     "filtresini kaybetti — alt-dize taraması biçimbirim tablosundaki bir DELİĞİ "
+     "örtüyormuş. `_DUN_RE` ise ters yönün kanıtı: `dun`+`ya` geçerli bir zincir olduğu "
+     "için genel çekim denetimi `dünya geneli ciro`ya dün filtresi taktı — kapalı sınıf "
+     "kelime kendi sınırını taşımalı"),
     ("KÖK-7e/ay-cekimi", 4,
      "🔴 AY ÇEKİMİ TEK SAHİPTEN (denetim raporu KÖK-7e). Ölçüldü: `_AY_ADI_RE` ay "
      "adından SONRA `\\b` istiyordu ve Türkçenin en doğal söyleyişlerini GÖRMÜYORDU — "
