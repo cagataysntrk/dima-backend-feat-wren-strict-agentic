@@ -84,6 +84,69 @@
   --opacity-disabled: 0.38;
   --opacity-soluk: 0.62;
   --opacity-faint: 0.6;
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     FAZ 7.12 — YÜZEY · YARIÇAP · OKUMA ÖLÇEĞİ  (2026-08-05)
+
+     🔴 ÖLÇÜLEN KUSUR (kanaat değil, sayı):
+       · baskın yazı boyutu **188× 11px · 121× 10px**, hatta 6× 9px — okunabilir
+         15px yalnız **3 kez**
+       · **387× `font-mono`** — arayüzün neredeyse tamamı terminal yazı tipi
+       · **222 kenarlık ↔ 17 gölge** — ayrım tamamen ÇİZGİYLE kuruluyor
+       · en büyük yarıçap **4px**, ve `rounded-*` yalnız **7 kez** kullanılmış
+
+     Yani bugünkü arayüz: *beyaz zemin üzerine, 10-11 piksel, tamamı monospace,
+     keskin köşeli, 222 çizgiyle bölünmüş.* Bu bir **terminal/cihaz paneli**
+     estetiğidir — bir sohbet ürününün değil. Göz yorgunluğu buradan geliyor.
+
+     ⚠ BU BLOK HİÇBİR MEVCUT DEĞERİ DEĞİŞTİRMEZ — yalnız yanına yenilerini koyar
+     (deponun kendi göç usulü, 7.0/§4). Bu fazın sonunda **görsel çıktı BİREBİR
+     AYNIDIR**; bileşenler bu belirteçleri FAZ 5'te benimser.
+     ═══════════════════════════════════════════════════════════════════════════ */
+
+  /* --- YÜZEY ÖLÇEĞİ. Derinlik GÖLGEYLE değil **parlaklık hiyerarşisiyle** kurulur:
+     2026'nın hâkim yönü kartları "süzülüyor" değil "üst üste yığılmış" gösterme.
+     ⚠ Dört seviye BİLİNÇLİ: üçü ayrımı taşıyamıyor, beşi algısal olarak ayırt
+     edilemiyor. `surface-1` en alt (tuval), `surface-4` en üst (yükseltilmiş). */
+  --surface-1: #f7f8f9;   /* tuval — sayfa zemini */
+  --surface-2: #ffffff;   /* panel/kart */
+  --surface-3: #ffffff;   /* yükseltilmiş kart */
+  --surface-4: #ffffff;   /* açılır menü/tooltip — gerçekten YÜZEN */
+  /* ⚠ Açık temada üst üç seviye aynı: beyaz zeminde parlaklıkla yükselmek mümkün
+     değil (yukarı çıkacak yer yok). Ayrım orada **kenarlık + gölgeyle** kurulur.
+     Koyu temada ise dördü de ayrışır — asıl kazanç orada. */
+  --surface-kenar: #e6e6e6;      /* yüzeyler arası 1px ayırıcı */
+  --surface-kenar-guclu: #d4d4d4; /* odaklı/seçili yüzey */
+
+  /* --- YARIÇAP ÖLÇEĞİ. ⚠ Mevcut `--radius-sm/md` KALIR (2px/4px); bunlar
+     onların üstüne eklenir. 8pt ızgarayla uyumlu. */
+  --radius-lg: 12px;   /* panel · kart */
+  --radius-btn: 8px;   /* düğme · girdi */
+  --radius-chip: 6px;  /* çip · rozet */
+  --radius-full: 999px;
+
+  /* --- OKUMA ÖLÇEĞİ — 🔴 iki bağlam, iki yoğunluk (tutarsızlık DEĞİL, bağlam farkı)
+     Sohbet insan metnidir → nefes alır. Panel veri yüzeyidir → sıkışır. */
+  --text-body: 1rem;        /* 16px — sohbet gövdesi */
+  --lh-body: 1.6;
+  --text-panel: 0.875rem;   /* 14px — panel içi tablo/etiket */
+  --lh-panel: 1.45;
+  --text-meta: 0.78125rem;  /* 12.5px — zaman damgası/meta */
+  /* ⚠ Satır uzunluğu: 45-75 karakter okunabilir bandı, optimum ~66.
+     75+ karakterde göz satır başını kaybeder. */
+  --measure: 68ch;
+
+  /* --- HAREKET. WCAG 2.3.3: etkileşimle tetiklenen hareket kapatılabilmeli. */
+  --motion-fast: 150ms;
+  --motion-md: 200ms;    /* panel/çubuk açılıp kapanması */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* --- DÜZEN ÖLÇÜLERİ — tek kaynak. ⚠ Bileşen CSS'inde sihirli sayı YOK. */
+  --cubuk-genis: 256px;
+  --cubuk-ray: 56px;
+  --panel-min: 400px;
+  --panel-varsayilan: 480px;
+  --sohbet-min: 520px;
 }
 
 @theme inline {
@@ -97,6 +160,16 @@
   --color-info: var(--info);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /* FAZ 7.12 — yeni belirteçler Tailwind yardımcılarına açılır. */
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-4: var(--surface-4);
+  --color-surface-kenar: var(--surface-kenar);
+  --color-surface-kenar-guclu: var(--surface-kenar-guclu);
+  --radius-lg: var(--radius-lg);
+  --radius-btn: var(--radius-btn);
+  --radius-chip: var(--radius-chip);
 }
 
 /* Sistem tercihi — bir VARSAYIMDIR ve kullanıcının açık tercihiyle ezilebilir. */
@@ -138,6 +211,18 @@
   --info:     #60a5fa;
   --shadow-1: 0 1px 2px rgb(0 0 0 / 0.5);
   --shadow-2: 0 2px 8px rgb(0 0 0 / 0.6);
+  /* 🔴 KOYU TEMA YÜZEYLERİ — saf siyah YASAK.
+     `#000` zeminde beyaz metin **halation** üretir: parlak harfler koyu zemine
+     "kanar", göz yorulur. Önerilen taban `#121212`+ bandı, metin **kırık beyaz**.
+     ⚠ Mevcut `--background: #08090a` bu fazda DEĞİŞMİYOR (sıfır görsel değişim
+     kuralı); yüzey ölçeği doğru bandı taşıyor ve bileşenler FAZ 5'te benimseyince
+     arayüz kendiliğinden o banda çıkıyor. */
+  --surface-1: #0f1115;
+  --surface-2: #16181d;
+  --surface-3: #1c1f26;
+  --surface-4: #23262e;
+  --surface-kenar: #262a31;
+  --surface-kenar-guclu: #343943;
 }
 
 :root[data-theme="light"] {
@@ -152,6 +237,12 @@
   --info:     #1d4ed8;
   --shadow-1: 0 1px 2px rgb(0 0 0 / 0.06);
   --shadow-2: 0 2px 8px rgb(0 0 0 / 0.10);
+  --surface-1: #f7f8f9;
+  --surface-2: #ffffff;
+  --surface-3: #ffffff;
+  --surface-4: #ffffff;
+  --surface-kenar: #e6e6e6;
+  --surface-kenar-guclu: #d4d4d4;
 }
 
 /* Tailwind v4: `dark:` varyantı ÖZNİTELİĞE bağlanır — `.dark` sınıfı ile ikinci bir
@@ -253,6 +344,26 @@ body {
     animation: none;
     stroke-dashoffset: 0;
     opacity: 1;
+  }
+
+  /* 🔴 FAZ 7.12 — PANEL/ÇUBUK HAREKETİ (WCAG 2.3.3, AAA).
+     *Kayan paneller* vestibüler rahatsızlık tetikleyicisidir; kılavuz "büyük ölçekli
+     hareket azaltılmalı VEYA DEĞİŞTİRİLMELİ" diyor ve daha güvenli alternatifi
+     adıyla söylüyor: **opaklık geçişleri ve kısaltılmış süreler**.
+
+     ⚠ Hareketi tümden kapatmak da yanlış olurdu: bir panelin **açıldığını** hiçbir
+     ipucu vermeden değiştirmek, kullanıcıyı içeriğin nereden geldiği konusunda
+     kör bırakır. Doğrusu: **kaydırmayı kaldır, sönümlemeyi kısalt.** */
+  :root {
+    --motion-fast: 100ms;
+    --motion-md: 100ms;
+  }
+
+  [data-kayan-panel],
+  [data-kayan-cubuk] {
+    transition-property: opacity !important;
+    transition-duration: 100ms !important;
+    transform: none !important;
   }
 }
 
