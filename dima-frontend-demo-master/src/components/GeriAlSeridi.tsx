@@ -34,7 +34,7 @@
  * Şerit; `export function …Panel` DEĞİL. Panel tavanı 13/13.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 /** Şeridin ekranda kalma süresi. ⚠ Sunucudaki geri-alma **süresiz**; bu yalnız
  *  şeridin ömrü. */
@@ -49,24 +49,27 @@ export function GeriAlSeridi({
   etiket: string | null;
   onGeriAl: () => void | Promise<void>;
 }) {
-  const [gorunur, setGorunur] = useState(false);
-  const [bekliyor, setBekliyor] = useState(false);
+  // 🔴 `gorunur` bir DURUM değil, bir TÜRETİMDİ — ve effect'te `setState` ile
+  // kopyalanıyordu (React'ın uyardığı basamaklı-render deseni).
+  //
+  // Görünürlük iki olgunun bileşimi: *"bir etiket var mı"* (prop) ve *"süresi doldu
+  // mu"* (zaman). İlki zaten prop; ikincisi **zaman aşımına uğrayan etiket** olarak
+  // tutulur. Böylece durum, türetilebilen bir şeyi değil, **yalnız türetilemeyeni**
+  // (hangi etiketin süresi doldu) saklar.
+  //
   // ⚠ Zamanlayıcı **yeni bir silmede sıfırlanmalı**: art arda iki silmede ilk sayaç
-  // ikincisinin şeridini erken kapatırdı.
-  const zamanlayici = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // ikincisinin şeridini erken kapatırdı — `etiket`e bağlı effect bunu zaten sağlıyor.
+  const [solmus, setSolmus] = useState<string | null>(null);
+  const [bekliyor, setBekliyor] = useState(false);
+  const gorunur = etiket !== null && solmus !== etiket;
 
   useEffect(() => {
     if (!etiket) return;
-    setGorunur(true);
-    setBekliyor(false);
-    if (zamanlayici.current) clearTimeout(zamanlayici.current);
-    zamanlayici.current = setTimeout(() => setGorunur(false), OMUR_MS);
-    return () => {
-      if (zamanlayici.current) clearTimeout(zamanlayici.current);
-    };
+    const t = setTimeout(() => setSolmus(etiket), OMUR_MS);
+    return () => clearTimeout(t);
   }, [etiket]);
 
-  if (!etiket || !gorunur) return null;
+  if (!gorunur) return null;
 
   return (
     <div
@@ -84,7 +87,8 @@ export function GeriAlSeridi({
           setBekliyor(true);
           try {
             await onGeriAl();
-            setGorunur(false);
+            // Geri alındıktan sonra şerit kapanır — *aynı* etiketi "solmuş" işaretleyerek.
+            setSolmus(etiket);
           } finally {
             setBekliyor(false);
           }

@@ -64,8 +64,19 @@ export function useOdakTuzagi<T extends HTMLElement>(
   const ref = useRef<T | null>(null);
   // ⚠ Kapatıcı her render'da yeni bir kimlik alabilir; dinleyiciyi yeniden bağlamak
   // yerine referansı tazeliyoruz — aksi hâlde her tuş vuruşunda yeniden bağlanırdı.
+  //
+  // 🔴 Ama tazeleme **render sırasında değil, commit'ten sonra** yapılır: render
+  // sırasında bir ref'e yazmak React'ın açıkça yasakladığı şeydir (*"Cannot access refs
+  // during render"*) ve eşzamanlı/yeniden-oynatılan render'larda **iptal edilmiş bir
+  // render'ın kapatıcısını** kalıcı hâle getirebilir.
+  //
+  // ⚠ Bağımlılık dizisi **yok**: her commit'ten sonra koşar, yani dinleyici her zaman
+  // en güncel kapatıcıyı görür. Ve dinleyici olayı **commit'ten sonra** okuduğu için
+  // bir kare geç kalma riski yoktur. *Doğru zaman, en erken zaman değildir.*
   const kapatRef = useRef(kapat);
-  kapatRef.current = kapat;
+  useEffect(() => {
+    kapatRef.current = kapat;
+  });
 
   useEffect(() => {
     if (!acik) return;

@@ -10,41 +10,50 @@
 
 ---
 
-## §1 · EKRANIN HARİTASI — üç bölge ve bir şerit
+## §1 · EKRANIN HARİTASI — açılır bir çubuk, sohbet, rapor
 
-Uygulama **tek sayfadır**; menü ağacı yoktur. Her şey üç yerde olur:
+> ⟳ **2026-08-05'te DEĞİŞTİ.** Sağ kenardaki ikon şeridi **kaldırıldı**; işlevleri
+> soldaki açılır çubuğa taşındı. Neyin nereye gittiği: **`YENILIKLER-UI-UX.md`**.
+
+Uygulama **tek sayfadır**; menü ağacı yoktur. Her şey şurada olur:
 
 ```
-┌────────────────────────────┬─────────────────────────────┬──┐
-│   SOL — SOHBET             │   SAĞ — RAPOR               │şe│
-│   sorunuzu buraya yazarsınız│   cevaplar burada birikir   │ri│
-│   konu listesi burada       │   her cevap bir KART        │t │
-└────────────────────────────┴─────────────────────────────┴──┘
+┌────┬──────────────────────┬────────────────────┬───────────────┐
+│ ▤  │  SOHBET              │  RAPOR             │ ANALİZ PANELİ │
+│çub.│  soru + konuşma      │  cevap kartları    │ (grafiğin     │
+│ ✎  │                      │                    │  makinesi)    │
+└────┴──────────────────────┴────────────────────┴───────────────┘
+   ↑ kapalıyken bile ✎ görünür — yeni sohbet
 ```
 
 | Bölge | Ne işe yarar |
 |---|---|
-| **Sol · Sohbet** | Soru yazarsınız. Geçmiş konularınız (*thread*) burada listelenir. Kapsam/mod anahtarları buradadır. |
-| **Sağ · Rapor** | Cevaplar **kart** olarak birikir. Her kartın kendi düğmeleri vardır. Kartlar **konuya göre** gruplanır. |
-| **Şerit (rail)** | Sağ kenarda yüzen ikonlar. **Mobilde ekranın altına iner.** |
-| **Analiz Tuvali** | İsteğe bağlı üçüncü bölge: seçtiğiniz kartları **rapor hâline** getirir. |
+| **Sol · Çubuk (▤)** | **Açılır/kapanır.** Yeni sohbet (**✎**) · geçmiş · bildirim · pano · yardım · ayarlar · **kanıt geçmişi** · kimlik · tema · çıkış. `Ctrl/⌘+B` ile aç/kapa. ⚠ Kapalıyken **✎ hep görünür**. |
+| **Sohbet** | Soru yazarsınız, cevabın **anlatımını** okursunuz. Kapsam/yol/mod anahtarları komposerin üstündedir. |
+| **Rapor** | Cevaplar **kart** olarak birikir; kartta **temiz grafik** vardır (düğme yok). Kartlar konuya göre gruplanır. |
+| **Analiz paneli** | Kartta **"panelde aç"** deyince sağda açılır: grafiğin **tüm makinesi** (yorum çubuğu · katkı · reçete · 🌳 kök-neden haritası). 🔴 **Modal değildir** — panel açıkken sohbete yazmaya devam edebilirsiniz. Kenarından **sürükleyerek** genişletilir. |
+| **Analiz Tuvali** | İsteğe bağlı: seçtiğiniz kartları **rapor hâline** getirir. |
 
-### 1.1 · Şerit ikonları — yukarıdan aşağı
+### 1.1 · Sol çubuk — yukarıdan aşağı
 
 | İkon | Adı | Ne açar |
 |---|---|---|
-| ↺ | **Sohbet geçmişi** | Eski konuşmalarınız; birine tıklayınca kaldığınız yerden devam edersiniz |
+| ✎ | **Yeni sohbet** | 🔴 Çubuk **kapalıyken de görünür** — yeni bir konu açmak tek tık |
+| ↺ | **Sohbet geçmişi** | Çubuğun içinde liste hâlinde: *Bugün · Dün · Son 7 gün · Son 30 gün · Ocak 2026…* Birine tıklayınca kaldığınız yerden devam edersiniz |
 | 🔔 | **Bildirimler** | Zamanlanmış raporlardan ve uyarılardan gelen bildirimler |
 | ▦ | **Panolar** | Canlı izlenen KPI panolarınız |
 | ✓ | **Ölçü inceleme** | Yeni ölçü adaylarının onay kuyruğu |
 | ? | **Yardım** | *"Ne sorabilirim"* — departmana göre örnek sorular |
 | ⚙ | **Ayarlar** | Şema · Veri Kaynağı Bağlantıları · Zamanlamalar · Tercihler |
+| ⇩ | **Kanıt geçmişi** | Son 20 makbuz + **⇩ denetim kaydı (JSON-LD)** dışa aktarımı ⟳ *yeni* |
 | ⏻ | **Çıkış** | Oturumu kapatır |
 | ☀/☾ | **Tema** | Aydınlık ↔ karanlık; tıklayınca değişir |
 
-> ⚠ **Şeritte bazı ikonları göremeyebilirsiniz — bu bir hata değildir.**
+> ⚠ **Çubukta bazı ikonları göremeyebilirsiniz — bu bir hata değildir.**
 > **Panolar** ikonu `dashboards` özelliği açıksa, **Ölçü inceleme** ikonu
-> `measure:read` yetkiniz varsa çıkar. Şerit **rolünüze göre kısalır**.
+> `measure:read` yetkiniz varsa çıkar. Çubuk **rolünüze göre kısalır**.
+>
+> 📱 **Mobilde** çubuk üstteki bir bant olarak durur ve tıklayınca **kayarak** açılır.
 
 ---
 
@@ -206,7 +215,7 @@ dışa aktarın. Bu, *"müdüre sunum"* akışının v1'deki karşılığıdır.
 
 ---
 
-## §7 · PANELLER — şeritten açılanlar
+## §7 · PANELLER — sol çubuktan açılanlar
 
 ### 7.1 · Sohbet geçmişi
 Eski konuşmalar. **Bir satıra tıkla** → devam et. **+ yeni sohbet**. **sil** *(⚠ §8)*.
@@ -344,7 +353,7 @@ Bunlar **testle kilitlidir**, iyi niyet beyanı değildir:
 - **Renk tek kanal değildir**: *"devre dışı"* ile *"soluk ama tıklanabilir"* asla aynı
   görünmez; hata **metinle de** söylenir.
 - Üç ekran genişliğinde *(375 / 768 / 1024)* **yatay taşma yok**.
-- **Mobilde şerit alta iner** — başparmakla ulaşılabilir.
+- **Mobilde** sol çubuk üstte bir bant olur, tıklayınca kayarak açılır.
 
 ---
 
@@ -362,7 +371,10 @@ Bunlar **testle kilitlidir**, iyi niyet beyanı değildir:
 10. **📎 Excel yükle** → yüklediğin veriye soru sor
 11. *"asdf qwerty"* sor → **dürüst duvar** mı, uydurma mı?
 12. *"neler yapabilirsin"* sor → yetenek cevabı geldi mi?
-13. Ekranı **375px**'e daralt → taşma var mı, şerit alta indi mi?
+13. Ekranı **375px**'e daralt → taşma var mı, üst bant çıktı mı?
+15. Bir kartta **"panelde aç"** → panel açıkken **sohbete yazabiliyor musunuz?** *(modal olsaydı yazamazdınız)*
+16. Panelde **🌳 kök neden haritası** → **silik** bir düğüme tıklanabiliyor mu? *(⊘ "bakmadım" ≠ "yok")*
+17. Haritada bir düğüme in → **✎ not al** → sohbete **yolla birlikte** düştü mü?
 14. **Tema** düğmesine bas → karanlık mod tutarlı mı?
 
 > ⚠ **11. adım en değerlisidir.** Bir BI ürününün kalitesi doğru soruya verdiği

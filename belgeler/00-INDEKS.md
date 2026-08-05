@@ -47,6 +47,7 @@ sıfırlansa bile operasyon buradan devam eder.
 | [`TEST-ORTAMI-KILAVUZU.md`](kilavuz/TEST-ORTAMI-KILAVUZU.md) | 🔴 **test koşacak/yazacak herkese** — süre kuralları, parçalar, kapılar |
 | [`CANLI_TEST_REHBERI.md`](kilavuz/CANLI_TEST_REHBERI.md) | canlı LLM turu koşacaklara (kota kısıtı!) |
 | [`KULLANIM-KILAVUZU-v1.md`](kilavuz/KULLANIM-KILAVUZU-v1.md) | son kullanıcı bakışı |
+| [`YENILIKLER-UI-UX.md`](kilavuz/YENILIKLER-UI-UX.md) | ⟳ **arayüz turu (2026-08-05)** — ne nereye taşındı, kılavuzdan ÖNCE okunur |
 
 ## `mimari/` — *neden böyle* (canlı)
 

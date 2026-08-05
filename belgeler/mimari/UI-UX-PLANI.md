@@ -514,6 +514,55 @@ bir özettir; orada kırılacak tek bir satır kümesi yoktur ve bunu **söyler*
    ama kapatılmadan v1 "tamam" denmez)*
 4. `belgeler/kilavuz/` altına **kullanıcı bakışlı** kısa bir "yenilikler" notu
 
+### ✅ YAPILDI — ve denetim planın dışından **beş** şey buldu
+
+**Plandaki dördü:**
+
+| # | ne | sonuç |
+|---|---|---|
+| 2 | Envanter/erişilebilirlik kapısı | 269 işlevin tamamı ulaşılabilir · **135 UI kapısı yeşil** |
+| 3 | Üç kırık yüzey | ⇩ JSON-LD ihracı · kanıt geçmişi · *"portföy"* kapsamı — **üçü de açıldı** |
+| 4 | Kullanıcı notu | `belgeler/kilavuz/YENILIKLER-UI-UX.md` + kılavuzun **bayat §1'i onarıldı** |
+| 1 | `--tam` | demet sonunda, tek koşum |
+
+**Denetimin kendi bulduğu beş kusur:**
+
+1. 🔴 **`pnpm lint` 7 hatayla düşüyordu — ve frontend'in HİÇ CI'ı yoktu.**
+   `backend-ci.yml`/`nightly.yml` yalnız Python'u koşuyordu; `CLAUDE.md`'de komut olarak
+   yazılı `pnpm lint` **hiçbir yerde zorlanmıyordu**. Hataların hiçbiri stil değildi:
+   dördü *effect gövdesinde senkron `setState`* (basamaklı render), biri *render sırasında
+   ref yazımı* (eşzamanlı render'da iptal edilmiş bir render'ın kapatıcısı kalıcılaşabilir),
+   biri **ölü kod**, biri kaçırılmış kesme işareti.
+   → `frontend-ci.yml` (`--max-warnings 0` + `tsc --noEmit` + `build`) ve yerel erken-uyarı
+   kapısı `test_ui_react_desenleri.py`. *Bir kural yazılıp koşulmuyorsa bir kural değil,
+   bir dilektir.*
+
+2. 🔴 **`ChatPanel` `kapsam · yol · hızlı/derin · 📎` dörtlüsünü KELİMESİ KELİMESİNE
+   kopyalıyordu (≈95 satır).** FAZ 3b bunu *"tek sahip"* diye ilan etmişti ama iddia
+   yalnız SAĞ komposer için doğruydu. Kanıtı da vardı: *"portföy"* düzeltmesi tek başına
+   yapılsaydı **sol komposer yine kırık kalırdı**. → `SoruAlani`ya bağlandı.
+   *Bir asimetriyi kapattığını ilan etmek, onu kapatmak değildir.*
+
+3. 🔴 **Tema anahtarı iki yerde çiziliyor ve birbirinden habersizdi** — her biri kendi
+   `useState`ini tutuyordu, birinden değiştirilince öteki eski değeri gösteriyordu.
+   → `lib/tema.ts` bir **depoya** dönüştü (`temaAbone` + `useSyncExternalStore`).
+   *Bir değerin iki görüntüleyicisi varsa, o artık bileşen durumu değil bir depodur.*
+
+4. 🔴 **`dimToFilter` — yazılmış, hiç çağrılmamış** dördüncü bir *"boyutu filtreye çevir"*
+   kopyası. Kaldırma sebebi *"kullanılmıyor"* değil **ikinci sahip olması**.
+   *Ölü kod zararsız değildir: canlanana kadar bakımsız kalır, canlandığında yanlış olur.*
+
+5. 🔴 **`⊘ atlandı` bir yeşil değildir.** Üç denetim dosyası (belge düzeni · CI kapıları ·
+   frontend-CI) standart konteynerde depo kökünü **göremiyor** ve 7-9 test atlıyordu —
+   toplam *"N passed"* içinde kaybolarak. Bir tur boyunca **yalan alarm** bile verdi.
+   → Reçete yazıldı: kökü `/repo`ya bağla, iş dizinini `backend` yap
+   (`TEST-ORTAMI-KILAVUZU`). *Bir kapıyı ölçemeyen bir ortam, o kapıyı geçmiş sayılmaz.*
+
+⚠ **Ve bir kırmızı BİLEREK üstlenilmedi:** `test_ACIKKEN_de_ROUTE_cozdugune_DOKUNMUYOR`
+izole bir `git worktree`de `HEAD`'de de kırmızı — bu turun işi değil, yol haritasının
+**FAZ F**'i. `OPERASYON-DURUM.md`'ye borç olarak yazıldı.
+*Bir kırmızıyı sahiplenmek, onu ölçmeden üstlenmek değildir.*
+
 ---
 
 # BÖLÜM D · RİSK KAYDI

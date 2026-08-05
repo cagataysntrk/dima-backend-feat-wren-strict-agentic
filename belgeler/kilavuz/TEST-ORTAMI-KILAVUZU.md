@@ -331,9 +331,24 @@ docker wait t1 && docker logs t1 && docker rm -f t1
 # 3 · gecelik CI (yerelde KOŞMA)                    (~4-5 dk)
 ... python lab/kapi.py --hepsi
 
-# ⚠ Belge düzeni denetimi REPO KÖKÜNDEN koşulur (konteynerde ⊘ atlanır):
-cd backend && python -m pytest tests/test_belge_duzeni.py -q
+# ⚠ DEPO KÖKÜ İSTEYEN DENETİMLER — konteynere yalnız `backend/` bağlanınca ⊘ atlanır.
+#    🔴 ÇÖZÜM (2026-08-05'te ölçüldü): kökü `/repo`ya bağla, iş dizinini `backend` yap.
+#    Böylece `APP.parent.parent` gerçekten DEPO KÖKÜ olur ve üçü de GERÇEKTEN koşar:
+#      · test_belge_duzeni.py        (belge yerleşimi + kök .md sayısı)
+#      · test_beyanlar_curumesin.py  (.github/workflows CI kapıları ayakta mı)
+#      · test_ui_react_desenleri.py  (frontend-ci.yml var mı, --max-warnings 0 mı)
+docker run -d --name kapi --user "$(id -u):$(id -g)" --network none \
+  -v "$PWD:/repo" -v "$PWD/dima-frontend-demo-master:/dima-frontend-demo-master:ro" \
+  -w /repo/backend -e DIMA_VQR_EMBEDDER=off dima-test \
+  python -m pytest tests/test_belge_duzeni.py tests/test_beyanlar_curumesin.py \
+                   tests/test_ui_react_desenleri.py -q
+docker wait kapi && docker logs kapi && docker rm -f kapi
 ```
+
+> ⚠ **`⊘ atlandı` bir yeşil değildir.** Bu üç dosya standart konteynerde **7-9 test**
+> atlar ve toplam *"N passed"* içinde kaybolur. Ölçüldü: bu yüzden `.github/workflows`
+> denetimi bir tur boyunca **yalan alarm** verdi (*"CI kapıları geri alınmış"* — oysa
+> yalnız görünmüyorlardı). *Bir kapıyı ölçemeyen bir ortam, o kapıyı geçmiş sayılmaz.*
 
 ### Yeni bir test yazacaksan
 

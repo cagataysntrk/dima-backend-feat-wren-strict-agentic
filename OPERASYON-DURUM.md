@@ -52,6 +52,7 @@ devam ettirir. 🔴 **Kural: her faz commit'inden sonra bu blok güncellenir.**
 | **`3.0`** | tenant açılışı — v1'in **tek sessizce atlanan** maddesi | 🔨 kod |
 | **Bayrak** | `public_api` · `threaded_chat` **kapısız**; `cekirdek_katman` **iki sahipli** | 🔨 kod |
 | **F2 kalanı** | bağlantı · tercih geri alma — ⚠ **gerekçesi yazılı**: ikisi de yeniden kurulabilir | ◐ karar |
+| 🔴 **FAZ F** | `test_ACIKKEN_de_ROUTE_cozdugune_DOKUNMUYOR` **kırmızı** — *"bu yıl sapma yüzdesi"* `enerji_sapma`ya çözülüyordu, artık *"birden fazla konu anlaşıldı"* diyor. ⚠ **UI turunda ölçüldü ama UI'dan DEĞİL**: izole bir `git worktree`de `HEAD`'de de kırmızı. Netleştirme önceliği bayrağı açıkken `route()`'un ZATEN çözdüğüne dokunuyor — yol haritası **FAZ F**'in konusu. *Bir kırmızıyı sahiplenmek, onu ölçmeden üstlenmek değildir.* | 🔨 kod |
 
 ### 🔴 KULLANICI TESPİTİ — *"bayrakları hep `off` tuttuk, hiç değişiklik olmadı"*
 

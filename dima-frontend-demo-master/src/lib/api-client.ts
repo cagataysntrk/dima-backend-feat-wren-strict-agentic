@@ -24,7 +24,6 @@ import type {
   MeasureCandidate,
   MeasurePreview,
   MeasurePreviewInput,
-  QueryResult,
   Report,
   ReportBlockInput,
   DrillRequestInput,

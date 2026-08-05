@@ -189,18 +189,19 @@ export function InterpretationBar({
     });
   };
 
-  // Kırılımdan tek değere GERİ dönüş: boyutu kaldır, o değere filtrele
-  // (ör. cinsiyet kırılımı → yalnız Kadın).
-  const dimToFilter = (dim: string, value: string) => {
-    const next = clone();
-    next.dimensions = dims.filter((x) => x !== dim);
-    if (!(next.dimensions as string[]).length) delete next.dimensions;
-    next.filters = [
-      ...filters.filter((f) => f.dimension !== dim),
-      { dimension: dim, operator: "eq", value },
-    ];
-    onEdit({ cq: next, label: `chip: kırılım → ${dim} = ${value}` });
-  };
+  // ⟳ FAZ 6 · KAPANIŞ DENETİMİ — **`dimToFilter` KALDIRILDI (ölü kod).**
+  //
+  // *"Kırılımdan tek değere geri dönüş"* (boyutu kaldır, o değere filtrele) burada
+  // yazılmıştı ama **hiçbir yerden çağrılmıyordu** — lint uyarısı onu FAZ 6'da ortaya
+  // çıkardı. Yetenek kaybolmuyor; **zaten üç yerde yaşıyor ve hepsi çağrılıyor**:
+  //   · `drill.select_cube_query` (sunucu — tek sahip)
+  //   · grafik tıklaması → `ek_filtreler` → `/ask/drill action="select"`
+  //   · kök-neden haritasında düğüm açılışı
+  //
+  // 🔴 Kaldırma sebebi *"kullanılmıyor"* değil, **ikinci sahip olması**: aynı dönüşümün
+  // dördüncü bir kopyası, bir gün ötekilerden ayrışacak ve kullanıcı aynı işlemin iki
+  // yerde farklı sonuç verdiğini görecekti. *Ölü kod zararsız değildir: canlanana kadar
+  // bakımsız kalır, canlandığında yanlış olur.*
 
   // Chip YORUMU gösterir, ham tarihi değil: preset ("Bu yıl"), ay ("Temmuz 2026") ya da
   // okunur aralık ("1 Oca – 31 Mar 2026"). Ham değerler tooltip'te şeffaf kalır.

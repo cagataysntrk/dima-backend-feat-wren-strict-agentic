@@ -239,14 +239,27 @@ export function ResultView({
   // Yalnız ŞEKİL imzası değişince tetiklenir: pano 60sn refetch'i (aynı sorgu) kullanıcının manuel
   // seçimini BOZMAZ. İlk mount'ta useState zaten ayarladı → atla.
   const shapeSig = `${result.columns.join(",")}|${viz?.kind ?? ""}`;
-  const mounted = useRef(false);
-  useEffect(() => {
-    if (!mounted.current) { mounted.current = true; return; }
+  // 🔴 FAZ 6 — **RENDER SIRASINDA AYARLAMA**, effect DEĞİL.
+  //
+  // Eski hâl bir effect + `mounted` ref + `eslint-disable` üçlüsüydü ve iki bedeli vardı:
+  //   1. Kullanıcı **bayat görünümü bir kare görüyordu** (effect commit'ten sonra koşar;
+  //      yeni sonuç eski "tablo" seçimiyle bir an çiziliyordu).
+  //   2. `mounted` ref'i *"ilk mount'ta atla"* demek için vardı — yani durum, kendini
+  //      ne zaman sıfırlayacağını **hatırlamak** zorundaydı.
+  //
+  // React'ın bu iş için belgelediği desen: **önceki değeri durumda tut, render sırasında
+  // karşılaştır.** Değişim anında yeniden render edilir ve bayat çıktı hiç commit edilmez;
+  // `mounted` bayrağı da gereksizleşir (ilk render'da `onceki === shapeSig`).
+  //
+  // ⚠ Pano 60sn yenilemesi (aynı sorgu → aynı imza) kullanıcının manuel seçimini
+  // BOZMAZ — imza değişmediği için dal hiç girilmez.
+  const [oncekiSekil, setOncekiSekil] = useState(shapeSig);
+  if (shapeSig !== oncekiSekil) {
+    setOncekiSekil(shapeSig);
     setView(defaultView());
     setType(hintKind ?? a.kind);
     setMeasure(measureDefault());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shapeSig]);
+  }
 
   // Güncel görünümün BİLEŞİK view_hint'i (grafiğin TÜM özellikleri): main#measure.
   //   main = table | pivot | facet:<dim> | <grafikTipi>   ·   measure yalnız grafik + çok-ölçüde

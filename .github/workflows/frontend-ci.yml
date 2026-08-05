@@ -1,0 +1,63 @@
+name: frontend-ci
+
+# 🔴 FAZ 6 · KAPANIŞ DENETİMİ — **frontend'in HİÇ CI'ı yoktu.**
+#
+# Ölçüldü: `backend-ci.yml` ve `nightly.yml` yalnız Python tarafını koşuyordu. Yani
+# `dima-frontend-demo-master/CLAUDE.md`'de komut olarak yazılı olan `pnpm lint` ve
+# TypeScript strict derlemesi **hiçbir yerde** zorlanmıyordu — ve zorlanmadığı için
+# depoda **7 lint hatası** birikmişti (dördü React'ın `set-state-in-effect` uyarısı,
+# biri render sırasında ref yazımı, biri ölü kod, biri kaçırılmış kesme işareti).
+#
+# ⚠ Bunların hiçbiri "stil" değildi: `set-state-in-effect` basamaklı render üretir,
+# render sırasında ref yazmak eşzamanlı render'da **iptal edilmiş bir render'ın**
+# kapatıcısını kalıcılaştırabilir, ölü kod ise ikinci bir sahip adayıdır.
+#
+# > *Bir kural yazılıp koşulmuyorsa, bir kural değildir — bir dilektir.*
+#
+# Python kapılarıyla aynı disiplin: `pnpm lint` **uyarıya da kırmızı verir**
+# (`--max-warnings 0`), çünkü bu depoda uyarı biriktirmenin sonucu ölçüldü.
+
+"on":
+  push:
+  pull_request:
+
+defaults:
+  run:
+    working-directory: dima-frontend-demo-master
+
+jobs:
+  lint-ve-tip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: dima-frontend-demo-master/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      # 🔴 `--max-warnings 0`: uyarı da kırmızıdır. FAZ 6'da yakalanan **ölü kod**
+      # (`dimToFilter` — yazılmış, hiç çağrılmamış, dördüncü bir "boyutu filtreye çevir"
+      # kopyası) yalnız bir *uyarı* olarak görünüyordu.
+      - name: lint (uyarı da kırmızıdır)
+        run: pnpm exec eslint src --max-warnings 0
+
+      # TypeScript strict — `any` yasak (saka-standards). `pnpm build` bunu zaten
+      # yapar ama ayrı adım olması KIRMIZININ NEDENİNİ okunur kılar: tip hatası mı,
+      # derleme hatası mı?
+      - name: tip denetimi (strict)
+        run: pnpm exec tsc --noEmit -p tsconfig.json
+
+      - name: üretim derlemesi
+        run: pnpm build
+        env:
+          # Derleme sırasında backend'e gidilmez; rewrite-proxy hedefi yalnız çalışma
+          # zamanında okunur. Yine de tanımlı olması uyarı gürültüsünü keser.
+          BACKEND_ORIGIN: http://localhost:8000

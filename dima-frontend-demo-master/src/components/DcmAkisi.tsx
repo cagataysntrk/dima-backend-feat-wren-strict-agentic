@@ -119,7 +119,7 @@ export function DcmAkisi({
           DCM Aktif
         </span>
         <span className="font-mono text-[11px] text-neutral-400">
-          serbest metin yok · her cevap LLM'siz cube yolundan
+          serbest metin yok · her cevap LLM&apos;siz cube yolundan
         </span>
       </div>
 

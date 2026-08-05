@@ -29,7 +29,9 @@
  * Çerez SSR'da okunabildiği için ilk kare doğru genişlikte gelir.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+
+import { useIstemciDegeri } from "@/lib/istemci";
 
 import { ConnectionBadge } from "@/components/ConnectionBadge";
 import { GeriAlSeridi } from "@/components/GeriAlSeridi";
@@ -39,7 +41,7 @@ import { LogoutButton } from "@/components/LogoutButton";
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { deleteConversation, listConversations, restoreConversation } from "@/lib/api-client";
 import { hataMetni } from "@/lib/mutasyonHatasi";
-import { type Tema, temaBaslat, temaOku, temaUygula } from "@/lib/tema";
+import { type Tema, temaAbone, temaBaslat, temaOku, temaUygula } from "@/lib/tema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 /** Açık genişlik. ⚠ 240px altında orta uzunluktaki başlıklar kırpılmaya başlar. */
@@ -53,6 +55,14 @@ function cerezOku(): boolean | null {
   if (typeof document === "undefined") return null;
   const m = document.cookie.match(new RegExp(`(?:^|; )${CEREZ}=([^;]*)`));
   return m ? m[1] === "acik" : null;
+}
+
+/** İlk açılış değeri: **çerez varsa o**, yoksa ≥1440px'te açık.
+ *  ⚠ Modül düzeyinde tanımlı — `useIstemciDegeri` her render'da yeni kimlikli bir
+ *  okuyucu alırsa `useSyncExternalStore` sonsuz döngüye girer. */
+function baslangicAcik(): boolean {
+  const c = cerezOku();
+  return c ?? (typeof window !== "undefined" && window.innerWidth >= 1440);
 }
 
 function cerezYaz(acik: boolean) {
@@ -84,6 +94,7 @@ export function YanCubuk({
   onYeniSohbet,
   onResume,
   onBolum,
+  onKanitArsivi,
   acikBolum,
   panolarVar,
   incelemeVar,
@@ -94,6 +105,13 @@ export function YanCubuk({
   onResume: (id: string) => void;
   /** Bölüm çekmecesini açar/kapatır — çubuk **kendisi** çekmece render etmez. */
   onBolum: (b: Bolum) => void;
+  /** 🔴 FAZ 6 · KAPANIŞ DENETİMİ — **kanıt arşivinin giriş kapısı.**
+   *  `ContractDetailPanel` arşiv listesini ve JSON-LD ihracını yalnız `contractId=""`
+   *  iken çiziyordu ve **hiçbir çağıran** boş dize geçmiyordu: kod tamdı, kapısı yoktu.
+   *  ⚠ `Bolum` durum makinesine karıştırılmadı — o `SettingsDrawer`ı açar, bu ise
+   *  var olan bir paneli açar. *İki farklı davranışı tek bir duruma yüklemek, o durumu
+   *  okuyan herkesi hangi dalda olduğunu tahmin etmeye zorlar.* Panel sayısı **sabit**. */
+  onKanitArsivi?: () => void;
   acikBolum: Bolum;
   /** `dashboards` bayrağı — yoksa giriş **hiç çizilmez**. */
   panolarVar: boolean;
@@ -101,22 +119,27 @@ export function YanCubuk({
   incelemeVar: boolean;
   onInceleme: () => void;
 }) {
-  const [acik, setAcik] = useState<boolean>(true);
+  // 🔴 Çerez + ekran genişliği **sunucuda okunamaz**. Eskiden effect gövdesinde senkron
+  // `setState` ile okunuyordu — React'ın uyardığı basamaklı-render deseni ve depoda
+  // **dört kopya** hâlindeydi. `useIstemciDegeri` aynı işi `useSyncExternalStore`
+  // üzerinden yapar; hidrasyon uyumu React'ın garantisi olur, bizim dikkatimiz değil.
+  //
+  // ⚠ Ve **effect'e geri düşmemek** için tercih bir *"elle seçim"* katmanı olarak
+  // tutuluyor: `null` = *"kullanıcı henüz dokunmadı"* → başlangıç değeri geçerli.
+  // *Türetilebilen bir değeri duruma kopyalamak, iki kaynağı senkron tutma borcudur.*
+  const baslangic = useIstemciDegeri(baslangicAcik, false);
+  const [elleSecim, setElleSecim] = useState<boolean | null>(null);
+  const acik = elleSecim ?? baslangic;
   const [ara, setAra] = useState("");
   const [hata, setHata] = useState<string | null>(null);
   const [silinen, setSilinen] = useState<{ id: string; title: string } | null>(null);
   const acKapaRef = useRef<HTMLButtonElement>(null);
 
-  // İlk açılış: çerez varsa o, yoksa **≥1440px açık**.
-  useEffect(() => {
-    const c = cerezOku();
-    setAcik(c ?? window.innerWidth >= 1440);
-  }, []);
-
   const degistir = useCallback(() => {
-    setAcik((a) => {
-      cerezYaz(!a);
-      return !a;
+    setElleSecim((a) => {
+      const yeni = !(a ?? baslangicAcik());
+      cerezYaz(yeni);
+      return yeni;
     });
   }, []);
 
@@ -422,6 +445,15 @@ export function YanCubuk({
               onClick={() => onBolum(acikBolum === "yardim" ? null : "yardim")}
               ikon={<><circle cx="12" cy="12" r="9" /><path d="M9.5 9a2.5 2.5 0 1 1 3 2.4V13" /><path d="M12 17h.01" /></>}
             />
+            {onKanitArsivi && (
+              <CubukDugmesi
+                acik={acik}
+                etiket="Kanıt geçmişi"
+                onClick={onKanitArsivi}
+                ikon={<><path d="M9 12h6M9 16h6M9 8h2" /><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /></>}
+              />
+            )}
+
             <CubukDugmesi
               acik={acik}
               etiket="Ayarlar"
@@ -510,11 +542,14 @@ function BolumDugmesi({
  * sessizce ezmek olurdu. İkon duruma göre değişir ve `title` o durumu **söyler**:
  * bir toggle'ın hangi konumda olduğunu tahmin ettirmek, onu bir sürprize çevirir. */
 function TemaDugmesi({ acik }: { acik: boolean }) {
-  const [tema, setTema] = useState<Tema>("sistem");
-  useEffect(() => {
-    temaBaslat();
-    setTema(temaOku());
-  }, []);
+  // 🔴 Tema artık bir **dış depodur** (`lib/tema.ts`), bileşen durumu değil: iki
+  // anahtar da (bu ve ötekisi) aynı değeri okur ve biri değişince öteki **anında**
+  // güncellenir. Eskiden her biri kendi `useState`ini tutuyordu ve ayrışıyorlardı.
+  // ⚠ `useSyncExternalStore` hidrasyonu da çözer: sunucuda `"sistem"`, istemcide
+  // gerçek değer — React'ın garantisi, bizim dikkatimiz değil.
+  const tema = useSyncExternalStore(temaAbone, temaOku, () => "sistem" as Tema);
+  useEffect(() => { temaBaslat(); }, []);
+  const setTema = (t: Tema) => temaUygula(t);
   const sonraki: Record<Tema, Tema> = { sistem: "light", light: "dark", dark: "sistem" };
   const etiket: Record<Tema, string> = {
     sistem: "Tema: sistem (işletim sistemine uyar)",

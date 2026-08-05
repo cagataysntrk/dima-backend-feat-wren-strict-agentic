@@ -23,6 +23,21 @@
 
 export type Tema = "sistem" | "light" | "dark";
 
+/** 🔴 ABONELER — *"tema bir DIŞ DEPODUR"*.
+ *
+ * ⚠ Ölçülen kusur: tema anahtarı **iki yerde** çiziliyor (`FloatingControls` ve
+ * `YanCubuk`) ve her biri kendi `useState`ini tutuyordu → birinden değiştirilince
+ * öteki **eski değeri göstermeye devam ediyordu**. İkisi de doğruydu; ikisi birden
+ * doğru değildi.
+ *
+ * *İki görüntüleyicisi olan bir değer artık bileşen durumu değil, bir depodur.* */
+const _aboneler = new Set<() => void>();
+
+export function temaAbone(f: () => void): () => void {
+  _aboneler.add(f);
+  return () => { _aboneler.delete(f); };
+}
+
 const ANAHTAR = "dima-tema";
 
 /** Kayıtlı tercih. ⚠ Tanınmayan bir değer **`"sistem"`e düşer**: bozuk bir
@@ -45,10 +60,13 @@ export function temaUygula(t: Tema): void {
   if (t === "sistem") {
     kok.removeAttribute("data-theme");
     window.localStorage.removeItem(ANAHTAR);
-    return;
+  } else {
+    kok.setAttribute("data-theme", t);
+    window.localStorage.setItem(ANAHTAR, t);
   }
-  kok.setAttribute("data-theme", t);
-  window.localStorage.setItem(ANAHTAR, t);
+  // ⚠ `storage` olayı **aynı sekmede ateşlemez** — o yüzden abonelere BURADAN haber
+  // verilir. Yalnız `storage`e güvenmek, iki anahtarın aynı sekmede ayrışması demekti.
+  _aboneler.forEach((f) => f());
 }
 
 /** Açılışta kayıtlı tercihi geri koyar. */

@@ -7,19 +7,16 @@ import { apiErrorMessage, ask, askCube, getConversation, uploadDataset } from "@
 import { AnalysisCanvas } from "@/components/AnalysisCanvas";
 import { ChatPanel } from "@/components/ChatPanel";
 import { AnalizPaneli } from "@/components/AnalizPaneli";
-import { AyarlarBolumu } from "@/components/AyarlarBolumu";
+import { Cekmece } from "@/components/Cekmece";
+import { ContractDetailPanel } from "@/components/ContractDetailPanel";
 import { KartMakinesi } from "@/components/KartMakinesi";
-import { DashboardsPanel } from "@/components/DashboardsPanel";
 import { DashboardView } from "@/components/DashboardView";
-import { HelpPanel } from "@/components/HelpPanel";
 import { Landing } from "@/components/Landing";
-import { NotificationsPanel } from "@/components/NotificationsBell";
 import { ReportPanel } from "@/components/ReportPanel";
-import { SettingsDrawer } from "@/components/SettingsDrawer";
 import { YanCubuk } from "@/components/YanCubuk";
 import { useHistory } from "@/stores/history";
 import { useFeature } from "@/lib/useFeature";
-import { usePermission } from "@/lib/usePermission";
+import { usePermission, useSuperadmin } from "@/lib/usePermission";
 import { groupIntoThreads, mintThreadId, replyAnchorLabel } from "@/lib/threads";
 import type { AskResponse, CubeQuery} from "@/lib/types";
 import { DcmAkisi } from "@/components/DcmAkisi";
@@ -67,6 +64,12 @@ export default function Home() {
   // Görünüm ipucu ("grafik ver") — sağ paneldeki raporun görünümünü değiştirir.
   const [viewHint, setViewHint] = useState<{ kind: string; nonce: number } | null>(null);
   const [drawer, setDrawer] = useState<Drawer>(null);
+  /** 🔴 FAZ 6 — kanıt arşivi. `null` kapalı · `""` **liste** · dolu id **tek kayıt**.
+   *  Envanter bu iki işlevi (son 20 makbuz · ⇩ JSON-LD ihracı) **kırık** ölçmüştü:
+   *  `ContractDetailPanel` ikisini de yalnız `contractId===""` iken çiziyor ve hiçbir
+   *  çağıran boş dize geçmiyordu. *Yazılmış ama çağrılmayan bir yüzey, olmayan bir
+   *  yüzeyden daha kötüdür: bakımı ödenir, değeri alınmaz.* */
+  const [kanitArsivi, setKanitArsivi] = useState<string | null>(null);
   // 🔴 FAZ 4 — ANALİZ PANELİ. `null` → kapalı. Değer, panelde açılan kartın sırası.
   // ⚠ Panelin içeriği kartın **makinesidir** (yorum çubuğu · reçete · katkı); grafiğin
   // kendisi sohbette **temiz** kalır. *Grafiği "olduğu gibi" sohbete koymak, grafiği
@@ -99,6 +102,8 @@ export default function Home() {
   const [openDashboard, setOpenDashboard] = useState<string | null>(null);
   const dashStage = useFeature("dashboards");
   const canReview = usePermission("measure:read");
+  // 🔴 FAZ 6 — *"portföy"* kapsamı envanterde KIRIK ölçülmüştü: prop hiç gönderilmiyordu.
+  const superadmin = useSuperadmin();
   const router = useRouter();
   const [startedLatch, setStarted] = useState(false);
   const [sessionId, setSessionId] = useState(makeSessionId);
@@ -450,6 +455,7 @@ export default function Home() {
         onYeniSohbet={newChat}
         onResume={resumeConversation}
         acikBolum={drawer as never}
+        onKanitArsivi={() => setKanitArsivi("")}
         onBolum={(b) => setDrawer(b as never)}
         panolarVar={Boolean(dashStage)}
         incelemeVar={Boolean(canReview)}
@@ -602,6 +608,13 @@ export default function Home() {
                   error={mutation.isError ? apiErrorMessage(mutation.error) : null}
                   sessionId={sessionId}
                   contextLabel={contextCq ? String(contextCq.cube ?? "rapor") : null}
+                  // 🔴 FAZ 6 — KAPANIŞ DENETİMİ: *"portföy"* kapsam seçeneği envanterde
+                  // **kırık** ölçülmüştü. `SoruAlani` `superadmin` prop'unu bekliyordu,
+                  // `page.tsx` onu **hiç göndermiyordu** → seçenek hiç görünmüyordu.
+                  // ⚠ Görünürlük bir güvenlik sınırı DEĞİL: sınırı `authorize()` + RLS
+                  // koyar. Bu yalnız kullanıcıya **yapamayacağı bir şeyi teklif etmeme**
+                  // nezaketi — ve nezaketin de çalışması gerekir.
+                  superadmin={superadmin}
                   onClearContext={() => {
                     // §B — "konudan çık": DÖRDÜ BİRLİKTE sıfırlanır → panel BOŞALIR,
                     // sonraki soru (sol komposer'dan) YENİ bir thread başlatır.
@@ -633,36 +646,28 @@ export default function Home() {
         </div>
       )}
 
-      <SettingsDrawer
-        open={drawer !== null}
-        onClose={() => setDrawer(null)}
-        title={
-          drawer === "help"
-            ? "dima · yardım"
-            : drawer === "notifications"
-              ? "Bildirimler"
+      {/* KANIT ARŞİVİ — liste (`""`) ve tek kayıt AYNI paneldir; `onSelect` listeden
+          kayda geçirir. ⚠ Yeni panel AÇILMADI (tavan 13/13): var olanın kapısı açıldı. */}
+      {kanitArsivi !== null && (
+        <ContractDetailPanel
+          contractId={kanitArsivi}
+          onSelect={(cid) => setKanitArsivi(cid)}
+          onClose={() => setKanitArsivi(null)}
+        />
+      )}
 
-                : drawer === "dashboards"
-                  ? "Panolar"
-                  : "Ayarlar · Veri Modeli"
-        }
-      >
-        {drawer === "help" ? (
-          <HelpPanel onPick={submitNew} />
-        ) : drawer === "notifications" ? (
-          <NotificationsPanel />
-
-        ) : drawer === "dashboards" ? (
-          <DashboardsPanel
-            onOpen={(id) => {
-              setOpenDashboard(id);
-              setDrawer(null);
-            }}
-          />
-        ) : (
-          <AyarlarBolumu kapsam={kapsamAcik ? kapsam : null} />
-        )}
-      </SettingsDrawer>
+      {/* ⟳ FAZ 6 — çekmece **yönlendiricisi çıkarıldı** (`Cekmece.tsx`).
+          Burada başlık bir üçlü koşul zinciri, gövde İKİNCİ bir üçlü koşul zinciriydi:
+          aynı dört dal, iki ayrı yerde iki kez. Beşinci bir bölüm eklenirse ikisini de
+          düzeltmek gerekirdi ve biri unutulurdu — başlık "Ayarlar" derken gövde
+          panoları çizerdi. Artık **tek tablo**: dal → (başlık, gövde). */}
+      <Cekmece
+        dal={drawer}
+        onKapat={() => setDrawer(null)}
+        onSoru={submitNew}
+        onPanoAc={setOpenDashboard}
+        kapsam={kapsamAcik ? kapsam : null}
+      />
       </div>
 
       {/* 🔴 ANALİZ PANELİ — reflow (overlay DEĞİL): sohbet daralır, gizlenmez.

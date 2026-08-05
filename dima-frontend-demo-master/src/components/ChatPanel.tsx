@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Thread } from "@/lib/threads";
 import type { CubeQuery } from "@/lib/types";
-import { CaretInput } from "@/components/CaretInput";
+import { SoruAlani } from "@/components/SoruAlani";
 import { DurdurDugmesi } from "@/components/DurdurDugmesi";
 
 // SQL provenance — keskin, monospace "sistem readout" rozeti. "vqr" (VQR birebir/yakın
@@ -239,7 +239,6 @@ export function ChatPanel({
   uploading?: boolean;
 }) {
   const [value, setValue] = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -322,134 +321,41 @@ export function ChatPanel({
           prop yorumu). "bağlam: X · ×" göstergesi ARTIK burada DEĞİL — sağ panele taşındı
           (bkz. ReportPanel.tsx başlık çubuğu). `compact` iken bunun YERİNE her zaman görünen
           bir İPUCU var: bu komposer'a yazmanın HER ZAMAN yeni bir thread açacağını netleştiriyor. */}
-      <div className="shrink-0 border-t border-hairline px-4 py-3">
-        {compact && (
-          <p className="mb-2 font-mono text-[var(--text-etiket)] leading-snug text-neutral-400">
-            ⓘ buraya yazmak her zaman <span className="text-accent">yeni bir thread</span>{" "}
-            başlatır — devam etmek için sağdaki paneli kullan.
-          </p>
-        )}
-        {/* YOL SINIRI (Faz F2) — soru BAŞINA tercih, o yüzden kompozerde durur.
-            Üç seviye MERDİVENİN kendisidir: küp → +LLM seçimi → +keşif. Sayısal bir
-            güven eşiği DEĞİL; MIMARI'nin kararı gereği kalibre edilmemiş bir sayı
-            "güven değil süstür". Varsayılan (sınırsız) HİÇBİR ŞEYİ değiştirmez. */}
-        {/* FAZ 2.3 — KAPSAM MERCEĞİ. `yol` anahtarıyla AYNI desen: yeni bir panel/ekran
-            DEĞİL, komposerin üstünde üç seviyeli bir seçim.
-            🔴 Bir GÖRÜNÜRLÜK aracıdır, GÜVENLİK SINIRI DEĞİL: `genel`e dönmek hiçbir
-            yetki AÇMAZ — sınırı backend (`authorize()` + RLS) koyar. `portfoy` yalnız
-            superadmin'e görünür; görünürlük bir sınır değil, YAPAMAYACAĞI bir şeyi
-            kullanıcıya teklif etmeme nezaketidir. */}
-        {onKapsam && (
-          <div className="mb-2 flex items-center gap-1.5">
-            <span className="select-none font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
-              kapsam
-            </span>
-            {([
-              ["genel", "genel", "Bugünkü tam katalog (varsayılan)"],
-              ["departman", "departmanım", "Yalnız departmanıma atanmış metrikler — atanmamışlar da görünür"],
-              ...(superadmin
-                ? [["portfoy", "portföy", "Çok-tenant birleşik görünüm (yalnız superadmin)"] as const]
-                : []),
-            ] as const).map(([deger, etiket, ipucu]) => (
-              <button
-                key={etiket}
-                type="button"
-                onClick={() => onKapsam(deger)}
-                title={ipucu}
-                className={`border px-1.5 py-0.5 font-mono text-[var(--text-etiket)] transition-colors ${
-                  (kapsam ?? "genel") === deger
-                    ? "border-accent/50 text-accent"
-                    : "border-hairline text-neutral-500 hover:text-foreground"
-                }`}
-              >
-                {etiket}
-              </button>
-            ))}
-          </div>
-        )}
-        {onYolSiniri && (
-          <div className="mb-2 flex items-center gap-1.5">
-            <span className="select-none font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
-              yol
-            </span>
-            {([
-              [null, "hepsi", "Küp → LLM seçimi → keşif (varsayılan)"],
-              ["llm", "küp + llm", "Ham SQL YOK — yalnız katalogdan seçim"],
-              ["deterministik", "yalnız küp", "LLM'e HİÇ gidilmez — yalnız kanıtlanmış yol"],
-            ] as const).map(([deger, etiket, ipucu]) => (
-              <button
-                key={etiket}
-                type="button"
-                onClick={() => onYolSiniri(deger)}
-                title={ipucu}
-                className={`border px-1.5 py-0.5 font-mono text-[var(--text-etiket)] transition-colors ${
-                  yolSiniri === deger
-                    ? "border-accent/50 text-accent"
-                    : "border-hairline text-neutral-500 hover:text-foreground"
-                }`}
-              >
-                {etiket}
-              </button>
-            ))}
-          </div>
-        )}
-        {/* 🔴 FAZ 5.14 — HIZLI ↔ DERİN. Soru kutusunun yanında **iki konumlu** anahtar.
-            `yol_siniri` üç konumlu bir UZMAN ayarıdır; bu ise günlük kullanım için
-            **tek soruluk** bir karardır ve her mesajda sıfırlanır. İkisi aynı sunucu
-            kapısından geçer — aynı davranışa iki AD, iki uygulama değil. */}
-        {onMod && (
-          <div className="mb-1.5 inline-flex border border-hairline">
-            {([
-              ["hizli", "hızlı", "Yalnız kanıtlanmış küp yolu — LLM'e HİÇ gidilmez"],
-              ["derin", "derin", "Tam merdiven: küp → LLM seçimi → keşif"],
-            ] as const).map(([deger, etiket, ipucu], i) => (
-              <button
-                key={deger}
-                type="button"
-                title={ipucu}
-                onClick={() => onMod(mod === deger ? null : deger)}
-                className={`${i ? "border-l border-hairline " : ""}px-2 py-0.5 font-mono text-[var(--text-etiket)] transition-colors ${
-                  mod === deger
-                    ? "bg-accent/10 text-accent"
-                    : "text-neutral-500 hover:text-foreground"
-                }`}
-              >
-                {etiket}
-              </button>
-            ))}
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          {onUpload && (
-            <>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".csv,.xlsx,.xls,.txt,.tsv"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) onUpload(f);
-                  e.target.value = "";
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading}
-                title="Excel/CSV yükle — bu sohbete özel veri kaynağı (geçici)"
-                className="select-none font-mono text-sm text-neutral-500 transition-colors hover:text-accent disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
-              >
-                {uploading ? "⋯" : "📎"}
-              </button>
-            </>
-          )}
-          <span className="select-none font-mono text-sm text-accent">›</span>
-          <div className="flex-1">
-            <CaretInput value={value} onChange={setValue} onSubmit={send} busy={pending} size="inline" />
-          </div>
-        </div>
-      </div>
+      {/* 🔴 FAZ 6 · KAPANIŞ DENETİMİ — **İKİNCİ SAHİP KAPANDI.**
+          FAZ 3b `kapsam · yol · hızlı/derin · 📎` dörtlüsünü `SoruAlani`da **tek sahibe**
+          bağlamıştı — ama bu iddia yalnız SAĞ komposer için doğruydu. Sol komposer aynı
+          dört kontrolü **kelimesi kelimesine** kendi içinde çiziyordu (≈95 satır).
+
+          Kanıtı da vardı: *"portföy"* seçeneği envanterde **kırık** ölçülmüştü ve düzeltme
+          `page.tsx → ReportPanel → SoruAlani` zincirine yapıldığında **buradaki kopya
+          yine kırık kalırdı** — kullanıcı aynı anahtarın iki yerde farklı davrandığını
+          görürdü.
+
+          > *Bir asimetriyi kapattığını ilan etmek, onu kapatmak değildir; kapanma
+          > kopyanın SİLİNMESİYLE olur.* */}
+      <SoruAlani
+        deger={value}
+        onDeger={setValue}
+        onGonder={send}
+        pending={pending}
+        ipucu={
+          compact ? (
+            <p className="mb-2 font-mono text-[var(--text-etiket)] leading-snug text-neutral-400">
+              ⓘ buraya yazmak her zaman <span className="text-accent">yeni bir thread</span>{" "}
+              başlatır — devam etmek için sağdaki paneli kullan.
+            </p>
+          ) : undefined
+        }
+        kapsam={kapsam}
+        onKapsam={onKapsam}
+        superadmin={superadmin}
+        yolSiniri={yolSiniri}
+        onYolSiniri={onYolSiniri}
+        mod={mod}
+        onMod={onMod}
+        onUpload={onUpload}
+        uploading={uploading}
+      />
     </div>
   );
 }

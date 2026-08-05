@@ -289,14 +289,28 @@ def test_KOMPOSER_KONTROLLERI_KAYBOLMADI():
 #
 # *Bir kusuru kapıya "geçti" diye yazmak, onu kapatmakla aynı görünür ama kapatmaz.*
 
-BEKLENEN_KIRIK = {
-    "ContractDetailPanel · JSON-LD denetim ihracı":
-        "yalnız `contractId=\"\"` iken çiziliyor; hiçbir çağıran boş dize geçmiyor",
-    "ContractDetailPanel · kanıt geçmişi (son 20 makbuz)":
-        "aynı sebep; `onSelect` prop'u da hiç geçilmiyor",
-    "ChatPanel · «portföy» kapsam seçeneği":
-        "`superadmin` prop'u bekliyor, `page.tsx` hiç göndermiyor",
-}
+#: ✅ **BOŞ — üç borcun üçü de FAZ 6'da ÖDENDİ.** (Kayıt aşağıda; MIMARI §10:
+#: *"kapananlar işaretlenir, silinmez"*.) Liste boş olduğunda kapı gevşemez:
+#: `test_UC_BORC_KAPANDI_VE_KAPALI_KALIYOR` artık **ileri yönde** bekçilik yapıyor.
+BEKLENEN_KIRIK: dict[str, str] = {}
+
+# ═══ KAPANMIŞ BORÇLAR — kayıt ═════════════════════════════════════════════════
+# ⟳ `ContractDetailPanel · JSON-LD denetim ihracı` — **KAPANDI (FAZ 6)**
+#   Sebep: yalnız `contractId=""` iken çiziliyordu ve hiçbir çağıran boş dize
+#   geçmiyordu. Kod tamdı, **kapısı yoktu**.
+#   Kapanış: yan çubuğa *"Kanıt geçmişi"* girişi; `page.tsx` `kanitArsivi` durumu
+#   (`null` kapalı · `""` liste · dolu id tek kayıt). Yeni panel AÇILMADI (tavan 13/13).
+# ⟳ `ContractDetailPanel · kanıt geçmişi (son 20 makbuz)` — **KAPANDI (FAZ 6)**
+#   Aynı kapı; `onSelect` de artık geçiliyor (listeden kayda geçiş).
+# ⟳ `ChatPanel · «portföy» kapsam seçeneği` — **KAPANDI (FAZ 6)**
+#   Sebep: `superadmin` prop'u bekleniyordu, `page.tsx` hiç göndermiyordu.
+#   Kapanış: `useSuperadmin()` (— `usePermission` ile **aynı** `/auth/me` uçuşunu
+#   paylaşır, ikinci bir mekanizma açılmadı) → `ReportPanel`/`ChatPanel` → `SoruAlani`.
+#   🔴 Ve düzeltirken ikinci bir kusur ölçüldü: `ChatPanel` `kapsam · yol · hızlı/derin
+#   · 📎` dörtlüsünü **kelimesi kelimesine kendi içinde** çiziyordu (≈95 satır). FAZ 3b
+#   *"tek sahip"* diye ilan etmişti ama iddia yalnız SAĞ komposer için doğruydu — yani
+#   `superadmin` düzeltmesi tek başına yapılsaydı **sol komposer yine kırık kalırdı**.
+#   *Bir asimetriyi kapattığını ilan etmek, onu kapatmak değildir.*
 
 
 def test_BEKLENEN_KIRIK_LISTESI_GEREKCELI():
@@ -306,24 +320,41 @@ def test_BEKLENEN_KIRIK_LISTESI_GEREKCELI():
         assert len(sebep) >= 30, f"{ad}: gerekçe yetersiz"
 
 
-def test_BEKLENEN_KIRIK_HALA_KIRIK_MI():
-    """🔴 **Ters yönlü kapı.** Bu üç yüzey düzeltilince test **kırmızı verir** ve
-    *"artık çalışıyor, listeden çıkar"* der.
+def test_UC_BORC_KAPANDI_VE_KAPALI_KALIYOR():
+    """✅ **Ters yönlü kapı GÖREVİNİ YAPTI — ve bu yüzden yön değiştirdi.**
 
-    *Bir borç listesi, borç ödendiğinde susuyorsa, bir sonraki okuyucuya hâlâ borç
-    varmış gibi görünür.*"""
+    Önceki hâli (`test_BEKLENEN_KIRIK_HALA_KIRIK_MI`) üç yüzeyin **kırık kaldığını**
+    doğruluyordu ve şöyle diyordu: *"düzeltilince kırmızı verir ve «artık çalışıyor,
+    listeden çıkar» der."* FAZ 6'da tam olarak bu oldu — kapı, borcun ödendiğini
+    **haber verdi**.
+
+    ⚠ Ve o an kritik: bir borç kapısı, borç ödenince **silinmez** — **ileri yöne
+    çevrilir**. Silinseydi aynı üç yüzey yarın sessizce yeniden kopabilirdi ve kimse
+    fark etmezdi. *Bir borcu ödemek, onu bir daha borçlanmayacağını garanti etmez;
+    garantiyi kapı verir.*
+
+    Üç borç ve ödendikleri yer:
+    | borç | kapanış |
+    |---|---|
+    | ⇩ JSON-LD ihracı · kanıt geçmişi | `page.tsx` → `ContractDetailPanel contractId=""` (yan çubukta *"Kanıt geçmişi"*) |
+    | *"portföy"* kapsamı | `page.tsx` → `useSuperadmin()` → `ReportPanel`/`ChatPanel` → `SoruAlani` |
+    """
     kaynak = _kaynaklar()
-    cdp = kaynak.get(_modul("ContractDetailPanel"), "")
-    # Bir çağıran boş dize geçmeye başladıysa borç kapanmıştır.
     cagiranlar = [m for m in _ulasilabilir()
                   if "ContractDetailPanel" in kaynak.get(m, "") and m != _modul("ContractDetailPanel")]
-    hala_kirik = not any('contractId=""' in kaynak[m] or "contractId={''}" in kaynak[m]
-                         for m in cagiranlar)
-    assert hala_kirik, (
-        "✅ JSON-LD ihracı / kanıt geçmişi artık erişilebilir görünüyor — "
-        "BEKLENEN_KIRIK listesinden ÇIKAR ve gerçek kapıya taşı")
-    assert "superadmin" in kaynak.get(_modul("ChatPanel"), ""), \
-        "ChatPanel'de `superadmin` prop'u yok — borç kaydı bayatlamış"
+    assert any('contractId=""' in kaynak[m] or "contractId={''}" in kaynak[m]
+               or "contractId={kanitArsivi}" in kaynak[m] for m in cagiranlar), (
+        "🔴 Kanıt arşivinin (son 20 makbuz + ⇩ JSON-LD ihracı) kapısı YİNE kapandı — "
+        "`ContractDetailPanel` bu iki işlevi yalnız `contractId=\"\"` iken çizer.")
+    sayfa = kaynak.get(_modul("page"), "") or "".join(
+        v for k, v in kaynak.items() if k.endswith("page"))
+    assert "useSuperadmin" in sayfa, (
+        "🔴 *portföy* kapsamı yine kırık: `page.tsx` `superadmin`i hesaplamıyor — "
+        "seçenek hiç görünmez. (Görünürlük bir güvenlik sınırı DEĞİL; sınırı "
+        "`authorize()` + RLS koyar. Bu yalnız nezaketin çalışmasıdır.)")
+    for m in ("ChatPanel", "ReportPanel", "SoruAlani"):
+        assert "superadmin" in kaynak.get(_modul(m), ""), \
+            f"🔴 {m}: `superadmin` zinciri kopmuş"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

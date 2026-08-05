@@ -33,17 +33,27 @@
  * (`DIMA_INTERACTION_LOG=false`) ve bildirim bunu **yazıyor**.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+import { useIstemciDegeri } from "@/lib/istemci";
 
 const ANAHTAR = "dima-kayit-bildirimi-okundu";
 
+/** ⚠ Modül düzeyinde: `useIstemciDegeri`ye her render'da yeni kimlikli bir okuyucu
+ *  geçmek `useSyncExternalStore`u sonsuz döngüye sokar. */
+function _okundu(): boolean {
+  return window.localStorage.getItem(ANAHTAR) === "1";
+}
+
 export function KayitBildirimi() {
   // ⚠ `useState(() => localStorage…)` YAZILMAZ: sunucuda `window` yoktur ve ilk render
-  // ile istemci render'ı ayrışır (hydration hatası). Okuma effect'te yapılır.
-  const [gorunur, setGorunur] = useState(false);
-  useEffect(() => {
-    if (window.localStorage.getItem(ANAHTAR) !== "1") setGorunur(true);
-  }, []);
+  // ile istemci render'ı ayrışır (hidrasyon hatası). ⟳ Ama okuma da **effect'te
+  // yapılmaz**: orada senkron `setState` basamaklı render tetikler (React'ın uyarısı).
+  // Doğru araç `useSyncExternalStore`; üçüncü parametresi sorunun kendisini adlandırır:
+  // *"sunucuda ne göstereyim?"*. Bkz. `lib/istemci.ts`.
+  const okundu = useIstemciDegeri(_okundu, true);
+  const [kapatildi, setKapatildi] = useState(false);
+  const gorunur = !okundu && !kapatildi;
 
   if (!gorunur) return null;
 
@@ -64,7 +74,7 @@ export function KayitBildirimi() {
       <button
         onClick={() => {
           window.localStorage.setItem(ANAHTAR, "1");
-          setGorunur(false);
+          setKapatildi(true);
         }}
         aria-label="Kayıt bildirimini kapat"
         title="Kapat — metin yardım panelinde kalır"

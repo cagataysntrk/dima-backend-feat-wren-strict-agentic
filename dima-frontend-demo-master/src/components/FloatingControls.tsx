@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 import { NotificationsBell } from "@/components/NotificationsBell";
-import { type Tema, temaBaslat, temaOku, temaUygula } from "@/lib/tema";
+import { type Tema, temaAbone, temaBaslat, temaOku, temaUygula } from "@/lib/tema";
 
 // Sayfada tek chrome: sağ kenarda GÖRÜNMEZ bir ikon ŞERİDİ (rail) — çizgisi/
 // zemini yok, sayfayla bütünleşik; yalnız ikonlar yüzer. Yukarıdan aşağı:
@@ -95,11 +95,14 @@ export function FloatingControls({
  * konumda olduğunu tahmin ettirmek, onu bir sürprize çevirir.
  */
 function TemaDugmesi({ btn }: { btn: string }) {
-  const [tema, setTema] = useState<Tema>("sistem");
-  useEffect(() => {
-    temaBaslat();
-    setTema(temaOku());
-  }, []);
+  // 🔴 Tema artık bir **dış depodur** (`lib/tema.ts`), bileşen durumu değil: iki
+  // anahtar da (bu ve ötekisi) aynı değeri okur ve biri değişince öteki **anında**
+  // güncellenir. Eskiden her biri kendi `useState`ini tutuyordu ve ayrışıyorlardı.
+  // ⚠ `useSyncExternalStore` hidrasyonu da çözer: sunucuda `"sistem"`, istemcide
+  // gerçek değer — React'ın garantisi, bizim dikkatimiz değil.
+  const tema = useSyncExternalStore(temaAbone, temaOku, () => "sistem" as Tema);
+  useEffect(() => { temaBaslat(); }, []);
+  const setTema = (t: Tema) => temaUygula(t);
   const sonraki: Record<Tema, Tema> = { sistem: "light", light: "dark", dark: "sistem" };
   const etiket: Record<Tema, string> = {
     sistem: "Tema: sistem (işletim sistemine uyar)",
