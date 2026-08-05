@@ -186,3 +186,34 @@ def ask(client, question: str, **kw) -> dict:
     r = client.post("/ask", json=payload)
     assert r.status_code == 200, r.text
     return r.json()
+
+@pytest.fixture(scope="session", autouse=True)
+def _test_kimligi():
+    """🔴 **Testler bir kullanıcıyı taklit eder — kimliği de taşımalı.**
+
+    `motor_cls=on` ile ölçüldü: 39 kırmızının bir kısmı `svc.dry_plan(sql)` /
+    `svc.query(sql)`'i **doğrudan**, kimliksiz çağıran testlerden geliyordu. Motor
+    planlama aşamasında `session property session_gizlilik is required … but not found
+    in headers` diyerek **fail-closed** patlıyordu — ve bu, **doğru davranıştır**:
+    kimliksiz bir kullanıcı sorgusu gürültülü patlamalı.
+
+    Kusur kodda değil, **koşum ortamındaydı**: gerçek bir istekte kimliği
+    `get_current_principal` kurar; doğrudan çağrıda kimseyi kurmuyordu. Bu fixture o
+    boşluğu kapatır — *bir testin ortamı, taklit ettiği ortamla aynı olmalıdır.*
+
+    ⚠ **Bu bir kapı gevşetmesi DEĞİLDİR.** Ürün kodunda hiçbir şey değişmiyor;
+    `motor_cls=off` iken bu kimliğin **hiçbir etkisi yok** (özellikler yalnız CLS
+    kuralları varken okunur). Ve `test_istek_kimligi.py` bağlamın kendisini ayrı ayrı
+    **kimliksiz** ölçmeye devam ediyor.
+
+    ⚠ Kimlik **owner** seviyesinde: test kullanıcısı (`TEST_USER`) zaten owner'dır, yani
+    fixture bir **ayrıcalık uydurmuyor** — HTTP yolunda çözülecek olanın aynısını kuruyor.
+    """
+    from app import istek_kimligi
+    from control_plane.authorize import Principal
+
+    p = Principal(user_id="test-user", tenant_id="test-tenant", roles=["owner"],
+                  tenant_slug="demo-boyahane")
+    token = istek_kimligi.ayarla(p)
+    yield p
+    istek_kimligi.sifirla(token)

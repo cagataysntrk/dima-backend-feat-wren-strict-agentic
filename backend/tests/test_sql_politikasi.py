@@ -89,7 +89,12 @@ def test_MESRU_yollar_strict_altinda_AYNEN_calisir(svc):
         ("çok ölçü", {"cube": "kalite", "measures": ["toplam_rework_kg", "rework_sayisi"]}),
     ):
         sql = svc.cube_sql(cq)
-        assert kati.dry_plan(sql), f"{ad}: strict altında meşru sorgu kırıldı"
+        # ⚠ Ham `WrenEngine` **oturum özelliği taşımaz** — servis onu `_oturum_ozellikleri`
+        # ile veriyor. `motor_cls=on` iken özelliksiz bir plan, strict yüzünden değil
+        # **CLS yüzünden** patlar ve bu test *"strict meşru sorguyu kırdı"* diye YANLIŞ
+        # bir sebep raporlardı. *Bir testin ortamı, taklit ettiği ortamla aynı olmalıdır.*
+        assert kati.dry_plan(sql, svc._katalog_ozellikleri()), \
+            f"{ad}: strict altında meşru sorgu kırıldı"
 
 
 def test_demo_katalogunda_MDL_DISI_tablo_yok(svc):

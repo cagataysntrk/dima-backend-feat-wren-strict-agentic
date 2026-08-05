@@ -156,14 +156,29 @@ export function Makbuz({
         <span className="text-foreground">{yolAdi(item.source)}</span>
         {adimlar > 0 && <span> · {adimlar} adım</span>}
         {ms > 0 && <span> · {ms} ms</span>}
-        {item.kanit_sinifi === "probabilistik" && (
+        {/* 🔴 **Kanıt sınıfı İKİ YÖNDE de yazılır** — ve bu bir kapının düzeltmesi:
+            katmanlı makbuza geçerken yalnız *"olasılıksal"* uyarısı korunmuş, *"ölçülmüş"*
+            hâli düşürülmüştü. `test_ai_act_uyumu` yakaladı.
+
+            ⚠ Yokluğu bir bilgi **değildir**: kullanıcı *"ölçülmüş"* ile *"bu alan hiç
+            gelmemiş"* arasındaki farkı **göremezdi** — ve AI Act'in istediği tam olarak
+            o ayrımdır. ⚠ İki hâl aynı vurguyu taşımaz: uyarı amber, ölçülmüş soluk —
+            *bir güvenceyi bir uyarı kadar bağırtmak, uyarıyı sıradanlaştırır.* */}
+        {item.kanit_sinifi === "probabilistik" ? (
           <span
             className="ml-1.5 text-amber-600"
             title="Bu cevabın üretiminde olasılıksal bir adım var (SQL yazımı ya da alan/ölçü SEÇİMİ). Sayı doğru hesaplanmış olsa bile SORUNUN karşılığı olmayabilir."
           >
             ⚠ olasılıksal
           </span>
-        )}
+        ) : item.kanit_sinifi === "olculmus" ? (
+          <span
+            className="ml-1.5 opacity-[var(--opacity-soluk)]"
+            title="Cevap uçtan uca deterministik yoldan üretildi — aynı soru aynı sonucu verir."
+          >
+            ölçülmüş
+          </span>
+        ) : null}
       </summary>
 
       <div className="border-t border-hairline px-3 py-2">

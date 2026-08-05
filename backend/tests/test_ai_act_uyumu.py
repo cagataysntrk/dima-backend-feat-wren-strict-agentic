@@ -273,6 +273,35 @@ def _fe(*parca: str) -> str:
     return FE.joinpath(*parca).read_text(encoding="utf-8")
 
 
+def _kart_agaci() -> str:
+    """🔴 **Cevap kartı bir DOSYA değil, bir AĞAÇTIR** — ve bu, bu operasyonda **ikinci**
+    kez aynı kusurdan öğrenildi.
+
+    FAZ 7.8'de makbuz `ReportCard.tsx`'ten `Makbuz.tsx`'e taşındı. `kanit_sinifi` hâlâ
+    **cevap kartında** render ediliyor, ama bu kapı `ReportCard.tsx` dosyasını okuduğu
+    için `ValueError: substring not found` verdi.
+
+    ⚠ **Ve gerilemeyi hızlı kapı GÖRMEDİ**: `lab/kapi.py --hizli --degisen` değişen
+    **Python modüllerine** göre test seçiyor; bir `.tsx` değişikliği bu Python kapısına
+    bağlanmıyor. *Bir kapının kapsamı, onu tetikleyen sinyalden büyük olamaz.*
+
+    `test_cevap_alani_yetim_degil._kart_agaci()` ile **aynı** çözüm ve aynı gerekçe:
+    bir alanın **nerede** render edildiği bir uygulama ayrıntısıdır; render **edilip
+    edilmediği** bir sözleşmedir.
+    """
+    import re
+
+    kok = _fe("components", "ReportCard.tsx")
+    parcalar = [kok]
+    for m in re.finditer(r'from "@/(components|lib)/(\w+)"', kok):
+        for uzanti in (".tsx", ".ts"):
+            aday = FE / m.group(1) / f"{m.group(2)}{uzanti}"
+            if aday.exists():
+                parcalar.append(aday.read_text(encoding="utf-8"))
+                break
+    return "\n".join(parcalar)
+
+
 def test_DURDURMA_DUGMESI_EKRANDA():
     """🔴 *Durdurulamayan bir otomasyon, üzerinde insan denetimi olmayan bir
     otomasyondur* — ve **erişilemeyen** bir durdurma ucu, olmayan bir uçtur. `job_id`
@@ -309,7 +338,7 @@ def test_MD50_ISARETI_EKRANDA_ve_ANLATININ_YANINDA():
 def test_KANIT_SINIFI_EKRANDA_ve_YUZDE_UYDURMUYOR():
     """⚠ Ekranda bir **yüzde** belirirse MIMARI §5 ihlal edilir: *kalibre edilmediği sürece
     o sayı bir güven değil bir **süstür**.*"""
-    kart = _fe("components", "ReportCard.tsx")
+    kart = _kart_agaci()
     i = kart.index("item.kanit_sinifi")
     blok = kart[i:i + 1500]
     assert "olasılıksal" in blok and "ölçülmüş" in blok

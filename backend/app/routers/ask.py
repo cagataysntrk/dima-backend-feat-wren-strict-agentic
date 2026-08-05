@@ -15,7 +15,7 @@ import time as _time
 from app import context as app_context
 from app import prescribe
 from app import planner as _planner
-from app import ask_jobs, cekirdek, followup, katman_b, typo_onerisi
+from app import ask_jobs, cekirdek, followup, istek_kimligi, katman_b, typo_onerisi
 from app import soz as _soz
 from app import cube_router, eylem, pii, tercih, viz, yoy
 from app.answer import (
@@ -1411,7 +1411,15 @@ def _queue_discovery_job(request: Request, body: AskRequest, principal, runner) 
                 s.add(j)
                 s.commit()
 
-    threading.Thread(target=_bg, daemon=True).start()
+    # 🔴 **Kimlik thread'e KOPYALANMAZ** — ve bu, `istek_kimligi`'nin belgelediği tam
+    # sınırdır. Ölçüldü (`DIMA_MOTOR_CLS=on`): arka-plan Discovery işi kimliksiz koştu,
+    # motor planlamada fail-closed patladı ve iz *"dürüst ret"* yerine bir `SQL_PLANNING`
+    # hatası taşıdı — yani **kullanıcıya yanlış sebep** gösteriliyordu.
+    #
+    # ⚠ Sarmalayıcı kimliği **şimdi** yakalar: iş kuyruğa girdikten sonra istek biter ve
+    # bağlam sıfırlanır. *Bir kimliği kullanacağın anda aramak, onu kaybetmenin en kolay
+    # yoludur.*
+    threading.Thread(target=istek_kimligi.kimlik_kopyala(_bg), daemon=True).start()
     return AskResponse(
         question=body.question, source=None, job_id=str(job_id),
         note="Bu soru arka planda hazırlanıyor…",

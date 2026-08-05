@@ -321,7 +321,11 @@ class WrenService:
         """
         try:
             with self._engine(strict=True) as eng:
-                eng.dry_plan(sql)
+                # 🔴 Gölge ölçüm de oturum özelliği taşımalı: taşımazsa `motor_cls=on`
+                # iken **her meşru sorgu** için *"strict açık olsaydı REDDEDİLİRDİ"*
+                # uyarısı basar. *Yanlış alarm üreten bir ölçüm, ölçüm değildir* — ve
+                # bu gölgenin tüm amacı, strict'e geçmenin maliyetini SAYMAK.
+                eng.dry_plan(sql, self._katalog_ozellikleri())
         except BaseException as exc:  # noqa: BLE001 — Rust PANIC `Exception` DEĞİLDİR
             _log.warning("SQL POLİTİKASI (gölge): strict açık olsaydı REDDEDİLİRDİ — %s | %s",
                          str(exc)[:180], " ".join(sql.split())[:220])
@@ -355,9 +359,11 @@ class WrenService:
             cfg, _mod = self._sql_policy()
             with WrenEngine(base64.b64encode(golge).decode(), self.datasource,
                             self._zaman_asimli_baglanti(), config=cfg) as eng:
-                rls_li = eng.dry_plan(sql)
+                rls_li = eng.dry_plan(sql, self._katalog_ozellikleri())
             with self._engine() as eng:
-                bugunku = eng.dry_plan(sql)
+                # ⚠ İKİ tarafa da AYNI özellikler: farklı özelliklerle planlanan iki
+                # SQL'i kıyaslamak, RLS farkı yerine ÖZELLİK farkını ölçerdi.
+                bugunku = eng.dry_plan(sql, self._katalog_ozellikleri())
         except BaseException as exc:  # noqa: BLE001 — Rust PANIC `Exception` DEĞİLDİR
             _log.warning("RLS (gölge): kıyas KOŞULAMADI — %s | %s",
                          str(exc)[:180], " ".join(sql.split())[:180])
@@ -833,7 +839,8 @@ class WrenService:
             try:
                 with self._engine() as eng:
                     tablo = eng.query(" UNION ALL ".join(
-                        _parca(i, b, e) for i, (_, _, b, e) in enumerate(istekler)))
+                        _parca(i, b, e) for i, (_, _, b, e) in enumerate(istekler)),
+                        properties=self._katalog_ozellikleri())
                 for r in tablo.to_pylist():
                     kova.setdefault(r["_i"], []).append(self._fix_tr(str(r["v"])))
             except Exception:
@@ -846,7 +853,8 @@ class WrenService:
                             try:
                                 kova[i] = [self._fix_tr(str(r["v"])) for r in eng.query(
                                     f"SELECT DISTINCT {e} AS v FROM {b} "
-                                    f"WHERE ({e}) IS NOT NULL LIMIT {self._MAX_ENUM + 1}"
+                                    f"WHERE ({e}) IS NOT NULL LIMIT {self._MAX_ENUM + 1}",
+                                    properties=self._katalog_ozellikleri(),
                                 ).to_pylist()]
                             except Exception:
                                 continue
@@ -980,7 +988,8 @@ class WrenService:
                     f"WHERE {kol} IS NOT NULL LIMIT {self._MAX_ENUM + 1})")
         try:
             with self._engine() as eng:
-                tablo = eng.query(" UNION ALL ".join(_parca(k, c) for k, c, _ in hedef))
+                tablo = eng.query(" UNION ALL ".join(_parca(k, c) for k, c, _ in hedef),
+                                  properties=self._katalog_ozellikleri())
             kova: dict[tuple[str, str], list] = {}
             for r in tablo.to_pylist():
                 kova.setdefault((r["_t"], r["_c"]), []).append(r["v"])
@@ -998,7 +1007,8 @@ class WrenService:
                     try:
                         vals = [r["v"] for r in eng.query(
                             f"SELECT DISTINCT {kol} AS v FROM {kaynak} "
-                            f"WHERE {kol} IS NOT NULL LIMIT {self._MAX_ENUM + 1}"
+                            f"WHERE {kol} IS NOT NULL LIMIT {self._MAX_ENUM + 1}",
+                            properties=self._katalog_ozellikleri(),
                         ).to_pylist()]
                     except Exception:
                         continue
@@ -1300,6 +1310,39 @@ class WrenService:
                 if vals and all(_is_str_lit(v) for v in vals) and not isinstance(inn.this, exp.Collate):
                     inn.set("this", _collate(inn.this))
         return tree.sql(dialect=write)
+
+    def _katalog_ozellikleri(self):
+        """🔴 **Katalog/şema sorguları da motora gider — ve `motor_cls=on` iken oturum
+        özelliği ZORUNLUDUR.**
+
+        Ölçüldü (`DIMA_MOTOR_CLS=on`, 39 kırmızı): kusur test yollarında değil, tam
+        burada — `_enrich_cube_dim_values` ve değer indeksi `eng.query()`'yi **özelliksiz**
+        çağırıyordu ve motor planlama aşamasında `session property session_gizlilik is
+        required … but not found in headers` diyerek **fail-closed** patlıyordu.
+
+        ⚠ *Bir teşhisi ilk açıklamada bırakmak, ölçmemekle aynı sonucu verir:* bu turda
+        önce *"kalan iş test/lab fixture'ları"* denmişti; traceback okunduğunda kusurun
+        **ürün kodunda** olduğu görüldü. Sebep, hatanın `try/except` içinde **loglanıp
+        yutulması** ve yüzeyde *"güvenilir bir sorgu üretemedim"* olarak görünmesiydi —
+        yani kusur **sebebinden uzakta** konuşuyordu.
+
+        ## 🔴 Kimlik yoksa BOŞ değil, EN KISITLI
+
+        Traceback okunduğunda ikinci bir şey daha görüldü: katalog zenginleştirme bir
+        isteğin **içinde** koşmuyor — **şema derlenirken**, yani hiç kimse sormadan önce
+        koşuyor. Orada bir kullanıcı kimliği aramak bir **kategori hatasıdır**: katalog
+        tenant düzeyindedir, kullanıcı düzeyinde değil.
+
+        Kimliksizken patlamak, ürünü *"şema derlenemiyor"* diye **tamamen** durdururdu —
+        motor-CLS'in koruduğundan çok daha fazlasını kaybederek. Bu yüzden
+        `rls.en_kisitli_ozellikler()`: ölçeğin **kapalı ucu**, bir varsayılan değil.
+
+        ⚠ Sonuç: katalog, **en az yetkili kullanıcının görebileceğinden fazlasını asla
+        numaralandıramaz** — hassas bir kolonun değerleri bir chip önerisinde sızamaz.
+        ⚠ Bir istek **içinde** çağrıldıysa (chip/drill yolu) bağlamdaki gerçek kimlik
+        kullanılır; en-kısıtlı yalnız **yedektir**.
+        """
+        return self._oturum_ozellikleri(None) or rls.en_kisitli_ozellikler()
 
     def _oturum_ozellikleri(self, principal):
         """FAZ 1.2 — motor session property'leri. **`WrenEngine` SÖZLÜK ister.**

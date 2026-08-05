@@ -294,6 +294,41 @@ def oturum_ozellikleri(principal: Any) -> dict[str, str]:
     return {OTURUM_GIZLILIK: sql_literal(gizlilik_seviyesi(principal))}
 
 
+def en_kisitli_ozellikler() -> dict[str, str]:
+    """**Katalog/şema sorguları için** en kısıtlı oturum özellikleri (seviye **0**).
+
+    ## 🔴 Neden `oturum_ozellikleri(None)`'ın boş sözlüğü BURADA doğru değil
+
+    O boş sözlük bir **kullanıcı sorgusu** içindir ve orada doğru: kimlik taşımayan bir
+    kullanıcı sorgusu motorun fail-closed dalını ateşler, **gürültülü** patlar ve tesisatın
+    koptuğu **anında** görülür. *Uydurma bir varsayılan, o kapıyı sessizce açardı.*
+
+    Katalog zenginleştirme ise **kategorik olarak farklıdır** ve bu ölçümle görüldü
+    (`DIMA_MOTOR_CLS=on` → 39 kırmızı, hepsi `_enrich_cube_dim_values` / değer indeksi):
+
+    | | kullanıcı sorgusu | katalog sorgusu |
+    |---|---|---|
+    | ne zaman koşar | bir isteğin **içinde** | şema derlenirken — **istek dışında** |
+    | kimliği var mı | **olmalı** | **olamaz** (henüz kimse sormadı) |
+    | kimliksizse | 🔴 **patlamalı** — tesisat kopmuş | ✅ **en kısıtlı** seviyede koşmalı |
+
+    🔴 Katalog sorgusuna kullanıcı kimliği aramak bir **kategori hatasıdır**: katalog
+    tenant düzeyindedir, kullanıcı düzeyinde değil. Ve kimlik yokluğunda patlamak, ürünü
+    *"şema derlenemiyor"* diye **tamamen** durdururdu — motor-CLS'in koruduğu şeyden çok
+    daha fazlasını kaybederek.
+
+    ⚠ Seviye **0 bir varsayılan değil, ölçeğin KAPALI ucudur**: `gizlilik_seviyesi()`
+    `pii:view` izni olmayan bir kullanıcıya da 0 verir. Yani katalog, **en az yetkili
+    kullanıcının görebileceğinden fazlasını asla numaralandıramaz** — hassas bir kolonun
+    değerleri bir chip önerisinde **sızamaz**.
+
+    ⚠ Ve bu, `oturum_ozellikleri`'nin fail-closed kararını **gevşetmez**: iki ayrı
+    fonksiyon, iki ayrı çağıran, iki ayrı gerekçe. *Bir kararı esnetmek yerine, farklı
+    olanı ayrı adlandırmak.*
+    """
+    return {OTURUM_GIZLILIK: sql_literal(0)}
+
+
 def _clac(kolon_adi: str, sinif: str) -> dict[str, Any]:
     """Bir kolon için CLAC kuralı. `requiredProperties` **`required=True`** — `1.1`'de
     ölçülen `defaultExpr`/`required=False` fail-open deseni burada da yasak."""
