@@ -218,7 +218,7 @@ function MetrikSahipligi() {
                     type="button"
                     disabled={!yetkili || ata.isPending || c === sahip}
                     onClick={() => ata.mutate({ terim: k.terim, cube: c })}
-                    className={`border px-1.5 py-[2px] font-mono text-[10px] transition-colors disabled:opacity-50 ${
+                    className={`border px-1.5 py-[2px] font-mono text-[10px] transition-colors disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)] ${
                       c === sahip
                         ? "border-accent/40 text-accent"
                         : c === k.onerilen_sahip

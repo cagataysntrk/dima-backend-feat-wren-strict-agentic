@@ -263,7 +263,7 @@ function ApproveForm({ candidate }: { candidate: MeasureCandidate }) {
   return (
     <div className="space-y-3 border border-hairline p-3">
       <div className="font-mono text-[11px] uppercase text-neutral-400">Onay formu</div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div>
           <label className={label_}>cube</label>
           <input className={field} value={cube} onChange={(e) => setCube(e.target.value)} />
@@ -285,7 +285,7 @@ function ApproveForm({ candidate }: { candidate: MeasureCandidate }) {
           onChange={(e) => setExpression(e.target.value)}
         />
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div>
           <label className={label_}>tip</label>
           <input className={field} value={type} onChange={(e) => setType(e.target.value)} />
@@ -316,7 +316,7 @@ function ApproveForm({ candidate }: { candidate: MeasureCandidate }) {
         <div className="mb-2 font-mono text-[11px] uppercase text-neutral-400">
           Altın-vaka (zorunlu — eval/cases.yaml&apos;a eklenir)
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <div>
             <label className={label_}>vaka id</label>
             <input className={field} value={goldenId} onChange={(e) => setGoldenId(e.target.value)} />
@@ -368,7 +368,7 @@ function ApproveForm({ candidate }: { candidate: MeasureCandidate }) {
           <button
             onClick={() => onizle.mutate()}
             disabled={onizle.isPending || !cube || !measureName || !expression}
-            className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-500 transition-colors hover:border-foreground/30 hover:text-foreground disabled:opacity-40"
+            className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-500 transition-colors hover:border-foreground/30 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
           >
             {onizle.isPending ? "hesaplanıyor…" : previewGuncel ? "yenile" : "diff'i göster"}
           </button>
@@ -427,14 +427,14 @@ function ApproveForm({ candidate }: { candidate: MeasureCandidate }) {
             !previewGuncel
           }
           title={previewGuncel ? undefined : "Önce diff'i göster — görülmeden onay yok"}
-          className="border border-emerald-600/50 px-3 py-1.5 font-mono text-[12px] text-emerald-600 transition-colors hover:bg-emerald-600/10 disabled:opacity-40"
+          className="border border-emerald-600/50 px-3 py-1.5 font-mono text-[12px] text-emerald-600 transition-colors hover:bg-emerald-600/10 disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
         >
           {approve.isPending ? "onaylanıyor…" : "✓ onayla"}
         </button>
         <button
           onClick={() => reject.mutate()}
           disabled={reject.isPending}
-          className="border border-hairline px-3 py-1.5 font-mono text-[12px] text-neutral-400 transition-colors hover:text-red-500 disabled:opacity-40"
+          className="border border-hairline px-3 py-1.5 font-mono text-[12px] text-neutral-400 transition-colors hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
         >
           ✗ reddet
         </button>
@@ -487,7 +487,7 @@ function DeprecateBlock({ candidate }: { candidate: MeasureCandidate }) {
       <button
         onClick={() => deprecate.mutate()}
         disabled={deprecate.isPending}
-        className="border border-red-500/40 px-3 py-1.5 font-mono text-[12px] text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-40"
+        className="border border-red-500/40 px-3 py-1.5 font-mono text-[12px] text-red-500 transition-colors hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
       >
         {deprecate.isPending ? "gizleniyor…" : "gizle (deprecate)"}
       </button>

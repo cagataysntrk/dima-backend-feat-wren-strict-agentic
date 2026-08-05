@@ -423,7 +423,7 @@ export function ChatPanel({
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading}
                 title="Excel/CSV yükle — bu sohbete özel veri kaynağı (geçici)"
-                className="select-none font-mono text-sm text-neutral-500 transition-colors hover:text-accent disabled:opacity-50"
+                className="select-none font-mono text-sm text-neutral-500 transition-colors hover:text-accent disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
               >
                 {uploading ? "⋯" : "📎"}
               </button>

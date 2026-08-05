@@ -46,7 +46,7 @@ export function Landing({
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="font-mono text-[11px] uppercase tracking-wide text-neutral-400 transition-colors hover:text-accent disabled:opacity-50"
+            className="font-mono text-[11px] uppercase tracking-wide text-neutral-400 transition-colors hover:text-accent disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
           >
             {uploading ? "⋯ yükleniyor" : "📎 Excel/CSV yükle"}
           </button>

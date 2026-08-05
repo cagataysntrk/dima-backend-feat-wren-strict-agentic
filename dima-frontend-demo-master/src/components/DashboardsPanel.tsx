@@ -5,6 +5,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createDashboard, deleteDashboard, listDashboards, patchDashboard } from "@/lib/api-client";
+import { useAdSor } from "@/components/AdSor";
 
 export function DashboardsPanel({ onOpen }: { onOpen: (id: string) => void }) {
   const qc = useQueryClient();
@@ -20,13 +21,14 @@ export function DashboardsPanel({ onOpen }: { onOpen: (id: string) => void }) {
   // Doğrulama turu düzeltmesi (1 Ağustos 2026) — PATCH /dashboards/{id} zaten vardı ama
   // hiç çağrılmıyordu: kullanıcı bir panoyu oluşturduktan sonra adını/görünürlüğünü ASLA
   // değiştiremiyordu.
+  const { sor: adSor, alan: adSorAlani } = useAdSor();
   const patch = useMutation({
     mutationFn: ({ id, body }: { id: string; body: Parameters<typeof patchDashboard>[1] }) =>
       patchDashboard(id, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["dashboards"] }),
   });
-  const rename = (id: string, currentTitle: string) => {
-    const title = window.prompt("Yeni pano adı:", currentTitle);
+  const rename = async (id: string, currentTitle: string) => {
+    const title = await adSor("Panoyu yeniden adlandır:", currentTitle);
     if (title && title !== currentTitle) patch.mutate({ id, body: { title } });
   };
   const toggleVisibility = (id: string, current: string) => {
@@ -37,17 +39,18 @@ export function DashboardsPanel({ onOpen }: { onOpen: (id: string) => void }) {
   const ownCount = list.filter((d) => d.own).length;
   const atMax = data ? ownCount >= data.max_per_user : false;
 
-  const newDash = () => {
-    const title = window.prompt("Yeni pano adı:", "Panom");
+  const newDash = async () => {
+    const title = await adSor("Yeni pano adı:", "Panom");
     if (title) create.mutate(title);
   };
 
   return (
     <div className="space-y-3">
+      {adSorAlani}
       <button
         onClick={newDash}
         disabled={atMax || create.isPending}
-        className="w-full border border-hairline px-2 py-1.5 text-left font-mono text-[12px] text-neutral-500 transition-colors hover:text-foreground disabled:opacity-40"
+        className="w-full border border-hairline px-2 py-1.5 text-left font-mono text-[12px] text-neutral-500 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
       >
         + yeni pano{atMax ? " · limit doldu" : ""}
       </button>

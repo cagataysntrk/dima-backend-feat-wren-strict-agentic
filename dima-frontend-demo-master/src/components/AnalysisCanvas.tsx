@@ -37,6 +37,7 @@ import { ResultView } from "@/components/ResultView";
 import { ReportView } from "@/components/ReportView";
 import { KpiCardView } from "@/components/KpiCard";
 import { OutputInsight } from "@/components/OutputInsight";
+import { useAdSor } from "@/components/AdSor";
 
 // `AskResponse`'un kendi kalıcı bir kimliği yok (sohbet mesajı DEĞİL, bir tuval öğesi) —
 // @dnd-kit her öge için SABİT bir `id` ister (index KULLANILAMAZ, sıralama sırasında anlamı
@@ -124,7 +125,7 @@ export function AnalysisCanvas({
           <button
             onClick={() => exportReport.mutate()}
             disabled={reportableItems.length === 0 || exportReport.isPending}
-            className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-400 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+            className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-400 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
             title="Tuvaldeki blokları çok-sayfa bir rapora derle"
           >
             {exportReport.isPending ? "derleniyor…" : "⎙ rapor oluştur"}
@@ -181,6 +182,7 @@ function CanvasCard({
   onMoveDown: () => void;
   onRemove: () => void;
 }) {
+  const { sor: adSor, alan: adSorAlani } = useAdSor();
   const [dashOpen, setDashOpen] = useState(false);
   const [dashList, setDashList] = useState<DashboardListItem[]>([]);
   const [addedTo, setAddedTo] = useState<string | null>(null);
@@ -211,7 +213,7 @@ function CanvasCard({
     }
   };
   const createAndAdd = async () => {
-    const title = window.prompt("Yeni pano adı:", "Panom");
+    const title = await adSor("Yeni pano adı:", "Panom");
     if (!title) return;
     try {
       const d = await createDashboard(title);
@@ -246,7 +248,7 @@ function CanvasCard({
               disabled={index === 0}
               title="Yukarı taşı"
               aria-label="Yukarı taşı"
-              className="text-neutral-400 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
+              className="text-neutral-400 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
             >
               ▲
             </button>
@@ -255,7 +257,7 @@ function CanvasCard({
               disabled={index === total - 1}
               title="Aşağı taşı"
               aria-label="Aşağı taşı"
-              className="text-neutral-400 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
+              className="text-neutral-400 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
             >
               ▼
             </button>
@@ -314,6 +316,7 @@ function CanvasCard({
           <button
             onClick={onRemove}
             title="Tuvalden kaldır"
+            aria-label="Tuvalden kaldır"
             className="font-mono text-[13px] text-neutral-400 transition-colors hover:text-red-500"
           >
             ×
@@ -331,6 +334,7 @@ function CanvasCard({
         <p className="font-mono text-[11px] text-neutral-400">{item.note || "veri yok"}</p>
       )}
       <OutputInsight interpretation={item.interpretation} />
+      {adSorAlani}
     </div>
   );
 }

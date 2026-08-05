@@ -51,7 +51,7 @@ export function DurdurDugmesi({ jobId }: { jobId: string | null }) {
           setDurum("hazir");
         }
       }}
-      className="inline-flex h-[20px] items-center gap-1 border border-hairline px-1.5 font-mono text-[10px] tracking-wide text-neutral-500 transition-colors hover:border-red-400 hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
+      className="inline-flex h-[20px] items-center gap-1 border border-hairline px-1.5 font-mono text-[10px] tracking-wide text-neutral-500 transition-colors hover:border-red-400 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)] dark:hover:text-red-400"
       title="İşi durdur — sonucu yayımlanmaz (AI Act Md.14)"
     >
       <span aria-hidden>■</span>

@@ -198,7 +198,7 @@ export function PrescriptionLayer({
                   onClick={() => dogrula.mutate(kayit.id)}
                   disabled={dogrula.isPending}
                   title="Sunucu hash'i yeniden hesaplar — kayıt değişmiş mi?"
-                  className="border border-hairline px-2 py-[2px] font-mono text-[10px] text-neutral-500 transition-colors hover:border-accent hover:text-accent disabled:opacity-40"
+                  className="border border-hairline px-2 py-[2px] font-mono text-[10px] text-neutral-500 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
                 >
                   {dogrula.isPending ? "doğrulanıyor…" : "doğrula"}
                 </button>
@@ -209,7 +209,7 @@ export function PrescriptionLayer({
                     onClick={() => sablonuKos.mutate(kayit.id)}
                     disabled={sablonuKos.isPending}
                     title="Kararın dayandığı analizi BUGÜNKÜ veriyle yeniden koş (0 LLM)"
-                    className="border border-hairline px-2 py-[2px] font-mono text-[10px] text-neutral-500 transition-colors hover:border-accent hover:text-accent disabled:opacity-40"
+                    className="border border-hairline px-2 py-[2px] font-mono text-[10px] text-neutral-500 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
                   >
                     {sablonuKos.isPending ? "koşuluyor…" : "↻ bugün koş"}
                   </button>
@@ -229,7 +229,7 @@ export function PrescriptionLayer({
                     onClick={() => kaydet.mutate(o)}
                     disabled={kaydet.isPending}
                     title={`"${o.segment}" seçeneğini seçtiğini, DEĞERLENDİRİLEN TÜM seçeneklerle ve gerekçesiyle birlikte kalıcı kaydet`}
-                    className="border border-hairline px-2 py-[2px] font-mono text-[10px] text-neutral-500 transition-colors hover:border-accent hover:text-accent disabled:opacity-40"
+                    className="border border-hairline px-2 py-[2px] font-mono text-[10px] text-neutral-500 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
                   >
                     {kaydet.isPending ? "…" : o.segment}
                   </button>

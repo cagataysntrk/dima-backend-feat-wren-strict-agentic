@@ -75,7 +75,14 @@
   --radius-md: 4px;
   --shadow-1: 0 1px 2px rgb(0 0 0 / 0.06);
   --shadow-2: 0 2px 8px rgb(0 0 0 / 0.10);
-  --opacity-disabled: 0.4;
+  /* 🔴 A11Y-9 / PK-13 — İKİ AYRI TOKEN, VE DEĞERLERİ ÇAKIŞMAZ.
+     Ölçüldü: `opacity-40` depoda **14 kez `disabled:`**, **14 kez düz** (tıklanabilir)
+     kullanılıyordu. Yani *"soluk ama tıklanabilir"* ile *"devre dışı"* **birebir aynı
+     pikseli** üretiyordu — kullanıcı hangisinin tıklanabildiğini **deneyerek** öğreniyordu.
+     Değerler bilerek ayrık: 0.38 ≠ 0.62. ⚠ Opaklık **tek kanal olamaz**; devre dışı olan
+     ayrıca `cursor-not-allowed` + `disabled` özniteliği taşır (renk-körü-güvenli). */
+  --opacity-disabled: 0.38;
+  --opacity-soluk: 0.62;
   --opacity-faint: 0.6;
 }
 

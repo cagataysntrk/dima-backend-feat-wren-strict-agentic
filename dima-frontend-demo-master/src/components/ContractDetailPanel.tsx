@@ -6,9 +6,10 @@
 // yeniden çalıştır" (replay) ile o kaydın hâlâ AYNI sonucu verip vermediğini gösterir.
 // ReportPanel VE DrillDownPanel'den AYNI bileşen çağrılır (tek, tutarlı kanıt-inceleme UI'ı).
 
-import { useEffect } from "react";
+import {  } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { exportAudit, getContract, listContracts, replayContract } from "@/lib/api-client";
+import { useOdakTuzagi } from "@/lib/odakTuzagi";
 
 export function ContractDetailPanel({
   contractId,
@@ -22,13 +23,10 @@ export function ContractDetailPanel({
   onClose: () => void;
   onSelect?: (cid: string) => void;
 }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  // 🔴 FAZ 7.5 · A11Y-3/A11Y-6: Esc **ve** odak tuzağı artık `useOdakTuzagi`'nin —
+  // burada elle yazılmış Esc dinleyicisi, aynı kuralın üç ayrı sahibinden biriydi ve
+  // üçü de odağı hiç tutmuyordu.
+  const kutuRef = useOdakTuzagi<HTMLDivElement>(true, onClose);
 
   const contractQ = useQuery({
     queryKey: ["contract", contractId],
@@ -80,7 +78,7 @@ export function ContractDetailPanel({
           onClick={() => ihrac.mutate()}
           disabled={ihrac.isPending}
           title="Tüm denetim kaydını JSON-LD / PROV-O biçiminde indir (AB Yapay Zekâ Yasası Md.13). Dosya, kaydın kopuk/bozuk olup olmadığını söyleyen bütünlük raporunu da taşır."
-          className="border border-hairline px-2 py-[3px] font-mono text-[11px] text-neutral-500 transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
+          className="border border-hairline px-2 py-[3px] font-mono text-[11px] text-neutral-500 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
         >
           {ihrac.isPending ? "hazırlanıyor…" : "⇩ denetim kaydı (JSON-LD)"}
         </button>
@@ -125,6 +123,7 @@ export function ContractDetailPanel({
       aria-label="Query Contract kanıt kaydı"
     >
       <div
+        ref={kutuRef}
         className="max-h-[85vh] w-[min(640px,92vw)] overflow-auto border border-hairline bg-background p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -191,7 +190,7 @@ export function ContractDetailPanel({
               <button
                 onClick={() => replay.mutate()}
                 disabled={replay.isPending}
-                className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-400 transition-colors hover:border-accent hover:text-accent disabled:opacity-40"
+                className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-400 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
               >
                 {replay.isPending ? "yeniden çalıştırılıyor…" : "↻ bugün yeniden çalıştır"}
               </button>

@@ -11,11 +11,12 @@
 // sözleşmesini çağırması hedeflenir — bu yüzden burada YENİ bir iş mantığı YOK, yalnız
 // backend'in zaten döndürdüğü yapıyı render eder.
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { drillAsk } from "@/lib/api-client";
 import { ContractDetailPanel } from "@/components/ContractDetailPanel";
 import type { CubeQuery, DrillResponse, QueryResult } from "@/lib/types";
+import { useOdakTuzagi } from "@/lib/odakTuzagi";
 
 interface Step {
   label: string;
@@ -66,16 +67,10 @@ export function DrillDownPanel({
   const [copied, setCopied] = useState(false);
   const [contractOpen, setContractOpen] = useState(false);
 
-  // Klavye ile kapatma (Esc) — dış sistemden (DOM) gelen bir olaya ABONE OLUNUYOR, setState
-  // yalnız KULLANICI tuşa bastığında (callback İÇİNDE) çağrılıyor — bu, bu oturumda daha önce
-  // yakalanan "effect gövdesinde SENKRON setState" antipattern'inden FARKLI, güvenli bir kullanım.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  // 🔴 FAZ 7.5 · A11Y-3/A11Y-6: Esc **ve** odak tuzağı artık `useOdakTuzagi`'nin —
+  // burada elle yazılmış Esc dinleyicisi, aynı kuralın üç ayrı sahibinden biriydi ve
+  // üçü de odağı hiç tutmuyordu.
+  const kutuRef = useOdakTuzagi<HTMLDivElement>(true, onClose);
 
   const steps: Step[] = initialQuery.data
     ? [{
@@ -151,6 +146,7 @@ export function DrillDownPanel({
       aria-label="Kök nedeni incele"
     >
       <div
+        ref={kutuRef}
         className="max-h-[85vh] w-[min(720px,92vw)] overflow-auto border border-hairline bg-background p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -267,7 +263,7 @@ export function DrillDownPanel({
                       key={d.name}
                       onClick={() => run(d.label, { action: "expand", dimension: d.name })}
                       disabled={loading}
-                      className="border border-hairline px-2 py-1 text-xs transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+                      className="border border-hairline px-2 py-1 text-xs transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
                     >
                       {d.label}
                     </button>
@@ -287,7 +283,7 @@ export function DrillDownPanel({
                       key={r.cube}
                       onClick={() => run(`↳ ${r.label}`, { action: "related", target_cube: r.cube })}
                       disabled={loading}
-                      className="border border-dashed border-hairline px-2 py-1 text-xs transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+                      className="border border-dashed border-hairline px-2 py-1 text-xs transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
                     >
                       {r.label}
                     </button>
@@ -300,7 +296,7 @@ export function DrillDownPanel({
               <button
                 onClick={showRaw}
                 disabled={loading}
-                className="text-xs text-muted underline transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                className="text-xs text-muted underline transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
               >
                 Ham satırları göster (bu dilimin gerçek kayıtları)
               </button>

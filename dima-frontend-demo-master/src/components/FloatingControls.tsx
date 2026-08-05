@@ -35,9 +35,14 @@ export function FloatingControls({
   return (
     // pt-[4.5rem]: ikonlar panel başlık çizgisinin (h-14) ALTINDA başlar — panel
     // açıkken de kapalıyken de aynı hizada (başlık şeridi sağa kadar uzar).
+    // 🔴 FAZ 7.6 — **mobilde (<768) şerit ALT ÇUBUĞA döner.** Sağ kenarda dikey bir
+    // 3rem'lik şerit, 375px'lik bir ekranın **%13'ünü** yer ve başparmakla en zor
+    // ulaşılan köşededir. Alt çubuk hem erişim mesafesini kısaltır hem genişliği
+    // içeriğe bırakır. ⚠ `pt-[4.5rem]` mobilde SIFIRLANIR: alt çubukta üstten boşluk,
+    // ikonları ekranın dışına iterdi.
     <div
       data-no-print
-      className="pointer-events-none fixed right-0 top-0 z-50 flex h-full w-12 flex-col items-center gap-1.5 pt-[4.5rem] [&>*]:pointer-events-auto"
+      className="pointer-events-none fixed right-0 top-0 z-50 flex h-full w-12 flex-col items-center gap-1.5 pt-[4.5rem] [&>*]:pointer-events-auto max-md:top-auto max-md:bottom-0 max-md:h-12 max-md:w-full max-md:flex-row max-md:justify-center max-md:gap-3 max-md:border-t max-md:border-hairline max-md:bg-background/95 max-md:pt-0 max-md:backdrop-blur-sm"
     >
       <button onClick={onHistory} aria-label="Sohbet geçmişi" title="Sohbet geçmişi" className={btn}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -70,10 +75,10 @@ export function FloatingControls({
           ⚠ ÜÇ durum: sistem → açık → karanlık → sistem. "Karar vermedim" hâlini yok
           etmek, kullanıcının sistem tercihini sessizce ezmek olurdu. */}
       <TemaDugmesi btn={btn} />
-      <button onClick={onHelp} aria-label="Yardım" className={btn}>
+      <button onClick={onHelp} aria-label="Yardım" title="Yardım" className={btn}>
         <span className="font-mono text-[13px]">?</span>
       </button>
-      <button onClick={onSettings} aria-label="Ayarlar" className={btn}>
+      <button onClick={onSettings} aria-label="Ayarlar" title="Ayarlar" className={btn}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
           <circle cx="12" cy="12" r="3" />
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />

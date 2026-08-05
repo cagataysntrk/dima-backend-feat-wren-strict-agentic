@@ -138,7 +138,7 @@ function LoginForm() {
       <button
         disabled={busy || !email || !password || (otpNeeded && otp.length < 6)}
         suppressHydrationWarning
-        className="w-full rounded-md bg-accent py-2 text-sm font-medium text-white disabled:opacity-50"
+        className="w-full rounded-md bg-accent py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
       >
         {busy ? "…" : "Giriş"}
       </button>

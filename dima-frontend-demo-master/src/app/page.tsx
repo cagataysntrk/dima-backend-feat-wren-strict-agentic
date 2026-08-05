@@ -65,6 +65,11 @@ export default function Home() {
   // Görünüm ipucu ("grafik ver") — sağ paneldeki raporun görünümünü değiştirir.
   const [viewHint, setViewHint] = useState<{ kind: string; nonce: number } | null>(null);
   const [drawer, setDrawer] = useState<Drawer>(null);
+  /** 🔴 FAZ 7.6 — **dar ekran sekmesi** (<1024). Masaüstünde bu durum HİÇ okunmaz;
+   *  iki bölme yan yanadır. ⚠ Varsayılan `"sohbet"`: dar bir ekranda ilk gösterilecek
+   *  şey **soru sorma yeridir** — boş bir sonuç bölmesi, kullanıcıya ne yapacağını
+   *  söylemez. */
+  const [darSekme, setDarSekme] = useState<"sohbet" | "sonuc">("sohbet");
   // YOL SINIRI (Faz F2) — oturum boyunca kalıcı bir tercih: "yalnız küpün kanıtladığı
   // cevapları göster". `null` = sınır yok (bugünkü davranış, hiçbir şey değişmez).
   const [yolSiniri, setYolSiniri] = useState<"deterministik" | "llm" | null>(null);
@@ -430,16 +435,45 @@ export default function Home() {
 
   return (
     // pr-12: sağdaki kalıcı ikon kolonu (rail) içeriği örtmesin.
-    <div className="h-full pr-12">
+    <div className="h-full pr-12 max-md:pb-12 max-md:pr-0">
       {openDashboard ? (
         <DashboardView id={openDashboard} onClose={() => setOpenDashboard(null)} />
       ) : !started ? (
         <Landing onSubmit={submitNew} onUpload={onUpload} uploading={uploadMut.isPending} />
       ) : (
-        <div className="flex h-full min-h-0">
+        <div className="flex h-full min-h-0 max-lg:flex-col">
+          {/* 🔴 Sekme çubuğu YALNIZ dar ekranda. ⚠ `lg:hidden` yeterli değil — çubuk
+              DOM'da kalırsa masaüstünde de yükseklik payı ayırır. */}
+          <div
+            data-no-print
+            role="tablist"
+            aria-label="Görünüm"
+            className="hidden shrink-0 border-b border-hairline max-lg:flex"
+          >
+            {(["sohbet", "sonuc"] as const).map((k) => (
+              <button
+                key={k}
+                role="tab"
+                aria-selected={darSekme === k}
+                onClick={() => setDarSekme(k)}
+                className={`flex-1 px-3 py-2 font-mono text-[11px] transition-colors ${
+                  darSekme === k
+                    ? "border-b-2 border-accent text-foreground"
+                    : "text-muted"
+                }`}
+              >
+                {k === "sohbet" ? "sohbet" : "sonuç"}
+              </button>
+            ))}
+          </div>
           <section
             data-no-print
-            className={`flex shrink-0 flex-col border-r border-hairline transition-[width] duration-200 ${
+            // max-lg: tek sütun — `min-w`/`max-w` MUTLAKA sıfırlanır, yoksa 375px'lik
+            // bir ekranda `min-w-[320px]` + sağ bölme yatay taşma üretirdi (V-2'nin
+            // ölçtüğü tam kusur).
+            className={`flex shrink-0 flex-col border-r border-hairline transition-[width] duration-200 max-lg:w-full max-lg:min-w-0 max-lg:max-w-none max-lg:border-r-0 ${
+              darSekme === "sonuc" ? "max-lg:hidden" : ""
+            } ${
               activeThreadId
                 ? "w-[26%] min-w-[260px] max-w-[340px]"
                 : "w-[38%] min-w-[320px] max-w-[440px]"
@@ -475,7 +509,11 @@ export default function Home() {
               uploading={uploadMut.isPending}
             />
           </section>
-          <section className="flex min-w-0 flex-1 flex-col overflow-auto">
+          <section
+            className={`flex min-w-0 flex-1 flex-col overflow-auto ${
+              darSekme === "sohbet" ? "max-lg:hidden" : ""
+            }`}
+          >
             <div
               data-no-print
               className="flex shrink-0 items-center justify-end gap-2 border-b border-hairline px-3 py-1.5"

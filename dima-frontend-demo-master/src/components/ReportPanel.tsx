@@ -213,6 +213,7 @@ export function ReportPanel({
             <span>bağlam: {contextLabel}</span>
             <button
               onClick={onClearContext}
+              aria-label="Bu thread'i kapat"
               title="Bu thread'i kapat — panel temizlenir, sonraki soru yeni bir thread başlatır"
               className="border border-hairline px-1 leading-tight transition-colors hover:border-accent/50 hover:text-foreground"
             >

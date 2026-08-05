@@ -74,7 +74,7 @@ export default function TercihlerPanel() {
               <button
                 onClick={() => sil.mutate(t.anahtar)}
                 disabled={sil.isPending}
-                className="shrink-0 border border-hairline px-2 py-0.5 font-mono text-[11px] text-neutral-400 transition-colors hover:text-foreground disabled:opacity-50"
+                className="shrink-0 border border-hairline px-2 py-0.5 font-mono text-[11px] text-neutral-400 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
               >
                 kaldır
               </button>
@@ -143,7 +143,7 @@ function BildirimTercihleri() {
                                enabled: !t.enabled })
                 }
                 disabled={yaz.isPending}
-                className={`border px-2 py-0.5 font-mono text-[11px] transition-colors disabled:opacity-50 ${
+                className={`border px-2 py-0.5 font-mono text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)] ${
                   t.enabled
                     ? "border-accent/50 text-accent"
                     : "border-hairline text-neutral-500"
@@ -156,7 +156,7 @@ function BildirimTercihleri() {
                   onClick={() => sil.mutate({ category: t.category, channel: t.channel })}
                   disabled={sil.isPending}
                   title="Tercihi kaldır — varsayılana (açık) döner"
-                  className="border border-hairline px-2 py-0.5 font-mono text-[11px] text-neutral-400 transition-colors hover:text-foreground disabled:opacity-50"
+                  className="border border-hairline px-2 py-0.5 font-mono text-[11px] text-neutral-400 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
                 >
                   kaldır
                 </button>

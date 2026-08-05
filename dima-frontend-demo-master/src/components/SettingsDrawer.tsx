@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useOdakTuzagi } from "@/lib/odakTuzagi";
 
 // Sağdan açılan sheet (ayarlar/yardım/bildirimler). Sağ ikon KOLONUNU (rail,
 // w-12) örtmez: right-12'de durur — kolon her zaman görünür ve tıklanabilir.
@@ -15,11 +15,9 @@ export function SettingsDrawer({
   title: string;
   children: React.ReactNode;
 }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    if (open) window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  // 🔴 FAZ 7.5 · A11Y-3: `open` tuzağa DOĞRUDAN geçilir — çekmece kapalıyken odak
+  // tuzağa DÜŞMEMELİ, yoksa arkadaki sayfa klavyeyle gezilemez hâle gelir.
+  const cekmeceRef = useOdakTuzagi<HTMLElement>(open, onClose);
 
   return (
     <div className={`fixed inset-0 z-40 ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
@@ -30,7 +28,14 @@ export function SettingsDrawer({
         }`}
       />
       <aside
-        className={`absolute right-12 top-0 flex h-full w-[22rem] max-w-[80vw] flex-col border-l border-hairline bg-background shadow-2xl transition-transform duration-200 ${
+        ref={cekmeceRef}
+        role="dialog"
+        aria-modal={open || undefined}
+        // 🔴 FAZ 7.6 — mobilde şerit ALT çubuğa döndüğü için `right-12` payı ARTIK YANLIŞTIR:
+        // olmayan bir kolona 3rem bırakır. Ayrıca `max-w-[80vw]` 375px'te 300px'lik bir
+        // çekmece demektir; dar ekranda çekmece **tam genişlik** olur ve alt çubuğun
+        // üstünde biter (`bottom-12`).
+        className={`absolute right-12 top-0 flex h-full w-[22rem] max-w-[80vw] flex-col border-l border-hairline bg-background shadow-2xl transition-transform duration-200 max-md:right-0 max-md:bottom-12 max-md:h-auto max-md:w-full max-md:max-w-none ${
           open ? "translate-x-0" : "translate-x-[calc(100%+3rem)]"
         }`}
       >

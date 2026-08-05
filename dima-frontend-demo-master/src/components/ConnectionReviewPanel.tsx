@@ -69,7 +69,7 @@ function OssieIthal({ id }: { id: string }) {
         type="button"
         disabled={!metin.trim() || ithal.isPending}
         onClick={() => ithal.mutate()}
-        className="mt-1 border border-hairline px-2 py-[3px] font-mono text-[11px] text-neutral-500 transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
+        className="mt-1 border border-hairline px-2 py-[3px] font-mono text-[11px] text-neutral-500 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
       >
         {ithal.isPending ? "…" : "önizle"}
       </button>
@@ -117,7 +117,7 @@ function OssieIhrac({ id }: { id: string }) {
         type="button"
         disabled={ihrac.isPending}
         onClick={() => ihrac.mutate()}
-        className="border border-hairline px-2 py-[3px] font-mono text-[11px] text-neutral-500 transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
+        className="border border-hairline px-2 py-[3px] font-mono text-[11px] text-neutral-500 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
       >
         {ihrac.isPending ? "…" : "⇫ semantik modeli dışa aktar (Ossie)"}
       </button>
@@ -282,7 +282,7 @@ export function ConnectionReviewPanel() {
               type="button"
               disabled={testMut.isPending || !form.host || !form.database}
               onClick={() => testMut.mutate()}
-              className="flex-1 rounded-md border border-hairline py-2 text-sm disabled:opacity-50"
+              className="flex-1 rounded-md border border-hairline py-2 text-sm disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
             >
               {testMut.isPending ? "…" : "Bağlantıyı test et"}
             </button>
@@ -290,7 +290,7 @@ export function ConnectionReviewPanel() {
               type="button"
               disabled={createMut.isPending || !form.host || !form.database}
               onClick={() => createMut.mutate()}
-              className="flex-1 rounded-md bg-accent py-2 text-sm font-medium text-white disabled:opacity-50"
+              className="flex-1 rounded-md bg-accent py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
             >
               {createMut.isPending ? "…" : "Bağla ve şemayı incele"}
             </button>
@@ -380,7 +380,7 @@ export function ConnectionReviewPanel() {
               type="button"
               disabled={confirmMut.isPending || includedNames.size === 0}
               onClick={() => confirmMut.mutate()}
-              className="flex-1 rounded-md bg-accent py-2 text-sm font-medium text-white disabled:opacity-50"
+              className="flex-1 rounded-md bg-accent py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
             >
               {confirmMut.isPending ? "…" : `Onayla (${includedNames.size} tablo)`}
             </button>

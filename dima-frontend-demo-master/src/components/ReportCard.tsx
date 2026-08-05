@@ -25,6 +25,7 @@ import { ResultView } from "@/components/ResultView";
 import { KpiCardView } from "@/components/KpiCard";
 import { OutputInsight } from "@/components/OutputInsight";
 import { AdhocBadge, SourceBadge } from "@/components/ChatPanel";
+import { useAdSor } from "@/components/AdSor";
 
 // §B Adım 2 (1 Ağustos 2026) — tek-rapor kartı: bugünkü ReportPanel'in TÜM gövdesi + tüm
 // rapor-başına local state'i (SQL/trace toggle, schedule/dashboard-ekle popover'ları, verify
@@ -93,6 +94,7 @@ export function ReportCard({
   const sqlStage = useFeature("sql_display");
   // Panoya ekle (dashboards bayrağı, §9) — bu raporun cube_query'si widget olur.
   const dashStage = useFeature("dashboards");
+  const { sor: adSor, alan: adSorAlani } = useAdSor();
   const [dashOpen, setDashOpen] = useState(false);
   const [dashList, setDashList] = useState<DashboardListItem[]>([]);
   const [addedTo, setAddedTo] = useState<string | null>(null);
@@ -126,7 +128,7 @@ export function ReportCard({
     }
   };
   const createAndAdd = async () => {
-    const title = window.prompt("Yeni pano adı:", "Panom");
+    const title = await adSor("Yeni pano adı:", "Panom");
     if (!title) return;
     try {
       const d = await createDashboard(title);
@@ -639,7 +641,7 @@ export function ReportCard({
                 <button
                   onClick={onaylaEylemi}
                   disabled={eylemBekliyor}
-                  className="border border-accent/50 px-2 py-0.5 font-mono text-[11px] text-accent transition-colors hover:bg-accent/10 disabled:opacity-50"
+                  className="border border-accent/50 px-2 py-0.5 font-mono text-[11px] text-accent transition-colors hover:bg-accent/10 disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
                 >
                   {eylemBekliyor ? "…" : "Onayla"}
                 </button>
@@ -1204,6 +1206,7 @@ export function ReportCard({
           onClose={closeDrill}
         />
       )}
+      {adSorAlani}
     </div>
   );
 }

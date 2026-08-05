@@ -506,7 +506,7 @@ export function InterpretationBar({
                         const lbl = cStart && cEnd ? `${cStart} – ${cEnd}` : cStart ? `${cStart}'den beri` : `≤ ${cEnd}`;
                         setPeriod(lbl, cStart || null, cEnd || undefined);
                       }}
-                      className="ml-auto border border-hairline px-1.5 py-0.5 font-mono text-[10px] text-accent hover:bg-neutral-500/[0.06] disabled:opacity-40"
+                      className="ml-auto border border-hairline px-1.5 py-0.5 font-mono text-[10px] text-accent hover:bg-neutral-500/[0.06] disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
                     >
                       uygula
                     </button>
