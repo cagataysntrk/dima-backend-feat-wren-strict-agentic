@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 import time as _time
 
+from app import uyum as _uyum
 from app import yetenek as _yetenek
 from app import context as app_context
 from app import netlestirme as _netlestirme
@@ -1952,6 +1953,26 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             # (tek sahip); buraya kalan çağrı ve atama.
             from app import veri_araligi as _va
             resp.note = _va.bos_sonuc_notu(service, cq, schema)
+
+        # 🔴🔴 KÖK-2 + KÖK-3 — UYUM KAPISI ve BEYANLI KISMİ CEVAP.
+        #
+        # Ölçülen (denetim raporu · devralınan raporun KN-4): `route()` bir CubeQuery
+        # üretiyor ama sorudaki niyet işaretinin sorguda karşılığı olduğu HİÇBİR YERDE
+        # denetlenmiyor. `ocak ve haziran ciro karşılaştır` → Ocak–Haziran TOPLAMI, ve
+        # `source=cube` rozetiyle — yani "kanıtlanmış yol" damgasıyla.
+        #
+        # ⚠ KÖK-2 tek başına inseydi kapsam DARALIRDI (cevap ölürdü). KÖK-3 riski alır:
+        # cevap gider ama **etiketli** gider. ADR-0008 "yanlış cevaba güven rozeti takma"
+        # der; beyanlı kısmi cevap ROZETSİZDİR — yasağı çiğnemez, KARŞILAR.
+        # ⚠ `cube_meta` bu kapanışın parametresi DEĞİL — `cq`den çözülür (boş-sonuç
+        # notuyla aynı düzeltme; ikisi de aynı kapsam yanılgısına düşmüştü).
+        _cm_uyum = next((c for c in (schema.get("cubes") or [])
+                         if c.get("name") == cq.get("cube")), None)
+        _ihlaller = _uyum.denetle(q_norm, {"cube_query": cq, "order": order,
+                                           "limit": limit_val}, _cm_uyum)
+        if _ihlaller:
+            resp.eksik_niyet = [i.isaret for i in _ihlaller]
+            resp.note = " ".join(x for x in [resp.note, _uyum.kismi_cevap_notu(_ihlaller)] if x)
         if learn and vqr is not None:
             try:
                 # `auto_cube` (Faz 4.1): saklanan SQL, LLM'in serbest metni DEĞİL —
@@ -2864,7 +2885,30 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             # (3) HİÇBİR kelime tanınmadı → bugünkü dürüst red KORUNUR. Katalog dökümü
             # burada bir "bildiğini okuma" değil, sistemin NE YAPABİLDİĞİNİ göstermesidir —
             # ve bu, hiçbir şey anlaşılmadığında yapılabilecek en dürüst şeydir.
+            # 🔴 KN-2 BELİRTİSİ — katalog 13→23 cube'a çıkınca bu liste **rastgeleleşti**.
+            #
+            # Ölçüldü: liste `schema["cubes"]` sırasında geziyor ve 14'te kesiliyordu.
+            # 13 cube'da hepsi sığıyordu; 23'te ilk 14 kazandı ve `oee`/`verimlilik` gibi
+            # ÇEKİRDEK konular listeden **düştü** — kullanıcı *"neyi sorabilirim"*
+            # sorusuna ürünün en temel konusunu göremeden cevap alıyordu.
+            #
+            # ⚠ Çözüm bir sıralama İCAT ETMEK değil: pack'te zaten **küratörlü** bir
+            # liste var (`starters`, `app/starters.py` — sektör/şirket zincirinden
+            # çözülür) ve burada **görmezden geliniyordu**. Önce o, sonra katalog.
+            #
+            # *Bir ürünün neyi öne çıkaracağına katalog sırası değil, alan bilgisi
+            # karar vermelidir — ve o bilgi bu depoda zaten yazılıdır.*
             example_labels = []
+            try:
+                from app.starters import starter_questions
+
+                for st in starter_questions(settings, principal):
+                    et = str(st.get("label") or st.get("query") or "").strip()
+                    if et and et not in example_labels:
+                        example_labels.append(et)
+            except Exception:                   # noqa: BLE001 — küratör YOKSA katalog yeter
+                _log.warning("küratörlü starter okunamadı (katalog otomatiğine düşülüyor)",
+                             exc_info=True)
             for c in schema.get("cubes") or []:
                 for m in (c.get("measures") or [])[:1]:
                     mdisp = (c.get("measure_synonyms_display") or {}).get(m) or m

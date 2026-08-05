@@ -90,6 +90,18 @@ MUAFIYET_ASK_KOD = [
                     "yerellerine bağlı). Kapının ölçüsü **eklenen kod**, ve eklenen kod "
                     "TEK satır: `sorar_mi()` çağrısı. Eşik ve düzey çözümü modüle ve "
                     "modül-düzeyi yardımcıya ait — `ask()`e giren yalnız SORU"),
+    ("KÖK-2+3/uyum", 8,
+     "🔴 UYUM KAPISI + BEYANLI KISMİ CEVAP (denetim raporu KÖK-2·KÖK-3). Ölçülen: "
+     "`route()` bir CubeQuery üretiyor ama sorudaki NİYET İŞARETİNİN sorguda karşılığı "
+     "olduğu hiçbir yerde denetlenmiyordu — `ocak ve haziran ciro karşılaştır` → "
+     "Ocak-Haziran TOPLAMI, üstelik `source=cube` rozetiyle. "
+     "🔴 Bu sekiz satır TAŞINAMAZ ve sebebi konum: denetim, sorgunun ÇALIŞTIĞI ve "
+     "sonucun BİLİNDİĞİ noktada yapılmalı (`_answer_from_cube_query`); daha erken "
+     "yapılsa `order`/`limit` henüz yok, daha geç yapılsa cevap çoktan gitmiş olur. "
+     "Taşınabilir olan HER ŞEY `app/uyum.py`'de: yedi değişmez, dedektörler, "
+     "kısmi-cevap metni. `ask()`e giren yalnız ÇAĞRI, cube_meta çözümü ve İKİ ATAMA. "
+     "⊙ Ölçüldü: 525 meşru soruda 0 yanlış-pozitif, 5/5 hedef yakalandı; ölçüt üç kez "
+     "düzeltildi ve her düzeltme bir yanlış-pozitif ölçümünden geldi"),
     ("KÖK-6/yetenek", 2, "🔴 YETENEK KAPISI (denetim raporu KN-3) — *"
                          "«forecast v1'de yok» gibi ÜRÜN-DÜZEYİ bir sınır Discovery'ye "
                          "düşüp bir SAYIYA dönüşüyordu (`adhoc.toplam_toplam_ciro`). "

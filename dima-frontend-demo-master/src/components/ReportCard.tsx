@@ -35,6 +35,23 @@ import { SertifikaBandi } from "@/components/SertifikaBandi";
 // thread'in item dizisi üstünde `.map()`ler (bkz. ReportPanel.tsx). `fb` (verify geri bildirim
 // map'i) İÇERİK-ANAHTARLI olduğu için (verifyKey = label::sql) PAYLAŞILAN bir prop olarak
 // yukarıdan alınır — yığındaki/thread'lerdeki TÜM kartlarda güvenle paylaşılabilir.
+/** 🔴 Kod → insan etiketi. Backend SABİT kod gönderir (telemetri gruplanabilsin),
+ *  arayüz onu okunur hâle çevirir. *Kod gruplanır, cümle okunur; ikisi ayrı sahiptir.* */
+const EKSIK_NIYET_ETIKET: Record<string, string> = {
+  kiyas: "kıyas", cok_donem: "çok dönem", trend: "trend",
+  kirilim: "kırılım", ustunluk: "sıralama", esik: "eşik", dislama: "dışlama",
+};
+
+const EKSIK_NIYET_ACIKLAMA: Record<string, string> = {
+  kiyas: "İki dönemi kıyaslamanı istedin ama tek bir toplam üretilebildi.",
+  cok_donem: "Birden çok dönem saydın ama tek bir aralık olarak toplandı.",
+  trend: "Değişimi/trendi istedin ama zaman ekseni kurulamadı.",
+  kirilim: "Bir kırılım istedin ama sorguya bir boyut taşınamadı.",
+  ustunluk: "En yüksek/en çok dedin ama sıralama uygulanamadı.",
+  esik: "Bir eşik verdin ama filtreye çevrilemedi.",
+  dislama: "Bir şeyi hariç tutmanı istedin ama dışlama filtresi kurulamadı.",
+};
+
 export function ReportCard({
   item,
   index,
@@ -876,6 +893,33 @@ export function ReportCard({
       {/* FAZ 5.13b — KURAL BAĞLAMI: kullanıcının KENDİ yazdığı bilgi.
           🔴 Sistemin hesabı gibi görünmemeli — ayrı bir işaret ve ayrı bir renk taşır.
           Bu metin SQL'e HİÇ dokunmadı; bir cevabın yanındaki dipnottur. */}
+      {/* 🔴 KÖK-3 · BEYANLI KISMİ CEVAP — *"şu kısmını verdim, şu kısmını veremedim"*.
+          Sayı doğrudur (küpten gelir); eksik olan sorunun bir PARÇASIDIR ve bu YAZILIR.
+          ⚠ Rozet DEĞİL, uyarı: ADR-0008 "yanlış cevaba güven rozeti takma" der —
+          beyanlı kısmi cevap rozetsizdir, yasağı çiğnemez KARŞILAR. */}
+      {item.eksik_niyet && item.eksik_niyet.length > 0 && (
+        <div
+          role="note"
+          className="mt-2 flex flex-wrap items-center gap-1.5 rounded-r-[var(--radius-chip)] border-l-2 border-warning/50 bg-warning/[0.06] py-1.5 pl-2.5 pr-2"
+        >
+          <span className="font-mono text-[11px] uppercase tracking-wider text-warning">
+            eksik
+          </span>
+          {item.eksik_niyet.map((k) => (
+            <span
+              key={k}
+              title={EKSIK_NIYET_ACIKLAMA[k] ?? k}
+              className="rounded-[var(--radius-chip)] border border-warning/40 px-1.5 py-0.5 font-mono text-[11px] text-warning"
+            >
+              {EKSIK_NIYET_ETIKET[k] ?? k}
+            </span>
+          ))}
+          <span className="text-[11px] text-neutral-500">
+            — sayı doğru, sorunun bu kısmı uygulanamadı
+          </span>
+        </div>
+      )}
+
       {item.kural_baglami && (
         <p className="mt-2 border-l-2 border-hairline pl-2 font-mono text-[11px] leading-snug text-neutral-400">
           ⓘ <span className="text-neutral-500">bilgi merkezi:</span> {item.kural_baglami}

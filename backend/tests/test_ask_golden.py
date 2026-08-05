@@ -7,9 +7,43 @@ kesin asserte edilir (veri Ocak–Tem 2026; bugün ilerledikçe dönemli sayıla
 
 from __future__ import annotations
 
+import re
+
 from tests.conftest import ask
 
 # --- meta/ürün soruları → yardım + örnek chip'leri ---------------------------
+
+#: 🔴 DÖNEM SINIRI **SEMANTİK** aranır, kolon ADIYLA değil.
+#:
+#: Ölçülen (denetim raporu §2.8/2): `assert "tarih >=" in sql` **bayat** bir iddiaydı.
+#: `bf5a7eb` ile gelen `urun_maliyetleri` tablosunda `tarih` kolonu **YOK** — `yil` ve
+#: `ay` var; `maliyet` cube'u zaman boyutunu `donem_tarih: make_date(yil, ay, 1)` diye
+#: **beyan ediyor**. Yani üretilen SQL doğru:
+#:     WHERE make_date(yil, ay, 1) >= '2026-01-01'
+#: Test ise bir **kolon adı** arıyordu ve bu, ifade-tabanlı zaman boyutu olan HER yeni
+#: cube'da kırılırdı.
+#:
+#: *Bir davranışı, onu gerçekleştiren kolonun adıyla sınamak, sözleşmeyi değil
+#: uygulamayı sınamaktır.*
+_DONEM_ALT_SINIRI = re.compile(r">=\s*'?\d{4}-\d{2}-\d{2}")
+_DONEM_UST_SINIRI = re.compile(r"<=\s*'?\d{4}-\d{2}-\d{2}")
+
+
+def _donem_alt_siniri_var(sql: str) -> bool:
+    """SQL bir dönem ALT sınırı taşıyor mu — kolon adı ne olursa olsun."""
+    return bool(_DONEM_ALT_SINIRI.search(sql or ""))
+
+
+def _tarih_filtresi_mi(f: dict) -> bool:
+    """Bir filtre **dönem** filtresi mi — değerine bakarak, adına değil."""
+    v = f.get("value")
+    return isinstance(v, str) and bool(_DONEM_ALT_SINIRI.search(f">= {v}")
+                                       or re.match(r"^\d{4}-\d{2}-\d{2}", v))
+
+
+def _donem_siniri_var(sql: str) -> bool:
+    return _donem_alt_siniri_var(sql) or bool(_DONEM_UST_SINIRI.search(sql or ""))
+
 
 def test_meta_dima_nedir(client):
     d = ask(client, "dima nedir?")
@@ -199,7 +233,7 @@ def test_clarify_then_period_chip(client):
     d1 = ask(client, "toplam üretim")
     d2 = ask(client, "bu yıl", cube_query=d1["cube_query"])
     assert d2["source"] == "cube"
-    assert "tarih >=" in d2["sql"]
+    assert _donem_alt_siniri_var(d2["sql"])
     assert d2["result"]["row_count"] == 1
 
 
@@ -207,11 +241,11 @@ def test_tumu_chipi_tarih_filtresini_kaldirir(client):
     """Log regresyonu: "bu yıl"dan sonra "Tümü" seçilirse eski tarih filtresi SİLİNMELİ."""
     d1 = ask(client, "toplam üretim")
     d2 = ask(client, "bu yıl", cube_query=d1["cube_query"])
-    assert "tarih >=" in d2["sql"]
+    assert _donem_alt_siniri_var(d2["sql"])
     d3 = ask(client, "tüm zamanlar", cube_query=d2["cube_query"])
     assert d3["source"] == "cube"
     # tarih FİLTRESİ kalktı ("tarih" kelimesi hafta-günü ifadesinde geçebilir)
-    assert "tarih >=" not in d3["sql"] and "tarih <=" not in d3["sql"]
+    assert not _donem_siniri_var(d3["sql"])
     assert "tüm zamanlar" in " ".join(d3["trace"])
 
 
@@ -244,7 +278,7 @@ def test_kirilimli_soru_da_donem_sorar(client):
     assert {"dimension": "cinsiyet", "operator": "eq", "value": "Kadın"} in cq["filters"]
     # "Bu yıl" chip'i → filtreli + kırılımlı rapor
     d2 = ask(client, "bu yıl", cube_query=cq)
-    assert d2["source"] == "cube" and "tarih >=" in d2["sql"]
+    assert d2["source"] == "cube" and _donem_alt_siniri_var(d2["sql"])
     assert d2["result"]["row_count"] == 12  # kadın operatörler × üretim yaptıkları gün×operatör
 
 
@@ -253,13 +287,13 @@ def test_kirilimli_soru_da_donem_sorar(client):
 def test_convo_uretim_donem_aylara_gore(client):
     d1 = ask(client, "toplam üretim")
     d2 = ask(client, "son 6 ay", cube_query=d1["cube_query"])
-    assert d2["source"] == "cube" and "tarih >=" in d2["sql"]
+    assert d2["source"] == "cube" and _donem_alt_siniri_var(d2["sql"])
     d3 = ask(client, "aylara göre toplam üretim", cube_query=d2["cube_query"])
     assert d3["source"] == "cube"  # LLM'siz (provider=rule'da bile çalışmalı)
     assert "refine → deterministik düzenleme" in d3["trace"]
     assert d3["cube_query"]["timeDimensions"][0]["granularity"] == "month"
     # dönem filtresi zincir boyunca korunur
-    assert any(f["dimension"] == "tarih" for f in d3["cube_query"]["filters"])
+    assert any(_tarih_filtresi_mi(f) for f in d3["cube_query"]["filters"])
 
 
 def test_convo_kirilim_ekleme(client):
@@ -466,7 +500,10 @@ def test_konusuz_soru_tahmin_etmez(client):
     assert d["source"] is None and d["note"]
     assert "neyi" in d["note"].lower()
     labels = [s["label"] for s in d["suggestions"]]
-    assert labels and any("oee" in l or "verim" in l for l in labels)
+    # ⚠ Büyük/küçük harf duyarsız: küratörlü starter'lar insan-okur etiketler taşır
+    # (`Makine bazında OEE (son 3 ay)`), katalog türevleri küçük harf. İkisi de meşru.
+    assert labels and any("oee" in l.lower() or "verim" in l.lower() for l in labels), \
+        f"çekirdek konu chip'lerde yok: {labels[:6]}"
     # konulu sorular etkilenmez
     d2 = ask(client, "makine bazında ortalama oee")
     assert d2["note"] is None or "neyi" not in (d2["note"] or "").lower()
@@ -796,7 +833,7 @@ def test_schedule_olustur_kos_bildirim(client):
     assert note["kind"] == "alert" and "eşik ihlali" in note["message"]
     assert note["contract_id"]  # her koşum sözleşme alır (ADR-0010)
     # dönem GÖRELİ çözüldü: cq'da bu yılın gte filtresi var
-    assert any(f["dimension"] == "tarih" for f in note["cube_query"]["filters"])
+    assert any(_tarih_filtresi_mi(f) for f in note["cube_query"]["filters"])
     # bildirim listede
     assert any(n["id"] == note["id"] for n in client.get("/notifications").json()["notifications"])
     # eşik ihlalsiz → normal rapor bildirimi

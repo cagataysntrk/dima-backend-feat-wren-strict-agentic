@@ -318,6 +318,16 @@ class AskResponse(BaseModel):
     #: FAZ 5.13b — kural motorunun **ek bağlamı**. 🔴 Bu metin SQL'e HİÇ dokunmaz;
     #: `narration_guard` eşleşmeyen **sayı** taşıyan cümleyi düşürmeye devam eder.
     kural_baglami: str | None = None
+    #: 🔴 KÖK-2/KÖK-3 — **BEYANLI KISMİ CEVAP.** Sorudaki hangi niyet işaretleri
+    #: sorguya TAŞINAMADI (`kiyas` · `cok_donem` · `trend` · `kirilim` · `ustunluk` ·
+    #: `esik` · `dislama`). Boş/`None` = sorunun tamamı karşılandı.
+    #:
+    #: ⚠ Bu alan **telemetri için sabit kodlar** taşır; kullanıcıya giden cümle
+    #: `note`tadır. İkisi ayrı: kod gruplanır, cümle okunur.
+    #:
+    #: *Bir cevabın eksik olduğunu bilmek, onu vermemekten iyidir — ama yalnız eksikliği
+    #: SÖYLEYEN bir cevap için doğrudur.*
+    eksik_niyet: list[str] | None = None
     #: 🔴 **FAZ 6.0 — D9: YAPILDI BİLDİRİMİ.** Kapsam içi + geri alınabilir bir eylem
     #: **istemsiz** koştuğunda dolar: `{eylem, id, not, geri_al}`.
     #:

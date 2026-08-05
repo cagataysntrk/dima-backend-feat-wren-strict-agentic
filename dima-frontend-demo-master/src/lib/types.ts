@@ -122,6 +122,14 @@ export interface AskResponse {
   // FAZ 5.13b — kural motorunun EK BAĞLAMI. 🔴 Bu metin SQL'e HİÇ dokunmaz; kullanıcının
   // kendi yazdığı bilgidir ve öyle GÖSTERİLİR (sistemin hesabı gibi değil).
   kural_baglami?: string | null;
+  /** 🔴 KÖK-2/KÖK-3 — **BEYANLI KISMİ CEVAP.** Sorudaki hangi niyet işaretleri sorguya
+   *  TAŞINAMADI: `kiyas` · `cok_donem` · `trend` · `kirilim` · `ustunluk` · `esik` ·
+   *  `dislama`. Boş/`null` = sorunun tamamı karşılandı.
+   *
+   *  ⚠ Bu alan **render EDİLMEK ZORUNDA**: rapor bunu *"arka-ön dikey dilim"* diye
+   *  yazıyor — *etiket üretilip render edilmezse hiçbir şey değişmez*. Yetim-alan
+   *  kapısı (`test_cevap_alani_yetim_degil.py`) bunu ilk günde yakaladı. */
+  eksik_niyet?: string[] | null;
   // 🔴 FAZ 6.0 — D9: YAPILDI BİLDİRİMİ. Kapsam içi + geri alınabilir bir eylem İSTEMSİZ
   // koştuğunda dolar.
   //
