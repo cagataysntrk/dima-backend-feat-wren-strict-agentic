@@ -365,6 +365,29 @@ def _sinifla(sonuc: dict | None, vaka: dict) -> str:
     > sorduğunda **LLM'siz** yol nereye kadar gidiyor?"* — çünkü ürünün tezi budur
     > (*"LLM garson, küp aşçı"*) ve mevcut korpus bunu **kataloğun kendi kelimeleriyle**
     > ölçtüğü için hep yüksek çıkıyor.
+
+    ## 🔴 ANLAM DENETİMİ — cube kimliği YETMEZ
+
+    İlk hâlim yalnız `cq["cube"] != vaka["cube"]` diye bakıyordu. Bir denetim ajanı
+    bunun **göremediği** bir sessiz-yanlışı canlıda ölçtü:
+
+    ```
+    «mart cirosunu şubat ile kıyasla»
+      → parti.toplam_ciro · tarih >= 2026-02-01 AND tarih <= 2026-03-31
+      → compare_mode = None
+    ```
+
+    **Kullanıcı iki ayı KIYASLA dedi; sistem iki ayı TOPLADI** — tek bir sayı döndü,
+    üstelik `source=cube` rozetiyle ve Query Contract'ıyla. Cube doğru, ölçü doğru,
+    **niyet yanlış**.
+
+    > ⚠ *Doğru cube'a gitmek doğru cevap vermek değildir.* Bir sınıflandırıcı yalnız
+    > kimliğe bakarsa, ürünün en tehlikeli hata sınıfını — doğru görünen yanlış cevabı —
+    # yapısal olarak göremez. Ve göremediği şeyi kimse aramaz.
+
+    Aşağıdaki denetim, niyetin **sorgunun şeklinde** karşılığı olup olmadığına bakar:
+    kıyas niyeti `compare_mode` ister, kırılım niyeti `dimensions` ister, üstünlük
+    niyeti `order_by`/`limit` ister. Karşılığı yoksa → **sessiz-yanlış**.
     """
     if sonuc is None:
         # `route()` pes etti → dürüst ret ya da netleştirme yolu. Hangisi olduğunu
@@ -373,13 +396,58 @@ def _sinifla(sonuc: dict | None, vaka: dict) -> str:
     cq = (sonuc or {}).get("cube_query") or {}
     if vaka.get("cube") and cq.get("cube") != vaka["cube"]:
         return SESSIZ_YANLIS
+    if _niyet_karsiligi_yok(cq, vaka.get("niyet")):
+        return SESSIZ_YANLIS
     return DOGRU
 
 
-def kos(persona: str | None = None, kademe: str | None = None) -> dict[str, Any]:
-    """Korpusu koşar. **Sıfır-LLM, sıfır-DB** — `route()` doğrudan."""
+def _niyet_karsiligi_yok(cq: dict, niyet: str | None) -> bool:
+    """Niyetin sorgu şeklinde karşılığı **var mı**.
+
+    ⚠ Yalnız **elle yazılmış** vakalarda `niyet` yoktur (onlarda `None` gelir) —
+    o durumda bu denetim **atlanır**, çünkü niyeti bilmeden şekil beklenemez.
+    *Bilinmeyen bir beklentiyi bir başarısızlık saymak, ölçümü gürültüye çevirir.*
+    """
+    if not niyet:
+        return False
+    from lab import senaryo_uretec as SU
+
+    boyut_var = bool(cq.get("dimensions"))
+    kiyas_var = bool(cq.get("compare_mode") or cq.get("compare") or cq.get("yoy"))
+    sira_var = bool(cq.get("order_by") or cq.get("limit") or cq.get("top"))
+    olcu_sayisi = len(cq.get("measures") or [])
+
+    if niyet == SU.NIYET_KIYAS:
+        # 🔴 CANLI SESSİZ-YANLIŞ: iki ay adı **aralık** okunuyor, kıyas değil.
+        return not kiyas_var
+    if niyet == SU.NIYET_KIRILIM:
+        return not boyut_var
+    if niyet == SU.NIYET_USTUNLUK:
+        return not (sira_var and boyut_var)
+    if niyet in (SU.NIYET_KOMPOZISYON, SU.NIYET_ETKI):
+        # İki ölçü istendi; tek ölçü dönmesi **istenmeyen bir cevabı** doğru sanmaktır.
+        return olcu_sayisi < 2
+    return False
+
+
+def kos(persona: str | None = None, kademe: str | None = None,
+        *, uretilmis: bool = True) -> dict[str, Any]:
+    """Korpusu koşar. **Sıfır-LLM, sıfır-DB** — `route()` doğrudan.
+
+    ## İki korpus, iki farklı iş — ve neden ikisi de gerekli
+
+    | korpus | kaç | ne verir |
+    |---|---|---|
+    | `VAKALAR` (elle) | 42 | **derinlik**: her biri gerçek bir olaydan toplandı, `kaynak` taşır |
+    | `senaryo_uretec.uret()` | ~1700 | **genişlik**: pairwise, kataloğa bağlı, kendiliğinden büyür |
+
+    ⚠ Elle yazılanları üretilmişlerle **değiştirmek** yanlış olurdu: üreteç bir borç
+    defteri okuyamaz. *Bir kusurun canlı turda görülmüş olması, onu kombinatoryal bir
+    şablonun üretemeyeceği bir vaka yapar.* İkisi ayrı ayrı raporlanır.
+    """
     from app import cube_router
     from app.config import get_settings
+    from lab import senaryo_uretec
     from app.wren_service import WrenService
 
     s = get_settings()
@@ -390,7 +458,16 @@ def kos(persona: str | None = None, kademe: str | None = None) -> dict[str, Any]
     hamlar = {str(m.get("name") if isinstance(m, dict) else m).lower()
               for c in (schema.get("cubes") or []) for m in (c.get("measures") or [])}
 
-    secili = [v for v in VAKALAR
+    havuz = list(VAKALAR)
+    kapsam_raporu: dict[str, Any] = {}
+    if uretilmis:
+        from lab import senaryo_uretec
+        uret_vakalar, kapsam_raporu = senaryo_uretec.uret(schema)
+        for u in uret_vakalar:
+            u.setdefault("cube", None)
+        havuz += uret_vakalar
+
+    secili = [v for v in havuz
               if (not persona or v["persona"] == persona)
               and (not kademe or v["kademe"] == kademe)]
 
@@ -405,6 +482,17 @@ def kos(persona: str | None = None, kademe: str | None = None) -> dict[str, Any]
             sizinti.append({"soru": v["soru"], "kelimeler": s_kelime})
             continue
         try:
+            # 🔴 HAM METİN — ve bu bilinçli, ölçülmüş bir karar.
+            #
+            # Bir tur **normalize ederek** ölçtüm; sonra `ask.py:2473`'ü okudum:
+            # `route_hit = cube_router.route(body.question, ...)` — ürün de **ham**
+            # soruyu geçiyor. Yani normalize etmek aracı ürüne yaklaştırmıyor,
+            # **uzaklaştırıyordu**: ürünün hiç görmediği bir girdiyle ürün ölçülürdü.
+            #
+            # ⚠ Bir denetim ajanı önce *"araç ham veriyor, ürün normalize ediyor"*
+            # dedi; ikinci turda kendi bulgusunu düzeltti. İkisini de kaynağa bakarak
+            # doğruladım. *Bir aracın ürünle aynı yolu izlediği, iddia edilmez —
+            # çağrı satırı okunarak görülür.*
             sonuc = cube_router.route(v["soru"], schema)
         except Exception as exc:                              # noqa: BLE001
             ayrinti.append({**v, "sinif": "hata", "not": str(exc)[:120]})
@@ -419,7 +507,11 @@ def kos(persona: str | None = None, kademe: str | None = None) -> dict[str, Any]
         ayrinti.append({**v, "sinif": sinif, "kabul_edildi": kabul_edildi})
 
     return {"sayac": {k: dict(vv) for k, vv in sayac.items()},
-            "sizinti": sizinti, "ayrinti": ayrinti, "toplam_vaka": len(secili)}
+            "sizinti": sizinti, "ayrinti": ayrinti, "toplam_vaka": len(secili),
+            "kapsam": kapsam_raporu, "elle_vaka": len(VAKALAR),
+            "uretilmis_vaka": len(secili) - len([v for v in VAKALAR
+                                                 if (not persona or v["persona"] == persona)
+                                                 and (not kademe or v["kademe"] == kademe)])}
 
 
 def rapor(sonuc: dict[str, Any]) -> str:

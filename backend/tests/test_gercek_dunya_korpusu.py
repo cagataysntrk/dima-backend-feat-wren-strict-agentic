@@ -227,3 +227,120 @@ def test_VAKA_SAYISI_ondan_fazla_persona_basina():
     from lab.gercek_dunya import VAKALAR
 
     assert len(VAKALAR) >= 40, f"vaka sayısı geriledi: {len(VAKALAR)}"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🔴 DİLSEL KAPSAM KAPISI — "ne eksik" artık tahmin değil, ölçüm
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# ## Bu kapının doğuş hikâyesi
+#
+# Kullanıcı iki gerçek kusur bildirdi (`şubata göre` · `üzerindeki etkisini ölç yani`)
+# ve sordu: *"testler bunları yakalar mı?"* Cevap **hayırdı**. İkisini eksen olarak
+# ekledim. Sonra doğru soruyu sordu:
+#
+# > *"bu ikisi en basiti — bu tarz o zaman **binlerce eksik** vardır"*
+#
+# Ve haklıydı. Eksen eklemek bir çözüm değil: hangi eksenin eksik olduğunu ancak kusur
+# **canlıda patladığında** öğrenirsek, test ortamı kusurları bulan değil **arkasından
+# koşan** bir alete dönüşür.
+#
+# 🔴 Bu kapı o döngüyü kırar: dilin özellikleri **önce sayılır** (`dil_ozellikleri.py`,
+# 71 özellik / 8 aile), sonra üretecin kaçını ürettiği **rakamla** söylenir. Kapsanmayan
+# bir özellik artık bilinmeyen bir bilinmeyen değil, **kırmızı bir testtir**.
+
+
+def test_DILSEL_KAPSAM_hicbir_ozellik_bos_kalmaz():
+    """🔴 Boş bir özellik = test ortamının deliği.
+
+    O sınıftaki bir kusur, korpus **ne kadar büyürse büyüsün** görünmez kalır —
+    çünkü onu tetikleyecek tek bir vaka bile üretilmiyordur.
+
+    ⚠ İlk koşumda **10 delik** buldu: yalın ay adı · olumsuzluk · çoklu soru ·
+    iki kırılım · sayısal aralık · boşluk hatası · büyük harf · noktalama · sayı
+    biçimi · yalın hâl. Onunun da onu kapatıldı ve kapı yeşile döndü.
+    """
+    from lab import dil_ozellikleri as D
+    from lab.gercek_dunya import VAKALAR
+
+    sorular = [v["soru"] for v in VAKALAR] + _uretilmis_sorular()
+    k = D.kapsam_olc(sorular)
+    assert not k["bos"], (
+        "🔴 test ortamının deliği — hiç üretilmeyen dilsel özellikler: "
+        + ", ".join(f"{o['kod']} ({o['ornek']})" for o in k["bos"])
+    )
+
+
+def test_DILSEL_KAPSAM_zayif_ozellik_yok():
+    """⚠ **Sıfır kapsam bir delik, BİR kapsam bir yanılsamadır.**
+
+    Tek vakayla kapsanan bir özellik raporda yeşil görünür ama o sınıfta bir kusuru
+    yakalama şansı istatistiksel olarak sıfıra yakındır. Eşik **5**."""
+    from lab import dil_ozellikleri as D
+    from lab.gercek_dunya import VAKALAR
+
+    k = D.kapsam_olc([v["soru"] for v in VAKALAR] + _uretilmis_sorular())
+    assert not k["zayif"], (
+        "⚠ zayıf kapsam (<5 vaka): "
+        + ", ".join(f"{o['kod']}={o['adet']}" for o in k["zayif"])
+    )
+
+
+def test_KAPALI_AILELER_tam_kapsanir():
+    """🔒 Türkçenin durum · iyelik · fiil kipi ekleri **sonlu** kümelerdir.
+
+    Yani bu ailelerde *"acaba unuttuğum bir biçim var mı"* sorusu **kapatılabilir** —
+    ve kapatıldığı bu testle beyan edilir. *Bir taksonominin değeri, neyi kapsamadığını
+    söylemesi kadar, neyi TAM kapsadığını kanıtlayabilmesindedir.*"""
+    from lab import dil_ozellikleri as D
+    from lab.gercek_dunya import VAKALAR
+
+    k = D.kapsam_olc([v["soru"] for v in VAKALAR] + _uretilmis_sorular())
+    for aile in D.KAPALI_AILELER:
+        v = k["aile_kapsami"][aile]
+        assert v["kapsanan"] == v["toplam"], (
+            f"🔒 kapalı küme «{aile}» eksik: {v['kapsanan']}/{v['toplam']}")
+
+
+def test_URETEC_canli_iki_kusur_sinifini_uretir():
+    """🔴 Kullanıcının bildirdiği **iki gerçek kusur** korpusta karşılığı olmadan
+    kalmasın. *Bir kusur bir kez canlıda görüldüyse, bir daha ancak korpus onu
+    üretebiliyorsa yakalanır.*"""
+    from lab import senaryo_uretec as S
+
+    vakalar = _uretilmis_vakalar()
+    cekimli = [v for v in vakalar
+               if any(v["donem"].startswith(a) and v["donem"] != a for a in S._AYLAR)]
+    iliski = [v for v in vakalar if v["niyet"] in (S.NIYET_ETKI, S.NIYET_KOMPOZISYON)]
+    assert len(cekimli) >= 50, f"ay çekimi («şubata göre») yetersiz: {len(cekimli)}"
+    assert len(iliski) >= 50, f"iki-ölçü ilişkisi («üzerindeki etkisi») yetersiz: {len(iliski)}"
+
+
+def test_PAIRWISE_kopya_uretmez():
+    """Üreteç **üretim anında** kopya eler; iki vaka aynı anlamlı kelime kümesini
+    taşımaz. ⚠ Sonradan elemek pairwise kapsamını sessizce delerdi."""
+    from lab.dil_ozellikleri import OZELLIKLER  # noqa: F401  (modül yüklenebilirlik denetimi)
+
+    sorular = _uretilmis_sorular()
+    assert len(set(sorular)) == len(sorular), "üreteç birebir kopya üretti"
+
+
+# --- yardımcılar: şema BİR KEZ yüklenir (her test yeniden yüklerse süit yavaşlar) ---
+_ONBELLEK: dict = {}
+
+
+def _uretilmis_vakalar() -> list[dict]:
+    if "vakalar" not in _ONBELLEK:
+        from app.config import get_settings
+        from app.wren_service import WrenService
+        from lab import senaryo_uretec
+
+        s = get_settings()
+        svc = WrenService(project_dir=s.resolved_project_dir(), datasource=s.datasource,
+                          connection_info=s.connection_dict())
+        _ONBELLEK["vakalar"] = senaryo_uretec.uret(svc.schema())[0]
+    return _ONBELLEK["vakalar"]
+
+
+def _uretilmis_sorular() -> list[str]:
+    return [v["soru"] for v in _uretilmis_vakalar()]
