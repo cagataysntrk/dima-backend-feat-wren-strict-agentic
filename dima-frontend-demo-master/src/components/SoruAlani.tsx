@@ -73,7 +73,7 @@ export function SoruAlani({
   const fileRef = useRef<HTMLInputElement>(null);
 
   const cip = (secili: boolean) =>
-    `rounded-[var(--radius-chip)] border px-1.5 py-0.5 font-mono text-[10px] transition-colors ${
+    `rounded-[var(--radius-chip)] border px-1.5 py-0.5 font-mono text-[var(--text-etiket)] transition-colors ${
       secili
         ? "border-accent/50 text-accent"
         : "border-[var(--surface-kenar)] text-neutral-500 hover:text-foreground"
@@ -89,7 +89,7 @@ export function SoruAlani({
           yapamayacağı bir şeyi teklif etmeme nezaketidir. */}
       {onKapsam && (
         <div className="mb-2 flex items-center gap-1.5">
-          <span className="select-none font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+          <span className="select-none font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
             kapsam
           </span>
           {([
@@ -115,7 +115,7 @@ export function SoruAlani({
       {/* YOL SINIRI — üç konumlu **uzman** ayarı; oturum boyu kalıcı. */}
       {onYolSiniri && (
         <div className="mb-2 flex items-center gap-1.5">
-          <span className="select-none font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+          <span className="select-none font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
             yol
           </span>
           {([
@@ -150,7 +150,7 @@ export function SoruAlani({
               type="button"
               title={ipucuMetni}
               onClick={() => onMod(mod === d ? null : d)}
-              className={`${i ? "border-l border-[var(--surface-kenar)] " : ""}px-2 py-0.5 font-mono text-[10px] transition-colors ${
+              className={`${i ? "border-l border-[var(--surface-kenar)] " : ""}px-2 py-0.5 font-mono text-[var(--text-etiket)] transition-colors ${
                 mod === d ? "bg-accent/10 text-accent" : "text-neutral-500 hover:text-foreground"
               }`}
             >

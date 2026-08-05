@@ -281,8 +281,12 @@ export function ReportCard({
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-8 py-7">
-      <div className="mb-5 border-b border-hairline pb-4">
+    <div className="mx-auto my-3 max-w-4xl rounded-[var(--radius-lg)] border border-[var(--surface-kenar)] bg-[var(--surface-2)] px-6 py-6 transition-colors duration-[var(--motion-md)] ease-[var(--ease-standard)]">
+      {/* ⟳ FAZ 5 — başlık altındaki **kural çizgisi kalktı**: kartın kendi kenarı
+          zaten bir sınır çiziyor, içeride ikinci bir yatay çizgi *aynı ayrımı iki
+          kez* anlatıyordu. Ayrım artık **boşlukla** kuruluyor (`mb-5` korundu).
+          ⚠ Bu bir sadeleştirme değil, **çift anlatımın** kaldırılmasıdır. */}
+      <div className="mb-5">
         <div className="flex items-start justify-between gap-3">
           {selectable && (
             <input
@@ -299,7 +303,7 @@ export function ReportCard({
                 yeni bir konu mu yoksa devam mı" sorusunu doğrudan cevaplayan bir etiket.
                 §B DÜZELTMESİ (1 Ağustos 2026): `reply_to_label` VARSA (bu karta özel bir
                 yanıtsa) ÖNCELİKLİ gösterilir — hangi karta bağlandığı en somut bilgi. */}
-            <span className="mb-0.5 block font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+            <span className="mb-0.5 block font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
               {item.reply_to_label
                 ? `↳ yanıt: "${item.reply_to_label}"`
                 : item.is_new_topic ? "◆ yeni konu" : "↳ önceki raporun devamı"}
@@ -308,7 +312,7 @@ export function ReportCard({
                 Cevap KAYBOLMADI (sessiz iptal yok) ama aktif bağlamı ele geçirmedi.
                 Bunu söylememek "neden eski rapor geri geldi?" sorusunu doğururdu. */}
             {item.steering_golgede && (
-              <span className="mb-1 block font-mono text-[10px] text-amber-500">
+              <span className="mb-1 block font-mono text-[var(--text-etiket)] text-amber-500">
                 ↺ bu cevap siz yeni bir soru sorarken hazırlanıyordu — bağlam yeni
                 sorunuzda kaldı
               </span>
@@ -428,7 +432,7 @@ export function ReportCard({
                 {/* #62 — ✗ yorum popup'ı: neden yanlış (opsiyonel) → note → #57 madenci. */}
                 {wrongOpen && !flagged && (
                   <span className="absolute right-0 top-full z-30 mt-1 flex w-64 flex-col gap-2 border border-hairline bg-background p-2 text-left shadow-lg">
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+                    <span className="font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
                       neden yanlış? (opsiyonel)
                     </span>
                     <textarea
@@ -465,7 +469,7 @@ export function ReportCard({
               <span
                 title={`Hedef ${item.hedef.hedef} · gerçekleşen ${item.hedef.gerceklesen}` +
                   (item.hedef.sapma_yuzde !== null ? ` · sapma %${item.hedef.sapma_yuzde}` : "")}
-                className={`inline-flex h-[20px] items-center gap-1 border px-1.5 font-mono text-[10px] tracking-wide ${
+                className={`inline-flex h-[20px] items-center gap-1 border px-1.5 font-mono text-[var(--text-etiket)] tracking-wide ${
                   item.hedef.ulasildi
                     ? "border-accent/40 text-accent"
                     : "border-amber-500/40 text-amber-600"
@@ -477,7 +481,7 @@ export function ReportCard({
             {item.mali_donem && (
               <span
                 title={`Bu şirketin mali yılı takvim yılından farklı. Gösterilen pencere: ${item.mali_donem}`}
-                className="inline-flex h-[20px] items-center gap-1 border border-hairline px-1.5 font-mono text-[10px] tracking-wide text-neutral-500"
+                className="inline-flex h-[20px] items-center gap-1 border border-hairline px-1.5 font-mono text-[var(--text-etiket)] tracking-wide text-neutral-500"
               >
                 <span aria-hidden>◷</span> {item.mali_donem}
               </span>
@@ -522,7 +526,7 @@ export function ReportCard({
                 </button>
                 {replyOpen && (
                   <span className="absolute right-0 top-full z-30 mt-1 flex w-64 flex-col gap-2 border border-hairline bg-background p-2 text-left shadow-lg">
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+                    <span className="font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
                       bu karta yanıt ver
                     </span>
                     <textarea
@@ -577,7 +581,7 @@ export function ReportCard({
               frontend bilir, backend onu UYDURMAZ. */}
         {item.eylem_onerisi && (
           <div className="mt-3 border border-accent/40 bg-accent/[0.04] p-3">
-            <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-accent">
+            <div className="mb-1.5 font-mono text-[var(--text-etiket)] uppercase tracking-wider text-accent">
               onay gerekiyor
             </div>
             <p className="font-mono text-[12px] leading-snug text-foreground">
@@ -649,7 +653,7 @@ export function ReportCard({
                   onFocus={(e) => e.currentTarget.select()}
                   className="w-full border border-hairline bg-transparent px-2 py-1 font-mono text-[11px] text-foreground"
                 />
-                <p className="font-mono text-[10px] leading-snug text-neutral-400">
+                <p className="font-mono text-[var(--text-etiket)] leading-snug text-neutral-400">
                   Link <span className="text-foreground">7 gün</span> geçerli, içerik{" "}
                   <span className="text-foreground">maskelenmiş</span> ve yalnız{" "}
                   <span className="text-foreground">aynı şirketten</span> giriş yapmış
@@ -692,7 +696,7 @@ export function ReportCard({
 
       {item.result && (item.freshness === "hata" || item.freshness === "bilinmiyor") && (
         <div className="border border-amber-600/60 bg-amber-950/20 p-4">
-          <p className="mb-1 font-mono text-[10px] uppercase tracking-wider text-amber-500">
+          <p className="mb-1 font-mono text-[var(--text-etiket)] uppercase tracking-wider text-amber-500">
             {item.freshness === "hata" ? "veri bayat — sayı gösterilmiyor"
                                        : "tazelik bilinmiyor — sayı gösterilmiyor"}
           </p>
@@ -700,7 +704,7 @@ export function ReportCard({
             {item.tazelik_aciklama}
           </p>
           {item.son_veri_ts && (
-            <p className="mt-1.5 font-mono text-[10px] text-neutral-400">
+            <p className="mt-1.5 font-mono text-[var(--text-etiket)] text-neutral-400">
               son senkron: {new Date(item.son_veri_ts).toLocaleString("tr-TR")}
             </p>
           )}
@@ -713,7 +717,7 @@ export function ReportCard({
               görsel kanal (renk+alt çizgi vs. emoji) — ikisi yarışmaz, üst üste binmez. */}
           {item.freshness === "uyari" && (
             <p
-              className="mb-2 font-mono text-[10px] text-amber-500 decoration-amber-500 decoration-wavy underline underline-offset-4"
+              className="mb-2 font-mono text-[var(--text-etiket)] text-amber-500 decoration-amber-500 decoration-wavy underline underline-offset-4"
               title={item.tazelik_aciklama ?? undefined}
             >
               veri eskimiş olabilir
@@ -759,7 +763,7 @@ export function ReportCard({
                 viewHint={vp.kind}
               />
               {vp.neden && (
-                <figcaption className="mt-1 font-mono text-[10px] leading-snug text-neutral-400">
+                <figcaption className="mt-1 font-mono text-[var(--text-etiket)] leading-snug text-neutral-400">
                   ⓘ {vp.neden}
                 </figcaption>
               )}
@@ -777,7 +781,7 @@ export function ReportCard({
           <span className="text-accent">✓ yapıldı</span>
           {item.eylem_sonucu.not ? ` · ${item.eylem_sonucu.not}` : ""}
           {item.eylem_sonucu.geri_al && (
-            <span className="block text-[10px] text-neutral-500">
+            <span className="block text-[var(--text-etiket)] text-neutral-500">
               ↩ {item.eylem_sonucu.geri_al}
             </span>
           )}
@@ -790,7 +794,7 @@ export function ReportCard({
           *Hayalet seri bir KARŞILAŞTIRMA sinyalidir, ikinci bir cevap değil.* */}
       {item.previous_result && (
         <p
-          className="mt-2 font-mono text-[10px] text-neutral-400"
+          className="mt-2 font-mono text-[var(--text-etiket)] text-neutral-400"
           title={`Önceki koşum · makbuz ${item.previous_result.contract_id}`}
         >
           ⟲ bu sorgu daha önce koşuldu
@@ -833,7 +837,7 @@ export function ReportCard({
           Karar backend'de (`answer.seal`); burada ikinci bir çıkarım yapılmaz. */}
       {item.ai_generated_prose && (
         <p
-          className="mx-auto mt-1 flex max-w-4xl items-center gap-1.5 px-8 font-mono text-[10px] tracking-wide text-neutral-400"
+          className="mx-auto mt-1 flex max-w-4xl items-center gap-1.5 px-8 font-mono text-[var(--text-etiket)] tracking-wide text-neutral-400"
           title="Yukarıdaki AÇIKLAMA METNİ yapay zekâ tarafından yazıldı (AB Yapay Zekâ Yasası Md.50). Sayılar ve tablo bu metinden DEĞİL, doğrudan semantik küpten gelir; metindeki eşleşmeyen sayılar yayımlanmadan önce düşürülür."
         >
           <span aria-hidden>✎</span>
@@ -940,7 +944,7 @@ export function ReportCard({
         <button
           onClick={onPanelAc}
           title="Bu analizi yan panelde aç — grafik, tablo, kırılım ve köken orada"
-          className="mt-2 inline-flex items-center gap-1 rounded-[var(--radius-chip)] border border-[var(--surface-kenar)] px-2 py-1 font-mono text-[10px] text-neutral-500 transition-colors hover:border-accent/50 hover:text-accent"
+          className="mt-2 inline-flex items-center gap-1 rounded-[var(--radius-chip)] border border-[var(--surface-kenar)] px-2 py-1 font-mono text-[var(--text-etiket)] text-neutral-500 transition-colors hover:border-accent/50 hover:text-accent"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <rect x="3" y="4" width="18" height="16" rx="2" />
@@ -965,7 +969,7 @@ export function ReportCard({
           hangisinin yeni sayı getireceğini bilemez. */}
       {onReply && (item.suggestions?.length ?? 0) > 0 && (
         <div className="mt-3">
-          <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+          <div className="mb-1.5 font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
             devam sorusu
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -1010,7 +1014,7 @@ export function ReportCard({
         {!makbuzKatmanli && item.contract_id ? (
           <button
             onClick={() => setContractOpen(true)}
-            className="font-mono text-[10px] tracking-wider text-neutral-300 underline-offset-2 transition-colors hover:text-foreground hover:underline dark:text-neutral-600"
+            className="font-mono text-[var(--text-etiket)] tracking-wider text-neutral-300 underline-offset-2 transition-colors hover:text-foreground hover:underline dark:text-neutral-600"
             title="Query Contract — bu raporun kanıt kaydı: soru + sorgu + sonuç özeti mühürlendi; sonradan yeniden oynatılıp doğrulanabilir (tıkla → incele)"
           >
             {item.contract_id}

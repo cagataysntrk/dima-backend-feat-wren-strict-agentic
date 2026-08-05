@@ -54,7 +54,7 @@ export function KartZamanlama({
   <span className="absolute right-0 top-full z-30 mt-1 flex w-64 flex-col gap-2 border border-hairline bg-background p-2 shadow-lg">
     {/* #56 alarm (opsiyonel) — eşik / anomali; ölçü rapor ölçülerinden. */}
     <div className="flex flex-col gap-1">
-      <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+      <span className="font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
         alarm (opsiyonel)
       </span>
       <div className="flex gap-1 font-mono text-[11px]">

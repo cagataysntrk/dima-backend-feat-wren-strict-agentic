@@ -78,7 +78,7 @@ function LoginForm() {
         suppressHydrationWarning
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className="mb-3 w-full rounded-md border border-hairline bg-transparent px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+        className="mb-3 w-full rounded-[var(--radius-btn)] border border-hairline bg-transparent px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
       />
 
       <label
@@ -95,7 +95,7 @@ function LoginForm() {
           suppressHydrationWarning
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-md border border-hairline bg-transparent py-2 pl-3 pr-10 text-sm text-foreground outline-none focus:border-accent"
+          className="w-full rounded-[var(--radius-btn)] border border-hairline bg-transparent py-2 pl-3 pr-10 text-sm text-foreground outline-none focus:border-accent"
         />
         <button
           type="button"
@@ -124,7 +124,7 @@ function LoginForm() {
             autoFocus
             value={otp}
             onChange={(e) => setOtp(e.target.value)}
-            className="mb-4 w-full rounded-md border border-hairline bg-transparent px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
+            className="mb-4 w-full rounded-[var(--radius-btn)] border border-hairline bg-transparent px-3 py-2 text-sm text-foreground outline-none focus:border-accent"
           />
         </>
       )}
@@ -138,7 +138,7 @@ function LoginForm() {
       <button
         disabled={busy || !email || !password || (otpNeeded && otp.length < 6)}
         suppressHydrationWarning
-        className="w-full rounded-md bg-accent py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
+        className="w-full rounded-[var(--radius-btn)] bg-accent py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
       >
         {busy ? "…" : "Giriş"}
       </button>

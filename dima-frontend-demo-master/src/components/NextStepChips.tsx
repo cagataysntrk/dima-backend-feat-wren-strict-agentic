@@ -30,7 +30,7 @@ export function NextStepChips({
   if (!steps?.length) return null;
   return (
     <div className="mt-3">
-      <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+      <div className="mb-1.5 font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
         {baslik}
       </div>
       <div className="flex flex-wrap gap-1.5">

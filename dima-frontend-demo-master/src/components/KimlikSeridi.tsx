@@ -70,7 +70,7 @@ export function KimlikSeridi({ gomulu = false }: { gomulu?: boolean } = {}) {
     return (
       <span
         data-no-print
-        className={`${gomulu ? "" : "fixed right-14 top-3 z-40 max-md:right-3"} font-mono text-[10px] text-neutral-400`}
+        className={`${gomulu ? "" : "fixed right-14 top-3 z-40 max-md:right-3"} font-mono text-[var(--text-etiket)] text-neutral-400`}
         title="/auth/me okunamadı"
       >
         kimlik okunamadı
@@ -84,7 +84,7 @@ export function KimlikSeridi({ gomulu = false }: { gomulu?: boolean } = {}) {
   return (
     <span
       data-no-print
-      className={`${gomulu ? "" : "fixed right-14 top-3 z-40 max-md:right-3"} flex max-w-[min(22rem,55vw)] min-w-0 items-center gap-1.5 font-mono text-[10px] text-neutral-400`}
+      className={`${gomulu ? "" : "fixed right-14 top-3 z-40 max-md:right-3"} flex max-w-[min(22rem,55vw)] min-w-0 items-center gap-1.5 font-mono text-[var(--text-etiket)] text-neutral-400`}
     >
       {/* 🔴 E-posta `null` olabilir ve o hâl **yazılır**, boş bırakılmaz: boş bir alan
           "yüklenmedi" gibi okunur, oysa burada bilgi **yok**. */}

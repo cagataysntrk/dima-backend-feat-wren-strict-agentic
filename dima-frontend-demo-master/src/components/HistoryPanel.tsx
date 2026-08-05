@@ -97,7 +97,7 @@ export function HistoryPanel({
                   <div className="truncate text-[13px] text-foreground">
                     {c.title || "(başlıksız)"}
                   </div>
-                  <div className="font-mono text-[10px] text-neutral-400">
+                  <div className="font-mono text-[var(--text-etiket)] text-neutral-400">
                     {c.message_count} mesaj · {fmtDate(c.updated_at)}
                   </div>
                 </button>

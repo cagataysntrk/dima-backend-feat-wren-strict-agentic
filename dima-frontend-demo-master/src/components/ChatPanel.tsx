@@ -93,7 +93,7 @@ export function AdhocBadge({ cubeQuery }: { cubeQuery: CubeQuery | null }) {
             "görünüm üzerinde çalışır. Kırılım/filtre yapılabilir, ama SQL'in seçmediği " +
             "bir kolon eklenemez. Güven rozeti bu yüzden yükselmez."
       }
-      className={`inline-flex h-[20px] items-center gap-1 border px-1.5 font-mono text-[10px] tracking-wide ${
+      className={`inline-flex h-[20px] items-center gap-1 border px-1.5 font-mono text-[var(--text-etiket)] tracking-wide ${
         kirpik ? "border-amber-500/40 text-amber-600" : "border-hairline text-neutral-500"
       }`}
     >
@@ -159,7 +159,7 @@ export function SourceBadge({
   return (
     <span
       title={title}
-      className={`inline-flex h-[20px] items-center gap-1 border px-1.5 font-mono text-[10px] tracking-wide ${cls}`}
+      className={`inline-flex h-[20px] items-center gap-1 border px-1.5 font-mono text-[var(--text-etiket)] tracking-wide ${cls}`}
     >
       {label}
       {sert && (
@@ -324,7 +324,7 @@ export function ChatPanel({
           bir İPUCU var: bu komposer'a yazmanın HER ZAMAN yeni bir thread açacağını netleştiriyor. */}
       <div className="shrink-0 border-t border-hairline px-4 py-3">
         {compact && (
-          <p className="mb-2 font-mono text-[10px] leading-snug text-neutral-400">
+          <p className="mb-2 font-mono text-[var(--text-etiket)] leading-snug text-neutral-400">
             ⓘ buraya yazmak her zaman <span className="text-accent">yeni bir thread</span>{" "}
             başlatır — devam etmek için sağdaki paneli kullan.
           </p>
@@ -341,7 +341,7 @@ export function ChatPanel({
             kullanıcıya teklif etmeme nezaketidir. */}
         {onKapsam && (
           <div className="mb-2 flex items-center gap-1.5">
-            <span className="select-none font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+            <span className="select-none font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
               kapsam
             </span>
             {([
@@ -356,7 +356,7 @@ export function ChatPanel({
                 type="button"
                 onClick={() => onKapsam(deger)}
                 title={ipucu}
-                className={`border px-1.5 py-0.5 font-mono text-[10px] transition-colors ${
+                className={`border px-1.5 py-0.5 font-mono text-[var(--text-etiket)] transition-colors ${
                   (kapsam ?? "genel") === deger
                     ? "border-accent/50 text-accent"
                     : "border-hairline text-neutral-500 hover:text-foreground"
@@ -369,7 +369,7 @@ export function ChatPanel({
         )}
         {onYolSiniri && (
           <div className="mb-2 flex items-center gap-1.5">
-            <span className="select-none font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+            <span className="select-none font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
               yol
             </span>
             {([
@@ -382,7 +382,7 @@ export function ChatPanel({
                 type="button"
                 onClick={() => onYolSiniri(deger)}
                 title={ipucu}
-                className={`border px-1.5 py-0.5 font-mono text-[10px] transition-colors ${
+                className={`border px-1.5 py-0.5 font-mono text-[var(--text-etiket)] transition-colors ${
                   yolSiniri === deger
                     ? "border-accent/50 text-accent"
                     : "border-hairline text-neutral-500 hover:text-foreground"
@@ -408,7 +408,7 @@ export function ChatPanel({
                 type="button"
                 title={ipucu}
                 onClick={() => onMod(mod === deger ? null : deger)}
-                className={`${i ? "border-l border-hairline " : ""}px-2 py-0.5 font-mono text-[10px] transition-colors ${
+                className={`${i ? "border-l border-hairline " : ""}px-2 py-0.5 font-mono text-[var(--text-etiket)] transition-colors ${
                   mod === deger
                     ? "bg-accent/10 text-accent"
                     : "text-neutral-500 hover:text-foreground"

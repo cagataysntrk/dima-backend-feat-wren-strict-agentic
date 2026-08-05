@@ -237,7 +237,7 @@ export function ReportPanel({
           seçim otomatik sıfırlanır (bkz. yukarıdaki render-sırasında-ayarlama). */}
       <div className="flex shrink-0 items-center gap-2 border-b border-hairline px-4 py-1.5">
         {contextLabel && (
-          <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wide text-neutral-400">
+          <span className="flex items-center gap-1.5 font-mono text-[var(--text-etiket)] uppercase tracking-wide text-neutral-400">
             <span className="text-accent">◆</span>
             <span>bağlam: {contextLabel}</span>
             <button
@@ -274,7 +274,13 @@ export function ReportPanel({
           </>
         )}
       </div>
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
+      {/* 🔴 FAZ 5 — TUVAL `--surface-1`, KART `--surface-2`.
+          Açık temada kart rengi `#ffffff`tir ve sayfa zemini de `#ffffff`di: iki
+          beyaz üst üste **katman üretmez**. Yükseklik hissi karta ışık ekleyerek
+          değil, **tuvali bir ton indirerek** kurulur (Gemini/Claude deseni).
+          ⚠ Koyu temada yön TERSİ: tuval `#0f1115`, kart `#16181d` — kart *yukarı*
+          çıkar. Aynı token çifti, iki temada iki yön. */}
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto bg-[var(--surface-1)]">
         {thread.items.map((it, i) => {
           if (raporlanabilir(it)) {
             return (
@@ -315,11 +321,11 @@ export function ReportPanel({
           // tıklaması bu SPESİFİK item'a anchor'lı bir "yanıtla" (aynı mekanizma, `onReply`).
           if (it.note) {
             return (
-              <div key={`${thread.id}-${i}-note`} className="mx-auto max-w-4xl px-8 py-4">
+              <div key={`${thread.id}-${i}-note`} className="mx-auto my-3 max-w-4xl rounded-[var(--radius-lg)] border border-[var(--surface-kenar)] bg-[var(--surface-2)] px-6 py-5">
                 <h3 className="mb-1.5 font-mono text-[13px] leading-snug text-foreground">
                   {it.question}
                 </h3>
-                <div className="border-l-2 border-amber-500/50 bg-amber-500/[0.04] py-1.5 pl-3 font-mono text-[12px] leading-snug text-neutral-500">
+                <div className="rounded-r-[var(--radius-chip)] border-l-2 border-amber-500/50 bg-amber-500/[0.04] py-2 pl-3 text-[var(--text-body)] leading-[var(--lh-body)] text-neutral-600 dark:text-neutral-300">
                   {it.note}
                 </div>
                 {it.suggestions && it.suggestions.length > 0 && (
@@ -384,7 +390,7 @@ export function ReportPanel({
           açması). */}
       {selectionMode && selected.size > 0 && onReplyMulti ? (
         <div className="shrink-0 border-t border-hairline bg-accent/[0.03] px-4 py-3">
-          <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+          <div className="mb-1.5 font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
             {selected.size} kart birleştirilerek soruluyor
           </div>
           <div className="flex items-center gap-2">

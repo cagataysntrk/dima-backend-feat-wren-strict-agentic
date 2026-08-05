@@ -46,7 +46,22 @@ def yorumsuz(kaynak: str) -> str:
 
     Çok satırlı blokların **devam satırları** da atılır: yarım bir ayıklayıcı, tam
     olmayan bir kapıdır (denetimde ölçüldü — 8 satır sızıyordu).
+
+    🔴 **İkinci sızıntı (FAZ 5'te ölçüldü): JSX yorumunun sarmalayıcısı.**
+    `{/* … */}` bir **yorumdur**, ama ayıklayıcı `/*`nin solundaki `{`yi ve `*/`nin
+    sağındaki `}`yi *kod* sayıyordu → çok satırlı her JSX yorumu tavana **2 satır**
+    yazıyordu. Bu, büyüme kapısını tam da cezalandırmaması gereken şeyde —
+    **gerekçe yazmakta** — cezalandırıyordu.
+
+    ⚠ Yalnız **tam olarak** `{` / `}` olan kalıntı atılır. `if (x) { /* …` satırındaki
+    `if (x) {` kod olarak kalır; oradaki süslü ayraç bir yorum sarmalayıcısı değil.
+
+    *Ölçüm aracının kendisi de bir bağımlılıktır: kapıyı geçmek için yorumu kısaltmak,
+    aletin hatasını belgeye ödetmek olurdu.*
     """
+    # Yalnızca JSX yorum sarmalayıcısı olan kalıntı — kod değil.
+    def _sarmalayici(x: str) -> bool:
+        return x.strip() in ("{", "}")
     out: list[str] = []
     blokta = False
     for s in kaynak.splitlines():
@@ -55,7 +70,7 @@ def yorumsuz(kaynak: str) -> str:
             if "*/" in d:
                 blokta = False
                 kalan = d.split("*/", 1)[1]
-                if kalan.strip():
+                if kalan.strip() and not _sarmalayici(kalan):
                     out.append(kalan)
             continue
         if d.startswith("//"):
@@ -63,7 +78,7 @@ def yorumsuz(kaynak: str) -> str:
         if "/*" in d and "*/" not in d.split("/*", 1)[1]:
             blokta = True
             bas = d.split("/*", 1)[0]
-            if bas.strip():
+            if bas.strip() and not _sarmalayici(bas):
                 out.append(bas)
             continue
         # satır-içi `//` yorumu: dize değişmezlerini bozmamak için yalnız satır

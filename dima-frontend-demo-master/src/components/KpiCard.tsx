@@ -87,11 +87,11 @@ export function KpiCardView({ card }: { card: KpiCard }) {
   return (
     <div className="border border-hairline bg-background p-5">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+        <span className="font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
           KPI{gran ? ` · ${gran} trend` : ""}
         </span>
         {card.lower_is_better && (
-          <span className="font-mono text-[10px] tracking-wider text-neutral-400" title="Düşük değer daha iyi">
+          <span className="font-mono text-[var(--text-etiket)] tracking-wider text-neutral-400" title="Düşük değer daha iyi">
             ↓ düşük iyi
           </span>
         )}

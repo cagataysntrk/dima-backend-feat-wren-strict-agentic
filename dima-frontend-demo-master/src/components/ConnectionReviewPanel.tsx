@@ -27,7 +27,7 @@ import type { ConnectionDraft, DraftCube } from "@/lib/types";
 type Step = "form" | "review" | "done";
 
 const inputCls =
-  "w-full rounded-md border border-hairline bg-transparent px-3 py-2 text-sm text-foreground outline-none focus:border-accent";
+  "w-full rounded-[var(--radius-btn)] border border-hairline bg-transparent px-3 py-2 text-sm text-foreground outline-none focus:border-accent";
 const labelCls = "mb-1 block font-mono text-[0.7rem] uppercase tracking-wide text-muted";
 
 function FormField({
@@ -282,7 +282,7 @@ export function ConnectionReviewPanel() {
               type="button"
               disabled={testMut.isPending || !form.host || !form.database}
               onClick={() => testMut.mutate()}
-              className="flex-1 rounded-md border border-hairline py-2 text-sm disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
+              className="flex-1 rounded-[var(--radius-btn)] border border-hairline py-2 text-sm disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
             >
               {testMut.isPending ? "…" : "Bağlantıyı test et"}
             </button>
@@ -290,7 +290,7 @@ export function ConnectionReviewPanel() {
               type="button"
               disabled={createMut.isPending || !form.host || !form.database}
               onClick={() => createMut.mutate()}
-              className="flex-1 rounded-md bg-accent py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
+              className="flex-1 rounded-[var(--radius-btn)] bg-accent py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
             >
               {createMut.isPending ? "…" : "Bağla ve şemayı incele"}
             </button>
@@ -372,7 +372,7 @@ export function ConnectionReviewPanel() {
             <button
               type="button"
               onClick={() => setStep("form")}
-              className="flex-1 rounded-md border border-hairline py-2 text-sm"
+              className="flex-1 rounded-[var(--radius-btn)] border border-hairline py-2 text-sm"
             >
               geri
             </button>
@@ -380,7 +380,7 @@ export function ConnectionReviewPanel() {
               type="button"
               disabled={confirmMut.isPending || includedNames.size === 0}
               onClick={() => confirmMut.mutate()}
-              className="flex-1 rounded-md bg-accent py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
+              className="flex-1 rounded-[var(--radius-btn)] bg-accent py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)]"
             >
               {confirmMut.isPending ? "…" : `Onayla (${includedNames.size} tablo)`}
             </button>
@@ -408,7 +408,7 @@ export function ConnectionReviewPanel() {
               setActiveConnId(null);
               setForm({ host: "", port: "5432", database: "", user: "", password: "" });
             }}
-            className="mt-4 rounded-md border border-hairline px-4 py-2 text-sm"
+            className="mt-4 rounded-[var(--radius-btn)] border border-hairline px-4 py-2 text-sm"
           >
             yeni bağlantı
           </button>
@@ -420,7 +420,7 @@ export function ConnectionReviewPanel() {
 
 function DraftCubeRow({ cube, onToggle }: { cube: DraftCube; onToggle: () => void }) {
   return (
-    <label className="flex cursor-pointer items-start gap-2 rounded-md border border-hairline p-2">
+    <label className="flex cursor-pointer items-start gap-2 rounded-[var(--radius-btn)] border border-hairline p-2">
       <input type="checkbox" checked={cube.include} onChange={onToggle} className="mt-1" />
       <div className="min-w-0 flex-1">
         <p className="font-mono text-xs">{cube.name}</p>

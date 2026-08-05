@@ -137,7 +137,7 @@ export function AnalysisCanvas({
           yanıtlar) rapora GİREMEZ (DashboardView'daki widget→blok kuralıyla AYNI) —
           kullanıcı "N blok" derken raporun neden daha az sayfa çıktığını anlasın. */}
       {reportableItems.length > 0 && reportableItems.length < items.length && (
-        <p className="mb-3 font-mono text-[10px] text-neutral-400">
+        <p className="mb-3 font-mono text-[var(--text-etiket)] text-neutral-400">
           not: {items.length - reportableItems.length} blok yapısal bir sorgu taşımadığı
           için rapora dahil edilmeyecek (yalnız {reportableItems.length} blok rapora girer).
         </p>

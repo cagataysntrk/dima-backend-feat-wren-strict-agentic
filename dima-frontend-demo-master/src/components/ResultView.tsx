@@ -473,7 +473,7 @@ export function ResultView({
               üretilir (tek sahip); burada yalnız gösterilir. */}
           {viz?.cizilmedi && (
             <span
-              className="font-mono text-[10px] text-neutral-400"
+              className="font-mono text-[var(--text-etiket)] text-neutral-400"
               title="Görsel dilbilgisi kararı (deterministik, §15.6)"
             >
               ⓘ grafik yerine {viz.kind === "table" ? "tablo" : "özet"} — {viz.cizilmedi}

@@ -113,7 +113,7 @@ export function DcmAkisi({
           moddur; sessiz bir kısıtlama, kullanıcıya ürünü bozuk gösterir. */}
       <div className="flex items-center gap-2">
         <span
-          className="border border-accent/50 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-accent"
+          className="border border-accent/50 px-2 py-0.5 font-mono text-[var(--text-etiket)] uppercase tracking-wider text-accent"
           title="Deterministik Cevap Modu: serbest metin kabul edilmez, her cevap LLM'siz cube yolundan üretilir."
         >
           DCM Aktif
@@ -212,7 +212,7 @@ function Adim({
 }) {
   return (
     <section className="border border-hairline p-3">
-      <h3 className="mb-2 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+      <h3 className="mb-2 font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
         {no}. {baslik}
         {secili && <span className="ml-2 text-accent">{secili}</span>}
       </h3>

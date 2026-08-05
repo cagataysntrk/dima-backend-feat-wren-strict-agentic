@@ -115,7 +115,15 @@
   /* ⚠ Açık temada üst üç seviye aynı: beyaz zeminde parlaklıkla yükselmek mümkün
      değil (yukarı çıkacak yer yok). Ayrım orada **kenarlık + gölgeyle** kurulur.
      Koyu temada ise dördü de ayrışır — asıl kazanç orada. */
-  --surface-kenar: #e6e6e6;      /* yüzeyler arası 1px ayırıcı */
+  /* 🔴 FAZ 5 · TEK SAHİP — `--hairline` (243 kullanım) ile `--surface-kenar`
+     (17 kullanım) **aynı şeyi** anlatıyordu: *"iki yüzey arasındaki 1px ayırıcı"*.
+     Bu deponun kendi defterindeki **"aynı kuralın iki sahibi"** sınıfı — ve
+     sessiz değildi: koyu temada değerleri **farklıydı** (`#1c1d1f` ≠ `#262a31`),
+     yani aynı ayrım, onu çizen bileşene göre **farklı görünüyordu**.
+     Sahip `--hairline` (çoğunluk); `--surface-kenar` ona **bağlandı, silinmedi**.
+     ⚠ Koyu değer `#1c1d1f` → `#262a31`e çıktı: kart artık `#16181d` yüzeyde ve
+     `#1c1d1f` bir kenarlık o yüzeyde **görünmüyordu**. */
+  --surface-kenar: var(--hairline);
   --surface-kenar-guclu: #d4d4d4; /* odaklı/seçili yüzey */
 
   /* --- YARIÇAP ÖLÇEĞİ. ⚠ Mevcut `--radius-sm/md` KALIR (2px/4px); bunlar
@@ -131,6 +139,15 @@
   --lh-body: 1.6;
   --text-panel: 0.875rem;   /* 14px — panel içi tablo/etiket */
   --lh-panel: 1.45;
+  /* 🔴 ETİKET TABANI — 11px. Sohbet yüzeyindeki en küçük izinli boy.
+     Ölçüldü: sohbet akışında **52 yerde** `text-[10px]`, birkaç yerde `9px` vardı.
+     10px altı metin, normal görme keskinliğinde bile **okunmuyor değil — okumaya
+     zorluyor**; ve bir sohbet ürününde okuma maliyeti ürünün kendisidir.
+     ⚠ Bu `--text-meta` (12.5px) DEĞİL: büyük harfli mikro-etiketler (`KAYNAK`,
+     `SORU`) 12.5px'te **bağırır** ve asıl metinle yarışır. İki ayrı iş, iki ayrı boy:
+     etiket **tanımlar**, meta **okunur**.
+     ⚠ Bu bir taban, bir hedef değil — asıl anlatım `--text-body`dedir. */
+  --text-etiket: 0.6875rem;   /* 11px */
   --text-meta: 0.78125rem;  /* 12.5px — zaman damgası/meta */
   /* ⚠ Satır uzunluğu: 45-75 karakter okunabilir bandı, optimum ~66.
      75+ karakterde göz satır başını kaybeder. */
@@ -175,10 +192,16 @@
 /* Sistem tercihi — bir VARSAYIMDIR ve kullanıcının açık tercihiyle ezilebilir. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #08090a;
-    --foreground: #e8e8e6;
+    /* 🔴 FAZ 5 — ZEMİN YÜZEY BANDINA ÇEKİLDİ: `#08090a` → `#0f1115`.
+       `#08090a` saf siyah değil ama ona **çok yakın**; o darlıkta beyaz metin
+       **halation** üretir — parlak harfler koyu zemine *kanar* ve göz yorulur.
+       Önerilen taban `#121212`+ bandı; yüzey ölçeğimizin tabanı (`--surface-1`)
+       zaten `#0f1115` ve zemin artık onunla **aynı** yerde.
+       ⚠ FAZ 1'de bilerek dokunulmamıştı (o fazın sözü "sıfır görsel değişim"di). */
+    --background: #0f1115;
+    --foreground: #e6e8eb;
     --muted: #6b6b6b;
-    --hairline: #1c1d1f;
+    --hairline: #262a31;
     --accent: #f5a524;
     --positive: #4ade80;
     --negative: #f87171;
@@ -186,6 +209,12 @@
     --info:     #60a5fa;
     --shadow-1: 0 1px 2px rgb(0 0 0 / 0.5);
     --shadow-2: 0 2px 8px rgb(0 0 0 / 0.6);
+    --surface-1: #0f1115;
+    --surface-2: #16181d;
+    --surface-3: #1c1f26;
+    --surface-4: #23262e;
+    --surface-kenar: var(--hairline);
+    --surface-kenar-guclu: #343943;
   }
 }
 
@@ -200,10 +229,10 @@
    kullanıcı "açık" seçemezdi — toggle tek yönlü çalışırdı.
    ═══════════════════════════════════════════════════════════════════════════ */
 :root[data-theme="dark"] {
-  --background: #08090a;
-  --foreground: #e8e8e6;
+  --background: #0f1115;
+  --foreground: #e6e8eb;
   --muted: #6b6b6b;
-  --hairline: #1c1d1f;
+  --hairline: #262a31;
   --accent: #f5a524;
   --positive: #4ade80;
   --negative: #f87171;
@@ -221,7 +250,7 @@
   --surface-2: #16181d;
   --surface-3: #1c1f26;
   --surface-4: #23262e;
-  --surface-kenar: #262a31;
+  --surface-kenar: var(--hairline);
   --surface-kenar-guclu: #343943;
 }
 
@@ -241,7 +270,7 @@
   --surface-2: #ffffff;
   --surface-3: #ffffff;
   --surface-4: #ffffff;
-  --surface-kenar: #e6e6e6;
+  --surface-kenar: var(--hairline);
   --surface-kenar-guclu: #d4d4d4;
 }
 

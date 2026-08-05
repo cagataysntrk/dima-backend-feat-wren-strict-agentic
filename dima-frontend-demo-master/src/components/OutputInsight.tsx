@@ -1,5 +1,17 @@
 "use client";
 
+/** ⚠ **FAZ 5 — PROSE ORANTILI, VERİ MONO.**
+ *
+ * Ölçülmüştü: arayüzde **188× 11px · 121× 10px**, okunabilir 15px yalnız **3 kez**, ve
+ * **387× `font-mono`**. Yani cevabın *anlatımı* bile terminal yazı tipiyle, 10-12
+ * piksellik puntoyla yazılıyordu.
+ *
+ * 🔴 Değişen: **insan metni**. Değişmeyen: **sayı · SQL · kod · rozet · meta**.
+ *
+ * > *Sayıyı orantılı yazı tipine çevirmek hizalamayı bozar — bir sütundaki rakamlar
+ * > birbirinin altına düşmez. Mono bir süs değil, sayının okunma biçimidir.*
+ */
+
 import type { Interpretation } from "@/lib/types";
 
 // EVRENSEL ÇIKTI YORUMU (feature flag: cikti_yorumlama). Backend her tablo/grafik/rapor/KPI
@@ -67,7 +79,7 @@ export function OutputInsight({ interpretation }: { interpretation?: Interpretat
         >
           <path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1h6c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2Z" />
         </svg>
-        <p className="text-[12px] leading-relaxed text-neutral-500 dark:text-neutral-400">
+        <p className="text-[var(--text-body)] leading-[var(--lh-body)] text-neutral-600 dark:text-neutral-300">
           {interpretation.summary}
         </p>
       </div>
@@ -82,14 +94,14 @@ export function OutputInsight({ interpretation }: { interpretation?: Interpretat
       {interpretation.narration && (
         <div className="flex gap-2 border border-dashed border-hairline px-3 py-2">
           <span
-            className="mt-0.5 shrink-0 font-mono text-[10px] text-neutral-400"
+            className="mt-0.5 shrink-0 font-mono text-[var(--text-etiket)] text-neutral-400"
             title="Bu metnin ÜSLUBUNU bir dil modeli yazdı; SAYILARI sistem koydu ve her
 biri sonuç kümesiyle eşlendi (eşleşmeyen cümle yayımlanmaz). Üstteki özet
 tamamen deterministiktir."
           >
             ✎ ANLATIM
           </span>
-          <p className="text-[12px] leading-relaxed text-neutral-600 dark:text-neutral-300">
+          <p className="text-[var(--text-body)] leading-[var(--lh-body)] text-neutral-700 dark:text-neutral-200">
             {interpretation.narration}
           </p>
         </div>
@@ -103,7 +115,7 @@ tamamen deterministiktir."
           {badgeFacts.map((f, i) => (
             <span
               key={`${f.type}-${i}`}
-              className="border border-hairline px-1.5 py-0.5 font-mono text-[10px] text-neutral-500 dark:text-neutral-400"
+              className="border border-hairline px-1.5 py-0.5 font-mono text-[var(--text-etiket)] text-neutral-500 dark:text-neutral-400"
             >
               <span aria-hidden className="mr-1">{FACT_ICON[f.type]}</span>
               {f.text}
@@ -116,7 +128,7 @@ tamamen deterministiktir."
       {signals.map((s, i) => (
         <div
           key={`${s.kind}-${i}`}
-          className={`flex gap-2 border px-3 py-2 text-[12px] leading-relaxed ${
+          className={`flex gap-2 rounded-[var(--radius-chip)] border px-3 py-2 text-[var(--text-panel)] leading-[var(--lh-panel)] ${
             SIGNAL_TONE[s.severity] ?? SIGNAL_TONE.info
           }`}
         >

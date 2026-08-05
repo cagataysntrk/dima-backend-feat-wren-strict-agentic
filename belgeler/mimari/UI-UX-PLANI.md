@@ -433,6 +433,37 @@ denildiğinde ajan **aynı ağacı** üretip sohbete rapor olarak koyabilir.
 - `font-mono` yalnız izinli bağlamlarda *(muafiyet listesi **gerekçeli**)*
 - saf `#000`/`#fff` metin yok
 
+### ✅ YAPILDI — ve dört kusur planın dışından çıktı
+
+| # | ne yapıldı | ölçü |
+|---|---|---|
+| 1 | Anlatım prose'u 12px → `--text-body` (16px), `--lh-body` | `OutputInsight` · kart/panel not blokları |
+| 2 | Sohbet akışında 9-10px metin **kalmadı** → `--text-etiket` (11px) | **55 yer**, 16 bileşen |
+| 3 | Tuval `--surface-1`, kart `--surface-2` + `--radius-lg` + kenar | `ReportPanel` · `ReportCard` |
+| 4 | Kalan ham yarıçap tokenlandı | 11 × `rounded-md` → `--radius-btn` |
+| 5 | Kart başlığındaki **kural çizgisi kalktı** — ayrım boşlukla | çift anlatım |
+
+🔴 **Kapı dörtte biri planın dışındaydı — ve dördü de sessizdi:**
+
+1. **`@media (prefers-color-scheme: dark)` bloğunda yüzey tokenları HİÇ YOKTU.**
+   Varsayılan tema `"sistem"` ve o hâlde `lib/tema.ts` `data-theme`i **siler** — yani
+   `@media` bloğu *asıl yoldur*. FAZ 1'de görünmüyordu (kimse o tokenları kullanmıyordu);
+   tuval `--surface-1`e bağlanır bağlanmaz, sistemi karanlık olan kullanıcı **kar beyazı
+   bir tuval** görecekti. *Kullanılmayan bir token yanlışlığını saklar; kusuru ortaya
+   çıkaran şey benimsenmesiydi.*
+2. **Ayırıcının iki sahibi vardı** — `--hairline` (243 kullanım) ve `--surface-kenar` (17),
+   ve koyu temada **değerleri farklıydı** (`#1c1d1f` ≠ `#262a31`): aynı ayrım, onu çizen
+   bileşene göre farklı görünüyordu. Sahip `--hairline`; ikinci ad ona **bağlandı**, silinmedi.
+3. **Açık temada kart `#ffffff`, sayfa da `#ffffff`di** — iki beyaz üst üste katman üretmez.
+   Kullanıcının *"bembeyaz dikdörtgen"* tarifi buydu. Yükseklik karta ışık ekleyerek değil,
+   **tuvali bir ton indirerek** kuruldu. ⚠ Koyu temada yön TERSİ.
+4. **Büyüme kapısının aleti bozuktu:** `yorumsuz()` çok satırlı `{/* … */}` yorumunun
+   sarmalayıcısını (`{` ve `}`) **kod sayıyordu** → tavanlar **54 satıra kadar hava**
+   taşıyordu ve o hava gerekçe yazıldıkça şişiyordu. Alet onarıldı, tavanlar **yeniden
+   ölçüldü ve indi** (ReportCard 883→829 · page 522→512 · …), ve `api-client`'ın 14
+   satırlık muafiyeti **kapatıldı** (tavan zaten onu yutmuştu — aynı satırlar ikinci kez
+   affediliyordu). *Ölçüm aracının kendisi de bir bağımlılıktır.*
+
 ---
 
 ## FAZ 6 · KAPANIŞ DENETİMİ

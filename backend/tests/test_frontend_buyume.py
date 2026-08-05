@@ -52,27 +52,47 @@ from tests.kapi_ortak import fe_dosyalari, yorumsuz
 # HTTP oradan geçer (`dima-frontend/CLAUDE.md`) — yani bu bir muafiyet değil, kuralın
 # kendi maliyeti. *Bir tavan, kuralın gerektirdiği büyümeyi de yasaklıyorsa kuralı
 # yasaklamış olur.*
+# ⟳ FAZ 5 — TAVANLAR **YENİDEN ÖLÇÜLDÜ ve HEPSİ İNDİ (ya da sabit kaldı).**
+# Sebep bir kod değişikliği değil, **aletin onarımı**: `yorumsuz()` çok satırlı JSX
+# yorumlarının sarmalayıcısını (`{` ve `}`) kod sayıyordu. Yani bu depodaki tavanlar
+# gerçekte olmayan **54 satıra kadar** hava taşıyordu — ve o hava, gerekçe yazıldıkça
+# şişiyordu.
+#
+# 🔴 Her yeni sayı **ölçülen** değerdir; hiçbiri yuvarlanmadı, hiçbiri yükselmedi:
+#   ReportCard 883→829 · page 522→512 · InterpretationBar 472→468 ·
+#   ReviewPanel 555→553 · ResultView 476→474 · (api-client · chart · types sabit)
+#
+# *Bir tavanın hava taşıdığı, ancak aleti onarınca görülür; ve o hava fark edilmeden
+# harcanır — çünkü kapı yeşil kaldığı sürece kimse ölçüye bakmaz.*
 TAVANLAR = {
-    "components/ReportCard.tsx": 883,
+    "components/ReportCard.tsx": 829,
     "lib/api-client.ts": 791,
     "lib/chart.ts": 688,
     "lib/types.ts": 579,
-    "components/ReviewPanel.tsx": 555,
-    "app/page.tsx": 522,
-    "components/ResultView.tsx": 476,
-    "components/InterpretationBar.tsx": 472,
+    "components/ReviewPanel.tsx": 553,
+    "app/page.tsx": 512,
+    "components/ResultView.tsx": 474,
+    "components/InterpretationBar.tsx": 468,
 }
 
 #: `(dosya, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
-MUAFIYET: list[tuple[str, int, str]] = [
-    ("lib/api-client.ts", 14,
-     "denetim F2 — pano ve widget GERİ ALMA sarmalayıcıları (`restoreDashboard`, "
-     "`restoreDashboardWidget`). 🔴 Bu iki fonksiyon TAŞINAMAZ: `dima-frontend/CLAUDE.md` "
-     "birebir «Tüm HTTP `src/lib/api-client.ts`'ten geçer — dağınık `fetch` yok» diyor. "
-     "İkinci bir HTTP dosyası açmak, bir tavan borcunu bir MİMARİ İHLALİNE çevirirdi. "
-     "⚠ Ve kapı bunu ilk gününde yakaladı — yazarını dahil: bir tavan, kendi koyanını "
-     "da bağlamıyorsa bir tavan değildir."),
-]
+#: ⚠ Kapı `Δ > 0` ister: **hiçbir şey vermeyen bir muafiyet muafiyet değildir** — ve
+#: bu kuralı FAZ 5'te bizzat kendi kapımız uyguladı (Δ'yı 0'a çekince kırmızı verdi;
+#: doğru yanıt onu **listeden çıkarmaktı**, sıfırlamak değil).
+MUAFIYET: list[tuple[str, int, str]] = []
+
+# ═══ KAPANMIŞ MUAFİYETLER — kayıt, MIMARI §10: *"kapananlar işaretlenir, silinmez"* ═══
+#
+# ⟳ `lib/api-client.ts` · Δ 14 · **KAPANDI (FAZ 5)**
+#   Açılış gerekçesi: denetim F2 — pano ve widget GERİ ALMA sarmalayıcıları
+#   (`restoreDashboard`, `restoreDashboardWidget`). Bu iki fonksiyon TAŞINAMAZDI:
+#   `dima-frontend/CLAUDE.md` birebir «Tüm HTTP `src/lib/api-client.ts`'ten geçer —
+#   dağınık `fetch` yok» diyor; ikinci bir HTTP dosyası açmak bir tavan borcunu bir
+#   MİMARİ İHLALİNE çevirirdi.
+#   🔴 Kapanış sebebi: muafiyet açıldığında tavan **778**'di. Sonra tavan ölçülen
+#   **791**'e çekildi ve o 14 satır **tavanın içine girdi** — yani muafiyet aynı
+#   satırları ikinci kez affediyordu. Etkin tavan sessizce 805 olmuştu.
+#   *Bir muafiyet, gerekçesi tükendiğinde kapanır — unutulduğunda değil.*
 
 
 def _kod_satiri(metin: str) -> int:
@@ -107,6 +127,18 @@ def test_KAPI_GERCEKTEN_KIRMIZI_VERIYOR():
         f"🔴 {dosya} tavanında {TAVANLAR[dosya] - n} satır BOŞLUK var — kapı büyümeyi "
         f"durdurmuyor. Tavan **ölçülen değere** çekilmeli.")
     assert _kod_satiri(kaynak + "\nconst _MUTASYON = 1;\n") > TAVANLAR[dosya]
+
+
+def test_JSX_YORUMU_TAVANI_YEMIYOR():
+    """🔴 **Ölçüldü, tahmin değil.** Çok satırlı bir `{/* … */}` bloğu tavana **2 satır**
+    yazıyordu: ayıklayıcı `/*`nin solundaki `{`yi ve `*/`nin sağındaki `}`yi kod sayıyordu.
+
+    Sonuç ters yönlüydü: kapı, gerekçe yazmayı **cezalandırıyordu** — oysa `yorumsuz()`
+    tam da bunu önlemek için yazılmıştı. *Bir aletin niyeti, davranışının kanıtı değildir.*"""
+    kaynak = fe_dosyalari()["components/ReportCard.tsx"]
+    jsx = "\n      {/* çok\n          satırlı\n          JSX yorumu */}\n"
+    assert _kod_satiri(kaynak + jsx) == _kod_satiri(kaynak), \
+        "🔴 JSX yorum sarmalayıcısı hâlâ kod sayılıyor"
 
 
 def test_YORUM_SATIRI_TAVANI_YEMIYOR():

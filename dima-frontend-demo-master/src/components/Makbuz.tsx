@@ -202,7 +202,7 @@ export function Makbuz({
         {/* 🔴 KATMAN 3 — TAM İZ. **Hiçbir şey silinmedi**, yalnız bir kademe altına
             katlandı: denetlenebilirlik bir kademelendirmeye feda edilemez. */}
         <details className="mt-2 border-t border-hairline pt-2" data-makbuz-tam>
-          <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+          <summary className="cursor-pointer font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
             tam iz
           </summary>
           <div className="mt-1.5 space-y-2">
@@ -226,7 +226,7 @@ export function Makbuz({
                 yapılmamış bir adım gibi okunur ve koşumun maliyeti anlaşılmaz olur. */}
             {item.agent_run && item.agent_run.steps.length > 0 && (
               <div className="border-t border-hairline pt-1.5">
-                <div className="mb-1 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+                <div className="mb-1 font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
                   ajan adımları · {item.agent_run.step_count} adım ·{" "}
                   {item.agent_run.query_count} sorgu
                   {item.agent_run.truncated && (
@@ -269,7 +269,7 @@ export function Makbuz({
             )}
             {sqlAcik && item.planned_sql && item.planned_sql !== item.sql && (
               <div>
-                <p className="mb-1 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+                <p className="mb-1 font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
                   plan (öz iyileştirme öncesi derlenen SQL)
                 </p>
                 <pre className="overflow-auto border border-hairline bg-neutral-950 p-3 font-mono text-[11px] leading-relaxed text-neutral-400">
@@ -280,7 +280,7 @@ export function Makbuz({
             {item.contract_id && onContract && (
               <button
                 onClick={onContract}
-                className="font-mono text-[10px] tracking-wider text-neutral-400 underline-offset-2 transition-colors hover:text-foreground hover:underline"
+                className="font-mono text-[var(--text-etiket)] tracking-wider text-neutral-400 underline-offset-2 transition-colors hover:text-foreground hover:underline"
                 title="Query Contract — bu raporun kanıt kaydı: soru + sorgu + sonuç özeti mühürlendi; sonradan yeniden oynatılıp doğrulanabilir"
               >
                 {item.contract_id}
@@ -305,7 +305,7 @@ export function MakbuzDuz({ item }: { item: AskResponse }) {
   if (!item.trace) return null;
   return (
     <div className="mt-3 border border-hairline bg-neutral-500/[0.03] p-3">
-      <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+      <div className="mb-1.5 font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
         nasıl çözüldü
       </div>
       {item.explain?.path && (
@@ -339,7 +339,7 @@ export function MakbuzDuz({ item }: { item: AskResponse }) {
       </ol>
       {item.agent_run && item.agent_run.steps.length > 0 && (
         <div className="mt-2 border-t border-hairline pt-2">
-          <div className="mb-1 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+          <div className="mb-1 font-mono text-[var(--text-etiket)] uppercase tracking-wider text-neutral-400">
             ajan adımları · {item.agent_run.step_count} adım · {item.agent_run.query_count} sorgu
           </div>
           <ul className="space-y-0.5">

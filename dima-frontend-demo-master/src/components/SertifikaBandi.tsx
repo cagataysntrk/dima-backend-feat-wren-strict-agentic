@@ -70,7 +70,7 @@ export function SertifikaBandi({ item }: { item: AskResponse }) {
       aria-label="Metrik tanımı uyarısı"
       className="mt-3 border-l-2 border-amber-500/70 bg-amber-500/[0.06] py-2 pl-3 pr-2"
     >
-      <p className="font-mono text-[10px] uppercase tracking-wider text-amber-600">
+      <p className="font-mono text-[var(--text-etiket)] uppercase tracking-wider text-amber-600">
         ⚠ metrik tanımı değişmiş — sertifika yeniden doğrulanmalı
       </p>
       <p className="mt-1 font-mono text-[11px] leading-snug text-neutral-500">
@@ -83,7 +83,7 @@ export function SertifikaBandi({ item }: { item: AskResponse }) {
       </p>
       {/* ⚠ Eylem bir DÜĞME değil, bir YÖN: yeniden doğrulama bir yetki kararıdır ve
           sahibi metrik sahibidir. *Bir uyarı, çözemeyeceği bir eylemi vaat etmemeli.* */}
-      <p className="mt-1 font-mono text-[10px] leading-snug text-neutral-400">
+      <p className="mt-1 font-mono text-[var(--text-etiket)] leading-snug text-neutral-400">
         Yeniden doğrulama metrik sahibinin kararıdır — ayarlar → veri modeli → ölçü
         sahipliği.
       </p>
@@ -91,7 +91,7 @@ export function SertifikaBandi({ item }: { item: AskResponse }) {
         // ⚠ Backend'in bilinen sınırı **taşınıyor**, gizlenmiyor: çok ölçülü cevapta
         // sertifika ilk ölçüden okunur. Kullanıcı hangi ölçü hakkında uyarıldığını
         // bilmeden bir karar veremez.
-        <p className="mt-1 font-mono text-[10px] leading-snug text-neutral-400">
+        <p className="mt-1 font-mono text-[var(--text-etiket)] leading-snug text-neutral-400">
           ⚠ {s.kisit}
         </p>
       )}
