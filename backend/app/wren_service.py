@@ -7,6 +7,8 @@ the demo simple and avoids holding DB connections open between requests.
 
 from __future__ import annotations
 
+import hashlib
+
 import base64
 import json
 import re
@@ -72,6 +74,11 @@ def guard_sql(sql: str) -> str:
     if _FORBIDDEN.search(stripped):
         raise UnsafeSqlError("Veri değiştiren ifadeler (INSERT/UPDATE/DELETE/DROP...) yasak.")
     return stripped
+
+
+#: CLAC gölge manifesti — **MDL baytına göre** bellekte. ⚠ Tek girdi: MDL bir istek
+#: içinde değişmez ve sınırsız bir sözlük, uzun ömürlü bir süreçte sessiz bir sızıntıdır.
+_CLAC_ONBELLEK: dict[str, tuple[bytes, int]] = {}
 
 
 class WrenService:
@@ -329,6 +336,75 @@ class WrenService:
         except BaseException as exc:  # noqa: BLE001 — Rust PANIC `Exception` DEĞİLDİR
             _log.warning("SQL POLİTİKASI (gölge): strict açık olsaydı REDDEDİLİRDİ — %s | %s",
                          str(exc)[:180], " ".join(sql.split())[:220])
+
+    def _cls_golge_denetimi(self, sql: str, properties) -> None:
+        """GÖLGE MOD: *"`motor_cls=on` olsaydı bu sorgu **kolon kaybeder miydi**?"*
+        — sorar, LOGLAR, akışı **DEĞİŞTİRMEZ**.
+
+        ## 🔴 Bu ölçüm YOKTU — ve `shadow` bir HİÇLİKTİ
+
+        Ölçüldü (§C ölçüt 4, 3. teşhis): `rls.cls_manifeste_yaz` `shadow` kademesinde
+        manifesti **dokunmadan** döndürüyor, yani **`shadow ≡ off`**. Kademe vardı,
+        ölçümü yoktu. Ölçütün hedefi ise *"`on`; **gölge modda 7 gün · sapma 0**"* —
+        yani `off → shadow` yapmak, ölçmeden bir kutu işaretlemek olurdu.
+
+        > 🔴 *Ölçmeyen bir gölge modu, ilerleme gibi görünen bir hiçliktir.*
+
+        ## Neden kolon SAYISI kıyaslanıyor
+
+        CLS `pii.py`'den **kategorik olarak farklıdır**: maskeleme kolonu **gösterir**
+        (`123****89`), CLS onu **plandan düşürür** — ve düşme **sessizdir**. Yani gölgenin
+        ölçmesi gereken şey *"plan patlar mı"* değil, **"kaç kolon kaybolur"**dur.
+
+        ## ⚠ Maliyet — ve belgemi DÜZELTTİM
+
+        İlk yazımda *"ucuz ön eleme (kardeş desen)"* yazdım ve **uygulamadım**: RLS
+        gölgesi `alwaysFilter` baytını tarayabiliyor çünkü manifest o işareti taşıyor;
+        CLS'in sınıflandırması ise **ad tabanlıdır** (`sensitivity.classify`) ve
+        manifestte byte düzeyinde taranabilecek bir işaret **yok**.
+
+        🔴 *Belgede olup kodda olmayan bir iyileştirme, kodda olmayan bir iyileştirmeden
+        kötüdür — çünkü var sanılır.*
+
+        Gerçek çözüm **bellekleme**: CLAC manifesti MDL baytlarına göre bir kez üretilir
+        (`_CLAC_ONBELLEK`). Gölge her sorguda koşar ama `json.loads` **manifest başına bir
+        kez** olur; kalan maliyet iki `dry_plan`dır ve o, gölgenin **kendisidir**.
+
+        ⚠ **Kayıt yeri kardeşiyle aynı** (`_log.warning`), ikinci bir JSONL **açılmadı**:
+        gölge bulgularının bu depoda zaten bir sahibi var ve ikincisi *"aynı kuralın iki
+        sahibi"* olurdu. 7 günlük ölçüt aynı greple ölçülür: **`CLS (gölge)`** etiketi.
+        """
+        try:
+            ham = self._mdl_bytes()
+            # ⚠ Hassas kolon yoksa CLS `on`'da da bir şey düşürmez → ölçülecek fark yok.
+            anahtar = hashlib.sha256(ham).hexdigest()
+            if anahtar not in _CLAC_ONBELLEK:
+                _CLAC_ONBELLEK.clear()          # tek girdi yeter: MDL istek içinde değişmez
+                _CLAC_ONBELLEK[anahtar] = rls.clac_manifesti(ham)
+            golge, kural_sayisi = _CLAC_ONBELLEK[anahtar]
+            if not kural_sayisi:
+                return
+            cfg, _mod = self._sql_policy()
+            with WrenEngine(base64.b64encode(golge).decode(), self.datasource,
+                            self._zaman_asimli_baglanti(), config=cfg) as eng:
+                # ⚠ **AYNI özellikler**: farklı özelliklerle planlanan iki SQL'i
+                # kıyaslamak, CLS farkı yerine ÖZELLİK farkını ölçerdi.
+                cls_li = eng.dry_plan(sql, properties)
+            with self._engine() as eng:
+                bugunku = eng.dry_plan(sql, properties)
+        except BaseException as exc:  # noqa: BLE001 — Rust PANIC `Exception` DEĞİLDİR
+            # 🔴 **Planlama HATASI da bir bulgudur**: `on`'da bu sorgu **çalışmazdı**.
+            # Sessizce geçmek, `on`'a geçişin maliyetini sıfır göstermek olurdu.
+            _log.warning("CLS (gölge): `motor_cls=on` olsaydı bu sorgu PLANLANAMAZDI — "
+                         "%s | %s", str(exc)[:180], " ".join(sql.split())[:200])
+            return
+
+        if cls_li != bugunku:
+            # ⚠ Fark **beklenen** de olabilir (hassas kolon gerçekten düşer) ama ölçütün
+            # istediği *"sapma 0"*dır: her fark bir **karar** gerektirir ve kararın
+            # verilebilmesi için önce **görünmesi** gerekir.
+            _log.warning("CLS (gölge): plan FARKLI — `motor_cls=on` %d kuralla kolon "
+                         "düşürürdü | %s", kural_sayisi, " ".join(sql.split())[:200])
 
     def _rls_golge_denetimi(self, sql: str) -> None:
         """GÖLGE MOD: *"`motor_rls=on` olsaydı bu sorgu farklı mı planlanırdı?"* — sorar,
@@ -1427,6 +1503,11 @@ class WrenService:
         # ikisini tek bayrağa bağlamak, birinin ölçümünü ötekinin kararına bağlardı.
         if self._rls_kademesi() == "shadow":
             self._rls_golge_denetimi(sql)
+        # 🔴 §C ölçüt 4'ün ÖN KOŞULU: `shadow` artık **ölçüyor**. Önce `cls_manifeste_yaz`
+        # `shadow`'da manifesti dokunmadan döndürüyordu — yani `shadow ≡ off` idi ve
+        # *"gölge modda 7 gün · sapma 0"* şartı **ölçülemezdi**.
+        if self._cls_kademesi() == "shadow":
+            self._cls_golge_denetimi(sql, self._oturum_ozellikleri(principal))
         with self._engine() as eng:
             return eng.dry_plan(sql, self._oturum_ozellikleri(principal))
 
@@ -1455,6 +1536,11 @@ class WrenService:
         # ikisini tek bayrağa bağlamak, birinin ölçümünü ötekinin kararına bağlardı.
         if self._rls_kademesi() == "shadow":
             self._rls_golge_denetimi(sql)
+        # 🔴 §C ölçüt 4'ün ÖN KOŞULU: `shadow` artık **ölçüyor**. Önce `cls_manifeste_yaz`
+        # `shadow`'da manifesti dokunmadan döndürüyordu — yani `shadow ≡ off` idi ve
+        # *"gölge modda 7 gün · sapma 0"* şartı **ölçülemezdi**.
+        if self._cls_kademesi() == "shadow":
+            self._cls_golge_denetimi(sql, self._oturum_ozellikleri(principal))
         with self._engine() as eng:
             table = eng.query(sql, limit=limit,
                               properties=self._oturum_ozellikleri(principal))

@@ -245,6 +245,18 @@ def patch_widget(request: Request, did: str, wid: str, body: WidgetPatch,
     if "refresh" in data and data["refresh"]:
         w.refresh = data["refresh"]
     if "pinned" in data and data["pinned"] is not None:
+        # 🔴 **BAYRAK KAPISI — ve bu bir DÜZELTME.** Modülü bağladım ama bayrağı
+        # bağlamamıştım: `kpi_pin` açıp kapatmak **hiçbir şey yapmıyordu**. Denetimin
+        # §11/GRUP 2'sinin adlandırdığı *"kapısız bayrak"* sınıfı — ve onu kapatırken
+        # kendim üretmiştim.
+        # ⚠ Kapalıyken `pinned` **sessizce yok sayılmaz**, 400 döner: *sessizce yok
+        # sayılan bir istek, kullanıcıya işlemin olduğunu düşündürür.*
+        from app.config import get_settings as _gs
+        from app.features import resolve_for as _rf
+
+        if "kpi_pin" not in _rf(_gs(), p):
+            raise HTTPException(status_code=400,
+                                detail="KPI sabitleme bu kurulumda kapalı.")
         # 🔴 **FAZ 5.10 — PİN KARARI `kpi_pin`'e ait**, burada yeniden yazılmaz.
         # Modül 85 satır + 10 testle yazılmıştı ve üretim kodunda **hiç import
         # edilmiyordu**; sınırı burada elle yazmak, aynı kuralın **ikinci sahibi** olurdu.

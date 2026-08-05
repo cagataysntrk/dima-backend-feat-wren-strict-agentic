@@ -808,22 +808,38 @@ edilmiyor, **adları ve açılabilirlikleri** veriliyor.
 
 ### 🔴 GRUP 2 — **AÇILAMAZ / açmadan önce iş var** *(bayrağı çevirmek yetmez)*
 
-| Bayrak | Neden | Önce ne gerekir |
-|---|---|---|
-| **`tazelik`** | **KAPISIZ** — `resolve_for`'da adı geçmiyor, `freshness`'ı **kimse doldurmuyor** | `tazelik.kademe()`'yi cevap yoluna bağla *(ve `ters_yetim` kapısını **üreticiye** çevir)* |
-| **`metrik_sertifikasi`** | **KAPISIZ** — `certification.py`'nin **sıfır** çağıranı | modülü metrik yoluna bağla |
-| **`kpi_pin`** | **KAPISIZ** — `kpi_pin.py` yetim | panoya bağla |
-| **`kanal_kimlik`** | **KAPISIZ** — `kanal_kimlik.py` yetim | bildirim yoluna bağla |
-| **`threaded_chat`** | **KAPISIZ** — `app/` içinde adı yok | — |
-| **`public_api`** | **KAPISIZ** — `app/` içinde adı **hiç geçmiyor** | uçları bayrağa bağla |
-| **`cekirdek_katman`** | **İKİ SAHİPLİ** — açış `features.yml`'den **değil** `DIMA_CEKIRDEK_KATMAN` env'inden yapılır | tek sahibe indir *(ya da kaydı **beyanlı istisna** yap)* |
-| **`embed`** | **P0 ölçülü**: `motor_cls=off` | motor-CLS açılmadan **asla** |
-| **`onay_akisi`** | ◐ **yarısı bağlı** — açmak D9 yarısını açar, onay talebi/süre aşımını **açmaz** | `onay_akisi.py`'yi bağla |
+> ⟳ **YENİDEN ÖLÇÜLDÜ (2026-08-05, aynı gün, denetimden SONRA).** Bu tablo **9 kapısız
+> bayrak** sayıyordu; beşi o günün geliştirme turlarında **bağlandı**. Ölçüm komutu:
+> `resolve_for(...)` içinde bayrak adının **gerçekten** arandığı yerler.
 
-> 🔴 **Test ederken kritik uyarı:** Grup 2'deki bir bayrağı `features.yml`'den açıp
-> *"bir şey değişmedi"* görmek **bayrağın işe yaramadığı** anlamına gelmez — **hiç
-> bağlanmadığı** anlamına gelir. İkisini karıştırmak, yanlış bir *"özellik işe yaramıyor"*
-> yargısı doğurur.
+| Bayrak | Denetim anı | **Bugün** | Not |
+|---|---|---|---|
+| **`tazelik`** | 🔴 kapısız | ✅ **bağlı** | `SyncState → tazelik.kademe → freshness → ekran`; zincirin **ortası** eksikti |
+| **`metrik_sertifikasi`** | 🔴 kapısız | ✅ **bağlı** | beş halka vardı, **hiçbiri diğerine dokunmuyordu** |
+| **`onay_akisi`** | ◐ yarısı | ✅ **bağlı** | + §C ölçüt 6'nın **eksik olan** *"süre aşımı 30 dk"* şartı |
+| **`ui_knowledge_center`** | ⚠ motoru yetim | ✅ **bağlı** | ⚠ modül **de** kaynak **da** eksikti — düz metin ≠ yapısal kural |
+| **`kpi_pin`** | 🔴 kapısız | ✅ **bağlı** | 🔴 modül önce bağlandı, **bayrağı unutuldu** ve ikinci turda düzeltildi — *kapısız bayrak sınıfı, onu kapatırken yeniden üretildi* |
+| **`kanal_kimlik`** | 🔴 kapısız | ⊘ **meşru bekleyiş** | Slack/Teams **adaptörü yok**; bağlanacak bir yol yok |
+| **`public_api`** | 🔴 kapısız | 🔴 **açık** | uçlar bayrağa bağlanmalı |
+| **`threaded_chat`** | 🔴 kapısız | 🔴 **açık** | `app/` içinde adı yok |
+| **`cekirdek_katman`** | ⚠ iki sahipli | 🔴 **açık** | açış `DIMA_CEKIRDEK_KATMAN` env'inden; tek sahibe indirilmeli |
+| **`embed`** | 🔴 P0 | ⊘ **bloke** | `motor_cls` `on` olmadan **asla** |
+
+> 🔴 **Test ederken kritik uyarı (KORUNUYOR ve şimdi DAHA ÖNEMLİ):** Grup 2'deki bir
+> bayrağı `features.yml`'den açıp *"bir şey değişmedi"* görmek **bayrağın işe yaramadığı**
+> anlamına gelmez — **hiç bağlanmadığı** anlamına gelir.
+>
+> ⟳ **Ve kullanıcının kendi gözlemi bunu doğruladı** (2026-08-05): *"bu testler zaten
+> gerçek kullanıcı gibi olmadığından ve sistemdekilere uyumlu olduğundan biz hep
+> bayrakları `off` tuttuk, hiç değişiklik olmadı."* — **İki ayrı sebep aynı belirtiyi
+> üretiyordu** ve bu ayrım yapılmadan hiçbir A/B kararı verilemezdi:
+>
+> | sebep | belirti | çözümü |
+> |---|---|---|
+> | **(a)** bayrak **bağlı değil** | açmak hiçbir şey yapmaz | §11/GRUP 2 — **beşi kapandı** |
+> | **(b)** korpus değişimi **göremiyor** | açmak ölçümde görünmez | §9.6 gerçek-dünya korpusu — **açık** |
+>
+> *Bir A/B'nin sonucu "fark yok" ise, önce ölçen aletin o farkı görebildiği kanıtlanmalıdır.*
 
 ### ⚖ GRUP 3 — **`beta` ama hakemi ölçüm değil, SEN'sin**
 

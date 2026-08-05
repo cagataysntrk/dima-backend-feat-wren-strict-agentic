@@ -123,3 +123,21 @@ def test_PIN_yeni_PANEL_acmadi():
 
     toplam = sum(len(DESEN.findall(v)) for v in fe_dosyalari().values())
     assert toplam <= TAVAN
+
+
+def test_BAYRAK_KAPISI_var():
+    """🔴 **Kendi ürettiğim kusur.** Modülü bağladım ama **bayrağı bağlamadım**:
+    `kpi_pin` açıp kapatmak **hiçbir şey yapmıyordu** — denetimin §11/GRUP 2'sinin
+    adlandırdığı *"kapısız bayrak"* sınıfını, tam onu kapatırken ürettim.
+
+    ⚠ Kapalıyken `pinned` **sessizce yok sayılmaz**, 400 döner: *sessizce yok sayılan bir
+    istek, kullanıcıya işlemin olduğunu düşündürür.*
+    """
+    import ast
+
+    agac = ast.parse((_KOK / "app/routers/dashboards.py").read_text(encoding="utf-8"))
+    fn = next(n for n in ast.walk(agac)
+              if isinstance(n, ast.FunctionDef) and n.name == "patch_widget")
+    govde = ast.unparse(fn)
+    assert "'kpi_pin' not in _rf(" in govde or '"kpi_pin" not in _rf(' in govde
+    assert "status_code=400" in govde

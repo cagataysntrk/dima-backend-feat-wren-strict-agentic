@@ -21,6 +21,53 @@ devam ettirir. 🔴 **Kural: her faz commit'inden sonra bu blok güncellenir.**
 
 | | |
 |---|---|
+| **Aktif faz** | **v1 KAPANIŞ TURU** *(FAZ 0…8 ✅; FAZ 7.3/7.7'nin kalanı açık)* |
+| **Korpus** | 🟢 **%93,1** (taban %93,2) — **on demet** boyunca sabit |
+| **Süit** | **3527 test · 247 kapı dosyası** *(1. ölçüm turunda 3347 · 233)* |
+| **§C ölçütü** | **10 yeşil · 5 sarı · 1 kırmızı** (ölçüt 4) · 13 ⊘ *(kod değil)* |
+| **Push** | ✅ `origin/wren-bağımsız` ile **fark 0** |
+
+### ✅ BU TURDA KAPANANLAR
+
+| # | iş | ölçüm |
+|---|---|---|
+| **UI/UX F1-F6** | **altısı da** kapandı | hard-delete ihlali · geri alma · hata yüzeyi · tek ses · büyüme kapısı · görünmeyen özellikler |
+| **Yetim modül** | **12 → 0 gerçek** | 8 bağlandı; 4'ü **meşru bekleyiş** *(bir sayıyı kusur listesi sanmak, dördünü haksız borç yazar)* |
+| **Ölçüt 6** | *"süre aşımı 30 dk"* **yoktu** | imzalı onay bileti; ölçüt 🟢 işaretliyken **üçte biri eksikti** |
+| **Ölçüt 12** | tazelik zinciri | `SyncState → kademe → freshness → ekran`; **ortası** eksikti |
+| **Borç 1** | motor-RLS tesisatı | `motor_cls=on` ile **3319 yeşil / 0 kırmızı** |
+| **Borç 7** | modül tavanları | `ask()` 1206→1150 · `ask.py` 2498→2377 · `cube_router` 1749→1703 |
+| **Hızlı kapı** | **iki kör nokta** | `.tsx` → 0 kapı seçiyordu · dosya **yolunu** okuyan kapılar hiç seçilmiyordu |
+| **CLS gölgesi** | **hiçbir şey ölçmüyordu** | `shadow ≡ off` idi; artık plan farkını **ölçüyor** |
+
+### 🔴 AÇIK KALANLAR — ve hangisi KOD değil
+
+| # | ne | tür |
+|---|---|---|
+| **Ölçüt 4** | `motor_cls` — gölge ölçümü **kuruldu**, sıra: `shadow` aç → **7 gün · sapma 0** → `on` | ⏳ **süre** |
+| **FAZ 8.1** | gerçek kullanım penceresi: 1-2 kullanıcı × 2-4 hafta · **≥300 tur** | ⏳ **süre** |
+| **§9.6** | 🔴 **gerçek-dünya korpusu** — persona × zorluk merdiveni | 🔨 kod |
+| **FAZ 7.7** | `/settings` tam sayfa + `admin_app`'in 13 router tüketicisi | 🔨 kod |
+| **FAZ 7.3** | 10 alt madde (a-kısmi · c · d · f · g · h · i · j · l · m) + 6 rota | 🔨 kod |
+| **`3.0`** | tenant açılışı — v1'in **tek sessizce atlanan** maddesi | 🔨 kod |
+| **Bayrak** | `public_api` · `threaded_chat` **kapısız**; `cekirdek_katman` **iki sahipli** | 🔨 kod |
+| **F2 kalanı** | bağlantı · tercih geri alma — ⚠ **gerekçesi yazılı**: ikisi de yeniden kurulabilir | ◐ karar |
+
+### 🔴 KULLANICI TESPİTİ — *"bayrakları hep `off` tuttuk, hiç değişiklik olmadı"*
+
+**Ölçüldü: iki ayrı sebep aynı belirtiyi üretiyordu** ve ayrım yapılmadan hiçbir A/B
+kararı verilemezdi.
+
+| sebep | belirti | durum |
+|---|---|---|
+| **(a)** bayrak **bağlı değil** — açmak hiçbir şey yapmaz | *"fark yok"* | ✅ **beşi bağlandı** (§11/GRUP 2) |
+| **(b)** korpus değişimi **göremiyor** — `execute=False`, LLM yok, sorular kataloğun kendi sözlüğünden | *"fark yok"* | 🔴 **açık** — §9.6 |
+
+> 🔴 *Bir A/B'nin sonucu "fark yok" ise, önce ölçen aletin o farkı **görebildiği**
+> kanıtlanmalıdır.* Korpus bugün *"sistem kendi kelimelerini tanıyor mu"* sorusunu
+> ölçüyor (**≥%97,1 katalog türevi**) — kullanıcının kelimelerini değil.
+
+---|---|
 | **Aktif faz** | **FAZ 7 · ARAYÜZ** *(FAZ 0·1·2·3·4·5·6 ✅ bitti)* — panel tavanı **13/13 DOLU** |
 | **Biten** | 🎉 **FAZ 4·5·6 KAPANDI** + denetim **D1–D5**. FAZ 6: `6.0` D9 geri alma · `6.1` onay akışı · `6.2` yazma araçları · `6.3` araç kaydı 16→23 · `6.4` planlayıcı sertleştirmesi · `6.5` public API · `6.6` kanal kimliği |
 | ⏸ **5.6 BLOKE** | peer kıyası **AJ2**'ye bağlı (`compare` enum→ALAN). AJ2 inmeden 5.6 üçüncü bir enum değeri çakar ve dördüncüsü aynı konuşmayı yeniden doğurur |
