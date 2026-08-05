@@ -6,18 +6,15 @@ import { useMemo, useRef, useState } from "react";
 import { apiErrorMessage, ask, askCube, getConversation, uploadDataset } from "@/lib/api-client";
 import { AnalysisCanvas } from "@/components/AnalysisCanvas";
 import { ChatPanel } from "@/components/ChatPanel";
-import { ConnectionReviewPanel } from "@/components/ConnectionReviewPanel";
+import { AyarlarBolumu } from "@/components/AyarlarBolumu";
 import { DashboardsPanel } from "@/components/DashboardsPanel";
 import { DashboardView } from "@/components/DashboardView";
 import { HelpPanel } from "@/components/HelpPanel";
 import { Landing } from "@/components/Landing";
 import { NotificationsPanel } from "@/components/NotificationsBell";
 import { ReportPanel } from "@/components/ReportPanel";
-import { SchedulesPanel } from "@/components/SchedulesPanel";
-import { SchemaPanel } from "@/components/SchemaPanel";
 import { SettingsDrawer } from "@/components/SettingsDrawer";
 import { YanCubuk } from "@/components/YanCubuk";
-import TercihlerPanel from "@/components/TercihlerPanel";
 import { useHistory } from "@/stores/history";
 import { useFeature } from "@/lib/useFeature";
 import { usePermission } from "@/lib/usePermission";
@@ -91,8 +88,6 @@ export default function Home() {
   const kapsamAcik = useFeature("kapsam_mercegi") !== "off";
   // "Ayarlar" drawer'ı içi iki sekmeli (Faz 4.5): mevcut şema görünümü + DB bağlama
   // sihirbazı — YENİ bir rail ikonu/Drawer değeri EKLEMEDEN, en düşük riskli entegrasyon.
-  const [settingsTab, setSettingsTab] =
-    useState<"sema" | "baglanti" | "zamanlamalar" | "tercihler">("sema");
   // Açık pano (main-area overlay) — set ise chat/rapor yerine pano grid'i gösterilir (§9).
   const [openDashboard, setOpenDashboard] = useState<string | null>(null);
   const dashStage = useFeature("dashboards");
@@ -611,6 +606,17 @@ export default function Home() {
                   onContinue={submitContinue}
                   onReply={submitReply}
                   onReplyMulti={submitReplyMulti}
+                  // 🔴 FAZ 3b — ASİMETRİ KAPANDI: bu dört ayar artık TAKİP sorusunda
+                  // da verilebiliyor. Aynı `SoruAlani` bileşeni iki yerde de kullanılıyor
+                  // — iki kopya değil, TEK SAHİP.
+                  kapsam={kapsam}
+                  onKapsam={kapsamAcik ? setKapsam : undefined}
+                  yolSiniri={yolSiniri}
+                  onYolSiniri={setYolSiniri}
+                  mod={hizliDerinAcik ? mod : null}
+                  onMod={hizliDerinAcik ? setMod : undefined}
+                  onUpload={onUpload}
+                  uploading={uploadMut.isPending}
                 />
               )}
             </div>
@@ -645,43 +651,7 @@ export default function Home() {
             }}
           />
         ) : (
-          <div>
-            <div className="mb-4 flex gap-1 border-b border-hairline text-xs">
-              <button
-                onClick={() => setSettingsTab("sema")}
-                className={`px-3 py-2 ${settingsTab === "sema" ? "border-b-2 border-accent text-foreground" : "text-muted"}`}
-              >
-                Şema
-              </button>
-              <button
-                onClick={() => setSettingsTab("baglanti")}
-                className={`px-3 py-2 ${settingsTab === "baglanti" ? "border-b-2 border-accent text-foreground" : "text-muted"}`}
-              >
-                Veri Kaynağı Bağla
-              </button>
-              <button
-                onClick={() => setSettingsTab("zamanlamalar")}
-                className={`px-3 py-2 ${settingsTab === "zamanlamalar" ? "border-b-2 border-accent text-foreground" : "text-muted"}`}
-              >
-                Zamanlamalar
-              </button>
-              <button
-                onClick={() => setSettingsTab("tercihler")}
-                className={`px-3 py-2 ${settingsTab === "tercihler" ? "border-b-2 border-accent text-foreground" : "text-muted"}`}
-              >
-                Tercihler
-              </button>
-            </div>
-            {settingsTab === "sema" ? (
-              <SchemaPanel kapsam={kapsamAcik ? kapsam : null} />
-            ) : settingsTab === "baglanti" ? (
-              <ConnectionReviewPanel />
-            ) : settingsTab === "zamanlamalar" ? (
-              <SchedulesPanel />
-            ) : (
-              <TercihlerPanel />
-            )}
-          </div>
+          <AyarlarBolumu kapsam={kapsamAcik ? kapsam : null} />
         )}
       </SettingsDrawer>
       </div>

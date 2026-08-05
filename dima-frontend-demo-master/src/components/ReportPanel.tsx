@@ -6,6 +6,7 @@ import type { AskResponse, CubeQuery } from "@/lib/types";
 import type { Thread } from "@/lib/threads";
 import { BrandMark } from "@/components/BrandMark";
 import { CaretInput } from "@/components/CaretInput";
+import { type Kapsam, type Mod, SoruAlani, type YolSiniri } from "@/components/SoruAlani";
 import { DurdurDugmesi } from "@/components/DurdurDugmesi";
 import { NextStepChips } from "@/components/NextStepChips";
 import { ReportCard } from "@/components/ReportCard";
@@ -86,6 +87,19 @@ export function ReportPanel({
   onContinue,
   onReply,
   onReplyMulti,
+  // 🔴 FAZ 3b — ASİMETRİ KAPANDI. Bu dört ayar bugüne kadar YALNIZ sol komposerde
+  // vardı; takip sorusunda verilemiyordu. *Bir ayarın yalnız bazı sorulara
+  // uygulanabilmesi, kullanıcıya o ayarın ne zaman geçerli olduğunu TAHMİN ETTİRİR
+  // — ve tahmin ettiren bir ayar, güvenilmeyen bir ayardır.*
+  kapsam,
+  onKapsam,
+  superadmin,
+  yolSiniri,
+  onYolSiniri,
+  mod,
+  onMod,
+  onUpload,
+  uploading,
 }: {
   thread: Thread | null;
   pending: boolean;
@@ -106,6 +120,15 @@ export function ReportPanel({
   // §B düzeltmesi (1 Ağustos 2026) — bu panelin KENDİ komposer'ı: aktif thread'in GÜNCEL
   // bağlamıyla devam eder (eski TEK komposer'ın bağlamsal davranışı, artık burada).
   onContinue?: (text: string) => void;
+  kapsam?: Kapsam | null;
+  onKapsam?: (k: Kapsam) => void;
+  superadmin?: boolean;
+  yolSiniri?: YolSiniri;
+  onYolSiniri?: (y: YolSiniri) => void;
+  mod?: Mod;
+  onMod?: (m: Mod) => void;
+  onUpload?: (f: File) => void;
+  uploading?: boolean;
   // Bir karta "yanıtla": bağlam O ÇAPA karttan gelir, sonuç thread'in SONUNA eklenir.
   // `hucre` (Faz G2): grafikte işaret edilen koordinat — ReportCard'dan page.tsx'e
   // geçirilir, orada `AskRequest.anchor` olur.
@@ -368,25 +391,26 @@ export function ReportPanel({
         </div>
       ) : (
         onContinue && (
-          <div className="shrink-0 border-t border-hairline px-4 py-3">
-            <div className="flex items-center gap-2">
-              <span className="select-none font-mono text-sm text-accent">›</span>
-              <div className="flex-1">
-                <CaretInput
-                  value={continueValue}
-                  onChange={setContinueValue}
-                  onSubmit={() => {
-                    const t = continueValue.trim();
-                    if (!t) return;
-                    onContinue(t);
-                    setContinueValue("");
-                  }}
-                  busy={pending}
-                  size="inline"
-                />
-              </div>
-            </div>
-          </div>
+          <SoruAlani
+            deger={continueValue}
+            onDeger={setContinueValue}
+            onGonder={() => {
+              const t = continueValue.trim();
+              if (!t) return;
+              onContinue(t);
+              setContinueValue("");
+            }}
+            pending={pending}
+            kapsam={kapsam}
+            onKapsam={onKapsam}
+            superadmin={superadmin}
+            yolSiniri={yolSiniri}
+            onYolSiniri={onYolSiniri}
+            mod={mod}
+            onMod={onMod}
+            onUpload={onUpload}
+            uploading={uploading}
+          />
         )
       )}
     </div>

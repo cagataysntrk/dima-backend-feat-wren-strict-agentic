@@ -194,6 +194,7 @@ TEK_GIRISLI: tuple[tuple[str, str, str], ...] = (
     ("YanCubuk", "translate-x-full", "mobilde çubuk KATMAN olur (reflow değil)"),
     ("YanCubuk", "gomulu", "kimlik · bağlantı · çıkış çubuğa gömüldü"),
     ("SchedulesPanel", "schedule", "zamanlama yönetimi — yalnız Ayarlar→Zamanlamalar"),
+    ("AyarlarBolumu", "Veri Kaynağı Bağla", "ayarların dört sekmesi — page.tsx'ten çıkarıldı"),
     ("TercihlerPanel", "tercih", "tercihler + bildirim tercihleri"),
     ("SchemaPanel", "sahip", "metrik sahipliği atama/kaldırma"),
     ("ConnectionReviewPanel", "test", "veri kaynağı bağlama sihirbazı"),
@@ -227,6 +228,33 @@ def test_TEK_GIRISLI_ISLEVLER_ULASILABILIR():
         if not ok:
             dusen.append(f"{ne} → {bilesen}: {teshis}")
     assert not dusen, "🔴 kaybolan tek-girişli işlevler:\n  " + "\n  ".join(dusen)
+
+
+def test_KOMPOSER_ASIMETRISI_KAPANDI():
+    """🔴 **FAZ 3b.** `kapsam` · `yol sınırı` · `hızlı/derin` · `📎 yükleme` bugüne
+    kadar **yalnız sol komposerde** vardı; takip sorusunda verilemiyordu.
+
+    > ⚠ *Bir ayarın yalnız bazı sorulara uygulanabilmesi, kullanıcıya o ayarın ne
+    > zaman geçerli olduğunu **tahmin ettirir** — ve tahmin ettiren bir ayar,
+    > güvenilmeyen bir ayardır.*
+
+    Kapı **tek sahibi** sınar: aynı `SoruAlani` bileşeni **iki yerde de** kullanılmalı.
+    *Bir asimetri, ikinci bir kopya eklenerek değil, tek sahip kurularak kapatılır* —
+    iki kopya olsaydı biri güncellenir, öteki kalır ve aynı anahtar iki yerde farklı
+    davranırdı."""
+    ok, t = _erisilebilir("SoruAlani")
+    assert ok, t
+    kaynak = _kaynaklar()
+    kullananlar = [m for m in _ulasilabilir()
+                   if "SoruAlani" in kaynak.get(m, "") and m != _modul("SoruAlani")]
+    assert len(kullananlar) >= 2, (
+        f"🔴 ortak komposer tek yerde kullanılıyor: {kullananlar} — "
+        "asimetri kapanmamış")
+    # Dört ayarın dördü de ortak bileşende yaşamalı.
+    src = kaynak[_modul("SoruAlani")]
+    for anahtar, ad in (("onKapsam", "kapsam merceği"), ("onYolSiniri", "yol sınırı"),
+                        ("onMod", "hızlı/derin"), ("onUpload", "dosya yükleme")):
+        assert anahtar in src, f"🔴 ortak komposerde eksik: {ad}"
 
 
 def test_KOMPOSER_KONTROLLERI_KAYBOLMADI():
