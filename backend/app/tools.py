@@ -128,7 +128,7 @@ KAYIT: tuple[Arac, ...] = (
     # --- sorgu ÜRETENLER (merdiven) ---------------------------------------------
     Arac(
         ad="route",
-        ozet="Türkçe soruyu SIFIR LLM ile bir CubeQuery'ye çözer; çözemezse None döner.",
+        ozet="Türkçe soruyu SIFIR LLM ile bir CubeQuery'ye çözer; çözemezse None döner. [Erişim: yalnız KATALOG (ölçü/boyut adları) — ham veri YOK] [Ne zaman: her soruda İLK basamak] [NE ZAMAN KULLANILMAZ: takip mesajlarında (o `deterministic_refine`'ın işi); bir cevabın ÜSTÜNDE konuşurken]",
         girdi={"question": "kullanıcının sorusu (ham metin)",
                "schema": "cube kataloğu (WrenService.schema())"},
         cikti="{cube_query, order, limit} ya da None",
@@ -143,7 +143,7 @@ KAYIT: tuple[Arac, ...] = (
     Arac(
         ad="deterministic_refine",
         ozet="Var olan bir CubeQuery'yi takip sorusuyla düzenler (granülerlik, kırılım, "
-             "sıralama, dönem) — yeni sorgu üretmez, mevcut olanı değiştirir.",
+             "sıralama, dönem) — yeni sorgu üretmez, mevcut olanı değiştirir. [Erişim: önceki CubeQuery + katalog] [Ne zaman: elde bir rapor VARKEN gelen takip mesajında] [NE ZAMAN KULLANILMAZ: taze soruda (önceki sorgu yoksa); konu değiştiğinde]",
         girdi={"prev": "önceki cube_query", "q": "normalize edilmiş takip sorusu",
                "schema": "cube kataloğu"},
         cikti="düzenlenmiş cube_query ya da None",
@@ -157,7 +157,7 @@ KAYIT: tuple[Arac, ...] = (
     ),
     Arac(
         ad="cube_sql",
-        ozet="CubeQuery'yi çalıştırılabilir SQL'e derler (JOIN YAZMAZ — cube derleyicisi).",
+        ozet="CubeQuery'yi çalıştırılabilir SQL'e derler (JOIN YAZMAZ — cube derleyicisi). [Erişim: MDL + CubeQuery] [Ne zaman: çalıştırmadan hemen önce] [NE ZAMAN KULLANILMAZ: JOIN yazmak için — JOIN'i cube derleyicisi kurar; ham SQL üretmek için]",
         girdi={"cube_query": "CubeQuery", "order": "(ölçü, yön) ya da None",
                "limit": "satır üst sınırı ya da None"},
         cikti="SQL metni",
@@ -171,7 +171,7 @@ KAYIT: tuple[Arac, ...] = (
     # --- sorgu DÖNÜŞTÜRENLER (gezinme) -------------------------------------------
     Arac(
         ad="drill.expand",
-        ozet="Bir CubeQuery'ye yeni bir kırılım boyutu ekler (bir seviye aşağı in).",
+        ozet="Bir CubeQuery'ye yeni bir kırılım boyutu ekler (bir seviye aşağı in). [Erişim: CubeQuery + katalog boyutları] [Ne zaman: kullanıcı 'neden' diye sorup bir kırılım aradığında] [NE ZAMAN KULLANILMAZ: iki kırılım zaten varken (satır patlar); ölçü değiştirmek için]",
         girdi={"cube_query": "CubeQuery", "dimension": "eklenecek boyut adı"},
         cikti="genişletilmiş CubeQuery",
         determinizm="deterministik", maliyet="sifir", yan_etki="yok",
@@ -184,7 +184,7 @@ KAYIT: tuple[Arac, ...] = (
     ),
     Arac(
         ad="drill.select",
-        ozet="Bir hücreyi/segmenti tek başına gösteren CubeQuery üretir (grafikten seçim).",
+        ozet="Bir hücreyi/segmenti tek başına gösteren CubeQuery üretir (grafikten seçim). [Erişim: CubeQuery + seçilen hücre] [Ne zaman: kullanıcı grafikte bir noktaya işaret ettiğinde] [NE ZAMAN KULLANILMAZ: ham satır göstermek için (T1/T2 sınırı); seçim yokken]",
         girdi={"cube_query": "CubeQuery", "dimension": "boyut", "value": "seçilen değer"},
         cikti="filtrelenmiş CubeQuery",
         determinizm="deterministik", maliyet="sifir", yan_etki="yok",
@@ -196,7 +196,7 @@ KAYIT: tuple[Arac, ...] = (
     ),
     Arac(
         ad="yoy.compute",
-        ozet="Aynı raporu önceki dönemle (yıl ya da ay) hizalayıp kıyas kolonları ekler.",
+        ozet="Aynı raporu önceki dönemle (yıl ya da ay) hizalayıp kıyas kolonları ekler. [Erişim: CubeQuery + zaman boyutu] [Ne zaman: 'geçen yıla/aya göre' istendiğinde] [NE ZAMAN KULLANILMAZ: çok-yıl veri yoksa; zaman boyutu olmayan cube'da]",
         girdi={"service": "WrenService", "cq": "CubeQuery", "mode": "'yoy' | 'mom'",
                "time_dim": "zaman boyutu adı", "limit": "satır üst sınırı"},
         cikti="{rows, columns} — <ölçü>_gecen ve <ölçü>_degisim_yuzde kolonlarıyla",
@@ -211,7 +211,7 @@ KAYIT: tuple[Arac, ...] = (
     # --- AÇIKLAYICILAR (neden değişti) -------------------------------------------
     Arac(
         ad="contribution.decompose",
-        ozet="Dönemsel değişimi SEGMENTLERE dağıtır: kim ne kadar sürükledi?",
+        ozet="Dönemsel değişimi SEGMENTLERE dağıtır: kim ne kadar sürükledi? [Erişim: iki dönemin sonuçları] [Ne zaman: 'neden değişti' sorusunda, kırılım BELLİYKEN] [NE ZAMAN KULLANILMAZ: toplanamayan (ortalama/oran) ölçüde — katkı MATEMATİKSEL OLARAK tanımsızdır]",
         girdi={"rows": "kıyas satırları", "dim": "boyut", "measure": "ölçü",
                "cube_query": "kaynak CubeQuery"},
         cikti="ContributionReport — her bulgu KENDİ cube_query'siyle",
@@ -226,7 +226,7 @@ KAYIT: tuple[Arac, ...] = (
     ),
     Arac(
         ad="contribution.report",
-        ozet="KULLANILMAYAN boyutları tarar, değişimi ayrıştırır, açıklayıcılığa göre sıralar.",
+        ozet="KULLANILMAYAN boyutları tarar, değişimi ayrıştırır, açıklayıcılığa göre sıralar. [Erişim: kullanılmayan boyutlar + iki dönem] [Ne zaman: hangi kırılımın açıkladığı BİLİNMEDİĞİNDE] [NE ZAMAN KULLANILMAZ: pahalıdır (boyut başına sorgu) — kırılım belliyse `contribution.decompose` yeter]",
         girdi={"service": "WrenService", "schema": "cube kataloğu", "cube_query": "kaynak CubeQuery",
                "mode": "yoy|mom", "kind": "segment|pvm", "max_dimensions": "tarama sınırı"},
         cikti="{measure, mode, kind, raporlar[], pvm_raporlar[], taranmayan_boyut, note}",
@@ -245,7 +245,7 @@ KAYIT: tuple[Arac, ...] = (
     ),
     Arac(
         ad="contribution.pvm",
-        ozet="Değişimi FİYAT / MİKTAR / BİRLEŞİK etkiye ayrıştırır (artıksız).",
+        ozet="Değişimi FİYAT / MİKTAR / BİRLEŞİK etkiye ayrıştırır (artıksız). [Erişim: fiyat/miktar çifti BEYAN EDİLMİŞ cube] [Ne zaman: ciro/tutar değişimi ekonomik olarak ayrıştırılacaksa] [NE ZAMAN KULLANILMAZ: `pvm` beyanı yoksa — ad kalıbından çıkarmak GÜVENLE YANLIŞ ekonomi üretir]",
         girdi={"cube_meta": "cube metadata (pvm: beyanı olmalı)"},
         cikti="PvmReport listesi — fiyat+miktar+birleşik = net (birebir)",
         determinizm="deterministik", maliyet="ucuz", yan_etki="yok",
@@ -257,7 +257,7 @@ KAYIT: tuple[Arac, ...] = (
     ),
     Arac(
         ad="interpret",
-        ozet="Eldeki sonuç tablosunu deterministik olarak yorumlar (sinyal/aykırılık/trend).",
+        ozet="Eldeki sonuç tablosunu deterministik olarak yorumlar (sinyal/aykırılık/trend). [Erişim: eldeki sonuç tablosu — LLM'e ham veri GİTMEZ] [Ne zaman: her cevapta, sayıların üstüne] [NE ZAMAN KULLANILMAZ: sonuç boşken; tek satırlık sonuçta trend aramak için]",
         girdi={"result": "sorgu sonucu", "cube_query": "kaynak CubeQuery"},
         cikti="Interpretation — flag'li, veri-güdümlü ifadeler",
         determinizm="deterministik", maliyet="sifir", yan_etki="yok",
@@ -270,7 +270,7 @@ KAYIT: tuple[Arac, ...] = (
     ),
     Arac(
         ad="viz.recommend",
-        ozet="Sonucun doğru görselleştirmesini DETERMİNİSTİK seçer (Show-Me/Cleveland-McGill).",
+        ozet="Sonucun doğru görselleştirmesini DETERMİNİSTİK seçer (Show-Me/Cleveland-McGill). [Erişim: sonuç + cube metadata (birim/additive)] [Ne zaman: sonuç dolu olduğunda] [NE ZAMAN KULLANILMAZ: grafik türünü LLM'e SEÇTİRMEK için — karar deterministiktir (ADR-0024)]",
         girdi={"result": "sorgu sonucu", "cube_query": "CubeQuery",
                "cube_meta": "semantik metadata (units, lower_is_better…)"},
         cikti="VizSpec",
@@ -283,7 +283,7 @@ KAYIT: tuple[Arac, ...] = (
     ),
     Arac(
         ad="cross_cube_add",
-        ozet="Mevcut rapora BAŞKA bir cube'un ölçüsünü `blend` olarak katar (LLM'siz).",
+        ozet="Mevcut rapora BAŞKA bir cube'un ölçüsünü `blend` olarak katar (LLM'siz). [Erişim: iki cube'un ölçüleri + ortak grain] [Ne zaman: kullanıcı ikinci bir cube'un ölçüsünü de istediğinde] [NE ZAMAN KULLANILMAZ: grain uyuşmuyorsa (fan-out); ilişki sertifikası `olculmedi` ise]",
         girdi={"prev": "mevcut CubeQuery", "q": "kullanıcının sorusu",
                "schema": "cube kataloğu"},
         cikti="genişletilmiş CubeQuery (`blend` alanı dolu) ya da None",
@@ -306,7 +306,7 @@ KAYIT: tuple[Arac, ...] = (
     # --- LLM araçları (yalnız deterministik yol tükendiğinde) --------------------
     Arac(
         ad="llm.prompt_enhance",
-        ozet="Soruyu katalog terimleriyle YENİDEN YAZAR (yapı SEÇMEZ) — sonuç route()'a döner.",
+        ozet="Soruyu katalog terimleriyle YENİDEN YAZAR (yapı SEÇMEZ) — sonuç route()'a döner. [Erişim: soru metni + katalog terimleri — ham veri YOK] [Ne zaman: `route()` boş döndüğünde, LLM seçiminden ÖNCE] [NE ZAMAN KULLANILMAZ: yapı SEÇMEK için — yalnız yeniden yazar]",
         girdi={"soru": "kullanıcının ham sorusu", "catalog": "cube kataloğu metni"},
         cikti="düz metin (yeniden yazılmış soru) — DETERMİNİSTİK route()'a geri verilir",
         determinizm="llm", maliyet="ucuz", yan_etki="yok",
@@ -322,7 +322,7 @@ KAYIT: tuple[Arac, ...] = (
     ),
     Arac(
         ad="llm.anlat",
-        ozet="Deterministik olguları AKICI Türkçeye çevirir — T2 anlatıcı (FAZ 5).",
+        ozet="Deterministik olguları AKICI Türkçeye çevirir — T2 anlatıcı (FAZ 5). [Erişim: deterministik OLGULAR — ham satır YOK] [Ne zaman: olgular hesaplandıktan sonra, üslup için] [NE ZAMAN KULLANILMAZ: SAYI üretmek için — sayıyı her zaman küp koyar ve `narration_guard` eşleşmeyeni DÜŞÜRÜR]",
         girdi={"soru": "kullanıcının sorusu",
                "gercekler": "interpret() facts listesi (ZATEN hesaplanmış)"},
         cikti="düz metin — narration_guard'tan GEÇMEDEN yayımlanamaz",
@@ -341,7 +341,7 @@ KAYIT: tuple[Arac, ...] = (
     ),
     Arac(
         ad="narration_guard.dogrula",
-        ozet="Bir anlatı metnindeki HER sayıyı sonuç kümesine karşı doğrular — KAPIDIR.",
+        ozet="Bir anlatı metnindeki HER sayıyı sonuç kümesine karşı doğrular — KAPIDIR. [Erişim: anlatı metni + sonuç kümesi] [Ne zaman: her LLM anlatısından SONRA — KAPIDIR, seçenek değil] [NE ZAMAN KULLANILMAZ: atlanamaz; atlanırsa uydurma sayı yayımlanır]",
         girdi={"metin": "yayımlanmak istenen düz metin",
                "result": "cevabın sonuç kümesi (rows/columns)",
                "ek": "beyan edilmiş ek türetmeler (ör. yeni bir metriğin ara değerleri)"},
@@ -371,7 +371,7 @@ KAYIT: tuple[Arac, ...] = (
     ),
     Arac(
         ad="llm.select_cube",
-        ozet="Katalogdan ölçü/boyut/filtre SEÇER (SQL YAZMAZ) — Intent-JSON.",
+        ozet="Katalogdan ölçü/boyut/filtre SEÇER (SQL YAZMAZ) — Intent-JSON. [Erişim: KATALOG metni (ad/etiket/sinonim) — ham veri YOK] [Ne zaman: `route()` çözemediğinde] [NE ZAMAN KULLANILMAZ: SQL yazmak için; `route()` zaten çözdüyse (deterministik-önce)]",
         girdi={"question": "soru", "catalog": "cube kataloğu metni"},
         cikti="CubeQuery (JSON) — deterministik derleyiciye gider",
         determinizm="llm", maliyet="ucuz", yan_etki="yok",
@@ -387,6 +387,139 @@ KAYIT: tuple[Arac, ...] = (
         etiketler=("sorgu-uretimi", "llm"),
     ),
 )
+
+# 🔴 FAZ 6.3 — **"ZATEN VAR AMA KAYITSIZ"**: sıfır yeni kod, yalnız **beyan**.
+#
+# Bu altı yetenek üründe **çalışıyordu** ama araç kaydında **yoktu** — yani planlayıcı
+# onlara **erişemiyordu**. *Kayıtta görünmeyen şey, planlayıcının erişemediği şeydir* ve
+# bu liste onun sınırının kanıtıdır; sınır **yanlış yerdeydi**.
+#
+# ⚠ **Bir ad düzeltildi:** yol haritası `kpi.resolve_series` diyordu; ölçüldü, öyle bir
+# fonksiyon **yok** — gerçek ad `kpi.resolve_kpi`. *Bir plandaki ad, koddaki adın yerine
+# geçmez.*
+KAYITSIZ_OLANLAR: tuple[Arac, ...] = (
+    Arac(
+        ad="prescribe.recete",
+        ozet="Sinyallerden aksiyon reçetesi üretir (seçenekler + gerekçe). "
+             "[Erişim: hesaplanmış sinyaller — ham veri YOK] "
+             "[Ne zaman: 'ne yapmalıyız?' türü bir soruda] "
+             "[NE ZAMAN KULLANILMAZ: sinyal yokken (reçete uydurur); bir SAYI sorusuna "
+             "cevap olarak]",
+        girdi={"signals": "sinyal listesi (JSON)", "cube_query": "bağlam CubeQuery"},
+        cikti="seçenekler + gerekçe",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.prescribe", fonksiyon="recete",
+        notlar="Deterministik: aynı sinyaller aynı reçeteyi verir.",
+        etiketler=("yorum", "karar"),
+    ),
+    Arac(
+        ad="statements.resolve",
+        ozet="Gelir tablosu / bilanço gibi ÇOK SATIRLI mali tabloyu çözer. "
+             "[Erişim: mali cube'lar (mizan/cari) + tablo tanımı] "
+             "[Ne zaman: kullanıcı bir MALİ TABLO istediğinde] "
+             "[NE ZAMAN KULLANILMAZ: tek bir ölçü sorusu için (aşırı ağır); mali tablo "
+             "tanımı olmayan tenant'ta]",
+        girdi={"kind": "gelir_tablosu | bilanco",
+               "extra_filters": "isteğe bağlı ek filtreler"},
+        cikti="satır hiyerarşili mali tablo",
+        determinizm="deterministik", maliyet="ucuz", yan_etki="yok",
+        izin="query:run", makbuz="contract_id",
+        modul="app.statements", fonksiyon="resolve_statement",
+        notlar="⚠ Yol haritası bu aracı `statements.resolve` diye adlandırmıştı; öyle "
+               "bir fonksiyon YOK — gerçek ad `resolve_statement`. **İki ad hatası** bu "
+               "maddede ölçüldü (öteki: `kpi.resolve_series`). *Bir plandaki ad, koddaki "
+               "adın yerine geçmez* — ve kapı artık her aracın gerçekten ÇÖZÜLDÜĞÜNÜ "
+               "ölçüyor.",
+        # ⚠ `sorgu-uretimi` etiketi **BİLEREK YOK**: o etiket merdivenin `route()`
+        # basamağını işaretler ve *deterministik-önce* kapısının veri kaynağıdır. Mali
+        # tablo bir **alternatif** değil, ayrı bir yetenektir; etiketi paylaşmak
+        # planlayıcıya *"route yerine bunu kullanabilirsin"* dedirtirdi.
+        etiketler=("mali",),
+    ),
+    Arac(
+        ad="kpi.resolve",
+        ozet="Çapraz-cube KPI'yı bileşenlerinden hesaplar (formül tanımdan gelir). "
+             "[Erişim: KPI tanımı + bileşen cube'lar] "
+             "[Ne zaman: kullanıcı tanımlı bir KPI sorduğunda] "
+             "[NE ZAMAN KULLANILMAZ: formülü UYDURMAK için — tanımsız bir KPI "
+             "hesaplanmaz, sorulur]",
+        girdi={"spec": "KPI tanımı (JSON)", "where": "isteğe bağlı filtre"},
+        cikti="KPI değeri + bileşenler",
+        determinizm="deterministik", maliyet="pahali", yan_etki="yok",
+        # ⚠ `contribution:scan` bu deponun **var olan** "pahalı çok-sorgulu tarama"
+        # kapısıdır. Adı katkı-ayrıştırmasına özgü ama **anlamı** maliyet sınırıdır ve
+        # yeni bir izin İCAT ETMEK, matrisi bir araç için genişletmek olurdu.
+        # 🔴 Ad borcu kayda geçti: izin bir gün `scan:expensive` gibi nötr bir ada
+        # taşınmalı — ama o, matrisi değiştiren AYRI bir karardır.
+        izin="contribution:scan", makbuz="contract_id",
+        modul="app.kpi", fonksiyon="resolve_kpi",
+        notlar="⚠ Yol haritası bu aracı `resolve_series` diye adlandırmıştı; öyle bir "
+               "fonksiyon YOK. Ad koddan alındı.",
+        etiketler=("kpi",),
+    ),
+    Arac(
+        ad="report.compose",
+        ozet="Çok bloklu bir raporu derler (kapak + yönetici özeti + kartlar + kaynaklar). "
+             "[Erişim: blok başına CubeQuery] "
+             "[Ne zaman: kullanıcı birden çok raporu tek belgede istediğinde] "
+             "[NE ZAMAN KULLANILMAZ: tek bir soru için; blok sayısı tavanı aşarsa]",
+        girdi={"spec": "rapor şartnamesi (başlık + bloklar)"},
+        cikti="sayfalanmış rapor + kaynak listesi",
+        determinizm="deterministik", maliyet="pahali", yan_etki="yok",
+        # ⚠ Aynı gerekçe (`kpi.resolve`): blok başına bir sorgu koşar.
+        izin="contribution:scan", makbuz="contract_id",
+        modul="app.report", fonksiyon="compose_report",
+        notlar="Her blok kendi makbuzunu yazar; kaynak listesi `pages`'ten BAĞIMSIZDIR.",
+        etiketler=("rapor",),
+    ),
+    Arac(
+        ad="schedules.uyari_nedeni",
+        ozet="Bir alarmın NEDENİNİ çıkarır: hangi segmentler ihlali sürüklüyor. "
+             "[Erişim: alarm sonucu + segment satırları (PII maskeli)] "
+             "[Ne zaman: bir eşik/anomali ihlali bildirilirken] "
+             "[NE ZAMAN KULLANILMAZ: ihlal yokken; tıklanabilir sorgu üretmek için — "
+             "bildirim gövdesi sorgu TAŞIMAZ]",
+        girdi={"result": "alarm sonucu", "measure": "ölçü adı"},
+        cikti="maskeli neden satırları + kırpma notu",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.schedules", fonksiyon="uyari_nedeni",
+        notlar="Etiketler PII-maskeli.",
+        etiketler=("yorum", "bildirim"),
+    ),
+    Arac(
+        ad="stats.trend",
+        ozet="Bir serinin regresyon EĞİMİNİ ve uyumunu (r²) hesaplar. "
+             "[Erişim: sayı dizisi — ham satır YOK] "
+             "[Ne zaman: bir eğilimin YÖNÜ ve gücü sorulduğunda] "
+             "[NE ZAMAN KULLANILMAZ: n<5'te (gürültüye yön atfetmek olur); bir "
+             "p-değeri/anlamlılık iddiası için — üretmez]",
+        girdi={"degerler": "sayı dizisi"},
+        cikti="{egim, r2, yon, n} ya da None",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.stats", fonksiyon="trend",
+        notlar="🔴 n<5 → None: dört noktaya doğru çizmek, gürültüye bir YÖN atfetmektir.",
+        etiketler=("yorum", "istatistik"),
+    ),
+    Arac(
+        ad="stats.ozet",
+        ozet="Bir serinin n/ortalama/std/min/maks/medyan özetini verir. "
+             "[Erişim: sayı dizisi — ham satır YOK] "
+             "[Ne zaman: dağılımın şekli sorulduğunda] "
+             "[NE ZAMAN KULLANILMAZ: boş seride (None döner); tek değeri 'ortalama' "
+             "diye sunmak için]",
+        girdi={"degerler": "sayı dizisi"},
+        cikti="{n, ortalama, std, min, maks, medyan} ya da None",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.stats", fonksiyon="ozet",
+        notlar="Medyan çift gözlemde iki ortanın ortalamasıdır (alt-orta YANLI olurdu).",
+        etiketler=("yorum", "istatistik"),
+    ),
+)
+
 
 def _yazma_araclari() -> tuple[Arac, ...]:
     """🔴 **FAZ 6.2 — YAZMA ARAÇLARI.** [bayrak: `yazma_araclari`]
@@ -422,7 +555,7 @@ def _yazma_araclari() -> tuple[Arac, ...]:
     return YAZMA_KAYIT
 
 
-KAYIT = KAYIT + _yazma_araclari()
+KAYIT = KAYIT + KAYITSIZ_OLANLAR + _yazma_araclari()
 
 _ARACLAR: dict[str, Arac] = {a.ad: a for a in KAYIT}
 

@@ -366,3 +366,84 @@ def test_llm_araclari_PRINCIPALE_gore_suzulur():
     sa = Principal(user_id="s", tenant_id=None, is_superadmin=True)
     assert len(tools.llm_araclari(sa)) == len(tools.hepsi())
     assert len(tools.llm_araclari(_p("viewer"))) <= len(tools.hepsi())
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FAZ 6.3 — ARAÇ KAYDI GENİŞLEMESİ
+# ─────────────────────────────────────────────────────────────────────────────
+
+def test_HER_ARACIN_ozeti_DORT_BILESENLI():
+    """🔴 FAZ 6.3 — `[Ne yapar] + [Hangi veriye erişir] + [Ne zaman] + [NE ZAMAN
+    KULLANILMAZ]`.
+
+    Snowflake'in adlandırdığı **yanlış-araç-seçimi karşı önlemi**. Dördüncü bileşen
+    ötekilerden **daha değerlidir**: bir aracın ne yaptığını söylemek onu seçtirir; ne
+    zaman **kullanılmayacağını** söylemek yanlış seçimi **önler**.
+    """
+    eksik = {}
+    for a in tools.hepsi():
+        yok = [k for k in ("[Erişim:", "[Ne zaman:", "[NE ZAMAN KULLANILMAZ:")
+               if k not in a.ozet]
+        if yok:
+            eksik[a.ad] = yok
+    assert not eksik, (
+        f"🔴 `ozet`i eksik araç(lar): {eksik}\n"
+        f"Dört bileşen zorunlu — özellikle **NE ZAMAN KULLANILMAZ**: bir aracın ne "
+        f"yaptığını söylemek onu SEÇTİRİR, ne zaman kullanılmayacağını söylemek yanlış "
+        f"seçimi ÖNLER.")
+
+
+def test_HER_ARAC_GERCEKTEN_COZULUYOR():
+    """🔴 **İki ad hatası bu kapıyla bulundu.**
+
+    Yol haritası `kpi.resolve_series` ve `statements.resolve` diyordu; **ikisi de yok**
+    (gerçek adlar `resolve_kpi` ve `resolve_statement`). Bir kayıt, çözülemeyen bir
+    işaretçi taşıyorsa **yalan söylüyordur**: planlayıcı onu seçer ve çalıştırma anında
+    patlar.
+
+    *Bir plandaki ad, koddaki adın yerine geçmez.*
+    """
+    kirik = []
+    for a in tools.hepsi():
+        if a.baglanma != "modul":
+            continue                      # servise bağlı araçlar istek kapsamı ister
+        try:
+            a.cagir()
+        except Exception as exc:          # noqa: BLE001
+            kirik.append(f"{a.ad}: {type(exc).__name__}: {exc}"[:120])
+    assert not kirik, (
+        "🔴 Çözülemeyen araç işaretçisi:\n  " + "\n  ".join(kirik)
+        + "\nKayıt bir İŞARETÇİDİR; çözülemeyen bir işaretçi, planlayıcının seçip "
+          "çalıştırma anında patlayacağı bir yalandır.")
+
+
+def test_KAYITSIZ_OLANLAR_sifir_yeni_kod():
+    """⚠ *"Zaten var ama kayıtsız"* — bu altı yetenek üründe **çalışıyordu**, kayıtta
+    **yoktu**.
+
+    *Kayıtta görünmeyen şey, planlayıcının erişemediği şeydir* — ve sınır **yanlış
+    yerdeydi**. Kapı: hepsi **var olan** bir modül fonksiyonunu göstermeli, yenisini
+    değil.
+    """
+    from app.tools import KAYITSIZ_OLANLAR
+
+    assert len(KAYITSIZ_OLANLAR) >= 6
+    for a in KAYITSIZ_OLANLAR:
+        assert a.baglanma == "modul" and a.modul.startswith("app."), a.ad
+        assert a.yan_etki == "yok", f"{a.ad}: kayıtsız araçlar YAZMAZ"
+
+
+def test_ARAC_SAYISI_KAYITLI():
+    """Sayı **belgede** yazılı; kayıt büyürse beyan da güncellenmeli.
+
+    Bugün: **16** (taban) + **7** (kayıtsız olanlar) = **23**; `yazma_araclari` açıkken
+    **+3** = 26.
+    """
+    from app.config import get_settings
+
+    acik = str(getattr(get_settings(), "yazma_araclari", "") or "").lower() in (
+        "1", "true", "on", "yes")
+    beklenen = 26 if acik else 23
+    assert len(tools.hepsi()) == beklenen, (
+        f"araç sayısı {len(tools.hepsi())}, beklenen {beklenen} — kayıt değiştiyse bu "
+        f"bir ÜRÜN kararıdır ve beyanı da değişmeli.")
