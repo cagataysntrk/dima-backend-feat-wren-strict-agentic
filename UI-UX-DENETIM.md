@@ -110,8 +110,17 @@ grep -rn "window.confirm\|confirm(" src/ --include=*.tsx      # → 0
 | 3 | *"Widget'ı kaldır"* | `DashboardView.tsx:196` | pano widget'ı | soft-delete |
 | 4 | *(tercih sil)* | `TercihlerPanel.tsx:75` | sunum tercihi | soft-delete |
 | 5 | *(bildirim tercihi sil)* | `TercihlerPanel.tsx:156` | kanal tercihi | soft-delete |
-| 6 | 🔴 *"Zamanlamayı sil"* | `SchedulesPanel.tsx:105` | zamanlanmış rapor | **HARD** — `schedules.remove(sid)` |
-| 7 | 🔴 *"sil"* | `ConnectionReviewPanel.tsx:321` | **veri kaynağı bağlantısı** | **HARD** — `s.delete(conn)` |
+| 6 | *"Zamanlamayı sil"* | `SchedulesPanel.tsx:105` | zamanlanmış rapor | ⟳ **soft-delete** — düzeltme aşağıda |
+| 7 | 🔴 *"sil"* | `ConnectionReviewPanel.tsx:321` | **veri kaynağı bağlantısı** | ~~HARD~~ → ✅ **soft-delete** (`f1a7c92d4b60`) |
+
+> ⟳ **DENETİM DÜZELTMESİ (2026-08-05, aynı gün).** Bu tablo **iki** hard-delete sayıyordu;
+> ölçüm **bir** buldu. `schedules.remove()` **zaten soft-delete**'tir ve kodun kendi
+> satırı bunu yazıyor: `row.deleted_at = datetime.utcnow()` · *"Soft-delete (deleted_at
+> damgası; fiziksel silinmez — ADR-0019)"*.
+>
+> 🔴 **Denetimin kendi kuralı burada da geçerli:** *bir iddia, kodun okunmasıyla
+> doğrulanmadıysa bir iddiadır.* Tek gerçek ihlal `connections`'tı ve **kapandı**;
+> depoda başka hard-delete **yok** (`test_hard_delete_yok.py`, AST taraması).
 
 **Üç ayrı ilkeyle çelişiyor — ve üçü de bu deponun kendi yazısı:**
 
@@ -179,7 +188,16 @@ for f in src/components/*.tsx; do m=$(grep -c useMutation "$f");
 | `HistoryPanel.tsx` | **2** | **0** |
 | `AnalysisCanvas.tsx` | **2** | **0** |
 
-Toplam **51 mutasyonun 14'ü** hiçbir hata durumu göstermiyor. Pratikte: yetkisi olmayan
+Toplam **51 mutasyonun 14'ü** hiçbir hata durumu göstermiyor.
+
+> ⟳ **YENİDEN ÖLÇÜLDÜ (aynı gün):** sayı **14'ten büyük**. Dört bileşen değil, **dokuz**
+> bileşende mutasyon sayısı `onError` sayısını aşıyor (`ConnectionReviewPanel` 7/1 ·
+> `DashboardView` 7/2 · `ReviewPanel` 4/2 · `PrescriptionLayer` 3/0 ·
+> `ContractDetailPanel` 2/0 · `AnalysisCanvas` · `ContributionLayer` · `DcmAkisi` ·
+> `SchemaPanel` 1/0). Üçü kapatıldı (`DashboardsPanel` · `HistoryPanel` ·
+> `TercihlerPanel`) ve altyapı **tek sahipli** kuruldu (`lib/mutasyonHatasi.ts` +
+> `HataSeridi.tsx`); kalanlar aynı deseni **bağlamayı** bekliyor.
+> ⚠ *Bir sayıyı düzeltmek onu büyütebilir; ölçmemek küçültmez.* Pratikte: yetkisi olmayan
 bir kullanıcı *"Panoyu sil"*e basar → sunucu **403** döner → **ekranda hiçbir şey olmaz**.
 Satır yerinde durur. Kullanıcı ya tekrar basar ya *"arayüz donmuş"* der.
 

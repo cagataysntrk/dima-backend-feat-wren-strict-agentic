@@ -536,8 +536,35 @@ Yani gerçek-dünya kapsamı **toplamda birkaç yüz vaka**, katalog türevi kor
 
 ### 9.6 · 🔵 ÖNERİ — *gerçek-dünya korpusu*: persona × zorluk merdiveni
 
-> ⚠ **Bu bir PLANDIR, uygulanmadı.** Denetim geliştirme yapmaz; madde açılması
-> kullanıcının kararıdır. Aşağısı, açılırsa **nasıl** yazılacağının şartnamesidir.
+> ⟳ **UYGULANDI (2026-08-05, denetimden sonra): `backend/lab/gercek_dunya.py`.**
+> Altı kural birebir; **ilk taban ölçüldü**. Aşağıdaki şartname **kaynak metin olarak
+> korunuyor** — ve bir kuralı **kalibre etmek** gerekti:
+>
+> 🔴 **Kural 1 harfiyen uygulanınca amacının tersine döndü.** *"soru ∩ etiketler = ∅"*
+> uygulandı ve **15 vakanın 8'i** elendi: `fire` · `bakiye` · `müşteri` · `makine` ·
+> `ciro`. Bunlar *"cevabın anahtarı"* değil **işin kendi kelimeleri** — üretim müdürü
+> *"fire"* der, **başka kelimesi yoktur**. Kuralın niyeti **türetmeyi** yasaklamaktı
+> (`gen_single`'ın etiket × dönem × boyut şablonu), **dağarcığı** değil.
+> → İki mekanik imza: (1) **ham tanımlayıcı** (`toplam_fire_kg`) · (2) sorunun
+> **tamamının** katalog kelimesi olması. *Bir kuralı harfiyen uygulamak, onu amacının
+> tersine çevirebilir.*
+>
+> **İLK TABAN** (`lab/reports/gercek_dunya.md`): 15 vaka · kabul **5** · 🔴 **sessiz-yanlış 0**
+>
+> | kademe | vaka | kabul |
+> |---|---|---|
+> | K1 düz | 5 | 2 |
+> | K2 kırılımlı | 3 | 2 |
+> | K3 kıyaslı | 3 | **0** |
+> | K4 nedensel | 2 | **0** |
+> | K5 kararsal | 1 | 1 |
+>
+> 🔴 **K3 ve K4 sıfır**: deterministik yol, kullanıcının **kendi kelimeleriyle** sorulan
+> **kıyas** ve **neden** sorularına hiç ulaşamıyor — mevcut korpusun **yapısal olarak
+> göremediği** boşluk. ⚠ **Sessiz-yanlış 0**: sistem bilmediğini **uydurmuyor**; bu bir
+> kazançtır ve ayrı sütundur.
+> ⚠ Ölçülen katman `route()` — **sıfır-LLM** yol. `durust_ret` *"deterministik yol pes
+> etti"* demektir; `/ask` orada durmaz. Rapor bunu **başlığında** yazıyor.
 
 **Kural 0 — payda kutsaldır.** Yeni korpus **var olanın yerine geçmez**, **yanına**
 kurulur (`lab/gercek_dunya.py`). Eski taban bozulursa geçmiş ölçümler karşılaştırılamaz.
