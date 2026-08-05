@@ -24,6 +24,7 @@ import { useFeature } from "@/lib/useFeature";
 import { usePermission } from "@/lib/usePermission";
 import { groupIntoThreads, mintThreadId, replyAnchorLabel } from "@/lib/threads";
 import type { AskResponse, CubeQuery} from "@/lib/types";
+import { DcmAkisi } from "@/components/DcmAkisi";
 
 type Drawer = "settings" | "help" | "notifications" | "history" | "dashboards" | null;
 
@@ -73,6 +74,9 @@ export default function Home() {
   // YOL SINIRI (Faz F2) — oturum boyunca kalıcı bir tercih: "yalnız küpün kanıtladığı
   // cevapları göster". `null` = sınır yok (bugünkü davranış, hiçbir şey değişmez).
   const [yolSiniri, setYolSiniri] = useState<"deterministik" | "llm" | null>(null);
+  /** FAZ 7.11 — DCM modu. ⚠ Bir **kısıtlamadır**: varsayılanı `off` ve istemeden
+   *  açılırsa kullanıcı ürünü bozuk sanar (*"neden yazamıyorum?"*). */
+  const dcmModu = useFeature("ui_dcm_modu");
   // 🔴 FAZ 5.14 — HIZLI ↔ DERİN. ⚠ Seçim **thread'e değil SORUYA** bağlıdır ve her
   // mesajda **sıfırlanır** (aşağıda `onSettled`): bir mod'u yapıştırmak, kullanıcının
   // bir kez verdiği kararı ona sormadan her turda yeniden uygulamak olurdu — ve o karar
@@ -436,7 +440,20 @@ export default function Home() {
   return (
     // pr-12: sağdaki kalıcı ikon kolonu (rail) içeriği örtmesin.
     <div className="h-full pr-12 max-md:pb-12 max-md:pr-0">
-      {openDashboard ? (
+      {/* 🔴 FAZ 7.11 — DCM. Bayrak açıkken sohbet yüzeyine **hiç girilmez**: serbest
+          metni gizlemek bir görünüm kararıdır, akışı hiç kurmamak bir GARANTİDİR. */}
+      {dcmModu ? (
+        <DcmAkisi
+          sessionId={sessionId}
+          onSonuc={(r) => {
+            // ⚠ Sonuç **var olan** geçmiş deposuna yazılır: DCM ayrı bir sonuç yolu
+            // AÇMAZ — ikinci bir depo, aynı cevabın iki farklı geçmişte yaşaması
+            // demek olurdu ve kullanıcı hangisinin doğru olduğunu bilemezdi.
+            setStarted(true);
+            addHistory(r);
+          }}
+        />
+      ) : openDashboard ? (
         <DashboardView id={openDashboard} onClose={() => setOpenDashboard(null)} />
       ) : !started ? (
         <Landing onSubmit={submitNew} onUpload={onUpload} uploading={uploadMut.isPending} />

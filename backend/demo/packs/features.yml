@@ -188,3 +188,7 @@ features:
                           # Varsayılan KISA (Steyvers 2025: uzun açıklama doğruluğu
                           # artırmadan güveni artırır). Ayrıntı SİLİNMEZ, katlanır.
                           # KAPALIYKEN eski üç-yüzeyli davranış birebir (KURAL B).
+  ui_dcm_modu: "off"      # FAZ 7.11: Deterministik Cevap Modu (banka/kamu satış argümanı).
+                          # VARSAYILAN KAPALI ve bu bir karar: DCM bir KISITLAMADIR;
+                          # istemeden açılırsa kullanıcı ürünü BOZUK sanır ("neden yazamıyorum?").
+                          # Açıkken serbest metin YOK, cevap 3 tıkta ve LLM'siz.

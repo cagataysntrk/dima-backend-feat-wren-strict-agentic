@@ -186,6 +186,23 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "KAPALIYKEN eski üç-yüzeyli davranış birebir korunur (KURAL B).",
         "category": "arayuz",
     },
+    "ui_dcm_modu": {
+        "label": "DCM — Deterministik Cevap Modu (banka/kamu)",
+        "description": "Sohbet SERBEST METİN KABUL ETMEZ; cevap üç tıkla (ölçü → analiz "
+                       "tipi → dönem) ve LLM'e HİÇ gidilmeden üretilir. 🔴 Metin "
+                       "kutusunu GİZLEMEK bir garanti DEĞİLDİR — o bir görünüm "
+                       "kararıdır ve uca doğrudan serbest metin gönderilebilir. "
+                       "Garantiyi akışın kendisi verir: `POST /cube` bir `cube_query`'yi "
+                       "LLM'siz koşar, yani serbest metin diye bir şey HİÇ OLUŞMAZ. "
+                       "⚠ Yol haritasının «tüm sonuçlar ALTIN ROZET» maddesi BİLİNÇLİ "
+                       "olarak uygulanmadı: FAZ 7.8/K2 tam da onu kaldırdı (kalibre "
+                       "edilmemiş bir yüzde, MIMARI §9'a göre «güven değil SÜS»). İki "
+                       "madde çatışınca mimari kural kazanır ve çatışma GİZLENMEZ — "
+                       "DCM'in vaadi `◆ CUBE` rozetinde ZATEN ölçülmüş olarak duruyor. "
+                       "⚠ Üçüncü seçim DOĞRUDAN koşar: ayrı bir «çalıştır» düğmesi "
+                       "kapıyı dört tığa çıkarır ve hiçbir bilgi eklemezdi.",
+        "category": "arayuz",
+    },
     "kpi_pin": {
         "label": "KPI pin (panoda sabitleme)",
         "description": "Pano VARDI ama KPI-pin semantiği ayrı DEĞİLDİ ve NL yolu YOKTU: "
