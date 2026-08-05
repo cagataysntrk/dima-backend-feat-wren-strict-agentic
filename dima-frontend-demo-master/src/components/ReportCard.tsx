@@ -27,6 +27,7 @@ import { OutputInsight } from "@/components/OutputInsight";
 import { AdhocBadge, SourceBadge } from "@/components/ChatPanel";
 import { useAdSor } from "@/components/AdSor";
 import { Makbuz, MakbuzDuz } from "@/components/Makbuz";
+import { SertifikaBandi } from "@/components/SertifikaBandi";
 
 // §B Adım 2 (1 Ağustos 2026) — tek-rapor kartı: bugünkü ReportPanel'in TÜM gövdesi + tüm
 // rapor-başına local state'i (SQL/trace toggle, schedule/dashboard-ekle popover'ları, verify
@@ -507,7 +508,7 @@ export function ReportCard({
                 )}
               </div>
             )}
-            <SourceBadge source={item.source} />
+            <SourceBadge source={item.source} sertifika={item.explain?.sertifika} />
             {/* FAZ 2.6 — MALİ YIL. Yalnız takvim yılından FARKLIYSA görünür.
                 🔴 "Bu yıl" dediğinde Nisan–Mart penceresi gelen bir kullanıcı, hangi
                 pencereyi gördüğünü BİLMELİ: doğru sayı, yanlış soruya cevap olabilir. */}
@@ -740,6 +741,12 @@ export function ReportCard({
           yazıyordu; yol haritası "bugünkü davranıştan KASITLI BİR SERTLEŞME" diye düzeltti.
           Sekiz gün eski bir sayıyı normal gibi göstermek, kullanıcıyı YANLIŞ BİR KARARA
           götürür — ve o karar geri alınamaz. Sayının yerine NEDEN gösterilmediği gelir. */}
+      {/* 🔴 FAZ 7.3(k) — SERTİFİKA DRIFT BANDI. Tazelik bandının hemen üstünde ve bu
+          sıra bilinçli: ikisi de *"bu sayıya güvenmeden önce oku"* sınıfı ama farklı
+          şeyler söylüyorlar — tazelik **verinin**, sertifika **tanımın** yaşını sorar.
+          Bir sayı taze olup yanlış tanımlanmış olabilir. */}
+      <SertifikaBandi item={item} />
+
       {item.result && (item.freshness === "hata" || item.freshness === "bilinmiyor") && (
         <div className="border border-amber-600/60 bg-amber-950/20 p-4">
           <p className="mb-1 font-mono text-[10px] uppercase tracking-wider text-amber-500">

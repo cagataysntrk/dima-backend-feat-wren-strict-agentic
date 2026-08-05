@@ -606,6 +606,52 @@ def record_contract(request: Request, *, service, session_id: str | None, questi
         return None
 
 
+def _sertifika_blogu(request, resp: AskResponse, principal) -> dict | None:
+    """`cube_query` → metrik referansı → kayıt → bugünkü durum.
+
+    ⚠ Her adım **sessizce** `None` dönebilir ve bu doğru: bir sertifika **yokluğu** bir
+    hata değildir. Ama yokluk `otomatik_iptal_nedeni` ile **karıştırılmaz** —
+    `certification.durum()` ikisini ayrı döndürür.
+
+    🔴 **Tanım/köken parmak izleri BUGÜNKÜ şemadan hesaplanır**, kayıttakiyle kıyaslanmak
+    için. Kayıttakini yeniden kullanmak, kıyası **kendisiyle** yapmak olurdu ve hiçbir
+    çürüme asla görünmezdi.
+    """
+    from app import certification, sertifika_okuma
+    from control_plane.db import get_session
+
+    ref = sertifika_okuma.metrik_ref(resp.cube_query)
+    if not ref:
+        return None
+    tenant_id = getattr(principal, "tenant_id", None)
+    if not tenant_id:
+        return None
+
+    with next(get_session()) as oturum:                  # type: ignore[call-overload]
+        kayit = sertifika_okuma.kayittan_oku(oturum, tenant_id, ref)
+    if kayit is None:
+        return None
+
+    # Bugünkü parmak izleri — kıyas için.
+    try:
+        from app.company_registry import wren_for_request
+        sema = wren_for_request(request).schema()
+        cube_adi, _, olcu_adi = ref.partition(".")
+        olcu = None
+        for c in (sema.get("cubes") or []):
+            if c.get("name") == cube_adi:
+                for m in (c.get("measures") or []):
+                    if (m.get("name") if isinstance(m, dict) else m) == olcu_adi:
+                        olcu = m if isinstance(m, dict) else {"name": m}
+                        break
+        tanim = certification.tanim_hash(olcu)
+        koken = certification.koken_hash(resp.cube_query)
+    except Exception:                       # noqa: BLE001
+        tanim = koken = None
+
+    return sertifika_okuma.blok(kayit, tanim=tanim, koken=koken)
+
+
 def seal(resp: AskResponse, *, request: Request, principal, t0: float,
          session_id: str | None, log_body: Any = None, thread_id: str | None = None,
          reply_to_label: str | None = None, is_new_topic: bool | None = None,
@@ -658,6 +704,35 @@ def seal(resp: AskResponse, *, request: Request, principal, t0: float,
             resp.hedef = None
     except Exception:                       # noqa: BLE001 — hedef cevabı DÜŞÜRMEZ
         resp.hedef = None
+
+    # 🔴 **FAZ 7.3(k) / B8 — SERTİFİKA ZİNCİRİ BAĞLANDI.**
+    #
+    # Ölçüldü: `MetrikSertifikasi` tablosunun **hiçbir okuyucusu**, `certification.py`'nin
+    # **hiçbir çağıranı**, `AskResponse.sertifika`'nın **hiçbir dolduranı** ve
+    # `sertifikaRozeti()`'nin **hiçbir verisi** yoktu. Dört parça da ayrı ayrı doğru,
+    # hiçbiri diğerine dokunmuyor.
+    # *Bir zincirin her halkasını ayrı ayrı test etmek, zinciri test etmek değildir.*
+    #
+    # ⚠ Yeri `seal()`: sertifika bir **mühürleme** kararıdır (cevap tamamlandıktan sonra
+    # okunur) ve `ask()` tavanı 1150/1151 — oraya bir çağrı eklemek tavanı aşardı.
+    # ⚠ Bayrak kapalıyken `resp.sertifika` **HİÇ üretilmez** → yanıt bayt bayt bugünküyle
+    # aynı (KURAL B).
+    try:
+        from app.config import get_settings
+        from app.features import resolve_for
+
+        # 🔴 `sertifika` **`Explain`'in alanıdır**, `AskResponse`'un değil — ve ilk
+        # yazımda `resp.sertifika` yazdım, süit `ValueError: "AskResponse" object has no
+        # field "sertifika"` ile yakaladı. ⚠ Pydantic bunu **çalışma zamanında** söyledi;
+        # bir alanın hangi modele ait olduğunu *"yakınında duruyor"* diye varsaymak, bu
+        # zincirin BEŞİNCİ kopukluğuydu.
+        _principal = getattr(request.state, "principal", None)
+        if resp.explain is not None and "metrik_sertifikasi" in resolve_for(
+                get_settings(), _principal):
+            resp.explain.sertifika = _sertifika_blogu(request, resp, _principal)
+    except Exception:                       # noqa: BLE001 — sertifika cevabı DÜŞÜRMEZ
+        if resp.explain is not None:
+            resp.explain.sertifika = None
     # FAZ 2.6 — mali yıl penceresi. `seal()` HER yanıtın geçtiği kapanıştır; başka bir
     # yere koymak onu BAZI yanıtlarda eksik bırakırdı (1.12'nin aynı gerekçesi).
     try:

@@ -36,7 +36,7 @@ _KOK = Path(__file__).resolve().parents[1]
 if str(_KOK) not in sys.path:
     sys.path.insert(0, str(_KOK))
 
-from lab.kapi import _FE_OKUYAN, _frontend_degisti, _secim  # noqa: E402
+from lab.kapi import _FE_OKUYAN, _frontend_degisti, _secim, _yol_desenleri  # noqa: E402
 
 _TSX = "dima-frontend-demo-master/src/components/ReportCard.tsx"
 
@@ -87,3 +87,43 @@ def test_SECIM_hicbir_zaman_BOS_donmuyor():
     seçim, koşmayan bir kapıdır ve yeşil görünür.*"""
     secili, _ = _secim(["README.md"])
     assert secili, "🔴 seçim boş — hızlı kapı hiçbir şey koşmadan yeşil der"
+
+
+# --- İKİNCİ KÖR NOKTA: dosya YOLUNU okuyan kapılar ------------------------------------
+
+def test_YOLU_OKUYAN_kapilar_da_seciliyor():
+    """🔴 **İkinci kör nokta, birincisiyle aynı sınıf** (2026-08-05).
+
+    `_desenler()` yalnız **import** biçimli bağımlılığı sayıyordu. Ama bazı kapılar modülü
+    import etmez, dosyayı **okur**:
+    `ast.parse((KOK / "app" / "routers" / "ask.py").read_text())`.
+
+    **Ölçülen bedel:** `_queue_discovery_job` `discovery_kuyrugu.py`'ye taşındığında
+    `test_ai_act_uyumu::test_KOSUCU_IPTALI_GERCEKTEN_OKUYOR` kırmızıya döndü; o turun
+    hızlı kapısı **517 yeşil** dedi ve kırmızı ancak **bir sonraki turda** görüldü.
+
+    *Bir kaynak dosyayı okumak da bir bağımlılıktır — import kadar gerçek.*
+    """
+    secili, _ = _secim(["backend/app/routers/ask.py"])
+    assert "test_ai_act_uyumu.py" in secili, (
+        "🔴 `ask.py`'yi dosya olarak okuyan kapı SEÇİLMİYOR — taşıma/silme kırmızısı gizlenir.")
+    assert "test_modul_buyume.py" in secili, (
+        "🔴 Modül tavanı kapısı seçilmiyor — tavan aşımı sessizce birikir.")
+
+
+def test_YOL_DESENI_TIRNAK_ICINDEKI_ADI_ariyor():
+    """⚠ Bu depoda yol **üç** biçimde kuruluyor (`"a/b.py"` · `KOK / "a" / "b.py"` ·
+    `APP / "b.py"`); üçünün tek ortak noktası **tırnak içindeki dosya adıdır**."""
+    d = _yol_desenleri(["backend/app/cube_router.py"])
+    assert d and d[0].search('(APP / "cube_router.py")')
+    assert d[0].search('KOK / "app" / "cube_router.py"')
+    assert not d[0].search("import cube_router"), (
+        "🔴 Tırnaksız bir ad eşleşiyor — `--hizli`'nin sade-ad tuzağına düşer.")
+
+
+def test_YOL_SECIMI_KAPIYI_yavaslatmiyor():
+    """⚠ *Fazladan koşan bir kapı zaman kaybettirir; koşmayan bir kapı kırmızıyı gizler* —
+    ama yine de sınır ölçülür: tek bir modül değişikliği süitin yarısını seçmemeli."""
+    secili, toplam = _secim(["backend/app/routers/ask.py"])
+    assert len(secili) < toplam * 0.4, (
+        f"🔴 {len(secili)}/{toplam} kapı seçildi — `--hizli` hızlı olmaktan çıkar.")

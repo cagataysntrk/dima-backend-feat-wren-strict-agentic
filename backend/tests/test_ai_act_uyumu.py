@@ -213,9 +213,16 @@ def test_KOSUCU_IPTALI_GERCEKTEN_OKUYOR():
     assert ask_jobs.yayimlanabilir_mi("running") is True
     assert ask_jobs.yayimlanabilir_mi("cancelled") is False
 
-    agac = ast.parse((KOK / "app" / "routers" / "ask.py").read_text(encoding="utf-8"))
+    # 🔴 Gövde FAZ 7 tavan borcu için `app/discovery_kuyrugu.py`'ye **taşındı**
+    # (`ask.py` 2442/2419). Davranış birebir aynı; değişen yalnız ev.
+    #
+    # ⚠ **Ve bu kapı taşımayı GÖREMEDİ**: modülü import etmiyor, dosya yolunu **dize
+    # olarak** okuyor — `lab/kapi.py --hizli --degisen`'in import-tabanlı seçimi onu
+    # hiç seçmedi. Aynı kör nokta sınıfı `.tsx` için bir tur önce kapanmıştı; bu, onun
+    # **Python yüzeyi**. `test_kapi_secimi.py` artık ikisini de kilitliyor.
+    agac = ast.parse((KOK / "app" / "discovery_kuyrugu.py").read_text(encoding="utf-8"))
     fn = next(n for n in ast.walk(agac)
-              if isinstance(n, ast.FunctionDef) and n.name == "_queue_discovery_job")
+              if isinstance(n, ast.FunctionDef) and n.name == "kuyrukla")
     bg = next(n for n in ast.walk(fn) if isinstance(n, ast.FunctionDef) and n.name == "_bg")
     cagrilar = [n for n in ast.walk(bg) if isinstance(n, ast.Call)
                 and getattr(n.func, "attr", "") == "yayimlanabilir_mi"]

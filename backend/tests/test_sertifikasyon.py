@@ -159,17 +159,32 @@ def test_FRONTEND_KADEMEYI_GOSTERIYOR():
     """🔴 **K2:** yeni bir sözleşme alanı **frontend tüketicisi olmadan** eklenemez."""
     if not FE.exists():
         pytest.skip("frontend bu koşumda mount edilmemiş")
-    panel = (FE / "components" / "ChatPanel.tsx").read_text(encoding="utf-8")
+    from tests.kapi_ortak import fe_dosyalari
+    from tests.test_panel_sayisi import DESEN
+
+    # ⚠ **Yorumsuz** kaynak: bu kapı iki kez kendi belgesini ölçtü (aşağıya bak).
+    panel = fe_dosyalari()["components/ChatPanel.tsx"]
     assert "sertifikaRozeti" in panel, "sertifika kademesi hiçbir yerde GÖSTERİLMİYOR"
-    # 🔴 **YAPISAL ölçüm** — ve bu bir düzeltme: ilk sürüm *"yeni panel DEĞİL"* cümlesini
-    # ARIYORDU ve cümle satır sonuna bölündüğü için kırmızı verdi (bu oturumda dördüncü
-    # kez metin ölçme kusuru). Doğru soru bir cümle değil bir YER: kademe, var olan güven
-    # rozetinin YANINDA mı duruyor? Aynı dosyada olmak, tam olarak bunun kanıtıdır.
-    assert "confidenceBadge" in panel, (
-        "sertifika kademesi güven rozetinden AYRI bir yere taşınmış — yol haritası birebir "
-        "'güven rozetinin kademesi (yeni panel DEĞİL)' diyor; K5 panel tavanı 13/13, boşluk 0")
-    yeni_panel = [f.name for f in (FE / "components").glob("*Sertifika*")]
-    assert not yeni_panel, f"YENİ PANEL açılmış: {yeni_panel} — tavan 13/13, boşluk 0"
+
+    # 🔴 **İKİ DÜZELTME — ikisi de bu kapının KENDİ kusuruydu.**
+    #
+    # (1) Çapa `confidenceBadge`di ve FAZ 7.8/K2 o rozeti **kaldırdı** (kalibre edilmemiş
+    #     yüzde = MIMARI §9'a göre süs). Kapı yine de yeşildi, çünkü `confidenceBadge`
+    #     artık yalnız **kaldırma gerekçesini anlatan yorumda** geçiyordu — yani bir metin
+    #     taraması **kendi belgesini** ölçüyordu (bu operasyonda onuncu kez).
+    #     Yeni çapa `SourceBadge`: yol rozeti duruyor ve sertifika onun **yanında**.
+    #
+    # (2) `glob("*Sertifika*")` **dosya adı** sayıyordu; oysa K5'in bağlayıcı tanımı
+    #     (`test_panel_sayisi.py`) açık: *"sayılan şey **export edilen panel bileşenidir**,
+    #     dosya sayısı DEĞİL."* Bu kapı, deponun kendi tanımıyla **çelişiyordu** ve
+    #     `SertifikaBandi.tsx`'i (bir bant, panel değil) yeni panel sandı.
+    #     *Bir kuralın iki tanımı varsa, biri yanlıştır.*
+    assert "SourceBadge" in panel, (
+        "sertifika kademesi yol rozetinden AYRI bir yere taşınmış — yol haritası birebir "
+        "'güven rozetinin kademesi (yeni panel DEĞİL)' diyor; K5 tavanı 13/13, boşluk 0")
+    yeni_panel = sorted(ad for yol, src in fe_dosyalari().items()
+                        if "Sertifika" in yol for ad in DESEN.findall(src))
+    assert not yeni_panel, f"YENİ PANEL export edilmiş: {yeni_panel} — tavan 13/13"
 
 
 def test_FRONTEND_ESIK_KOPYALAMIYOR():

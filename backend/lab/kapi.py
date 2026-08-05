@@ -197,6 +197,39 @@ def _desenler(degisen: list[str]) -> list[re.Pattern[str]]:
     return desenler
 
 
+def _yol_desenleri(degisen: list[str]) -> list[re.Pattern[str]]:
+    """Değişen dosyanın **YOLUNU dize olarak** okuyan kapılar.
+
+    🔴 **İkinci kör nokta, birincisiyle aynı sınıf** (2026-08-05). `_desenler()` yalnız
+    **import** biçimli bağımlılığı sayıyor. Ama bazı kapılar modülü import etmez, dosyayı
+    **okur**: `ast.parse((KOK / "app" / "routers" / "ask.py").read_text())`. O kapılar
+    `ask.py` değişse bile **hiç seçilmiyordu**.
+
+    Ölçülen bedel: `_queue_discovery_job` `discovery_kuyrugu.py`'ye taşındı ve
+    `test_ai_act_uyumu::test_KOSUCU_IPTALI_GERCEKTEN_OKUYOR` kırmızıya döndü; o turun
+    hızlı kapısı **517 yeşil** dedi ve kırmızı ancak bir sonraki turda görüldü.
+
+    *Bir kapının kapsamı, onu tetikleyen sinyalden büyük olamaz* — ve bir kaynak dosyayı
+    okumak da bir bağımlılıktır, import kadar gerçek.
+
+    ⚠ **Ölçüt TIRNAK İÇİNDEKİ DOSYA ADIDIR**, tam yol değil — ve bu bir daraltma değil,
+    bir **genelleme**: bu depoda yol üç ayrı biçimde kuruluyor
+    (`"app/routers/ask.py"` · `KOK / "app" / "routers" / "ask.py"` · `APP / "ask.py"`).
+    Üçünün **tek ortak noktası** tırnak içindeki dosya adıdır.
+
+    ⚠ Yanlış-pozitif riski kabul edildi ve ölçüldü: bir docstring'de geçen `"ask.py"`
+    de seçim üretir. *Fazladan koşan bir kapı zaman kaybettirir; koşmayan bir kapı
+    kırmızıyı gizler* — ve ikincisi bu operasyonda **iki kez** oldu.
+    """
+    desenler: list[re.Pattern[str]] = []
+    for d in degisen:
+        yol = pathlib.PurePosixPath(d)
+        if yol.suffix != ".py" or yol.name == "__init__.py":
+            continue
+        desenler.append(re.compile(f'"{re.escape(yol.name)}"'))
+    return desenler
+
+
 def _secim(degisen: list[str]) -> tuple[list[str], int]:
     hepsi = sorted(f.name for f in TESTLER.glob("test_*.py"))
     secili = {f for f in CEKIRDEK if (TESTLER / f).exists()}
@@ -205,7 +238,7 @@ def _secim(degisen: list[str]) -> tuple[list[str], int]:
         ad = pathlib.PurePosixPath(d).name
         if ad.startswith("test_") and (TESTLER / ad).exists():
             secili.add(ad)
-    desenler = _desenler(degisen)
+    desenler = _desenler(degisen) + _yol_desenleri(degisen)
     fe = _frontend_degisti(degisen)
     if desenler or fe:
         for ad in hepsi:

@@ -102,8 +102,22 @@ export function AdhocBadge({ cubeQuery }: { cubeQuery: CubeQuery | null }) {
   );
 }
 
-export function SourceBadge({ source }: { source: string | null }) {
+export function SourceBadge({
+  source,
+  sertifika,
+}: {
+  source: string | null;
+  /** 🔴 FAZ 7.3(k) — `sertifikaRozeti()` **export edilmiş ama HİÇ ÇAĞRILMAMIŞTI**
+   *  (zincirin beşinci kopukluğu). Rozet artık yol rozetinin yanında duruyor: yol
+   *  *"nereden geldi"*, sertifika *"tanımını kim onayladı"* der.
+   *
+   *  ⚠ `uyari` kademesi burada **gösterilmez** — onun yeri `SertifikaBandi`dir.
+   *  *Bir uyarıyı bir etiketin içine sıkıştırmak, onu bir etikete indirger.* */
+  sertifika?: { kademe?: string | null; otomatik_iptal_nedeni?: string[] | null } | null;
+}) {
   if (!source) return null;
+  const sert = sertifika?.kademe && sertifika.kademe !== "uyari"
+    ? sertifikaRozeti(sertifika) : null;
   let label: string, cls: string, title: string;
   if (source === "cube") {
     label = "◆ CUBE";
@@ -148,6 +162,11 @@ export function SourceBadge({ source }: { source: string | null }) {
       className={`inline-flex h-[20px] items-center gap-1 border px-1.5 font-mono text-[10px] tracking-wide ${cls}`}
     >
       {label}
+      {sert && (
+        <span className="ml-1 opacity-[var(--opacity-soluk)]" title={sert.title}>
+          {sert.emoji}
+        </span>
+      )}
     </span>
   );
 }
@@ -267,7 +286,7 @@ export function ChatPanel({
                           ? `${reportable.result.row_count} satır`
                           : reportable.kpi ? "KPI kartı" : "sql"}
                       </span>
-                      <SourceBadge source={reportable.source} />
+                      <SourceBadge source={reportable.source} sertifika={reportable.explain?.sertifika} />
                     </>
                   ) : last.note ? (
                     <span className="truncate text-amber-600">{last.note}</span>

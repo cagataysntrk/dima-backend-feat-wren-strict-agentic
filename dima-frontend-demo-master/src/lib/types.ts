@@ -281,6 +281,33 @@ export interface Explain {
   path: string;
   confidence: number | null;
   assumptions: string[];
+  /** 🔴 **FAZ 7.3(k) / B8 — ZİNCİR BAĞLANDI.**
+   *
+   * Bu alan **tipte bile yoktu**, oysa `schemas.py::Explain.sertifika` FAZ 1.5'ten beri
+   * vardı ve `sertifikaRozeti()` (ChatPanel) onu okumak için yazılmıştı. Ölçüldü:
+   * tablo → `certification.py` → `Explain.sertifika` → rozet — **dört halka da vardı,
+   * hiçbiri diğerine dokunmuyordu.**
+   *
+   * `path`/`confidence` *"bu cevap hangi yoldan geldi"* der; `sertifika` **başka bir
+   * soruya** cevap verir: *"bu metriğin TANIMINI kim onayladı ve o onaydan beri ne
+   * değişti?"* Bir metrik **doğru hesaplanıp yanlış tanımlanmış** olabilir ve
+   * determinizm onu yakalamaz.
+   *
+   * ⚠ `kademe` backend'de hesaplanır (`sertifika_okuma.blok`): rozet kademesi bir
+   * **karardır** ve iki sahibi olursa ayrışır. Arayüz yalnız **gösterir**.
+   */
+  sertifika?: {
+    seviye?: string | null;
+    kademe?: string | null;
+    gecerli?: boolean;
+    yeniden_dogrulama_gerekli?: boolean;
+    otomatik_iptal_nedeni?: string[] | null;
+    sertifika_notu?: string | null;
+    son_gecerlilik?: string | null;
+    /** ⚠ Bilinen sınır, backend'den **taşınır**: çok ölçülü cevapta sertifika ilk
+     *  ölçüden okunur; doğrusu en zayıf halkadır. */
+    kisit?: string | null;
+  } | null;
 }
 
 // VizSpec — backend viz.recommend() çıktısı (ADR-0024). FE `chart.ts` Analysis'ine adapte edilir.
