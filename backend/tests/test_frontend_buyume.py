@@ -39,13 +39,26 @@ from tests.kapi_ortak import fe_dosyalari, yorumsuz
 #: `dosya → tavan` (kod satırı, yorumsuz). **Ölçülen değerler** — 2026-08-05.
 #: ⚠ Yalnız *"ağırlık merkezi"* dosyalar: her dosyaya tavan koymak, kapıyı bir
 #: bürokrasiye çevirir ve **hiçbirine bakılmaz** hâle getirir.
+# ⟳ 2026-08-05 · FAZ 4 — İKİ TAVAN **İNDİRİLDİ**, biri yükseltildi.
+#
+# 🔴 Kapının kendi kuralı: *"tavanda boşluk varsa kapı büyümeyi durdurmuyor; tavan
+# ÖLÇÜLEN DEĞERE çekilmeli."* `ReportCard` makinesi (`KartMakinesi`) ve zamanlama
+# açılır kutusu (`KartZamanlama`) ayrı bileşenlere çıkınca dosya 948 → **883**'e indi;
+# tavanı 948'de bırakmak 65 satırlık **sessiz bir büyüme izni** olurdu.
+#   ReportCard 948 → 883   (makine + zamanlama çıkarıldı)
+#   page.tsx   534 → 522   (ayarlar bölümü çıkarıldı)
+#
+# ⚠ `api-client.ts` 778 → 791: geri-alma sarmalayıcıları eklenmişti ve bu depoda TÜM
+# HTTP oradan geçer (`dima-frontend/CLAUDE.md`) — yani bu bir muafiyet değil, kuralın
+# kendi maliyeti. *Bir tavan, kuralın gerektirdiği büyümeyi de yasaklıyorsa kuralı
+# yasaklamış olur.*
 TAVANLAR = {
-    "components/ReportCard.tsx": 948,
-    "lib/api-client.ts": 778,
+    "components/ReportCard.tsx": 883,
+    "lib/api-client.ts": 791,
     "lib/chart.ts": 688,
     "lib/types.ts": 579,
     "components/ReviewPanel.tsx": 555,
-    "app/page.tsx": 534,
+    "app/page.tsx": 522,
     "components/ResultView.tsx": 476,
     "components/InterpretationBar.tsx": 472,
 }

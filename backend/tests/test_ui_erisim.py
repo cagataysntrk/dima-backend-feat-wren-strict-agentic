@@ -210,6 +210,10 @@ TEK_GIRISLI: tuple[tuple[str, str, str], ...] = (
     ("Makbuz", "ne yaptım", "katmanlı makbuz — kanıt zinciri"),
     ("ContractDetailPanel", "nereden geldi", "«bu sayı nereden geldi» köken cümleleri"),
     ("InterpretationBar", "kırılım", "yorum çubuğu — LLM'siz düzenleme"),
+    # 🔴 FAZ 4 — grafiğin MAKİNESİ ayrı bileşende; panel açıkken oraya taşınıyor.
+    ("KartMakinesi", "InterpretationBar", "yorum çubuğu · reçete · katkı — tek yerde"),
+    ("KartZamanlama", "alarm", "🔔 alarm + periyot açılır kutusu (ReportCard'tan çıktı)"),
+    ("AnalizPaneli", "complementary", "analiz paneli — modal DEĞİL"),
     ("OutputInsight", "ANLATIM", "çıktı yorumu + anlatım kutusu"),
     ("KpiCard", "formül", "KPI kartı — formül + bileşenler"),
     ("ResultView", "pivot", "grafik/tablo/pivot + dışa aktarma"),

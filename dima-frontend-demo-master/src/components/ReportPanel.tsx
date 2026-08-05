@@ -87,6 +87,8 @@ export function ReportPanel({
   onContinue,
   onReply,
   onReplyMulti,
+  onPanelAc,
+  panelAcikSira,
   // 🔴 FAZ 3b — ASİMETRİ KAPANDI. Bu dört ayar bugüne kadar YALNIZ sol komposerde
   // vardı; takip sorusunda verilemiyordu. *Bir ayarın yalnız bazı sorulara
   // uygulanabilmesi, kullanıcıya o ayarın ne zaman geçerli olduğunu TAHMİN ETTİRİR
@@ -120,6 +122,10 @@ export function ReportPanel({
   // §B düzeltmesi (1 Ağustos 2026) — bu panelin KENDİ komposer'ı: aktif thread'in GÜNCEL
   // bağlamıyla devam eder (eski TEK komposer'ın bağlamsal davranışı, artık burada).
   onContinue?: (text: string) => void;
+  /** 🔴 FAZ 4 — kartın **makinesini** panelde açar. `undefined` → düğme çizilmez. */
+  onPanelAc?: (sira: number) => void;
+  /** Panelde açık olan kartın sırası — o kart makinesini **çizmez** (panele taşındı). */
+  panelAcikSira?: number | null;
   kapsam?: Kapsam | null;
   onKapsam?: (k: Kapsam) => void;
   superadmin?: boolean;
@@ -285,6 +291,11 @@ export function ReportPanel({
                 setFb={setFb}
                 onReply={onReply}
                 selectable={selectionMode}
+                // 🔴 FAZ 4 — makine panelde açıksa kart onu ÇİZMEZ (iki yerde iki
+                // kopya olurdu). *Aynı makineyi iki kez göstermek, kullanıcıya
+                // hangisinin gerçek olduğunu sordurur.*
+                makineGizli={panelAcikSira === i}
+                onPanelAc={onPanelAc ? () => onPanelAc(i) : undefined}
                 selected={selected.has(i)}
                 onToggleSelect={() =>
                   setSelected((s) => {

@@ -17,10 +17,9 @@ import {
   createShareLink,
 } from "@/lib/api-client";
 import { ContractDetailPanel } from "@/components/ContractDetailPanel";
-import { ContributionLayer } from "@/components/ContributionLayer";
-import { PrescriptionLayer } from "@/components/PrescriptionLayer";
 import { DrillDownPanel } from "@/components/DrillDownPanel";
-import { InterpretationBar } from "@/components/InterpretationBar";
+import { KartMakinesi } from "@/components/KartMakinesi";
+import { KartZamanlama } from "@/components/KartZamanlama";
 import { ResultView } from "@/components/ResultView";
 import { KpiCardView } from "@/components/KpiCard";
 import { OutputInsight } from "@/components/OutputInsight";
@@ -47,6 +46,8 @@ export function ReportCard({
   setFb,
   onReply,
   selectable,
+  makineGizli,
+  onPanelAc,
   selected,
   onToggleSelect,
 }: {
@@ -74,6 +75,10 @@ export function ReportCard({
              hucre?: { dimension: string; value: string }) => void;
   // Çoklu-seçim (birleşik bağlam) — yalnız seçim modu açıkken görünür bir checkbox.
   selectable?: boolean;
+  /** Panel açıkken makine ORAYA taşınır; kart onu çizmez. */
+  makineGizli?: boolean;
+  /** 🔴 *"Panelde aç"* — grafiğin makinesini yan panele taşır. */
+  onPanelAc?: () => void;
   selected?: boolean;
   onToggleSelect?: () => void;
 }) {
@@ -325,86 +330,20 @@ export function ReportCard({
                   {scheduled === verifyKey ? "🔔 zamanlandı" : "🔔 zamanla"}
                 </button>
                 {schedOpen && (
-                  <span className="absolute right-0 top-full z-30 mt-1 flex w-64 flex-col gap-2 border border-hairline bg-background p-2 shadow-lg">
-                    {/* #56 alarm (opsiyonel) — eşik / anomali; ölçü rapor ölçülerinden. */}
-                    <div className="flex flex-col gap-1">
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">
-                        alarm (opsiyonel)
-                      </span>
-                      <div className="flex gap-1 font-mono text-[11px]">
-                        {(["none", "threshold", "anomaly"] as const).map((t) => (
-                          <button
-                            key={t}
-                            onClick={() => setAlarmType(t)}
-                            className={`border px-1.5 py-0.5 transition-colors ${
-                              alarmType === t
-                                ? "border-accent/40 text-accent"
-                                : "border-hairline text-neutral-400 hover:text-foreground"
-                            }`}
-                          >
-                            {t === "none" ? "yok" : t === "threshold" ? "eşik" : "anomali"}
-                          </button>
-                        ))}
-                      </div>
-                      {alarmType !== "none" && (
-                        <div className="flex items-center gap-1 font-mono text-[11px]">
-                          <select
-                            value={alarmMeasure || measures[0] || ""}
-                            onChange={(e) => setAlarmMeasure(e.target.value)}
-                            className="min-w-0 flex-1 border border-hairline bg-background px-1 py-0.5"
-                          >
-                            {measures.map((m) => (
-                              <option key={m} value={m}>{m}</option>
-                            ))}
-                          </select>
-                          {alarmType === "threshold" ? (
-                            <>
-                              <select
-                                value={alarmOp}
-                                onChange={(e) => setAlarmOp(e.target.value as "gt" | "lt")}
-                                className="border border-hairline bg-background px-1 py-0.5"
-                              >
-                                <option value="gt">&gt;</option>
-                                <option value="lt">&lt;</option>
-                              </select>
-                              <input
-                                value={alarmValue}
-                                onChange={(e) => setAlarmValue(e.target.value)}
-                                inputMode="decimal"
-                                placeholder="değer"
-                                className="w-16 border border-hairline bg-background px-1 py-0.5"
-                              />
-                            </>
-                          ) : (
-                            <span className="text-neutral-400">z-skoru (olağandışı)</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    {/* #56 e-posta teslim (opsiyonel) — in-app bell her zaman düşer. */}
-                    <input
-                      value={emails}
-                      onChange={(e) => setEmails(e.target.value)}
-                      placeholder="e-posta (virgülle, opsiyonel)"
-                      className="border border-hairline bg-background px-1.5 py-1 font-mono text-[11px]"
-                    />
-                    {/* Periyot preset'i — tıklama mevcut alarm+e-posta ile zamanlar. */}
-                    <div className="flex flex-col border-t border-hairline pt-1">
-                      {[
-                        { name: "her sabah 08:00 · dünün verisi", every: "day" as const, at: "08:00", period: "dün" },
-                        { name: "her saat · bugünün verisi", every: "hour" as const, period: "bugün" },
-                        { name: "her pazartesi 08:00 · geçen hafta", every: "week" as const, at: "08:00", weekday: 1, period: "geçen hafta" },
-                      ].map((pr) => (
-                        <button
-                          key={pr.name}
-                          onClick={() => schedule(pr)}
-                          className="px-2 py-1.5 text-left font-mono text-[11px] text-neutral-500 hover:bg-neutral-500/[0.06] hover:text-foreground"
-                        >
-                          {pr.name}
-                        </button>
-                      ))}
-                    </div>
-                  </span>
+                  <KartZamanlama
+                    measures={measures}
+                    alarmType={alarmType}
+                    setAlarmType={setAlarmType}
+                    alarmMeasure={alarmMeasure}
+                    setAlarmMeasure={setAlarmMeasure}
+                    alarmOp={alarmOp}
+                    setAlarmOp={setAlarmOp}
+                    alarmValue={alarmValue}
+                    setAlarmValue={setAlarmValue}
+                    emails={emails}
+                    setEmails={setEmails}
+                    schedule={schedule}
+                  />
                 )}
               </span>
             )}
@@ -735,11 +674,6 @@ export function ReportCard({
         )}
       </div>
 
-      {item.cube_query && onCubeEdit &&
-        ((item.cube_query as { measures?: unknown[] }).measures?.length ?? 0) > 0 && (
-        <InterpretationBar cq={item.cube_query} onEdit={onCubeEdit} />
-      )}
-
       {/* Cross-cube KPI kartı (CCC / likidite) — cube tablosu değil bileşke skaler. */}
       {item.kpi && <KpiCardView card={item.kpi} />}
 
@@ -998,28 +932,25 @@ export function ReportCard({
           Altındaki katkı katmanı o cevabın DAYANAĞIDIR (hangi segment ne kadar
           hareket etti). Sıra ters olsaydı kullanıcı önce ham ayrışmayı, sonra
           cevabı görürdü. */}
-      {item.prescription && (
-        <PrescriptionLayer
-          recete={item.prescription}
-          onCubeEdit={onCubeEdit}
-          soru={item.question}
-          sessionId={sessionId}
-          // Kanıt bağı: karar, dayandığı makbuza bağlanınca YENİDEN ÇALIŞTIRILABİLİR
-          // bir iddiaya dönüşür. Kanıtsız kayıt da meşrudur ama farklıdır.
-          contractIds={item.contract_id ? [item.contract_id] : []}
-          // FAZ 5.8 — ŞABLON: `contract_ids` o günün sayısını DONDURUR, `cube_query`
-          // aynı analizi BUGÜN koşulabilir kılar. İkisi farklı sorular cevaplar.
-          cubeQuery={item.cube_query ?? null}
-        />
+      {/* 🔴 FAZ 4 — MAKİNE. Yorum çubuğu · reçete · katkı **tek bileşende** toplandı
+          ve panel açıkken oraya taşınıyor. Sohbette kalan şey: cevap + sayı + temiz
+          grafik. *Grafiği "olduğu gibi" sohbete koymak, grafiği değil bütün
+          MAKİNESİNİ sohbete koymaktır.* */}
+      {onPanelAc && (item.result || item.cube_query) && (
+        <button
+          onClick={onPanelAc}
+          title="Bu analizi yan panelde aç — grafik, tablo, kırılım ve köken orada"
+          className="mt-2 inline-flex items-center gap-1 rounded-[var(--radius-chip)] border border-[var(--surface-kenar)] px-2 py-1 font-mono text-[10px] text-neutral-500 transition-colors hover:border-accent/50 hover:text-accent"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <path d="M15 4v16" />
+          </svg>
+          panelde aç
+        </button>
       )}
-
-      {item.cube_query && (item.result || item.contribution) && (
-        <ContributionLayer
-          cubeQuery={item.cube_query}
-          sessionId={sessionId}
-          onCubeEdit={onCubeEdit}
-          hazir={item.contribution ?? null}
-        />
+      {!makineGizli && (
+        <KartMakinesi item={item} onCubeEdit={onCubeEdit} sessionId={sessionId} />
       )}
 
       {/* DEVAM SORUSU chip'leri (`suggestions`) — FAZ D2.

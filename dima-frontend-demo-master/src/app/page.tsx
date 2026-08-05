@@ -6,7 +6,9 @@ import { useMemo, useRef, useState } from "react";
 import { apiErrorMessage, ask, askCube, getConversation, uploadDataset } from "@/lib/api-client";
 import { AnalysisCanvas } from "@/components/AnalysisCanvas";
 import { ChatPanel } from "@/components/ChatPanel";
+import { AnalizPaneli } from "@/components/AnalizPaneli";
 import { AyarlarBolumu } from "@/components/AyarlarBolumu";
+import { KartMakinesi } from "@/components/KartMakinesi";
 import { DashboardsPanel } from "@/components/DashboardsPanel";
 import { DashboardView } from "@/components/DashboardView";
 import { HelpPanel } from "@/components/HelpPanel";
@@ -65,6 +67,11 @@ export default function Home() {
   // Görünüm ipucu ("grafik ver") — sağ paneldeki raporun görünümünü değiştirir.
   const [viewHint, setViewHint] = useState<{ kind: string; nonce: number } | null>(null);
   const [drawer, setDrawer] = useState<Drawer>(null);
+  // 🔴 FAZ 4 — ANALİZ PANELİ. `null` → kapalı. Değer, panelde açılan kartın sırası.
+  // ⚠ Panelin içeriği kartın **makinesidir** (yorum çubuğu · reçete · katkı); grafiğin
+  // kendisi sohbette **temiz** kalır. *Grafiği "olduğu gibi" sohbete koymak, grafiği
+  // değil bütün makinesini sohbete koymaktır.*
+  const [panelKart, setPanelKart] = useState<number | null>(null);
   /** 🔴 FAZ 7.6 — **dar ekran sekmesi** (<1024). Masaüstünde bu durum HİÇ okunmaz;
    *  iki bölme yan yanadır. ⚠ Varsayılan `"sohbet"`: dar bir ekranda ilk gösterilecek
    *  şey **soru sorma yeridir** — boş bir sonuç bölmesi, kullanıcıya ne yapacağını
@@ -606,6 +613,8 @@ export default function Home() {
                   onContinue={submitContinue}
                   onReply={submitReply}
                   onReplyMulti={submitReplyMulti}
+                  onPanelAc={setPanelKart}
+                  panelAcikSira={panelKart}
                   // 🔴 FAZ 3b — ASİMETRİ KAPANDI: bu dört ayar artık TAKİP sorusunda
                   // da verilebiliyor. Aynı `SoruAlani` bileşeni iki yerde de kullanılıyor
                   // — iki kopya değil, TEK SAHİP.
@@ -655,6 +664,31 @@ export default function Home() {
         )}
       </SettingsDrawer>
       </div>
+
+      {/* 🔴 ANALİZ PANELİ — reflow (overlay DEĞİL): sohbet daralır, gizlenmez.
+          Kullanıcının gerekçesi: *"panel açıkken hem grafiğe bakıp hem yorum
+          yazabilir; modalda kapatmak zorunda kalır."* */}
+      {activeThread && panelKart !== null && activeThread.items[panelKart] && (
+        <AnalizPaneli
+          acik
+          onKapat={() => setPanelKart(null)}
+          baslik={activeThread.items[panelKart].question || "Analiz"}
+          sira={panelKart + 1}
+          toplam={activeThread.items.length}
+          onOnceki={panelKart > 0 ? () => setPanelKart(panelKart - 1) : undefined}
+          onSonraki={
+            panelKart < activeThread.items.length - 1
+              ? () => setPanelKart(panelKart + 1)
+              : undefined
+          }
+        >
+          <KartMakinesi
+            item={activeThread.items[panelKart]}
+            onCubeEdit={({ cq, label }) => cubeMutation.mutate({ cq, label })}
+            sessionId={sessionId}
+          />
+        </AnalizPaneli>
+      )}
     </div>
   );
 }
