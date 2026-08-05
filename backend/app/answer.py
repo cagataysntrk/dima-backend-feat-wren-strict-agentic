@@ -159,8 +159,38 @@ def _uuid_or_none(val):
         return None
 
 
+def _bosluk_kaydi(request, body, resp) -> dict:
+    """🔴 KÖK-8a — cevap gelmediyse **NEDEN gelmediğini** kelime düzeyinde kaydet.
+
+    Sözlük boşluğu bugün tahminle kapatılıyor; bu, onu **ölçüme** çevirir:
+    *"bu ay 412 soru `sattık` yüzünden düştü"*.
+
+    ⚠ Yalnız cevap YOKKEN yazılır (`resp.source is None`): dolu bir cevapta bu iki
+    kolon gürültüdür ve her isteğe bir katalog taraması maliyeti bindirirdi.
+
+    ⚠ Ve **best-effort**: telemetri bir cevabı asla düşürmez.
+    """
+    if resp.source is not None:
+        return {}
+    try:
+        from app import cube_router
+        from app.company_registry import wren_for_request
+
+        schema = wren_for_request(request).schema()
+        q = body.question or ""
+        bilinmeyen, _ = cube_router.partial_unknowns(q, schema)
+        adaylar = [c.get("name") for c, _m in cube_router.measure_cube_candidates(q, schema)]
+        return {
+            "uncovered_words": json.dumps(sorted(bilinmeyen), ensure_ascii=False) or None,
+            "aday_cubelar": json.dumps(sorted(x for x in adaylar if x), ensure_ascii=False) or None,
+        }
+    except Exception:                       # noqa: BLE001 — telemetri cevabı DÜŞÜRMEZ
+        _log.warning("boşluk kaydı üretilemedi (best-effort)", exc_info=True)
+        return {}
+
+
 def _log_interaction(session_id: str | None, body: AskRequest, resp: AskResponse,
-                     dur_ms: int, principal=None) -> None:
+                     dur_ms: int, principal=None, request=None) -> None:
     """Her etkileşimi `interaction_log` DB tablosuna yazar — TEK KAYNAK (ADR-0020).
 
     JSONL kaldırıldı (redundancy): admin viewer AYRI servis (ADR-0015) → Postgres ortak store'dan
@@ -195,7 +225,8 @@ def _log_interaction(session_id: str | None, body: AskRequest, resp: AskResponse
                 # RED GEREKÇESİ (Faz 0): `route()` pes ettiyse HANGİ dalda. Deterministik
                 # yol cevabı ürettiyse `None` kalır — yani bu kolonun doluluğu doğrudan
                 # "deterministik yoldan çıkamayan sorular" kümesini verir.
-                reject_reason=_red_gerekcesi()))
+                reject_reason=_red_gerekcesi(),
+                **_bosluk_kaydi(request, body, resp)))
             s.commit()
     except Exception:
         _log.warning("interaction log (DB) yazılamadı (best-effort)", exc_info=True)
@@ -911,7 +942,7 @@ def seal(resp: AskResponse, *, request: Request, principal, t0: float,
     _persist_message(request, resp, session_id)
     sure_ms = int((time.monotonic() - t0) * 1000)
     if log_body is not None:
-        _log_interaction(session_id, log_body, resp, sure_ms, principal)
+        _log_interaction(session_id, log_body, resp, sure_ms, principal, request)
 
     # BİLEREK try/except'siz: `audit.record` kendi içinde DB→spool'a düşer ve YALNIZ ikisi
     # birlikte başarısız olursa fırlatır. "Başarı audit'siz raporlanamaz" — fail-closed.

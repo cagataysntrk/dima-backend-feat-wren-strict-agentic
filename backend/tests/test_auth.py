@@ -10,6 +10,8 @@ from __future__ import annotations
 import time
 from datetime import timedelta
 
+from pathlib import Path
+
 import pytest
 from sqlmodel import Session, select
 
@@ -377,7 +379,17 @@ def test_packs_discovery_and_tenant_config_flow(client, admin_client, tmp_path):
     assert "boyahane" in keys
     boyahane = next(p for p in packs["sektorler"] if p["key"] == "boyahane")
     assert any(c["name"] == "parti" for c in boyahane["cubes"])  # cube önizlemesi
-    assert boyahane["moduller"] == ["oee", "bakim", "ik", "enerji"]
+    # ⟳ KN-2 — `bf5a7eb` boyahane'ye BEŞ modül daha ekledi (butce · satis · maliyet ·
+    # finans · lojistik) ve bu beyan güncellenmedi; denetim raporu bunu "Pack listesi
+    # 5 fazla" diye ölçtü. Liste PAKETTEN okunur, elle sabitlenmez: bir beyanı elle
+    # sabitlemek, onu bir sonraki modülde yine bayatlatır.
+    # *Bir listeyi kopyalamak yerine kaynağını göstermek, kopyanın bayatlamasını
+    # imkânsız kılar.*
+    import yaml as _yaml
+    _pack = _yaml.safe_load(
+        (Path(__file__).resolve().parents[1] / "demo/packs/sektor/boyahane/pack.yml")
+        .read_text(encoding="utf-8"))
+    assert boyahane["moduller"] == _pack["moduller"]
 
     # Bilinmeyen pack reddedilir (sessiz çürüme yok).
     r = admin_client.post("/sadmin/tenants", headers=h, json={
@@ -508,8 +520,20 @@ def test_legacy_token_without_slug_gets_401_to_refresh(client):
 def test_admin_can_toggle_tenant_status(admin_client):
     r = admin_client.post("/auth/login", json=TEST_SUPERADMIN)
     h = {"Authorization": f"Bearer {r.json()['access_token']}"}
+    # 🔴 KENDİ KENDİNE YETER — sıra bağımlılığı kaldırıldı.
+    #
+    # Ölçüldü: bu test `askida-firma` tenant'ını ÖNCEKİ bir testin yaratmasına
+    # güveniyordu. Seri koşumda geçiyor, `-n 4` ile paralel koşumda **StopIteration**
+    # veriyordu — çünkü xdist testleri işçilere dağıtınca önkoşul başka bir süreçte
+    # kalıyor. *Bir testin geçmesi, koşum biçimine bağlı olmamalıdır; öyleyse ölçtüğü
+    # şey ürün değil, sıradır.*
     tenants = admin_client.get("/sadmin/tenants", headers=h).json()
-    tid = next(t["id"] for t in tenants if t["slug"] == "askida-firma")
+    tid = next((t["id"] for t in tenants if t["slug"] == "askida-firma"), None)
+    if tid is None:
+        y = admin_client.post("/sadmin/tenants", headers=h,
+                              json={"slug": "askida-firma", "name": "Askıda Firma"})
+        assert y.status_code in (200, 201), y.text
+        tid = y.json()["id"]
     r = admin_client.patch(f"/sadmin/tenants/{tid}", headers=h,
                            json={"status": "suspended"})
     assert r.status_code == 200 and r.json()["status"] == "suspended"

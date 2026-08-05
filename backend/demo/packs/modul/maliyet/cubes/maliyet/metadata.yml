@@ -39,12 +39,21 @@ measures:
     expression: "ROUND(AVG(kimyasal_tl_kg),3)"
     type: DOUBLE
     unit: "₺/kg"
-    synonyms: [kimyasal maliyeti, boya maliyeti, kimyasal birim maliyet]
+    # 🔴 KN-2 ÇAKIŞMASI — çıplak `kimyasal maliyeti`/`boya maliyeti` KALDIRILDI.
+    # Ölçüldü (eval `ny-kimyasal-maliyet-renk`): golden `surdurulebilirlik.toplam_kimyasal_tl`
+    # bekliyor ve bu cube o soruyu **cevaplayamaz bile** — yalnız `makine` boyutu var,
+    # soru `renk bazında` istiyor. Çıplak terim TOPLAM maliyetin (₺), buradaki ise
+    # KG BAŞINA birim maliyetin (₺/kg) adıdır; ikisi farklı ölçülerdir.
+    # *Bir birim maliyeti, toplam maliyetin adıyla çağırmak, iki farklı sayıyı tek isme
+    # bağlamaktır — ve hangisinin geldiğini kullanıcı göremez.*
+    synonyms: [kimyasal birim maliyet, kg başına kimyasal, birim boya maliyeti]
   - name: enerji_maliyet_kg
     expression: "ROUND(AVG(elektrik_tl_kg + dogalgaz_tl_kg),3)"
     type: DOUBLE
     unit: "₺/kg"
-    synonyms: [enerji maliyeti, elektrik gaz maliyeti, enerji birim maliyet]
+    # 🔴 Aynı gerekçe (eval `ny-enerji-maliyet-asama`): çıplak `enerji maliyeti`
+    # `surdurulebilirlik.toplam_enerji_tl`in; burası ₺/kg birim maliyettir.
+    synonyms: [enerji birim maliyet, kg başına enerji, elektrik gaz birim maliyeti]
   - name: iscilik_maliyet_kg
     expression: "ROUND(AVG(iscilik_tl_kg),3)"
     type: DOUBLE
@@ -54,7 +63,14 @@ measures:
     expression: SUM(uretim_kg)
     type: DOUBLE
     unit: "kg"
-    synonyms: [üretim miktarı, üretilen kilo, toplam üretim]
+    # 🔴 KN-2 ÇAKIŞMASI — ölçüldü (eval, 2026-08-05): `toplam üretim` bu cube'a gidiyordu
+    # ve **on eval vakası** düştü (`tarih-bugun` · `tarih-dun` · `tarih-son30gun` …).
+    # `maliyet` cube'unun tabanı `urun_maliyetleri` — AYLIK maliyetlendirme tablosu
+    # (yil/ay grain). Oradaki üretim, kg başına maliyetin PAYDASIDIR; bir üretim
+    # raporu değil. Çıplak `toplam üretim` üretim cube'unun (`oee`) kimliğidir.
+    # ⚠ Nitelenmiş hâller KALDI: *"maliyetlendirilen üretim"* hâlâ buraya gelir.
+    # *Bir paydayı, ölçünün kendisi sanmak — payda büyüdükçe cevap kayar.*
+    synonyms: [maliyetlendirilen üretim, maliyet üretim miktarı]
 
 # PVM: birim maliyet × üretim miktarı → "maliyet neden arttı: birim mi, hacim mi?"
 pvm:

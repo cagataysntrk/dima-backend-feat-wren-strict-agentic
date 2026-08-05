@@ -71,6 +71,16 @@ def _norm(s: str) -> str:
     return s.translate(str.maketrans("çÇğĞıİöÖşŞüÜ", "cCgGiIoOsSuU")).lower()
 
 
+#: 🔴 ARALIK İŞARETLERİ — iki dönem adı **tek bir aralığın iki UCU** olabilir.
+#:
+#: Ölçülen yanlış-pozitif: `1 ocak 31 mart arası toplam üretim` (eval `tarih-acik-aralik`)
+#: iki ay adı taşıyor ve *"çok dönem"* sanılıyordu — oysa orada **tek bir aralık** var ve
+#: `route()` onu zaten `gte`+`lte` ile doğru kurmuş.
+#:
+#: *İki tarih, aralarında bir "arası" varsa iki istek değil bir aralıktır.*
+_ARALIK = (" arasi", " arasinda", " ile ", " ila ", " kadar", "dan ", "den ",
+           "tan ", "ten ", " itibaren")
+
 #: Göreli dönem aralığı — *"son 3 ay"*, *"son 6 ay"*. İkisi AYRI birer dönemdir.
 _GORELI_DONEM = re.compile(
     r"son\s+(\d+)\s*(ay|gun|hafta|yil|ceyrek)")
@@ -144,7 +154,17 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
     # 2 · ÇOK-DÖNEM — "ocak ve haziran", "2025 ve 2026"
     #    ⚠ Kıyas ihlali zaten yazıldıysa tekrar etme: aynı kaybı iki kez anlatmak,
     #    kullanıcıya iki ayrı sorun varmış gibi görünür.
-    if (_cok_donem(qn) >= 2 and not any(i.isaret == "kiyas" for i in out)
+    # ⚠ Aralık işareti varsa iki dönem adı tek bir aralığın UÇLARIDIR — ihlal yok.
+    #
+    # 🔴 İlk yazımda buna bir de *"route zaten gte+lte kurduysa niyet taşınmıştır"*
+    # şartı eklenmişti ve **hedefi kaçırdı**: `ocak ve haziran ciro karşılaştır`
+    # sorusunda route iki dönemi TEK aralığa (1 Ocak – 30 Haziran) çöküyor ve o da
+    # gte+lte üretiyor. Yani "iki uçlu filtre" hem doğru aralığın hem YANLIŞ çöküşün
+    # imzası — ayırt edici değil.
+    # *Bir imza, iki farklı olayda da görünüyorsa kanıt değildir.*
+    _aralik_ifadesi = any(w in f" {qn} " for w in _ARALIK)
+    if (_cok_donem(qn) >= 2 and not _aralik_ifadesi
+            and not any(i.isaret == "kiyas" for i in out)
             and not (ic.get("compare") or ic.get("compare_mode"))):
         out.append(Ihlal(
             "cok_donem",

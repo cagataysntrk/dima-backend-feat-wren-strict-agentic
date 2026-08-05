@@ -246,6 +246,24 @@ class InteractionLog(SQLModel, table=True):
     # çıktısı ("en sık 20 red gerekçesi") tam olarak bunu gerektiriyor.
     # `route()` pes etmediyse (cevap geldi) NULL kalır.
     reject_reason: str | None = Field(default=None, index=True)
+    # 🔴 KÖK-8a — RED KAYITLARI KENDİ BOŞLUĞUNU BİLDİRSİN (denetim raporu).
+    #
+    # `reject_reason` *"hangi dalda pes ettim"* der (R1…R10) ama **hangi kelime yüzünden**
+    # demez. Sözlük boşluğu bugün **tahminle** kapatılıyor: birileri bir kelime düşünüp
+    # katalog'a ekliyor. Bu iki kolon onu **ölçüme** çevirir:
+    #
+    #     "bu ay 412 soru `sattık` yüzünden düştü"
+    #
+    # 🔴 Stratejik değeri en yüksek madde: girdi **gerçek kullanıcı cümleleridir**, yani
+    # devralınan raporun teşhis ettiği *"sistemi kendi aynasında ölçme"* tuzağına
+    # **yapısal olarak** düşemez. Ve elle vaka yazma ihtiyacını azaltır.
+    #
+    # ⚠ İkisi de JSON dizi (metin): SQLite/Postgres ortak paydası. Sorgu `LIKE` ile
+    # yapılabilir; asıl tüketici toplu bir rapor, satır-içi filtre değil.
+    #: `route()`in kapsayamadığı kelimeler — sözlük boşluğunun ADI.
+    uncovered_words: str | None = None
+    #: Ölçü sinyali veren ama seçilmeyen cube'lar — belirsizliğin ADI.
+    aday_cubelar: str | None = None
 
 
 class VerifiedQuery(SQLModel, table=True):

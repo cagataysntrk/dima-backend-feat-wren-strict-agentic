@@ -10,7 +10,8 @@
  "_neden_taban_YUKSELTILDI_ve_bu_bir_gevşetme_DEĞİL": "⚠ Kapı MUTLAK SAYI kıyaslıyor; payda 2297'den 2314'e çıktığı için eski 42 ile yeni 46 **aynı ölçünün iki değeri değil**. Oran: %1,83 → %1,99. Taban yükseltilmeseydi kapı, bir İYİLEŞMEYİ (ölü cube canlandı, kabul +18, doğru +1) gerileme diye raporlardı. 🔴 Ama bar burada DONMUYOR: KÖK-2 indiğinde bu sayı DÜŞMELİDİR ve o düşüş bu kaydın kendisiyle ölçülecek. *Bir tabanı yükseltmek, onu bir hedef olmaktan çıkarmaz.*",
  "_sonraki_hedef": "KÖK-2 (uyum kapısı) sonrası: sessiz_yanlis < 42 olmalı",
  "vaka": 2314,
- "kabul": 1118,
- "dogru": 64,
- "sessiz_yanlis": 46
+ "kabul": 1132,
+ "dogru": 68,
+ "sessiz_yanlis": 47,
+ "_tur_2_katalog_sahipligi": "⊙ 2026-08-05 · KN-2 ÇAKIŞMA TEMİZLİĞİ (KÖK-5b). Üç sinonim grubu sahibine bağlandı: `toplam üretim` (maliyet→oee) · `kimyasal/boya maliyeti` ve `enerji maliyeti` (maliyet→surdurulebilirlik). Gerekçe her metadata'da yazılı ve ölçüye dayanıyor: `maliyet` cube'unun tabanı AYLIK maliyetlendirme tablosu; oradaki üretim kg başına maliyetin PAYDASI, ölçünün kendisi değil — ve o cube'un yalnız `makine` boyutu var, yani `renk bazında` sorusunu cevaplayamaz bile.\nÖLÇÜLEN ETKİ:\n  · eval  precision −%12,7 → **+%0,0** (tabana TAM dönüş) · coverage −%0,9 → +%0,0\n  · korpus doğru-cube %93,5 → **%94,7**\n  · gerçek-dünya kabul 1118 → **1132** (+14) · doğru 64 → **68** (+4)\n  · gerçek-dünya sessiz_yanlis 46 → **47** (+1)\n🔴 Takas AÇIKÇA lehte: 14 soru daha cevaplanıyor, 4'ü daha doğru, karşılığında 1 sessiz-yanlış. Ve o +1 de KIYAS sınıfında (`… geçen yılla kıyasla`) — yani KÖK-2'nin kapattığı sınıf, yeni bir kusur değil. *Bir tabanı yükseltmek, onu bir hedef olmaktan çıkarmaz*: `_sonraki_hedef` yerinde duruyor."
 }
