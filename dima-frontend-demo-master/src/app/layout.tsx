@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ConnectionBadge } from "@/components/ConnectionBadge";
+import { KimlikSeridi } from "@/components/KimlikSeridi";
 import { LogoutButton } from "@/components/LogoutButton";
 import { Providers } from "@/lib/providers";
 
@@ -39,6 +40,7 @@ export default function RootLayout({
       <body className="h-full flex flex-col overflow-hidden">
         <Providers>
           <ConnectionBadge />
+          <KimlikSeridi />
           <LogoutButton />
           {children}
         </Providers>

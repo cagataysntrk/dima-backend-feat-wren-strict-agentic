@@ -14,6 +14,8 @@ ikisi bağımsız kod yollarıdır, biri yamanırken öbürü unutulma riski ta�
 
 from __future__ import annotations
 
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlmodel import Session
 
@@ -23,6 +25,7 @@ from app.auth.schemas import LoginRequest, MeResponse, TokenResponse, UserOut
 from control_plane.authorize import Principal, permissions_for
 from control_plane.config import get_auth_settings
 from control_plane.db import get_session
+from control_plane.models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -127,9 +130,28 @@ def logout(request: Request, response: Response,
 
 
 @router.get("/me", response_model=MeResponse)
-def me(principal: Principal = Depends(get_current_principal)) -> MeResponse:
+def me(principal: Principal = Depends(get_current_principal),
+       session: Session = Depends(get_session)) -> MeResponse:
+    """Kimlik + izinler.
+
+    🔴 **FAZ 7.7 — e-posta buradan gelir, `login()`'den değil.** Frontend `login()`'in
+    döndürdüğü kullanıcıyı **atıyordu** (`await login(...)`), ve atmasa bile bir sayfa
+    yenilemesinden sonra o değer **kaybolurdu**: erişim token'ı yalnız bellekte durur,
+    oturum refresh çerezinden **yeniden** kurulur ve o yolda `login()` hiç çağrılmaz.
+    *Bir kimliği yalnız giriş anında bilmek, onu bilmemektir.*
+    """
+    # ⚠ `User.id` bir **UUID sütunudur**, `principal.user_id` ise token'dan gelen bir
+    # **dizgedir**: `session.get(User, "…")` sürücü katmanında `AttributeError` verir.
+    # Ve token'daki değer her zaman geçerli bir UUID olmak **zorunda değildir** —
+    # bir kimlik okuması, kötü biçimli bir kimlik yüzünden 500 dönmemeli.
+    try:
+        _uid = uuid.UUID(str(principal.user_id))
+    except (ValueError, AttributeError, TypeError):
+        _uid = None
+    kullanici = session.get(User, _uid) if _uid else None
     return MeResponse(
         user_id=principal.user_id,
+        email=kullanici.email if kullanici else None,
         tenant_id=principal.tenant_id,
         is_superadmin=principal.is_superadmin,
         roles=principal.roles,

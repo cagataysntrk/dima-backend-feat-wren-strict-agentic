@@ -192,8 +192,31 @@ export async function logout(): Promise<void> {
   }
 }
 
-export async function getMe(): Promise<AuthUser> {
-  const { data } = await apiClient.get<AuthUser>("/auth/me");
+/** 🔴 FAZ 7.7 — **`/auth/me` `AuthUser` DEĞİLDİR ve dönüş tipi bunu söylemeliydi.**
+ *
+ * `AuthUser` `login()`'in döndürdüğü şekildir (`id`, `email` **zorunlu**). `/auth/me` ise
+ * `MeResponse` döndürür: `user_id` (`id` değil) · `branch_ids` (`AuthUser`'da yok) ve
+ * FAZ 7.7'ye kadar **`email` hiç yoktu**.
+ *
+ * Yani TypeScript `me.email`in **var** olduğuna inanıyordu ve çalışma zamanında
+ * `undefined` geliyordu — bir tür sistemi tam da engellemesi gereken şeyi **onaylıyordu**.
+ * *Bir tipin telde karşılığı yoksa, o tip bir belge değil bir yanlış beyandır.*
+ *
+ * ⚠ `email` burada `string | null`: kullanıcı kaydı silinmiş olabilir. *Bulunamayan bir
+ * e-postayı boş dizgeyle doldurmak, "yok" ile "boş" ayrımını siler.*
+ */
+export interface Me {
+  user_id: string;
+  email: string | null;
+  tenant_id: string | null;
+  is_superadmin: boolean;
+  roles: string[];
+  branch_ids: string[];
+  permissions?: string[];
+}
+
+export async function getMe(): Promise<Me> {
+  const { data } = await apiClient.get<Me>("/auth/me");
   return data;
 }
 
