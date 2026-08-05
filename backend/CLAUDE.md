@@ -17,7 +17,7 @@
 > **Mimari otorite `backend/MIMARI.md`'dir.** Bu dosya kısa bir kural indeksidir. Mimari bir
 > soruda (cevaplama merdiveni, semantik katman, JOIN'in nerede oluştuğu, ne YAPILMAYACAĞI,
 > bilinen kusurlar, ADR listesi) **önce `MIMARI.md`'yi oku** — çelişkide o kazanır.
-> `HANDOFF_DOCS/*` tarihsel kayıttır; `Dima-0-100-Gorev-Takip-Dosyasi (2).md` ürün şartnamesidir,
+> `belgeler/devir/*` tarihsel kayıttır; `belgeler/urun/Dima-0-100-Gorev-Takip.md` ürün şartnamesidir,
 > mimari otorite değildir.
 
 ## Rol

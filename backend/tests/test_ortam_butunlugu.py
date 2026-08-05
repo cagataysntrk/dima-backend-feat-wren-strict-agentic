@@ -1,7 +1,7 @@
 """TEST ORTAMININ KENDİ BÜTÜNLÜĞÜ — *aleti kim ölçüyor?*
 
 Bu dosya ürünü sınamaz; **test ortamının kendisini** sınar. Gerekçesi ölçülmüş:
-`TEST-ORTAMI-RAPORU_2026-08-05.md §5` üç riski *"AÇIK"* diye işaretledi ve üçü de
+`belgeler/denetim/2026-08-05_TEST-ORTAMI-RAPORU.md §5` üç riski *"AÇIK"* diye işaretledi ve üçü de
 aynı sınıftandı — **bir kural yazılmış ama onu koruyan kapı yok**.
 
 > 🔴 *Bir denetim turunun bulduğu şey, kapıya çevrilmezse bir sonraki turda yeniden

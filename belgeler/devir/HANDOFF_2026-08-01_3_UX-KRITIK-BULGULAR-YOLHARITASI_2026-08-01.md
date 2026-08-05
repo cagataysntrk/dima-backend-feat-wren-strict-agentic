@@ -70,7 +70,7 @@ konuya geri dönülüp kaldığı yerden devam edilebilir. "Tuval" (AnalysisCanv
 KARIŞMAZ — o, FARKLI konuları birleştirmek içindir (kullanıcının kendi ayrımı).
 
 **Ayrı bir Plan Mode turu** (2 paralel Explore agent'ı + 1 Plan agent'ı, kullanıcının
-işaret ettiği `Dima-0-100-Gorev-Takip-Dosyasi (2).md` FAZ 2/3 bölümleri okunarak) ile
+işaret ettiği `belgeler/urun/Dima-0-100-Gorev-Takip.md` FAZ 2/3 bölümleri okunarak) ile
 tasarlandı ve onaylandı. Plan agent'ı, İLK sezginin (düz listeyi `is_new_topic`
 sınırlarında gruplamak) YANLIŞ olduğunu somut bir senaryoyla kanıtladı: Thread A (3 mesaj)
 → B (2 mesaj) → C (1 mesaj) → A'ya geri dönüp devam edilirse, SAF ardışık gruplama bu

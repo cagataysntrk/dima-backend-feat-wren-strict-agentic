@@ -6,7 +6,7 @@
 > çalışma ağacı temiz.
 > **Bu bir denetim değildir.** *"Kurduğumuz test ortamı bugün nerede duruyor, neyi
 > ölçebiliyor, neyi ölçemiyor"* sorusuna cevap verir. **Bu rapor kod değiştirmez.**
-> **Kardeş belge:** `TEST-ORTAMI-ARASTIRMA_2026-08-05.md` *(literatür taraması)*.
+> **Kardeş belge:** `belgeler/denetim/2026-08-05_TEST-ORTAMI-ARASTIRMA.md` *(literatür taraması)*.
 
 > ⟳ **SÜRÜM NOTU.** Bu raporun ilk hâli `@23b5493` + çalışma ağacı üstünde alınmıştı ve
 > **üç kopukluk** ölçmüştü *(üretici çağrılmıyor · `build()` siliyor · cube'lar

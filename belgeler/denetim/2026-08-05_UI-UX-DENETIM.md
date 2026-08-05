@@ -11,7 +11,7 @@ Otorite sırası değişmedi: `OPERASYON.md` → `OPERASYON-DURUM.md` → yol ha
 `backend/MIMARI.md`. **Bu dosya otorite taşımaz**; bulguları borç defterine geçtiğinde
 görevini tamamlar.
 
-🔴 **Tekrar edilmeyenler — kasten.** `V1-SON-KONTROL.md` §4'ün ölçtüğü **sekiz UI kusuru**
+🔴 **Tekrar edilmeyenler — kasten.** `belgeler/denetim/2026-08-05_V1-SON-KONTROL.md` §4'ün ölçtüğü **sekiz UI kusuru**
 (`opacity-40` çifte anlamı · `focus-trap` yokluğu · `window.prompt` birincil yüzey ·
 `max-md:` yokluğu · cevap kartında `<details>` yokluğu · *"Yüksek güven (%100)"* ·
 gömülü NUL · `AuthUser.email`) burada **yeniden anlatılmaz**. Hepsi ölçüldü, hepsi
@@ -245,7 +245,7 @@ ederken *"bu ürün bunu yapmıyor"* diye rapor edecektir:
 **hedef kıyası** · **içgörü paketi** · **bilgi merkezi** · **DCM modu** · **kapsam
 merceği** · **hızlı↔derin anahtarı** · **onay talebi/süre aşımı**.
 
-🔴 **UX açısından kritik ayrım** *(`DENETIM-RAPORU_2026-08-05.md` §11'de ölçüldü)*:
+🔴 **UX açısından kritik ayrım** *(`belgeler/denetim/2026-08-05_DENETIM.md` §11'de ölçüldü)*:
 bunların bir kısmı **kapalı** (bayrağı çevirince gelir), bir kısmı **bağlanmamış**
 (bayrağı çevirmek hiçbir şey yapmaz). Arayüz testinde ikisi **birebir aynı görünür** —
 ve bu ayrımı bilmeden test eden kişi yanlış bir *"özellik çalışmıyor"* yargısı üretir.

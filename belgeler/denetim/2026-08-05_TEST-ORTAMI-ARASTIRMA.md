@@ -5,7 +5,7 @@
 > **Yöntem:** 6 arama · 5 tam metin okuma · 1 erişilemedi (ACM 403).
 > **Kesit:** 2026-08-05. **Bu belge kod değiştirmez** — ne bulunduğunu ve neyin bize
 > uyup neyin uymadığını söyler.
-> **Kardeş belge:** `TEST-ORTAMI-RAPORU_2026-08-05.md` *(bugünkü durum ölçümü)*.
+> **Kardeş belge:** `belgeler/denetim/2026-08-05_TEST-ORTAMI-RAPORU.md` *(bugünkü durum ölçümü)*.
 
 ---
 

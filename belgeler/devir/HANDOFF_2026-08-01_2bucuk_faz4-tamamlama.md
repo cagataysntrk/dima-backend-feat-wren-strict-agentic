@@ -265,7 +265,7 @@ Kullanıcının özel talebiyle 4.10/4.11'e ek bir senaryo-bazlı sertleştirme 
 
 ## §4 — UC (kabul testi) izlenebilirlik tablosu
 
-Kaynak: `Dima-0-100-Gorev-Takip-Dosyasi (2).md` (repo kökünde) — UC-1.x/UC-2.x
+Kaynak: `belgeler/urun/Dima-0-100-Gorev-Takip.md` (repo kökünde) — UC-1.x/UC-2.x
 numaralaması bu belgenin KENDİ acceptance-test listesidir (plan'ın görev-numaralarıyla
 KARIŞTIRILMAMALI, ayrı bir sayaç).
 

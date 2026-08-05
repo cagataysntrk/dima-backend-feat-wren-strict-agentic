@@ -28,7 +28,7 @@ Ve teknik hedefi: ***"Mükemmel motor + insani yüz tek sistemde."***
 | 3 | **BU DOSYA** — nasıl çalışılır | `OPERASYON.md` |
 | 4 | **DURUM** — nerede kaldık | `OPERASYON-DURUM.md` |
 | 5 | Kanıt / ölçümler | `~/.claude/plans/polymorphic-tumbling-riddle.md` |
-| 6 | Ürün şartnamesi *(mimari otorite DEĞİL)* | `Dima-0-100-Gorev-Takip-Dosyasi (2).md` |
+| 6 | Ürün şartnamesi *(mimari otorite DEĞİL)* | `belgeler/urun/Dima-0-100-Gorev-Takip.md` |
 
 > ⚠ **İSTİSNA:** Yol haritası FAZ −1'in `⟳ YÜRÜRLÜKTE` bloğunda listelenen `MIMARI.md`
 > başlıklarında **yol haritası kazanır** — ve o işaret, ilgili madde indiğinde **silinip

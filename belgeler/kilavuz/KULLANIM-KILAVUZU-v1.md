@@ -285,7 +285,7 @@ Departman sekmeleri + örnek sorular. Bir örneğe tıklamak onu **sorar**.
 > hiçbir uyarı çıkmaz** *(Panolar · Pano görünümü · Sohbet geçmişi · Analiz Tuvali)*.
 > Satır yerinde durur. **Bir işlem olmadıysa sayfayı yenileyip doğrulayın.**
 >
-> Bu iki nokta `UI-UX-DENETIM.md` **F1 · F2 · F3**'te kayıtlıdır ve düzeltme sırası
+> Bu iki nokta `belgeler/denetim/2026-08-05_UI-UX-DENETIM.md` **F1 · F2 · F3**'te kayıtlıdır ve düzeltme sırası
 > orada yazılıdır. Kılavuz **bugünü** anlatır, olması gerekeni değil.
 
 ---
@@ -316,7 +316,7 @@ görmüyor olmanız bir kurulum hatası değildir.
 
 > 🔴 **Test ederken kritik ayrım.** *"⚠ kapalı"* = bir ayar açılınca gelir.
 > *"🔴 bağlanmamış"* = ayarı açmak **hiçbir şey yapmaz**, önce kod bağlanmalı.
-> Ekranda ikisi **birebir aynı görünür**. Ayrıntı: `DENETIM-RAPORU_2026-08-05.md` §11.
+> Ekranda ikisi **birebir aynı görünür**. Ayrıntı: `belgeler/denetim/2026-08-05_DENETIM.md` §11.
 
 ---
 

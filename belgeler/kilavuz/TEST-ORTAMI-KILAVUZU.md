@@ -3,8 +3,8 @@
 > **Kime:** bu depoda test koşacak / test yazacak herkese.
 > **Ne değil:** bu bir denetim raporu değil; **kullanım kılavuzu** ve **kural seti**.
 > **Kesit:** `@defb0e7` · 2026-08-05.
-> **Kardeş belgeler:** `TEST-ORTAMI-RAPORU_2026-08-05.md` (durum ölçümü) ·
-> `TEST-ORTAMI-ARASTIRMA_2026-08-05.md` (literatür) · `backend/CLAUDE.md` (kapı politikası).
+> **Kardeş belgeler:** `belgeler/denetim/2026-08-05_TEST-ORTAMI-RAPORU.md` (durum ölçümü) ·
+> `belgeler/denetim/2026-08-05_TEST-ORTAMI-ARASTIRMA.md` (literatür) · `backend/CLAUDE.md` (kapı politikası).
 
 ---
 
@@ -280,7 +280,7 @@ yoksa *"genişleme mi gerileme mi"* ayırt edilemezdi. Bir kapı bunu sınıyor
 ```bash
 # 0 · ortam
 cd /home/cagataysntrk/İndirilenler/dima-backend-feat-wren-strict-agentic
-# (backend Docker'da koşar; SERVER_COMMANDS.md'ye bak — port 8001, frontend pnpm)
+# (backend Docker'da koşar; belgeler/kilavuz/SERVER_COMMANDS.md'ye bak — port 8001, frontend pnpm)
 
 # 1 · bir dosyayı düzenledin → YALNIZ onun testi   (3-15 sn)
 docker run -d --name t1 --user "$(id -u):$(id -g)" --network none \

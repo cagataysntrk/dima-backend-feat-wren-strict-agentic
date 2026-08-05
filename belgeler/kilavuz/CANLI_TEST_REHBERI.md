@@ -4,7 +4,7 @@ Bu belge, çalışan bir backend'e **gerçek LLM sağlayıcısıyla** soru sorar
 sırayı, harcanabilecek istek bütçesini ve dönen cevapta neye bakılacağını anlatır.
 
 Kapsam: `backend/` (FastAPI, konteyner `dima-backend-core`, host portu **8001**).
-Kurulum/log komutları `SERVER_COMMANDS.md`'den alınmıştır; mimari iddialar
+Kurulum/log komutları `belgeler/kilavuz/SERVER_COMMANDS.md`'den alınmıştır; mimari iddialar
 `backend/MIMARI.md`'ye aittir.
 
 > **Önce §2'yi oku.** LLM istek bütçesi ölçülmüş ve dardır; testlerin çoğu bütçe
@@ -17,7 +17,7 @@ Kurulum/log komutları `SERVER_COMMANDS.md`'den alınmıştır; mimari iddialar
 ### 1.1 Rebuild (kod değiştiyse ZORUNLU)
 
 `docker-compose.yml`'de `backend` için volume **yoktur** — Python kodu değiştiğinde imaj
-yeniden inşa edilmezse **eski kod koşmaya devam eder** (`SERVER_COMMANDS.md` §1).
+yeniden inşa edilmezse **eski kod koşmaya devam eder** (`belgeler/kilavuz/SERVER_COMMANDS.md` §1).
 
 Ana proje dizininde:
 
@@ -34,7 +34,7 @@ docker-compose up -d dima-backend
 docker exec dima-backend-core python -m control_plane.cli seed-demo
 ```
 
-> **Not — `SERVER_COMMANDS.md`'ye göre değişen davranış.** O belge "konteyner silinince
+> **Not — `belgeler/kilavuz/SERVER_COMMANDS.md`'ye göre değişen davranış.** O belge "konteyner silinince
 > demo DB sıfırlanabilir" der; bu artık **genelde olmaz**: `docker-compose.yml` 2 Ağustos
 > 2026'da `dima_logs:/app/logs` adlı bir named volume kazandı ve control-plane SQLite'ı
 > (`.../logs/control_plane.db`, `control_plane/config.py:104`) orada yaşıyor. Yani DB

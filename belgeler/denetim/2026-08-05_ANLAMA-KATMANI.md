@@ -360,7 +360,7 @@ if (route_hit is None
 
 ⊡ `demo/packs/features.yml:150` → `netlestirme_onceligi: "off"`.
 
-⊡ Kararın ölçümü (`V1-MIMARI-HARITASI.md:712`): *A/B 63 etiketli vaka — bozulan 0, kurtarılan
+⊡ Kararın ölçümü (`belgeler/mimari/V1-MIMARI-HARITASI.md:712`): *A/B 63 etiketli vaka — bozulan 0, kurtarılan
 0. 15 gerçek ifade — cevaplanan 12→8, kurtarılan 1 (**doğru ölçüyle 0**), kaybedilen 5.
 Kabul ölçütü (doğru kurtarma > 0) **karşılanmıyor** → KAPALI.*
 
@@ -378,7 +378,7 @@ ama karar **`doğru kurtarma > 0`** ölçütüne dayandığı için, ölçütün
 
 ### 6.3 ⚠ DÜZELTİLDİ — *"prompt enhancer'a sıra gelmedi"*
 
-⊡ `V1-MIMARI-HARITASI.md:721` → **"ölçüldü, kazanç YOK, kota sınırına çarpıldı"**.
+⊡ `belgeler/mimari/V1-MIMARI-HARITASI.md:721` → **"ölçüldü, kazanç YOK, kota sınırına çarpıldı"**.
 ⊡ `demo/packs/features.yml:80` → `prompt_enhancer: "off"`.
 
 > Yani *"sıra gelmedi"* değil — **sıra geldi, ölçüldü, kazanç görülmedi.**
@@ -453,7 +453,7 @@ doğrudan katkısı yok; **sıcak yola LLM ekliyor** ve gecikme bütçesiyle bir
 > üretiyor. Sonra `netlestirme_onceligi` kapalı olduğu için o liste **kullanılmıyor** ve
 > Intent-JSON olasılıksal bir seçim yapıyor.
 >
-> ⊡ Ve yan bulgu kayıtlı (`V1-MIMARI-HARITASI.md:713`): *"`bu yıl bakiye` kararlı şekilde
+> ⊡ Ve yan bulgu kayıtlı (`belgeler/mimari/V1-MIMARI-HARITASI.md:713`): *"`bu yıl bakiye` kararlı şekilde
 > `mizan.bakiye` seçiyor ve cevap **₺0** — mizan yapısı gereği sıfıra denkleşir."*
 >
 > Yani bu vakada olasılıksal seçim yalnız *belirsiz* değil, **yapısal olarak anlamsız bir
@@ -1291,7 +1291,7 @@ alınırsa **imgedeki eski kod** ölçülür.
 | Cevaplama merdiveni | `backend/app/routers/ask.py:1376-1408` (docstring) · `2473` (route) · `2615` (netleştirme) · `2634` (Intent-JSON) · `3298` (raw_followup düzeltmesi) |
 | Bayrak durumları | `backend/demo/packs/features.yml:75-90, 150` |
 | Bayrak metadata | `backend/app/features.py:472-500` |
-| Bayrak ölçüm kararları | `V1-MIMARI-HARITASI.md:705-740` |
+| Bayrak ölçüm kararları | `belgeler/mimari/V1-MIMARI-HARITASI.md:705-740` |
 | ADR-0008 | `backend/docs/adr/0008-anlamadığını-bil-tanınmayan-kelime-cevap-yok-ve-öneri-yok.md` |
 | Gerçek-dünya korpusu | `backend/lab/gercek_dunya.py` · rapor: `backend/lab/reports/gercek_dunya.md` |
 | Netleştirme A/B aleti | `backend/lab/faz0_4_netlestirme.py` |

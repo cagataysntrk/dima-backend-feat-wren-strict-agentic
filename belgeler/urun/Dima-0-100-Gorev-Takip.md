@@ -8,7 +8,7 @@
 > (NestJS/Redis/Vault/BullMQ/Temporal/LangGraph/Vega-Lite ↔ tek Python-FastAPI + threading +
 > ECharts). Ayrıntılı karşılaştırma ve gerekçeler: **`backend/MIMARI.md §8.3`**.
 > Not: dosyadaki hiçbir kutu işaretli değil (PDF→MD dönüşümünde kayboldu) — gerçek durum
-> `HANDOFF_DOCS/` ve git geçmişindedir.
+> `belgeler/devir/` ve git geçmişindedir.
 
 
 
@@ -8089,7 +8089,7 @@ Ek güvenceler:
 
 ### 5.4 · Test protokolü — adım adım, ucuzdan pahalıya
 
-Bütçe gerçeği (`CANLI_TEST_REHBERI.md` §2.2): **tur başına maliyet 1 değil 3** (`consistency_k=3`), sınır 10 sn / 10 istek.
+Bütçe gerçeği (`belgeler/kilavuz/CANLI_TEST_REHBERI.md` §2.2): **tur başına maliyet 1 değil 3** (`consistency_k=3`), sınır 10 sn / 10 istek.
 
 | Adım | Ne | Maliyet | Ölçüt |
 |---|---|---|---|
