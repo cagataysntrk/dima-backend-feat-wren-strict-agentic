@@ -165,6 +165,27 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "tekil kart birebir bugünkü hâliyle görünür (FAZ 5.12).",
         "category": "arayuz",
     },
+    "ui_kanit_gorunurlugu": {
+        "label": "Kanıt görünürlüğü (katmanlı makbuz)",
+        "description": "🔴 D3 «zaten yapılmış» diye YANLIŞ KAPATILMIŞTI; ölçüm bunu "
+                       "çürüttü: cevap kartında `<details>` sayısı SIFIRDI. Bugün `?` "
+                       "toggle'ı üç düz listeyi AYNI görsel seviyede açıyor, SQL ayrı "
+                       "bir toggle'da, `contract_id` ayrı bir modalde — üç kopuk yüzey, "
+                       "sıfır kademe. Bu bayrak ÜÇ KATMANLI tek bir kapsayıcı açar: "
+                       "(1) tek satır «deterministik küp · 2 adım · 34 ms», (2) düz "
+                       "Türkçe «ne yaptım» — hangi cube · ölçü · filtre · dönem, "
+                       "`cube_query`'den DETERMİNİSTİK olarak türetilir (backend'e "
+                       "ikinci bir «bunu anlat» ucu eklemek aynı gerçeğin İKİ SAHİBİNİ "
+                       "yaratırdı), (3) tam iz + ajan adımları + tıklanabilir makbuz + "
+                       "SQL + `contract_id`. 🔴 AYRINTI SİLİNMEZ, YALNIZ KATLANIR — "
+                       "denetlenebilirlik bir kademelendirmeye feda edilemez. "
+                       "⚠ Kademelendirme bir tercih değil bir ÖLÇÜM sonucudur: «daha "
+                       "uzun açıklamalar, DOĞRULUĞU ARTIRMADAN kullanıcı güvenini "
+                       "artırıyor» (Steyvers ve ark., Nature Machine Intelligence "
+                       "7:221-231, 2025) — varsayılan kısa, ayrıntı talep üzerine. "
+                       "KAPALIYKEN eski üç-yüzeyli davranış birebir korunur (KURAL B).",
+        "category": "arayuz",
+    },
     "kpi_pin": {
         "label": "KPI pin (panoda sabitleme)",
         "description": "Pano VARDI ama KPI-pin semantiği ayrı DEĞİLDİ ve NL yolu YOKTU: "

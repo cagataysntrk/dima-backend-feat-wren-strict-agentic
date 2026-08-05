@@ -275,7 +275,7 @@ function CanvasCard({
               🔴 `ChatPanel.SourceBadge` YENİDEN KULLANILIYOR — ikinci bir render edici
               yazmak, aynı kuralın iki sahibi demekti (bu deponun 1 numaralı kusuru) ve
               iki yüzeyin rozetleri zamanla AYRIŞIRDI. */}
-          <SourceBadge source={item.source ?? null} confidence={item.explain?.confidence} />
+          <SourceBadge source={item.source ?? null} />
           {item.cube_query && (
             <span className="relative">
               <button

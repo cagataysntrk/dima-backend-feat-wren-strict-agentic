@@ -183,3 +183,8 @@ features:
                           # chip/kırılım/drill/doğru grafik Discovery cevabında da açılsın.
                           # YAPI ≠ GÜVEN: source `llm:*` KALIR, confidence None KALIR.
                           # KAPALIYKEN davranış bugünküyle BİREBİR aynı (KURAL B, testli).
+  ui_kanit_gorunurlugu: beta   # FAZ 7.8/K1: makbuz ÜÇ KATMAN, tek kapsayıcı. Ölçüldü:
+                          # cevap kartında `<details>` SIFIRDI — D3 yanlış kapatılmıştı.
+                          # Varsayılan KISA (Steyvers 2025: uzun açıklama doğruluğu
+                          # artırmadan güveni artırır). Ayrıntı SİLİNMEZ, katlanır.
+                          # KAPALIYKEN eski üç-yüzeyli davranış birebir (KURAL B).

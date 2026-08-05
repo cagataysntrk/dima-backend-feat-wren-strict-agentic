@@ -10,22 +10,26 @@ import { DurdurDugmesi } from "@/components/DurdurDugmesi";
 // eşleşme tekrar oynatma) ve "meta"/"catalog" (deterministik, veri sorgusu değil) da
 // LLM'siz aile — cube/kpi ile aynı vurguyu taşır ki kullanıcı ne zaman LLM'in atlandığını
 // görebilsin (strict-agentic /ask önceden her soruyu LLM'e düşürüyordu, artık düşürmüyor).
-// Faz 4.13b (1 Ağustos 2026) — dış yol haritası 2.17 "güven rozeti": `explain.confidence`
-// (Faz 3'ten beri backend'de var) görsel bir 🥇/🥈/🥉'e çevrilir. `confidence` prop'u
-// VERİLMEZSE (eski çağrı yerleri/explain henüz yoksa) rozet HİÇ gösterilmez — yalnız
-// SourceBadge'in metin etiketi (mevcut davranış) görünür, hiçbir şey KIRILMAZ.
-function confidenceBadge(
-  confidence: number | null | undefined,
-): { emoji: string; title: string } | null {
-  if (confidence === undefined) return null;
-  if (confidence === null) {
-    return { emoji: "🥉", title: "Güven ölçülemedi (LLM/kural yolu — deterministik değil)" };
-  }
-  const pct = Math.round(confidence * 100);
-  if (confidence >= 0.9) return { emoji: "🥇", title: `Yüksek güven (${pct}%)` };
-  if (confidence >= 0.7) return { emoji: "🥈", title: `Orta güven (${pct}%)` };
-  return { emoji: "🥉", title: `Düşük güven (${pct}%) — bir varsayım yapılmış olabilir` };
-}
+// 🔴 FAZ 7.8 · **K2 — MADALYA KALDIRILDI.** Bu bir ÇIKARMA kalemidir.
+//
+// Burada `confidenceBadge()` vardı: `explain.confidence`'ı 🥇/🥈/🥉'ye ve **yüzdeye**
+// çeviriyordu (`Yüksek güven (100%)`). Kaynağı `answer.py::_EXPLAIN_PATH` — ve o
+// **sabit kodlu bir YOL ETİKETİDİR**, hesaplanmış değil:
+//   cube → 1.0 · vqr → 0.95 · cube+llm → 0.85 · rule → None
+//
+// Yani kullanıcı **"Yüksek güven (100%)"** okuyordu ve arkasında **hiçbir ölçüm yoktu**;
+// söylenen tek şey *"bu cevap route()'tan geldi"*ydi.
+//
+// 🔴 MIMARI §9'un kendi yasağının üründe **canlı ihlaliydi**:
+//    *"kalibre edilmediği sürece o sayı bir güven değil bir SÜSTÜR."*
+//
+// ⚠ Ve süs zararsız değil: kalibre edilmemiş güven **uygun güveni bozar** — kullanıcı
+// %100 gördüğü bir cevabı denetlemez. Bir rozetin en kötü hâli, denetlemeyi
+// GEREKSİZ göstermesidir.
+//
+// Yerine geçen bir şey **yazılmadı**, çünkü zaten vardı: `SourceBadge`'in kendisi
+// (◆ CUBE · ◆ VQR · ◈ LLM) **yolu** söylüyor — ve yol, ölçülmüş bir olgudur.
+// Kademe bilgisi ise makbuzun katman 1'inde (`Makbuz.tsx`) düz Türkçe duruyor.
 
 /** FAZ 1.5 — SERTİFİKA KADEMESİ. **Yeni bir panel DEĞİL**: var olan güven rozetinin
  * yanında duran bir kademe (yol haritası birebir: *"güven rozetinin kademesi (yeni panel
@@ -98,15 +102,8 @@ export function AdhocBadge({ cubeQuery }: { cubeQuery: CubeQuery | null }) {
   );
 }
 
-export function SourceBadge({
-  source,
-  confidence,
-}: {
-  source: string | null;
-  confidence?: number | null;
-}) {
+export function SourceBadge({ source }: { source: string | null }) {
   if (!source) return null;
-  const badge = confidenceBadge(confidence);
   let label: string, cls: string, title: string;
   if (source === "cube") {
     label = "◆ CUBE";
@@ -147,10 +144,9 @@ export function SourceBadge({
   }
   return (
     <span
-      title={badge ? `${title} · ${badge.title}` : title}
+      title={title}
       className={`inline-flex h-[20px] items-center gap-1 border px-1.5 font-mono text-[10px] tracking-wide ${cls}`}
     >
-      {badge && <span aria-hidden>{badge.emoji}</span>}
       {label}
     </span>
   );
@@ -271,7 +267,7 @@ export function ChatPanel({
                           ? `${reportable.result.row_count} satır`
                           : reportable.kpi ? "KPI kartı" : "sql"}
                       </span>
-                      <SourceBadge source={reportable.source} confidence={reportable.explain?.confidence} />
+                      <SourceBadge source={reportable.source} />
                     </>
                   ) : last.note ? (
                     <span className="truncate text-amber-600">{last.note}</span>

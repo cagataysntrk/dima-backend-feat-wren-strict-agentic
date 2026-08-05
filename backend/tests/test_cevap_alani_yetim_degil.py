@@ -236,12 +236,42 @@ def _fe_yorumsuz() -> str:
     return "\n".join(fe_dosyalari().values())
 
 
+def _kart_agaci() -> str:
+    """🔴 **Cevap kartı bir DOSYA değil, bir AĞAÇTIR.**
+
+    Bu yardımcı bir kusurdan doğdu: FAZ 7.8'de makbuz `ReportCard.tsx`'ten kendi
+    bileşenine (`Makbuz.tsx`) taşındı — alanlar **hâlâ cevap kartında render ediliyordu**
+    ama kapı `ReportCard.tsx` dosyasını okuduğu için **kırmızı verdi**.
+
+    Yani kapı bir **davranışı** değil bir **konumu** ölçüyordu; ve bu deponun en sık
+    tekrarlayan kusur sınıfının (*"testler METNİ ölçtü, davranışı değil"*) bir kuzeni.
+    *Bir alanın nerede render edildiği bir uygulama ayrıntısıdır; render EDİLİP
+    EDİLMEDİĞİ bir sözleşmedir.*
+
+    Çözüm: `ReportCard`'ın **doğrudan import ettiği** yerel bileşenler de ağaca dâhil.
+    Bir seviye yeter — iki seviye, ilgisiz bir bileşende geçen bir adı *"render ediliyor"*
+    saymaya başlardı.
+    """
+    import re
+
+    dosyalar = fe_dosyalari()
+    kok = "components/ReportCard.tsx"
+    parcalar = [dosyalar[kok]]
+    for m in re.finditer(r'from "@/(components|lib)/(\w+)"', dosyalar[kok]):
+        for uzanti in (".tsx", ".ts"):
+            anahtar = f"{m.group(1)}/{m.group(2)}{uzanti}"
+            if anahtar in dosyalar:
+                parcalar.append(dosyalar[anahtar])
+                break
+    return _yorumsuz_kod("\n".join(parcalar))
+
+
 def test_FAZ_0_8_MAKBUZ_KIMLIGI_render_ediliyor():
     """✅ **FAZ 0.8.** `agent_run.steps[].receipt` yalnız `types.ts`'te geçiyordu —
     yani bir **tip beyanıydı**, tüketici değil. Makbuz kimliği bir adımın ürettiği
     KANITIN kimliğidir; görünmezse *"her sayının kaynağını kanıtlayabilen"* vaadi
     adım seviyesinde **beyandan ibaret** kalır."""
-    kart = _yorumsuz_kod((FE / "components" / "ReportCard.tsx").read_text(encoding="utf-8"))
+    kart = _kart_agaci()
     assert "s.receipt" in kart, "adım makbuzu render EDİLMİYOR"
     assert "/contracts/${s.receipt}" in kart, \
         "makbuz kimliği KANITIN KENDİSİNE gitmiyor — tıklanamayan bir kimlik, kimlik değildir"
@@ -250,7 +280,7 @@ def test_FAZ_0_8_MAKBUZ_KIMLIGI_render_ediliyor():
 def test_FAZ_0_9_EXPLAIN_PATH_render_ediliyor():
     """✅ **FAZ 0.9.** Rozet *"ne"* der, `explain.path` *"nereden"* der — ikisi birlikte
     MIMARI §5'in `source` sözleşmesini tamamlar."""
-    kart = _yorumsuz_kod((FE / "components" / "ReportCard.tsx").read_text(encoding="utf-8"))
+    kart = _kart_agaci()
     assert "item.explain?.path" in kart or "explain.path" in kart, \
         "`explain.path` HÂLÂ render edilmiyor — tip var, tüketici yok"
 

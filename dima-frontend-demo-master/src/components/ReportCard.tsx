@@ -26,6 +26,7 @@ import { KpiCardView } from "@/components/KpiCard";
 import { OutputInsight } from "@/components/OutputInsight";
 import { AdhocBadge, SourceBadge } from "@/components/ChatPanel";
 import { useAdSor } from "@/components/AdSor";
+import { Makbuz, MakbuzDuz } from "@/components/Makbuz";
 
 // §B Adım 2 (1 Ağustos 2026) — tek-rapor kartı: bugünkü ReportPanel'in TÜM gövdesi + tüm
 // rapor-başına local state'i (SQL/trace toggle, schedule/dashboard-ekle popover'ları, verify
@@ -92,6 +93,10 @@ export function ReportCard({
   const [contractOpen, setContractOpen] = useState(false);
   // SQL gösterimi (sql_display bayrağı) — ham şeffaflık özelliği; kapalıysa buton yok.
   const sqlStage = useFeature("sql_display");
+  // 🔴 KURAL B — bayrak KAPALIYKEN eski üç-yüzeyli davranış **birebir** döner: `?`
+  // toggle'ı, ayrı SQL bloğu ve alt şeritteki `contract_id`. Kademelendirme bir
+  // iyileştirmedir; bir iyileştirmenin geri alma yolu **olmak zorundadır**.
+  const makbuzKatmanli = useFeature("ui_kanit_gorunurlugu");
   // Panoya ekle (dashboards bayrağı, §9) — bu raporun cube_query'si widget olur.
   const dashStage = useFeature("dashboards");
   const { sor: adSor, alan: adSorAlani } = useAdSor();
@@ -502,7 +507,7 @@ export function ReportCard({
                 )}
               </div>
             )}
-            <SourceBadge source={item.source} confidence={item.explain?.confidence} />
+            <SourceBadge source={item.source} />
             {/* FAZ 2.6 — MALİ YIL. Yalnız takvim yılından FARKLIYSA görünür.
                 🔴 "Bu yıl" dediğinde Nisan–Mart penceresi gelen bir kullanıcı, hangi
                 pencereyi gördüğünü BİLMELİ: doğru sayı, yanlış soruya cevap olabilir. */}
@@ -539,9 +544,9 @@ export function ReportCard({
                 ⤵ kırılıma in
               </button>
             )}
-            {item.trace && item.trace.length > 0 && (
+            {!makbuzKatmanli && item.trace && item.trace.length > 0 && (
               <button
-                onClick={() => setShowTrace((s) => !s)}
+                onClick={() => setShowTrace((t) => !t)}
                 title="Bu sorgu nasıl çözüldü?"
                 aria-label="Trace"
                 className={`flex h-[20px] w-[20px] items-center justify-center border font-mono text-[11px] transition-colors ${
@@ -705,130 +710,18 @@ export function ReportCard({
             )}
           </div>
         )}
-        {showTrace && item.trace && (
-          <div className="mt-3 border border-hairline bg-neutral-500/[0.03] p-3">
-            <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
-              nasıl çözüldü
-            </div>
-            {/* ⚠️ FAZ 0.9 — `explain.path` YETİMDİ: tip `types.ts`'te vardı, hiçbir yerde
-                RENDER EDİLMİYORDU ([KANIT §0.1-7]). Backend her cevapta hangi YOLDAN
-                geçildiğini yazıyor (cube · cube+llm · llm:*) ve bu, rozetin taşıdığı
-                garantiyi TAMAMLAYAN bilgidir: rozet "ne" der, yol "nereden" der.
-                Trace bloğunun ÜSTÜNE konur çünkü adımların bağlamıdır — MIMARI §5'in
-                "source gizlenemez" kuralının ayrıntı katmanı. */}
-            {item.explain?.path && (
-              <div className="mb-2 font-mono text-[11px] text-neutral-500">
-                <span className="mr-1 text-neutral-400">yol:</span>
-                <span className="text-foreground">{item.explain.path}</span>
-              </div>
-            )}
-            {/* FAZ 1.12 — KANIT SINIFI. ⚠ Skaler bir "güven yüzdesi" DEĞİL: MIMARI §5'in
-                kararı gereği kalibre edilmemiş bir sayı "güven değil SÜStür". Bu bir
-                KATEGORİ ve ayrıntı katmanında durur (D3: makbuz katmanlı) — üst satırda
-                gösterilseydi rozetin söylediğini ikinci kez, başka kelimelerle söylerdi.
-                `cube+llm`'de sayı küpten gelse bile ALAN SEÇİMİ olasılıksaldır: seçim
-                yanlışsa doğru sayı YANLIŞ SORUYA cevap olur. */}
-            {item.kanit_sinifi && (
-              <div className="mb-2 font-mono text-[11px] text-neutral-500">
-                <span className="mr-1 text-neutral-400">kanıt sınıfı:</span>
-                <span
-                  className={item.kanit_sinifi === "probabilistik" ? "text-amber-600" : "text-foreground"}
-                  title={
-                    item.kanit_sinifi === "probabilistik"
-                      ? "Bu cevabın üretiminde olasılıksal bir adım var (SQL yazımı ya da alan/ölçü SEÇİMİ). Sayı doğru hesaplanmış olsa bile SORUNUN karşılığı olmayabilir."
-                      : "Cevap uçtan uca deterministik yoldan üretildi — aynı soru aynı sonucu verir."
-                  }
-                >
-                  {item.kanit_sinifi === "probabilistik" ? "olasılıksal" : "ölçülmüş"}
-                </span>
-              </div>
-            )}
-            <ol className="space-y-0.5">
-              {item.trace.map((t, i) => (
-                <li key={i} className="font-mono text-[11px] text-neutral-500">
-                  <span className="mr-1 text-accent">{String(i + 1).padStart(2, "0")}</span>
-                  {t}
-                </li>
-              ))}
-            </ol>
-            {/* FAZ 4 — AJAN KOŞUM MAKBUZU. `trace` insan-okur bir anlatı; bu ise
-                DENETLENEBİLİR bir kayıt: hangi araç, ne kadar sürdü, hangi adım
-                REDDEDİLDİ. Reddedilen adımlar GİZLENMEZ — bütçe tüketildi ve kullanıcı
-                neyin DENENDİĞİNİ görebilmeli (sessizce kaybolan bir adım, yapılmamış bir
-                adım gibi okunur ve koşumun maliyeti anlaşılmaz olur). */}
-            {item.agent_run && item.agent_run.steps.length > 0 && (
-              <div className="mt-2 border-t border-hairline pt-2">
-                <div className="mb-1 flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
-                  <span>ajan adımları</span>
-                  <span className="text-neutral-500">
-                    {item.agent_run.step_count} adım · {item.agent_run.query_count} sorgu
-                  </span>
-                  {item.agent_run.truncated && (
-                    <span
-                      className="text-amber-600"
-                      title={item.agent_run.truncation_reason ?? "bütçe tavanı aşıldı"}
-                    >
-                      ⚠ kısıldı
-                    </span>
-                  )}
-                </div>
-                <ul className="space-y-0.5">
-                  {item.agent_run.steps.map((s, i) => (
-                    <li
-                      key={`${s.tool}-${i}`}
-                      className={`font-mono text-[11px] ${s.error ? "text-amber-600" : "text-neutral-500"}`}
-                      title={s.error ?? undefined}
-                    >
-                      <span className="mr-1 text-neutral-400">
-                        {s.determinism === "llm" ? "▚" : "◆"}
-                      </span>
-                      {s.tool}
-                      <span className="ml-1 text-neutral-400">{s.ms}ms</span>
-                      {s.error && <span className="ml-1">— reddedildi</span>}
-                      {s.gated === false && (
-                        <span className="ml-1 text-amber-600" title={s.note}>
-                          — kapısız
-                        </span>
-                      )}
-                      {/* ⚠️ FAZ 0.8 — `agent_run.steps[].receipt` YETİMDİ: yalnız
-                          `types.ts:74`'te geçiyordu, hiçbir yerde render edilmiyordu
-                          ([KANIT §0.1-7]). Makbuz kimliği, bir adımın ürettiği KANITIN
-                          kimliğidir: tıklanınca o kanıtın kendisine (`/contracts/{id}`)
-                          gider. Bu, "her sayının kaynağını kanıtlayabilen" vaadinin
-                          ADIM SEVİYESİNDEKİ karşılığıdır — makbuz görünmezse vaat bir
-                          beyandan ibarettir. */}
-                      {s.receipt && (
-                        <a
-                          href={`/contracts/${s.receipt}`}
-                          title="Bu adımın ürettiği kanıt (Query Contract)"
-                          className="ml-1 text-accent underline-offset-2 hover:underline"
-                        >
-                          ⛓ makbuz
-                        </a>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Faz 3: `explain` trace'in ÜSTÜNE biner (onu değiştirmez) — yalnız sessizce
-                yapılan gerçek bir varsayım varsa (ör. dönem belirtilmedi) gösterilir. */}
-            {item.explain && item.explain.assumptions.length > 0 && (
-              <div className="mt-2 border-t border-hairline pt-2">
-                <div className="mb-1 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
-                  varsayımlar
-                </div>
-                <ul className="space-y-0.5">
-                  {item.explain.assumptions.map((a, i) => (
-                    <li key={i} className="font-mono text-[11px] text-amber-600">
-                      {a}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
+        {/* 🔴 FAZ 7.8/K1 — KATMANLI MAKBUZ. Eskiden burada `?` toggle'ıyla açılan DÜZ
+            bir blok vardı: yol · kanıt sınıfı · trace · ajan adımları **aynı görsel
+            seviyede**; SQL ve `contract_id` ise BAŞKA iki yerde. Üç kopuk yüzey, sıfır
+            kademe. Artık TEK kapsayıcı, üç katman — ve **hiçbir ayrıntı silinmedi**. */}
+        {makbuzKatmanli ? (
+          <Makbuz
+            item={item}
+            sqlAcik={Boolean(sqlStage && showSql)}
+            onContract={item.contract_id ? () => setContractOpen(true) : undefined}
+          />
+        ) : (
+          showTrace && <MakbuzDuz item={item} />
         )}
       </div>
 
@@ -1164,7 +1057,10 @@ export function ReportCard({
         ) : (
           <span />
         )}
-        {item.contract_id && (
+        {/* ⚠ Bayrak AÇIKKEN `contract_id` makbuzun KATMAN 3'ündedir; burada ikinci bir
+            sahip bırakmak, aynı kaydı iki farklı yerden açılabilir yapardı — ve iki yer
+            bir gün ayrışır. Bayrak kapalıyken eski yer birebir geri gelir. */}
+        {!makbuzKatmanli && item.contract_id ? (
           <button
             onClick={() => setContractOpen(true)}
             className="font-mono text-[10px] tracking-wider text-neutral-300 underline-offset-2 transition-colors hover:text-foreground hover:underline dark:text-neutral-600"
@@ -1172,27 +1068,19 @@ export function ReportCard({
           >
             {item.contract_id}
           </button>
+        ) : (
+          <span />
         )}
       </div>
-      {sqlStage && showSql && (
-        <pre className="mt-2 overflow-auto border border-hairline bg-neutral-950 p-4 font-mono text-xs leading-relaxed text-neutral-100">
-          {item.sql}
-        </pre>
-      )}
       {/* Doğrulama turu düzeltmesi (1 Ağustos 2026, P2-22): `planned_sql` (dry-plan çıktısı —
           backend'de zaten dolduruluyordu, bkz. app/routers/ask.py) hiç GÖSTERİLMİYORDU.
           Yalnız GERÇEK çalışan SQL'den FARKLIYSA gösterilir (self-healing/repair sonrası
           "plan neydi, gerçekte ne çalıştı" farkını görünür kılar) — aynıysa gürültü olmasın
           diye tekrar edilmez. */}
-      {sqlStage && showSql && item.planned_sql && item.planned_sql !== item.sql && (
-        <div className="mt-2">
-          <p className="mb-1 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
-            plan (öz iyileştirme öncesi derlenen SQL)
-          </p>
-          <pre className="overflow-auto border border-hairline bg-neutral-950 p-4 font-mono text-xs leading-relaxed text-neutral-400">
-            {item.planned_sql}
-          </pre>
-        </div>
+      {!makbuzKatmanli && sqlStage && showSql && (
+        <pre className="mt-2 overflow-auto border border-hairline bg-neutral-950 p-4 font-mono text-xs leading-relaxed text-neutral-100">
+          {item.sql}
+        </pre>
       )}
       {contractOpen && item.contract_id && (
         <ContractDetailPanel contractId={item.contract_id} onClose={() => setContractOpen(false)} />
