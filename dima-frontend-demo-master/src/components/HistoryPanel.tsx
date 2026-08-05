@@ -1,10 +1,11 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { deleteConversation, listConversations } from "@/lib/api-client";
+import { deleteConversation, listConversations, restoreConversation } from "@/lib/api-client";
 import { useState } from "react";
 import { HataSeridi } from "@/components/HataSeridi";
 import { hataMetni } from "@/lib/mutasyonHatasi";
+import { GeriAlSeridi } from "@/components/GeriAlSeridi";
 
 // Sohbet geçmişi (per-user, backend kalıcı). Liste → tıkla=resume, × = soft-delete.
 // Minimal: demo sağ sheet içinde render edilir (SettingsDrawer). dima-frontend'in
@@ -32,13 +33,31 @@ export function HistoryPanel({
   // ekranda hiçbir iz bırakmıyordu. *Sessizce başarısız olan bir eylem,
   // kullanıcıya ürünün bozuk olduğunu değil KENDİSİNİN yanlış yaptığını düşündürür.*
   const [hata, setHata] = useState<string | null>(null);
+  // 🔴 Denetim F2: sunucu **silmiyor damgalıyordu** ama geri getiren hiçbir yol yoktu —
+  // kullanıcı açısından soft-delete ile hard-delete **birebir aynı deneyimdi**.
+  // ⚠ Ad da tutuluyor: *"silindi"* tek başına NEYİN silindiğini söylemez ve kullanıcı
+  // geri alıp almayacağına karar veremez.
+  const [silinen, setSilinen] = useState<{ id: string; title: string } | null>(null);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["conversations"],
     queryFn: listConversations,
   });
+  const geriAl = useMutation({
+    onError: (e) => setHata(hataMetni(e, "Geri alma")),
+    mutationFn: (id: string) => restoreConversation(id),
+    onSuccess: () => {
+      setSilinen(null);
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
   const del = useMutation({
-    onError: (e) => setHata(hataMetni(e, "Sohbet silme")),
+    onError: (e) => {
+      // 🔴 Silme başarısızsa geri-al şeridi **gösterilmemeli**: olmayan bir silmeyi
+      // geri almayı teklif etmek, kullanıcıya yanlış bir dünya tarif eder.
+      setSilinen(null);
+      setHata(hataMetni(e, "Sohbet silme"));
+    },
     mutationFn: (id: string) => deleteConversation(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["conversations"] }),
   });
@@ -46,6 +65,12 @@ export function HistoryPanel({
   return (
     <div className="space-y-3">
       <HataSeridi metin={hata} onKapat={() => setHata(null)} />
+      <GeriAlSeridi
+        etiket={silinen?.title ?? null}
+        onGeriAl={async () => {
+          await geriAl.mutateAsync(silinen!.id);
+        }}
+      />
       <button
         onClick={onNewChat}
         className="w-full border border-hairline px-3 py-1.5 text-left font-mono text-[12px] text-neutral-600 transition-colors hover:border-accent/50 hover:text-foreground dark:text-neutral-300"
@@ -77,7 +102,12 @@ export function HistoryPanel({
                   </div>
                 </button>
                 <button
-                  onClick={() => del.mutate(c.id)}
+                  // ⚠ Ad silmeden ÖNCE yakalanır: silindikten sonra liste tazelenir ve
+                  // satır kaybolur — o an adı sormanın yeri kalmaz.
+                  onClick={() => {
+                    setSilinen({ id: c.id, title: c.title || "Sohbet" });
+                    del.mutate(c.id);
+                  }}
                   disabled={del.isPending}
                   title="Sohbeti sil"
                   className="px-1.5 font-mono text-sm text-neutral-400 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"

@@ -116,6 +116,63 @@ def get_conversation(cid: str, request: Request) -> ConversationDetail:
                               messages=payloads)
 
 
+@router.post("/{cid}/geri-al", status_code=200)
+def geri_al_conversation(cid: str, request: Request) -> dict:
+    """**SİLMEYİ GERİ AL** — `deleted_at` damgasını kaldırır. *(denetim F2)*
+
+    ## 🔴 Ölçülen kusur
+
+    Sunucu beş nesneyi **silmiyor, damgalıyor**; kayıt duruyor. Ama arayüzde — ve
+    **hiçbir uçta** — silinmiş bir şeyi geri getiren **tek bir yol yoktu**. Yani
+    kullanıcı açısından soft-delete ile hard-delete **birebir aynı deneyimdi** ve
+    ADR-0019'un bedeli ödenmiş güvenlik ağı **kimseye ulaşmıyordu**.
+
+    > 🔴 *Geri alınamayan bir soft-delete, pahalı bir hard-delete'tir.*
+
+    ## Neden ayrı bir uç, `PATCH` değil
+
+    `PATCH /{cid}` bir **alan güncellemesidir** ve `deleted_at`'i oraya açmak, silinmiş
+    bir kaydı **kazara** dirilten bir yol bırakırdı. Geri alma bir **niyettir**; niyeti
+    kendi ucunda tutmak, onu denetlenebilir de yapar (`audit`).
+
+    ## ⚠ Neden süre sınırı YOK
+
+    Kayıt duruyorsa geri alınabilir. Bir süre sınırı koymak, kullanıcıya *"beş saniyede
+    karar ver"* demekti; oysa asıl güvence kaydın **durmasıdır**. Arayüzdeki şerit
+    geçicidir — **yetenek değil**.
+
+    ⚠ Zaten silinmemiş bir sohbette **hata değil, no-op**: kullanıcı iki kez geri-al'a
+    bastığında bir hata görmemeli. *Bir düzeltmenin ikinci kez uygulanması, bir hata
+    değildir.*
+    """
+    import uuid as _u
+
+    uid = _uid(request)
+    try:
+        anahtar = _u.UUID(cid)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Geçersiz sohbet id") from None
+
+    with Session(engine) as s:
+        c = s.get(Conversation, anahtar)
+        # 🔴 `_owned` KULLANILMAZ: o, silinmiş kaydı 404 sayar — yani tam da geri almak
+        # istediğimiz durumu görünmez yapardı. Sahiplik burada elle doğrulanır.
+        if c is None or c.user_id != uid:
+            raise HTTPException(status_code=404, detail="Sohbet bulunamadı")
+        if c.deleted_at is not None:
+            c.deleted_at = None
+            s.add(c)
+            s.commit()
+        baslik = c.title
+
+    from control_plane import audit
+
+    audit.record(getattr(request.state, "principal", None), "conversation_restore",
+                 nl_question=cid,
+                 ip=request.client.host if request.client else None)
+    return {"ok": True, "id": cid, "title": baslik}
+
+
 @router.delete("/{cid}", status_code=204)
 def delete_conversation(cid: str, request: Request) -> None:
     """SOFT DELETE (proje kuralı: hard-delete YOK): deleted_at damgası. Kayıt+mesajlar kalır

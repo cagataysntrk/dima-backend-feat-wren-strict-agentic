@@ -466,6 +466,19 @@ export async function deleteConversation(id: string): Promise<void> {
   await apiClient.delete(`/conversations/${id}`);
 }
 
+/** **SİLMEYİ GERİ AL** (denetim F2) — `deleted_at` damgasını kaldırır.
+ *
+ * 🔴 Sunucu beş nesneyi silmiyor **damgalıyordu**, ama geri getiren **hiçbir yol yoktu**:
+ * kullanıcı açısından soft-delete ile hard-delete **birebir aynı deneyimdi** ve
+ * ADR-0019'un bedeli ödenmiş güvenlik ağı **kimseye ulaşmıyordu**.
+ * *Geri alınamayan bir soft-delete, pahalı bir hard-delete'tir.*
+ */
+export async function restoreConversation(id: string): Promise<{ ok: boolean; title: string }> {
+  const { data } = await apiClient.post<{ ok: boolean; title: string }>(
+    `/conversations/${id}/geri-al`);
+  return data;
+}
+
 // Yorum çubuğu (chip) düzenlemesi — CubeQuery doğrudan, deterministik çalışır (LLM yok).
 export async function askCube(body: {
   cube_query: CubeQuery;
