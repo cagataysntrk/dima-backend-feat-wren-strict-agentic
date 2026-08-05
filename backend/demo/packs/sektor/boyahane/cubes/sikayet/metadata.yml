@@ -32,7 +32,15 @@ measures:
     expression: "COUNT(DISTINCT sikayet_no)"
     type: DOUBLE
     synonyms: [şikayet adedi, şikayet sayısı, kaç şikayet, reklamasyon sayısı]
-  - name: iade_kg
+  # 🔴 KÖK-5c (denetim KN-6, 2026-08-05) — ÖLÇÜ ADI `iade_kg` idi ve kendi ifadesindeki
+  # KOLON adıyla aynıydı. Motor bunu derlemede kabul ediyor, `mdl.json` üretiliyor,
+  # cube katalogda GÖRÜNÜYOR — ama o cube'a bir sorgu dokununca:
+  #   [INVALID_SQL] Cube 'sikayet': circular dependency detected in measure expressions
+  # ve etki cube DÜZEYİNDE: 6 ölçü + 9 boyut birden ölüyor. Ölçüldü: 172 ölçü tarandı,
+  # desenin TEK örneği buydu.
+  # ⚠ Yalnız AD değişti; ifade AYNI. Sinonimler korundu → kullanıcı yüzeyi değişmiyor.
+  # Kanıt: `test_member_sweep` 3 kırmızı → 5 yeşil (izole worktree'de ölçüldü).
+  - name: toplam_iade_kg
     expression: SUM(iade_kg)
     type: DOUBLE
     unit: "kg"

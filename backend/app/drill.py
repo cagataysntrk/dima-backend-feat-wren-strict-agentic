@@ -208,6 +208,20 @@ def related_cubes(current_cube: str, active_dims: set[str], all_cubes: list[dict
     return out
 
 
+def aktif_boyutlar(cube_query: dict) -> set:
+    """Bir `cube_query`'de **kullanımda olan** boyutlar: kırılımdakiler ∪ filtredekiler.
+
+    ⚠ Bu iki satır `ask.py`de **dört kez** birebir tekrar ediyordu. Bir gün biri filtreli
+    boyutu saymayı unutursa `related_cubes` sessizce **fazla** cube önerir ve kimse
+    nedenini bilmez. *Dört kopyanın hepsini birden düzeltmek, birini düzeltmekten kolay
+    değildir — imkânsızdır, çünkü dördüncüsü unutulur.*
+
+    ⚠ Ve burada, router'da değil: bir `cube_query` **okumasının** evi `drill.py`dir.
+    """
+    return set(cube_query.get("dimensions") or []) | {
+        f.get("dimension") for f in (cube_query.get("filters") or [])}
+
+
 def expand_cube_query(cube_query: dict, dimension: str) -> dict:
     """Mevcut cube_query'ye YENİ bir dallanma boyutu EKLER (dimensions listesine ekler) —
     saf, yan-etkisiz: girdiyi DEĞİŞTİRMEZ, yeni bir sözlük döner (breadcrumb geçmişinin her

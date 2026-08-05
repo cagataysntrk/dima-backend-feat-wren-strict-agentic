@@ -90,6 +90,17 @@ MUAFIYET_ASK_KOD = [
                     "yerellerine bağlı). Kapının ölçüsü **eklenen kod**, ve eklenen kod "
                     "TEK satır: `sorar_mi()` çağrısı. Eşik ve düzey çözümü modüle ve "
                     "modül-düzeyi yardımcıya ait — `ask()`e giren yalnız SORU"),
+    ("KÖK-6/yetenek", 2, "🔴 YETENEK KAPISI (denetim raporu KN-3) — *"
+                         "«forecast v1'de yok» gibi ÜRÜN-DÜZEYİ bir sınır Discovery'ye "
+                         "düşüp bir SAYIYA dönüşüyordu (`adhoc.toplam_toplam_ciro`). "
+                         "🔴 Bu iki satır TAŞINAMAZ ve sebebi kod değil KONUM: kapının "
+                         "tek güvencesi *«route() ve Intent-JSON'ın İKİSİ de pes ettikten "
+                         "SONRA»* çalışmasıdır. Daha erken bir yere konsa cevaplanabilir "
+                         "soruları keserdi; daha geç konsa Discovery zaten devralmış "
+                         "olurdu. Taşınabilir olan HER ŞEY `app/yetenek.py`'de: üç "
+                         "dedektör, üç kutu, mesajlar ve yanıt alanları. `ask()`'e giren "
+                         "yalnız ÇAĞRI ve DÖNÜŞ. ⊙ Ölçüldü: 968 meşru soruda "
+                         "**0 yanlış-pozitif**, 3/3 hedef yakalandı"),
     ("faz-1.3b/2", 3, "Katman B'nin Discovery çağrı yolu — TAŞINABİLİR OLAN HER ŞEY "
                       "`app/katman_b.py`'ye taşındı (zorlama · allowlist okuma · ret notu "
                       "· sarmal sınıf). `ask()`'te kalan üç satır taşınamaz: motoru bir kez "

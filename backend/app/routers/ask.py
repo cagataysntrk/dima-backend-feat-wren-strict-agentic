@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 import time as _time
 
+from app import yetenek as _yetenek
 from app import context as app_context
 from app import netlestirme as _netlestirme
 from app import prescribe
@@ -3333,6 +3334,20 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             trace=["Yol sınırı: Discovery (ham SQL) kullanıcı tercihiyle KAPALI"],
         ))
 
+    # 🔴 KÖK-6 — YETENEK KAPISI (denetim raporu KN-3). AYNI KAPI, ikinci ölçüt.
+    #
+    # Ölçülen kusur: yukarıdaki kapı bir **kullanıcı tercihi** okuyor; yetenek KAPSAMINA
+    # bakan bir kapı YOKTU. Sonuç: *"forecast v1'de yok"* gibi **ürün-düzeyi bir sınır**
+    # da Discovery'ye düşüyor ve **bir sayıya dönüşüyor** (`adhoc.toplam_toplam_ciro`).
+    # Rozet dürüst kalıyor (`source=llm:*`) — halüsinasyon değil; ama kullanıcı ilan
+    # edilmiş bir sınırın cevabı yerine bir sayı görüyor.
+    #
+    # ⚠ KONUM BAĞLAYICI: burası `route()` ve Intent-JSON'ın İKİSİ de pes ettikten sonra.
+    # Yani cevaplanabilen hiçbir soru bu kapıya uğramaz — modülün güvencesi kodunda
+    # değil, **çağrıldığı yerde** yaşıyor.
+    if (_sinir := _yetenek.kapsam_disi(body.question or "", schema)) is not None:
+        return _finish(AskResponse(**_yetenek.yanit_alanlari(_sinir, body.question)))
+
     llm = getattr(request.app.state, "llm", None)
     if llm is None:
         raise HTTPException(status_code=503, detail="LLM sağlayıcısı yapılandırılmamış.")
@@ -3705,6 +3720,7 @@ def _ask_drill_govde(request: Request, body: DrillRequest) -> DrillResponse:
     import time as _time
 
     from app.drill import (
+        aktif_boyutlar,
         available_dimensions,
         expand_cube_query,
         flag_outliers,
@@ -3793,8 +3809,7 @@ def _ask_drill_govde(request: Request, body: DrillRequest) -> DrillResponse:
         anomalies = []
         if body.result and body.result.rows:
             anomalies = _anomalies_for(body.cube_query, body.result.model_dump())
-        active_dims = set(body.cube_query.get("dimensions") or [])
-        active_dims |= {f.get("dimension") for f in (body.cube_query.get("filters") or [])}
+        active_dims = aktif_boyutlar(body.cube_query)
         # UC-2.18 kanıt paneli: "explain" YENİ bir sorgu ÇALIŞTIRMAZ (mevcut result yeniden
         # kullanılır) ama SQL METNİ yine de üretilebilir (derleme, ÇALIŞTIRMA değil) — kullanıcı
         # ilk tıklamada bile formülün YANINDA gerçek SQL'i görsün. Başarısız olursa sessizce None
@@ -3821,8 +3836,7 @@ def _ask_drill_govde(request: Request, body: DrillRequest) -> DrillResponse:
             request, service, body.session_id,
             f"drill: {cube_meta.get('display') or cube_meta['name']} → {body.dimension}",
             new_cq, sql, result)
-        active_dims = set(new_cq.get("dimensions") or [])
-        active_dims |= {f.get("dimension") for f in (new_cq.get("filters") or [])}
+        active_dims = aktif_boyutlar(new_cq)
         return DrillResponse(
             cube_query=new_cq,
             formula_explanation=formula_explanation(new_cq, cube_meta),
@@ -3847,8 +3861,7 @@ def _ask_drill_govde(request: Request, body: DrillRequest) -> DrillResponse:
             f"drill: {cube_meta.get('display') or cube_meta['name']} → "
             f"{body.dimension}={body.filter_value}",
             new_cq, sql, result)
-        active_dims = set(new_cq.get("dimensions") or [])
-        active_dims |= {f.get("dimension") for f in (new_cq.get("filters") or [])}
+        active_dims = aktif_boyutlar(new_cq)
         return DrillResponse(
             cube_query=new_cq,
             formula_explanation=formula_explanation(new_cq, cube_meta),
@@ -3874,8 +3887,7 @@ def _ask_drill_govde(request: Request, body: DrillRequest) -> DrillResponse:
             f"drill: {cube_meta.get('display') or cube_meta['name']} → "
             f"{target_meta.get('display') or body.target_cube} (ilişkili veri)",
             new_cq, sql, result)
-        active_dims = set(new_cq.get("dimensions") or [])
-        active_dims |= {f.get("dimension") for f in (new_cq.get("filters") or [])}
+        active_dims = aktif_boyutlar(new_cq)
         return DrillResponse(
             cube_query=new_cq,
             formula_explanation=formula_explanation(new_cq, target_meta),

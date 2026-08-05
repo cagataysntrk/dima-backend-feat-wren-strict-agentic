@@ -804,6 +804,64 @@ class ProjectValidationError(RuntimeError):
     """Compose çıktısı yapısal olarak geçersiz — MDL ÜRETİLMEZ (fail-closed)."""
 
 
+#: 🔴 KÖK-5c — SQL toplama fonksiyonları. Bir ölçü ifadesinde bunların DIŞINDAKİ
+#: tanımlayıcılar kolon adı sayılır.
+_TANIMLAYICI = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+
+
+def _ozyineli_olcu(project_dir: Path) -> list[str]:
+    """🔴 KÖK-5c — **bir ölçünün ifadesi kendi adına referans veremez.**
+
+    ## Ölçülen kusur (denetim raporu KN-6, 2026-08-05)
+
+    ```yaml
+    - name: iade_kg
+      expression: SUM(iade_kg)     # ← ölçünün ADI, kendi ifadesindeki KOLON adıyla aynı
+    ```
+
+    Motor bunu **derleme zamanında kabul ediyor** — `mdl.json` sorunsuz üretiliyor,
+    `sikayet` cube'u katalogda **görünüyor**. Kusur ancak o cube'a **bir sorgu
+    dokunduğunda** çıkıyor:
+
+    > `[INVALID_SQL] Failed to analyze MDL: Cube 'sikayet': circular dependency
+    > detected in measure expressions phase=SQL_PLANNING`
+
+    Ve etki **cube düzeyinde**: tek satır yüzünden `sikayet`'in **6 ölçüsü + 9 boyutu**
+    birden kullanılamaz hâle geliyor. Ölçüldü: 172 ölçü tarandı, desenin **tek örneği**.
+
+    ## Neden BURADA (derleme), orada (sorgu) değil
+
+    🔴 *Bir katalog kusuru bir kullanıcı deneyimi olmamalıdır.* Bugün bu hata
+    kullanıcının önünde, bir soruya cevap verilemeyişi olarak çıkıyor; ve daha kötüsü,
+    `route()` o cube'a ulaşamadığı için soru **Discovery'ye** düşüyor — yani kullanıcı
+    bir hata bile görmüyor, **başka bir yoldan gelmiş bir sayı** görüyor.
+
+    ⚠ Motorun kendi doğrulayıcısı (`validate_project`) bu sınıfı **görmüyor** — bu yüzden
+    kendi kuralımızı yazıyoruz. MIMARI §5 *"motor zaten yapıyorsa yazma"* der; burada
+    **yapmıyor** ve bu ölçüldü.
+
+    ⚠ Tarama kasten **dar**: yalnız ölçünün *kendi* adı aranır. Ölçüler arası referans
+    (`a` → `b` → `a`) meşru bir modelleme olabilir ve motor onu zaten çözer; buradaki
+    hedef **doğrudan öz-referanstır**.
+    """
+    kotu: list[str] = []
+    for meta in sorted((project_dir / "cubes").glob("*/metadata.yml")):
+        try:
+            d = yaml.safe_load(meta.read_text(encoding="utf-8")) or {}
+        except Exception:                                  # ADR-0020: sessiz yutma yok
+            print(f"UYARI: cube metadata okunamadı: {meta}")
+            continue
+        cube = d.get("name") or meta.parent.name
+        for m in (d.get("measures") or []):
+            ad, ifade = m.get("name"), str(m.get("expression") or "")
+            if not ad or not ifade:
+                continue
+            # `SUM(iade_kg)` → {"SUM", "iade_kg"} ; ölçünün adı bu kümedeyse öz-referans.
+            if ad in set(_TANIMLAYICI.findall(ifade)):
+                kotu.append(f"{cube}.{ad} → {ifade}")
+    return kotu
+
+
 def dogrula(project_dir: Path) -> dict:
     """Compose çıktısını MOTORUN kendi doğrulayıcısına sokar (Faz B, `context.validate_project`).
 
@@ -840,6 +898,19 @@ def dogrula(project_dir: Path) -> dict:
         # zorunlu bir bileşen değil. Ama sessiz de kalmaz.
         print(f"UYARI: proje doğrulaması çalıştırılamadı ({type(exc).__name__}: {exc})")
         return {"ok": None, "errors": 0, "warnings": 0}
+
+    # 🔴 KÖK-5c — MOTORUN GÖRMEDİĞİ SINIF. `validate_project` öz-referanslı ölçüyü
+    # kabul ediyor; hata ancak SQL planlamada, yani kullanıcının önünde çıkıyor.
+    ozyineli = _ozyineli_olcu(project_dir)
+    if ozyineli:
+        raise ProjectValidationError(
+            "🔴 ÖZ-REFERANSLI ÖLÇÜ — MDL üretilmedi (KÖK-5c, fail-closed):\n  "
+            + "\n  ".join(ozyineli)
+            + "\n\nBir ölçünün ADI, kendi ifadesindeki kolon adıyla aynı olamaz: motor "
+              "bunu derlemede kabul eder ama SQL planlamada 'circular dependency' verir "
+              "ve o cube'un TÜM ölçü/boyutları kullanılamaz hâle gelir.\n"
+              "YAPILACAK: ölçüyü yeniden adlandır (ör. `iade_kg` → `toplam_iade_kg`); "
+              "ifade AYNI kalır, yalnız ad çakışması kalkar.")
 
     hatalar = [b for b in bulgular if getattr(b, "level", "") == "error"]
     uyarilar = [b for b in bulgular if getattr(b, "level", "") != "error"]
