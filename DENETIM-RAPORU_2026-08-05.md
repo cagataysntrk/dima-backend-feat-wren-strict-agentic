@@ -183,3 +183,48 @@ kapalı ya da erişilemez, üçünün de planda evi belli.
 
 **Bundan sonrası plana uyar:** madde sırası, `KAPI` şartları, `GERİ AL` sözleşmesi, demet
 disiplini. Ölçüm koşulur, **sonucu kaydedilir, maddeyi iptal etmez.**
+
+---
+
+# ✅ KAPANIŞ — bu raporun bulguları BORÇ DEFTERİNE GEÇTİ (@`7f3667a`)
+
+Rapor kendi ömrünü §0'da ilan etmişti: *"buradaki bulgular borç defterine geçtiğinde bu
+dosya silinebilir; ikinci bir durum kaydı yaşatmak, deponun kendi avladığı «aynı kural
+iki yerde» sınıfını doğurur."* Bu bölüm o geçişin kaydıdır — **dosya artık silinebilir.**
+
+| # | Bulgu | Kapanış | Kanıt |
+|---|---|---|---|
+| **D1** | Çıplak ikinci ölçü adı tanınmıyor (§3A · §6) | ✅ | düşüş **−%18,2 → −%4,5**, `kaldi` → `gecti`, korpus **sabit** |
+| **D2** | ADR kaydı kodun ~2 faz gerisinde (§3C) | ✅ | **ADR-0025…0034**, kararın yaşadığı yere atıflı, kapı **köken beyanına** çevrildi |
+| **D3** | `is_period_only` yetim fonksiyon (§3B) | ✅ | **önce şartname taşındı, sonra kaldırıldı** — 13 ifade artık `deterministic_refine` üstünde ölçülüyor |
+| **D4** | `capa_zinciri` kapalı — kural hiç ateşlemiyor (§3A · §6) | ✅ | **beta**; senaryolar tabanda, kural ateşliyor, çelişkide **soruyor** |
+| **D5** | Deneyim süitinin çoğunluğu koşmuyor (§3E) | ✅ | *"63 ⊘"* ölçüldü: **60 tasarım + 3 gerçek risk**; iki üçüncü hâl **ayrıldı** |
+| — | Diyalog yöneticisinin erişim hatası (§3B) | ✅ | FAZ 5.0 |
+| — | 6./7. konuşma türü (§3B) | ✅ | FAZ 5.1 · 5.2 |
+| — | Kalıp sözlüğünün kök nedeni (§5/4) | ✅ | FAZ 5.3 — sözlük **kullanıcı ifadelerinden** besleniyor |
+| — | `OPERASYON-DURUM.md` bayat (§1) | ✅ | başlık + `ŞU AN` + borç defteri uzlaştırıldı |
+
+## 🔴 Raporun §6'daki üçlüsü TAMAMLANDI
+
+> *"Çapa zinciri + diyalog yöneticisinin erişim hatası + çıplak ölçü adının tanınmaması:
+> bu üçü birlikte **tek bir şeyi** verir — çalışan bir diyalog yöneticisi."*
+
+Üçü de kapandı.
+
+## ⚠ Raporun kendi dersi, ölçümle DOĞRULANDI
+
+Rapor §4/risk-1'de *"çıplak ölçü adını tanıtmak, bugün **boyut** sanılan kelimeleri ölçüye
+çekebilir"* diyordu ve **haklı çıktı**: `test_capraz_cube_gecis_notu` kırmızı verdi
+(*"kumaş cinsine göre fire oranı bu yıl"* bir konu değişimidir, ekleme sanıldı).
+
+⚠ Ama uyarının önerdiği kapı (**benchmark + korpus**) bile **yetmedi** — korpus bunu
+görmedi (%93,1 birebir), yakalayan **altın süit** oldu. *Bir riskin ölçülmemesi, yokluğu
+değildir* ve bir kapının kapsamı, ölçtüğü şey kadardır.
+
+## ⏸ Kapanmayan — ve neden
+
+**§3A'nın kalan `off` bayrakları** (`tazelik` · `lineage` · `metrik_sertifikasi` ve
+diğerleri) **bilerek açılmadı**: raporun kendi §5/5'i *"kapalı bayrakların açılışını ayrı
+bir tur yap"* diyor ve her açış **kendi ölçümünü** ister. Bu turda ölçümü yapılan iki
+bayrak (`olcu_ekleme_takibi` · `capa_zinciri`) açıldı; kalanlar borç defterinde **sahibiyle
+birlikte** duruyor.
