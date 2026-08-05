@@ -136,6 +136,35 @@ CEKIRDEK = (
 )
 
 
+#: Frontend kaynak uzantıları. ⚠ `.css` **dahil**: FAZ 7.2'nin tasarım sistemi kapısı
+#: `globals.css`'i okuyor ve bir token silinmesi yalnız oradan görünür.
+_FE_UZANTI = (".ts", ".tsx", ".css")
+
+#: Frontend'i okuyan kapıların **tek ortak imzası**: hepsi `tests/kapi_ortak`'ın
+#: yardımcılarını (`fe_dosyalari` · `fe_kaynak` · `frontend_dir`) ya da doğrudan frontend
+#: dizin adını kullanır. *Bir kuralı bir listeye değil bir İMZAYA bağlamak, listeyi
+#: bayatlamaktan kurtarır.*
+_FE_OKUYAN = re.compile(r"fe_dosyalari|fe_kaynak|frontend_dir|dima-frontend-demo-master")
+
+
+def _frontend_degisti(degisen: list[str]) -> bool:
+    """🔴 **Ölçülmüş bir kör nokta** (2026-08-05).
+
+    `_desenler` yalnız `.py` dosyalarına bakıyordu; bir `.tsx` değişikliği **hiçbir**
+    kapı seçmiyordu. Sonuç: FAZ 7.8'de `ReportCard.tsx`'ten taşınan bir alan yüzünden
+    `test_ai_act_uyumu` kırmızıya döndü ve **dört demet boyunca görünmedi** — hızlı
+    kapı her seferinde yeşil dedi.
+
+    *Bir kapının kapsamı, onu tetikleyen sinyalden büyük olamaz.*
+
+    ⚠ Frontend'i okuyan kapılar **modül bağımlılığıyla** seçilemez: onlar bir Python
+    modülünü import etmez, bir **dosya ağacını okur**. Bu yüzden ayrı ve adı olan bir
+    kural — ve `--hizli`'nin sade-ad tuzağına düşmemek için desen `kapi_ortak`'ın
+    yardımcı **adlarına** bağlı, `"frontend"` gibi bir kelimeye değil.
+    """
+    return any(pathlib.PurePosixPath(d).suffix in _FE_UZANTI for d in degisen)
+
+
 def _desenler(degisen: list[str]) -> list[re.Pattern[str]]:
     """Değişen kaynak dosya → o modüle BAĞIMLILIĞI gösteren desenler.
 
@@ -177,10 +206,13 @@ def _secim(degisen: list[str]) -> tuple[list[str], int]:
         if ad.startswith("test_") and (TESTLER / ad).exists():
             secili.add(ad)
     desenler = _desenler(degisen)
-    if desenler:
+    fe = _frontend_degisti(degisen)
+    if desenler or fe:
         for ad in hepsi:
             metin = (TESTLER / ad).read_text(encoding="utf-8", errors="ignore")
-            if any(dsn.search(metin) for dsn in desenler):
+            if desenler and any(dsn.search(metin) for dsn in desenler):
+                secili.add(ad)
+            elif fe and _FE_OKUYAN.search(metin):
                 secili.add(ad)
     return sorted(secili), len(hepsi)
 
