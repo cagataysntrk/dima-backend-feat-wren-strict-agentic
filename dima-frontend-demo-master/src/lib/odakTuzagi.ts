@@ -120,3 +120,50 @@ export function useOdakTuzagi<T extends HTMLElement>(
 
   return ref;
 }
+
+/** **KAPSAMLI ESCAPE** — *modal olmayan* yüzeyler için. (FAZ 4)
+ *
+ * ## 🔴 Neden `useOdakTuzagi`'nın yanında, ayrı bir dosyada DEĞİL
+ *
+ * `test_A11Y3_TUZAGIN_TEK_SAHIBI_var` şunu söylüyor: klavye/odak kuralı **tek yerde**
+ * yazılır. Üç modal kendi Esc dinleyicisini yazdığında *"hangisinin doğru olduğu
+ * ölçülemez"* hâle gelmişti.
+ *
+ * Analiz paneli **modal değildir** ve odak tuzağı **istemez** — ama Escape ister.
+ * Bu ihtiyaç için ayrı bir modül açmak, aynı kuralın **ikinci sahibini** doğururdu.
+ * Doğrusu: tek sahibi **genişletmek**.
+ *
+ * ## Modal Escape'ten farkı — ve neden bu fark hayati
+ *
+ * | | modal | modal olmayan |
+ * |---|---|---|
+ * | Escape kapsamı | **global** — her yerden kapatır | 🔴 **yalnız odak içerideyken** |
+ * | odak tuzağı | var | **yok** |
+ * | arkadaki yüzey | ölü | **canlı** |
+ *
+ * ⚠ Escape'i modal olmayan bir panelde **global** yakalamak, kullanıcı composer'da
+ * yazarken paneli kapatırdı. Panelin varlık sebebi *"hem bak hem yaz"*tı; global bir
+ * Escape tam da o vaadi kırardı.
+ *
+ * *Aynı tuş, iki bağlamda iki farklı kuraldır — ve ikisini tek kurala indirgemek,
+ * birini yanlış yapmaktır.*
+ */
+export function useKapsamliEscape(
+  etkin: boolean,
+  kapat: () => void,
+  kapsam: React.RefObject<HTMLElement | null>,
+) {
+  useEffect(() => {
+    if (!etkin) return;
+    const f = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const h = document.activeElement;
+      // 🔴 Odak panelin İÇİNDE değilse dokunma — kullanıcı başka bir yerde yazıyordur.
+      if (!h || !kapsam.current?.contains(h)) return;
+      e.preventDefault();
+      kapat();
+    };
+    window.addEventListener("keydown", f);
+    return () => window.removeEventListener("keydown", f);
+  }, [etkin, kapat, kapsam]);
+}
