@@ -410,3 +410,131 @@ def test_MIGRATION_TRACE_blok_disinda_TANIMLI():
     tanim = govde.index("migration_trace: list[str] = []")
     blok = govde.index("    if structural_followup:\n")
     assert tanim < blok, "`migration_trace` hâlâ `if structural_followup` bloğunun İÇİNDE"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FAZ 6.4 — PLANLAYICI SERTLEŞTİRMESİ (§8.1, §8.6-8.10)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def test_6_4_PLAN_DONDURULDUKTAN_sonra_arac_ciktisi_DEGISTIREMEZ():
+    """🔴 **Kontrol-akışı bütünlüğü** (§8.1).
+
+    Plan, **güvenilmeyen araç çıktısı bağlama girmeden** donar. Bir araç çıktısı planı
+    değiştirebilseydi, dış veri (bir cube satırı, bir LLM metni) koşumun **akışını
+    yönlendirebilirdi** — ve o an sistem bir **ReAct döngüsüne** dönerdi (MIMARI §11.5:
+    *bu modül bir ReAct döngüsü DEĞİLDİR*).
+    """
+    import dataclasses
+
+    from app.planner import PlanTaslagi, dondur
+
+    taslak = dondur([{"arac": "route", "neden": "x"}, {"arac": "interpret"}])
+    assert isinstance(taslak, PlanTaslagi) and taslak.donduruldu
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        taslak.adimlar = ()                       # type: ignore[misc]
+
+
+def test_6_4_DONDURMA_cagiranin_referansiyla_DELINEMEZ():
+    """⚠ İç sözlükler de kopyalanır: bir çağıranın elindeki referansla adımı sonradan
+    değiştirmek, dondurmayı **görünmez biçimde** delerdi."""
+    from app.planner import dondur
+
+    ham = [{"arac": "route"}]
+    taslak = dondur(ham)
+    ham[0]["arac"] = "llm.select_cube"
+    assert taslak.adimlar[0]["arac"] == "route", (
+        "🔴 Dondurulmuş plan dışarıdan değiştirildi — dondurma bir temenniye dönmüş.")
+
+
+# --- DÖRT KATMANLI DOĞRULAMA · SINIR DEĞERLERİ --------------------------------------
+
+def _r(degerler, kolon="v"):
+    return {"columns": [kolon], "rows": [{kolon: x} for x in degerler]}
+
+
+def test_6_4_KATMAN_satir_bos_sonuc():
+    """*Boş bir sonuç bir cevap değil, bir sessizliktir.*"""
+    from app.planner import adim_dogrula
+
+    r = adim_dogrula({"columns": ["v"], "rows": []})
+    assert r["gecti"] is False and r["katman"] == "satir"
+
+
+def test_6_4_KATMAN_null_sinir_degerinde():
+    """Sınır: **%90 geçer, %91 geçmez.**"""
+    from app.planner import adim_dogrula
+
+    # 10 değerin 9'u boş → %90 → eşiği AŞMAZ (kural `>` )
+    assert adim_dogrula(_r([1] + [None] * 9))["gecti"] is True
+    # 11 değerin 10'u boş → %90,9 → aşar
+    assert adim_dogrula(_r([1] + [None] * 10))["katman"] == "null"
+
+
+def test_6_4_KATMAN_mertebe_sinir_degerinde():
+    """Sınır: **99× geçer, 100× geçmez** — birim/ölçek hatasının tek işareti."""
+    from app.planner import adim_dogrula
+
+    assert adim_dogrula(_r([1, 1, 99]))["gecti"] is True
+    assert adim_dogrula(_r([1, 1, 100]))["katman"] == "mertebe"
+
+
+def test_6_4_MERTEBE_en_az_UC_gozlem_ister():
+    """⚠ *İki noktada "medyan" bir merkez değil, noktalardan biridir.*"""
+    from app.planner import adim_dogrula
+
+    assert adim_dogrula(_r([1, 100000]))["gecti"] is True
+
+
+def test_6_4_KATMAN_sema_uyusmazligi():
+    """*Cevap başka bir soruya ait.*"""
+    from app.planner import adim_dogrula
+
+    r = adim_dogrula(_r([1, 2, 3]), beklenen_kolonlar=["fire_orani"])
+    assert r["gecti"] is False and r["katman"] == "sema"
+
+
+def test_6_4_DOGRULAMA_adimi_DUSURMEZ():
+    """🔴 Bir `gecti=False`, *"bu sonuç yanlış"* demez; *"bu noktadan yeniden planla"*
+    der.
+
+    *Şüpheli bir sayı, yokluğundan daha bilgilendiricidir — yeter ki şüphe SÖYLENSİN.*
+    """
+    from app.planner import adim_dogrula
+
+    r = adim_dogrula(_r([1, 1, 100]))
+    assert r["neden"], "gerekçesiz bir doğrulama reddi, kullanıcıya hiçbir şey söylemez"
+    assert "yanlış" not in r["neden"].lower()
+
+
+# --- HATA SINIFLANDIRMA (§8.8) ------------------------------------------------------
+
+def test_6_4_HATA_IMZASI_degisken_parcalari_ELER():
+    """⚠ Mesajın tamamını imza saymak, içindeki id/sayı gibi **değişken parçalar**
+    yüzünden aynı hatayı her seferinde **yeni** gösterir ve strateji hiç değişmezdi."""
+    from app.planner import hata_imzasi
+
+    a = hata_imzasi("route", "ValueError: cube 'x-123' bulunamadı")
+    b = hata_imzasi("route", "ValueError: cube 'y-999' bulunamadı")
+    assert a == b == "route|ValueError"
+
+
+def test_6_4_AYNI_IMZA_IKINCI_KEZ_strateji_degistirir():
+    """*Aynı yoldan ikinci kez geçmek bir ısrar değil, bir döngüdür.*"""
+    from app.planner import strateji_degistir_mi
+
+    assert strateji_degistir_mi([], "route|ValueError") is False
+    assert strateji_degistir_mi(["route|ValueError"], "route|ValueError") is True
+
+
+# --- PLAN KONTROL LİSTESİ (§8.7) ----------------------------------------------------
+
+def test_6_4_KOSUM_adim_sayaci():
+    """⚠ Hatalı adım **kaydedilir** ama *tamamlandı* sayılmaz — ikisini karıştırmak,
+    yarım bir koşumu **tam** gösterirdi."""
+    from app.planner import Adim, Kosum
+
+    k = Kosum(adimlar_toplam=3)
+    k.adimlar.append(Adim(arac="route", determinizm="deterministik", sure_ms=1))
+    k.adimlar.append(Adim(arac="interpret", determinizm="deterministik", sure_ms=1,
+                          hata="ValueError: x"))
+    assert k.adimlar_toplam == 3 and k.adimlar_tamam == 1

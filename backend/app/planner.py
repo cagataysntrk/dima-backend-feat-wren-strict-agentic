@@ -108,6 +108,126 @@ class Adim:
                 **({"gated": False, "note": not_} if (self.kapisiz or bilinmeyen) else {})}
 
 
+@dataclass(frozen=True)
+class PlanTaslagi:
+    """🔴 **FAZ 6.4 — DONDURULMUŞ PLAN** (§8.1).
+
+    ## Neden dondurulur — güvenlik gerekçesi
+
+    **Kontrol-akışı bütünlüğü**: plan, **güvenilmeyen araç çıktısı bağlama girmeden**
+    donar. Bir araç çıktısı planı değiştirebilseydi, dış veri (bir cube satırı, bir LLM
+    metni) **koşumun akışını yönlendirebilirdi** — ve o an sistem bir ReAct döngüsüne
+    dönerdi.
+
+    > MIMARI §11.5 korunur: **bu modül bir ReAct döngüsü DEĞİLDİR.**
+
+    ⚠ `frozen=True` bir **süs değil**: doğrulama düşünce **yalnız o noktadan** yeniden
+    planlanır ve yeni bir taslak **üretilir** — var olanı düzenlemek, dondurmayı bir
+    temenniye çevirirdi.
+    """
+
+    adimlar: tuple[dict[str, Any], ...]
+    donduruldu: bool = True
+
+    def __len__(self) -> int:
+        return len(self.adimlar)
+
+
+def dondur(adimlar: list[dict[str, Any]]) -> PlanTaslagi:
+    """Öneri listesini **dondurulmuş** bir taslağa çevirir.
+
+    ⚠ İç sözlükler de kopyalanır: bir çağıranın elindeki referansla adımı sonradan
+    değiştirmesi, dondurmayı **görünmez biçimde** delerdi.
+    """
+    return PlanTaslagi(adimlar=tuple(dict(a) for a in (adimlar or [])))
+
+
+# --- DÖRT KATMANLI ADIM DOĞRULAMA (§8.6) ------------------------------------------
+
+#: Büyüklük mertebesi sapma eşiği — medyana göre **100×**. ⚠ Bir sapma bir **hata
+#: değildir**, bir **işarettir**: doğrulama adımı düşürmez, **yeniden planlamayı**
+#: tetikler.
+MERTEBE_ESIGI = 100.0
+
+#: Null oranı eşiği. Bir kolonun %90'ı boşsa o kolon bir **cevap taşımıyordur**.
+NULL_ESIGI = 0.90
+
+
+def adim_dogrula(sonuc: dict[str, Any] | None, *, olcu: str | None = None,
+                 beklenen_kolonlar: list[str] | None = None) -> dict[str, Any]:
+    """§8.6 — **dört katman**. Döner: `{gecti, katman, neden}`.
+
+    | katman | koşul | neden önemli |
+    |---|---|---|
+    | `satir` | `row_count == 0` | boş bir sonuç bir cevap değil, bir **sessizliktir** |
+    | `null` | `null_orani > %90` | kolon var ama **veri yok** — grafik boş çizilir |
+    | `mertebe` | medyana göre **≥100×** sapma | birim/ölçek hatasının **tek** işareti |
+    | `sema` | beklenen kolon yok | sorgu değişmiş, cevap **başka bir soruya** ait |
+
+    🔴 **Doğrulama adımı DÜŞÜRMEZ.** Bir `gecti=False`, *"bu sonuç yanlış"* demez;
+    *"bu noktadan yeniden planla"* der. Sonucu atmak, kullanıcıya hiçbir şey
+    göstermemek olurdu — oysa **şüpheli bir sayı, yokluğundan daha bilgilendiricidir**,
+    yeter ki şüphe **söylensin**.
+    """
+    satirlar = (sonuc or {}).get("rows") or []
+    if not satirlar:
+        return {"gecti": False, "katman": "satir",
+                "neden": "sonuç boş — boş bir sonuç bir cevap değil, bir sessizliktir"}
+
+    kolonlar = list((sonuc or {}).get("columns") or (satirlar[0].keys() if satirlar else []))
+    if beklenen_kolonlar:
+        eksik = [k for k in beklenen_kolonlar if k not in kolonlar]
+        if eksik:
+            return {"gecti": False, "katman": "sema",
+                    "neden": f"beklenen kolon(lar) yok: {eksik} — cevap başka bir soruya ait"}
+
+    hedef = olcu or next((k for k in kolonlar
+                          if any(isinstance(r.get(k), (int, float)) for r in satirlar)), None)
+    if hedef is None:
+        return {"gecti": True, "katman": None, "neden": ""}
+
+    degerler = [r.get(hedef) for r in satirlar]
+    bos = sum(1 for v in degerler if v is None)
+    if len(degerler) and bos / len(degerler) > NULL_ESIGI:
+        return {"gecti": False, "katman": "null",
+                "neden": f"`{hedef}` kolonunun %{bos / len(degerler) * 100:.0f}'i boş — "
+                         f"kolon var ama veri yok"}
+
+    sayilar = sorted(float(v) for v in degerler
+                     if isinstance(v, (int, float)) and v is not None)
+    # ⚠ Mertebe sapması **en az 3 gözlem** ister: iki noktada "medyan" bir merkez
+    # değil, noktalardan biridir.
+    if len(sayilar) >= 3:
+        orta = sayilar[len(sayilar) // 2]
+        if orta:
+            enb = max(abs(x) for x in sayilar)
+            if enb / abs(orta) >= MERTEBE_ESIGI:
+                return {"gecti": False, "katman": "mertebe",
+                        "neden": f"en büyük değer medyanın {enb / abs(orta):.0f}× katı — "
+                                 f"birim/ölçek hatasının tek işareti budur"}
+    return {"gecti": True, "katman": None, "neden": ""}
+
+
+# --- HATA SINIFLANDIRMA (§8.8) ------------------------------------------------------
+
+def hata_imzasi(arac: str, hata: str | None) -> str:
+    """Aynı hatanın **kimliği** — mesaj metni değil, **sınıfı**.
+
+    ⚠ Mesajın tamamını imza saymak, içindeki değişken parçalar (id'ler, sayılar)
+    yüzünden **aynı hatayı her seferinde yeni** gösterirdi ve strateji hiç değişmezdi.
+    """
+    tip = str(hata or "").split(":", 1)[0].strip() or "?"
+    return f"{arac}|{tip}"
+
+
+def strateji_degistir_mi(imzalar: list[str], yeni: str) -> bool:
+    """§8.8 — **aynı hata imzası 2. kez → strateji değiştir**.
+
+    *Aynı yoldan ikinci kez geçmek bir ısrar değil, bir döngüdür.*
+    """
+    return imzalar.count(yeni) >= 1
+
+
 @dataclass
 class Kosum:
     """Bir ajan koşusunun tamamı: adımlar + bütçe durumu + kısılma gerekçesi."""
@@ -116,6 +236,15 @@ class Kosum:
     kisildi: bool = False
     kisilma_nedeni: str = ""
     kok_makbuz: str | None = None
+    #: 🔴 FAZ 6.4 — **PLAN KONTROL LİSTESİ** (§8.7). *Kaç adım planlandı, kaçı tamamlandı*
+    #: — bu ikisi ayrışırsa koşum **yarım kalmıştır** ve makbuz bunu söylemeli.
+    adimlar_toplam: int = 0
+
+    @property
+    def adimlar_tamam(self) -> int:
+        """Hatasız tamamlanan adım sayısı. ⚠ Hatalı adım da **kaydedilir** ama
+        *tamamlandı* sayılmaz — ikisini karıştırmak, yarım bir koşumu tam gösterirdi."""
+        return sum(1 for a in self.adimlar if not a.hata)
 
     @property
     def sorgu_sayisi(self) -> int:
