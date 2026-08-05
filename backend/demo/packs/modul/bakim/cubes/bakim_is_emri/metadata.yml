@@ -33,7 +33,8 @@ measures:
     expression: SUM(maliyet)
     type: DOUBLE
     unit: "₺"
-    synonyms: [bakım maliyeti, onarım maliyeti, bakım gideri, yedek parça maliyeti]
+    # ⚠ `yedek parça maliyeti` KALDIRILDI → `bakim.toplam_yedek_parca_maliyet`in.
+    synonyms: [bakım maliyeti, onarım maliyeti, bakım gideri, iş emri maliyeti]
   - name: planli_bakim_yuzde
     expression: "ROUND(100.0 * SUM(CASE WHEN tur = 'PLANLI' THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1)"
     type: DOUBLE
@@ -43,7 +44,8 @@ measures:
     expression: "ROUND(AVG(sure_dk),1)"
     type: DOUBLE
     unit: "dk"
-    synonyms: [ortalama müdahale, mttr, ortalama onarım süresi, ne kadar sürüyor]
+    # ⚠ `mttr` KALDIRILDI → `bakim.ort_durus_dakika`nın (MTTR arıza ONARIM süresidir).
+    synonyms: [ortalama müdahale, ortalama bakım süresi, ne kadar sürüyor]
 
 dimensions:
   - name: makine

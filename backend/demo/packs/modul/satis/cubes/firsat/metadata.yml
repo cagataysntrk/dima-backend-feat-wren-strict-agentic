@@ -38,7 +38,8 @@ measures:
     expression: "ROUND(100.0 * SUM(CASE WHEN asama = 'Kazanıldı' THEN 1 ELSE 0 END) / NULLIF(SUM(CASE WHEN asama IN ('Kazanıldı','Kaybedildi') THEN 1 ELSE 0 END),0), 1)"
     type: DOUBLE
     unit: "%"
-    synonyms: [kazanma oranı, başarı oranı, dönüşüm oranı, kazanç oranı, win rate]
+    # ⚠ `başarı oranı` KALDIRILDI → `egitim.basari_orani_yuzde`nin (sınav geçme oranı).
+    synonyms: [kazanma oranı, dönüşüm oranı, kazanç oranı, win rate, fırsat başarısı]
   - name: kaybedilen_tutar
     expression: "SUM(CASE WHEN asama = 'Kaybedildi' THEN tahmini_tutar ELSE 0 END)"
     type: DOUBLE

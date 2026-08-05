@@ -55,7 +55,11 @@ measures:
     expression: "ROUND(AVG(sapma_dE),3)"
     type: DOUBLE
     unit: "dE"
-    synonyms: [sapma, renk sapması, ortalama sapma, dE, delta e]
+    # 🔴 DARALTILDI: `sapma`·`renk sapması`·`ortalama sapma`·`delta e` çıplak hâlleriyle
+    # `kalite.ort_dE` ve `parti.ort_renk_sapmasi`nın. Buradaki ölçü **şikâyete konu**
+    # sapmadır — terim de bunu söylemeli. *Bir eş anlamlı, sahibi olmayan bir kelimeyi
+    # ödünç alamaz.*
+    synonyms: [şikayet sapması, müşteri sapması, şikayet dE, itiraz sapması]
 
 dimensions:
   - name: musteri_kod

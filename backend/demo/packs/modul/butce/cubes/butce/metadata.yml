@@ -16,7 +16,9 @@ base_object: butce_hedefleri
 # değil. Cube kimliğinde tutulmaz — yoksa "bu ay ciro" sorusu parti yerine buraya
 # düşer ve kullanıcı GERÇEKLEŞEN yerine HEDEFİ görür (sessiz-yanlış). Bütçeye
 # "bütçe/hedef/plan/gerçekleşme" kelimeleriyle ulaşılır.
-synonyms: [bütçe, hedef, plan, planlanan, bütçelenen, gerçekleşme, sapma, bütçe hedefi]
+# ⚠ Çıplak `sapma` KALDIRILDI (dört sahipli); nitelenmiş `bütçe sapması` KALDI.
+synonyms: [bütçe, hedef, plan, planlanan, bütçelenen, gerçekleşme, bütçe sapması,
+           bütçe hedefi]
 
 measures:
   - name: toplam_hedef
