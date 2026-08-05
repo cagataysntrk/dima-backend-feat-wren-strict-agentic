@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { NotificationsBell } from "@/components/NotificationsBell";
+import { type Tema, temaBaslat, temaOku, temaUygula } from "@/lib/tema";
 
 // Sayfada tek chrome: sağ kenarda GÖRÜNMEZ bir ikon ŞERİDİ (rail) — çizgisi/
 // zemini yok, sayfayla bütünleşik; yalnız ikonlar yüzer. Yukarıdan aşağı:
@@ -62,6 +65,11 @@ export function FloatingControls({
           </svg>
         </button>
       )}
+      {/* 🔴 FAZ 7.2 — TEMA ANAHTARI. Yeni bir PANEL değil: var olan ikon şeridinin bir
+          düğmesi (K5 tavanı 13/13 — *bir yetenek bir panel doğurmaz*).
+          ⚠ ÜÇ durum: sistem → açık → karanlık → sistem. "Karar vermedim" hâlini yok
+          etmek, kullanıcının sistem tercihini sessizce ezmek olurdu. */}
+      <TemaDugmesi btn={btn} />
       <button onClick={onHelp} aria-label="Yardım" className={btn}>
         <span className="font-mono text-[13px]">?</span>
       </button>
@@ -72,5 +80,40 @@ export function FloatingControls({
         </svg>
       </button>
     </div>
+  );
+}
+
+
+/** FAZ 7.2 — tema anahtarı. Üç durumlu: `sistem → light → dark → sistem`.
+ *
+ * ⚠ İkon **duruma göre** değişir ve `title` o durumu **söyler**: bir toggle'ın hangi
+ * konumda olduğunu tahmin ettirmek, onu bir sürprize çevirir.
+ */
+function TemaDugmesi({ btn }: { btn: string }) {
+  const [tema, setTema] = useState<Tema>("sistem");
+  useEffect(() => {
+    temaBaslat();
+    setTema(temaOku());
+  }, []);
+  const sonraki: Record<Tema, Tema> = { sistem: "light", light: "dark", dark: "sistem" };
+  const etiket: Record<Tema, string> = {
+    sistem: "Tema: sistem (işletim sistemine uyar)",
+    light: "Tema: açık",
+    dark: "Tema: karanlık",
+  };
+  const isaret: Record<Tema, string> = { sistem: "◐", light: "☀", dark: "☾" };
+  return (
+    <button
+      onClick={() => {
+        const y = sonraki[tema];
+        temaUygula(y);
+        setTema(y);
+      }}
+      aria-label={etiket[tema]}
+      title={`${etiket[tema]} — değiştirmek için tıkla`}
+      className={btn}
+    >
+      <span className="font-mono text-[13px]" aria-hidden>{isaret[tema]}</span>
+    </button>
   );
 }

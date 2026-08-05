@@ -1,11 +1,82 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   FAZ 7.2 — TASARIM SİSTEMİ
+   ═══════════════════════════════════════════════════════════════════════════
+
+   🔴 KARANLIK MOD TEŞHİSİ DÜZELTİLDİ. Sürüm 1 "yalnız toggle eksik" diyordu; ölçüldü
+   ve teşhis EKSİKTİ: `prefers-color-scheme` VARDI ama `data-theme` 0, `.dark` 0,
+   `@custom-variant dark` 0 — yani sınıf-tabanlı katmanın KENDİSİ yoktu ve bir toggle
+   yazacak yer bulunamazdı.
+
+   ⚠ SIRA BAĞLAYICI: `[data-theme]` blokları `@media (prefers-color-scheme)` bloğundan
+   SONRA gelir. Kullanıcının açık tercihi, işletim sisteminin varsayımını EZMELİDİR —
+   tersi sıra, toggle'ı çalışmıyor gösterirdi.
+
+   ⚠ Token'lar ÖNCE eklenir, eskiler sıfır kullanımda silinir (göç usulü, 7.0/§4).
+   Bu blok hiçbir mevcut değeri DEĞİŞTİRMEZ; yalnız yanına yenilerini koyar.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
   --muted: #8a8a8a;
   --hairline: #e6e6e6;
   --accent: #b45309; /* oksit/amber — pigment & amber-CRT çağrışımı, jenerik mavi değil */
+
+  /* --- ACCENT ÖLÇEĞİ (50-900) — tek bir `--accent`ten türetilmedi, ELLE seçildi.
+     ⚠ Programatik açma/koyulaştırma (`color-mix`) algısal olarak DÜZ bir ölçek üretmez:
+     amber ailesinde orta tonlar sarıya kayar. Ölçek, aynı pigment ailesinden okunarak
+     yazıldı. */
+  --accent-50:  #fef6e7;
+  --accent-100: #fdecc8;
+  --accent-200: #fbd68d;
+  --accent-300: #f8bd52;
+  --accent-400: #f5a524;
+  --accent-500: #d98613;
+  --accent-600: #b45309;
+  --accent-700: #8a3f07;
+  --accent-800: #612c05;
+  --accent-900: #3d1b03;
+
+  /* --- SEMANTİK RENKLER — "kırmızı" değil "negatif": ad, ANLAMI taşır.
+     🔴 `--positive`/`--negative` YÖN bildirir, DEĞER değil: `lower_is_better` bir ölçüde
+     düşüş POZİTİFTİR ve rengi o beyan belirler (`viz.py` `lower_set`). Rengi doğrudan
+     "artış = yeşil" diye bağlamak, fire artışını KUTLARDI. */
+  --positive: #15803d;
+  --negative: #b91c1c;
+  --warning:  #b45309;
+  --info:     #1d4ed8;
+
+  /* --- GRAFİK PALETİ (1-8). ⚠ Sekiz ile sınırlı ve bu BİLİNÇLİ: dokuzuncu bir seri,
+     okunabilir bir grafikte zaten fazladır (§15.6'nın kategori tavanıyla aynı ders). */
+  --chart-1: #b45309;
+  --chart-2: #1d4ed8;
+  --chart-3: #15803d;
+  --chart-4: #7c3aed;
+  --chart-5: #be123c;
+  --chart-6: #0f766e;
+  --chart-7: #a16207;
+  --chart-8: #4b5563;
+
+  /* --- TİPOGRAFİ ÖLÇEĞİ */
+  --text-3xs: 0.5625rem;  /*  9px */
+  --text-2xs: 0.625rem;   /* 10px */
+  --text-xs:  0.6875rem;  /* 11px */
+  --text-sm:  0.8125rem;  /* 13px */
+  --text-base:0.9375rem;  /* 15px */
+  --text-lg:  1.0625rem;  /* 17px */
+  --text-xl:  1.25rem;    /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+
+  /* --- RADIUS / SHADOW / OPACITY */
+  --radius-none: 0;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.06);
+  --shadow-2: 0 2px 8px rgb(0 0 0 / 0.10);
+  --opacity-disabled: 0.4;
+  --opacity-faint: 0.6;
 }
 
 @theme inline {
@@ -13,10 +84,15 @@
   --color-foreground: var(--foreground);
   --color-accent: var(--accent);
   --color-hairline: var(--hairline);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
+/* Sistem tercihi — bir VARSAYIMDIR ve kullanıcının açık tercihiyle ezilebilir. */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #08090a;
@@ -24,8 +100,56 @@
     --muted: #6b6b6b;
     --hairline: #1c1d1f;
     --accent: #f5a524;
+    --positive: #4ade80;
+    --negative: #f87171;
+    --warning:  #fbbf24;
+    --info:     #60a5fa;
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.5);
+    --shadow-2: 0 2px 8px rgb(0 0 0 / 0.6);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   🔴 SINIF/ÖZNİTELİK TABANLI TEMA — KULLANICININ AÇIK TERCİHİ.
+
+   ⚠ Bu iki blok `prefers-color-scheme`'den SONRA gelir ve bu SIRA BAĞLAYICIDIR:
+   kullanıcı "karanlık" dediyse, işletim sistemi "açık" dese bile karanlık kalır.
+   *Bir tercihi bir varsayımın altına koymak, tercihi yok saymaktır.*
+
+   ⚠ İKİ YÖN de yazılı: `data-theme="light"` bloğu olmadan, sistemi karanlık olan bir
+   kullanıcı "açık" seçemezdi — toggle tek yönlü çalışırdı.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root[data-theme="dark"] {
+  --background: #08090a;
+  --foreground: #e8e8e6;
+  --muted: #6b6b6b;
+  --hairline: #1c1d1f;
+  --accent: #f5a524;
+  --positive: #4ade80;
+  --negative: #f87171;
+  --warning:  #fbbf24;
+  --info:     #60a5fa;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.5);
+  --shadow-2: 0 2px 8px rgb(0 0 0 / 0.6);
+}
+
+:root[data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #171717;
+  --muted: #8a8a8a;
+  --hairline: #e6e6e6;
+  --accent: #b45309;
+  --positive: #15803d;
+  --negative: #b91c1c;
+  --warning:  #b45309;
+  --info:     #1d4ed8;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.06);
+  --shadow-2: 0 2px 8px rgb(0 0 0 / 0.10);
+}
+
+/* Tailwind v4: `dark:` varyantı ÖZNİTELİĞE bağlanır — `.dark` sınıfı ile ikinci bir
+   mekanizma açmak, aynı kuralın iki sahibi olurdu. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 body {
   background: var(--background);
