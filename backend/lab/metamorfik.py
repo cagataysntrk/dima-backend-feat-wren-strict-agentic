@@ -452,7 +452,10 @@ def main() -> int:                                          # pragma: no cover
     if a.ornek:
         # ⚠ Örnekleme **sabit tohumlu**: her koşumda farklı örnek almak, sayıyı
         # kıyaslanamaz yapardı — ve kıyaslanamayan bir sayı bir taban değildir.
-        uret, _ = senaryo_uretec.uret(schema)
+        # ⚠ `--ornek N` kadar soru örnekleneceğine göre, tam korpusu üretmenin
+        # anlamı yok. Havuz örneklemin **üç katı** tutulur: seçim çeşitliliği
+        # korunur, üretim maliyeti korpus boyuyla değil ihtiyaçla ölçeklenir.
+        uret, _ = senaryo_uretec.uret(schema, azami=max(a.ornek * 3, 600))
         sorular += [v["soru"] for v in
                     random.Random(20260805).sample(uret, min(a.ornek, len(uret)))]
 

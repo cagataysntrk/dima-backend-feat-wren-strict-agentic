@@ -439,7 +439,11 @@ def kos(persona: str | None = None, kademe: str | None = None,
     | korpus | kaç | ne verir |
     |---|---|---|
     | `VAKALAR` (elle) | 42 | **derinlik**: her biri gerçek bir olaydan toplandı, `kaynak` taşır |
-    | `senaryo_uretec.uret()` | ~1700 | **genişlik**: pairwise, kataloğa bağlı, kendiliğinden büyür |
+    | `senaryo_uretec.uret()` | **~10 700** | **genişlik**: pairwise, kataloğa bağlı, kendiliğinden büyür |
+
+⚠ Kapı (`pytest`) bu korpusun **2 500'lük deterministik önekini** kullanır; tam kümeyi
+yalnız bu lab koşumu üretir. *Geliştirme kapısının bütçesi 1-2 dakikadır ve o bütçe
+üretime harcanamaz.*
 
     ⚠ Elle yazılanları üretilmişlerle **değiştirmek** yanlış olurdu: üreteç bir borç
     defteri okuyamaz. *Bir kusurun canlı turda görülmüş olması, onu kombinatoryal bir

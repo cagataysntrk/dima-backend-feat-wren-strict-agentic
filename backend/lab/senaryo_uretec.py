@@ -82,7 +82,6 @@ import itertools
 import random
 import unicodedata
 from collections import Counter, defaultdict
-from typing import Any
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # EKSEN 1 · NİYET — kullanıcının ne İSTEDİĞİ (SQL zorluğu değil, İŞ zorluğu)
@@ -587,7 +586,10 @@ def pairwise(eksenler: dict[str, list], rng: random.Random,
         # *"her ikili kapsandı mı"* değil. İkincisi lab koşumunun işi.
         if azami and len(secilen) >= azami:
             break
-    return secilen, toplam_ikili
+    # 🔴 Erken kesildiyse `hedef` boşalmamıştır. Kapsananı **saymadan** yalnız hedefi
+    # raporlamak, kısmi bir kümeyi tam gibi gösterirdi.
+    # *Bir kapsam raporunun ilk görevi, kapsamadığını söylemektir.*
+    return secilen, toplam_ikili, toplam_ikili - len(hedef)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -813,7 +815,7 @@ def uret(schema: dict, *, tohum: int = 20260805,
         "dolgu": list(DOLGULAR),
         "bicim": list(BICIMLER),
     }
-    kombinasyonlar, toplam_ikili = pairwise(eksenler, rng, azami)
+    kombinasyonlar, toplam_ikili, kapsanan_ikili = pairwise(eksenler, rng, azami)
     sayac_donem = _SinifSayaci()
 
     vakalar: list[dict] = []
@@ -861,6 +863,11 @@ def uret(schema: dict, *, tohum: int = 20260805,
         "vaka": len(vakalar),
         "kopya_atlanan": kopya_atlanan,
         "ikili_hedef": toplam_ikili,
+        "ikili_kapsanan": kapsanan_ikili,
+        "ikili_yuzde": round(100 * kapsanan_ikili / max(toplam_ikili, 1), 1),
+        # ⚠ `azami` verildiyse bu **kısmi** bir korpustur ve rapor bunu SÖYLER —
+        # okuyucu 2 500'lük kapı örneğini 10 700'lük lab korpusu sanmasın.
+        "kismi": bool(azami),
         "eksen_boyutlari": {k: len(v) for k, v in eksenler.items()},
         "cube": len(cubes),
         "persona": dict(Counter(v["persona"] for v in vakalar)),

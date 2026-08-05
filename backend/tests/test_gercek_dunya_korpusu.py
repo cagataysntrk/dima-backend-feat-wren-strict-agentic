@@ -270,9 +270,18 @@ def test_DILSEL_KAPSAM_hicbir_ozellik_bos_kalmaz():
 
     sorular = [v["soru"] for v in VAKALAR] + _uretilmis_sorular()
     k = D.kapsam_olc(sorular)
+    # ⚠ HATA MESAJI DOĞRU YERİ GÖSTERMELİ: kapı tam korpusu değil, **2 500'lük
+    # deterministik öneki** kullanıyor. Bir özellik burada boş çıkarsa iki ihtimal
+    # var — üreteç onu hiç üretemiyor (**gerçek delik**), ya da örnek yetersiz.
+    # *İkisini ayırmayan bir hata mesajı, ilk okuyanı yanlış yere gönderir ve
+    # aranan kusur bulunamaz.*
     assert not k["bos"], (
-        "🔴 test ortamının deliği — hiç üretilmeyen dilsel özellikler: "
+        "🔴 hiç üretilmeyen dilsel özellik: "
         + ", ".join(f"{o['kod']} ({o['ornek']})" for o in k["bos"])
+        + f"\n   ⚠ Kapı yalnız İLK {KAPI_ORNEK} vakayı kullanıyor. Önce şunu koş:"
+          "\n     python lab/gercek_dunya.py     (tam korpus, ~10 700 vaka)"
+          "\n   Orada da boşsa → ÜRETEÇ DELİĞİ (senaryo_uretec.py'ye eksen ekle)."
+          "\n   Orada doluysa → KAPI_ORNEK yetersiz, bu dosyada artır."
     )
 
 

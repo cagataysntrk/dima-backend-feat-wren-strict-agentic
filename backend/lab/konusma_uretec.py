@@ -56,10 +56,8 @@ sohbetteki karşılığıdır: onsuz, her turu yok sayan bir ürün tüm testler
 
 from __future__ import annotations
 
-import itertools
 import random
-from collections import Counter, defaultdict
-from typing import Any
+from collections import Counter
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TUR TÜRLERİ — ürünün KENDİ tanıdıklarından + canlı senaryolardan
@@ -192,6 +190,11 @@ def gecis_kapsami(uzunluklar: tuple[int, ...], rng: random.Random) -> list[list[
 #: duruyor mu"* sorusu iki turlu bir sohbette sorulamaz.
 UZUNLUKLAR = (2, 3, 5, 8)
 
+#: Açılış/konu-değişimi havuzunun büyüklüğü. ⚠ Sohbet çeşitliliği **tur dizisinden**
+#: gelir, açılış sorusunun kendisinden değil — havuzu büyütmek geçiş kapsamını
+#: artırmaz, yalnız üretim maliyetini artırır.
+ACILIS_HAVUZU = 1200
+
 
 def uret(schema: dict, *, tohum: int = 20260805) -> tuple[list[dict], dict]:
     """Kataloğa bağlı, geçiş-kapsamlı sohbet korpusu üretir.
@@ -201,7 +204,11 @@ def uret(schema: dict, *, tohum: int = 20260805) -> tuple[list[dict], dict]:
     from lab import senaryo_uretec as SU
 
     rng = random.Random(tohum)
-    tekil, _ = SU.uret(schema)
+    # ⚠ Sohbet üreteci tekil korpusu **yalnız açılış/konu-değişimi havuzu** için
+    # kullanıyor; her sohbet ondan birkaç soru çekiyor. Tam korpusu (10 700 vaka)
+    # üretmek bu iş için saf israftı — havuz zaten birkaç yüz sorudan sonra
+    # doyuyor. *Bir kaynağın tamamını üretmek, ondan azını kullanacaksan maliyettir.*
+    tekil, _ = SU.uret(schema, azami=ACILIS_HAVUZU)
     if not tekil:
         raise RuntimeError("tekil korpus boş — sohbet üretilemez")
 

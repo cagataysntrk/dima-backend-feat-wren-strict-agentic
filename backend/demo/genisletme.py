@@ -62,7 +62,15 @@ from pathlib import Path
 
 import duckdb
 
-import olaylar as OL
+# ⚠ İki yoldan da yüklenebilmeli: `build_data.py` `demo/`yi sys.path'e ekleyip
+# `from genisletme import genislet` diyor (çıplak import çalışır); ama bir test
+# `demo.genisletme` diye yüklerse çıplak import **ÇÖKER**.
+# *Bir modülün yalnız tek bir çağrı yolundan yüklenebilmesi, o yolun dışındaki
+# herkes için görünmez bir tuzaktır.*
+try:                                                      # pragma: no cover
+    from demo import olaylar as OL
+except ImportError:                                       # doğrudan `demo/` içinden
+    import olaylar as OL
 
 DB = Path(__file__).resolve().parent / "data" / "boyahane.duckdb"
 
