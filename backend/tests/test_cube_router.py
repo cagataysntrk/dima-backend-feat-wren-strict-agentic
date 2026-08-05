@@ -7,6 +7,7 @@ neyi bozduğunu anında gösterir (ADR-0004 "değişiklikte doğruluk düşerse 
 
 from __future__ import annotations
 
+import pytest
 from datetime import date
 
 from app import cube_router
@@ -411,18 +412,64 @@ def test_date_filter_bu_yil():
     assert date.fromisoformat(_gte("bu yıl")["value"]) == date.today().replace(month=1, day=1)
 
 
-def test_is_period_only():
-    assert cube_router.is_period_only(_norm("bu ay"))
-    assert cube_router.is_period_only(_norm("son 6 ay"))
-    assert cube_router.is_period_only(_norm("temmuz ayı"))
-    assert cube_router.is_period_only(_norm("tüm zamanlar"))
-    assert not cube_router.is_period_only(_norm("bu ay toplam üretim"))
+@pytest.mark.parametrize("ifade", [
+    "bu ay", "son 6 ay", "temmuz ayı", "tüm zamanlar",
     # önceki takvim dönemleri (log 2026-07-20: "geçen ay" gereksiz soruyordu)
-    assert cube_router.is_period_only(_norm("geçen ay"))
-    assert cube_router.is_period_only(_norm("bir önceki ay"))
-    assert cube_router.is_period_only(_norm("geçen hafta"))
-    assert cube_router.is_period_only(_norm("geçen yıl"))
-    assert cube_router.is_period_only(_norm("dün"))
+    "geçen ay", "bir önceki ay", "geçen hafta", "geçen yıl", "dün",
+    "2. çeyrek", "ikinci çeyrek 2026", "evvelki ay", "dün için",
+])
+def test_DONEM_IFADELERI_gercek_akista_karsilaniyor(ifade, schema):
+    """⟳ **`is_period_only` KALDIRILDI — şartnamesi buraya TAŞINDI.**
+
+    Fonksiyon üretimde **hiç çağrılmıyordu** (denetim: 0 prod referansı, 13 test) ve
+    kendi docstring'i şunu diyordu: *"doğru kapanış: testleri gerçek akışın (refine)
+    şartnamesine çevirip fonksiyonu kaldırmak — ayrı bir tur."*
+
+    🔴 Bu, o tur. Ama **önce şartname taşındı, sonra fonksiyon kaldırıldı** — tersi sıra
+    13 Türkçe dönem ifadesinin karşılanıp karşılanmadığını **ölçen hiçbir şey bırakmazdı**.
+    *Ölü sanılan bir fonksiyonu silmek ucuzdur; onunla birlikte silinen şartnameyi geri
+    getirmek değildir.*
+
+    ⚠ Ölçülen şey artık **fonksiyonun kendisi değil, davranış**: takip mesajı yalnız bir
+    dönem ifadesiyse `deterministic_refine` onu bir **dönem düzenlemesi** olarak
+    karşılamalı — yani `filters` üretmeli ve ölçü/kırılımı **korumalı**.
+    """
+    meta = next(c for c in schema["cubes"] if c.get("time_dimensions"))
+    prev = {"cube": meta["name"], "measures": [(meta.get("measures") or [""])[0]],
+            "dimensions": list(meta.get("dimensions") or [])[:1],
+            "filters": [{"dimension": "tarih", "operator": "gte",
+                         "value": "2026-01-01"}]}
+    cq = cube_router.deterministic_refine(prev, _norm(ifade), schema)
+    assert cq is not None, (
+        f"`{ifade}` bir dönem ifadesi ama zincir onu karşılamadı — kullanıcı "
+        f"netleştirmeye cevap verdiğinde duvara çarpar.")
+    # ⚠ *"Tüm zamanlar"* bir dönem **EKLEMEZ, KALDIRIR** — ve `period_confirmed` ile
+    # damgalar. İlk yazımda bunu bir kusur sandım; ölçünce doğru davrandığı görüldü.
+    # *Bir beklentinin karşılanmaması, davranışın yanlış olduğu anlamına gelmez.*
+    if cube_router.is_all_time(_norm(ifade)):
+        assert cq.get("period_confirmed") is True, (
+            f"`{ifade}` tüm-zamanlar ifadesi ama onay damgası yok — sessizce filtresiz "
+            f"bir sorgu, kullanıcının sormadığı bir soruya cevaptır.")
+        assert not cq.get("filters"), f"`{ifade}` dönem filtresini KALDIRMALI: {cq}"
+    else:
+        assert cq.get("filters") or cq.get("timeDimensions"), (
+            f"`{ifade}` bir dönem üretmedi: {cq}")
+    # Ölçü ve kırılım KORUNUR — dönem bir düzenlemedir, yeni bir sorgu değil.
+    assert cq["measures"] == prev["measures"]
+    assert cq.get("dimensions") == prev.get("dimensions")
+
+
+def test_DONEM_OLMAYAN_mesaj_donem_duzenlemesi_SAYILMAZ(schema):
+    """`is_period_only`'nin negatif vakası da taşındı: *"bu ay toplam üretim"* yalnız bir
+    dönem ifadesi **değildir** — bir ölçü de taşır."""
+    meta = next(c for c in schema["cubes"] if c.get("time_dimensions"))
+    prev = {"cube": meta["name"], "measures": [(meta.get("measures") or [""])[0]],
+            "dimensions": []}
+    cq = cube_router.deterministic_refine(prev, _norm("bu ay toplam üretim"), schema)
+    # Karşılanabilir ya da karşılanmayabilir; şart olan tek şey ÖLÇÜNÜN sessizce
+    # değişmemesi — bu mesaj bir dönem düzenlemesi DEĞİLDİR.
+    if cq is not None:
+        assert cq["measures"] == prev["measures"]
 
 
 def test_gecen_ay_onceki_takvim_donemi():
@@ -487,10 +534,13 @@ def test_ceyrek_donem_kova_degil(schema):
     # dönem ifadesi kova TETİKLEMEZ; salt kova ifadeleri çalışmaya devam eder
     assert cube_router._time_gran(_norm("2. çeyrek")) is None
     assert cube_router._time_gran(_norm("çeyreklere göre")) == "quarter"
-    # chip/takip mesajı olarak tanınır
-    assert cube_router.is_period_only(_norm("2. çeyrek"))
-    assert cube_router.is_period_only(_norm("dönem 2. çeyrek"))
-    assert cube_router.is_period_only(_norm("ikinci çeyrek için"))
+    # ⟳ Son iki satır `is_period_only` çağırıyordu; fonksiyon KALDIRILDI (denetim D3).
+    # Şartname gerçek akışa taşındı — chip/takip mesajı olarak tanınmanın kanıtı artık
+    # `date_filters`'ın **gerçekten** bir aralık üretmesidir (yukarıdaki satırlar) ve
+    # `test_DONEM_IFADELERI_gercek_akista_karsilaniyor` bunu `deterministic_refine`
+    # üstünden bir kez daha ölçer. *Bir yeteneğin kanıtı, onu kullanan yoldur.*
+    assert cube_router.date_filters(_norm("dönem 2. çeyrek"), "tarih")
+    assert cube_router.date_filters(_norm("ikinci çeyrek için"), "tarih")
     # refine: rapora dönem uygulanır, kova EKLENMEZ
     prev = {"cube": "parti", "measures": ["fire_orani_yuzde"], "dimensions": ["hafta_gunu"],
             "filters": [{"dimension": "tarih", "operator": "gte", "value": "2026-01-01"}]}

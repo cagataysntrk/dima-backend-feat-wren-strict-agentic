@@ -504,47 +504,20 @@ def is_all_time(q: str) -> bool:
     return s in ("tumu", "hepsi", "tum veriler") or s.startswith("tum zaman")
 
 
-def is_period_only(q: str) -> bool:
-    """Mesaj sadece bir dönem ifadesi mi ("bu ay", "son 3 ay", "temmuz ayı", "tümü")?
-
-    ⚠️ **ÜRETİMDE ÇAĞRILMIYOR** (2 Ağustos 2026 denetimi: 0 prod referansı, 13 test).
-    Amaçlandığı akış — ADR-0007 K3'ün dönem netleştirme chip'i: kullanıcıya *"hangi dönem?"*
-    sorulur, *"son 3 ay"* yanıtı gelir — **`deterministic_refine` tarafından ZATEN
-    karşılanıyor.** Ölçüldü: `"son 3 ay"` → `gte 2026-05-02`, `"bu yıl"` → `gte 2026-01-01`,
-    `"geçen ay"` → `gte/lte` çifti; üçü de doğru. Takip sınıflandırması da refine'ın
-    başarısını sinyal olarak kullandığı için bu fonksiyona ihtiyaç duymuyor.
-
-    **Neden silinmedi:** 13 testi Türkçe dönem ifadelerinin (çeyrek varyantları, "evvelki
-    ay", "dün için", "tümü") bir **şartnamesidir** ve `deterministic_refine`'ın bunları
-    karşılamaya devam etmesi gerekir. Fonksiyonu silmek o şartnameyi de silerdi. Doğru
-    kapanış: testleri gerçek akışın (refine) şartnamesine çevirip fonksiyonu kaldırmak —
-    ayrı bir tur. O güne kadar bu not, "ölü sanıp silme, önce testleri taşı" uyarısıdır.
-    """
-    s = q.strip()
-    if s in ("bugun", "bu hafta", "bu ay", "bu yil", "bu sene"):
-        return True
-    if is_all_time(s):
-        return True
-    if re.fullmatch(r"son\s+(?:\d+\s+)?(ay|gun|hafta|yil)(\s+icin)?", s):
-        return True
-    if re.fullmatch(r"(?:bir\s+)?(?:gecen|onceki|evvelki)\s+(ay|hafta|yil|sene|gun)(\s+icin)?", s):
-        return True
-    if s in ("dun", "dun icin"):
-        return True
-    # "2. çeyrek" / "dönem 2. çeyrek" / "ikinci çeyrek 2026"
-    if re.fullmatch(
-        r"(?:donem\s+)?(?:20\d{2}\s+)?(?:[1-4]\s*\.?\s*|ilk\s+|birinci\s+|ikinci\s+|ucuncu\s+|dorduncu\s+)"
-        r"ceyrek\w*(\s+20\d{2})?(\s+icin)?",
-        s,
-    ):
-        return True
-    return bool(re.fullmatch(
-        r"(?:20\d{2}\s+)?(ocak|subat|mart|nisan|mayis|haziran|temmuz|agustos|eylul|ekim|kasim|aralik)"
-        r"(\s+ayi\w*)?(\s+20\d{2})?(\s+icin)?",
-        s,
-    ))
-
-
+# ⟳ **`is_period_only` KALDIRILDI (denetim D3 — yetim fonksiyon).**
+#
+# Üretimde **hiç çağrılmıyordu** (0 prod referansı, 13 test) ve kendi docstring'i doğru
+# kapanışı yazmıştı: *"testleri gerçek akışın (refine) şartnamesine çevirip fonksiyonu
+# kaldırmak — ayrı bir tur."* Bu, o tur.
+#
+# 🔴 **Sıra bağlayıcıydı: önce şartname taşındı, sonra fonksiyon kaldırıldı.** Tersi sıra,
+# 13 Türkçe dönem ifadesinin karşılanıp karşılanmadığını **ölçen hiçbir şey bırakmazdı**.
+# *Ölü sanılan bir fonksiyonu silmek ucuzdur; onunla birlikte silinen şartnameyi geri
+# getirmek değildir.*
+#
+# Şartnamenin yeni evi: `tests/test_cube_router.py::
+# test_DONEM_IFADELERI_gercek_akista_karsilaniyor` — ölçülen şey artık fonksiyonun
+# kendisi değil, **davranış**.
 def is_capability_query(q: str) -> bool:
     """"Hangi kırılımlara göre detaylandırabilirim?" gibi META-sorular bir DÜZENLEME
     DEĞİL — mevcut cube'un HANGİ boyutları taşıdığının sorulmasıdır (log regresyonu:
