@@ -137,7 +137,9 @@ ertelemeler, borç değil.)*
   kalıyor.
 - **Korpus, yazım-hatası yolunu hiç sormuyor.** `CLAUDE.md`'nin kendi beyanı: korpus
   yeşilken gerçek kullanıcı deneyimi kırık olabilir. Nitekim *"çıkışsız yazım düzeltmesi"*
-  borcu tam buradan geldi ve **canlıda yeniden üretildi**.
+  borcu tam buradan geldi ve **canlıda yeniden üretildi**. ⟳ **Mekanizması ve bu boşluğu
+  kapatmaya çalışırken düşülecek tuzak §9.7'de** — körlük *az örnek* değil **yapısal
+  sıfır**, ve en akla yatkın düzeltme (Türkçe harf mutasyonu) **sahte yeşil** verir.
 - **Deneyim süitinin çoğunluğu hiç koşmuyor.** Koşmayan vaka, geçen vaka değildir.
 
 ---
@@ -585,6 +587,63 @@ raporlanır** ki bir kademedeki kayıp ötekinde saklanmasın:
 **Kural 6 — kapı, bugünkü kapının yanına kurulur.** Hedef **yüzde değil ilerlemedir**:
 ilk koşum **taban**dır; sonraki her tur o tabana göre ölçülür. *Bir kapının kapsamı,
 ölçtüğü şey kadardır.*
+
+### 9.7 · ⚠ YAZIM YOLU — §9.6'nın *«Saha kullanıcısı»* satırı bir **TUZAK** taşıyor
+
+> **Ek denetim (2026-08-05).** §3/E *"korpus yazım-hatası yolunu hiç sormuyor"* der ve
+> `CLAUDE.md` bunu zaten beyan eder. Bu alt bölüm o cümlenin **mekanizmasını** yazar —
+> çünkü §9.6'nın *"Saha kullanıcısı"* personası yanlış kurulursa **sahte yeşil** üretir.
+
+**a · Körlük «az örnek» değil, YAPISAL SIFIR.** `lab/nl_corpus.py`'nin `gen_single()`'ı
+her soruyu `_measure_words`/`_dim_words`'ten — yani **kataloğun kendi sözlüğünden** —
+kuruyor. Sonuç zincirleme: `partial_unknowns` boş kalır → `cube_router.typo_correct()`
+**ilk kapısında döner** (`if not unknown: return q, []`), tek satır bile çalışmaz. Yani
+`%93,1`'in içinde bu dalın payı *az* değil, **sıfır tur**. `NOISE` ve `REAL_PHRASINGS`
+satırları katalog-dışı kelime taşıdığı için dala **girer**, ama hiçbiri bir katalog
+teriminin **yanlış yazılmış hâli** değildir — *"düzeltme doğru mu"* sorusu hiç sorulmaz.
+
+**b · 🔴 TUZAK: Türkçe'nin en yaygın «yazım hatası» sınıfı ZATEN KAPALI.** `app/llm.py`'nin
+`_TR` tablosu + `_norm()` her şeyi ASCII'ye katlar. Bir mutasyon üreteci `ı→i` · `ş→s` ·
+`ğ→g` · `ö→o` · `ü→u` · `ç→c` bozmaları üretirse **hepsi geçer** ve kapı *"yazım
+dayanıklılığı yüksek"* der — oysa hiçbir şey ölçülmemiştir:
+
+```bash
+cd backend && python3 -c "
+from app.llm import _norm
+for a,b in [('fıre','fire'),('müşteri','musteri'),('ağırlık','agirlik'),('İSTANBUL','istanbul')]:
+    print(f'{a:10} ≡ {b:10} → {_norm(a)==_norm(b)}')"   # dördü de True
+```
+
+**Ölçülen gerçek kalan sınıf** harf kayması/düşmesi/tekrarı — mutasyon üreteci **yalnız
+bunu** üretmeli:
+
+```bash
+python3 -c "import difflib
+for a,b in [('musteri','musetri'),('musteri','musteir'),('miktar','mikatr'),('adet','adett'),('ciro','cirp')]:
+    print(f'{b:9} ~ {a:9} {difflib.SequenceMatcher(None,b,a).ratio():.3f}')"   # 0,750–0,889
+```
+
+**c · Kusur zaten işaretli, kolay çözümü de ÇÜRÜTÜLMÜŞ.**
+`tests/test_typo_onerisi_kapisi.py` bir `xfail(strict=True)` taşıyor: **doğru yazılmış**
+sorular *"… mi demek istedin?"* ile kesiliyor. Aynı dosya *"eşiği yükselt"* teorisini
+**ölçerek reddetmiş** — saçma öneriler `0,600–0,769`, gerçek hatalar `0,714–0,923`,
+**bantlar çakışıyor**; eşik yükseltmek `fıre→fire`'ı da öldürürdü. Kayıtlı ayırıcı sinyal
+benzerlik **oranı değil Türkçe FİİL ÇEKİMİ**: ölçülen saçmaların dördü de fiil→isim
+(`arttı→parti` · `veren→renk` · `işledik→iplik` · `sattık→hattı`), gerçek hata ise isim.
+Kalem **§G/AJ0'ın morfoloji maddesine** yazılı, koda geçmemiş.
+
+**d · Ve bu yolu ölçmek UCUZ — kimse denemediği için pahalı sanılıyor.** Zincirin tamamı
+(`typo_correct` → `typo_onerisi.gecerli_oneri` → `route()` doğrulaması) **sıfır-LLM ve
+deterministik**. Ölçüm için ne HTTP turu ne korpus koşusu gerekir; `route()` doğrudan
+çağrılır. Maliyet **dakika değil saniye** — §9.6'nın 7.000 turluk paydasına dokunmadan.
+
+> 🔴 **SIRA, bulgunun kendisinden önemli: ALET ÖNCE, MÜDAHALE SONRA.** Morfoloji kapısı
+> (**c**) önce inerse, işe yarayıp yaramadığını ölçecek alet **yoktur** — üstelik kapının
+> kendisi yeni bir körlük doğurabilir (çekim eki taşıyan **gerçek** bir katalog terimi
+> varsa onu da eler). Doğru sıra: **(a+b) mutasyon katmanı → (c) morfoloji kapısı → canlı
+> `typo_fixes` kaydı**. Üçüncüsü, mutasyon listesini tahminden değil **sahadan** besleyen
+> tek kaynaktır. *Bir kapıyı, onu ölçen aletten önce indirmek, §2'nin «ölçüm HEDEF koyar»
+> kuralını tersine çevirir.*
 
 ---
 
