@@ -424,10 +424,21 @@ def kapi_degerlendir(reports: list[dict]) -> tuple[bool, list[str]]:
     satirlar = [f"TABAN: {beklenen['kaynak']}"]
     gecti = True
     toplam_d = toplam_p = 0
+    # 🔴 ⊘ ÜÇÜNCÜ HÂL — ölçülemeyen şirket bir GERİLEME DEĞİLDİR.
+    #
+    # Ölçüldü (2026-08-05): dilimler `compose kilidi 60 sn'de alınamadı` ile düşünce
+    # o şirket rapordan çıkıyor ve TOPLAM **kalan şirketler üstünden** hesaplanıp
+    # dondurulmuş tabanla kıyaslanıyordu. Aynı kod üç farklı toplam verdi — **%93,4**
+    # (boyahane düşük), **%93,0** (hepsi vardı), **%91,8** (boyahane+atiksan düşük).
+    # Yani kapı, ölçemediği şeyi bir kalite değişimi diye raporluyordu; ve %93,4 hâli
+    # **yeşil** göründü — eksik ölçüm bir İYİLEŞME gibi okundu.
+    #
+    # *Bir kapı, ölçemediği şeyi "başarısız" ya da "başarılı" diye raporlarsa, ölçüm
+    # aracının kendisi bir kusur kaynağıdır.* (denetim raporu KÖK-8)
+    olculemeyen = [r["company"] for r in reports if r.get("error")]
     for rep in reports:
         if rep.get("error"):
-            satirlar.append(f"  {rep['company']}: HATA — kıyaslanamadı")
-            gecti = False
+            satirlar.append(f"  {rep['company']}: ⊘ ÖLÇÜLEMEDİ — {str(rep['error'])[:90]}")
             continue
         total = sum(rep["cats"].values())
         ok = sum(v for k, v in rep["cats"].items() if "::OK" in k)
@@ -449,6 +460,9 @@ def kapi_degerlendir(reports: list[dict]) -> tuple[bool, list[str]]:
         b = beklenen["dogru_cube_yuzde"]
         isaret = "✅" if yuzde >= b - TOLERANS_DOGRULUK else "❌ GERİLEME"
         satirlar.append(f"  TOPLAM doğru-cube: %{yuzde:.1f} (taban %{b}) {isaret}")
+        if olculemeyen:
+            # 🔴 Eksik şirketle hesaplanan toplam, tabanla **aynı ölçü değildir**.
+            satirlar[-1] += "  ⚠ KIYAS GEÇERSİZ"
 
         # ═══ FAZ 0.19 — İKİ PAYDA TERS YÖNE GİDERSE **KIRMIZI** ═══════════════
         #
@@ -482,8 +496,22 @@ def kapi_degerlendir(reports: list[dict]) -> tuple[bool, list[str]]:
                         f"%{yuzde:.1f} (taban %{b}) ↔ semantik %{v_yuzde:.1f} "
                         f"(taban %{b_vak}). Bu bir YORUM FARKI DEĞİL: biri kartezyen "
                         "şişmeyi, öteki gerçek kapsamı ölçüyor ve ikisi ayrıştı.")
-        if yuzde < b - TOLERANS_DOGRULUK:
+        if yuzde < b - TOLERANS_DOGRULUK and not olculemeyen:
             gecti = False
+
+    # 🔴 VERDİKT ÜÇ HÂLLİ. Ölçülemeyen şirket varsa kapı **ne yeşil ne kırmızı** der:
+    # kıyas geçersizdir ve bunu SÖYLEMEK, yeşile ya da kırmızıya yuvarlamaktan dürüsttür.
+    # ⚠ `gecti=False` kalır (çıkış kodu 1) — ölçülemeyen bir kapı geçilmiş sayılmaz;
+    # ama METİN bunun bir GERİLEME olmadığını açıkça yazar.
+    if olculemeyen:
+        satirlar.append(
+            f"  ⊘ ÖLÇÜLEMEDİ: {', '.join(olculemeyen)} — bu bir GERİLEME DEĞİL, "
+            "bir ÖLÇÜM BOŞLUĞUDUR. Eksik şirketle hesaplanan toplam dondurulmuş tabanla "
+            "**aynı ölçü değildir** ve kıyası geçersizdir.\n"
+            "     Sebep genellikle `compose kilidi` zaman aşımı = CPU açlığı. Çözüm: "
+            "`DIMA_COMPOSE_KILIT_SN=300` ya da daha az paralellik "
+            "(`DIMA_KORPUS_PARALEL=8`).")
+        gecti = False
     return gecti, satirlar
 
 

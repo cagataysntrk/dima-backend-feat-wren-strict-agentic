@@ -64,7 +64,17 @@ _BUILD_LOCKS: dict[str, "DerlemeKilidi"] = {}
 #: Süreç-arası kilit için bekleme tavanı. Aşımda **`RuntimeError`** — sessiz geçiş YOK:
 #: kilidi alamadan derlemeye girmek, kilidin var olmamasıyla aynı şeydir ama üstüne bir de
 #: *"korunuyoruz"* beyanı ekler.
-KILIT_ZAMAN_ASIMI_SN = 60.0
+#: 🔴 ÖLÇÜLDÜ (2026-08-05): sabit 60 sn **yetmiyor**. Korpus 16 dilimi eşzamanlı
+#: koşarken her dilim KENDİ aynasında compose ediyor — yani kilit çekişmesi YOK, darboğaz
+#: **CPU açlığı**: 20 çekirdekte 16 compose aynı anda koşunca tek bir compose 60 sn'i
+#: aşabiliyor. Sonuç: `boyahane` ve `atiksan` dilimleri hata payloadıyla dönüyor, kapı
+#: **eksik payda** üstünden yüzde hesaplayıp *"gerileme"* ilan ediyordu (aynı koşum üç
+#: farklı toplam verdi: %93,4 · %93,0 · %91,8 — hangi şirketin düştüğüne göre).
+#:
+#: *Bir zaman aşımı, işin süresine değil MAKİNENİN YÜKÜNE göre ölçülmelidir.*
+#: Taban 60 sn korunur, çekirdek başına eşzamanlılık payı eklenir; env ile ezilebilir.
+KILIT_ZAMAN_ASIMI_SN = float(os.environ.get("DIMA_COMPOSE_KILIT_SN", "0")) or max(
+    60.0, 15.0 * (os.cpu_count() or 4))
 
 
 def kilit_dosyasi(out: Path) -> Path:

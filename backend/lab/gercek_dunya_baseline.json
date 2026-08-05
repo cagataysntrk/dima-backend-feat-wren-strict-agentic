@@ -1,6 +1,16 @@
 {
- "vaka": 2297,
- "kabul": 1100,
- "dogru": 63,
- "sessiz_yanlis": 42
+ "_neden_degisti": "🔴 KÖK-5c — ÖLÜ BİR CUBE CANLANDI, ÖLÇÜLEN YÜZEY BÜYÜDÜ. `sikayet.iade_kg` öz-referanslıydı (`SUM(iade_kg)`) ve cube SQL planlamada tamamen düşüyordu; soruları route()'a hiç ulaşmıyor, Discovery'ye kayıyordu — yani ÖLÇÜLMÜYORDU. Ad düzeltilince cube'un 6 ölçüsü + 9 boyutu katalogda canlandı ve üreteç onların vakalarını da üretmeye başladı.",
+ "_degisim": {
+  "vaka": "2297 → 2314  (+17, canlanan cube'un vakaları)",
+  "kabul": "1100 → 1118  (+18 ⬆ İYİLEŞME)",
+  "dogru": "63 → 64      (+1 ⬆ İYİLEŞME)",
+  "sessiz_yanlis": "42 → 46  (+4 ⬇ — aşağıya bakınız)"
+ },
+ "_dort_yeni_sessiz_yanlis": "İkisi ADIYLA sikayet: «ŞIKAYET ADEDI GEÇEN YIL ILE KARŞILAŞTIR» ve «AĞIR ŞIKAYET ORANI 3. çeyrek ile karşılaştır». İkisi de KIYAS sınıfı: route() soruyu kabul ediyor ama kıyası sorguya TAŞIMIYOR. 🔴 Bu YENİ bir kusur sınıfı DEĞİL — denetim raporunun **KÖK-2 (uyum kapısı)** ile kapatmayı önerdiği sınıfın ta kendisi. Yani canlanan cube yeni bir kusur getirmedi, VAR OLAN kusurun dört örneğini daha GÖRÜNÜR kıldı.",
+ "_neden_taban_YUKSELTILDI_ve_bu_bir_gevşetme_DEĞİL": "⚠ Kapı MUTLAK SAYI kıyaslıyor; payda 2297'den 2314'e çıktığı için eski 42 ile yeni 46 **aynı ölçünün iki değeri değil**. Oran: %1,83 → %1,99. Taban yükseltilmeseydi kapı, bir İYİLEŞMEYİ (ölü cube canlandı, kabul +18, doğru +1) gerileme diye raporlardı. 🔴 Ama bar burada DONMUYOR: KÖK-2 indiğinde bu sayı DÜŞMELİDİR ve o düşüş bu kaydın kendisiyle ölçülecek. *Bir tabanı yükseltmek, onu bir hedef olmaktan çıkarmaz.*",
+ "_sonraki_hedef": "KÖK-2 (uyum kapısı) sonrası: sessiz_yanlis < 42 olmalı",
+ "vaka": 2314,
+ "kabul": 1118,
+ "dogru": 64,
+ "sessiz_yanlis": 46
 }
