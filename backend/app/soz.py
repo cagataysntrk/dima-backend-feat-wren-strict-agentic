@@ -34,6 +34,10 @@ ikinci bir işi olduğu anda kimse ona metin yazmaz.*
 `AskResponse.note` bugün **dört** anlam taşıyor (dürüst ret · netleştirme · kırpılma
 uyarısı · upload bildirimi) **ve kalıcı `payload_json` geçmişi ona bağlı**. Yeni alan
 `soz`; frontend `soz ?? note` okur → **eski kayıtlar aynen çalışır**.
+
+> **Karar kaydı: `ADR-0033`** — tek ses — kullanıcıya dönen metin tek katalogdan.
+> ⚠ Atıf, kararın **yaşadığı yere** yazılır: kayıt ile kod birbirini ancak
+> böyle doğrulayabilir (`tests/test_adr_dosyalari.py` iki yönü de kilitler).
 """
 
 from __future__ import annotations

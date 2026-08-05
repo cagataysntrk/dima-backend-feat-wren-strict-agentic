@@ -546,9 +546,16 @@ def test_TERS_TUZAK_FAZ_4_6_ADR_DOSYALARI_AYAKTA():
         f"ölçütü yine var olmayan bir belgeye dayanır.")
     for p in dosyalar:
         metin = p.read_text(encoding="utf-8")
-        assert "REKONSTRÜKSİYON" in metin.upper() and "kod kazanır" in metin, (
-            f"🔴 `{p.name}` artık rekonstrüksiyon olduğunu ilan ETMİYOR — orijinal bir "
-            f"karar kaydı gibi okunur.")
+        ust = metin.upper()
+        # ⚠ **KÖKEN İKİ HÂLLİ** (FAZ 4.6 sonrası): `0003…0024` rekonstrüksiyon, `0025+`
+        # kararla **aynı turda** yazıldı. İkisini tek damgayla istemek, yeni kayıtları
+        # *"sonradan türetilmiş"* diye **olduğundan zayıf** gösterirdi.
+        assert ("REKONSTRÜKSİYON" in ust or "GÜNÜ YAZILDI" in ust), (
+            f"🔴 `{p.name}` KÖKENİNİ ilan etmiyor — ne zaman yazıldığı bilinmeyen bir "
+            f"karar kaydı, doğrulanamaz bir kayıttır.")
+        assert "kod kazanır" in metin, (
+            f"🔴 `{p.name}` çelişkide kodun kazandığını söylemiyor — belge bir otorite "
+            f"gibi okunabilir hâle gelmiş.")
 
 
 def test_TERS_TUZAK_FAZ_4_5_MCP_AYAKTA():

@@ -23,6 +23,10 @@ fonksiyon **kurar**, aradaki imzalar sabit kalır. Üçüncü kez **aynı** kal�
 icat edilmedi.
 
 FastAPI sync endpoint'i kendi kopya-context'inde koştuğu için istekler izoledir.
+
+> **Karar kaydı: `ADR-0027`** — mali takvim — takvim yılı bir varsayımdır.
+> ⚠ Atıf, kararın **yaşadığı yere** yazılır: kayıt ile kod birbirini ancak
+> böyle doğrulayabilir (`tests/test_adr_dosyalari.py` iki yönü de kilitler).
 """
 
 from __future__ import annotations

@@ -28,6 +28,10 @@ yürütme yolu açılırsa **bu madde yanlış yapılmış demektir** — ve far
 
 ⚠ Bu yüzden `cagir()` bir `Planlayici` **ister**. İstemeseydi kapıları atlamak bir
 imza değişikliği kadar kolay olurdu; istediği için atlamak **imkânsızdır**.
+
+> **Karar kaydı: `ADR-0031`** — MCP yüzeyi — HTTP'nin YANINA değil İÇİNE.
+> ⚠ Atıf, kararın **yaşadığı yere** yazılır: kayıt ile kod birbirini ancak
+> böyle doğrulayabilir (`tests/test_adr_dosyalari.py` iki yönü de kilitler).
 """
 
 from __future__ import annotations

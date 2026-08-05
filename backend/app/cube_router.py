@@ -1030,6 +1030,36 @@ _RM_VERB_RE = re.compile(
     r"\b(gosterme\w*|gizle\w*|kaldir\w*|cikar\w*|sil|silelim|silsin|istemiyorum|istemem|olmasin)\b")
 
 
+def _ciplak_olcu_adi(q: str, cube_meta: dict, msyn: str | None) -> bool:
+    """Takip mesajı **yalnızca bir ölçü atomu** mu — başka hiçbir sinyal taşımıyor mu?
+
+    🔴 **Bu şartı KAPI öğretti — ve tam da denetimin uyardığı sınıfta.** İlk sürümde şart
+    yoktu ve `test_capraz_cube_gecis_notu` kırmızı verdi: *"kumaş cinsine göre fire oranı
+    bu yıl"* bir **konu değişimidir** (`oee` → `parti`) ama içindeki `fire oranı`
+    eşleştiği için **`oee`'ye ölçü ekleme** sanıldı ve çapraz-cube geçişi **kayboldu**.
+
+    ⚠ Denetim raporunun §4/risk-1'i tam bunu söylüyordu. Korpus bunu **görmedi** (%93,1
+    birebir); **altın süit gördü**. *Bir riskin ölçülmemesi, yokluğu değildir.*
+
+    ## ⚠ İkinci düzeltme: METİN ÇIKARMA DEĞİL, SİNYAL YOKLUĞU
+
+    İlk daraltmam *"sinonimi çıkar, kalan boş olsun"* diyordu ve **faydayı tamamen
+    öldürdü**: atom `fire orani yuzde`, eşleşen sinonim `fire orani` — geriye `yuzde`
+    kalıyor ve mesaj *"çıplak değil"* sayılıyordu. Ölçüldü: düşüş −%4,5'ten **−%18,2'ye
+    geri döndü**, yani düzeltme kendi düzelttiği şeyi geri aldı.
+
+    Doğru ayrım **metinsel değil semantiktir**: mesaj bir **boyut**, bir **granülerlik**
+    ya da bir **dönem** sinyali taşıyorsa o bir shard atomu değil, normal bir düzenleme
+    (ya da konu değişimi) mesajıdır ve zincirin geri kalanına aittir.
+    """
+    del msyn                       # metinsel eşleşme BİLEREK kullanılmıyor (yukarı bak)
+    if _match_dims(q, cube_meta):
+        return False
+    if _time_gran(q):
+        return False
+    return not _period_hit_words(q)
+
+
 def deterministic_refine(prev: dict, q: str, schema: dict,
                          *, olcu_ekle: bool = False) -> dict | None:
     """Yaygın konuşmasal düzenlemeleri LLM'SİZ uygular (deterministik-önce, ADR-0004):
@@ -1101,10 +1131,10 @@ def deterministic_refine(prev: dict, q: str, schema: dict,
     # takip mesajı **tek bir atomdur** (*"fire oranı"*), zamir taşımaz. Şart konsaydı
     # düzeltme, düzelttiği kusurun aynısını bir kat aşağıda tekrarlardı (5.2'nin dersi).
     if (em and em not in prev.get("measures", []) and swap is None and topn is None
-            and olcu_ekle and not corr):
+            and olcu_ekle and not corr
+            and _ciplak_olcu_adi(q, cube_meta, msyn)):
         cq_ek = copy.deepcopy(prev)
         cq_ek["measures"] = [*prev.get("measures", []), em]
-        del msyn
         return cq_ek
     if em and em not in prev.get("measures", []) and swap is None and topn is None:
         return None  # farklı metrik açıkça isteniyor → yeni sorgu, LLM sınıflandırsın

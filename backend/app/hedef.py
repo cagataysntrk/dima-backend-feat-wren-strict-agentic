@@ -25,6 +25,10 @@ tarihli hedefler **ayrı bir dilimdir** ve o dilim gelene kadar burada **uydurul
 
 *Yarım inmiş bir mekanizmayı tam gibi göstermek, hiç indirmemekten kötüdür* — bu yüzden
 sınır burada yazılı ve kapı onu kilitliyor.
+
+> **Karar kaydı: `ADR-0028`** — hedef beyanı — hedef UYDURULMAZ.
+> ⚠ Atıf, kararın **yaşadığı yere** yazılır: kayıt ile kod birbirini ancak
+> böyle doğrulayabilir (`tests/test_adr_dosyalari.py` iki yönü de kilitler).
 """
 
 from __future__ import annotations

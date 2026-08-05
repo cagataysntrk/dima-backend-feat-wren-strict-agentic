@@ -25,6 +25,10 @@ birleştirme, bastırılacak bir sinyali gruba sokup **grubun tamamını** kurta
 Bastırma bir **görünürlük** kararıdır, bir **kayıt** kararı değil. Kayıt silinirse
 *"neden bana haber verilmedi"* sorusunun cevabı kimsede olmaz — ve o soru bir olaydan
 **sonra** sorulur. `bastirildi` damgası kayıtta durur.
+
+> **Karar kaydı: `ADR-0032`** — bildirim kapısı — dört sıralı adım.
+> ⚠ Atıf, kararın **yaşadığı yere** yazılır: kayıt ile kod birbirini ancak
+> böyle doğrulayabilir (`tests/test_adr_dosyalari.py` iki yönü de kilitler).
 """
 
 from __future__ import annotations

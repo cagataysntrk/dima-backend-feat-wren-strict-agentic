@@ -2,6 +2,8 @@
 
 Standart temeli: docs/research/viz-oneri-standartlari-2026-07.md (Mackinlay Show Me + Cleveland-
 McGill + çok-birim politikası). Karar saf kural (LLM yok): aynı girdi → aynı VizSpec.
+
+> **Karar kaydı: `ADR-0034`** — görsel dilbilgisi daralması — ne zaman grafik ÇİZİLMEZ.
 """
 
 from __future__ import annotations

@@ -8,6 +8,8 @@ dolduracak bir yol olmadığı için hakem **hiçbir zaman** karar veremezdi.
 ⚠ **Bu dosya 2.2b'nin KENDİ kapısıdır** — `test_metrik_kaydi.py` 0.18'indir. Yol
 haritasının kendi uyarısı: *"bir doğrulama turunda 2.2b, 0.18'in testiyle «bitti»
 sayılabilirdi: kapı yanlış maddeyi yeşile boyar."*
+
+> **Karar kaydı: `ADR-0029`** — metrik sahipliği — pack ÖNERİR, tenant UYGULAR.
 """
 
 from __future__ import annotations

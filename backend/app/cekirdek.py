@@ -50,6 +50,10 @@ vermekten kesinlikle iyidir* (`compose.dogrula`'nın aynı gerekçesi).
 ⚠ `shadow` bilerek **yazmıyor**: yazan bir gölge, gölge değildir (FAZ 1.1'de ölçülen
 kusur — `motor_rls` gölgesi manifeste RLAC yazıyordu ve *"shadow"* adı altında **servis
 edilen cevabı** değiştirecekti).
+
+> **Karar kaydı: `ADR-0025`** — çekirdek katman + grain sözleşmesi (fail-closed).
+> ⚠ Atıf, kararın **yaşadığı yere** yazılır: kayıt ile kod birbirini ancak
+> böyle doğrulayabilir (`tests/test_adr_dosyalari.py` iki yönü de kilitler).
 """
 
 from __future__ import annotations

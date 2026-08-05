@@ -31,6 +31,10 @@ sürece `certified: "olculmedi"` taşır — çünkü bir başkasının modelini
 ## ⚠ ÇEKİRDEK KATMANA İNER, ERP KATMANINA DEĞİL
 
 Aksi hâlde `cari`/`ticaret`'in **dördüncü kopyası** doğardı (FAZ 2.1'in ölçtüğü kusur).
+
+> **Karar kaydı: `ADR-0030`** — Apache Ossie ithal/ihraç — çevirici yazılır, motor yazılmaz.
+> ⚠ Atıf, kararın **yaşadığı yere** yazılır: kayıt ile kod birbirini ancak
+> böyle doğrulayabilir (`tests/test_adr_dosyalari.py` iki yönü de kilitler).
 """
 
 from __future__ import annotations

@@ -28,6 +28,10 @@ ve kapı bunu tersinden de doğrular: her mercek çıktısı, mercek kapalıyken
 | `departman` | kullanıcının departmanına **atanmış** metrikler | herkes |
 | `genel` *(varsayılan)* | bugünkü **tam** katalog | herkes |
 | `portfoy` | **çok-tenant** birleşik görünüm | 🔴 yalnız çok-tenant yetkisi |
+
+> **Karar kaydı: `ADR-0026`** — kapsam merceği — görünürlük, güvenlik sınırı DEĞİL.
+> ⚠ Atıf, kararın **yaşadığı yere** yazılır: kayıt ile kod birbirini ancak
+> böyle doğrulayabilir (`tests/test_adr_dosyalari.py` iki yönü de kilitler).
 """
 
 from __future__ import annotations

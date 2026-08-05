@@ -151,3 +151,75 @@ def test_SHARDING_araci_AB_kosabiliyor():
 
     assert "olcu_ekle" in inspect.signature(kos).parameters
     assert "olcu_ekle" in inspect.signature(konusma_kos).parameters
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 🔴 DENETİMİN §4/RİSK-1'İ GERÇEKLEŞTİ — ve iki kez daraltıldı
+# ─────────────────────────────────────────────────────────────────────────────
+
+def test_CAPRAZ_CUBE_konu_degisimi_EKLEME_sanilmaz(schema):
+    """🔴 **Gerçek gerileme, altın süit tarafından yakalandı.**
+
+    *"Kumaş cinsine göre fire oranı bu yıl"* bir **konu değişimidir** (`oee` → `parti`)
+    ama içindeki `fire oranı` `oee`'nin de bir ölçüsü. İlk sürümde ekleme sanıldı ve
+    **çapraz-cube geçişi kayboldu**.
+
+    ⚠ Korpus bunu **görmedi** (%93,1 birebir). *Bir riskin ölçülmemesi, yokluğu
+    değildir.*
+    """
+    meta = next(c for c in schema["cubes"] if c["name"] == "oee")
+    prev = {"cube": "oee", "measures": [(meta.get("measures") or ["ort_oee"])[0]],
+            "timeDimensions": [{"dimension": "tarih", "granularity": "month"}]}
+    cq = cr.deterministic_refine(
+        prev, cr._norm("kumas cinsine gore fire orani bu yil"), schema, olcu_ekle=True)
+    if cq is not None:
+        assert len(cq.get("measures") or []) == len(prev["measures"]), (
+            "🔴 Konu değişimi ÖLÇÜ EKLEME sanıldı — çapraz-cube geçişi kaybolur.")
+
+
+def test_BOYUT_tasiyan_mesaj_EKLEME_dali_ATESLEMEZ(schema, _meta):
+    prev = _prev(_meta)
+    m2 = _ikinci_olcu(_meta, prev)
+    ad = ((_meta.get("measure_synonyms") or {}).get(m2) or [m2])[0].removesuffix("!")
+    boyut = (_meta.get("dimensions") or ["makine"])[0]
+    b_ad = ((_meta.get("dimension_labels") or {}).get(boyut) or boyut).replace("_", " ")
+    cq = cr.deterministic_refine(prev, cr._norm(f"{ad} {b_ad} bazinda"), schema,
+                                 olcu_ekle=True)
+    if cq is not None:
+        assert cq.get("measures") == prev["measures"], (
+            "🔴 Boyut taşıyan bir mesaj shard atomu DEĞİLDİR — normal zincire aittir.")
+
+
+def test_DONEM_tasiyan_mesaj_EKLEME_dali_ATESLEMEZ(schema, _meta):
+    prev = _prev(_meta)
+    m2 = _ikinci_olcu(_meta, prev)
+    ad = ((_meta.get("measure_synonyms") or {}).get(m2) or [m2])[0].removesuffix("!")
+    cq = cr.deterministic_refine(prev, cr._norm(f"{ad} bu yil"), schema, olcu_ekle=True)
+    if cq is not None:
+        assert cq.get("measures") == prev["measures"], (
+            "🔴 Dönem taşıyan bir mesaj shard atomu DEĞİLDİR.")
+
+
+def test_AYRIM_METINSEL_DEGIL_SEMANTIK():
+    """🔴 İkinci daraltma **ölçümle** düzeltildi.
+
+    İlk daraltmam *"sinonimi çıkar, kalan boş olsun"* diyordu ve **faydayı tamamen
+    öldürdü**: atom `fire orani yuzde`, eşleşen sinonim `fire orani` → geriye `yuzde`
+    kalıyor ve mesaj *"çıplak değil"* sayılıyordu. Ölçüldü: düşüş −%4,5'ten **−%18,2'ye
+    geri döndü** — yani düzeltme, düzelttiği şeyi geri aldı.
+
+    ⚠ Belirteç AST: ayrım **sinyal yokluğuna** bakmalı (`_match_dims` · `_time_gran` ·
+    `_period_hit_words`), metin çıkarmaya değil.
+    """
+    import ast
+    from pathlib import Path
+
+    agac = ast.parse((Path(__file__).resolve().parents[1] / "app/cube_router.py")
+                     .read_text(encoding="utf-8"))
+    fn = next(n for n in ast.walk(agac)
+              if isinstance(n, ast.FunctionDef) and n.name == "_ciplak_olcu_adi")
+    cagrilar = {getattr(c.func, "id", getattr(c.func, "attr", ""))
+                for c in ast.walk(fn) if isinstance(c, ast.Call)}
+    assert {"_match_dims", "_time_gran", "_period_hit_words"} <= cagrilar, (
+        f"🔴 Ayrım semantik değil: {sorted(cagrilar)}. Metinsel çıkarma, sinonim ile "
+        f"atomun birebir örtüşmediği her vakada yanlış karar verir.")

@@ -89,22 +89,51 @@ def test_HIC_KULLANILMAYAN_kimlige_dosya_YAZILMAZ():
         f"bir kimliği meşrulaştırmak için kullanılamaz.")
 
 
+#: 🔴 **KÖKEN BEYANI — iki hâlden BİRİ, ikisi birden DEĞİL.**
+#:
+#: `0003…0024` **rekonstrüksiyondur** (karar alındığı gün yazılmamıştı, atıf
+#: bağlamlarından türetildi). `0025+` ise kararla **aynı turda** yazıldı.
+#:
+#: ⚠ İkisini aynı damgayla işaretlemek **yanlış beyandır** ve iki yönü de vardır:
+#: yeni bir kaydı *"rekonstrüksiyon"* demek onu **olduğundan zayıf**, eski bir kaydı
+#: *"günü yazıldı"* demek **olduğundan güçlü** gösterirdi. *Bir kaydın değeri, ne
+#: zaman yazıldığını doğru söylemesine bağlıdır.*
+_KOKENLER = ("REKONSTRÜKSİYON", "GÜNÜ YAZILDI")
+
+
 @pytest.mark.parametrize("num", sorted(_dosyalar()))
-def test_her_dosya_REKONSTRUKSIYON_oldugunu_ILAN_eder(num):
+def test_her_dosya_KOKENINI_ILAN_eder(num):
     """🔴 *Var olmayan bir belgeye atıf yapmak bir eksiklikti; onu uydurulmuş bir tarihle
     doldurmak bir SAHTEKÂRLIK olurdu.*
 
-    Her dosya (a) rekonstrüksiyon olduğunu, (b) çelişkide **kodun kazandığını**,
-    (c) **kanıt** işaretçisini taşımak zorunda.
+    Her dosya (a) **kökenini** (rekonstrüksiyon ↔ günü yazıldı), (b) çelişkide **kodun
+    kazandığını**, (c) **kanıt** işaretçisini taşımak zorunda.
     """
     metin = _dosyalar()[num].read_text(encoding="utf-8")
-    assert "REKONSTRÜKSİYON" in metin.upper(), (
-        f"ADR-{num}: dosya rekonstrüksiyon olduğunu İLAN ETMİYOR — orijinal bir karar "
-        f"kaydı gibi okunur ve bu bir sahtekârlıktır.")
+    ust = metin.upper()
+    bulunan = [k for k in _KOKENLER if k in ust]
+    assert bulunan, (
+        f"ADR-{num}: dosya KÖKENİNİ ilan etmiyor ({' ya da '.join(_KOKENLER)}) — ne "
+        f"zaman yazıldığı bilinmeyen bir karar kaydı, doğrulanamaz bir kayıttır.")
+    assert len(bulunan) == 1, (
+        f"ADR-{num}: dosya İKİ köken birden iddia ediyor ({bulunan}). Bir kayıt ya "
+        f"sonradan türetilmiştir ya kararla birlikte yazılmıştır; ikisi birden olamaz.")
     assert "kod kazanır" in metin, (
         f"ADR-{num}: çelişkide kodun kazandığı yazılı değil — belge bir otorite gibi "
         f"okunabilir hâle gelmiş.")
     assert "## Kanıt" in metin, f"ADR-{num}: kanıt bölümü yok — doğrulanamaz bir kayıt."
+
+
+def test_ESKI_kayitlar_REKONSTRUKSIYON_yeniler_DEGIL():
+    """⚠ Köken **numaraya göre** doğrulanır: `0024` ve öncesi rekonstrüksiyon, `0025+`
+    kararla aynı turda yazıldı. Bir gün biri eski bir dosyaya *"günü yazıldı"* yazarsa
+    bu kapı kırmızı olur."""
+    for num, yol in sorted(_dosyalar().items()):
+        ust = yol.read_text(encoding="utf-8").upper()
+        beklenen = "REKONSTRÜKSİYON" if int(num) <= 24 else "GÜNÜ YAZILDI"
+        assert beklenen in ust, (
+            f"ADR-{num}: köken beklenen ile uyuşmuyor (beklenen: {beklenen!r}). "
+            f"0024 ve öncesi rekonstrüksiyondur; 0025+ kararla aynı turda yazıldı.")
 
 
 def test_ADR_0007_K3_DOSYASI_C3_olcutunu_tasiyor():
