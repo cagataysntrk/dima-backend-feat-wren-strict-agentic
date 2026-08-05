@@ -16,6 +16,8 @@ import {
 import type { Report } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 import { ReportView } from "@/components/ReportView";
+import { HataSeridi } from "@/components/HataSeridi";
+import { hataMetni } from "@/lib/mutasyonHatasi";
 
 // Doğrulama turu düzeltmesi (1 Ağustos 2026, P2-22): widget-BAŞINA yenileme sıklığı
 // (`DashboardWidget.refresh` — backend'de zaten vardı, yalnız YAZMA ucu eksikti, bkz.
@@ -81,6 +83,19 @@ export function DashboardView({ id, onClose }: { id: string; onClose: () => void
 
   // GÖRÜNÜM KAYDET: kullanıcı panoda bir widget'ın tip/görünümünü değiştirince kalıcılaştır
   // (view_hint). Meta cache'i optimistik güncelle → refetch churn'ü olmadan seçim korunur.
+  // 🔴 FAZ 5.10 — KPI PİN. ⚠ Sunucu sınır aşımında **400 + sebep** döner ve sessizce
+  // en eskiyi düşürmez; o sebep kullanıcıya **olduğu gibi** gösterilir (`hataMetni`
+  // sunucunun kendi cümlesini önceler).
+  const [pinHata, setPinHata] = useState<string | null>(null);
+  const pin = useMutation({
+    onError: (e) => setPinHata(hataMetni(e, "Sabitleme")),
+    mutationFn: ({ wid, pinned }: { wid: string; pinned: boolean }) =>
+      patchDashboardWidget(id, wid, { pinned }),
+    onSuccess: () => {
+      setPinHata(null);
+      qc.invalidateQueries({ queryKey: ["dashboard", id] });
+    },
+  });
   const saveView = useMutation({
     mutationFn: ({ wid, viewHint }: { wid: string; viewHint: string }) =>
       patchDashboardWidget(id, wid, { view_hint: viewHint }),
@@ -153,7 +168,9 @@ export function DashboardView({ id, onClose }: { id: string; onClose: () => void
             <span className="text-foreground">+ panoya ekle</span> ile widget ekle.
           </p>
         ) : (
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <>
+            <HataSeridi metin={pinHata} onKapat={() => setPinHata(null)} />
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {widgets.map((w) => {
               const wd = dataById.get(w.id);
               const wide = w.pos?.w === 2;
@@ -174,6 +191,23 @@ export function DashboardView({ id, onClose }: { id: string; onClose: () => void
                       {/* P2-22: genişlik + yenileme sıklığı — ikisi de backend'de zaten
                           var olan (pos_json/refresh) alanları KULLANIR, yeni bir kavram
                           İCAT ETMEZ. */}
+                      {/* 🔴 Pin bir **katmandır, panel değil** (PK-1/K5): var olan
+                          widget şeridinin bir işareti. Pinli widget'lar üste çıkar —
+                          sıralama `kpi_pin.sirala`'nın kararıdır, arayüz yeniden yazmaz. */}
+                      <button
+                        onClick={() => pin.mutate({ wid: w.id, pinned: !w.pinned })}
+                        disabled={pin.isPending}
+                        title={w.pinned ? "Sabitlemeyi kaldır" : "Panonun üstüne sabitle"}
+                        aria-label={w.pinned ? "Sabitlemeyi kaldır" : "Üste sabitle"}
+                        aria-pressed={Boolean(w.pinned)}
+                        className={`font-mono text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-[var(--opacity-disabled)] ${
+                          w.pinned ? "text-accent" : "text-neutral-400 hover:text-foreground"
+                        }`}
+                      >
+                        {/* ⚠ Renk **tek kanal olamaz** (A11Y-9): sabitlenmiş hâl ayrıca
+                            dolu bir glif ve `aria-pressed` taşır. */}
+                        {w.pinned ? "◆ sabit" : "◇ sabitle"}
+                      </button>
                       <button
                         onClick={() => onWidgetWidth(w.id, wide ? 1 : 2)}
                         title={wide ? "Normal genişliğe al" : "Geniş yap (2 kolon)"}
@@ -220,6 +254,7 @@ export function DashboardView({ id, onClose }: { id: string; onClose: () => void
               );
             })}
           </div>
+          </>
         )}
       </div>
     </div>

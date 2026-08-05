@@ -504,6 +504,10 @@ class DashboardWidget(SQLModel, table=True):
     title: str = ""
     cube_query_json: str                                     # dönem-göreli CubeQuery
     view_hint: str | None = None                             # grafik türü (bar/line/pivot/…)
+    #: 🔴 FAZ 5.10 — **KPI PİN**. `app/kpi_pin.py` yazılmıştı ama kolonu yoktu ve modül
+    #: üretim kodunda **hiç import edilmiyordu**. ⚠ Varsayılan `False`: mevcut widget'lar
+    #: pin'siz doğar — *hiç kimse onları pin'lemedi.*
+    pinned: bool = False
     period: str | None = None                                # "bu hafta" — her açılışta çözülür
     pos_json: str | None = None                              # {x,y,w,h} grid konumu
     refresh: str = "onview"                                  # onview | cache:<ttl> | live

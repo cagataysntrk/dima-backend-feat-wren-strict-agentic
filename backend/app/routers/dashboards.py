@@ -74,14 +74,24 @@ def _widget_dict(w: DashboardWidget) -> dict:
     return {"id": str(w.id), "title": w.title,
             "cube_query": json.loads(w.cube_query_json),
             "view_hint": w.view_hint, "period": w.period,
-            "pos": json.loads(w.pos_json) if w.pos_json else None, "refresh": w.refresh}
+            "pos": json.loads(w.pos_json) if w.pos_json else None, "refresh": w.refresh,
+            "pinned": bool(getattr(w, "pinned", False))}
 
 
 def _widgets_of(session: Session, dashboard_id) -> list[DashboardWidget]:
-    return list(session.exec(select(DashboardWidget).where(
+    """⚠ **Sıralama `kpi_pin.sirala`'ya devredildi**: pinli widget'lar üste çıkar ve
+    kendi aralarında **oluşturma sırasını korur**. Sıralamayı burada elle yazmak,
+    aynı kuralın ikinci sahibi olurdu."""
+    from app import kpi_pin
+
+    satirlar = list(session.exec(select(DashboardWidget).where(
         DashboardWidget.dashboard_id == dashboard_id,
         col(DashboardWidget.deleted_at).is_(None),
     ).order_by(col(DashboardWidget.created_at))).all())
+    sira = {w["id"]: i for i, w in enumerate(
+        kpi_pin.sirala([{"id": str(x.id), "pinned": bool(getattr(x, "pinned", False))}
+                        for x in satirlar]))}
+    return sorted(satirlar, key=lambda x: sira.get(str(x.id), 0))
 
 
 @router.get("/dashboards")
@@ -204,6 +214,10 @@ class WidgetPatch(BaseModel):
     # ne widget genişliğini/yerleşimini ne de yenileme sıklığını hiç KAYDEDEMİYORDU.
     pos: dict | None = None                # {x,y,w,h} — bu sürümde yalnız "w" (genişlik) kullanılır
     refresh: str | None = None             # onview | live | cache:<saniye>
+    #: 🔴 FAZ 5.10 — KPI pin. ⚠ Sınır aşıldığında uç **400** döner ve **sebebi yazar**;
+    #: sessizce en eskiyi düşürmez: *bir pin bir karardır ve kullanıcının kendi eliyle
+    #: koyduğu bir şeyi haber vermeden kaldırmak, ürünün onun yerine karar vermesidir.*
+    pinned: bool | None = None
 
 
 @router.patch("/dashboards/{did}/widgets/{wid}")
@@ -230,6 +244,21 @@ def patch_widget(request: Request, did: str, wid: str, body: WidgetPatch,
         w.pos_json = json.dumps(data["pos"], ensure_ascii=False) if data["pos"] else None
     if "refresh" in data and data["refresh"]:
         w.refresh = data["refresh"]
+    if "pinned" in data and data["pinned"] is not None:
+        # 🔴 **FAZ 5.10 — PİN KARARI `kpi_pin`'e ait**, burada yeniden yazılmaz.
+        # Modül 85 satır + 10 testle yazılmıştı ve üretim kodunda **hiç import
+        # edilmiyordu**; sınırı burada elle yazmak, aynı kuralın **ikinci sahibi** olurdu.
+        from app import kpi_pin
+
+        if data["pinned"]:
+            karar = kpi_pin.pin_karari(
+                [_widget_dict(x) for x in _widgets_of(session, d.id)], wid)
+            if not karar["izin"]:
+                # ⚠ **400 + sebep**, sessiz düşürme YOK: *bir pin bir karardır ve
+                # kullanıcının kendi eliyle koyduğu bir şeyi haber vermeden kaldırmak,
+                # ürünün onun yerine karar vermesidir.* (`kpi_pin` bunu böyle yazıyor.)
+                raise HTTPException(status_code=400, detail=karar["sebep"])
+        w.pinned = bool(data["pinned"])
     session.add(w)
     d.updated_at = datetime.utcnow()
     session.add(d)

@@ -399,6 +399,12 @@ export interface DashboardWidget {
   period: string | null;
   pos: { x: number; y: number; w: number; h: number } | null;
   refresh: string;
+  /** 🔴 FAZ 5.10 — **KPI PİN**. `app/kpi_pin.py` (85 satır, 10 test) üretim kodunda
+   *  **hiç import edilmiyordu**: semantik yazılmış, kolonu yokmuş, ekranı yokmuş.
+   *  ⚠ Pin bir **katmandır, panel değil** (PK-1/K5): var olan widget'ın bir işareti.
+   *  ⚠ Pinli widget'lar **üste** çıkar ve kendi aralarında oluşturma sırasını korur —
+   *  sıralama `kpi_pin.sirala`'nın kararıdır, arayüz onu yeniden yazmaz. */
+  pinned?: boolean;
 }
 
 export interface DashboardDetail {

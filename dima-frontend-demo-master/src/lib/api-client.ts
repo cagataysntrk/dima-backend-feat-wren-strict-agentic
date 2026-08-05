@@ -799,7 +799,11 @@ export async function patchDashboardWidget(
   id: string,
   wid: string,
   body: { view_hint?: string; period?: string; title?: string;
-          pos?: { x: number; y: number; w: number; h: number } | null; refresh?: string },
+          pos?: { x: number; y: number; w: number; h: number } | null; refresh?: string;
+          /** 🔴 FAZ 5.10 — KPI pin. ⚠ Sınır aşıldığında sunucu **400 + sebep** döner ve
+           *  sessizce en eskiyi düşürmez: *bir pin bir karardır.* Çağıran hatayı
+           *  `HataSeridi` ile gösterir — sunucunun cümlesi kullanıcıya ulaşır. */
+          pinned?: boolean },
 ): Promise<void> {
   await apiClient.patch(`/dashboards/${id}/widgets/${wid}`, body);
 }
