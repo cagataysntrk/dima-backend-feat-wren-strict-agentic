@@ -567,7 +567,19 @@ def pairwise(eksenler: dict[str, list], rng: random.Random,
                 if en_iyi_kazanc == len(ikili_indeks):
                     break
         if not en_iyi_kazanc:        # havuz hiç yeni ikili bulamadı → kalanları tara
-            eksik = next(iter(hedef))
+            # 🔴 `next(iter(hedef))` DEĞİL — bir küme üzerinde yineleme sırası
+            # Python'un **karma tohumuna** bağlıdır (`PYTHONHASHSEED` varsayılan
+            # olarak rastgeledir). Yani sabit RNG tohumuna rağmen korpus **her
+            # süreçte farklı** çıkıyordu.
+            #
+            # ⚠ Sonuç sinsiydi: önbellek anahtarı *"aynı katalog + aynı tohum →
+            # aynı korpus"* varsayımına dayanıyor. O varsayım bozulunca iki koşum
+            # farklı korpus üretip **aynı anahtara** yazar; ve bir testin bugün geçip
+            # yarın kalması *"kod değişti"* değil *"sıra değişti"* olur — teşhis
+            # imkânsızlaşır.
+            #
+            # *Bir kümenin sırası bir karar dayanağı olamaz; sıralanması gerekir.*
+            eksik = sorted(hedef)[0]
             en_iyi = {ad: rng.choice(eksenler[ad]) for ad in adlar}
             for (eksen, deger) in eksik:
                 en_iyi[eksen] = deger

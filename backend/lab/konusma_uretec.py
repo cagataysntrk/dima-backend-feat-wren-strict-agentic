@@ -169,13 +169,45 @@ def gecis_kapsami(uzunluklar: tuple[int, ...], rng: random.Random) -> list[list[
     """
     hedef = {(a, b) for a in TUR_TURLERI for b in TUR_TURLERI}
     sohbetler: list[list[str]] = []
+    # 🔴 SONSUZ DÖNGÜ — ölçüldü, ve tam da bu satırlarda yaşıyordu.
+    #
+    # İlk yazımım her turu **rastgele bir turla** başlatıp zinciri uzatıyordu:
+    #
+    #     zincir = [T_ACILIS if rng.random() < 0.70 else rng.choice(TUR_TURLERI)]
+    #     ...  adaylar = [b for (a, b) in hedef if a == son]
+    #
+    # Kalan kapanmamış çiftlerin hepsi `X` ile başlıyorsa ve zincir hiçbir turda
+    # `X`'e uğramıyorsa, o çiftler **hiçbir zaman** kapanmaz — döngü döner durur.
+    # %70 `T_ACILIS` başlangıcı bunu ağırlaştırıyordu: uzun kuyruk fiilen sonsuz.
+    # (Bir kapı testi 6+ dakika tek çekirdekte asılı kaldı; ilk teşhisim "regex
+    # geri-izlemesi" idi ve **yanlıştı** — sebep buradaki ilerleme garantisizliğiydi.)
+    #
+    # > ⚠ *Rastgele arama, aradığı şeye ulaşacağını garanti etmez; yalnız
+    # > ulaşabileceğini gösterir. Bir kapsam algoritması ihtimalle değil,
+    # > **inşayla** ilerlemelidir.*
+    #
+    # Düzeltme: her tur **kapanmamış bir çiftle başlar** → o çift o turda kesin
+    # kapanır → en çok `len(hedef)` tur, yani **289**. Terminasyon artık bir umut
+    # değil, bir üst sınır.
+    GUVENLIK_TAVANI = len(TUR_TURLERI) ** 2 + 50
     while hedef:
+        if len(sohbetler) > GUVENLIK_TAVANI:             # asla ulaşılmamalı
+            raise RuntimeError(
+                f"geçiş kapsamı yakınsamadı: {len(hedef)} çift kaldı — "
+                "ilerleme garantisi bozulmuş, algoritmayı gözden geçir")
         boy = rng.choice(uzunluklar)
-        zincir = [T_ACILIS if rng.random() < 0.70 else rng.choice(TUR_TURLERI)]
-        for _ in range(boy - 1):
+        # ⚠ Deterministik seçim (`sorted`) — rastgele seçim aynı tohumda farklı
+        # korpus üretip *"dün geçen test bugün kaldı"* teşhisini imkânsızlaştırırdı.
+        a0, b0 = sorted(hedef)[0]
+        zincir = [a0, b0]
+        # Gerçekçilik korunuyor: sohbetlerin çoğu bir açılışla başlar. Önek eklemek
+        # (a0, b0) çiftini **düşürmez** — yalnız başına bir geçiş daha katar.
+        if a0 != T_ACILIS and rng.random() < 0.70:
+            zincir.insert(0, T_ACILIS)
+        while len(zincir) < boy:
             son = zincir[-1]
-            adaylar = [b for (a, b) in hedef if a == son]
-            zincir.append(rng.choice(adaylar) if adaylar else rng.choice(TUR_TURLERI))
+            adaylar = sorted(b for (a, b) in hedef if a == son)
+            zincir.append(adaylar[0] if adaylar else rng.choice(TUR_TURLERI))
         for a, b in zip(zincir, zincir[1:]):
             hedef.discard((a, b))
         sohbetler.append(zincir)
