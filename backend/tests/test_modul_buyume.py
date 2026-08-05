@@ -90,6 +90,21 @@ MUAFIYET_ASK_KOD = [
                     "yerellerine bağlı). Kapının ölçüsü **eklenen kod**, ve eklenen kod "
                     "TEK satır: `sorar_mi()` çağrısı. Eşik ve düzey çözümü modüle ve "
                     "modül-düzeyi yardımcıya ait — `ask()`e giren yalnız SORU"),
+    ("KÖK-4/donem_capasi", 3,
+     "🔴 TAKİP TURUNDA DÖNEM ÇAPASI (denetim raporu KN-1) — sondanın EN BÜYÜK tek "
+     "kümesi: 43 netleştirmenin 34'ü dönem, 26'sı TAKİP turunda ve 26/26'sında önceki "
+     "turda dönem VARDI. Ölçü değişince `deterministic_refine` dönemi düşürüyor ve "
+     "`_period_gate` «Hangi dönem için?» diye soruyor — oysa cevap bir tur önce "
+     "verilmişti. "
+     "🔴 Bu altı satır TAŞINAMAZ ve sebebi konum: `_period_gate` takip zincirinin DÖRT "
+     "dalının da (refine · cross_cube_add · cross_cube_dim_switch · taze route) geçtiği "
+     "TEK karar noktasıdır. Dört yere ayrı ayrı yazmak 'aynı kuralın iki sahibi' "
+     "sınıfını DÖRDE katlardı. Taşınabilir olan her şey `app/donem_capasi.py`'de: üç "
+     "şart, zaman-boyutu yeniden adlandırma, not metni, TAŞIYICI temizliği. "
+     "⊙ Büyüme kapısı bunu İKİ KEZ ölçtü ve iki kez de tasarımı düzeltti: "
+     "10 satır → 3 (yerinde taşıma + notu_al modüle gitti). "
+     "⚠ Ve `return None` KALDIRILMADI (anti-çözüm A4): o dal bilinçli — farklı metrik "
+     "gerçekten yeni bir sorudur. Dönem soruya değil OTURUMA bağlandı"),
     ("KÖK-2+3/uyum", 8,
      "🔴 UYUM KAPISI + BEYANLI KISMİ CEVAP (denetim raporu KÖK-2·KÖK-3). Ölçülen: "
      "`route()` bir CubeQuery üretiyor ama sorudaki NİYET İŞARETİNİN sorguda karşılığı "

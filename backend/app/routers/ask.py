@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 import time as _time
 
+from app import donem_capasi as _capa
 from app import uyum as _uyum
 from app import yetenek as _yetenek
 from app import context as app_context
@@ -1858,6 +1859,24 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             ))
         if has_period_filter or cube_router._period_hit_words(q_norm):
             return None
+
+        # 🔴 KÖK-4 — DÖNEM ÇAPASI (denetim raporu KN-1, sondanın EN BÜYÜK kümesi).
+        #
+        # Ölçüldü: 43 netleştirmenin 34'ü dönem, **26'sı takip turunda** ve 26/26'sında
+        # ÖNCEKİ TURDA DÖNEM VARDI. Mekanizma: ölçü değişince `deterministic_refine`
+        # dönemi düşürüyor (ya da `None` dönüp soru "taze" sayılıyor) ve bu kapı
+        # «Hangi dönem için?» diye soruyor — oysa cevap **bir tur önce verilmişti**.
+        #
+        # ⚠ Düzeltme BURADA, tek karar noktasında: takip zincirinin dört dalı da
+        # (`refine` · `cross_cube_add` · `cross_cube_dim_switch` · taze route) bu kapıdan
+        # geçiyor. Dört yere ayrı ayrı yazmak, bu deponun "aynı kuralın iki sahibi"
+        # sınıfını dörde katlardı.
+        #
+        # ⚠ `cq` **YERİNDE** değiştirilir ve `None` dönülür: kapının sözleşmesi zaten
+        # *"None = devam et"*tir. Yeni bir dönüş türü eklemek her çağıranı değiştirirdi.
+        if _capa.tasi_yerinde(cq, body.cube_query or None, body.question, cube_meta):
+            return None
+
         return _finish(AskResponse(
             question=body.question, source=None, note=_PERIOD_TEXT, cube_query=cq,
             suggestions=[Suggestion(**s) for s in _PERIOD_SUGGESTIONS],
@@ -1873,6 +1892,16 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         yeni Intent-path kaynağında yeniden yazılmasın (Faz 1'de zaten kopya kod riski
         vardı, Faz 1.5'te dört kaynak daha eklenince tek helper'a çıkarıldı).
         Derleme/doğrulama başarısız olursa None döner (çağıran sıradaki adıma düşer)."""
+        # 🔴 KÖK-4 — çapa notu `cq`den ALINIR ve ANAHTAR SİLİNİR. Silinmezse `cube_query`
+        # cevaba sızar ve daha kötüsü SQL derleyicisine bilinmeyen bir alan olarak gider.
+        # *Bir taşıyıcı alan, taşıdığı yere varınca boşaltılmalıdır.*
+        #
+        # ⚠ KONUM: docstring'in HEMEN ARDINDA. İlk yazımda docstring'in ÖNÜNE kondu ve
+        # fonksiyon **docstring'ini kaybetti** — Python bir dizgeyi ancak gövdenin İLK
+        # deyimiyse docstring sayar. Büyüme kapısı bunu 6 "yeni kod satırı" olarak
+        # gösterdi ve teşhisi o verdi. *Bir ölçüm aracının yakaladığı sayı, bazen
+        # ölçtüğü şey değil, ölçemediği şeydir.*
+        note, trace = _capa.notu_al(cq, note, trace)
         # KALICI GRANÜLERLİK TERCİHİ (FAZ E) — SQL derlenmeden ÖNCE uygulanır ki
         # cevaptaki sayı ile `cube_query` BİREBİR aynı şeyi anlatsın (sonradan
         # uygulansaydı makbuz ile rapor ayrışırdı).
