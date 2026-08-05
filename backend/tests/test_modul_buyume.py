@@ -83,6 +83,13 @@ MUAFIYET_ASK_KOD = [
                           "notun içine tanelik uyarısı giriyor (`grain_uyarisi`). Uyarıyı "
                           "cevaba TAŞIYAN satır `ask()` içinde olmak zorunda: notu üreten "
                           "yer orası. Karar ve metin `app/cekirdek.py`'de"),
+    ("faz-5.16", 1, "NETLEŞTİRME DÜZEYİ bağlandı — `_olcu_belirsizligi_netlestir`'in "
+                    "ilk satırı `netlestirme.sorar_mi()`'ye sorar. 🔴 Bu satır TAŞINAMAZ: "
+                    "karar noktası `ask()`in kendi dalıdır ve kararı bir modüle çıkarmak "
+                    "dalın kendisini de çıkarmak demektir (o da 33 satır ve `ask()`in "
+                    "yerellerine bağlı). Kapının ölçüsü **eklenen kod**, ve eklenen kod "
+                    "TEK satır: `sorar_mi()` çağrısı. Eşik ve düzey çözümü modüle ve "
+                    "modül-düzeyi yardımcıya ait — `ask()`e giren yalnız SORU"),
     ("faz-1.3b/2", 3, "Katman B'nin Discovery çağrı yolu — TAŞINABİLİR OLAN HER ŞEY "
                       "`app/katman_b.py`'ye taşındı (zorlama · allowlist okuma · ret notu "
                       "· sarmal sınıf). `ask()`'te kalan üç satır taşınamaz: motoru bir kez "
@@ -108,6 +115,13 @@ MUAFIYET_CUBE_ROUTER_KOD = [
 #: değil sessiz bir tavan artışıdır* (bu dosyanın kendi cümlesi). Dosya muafiyeti bu yüzden
 #: **ayrı** sayılır ve `ask()` tavanına **dokunmaz**.
 MUAFIYET_ASK_DOSYA = [
+    ("faz-5.16", 17, "`_netlestirme_duzeyi()` modül-düzeyi yardımcısı: tenant ayarını "
+                     "okur ve `netlestirme.duzey()`e verir. 🔴 `ask()`in İÇİNE "
+                     "yazılsaydı gövde tavanını 17 satır aşardı; dışarı alınması hem "
+                     "tavanı korur hem doğru yerdir — bir AYAR okuması bir cevaplama "
+                     "adımı değildir. ⚠ Okunamazsa `normal` döner: varsayılan BUGÜNKÜ "
+                     "davranıştır ve bir ayar okunamadığında davranışı değiştirmek "
+                     "sessiz bir kapsam kaybı olurdu"),
     ("faz-1.12", 9, "AI Act Md.14 durdurma ucu — karar+yazma `app/ask_jobs.py`'de; `ask.py`'de "
                 "kalan yalnız UÇ KAYDI (dekoratör 2 + imza 1 + delege 1 + `ask_jobs` "
                 "importu 1), `_bg`'nin iki dalındaki iptal kontrolü (2) ve akışın `iptal` "

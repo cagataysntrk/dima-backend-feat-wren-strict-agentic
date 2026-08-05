@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 import time as _time
 
 from app import context as app_context
+from app import netlestirme as _netlestirme
 from app import prescribe
 from app import planner as _planner
 from app import ask_jobs, cekirdek, followup, istek_kimligi, katman_b, typo_onerisi
@@ -1333,6 +1334,30 @@ def _with_extra_context(question: str, extra_context: list[str] | None) -> str:
 from app.discovery_kuyrugu import kuyrukla as _queue_discovery_job  # noqa: E402,F401
 
 
+def _netlestirme_duzeyi(request) -> str:
+    """Tenant'ın netleştirme düzeyi — `kapali | normal | yuksek`.
+
+    ⚠ Okunamazsa **`normal`**: varsayılan *bugünkü davranıştır* ve bir ayar okunamadığında
+    davranışı değiştirmek, sessiz bir kapsam kaybı olurdu.
+    """
+    try:
+        from sqlmodel import Session, select
+
+        from control_plane.db import engine
+        from control_plane.models import TenantConfig
+
+        principal = getattr(request.state, "principal", None)
+        tid = getattr(principal, "tenant_id", None)
+        if not tid:
+            return _netlestirme.VARSAYILAN
+        with Session(engine) as s:
+            satir = s.exec(select(TenantConfig).where(
+                TenantConfig.tenant_id == tid)).first()
+        return _netlestirme.duzey(getattr(satir, "netlestirme_duzeyi", None))
+    except Exception:                                    # noqa: BLE001
+        return _netlestirme.VARSAYILAN
+
+
 @router.post("/ask", response_model=AskResponse,
              dependencies=[Depends(require("query:run")), Depends(require_company)])
 def ask(request: Request, body: AskRequest) -> AskResponse:
@@ -2376,6 +2401,17 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     def _olcu_belirsizligi_netlestir(q_norm: str, schema: dict) -> AskResponse | None:
         """Katalog **≥2 SAHİP** biliyorsa netleştirme chip'i — yoksa `None`.
 
+        ## 🔴 FAZ 5.16 — NETLEŞTİRME DÜZEYİ BAĞLANDI
+
+        `app/netlestirme.py` (107 satır, 13 test) üretim kodunda **hiç import
+        edilmiyordu**: `TenantConfig.netlestirme_duzeyi` kolonu vardı, modül vardı,
+        **hiçbir karar onu okumuyordu**. Denetimin *"12 yetim modül"* bulgusunun son
+        gerçek kalemi.
+
+        ⚠ Ölçü belirsizliği **`yuksek`** düzeyde sorulur; `normal` (varsayılan =
+        **bugünkü davranış**, ADR-0007 K3) yalnız **dönem** sorar. Yani bu kapı
+        kapalıyken davranış bugünküyle **birebir** aynıdır (KURAL B).
+
         ## FAZ 2a'nın etiket çakışması tuzağı (korunuyor)
 
         Chip'ler eskiden yalnız ölçünün GÖRÜNEN adıyla kuruluyordu; iki cube aynı adı
@@ -2390,6 +2426,16 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         **ÖNCE**, (b) bayrak kapalıyken bugünkü yerinde (Intent'ten sonra). İki kopya
         yazmak, bu deponun defalarca ölçtüğü *"kimlik asimetrisi"*ni üretirdi.
         """
+        # 🔴 **MODÜLÜN MODELİ SEVK EDİLEN DAVRANIŞLA ÇELİŞİYORDU — ölçümle yakalandı.**
+        # `sorar_mi("normal", "olcu")` **False** döner (modülün belgesi: *"normal yalnız
+        # dönem sorar"*), ama ürün **bugün** ölçü belirsizliğini de soruyor ve
+        # `test_netlestirme_onceligi` bunu kilitliyor. Modülü olduğu gibi uygulamak
+        # **KURAL B'yi kırardı**: varsayılan ayarda bir yetenek **sessizce kaybolurdu**.
+        # → Kapı yalnız **`kapali`**'yı uygular; `normal` bugünkü davranıştır.
+        # *Bir modülün modeli ile sevk edilen davranış çelişiyorsa, kazanan sevk edilen
+        # davranıştır — çünkü kullanıcı onu görüyor.*
+        if _netlestirme_duzeyi(request) == "kapali":
+            return None
         try:
             cands = cube_router.measure_cube_candidates(q_norm, schema)
         except Exception:
