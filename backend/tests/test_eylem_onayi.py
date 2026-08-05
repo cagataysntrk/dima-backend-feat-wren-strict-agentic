@@ -147,7 +147,8 @@ def test_ONAY_PANOYA_EKLER_ve_AUDIT_yazar(client, taban):
     d = ask(client, "bunu panoya ekle", cube_query=taban["cube_query"])
     oneri = d["eylem_onerisi"]
     r = client.post("/ask/eylem", json={"eylem": oneri["eylem"],
-                                        "argumanlar": oneri["argumanlar"]})
+                                        "argumanlar": oneri["argumanlar"],
+                                        "bilet": oneri.get("bilet", "")})
     assert r.status_code == 200, r.text
     out = r.json()
     assert out["ok"] and out["id"], out
@@ -171,7 +172,8 @@ def test_ONAY_ZAMANLAMA_KURAR(client, taban):
     d = ask(client, "her pazartesi bu raporu yolla", cube_query=taban["cube_query"])
     oneri = d["eylem_onerisi"]
     r = client.post("/ask/eylem", json={"eylem": oneri["eylem"],
-                                        "argumanlar": oneri["argumanlar"]})
+                                        "argumanlar": oneri["argumanlar"],
+                                        "bilet": oneri.get("bilet", "")})
     assert r.status_code == 200, r.text
     kayitlar = client.get("/schedules").json()["schedules"]
     assert any(s.get("every") == "week" and s.get("weekday") == 1 for s in kayitlar), kayitlar
@@ -192,13 +194,20 @@ def test_YETKISIZ_KULLANICI_ONAYLAYAMAZ(client, taban):
     c.headers["Authorization"] = f"Bearer {tok}"
     args = {"label": "x", "cube_query": taban["cube_query"],
             "every": "week", "at": "08:00", "weekday": 1}
-    r = c.post("/ask/eylem", json={"eylem": eylem.ZAMANLA, "argumanlar": args})
+    # ⚠ Bilet **mint edilir**: bu testin konusu YETKİ, süre değil — ve gerçek bir istemci
+    # her zaman bir bilet taşır (öneriyle birlikte gelir). Biletsiz göndermek, testi
+    # istemeden bir *"bilet kapısı"* testine çevirirdi.
+    from app import onay_akisi
+
+    r = c.post("/ask/eylem", json={"eylem": eylem.ZAMANLA, "argumanlar": args,
+                                   "bilet": onay_akisi.bilet(eylem.ZAMANLA)})
     assert r.status_code == 403, r.text
     # …ama PANO eylemi (izin=query:run) viewer'a AÇIK olmalı: yetki eşiği eylemin
     # kendi riskinden gelir, "yazma" etiketinden değil.
     r2 = c.post("/ask/eylem", json={"eylem": eylem.PANO_EKLE,
                                     "argumanlar": {"title": "v",
-                                                   "cube_query": taban["cube_query"]}})
+                                                   "cube_query": taban["cube_query"]},
+                                    "bilet": onay_akisi.bilet(eylem.PANO_EKLE)})
     assert r2.status_code == 200, r2.text
 
 

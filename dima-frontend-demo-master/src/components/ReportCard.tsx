@@ -171,10 +171,19 @@ export function ReportCard({
       const liveHint = lv && lv.sql === (item.sql ?? "") ? lv.hint : null;
       const args = { ...oneri.argumanlar,
                      ...(liveHint && oneri.eylem === "pano.ekle" ? { view_hint: liveHint } : {}) };
-      const out = await onaylaEylem(oneri.eylem, args);
+      // ⚠ Bilet öneriyle birlikte geldi; taşınmazsa sunucu **fail-closed** reddeder.
+      const out = await onaylaEylem(oneri.eylem, args, String(oneri.bilet ?? ""));
       setEylemSonuc(out.note);
-    } catch {
-      setActionError("İşlem tamamlanamadı. Lütfen tekrar dener misin?");
+    } catch (e) {
+      // 🔴 Süre aşımı **ayrı** söylenir: *"tekrar dener misin"* bayat bir öneride
+      // kullanıcıyı aynı duvara ikinci kez çarptırır. Ne yapması gerektiğini söyle.
+      const durum = (e as { response?: { status?: number; data?: { detail?: string } } })
+        ?.response;
+      const bayat = durum?.status === 400 && /süre|bilet/i.test(durum?.data?.detail ?? "");
+      setActionError(bayat
+        ? "Bu öneri zaman aşımına uğradı (30 dk). Soruyu yeniden sorup öneriyi tazeleyin — "
+          + "aradan geçen sürede veri ya da yetki değişmiş olabilir."
+        : "İşlem tamamlanamadı. Lütfen tekrar dener misin?");
     } finally {
       setEylemBekliyor(false);
     }

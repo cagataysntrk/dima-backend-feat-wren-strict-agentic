@@ -42,7 +42,8 @@ def _temiz(client):
 def _onayla(client, d) -> dict:
     oneri = d["eylem_onerisi"]
     r = client.post("/ask/eylem", json={"eylem": oneri["eylem"],
-                                        "argumanlar": oneri["argumanlar"]})
+                                        "argumanlar": oneri["argumanlar"],
+                                        "bilet": oneri.get("bilet", "")})
     assert r.status_code == 200, r.text
     return r.json()
 

@@ -604,8 +604,20 @@ export async function silTercih(anahtar: string): Promise<void> {
 export async function onaylaEylem(
   eylem: string,
   argumanlar: Record<string, unknown>,
+  /** 🔴 **İmzalı onay bileti** — öneriyle birlikte gelir (`eylem_onerisi.bilet`) ve
+   *  §C ölçüt 6'nın *"süre aşımı 30 dk"* şartını taşır.
+   *
+   *  Ölçüldü: canlı onay yolunda **hiçbir süre kontrolü yoktu** — üç saat önceki bir
+   *  öneri onaylanıp koşabiliyordu.
+   *
+   *  ⚠ **Parametre zorunlu tutuldu** (varsayılan yok): varsayılan `""` verseydim, bir
+   *  çağrı yeri bileti geçirmeyi unuttuğunda TypeScript **susardı** ve kusur ancak
+   *  çalışma zamanında, *"onay bileti bozuk"* diye görünürdü.
+   *  *Bir zorunluluğu isteğe bağlı yapmak, onu unutulabilir yapmaktır.* */
+  bilet: string,
 ): Promise<EylemOnayResult> {
-  const { data } = await apiClient.post<EylemOnayResult>("/ask/eylem", { eylem, argumanlar });
+  const { data } = await apiClient.post<EylemOnayResult>(
+    "/ask/eylem", { eylem, argumanlar, bilet });
   return data;
 }
 // Query Contract keşif/replay (doğrulama turu düzeltmesi, 1 Ağustos 2026) — `contract_id`

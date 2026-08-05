@@ -482,10 +482,19 @@ class EylemOnayRequest(BaseModel):
     olmayan ad → 400), `authorize()`'ı YENİDEN çağırır (öneri anındaki yetkiye
     güvenmek TOCTOU olurdu) ve argümanları VAR OLAN handler'a verir — doğrulama
     ikinci kez YAZILMAZ.
+
+    🔴 **`bilet` §C ölçüt 6'nın "süre aşımı 30 dk" şartıdır** ve zorunludur: canlı yolda
+    hiçbir süre kontrolü yoktu, üç saat önceki bir öneri onaylanıp koşabiliyordu.
+    ⚠ İstemciden gelen düz bir zaman damgası **yetmezdi** — istemci her seferinde
+    *"şimdi"* gönderir ve kapı bir **törene** dönüşürdü. Bilet **imzalıdır** (HMAC,
+    `onay_akisi.bilet`).
     """
 
     eylem: str
     argumanlar: dict[str, Any] = Field(default_factory=dict)
+    #: İmzalı onay bileti (`onay_akisi.bilet`). ⚠ Varsayılan `""` **ve bu fail-closed**:
+    #: biletsiz bir onay reddedilir — *bir süre kapısı, atlanabildiği anda bir tören olur.*
+    bilet: str = ""
     #: `pano.ekle` için hedef pano; boşsa kullanıcının ilk panosu kullanılır
     #: (hiç yoksa oluşturulur — öneri özeti bunu SÖYLER).
     dashboard_id: str | None = None

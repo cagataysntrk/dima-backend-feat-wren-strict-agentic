@@ -133,6 +133,29 @@ def eylem_onayla(request: Request, body: EylemOnayRequest,
             status_code=403,
             detail=f"Bu işlem için yetkiniz yok ({beyan.izin}).")
 
+    # (2b) 🔴 **SÜRE KAPISI — §C ölçüt 6'nın üçüncü şartı.**
+    #
+    # Ölçüldü (okunarak): bu yolda **hiçbir süre kontrolü yoktu**; üç saat önceki bir
+    # öneri onaylanıp koşabiliyordu. Şartın *"süre aşımı 30 dk"* yarısı **yalnız
+    # `onay_akisi.py`'de** duruyordu — o modülün hiçbir üretim tüketicisi olmadan
+    # (denetimin *"12 yetim modül"* bulgusu).
+    #
+    # ⚠ **Yetkiden SONRA — ve ilk yazımda önce koymuştum.** Gerekçem *"süresi dolmuş bir
+    # öneri, yetkisi olsa bile koşmamalı"*ydı ve **yanlıştı**: yetki önce koşarsa yetkili
+    # kullanıcı yine bu kapıya çarpar, yetkisiz olan ise **daha güçlü** bir kapıda durur.
+    # Ters sıra yalnız bir şey yapıyordu: yetkisiz bir çağrıya *"bilet bozuk"* diyerek
+    # **403 sinyalini gizliyordu**. `test_eylem_onayi` bunu yakaladı.
+    # *Bir kapıyı öne almak, onu güçlendirmez; yalnız arkasındakinin sesini kısar.*
+    from app import onay_akisi
+
+    try:
+        onay_akisi.bilet_dogrula(body.bilet, beyan.ad)
+    except onay_akisi.OnayHatasi as exc:
+        # 🔴 **410 değil 400**: 410 (Gone) bir kaynağın *"vardı, artık yok"* hâlidir;
+        # burada kaynak duruyor, **onay** bayatladı. Ve mesaj NEDENİ söylüyor —
+        # *süresi dolduğu söylenmeyen bir ret, bir arıza gibi okunur.*
+        raise HTTPException(status_code=400, detail=str(exc)) from None
+
     args = dict(body.argumanlar or {})
     # RAPOR ÇAPASI ŞARTI eyleme ÖZELDİR: pano/zamanlama bir raporu kalıcılaştırır ve
     # doğrulanmış bir `cube_query` taşımak ZORUNDADIR (uydurma bir sorgu her hafta

@@ -205,3 +205,85 @@ def istem_orani(tur_sayisi: int, istem_sayisi: int) -> dict[str, Any]:
     return {"oran": round(oran, 4), "tur": tur_sayisi, "istem": istem_sayisi,
             "not": ("⚠ Onay yorgunluğu göstergesi: bu oran ARTARSA kullanıcı her isteme "
                     "daha az dikkat eder (~%93 otomatik onay ölçüldü).")}
+
+# ── ONAY BİLETİ: §C ölçüt 6'nın "süre aşımı 30 dk" şartı ─────────────────────────────
+#
+# 🔴 **Ölçülen boşluk (2026-08-05, OKUNARAK bulundu).** §C ölçüt 6 *"onaysız yazma
+# imkânsız + onay başına audit satırı + **süre aşımı 30 dk**"* diyor ve ölçüt raporda
+# 🟢 işaretliydi. Canlı onay yolu (`app/routers/eylem.py::eylem_onayla`) okundu:
+# **hiçbir süre kontrolü yok** — üç saat önceki bir öneri onaylanıp koşabilirdi.
+# `VARSAYILAN_OMUR_SN = 30 * 60` yalnız **bu modülde** duruyordu ve modülün **hiçbir
+# üretim tüketicisi yoktu** (denetimin *"12 yetim modül"* bulgusunun ikinci kalemi).
+#
+# ⚠ **Neden istemciden gelen bir zaman damgası YETMEZ:** istemci her seferinde *"şimdi"*
+# gönderebilir ve süre kontrolü bir **törene** dönüşür. Bilet bu yüzden **imzalıdır**.
+#
+# ⚠ **Neden ikinci bir secret üretilmiyor:** `paylasim.py`'nin kendi gerekçesi burada da
+# geçerli — rotasyonu, saklanması ve sızma davranışı olan **bir** anahtar vardır.
+# *İki anahtar, iki kez yanlış yönetilir.*
+
+import base64
+import hashlib
+import hmac
+import json as _json
+import time as _time
+
+
+def _gizli() -> bytes:
+    from control_plane.config import get_auth_settings
+
+    s = str(getattr(get_auth_settings(), "jwt_secret", "") or "")
+    if not s:
+        raise OnayHatasi(
+            "Onay bileti için `jwt_secret` gerekli. Anahtarsız bir imza, imza değildir.")
+    return s.encode("utf-8")
+
+
+def _b64(ham: bytes) -> str:
+    return base64.urlsafe_b64encode(ham).decode("ascii").rstrip("=")
+
+
+def _b64_coz(m: str) -> bytes:
+    return base64.urlsafe_b64decode(m + "=" * (-len(m) % 4))
+
+
+def bilet(eylem: str, *, omur: int | None = None, simdi: float | None = None) -> str:
+    """Bir eylem önerisi için **imzalı ve süreli** onay bileti.
+
+    ⚠ Yük **yalnız eylem adı + son kullanma**: argümanlar biletin içine konmaz. Konsaydı
+    bilet, argümanları da **doğrulanmış** gösterirdi — oysa `eylem_onayla` onları zaten
+    kendi kapılarından geçiriyor ve iki doğrulama, ikisi de eksik olurdu.
+    """
+    govde = {"e": eylem,
+             "exp": int((simdi if simdi is not None else _time.time())
+                        + int(omur or VARSAYILAN_OMUR_SN))}
+    ham = _json.dumps(govde, ensure_ascii=False, separators=(",", ":"),
+                      sort_keys=True).encode("utf-8")
+    return f"{_b64(ham)}.{_b64(hmac.new(_gizli(), ham, hashlib.sha256).digest())}"
+
+
+def bilet_dogrula(token: str, eylem: str, *, simdi: float | None = None) -> None:
+    """Bilet geçerli mi — **fail-closed**, geçersizse `OnayHatasi`.
+
+    🔴 İmza **sabit-zamanlı** karşılaştırılır: normal `==`, bileti bayt bayt tahmin
+    etmeye açık bir zamanlama kanalı bırakırdı.
+    🔴 Eylem adı **biletin içinde** doğrulanır: bir *"tercih kaydet"* bileti bir
+    *"zamanla"* onayına iliştirilebilseydi, süre kapısı **yanlış eylemi** korurdu.
+    """
+    try:
+        g_b64, i_b64 = str(token or "").split(".", 1)
+        ham, imza = _b64_coz(g_b64), _b64_coz(i_b64)
+    except Exception as exc:                                  # noqa: BLE001
+        raise OnayHatasi("Onay bileti bozuk.") from exc
+    if not hmac.compare_digest(hmac.new(_gizli(), ham, hashlib.sha256).digest(), imza):
+        raise OnayHatasi("Onay bileti doğrulanamadı (imza uyuşmuyor).")
+    try:
+        govde = _json.loads(ham.decode("utf-8"))
+    except Exception as exc:                                  # noqa: BLE001
+        raise OnayHatasi("Onay bileti okunamadı.") from exc
+    if govde.get("e") != eylem:
+        raise OnayHatasi("Onay bileti BAŞKA bir eylem için verilmiş.")
+    if float(govde.get("exp") or 0) < (simdi if simdi is not None else _time.time()):
+        raise OnayHatasi(
+            f"Onay süresi doldu ({VARSAYILAN_OMUR_SN // 60} dk). Öneriyi yeniden alın — "
+            f"aradan geçen sürede veri ya da yetki değişmiş olabilir.")

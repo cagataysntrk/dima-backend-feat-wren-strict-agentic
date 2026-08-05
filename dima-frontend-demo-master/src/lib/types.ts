@@ -906,6 +906,17 @@ export interface EylemOnerisi {
   izin: string;                 // authorize() aksiyonu (permissions ile eşleşmeli)
   geri_alinabilir: boolean;     // false → UI daha ağır bir onay dili kullanır
   argumanlar: Record<string, unknown>;
+  /** 🔴 **İmzalı onay bileti** — §C ölçüt 6'nın *"süre aşımı 30 dk"* şartı.
+   *
+   *  Ölçüldü: canlı onay yolunda **hiçbir süre kontrolü yoktu** ve üç saat önceki bir
+   *  öneri onaylanıp koşabiliyordu; `VARSAYILAN_OMUR_SN` yalnız `onay_akisi.py`'de
+   *  duruyordu — o modülün **hiçbir üretim tüketicisi olmadan**.
+   *
+   *  ⚠ İstemciden gelen düz bir zaman damgası **yetmezdi**: istemci her seferinde
+   *  *"şimdi"* gönderir ve kapı bir **törene** dönüşürdü. Bilet HMAC ile imzalıdır.
+   *  ⚠ Opsiyonel: anahtar yoksa sunucu bileti **üretemez** ve öneri biletsiz gelir —
+   *  o durumda onay reddedilir (fail-closed), sessizce süresiz koşmaz. */
+  bilet?: string;
 }
 
 export interface EylemOnayResult {

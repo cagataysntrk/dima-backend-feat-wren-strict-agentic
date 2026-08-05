@@ -705,6 +705,29 @@ def seal(resp: AskResponse, *, request: Request, principal, t0: float,
     except Exception:                       # noqa: BLE001 — hedef cevabı DÜŞÜRMEZ
         resp.hedef = None
 
+    # 🔴 **ONAY BİLETİ — §C ölçüt 6'nın "süre aşımı 30 dk" şartı, TEK SAHİPTEN.**
+    #
+    # Ölçüldü (okunarak): canlı onay yolunda **hiçbir süre kontrolü yoktu**; üç saat
+    # önceki bir öneri onaylanıp koşabiliyordu. `VARSAYILAN_OMUR_SN` yalnız
+    # `onay_akisi.py`'de duruyordu — o modülün **hiçbir üretim tüketicisi olmadan**.
+    #
+    # ⚠ **Neden `seal()` — ve neden öneriyi KURAN yerler değil.** Öneri üç ayrı yerde
+    # kuruluyor (`eylem.py` ×2 + `ask.py`'nin tercih dalı). Üçüne ayrı ayrı bilet eklemek
+    # **üç sahip** demekti ve dördüncüsü bir gün unuturdu — bu deponun en sık kusuru.
+    # Burada bir kez iliştirilir ve **her** öneri, nerede kurulursa kurulsun taşır.
+    # ⚠ Ayrıca `ask()` tavanı 1150/1151: oraya bir satır eklemek tavanı doldururdu.
+    if isinstance(resp.eylem_onerisi, dict) and resp.eylem_onerisi.get("eylem"):
+        try:
+            from app import onay_akisi
+            resp.eylem_onerisi = {**resp.eylem_onerisi,
+                                  "bilet": onay_akisi.bilet(resp.eylem_onerisi["eylem"])}
+        except Exception:                   # noqa: BLE001 — anahtar yoksa BİLETSİZ döner
+            # 🔴 Sessizce süresiz bir öneri üretmek yerine **biletsiz** dönülür ve
+            # `eylem_onayla` onu reddeder. *Bir süre kapısı, atlanabildiği anda bir
+            # törene dönüşür.*
+            _log.warning("onay bileti üretilemedi — öneri BİLETSİZ (fail-closed)",
+                         exc_info=True)
+
     # 🔴 **FAZ 7.3(k) / B8 — SERTİFİKA ZİNCİRİ BAĞLANDI.**
     #
     # Ölçüldü: `MetrikSertifikasi` tablosunun **hiçbir okuyucusu**, `certification.py`'nin
