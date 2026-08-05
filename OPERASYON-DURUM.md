@@ -25,9 +25,10 @@ devam ettirir. 🔴 **Kural: her faz commit'inden sonra bu blok güncellenir.**
 | **Biten** | 🎉 **FAZ 4·5·6 KAPANDI** + denetim **D1–D5**. FAZ 6: `6.0` D9 geri alma · `6.1` onay akışı · `6.2` yazma araçları · `6.3` araç kaydı 16→23 · `6.4` planlayıcı sertleştirmesi · `6.5` public API · `6.6` kanal kimliği |
 | ⏸ **5.6 BLOKE** | peer kıyası **AJ2**'ye bağlı (`compare` enum→ALAN). AJ2 inmeden 5.6 üçüncü bir enum değeri çakar ve dördüncüsü aynı konuşmayı yeniden doğurur |
 | **§C/16 ÖLÇÜLDÜ** | **%76,1** doğru · netleştirme **%16,8 ayrı satırda** · n=**155** · `demo-boyahane`. Üç şirket `⊘` (mssql fixture, altın cevap üretilemedi) |
-| **Sıradaki madde** | **FAZ 7.0** — planın kendi **5 iç boşluğu** kapatılır → `7.1`…`7.11` |
+| **Sıradaki madde** | **FAZ 7.3** + **7.7**'nin `/settings` yarısı — `7.0`·`7.1`·`7.2`·`7.4`·`7.5`·`7.6`·`7.8`·`7.9`·`7.10`·`7.11` ✅ · `7.7` kimlik yarısı ✅ |
 | ⏸ **6.5/embed BLOKE** | 🔴 **P0 ölçüldü**: `motor_cls=off` — motor-RLS hiç açık değil, `always_filter` tek başına yeterli sayılmaz. Kapı `embed_kapsam.p0_engeli()`de |
-| **Korpus** | **%93,1** — dokuz FAZ 5 maddesi boyunca **sabit** (taban %93,2) |
+| **Korpus** | **%93,1** — FAZ 5·6·7 boyunca **sabit** (taban %93,2); semantik vaka 407/444 = %91,7 |
+| 🆕 **FAZ 7'de ölçülen ve GERÇEK çıkan kusurlar** | (a) `opacity-40` **14 kez `disabled:` + 14 kez düz** → *"soluk"* ile *"devre dışı"* aynı piksel · (b) `focus-trap` **0 kullanım**, üç modal odağı hiç tutmuyordu · (c) `window.prompt` **4 yerde** birincil yüzey · (d) `max-md:`/`max-lg:` **0** → 375px'te sağ bölmeye **7px** kalıyordu · (e) cevap kartında `<details>` **0** (D3 yanlış kapatılmıştı) · (f) `Yüksek güven (100%)` — kalibre edilmemiş, MIMARI §9'un **canlı ihlali** · (g) `PivotTable.tsx`'te **iki gömülü NUL** (UTF-8 geçerli, hiçbir linter görmedi) · (h) `AuthUser.email` **zorunlu** ama `/auth/me` onu hiç göndermiyordu |
 | **Sonraki faz** | FAZ 8 (3 madde — gerçek kullanım penceresi) → **v1 son kontrol** |
 | 🔴 **Açık borç 1** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ |
 | ✅ **Borç 2 KAPANDI** | FAZ 4.3 — çıplak ikinci ölçü adı: **−%18,2 → −%4,5**, `kaldi` → `gecti`, korpus sabit. Bayrak `olcu_ekleme_takibi` **beta** |
