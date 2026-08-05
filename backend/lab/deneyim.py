@@ -217,19 +217,47 @@ SENARYOLAR: tuple[dict, ...] = (
 )
 
 
-def _olc(senaryo: dict, turlar: list[dict]) -> dict[str, bool | None]:
-    """Sözleşme satırlarını ölçer. `None` = ⊘ ölçülemedi (ön koşul sağlanmadı)."""
-    olcum: dict[str, bool | None] = {}
+#: 🔴 **`⊘`'NİN İKİ ANLAMI VARDI VE RAPOR AYIRMIYORDU** (denetim D5).
+#:
+#: Denetim *"deneyim süitinin çoğunluğu hiç koşmuyor — koşmayan vaka, geçen vaka
+#: değildir"* dedi ve **haklıydı, ama tam olarak değil**: `⊘` hücrelerinin çoğu bir
+#: **çalışmama** değil, bir **kapsam dışılıktı** — senaryo o satırı **zaten ölçmüyordu**
+#: (`olculen` alt kümesi). İkisini aynı işaretle göstermek, tasarımı bir **kusur** gibi
+#: gösteriyordu.
+#:
+#: *Bir `⊘`, neyi ölçmediğini söylemiyorsa bir ölçüm değil bir boşluktur.*
+KAPSAM_DISI = "kapsam_disi"      # senaryo bu satırı ZATEN ölçmez (tasarım)
+ON_KOSUL_YOK = "on_kosul_yok"    # ölçer ama ön koşul koşumda sağlanmadı
+
+
+def _olc(senaryo: dict, turlar: list[dict]) -> dict[str, bool | str | None]:
+    """Sözleşme satırlarını ölçer.
+
+    Değerler: `True` · `False` · `KAPSAM_DISI` · `ON_KOSUL_YOK`.
+
+    🔴 İki `⊘` **ayrılır**: senaryonun **ölçmediği** bir satır ile **ölçmeye çalışıp
+    ön koşul bulamadığı** bir satır aynı şey değildir. Birincisi tasarım, ikincisi
+    **kapsanmamış risk**.
+    """
+    olcum: dict[str, bool | str | None] = {}
     ilgili = set(senaryo["olculen"])
+    # Senaryonun ölçmediği her satır AÇIKÇA kapsam dışı damgalanır.
+    for satir in (S1_CAPA, S2_ANLAT, S3_SUREKLILIK, S4_SOSYAL, S5_BELIRSIZLIK,
+                  S6_MAKBUZ, S7_GERI_DONUS):
+        if satir not in ilgili:
+            olcum[satir] = KAPSAM_DISI
     # ÖLÇÜM DIŞI turlar (ör. tıklanacak chip yokken `__CHIP__`) hiçbir satırda sayılmaz:
     # onlar bir cevap değil, bir önkoşul yokluğudur.
     turlar = [t for t in turlar if t["tur_tipi"] != "olcum_disi"]
     if not turlar:
-        return {s: None for s in ilgili}
+        return {**olcum, **{s: ON_KOSUL_YOK for s in ilgili}}
 
     def yaz(satir: str, deger: bool | None) -> None:
         if satir in ilgili:
-            olcum[satir] = deger
+            # ⚠ `None` artık **ON_KOSUL_YOK**: senaryo bu satırı ölçüyor ama koşumda
+            # ön koşul (ör. tıklanacak chip, konuşma turu) bulunamadı. Kapsam dışı
+            # olanlar yukarıda damgalandı ve buraya hiç gelmez.
+            olcum[satir] = ON_KOSUL_YOK if deger is None else deger
 
     # 3 · SÜREKLİLİK — "ilişkilendiremedim" hiç görülmemeli.
     kopma = sum(1 for t in turlar if KOPMA_IZI in (t["cevap"].get("note") or "").lower())
@@ -377,8 +405,14 @@ def kos(c, senaryo: dict, *, live: bool) -> dict:
             "olcum": _olc(senaryo, turlar)}
 
 
-def _isaret(v: bool | None) -> str:
-    return "✅" if v is True else ("❌" if v is False else "⊘")
+def _isaret(v) -> str:
+    if v is True:
+        return "✅"
+    if v is False:
+        return "❌"
+    # 🔴 İki `⊘` AYRI gösterilir: `·` senaryonun ölçmediği satır (tasarım), `⊘` ölçmeye
+    # çalışıp ön koşul bulamadığı satır (**kapsanmamış risk**).
+    return "·" if v == KAPSAM_DISI else "⊘"
 
 
 def _rapor_yaz(sonuc: dict, live: bool) -> None:
@@ -389,8 +423,12 @@ def _rapor_yaz(sonuc: dict, live: bool) -> None:
          "", "## Sözleşme", "", "| satır | sonuç |", "|---|---|"]
     for satir, v in sorted(sonuc["olcum"].items()):
         s.append(f"| {satir} | {_isaret(v)} |")
-    s += ["", "⊘ = bu senaryo o satırı ölçmez (ön koşul yok). Yeşile yuvarlamak "
-          "*'risk yok'* yalanı üretirdi.", "", "## Turlar", ""]
+    s += ["",
+          "**`·`** = bu senaryo o satırı **zaten ölçmez** (tasarım — `olculen` alt kümesi).",
+          "**`⊘`** = ölçer **ama koşumda ön koşul bulunamadı** — bu **kapsanmamış bir "
+          "risktir** ve yeşile yuvarlamak *'risk yok'* yalanı üretirdi.",
+          "", "🔴 İkisini aynı işaretle göstermek, tasarımı bir **kusur** gibi gösterir "
+          "(denetim D5).", "", "## Turlar", ""]
     for i, t in enumerate(sonuc["turlar"], 1):
         d = t["cevap"]
         s += [f"### {i}. `{t['soru']}`  ·  _{t['tur_tipi']}_", "",
@@ -490,9 +528,19 @@ def main() -> int:
         hucre = "".join(f"{_isaret(s['olcum'].get(x)):>4}" for x in satirlar)
         kirmizi += sum(1 for x in satirlar if s["olcum"].get(x) is False)
         print(f"  {s['ad']:<20}{hucre}")
-    olculemedi = sum(1 for s in sonuclar for x in satirlar if s["olcum"].get(x) is None)
-    print(f"\n✅ geçen: {sum(1 for s in sonuclar for x in satirlar if s['olcum'].get(x) is True)}"
-          f"   ❌ kalan: {kirmizi}   ⊘ ölçülemedi: {olculemedi}")
+    kapsam_disi = sum(1 for s in sonuclar for x in satirlar
+                      if s["olcum"].get(x) == KAPSAM_DISI)
+    on_kosulsuz = sum(1 for s in sonuclar for x in satirlar
+                      if s["olcum"].get(x) == ON_KOSUL_YOK)
+    gecen = sum(1 for s in sonuclar for x in satirlar if s["olcum"].get(x) is True)
+    print(f"\n✅ geçen: {gecen}   ❌ kalan: {kirmizi}"
+          f"   · kapsam dışı: {kapsam_disi}   ⊘ ön koşul yok: {on_kosulsuz}")
+    if on_kosulsuz:
+        print(f"⚠ **{on_kosulsuz} hücre KAPSANMAMIŞ RİSK**: senaryo o satırı ölçüyor ama "
+              f"koşumda ön koşul bulunamadı. *Koşmayan vaka, geçen vaka değildir.*")
+    print(f"· Kapsam dışı {kapsam_disi} hücre bir kusur DEĞİL: senaryo o satırı zaten "
+          f"ölçmüyor (tasarım). İkisini aynı işaretle göstermek denetimde 'süitin "
+          f"%60'ı koşmuyor' diye okundu.")
     print(f"Raporlar: {RAPOR_DIZINI}")
     if not args.live:
         print("⚠ Bu koşum bir KAPI DEĞİLDİR (LLM yok). Sözleşmenin anlatı/Intent "

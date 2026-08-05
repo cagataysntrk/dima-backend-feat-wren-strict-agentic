@@ -8,7 +8,7 @@
 >
 > Bu dört dosya operasyonun **tam durumunu** taşır. Sohbet geçmişine ihtiyaç YOKTUR.
 
-**Son güncelleme:** 2026-08-05 · HEAD → **FAZ 5 · 5.14 bitti** @`6112c42` @`7d0048f`
+**Son güncelleme:** 2026-08-05 · HEAD → **denetim D1–D5 kapandı** @`488e409` @`7d0048f`
 
 ⚠ **Bu başlık BİR KEZ BAYATLADI ve bir denetim onu yakaladı:** *"HEAD → FAZ 0 · adım 1"*
 yazıyordu, gerçek HEAD **FAZ 4.4**'teydi. Bu dosya *"bağlam sıfırlanırsa buradan başla"*
@@ -29,9 +29,10 @@ devam ettirir. 🔴 **Kural: her faz commit'inden sonra bu blok güncellenir.**
 | **Korpus** | **%93,1** — dokuz FAZ 5 maddesi boyunca **sabit** (taban %93,2) |
 | **Sonraki faz** | FAZ 6 (agentic — onaylı yazma, 7 madde) → FAZ 7 (arayüz, 11) → FAZ 8 (3) |
 | 🔴 **Açık borç 1** | **36 çağrı sitesi kimlik geçmiyor** → `motor_cls=on` KİLİTLİ |
-| 🔴 **Açık borç 2** | **FAZ 4.3 hedefi TUTMADI** — `deterministic_refine`'ın ölçü-ekleme kapısı dar (−%18,2 vs hedef −%10). Bilerek düzeltilmedi (harness davranış değiştirmez) |
-| 🔴 **Açık borç 3** | **13 bayrak `off`** — ödenmiş, testli, kullanıcıya kapalı. Üçü FAZ 1'in ana teslimatı (`tazelik` · `lineage` · `metrik_sertifikasi`) |
-| 🔴 **Açık borç 4** | **ADR kaydı kodun ~2 faz gerisinde** — `ADR-0024` sonrası inen faz-düzeyi kararların ADR'si yok (grain sözleşmesi · çekirdek katman · kapsam merceği · mali takvim · sahiplik hakemi · Ossie · MCP) |
+| ✅ **Borç 2 KAPANDI** | FAZ 4.3 — çıplak ikinci ölçü adı: **−%18,2 → −%4,5**, `kaldi` → `gecti`, korpus sabit. Bayrak `olcu_ekleme_takibi` **beta** |
+| 🔴 **Açık borç 3** | **11 bayrak `off`** — ödenmiş, testli, kullanıcıya kapalı. Üçü FAZ 1'in ana teslimatı (`tazelik` · `lineage` · `metrik_sertifikasi`). ⚠ `capa_zinciri` ve `olcu_ekleme_takibi` bu turda **ölçümle açıldı** |
+| ✅ **Borç 4 KAPANDI** | **ADR-0025…0034** yazıldı (10 karar) ve kararın yaşadığı yere atıflandı; kapı **köken beyanına** çevrildi (`REKONSTRÜKSİYON` ↔ `GÜNÜ YAZILDI`) |
+| ✅ **Denetim D3/D5** | `is_period_only` **kaldırıldı** (şartnamesi önce gerçek akışa taşındı) · deneyim süitinde `⊘`'nin **iki anlamı ayrıldı**: *"%60 koşmuyor"* aslında **60 tasarım + 3 gerçek risk** |
 | **Tempo** | 🔴 **YENİ TEST POLİTİKASI** (`backend/CLAUDE.md`): geliştirmede `--hizli --degisen` (~1 dk) · demet sonunda `--tam` = **yalnız korpus** (1 dk 50 sn) · `--hepsi` **yalnız gecelik CI** |
 | **v1 bitiş ölçütü** | §C'nin **16 ölçütü** yeşil |
 
