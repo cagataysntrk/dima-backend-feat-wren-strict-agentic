@@ -872,6 +872,108 @@ def _ozyineli_olcu(project_dir: Path) -> list[str]:
     return kotu
 
 
+def _olcu_beyani(project_dir: Path) -> list[str]:
+    """🔴 HER ÖLÇÜ BİR **BİRİM** BEYAN ETMELİ — ve çakışan terimler **ayrışabilmeli**.
+
+    ## Ölçülen kusur (2026-08-06)
+
+    Boyahane kataloğunda **122 ölçünün 72'sinde** (%59) `unit` yoktu. Sonucu doğrudan
+    çakışma hakemliğinde görünüyordu:
+
+    ```
+    üretim → oee.toplam_uretim_kg[—] ↔ parti.toplam_agirlik_kg[—]
+    ```
+
+    Bu bir **felsefe sorusu değil**, iki alanın da boş olmasının sonucu. Birimler
+    doldurulunca ölçüldü:
+
+    | çakışan ölçü terimi | 35 |
+    |---|---|
+    | ✅ **BİRİM** ayırıyor | 12 |
+    | ✅ **GRAIN** (`base_object`) ayırıyor | 23 |
+    | 🔴 gerçek belirsizlik | **0** |
+
+    > *Hakemlik kuyruğu bitmiyor gibi görünüyordu çünkü altı farklı sınıfı tek bir yolla
+    > — elle sahip atayarak — çözmeye çalışıyorduk. Dördü metadata işiydi.*
+
+    ## İki değişmez
+
+    1. **Her ölçü `unit` taşır.** Birimsiz bir sayı, kıyaslanamaz bir sayıdır.
+    2. **Çakışan bir terim `unit` ya da `base_object` ile ayrışır** — ya da
+       `sahiplik_kararlari.yml`'de **yazılı bir sahibi** olur.
+
+    ⚠ İkincisi KN-2'nin yapısal panzehiridir: yeni bir cube var olan bir terimi
+    sahiplenirse, derlemede **ayırt edilebilirliğini kanıtlamak** zorundadır.
+    *Bir terimi ikinci kez sahiplenmek serbesttir; ayırt edilemez kılmak değil.*
+    """
+    import yaml as _y
+
+    kotu: list[str] = []
+    sahipler: dict[str, list[tuple] ] = {}
+    for meta in sorted((project_dir / "cubes").glob("*/metadata.yml")):
+        try:
+            d = _y.safe_load(meta.read_text(encoding="utf-8")) or {}
+        except Exception:                                   # ADR-0020
+            print(f"UYARI: cube metadata okunamadı: {meta}")
+            continue
+        cube = d.get("name") or meta.parent.name
+        taban = d.get("base_object") or d.get("baseObject")
+        for m in (d.get("measures") or []):
+            ad, birim = m.get("name"), m.get("unit")
+            if not ad:
+                continue
+            if not birim:
+                kotu.append(f"BİRİMSİZ: {cube}.{ad}")
+                continue
+            # 🔴 BİRİM SAĞLAM MI — "dolu" yetmez.
+            #
+            # Ölçüldü (2026-08-06): birimleri toplu doldururken ham dizgede `\"` kullanıldı
+            # ve **18 dosyaya** `unit: \"lt/kg\"` yazıldı — yani değer literal ters bölü
+            # taşıyordu. Kapı bunu **yakalamadı**, çünkü yalnız *"dolu mu"* diye bakıyordu.
+            # *Bir alanın var olması, doğru olması değildir; bir kapı da alanın kendisini
+            # değil, TAŞIDIĞI DEĞERİ denetlemelidir.*
+            if any(ch in str(birim) for ch in ('\\', '"', "'")):
+                kotu.append(f"BOZUK BİRİM: {cube}.{ad} = {birim!r}")
+                continue
+            if m.get("nl") is False:
+                continue          # NL yüzeyine çıkmıyor → çakışma hakemliğine girmez
+            for t in [ad, *(m.get("synonyms") or [])]:
+                kayit = (cube, ad, birim, taban)
+                kova = sahipler.setdefault(str(t).strip().lower(), [])
+                # ⚠ Aynı ölçü, adı VE bir sinonimi aynı terimse iki kez düşerdi
+                # (`karlilik.smm` ↔ `karlilik.smm`). Bir ölçü kendisiyle çakışamaz.
+                if kayit not in kova:
+                    kova.append(kayit)
+
+    yazili = _pack_sahipleri(project_dir)
+    for terim, v in sorted(sahipler.items()):
+        if len(v) < 2:
+            continue
+        if len({x[2] for x in v}) > 1 or len({x[3] for x in v}) > 1:
+            continue                                        # birim ya da grain ayırıyor
+        if terim in yazili:
+            continue                                        # yazılı sahibi var
+        kotu.append(f"AYIRT EDİLEMEZ: «{terim}» → "
+                    + " ↔ ".join(f"{c}.{a}[{b}]" for c, a, b, _t in v))
+    return kotu
+
+
+def _pack_sahipleri(project_dir: Path) -> set[str]:
+    """`sahiplik_kararlari.yml`'de **yazılı** terimler (kutu ne olursa olsun)."""
+    import yaml as _y
+
+    for aday in (project_dir / "knowledge" / "sahiplik_kararlari.yml",
+                 project_dir.parent / "packs" / "cekirdek" / "sahiplik_kararlari.yml"):
+        if aday.is_file():
+            try:
+                d = _y.safe_load(aday.read_text(encoding="utf-8")) or {}
+                return {str(k.get("terim", "")).strip().lower()
+                        for k in (d.get("kararlar") or []) if k.get("terim")}
+            except Exception:                               # ADR-0020
+                print(f"UYARI: sahiplik kararları okunamadı: {aday}")
+    return set()
+
+
 def dogrula(project_dir: Path) -> dict:
     """Compose çıktısını MOTORUN kendi doğrulayıcısına sokar (Faz B, `context.validate_project`).
 
@@ -921,6 +1023,22 @@ def dogrula(project_dir: Path) -> dict:
               "ve o cube'un TÜM ölçü/boyutları kullanılamaz hâle gelir.\n"
               "YAPILACAK: ölçüyü yeniden adlandır (ör. `iade_kg` → `toplam_iade_kg`); "
               "ifade AYNI kalır, yalnız ad çakışması kalkar.")
+
+    # 🔴 ÖLÇÜ BEYANI — her ölçü bir BİRİM taşır, çakışan terim AYIRT EDİLEBİLİR olur.
+    # Ölçüldü (2026-08-06): 122 ölçünün 72'si birimsizdi ve çakışma hakemliği bu yüzden
+    # bitmiyordu. Birimler dolunca 35 çakışmanın **35'i** yapısal olarak ayrıştı
+    # (12 birimle · 23 grain'le · gerçek belirsizlik **0**).
+    beyan = _olcu_beyani(project_dir)
+    if beyan:
+        raise ProjectValidationError(
+            "🔴 ÖLÇÜ BEYANI EKSİK — MDL üretilmedi (fail-closed):\n  "
+            + "\n  ".join(beyan)
+            + "\n\nBİRİMSİZ: her ölçü `unit:` beyan etmeli — birimsiz bir sayı "
+              "kıyaslanamaz bir sayıdır ve çakışma hakemliğini imkânsız kılar.\n"
+              "AYIRT EDİLEMEZ: aynı terimi iki ölçü sahipleniyor ve ne birimleri ne "
+              "taban tabloları farklı. Ya birini nitele, ya `nl: false` ver, ya da "
+              "`sahiplik_kararlari.yml`'ye yazılı bir sahip koy.\n"
+              "⚠ Bir terimi ikinci kez sahiplenmek serbesttir; AYIRT EDİLEMEZ kılmak değil.")
 
     hatalar = [b for b in bulgular if getattr(b, "level", "") == "error"]
     uyarilar = [b for b in bulgular if getattr(b, "level", "") != "error"]

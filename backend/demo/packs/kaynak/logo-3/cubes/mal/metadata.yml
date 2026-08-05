@@ -20,10 +20,12 @@ measures:
   - name: satis_miktari
     expression: "SUM(CASE WHEN IOCODE IN (3, 4) THEN AMOUNT ELSE 0 END)"
     type: DOUBLE
+    unit: "kg"
     synonyms: [satış miktarı, satılan, sevk edilen, çıkış]
   - name: alim_miktari
     expression: "SUM(CASE WHEN IOCODE IN (1, 2) THEN AMOUNT ELSE 0 END)"
     type: DOUBLE
+    unit: "kg"
     synonyms: [alım miktarı, alınan, giriş]
   - name: satis_tutari_kalem
     cekirdek_metrik: satis_tutari

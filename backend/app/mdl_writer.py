@@ -83,6 +83,7 @@ def add_measure_to_cube_yaml(
     measure_name: str,
     expression: str,
     type_: str = "DOUBLE",
+    unit: str | None = None,
     synonyms: list[str] | None = None,
     lower_is_better: bool | None = None,
     label: str | None = None,
@@ -109,6 +110,22 @@ def add_measure_to_cube_yaml(
     new_measure["name"] = measure_name
     new_measure["expression"] = expression
     new_measure["type"] = type_
+    # 🔴 BİRİM ZORUNLU — ölçünün DOĞDUĞU yerde.
+    #
+    # Ölçüldü (2026-08-06): katalogdaki 122 ölçünün 72'si birimsizdi ve çakışma
+    # hakemliği bu yüzden bitmiyordu. Birimler dolunca 35 çakışmanın 35'i yapısal
+    # olarak ayrıştı. Ama terfi akışı birimsiz ölçü yazmaya devam etseydi, boşluk
+    # **yeniden dolardı** — ve bu kez kullanıcı eliyle.
+    #
+    # ⚠ Kapıyı kaynağa koymak, çıktıyı temizlemekten ucuzdur: derleme kapısı
+    # (`compose._olcu_beyani`) bunu zaten reddediyor; burada reddetmek kullanıcıya
+    # **onay anında** söyler, build kırıldığında değil.
+    if not unit:
+        raise MeasureWriteError(
+            f"`{measure_name}` için `unit` gerekli. Birimsiz bir sayı kıyaslanamaz ve "
+            "aynı terimi sahiplenen iki ölçü ayırt edilemez hâle gelir (derleme kapısı "
+            "`_olcu_beyani` bunu zaten reddeder).")
+    new_measure["unit"] = str(unit)
     if label:
         new_measure["label"] = label
     if synonyms:

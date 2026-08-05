@@ -18,6 +18,7 @@ measures:
   - name: firsat_adedi
     expression: "COUNT(DISTINCT firsat_no)"
     type: DOUBLE
+    unit: "adet"
     synonyms: [fırsat adedi, fırsat sayısı, kaç fırsat, huni büyüklüğü]
   - name: firsat_tutari
     expression: SUM(tahmini_tutar)

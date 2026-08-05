@@ -22,6 +22,7 @@ measures:
   - name: toplam_sure_dk
     expression: SUM(sure_dk)
     type: DOUBLE
+    unit: "dk"
     # "duruş nedeni/nedenleri" DE ölçü sinonimi olarak eklendi (cube+boyut'a EK): "toplam"
     # kelimesi geçmeyen bare "duruş nedeni bu yıl" gibi sorularda bile bu cube'un varsayılan
     # ölçüsü olarak rekabet edebilsin (aksi halde OEE'nin bare "duruş" ölçü kanıtı, kanıtsız
@@ -32,6 +33,7 @@ measures:
   - name: duruş_sayisi
     expression: COUNT(*)
     type: DOUBLE
+    unit: "adet"
     synonyms: [duruş sayısı, kaç duruş, duruş olayı sayısı, duruş adedi]
     lower_is_better: true
 

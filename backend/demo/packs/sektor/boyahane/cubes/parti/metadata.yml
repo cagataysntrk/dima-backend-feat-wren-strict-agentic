@@ -27,10 +27,23 @@ base_object: partiler  # operatör demografisi ilişki üzerinden (models_enrich
 synonyms: [fire, ciro, gelir, tutar, satış, kar!, kârımız, karımız, kârlı, karlı,
            kazanç, marj, sapma, ağırlık, kilo, tonaj, parti, müşteri, kumaş, renk, aşama,
            boyama, yıkama, apre, kurutma, reddedil, maliyet,
-           operatör, çalışan, personel, cinsiyet, yaş, departman]
-# ⚠ `eğitim` KALDIRILDI (2026-08-05): burada bir BOYUT kelimesiydi (`egitim_durumu`)
-# ama `egitim` cube'unun KİMLİĞİdir. Kimlik kelimesini bir boyut için ödünç almak,
-# *"eğitim başarı oranı"* sorusunu `parti`ye düşürüyordu.
+           operatör, çalışan, personel, cinsiyet, yaş, eğitim, departman]
+# 🔴 `eğitim` GERİ GELDİ (2026-08-06) — ve bu bir düzeltme değil, bir ANTİ-ÇÖZÜMÜN
+# GERİ ALINMASIDIR.
+#
+# 2026-08-05'te *"kimlik kelimesini bir boyut için ödünç almak"* gerekçesiyle silinmişti.
+# Ölçüldü: `test_iliski_uzerinden_kirilim_TOPLAMI_DEGISTIRMEZ[egitim]` kırmızıya döndü —
+#     `bu yıl egitim bazında ağırlık`     → parti ✅   (`ağırlık` kimlikte DE var)
+#     `bu yıl egitim bazında işlenen kg`  → route None 🔴
+# Fark: `işlenen` YALNIZ ölçü sinonimi. Cube-kimliği aday üretecidir; `eğitim` kimlikten
+# çıkınca `parti` o soruda ADAY BİLE OLMUYOR ve `egitim` cube'u ölçüyü karşılayamıyor.
+#
+# ⚠ Bu tam olarak denetim raporunun **A2 anti-çözümü**: *"Cube kimliğinden çakışan
+# terimleri sil → erişim %64→%56, 388 cevap kaybı. Kimliği kaldırmak sahipliği ÇÖZMEZ,
+# yalnız zorlamayı kaldırır."* Rapor bunu yazmıştı; ben yine de yaptım ve kapı yakaladı.
+#
+# 🔴 Doğru çözüm kimliği silmek değil, AYIRT EDİLEBİLİRLİĞİ kurmaktır — birim/grain
+# beyanı (`_olcu_beyani` kapısı) ve gerçekten belirsiz kalanda netleştirme.
 # NOT: "verim/verimlilik/randıman" OEE cube kimliğidir → parti'de TUTULMAZ (routing
 # ambiguity). Kişi-verimliliği parti'ye operatör/cinsiyet/çalışan + ölçü (ilk_seferde_
 # tamam_yuzde / kg) ile ulaşılır; "randıman" tek başına oee'ye gider (golden korunur).
@@ -43,24 +56,29 @@ measures:
   - name: toplam_fire_kg
     expression: "SUM(CASE WHEN ilk_seferde_tamam = 0 THEN kg ELSE 0 END)"
     type: DOUBLE
+    unit: "kg"
     synonyms: [fire]
     lower_is_better: true
   - name: fire_orani_yuzde
     expression: "ROUND(SUM(CASE WHEN ilk_seferde_tamam = 0 THEN kg ELSE 0 END)*100.0/NULLIF(SUM(kg),0),2)"
     type: DOUBLE
+    unit: "%"
     synonyms: [fire oranı, fire yüzdesi, hata oranı]
     lower_is_better: true
   - name: toplam_agirlik_kg
     expression: SUM(kg)
     type: DOUBLE
+    unit: "kg"
     synonyms: [ağırlık, kilo, tonaj, işlenen, üretim, üretilen]  # parti bağlamında üretim = işlenen kg
   - name: toplam_metre
     expression: SUM(metre)
     type: DOUBLE
+    unit: "m"
     synonyms: [metre, metraj, uzunluk]
   - name: toplam_ciro
     expression: SUM(ciro_tl)
     type: DOUBLE
+    unit: "₺"
     synonyms: [ciro, gelir, tutar, satış]
   # KÂR (parti düzeyi katkı marjı): boyahanede enerji + kimyasal ana değişken maliyettir →
   # kâr ≈ ciro − enerji_toplam_tl − kimyasal_tl. İşçilik/SG&A dönemsel (finans/mizan gelir
@@ -68,15 +86,18 @@ measures:
   - name: kar
     expression: "SUM(ciro_tl - enerji_toplam_tl - kimyasal_tl)"
     type: DOUBLE
+    unit: "₺"
     synonyms: [kar!, kârımız, karımız, kârlı, karlı, kazanç]  # "kar!" tam-kelime (karşılaştır tuzağı)
   - name: kar_marji_yuzde
     expression: "ROUND(SUM(ciro_tl - enerji_toplam_tl - kimyasal_tl)*100.0/NULLIF(SUM(ciro_tl),0),2)"
     type: DOUBLE
+    unit: "%"
     synonyms: [kar oranı, kar yüzdesi, kâr marjı, kar marjı, karlılık oranı, karlılık, marj]
   # ORAN ölçüsü = TOPLAM/TOPLAM (ISO tarzı, satır-AVG değil). renk sapması = uretim_dE.
   - name: ort_renk_sapmasi
     expression: AVG(uretim_dE)
     type: DOUBLE
+    unit: "dE"
     # "dE!" TAM-KELİME (sonu "!"): 2 harfli kısa sinonim substring-eşleşmede tehlikeli
     # ("saDEce" içinde "de" geçiyor → yanlış ölçü eşleşmesi, log: "sadece beyaz ve
     # siyah renk ver" deterministic_refine'ı yanlışlıkla ölçü-değişimi sanıp bail ediyordu).
@@ -86,10 +107,12 @@ measures:
   - name: ilk_seferde_tamam_yuzde
     expression: "ROUND(SUM(ilk_seferde_tamam)*100.0/NULLIF(COUNT(*),0),2)"
     type: DOUBLE
+    unit: "%"
     synonyms: [ilk seferde tamam, rft, ilk sefer, ilk seferde]
   - name: parti_sayisi
     expression: COUNT(*)
     type: DOUBLE
+    unit: "adet"
     synonyms: [parti sayısı, kaç parti, adet]
 
 # PVM (Faz 5.1): ciro = birim fiyat × işlenen kilo. TL/kg boyahanenin GERÇEK birim

@@ -211,6 +211,8 @@ class MeasureApprove(BaseModel):
     measure_name: str
     expression: str
     type: str = "DOUBLE"
+    #: 🔴 ZORUNLU — birimsiz bir ölçü katalogda ayırt edilemez (bkz. mdl_writer).
+    unit: str
     label: str | None = None
     synonyms: list[str] = []
     lower_is_better: bool | None = None
@@ -388,8 +390,8 @@ def approve_candidate(cid: str, body: MeasureApprove, request: Request,
     try:
         mdl_writer.add_measure_to_cube_yaml(
             yaml_path, measure_name=body.measure_name, expression=body.expression,
-            type_=body.type, synonyms=body.synonyms, lower_is_better=body.lower_is_better,
-            label=body.label)
+            type_=body.type, unit=body.unit, synonyms=body.synonyms,
+            lower_is_better=body.lower_is_better, label=body.label)
     except mdl_writer.MeasureWriteError as exc:
         raise HTTPException(status_code=409, detail=str(exc))
 

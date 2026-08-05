@@ -28,6 +28,7 @@ measures:
   - name: hareket_sayisi
     expression: COUNT(*)
     type: DOUBLE
+    unit: "adet"
     synonyms: [hareket sayısı, kaç hareket, işlem sayısı, adet]
 
 dimensions:

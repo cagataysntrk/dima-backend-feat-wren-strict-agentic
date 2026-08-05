@@ -57,6 +57,7 @@ measures:
   - name: personel_sayisi
     expression: "COUNT(DISTINCT personel_kodu)"
     type: DOUBLE
+    unit: "adet"
     synonyms: [personel sayısı, çalışan sayısı, kaç kişi, kadro, headcount, mevcut]
 
 # PVM (Faz 5.1): bordro maliyeti = kişi başı maliyet × kadro. "İşçilik neden arttı"

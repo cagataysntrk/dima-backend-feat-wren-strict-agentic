@@ -50,6 +50,7 @@ cube:
     - name: dso_gun
       expression: "ROUND(AVG(running_ar) / NULLIF(SUM(borc), 0) * 365, 1)"
       type: DOUBLE
+      unit: "gün"
       lower_is_better: true
       synonyms: [dso, alacak devir günü, tahsilat süresi, kaç günde tahsil, ortalama tahsilat günü]
     # Açık borç (AP) = tedarikçiye borcumuz (net alacak = alacak−borç). Tedarikçi cari'lerde anlamlı.
@@ -64,6 +65,7 @@ cube:
     - name: dpo_gun
       expression: "ROUND(-AVG(running_ar) / NULLIF(SUM(alacak), 0) * 365, 1)"
       type: DOUBLE
+      unit: "gün"
       synonyms: [dpo, borç ödeme günü, tedarikçi ödeme süresi, kaç günde ödüyoruz, ortalama ödeme günü]
   dimensions:
     - name: cari_adi

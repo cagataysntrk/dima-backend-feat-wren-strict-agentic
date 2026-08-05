@@ -87,6 +87,12 @@ def test_measure_promote_full_lifecycle(client, clean_promote_artifacts):
     approve_body = {
         "cube": _TEST_CUBE, "measure_name": _TEST_MEASURE,
         "expression": "MAX(CASE WHEN ilk_seferde_tamam = 0 THEN kg ELSE 0 END)", "type": "DOUBLE",
+        # 🔴 `unit` ZORUNLU (2026-08-06) — ölçünün DOĞDUĞU yerde. Terfi akışı birimsiz
+        # ölçü yazsaydı, katalogdaki 72 birimsiz ölçüyle kapatılan boşluk yeniden
+        # dolardı; bu kez KULLANICI ELİYLE. Derleme kapısı (`_olcu_beyani`) bunu zaten
+        # reddediyor — burada reddetmek kullanıcıya ONAY ANINDA söyler, build kırılınca
+        # değil. *Bir kapıyı kaynağa koymak, çıktıyı temizlemekten ucuzdur.*
+        "unit": "kg",
         "synonyms": ["test geçici azami fire"], "lower_is_better": True,
         "golden_case": {"id": _GOLDEN_ID, "q": "test geçici azami fire bu yıl",
                         "tags": ["faz2d-test"], "expect": "answer",
@@ -166,8 +172,11 @@ def test_measure_candidate_reject_lifecycle(client):
     # zaten reddedilmiş bir aday TEKRAR reddedilemez/onaylanamaz (409 — durum makinesi).
     assert admin.post(f"/measures/candidates/{cid}/reject",
                       json={"note": "tekrar"}).status_code == 409
+    # ⚠ `unit` burada da zorunlu — aksi hâlde 422 (şema) dönerdi ve test DURUM
+    # MAKİNESİNİ (409) değil, kendi eksik payload'ını ölçmüş olurdu.
+    # *Bir testin ölçtüğü şeyi, kendi kurulumu gölgelememelidir.*
     approve_body = {"cube": _TEST_CUBE, "measure_name": "asla_yazilmayacak_olcu",
-                    "expression": "1", "type": "DOUBLE",
+                    "expression": "1", "type": "DOUBLE", "unit": "adet",
                     "golden_case": {"id": "asla-yazilmayacak", "q": "x", "shape": {}}}
     assert admin.post(f"/measures/candidates/{cid}/approve",
                       json=approve_body).status_code == 409

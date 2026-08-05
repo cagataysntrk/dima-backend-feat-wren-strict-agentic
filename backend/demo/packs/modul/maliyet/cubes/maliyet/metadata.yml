@@ -63,6 +63,14 @@ measures:
     expression: SUM(uretim_kg)
     type: DOUBLE
     unit: "kg"
+    # 🔴 PAYDA ROLÜ — NL yüzeyine ÇIKMAZ.
+    # Bu ölçü bir üretim raporu değil, kg-başına maliyetin PAYDASIDIR
+    # (`urun_maliyetleri` AYLIK maliyetlendirme tablosu, yil/ay grain).
+    # ⊙ Ölçüldü: `toplam üretim` sinonimi buradayken ON eval vakası bu
+    # cube'a gidiyordu — ve cube'un yalnız `makine` boyutu olduğu için
+    # soruların çoğunu cevaplayamıyordu bile. precision −%12,7.
+    # ⚠ SİLİNMİYOR: SQL'de gerekli, `/cube` ile açıkça istenebilir.
+    nl: false
     # 🔴 KN-2 ÇAKIŞMASI — ölçüldü (eval, 2026-08-05): `toplam üretim` bu cube'a gidiyordu
     # ve **on eval vakası** düştü (`tarih-bugun` · `tarih-dun` · `tarih-son30gun` …).
     # `maliyet` cube'unun tabanı `urun_maliyetleri` — AYLIK maliyetlendirme tablosu

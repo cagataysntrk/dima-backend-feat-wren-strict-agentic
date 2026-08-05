@@ -611,11 +611,22 @@ class WrenService:
                 "default_measure": c.get("defaultMeasure"),
                 # İNSANCA görünüm (chip/not etiketleri): label > ilk ham sinonim
                 "display": str(c.get("label") or (c.get("synonyms") or [c.get("name")])[0]).rstrip("!"),
+                # 🔴 `nl: false` → ölçü NL YÜZEYİNDEN ÇIKAR (2026-08-06).
+                #
+                # Ölçülen kusur: `maliyet.toplam_uretim_kg` bir üretim ölçüsü DEĞİL,
+                # kg-başına maliyetin **PAYDASIDIR** (`urun_maliyetleri` aylık
+                # maliyetlendirme tablosu). Ama `toplam üretim` sinonimini taşıdığı için
+                # `route()` on eval vakasını oraya yönlendiriyordu — ve o cube'un yalnız
+                # `makine` boyutu olduğu için soruların çoğunu **cevaplayamıyordu** bile.
+                #
+                # ⚠ Ölçü SİLİNMİYOR: SQL'de gerekli (oran hesabının paydası) ve `/cube`
+                # ile açıkça istenebilir. Yalnız **doğal dil eşleştirmesine** girmiyor.
+                # *Bir paydayı, ölçünün kendisi sanmak — payda büyüdükçe cevap kayar.*
                 "measure_synonyms": {
                     m["name"]: _merge_syns(
                         _with_label(m.get("label"), _syns(m.get("synonyms"))),
                         _archetype_syns(m["name"]))
-                    for m in c.get("measures", [])
+                    for m in c.get("measures", []) if m.get("nl") is not False
                 },
                 "measure_synonyms_display": {
                     m["name"]: str(m.get("label") or (m.get("synonyms") or [m["name"]])[0]).rstrip("!")

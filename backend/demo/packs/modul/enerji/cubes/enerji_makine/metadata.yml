@@ -13,14 +13,17 @@ measures:
   - name: toplam_elektrik_kwh
     expression: SUM(elektrik_kwh)
     type: DOUBLE
+    unit: "kWh"
     synonyms: [elektrik, elektrik tüketimi, ölçülen elektrik, kwh]
   - name: toplam_dogalgaz_sm3
     expression: SUM(dogalgaz_sm3)
     type: DOUBLE
+    unit: "sm³"
     synonyms: [doğalgaz, gaz, doğalgaz tüketimi, sm3]
   - name: toplam_tep
     expression: SUM(tep)
     type: DOUBLE
+    unit: "TEP"
     synonyms: [tep, ölçülen tep, enerji tep, ton eşdeğer petrol]
     lower_is_better: true
 

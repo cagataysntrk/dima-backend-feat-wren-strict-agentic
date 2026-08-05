@@ -17,6 +17,7 @@ measures:
   - name: sevkiyat_adedi
     expression: "COUNT(DISTINCT sevkiyat_no)"
     type: DOUBLE
+    unit: "adet"
     synonyms: [sevkiyat adedi, sevkiyat sayısı, kaç sevkiyat, gönderi sayısı]
   - name: nakliye_maliyeti
     expression: SUM(nakliye_tutar)

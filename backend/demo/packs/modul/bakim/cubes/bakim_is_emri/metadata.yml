@@ -23,6 +23,7 @@ measures:
   - name: is_emri_adedi
     expression: "COUNT(DISTINCT is_emri_no)"
     type: DOUBLE
+    unit: "adet"
     synonyms: [iş emri adedi, bakım adedi, kaç bakım, müdahale sayısı]
   - name: toplam_bakim_suresi
     expression: SUM(sure_dk)

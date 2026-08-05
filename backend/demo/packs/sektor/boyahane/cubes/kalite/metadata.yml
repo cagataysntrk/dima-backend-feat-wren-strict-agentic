@@ -15,22 +15,26 @@ measures:
   - name: toplam_rework_kg
     expression: SUM(kg)
     type: DOUBLE
+    unit: "kg"
     synonyms: [rework kg, tamir kg, yeniden işlenen, hatalı kg, tamir edilen]
     lower_is_better: true
   - name: rework_sayisi
     expression: COUNT(*)
     type: DOUBLE
+    unit: "adet"
     synonyms: [rework sayısı, tamir sayısı, kaç rework, kaç tamir, hata sayısı, adet]
     lower_is_better: true
   - name: toplam_ek_sure_dk
     # Rework'ün yol açtığı ek makine süresi — kapasite kaybı (aksiyon önceliği).
     expression: SUM(ek_sure_dk)
     type: DOUBLE
+    unit: "dk"
     synonyms: [ek süre, kayıp süre, ilave süre, rework süresi, tamir süresi]
     lower_is_better: true
   - name: ort_dE
     expression: "ROUND(AVG(dE),2)"
     type: DOUBLE
+    unit: "dE"
     # "dE!" TAM-KELİME (sonu "!"): 2 harfli kısa sinonim substring-eşleşmede tehlikeli
     # (ör. "neDEnlerine" içinde "de" geçiyor → yanlış ölçü eşleşmesi — parti cube'undaki
     # ort_renk_sapmasi'nde AYNI desen gözlemlendi, bkz. BASELINE_RECONCILIATION).
@@ -40,6 +44,7 @@ measures:
     # dE toleransı aşan rework adedi — müşteri şartnamesi ihlali.
     expression: "SUM(CASE WHEN dE > tolerans THEN 1 ELSE 0 END)"
     type: DOUBLE
+    unit: "adet"
     synonyms: [tolerans aşımı, tolerans dışı, şartname dışı, ret adedi]
     lower_is_better: true
 

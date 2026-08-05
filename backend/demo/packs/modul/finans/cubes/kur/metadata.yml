@@ -41,6 +41,7 @@ measures:
   - name: kur_oynakligi
     expression: "ROUND(STDDEV_SAMP(kur),4)"
     type: DOUBLE
+    unit: "₺"
     # ⚠ Çıplak `sapma` KALDIRILDI: dört cube'un ölçüsüydü (bütçe · enerji · renk · kur).
     synonyms: [oynaklık, volatilite, dalgalanma, kur oynaklığı, kur sapması]
 

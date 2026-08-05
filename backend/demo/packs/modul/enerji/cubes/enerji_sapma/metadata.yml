@@ -15,20 +15,24 @@ measures:
     # Net EnPG (aylık farkların toplamı ≈ dönem-sonu CUSUM). Pozitif = beklenenin üstü (araştır).
     expression: "ROUND(SUM(enpg),0)"
     type: DOUBLE
+    unit: "kWh"
     synonyms: [enpg, sapma, net sapma, fark, kümülatif fark, cusum]
     lower_is_better: true
   - name: sapma_yuzde
     expression: "ROUND(SUM(enpg)*100.0/NULLIF(SUM(beklenen),0),1)"
     type: DOUBLE
+    unit: "%"
     synonyms: [sapma yüzdesi, sapma oranı, performans sapması yüzde]
     lower_is_better: true
   - name: toplam_gerceklesen
     expression: SUM(gerceklesen)
     type: DOUBLE
+    unit: "kWh"
     synonyms: [gerçekleşen, gerçekleşen tüketim, fiili tüketim]
   - name: toplam_beklenen
     expression: SUM(beklenen)
     type: DOUBLE
+    unit: "kWh"
     synonyms: [beklenen, beklenen tüketim, regresyon, referans tüketim]
 
 dimensions:

@@ -20,10 +20,12 @@ measures:
   - name: satis_miktari
     expression: "SUM(CASE WHEN STHAR_GCKOD = 'C' THEN STHAR_GCMIK ELSE 0 END)"
     type: DOUBLE
+    unit: "kg"
     synonyms: [satış miktarı, satılan, sevk edilen, çıkış]
   - name: alim_miktari
     expression: "SUM(CASE WHEN STHAR_GCKOD = 'G' THEN STHAR_GCMIK ELSE 0 END)"
     type: DOUBLE
+    unit: "kg"
     synonyms: [alım miktarı, alınan, toplanan, giriş]
   - name: satis_tutari_hareket
     cekirdek_metrik: satis_tutari
@@ -39,6 +41,7 @@ measures:
   - name: net_miktar
     expression: "SUM(CASE WHEN STHAR_GCKOD = 'G' THEN STHAR_GCMIK ELSE -STHAR_GCMIK END)"
     type: DOUBLE
+    unit: "kg"
     additive: semi
     synonyms: [net miktar, stok değişimi, net stok, stok mevcudu, kalan stok, eldeki stok]
   # --- P0 satış genişletme (mal tarafı): realize edilmiş ORTALAMA fiyatlar (tutar/miktar —

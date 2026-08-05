@@ -25,6 +25,7 @@ measures:
   - name: satis_miktari
     expression: "SUM(CASE WHEN sth_tip = 1 THEN sth_miktar ELSE 0 END)"
     type: DOUBLE
+    unit: "kg"
     synonyms: [satış miktarı, satılan, sevk edilen]
   - name: alim_tutari
     expression: "SUM(CASE WHEN sth_tip = 0 THEN sth_tutar ELSE 0 END)"
@@ -34,10 +35,12 @@ measures:
   - name: alim_miktari
     expression: "SUM(CASE WHEN sth_tip = 0 THEN sth_miktar ELSE 0 END)"
     type: DOUBLE
+    unit: "kg"
     synonyms: [alım miktarı, alınan, toplanan]
   - name: net_miktar
     expression: "SUM(CASE WHEN sth_tip = 0 THEN sth_miktar ELSE -sth_miktar END)"
     type: DOUBLE
+    unit: "kg"
     synonyms: [net miktar, stok değişimi]
   - name: islem_sayisi
     expression: COUNT(*)

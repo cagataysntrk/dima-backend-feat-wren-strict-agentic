@@ -22,6 +22,7 @@ measures:
   - name: siparis_adedi
     expression: "COUNT(DISTINCT siparis_no)"
     type: DOUBLE
+    unit: "adet"
     synonyms: [sipariş adedi, sipariş sayısı, kaç sipariş, sipariş adet]
   - name: siparis_tutari
     expression: SUM(toplam_tutar)

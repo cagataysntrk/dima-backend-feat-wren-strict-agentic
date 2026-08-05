@@ -31,6 +31,7 @@ measures:
   - name: sikayet_adedi
     expression: "COUNT(DISTINCT sikayet_no)"
     type: DOUBLE
+    unit: "adet"
     synonyms: [şikayet adedi, şikayet sayısı, kaç şikayet, reklamasyon sayısı]
   # 🔴 KÖK-5c (denetim KN-6, 2026-08-05) — ÖLÇÜ ADI `iade_kg` idi ve kendi ifadesindeki
   # KOLON adıyla aynıydı. Motor bunu derlemede kabul ediyor, `mdl.json` üretiliyor,
@@ -53,6 +54,7 @@ measures:
   - name: acik_sikayet
     expression: "SUM(CASE WHEN durum = 'AÇIK' THEN 1 ELSE 0 END)"
     type: DOUBLE
+    unit: "adet"
     synonyms: [açık şikayet, çözülmemiş, bekleyen şikayet, kapanmamış]
   - name: agir_sikayet_yuzde
     expression: "ROUND(100.0 * SUM(CASE WHEN siddet = 'AĞIR' THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1)"

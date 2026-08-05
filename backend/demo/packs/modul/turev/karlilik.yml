@@ -103,11 +103,13 @@ cube:
     - name: stok_devir
       expression: "ROUND(SUM(sale_qty * avg_maliyet) / NULLIF(AVG(running_stok_deger), 0), 2)"
       type: DOUBLE
+      unit: "kez"
       synonyms: [stok devir, devir hızı, stok devir hızı, envanter devir, kaç kez döndü]
     # DIO (gün) = 365 ÷ devir = ortalama stokta kalma süresi (düşük = hızlı).
     - name: dio_gun
       expression: "ROUND(365.0 * AVG(running_stok_deger) / NULLIF(SUM(sale_qty * avg_maliyet), 0), 1)"
       type: DOUBLE
+      unit: "gün"
       lower_is_better: true
       synonyms: [dio, stokta kalma, ortalama stok günü, kaç günde satılıyor, stok gün]
   dimensions:

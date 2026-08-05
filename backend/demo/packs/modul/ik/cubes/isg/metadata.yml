@@ -19,6 +19,7 @@ measures:
   - name: kaza_adedi
     expression: "COUNT(*)"
     type: DOUBLE
+    unit: "adet"
     synonyms: [kaza adedi, kaza sayısı, kaç kaza, olay sayısı]
   - name: kayip_is_gunu
     expression: SUM(is_gunu_kaybi)
@@ -28,10 +29,12 @@ measures:
   - name: ciddi_kaza_adedi
     expression: "SUM(CASE WHEN siddet = 'CİDDİ' THEN 1 ELSE 0 END)"
     type: DOUBLE
+    unit: "adet"
     synonyms: [ciddi kaza, ağır kaza, kritik kaza]
   - name: ramak_kala_adedi
     expression: "SUM(CASE WHEN siddet = 'RAMAK KALA' THEN 1 ELSE 0 END)"
     type: DOUBLE
+    unit: "adet"
     synonyms: [ramak kala, ucuz atlatma, near miss, olay bildirimi]
   - name: ort_kayip_gun
     expression: "ROUND(AVG(is_gunu_kaybi),2)"

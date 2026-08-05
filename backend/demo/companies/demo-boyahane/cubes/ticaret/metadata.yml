@@ -27,6 +27,7 @@ measures:
   - name: fatura_sayisi
     expression: COUNT(*)
     type: DOUBLE
+    unit: "adet"
     synonyms: [fatura sayısı, kaç fatura, fatura adedi, adet]
 
 dimensions:

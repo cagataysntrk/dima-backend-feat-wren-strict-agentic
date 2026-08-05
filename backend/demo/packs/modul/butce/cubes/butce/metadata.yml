@@ -39,6 +39,7 @@ measures:
   - name: kalem_sayisi
     expression: "COUNT(DISTINCT kalem)"
     type: DOUBLE
+    unit: "adet"
     synonyms: [kalem sayısı, kaç kalem, bütçe kalemi]
 
 dimensions:

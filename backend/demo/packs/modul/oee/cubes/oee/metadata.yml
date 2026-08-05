@@ -21,51 +21,61 @@ measures:
   - name: ort_oee
     expression: "(1.0*SUM(calisma_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)) * (SUM(performans_PV*planli_uretim_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)) * (1.0*SUM(uretim_kg - hatali_kg)/NULLIF(SUM(uretim_kg),0))"
     type: DOUBLE
+    unit: "%"
     synonyms: [oee, verim, randıman, toplam ekipman etkinliği]
   - name: ort_kullanilabilirlik
     # Availability = APT/PBT (ISO 22400 6.8) = çalışma/planlı-üretim süresi
     expression: "1.0*SUM(calisma_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)"
     type: DOUBLE
+    unit: "%"
     synonyms: [kullanılabilirlik, availability]
   - name: ort_performans
     # Effectiveness (ISO 22400 6.9) — planlı-süre ağırlıklı performans (teorik hız yok)
     expression: "SUM(performans_PV*planli_uretim_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)"
     type: DOUBLE
+    unit: "%"
     synonyms: [performans]
   - name: ort_kalite
     # Quality ratio = GQ/PQ (ISO 22400 6.10) = sağlam/toplam üretim
     expression: "1.0*SUM(uretim_kg - hatali_kg)/NULLIF(SUM(uretim_kg),0)"
     type: DOUBLE
+    unit: "%"
     synonyms: [kalite]
   - name: toplam_durus_dakika
     # Toplam duruş = planlı + plansız (arıza). Aksiyon plansızdadır ama "duruş" = tümü.
     expression: "SUM(planli_durus_dk + plansiz_durus_dk)"
     type: DOUBLE
+    unit: "dk"
     synonyms: [duruş, arıza, downtime, duruş süresi]
     lower_is_better: true
   - name: plansiz_durus_dakika
     expression: SUM(plansiz_durus_dk)
     type: DOUBLE
+    unit: "dk"
     synonyms: [plansız duruş, arıza duruşu, beklenmedik duruş]
     lower_is_better: true
   - name: toplam_uretim_kg
     expression: SUM(uretim_kg)
     type: DOUBLE
+    unit: "kg"
     synonyms: [üretim, miktar, üretilen]
   - name: toplam_fire_kg
     # Gerçek AĞIRLIK-bazlı fire (hatali_kg) — parti cube'unun ilk-sefer proxy'sinden zengin.
     expression: SUM(hatali_kg)
     type: DOUBLE
+    unit: "kg"
     synonyms: [fire, hatalı, hurda]
     lower_is_better: true
   - name: ilk_seferde_tamam_yuzde
     # RFT (Right First Time) — vardiya bazında ilk seferde tamamlanan parti oranı.
     expression: "ROUND(SUM(ilk_seferde_tamam)*100.0/NULLIF(SUM(parti_sayisi),0),2)"
     type: DOUBLE
+    unit: "%"
     synonyms: [ilk seferde tamam, rft, ilk sefer]
   - name: toplam_parti
     expression: SUM(parti_sayisi)
     type: DOUBLE
+    unit: "parti"
     synonyms: [parti sayısı, kaç parti, adet]
 
 dimensions:
