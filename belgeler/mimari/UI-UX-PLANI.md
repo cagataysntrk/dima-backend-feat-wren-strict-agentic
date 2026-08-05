@@ -291,6 +291,132 @@ Yalnız test dosyası eklenir; ürün kodu değişmez → risk **sıfır**.
 
 ---
 
+## FAZ 4B · 🌳 KÖK-NEDEN HARİTASI — *sayıda boğulma, ilişkiye tıkla*
+
+> **Bugünkü kusur (kullanıcının kendi ifadesi):** *"çok karışık, kullanıcılar kolay kolay
+> anlamıyor çözemiyor."* `DrillDownPanel` bir **tablo yığını**: hangi yolun bakmaya
+> değer olduğunu söylemiyor, kullanıcı sayıların içinde kayboluyor.
+
+### 🔴 TASARIM KARARI: şema **panelde**, vaka kaydı **sohbette**
+
+⚠ Kullanıcı *"cevabın altında açılsın"* dedi. **Panelde açıyorum** ve gerekçesi
+kullanıcının **kendi** şikâyeti:
+
+| gerekçe | |
+|---|---|
+| *"altına doğru açılıyor, boğuluyor"* | ağaç sohbette açılırsa kartı yine metrelerce uzatır — şikâyet edilen şeyin ta kendisi |
+| ağaç **genişlik** ister | sohbet sütunu 720px'e kapalı; panel sürüklenerek **%55vw**'ye açılır |
+| *"not alırken bakabilmeli"* | panel açıkken sohbet görünür kalır — zaten panelin varlık sebebi |
+| *"modal olmasın"* | ✅ **panel modal değildir** — şart karşılanıyor |
+
+**Araştırma tezgâhta yapılır, sonucu konuşmaya yazılır.**
+
+### D.1 · Düğüm = bir **hipotez**, veri yığını değil
+
+Her düğüm bir **aday açıklama**: *"fire artışı **makine** kırılımında mı?"*
+Düğümün **görsel ağırlığı = veriden gelen sinyal** — ve bu, kullanıcı **tıklamadan
+önce** hesaplanıp gösterilir.
+
+| durum | görünüm | anlamı |
+|---|---|---|
+| **kanıtlı** | koyu · dolu · kalın kenar | veri **var**, sinyal eşiğin **üstünde** |
+| **zayıf** | orta ton | veri var, sinyal **düşük** |
+| **⊘ ölçülemedi** | silik · **kesikli** kenar | boyut var ama veri **yok** / taranmadı |
+| **kapsam dışı** | hayalet (en silik) | cube bu boyutu **taşımıyor** |
+
+> 🔴 **Silik düğümler bu tasarımın en dürüst parçasıdır.** *Yalnız bulduğunu gösteren
+> bir ağaç, bakmadığını gizler.* Bu, deponun kendi **⊘ ÖLÇÜLEMEDİ** üçüncü hâlinin
+> görsel karşılığı: ölçülemeyen paydadan çıkar ama **sayılır ve görünür**.
+
+⚠ **Silik ≠ kapalı.** Hiçbir düğüm **devre dışı bırakılmaz**, yalnız önceliksizleşir —
+çünkü bazen **verinin yokluğu bulgunun kendisidir** (*"o vardiyada hiç kayıt yok"*).
+
+### D.2 · 🔴 BOĞULMAMA KURALI — *yol + bir kat*
+
+Her an ekranda **yalnız iki şey** olur:
+1. **kat edilen yol** (kök → dal → dal) — daima görünür, geri dönülebilir
+2. **açık olan tek kat** — kardeş dallar **katlanır**
+
+*Bir ağaç, tüm dallarını aynı anda gösterdiğinde ağaç olmaktan çıkar, yığın olur.*
+
+Her genişletme adımı **kendi küçük grafiğini** üretir — çıplak tablo **asla**.
+⚠ Tablo yalnız *"ham satırları göster"* dendiğinde açılır.
+
+### D.3 · Grafik tıklaması = bir drill adımı (**ayrı mekanizma değil**)
+
+Kullanıcı bir grafikte **düşük** bir noktaya tıklar → o nokta **filtreli bir düğüme**
+dönüşür ve **aynı ağaçta** dallanır.
+
+🔴 Bugünkü kısıt kalkar: `ResultView` bugün facet/scatter/ısı haritasında tıklamayı
+**kapatıyor**. Yeni kuralda **her grafik türü** giriş noktasıdır — çizgi · sütun ·
+pasta · ısı · serpme · panelli.
+
+*İki giriş noktası, tek model:* ağaçtan tıkla ya da grafikten tıkla — ikisi de aynı
+düğüm ağacını büyütür.
+
+### D.4 · Not = **kökeniyle** kaydedilir
+
+Kullanıcı **herhangi bir düğümde** not alabilir. Not sohbete kaydedilirken **yolun
+kendisi de** kaydedilir — kart, mini bir yol diyagramı gösterir:
+
+```
+fire ↑ ── makine: RAM-2 ── vardiya: Gece ── ✎ "kalibrasyon şüphesi"
+```
+
+> 🔴 *Bir not, kökeni olmadan bir kanaattir.* Bu deponun makbuz kültürünün birebir
+> karşılığı: yol kaydedilmezse not yeniden üretilemez, doğrulanamaz, tartışılamaz.
+
+Sohbetteki kayıt bir **vaka kaydı**dır: tek başına okunabilir, tıklanınca **aynı
+düğümde** araştırma yeniden açılır.
+
+### D.5 · Responsive-first — ağaç küçük ekranda **ağaç değildir**
+
+| genişlik | izdüşüm |
+|---|---|
+| ≥1280px | **yatay ağaç** (kök solda → dallar sağa), yol üstte |
+| 768–1279 | **dikey ağaç**, yol yukarıda |
+| <768px | 🔴 **yol = kaydırılabilir çip şeridi** + **açık kat = kart listesi** |
+
+375px'lik bir ekranda ağaç çizmek okunamaz. Aynı veri, **farklı izdüşüm** — ve yol
+her üç izdüşümde de daima görünür.
+
+### D.6 · 🔴 AJANİK OLMAYA HAZIR — *asıl uzun vadeli kazanç*
+
+İnsanın tıklayarak verdiği karar (*"hangi boyutta dallanayım"*) ile bir ajanın vereceği
+karar **aynı karardır**. O yüzden düğüm **şeması** ve **puanlama** arayüzde değil,
+**backend sözleşmesinde** tanımlanır:
+
+```
+dugum: { boyut, deger?, olcu, sinyal, durum, cocuklar[], makbuz }
+```
+
+- `sinyal` — dallanmanın **değerini** veren skor (varyans/katkı); **arayüz onu
+  hesaplamaz, gösterir**
+- `durum` — `kanitli | zayif | olculemedi | kapsam_disi`
+- `makbuz` — her düğüm kendi kanıtını taşır *(bu depoda kanıtsız sayı yayımlanmaz)*
+
+⚠ **Bu ayrım şart:** puanlama arayüzde kalırsa, ajan aynı araştırmayı yapamaz —
+frontend'e gömülü bir mantık **çağrılamaz**. Böylece ileride *"kök neden analizi yap"*
+denildiğinde ajan **aynı ağacı** üretip sohbete rapor olarak koyabilir.
+
+### Adımlar
+1. Düğüm şeması + `sinyal`/`durum` hesabı **backend'de** (ajan çağrılabilir uç).
+2. `src/components/KokNedenHaritasi.tsx` — 🔴 `…Panel` **değil** (K1).
+3. Panelde açılır; yol + bir kat; kardeşler katlanır.
+4. Her düğüm kendi **küçük grafiğini** çizer.
+5. `ResultView`'da facet/scatter/ısı tıklama kısıtı **kaldırılır**.
+6. Düğümde not → sohbete **yol diyagramıyla** vaka kaydı.
+7. Üç izdüşüm (yatay · dikey · çip+liste).
+
+### Kapı
+- `test_ui_erisim.py` yeşil — `DrillDownPanel`'in **her** işlevi taşınmış olmalı
+- Düğüm durumu testi: dört durumun dördü de üretilebiliyor; **silik olan tıklanabilir**
+- Not testi: kaydedilen notta **yol** var
+- Responsive testi: <768px'te ağaç **çizilmiyor**, çip+liste çiziliyor
+- `test_panel_sayisi.py` ≤13
+
+---
+
 ## FAZ 5 · GÖRSEL DİLİN UYGULANMASI
 
 ### Adımlar
