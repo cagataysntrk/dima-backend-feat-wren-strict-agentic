@@ -27,7 +27,10 @@ base_object: partiler  # operatör demografisi ilişki üzerinden (models_enrich
 synonyms: [fire, ciro, gelir, tutar, satış, kar!, kârımız, karımız, kârlı, karlı,
            kazanç, marj, sapma, ağırlık, kilo, tonaj, parti, müşteri, kumaş, renk, aşama,
            boyama, yıkama, apre, kurutma, reddedil, maliyet,
-           operatör, çalışan, personel, cinsiyet, yaş, eğitim, departman]
+           operatör, çalışan, personel, cinsiyet, yaş, departman]
+# ⚠ `eğitim` KALDIRILDI (2026-08-05): burada bir BOYUT kelimesiydi (`egitim_durumu`)
+# ama `egitim` cube'unun KİMLİĞİdir. Kimlik kelimesini bir boyut için ödünç almak,
+# *"eğitim başarı oranı"* sorusunu `parti`ye düşürüyordu.
 # NOT: "verim/verimlilik/randıman" OEE cube kimliğidir → parti'de TUTULMAZ (routing
 # ambiguity). Kişi-verimliliği parti'ye operatör/cinsiyet/çalışan + ölçü (ilk_seferde_
 # tamam_yuzde / kg) ile ulaşılır; "randıman" tek başına oee'ye gider (golden korunur).

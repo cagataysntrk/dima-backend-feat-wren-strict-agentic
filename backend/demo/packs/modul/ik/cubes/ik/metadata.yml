@@ -31,7 +31,9 @@ measures:
     expression: "SUM(brut_maas + sgk_isveren)"
     type: DOUBLE
     unit: "₺"
-    synonyms: [işveren maliyeti, işçilik maliyeti, toplam maliyet, bordro maliyeti, kadro maliyeti]
+    # ⚠ `işçilik maliyeti` KALDIRILDI → `maliyet.iscilik_maliyet_kg`in (kg başına birim
+    # maliyet, ürün maliyetlendirmesinin parçası). Burası BORDRO toplamıdır.
+    synonyms: [işveren maliyeti, toplam maliyet, bordro maliyeti, kadro maliyeti]
   - name: toplam_mesai_ucreti
     expression: SUM(mesai_ucreti)
     type: DOUBLE

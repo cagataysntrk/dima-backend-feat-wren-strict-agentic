@@ -164,6 +164,18 @@
       "toplam_dogru_cube_yuzde": 93.2,
       "vaka_dogru_yuzde": 92.1,
       "_not": "FAZ 0'ın sekiz adımı indi ve korpus KIPIRDAMADI (%93,2 → %93,2). Bu bir başarısızlık DEĞİL, beklenen sonuç: inen maddelerin çoğu KAPI ve YETİM işiydi, ikisi (0.18 metrik kaydı · 0.5 çapa zinciri) BAYRAKLI ve varsayılan `off` — yani davranış birebir bugünkü. Kapsam kazancı bayraklar açıldığında ölçülecek (0.4'ün A/B turu). Sabit bir sayı, 'hiçbir şey olmadı' demek değildir; 'gerileme olmadı' demektir ve KURAL A'nın istediği tam budur."
+    },
+    {
+      "faz": "test ortamı genişlemesi + terim çakışması temizliği (2026-08-05)",
+      "olculdu": "2026-08-05",
+      "commit": "abb74a3",
+      "degisiklik": "🔴 KAPSAM BÜYÜDÜ, TABAN DEĞİŞMEDİ. `bf5a7eb` ERP seed'ini 47→80 tabloya, boyahane kataloğunu 13→23 cube'a çıkardı; korpus katalogdan ÜRETİLDİĞİ için payda 7213→9706 (+%35) büyüdü. Bu tur ile GELEN 10 cube, var olan terimlerin üstüne ikinci sahipler kondurmuştu ve oran %93,2→%92,6'ya düştü — **kırmızı** verdi.\nTeşhis KOŞARAK değil, OKUYARAK bulundu: katalog taraması boyahane'de **44 ölçü + 7 cube terimi** çakışması gösterdi. Bunlardan yeni cube'ların getirdiği 8+3 tanesi çözüldü (her biri gerekçesiyle metadata'da yazılı):\n  · `bakım maliyeti` / `yedek parça maliyeti` / `mttr` — `bakim` ↔ `bakim_is_emri`\n  · çıplak `bakım` — `bakim`ın tabanı `ariza_kayitlari`, kimliği ARIZA\n  · `ağırlık` — `isg.ort_kayip_gun` jenerik kg terimini çalıyordu → `kaza ağırlığı`\n  · `sapma`·`renk sapması`·`ortalama sapma`·`delta e` — `sikayet` → `şikayet sapması`\n  · `başarı oranı` — `firsat` → `egitim`in · `işçilik maliyeti` — `ik` → `maliyet`in\n  · çıplak `sapma` — `kur` ve `butce` → nitelenmiş hâlleri\n  · `eğitim` — `parti`de BOYUT kelimesiydi, `egitim` cube'unun KİMLİĞİ\nSonuç: %92,6 → **%93,0** · boyahane erişim %67→%68 · discovery 225→180 · yanlış-cube 247→216. Mutlak doğru sayısı 6720 → **9154** (+%36).",
+      "_neden_yuzde_YAZILMADI": "🔴 Bu tur bilerek `toplam_dogru_cube_yuzde` **TAŞIMIYOR** ve bu bir ihmal değil bir karardır: yazsaydık kapının çıtası %92,7'den %92,5'e **inerdi**. Payda büyüdü diye kalite hedefini indirmek, tam da bu deponun `gitas` vakasında reddettiği hareketin aynadaki hâlidir (orada payda KÜÇÜLÜP oran YÜKSELMİŞTİ). Çıta **%93,2'de kalır**; %93,0 onun tolerans bandında (0,5 puan) yeşildir ve kalan 36 çakışma kapatıldıkça oran yukarı gitmelidir. *Bir kapıyı geçmek için çıtayı indirmek, geçmek değildir.*",
+      "_kalan_hedef": {
+        "olcu_cakismasi": 36,
+        "cube_cakismasi": 4,
+        "_not": "Kalanların hepsi bu turdan ÖNCE de vardı (`elektrik`·`tep`·`fire`·`üretim`·`marj`·`arıza`·`tamir`·`maliyet`). `elektrik` için FAZ 2a'da zaten bir sahiplik kararı yazılmıştı ama `sahiplik_kararlari.yml` **öneri**dir, uygulayıcı değil (FAZ 3.1b: uygulamak korpusu %93,2→%92,6 geriletmişti). Yani bu küme bir KATALOG borcudur, bir router kusuru değil."
+      }
     }
   ],
   "vaka_dogru_yuzde": 92.1,

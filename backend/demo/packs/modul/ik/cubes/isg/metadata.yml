@@ -37,7 +37,9 @@ measures:
     expression: "ROUND(AVG(is_gunu_kaybi),2)"
     type: DOUBLE
     unit: "gün"
-    synonyms: [ortalama kayıp gün, kaza başına kayıp, ağırlık]
+    # 🔴 `ağırlık` KALDIRILDI: `parti.toplam_agirlik_kg` (kg) o kelimenin sahibi ve
+    # jenerik. Burada kastedilen *kaza ağırlığı*dır — o hâlde ADI da öyle olmalı.
+    synonyms: [ortalama kayıp gün, kaza başına kayıp, kaza ağırlığı]
 
 dimensions:
   - name: departman

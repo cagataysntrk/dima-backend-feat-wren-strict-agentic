@@ -7,8 +7,13 @@ base_object: ariza_kayitlari
 # parça maliyeti, arıza tipi/sıklığı. OEE cube'undaki plansız duruşu KÖK-NEDENE bağlar.
 # NOT: bare "duruş/downtime" OEE kimliğidir (toplam_durus_dakika) → bakım'da TUTULMAZ;
 # bakım'a arıza/bakım/tamir/yedek parça ile ulaşılır (arıza duruşu ölçüde ayrıca var).
-synonyms: [bakım, arıza, ariza, tamir, breakdown, yedek parça, müdahale,
-           bakim, makine arızası, servis]
+# 🔴 KİMLİK AYRIMI (2026-08-05): bu cube'un tabanı `ariza_kayitlari` — kimliği
+# **ARIZA**dır. Çıplak `bakım`/`bakim` `bakim_is_emri`ye (tabanı `bakim_is_emirleri`)
+# bırakıldı; ikisi de sahiplenince korpus terimi hiçbirine çözemiyor ve soru
+# Discovery'ye düşüyordu. *İki sahipli bir terim, sahipsiz bir terimden kötüdür:
+# üstüne bir de "sahibi var" beyanı ekler.*
+synonyms: [arıza, ariza, tamir, breakdown, yedek parça, müdahale,
+           makine arızası, servis]
 
 measures:
   - name: ariza_sayisi
@@ -31,7 +36,9 @@ measures:
     expression: SUM(yedek_parca_maliyet)
     type: DOUBLE
     unit: "₺"
-    synonyms: [yedek parça, yedek parça maliyeti, parça maliyeti, bakım maliyeti]
+    # ⚠ `bakım maliyeti` KALDIRILDI → `bakim_is_emri.bakim_maliyeti`nin. Burası
+    # yalnız YEDEK PARÇA kalemidir; iş emri maliyeti işçilik+parça toplamıdır.
+    synonyms: [yedek parça, yedek parça maliyeti, parça maliyeti]
     lower_is_better: true
 
 dimensions:
