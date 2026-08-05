@@ -3714,7 +3714,11 @@ demektir.
 **Kalan (F3):** belirsizlikte plan seviyesinde sorma, ve kalan kompozisyonların
 (rapor · pano) planlayıcıya taşınması.
 
-29 test: `tests/test_orkestrator.py` *(FAZ 0.2 + 0.22 kapıları eklendi)*.
+**40 test**: `tests/test_orkestrator.py` *(FAZ 0.2 + 0.22 + **6.4 sertleştirmesi** @`31916d6`)*.
+FAZ 6.4 ile eklenenler: **plan dondurma** (kontrol-akışı bütünlüğü — araç çıktısı planı
+değiştiremez), **dört katmanlı adım doğrulama** sınır değerleriyle (`satır=0` · null
+%90/%91 · mertebe 99×/100× · şema), **hata imzası** (mesajın tamamı değil **sınıfı**) ve
+**plan kontrol listesi** (`adimlar_toplam`/`adimlar_tamam`).
 
 > ⟳ **TOPLANABİLİRLİK: TEK SINIFLANDIRICI, ÜÇ POLİTİKA** *(FAZ 0 / canlı denetim + bütünlük denetimi, 2026-08-04)*
 >
