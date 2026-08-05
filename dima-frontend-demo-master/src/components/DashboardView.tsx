@@ -11,6 +11,7 @@ import {
   getDashboard,
   getDashboardData,
   patchDashboardWidget,
+  restoreDashboardWidget,
   postReport,
 } from "@/lib/api-client";
 import type { Report } from "@/lib/types";
@@ -18,6 +19,7 @@ import { ResultView } from "@/components/ResultView";
 import { ReportView } from "@/components/ReportView";
 import { HataSeridi } from "@/components/HataSeridi";
 import { hataMetni } from "@/lib/mutasyonHatasi";
+import { GeriAlSeridi } from "@/components/GeriAlSeridi";
 
 // Doğrulama turu düzeltmesi (1 Ağustos 2026, P2-22): widget-BAŞINA yenileme sıklığı
 // (`DashboardWidget.refresh` — backend'de zaten vardı, yalnız YAZMA ucu eksikti, bkz.
@@ -87,6 +89,16 @@ export function DashboardView({ id, onClose }: { id: string; onClose: () => void
   // en eskiyi düşürmez; o sebep kullanıcıya **olduğu gibi** gösterilir (`hataMetni`
   // sunucunun kendi cümlesini önceler).
   const [pinHata, setPinHata] = useState<string | null>(null);
+  // 🔴 Denetim F2 — widget geri alma. Kullanıcının **gözünün önünde** kaybolan bir şey.
+  const [silinenW, setSilinenW] = useState<{ id: string; title: string } | null>(null);
+  const geriAlW = useMutation({
+    onError: (e) => setPinHata(hataMetni(e, "Geri alma")),
+    mutationFn: (wid: string) => restoreDashboardWidget(id, wid),
+    onSuccess: () => {
+      setSilinenW(null);
+      qc.invalidateQueries({ queryKey: ["dashboard", id] });
+    },
+  });
   const pin = useMutation({
     onError: (e) => setPinHata(hataMetni(e, "Sabitleme")),
     mutationFn: ({ wid, pinned }: { wid: string; pinned: boolean }) =>
@@ -170,6 +182,12 @@ export function DashboardView({ id, onClose }: { id: string; onClose: () => void
         ) : (
           <>
             <HataSeridi metin={pinHata} onKapat={() => setPinHata(null)} />
+            <GeriAlSeridi
+              etiket={silinenW?.title ?? null}
+              onGeriAl={async () => {
+                await geriAlW.mutateAsync(silinenW!.id);
+              }}
+            />
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {widgets.map((w) => {
               const wd = dataById.get(w.id);
@@ -227,7 +245,11 @@ export function DashboardView({ id, onClose }: { id: string; onClose: () => void
                         ))}
                       </select>
                       <button
-                        onClick={() => del.mutate(w.id)}
+                        onClick={() => {
+                          // ⚠ Ad silmeden ÖNCE: sonra ızgara tazelenir, kart kaybolur.
+                          setSilinenW({ id: w.id, title: w.title || "Widget" });
+                          del.mutate(w.id);
+                        }}
                         title="Widget'ı kaldır"
                         aria-label="Widget'ı kaldır"
                         className="shrink-0 font-mono text-[13px] text-neutral-400 transition-colors hover:text-red-500"

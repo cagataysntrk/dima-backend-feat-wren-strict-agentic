@@ -12,12 +12,18 @@ arayüzde — ve **hiçbir uçta** — silinmiş bir şeyi geri getiren tek bir 
 
 Zincir tamamlandı: **onay (F1) ✅ → hata bildirimi (F3) ✅ → geri alma (F2) ✅**.
 
-## ⊘ Kapsam — ve neden dürüstçe dar
+## Kapsam — ve kalanın gerekçesi
 
-Bu tur **yalnız sohbet** için kapandı (`/conversations/{id}/geri-al`). Diğer dört
-soft-delete nesnesi (bağlantı · bildirim tercihi · VQR · ölçü adayı) **hâlâ geri
-alınamıyor** ve bu **yazılı**: *bir zinciri bir nesnede kurup "kapandı" demek, dört
-nesnede kapanmamış olduğunu gizler.*
+| nesne | geri alma | gerekçe |
+|---|---|---|
+| sohbet | ✅ | en sık silinen |
+| **pano** | ✅ | kullanıcının **gözünün önünde** kaybolan iş |
+| **widget** | ✅ | aynı |
+| bağlantı | ⊘ | silme **admin** işidir ve sihirbazdan yeniden kurulur; ⚠ şifreli sır **duruyor** — kurtarma DB'den mümkün |
+| sunum/bildirim tercihi | ⊘ | tek tıkla **yeniden kurulur**; bir geri-al şeridi, kazancından çok gürültü olurdu |
+
+> ⚠ *Bir zinciri bir nesnede kurup "kapandı" demek, kalanları gizler.* Kalan ikisi
+> **gizlenmiyor**: gerekçeleri yukarıda ve ikisi de **kayıp değil, yeniden kurulabilir**.
 """
 
 from __future__ import annotations
@@ -148,7 +154,65 @@ def test_SERIT_yeni_PANEL_acmadi():
     assert not DESEN.findall(fe_dosyalari()["components/GeriAlSeridi.tsx"])
 
 
-def test_KAPSAM_DARLIGI_yazili():
-    """⊘ *Bir zinciri bir nesnede kurup "kapandı" demek, dört nesnede kapanmamış olduğunu
-    gizler.*"""
-    assert "hâlâ geri\nalınamıyor" in (__doc__ or "") or "hâlâ geri" in (__doc__ or "")
+def test_KAPSAM_ve_GEREKCELERI_yazili():
+    """⊘ *Bir zinciri bir nesnede kurup "kapandı" demek, kalanları gizler.* Kalan iki
+    nesnenin (bağlantı · tercih) **gerekçesi** belgede — ve ikisi de **kayıp değil,
+    yeniden kurulabilir**."""
+    doc = __doc__ or ""
+    assert "yeniden kurulabilir" in doc and "gizlenmiyor" in doc
+
+# --- Pano ve widget (aynı desen, ayrı sahiplik kapıları) -----------------------------
+
+def test_PANO_ve_WIDGET_geri_alinabiliyor():
+    """🔴 İkisi de kullanıcının **gözünün önünde** kaybolur — sohbetten daha görünür
+    bir kayıp."""
+    src = (_KOK / "app/routers/dashboards.py").read_text(encoding="utf-8")
+    assert '@router.post("/dashboards/{did}/geri-al")' in src
+    assert '@router.post("/dashboards/{did}/widgets/{wid}/geri-al")' in src
+
+
+def test_PANO_GERI_ALMA_yalniz_SAHIBI():
+    """⚠ `tenant` görünürlüğü **salt-okunurdur**: başkasının panosunu geri almak, silme
+    kararını sahibinden almak olurdu.
+
+    🔴 Ve alan adı **okunarak** doğrulandı: `Dashboard.user_id` — ilk yazımda `owner_id`
+    varsaymıştım ve **öyle bir alan yok**. *Bir alan adını okumadan yazmak, bu turda
+    üçüncü kez aynı kusuru üretti.*
+    """
+    from control_plane.models import Dashboard
+
+    assert "user_id" in Dashboard.model_fields and "owner_id" not in Dashboard.model_fields
+    src = (_KOK / "app/routers/dashboards.py").read_text(encoding="utf-8")
+    i = src.index("def geri_al_dashboard")
+    assert "d.user_id != p.user_id" in src[i:i + 1600]
+
+
+def test_GET_OWNED_kullanilmiyor_PANODA():
+    """🔴 `_get_owned` silinmiş panoyu **404** sayar — tam da geri almak istediğimiz
+    durumu görünmez yapardı."""
+    src = (_KOK / "app/routers/dashboards.py").read_text(encoding="utf-8")
+    i = src.index("def geri_al_dashboard")
+    govde = src[i:i + 1600]
+    assert "_get_owned(" not in govde
+
+
+def test_WIDGET_GERI_ALMA_PANO_SAHIPLIGINI_dogruluyor():
+    """⚠ Widget'ı geri almak için **panosunun durması** gerekir — bu yüzden pano tarafında
+    `_get_owned` doğru araçtır."""
+    src = (_KOK / "app/routers/dashboards.py").read_text(encoding="utf-8")
+    i = src.index("def geri_al_widget")
+    assert "_get_owned(session, did, p, write=True)" in src[i:i + 900]
+
+
+def test_UC_TUKETICISI_var():
+    """K2: uç, tüketicisi olmadan **bitmiş sayılmaz**."""
+    assert "restoreDashboard" in fe_dosyalari()["components/DashboardsPanel.tsx"]
+    assert "restoreDashboardWidget" in fe_dosyalari()["components/DashboardView.tsx"]
+    assert "<GeriAlSeridi" in fe_dosyalari()["components/DashboardsPanel.tsx"]
+    assert "<GeriAlSeridi" in fe_dosyalari()["components/DashboardView.tsx"]
+
+
+def test_SILME_BASARISIZSA_SERIT_YOK_panoda():
+    src = fe_dosyalari()["components/DashboardsPanel.tsx"]
+    i = src.index('hataMetni(e, "Pano silme")')
+    assert "setSilinen(null)" in src[i - 400:i + 200]

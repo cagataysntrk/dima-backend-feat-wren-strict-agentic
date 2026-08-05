@@ -347,3 +347,61 @@ def dashboard_data(request: Request, did: str, session: Session = Depends(get_se
         except Exception as exc:  # noqa: BLE001 — tek widget hatası panoyu düşürmesin
             out.append({"id": str(w.id), "result": None, "viz": None, "error": str(exc)[:200]})
     return {"widgets": out}
+
+@router.post("/dashboards/{did}/geri-al")
+def geri_al_dashboard(request: Request, did: str,
+                      session: Session = Depends(get_session)) -> dict:
+    """**PANO SİLMEYİ GERİ AL** — `deleted_at` damgasını kaldırır. *(denetim F2)*
+
+    🔴 Sunucu panoyu **silmiyor, damgalıyordu**; kayıt duruyordu ama geri getiren
+    **hiçbir yol yoktu** — kullanıcı açısından soft-delete ile hard-delete **birebir
+    aynı deneyimdi**. *Geri alınamayan bir soft-delete, pahalı bir hard-delete'tir.*
+
+    ⚠ `_get_owned` **kullanılamaz**: o silinmiş panoyu 404 sayar, yani tam da geri almak
+    istediğimiz durumu **görünmez** yapar. Sahiplik elle doğrulanır.
+    ⚠ Zaten silinmemişse **no-op**: *bir düzeltmenin ikinci kez uygulanması bir hata
+    değildir.*
+    """
+    p = _principal(request)
+    try:
+        d = session.get(Dashboard, uuid.UUID(did))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Geçersiz pano id") from None
+    # 🔴 Sahiplik alanı `user_id` — `_get_owned`'ın kendi kullandığı alan. (İlk yazımda
+    # `owner_id` varsaydım; **öyle bir alan yok**. *Bir alan adını okumadan yazmak, bu
+    # turda üçüncü kez aynı kusuru üretti.*)
+    # ⚠ Ve **yalnız sahibi**: `tenant` görünürlüğü salt-okunurdur; başkasının panosunu
+    # geri almak, silme kararını sahibinden almak olurdu.
+    if d is None or d.user_id != p.user_id:
+        raise HTTPException(status_code=404, detail="Pano bulunamadı")
+    if d.deleted_at is not None:
+        d.deleted_at = None
+        session.add(d)
+        session.commit()
+    return {"restored": True, "id": did, "title": d.title}
+
+
+@router.post("/dashboards/{did}/widgets/{wid}/geri-al")
+def geri_al_widget(request: Request, did: str, wid: str,
+                   session: Session = Depends(get_session)) -> dict:
+    """**WIDGET SİLMEYİ GERİ AL.** Panonun sahipliği `_get_owned` ile doğrulanır —
+    pano **silinmemiştir** (widget'ı geri almak için panosunun durması gerekir).
+
+    ⚠ Widget kendi `deleted_at`'inden çözülür; `_get_own`-benzeri bir süzgeç **burada
+    kullanılamaz**, yoksa silinmiş widget bulunamaz.
+    """
+    p = _principal(request)
+    d = _get_owned(session, did, p, write=True)
+    try:
+        w = session.get(DashboardWidget, uuid.UUID(wid))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Geçersiz widget id") from None
+    if w is None or str(w.dashboard_id) != did:
+        raise HTTPException(status_code=404, detail="Widget bulunamadı")
+    if w.deleted_at is not None:
+        w.deleted_at = None
+        session.add(w)
+        d.updated_at = datetime.utcnow()
+        session.add(d)
+        session.commit()
+    return {"restored": True, "id": wid, "title": w.title}

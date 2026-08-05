@@ -4,11 +4,13 @@
 // React Query ile liste + mutation'da invalidate. Açma → page main-area overlay'i.
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createDashboard, deleteDashboard, listDashboards, patchDashboard } from "@/lib/api-client";
+import { createDashboard, deleteDashboard, listDashboards, patchDashboard,
+         restoreDashboard } from "@/lib/api-client";
 import { useAdSor } from "@/components/AdSor";
 import { useState } from "react";
 import { HataSeridi } from "@/components/HataSeridi";
 import { hataMetni } from "@/lib/mutasyonHatasi";
+import { GeriAlSeridi } from "@/components/GeriAlSeridi";
 
 export function DashboardsPanel({ onOpen }: { onOpen: (id: string) => void }) {
   // 🔴 Denetim F3: bu panelde mutasyonların **hiçbiri** hata yüzeyi taşımıyordu —
@@ -16,6 +18,17 @@ export function DashboardsPanel({ onOpen }: { onOpen: (id: string) => void }) {
   // bir eylem, kullanıcıya ürünün bozuk olduğunu değil KENDİSİNİN yanlış yaptığını
   // düşündürür.*
   const [hata, setHata] = useState<string | null>(null);
+  // 🔴 Denetim F2: pano soft-delete ediliyordu ama geri getiren yol yoktu.
+  // ⚠ Ad silmeden ÖNCE yakalanır: sonra liste tazelenir ve satır kaybolur.
+  const [silinen, setSilinen] = useState<{ id: string; title: string } | null>(null);
+  const geriAl = useMutation({
+    onError: (e) => setHata(hataMetni(e, "Geri alma")),
+    mutationFn: (pid: string) => restoreDashboard(pid),
+    onSuccess: () => {
+      setSilinen(null);
+      qc.invalidateQueries({ queryKey: ["dashboards"] });
+    },
+  });
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["dashboards"], queryFn: listDashboards });
   const create = useMutation({
@@ -24,7 +37,12 @@ export function DashboardsPanel({ onOpen }: { onOpen: (id: string) => void }) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["dashboards"] }),
   });
   const del = useMutation({
-    onError: (e) => setHata(hataMetni(e, "Pano silme")),
+    onError: (e) => {
+      // 🔴 Silme başarısızsa geri-al şeridi gösterilmemeli: *olmayan bir silmeyi geri
+      // almayı teklif etmek, kullanıcıya yanlış bir dünya tarif eder.*
+      setSilinen(null);
+      setHata(hataMetni(e, "Pano silme"));
+    },
     mutationFn: (id: string) => deleteDashboard(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["dashboards"] }),
   });
@@ -58,6 +76,12 @@ export function DashboardsPanel({ onOpen }: { onOpen: (id: string) => void }) {
   return (
     <div className="space-y-3">
       <HataSeridi metin={hata} onKapat={() => setHata(null)} />
+      <GeriAlSeridi
+        etiket={silinen?.title ?? null}
+        onGeriAl={async () => {
+          await geriAl.mutateAsync(silinen!.id);
+        }}
+      />
       {adSorAlani}
       <button
         onClick={newDash}
@@ -110,7 +134,10 @@ export function DashboardsPanel({ onOpen }: { onOpen: (id: string) => void }) {
                     {d.visibility === "tenant" ? "🏢" : "🔒"}
                   </button>
                   <button
-                    onClick={() => del.mutate(d.id)}
+                    onClick={() => {
+                      setSilinen({ id: d.id, title: d.title || "Pano" });
+                      del.mutate(d.id);
+                    }}
                     disabled={del.isPending}
                     title="Panoyu sil"
                     aria-label="Panoyu sil"

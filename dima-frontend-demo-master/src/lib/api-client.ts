@@ -786,6 +786,24 @@ export async function addDashboardWidget(
   return data;
 }
 
+/** **PANO SİLMEYİ GERİ AL** (denetim F2). 🔴 Sunucu panoyu silmiyor **damgalıyordu**;
+ *  geri getiren hiçbir yol yoktu — *geri alınamayan bir soft-delete, pahalı bir
+ *  hard-delete'tir.* */
+export async function restoreDashboard(id: string): Promise<{ restored: boolean; title: string }> {
+  const { data } = await apiClient.post<{ restored: boolean; title: string }>(
+    `/dashboards/${id}/geri-al`);
+  return data;
+}
+
+/** **WIDGET SİLMEYİ GERİ AL** (denetim F2). */
+export async function restoreDashboardWidget(
+  id: string, wid: string,
+): Promise<{ restored: boolean; title: string }> {
+  const { data } = await apiClient.post<{ restored: boolean; title: string }>(
+    `/dashboards/${id}/widgets/${wid}/geri-al`);
+  return data;
+}
+
 export async function deleteDashboardWidget(id: string, wid: string): Promise<void> {
   await apiClient.delete(`/dashboards/${id}/widgets/${wid}`);
 }
