@@ -372,15 +372,23 @@ def test_VIZ_adhoc_semasina_DUSUYOR():
     kusur buydu: `cube_router._cube_meta(schema, ...)` — yani YALNIZ tenant şeması."""
     import inspect
 
-    from app.routers import ask as ask_mod
+    from app import gorsel_ekleme
 
-    govde = inspect.getsource(ask_mod.ask)
-    i = govde.index("def _attach_viz(")
-    # Sabit karakter penceresi KIRILGAN (ilk sürüm 2200'de kesti ve yanlış rapor verdi);
-    # sınır bir SONRAKİ iç fonksiyon tanımıdır.
-    j = govde.index("\n    def ", i + 10)
-    pencere = govde[i:j]
-    assert '_adhoc_store(request).get(' in pencere, (
+    # 🔴 **GÖVDE `ask()`'ten ÇIKTI — ve bu kapı bir KONUMU ölçüyordu.**
+    #
+    # `_attach_viz` FAZ 7 tavan borcu için `app/gorsel_ekleme.py`'ye taşındı; davranış
+    # birebir aynı kaldı ama kapı `ask()`'in kaynağında arama yaptığı için kırmızı verdi.
+    # Bu operasyonda **üçüncü** kez aynı sınıf (`_kart_agaci` ×2, şimdi bu):
+    # *bir davranışın nerede yaşadığı bir uygulama ayrıntısıdır; YAŞAYIP yaşamadığı bir
+    # sözleşmedir.*
+    #
+    # ⚠ Pencere kırpmaya da gerek kalmadı: fonksiyon artık kendi modülünde ve `inspect`
+    # tam gövdesini veriyor. *Bir sınırı aramak zorunda kalmamak, en sağlam sınırdır.*
+    pencere = inspect.getsource(gorsel_ekleme.gorsel_ekle)
+    # ⚠ Çağrı `adhoc_coz(...)`: `_adhoc_store` artık **argüman** olarak geçiyor
+    # (import edilseydi `gorsel_ekleme` → `ask.py` döngüsü doğardı). Aranan şey adın
+    # kendisi değil, **ad-hoc kaydın okunması**.
+    assert 'adhoc_coz(request).get(' in pencere, (
         "`_attach_viz` ad-hoc kaydı okumuyor — Discovery cevabında `cube_meta` her zaman "
         "None kalır ve 'doğru grafik/köken açıldı' iddiası karşılıksızdır")
     assert "_cube_meta(_sema," in pencere, "cube meta hâlâ SABİT tenant şemasından okunuyor"

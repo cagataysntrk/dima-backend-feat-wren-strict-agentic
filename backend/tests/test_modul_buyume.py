@@ -125,7 +125,23 @@ TAVAN_CUBE_ROUTER_KOD = (TABAN_CUBE_ROUTER_KOD
                          + sum(d for _s, d, _g in MUAFIYET_CUBE_ROUTER_KOD))
 #: Dosya tavanı: FAZ 0 ÖNCESİ dosya kodu (2394) − o günkü `ask()` kodu (1135) = 1259 taşınabilir
 #: pay, artı `ask()` muafiyetleri (taşınabilir), artı **modül düzeyi** muafiyetleri (ayrı liste).
-TAVAN_ASK_DOSYA = TAVAN_ASK_KOD + 1259 + sum(d for _s, d, _g in MUAFIYET_ASK_DOSYA)
+#:
+#: 🔴 **1259 → 1217 (2026-08-05): PAY İNDİ, çünkü BOŞLUK BÜYÜMEYİ DURDURMAZ.**
+#: `_attach_viz` → `app/gorsel_ekleme.py` ve `_queue_discovery_job` →
+#: `app/discovery_kuyrugu.py` taşındıktan sonra dosya 2498'den **2377**'ye düştü ve
+#: tavanda **42 satır boşluk** kaldı. `cube_router`'da meta-kapı aynı boşluğu kırmızı
+#: vermişti; burada meta-kapı yok ama **kural aynı**: *bir tavanı bir taşımadan sonra
+#: indirmemek, kazanılan payı sessizce yeni büyümeye açar.*
+#:
+#: ⚠ `ask()` tavanı **1151'de bırakıldı** (bugün 1150, boşluk **1**): gövde payı zaten
+#: sıkı ve onu 1150'ye çekmek, bir sonraki tek satırlık düzeltmeyi bir muafiyet
+#: tartışmasına çevirirdi. *Bir tavan sıfır boşlukla değil, ANLAMLI bir boşlukla sıkıdır.*
+#: 🔴 **TEK KOPYA.** Bu sayı iki yerde yazılıydı — burada ve `test_MUAFIYETLER_GEREKCELI
+#: _ve_TOPLAMI_TUTUYOR`'un içinde — ve indirdiğimde **ikincisi bayatladı**: kapı
+#: `2410 + 9 == 2377` diye kırmızı verdi. *Tanımsız bir sayının iki kopyası, iki ayrı
+#: bayatlama yüzeyidir* (bu dosyanın kendi cümlesi, bu kez kendi üstünde ölçüldü).
+TASINABILIR_PAY = 1217
+TAVAN_ASK_DOSYA = TAVAN_ASK_KOD + TASINABILIR_PAY + sum(d for _s, d, _g in MUAFIYET_ASK_DOSYA)
 
 
 # ── ÖLÇÜM ARACI ──────────────────────────────────────────────────────────────
@@ -282,7 +298,8 @@ def test_MUAFIYETLER_GEREKCELI_ve_TOPLAMI_TUTUYOR():
             ("ASK", MUAFIYET_ASK_KOD, TABAN_ASK_KOD, TAVAN_ASK_KOD),
             ("CUBE_ROUTER", MUAFIYET_CUBE_ROUTER_KOD,
              TABAN_CUBE_ROUTER_KOD, TAVAN_CUBE_ROUTER_KOD),
-            ("ASK_DOSYA", MUAFIYET_ASK_DOSYA, TAVAN_ASK_KOD + 1259, TAVAN_ASK_DOSYA)):
+            ("ASK_DOSYA", MUAFIYET_ASK_DOSYA, TAVAN_ASK_KOD + TASINABILIR_PAY,
+             TAVAN_ASK_DOSYA)):
         for sha, delta, gerekce in liste:
             assert len(sha) >= 7 and delta > 0 and len(gerekce) > 25, \
                 f"{ad}: muafiyet eksik/gerekçesiz: {(sha, delta, gerekce)}"

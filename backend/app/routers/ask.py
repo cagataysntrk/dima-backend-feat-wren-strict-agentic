@@ -17,7 +17,7 @@ from app import prescribe
 from app import planner as _planner
 from app import ask_jobs, cekirdek, followup, istek_kimligi, katman_b, typo_onerisi
 from app import soz as _soz
-from app import cube_router, eylem, pii, tercih, viz, yoy
+from app import cube_router, eylem, gorsel_ekleme, pii, tercih, viz, yoy
 from app.answer import (
     _attach_next_steps,
     _attach_recommendations,
@@ -1326,105 +1326,11 @@ def _with_extra_context(question: str, extra_context: list[str] | None) -> str:
     return f"Ek bağlam (kullanıcının seçtiği ilgili önceki sorular/sonuçlar):\n{grounding}\n\nSoru: {question}"
 
 
-def _queue_discovery_job(request: Request, body: AskRequest, principal, runner) -> AskResponse:
-    """Faz 4.1 (dış yol haritası 0.1'in BullMQ/Redis'siz karşılığı) — Discovery'yi arka-plan
-    işine kuyruklar (yalnız `ask_async_discovery` bayrağı açıkken çağrılır). `CloneJob` ile
-    AYNI desen (control_plane/models.py::AskJob docstring'i): DB-tablosu tabanlı durum +
-    thread — in-memory DEĞİL, süreç yeniden başlasa da iz bırakır.
-
-    `runner` (ask()'in `_run_discovery` kapanışı) zaten `service`/`schema`/`vqr`/`llm`/
-    `principal`/`body`'yi KAPANIŞ olarak taşıyor — CloneJob'un aksine bunları TEKRAR DB'den
-    türetmeye GEREK YOK: iş aynı süreçte, aynı anda başlıyor (yalnız İSTEMCİYE hemen dönmek
-    için arka plana alınıyor), request-bağımsız yeniden-kurulum gerektirmiyor. Süreç bu iş
-    bitmeden ÇÖKERSE (`app/main.py` lifespan'daki kurtarma), iş "yarıda kaldı" diye dürüstçe
-    `failed`e çevrilir — sessizce kaybolmaz, ama otomatik yeniden-deneme bu ilk sürümde
-    kapsam dışı (bilinçli sınır, AskJob docstring'inde gerekçeli)."""
-    import json as _json
-    import threading
-    import uuid as _uuid
-
-    from sqlmodel import Session
-
-    from control_plane.db import engine
-    from control_plane.models import AskJob
-
-    tenant_id_raw = getattr(principal, "tenant_id", None)
-    try:
-        tenant_uuid = _uuid.UUID(str(tenant_id_raw)) if tenant_id_raw else None
-    except (ValueError, TypeError):
-        tenant_uuid = None
-
-    job = AskJob(
-        tenant_id=tenant_uuid, session_id=body.session_id, question=body.question,
-        request_json=_json.dumps({"question": body.question, "session_id": body.session_id},
-                                 ensure_ascii=False),
-    )
-    with Session(engine) as s:
-        s.add(job)
-        s.commit()
-        s.refresh(job)
-    job_id = job.id
-
-    def _on_step(trace: list[str]) -> None:
-        """Faz 4.12 — HER Discovery adımından sonra çağrılır, job satırına ANINDA yazar
-        (best-effort: bir yazım başarısız olursa Discovery'yi DURDURMAZ, yalnız o adımın
-        canlı görünürlüğü kaybolur — sonuç yine de tamamlanınca result_json'da tam gelir)."""
-        try:
-            import json as _json
-            with Session(engine) as s:
-                j = s.get(AskJob, job_id)
-                if j is not None:
-                    j.trace_json = _json.dumps(trace, ensure_ascii=False)
-                    s.add(j)
-                    s.commit()
-        except Exception:
-            _log.warning("AskJob canlı adım yazımı başarısız (best-effort)", exc_info=True)
-
-    def _bg() -> None:
-        with Session(engine) as s:
-            j = s.get(AskJob, job_id)
-            j.status = "running"
-            j.started_at = datetime.utcnow()
-            s.add(j)
-            s.commit()
-        try:
-            resp = runner(on_step=_on_step)
-            with Session(engine) as s:
-                j = s.get(AskJob, job_id)
-                # FAZ 1.12 (AI Act Md.14) — kullanıcı DURDURDUYSA sonuç YAYIMLANMAZ.
-                # İptal işi öldürmez, sonucunu yayımlatmaz (gerekçe: app/ask_jobs.py):
-                # yarım bir sonucu yayımlamamak, hızlı öldürmekten daha güvenlidir.
-                if ask_jobs.yayimlanabilir_mi(j.status):
-                    j.status = "completed"
-                    j.result_json = resp.model_dump_json()
-                j.finished_at = datetime.utcnow()
-                s.add(j)
-                s.commit()
-        except Exception as exc:  # noqa: BLE001 - arka-plan işi ASLA sessizce kaybolmaz
-            _log.warning("AskJob arka-plan çalıştırması başarısız", exc_info=True)
-            with Session(engine) as s:
-                j = s.get(AskJob, job_id)
-                if ask_jobs.yayimlanabilir_mi(j.status):   # durduruldu → `failed` DEMEZ
-                    j.status = "failed"
-                j.error = str(exc)[:500]                   # tanı yine de yazılır
-                j.finished_at = datetime.utcnow()
-                s.add(j)
-                s.commit()
-
-    # 🔴 **Kimlik thread'e KOPYALANMAZ** — ve bu, `istek_kimligi`'nin belgelediği tam
-    # sınırdır. Ölçüldü (`DIMA_MOTOR_CLS=on`): arka-plan Discovery işi kimliksiz koştu,
-    # motor planlamada fail-closed patladı ve iz *"dürüst ret"* yerine bir `SQL_PLANNING`
-    # hatası taşıdı — yani **kullanıcıya yanlış sebep** gösteriliyordu.
-    #
-    # ⚠ Sarmalayıcı kimliği **şimdi** yakalar: iş kuyruğa girdikten sonra istek biter ve
-    # bağlam sıfırlanır. *Bir kimliği kullanacağın anda aramak, onu kaybetmenin en kolay
-    # yoludur.*
-    threading.Thread(target=istek_kimligi.kimlik_kopyala(_bg), daemon=True).start()
-    return AskResponse(
-        question=body.question, source=None, job_id=str(job_id),
-        note="Bu soru arka planda hazırlanıyor…",
-        trace=["Discovery: arka-plan işine kuyruklandı (ask_async_discovery)"],
-    )
+#: 🔴 FAZ 7 tavan borcu — gövde `app/discovery_kuyrugu.py`'ye **taşındı**
+#: (`ask.py` 2442/2419). Aday **bağımlılıkla** seçildi: bu fonksiyon `ask.py`'nin
+#: **hiçbir** yerel fonksiyonuna dokunmuyor (`runner` zaten parametre), dolayısıyla
+#: döngüsel import riski yok. Yeniden-ihraç tek çağrı yerini korur.
+from app.discovery_kuyrugu import kuyrukla as _queue_discovery_job  # noqa: E402,F401
 
 
 @router.post("/ask", response_model=AskResponse,
@@ -1627,107 +1533,15 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     thread_id=body.thread_id, reply_to_label=body.reply_to_label,
                     is_new_topic=not is_followup, endpoint="ask")
 
+    # 🔴 FAZ 7 tavan borcu — gövde `app/gorsel_ekleme.py`'ye **taşındı** (`ask()` 1206/1151).
+    # Burada kalan yalnız `ask()` yerellerinin bağlanması. ⚠ Sarmalayıcı bilinçli: on
+    # çağrı yeri var ve her birine beş argüman eklemek, bir tavan borcunu on ayrı diff
+    # satırına çevirirdi. ⚠ `_adhoc_store` **argüman** olarak geçer, import edilmez:
+    # `gorsel_ekleme`'nin `ask.py`'yi import etmesi döngüsel bağımlılık olurdu.
     def _attach_viz(resp: AskResponse, result: dict | None, cq: dict | None = None) -> AskResponse:
-        """Faz 2d+3 (viz.py↔chart.ts birleştirme, 31 Temmuz 2026): ÖNCEDEN `units={}`/
-        `lower_set=[]` SABİT geçiliyordu — `recommend()`'in birim-farkındalığı (facet_measure/
-        dual_axis/partition rengi) cube metadata'sında GERÇEK birimler olsa bile HİÇBİR ZAMAN
-        devreye giremiyordu (schema zaten `units`/`lower_is_better`'ı taşıyor, ask.py bunu
-        yalnız yanlışlıkla kullanmıyordu). Ayrıca `recommend()` istisna fırlatırsa `resp.viz`
-        sessizce None kalıyordu ve `result` yine de döndürülüyordu — frontend bu durumda
-        `chart.ts`'in KENDİ (daha az yetenekli, `recommend()` katmanı olmayan — bkz. viz.py
-        modül docstring'i) yerel `analyze()`'ine düşüyordu: "tek backend-hesaplı spec" hedefinin
-        TAM TERSİ bir sessiz-geriye-düşüş. İki düzeltme: (1) gerçek units/lower_set schema'dan
-        okunur, (2) recommend() başarısız olursa ÇIPLAK analyze()'e (birim/karşılaştırma
-        farkındalığı yok ama HER ZAMAN bir karar) düşülür — resp.viz sonuç doluyken asla None
-        kalmaz."""
-        # Metadata argümanları `viz.meta_args`'tan gelir (Faz I1) — burada elle
-        # toplanmaz. Elle toplama bu dosyada zaten bir `measure_units` yazım hatası
-        # üretmişti ve `semi_additive` hiçbir zaman geçirilmemişti.
-        cube_meta_for_viz: dict | None = None
-        if cq and cq.get("cube"):
-            # FAZ 9.9 — AD-HOC CUBE TENANT KATALOĞUNDA YOKTUR. Eskiden yalnız `schema`'ya
-            # bakılıyordu → Discovery cevabında `cube_meta` **her zaman None** kalıyordu ve
-            # MIMARI §6.2z'nin *"doğru grafik · köken hepsi açıldı"* iddiası **karşılıksız**
-            # oluyordu: kapı yeşil, hiçbir şey açılmıyor. `_attach_next_steps` bunu zaten
-            # doğru yapıyordu — kural bir tüketiciye öğretilmiş, kardeşine öğretilmemişti
-            # (*"kimlik asimetrisi"*, MIMARI §6.1h).
-            _sema = schema
-            if cq.get("adhoc"):
-                _kayit = _adhoc_store(request).get(str(cq.get("adhoc_id") or ""))
-                if _kayit and _kayit.get("schema"):
-                    _sema = _kayit["schema"]
-            cube_meta = cube_router._cube_meta(_sema, cq["cube"])
-            if cube_meta:
-                cube_meta_for_viz = cube_meta
-                # Madde 12 (1 Ağustos 2026): KPI-olmayan cube raporları için de düz-dil
-                # hesaplama açıklaması — drill.py'nin ZATEN VAR OLAN saf fonksiyonu
-                # (önceden yalnız /ask/drill'e bağlıydı) normal /ask cevabına taşınır.
-                try:
-                    from app.drill import formula_explanation
-
-                    resp.calculation_explanation = formula_explanation(cq, cube_meta)
-                except Exception:
-                    _log.warning("hesaplama açıklaması üretilemedi (best-effort)",
-                                exc_info=True)
-                # JOIN SOYAĞACI (Faz 1.3): kullanılan boyutlardan hangileri cube'un KENDİ
-                # tablosundan DEĞİL, bir ilişki üzerinden geldi? Ürünün tezi "her sayının
-                # kaynağını kanıtlayabilmek"; bir kolon iki tablo öteden geliyorsa bunu
-                # kullanıcı GÖRMELİ. `dimension_origin` yalnız ilişki-türevi boyutlarda
-                # dolu olduğundan (yerel boyutlarda yok) burası doğal olarak sessiz kalır.
-                try:
-                    origin = cube_meta.get("dimension_origin") or {}
-                    satir = [
-                        f"“{cube_meta.get('dimension_labels', {}).get(d, d)}” boyutu "
-                        f"{origin[d]['model']}.{origin[d]['column']} kolonundan, "
-                        f"{origin[d]['relationship']} ilişkisi üzerinden geldi "
-                        f"({origin[d].get('hops', 1)} sıçrama)."
-                        for d in (cq.get("dimensions") or []) if d in origin
-                    ]
-                    if satir:
-                        resp.calculation_explanation = " ".join(
-                            filter(None, [resp.calculation_explanation, *satir]))
-                except Exception:
-                    _log.warning("join soyağacı üretilemedi (best-effort)", exc_info=True)
-        try:
-            resp.viz = viz.recommend(result, cube_query=cq, **viz.meta_args(cube_meta_for_viz))
-            # 🔴 FAZ 5.12 — İÇGÖRÜ PAKETİ. **`resp.viz` DEĞİŞMEZ**: paket AYRI bir alanda
-            # (`viz_paketi`) taşınır ve bayrak kapalıyken `None` kalır → tekil kart bugünkü
-            # hâliyle görünür (V-5/E-3: **birebir eski davranış**).
-            #
-            # ⚠ `recommend`i iki kez çağırmak yerine paketin İLK üyesini `resp.viz` yapmak
-            # daha "temiz" görünürdü — ama o an tekil dönüşün bayt-bayt aynılığı **bir
-            # varsayıma** dönerdi. *Geriye uyumluluk, ikinci bir çağrının maliyetinden
-            # ucuzdur.*
-            # 🔴 FAZ 5.13a — HAYALET SERİ. Aynı sorgunun bir önceki koşumu.
-            # ⚠ Bulunamaması cevabı DÜŞÜRMEZ: hayalet seri bir **ek**tir, bir cevap değil.
-            if "ui_knowledge_center" in resolve_for(settings, principal):
-                try:
-                    from app.contracts import ContractStore
-
-                    resp.previous_result = ContractStore().find_previous(
-                        cq,
-                        tenant_id=str(getattr(principal, "tenant_id", "") or "") or None,
-                        mdl_version=str(schema.get("version") or ""))
-                except Exception:                            # noqa: BLE001
-                    _log.warning("hayalet seri okunamadı (best-effort)", exc_info=True)
-            if "ui_icgoru_paketi" in resolve_for(settings, principal):
-                try:
-                    _pk = viz.recommend(result, cube_query=cq, paket=True,
-                                        **viz.meta_args(cube_meta_for_viz))
-                    resp.viz_paketi = _pk if isinstance(_pk, list) and len(_pk) > 1 else None
-                except Exception:                            # noqa: BLE001
-                    _log.warning("içgörü paketi üretilemedi (best-effort)", exc_info=True)
-        except Exception:
-            _log.warning("viz önerisi üretilemedi (recommend) — taban analyze()'e düşülüyor",
-                        exc_info=True)
-            try:
-                cols = (result or {}).get("columns") or []
-                rows = (result or {}).get("rows") or []
-                resp.viz = viz.analyze(cols, rows) if (cols and rows) else None
-            except Exception:
-                _log.warning("viz taban kararı (analyze) da üretilemedi (best-effort)",
-                            exc_info=True)
-        return resp
+        return gorsel_ekleme.gorsel_ekle(resp, result, cq, schema=schema, settings=settings,
+                                         request=request, principal=principal,
+                                         adhoc_coz=_adhoc_store)
 
     def _record_contract(cq: dict | None, sql: str | None, result: dict | None,
                          source: str) -> str | None:
