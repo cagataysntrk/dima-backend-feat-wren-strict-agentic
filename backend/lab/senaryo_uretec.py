@@ -358,9 +358,78 @@ def _ay_cekimle(ay: str, kalip: tuple[str, str]) -> str:
     return ay + (kalip[0] if son_unlu in _KALIN else kalip[1])
 
 
-DONEMLER = _DONEM_YALIN + tuple(
-    _ay_cekimle(ay, kalip) for ay in _AYLAR for kalip in _EK_KALIPLARI
-)
+_DONEM_CEKIMLI = tuple(_ay_cekimle(ay, kalip)
+                       for ay in _AYLAR for kalip in _EK_KALIPLARI)
+
+DONEMLER = _DONEM_YALIN + _DONEM_CEKIMLI
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🔴 DÖNEM **SINIFI** — eksen patlamasının çözümü
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# ## Ölçülen problem
+#
+# `donem` ekseni 82 değer taşıyordu (15 yalın + 60 çekimli + 7 aralık). Pairwise'ın
+# boyu **en büyük iki eksenin çarpımı** kadardır: 135 ölçü × 82 dönem = **11 070**
+# ikili → korpus 10 589 vakaya şişti ve koşumu **~70 sn** sürdü.
+#
+# ## Ama o çarpım gereksiz — ve nedeni yapısal
+#
+# *"`şubata` çekimi tanınıyor mu"* sorusu **hangi ölçüyle sorulduğuna bağlı değildir**:
+# dönem çözümlemesi ölçü eşleştirmesinden **ayrı bir mekanizma** (`_period_hit_words`
+# vs `_match_measure`). Yani 135 ölçünün her biriyle 60 ay çekimini denemek, aynı
+# mekanizmayı 8 100 kez sınamaktır.
+#
+# > ⚠ *Bir kombinasyon, iki eksen gerçekten etkileşiyorsa gereklidir.* Etkileşmeyen
+# > iki ekseni çaprazlamak kapsam üretmez — yalnız süre üretir. Ve **uzun bir kapı,
+# > atlanan bir kapıya dönüşür**.
+#
+# ## Çözüm: dönem **sınıfı** eksene girer, somut biçim içinden döner
+#
+# Pairwise `donem_sinifi` (7 değer) üzerinden kurulur; her vakada o sınıftan somut bir
+# biçim **sırayla** seçilir. Böylece 60 ay çekiminin **hepsi** yine üretilir (kapsam
+# korunur, `dil_ozellikleri` kapısı bunu sınıyor) ama pairwise 135 × 7 = **945** ikiliye
+# iner. *Kapsam kaybolmuyor — kombinasyon kayboluyor, ki zaten anlamsızdı.*
+
+DS_YOK = "yok"
+DS_GORELI = "goreli"        # bu ay · geçen yıl · son 3 ay
+DS_AY_YALIN = "ay_yalin"    # ocak ayında · haziran
+DS_AY_CEKIMLI = "ay_cekimli"  # 🔴 şubata · ocakla · martta — CANLI KUSUR
+DS_CEYREK = "ceyrek"        # 2. çeyrek · yılbaşından bugüne
+DS_YIL = "yil"              # 2025'te
+DS_ARALIK = "aralik"        # ocaktan marta
+
+DONEM_SINIFLARI = (DS_YOK, DS_GORELI, DS_AY_YALIN, DS_AY_CEKIMLI,
+                   DS_CEYREK, DS_YIL, DS_ARALIK)
+
+_SINIF_BICIMLERI: dict[str, tuple[str, ...]] = {
+    DS_YOK: ("",),
+    DS_GORELI: ("bu ay", "geçen ay", "bu yıl", "geçen yıl", "son 3 ay", "son 6 ay",
+                "son 12 ay", "geçen hafta", "dün", "bu hafta"),
+    DS_AY_YALIN: ("ocak ayında", "mart ayı", "haziran", "aralık ayında"),
+    DS_AY_CEKIMLI: _DONEM_CEKIMLI,          # 🔴 altmışının HEPSİ sırayla dönüyor
+    DS_CEYREK: ("2. çeyrek", "3. çeyrek", "yılbaşından bugüne"),
+    DS_YIL: ("2025'te",),
+    DS_ARALIK: ("ocaktan marta", "nisan-haziran arası", "mayıstan bugüne"),
+}
+
+
+class _SinifSayaci:
+    """Her dönem sınıfı için somut biçimleri **sırayla** dolaştırır.
+
+    ⚠ Rastgele seçim yerine **döngüsel**: rastgelelikte 60 ay çekiminin bazıları hiç
+    seçilmeyebilir ve `dil_ozellikleri` kapısı sessizce zayıflar. Döngüsel seçim,
+    yeterli vaka üretildiğinde **hepsinin** görünmesini garanti eder.
+    """
+
+    def __init__(self) -> None:
+        self._i: dict[str, int] = {k: 0 for k in _SINIF_BICIMLERI}
+
+    def al(self, sinif: str) -> str:
+        bicimler = _SINIF_BICIMLERI[sinif]
+        d = bicimler[self._i[sinif] % len(bicimler)]
+        self._i[sinif] += 1
+        return d
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -649,7 +718,7 @@ def _katalog_parmak_izi(schema: dict, tohum: int) -> str:
 #: ⚠ Üreteç değiştiğinde önbellek **bayatlar**. Bu sayı elle artırılır; artırılmazsa
 #: eski korpus sessizce yeniden kullanılır ve *"değişikliğim neden bir şey yapmadı"*
 #: diye saatler harcanır. *Bir önbelleğin en tehlikeli hâli, doğru görünen bayat hâlidir.*
-SURUM = 3
+SURUM = 4        # dönem ekseni sınıfa çevrildi → önbellek bayat
 
 
 def uret(schema: dict, *, tohum: int = 20260805,
@@ -717,18 +786,22 @@ def uret(schema: dict, *, tohum: int = 20260805,
         "olcu": olcu_refleri,
         "niyet": list(NIYET_KADEME),
         "kayit": list(KAYITLAR),
-        "donem": list(DONEMLER),
+        # 🔴 Eksende **sınıf** var, somut biçim değil — gerekçe yukarıda ölçülü.
+        "donem_sinifi": list(DONEM_SINIFLARI),
         "dolgu": list(DOLGULAR),
         "bicim": list(BICIMLER),
     }
     kombinasyonlar, toplam_ikili = pairwise(eksenler, rng)
+    sayac_donem = _SinifSayaci()
 
     vakalar: list[dict] = []
     gorulen: set[frozenset] = set()
     kopya_atlanan = 0
     for k in kombinasyonlar:
         cad, ifade, boyut = k["olcu"]
-        niyet, kayit, donem = k["niyet"], k["kayit"], k["donem"]
+        niyet, kayit = k["niyet"], k["kayit"]
+        donem_sinifi = k["donem_sinifi"]
+        donem = sayac_donem.al(donem_sinifi)
         dolgu, bicim = k["dolgu"], k["bicim"]
         # ⚠ İKİ-ÖLÇÜ niyetlerinde ikinci ölçü **başka bir cube'dan** seçilir: aynı
         # cube'un iki ölçüsü zaten kompozisyon değil, çoklu-ölçü sorgusudur. Canlı
@@ -752,7 +825,8 @@ def uret(schema: dict, *, tohum: int = 20260805,
         kabul, yasak = _beklenti(niyet, ifade, sahipler, donem, kayit)
         vakalar.append({
             "soru": soru, "cube": cad, "olcu_ifade": ifade, "boyut": boyut,
-            "niyet": niyet, "kayit": kayit, "donem": donem, "dolgu": dolgu,
+            "niyet": niyet, "kayit": kayit, "donem": donem,
+            "donem_sinifi": donem_sinifi, "dolgu": dolgu,
             "bicim": bicim, "olcu2": olcu2,
             "kademe": NIYET_KADEME[niyet], "persona": persona_of(cad),
             "kabul": kabul, "yasak": yasak,
@@ -773,6 +847,8 @@ def uret(schema: dict, *, tohum: int = 20260805,
         "niyet": dict(Counter(v["niyet"] for v in vakalar)),
         "dolgu": dict(Counter(v["dolgu"] or "yok" for v in vakalar)),
         "bicim": dict(Counter(v["bicim"] or "düz" for v in vakalar)),
+        "donem_sinifi": dict(Counter(v["donem_sinifi"] for v in vakalar)),
+        "donem_bicimi_sayisi": len({v["donem"] for v in vakalar}),
     }
     if _yol and not azami:
         try:
