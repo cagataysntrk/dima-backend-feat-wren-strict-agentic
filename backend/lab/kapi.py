@@ -247,6 +247,38 @@ def _yol_desenleri(degisen: list[str]) -> list[re.Pattern[str]]:
     return desenler
 
 
+#: 🔴 UÇTAN-TÜKETİLEN BAĞIMLILIKLAR — import grafiğinin GÖREMEDİĞİ kenarlar.
+#:
+#: `_desenler` yalnız **import-biçimli** eşleşme sayar ve kendi belgesi bunu bilinçli bir
+#: sınır olarak yazar: *"bir modülü import etmeden yalnız HTTP ucundan tüketen test
+#: kaçabilir."* Sınır doğruydu (sade ad araması 67/137 dosya seçiyordu) ama bedeli bu
+#: turda **üçüncü kez** ödendi:
+#:
+#:     `app/llm.py` değişti  →  `test_yol_siniri` SEÇİLMEDİ  →  kırmızı iki demet gizlendi
+#:
+#: O test `llm.py`'yi hiç import etmez; `ask(client, …)` ile **uçtan** tüketir. Ve tam da
+#: `llm.py`'nin uydurma-SQL dalına dayanıyordu.
+#:
+#: ⚠ Çözüm import grafiğini genişletmek DEĞİL (ölçüldü, reddedildi) — **adı olan, sayılı
+#: ve gerekçeli** bir kenar listesi. *Bir grafiğin göremediği kenarı elle çizmek, grafiği
+#: bulanıklaştırmaktan iyidir.*
+UCTAN_TUKETILEN: dict[str, tuple[str, ...]] = {
+    # Sağlayıcı sınırı: cevaplama merdiveninin EN ALT basamağı. Onu import eden test
+    # neredeyse yok; onu HTTP ucundan ölçen test çok.
+    "app/llm.py": ("test_yol_siniri.py", "test_uydurma_sayi_yok.py",
+                   "test_discovery_dogrulama.py"),
+}
+
+
+def _uctan(degisen: list[str]) -> set[str]:
+    """Import grafiğinin göremediği kenarlardan gelen test dosyaları."""
+    out: set[str] = set()
+    for d in degisen:
+        anahtar = str(pathlib.PurePosixPath(d)).removeprefix("backend/")
+        out |= set(UCTAN_TUKETILEN.get(anahtar, ()))
+    return {a for a in out if (TESTLER / a).exists()}
+
+
 def _secim(degisen: list[str]) -> tuple[list[str], int]:
     hepsi = sorted(f.name for f in TESTLER.glob("test_*.py"))
     secili = {f for f in CEKIRDEK if (TESTLER / f).exists()}
@@ -255,6 +287,7 @@ def _secim(degisen: list[str]) -> tuple[list[str], int]:
         ad = pathlib.PurePosixPath(d).name
         if ad.startswith("test_") and (TESTLER / ad).exists():
             secili.add(ad)
+    secili |= _uctan(degisen)
     desenler = _desenler(degisen) + _yol_desenleri(degisen)
     fe = _frontend_degisti(degisen)
     if desenler or fe:

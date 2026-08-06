@@ -3,8 +3,20 @@
 Bayrak `ask_async_discovery` VARSAYILAN KAPALI (demo/packs/features.yml'e bilerek
 eklenmedi) — bu testler flag'i yalnız KENDİ SÜRELERİNCE (monkeypatch, testten sonra
 otomatik geri alınır) açar; session-scoped `client` fixture'ını paylaşan DİĞER testler
-etkilenmez. "sevkiyat durumu" `test_discovery_execution_failure.py`'de olduğu gibi
-`route()`'un DOĞAL olarak None döndüğü (Discovery'ye düşen) bir soru — mock gerekmez."""
+etkilenmez. "asdf zxcv listele" `test_discovery_execution_failure.py`'de olduğu gibi
+`route()`'un DOĞAL olarak None döndüğü (Discovery'ye düşen) bir soru — mock gerekmez.
+    ## ⟳ ARAÇ DEĞİŞTİ (2026-08-06) — ölçüt DEĞİL
+
+    Bu test `"sevkiyat durumu"` kullanıyordu ve kural motoru ona
+    `SELECT COUNT(*) FROM partiler` → **37 878** üretiyordu. O bir **uydurmaydı**: dört
+    farklı anlamsız soru aynı sayıyı veriyordu (`tests/test_uydurma_sayi_yok.py`) ve dal
+    `ce5177d`de kapatıldı → bu kapı kırmızıya döndü.
+
+    Yeni araç `"asdf zxcv listele"`: kapsam kapısından düşer, Discovery'ye ulaşır ve
+    kural motorunun **satır dökümü** dalından cevaplanır. Döküm bir sayı UYDURMAZ —
+    veriyi olduğu gibi gösterir. *Bir kapının ölçtüğü şey doğruysa, o şeyi ölçme biçimi
+    değişebilir.*
+"""
 
 from __future__ import annotations
 
@@ -25,7 +37,7 @@ def _enable_async_discovery(monkeypatch) -> None:
         return flags
 
     monkeypatch.setattr(features_mod, "resolve_for", fake)
-    # VQR'ı devre dışı bırak: "sevkiyat durumu" ÖNCEKİ bir testte (flag-off) BAĞIMSIZ
+    # VQR'ı devre dışı bırak: "asdf zxcv listele" ÖNCEKİ bir testte (flag-off) BAĞIMSIZ
     # soru olarak başarıyla cevaplanıp otomatik VQR'a yazılmış olabilir (adım 6, ask.py) —
     # sonraki çağrılarda near_exact eşleşmesi Discovery'ye HİÇ uğramadan (ve dolayısıyla
     # bu bayrak kontrolüne hiç uğramadan) VQR'dan cevap dönebilirdi. Testler birbirinden
@@ -49,7 +61,7 @@ def _poll_job(client, job_id: str, *, max_tries: int = 100, delay: float = 0.15)
 def test_flag_off_by_default_discovery_stays_synchronous(client):
     """Regresyon kilidi: bayrak override'sız (varsayılan hal) /ask HİÇBİR ZAMAN job_id
     döndürmez — Discovery senkron çalışır, tam AskResponse ilk çağrıda gelir."""
-    r = client.post("/ask", json={"question": "sevkiyat durumu", "execute": True,
+    r = client.post("/ask", json={"question": "asdf zxcv listele", "execute": True,
                                   "session_id": "eval-sync-default"})
     assert r.status_code == 200, r.text
     body = r.json()
@@ -60,7 +72,7 @@ def test_flag_off_by_default_discovery_stays_synchronous(client):
 
 def test_ask_queues_background_job_when_flag_on(client, monkeypatch):
     _enable_async_discovery(monkeypatch)
-    r = client.post("/ask", json={"question": "sevkiyat durumu", "execute": True,
+    r = client.post("/ask", json={"question": "asdf zxcv listele", "execute": True,
                                   "session_id": "eval-async-1"})
     assert r.status_code == 200, r.text
     body = r.json()
@@ -72,7 +84,7 @@ def test_ask_queues_background_job_when_flag_on(client, monkeypatch):
     jbody = _poll_job(client, body["job_id"])
     assert jbody["status"] == "completed", jbody
     assert jbody["response"] is not None
-    assert jbody["response"]["question"] == "sevkiyat durumu"
+    assert jbody["response"]["question"] == "asdf zxcv listele"
     assert jbody["response"].get("job_id") is None  # tamamlanan cevap kendi job_id taşımaz
 
 
@@ -80,7 +92,7 @@ def test_ask_job_persists_in_db(client, monkeypatch):
     """Kalıcılık: job DB'de durur, TAZE bir Session ile (yanıt nesnesinden bağımsız)
     sorgulanabilir — in-memory değil (dış yol haritası 0.1 'bitti sayılır'ı)."""
     _enable_async_discovery(monkeypatch)
-    r = client.post("/ask", json={"question": "sevkiyat durumu", "execute": True,
+    r = client.post("/ask", json={"question": "asdf zxcv listele", "execute": True,
                                   "session_id": "eval-async-2"})
     job_id = r.json()["job_id"]
     _poll_job(client, job_id)
@@ -111,7 +123,7 @@ def test_ask_job_failure_is_honest_never_silent(client, monkeypatch):
 
     monkeypatch.setattr(WrenService, "query", always_fails)
 
-    r = client.post("/ask", json={"question": "sevkiyat durumu", "execute": True,
+    r = client.post("/ask", json={"question": "asdf zxcv listele", "execute": True,
                                   "session_id": "eval-async-3"})
     assert r.status_code == 200, r.text
     job_id = r.json()["job_id"]
@@ -146,7 +158,7 @@ def test_ask_job_trace_accumulates_and_persists(client, monkeypatch):
     üzerinden, sonuçtan post-hoc türetilmeden) yazıldığını doğrudan DB'den kontrol eder —
     nihai job.trace ile response.trace'in TUTARLI olduğunu da kanıtlar."""
     _enable_async_discovery(monkeypatch)
-    r = client.post("/ask", json={"question": "sevkiyat durumu", "execute": True,
+    r = client.post("/ask", json={"question": "asdf zxcv listele", "execute": True,
                                   "session_id": "eval-async-trace"})
     job_id = r.json()["job_id"]
     jbody = _poll_job(client, job_id)

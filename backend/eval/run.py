@@ -47,7 +47,26 @@ def classify(d: dict) -> str:
     telemetri için `source` set ediyor — bu yüzden `source` kontrolü ÖNCE gelirse her
     chip yanıtı yanlışlıkla "answer" sayılıyordu (canlı 2026-07-31 kök neden: CI'a ilk
     bağlandığında ~32 puanlık sahte precision düşüşü — ürün regresyonu değil, bu fonksiyon
-    bayattı). `suggestions` varlığı chip'in daha güvenilir imzası — önce o kontrol edilir."""
+    bayattı). `suggestions` varlığı chip'in daha güvenilir imzası — önce o kontrol edilir.
+
+    ## 🔴 VE O İMZA 2026-08-06'DA YETMEZ OLDU — ölçümle yakalandı
+
+    KÖK-9 (bilinen belirsizlik beyanı) **başarılı bir cevabın yanına** chip koyuyor:
+    sayı gelir, satır gelir, `source=cube` — sadece *"«tep» birden fazla yerde tanımlı"*
+    diye bir seçenek daha eklenir. `suggestions` imzası bunu **chip** sayınca:
+
+        coverage **−23,4%**   ← ürün regresyonu DEĞİL, bu fonksiyon bayattı
+
+    Ve bu, aynı fonksiyonun 2026-07-31'de yaşadığı hatanın **birebir kardeşi**: o gün de
+    sahte bir precision düşüşü ürün kusuru sanılmıştı.
+
+    🔴 Doğru imza: **bir cevap verildi mi?** Bir sonuç satırı varsa cevap verilmiştir;
+    yanına konan seçenek onu bir soruya çevirmez. *Bir cevabın yanına seçenek koymak,
+    cevabı geri almak değildir.*
+    """
+    # Cevap GERÇEKTEN verildi mi — chip'lerden ÖNCE bu sorulur.
+    if (d.get("result") or {}).get("row_count") is not None and d.get("source"):
+        return "answer"
     if d.get("suggestions"):
         return "chip"
     if d.get("source"):

@@ -176,6 +176,28 @@
         "cube_cakismasi": 4,
         "_not": "Kalanların hepsi bu turdan ÖNCE de vardı (`elektrik`·`tep`·`fire`·`üretim`·`marj`·`arıza`·`tamir`·`maliyet`). `elektrik` için FAZ 2a'da zaten bir sahiplik kararı yazılmıştı ama `sahiplik_kararlari.yml` **öneri**dir, uygulayıcı değil (FAZ 3.1b: uygulamak korpusu %93,2→%92,6 geriletmişti). Yani bu küme bir KATALOG borcudur, bir router kusuru değil."
       }
+    },
+    {
+      "faz": "denetim kök çözümleri: KÖK-7a/7c/7d/7e + KÖK-9 + uydurma-sayı kapatması",
+      "olculdu": "2026-08-06",
+      "commit": "kok-7-9",
+      "sirketler": {
+        "boyahane": {
+          "erisim_yuzde": 69
+        },
+        "atiksan": {
+          "erisim_yuzde": 69
+        },
+        "gulteks": {
+          "erisim_yuzde": 69
+        },
+        "gitas": {
+          "erisim_yuzde": 72
+        }
+      },
+      "toplam_dogru_cube_yuzde": 95.1,
+      "vaka_dogru_yuzde": 94.2,
+      "_neden_YAZILDI": "🔴 Bir önceki tur `toplam_dogru_cube_yuzde`'yi BİLEREK yazmamıştı ve gerekçesi doğruydu: *'yazsaydık çıta %92,7'den %92,5'e İNERDİ; bir kapıyı geçmek için çıtayı indirmek, geçmek değildir.'* ⚠ Ama o karar üç kapıyı da (`test_KAPI_SON_TURA_bakiyor_koke_DEGIL` · `test_KOSUM_HATASI_sessizce_YESIL_olmuyor` · `test_SON_TURDA_IKI_PAYDA_da_var`) KIRMIZI bıraktı ve o kırmızı GÖRÜLMEDİ — yerel kapı korpusa indirilmişti. *Bir kararı belgelemek, onun bedelini ödemek değildir.*\n🔴 Bugün yazmanın sebebi tersi: oran **%95,1** ve çıtayı **YÜKSELTİYOR** (%93,2 → %95,1). Önceki turun kendi cümlesi bunu şart koşmuştu: *'kalan 36 çakışma kapatıldıkça oran yukarı gitmelidir.'* Gitti.\n⊙ Bu turun katkısı ve neden ORAN YÜKSELDİ: uydurma-sayı dalı kapatıldı (anlaşılmamış soruya `SELECT COUNT(*)` → tek sayı) ve o cevaplar yanlış-cube havuzundan ÇIKTI. Yani oran, kapsam daraltılarak değil **ölçüm dürüstleştirilerek** yükseldi — `gitas` vakasının (payda küçülüp oran yükselmesi) TERSİ: burada payda sabit, dört şirket de ayakta (69·69·69·72).\n⊙ Semantik vaka **%92,1 → %94,2**. İnen kök çözümler: KÖK-7a (`in q` yasağı, 25 sözlük) · 7c (çok-geçiş) · 7d (türetme, fail-closed) · 7e (ay çekimi %18→%100) · KÖK-9 (belirsizlik chip'i + tek teşhis kaynağı)."
     }
   ],
   "vaka_dogru_yuzde": 92.1,

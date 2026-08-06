@@ -109,13 +109,29 @@ def chipler(terim: str, oteki_cubelar: list[str],
 
 
 def cube_etiketi(cube_meta: dict[str, Any]) -> str:
-    """Kullanıcıya gösterilecek cube adı — ilk sinonim, yoksa teknik ad.
+    """Kullanıcıya gösterilecek cube adı.
 
-    ⚠ Teknik ad (`enerji_makine`) bir kullanıcı için jargondur; katalogdaki ilk sinonim
-    (`bölüm enerji`) onun kendi diliyle yazılmıştır. `!` işaretçisi kırpılır —
-    o bir eşleşme kuralıdır, gösterilecek metin değil.
+    ## 🔴 SIRA ÖLÇÜMLE DÜZELTİLDİ — ilk yazım YANILTICIYDI
+
+    İlk yazım *"ilk sinonim, yoksa teknik ad"* diyordu ve `eval` koşumunda ne ürettiği
+    görüldü:
+
+        «sapma» birden fazla yerde tanımlı — bu cevap **fire** tanımıyla hesaplandı.
+
+    `fire`, `parti` cube'unun ilk sinonimidir — ama kullanıcı için o **başka bir
+    ölçünün adıdır**. Cümle *"sapmayı fire olarak hesapladım"* diye okunuyordu ve bu,
+    beyan etmeye çalıştığımız şeyin tam tersini söylüyordu.
+
+    🔴 Doğru sıra: **`display` → teknik ad → ilk sinonim.** `display` katalogda tam da
+    *"bu cube'un insan adı"* olarak duruyor; sinonimler ise **eşleşme** için var ve
+    ilkinin bir ad olması **tesadüftür**.
+
+    *Bir alanı amacı dışında kullanmak, çoğu zaman bir kez işe yarar ve sonra yanıltır.*
+
+    ⚠ `!` işaretçisi kırpılır — o bir eşleşme kuralıdır, gösterilecek metin değil.
     """
+    ad = cube_meta.get("display") or cube_meta.get("name")
+    if ad:
+        return str(ad).removesuffix("!")
     syns = cube_meta.get("synonyms") or []
-    if syns:
-        return str(syns[0]).removesuffix("!")
-    return str(cube_meta.get("name") or "")
+    return str(syns[0]).removesuffix("!") if syns else ""

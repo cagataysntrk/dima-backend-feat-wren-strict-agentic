@@ -70,7 +70,22 @@ def test_SIRKET_tabanlari_SON_turla_ezilir():
 
 # --- KAPI MANTIĞI: gerilemeyi GERÇEKTEN yakalıyor mu ------------------------------
 
-def _dort_sirket(erisim_carpani: float = 1.0, dogruluk: float = 0.932) -> list[dict]:
+#: 🔴 Sentetik *"tabanı koruyan koşum"*un doğruluğu TABANDAN OKUNUR, sabit yazılmaz.
+#:
+#: Ölçüldü (2026-08-06): sabit `0.932` yazılıydı ve taban **%95,1**'e çıkınca fikstür
+#: kendi kendine bir **gerileme** üretti — üç kapı birden kırmızı verdi. Yani *"taban
+#: korunuyor"* diye kurulan koşum, tabanın kendisinden **geride kalmıştı**.
+#:
+#: ⚠ Ve bu, bu dosyanın KENDİ dersinin bir başka yüzü: `_taban_beklenen()` kök yerine
+#: son tura bakıyor çünkü *"köke bakan bir kapı gerilemeyi kaçırır."* Aynı şey fikstür
+#: için de geçerli: **tabana bakmayan bir fikstür, tabanı test etmez.**
+#: *Bir taban değeri kodda iki kez yazılıyorsa, ikincisi er ya da geç bayatlar.*
+def _taban_dogrulugu() -> float:
+    return _taban_beklenen()["dogru_cube_yuzde"] / 100.0
+
+
+def _dort_sirket(erisim_carpani: float = 1.0, dogruluk: float | None = None) -> list[dict]:
+    dogruluk = _taban_dogrulugu() if dogruluk is None else dogruluk
     beklenen = _taban_beklenen()["sirketler"]
     out = []
     for ad, v in beklenen.items():
@@ -111,7 +126,8 @@ def test_TOLERANS_gurultuyu_ELEMEZ_ama_GERCEK_dususu_yakalar():
     assert TOLERANS_DOGRULUK < TOLERANS_PUAN, \
         "doğruluk toleransı erişimden DAR olmalı — ana metrik odur"
 
-    gecti, _ = kapi_degerlendir(_dort_sirket(dogruluk=0.932 - TOLERANS_DOGRULUK / 200))
+    gecti, _ = kapi_degerlendir(
+        _dort_sirket(dogruluk=_taban_dogrulugu() - TOLERANS_DOGRULUK / 200))
     assert gecti, "yuvarlama gürültüsü kapıyı kırmızı yaktı"
 
 
@@ -119,7 +135,14 @@ def test_KOSUM_HATASI_sessizce_YESIL_olmuyor():
     """Bir şirket patlarsa kapı "kıyaslanacak veri yok" diye yeşil kalmamalı — ölçüm
     aracının sessizce kırılması bu deponun en pahalı dersidir (MIMARI §6.4)."""
     gecti, satirlar = kapi_degerlendir([{"company": "boyahane", "error": "patladı"}])
-    assert not gecti and any("HATA" in s for s in satirlar)
+    assert not gecti, "🔴 patlayan şirketle kapı YEŞİL kaldı"
+    # ⟳ Metin `"HATA"` → `"⊘ ÖLÇÜLEMEDİ"` olmuştu ve bu test güncellenmemişti (uzun süre
+    # kırmızı, görülmedi). Yeni metin DAHA İYİ: deponun üçüncü-durum disiplini bir
+    # başarısızlığı değil bir **ölçüm boşluğunu** adlandırıyor. Kapı artık o kanonik
+    # işarete bakıyor. *Bir kapı, koruduğu şeyin diliyle konuşmalıdır.*
+    assert any("ÖLÇÜLEMEDİ" in s for s in satirlar), (
+        "🔴 ölçüm boşluğu ADIYLA raporlanmıyor — sessiz bir kırmızı, yanlış bir "
+        f"gerileme teşhisi olarak okunur: {satirlar}")
 
 
 # --- TÜKETİCİ: taban bir daha YETİM kalmasın --------------------------------------

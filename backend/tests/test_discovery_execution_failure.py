@@ -6,8 +6,20 @@ ayrı bir aşamadır ve karmaşık sorularda patlayabiliyordu → çıplak 500 (
 turu ÇALIŞTIRMA hatasında da denenir; o da başarısız olursa dürüst ret (asla 500).
 
 Bu test GERÇEK bir LLM'in üretebileceği "dry_plan geçer ama çalıştırma patlar" senaryosunu
-`WrenService.query`'yi monkeypatch'leyerek simüle eder — "sevkiyat durumu" gibi `route()`'un
-DOĞAL olarak None döndüğü (mock gerekmeden Discovery'ye düşen) bir soru kullanılır."""
+`WrenService.query`'yi monkeypatch'leyerek simüle eder — "asdf zxcv listele" gibi `route()`'un
+DOĞAL olarak None döndüğü (mock gerekmeden Discovery'ye düşen) bir soru kullanılır.
+    ## ⟳ ARAÇ DEĞİŞTİ (2026-08-06) — ölçüt DEĞİL
+
+    Bu test `"sevkiyat durumu"` kullanıyordu ve kural motoru ona
+    `SELECT COUNT(*) FROM partiler` → **37 878** üretiyordu. O bir **uydurmaydı**: dört
+    farklı anlamsız soru aynı sayıyı veriyordu (`tests/test_uydurma_sayi_yok.py`) ve dal
+    `ce5177d`de kapatıldı → bu kapı kırmızıya döndü.
+
+    Yeni araç `"asdf zxcv listele"`: kapsam kapısından düşer, Discovery'ye ulaşır ve
+    kural motorunun **satır dökümü** dalından cevaplanır. Döküm bir sayı UYDURMAZ —
+    veriyi olduğu gibi gösterir. *Bir kapının ölçtüğü şey doğruysa, o şeyi ölçme biçimi
+    değişebilir.*
+"""
 
 from __future__ import annotations
 
@@ -26,7 +38,7 @@ def test_discovery_execution_failure_never_500(client, monkeypatch):
 
     monkeypatch.setattr(WrenService, "query", flaky_query)
 
-    r = client.post("/ask", json={"question": "sevkiyat durumu", "execute": True})
+    r = client.post("/ask", json={"question": "asdf zxcv listele", "execute": True})
     assert r.status_code == 200, r.text  # ASLA 500 — dürüst ret ya da self-heal
     body = r.json()
     assert len(calls) >= 1  # gerçekten çalıştırma denendi (dry_plan'dan geçti)

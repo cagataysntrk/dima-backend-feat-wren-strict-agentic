@@ -49,8 +49,14 @@ def _aday(company="demo-boyahane") -> str:
 
 
 def _govde(**kw):
+    # 🔴 `unit` ZORUNLU oldu (2026-08-06, `_olcu_beyani` derleme kapısı): *"birimsiz bir
+    # sayı kıyaslanamaz ve aynı terimi sahiplenen iki ölçü ayırt edilemez hâle gelir."*
+    # Terfi ucu o kapıyı **çalışma anında da** uyguluyor ve bu yük onsuz 409 alıyordu.
+    # ⚠ Testin yükü bayattı, kapı değil: bir kapı sıkılaştığında ona uymayan fikstürler
+    # DÜZELTİLİR, kapı gevşetilmez. *Bir kuralı kanıtlayan test, kuralın kendisinden
+    # muaf olamaz.*
     return {"cube": _TEST_CUBE, "measure_name": _TEST_MEASURE, "expression": _EXPR,
-            "type": "DOUBLE", "synonyms": ["önizleme geçici ölçü"],
+            "type": "DOUBLE", "unit": "kg", "synonyms": ["önizleme geçici ölçü"],
             "lower_is_better": True, **kw}
 
 

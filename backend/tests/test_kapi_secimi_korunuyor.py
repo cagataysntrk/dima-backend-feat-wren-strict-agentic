@@ -63,6 +63,24 @@ def test_CEKIRDEK_DOSYALARI_GERCEKTEN_VAR():
     assert not yok, f"🔴 ÇEKİRDEK'te var, diskte yok: {yok}"
 
 
+def test_UCTAN_TUKETILEN_KENARLAR_VAR():
+    """🔴 **Aynı sınıfın ÜÇÜNCÜ tekrarı** — ve bu kez import grafiğinin kendi sınırı.
+
+    `_desenler` yalnız import-biçimli eşleşme sayar (bilinçli: sade ad araması 67/137
+    dosya seçiyordu). Ama `test_yol_siniri` `app/llm.py`'yi **hiç import etmez** —
+    `ask(client, …)` ile uçtan tüketir. Ve tam da `llm.py`'nin uydurma-SQL dalına
+    dayanıyordu: dal kapatılınca kapı kırmızıya döndü ve **iki demet** görünmedi.
+
+    *Bir grafiğin göremediği kenarı elle çizmek, grafiği bulanıklaştırmaktan iyidir.*"""
+    from lab.kapi import UCTAN_TUKETILEN, _secim
+
+    assert "app/llm.py" in UCTAN_TUKETILEN, "🔴 sağlayıcı sınırının kenarı silinmiş"
+    secili, _ = _secim(["app/llm.py"])
+    assert "test_yol_siniri.py" in secili, (
+        "🔴 `app/llm.py` değişince `test_yol_siniri` seçilmiyor — bu testin bu dosyaya "
+        "bağımlılığı import ile GÖRÜNMEZ ve tam da bu yüzden iki demet kırmızı kaldı")
+
+
 def test_FRONTEND_SINYALI_HALA_VAR():
     """⚠ Çekirdeğe eklemek `_frontend_degisti`'yi **gereksizleştirmez**: o, `.tsx`
     değişiminde çekirdek DIŞINDAKİ frontend kapılarını da seçer (tasarım sistemi,

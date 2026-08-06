@@ -245,12 +245,26 @@ def _append_golden_case(case: GoldenCaseIn) -> None:
 
 class MeasurePreview(BaseModel):
     """Önizleme, onayın altın-vaka DIŞINDAKİ tüm alanlarını alır — altın vaka MDL'i
-    değiştirmez (`eval/cases.yaml`'a gider), dolayısıyla diff'te görünmez."""
+    değiştirmez (`eval/cases.yaml`'a gider), dolayısıyla diff'te görünmez.
+
+    ## 🔴 `unit` BURADA EKSİKTİ — ve önizleme ucu bir demet boyunca KIRIKTI
+
+    `unit` `MeasureApprove`'da **zorunlu** yapıldığında (`30ab1f7`, birim beyanı kapısı)
+    bu modele eklenmedi. Sonuç: önizleme her çağrıda **409** döndü — çünkü aynı yazıcıyı
+    çağırıyor ve yazıcı birimi arıyordu.
+
+    ⚠ Ve yukarıdaki cümle (*"onayın altın-vaka DIŞINDAKİ TÜM alanlarını alır"*) bunu
+    zaten **taahhüt ediyordu**; sözleşme yazılıydı, kod ondan ayrıldı.
+    *İki uç arasındaki bir sözleşmeyi bir docstring taşıyorsa, onu bir kapı da taşımalı.*
+    `test_ONIZLEME_ile_ONAY_ayni_sonucu_uretir` o kapıdır ve kırmızı vererek buldu.
+    """
 
     cube: str
     measure_name: str
     expression: str
     type: str = "DOUBLE"
+    #: 🔴 ZORUNLU — `MeasureApprove` ile AYNI sözleşme (yukarıdaki nota bak).
+    unit: str
     label: str | None = None
     synonyms: list[str] = []
     lower_is_better: bool | None = None
@@ -320,8 +334,15 @@ def preview_candidate(cid: str, body: MeasurePreview, request: Request,
         shutil.copy2(kaynak, gecici)
         try:
             mdl_writer.add_measure_to_cube_yaml(
+                # 🔴 `unit` ONAY ÇAĞRISINDA VARDI, ÖNİZLEMEDE YOKTU — ve bu, önizlemenin
+                # var olma sebebini çürütüyordu: docstring *"diff, ÜRETİMDEKİ yazıcının
+                # KENDİSİ ile üretilir; taklit olsaydı zamanla asıl yazıcıdan ayrışır ve
+                # inceleyene YALAN söylerdi"* diyor. Aynı yazıcı, **farklı argümanlarla**
+                # çağrılınca taklit olmasa da aynı ayrışma doğuyordu.
+                # *Aynı fonksiyonu iki yerden farklı çağırmak, iki fonksiyon yazmakla
+                # aynı riski taşır.*
                 gecici, measure_name=body.measure_name, expression=body.expression,
-                type_=body.type, synonyms=body.synonyms,
+                type_=body.type, unit=body.unit, synonyms=body.synonyms,
                 lower_is_better=body.lower_is_better, label=body.label)
         except mdl_writer.MeasureWriteError as exc:
             raise HTTPException(status_code=409, detail=str(exc))

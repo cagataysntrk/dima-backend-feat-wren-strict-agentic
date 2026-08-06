@@ -608,6 +608,21 @@ _OEE_HINTS = (
 _SAYMA_NIYETI = ("kac ", " kac", "sayisi", "adet", "kacar")
 
 
+#: Satır DÖKÜMÜ niyeti — `_partiler_sql`in aşağıdaki liste dalıyla **aynı kelimeler**.
+#: ⚠ Tek sahip: iki yerde iki liste tutmak, bu deponun ölçülmüş kusur sınıfıdır.
+_LISTE_KELIMELERI = ("listele", "liste", "goster", "hangileri", "hangi", "detay", "dokum")
+
+
+def _liste_niyeti(q: str) -> bool:
+    """Soru bir **satır dökümü** mü istiyor — tek bir sayı değil?
+
+    🔴 Bu, sayma dalının meşru istisnasıdır: döküm **uydurmaz**, veriyi olduğu gibi
+    gösterir. Uydurma riski tek bir sayı vermekte; kullanıcı bir tabloya bakarken ne
+    aldığını görür.
+    """
+    return any(w in q for w in _LISTE_KELIMELERI)
+
+
 def _sayma_dayanagi(q: str, cols: set) -> bool:
     """Soruda sayma dalını haklı çıkaran bir dayanak var mı — **iki şart BİRDEN**.
 
@@ -917,7 +932,17 @@ class RuleBasedSqlGenerator:
             # Kural: sayma dalı yalnız soruda **tanınan bir dayanak** varken meşrudur —
             # ya açık bir sayma niyeti (`kaç`/`sayısı`/`adet`) ya bir kolon/varlık adı.
             # Hiçbiri yoksa **dürüst ret**; üst basamaklar (Discovery) yine denenebilir.
-            if not _sayma_dayanagi(q, cols):
+            # ⚠ LİSTE/DÖKÜM NİYETİ İSTİSNA — ve bu, kapının kendi ölçümüyle bulundu:
+            # ilk yazımda bu dal koşulsuz `raise` ediyordu ve **satır dökümü yolu da
+            # onun arkasındaydı** (`alias == "parti_sayisi"` şartıyla aşağıda). Yani
+            # *"partileri listele"* gibi HİÇBİR SAYI UYDURMAYAN meşru bir istek de
+            # kesildi ve iki kapı (`test_ask_async_discovery` ·
+            # `test_discovery_execution_failure`) kırmızıya döndü.
+            # 🔴 Ayrım net: uydurma riski **tek bir sayı** vermekte; satır dökümü
+            # veriyi olduğu gibi gösterir ve kullanıcı ne aldığını görür.
+            # *Bir kapıyı kapatırken, arkasından geçen başka bir yolu da kapatmamak
+            # gerekir — ve bunu ancak koşarak öğrenirsin.*
+            if not (_liste_niyeti(q) or _sayma_dayanagi(q, cols)):
                 raise ValueError(
                     "Kural-tabanlı jeneratör soruda tanıdığı bir ölçü/varlık bulamadı — "
                     "sayı uydurmak yerine dürüstçe reddediyor."

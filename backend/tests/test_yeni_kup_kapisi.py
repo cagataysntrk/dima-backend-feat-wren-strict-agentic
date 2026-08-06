@@ -48,10 +48,31 @@ PACKS = KOK / "demo" / "packs"
 #: **kaçırıyordu**; kapı ilk koşumda onları *"yeni doğmuş"* ilan etti. Bu deponun en sık
 #: kusuru: *beyan var, sayım yok.* Liste artık ölçümden geliyor
 #: (`python -c "from tests.test_yeni_kup_kapisi import _kup_adlari; print(sorted(_kup_adlari()))"`).
+#: ⟳ **16 → 26 (2026-08-06): TABAN TAZELENDİ — ve bu kapı 10 küp boyunca KIRMIZI
+#: kalmış, kimse görmemiş.**
+#:
+#: On küp (`bakim_is_emri` · `butce` · `egitim` · `firsat` · `isg` · `kur` · `maliyet` ·
+#: `sevkiyat` · `sikayet` · `siparis`) `bf5a7eb` ile geldi — commit'in **kendi başlığı**
+#: *"katalog 13→23 cube"* diyor, yani bilinçli ve belgeli bir genişleme. Bayat olan
+#: küpler değil, **bu beyandı**.
+#:
+#: 🔴 Ve neden görülmedi: yerel kapı 2026-08-04'te *yalnız korpusa* indirildi, süit
+#: gecelik CI'ya taşındı; bu test de `--hizli`nin import-grafiğiyle tipik değişikliklerde
+#: hiç seçilmiyordu. *Bir kapıyı ucuzlaştırmak, onu görünmez yapmanın da yoludur.*
+#:
+#: ⚠ Taban **ölçümle** tazelendi, tahminle değil — ve kapının KENDİ dört adımlı ölçütü
+#: (aşağıda) olumlu yönde karşılanıyor: bu 26 küp yerindeyken korpus doğru-cube
+#: **%95,1**, dondurulmuş taban **%93,2**. Yani *"gerilerse küp geri alınır"* şartı
+#: sağlanmış durumda; geri alınacak bir gerileme yok.
+#:
+#: 🔴 Kapının gücü KORUNDU: bundan sonraki HER yeni küp yine kırmızı verir. Taban
+#: tazelemek kuralı kapatmak değildir — *tazelenmemiş bir taban, kapıyı sessizce
+#: sürekli kırmızı tutarak ETKİSİZ kılar; okunmayan bir alarm, olmayan bir alarmdır.*
 MEVCUT_KUPLER = {
-    "bakim", "cari", "cari_finans", "enerji_makine", "enerji_sapma", "enerji_tesis",
-    "ik", "kalite", "karlilik", "mal", "mizan", "oee", "parti", "surdurulebilirlik",
-    "ticaret", "yaslandirma",
+    "bakim", "bakim_is_emri", "butce", "cari", "cari_finans", "egitim",
+    "enerji_makine", "enerji_sapma", "enerji_tesis", "firsat", "ik", "isg",
+    "kalite", "karlilik", "kur", "mal", "maliyet", "mizan", "oee", "parti",
+    "sevkiyat", "sikayet", "siparis", "surdurulebilirlik", "ticaret", "yaslandirma",
 }
 
 #: Departman adları — küp adı **olamaz** (departman bir MERCEKTİR, madde 2.3).
@@ -117,8 +138,24 @@ def test_MEVCUT_ADLAR_DENETLENMIYOR():
 def test_TABAN_KUMESI_BUYUTULMEMIS():
     """🔴 **Kapıyı kapatmanın en sessiz yolu, muafiyet listesini büyütmektir.** Küme
     donmuştur: bir sonraki tur yeni bir küp eklerken burayı genişletmek isterse, kuralı
-    **yeni küplere de uygulamamayı** seçmiş olur — ve bu görünür olmalı."""
-    assert len(MEVCUT_KUPLER) == 16, (
+    **yeni küplere de uygulamamayı** seçmiş olur — ve bu görünür olmalı.
+
+    ## ⟳ 16 → 26 (2026-08-06) — gerekçe, docstring'in kendi şartı gereği BURADA
+
+    On küp `bf5a7eb` ile geldi ve o commit'in **kendi başlığı** *"katalog 13→23 cube"*
+    diyor: bilinçli, belgeli bir genişleme. Bayat olan küpler değil, **beyandı** — ve
+    kapı o günden beri **kırmızıydı**, kimse görmedi (yerel kapı korpusa indirilmişti,
+    bu test de import grafiğiyle tipik değişikliklerde seçilmiyordu).
+
+    🔴 Kapının KENDİ dört adımlı ölçütü **olumlu yönde** karşılanıyor: bu 26 küp
+    yerindeyken korpus doğru-cube **%95,1**, dondurulmuş taban **%93,2**. *"Gerilerse
+    küp geri alınır"* şartının geri alacağı bir gerileme yok.
+
+    ⚠ Ve kapının gücü KORUNDU: bundan sonraki her yeni küp yine kırmızı verir.
+    *Tazelenmemiş bir taban, kapıyı sürekli kırmızı tutarak ETKİSİZ kılar; okunmayan
+    bir alarm, olmayan bir alarmdır.*
+    """
+    assert len(MEVCUT_KUPLER) == 26, (
         f"donmuş taban {len(MEVCUT_KUPLER)} öğe — büyütüldüyse GEREKÇESİ buraya yazılmalı, "
         "sayı sessizce güncellenmemeli")
 

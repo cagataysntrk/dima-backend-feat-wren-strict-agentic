@@ -104,12 +104,47 @@ def test_CHIP_AYNI_DUVARA_GERI_DONMUYOR(schema):
         assert c["label"].startswith("adet (")
 
 
-def test_CUBE_ETIKETI_JARGON_DEGIL(schema):
-    """⚠ Teknik ad (`enerji_makine`) kullanıcı için jargondur; katalogdaki ilk sinonim
-    onun kendi diliyle yazılmıştır. `!` işaretçisi bir eşleşme kuralıdır, gösterilecek
-    metin değil."""
-    assert bc.cube_etiketi({"name": "x", "synonyms": ["su!", "b"]}) == "su"
-    assert bc.cube_etiketi({"name": "enerji_makine", "synonyms": []}) == "enerji_makine"
+def test_CUBE_ETIKETI_DISPLAY_ONCELIKLI(schema):
+    """🔴 **Sıra ölçümle düzeltildi.** İlk yazım *"ilk sinonim"* diyordu ve `eval`
+    koşumunda ne ürettiği görüldü:
+
+        «sapma» birden fazla yerde tanımlı — bu cevap **fire** tanımıyla hesaplandı.
+
+    `fire`, `parti` cube'unun ilk sinonimidir — ama kullanıcı için **başka bir ölçünün
+    adıdır**. Cümle *"sapmayı fire olarak hesapladım"* diye okunuyordu: beyan etmeye
+    çalıştığımız şeyin tam tersi.
+
+    Doğru sıra `display` → teknik ad → sinonim. *Bir alanı amacı dışında kullanmak,
+    çoğu zaman bir kez işe yarar ve sonra yanıltır.*"""
+    assert bc.cube_etiketi({"name": "parti", "display": "Parti",
+                            "synonyms": ["fire", "ciro"]}) == "Parti"
+    assert bc.cube_etiketi({"name": "enerji_makine", "synonyms": ["bolum enerji"]}) \
+        == "enerji_makine"
+    assert bc.cube_etiketi({"synonyms": ["su!"]}) == "su"      # son çare
+
+
+def test_ETIKET_BASKA_OLCUNUN_ADI_OLMUYOR(schema):
+    """🔴 Ölçülen kusurun **doğrudan** kapısı: gerçek katalogda hiçbir cube etiketi,
+    o cube'un **kendi bir ölçüsünün** adı olmamalı — yoksa beyan cümlesi kendi kendini
+    çürütür."""
+    kotu = []
+    for c in schema["cubes"]:
+        etiket = bc.cube_etiketi(c).lower()
+        # ⚠ MEŞRU İSTİSNA: cube'un KENDİ ADI aynı zamanda bir ölçü sinonimiyse yanıltıcı
+        # değildir — `oee` cube'u gerçekten OEE'yi ölçer. Yanıltıcı olan, adın **başka**
+        # bir ölçüden ödünç alınmasıdır (`parti` → «fire»), ve `display`/`name` önceliği
+        # tam olarak onu kapatıyor. *Bir kapının kırmızısı, kapının kendi cümlesini
+        # doğrulamalıdır; doğrulamıyorsa ölçüt fazla geniştir.*
+        if etiket in {str(c.get("name") or "").lower(),
+                      str(c.get("display") or "").lower()}:
+            continue
+        olcu_adlari = {str(x).removesuffix("!").lower()
+                       for syns in (c.get("measure_synonyms") or {}).values()
+                       for x in (syns or [])}
+        if etiket and etiket in olcu_adlari:
+            kotu.append(f"{c['name']} → «{etiket}»")
+    assert not kotu, ("🔴 cube etiketi kendi ölçüsünün adı: " + ", ".join(kotu[:5])
+                      + " — beyan cümlesi «X'i Y tanımıyla hesapladım» diye okunur")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

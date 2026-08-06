@@ -34,8 +34,25 @@ from app import viz
 
 # Karar üreten alanlar — sadakat bunların üstünde tanımlıdır. `alternatives` de dahil:
 # kullanıcıya sunulan toggle seçenekleri de bir karardır ve yüzeyler arasında değişmemeli.
+# 🔴 `lower_set` EKLENDİ (2026-08-06) — ve onu ekleten şey bir KAPI KIRMIZISI oldu.
+#
+# `test_META_ARGS_atlanirsa_karar_DEGISIR` kırmızıya döndü: metadata'sız çağrı **aynı
+# kararı** veriyordu. Ölçüldü — tek fark `lower_set`ti ve o bu listede YOKTU:
+#
+#     tam:    lower_set = ['fire_orani_yuzde', 'ort_renk_sapmasi', 'toplam_fire_kg']
+#     çıplak: lower_set = None
+#
+# ⚠ `unit_count`/`dual_axis` ikisinde de aynı çıkıyor, çünkü `recommend` birim SAYISINI
+# veriden çıkarabiliyor. Metadata'nın **tek başına** taşıdığı bilgi `lower_set`tir ve o,
+# *"yüksek sayı İYİ mi KÖTÜ mü"* kararıdır: ısı haritasının yönü, rengin anlamı.
+#
+# 🔴 Yani sadakat riskinin en görünür hâli listede eksikti — ve kapı, tam da onu
+# kaybettiği için değil, **ölçemediği** için kırmızı verdi.
+# *Bir sadakat listesi, metadata'nın tek başına taşıdığı her alanı içermelidir; yoksa
+# kaybolan bilgi sessizce kaybolur.*
 KARAR_ALANLARI = ("kind", "measures", "dims", "time_col", "primary_dim", "series_dim",
-                  "stackable", "partition", "dual_axis", "unit_count", "alternatives")
+                  "stackable", "partition", "dual_axis", "unit_count", "alternatives",
+                  "lower_set")
 
 
 def _karar(spec: dict | None) -> dict:
