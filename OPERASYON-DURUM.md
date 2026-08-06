@@ -2364,7 +2364,22 @@ görebilmesinin ilk adımıdır.*
 verisiyle çelişiyordu); `AskJob.trace_json` yayımlanan izle ayrışıyordu — *bir kaydın
 canlı hâli, yayımlanan hâline yakınsamalıdır; yoksa kayıt bir tarih değil bir taslaktır.*
 
-#### Sıradaki — KÖK-1 FAZ 2
-Tüketiciler **tek tek** taşınır; her taşımada eşdeğerlik `test_kok1_niyet.py` ile
-ölçülür. İlk müşteri raporun kendi kararıyla **`app/uyum.py`** (*"KÇ-1, KÇ-0'ın ilk
-müşterisidir"*): 10 fonksiyon, 7 değişmez, `cube_router`a 2 çağrı.
+#### ✅ KÖK-1 FAZ 2 — ilk müşteri (`app/uyum.py`) TAŞINDI
+
+⊙ Göç **ölçüldü, tahmin edilmedi**: 2 270 korpus sorusunda yedi soru-sinyalinin
+**YEDİSİ DE** birebir aynı → sonra taşındı. Kapı: `test_FAZ2_ESDEGERLIK`.
+
+🔴 Ve göç bir **tasarım gerçeği** ortaya çıkardı: `Niyet` çözümleme ile eşleştirmeyi
+karıştırıyordu (*"kırılım İSTENDİ mi"* ≠ *"hangi boyut EŞLEŞTİ"*). Raporun KÖK-1
+başlığı zaten buydu. Nesne ikiye ayrıldı: `coz_soru()` **şemasız** (dil), `coz()`
+**şemalı** (katalog).
+⊙ Ayrımı zorlayan şey bir tercih değil **ilk müşterinin sözleşmesiydi**: `uyum.denetle`
+şema almıyor. *Bir soyutlamanın doğru sınırını, onu ilk kullanan çizer.*
+
+⊘ **ÜSTÜNLÜK bilerek taşınmadı**: `_ustunluk_mu` `ic`+`cube_meta` ister (ipucu bir ölçü
+adının içindeyse ipucu değildir — `kur` cube'unun ölçüsü literal *"en yüksek kur"*).
+O denetim **eşleştirme** tarafıdır. `test_USTUNLUK_BILEREK_TASINMADI` sınırı yazılı tutar.
+
+#### Sıradaki — KÖK-1 FAZ 2 (kalan tüketiciler)
+`yetenek` · `donem_capasi` · `turetme` · `belirsizlik_chipi`. Her biri için sinyali
+`YEDI_SINYAL` tablosuna ekle → `test_FAZ2_ESDEGERLIK` ile ölç → sonra taşı.

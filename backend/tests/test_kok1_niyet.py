@@ -205,3 +205,118 @@ def test_BAYRAK_KAYITLI_VE_VARSAYILAN_ACIK():
     yml = (pathlib.Path(__file__).resolve().parents[1]
            / "demo" / "packs" / "features.yml").read_text(encoding="utf-8")
     assert 'niyet_izi: "prod"' in yml, "🔴 varsayılan değer pack'te YAZILI değil"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 4 · FAZ 2 — TÜKETİCİ GÖÇÜ, ve her adımın kanıtı
+# ═══════════════════════════════════════════════════════════════════════════════
+
+#: `uyum`un okuduğu **yedi** soru-sinyali ↔ `Niyet`in taşıdığı karşılıkları.
+#: 🔴 Bu tablo Faz 2'nin **sözleşmesidir**: bir tanesi ayrışırsa o tüketici taşınamaz.
+YEDI_SINYAL = [
+    ("kiyas", lambda cr, uy, qn: bool(cr.compare_mode(qn)),
+     lambda n: n_mod.TUR_KIYAS in n.turler),
+    ("cok_donem", lambda cr, uy, qn: uy._cok_donem(qn) >= 2, lambda n: n.cok_donem),
+    ("trend", lambda cr, uy, qn: uy.trend_istendi(qn), lambda n: n.trend_istendi),
+    ("kirilim", lambda cr, uy, qn: cr._herhangi(qn, cr._BREAKDOWN_HINTS),
+     lambda n: n.kirilim_istendi),
+    ("ustunluk", lambda cr, uy, qn: uy.ustunluk_istendi(qn), lambda n: n.ustunluk_istendi),
+    ("esik", lambda cr, uy, qn: bool(cr._measure_threshold(qn)),
+     lambda n: any(f.get("operator") not in ("gte", "lte") for f in n.filtreler)),
+    ("dislama", lambda cr, uy, qn: cr._herhangi(qn, cr._EXCLUDE_MARKERS),
+     lambda n: n.dislama_istendi),
+]
+
+import app.niyet as n_mod  # noqa: E402  (YEDI_SINYAL lambda'ları için)
+
+
+def test_FAZ2_ESDEGERLIK(schema):
+    """🔴 **FAZ 2'NİN KANITI.** `Niyet`, `uyum`un yedi soru-sinyalini **birebir** aynı
+    okuyor mu — katalogdan üretilmiş geniş bir soru kümesinde?
+
+    ⊙ Ölçüldü (2026-08-06): **2 270** soruda **7/7 AYNI**. Göç ancak bundan sonra
+    yapıldı. *Bir göçün ilk adımı, iki tarafın aynı şeyi söylediğini kanıtlamaktır.*
+
+    ⚠ Bu kapı Faz 2'nin **her** adımında koşar: yeni bir tüketici taşınmadan önce onun
+    okuduğu sinyal bu tabloya eklenir ve burada eşdeğerliği ölçülür.
+    """
+    from app import cube_router as cr
+    from app import uyum as uy
+
+    sorular = []
+    for c in schema["cubes"]:
+        for m, syns in list((c.get("measure_synonyms") or {}).items())[:4]:
+            t = (syns or [m])[0].removesuffix("!")
+            dims = (c.get("dimensions") or [])[:1]
+            sorular += [f"bu yıl {t}", f"ocak ve haziran {t} karşılaştır",
+                        f"{t} değişimi son 6 ay", f"en yüksek {t}",
+                        f"{t} 1000 üstü", f"beyaz hariç {t}"]
+            if dims:
+                sorular.append(f"bu yıl {dims[0]} bazında {t}")
+    assert len(sorular) > 300, f"⊘ ölçüm tabanı çöktü: {len(sorular)} soru"
+
+    fark: dict[str, tuple] = {}
+    for q in sorular:
+        qn = uy._norm(q)
+        niyet = n_mod.coz_soru(q)
+        for ad, eski, yeni in YEDI_SINYAL:
+            if bool(eski(cr, uy, qn)) != bool(yeni(niyet)) and ad not in fark:
+                fark[ad] = (q[:60], eski(cr, uy, qn), yeni(niyet))
+    assert not fark, ("🔴 niyet ile uyum AYRIŞIYOR — bu tüketici taşınamaz:\n  "
+                      + "\n  ".join(f"{k}: «{v[0]}» uyum={v[1]} niyet={v[2]}"
+                                    for k, v in fark.items()))
+
+
+def test_UYUM_SORUYU_ARTIK_KENDI_TARAMIYOR():
+    """🔴 Göçün **yapısal** kanıtı: `denetle` soru tarafını `Niyet`ten okumalı.
+    Eski tarayıcılar geri gelirse *"aynı kuralın iki sahibi"* de geri gelir."""
+    import pathlib
+
+    from app import uyum as uy
+
+    # ⚠ AST — metin DEĞİL. Bu depoda bir kapı ÜÇÜNCÜ kez kendi belgelendirmesini
+    # yakaladı: göçü ANLATAN yorum, göçün geri alındığı sanılmasına yol açtı.
+    # Yorumlar ve docstring'ler AST'de yoktur; kapı yalnız ÇALIŞAN KODU görür.
+    fn = _denetle_agaci(uy)
+    kod = ast.unparse(fn)
+    for eski in ("compare_mode(qn)", "_cok_donem(qn)", "_TREND.search(qn)",
+                 "_BREAKDOWN_HINTS", "_EXCLUDE_MARKERS", "_measure_threshold(qn)"):
+        assert eski not in kod, f"🔴 `denetle` soruyu yine kendi tarıyor: {eski}"
+    assert "coz_soru" in kod, "🔴 `denetle` niyet nesnesini okumuyor"
+
+
+def test_USTUNLUK_BILEREK_TASINMADI():
+    """⊘ **SINIR — ve yazılı.** `_ustunluk_mu` `denetle` içinde `ic`+`cube_meta` ile
+    çağrılır: ipucu bir **ölçü adının içindeyse** ipucu değildir (`kur` cube'unun ölçüsü
+    literal olarak *"en yüksek kur"*; 525 meşru soruda **10** yanlış-pozitif buradan
+    geliyordu).
+
+    O denetim **eşleştirme** tarafıdır ve şemasız bir çözümlemede yapılamaz.
+    *Ayrımın doğru yeri, ayrımın kendisi kadar önemlidir: yanlış yerden bölünen bir
+    sorumluluk iki yerde de eksik kalır.*"""
+    import pathlib
+
+    from app import uyum as uy
+
+    kod = ast.unparse(_denetle_agaci(uy))
+    assert "_ustunluk_mu(qn, _TOPN_CUE, ic, cube_meta)" in kod, \
+        "🔴 üstünlük denetimi cq-farkındalığını kaybetmiş — ölçü adı yanlış-pozitifi geri gelir"
+
+
+def _denetle_agaci(uy):
+    """`uyum.denetle`in AST gövdesi — **docstring'i çıkarılmış** hâliyle.
+
+    ⚠ `ast.unparse` docstring'i korur; göçü ANLATAN docstring, göçün geri alındığı
+    sanılmasına yol açardı. *Bir kapının baktığı metin, koruduğu şeyin kendisi olmalı;
+    onun anlatısı değil.*
+    """
+    import pathlib
+
+    agac = ast.parse(pathlib.Path(uy.__file__).read_text(encoding="utf-8"))
+    fn = next(x for x in ast.walk(agac)
+              if isinstance(x, ast.FunctionDef) and x.name == "denetle")
+    govde = list(fn.body)
+    if (govde and isinstance(govde[0], ast.Expr)
+            and isinstance(govde[0].value, ast.Constant)):
+        govde = govde[1:]
+    return ast.Module(body=govde, type_ignores=[])

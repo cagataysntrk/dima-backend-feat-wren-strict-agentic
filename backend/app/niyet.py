@@ -78,6 +78,23 @@ class Niyet:
     """
 
     soru: str
+
+    # ── ÇÖZÜMLEME (şema GEREKMEZ) — kullanıcı NE İSTEDİ ────────────────────────
+    #
+    # 🔴 Raporun başlığı: *"çözümleme ile eşleştirme AYRILSIN."* Bu blok sorunun
+    # **dilinden** okunur; katalog bilinmese de doğrudur. Faz 2'de `uyum`un okuduğu
+    # yedi soru-sinyalinin **hepsi** burada olmalı — ölçüldü ve ilk yazımda ÜÇÜ
+    # eksikti, İKİSİ farklı okunuyordu (`trend` · `kırılım` · `üstünlük`).
+    #
+    # ⚠ Ayrımın somut hâli: *"kullanıcı kırılım İSTEDİ mi"* çözümlemedir (`kirilim_istendi`),
+    # *"hangi boyut EŞLEŞTİ"* eşleştirmedir (`kirilimlar`). İkisini tek alanda taşımak,
+    # tam da bu nesnenin ayırmak için var olduğu iki şeyi karıştırmaktı.
+    kirilim_istendi: bool = False
+    trend_istendi: bool = False
+    ustunluk_istendi: bool = False
+    dislama_istendi: bool = False
+
+    # ── EŞLEŞTİRME (şema GEREKİR) — katalogda NE BULUNDU ───────────────────────
     olcu_adaylari: list[tuple[str, str]] = field(default_factory=list)   # (cube, ölçü)
     #: **ÇÖZÜLEBİLEN** dönem filtreleri — `CubeQuery`ye girecek olanlar.
     donemler: list[dict] = field(default_factory=list)
@@ -136,72 +153,103 @@ class Niyet:
         return "niyet: " + " · ".join(parca)
 
 
-def coz(soru: str, schema: dict[str, Any]) -> Niyet:
-    """Soru → `Niyet`. **Deterministik, LLM'siz, yan etkisiz.**
+def coz_soru(soru: str) -> Niyet:
+    """🔴 **ÇÖZÜMLEME — şemasız.** Sorunun dilinden okunan niyet.
 
-    🔴 Her alan mevcut bir çözümleyicinin çağrısıdır — bu fonksiyonda **tek bir regex
-    yoktur** ve olmamalıdır. Yeni bir dil kuralı gerekiyorsa yeri burası değil, o kuralın
-    **tek sahibi** olan modüldür.
+    Raporun KÖK-1 başlığı *"çözümleme ile eşleştirme ayrılsın"* der ve bu fonksiyon o
+    ayrımın somut hâlidir: katalog bilinmese de doğru olan her şey buradadır.
 
-    ⚠ Hata yutulmaz ama **niyet de düşürülmez**: bir çözümleyici patlarsa o alan boş
-    kalır ve `bilinmeyenler` bunu taşır. *Bir gözlemcinin, gözlediği şeyi düşürmesi
-    gözlemin kendisinden pahalıdır.*
+    ## Neden ayrı bir giriş noktası
+
+    `uyum.denetle(q, cq, cube_meta)` **şema almıyor** — yalnız tek bir `cube_meta`.
+    Faz 2'de onu `Niyet`e taşımak için niyetin şemasız üretilebilmesi **zorunluydu**.
+    ⊙ Yani ayrımı zorlayan şey bir tasarım tercihi değil, **ilk müşterinin sözleşmesi**
+    oldu. *Bir soyutlamanın doğru sınırını, onu ilk kullanan çizer.*
+
+    ⚠ Yedi sinyalin **hepsi** kendi sahibinden gelir; burada tek bir kalıp yok.
     """
     from app import cube_router as cr
+    from app import uyum as _uyum
 
     q = cr._norm(soru)
     turler: set[str] = set()
 
     donemler = _guvenli(lambda: cr.date_filters(q), [])
     filtreler = list(donemler)
-
     esik = _guvenli(lambda: cr._measure_threshold(q), None)
     if esik:
         filtreler.append(esik)
 
-    # ⚠ Kıyas ve dönem SAYIMI `app.uyum`dan gelir — o modül bu turda yazıldı, yedi
-    # değişmezin sahibi ve ölçüldü (525 meşru soruda 0 yanlış-pozitif). İkinci bir
-    # sayaç yazmak, bu nesnenin kapatmak için var olduğu kusuru doğururdu.
-    from app import uyum as _uyum
-
-    # ⚠ `_cok_donem` **adlandırılmış** dönemleri sayar (`ocak` · `2025` · `son 3 ay`);
-    # `bu yıl` gibi göreli bir dönemi saymaz — o `date_filters`ta çözülür. İkisinin
-    # birleşimi alınır, yoksa `bu yıl makine bazında oee` "dönemsiz" görünürdü ve iz
-    # kendi verisiyle çelişirdi. *Bir gözlem, gözlediği iki kaynağın ikisini de
-    # okumalıdır; yoksa gözlem değil bir seçimdir.*
-    donem_sayisi = max(_guvenli(lambda: _uyum._cok_donem(soru), 0),
-                       1 if donemler else 0)
-    # ⚠ `compare_mode` — `uyum`un KIYAS değişmezinin kullandığı **aynı** fonksiyon.
-    # İlk yazımda `uyum` içinde ayrı bir kıyas kalıbı olduğunu VARSAYDIM; okununca
-    # görüldü ki yok — o da bunu çağırıyor. *Bir modülü kullanmadan önce okumak, onu
-    # ikinci kez yazmaktan ucuzdur.*
+    donem_sayisi = max(_guvenli(lambda: _uyum._cok_donem(soru), 0), 1 if donemler else 0)
     if _guvenli(lambda: cr.compare_mode(q), None):
         turler.add(TUR_KIYAS)
     if _guvenli(lambda: cr.liste_niyeti(q), False):
         turler.add(TUR_LISTE)
 
     gran = _guvenli(lambda: cr._time_gran(q), None)
-    if gran:
+
+    # 🔴 TREND — `uyum._TREND` ("değişim/artış/seyir") ile `_time_gran` ("aylara göre")
+    # AYRI şeylerdir. İlk yazımda ikisi tek alanda toplandı ve `uyum`un okuması ile
+    # ayrıştı. *Bir alanı iki kaynaktan doldurmak, iki alanı bir kaynaktan doldurmaktan
+    # daha tehlikelidir: ikincisi eksik olur, birincisi YANLIŞ.*
+    trend = bool(_guvenli(lambda: _uyum.trend_istendi(q), False))
+    if trend or gran:
         turler.add(TUR_TREND)
 
+    # 🔴 ÜSTÜNLÜK iki ayrı soruya cevap verir ve ikisi de gerekir:
+    #   · `ustunluk_istendi` — *"en çok"* dendi mi (SAYI gerekmez) → `uyum`un sorusu
+    #   · `ustunluk`         — kaç tane (`en yüksek 5`)            → `route`un sorusu
+    ustunluk_var = bool(_guvenli(lambda: _uyum.ustunluk_istendi(q), False))
     ustunluk = _guvenli(lambda: cr._top_n(q), None)
-    if ustunluk:
+    if ustunluk or ustunluk_var:
         turler.add(TUR_USTUNLUK)
 
-    adaylar = [(c.get("name", ""), m)
-               for c, m in _guvenli(lambda: cr.measure_cube_candidates(q, schema), [])]
-    bilinmeyen = _guvenli(lambda: cr.partial_unknowns(q, schema)[0], [])
-
-    kirilimlar = _kirilimlar(cr, q, schema, adaylar)
-    if kirilimlar:
+    kirilim_istendi = bool(_guvenli(
+        lambda: cr._herhangi(q, cr._BREAKDOWN_HINTS), False))
+    dislama = bool(_guvenli(
+        lambda: cr._herhangi(q, cr._EXCLUDE_MARKERS), False))
+    if kirilim_istendi:
         turler.add(TUR_KIRILIM)
     if not turler:
         turler.add(TUR_TOPLAM)
 
-    return Niyet(soru=soru, olcu_adaylari=adaylar, donemler=donemler,
-                 donem_sayisi=donem_sayisi, kirilimlar=kirilimlar, filtreler=filtreler,
-                 turler=turler, ustunluk=ustunluk, granulerlik=gran,
-                 bilinmeyenler=list(bilinmeyen))
+    return Niyet(soru=soru, donemler=donemler, donem_sayisi=donem_sayisi,
+                 filtreler=filtreler, turler=turler, ustunluk=ustunluk,
+                 granulerlik=gran, kirilim_istendi=kirilim_istendi,
+                 trend_istendi=trend, ustunluk_istendi=ustunluk_var,
+                 dislama_istendi=dislama)
+
+
+def coz(soru: str, schema: dict[str, Any]) -> Niyet:
+    """🔴 **ÇÖZÜMLEME + EŞLEŞTİRME.** Şemasız niyeti alır, katalog bulgularıyla zenginleştirir.
+
+    ⚠ Gövde `coz_soru`yu **çağırır, kopyalamaz**. Kopyalasaydı bu nesne — ayırmak için var
+    olduğu kusuru — kendi içinde üretirdi. *Bir çatının ilk sınavı, kendi kendini
+    tekrarlamamasıdır.*
+
+    ⚠ `dataclasses.replace`: `Niyet` `frozen`dır ve öyle kalmalı; zenginleştirme bir
+    **yeni nesne** üretir, bir yerinde-düzeltme değil.
+    """
+    import dataclasses
+
+    from app import cube_router as cr
+
+    temel = coz_soru(soru)
+    q = cr._norm(soru)
+
+    adaylar = [(c.get("name", ""), m)
+               for c, m in _guvenli(lambda: cr.measure_cube_candidates(q, schema), [])]
+    bilinmeyen = _guvenli(lambda: cr.partial_unknowns(q, schema)[0], [])
+    kirilimlar = _kirilimlar(cr, q, schema, adaylar)
+
+    turler = set(temel.turler)
+    if kirilimlar:
+        turler.add(TUR_KIRILIM)
+    if turler != {TUR_TOPLAM}:
+        turler.discard(TUR_TOPLAM)
+
+    return dataclasses.replace(temel, olcu_adaylari=adaylar, kirilimlar=kirilimlar,
+                               turler=turler, bilinmeyenler=list(bilinmeyen))
 
 
 def _kirilimlar(cr, q: str, schema: dict, adaylar: list[tuple[str, str]]) -> list[str]:

@@ -129,6 +129,37 @@ def _cok_donem(q: str) -> int:
     return len(aylar) + len(yillar) + len(goreli) + len(ceyrek) + len(onceki)
 
 
+def trend_istendi(qn: str) -> bool:
+    """Soru bir **değişim/trend** istiyor mu — *"değişimi"* · *"artışı"* · *"seyri"*.
+
+    ## 🔴 Neden bir FONKSİYON (KÖK-1 Faz 2'de doğdu)
+
+    `_TREND` bu modülün **özel** kalıbıdır. `app/niyet.py` onu doğrudan çağırdı ve kendi
+    kapısı (`test_YENI_DILBILIM_YAZILMADI`) haklı olarak kırmızı verdi: bir çatının başka
+    modülün **kalıbına** uzanması, o kalıbı ikinci bir sahibe açar.
+
+    ⚠ Ödünç alınacak şey bir kalıp değil bir **karardır**. Kalıp burada kalır, karar
+    adıyla dışarı çıkar. *Bir kuralı paylaşmanın doğru biçimi, kuralı değil cevabını
+    paylaşmaktır.*
+
+    ⚠ `_time_gran` ile AYNI ŞEY DEĞİLDİR: o *"aylara göre"* der (eksen istendi), bu
+    *"değişimi"* der (değişim istendi). İkisini bir alanda toplamak Faz 2'nin ilk
+    ölçümünde yakalandı.
+    """
+    return bool(_TREND.search(qn))
+
+
+def ustunluk_istendi(qn: str) -> bool:
+    """Soru bir **üstünlük** istiyor mu — *"en yüksek"* · *"en çok"* (SAYI gerekmez).
+
+    ⚠ `cube_router._top_n` ile aynı şey değildir: o **sayı** ister (`en yüksek 5`), bu
+    istemez. `uyum`un beşinci değişmezi bunu sorar; `route`un sıralaması ötekini.
+    """
+    from app.cube_router import _TOPN_CUE
+
+    return bool(_ustunluk_mu(qn, _TOPN_CUE, None, None))
+
+
 def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
     """Sorudaki niyet işaretlerinin **sorguda karşılığı var mı?**
 
@@ -138,18 +169,30 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
     ⚠ Kapı **fail-closed değil, BEYAN-AÇIK**: cevabı öldürmez, **etiketler** (KÖK-3).
     Öldürmek kapsamı daraltırdı; etiketlemek daraltmaz ama sessizliği bitirir.
     """
-    from app.cube_router import (
-        _BREAKDOWN_HINTS,
-        _EXCLUDE_MARKERS,
-        _PERIOD_RANGE_REF,
-        _TOPN_CUE,
-        _measure_threshold,
-        _time_gran,
-        compare_mode,
-    )
+    from app.cube_router import _PERIOD_RANGE_REF, _TOPN_CUE, _time_gran
+    from app.niyet import TUR_KIYAS, coz_soru
 
     out: list[Ihlal] = []
     qn = _norm(q or "")
+
+    # 🔴 KÖK-1 FAZ 2 — SORU TARAFI ARTIK **NİYET NESNESİNDEN** OKUNUYOR.
+    #
+    # Bu modül soruyu yedi kez ayrı ayrı tarıyordu (`compare_mode` · `_cok_donem` ·
+    # `_TREND` · `_BREAKDOWN_HINTS` · `_ustunluk_mu` · `_measure_threshold` ·
+    # `_EXCLUDE_MARKERS`). Raporun KÖK-1'i *"çözümleme ile eşleştirme ayrılsın"* der ve
+    # bu modül **ilk müşteridir** (*"KÇ-1, KÇ-0'ın ilk müşterisidir"*).
+    #
+    # ⊙ Göç ÖLÇÜLDÜ, tahmin edilmedi: **2 270** korpus sorusunda yedi sinyalin
+    # **YEDİSİ DE** birebir aynı çıktı (`test_kok1_niyet.py::test_FAZ2_ESDEGERLIK`).
+    # *Bir göçün ilk adımı, iki tarafın aynı şeyi söylediğini kanıtlamaktır.*
+    #
+    # ⚠ ÜSTÜNLÜK **taşınMADI** ve bu bir eksik değil bir SINIR: `_ustunluk_mu` burada
+    # `ic`+`cube_meta` ile çağrılır çünkü ipucu bir **ölçü adının içindeyse** ipucu
+    # değildir (`kur` cube'unun ölçüsü literal olarak *"en yüksek kur"*; 525 meşru
+    # soruda 10 yanlış-pozitif buradan geliyordu). O denetim **eşleştirme** tarafıdır ve
+    # şemasız bir çözümlemede yapılamaz. *Ayrımın doğru yeri, ayrımın kendisi kadar
+    # önemlidir: yanlış yerden bölünen bir sorumluluk iki yerde de eksik kalır.*
+    niyet = coz_soru(q or "")
 
     # 🔴 `route()` bir SARMALAYICI döndürür: `{cube_query: {...}, measure, order, limit,
     # period_optional}`. İlk yazımda doğrudan `cq.get("dimensions")` okundu ve **her
@@ -167,7 +210,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
                 or ic.get("limit") or ic.get("entity_limit"))
 
     # 1 · KIYAS — "şubata göre", "geçen yılla kıyasla"
-    if compare_mode(qn) and not (ic.get("compare") or ic.get("compare_mode")):
+    if TUR_KIYAS in niyet.turler and not (ic.get("compare") or ic.get("compare_mode")):
         out.append(Ihlal(
             "kiyas",
             "iki dönemi **kıyaslamanı** istedin ama tek bir toplam üretebildim",
@@ -186,7 +229,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
     # imzası — ayırt edici değil.
     # *Bir imza, iki farklı olayda da görünüyorsa kanıt değildir.*
     _aralik_ifadesi = any(w in f" {qn} " for w in _ARALIK)
-    if (_cok_donem(qn) >= 2 and not _aralik_ifadesi
+    if (niyet.cok_donem and not _aralik_ifadesi
             and not any(i.isaret == "kiyas" for i in out)
             and not (ic.get("compare") or ic.get("compare_mode"))):
         out.append(Ihlal(
@@ -195,14 +238,14 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
             "Dönemleri ayrı ayrı sorarsan her birini tek tek veririm."))
 
     # 3 · TREND — zaman ekseni ister
-    if _TREND.search(qn) and not (_time_gran(qn) or _zaman_ekseni_var(ic, cube_meta)):
+    if niyet.trend_istendi and not (_time_gran(qn) or _zaman_ekseni_var(ic, cube_meta)):
         out.append(Ihlal(
             "trend",
             "**değişimi/trendi** istedin ama tek bir toplam ürettim — zaman ekseni yok",
             "*«aylara göre»* ya da *«çeyreklere göre»* eklersen zaman ekseninde çizerim."))
 
     # 4 · KIRILIM — mevcut korumanın genelleştirilmiş hâli
-    if (any(w in qn for w in _BREAKDOWN_HINTS) and not boyutlar
+    if (niyet.kirilim_istendi and not boyutlar
             and _time_gran(qn) is None and not _PERIOD_RANGE_REF.search(qn)):
         out.append(Ihlal(
             "kirilim",
@@ -217,14 +260,15 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
             "*«en yüksek 5 makine»* gibi sayı verirsen sıralayıp keserim."))
 
     # 6 · EŞİK — "1.000 üstü"
-    if _measure_threshold(qn) and not _esik_filtresi_var(filtreler):
+    if any(f.get("operator") not in ("gte", "lte") for f in niyet.filtreler) \
+            and not _esik_filtresi_var(filtreler):
         out.append(Ihlal(
             "esik",
             "bir **eşik** verdin (ör. *«1.000 üstü»*) ama filtreye çeviremedim",
             "Eşiği ölçü adıyla birlikte yazarsan (*«cirosu 1.000 üstü»*) uygularım."))
 
     # 7 · DIŞLAMA — "X hariç"
-    if (any(w in qn for w in _EXCLUDE_MARKERS)
+    if (niyet.dislama_istendi
             and not any(str(f.get("operator")) in ("neq", "not_in", "!=")
                         for f in filtreler)):
         out.append(Ihlal(
