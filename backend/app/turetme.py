@@ -99,6 +99,58 @@ EN_FAZLA = 4
 TUR_TURETME = "turetme"
 
 
+#: 🔴 **FİİL BİÇİMİ ENVANTERİ — `_FIIL_CEKIMI`den DAHA GENİŞ, ve sebebi ölçülmüş.**
+#:
+#: İki soru birbirine benzer ama **aynı değildir**:
+#:   · türetme (`_kokler`) → *"bu token bir katalog teriminden TÜRETİLEBİLİR mi?"*
+#:   · `fiil_bicimi_mi`    → *"bu token Türkçe bir FİİL ÇEKİMİ mi?"*
+#:
+#: Birincisi yanlış olursa **uydurma bir eşleşme** doğar (bir katalog terimi soruya
+#: yanlış bağlanır) → dar tutulur. İkincisi yanlış olursa yalnız **bir öneri bastırılır**
+#: → geniş tutulabilir: bastırılan öneri bir sayı değil bir chip'tir ve kullanıcı soruyu
+#: yine sorabilir.
+#:
+#: *İki sorunun yanlış cevabının bedeli farklıysa, envanterleri de farklı olmalıdır.*
+#:
+#: ⚠ Farkı **ortaç/zarf-fiil/kip** ekleri kurar — türetmenin ihtiyaç duymadığı, ama bir
+#: kelimenin fiil olduğunu kesinleştiren biçimler. Türetme `ver-EN`i aramaz (ondan bir
+#: isim türetmez); öneri ayırıcısı **arar**, çünkü `veren→renk` tam da oradan doğdu.
+_FIIL_BICIMI = _FIIL_CEKIMI + (
+    "en", "an",                      # ortaç: ver-EN · yap-AN
+    "erek", "arak", "ince", "inca",  # zarf-fiil: gid-EREK · gel-İNCE
+    "meli", "mali", "sin", "sun",    # kip: yap-MALI · gel-SİN
+    "ken", "ip", "up",               # bağ-fiil: gider-KEN · gel-İP
+)
+
+
+def fiil_bicimi_mi(w: str) -> bool:
+    """Token Türkçe bir **fiil çekimi** mi? — yazım-önerisi ayırıcısı (§G/AJ0 morfoloji).
+
+    ## 🔴 Ölçülen kusur (`app/typo_onerisi.py`'nin kendi belgesinden)
+
+    | kullanıcı yazdı | sistem önerdi |
+    |---|---|
+    | `arttı` | *"«parti» mi demek istedin?"* |
+    | `veren` | *"«renk» mi demek istedin?"* |
+    | `işledik` | *"«iplik» mi demek istedin?"* |
+    | `sattık` | *"«hattı» mi demek istedin?"* |
+
+    Dördü de **fiil**. Bir fiilin katalogda olmaması bir yazım hatası **değildir** — bir
+    cümledeki kelimelerin çoğu zaten katalog dışıdır (fiiller, edatlar, gündelik dil).
+
+    ⚠ Ve bir gerekçe **ÇÜRÜTÜLDÜ**: *"eşiği yükselt"* önerisi ölçümle reddedildi —
+    saçma **0,600–0,769**, gerçek yazım hatası **0,714–0,923**: **çakışıyorlar**.
+    Eşiği yükseltmek `fıre→fire` (0,750) gibi **gerçek** hataları kaybettirirdi.
+    `typo_onerisi`'nin kendi cümlesi: *"gerçek ayırıcı sinyal benzerlik oranı değil
+    **Türkçe fiil çekimi** (saçmaların hepsi fiil→isim) ve o iş AJ0'ın morfoloji
+    kalemine ait."* **Bu fonksiyon o cümledir.**
+
+    ⚠ Kök **en az 2 harf** (türetmede 3): `ver-en` · `at-tı` gibi kısa köklü fiiller çok
+    yaygın ve buradaki yanlışın bedeli yalnız **bastırılmış bir chip**tir.
+    """
+    return any(w.endswith(ek) and len(w) - len(ek) >= 2 for ek in _FIIL_BICIMI)
+
+
 def _kokler(w: str, ekler: tuple[str, ...], *, kendisi: bool) -> set[str]:
     """`w`'den `ekler`den birini soyarak elde edilen kök adayları.
 

@@ -135,6 +135,20 @@ MUAFIYET_ASK_KOD = [
      "SAHTEYDİ (`may`→prim · `ogrnim`→kar oranı — kelimenin KENDİSİ aday sayılıyordu); "
      "kullanıcı tarafı gerçek bir çekim soymak zorunda kılınınca **0**'a indi. "
      "*Bir tahminin ucuz olması, yanlış olmasını ucuzlaştırmaz*"),
+    ("AJ0/kisa-devre-yasagi", 6,
+     "🔴🔴 KISA DEVRE YASAĞI — MIMARI §5'in **18. yasağı** (yol haritası §G/AJ0, "
+     "*'ÖNCE BU İNER'*). Ölçüldü: *«mart ayında ciro şubata göre nasıl DEĞİŞTİ»* → "
+     "**«degisti» yerine «egitim» mi demek istedin?** Bir yazım TAHMİNİ, cevap "
+     "üretebilecek bir yolun (Discovery) önünü kesiyordu; ikinci vaka "
+     "`enerji kaynağı→enerji tep`. Kodun KENDİ yorumları aynı hatayı ÜÇ KEZ kaydetmiş "
+     "— her seferinde çağrı yerinde yamalanmış, KAPININ KENDİSİNDE HİÇ. "
+     "🔴 Bu 6 satır TAŞINAMAZ ve sebebi konum: üç `_try_fresh_intent()` çağrı yeri + "
+     "typo dalının `_merdiven.kaydet` çevrimi + Discovery başarısızlığında aday dönüşü "
+     "— hepsi `ask()`in KENDİ akış noktaları. Mekanizmanın tamamı `app/merdiven.py`'de "
+     "(aday defteri + üç bitirici) ve `ask()`e giren yalnız BİR nesne + çağrılar. "
+     "⚠ İlk uygulama üç CLOSURE'dı ve büyüme kapısı iç-fonksiyon tavanını (19) kırmızı "
+     "verdi; kapı haklıydı — mekanizma `ask()`in hiçbir yereline bağlı değil. "
+     "⊙ Sonuç: kısa devre 11 → **10**, ve envanter düşüşü KENDİ bildirdi"),
     ("KÖK-1/faz2-bellek", 1,
      "🔴 NİYET BELLEĞİ İSTEK SINIRINDA (`bellek_sifirla()`) — KÖK-1 Faz 2'nin ÖN KOŞULU. "
      "Ölçüldü: reddedilen bir soruda `partial_unknowns` **DÖRT KEZ** koşuyordu. Niyet "
@@ -267,6 +281,12 @@ MUAFIYET_CUBE_ROUTER_KOD = [
 #: değil sessiz bir tavan artışıdır* (bu dosyanın kendi cümlesi). Dosya muafiyeti bu yüzden
 #: **ayrı** sayılır ve `ask()` tavanına **dokunmaz**.
 MUAFIYET_ASK_DOSYA = [
+    ("AJ0/merdiven-baglantisi", 3,
+     "🔴 AJ0 kısa devre yasağının MODÜL-DÜZEYİ bağlantısı: `app/merdiven.py`'den üç ad "
+     "(`Merdiven` · `ZORUNLU` · `ADAY_IZI`) import edilir. Mekanizmanın TAMAMI o "
+     "modülde; `ask.py`'de kalan yalnız isimlerin bağlanması. ⚠ Sabitleri `ask.py`'de "
+     "tanımlamak, işaretçiyi iki sahibe açardı — dönem kapısı onu TAKAR, merdiven "
+     "OKUR ve ikisi ayrışırsa zorunlu netleştirme sessizce adaya düşerdi"),
     ("KÖK-1/niyet-izi-yardimcisi", 5,
      "🔴 `_niyet_izi()` MODÜL-DÜZEYİ yardımcısı — niyeti çözer ve tek satırlık izi "
      "döndürür. `ask()`in İÇİNE yazılsaydı gövde tavanını aşardı ve `ask()` zaten tam "

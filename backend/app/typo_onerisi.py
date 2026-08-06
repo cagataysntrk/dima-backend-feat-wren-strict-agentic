@@ -80,4 +80,49 @@ def gecerli_oneri(typo_fixes: list[dict[str, Any]], schema: dict,
     `ask()` tarafında tek satırlık bir çağrıya iner; karar burada, saf ve test edilebilir.
     """
     aday = next((f for f in typo_fixes or [] if f.get("kind") == "suggest"), None)
+    if fiil_uydurmasi_mi(aday):
+        return None
     return aday if cevap_aciyor_mu(aday, schema, liste_kirilimi=liste_kirilimi) else None
+
+
+def fiil_uydurmasi_mi(aday: dict[str, Any] | None) -> bool:
+    """🔴 **AYIRICI SİNYAL — bu modülün kendi belgesinin istediği şey.**
+
+    Bu dosyanın açılış notu şunu yazıyordu ve bir çözüm değil bir **teşhis**ti:
+
+    > *"Gerçek ayırıcı sinyal benzerlik oranı değil **Türkçe fiil çekimi** (saçmaların
+    > hepsi fiil→isim) ve o iş AJ0'ın morfoloji kalemine ait."*
+
+    Morfoloji kalemi indi (`app/turetme.py`, KÖK-7d) ve ayırıcı artık **var**:
+
+    | kullanıcı yazdı | önerilen | karar |
+    |---|---|---|
+    | `arttı` *(fiil)* | `parti` | 🔴 **bastırılır** |
+    | `veren` *(fiil)* | `renk` | 🔴 **bastırılır** |
+    | `işledik` *(fiil)* | `iplik` | 🔴 **bastırılır** |
+    | `sattık` *(fiil)* | `hattı` | 🔴 **bastırılır** |
+    | `muterileri` *(isim)* | `müşteri` | 🟢 **kalır** |
+
+    🔴 Bir fiilin katalogda olmaması bir yazım hatası **değildir** — bir cümledeki
+    kelimelerin çoğu zaten katalog dışıdır. Bulanık eşleştirici bunu bilemez; **dilbilgisi
+    bilir**.
+
+    ⚠ Neden **eşik değil**: ölçüldü ve çürütüldü — saçma **0,600–0,769**, gerçek yazım
+    hatası **0,714–0,923**, **çakışıyorlar**. Eşiği yükseltmek `fıre→fire` (0,750) gibi
+    gerçek hataları kaybettirirdi. *Bir sınıfı ayıran şey bir sayı değilse, hiçbir eşik
+    onu ayırmaz.*
+
+    ⚠ Ve karar **fail-open değil**: şüphede öneri **bastırılır**. Bastırılan bir öneri
+    kullanıcıya bir chip eksik gösterir; yanlış bir öneri onu **yanlış yere** bakmaya
+    davet eder. *İkisi aynı ağırlıkta değildir.*
+    """
+    from app.turetme import fiil_bicimi_mi
+
+    kaynak = str((aday or {}).get("from") or "")
+    if not kaynak:
+        return False
+    if fiil_bicimi_mi(kaynak):
+        _log.info("yazım önerisi BASTIRILDI (fiil biçimi): %r → %r",
+                  kaynak, (aday or {}).get("to"))
+        return True
+    return False

@@ -131,24 +131,40 @@ def test_BANTLAR_AYRIK_DEGIL_olculdu():
         "— örneklem değiştiyse ölçüm YENİLENMELİ; eşik kararı buna dayanacak.")
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "🔴 AÇIK KUSUR — ölçüldü, düzeltilmedi, GÖRÜNÜR bırakıldı. Öneri artık `route()` ile "
-    "doğrulanıyor ama saçma düzeltme de route ediyor: 'bu ay kaç parti işledik' → "
-    "'…parti iplik' katalog terimlerinden oluştuğu için ÇÖZÜLÜYOR. Ayırıcı sinyal "
-    "benzerlik ORANI DEĞİL (bantlar çakışıyor, bkz. test_BANTLAR_AYRIK_DEGIL_olculdu); "
-    "gerçek sinyal Türkçe FİİL ÇEKİMİ — saçmaların hepsi fiil→isim. O iş §G/AJ0'ın "
-    "morfoloji kalemine ait ve kanıtlanmamış bir eşik değişikliğiyle sevk edilmedi."))
+# ⟳ **`xfail` KALDIRILDI (2026-08-06) — ve onu kaldıran şey bu işaretin KENDİ reçetesiydi.**
+#
+# İşaretin gerekçesi bir teşhisti, bir teslim değil:
+#
+# > *"Ayırıcı sinyal benzerlik ORANI DEĞİL (bantlar çakışıyor); gerçek sinyal Türkçe
+# > **FİİL ÇEKİMİ** — saçmaların hepsi fiil→isim. **O iş §G/AJ0'ın morfoloji kalemine
+# > ait** ve kanıtlanmamış bir eşik değişikliğiyle sevk edilmedi."*
+#
+# 🔴 Morfoloji kalemi indi (`app/turetme.py`, KÖK-7d) ve ayırıcı **yazıldığı yerde**
+# kuruldu: `typo_onerisi.fiil_uydurmasi_mi` → `turetme.fiil_bicimi_mi`. Kullanıcının
+# yazdığı token bir **fiil çekimi** ise öneri **bastırılır**; bir fiilin katalogda
+# olmaması bir yazım hatası değildir.
+#
+# ⊙ Ölçüldü: `arttı→parti` · `veren→renk` · `işledik→iplik` · `sattık→hattı` **dördü de
+# bastırıldı**; `fıre→fire` (0,750 benzerlik) ve `muterileri→müşteri` **korundu**.
+# Eşik hiç değişmedi — çünkü eşik zaten yanlış eksendi.
+#
+# *Bir kusuru doğru teşhis edip görünür bırakmak, onu çözmenin yarısıdır; öteki yarısı
+# teşhisin işaret ettiği yerde çalışmaktır.*
 @pytest.mark.parametrize("soru", [
     "bu yıl fire ne kadar arttı",
     "en çok fire veren makine",
     "bu ay kaç parti işledik",
 ])
 def test_DOGRU_YAZILMIS_SORU_ONERIYLE_KESILMIYOR(client, soru):
-    """🔴 **Uçtan uca hedef — bugün HENÜZ tutmuyor ve bu bilinçle kayıtlı.**
+    """🟢 **Uçtan uca hedef — 2026-08-06'da TUTTU.**
 
     Bunlar **doğru yazılmış** sorular; hiçbiri bir *"… mi demek istedin?"* chip'iyle
-    kesilmemeli. `xfail(strict=True)`: düzeldiği gün bu test **kırılır** ve işareti
-    kaldırmaya zorlar — bir kapı geri alınmaz, `xfail` işaretlenir (`GERİ AL` kuralı).
+    kesilmemeli. Artık kesilmiyor: `arttı` · `veren` · `işledik` birer **fiil**tir ve
+    fiil çekimi taşıyan bir token için yazım önerisi üretilmiyor.
+
+    ⚠ Eşik DEĞİŞMEDİ. Kusur bir benzerlik ölçüsü sorunu sanılmıştı; ölçüldü ki bir
+    **dilbilgisi** sorunuydu — ve bantların çakıştığı ölçümü (`test_BANTLAR_AYRIK_DEGIL_
+    olculdu`) yapan da bu dosyaydı. *Doğru ölçüm, yanlış çözümü elemekle işe yarar.*
     """
     d = client.post("/ask", json={"question": soru, "execute": False}).json()
     not_metni = str(d.get("note") or "")
@@ -156,3 +172,68 @@ def test_DOGRU_YAZILMIS_SORU_ONERIYLE_KESILMIYOR(client, soru):
         f"{soru!r} bir yazım önerisiyle kesildi: {not_metni!r}\n"
         "Doğru yazılmış bir soruya yazım hatası demek, kullanıcının güvenini "
         "cevapsızlıktan daha hızlı kaybettirir.")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🔴 AYIRICI SİNYAL — fiil çekimi (§G/AJ0 morfoloji kalemi)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+#: Bu dosyanın kendi açılış ölçümünde saçma çıkan dört öneri — **dördü de fiil**.
+FIIL_UYDURMASI = [("artti", "parti"), ("veren", "renk"),
+                  ("isledik", "iplik"), ("sattik", "hatti")]
+
+#: Gerçek yazım hataları — **isim**, ve korunmalı.
+GERCEK_TYPO = [("fıre", "fire"), ("muterileri", "musteri"),
+               ("bakiyye", "bakiye"), ("renkk", "renk")]
+
+
+@pytest.mark.parametrize("kaynak,hedef", FIIL_UYDURMASI)
+def test_FIIL_ONERISI_BASTIRILIYOR(kaynak, hedef):
+    """🔴 **ASIL KAPI.** Bir fiilin katalogda olmaması bir yazım hatası **değildir** —
+    bir cümledeki kelimelerin çoğu zaten katalog dışıdır (fiiller, edatlar, gündelik dil).
+    Bulanık eşleştirici bunu bilemez; **dilbilgisi bilir**."""
+    from app.typo_onerisi import fiil_uydurmasi_mi
+
+    assert fiil_uydurmasi_mi({"from": kaynak, "to": hedef, "kind": "suggest"}), \
+        f"🔴 «{kaynak}» bir FİİL — «{hedef}» önerisi bastırılmalıydı"
+
+
+@pytest.mark.parametrize("kaynak,hedef", GERCEK_TYPO)
+def test_GERCEK_TYPO_KORUNUYOR(kaynak, hedef):
+    """🔴 Kapının **asıl sınavı**: gerçek yazım hataları kaybolmamalı.
+    *Bir kapı, yakaladıklarıyla değil YANLIŞ yakaladıklarıyla sınanır.*"""
+    from app.typo_onerisi import fiil_uydurmasi_mi
+
+    assert not fiil_uydurmasi_mi({"from": kaynak, "to": hedef, "kind": "suggest"}), \
+        f"🔴 «{kaynak}» bir İSİM — «{hedef}» önerisi korunmalıydı"
+
+
+def test_AYIRICI_MORFOLOJI_SAHIBINDEN():
+    """⚠ Karar `app/turetme.py`'den gelir — Türkçe biçimbiriminin **tek sahibi**.
+    `typo_onerisi` içine ikinci bir ek listesi yazmak, bu deponun ölçülmüş *"aynı kuralın
+    iki sahibi"* sınıfını doğururdu."""
+    import ast
+    import pathlib
+
+    from app import typo_onerisi as t
+
+    kaynak = pathlib.Path(t.__file__).read_text(encoding="utf-8")
+    fn = next(x for x in ast.walk(ast.parse(kaynak))
+              if isinstance(x, ast.FunctionDef) and x.name == "fiil_uydurmasi_mi")
+    assert "fiil_bicimi_mi" in ast.unparse(fn), "🔴 ayırıcı kendi ek listesini yazıyor"
+    assert "re.compile" not in kaynak, "🔴 modül kendi dil kuralını yazmış"
+
+
+def test_IKI_ENVANTER_AYRI_VE_GEREKCELI():
+    """⚠ `_FIIL_BICIMI` (öneri ayırıcısı) `_FIIL_CEKIMI`den (türetme) **daha geniştir** ve
+    bu bilinçli: türetme yanlış olursa **uydurma bir eşleşme** doğar, öneri ayırıcısı
+    yanlış olursa yalnız **bir chip bastırılır**.
+
+    *İki sorunun yanlış cevabının bedeli farklıysa, envanterleri de farklı olmalıdır.*"""
+    from app.turetme import _FIIL_BICIMI, _FIIL_CEKIMI
+
+    assert set(_FIIL_CEKIMI) < set(_FIIL_BICIMI), "🔴 envanterler ayrışmış"
+    # ⚠ Farkı ORTAÇ/ZARF-FİİL/KİP ekleri kurar: türetme `ver-EN`i aramaz (ondan bir isim
+    # türetmez), öneri ayırıcısı ARAR — çünkü `veren→renk` tam da oradan doğdu.
+    fark = set(_FIIL_BICIMI) - set(_FIIL_CEKIMI)
+    assert {"en", "an"} <= fark, f"🔴 ortaç ekleri geniş envanterde yok: {sorted(fark)}"
