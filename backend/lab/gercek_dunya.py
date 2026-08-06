@@ -455,10 +455,43 @@ yalnız bu lab koşumu üretir. *Geliştirme kapısının bütçesi 1-2 dakikad�
     defteri okuyamaz. *Bir kusurun canlı turda görülmüş olması, onu kombinatoryal bir
     şablonun üretemeyeceği bir vaka yapar.* İkisi ayrı ayrı raporlanır.
     """
+    import os
+
     from app import cube_router
     from app.config import get_settings
-    from lab import senaryo_uretec
     from app.wren_service import WrenService
+    from lab import senaryo_uretec
+    from lab.izolasyon import izole_proje_ayna
+
+    # 🔴 ŞEMA TAZE DERLENİR — bu satır bir HIZ tercihi değil, bir DOĞRULUK şartıdır.
+    #
+    # ## Ölçülen kusur (2026-08-06) — **ölçüm aracının kendisi yalan söyledi**
+    #
+    # Bu fonksiyon şemayı `s.resolved_project_dir()`ten, yani paylaşılan
+    # `demo/wren-project`ten okuyordu. O dizin **gitignore'lu bir DERLEME ARTEFAKTIDIR**
+    # ve pack'ler değiştiğinde kendiliğinden yenilenmez. `nl_corpus.py` ise ta baştan
+    # `izole_proje_ayna` ile **taze** derliyordu — yani iki ölçüm aracı **iki farklı
+    # şemadan** okuyordu ve biri bayat olabiliyordu.
+    #
+    # ⊙ Bedeli ölçüldü ve ağırdı: bir katalog turunda `git checkout` ile geri alınan
+    # sinonimler artefakta **YAZILI KALDI**; aynı kaynak durumda ardışık koşumlar
+    # `sessiz_yanlis` için **8** ve **17**, `dogru` için **83** ve **80** verdi. Temiz
+    # ağaçta kapı KIRMIZI görünüyordu. Altı ayrı ölçüm bu yüzden yanlış okundu ve
+    # aralarından biri, sağlam bir değişikliğin **geri alınmasına** yol açtı.
+    #
+    # 🔴 *Bir ölçüm aracının bayat okuması, yanlış bir sonuçtan daha kötüdür: yanlış
+    # sonuç sorgulanır, bayat okuma GÜVENİLİR.*
+    #
+    # ⚠ `git checkout` bu sınıfı **kapatmaz** — artefakt izlenmiyor, geri alma onu
+    # görmez. Tek yapısal çözüm, ölçümün şemasını kendi derlemesinden almasıdır.
+    from app.compose import compose_and_build
+
+    os.environ["DIMA_PROJECT_DIR"] = izole_proje_ayna("gercek-dunya")
+    get_settings.cache_clear()
+    # ⚠ Ayna yalnız BOŞ bir çıktı dizini kurar; derlemeyi çağıran yapar (ADR-0005 —
+    # `tests/conftest.py:134` ile aynı sözleşme). Aynayı kurup derlemeyi atlamak,
+    # bayat şemayı **yok** şemayla değiştirirdi: daha dürüst ama yine yanlış.
+    compose_and_build(get_settings())
 
     s = get_settings()
     svc = WrenService(project_dir=s.resolved_project_dir(), datasource=s.datasource,
