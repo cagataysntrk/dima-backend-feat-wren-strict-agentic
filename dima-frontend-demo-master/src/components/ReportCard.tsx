@@ -1076,13 +1076,13 @@ export function ReportCard({
           `next_steps`ten AYRI durur: o sorguyu DÜZENLER (`cube_query` taşır), bu ise
           bir SORU sorar — ikisi farklı eylemdir ve aynı kutuya konursa kullanıcı
           hangisinin yeni sayı getireceğini bilemez. */}
-      {onReply && (item.suggestions ?? []).filter((s) => s.kind !== "tanim").length > 0 && (
+      {onReply && (item.suggestions ?? []).filter((s) => !s.kind).length > 0 && (
         <div className="mt-3">
           <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
             devam sorusu
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {(item.suggestions ?? []).filter((s) => s.kind !== "tanim").map((s, i) => (
+            {(item.suggestions ?? []).filter((s) => !s.kind).map((s, i) => (
               <button
                 key={`sug-${i}`}
                 onClick={() => onReply(threadId, index, s.query)}
@@ -1106,6 +1106,34 @@ export function ReportCard({
           Backend ölçümü: kayıttaki 62/62 terim çok-sahipli ve cevapların %11,7'si
           bunlardan biri üzerinden gidiyordu — kullanıcı hangi tanımın kullanıldığını
           hiçbir yerden öğrenemiyordu. */}
+      {/* 🔴 TÜRETME chip'leri (`kind === "turetme"`) — KÖK-7d.
+          Bir REDDİN yanında durur: kullanıcı fiil kurdu ("ne kadar sattık"), katalogda
+          isim var ("satış"). Yani bir cevabın DEVAMI değil, sorunun DÜZELTMESİDİR —
+          ve fail-closed bir katmandan gelir: sistem tahmin etti, ama SORUYOR.
+          ⚠️ Devam sorusu kutusuna konamaz (orada cevap yok, red var). */}
+      {onReply && (item.suggestions ?? []).some((s) => s.kind === "turetme") && (
+        <div className="mt-3 border-l-2 border-sky-400/60 pl-3 dark:border-sky-500/50">
+          <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-sky-600 dark:text-sky-400">
+            bunu mu demek istedin
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {(item.suggestions ?? [])
+              .filter((s) => s.kind === "turetme")
+              .map((s, i) => (
+                <button
+                  key={`tur-${i}`}
+                  onClick={() => onReply(threadId, index, s.query)}
+                  title="Katalogdaki karşılığıyla yeniden sorar"
+                  className="border border-sky-400/50 px-2 py-1 font-mono text-[11px] text-sky-700 transition-colors hover:border-sky-500 hover:bg-sky-50 dark:text-sky-300 dark:hover:bg-sky-950/30"
+                >
+                  <span className="mr-1 opacity-60">↦</span>
+                  {s.label}
+                </button>
+              ))}
+          </div>
+        </div>
+      )}
+
       {onReply && (item.suggestions ?? []).some((s) => s.kind === "tanim") && (
         <div className="mt-3 border-l-2 border-amber-400/60 pl-3 dark:border-amber-500/50">
           <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-amber-600 dark:text-amber-400">

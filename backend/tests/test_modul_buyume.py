@@ -117,6 +117,24 @@ MUAFIYET_ASK_KOD = [
      "kısmi-cevap metni. `ask()`e giren yalnız ÇAĞRI, cube_meta çözümü ve İKİ ATAMA. "
      "⊙ Ölçüldü: 525 meşru soruda 0 yanlış-pozitif, 5/5 hedef yakalandı; ölçüt üç kez "
      "düzeltildi ve her düzeltme bir yanlış-pozitif ölçümünden geldi"),
+    ("KÖK-7d/turetme", 4,
+     "🔴 TÜRETME KATMANI (denetim raporu KN-8/KÇ-10) — katalog yalnız İSİM biçimini "
+     "biliyor, kullanıcı FİİL kuruyor: `sattık`→satış · `ürettik`→üretim · "
+     "`alacağımız`→alacak; üçü de **R10** ile ölüyordu. `_ek_gecerli` ÇEKİMİ çözer, bu "
+     "TÜRETMEDİR — farklı bir dilbilimsel işlem ve depoda karşılığı yoktu. "
+     "🔴 Bu 4 satır `_honest_refusal`in içinde ve TAŞINAMAZ: o yardımcı deponun BÜTÜN "
+     "dürüst retlerinin TEK ÇIKIŞ KAPISIDIR; türetmeyi tek tek dallara yazmak 'aynı "
+     "kuralın iki sahibi' sınıfını DÖRDE katlardı. Karar `app/turetme.py`'de (kapalı ek "
+     "envanterleri · yumuşama geri alma · hafif-fiil sınıfı), şema çözümü modül düzeyi "
+     "`_turetme_adaylari`'nda (ayrı muafiyet). "
+     "⚠ FAIL-CLOSED: chip üretir, CEVAP ÜRETMEZ — `route()` bu modülü hiç görmez ve "
+     "`test_ROUTE_TURETMEYI_GORMUYOR` bunu kilitler. Kapsam riski YAPISAL olarak sıfır; "
+     "KÖK-7b'nin ölçülmüş dersi budur (o, kapsamı AÇARAK denedi: ölçüt tuttu ama "
+     "kabul 1150→1117, sessiz_yanlis 12→30). "
+     "⊙ İki ölçüm, iki düzeltme: 1. turda korpusta **191 (%9,0)** chip üretti ve ÇOĞU "
+     "SAHTEYDİ (`may`→prim · `ogrnim`→kar oranı — kelimenin KENDİSİ aday sayılıyordu); "
+     "kullanıcı tarafı gerçek bir çekim soymak zorunda kılınınca **0**'a indi. "
+     "*Bir tahminin ucuz olması, yanlış olmasını ucuzlaştırmaz*"),
     ("KÖK-9/belirsizlik-chipi", 1,
      "🔴 BİLİNEN BELİRSİZLİK BEYAN EDİLİR (denetim raporu KN-6/KÇ-6). Ölçüldü: "
      "`metrik_kaydi` kaydındaki **62/62** terim ≥2 adaylı ve HİÇBİRİNİN sahibi yok; "
@@ -221,6 +239,15 @@ MUAFIYET_CUBE_ROUTER_KOD = [
 #: değil sessiz bir tavan artışıdır* (bu dosyanın kendi cümlesi). Dosya muafiyeti bu yüzden
 #: **ayrı** sayılır ve `ask()` tavanına **dokunmaz**.
 MUAFIYET_ASK_DOSYA = [
+    ("KÖK-7d/turetme-adaylari", 14,
+     "🔴 `_turetme_adaylari()` MODÜL-DÜZEYİ yardımcısı — bir dürüst reddin yanına konacak "
+     "türetme chip'lerini hesaplar. `ask()`in İÇİNE yazılsaydı gövde tavanını aşardı ve "
+     "`ask()` zaten tam tavanında; dışarı alınması hem tavanı korur hem DOĞRU YERDİR — "
+     "bir ÖNERİ hesabı bir cevaplama adımı değildir (aynı gerekçe `_netlestirme_duzeyi` "
+     "ve `_belirsizlik_beyani` muafiyetlerinde de yazılı). "
+     "⚠ Taşınabilir olan HER ŞEY `app/turetme.py`'de; burada kalan yalnız ŞEMAYI ÇÖZMEK "
+     "ve ÇAĞIRMAK. Şema okunamazsa boş liste döner — *bir öneri, önerdiği şeyden daha "
+     "kırılgan olmamalıdır*"),
     ("KÖK-9/belirsizlik-beyani", 20,
      "🔴 `_belirsizlik_beyani()` MODÜL-DÜZEYİ yardımcısı — çok-sahipli bir terimde cevaba "
      "alternatif chip'ini ve beyan notunu ekler. `ask()`in İÇİNE yazılsaydı gövde tavanını "

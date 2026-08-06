@@ -58,7 +58,13 @@ TAVANLAR = {
     #
     # ⚠ Tavan MUAFIYET listesine değil buraya yazıldı: `test_KAPI_SAHTE_DEGIL` bu dosyada
     # `n == TAVANLAR[dosya]` arıyor (boşluksuz tavan), muafiyet toplamına değil.
-    "components/ReportCard.tsx": 1009,
+    # ⊙ +24 · KÖK-7d TÜRETME chip'i (`kind === "turetme"`). ÜÇÜNCÜ değil DÖRDÜNCÜ bir
+    # edim ve kendi kutusunu hak ediyor: "devam sorusu" bir CEVABIN üstünde konuşur,
+    # "sonraki adım" bir SORGUYU düzenler, "başka tanım" aynı soruyu başka tanımla sorar
+    # — bu ise bir REDDİN yanında durur ve sorunun KENDİSİNİ düzeltir ("ne kadar sattık"
+    # → "ciro"). Var olan bir kutuya konsa kullanıcı bir cevabın devamı sanardı; oysa
+    # ortada cevap yok, red var. *Bir chip'in bulunduğu kutu, ne vaat ettiğini söyler.*
+    "components/ReportCard.tsx": 1033,
     "lib/api-client.ts": 778,
     "lib/chart.ts": 688,
     # ⊙ 579 → 581: +1 `eksik_niyet?: string[]` (KÖK-3) · +1 `Suggestion.kind?` (KÖK-9).

@@ -45,9 +45,28 @@ def _sor(client, q, sinir=None):
 
 @pytest.mark.parametrize("sinir", SINIRSIZ)
 def test_SINIRSIZ_davranis_BUGUNKU(client, sinir):
-    """`None` ve açık `kesif` aynı olmalı; varsayılan yol hiç değişmemeli."""
+    """`None` ve açık `kesif` aynı olmalı; varsayılan yol hiç değişmemeli.
+
+    ## 🔴 ARAÇ DEĞİŞTİ — ölçüt DEĞİL (2026-08-06)
+
+    Bu test *"Discovery açık mı"*yı **`asdf qwerty zxcv` sorusuna SQL üretiliyor mu**
+    diye ölçüyordu. O SQL bir **uydurmaydı**: kural motoru anlamadığı her soruya
+    `SELECT COUNT(*) FROM partiler` üretiyordu ve dört farklı anlamsız soru **aynı**
+    sayıyı (37 878) döndürüyordu (`tests/test_uydurma_sayi_yok.py`).
+
+    🔴 Yani bu kapı, deponun **en kötü hata sınıfını bir ÖZELLİK sanıp ona
+    dayanıyordu** — ve kusur kapatılınca kırmızı verdi.
+
+    ⚠ Ölçüt korunuyor: *sınırsız iki değer AYNI davranmalı.* Değişen yalnız kanıt —
+    "SQL var mı" yerine **"ikisi aynı mı"**. *Bir kapının ölçtüğü şey doğruysa, o şeyi
+    ölçme biçimi değişebilir; ölçtüğü şey yanlışsa biçimi kurtarmaz.*
+    """
     d = _sor(client, "asdf qwerty zxcv", sinir)
-    assert d.get("sql"), f"sınır={sinir!r} iken Discovery kapanmış"
+    taban = _sor(client, "asdf qwerty zxcv", None)
+    assert d.get("source") == taban.get("source"), \
+        f"sınır={sinir!r} varsayılandan AYRIŞTI: {d.get('source')} ≠ {taban.get('source')}"
+    assert not any("yol sınırı" in (t or "").lower() for t in (d.get("trace") or [])), \
+        f"sınır={sinir!r} iken bir yol KESİLDİ — sınırsız olmalıydı"
 
 
 def test_DETERMINISTIK_cevabi_HER_SEVIYEDE_gelir(client):
@@ -88,7 +107,12 @@ def test_TANINMAYAN_deger_SINIR_SAYILMAZ(client):
     """Bir yazım hatasının kullanıcının cevabını sessizce kesmesi, sınırın kendisinden
     daha zararlıdır → tanınmayan değer varsayılana düşer."""
     d = _sor(client, "asdf qwerty zxcv", "determinstik")   # kasıtlı yazım hatası
-    assert d.get("sql"), "tanınmayan sınır değeri cevabı KESTİ"
+    # ⚠ Kanıt "SQL üretildi" DEĞİL (o bir uydurmaydı — yukarıdaki nota bak): tanınmayan
+    # değer **varsayılana** düşmeli, yani sınırsız davranışla AYNI olmalı ve hiçbir yol
+    # kesilmemeli.
+    assert not any("yol sınırı" in (t or "").lower() for t in (d.get("trace") or [])), \
+        "tanınmayan sınır değeri bir yolu KESTİ — varsayılana düşmeliydi"
+    assert d.get("source") == _sor(client, "asdf qwerty zxcv", None).get("source")
 
 
 # --- FRONTEND TÜKETİCİSİ (yetim alan kapısı) ---------------------------------------

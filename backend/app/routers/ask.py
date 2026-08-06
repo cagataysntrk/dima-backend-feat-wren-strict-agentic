@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 import time as _time
 
 from app import donem_capasi as _capa
+from app import turetme as _turetme
 from app import uyum as _uyum
 from app import yetenek as _yetenek
 from app import context as app_context
@@ -1378,6 +1379,31 @@ def _belirsizlik_beyani(resp, q_norm: str, cq: dict, cube_meta, schema: dict):
     return [*(resp.suggestions or []), *[Suggestion(**c) for c in yeni]]
 
 
+def _turetme_adaylari(soru: str, request) -> list[dict]:
+    """🔴 KÖK-7d — bir dürüst reddin yanına konacak **türetme chip'leri**.
+
+    ## Neden `ask()`in İÇİNDE değil
+
+    Büyüme kapısının iki kez dayattığı kural: *taşınabilir olan her şey modüle gider.*
+    Kararın tamamı `app/turetme.py`'de (kapalı ek envanterleri, yumuşama geri alma,
+    hafif-fiil sınıfı); burada kalan yalnız **şemayı çözmek ve çağırmak**.
+
+    ⚠ Şema okunamazsa **boş liste** — bir chip üretememek bir cevabı düşürmemeli.
+    *Bir öneri, önerdiği şeyden daha kırılgan olmamalıdır.*
+    """
+    from app import cube_router as _cr
+    from app import turetme as _t
+    from app.company_registry import wren_for_request
+
+    try:
+        schema = wren_for_request(request).schema() or {}
+        bilinmeyen, _ = _cr.partial_unknowns(_cr._norm(soru), schema)
+        return _t.adaylar(bilinmeyen, schema)
+    except Exception:                        # ADR-0020: sessiz yutma yok
+        _log.warning("türetme adayları hesaplanamadı", exc_info=True)
+        return []
+
+
 def _netlestirme_duzeyi(request) -> str:
     """Tenant'ın netleştirme düzeyi — `kapali | normal | yuksek`.
 
@@ -1857,8 +1883,26 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         dürüstçe söylenecek bir sonuçtur (source=None, sql yok, çökme yok)."""
         # FAZ 5.17 — `soz` opsiyonel: verilmeyen yollarda frontend `soz ?? note` ile
         # bugünkü metni gösterir (GERİ AL bedava).
-        return _finish(AskResponse(question=body.question, source=None, note=note,
-                                   suggestions=suggestions or [], trace=trace, soz=soz))
+        #
+        # 🔴 KÖK-7d — TÜRETME CHİP'İ **TEK HUNİDEN**. Bu yardımcı, deponun bütün dürüst
+        # retlerinin çıkış kapısıdır; türetmeyi tek tek dallara yazmak, bu deponun
+        # ölçülmüş *"aynı kuralın iki sahibi"* sınıfını dörde katlardı. İlk denemede
+        # yalnız *kısmi-anlama* dalına bağlanmıştı ve ölçüldü: `ne kadar sattık` o daldan
+        # geçmiyor (katalog-dökümü dalına düşüyor) → chip hiç görünmüyordu.
+        # *Bir kancayı doğru yere takmak, doğru kancayı yazmak kadar iştir.*
+        #
+        # ⚠ Var olan öneriler EZİLMEZ, **ÖNE ALINIR** — ve bu sıra ölçümle seçildi:
+        # `ne kadar sattık` katalog-DÖKÜMÜ dalına düşüyor ve o dal kendi listesini
+        # taşıyor. *"Öneri varsa dokunma"* kuralı, chip'i tam da en çok işe yarayacağı
+        # yerde susturuyordu. Türetme adayı **soruya özgüdür**; döküm jeneriktir.
+        # *Bir listenin başı, o listenin en çok okunan yeridir.*
+        ek = [Suggestion(**c) for c in _turetme_adaylari(body.question, request)]
+        return _finish(AskResponse(question=body.question, source=None,
+                                   note=" ".join(x for x in [note, _turetme.not_metni(
+                                       [], len(ek))] if x) if ek else note,
+                                   suggestions=ek + (suggestions or []),
+                                   trace=trace + (["türetme adayı önerildi (KÖK-7d)"]
+                                                  if ek else []), soz=soz))
 
     def _period_gate(cq: dict, cube_meta: dict | None, period_optional: bool | None,
                      trace_prefix: str) -> AskResponse | None:
@@ -2991,13 +3035,16 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     mdisp = (c.get("measure_synonyms_display") or {}).get(m) or m
                     if mdisp not in example_labels:
                         example_labels.append(mdisp)
-            return _finish(AskResponse(
-                question=body.question, source=None,
+            # 🔴 KÖK-7d — bu dal `_honest_refusal` hunisinden GEÇMİYOR ve ölçüldü:
+            # `ne kadar sattık` tam da buraya düşüyor. Türetme chip'i onsuz, sorunun
+            # en iyi cevabı olduğu yerde susuyordu. *Bir kancayı doğru yere takmak,
+            # doğru kancayı yazmak kadar iştir.*
+            return _honest_refusal(
                 note="Neyi karşılaştırmak/görmek istediğini anlayamadım — sorunda tanıdığım "
                      "bir konu geçmiyor. Şunlardan birini mi demek istedin?",
                 suggestions=_dogrulanmis_chipler(example_labels, schema, en_fazla=14),
                 trace=["Intent-path: hiçbir konu tanınmadı → katalog örnekleri (LLM'siz)"],
-            ))
+            )
         return None
 
     def _learn_chip_completion(cq: dict, cube_meta: dict | None) -> str | None:

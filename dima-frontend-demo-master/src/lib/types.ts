@@ -159,7 +159,10 @@ export interface AskResponse {
    *  - undefined → DEVAM SORUSU (bu cevabın üstünde konuşur, yeni sorgu yazmaz)
    *  - "tanim"   → BELİRSİZLİK chip'i: aynı soruyu BAŞKA BİR TANIMLA yeniden sorar.
    *                🔴 Devam sorusu kutusuna KONAMAZ — o kutunun açıklaması
-   *                ("yeni sorgu yazılmaz") bunun için yanlış olurdu. */
+   *                ("yeni sorgu yazılmaz") bunun için yanlış olurdu.
+   *  - "turetme" → TÜRETME chip'i (KÖK-7d): kullanıcı FİİL kurdu ("ne kadar sattık"),
+   *                katalogda İSİM var ("satış"). Bir REDDİN yanında durur, yani bir
+   *                cevabın devamı değil bir DÜZELTME önerisidir. */
   suggestions?: { label: string; query: string; kind?: string }[];
   /** FAZ 1.7 — tazelik kademesi: `taze | uyari | hata | bilinmiyor`.
    *
