@@ -40,10 +40,32 @@ from tests.kapi_ortak import fe_dosyalari, yorumsuz
 #: ⚠ Yalnız *"ağırlık merkezi"* dosyalar: her dosyaya tavan koymak, kapıyı bir
 #: bürokrasiye çevirir ve **hiçbirine bakılmaz** hâle getirir.
 TAVANLAR = {
-    "components/ReportCard.tsx": 948,
+    # 🔴 **948 → 1009 (2026-08-06) ve bu ARTIŞIN İKİ AYRI SAHİBİ VAR — ikisi de yazılı.**
+    #
+    # ⊙ +37 · `7595250` (KÖK-2/KÖK-3): `eksik_niyet` uyarı şeridi. Backend cevabı artık
+    #   *"sayı doğru ama sorunun bir parçası taşınmadı"* diyor ve bunun bir TÜKETİCİSİ
+    #   olmadan özellik "bitti" değildir (deponun *arka-ön bütünlüğü* kuralı).
+    #   🔴 Ve bu artış kapıyı KIRMIZIYA ÇEVİRDİ, kimse görmedi: yerel kapı 2026-08-04'te
+    #   **yalnız korpusa** indirildi ve süit gecelik CI'ya taşındı. Üç commit boyunca
+    #   kırmızı kaldı. *Bir kapıyı ucuzlaştırmak, onu görünmez yapmanın da yoludur.*
+    #
+    # ⊙ +24 · KÖK-9 belirsizlik chip'i: `suggestions[].kind === "tanim"` bloğu.
+    #   TAŞINAMAZ ve sebebi ÜÇÜNCÜ BİR EDİM olması: "devam sorusu" bu cevabın ÜSTÜNDE
+    #   konuşur, "sonraki adım" bu SORGUYU düzenler, bu ise AYNI SORUYU BAŞKA BİR TANIMLA
+    #   yeniden sorar. Var olan kutuya koymak, o kutunun kullanıcıya verdiği sözü
+    #   ("yeni sorgu yazılmaz") YALAN yapardı. *Bir chip'in yanındaki açıklama, chip'in
+    #   kendisi kadar bir vaattir.*
+    #
+    # ⚠ Tavan MUAFIYET listesine değil buraya yazıldı: `test_KAPI_SAHTE_DEGIL` bu dosyada
+    # `n == TAVANLAR[dosya]` arıyor (boşluksuz tavan), muafiyet toplamına değil.
+    "components/ReportCard.tsx": 1009,
     "lib/api-client.ts": 778,
     "lib/chart.ts": 688,
-    "lib/types.ts": 579,
+    # ⊙ 579 → 581: +1 `eksik_niyet?: string[]` (KÖK-3) · +1 `Suggestion.kind?` (KÖK-9).
+    # ⚠ İkisi de bir ALAN BEYANIDIR, mantık değil — tip dosyasının büyümesi burada
+    # backend sözleşmesinin büyümesidir ve onu cezalandırmak, sözleşmeyi belgesiz
+    # bırakmayı ödüllendirirdi.
+    "lib/types.ts": 581,
     "components/ReviewPanel.tsx": 555,
     "app/page.tsx": 534,
     "components/ResultView.tsx": 476,

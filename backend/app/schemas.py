@@ -249,9 +249,23 @@ class QueryResult(BaseModel):
 
 class Suggestion(BaseModel):
     """Tıklanır hızlı-yanıt chip'i: label gösterilir, tıklanınca query gönderilir.
-    Meta yanıtta örnek sorgular; clarification'da dönem seçenekleri (ADR-0007)."""
+    Meta yanıtta örnek sorgular; clarification'da dönem seçenekleri (ADR-0007).
+
+    🔴 `kind` — **ÜÇÜNCÜ bir edim doğduğu için eklendi** (KÖK-9, 2026-08-06).
+    `ReportCard` bu chip'leri *"devam sorusu"* başlığıyla ve *"bu cevabın üstünde konuşur
+    — yeni sorgu yazılmaz"* açıklamasıyla basıyor. Belirsizlik chip'i (`kind="tanim"`)
+    ise **aynı soruyu BAŞKA BİR TANIMLA yeniden sorar** — yani yeni bir sorgu yazar ve
+    o açıklama onun için **yanlış** olurdu.
+
+    ⚠ `NextStep.kind` ile aynı gerekçe (*"FE gruplama/renk için"*) ve aynı disiplin:
+    `ReportCard`ın kendi yorumu *"ikisi farklı eylemdir ve aynı kutuya konursa kullanıcı
+    hangisinin yeni sayı getireceğini bilemez"* diyor. Üçüncü edim de o kutuya konamaz.
+
+    `None` = bugünkü devam sorusu davranışı (geriye uyumlu).
+    """
     label: str
     query: str
+    kind: str | None = None
 
 
 class NextStep(BaseModel):

@@ -1337,6 +1337,47 @@ def _with_extra_context(question: str, extra_context: list[str] | None) -> str:
 from app.discovery_kuyrugu import kuyrukla as _queue_discovery_job  # noqa: E402,F401
 
 
+def _belirsizlik_beyani(resp, q_norm: str, cq: dict, cube_meta, schema: dict):
+    """🔴 KÖK-9 — cevaba **bilinen belirsizliğin** chip'ini ve notunu ekler.
+
+    Döner: `resp.suggestions` için yeni liste (belirsizlik yoksa **olduğu gibi**).
+
+    ## Neden `ask()`in İÇİNDE değil
+
+    Büyüme kapısı bu deponun ölçülmüş dersini iki kez dayattı: *taşınabilir olan her şey
+    modüle gider.* `ask()`e giren yalnız **tek satırlık çağrı**; karar `app.metrik_kaydi`
+    (adaylar) ve `app.belirsizlik_chipi` (etiket, not, chip) arasında bölünmüş durumda ve
+    ikisi de zaten kendi sözleşmelerinin sahibi.
+
+    ## ⚠ VAR OLAN CHIP'LER EZİLMEZ
+
+    Cevap zaten bir öneri taşıyorsa (grafik chip'i, devam chip'i) belirsizlik chip'i
+    **sonuna** eklenir. Ezmek, bir kusuru kapatırken başka bir yeteneği sessizce
+    kaldırmak olurdu — bu deponun *"arka-ön bütünlüğü"* kuralının tam karşıtı.
+    """
+    from app import belirsizlik_chipi as _bc
+    from app.schemas import Suggestion
+
+    kayit = schema.get("metrik_kaydi")
+    if not kayit or cube_meta is None:
+        return resp.suggestions
+    terim = cube_router._match_measure(q_norm, cube_meta)[1]
+    if not terim:
+        return resp.suggestions
+    oteki = _bc.alternatifler(terim, kayit, cq.get("cube"))
+    if not oteki:
+        return resp.suggestions
+
+    yeni = _bc.chipler(terim, oteki, schema)
+    if not yeni:
+        return resp.suggestions
+    resp.note = " ".join(x for x in [
+        resp.note,
+        _bc.not_metni(terim, _bc.cube_etiketi(cube_meta), [c["label"] for c in yeni]),
+    ] if x)
+    return [*(resp.suggestions or []), *[Suggestion(**c) for c in yeni]]
+
+
 def _netlestirme_duzeyi(request) -> str:
     """Tenant'ın netleştirme düzeyi — `kapali | normal | yuksek`.
 
@@ -2002,6 +2043,13 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         if _ihlaller:
             resp.eksik_niyet = [i.isaret for i in _ihlaller]
             resp.note = " ".join(x for x in [resp.note, _uyum.kismi_cevap_notu(_ihlaller)] if x)
+        # 🔴 KÖK-9 — BİLİNEN BELİRSİZLİK BEYAN EDİLİR (denetim raporu KN-6/KÇ-6).
+        # Ölçüldü: kayıttaki **62/62** terim ≥2 adaylı ve hiçbirinin sahibi yok; cevaplanan
+        # soruların **%11,7'si** bu terimlerden biri üzerinden gidiyordu ve kullanıcı bunu
+        # hiçbir yerden öğrenemiyordu. ⚠ Reddetmek DEĞİL — o ölçüldü ve korpusu
+        # %94,3 → %83,6 düşürdü. Raporun ölçütü *"belirsizlik sıraya değil CHİP'e"*:
+        # cevap gider, alternatif chip olur, kapsam maliyeti SIFIRDIR.
+        resp.suggestions = _belirsizlik_beyani(resp, q_norm, cq, _cm_uyum, schema)
         if learn and vqr is not None:
             try:
                 # `auto_cube` (Faz 4.1): saklanan SQL, LLM'in serbest metni DEĞİL —

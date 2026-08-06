@@ -155,7 +155,12 @@ export interface AskResponse {
   // Sorgunun nasıl çözüldüğü — pipeline adımları ("?" ile gösterilir).
   trace?: string[];
   // Tıklanır chip'ler — meta örnek sorgular / dönem clarification seçenekleri.
-  suggestions?: { label: string; query: string }[];
+  /** Tıklanır chip. `kind` FE gruplaması içindir (KÖK-9):
+   *  - undefined → DEVAM SORUSU (bu cevabın üstünde konuşur, yeni sorgu yazmaz)
+   *  - "tanim"   → BELİRSİZLİK chip'i: aynı soruyu BAŞKA BİR TANIMLA yeniden sorar.
+   *                🔴 Devam sorusu kutusuna KONAMAZ — o kutunun açıklaması
+   *                ("yeni sorgu yazılmaz") bunun için yanlış olurdu. */
+  suggestions?: { label: string; query: string; kind?: string }[];
   /** FAZ 1.7 — tazelik kademesi: `taze | uyari | hata | bilinmiyor`.
    *
    * 🔴 `hata` VE `bilinmiyor`'da SAYI GÖSTERİLMEZ (B4: bilinmeyen tazelik TAZE DEĞİLDİR).

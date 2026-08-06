@@ -117,6 +117,20 @@ MUAFIYET_ASK_KOD = [
      "kısmi-cevap metni. `ask()`e giren yalnız ÇAĞRI, cube_meta çözümü ve İKİ ATAMA. "
      "⊙ Ölçüldü: 525 meşru soruda 0 yanlış-pozitif, 5/5 hedef yakalandı; ölçüt üç kez "
      "düzeltildi ve her düzeltme bir yanlış-pozitif ölçümünden geldi"),
+    ("KÖK-9/belirsizlik-chipi", 1,
+     "🔴 BİLİNEN BELİRSİZLİK BEYAN EDİLİR (denetim raporu KN-6/KÇ-6). Ölçüldü: "
+     "`metrik_kaydi` kaydındaki **62/62** terim ≥2 adaylı ve HİÇBİRİNİN sahibi yok; "
+     "cevaplanan soruların **%11,7'si** (18/154) bu terimlerden biri üzerinden gidiyor "
+     "ve kullanıcı hangi tanımın kullanıldığını HİÇBİR YERDEN öğrenemiyordu "
+     "(`parti sayısı`→oee/parti · `enerji tep`→3 cube · `adet`→**6** cube). "
+     "Kazananı bir karar değil bir YAN ETKİ belirliyordu: aday üretecinde boyut sayısı. "
+     "🔴 Bu TEK satır bir çağrıdır; karar `app/belirsizlik_chipi.py` ile "
+     "`app/metrik_kaydi.py` arasında ve yardımcı `_belirsizlik_beyani` MODÜL DÜZEYİNDE "
+     "(ayrı muafiyet listesinde) — `ask()` gövdesine giren yalnız atama. "
+     "⚠ REDDETMEK DEĞİL, ve sebebi ölçüldü: belirsizse `route()`u susturmak korpusu "
+     "%94,3 → **%83,6** düşürdü (dar hâli bile boyahane erişimini %69→%66 yaptı). "
+     "Raporun ölçütü *belirsizlik sıraya değil CHİP'e* — cevap gider, alternatif beyan "
+     "edilir, **kapsam maliyeti sıfırdır**"),
     ("KÖK-6/yetenek", 2, "🔴 YETENEK KAPISI (denetim raporu KN-3) — *"
                          "«forecast v1'de yok» gibi ÜRÜN-DÜZEYİ bir sınır Discovery'ye "
                          "düşüp bir SAYIYA dönüşüyordu (`adhoc.toplam_toplam_ciro`). "
@@ -188,6 +202,18 @@ MUAFIYET_CUBE_ROUTER_KOD = [
 #: değil sessiz bir tavan artışıdır* (bu dosyanın kendi cümlesi). Dosya muafiyeti bu yüzden
 #: **ayrı** sayılır ve `ask()` tavanına **dokunmaz**.
 MUAFIYET_ASK_DOSYA = [
+    ("KÖK-9/belirsizlik-beyani", 20,
+     "🔴 `_belirsizlik_beyani()` MODÜL-DÜZEYİ yardımcısı — çok-sahipli bir terimde cevaba "
+     "alternatif chip'ini ve beyan notunu ekler. `ask()`in İÇİNE yazılsaydı gövde tavanını "
+     "20 satır aşardı ve `ask()` zaten tam tavanında duruyor; dışarı alınması hem tavanı "
+     "korur hem DOĞRU YERDİR — bir cevabın ZENGİNLEŞTİRİLMESİ bir cevaplama ADIMI değildir "
+     "(aynı gerekçe `_netlestirme_duzeyi` muafiyetinde de yazılı). "
+     "⚠ Ve taşınabilir olan HER ŞEY zaten taşındı: adaylar `app/metrik_kaydi.py`, etiket/"
+     "not/chip `app/belirsizlik_chipi.py`; burada kalan yalnız İKİ SÖZLEŞMEYİ BAĞLAMAK — "
+     "`_match_measure`in eşleşen terimi ile kaydın adayları. "
+     "⚠ Ve bir GERİ AL şartı: `metrik_kaydi` bayrağı kapalıysa şemada anahtar yoktur, "
+     "fonksiyon ilk satırında çıkar ve davranış BİREBİR bugünküdür — bir özelliğin geri "
+     "alınması bir kod değişikliği gerektirmemelidir"),
     ("faz-5.16", 17, "`_netlestirme_duzeyi()` modül-düzeyi yardımcısı: tenant ayarını "
                      "okur ve `netlestirme.duzey()`e verir. 🔴 `ask()`in İÇİNE "
                      "yazılsaydı gövde tavanını 17 satır aşardı; dışarı alınması hem "
