@@ -255,6 +255,19 @@ pahalı olur.**
 - 🔴 **KOŞUM HİJYENİ:** `--rm` değil **`-d`**, `--name` ver, `docker wait` + `docker logs`
   ile oku, sonda `docker rm -f`. (`--rm` konteyner çıkınca kütüğü siler; bu operasyonda
   **iki koşumun özeti böyle kayboldu**.)
+- 🔴 **`--user "$(id -u):$(id -g)"` ZORUNLU — repoya yazan HER konteynerde.**
+  Ölçüldü (2026-08-06): bayrak unutulan **tek** bir derleme koşumu `demo/` altında
+  **229 dosyayı root sahipliğine** geçirdi; sonraki `--user`'lı koşumlarda **üç şirket**
+  `Permission denied` ile düştü ve korpus onları **%0 erişim** diye raporladı.
+  ⚠ Ve toplam yine **✅ %94,8** görünüyordu — çünkü **ayakta kalanlardan** hesaplanıyordu.
+  Bu, yukarıdaki *"gitas düştü, doğruluk YÜKSELDİ"* desenin birebir tekrarıdır:
+  **sistem bozulurken sayı iyileşir.** Onarım: `chown -R $(id -u):$(id -g) /app/demo`.
+- 🔴 **ÖLÇÜM ARACI ŞEMASINI KENDİ DERLEMESİNDEN ALIR.** `demo/wren-project`
+  **gitignore'lu bir derleme artefaktıdır**; pack değişince yenilenmez ve `git checkout`
+  onu **geri almaz**. Bir ölçüm aracı oradan okursa **bayat** bir katalogla koşar ve
+  aynı kaynak durumda farklı sayılar üretir (ölçüldü: `sessiz_yanlis` **8 ve 17**).
+  Kapı: `tests/test_olcum_semasi_taze.py`. *Bayat bir okuma, yanlış bir sonuçtan
+  kötüdür: yanlış sonuç sorgulanır, bayat okuma güvenilir.*
 
 ### Silinen bir şey YOK
 
