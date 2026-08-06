@@ -77,7 +77,12 @@ def envanter(sema: dict) -> dict:
     for sinonim, cube, olcu in sondalar(sema):
         q = cr._norm(sinonim)
         sonuc = cr.route(q, sema)
-        kod = cr.red_gerekcesi()
+        # 🔴 `red_gerekcesi()` DEĞİL `teshis()` (KÖK-9/KÇ-5, 2026-08-06). Ölçüldü:
+        # 2 116 reddin %43,2'sinde ham kapı kodu ile gerçek sorun ayrışıyordu ve
+        # ayrışanların **646'sı R1'di** — yani bu aracın envanteri, tam da saymak için
+        # var olduğu kümeyi şişiriyordu. *Bir envanter, saydığı şeyin tanımını başka bir
+        # yerden alıyorsa, saydığı şey o değildir.*
+        kod = cr.teshis(sinonim, sema)
         if sonuc is not None:
             kodlar["cozuldu"] += 1
             continue

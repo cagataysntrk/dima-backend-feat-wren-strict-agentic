@@ -208,7 +208,7 @@ def _log_interaction(session_id: str | None, body: AskRequest, resp: AskResponse
         def _j(v):
             return json.dumps(v, ensure_ascii=False) if v else None
 
-        from app.cube_router import red_gerekcesi as _red_gerekcesi
+        from app.cube_router import teshis as _teshis
         from app.llm import get_llm_usage
 
         _u = get_llm_usage() or {}  # yalnız LLM yoluna düşen istekte dolu; aksi halde boş
@@ -225,11 +225,39 @@ def _log_interaction(session_id: str | None, body: AskRequest, resp: AskResponse
                 # RED GEREKÇESİ (Faz 0): `route()` pes ettiyse HANGİ dalda. Deterministik
                 # yol cevabı ürettiyse `None` kalır — yani bu kolonun doluluğu doğrudan
                 # "deterministik yoldan çıkamayan sorular" kümesini verir.
-                reject_reason=_red_gerekcesi(),
+                # 🔴 KÖK-9/KÇ-5 (2026-08-06): `red_gerekcesi()` DEĞİL `teshis()`. Ölçüldü:
+                # 2 116 reddin **%43,2'sinde** ham kapı kodu (çoğu R1) ile gerçek sorun
+                # (tanınmayan kelime) AYRIŞIYORDU — ve bu kolonu okuyan araçlar
+                # (`lab/r1_envanteri.py` · `lab/risk_kapsam.py`) GELİŞTİRME ÖNCELİĞİNİ
+                # ona göre çıkarıyordu. *Kusuru gizlemekten daha kötüsü, yanlış yeri
+                # işaret etmektir* — burada yanlış yer gösterilen geliştiriciydi.
+                reject_reason=_teshis(body.question, _sema(request)),
                 **_bosluk_kaydi(request, body, resp)))
             s.commit()
     except Exception:
         _log.warning("interaction log (DB) yazılamadı (best-effort)", exc_info=True)
+
+
+def _sema(request: Request) -> dict:
+    """İstek şeması — okunamazsa **boş sözlük**.
+
+    ⚠ Teşhis hesabı bir kayıt yazarken koşuyor: şema okunamıyorsa telemetriyi kaybetmek
+    yerine ham koda düşmek doğrudur (`teshis()` boş şemada `partial_unknowns` üzerinden
+    ham koda döner). *Bir kayıt satırı, kaydettiği şeyden daha kırılgan olmamalıdır.*
+    """
+    # ⚠ İçeride import: `wren_for_request` bu modülde HER YERDE yerel olarak alınıyor
+    # (bkz. `:177`, `:309`) — modül düzeyine çekmek bir import döngüsü riskidir.
+    # 🔴 İlk yazımda unutuldu ve `NameError` **sessizce yutuldu**: çağıran blok
+    # `except Exception` ile sarılı bir "best-effort" kayıttır, yani ETKİLEŞİM KAYDI
+    # TAMAMEN YAZILMADI ve hiçbir yerde iz kalmadı. `test_kok8a_bosluk_kaydi` yakaladı.
+    # *En tehlikeli hata, bir hata yolunun içinde doğan hatadır.*
+    from app.company_registry import wren_for_request
+
+    try:
+        return wren_for_request(request).schema() or {}
+    except Exception:                        # ADR-0020: sessiz yutma yok
+        _log.warning("teşhis için şema okunamadı", exc_info=True)
+        return {}
 
 
 def _persist_message(request: Request, resp: AskResponse, session_id: str | None) -> None:

@@ -80,7 +80,7 @@ def sinifla(sema: dict, sorular: list[str]) -> dict[str, int]:
         if cr.route(qn, sema) is not None:
             sayim["route"] += 1
             continue
-        kod = cr.red_gerekcesi()
+        kod = cr.teshis(q, sema)   # KÖK-9/KÇ-5 — ham kapı kodu %43,2 ayrışıyordu
         # Netleştirme (`tie`/`CLARIFY`) bir **cevapsızlık değil**, bir sorudur: kullanıcı
         # bir tık sonra cevabı alır ve o cevap **deterministiktir**.
         sayim["tie_chip" if kod in ("R7", "R8", None) else "llm_gerekli"] += 1

@@ -3063,8 +3063,69 @@ def _reddet(kod: str) -> None:
 
 
 def red_gerekcesi() -> str | None:
-    """`route()` en son hangi dalda pes etti? (`None` = pes etmedi ya da hiç çağrılmadı)"""
+    """`route()` en son hangi dalda pes etti? (`None` = pes etmedi ya da hiç çağrılmadı)
+
+    ⚠ Bu **ham kapı kodudur** — *hangi dal durdu*. Kullanıcıya ve telemetriye giden
+    **teşhis** için `teshis()` kullan: ikisi %43,2 oranında ayrışıyordu ve sebebi
+    aşağıda yazılı.
+    """
     return _reddi_var.get()
+
+
+def teshis(q: str, schema: dict) -> str | None:
+    """🔴 KÖK-9/KÇ-5 — **TEK TEŞHİS KAYNAĞI.** Reddin *dürüst* gerekçesi.
+
+    ## Ölçülen kusur
+
+    ⊙ 2 116 reddedilen soruda, gerekçe R10 (kapsam) **olmadığı hâlde** tanınmayan kelime
+    **vardı**: **914 soru — %43,2.**
+
+    | ham kod | ayrışık | örnek |
+    |---|---|---|
+    | `R1` | **646** | `ocaka mai ntenance cost…` → gerçek sorun: `mai` · `ntenance` · `cost` |
+    | `R2` | 149 | `net pay artmadı mı listele…` → `artmadi` · `alti` |
+    | `R4` | 61 | `ocaktan siparis ortlaamasi…` → `ortlaamasi` |
+    | `R9` | 44 | `enerji yoğunluğu 2025'tea göre…` → `tea` · `alemde` |
+
+    Yani telemetri *"cube eşleşmedi"* (R1) diyordu; **gerçek sorun kullanıcının yazdığı
+    kelimelerdi**. Ve bu kodları okuyan araçlar (`lab/r1_envanteri.py`,
+    `lab/risk_kapsam.py`) **geliştirme önceliğini** ona göre çıkarıyordu.
+
+    > 🔴 Raporun cümlesi: *"Kusuru gizlemekten daha kötüsü, YANLIŞ YERİ işaret etmektir."*
+    > Burada yanlış yer gösterilen **kullanıcı değil, geliştiriciydi.**
+
+    ## ⚠ Neden R10 kapı sırasında ÖNE ALINMADI
+
+    Raporun önerisi *"R10'u başa al"*dı. **Uygulanamaz:** kapsam denetimi `known_words`
+    ister ve o küme R1…R9'un yaptığı EŞLEŞMELERDEN doğar. R10 en sonda çünkü **ötekilerin
+    çıktısına bağımlı** — sırayı çevirmek eşleştirmeyi ikinci kez yazmayı gerektirirdi ve
+    bu, deponun ölçülmüş *"aynı kuralın iki sahibi"* sınıfını doğururdu.
+
+    🔴 Doğru çözüm sırayı değil **kaynağı** tekleştirmek: teşhis, kullanıcıya giden mesajı
+    üreten HESABIN AYNISINDAN gelir (`partial_unknowns`). *İki sayı ayrışıyorsa çare
+    ikisini de düzeltmek değil, birini ötekinden türetmektir.*
+
+    ⚠ Ham kod **silinmedi**: `red_gerekcesi()` duruyor ve `_reddet` zinciri aynen çalışıyor
+    — *kapananlar işaretlenir, silinmez* (MIMARI §10). Değişen tek şey, **telemetrinin
+    hangisini yazdığı**.
+    """
+    ham = _reddi_var.get()
+    if ham is None:
+        return None
+    # 🔴 BOŞ ŞEMA TUZAĞI — kapı bunu kendi yakaladı. Şema okunamayıp `{}` gelirse
+    # `partial_unknowns` **her kelimeyi** tanınmaz sayar ve teşhis sahte bir R10'a
+    # çakılırdı: yani telemetriyi düzeltmek için yazılan kod, telemetriyi ikinci kez
+    # yanlış yapardı. *Bir hesabın girdisi boşsa, çıktısı bir bilgi değil bir yankıdır.*
+    if not (schema or {}).get("cubes"):
+        return ham
+    try:
+        bilinmeyen, _ = partial_unknowns(_norm(q), schema)
+    except Exception:                       # ADR-0020: sessiz yutma yok, ama teşhis
+        _log.warning("teşhis hesaplanamadı, ham koda düşülüyor", exc_info=True)
+        return ham
+    # Tanınmayan kelime VARSA teşhis odur — hangi kapının önce durduğu bir UYGULAMA
+    # ayrıntısıdır, kullanıcının sorununun adı değil.
+    return "R10" if bilinmeyen else ham
 
 
 #: Liste/döküm niyeti. KELİME-SINIRLI: `dokum` altdizisi "DOKUMa"yı (kumaş!) yakalıyordu;

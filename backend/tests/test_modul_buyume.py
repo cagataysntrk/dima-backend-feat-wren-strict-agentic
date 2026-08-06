@@ -151,6 +151,25 @@ MUAFIYET_ASK_KOD = [
                       "dürüst olmayan bir mesajı SATIN ALMAZ"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("KÖK-9/tek-teshis", 12,
+     "🔴 TEK TEŞHİS KAYNAĞI (denetim raporu KN-5/KÇ-5) — `teshis()`. Ölçüldü: **2 116** "
+     "reddedilen soruda ham kapı kodu R10 OLMADIĞI HÂLDE tanınmayan kelime VARDI → "
+     "**914 soru, %43,2**. Dağılım: R1 **646** · R2 149 · R4 61 · R9 44. Yani telemetri "
+     "*«cube eşleşmedi»* diyordu, gerçek sorun kullanıcının YAZDIĞI KELİMELERDİ — ve bu "
+     "kodları okuyan araçlar (`lab/r1_envanteri.py` · `lab/risk_kapsam.py`) GELİŞTİRME "
+     "ÖNCELİĞİNİ ona göre çıkarıyordu. Raporun cümlesi: *kusuru gizlemekten daha kötüsü "
+     "yanlış yeri işaret etmektir* — burada yanlış yer gösterilen KULLANICI DEĞİL, "
+     "GELİŞTİRİCİYDİ (kullanıcı mesajı `partial_unknowns` üzerinden zaten dürüsttü). "
+     "⚠ Raporun kendi önerisi (*«R10'u kapı sırasında başa al»*) UYGULANAMAZ: kapsam "
+     "denetimi `known_words` ister ve o küme R1…R9'un EŞLEŞMELERİNDEN doğar — R10 en "
+     "sonda çünkü ötekilerin ÇIKTISINA BAĞIMLI. Sırayı çevirmek eşleştirmeyi ikinci kez "
+     "yazmak, yani 'aynı kuralın iki sahibi' sınıfını doğurmak olurdu. "
+     "🔴 Doğru çözüm sırayı değil KAYNAĞI tekleştirmek: teşhis, kullanıcıya giden mesajı "
+     "üreten HESABIN AYNISINDAN (`partial_unknowns`) türer. *İki sayı ayrışıyorsa çare "
+     "ikisini de düzeltmek değil, birini ötekinden türetmektir.* "
+     "⊙ 12 satırın 4'ü BOŞ ŞEMA TUZAĞINI kapatıyor — kapı bunu kendi yakaladı: şema `{}` "
+     "gelirse `partial_unknowns` HER kelimeyi tanınmaz sayar ve teşhis sahte bir R10'a "
+     "çakılırdı; telemetriyi düzeltmek için yazılan kod onu ikinci kez yanlış yapardı"),
     ("KÖK-7a/in-q-yasagi", 6,
      "🔴 `in q` YASAĞI (denetim raporu KÖK-7a). Modülde **25 yerde** sözlükler düz "
      "alt-dize (`w in q`) ile taranıyordu; `_covers` (Faz 0.4) ve `_syn_hit` (Faz D3) "

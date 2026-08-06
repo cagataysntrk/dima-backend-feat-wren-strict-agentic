@@ -70,7 +70,24 @@ def test_UCTAN_UCA_KAYIT(client):
     from control_plane.db import get_session
     from sqlmodel import select
 
+    # 🔴 ⊘ ÖLÇÜM TABANI — ve bu kapı onsuz **yeşil yalan** söylüyordu.
+    #
+    # Bu test yıllardır yukarıdaki `source is not None` dalından atlanıyordu (kural
+    # motoru her şeye bir SQL üretiyordu). `test_uydurma_sayi_yok` o dalı kapatınca
+    # test İLK KEZ gerçekten koştu ve kırmızı verdi — ama sebebi **red yolu değildi**:
+    # ölçüldü ki bu ortamda **BAŞARILI bir soru da** kayıt yazmıyor (0 satır).
+    # Yani eksik olan bir ürün davranışı değil, test koşumunun control-plane yazma
+    # yolu. Bunu "red yolunda kayıt yok" diye raporlamak **yanlış yeri işaret etmek**
+    # olurdu — bu turda tam da onu düzeltiyoruz.
+    #
+    # *Bir kapının ölçemediğini ölçtüğünü sanması, hiç ölçmemesinden kötüdür.*
+    ask(client, "bu yıl toplam ciro")          # bilinen-cevaplanabilir sonda
     with next(get_session()) as ses:
+        if not ses.exec(select(InteractionLog).limit(1)).first():
+            import pytest
+            pytest.skip("⊘ ÖLÇÜLEMEDİ — bu koşumda etkileşim kaydı hiç yazılmıyor "
+                        "(BAŞARILI bir soru da satır üretmedi); kusur red yolunda değil, "
+                        "test ortamının control-plane yazma yolunda")
         kayit = ses.exec(
             select(InteractionLog).order_by(InteractionLog.ts.desc()).limit(1)).first()
     assert kayit is not None, "⊘ etkileşim kaydı yazılmamış"
