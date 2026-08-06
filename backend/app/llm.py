@@ -603,6 +603,42 @@ _OEE_HINTS = (
 )
 
 
+#: Sayma dalının meşruiyet şartı — bkz. `RuleBasedSqlGenerator._partiler_sql`'in
+#: koşulsuz `else` dalının kapatılma gerekçesi.
+_SAYMA_NIYETI = ("kac ", " kac", "sayisi", "adet", "kacar")
+
+
+def _sayma_dayanagi(q: str, cols: set) -> bool:
+    """Soruda sayma dalını haklı çıkaran bir dayanak var mı — **iki şart BİRDEN**.
+
+    1. **Açık sayma niyeti** — `kaç` · `sayısı` · `adet`.
+    2. **Tanınan bir varlık** — şemanın bir kolon adının kökü soruda geçiyor.
+
+    ## 🔴 Neden "VEYA" değil "VE" — ölçümle düzeltildi
+
+    İlk yazımda "biri yeterli" denmişti ve gerekçesi şuydu: *"sayma niyeti açıkça
+    yazılmışsa kullanıcı bir SAYI istemiştir."* **Ölçüm o gerekçeyi çürüttü:**
+
+        flarnak bizde kac  →  SELECT COUNT(*) FROM partiler  →  **37 878**
+
+    `flarnak` hiçbir yerde tanınmıyor; kullanıcı *"kaç flarnak"* diye sordu, sistem
+    *"37 878 parti"* dedi ve **notsuz** gönderdi. Sayma niyeti *sayının istendiğini*
+    söyler, **neyin sayılacağını** söylemez.
+
+    ⚠ Kapsam bedeli bilerek ödendi: `kaç kayıt var` gibi varlıksız sorular da düşer.
+    Bu **dar ama dürüsttür** ve kural motoru zaten anahtarsız yedektir — üst basamak
+    (Discovery) o soruları hâlâ deneyebilir.
+
+    ⊙ `kaç parti` KORUNUR: `parti_no` kolonunun kökü (`parti`) soruda geçer.
+
+    *Bir sınırı çizerken, çizginin hangi tarafında yanlış cevap, hangi tarafında eksik
+    cevap kaldığını bilmek gerekir; bu kural yanlışı keser, eksiği bırakır.*
+    """
+    if not any(w in q for w in _SAYMA_NIYETI):
+        return False
+    return any(len(c) >= 4 and c.split("_")[0] in q for c in cols)
+
+
 class RuleBasedSqlGenerator:
     """LLM'siz sezgisel NL→SQL. İki tabloyu yönlendirir:
     - `oee_vardiya` (OEE): makine/vardiya bazlı verimlilik (47-tablo rebind, eski adı
@@ -860,6 +896,32 @@ class RuleBasedSqlGenerator:
         elif (any(w in q for w in ["kilo", "agirli", "islenen", "tonaj"]) or has("kg")) and "agirlik_kg" in cols:
             measure, alias = "SUM(agirlik_kg)", "toplam_kg"
         else:
+            # 🔴 **KOŞULSUZ SAYMA DALI KAPATILDI** (2026-08-06, canlı ölçüm).
+            #
+            # Ölçülen kusur — bu sınıfın KENDİ belgesinin ihlali (*"sessiz yanlış üretmek
+            # yerine ... dürüstçe reddeder"*):
+            #
+            #     zombixyz ne kadar          →  SELECT COUNT(*) FROM partiler  →  37 878
+            #     flarnak bizde kac          →  aynı SQL, AYNI SAYI
+            #     qwertyuiop ne durumda      →  aynı SQL, AYNI SAYI
+            #     zombixyz ve flarnak kiyasla→  aynı SQL, AYNI SAYI
+            #
+            # Dördü de `source=rule` rozetiyle, **notsuz**, tek bir sayı olarak döndü.
+            # Bu, deponun adını koyduğu en kötü hata sınıfıdır: *anlaşılmamış bir soruya
+            # kendinden emin bir sayı.* ADR-0008'in birinci yasağı tam olarak budur.
+            #
+            # ⚠ Ve `route()` bunu ZATEN BİLİYORDU: `partial_unknowns` `['zombixyz']`
+            # döndürüyor, kapsam kapısı kelimeyi tanımıyor. Bilgi vardı; bu dala
+            # ulaşmıyordu. *Merdivenin alt basamağı, üst basamağın bildiğini bilmiyordu.*
+            #
+            # Kural: sayma dalı yalnız soruda **tanınan bir dayanak** varken meşrudur —
+            # ya açık bir sayma niyeti (`kaç`/`sayısı`/`adet`) ya bir kolon/varlık adı.
+            # Hiçbiri yoksa **dürüst ret**; üst basamaklar (Discovery) yine denenebilir.
+            if not _sayma_dayanagi(q, cols):
+                raise ValueError(
+                    "Kural-tabanlı jeneratör soruda tanıdığı bir ölçü/varlık bulamadı — "
+                    "sayı uydurmak yerine dürüstçe reddediyor."
+                )
             measure, alias = "COUNT(*)", "parti_sayisi"
 
         if "ortalama" in q and measure.startswith("SUM(") and measure[4:-1].isidentifier():
