@@ -269,6 +269,38 @@ pahalı olur.**
   Kapı: `tests/test_olcum_semasi_taze.py`. *Bayat bir okuma, yanlış bir sonuçtan
   kötüdür: yanlış sonuç sorgulanır, bayat okuma güvenilir.*
 
+### 🔴 BU POLİTİKANIN ÖLÇÜLEN BEDELİ (2026-08-06) — karar değil, FATURA
+
+Politika 2026-08-04'te kondu (*"kapı testlerini iptal edelim, sadece korpus koşsun"*) ve
+hız kazancı gerçek. Ama 2026-08-06'da **bir kez** tam süit koşuldu ve şu çıktı:
+
+> ⊙ **15 test kırmızıydı.** Hiçbiri o gün kırılmamıştı; hepsi **görünmüyordu**.
+
+| ne | kaç | sınıf |
+|---|---|---|
+| `MeasurePreview.unit` eksik → önizleme ucu **409** | 1 | 🔴 **gerçek ürün kusuru** |
+| uydurma-sayı düzeltmesi meşru **döküm** yolunu da kesmiş | 2 | 🔴 **gerçek gerileme** |
+| uydurmayı bir ÖZELLİK sanan kapılar | 3 | bayat kanıt |
+| `eval` beyanlı cevabı chip sanıyor (`coverage −23,4%`) | 1 | bayat sınıflandırıcı |
+| bayat taban (küp beyanı 16↔26 · sentetik fikstür 0.932 sabit) | 4 | bayat taban |
+| sadakat listesinde eksik alan (`lower_set`) | 1 | eksik sözleşme |
+| birim kapısına uymayan fikstür | 3 | bayat fikstür |
+
+🔴 **En pahalısı ikisi:** bir HTTP ucu bir demet boyunca kırıktı ve kimse görmedi;
+bir düzeltmem meşru bir yolu kesti ve korpus onu göremedi (korpus `route()`u ölçer,
+Discovery'yi değil).
+
+**Sonuç — politika DEĞİŞMEDİ, iki şart eklendi:**
+1. 🔴 **Gecelik CI `--hepsi` GERÇEKTEN koşuyor mu, doğrula.** Bu politikanın tamamı
+   *"süit silinmedi, CI'ya taşındı"* varsayımına dayanıyor. Koşmuyorsa politika
+   *"süit iptal"*e dönüşür ve yukarıdaki 15 kırmızı onun ilk faturasıdır.
+2. ⚠ **Merkezî dosya + davranış değiştiren demet → demet sonunda `--hepsi`** (4-6 dk).
+   `--tam` (korpus) `route()`u ölçer; `llm.py`/`ask.py`/`measures.py` gibi dosyalarda
+   kusur **Discovery ve HTTP uçlarında** doğar ve korpus onları **hiç görmez**.
+
+*Bir kapıyı ucuzlaştırmak, onu görünmez yapmanın da yoludur — ve görünmeyen bir kapı,
+kaldırılmış bir kapıdan yalnızca daha pahalıdır, daha güvenli değil.*
+
 ### Silinen bir şey YOK
 
 Süit · `eval` · senaryo **yerel kapıdan çıkarıldı, kaldırılmadı** (MIMARI §10:

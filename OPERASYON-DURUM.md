@@ -2306,3 +2306,28 @@ Tam gerekçe + sonraki tur yönü: `tests/test_kok7b_karar_kaydi.py`.
 3. ⊘ Açık kalanlar: `_STOP_STEMS` asimetrisi (`yaptık`✅/`verdik`❌) —
    `tests/test_kok7b_karar_kaydi.py`'de yazılı; evi KÖK-9 idi ama **chip yolu** üzerinden
    çözülmeli, kapsam kapısı üzerinden değil.
+
+### ⟳ Üçüncü demet — KÖK-7d + tam süit taraması (2026-08-06)
+
+| # | Ne | Ölçülen | Commit |
+|---|---|---|---|
+| **7d** | türetme katmanı, **fail-closed** | 3 hedef vaka chip alıyor; korpusta sahte aday **191 → 0** | `87efacc` |
+| **tarama** | tam süit bir kez koşuldu | 🔴 **15 kapı kırmızıymış** — 2'si gerçek ürün kusuru | `89a2c4d` |
+
+🔴 **KÖK-7 TAMAMLANDI**: 7a · 7c · 7d · 7e indi; 7b ölçülüp **reddedildi** (karar kaydı
+`tests/test_kok7b_karar_kaydi.py`).
+
+### 🔴 EN PAHALI DERS — yerel kapının korpusa indirilmesi 15 kırmızıyı gizledi
+
+Bunların **ikisi gerçek**: `MeasurePreview.unit` eksikliği önizleme ucunu bir demet
+boyunca **409**'da tuttu; uydurma-sayı düzeltmem meşru **satır dökümü** yolunu da kesti.
+Korpus ikisini de göremez — o `route()`u ölçer, Discovery'yi ve HTTP uçlarını değil.
+
+⚠ Politika DEĞİŞMEDİ (kullanıcı kararı), iki şart eklendi (`backend/CLAUDE.md`):
+gecelik CI'ın `--hepsi`yi gerçekten koştuğu **doğrulanmalı**; merkezî dosya değiştiren
+demetlerde demet sonu `--hepsi` (4-6 dk).
+
+### Sıradaki
+1. **KÖK-1** — Niyet nesnesi (mimari; raporun son büyük kalemi).
+2. ⊘ `_STOP_STEMS` asimetrisi (`yaptık`✅/`verdik`❌) — 7b'nin karar kaydında yazılı;
+   çözümü **chip yolu** üzerinden olmalı, kapsam kapısı üzerinden değil.
