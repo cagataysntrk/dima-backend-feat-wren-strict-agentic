@@ -14,6 +14,15 @@
 # yalnız burada tanımlı; admin panelden tenant/rol/kullanıcı override'ı ile açılır.
 # Metadata (etiket/açıklama/kategori) app/features.py FLAG_REGISTRY'de — tek kaynak.
 features:
+  # 🔴 KÖK-1 FAZ 1 — NİYET İZİ. Varsayılan **`prod`** ve bu bir karar: Faz 1'in tamamı
+  # GÖRÜNÜRLÜKTÜR ve hiçbir kararı değiştirmez (`test_kok1_niyet.py::
+  # test_ROUTE_DAVRANISI_DEGISMEDI` bunu kilitler). Kapalı bir gözlem, olmayan bir
+  # gözlemdir; ve Faz 2'nin tüketici göçü bu izin ürettiği ölçüme dayanacak.
+  # ⚠ Değer `"on"` yazılmıştı ve bayrak kaydı kapısı reddetti: geçerli aşamalar
+  # `off|alpha|beta|prod`. Kapı haklıydı — *bir bayrağın aşaması bir "açık/kapalı"
+  # değil, bir OLGUNLUK beyanıdır.*
+  # ⚠ GERİ AL tek satır: `"off"` → tek bir iz satırı bile eklenmez.
+  niyet_izi: "prod"
   # FAZ 2.3 — kapsam merceği. `off`: her kullanıcı bugünkü TAM katalogu görür.
   # 🔴 Mercek bir GÖRÜNÜRLÜK aracıdır, GÜVENLİK SINIRI DEĞİL — kapatmak yetki AÇMAZ.
   kapsam_mercegi: "off"   # ⚠ TIRNAK ŞART: YAML 1.1 çıplak `off`u BOOLEAN okur

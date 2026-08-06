@@ -93,6 +93,11 @@ def kuyrukla(request: Request, body: AskRequest, principal, runner) -> AskRespon
         except Exception:
             _log.warning("AskJob canlı adım yazımı başarısız (best-effort)", exc_info=True)
 
+    def _json_dump(v) -> str:
+        import json as _json
+
+        return _json.dumps(v, ensure_ascii=False)
+
     def _bg() -> None:
         with Session(engine) as s:
             j = s.get(AskJob, job_id)
@@ -110,6 +115,21 @@ def kuyrukla(request: Request, body: AskRequest, principal, runner) -> AskRespon
                 if ask_jobs.yayimlanabilir_mi(j.status):
                     j.status = "completed"
                     j.result_json = resp.model_dump_json()
+                    # 🔴 CANLI ADIM SÜTUNU, YAYIMLANAN GERÇEĞE YAKINSAR.
+                    #
+                    # `_on_step` yalnız **Discovery adımlarını** yazar; kapanışta
+                    # (`seal`) eklenen satırlar ona hiç ulaşmıyordu. Ölçüldü (KÖK-1
+                    # niyet izi eklenince): `trace_json` ile `response.trace` **bir
+                    # satır** ayrıştı ve `test_ask_job_trace_accumulates_and_persists`
+                    # kırmızı verdi — kapı haklıydı, ayrışma gerçekti.
+                    #
+                    # ⚠ Bu bir "test düzeltmesi" değil bir **sözleşme onarımı**dır:
+                    # `/ask/jobs/{id}` bu sütunu kullanıcıya *işin izi* diye gösteriyor.
+                    # İki iz varsa kullanıcı hangisine bakacağını bilemez.
+                    # *Bir kaydın canlı hâli, yayımlanan hâline yakınsamalıdır; yoksa
+                    # kayıt bir tarih değil bir taslaktır.*
+                    if resp.trace:
+                        j.trace_json = _json_dump(list(resp.trace))
                 j.finished_at = datetime.utcnow()
                 s.add(j)
                 s.commit()

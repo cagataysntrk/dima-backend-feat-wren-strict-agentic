@@ -135,6 +135,23 @@ MUAFIYET_ASK_KOD = [
      "SAHTEYDİ (`may`→prim · `ogrnim`→kar oranı — kelimenin KENDİSİ aday sayılıyordu); "
      "kullanıcı tarafı gerçek bir çekim soymak zorunda kılınınca **0**'a indi. "
      "*Bir tahminin ucuz olması, yanlış olmasını ucuzlaştırmaz*"),
+    ("KÖK-1/niyet-izi", 2,
+     "🔴🔴 NİYET NESNESİ FAZ 1 (denetim raporu KÖK-1 · devralınan KÇ-0). Raporun "
+     "teşhisi: *«KN-4 (uyum denetimi) YAZILAMAZ çünkü karşılaştırılacak iki şey yok; "
+     "KN-1 kaçınılmaz çünkü taşınacak durum bir NESNE DEĞİL.»* Ölçüldü: `app/`'de "
+     "`Niyet` sınıfı YOKTU ve o boşluk bu turda **BEŞ ayrı yerde** ayrı ayrı dolduruldu "
+     "(`uyum` · `yetenek` · `donem_capasi` · `turetme` · `belirsizlik_chipi`) — 'aynı "
+     "kuralın iki sahibi' sınıfının BEŞE KATLANMIŞ hâli. "
+     "🔴 Bu 2 satır (`if bayrak:` + atama) `_finish`in içinde ve TAŞINAMAZ: merdivenin "
+     "HANGİ basamağından çıkılırsa çıkılsın oradan geçilir; niyeti tek bir dala bağlamak "
+     "ölçmek istediğimiz şeyin YARISINI görmemek olurdu. Nesne `app/niyet.py`'de, "
+     "şema çözümü modül düzeyi `_niyet_izi`'nde (ayrı muafiyet). "
+     "⚠ FAZ 1 SÖZLEŞMESİ: hiçbir karar değişmez — `route()` nesneyi GÖRMEZ "
+     "(`test_ROUTE_NIYETI_GORMUYOR`), davranış birebir aynı "
+     "(`test_ROUTE_DAVRANISI_DEGISMEDI`), bayrak kapalıyken TEK SATIR bile eklenmez. "
+     "⊙ Ve ölçülebilir hâle gelen şey: `ocak ve haziran ciro` → `dönem=2(çözülemedi)` · "
+     "`🔴temsil-yok=cok_donem`. *Bir sistemin temsil edemediği şeyi SAYABİLMESİ, onu "
+     "görebilmesinin ilk adımıdır*"),
     ("KÖK-9/belirsizlik-chipi", 1,
      "🔴 BİLİNEN BELİRSİZLİK BEYAN EDİLİR (denetim raporu KN-6/KÇ-6). Ölçüldü: "
      "`metrik_kaydi` kaydındaki **62/62** terim ≥2 adaylı ve HİÇBİRİNİN sahibi yok; "
@@ -239,6 +256,13 @@ MUAFIYET_CUBE_ROUTER_KOD = [
 #: değil sessiz bir tavan artışıdır* (bu dosyanın kendi cümlesi). Dosya muafiyeti bu yüzden
 #: **ayrı** sayılır ve `ask()` tavanına **dokunmaz**.
 MUAFIYET_ASK_DOSYA = [
+    ("KÖK-1/niyet-izi-yardimcisi", 5,
+     "🔴 `_niyet_izi()` MODÜL-DÜZEYİ yardımcısı — niyeti çözer ve tek satırlık izi "
+     "döndürür. `ask()`in İÇİNE yazılsaydı gövde tavanını aşardı ve `ask()` zaten tam "
+     "tavanında; dışarı alınması hem tavanı korur hem DOĞRU YERDİR (bir GÖZLEM bir "
+     "cevaplama adımı değildir — `_netlestirme_duzeyi` · `_belirsizlik_beyani` · "
+     "`_turetme_adaylari` ile aynı gerekçe). "
+     "⚠ ASLA FIRLATMAZ: bir gözlem, gözlediği cevabı düşüremez"),
     ("KÖK-7d/turetme-adaylari", 14,
      "🔴 `_turetme_adaylari()` MODÜL-DÜZEYİ yardımcısı — bir dürüst reddin yanına konacak "
      "türetme chip'lerini hesaplar. `ask()`in İÇİNE yazılsaydı gövde tavanını aşardı ve "

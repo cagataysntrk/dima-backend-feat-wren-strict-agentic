@@ -369,6 +369,14 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "bugünkü (GERİ AL).",
         "category": "Kanıt",
     },
+    "niyet_izi": {
+        "label": "Niyet izi (KÖK-1 Faz 1)",
+        "description": "Her cevaba sorunun ÇÖZÜMLENMİŞ NİYETİNİ tek satırlık bir iz "
+                       "olarak ekler (tür · dönem sayısı · kırılım · temsil edilemeyen "
+                       "işaretler). Hiçbir kararı değiştirmez — Faz 1'in tamamı "
+                       "GÖRÜNÜRLÜKTÜR. Kapalıyken tek bir satır bile eklenmez.",
+        "category": "Kanıt",
+    },
     "metrik_kaydi": {
         "label": "Metrik kaydı (hakem)",
         "description": "Bir iş terimini birden fazla cube sahipleniyorsa HAKEM kaydı "

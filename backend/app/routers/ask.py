@@ -1379,6 +1379,26 @@ def _belirsizlik_beyani(resp, q_norm: str, cq: dict, cube_meta, schema: dict):
     return [*(resp.suggestions or []), *[Suggestion(**c) for c in yeni]]
 
 
+def _niyet_izi(soru: str, schema: dict) -> list[str]:
+    """🔴 KÖK-1 FAZ 1 — niyetin tek satırlık **görünürlüğü**, iz olarak.
+
+    Faz 1'in tamamı budur: nesne üretilir, yazılır, **hiçbir karar değiştirmez**.
+    Faz 2'de tüketiciler tek tek buraya taşınacak ve her taşımada eşdeğerlik
+    `test_kok1_niyet.py` ile ölçülecek.
+
+    ⚠ Bayrağa bağlı: `niyet_izi` kapalıyken **tek bir satır bile** eklenmez ve davranış
+    birebir bugünküdür. *Bir gözlemin geri alınması bir kod değişikliği gerektirmemelidir.*
+
+    ⚠ Ve **asla fırlatmaz**: bir gözlem, gözlediği cevabı düşüremez.
+    """
+    try:
+        from app import niyet as _n
+        return [_n.coz(soru, schema).iz()]
+    except Exception:                        # ADR-0020: sessiz yutma yok
+        _log.warning("niyet izi üretilemedi", exc_info=True)
+        return []
+
+
 def _turetme_adaylari(soru: str, request) -> list[dict]:
     """🔴 KÖK-7d — bir dürüst reddin yanına konacak **türetme chip'leri**.
 
@@ -1623,6 +1643,14 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         Eskiden 55 satırlık bir CLOSURE'dı ve tam da bu yüzden `/cube` kendi kopyasını
         yazmak, `_try_kpi` de onu atlamak zorunda kalmıştı. Artık tek gövde; buradaki
         iş yalnız `/ask`'e özgü bağlamı (takip sinyali, thread çapası) geçirmek."""
+        # 🔴 KÖK-1 FAZ 1 — NİYET İZİ. Raporun kapı ölçütü aynen: *"`Niyet` üretilir ve
+        # LOGLANIR; `route()` davranışı BİREBİR aynı kalır."* Bu tek satır o "loglanır"
+        # şartıdır ve **hiçbir kararı değiştirmez**: yalnız cevabın izine bir gözlem
+        # ekler. ⚠ `_finish` seçildi çünkü merdivenin HANGİ basamağından çıkılırsa
+        # çıkılsın buradan geçilir — niyeti tek bir dala bağlamak, ölçmek istediğimiz
+        # şeyin yarısını görmemek olurdu.
+        if "niyet_izi" in resolve_for(settings, principal):
+            resp.trace = [*(resp.trace or []), *_niyet_izi(body.question, schema)]
         return seal(resp, request=request, principal=principal, t0=t0,
                     session_id=body.session_id, log_body=body,
                     thread_id=body.thread_id, reply_to_label=body.reply_to_label,

@@ -2331,3 +2331,40 @@ demetlerde demet sonu `--hepsi` (4-6 dk).
 1. **KÖK-1** — Niyet nesnesi (mimari; raporun son büyük kalemi).
 2. ⊘ `_STOP_STEMS` asimetrisi (`yaptık`✅/`verdik`❌) — 7b'nin karar kaydında yazılı;
    çözümü **chip yolu** üzerinden olmalı, kapsam kapısı üzerinden değil.
+
+### ⟳ Dördüncü demet — KÖK-1 FAZ 1 (2026-08-06)
+
+**🔴 DENETİM RAPORUNUN DOKUZ KÖK ÇÖZÜMÜNÜN HEPSİ ELE ALINDI.**
+
+| # | Ne | Durum |
+|---|---|---|
+| KÖK-1 | Niyet nesnesi | ✅ **Faz 1 indi** (gözlemci + iz + bayrak) · Faz 2 sıradaki |
+| KÖK-2/3 | Uyum kapısı + beyanlı kısmi | ✅ indi |
+| KÖK-4 | Takip turunda dönem çapası | ✅ indi |
+| KÖK-5 | Derleme-zamanı katalog kapısı | ✅ indi |
+| KÖK-6 | Yetenek beyanı | ✅ indi |
+| KÖK-7 | Tek biçimbirim sahibi | ✅ 7a·7c·7d·7e indi · **7b ölçülüp REDDEDİLDİ** |
+| KÖK-8 | Kendini bildiren ölçüm | ✅ indi |
+| KÖK-9 | Tek teşhis + belirsizlik→chip | ✅ indi |
+
+#### KÖK-1 Faz 1 — raporun kendi ölçütüyle
+
+> *"`Niyet` üretilir ve **loglanır**; `route()` davranışı **BİREBİR aynı** kalır.
+> Sıfır gerileme, tam görünürlük."*
+
+⊙ `app/niyet.py` — **tek bir regex yok**; her alan mevcut bir çözümleyicinin çağrısı
+(`test_YENI_DILBILIM_YAZILMADI` AST ile kilitler). Bayrak `niyet_izi: "prod"`,
+kapalıyken **tek satır bile** eklenmez.
+
+🔴 Ölçülebilir hâle gelen şey: `ocak ve haziran ciro` → `dönem=2(çözülemedi)` ·
+`🔴temsil-yok=cok_donem`. *Bir sistemin temsil edemediği şeyi SAYABİLMESİ, onu
+görebilmesinin ilk adımıdır.*
+
+⚠ Ve kapı iki gerçek ayrışma buldu: `_cok_donem` göreli dönemi saymıyordu (iz kendi
+verisiyle çelişiyordu); `AskJob.trace_json` yayımlanan izle ayrışıyordu — *bir kaydın
+canlı hâli, yayımlanan hâline yakınsamalıdır; yoksa kayıt bir tarih değil bir taslaktır.*
+
+#### Sıradaki — KÖK-1 FAZ 2
+Tüketiciler **tek tek** taşınır; her taşımada eşdeğerlik `test_kok1_niyet.py` ile
+ölçülür. İlk müşteri raporun kendi kararıyla **`app/uyum.py`** (*"KÇ-1, KÇ-0'ın ilk
+müşterisidir"*): 10 fonksiyon, 7 değişmez, `cube_router`a 2 çağrı.
