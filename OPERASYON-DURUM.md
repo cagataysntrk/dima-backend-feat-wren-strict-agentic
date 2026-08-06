@@ -2223,3 +2223,56 @@ neyi ölçtüğünü bilemez — taban kaybolur.
 **boyut** sanılan kelimeleri ölçüye çekebilir.
 
 **Diğer üç şirket `⊘`:** kohortları 7–10; hedef o çözünürlükte ayırt edilemez.
+
+---
+
+## ⟳ DENETİM RAPORU KÖK ÇÖZÜMLERİ — 2026-08-06 turu
+
+### İnenler (demet kapısı ✓ yeşil · korpus %94,3 · dört şirket ayakta)
+
+| # | Ne | Ölçülen kazanç | Commit |
+|---|---|---|---|
+| **7e** | ay çekimi tek sahipten (`_AY_ADI_RE` + `_ek_gecerli`, iki tüketicide) | %18 → **%100** (60/60) | `4cc2ab5` |
+| **7c** | çok-geçiş: yedi dönem kalıbı `.search` → `.finditer` | `beyanli_kismi` 57→**58**, sessiz-yanlış **12 sabit** | `befafbb` |
+| **7a** | `in q` yasağı: **25** sözlük taraması `_syn_hit`e bağlandı | `trendyol`→trend · `bu ayrica`→bu ay · `uygun`→gun kapandı; hiçbir ölçü gerilemedi | `5b834ab` |
+| **ölçüm** | gerçek-dünya korpusu **bayat artefakttan** okuyordu | aynı kaynakta 8↔17 sapması bitti | `771137c` |
+| **hijyen** | `--user` zorunluluğu + taze şema kuralı `CLAUDE.md`'ye | üç şirketin sessizce düşmesi kapıya bağlandı | `1d4ea92` |
+| **7b** | ⊘ denendi, ölçüldü, **inmedi** — karar kaydı | — | `67684f3` |
+
+### 🔴 BU TURUN EN PAHALI DERSİ — ölçüm aracı yalan söyledi
+
+`backend/demo/wren-project` **gitignore'lu bir derleme artefaktıdır** ve `git checkout`
+onu geri almaz. `lab/gercek_dunya.py` şemayı oradan okuyordu (`nl_corpus.py` ise taze
+derliyordu) → **aynı kaynak durumda** `sessiz_yanlis` **8 ve 17**, `dogru` **83 ve 80**.
+
+⊙ Bedeli somut: bu turda **üç katalog çakışması** "çözüldü", yeşil göründü, sonra bayat
+çıktı ve geri alındı. **7b bir kez 8 sessiz-yanlışla yeşil görünüp neredeyse indi**;
+taze derlemeyle gerçek sayı **30**'du.
+
+> *Bir ölçüm aracının bayat okuması, yanlış bir sonuçtan daha kötüdür: yanlış sonuç
+> sorgulanır, bayat okuma güvenilir.*
+
+Kapılar: `tests/test_olcum_semasi_taze.py` (5) · `CLAUDE.md` koşum hijyeni (2 yeni kural).
+
+### ⊘ KÖK-7b — ölçütü tutturdu, ürünü bozdu
+
+§4 probu **%31,2 → ≥%90**, `_STOP_STEMS`'e **0** kelime eklendi — ölçüt tam tuttu.
+Ama gerçek-dünya: **kabul 1150 → 1117**, **sessiz_yanlis 12 → 30**. Kayıp `kabul`den
+`sessiz_yanlis`e **taşındı**: yapısal dolgu anlamlı kelimeleri de yutunca soru
+*anlaşılmış gibi* görünüp yanlış cube'a gidiyor.
+
+🔴 **7b'nin evi kapsam kapısı değil, KÖK-9'dur** (belirsizlik→chip). Raporun kendi
+şartı: *"kapı, «bilmiyorum» ile «iki adaydan hangisi?» ayrımını korumak zorundadır."*
+Tam gerekçe + sonraki tur yönü: `tests/test_kok7b_karar_kaydi.py`.
+
+### Sıradaki
+
+1. **KÖK-9** — tek teşhis kaynağı (R10'u kapı sırasında başa al) + **belirsizlik→chip**.
+   ⚠ Ön ölçüm var: `metrik_kaydi` `sapma`→2 aday, `parti sayisi`→2, `adet`→**6** aday
+   biliyor ve `sahiplenilen_terimler` hepsinde **BOŞ** — yani sistem belirsizliği
+   *deterministik olarak biliyor* ve yine de tahmin ediyor.
+   🔴 Ve bir anti-çözüm ÖLÇÜLDÜ: belirsizlikte **koşulsuz** reddetmek korpusu
+   %94,3 → **%83,6** düşürdü. Cube-düzeyi eşleşme **gerçek bir kanıttır**;
+   *bir ilkeyi doğru bulmak, onu her yere uygulamak için yetmez.*
+2. **7d** (türetme, fail-closed) — 7b'nin dersinden sonra: kapsamı açmasın, chip üretsin.
+3. **KÖK-1** — Niyet nesnesi (mimari).
