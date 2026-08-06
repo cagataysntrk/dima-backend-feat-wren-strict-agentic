@@ -133,6 +133,23 @@ CEKIRDEK = (
     "test_ask_golden.py",               # uçtan uca altın yol
     "test_takip_ucuncu_sinif.py",       # takip/konuşma yolu
     "test_cevap_alani_yetim_degil.py",  # cevap alanlarının tüketicisi var mı
+    # 🔴 BÜYÜME TAVANLARI — **her koşumda**, ne değişirse değişsin (eklendi 2026-08-06).
+    #
+    # Ölçülen kusur: `test_frontend_buyume` **üç commit boyunca kırmızıydı** ve hızlı kapı
+    # her seferinde YEŞİL dedi. Sebep bir kod kusuru değil bir **seçim** kusuruydu:
+    # `--degisen` ELLE verilen bir listedir ve o demette `ReportCard.tsx` listeye
+    # YAZILMAMIŞTI → `_frontend_degisti()` `False` döndü → frontend kapıları hiç seçilmedi.
+    #
+    # ⚠ Ve bu, `_frontend_degisti`nin kendi docstring'indeki dersin **ikinci hâlidir**:
+    # orada kapsam *uzantı süzgecinden* dardı, burada *girdi listesinden*. İkisi de aynı
+    # cümleye çıkıyor: **bir kapının kapsamı, onu tetikleyen sinyalden büyük olamaz.**
+    #
+    # 🔴 Çözüm neden ÇEKİRDEK: bir tavanı **her değişiklik** aşabilir; import bağımlılığına
+    # bakan bir seçim onu asla güvenilir şekilde bulamaz (tavan bir *dosya boyutudur*, bir
+    # *çağrı grafiği* değil). Ve maliyeti ölçüldü: ikisi birlikte **~5 sn** — çekirdeğin
+    # geri kalanının yanında bedava.
+    "test_modul_buyume.py",             # ask()/cube_router tavanları
+    "test_frontend_buyume.py",          # ReportCard/types tavanları
 )
 
 
