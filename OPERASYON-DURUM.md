@@ -2276,3 +2276,33 @@ Tam gerekçe + sonraki tur yönü: `tests/test_kok7b_karar_kaydi.py`.
    *bir ilkeyi doğru bulmak, onu her yere uygulamak için yetmez.*
 2. **7d** (türetme, fail-closed) — 7b'nin dersinden sonra: kapsamı açmasın, chip üretsin.
 3. **KÖK-1** — Niyet nesnesi (mimari).
+
+### ⟳ İkinci demet — KÖK-9 ve zincirleme bulgular (2026-08-06)
+
+| # | Ne | Ölçülen | Commit |
+|---|---|---|---|
+| **KÖK-9** | bilinen belirsizlik **chip'e** bağlandı (reddetmeye değil) | kayıt **62/62** terim çok-sahipli, cevapların **%11,7'si** beyansız → beyanlı; **kapsam maliyeti 0** | `684acbc` |
+| **kapı seçimi** | büyüme tavanları ÇEKİRDEĞE | frontend kapısı **üç commit** kırmızıymış, görülmemiş | `99f5250` |
+| **uydurma sayı** | koşulsuz `COUNT(*)` dalı kapatıldı | 4 anlamsız soru → aynı **37 878**; korpus **%94,3 → %95,1** | `ce5177d` |
+| **KÇ-5** | tek teşhis kaynağı (`teshis()`) | reddin **%43,2'si** yanlış yeri işaret ediyordu (R1'in **646'sı**) | `de52c00` |
+
+### 🔴 BU DEMETİN DERSİ — bir düzeltme, üç gizli kusuru ortaya çıkardı
+
+`test_uydurma_sayi_yok` kural motorunun "her şeye SQL üret" dalını kapatınca:
+1. `test_kok8a::test_UCTAN_UCA_KAYIT` **yıllardır atlanıyordu** ve ilk kez koştu;
+2. koşunca kırmızı verdi ama sebebi **red yolu değildi** — bu ortamda **başarılı bir
+   soru da** kayıt yazmıyor (ölçüldü: 0 satır) → ⊘ gerçek sebebiyle yazıldı;
+3. `_sema()` yardımcısında unutulan bir import **`except Exception`de yutuldu** ve
+   etkileşim kaydını tamamen sessizleştirdi.
+
+> *Bir kapının ölçemediğini ölçtüğünü sanması, hiç ölçmemesinden kötüdür.*
+> *En tehlikeli hata, bir hata yolunun içinde doğan hatadır.*
+
+### Sıradaki
+
+1. **7d** — türetme (`sattık`→`satis_tutari`), **fail-closed**: 7b'nin dersinden sonra
+   kapsamı AÇMAYACAK, chip üretecek.
+2. **KÖK-1** — Niyet nesnesi (mimari; en büyük kalem).
+3. ⊘ Açık kalanlar: `_STOP_STEMS` asimetrisi (`yaptık`✅/`verdik`❌) —
+   `tests/test_kok7b_karar_kaydi.py`'de yazılı; evi KÖK-9 idi ama **chip yolu** üzerinden
+   çözülmeli, kapsam kapısı üzerinden değil.
