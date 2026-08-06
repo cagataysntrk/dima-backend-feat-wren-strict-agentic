@@ -55,8 +55,40 @@ bir **liste**dir; `route()` tek aralığa çökmek zorundadır, `Niyet` çökmez
 
 from __future__ import annotations
 
+import contextvars
 from dataclasses import dataclass, field
 from typing import Any
+
+#: 🔴 İSTEK-KAPSAMLI BELLEK — ve Faz 2'nin **ön koşulu**.
+#:
+#: Ölçüldü (2026-08-06): reddedilen bir soruda `partial_unknowns` **DÖRT KEZ** koşuyordu
+#: (`_niyet_izi` · `_turetme_adaylari` · `ask`in kendi netleştirme dalı · …). Niyet
+#: nesnesi *"tek çatı"* olacaksa, çatıya girmek **ucuz** olmalı: aksi hâlde her yeni
+#: tüketici tam bir yeniden-çözümleme ekler ve tek çatı, dağınık okuyuculardan **pahalı**
+#: hâle gelir — yani KÖK-1'in kendisi bir maliyet kalemine dönüşür.
+#:
+#: ⚠ Kapsam **istek**tir, süreç değil: `ContextVar` her istekte kendi değerini taşır
+#: (`cube_router._reddi_var` ile aynı desen). Süreç ömrü boyunca önbelleklemek, şema
+#: değiştiğinde bayat bir niyet üretirdi — ve bu operasyon bayat okumanın bedelini
+#: **ölçtü** (`tests/test_olcum_semasi_taze.py`).
+#:
+#: *Bir soyutlamanın benimsenmesi, ona girmenin maliyetiyle ters orantılıdır.*
+_BELLEK: contextvars.ContextVar[dict] = contextvars.ContextVar("niyet_bellek")
+
+
+def bellek_sifirla() -> None:
+    """İstek sınırında çağrılır — yeni istek, yeni bellek."""
+    _BELLEK.set({})
+
+
+def _bellekten(anahtar: str, uret):
+    try:
+        d = _BELLEK.get()
+    except LookupError:
+        return uret()                    # istek dışı çağrı (lab/test) → önbelleksiz
+    if anahtar not in d:
+        d[anahtar] = uret()
+    return d[anahtar]
 
 #: Niyet türleri — **kapalı** küme. Yeni bir tür eklendiğinde uyum denetimi de eklenir
 #: (KÖK-2'nin *"mekanizma kendini genişletir"* ilkesi).
@@ -154,6 +186,11 @@ class Niyet:
 
 
 def coz_soru(soru: str) -> Niyet:
+    """İstek-kapsamlı belleğe alınmış `_coz_soru` — sözleşme aynı, maliyet bir kez."""
+    return _bellekten(f"soru:{soru}", lambda: _coz_soru(soru))
+
+
+def _coz_soru(soru: str) -> Niyet:
     """🔴 **ÇÖZÜMLEME — şemasız.** Sorunun dilinden okunan niyet.
 
     Raporun KÖK-1 başlığı *"çözümleme ile eşleştirme ayrılsın"* der ve bu fonksiyon o
@@ -221,6 +258,16 @@ def coz_soru(soru: str) -> Niyet:
 
 
 def coz(soru: str, schema: dict[str, Any]) -> Niyet:
+    """İstek-kapsamlı belleğe alınmış `_coz` — sözleşme aynı, maliyet bir kez.
+
+    ⚠ Anahtar **yalnız soruyu** taşır: bir istek içinde şema değişmez (tek tenant, tek
+    derleme). Şemayı anahtara katmak onu hash'lemeyi gerektirirdi ve bu, önbelleğin
+    kazandırdığından pahalı olurdu.
+    """
+    return _bellekten(f"tam:{soru}", lambda: _coz(soru, schema))
+
+
+def _coz(soru: str, schema: dict[str, Any]) -> Niyet:
     """🔴 **ÇÖZÜMLEME + EŞLEŞTİRME.** Şemasız niyeti alır, katalog bulgularıyla zenginleştirir.
 
     ⚠ Gövde `coz_soru`yu **çağırır, kopyalamaz**. Kopyalasaydı bu nesne — ayırmak için var

@@ -2380,6 +2380,26 @@ başlığı zaten buydu. Nesne ikiye ayrıldı: `coz_soru()` **şemasız** (dil)
 adının içindeyse ipucu değildir — `kur` cube'unun ölçüsü literal *"en yüksek kur"*).
 O denetim **eşleştirme** tarafıdır. `test_USTUNLUK_BILEREK_TASINMADI` sınırı yazılı tutar.
 
-#### Sıradaki — KÖK-1 FAZ 2 (kalan tüketiciler)
-`yetenek` · `donem_capasi` · `turetme` · `belirsizlik_chipi`. Her biri için sinyali
-`YEDI_SINYAL` tablosuna ekle → `test_FAZ2_ESDEGERLIK` ile ölç → sonra taşı.
+#### ⊙ KÖK-1 FAZ 2 — kalan dört tüketici ÖLÇÜLDÜ, üçü TAŞINMAYACAK
+
+| tüketici | soru tarafında ne okuyor | karar |
+|---|---|---|
+| `donem_capasi` | 1 sinyal (`is_all_time`) — **zaten tek sahipli** | ⊘ taşınmaz |
+| `yetenek` | 3 sinyal, 2'si **şemalı** kendi dedektörü | ⊘ taşınmaz |
+| `turetme` | **0** — `bilinmeyen` listesini ALIR | ✅ **çağrı yeri taşındı** |
+| `belirsizlik_chipi` | **0** — eşleşmiş `terim`i ALIR | ⊘ taşınacak bir okuma yok |
+
+🔴 KÖK-1'i doğuran **çoklu-sahiplik bu dörtte yok**. `uyum` soruyu yedi kez tarıyordu;
+bunlar ya hiç taramıyor ya zaten tek sahipli birini çağırıyor. *Taşımak kusur kapatmaz,
+yalnız bir dolaylama ekler* — ve bu deponun kuralı dolaylamayı bedava saymaz.
+
+#### ✅ Ama GERÇEK bir tekrar ölçüldü ve kapatıldı
+Reddedilen bir soruda `partial_unknowns` **4 kez** koşuyordu. İki iş yapıldı:
+· **istek-kapsamlı bellek** (`niyet.bellek_sifirla()`, `reset_llm_usage()` ile aynı yerde)
+· `_turetme_adaylari` artık `Niyet.bilinmeyenler` okuyor
+⊙ **4 → 3.** *Bir soyutlamanın benimsenmesi, ona girmenin maliyetiyle ters orantılıdır.*
+
+#### Sıradaki
+Kalan **tek** doğrudan çağrı `ask.py:2959` — `unknown` ve `hits`i **birlikte** kullanıyor.
+`Niyet`e `hits` alanı eklenirse 3 → 2 olur; eklemeden yarım taşımak, alanı iki yerde
+tutmak olurdu.

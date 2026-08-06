@@ -320,3 +320,84 @@ def _denetle_agaci(uy):
             and isinstance(govde[0].value, ast.Constant)):
         govde = govde[1:]
     return ast.Module(body=govde, type_ignores=[])
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 5 · İSTEK-KAPSAMLI BELLEK — Faz 2'nin ÖN KOŞULU
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def test_BELLEK_AYNI_ISTEKTE_TEK_KEZ_COZUYOR():
+    """🔴 **Faz 2'nin ön koşulu.** Ölçüldü: reddedilen bir soruda `partial_unknowns`
+    **dört kez** koşuyordu. Niyet nesnesi *"tek çatı"* olacaksa çatıya girmek **ucuz**
+    olmalı — aksi hâlde her yeni tüketici tam bir yeniden-çözümleme ekler ve tek çatı,
+    dağınık okuyuculardan **pahalı** hâle gelir.
+
+    *Bir soyutlamanın benimsenmesi, ona girmenin maliyetiyle ters orantılıdır.*"""
+    n_mod.bellek_sifirla()
+    sayac = {"n": 0}
+    gercek = n_mod._coz_soru
+
+    try:
+        n_mod._coz_soru = lambda q: (sayac.__setitem__("n", sayac["n"] + 1),
+                                     gercek(q))[1]
+        for _ in range(3):
+            n_mod.coz_soru("bu yil toplam ciro")
+        assert sayac["n"] == 1, f"🔴 aynı istekte {sayac['n']} kez çözüldü"
+    finally:
+        n_mod._coz_soru = gercek
+
+
+def test_BELLEK_ISTEK_SINIRINDA_SIFIRLANIYOR():
+    """⚠ Kapsam **istek**tir, süreç değil. Süreç ömrü boyunca önbelleklemek, şema
+    değiştiğinde **bayat** bir niyet üretirdi — ve bu operasyon bayat okumanın bedelini
+    ölçtü (`tests/test_olcum_semasi_taze.py`)."""
+    n_mod.bellek_sifirla()
+    n_mod.coz_soru("bu yil toplam ciro")
+    n_mod.bellek_sifirla()
+    assert n_mod._BELLEK.get() == {}, "🔴 sıfırlama belleği boşaltmıyor"
+
+
+def test_ISTEK_DISI_CAGRI_ONBELLEKSIZ_CALISIYOR():
+    """⚠ Lab araçları ve testler istek bağlamı olmadan çağırır. `ContextVar` orada
+    `LookupError` verir ve niyet **yine üretilmeli** — önbelleksiz, ama çalışır.
+    *Bir hızlandırmanın yokluğu, bir çalışmama sebebi olamaz.*"""
+    import contextvars
+
+    def _izole():
+        return n_mod.coz_soru("bu yil toplam ciro").iz()
+
+    assert contextvars.Context().run(_izole).startswith("niyet:")
+
+
+def test_TURETME_ARTIK_NIYETTEN_OKUYOR():
+    """🔴 Faz 2 göçü — `_turetme_adaylari` `partial_unknowns`u DOĞRUDAN çağırmamalı.
+    ⊙ Ölçüldü: reddedilen soruda toplam çağrı **4 → 3**."""
+    import pathlib
+
+    from app.routers import ask as ask_mod
+
+    kaynak = pathlib.Path(ask_mod.__file__).read_text(encoding="utf-8")
+    agac = ast.parse(kaynak)
+    fn = next(x for x in ast.walk(agac)
+              if isinstance(x, ast.FunctionDef) and x.name == "_turetme_adaylari")
+    kod = ast.unparse(fn)
+    assert "partial_unknowns" not in kod, \
+        "🔴 türetme yine kendi çözümlemesini yapıyor — tek çatının maliyeti ikiye katlanır"
+    assert "coz(" in kod, "🔴 niyet nesnesinden okumuyor"
+
+
+def test_BELLEK_ISTEK_SINIRINA_BAGLI():
+    """⚠ `bellek_sifirla()` `ask()`in girişinde, `reset_llm_usage()` ile **aynı yerde**
+    olmalı: ikisi de istek-kapsamlı bir birikimi temizler. Unutulursa iki istek aynı
+    niyeti paylaşır — *bir önbellek, sınırını kaybettiğinde bir hataya dönüşür.*"""
+    import pathlib
+
+    from app.routers import ask as ask_mod
+
+    kaynak = pathlib.Path(ask_mod.__file__).read_text(encoding="utf-8")
+    fn = next(x for x in ast.walk(ast.parse(kaynak))
+              if isinstance(x, ast.FunctionDef) and x.name == "ask")
+    kod = ast.unparse(fn)
+    assert "bellek_sifirla()" in kod, "🔴 istek sınırında bellek sıfırlanmıyor"
+    assert kod.index("bellek_sifirla()") < kod.index("q_norm"), \
+        "🔴 sıfırlama çözümlemeden SONRA — bir önceki isteğin niyeti sızabilir"

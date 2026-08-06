@@ -135,6 +135,17 @@ MUAFIYET_ASK_KOD = [
      "SAHTEYDİ (`may`→prim · `ogrnim`→kar oranı — kelimenin KENDİSİ aday sayılıyordu); "
      "kullanıcı tarafı gerçek bir çekim soymak zorunda kılınınca **0**'a indi. "
      "*Bir tahminin ucuz olması, yanlış olmasını ucuzlaştırmaz*"),
+    ("KÖK-1/faz2-bellek", 1,
+     "🔴 NİYET BELLEĞİ İSTEK SINIRINDA (`bellek_sifirla()`) — KÖK-1 Faz 2'nin ÖN KOŞULU. "
+     "Ölçüldü: reddedilen bir soruda `partial_unknowns` **DÖRT KEZ** koşuyordu. Niyet "
+     "nesnesi 'tek çatı' olacaksa çatıya girmek UCUZ olmalı; aksi hâlde her yeni tüketici "
+     "tam bir yeniden-çözümleme ekler ve tek çatı, dağınık okuyuculardan PAHALI hâle "
+     "gelir — yani KÖK-1'in kendisi bir maliyet kalemine dönüşür. "
+     "🔴 Bu TEK satır TAŞINAMAZ ve yeri tesadüf değil: `reset_llm_usage()` ile AYNI "
+     "yerde, çünkü ikisi de istek-kapsamlı bir birikimi temizler. Daha geç konsa bir "
+     "önceki isteğin niyeti sızardı (`test_BELLEK_ISTEK_SINIRINA_BAGLI` sırayı kilitler). "
+     "⊙ Sonuç: türetme çağrı yeri niyetten okumaya geçince 4 → 3. "
+     "*Bir soyutlamanın benimsenmesi, ona girmenin maliyetiyle ters orantılıdır*"),
     ("KÖK-1/niyet-izi", 2,
      "🔴🔴 NİYET NESNESİ FAZ 1 (denetim raporu KÖK-1 · devralınan KÇ-0). Raporun "
      "teşhisi: *«KN-4 (uyum denetimi) YAZILAMAZ çünkü karşılaştırılacak iki şey yok; "

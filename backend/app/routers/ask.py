@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 import time as _time
 
 from app import donem_capasi as _capa
+from app import niyet as _niyet
 from app import turetme as _turetme
 from app import uyum as _uyum
 from app import yetenek as _yetenek
@@ -1411,14 +1412,19 @@ def _turetme_adaylari(soru: str, request) -> list[dict]:
     ⚠ Şema okunamazsa **boş liste** — bir chip üretememek bir cevabı düşürmemeli.
     *Bir öneri, önerdiği şeyden daha kırılgan olmamalıdır.*
     """
-    from app import cube_router as _cr
+    from app import niyet as _n
     from app import turetme as _t
     from app.company_registry import wren_for_request
 
     try:
         schema = wren_for_request(request).schema() or {}
-        bilinmeyen, _ = _cr.partial_unknowns(_cr._norm(soru), schema)
-        return _t.adaylar(bilinmeyen, schema)
+        # 🔴 KÖK-1 FAZ 2 — `partial_unknowns` ARTIK DOĞRUDAN ÇAĞRILMIYOR.
+        #
+        # Ölçüldü: reddedilen bir soruda o fonksiyon **dört kez** koşuyordu ve biri
+        # buradaydı. `Niyet` onu zaten çözmüş durumda ve istek-kapsamlı bellekte
+        # duruyor — ikinci kez çağırmak, tek çatının maliyetini iki katına çıkarırdı.
+        # *Bir çatının altına girmek, çatının dışında kalmaktan pahalı olmamalıdır.*
+        return _t.adaylar(_n.coz(soru, schema).bilinmeyenler, schema)
     except Exception:                        # ADR-0020: sessiz yutma yok
         _log.warning("türetme adayları hesaplanamadı", exc_info=True)
         return []
@@ -1506,6 +1512,15 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
 
     t0 = time.monotonic()
     reset_llm_usage()
+    # 🔴 KÖK-1 FAZ 2 — NİYET BELLEĞİ İSTEK SINIRINDA SIFIRLANIR.
+    #
+    # `reset_llm_usage()` ile aynı yerde ve aynı sebeple: ikisi de **istek-kapsamlı**
+    # bir birikimi temizler. Ölçüldü: reddedilen bir soruda `partial_unknowns` DÖRT KEZ
+    # koşuyordu; niyet nesnesi *"tek çatı"* olacaksa çatıya girmek **ucuz** olmalı, yoksa
+    # her yeni tüketici tam bir yeniden-çözümleme ekler ve tek çatı dağınık okuyuculardan
+    # PAHALI hâle gelir.
+    # *Bir soyutlamanın benimsenmesi, ona girmenin maliyetiyle ters orantılıdır.*
+    _niyet.bellek_sifirla()
     settings = get_settings()
     service = _service_for(request, body.session_id)
     schema = service.schema()
