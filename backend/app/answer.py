@@ -452,9 +452,30 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
         if "t2_sablon" in resolve_for(get_settings(), principal):
             from app import anlatici as _anlatici
 
-            if (_sablon := _anlatici.anlat(yorum)):
-                yorum["narration"] = _sablon
-                yorum["narration_kaynak"] = "sablon"      # makbuz: LLM devreye GİRMEDİ
+            if _anlatici.basit_mi(yorum):
+                # 🔴 **ASIL KAZANÇ METİN DEĞİL, YAPILMAYAN ÇAĞRI.** Canlı ölçüldü:
+                #
+                # | tur | toplam | anlatı LLM | pay |
+                # |---|---|---|---|
+                # | *"makine bazında oee son 3 ay"* | 5.420 ms | **2.936 ms** | %54 |
+                # | *"aylara göre"* (takip) | 24.285 ms | 🔴 **22.564 ms** | **%93** |
+                #
+                # İki turda da **intent 0 LLM** aldı (`route()` / `deterministic_refine`);
+                # bekleyişin tamamı **süslemeydi**. Ve süslenen şey `summary`'nin taşıdığı
+                # **aynı üç olguydu** — LLM'in kattığı bilgi değil, üsluptu.
+                #
+                # 🔴 Bu yüzden şablon basamağı **metin üretmese bile** durur: `summary`
+                # zaten yazılı ve kullanıcı onu görüyor. Bir cümleyi ikinci kez, 22 saniye
+                # bekleterek yazdırmak bir kazanç değil bir **fatura**dır.
+                #
+                # ⚠ İlk yazımda yankı kapısı buraya **yanlış** yerleştirilmişti: metin
+                # `summary` ile aynıysa `None` dönüyordu ve tur **LLM'e düşüyordu** — yani
+                # kapı, önlemek için var olduğu çağrıyı **davet ediyordu**.
+                # *Bir eniyileştirmenin ölçütü ürettiği çıktı değil, engellediği iştir.*
+                yorum["narration_kaynak"] = "sablon"       # makbuz: LLM devreye GİRMEDİ
+                if (_sablon := _anlatici.anlat(yorum)):
+                    yorum["narration"] = _sablon           # yalnız EK BİLGİ varsa
+                _log.info("T2 ŞABLON: LLM çağrısı YAPILMADI (0 token, 0 ms)")
                 return
         if "t2_anlatici" not in resolve_for(get_settings(), principal):
             return                      # KURAL B — kapalıyken davranış BİREBİR bugünkü

@@ -103,3 +103,35 @@ def test_TANINAN_TURLER_KAPALI_KUME(tur):
     """Yeni bir olgu türü `interpret()`'e eklenirse bu basamak onu **tanımaz** ve
     devreder — sessizce atlamaz."""
     assert isinstance(tur, str) and tur
+
+
+def test_ASIL_KAZANC_YAPILMAYAN_CAGRI():
+    """🔴 **Canlı ölçüm bu kapının varlık sebebidir.**
+
+    | tur | toplam | anlatı LLM | pay |
+    |---|---|---|---|
+    | *"makine bazında oee son 3 ay"* | 5.420 ms | **2.936 ms** | %54 |
+    | *"aylara göre"* (takip) | 24.285 ms | 🔴 **22.564 ms** | **%93** |
+
+    İki turda da **intent 0 LLM** aldı (`route()` / `deterministic_refine`); bekleyişin
+    tamamı **süslemeydi** — ve süslenen şey `summary`'nin taşıdığı **aynı olgulardı**.
+
+    ⚠ İlk yazımda yankı kapısı yanlış yerdeydi: metin `summary` ile aynıysa `None`
+    dönüyordu ve tur **LLM'e düşüyordu** — yani kapı, önlemek için var olduğu çağrıyı
+    **davet ediyordu**.
+
+    *Bir eniyileştirmenin ölçütü ürettiği çıktı değil, engellediği iştir.*
+    """
+    import inspect
+
+    from app import answer as answer_mod
+
+    src = inspect.getsource(answer_mod._anlati_ekle)
+    i = src.index("basit_mi(yorum)")
+    blok = src[i:i + 1800]
+    assert "return" in blok, "🔴 şablon dalı erken dönmüyor — LLM yine çağrılır"
+    j = src.index('calistir("llm.anlat"')
+    assert i < j, "🔴 şablon kontrolü LLM çağrısından SONRA"
+    # Ve dönüş `anlat()`'ın çıktısına BAĞLI OLMAMALI:
+    assert 'if (_sablon := ' in blok and blok.index("return") > blok.index("if (_sablon"), (
+        "🔴 dönüş metin üretimine bağlı — yankı durumunda LLM yeniden devreye girer")
