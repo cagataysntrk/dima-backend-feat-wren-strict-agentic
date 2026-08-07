@@ -119,6 +119,12 @@ def test_SINIFSIZ_MODUL_BIRAKILAMAZ():
         "llm_guard.py": "🚪 çıkış kapısı — `safe_call`, fail-closed",
         "yayilim.py": "🚪 korunan yayılım — perdeleme/geri koyma (G0b)",
         "narration_guard.py": "🚪 metin→SAYI kapısı",
+        # 📊 TELEMETRİ — kapıların KENDİSİNİ ölçer, hiçbir karara girmez.
+        # `Ö5`: guard'lar fail-closed düştüğünde sistem "soğur" ama HİÇBİR ŞEY hata
+        # vermez; bu modül o sessizliği bir sayıya çevirir. Ne dil okur ne sorgu kurar —
+        # yalnız iki kapının çıktısını sayar. *Ölçen bir modül, ölçtüğü tarafa ait
+        # değildir; aksi hâlde kendi sonucunu etkiler.*
+        "guard_alarmi.py": "📊 telemetri — guard düşme oranı (Ö5), karara girmez",
         "iddia.py": "🚪 metin→İDDİA kapısı (G4) — §4'ün değişmezinin ikinci yarısı",
         "uyum.py": "🚪 niyet↔sorgu uyum kapısı (beyan-açık)",
         "pii.py": "🚪 maskeleme, tek çıkış",

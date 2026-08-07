@@ -64,4 +64,16 @@ def ready(request: Request, response: Response) -> dict:
     }
     if db_error:
         body["db_error"] = db_error
+    # 🔴 `Ö5` — GUARD DÜŞME ORANI. Sağlık yüzeyinde çünkü bu bir **iş kaydı değil sağlık
+    # sinyalidir**: geçmişe dönük sorgulanması değil, ŞİMDİ görünmesi gerekir.
+    # ⚠ `status`'ü **etkilemez** — anlatının soğuması bir kesinti değildir; sistem doğru
+    # cevap vermeye devam eder. Alarmı hazır-değil saymak, bir üslup sorununu bir
+    # kullanılabilirlik sorunu gibi raporlardı. *Bir sinyali yanlış şiddette çalmak, onu
+    # susturmanın bir başka yoludur.*
+    try:
+        from app.guard_alarmi import durum as _guard_durum
+
+        body["guard"] = _guard_durum()
+    except Exception:                                       # noqa: BLE001
+        pass
     return body

@@ -101,6 +101,9 @@ class Rapor:
     temiz_metin: str
     reddedilen: list[str] = field(default_factory=list)
     gerekceler: list[str] = field(default_factory=list)
+    #: 🔴 `Ö5` — **PAYDA** (bkz. `narration_guard.Rapor.toplam_cumle`). Bölmeyi yapan
+    #: fonksiyon üretir; çağıran yeniden bölmez.
+    toplam_cumle: int = 0
 
     def makbuza(self) -> dict:
         return {"dusen_cumle": len(self.reddedilen),
@@ -181,4 +184,5 @@ def dogrula(metin: str | None, schema: dict | None = None) -> Rapor:
         _log.info("İDDİA KAPISI: %d cümle düştü — %s",
                   len(reddedilen), "; ".join(gerekceler[:3]))
     return Rapor(gecti=not reddedilen, temiz_metin=" ".join(kalan),
-                 reddedilen=reddedilen, gerekceler=gerekceler)
+                 reddedilen=reddedilen, gerekceler=gerekceler,
+                 toplam_cumle=len(kalan) + len(reddedilen))

@@ -165,6 +165,195 @@ SENARYOLAR: tuple[dict, ...] = (
                    "firesiz partiler kaç tane"],          # olumsuzluk — desteklenmiyor
         "olculen": (S10_MENU, S6_MAKBUZ),
     },
+
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # 🔴 GENİŞLETME 6 → 25 SENARYO (2026-08-07)
+    #
+    # ## Neden
+    #
+    # Ölçüldü ve fark üç mertebe: bu turda **6 senaryo / 16 tur** üç gerçek kusur buldu
+    # (`NameError` → iddia kapısı bir demettir şemasız koşuyordu · netleştirme turu ne
+    # anladığını söylemiyordu · canlıda yer tutucu düşmesi). Aynı anda **4 045 test +
+    # ~14 700 korpus turu** bunların **hiçbirini** görmedi.
+    #
+    # Sebep yapısal: korpus ve süit **mutfağı** ölçer (`route()` doğruluğu, yapısal
+    # kapılar); garsonun değeri **konuşmanın kendisindedir** ve orayı yalnız senaryolar
+    # görür. *Bir katmanı, onu görmeyen bir aletle savunmak, savunmamaktır.*
+    #
+    # ## ⚠ Ama senaryolar ötekilerin YERİNE GEÇMEZ — ölçüldü
+    #
+    # Bu turda `--hepsi`'nin bulduğu **9 kırmızının hiçbiri** bir senaryoyla
+    # yakalanamazdı: YAML boolean tuzağı · `FLAG_REGISTRY` eksiği · `⟳` satır biçimi ·
+    # `ask()` tavanı. Bunlar **meta-kapılar**. Ve korpusun tek gerçek yakalaması
+    # (`gitas` düştü, payda 445→342, doğruluk **yükseldi**) **payda sabitliğine** dayanır;
+    # senaryo kümesi o sinyali yapısal olarak veremez.
+    #
+    # 🔴 **Dolayısıyla bu genişletme bir İKAME değil bir DENGELEMEDİR:** senaryo sayısı
+    # artar, kapı koşum SIKLIĞI düşer.
+    #
+    # ## Maliyet — dürüstçe yazılı
+    #
+    # 25 senaryo · **~55 tur**. Canlı modda tur arası `LIVE_BEKLE` (5 sn) + sağlayıcı
+    # gecikmesi → kabaca **12-18 dk**. Bu yüzden `--live` bir **faz sonu** kapısıdır
+    # (politika zaten böyleydi); yapısal duman modu saniyeler sürer.
+    # *Bir kapıyı pahalılaştırmak, onu atlanan bir kapıya çevirir* — bu yüzden sıklık
+    # artmaz, kapsam artar.
+    #
+    # ## Terimler UYDURULMADI
+    #
+    # Her ölçü/boyut adı `demo/packs/sektor/boyahane` ve `modul/oee` kataloğundan
+    # **okundu** (`toplam_fire_kg` · `fire_orani_yuzde` · `toplam_rework_kg` ·
+    # `rework_sayisi` · `sikayet_adedi` · `ort_oee` · `makine` · `sebep` · `konu` ·
+    # `musteri` · `renk`). Uydurulmuş bir terim, senaryoyu **sessizce** ölçümsüz bırakır.
+    # ═══════════════════════════════════════════════════════════════════════════════
+
+    # --- ÇAPA (S1) — konuşma turu YENİ SQL YAZMAZ -----------------------------------
+    {
+        "ad": "capa_neden",
+        "aciklama": "«Bu neden böyle?» bir KONUŞMA turudur: mevcut rapor üstünde konuşur, "
+                    "yeni sorgu yazmaz.",
+        "turlar": ["bu yıl makine bazında ort_oee", "bu neden böyle?"],
+        "olculen": (S1_CAPA, S3_SUREKLILIK, S6_MAKBUZ),
+    },
+    {
+        "ad": "capa_normal_mi",
+        "aciklama": "«Normal mi?» bir yargı sorusudur — sorguyu değiştirmemeli.",
+        "turlar": ["mart ayında fire oranı", "normal mi?"],
+        "olculen": (S1_CAPA, S3_SUREKLILIK, S6_MAKBUZ),
+    },
+    {
+        "ad": "capa_ne_yapmali",
+        "aciklama": "«Ne yapmalıyız?» reçete ister; yeni bir SQL değil.",
+        "turlar": ["bu yıl toplam rework kg", "ne yapmalıyız?"],
+        "olculen": (S1_CAPA, S3_SUREKLILIK, S6_MAKBUZ),
+    },
+
+    # --- ANLATI (S2) — ≥3 olgu + anlatı + ≥2 chip ------------------------------------
+    {
+        "ad": "anlat_grafik_ustunde",
+        "aciklama": "Kullanıcı zaman serisine bakıp ONUN ÜSTÜNDE konuşuyor.",
+        "turlar": ["son 6 ayda aylık toplam fire kg", "bunu yorumla",
+                   "en kötü ay hangisi?"],
+        "olculen": (S2_ANLAT, S1_CAPA, S3_SUREKLILIK, S6_MAKBUZ),
+    },
+    {
+        "ad": "anlat_ozetle",
+        "aciklama": "«Özetle» — kırılımlı bir tabloyu anlatıya çevirebiliyor mu?",
+        "turlar": ["bu yıl konu bazında şikayet adedi", "özetle"],
+        "olculen": (S2_ANLAT, S3_SUREKLILIK, S6_MAKBUZ),
+    },
+
+    # --- SOSYAL (S4) — 0 LLM · 0 SQL ------------------------------------------------
+    {
+        "ad": "sosyal_acilis",
+        "aciklama": "Selamlama motora HİÇ gitmez; ardından iş sorusu normal akar.",
+        "turlar": ["merhaba", "bu yıl toplam ciro"],
+        "olculen": (S4_SOSYAL, S6_MAKBUZ),
+    },
+    {
+        "ad": "sosyal_kapanis",
+        "aciklama": "Teşekkür + kapanış: veri sinyali YOK, sorgu üretilmemeli.",
+        "turlar": ["mart ayında rework sayısı", "teşekkürler, iyi çalışmalar"],
+        "olculen": (S4_SOSYAL, S3_SUREKLILIK, S6_MAKBUZ),
+    },
+
+    # --- BELİRSİZLİK (S5) — tahmin yok, SORU var ------------------------------------
+    {
+        "ad": "belirsizlik_donem",
+        "aciklama": "Dönemsiz ölçü → tahmin edilmemeli, SORULMALI.",
+        "turlar": ["toplam rework kg", "__CHIP__"],
+        "olculen": (S5_BELIRSIZLIK, S3_SUREKLILIK, S8_TEMELLENDIRME),
+    },
+    {
+        "ad": "belirsizlik_sonra_devam",
+        "aciklama": "Netleştirmeden sonra kullanıcı KENDİ cümlesiyle devam ediyor.",
+        "turlar": ["şikayet adedi", "geçen yıl", "peki konu bazında?"],
+        "olculen": (S5_BELIRSIZLIK, S3_SUREKLILIK, S8_TEMELLENDIRME),
+    },
+
+    # --- GERİ DÖNÜŞ (S7) — 0 LLM ile replay ------------------------------------------
+    {
+        "ad": "geri_donus_ikinci_kart",
+        "aciklama": "Üç turluk bir sohbetten SONRA ikinci karta dönülüyor — bağlam "
+                    "kaybolmadan.",
+        "turlar": ["bu yıl toplam fire kg",
+                   "mart ayında toplam rework kg",
+                   ("__CUBE__", 0)],
+        "olculen": (S7_GERI_DONUS, S3_SUREKLILIK, S6_MAKBUZ),
+    },
+
+    # --- TEMELLENDİRME (S8) — ne anladığını SÖYLER ----------------------------------
+    {
+        "ad": "temellendirme_kirilimli",
+        "aciklama": "Kırılım ve dönem birlikte: beyan ikisini de içeriyor mu?",
+        "turlar": ["geçen yıl müşteri bazında toplam ciro"],
+        "olculen": (S8_TEMELLENDIRME, S6_MAKBUZ),
+    },
+    {
+        "ad": "temellendirme_filtreli",
+        "aciklama": "Dışlama filtresi de anlaşılan şeyin parçasıdır.",
+        "turlar": ["beyaz hariç bu yıl toplam fire kg"],
+        "olculen": (S8_TEMELLENDIRME, S6_MAKBUZ),
+    },
+
+    # --- ONARIM (S9) — TEK slot düzelir --------------------------------------------
+    {
+        "ad": "onarim_olcu",
+        "aciklama": "Kullanıcı ÖLÇÜYÜ düzeltiyor; dönem ve kırılım korunmalı.",
+        "turlar": ["mart ayında makine bazında toplam fire kg",
+                   "yok ya fire oranı demek istedim"],
+        "olculen": (S9_ONARIM, S3_SUREKLILIK, S6_MAKBUZ),
+    },
+    {
+        "ad": "onarim_kirilim",
+        "aciklama": "Kullanıcı KIRILIMI düzeltiyor; ölçü ve dönem korunmalı.",
+        "turlar": ["bu yıl makine bazında toplam rework kg",
+                   "makine değil sebep bazında olsun"],
+        "olculen": (S9_ONARIM, S3_SUREKLILIK, S6_MAKBUZ),
+    },
+
+    # --- MENÜ (S10) — «yapamam»ın yanına «ama şunu yapabilirim» ---------------------
+    {
+        "ad": "menu_tahmin",
+        "aciklama": "Geleceğe dönük tahmin v1'de YOK — ama ne yapılabildiği söylenmeli.",
+        "turlar": ["önümüzdeki ay ne kadar fire olur"],
+        "olculen": (S10_MENU, S6_MAKBUZ),
+    },
+    {
+        "ad": "menu_sonra_toparlanma",
+        "aciklama": "🔴 Reddin ARDINDAN sohbet ölmemeli: kullanıcı yeni bir soru sorunca "
+                    "sistem normal akışa dönebilmeli.",
+        "turlar": ["gelecek çeyrek cirosunu tahmin et",
+                   "peki bu yıl toplam ciro ne kadar"],
+        "olculen": (S10_MENU, S3_SUREKLILIK, S6_MAKBUZ),
+    },
+
+    # --- SÜREKLİLİK (S3) — çok turlu derinleşme -------------------------------------
+    {
+        "ad": "derinlesme_dort_tur",
+        "aciklama": "🔴 B2B'nin gerçek deseni: dört turluk daralma. `lab/sharding.py` bu "
+                    "eksende **tur 1 %63,6 → tur 5 %45,5** ölçtü — senaryo o kaybı "
+                    "konuşma katmanında görünür kılar.",
+        "turlar": ["bu yıl toplam fire kg",
+                   "sadece mart",
+                   "makine bazında kır",
+                   "en yükseği hangisi?"],
+        "olculen": (S3_SUREKLILIK, S8_TEMELLENDIRME, S6_MAKBUZ),
+    },
+    {
+        "ad": "dagitik_ifade",
+        "aciklama": "Kullanıcı KENDİ diliyle konuşuyor — devrik, dolgu kelimeli.",
+        "turlar": ["şu mart ayı fire kg neydi ya",
+                   "bi de makine bazında göster"],
+        "olculen": (S3_SUREKLILIK, S8_TEMELLENDIRME, S6_MAKBUZ),
+    },
+    {
+        "ad": "konu_degisimi",
+        "aciklama": "Kullanıcı konuyu DEĞİŞTİRİYOR — eski bağlam yeni soruyu kirletmemeli.",
+        "turlar": ["bu yıl makine bazında toplam fire kg",
+                   "geçen yıl konu bazında şikayet adedi"],
+        "olculen": (S3_SUREKLILIK, S8_TEMELLENDIRME, S6_MAKBUZ),
+    },
 )
 
 

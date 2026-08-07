@@ -170,10 +170,20 @@ class Rapor:
     temiz_metin: str
     reddedilen: list[str] = field(default_factory=list)
     dogrulanamayan_sayilar: list[float] = field(default_factory=list)
+    #: 🔴 `Ö5` — **PAYDA.** Guard'a giren cümle sayısı. Düşme ORANI olmadan düşme SAYISI
+    #: yorumlanamaz: iki cümlelik bir anlatıda 1 düşmek ile yirmi cümlelik birinde 1
+    #: düşmek aynı sayıdır, aynı şey değildir.
+    #:
+    #: ⚠ Burada üretilir çünkü bölmeyi **bu fonksiyon** yapıyor. Çağıranın metni yeniden
+    #: bölmesi, `_CUMLE_RE`'nin ikinci bir sahibi demekti — ve bu deponun bir numaralı
+    #: kusur sınıfı tam olarak odur. *Bir sayıyı, onu zaten bilen yerden iste.*
+    toplam_cumle: int = 0
 
     def makbuza(self) -> dict[str, Any]:
         return {"narration_verified": self.gecti,
                 "rejected_sentences": len(self.reddedilen),
+                # 🔴 `Ö5` — payda olmadan düşme sayısı yorumlanamaz.
+                "total_sentences": self.toplam_cumle,
                 "unverified_numbers": self.dogrulanamayan_sayilar[:10],
                 # 🔴 G5.4 — MUAFİYETLER GÖRÜNÜR OLUR.
                 #
@@ -215,6 +225,7 @@ def dogrula(metin: str | None, result: dict | None, *,
         temiz_metin=" ".join(kalan),
         reddedilen=reddedilen,
         dogrulanamayan_sayilar=kotu_sayilar,
+        toplam_cumle=len(kalan) + len(reddedilen),
     )
 
 

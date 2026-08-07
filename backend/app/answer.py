@@ -554,6 +554,17 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
                 "anlati_dusen": int(_mk.get("rejected_sentences") or 0),
                 "guard_muaf": _mk.get("muaf"),
             }
+            # 🔴 `Ö5` — DÜŞME ORANI KAYAN PENCEREYE. `iddia.py`'nin kendi sözü:
+            # *"düşme oranı ÖLÇÜLÜR — kapı agresifse gevşetilir, ama ÖLÇÜYLE."*
+            # Söz yazılmıştı, ölçüm kurulmamıştı. Model/prompt değişince kapılar TÜM
+            # anlatıyı düşürmeye başlayabilir: kullanıcı yanlış sayı görmez (güvenli)
+            # ama sistem sürekli "soğuk" cevap verir ve **hiçbir alarm çalmaz**.
+            # *Bir kapının sessizce her şeyi düşürmesi, hiç olmamasından farksızdır —
+            # tek fark, sistemin kendini güvende sanmasıdır.*
+            from app import guard_alarmi as _alarm
+
+            _alarm.kaydet(int(_mk.get("rejected_sentences") or 0),
+                          int(_mk.get("total_sentences") or 0))
         except Exception:                                  # noqa: BLE001 — makbuz süstür
             _log.warning("guard makbuzu yazılamadı", exc_info=True)
         if getattr(rapor, "reddedilen", None):
