@@ -281,8 +281,17 @@ def run_company(name, login, pw, slug, pay: int = 0, pay_sayisi: int = 1):
     # varyantlarından biri bile yanlış cube'a giderse vaka **yanlıştır**. Gevşek (OR/
     # çoğunluk) sayım, tek bir doğru varyantla bir sahiplik hatasını gizlerdi.
     vaka_sonuc: dict[tuple, bool] = {}
+
+    # 🔴 `G3.4` sayaçları — **tekil VE süreç** turlarının ikisini de kapsar.
+    # ⚠ Yalnız süreç turlarında saymak, oranı sistematik olarak yanlış verirdi: tekil
+    # sorular korpusun büyük çoğunluğu. *Bir oranı payda seçerek iyileştirmek, bu
+    # deponun `gitas` dersinin ta kendisidir.*
+    kesme_sayi, kesme_toplam = [0], [0]
     for q, exp, kaynak, vaka in singles:
         d = ask(q)
+        kesme_toplam[0] += 1
+        if _cevapsiz_kesme(d):
+            kesme_sayi[0] += 1
         s = _sinif(d, exp)
         cats[f"tekil::{s}"] += 1
         # DOĞRULUK KANALI (2 Ağustos 2026): `exp` TÜM cube adlarıdır, yani yukarıdaki
@@ -317,6 +326,34 @@ def run_company(name, login, pw, slug, pay: int = 0, pay_sayisi: int = 1):
                 and exp not in ("NOISE", "CAP"):
             fails[s].append((q, (d.get("note") or "")[:60], (d.get("trace") or [])[-1:]))
 
+# 🔴 `G3.4` — **CEVAPSIZ KESME ORANI**: merdiveni erken bitiren tur oranı.
+#
+# `MIMARI §5`'in 18. yasağı: *"Merdiveni yalnız **pozitif cevap** ya da kullanıcının
+# **açık `yol_siniri`**'si bitirebilir."* Ölçüt doğrudan o cümleden türetildi —
+# uydurulmadı:
+#
+#   cevapsız kesme  =  cevap YOK  ∧  kullanıcı durdurmadı  ∧  **Discovery hiç koşmadı**
+#
+# Üçüncü şart ayırt edicidir ve olmadan ölçüt yanlış olurdu: merdiven **sonuna kadar
+# koşup** cevap bulamadıysa bu bir *kesme* değil bir **kapsam sınırıdır**. Kesme, altta
+# çalışabilir bir basamak **varken** durmaktır.
+#
+# ⚠ `yol_siniri` bu korpusta hiç gönderilmiyor → ikinci şart daima sağlanır. Yine de
+# koşula yazılı: ölçüt, korpusun bugünkü kurulumuna değil **yasağın tanımına** bağlı
+# kalmalı. *Bir ölçütü bugünkü koşullara göre sadeleştirmek, onu yarın yanlış yapar.*
+_DISCOVERY_IZI = "Discovery"
+
+
+def _cevapsiz_kesme(d: dict) -> bool:
+    """Bu tur merdiveni **erken** mi bitirdi?"""
+    if d.get("source"):
+        return False                       # pozitif cevap → meşru bitiş
+    if d.get("yol_siniri"):
+        return False                       # kullanıcının açık talimatı → meşru bitiş
+    iz = " ".join(str(x) for x in (d.get("trace") or []))
+    return _DISCOVERY_IZI not in iz        # Discovery hiç koşmadıysa → KESME
+
+
     # süreç
     procs, valid = gen_processes(schema)
     # Bir sürecin adımları BİRBİRİNE bağlıdır (`cq` bağlamı ileri taşınır) → süreç
@@ -331,6 +368,9 @@ def run_company(name, login, pw, slug, pay: int = 0, pay_sayisi: int = 1):
                 continue
             n_steps += 1
             d = ask(step, cq=cq if i else None)
+            kesme_toplam[0] += 1
+            if _cevapsiz_kesme(d):
+                kesme_sayi[0] += 1
             exp = "NOISE" if step in STEP_NOISE else (valid if i == 0 else None)
             s = _sinif(d, exp)
             cats[f"süreç::{s}"] += 1
@@ -341,6 +381,9 @@ def run_company(name, login, pw, slug, pay: int = 0, pay_sayisi: int = 1):
 
     c.__exit__(None, None, None)
     return {"company": name, "n_single": len(singles), "n_proc_steps": n_steps,
+            # 🔴 `G3.4` — cevapsız kesme. **Ham sayılar da** verilir: bir oran, paydası
+            # görünmeden yorumlanamaz (bu deponun `gitas` dersi).
+            "kesme_sayi": kesme_sayi[0], "kesme_payda": kesme_toplam[0],
             "cats": dict(cats), "fails": {k: v[:12] for k, v in fails.items()},
             "dogru_cube": dict(dogru), "yanlis_cube_ornek": yanlis_ornek[:20],
             # FAZ 0.19 — İKİNCİ PAYDA. Ham tur paydası yukarıda AYNEN duruyor.
@@ -584,6 +627,9 @@ def birlestir(dilimler: list[dict]) -> dict:
     return {"company": ilk["company"],
             "n_single": sum(d["n_single"] for d in dilimler),
             "n_proc_steps": sum(d["n_proc_steps"] for d in dilimler),
+            # 🔴 `G3.4` — dilimler arasında TOPLANIR (turlar bağımsız, çift sayım yok).
+            "kesme_sayi": sum(d.get("kesme_sayi", 0) for d in dilimler),
+            "kesme_payda": sum(d.get("kesme_payda", 0) for d in dilimler),
             "cats": dict(cats), "fails": {k: v[:12] for k, v in fails.items()},
             "dogru_cube": dict(dogru), "yanlis_cube_ornek": yanlis[:20],
             "vaka_toplam": len(vaka),
@@ -635,6 +681,15 @@ def main():
             continue
         total = sum(rep["cats"].values())
         lines.append(f"- tekil senaryo: {rep['n_single']} · süreç adımı: {rep['n_proc_steps']} · toplam tur: {total}")
+        # 🔴 `G3.4` — CEVAPSIZ KESME ORANI. `MIMARI §5`'in 18. yasağının ölçüsü:
+        # merdiveni **pozitif cevap** ya da **açık `yol_siniri`** dışında bir şey
+        # bitirdiyse, o bir kesmedir. Ham sayılar da basılır — *bir oran, paydası
+        # görünmeden yorumlanamaz.*
+        _ks, _kp = rep.get("kesme_sayi", 0), rep.get("kesme_payda", 0)
+        if _kp:
+            lines.append(
+                f"- 🔴 cevapsız kesme: **{_ks}/{_kp}** (%{_ks / _kp * 100:.1f}) "
+                f"— cevap yok · kullanıcı durdurmadı · Discovery hiç koşmadı")
         # FAZ 0.19 — **İKİ PAYDA YAN YANA.** Ham tur paydası kartezyen şişmeyi taşır
         # (11 dönem × boyut aynı semantik vakayı defalarca sayar); semantik vaka paydası
         # `(cube, ölçü, niyet)` üçlüsüne çöker. İkisi **birlikte** okunur: biri artıp

@@ -1738,6 +1738,45 @@ değişirse aynı satır yeniden anlam kazanır.
 yok edicisi değil: şemaya uyan ama yanlış bir cevap da şemaya uyar. Bu yüzden `iddia.py`
 ve hava boşluğu bayrağın yerine geçmez — onlar **başka** bir şeyi korur.
 
+### 🔴 `G3`'ÜN ÖLÇÜMÜ SAĞLAYICIDAN KÖRDÜ — kararın neden ASKIDA olduğu
+
+18. yasağın (*"cevapsız bir dal cevaplı bir yolu KESEMEZ"*) tam uygulaması ölçüldü ve
+**geri alındı**: korpus **%95,1 → %93,5**, eval precision **−%1,8**, süitte **7 kırmızı**
+(ayrıntı `:442` ve `tests/test_kisa_devre_yok.py`).
+
+🔴 **Ama o ölçüm, ölçmesi gereken şeyi ölçemez — ve bu `G3.2`'de bulundu.**
+
+`lab/nl_corpus.py`'nin kendi başlığı: *"**LLM yok (rule provider)**: deterministik
+çekirdeğin tavanı ölçülür."* Yani `%95,1 → %93,5` şunun maliyetidir: bir dalı adaya
+çevirip turu **mutfağın en aptal yedeğine** devretmek. Üretimde o basamakta **gerçek bir
+LLM** var.
+
+> *Bir devrin maliyetini, devredilenin en kötü hâliyle ölçmek, devri değil yedeği ölçer.*
+
+Yasağın **dördüncü koşulu** (*"bir sonraki basamak gerçekten daha yetenekli olmalı"*)
+tam olarak bu soruyu soruyor — ve korpus onu **yapısal olarak** yanıtlayamaz.
+
+#### Doğru alet hangisi DEĞİL, hangisi
+
+| alet | ölçer | `G3.2`'yi yanıtlar mı |
+|---|---|---|
+| `lab/nl_corpus.py` | `route()` tavanı, **rule** ile | ❌ sağlayıcıdan kör |
+| `lab/gercek_dunya.py` | `route()`, tek turlu | ❌ aynı sebep |
+| `eval --slice llm` | uçtan uca, **gerçek sağlayıcı** | ◐ 4 vaka — dar ama **doğru sınıf** |
+| `lab/garson.py --live` | konuşma, gerçek sağlayıcı | ◐ doğru ortam, dar korpus |
+
+→ `G3.2` bir **kod işi değil, bir ölçüm aleti işidir** ve `eval`'in LLM dilimini
+büyütmekten geçer. Borç `OPERASYON-DURUM.md`'de.
+
+#### Ve `merdiven.py` bilerek YAZILMADI
+
+Bu turda yazıldı ve **geri alındı**: bağlanmamış bir modül, bu deponun yasakladığı
+**yetimdir** (`OPERASYON.md §6/1`). Mekanizma zaten bir kez yazılmış, ölçülmüş ve
+kaydedilmişti; ikinci kez yazıp kapalı bırakmak, ölçümü ilerletmeden dosya sayısını
+artırmak olurdu.
+
+*Bir mekanizmayı ölçemeden kurmak, kararı ertelemenin pahalı bir biçimidir.*
+
 ### 🔴 `G2` — DİYALOG BELLEĞİ: sistem SORDUĞUNU HATIRLAR
 
 > ⚠ Bu kayıt **geç** yazıldı ve bunu bir denetim ajanı buldu: fazın **en büyük yeni
