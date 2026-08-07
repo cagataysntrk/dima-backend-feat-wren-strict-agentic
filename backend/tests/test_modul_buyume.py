@@ -318,6 +318,21 @@ MUAFIYET_ASK_KOD = [
                       "dürüst olmayan bir mesajı SATIN ALMAZ"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("morfoloji/ters-yon-kok", 9,
+     "🔴 **ON İKİ MORFOLOJİ VAKASININ ORTAK KÖKÜ.** Katalogda **ad** var (`uretim`·`islem`), "
+     "kullanıcıda **fiil** (`üretildi`·`işlenen`); `_covers` ikisini bağlayamıyor çünkü "
+     "hiçbiri ötekinin öneki değil — ortak olan **kök**tür (`üret`·`işle`). "
+     "⊙ Ek kümesi Türkçe **dilbilgisidir**, alan sözlüğü değil (`-im/-ım/-um/-üm`, `-me/-ma`, "
+     "`-iş/-ış/-uş/-üş`): `ADR-0008` alan diline kelime listesiyle yetişmeyi yasaklar, bir "
+     "dilin **ek envanterini** tanımayı değil. "
+     "🔴 Soyma **yalnız katalog terimine** uygulanır: kullanıcının ne yazdığını bilmiyoruz, "
+     "katalog ise **bizim beyanımız**. *Bir eşleşmeyi genişletirken, tahmin edilen tarafı "
+     "değil beyan edilen tarafı esnet.* "
+     "⚠ Kök **en az dört harf** — daha kısası `_covers`'ın kendi belgelediği sessiz-yanlışları "
+     "(`kar ⊂ ankara`) geri getirirdi. Ve ek zinciri doğrulaması **aynen** uygulanıyor: "
+     "gevşeme yok, yalnız başlangıç noktası kısalıyor. "
+     "⚠ **TAŞINAMAZ:** `_covers` bu dosyanın çekirdek eşleştiricisi ve `_kok` onun **iç** "
+     "yardımcısı; ayırmak, tek bir eşleşme kararını iki dosyaya bölerdi."),
     ("ustunluk/yapi-liste-degil", 5,
      "🔴 **ÜSTÜNLÜK BİR YAPIDIR, BİR LİSTE DEĞİL.** Curl'de ölçüldü (`§28.4/P2`): *«bu yıl "
      "en uzun duruş hangi makinede»* → *«uzun başka bir konu gibi görünüyor»*. `_direction` "

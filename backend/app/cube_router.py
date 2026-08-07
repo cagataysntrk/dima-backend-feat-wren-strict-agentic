@@ -2902,6 +2902,36 @@ def _deger_dislaniyor(q: str, deger_norm: str, kardesler: list[str]) -> bool:
     return False
 
 
+#: 🔴 **AD YAPAN EKLER — katalog terimini KÖKÜNE indirir.** Onbir/oniki morfoloji vakasının
+#: ortak kökü: katalogda **ad** var (`uretim`·`islem`), kullanıcıda **fiil** (`üretildi`·
+#: `işlenen`). `_covers` ikisini bağlayamıyor çünkü hiçbiri ötekinin öneki değil — ortak
+#: olan **kök**tür (`üret`·`işle`).
+#:
+#: ⊙ Bu küme Türkçe **dilbilgisidir**, alan sözlüğü değil: `-im/-ım/-um/-üm` (üret**im**),
+#: `-me/-ma` (öde**me**), `-iş/-ış/-uş/-üş` (satı**ş**). `ADR-0008` alan diline kelime
+#: listesiyle yetişmeyi yasaklar; bir dilin **ek envanterini** tanımayı değil.
+#:
+#: ⚠ **Kök en az dört harf**: daha kısası (`fir`·`kar`) kapsamı deler ve `_covers`'ın
+#: kendi belgelediği sessiz-yanlışları (`kar ⊂ ankara`) geri getirirdi.
+_AD_YAPAN_EKLER = ("im", "ım", "um", "üm", "me", "ma", "iş", "ış", "uş", "üş")
+_KOK_ASGARI = 4
+
+
+def _kok(known: str) -> str | None:
+    """Katalog teriminin ad-yapan eki soyulmuş kökü — soyulacak ek yoksa `None`.
+
+    🔴 Yalnız **katalog terimine** uygulanır, kullanıcının kelimesine değil: kullanıcı
+    ne yazdığını bilmiyoruz, katalog ise **bizim** beyanımız. Kullanıcı tarafını soymak,
+    bir kelimeyi tahmin ederek kısaltmak olurdu.
+
+    *Bir eşleşmeyi genişletirken, tahmin edilen tarafı değil beyan edilen tarafı esnet.*
+    """
+    for ek in _AD_YAPAN_EKLER:
+        if known.endswith(ek) and len(known) - len(ek) >= _KOK_ASGARI:
+            return known[: -len(ek)]
+    return None
+
+
 def _covers(known: str, word: str) -> bool:
     """`known` kelimesi `word`'ü kapsıyor mu? (Türkçe EKLEMELİ dil varsayımı.)
 
@@ -2938,6 +2968,11 @@ def _covers(known: str, word: str) -> bool:
         return False
     # Kural gövdesi `_ek_gecerli`'de — `_syn_hit` (Faz D3) ile TEK KAYNAK.
     return _ek_gecerli(word[len(known):])
+    # 🔴 **TERS YÖN**: doğrudan kapsamıyorsa, katalog terimini **köküne** indirip yeniden
+    # dene. `uretim` → `uret`; `uretildi`.startswith(`uret`) ✅. Ek zinciri doğrulaması
+    # aynen uygulanır — yani gevşeme yok, yalnız **başlangıç noktası** kısalıyor.
+    kok = _kok(known)
+    return _covers(kok, word) if kok else False
 
 
 def _uncovered(q: str, known_words: set[str]) -> list[str]:

@@ -2254,3 +2254,55 @@ sinyali (rakip cube kimliği) elde olmasına rağmen takip kazandı.
 
 *Bir raporu düzenlemek ile yeni bir rapor istemek arasındaki farkı kaçıran sistem,
 kullanıcının sormadığı sayıyı ona ilk satırda gösterir.*
+
+---
+
+## 31 · MORFOLOJİ KÖK ÇÖZÜMÜ — bir kat indi, **bir kat daha var**
+
+### 31.1 · İnen kat: katalog terimi artık KÖKÜNE iniyor
+
+Onbir/oniki vakanın ortak kökü: katalogda **ad** var (`uretim`·`islem`), kullanıcıda
+**fiil** (`üretildi`·`işlenen`). `_covers` ikisini bağlayamıyordu çünkü hiçbiri ötekinin
+öneki değil — ortak olan **kök**tür.
+
+`_kok()` eklendi: ad-yapan ekleri (`-im/-ım/-um/-üm` · `-me/-ma` · `-iş/-ış/-uş/-üş`)
+soyup `uretim → uret` yapıyor, sonra `_covers` **aynen** yeniden koşuyor.
+
+⚠ İki sınır yazılı: kök **en az dört harf** (`kar ⊂ ankara` sessiz-yanlışı geri gelmesin)
+ve soyma **yalnız katalog terimine** — *bir eşleşmeyi genişletirken, tahmin edilen tarafı
+değil beyan edilen tarafı esnet.*
+
+⊙ **Korpus: `sessiz_yanlis` 12'de SABİT**, `dogru` 91'de sabit — yani genişleme
+**bedelsiz**, ama bu vakayı da **açmadı**.
+
+### 31.2 · 🔴 KALAN KAT: ek zinciri doğrulayıcısı AD çekimi biliyor, FİİL çekimi bilmiyor
+
+```
+"geçen ay kaç parti üretildi"   →  hâlâ 🔴 "«uretildi» kısmını anlayamadım"
+```
+
+⊙ Ölçüm: `_kok("uretim")` → `uret` ✅ ve `"uretildi".startswith("uret")` ✅ — ama
+`_covers`'ın **ek zinciri doğrulaması** kalan `ildi` parçasını reddediyor.
+
+🔴 Sebep: o doğrulayıcı **ad çekimini** tanıyor (hâl · çoğul · iyelik). `-il` (edilgen)
+ve `-di` (görülen geçmiş) **fiil çekimidir** ve envanterde yok.
+
+> **Kalan kök çözüm:** ek zinciri doğrulayıcısına **fiil çekimi** eklenmeli — edilgen
+> (`-il/-ıl/-ul/-ül`, `-in/-ın`), sıfat-fiil (`-en/-an`, `-dik/-dık`), zaman ekleri
+> (`-di/-dı/-du/-dü`, `-yor`, `-miş/-mış`).
+>
+> ⚠ Bu, ad çekiminden **daha geniş** bir yüzeydir ve `§26.1`'in dersi burada da geçerli:
+> genişleme `sessiz_yanlis`'i artırırsa **geri alınır**. Korpus tek hakem.
+
+*Bir dili yarısıyla tanımak, tanımamaktan yalnızca daha az görünür biçimde eksiktir:
+sistem bazı cümleleri anlar ve neden ötekileri anlamadığını kimse söyleyemez.*
+
+### 31.3 · Koşum kaydı
+
+| tur | soru | sonuç |
+|---|---|---|
+| A9/1 | `bu yıl vardiya bazında işlenen kg` | 🔴 `işlenen` — **12.** morfoloji vakası |
+| A9/2 | `sadece gece vardiyası` | ◐ `makine_duruslari` · `vardiya=3` çözüldü ama dönem soruyor (bağlam tur 1'de kırıldığı için) |
+| V1 | `geçen ay kaç parti üretildi` | 🔴 kalan kat (fiil çekimi) |
+
+Kapılar: hızlı kapı **1425 yeşil** · korpus **%95,1 = taban**, `sessiz_yanlis` **12 sabit**.
