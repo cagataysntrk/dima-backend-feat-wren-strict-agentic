@@ -5,6 +5,7 @@ import { useClickOutside } from "@/lib/useClickOutside";
 import { useFeature } from "@/lib/useFeature";
 import { usePermission } from "@/lib/usePermission";
 import { NextStepChips } from "@/components/NextStepChips";
+import { DiyalogDurumu } from "@/components/DiyalogDurumu";
 import type { AskResponse, CubeQuery, DashboardListItem } from "@/lib/types";
 import {
   addDashboardWidget,
@@ -1162,6 +1163,8 @@ export function ReportCard({
           İKİ KEZ, üstelik ikincisini YANLIŞ BAŞLIKLA ("sonraki adım") sunardı. */}
       {!item.contribution && onCubeEdit && (
         <NextStepChips steps={item.next_steps} onCubeEdit={onCubeEdit} />
+        {/* 🔴 G2 — bekleyen yuva. Chip satırının ALTINDA, yeni panel YOK (PK-1). */}
+        <DiyalogDurumu item={item} />
       )}
 
       <div className="mt-5 flex items-center justify-between">

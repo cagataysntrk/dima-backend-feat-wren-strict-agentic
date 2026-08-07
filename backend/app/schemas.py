@@ -79,6 +79,11 @@ class AskRequest(BaseModel):
     # olmadığı için `test_K2b_DIGER_SOZLESMELER_de_taranir` KIRMIZI verdi.
     # *Bir sözleşme alanı, tüketicisi olmadan yalnız bir vaattir.*
     cube_query: dict[str, Any] | None = None
+    #: 🔴 G2 — DİYALOG DURUMU (yankı). Sunucu oturum SAKLAMAZ; `cube_query`'nin bugün
+    #: taşındığı gibi taşır: cevapta döner, istemci bir sonraki istekte GERİ YOLLAR.
+    #: ⚠ İstemci yankılamazsa bellek YOKTUR — bu bilinçli: sessiz bir sunucu-yanı oturum
+    #: deposu, thread/UI gruplamasının semantik sınır taşımasına yol açardı.
+    diyalog_durumu: dict[str, Any] | None = None
     # Strict-agentic /ask'in takip (follow-up) bağlamı: bir önceki turun `AskResponse.sql`'i.
     # BİLEREK `cube_query`den AYRI bir alan — `cube_query` frontend'de scheduling/dashboard/
     # verify gibi başka özelliklerin de gate'i (gerçek CubeQuery şekli varsayıyorlar); onu
@@ -366,6 +371,10 @@ class AskResponse(BaseModel):
     #: değil **muhasebe**; 0 LLM · 0 token. `{cube, olcu, donem, granulerlik,
     #: kirilim[], filtreler[]}`. ⚠ `explain` ile KARIŞTIRILMAZ: o **yol**, bu **anlam**.
     temellendirme: dict | None = None
+    #: 🔴 G2 — `{acik_slotlar, sorulan, dolu, tur_no}`. Sistem NE SORDUĞUNU hatırlar;
+    #: istemci bunu bir sonraki isteğe yankılar. JPMorgan 2026: tur-3 durumsuz **%0**,
+    #: iki turluk pencereyle **%87,6-100** — durum taşımak var olma koşuludur.
+    diyalog_durumu: dict | None = None
     # FAZ 1.7 — TAZELİK MERDİVENİ. `taze | uyari | hata | bilinmiyor`.
     # 🔴 `hata` VE `bilinmiyor` kademelerinde SAYI GÖSTERİLMEZ (B4: bilinmeyen tazelik
     # TAZE DEĞİLDİR). Kaynak planlar bunun TERSİNİ yazıyordu; yol haritası bunu

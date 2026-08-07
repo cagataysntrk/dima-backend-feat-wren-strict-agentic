@@ -205,7 +205,7 @@ def apply_to_ask_response(resp, principal) -> bool:
             else:
                 resp.result.rows = masked_rows
     # ⟳ **FAZ 1.2c — SAYMA, KAPAT.** Eskiden burada yalnız `facts[].text` ve `summary`
-    # maskeleniyordu; `AskResponse`'un (o gün 29, bugün 41) alanının geri kalanı — `narration` (LLM metni,
+    # maskeleniyordu; `AskResponse`'un (o gün 29, bugün 42) alanının geri kalanı — `narration` (LLM metni,
     # olgulardan üretilir) · `contribution` (**cevabın gövdesi**) · `next_steps` ·
     # `suggestions` · `prescription` — **hiç** maskelenmiyordu. Sayılan bir liste, yeni
     # alanı sessizce dışarıda bırakır; tümleyen bırakmaz.

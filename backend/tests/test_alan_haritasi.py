@@ -32,6 +32,7 @@ GARSON = {
     "donem_capasi.py", "netlestirme.py", "belirsizlik_chipi.py", "soz.py",
     "intent_semasi.py", "kapsam.py", "embed_kapsam.py", "yetenek.py",
     "temellendirme.py",   # G1 — CubeQuery → "anladığım şu" (0 LLM, motora dokunmaz)
+    "diyalog.py",         # G2 — slot durumu; saf fonksiyon, LLM YOK, motora dokunmaz
     "sinonim_onerici.py", "archetypes.py", "starters.py",
 }
 

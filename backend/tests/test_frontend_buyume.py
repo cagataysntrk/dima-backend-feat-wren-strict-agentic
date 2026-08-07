@@ -68,7 +68,9 @@ TAVANLAR = {
     # kapı yakaladı, **bileşene çıkarıldı** (`Temellendirme.tsx`) ve dosya bir satır
     # KÜÇÜLDÜ. Tavan ölçülen değere ÇEKİLDİ — `test_KAPI_GERCEKTEN_KIRMIZI_VERIYOR`
     # boşluk bırakmayı yasaklıyor: *kırmızı veremeyen bir kapı, olmayan bir kapıdır.*
-    "components/ReportCard.tsx": 1032,
+    # ⊙ 1032 → 1035 (`G2`): `<DiyalogDurumu item={item} />` + import + yorum. Render
+    # ZATEN bileşene çıkarılmış hâlde geldi (G1'in dersi) — burada kalan yalnız ÇAĞRI.
+    "components/ReportCard.tsx": 1035,
     "lib/api-client.ts": 778,
     "lib/chart.ts": 688,
     # ⊙ 579 → 581: +1 `eksik_niyet?: string[]` (KÖK-3) · +1 `Suggestion.kind?` (KÖK-9).
@@ -84,7 +86,11 @@ TAVANLAR = {
     #   🔴 İkisi de `test_cevap_alani_yetim_degil.py` tarafından ZORUNLU kılınıyor: backend
     #   alanı tüketicisiz kalamaz. Yani bu artış bir tercih değil, **başka bir kapının
     #   emri**. Tipi yazmamak, alanı yetim bırakmak olurdu.
-    "lib/types.ts": 585,
+    #
+    # ⊙ 585 → 588 (`G2`): +3 `diyalog_durumu?: {acik_slotlar, sorulan, dolu, tur_no}`.
+    #   Aynı gerekçe: bir ALAN BEYANI. Ve `test_cevap_alani_yetim_degil` onu ZORUNLU
+    #   kılıyor — tipi yazmamak, alanı yetim bırakmak olurdu.
+    "lib/types.ts": 588,
     "components/ReviewPanel.tsx": 555,
     "app/page.tsx": 534,
     "components/ResultView.tsx": 476,

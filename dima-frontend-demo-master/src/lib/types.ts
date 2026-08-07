@@ -237,6 +237,12 @@ export interface AskResponse {
     cube?: string; olcu?: string; donem?: string; granulerlik?: string;
     kirilim?: string[]; filtreler?: string[];
   } | null;
+  // 🔴 G2 — DİYALOG DURUMU. Sunucu oturum SAKLAMAZ; bu nesne cevapta gelir ve istemci
+  // bir sonraki isteğe YANKILAR (`cube_query` ile aynı desen). JPMorgan 2026: tur-3
+  // durumsuz %0, iki turluk pencereyle %87,6-100 — durum taşımak var olma koşuludur.
+  diyalog_durumu?: {
+    acik_slotlar: string[]; sorulan?: string; dolu?: string[]; tur_no: number;
+  } | null;
   // Madde 12 (1 Ağustos 2026) — düz-dil hesaplama açıklaması (KPI-olmayan cube raporları için;
   // KpiCard'ın `card.explain`iyle AYNI amaç). `explain` (yukarıda) ile KARIŞTIRILMAMALI — o
   // provenance/güven taşır, bu alan ÖLÇÜNÜN NASIL HESAPLANDIĞINI anlatır. cube_query yoksa null.

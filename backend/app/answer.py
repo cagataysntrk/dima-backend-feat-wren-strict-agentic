@@ -548,6 +548,36 @@ def _temellendir(resp: AskResponse) -> None:
         _log.warning("temellendirme kurulamadı (cevap etkilenmez)", exc_info=True)
 
 
+def _diyalog_durumu(resp: AskResponse, log_body: Any) -> None:
+    """🔴 `G2` — sistem NE SORDUĞUNU hatırlar. Durumsuz taşıma: cevapta döner,
+    istemci yankılar.
+
+    ⚠ **Bu adım DAVRANIŞI DEĞİŞTİRMEZ** — yalnız KAYDEDER. Devam/onarım davranışı
+    `G2.7`/`G2.8`'de gelir. Ara commit'in anlamı budur: bir belleği önce **görünür**
+    kılarsın, sonra **kullanırsın**; tersi, göremediğin bir şeye güvenmek olurdu.
+    """
+    try:
+        from app.diyalog import durum
+
+        # ⚠ İstek gövdesi `seal`'in ZATEN aldığı `log_body`'dir — ikinci bir taşıyıcı
+        # icat edilmedi. `/cube` gibi farklı şemalı uçlar `SimpleNamespace` verir ve
+        # `getattr` orada da doğru çalışır (alan yoksa `None`).
+        onceki = getattr(log_body, "diyalog_durumu", None)
+        # `sorulan`: bu tur bir netleştirme ürettiyse hangi yuvayı sorduğu.
+        # ⚠ Kaynağı `suggestions[].kind` DEĞİL, cevabın kendi eksiğidir — chip'in
+        # görünüşü değişebilir, eksik yuva değişmez.
+        sorulan = None
+        if resp.source is None and resp.suggestions:
+            from app.diyalog import SLOT_DONEM, SLOT_OLCU
+            metin = " ".join(str(s.query or "") + str(s.label or "")
+                             for s in resp.suggestions).lower()
+            sorulan = SLOT_DONEM if any(k in metin for k in ("ay", "yıl", "dönem")) \
+                else SLOT_OLCU
+        resp.diyalog_durumu = durum(resp.cube_query, sorulan=sorulan, onceki=onceki)
+    except Exception:                                      # noqa: BLE001 — best-effort
+        _log.warning("diyalog durumu kurulamadı (cevap etkilenmez)", exc_info=True)
+
+
 def _adhoc_kayit(request: Request, cq: dict | None) -> dict | None:
     """Ad-hoc cube kaydı (FAZ 1 / K1) — yoksa None. `ask.py::_adhoc_store` ile AYNI depo;
     burada import döngüsü olmasın diye `app.state`'ten doğrudan okunur."""
@@ -901,6 +931,7 @@ def seal(resp: AskResponse, *, request: Request, principal, t0: float,
     # Sıra ÖNEMLİ: öneriler yorumun signal'larına bağımlı; explain ikisini de okur.
     _maybe_interpret(request, resp)
     _temellendir(resp)
+    _diyalog_durumu(resp, log_body)
     _attach_next_steps(request, resp)
     _attach_recommendations(request, resp)
     resp.explain = _build_explain(resp)
