@@ -1562,6 +1562,25 @@ Taban **korundu**, hiçbir satır gerilemedi: `3·süreklilik ✅2` · `5·belir
 `6·makbuz ✅3` · `8·temellendirme ✅1 ❌1` · `9·onarım ✅1` · `10·menü ❌1`.
 ⚠ `alpha` **bilinçli**: KURAL G-1 gereği ikinci koşum olmadan `beta` yok.
 
+### 🔴 MENÜ (`G8`) — *"yapamam"*ın yanına *"ama şunu yapabilirim"*
+
+`yetenek.py` (KÖK-6) zaten *"yapamam"* diyor ve gerekçesini yazıyordu. ⚠ Ama
+*"Yapabildiğim: …"* cümlesi **serbest metin** ve **elle yazılmış örneklerle** doluydu
+(*"son 6 ayda ciro nasıl gitti"*) — o örnekler hiçbir tenant'ta **doğrulanmıyordu**:
+cube yoksa öneri kullanıcıyı **ikinci bir duvara** çarptırırdı.
+
+🔴 `onerileri_kur()` onları **katalogdan türetir** ve her birini **`route()`'a sorar**;
+cevap açmayan öneri **basılmaz**. Bu, `ask.py:428`'in `_dogrulanmis_chipler`
+disiplininin aynısı: *aynı duvara ikinci kez çarptıran bir chip, chip olmamasından
+kötüdür.*
+
+⚠ **Üçüncü öneri kanalı AÇILMADI.** `AskResponse` zaten `suggestions` ve `next_steps`
+taşıyor; üçüncüsü kullanıcıya *"hangisi gerçek öneri"* sorusunu sordururdu. Mevcut
+`suggestions` kullanıldı ve `source is None` (ret) korundu.
+
+Bu, denetim belgesinin **`KÇ-7`**'sidir (*"«anlamadım» ile «yapamıyorum» ayrılsın"*) —
+sekiz kök çözümün son açık olanı.
+
 ### 🔴 ALAN HARİTASI — garson ↔ mutfak, ve kapılar
 
 `tests/test_alan_haritasi.py` sınırı **AST ile** kilitler: 🗣 garson modülü motora
@@ -4206,7 +4225,9 @@ görünsün"*) anlatıcı için de uygulandı.
 ekliyor, açılması **bilinçli bir karar** olmalı. Kural-tabanlı sağlayıcı `anlat` taşımaz —
 yokluğu bir hata değil **yol kapalı** sinyalidir.
 
-20 test: `tests/test_t2_anlatici.py` (+ `test_beyanlar_curumesin.py` 4 yeni kapı).
+24 test: `tests/test_t2_anlatici.py` (+ `test_beyanlar_curumesin.py` 4 yeni kapı).
+⊙ 20 → 24 (`G5`, 2026-08-07): ön koşul kilidi · muafiyet görünürlüğü · öz-düzeltme
+yasağı · zincir sırası. *Bir kapının test sayısı, verdiği güvencenin ölçüsüdür.*
 
 ### 12.7 Takip sorusunun ÜÇ sınıfı (G1 — `app/followup.py`) ✅
 

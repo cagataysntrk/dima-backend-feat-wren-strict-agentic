@@ -59,7 +59,7 @@ kodun kendisinden değil, **çağrıldığı yerden** gelir.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from app.logging_setup import get_logger
 
@@ -79,6 +79,11 @@ class Sinir:
     kutu: str
     mesaj: str
     gerekce: str
+    #: 🔴 `G8` — **YAPISAL** kapasite beyanı. `mesaj` içindeki *"Yapabildiğim: …"*
+    #: cümlesi bugün **elle yazılmış örnekler** taşıyor; bunlar katalogdan TÜRETİLİR ve
+    #: `route()` ile **DOĞRULANIR**. *Çalışmayan bir öneri, öneri değil ikinci bir
+    #: duvardır* — `ask.py:428`'in `_dogrulanmis_chipler` disiplininin aynısı.
+    oneriler: list = field(default_factory=list)
 
 
 #: 🔴 FORECAST işaretleri — **kapalı, belgeli** sözlük.
@@ -266,6 +271,55 @@ def _iki_cube_olcusu(q: str, schema: dict) -> str | None:
                       for kelime, cs in sorted(sahipler.items()))
 
 
+def onerileri_kur(schema: dict, *, tur: str, en_fazla: int = 3) -> list[dict]:
+    """🔴 `G8` — *"ama şunu yapabilirim"*: **katalogdan türet, `route()` ile doğrula**.
+
+    Bugün `Sinir.mesaj` içindeki örnekler **elle yazılmış** (*"son 6 ayda ciro nasıl
+    gitti"*) ve hiçbir tenant'ta doğrulanmıyor — o cube yoksa öneri **ikinci bir duvara**
+    çarptırır. Bu fonksiyon önerileri **o tenant'ın kataloğundan** kurar ve her birini
+    `route()`'a sorar; cevap açmayan öneri **basılmaz**.
+
+    *Aynı duvara ikinci kez çarptıran bir chip, chip olmamasından kötüdür*
+    (`ask.py:428`'in `_dogrulanmis_chipler` disiplini).
+    """
+    from app import cube_router
+
+    kaliplar = {
+        # Sınıra göre **ne yapılabileceği** değişir; kalıp sayısı KAPALI ve gerekçeli.
+        "forecast": ["son 6 ayda {olcu}", "bu yıl {olcu}"],
+        "olumsuzluk": ["{kirilim} bazında {olcu}"],
+        "iki_cube": ["{olcu}"],
+    }.get(tur, ["{olcu}"])
+
+    out: list[dict] = []
+    for c in (schema or {}).get("cubes", [])[:6]:
+        olculer = [m.get("name") if isinstance(m, dict) else m
+                   for m in (c.get("measures") or [])][:2]
+        boyutlar = [d.get("name") if isinstance(d, dict) else d
+                    for d in (c.get("dimensions") or [])][:1]
+        etiketler = {**(c.get("measure_synonyms_display") or {}),
+                     **(c.get("dimension_labels") or {})}
+        for olcu in filter(None, olculer):
+            for kalip in kaliplar:
+                if "{kirilim}" in kalip and not boyutlar:
+                    continue
+                soru = kalip.format(
+                    olcu=etiketler.get(olcu) or str(olcu).replace("_", " "),
+                    kirilim=(etiketler.get(boyutlar[0]) if boyutlar else "") or
+                            (str(boyutlar[0]).replace("_", " ") if boyutlar else ""))
+                soru = " ".join(soru.split())
+                try:
+                    if cube_router.route(cube_router._norm(soru), schema) is None:
+                        continue                      # 🔴 cevap açmıyor → BASILMAZ
+                except Exception:                     # noqa: BLE001 — fail-closed
+                    continue
+                if soru not in [o["query"] for o in out]:
+                    out.append({"label": soru, "query": soru})
+                if len(out) >= en_fazla:
+                    return out
+    return out
+
+
 def kapsam_disi(q: str, schema: dict) -> Sinir | None:
     """İlan edilmiş bir yetenek sınırına çarpıldı mı? Yoksa `None`.
 
@@ -283,7 +337,8 @@ def kapsam_disi(q: str, schema: dict) -> Sinir | None:
                    "onlardan bir projeksiyon üretmek başka bir güvence sınıfıdır.\n\n"
                    "Yapabildiğim: **geçmiş eğilimi** gösterebilirim — *«son 6 ayda ciro "
                    "nasıl gitti»* ya da *«bu yıl ile geçen yılı kıyasla»*."),
-            gerekce="v1 kapsam kararı (yol haritası: forecast dışarıda)")
+            gerekce="v1 kapsam kararı (yol haritası: forecast dışarıda)",
+            oneriler=onerileri_kur(schema, tur="forecast"))
 
     olm = _olumsuzluk(q, schema)
     if olm:
@@ -294,7 +349,8 @@ def kapsam_disi(q: str, schema: dict) -> Sinir | None:
                    "kayıtları saymanın tersi değil; ayrı bir filtre türü.\n\n"
                    "Yapabildiğim: olumlu hâlini sorabilirsin — sonra kırılıma inip "
                    "sıfır olan grubu görebiliriz."),
-            gerekce="olumsuzluk filtresi (neq/not_in) v1'de bağlı değil")
+            gerekce="olumsuzluk filtresi (neq/not_in) v1'de bağlı değil",
+            oneriler=onerileri_kur(schema, tur="olumsuzluk"))
 
     ikili = _iki_cube_olcusu(q, schema)
     if ikili:
@@ -307,7 +363,8 @@ def kapsam_disi(q: str, schema: dict) -> Sinir | None:
                    "Yapabildiğim: ikisini **ayrı ayrı** sorabilirsin; ya da birini "
                    "sorup üstüne *«bir de … ekle»* diyebilirsin — takip yolunda aynı "
                    "cube içinde ölçü eklemek çalışıyor."),
-            gerekce="MIMARI §9.2 — çapraz-cube ölçü birleştirme kapsam dışı")
+            gerekce="MIMARI §9.2 — çapraz-cube ölçü birleştirme kapsam dışı",
+            oneriler=onerileri_kur(schema, tur="iki_cube"))
 
     return None
 
@@ -319,10 +376,20 @@ def yanit_alanlari(sinir: Sinir, soru: str | None) -> dict:
     bölünürse mesaj burada değişir, iz orada eski kalır. *Bir cevabın metni ile izinin
     ayrı sahipleri olursa, biri güncellenip öteki unutulur.*
     """
-    _log.info("YETENEK KAPISI: %s (%s) — Discovery'ye GİDİLMEDİ", sinir.tur, sinir.kutu)
-    return {
+    _log.info("YETENEK KAPISI: %s (%s) — Discovery'ye GİDİLMEDİ · %d öneri",
+              sinir.tur, sinir.kutu, len(sinir.oneriler))
+    out = {
         "question": soru,
         "source": None,
         "note": sinir.mesaj,
         "trace": [f"Yetenek sınırı: {sinir.tur} · kutu={sinir.kutu} · {sinir.gerekce}"],
     }
+    # 🔴 `G8` — *"ama şunu yapabilirim"*. Üçüncü bir öneri kanalı AÇILMAZ: mevcut
+    # `suggestions` kullanılır. `AskResponse` zaten `suggestions` ve `next_steps`
+    # taşıyor; üçüncüsü kullanıcıya *"hangisi gerçek öneri"* sorusunu sordururdu.
+    if sinir.oneriler:
+        from app.schemas import Suggestion
+
+        out["suggestions"] = [Suggestion(label=o["label"], query=o["query"])
+                              for o in sinir.oneriler]
+    return out
