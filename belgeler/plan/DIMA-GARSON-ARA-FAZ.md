@@ -2870,6 +2870,68 @@ koşuyor. Bu maddeleri **uygulamak kolay, doğru olduğunu göstermek imkânsız
 
 ---
 
+## §AJ4 · GARSONUN FİŞİ EKSİK — mutfak 12 yazabiliyor, garson 7 söyleyebiliyor
+
+> **Kaynak:** `belgeler/denetim/2026-08-07_CEVIRI-SOZLESMESI.md`
+
+`route()` bir `cube_query`'ye **12 anahtar** yazabiliyor; LLM'e sunulan Intent-JSON şeması
+**7** alan tanıyor. Aradaki farkın tamamı **mutfakta çalışıyor**, garson söyleyemiyor:
+
+| yetenek | mutfak | şema | sınıf |
+|---|---|---|---|
+| `measure_having` (*"10 milyon üzeri"*) | ✅ | ❌ | 🔴 **KAPSAM** |
+| `entity_limit` (*"en yüksek **5 makine**"*) | ✅ | ❌ | 🔴 **KAPSAM** |
+| `ayrik_aylar` (*"ocak **ve** haziran"*, aradakiler hariç) | ✅ | ❌ | 🔴 **KAPSAM** |
+| `referans` (adlandırılmış dönem kıyası) | ✅ | ❌ | 🔴 **KAPSAM** |
+| `order` · `limit` | ✅ | ❌ | ◐ sunum |
+
+🔴 **Ayrım `G6.5`'te kurulan kuralın aynısı:** *"zaten sessizce düşüyor"* gerekçesi
+**sunumu** değiştiren alanlar için doğru kalır; **kapsamı** değiştirenler için değil —
+düşünce kullanıcı bir şey ister, başkasını alır ve **fark edemez**.
+
+### Ve model KOLAY işte ZOR işten daha yetkili
+
+| | taze soru *(zor)* | takip düzenlemesi *(kolay)* |
+|---|---|---|
+| ek alanlar | — | `action`·`order`·`direction`·`limit`·`view`·`reason` |
+| örnek | **5** *(`AJ3.5` ile 0→5)* | **21** |
+| *"yapamıyorum"* kanalı | sebepsiz `{"cube":null}` | `unavailable` + **`reason`** |
+
+*Ham Türkçeyi sıfırdan çevirene daha az alan, daha az örnek ve daha kaba bir red kanalı
+verilmiş.*
+
+### Bir yeri belli karışıklık: iddianın sahibi kim
+
+`uyum.denetle` her cevapta koşuyor ve niyeti **deterministik** `Niyet`'ten okuyor — **LLM'in
+ürettiği sorgular dahil**. Yani sorgunun sahibi LLM, *"kullanıcı ne istedi"* iddiasının
+sahibi deterministik katman. Kullanıcının `ocağa göre` vakasında **yanlış beyanı** üreten
+tam olarak buydu (`Ö10` ile kapatıldı, ama **yapısal soru duruyor**).
+
+### ADIMLAR
+
+| # | Adım | Durum |
+|---|---|---|
+| **AJ4.1** 🔴 | **Kapsam alanları şemaya**: `measure_having` · `entity_limit` · `ayrik_aylar` · `referans`. Beyaz liste **gevşetilmez** | ⊘ |
+| **AJ4.2** ◐ | `order`/`limit` — **sunum**, `G6.5`'in kuralı gereği dışarıda kalır | ✅ karar kayıtlı |
+| **AJ4.3** 🔴 | **`reason` kanalı**: taze yolda red **sebepsiz**; takip yolunda `unavailable`+`reason` var. Sebepsiz red, `AJ3.6`'nın (iki redi ayır) ölçüm borcunu da büyütüyor | ⊘ |
+| **AJ4.4** 🔴 | **Örnek dengesi** 5 → ~20 | ⊘ |
+| **AJ4.6** 🔴🔴 | **`route()`'un DERECE kavramı yok** — çıktısı ikili: bir `cube_query` ya da `None`. İçeride bir marjin sistemi **var** (ölçü-sinonim uzunluğu · alt-dize spesifikliği · boyut kanıtı · 4-harf cube marjini) ama *"kıl payı kazandım"* ile *"tartışmasız kazandım"* **aynı çıkışa** gidiyor. ⊙ Ölçüldü: `route()` *"eminim"* dediği **1138** vakanın **12'sinde** yanılıyor ve `◆ CUBE` rozetiyle, yüksek güvenle yanılıyor — yani kullanıcının *"%100 kesinse deterministik"* şartı bugün **%98,9**. 🔴 Çözüm mimari değişikliği DEĞİL: marjin **zaten hesaplanıyor, sadece atılıyor** — dışarı verilirse *kıl payı* dalı LLM'e gider. ⚠ Takas ölçülmeli: eşiği yükseltmek 12 sessiz-yanlışı kapatırken doğru cevapların bir kısmını da LLM'e yollar | ⊘ ön koşul yine `eval --slice llm` |
+| **AJ4.5** 🔴 | **İki ayrıştırıcı kararı**: `uyum` LLM cevabında kimin adına konuşuyor | ⊘ yapısal |
+
+⚠ Hepsinin ön koşulu yine tek: **`eval --slice llm` 4 vaka**. Bu belgede **dördüncü** kez.
+
+### ⊙ Yan doğrulamalar (üçü de ölçüldü, üçü de rahatlatıcı)
+
+* **Chip'ler LLM'e gitmiyor**: refine chip'leri `POST /cube` → **0 LLM**; açılış
+  chip'lerinin **9/10**'unu `route()` çözüyor. Düşen tek chip yine `göre` belirsizliği.
+* **VQR üçüncü hızlı yol olarak çalışıyor**: doğrulanmış soru `source="vqr"` ile LLM'siz
+  dönüyor **ve** dönerken `parse_cube_query` + `_period_gate`'ten geçiyor. Merdiven zaten
+  `VQR → route() → Intent-JSON → Discovery`. Eksik olan mekanizma değil, **VQR'ın dolması**.
+* **`route()` gerçek dilde zaten yoldan çekiliyor**: 2285 soruda cevapladığı **%3,0**,
+  devrettiği **%93,3**, sessiz-yanlışı **%0,53**.
+
+---
+
 ## KAPANIŞ — BU FAZIN TEK CÜMLESİ
 
 > Mutfak, **dünyanın en katı ucunda** kuruldu: on üründen dokuzunun taklit etmeye çalıştığı
