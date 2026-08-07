@@ -77,6 +77,7 @@ kronolojik sıralansın.
 | [`2026-08-05_TEST-ORTAMI-ARASTIRMA.md`](denetim/2026-08-05_TEST-ORTAMI-ARASTIRMA.md) | literatür taraması (Spider 2.0 · BEAVER · InsightBench · MT-TEQL) |
 | [`2026-08-05_ANLAMA-KATMANI.md`](denetim/2026-08-05_ANLAMA-KATMANI.md) | ⏸ anlama katmanı kök-neden analizi — *ilerinin konusu* |
 | [`2026-08-07_CANLI-ARIZA-TESHISI.md`](denetim/2026-08-07_CANLI-ARIZA-TESHISI.md) | 🔴 canlı üç arıza: **Intent-JSON 9/9 `cube:null`** (katalog Türkçe eşanlamları taşımıyor) · anlatıda deterministik basamak yok · 500 backend'den **çıkmadı** |
+| [`2026-08-07_LLM-YOLU-TESHISI-ve-GERI-DONULEBILIR-DENEY.md`](denetim/2026-08-07_LLM-YOLU-TESHISI-ve-GERI-DONULEBILIR-DENEY.md) | 🔴 iki inanış ÇÜRÜDÜ: deterministik katman **kesmiyor** (gerçek dilde %93,3'ü devrediyor, 42 vakada 0 çözüyor) ve LLM **yanlış anlamıyor, REDDEDİYOR**. LLM #1 (çevirmen) ↔ Discovery (ham SQL) ayrımı · beş eksik · **geri dönülebilir deney planı** — yarısı bugün `yol_siniri:"llm"` ile kodsuz koşulabilir |
 
 ## `devir/` — 🔒 oturum devri (**değiştirilmez**)
 
