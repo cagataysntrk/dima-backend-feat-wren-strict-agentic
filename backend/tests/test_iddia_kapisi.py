@@ -176,3 +176,73 @@ def test_ANLATI_YOLUNDA_SEMA_GERCEKTEN_OKUNUYOR():
         "modül düzeyinde YOK (`answer.py:248` notu: «HER YERDE yerel olarak alınıyor»); "
         "import olmadan `NameError` doğar ve `except Exception` onu sessizce yutar — "
         "iddia kapısı şemasız koşar, her yetenek vaadi haksız yere düşer.")
+
+
+# --- 🔴 TEK SAHİP: katalog taraması (denetim bulgusu, 2026-08-07) -----------------
+
+def test_KATALOG_TARAMASI_TEK_SAHIPLI():
+    """🔴 **İKİ SAHİPTİ ve İKİSİ AYRIŞMIŞTI.**
+
+    `app/yetenek.py` aynı taramanın ikinci kopyasını taşıyordu ve o kopyanın kendi şerhi
+    buradaki kusuru **zaten yazmıştı**:
+
+    > *"`WrenService.schema()` şekli paket YAML'ından **farklıdır**… ilk yazımda küme
+    > **boş kaldı**."*
+
+    O ders orada öğrenildi, **burada uygulanmadı**. *Bir dersi bir dosyada öğrenip
+    ötekine taşımamak, onu öğrenmemekle aynı sonucu verir.*
+    """
+    import ast
+    import pathlib
+
+    from app import iddia
+
+    kok = pathlib.Path(iddia.__file__).parent
+    sahipler = []
+    for yol in sorted(kok.rglob("*.py")):
+        agac = ast.parse(yol.read_text(encoding="utf-8"))
+        for d in ast.walk(agac):
+            if isinstance(d, ast.FunctionDef) and d.name.endswith("katalog_terimleri"):
+                # Gövdesi yalnız devretme ise sahip değildir (üç satır: import, return).
+                if len([s for s in d.body if not isinstance(s, ast.Expr)]) > 3:
+                    sahipler.append(f"{yol.name}:{d.lineno}")
+    assert len(sahipler) == 1, (
+        f"🔴 katalog taramasının {len(sahipler)} sahibi var: {sahipler} — ikisi zamanla "
+        f"AYRIŞIR ve bu bir kez zaten oldu (`dimension_labels` diye var olmayan bir alan).")
+
+
+def test_GERCEK_SEMA_SEKLI_OKUNUYOR(schema):
+    """🔴 Onarılan somut delik: `dimension_synonyms` ve `time_dimensions`.
+
+    ⚠ Yön önemli — kapı *"vaat katalogda karşılık buluyor mu"* diye sorar, yani eksik bir
+    küme **yanlış DÜŞÜRME** üretir. *Fail-closed bir kapının eksik beslenmesi, onu katı
+    değil KÖR yapar.*
+    """
+    from app.iddia import katalog_terimleri
+
+    terimler = katalog_terimleri(schema)
+    c = next((c for c in schema["cubes"] if c.get("dimension_synonyms")), None)
+    if c is not None:
+        syn = next(iter(next(iter(c["dimension_synonyms"].values()))))
+        assert str(syn).rstrip("!").lower() in terimler, (
+            f"🔴 boyut sinonimi `{syn}` küme dışında — bu terimi anan meşru bir vaat "
+            f"sessizce DÜŞERDİ")
+    zamanli = next((c for c in schema["cubes"] if c.get("time_dimensions")), None)
+    if zamanli is not None:
+        assert str(zamanli["time_dimensions"][0]).lower() in terimler
+
+
+def test_YETENEK_BEYANI_IDDIA_KAPISINDAN_GECIYOR():
+    """🔴 `G8.4` — metin **deterministik diye muaf değildir**: bir şablon da katalogdan
+    ayrışabilir (bu turda tam öyle bir ayrışma bulundu). Denetim **bedava** (0 LLM).
+
+    ⚠ Ve düşme **sessizleşmek değildir**: kapının koruduğu şey **vaat**, sınırın kendisi
+    değil. *Fail-closed, sessiz-closed demek değildir.*"""
+    import inspect
+
+    from app import yetenek
+
+    src = inspect.getsource(yetenek.yanit_alanlari)
+    assert "iddia" in src, "🔴 yetenek beyanı iddia kapısını atlıyor"
+    assert "except Exception" in src, (
+        "🔴 kapı patlarsa sınır beyanı DÜŞMEMELİ — kullanıcı cevapsız kalır")

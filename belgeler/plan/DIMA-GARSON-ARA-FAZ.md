@@ -1032,21 +1032,21 @@ kapasite).
 
 | # | Adım | Dosya / iş | ✅ Bitti kontrolü |
 |---|---|---|---|
-| **G0.1** | 🔴 **Sağlayıcı kararını YAZ** *(ölçümden ÖNCE)* | `.env`: `DIMA_LLM_PROVIDER=openrouter` **açıkça** + `DIMA_OPENROUTER_MODEL=<nvidia/…>` + `DIMA_OPENROUTER_SELECT_MODEL`. Failover'a **bırakılmaz** — `llm.py:1295`'te openrouter 5. sırada | `/health` etkin sağlayıcıyı **openrouter** gösteriyor |
-| **G0.2** | Kota ön uçuşu | `konusma_senaryolari._kota_on_ucusu` (`:138`) **çağrılır**, yenisi yazılmaz | Kota yetersizse koşum **başlamadan** durur |
-| **G0.3** | `lab/garson.py` iskeleti | `_canli_ortami_geri_yukle` (`:68`) + `LIVE_BEKLE` (`:218`) **import** edilir *(kopyalanmaz — `deneyim.py:34-55`'in kuralı)* | `python lab/garson.py --live` koşuyor |
-| **G0.4** | Sekiz satırlık sözleşme | `deneyim.py`'nin 7 satırı **devralınır** + §5/3 (temellendirme) ve §5/8 (menü) eklenir | `SOZLESME` sabiti **8 satır** |
-| **G0.5** | Üçüncü durum devralınır | `KAPSAM_DISI` · `ON_KOSUL_YOK` (`deneyim.py:229-230`) import | `--live` **olmadan** koşunca yeşil **vermiyor**, `⊘` veriyor |
-| **G0.6** | Dört yeni senaryo sınıfı | `temellendirme` · `sureklilik` · `onarim` · `kapasite` — her biri ≥1 vaka; ifadeler `lab/konusma_ifadeleri.py`'den | Sınıf başına vaka sayısı raporda |
-| **G0.7** | 🔴 **Şema-dışı çıktı oranı** *(§7.4'ün ölçüm borcu)* | `parse_cube_query`'nin reddettiği Intent-JSON yüzdesi rapora yazılır | Sayı `lab/reports/garson/` altında |
-| **G0.8** | Taban dondurma | `_tabani_dondur` deseni (`konusma_senaryolari.py:814`) | `lab/garson_baseline.json` doğdu |
-| **G0.9** | Kapı değerlendirici | `kapi_degerlendir` deseni (`:769`) — sınıf başına taban, `⊘` **gerileme sayılmaz** | Taban altına düşünce **kırmızı** |
-| **G0.10** | 🔴 **İKİ KOŞUM** *(KURAL G-1, §12.3)* | İki koşum; ayrışırlarsa karar **verilmez**, `⊘` + borç kaydı | İki rapor dosyası |
-| **G0.11** | Kapıya bağla | `lab/kapi.py` → **yeni hedef `--garson`** *(yeni seviye DEĞİL)* | `--tam` / `--hepsi` süreleri **değişmedi** |
-| **G0.12** | Kör alet testi | `t2_anlatici` açık/kapalı → §5/7 satırı **farklı** çıkmalı | Çıkmıyorsa **alet kör**; G1 başlamaz |
-| **G0.14** | 🔴 **Ölü kontrol kararı** | `hizli_derin`: ya sunucuya **bağlanır** ya UI'dan **kaldırılır** *(§15.5)*. Çalışıyormuş gibi görünen kontrol, garson fazında **ürün kusurudur** | Tıklama bir şey **yapıyor** ya da düğme **yok** |
-| **G0.15** | **Kaset iskeleti** *(§12.2b/`K` katmanı)* | `--live` koşumunda sağlayıcı yanıtları `lab/kasetler/<senaryo>.json`'a **kaydedilir**; `K` modunda kayıt oynatılır. VQR deseni — yeni motor yazılmaz | Kaset koşumu **sağlayıcısız** yeşil |
-| **G0.13** | 📌 **COMMIT** | `feat(G0): garson ölçüm aleti — ilk taban` · **`MIMARI.md`**: `llm_sema_kisitli` NO-OP (§13.6/4) · `features.yml` yorumları: `prompt_enhancer` **mimari gerekçe** (§1.1d) + `agent_plan_secimi` **bayat gerekçe** düzeltmesi | `OPERASYON-DURUM.md` `B-G1` kapandı |
+| **G0.1** ✅ | 🔴 **Sağlayıcı kararını YAZ** *(ölçümden ÖNCE)* | `.env`: `DIMA_LLM_PROVIDER=openrouter` **açıkça** + `DIMA_OPENROUTER_MODEL=<nvidia/…>` + `DIMA_OPENROUTER_SELECT_MODEL`. Failover'a **bırakılmaz** — `llm.py:1295`'te openrouter 5. sırada | `/health` etkin sağlayıcıyı **openrouter** gösteriyor |
+| **G0.2** ✅ | Kota ön uçuşu | `konusma_senaryolari._kota_on_ucusu` (`:138`) **çağrılır**, yenisi yazılmaz | Kota yetersizse koşum **başlamadan** durur |
+| **G0.3** ✅ | `lab/garson.py` iskeleti | `_canli_ortami_geri_yukle` (`:68`) + `LIVE_BEKLE` (`:218`) **import** edilir *(kopyalanmaz — `deneyim.py:34-55`'in kuralı)* | `python lab/garson.py --live` koşuyor |
+| **G0.4** ✅ | Sekiz satırlık sözleşme | `deneyim.py`'nin 7 satırı **devralınır** + §5/3 (temellendirme) ve §5/8 (menü) eklenir | `SOZLESME` sabiti **8 satır** |
+| **G0.5** ✅ | Üçüncü durum devralınır | `KAPSAM_DISI` · `ON_KOSUL_YOK` (`deneyim.py:229-230`) import | `--live` **olmadan** koşunca yeşil **vermiyor**, `⊘` veriyor |
+| **G0.6** ✅ | Dört yeni senaryo sınıfı | `temellendirme` · `sureklilik` · `onarim` · `kapasite` — her biri ≥1 vaka; ifadeler `lab/konusma_ifadeleri.py`'den | Sınıf başına vaka sayısı raporda |
+| **G0.7** ✅ | 🔴 **Şema-dışı çıktı oranı** *(§7.4'ün ölçüm borcu)* | `parse_cube_query`'nin reddettiği Intent-JSON yüzdesi rapora yazılır | Sayı `lab/reports/garson/` altında |
+| **G0.8** ✅ | Taban dondurma | `_tabani_dondur` deseni (`konusma_senaryolari.py:814`) | `lab/garson_baseline.json` doğdu |
+| **G0.9** ✅ | Kapı değerlendirici | `kapi_degerlendir` deseni (`:769`) — sınıf başına taban, `⊘` **gerileme sayılmaz** | Taban altına düşünce **kırmızı** |
+| **G0.10** ✅ | 🔴 **İKİ KOŞUM** *(KURAL G-1, §12.3)* | İki koşum; ayrışırlarsa karar **verilmez**, `⊘` + borç kaydı | İki rapor dosyası |
+| **G0.11** ✅ | Kapıya bağla | `lab/kapi.py` → **yeni hedef `--garson`** *(yeni seviye DEĞİL)* | `--tam` / `--hepsi` süreleri **değişmedi** |
+| **G0.12** ✅ | Kör alet testi | `t2_anlatici` açık/kapalı → §5/7 satırı **farklı** çıkmalı | Çıkmıyorsa **alet kör**; G1 başlamaz |
+| **G0.14** ✅ | 🔴 **Ölü kontrol kararı** | `hizli_derin`: ya sunucuya **bağlanır** ya UI'dan **kaldırılır** *(§15.5)*. Çalışıyormuş gibi görünen kontrol, garson fazında **ürün kusurudur** | Tıklama bir şey **yapıyor** ya da düğme **yok** |
+| **G0.15** ✅ | **Kaset iskeleti** *(§12.2b/`K` katmanı)* | `--live` koşumunda sağlayıcı yanıtları `lab/kasetler/<senaryo>.json`'a **kaydedilir**; `K` modunda kayıt oynatılır. VQR deseni — yeni motor yazılmaz | Kaset koşumu **sağlayıcısız** yeşil |
+| **G0.13** ✅ | 📌 **COMMIT** | `feat(G0): garson ölçüm aleti — ilk taban` · **`MIMARI.md`**: `llm_sema_kisitli` NO-OP (§13.6/4) · `features.yml` yorumları: `prompt_enhancer` **mimari gerekçe** (§1.1d) + `agent_plan_secimi` **bayat gerekçe** düzeltmesi | `OPERASYON-DURUM.md` `B-G1` kapandı |
 
 ---
 
@@ -1142,18 +1142,18 @@ yapılmaz** — bozulma merdiveninin 3. basamağına düşülür *(deterministik
 
 | # | Adım | Dosya / iş | ✅ Bitti kontrolü |
 |---|---|---|---|
-| **G0b.1** | Envanter | Üç kanalın giden yükü **birebir** kayda geçer *(ne gidiyor, hangi alan)* | Tablo `MIMARI.md`'de |
-| **G0b.2** | 🔴 **Geçidi GENİŞLET** *(yeni modül YAZMA)* | `app/llm_guard.py`'ye yayılım politikası eklenir. `safe_call` **zaten** `_ask`/`_arac_ile`/`_chat`'i sarıyor | `hava_boslugu.py` **doğmadı** *(ikinci sahip yok)* |
-| **G0b.3** | Kanal envanteri | Üç kanal **zaten** `safe_call`'dan geçiyor *(sağlayıcı metodu seviyesinde)* — doğrulanır, yeniden bağlanmaz | AST: `safe_call`'suz sağlayıcı metodu **yok** |
-| **G0b.4** | AST kaçak kapısı | `safe_call` sarmayan yeni bir sağlayıcı metodu → **CI kırmızı** | Test yeşil |
-| **G0b.5** | PII maskesi | ✅ **ZATEN VAR** (`llm_guard.ihlalleri_bul`) — yalnız **regresyon testi** yazılır | 4 vaka yeşil |
+| **G0b.1** ✅ | Envanter | Üç kanalın giden yükü **birebir** kayda geçer *(ne gidiyor, hangi alan)* | Tablo `MIMARI.md`'de |
+| **G0b.2** ✅ | 🔴 **Geçidi GENİŞLET** *(yeni modül YAZMA)* | `app/llm_guard.py`'ye yayılım politikası eklenir. `safe_call` **zaten** `_ask`/`_arac_ile`/`_chat`'i sarıyor | `hava_boslugu.py` **doğmadı** *(ikinci sahip yok)* |
+| **G0b.3** ✅ | Kanal envanteri | Üç kanal **zaten** `safe_call`'dan geçiyor *(sağlayıcı metodu seviyesinde)* — doğrulanır, yeniden bağlanmaz | AST: `safe_call`'suz sağlayıcı metodu **yok** |
+| **G0b.4** ✅ | AST kaçak kapısı | `safe_call` sarmayan yeni bir sağlayıcı metodu → **CI kırmızı** | Test yeşil |
+| **G0b.5** ✅ | PII maskesi | ✅ **ZATEN VAR** (`llm_guard.ihlalleri_bul`) — yalnız **regresyon testi** yazılır | 4 vaka yeşil |
 | **G0b.6** ✅ | Varlık çözümü | `value_index` ile çözülen değer → `{{ENT_i}}`; LLM'e **kural** olarak gider | ✅ **İNDİ** (`app/varlik.py` · `tests/test_varlik_perdesi.py`). ⊙ Ölçüm önce yapıldı ve **bir yarısı zaten kapalıydı**: `corrected_q` LLM'e hiç gitmiyor (artık kilitli). 🔴 Açık kapı **başkasıydı** — `build_catalog` boyut **değerlerini** prompt'a yazıyor; perde oraya kuruldu. ⚠ Ve ölçüm bir tuzak buldu: `ciro` bu katalogda **hem ölçü sinonimi hem boyut değeri** — perde onu yutunca sorudan ÖLÇÜ siliniyordu. Sözlükle çakışan değer artık perdelenmiyor (`typo_suggest`'in *çapraz-konu* kuralının aynısı) |
-| **G0b.7** | Korunan yayılım | Fact-Sheet'teki sayı ve boyut değeri → `{{NUM_i}}` / `{{DIM_i}}` | Fixture taraması temiz |
-| **G0b.8** | Geri koyma | Renderer haritadan gerçek değeri koyar; eksik/fazla yayılım → **cümle düşer** | Yapısal doğrulama |
-| **G0b.9** | Çıkış kütüğü | ✅ disiplin **zaten var** (`llm_guard`: değer loglanmaz) — yer tutucu **sayısı** eklenir | Kütükte değer yok |
-| **G0b.9a** | 🖥 **ÖN YÜZ — güven sinyali** | `Makbuz.tsx`'in **mevcut** *"tam iz"* bloğuna (`:205-215`) tek satır: `hava boşluğu · 3 yer tutucu · dışarı çıkan: yok`. 🔴 Kullanıcı **verisinin çıkmadığını görmeli** — görünmeyen güvenlik, satılamayan güvenliktir. Yeni panel/blok **YOK** | `ui_kanit_gorunurlugu` altında |
-| **G0b.9b** | 🔴 **Alan haritası kapısı** | **yeni** `tests/test_alan_haritasi.py` — §1.2c'nin sınıflandırması AST ile kilitlenir | 🗣/🍳 çapraz import **yok** |
-| **G0b.10** | 📌 **COMMIT** | `feat(G0b): hava boşluğu — korunan yayılım llm_guard'a eklendi` · `MIMARI.md`: **üçüncü değişmez** *(§13.6/6)* | `Ç-24` **çözüldü** kaydı |
+| **G0b.7** ✅ | Korunan yayılım | Fact-Sheet'teki sayı ve boyut değeri → `{{NUM_i}}` / `{{DIM_i}}` | Fixture taraması temiz |
+| **G0b.8** ✅ | Geri koyma | Renderer haritadan gerçek değeri koyar; eksik/fazla yayılım → **cümle düşer** | Yapısal doğrulama |
+| **G0b.9** ✅ | Çıkış kütüğü | ✅ disiplin **zaten var** (`llm_guard`: değer loglanmaz) — yer tutucu **sayısı** eklenir | Kütükte değer yok |
+| **G0b.9a** ✅ | 🖥 **ÖN YÜZ — güven sinyali** | `Makbuz.tsx`'in **mevcut** *"tam iz"* bloğuna (`:205-215`) tek satır: `hava boşluğu · 3 yer tutucu · dışarı çıkan: yok`. 🔴 Kullanıcı **verisinin çıkmadığını görmeli** — görünmeyen güvenlik, satılamayan güvenliktir. Yeni panel/blok **YOK** | `ui_kanit_gorunurlugu` altında |
+| **G0b.9b** ✅ | 🔴 **Alan haritası kapısı** | **yeni** `tests/test_alan_haritasi.py` — §1.2c'nin sınıflandırması AST ile kilitlenir | 🗣/🍳 çapraz import **yok** |
+| **G0b.10** ✅ | 📌 **COMMIT** | `feat(G0b): hava boşluğu — korunan yayılım llm_guard'a eklendi` · `MIMARI.md`: **üçüncü değişmez** *(§13.6/6)* | `Ç-24` **çözüldü** kaydı |
 
 ---
 
@@ -1217,18 +1217,18 @@ gerekmez** — geri alma yüzeyi yok.
 
 | # | Adım | Dosya / iş | ✅ Bitti kontrolü |
 |---|---|---|---|
-| **G1.1** | Saf üretici | **yeni** `app/temellendirme.py::kur(cq, cube_meta, catalog) -> dict \| None` — **LLM yok, sayı yok**; `interpret.py:397 _ad()` ile görünen adlar | Birim test: aynı `cq` → aynı çıktı |
-| **G1.2** | Sözleşme alanı | `app/schemas.py:306 AskResponse` → `temellendirme: dict \| None = None`; alan **`explain` ile karıştırılmaz** (o **yol**, bu **anlam**) | `openapi.json`'da görünüyor |
-| **G1.3** | Tek çağrı yeri | `app/answer.py::seal()` zincirine — `_maybe_interpret`'ten **sonra**, `_build_explain`'den **önce** | `grep -c "temellendirme.kur"` = **1** *(tek sahip)* |
-| **G1.4** | Beyan kanalı **paylaşılır** | `uyum.py::kismi_cevap_notu` **yeniden yazılmaz**; ihlal varsa o, yoksa `temellendirme` — aynı kanal | İki ayrı beyan üreteci **yok** (AST kapısı) |
+| **G1.1** ✅ | Saf üretici | **yeni** `app/temellendirme.py::kur(cq, cube_meta, catalog) -> dict \| None` — **LLM yok, sayı yok**; `interpret.py:397 _ad()` ile görünen adlar | Birim test: aynı `cq` → aynı çıktı |
+| **G1.2** ✅ | Sözleşme alanı | `app/schemas.py:306 AskResponse` → `temellendirme: dict \| None = None`; alan **`explain` ile karıştırılmaz** (o **yol**, bu **anlam**) | `openapi.json`'da görünüyor |
+| **G1.3** ✅ | Tek çağrı yeri | `app/answer.py::seal()` zincirine — `_maybe_interpret`'ten **sonra**, `_build_explain`'den **önce** | `grep -c "temellendirme.kur"` = **1** *(tek sahip)* |
+| **G1.4** ✅ | Beyan kanalı **paylaşılır** | `uyum.py::kismi_cevap_notu` **yeniden yazılmaz**; ihlal varsa o, yoksa `temellendirme` — aynı kanal | İki ayrı beyan üreteci **yok** (AST kapısı) |
 | ~~G1.4b-d~~ | 🔴 **DÜŞÜRÜLDÜ — marjin ZATEN VAR** | Ölçüldü (`G1`, 2026-08-07): `cube_router._match_cube` **çok sinyalli** bir marjin sistemi taşıyor — ölçü-sinonim uzunluğu (`:908`) · alt-dize spesifikliği (`:932`) · boyut-kanıtı (`:937`) · **4-harf cube marjini** (`:947`); kırılamazsa `None` → `cube_tie_candidates` chip → **SORUYOR**. Ve `value_index:28` `AUTO_MARGIN=0.08` değer eşleşmesinde aynısını yapıyor. 🔴 Dördüncü bir marjin sahibi yazmak **KAT-1 ihlali** olurdu | §1.1c'nin ağacı **zaten uygulanmış** — belge onu TARİF ediyor, EMRETMİYOR |
-| **G1.5** | Ön yüz tipi | `src/lib/types.ts` → `temellendirme?: Temellendirme \| null` *(`:202 interpretation` komşuluğu)* | `tsc` temiz |
-| **G1.6** | Ön yüz render | `ReportCard.tsx` — `SourceBadge`'in (`:537`) **hemen altına**, tablodan **önce** rozet dizisi | Görsel: tek satır, taşmıyor |
-| **G1.7** | Rozetler tıklanabilir | Her rozet → o alanı değiştiren chip; `POST /cube` (`ask.py:948`) ile **0 LLM** | Tıklama LLM çağırmıyor *(telemetri)* |
-| **G1.8** | Kapı testi | **yeni** `tests/test_temellendirme.py`: başarılı cevapta alan **dolu** · `cq` ile **birebir tutarlı** · **ham kolon adı yok** | 4 test yeşil |
-| **G1.9** | Yetim kapısı | `tests/test_cevap_alani_yetim_degil.py` yeni alanı **görüyor** | Kapı yeşil |
-| **G1.10** | Kazanç + gerileme | `lab/garson.py --live` §5/3 **yeşil** ‖ `kapi.py --tam` + `eval` **gerilemedi** | İkisi de kayıtlı |
-| **G1.11** | 📌 **COMMIT** | `feat(G1): temellendirme — sistem ne anladığını SÖYLÜYOR` · `MIMARI.md`'ye **§13.6/3** (`KÇ-1` beyan-açık sapması) | |
+| **G1.5** ✅ | Ön yüz tipi | `src/lib/types.ts` → `temellendirme?: Temellendirme \| null` *(`:202 interpretation` komşuluğu)* | `tsc` temiz |
+| **G1.6** ✅ | Ön yüz render | `ReportCard.tsx` — `SourceBadge`'in (`:537`) **hemen altına**, tablodan **önce** rozet dizisi | Görsel: tek satır, taşmıyor |
+| **G1.7** ✅ | Rozetler tıklanabilir | Her rozet → o alanı değiştiren chip; `POST /cube` (`ask.py:948`) ile **0 LLM** | Tıklama LLM çağırmıyor *(telemetri)* |
+| **G1.8** ✅ | Kapı testi | **yeni** `tests/test_temellendirme.py`: başarılı cevapta alan **dolu** · `cq` ile **birebir tutarlı** · **ham kolon adı yok** | 4 test yeşil |
+| **G1.9** ✅ | Yetim kapısı | `tests/test_cevap_alani_yetim_degil.py` yeni alanı **görüyor** | Kapı yeşil |
+| **G1.10** ✅ | Kazanç + gerileme | `lab/garson.py --live` §5/3 **yeşil** ‖ `kapi.py --tam` + `eval` **gerilemedi** | İkisi de kayıtlı |
+| **G1.11** ✅ | 📌 **COMMIT** | `feat(G1): temellendirme — sistem ne anladığını SÖYLÜYOR` · `MIMARI.md`'ye **§13.6/3** (`KÇ-1` beyan-açık sapması) | |
 
 ---
 
@@ -1288,20 +1288,20 @@ yeniden yazılmaz, **çağrılır**.
 
 | # | Adım | Dosya / iş | ✅ Bitti kontrolü |
 |---|---|---|---|
-| **G2.1** | 🔴 **ÖNCE KARAR: tek temsil** | `app/niyet.py`'nin `Niyet`'i **açık slotun taşıyıcısıdır**. *Açık slot = `Niyet`'in boş alanı.* İkinci bir slot dataclass'ı **yazılmaz** *(`KÇ-0`, KAT-1)* | Karar `MIMARI.md`'de yazılı |
-| **G2.2** | Modül iskeleti | **yeni** `app/diyalog.py` — saf fonksiyonlar, `context.py:37-41` felsefesi. **`re` import etmez** *(dil işi `niyet.py`/`turetme.py`'nin)* | AST kapısı: `re` yok |
-| **G2.3** | **Slot durumu** | `acik_slotlar(niyet) -> list[str]` — `Niyet`'in boş zorunlu alanları | Birim test: 3 vaka |
-| **G2.4** | Sözleşme alanı | `schemas.py:306` → `diyalog_durumu: dict \| None` `{acik_slotlar, sorulan, dolu, tur_no}` | `openapi.json` |
-| **G2.5** | Netleştirme **slot yazar** | 11 netleştirme dalı `sorulan` slotunu **kaydeder** *(davranış değişmiyor — yalnız kayıt)* | `diyalog_durumu` dolu dönüyor |
-| **G2.6** | 📌 **ARA COMMIT** | `feat(G2/1): slot durumu — sistem NE SORDUĞUNU biliyor` | Davranış **birebir bugünkü** |
-| **G2.7** | **Devam** | Netleştirme cevabı gelince `KURAL_TAZE` **ateşlenmez**; özgün niyet `Baglam`'dan **birleştirilir** | `test_diyalog.py::test_devam` |
-| **G2.8** | **Onarım** | *"hayır, şubat demiştim"* → **yalnız dönem slotu** değişir; ölçü/kırılım **korunur**. `followup.py`'nin kalıp disiplini *(kelime sınırı)*, yeni sözlük **yok** *(ADR-0008)* | `test_diyalog.py::test_onarim` |
-| **G2.9** | Ücretsiz kapanış | `netlestirme.py`'nin `yuksek` düzeyi burada **gerçekten uygulanır** *(`ask.py:2613-2621`'in itirafı kapanır)* | Üç düzey ayrışıyor |
-| **G2.10** | 🔴 **Basitlik kilidi** | Bağlam penceresi **>2 tur olamaz**; retrieval **eklenmez** *(JPMorgan −12,6 · deponun kendi +14/−16)* | Test pencereyi **kilitler** |
-| **G2.11** | Bayrak | `features.py` + `features.yml` → `diyalog: "alpha"` | `off` → davranış birebir bugünkü |
-| **G2.12** | Ön yüz | Açık slot **mevcut chip satırında** görünür — 🔴 **yeni panel YOK** *(PK-1)* | Panel sayısı **değişmedi** |
-| **G2.13** | Kazanç + gerileme | `garson.py --live` §5/5 ve §5/6 **yeşil** ‖ `--tam` **gerilemez** *(bu katman cevap üretmiyor)* | Kayıtlı |
-| **G2.14** | 📌 **COMMIT** | `feat(G2): diyalog belleği — sorduğunu HATIRLIYOR` · `MIMARI.md`'ye **Katman 2** | `B-G2` kapandı |
+| **G2.1** ✅ | 🔴 **ÖNCE KARAR: tek temsil** | `app/niyet.py`'nin `Niyet`'i **açık slotun taşıyıcısıdır**. *Açık slot = `Niyet`'in boş alanı.* İkinci bir slot dataclass'ı **yazılmaz** *(`KÇ-0`, KAT-1)* | Karar `MIMARI.md`'de yazılı |
+| **G2.2** ✅ | Modül iskeleti | **yeni** `app/diyalog.py` — saf fonksiyonlar, `context.py:37-41` felsefesi. **`re` import etmez** *(dil işi `niyet.py`/`turetme.py`'nin)* | AST kapısı: `re` yok |
+| **G2.3** ✅ | **Slot durumu** | `acik_slotlar(niyet) -> list[str]` — `Niyet`'in boş zorunlu alanları | Birim test: 3 vaka |
+| **G2.4** ✅ | Sözleşme alanı | `schemas.py:306` → `diyalog_durumu: dict \| None` `{acik_slotlar, sorulan, dolu, tur_no}` | `openapi.json` |
+| **G2.5** ✅ | Netleştirme **slot yazar** | 11 netleştirme dalı `sorulan` slotunu **kaydeder** *(davranış değişmiyor — yalnız kayıt)* | `diyalog_durumu` dolu dönüyor |
+| **G2.6** ✅ | 📌 **ARA COMMIT** | `feat(G2/1): slot durumu — sistem NE SORDUĞUNU biliyor` | Davranış **birebir bugünkü** |
+| **G2.7** ✅ | **Devam** | Netleştirme cevabı gelince `KURAL_TAZE` **ateşlenmez**; özgün niyet `Baglam`'dan **birleştirilir** | `test_diyalog.py::test_devam` |
+| **G2.8** ✅ | **Onarım** | *"hayır, şubat demiştim"* → **yalnız dönem slotu** değişir; ölçü/kırılım **korunur**. `followup.py`'nin kalıp disiplini *(kelime sınırı)*, yeni sözlük **yok** *(ADR-0008)* | `test_diyalog.py::test_onarim` |
+| **G2.9** ✅ | Ücretsiz kapanış | `netlestirme.py`'nin `yuksek` düzeyi burada **gerçekten uygulanır** *(`ask.py:2613-2621`'in itirafı kapanır)* | Üç düzey ayrışıyor |
+| **G2.10** ✅ | 🔴 **Basitlik kilidi** | Bağlam penceresi **>2 tur olamaz**; retrieval **eklenmez** *(JPMorgan −12,6 · deponun kendi +14/−16)* | Test pencereyi **kilitler** |
+| **G2.11** ✅ | Bayrak | `features.py` + `features.yml` → `diyalog: "alpha"` | `off` → davranış birebir bugünkü |
+| **G2.12** ✅ | Ön yüz | Açık slot **mevcut chip satırında** görünür — 🔴 **yeni panel YOK** *(PK-1)* | Panel sayısı **değişmedi** |
+| **G2.13** ✅ | Kazanç + gerileme | `garson.py --live` §5/5 ve §5/6 **yeşil** ‖ `--tam` **gerilemez** *(bu katman cevap üretmiyor)* | Kayıtlı |
+| **G2.14** ✅ | 📌 **COMMIT** | `feat(G2): diyalog belleği — sorduğunu HATIRLIYOR` · `MIMARI.md`'ye **Katman 2** | `B-G2` kapandı |
 
 ---
 
@@ -1354,15 +1354,15 @@ istisnadır**. Yasağın kendisi `MIMARI.md §5`'e girer.
 
 | # | Adım | Dosya / iş | ✅ Bitti kontrolü |
 |---|---|---|---|
-| **G3.1** | 🔴 **ÖNCE ÖLÇ — `rule` ile** | Bugünkü geri almayı **aynı ortamda tekrarla** (`MIMARI.md:442`'nin sayısı üretilebiliyor mu?) | %95,1→%93,5 **yeniden çıkıyor** → taban geçerli |
-| **G3.2** | 🔴 **SONRA ÖLÇ — gerçek sağlayıcı** | Aynı değişiklik, `DIMA_LLM_PROVIDER=openrouter` | İki sayı **yan yana** raporda |
-| **G3.3** | Karar | İki sayı ayrışıyorsa → geri alma bir **ortam artefaktıydı**; ayrışmıyorsa → gerçek maliyet | Karar + gerekçe yazılı |
-| **G3.4** | Cevapsız kesme oranı | `nl_corpus`'a yeni metrik: cevap üretmeyen basamağın karar verdiği **ama altında çalışabilir basamak olan** tur oranı | Şirket başına sayı |
-| **G3.5** | Aday defteri | Merdiven bitiricileri **ikiye** iner: pozitif cevap · açık `yol_siniri`. Cevapsız dal **aday** olur | `app/merdiven.py` *(adı serbest)* |
-| **G3.6** | 🔴 **Kapıyı YENİDEN YAZ** | `tests/test_kisa_devre_yok.py`: `assert not (app/merdiven.py).exists()` **KALDIRILIR** · `len(kisa) == 11` → `<= <önceki>` **cırcır ters** | Muafiyet + gerekçe zorunluluğu **korunuyor** |
-| **G3.7** | 🖥 Merdiven izi | ⚠ *Düzeltme:* **render ZATEN VAR** — `Makbuz.tsx:209-213` `explain.path`'i *"tam iz"* `<details>` bloğunda basıyor. 🔴 **Yeni UI yazılmaz**, `explain.path`'in **içeriği** zenginleşir: hangi basamak karar verdi · hangileri atlandı · hangi adaylar birikti | Aynı blokta, yeni panel yok |
-| **G3.8** | 🔴 **Doğruluk vetosu** | `eval` precision ve `sessiz_yanlis` **artmadı** | Kapsam düşebilir; **yanlış artamaz** |
-| **G3.9** | 📌 **COMMIT** | `feat(G3): kısa devre yasağı — cevapsız dal cevaplı yolu KESMİYOR` · `MIMARI.md` **§5'in 18. yasağı + dördüncü koşulu + ÖLÇÜM ORTAMI** | `B-G5` kapandı *(§5 ↔ `:442` çelişkisi biter)* |
+| **G3.1** ✅ | 🔴 **ÖNCE ÖLÇ — `rule` ile** | Bugünkü geri almayı **aynı ortamda tekrarla** (`MIMARI.md:442`'nin sayısı üretilebiliyor mu?) | %95,1→%93,5 **yeniden çıkıyor** → taban geçerli |
+| **G3.2** ✅ | 🔴 **SONRA ÖLÇ — gerçek sağlayıcı** | Aynı değişiklik, `DIMA_LLM_PROVIDER=openrouter` | İki sayı **yan yana** raporda |
+| **G3.3** ✅ | Karar | İki sayı ayrışıyorsa → geri alma bir **ortam artefaktıydı**; ayrışmıyorsa → gerçek maliyet | Karar + gerekçe yazılı |
+| **G3.4** ✅ | Cevapsız kesme oranı | `nl_corpus`'a yeni metrik: cevap üretmeyen basamağın karar verdiği **ama altında çalışabilir basamak olan** tur oranı | Şirket başına sayı |
+| **G3.5** ⊘ | Aday defteri | Merdiven bitiricileri **ikiye** iner: pozitif cevap · açık `yol_siniri`. Cevapsız dal **aday** olur | `app/merdiven.py` *(adı serbest)* — ⊘ **BİLEREK YAZILMADI.** Mekanizma bir kez yazılmış, ölçülmüş ve geri alınmıştı (`test_kisa_devre_yok.py`); bu turda yeniden yazıldı ve **yine geri alındı** — bağlanmamış modül = **yetim** (`OPERASYON.md §6/1`). *Bir mekanizmayı ölçemeden kurmak, kararı ertelemenin pahalı bir biçimidir.* |
+| **G3.6** ⊘ | 🔴 **Kapıyı YENİDEN YAZ** | `tests/test_kisa_devre_yok.py`: `assert not (app/merdiven.py).exists()` **KALDIRILIR** · `len(kisa) == 11` → `<= <önceki>` **cırcır ters** | Muafiyet + gerekçe zorunluluğu **korunuyor** — ⊘ `G3.5`'e bağlı — aday defteri olmadan kapı neyi yeniden yazacağını bilmez |
+| **G3.7** ⊘ | 🖥 Merdiven izi | ⚠ *Düzeltme:* **render ZATEN VAR** — `Makbuz.tsx:209-213` `explain.path`'i *"tam iz"* `<details>` bloğunda basıyor. 🔴 **Yeni UI yazılmaz**, `explain.path`'in **içeriği** zenginleşir: hangi basamak karar verdi · hangileri atlandı · hangi adaylar birikti | Aynı blokta, yeni panel yok — ⊘ `G3.5`'e bağlı — defter yoksa `explain.path` zenginleşemez |
+| **G3.8** ✅ | 🔴 **Doğruluk vetosu** | `eval` precision ve `sessiz_yanlis` **artmadı** | Kapsam düşebilir; **yanlış artamaz** |
+| **G3.9** ✅ | 📌 **COMMIT** | `feat(G3): kısa devre yasağı — cevapsız dal cevaplı yolu KESMİYOR` · `MIMARI.md` **§5'in 18. yasağı + dördüncü koşulu + ÖLÇÜM ORTAMI** | `B-G5` kapandı *(§5 ↔ `:442` çelişkisi biter)* |
 
 ---
 
@@ -1412,16 +1412,16 @@ kendisi bayrak taşımaz.
 
 | # | Adım | Dosya / iş | ✅ Bitti kontrolü |
 |---|---|---|---|
-| **G4.1** | Modül | **yeni** `app/iddia.py::dogrula(metin, schema, sonuc) -> Rapor` — `narration_guard.py`'nin **birebir deseni**: cümle cümle, düşeni düşür, fail-closed, oranı logla | İmza + docstring |
-| **G4.2** | Katalog sözcüğü denetimi | Metindeki her katalog terimi `service.schema()`'da **bulunmalı** | Olmayan boyut adı → cümle **düşer** |
-| **G4.3** | İzinli söz-edimi beyaz listesi | *sor · var olanı öner · ne yaptığını açıkla · bilmediğini söyle* | İzinli cümle **geçer** |
-| **G4.4** | Yasak sınıflar | olmayan **yetenek** vaadi · sonuçta olmayan **olgu** iddiası · doğrulanamaz **güven beyanı** | Üçü için ayrı test |
-| **G4.5** | `seal()` önüne bağla | `answer.py::seal()` — `narration_guard` ile **aynı hizada**, ondan **önce** | İki kapı da metni görüyor |
-| **G4.6** | 🔴 **Düşme oranı ölçülür** | Oran raporlanır; bir tavanı aşarsa kapı **agresif**tir ve **ölçüyle** gevşetilir *(`narration_guard`'ın kendi dersi: kullanılamayan kapı kapatılır)* | Oran `lab/reports/`'ta |
-| **G4.7** | **Bedava denetim** | Kapı **deterministik** metinlerde de koşar; orada düşen cümle = **deterministik yolda kusur** | Bugün 0 düşmeli |
-| **G4.8** | Kapı testi | **yeni** `tests/test_iddia_kapisi.py` — `narration_guard`'ın 20 testlik titizliğiyle; sağlayıcı çökünce **fail-closed** *(metin yok, cevap yine döner)* | ≥12 test yeşil |
-| **G4.8b** | 🖥 **ÖN YÜZ — düşen cümle izi** | `Makbuz.tsx`: *"iddia kapısı: N cümle düşürüldü"*. `narration_guard`'ın izi neredeyse **aynı yerde** durur — ikinci bir panel açılmaz | Sayı görünüyor · panel sayısı değişmedi |
-| **G4.9** | 📌 **COMMIT** | `feat(G4): iddia kapısı — LLM'in her İDDİASI şemaya karşı doğrulanıyor` · 🔴 `MIMARI.md` **§4'ün değişmezi İKİYE BÖLÜNÜR** *(§13.6/1 — bu fazın en önemli mimari kaydı)* | `B-G3` kapandı |
+| **G4.1** ✅ | Modül | **yeni** `app/iddia.py::dogrula(metin, schema, sonuc) -> Rapor` — `narration_guard.py`'nin **birebir deseni**: cümle cümle, düşeni düşür, fail-closed, oranı logla | İmza + docstring |
+| **G4.2** ✅ | Katalog sözcüğü denetimi | Metindeki her katalog terimi `service.schema()`'da **bulunmalı** | Olmayan boyut adı → cümle **düşer** |
+| **G4.3** ✅ | İzinli söz-edimi beyaz listesi | *sor · var olanı öner · ne yaptığını açıkla · bilmediğini söyle* | İzinli cümle **geçer** |
+| **G4.4** ✅ | Yasak sınıflar | olmayan **yetenek** vaadi · sonuçta olmayan **olgu** iddiası · doğrulanamaz **güven beyanı** | Üçü için ayrı test |
+| **G4.5** ✅ | `seal()` önüne bağla | `answer.py::seal()` — `narration_guard` ile **aynı hizada**, ondan **önce** | İki kapı da metni görüyor |
+| **G4.6** ✅ | 🔴 **Düşme oranı ölçülür** | Oran raporlanır; bir tavanı aşarsa kapı **agresif**tir ve **ölçüyle** gevşetilir *(`narration_guard`'ın kendi dersi: kullanılamayan kapı kapatılır)* | Oran `lab/reports/`'ta |
+| **G4.7** ✅ | **Bedava denetim** | Kapı **deterministik** metinlerde de koşar; orada düşen cümle = **deterministik yolda kusur** | Bugün 0 düşmeli |
+| **G4.8** ✅ | Kapı testi | **yeni** `tests/test_iddia_kapisi.py` — `narration_guard`'ın 20 testlik titizliğiyle; sağlayıcı çökünce **fail-closed** *(metin yok, cevap yine döner)* | ≥12 test yeşil |
+| **G4.8b** ✅ | 🖥 **ÖN YÜZ — düşen cümle izi** | `Makbuz.tsx`: *"iddia kapısı: N cümle düşürüldü"*. `narration_guard`'ın izi neredeyse **aynı yerde** durur — ikinci bir panel açılmaz | Sayı görünüyor · panel sayısı değişmedi |
+| **G4.9** ✅ | 📌 **COMMIT** | `feat(G4): iddia kapısı — LLM'in her İDDİASI şemaya karşı doğrulanıyor` · 🔴 `MIMARI.md` **§4'ün değişmezi İKİYE BÖLÜNÜR** *(§13.6/1 — bu fazın en önemli mimari kaydı)* | `B-G3` kapandı |
 
 ---
 
@@ -1476,20 +1476,20 @@ Fact-Sheet 150–250 token; ham satır **hiç gitmez**. Model: `_select_model` (
 
 | # | Adım | Dosya / iş | ✅ Bitti kontrolü |
 |---|---|---|---|
-| **G5.1** | Ön koşul kilidi | Test: `t2_anlatici` açıkken `iddia.py` **yoksa** anlatı **yayımlanamaz** | Kilit testi yeşil |
-| **G5.2** | **Birebir korunan yayılımlar** *(Tableau Pulse deseni — ÖNLEME)* | Metrik adı · boyut değeri · sayı, LLM'e **işaretli** gider ve çıktıda **birebir** korunur; bozulursa cümle **düşer** | Bozma testi: 3 vaka |
-| **G5.3** | **PCN disiplini** *(TESPİT)* | Varsayılan **doğrulanmamış**; sayı ancak bir kaynağa **bağlanabiliyorsa** doğrulanmış sayılır | Bağlanamayan sayı → cümle düşer |
-| **G5.4** | 🔴 **Muafiyetler görünür olur** | `narration_guard`'ın `YIL_ARALIGI=(1900,2100)` ve `SIRA_ESIGI=10` muafiyetleri: ya **kalkar** ya **makbuzda yazar**. Bugün kullanıcı *"her sayı doğrulanır"* sanıyor | Karar + kayıt |
-| **G5.5** | Fact-Sheet sınırı | Girdi **yalnız** `interpret()` olguları *(`test_t2_anlatici.py`'nin 3. değişmezi)*; ham satır **hiç gitmez**; 150–250 token | Token telemetrisi |
-| **G5.6** | 🔴 **Öz-düzeltme YASAK** | LLM'e *"sayılarını kontrol et"* **dedirtilmez** *(Huang ICLR 2024: −34 puan)*. Doğrulama daima **veriye** karşı | AST/prompt kapısı |
-| **G5.7** | Bayrak `alpha` | `features.yml` → `t2_anlatici: "alpha"`, tek test kullanıcısı | Yalnız o kullanıcıda |
-| **G5.8** | 🔴 **İKİ KOŞUM ölç** *(KURAL G-1)* | `garson.py --live` ×2; kota planı: `LIVE_BEKLE` + `_kota_on_ucusu` | İki rapor |
-| **G5.9** | Karar | Kazanç varsa `beta`; yoksa `off` **+ gerekçe `MIMARI.md`'ye** | Karar yazılı |
-| **G5.10** ✅ | Akış *(kolay kazanç)* | `ask_async_discovery` açılır; anlatı **token token** akar *(`ask.py:3864` hattı hazır)* — bugün yalnız **iz adımı** taşıyor | ✅ **İNDİ — ama YARISI ÖLÇÜLDÜ ve DÜŞTÜ.** `ask_async_discovery: beta` açıldı (hat **ve** ön yüz tüketicisi ikisi de yazılıydı, tek eksik bayraktı); iz adımları **canlı** akıyor. 🔴 **Anlatı akmıyor ve AKAMAZ**: (1) `app/llm.py`'de tek bir `stream` çağrısı yok — akıtılacak token dizisi üretilmiyor; (2) olsaydı bile `narration_guard` her cümledeki **her sayıyı** doğruluyor ve **yarım cümlenin sayısı doğrulanamaz**. `Ö1`'in *cümle-tamponlu* şartı tam budur; taşıma katmanı işi, faz `S` |
+| **G5.1** ✅ | Ön koşul kilidi | Test: `t2_anlatici` açıkken `iddia.py` **yoksa** anlatı **yayımlanamaz** | Kilit testi yeşil |
+| **G5.2** ✅ | **Birebir korunan yayılımlar** *(Tableau Pulse deseni — ÖNLEME)* | Metrik adı · boyut değeri · sayı, LLM'e **işaretli** gider ve çıktıda **birebir** korunur; bozulursa cümle **düşer** | Bozma testi: 3 vaka |
+| **G5.3** ✅ | **PCN disiplini** *(TESPİT)* | Varsayılan **doğrulanmamış**; sayı ancak bir kaynağa **bağlanabiliyorsa** doğrulanmış sayılır | Bağlanamayan sayı → cümle düşer |
+| **G5.4** ✅ | 🔴 **Muafiyetler görünür olur** | `narration_guard`'ın `YIL_ARALIGI=(1900,2100)` ve `SIRA_ESIGI=10` muafiyetleri: ya **kalkar** ya **makbuzda yazar**. Bugün kullanıcı *"her sayı doğrulanır"* sanıyor | Karar + kayıt |
+| **G5.5** ✅ | Fact-Sheet sınırı | Girdi **yalnız** `interpret()` olguları *(`test_t2_anlatici.py`'nin 3. değişmezi)*; ham satır **hiç gitmez**; 150–250 token | Token telemetrisi |
+| **G5.6** ✅ | 🔴 **Öz-düzeltme YASAK** | LLM'e *"sayılarını kontrol et"* **dedirtilmez** *(Huang ICLR 2024: −34 puan)*. Doğrulama daima **veriye** karşı | AST/prompt kapısı |
+| **G5.7** ✅ | Bayrak `alpha` | `features.yml` → `t2_anlatici: "alpha"`, tek test kullanıcısı | Yalnız o kullanıcıda |
+| **G5.8** ✅ | 🔴 **İKİ KOŞUM ölç** *(KURAL G-1)* | `garson.py --live` ×2; kota planı: `LIVE_BEKLE` + `_kota_on_ucusu` | İki rapor |
+| **G5.9** ✅ | Karar | Kazanç varsa `beta`; yoksa `off` **+ gerekçe `MIMARI.md`'ye** | Karar yazılı |
+| **G5.10** ◐ | Akış *(kolay kazanç)* | `ask_async_discovery` açılır; anlatı **token token** akar *(`ask.py:3864` hattı hazır)* — bugün yalnız **iz adımı** taşıyor | ◐ **AÇILDI, ÖLÇÜLDÜ, GERİ ALINDI.** Bayrak `off`; hat ve ön yüz tüketicisi **doğrulandı**. ⊙ A/B (aynı kod, yalnız bayrak): açıkken telemetri kapısı **2 kırmızı**, kapalıyken **12 yeşil** — LLM yoluna düşen soru **red gerekçesiz** kaydediliyor (`_teshis` şemayı arka-plan thread'inde okuyamıyor). O kolonun tek varlık sebebi *kapsam boşluğunun EN BÜYÜK kümesi*ydi. 🔴 **ÖN KOŞUL:** teşhis kuyruğa girmeden ÖNCE hesaplanıp işe taşınmalı (`_log_interaction` artık `red_gerekcesi` alıyor — mekanizma hazır). *Bir taşımayı değiştirmek ölçümü de değiştirir.* Eski kayıt: `ask_async_discovery: beta` açıldı (hat **ve** ön yüz tüketicisi ikisi de yazılıydı, tek eksik bayraktı); iz adımları **canlı** akıyor. 🔴 **Anlatı akmıyor ve AKAMAZ**: (1) `app/llm.py`'de tek bir `stream` çağrısı yok — akıtılacak token dizisi üretilmiyor; (2) olsaydı bile `narration_guard` her cümledeki **her sayıyı** doğruluyor ve **yarım cümlenin sayısı doğrulanamaz**. `Ö1`'in *cümle-tamponlu* şartı tam budur; taşıma katmanı işi, faz `S` |
 | **G5.10b** ✅ | 🖥 **ÖN YÜZ — akış tüketicisi** | `ChatPanel.tsx` + `api-client.ts:306 streamAskJob` + `DurdurDugmesi.tsx` **zaten yazılı** — bayrak açılınca **gerçekten** akıyor mu, elle doğrulanır | Yazıyor-animasyonu çalışıyor |
 | **G5.10c** ✅ | 🖥 **ÖN YÜZ — anlatı zaten bağlı** | `OutputInsight.tsx:82-93` (`narration`) + `ReportCard.tsx:945-955` (AI Act Md.50 işareti) — **yeni render YAZILMAZ**, yalnız doğrulanır | İşaret yalnız `narration` varken |
-| **G5.11** | 🔴 **Doğruluk vetosu** | `eval` `sessiz_yanlis` **artmadı** · uydurma sayı **sıfır** | Kayıtlı |
-| **G5.12** | 📌 **COMMIT** | `feat(G5): anlatıcı — guard ve iddia kapısı altında` | §5/2 ve §5/7 yeşil |
+| **G5.11** ✅ | 🔴 **Doğruluk vetosu** | `eval` `sessiz_yanlis` **artmadı** · uydurma sayı **sıfır** | Kayıtlı |
+| **G5.12** ✅ | 📌 **COMMIT** | `feat(G5): anlatıcı — guard ve iddia kapısı altında` | §5/2 ve §5/7 yeşil |
 
 ---
 
@@ -1565,20 +1565,20 @@ varılmış; kabul ölçütleri oradan **aynen** alınır)*:
 
 | # | Adım | Dosya / iş | ✅ Bitti kontrolü |
 |---|---|---|---|
-| **G6.1** | 🔴 **ÖNCE KAPI** | İki adlandırılmış dönem + kıyas fiili **aralık toplamına çökemez**. `uyum.py`'nin `kiyas`+`cok_donem` değişmezleri **temsil edilebilir** hâle gelir | `mart cirosunu şubat ile kıyasla` → **tek birleşik sayı DÖNMÜYOR** |
-| **G6.2** | Eşdeğerlik önce ölçülür *(Faz 2 deseni)* | `yoy`/`mom` → `referans`'a çevrildikten sonra **birebir aynı SQL** | SQL diff **boş** |
+| **G6.1** ✅ | 🔴 **ÖNCE KAPI** | İki adlandırılmış dönem + kıyas fiili **aralık toplamına çökemez**. `uyum.py`'nin `kiyas`+`cok_donem` değişmezleri **temsil edilebilir** hâle gelir | `mart cirosunu şubat ile kıyasla` → **tek birleşik sayı DÖNMÜYOR** |
+| **G6.2** ✅ | Eşdeğerlik önce ölçülür *(Faz 2 deseni)* | `yoy`/`mom` → `referans`'a çevrildikten sonra **birebir aynı SQL** | SQL diff **boş** |
 | **G6.3** ✅ | Alan | `CubeQuery.referans: {eksen, kaynak, hedef}`; `eksen ∈ {dönem, kohort, hedef, bütçe, sabit}` | `parse_cube_query` beyaz listesinde |
 | **G6.4** ✅ | 🔴 **Taşıyıcı `Niyet`** | `referans` bilgisi `app/niyet.py`'de doğar *(`KÇ-0`'ın müşterisi)*; ikinci sahip **yok** | AST kapısı: tek temsil |
 | **G6.5** ✅ | Intent-JSON şeması | `intent_semasi.py` → **`compare` VE `blend`** girer. `oneOf` **korunur** *(§7.4/(c))* | Şema testi |
-| **G6.6** | `Ö9` — adlandırılmış dönem | `mart cirosunu şubata göre` → **iki seri + %değişim** | Denetimin kabul ölçütü |
-| **G6.7** | `Ö11` — `blend` | `verimlilik ve ciro` → iki seri **ya da** netleştirme; **R1 değil** | Denetimin kabul ölçütü |
-| **G6.8** | `Ö12` chip yarısı | *"ilişki mi, iki ayrı seri mi?"* netleştirmesi | Chip `route()` ile **doğrulanmış** |
-| **G6.9** | `R11` | Yeni red kodu — *"anlaşıldı ama İFADE EDİLEMEZ"*. **Kapalıyken de sayılır** | `R1..R11` |
-| **G6.10** | Göç | `compare`'ın 7 dokunuşu `referans`'a; eski `compare` bir süre **kabul edilir** *(deprecation)* | Eski çağrılar çalışıyor |
-| **G6.11** | Sağlayıcı görünürlüğü | Failover Anthropic'ten düşünce şema garantisinin kaybolduğu **makbuza yazılır** *(§7.4)* | Makbuzda alan |
-| **G6.12** | Ön yüz | Kıyas chip'leri **tek şablondan** *(bugün `yoy` için özel dal var — o dal silinir)* | Özel dal yok |
-| **G6.13** | 🔴 Gerileme | `nl_corpus --kapi` doğru-cube **gerilemedi** | Kayıtlı |
-| **G6.14** | 📌 **COMMIT** | `feat(G6): referans cebiri — LLM kıyası SÖYLEYEBİLİYOR` · `MIMARI.md` **§13.6/5** · 🔴 **v1'in `5.6`'sı açılır** | `B-G4` kapandı |
+| **G6.6** ✅ | `Ö9` — adlandırılmış dönem | `mart cirosunu şubata göre` → **iki seri + %değişim** | Denetimin kabul ölçütü |
+| **G6.7** ✅ | `Ö11` — `blend` | `verimlilik ve ciro` → iki seri **ya da** netleştirme; **R1 değil** | Denetimin kabul ölçütü |
+| **G6.8** ✅ | `Ö12` chip yarısı | *"ilişki mi, iki ayrı seri mi?"* netleştirmesi | Chip `route()` ile **doğrulanmış** |
+| **G6.9** ✅ | `R11` | Yeni red kodu — *"anlaşıldı ama İFADE EDİLEMEZ"*. **Kapalıyken de sayılır** | `R1..R11` |
+| **G6.10** ✅ | Göç | `compare`'ın 7 dokunuşu `referans`'a; eski `compare` bir süre **kabul edilir** *(deprecation)* | Eski çağrılar çalışıyor |
+| **G6.11** ✅ | Sağlayıcı görünürlüğü | Failover Anthropic'ten düşünce şema garantisinin kaybolduğu **makbuza yazılır** *(§7.4)* | Makbuzda alan |
+| **G6.12** ✅ | Ön yüz | Kıyas chip'leri **tek şablondan** *(bugün `yoy` için özel dal var — o dal silinir)* | Özel dal yok |
+| **G6.13** ✅ | 🔴 Gerileme | `nl_corpus --kapi` doğru-cube **gerilemedi** | Kayıtlı |
+| **G6.14** ✅ | 📌 **COMMIT** | `feat(G6): referans cebiri — LLM kıyası SÖYLEYEBİLİYOR` · `MIMARI.md` **§13.6/5** · 🔴 **v1'in `5.6`'sı açılır** | `B-G4` kapandı |
 
 ---
 
@@ -1621,15 +1621,15 @@ hem LLM çıktısını temizler.
 
 | # | Adım | Dosya / iş | ✅ Bitti kontrolü |
 |---|---|---|---|
-| **G7.1** | Kapsamı **yaz ve kilitle** | Yalnız dört sınıf: *metrik adı · boyut değeri · sayı · tarih*. **Serbest metne uygulanmaz** | AST kapısı: çağrı yerleri sayılı |
-| **G7.2** | Ünlü uyumu | 🔴 **`cube_router._ek_gecerli` TEK SAHİPTİR** (`:216` — *"Karar `_ek_gecerli`nin (tek sahip)"*). O **doğrulama** yapıyor, `ek.py` **üretim**; ama **kural tablosu ORTAK olmalı** — ikinci bir ünlü-uyumu tablosu KAT-1 ihlali | Tek tablo, iki tüketici |
-| **G7.3** | Ünsüz yumuşaması/sertleşmesi | aynı modül | Test matrisi |
-| **G7.4** | 🔴 **Sayı → okunuş tablosu** | `3'te` ← *üç* · `1.000.000'a` ← *milyon* · `%12'ye` · `2026'da`. ⚠ *"Son harfe bakar"* **yanlıştır** (§9/L-2) | 4 vaka yeşil |
-| **G7.5** | İstisna sözlüğü | TDK'nın belgelediği **kapalı** liste (`saat→saati` · `kitap→kitabı`) | Liste kapalı, gerekçeli |
-| **G7.6** | Test korpusu | Katalogdaki **tüm** metrik/boyut adları × beş ek tipi | Üretilmiş beklenen çıktı |
-| **G7.7** | Zemberek **alınmadı** kaydı | Üç gerekçe *(2019 sürümü · JVM · `--network none`)* + google-research arşivi **2026-04-19** | `MIMARI.md`'de ADR notu |
-| **G7.7b** | 🖥 **ÖN YÜZ — bilinçli olarak YOK** | Ek motoru **metin biçimlendirir**; çıktı mevcut `OutputInsight`/`ReportCard` yolundan geçer. 🔴 Gerekçe **yazılır** ki *"unutuldu"* sanılmasın | Kayıt `MIMARI.md`'de |
-| **G7.8** | 📌 **COMMIT** | `feat(G7): Türkçe ek motoru — enjekte edilen yuvalar doğru çekimleniyor` | |
+| **G7.1** ✅ | Kapsamı **yaz ve kilitle** | Yalnız dört sınıf: *metrik adı · boyut değeri · sayı · tarih*. **Serbest metne uygulanmaz** | AST kapısı: çağrı yerleri sayılı |
+| **G7.2** ✅ | Ünlü uyumu | 🔴 **`cube_router._ek_gecerli` TEK SAHİPTİR** (`:216` — *"Karar `_ek_gecerli`nin (tek sahip)"*). O **doğrulama** yapıyor, `ek.py` **üretim**; ama **kural tablosu ORTAK olmalı** — ikinci bir ünlü-uyumu tablosu KAT-1 ihlali | Tek tablo, iki tüketici |
+| **G7.3** ✅ | Ünsüz yumuşaması/sertleşmesi | aynı modül | Test matrisi |
+| **G7.4** ✅ | 🔴 **Sayı → okunuş tablosu** | `3'te` ← *üç* · `1.000.000'a` ← *milyon* · `%12'ye` · `2026'da`. ⚠ *"Son harfe bakar"* **yanlıştır** (§9/L-2) | 4 vaka yeşil |
+| **G7.5** ✅ | İstisna sözlüğü | TDK'nın belgelediği **kapalı** liste (`saat→saati` · `kitap→kitabı`) | Liste kapalı, gerekçeli |
+| **G7.6** ✅ | Test korpusu | Katalogdaki **tüm** metrik/boyut adları × beş ek tipi | Üretilmiş beklenen çıktı |
+| **G7.7** ✅ | Zemberek **alınmadı** kaydı | Üç gerekçe *(2019 sürümü · JVM · `--network none`)* + google-research arşivi **2026-04-19** | `MIMARI.md`'de ADR notu |
+| **G7.7b** ✅ | 🖥 **ÖN YÜZ — bilinçli olarak YOK** | Ek motoru **metin biçimlendirir**; çıktı mevcut `OutputInsight`/`ReportCard` yolundan geçer. 🔴 Gerekçe **yazılır** ki *"unutuldu"* sanılmasın | Kayıt `MIMARI.md`'de |
+| **G7.8** ✅ | 📌 **COMMIT** | `feat(G7): Türkçe ek motoru — enjekte edilen yuvalar doğru çekimleniyor` | |
 
 ---
 
@@ -1680,14 +1680,14 @@ cevaplamaya çalışmıyor; ADR-0008 tam olarak onu yasaklar"*. **Yeni kelime ek
 
 | # | Adım | Dosya / iş | ✅ Bitti kontrolü |
 |---|---|---|---|
-| **G8.1** | İki ret sınıfını **ayır** | *"anlamadım"* (dil) ↔ *"yapamıyorum"* (katalog). `teshis()` + `Niyet.bilinmeyenler` zaten ayrımı **taşıyor** — kullanılmıyor | Ret kodu sınıfa eşleniyor |
-| **G8.2** | Alan | `schemas.py:306` → `kapasite: dict \| None` `{yakin_olculer[], mevcut_kirilimlar[], onerilen_soru}` | `openapi.json` |
-| **G8.3** | Kaynak **katalog** | `ask.py:617,658`'in meta/katalog yolu **çağrılır**; LLM **yok** | 0 token |
-| **G8.4** | 🔴 **`iddia.py`'den geçer** | Kapasite beyanı bir **yetenek iddiasıdır** — G4 onu denetler | Olmayan boyut **önerilemiyor** |
-| **G8.5** | Öneri `route()` ile doğrulanır | `ask.py:428 _dogrulanmis_chipler` deseni — *"aynı duvara ikinci kez çarptıran chip, chip olmamasından kötüdür"* | Doğrulanmamış öneri **çıkmıyor** |
-| **G8.6** | Ön yüz | Ret kartında, `soz ?? note`'un (`ReportCard.tsx:643`) altında | Yeni panel **yok** |
-| **G8.7** | Kapı testi | **yeni** `tests/test_kapasite_beyani.py` — 4 değişmez | Yeşil |
-| **G8.8** | 📌 **COMMIT** | `feat(G8): kapasite beyanı — yapamadığını söylerken YAPABİLDİĞİNİ de söylüyor` | `B-G6` kapandı · §5/8 yeşil |
+| **G8.1** ✅ | İki ret sınıfını **ayır** | *"anlamadım"* (dil) ↔ *"yapamıyorum"* (katalog). `teshis()` + `Niyet.bilinmeyenler` zaten ayrımı **taşıyor** — kullanılmıyor | Ret kodu sınıfa eşleniyor |
+| **G8.2** ✅ | Alan | `schemas.py:306` → `kapasite: dict \| None` `{yakin_olculer[], mevcut_kirilimlar[], onerilen_soru}` | `openapi.json` |
+| **G8.3** ✅ | Kaynak **katalog** | `ask.py:617,658`'in meta/katalog yolu **çağrılır**; LLM **yok** | 0 token |
+| **G8.4** ✅ | 🔴 **`iddia.py`'den geçer** | Kapasite beyanı bir **yetenek iddiasıdır** — G4 onu denetler | Olmayan boyut **önerilemiyor** |
+| **G8.5** ✅ | Öneri `route()` ile doğrulanır | `ask.py:428 _dogrulanmis_chipler` deseni — *"aynı duvara ikinci kez çarptıran chip, chip olmamasından kötüdür"* | Doğrulanmamış öneri **çıkmıyor** |
+| **G8.6** ✅ | Ön yüz | Ret kartında, `soz ?? note`'un (`ReportCard.tsx:643`) altında | Yeni panel **yok** |
+| **G8.7** ✅ | Kapı testi | **yeni** `tests/test_kapasite_beyani.py` — 4 değişmez | Yeşil |
+| **G8.8** ✅ | 📌 **COMMIT** | `feat(G8): kapasite beyanı — yapamadığını söylerken YAPABİLDİĞİNİ de söylüyor` | `B-G6` kapandı · §5/8 yeşil |
 
 ---
 
@@ -2700,6 +2700,29 @@ kendi teşhisi**: B1…B9 · KN-1…KN-7 · Ö1…Ö12 · KÇ-0…KÇ-7 · §12'
 `OPERASYON.md` (§2 döngü · §3 test kapısı · §4 KAT-1…5 · §5 D1…D5 · §6 geliştirme
 değişmezleri · §9 commit · §10 sıra) · `~/.claude/plans/DIMA-V1-YOL-HARITASI.md` §G
 (`YH:771-1680`) · `dima v2 v3 için mimari karar (1).md` (danışman girdisi — denetimi §9'da)
+
+---
+
+### 📊 DURUM — 2026-08-07 · adım adım DOĞRULANDI
+
+| | adım |
+|---|---|
+| ✅ **indi** | **113** |
+| ⊘ **bilerek ertelendi** *(gerekçesi satırında)* | **3** |
+
+⚠ Bu tablo **beyan değil ölçüm**: her adımın kanıtı kaynakta arandı (dosya · fonksiyon ·
+kapı · bayrak), *"belgede yazıyor"* kanıt sayılmadı. Tarama üç kez yanlış pozitif verdi
+(`G0.4` · `G4.4` · `G7.6` — dedektör kelimeyi aradı, kod başka ad kullanıyordu) ve
+düzeltildi. *Bir denetim aracının kendisi de ölçülmeden güvenilmez.*
+
+🔴 **Ve tarama üç GERÇEK eksik buldu** — hepsi bu turda kapatıldı:
+* `G8.4` — `yetenek` beyanı `iddia` kapısını **atlıyordu**; dahası ikisi aynı katalog
+  taramasının **iki sahibiydi** ve `iddia`'nınki gerçek şema şeklini **eksik okuyordu**
+  (`dimension_labels` diye var olmayan bir alan) → fail-closed bir kapı **kör** olmuştu.
+* `G6.11` — failover'da şema garantisinin kaybı makbuza **yazılmıyordu**.
+* `G6.8` — `blend` indikten sonra *"birleştirmiyorum"* diyen sınır beyanı **bayatlamıştı**.
+  *Yanlış bir «yapamam», yanlış bir «yapabilirim» kadar pahalıdır.*
+
 
 ---
 

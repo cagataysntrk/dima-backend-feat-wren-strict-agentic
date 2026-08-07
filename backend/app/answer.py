@@ -190,7 +190,8 @@ def _bosluk_kaydi(request, body, resp) -> dict:
 
 
 def _log_interaction(session_id: str | None, body: AskRequest, resp: AskResponse,
-                     dur_ms: int, principal=None, request=None) -> None:
+                     dur_ms: int, principal=None, request=None,
+                     red_gerekcesi: str | None = None) -> None:
     """Her etkileşimi `interaction_log` DB tablosuna yazar — TEK KAYNAK (ADR-0020).
 
     JSONL kaldırıldı (redundancy): admin viewer AYRI servis (ADR-0015) → Postgres ortak store'dan
@@ -231,7 +232,13 @@ def _log_interaction(session_id: str | None, body: AskRequest, resp: AskResponse
                 # (`lab/r1_envanteri.py` · `lab/risk_kapsam.py`) GELİŞTİRME ÖNCELİĞİNİ
                 # ona göre çıkarıyordu. *Kusuru gizlemekten daha kötüsü, yanlış yeri
                 # işaret etmektir* — burada yanlış yer gösterilen geliştiriciydi.
-                reject_reason=_teshis(body.question, _sema(request)),
+                # 🔴 `red_gerekcesi` — çağıran gerekçeyi **biliyorsa** o kazanır.
+                # Arka-plan işi patladığında `_teshis` bir şey üretemez: kimlik
+                # thread'e kopyalanmaz (`discovery_kuyrugu`'nun kendi sınırı), şema
+                # okunamaz ve hesap `None` döner. Gerekçesiz bir cevapsızlık kaydı,
+                # *kaç soru cevaplanamadı* sayacını doldurur ama **neden**ini boş
+                # bırakır — ve o kolonun tek varlık sebebi o sorudur.
+                reject_reason=red_gerekcesi or _teshis(body.question, _sema(request)),
                 **_bosluk_kaydi(request, body, resp)))
             s.commit()
     except Exception:
@@ -1055,6 +1062,35 @@ def seal(resp: AskResponse, *, request: Request, principal, t0: float,
     _attach_next_steps(request, resp)
     _attach_recommendations(request, resp)
     resp.explain = _build_explain(resp)
+    # 🔴 `G6.11` — **ŞEMA GARANTİSİ SAĞLAYICIYA BAĞLI ve bu MAKBUZA YAZILIR.**
+    #
+    # `llm_sema_kisitli` yalnız Anthropic'te gerçektir (`llm.py`'nin kendi beyanı:
+    # `sema_kullanir`). Failover ikinci sağlayıcıya düştüğünde Intent-JSON **serbest
+    # JSON** olarak üretilir — `parse_cube_query` hâlâ reddeder, yani cevap yanlış olmaz,
+    # ama *"model geçersiz bir ad ÜRETEMEZ"* garantisi **yoktur**.
+    #
+    # ⚠ Kanal bilerek `assumptions`: o liste zaten *"sessiz bir varsayım yapıldı"*
+    # demektir ve dolduğunda güveni **bir kademe düşürür**. İkinci bir alan açmak,
+    # kullanıcıya iki farklı güven anlatısı vermek olurdu.
+    #
+    # *Bir garantinin koşullu olduğunu bilip söylememek, garantiyi vermekten kötüdür:
+    # ilki bir sınır, ikincisi bir yanlış beyandır.*
+    try:
+        if resp.source == "cube+llm" and resp.explain is not None:
+            from app.config import get_settings as _gs3
+            from app.features import resolve_for as _rf3
+
+            _llm = getattr(getattr(request, "app", None), "state", None)
+            _llm = getattr(_llm, "llm", None)
+            if (_llm is not None and not getattr(_llm, "sema_kullanir", True)
+                    and "llm_sema_kisitli" in _rf3(
+                        _gs3(), getattr(getattr(request, "state", None), "principal", None))):
+                resp.explain.assumptions.append(
+                    "Şema-kısıtlı çıktı istendi ama etkin sağlayıcı onu desteklemiyor "
+                    "(failover) — ad doğrulaması yine yapıldı, ama model geçersiz bir ad "
+                    "ÜRETEMEZ garantisi bu yanıtta yok.")
+    except Exception:                                  # noqa: BLE001 — makbuz cevabı düşürmez
+        _log.warning("şema garantisi makbuza yazılamadı", exc_info=True)
 
     # ⚠️ FAZ 1.12 — AI ACT İŞARETLEMESİ. `_maybe_interpret` ANLATIYI ürettikten SONRA
     # okunur: `narration` varsa bu yanıtta LLM üretimi düz metin VAR demektir.

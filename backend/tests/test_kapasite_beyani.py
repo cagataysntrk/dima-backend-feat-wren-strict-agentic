@@ -102,3 +102,31 @@ def test_FORECAST_sinirinda_oneriler_TASINIR():
     s = kapsam_disi("bu gidişle yılı nerede kapatırız", _SEMA)
     assert s is not None and s.tur == "forecast"
     assert isinstance(s.oneriler, list)
+
+
+def test_G6_8_IKI_CUBE_BEYANI_BAYATLAMADI(schema):
+    """🔴 `G6.8` (`Ö12`'nin chip yarısı) — **bir sınır beyanı bayatlamıştı.**
+
+    Eski metin *"onları tek bir tabloda birleştirmiyorum"* diyordu. `G6.5`'ten sonra bu
+    **artık doğru değil**: `blend` mutfakta çalışıyor, `blend_uyumlu` grain'i doğruluyor,
+    Intent-JSON onu ifade edebiliyor.
+
+    ⚠ *Bir sınır beyanı, sınır değiştiğinde kendiliğinden güncellenmez — ve güncellenmeyen
+    bir beyan, kullanıcıya sahip olduğumuz yeteneği YOK diye söyler.*
+    *Yanlış bir «yapamam», yanlış bir «yapabilirim» kadar pahalıdır.*
+
+    Ayrım kilitleniyor: **yan yana** ✅ (`blend`) · **ilişki** ⊘ (v2 · II-D).
+    """
+    from app import yetenek
+
+    ikili = yetenek._iki_cube_olcusu("fire ve maas ortalamasi", schema)
+    if not ikili:
+        import pytest
+        pytest.skip("⊘ bu katalogda iki-cube vakası kurulmadı — vaka bayat")
+    s = yetenek.kapsam_disi("fire ve maas ortalamasi", schema)
+    assert s is not None and s.tur == "iki_cube"
+    assert "birleştirmiyorum" not in s.mesaj, (
+        "🔴 BAYAT BEYAN: `blend` indi, metin hâlâ 'birleştirmiyorum' diyor")
+    assert "ilişki" in s.mesaj.lower(), "🔴 yapamadığımız şey (ilişki) adlandırılmamış"
+    assert "yan yana" in s.mesaj.lower(), "🔴 yapabildiğimiz şey söylenmemiş"
+    assert "Ö12" in s.gerekce

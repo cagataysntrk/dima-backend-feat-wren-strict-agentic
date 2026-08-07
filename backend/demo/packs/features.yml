@@ -75,7 +75,17 @@ features:
   # yüzden ekleme DAVRANIŞ DEĞİŞTİRMEZ — ama *"bu bayrak var ve kapalı"* ile *"böyle bir
   # bayrak yok"* okuyucu için aynı şey değildir. 🔴 Yazılı olmayan bir varsayılan,
   # tartışılamayan bir varsayılandır.
-  ask_async_discovery: beta   # 🔴 G5.10 — AÇILDI. Discovery arka-plan işi + canlı akış.
+  ask_async_discovery: "off"   # 🔴 G5.10 — AÇILDI, ÖLÇÜLDÜ, GERİ ALINDI.
+  # ⊙ A/B (aynı kod, yalnız bu bayrak): açıkken `tests/test_telemetri_yazma_yolu.py`
+  # **2 kırmızı**, kapalıyken **12 yeşil**. Kayıp gerçek ve dar: LLM yoluna düşen soru
+  # telemetriye **red gerekçesi OLMADAN** yazılıyor — çünkü `_teshis` şemayı arka-plan
+  # thread'inde okuyamıyor (istek nesnesi cevap gönderildikten sonra kullanılamaz).
+  # 🔴 O kolonun tek varlık sebebi *"kapsam boşluğunun EN BÜYÜK kümesi"*ni saymaktı.
+  # ⚠ Yani hız kazancı gerçek ama bedeli bir **ölçüm kanalı**: bu turda tam bu sınıftan
+  # bir kusurun (`nl_corpus`'un süreç yarısı) faturası ödendi.
+  # *Bir taşımayı değiştirmek ölçümü de değiştirir; ölçüm taşımadan bağımsız olmalıdır,
+  # yoksa her hızlanma bir körleşmedir.*
+  # ÖN KOŞUL: teşhis kuyruğa girmeden ÖNCE (istek thread'inde) hesaplanıp işe taşınmalı.   # 🔴 G5.10 — AÇILDI. Discovery arka-plan işi + canlı akış.
   # ⊙ Ölçülen kazanç: deterministik yol ~100–800 ms (akış gereksiz), **LLM yolu 2,8–5,5 sn**
   # ve o süre bugün SESSİZ geçiyor. `AskJob.trace` aşamaları ZATEN taşıyordu; eksik olan
   # onları **anında** iletmekti — `GET /ask/jobs/{id}/stream` ve ön yüz tüketicisi

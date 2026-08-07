@@ -110,26 +110,59 @@ class Rapor:
                 "gerekceler": self.gerekceler[:10]}
 
 
-def _katalog_terimleri(schema: dict | None) -> set[str]:
-    """Şemadaki **tüm** ad ve sinonimler — bir iddianın dayanabileceği kelime kümesi."""
+def katalog_terimleri(schema: dict | None, *, norm=None) -> set[str]:
+    """Şemadaki **tüm** ad ve sinonimler — bir iddianın dayanabileceği kelime kümesi.
+
+    🔴 **İKİ SAHİPTİ, TEKE İNDİ — ve ikisinden biri EKSİK OKUYORDU.**
+
+    `app/yetenek.py` bu taramanın ikinci bir kopyasını taşıyordu ve o kopyanın kendi
+    şerhi buradaki kusuru **zaten yazmıştı**:
+
+    > *"`WrenService.schema()` şekli paket YAML'ından **farklıdır**… İlk yazımda yalnız
+    > paket şekli okundu ve gerçek şemada küme **boş kaldı**."*
+
+    O ders orada öğrenildi, **burada uygulanmadı**. Buradaki sürüm gerçek şemada:
+
+    | eksik | sonucu |
+    |---|---|
+    | `dimension_synonyms` hiç okunmuyordu *(`dimension_labels` aranıyordu — o alan YOK)* | boyut sinonimi anan meşru bir vaat **düşürülüyordu** |
+    | `time_dimensions` hiç okunmuyordu | aynı |
+    | `!` soneki soyulmuyordu | *"ciro!"* ≠ *"ciro"* |
+
+    ⚠ Yön önemli: kapı *"vaat katalogda karşılık buluyor mu"* diye sorar, yani eksik bir
+    küme **yanlış DÜŞÜRME** üretir — sessiz bir kapsam kaybı. Fail-closed bir kapının
+    eksik beslenmesi, onu katı değil **kör** yapar.
+
+    *Bir dersi bir dosyada öğrenip ötekine taşımamak, onu öğrenmemekle aynı sonucu verir.*
+
+    `norm` — çağıranın eşleştirme politikası. Tarama katalog bilgisidir ve **burada**;
+    normalleştirme eşleştirme politikasıdır ve **çağıranındır** (`yetenek` Türkçe
+    düzleştirme ister, bu modül düz `lower()` ile çalışır).
+    """
+    f = norm or (lambda s: str(s).lower())
     out: set[str] = set()
     for c in (schema or {}).get("cubes", []) or []:
         for anahtar in ("name", "label"):
             if v := c.get(anahtar):
-                out.add(str(v).lower())
-        for grup in ("synonyms", "measure_synonyms", "dimension_labels"):
-            deger = c.get(grup)
-            if isinstance(deger, dict):
-                out |= {str(k).lower() for k in deger}
-                out |= {str(v).lower() for v in deger.values() if isinstance(v, str)}
-            elif isinstance(deger, (list, tuple)):
-                out |= {str(v).lower() for v in deger}
-        for alan in ("measures", "dimensions"):
+                out.add(f(str(v)))
+        for s in c.get("synonyms") or []:
+            out.add(f(str(s).removesuffix("!")))
+        # `schema()` şekli: ad listeleri + AYRI sinonim sözlükleri.
+        for alan in ("measures", "dimensions", "time_dimensions"):
             for m in c.get(alan) or []:
-                ad = m.get("name") if isinstance(m, dict) else m
-                if ad:
-                    out.add(str(ad).lower())
-    return {t for t in out if t}
+                if isinstance(m, dict):                       # paket şekli
+                    if ad := m.get("name"):
+                        out.add(f(str(ad)))
+                    for s in m.get("synonyms") or []:
+                        out.add(f(str(s).removesuffix("!")))
+                elif m:
+                    out.add(f(str(m)))
+        for anahtar in ("measure_synonyms", "dimension_synonyms"):
+            for _ad, syns in (c.get(anahtar) or {}).items():
+                for s in syns or []:
+                    out.add(f(str(s).removesuffix("!")))
+    out.discard("")
+    return out
 
 
 def _izinli_mi(cumle_kucuk: str) -> bool:
@@ -151,7 +184,7 @@ def dogrula(metin: str | None, schema: dict | None = None) -> Rapor:
     kalan: list[str] = []
     reddedilen: list[str] = []
     gerekceler: list[str] = []
-    katalog = _katalog_terimleri(schema)
+    katalog = katalog_terimleri(schema)
 
     for cumle in (c for c in _CUMLE_RE.split(metin) if c.strip()):
         c = cumle.strip()

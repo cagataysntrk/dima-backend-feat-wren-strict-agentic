@@ -143,6 +143,36 @@ def kuyrukla(request: Request, body: AskRequest, principal, runner) -> AskRespon
                 j.finished_at = datetime.utcnow()
                 s.add(j)
                 s.commit()
+            # 🔴 **BAŞARISIZ İŞ DE BİR CEVAPSIZ SORUDUR — ve telemetriye girer.**
+            #
+            # Başarılı yol `_finish` üzerinden zaten yazıyor (`answer._log_interaction`).
+            # Başarısız yol ona hiç ulaşmıyordu: iş `failed` olur, kullanıcı hata görür,
+            # ve *"kaç soru cevaplanamadı"* sayacında **hiç görünmezdi**.
+            #
+            # ⚠ Bu, bayrak `off`'ken YOKTU: senkron yolda bir istisna da `_finish`'e
+            # düşüyordu. Yani `ask_async_discovery`'yi açmak, bir ölçüm kanalını
+            # **sessizce daraltıyordu** — bu turda tam olarak bu sınıftan bir kusurun
+            # (`nl_corpus`'un süreç yarısı) bedeli ödendi.
+            #
+            # *Bir taşımayı değiştirmek, ölçümü de değiştirir; ölçüm taşımadan bağımsız
+            # olmalıdır, yoksa her hızlanma bir körleşmedir.*
+            try:
+                from app.answer import _log_interaction
+                from app.schemas import AskResponse as _AR
+
+                _log_interaction(
+                    getattr(body, "session_id", None), body,
+                    _AR(question=body.question, source=None,
+                        note=f"arka-plan Discovery başarısız: {str(exc)[:200]}",
+                        trace=["AskJob: failed"]),
+                    0, principal, request,
+                    # ⚠ Gerekçe **burada biliniyor** ve başka hiçbir yerde bilinemez:
+                    # kimlik thread'e kopyalanmadığı için `_teshis` şemayı okuyamaz ve
+                    # `None` döner. *Gerekçesiz bir cevapsızlık kaydı, sayacı doldurur
+                    # ama sorunun kendisini boş bırakır.*
+                    red_gerekcesi=f"JOB_FAILED: {type(exc).__name__}")
+            except Exception:                              # noqa: BLE001 — iş kaydı DÜŞMEZ
+                _log.warning("başarısız iş telemetriye yazılamadı", exc_info=True)
 
     # 🔴 **Kimlik thread'e KOPYALANMAZ** — ve bu, `istek_kimligi`'nin belgelediği tam
     # sınırdır. Ölçüldü (`DIMA_MOTOR_CLS=on`): arka-plan Discovery işi kimliksiz koştu,

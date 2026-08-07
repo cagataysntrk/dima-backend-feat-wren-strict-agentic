@@ -402,3 +402,30 @@ def test_SEMA_YALNIZ_OKUYACAK_OLAN_ICIN_URETILIR():
               / "app/routers/ask.py").read_text(encoding="utf-8")
     assert 'getattr(llm_probe, "sema_kullanir", True)' in kaynak, (
         "🔴 çağıran sağlayıcıya sormuyor ya da fail-open varsayılanı kaybolmuş")
+
+
+def test_G6_11_SEMA_GARANTISI_KAYBI_MAKBUZA_YAZILIYOR():
+    """🔴 `G6.11` — `llm_sema_kisitli` **yalnız Anthropic'te gerçek** (`sema_kullanir`).
+    Failover düşünce garanti kaybolur; cevap yanlış olmaz (`parse_cube_query` hâlâ
+    reddeder) ama *"model geçersiz bir ad ÜRETEMEZ"* sözü **tutulmaz**.
+
+    ⚠ Kanal bilerek `assumptions`: o liste zaten güveni bir kademe düşürüyor. İkinci bir
+    alan, kullanıcıya iki farklı güven anlatısı vermek olurdu.
+
+    *Bir garantinin koşullu olduğunu bilip söylememek, garantiyi vermekten kötüdür: ilki
+    bir sınır, ikincisi bir yanlış beyandır.*
+    """
+    import inspect
+
+    from app import answer as answer_mod
+
+    src = inspect.getsource(answer_mod)
+    # ⚠ Çapa **kod satırının kendisi**, yorumdaki geçiş değil: ilk yazımda pencere
+    # yorumun başına düştü ve kapı kendi metnini ölçtü. *Bir kapı, koruduğu şeyin
+    # koduna çapalanmalı; anlatısına değil.*
+    anahtar = 'getattr(_llm, "sema_kullanir", True)'
+    assert anahtar in src, "🔴 makbuz sağlayıcı yeteneğini hiç SORMUYOR"
+    i = src.index(anahtar)
+    yakin = src[i:i + 1400]
+    assert "assumptions" in yakin, "🔴 kayıt `assumptions` kanalından geçmiyor"
+    assert "except Exception" in yakin, "🔴 makbuz cevabı düşürebilir"

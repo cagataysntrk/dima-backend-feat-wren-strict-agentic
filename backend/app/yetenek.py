@@ -149,37 +149,25 @@ def _olumsuzluk(q: str, schema: dict) -> str | None:
 
 
 def _katalog_terimleri(schema: dict) -> set[str]:
-    """Katalogdaki **tüm** terimlerin normalize kümesi — cube · ölçü · boyut sinonimleri.
+    """Katalogdaki tüm terimlerin **normalize** kümesi — cube · ölçü · boyut sinonimleri.
 
-    ⚠ `WrenService.schema()` şekli **paket YAML'ından farklıdır**: adlar düz listelerde
-    (`measures: [ad, …]`), sinonimler ayrı sözlüklerde (`measure_synonyms: {ad: [syn]}`).
-    İlk yazımda yalnız paket şekli okundu ve gerçek şemada küme **boş kaldı** — yani
-    olumsuzluk dedektörü sessizce hiçbir şey yakalamıyordu.
+    🔴 **TARAMA ARTIK BURADA DEĞİL** (`app/iddia.py`). Bu fonksiyonun eski gövdesi,
+    `iddia`'nın gövdesiyle **aynı soruyu** iki farklı biçimde yanıtlıyordu — ve ikisi
+    **ayrışmıştı**: buradaki `schema()` şeklini doğru okuyordu, oradaki `dimension_labels`
+    diye var olmayan bir alan arıyordu.
 
-    *Bir sözlüğü okumayı bilmek, onu okumak değildir; şekli ölçülmeden yazılan her
-    okuyucu boş bir küme döndürebilir ve bu sessizdir.*
+    ⚠ O ders **burada** yazılıydı ve orada uygulanmamıştı:
 
-    İki şekli de kabul eder — testler paket şekliyle kurulum yapabilsin diye.
+    > *"`WrenService.schema()` şekli paket YAML'ından farklıdır… ilk yazımda küme boş
+    > kaldı — yani olumsuzluk dedektörü sessizce hiçbir şey yakalamıyordu.*
+    > *Bir sözlüğü okumayı bilmek, onu okumak değildir."*
+
+    Kalan tek şey **eşleştirme politikası**: bu modül Türkçe düzleştirme (`_norm`) ile
+    eşler, `iddia` düz `lower()` ile. Politika çağıranındır; **tarama katalogundur**.
     """
-    out: set[str] = set()
-    for c in schema.get("cubes") or []:
-        for t in (c.get("synonyms") or []):
-            out.add(_norm(str(t).removesuffix("!")))
-        # schema() şekli: ad listeleri + ayrı sinonim sözlükleri
-        for anahtar in ("measures", "dimensions", "time_dimensions"):
-            for m in (c.get(anahtar) or []):
-                if isinstance(m, dict):                       # paket şekli
-                    out.add(_norm(str(m.get("name") or "")))
-                    for t in (m.get("synonyms") or []):
-                        out.add(_norm(str(t).removesuffix("!")))
-                else:
-                    out.add(_norm(str(m)))
-        for anahtar in ("measure_synonyms", "dimension_synonyms"):
-            for _ad, syns in (c.get(anahtar) or {}).items():
-                for t in (syns or []):
-                    out.add(_norm(str(t).removesuffix("!")))
-    out.discard("")
-    return out
+    from app.iddia import katalog_terimleri
+
+    return katalog_terimleri(schema, norm=_norm)
 
 
 def _syn_benzeri(q: str, terim: str) -> bool:
@@ -354,22 +342,38 @@ def kapsam_disi(q: str, schema: dict) -> Sinir | None:
 
     ikili = _iki_cube_olcusu(q, schema)
     if ikili:
+        # 🔴 `G6.8` (`Ö12`'nin chip yarısı) — **BU BEYAN BAYATLADI ve düzeltildi.**
+        #
+        # Eski metin *"onları tek bir tabloda birleştirmiyorum"* diyordu. `G6.5`'ten sonra
+        # bu **artık doğru değil**: çapraz-cube harman (`blend`) mutfakta çalışıyor, kapı
+        # grain uyumunu doğruluyor (`cube_router.blend_uyumlu`) ve Intent-JSON onu **ifade
+        # edebiliyor**. Yapamadığımız şey **birleştirme** değil, **ilişki**.
+        #
+        # ⚠ Bir sınır beyanı, sınır değiştiğinde **kendiliğinden** güncellenmez — ve
+        # güncellenmeyen bir sınır beyanı, kullanıcıya sahip olduğumuz yeteneği
+        # **yok** diye söyler. *Yanlış bir «yapamam», yanlış bir «yapabilirim» kadar
+        # pahalıdır: ikisi de kullanıcının kararını yanlış bilgiyle değiştirir.*
+        #
+        # 🔴 Ayrım şudur ve `Ö12`'nin ikiye bölünmesi tam budur:
+        #   · **iki ayrı seri, ortak eksende** → ✅ var (`blend`, `G6.5`)
+        #   · **aralarındaki ilişki/etki/korelasyon** → ⊘ v2 · II-D (§8'in gerekçesi)
         return Sinir(
             tur="iki_cube", kutu=KUTU_YAPMIYORUM,
-            mesaj=(f"Bu soru **iki ayrı konunun** ölçüsünü aynı sorguda istiyor "
-                   f"({ikili}). Onları tek bir tabloda birleştirmiyorum — çünkü farklı "
-                   "tanelilikteki iki ölçüyü yan yana toplamak **sessizce yanlış** bir "
-                   "sayı üretir.\n\n"
-                   "Yapabildiğim: ikisini **ayrı ayrı** sorabilirsin; ya da birini "
-                   "sorup üstüne *«bir de … ekle»* diyebilirsin — takip yolunda aynı "
-                   "cube içinde ölçü eklemek çalışıyor."),
-            gerekce="MIMARI §9.2 — çapraz-cube ölçü birleştirme kapsam dışı",
+            mesaj=(f"Bu soru **iki ayrı konunun** ölçüsünü birlikte istiyor ({ikili}). "
+                   "İkisini **ortak bir eksende yan yana** koyabilirim — ama "
+                   "aralarındaki **ilişkiyi** (etki, korelasyon) hesaplayamıyorum.\n\n"
+                   "İki şey karıştırılmasın: yan yana koymak iki **ayrı** seridir ve "
+                   "her sayı kendi cube'undan gelir; ilişki ise bir **çıkarımdır** ve "
+                   "onu ancak ölçebildiğimde söylerim.\n\n"
+                   "Yapabildiğim: birini sorup üstüne *«bir de … ekle»* diyebilirsin — "
+                   "ortak kırılım varsa ikisi aynı tabloda gelir."),
+            gerekce="Ö12: yan yana ✅ (blend) · ilişki ⊘ (v2 · II-D)",
             oneriler=onerileri_kur(schema, tur="iki_cube"))
 
     return None
 
 
-def yanit_alanlari(sinir: Sinir, soru: str | None) -> dict:
+def yanit_alanlari(sinir: Sinir, soru: str | None, _sema: dict | None = None) -> dict:
     """`AskResponse` alanları — **tek yerden**.
 
     ⚠ Router'ın işi HTTP'dir; bir sınırın nasıl ANLATILDIĞI bu modülün işi. İkiye
@@ -378,11 +382,33 @@ def yanit_alanlari(sinir: Sinir, soru: str | None) -> dict:
     """
     _log.info("YETENEK KAPISI: %s (%s) — Discovery'ye GİDİLMEDİ · %d öneri",
               sinir.tur, sinir.kutu, len(sinir.oneriler))
+    # 🔴 `G8.4` — **BEYAN `iddia.py`'DEN GEÇER.** Metin deterministik diye muaf değildir:
+    # kapının işi *"bu cümle tutulabilir bir söz mü"* sorusudur ve bir şablon da katalogdan
+    # **ayrışabilir** (bu turda tam olarak öyle bir ayrışma bulundu — bkz. `katalog_terimleri`).
+    # Denetim **bedava**: 0 LLM, 0 token (`G4.7`).
+    #
+    # ⚠ Ve düşme burada **sessizleşmek değildir**: bir sınır beyanının yerini boşluk alsaydı
+    # kullanıcı cevapsız kalırdı — oysa kapının koruduğu şey **vaat**, sınırın kendisi değil.
+    # Düşerse iz kaydedilir ve metin **öneri yarısına** iner (*"şunu yapabilirim"* düşer,
+    # *"bunu yapamam"* kalır). *Fail-closed, sessiz-closed demek değildir.*
+    mesaj, dusen = sinir.mesaj, None
+    try:
+        from app import iddia as _iddia
+
+        _r = _iddia.dogrula(sinir.mesaj, _sema)
+        if not _r.gecti and _r.temiz_metin.strip():
+            mesaj, dusen = _r.temiz_metin.strip(), _r.gerekceler
+        elif not _r.gecti:
+            dusen = _r.gerekceler
+    except Exception:                                  # noqa: BLE001 — sınır beyanı DÜŞMEZ
+        _log.warning("iddia kapısı yetenek beyanında çalışmadı", exc_info=True)
+
     out = {
         "question": soru,
         "source": None,
-        "note": sinir.mesaj,
-        "trace": [f"Yetenek sınırı: {sinir.tur} · kutu={sinir.kutu} · {sinir.gerekce}"],
+        "note": mesaj,
+        "trace": [f"Yetenek sınırı: {sinir.tur} · kutu={sinir.kutu} · {sinir.gerekce}"]
+                 + ([f"🔴 iddia kapısı düşürdü: {', '.join(dusen)}"] if dusen else []),
     }
     # 🔴 `G8` — *"ama şunu yapabilirim"*. Üçüncü bir öneri kanalı AÇILMAZ: mevcut
     # `suggestions` kullanılır. `AskResponse` zaten `suggestions` ve `next_steps`

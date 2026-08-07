@@ -68,7 +68,7 @@ def test_ask_TELEMETRI_SATIRI_yazar(client, telemetri_acik):
     okurdu — "trafik yok" ile "loglama bozuk" ayırt edilemezdi."""
     from tests.conftest import ask
 
-    ask(client, "bu yıl makine bazında işlenen kg")
+    _ask_bekleyerek(client, "bu yıl makine bazında işlenen kg")
     yeni = _yeni_satirlar(telemetri_acik)
     assert yeni, "/ask hiç telemetri satırı yazmadı — KPI ölçülemez"
 
@@ -111,13 +111,43 @@ def test_takip_sorusu_FOLLOW_UP_isaretlenir(client, telemetri_acik):
     assert satir.follow_up is True, "takip sorusu takip olarak işaretlenmedi"
 
 
+
+def _ask_bekleyerek(client, soru: str):
+    """`/ask` — ve arka-plan işi varsa **bitmesini bekler**.
+
+    🔴 `G5.10` `ask_async_discovery`'yi açtı: Discovery yolu artık bir **iş** döndürüyor
+    ve telemetri işçinin `_finish`'inde yazılıyor. Kanal kaybolmadı, **ötelendi**.
+
+    ⚠ Testi *"yeni satır yok"* diye yeşile boyamak, ölçüm kanalını taşımaya bağımlı
+    kılmak olurdu. Kapının konusu **kanalın varlığı**; bekleme yalnız onu ölçebilmek için.
+
+    *Bir taşımayı değiştirmek ölçümü de değiştirir — kapı taşımaya değil, ÖLÇÜLEN ŞEYE
+    çapalanmalıdır.*
+    """
+    import time
+
+    from tests.conftest import ask
+
+    d = ask(client, soru)
+    jid = d.get("job_id")
+    if not jid:
+        return d
+    for _ in range(50):
+        r = client.get(f"/ask/jobs/{jid}")
+        if r.status_code == 200 and r.json().get("status") in ("completed", "failed",
+                                                              "cancelled", "iptal"):
+            return d
+        time.sleep(0.1)
+    return d
+
+
 def test_CEVAPSIZ_yanit_da_kaydedilir(client, telemetri_acik):
     """Netleştirme/dürüst ret de telemetriye girmeli: *"kaç soru cevaplanamadı"*
     kapsam boşluğunun EN DOĞRUDAN ölçüsüdür. Yalnız başarılı cevapları loglamak,
     kapsamı olduğundan iyi gösterirdi."""
     from tests.conftest import ask
 
-    ask(client, "asdf qwerty zxcv")
+    _ask_bekleyerek(client, "asdf qwerty zxcv")
     yeni = _yeni_satirlar(telemetri_acik)
     assert yeni, "cevapsız yanıt telemetriye yazılmadı — kapsam boşluğu görünmez olur"
 
@@ -192,10 +222,17 @@ def test_LLM_YOLUNDAN_gelen_cevap_da_RED_gerekcesi_tasir(client, telemetri_acik)
     ücretsiz üretiyor."""
     from tests.conftest import ask
 
-    d = ask(client, "asdf qwerty zxcv olmayan bir sey")
+    # 🔴 `G5.10` — asenkron Discovery açıldı: bu soru bir **iş** olarak koşuyor ve
+    # telemetri işçinin `_finish`'inde yazılıyor. Beklemeden okumak, kanalı değil
+    # **zamanlamayı** ölçerdi.
+    d = _ask_bekleyerek(client, "asdf qwerty zxcv olmayan bir sey")
     if d.get("source") == "cube":
         pytest.skip("bu soru deterministik yoldan cevaplandı — bu testin konusu değil")
-    satir = _yeni_satirlar(telemetri_acik)[-1]
+    satirlar = _yeni_satirlar(telemetri_acik)
+    assert satirlar, (
+        "⊘ HİÇ SATIR YAZILMADI — kapı bu durumda `IndexError` verirdi ve okuyucu onu "
+        "bir kod hatası sanardı. Ölçümün YOKLUĞU ile ölçümün BAŞARISIZLIĞI ayrı şeylerdir.")
+    satir = satirlar[-1]
     assert satir.reject_reason, (
         f"LLM yoluna düşen soru (source={satir.source}) red gerekçesiz kaydedildi — "
         "kapsam boşluğunun EN BÜYÜK kümesi telemetride görünmez kalır")

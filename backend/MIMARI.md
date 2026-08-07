@@ -1738,6 +1738,42 @@ değişirse aynı satır yeniden anlam kazanır.
 yok edicisi değil: şemaya uyan ama yanlış bir cevap da şemaya uyar. Bu yüzden `iddia.py`
 ve hava boşluğu bayrağın yerine geçmez — onlar **başka** bir şeyi korur.
 
+### 🔴 `G5.10` — AKIŞ AÇILDI, ÖLÇÜLDÜ, GERİ ALINDI
+
+Hat (`GET /ask/jobs/{id}/stream`) **ve** ön yüz tüketicisi (`streamAskJob` +
+`DurdurDugmesi`) ikisi de yazılıydı; tek eksik bayraktı. Kazanç da gerçek: deterministik
+yol ~100–800 ms, **LLM yolu 2,8–5,5 sn** ve o süre bugün **sessiz** geçiyor.
+
+⊙ **A/B — aynı kod, yalnız `ask_async_discovery`:**
+
+| | `tests/test_telemetri_yazma_yolu.py` |
+|---|---|
+| açık | 🔴 **2 kırmızı** |
+| kapalı | ✅ **12 yeşil** |
+
+🔴 Kayıp dar ama tam ölçmek istediğimiz yerde: LLM yoluna düşen soru telemetriye **red
+gerekçesi olmadan** yazılıyor — `_teshis` şemayı arka-plan thread'inde okuyamıyor (istek
+nesnesi cevap gönderildikten sonra kullanılamaz). O kolonun tek varlık sebebi *"kapsam
+boşluğunun EN BÜYÜK kümesi"*ni saymaktı.
+
+⚠ Yani hız kazancı bir **ölçüm kanalıyla** ödeniyordu — ve bu turda tam bu sınıftan bir
+kusurun faturası zaten ödenmişti (`nl_corpus`'un süreç yarısı sessizce koşmuyordu).
+
+*Bir taşımayı değiştirmek ölçümü de değiştirir; ölçüm taşımadan bağımsız olmalıdır, yoksa
+her hızlanma bir körleşmedir.*
+
+**ÖN KOŞUL** (yeniden açılmadan önce): teşhis kuyruğa girmeden **önce**, istek
+thread'inde hesaplanıp işe taşınmalı. Mekanizma **hazır**: `_log_interaction` artık
+`red_gerekcesi` parametresi alıyor ve **başarısız iş dalı onu kullanıyor** (o dal eskiden
+telemetriye hiç yazmıyordu — açık bir delikti, bayraktan bağımsız kapatıldı).
+
+#### Ve anlatı akışı ayrı bir sebeple kapalı
+
+Plan *"anlatı token token akar"* diyordu. İki bağımsız sebeple imkânsız: (1) `app/llm.py`'de
+tek bir `stream` çağrısı yok; (2) olsaydı bile `narration_guard` her cümledeki **her sayıyı**
+doğruluyor ve **yarım cümlenin sayısı doğrulanamaz**. Denetimin `Ö1` maddesi
+(*"cümle-tamponlu olmak zorunda"*) bir kısıt değil, bu kararın **kaydıymış**.
+
 ### 🔴 KATALOG SÖZLÜĞÜ — *en çok güvendiğimiz basamak, en kör hâliyle koşuyordu*
 
 `route()` zengin bir Türkçe eşanlam katmanı kullanır (`oee` → *"verim"*, *"randiman"*,
@@ -3018,7 +3054,7 @@ enum'dan kötüdür: modele var olmayan bir adı **dayatırdı**.
 > ölçülemeyen bir kazanç doğrulanamaz. Oranın önce/sonra kıyası **Faz 0.5'in `--live`
 > modunun** işidir ve o faza girdi olarak taşınmıştır.
 
-23 test: `tests/test_sema_kisitli.py` · bayraklar `llm_sema_kisitli` **ve** `referans_dili` (KURAL B). 🔴 `G6.5` ile şemaya **`blend`** girdi — ama yalnız `referans_dili` açıkken (`harman=True`); kapalıyken şema **bayt bayt bugünkü** ve bunu ayrı bir fixture kilitliyor (`sema` ↔ `sema_harman`).
+24 test: `tests/test_sema_kisitli.py` · bayraklar `llm_sema_kisitli` **ve** `referans_dili` (KURAL B). 🔴 `G6.5` ile şemaya **`blend`** girdi — ama yalnız `referans_dili` açıkken (`harman=True`); kapalıyken şema **bayt bayt bugünkü** ve bunu ayrı bir fixture kilitliyor (`sema` ↔ `sema_harman`).
 
 > ⟳ **KAZANÇ ÖLÇÜLDÜ (3 Ağustos 2026, gerçek Gemini) — VE KAZANÇ YOK.**
 >

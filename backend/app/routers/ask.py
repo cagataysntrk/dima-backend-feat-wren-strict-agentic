@@ -3652,7 +3652,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     # Yani cevaplanabilen hiçbir soru bu kapıya uğramaz — modülün güvencesi kodunda
     # değil, **çağrıldığı yerde** yaşıyor.
     if (_sinir := _yetenek.kapsam_disi(body.question or "", schema)) is not None:
-        return _finish(AskResponse(**_yetenek.yanit_alanlari(_sinir, body.question)))
+        return _finish(AskResponse(
+            **_yetenek.yanit_alanlari(_sinir, body.question, schema)))
 
     llm = getattr(request.app.state, "llm", None)
     if llm is None:

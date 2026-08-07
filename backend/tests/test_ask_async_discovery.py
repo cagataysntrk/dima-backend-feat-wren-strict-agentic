@@ -90,21 +90,41 @@ def test_BAYRAK_KAPATILINCA_DISCOVERY_YINE_SENKRON(client, monkeypatch):
     assert body["source"] is not None
 
 
-def test_BAYRAK_ARTIK_ACIK_ve_VARSAYILAN_ASENKRON(client):
-    """🔴 `G5.10`'un kararı: akış hattı **ve** ön yüz tüketicisi ikisi de yazılıydı, tek
-    eksik bayraktı.
+def test_G5_10_ACILDI_OLCULDU_ve_GERI_ALINDI(client):
+    """🔴 `G5.10` — **bayrak açıldı, ölçüldü ve GERİ ALINDI.** Kapı kararın kaydıdır.
 
-    ⊙ Ölçülen kazanç: deterministik yol ~100–800 ms (akış gereksiz), **LLM yolu 2,8–5,5
-    sn** — ve o süre bugüne kadar **sessiz** geçiyordu.
+    Hat (`GET /ask/jobs/{id}/stream`) **ve** ön yüz tüketicisi (`streamAskJob` +
+    `DurdurDugmesi`) ikisi de yazılıydı; tek eksik bayraktı ve kazanç gerçekti
+    (deterministik yol ~100–800 ms, **LLM yolu 2,8–5,5 sn** ve o süre sessiz geçiyor).
 
-    ⚠ Bu test bayrağı **taklit etmez**: `demo/packs/features.yml`'in gerçek değerini
-    ölçer. Taklit etseydi, bayrağın açık olduğunu değil, açılabildiğini kanıtlardı.
+    ⊙ **A/B — aynı kod, yalnız bu bayrak:**
+
+    | | `tests/test_telemetri_yazma_yolu.py` |
+    |---|---|
+    | açık | 🔴 **2 kırmızı** |
+    | kapalı | ✅ **12 yeşil** |
+
+    🔴 Kayıp dar ama tam da ölçmek istediğimiz yerde: LLM yoluna düşen soru telemetriye
+    **red gerekçesi olmadan** yazılıyor, çünkü `_teshis` şemayı arka-plan thread'inde
+    okuyamıyor (istek nesnesi cevap gönderildikten sonra kullanılamaz). O kolonun tek
+    varlık sebebi *"kapsam boşluğunun EN BÜYÜK kümesi"*ni saymaktı.
+
+    ⚠ Yani hız kazancı bir **ölçüm kanalıyla** ödeniyordu. Bu turda tam bu sınıftan bir
+    kusurun faturası zaten ödenmişti (`nl_corpus`'un süreç yarısı sessizce koşmuyordu).
+
+    *Bir taşımayı değiştirmek ölçümü de değiştirir; ölçüm taşımadan bağımsız olmalıdır,
+    yoksa her hızlanma bir körleşmedir.*
+
+    **ÖN KOŞUL** (bayrak yeniden açılmadan önce): teşhis kuyruğa girmeden **önce**, istek
+    thread'inde hesaplanıp işe taşınmalı. Mekanizma hazır — `_log_interaction` artık
+    `red_gerekcesi` parametresi alıyor ve başarısız iş dalı onu **kullanıyor**.
     """
     r = client.post("/ask", json={"question": "asdf zxcv listele", "execute": True,
-                                  "session_id": "eval-async-default"})
+                                  "session_id": "eval-sync-varsayilan"})
     assert r.status_code == 200, r.text
-    assert r.json().get("job_id"), (
-        "🔴 `ask_async_discovery` kapanmış — `G5.10` geri alınmış olabilir")
+    assert r.json().get("job_id") is None, (
+        "🔴 `ask_async_discovery` yeniden açılmış. Ön koşul karşılandıysa bu kapı "
+        "güncellenmeli — ama telemetri kapısı da birlikte yeşil olmalı.")
 
 
 def test_ask_queues_background_job_when_flag_on(client, monkeypatch):
