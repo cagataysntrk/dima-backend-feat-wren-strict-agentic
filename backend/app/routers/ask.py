@@ -2965,6 +2965,28 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 trace=["Yol sınırı: LLM basamakları kullanıcı tercihiyle KAPALI"],
             ))
 
+        # 🔴🔴 **SINIR LLM'DEN ÖNCE — canlı curl turu 2a'da ÖLÇÜLDÜ ve kusur BENİMDİ.**
+        #
+        # `§AJ3` ile modeli yorumlamaya **istekli** hâle getirdim (dönem alanı · karşı
+        # ağırlık · örnekler). Ölçülen yan etki: *"gelecek ay ciro tahmini"* artık
+        # `cube+llm` ile **30 satır geçmiş veri** dönüyordu — not yok, sınır yok.
+        #
+        # 🔴 Yani modeli konuşkan yapmak, sınır kapısını **daha erken** gerektirdi:
+        # `route()` pes ettiğinde soru LLM'e gitmeden önce *"bu zaten yapamadığımız bir
+        # şey mi"* diye sorulmalı. Aksi hâlde model, yapamadığımız bir isteği
+        # yapabildiğimiz bir sorguya **çevirir** — ve sonuç sessiz-yanlıştır.
+        #
+        # ⚠ Kapsam dar: `kapsam_disi` **beyan edilmiş** sınıfları tanır (tahmin · yargı ·
+        # iki-cube · olumsuzluk) ve tahmin yürütmez; `None` dönerse merdiven aynen devam
+        # eder. Yani bu bir **kesme** değil, bir **öncelik**.
+        #
+        # *Bir basamağı daha yetenekli yapmak, ondan önceki sınırı daha erken sormayı
+        # gerektirir — yoksa yeni yetenek, ilk olarak yapamadığımız şeyi yapmayı dener.*
+        if route_hit is None and (
+                _sinir_llm_oncesi := _guvenli_kapsam_disi(body.question or "",
+                                                          schema)) is not None:
+            return _finish(AskResponse(
+                **_yetenek.yanit_alanlari(_sinir_llm_oncesi, body.question, schema)))
         if route_hit is None and "ask_intent_first" in resolve_for(settings, principal):
             llm_probe = getattr(request.app.state, "llm", None)
             if llm_probe is not None and hasattr(llm_probe, "select_cube"):
@@ -3181,6 +3203,21 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             # yutulmaz).
             # FAZ -1: tarama `cube_router.ilgili_cubelar`'a TAŞINDI (kopyalanmadı) —
             # aynı sinyal artık "hiç konu yok" dalında da kullanılabiliyor.
+            # 🔴 **SINIR BURADA DA ÖNCE KONUŞUR — canlı curl turu 2.**
+            #
+            # Ölçüldü (bu dal düzeltilmeden önce): *"gelecek ay ciro tahmini"* →
+            # *"«gelecek tahmini» kısmını anlayamadım"*. Dürüst ama **yanlış cümle**:
+            # sistem o kelimeleri anlıyor, **yapamadığı** onların istediği şey.
+            # ⚠ *"Anlamadım"* demek, *"yapamıyorum"*dan farklıdır: birincisi kullanıcıyı
+            # yeniden yazmaya çağırır, ikincisi sınırı söyler. Yanlış olanı seçmek,
+            # kullanıcıyı **sonuçsuz bir döngüye** sokar.
+            #
+            # *Anlaşılmayan bir kelime ile yapılamayan bir istek aynı cevabı hak etmez.*
+            if (_sinir_kismi := _guvenli_kapsam_disi(body.question or "",
+                                                     schema)) is not None:
+                return _finish(AskResponse(
+                    **_yetenek.yanit_alanlari(_sinir_kismi, body.question, schema)))
+
             hit_cube_names = {c["name"] for c, _ in hits}
             other_topic = False
             for c in cube_router.ilgili_cubelar(q_norm, schema, haric=hit_cube_names):
