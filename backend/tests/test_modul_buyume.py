@@ -82,6 +82,21 @@ TABAN_CUBE_ROUTER_KOD = 1664  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("sosyal/baglam-kapisi", 2,
+     "🔴 **CANLI CURL BULGUSU: kök-neden sorusu VEDA sanıldı.** *«peki bu neden düşük»* → "
+     "*«Görüşürüz! İstediğin zaman buradayım.»* — 371 ms, 0 LLM, kendinden emin: en ucuz, "
+     "en hızlı, en yanlış cevap. "
+     "⊙ Kontrollü karşılaştırma tetikleyiciyi izole etti (*«peki bu ay ciro»* DOĞRU "
+     "çalışıyor): kusur `peki`'nin sözlükte olmasında değil, **veri sinyalinin tanımında**. "
+     "Bir takip sorusu (`bu`·`neden`·`düşük`) katalog terimi **taşımaz** — onu önceki tur "
+     "taşır ve o tur istekte **elde durur**. "
+     "⚠ **TAŞINAMAZ:** kapı iki kanatlı ve karar `body` ile `q_norm`'un **ikisinin birden** "
+     "elde olduğu tek yerde; bir modüle çıkarmak istek nesnesini o modüle taşımak olurdu. "
+     "🔴 İki kanat **ayrı** tutuldu: *tam kaplama* bağlamdan bağımsız kazanmaya devam eder "
+     "(thread ortasındaki *«teşekkürler»* hâlâ sosyaldir); bağlama bağlanan yalnız **zayıf** "
+     "kanat — yanılabildiği yer orasıydı. "
+     "*Bir cümlenin veri sorusu olup olmadığı yalnız kendi kelimelerinden okunamaz; bağlamı "
+     "elde tutan bir sistem için bu bilgi zaten mevcuttur.*"),
     ("VQR/eksik-niyet-ogrenmez", 4,
      "🔴 **EKSİK NİYETLİ CEVAP «DOĞRULANMIŞ» SAYILAMAZ.** Canlı denetim: *«şubatta ciro "
      "ocağa göre nasıl değişti»* → `source=vqr`, 434 ms, `eksik_niyet=['kiyas','trend']` — "

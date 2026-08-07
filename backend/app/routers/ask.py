@@ -2303,7 +2303,28 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         #   (b) kalıp ifade TÜM mesajı kaplıyor → "iyi çalışmalar" (`çalışma` katalogda
         #       gerçek bir terim ama kalıp ifadenin parçası, katalog terimi değil)
         # Aksi hâlde sosyal sözcük İÇEREN bir veri sorusudur ve kapı AÇILMAZ.
-        if _tam_kaplama or not cube_router.veri_niyeti_var(q_norm, schema):
+        # 🔴 **BAĞLAM ELDEYKEN «VERİ SİNYALİ YOK» DENEMEZ — canlı bulgu (§16 A).**
+        #
+        # Ölçüldü: `peki bu neden düşük` → **"Görüşürüz! İstediğin zaman buradayım."**
+        # 371 ms, 0 LLM, kendinden emin. Kullanıcı bir **kök-neden** sorusu sordu; sistem
+        # **hoşça kal** dedi — en ucuz, en hızlı, en yanlış cevap.
+        #
+        # ⊙ Kontrollü karşılaştırma tetikleyiciyi izole etti: `peki bu ay ciro` **doğru**
+        # çalışıyor, `peki bu neden düşük` çalışmıyor. Yani kusur `peki`'nin sözlükte
+        # olmasında değil, **veri sinyalinin tanımında**: bir takip sorusu (`bu`·`neden`·
+        # `düşük`) katalog terimi **taşımaz** — onu önceki tur taşır, ve o tur **elde
+        # duruyor** (`body.cube_query`).
+        #
+        # *Bir cümlenin veri sorusu olup olmadığı yalnız kendi kelimelerinden okunamaz;
+        # bağlamı elde tutan bir sistem için bu bilgi zaten mevcuttur.*
+        #
+        # ⚠ İki kanat AYRI tutuldu ve bu bilinçli: **tam kaplama** bağlamdan bağımsız
+        # kazanmaya devam eder — bir thread'in ortasındaki *"teşekkürler"* hâlâ sosyaldir.
+        # Bağlama bağlanan yalnız **zayıf** kanat (*"veri sinyali bulamadım"*), çünkü
+        # yanılabildiği yer orasıydı.
+        _baglamli = bool(getattr(body, "cube_query", None) or getattr(body, "history", None))
+        if _tam_kaplama or (not _baglamli
+                            and not cube_router.veri_niyeti_var(q_norm, schema)):
             return _finish(AskResponse(
                 question=body.question, source="meta", note=_SOSYAL_METIN[_tur],
                 suggestions=[Suggestion(**s) for s in _META_SUGGESTIONS[:3]],
