@@ -314,6 +314,20 @@ MUAFIYET_ASK_KOD = [
                       "dürüst olmayan bir mesajı SATIN ALMAZ"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("kapsam/ayristirici-tuketti-TAKIP", 5,
+     "🔴 **AYNI KURAL, TAKİP YOLUNDA — ve ilk düzeltmem YANLIŞ KATMANDAYDI.** Kuralı "
+     "`route()`'un kapısına yazdım, curl ile doğruladım ve **hâlâ kırıktı**: kullanıcının "
+     "bildirdiği bağlam kopması (*«en yüksek 3'ünü getir»* → *«ilişkilendiremedim»*) "
+     "`deterministic_refine`'ın **kendi** kapısından geçiyor (`:1423`). "
+     "⊙ İzole edildi: `refine(prev, «en yuksek 3»)` → ✅ `limit=3`; `«en yuksek 3 unu "
+     "getir»` → **None**. Fark **tek kelime**: `unu`. "
+     "⚠ Ve `deterministic_refine`'ın kendi şerhi bunu **zaten** uyarıyordu: *«DÖRT "
+     "tüketicinin DÖRDÜNDE de dolgu sayılır — biri atlanırsa aynı soru geldiği yola göre "
+     "farklı davranır.»* Beşinci bir dolgu sınıfı ekleyip yalnız birinde uyguladım. "
+     "⚠ **TAŞINAMAZ:** `known` her iki fonksiyonun da **yerel** değişkeni; ortak bir "
+     "yardımcı, kümeyi iki fonksiyondan da dışarı vermeyi gerektirirdi. "
+     "*Bir kusuru doğru teşhis edip yanlış katmanda düzeltmek, onu ikinci kez bulmayı "
+     "gerektirir.*"),
     ("kapsam/ayristirici-tuketti", 5,
      "🔴🔴 **ALTI KUSURUN TEK KÖKÜ** — canlı curl turunda bulundu: `3'ünü` · `3 tanesi` · "
      "`üretildi` · `çeyreklere` · `ocağa` · `5 milyon üzeri`. Hepsinde ayrıştırıcı ✅ ve "

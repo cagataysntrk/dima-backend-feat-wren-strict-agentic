@@ -1526,3 +1526,84 @@ Ama kapsam kapısı onu hâlâ **bilinmeyen** sayıyor → tur ölüyor.
 ⚠ Ve dikkat: `Ö10` düzeltmesi `niyet`i onardı (kırılım yanlış beyanı bitti) ama **turu
 kurtarmadı** — çünkü kusur `niyet`te değil **kapsam kapısındaydı**. *Bir kusuru doğru
 teşhis edip yanlış katmanda düzeltmek, onu ikinci kez bulmayı gerektirir.*
+
+---
+
+## 23 · 🔴🔴 `T-N` — *"yıkama neden yüksek"* · frontta **500**'ün kökü
+
+> curl, taze konteyner, **tek tek** koşuldu. Kullanıcının canlıda gördüğü
+> `Request failed with status code 500` burada birebir üretildi.
+
+### 23.1 · Turlar
+
+```
+n1/1  "aşama bazında toplam fire"
+      ✅ cq={parti · toplam_fire_kg · dimensions:[asama]} · not:"hangi dönem için?" · 489 ms
+
+n1/2  "bu yıl"
+      ✅ src=cube · 6 satır · gte 2026-01-01
+      özt: "En yüksek aşama: YIKAMA (113.840,10 kg, toplamın %25.0'i)…" · 487 ms
+
+n1/3  "yıkama neden yüksek"
+      🔴 src=llm:openrouter · cq={"cube":"adhoc"} · 78 834 ms
+      iz : "Discovery: ham-SQL üretimi (Intent-path kapsamadı)"
+```
+
+### 23.2 · 🔴 KUSUR P — frontta 500'ün sebebi **süre**, hata değil
+
+Kullanıcının paylaştığı canlı logda kritik ayrıntı: `POST /ask … 200 OK` satırı
+**HİÇ YOK**. Backend `CEVAP` yazdı (36 835 ms), ama erişim satırı yazılmadı — yani
+**istemci çoktan kopmuştu**.
+
+🔴 Yani **500 backend'den çıkmıyor**: cevap 36–79 saniye sürüyor, Next rewrite-proxy
+vazgeçiyor ve ön yüz onu *"sunucu hatası"* diye gösteriyor.
+
+*Bir cevabın geç gelmesi, kullanıcı için gelmemesiyle aynıdır — ve hata mesajı yanlış
+yeri işaret eder.*
+
+### 23.3 · 🔴 KUSUR R — *"neden"* sorusu Discovery'ye düşüyor
+
+`TUR_NEDEN` sınıflandırıcısı **var** ve çalışıyor:
+
+| soru | sınıf |
+|---|---|
+| `neden yüksek` | ✅ `neden` |
+| `bu neden yüksek` | ✅ `neden` |
+| `yıkama neden bu kadar yüksek` | ✅ `neden` |
+| 🔴 **`yıkama neden yüksek`** | **`None`** |
+
+⊙ Fark: başta bir **segment değeri** (`yıkama`) var ve sınıflandırıcı onu tanımıyor →
+tur `TUR_NEDEN`'e girmiyor → Intent kapsamıyor → **Discovery** (ham SQL, en pahalı ve en
+az güvenilen basamak).
+
+🔴 **Yedinci kez aynı sınıf**: sistemin **çözebildiği** bir kelime (burada bir boyut
+değeri) bir kapıda **tanınmadığı** için tur yanlış yola gidiyor.
+(`ocağa` · `3'ünü` · `çeyreklere` · `üretildi` · `3 tanesi` · `5 milyon üzeri` · `yıkama`)
+
+### 23.4 · ⚠ Ve cevabın kendisi ASLINDA doğruydu
+
+```
+özt: "En yüksek neden: Malzeme/Parti Bekleme (14.019, toplamın %84.7'i).
+      En düşük: Enerji Kesintisi (95); 6 kalem."
+```
+
+🔴 Bu **tam olarak** kullanıcının istediği kök-neden anlatımı (*"vardiya 1'de mal
+beklediği için…"*). Ama:
+
+* **78,8 saniyede** geldi (proxy kopar → 500),
+* `cube=adhoc` — yani **ham SQL**, doğrulanmış küp değil,
+* ve `duruş nedeni` kırılımı **deterministik olarak zaten mümkün**
+  (`makine_duruslari` cube'u · `drill.py` · `contribution.py`).
+
+> **Sistem doğru cevabı biliyor ve onu en pahalı, en yavaş, en az güvenilen yoldan
+> alıyor.** Kullanıcının kuralı burada birebir geçerli: *"cevabı sistem verecek, LLM
+> sadece garson."*
+
+### 23.5 · Düzeltme sırası (kanıtlarıyla hazır)
+
+1. **`yıkama neden yüksek` → `TUR_NEDEN`**: sınıflandırıcı, önündeki **boyut değerini**
+   dolgu saymalı — `§22.4`'ün kuralının yedinci uygulaması.
+2. **`TUR_NEDEN` deterministik kalsın**: `contribution`/`drill` ile duruş-nedeni
+   kırılımı, **0 LLM**. Ölçüm: bugünkü 78,8 sn → beklenen **< 1 sn**.
+3. **Ön yüz zaman aşımı**: `apiClient`'ta tanımlı değil; 20 sn'lik Intent bütçesi bile
+   proxy'yi kurtarmayabilir — sınır ön yüzde de olmalı.

@@ -1420,6 +1420,26 @@ def deterministic_refine(prev: dict, q: str, schema: dict,
     # farklı davranır (Faz -1'in "üç çağrı yeri" dersi).
     known |= _sosyal_hit_words(q) | _atif_hit_words(q)
     known |= rm_verb_words  # ölçü-çıkarma fiilleri (kaldır/sil…) dolgu sayılır, kapsamı delmez
+    # 🔴 **AYNI KURAL, TAKİP YOLUNDA — ve ilk düzeltmem YANLIŞ KATMANDAYDI.**
+    #
+    # Kuralı `route()`'un kapısına yazdım (`:3666`), curl ile doğruladım ve **hâlâ
+    # kırıktı**: kullanıcının bildirdiği bağlam kopması (*"en yüksek 3'ünü getir"* →
+    # *"ilişkilendiremedim"*) **bu** kapıdan geçiyor.
+    #
+    # ⊙ İzole edildi: `deterministic_refine(prev, "en yuksek 3")` → ✅ `limit=3`;
+    # `"en yuksek 3 unu getir"` → **None**. Fark tek kelime: `unu`.
+    #
+    # ⚠ Bu, üstteki şerhin kendi uyarısının doğrulanmasıdır: *"DÖRT tüketicinin
+    # DÖRDÜNDE de dolgu sayılır — biri atlanırsa aynı soru geldiği yola göre farklı
+    # davranır."* Ben beşinci bir dolgu sınıfı ekleyip **yalnız birinde** uyguladım.
+    #
+    # *Bir kusuru doğru teşhis edip yanlış katmanda düzeltmek, onu ikinci kez bulmayı
+    # gerektirir.*
+    if _top_n(q, cube_meta):
+        known.update(w for m in _TOPN_CUE.finditer(q)
+                     for w in re.findall(r"[a-z]+", m.group(0)))
+        for m in re.finditer(r"\b\d+\s+([a-z]{1,6})\b", q):
+            known.add(m.group(1))
     if not _coverage_ok(q, known):
         return None
 
