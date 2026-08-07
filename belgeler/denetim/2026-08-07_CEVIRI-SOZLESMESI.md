@@ -1163,3 +1163,94 @@ tanımıyla hesaplandı. Diğerleri: fire (parti)."* — thread içinde de sessi
 `_cube_refine_user`) · `app/uyum.py:212` · `app/routers/ask.py:2080`·`2194`·`2509`·`2734`·`2895` ·
 `demo/packs/starters.yml` (10 chip, route ölçümü) · **canlı koşum** (`:8001`, tenant `boyahane`, 2 tur, konteyner logları) · `lab/reports/gercek_dunya.md`
 (2285 vaka · kademe kırılımı) · canlı Intent turu (9 çağrı).*
+
+---
+
+## 20 · YENİ SENARYO TURU — `T-A` · `T-B` (curl, taze konteyner, tek tek)
+
+> ✅ Önceki sekiz kusurdan **yedisi doğrulandı kapandı** (§20.0). Bu bölüm **yeni**
+> senaryolarla bulunan **dört** kusuru taşıyor.
+
+### 20.0 · Kapanan kusurların CANLI doğrulaması
+
+| # | önce | **sonra (curl)** |
+|---|---|---|
+| **A** | `peki bu neden düşük` → *"Görüşürüz!"* | ✅ *"cevap üstünde konuşma"* + `ort_oee` ortalama uyarısı |
+| **B** | `makine bazında oee son 3 ay` **5.420 ms** | ✅ **1.190 ms** · log: `T2 ŞABLON: LLM çağrısı YAPILMADI` |
+| **B** | takip `aylara göre` 🔴 **24.285 ms** | ✅ **503 ms** — **48×** |
+| **C** | `gelecek ay ciro tahmini` → *"hangi dönem?"*, sonra `cube+llm` **30 satır** | ✅ *"forecast v1'de yok"* · **1.008 ms** |
+| **C/2** | `iyi miyiz kötü müyüz` → *"ort oee… hangi dönem?"* | ✅ *"eşik uydurmam"* · **1.536 ms** |
+| **D** | VQR eksik cevabı dondurdu | ✅ tamamen kapatıldı (`vqr_acik=False`) |
+| **H** | 69.399 ms'e kadar salınım | ✅ 8 sn tavan — aşımda **anlatı düşer, cevap yaşar** |
+
+🔴 Ve bir kusuru **düzeltmenin kendisi doğurdu**: `§AJ3` modeli istekli yapınca
+*"gelecek ay ciro tahmini"* `cube+llm` ile **30 satır geçmiş veri** döndü. Sınır üç dala
+birden taşındı (LLM'den önce · kısmi-anlama · dönem netleştirmesi), sözleşme **tek**.
+
+### 20.1 · `T-A` — kümülatif thread (4 tur)
+
+| tur | soru | sonuç |
+|---|---|---|
+| 1 | `bu yıl toplam ciro` | ✅ `gte 2026-01-01` · 0 LLM · **510 ms** |
+| 2 | `müşteri bazında göster` | ✅ dönem **korundu**, boyut eklendi · **431 ms** |
+| 3 | `en yüksek 3 tanesi` | 🔴 **iki kusur** — aşağıda |
+| 4 | `geçen yıla göre nasıl` | 🔴 kıyas **koştu ama söylenmedi** |
+
+### 20.2 · 🔴 KUSUR I — deterministik takip LLM'e düştü (**23,5 sn**)
+
+```
+"en yüksek 3 tanesi"  →  source=cube+llm · 23 489 ms
+iz: "Takip: LLM-destekli yapısal düzenleme"
+    "niyet: tür=ustunluk · üstünlük=3 · bilinmeyen=tanesi"
+```
+
+⊙ **Ayrıştırıcı çalışıyor** — doğrudan ölçüldü: `_top_n("en yuksek 3 tanesi")` → **3**.
+Ve tüketici de var: `deterministic_refine:1346` `cq["limit"]`'i tam bu durumda kuruyor.
+
+🔴 Yani kusur ne ayrıştırıcıda ne tüketicide — **çağrı koşulunda**: `bilinmeyen=tanesi`
+bir kapsam kapısını kapatıp refine'ı erken düşürüyor olabilir. *Bir yolun iki ucu da
+çalışırken yol çalışmıyorsa, kusur uçlarda değil kapıdadır.*
+
+### 20.3 · 🔴 KUSUR J — `limit` var, `order` YOK (tekrarlanabilirlik)
+
+Aynı turun çıktısı: `{… "limit": 3}` — **`order` yok**. Bugün doğru satırlar geldi, ama
+kayıtlı sorgu bir daha koşulduğunda (`/cube` chip'i · pano · zamanlanmış rapor)
+**başka üç satır** dönebilir.
+
+🔴 Ve bu `contracts.py`'nin *"SQL farklı → TANIM DEĞİŞTİ"* alarmını **yanlış** ateşler.
+*Sıralamasız bir limit, sonucu değil kuyruğu keser.*
+
+### 20.4 · 🔴 KUSUR K — kıyas KOŞTU ama SÖYLENMEDİ
+
+```
+"geçen yıla göre nasıl"  →  iz: "Takip: dönemsel kıyas (yoy, LLM'siz)"  ✅
+summary: (bir önceki turla BİREBİR AYNI)                                 🔴
+niyet  : 🔴temsil-yok=kiyas                                              🔴
+```
+
+Kullanıcı *"geçen yıla göre nasıl"* diye sordu; sorgu kıyası **kurdu**, `interpret()`
+özeti **kıyastan hiç söz etmedi** ve `eksik_niyet` de boş — yani ne cevap ne beyan.
+
+🔴 En sinsi biçim: sistem **doğru olanı yaptı** ve **söylemedi**.
+*Hesaplanan ama söylenmeyen bir kıyas, hesaplanmamış bir kıyastan ayırt edilemez.*
+
+### 20.5 · 🔴 KUSUR L — eşik ayrıştırıldı, uygulanmadı
+
+```
+"bu yıl 5 milyon üzeri ciro yapan müşteriler"
+→ cq'da `measure_having` YOK · eksik_niyet=['esik'] · 8 satır (hepsi)
+```
+
+⊙ Ayrıştırıcı **çalışıyor**: `_measure_threshold(...)` → `{'op': '>', 'value': 5000000.0}`.
+Ve tüketici de var: `route():3651` `cq["measure_having"]`'i kuruyor.
+
+⚠ Beyan **dürüst** (*"eşiği ölçü adıyla yaz"*) — ama yanlış: ölçü adı **zaten** cümlede
+(*"ciro yapan"*). Yani sistem kullanıcıya, kullanıcının **zaten yaptığı** şeyi öneriyor.
+
+*Bir çözüm önerisi, kullanıcının hâlihazırda denediği şeyse, öneri değil bir yankıdır.*
+
+### 20.6 · Sıradaki döngü — kök neden sırası
+
+`I` ve `L` **aynı sınıf**: ayrıştırıcı ✅ · tüketici ✅ · **çağrı koşulu** 🔴. Önce o
+koşullar okunmalı (`_coverage_ok` · `bilinmeyen` kapıları), sonra `K` (özetin kıyası
+görmesi), sonra `J` (`limit`→`order` eşleşmesi).
