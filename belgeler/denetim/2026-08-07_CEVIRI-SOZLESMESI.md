@@ -2306,3 +2306,143 @@ sistem bazı cümleleri anlar ve neden ötekileri anlamadığını kimse söyley
 | V1 | `geçen ay kaç parti üretildi` | 🔴 kalan kat (fiil çekimi) |
 
 Kapılar: hızlı kapı **1425 yeşil** · korpus **%95,1 = taban**, `sessiz_yanlis` **12 sabit**.
+
+---
+
+## §32 · FİİL MORFOLOJİSİ — ve *"kısa ek tehlikeli görünür ama değildir"* iddiasının ÇÜRÜTÜLMESİ
+
+### 32.1 · Ne eksikti
+
+`§31.1`'de `_kok()` indi: katalog terimlerinden **ad yapan** ekler soyuluyor
+(`uretim → uret`), böylece `uretildi` bir katalog terimine bağlanabiliyordu. Korpus
+yeşildi (`sessiz_yanlis` **12** sabit). Ama curl hâlâ kırmızıydı:
+
+```
+geçen ay kaç parti üretildi   →  eksik: ['olcu']
+```
+
+İzole edilen sebep — **iki koşul, biri sağlanmıyordu**:
+
+| kontrol | sonuç |
+|---|---|
+| `_kok("uretim")` → `"uret"` | ✅ |
+| `"uretildi".startswith("uret")` | ✅ |
+| `_ek_gecerli("ildi")` — kalan ek zinciri geçerli mi? | 🔴 **HAYIR** |
+
+`_SUFFIX_ATOMS` envanteri **ad** çekimini biliyordu (hâl · çoğul · iyelik). `-il`
+(edilgen) ve `-di` (görülen geçmiş) **fiil** çekimidir ve envanterde **hiç yoktu**.
+Yani `§31.1` doğru bir kökü buluyor, sonra kalanı tanımadığı için **reddediyordu**.
+
+### 32.2 · İlk yazım — ve kapının çürüttüğü iddia
+
+İlk denemede envantere şunlar kondu:
+
+```python
+"ildi","ıldı","uldu","üldü",  "il","ıl","ul","ül",  "en","an",
+"dik","dık","duk",  "yor",  "di","du","ti","tu",
+```
+
+Ve muafiyet gerekçesine şu cümle yazıldı:
+
+> *«Kısa oldukları için tek başlarına tehlikeli görünürler — ama zincir kalanın
+> **tamamını** eşlemek zorunda **ve** kök zaten bir katalog terimidir: yüzey iki yandan
+> sınırlı.»*
+
+🔴 **Bu cümle yanlıştı ve demet kapısı onu tek satırda çürüttü:**
+
+```
+E   AssertionError: assert not True
+E    +  where True = _covers('mal', 'maliyeti')
+```
+
+`maliyeti` = `mal` + `i` + `ye` + `ti` — ve `ti` yeni envanterdeydi. Yani `_covers`'ın
+**var olma sebebi** olan `mal ⊂ maliyeti` sessiz-yanlışı geri gelmişti.
+
+⊙ **Yanıldığım nokta:** *"iki yandan sınırlı"* bir yüzeyin **hâlâ geniş** olabileceği.
+İki harflik bir ek zincirde **her yere** sığar; kısalık bir güvence değil, tehlikenin
+ta kendisidir.
+
+> *Bir ekin kısalığı onun tehlikesidir: kısa ek her kelimenin sonunda bulunur.*
+
+### 32.3 · Düzeltilmiş envanter — bileşik biçimler
+
+Kısa olanlar düşürüldü, yerlerine **bileşik** olanlar kondu. Aynı işi görürler, kazayla
+eşleşemezler:
+
+```python
+"ildi","ıldı","uldu","üldü",   # edilgen+geçmiş bileşiği:  "üret"+"ildi"
+"ilen","ılan","ulan","ülen",   # edilgen+sıfat-fiil
+"en","an",                     # sıfat-fiil: "ver"+"en"
+"dik","dık","duk","dük",       # ortaç
+"yor",                         # şimdiki zaman
+```
+
+| biçim | çözülüş |
+|---|---|
+| `üretildi` | `uret` + **`ildi`** ✅ |
+| `veren` | `ver` + **`en`** ✅ |
+| `işlenen` | `isle` + `n` + **`en`** ✅ |
+| `maliyeti` | `mal` + `i` + `ye` + `ti` → **`ti` YOK** ⛔ ✅ doğru red |
+
+### 32.4 · İki kapının işbölümü — ölçülmüş bir gerçek
+
+🔴 **Korpus bu gerilemeyi GÖREMEDİ.** `kkO` koşumu kısa eklerle koştu ve
+`sessiz_yanlis` **12**'de sabit kaldı. Gerilemeyi yakalayan `--hizli`'nin seçtiği
+birim testiydi.
+
+Sebep yapısal: korpus soruları **katalogdan üretilir**, yani `maliyeti` gibi bir
+terimin **yanlış bir kökle** eşleşmesi korpusun sorduğu bir soru değildir. Korpus
+*"kaç soru cevaplanabiliyor"* sorusunu sorar; birim testi *"bu eşleşme doğru mu"*
+sorusunu.
+
+> *İki kapı aynı şeye bakmıyorsa, birinin yeşili ötekinin yeşili değildir — ve bir
+> demet ancak ikisi birden yeşilse yeşildir.*
+
+Bu, `CLAUDE.md`'deki *"korpusun bilinen körlüğü"* maddesinin **ikinci** kanıtıdır
+(ilki: typo yolu korpusta hiç sorulmuyor).
+
+### 32.5 · Meta-kapı da konuştu
+
+Kısa ekler düşünce net Δ **7 → 6** oldu ve meta-kapı **kırmızı** verdi:
+
+```
+🔴 KAPI SAHTE: bir kod satırı eklendi ve tavan hâlâ aşılmadı.
+   Tavanda boşluk var demektir (1) — kapı büyümeyi DURDURMUYOR.
+```
+
+Doğru tepki tavanı **elle yükseltmek değil**, muafiyet Δ'sını gerçeğe eşitlemekti
+(tavan zaten `sum(Δ)`'dan türetiliyor). *Bir tavanda boşluk bırakmak, tavanı bir
+sonraki artışta sessizce kabul etmektir.*
+
+### 32.6 · Tazeleme sonrası curl doğrulaması — üçü de DOĞRU
+
+`docker-compose build` + `up` sonrası, tek tek:
+
+| # | soru | önce | **sonra** | süre |
+|---|---|---|---|---|
+| `m32a` | `geçen ay kaç parti üretildi` | `eksik: ['olcu']` | ✅ `cq={parti, parti_sayisi, 2026-07}` + **dürüst sınır**: *«Bu aralıkta kayıt yok… elimdeki veri 01.01.2024 – 30.06.2026»* | 12.909 ms |
+| `m32b` | `en çok fire veren 3 aşama` | `veren` anlaşılmıyor | ✅ `cq={parti, toplam_fire_kg, dims:[asama]}` + *«hangi dönem için?»* | 14.335 ms |
+| `m32c` | `bu yıl vardiya bazında işlenen kg` | `işlenen` anlaşılmıyor | ✅ **3 satır**, `cq={oee, toplam_uretim_kg, dims:[vardiya], 2026-01-01…}` | 20.425 ms |
+
+⊙ `m32a`'nın cevabı **veri yok** — ve bu **doğru** cevaptır: veri 2026-06-30'da bitiyor,
+*"geçen ay"* 2026-07. Sistem boş tablo göstermiyor, **sınırını beyan ediyor**.
+
+### 32.7 · Doğrulama turunun AÇTIĞI üç kayıt
+
+**(a) 🔴 Üçü de `source=cube+llm` — yani `route()` hâlâ çözemiyor.**
+Morfoloji onarımı `_covers`'ı düzeltti ama bu üç cümle deterministik yoldan **geçmedi**;
+cevabı **garson LLM** verdi. Kullanıcının mimari duruşuna göre bu **tasarımın çalışması**
+(*"route'un cevaplayamadığı her şeyi LLM'e yıkabilmek"*), ama **fiyatı 12–20 sn**.
+
+**(b) ⚠ `Kusur T` yine göründü** — `en çok fire veren **3** aşama`'da hem `order` hem
+`limit` **kayboldu**: `cq`'da ne `order` var ne `limit`. Netleştirme turuna girerken
+üstünlük+sayı niyeti düşüyor.
+
+**(c) ✅ Beyaz-liste reddi bir KUSUR DEĞİL — kapının işi.**
+Log: `intent: whitelist REDDİ (sema=kapali) — ham={"cube":"parti","measures":
+["toplam_agirlik_kg"],"dimensions":["vardiya"],…}`. LLM `parti` küpüne **olmayan** bir
+ölçü/boyut uydurdu; `parse_cube_query` oyu düşürdü. Üç oydan biri gitti, kalan ikisi
+uyuştu, cevap doğru çıktı.
+
+> *Bir uydurmanın sessizce düşürülmesi bir kayıp değil, kapının tek görünür kanıtıdır —
+> ve bu satır loga yazıldığı için görünür.*

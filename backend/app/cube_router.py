@@ -2802,6 +2802,30 @@ _SUFFIX_ATOMS = (
     "ku",                            # 🔴 `-ki`nin YUVARLAK ünlü biçimi: bugün+KÜ, dün+KÜ
     "ce", "ca", "ci", "cu",
     "ir", "ur", "er", "ar",          # geniş zaman: "göster"+"ir"
+    # 🔴 **FİİL ÇEKİMİ — envanterin eksik yarısı.** Bu liste **ad** çekimini (hâl · çoğul ·
+    # iyelik) biliyordu; `üretildi`·`işlenen`·`veren` gibi **fiil** biçimleri hiç
+    # tanınmıyordu ve on iki morfoloji vakasının kalan katı buydu (`§31.2`).
+    #
+    # ⊙ Bunlar da **dilbilgisi**, alan sözlüğü değil: edilgen (`-il`), sıfat-fiil (`-en`),
+    # görülen geçmiş (`-di`), şimdiki (`-yor`), ortaç (`-dik`).
+    #
+    # ⚠ Kısa oldukları için tek başlarına tehlikeli görünürler — ama zincir kalanın
+    # **tamamını** eşlemek zorunda ve kök zaten bir katalog terimidir; yüzey iki yandan
+    # sınırlı. Yine de hakem **korpus**: `sessiz_yanlis` artarsa geri alınır (`§26.1`).
+    # 🔴 **KISA FİİL EKLERİ DÜŞÜRÜLDÜ — kapı bir SESSİZ-YANLIŞ gerilemesi yakaladı.**
+    # İlk yazımda `di`·`du`·`ti`·`tu` ve `il`·`ıl`·`ul`·`ül` de vardı. Sonuç:
+    # `_covers("mal", "maliyeti")` → **True** (`i`+`ye`+`ti` zincirlendi) — yani
+    # `_covers`'ın **var olma sebebi** olan `mal ⊂ maliyeti` sessiz-yanlışı geri geldi.
+    #
+    # ⊙ Ders: iki harflik bir ek, zincirde **her yere** sığar. Uzun ve **bileşik** biçimler
+    # (`ildi`) aynı işi görür ve kazayla eşleşemez.
+    #
+    # *Bir ekin kısalığı, onun tehlikesidir: kısa ek her kelimenin sonunda bulunur.*
+    "ildi", "ıldı", "uldu", "üldü",   # edilgen+geçmiş bileşiği: "üret"+"ildi"
+    "ilen", "ılan", "ulan", "ülen",   # edilgen+sıfat-fiil: "işle"+"n"+"en" bileşiği
+    "en", "an",                       # sıfat-fiil: "ver"+"en"
+    "dik", "dık", "duk", "dük",       # ortaç: "işle"+"dik"
+    "yor",                            # şimdiki zaman
     "i", "u", "e", "a", "y", "n", "s", "m",
 )
 # 🔴 `ku` KÖK-7a'da eklendi ve **ölçüyle zorunlu oldu**: `in q` yasağı uygulanınca
@@ -2913,7 +2937,8 @@ def _deger_dislaniyor(q: str, deger_norm: str, kardesler: list[str]) -> bool:
 #:
 #: ⚠ **Kök en az dört harf**: daha kısası (`fir`·`kar`) kapsamı deler ve `_covers`'ın
 #: kendi belgelediği sessiz-yanlışları (`kar ⊂ ankara`) geri getirirdi.
-_AD_YAPAN_EKLER = ("im", "ım", "um", "üm", "me", "ma", "iş", "ış", "uş", "üş")
+_AD_YAPAN_EKLER = ("im", "ım", "um", "üm", "em", "am",
+                   "me", "ma", "iş", "ış", "uş", "üş")
 _KOK_ASGARI = 4
 
 

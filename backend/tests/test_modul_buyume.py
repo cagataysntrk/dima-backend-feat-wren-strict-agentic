@@ -318,6 +318,25 @@ MUAFIYET_ASK_KOD = [
                       "dürüst olmayan bir mesajı SATIN ALMAZ"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("morfoloji/fiil-cekimi", 6,
+     "🔴 **ENVANTERİN EKSİK YARISI.** `_SUFFIX_ATOMS` **ad** çekimini biliyordu (hâl · çoğul "
+     "· iyelik); `üretildi`·`işlenen`·`veren` gibi **fiil** biçimleri hiç tanınmıyordu ve "
+     "on iki morfoloji vakasının kalan katı buydu (`§31.2`). "
+     "⊙ Eklenenler de **dilbilgisi**, alan sözlüğü değil: edilgen (`-il`), sıfat-fiil "
+     "(`-en`), görülen geçmiş (`-di`), şimdiki (`-yor`), ortaç (`-dik`). "
+     "🔴 **VE BU CÜMLENİN İLK HÂLİ YANLIŞ ÇIKTI — kapı onu ÇÜRÜTTÜ.** Burada önce "
+     "*«kısa ekler tek başlarına tehlikeli görünür ama zincir kalanın tamamını eşlemek "
+     "zorunda, yüzey iki yandan sınırlı»* yazıyordu. İlk yazımda `di`·`du`·`ti`·`tu` ve "
+     "`il`·`ıl`·`ul`·`ül` de vardı; demet kapısı `_covers('mal', 'maliyeti')` → **True** "
+     "verdi — yani `_covers`'ın **var olma sebebi** olan `mal ⊂ maliyeti` sessiz-yanlışı "
+     "geri geldi (`i`+`ye`+`ti` zincirlendi). "
+     "⊙ Yanıldığım nokta: *«iki yandan sınırlı»* bir yüzeyin **hâlâ geniş** olabileceği. "
+     "İki harflik bir ek zincirde **her yere** sığar; kısalık bir güvence değil, tam "
+     "tersine tehlikenin ta kendisidir. Kısa biçimler düşürüldü, yerlerine **bileşik** "
+     "olanlar (`ildi`·`ilen`) kondu — aynı işi görürler, kazayla eşleşemezler. "
+     "Hakem yine **korpus**: `sessiz_yanlis` artarsa geri alınır (`§26.1`). "
+     "⚠ **TAŞINAMAZ:** envanter `_SUFFIX_CHAIN_RE`'nin kaynağı ve `_ek_gecerli` onun tek "
+     "tüketicisi; bir modüle çıkarmak Türkçenin ek listesini iki dosyaya bölerdi."),
     ("morfoloji/ters-yon-kok", 9,
      "🔴 **ON İKİ MORFOLOJİ VAKASININ ORTAK KÖKÜ.** Katalogda **ad** var (`uretim`·`islem`), "
      "kullanıcıda **fiil** (`üretildi`·`işlenen`); `_covers` ikisini bağlayamıyor çünkü "
