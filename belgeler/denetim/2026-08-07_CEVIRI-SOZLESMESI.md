@@ -1672,3 +1672,43 @@ güvenlidir.*
 🔴 Sıradaki tur bunu ele alacak: `üretildi`/`etti` gibi **fiil** biçimleri ve `hangi`
 gibi **soru sözcükleri** dolgu sınıfına girmeli — `_LISTE_RE`/`rm_verb_words` için zaten
 var olan desenin genişletilmesi, yeni sözlük değil.
+
+### 24.5 · ⚠ ÖZ-DENETİM — son düzeltme KÖK ÇÖZÜM DEĞİL, kısmi
+
+Kullanıcının kuralı: **kök neden ve kök çözüm; tikel çözüm yasak.** Bu ölçüte göre
+`§24.2`'nin düzeltmesi **geçer not almıyor**:
+
+```python
+_KARSILASTIRMA = ("yuksek", "dusuk", "fazla", "az", "kotu", "iyi", …)   # 🔴 KELİME LİSTESİ
+_KARSILASTIRMA_AZAMI_KELIME = 4                                         # 🔴 EŞİK
+```
+
+🔴 Bu bir **liste + eşik**, yani tam olarak `ADR-0008`'in yasakladığı biçim. Bugün
+çalışıyor ama *"yıkama neden geride kaldı"*, *"3. vardiya neden zayıf"*, *"bu aşama neden
+sorunlu"* yine düşer — ve her biri listeye bir kelime daha eklettirir.
+
+#### Kök çözüm — yapısal, ve zaten elimizde
+
+Takip sorusunu eldeki cevaba bağlayan şey **zamir ya da sıfat değil**, sorunun
+**ekrandaki raporun bir satırını adlandırması**dır:
+
+| soru | bağ |
+|---|---|
+| `yıkama neden yüksek` | `yıkama` ∈ `asama` değerleri **(mevcut raporun kırılımı)** |
+| `3. vardiya neden düşük` | `3. Vardiya (00-08)` ∈ `vardiya` değerleri |
+| `fire oranı neden yüksek olur genel olarak` | `fire oranı` bir **ölçü adı** → bağ YOK |
+
+> **Kural:** bir takip sorusu, mevcut raporun **kırılım değerlerinden birini** anıyorsa
+> bağlıdır — zamire de sıfata da gerek yoktur. Bir **ölçü adını** anıyorsa yeni konudur.
+
+⊙ Bu ayrım *"genel olarak"* sorusunu da **kendiliğinden** dışarıda bırakır — uzunluk
+eşiğine gerek kalmaz.
+
+⚠ Gereken veri **zaten var**: `cube_query.dimensions` + katalogun `dimension_values`'ı
+(`value_index` bunu okuyor). Yani kök çözüm yeni bir sözlük değil, **var olan bir
+kaynağın ikinci tüketicisi**.
+
+*Bir kusuru gördüğü yerde yamamak, sınıfını görmemenin en pahalı biçimidir: her yeni
+örnek yeni bir yama ister ve yamalar birbirini tanımaz.*
+
+🔴 **Sıradaki tur bunu uygulayacak** ve `_KARSILASTIRMA` listesi **silinecek**.
