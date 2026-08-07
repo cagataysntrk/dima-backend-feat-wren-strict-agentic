@@ -1581,6 +1581,42 @@ taşıyor; üçüncüsü kullanıcıya *"hangisi gerçek öneri"* sorusunu sordu
 Bu, denetim belgesinin **`KÇ-7`**'sidir (*"«anlamadım» ile «yapamıyorum» ayrılsın"*) —
 sekiz kök çözümün son açık olanı.
 
+### 🔴 TÜRKÇE EK MOTORU (`G7`) — ve iki kapalı liste
+
+`app/ek.py`: ünlü uyumu (2'li + 4'lü) · ünsüz sertleşmesi/yumuşaması · tampon harfler ·
+**sayı→okunuş** tablosu. Kapsam **kapalı**: metrik adı · boyut değeri · sayı · tarih.
+
+**Zemberek ALINMADI** — üç somut engel: son sürüm **0.17.1 · Temmuz 2019** (*"slow
+maintenance mode"*) · sağlıklı Python bağlayıcısı yok → **JVM** · `pip install` **ağ
+ister**, CI `--network none`. Google'ın FST'si **19 Nisan 2026'da arşivlendi**.
+
+#### ⚠ `_SUFFIX_ATOMS` ile tablo PAYLAŞILAMADI — ve bu bir kusur değil
+
+Yol haritası *"kural tablosu ORTAK olmalı"* diyordu. Uygulanamaz:
+
+| | `cube_router._SUFFIX_ATOMS` | `app/ek.py` |
+|---|---|---|
+| yön | **doğrulama** (*"bu kuyruk ek mi?"*) | **üretim** (*"eki nasıl yazarım?"*) |
+| alfabe | **ASCII-normalize** (ı→i, ü→u) | **gerçek imlâ** (ü/ö/ı ayrımı ŞART) |
+
+🔴 Ünlü uyumu **tam olarak** normalizasyonun sildiği bilgiye dayanır. Aynı kural değil,
+**ters iki kural**. *İki fonksiyon aynı konuyu konuşuyor diye aynı sahibe ait olmaz.*
+
+#### 🔴 Sayı → OKUNUŞ zorunlu — danışman belgesi burada YANILIYORDU
+
+Belge *"son harfe bakar"* diyordu. Ek sayının **okunuşuna** göre değişir:
+`3` → *üç* → **`3'te`** · `40` → *kırk* → **`40'ta`** · `1.000.000` → *milyon* →
+**`1.000.000'a`** · `12` → *iki* → **`12'ye`**. Son harfe bakan bir motor dördünü de
+yanlış yazardı.
+
+#### İKİ kapalı liste — ve ikincisini bir TEST buldurdu
+
+1. **Yumuşamayanlar**: `saat`→`saati` (❌ *saadi*), `devlet`, `sanat`…
+2. 🔴 **İnce okunanlar**: `saat` son ünlüsü `a` (kalın) olduğu için kural `saatı` üretti;
+   **doğrusu `saati`**. Yabancı kökenli, **ince** çekimlenen sözcükler. `sanat`→`sanatı`
+   (kalın, düzenli) ama `dikkat`→`dikkati` (ince) — **aynı yazım, farklı çekim**.
+   *Bir dilin istisnası bir kuralın eksiği değil, sözlüğün kendisidir.*
+
 ### 🔴 ALAN HARİTASI — garson ↔ mutfak, ve kapılar
 
 `tests/test_alan_haritasi.py` sınırı **AST ile** kilitler: 🗣 garson modülü motora
