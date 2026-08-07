@@ -1483,6 +1483,39 @@ Geri alınan deneyin açıklaması silinmeden kalmış. Gerçek durum `4/11 kıs
 Statik envanter (11 dal) sınıfı görünür tutuyor ama **çalışma anındaki** oranı ölçmüyor.
 Yeri `nl_corpus`'tur ve bir lab değişikliği ister.
 
+### 🔴 §4'ÜN DEĞİŞMEZİ İKİYE BÖLÜNDÜ (`G4`) — sayı kapısı · İDDİA kapısı
+
+`narration_guard` kendi sınırını zaten itiraf ediyordu: *"Sayı **İÇERMEYEN** cümleler
+geçer: bu kapı **sayı uydurmasını** engeller, **üslubu değil**."*
+
+Yani şu üç cümle **hiçbir kapıdan takılmıyordu**:
+
+| cümle | sınıf |
+|---|---|
+| *"Fire verisi 2019'dan beri kayıtlı."* | şema iddiası |
+| *"İstersen tedarikçi kırılımı da ekleyebilirim."* | 🔴 **yetenek vaadi** — o boyut yoksa kullanıcı *"olsun"* der ve sistem çuvallar |
+| *"Hesabın doğru olduğundan eminim."* | doğrulanamaz güven |
+
+⚠ Üçüncüsü danışman belgesinin **kendi örnek çıktısında** vardı — kapının engellemesi
+gereken şey, kapıyı öneren belgenin vitrinindeydi.
+
+| # | değişmez | neyi korur | kapı |
+|---|---|---|---|
+| 1 | Sayıyı **KÜP** koyar | **rakam** | `narration_guard` ±%2 |
+| 2 | LLM'in her **İDDİASI** şemaya karşı doğrulanır | **cümle** | 🔴 `app/iddia.py` |
+
+🔴 Bu §4'ü **gevşetmiyor, İKİYE BÖLÜYOR.** Sayı yolu birebir aynı. Değişen: *"cümleyi kim
+kurar"* sorusunun cevabı artık **ayrı bir kapıya** bağlı, sayı kapısının yan ürünü değil.
+
+**Desen birebir devralındı:** cümle cümle · düşeni düşür · fail-closed · oranı logla.
+Ve *cümle ayırıcı* **ödünç alındı, kopyalanmadı** — ilk sürüm kendi regex'ini yazdı,
+`test_IKINCI_DOGRULAMA_MIMARISI_YOK` **haklı olarak** kırmızı verdi: yazılan desen
+sahibininkinden **farklıydı** (üç nokta ve *"1. madde"* koruması eksikti) ve fark
+**sessiz** olurdu. *Bir deseni varsaymak, onu okumaktan her zaman daha pahalıdır.*
+
+**Bedava denetim çalıştı:** kapı `soz.py`'nin **13 deterministik metninde** de koşuldu,
+hepsi geçti. Bir gün düşerse, o deterministik yolda bir kusur var demektir.
+
 ### 🔴 ALAN HARİTASI — garson ↔ mutfak, ve kapılar
 
 `tests/test_alan_haritasi.py` sınırı **AST ile** kilitler: 🗣 garson modülü motora

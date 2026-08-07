@@ -229,7 +229,7 @@ export interface AskResponse {
   // YER TUTUCU olarak gider (`{{DIM_1}}` · `{{NUM_1}}`); model bir rakam ÜRETEMEZ,
   // yalnız verdiğimiz yuvayı taşıyabilir. `bozulan` > 0 ise model yuvayı bozmuş ya da
   // UYDURMUŞ demektir. ⚠ Yalnız SAYI taşır — hangi değerin perdelendiği asla gelmez.
-  hava_boslugu?: { yer_tutucu: number; bozulan: number } | null;
+  hava_boslugu?: { yer_tutucu: number; bozulan: number; iddia_dusen?: number } | null;
   // 🔴 G1 — TEMELLENDİRME: *"anladığım şu"*. Kaynağı YALNIZ `cube_query` — anlatı değil
   // MUHASEBE; 0 LLM · 0 token, yani LLM düşse bile gelir. ⚠ `explain` ile karıştırma:
   // o **yol** (hangi basamak), bu **anlam** (ne anlaşıldı).

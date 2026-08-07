@@ -113,7 +113,8 @@ def test_SINIFSIZ_MODUL_BIRAKILAMAZ():
         # 🚪 KAPI — ikisinin arasında durur, ikisine de ait değildir
         "llm_guard.py": "🚪 çıkış kapısı — `safe_call`, fail-closed",
         "yayilim.py": "🚪 korunan yayılım — perdeleme/geri koyma (G0b)",
-        "narration_guard.py": "🚪 metin→sayı kapısı",
+        "narration_guard.py": "🚪 metin→SAYI kapısı",
+        "iddia.py": "🚪 metin→İDDİA kapısı (G4) — §4'ün değişmezinin ikinci yarısı",
         "uyum.py": "🚪 niyet↔sorgu uyum kapısı (beyan-açık)",
         "pii.py": "🚪 maskeleme, tek çıkış",
         "planner.py": "🚪 dört kapı (kayıt·yetki·det-önce·bütçe)",

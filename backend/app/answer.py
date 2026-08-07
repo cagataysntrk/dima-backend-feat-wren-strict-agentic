@@ -480,6 +480,24 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
         resp.hava_boslugu = {"yer_tutucu": len(_harita),
                              "bozulan": len(_yayilim_sorunlari)}
 
+        # 🔴 G4 — İDDİA KAPISI, guard'ın YANINDA. İkisi de `seal()`'in önünde durur ve
+        # farklı şeyleri korur: guard **rakamı**, iddia **cümleyi**. §4'ün değişmezi
+        # burada ikiye bölünür — gevşemez, BÖLÜNÜR.
+        from app import iddia as _iddia
+
+        try:
+            _sema = wren_for_request(request).schema()
+        except Exception:                                  # noqa: BLE001
+            _sema = None                                   # fail-closed: katalog yoksa
+            _log.warning("iddia kapısı için şema okunamadı", exc_info=True)
+        _ir = _iddia.dogrula(ham, _sema)
+        resp.hava_boslugu = {**(resp.hava_boslugu or {}),
+                             "iddia_dusen": len(_ir.reddedilen)}
+        if _ir.reddedilen:
+            _log.info("İDDİA KAPISI: %d cümle düştü — %s",
+                      len(_ir.reddedilen), "; ".join(_ir.gerekceler[:3]))
+        ham = _ir.temiz_metin
+
         metin, rapor = guvenli_anlatim(
             ham, resp.result.model_dump() if resp.result else None, yedek=None)
         if not metin:

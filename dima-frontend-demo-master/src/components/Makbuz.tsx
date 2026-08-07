@@ -227,6 +227,16 @@ export function Makbuz({
                     ? `${item.hava_boslugu.bozulan} bozuldu`
                     : "dışarı çıkan: yok"}
                 </span>
+                {/* 🔴 G4 — iddia kapısının izi, guard'ın iziyle AYNI yerde. İkinci bir
+                    panel açmak, iki kapıyı iki ayrı şeymiş gibi gösterirdi. */}
+                {item.hava_boslugu.iddia_dusen !== undefined && (
+                  <>
+                    <span className="mx-1 text-neutral-400">·</span>
+                    <span className={item.hava_boslugu.iddia_dusen ? "text-amber-500" : "text-foreground"}>
+                      iddia: {item.hava_boslugu.iddia_dusen} cümle düştü
+                    </span>
+                  </>
+                )}
               </div>
             )}
             {item.trace && item.trace.length > 0 && (
