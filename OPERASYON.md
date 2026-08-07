@@ -480,6 +480,97 @@ değişken soru. Budama **değişken** katmanda kalır.
 
 ---
 
+## 10c · 🔴 BEŞ KÖŞE VAKASI — dış öneri, **kodla sınandı** *(2026-08-07)*
+
+> Sistemi tanımayan bir danışman beş teknik köşe vakası önerdi. Beşi de **koda karşı
+> doğrulandı** (`K1`: dış rapor ikinci el kanıttır). Sonuç: **ikisi kabul, ikisi zaten
+> var ama bir borcu ortaya çıkardı, biri reddedildi.**
+
+### ✅ `Ö1` KABUL — Akış, **cümle-tamponlu** olmak zorunda *(gelecek faz kısıtı)*
+
+Öneri: SSE metni token token akıtırsa, `narration_guard`/`iddia.py` **cümle
+tamamlandıktan sonra** karar verdiği için düşen bir cümle **ekranda çoktan görünmüş**
+olur.
+
+⊙ Doğrulandı: bugün SSE **metin akıtmıyor** — `ask.py`'nin üreticisi yalnız `adim` (iz)
+olayları ve sonda **tek parça** `tamam` yayınlıyor. Yani risk **bugün yok**, ama akış
+maddesi (`S`) indiği gün **yapısal olarak** doğar: fail-closed bir kapı, çıktısı çoktan
+gönderilmiş bir cümleyi geri alamaz.
+
+🔴 **Bağlayıcı kısıt, şimdiden yazılı:** anlatı akışı **cümle tamponlu** olur. Metin
+cümle sınırına kadar tamponda birikir, `narration_guard` + `iddia.py`'den geçer, **sonra**
+blok hâlinde akar. Düşen cümle istemciye **hiç** ulaşmaz.
+*Bir kapıyı geri alınamaz bir kanalın arkasına koymak, o kapıyı kaldırmaktır.*
+
+### ◐ `Ö2` ZATEN VAR — ama işaret ettiği kayıp **ÖLÇÜLMÜŞ ve AÇIK**
+
+Öneri: sohbet geçmişi 2 turla sınırlıyken **kümülatif CubeQuery**'yi uzun ömürlü taşı.
+
+⊙ Doğrulandı: **tam olarak bunu yapıyoruz.** `context.py:185` ham metin penceresini
+`(history or [])[-2:]` ile sınırlıyor; `cube_query` ise **ayrı ve yapısal** olarak her
+turda yankılanıyor (`ask.py:1569`), `deterministic_refine(prev, …)` de düzenlemeyi
+**önceki sorgunun üstüne** uyguluyor. Yani mekanizma mevcut.
+
+🔴 **Ama önerinin işaret ettiği KAYIP gerçek ve bizde ÖLÇÜLMÜŞ:** `lab/sharding.py`,
+44 konuşmalık sabit kohortta **tur 1 %63,6 → tur 5 %45,5 = −%18,2** (hedef −%10).
+Yani kümülatif taşıma **var** ama çok-turlu derinleşmede yine bozuluyor.
+*Bir mekanizmanın var olması, işini yaptığının kanıtı değildir.*
+→ Borç: çok-turlu bozulma (`FAZ 4.3`'ün ölçülmüş borcu) — sahibi atanmalı.
+
+### ✅ `Ö3` KABUL — kaçış kapısı **zaten config'de**, ölçüm eşiği yazıldı
+
+Öneri: tek büyük model Eksen 1'de (Intent-JSON) yüksek TTFT üretebilir; Eksen 1 için
+küçük bir model **B planı** olarak yedekte dursun.
+
+⊙ Doğrulandı: `config.py:96` `openrouter_select_model: str = ""` — **kaldıraç var**,
+yalnız boş. Yani B planı bir **kod işi değil, bir env satırı**.
+
+⊙ Ve ölçüm önemsiz değil: bu turda canlı kapıda **ilk çağrı 33,7 sn**, sonrakiler
+**~1,4 sn** (önbellek ısınıyor). Yani sıcak p95 önerinin eşiğinin (**1,5 sn**) tam
+sınırında, **soğuk başlangıç** ise onun çok ötesinde.
+
+🔴 **Kural:** Eksen 1 p95 > **1,5 sn** ölçülürse `openrouter_select_model` doldurulur —
+mimari değişmez, yalnız o alan yazılır. ⚠ Kullanıcı kararı *"tek model"*di; bu kaldıraç
+o kararı **değiştirmez**, ölçüm onu gerektirirse diye **görünür** durur.
+
+### ⊘ `Ö4` REDDEDİLDİ — ikinci sahip yaratırdı
+
+Öneri: `garson.py`'nin 15 ifadesinden **150+ sentetik varyasyon** üretilip ayrı bir
+küme (`garson_variations.json`) olarak stress-test edilsin.
+
+🔴 Reddin gerekçesi aletin **kendi docstring'inde** yazılı: *"§5/2 «kendi diliyle sipariş
+alır» bilinçle DIŞARIDA: onu `lab/gercek_dunya.py` persona×zorluk matrisiyle **zaten
+ölçüyor** — ikinci bir sahip yaratmayız."* O araç bugün **2 312 vaka** koşuyor ve dağınık
+/ yazım hatalı ifadeleri içeriyor. İkinci bir varyasyon kümesi, bu deponun bir numaralı
+kusur sınıfını (*aynı kuralın iki sahibi*) doğrudan üretirdi.
+
+⚠ **Ama önerinin bir yarısı gerçek bir boşluğa değiyor ve kayda geçer:**
+`gercek_dunya.py` **tek turlu** ve yalnız `route()`'u ölçüyor; `garson.py` çok turlu ama
+yalnız **6 senaryo / 16 tur**. Yani *"aynı isteği farklı biçimde, ÇOK TURLU sor"* ekseni
+hiçbir alette yok. Genişletilecekse **`garson.py` içinde** genişletilir, yeni bir küme
+açılmaz — ve kullanıcının bağlayıcı sınırı geçerlidir: *"testleri yığma, 10-20 istek bile
+akıllıca yapılırsa yeterli."*
+
+### ✅ `Ö5` KABUL — **en değerli öneri**; kapının kendi sözü tutulmamış
+
+Öneri: model/prompt değişirse guard'lar **sessizce** tüm anlatıyı düşürmeye başlayabilir;
+kullanıcı yanlış sayı görmez (güvenli) ama sistem sürekli *"soğuk"* cevap verir ve
+**kimse fark etmez**. → Son N istekte düşme oranı eşiği aşarsa **alarm**.
+
+⊙ Doğrulandı: agrege düşme oranı **hiçbir yerde ölçülmüyor** (`grep dusme_orani|drop_rate`
+→ **0**). Tek tek loglar var, makbuzda tek cevaplık sayı var — **oran yok**.
+
+🔴 Ve bu, `app/iddia.py`'nin **kendi docstring'inin** sözüdür: *"düşme oranı **ölçülür** —
+kapı agresifse gevşetilir, ama **ölçüyle**, sezgiyle değil."* Söz yazıldı, ölçüm
+kurulmadı. *Bir kapının sessizce her şeyi düşürmesi, hiç olmamasından farksızdır — tek
+fark, sistemin kendini güvende sanmasıdır.*
+
+→ Faz maddesi: `interaction_log` üzerinden **kayan pencere** düşme oranı + eşik uyarısı.
+⚠ Eşik **ölçümle** konur (bugün taban bilinmiyor); önerinin **%30**'u bir başlangıç
+tahminidir, bir karar değil.
+
+---
+
 ## 11 · DURMA ŞARTLARI — sadece bunlar
 
 Döngü **v1 bitene kadar** sürer. Yalnız şu üç durumda durulur ve sorulur:
