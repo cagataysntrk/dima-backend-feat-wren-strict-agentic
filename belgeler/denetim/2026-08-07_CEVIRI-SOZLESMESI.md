@@ -1914,3 +1914,33 @@ hesaplanıp her `result()` ona göre kısaltılmalı.
    boyut, `en çok` bir sıralama; şema artık `order`+`limit`+`measure_having` de tanıyor
    (`§AJ4`). Yani fiş tamam, **red hâlâ var** → prompt tarafı ölçülmeli
    (`AJ3.4` red yanlılığı · `AJ3.5` örnek sayısı).
+
+### 27.4 · ⚠ `s5` YANLIŞ SINIFLANDIRILMIŞ — LLM'in reddi DOĞRUYMUŞ
+
+`§24.4` ve `§27.3`'te *"`hangi müşteri en çok iade etti` — sistem bunu çözebiliyor,
+`iade` bir ölçü"* yazmıştım. **Katalog okundu: yanlış.**
+
+`iade` bu katalogda **bir ölçü değil** — yalnızca `metrik_sozlugu.yml`'de bir **yorum
+satırında** geçiyor (*"iptal/iade faturada görünür"*). Yani:
+
+* `route()`'un pes etmesi ✅ doğru
+* Intent-JSON'un `{cube:null}` demesi ✅ **doğru**
+* kusur yalnızca **sunumda**: *"«hangi etti» başka bir konu gibi görünüyor"* — anlamsız
+  bir cümle; kullanıcıya *"**iade** diye bir ölçüm tutmuyorum"* denmeliydi.
+
+🔴 Ders bende: *"sistem bunu çözebiliyor"* iddiasını **katalogdan doğrulamadan** yazdım
+ve bir turu yanlış kusur sınıfına harcadım.
+
+> *Bir kusuru sınıflandırmadan önce, sistemin o soruya verecek cevabı olup olmadığını
+> katalogdan doğrula — yoksa doğru davranışı kusur sanarsın.*
+
+⊙ Yeniden sınıflandırma:
+
+| soru | eski teşhis | **doğru teşhis** |
+|---|---|---|
+| `hangi müşteri en çok iade etti` | 🔴 kapsam kapısı kusuru | ✅ **doğru red** · ⚠ kötü **cümle** |
+| `geçen ay kaç parti üretildi` | 🔴 `üretildi` bilinmeyen | 🔴 **açık** — `uretim` katalogda var |
+
+**Kalan gerçek iş:** red **cümlesi**. Kullanıcı *"«hangi etti» başka bir konu"* değil,
+*"iade diye bir ölçüm yok; şunlar var…"* duymalı — ve o cümlenin sahibi `app/yetenek.py`
+(kapasite beyanı), netleştirme değil.

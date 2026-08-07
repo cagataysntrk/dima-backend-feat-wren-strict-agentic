@@ -72,3 +72,29 @@ def test_IMZA_EN_DAR_KAPSAMA_GORE():
     src = inspect.getsource(ask_mod._select_consistent)
     assert "_rf4(get_settings(), None)" in src, (
         "🔴 `principal` kullanılmış — bu fonksiyonun kapsamında o isim YOK")
+
+
+def test_BUTCE_SON_TARIH_OY_BASINA_PAY_DEGIL():
+    """🔴 **Canlı ölçüm ilk tasarımı çürüttü** (`§27.2`).
+
+    `intent_azami_saniye=20` konulu hâlde tek çağrı **47.544 ms** sürdü, istek
+    **49.782 ms**. Sebep: her oy için ayrı `result(timeout=azami)` çağrılıyordu ve her
+    çağrı **kendi anından** saymaya başlıyordu — ilk oy 7,6 sn sürünce ikinciye **20 sn
+    daha** tanınıyordu.
+
+    *Bir bütçeyi parça başına vermek, bütçeyi parça sayısıyla çarpmaktır.*
+
+    ⚠ Son tarih **gönderimden önce** hesaplanmalı: `submit`'ten sonra hesaplamak, iş
+    kuyrukta beklerken geçen süreyi bütçenin dışında bırakırdı.
+    """
+    import inspect
+
+    from app.routers import ask as ask_mod
+
+    src = inspect.getsource(ask_mod._select_consistent)
+    assert "_bitis = _time.monotonic() + _intent_azami" in src, (
+        "🔴 bütçe hâlâ oy başına — toplam süre sınırsız kalır")
+    assert "_bitis - _time.monotonic()" in src, "🔴 kalan süre hesaplanmıyor"
+    i_bitis, i_submit = src.index("_bitis ="), src.index("ex.submit(one")
+    assert i_bitis < i_submit, (
+        "🔴 son tarih gönderimden SONRA hesaplanıyor — kuyruk süresi bütçe dışı kalır")

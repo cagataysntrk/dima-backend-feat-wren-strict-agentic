@@ -800,14 +800,27 @@ def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
     #
     # *Bir bütçeyi yalnız bir basamağa koymak, ötekini sınırsız ilan etmektir.*
     _intent_azami = float(getattr(get_settings(), "intent_azami_saniye", 20.0) or 20.0)
+    # 🔴 **BÜTÇE BİR SON TARİHTİR, OY BAŞINA PAY DEĞİL — canlı ölçüm çürüttü.**
+    #
+    # İlk yazım her oy için ayrı `result(timeout=azami)` çağırıyordu ve her çağrı **kendi
+    # anından** saymaya başlıyordu. Ölçüldü (`§27.2`): `intent_azami_saniye=20` konulu
+    # hâlde tek çağrı **47.544 ms** sürdü, istek **49.782 ms**. Çünkü ilk oy 7,6 sn
+    # sürdüğünde ikinciye **20 sn daha** tanınıyordu.
+    #
+    # *Bir bütçeyi parça başına vermek, bütçeyi parça sayısıyla çarpmaktır.*
+    #
+    # ⚠ Son tarih **gönderimden önce** hesaplanır: `submit`'ten sonra hesaplamak, iş
+    # kuyrukta beklerken geçen süreyi bütçenin dışında bırakırdı.
+    _bitis = _time.monotonic() + _intent_azami
     oylar = []
     with cf.ThreadPoolExecutor(max_workers=k) as ex:
         _isler = [ex.submit(one, i) for i in range(k)]
         for _f in _isler:
             try:
-                oylar.append(_f.result(timeout=_intent_azami))
+                oylar.append(_f.result(timeout=max(0.0, _bitis - _time.monotonic())))
             except cf.TimeoutError:
-                _log.warning("Intent oyu BÜTÇEYİ AŞTI (%.0f sn) — oy düştü", _intent_azami)
+                _log.warning("Intent oyu BÜTÇEYİ AŞTI (toplam %.0f sn) — oy düştü",
+                             _intent_azami)
                 oylar.append(None)
     cands = [c for c in oylar if c]
     if not cands:
