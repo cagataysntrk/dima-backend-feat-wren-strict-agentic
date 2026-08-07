@@ -2406,7 +2406,15 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     #   (2) Sabit `True` yüzünden `followup.py`'nin *"bağlam-yok"* kuralı **üretimde hiç
     #       ateşlenmiyordu** — yalnız birim testinde yaşıyordu.
     # ⚠ Çağrı yukarı taşındı ama **hiçbir yol kesilmedi** (KAT-2).
-    niyet = followup.sinifla(body.question, baglam_var=bool(is_followup))
+    # 🔴 **ÇAPA DEĞERLERİ** — *"ekranda hangi satırlar var"*. Sahibi **bağlam katmanı**
+    # (`app/context.py`), sınıflandırıcı değil (`KAT-1`); burada kalan yalnız çağrı.
+    try:
+        _capa_degerleri = app_context.capa_degerleri(body.cube_query, schema)
+    except Exception:                                  # noqa: BLE001 — sınıflandırma düşmez
+        _capa_degerleri = None
+        _log.warning("çapa değerleri okunamadı (best-effort)", exc_info=True)
+    niyet = followup.sinifla(body.question, baglam_var=bool(is_followup),
+                             capa_degerleri=_capa_degerleri)
 
     _eylem_karar = eylem.degerlendir(q_norm, body.cube_query, schema=schema)
     # 🔴 FAZ 5.1 — **6. TÜR: *"bunu takip et"***. `degerlendir()` bunu tanımaz (teslim

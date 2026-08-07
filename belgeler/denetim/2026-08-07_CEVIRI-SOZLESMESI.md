@@ -1712,3 +1712,40 @@ kaynağın ikinci tüketicisi**.
 örnek yeni bir yama ister ve yamalar birbirini tanımaz.*
 
 🔴 **Sıradaki tur bunu uygulayacak** ve `_KARSILASTIRMA` listesi **silinecek**.
+
+### 24.6 · ✅ KÖK ÇÖZÜM İNDİ — kelime listesi silindi, curl doğruladı
+
+```
+"yıkama neden geride kaldı"        ← eski KELİME LİSTESİNDE YOKTU
+önce  🔴 cube+llm · "LLM-destekli yapısal düzenleme" · 28 498 ms
+sonra ✅ "cevap üstünde konuşma (neden, LLM'siz)" ·  1 778 ms · 0 LLM
+```
+
+| | önce (tikel) | sonra (kök) |
+|---|---|---|
+| ölçüt | `_KARSILASTIRMA` **kelime listesi** + 4-kelime eşiği | soru, kırılımın bir **DEĞERİNİ** anıyor mu |
+| `yıkama neden yüksek` | ✅ | ✅ |
+| `yıkama neden **geride kaldı**` | 🔴 | ✅ **liste büyümeden** |
+| `fire oranı neden yüksek olur genel olarak` | eşikle elenir | **kendiliğinden** elenir (ölçü adı, değer değil) |
+
+*Zamir "şu" der; değer **HANGİSİ** olduğunu söyler.*
+
+#### ⚠ Ve kök çözümün kendisi bir kez YANLIŞ KAYNAKTAN okudu
+
+İlk yazım `previous_result.rows`'u okuyordu. Curl **çalışmadığını** gösterdi:
+`AskRequest`'te öyle bir alan **YOK** — istemci satırları hiç göndermiyor, yani kod her
+zaman `None` alıyor ve **sessizce hiçbir şey yapıyordu**. Birim testi de geçmişti
+(fikstür alanı elle veriyordu).
+
+> *Var olmayan bir alanı okuyan kod, sessizce hiçbir şey yapar — ve testi geçer.
+> Onu yalnız canlı tur yakalar.*
+
+Doğru kaynak kataloğun `dimension_values`'ı — ve **daha iyi**: kullanıcı ikinci
+sayfadaki bir satırı da adıyla anabilir; ekran görünenle sınırlıdır, katalog değil.
+
+#### Sahiplik ve kapı
+
+*"Ekranda ne var"* sorusunun sahibi **bağlam katmanı** (`app/context.py::capa_degerleri`);
+`followup.sinifla` değerleri **alır**, okumaz (`KAT-1`). Kapı bunu **AST** ile ölçüyor —
+metin taraması iki kez yanlış pozitif verdi, çünkü şerhler kararı anlatmak için o
+isimleri anmak **zorunda**. *Bir kapı, koruduğu şeyin kaydını da yasaklarsa kararı siler.*

@@ -198,7 +198,8 @@ def _hit(q: str, kaliplar: tuple[str, ...]) -> str | None:
     return None
 
 
-def sinifla(soru: str, *, baglam_var: bool) -> Niyet:
+def sinifla(soru: str, *, baglam_var: bool,
+            capa_degerleri: frozenset[str] | None = None) -> Niyet:
     """Takip sorusunu üç sınıftan birine ayırır. **Saf fonksiyon, LLM YOK.**
 
     `baglam_var`: elde bir cevap (cube_query) var mı? Yoksa "cevap üstünde konuşma"
@@ -255,54 +256,46 @@ def sinifla(soru: str, *, baglam_var: bool) -> Niyet:
                 # ve yalnız ekranda rapor varken. Ötekilerde (`ANLAT`/`TAKİP`) bu gevşeme
                 # konu değişimini çalardı; *"fire analizini yap"* bir karşılaştırma
                 # taşımaz zaten, ama sınırı **yazarak** koymak gerekiyor.
-                and not (tur == TUR_NEDEN and baglam_var and _karsilastirmali(q))):
+                # 🔴 Ekrandaki raporun bir satırını adlandırmak, zamirden **güçlü**
+                # bir bağdır: zamir *"şu"* der, değer **hangisi** olduğunu söyler.
+                and not (tur == TUR_NEDEN and baglam_var
+                         and _capaya_deger(q, capa_degerleri))):
             continue
         return Niyet(sinif=SINIF_KONUSMA, tur=tur, kural=f"konusma:{tur}", kanit=k)
 
     return Niyet(sinif=SINIF_YENI, kural="kalip-yok")
 
 
-#: 🔴 **KARŞILAŞTIRMALI SIFAT — zamirin yerini tutan yapısal bağ.** Canlı curl'de
-#: ölçüldü: *"yıkama neden yüksek"* ve *"3. vardiya neden düşük"* `TUR_NEDEN`'e
-#: **girmiyordu** (zamir yok, üç-dört kelime), tur **Discovery'ye** düşüyordu:
-#: **78.834 ms** ve **54.231 ms**, biri `cube=adhoc` ham SQL, öteki **0 satır**.
+#: 🔴 **KÖK ÇÖZÜM — kelime listesi SİLİNDİ.** Önceki sürüm bir `_KARSILASTIRMA` listesi
+#: (`yuksek`·`dusuk`·`fazla`…) ve bir uzunluk eşiği (4 kelime) taşıyordu. Çalışıyordu ama
+#: **tikel**di: *"yıkama neden geride kaldı"* · *"3. vardiya neden zayıf"* · *"bu aşama
+#: neden sorunlu"* yine düşerdi ve her biri listeye bir kelime daha eklettirirdi
+#: (`ADR-0008`: *dile kelime listesiyle yetişilmez*).
 #:
-#: ⊙ Oysa bağ zamirden **daha güçlü**: kullanıcı ekrandaki raporun bir **satırını**
-#: adlandırıyor (`yıkama` bir `asama` değeri, `3. vardiya` bir `vardiya` değeri).
+#: ⊙ Asıl bağ **yapısal**: takip sorusu, ekrandaki raporun **bir satırını adlandırıyor**.
 #:
-#: 🔴 Ve *"yüksek/düşük"* tek başına bir **karşılaştırmadır**: neye göre yüksek? Ekranda
-#: duran şeye göre. Yani sıfat, bağlamı **ima etmekle kalmaz, gerektirir**.
+#: | soru | bağ |
+#: |---|---|
+#: | `yıkama neden yüksek` | `yıkama` ∈ mevcut kırılımın **değerleri** ✅ |
+#: | `3. vardiya neden düşük` | `3. Vardiya (00-08)` ∈ `vardiya` değerleri ✅ |
+#: | `fire oranı neden yüksek olur genel olarak` | `fire oranı` bir **ölçü adı** → bağ YOK |
 #:
-#: ⚠ Şart `baglam_var` ile birlikte uygulanır — ekranda rapor yoksa *"fire neden yüksek
-#: olur"* yine yeni bir sorudur ve bu dal hiç açılmaz.
+#: 🔴 Ve bu ayrım *"genel olarak"* sorusunu **kendiliğinden** dışarıda bırakır — uzunluk
+#: eşiğine gerek kalmaz. Kelime listesi de, eşik de silindi.
 #:
-#: *Bir cümleyi eldeki cevaba bağlayan tek şey zamir değildir; bir karşılaştırma da
-#: bağlar — çünkü karşılaştırmanın öteki ucu zaten ekrandadır.*
-_KARSILASTIRMA = ("yuksek", "yüksek", "dusuk", "düşük", "fazla", "az ",
-                  "kotu", "kötü", "iyi", "geride", "onde", "önde")
+#: ⚠ Değerleri **bu modül okumaz**: çağıran verir (`capa_degerleri`). Sebep `KAT-1`:
+#: *"hangi değerler ekranda"* sorusunun sahibi `ask.py`'nin bağlam katmanıdır, bir
+#: sınıflandırıcı değil. Boş geçilirse davranış **bugünküyle birebir** (zamir şartı).
+#:
+#: *Bir kusuru gördüğü yerde yamamak, sınıfını görmemenin en pahalı biçimidir: her yeni
+#: örnek yeni bir yama ister ve yamalar birbirini tanımaz.*
 
 
-#: 🔴 **UZUNLUK SINIRI — ve kapı bunu KENDİ yakaladı.** İlk yazımda yalnız karşılaştırmalı
-#: sıfat aranıyordu ve `test_UZUN_neden_sorusu_ZAMIR_ister` kırmızı verdi:
-#: *"fire oranı neden yüksek olur genel olarak"* bir **yeni konudur**, takip değil —
-#: ve haklıydı.
-#:
-#: ⊙ Ayıran şey uzunluk: ekrandaki bir **satırı** adlandıran soru kısadır
-#: (*"yıkama neden yüksek"* 3 · *"3. vardiya neden düşük"* 3 kelime), genel bir soru
-#: uzar (*"…olur genel olarak"* 6).
-#:
-#: ⚠ Bu bir tahmin değil `_kisa_soru`'nun **aynı ilkesi**, bir kademe gevşetilmiş hâli:
-#: orada eşik 2 (zamirsiz, sıfatsız), burada 4 — çünkü karşılaştırmalı sıfat **kendisi**
-#: bir bağ taşır ve o bağ iki kelimelik payı hak eder.
-#:
-#: *Bir gevşemeyi, gevşettiği kuralın kendi ölçüsüyle sınırlamak, ikinci bir kural
-#: yazmaktan güvenlidir.*
-_KARSILASTIRMA_AZAMI_KELIME = 4
-
-
-def _karsilastirmali(q: str) -> bool:
-    return (any(w in q for w in _KARSILASTIRMA)
-            and len(re.findall(r"[a-z]+", q)) <= _KARSILASTIRMA_AZAMI_KELIME)
+def _capaya_deger(q: str, capa_degerleri: frozenset[str] | None) -> bool:
+    """Soru, ekrandaki raporun bir **satırını** adlandırıyor mu?"""
+    if not capa_degerleri:
+        return False
+    return any(d and d in q for d in capa_degerleri)
 
 
 def _kisa_soru(q: str) -> bool:

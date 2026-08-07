@@ -264,3 +264,51 @@ class SureklilikOlcumu:
         """
         n = self.korunan + self.kopan
         return (self.korunan / n) if n else None
+
+
+def capa_degerleri(cube_query: dict | None, schema: dict | None) -> frozenset[str] | None:
+    """🔴 Ekrandaki raporun **satır etiketleri** — bir takip sorusunun çapası.
+
+    ## Neden burada
+
+    *"Yıkama neden yüksek"*i eldeki cevaba bağlayan şey `yıkama`'nın **mevcut raporun
+    kırılım değerlerinden biri** olmasıdır — zamirden **güçlü** bir bağ, çünkü zamir
+    *"şu"* der, değer **hangisi** olduğunu söyler.
+
+    ⚠ `followup.sinifla` bir **sınıflandırıcıdır**; katalog/sonuç okumak onun işi değil
+    (`KAT-1`). *"Ekranda ne var"* sorusunun sahibi **bağlam katmanıdır** ve burası odur.
+
+    🔴 Uydurma yok: kaynak yalnız `previous_result`'ın satırları. Rapor yoksa `None` ve
+    çağıran bugünkü davranışına döner (`KURAL B`).
+
+    ⚠ İlk 200 satır: bir kırılım daha uzunsa etiketleri bir **takip zamiri** gibi
+    kullanılamaz zaten (kullanıcı 500. satırı adıyla anmaz), ve tarama maliyeti
+    sınırsız olamaz.
+    """
+    # 🔴 **KAYNAK: KATALOG, ekran DEĞİL — ve bu bir düzeltmenin kaydı.**
+    #
+    # İlk yazım `previous_result`'ın satırlarını okuyordu. Curl ile doğrulandı ve
+    # **çalışmadı**: `AskRequest`'te öyle bir alan **yok** — istemci satırları hiç
+    # göndermiyor. Yani okuduğum şey her zaman `None`du.
+    #
+    # ⊙ Doğru kaynak zaten elde: kataloğun `dimension_values`'ı (`value_index` de onu
+    # okuyor). Ve **daha iyi**: kullanıcı ikinci sayfadaki bir satırı da adıyla anabilir;
+    # ekran görünenle sınırlıdır, katalog değil.
+    #
+    # *Var olmayan bir alanı okuyan kod, sessizce hiçbir şey yapar — ve testi geçer.*
+    from app import cube_router as cr
+
+    dims = {str(d) for d in ((cube_query or {}).get("dimensions") or [])}
+    cube = (cube_query or {}).get("cube")
+    if not dims or not cube:
+        return None
+    out: set[str] = set()
+    for c in (schema or {}).get("cubes") or []:
+        if c.get("name") != cube:
+            continue
+        for ad, degerler in (c.get("dimension_values") or {}).items():
+            if ad in dims:
+                out |= {cr._norm(str(v)) for v in (degerler or []) if str(v).strip()}
+    # ⚠ En az üç harf: kısa bir değer (`A`, `12`) cümlenin ortasında tesadüfen geçer ve
+    # alakasız bir soruyu takip sanardık. *Bir bağ, tesadüfen kurulabiliyorsa bağ değildir.*
+    return frozenset(x for x in out if len(x) >= 3) or None
