@@ -407,3 +407,42 @@ def test_K2c_ERISILEBILIRLIK_kapisi_SILINEMEZ():
         f"K2/(c) ERİŞİLEBİLİRLİK kapısı EKSİK: {eksik}. Alanın FE kaynağında geçmesi bir "
         "TÜKETİCİ kanıtı değil, bir METİN kanıtıdır — 0.23'te üç ödenmiş özellik tam bu "
         "yüzden ekranda yoktu.")
+
+
+def test_RAPORLANABILIRLIK_BIR_TOTOLOJI_DEGIL():
+    """🔴 `DA-3` — kapı **daima true** dönüyordu ve bunu bir denetim ajanı buldu.
+
+    `AskResponse.kanit_sinifi` `schemas.py`'de `"olculmus"` **varsayılanıyla** gelir ve
+    `test_ai_act_uyumu` onu *"her yanıtta"* diye kilitler. `SAF_NOT_ALANLARI` kümesinde
+    olmadığı için `raporlanabilir()` her cevaba `true` diyordu:
+
+    * bir netleştirme (*"hangi dönem?"*) **gövdesiz bir rapor kartı** olarak çiziliyordu —
+      üstelik *kanıt sınıfı: ölçülmüş* damgasıyla, yani bir **soruya** "ölçülmüş" deniyordu;
+    * saf-not dalının doğru başlığı (`"şunlardan biri mi?"`) **hiç çalışmıyordu**.
+
+    *Her cevapta dolu olan bir alan, bir ayrım ölçütü olamaz — yalnız ayrımın olmadığını
+    gizler.*
+
+    ⚠ Bu test kümeyi **büyütmeye** karşı değil, **totolojiye** karşıdır: `AskResponse`'un
+    varsayılanı dolu olan her alanı ya kümede olmalı ya bir gövde olmalı.
+    """
+    import app.schemas as S
+
+    kod = _yorumsuz_kod(_panel_metni())
+    i = kod.index("SAF_NOT_ALANLARI = new Set")
+    kume = kod[i:kod.index("]", i)]
+
+    # Varsayılanı dolu (her cevapta gelen) alanlar
+    daima_dolu = [
+        ad for ad, f in S.AskResponse.model_fields.items()
+        if f.default not in (None, ..., False) and not callable(f.default)
+        and f.default != "" and f.default_factory is None
+    ]
+    assert daima_dolu, "⊘ ölçüm tabanı çöktü: varsayılanı dolu alan bulunamadı"
+
+    kacak = [ad for ad in daima_dolu if f'"{ad}"' not in kume and ad not in MUAF]
+    assert not kacak, (
+        "🔴 RAPORLANABİLİRLİK TOTOLOJİSİ — bu alan(lar) HER cevapta dolu ve «saf not» "
+        f"kümesinde değil:\n  {kacak}\n\nSonuç: `raporlanabilir()` daima `true` döner ve "
+        "gövdesiz cevaplar (netleştirme · ret) rapor kartı olarak çizilir. "
+        "Ya kümeye ekle, ya varsayılanı kaldır.")

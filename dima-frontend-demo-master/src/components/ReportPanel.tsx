@@ -68,6 +68,30 @@ const SAF_NOT_ALANLARI = new Set<keyof AskResponse | string>([
   // *Kendi alanını sınıflandırmak bir sorumluluk; başkasınınkini ölçmeden değiştirmek
   // bir risktir.*
   "temellendirme", "diyalog_durumu",
+  // 🔴 `DA-3` — **KAPI BİR TOTOLOJİYDİ.** `kanit_sinifi` `schemas.py:396`'da
+  // `"olculmus"` VARSAYILANIYLA gelir ve `test_ai_act_uyumu` onu *"her yanıtta"* diye
+  // kilitler → kümede olmadığı için `raporlanabilir()` **daima true** dönüyordu.
+  //
+  // İki sonucu vardı ve ikisi de görünürdü: (1) bir netleştirme cevabı (*"hangi dönem?"*)
+  // **gövdesiz bir rapor kartı** olarak çiziliyordu — üstelik *kanıt sınıfı: ölçülmüş*
+  // damgasıyla, yani bir SORUYA "ölçülmüş" deniyordu; (2) alttaki saf-not dalı ve onun
+  // doğru başlığı (`"şunlardan biri mi?"`) **hiç çalışmıyordu**, kart varsayılan
+  // `"sonraki adım"` başlığını basıyordu — deponun kendi yasakladığı **yanlış başlık**.
+  //
+  // ⚠ Gövdeler bu kümeye giremez ve bunu bir kapı kilitler
+  // (`test_RAPORLANABILIRLIK_SAYMIYOR_KAPATIYOR`): `result` · `kpi` · `contribution` ·
+  // `prescription` · `eylem_onerisi` · `interpretation` · `recommendations` · `viz`.
+  // Yani gerçek bir gövde taşıyan cevap **yine** kart olur; değişen yalnız gövdesizler.
+  //
+  // *Her cevapta dolu olan bir alan, bir ayrım ölçütü olamaz — yalnız ayrımın olmadığını
+  // gizler.*
+  "kanit_sinifi",
+  // 🔴 `soz` — `note`'un KARDEŞİ (`ReportCard` ikisini `item.soz || item.note` diye tek
+  // blokta basar). `FAZ 5.17`'de eklenirken bu kümeye **yazılmamış**; kusur o gün
+  // görünmedi çünkü `kanit_sinifi` zaten kapıyı totolojiye çevirmişti — bir kusur bir
+  // başkasını gizliyordu. `kanit_sinifi` kapanınca `soz` ortaya çıktı.
+  // *İki kusur üst üste bindiğinde, birini kapatmak ötekini bulur.*
+  "soz",
 ]);
 
 export function raporlanabilir(it: AskResponse): boolean {
