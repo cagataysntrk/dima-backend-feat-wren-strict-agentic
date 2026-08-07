@@ -1989,3 +1989,35 @@ döndürdü — ölçülen vaka `other_topic` dalından geçiyordu.
 *Bir düzeltmeyi tek dala uygulamak, iki dalı olan bir kusuru yarım kapatır.*
 
 Kapı artık **her iki** dalın yedeğini ayrı ayrı ölçüyor.
+
+### 28.4 · YENİ SENARYOLAR — `P` serisi (curl, tek tek)
+
+| # | senaryo | sonuç |
+|---|---|---|
+| P1 | `bu yıl kalite red oranı` | ⚠ `cube+llm` · `tolerans_asma_sayisi` seçildi — **oran değil sayı**; özet *"1 satırlık sonuç"* (değer yok) |
+| P2 | `bu yıl en uzun duruş hangi makinede` | 🔴 *"«uzun» başka bir konu gibi görünüyor"* |
+| P3 | `2025 toplam ciro` | 🔴 *"hangi dönem için?"* — çıplak **yıl** dönem sayılmıyor |
+
+#### 🔴 P2 — sıfat, konu sanılıyor
+
+`uzun` bir **niteleme sıfatıdır** (*"en uzun duruş"* = `toplam_durus_dakika` + `desc`),
+bir konu değil. Gösterim süzgeci (`§28.2`) işlev sözcüklerini eledi ama **sıfatları**
+elemiyor — ve daha önemlisi, kapsam kapısı hâlâ turu düşürüyor.
+
+⚠ `§26.1`'in dersi burada bağlayıcı: dolgu sınıfını genişletmek **sessiz-yanlışı
+artırdı** (12 → 13). Yani `uzun`'u dolguya eklemek **yasak**; doğru yol, sıfatın
+**sıralama niyetine** çevrilmesi (`_direction` zaten *"en uzun"*u okuyabilir mi —
+ölçülmeli).
+
+#### 🔴 P3 — çıplak yıl dönem sayılmıyor
+
+`_calendar_year_filters` *"2019 yılında"* · *"2019'da"* · *"2019 senesinde"* biçimlerini
+tanıyor; **çıplak `2025`** tanınmıyor ve bu **bilinçliydi** (belgede: *"çıplak 2019 ise
+dönem SORUYORDU — sessiz-yanlış YOK"*).
+
+⊙ Yani P3 bir **kusur değil, kayıtlı bir karar** olabilir. ⚠ Ama ölçüt kullanıcı
+tarafında değişmiş olabilir: *"2025 toplam ciro"* günlük dilde tartışmasız bir yıl
+ifadesidir. **Karar yeniden tartılmalı** — ve tartı `nl_corpus`'ta, tahminle değil.
+
+*Bir kararı kusur sanmadan önce kaydını ara; kayıtlı bir kararı değiştirmek, onu ölçen
+sayıyı da değiştirmeyi gerektirir.*
