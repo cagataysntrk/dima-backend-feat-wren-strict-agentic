@@ -1744,7 +1744,7 @@ cevaplamaya çalışmıyor; ADR-0008 tam olarak onu yasaklar"*. **Yeni kelime ek
 | ◐ `B2` | ~~*"~100 vaka üretilmeli, bugün 2"*~~ → **YANLIŞTI.** Etiketli + `route()=None` **2 116** vaka **zaten var** (`senaryo_uretec.py:863` her soruya kaynak cube'unu yazıyor). İş **üretmek değil AYIKLAMAK**: üreteç `kabul` beklentisi de taşıyor, bazı vakalarda doğru cevap **netleştirmedir**. ⚠ Ayrıca `lab/nl_accuracy.py:354` `ab_kurtarma_kos()` zaten LLM'i yer gerçeğiyle ölçüyor — **genişletilir, yeniden yazılmaz** | aynı | 🔴 yüksek |
 | `B6` | Prompt caching — üç katmanlı önek | aynı | orta |
 | `Ö5` | **Guard düşme oranı alarmı** — agrege ölçüm hiç yok | `OPERASYON.md §10c` | 🔴 yüksek |
-| `Ö2` | Çok-turlu bozulma: tur 1 **%63,6** → tur 5 **%45,5** | aynı | 🔴 yüksek, **sahipsiz** |
+| ⊘ `Ö2` | ~~Çok-turlu bozulma sahipsiz~~ → **BULGU BAYAT.** Borç ölçülüp kapanmış: **−%18,2 → −%4,5**, bayrak `olcu_ekleme_takibi` `beta` (`OPERASYON-DURUM.md:112`). Ajan `cube_router` docstring'ini okumuş, kapanış kaydını görmemiş | — | ✅ kapalı |
 | `Ö1` | Akış inerse **cümle-tamponlu** olmak zorunda | aynı | kısıt *(faz `S`)* |
 | `Ö3` | Eksen 1 p95 > 1,5 sn ise `openrouter_select_model` | aynı | env işi |
 | `B-G4` | `compare` **enum→ALAN** + `blend` → `5.6` hâlâ **BLOKE** | `OPERASYON-DURUM.md` | orta |

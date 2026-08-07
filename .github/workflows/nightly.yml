@@ -82,3 +82,47 @@ jobs:
           path: backend/lab/reports/
           retention-days: 14
           if-no-files-found: warn
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # 🔴 FRONTEND DERLENİYOR MU — `K3`'ün ÖLÇÜLMÜŞ BORCU
+  #
+  # Ölçülen kusur: `tsc` bu depoda **hiç koşmamıştı**. Frontend `G1`'den beri
+  # derlenmiyordu (4 hata: fragment'sız kardeş JSX · var olmayan tip `AskItem` ·
+  # örtük `any`) ve **Python süiti yeşildi** — çünkü Python kapısı TypeScript okumaz.
+  #
+  #   *Bir dilin derleyicisi koşulmuyorsa, o dilde yazılan her şey denetimsizdir.*
+  #
+  # ⚠ **AYRI İŞ, bilinçli:** `kapi` işine eklemek, node kurulumunu Python kapısının
+  # önüne koyardı — frontend kurulumu çökerse ölçüm kapıları hiç koşmazdı. İki ayrı
+  # yetenek, iki ayrı kırmızı. *Bir kapının çökmesi, öteki kapının ölçümünü
+  # engellememelidir.*
+  #
+  # ⚠ `test_frontend_derlenir.py::test_TSC_TEMIZ` konteynerde `npx` bulamayınca `skip`
+  # eder; bu iş o testin **gerçekten koştuğu tek yerdir**.
+  frontend-tsc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: dima-frontend-demo-master/pnpm-lock.yaml
+
+      - name: pnpm kur
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Bağımlılıkları kur
+        working-directory: dima-frontend-demo-master
+        # `--frozen-lockfile`: kilit dosyası neyi diyorsa o kurulur. Gevşek kurulum,
+        # CI'ın geliştirici makinesinden FARKLI bir ağaç derlemesi demekti — ve o zaman
+        # yeşil bir CI, kırmızı bir makineyi gizler.
+        run: pnpm install --frozen-lockfile
+
+      - name: 🔴 tsc --noEmit (tip denetimi)
+        working-directory: dima-frontend-demo-master
+        run: pnpm exec tsc --noEmit -p tsconfig.json

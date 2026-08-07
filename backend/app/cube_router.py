@@ -1109,6 +1109,15 @@ def deterministic_refine(prev: dict, q: str, schema: dict,
     eşleşince *"farklı metrik açıkça isteniyor"* varsayılıp zincir terk ediliyor. Oysa
     *"bir de fire ekle"* çalışıyordu — yani mekanizma vardı, **ipuçsuz hâli** yoktu.
 
+    ✅ **VE BU BORÇ KAPANDI — ölçüldü: `−%18,2` → `−%4,5`** (`kaldi` → `gecti`, korpus
+    sabit). Bayrak `olcu_ekleme_takibi` **`beta`**; kayıt `OPERASYON-DURUM.md`.
+
+    🔴 Bu satır sonradan eklendi ve sebebi bir **denetim kusurudur**: bir denetim ajanı
+    yukarıdaki iki paragrafı okuyup borcu *"açık ve sahipsiz"* diye raporladı — çünkü
+    docstring **sorunu** anlatıyor, **çözümü** anmıyordu.
+    *Bir kusurun hikâyesini yazan yer, kapandığını da yazmalıdır; yoksa metin kendi
+    tarihinde donar ve okuyan bugünü yanlış bilir.*
+
     ⚠ **Bayrak parametrede, `get_settings()` çağrısında DEĞİL.** Bu fonksiyon **saf**
     kalmalı: içine bir ayar okuması koymak, onu test edilebilirlikten ve `lab/`
     araçlarının A/B koşabilmesinden ederdi. Bayrağı çağıran çözer.

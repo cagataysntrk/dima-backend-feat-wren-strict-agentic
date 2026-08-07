@@ -1738,6 +1738,56 @@ değişirse aynı satır yeniden anlam kazanır.
 yok edicisi değil: şemaya uyan ama yanlış bir cevap da şemaya uyar. Bu yüzden `iddia.py`
 ve hava boşluğu bayrağın yerine geçmez — onlar **başka** bir şeyi korur.
 
+### 🔴 `G2` — DİYALOG BELLEĞİ: sistem SORDUĞUNU HATIRLAR
+
+> ⚠ Bu kayıt **geç** yazıldı ve bunu bir denetim ajanı buldu: fazın **en büyük yeni
+> katmanı** (`app/diyalog.py`) mimari otoritede hiç görünmüyordu. `§13.6`'nın kuralı
+> *"kod ve belge AYNI COMMIT'te gider"* — çiğnendi ve kayda geçti.
+
+#### Ölçülen kusur
+
+JPMorgan (arXiv 2605.26394): çok-turlu text-to-SQL'de tur-3 **durumsuz** koşulduğunda
+beş modelin beşi de **%0** yürütme doğruluğu verdi; **iki turluk** bir pencereyle
+**%87,6–100**. Durum taşımak bir iyileştirme değil, **var olma koşuludur**.
+
+DİMA'da netleştirme **durumsuzdu**: chip tam bir soru metni taşıyor, sunucu **hiçbir açık
+slot saklamıyor**, tur **sıfırdan** koşuyordu. Çok adımlı daraltma (*"hangi küp? → hangi
+ölçü? → hangi dönem?"*) **yapısal olarak** imkânsızdı: her adım öncekini unutuyordu.
+
+#### Tasarım — üç karar, üçü de gerekçeli
+
+**1 · Açık slot ikinci bir veri yapısı DEĞİL, `Niyet`'in boş alanıdır.** `app/niyet.py`
+zaten `olcu_adaylari` · `donemler` · `kirilimlar` · `granulerlik` taşıyor; ikinci bir
+slot dataclass'ı `KAT-1` ihlali olurdu — *aynı kuralın iki sahibi*, bu deponun adını
+koyduğu kusur.
+
+**2 · Sunucu oturum SAKLAMAZ — YANKI taşır.** Durum cevapta döner, istemci bir sonraki
+istekte **geri yollar** (`cube_query`'nin bugün taşındığı gibi). `context.py`'nin
+felsefesi: *"bağlam çözümü bir anlama işi değil bir MUHASEBE işidir."*
+
+🔴 Bedeli dürüstçe yazılı: **istemci yankılamazsa bellek YOKTUR.** Ve tam bu oldu —
+`types.ts`'in `AskRequest`'inde alan **yoktu**, `KURAL_DEVAM` üretimde **hiç
+ateşlenmedi**. Bir demet boyunca `G2` bir rozetti, bir bellek değil. Üstelik bu,
+`types.ts:565`'te belgeli `KURAL_CAPA` vakasının **birebir tekrarıydı**.
+*Bir deponun defterindeki bir kusur sınıfı, okunmadıkça tekrar eder.*
+
+⚠ Alternatif (sessiz sunucu-yanı oturum deposu) **bilerek reddedildi**: `thread`/UI
+gruplamasının semantik sınır taşımasına yol açardı — bu depoda ölçülmüş bir kusur sınıfı.
+
+**3 · `KURAL_DEVAM`, `KURAL_TAZE`'den ÖNCE ateşler.** Bekleyen bir soru varken gelen kısa
+bir ifade (*"geçen ay"*) **yeni bir soru değildir**, bir **cevaptır**.
+
+#### Kapılar
+
+| ne | nerede |
+|---|---|
+| `devam_edilebilir` **hem** `sorulan` **hem** `kismi_cq` ister | `app/diyalog.py` — yalnız biri varsa `None`, tahmin yok |
+| İstemci alanı gerçekten **gönderiyor** mu | `test_K2c_ISTEK_ALANI_GONDERILIYOR_mu` — `types.ts` kanıt sayılmaz |
+| Kill-switch | `diyalog_bellegi` (`prod`) — kapalıyken durum sunucuya **hiç girmez** |
+| Basitlik kilidi | `test_diyalog.py` — pencere `[-2:]` sabit |
+
+⊙ Canlı kapıda **üç koşum**: `3·süreklilik` 3/3 · `9·onarım` 1/1.
+
 ### 🔴 `KÇ-1`'in SAPMASI — denetim *fail-closed* istedi, uygulama *beyan-açık* seçti
 
 Denetimin `Ö8` maddesi **"ACİL — HEPSİNDEN ÖNCE"** işaretliydi ve kabul ölçütü

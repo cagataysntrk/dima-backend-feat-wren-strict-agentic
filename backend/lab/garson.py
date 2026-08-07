@@ -376,18 +376,28 @@ def _temellendirme_var(d: dict) -> bool:
 def _menu_var(d: dict) -> bool:
     """Ret cevabı **ne yapılabileceğini** de söylüyor mu?
 
-    Bugünkü `yetenek.yanit_alanlari` yalnız `note` + `trace` döndürüyor (KÖK-6);
-    `G8` ona `yakin_olculer` / `mevcut_kirilimlar` / `onerilen_soru` ekleyecek.
+    ## 🔴 ÖLÜ DAL KALDIRILDI — ve planın kendi çelişkisi burada çözüldü
+
+    Bu fonksiyon `d.get("kapasite")` okuyordu: `G8` yazılmadan önce planın `§13.5b`'si
+    *"üç yeni alan kapıya bağlanır: `temellendirme` · `diyalog_durumu` · **`kapasite`**"*
+    diyordu. Ama planın `§13.5c/G8.2`'si **tam tersini** söylüyor: *"üçüncü kanal
+    açma."* Kod ikinciyi seçti, öneriler mevcut `suggestions` kanalına bağlandı ve karar
+    **testle kilitlendi** (`test_kapasite_beyani.py`: `assert "kapasite" not in alanlar`).
+
+    Yani `AskResponse.kapasite` diye bir alan **yok ve olmayacak** — o dal hiçbir zaman
+    doğru dönemezdi. Bir denetim ajanı yakaladı.
+
+    *Bir ölçüm aracında ölü bir dal, yalnız gereksiz değil YANILTICIDIR: okuyan onu bir
+    yetenek sanır ve o yeteneğin ölçüldüğünü düşünür.*
+
+    Kalan tek ölçüt doğru olanıdır: **ret cevabında** (`source is None`) bir chip/öneri
+    varsa menü basılmıştır.
     """
-    k = d.get("kapasite")
-    if isinstance(k, dict) and (k.get("yakin_olculer") or k.get("mevcut_kirilimlar")
-                                or k.get("onerilen_soru")):
-        return True
-    # Geçiş dönemi: öneri `next_steps`/`suggestions` üzerinden de gelebilir — ama
-    # yalnız RET cevabında (`source is None`) menü sayılır.
-    if d.get("source") is None and (d.get("next_steps") or d.get("suggestions")):
-        return True
-    return False
+    # ⚠ `source is None` şartı bilinçli: başarılı bir cevabın yanındaki chip'ler *"sonraki
+    # adım"*tır, *"ama şunu yapabilirim"* değil. İkisini aynı saymak, menüyü hiç
+    # basmayan bir sistemi de yeşil gösterirdi.
+    return bool(d.get("source") is None
+                and (d.get("next_steps") or d.get("suggestions")))
 
 
 def _onarim_dogru(turlar: list[dict]) -> bool | str:

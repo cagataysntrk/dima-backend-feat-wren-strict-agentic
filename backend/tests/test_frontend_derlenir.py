@@ -156,3 +156,34 @@ def test_MARKDOWN_ISARETI_YORUMLANIYOR():
         "🔴 not bloğu `vurgula`'dan geçmiyor — `**` ham basılır")
     assert "whitespace-pre-line" in kart, (
         "🔴 not bloğunda satır sonu korunmuyor — `\\n\\n` paragrafları tek satıra çöker")
+
+
+def test_TSC_GECELIK_CIDA_KOSUYOR():
+    """🔴 `K3`'ün açık borcu — **kapandı ve burada kilitlendi.**
+
+    `test_TSC_TEMIZ` konteynerde `npx` bulamayınca `skip` eder; yani o test **tek başına**
+    hiçbir şeyi garanti etmez. Garantiyi veren şey, `tsc`'nin **bir yerde gerçekten
+    koşuyor** olmasıdır.
+
+    ⊙ Ölçülen kusur: `tsc` bu depoda **hiç koşmamıştı**. Frontend `G1`'den beri
+    derlenmiyordu (4 hata) ve Python süiti yeşildi — çünkü Python kapısı TypeScript okumaz.
+
+    *Bir dilin derleyicisi koşulmuyorsa, o dilde yazılan her şey denetimsizdir.*
+
+    ⚠ Ve iş **ayrı** olmalı: `kapi` işine eklemek node kurulumunu Python kapısının önüne
+    koyardı — frontend kurulumu çökerse ölçüm kapıları hiç koşmazdı.
+    *Bir kapının çökmesi, öteki kapının ölçümünü engellememelidir.*
+    """
+    import pathlib
+
+    wf = (pathlib.Path(__file__).resolve().parents[2]
+          / ".github/workflows/nightly.yml")
+    if not wf.exists():
+        pytest.skip("⊘ CI reçetesi mount edilmemiş")
+    metin = wf.read_text(encoding="utf-8")
+    assert "tsc --noEmit" in metin, (
+        "🔴 `tsc` gecelik CI'da KOŞMUYOR — `test_TSC_TEMIZ` konteynerde atlandığı için "
+        "TypeScript tarafı hiçbir yerde denetlenmez.")
+    assert "frontend-tsc:" in metin, (
+        "🔴 `tsc` ayrı bir iş değil — `kapi` işine gömülüyse frontend kurulumu çökünce "
+        "ölçüm kapıları da koşmaz.")
