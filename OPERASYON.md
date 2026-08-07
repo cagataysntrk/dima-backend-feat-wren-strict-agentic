@@ -442,13 +442,68 @@ ediyor). Kalan iki kalem **hiç ele alınmadı**; planın kendisi budamadan **s�
 
 ⚠ Bu **23 cube**'luk bir demo. 100 cube'lu bir müşteride sayı ~4 katına çıkar.
 
-### 🔴 ÜÇ BAĞLAYICI ÖN KOŞUL — bunlar olmadan `prod` YASAK
+### 🔴 ÖLÇÜLDÜ — VE TASARIM DOĞRU NÜFUSTA ÇÖKTÜ *(2026-08-07)*
 
-1. **Etiketli route-BAŞARISIZLIK korpusu (~100 vaka).** Bugün elde **2** var.
-   🔴 Sebep bir ölçüm hatasıdır ve adı konulmalı: mevcut yer gerçeği `route()`'un
-   **başarısından** geliyor — oysa budama yalnız **`route()` pes ettiğinde** önemlidir
-   (LLM ancak o zaman çağrılır). *Bir ölçümün sayısı değil, hangi nüfustan geldiği karar
-   verir.*
+> Aşağıdaki üç ön koşul yazıldıktan **sonra** doğru nüfusta ölçüm yapıldı ve sonuç
+> tasarımı **çürüttü**. Bu bölüm o ölçümü taşır; ön koşullar altta **kayıt için** duruyor.
+
+**Nüfus düzeltmesi — iki bağımsız ajan da yanılmıştı.** *"Etiketli route-başarısızlık
+vakası **2**"* deniyordu; ikisi de yalnız **elle yazılmış** 42 vakaya bakmış.
+`lab/senaryo_uretec.py:863` her üretilen soruya **`"cube": cad`** yazıyor ve
+`gercek_dunya.py:509`'daki `setdefault` onu **ezmiyor**:
+
+| küme | toplam | etiketli | **etiketli ∧ `route()=None`** |
+|---|---|---|---|
+| elle (`VAKALAR`) | 42 | 2 | 2 |
+| **üreteç** | 2 270 | **2 270** | 🔴 **2 116** |
+
+Yani korpus **zaten vardı**. Bu, bu fazın tekrar eden sınıfının **tersi**: *"beyan var,
+karşılığı yok"* değil — **karşılık var, beyan yok**.
+
+**Ve o nüfusta ölçülen recall** *(n=2 116, katalog 23 cube)*:
+
+| tasarım | recall | 🔴 KAYIP | fail-open | tasarruf |
+|---|---|---|---|---|
+| `ilgili_cubelar` | %78,1 | **464** | 599 | %60,7 |
+| `measure_cube_candidates` | %100 | 0 | **2 116 (hepsi)** | **%0** |
+| 🔴 **birleşim + fail-open** | **%78,1** | **464** | 599 | %60,7 |
+
+🔴 **Birleşim `ilgili_cubelar`'a ÇÖKÜYOR.** Sebep yapısal: bu sorular `route()`'un pes
+ettiği dağınık ifadeler ve içlerinde **tanınan bir ölçü adı yok** — dolayısıyla ölçü
+sinyali **2 116'nın 2 116'sında** boş dönüyor. *İki eksenden bakan bir tasarım, ikinci
+eksenin hiç veri görmediği bir nüfusta tek eksenlidir.*
+
+⚠ **Ve fail-open kurtarmıyor:** 464 kayıp **boş seçimden** değil, **dolu ama yanlış**
+seçimden geliyor. Fail-open yalnız boşlukta devreye girer; yanlış menü sessizce gider.
+
+#### Önceki ölçüm neden %100 demişti — ve dersi
+
+Dış tasarım *"birleşim %100 · 0 kayıp"* ölçmüştü. O ölçüm `route()`'un **başarılı olduğu**
+sorularda yapıldı — ve orada ölçü adı **zaten tanınır**, çünkü `route()` tam da onu
+tanıdığı için başarılıdır. **Ölçüm, ölçtüğü şeyin varlık koşulunu içeriyordu.**
+
+*Bir ölçümün sayısı değil, hangi nüfustan geldiği karar verir.*
+
+#### 🔴 KARAR: budama bu tasarımla İNMEZ
+
+`B1`/`B3` **askıya alındı**. Yeni sinyal gerekiyor — aday eksenler *(hiçbiri ölçülmedi)*:
+gövde/kök eşleşmesi · `value_index` üzerinden **değer** sinyali · gömme (embedding)
+benzerliği. Her biri **aynı nüfusta** ölçülmeden yazılmaz.
+
+⊙ Kalan geçerli kalemler: `B5` ✅ (indi) · `B2` *(aşağıda, metni düzeltildi)* · `B6`.
+
+---
+
+### ÖN KOŞULLAR *(kayıt için — ilki ölçümle düzeltildi)*
+
+1. ~~**Etiketli route-BAŞARISIZLIK korpusu (~100 vaka); bugün elde 2 var.**~~
+   🔴 **YANLIŞ ÇIKTI.** Korpus **var**: 2 116 etiketli + `route()=None` vaka. İş
+   **üretmek** değil **ayıklamak**: üreteç `kabul` beklentisi de taşıyor, bazı vakalarda
+   doğru cevap **netleştirmedir** — temiz yer gerçeği bir **alt kümedir** ve o ayrım
+   yapılmalı. Ayrıca `lab/nl_accuracy.py:354` `ab_kurtarma_kos()` **zaten** `route()`
+   pes ettiğinde LLM'i yer gerçeğiyle ölçüyor (`REAL_PHRASINGS`, ~43 doğal ifade) —
+   sıfırdan bir alet **yazılmaz**, o genişletilir. *İkinci bir sahip yaratmak, ölçüm
+   aracında en pahalı hatadır.*
 2. **Bayrak + FAIL-OPEN.** `sema_budama: alpha`; seçim **boş** dönerse **tam katalog**.
    Ölçüldü: yalnız `ilgili_cubelar` ile budama vakaların **%13,4'ünde doğru cube'u
    DÜŞÜRÜYOR** — bazılarında boş dönüyor. Doğru cube budanırsa LLM **yanlış menüyü**

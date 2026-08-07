@@ -370,7 +370,7 @@ def hizli(degisen: list[str]) -> int:
 
 #: Tüm adımlar — anahtar, `--sadece` ile seçmek için. **Sıra anlamlıdır:** korpus
 #: BAŞTA, çünkü yerel kapının tek adımı odur ve `--hepsi`'de de önce o konuşmalıdır.
-ADIM_ANAHTARLARI = ("korpus", "gercek", "suit", "eval", "senaryo", "garson")
+ADIM_ANAHTARLARI = ("korpus", "gercek", "suit", "eval", "senaryo", "garson", "eval_llm")
 
 #: 🔴 **`garson` HİÇBİR TOPLU KOŞUMDA YOK — ne yerelde ne `--hepsi`'de.**
 #:
@@ -451,6 +451,18 @@ def tam(sadece: tuple[str, ...] = (), *, hepsi: bool = False) -> int:
         # 🔴 GARSON KAPISI — yalnız `--sadece garson` ile. `--live` ve ağ ister; ötekiler
         # `--network none` ile koşar. Toplu koşuma girmemesi bilinçlidir (yukarı bak).
         ([sys.executable, "lab/garson.py", "--live"], "garson kapısı"),
+        # 🔴 **LLM DİLİMİ — VARSAYILAN YOLUN TEK OTOMATİK KANCASI** (denetim bulgusu).
+        #
+        # `eval/run.py` `--slice {det,llm}` destekliyor ve `eval/cases.yaml`'de `slice: llm`
+        # vakaları duruyor. Ama yukarıdaki `eval.run` adımı **bayraksız** çağırıyor →
+        # varsayılan `det`. Yani planın *"`route()` varsayılan değil, ispatlı istisnadır"*
+        # dediği mimaride, **varsayılan yol hiç ölçülmüyordu**.
+        #
+        # ⚠ Toplu koşuma girmez ve sebebi `garson` ile aynı: gerçek sağlayıcı + anahtar
+        # ister, `--hepsi` ise `--network none` ile koşar. Yeri **faz sonu**dur.
+        # *Koşulmayan bir dilim, olmayan bir dilimden yalnızca daha pahalıdır: bakım
+        # ister, güven verir, hiçbir şey ölçmez.*
+        ([sys.executable, "-m", "eval.run", "--slice", "llm"], "eval LLM dilimi"),
     )
     # 🔴 Yerel kapı **daraltılmış**: `--sadece` verilmediyse ve `--hepsi` denmediyse
     # YALNIZ korpus koşar. Bu bir kırpma DEĞİL, ilan edilmiş bir kapsam — ve aşağıda

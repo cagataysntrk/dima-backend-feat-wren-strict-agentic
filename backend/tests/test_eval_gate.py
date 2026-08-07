@@ -13,6 +13,8 @@ coverage'ı düşürebilir) — ama bunun da baseline'ı güncellenerek KAYDA GE
 from __future__ import annotations
 
 import json
+import pytest
+import pathlib
 
 import yaml
 
@@ -68,3 +70,41 @@ def test_eval_gate_deterministik_pay_dusmez(client):
         f"deterministik pay DÜŞTÜ: {m['deterministic_share']:.1%} < {floor:.1%} (baseline)\n"
         f"LLM'e kaçan cevaplar:\n{kaçanlar}"
     )
+
+
+# --- 🔴 VARSAYILAN YOLUN TEK KANCASI — KANCASIZ DURUYOR ---------------------------
+
+
+def test_LLM_DILIMI_YETIM_DEGIL():
+    """🔴 **Denetim bulgusu: `eval`'in LLM dilimi var, hiçbir kapı onu koşmuyor.**
+
+    `eval/run.py` `--slice {det,llm}` destekliyor ve `eval/cases.yaml`'de `slice: llm`
+    vakaları duruyor. Ama:
+
+    * bu dosyanın iki kapısı da `slice_="det"` **sabit**;
+    * `lab/kapi.py` `eval.run`'ı **bayraksız** çağırıyor → varsayılan `det`.
+
+    Yani planın *"`route()` varsayılan değil, **ispatlı istisnadır**"* dediği mimaride,
+    **varsayılan yolun tek otomatik kancası kancasız duruyor**.
+
+    ⚠ Bu test dilimi **koşmaz** — koşamaz: LLM dilimi gerçek bir sağlayıcı ve anahtar
+    ister, `--hepsi` ise `--network none` ile koşar. Yaptığı şey **görünür kılmak**:
+    dilim varsa ya bir koşucusu olmalı ya vakaları kaldırılmalı.
+
+    *Koşulmayan bir dilim, olmayan bir dilimden yalnızca daha pahalıdır: bakım ister,
+    güven verir, hiçbir şey ölçmez.*
+    """
+    import yaml as _yaml
+
+    vakalar = _yaml.safe_load(CASES.read_text())
+    llm_vakalari = [c for c in (vakalar or []) if str(c.get("slice", "det")) == "llm"]
+    if not llm_vakalari:
+        pytest.skip("⊘ `slice: llm` vakası yok — dilim konusuz")
+
+    kapi = (pathlib.Path(__file__).resolve().parents[1] / "lab/kapi.py").read_text(
+        encoding="utf-8")
+    assert "--slice" in kapi or "slice" in kapi, (
+        f"🔴 `eval/cases.yaml`'de {len(llm_vakalari)} adet `slice: llm` vakası var ama "
+        "`lab/kapi.py` `eval.run`'ı DİLİM BAYRAĞI OLMADAN çağırıyor → varsayılan `det`. "
+        "Varsayılan yolun (LLM) tek otomatik kancası hiç koşmuyor. "
+        "Ya bir koşucu bağla (canlı kapı), ya vakaları kaldır.")

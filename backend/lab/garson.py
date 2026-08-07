@@ -628,6 +628,24 @@ def main() -> int:
     rapor = _rapor_yaz(sonuclar, ozet, sema, args.live, muhur)
     print(f"\nrapor: {rapor}")
     print(f"şema-dışı oran: {sema['oran']} ({sema['sema_disi']}/{sema['llm_turu']})")
+    # 🔴 `G0.12` — **ANLATININ KAYNAĞI AYIRT EDİLİR.** Sözleşme satırı `2·anlat` bilinçli
+    # olarak `narration or summary` okur (`deneyim.py:307`): ikisi de sözleşmeyi karşılar
+    # ve bu **kusur değil, beyan edilmiş bir yoldur**. Ama tam o yüzden satır
+    # `t2_anlatici` açık/kapalı **AYNI** çıkıyordu — ve `G0.12`'nin kırmızı çizgisi bunu
+    # yasaklıyor: *"açık/kapalı FARKLI çıkmalı; çıkmıyorsa alet KÖR, `G1` başlamaz."*
+    # Bir denetim ajanı yakaladı: `DA-2` satırı **ölçülür** yaptı ama **ayırt edici**
+    # yapmadı.
+    #
+    # ⚠ Çözüm sözleşme satırını bozmak DEĞİL — o doğru şeyi ölçüyor. Çözüm **ayrı bir
+    # ayırt edici** basmak. `t2_anlatici` kapalıyken `narration` **0** olmalıdır; bu iki
+    # sayı yan yana durduğu sürece aletin körlüğü **görülebilir**.
+    # *Bir satırı ayırt edici yapmak için onu bozmak gerekmiyorsa, bozma.*
+    _narr = sum(1 for s in sonuclar for _t in s["turlar"]
+                if (((_t.get("cevap") or {}).get("interpretation") or {}) or {}).get("narration"))
+    _summ = sum(1 for s in sonuclar for _t in s["turlar"]
+                if (((_t.get("cevap") or {}).get("interpretation") or {}) or {}).get("summary"))
+    print(f"anlatı kaynağı: narration={_narr} · summary={_summ}"
+          + ("   ⚠ narration=0 → `t2_anlatici` KAPALI görünüyor" if not _narr else ""))
     for satir in TUM_SATIRLAR:
         v = ozet[satir]
         print(f"  {satir:<52} ✅{v['gecti']}  ❌{v['kaldi']}  ⊘{v['olculemedi']}")

@@ -114,13 +114,25 @@ def test_KIYAS_CEVABI_ARTIK_ETIKETSIZ_GITMIYOR(schema):
     """
     from app.uyum import denetle
 
+    # 🔴 **BOŞUNA YEŞİL KAPANDI (denetim bulgusu).** Eskiden `if hit is None: continue`
+    # vardı ve döngü dışında hiçbir iddia yoktu: iki soru da `route()`'tan düşerse test
+    # **hiç iddia koşmadan** yeşil geçiyordu. Oysa bu, `G6`'nın *"sessiz 244 → 0"*
+    # kazancının tek regresyon kapısı.
+    # *Bir testin geçmesi, bir şeyi sınadığı anlamına gelmez — kaç kez sınadığını da
+    # saymak gerekir.*
+    olculen = 0
     for soru in ("borc mart ile nisanı kıyasla", "borc 2025 ile 2026 karşılaştır"):
         hit = cr.route(cr._norm(soru), schema)
         if hit is None:
             continue
+        olculen += 1
         ic = hit.get("cube_query") or {}
         assert ic.get("compare") or denetle(soru, hit), (
             f"🔴 {soru!r} kıyassız cevaplandı ve ETİKETSİZ gitti")
+    assert olculen, (
+        "⊘ HİÇBİR VAKA ÖLÇÜLMEDİ — iki soru da `route()`'tan düştü. Bu bir başarı "
+        "değil, ölçümün YOKLUĞU: vakalar bayatlamış olabilir. Ya vakaları tazele, ya "
+        "kapının konusunu değiştir.")
 
 
 def test_GERCEK_ARALIK_ETIKETLENMIYOR(schema):
