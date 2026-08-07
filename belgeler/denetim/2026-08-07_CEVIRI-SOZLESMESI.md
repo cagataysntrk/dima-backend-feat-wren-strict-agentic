@@ -861,6 +861,93 @@ Okunuşu — §14'ten gerçek bir tur:
 
 ---
 
+## 16 · 🔴🔴 UZUN THREAD KOŞUMU — İKİ YENİ KUSUR, biri AĞIR
+
+### 16.1 · Thread 7 — *"bu neden düşük"* zinciri (4 tur)
+
+| tur | soru | `source` | satır | süre | iz |
+|---|---|---|---|---|---|
+| 1 | `mayıs ayında hat bazında oee` | 🟢 `cube` | 8 | 7 626 ms | `route()` — LLM'siz |
+| 2 | `en düşük hangisi` | 🟢 `cube` | 8 | 11 638 ms | `refine → deterministik düzenleme` |
+| 3 | `peki bu neden düşük` | 🔴🔴 **`meta`** | — | **371 ms** | 🔴 **`sosyal sınıf (kapanis)`** |
+| 4 | `nisanla kıyasla` | 🔴 `cube+llm` | 1 | 19 783 ms | `eksik_niyet=['kiyas']` |
+
+### 16.2 · 🔴🔴 KUSUR A — kök-neden sorusu **VEDA** sanıldı
+
+```
+soru : "peki bu neden düşük"
+iz   : sosyal sınıf (kapanis) → deterministik yanıt (LLM'siz, sıfır maliyet)
+cevap: "Görüşürüz! İstediğin zaman buradayım."
+süre : 371 ms
+```
+
+🔴 **Kullanıcı bir kök-neden sorusu sordu; sistem hoşça kal dedi.** Ve bunu **0 LLM ile,
+371 ms'de, kendinden emin** yaptı — yani en ucuz, en hızlı, en yanlış cevap.
+
+**Tetikleyici izole edildi** — beş varyant, tek tek:
+
+| soru | `source` | cevap | yargı |
+|---|---|---|---|
+| `peki bu neden düşük` | 🔴 `meta` | *"Görüşürüz!"* | **YANLIŞ** |
+| `peki neden böyle` | 🔴 `meta` | *"Görüşürüz!"* | **YANLIŞ** |
+| `neden düşük` | 🟢 `None` | *"ort oee çıkarabilirim — hangi dönem için?"* | ✅ netleştirme |
+| `peki bu ay ciro` | 🟢 `cube` | rapor | ✅ |
+| `bu neden düşük` | ⚠ — | **bozuk JSON** *(§16.3)* | ⚠ |
+
+⊙ **Teşhis:** tetikleyici **`peki`**. Ama tek başına değil — `peki bu ay ciro` **doğru**
+çalışıyor. Yani sosyal sınıf kapısı (`D1`) şöyle davranıyor:
+
+> `peki` sosyal sözlükte **var** *(kapanış ailesi)*; cümlede **veri sinyali** bulunmazsa
+> sosyal sınıf kazanıyor. `bu neden düşük` bir katalog terimi taşımadığı için veri sinyali
+> **sayılmıyor** → *"peki"* kapanış diye okunuyor.
+
+🔴 Kusur `peki`'nin sözlükte olmasında değil, **veri sinyalinin tanımında**: bir **takip
+sorusu** (`bu`, `neden`, `düşük`) katalog terimi taşımaz — ama bir thread'in ortasında
+gelmiştir ve önceki turun `cube_query`'si **elde durmaktadır**. Kapı ona bakmıyor.
+
+> *Bir cümlenin veri sorusu olup olmadığı, yalnız kendi kelimelerinden okunamaz —
+> bağlamı elde tutan bir sistem için bu bilgi zaten mevcuttur.*
+
+⚠ Ve bu, `D1`'in kendi kapı cümlesiyle **çelişiyor**: *"veri sinyali varsa sosyal kelime
+kapıyı AÇMAZ"*. Kural doğru; **sinyalin tanımı** thread bağlamını kapsamıyor.
+
+### 16.3 · ⚠ KUSUR B — bozuk JSON yanıtı
+
+`bu neden düşük` → istemci tarafında:
+
+```
+json.decoder.JSONDecodeError: Invalid control character at: line 1 column 415
+```
+
+🔴 Yanıt gövdesinde **kaçırılmamış bir kontrol karakteri** var (muhtemelen bir metin
+alanına giren ham `\n`). Bu, `curl | jq` ya da herhangi bir katı JSON çözücüsünde
+**yanıtın tamamını** düşürür — ön yüz bunu *"sunucu hatası"* diye gösterir.
+
+⚠ Ayrı bir bulgu ve `§16.2`'den bağımsız: aynı soru `peki` olmadan sorulduğunda ortaya
+çıktı.
+
+### 16.4 · Thread 7'nin öteki iki dersi
+
+| bulgu | kanıt |
+|---|---|
+| 🟢 `en düşük hangisi` **deterministik** çözüldü | `refine → deterministik düzenleme`, 0 LLM intent |
+| 🔴 `nisanla kıyasla` **kıyas kuramadı** | `cube+llm` · `eksik_niyet=['kiyas']` · *"iki dönemi kıyaslamanı istedin ama tek bir toplam üretebildim"* — §3.1'in `referans`/`ayrik_aylar` boşluğunun canlı hâli |
+
+### 16.5 · Bu iki kusurun `§15` runbook'una eklenmesi
+
+| # | soru | bugün | beklenen |
+|---|---|---|---|
+| 7·T3 | `peki bu neden düşük` | 🔴 `meta` — *"Görüşürüz!"* | thread içinde **asla sosyal** olmamalı; `contribution`/netleştirme |
+| — | `peki neden böyle` | 🔴 `meta` | aynı |
+| — | `bu neden düşük` | ⚠ bozuk JSON | geçerli JSON |
+| 7·T4 | `nisanla kıyasla` | 🔴 `eksik_niyet=['kiyas']` | `compare=mom` ile tam kıyas |
+
+⚠ **Regresyon kapısı önerisi:** sosyal sınıf kapısına *"istekte `cube_query` varsa sosyal
+sınıf kapalıdır"* şartı. Bir thread'in içinde veda edilmez.
+
+
+---
+
 *Ölçüm kaynakları: `app/cube_router.py` (anahtar taraması · `parse_cube_query` ·
 `_measure_threshold` · `_top_n` · marjinler `:908`·`:932`·`:937`·`:947`) ·
 `app/intent_semasi.py` (şema alanları) · `app/llm.py` (`_cube_select_system` ↔
