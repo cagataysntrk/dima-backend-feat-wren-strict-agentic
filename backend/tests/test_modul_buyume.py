@@ -211,6 +211,20 @@ MUAFIYET_ASK_KOD = [
                       "dürüst olmayan bir mesajı SATIN ALMAZ"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("G6/kiyas-niyeti+R11", 6,
+     "🔴 **KIYAS FİİLİ SÖKÜLÜYORDU AMA SAYILMIYORDU.** `_KIYAS_FIIL` bu modülde 2019'dan "
+     "beri var ve `strip_compare` onu sorudan **söküyor**; ama hiçbir yerde *«kıyas "
+     "istendi»* diye bir **yüklem** yoktu. `TUR_KIYAS`'ın tek kaynağı `compare_mode`'du "
+     "ve o **göreli** kıyastır (`yoy`/`mom`) — *«mart cirosunu şubat ile kıyasla»* iki "
+     "uçludur, ona `None` der. ⊙ Ölçüldü (10 kıyas sorusu): red **3** · **SESSİZ YARIM "
+     "5** · temiz 2. O beşin en kötüsü *«mart cirosunu şubat ile kıyasla»* → **1 Şubat–31 "
+     "Mart TOPLAMI** döndü ve `uyum` dâhil **hiçbir kapı etiketlemedi** (`\" ile \"` "
+     "`_ARALIK`'ta olduğu için `cok_donem` bastırılıyordu). "
+     "⚠ **Taşınamaz:** `kiyas_niyeti` `_KIYAS_FIIL` + `_syn_hit`'in üstünde durur; bir "
+     "modüle çıkarmak sözlüğü sahibinden ayırır, yani `KAT-1`'i (*«aynı kuralın iki "
+     "sahibi»*) tam olarak doğurur. 2 satır yüklem + 2 satır `R11` dalı + 2 satır "
+     "`return`/boşluk. `R11` niyet katmanını **çağırmaz** — ilk yazım çağırdı ve "
+     "`KÖK-1 Faz 1`'in *«sıfır müdahale»* kapısı haklı olarak kırmızı verdi"),
     ("KÖK-9/tek-teshis", 12,
      "🔴 TEK TEŞHİS KAYNAĞI (denetim raporu KN-5/KÇ-5) — `teshis()`. Ölçüldü: **2 116** "
      "reddedilen soruda ham kapı kodu R10 OLMADIĞI HÂLDE tanınmayan kelime VARDI → "

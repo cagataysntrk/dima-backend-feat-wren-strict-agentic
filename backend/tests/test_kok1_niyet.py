@@ -214,7 +214,17 @@ def test_BAYRAK_KAYITLI_VE_VARSAYILAN_ACIK():
 #: `uyum`un okuduğu **yedi** soru-sinyali ↔ `Niyet`in taşıdığı karşılıkları.
 #: 🔴 Bu tablo Faz 2'nin **sözleşmesidir**: bir tanesi ayrışırsa o tüketici taşınamaz.
 YEDI_SINYAL = [
-    ("kiyas", lambda cr, uy, qn: bool(cr.compare_mode(qn)),
+    # 🔴 `G6` (2026-08-07) — BU SATIR GENİŞLEDİ, GEVŞEMEDİ.
+    #
+    # Eskiden `TUR_KIYAS ≡ compare_mode`'du. Ölçüldü ki `compare_mode` **göreli**
+    # kıyastır (`yoy`/`mom`) ve *"mart cirosunu şubat ile kıyasla"*ya `None` der — o soru
+    # **iki uçlu**dur. Sonuç: niyet nesnesi kıyası **saymıyordu**, `uyum` da oradan
+    # okuduğu için susuyordu ve soru **1 Şubat–31 Mart TOPLAMIYLA** etiketsiz cevaplanıyordu.
+    #
+    # Sol taraf hâlâ **ham router yüklemleri**, sağ taraf hâlâ **niyet alanı** — testin
+    # şekli aynı, kapsamı düzeltildi. `kiyas_niyeti` yeni bir sözlük değil, var olan
+    # `_KIYAS_FIIL`'in yüklem hâlidir (`ADR-0008`).
+    ("kiyas", lambda cr, uy, qn: bool(cr.compare_mode(qn)) or cr.kiyas_niyeti(qn),
      lambda n: n_mod.TUR_KIYAS in n.turler),
     ("cok_donem", lambda cr, uy, qn: uy._cok_donem(qn) >= 2, lambda n: n.cok_donem),
     ("trend", lambda cr, uy, qn: uy.trend_istendi(qn), lambda n: n.trend_istendi),

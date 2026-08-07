@@ -218,7 +218,18 @@ def _coz_soru(soru: str) -> Niyet:
         filtreler.append(esik)
 
     donem_sayisi = max(_guvenli(lambda: _uyum._cok_donem(soru), 0), 1 if donemler else 0)
-    if _guvenli(lambda: cr.compare_mode(q), None):
+    # 🔴 `G6` — KIYAS İKİ BİÇİMDE GELİR ve eskiden yalnız biri sayılıyordu.
+    #
+    # `compare_mode` **göreli** kıyastır (*"geçen yıla göre"* → `yoy`/`mom`); tüketicileri
+    # onunla göreli SQL kurar, bu yüzden **iki uçlu** kıyasa `None` demesi doğrudur.
+    # Ama `TUR_KIYAS`'ın tek kaynağı o olunca *"mart cirosunu şubat ile kıyasla"* sorusu
+    # niyet nesnesinde **kıyas SAYILMIYORDU** — ve `uyum` kapısı da oradan okuduğu için
+    # sessiz kalıyordu. Ölçüldü: o soru **1 Şubat–31 Mart toplamını** döndürüyor ve
+    # hiçbir kapı etiketlemiyordu.
+    #
+    # *Bir niyeti sökebilen sistem (`strip_compare`) onu sayabilmelidir de.*
+    if (_guvenli(lambda: cr.compare_mode(q), None)
+            or _guvenli(lambda: cr.kiyas_niyeti(q), False)):
         turler.add(TUR_KIYAS)
     if _guvenli(lambda: cr.liste_niyeti(q), False):
         turler.add(TUR_LISTE)

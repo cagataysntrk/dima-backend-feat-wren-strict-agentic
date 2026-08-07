@@ -1449,6 +1449,31 @@ _KIYAS_FIIL = ("kiyasla", "kiyaslama", "kiyas", "karsilastir", "karsilastirma",
 _ACIK_KIYAS = ("yoy", "mom")
 
 
+def kiyas_niyeti(q: str) -> bool:
+    """Soru bir **kıyas** istiyor mu? — *"kıyasla"*, *"karşılaştır"*, *"mukayese"*.
+
+    🔴 `compare_mode()`'dan **DAHA GENİŞ**, ve fark ölçüldü: `compare_mode` yalnız
+    **göreli** kıyası (`yoy`/`mom`) tanır çünkü tüketicileri onunla göreli SQL kurar.
+    *"mart cirosunu şubat ile kıyasla"* göreli değildir — **iki uçlu**dur ve
+    `compare_mode` ona `None` der. Sonuç ölçüldü (`G6`, 10 kıyas sorusu):
+
+    | soru | bugün ne oluyor |
+    |---|---|
+    | *"mart cirosunu şubat ile kıyasla"* | 🔴 **1 Şubat–31 Mart TOPLAMI** döndü — kıyas değil |
+    | *"2025 ve 2026 ciro karşılaştır"* | 🔴 **hiç dönem filtresi yok** |
+
+    …ve `Niyet` bunlara `TUR_KIYAS` **demiyordu**, çünkü `TUR_KIYAS`'ın tek kaynağı
+    `compare_mode`'du. Yani kıyas fiili sorunun içinde duruyor, sistem onu `strip_compare`
+    ile **söküyor**, ama hiçbir yerde *"kıyas istendi"* diye **saymıyordu**.
+
+    ⚠ **YENİ SÖZLÜK YOK — `_KIYAS_FIIL` var olan tek sahiptir** (`ADR-0008`). Bu fonksiyon
+    o listeye bir kelime eklemez; onu bir **yüklem** olarak açar. `_kiyas_spanlari` aynı
+    listeyi *"göreli dönem kökü yanında mı"* diye sorar, bu ise *"hiç var mı"* diye.
+    *Aynı sözlüğe iki soru sormak, iki sözlük tutmak değildir.*
+    """
+    return any(_syn_hit(q, f) for f in _KIYAS_FIIL)
+
+
 def _kiyas_spanlari(q: str, kokler) -> list[tuple[int, int]]:
     """Kıyas OLARAK okunan dönem-geri ifadelerinin aralıkları (bitişik edat dâhil)."""
     fiil_var = any(_syn_hit(q, f) for f in _KIYAS_FIIL)
@@ -3125,7 +3150,22 @@ def teshis(q: str, schema: dict) -> str | None:
         return ham
     # Tanınmayan kelime VARSA teşhis odur — hangi kapının önce durduğu bir UYGULAMA
     # ayrıntısıdır, kullanıcının sorununun adı değil.
-    return "R10" if bilinmeyen else ham
+    if bilinmeyen:
+        return "R10"
+    # 🔴 **R11 — «ANLAŞILDI ama İFADE EDİLEMEZ»** (`G6`, 2026-08-07).
+    #
+    # Tanınmayan kelime YOK — sistem soruyu **anladı** — ama yine de pes etti. `R1`
+    # *"kelimeyi bilmiyorum"* der ve geliştiriciyi **kataloğa** yollar; `R11` *"biliyorum
+    # ama söyleyemiyorum"* der ve **CEBİRE** yollar. İkisi aynı kovaya düşerse kıyas
+    # cebirinin hedef nüfusu **hiç görünmez**.
+    #
+    # ⚠ İlk yazım niyet katmanının `temsil_edilemeyen`'ini çağırdı ve `KÖK-1 Faz 1`'in *"sıfır
+    # müdahale"* kapısı **haklı olarak** kırmızı verdi: yön tek yönlüdür (`niyet →
+    # cube_router`), tersi bir döngüdür. Sinyal zaten burada: `kiyas_niyeti` bu modülün
+    # kendi yüklemi. *Bir kapının reddi çoğu zaman daha ucuz bir çözümün adresidir.*
+    if kiyas_niyeti(q):
+        return "R11"
+    return ham
 
 
 #: Liste/döküm niyeti. KELİME-SINIRLI: `dokum` altdizisi "DOKUMa"yı (kumaş!) yakalıyordu;

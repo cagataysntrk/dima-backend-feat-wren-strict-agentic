@@ -78,8 +78,25 @@ def _norm(s: str) -> str:
 #: `route()` onu zaten `gte`+`lte` ile doğru kurmuş.
 #:
 #: *İki tarih, aralarında bir "arası" varsa iki istek değil bir aralıktır.*
-_ARALIK = (" arasi", " arasinda", " ile ", " ila ", " kadar", "dan ", "den ",
+_ARALIK = (" arasi", " arasinda", " ila ", " kadar", "dan ", "den ",
            "tan ", "ten ", " itibaren")
+
+#: 🔴 **AŞIRI-YÜKLÜ BAĞLAÇ** — `" ile "` iki ayrı işi görür ve `G6`'da ölçüldü:
+#:
+#: | okuma | örnek |
+#: |---|---|
+#: | **aralık** | *"ocak **ile** mart arası"* → tek dönem |
+#: | **birliktelik** | *"mart cirosunu şubat **ile** kıyasla"* → **iki** dönem |
+#:
+#: Bağlaç `_ARALIK` içindeyken ikinci okuma birinciye yutuluyordu: `cok_donem` ihlali
+#: bastırılıyor, `kiyas` ihlali de (o zaman) hiç doğmuyordu → soru **1 Şubat–31 Mart
+#: toplamıyla** cevaplanıp **etiketsiz** gidiyordu.
+#:
+#: ⚠ Bu, bu deponun defterindeki **`göre`/`bazında` aşırı-yüklenmesinin** aynı sınıfı.
+#: Çözüm bir kelime eklemek değil, iki sahip arasında bir **öncelik** kurmaktır:
+#: kıyas fiili varsa `" ile "` **birliktelik** okunur. Gerçek aralık ifadesi zaten
+#: `" arasi"`/`" ila "` taşır — yani bu kısıt meşru aralığı **daraltmaz**.
+_ARALIK_BAGLAC = (" ile ",)
 
 #: Göreli dönem aralığı — *"son 3 ay"*, *"son 6 ay"*. İkisi AYRI birer dönemdir.
 _GORELI_DONEM = re.compile(
@@ -228,7 +245,9 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
     # gte+lte üretiyor. Yani "iki uçlu filtre" hem doğru aralığın hem YANLIŞ çöküşün
     # imzası — ayırt edici değil.
     # *Bir imza, iki farklı olayda da görünüyorsa kanıt değildir.*
-    _aralik_ifadesi = any(w in f" {qn} " for w in _ARALIK)
+    _pad = f" {qn} "
+    _aralik_ifadesi = any(w in _pad for w in _ARALIK) or (
+        any(w in _pad for w in _ARALIK_BAGLAC) and TUR_KIYAS not in niyet.turler)
     if (niyet.cok_donem and not _aralik_ifadesi
             and not any(i.isaret == "kiyas" for i in out)
             and not (ic.get("compare") or ic.get("compare_mode"))):
