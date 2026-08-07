@@ -133,7 +133,66 @@ def geri_koy(metin: str, harita: dict[str, str]) -> tuple[str, list[str]]:
         if yt not in metin:
             sorunlar.append(f"eksik:{yt}")
         else:
-            metin = metin.replace(yt, gercek)
+            metin = _yerine_koy(metin, yt, gercek)
     if sorunlar:
         _log.warning("yayılım bozuldu: %s", ", ".join(sorunlar))
     return metin, sorunlar
+
+
+# --- 🔴 EK MOTORU BURAYA BAĞLANIR (`G7`'nin tek üretim tüketicisi) -------------------
+#
+# `G7` `app/ek.py`'yi yazdı ama **hiçbir yerden çağırmadı** — üç denetim ajanının üçü de
+# bağımsız buldu (`DA-1`). *Bir modülün testli olması, kullanıldığını kanıtlamaz.*
+#
+# Bağlanacağı doğru yer burası ve sebebi yapısal: **yer tutucunun sınırını bilen tek
+# modül bu.** Model `{{DIM_1}}` görür ve etrafına Türkçe yazar — *"en yüksek {{DIM_1}}'de"*
+# gibi. Ama eki, yer tutucunun **arkasındaki gerçek değeri görmeden** seçmiştir; gerçek
+# değer `Mart` ise doğrusu `Mart'ta`, `Kasım` ise `Kasım'da`.
+#
+# Düz `str.replace` bu eki **olduğu gibi** bırakıyordu: model ne yazdıysa o.
+# *Bir değeri gizleyip yerine bir yuva koymak, o yuvanın dilbilgisini de üstlenmektir.*
+
+#: Modelin yazdığı ek → `ek.py`'nin beş tipinden biri. **Yeni sözlük değil**: `ek_bagla`'nın
+#: kendi tiplerinin ters haritası. Ünlü uyumunun her varyantı aynı tipe düşer.
+_EK_TERS = {
+    "de": "de", "da": "de", "te": "de", "ta": "de",
+    "den": "den", "dan": "den", "ten": "den", "tan": "den",
+    "e": "e", "a": "e", "ye": "e", "ya": "e",
+    "i": "i", "ı": "i", "u": "i", "ü": "i",
+    "yi": "i", "yı": "i", "yu": "i", "yü": "i",
+    "in": "in", "ın": "in", "un": "in", "ün": "in",
+    "nin": "in", "nın": "in", "nun": "in", "nün": "in",
+}
+
+
+def _yerine_koy(metin: str, yt: str, gercek: str) -> str:
+    """`{{X}}` → gerçek değer, **arkasındaki ek yeniden çekimlenerek**.
+
+    ⚠ Kapsam **kapalı**: yalnız kesme işaretiyle yazılmış ek (`{{DIM_1}}'de`). Bitişik
+    yazılmış bir kuyruk bir ek de olabilir bir kelime de; ayırt etmek bir morfoloji işidir
+    ve bu modülün kapsamı değil — *şüphede dokunmamak, yanlış çekimlemekten iyidir.*
+
+    🔴 Sayı yuvaları (`{{NUM_i}}`) `sayi=True` ile gider: ek sayının **okunuşuna** göre
+    seçilir (`3` → *üç* → `3'te`; `1.000.000` → *milyon* → `1.000.000'a`).
+    """
+    import re as _re
+
+    from app.ek import ek_bagla
+
+    sayi_mi = yt.startswith("{{NUM")
+    desen = _re.compile(_re.escape(yt) + r"(?:['’]([a-zçğıöşü]{1,3}))?")
+
+    def _degistir(m: _re.Match) -> str:
+        kuyruk = (m.group(1) or "").lower()
+        tip = _EK_TERS.get(kuyruk)
+        if not tip:
+            return gercek if not kuyruk else f"{gercek}'{kuyruk}"
+        try:
+            # 🔴 `kesme=True`: modelin yazdığı kesme işareti, sözcüğün **özel ad**
+            # olduğunun beyanıdır — ve özel adlarda yumuşama yazıya geçmez (TDK).
+            return ek_bagla(gercek, tip, sayi=sayi_mi, kesme=not sayi_mi)
+        except Exception:                            # noqa: BLE001 — çekim cevabı düşürmez
+            _log.warning("ek çekimlenemedi (%r + %r)", gercek, tip, exc_info=True)
+            return f"{gercek}'{kuyruk}"
+
+    return desen.sub(_degistir, metin)

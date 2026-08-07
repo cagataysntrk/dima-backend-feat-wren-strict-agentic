@@ -59,6 +59,12 @@ export default function Home() {
   // Takip bağlamı: bir sonraki mesajla gönderilecek CubeQuery. Rapor VE clarify notu (kısmi
   // cube_query) bunu günceller — "bu ay" chip'i doğru sorguya uygulansın (ADR-0007 Faz C).
   const [contextCq, setContextCq] = useState<AskResponse["cube_query"]>(null);
+  // 🔴 `G2` — DİYALOG DURUMU YANKISI. `contextCq`'nun KARDEŞİ: aynı yaşam döngüsü, aynı
+  // sıfırlanma noktaları. Sunucu oturum saklamaz; *"sorduğunu hatırlamak"* bu yankıya
+  // bağlıdır (`backend/app/schemas.py:82-86` · `context.py::KURAL_DEVAM`).
+  // ⚠ Bir demet boyunca EKSİKTİ → `KURAL_DEVAM` üretimde hiç ateşlenmedi.
+  const [diyalogDurumu, setDiyalogDurumu] =
+    useState<AskResponse["diyalog_durumu"]>(null);
   // Strict-agentic (wren_sql) takip bağlamı: bir önceki /ask cevabının SQL'i — cube_query'den
   // AYRI (bkz. lib/types.ts AskRequest.prev_sql); "aylara göre" gibi bir takip mesajı backend'de
   // bu SQL'i düzenleyerek yanıtlanır (generate_followup_sql), sıfırdan bağlamsız üretmez.
@@ -164,6 +170,7 @@ export default function Home() {
     const resumedThreads = groupIntoThreads(det.messages);
     setActiveThreadId(resumedThreads.at(-1)?.id ?? null);
     setContextCq(lastReport?.cube_query ?? null);
+    setDiyalogDurumu(lastReport?.diyalog_durumu ?? null);
     setCanvasItems([]); // tuval sohbet-oturumu kapsamlı — devralınan sohbette sıfırdan başlar
     setViewHint(lastReport?.view_hint ? { kind: lastReport.view_hint, nonce: Date.now() } : null);
     setPrevSql(lastReport?.sql || null);
@@ -176,6 +183,7 @@ export default function Home() {
     clearHistory();
     setActiveThreadId(null);
     setContextCq(null);
+    setDiyalogDurumu(null);
     setPrevSql(null);
     setCanvasItems([]); // tuval sohbet-oturumu kapsamlı — yeni sohbet sıfırdan başlar
     setStarted(false);
@@ -227,8 +235,10 @@ export default function Home() {
         // Sol komposer: cube_query/prev_sql/history/thread_id HEPSİ boş — gerçekten taze
         // bir istek, aktif thread'in bağlamından TAMAMEN bağımsız.
         return ask(
+          // ⚠ `diyalog_durumu` de BİLEREK yok: sol komposer "gerçekten taze" demektir,
+          // bekleyen bir soruyu oradan cevaplamak yeni bir konu açmaktır.
           { question: vars.question, cube_query: null, prev_sql: null, history: [],
-            session_id: sessionId, thread_id: null },
+            diyalog_durumu: null, session_id: sessionId, thread_id: null },
           setLiveTrace,
           setAktifJobId,
         );
@@ -240,6 +250,9 @@ export default function Home() {
           {
             question: vars.question,
             cube_query: contextCq,
+            // 🔴 `G2` — bekleyen soru bu turda cevaplanıyor olabilir. Yankı olmadan
+            // sunucu turu `KURAL_TAZE` sayar ve "mart" tanınmayan bir soru olur.
+            diyalog_durumu: diyalogDurumu,
             prev_sql: prevSql,
             history: (activeThread?.items ?? []).map((i) => i.question).slice(-8),
             session_id: sessionId,
@@ -280,6 +293,11 @@ export default function Home() {
         {
           question: vars.question,
           cube_query: anchor?.cube_query ?? null,
+          // 🔴 `G2` — bağlam ÇAPADAN gelir, thread'in güncelinden değil (bu dalın kendi
+          // ilkesi). Diyalog durumu da öyle: çapa bir netleştirme kartıysa ona verilen
+          // cevap o bekleyen yuvayı doldurur. *Bir bağlamın parçalarını farklı
+          // yerlerden toplamak, bağlamı bozmanın en sessiz yoludur.*
+          diyalog_durumu: anchor?.diyalog_durumu ?? null,
           prev_sql: anchor?.sql || null,
           history: historyThroughAnchor,
           session_id: sessionId,
@@ -332,6 +350,8 @@ export default function Home() {
       else if (data.result) setViewHint(null);
       // Bağlam: rapor ya da clarify (kısmi cube_query) her ikisi de bir sonraki mesaj için.
       setContextCq(data.cube_query ?? null);
+      // 🔴 `G2` — durumu yankıla: bir sonraki tur "kaldığı yerden" devam edebilsin.
+      setDiyalogDurumu(data.diyalog_durumu ?? null);
       // wren_sql takip bağlamı: sql yoksa (meta/katalog/hata notu) bir sonraki soru
       // bağlamsız (fresh) sayılır — stale SQL'e "düzenleme" uygulanmaz.
       setPrevSql(data.sql || null);
@@ -388,6 +408,7 @@ export default function Home() {
       // chip düzenlemesi RAPOR ŞEKLİNİ küçük değiştirir — mevcut görünüm tercihi
       // (ör. panelli) KORUNUR; yeni ipucu yalnız /ask cevabından gelir.
       setContextCq(data.cube_query ?? null);
+      setDiyalogDurumu(data.diyalog_durumu ?? null);
       // /cube deterministik cube_query akışıdır — wren_sql takip bağlamıyla ilgisiz;
       // bir sonraki /ask sıfırdan (fresh) başlasın diye temizlenir.
       setPrevSql(null);
@@ -405,6 +426,7 @@ export default function Home() {
     onSuccess: (r, file) => {
       setStarted(true);
       setContextCq(null); // yeni veri kaynağı — eski cube bağlamı düşer
+      setDiyalogDurumu(null);   // …ve bekleyen soru da o kaynağa aitti
       setPrevSql(null); // yeni veri kaynağı — eski wren_sql takip bağlamı da düşer
       // §B Adım 1 — yeni veri kaynağı = yeni konu: yeni thread mint edilir, pseudo-
       // AskResponse'a AÇIKÇA is_new_topic+thread_id set edilir (ÖNCEDEN ikisi de set

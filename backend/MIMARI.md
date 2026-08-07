@@ -404,6 +404,27 @@ Bildirimde, `/ask/contribution` yanıtında ve `ContributionLayer`'da görünür
 6. **Deterministik yol sayı uydurmaz.** Belirsizlikte **sorar** (chip), tahmin etmez. Tek
    tanınmayan kelime → cevap yok **ve öneri de yok** (ADR-0008: *yanlış öneri, önerisizlikten
    kötüdür*).
+
+   🔴 **6b. Bu değişmez GARSON FAZINDA İKİYE BÖLÜNDÜ — gevşemedi, BÖLÜNDÜ.**
+   *"Sayı uydurmaz"* iki ayrı şeyi koruyor ve ikisinin kapısı **ayrı**:
+
+   | | ne korur | kapı | ölçüt |
+   |---|---|---|---|
+   | **rakam** | LLM'in yazdığı **sayı** küpten mi? | `app/narration_guard.py` | ±%2 eşleşme |
+   | **cümle** | LLM'in her **İDDİASI** şemaya karşı doğrulandı mı? | 🔴 `app/iddia.py` | katalog + fail-closed |
+
+   Sebep `narration_guard`'ın kendi itirafıdır: *"Sayı **İÇERMEYEN** cümleler geçer: bu
+   kapı **sayı uydurmasını** engeller, **üslubu değil**."* Yani *"İstersen tedarikçi
+   kırılımı da ekleyebilirim"* (o boyut yoksa **sistem çuvallar**) hiçbir kapıya
+   takılmıyordu. İkisi de `answer.py::seal()`'in önünde durur; sayı yolu **birebir aynı**
+   kaldı. *Bir değişmezi bölmek onu zayıflatmaz; hangi parçasının hangi kapıya ait
+   olduğunu söyler.*
+
+   🔴 **6c. ÜÇÜNCÜ DEĞİŞMEZ — HAVA BOŞLUĞU.** LLM'e giden her yük **tek geçitten**
+   geçer; **ham satır · gerçek boyut değeri · gerçek sayı binadan ÇIKMAZ**
+   (`app/llm_guard.py` PII deseni + `app/yayilim.py` yer tutucu perdesi). Bu bir üslup
+   kuralı değil bir **güvenlik sınırıdır**: doğrulaması ±%2 eşleştirmeden **güçlüdür**,
+   çünkü model bir rakamı **üretemez bile**. Ayrıntı: *«ÜÇÜNCÜ DEĞİŞMEZ»* bölümü.
 7. **Auth her zaman zorunlu**, kapatma bayrağı yoktur. Güvenlik sınırı `authorize()`'dır; feature
    flag onu **gevşetemez**.
 8. **DB→dosya tek yönlü.** `TenantConfig` satırı olan tenant'ın `company.yml`'i TÜRETİLMİŞTİR;
@@ -1671,6 +1692,22 @@ cevaplarında **dolu geliyor** — yani o cevaplar bu fazdan **önce de** raporl
 sayılıyordu. Düzeltilmedi, **borç olarak yazıldı**: ölçülmemiş bir davranış değişikliği
 faz kapanışında yapılmaz. *Kendi alanını sınıflandırmak bir sorumluluk; başkasınınkini
 ölçmeden değiştirmek bir risktir.*
+
+### 🔴 ÖLÜ BAYRAK — `llm_sema_kisitli` SEÇİLEN SAĞLAYICIDA **NO-OP**
+
+`llm_sema_kisitli` bayrağı *"LLM çıktısı JSON şemasına kısıtlansın"* vaat ediyor. Garson
+fazının sağlayıcı kararından sonra (`openrouter` · `deepseek/deepseek-v4-flash`) ölçüldü:
+**o sağlayıcı `oneOf` desteklemiyor**, yani bayrak açık da olsa kapalı da olsa çıktı
+kısıtlanmıyor — **NO-OP**.
+
+🔴 Bu kayıt buraya yazılmalıydı çünkü mimari otorite burasıdır: *bir bayrağın adı bir
+yetenek beyanıdır ve karşılığı yoksa beyan yalandır.* Ölçüm `lab/garson.py`'nin **şema-dışı
+oran** satırıyla sürüyor (bugün `0/1`) — kapatılmadı, **görünür** bırakıldı; sağlayıcı
+değişirse aynı satır yeniden anlam kazanır.
+
+⚠ Ve kısıtlı çözümleme zaten bir **ayrıştırma-hatası** yok edicisidir, bir **halüsinasyon**
+yok edicisi değil: şemaya uyan ama yanlış bir cevap da şemaya uyar. Bu yüzden `iddia.py`
+ve hava boşluğu bayrağın yerine geçmez — onlar **başka** bir şeyi korur.
 
 ### 🔴 `KÇ-1`'in SAPMASI — denetim *fail-closed* istedi, uygulama *beyan-açık* seçti
 

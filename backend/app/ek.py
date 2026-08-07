@@ -144,7 +144,8 @@ def _yumusat(govde: str) -> str:
     return govde
 
 
-def ek_bagla(sozcuk: str, ek_tipi: str, *, sayi: bool = False) -> str:
+def ek_bagla(sozcuk: str, ek_tipi: str, *, sayi: bool = False,
+             kesme: bool = False) -> str:
     """`sozcuk` + doğru çekim eki. `ek_tipi ∈ {de, den, e, i, in}`.
 
     `sayi=True` ise ek **okunuşa** göre seçilir ve **kesme işaretiyle** yazılır
@@ -154,6 +155,12 @@ def ek_bagla(sozcuk: str, ek_tipi: str, *, sayi: bool = False) -> str:
     🔴 **Fail-open değil, fail-same:** bilinmeyen bir ek tipi ya da boş sözcükte
     **sözcüğün kendisi** döner. Bir eki yanlış yazmaktansa hiç yazmamak yeğdir —
     yanlış çekim, uydurma bir sayı kadar görünür bir kusurdur.
+
+    🔴 `kesme=True` → **ÖZEL AD** kipi: kesme işaretiyle yazılır ve **yumuşama
+    uygulanmaz** (`Mart'ta` · `Ahmet'i`, `Ahmed'i` DEĞİL). TDK kuralı: özel adlarda ünsüz
+    yumuşaması **yazıya geçmez**. Bu ayrım `app/yayilim.py`'nin yer tutucu geri koymasında
+    zorunlu: boyut değerleri (`Mart` · `Merkez` · `Kadıköy`) özel addır ve model zaten
+    kesme işaretiyle yazar — *modelin yazdığı kesme, sözcüğün özel ad olduğunun beyanıdır.*
     """
     if not sozcuk or not str(sozcuk).strip():
         return str(sozcuk or "")
@@ -188,8 +195,8 @@ def ek_bagla(sozcuk: str, ek_tipi: str, *, sayi: bool = False) -> str:
         _log.warning("bilinmeyen ek tipi %r — sözcük olduğu gibi döndü", ek_tipi)
         return s
 
-    if sayi:
-        return f"{s}'{ek}"
+    if sayi or kesme:
+        return f"{s}'{ek}"          # özel ad / sayı: kesme + yumuşama YOK
     if ek_tipi in ("e", "i", "in") and not unlu_bitis:
         return _yumusat(s) + ek
     return s + ek

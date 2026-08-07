@@ -103,3 +103,67 @@ def test_ZEMBEREK_ALINMADI_gerekcesi_YAZILI():
               / "app" / "ek.py").read_text(encoding="utf-8")
     for gerekce in ("0.17.1", "JVM", "--network none"):
         assert gerekce in kaynak
+
+
+# --- 🔴 DA-1 KAPANDI — motorun ÜRETİM TÜKETİCİSİ --------------------------------
+
+
+def test_EK_MOTORUNUN_URETIM_CAGIRANI_VAR():
+    """🔴 **Üç denetim ajanı da bağımsız olarak buldu:** `G7` bu modülü yazdı ve
+    **hiçbir yerden çağırmadı**. Commit başlığı *"enjekte edilen yuvalar doğru
+    çekimleniyor"* diyordu; hiçbir yuva çekimlenmiyordu.
+
+    *Bir modülün testli olması, kullanıldığını kanıtlamaz.*
+    """
+    import ast
+    import pathlib
+
+    kok = pathlib.Path(__file__).resolve().parents[1] / "app"
+    cagiranlar = []
+    for py in kok.rglob("*.py"):
+        if py.name == "ek.py":
+            continue
+        try:
+            agac = ast.parse(py.read_text(encoding="utf-8"))
+        except SyntaxError:
+            continue
+        for n in ast.walk(agac):
+            if isinstance(n, ast.ImportFrom) and n.module == "app.ek":
+                cagiranlar.append(py.name)
+    assert cagiranlar, (
+        "🔴 `app/ek.py` üretimde SIFIR çağıranı olan bir YETİM. Yetim yasağı: bir "
+        "backend yeteneği tüketicisi olmadan «bitti» değildir.")
+
+
+def test_YUVA_CEKIMI_GERCEK_DEGERE_GORE():
+    """Model eki **yuvayı görerek** seçer, gerçek değeri görmeden. `Mart` ile `Kasım`
+    aynı yuvada olabilir ama ekleri farklıdır."""
+    from app.yayilim import geri_koy
+
+    m, s = geri_koy("en yüksek {{DIM_1}}'de oldu", {"{{DIM_1}}": "Mart"})
+    assert m == "en yüksek Mart'ta oldu", m
+    assert not s
+
+    m, _ = geri_koy("en yüksek {{DIM_1}}'de oldu", {"{{DIM_1}}": "Kasım"})
+    assert m == "en yüksek Kasım'da oldu", m
+
+
+def test_SAYI_YUVASI_OKUNUSA_GORE():
+    """`3` → *üç* → `3'te`; `1.000.000` → *milyon* → `1.000.000'a`."""
+    from app.yayilim import geri_koy
+
+    m, _ = geri_koy("{{NUM_1}}'de arttı", {"{{NUM_1}}": "3"})
+    assert m == "3'te arttı", m
+    m, _ = geri_koy("{{NUM_1}}'e ulaştı", {"{{NUM_1}}": "1.000.000"})
+    assert m == "1.000.000'a ulaştı", m
+
+
+def test_EKSIZ_YUVA_ve_TANINMAYAN_KUYRUK_BOZULMAZ():
+    """⚠ Kapsam kapalı: ek yoksa dokunulmaz, tanınmayan bir kuyruk **olduğu gibi** kalır.
+    *Şüphede dokunmamak, yanlış çekimlemekten iyidir.*"""
+    from app.yayilim import geri_koy
+
+    m, _ = geri_koy("{{DIM_1}} en yüksek", {"{{DIM_1}}": "Mart"})
+    assert m == "Mart en yüksek"
+    m, _ = geri_koy("{{DIM_1}}'xyz", {"{{DIM_1}}": "Mart"})
+    assert m == "Mart'xyz"

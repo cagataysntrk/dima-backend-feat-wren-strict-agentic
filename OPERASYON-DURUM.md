@@ -15,8 +15,13 @@
 > sıra)"* yazıyordu; **yol haritasında §10 YOKTUR**, kastedilen `OPERASYON.md · §10`'dur.
 > Bu satırı takip eden bir ajan sırayı bulamıyordu.
 
-**Son güncelleme:** 2026-08-07 · HEAD @`294eb67` *(2026-08-06)* ·
-🔵 **AKTİF: GARSON ARA FAZI — planlama bitti, `G0` bekliyor**
+**Son güncelleme:** 2026-08-07 · HEAD @`b297e6c` ·
+🟢 **GARSON ARA FAZI TAMAMLANDI** — `G0…G8` + `Z` indi (13 commit), push edildi
+
+⚠ **VE BU BAŞLIK BİR KEZ DAHA BAYATLADI.** Faz boyunca 13 commit atıldı; başlık hâlâ
+*"planlama bitti, `G0` bekliyor"* diyordu ve bunu **bir denetim ajanı yakaladı** — tam
+olarak aşağıdaki uyarının ikinci kez gerçekleşmesi. Bağlam sıfırlanan bir ajan bütün
+fazı **baştan** yapardı. 🔴 *Bir kuralı yazmak, onu uygulamak değildir.*
 
 ⚠ **Bu başlık BİR KEZ BAYATLADI ve bir denetim onu yakaladı:** *"HEAD → FAZ 0 · adım 1"*
 yazıyordu, gerçek HEAD **FAZ 4.4**'teydi. Bu dosya *"bağlam sıfırlanırsa buradan başla"*
@@ -29,11 +34,12 @@ devam ettirir. 🔴 **Kural: her faz commit'inden sonra bu blok güncellenir.**
 
 | | |
 |---|---|
-| **Aktif faz** | 🔵 **GARSON ARA FAZI** — `~/.claude/plans/DIMA-GARSON-ARA-FAZ.md` · **planlama BİTTİ**, sıradaki madde **`G0` (ölçüm aleti)** · 🔴 *G0 inmeden kod yazılmaz* |
+| **Aktif faz** | 🟢 **GARSON ARA FAZI ✅ BİTTİ** *(`G0…G8` + `Z`, HEAD `b297e6c`)* — sırada v1'in kalanı / Bölüm II | ⟵ *(eski satır aşağıda)* |
+| ~~eski~~ | ~~🔵 **GARSON ARA FAZI** — `~/.claude/plans/DIMA-GARSON-ARA-FAZ.md` · **planlama BİTTİ**, sıradaki madde **`G0` (ölçüm aleti)** · 🔴 *G0 inmeden kod yazılmaz* |
 | **Önceki** | v1 gövdesi ✅ *(FAZ 0…8; FAZ 7.3/7.7'nin kalanı ve `3.0` tenant açılışı açık)* |
 | **Korpus** | 🟢 **%95,1** — kapı çıktısı `kapi.py --tam` *(şirket kırılımı `backend/lab/reports/nl_corpus.md`)* |
-| **Gerçek-dünya** | kabul **1150** · doğru **83** · sessiz_yanlış **12** · beyanlı_kısmi **58** |
-| **Süit** | **3869 yeşil** · `eval` **+0,0 / +0,0 / +0,0** |
+| **Gerçek-dünya** | kabul **1138** · doğru **69** · sessiz_yanlış **12** · beyanlı_kısmi **72** *(⚠ `dogru` düşüşü gerileme DEĞİL: `dogru+beyanli` 140→141 korundu, `uyum` kapısı keskinleşti — `gercek_dunya_baseline.json` gerekçeli)* |
+| **Süit** | ⚠ **3869 sayısı BAYAT** — faz boyunca ~1000 satır yeni test indi; `--hizli` son koşumu **1526 yeşil** (kapı seçimi), `--hepsi` faz kapanışında **koşulmadı** (borç) |
 | **§C ölçütü** | **10 yeşil · 5 sarı · 1 kırmızı** (ölçüt 4 — `motor_cls` hâlâ `off`) · 13 ⊘ *(kod değil)* |
 | **Push** | ✅ `origin/wren-bağımsız` ile **fark 0** |
 | **Sağlayıcı** | 🔴 **OpenRouter + NVIDIA açık kaynak model** *(karar 2026-08-07)* — mimari sonucu: `llm_sema_kisitli` bu sağlayıcıda **NO-OP** (ara faz §7.4) |
@@ -42,12 +48,12 @@ devam ettirir. 🔴 **Kural: her faz commit'inden sonra bu blok güncellenir.**
 
 | # | Ne | Nerede |
 |---|---|---|
-| **B-G1** | `lab/garson.py --live` **yok** — garsonu görebilen tek alet kurulmadı; `konusma_senaryolari` sekiz koşumun sekizinde de `⊘ ÖLÇÜLEMEDİ` verdi | ara faz `G0` |
-| **B-G2** | `0.5b` FAZ 0'da ✅ ilan edilmiş ama **kodda sıfır iz** (`netlestirme.birlestir` · `bekleyen_netlestirme` → 0 isabet) → `AJ0b` **sıfırdan** yazılacak | ara faz `G2` |
-| **B-G3** | `app/iddia.py` **yok** — `t2_anlatici` bu kapı olmadan açılamaz | ara faz `G4` |
-| **B-G4** | Intent-JSON'da `compare`/`blend`/çoklu dönem **yok** → `5.6` (peer) **BLOKE**, v1 §G'siz kapanamıyor | ara faz `G6` |
-| **B-G5** | `MIMARI.md` §5 (*18. yasak ⟳ UYGULANMADI*) ile `:442` (*inmiş + ölçülmüş geri alma*) **çelişiyor** — biri bayat | ara faz `G3` + §13.6 |
-| **B-G6** | `KÇ-7` (*"anlamadım" ≠ "yapamıyorum"*) denetim belgesinden **açık** | ara faz `G8` |
+| **B-G1** ✅ | ~~`lab/garson.py --live` **yok**~~ → `G0`'da indi ve `Z.2`'de canlı koştu (3 koşum). ⚠ **Ama alet 10 satırın 4'ünü hiç ölçmüyor** — yeni borç aşağıda. Eski: `lab/garson.py --live` **yok** — garsonu görebilen tek alet kurulmadı; `konusma_senaryolari` sekiz koşumun sekizinde de `⊘ ÖLÇÜLEMEDİ` verdi | ara faz `G0` |
+| **B-G2** ✅ | `G2`'de **sıfırdan** yazıldı (`app/diyalog.py`) ve `Z` turunda istemci yankısı bağlandı. Eski: `0.5b` FAZ 0'da ✅ ilan edilmiş ama **kodda sıfır iz** (`netlestirme.birlestir` · `bekleyen_netlestirme` → 0 isabet) → `AJ0b` **sıfırdan** yazılacak | ara faz `G2` |
+| **B-G3** ✅ | `G4`'te indi; `Z`'de canlı kapı onun **şemasız koştuğunu** bulup düzeltti. Eski: `app/iddia.py` **yok** — `t2_anlatici` bu kapı olmadan açılamaz | ara faz `G4` |
+| **B-G4** ◐ | **YARIM.** `compare` şemaya ve `parse_cube_query`'ye girdi; ama **`blend` girmedi** ve `compare` hâlâ **enum** (`yoy`/`mom`), plan onu **ALAN**'a çevirmek istiyordu. 🔴 Bu yüzden `5.6` (peer) **hâlâ bloke** — önceki turda «açıldı» denmişti, **fazla iddialıydı**. Eski: Intent-JSON'da `compare`/`blend`/çoklu dönem **yok** → `5.6` (peer) **BLOKE**, v1 §G'siz kapanamıyor | ara faz `G6` |
+| **B-G5** ✅ | Çelişki çözüldü: `§5` satırı bayattı, `:442` güncel → `§5` ◐ **KISMEN İNDİ** oldu. Eski: `MIMARI.md` §5 (*18. yasak ⟳ UYGULANMADI*) ile `:442` (*inmiş + ölçülmüş geri alma*) **çelişiyor** — biri bayat | ara faz `G3` + §13.6 |
+| **B-G6** ✅ | `G8`'de indi (`app/yetenek.py` · `Sinir.oneriler`, katalogdan `route()` ile doğrulanmış öneriler). Eski: `KÇ-7` (*"anlamadım" ≠ "yapamıyorum"*) denetim belgesinden **açık** | ara faz `G8` |
 
 ### ✅ BU TURDA KAPANANLAR
 
@@ -2479,5 +2485,15 @@ soru LLM'e gitmiyor. Dokunulmadı.
 | **B-G5** | ✅ **KAPANDI** — çelişki çözüldü: `§5` satırı **bayattı** (*"⟳ UYGULANMADI"*), `:442` güncel. `§5` → ◐ **KISMEN İNDİ**. Yasağın tam uygulaması ölçülüp geri alınmıştı (korpus %95,1→%93,5) ve **dördüncü koşulu** oradan doğdu |
 | **KÇ-1** | ✅ **KAYDA GEÇTİ** *(zorunlu kayıt #3)* — ve `G6` denetimin kabul ölçütünü **karşıladı**: *"«mart cirosunu şubat ile kıyasla» tek birleşik sayı döndürmesin"* → artık gerçek kıyas dönüyor |
 | **yeni** | 🔴 `tsc` gecelik CI'da koşmuyor |
+| 🔴 **DA-1** | **`app/ek.py` (G7) üretimde SIFIR çağıranı var** — yalnız kendi testi import ediyor. Commit başlığı *"enjekte edilen yuvalar doğru çekimleniyor"* diyor; hiçbir yuva çekimlenmiyor. `G7.1`'in AST kapısı da kurulmadı. **Yetim yasağının doğrudan ihlali** — üç denetim ajanının **üçü de** bağımsız buldu |
+| 🔴 **DA-2** | **`lab/garson.py` 10 satırın DÖRDÜNÜ hiç ölçmüyor** (`1·çapa` · `2·anlat` · `4·sosyal` · `7·geri dönüş`): senaryoların `olculen` demetlerinde yoklar, sekiz raporun sekizinde de `0\|0\|0`. En ağırı `2·anlat` — **anlatıcının kendi satırı** ve `G5` `t2_anlatici`'yi açtıktan sonra da 0 kaldı. `G0.12`'nin *"alet körse G1 başlamaz"* kırmızı çizgisi bu yüzden fiilen sınanmadı |
+| 🔴 **DA-3** | **`raporlanabilir()` bir totoloji**: `kanit_sinifi` her cevapta dolu (`schemas.py:396`, `test_ai_act_uyumu` kilitliyor) ve `SAF_NOT_ALANLARI` dışında → kapı **daima true**. Sonuç: `Z`'de eklediğim `temellendirme`/`diyalog_durumu` sınıflandırması **etkisiz**, ve netleştirme cevapları `"şunlardan biri mi?"* başlığı yerine `"sonraki adım"` başlığıyla çiziliyor |
+| ⚠ **DA-4** | `narration_guard.Rapor.makbuza()` üretimde **sıfır çağıranı** var (`answer.py:529` yalnız `reddedilen`'i okuyor) — `MIMARI:1545`'in *"artık yazıyor"* iddiası karşılıksız |
+| ⚠ **DA-5** | `G2`'nin **kill-switch'i yok** (`features.py`/`features.yml`'de `diyalog` → 0 isabet); GERİ AL sözleşmesi uygulanamaz |
+| ⚠ **DA-6** | `test_kisa_devre_yok.py:191` hâlâ `== 11` assert'i taşıyor; `MIMARI:1461`'in *"artamaz, AZALABİLİR"* kararı koda geçmemiş — kusur kapatan geliştirici kapıyı kırmakla cezalandırılıyor |
+| ⚠ **DA-7** | `temellendirme.cube` üretiliyor + testleniyor + tipli, ama `Temellendirme.tsx` onu **render etmiyor** — `G1`'in gerekçesi `WRONG_SCOPE` %14,4'tü, kapsamı söyleyen alan düşmüş |
+| ⚠ **DA-8** | Kullanıcıya giden metinler **markdown `**`** taşıyor (`yetenek.py:335` · `uyum.py:387`), arayüzde markdown yorumlayıcı **yok** → kullanıcı yıldızları okuyor; `ChatPanel.tsx:292` notu ayrıca `truncate` ile tek satıra kırpıyor |
+| ⚠ **DA-9** | `InterpretationBar.tsx:521` kıyas anahtarı `=== "yoy"` sabit kodlu; `kiyas_cebiri` `mom` üretiyor ama ön yüz onu ne gösteriyor ne kaldırabiliyor |
+| ⚠ **DA-10** | `netlestirme.donem`/`donem_sade`/`olcu` katalog girdilerinin **üretimde çağıranı yok**; `_PERIOD_TEXT` (`ask.py:585`) elle yazılmış eski metin basılıyor — netleştirmelerin %79'u dönem sorusu |
 | **yeni** | ⚠ `kanit_sinifi` `ReportPanel.SAF_NOT_ALANLARI` kümesinin **dışında** ve netleştirme cevaplarında **dolu geliyor** → o cevaplar `raporlanabilir()` kapısından geçiyor. Garson fazından **önce de** böyleydi; düzeltmek ölçülmemiş bir davranış değişikliği olacağı için faz kapanışında **yapılmadı** |
 | **yeni** | ⚠ `Niyet.temsil_edilemeyen` izi, `route`'un indirgeme yaptığını **bilmez** (soruya bakar, sorguya değil): kıyas kurulmuş bir cevapta iz hâlâ `temsil-yok=cok_donem` yazar. Zararsız — `uyum` cq'yu görüp doğru susuyor — ama **iz yanıltıcı** |

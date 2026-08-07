@@ -350,6 +350,46 @@ def test_K2b_DIGER_SOZLESMELER_de_taranir():
         + "\n\nYa bir tüketici bağla, ya IC_ICE_MUAF'a SAHİBİYLE ekle.")
 
 
+def test_K2c_ISTEK_ALANI_GONDERILIYOR_mu():
+    """🔴 **(c) SINIF KÖRLÜĞÜNÜN İKİNCİ KATI — ve bir demet boyunca bir yetimi gizledi.**
+
+    Yukarıdaki tarama `alan not in metin` diyor ve `metin` **tüm** frontend kaynağıdır —
+    `types.ts` dâhil. `AskRequest.diyalog_durumu` tam bu yüzden yeşil geçti: aynı ad
+    `AskResponse` tarafında **tip olarak** duruyordu, dolayısıyla `in metin` doğruydu.
+    Ama istemci onu **hiç göndermiyordu** → `KURAL_DEVAM` (`app/context.py`) üretimde
+    **hiç ateşlenmedi** ve `G2`'nin bütün bellek zinciri ölü koddu.
+
+    ⚠ Bu dosyanın kendi uyarısı (`:90`) *"alan FE kaynağında geçiyor bir TÜKETİCİ kanıtı
+    değil, bir METİN kanıtıdır"* diyor — ve kapı tam o körlüğe düşüyordu.
+
+    🔴 **Doğru kanıt sınıfa göre değişir:**
+
+    | sözleşme | yön | kanıt |
+    |---|---|---|
+    | `AskResponse` | sunucu → istemci | alan FE'de **okunuyor** |
+    | `AskRequest` | istemci → sunucu | alan FE'de **doldurulup gönderiliyor** |
+
+    Bir isteğin alanı için `types.ts` **kanıt değildir**: orada yalnız *tanımlıdır*.
+    Kanıt, `types.ts` DIŞINDA bir yerde nesne anahtarı olarak geçmesidir.
+    *Bir alanın var olması, taşınması demek değildir.*
+    """
+    import app.schemas as S
+
+    dosyalar = fe_dosyalari()
+    disari = "\n".join(icerik for yol, icerik in dosyalar.items()
+                       if "types.ts" not in str(yol))
+    assert disari.strip(), "⊘ ölçüm tabanı çöktü: types.ts dışında FE dosyası yok"
+
+    yetim = [alan for alan in S.AskRequest.model_fields
+             if f"AskRequest.{alan}" not in IC_ICE_MUAF and alan not in MUAF
+             and f"{alan}:" not in disari]
+    assert not yetim, (
+        "🔴 GÖNDERİLMEYEN İSTEK ALANI — backend okuyor, istemci DOLDURMUYOR:\n  "
+        + "\n  ".join(sorted(yetim))
+        + "\n\nBu alanlar `types.ts`'te tanımlı olabilir; tanım GÖNDERİM DEĞİLDİR. "
+          "Ya bir çağrı yerinde doldur, ya `IC_ICE_MUAF`'a SAHİBİYLE ekle.")
+
+
 def test_K2c_ERISILEBILIRLIK_kapisi_SILINEMEZ():
     """🔴 **(c) EN PAHALI KÖRLÜK — *«geçiyor mu»* ≠ *«ULAŞILABİLİR mi»*.**
 

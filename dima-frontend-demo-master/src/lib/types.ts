@@ -240,9 +240,7 @@ export interface AskResponse {
   // 🔴 G2 — DİYALOG DURUMU. Sunucu oturum SAKLAMAZ; bu nesne cevapta gelir ve istemci
   // bir sonraki isteğe YANKILAR (`cube_query` ile aynı desen). JPMorgan 2026: tur-3
   // durumsuz %0, iki turluk pencereyle %87,6-100 — durum taşımak var olma koşuludur.
-  diyalog_durumu?: {
-    acik_slotlar: string[]; sorulan?: string; dolu?: string[]; tur_no: number;
-  } | null;
+  diyalog_durumu?: DiyalogDurumu | null;
   // Madde 12 (1 Ağustos 2026) — düz-dil hesaplama açıklaması (KPI-olmayan cube raporları için;
   // KpiCard'ın `card.explain`iyle AYNI amaç). `explain` (yukarıda) ile KARIŞTIRILMAMALI — o
   // provenance/güven taşır, bu alan ÖLÇÜNÜN NASIL HESAPLANDIĞINI anlatır. cube_query yoksa null.
@@ -542,6 +540,20 @@ export interface KpiCard {
   }[] | null;
 }
 
+/** 🔴 `G2` — DİYALOG DURUMU. **İki yönlü**: sunucu cevapta döndürür, istemci bir
+ * sonraki istekte **geri yollar**. Sunucu oturum SAKLAMAZ (`schemas.py:82-86`).
+ *
+ * ⚠ `kismi_cq` şarttır: `devam_edilebilir` **hem** `sorulan` **hem** `kismi_cq` ister
+ * (`app/diyalog.py:133-141`). Tipte olmazsa yankıyı tipli nesneden kuran biri
+ * kapattığını sanar ve yine `None` alır. */
+export interface DiyalogDurumu {
+  acik_slotlar: string[];
+  sorulan?: string;
+  dolu?: string[];
+  tur_no: number;
+  kismi_cq?: CubeQuery | null;
+}
+
 export interface AskRequest {
   question: string;
   limit?: number;
@@ -554,6 +566,19 @@ export interface AskRequest {
   // varsayan özelliklerin de gate'i (bkz. ReportPanel.tsx); onu ham SQL taşımak için
   // yeniden kullanmak o özellikleri wren_sql cevaplarında da yanlışlıkla açardı.
   prev_sql?: string | null;
+  // 🔴 `G2` — DİYALOG DURUMU YANKISI. Sunucu oturum SAKLAMAZ; durumu `cube_query`'nin
+  // taşındığı gibi taşır: cevapta döner, istemci **geri yollar**
+  // (`backend/app/schemas.py:82-86`).
+  //
+  // ⚠ **Bu alan bir demet boyunca EKSİKTİ ve `KURAL_DEVAM` üretimde HİÇ ateşlenmedi.**
+  // Backend tarafı (`context.py::KURAL_DEVAM` · `diyalog.devam_edilebilir`) tamamen
+  // yazılmış ve testliydi; tek eksik bu satırdı. Alanın backend'deki kendi şerhi kusuru
+  // **önceden** yazmış: *"İstemci yankılamazsa bellek YOKTUR."*
+  //
+  // 🔴 Ve bu, hemen aşağıdaki `reply_to_cube_query` şerhinin anlattığı `KURAL_CAPA`
+  // vakasının **birebir tekrarıdır**: sunucu tarafı hazır, istemci taşımıyor, kapı
+  // yeşil. *Bir deponun defterindeki bir kusur sınıfı, okunmadıkça tekrar eder.*
+  diyalog_durumu?: DiyalogDurumu | null;
   // Sohbet oturumu kimliği — kalıcı logda chat'i gruplamak için.
   session_id?: string;
   // §B (1 Ağustos 2026) — konu/thread kimliği (client üretir, backend salt echo eder,
