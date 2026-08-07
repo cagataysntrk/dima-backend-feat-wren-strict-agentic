@@ -76,6 +76,7 @@ kronolojik sıralansın.
 | [`2026-08-05_TEST-ORTAMI-RAPORU.md`](denetim/2026-08-05_TEST-ORTAMI-RAPORU.md) | test ortamının **durum** ölçümü |
 | [`2026-08-05_TEST-ORTAMI-ARASTIRMA.md`](denetim/2026-08-05_TEST-ORTAMI-ARASTIRMA.md) | literatür taraması (Spider 2.0 · BEAVER · InsightBench · MT-TEQL) |
 | [`2026-08-05_ANLAMA-KATMANI.md`](denetim/2026-08-05_ANLAMA-KATMANI.md) | ⏸ anlama katmanı kök-neden analizi — *ilerinin konusu* |
+| [`2026-08-07_CANLI-ARIZA-TESHISI.md`](denetim/2026-08-07_CANLI-ARIZA-TESHISI.md) | 🔴 canlı üç arıza: **Intent-JSON 9/9 `cube:null`** (katalog Türkçe eşanlamları taşımıyor) · anlatıda deterministik basamak yok · 500 backend'den **çıkmadı** |
 
 ## `devir/` — 🔒 oturum devri (**değiştirilmez**)
 
