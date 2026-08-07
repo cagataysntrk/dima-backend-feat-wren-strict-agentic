@@ -2084,3 +2084,52 @@ sonra 🔴 "«hangi makinede» yerine «hangi gun» mi demek istedin?"
 
 *Bir yazım önerisi, düzeltmeye çalıştığı metinde katalogun kendi kelimesi varsa öneri
 değil bir yanlış anlamadır.*
+
+---
+
+## 30 · `A` SERİSİ — 20 AGENTIC SENARYO (sıralı işlem · çok grafik · sohbet)
+
+> **Kullanıcı talebi (2026-08-07):** *"Artık daha karmaşık, aslında **agentic**
+> diyebileceğimiz sıralı işlemler, birden fazla grafik ya da bir grafikte birden çok
+> eksen, modern grafikler… sohbet tarzı öneriler isteyelim, soralım, konuşalım, grafik
+> dönüşümü isteyelim (bar yerine pie)."*
+>
+> 🔴 Her senaryo **thread**tir; turlar **tek tek** `curl` ile koşulur ve **her turun**
+> `source` · `cq` · `note` · `iz` · süre'si buraya yazılır.
+
+### 30.1 · Senaryo listesi (20 thread · 58 tur)
+
+| # | thread | turlar |
+|---|---|---|
+| **A1** | çok adımlı etki analizi | `makine verimliliklerinin bu yılki karlılığa etkisini analiz et` → `en düşük 3 makineyi göster` → `bunların duruş nedenlerini kır` |
+| **A2** | kıyas + kök-neden zinciri | `personel çalışma süreleri ve verimliliklerini kıyasla` → `en düşüğü listele` → `neden diğerlerinden düşük` |
+| **A3** | üç yönlü dallanma | `ciromun en büyük 3 kaynağı olan müşterilerimi bul` → `bunlara en çok neler sattığımı karşılaştır` → `üçü için ayrı ayrı göster` |
+| **A4** | grafik dönüşümü | `bu yıl aşama bazında fire` → `pasta grafik yap` → `yine bar yap` |
+| **A5** | çok eksen | `aylık ciro ve fire birlikte` → `ikisini tek grafikte göster` |
+| **A6** | sohbet + öneri | `bu ay nasıl gidiyoruz` → `ne önerirsin` → `ilkini uygula` |
+| **A7** | dönem daraltma zinciri | `2026 ciro` → `sadece ilk çeyrek` → `aylık kır` → `en iyi ayı söyle` |
+| **A8** | ölçü ekleme + kaldırma | `makine bazında oee` → `bir de fire ekle` → `oee'yi çıkar` |
+| **A9** | filtre diyaloğu | `vardiya bazında üretim` → `sadece gece vardiyası` → `geçen yılla kıyasla` |
+| **A10** | belirsizlik → netleştirme → devam | `fire ne durumda` → *(chip seç)* → `aylara göre` |
+| **A11** | yetenek sınırı → alternatif | `gelecek çeyrek tahmini` → `peki geçmiş eğilim` |
+| **A12** | çapraz-cube harman | `bu yıl ciro` → `bir de enerji maliyeti ekle` → `oranını göster` |
+| **A13** | top-N + drill | `en çok fire veren 3 aşama` → `ilkini makinelere kır` |
+| **A14** | eşik + sıralama | `10 milyon üzeri ciro yapan müşteriler` → `en yükseğinden sırala` |
+| **A15** | zaman serisi + anomali | `aylık fire trendi` → `sıra dışı ay var mı` |
+| **A16** | konu değişimi (tuzak) | `bu yıl ciro` → `kalite red oranı nedir` *(yeni konu — takip DEĞİL)* |
+| **A17** | çoklu kırılım | `müşteri ve aşama bazında fire` → `en kötü ikiliyi bul` |
+| **A18** | oran hesabı | `fire oranı yüzde kaç` → `geçen yıla göre değişimi` |
+| **A19** | özet + paylaşım | `bu yılın özetini çıkar` → `müdüre 3 cümle yaz` |
+| **A20** | geri alma / düzeltme | `mart ciro` → `pardon nisan olacaktı` → `ikisini kıyasla` |
+
+### 30.2 · Kabul ölçütü — *"cevap geldi"* YETMEZ
+
+Her tur için üç soru:
+
+1. **Doğru mu** — `cq` sorulan şeyi mi kuruyor (ölçü · kapsam · dönem · sıralama)?
+2. **Dürüst mü** — yapamadığını **söylüyor** mu (`eksik_niyet`/sınır beyanı), yoksa
+   sessizce eksik mi cevaplıyor?
+3. **Deterministik mi** — `iz`'de LLM görünüyorsa **neden**? (garson mu, Discovery mi?)
+
+⚠ Ve süre: **>10 sn** bir turda ön yüz proxy'si kopabiliyor (`§23.2`) — o tur **kırmızı**
+sayılır, cevap doğru olsa bile.
