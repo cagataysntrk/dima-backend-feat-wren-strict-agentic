@@ -72,9 +72,24 @@ def test_ANLATI_GUARD_ZORUNLU_kapidir():
         "makbuzda adım olarak görünmez (MIMARI §12.6b'nin beyanı karşılıksız kalır)")
     i_ham = govde.index('calistir("llm.anlat"')
     i_guard = govde.index("guvenli_anlatim(")
-    i_yaz = govde.index('yorum["narration"] =')
+    # ⟳ **ÇAPA KAYDI — T2 ŞABLON BASAMAĞI.** `index()` artık **ilk** `narration`
+    # atamasını buluyordu ve o, LLM'den ÖNCE koşan **şablon** basamağının atamasıdır
+    # (0 LLM). Kapı bu yüzden kırmızı verdi ve **haklıydı**: çapası kaymıştı.
+    #
+    # 🔴 Kapı GEVŞETİLMEDİ, iki yönde KESKİNLEŞTİRİLDİ:
+    #   (1) LLM ataması `rindex` ile aranır — guard hâlâ arada olmak zorunda;
+    #   (2) şablon atamasının LLM çağrısından **ÖNCE** olduğu ayrıca ölçülür, yani
+    #       merdiven sırası da kilitli: ucuz basamak önce denenir.
+    #
+    # *Bir kapının çapası kayınca doğru tepki onu silmek değil, yeniden çakmaktır.*
+    i_yaz = govde.rindex('yorum["narration"] =')
     assert i_ham < i_guard < i_yaz, (
         "LLM çıktısı guard'a UĞRAMADAN yayımlanabiliyor — fail-closed sözleşme kırık")
+    i_sablon = govde.index('yorum["narration"] = _sablon')
+    assert i_sablon < i_ham, (
+        "🔴 MERDİVEN SIRASI TERS: şablon basamağı (0 LLM) LLM çağrısından SONRA "
+        "deneniyor — ucuz basamağın pahalıdan sonra koşması, merdiveni merdiven "
+        "olmaktan çıkarır")
 
 
 def test_ANLATI_TUM_CUMLELER_DUSERSE_HIC_EKLENMEZ():

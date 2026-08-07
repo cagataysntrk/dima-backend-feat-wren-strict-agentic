@@ -483,6 +483,14 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "— aksi hâlde döküm isteyene dejenere tek toplam dönerdi.",
         "category": "Analiz",
     },
+    "t2_sablon": {
+        "label": "T2 şablon anlatıcı (LLM'siz ilk basamak)",
+        "description": "Basit turlarda anlatıyı SİSTEM yazar: `interpret()`'in olgu "
+                       "metinlerinden Türkçe bir özet kurar — 0 LLM, 0 token. Tanımadığı "
+                       "bir olgu türü, birden çok ölçü ya da çok olgu varsa turu "
+                       "`t2_anlatici`'ya DEVREDER; sayıya hiç dokunmaz.",
+        "category": "Anlama",
+    },
     "oylama_paydasi": {
         "label": "Oylama paydası çekimserleri de sayar",
         "description": "Self-consistency uyum oranı `{cube:null}` (bilmiyorum) oylarını "

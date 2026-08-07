@@ -144,6 +144,9 @@ def test_SINIFSIZ_MODUL_BIRAKILAMAZ():
         # 🔴 LLM'in gördüğü METİN — `intent_semasi`'nin kardeşi (o şemayı, bu düz metni
         # üretir). Yönlendirme kararı vermez, katalog dışına çıkmaz: sunum katmanı.
         "katalog_metni.py": "🌉 katalogdan LLM'in okuduğu metni üretir",
+        # 🗣 GARSON: cümle yazar, sayı hesaplamaz, ham satır görmez. `interpret()`'in
+        # (mutfak) ürettiği olguları **anlatır** — köprünün öteki ucundaki tüketici.
+        "anlatici.py": "🗣 olguları Türkçe cümleye çevirir (0 LLM)",
         "vqr.py": "🌉 soru→sorgu belleği",
         # 🎨 SUNUM
         "viz.py": "🎨", "report.py": "🎨", "prescribe.py": "🎨", "fmt.py": "🎨",

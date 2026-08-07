@@ -434,6 +434,28 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
     principal = getattr(request.state, "principal", None)
     try:
         from app.features import resolve_for
+
+        # 🔴 **T2'NİN İLK BASAMAĞI — ve LLM'DEN ÖNCE.** Merdiven ilkesi (`MIMARI §4`):
+        # her basamak bir öncekinin yapamadığını yapar. Anlatının ilk basamağı
+        # yazılmamıştı: `t2_anlatici` açıksa LLM, kapalıysa **hiç**.
+        #
+        # ⊙ Oysa `interpret()` yapılandırılmış olgular üretiyor (`trend`/`delta`/`peak`…)
+        # ve *"ne yüksek ne düşük"* demek için bir modele ihtiyaç yok.
+        #
+        # ⚠ Şablon **sayıya dokunmaz**: cümleyi `interpret()`'in kendi metinlerinden
+        # kurar. `narration_guard`'dan geçmesi tesadüf değil **yapısal**.
+        #
+        # 🔴 Ve devir koşulu **tanınmayanın varlığıdır**: bilmediği bir olgu türünü
+        # görmezden gelip kalanı anlatmak, kullanıcıya *eksik ama tam görünen* bir özet
+        # vermek olurdu. *Bir merdivenin basamağı, ne yapamadığını bilmiyorsa basamak
+        # değil bir tahmindir.*
+        if "t2_sablon" in resolve_for(get_settings(), principal):
+            from app import anlatici as _anlatici
+
+            if (_sablon := _anlatici.anlat(yorum)):
+                yorum["narration"] = _sablon
+                yorum["narration_kaynak"] = "sablon"      # makbuz: LLM devreye GİRMEDİ
+                return
         if "t2_anlatici" not in resolve_for(get_settings(), principal):
             return                      # KURAL B — kapalıyken davranış BİREBİR bugünkü
         llm = getattr(request.app.state, "llm", None)
@@ -541,6 +563,7 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
                       len(getattr(rapor, "reddedilen", []) or []))
             return
         yorum["narration"] = metin
+        yorum["narration_kaynak"] = "llm"                 # makbuz: hangi basamak yazdı
         # 🔴 `DA-4` — GUARD'IN MAKBUZU KULLANICIYA ULAŞIYOR.
         #
         # `narration_guard.Rapor.makbuza()` yazılmıştı ve **hiçbir yerden
@@ -1214,7 +1237,21 @@ def seal(resp: AskResponse, *, request: Request, principal, t0: float,
         resp.mali_donem = mali_takvim.etiket(_date.today()) or None
     except Exception:                       # noqa: BLE001 — etiket cevabı DÜŞÜRMEZ
         resp.mali_donem = None
-    resp.ai_generated_prose = bool((resp.interpretation or {}).get("narration"))
+    # 🔴 **AI ACT Md.50 — İŞARET, METNİN VARLIĞINA DEĞİL KAYNAĞINA BAKAR.**
+    #
+    # Eski hesap yalnız `narration`'ın **var olup olmadığına** bakıyordu. T2'nin şablon
+    # basamağı inince bu **yanlış beyana** dönüştü: `interpret()`'in kendi olgu
+    # metinlerinden kurulmuş, tek bir sağlayıcı çağrısı görmemiş bir cümle *"yapay zekâ
+    # tarafından yazılmıştır"* diye işaretlenirdi.
+    #
+    # ⚠ Fazla işaretlemek de bir yanlış beyandır: kullanıcı deterministik bir cümleye
+    # LLM'e duyduğu şüpheyle bakar, ve işaretin **ayırt edici gücü** kaybolur — her şey
+    # işaretliyse hiçbir şey işaretli değildir.
+    #
+    # *Bir uyarıyı hak etmeyen yere koymak, hak ettiği yerde okunmamasına yol açar.*
+    _yorum = resp.interpretation or {}
+    resp.ai_generated_prose = bool(_yorum.get("narration")) and \
+        _yorum.get("narration_kaynak") != "sablon"
     # `probabilistik` YALNIZ LLM yolunda: `cube` deterministiktir, `cube+llm`'de ALAN
     # SEÇİMİ olasılıksaldır ama SAYI yine küpten gelir → yine `olculmus` DEĞİL.
     # ⚠ Skaler bir güven puanı UYDURULMAZ; bu bir KATEGORİDİR.
