@@ -212,6 +212,23 @@ export function Makbuz({
                 <span className="text-foreground">{item.explain.path}</span>
               </div>
             )}
+            {item.hava_boslugu && (
+              /* 🔴 G0b — GÜVEN SİNYALİ. Görünmeyen güvenlik, satılamayan güvenliktir:
+                 kullanıcı verisinin binadan çıkmadığını GÖREBİLMELİ. Yeni panel YOK —
+                 mevcut "tam iz" bloğunda tek satır. */
+              <div className="font-mono text-[11px] text-neutral-500">
+                <span className="mr-1 text-neutral-400">hava boşluğu:</span>
+                <span className="text-foreground">
+                  {item.hava_boslugu.yer_tutucu} yer tutucu
+                </span>
+                <span className="mx-1 text-neutral-400">·</span>
+                <span className={item.hava_boslugu.bozulan ? "text-amber-500" : "text-foreground"}>
+                  {item.hava_boslugu.bozulan
+                    ? `${item.hava_boslugu.bozulan} bozuldu`
+                    : "dışarı çıkan: yok"}
+                </span>
+              </div>
+            )}
             {item.trace && item.trace.length > 0 && (
               <ol className="space-y-0.5">
                 {item.trace.map((t, i) => (

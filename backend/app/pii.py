@@ -205,10 +205,13 @@ def apply_to_ask_response(resp, principal) -> bool:
             else:
                 resp.result.rows = masked_rows
     # ⟳ **FAZ 1.2c — SAYMA, KAPAT.** Eskiden burada yalnız `facts[].text` ve `summary`
-    # maskeleniyordu; `AskResponse`'un (o gün 29, bugün 39) alanının geri kalanı — `narration` (LLM metni,
+    # maskeleniyordu; `AskResponse`'un (o gün 29, bugün 40) alanının geri kalanı — `narration` (LLM metni,
     # olgulardan üretilir) · `contribution` (**cevabın gövdesi**) · `next_steps` ·
     # `suggestions` · `prescription` — **hiç** maskelenmiyordu. Sayılan bir liste, yeni
     # alanı sessizce dışarıda bırakır; tümleyen bırakmaz.
+    # ⚠ `hava_boslugu` (G0b) yalnız SAYI taşır — hangi değerin perdelendiği ASLA
+    # yazılmaz. Tümleyen yine de üstünden geçer: muafiyet listesine EKLENMEDİ, çünkü
+    # *sayılan bir liste yeni alanı sessizce dışarıda bırakır* — bu dosyanın kendi dersi.
     if not has_pii_view:
         for alan in type(resp).model_fields:
             if alan in MUAF_ALANLAR:

@@ -164,12 +164,25 @@ def test_OLGU_YOKSA_LLM_CAGRILMAZ(monkeypatch):
 # --- GİRDİ DAR: ham satır GİTMEZ --------------------------------------------------
 
 def test_LLMe_YALNIZ_OLGULAR_gider(monkeypatch):
-    """Model ham satır görmez, sayı hesaplamaz. Girdi `interpret()`'in olgularıdır."""
-    llm = _SahteLLM("Bu yıl toplam ciro 1500 TL.")
+    """Model ham satır görmez, sayı hesaplamaz. Girdi `interpret()`'in olgularıdır.
+
+    🔴 **G0b ile GÜÇLENDİ (2026-08-07).** Değişmez aynı, uygulaması **daha katı**:
+    artık olgular da **perdelenerek** gidiyor. Yani model yalnız *"ham satır görmez"*
+    değil, **gerçek sayıyı da görmez** — yerine `{{NUM_i}}` yuvası alır.
+
+    ⚠ Bu testin ilk hâli olguların **birebir** gitmesini bekliyordu ve `G0b` onu haklı
+    olarak kırdı. Beklenti güncellendi: *dizeler eşit mi* değil, **ne SIZDI**.
+    """
+    llm = _SahteLLM("Bu yıl toplam ciro {{NUM_1}} TL.")
     _kos(monkeypatch, llm, dict(_YORUM), _SONUC)
     (soru, gercekler), = llm.cagrildi
-    assert gercekler == ["Toplam ciro 1500 TL."]
     assert soru == "bu yıl ciro"
+    giden = " ".join(gercekler)
+    # 1 · Olgu METNİ gidiyor (ham satır değil)
+    assert "Toplam ciro" in giden
+    # 2 · 🔴 GERÇEK SAYI GİTMİYOR — hava boşluğu
+    assert "1500" not in giden, f"gerçek sayı sağlayıcıya SIZDI: {giden}"
+    assert "{{NUM_" in giden
 
 
 def test_PROMPT_sayi_uretmeyi_YASAKLIYOR():

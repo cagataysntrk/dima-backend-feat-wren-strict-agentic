@@ -1315,6 +1315,65 @@ sıfır say"* diye yazmıştı; ölçüldü, sıfır değil.)
 ⚠ **Soğuk başlangıç:** ilk çağrı **41 sn** ölçüldü, sonrakiler 2–7 sn. Gecikme bütçesi
 (garson §7.2) bu ayrımı **ayrı** ölçmelidir — ortalama ikisini de gizler.
 
+### 🔴 ÜÇÜNCÜ DEĞİŞMEZ — HAVA BOŞLUĞU (`G0b`, 2026-08-07)
+
+§4 bugüne kadar **iki** değişmez tanıyordu: *sayıyı küp koyar* · *LLM'in iddiası şemaya
+karşı doğrulanır*. Garson fazı bir **üçüncüsünü** ekliyor ve o bir **güvenlik sınırıdır**:
+
+> 🔴 **Gerçek boyut değerleri ve gerçek sayılar BİNADAN ÇIKMAZ.**
+
+**Ölçülen kusur.** `llm_guard.ihlalleri_bul` PII **kalıplarını** yakalıyor (TCKN ·
+e-posta · telefon · IBAN). Ama `interpret.py:248` şunu üretiyor ve olduğu gibi
+sağlayıcıya gidiyordu:
+
+    "En yüksek Makine: RAM 3 (12.430 kg)"
+           gerçek boyut DEĞERİ ─┘        └─ gerçek SAYI
+
+İkisi de hiçbir maskeye uymaz. Dış sağlayıcıya (OpenRouter) geçildiği an bu **binadan
+çıkan veridir**.
+
+**Çözüm — korunan yayılım** (`app/yayilim.py`): gerçek değer/sayı `{{DIM_i}}`/`{{NUM_i}}`
+yuvasına çevrilir, harita **çağıranda kalır**, dönen metinde `geri_koy` ile yerine konur.
+
+🔴 **Ve bu, `narration_guard`'ı ZAYIFLATMAZ — GÜÇLENDİRİR:**
+
+| | ±%2 eşleştirme *(önce)* | yer tutucu *(şimdi)* |
+|---|---|---|
+| LLM gerçek sayıyı görür mü | evet → **dışarı çıkar** | **hayır** |
+| doğrulama | metindeki sayıyı DB ile karşılaştır | her `{{NUM_i}}` **tam bir kez** mi — **yapısal** |
+| uydurma sayı mümkün mü | tolerans içinde **evet** | 🔴 **hayır — rakam üretemez ki** |
+
+⚠ **Ve bir sınır dürüstçe yazılı:** kullanıcının **sorusu** LLM'e gitmek zorundadır —
+anlaşılacak şey odur. Orada `pii.py` maskeleri ve `value_index` varlık çözümü çalışır;
+kalan risk `yol_siniri` ile kapatılabilir.
+
+**Yeni sahiplik kuralı — ve bunu bir kapı öğretti.** Perdeleme ilk olarak
+`llm_guard.py`'ye yazıldı; `test_llm_guard.py::test_DESEN_SOZLUGU_KOPYALANMAMIS` **haklı
+olarak** kırmızı verdi (*"o modül regex yazmaz — desenin tek sahibi `pii.py`"*).
+Kapıyı gevşetmek kendi lehine hile olurdu. Doğru okuma **iki ayrı soru**:
+
+| modül | sorusu |
+|---|---|
+| `llm_guard` | *"bu yük **çıkabilir mi**?"* — fail-closed kişisel veri kapısı |
+| `yayilim` | *"**ne perdelenecek**?"* — gerçek değer/sayı dönüşümü |
+
+Kapılar: `tests/test_hava_boslugu.py` (11) · `tests/test_alan_haritasi.py` (36) ·
+`test_t2_anlatici.py`'nin 3. değişmezi **güçlendirildi** (artık *"gerçek sayı sızmadı"*
+diye ölçüyor, *"dizeler eşit"* diye değil).
+
+### 🔴 ALAN HARİTASI — garson ↔ mutfak, ve kapılar
+
+`tests/test_alan_haritasi.py` sınırı **AST ile** kilitler: 🗣 garson modülü motora
+(`wren_service`·`katman_b`·`compose`) dokunamaz, 🍳 mutfak modülü dil modülüne
+(`llm`·`soz`·`followup`…) uzanamaz, ve **sınıfsız modül bırakılamaz**.
+
+⚠ **İlk koşumda bir sınır kokusu buldu ve kayda geçti:** `wren_service.py:552,825` →
+`from app.llm import _norm`. `_norm` bir metin normalleştiricidir, bir dil anlama yüzeyi
+değil — ama evi `llm.py` olduğu için mutfak dil modülüne uzanmış görünüyor. Gerekçeli
+muafiyet olarak **görünür** bırakıldı (`MUAF_GECISLER`); gerçek çözüm `_norm`'u ortak bir
+yardımcıya taşımak ve o **bu fazın konusu değil**. *Bir muafiyet bir çözüm değildir;
+görünür bırakılmış bir borçtur.*
+
 ### 🔴 TEŞHİS KUSURU — `KeyError: 'choices'` (aynı tur, düzeltildi)
 
 `OpenAICompatibleSqlGenerator._chat` yanıtı tek satırda indeksliyordu. OpenRouter

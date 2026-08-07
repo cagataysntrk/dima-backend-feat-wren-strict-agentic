@@ -51,6 +51,10 @@ def ihlalleri_bul(yuk: str) -> list[str]:
 
     Değerin kendisi **döndürülmez ve loglanmaz**: bir sızıntıyı raporlarken sızdırmak,
     kapının kendisini bir sızıntı yüzeyine çevirirdi.
+
+    ⚠ **Kapsamı: PII KALIPLARI.** Gerçek boyut değerleri (`"RAM 3"`) ve sayılar
+    (`12.430`) hiçbir kalıba uymaz — onların perdelenmesi `app/yayilim.py`'nin işidir
+    (`G0b`). *İki ayrı soru, iki ayrı sahip: "kişisel veri mi?" ≠ "gerçek değer mi?"*
     """
     if not yuk:
         return []

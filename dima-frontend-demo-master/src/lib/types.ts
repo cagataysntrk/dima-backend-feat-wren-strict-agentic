@@ -225,6 +225,11 @@ export interface AskResponse {
   // SİLMEZ (SourceBadge/trace render'ı kırılmaz — kademeli geçiş). Rapor üretmeyen yanıtlarda
   // (netleştirme/chip) null.
   explain?: Explain | null;
+  // 🔴 G0b — HAVA BOŞLUĞU makbuzu. Gerçek boyut değerleri ve sayılar sağlayıcıya
+  // YER TUTUCU olarak gider (`{{DIM_1}}` · `{{NUM_1}}`); model bir rakam ÜRETEMEZ,
+  // yalnız verdiğimiz yuvayı taşıyabilir. `bozulan` > 0 ise model yuvayı bozmuş ya da
+  // UYDURMUŞ demektir. ⚠ Yalnız SAYI taşır — hangi değerin perdelendiği asla gelmez.
+  hava_boslugu?: { yer_tutucu: number; bozulan: number } | null;
   // Madde 12 (1 Ağustos 2026) — düz-dil hesaplama açıklaması (KPI-olmayan cube raporları için;
   // KpiCard'ın `card.explain`iyle AYNI amaç). `explain` (yukarıda) ile KARIŞTIRILMAMALI — o
   // provenance/güven taşır, bu alan ÖLÇÜNÜN NASIL HESAPLANDIĞINI anlatır. cube_query yoksa null.

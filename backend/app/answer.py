@@ -456,8 +456,26 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
         # Maliyeti sıfır: `interpret` veriye dokunmaz, eldeki sonucu okur.
         plan.calistir("interpret", resp.result.model_dump() if resp.result else None,
                       resp.cube_query)
+
+        # 🔴 G0b — HAVA BOŞLUĞU. Fact-Sheet'te GERÇEK boyut değerleri ve GERÇEK sayılar
+        # var (`interpret.py:248` → *"En yüksek Makine: RAM 3 (12.430 kg)"*); ikisi de
+        # PII kalıbı DEĞİL, yani `llm_guard` onları görmez ve dış sağlayıcıya olduğu gibi
+        # giderlerdi. Perdeleme onları yer tutucuya çevirir: model gerçek değeri **hiç
+        # görmez** ve bir rakam **üretemez** — yalnız verdiğimiz yuvayı taşıyabilir.
+        from app.yayilim import geri_koy, perdele
+
+        gercekler, _harita = perdele(gercekler, degerler=_boyut_degerleri(resp))
         ham = plan.calistir("llm.anlat", resp.question, gercekler)
         _anlati_makbuzu(resp, plan)
+        ham, _yayilim_sorunlari = geri_koy(ham or "", _harita)
+        if _yayilim_sorunlari:
+            # Model yuvayı bozduysa ya da UYDURDUYSA cümle güvenilmezdir. Sessizce
+            # geri koymak, bozulmuş bir cümleyi doğru göstermek olurdu.
+            _log.info("T2 anlatı YAYILIM BOZULDU (%d): %s",
+                      len(_yayilim_sorunlari), ", ".join(_yayilim_sorunlari[:5]))
+        resp.hava_boslugu = {"yer_tutucu": len(_harita),
+                             "bozulan": len(_yayilim_sorunlari)}
+
         metin, rapor = guvenli_anlatim(
             ham, resp.result.model_dump() if resp.result else None, yedek=None)
         if not metin:
@@ -472,6 +490,35 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
                       len(rapor.reddedilen))
     except Exception:  # noqa: BLE001 — anlatı SÜStür, cevabı asla düşürmez
         _log.warning("T2 anlatı üretilemedi (best-effort)", exc_info=True)
+
+
+def _boyut_degerleri(resp) -> list[str]:
+    """Sonuç satırlarındaki **gerçek boyut değerleri** — perdelemenin girdisi (`G0b`).
+
+    Yalnız `cube_query.dimensions`'ta ilan edilmiş kolonlar okunur: ölçü kolonları
+    zaten sayıdır ve sayı taraması onları **zaten** perdeler. Boyut değerleri ise
+    (`"RAM 3"` · `"Ahmet Tekstil A.Ş."`) hiçbir kalıba uymaz — bu liste olmadan
+    perdeleme onları göremez.
+    """
+    try:
+        r = resp.result.model_dump() if resp.result else None
+        satirlar = (r or {}).get("rows") or []
+        boyutlar = [str(d) for d in ((resp.cube_query or {}).get("dimensions") or [])]
+        if not satirlar or not boyutlar:
+            return []
+        kisa = {b.split(".")[-1] for b in boyutlar} | set(boyutlar)
+        out: list[str] = []
+        for s in satirlar[:200]:                      # üst sınır: perdeleme O(n·m)
+            if not isinstance(s, dict):
+                continue
+            for k, v in s.items():
+                if k in kisa and isinstance(v, str) and v.strip():
+                    out.append(v)
+        return out
+    except Exception:                                  # noqa: BLE001 — best-effort
+        _log.warning("boyut değerleri okunamadı; perdeleme yalnız SAYI yapacak",
+                     exc_info=True)
+        return []
 
 
 def _adhoc_kayit(request: Request, cq: dict | None) -> dict | None:

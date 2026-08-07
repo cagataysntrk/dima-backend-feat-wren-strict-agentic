@@ -357,6 +357,11 @@ class AskResponse(BaseModel):
     # ÇİZİLMEZ: "hedef yok" ile "hedef 0" asla karıştırılmaz. Hedef UYDURULMAZ —
     # kullanıcının KENDİ sınırı okunur (MIMARI Faz G3).
     hedef: dict | None = None
+    #: 🔴 G0b — HAVA BOŞLUĞU makbuzu: `{yer_tutucu: N, bozulan: M}`.
+    #: Kullanıcı **verisinin dışarı çıkmadığını GÖRMELİ** — görünmeyen güvenlik,
+    #: satılamayan güvenliktir. Yalnız sayı taşır; **hangi değerin** perdelendiği
+    #: ASLA yazılmaz (bir sızıntıyı raporlarken sızdırmak, `llm_guard`'ın kendi dersi).
+    hava_boslugu: dict | None = None
     # FAZ 1.7 — TAZELİK MERDİVENİ. `taze | uyari | hata | bilinmiyor`.
     # 🔴 `hata` VE `bilinmiyor` kademelerinde SAYI GÖSTERİLMEZ (B4: bilinmeyen tazelik
     # TAZE DEĞİLDİR). Kaynak planlar bunun TERSİNİ yazıyordu; yol haritası bunu
