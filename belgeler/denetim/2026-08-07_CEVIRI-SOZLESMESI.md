@@ -1866,3 +1866,51 @@ bu, kullanıcıya **bir soru** olarak dönüyor — oysa cevabı LLM verebilir.
    devir arttıkça yanlış cevap da artabilir. Sıra: **önce fişi tamamla, sonra devri aç.**
 
 *Bir merdivenin basamağını atlamak, o basamağı hiç yazmamakla aynı sonucu verir.*
+
+---
+
+## 27 · 🔴 DEVİR ZATEN AÇIK — kesen sıra DEĞİL, **LLM'in kendisi**
+
+### 27.1 · Ölçüm sıralamayı aklıyor
+
+`§26.2`'de *"netleştirme dalı LLM'den önce kesiyor"* diye teşhis koymuştum. **Kaynak
+okundu ve yanlış çıktı**: Intent bloğu `ask.py:3018`, netleştirme `:3256` — yani Intent
+**önce** koşuyor ve bayrak `ask_intent_first: beta` **açık**.
+
+Curl (taze konteyner, tüm `§AJ2`–`§AJ4` düzeltmeleri yüklü):
+
+```
+"bu yıl hangi müşteri en çok iade etti"
+src : None · cq={} · 49 782 ms
+iz  : "Intent-path: çapraz konu (rakip cube kimliği) → netleştirme (LLM'siz)"
+log : openrouter … 7 642 ms
+      openrouter … 47 544 ms          ← LLM İKİ KEZ KOŞTU
+```
+
+🔴 **LLM çağrıldı ve `{cube:null}` döndü.** Yani devir **çalışıyor**; kaybedilen tur
+garsonun **reddi**yle kayboluyor — `§AJ3`'ün red sınıfı, hâlâ açık.
+
+> *Bir teşhisi kaynağı okumadan koymak, doğru kusuru yanlış katmanda aramaktır.*
+> (`§26.2` düzeltildi; kaydı burada duruyor.)
+
+### 27.2 · 🔴 KUSUR S — Intent bütçesi TUTMADI
+
+`§22.5/N` ile `intent_azami_saniye = 20` konmuştu. Ölçülen: tek çağrı **47 544 ms**,
+toplam istek **49 782 ms**. Bütçe **uygulanmıyor**.
+
+⊙ Olası sebep: oylar sırayla toplanıyor (`for _f in _isler: _f.result(timeout=…)`) ve
+her `result()` **kendi anından** saymaya başlıyor — yani toplam bütçe değil, **kalan oy
+başına** bütçe oluyor. İlk oy 7,6 sn sürerse ikinciye 20 sn daha tanınır.
+
+🔴 Doğru tasarım: bütçe **turun tamamına** ait olmalı — bir son tarih (`deadline`)
+hesaplanıp her `result()` ona göre kısaltılmalı.
+
+*Bir bütçeyi parça başına vermek, bütçeyi parça sayısıyla çarpmaktır.*
+
+### 27.3 · Sıradaki iki iş (sırasıyla)
+
+1. **`S`** — Intent bütçesi bir **son tarihe** çevrilsin (`monotonic() + azami`).
+2. **`§AJ3`'ün red sınıfı** — bu soru neden reddediliyor? `iade` bir ölçü, `müşteri` bir
+   boyut, `en çok` bir sıralama; şema artık `order`+`limit`+`measure_having` de tanıyor
+   (`§AJ4`). Yani fiş tamam, **red hâlâ var** → prompt tarafı ölçülmeli
+   (`AJ3.4` red yanlılığı · `AJ3.5` örnek sayısı).
