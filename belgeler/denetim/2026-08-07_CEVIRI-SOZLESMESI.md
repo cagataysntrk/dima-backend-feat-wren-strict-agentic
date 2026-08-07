@@ -1798,3 +1798,71 @@ ordinal çeyreğin bozulmadığı · birim kümesinin tutarlılığı.
 ⊙ İkisi de `rm_verb_words`'ün (ölçü-çıkarma fiilleri dolgu sayılır) **kardeşi**: bir
 fiil çekimi ya da soru sözcüğü, katalogda karşılığı olan bir ölçüyü **anlatan** kelimedir,
 kapsamı delmemeli.
+
+---
+
+## 26 · 🔴🔴 MİMARİ ÖNCELİK DÜZELTİLDİ — mesele `route()` değil, **DEVİR**
+
+> **Kullanıcı (2026-08-07):** *"Meselemiz `route`'u iyileştirmek değil aslında; `route`'un
+> cevaplayamadığı **her şeyi LLM'e yıkabilmek** — bunun çok iyi çalışması. Bu olduktan
+> sonra `route` iyileştirmek. Mesela bu LLM'e gitseydi zaten bu sorun çıkmazdı: küpü LLM
+> çalıştırırdı, **intent LLM** yani — Discovery değil, **garson** olan."*
+
+### 26.1 · Ve ölçüm bu önceliği DOĞRULADI — kendi düzeltmemi çürüterek
+
+`§25.4`'ün kalan iki kusuru (`hangi`·`etti`) için dolgu sınıfını genişlettim: `hangi` bir
+soru sözcüğü (`nedir`/`nasil` zaten oradaydı), `etti` bir yardımcı fiil. Gerekçe sağlamdı,
+kapıları geçti, **1 435 test yeşil**.
+
+🔴 **Korpus çürüttü:**
+
+```
+✓ korpus kapısı          %95.1 (taban %95.1) ✅
+✗ gerçek-dünya korpusu   🔴 sessiz_yanlis ARTTI: 12 → 13
+```
+
+⊙ Dolgu sınıfını genişletmek, kapsam kapısını **gevşetir**; gevşeyen kapı bir soruyu daha
+**yanlış cube'a** gönderdi. Yani `route()`'u daha hoşgörülü yapmanın bedeli **sessiz
+yanlış**tır — ve doğruluk vetosu bunu reddeder.
+
+**Geri alındı.** *Bir kapıyı gevşeterek kazanılan kapsam, kaybedilen doğrulukla ödenir —
+ve bu takas hep aynı yöne bakar.*
+
+### 26.2 · Doğru hedef: `route()` **temiz pes etsin**, tur LLM'e gitsin
+
+Ölçülen kusur şu değil: *"route bunu anlayamadı"*. Şu:
+
+```
+"bu yıl hangi müşteri en çok iade etti"
+iz : "Intent-path: çapraz konu (rakip cube kimliği) → netleştirme (LLM'siz)"
+not: "«hangi etti» başka bir konu gibi görünüyor. Hangisini istiyorsun?"
+```
+
+🔴 `route()` pes etti — **doğru**. Ama tur **LLM'e gitmedi**: araya bir **netleştirme
+dalı** girdi ve merdiveni kesti. Oysa Intent-JSON bu soruyu büyük olasılıkla çözerdi
+(`iade` bir ölçü, `müşteri` bir boyut, `en çok` bir sıralama).
+
+> **Kural:** `route()`'un pes etmesi bir **cevap** değil bir **devirdir**. Devri kesen her
+> dal, sistemin en yetenekli basamağını kullanıcının önünden çekiyor demektir.
+
+### 26.3 · Aynı sınıftan üç dal (ölçülmüş)
+
+| dal | iz | ne yapıyor |
+|---|---|---|
+| çapraz konu | *"rakip cube kimliği → netleştirme"* | 🔴 LLM'den **önce** kesiyor |
+| kısmi anlama | *"kısmi anlama → rapor düşülmedi"* | 🔴 aynı |
+| dönem belirsiz | *"dönem belirsiz → netleştirme"* | ◐ meşru (`ADR-0007-K3`) ama sırası tartışılır |
+
+⚠ İlk ikisi **kapsam kapısının çıktısıdır**: `route()` *"şu kelimeyi tanımadım"* diyor ve
+bu, kullanıcıya **bir soru** olarak dönüyor — oysa cevabı LLM verebilir.
+
+### 26.4 · 🔴 SIRADAKİ KÖK ÇÖZÜM (bu belgede bağlayıcı)
+
+1. **Netleştirme dalları Intent-JSON'dan SONRA çalışsın.** `route()` pes ettiğinde tur
+   **doğrudan** garsona gider; garson da çözemezse **o zaman** netleştirme.
+2. Ölçüt: `iz`'de *"netleştirme (LLM'siz)"* gören her tur, **LLM hiç denenmeden**
+   kesilmiş demektir — bu sayı düşmeli.
+3. ⚠ Ve bunun **ön koşulu** `§AJ3`/`§AJ4`: garsonun fişi eksikken (12 anahtar ↔ 7 alan)
+   devir arttıkça yanlış cevap da artabilir. Sıra: **önce fişi tamamla, sonra devri aç.**
+
+*Bir merdivenin basamağını atlamak, o basamağı hiç yazmamakla aynı sonucu verir.*
