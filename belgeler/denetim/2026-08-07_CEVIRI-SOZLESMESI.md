@@ -698,6 +698,152 @@ kararı bundan **bağımsız** olarak doğrudur (0 satırda zaten çalışmıyor
 
 ---
 
+## 15 · RUNBOOK — düzeltmelerden SONRA aynı usulle nasıl koşulur
+
+> Bu bölüm §14'ün **birebir tekrarı** içindir. Aynı adımlar, aynı okunacak alanlar,
+> aynı log satırları — ki *"düzeldi mi"* sorusu **aynı ölçüyle** yanıtlansın.
+> ⚠ Test koşucusu (`pytest`) **kullanılmaz**: amaç ürünün gerçek HTTP yüzeyini,
+> kullanıcının yazdığı gibi sınamaktır.
+
+### 15.0 · 🔴 ÖNCE KONTEYNERİ TAZELE — yoksa dünkü kodu ölçersin
+
+§14.5'te ölçüldü: canlı konteyner düzeltmeleri **taşımıyordu** (`yılbaşından bugüne`
+canlıda `cube+llm`, depoda deterministik). Kaynak bind-mount **edilmiyor**.
+
+```bash
+docker ps --format '{{.Names}}\t{{.Status}}\t{{.Ports}}' | grep dima-backend
+# → dima-backend-core  Up X  0.0.0.0:8001->8000/tcp
+docker restart dima-backend-core     # (imaj yeniden derlendiyse: down/up)
+curl -s localhost:8001/health        # → {"status":"ok"}
+```
+
+⚠ `:8000` **başka bir uygulamadır** (`akis-main`); Dima `:8001`.
+
+### 15.1 · Kimlik
+
+Parola kodda sabit: `backend/control_plane/seed.py` → `DEMO_OWNER_PASSWORD`.
+E-posta kalıbı: `{tenant-slug}@usedima.com` (`seed.py:150`).
+
+```bash
+TK=$(curl -s -X POST localhost:8001/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"demo-boyahane@usedima.com","password":"dima-demo-1234"}' \
+  | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
+echo "${#TK} karakter"
+```
+
+🔴 **Hız sınırı vardır.** Yanlış parola denemeleri
+`{"detail":"Çok fazla deneme — bir süre bekleyin"}` üretir ve pencere kapanana kadar
+**doğru parola da reddedilir** (ölçüldü: ~30–60 sn). Parolayı önce koddan **oku**, deneme
+yapma.
+
+### 15.2 · Tek turluk çağrı — kopyala/yapıştır
+
+```bash
+ask(){ # ask <session> <soru> [cube_query_json] [history_json]
+  local sid="$1" q="$2" cq="$3" hist="$4" body
+  if [ -n "$cq" ]; then
+    body="{\"question\":\"$q\",\"execute\":true,\"session_id\":\"$sid\",\"cube_query\":$cq,\"history\":[$hist]}"
+  else
+    body="{\"question\":\"$q\",\"execute\":true,\"session_id\":\"$sid\"}"
+  fi
+  local T0=$(date +%s%3N)
+  curl -s --max-time 120 -X POST localhost:8001/ask \
+       -H "Authorization: Bearer $TK" -H 'Content-Type: application/json' \
+       -d "$body" -o /tmp/cur.json
+  local T1=$(date +%s%3N)
+  python3 -c "
+import json
+d=json.load(open('/tmp/cur.json')); i=d.get('interpretation') or {}
+print(f\"  src={str(d.get('source')):9} satır={str((d.get('result') or {}).get('row_count')):4} ${T1}-${T0}ms\")
+print('  eksik_niyet:', d.get('eksik_niyet'))
+print('  note       :', (d.get('note') or '—')[:180])
+print('  explain    :', json.dumps(d.get('explain'), ensure_ascii=False))
+print('  iz         :'); [print('     -', x) for x in (d.get('trace') or [])]
+print('  anlatı     :', 'LLM' if i.get('narration') else '—', '| özet:', (i.get('summary') or '—')[:100])
+"
+  python3 -c "import json;print(json.dumps(json.load(open('/tmp/cur.json')).get('cube_query'),ensure_ascii=False))" > /tmp/cq.json
+}
+```
+
+**Thread kurmak** — frontend'in yaptığının aynısı: T1'in `cube_query`'sini T2'ye **aynen**
+yankıla.
+
+```bash
+ask t1 "makine bazında oee son 3 ay"                       # T1 — taze
+CQ=$(cat /tmp/cq.json)
+ask t1 "aylara göre" "$CQ" '"makine bazında oee son 3 ay"' # T2 — thread içi
+```
+
+### 15.3 · 🔴 HER TURDA OKUNACAK ALTI ALAN
+
+| alan | ne söyler | 🟢 iyi | 🔴 kötü |
+|---|---|---|---|
+| `source` | hangi basamak cevapladı | `cube` · `vqr` | `cube+llm` *(intent LLM'e gitti)* |
+| `explain.path` | **aynı şeyin doğrulaması** | *"route() — LLM'siz"* | *"LLM Intent-JSON"* |
+| `trace[0]` | ilk basamak | *"cube_router.route()"* · *"refine → **deterministik** düzenleme"* | *"Takip: **LLM-destekli** yapısal düzenleme"* |
+| `eksik_niyet` | sistem neyi **yapamadığını** söylüyor mu | `None` | dolu → cevap **kısmi** |
+| `note` | beyan kanalı | belirsizlik/boş-sonuç açıklaması | sessizlik |
+| `interpretation.narration` | anlatıcı LLM koştu mu | `—` *(basit vaka)* | `LLM` *(basit vakada = israf)* |
+
+⚠ `source` ile `explain.path` **birbirini doğrular**; ayrışırlarsa biri bayattır — bu
+depoda bir kez oldu (Intent-JSON cevabı `route()` güveniyle rozetlenmişti).
+
+### 15.4 · LOGU İZLE — sürenin nereye gittiği YALNIZ orada görünür
+
+```bash
+docker logs --since 10m dima-backend-core 2>&1 \
+  | grep -E "İSTEK|CEVAP|BAĞLAM|dima\.llm|yayilim|Discovery|vqr"
+```
+
+Okunuşu — §14'ten gerçek bir tur:
+
+```
+13:43:18  BAĞLAM  kural=yapisal:cube_query cube=oee eksen=('makine',)   ← thread ALGILANDI
+13:43:18  İSTEK   q='aylara göre'  followup=True(yapısal=True)          ← takip dalı
+13:43:19  yayilim: perdeleme: 1 metin · 1 yer tutucu                    ← ANLATI maskeleme
+13:43:41  dima.llm: openrouter BAŞARILI (…, 22564ms)                    ← 🔴 anlatı LLM
+13:43:42  CEVAP   source=cube  satır=22  süre=24285ms
+```
+
+🔴 **Ayrıştırma kuralı — bu raporun bütün teşhisi buna dayanıyor:**
+
+| log deseni | ne demek |
+|---|---|
+| `dima.llm` satırı **`yayilim: perdeleme`'den SONRA** | çağrı **ANLATICIDIR** (intent değil) |
+| `dima.llm` satırı `İSTEK` ile `CEVAP` arasında, **perdeleme YOK** | çağrı **INTENT**'tir |
+| `dima.llm` **hiç yok** | tur tamamen deterministik |
+| `süre` − `dima.llm ms` | **cevabın kendi maliyeti** *(ölçüldü: ~1 sn)* |
+
+### 15.5 · 🔴 KABUL TABLOSU — düzeltmeler sonrası beklenen
+
+| # | soru | bugün *(ölçüldü)* | düzeltme sonrası **beklenen** |
+|---|---|---|---|
+| 1·T1 | `makine bazında oee son 3 ay` | `cube` · 5 420 ms · anlatı **LLM** | `cube` · **< 1 sn** · anlatı **şablon** *(§13.5a)* |
+| 1·T2 | `aylara göre` | `cube` · **24 285 ms** | `cube` · **< 1 sn** |
+| 2·T1 | `bu ay toplam üretim` | `cube` · 602 ms · anlatı LLM *(özet: **"1 satırlık sonuç"**)* | anlatı **YOK** — özeti boş olan vakada LLM çağrılmamalı |
+| 4·T1 | `duruş nedenlerine göre toplam süre bu ay` | 🔴 `cube+llm` · 16 687 ms | 🟢 `cube` — **kendi açılış chip'imiz** deterministik olmalı |
+| 5·T1 | `şubatta ciro ocağa göre nasıl değişti` | `vqr` · `eksik_niyet=['kiyas','trend']` | 🔴 **VQR'dan DÜŞMELİ** *(§14.3)* → `compare=mom` ile tam cevap |
+| 6·T1 | `yılbaşından bugüne hasılat` | 🔴 `cube+llm` · 24 269 ms | 🟢 `cube` — YTD onarımı **canlıya inince** |
+| 6·T2 | `çeyreklere böl` | 🔴🔴 `cube+llm` · **69 399 ms** | 🟢 `cube` · *"refine → **deterministik**"* — `_time_gran` `quarter`'ı tanıyor |
+
+### 15.6 · Koşum disiplini
+
+1. **Tur tur ilerle.** Bir turun `cube_query`'si sonrakinin girdisidir; toplu koşmak
+   thread'i bozar.
+2. **Her turdan sonra logu oku.** `source=cube` görüp geçmek yetmez — §14'ün bütün
+   bulgusu *"`source=cube` ama yine de LLM çağrısı var"* satırındaydı.
+3. **Süreyi iki parçaya ayır** (§15.4). Toplam süre tek başına hangi katmanın yavaş
+   olduğunu **söylemez**.
+4. ⚠ **Sağlayıcı gecikmesini karıştırma.** `deepseek-v4-flash` aynı oturumda
+   2,9 → 22,6 → 69,4 sn salındı. Şüpheliyse aynı turu **iki kez** koş; fark büyükse sorun
+   mimaride değil sağlayıcıdadır (`KURAL G-1`'in aynı ilkesi).
+5. **Boş sonuç bir kusur değildir.** Demo verisi **30.06.2026**'da bitiyor; *"bu ay"*
+   soruları 0 satır döner ve sistem bunu **dürüstçe** söyler — bu ✅ bir davranıştır.
+
+
+---
+
 *Ölçüm kaynakları: `app/cube_router.py` (anahtar taraması · `parse_cube_query` ·
 `_measure_threshold` · `_top_n` · marjinler `:908`·`:932`·`:937`·`:947`) ·
 `app/intent_semasi.py` (şema alanları) · `app/llm.py` (`_cube_select_system` ↔
