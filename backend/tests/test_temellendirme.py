@@ -82,3 +82,43 @@ def test_SINIR_YAZILI():
     kaynak = (pathlib.Path(__file__).resolve().parents[1]
               / "app" / "temellendirme.py").read_text(encoding="utf-8")
     assert "garanti değil" in kaynak
+
+
+# --- 🔴 CANLI KAPI BULDU — netleştirme turu da temellendirilir ----------------------
+
+
+def test_NETLESTIRME_TURU_DA_TEMELLENDIRILIR(client):
+    """🔴 `lab/garson.py --live` `8·temellendirme` satırında ❌ verdi ve sebebi ölçüldü:
+
+        `fire kg` → source=None (dönem soruluyor) · cube_query={'cube':'parti',
+                    'measures':['toplam_fire_kg']} · temellendirme=None
+
+    `_temellendir` `source is None` ise dönüyordu; gerekçesi *"netleştirme cevabında
+    temellendirilecek bir sorgu YOK"* idi ve **yanlıştı**. Kapı, temellendirmenin en
+    değerli olduğu anda susuyordu: sistem *"hangi dönem?"* diye sorarken *"fire kg'yi
+    anladım"* demiyordu.
+
+    *Bir kapının gerekçesi, kapının kendisinden daha hızlı bayatlar.*
+    """
+    from tests.conftest import ask
+
+    d = ask(client, "fire kg", session_id="tem-netlestirme")
+    cq = d.get("cube_query") or {}
+    if not cq.get("measures"):
+        import pytest
+        pytest.skip(f"⊘ vaka bayat — netleştirme kısmi sorgu taşımıyor: {cq}")
+    t = d.get("temellendirme")
+    assert isinstance(t, dict) and (t.get("olcu") or t.get("donem")), (
+        f"🔴 netleştirme turu ne anladığını SÖYLEMİYOR: cq={cq} temellendirme={t}")
+
+
+def test_DUZ_RETTE_GURULTU_YOK(client):
+    """⚠ Ters yön: `cube_query` boş bir rette temellendirme **basılmaz** — yoksa her
+    ret bir *"anladığım şu: (boş)"* gürültüsü üretirdi."""
+    from tests.conftest import ask
+
+    d = ask(client, "zxqw plmk asdf", session_id="tem-ret")
+    if d.get("cube_query"):
+        import pytest
+        pytest.skip("⊘ bu soru kısmi sorgu üretti — vaka uygun değil")
+    assert not d.get("temellendirme")

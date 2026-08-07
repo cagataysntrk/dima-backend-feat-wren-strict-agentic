@@ -2476,5 +2476,8 @@ soru LLM'e gitmiyor. Dokunulmadı.
 |---|---|
 | **#17** *(«değişim» istendi, TOPLAM verildi)* | ◐ **YARIM.** *"Uyarı da yok"* yarısı **KÖK-3** ile zaten kapanmıştı (ölçüldü: `eksik=['trend']` + yol gösteren not). `G6` **iki uçlu kıyas** eksenini kapatır; bu vakanın kalanı bir **zaman ekseni** işidir ve açık kalır |
 | **B-G4** | ✅ **KAPANDI** — `compare` Intent-JSON şemasına (yalnız zaman boyutlu dalda, `oneOf` korunarak) ve `parse_cube_query` beyaz listesine girdi. `5.6` (peer) bloğu kalktı |
+| **B-G5** | ✅ **KAPANDI** — çelişki çözüldü: `§5` satırı **bayattı** (*"⟳ UYGULANMADI"*), `:442` güncel. `§5` → ◐ **KISMEN İNDİ**. Yasağın tam uygulaması ölçülüp geri alınmıştı (korpus %95,1→%93,5) ve **dördüncü koşulu** oradan doğdu |
+| **KÇ-1** | ✅ **KAYDA GEÇTİ** *(zorunlu kayıt #3)* — ve `G6` denetimin kabul ölçütünü **karşıladı**: *"«mart cirosunu şubat ile kıyasla» tek birleşik sayı döndürmesin"* → artık gerçek kıyas dönüyor |
 | **yeni** | 🔴 `tsc` gecelik CI'da koşmuyor |
+| **yeni** | ⚠ `kanit_sinifi` `ReportPanel.SAF_NOT_ALANLARI` kümesinin **dışında** ve netleştirme cevaplarında **dolu geliyor** → o cevaplar `raporlanabilir()` kapısından geçiyor. Garson fazından **önce de** böyleydi; düzeltmek ölçülmemiş bir davranış değişikliği olacağı için faz kapanışında **yapılmadı** |
 | **yeni** | ⚠ `Niyet.temsil_edilemeyen` izi, `route`'un indirgeme yaptığını **bilmez** (soruya bakar, sorguya değil): kıyas kurulmuş bir cevapta iz hâlâ `temsil-yok=cok_donem` yazar. Zararsız — `uyum` cq'yu görüp doğru susuyor — ama **iz yanıltıcı** |

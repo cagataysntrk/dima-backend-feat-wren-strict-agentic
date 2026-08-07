@@ -54,6 +54,20 @@ const SAF_NOT_ALANLARI = new Set<keyof AskResponse | string>([
   "calculation_explanation",
   // — istemci-tarafı alanlar (backend göndermez, `page.tsx` ekler) —
   "steering_golgede",
+  // 🔴 **GARSON FAZI — DİPNOTLAR, GÖVDE DEĞİL.** `G1`'in `temellendirme`si ve `G2`'nin
+  // `diyalog_durumu`su bir cevabın **yanında** konuşur (rozet · bekleyen yuva); ikisi de
+  // `ReportCard` içinde render edilir ama hiçbiri bir **rapor gövdesi** değildir.
+  // Kümeye girmezlerse bir netleştirme cevabı ("hangi dönem?") yalnız bu dipnotlar
+  // yüzünden **gövdesiz bir kart** olarak çizilir — bu dosyanın kendi uyarısıyla
+  // *"görünür bir gerileme"*.
+  //
+  // ⚠ Ölçüldü ve bir sınır bulundu: `kanit_sinifi` de kümenin DIŞINDA ve netleştirme
+  // cevaplarında **dolu geliyor** — yani o cevaplar bu fazdan ÖNCE de raporlanabilir
+  // sayılıyordu. Bu satırlar o durumu **düzeltmez**, çünkü düzeltmek ölçülmemiş bir
+  // davranış değişikliğidir; borç `OPERASYON-DURUM.md`'ye yazıldı.
+  // *Kendi alanını sınıflandırmak bir sorumluluk; başkasınınkini ölçmeden değiştirmek
+  // bir risktir.*
+  "temellendirme", "diyalog_durumu",
 ]);
 
 export function raporlanabilir(it: AskResponse): boolean {

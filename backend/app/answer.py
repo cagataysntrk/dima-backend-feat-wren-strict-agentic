@@ -498,6 +498,21 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
         # burada ikiye bölünür — gevşemez, BÖLÜNÜR.
         from app import iddia as _iddia
 
+        # 🔴 **YEREL İMPORT ZORUNLU — ve eksikliği CANLI KAPI buldu.**
+        #
+        # `:248`'in notu açık: *"`wren_for_request` bu modülde HER YERDE yerel olarak
+        # alınıyor."* `G4` bu satırı yazmayı atladı ve sonuç `NameError` oldu — ama
+        # aşağıdaki `except Exception` onu **yuttu**: kapı her turda sessizce şemasız
+        # koştu, yani her yetenek vaadi *"katalog yok → doğrulanamaz"* diye düştü.
+        #
+        # ⊙ Hiçbir birim testi göremedi (hepsi `dogrula()`'yı **doğrudan** şemayla
+        # çağırıyor); süit de göremedi (`t2_anlatici` kapalıyken bu dal hiç koşmuyor).
+        # Onu bulan `lab/garson.py --live` oldu — **kapının varlık sebebi tam budur**.
+        #
+        # *Bir `except Exception`, kapsadığı kodun yazılmamış olmasını da başarıyla
+        # gizler.*
+        from app.company_registry import wren_for_request
+
         try:
             _sema = wren_for_request(request).schema()
         except Exception:                                  # noqa: BLE001
@@ -566,8 +581,24 @@ def _temellendir(resp: AskResponse) -> None:
     🔴 **0 token olması bir tasarım özelliğidir:** LLM tamamen düşse bile (kota · ağ ·
     429) bu satır **yine basılır** — bozulma merdiveninin 3. basamağı.
     """
-    if resp.source is None or not resp.cube_query:
-        return          # ret/netleştirme cevabında temellendirilecek bir sorgu YOK
+    # 🔴 **NETLEŞTİRME TURU DA TEMELLENDİRİLİR — ve bunu CANLI KAPI buldu.**
+    #
+    # İlk kapı `resp.source is None` ise dönüyordu, gerekçesi *"netleştirme cevabında
+    # temellendirilecek bir sorgu YOK"*. **Ölçüldü ve yanlış çıktı:** `fire kg` →
+    # `source=None` (dönem soruluyor) ama `cube_query` **dolu**:
+    # `{'cube': 'parti', 'measures': ['toplam_fire_kg']}`.
+    #
+    # Yani kapı, temellendirmenin **en değerli** olduğu anda susuyordu: sistem *"hangi
+    # dönem?"* diye sorarken *"fire kg'yi anladım"* demiyordu. Kullanıcı açısından bu,
+    # sorunun **neyin üstüne** sorulduğunu bilmemek demektir — `G1`'in kapatmak için
+    # yazıldığı boşluğun ta kendisi.
+    #
+    # ⚠ Gürültü riski yok: düz retlerde `cube_query` **boştur** (ölçüldü: `{}`), ve
+    # `kur()` söyleyecek bir şey yoksa zaten `None` döner (*"boş sözlük dönmez"*).
+    #
+    # *Bir kapının gerekçesi, kapının kendisinden daha hızlı bayatlar.*
+    if not resp.cube_query:
+        return
     try:
         from app.temellendirme import kur
 

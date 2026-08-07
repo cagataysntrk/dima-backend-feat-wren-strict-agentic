@@ -2862,14 +2862,6 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 except Exception:
                     _log.warning("LLM Intent-JSON seçimi başarısız (best-effort)", exc_info=True)
 
-        # 🔴 `G6` — MUTLAK KIYAS. Karar `app/kiyas_cebiri.ayikla`'da (gerekçe orada);
-        # burada kalan yalnız ÇAĞRI ve DÖNÜŞ, çünkü `_kiyas_cevabi` bir kapanıştır ve
-        # gövdesi kopyalanamaz — kopyalansa iki dal zamanla ayrışırdı.
-        if (_ayr := kiyas_cebiri.ayikla(route_hit)) is not None:
-            route_hit = {**route_hit, "cube_query": _ayr[0]}
-            if (_k := _kiyas_cevabi(*_ayr, "Intent-path: mutlak kıyas")) is not None:
-                return _k
-
         if route_hit:
             cq = route_hit["cube_query"]
             # Gitaş logu 2026-07-24: order/limit route()'tan AYRI alanlar olarak
@@ -2884,6 +2876,22 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 cq = {**cq, "order": {"measure": om, "direction": str(odir).lower()}}
             if route_hit.get("limit"):
                 cq = {**cq, "limit": route_hit["limit"]}
+
+            # 🔴 `G6` — MUTLAK KIYAS. Karar `app/kiyas_cebiri.ayikla`'da (gerekçe orada);
+            # burada kalan yalnız ÇAĞRI ve DÖNÜŞ, çünkü `_kiyas_cevabi` bir kapanıştır ve
+            # gövdesi kopyalanamaz — kopyalansa iki dal zamanla ayrışırdı.
+            #
+            # ⚠ **YERİ ÖNEMLİ: `order`/`limit` GÖMÜLDÜKTEN SONRA.** İlk yerleştirmem
+            # yukarıdaydı ve ölçüldü: *"en çok ciro yapan 5 müşteri mart ile nisanı
+            # kıyasla"* → `compare=mom` **ve** `order=(toplam_ciro,DESC)` `limit=5`.
+            # Orada çağrılsaydı kıyas **sıralamasız ve limitsiz** hesaplanırdı — ve bu,
+            # Gitaş logunun (2026-07-24) tam olarak bu satırların üstünde anlattığı
+            # kusurun ikinci kez doğması olurdu.
+            # *Bir alanı taşımak için yazılmış kodun üstünde durmak, onu taşımamaktır.*
+            if (_ayr := kiyas_cebiri.ayikla({"cube_query": cq})) is not None:
+                cq = _ayr[0]
+                if (_k := _kiyas_cevabi(*_ayr, "Intent-path: mutlak kıyas")) is not None:
+                    return _k
             cube_meta = next((c for c in (schema.get("cubes") or [])
                               if c.get("name") == cq.get("cube")), None)
             # FAZ -0.5d — DÖNEM ASİMETRİSİ. `llm.py`'nin prompt'u LLM'e tarih filtresi

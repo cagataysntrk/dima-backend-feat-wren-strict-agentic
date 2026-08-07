@@ -212,3 +212,31 @@ def test_PARSE_compare_ARTIK_DUSMUYOR(schema):
     kotu = parse_cube_query(json.dumps(
         {"cube": c["name"], "measures": [olcu], "compare": "uydurma"}), index)
     assert kotu and "compare" not in kotu, "🔴 tanımsız mod geçirildi — motor onu yutar"
+
+
+def test_TOPN_ILE_KIYAS_SIRALAMAYI_KAYBETMIYOR(schema):
+    """🔴 Ölçülen uç durum: *"en çok ciro yapan 5 müşteri mart ile nisanı kıyasla"* hem
+    `compare=mom` hem `order`+`limit` taşır.
+
+    `route()` `order`/`limit`'i **ayrı alanlar** olarak döner ve `ask()` onları `cq`'nun
+    içine gömer (Gitaş logu 2026-07-24). Kıyas dalı o gömmeden **önce** çağrılırsa kıyas
+    **sıralamasız ve limitsiz** hesaplanır — aynı kusurun ikinci kez doğuşu.
+    *Bir alanı taşımak için yazılmış kodun üstünde durmak, onu taşımamaktır.*
+    """
+    from pathlib import Path
+
+    from app import cube_router as cr
+
+    metin = (Path(__file__).resolve().parents[1]
+             / "app/routers/ask.py").read_text(encoding="utf-8")
+    assert metin.index("kiyas_cebiri.ayikla") > metin.index(
+        'cq = {**cq, "limit": route_hit["limit"]}'), (
+        "🔴 kıyas dalı `order`/`limit` gömülmeden ÖNCE koşuyor — top-N'li bir kıyas "
+        "sorusu sıralamasını kaybeder")
+
+    hit = cr.route(cr._norm("en çok ciro yapan 5 müşteri mart ile nisanı kıyasla"), schema)
+    if hit is None:
+        import pytest
+        pytest.skip("⊘ vaka bayat")
+    if (hit.get("cube_query") or {}).get("compare"):
+        assert hit.get("order") or hit.get("limit"), "⊘ vaka artık top-N taşımıyor"

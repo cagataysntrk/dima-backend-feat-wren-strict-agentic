@@ -144,3 +144,35 @@ def test_IKINCI_DOGRULAMA_MIMARISI_YOK():
         "eksikti). Fark SESSİZ olurdu.")
     assert "_CUMLE_RE = re.compile" in n, "cümle ayırıcısının sahibi narration_guard olmalı"
     assert "_CUMLE_RE = re.compile" not in i, "iddia.py ikinci bir sahip yaratmış"
+
+
+# --- 🔴 CANLI KAPI BULDU — kapının şemaya GERÇEKTEN ulaştığı ------------------------
+
+
+def test_ANLATI_YOLUNDA_SEMA_GERCEKTEN_OKUNUYOR():
+    """🔴 `lab/garson.py --live` bunu buldu: `_anlati_ekle` içinde `wren_for_request`
+    **import edilmemişti** → her turda `NameError` → `except Exception` onu **yuttu** →
+    kapı sessizce **şemasız** koştu ve her yetenek vaadi *"katalog yok"* diye düştü.
+
+    Hiçbir birim testi göremezdi: hepsi `dogrula()`'yı doğrudan şemayla çağırıyor.
+    Süit de göremezdi: `t2_anlatici` kapalıyken bu dal hiç koşmuyor.
+
+    *Bir `except Exception`, kapsadığı kodun yazılmamış olmasını da başarıyla gizler.*
+    """
+    import ast
+    import pathlib
+
+    kaynak = (pathlib.Path(__file__).resolve().parents[1]
+              / "app/answer.py").read_text(encoding="utf-8")
+    agac = ast.parse(kaynak)
+    fn = next(n for n in ast.walk(agac)
+              if isinstance(n, ast.FunctionDef) and n.name == "_anlati_ekle")
+    yerel_import = any(
+        isinstance(n, ast.ImportFrom) and n.module == "app.company_registry"
+        and any(a.name == "wren_for_request" for a in n.names)
+        for n in ast.walk(fn))
+    assert yerel_import, (
+        "🔴 `_anlati_ekle` `wren_for_request`'i yerel import ETMİYOR. Bu modülde o ad "
+        "modül düzeyinde YOK (`answer.py:248` notu: «HER YERDE yerel olarak alınıyor»); "
+        "import olmadan `NameError` doğar ve `except Exception` onu sessizce yutar — "
+        "iddia kapısı şemasız koşar, her yetenek vaadi haksız yere düşer.")

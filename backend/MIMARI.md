@@ -64,7 +64,7 @@
 > Tuzaklar **silinmedi, TERS ÇEVRİLDİ**: `test_TERS_TUZAK_FAZ_2_1_CEKIRDEK_KATMAN_AYAKTA`.
 
 | **§3.4** | **`SessionProperty` TÜM çağrı sitelerinde** — bugün 36 `query`/`dry_plan` çağrısı kimlik geçmiyor *(CLS `off`, bkz. §6.3c)* | **FAZ 1.2 kuyruğu** | ⟳ UYGULANMADI |
-| **§5** | **18. yasak**: *"cevapsız bir dal, cevaplı bir yolu KESEMEZ"* (`KAT-2`) | **§G/AJ0** | ⟳ UYGULANMADI |
+| **§5** | **18. yasak**: *"cevapsız bir dal, cevaplı bir yolu KESEMEZ"* (`KAT-2`) | **§G/AJ0** | ◐ **KISMEN İNDİ** — ayrıntı `:442` |
 | **§9** | hedef mimari — **metrik katmanı** merdivene giriyor | **FAZ 0.18 · 2.1** | ⟳ UYGULANMADI |
 | **§11** | agentic — **onaylı yazma aksiyonları** | **FAZ 6.1** | ⟳ UYGULANMADI |
 
@@ -1616,6 +1616,90 @@ yanlış yazardı.
    **doğrusu `saati`**. Yabancı kökenli, **ince** çekimlenen sözcükler. `sanat`→`sanatı`
    (kalın, düzenli) ama `dikkat`→`dikkati` (ince) — **aynı yazım, farklı çekim**.
    *Bir dilin istisnası bir kuralın eksiği değil, sözlüğün kendisidir.*
+
+### 🔴 CANLI KAPI İKİ KUSUR BULDU — ve ikisini de başka hiçbir kapı göremezdi
+
+`Z.2`'de `lab/garson.py --live` **gerçek sağlayıcıyla** koştu (openrouter ·
+`deepseek/deepseek-v4-flash`; ilk çağrı 33,7 sn, sonrakiler ~1,4 sn — önbellek ısınıyor).
+İki kusur çıktı; **ikisi de birim testlerinin ve süitin kör noktasındaydı.**
+
+#### 1 · İddia kapısı bir demettir **ŞEMASIZ** koşuyordu
+
+```
+NameError: name 'wren_for_request' is not defined   (answer.py:502)
+WARNING dima.ask: iddia kapısı için şema okunamadı
+```
+
+`answer.py:248`'in kendi notu *"`wren_for_request` bu modülde **HER YERDE yerel olarak**
+alınıyor"* diyor; `G4` o satırı yazmayı atladı. Sonuç `NameError` oldu — ve hemen
+altındaki `except Exception` onu **yuttu**: kapı her turda `_sema=None` ile koştu, yani
+**her yetenek vaadi** *"katalog yok → doğrulanamaz"* diye düştü.
+
+🔴 Neden görünmedi: birim testlerinin **hepsi** `dogrula()`'yı doğrudan şemayla çağırıyor;
+süit de göremezdi çünkü `t2_anlatici` kapalıyken bu dal **hiç koşmuyor**.
+*Bir `except Exception`, kapsadığı kodun yazılmamış olmasını da başarıyla gizler.*
+→ Kapı: `test_ANLATI_YOLUNDA_SEMA_GERCEKTEN_OKUNUYOR` (AST ile yerel import arar).
+
+#### 2 · Netleştirme turu **ne anladığını söylemiyordu**
+
+`_temellendir` `resp.source is None` ise dönüyordu; gerekçesi *"netleştirme cevabında
+temellendirilecek bir sorgu YOK"* idi. **Ölçüldü ve yanlış çıktı:**
+
+```
+`fire kg` → source=None (dönem soruluyor)
+          → cube_query = {'cube': 'parti', 'measures': ['toplam_fire_kg']}
+          → temellendirme = None
+```
+
+Yani kapı, temellendirmenin **en değerli olduğu anda** susuyordu: sistem *"hangi dönem?"*
+diye sorarken *"fire kg'yi anladım"* demiyordu — `G1`'in kapatmak için yazıldığı boşluğun
+ta kendisi. *Bir kapının gerekçesi, kapının kendisinden daha hızlı bayatlar.*
+
+⚠ Gürültü riski ölçüldü ve yok: düz retlerde `cube_query` **boştur** (`{}`), ve `kur()`
+söyleyecek bir şey yoksa zaten `None` döner.
+
+#### 3 · Frontend sınıflandırması — dipnot mu, gövde mi?
+
+`ReportPanel.raporlanabilir()` *"gövdeyi sayma, gövdesizliği kapat"* ilkesiyle çalışır:
+`SAF_NOT_ALANLARI` **dışındaki** her dolu alan cevabı bir rapor kartı yapar. `G1`'in
+`temellendirme`si ve `G2`'nin `diyalog_durumu`su o kümede **değildi** → bir netleştirme
+cevabı yalnız bu dipnotlar yüzünden **gövdesiz bir kart** olarak çizilebilirdi (dosyanın
+kendi deyimiyle *"görünür bir gerileme"*). İkisi de kümeye alındı.
+
+⚠ **Ve bir sınır ölçüldü:** `kanit_sinifi` de kümenin dışında ve netleştirme
+cevaplarında **dolu geliyor** — yani o cevaplar bu fazdan **önce de** raporlanabilir
+sayılıyordu. Düzeltilmedi, **borç olarak yazıldı**: ölçülmemiş bir davranış değişikliği
+faz kapanışında yapılmaz. *Kendi alanını sınıflandırmak bir sorumluluk; başkasınınkini
+ölçmeden değiştirmek bir risktir.*
+
+### 🔴 `KÇ-1`'in SAPMASI — denetim *fail-closed* istedi, uygulama *beyan-açık* seçti
+
+Denetimin `Ö8` maddesi **"ACİL — HEPSİNDEN ÖNCE"** işaretliydi ve kabul ölçütü
+**fail-closed**tı:
+
+> *"`mart cirosunu şubat ile kıyasla` tek birleşik sayı **DÖNDÜRMESİN**."*
+
+`app/uyum.py:169` başka bir yol seçti ve gerekçesini yazdı: *"Kapı **fail-closed değil,
+BEYAN-AÇIK**: cevabı öldürmez, **etiketler**."* Sebep kapsamdı — öldürmek cevaplanabilir
+soruları da keserdi. Kapı ölçümündeki `beyanli_kismi: 58` tam olarak bu sayıdır.
+
+#### 🔴 Ve `G6` ÜÇÜNCÜ BİR YOL AÇTI — ölçütün kendisi karşılandı
+
+Denetimin cümlesindeki soru **birebir** `G6`'nın vakasıdır ve bugün o soru artık tek
+birleşik sayı **döndürmüyor**: `app/kiyas_cebiri.py` onu *"mart cirosu + `mom`"*a
+indirgiyor ve **gerçek bir kıyas** hesaplanıyor.
+
+| yol | ne yapar | bedeli |
+|---|---|---|
+| fail-closed *(denetimin istediği)* | cevabı **öldürür** | cevaplanabilir sorular da düşer |
+| beyan-açık *(uygulamanın seçtiği)* | cevabı **etiketler** | kullanıcı eksiği görür ama kıyası alamaz |
+| 🔴 **cevaplanabilir kılmak** *(`G6`)* | kıyası **hesaplar** | yalnız TAM indirgenebilende |
+
+⊙ Ölçüldü: 305 cevaplanan kıyas sorusunun **122'si** artık üçüncü yola düşüyor; kalan
+**183'ü** beyan-açık kalır (indirgenemez) ve **sessiz sayısı 0**'dır.
+
+*Bir kabul ölçütünü karşılamanın yolu, onun önerdiği mekanizma olmak zorunda değildir —
+ama ölçütün kendisi karşılanmadıkça sapma bir gerekçe değil bir borçtur.*
 
 ### 🔴 `G6` — KIYAS CEBİRİ: bir niyeti SÖKEBİLEN sistem onu SAYABİLMELİDİR
 
