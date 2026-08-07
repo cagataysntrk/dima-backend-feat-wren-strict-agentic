@@ -2703,6 +2703,78 @@ değişmezleri · §9 commit · §10 sıra) · `~/.claude/plans/DIMA-V1-YOL-HARI
 
 ---
 
+## §AJ2 · CANLI DENETİM BULGUSU — *en çok güvendiğimiz basamak, en kör hâliyle koşuyordu*
+
+> **Kaynak:** `belgeler/denetim/2026-08-07_CANLI-ARIZA-TESHISI.md` (canlı ajan denetimi),
+> **ve iddianın her sayısı yerinde yeniden ölçüldü** — biri düzeltildi.
+
+### Bulgu
+
+`route()` zengin bir Türkçe eşanlam katmanı kullanıyor: `oee` → *"verim"*, *"randiman"*,
+*"performans"*; `ort_oee`'nin sekiz sinonimi var. Bu katman şemada **beyan edilmiş**.
+
+⊙ **LLM'e giden katalogda hiçbiri yoktu.** Ölçüldü: `verim` **0 kez** · `randiman` **0** ·
+`verimlilik` **0** · `hasılat` **0** · `bordro` **0**. 23 cube'un **23'ünde** `synonyms`
+**ve** `measure_synonyms` beyan edilmiş olmasına rağmen.
+
+| | eşanlam katmanı |
+|---|---|
+| `route()` — *en az güvendiğimiz basamak* | ✅ **tam** |
+| LLM — 🔴 *en çok güvendiğimiz basamak* | 🔴 **HİÇ** |
+
+Canlı sonucu: *"verimlilik"* sorusunda **9/9 Intent çağrısı `{"cube":null}`** — oylama
+uyuşmazlığı değil, **aday yokluğu**. Model reddetti çünkü elindeki listede o kelime yoktu.
+
+🔴 Bu, kullanıcının bu fazdaki en net talimatıyla doğrudan çelişiyordu:
+> *"burada asıl güvendiğimiz llm… sistemi burada deterministiğe yıkamayız."*
+
+### ⚠ `ADR-0008` ile çelişmiyor — tam tersi
+
+Yasak olan **sözlük icat etmek**tir. Burada yeni liste yazılmıyor; şemanın **zaten beyan
+ettiği** liste ikinci tüketicisine gösteriliyor.
+*Bir bilgiyi beyan edip tüketicilerinden birine göstermemek, onu iki kez tanımlamaya
+davettir — çünkü göremeyen taraf er ya da geç kendi listesini yazar.*
+
+### 🔴 AJANIN SAYISI DÜZELTİLDİ
+
+Denetim maliyeti *"+2.192 token (%54)"* diye raporladı. Yerinde ölçüm:
+
+| kapsam | katalog | oran |
+|---|---|---|
+| bugünkü (sözlüksüz) | 12.115 karakter | 1,00× |
+| + cube sinonimleri | 14.709 | 1,21× |
+| **+ ölçü sinonimleri** *(seçilen)* | **23.417** | **1,93×** |
+| + boyut sinonimleri | 29.889 | **2,47×** |
+
+*Bir maliyet tahmini, ölçülene kadar bir maliyet değildir.*
+
+**Kapsam kararı:** boyut sinonimleri **dışarıda** — maliyetin %30'unu yiyor ama ölçülen
+kusuru (**cube seçimi**) çözmüyor; boyut eşleştirmesi `route()`'un güçlü olduğu yer ve
+model boyut **adlarını** zaten görüyor.
+
+### ADIMLAR
+
+| # | Adım | Dosya / iş | ✅ Bitti kontrolü |
+|---|---|---|---|
+| **AJ2.1** ✅ | Ölçüm önce | Katalogda eşanlam **var mı** — kapının konusu taze mi | ✅ 23/23 beyanlı, katalogda 0 |
+| **AJ2.2** ✅ | Modül | `build_catalog` → `app/katalog_metni.py` *(`cube_router` tavanda; ve *"LLM'in gördüğü metin"* onun sorusu değil)* | ✅ Tavan **1760 → 1739** indi |
+| **AJ2.3** ✅ | Sözlük eki | cube + ölçü sinonimleri, `«…»` içinde, **dedup**'lu | ✅ `test_ESANLAMLAR_ARTIK_KATALOGDA` |
+| **AJ2.4** ✅ | Maliyet kapısı | Oran bandı **ölçümün etrafına** kondu (1,5–2,1×) | ✅ *"sınırı ölçüye çekmek ≠ ölçüyü sınıra çekmek"* |
+| **AJ2.5** ✅ | Kapsam kararı | Boyut sinonimleri dışarıda — **kaynak düzeyinde** kilitli | ✅ Kapı iki kez yanlış yere baktı, kaydı yazılı |
+| **AJ2.6** ✅ | Tek çözüm noktası | `catalog_text` **dört** yerde üretiliyor → hepsi `metin_ve_indeks`'ten | ✅ `test_BAYRAGI_TEK_YERDE_COZUYORUZ` |
+| **AJ2.7** ✅ | Bayrak | `katalog_sozlugu: beta` — kapalıyken metin **bayt bayt bugünkü** | ✅ `KURAL B` |
+| **AJ2.8** 🔴 | **Ölçüm borcu** | Kazanç **gerçek sağlayıcı** ister; `eval --slice llm` bugün **4 vaka** | ⊘ `G3.2` ile **aynı** alet sorunu |
+| **AJ2.9** 🔴 | **Önbellek borcu** | Sabit önek → `B6` (üç katmanlı önek) ödendiğinde maliyet tekrar etmez | ⊘ Bu modül `B6`'nın **ilk müşterisi** |
+
+### Denetimin öteki iki bulgusu — akıbetleri
+
+| # | bulgu | akıbet |
+|---|---|---|
+| **#2** | Anlatı merdiveninde deterministik ilk basamak yok | ⊘ `G5.10`'da ölçüldü: `llm.py`'de **akış yok** ve guard cümle bütünlüğü istiyor. Şablon basamağı ayrı bir iştir — faz `S` |
+| **#3** | Takip turunda 500 | ⊘ **Backend'den çıkmamış**: `restarts=0`, erişim logunda **sıfır 5xx**, 22 dk hiç istek yok. Next rewrite-proxy üretmiş; `apiClient`'ta **timeout tanımsız** (39,4 sn'lik bir cevap ölçüldü) → ön yüz işi |
+
+---
+
 ## KAPANIŞ — BU FAZIN TEK CÜMLESİ
 
 > Mutfak, **dünyanın en katı ucunda** kuruldu: on üründen dokuzunun taklit etmeye çalıştığı

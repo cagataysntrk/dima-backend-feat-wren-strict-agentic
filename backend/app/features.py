@@ -483,6 +483,15 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "— aksi hâlde döküm isteyene dejenere tek toplam dönerdi.",
         "category": "Analiz",
     },
+    "katalog_sozlugu": {
+        "label": "Katalog sözlüğü (LLM Türkçe eşanlamları görür)",
+        "description": "LLM'e giden cube kataloğuna şemanın ZATEN beyan ettiği Türkçe "
+                       "eşanlamlar eklenir (oee «verim, randiman, performans»). Bugüne "
+                       "kadar bu katmanı yalnız route() kullanıyordu; LLM teknik kolon "
+                       "adlarından ibaret bir liste görüyordu. Metin ~%54 büyür — ama "
+                       "SABİT ÖNEK, yani önbelleklenebilir.",
+        "category": "Anlama",
+    },
     "varlik_perdesi": {
         "label": "Varlık perdesi (gerçek değer sağlayıcıya gitmez)",
         "description": "Sorudaki katalog DEĞERLERİ `{{ENT_i}}` ile perdelenir ve LLM'e "

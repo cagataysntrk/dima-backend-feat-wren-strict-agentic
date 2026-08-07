@@ -3608,34 +3608,15 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
 
 # --- LLM'e cube seçtirme (kelime yönlendirici kaçırırsa) --------------------
 
-def build_catalog(schema: dict) -> tuple[str, dict]:
-    """LLM prompt'u için cube kataloğu metni + doğrulama indeksi döner."""
-    from app.sensitivity import prompt_safe_values
-
-    cubes = schema.get("cubes") or []
-    cols = {c["name"]: c for m in schema.get("models", []) for c in m["columns"]}
-    lines, enum_lines, index = [], [], {}
-    for c in cubes:
-        index[c["name"]] = c
-        line = f'- {c["name"]}: measures[{", ".join(c.get("measures", []))}]'
-        if c.get("dimensions"):
-            line += f'; dimensions[{", ".join(c["dimensions"])}]'
-        if c.get("time_dimensions"):
-            line += f'; time[{", ".join(c["time_dimensions"])}]'
-        lines.append(line)
-        for dim in c.get("dimensions", []):
-            col = cols.get(dim)
-            # HASSAS KOLON DEĞERLERİ PROMPT'A GİRMEZ (Faz A1). Süzgeç `llm._schema_prompt`
-            # ile AYNI kaynaktan (`app/sensitivity.py`) — eskiden iki prompt üreticisi
-            # farklı politika uyguluyordu (burada ≤25 + cube whitelist, orada HER VARCHAR).
-            vals = prompt_safe_values(col) if col else []
-            if vals and len(vals) <= 25:
-                enum_lines.append(f'  {c["name"]}.{dim} ∈ {{{", ".join(map(str, vals))}}}')
-    catalog = "\n".join(lines)
-    if enum_lines:
-        catalog += "\n\nFiltre değerleri (birebir kullan):\n" + "\n".join(enum_lines)
-    return catalog, index
-
+#: 🔴 `build_catalog` **`app/katalog_metni.py`'ye TAŞINDI** — ve taşınacak şey rastgele
+#: seçilmedi: bu fonksiyon bir **yönlendirme kararı vermez**, *"LLM'in gördüğü metin nasıl
+#: görünür"* sorusunu yanıtlar. `intent_semasi`'nin taşınmasıyla **aynı sınırın öteki
+#: yarısı**: biri şemayı, öteki düz metni üretir. Bu dosya *"hangi cube, hangi ölçü"*nun
+#: sahibidir — *"nasıl anlatılır"*ın değil.
+#:
+#: ⚠ Yeniden dışa aktarılıyor çünkü çağıranların sayısı çok ve hepsi `cube_router`'dan
+#: alıyor; bir taşımanın maliyeti, taşınan şeyin adını değiştirmeyi gerektirmemeli.
+from app.katalog_metni import build_catalog  # noqa: E402,F401
 
 # Zaman granülerliği merdiveni (kaba→ince); drill-down bir kademe iner (ay→hafta).
 _GRAN_LADDER = ["year", "quarter", "month", "week", "day"]

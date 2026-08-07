@@ -18,6 +18,7 @@ from app import niyet as _niyet
 from app import turetme as _turetme
 from app import uyum as _uyum
 from app import yetenek as _yetenek
+from app import katalog_metni
 from app import varlik
 from app import context as app_context
 from app import netlestirme as _netlestirme
@@ -256,7 +257,7 @@ def _prompt_enhance_dene(request, ham_soru: str, q_norm: str, schema: dict, prin
         from app import planner as _planner
 
         service = _service_for(request, None)
-        catalog_text, _idx = cube_router.build_catalog(schema)
+        catalog_text, _idx = katalog_metni.metin_ve_indeks(schema, principal)
         plan = _planner.Planlayici(
             principal=principal,
             butce=_planner.Butce(adim=3, saniye=10.0, sorgu=0),
@@ -345,7 +346,7 @@ def _capraz_alan_pilotu(request, body, q_norm: str, schema: dict, principal,
                 # "yok" olmasının ikinci sebebi buydu (birincisi aracın hiç çağrılmaması).
                 sonuc = plan.calistir("route", body.question, schema) or sonuc
             elif ad == "llm.select_cube" and not sonuc:
-                catalog_text, index = cube_router.build_catalog(schema)
+                catalog_text, index = katalog_metni.metin_ve_indeks(schema, principal)
                 ham = plan.calistir("llm.select_cube", body.question, catalog_text)
                 cq = cube_router.parse_cube_query(ham, index)
                 if cq:
@@ -2867,7 +2868,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             llm_probe = getattr(request.app.state, "llm", None)
             if llm_probe is not None and hasattr(llm_probe, "select_cube"):
                 try:
-                    catalog_text, cube_index = cube_router.build_catalog(schema)
+                    catalog_text, cube_index = katalog_metni.metin_ve_indeks(schema, principal)
                     # SELF-CONSISTENCY (Faz D4). `_select_consistent` ve `consistency_k=3`
                     # ayarı ikisi de YAZILMIŞ ama BAĞLANMAMIŞTI: burada tek bir örnek
                     # alınıyordu, yani ayar bir NİYET BEYANIYDI — `grep consistency_k` bugüne
@@ -3507,7 +3508,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         reason = None
         if llm_probe is not None and hasattr(llm_probe, "refine_cube"):
             try:
-                catalog_text, cube_index = cube_router.build_catalog(schema)
+                catalog_text, cube_index = katalog_metni.metin_ve_indeks(schema, principal)
                 raw = llm_probe.refine_cube(
                     json.dumps(prev_cq, ensure_ascii=False), body.question, catalog_text)
                 decision = _parse_decision(raw)

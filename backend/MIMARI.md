@@ -1738,6 +1738,59 @@ değişirse aynı satır yeniden anlam kazanır.
 yok edicisi değil: şemaya uyan ama yanlış bir cevap da şemaya uyar. Bu yüzden `iddia.py`
 ve hava boşluğu bayrağın yerine geçmez — onlar **başka** bir şeyi korur.
 
+### 🔴 KATALOG SÖZLÜĞÜ — *en çok güvendiğimiz basamak, en kör hâliyle koşuyordu*
+
+`route()` zengin bir Türkçe eşanlam katmanı kullanır (`oee` → *"verim"*, *"randiman"*,
+*"performans"*; `ort_oee`'nin sekiz sinonimi). Katman şemada **beyan edilmiş**.
+
+⊙ Ölçüldü: **LLM'e giden katalogda hiçbiri yoktu.** `verim` 0 · `randiman` 0 ·
+`verimlilik` 0 · `hasılat` 0 · `bordro` 0 — 23 cube'un 23'ünde beyan olmasına rağmen.
+
+| | eşanlam katmanı |
+|---|---|
+| `route()` — *en az güvendiğimiz basamak* | ✅ **tam** |
+| LLM — 🔴 *en çok güvendiğimiz basamak* | 🔴 **HİÇ** |
+
+Canlı sonucu: *"verimlilik"* sorusunda **9/9 Intent çağrısı `{"cube":null}`** — oylama
+uyuşmazlığı değil **aday yokluğu**. Model reddetti çünkü elindeki listede o kelime yoktu.
+
+#### ⚠ `ADR-0008` ile çelişmiyor — tam tersi
+
+Yasak olan **sözlük icat etmek**tir. Burada yeni liste yazılmıyor; şemanın **zaten beyan
+ettiği** liste ikinci tüketicisine gösteriliyor. *Bir bilgiyi beyan edip tüketicilerinden
+birine göstermemek, onu iki kez tanımlamaya davettir — çünkü göremeyen taraf er ya da geç
+kendi listesini yazar.*
+
+#### Maliyet ölçüldü ve bir TAHMİNİ DÜZELTTİ
+
+| kapsam | katalog | oran |
+|---|---|---|
+| bugünkü | 12.115 karakter | 1,00× |
+| + cube | 14.709 | 1,21× |
+| **+ ölçü** *(seçilen)* | **23.417** | **1,93×** |
+| + boyut | 29.889 | 2,47× |
+
+Canlı denetim *"+%54"* demişti; yerinde ölçüm **2,47×**. *Bir maliyet tahmini, ölçülene
+kadar bir maliyet değildir.*
+
+🔴 **Kapsam kararı:** boyut sinonimleri **dışarıda** — maliyetin %30'unu yiyor ama ölçülen
+kusuru (**cube seçimi**) çözmüyor. Karar **kaynak düzeyinde** kilitli, ve kapı iki kez
+yanlış yere baktığı için o da yazılı: *bir kapının yanlış yerde araması, bulduğu şeyi
+kanıt olmaktan çıkarır.*
+
+#### İki yapısal kazanç daha
+
+* `build_catalog` **`app/katalog_metni.py`'ye taşındı** → `cube_router` tavanı
+  **1760 → 1739** indi (meta-kapı boşluğu kendisi yakaladı).
+* 🔴 **Bir yardımcının imzası, çağıranların EN DAR kapsamına göre çizilir.** İlk sürüm
+  zorunlu `settings` aldı; dört çağrı yerinden ikisinde o isim kapsamda yoktu ve
+  `NameError` çağıranın `except Exception`'ında **yutuldu** — enhancer sessizce
+  *"çözemedim"* demeye başladı. Üç kapı yakaladı; imza artık kapıyla kilitli.
+
+**GERİ AL.** `katalog_sozlugu: off` → katalog metni bayt bayt bugünkü.
+🔴 **Ölçüm borcu:** kazanç **gerçek sağlayıcı** ister (`eval --slice llm`, bugün 4 vaka) —
+`G3.2` ile **aynı** alet sorunu. **Önbellek borcu:** sabit önek → `B6`'nın ilk müşterisi.
+
 ### 🔴 ÖLÇÜM ARACI SESSİZCE DARALDI — ve taban onun üstüne yazıldı
 
 `G3.4`'te `_cevapsiz_kesme` eklenirken tanım `run_company`'nin **gövdesinin ortasına**

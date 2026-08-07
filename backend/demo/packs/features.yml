@@ -129,6 +129,12 @@ features:
                           # narration_guard ZORUNLU çıkış kapısı (fail-closed: eşleşmeyen
                           # sayı taşıyan cümle YAYIMLANMAZ). `off` — sıcak yola LLM çağrısı
                           # ekliyor; açılması bilinçli bir karar olmalı (KURAL B, testli).
+  katalog_sozlugu: beta  # 🔴 LLM artık Türkçe eşanlamları GÖRÜYOR.
+  # ⊙ Ölçüldü: 23 cube'un 23'ünde `synonyms`+`measure_synonyms` beyan edilmiş, katalogda
+  # `verim`/`randiman`/`verimlilik`/`hasılat`/`bordro` **0 kez** geçiyordu. Canlı sonuç:
+  # *"verimlilik"* sorusunda **9/9 Intent çağrısı `{"cube":null}`** — aday YOKLUĞU.
+  # ⚠ `ADR-0008` ihlali DEĞİL: yeni liste yazılmıyor, var olan beyan ikinci tüketiciye
+  # gösteriliyor. Kapalıyken katalog metni **bayt bayt bugünkü**.
   varlik_perdesi: beta  # 🔴 G0b.6: hava boşluğu — gerçek değer sağlayıcıya HAM gitmez.
   # ⚠ Bilgi KAYBI değil kazancı: ham değer *"bu ne?"* sorusunu açık bırakır, yer tutucu
   # hangi boyuta ait olduğunu SÖYLER. Kapalıyken soru ham gider (bugünkü davranış).

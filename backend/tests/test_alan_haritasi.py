@@ -141,6 +141,9 @@ def test_SINIFSIZ_MODUL_BIRAKILAMAZ():
         # (`sensitivity` süzgeciyle) ama onları **garson için** perdeler. Sayı hesaplamaz,
         # SQL yazmaz, katalog dışına çıkmaz — köprünün tanımı budur.
         "varlik.py": "🌉 veri değeri okur, garson için PERDELER",
+        # 🔴 LLM'in gördüğü METİN — `intent_semasi`'nin kardeşi (o şemayı, bu düz metni
+        # üretir). Yönlendirme kararı vermez, katalog dışına çıkmaz: sunum katmanı.
+        "katalog_metni.py": "🌉 katalogdan LLM'in okuduğu metni üretir",
         "vqr.py": "🌉 soru→sorgu belleği",
         # 🎨 SUNUM
         "viz.py": "🎨", "report.py": "🎨", "prescribe.py": "🎨", "fmt.py": "🎨",

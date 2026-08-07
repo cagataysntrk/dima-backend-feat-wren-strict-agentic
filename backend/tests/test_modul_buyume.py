@@ -71,11 +71,24 @@ TABAN_ASK_IC_FN = 19          # iç fonksiyon (closure) sayısı
 #: ölçülen değerin **İÇİNDE** zaten var — onları bir kez daha eklemek **çifte sayımdır**.
 #: Doğru taban: `ölçülen (1703) − Σmuafiyet (18) = 1685`, ve tavan yine tam 1703.
 #: *Bir formülü düzeltmeden bir sayıyı düzeltmek, sayıyı ikinci kez yanlış yapar.*
-TABAN_CUBE_ROUTER_KOD = 1685  # 1703 ölçüldü − 18 muafiyet = taban; tavan tam 1703
+TABAN_CUBE_ROUTER_KOD = 1664  # 1739 ölçüldü − 75 muafiyet = taban; tavan tam 1739
+#: 🔴 **1685 → 1664 (2026-08-07): TAVAN YİNE İNDİ — ve yine bir KURAL GEREĞİ.**
+#: `build_catalog` `app/katalog_metni.py`'ye taşındı (LLM'in gördüğü METNİN sahibi
+#: `cube_router` değil); dosya 1760'tan 1739'a düştü ve tavanda **21 satır boşluk**
+#: kaldı. Meta-kapı (`test_TAVAN_KAPISI_GERCEKTEN_KAPI_MI`) bunu **kendisi yakaladı**:
+#: boşluklu bir tavan, büyümeyi durdurmayan bir tavandır.
+#: *Bir tavanı indirmemek, onu yükseltmenin sessiz biçimidir.*
 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("katalog-sozlugu/tek-cozum", 2,
+     "🔴 `catalog_text` **dört** çağrı yerinde üretiliyor (planlayıcı · `llm.select_cube` · "
+     "Intent-JSON · `refine_cube`) ve dördü de `katalog_metni.metin_ve_indeks`'ten geçiyor. "
+     "Δ yalnız iki satır sarmadan geliyor (satır uzunluğu sınırı). "
+     "⚠ **TAŞINAMAZ:** bayrak çözümü **zaten taşındı** — bu dosyada kalan yalnız çağrı. "
+     "*Bir bayrağı N yerde okumak, N−1 yerde okumaya giden yoldur*; dördünü tek yardımcıya "
+     "bağlamak o yolu kapatır."),
     ("G0b.6/varlik-perdesi", 4,
      "🔴 **HAVA BOŞLUĞU: gerçek değer sağlayıcıya HAM gitmez.** Mekanizmanın tamamı "
      "`app/varlik.py`'de (perdele + fail-closed geri koyma); burada kalan **yalnız üç "
