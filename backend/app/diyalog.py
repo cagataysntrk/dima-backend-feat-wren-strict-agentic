@@ -84,7 +84,8 @@ def _donem_var(cq: dict) -> bool:
 
 
 def durum(cube_query: dict | None, *, sorulan: str | None = None,
-          onceki: dict | None = None, donem_gerekli: bool = False) -> dict | None:
+          onceki: dict | None = None, donem_gerekli: bool = False,
+          kismi_cq: dict | None = None) -> dict | None:
     """Bir turun diyalog durumu — cevapta döner, istemci **yankılar**.
 
     `sorulan` — bu turda kullanıcıya sorulan yuva (netleştirme dalı bunu bildirir).
@@ -104,6 +105,15 @@ def durum(cube_query: dict | None, *, sorulan: str | None = None,
         out["sorulan"] = sorulan
     if dolu:
         out["dolu"] = dolu
+    # 🔴 KISMİ SORGU — `devam`ın hammaddesi. Netleştirme dalları `cube_query=None`
+    # döndürüyor; o turda ANLAŞILMIŞ olan parça (cube · ölçü) burada taşınmazsa bir
+    # sonraki tur onu **yeniden bulmak** zorunda kalır ve `KURAL_TAZE` ateşlenir.
+    # *Sorduğunu hatırlamak, sorarken bildiğini de hatırlamaktır.*
+    kismi = kismi_cq if isinstance(kismi_cq, dict) else (
+        cube_query if isinstance(cube_query, dict) else None)
+    if kismi and (kismi.get("cube") or kismi.get("measures")):
+        out["kismi_cq"] = {k: v for k, v in kismi.items()
+                           if k in ("cube", "measures", "dimensions")}
     return out
 
 
@@ -118,6 +128,20 @@ def bekleyen_yanit_mi(onceki: dict | None) -> str | None:
         return None
     sorulan = onceki.get("sorulan")
     return str(sorulan) if sorulan and sorulan in TUM_SLOTLAR else None
+
+
+def devam_edilebilir(onceki: dict | None) -> dict | None:
+    """Bekleyen bir soru VE onun kısmi sorgusu var mı? → kısmi `CubeQuery`.
+
+    🔴 `context.coz`'un `KURAL_DEVAM` dalının tetikleyicisi. İkisi birden gerekir:
+    bir soru sorulmuş **olmalı** (`sorulan`) ve o soruyu sorarken ne anlaşıldığı
+    **taşınmış olmalı** (`kismi_cq`). Yalnız biri varsa devam edilemez — ve bu
+    dürüstçe `None`'dır, tahmin değil.
+    """
+    if not bekleyen_yanit_mi(onceki):
+        return None
+    kismi = (onceki or {}).get("kismi_cq")
+    return kismi if isinstance(kismi, dict) and kismi else None
 
 
 def onarim_hedefi(onceki: dict | None, yeni_cq: dict | None,

@@ -55,6 +55,10 @@ KURAL_CELISKI = "capa:coklu-celiski"     # birden çok kart seçildi, ÇELİŞİ
 KURAL_YAPISAL = "yapisal:cube_query"     # istemci açık cube_query taşıdı
 KURAL_HAM = "ham:onceki-sql"             # ham-SQL takibi (Discovery zinciri)
 KURAL_TAZE = "taze:capa-yok"             # hiçbir çapa yok — yeni soru
+#: 🔴 `G2` — bir önceki tur bir YUVA SORDU ve bu tur onun CEVABI. Yeni bir soru değil.
+#: Ölçülen kusur: netleştirme dalları `cube_query=None` döndürdüğü için kullanıcının
+#: *"geçen ay"* cevabı `KURAL_TAZE`'ye düşüyor ve tur **sıfırdan** koşuyordu.
+KURAL_DEVAM = "devam:bekleyen-yanit"
 # FAZ E — kullanıcı ÖNCEKİ TURUN METNİNE işaret etti ("az önce dediğin gibi…",
 # "yukarıdaki raporu…"). Yapısal bağlam (cube_query) YOK ama çapa **ham ifadededir**.
 KURAL_ATIF = "atif:onceki-tur"
@@ -163,6 +167,7 @@ def coz(
     capa_etiketi: str | None = None,
     kok_makbuz: str | None = None,
     atif: bool = False,
+    diyalog_durumu: dict | None = None,
 ) -> Baglam:
     """Bağlamı çözer ve **gerekçesini** birlikte döndürür. Saf fonksiyon — I/O yok.
 
@@ -195,6 +200,16 @@ def coz(
         return Baglam(kural=KURAL_CELISKI, adaylar=tuple(capalar), kok_makbuz=kok_makbuz,
                       capa_etiketi=capa_etiketi, ham_ifade=pencere,
                       notlar="seçilen kartlar farklı cube'lara ait — birleştirilemez")
+    # 🔴 `G2` — DEVAM. Yapısal bağlamdan ÖNCE gelmez (istemci `cube_query` yolluyorsa o
+    # daha güçlü bir sinyaldir) ama `KURAL_TAZE`'den **önce** gelir: bekleyen bir soruya
+    # verilen cevap, yeni bir soru DEĞİLDİR.
+    if not cube_query:
+        from app.diyalog import devam_edilebilir
+
+        if (kismi := devam_edilebilir(diyalog_durumu)) is not None:
+            return Baglam(kural=KURAL_DEVAM, cube_query=kismi, kok_makbuz=kok_makbuz,
+                          ham_ifade=pencere, kullanilmis_eksenler=_eksenler(kismi),
+                          notlar="bekleyen yuvaya cevap — özgün niyet KORUNDU")
     if cube_query:
         return Baglam(kural=KURAL_YAPISAL, cube_query=cube_query, kok_makbuz=kok_makbuz,
                       ham_ifade=pencere,

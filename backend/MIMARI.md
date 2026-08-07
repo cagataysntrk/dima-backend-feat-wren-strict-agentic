@@ -1315,6 +1315,25 @@ sıfır say"* diye yazmıştı; ölçüldü, sıfır değil.)
 ⚠ **Soğuk başlangıç:** ilk çağrı **41 sn** ölçüldü, sonrakiler 2–7 sn. Gecikme bütçesi
 (garson §7.2) bu ayrımı **ayrı** ölçmelidir — ortalama ikisini de gizler.
 
+🔴 **VE ÜCRETSİZ KATMAN YÜK ALTINDA ÇÖKÜYOR — ölçüldü (`G2`, 2026-08-07).** Aynı model,
+aynı istek: bir koşumda **1.077.897 ms (≈18 dakika)** sürdü ve `finish_reason=length` ile
+**boş içerik** döndürdü; on dakika sonra aynı çağrı **3,9 sn**'de temiz cevap verdi.
+
+| ölçüm | süre | sonuç |
+|---|---|---|
+| sakin | **0,8–4,5 sn** | `"TAMAM"` · `finish=stop` |
+| yük altında | 🔴 **1.077 sn** | boş · `finish=length` |
+
+**İki sonucu var ve ikisi de yazılı:**
+1. `_chat`'in `timeout=30`'u bu koşulda **kurtarıcıdır**, kusur değil — 18 dakikalık bir
+   isteği beklemek sıcak yolu kilitlerdi.
+2. 🔴 **`:free` katmanı bir ÖLÇÜM ortamı olarak güvenilmez.** Garson kapısı (`--live`)
+   bu yüzden **iki koşum** ister (KURAL G-1) ve ayrışmada karar **vermez** — bu kural
+   burada teorik değil, **fiilen** çalıştı.
+
+⚠ Ve teşhis kapısı (`_icerik_cikar`) burada kendini ödedi: bu vaka eskiden opak bir
+`KeyError: 'choices'` olacaktı. *Bir hata, ne olduğunu söylemiyorsa yutulmuştur.*
+
 ### 🔴 ÜÇÜNCÜ DEĞİŞMEZ — HAVA BOŞLUĞU (`G0b`, 2026-08-07)
 
 §4 bugüne kadar **iki** değişmez tanıyordu: *sayıyı küp koyar* · *LLM'in iddiası şemaya

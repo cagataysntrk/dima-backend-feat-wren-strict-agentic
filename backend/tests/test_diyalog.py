@@ -19,6 +19,7 @@ from app.diyalog import (
     SLOT_OLCU,
     acik_slotlar,
     bekleyen_yanit_mi,
+    devam_edilebilir,
     durum,
     onarim_hedefi,
 )
@@ -154,3 +155,46 @@ def test_PENCERE_GENISLETILMEDI():
     ctx = (pathlib.Path(__file__).resolve().parents[1]
            / "app" / "context.py").read_text(encoding="utf-8")
     assert "(history or [])[-2:]" in ctx, "bağlam penceresi değişmiş — basitlik kilidi kırıldı"
+
+
+# --- G2.7 · DEVAM ------------------------------------------------------------------
+
+
+def test_kismi_sorgu_TASINIR():
+    """Netleştirme `cube_query=None` döndürür ama o turda cube ANLAŞILMIŞ olabilir.
+    Taşınmazsa bir sonraki tur onu yeniden bulmak zorunda kalır."""
+    d = durum(None, sorulan=SLOT_DONEM, kismi_cq={"cube": "satis", "measures": ["ciro"]},
+              donem_gerekli=True)
+    assert d["kismi_cq"] == {"cube": "satis", "measures": ["ciro"]}
+
+
+def test_devam_IKISI_BIRDEN_ister():
+    """🔴 Bir soru sorulmuş OLMALI **ve** o an ne anlaşıldığı taşınmış OLMALI.
+    Yalnız biri varsa devam edilemez — ve bu dürüstçe `None`'dır, tahmin değil."""
+    assert devam_edilebilir({"sorulan": SLOT_DONEM,
+                             "kismi_cq": {"cube": "s"}}) == {"cube": "s"}
+    assert devam_edilebilir({"sorulan": SLOT_DONEM}) is None          # kısmi yok
+    assert devam_edilebilir({"kismi_cq": {"cube": "s"}}) is None      # soru yok
+    assert devam_edilebilir(None) is None
+
+
+def test_KURAL_DEVAM_TAZEnin_ONUNE_gecer():
+    """🔴 `G2`'nin davranış çekirdeği: bekleyen bir soruya verilen cevap **yeni bir soru
+    DEĞİLDİR**. Eskiden `KURAL_TAZE` ateşleniyor ve tur SIFIRDAN koşuyordu."""
+    from app.context import KURAL_DEVAM, KURAL_TAZE, coz
+
+    dd = {"sorulan": SLOT_DONEM, "kismi_cq": {"cube": "satis", "measures": ["ciro"]}}
+    b = coz(history=["fire kg"], diyalog_durumu=dd)
+    assert b.kural == KURAL_DEVAM
+    assert b.cube_query == {"cube": "satis", "measures": ["ciro"]}
+    # Bekleyen soru YOKKEN davranış BİREBİR eskisi
+    assert coz(history=["fire kg"]).kural == KURAL_TAZE
+
+
+def test_YAPISAL_baglam_DEVAMdan_GUCLU():
+    """İstemci `cube_query` yolluyorsa o daha güçlü bir sinyaldir — devam onu ezmez."""
+    from app.context import KURAL_YAPISAL, coz
+
+    dd = {"sorulan": SLOT_DONEM, "kismi_cq": {"cube": "eski"}}
+    b = coz(cube_query={"cube": "yeni"}, diyalog_durumu=dd)
+    assert b.kural == KURAL_YAPISAL and b.cube_query["cube"] == "yeni"

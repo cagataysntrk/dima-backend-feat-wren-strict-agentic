@@ -573,7 +573,19 @@ def _diyalog_durumu(resp: AskResponse, log_body: Any) -> None:
                              for s in resp.suggestions).lower()
             sorulan = SLOT_DONEM if any(k in metin for k in ("ay", "yıl", "dönem")) \
                 else SLOT_OLCU
-        resp.diyalog_durumu = durum(resp.cube_query, sorulan=sorulan, onceki=onceki)
+        # 🔴 KISMİ SORGU: netleştirme dalları `cube_query=None` döndürüyor ama o turda
+        # bir şey ANLAŞILMIŞ olabilir (cube bulundu, ölçü belirsiz). `next_steps`/
+        # `suggestions` chip'leri o kısmı zaten taşıyor — oradan okunur, YENİDEN
+        # hesaplanmaz. *Sorduğunu hatırlamak, sorarken bildiğini de hatırlamaktır.*
+        kismi = resp.cube_query
+        if kismi is None:
+            for ns in (resp.next_steps or []):
+                aday = getattr(ns, "cube_query", None)
+                if isinstance(aday, dict) and (aday.get("cube") or aday.get("measures")):
+                    kismi = aday
+                    break
+        resp.diyalog_durumu = durum(resp.cube_query, sorulan=sorulan, onceki=onceki,
+                                    kismi_cq=kismi)
     except Exception:                                      # noqa: BLE001 — best-effort
         _log.warning("diyalog durumu kurulamadı (cevap etkilenmez)", exc_info=True)
 

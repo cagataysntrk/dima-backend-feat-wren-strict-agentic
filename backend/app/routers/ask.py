@@ -1571,6 +1571,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         capalar=_capalar,
         capa_etiketi=body.reply_to_label,
         atif=cube_router.atif_var(body.question),
+        diyalog_durumu=getattr(body, "diyalog_durumu", None),
     )
 
     # ATIF ÇÖZÜMÜ (FAZ E) — bağlamın ham ifadeden GERİ KAZANILMASI.
