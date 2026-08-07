@@ -1353,3 +1353,63 @@ katkı payı **değildir** — kırılım karşılaştırmasıdır (vardiya · d
 boyut hangisi"* **deterministik olarak** yanıtlanabilir.
 
 **Sonraki tur bunu senaryo olarak koşacak** ve ölçecek.
+
+---
+
+## 22 · TUR 2 — ortam bulguları ve ilk iki senaryo
+
+### 22.1 · ⚠ İKİ ORTAM ENGELİ — bulgu sanılmasın diye kayıtta
+
+| | belirti | gerçek |
+|---|---|---|
+| `{"detail":"Geçersiz veya süresi dolmuş token"}` · **8 ms** | ürün kusuru gibi | 🔴 **token 15 dk'da doldu** — yeniden login |
+| `openrouter … 402 Client Error: Payment Required` | LLM sessiz | 🔴 **kredi bitti** → `.env`'de `DIMA_LLM_PROVIDER=gemini` |
+
+⚠ Ölü bir sağlayıcıyla ölçülen tur, ürünün davranışını değil **faturayı** ölçer.
+`gemini-flash-lite-latest` ile devam edildi (**1.028–3.102 ms** — OpenRouter'ın
+2,9/22,6/69,4 sn salınımına karşı **kararlı**; `H` kusuru bu sağlayıcıda görünmüyor).
+
+### 22.2 · 🔴 KUSUR M — fiil çekimi turu öldürüyor (`I`/`L`/`§21` ile AYNI SINIF)
+
+```
+"geçen ay kaç parti üretildi"
+→ src=None · cq={} · 4 330 ms
+  not: "«uretildi» kısmını anlayamadım, bu yüzden rapor düşülmedi."
+  iz : "Intent-path: kısmi anlama → rapor düşülmedi, netleştirme (LLM'siz)"
+```
+
+🔴 `uretildi` — `üretim`in **çekimli fiil hâli**. Katalogda `uretim`/`uretilen` var,
+`uretildi` yok → kapsam kapısı turu düşürüyor.
+
+⊙ Bu **dördüncü** kez: `ocağa` (§Ö10) · `3'ünü` (§21) · `çeyreklere` · şimdi `üretildi`.
+Dördü de aynı sınıf: **çekim eki, kapsam kapısını tetikliyor.**
+
+*Bir dilin eklerini üretebilen sistem (`app/ek.py`), onları sökebilmelidir de.*
+
+### 22.3 · ✅ S2 — doğru davranış
+
+```
+"en çok fire veren makine"
+→ cq={oee · toplam_fire_kg · dimensions:[makine]} · not: "hangi dönem için?"
+```
+
+✅ Ölçü **ve** kırılım doğru çözüldü; dönem yokken **sormak** doğru (`ADR-0007-K3`).
+⚠ *"en çok"* niyeti `cq`'ya `order` olarak **girmedi** — `§20.3`'ün (`J`) kardeşi:
+sıralama niyeti okunuyor, sorguya yazılmıyor.
+
+### 22.4 · 🔴 BİRLEŞİK TEŞHİS — beş kusur, TEK kök
+
+`I` (`3 tanesi`) · `L` (`5 milyon üzeri`) · `§21` (`3'ünü`) · `M` (`üretildi`) ·
+kısmen `J` (`order` yazılmıyor):
+
+> **Ayrıştırıcı ✅ · tüketici ✅ · kapsam kapısı 🔴.**
+> `_top_n`, `_measure_threshold`, ölçü eşleştirmesi — hepsi doğru çalışıyor. Tur,
+> ayrıştırıcının **zaten tükettiği** kelime *"bilinmeyen"* sayıldığı için ölüyor.
+
+🔴 **Emsal kodun içinde**: `cube_router:3636` eşik için bu bağışıklığı **zaten** veriyor
+(`known |= _gecenler(q, _TH_WORDS)`). Kural genelleştirilmeli:
+
+> **Bir ayrıştırıcı bir kelimeyi tükettiyse, o kelime kapsam kapısında BİLİNMEYEN
+> sayılamaz.**
+
+Bu tek kural beş kusuru birden kapatır ve **yeni sözlük gerektirmez**.
