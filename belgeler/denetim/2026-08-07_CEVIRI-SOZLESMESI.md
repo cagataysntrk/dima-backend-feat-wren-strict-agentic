@@ -1051,6 +1051,112 @@ sessizce *"cevap yok"* gibi okunur.
 
 ---
 
+## 18 · THREAD 10–11 — İKİ KANIT, ve oylama kusurunun CANLI GÖRÜNTÜSÜ
+
+### 18.1 · 🔴🔴 OY PAYDASI KUSURU CANLI İZDE GÖRÜNDÜ
+
+```
+soru : "işler nasıl gidiyor bu ay"
+iz   : Intent-path: self-consistency uyuşmazlığı (%50 uyum / 3 örnek, eksen=measures)
+       → netleştirme
+note : "Hangi ölçüyü istiyorsun?"
+süre : 41 565 ms
+```
+
+🔴 **`%50 uyum / 3 örnek` matematiksel olarak İMKÂNSIZDIR** — payda 3 olsaydı olası
+değerler `%33` · `%67` · `%100`'dür. `%50` yalnız **payda 2** iken çıkar.
+
+> Yani üç örnekten **biri `{cube:null}` döndü ve paydadan DÜŞTÜ**. §2.1'de kaynak
+> okunarak bulunan kusur, burada **üretim izinde** görünüyor.
+
+⊙ Bu, oylama kusurunun **teorik değil ölçülmüş** olduğunun kanıtıdır — ve bu vakada
+lehimize çalıştı (netleştirmeye düştü). Ters yönde çalıştığında (1 cevap + 2 çekimser →
+**%100 uyum**) sistem en şüpheli anında **en emin** görünecek.
+
+⚠ Ve maliyet: `consistency_k=3` → **üç** LLM çağrısı → **41,5 sn** — sonuç yalnız
+*"Hangi ölçüyü istiyorsun?"*.
+
+### 18.2 · 🔴 `iyi mi kötü mü` — yargı sınırı yine konuşmadı
+
+```
+iz   : Intent-path: dönem belirsiz → netleştirme (LLM'siz)
+note : "ort oee çıkarabilirim — hangi dönem için?"
+```
+
+Kullanıcı **yargı** istedi (*iyi mi kötü mü*); sistemde eşik/hedef yok. Yine netleştirme
+fırladı ve **ölçü + dönem** sordu. `KUSUR D`'nin (§17.4) ikinci örneği: **sınır beyanı
+merdivenin çok altında.**
+
+### 18.3 · ✅✅ `peki` TEŞHİSİ KONTROLLÜ KARŞILAŞTIRMAYLA KANITLANDI
+
+Thread 11, aynı oturumda, aynı bağlaçla iki soru:
+
+| soru | katalog terimi | `source` | sonuç |
+|---|---|---|---|
+| `peki bu neden düşük` *(T7)* | **yok** | 🔴 `meta` | **"Görüşürüz!"** |
+| `peki fire ne durumda` *(T11)* | **`fire`** ✅ | 🟢 `cube` | `refine → deterministik` ✅ |
+
+> 🔴 **Teşhis kesinleşti:** `peki` tek başına kusur değil. Kusur, **veri sinyalinin
+> yalnız kelimelerden** aranmasında: cümlede katalog terimi yoksa sosyal sınıf kazanıyor —
+> **istekte önceki turun `cube_query`'si dursa bile.**
+
+*Bir takip sorusu, tanımı gereği kendi terimlerini taşımaz; onları bir önceki tur taşır.*
+
+### 18.4 · ✅ Sosyal sınıf DOĞRU çalıştığında
+
+```
+soru : "teşekkürler"   (thread içinde, cube_query elde)
+iz   : sosyal sınıf (tesekkur) → deterministik yanıt (LLM'siz, sıfır maliyet)
+note : "Rica ederim. Başka neye bakmak istersin?"  ·  418 ms · 3 öneri
+```
+
+✅ `D1` amacına uygun çalışıyor: 0 LLM, 0 SQL, 418 ms, üstüne devam önerileri.
+🔴 Sorun sınıfın **varlığı** değil, **sınırı**.
+
+### 18.5 · ✅ Belirsizlik beyanı takip turunda da korunuyor
+
+`peki fire ne durumda` → *"«fire» birden fazla yerde tanımlı — bu cevap **OEE**
+tanımıyla hesaplandı. Diğerleri: fire (parti)."* — thread içinde de sessiz seçim **yok**.
+
+---
+
+## 19 · TOPLAM BİLANÇO — 11 thread · 24 tur · canlı API
+
+### 19.1 · Bulunan kusurlar, ağırlık sırasına göre
+
+| # | kusur | kanıt | sınıf |
+|---|---|---|---|
+| **A** | 🔴🔴 Kök-neden sorusu **VEDA** sanıldı | `peki bu neden düşük` → *"Görüşürüz!"* · 371 ms · 0 LLM | **sessiz-yanlış** |
+| **B** | 🔴🔴 Anlatıcı LLM her cevaba biniyor | sürenin **%54–%93'ü**; `çeyreklere böl` **69 399 ms** | **performans** |
+| **C** | 🔴 Yetenek sınırı atlanıyor | `gelecek ay ciro tahmini` → *"hangi dönem için?"* · `iyi mi kötü mü` → *"ort oee"* | **sessiz-yanlış adayı** |
+| **D** | 🔴 VQR **eksik** cevabı önbellekliyor | `source=vqr` · `eksik_niyet=['kiyas','trend']` | **kalıcılaşan eksik** |
+| **E** | 🔴 Oy paydası çekimserleri düşürüyor | üretim izi: *"%50 uyum / **3 örnek**"* | **kalibrasyon** |
+| **F** | 🔴 Netleştirme **alakasız ölçü** öneriyor | `personel verimliliklerini kıyasla` → *"toplam agirlik kg"* | **yanlış yönlendirme** |
+| **G** | ⚠ Bozuk JSON yanıtı | `bu neden düşük` → kontrol karakteri | **protokol** |
+| **H** | ⚠ Sağlayıcı gecikmesi salınıyor | `deepseek-v4-flash` 2,9 → 22,6 → **69,4 sn** | **altyapı** |
+
+### 19.2 · ✅ Doğrulanan iyi davranışlar — regresyon kapısı hak ediyor
+
+| davranış | kanıt |
+|---|---|
+| Belirsizlik beyanı *(taze **ve** takip)* | *"«fire» birden fazla yerde tanımlı — bu cevap OEE tanımıyla"* |
+| Boş sonuç dürüstlüğü | *"Rapor doğru kuruldu — elimdeki veri 01.01.2024–30.06.2026"* |
+| Çapraz-cube harman | `bir de ciro ekle` → iki ölçü, **0 LLM** |
+| Kök-neden analizi | `neden bu kadar fark var` → katkı segmentleri, **0 LLM** |
+| Sosyal sınıf *(yerinde)* | `teşekkürler` → **418 ms**, 3 öneri |
+| Kıyas eksiğini **beyan etme** | `ocak ve haziran…` → `eksik_niyet=['kiyas']` + açıklama |
+| Takip düzenlemesi | `en düşük hangisi` · `aylara göre` · `en yüksek 5` → hepsi **deterministik** |
+
+### 19.3 · 🔴 EN ÖNEMLİ TEK CÜMLE
+
+> **Sistemin çevirisi bozuk değil — sistemin KONUŞMASI bozuk.**
+> Intent 24 turun 20'sinde deterministik çözüldü. Kaybedilen şey ya **hız** (anlatıcı),
+> ya **sınırın söylenmesi** (yetenek kapısı geç), ya **bağlamın kullanılması** (`peki`),
+> ya **kalibrasyon** (oy paydası) — dördü de çeviriden **sonraki** katmanlar.
+
+
+---
+
 *Ölçüm kaynakları: `app/cube_router.py` (anahtar taraması · `parse_cube_query` ·
 `_measure_threshold` · `_top_n` · marjinler `:908`·`:932`·`:937`·`:947`) ·
 `app/intent_semasi.py` (şema alanları) · `app/llm.py` (`_cube_select_system` ↔
