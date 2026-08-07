@@ -20,13 +20,13 @@
   "olculemedi": 0
  },
  "5·belirsizlik: tahmin yok, soru var": {
-  "gecti": 0,
-  "kaldi": 1,
+  "gecti": 1,
+  "kaldi": 0,
   "olculemedi": 0
  },
  "6·makbuz: her cevap gerekçeli": {
-  "gecti": 0,
-  "kaldi": 3,
+  "gecti": 3,
+  "kaldi": 0,
   "olculemedi": 0
  },
  "7·geri dönüş: 0 LLM ile replay": {
@@ -35,14 +35,14 @@
   "olculemedi": 0
  },
  "8·temellendirme: ne anladığını SÖYLER": {
-  "gecti": 0,
-  "kaldi": 0,
-  "olculemedi": 2
+  "gecti": 1,
+  "kaldi": 1,
+  "olculemedi": 0
  },
  "9·onarım: tek slot düzelir, baştan başlamaz": {
-  "gecti": 0,
+  "gecti": 1,
   "kaldi": 0,
-  "olculemedi": 1
+  "olculemedi": 0
  },
  "10·menü: yapamadığında NE YAPABİLDİĞİNİ söyler": {
   "gecti": 0,

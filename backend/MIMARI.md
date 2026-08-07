@@ -1361,6 +1361,58 @@ Kapılar: `tests/test_hava_boslugu.py` (11) · `tests/test_alan_haritasi.py` (36
 `test_t2_anlatici.py`'nin 3. değişmezi **güçlendirildi** (artık *"gerçek sayı sızmadı"*
 diye ölçüyor, *"dizeler eşit"* diye değil).
 
+### 🔴 TEMELLENDİRME (`G1`) — ve ölçüm aletinin kendi kusuru
+
+**Ne indi.** `app/temellendirme.py::kur()` — `CubeQuery` → *"anladığım şu: Satış Cirosu ·
+Mart 2026 · Şube"*. **0 LLM · 0 token**; kaynağı anlatı değil **muhasebe**.
+
+Gerekçe ölçülmüş: üretimdeki başarısızlığın **%69'u** (`WRONG_FILTER` %54,6 +
+`WRONG_SCOPE` %14,4) *"SQL çalıştı, makul bir sayı döndü, ama **başka bir sorunun**
+cevabıydı"* sınıfı. Garson **siparişi tekrarlar**.
+
+⚠ **Kural ZATEN yazılıydı, uygulaması dardı.** `soz.py:19`: *"ÖNCE NE ANLADIĞINI SÖYLE,
+SONRA SOR"* ve `KATALOG["netlestirme.donem"]`'in **`{ne}` yuvası**. Ama yalnız
+**netleştirmede**. `uyum.kismi_cevap_notu` da aynı yarımlıkta: sistem **yanıldığını**
+söylüyordu, **anladığını** söylemiyordu. `G1` o kanalın eksik yarısıdır — ikinci bir
+beyan üreteci yazılmadı.
+
+🔴 **0 token olması bir tasarım özelliğidir:** LLM tamamen düşse bile (kota · 429) bu
+satır **yine basılır**. *Garson hastalanırsa mutfak yine de siparişi tekrar eder.*
+
+⚠ **Ve sınır dürüstçe yazılı:** temellendirme hatayı **görünür** kılar, **engellemez**.
+Etiketi okumayan kullanıcı yanlış sayıyı yine taşır — bir **garanti değil**, bir
+**görünürlük** kazanımı. *(Danışman belgesi bunu garanti sanıyordu.)*
+
+#### 🔴 MARJİN «YAZILACAK» SANILDI — ÜÇ YERDE ZATEN VARDI
+
+Yol haritası `G1.4b`'de *"marjin sinyali yok, kurulacak"* diyordu. **Yanlıştı:**
+
+| nerede | ne |
+|---|---|
+| `cube_router.py:947` | cube-düzeyi **4-harf marjini**; kırılamazsa `None` → `cube_tie_candidates` chip → **SORAR** |
+| `cube_router.py:908-937` | ölçü-sinonim uzunluğu · alt-dize spesifikliği · boyut-kanıtı |
+| `value_index.py:28` | `AUTO_MARGIN = 0.08` — değer eşleşmesinde aynı desen |
+
+Dördüncü bir marjin sahibi yazmak **KAT-1 ihlali** olurdu. Madde **düşürüldü**.
+🔴 Sebep aynı: *«YOK» iddiası Türkçe arandı, kod İngilizce yazmış* (`AUTO_MARGIN` ≠
+`marjin`) — bu turda **üçüncü** tekrarı.
+
+#### 🔴 ÖLÇÜM ALETİ SIFIR CEVAP ALIP «YEŞİL» VERDİ — ve kapı kuruldu
+
+`lab/garson.py`'nin ilk koşumu çıplak `TestClient(app)` kullandı. `/ask` **auth
+zorunlu** olduğu için **on turun onu da 401** döndü → `source=None`. Alet yine de bir
+tablo bastı ve **`3·süreklilik ✅2`** yazdı — çünkü cevap yokken *"ilişkilendiremedim"*
+de yoktu.
+
+> ⊙ **Sistem hiç çalışmazken bir satır YEŞİL verdi.**
+
+Bu, deponun defalarca ısırıldığı desenin aynısı (`gitas` düştü → doğruluk **yükseldi**;
+`--user` unutuldu → toplam **yeşil** kaldı). Düzeltme iki katmanlı:
+1. İstemci kurulumu `deneyim.py` ile birebir (`create_app` + `make_tenant_user` + login).
+2. 🔴 **SIFIR-CEVAP KAPISI:** hiçbir tur `source` üretmediyse rapor **basılmaz**, taban
+   **dondurulmaz**, kapı **geçmez**. *Ölçmediğini ölçmüş gibi göstermek, hiç ölçmemekten
+   kötüdür.*
+
 ### 🔴 ALAN HARİTASI — garson ↔ mutfak, ve kapılar
 
 `tests/test_alan_haritasi.py` sınırı **AST ile** kilitler: 🗣 garson modülü motora

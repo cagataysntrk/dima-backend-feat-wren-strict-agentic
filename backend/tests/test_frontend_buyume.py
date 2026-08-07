@@ -64,14 +64,27 @@ TAVANLAR = {
     # — bu ise bir REDDİN yanında durur ve sorunun KENDİSİNİ düzeltir ("ne kadar sattık"
     # → "ciro"). Var olan bir kutuya konsa kullanıcı bir cevabın devamı sanardı; oysa
     # ortada cevap yok, red var. *Bir chip'in bulunduğu kutu, ne vaat ettiğini söyler.*
-    "components/ReportCard.tsx": 1033,
+    # ⊙ 1033 → 1032 (2026-08-07, `G1`): temellendirme rozet dizisi bu dosyaya yazıldı,
+    # kapı yakaladı, **bileşene çıkarıldı** (`Temellendirme.tsx`) ve dosya bir satır
+    # KÜÇÜLDÜ. Tavan ölçülen değere ÇEKİLDİ — `test_KAPI_GERCEKTEN_KIRMIZI_VERIYOR`
+    # boşluk bırakmayı yasaklıyor: *kırmızı veremeyen bir kapı, olmayan bir kapıdır.*
+    "components/ReportCard.tsx": 1032,
     "lib/api-client.ts": 778,
     "lib/chart.ts": 688,
     # ⊙ 579 → 581: +1 `eksik_niyet?: string[]` (KÖK-3) · +1 `Suggestion.kind?` (KÖK-9).
     # ⚠ İkisi de bir ALAN BEYANIDIR, mantık değil — tip dosyasının büyümesi burada
     # backend sözleşmesinin büyümesidir ve onu cezalandırmak, sözleşmeyi belgesiz
     # bırakmayı ödüllendirirdi.
-    "lib/types.ts": 581,
+    #
+    # ⊙ 581 → 585 (2026-08-07, garson ara fazı) — **aynı gerekçe, iki yeni sözleşme alanı:**
+    #   +1 `hava_boslugu?: {yer_tutucu, bozulan}` (`G0b`) — gerçek değer/sayı yer tutucuya
+    #      çevrildi; kullanıcı verisinin ÇIKMADIĞINI görebilmeli.
+    #   +4 `temellendirme?: {cube, olcu, donem, granulerlik, kirilim[], filtreler[]}` (`G1`)
+    #      — *"anladığım şu"*; 0 LLM, 0 token.
+    #   🔴 İkisi de `test_cevap_alani_yetim_degil.py` tarafından ZORUNLU kılınıyor: backend
+    #   alanı tüketicisiz kalamaz. Yani bu artış bir tercih değil, **başka bir kapının
+    #   emri**. Tipi yazmamak, alanı yetim bırakmak olurdu.
+    "lib/types.ts": 585,
     "components/ReviewPanel.tsx": 555,
     "app/page.tsx": 534,
     "components/ResultView.tsx": 476,

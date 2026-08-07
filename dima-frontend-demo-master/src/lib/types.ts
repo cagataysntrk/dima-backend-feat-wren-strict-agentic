@@ -230,6 +230,13 @@ export interface AskResponse {
   // yalnız verdiğimiz yuvayı taşıyabilir. `bozulan` > 0 ise model yuvayı bozmuş ya da
   // UYDURMUŞ demektir. ⚠ Yalnız SAYI taşır — hangi değerin perdelendiği asla gelmez.
   hava_boslugu?: { yer_tutucu: number; bozulan: number } | null;
+  // 🔴 G1 — TEMELLENDİRME: *"anladığım şu"*. Kaynağı YALNIZ `cube_query` — anlatı değil
+  // MUHASEBE; 0 LLM · 0 token, yani LLM düşse bile gelir. ⚠ `explain` ile karıştırma:
+  // o **yol** (hangi basamak), bu **anlam** (ne anlaşıldı).
+  temellendirme?: {
+    cube?: string; olcu?: string; donem?: string; granulerlik?: string;
+    kirilim?: string[]; filtreler?: string[];
+  } | null;
   // Madde 12 (1 Ağustos 2026) — düz-dil hesaplama açıklaması (KPI-olmayan cube raporları için;
   // KpiCard'ın `card.explain`iyle AYNI amaç). `explain` (yukarıda) ile KARIŞTIRILMAMALI — o
   // provenance/güven taşır, bu alan ÖLÇÜNÜN NASIL HESAPLANDIĞINI anlatır. cube_query yoksa null.

@@ -27,6 +27,7 @@ import { OutputInsight } from "@/components/OutputInsight";
 import { AdhocBadge, SourceBadge } from "@/components/ChatPanel";
 import { useAdSor } from "@/components/AdSor";
 import { Makbuz, MakbuzDuz } from "@/components/Makbuz";
+import { Temellendirme } from "@/components/Temellendirme";
 import { SertifikaBandi } from "@/components/SertifikaBandi";
 
 // §B Adım 2 (1 Ağustos 2026) — tek-rapor kartı: bugünkü ReportPanel'in TÜM gövdesi + tüm
@@ -535,10 +536,7 @@ export function ReportCard({
               </div>
             )}
             <SourceBadge source={item.source} sertifika={item.explain?.sertifika} />
-            {/* FAZ 2.6 — MALİ YIL. Yalnız takvim yılından FARKLIYSA görünür.
-                🔴 "Bu yıl" dediğinde Nisan–Mart penceresi gelen bir kullanıcı, hangi
-                pencereyi gördüğünü BİLMELİ: doğru sayı, yanlış soruya cevap olabilir. */}
-            {/* FAZ 2.5 — HEDEF. Yalnız BEYAN varsa görünür; hedef UYDURULMAZ. */}
+            <Temellendirme item={item} />
             {item.hedef && (
               <span
                 title={`Hedef ${item.hedef.hedef} · gerçekleşen ${item.hedef.gerceklesen}` +

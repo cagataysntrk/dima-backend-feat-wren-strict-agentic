@@ -339,6 +339,10 @@ def _maybe_interpret(request: Request, resp: AskResponse) -> None:
                              **(_spec.get("dimension_labels") or {})}
             except Exception:                              # noqa: BLE001
                 _log.warning("etiket sözlüğü kurulamadı (best-effort)", exc_info=True)
+        # 🔴 G1 — TEMELLENDİRME aynı etiket sözlüğünü kullanır. İkinci bir `build_catalog`
+        # çağrısı YAPILMAZ: bu bloğun kendi yorumu *"ETİKETLER TEK KAYNAKTAN"* diyor ve
+        # ikinci bir kaynak, zamanla ayrışan iki ad kümesi doğururdu.
+        resp._etiketler = etiketler          # type: ignore[attr-defined]
         if resp.kpi and resp.kpi.get("lower_is_better"):
             lower_is_better.add(resp.kpi.get("kpi"))  # KPI ölçüsü (CCC gibi) düşük=iyi
         # EŞİK KIYASI (Faz G3). Kaynak KULLANICININ KENDİ kurduğu alarmlardır — cube
@@ -519,6 +523,29 @@ def _boyut_degerleri(resp) -> list[str]:
         _log.warning("boyut değerleri okunamadı; perdeleme yalnız SAYI yapacak",
                      exc_info=True)
         return []
+
+
+def _temellendir(resp: AskResponse) -> None:
+    """🔴 `G1` — cevap **ne anladığını söyler**. 0 LLM · 0 token.
+
+    ⚠ **Beyan kanalı PAYLAŞILIR:** `uyum.kismi_cevap_notu` bir ihlal bulduğunda zaten
+    konuşuyor (`beyanli_kismi`). Bu, o kanalın **eksik yarısıdır** — sistem yanıldığını
+    söylüyordu, anladığını söylemiyordu. İkinci bir beyan üreteci YAZILMAZ.
+
+    🔴 **0 token olması bir tasarım özelliğidir:** LLM tamamen düşse bile (kota · ağ ·
+    429) bu satır **yine basılır** — bozulma merdiveninin 3. basamağı.
+    """
+    if resp.source is None or not resp.cube_query:
+        return          # ret/netleştirme cevabında temellendirilecek bir sorgu YOK
+    try:
+        from app.temellendirme import kur
+
+        resp.temellendirme = kur(
+            resp.cube_query,
+            katalog=getattr(resp, "_etiketler", None),
+            cube_etiketi=(resp.cube_query or {}).get("cube"))
+    except Exception:                                      # noqa: BLE001 — best-effort
+        _log.warning("temellendirme kurulamadı (cevap etkilenmez)", exc_info=True)
 
 
 def _adhoc_kayit(request: Request, cq: dict | None) -> dict | None:
@@ -873,6 +900,7 @@ def seal(resp: AskResponse, *, request: Request, principal, t0: float,
 
     # Sıra ÖNEMLİ: öneriler yorumun signal'larına bağımlı; explain ikisini de okur.
     _maybe_interpret(request, resp)
+    _temellendir(resp)
     _attach_next_steps(request, resp)
     _attach_recommendations(request, resp)
     resp.explain = _build_explain(resp)

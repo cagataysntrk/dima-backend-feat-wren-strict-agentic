@@ -362,6 +362,10 @@ class AskResponse(BaseModel):
     #: satılamayan güvenliktir. Yalnız sayı taşır; **hangi değerin** perdelendiği
     #: ASLA yazılmaz (bir sızıntıyı raporlarken sızdırmak, `llm_guard`'ın kendi dersi).
     hava_boslugu: dict | None = None
+    #: 🔴 G1 — TEMELLENDİRME: *"anladığım şu"*. Kaynağı YALNIZ `cube_query` — anlatı
+    #: değil **muhasebe**; 0 LLM · 0 token. `{cube, olcu, donem, granulerlik,
+    #: kirilim[], filtreler[]}`. ⚠ `explain` ile KARIŞTIRILMAZ: o **yol**, bu **anlam**.
+    temellendirme: dict | None = None
     # FAZ 1.7 — TAZELİK MERDİVENİ. `taze | uyari | hata | bilinmiyor`.
     # 🔴 `hata` VE `bilinmiyor` kademelerinde SAYI GÖSTERİLMEZ (B4: bilinmeyen tazelik
     # TAZE DEĞİLDİR). Kaynak planlar bunun TERSİNİ yazıyordu; yol haritası bunu

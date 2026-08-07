@@ -337,20 +337,54 @@ def main() -> int:
         print("🔴 YAPISAL DUMAN — bu bir KAPI DEĞİLDİR. Tüm satırlar `⊘` sayılır. "
               "Asıl ölçüm: --live", flush=True)
 
+    # 🔴 İSTEMCİ KURULUMU `deneyim.py` İLE BİREBİR — ve bu bir üslup tercihi değil,
+    # ölçülmüş bir kusurun kapısı. İlk sürüm çıplak `TestClient(app)` kullandı; `/ask`
+    # **auth zorunlu** olduğu için her tur **401** döndü ve `source=None` olarak
+    # raporlandı. Yani alet *"ürün cevap vermiyor"* diye ölçtü — oysa **kapıya hiç
+    # girmemişti**. `create_app()` + `make_tenant_user` + login: üçü birden gerekli.
     from fastapi.testclient import TestClient
 
-    from app.main import app
+    from app.main import create_app
+    from tests.conftest import make_tenant_user
+
+    make_tenant_user("owner@dima.local", "owner-parola-123", tenant_slug=None)
+    c = TestClient(create_app())
+    c.__enter__()
+    _r = c.post("/auth/login", json={"email": "owner@dima.local",
+                                     "password": "owner-parola-123"})
+    if _r.status_code != 200:
+        print(f"🔴 LOGIN BAŞARISIZ ({_r.status_code}) — ölçüm YAPILMADI.")
+        return 1
+    c.headers["Authorization"] = f"Bearer {_r.json()['access_token']}"
 
     secili = [s for s in SENARYOLAR if not args.senaryo or s["ad"] == args.senaryo]
     sonuclar = []
-    with TestClient(app) as c:
-        for senaryo in secili:
-            print(f"▸ {senaryo['ad']}", flush=True)
-            r = kos(c, senaryo, live=args.live)
-            r["olcum"] = _olc_garson(senaryo, r["turlar"])
-            sonuclar.append(r)
-            if args.live:
-                time.sleep(LIVE_BEKLE)
+    for senaryo in secili:
+        print(f"▸ {senaryo['ad']}", flush=True)
+        r = kos(c, senaryo, live=args.live)
+        r["olcum"] = _olc_garson(senaryo, r["turlar"])
+        sonuclar.append(r)
+        if args.live:
+            time.sleep(LIVE_BEKLE)
+
+    # 🔴 SIFIR-CEVAP KAPISI — ölçülmüş kusurun yapısal karşılığı.
+    #
+    # İlk koşumda **on turun onu da** `source=None` döndü (auth eksikti) ve alet yine de
+    # bir tablo bastı: `3·süreklilik ✅2` — çünkü cevap yokken *"ilişkilendiremedim"* de
+    # yoktu. **Sistem hiç çalışmazken bir satır YEŞİL verdi.** Bu deponun defalarca
+    # ısırıldığı desen (`gitas` düştü → doğruluk yükseldi; `--user` unutuldu → toplam
+    # yeşil kaldı).
+    #
+    # Kural: **hiçbir tur cevap üretmediyse ölçüm yoktur.** Rapor basılmaz, taban
+    # dondurulmaz, kapı geçmez. *Ölçmediğini ölçmüş gibi göstermek, hiç ölçmemekten
+    # kötüdür.*
+    _cevaplilar = [t for s in sonuclar for t in s["turlar"]
+                   if (t.get("cevap") or {}).get("source")]
+    if not _cevaplilar:
+        print("\n🔴 SIFIR CEVAP — hiçbir tur `source` üretmedi. ÖLÇÜM YAPILMADI.\n"
+              "   Olası sebep: auth · tenant · katalog · sağlayıcı. Rapor BASILMADI;\n"
+              "   yeşil/kırmızı sayıları bu koşumdan OKUNAMAZ.", flush=True)
+        return 1
 
     ozet = _ozet(sonuclar)
     sema = _sema_disi_orani(sonuclar)
