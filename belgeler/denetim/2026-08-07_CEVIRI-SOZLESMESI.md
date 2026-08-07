@@ -2133,3 +2133,46 @@ Her tur için üç soru:
 
 ⚠ Ve süre: **>10 sn** bir turda ön yüz proxy'si kopabiliyor (`§23.2`) — o tur **kırmızı**
 sayılır, cevap doğru olsa bile.
+
+### 30.3 · Koşum — ilk parti (curl, tek tek)
+
+| tur | soru | sonuç |
+|---|---|---|
+| **A1/1** | `makine verimliliklerinin bu yılki karlılığa etkisini analiz et` | 🔴 *"«karliliga etkisini analiz» başka bir konu"* |
+| **A2/1** | `personel çalışma süreleri ve verimliliklerini kıyasla` | 🔴 *"«personel sureleri» başka bir konu"* |
+| **A3/1** | `ciromun en büyük 3 kaynağı olan müşterilerimi bul` | ✅ cube+ölçü+boyut çözüldü · dönem soruyor |
+| **A3/2** | `bu yıl` | 🔴 **8 satır** — *"en büyük **3**"* niyeti turlar arası **KAYBOLDU** |
+| **A4/1** | `pasta grafik yap` | ✅✅ *"saf görünüm değişikliği → pie (rapor korunur, LLM'siz)"* · `view_hint=pie` |
+
+#### 🔴 KUSUR T — TOP-N NİYETİ TURLAR ARASI KAYBOLUYOR
+
+```
+tur 1: "ciromun en büyük 3 kaynağı olan müşterilerimi bul"  → cq: {musteri, toplam_ciro}
+       (dönem sorulur; ⚠ `limit:3` cq'ya HİÇ yazılmadı — soru cevaplanamadı ki yazılsın)
+tur 2: "bu yıl"                                            → 8 satır
+```
+
+⊙ Kök: netleştirme turu `cq`'yu **taşıyor** ama kullanıcının **ilk cümlesindeki** top-N
+niyetini taşımıyor. İkinci turda soru yalnız *"bu yıl"* — orada `3` yok.
+
+🔴 Bu, `§28.2`'nin *"iki soru iki liste"* dersinin kardeşi: **niyet** ile **sorgu** ayrı
+şeyler ve netleştirme yalnız sorguyu köprülüyor.
+
+> **Kural:** bir netleştirme turu, cevaplanmamış sorunun **niyetini** de taşımalı —
+> yoksa kullanıcı sorusunu ikinci kez sormak zorunda kalır ve sistem *"anladım"* dediği
+> şeyi **unutmuş** olur.
+
+*Bir soruyu yarım cevaplayıp yarısını unutmak, hiç cevaplamamaktan daha yanıltıcıdır:
+kullanıcı cevabın tam olduğunu sanır.*
+
+#### 🔴 KUSUR U — *"analiz et"* / *"kıyasla"* fiilleri konu sanılıyor
+
+`A1` ve `A2` aynı biçimde düştü: **çok ölçülü, çok adımlı** bir istek, kapsam kapısında
+*"başka bir konu"* diye etiketlendi.
+
+⚠ `karliliga etkisini analiz` ve `personel sureleri` — bunlar **konu** değil, **eylem**
+(`analiz et` · `kıyasla`) ve **çekim** (`karlılığa` · `süreleri`). Dokuzuncu ve onuncu
+morfoloji vakası.
+
+⊙ Ve bu iki soru, kullanıcının *"agentic"* dediği sınıfın **tam merkezi**: birden çok
+ölçü + sıralı işlem. Sistem bugün onları **ilk adımda** kaybediyor.
