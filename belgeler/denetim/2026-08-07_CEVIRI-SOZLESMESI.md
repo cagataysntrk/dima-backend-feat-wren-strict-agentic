@@ -1749,3 +1749,52 @@ sayfadaki bir satırı da adıyla anabilir; ekran görünenle sınırlıdır, ka
 `followup.sinifla` değerleri **alır**, okumaz (`KAT-1`). Kapı bunu **AST** ile ölçüyor —
 metin taraması iki kez yanlış pozitif verdi, çünkü şerhler kararı anlatmak için o
 isimleri anmak **zorunda**. *Bir kapı, koruduğu şeyin kaydını da yasaklarsa kararı siler.*
+
+---
+
+## 25 · TUR 3 — göreli çeyrek · kök çözüm · curl doğrulaması
+
+### 25.1 · İzolasyon (curl, tek tek)
+
+| soru | önce |
+|---|---|
+| `2. çeyrek toplam fire` | ✅ `2026-04-01..06-30` |
+| `bu çeyrek toplam fire` | ⚠ **kovaya** döndü (`granularity=quarter`, 10 satır) — dönem değil |
+| 🔴 `geçen çeyrek toplam fire` | **dönem hiç yok** → *"hangi dönem için?"* |
+
+### 25.2 · Kök: bir birim, bir ailede tanınıp ötekinde tanınmıyordu
+
+`ceyrek` bu dosyada **zaten bilinen** bir takvim birimi (`_QUARTER_RE` · `_GRAN_LADDER` ·
+`mali_takvim`). Göreli dönem ailesi (`geçen ay`/`geçen yıl`/`geçen hafta`/`dün`) onu
+**taşımıyordu**.
+
+⚠ Düzeltme bir kelime eklemek **değil**, var olan **birim kümesini tutarlı kılmak**:
+`ay`·`hafta`·`yil`·`gun` göreli olabiliyorsa `ceyrek` de olabilmeli.
+
+🔴 Hesap `mali_takvim.yil_basi`'na dayanır — Ocak'ta başlamayan mali yılda da doğru
+(`FAZ 2.6`'nın aynı dersi) — ve ay sonu `calendar` ile, elle `30/31` yazmadan.
+
+*Bir birimi bir ailede tanıyıp ötekinde tanımamak, kullanıcıya dilin kurallarını değil
+bizim dosya düzenimizi öğretmektir.*
+
+### 25.3 · ✅ Curl doğrulaması
+
+```
+"geçen çeyrek toplam fire"
+önce  🔴 src=None · "toplam fire kg çıkarabilirim — hangi dönem için?"
+sonra ✅ src=cube · dönem filtresi kuruldu · 1 satır
+```
+
+Kapı: `tests/test_goreli_ceyrek.py` (5) — üç aylık pencere · mali yıl bağı ·
+ordinal çeyreğin bozulmadığı · birim kümesinin tutarlılığı.
+
+### 25.4 · Kalan iki kusur (aynı sınıf, sıradaki tur)
+
+| soru | tanınmayan |
+|---|---|
+| `geçen ay kaç parti üretildi` | `üretildi` — **fiil çekimi** |
+| `bu yıl hangi müşteri en çok iade etti` | `hangi`·`etti` — **soru sözcüğü + fiil** |
+
+⊙ İkisi de `rm_verb_words`'ün (ölçü-çıkarma fiilleri dolgu sayılır) **kardeşi**: bir
+fiil çekimi ya da soru sözcüğü, katalogda karşılığı olan bir ölçüyü **anlatan** kelimedir,
+kapsamı delmemeli.

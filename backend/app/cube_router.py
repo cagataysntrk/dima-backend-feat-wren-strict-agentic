@@ -100,8 +100,29 @@ def _current_period_filter(q: str, time_dim: str) -> dict | None:
 #: kelimeler kendi sınırlarını taşır.*
 _DUN_RE = re.compile(r"\bdun(?:ku)?\b")
 
+#: 🔴 **ÇEYREK EKLENDİ — kök çözüm, yeni sözlük DEĞİL.** Curl'de ölçüldü:
+#: `2. çeyrek toplam fire` ✅ (`_QUARTER_RE` çözüyor) ama `geçen çeyrek toplam fire` →
+#: **dönem hiç yok**, sistem *"hangi dönem için?"* diye soruyor.
+#:
+#: ⊙ Kök: `çeyrek` bu dosyada **zaten bilinen bir takvim birimi** (`_QUARTER_RE` ·
+#: `_GRAN_LADDER` · `mali_takvim`). Göreli dönem ailesi (`geçen ay`/`geçen yıl`) onu
+#: taşımıyordu — yani birim tanınıyor ama **bir ailede eksikti**.
+#:
+#: ⚠ Bu bir kelime eklemek değil, **var olan birim kümesini tutarlı kılmaktır**:
+#: `ay`·`hafta`·`yil`·`gun` göreli olabiliyorsa `ceyrek` de olabilmeli. Aksi hâlde aynı
+#: birim, geldiği aileye göre farklı davranır.
+#:
+#: *Bir birimi bir ailede tanıyıp ötekinde tanımamak, kullanıcıya dilin kurallarını
+#: değil bizim dosya düzenimizi öğretmektir.*
 _PREV_RE = re.compile(
-    r"\b(?:bir\s+)?(?:gecen|onceki|evvelki)\s+(ay|hafta|yil|sene|gun)([a-z]*)\b")
+    r"\b(?:bir\s+)?(?:gecen|onceki|evvelki)\s+(ay|hafta|yil|sene|gun|ceyrek)([a-z]*)\b")
+
+
+def _ay_sonu_gunu(y: int, a: int) -> date:
+    """Ayın son günü — `calendar` ile, elle 30/31 yazmadan."""
+    import calendar as _cal
+
+    return date(y, a, _cal.monthrange(y, a)[1])
 
 
 def _prev_period_filters(q: str, time_dim: str) -> list[dict]:
@@ -127,6 +148,19 @@ def _prev_period_filters(q: str, time_dim: str) -> list[dict]:
         # 🔴 FAZ 2.6 — "geçen yıl" da MALİ yıldır. `12-31` sabiti, Ocak'ta başlamayan
         # bir mali yılda pencereyi bir çeyrek KAYDIRIRDI.
         start, end = mali_takvim.yil_penceresi(today, kac_yil_once=1)
+    elif unit == "ceyrek":
+        # 🔴 Önceki çeyrek — hesap `mali_takvim`'in yıl başına dayanır ki mali yılı
+        # Ocak'ta başlamayan müşteride de doğru olsun (`FAZ 2.6`'nın aynı dersi).
+        _yb = mali_takvim.yil_basi(today)
+        _ic = ((today.year - _yb.year) * 12 + today.month - _yb.month) // 3
+        _bas_ay = _yb.month + (_ic - 1) * 3
+        _yil = _yb.year + (_bas_ay - 1) // 12
+        _ay = (_bas_ay - 1) % 12 + 1
+        start = date(_yil, _ay, 1)
+        _son_ay = _ay + 2
+        _son_yil = _yil + (_son_ay - 1) // 12
+        _son_ay = (_son_ay - 1) % 12 + 1
+        end = _ay_sonu_gunu(_son_yil, _son_ay)
     elif unit == "hafta":
         start = today - timedelta(days=today.weekday() + 7)  # önceki Pazartesi
         end = start + timedelta(days=6)

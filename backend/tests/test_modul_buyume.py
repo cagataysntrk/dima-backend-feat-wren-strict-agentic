@@ -316,6 +316,19 @@ MUAFIYET_ASK_KOD = [
                       "dürüst olmayan bir mesajı SATIN ALMAZ"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("donem/goreli-ceyrek", 14,
+     "🔴 **KÖK ÇÖZÜM: bir birim, bir ailede tanınıp ötekinde tanınmıyordu.** Curl'de "
+     "ölçüldü: `2. çeyrek toplam fire` ✅ (`_QUARTER_RE`) ama `geçen çeyrek toplam fire` → "
+     "**dönem hiç yok**, sistem *«hangi dönem için?»* diye soruyor. "
+     "⊙ `ceyrek` bu dosyada **zaten bilinen** bir takvim birimi (`_QUARTER_RE` · "
+     "`_GRAN_LADDER` · `mali_takvim`); göreli dönem ailesi (`geçen ay`/`geçen yıl`) onu "
+     "taşımıyordu. Bu bir kelime eklemek değil, **var olan birim kümesini tutarlı kılmak**. "
+     "🔴 Hesap `mali_takvim.yil_basi`'na dayanır — Ocak'ta başlamayan mali yılda da doğru "
+     "(`FAZ 2.6`'nın aynı dersi), ve ay sonu `calendar` ile (elle 30/31 yok). "
+     "⚠ **TAŞINAMAZ:** dal `_prev_period_filters`'ın **birim anahtarının** içinde; bir "
+     "modüle çıkarmak aynı `if/elif` zincirini ikiye bölerdi. "
+     "*Bir birimi bir ailede tanıyıp ötekinde tanımamak, kullanıcıya dilin kurallarını "
+     "değil bizim dosya düzenimizi öğretmektir.*"),
     ("kapsam/ayristirici-tuketti-TAKIP", 5,
      "🔴 **AYNI KURAL, TAKİP YOLUNDA — ve ilk düzeltmem YANLIŞ KATMANDAYDI.** Kuralı "
      "`route()`'un kapısına yazdım, curl ile doğruladım ve **hâlâ kırıktı**: kullanıcının "
