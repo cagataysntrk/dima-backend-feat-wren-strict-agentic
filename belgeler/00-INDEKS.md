@@ -78,6 +78,7 @@ kronolojik sıralansın.
 | [`2026-08-05_ANLAMA-KATMANI.md`](denetim/2026-08-05_ANLAMA-KATMANI.md) | ⏸ anlama katmanı kök-neden analizi — *ilerinin konusu* |
 | [`2026-08-07_CANLI-ARIZA-TESHISI.md`](denetim/2026-08-07_CANLI-ARIZA-TESHISI.md) | 🔴 canlı üç arıza: **Intent-JSON 9/9 `cube:null`** (katalog Türkçe eşanlamları taşımıyor) · anlatıda deterministik basamak yok · 500 backend'den **çıkmadı** |
 | [`2026-08-07_LLM-YOLU-TESHISI-ve-GERI-DONULEBILIR-DENEY.md`](denetim/2026-08-07_LLM-YOLU-TESHISI-ve-GERI-DONULEBILIR-DENEY.md) | 🔴 iki inanış ÇÜRÜDÜ: deterministik katman **kesmiyor** (gerçek dilde %93,3'ü devrediyor, 42 vakada 0 çözüyor) ve LLM **yanlış anlamıyor, REDDEDİYOR**. LLM #1 (çevirmen) ↔ Discovery (ham SQL) ayrımı · beş eksik · **geri dönülebilir deney planı** — yarısı bugün `yol_siniri:"llm"` ile kodsuz koşulabilir |
+| [`2026-08-07_CEVIRI-SOZLESMESI.md`](denetim/2026-08-07_CEVIRI-SOZLESMESI.md) | 🔴 **«LLM anlıyor; SÖYLEYEMİYOR».** Sistem dili net ama garsonun fişi eksik: `route()` **12 anahtar** üretebiliyor, şema modele **7** alan sunuyor — `order`·`limit`·`entity_limit`·`measure_having`·`ayrik_aylar`·`referans` mutfakta çalışıyor, LLM ifade **edemiyor**. ⊙ Model **kolay** işte (takip: 21 örnek, 6 ek alan, `reason`) **zor** işten (taze: 5 örnek, sebepsiz `cube:null`) daha yetkili. 🔴 Ve *neyin ne yaptığı* bir yerde gerçekten karışık: sorgunun sahibi LLM, *«ne istendi»* iddiasının sahibi deterministik `Niyet` → ölçülmüş **yanlış beyan** |
 
 ## `devir/` — 🔒 oturum devri (**değiştirilmez**)
 
