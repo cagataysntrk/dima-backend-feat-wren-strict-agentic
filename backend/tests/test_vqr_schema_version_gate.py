@@ -34,6 +34,16 @@ Q = "vqr surum kapisi icin ozel soru"
 SQL = "SELECT 1 AS x"
 
 
+@pytest.fixture(autouse=True)
+def _vqr_mekanizmasi(vqr_acik):
+    """🔴 **VQR ürün varsayılanında KAPALI** (kullanıcı kararı: *"o bambaşka bir ar-ge
+    konusu"*). Bu dosya **mekanizmayı** sınıyor, ürün varsayılanını değil — o yüzden onu
+    açıkça açar.
+
+    *Kapatılan bir mekanizmanın testleri silinirse, açıldığı gün kimse onu sınamaz.*
+    """
+
+
 @pytest.fixture()
 def vqr_store(client):
     """Aktif tenant'ın VQR deposu (conftest izole geçici dosyaya yönlendirir)."""

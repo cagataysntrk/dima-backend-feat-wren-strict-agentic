@@ -7,6 +7,8 @@ kesin asserte edilir (veri Ocak–Tem 2026; bugün ilerledikçe dönemli sayıla
 
 from __future__ import annotations
 
+import pytest
+
 import re
 
 from tests.conftest import ask
@@ -43,6 +45,16 @@ def _tarih_filtresi_mi(f: dict) -> bool:
 
 def _donem_siniri_var(sql: str) -> bool:
     return _donem_alt_siniri_var(sql) or bool(_DONEM_UST_SINIRI.search(sql or ""))
+
+
+@pytest.fixture(autouse=True)
+def _vqr_mekanizmasi(vqr_acik):
+    """🔴 **VQR ürün varsayılanında KAPALI** (kullanıcı kararı: *"o bambaşka bir ar-ge
+    konusu"*). Bu dosya **mekanizmayı** sınıyor, ürün varsayılanını değil — o yüzden onu
+    açıkça açar.
+
+    *Kapatılan bir mekanizmanın testleri silinirse, açıldığı gün kimse onu sınamaz.*
+    """
 
 
 def test_meta_dima_nedir(client):

@@ -250,3 +250,23 @@ def _test_kimligi():
     token = istek_kimligi.ayarla(p)
     yield p
     istek_kimligi.sifirla(token)
+
+
+@pytest.fixture
+def vqr_acik(monkeypatch):
+    """🔴 **VQR ürün varsayılanında KAPALI** (kullanıcı kararı: *"o bambaşka bir ar-ge
+    konusu"*) — ama mekanizma **silinmedi**, kapatıldı (`MIMARI §10`).
+
+    Mekanizmayı sınayan testler onu **açıkça** açar. Bu bir kolaylık değil bir **ayrım**:
+    *"ürün bunu yapıyor mu"* ile *"mekanizma çalışıyor mu"* farklı sorulardır, ve ikincisi
+    birincinin varsayılanına bağlı olmamalı.
+
+    *Kapatılan bir mekanizmanın testleri silinirse, açıldığı gün kimse onu sınamaz.*
+    """
+    from app.config import get_settings
+
+    s = get_settings()
+    monkeypatch.setattr(s, "vqr_acik", True, raising=False)
+    get_settings.cache_clear() if hasattr(get_settings, "cache_clear") else None
+    monkeypatch.setattr(type(s), "vqr_acik", property(lambda self: True), raising=False)
+    yield

@@ -42,8 +42,14 @@ def test_A_TAKIP_TABAN_SORUYU_DEGISTIRMEZ(client):
         f"{tekrar.get('cube_query')}")
 
 
-def test_A_GERCEK_TAMAMLAMA_HALA_OGRENILIR(client, schema):
-    """Kapı fazla geniş olmamalı — ilk düzeltmem tam da bu yüzden İKİ ALTIN TESTİ
+def test_A_GERCEK_TAMAMLAMA_HALA_OGRENILIR(client, schema, vqr_acik):
+    """⚠ `vqr_acik` — **VQR ürün varsayılanında KAPALI** (kullanıcı kararı: *"o bambaşka
+    bir ar-ge konusu"*). Bu test **öğrenme mekanizmasını** sınıyor, ürün varsayılanını
+    değil; kapatıldı diye silinirse, VQR açıldığı gün kimse bu ayrımı sınamaz.
+
+    *Kapatılan bir mekanizmanın testleri silinirse, açıldığı gün kimse onu sınamaz.*
+
+    Kapı fazla geniş olmamalı — ilk düzeltmem tam da bu yüzden İKİ ALTIN TESTİ
     düşürdü ve kaydı burada duruyor.
 
     Ayıran ölçüt `route()` DEĞİL **cevaplanabilirlik**tir: `route()` bir şekil döndürse

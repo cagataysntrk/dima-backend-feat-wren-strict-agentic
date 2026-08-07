@@ -2203,6 +2203,24 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # %94,3 → %83,6 düşürdü. Raporun ölçütü *"belirsizlik sıraya değil CHİP'e"*:
         # cevap gider, alternatif chip olur, kapsam maliyeti SIFIRDIR.
         resp.suggestions = _belirsizlik_beyani(resp, q_norm, cq, _cm_uyum, schema)
+        # 🔴 **EKSİK NİYETLİ CEVAP «DOĞRULANMIŞ» SAYILAMAZ.** Canlı denetimde bulundu:
+        # *"şubatta ciro ocağa göre nasıl değişti"* → `source=vqr`, 434 ms, ve
+        # `eksik_niyet=['kiyas','trend']`. Yani **beyanlı kısmi** bir cevap doğrulanmış
+        # soru deposuna girmişti.
+        #
+        # ⚠ Zararı bileşik: VQR merdivenin **İLK** basamağı. Deterministik yol iyileşse
+        # bile (bu turda `Ö10` ile tam o soru düzeldi) kayıt onu **es geçtiriyor** —
+        # yani depo, düzelttiğimiz kusuru **dondurup koruyor**.
+        #
+        # ⊙ Modülün kendi şerhi zaten uyarıyordu: *"dondurulmuş kayıt İYİLEŞMEZ, router
+        # İYİLEŞİR"* — ama kural yalnız **replay**'e uygulanmıştı, **yazmaya** değil.
+        #
+        # *Bir öğrenme deposu, öğrendiği şeyin eksik olduğunu bilmiyorsa öğrenmez —
+        # ezberler.*
+        if learn and getattr(resp, "eksik_niyet", None):
+            learn = False
+            _log.info("VQR kaydı ATLANDI: cevap beyanlı-kısmi (eksik=%s)",
+                      resp.eksik_niyet)
         if learn and vqr is not None:
             try:
                 # `auto_cube` (Faz 4.1): saklanan SQL, LLM'in serbest metni DEĞİL —

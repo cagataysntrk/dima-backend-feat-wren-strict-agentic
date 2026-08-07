@@ -200,6 +200,15 @@ def vqr_for_request(request):
     Varsayılan şirket ``app.state.vqr``'ı (startup'ta kurulan) kullanır; diğer her
     tenant için ``company_registry`` üzerinden slug-bazlı VQR talep üzerine derlenir.
     Önceden `/verify` bu durumda VQR'ı tamamen None'a zorluyordu (bkz. CompanyRegistry.vqr_for)."""
+    # 🔴 **TEK ANAHTAR — ve en üstte.** VQR merdivenin İLK basamağı; kapatmanın tek
+    # doğru yeri, onu **veren** yerdir. Çağıranlar `vqr is None`'ı zaten her yerde
+    # tanıyor (`if learn and vqr is not None`, `if vqr is None: return` …), yani kapatma
+    # yeni bir dal açmıyor — var olan sözleşmeyi kullanıyor.
+    # ⚠ Aksi hâlde anahtar **her çağıranda** ayrı ayrı okunurdu ve biri unutulurdu.
+    from app.config import get_settings as _gs
+
+    if not _gs().vqr_acik:
+        return None
     service = wren_for_request(request)
     slug = getattr(service, "company_slug", None)
     default_vqr = getattr(request.app.state, "vqr", None)

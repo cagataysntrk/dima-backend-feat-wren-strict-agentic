@@ -82,6 +82,19 @@ TABAN_CUBE_ROUTER_KOD = 1664  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("VQR/eksik-niyet-ogrenmez", 4,
+     "🔴 **EKSİK NİYETLİ CEVAP «DOĞRULANMIŞ» SAYILAMAZ.** Canlı denetim: *«şubatta ciro "
+     "ocağa göre nasıl değişti»* → `source=vqr`, 434 ms, `eksik_niyet=['kiyas','trend']` — "
+     "**beyanlı kısmi** bir cevap doğrulanmış soru deposuna girmişti. "
+     "⚠ Zararı **bileşik**: VQR merdivenin **İLK** basamağı; deterministik yol iyileşse "
+     "bile (bu turda `Ö10` tam o soruyu düzeltti) kayıt onu **es geçtirir** — depo, "
+     "düzelttiğimiz kusuru **dondurup korur**. "
+     "⚠ **TAŞINAMAZ:** karar `learn` bayrağının ve `resp`in **ikisinin birden** elde olduğu "
+     "tek yer, ve `vqr.store` çağrısının **hemen üstünde** durmak zorunda — araya giren bir "
+     "dal kaydı yine yazdırırdı. "
+     "⊙ `app/vqr.py`'nin kendi şerhi bunu zaten biliyordu (*«dondurulmuş kayıt İYİLEŞMEZ, "
+     "router İYİLEŞİR»*) ama kuralı yalnız **okumaya** uyguluyordu. "
+     "*Bir öğrenme deposu, öğrendiği şeyin eksik olduğunu bilmiyorsa öğrenmez — ezberler.*"),
     ("AJ3.3/donem-ifadesi", 2,
      "🔴 **İFADE BOŞLUĞU — model dönemi hiçbir yere KOYAMIYORDU.** Prompt *«tarih yazma (sistem hesaplar)»* diyordu ve dönemi yazacak bir **alan yoktu**; tutarlı tek davranışı dönemi düşürmek ya da tüm soruyu reddetmekti (canlı: **9/9 `{cube:null}`**). ⚠ **TAŞINAMAZ:** çözüm `_resolve_period`'ün işi ve o **zaten var** (takip yolu); burada kalan yalnız **çağrı** ve alanın sorgudan çıkarılması. İkinci bir çözücü yazmak, aynı ifadenin iki farklı tarihe çözülmesi demekti. 🔴 Tasarım **icat edilmedi**, takip yolundan alındı (`period_expr`) — orada ölçülmüş ve çalışıyor."),
     ("katalog-sozlugu/tek-cozum", 2,

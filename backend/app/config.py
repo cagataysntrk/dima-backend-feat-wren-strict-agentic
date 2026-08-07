@@ -114,6 +114,22 @@ class Settings(BaseSettings):
     # Self-consistency (ADR-0008 + literatür önerisi #1): LLM cube-seçimi k kez
     # örneklenir, kanonik CubeQuery üzerinde oylanır; uyuşmazlık → chip. 1 = kapalı.
     consistency_k: int = 3
+    # 🔴 **VQR KAPALI (kullanıcı kararı, 2026-08-07): *"o bambaşka bir ar-ge konusu."***
+    #
+    # Doğrulanmış soru deposu merdivenin **İLK** basamağıdır — yani bir kayıt dondurulduğu
+    # anda deterministik yolun sonraki iyileşmelerini **es geçtirir**. Canlı denetimde tam
+    # bu görüldü: *"şubatta ciro ocağa göre nasıl değişti"* `source=vqr` ile 434 ms'de
+    # dönüyordu ve cevabı **beyanlı kısmiydi** (`eksik_niyet=['kiyas','trend']`) — aynı
+    # soruyu `Ö10` ile düzelttiğimiz halde kullanıcı **eski cevabı** görecekti.
+    #
+    # ⚠ Mekanizma **silinmedi, kapatıldı** (`MIMARI §10`: *kapananlar işaretlenir,
+    # silinmez*). Depo, benzerlik kapısı, güven kapısı, şema-sürüm kapısı ve `/verify`
+    # ucu yerinde duruyor; tek anahtar bu. `DIMA_VQR_ACIK=1` ile geri gelir.
+    #
+    # *Bir öğrenme deposu, öğrendiğini ne zaman unutacağını bilmiyorsa, öğrenmez —
+    # ezberler; ve ezber, düzeltilen kusuru da korur.*
+    vqr_acik: bool = False
+
     # Verified Query Repository dosyası (boş = <proje>/knowledge/verified/queries.jsonl).
     # Testler izolasyon için geçici yola yönlendirir.
     vqr_path: str = ""

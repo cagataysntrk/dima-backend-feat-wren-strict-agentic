@@ -24,6 +24,16 @@ from tests.conftest import (
 
 
 @pytest.fixture(autouse=True)
+def _vqr_mekanizmasi(vqr_acik):
+    """🔴 **VQR ürün varsayılanında KAPALI** (kullanıcı kararı: *"o bambaşka bir ar-ge
+    konusu"*). Bu dosya **mekanizmayı** sınıyor, ürün varsayılanını değil — o yüzden onu
+    açıkça açar.
+
+    *Kapatılan bir mekanizmanın testleri silinirse, açıldığı gün kimse onu sınamaz.*
+    """
+
+
+@pytest.fixture(autouse=True)
 def _clean_limiter():
     from control_plane.ratelimit import login_limiter
 
