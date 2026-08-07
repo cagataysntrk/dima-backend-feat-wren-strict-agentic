@@ -1607,3 +1607,68 @@ beklediği için…"*). Ama:
    kırılımı, **0 LLM**. Ölçüm: bugünkü 78,8 sn → beklenen **< 1 sn**.
 3. **Ön yüz zaman aşımı**: `apiClient`'ta tanımlı değil; 20 sn'lik Intent bütçesi bile
    proxy'yi kurtarmayabilir — sınır ön yüzde de olmalı.
+
+---
+
+## 24 · TUR 2 BİLANÇOSU — 8 senaryo · 1 düzeltme · **77× hızlanma**
+
+### 24.1 · Senaryo tablosu (curl, tek tek, taze konteyner)
+
+| # | senaryo | sonuç | süre |
+|---|---|---|---|
+| s1 | `geçen ay kaç parti üretildi` | 🔴 `üretildi` bilinmeyen | 4 330 ms |
+| s2 | `en çok fire veren makine` | ✅ ölçü+kırılım doğru, dönem sorar | 1 954 ms |
+| s3 | `mart ayında toplam ciro` | ✅ `2026-03-01..03-31` · 0 LLM | 1 042 ms |
+| s5 | `bu yıl hangi müşteri en çok iade etti` | 🔴 `hangi`/`etti` bilinmeyen | — |
+| s6 | `geçen çeyrek toplam fire` | 🔴 çeyrek **dönem sayılmadı** | — |
+| s7 | `bu ay makine bazında duruş süresi` | ✅ boş-sonuç dürüstlüğü | — |
+| s8/1 | `bu yıl vardiya bazında oee` | ✅ 3 satır | — |
+| s8/2 | `en düşük hangisi` | ✅ `order` kuruldu · 0 LLM | — |
+| s8/3 | `3. vardiya neden düşük` | 🔴 **54 231 ms** · 0 satır (LLM yanlış filtre) | 54 231 ms |
+| n1/3 | `yıkama neden yüksek` | 🔴 **78 834 ms** · `cube=adhoc` | 78 834 ms |
+
+### 24.2 · ✅ DÜZELTME — *"neden"* soruları artık deterministik
+
+**Kök neden:** `TUR_NEDEN` bir **işaret zamiri** istiyordu. `yıkama neden yüksek` ve
+`3. vardiya neden düşük` zamir taşımıyor — oysa raporun **bir satırını adlandırıyorlar**.
+Ve *"yüksek/düşük"* zaten bir **karşılaştırma**: neye göre? Ekranda durana göre.
+
+> *Bir cümleyi eldeki cevaba bağlayan tek şey zamir değildir; bir karşılaştırma da
+> bağlar — çünkü karşılaştırmanın öteki ucu zaten ekrandadır.*
+
+**Curl doğrulaması (aynı senaryo, yeniden derlenmiş konteyner):**
+
+```
+"yıkama neden yüksek"
+önce  🔴 llm:openrouter · cube=adhoc · 78 834 ms → proxy kopar → frontta 500
+sonra ✅ "Takip: üçüncü sınıf → cevap üstünde konuşma (neden, LLM'siz)" · 1 018 ms
+      not: "Değişimi en çok sürükleyen segmentler aşağıda — her biri tıklanınca
+            tek başına açılır ve kendi kanıtını üretir."
+```
+
+🔴 **77× hızlandı ve cevabı artık SİSTEM veriyor** — *"LLM sadece garson."*
+
+### 24.3 · ⚠ Kapı kuralı bir kez DARALTTI
+
+İlk hâli fazla genişti: `test_UZUN_neden_sorusu_ZAMIR_ister` kırmızı verdi —
+*"fire oranı neden yüksek olur genel olarak"* bir **yeni konudur**, takip değil.
+Sınır `_kisa_soru`'nun **kendi ölçüsüyle** daraltıldı (2 → 4 kelime).
+
+*Bir gevşemeyi, gevşettiği kuralın kendi ölçüsüyle sınırlamak, ikinci bir kural yazmaktan
+güvenlidir.*
+
+### 24.4 · 🔴 KALAN ÜÇ KUSUR — hepsi AYNI SINIF (sekizinci–onuncu örnek)
+
+| soru | tanınmayan | sistem bunu çözebiliyor mu |
+|---|---|---|
+| `geçen ay kaç parti üretildi` | `üretildi` | ✅ `uretim` katalogda |
+| `hangi müşteri en çok iade etti` | `hangi`·`etti` | ✅ `iade` bir ölçü |
+| `geçen çeyrek toplam fire` | çeyrek dönemi | ✅ `_quarter_period_filters` var |
+
+> **Bir ayrıştırıcı bir kelimeyi tükettiyse, o kelime kapsam kapısında BİLİNMEYEN
+> sayılamaz** — kural iki kapıda uygulandı (`route()` · `deterministic_refine`), ama
+> **fiil çekimleri ve soru sözcükleri** için henüz uygulanmadı.
+
+🔴 Sıradaki tur bunu ele alacak: `üretildi`/`etti` gibi **fiil** biçimleri ve `hangi`
+gibi **soru sözcükleri** dolgu sınıfına girmeli — `_LISTE_RE`/`rm_verb_words` için zaten
+var olan desenin genişletilmesi, yeni sözlük değil.

@@ -250,11 +250,59 @@ def sinifla(soru: str, *, baglam_var: bool) -> Niyet:
         # taşımak zorunda değildir. Şart konsaydı en doğal ifade yine kapalı kalırdı —
         # yani düzeltilen kusurun aynısı, bir kat aşağıda tekrarlanırdı.
         if (tur in (TUR_NEDEN, TUR_ISARET, TUR_ANLAT, TUR_TAKIP)
-                and not zamir and not _kisa_soru(q)):
+                and not zamir and not _kisa_soru(q)
+                # 🔴 Karşılaştırmalı sıfat zamirin yerini tutar — yalnız `TUR_NEDEN`'de
+                # ve yalnız ekranda rapor varken. Ötekilerde (`ANLAT`/`TAKİP`) bu gevşeme
+                # konu değişimini çalardı; *"fire analizini yap"* bir karşılaştırma
+                # taşımaz zaten, ama sınırı **yazarak** koymak gerekiyor.
+                and not (tur == TUR_NEDEN and baglam_var and _karsilastirmali(q))):
             continue
         return Niyet(sinif=SINIF_KONUSMA, tur=tur, kural=f"konusma:{tur}", kanit=k)
 
     return Niyet(sinif=SINIF_YENI, kural="kalip-yok")
+
+
+#: 🔴 **KARŞILAŞTIRMALI SIFAT — zamirin yerini tutan yapısal bağ.** Canlı curl'de
+#: ölçüldü: *"yıkama neden yüksek"* ve *"3. vardiya neden düşük"* `TUR_NEDEN`'e
+#: **girmiyordu** (zamir yok, üç-dört kelime), tur **Discovery'ye** düşüyordu:
+#: **78.834 ms** ve **54.231 ms**, biri `cube=adhoc` ham SQL, öteki **0 satır**.
+#:
+#: ⊙ Oysa bağ zamirden **daha güçlü**: kullanıcı ekrandaki raporun bir **satırını**
+#: adlandırıyor (`yıkama` bir `asama` değeri, `3. vardiya` bir `vardiya` değeri).
+#:
+#: 🔴 Ve *"yüksek/düşük"* tek başına bir **karşılaştırmadır**: neye göre yüksek? Ekranda
+#: duran şeye göre. Yani sıfat, bağlamı **ima etmekle kalmaz, gerektirir**.
+#:
+#: ⚠ Şart `baglam_var` ile birlikte uygulanır — ekranda rapor yoksa *"fire neden yüksek
+#: olur"* yine yeni bir sorudur ve bu dal hiç açılmaz.
+#:
+#: *Bir cümleyi eldeki cevaba bağlayan tek şey zamir değildir; bir karşılaştırma da
+#: bağlar — çünkü karşılaştırmanın öteki ucu zaten ekrandadır.*
+_KARSILASTIRMA = ("yuksek", "yüksek", "dusuk", "düşük", "fazla", "az ",
+                  "kotu", "kötü", "iyi", "geride", "onde", "önde")
+
+
+#: 🔴 **UZUNLUK SINIRI — ve kapı bunu KENDİ yakaladı.** İlk yazımda yalnız karşılaştırmalı
+#: sıfat aranıyordu ve `test_UZUN_neden_sorusu_ZAMIR_ister` kırmızı verdi:
+#: *"fire oranı neden yüksek olur genel olarak"* bir **yeni konudur**, takip değil —
+#: ve haklıydı.
+#:
+#: ⊙ Ayıran şey uzunluk: ekrandaki bir **satırı** adlandıran soru kısadır
+#: (*"yıkama neden yüksek"* 3 · *"3. vardiya neden düşük"* 3 kelime), genel bir soru
+#: uzar (*"…olur genel olarak"* 6).
+#:
+#: ⚠ Bu bir tahmin değil `_kisa_soru`'nun **aynı ilkesi**, bir kademe gevşetilmiş hâli:
+#: orada eşik 2 (zamirsiz, sıfatsız), burada 4 — çünkü karşılaştırmalı sıfat **kendisi**
+#: bir bağ taşır ve o bağ iki kelimelik payı hak eder.
+#:
+#: *Bir gevşemeyi, gevşettiği kuralın kendi ölçüsüyle sınırlamak, ikinci bir kural
+#: yazmaktan güvenlidir.*
+_KARSILASTIRMA_AZAMI_KELIME = 4
+
+
+def _karsilastirmali(q: str) -> bool:
+    return (any(w in q for w in _KARSILASTIRMA)
+            and len(re.findall(r"[a-z]+", q)) <= _KARSILASTIRMA_AZAMI_KELIME)
 
 
 def _kisa_soru(q: str) -> bool:
