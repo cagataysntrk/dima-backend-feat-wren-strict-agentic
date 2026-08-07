@@ -1486,3 +1486,43 @@ kısmen `J` (`order` yazılmıyor):
 > sayılamaz.**
 
 Bu tek kural beş kusuru birden kapatır ve **yeni sözlük gerektirmez**.
+
+### 22.5 · S3 ✅ · S4 🔴🔴 — iki ağır bulgu
+
+```
+S3  "mart ayında toplam ciro"
+    ✅ cube · 2026-03-01..03-31 · ₺11.974.792,05 · 0 LLM · 1 042 ms
+```
+
+```
+S4  "şubatta ciro ocağa göre nasıl değişti"
+    🔴 src=None · cq={} · 99 386 ms
+    not: "«ocaga degisti» kısmını anlayamadım"
+    log: openrouter … 74 919 ms  ·  openrouter … 98 176 ms
+```
+
+#### 🔴 KUSUR N — Intent çağrısının ZAMAN SINIRI YOK (**98 sn**)
+
+`§H` için konan bütçe (8 sn) **yalnız anlatıcıyı** kapsıyor. Intent-JSON çağrısı
+sınırsız: ölçülen **98.176 ms**. Bir kullanıcı 1,5 dakika bekliyor ve sonunda
+*"anlayamadım"* alıyor.
+
+🔴 Ve bu **döngünün kendisini** engelliyor: senaryo turu sağlayıcının salınımına esir.
+
+*Bir bütçeyi yalnız bir basamağa koymak, ötekini sınırsız ilan etmektir.*
+
+#### 🔴 KUSUR O — `ocaga` ALTINCI kez aynı sınıf
+
+`Ö10` ile `_MONTH_ALT`'a `oca[kğ]` eklendi ve `date_filters` artık `ocaga`'yı **çözüyor**.
+Ama kapsam kapısı onu hâlâ **bilinmeyen** sayıyor → tur ölüyor.
+
+⊙ Aynı kök, **altıncı** örnek: `ocağa` · `3'ünü` · `çeyreklere` · `üretildi` ·
+`3 tanesi` · `5 milyon üzeri`.
+
+> 🔴 **§22.4'ün tek kuralı bunların HEPSİNİ kapatır:**
+> *Bir ayrıştırıcı bir kelimeyi tükettiyse, o kelime kapsam kapısında BİLİNMEYEN
+> sayılamaz.*
+
+⚠ Ve dikkat: `Ö10` düzeltmesi `niyet`i onardı (kırılım yanlış beyanı bitti) ama **turu
+kurtarmadı** — çünkü kusur `niyet`te değil **kapsam kapısındaydı**. *Bir kusuru doğru
+teşhis edip yanlış katmanda düzeltmek, onu ikinci kez bulmayı gerektirir.*
