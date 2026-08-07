@@ -4,7 +4,7 @@
 > şunları oku** — bağlam sıfırlansa bile operasyon buradan devam eder:
 > 1. **`OPERASYON.md`** (repo kökü) — kural seti, döngü adımları, test kapısı, öz-denetim
 > 2. **`OPERASYON-DURUM.md`** (repo kökü) — **nerede kaldık**, açık borçlar, ölçüm tabanı
-> 3. **`~/.claude/plans/DIMA-V1-YOL-HARITASI.md`** — ne yapılacak (**5256** satır @`e22b2b9`
+> 3. **`belgeler/plan/DIMA-V1-YOL-HARITASI.md`** — ne yapılacak (**5256** satır @`e22b2b9`
 >    · `wc -l`; §10'daki bağlayıcı sıra)
 >
 > *Bu üçü + `MIMARI.md` operasyonun tam durumunu taşır; sohbet geçmişine ihtiyaç yoktur.*

@@ -15,7 +15,7 @@ Damga: `2026-08-05` · HEAD `eb48c40` · aktif faz **FAZ 4**
 |---|---|---|
 | **Kod** (`app/`, `tests/`, `demo/packs/`) | 🥇 **Nihai gerçek** | **Kod kazanır.** Belge yanlıştır |
 | `backend/MIMARI.md` | 🥈 Mimari otorite | **MIMARI kazanır** |
-| `~/.claude/plans/DIMA-V1-YOL-HARITASI.md` | 🥉 Plan otoritesi | **Yol haritası kazanır** |
+| `belgeler/plan/DIMA-V1-YOL-HARITASI.md` | 🥉 Plan otoritesi | **Yol haritası kazanır** |
 | `OPERASYON-DURUM.md` | Durum kaydı | **Durum kaydı kazanır** |
 | **BU BELGE** | ❌ **YOK** | — |
 

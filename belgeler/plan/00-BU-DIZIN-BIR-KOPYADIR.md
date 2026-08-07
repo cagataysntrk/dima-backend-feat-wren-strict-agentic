@@ -1,44 +1,45 @@
-# ⚠ BU DİZİN BİR **KOPYADIR** — kaynak `~/.claude/plans/`
+# ✅ BU DİZİN ARTIK **KAYNAKTIR** — kopya değil
 
-> 🔴 **Yerleşim kuralına aykırı bir durum ve bilerek yazılıyor:** `00-INDEKS.md` bir
-> belgenin yerini *"ne zaman bayatladığına"* göre belirler. Bu dizin o kurala girmiyor
-> çünkü buradaki dosyalar **başka bir yerde yaşıyor** ve buraya **kopyalanıyor**.
+> ⚠ **Dosya adı bilerek değiştirilmedi.** Bir gün *"kopyadır"* diyordu; bugün kaynak.
+> Adı korumak, bu geçişin **olduğunu** görünür bırakır — ve bu depoda kural şudur:
+> *kapananlar işaretlenir, silinmez.*
 
-## Neden kopyalandı
+## Bugünkü durum
 
-Planlar `~/.claude/plans/` altında tutuluyordu. Ölçülen üç zararı:
+| belge | rol |
+|---|---|
+| `DIMA-GARSON-ARA-FAZ.md` | garson ara fazının **tek** planı |
+| `DIMA-V1-YOL-HARITASI.md` | v1'in **tek** yol haritası |
 
-| # | Zarar | Kanıt |
-|---|---|---|
-| 1 | **Versiyonlanmıyor** | Plana `§6.Ω` bölümü enjekte edildi; `git add -A && git commit` *"işlenecek bir şey yok"* dedi. O değişikliğin tarihçesi **yok** — kim, ne zaman, geri alınabilir mi: hiçbiri kayıtlı değil |
-| 2 | **Paylaşılmıyor** | Depo başka bir geliştiriciyle paylaşılıyor; `~/.claude/` kişisel bir dizin. `CLAUDE.md` planı **mutlak yolla** işaret ediyor — o yolu olmayan biri için o satır ölü |
-| 3 | **Hiçbir kapı göremiyor** | Depo içi belgeler kapılarla denetleniyor (`test_beyanlar_curumesin` · `test_yol_haritasi_butunlugu`). Plan dışarıda olduğu için denetimsiz. Bedeli ölçüldü: `§13.6` *"beş şey"* deyip **altı** satır listeliyordu ve bu sayım hatası **kayıt #4'ün düşmesini kolaylaştırdı** |
+`~/.claude/plans/` altındaki eski dosyalar **silinmedi**, birer **yönlendirmeye**
+çevrildi: o yola mutlak yolla işaret eden eski bir atıf ya da bağlamı sıfırlanmış bir
+ajan, boşluk yerine **adres** bulsun diye.
 
-## 🔴 KAYNAK HANGİSİ — ve neden bu bir BORÇ
+## Neden taşındı — iki ölçülmüş risk
 
-**Kaynak hâlâ `~/.claude/plans/`.** `CLAUDE.md`'nin operasyon başlığı oraya işaret ediyor
-ve o satır değiştirilmedi. Buradakiler **türev**dir.
+**1 · Sürüm bağı yoktu.** Kod bir commit'te ilerlerken plan başka bir zamandaydı; *"bu
+kod hangi plana göre yazıldı"* sorusu **sorulamıyordu**. Artık plan da commit'lerle
+birlikte geziyor: `git log belgeler/plan/` planın kendi tarihini verir.
 
-⚠ Yani şu anda **aynı belgenin iki kopyası** var — ve bu, bu deponun adıyla andığı
-*"aynı kuralın iki sahibi"* sınıfının belge tarafındaki hâlidir. Kopya, kaynağı
-güncellendiğinde **sessizce bayatlar**.
+**2 · Kopya, iki sahip demektir.** Bir süre hem `~/.claude/plans/` hem `belgeler/plan/`
+altında iki nüsha vardı. Kopya, kaynak güncellenince **sessizce** bayatlar — ve bayat bir
+plan, olmayan bir plandan **daha kötüdür**: bağlamı sıfırlanan bir ajan onu okur, güvenir
+ve **yanlış fazdan** devam eder. Bu depoda o kusur `OPERASYON-DURUM.md` başlığında **iki
+kez** yaşandı.
 
-> *Bir belgeyi kopyalamak, onu paylaşılabilir yapar ama iki gerçek yaratır; hangisinin
-> gerçek olduğunu yazmazsan, altı ay sonra ikisi de değildir.*
+> *İki gerçek, sıfır gerçekten kötüdür: sıfır gerçek arattırır, iki gerçek yanıltır.*
 
-**Kalıcı çözüm iki seçenekten biri** ve bir karar bekliyor:
+## Güncellenen atıflar
 
-1. **Taşı** — kaynak buraya gelir, `~/.claude/plans/` altındaki bir sembolik bağa
-   dönüşür, `CLAUDE.md` göreli yola çevrilir. *(Önerilen: tek gerçek kalır.)*
-2. **Kopya kal, ama kapıya bağla** — bir test iki dosyanın **aynı** olduğunu doğrular;
-   ayrıştıkları gün kırmızı verir.
+`backend/CLAUDE.md` · `OPERASYON.md` · `OPERASYON-DENETIM.md` ·
+`belgeler/mimari/V1-MIMARI-HARITASI.md` — dördü de artık `belgeler/plan/`'a işaret ediyor.
 
-Bu karar verilene kadar **kaynak `~/.claude/plans/`'tır** ve buradaki kopya
-**yalnız okuma amaçlıdır** — buradaki bir dosyayı düzenlemek, kaynağı güncellemez.
+⚠ **Tarihsel belgelere DOKUNULMADI** (`belgeler/denetim/*` · `belgeler/devir/*`): onlar
+bir günün fotoğrafıdır ve o gün belge gerçekten oradaydı. Geçmişi bugünkü yola göre
+düzeltmek, kaydı **yanlış** yapardı.
 
-## Kopyalanan dosyalar
+## Kapı
 
-| dosya | kaynak | kopyalandığı an |
-|---|---|---|
-| `DIMA-GARSON-ARA-FAZ.md` | `~/.claude/plans/` | 2026-08-07 |
-| `DIMA-V1-YOL-HARITASI.md` | `~/.claude/plans/` | 2026-08-07 |
+`backend/tests/test_plan_kopyasi_taze.py` — plan repoda mı, ve dışarıda **rakip bir
+nüsha** kalmış mı diye bakar. *Bir taşımanın tamamlandığını, taşınan şeyin arkasında bir
+şey kalmadığı kanıtlar.*

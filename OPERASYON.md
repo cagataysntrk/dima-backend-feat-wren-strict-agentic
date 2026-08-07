@@ -24,7 +24,7 @@ Ve teknik hedefi: ***"Mükemmel motor + insani yüz tek sistemde."***
 | # | Belge | Yol |
 |---|---|---|
 | 1 | **MIMARI değişmezleri (§4) ve yasakları (§5)** | `backend/MIMARI.md` |
-| 2 | **YOL HARİTASI** — ne, hangi sırayla, hangi kapıyla | `~/.claude/plans/DIMA-V1-YOL-HARITASI.md` |
+| 2 | **YOL HARİTASI** — ne, hangi sırayla, hangi kapıyla | `belgeler/plan/DIMA-V1-YOL-HARITASI.md` 🔴 **repoda** |
 | 3 | **BU DOSYA** — nasıl çalışılır | `OPERASYON.md` |
 | 4 | **DURUM** — nerede kaldık | `OPERASYON-DURUM.md` |
 | 5 | Kanıt / ölçümler | `~/.claude/plans/polymorphic-tumbling-riddle.md` |

@@ -38,7 +38,7 @@
 ```
 Türkçe cevap ver. Bir geliştirme turunun yol haritasına UYUMUNU denetle.
 
-BELGE : ~/.claude/plans/DIMA-V1-YOL-HARITASI.md   (madde: <MADDE>)
+BELGE : belgeler/plan/DIMA-V1-YOL-HARITASI.md   (madde: <MADDE>)
 KURAL : <repo>/OPERASYON.md                        (§2 döngü · §5 D1-D5 · §6 değişmezler)
 REPO  : /home/cagataysntrk/İndirilenler/dima-backend-feat-wren-strict-agentic
 TUR   : <SHA> — `git show --stat <SHA>` ile başla
