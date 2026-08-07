@@ -91,6 +91,20 @@ class Settings(BaseSettings):
     # ⚠️ Zincirdeki YERİ bilinçli: `gemini`/`groq`'tan SONRA. Ölçüm sağlayıcısı, üretimin
     # varsayılan sağlayıcısını **değiştirmemeli**; yalnız onlar tükendiğinde devreye girer.
     openrouter_api_key: str = ""
+    # 🔴 **YEDEK ANAHTAR ZİNCİRİ (kullanıcı kararı, 2026-08-07).** OpenRouter'ın ücretsiz
+    # katmanı kredi dolunca `402 Payment Required` verir ve **tüm LLM yolu susar** —
+    # ölçüm turu ürünü değil **faturayı** ölçmeye başlar (ve bu bir kez oldu).
+    #
+    # ⚠ Zincir **döngüseldir**: anahtarlar sırayla denenir ve tur başa döndüğünde ilk
+    # anahtarın kotası çoktan tazelenmiş olur. Yani bu bir yedek değil bir **rotasyon**.
+    #
+    # Virgülle ayrılmış liste. Boşsa `openrouter_api_key` tek başına kullanılır —
+    # yani varsayılan davranış **birebir bugünkü**.
+    #
+    # *Bir ölçüm aracının durması, ölçtüğü şeyin bozulmasından daha sinsidir: biri
+    # kırmızı verir, öteki sessizce sıfır ölçer.*
+    openrouter_api_keys: str = ""
+
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     openrouter_model: str = "openai/gpt-oss-120b"
     openrouter_select_model: str = ""

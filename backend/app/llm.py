@@ -583,7 +583,16 @@ class OpenAICompatibleSqlGenerator:
     def __init__(self, base_url: str, api_key: str, model: str, provider: str = "openai", dialect: str = "",
                  select_model: str | None = None):
         self._url = base_url.rstrip("/") + "/chat/completions"
-        self._key = api_key
+        # 🔴 **ANAHTAR ZİNCİRİ.** `api_key` virgüllü bir liste olabilir; ilk eleman
+        # bugünkü tek anahtarla **birebir aynı** davranır. Kota dolunca (`402`/`429`)
+        # sıradakine geçilir ve tur başa döndüğünde ilki tazelenmiş olur.
+        #
+        # ⚠ Rotasyon **çağrı başına değil, HATA başına**: her istekte anahtar değiştirmek
+        # sağlayıcının kota muhasebesini okunamaz kılar ve hangi anahtarın dolduğunu
+        # **hiç** öğrenemezdik. *Bir yedek, ancak öncekinin neden düştüğü bilinirse
+        # yedektir.*
+        self._keys = [k.strip() for k in str(api_key or "").split(",") if k.strip()]
+        self._key_ix = 0
         self._model = model
         # Faz 4.2 — bkz. AnthropicSqlGenerator._select_model docstring'i (aynı ilke).
         self._select_model = select_model or model
@@ -595,8 +604,8 @@ class OpenAICompatibleSqlGenerator:
 
         use_model = model or self._model
         headers = {"Content-Type": "application/json"}
-        if self._key:
-            headers["Authorization"] = f"Bearer {self._key}"
+        if self._keys:
+            headers["Authorization"] = f"Bearer {self._keys[self._key_ix]}"
         payload = {
             "model": use_model,
             "temperature": 0,
@@ -614,6 +623,18 @@ class OpenAICompatibleSqlGenerator:
             resp.raise_for_status()
             data = resp.json()
         except Exception as exc:
+            # 🔴 **KOTA DOLDU → SIRADAKİ ANAHTAR.** Yalnız `402`/`429` (ödeme/hız sınırı)
+            # rotasyona sebep olur: bir şema hatası ya da 500, anahtar değiştirmekle
+            # düzelmez ve zinciri boşuna tüketirdi.
+            # ⚠ Rotasyon **yeniden denemez** — çağrı bu tur düşer, sonraki tur yeni
+            # anahtarla açılır. Aynı istek içinde denemek, bir hatayı gizleyip süreyi
+            # ikiye katlardı. *Bir yedeğe geçmek, hatayı silmek değil bir sonrakini
+            # kurtarmaktır.*
+            _m = str(exc)
+            if len(self._keys) > 1 and ("402" in _m or "429" in _m):
+                self._key_ix = (self._key_ix + 1) % len(self._keys)
+                _log.warning("%s: kota/ödeme hatası → anahtar %d/%d'e geçildi",
+                             self._provider, self._key_ix + 1, len(self._keys))
             # Log-and-rethrow — bkz. AnthropicSqlGenerator._ask (aynı desen). Groq/Ollama/
             # Gemini/xAI HEPSİ bu sınıftan geçer; `provider` alanı hangisi olduğunu netleştirir.
             _log.warning("%s API çağrısı başarısız (model=%s, %dms): %s",
@@ -1341,7 +1362,9 @@ def _make(provider: str, settings, dialect: str):
         )
     if provider == "openrouter" and settings.openrouter_api_key:
         return OpenAICompatibleSqlGenerator(
-            settings.openrouter_base_url, settings.openrouter_api_key,
+            settings.openrouter_base_url,
+            # Zincir varsa o, yoksa tek anahtar — varsayılan davranış birebir bugünkü.
+            settings.openrouter_api_keys or settings.openrouter_api_key,
             settings.openrouter_model, "openrouter", dialect,
             select_model=settings.openrouter_select_model,
         )

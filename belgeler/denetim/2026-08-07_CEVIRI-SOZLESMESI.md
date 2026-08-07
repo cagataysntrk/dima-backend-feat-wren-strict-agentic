@@ -20,6 +20,79 @@
 
 ---
 
+---
+
+## 0 · 🔴 ÇALIŞMA KURALLARI — BAĞLAYICI (bu belgenin sözleşmesi)
+
+> Bu bölüm belgenin **başında** durur çünkü geri kalan her ölçüm ona dayanır. Bağlam
+> sıfırlansa bile buradan devam edilir.
+
+### 0.1 · DÖNGÜ — sırası değişmez
+
+1. **10–15 ÖZGÜN senaryo** yaz: öncekileri **tekrar etmeyen**, **basitten zora**,
+   **kısadan uzun zincire** (çok turlu thread'ler dahil).
+2. **`curl` ile TEK TEK koş.** 🔴 **Toplu koşum YASAK.** Her turdan sonra dur, çıktıyı
+   **ve konteyner loglarını anbean** oku.
+3. **Her turu tek tek raporla ve bu belgeye yaz.**
+4. **Ancak ondan sonra** teşhise geç: kök neden → geliştirme.
+5. Düzeltmeden sonra **aynı senaryoları `curl` ile tekrar koş**, emin ol, raporla.
+6. **Durmadan tekrarla** — en zor senaryolarda bile thread'ler mükemmel akana kadar.
+
+### 0.2 · İki değişmez
+
+* 🔴 **Tam çalışma = DOĞRU cevap.** Cevap gelmesi yetmez. `source=cube` görmek başarı
+  değildir; `cq`'nun **doğru** olması başarıdır (ölçü · kapsam · dönem · beyan).
+* 🔴 **Bu belge her bulguyu KANITIYLA taşır.** Soru · `source` · `cq` · `note` · `iz` ·
+  süre · ilgili log satırı. *Hafıza gitse bile belge duracak.*
+
+### 0.3 · Ortam — üç tuzak, üçü de bir kez ısırdı
+
+| tuzak | belirti | çözüm |
+|---|---|---|
+| **Bayat imaj** | düzeltme etkisiz görünür | 🔴 `docker restart` **YETMEZ** — aşağıdaki `build` |
+| **Token 15 dk** | `{"detail":"Geçersiz veya süresi dolmuş token"}` · **~8 ms** | yeniden login (ürün kusuru **değil**) |
+| **Sağlayıcı kotası** | `402 Payment Required` · LLM susar | anahtar zinciri (§0.5) ya da `DIMA_LLM_PROVIDER=gemini` |
+
+```bash
+export DOCKER_BUILDKIT=0 && export COMPOSE_DOCKER_CLI_BUILD=0 && \
+docker-compose build dima-backend && \
+docker rm -f dima-backend-core && \
+docker-compose up -d dima-backend
+until curl -sf localhost:8001/health >/dev/null; do sleep 3; done && echo hazır
+```
+
+⚠ Kaynak **bind-mount edilmiyor**; `restart` aynı imajı başlatır. Bu bir kez oldu ve
+**bütün bir ölçüm turu** dünkü kodu ölçtü.
+
+### 0.4 · Yerel test kapısı — üç seviye, başkası yok
+
+| ne zaman | komut | süre |
+|---|---|---|
+| her düzenlemeden sonra | `pytest tests/test_x.py` (yalnız hedef) | 3–15 sn |
+| **demet sonunda, bir kez** | `lab/kapi.py --hizli --degisen <dosyalar>` → sonra `--tam` | ~2 + ~2 dk |
+| gecelik CI | `--hepsi` | 🔴 **yerelde ASLA** |
+
+🔴 Ve bu belgenin kendi dersi: **birim testleri bu kusurların hiçbirini görmedi.**
+*"Bağlam 2. turdan sonra kopuyor"* · *"kök-neden sorusu veda sanıldı"* · *"anlatıcı 24
+sn"* · *"tahmin sorusu 30 satır geçmiş veri"* — **hepsi yalnız canlı curl turunda**
+göründü.
+
+> **En önemli testler bu curl testleridir.**
+
+### 0.5 · 🔴 ANAHTAR ZİNCİRİ — ölçüm durmasın diye
+
+`.env` → `DIMA_OPENROUTER_API_KEYS` (virgüllü). Kota dolunca (`402`/`429`) **sıradakine**
+geçilir; zincir **döngüseldir**, tur başa döndüğünde ilkinin kotası tazelenmiştir.
+
+⚠ Rotasyon **çağrı başına değil HATA başına** ve **yeniden denemez**: çağrı bu tur düşer,
+sonraki tur yeni anahtarla açılır. *Bir yedeğe geçmek, hatayı silmek değil bir sonrakini
+kurtarmaktır.*
+Kapı: `tests/test_anahtar_zinciri.py`.
+
+*Bir ölçüm aracının durması, ölçtüğü şeyin bozulmasından daha sinsidir: biri kırmızı
+verir, öteki sessizce sıfır ölçer.*
+
+
 ## 1 · MERDİVEN GERÇEĞİ — *"her şey LLM'e mi gidiyor?"*
 
 ### 1.1 · Sıra deterministik-önce, ve bu doğrulandı
