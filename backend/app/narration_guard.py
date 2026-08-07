@@ -174,7 +174,13 @@ class Rapor:
     def makbuza(self) -> dict[str, Any]:
         return {"narration_verified": self.gecti,
                 "rejected_sentences": len(self.reddedilen),
-                "unverified_numbers": self.dogrulanamayan_sayilar[:10]}
+                "unverified_numbers": self.dogrulanamayan_sayilar[:10],
+                # 🔴 G5.4 — MUAFİYETLER GÖRÜNÜR OLUR.
+                #
+                # Kapı iki sınıfı **hiç doğrulamıyor** ve bu bilinçli — ama BELGESİZDİ:
+                # kullanıcı *"her sayı doğrulanır"* sanıyordu. Bir muafiyeti gizlemek,
+                # onu bir garanti gibi göstermenin en kısa yoludur.
+                "muaf": {"yil": list(YIL_ARALIGI), "sira_esigi": SIRA_ESIGI}}
 
 
 def dogrula(metin: str | None, result: dict | None, *,

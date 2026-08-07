@@ -438,6 +438,19 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
             return
         from app.narration_guard import guvenli_anlatim
 
+        # 🔴 G5.1 — ÖN KOŞUL KİLİDİ. Anlatıcı, `iddia.py` OLMADAN açılamaz.
+        #
+        # `narration_guard` yalnız **rakamı** korur; `iddia.py` **cümleyi**. İkincisi
+        # yoksa anlatı, korunmayan bir yüzeye açılır: *"tedarikçi kırılımı da
+        # ekleyebilirim"* hiçbir kapıya takılmadan kullanıcıya ulaşırdı.
+        # Fail-closed: modül yoksa anlatı **hiç üretilmez**, cevap deterministik kalır.
+        try:
+            import app.iddia as _iddia_kontrol  # noqa: F401
+        except ImportError:
+            _log.error("T2 anlatı ENGELLENDİ: `app/iddia.py` YOK — §4'ün ikinci "
+                       "değişmezi kurulmadan anlatıcı açılamaz (G5.1).")
+            return
+
         # FAZ 9.8 — ÇAĞRI PLANLAYICIDAN GEÇER. MIMARI §12.6b *"prompt-enhancer için
         # koşulan şart (kapısız LLM çağrısı olmasın; makbuzda ADIM olarak görünsün)
         # anlatıcı için de uygulandı"* diyordu; kayıt (`tools.KAYIT`) doğruydu ama

@@ -97,7 +97,14 @@ features:
                           # metni iyileştirir. Planlayıcının DÖRT KAPISINDAN geçer
                           # (route denenmeden seçilemez). `off` — sıcak yola LLM çağrısı
                           # ekliyor; açılması bilinçli karar olmalı (KURAL B, testli).
-  t2_anlatici: "off"     # FAZ 5: guarded LLM anlatıcı — deterministik olguları AKICI
+  t2_anlatici: alpha   # 🔴 G5 — AÇILDI (2026-08-07). Kapalılığın sebebi bir KARAR
+  #   değil, ÖLÇÜLMEMİŞLİKTİ: MIMARI §6.19z'de kazanç ölçümü "⊘ ÖLÇÜLEMEDİ — kota".
+  #   Üç ön koşul da sağlandı ve üçü de FAIL-CLOSED:
+  #     G0b · hava boşluğu   → gerçek değer/sayı yer tutucuya çevrilir, DIŞARI ÇIKMAZ
+  #     G4  · iddia kapısı   → "tedarikçi kırılımı da ekleyebilirim" DÜŞER
+  #     G5.1· ön koşul kilidi→ iddia.py yoksa anlatı HİÇ üretilmez
+  #   ⚠ `alpha` bilinçli: KURAL G-1 gereği iki koşum ölçülmeden `beta` olmaz.
+  #   Kazanç yoksa `off`'a döner VE gerekçesi MIMARI'ye yazılır (§13.4).
                           # Türkçeye çevirir. LLM ÜSLUBU yazar, SAYIYI sistem koyar.
                           # narration_guard ZORUNLU çıkış kapısı (fail-closed: eşleşmeyen
                           # sayı taşıyan cümle YAYIMLANMAZ). `off` — sıcak yola LLM çağrısı

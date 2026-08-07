@@ -307,3 +307,75 @@ def test_MAKBUZ_HATASI_cevabi_DUSURMEZ():
     resp = AskResponse(question="x")
     _anlati_makbuzu(resp, _Patlak())      # patlamamalı
     assert resp.agent_run is None
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 🔴 G5 — AÇILIŞIN ÜÇ ŞARTI
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def test_G5_1_IDDIA_KAPISI_ON_KOSUL():
+    """🔴 Anlatıcı `iddia.py` OLMADAN açılamaz — fail-closed.
+
+    `narration_guard` yalnız **rakamı** korur; `iddia.py` **cümleyi**. İkincisi yoksa
+    anlatı **korunmayan bir yüzeye** açılır: *"tedarikçi kırılımı da ekleyebilirim"*
+    hiçbir kapıya takılmadan kullanıcıya ulaşırdı.
+    """
+    import pathlib
+    kok = pathlib.Path(__file__).resolve().parents[1]
+    assert (kok / "app" / "iddia.py").exists(), "§4'ün ikinci değişmezi YOK"
+    kaynak = (kok / "app" / "answer.py").read_text(encoding="utf-8")
+    assert "G5.1 — ÖN KOŞUL KİLİDİ" in kaynak
+    assert "import app.iddia" in kaynak, "anlatıcı iddia kapısını KONTROL ETMİYOR"
+
+
+def test_G5_4_MUAFIYETLER_GORUNUR():
+    """🔴 Kapı iki sınıfı **hiç doğrulamıyor** (yıl · <10 sıra) ve bu bilinçliydi —
+    ama **BELGESİZDİ**: kullanıcı *"her sayı doğrulanır"* sanıyordu.
+
+    *Bir muafiyeti gizlemek, onu bir garanti gibi göstermenin en kısa yoludur.*
+    """
+    from app.narration_guard import SIRA_ESIGI, YIL_ARALIGI, Rapor
+
+    m = Rapor(gecti=True, temiz_metin="x").makbuza()
+    assert m["muaf"]["yil"] == list(YIL_ARALIGI)
+    assert m["muaf"]["sira_esigi"] == SIRA_ESIGI
+
+
+def test_G5_6_OZ_DUZELTME_YASAK():
+    """🔴 **Ölçülmüş negatif sonuç** (Huang ve ark., ICLR 2024): dış bir doğruluk kaynağı
+    olmadan öz-düzeltme performansı **DÜŞÜRÜR** — GPT-3.5 CommonSenseQA %75,8 → %41,8
+    (iki turda **−34 puan**).
+
+    → LLM'e *"sayılarını bir kontrol et"* dedirtilmez. Doğrulama daima **VERİYE** karşı
+    yapılır, modele karşı değil.
+    """
+    from app import llm as llm_mod
+
+    s = llm_mod._anlati_system().lower()
+    # ⚠ Arama **EMİR KİPİNE** bakar, kelimeye değil. İlk sürüm çıplak `"doğrula"`
+    # arıyordu ve prompt'un *"Sana DOĞRULANMIŞ bulgular veriliyor"* cümlesine takıldı —
+    # o cümle **girdiyi** niteliyor, öz-denetim İSTEMİYOR. *Bir yasağı ararken kelimeyi
+    # değil EDİMİ aramak gerekir.*
+    for yasak in ("kontrol et", "gözden geçir", "doğrula.", "doğrula\n", "emin ol",
+                  "kendi cevabını", "tekrar bak", "yeniden değerlendir"):
+        assert yasak not in s, (
+            f"anlatı prompt'u modelden ÖZ-DENETİM istiyor ({yasak!r}) — ölçülmüş "
+            "negatif sonuç: −34 puana kadar BOZAR (Huang ve ark., ICLR 2024)")
+    # Ve olumlu şart: doğrulamanın VERİYE karşı yapıldığı yazılı olmalı.
+    assert "hi̇çbi̇r yeni̇ sayi üretme" in s or "hiçbir yeni sayi üretme" in s or \
+           "hiçbir yeni sayı üretme" in s
+
+
+def test_G5_ZINCIR_TAM():
+    """🔴 Anlatı yolunun **dört** kapısı da bağlı olmalı ve sıra anlamlıdır:
+    perdele (G0b) → LLM → geri koy (G0b) → iddia (G4) → guard (rakam)."""
+    import pathlib
+    kaynak = (pathlib.Path(__file__).resolve().parents[1]
+              / "app" / "answer.py").read_text(encoding="utf-8")
+    sira = [kaynak.index(x) for x in
+            ("from app.yayilim import geri_koy, perdele",
+             'plan.calistir("llm.anlat"',
+             "_iddia.dogrula(ham",
+             "guvenli_anlatim(")]
+    assert sira == sorted(sira), f"anlatı zincirinin sırası bozulmuş: {sira}"

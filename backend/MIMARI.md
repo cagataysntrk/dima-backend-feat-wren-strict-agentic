@@ -1516,6 +1516,52 @@ sahibininkinden **farklıydı** (üç nokta ve *"1. madde"* koruması eksikti) v
 **Bedava denetim çalıştı:** kapı `soz.py`'nin **13 deterministik metninde** de koşuldu,
 hepsi geçti. Bir gün düşerse, o deterministik yolda bir kusur var demektir.
 
+### 🔴 ANLATICI AÇILDI (`G5`) — üç fail-closed kapının arkasında
+
+`t2_anlatici` **2026-08-07'de `alpha`ya alındı**. Kapalılığının sebebi bir **karar
+değil, ÖLÇÜLMEMİŞLİKTİ**: §6.19z'de kazanç ölçümü **`⊘ ÖLÇÜLEMEDİ — kota`** diyor ve
+bu, belgede bir *karar* gibi okunuyordu.
+
+**Zincir — sıra anlamlıdır ve test kilitler:**
+
+```
+Fact-Sheet → perdele (G0b) → LLM → geri koy (G0b) → iddia (G4) → guard (rakam) → seal
+             gerçek değer          yapısal            cümle        ±%2
+             DIŞARI ÇIKMAZ         doğrulama          denetimi
+```
+
+| kapı | neyi korur | fail-closed mi |
+|---|---|---|
+| `yayilim.perdele` | gerçek değer/sayı **binadan çıkmaz** | ✅ |
+| `yayilim.geri_koy` | yer tutucu bozulur/uydurulursa **görünür** | ✅ |
+| `iddia.dogrula` | **cümle** — yetenek vaadi · doğrulanamaz güven | ✅ |
+| `narration_guard` | **rakam** ±%2 | ✅ |
+| `G5.1` ön koşul | `iddia.py` yoksa anlatı **hiç üretilmez** | ✅ |
+
+#### `G5.4` — MUAFİYETLER GÖRÜNÜR OLDU
+
+`narration_guard` iki sınıfı **hiç doğrulamıyor** ve bu bilinçliydi ama **belgesizdi**:
+1900–2100 arası tam sayılar (yıl) ve `<10` sıra sayıları. Kullanıcı *"her sayı
+doğrulanır"* sanıyordu. Artık `Rapor.makbuza()` onları **yazıyor**.
+*Bir muafiyeti gizlemek, onu bir garanti gibi göstermenin en kısa yoludur.*
+
+#### `G5.6` — ÖZ-DÜZELTME YASAK (ölçülmüş negatif sonuç)
+
+Huang ve ark. (ICLR 2024): dış bir doğruluk kaynağı olmadan öz-düzeltme performansı
+**düşürür** — GPT-3.5 CommonSenseQA **%75,8 → %41,8** (iki turda **−34 puan**).
+→ Anlatı prompt'u modelden **kendi çıktısını denetlemesini istemez**; doğrulama daima
+**veriye** karşı yapılır.
+
+⚠ Ve kapı yazılırken **kendi testim fazla genişti**: çıplak `"doğrula"` arıyordu ve
+prompt'un *"Sana **DOĞRULANMIŞ** bulgular veriliyor"* cümlesine takıldı — o cümle
+**girdiyi** niteliyor. *Bir yasağı ararken kelimeyi değil EDİMİ aramak gerekir.*
+
+#### Ölçüm (`--live`, `g5a`)
+
+Taban **korundu**, hiçbir satır gerilemedi: `3·süreklilik ✅2` · `5·belirsizlik ✅1` ·
+`6·makbuz ✅3` · `8·temellendirme ✅1 ❌1` · `9·onarım ✅1` · `10·menü ❌1`.
+⚠ `alpha` **bilinçli**: KURAL G-1 gereği ikinci koşum olmadan `beta` yok.
+
 ### 🔴 ALAN HARİTASI — garson ↔ mutfak, ve kapılar
 
 `tests/test_alan_haritasi.py` sınırı **AST ile** kilitler: 🗣 garson modülü motora
