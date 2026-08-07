@@ -1469,6 +1469,10 @@ def deterministic_refine(prev: dict, q: str, schema: dict,
     #
     # *Bir kusuru doğru teşhis edip yanlış katmanda düzeltmek, onu ikinci kez bulmayı
     # gerektirir.*
+    if _direction(q):
+        # 🔴 `§22.4` — üstünlük yapısı (`en` + sıfat) sıralama niyetine gider; kapsam
+        # kapısında **konu** sayılamaz. Kapsam dar: yalnız yapı gerçekten eşleştiyse.
+        known |= ustunluk_sozcukleri(q)
     if _top_n(q, cube_meta):
         known.update(w for m in _TOPN_CUE.finditer(q)
                      for w in re.findall(r"[a-z]+", m.group(0)))
@@ -1775,14 +1779,53 @@ def _time_gran(q: str) -> str | None:
     return None
 
 
+#: 🔴 **ÜSTÜNLÜK BİR YAPIDIR, BİR LİSTE DEĞİL.** Curl'de ölçüldü (`§28.4/P2`):
+#: *"bu yıl en uzun duruş hangi makinede"* → ***"«uzun» başka bir konu gibi görünüyor"***.
+#: Sebep: `_direction` bir **sıfat listesiydi** (`en dusuk`·`en cok`·`en yuksek`…) ve
+#: `en uzun` içinde yoktu — yarın `en kısa`, `en ağır`, `en hızlı` olacaktı (`ADR-0008`).
+#:
+#: ⊙ Türkçede üstünlük **kapalı bir yapıdır**: `en` + sıfat. Yapıyı tanımak için sıfatı
+#: bilmek gerekmez; **yön** için gerekir — ve yön küçük, **kapalı** bir kutupluluk
+#: kümesiyle çözülür (`az`·`düşük`·`kötü`… → ASC, kalanı DESC).
+#:
+#: ⚠ Böylece liste **büyümüyor, küçülüyor**: on bir kalıp yerine bir yapı + dört kutup.
+#:
+#: *Bir dilin yapısını tanımak, o yapının bütün örneklerini saymaktan hem kısadır hem
+#: doğrudur.*
+_USTUNLUK_RE = re.compile(r"\ben\s+([a-z]+)")
+
+#: `en <sıfat>` yapısında **azlık** bildiren kutup. Kapalı ve küçük; kalan her sıfat
+#: **çokluk** okunur — çünkü *"en X"* günlük dilde ezici çoğunlukla *"en fazla X"*tır.
+_AZLIK_KUTBU = frozenset({"dusuk", "az", "kotu", "verimsiz", "kisa", "kucuk", "yavas"})
+
+
+def ustunluk_sozcukleri(q: str) -> set[str]:
+    """`en <sıfat>` yapısının **tükettiği** kelimeler — kapsam kapısı için.
+
+    🔴 `§22.4`'ün kuralı: *bir ayrıştırıcı bir kelimeyi tükettiyse, o kelime kapsam
+    kapısında bilinmeyen sayılamaz.* Yapı iki kelimedir (`en` + sıfat) ve ikisi de
+    sıralama niyetine gider — konuya değil.
+    """
+    return {w for m in _USTUNLUK_RE.finditer(q) for w in ("en", m.group(1))}
+
+
 def _direction(q: str):
-    asc = _herhangi(q, ["en dusuk", "en az", "en kotu", "en verimsiz"])
-    desc = _herhangi(q, ["en cok", "en yuksek", "en fazla", "en verimli", "en iyi", "en buyuk", "hangisi"])
-    if asc:
-        return "ASC"
-    if desc:
-        return "DESC"
-    return None
+    # 🔴 **YAPI ÖNCE, KISAYOL SONRA — kapı bunu yakaladı.**
+    # İlk yazımda `hangisi` kısayolu başta duruyordu ve *"en düşük hangisi"* sorusunu
+    # **DESC** yapıyordu: kullanıcı en düşüğü istiyor, sistem en yükseği sıralıyor —
+    # sessiz-yanlışın en doğrudan biçimi (`test_refine_en_dusuk_siralama` kırmızı verdi).
+    # ⊙ Sebep açık: `hangisi` **yönsüzdür**, yapı ise yönü **taşır**. Yönsüz bir işaret,
+    # yönlü bir yapıyı ezemez.
+    # *Bir kısayol, kestirdiği yolun kendisinden daha çok şey bilemez.*
+    m = _USTUNLUK_RE.search(q)
+    if m:
+        # ⚠ **KÖK eşleşmesi, tam eşleşme değil** — kapı yakaladı: *"en düşükleri göster"*
+        # → `dusukleri` ∉ `_AZLIK_KUTBU` olduğu için DESC çıkıyordu. Eski liste
+        # (`_herhangi`) zaten çekim toleranslıydı; yapıya geçerken o toleransı düşürmüşüm.
+        # *Bir listeyi yapıya çevirirken, listenin sessizce yaptığı işi de taşımak gerekir.*
+        return "ASC" if any(m.group(1).startswith(k) for k in _AZLIK_KUTBU) else "DESC"
+    # `hangisi` tek başına da bir sıralama sorusudur (*"en yüksek"* örtük).
+    return "DESC" if _syn_hit(q, "hangisi") else None
 
 
 def _top_n(q: str, cube_meta: dict | None = None) -> int | None:
@@ -3704,6 +3747,10 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
     # yalnız `_top_n` **gerçekten eşleştiyse**; eşleşmediyse kelime bilinmeyen kalır.
     #
     # *Bir yolun iki ucu da çalışırken yol çalışmıyorsa, kusur uçlarda değil kapıdadır.*
+    if _direction(q):
+        # 🔴 `§22.4` — üstünlük yapısı (`en` + sıfat) sıralama niyetine gider; kapsam
+        # kapısında **konu** sayılamaz. Kapsam dar: yalnız yapı gerçekten eşleştiyse.
+        known |= ustunluk_sozcukleri(q)
     if _top_n(q, cube_meta):
         known.update(w for m in _TOPN_CUE.finditer(q)
                      for w in re.findall(r"[a-z]+", m.group(0)))

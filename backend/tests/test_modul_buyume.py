@@ -318,6 +318,21 @@ MUAFIYET_ASK_KOD = [
                       "dürüst olmayan bir mesajı SATIN ALMAZ"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("ustunluk/yapi-liste-degil", 5,
+     "🔴 **ÜSTÜNLÜK BİR YAPIDIR, BİR LİSTE DEĞİL.** Curl'de ölçüldü (`§28.4/P2`): *«bu yıl "
+     "en uzun duruş hangi makinede»* → *«uzun başka bir konu gibi görünüyor»*. `_direction` "
+     "on bir kalıplık bir **sıfat listesiydi** ve `en uzun` yoktu — yarın `en kısa`, `en "
+     "ağır`, `en hızlı` olacaktı (`ADR-0008`). "
+     "⊙ Türkçede üstünlük **kapalı bir yapıdır**: `en` + sıfat. Yapıyı tanımak için sıfatı "
+     "bilmek gerekmez; **yön** için gerekir ve o da küçük bir **kutupluluk** kümesiyle "
+     "çözülür. 🔴 Böylece liste **büyümedi, küçüldü**: 11 kalıp → 1 yapı + 4 kutup (+3 "
+     "yeni kutup ekleyerek 7). "
+     "⚠ Ve `§22.4`'ün kuralı uygulandı: yapının tükettiği iki kelime kapsam kapısında "
+     "**konu sayılmaz** — kapsam dar, yalnız yapı gerçekten eşleştiyse. "
+     "⚠ **TAŞINAMAZ:** `_direction` ve kapsam kapısı aynı dosyada ve `known` yerel; ayrıca "
+     "`_USTUNLUK_RE` iki tüketiciye birden hizmet ediyor (yön + kapsam). "
+     "*Bir dilin yapısını tanımak, o yapının bütün örneklerini saymaktan hem kısadır hem "
+     "doğrudur.*"),
     ("AJ4/measure-having-beyaz-liste", 6,
      "🔴 **GARSONUN FİŞİ EKSİKTİ.** Ölçüldü (`§AJ4`): `route()` bir sorguya **12 anahtar** "
      "yazabiliyor, LLM'e sunulan şema **7** tanıyordu — ve beyaz liste `measure_having`'i "

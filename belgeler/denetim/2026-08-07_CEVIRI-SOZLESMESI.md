@@ -2021,3 +2021,66 @@ ifadesidir. **Karar yeniden tartılmalı** — ve tartı `nl_corpus`'ta, tahminl
 
 *Bir kararı kusur sanmadan önce kaydını ara; kayıtlı bir kararı değiştirmek, onu ölçen
 sayıyı da değiştirmeyi gerektirir.*
+
+---
+
+## 29 · ÜSTÜNLÜK BİR YAPIYA ÇEVRİLDİ — korpusta **+22 doğru**
+
+### 29.1 · Kök: liste değil yapı
+
+`_direction` on bir kalıplık bir **sıfat listesiydi** (`en dusuk`·`en cok`·`en yuksek`…)
+ve `en uzun` içinde yoktu; yarın `en kısa`, `en ağır`, `en hızlı` olacaktı (`ADR-0008`).
+
+⊙ Türkçede üstünlük **kapalı bir yapıdır**: `en` + sıfat. Yapıyı tanımak için sıfatı
+bilmek gerekmez — **yön** için gerekir, ve o da küçük bir **kutupluluk** kümesiyle çözülür.
+
+🔴 Liste **büyümedi, küçüldü**: 11 kalıp → 1 yapı + 7 kutup.
+Ve `§22.4`'ün kuralı uygulandı: yapının tükettiği iki kelime kapsam kapısında **konu
+sayılmaz**.
+
+*Bir dilin yapısını tanımak, o yapının bütün örneklerini saymaktan hem kısadır hem
+doğrudur.*
+
+### 29.2 · ⊙ ÖLÇÜLEN KAZANÇ (gerçek-dünya korpusu, 2285 vaka)
+
+| | önce | **sonra** | Δ |
+|---|---|---|---|
+| kabul | 1 138 | **1 156** | +18 |
+| 🔴 **doğru** | 69 | **91** | **+22** |
+| beyanlı kısmi | 72 | **50** | −22 |
+| 🔴 **sessiz-yanlış** | 12 | **12** | **0** |
+
+> Doğru cevap **%32 arttı**, sessiz-yanlış **hiç artmadı**. Kapsam beyandan değil,
+> **beyanlı kısmiden** kazanıldı: daha önce *"sıralayamadım"* diye etiketlenen 22 cevap
+> artık gerçekten sıralanıyor.
+
+### 29.3 · ⚠ İki kez kapı yakaladı — ikisi de yapıya geçişin bedeli
+
+1. **`hangisi` kısayolu yapıyı eziyordu**: *"en düşük hangisi"* → **DESC**. Kullanıcı en
+   düşüğü ister, sistem en yükseği sıralar. *Bir kısayol, kestirdiği yolun kendisinden
+   daha çok şey bilemez.* → yapı önce, kısayol sonra.
+2. **Kutupluluk TAM eşleşmeydi**: *"en düşükleri göster"* → `dusukleri` ∉ küme → DESC.
+   Eski liste (`_herhangi`) zaten **çekim toleranslıydı**; yapıya geçerken o toleransı
+   düşürmüşüm. *Bir listeyi yapıya çevirirken, listenin sessizce yaptığı işi de taşımak
+   gerekir.*
+
+### 29.4 · 🔴 P2 İLERLEDİ, YENİ ENGEL ÇIKTI (sekizinci morfoloji vakası)
+
+```
+"bu yıl en uzun duruş hangi makinede"
+önce  🔴 "«uzun» başka bir konu gibi görünüyor"
+sonra 🔴 "«hangi makinede» yerine «hangi gun» mi demek istedin?"
+```
+
+⊙ `uzun` artık engel değil. Yeni engel: **`makinede`** — `makine`'nin bulunma hâli — ve
+üstüne **absürt bir öneri** (`hangi gun`).
+
+🔴 İki kusur birden:
+* **morfoloji**: `makine` bir boyut adı; `makinede` onun çekimi (sekizinci vaka —
+  `ocağa`·`3'ünü`·`çeyreklere`·`üretildi`·`3 tanesi`·`5 milyon üzeri`·`yıkama`·`makinede`)
+* **öneri kalitesi**: `typo_correct`'in *"çapraz-konu terimi — yazım hatası değil"*
+  koruması burada çalışmıyor; içinde **gerçek bir boyut adı** geçen bir parçaya düzeltme
+  önerilmemeli.
+
+*Bir yazım önerisi, düzeltmeye çalıştığı metinde katalogun kendi kelimesi varsa öneri
+değil bir yanlış anlamadır.*
