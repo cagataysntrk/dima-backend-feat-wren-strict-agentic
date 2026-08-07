@@ -198,3 +198,38 @@ def test_YAPISAL_baglam_DEVAMdan_GUCLU():
     dd = {"sorulan": SLOT_DONEM, "kismi_cq": {"cube": "eski"}}
     b = coz(cube_query={"cube": "yeni"}, diyalog_durumu=dd)
     assert b.kural == KURAL_YAPISAL and b.cube_query["cube"] == "yeni"
+
+
+# --- 🔴 DA-5 — KILL-SWITCH YOKTU ---------------------------------------------------
+
+
+def test_G2_KILL_SWITCH_VAR():
+    """🔴 `G2` indiğinde GERİ AL sözleşmesi yazılmıştı (*"`off` → davranış birebir
+    bugünkü"*) ama **bayrak hiç yaratılmamıştı** — bir denetim ajanı buldu.
+
+    `MIMARI §9.11`'in kendi dersi: *bir kill-switch yalnız KODDA varsa yarımdır.*
+    Bayrağı olmayan bir katman geri alınamaz; geri alınamayan bir katman, ölçülmüş bir
+    kazanç olmadan **kalıcıdır**.
+    """
+    import pathlib
+
+    kok = pathlib.Path(__file__).resolve().parents[1]
+    yml = (kok / "demo/packs/features.yml").read_text(encoding="utf-8")
+    assert "diyalog_bellegi:" in yml, "🔴 `G2` bayrağı YAML'de yok — geri alınamaz"
+
+    kaynak = (kok / "app/routers/ask.py").read_text(encoding="utf-8")
+    assert '"diyalog_bellegi" in resolve_for' in kaynak, (
+        "🔴 bayrak okunmuyor — YAML'de bir ad var ama kod onu hiç sormuyor; "
+        "bu, kill-switch'in olmamasından daha kötüdür: VAR sanılır")
+
+
+def test_KILL_SWITCH_TEK_NOKTADA():
+    """⚠ Kesme noktası **girişte**: durum sunucuya hiç girmezse `devam_edilebilir(None)`
+    zaten `None` döner ve `KURAL_DEVAM` ateşlenmez.
+    *Tek noktada kesmek, on dalda ayrı ayrı sormaktan hem ucuz hem dürüsttür.*"""
+    import pathlib
+
+    kaynak = (pathlib.Path(__file__).resolve().parents[1]
+              / "app/routers/ask.py").read_text(encoding="utf-8")
+    assert kaynak.count('"diyalog_bellegi" in resolve_for') == 1, (
+        "🔴 bayrak birden çok yerde soruluyor — ikinci sahip riski")

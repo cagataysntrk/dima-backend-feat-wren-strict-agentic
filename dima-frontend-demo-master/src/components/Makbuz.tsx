@@ -237,6 +237,25 @@ export function Makbuz({
                     </span>
                   </>
                 )}
+                {/* 🔴 `DA-4` — ANLATI GUARD'ININ MAKBUZU, aynı satırda. `G5.4` muafiyetleri
+                    görünür kılmak için yazılmıştı ama `makbuza()` hiç çağrılmıyordu:
+                    kullanıcı *"her sayı doğrulanır"* sanıyordu. Muafiyet **adlandırılır**
+                    — *bir muafiyeti gizlemek, onu bir garanti gibi göstermektir.* */}
+                {item.hava_boslugu.anlati_dogrulandi !== undefined && (
+                  <>
+                    <span className="mx-1 text-neutral-400">·</span>
+                    <span
+                      title={
+                        "Anlatıdaki her sayı küple ±%2 eşleştirilir. MUAF iki sınıf: " +
+                        `yıl sayıları (${item.hava_boslugu.guard_muaf?.yil?.join("–") ?? "?"}) ` +
+                        `ve sıralama eşiğinin altındaki küçük sayılar (<${item.hava_boslugu.guard_muaf?.sira_esigi ?? "?"}).`
+                      }
+                      className={item.hava_boslugu.anlati_dusen ? "text-amber-500" : "text-foreground"}
+                    >
+                      anlatı: {item.hava_boslugu.anlati_dusen ?? 0} cümle düştü
+                    </span>
+                  </>
+                )}
               </div>
             )}
             {item.trace && item.trace.length > 0 && (

@@ -518,12 +518,23 @@ export function InterpretationBar({
         );
       })()}
 
-      {/* DÖNEMSEL KIYAS (YoY) — kova/dönem yanında "geçen yıla göre". Aç: compare=yoy ekler
-          (/cube period-shift → cari + geçen yıl + %). Aktifken × ile kaldırılır (diğer chip'ler gibi). */}
+      {/* DÖNEMSEL KIYAS — kova/dönem yanında. Aç: compare ekler (/cube period-shift →
+          cari + geçen dönem + %). Aktifken × ile kaldırılır (diğer chip'ler gibi).
+          🔴 `DA-9` — **KİPE DUYARLI.** Eskiden `=== "yoy"` sabit kodluydu; `G6`'nın
+          `kiyas_cebiri`'si `mom` de üretiyor (*"mart'ı şubat ile kıyasla"* → `mom`).
+          Sonuç iki kat kusurluydu: `mom` aktifken chip **"kapalı"** gösteriyordu ve
+          tıklayınca kullanıcının kıyasını **sessizce `yoy`'a çeviriyordu** — yani bir
+          gösterge, kapatmaya çalıştığı şeyi DEĞİŞTİRİYORDU.
+          *Bir anahtarın yalnız bir değeri tanıması, öteki değeri yok saymak değil
+          BOZMAKTIR.* */}
       {(() => {
-        const active = (cq.compare as string | undefined) === "yoy";
+        const mod = cq.compare as string | undefined;
+        const active = mod === "yoy" || mod === "mom";
+        const etiket = mod === "mom" ? "geçen aya göre" : "geçen yıla göre";
         const setCompare = (on: boolean) => {
           const next = clone() as Record<string, unknown>;
+          // ⚠ Açarken varsayılan `yoy` (bugünkü davranış); KAPATIRKEN hangi kip olursa
+          // olsun **silinir** — `mom`'u `yoy`'a çevirmek bir kaldırma değil bir düzenlemedir.
           if (on) next.compare = "yoy";
           else delete next.compare;
           onEdit({ cq: next as CubeQuery, label: on ? "chip: geçen yıla göre kıyasla" : "chip: kıyas kaldırıldı" });
@@ -533,10 +544,11 @@ export function InterpretationBar({
             onClick={() => setCompare(!active)}
             role="switch"
             aria-checked={active}
-            title="Geçen yıla göre kıyasla (YoY) — aç/kapa"
+            title={active ? `${etiket} kıyaslanıyor — kaldırmak için tıkla`
+                          : "Geçen yıla göre kıyasla (YoY) — aç/kapa"}
             className={`${chip} inline-flex items-center gap-1.5 hover:text-foreground ${active ? "border-accent text-accent" : ""}`}
           >
-            <span className={active ? "text-accent" : "text-neutral-400"}>◷</span> geçen yıla göre
+            <span className={active ? "text-accent" : "text-neutral-400"}>◷</span> {etiket}
             {/* on/off göstergesi: yeşil=açık, gri=kapalı */}
             <span className={`inline-block h-2.5 w-2.5 rounded-full ${active ? "bg-accent" : "bg-neutral-400/40"}`} />
             <span className={active ? "text-accent" : "text-neutral-400"}>{active ? "açık" : "kapalı"}</span>

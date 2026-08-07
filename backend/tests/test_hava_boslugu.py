@@ -21,6 +21,8 @@ test_DESEN_SOZLUGU_KOPYALANMAMIS` o modüle regex yazılmasını kilitliyor ve *
 
 from __future__ import annotations
 
+import pytest
+
 from app.llm_guard import ihlalleri_bul
 from app.yayilim import geri_koy, perdele
 
@@ -108,3 +110,40 @@ def test_pii_kapisi_AYNEN_calisiyor():
     """`G0b` mevcut kapıyı genişletti, **değiştirmedi**."""
     assert ihlalleri_bul("iletisim: a@b.com") == ["e-posta"]
     assert ihlalleri_bul("merhaba") == []
+
+
+# --- 🔴 DA-4 — GUARD MAKBUZU ÇAĞRANSIZDI ------------------------------------------
+
+
+def test_GUARD_MAKBUZU_CAGRILIYOR():
+    """🔴 `narration_guard.Rapor.makbuza()` yazılmıştı ve **hiçbir yerden
+    çağrılmıyordu** — bir denetim ajanı buldu.
+
+    `G5.4`'ün gerekçesi şuydu: *"Kapı iki sınıfı hiç doğrulamıyor ve bu bilinçli — ama
+    BELGESİZDİ: kullanıcı «her sayı doğrulanır» sanıyordu."* Makbuza yazılmadıkça madde
+    **kendi teşhisini** tekrar üretir: muafiyet yine gizli kalır.
+
+    *Bir muafiyeti gizlemek, onu bir garanti gibi göstermenin en kısa yoludur.*
+    """
+    import pathlib
+
+    kaynak = (pathlib.Path(__file__).resolve().parents[1]
+              / "app/answer.py").read_text(encoding="utf-8")
+    assert "rapor.makbuza()" in kaynak, (
+        "🔴 anlatı guard'ının makbuzu üretimde çağrılmıyor — muafiyetler yine gizli")
+    for alan in ("anlati_dogrulandi", "anlati_dusen", "guard_muaf"):
+        assert alan in kaynak, f"🔴 `{alan}` makbuza taşınmıyor"
+
+
+def test_GUARD_MAKBUZU_EKRANDA():
+    """⚠ Ve **yeni panel YOK**: iddia kapısının izi nerede duruyorsa oraya girer.
+    *İki kapıyı iki ayrı yere yazmak, onları iki ayrı şeymiş gibi gösterir.*"""
+    import pathlib
+
+    fe = (pathlib.Path(__file__).resolve().parents[2]
+          / "dima-frontend-demo-master/src/components/Makbuz.tsx")
+    if not fe.exists():
+        pytest.skip("⊘ frontend mount edilmemiş")
+    kart = fe.read_text(encoding="utf-8")
+    assert "anlati_dogrulandi" in kart, "🔴 guard makbuzu ekranda YOK"
+    assert "guard_muaf" in kart, "🔴 muafiyetler adlandırılmıyor"

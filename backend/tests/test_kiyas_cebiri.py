@@ -240,3 +240,25 @@ def test_TOPN_ILE_KIYAS_SIRALAMAYI_KAYBETMIYOR(schema):
         pytest.skip("⊘ vaka bayat")
     if (hit.get("cube_query") or {}).get("compare"):
         assert hit.get("order") or hit.get("limit"), "⊘ vaka artık top-N taşımıyor"
+
+
+def test_KIYAS_CHIPI_MOM_KIPINI_TANIYOR():
+    """🔴 `DA-9` — chip `=== "yoy"` sabit kodluydu; `kiyas_cebiri` `mom` de üretiyor.
+
+    Kusur iki katlıydı: `mom` aktifken chip **"kapalı"** gösteriyordu **ve** tıklayınca
+    kullanıcının kıyasını **sessizce `yoy`'a çeviriyordu** — bir gösterge, kapatmaya
+    çalıştığı şeyi DEĞİŞTİRİYORDU.
+
+    *Bir anahtarın yalnız bir değeri tanıması, öteki değeri yok saymak değil BOZMAKTIR.*
+    """
+    import pathlib
+
+    fe = (pathlib.Path(__file__).resolve().parents[2]
+          / "dima-frontend-demo-master/src/components/InterpretationBar.tsx")
+    if not fe.exists():
+        import pytest
+        pytest.skip("⊘ frontend mount edilmemiş")
+    src = fe.read_text(encoding="utf-8")
+    assert 'mod === "yoy" || mod === "mom"' in src, (
+        "🔴 kıyas chip'i `mom` kipini tanımıyor — backend üretiyor, ekran görmüyor")
+    assert '"geçen aya göre"' in src, "🔴 `mom` için etiket yok"

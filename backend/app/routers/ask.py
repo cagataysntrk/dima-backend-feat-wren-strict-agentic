@@ -1572,7 +1572,16 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         capalar=_capalar,
         capa_etiketi=body.reply_to_label,
         atif=cube_router.atif_var(body.question),
-        diyalog_durumu=getattr(body, "diyalog_durumu", None),
+        # 🔴 `DA-5` — `G2`'NİN KILL-SWITCH'İ. `MIMARI §9.11`'in kendi dersi: *"bir
+        # kill-switch yalnız KODDA varsa yarımdır."* `G2` indiğinde GERİ AL sözleşmesi
+        # (*"`off` → davranış birebir bugünkü"*) yazılmıştı ama **bayrak hiç
+        # yaratılmamıştı** — bir denetim ajanı buldu.
+        #
+        # Bayrak kapalıyken durum sunucuya **hiç girmez**: `devam_edilebilir(None)` →
+        # `None` → `KURAL_DEVAM` ateşlenmez → davranış `G2` öncesiyle birebir aynı.
+        # *Tek noktada kesmek, on dalda ayrı ayrı sormaktan hem ucuz hem dürüsttür.*
+        diyalog_durumu=(getattr(body, "diyalog_durumu", None)
+                        if "diyalog_bellegi" in resolve_for(settings, principal) else None),
     )
 
     # ATIF ÇÖZÜMÜ (FAZ E) — bağlamın ham ifadeden GERİ KAZANILMASI.

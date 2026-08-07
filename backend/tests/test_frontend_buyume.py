@@ -116,7 +116,14 @@ TAVANLAR = {
     #   `devam_edilebilir` (hem `sorulan` hem `kismi_cq` ister) yine `None` döner, yani
     #   yankıyı tipli nesneden kuran biri **kapattığını sanır**.
     #   ⚠ Bir tipi bölmek onu küçültmez; iki yönde AYNI şekli garanti eder.
-    "lib/types.ts": 594,
+    # ⊙ +4 · `DA-4` — anlatı guard'ının makbuzu (`anlati_dogrulandi` · `anlati_dusen` ·
+    #   `guard_muaf`). `narration_guard.Rapor.makbuza()` yazılmıştı ve **hiçbir yerden
+    #   çağrılmıyordu**: `G5.4`'ün *"muafiyetler GÖRÜNÜR olur"* kazancı yalnız log'a
+    #   gidiyordu ve kullanıcı *"her sayı doğrulanır"* sanmaya devam ediyordu.
+    #   ⚠ Yeni panel/alan **açılmadı**: mevcut `hava_boslugu` bloğuna girdi — iddia
+    #   kapısının izi neredeyse oraya. *İki kapıyı iki ayrı yere yazmak, onları iki ayrı
+    #   şeymiş gibi gösterir.*
+    "lib/types.ts": 598,
     "components/ReviewPanel.tsx": 555,
     # ⊙ +9 · 🔴 `G2` DİYALOG DURUMU YANKISI — **taşınamaz, çünkü bir davranış değil bir
     #   TELDİR.** Backend'in bellek zinciri (`AskRequest.diyalog_durumu` → `context.py::
@@ -130,7 +137,14 @@ TAVANLAR = {
     #   Kapısı: `tests/test_cevap_alani_yetim_degil.py::test_K2c_ISTEK_ALANI_GONDERILIYOR_mu`.
     "app/page.tsx": 543,
     "components/ResultView.tsx": 476,
-    "components/InterpretationBar.tsx": 472,
+    # ⊙ +3 · `DA-9` — kıyas chip'i **kipe duyarlı** oldu. Eskiden `=== "yoy"` sabit
+    #   kodluydu; `G6`'nın `kiyas_cebiri`'si `mom` de üretiyor. Kusur iki katlıydı:
+    #   `mom` aktifken chip **"kapalı"** gösteriyordu ve tıklayınca kullanıcının kıyasını
+    #   **sessizce `yoy`'a çeviriyordu** — bir gösterge, kapatmaya çalıştığı şeyi
+    #   DEĞİŞTİRİYORDU. **Taşınamaz:** üç satırın ikisi bir `const`, biri bir etiket;
+    #   bir bileşene çıkarmak tek bir chip için dosya açmak olurdu.
+    #   *Bir anahtarın yalnız bir değeri tanıması, öteki değeri yok saymak değil BOZMAKTIR.*
+    "components/InterpretationBar.tsx": 475,
 }
 
 #: `(dosya, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.

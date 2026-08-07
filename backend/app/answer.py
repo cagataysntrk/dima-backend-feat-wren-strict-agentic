@@ -534,6 +534,28 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
                       len(getattr(rapor, "reddedilen", []) or []))
             return
         yorum["narration"] = metin
+        # 🔴 `DA-4` — GUARD'IN MAKBUZU KULLANICIYA ULAŞIYOR.
+        #
+        # `narration_guard.Rapor.makbuza()` yazılmıştı ve **hiçbir yerden
+        # çağrılmıyordu**: `G5.4`'ün *"muafiyetler GÖRÜNÜR olur"* kazancı yalnız log'a
+        # gidiyordu. Oysa maddenin kendi gerekçesi *"kullanıcı «her sayı doğrulanır»
+        # sanıyordu; bir muafiyeti gizlemek, onu bir garanti gibi göstermenin en kısa
+        # yoludur"* diyor — yani makbuza yazılmadıkça madde **kendi teşhisini** tekrar
+        # üretir.
+        #
+        # ⚠ Yeni alan/panel YOK: iddia kapısının izi nerede duruyorsa oraya, aynı
+        # `hava_boslugu` bloğuna girer. *İki kapıyı iki ayrı yere yazmak, onları iki ayrı
+        # şeymiş gibi gösterir.*
+        try:
+            _mk = rapor.makbuza()
+            resp.hava_boslugu = {
+                **(resp.hava_boslugu or {}),
+                "anlati_dogrulandi": bool(_mk.get("narration_verified")),
+                "anlati_dusen": int(_mk.get("rejected_sentences") or 0),
+                "guard_muaf": _mk.get("muaf"),
+            }
+        except Exception:                                  # noqa: BLE001 — makbuz süstür
+            _log.warning("guard makbuzu yazılamadı", exc_info=True)
         if getattr(rapor, "reddedilen", None):
             # Kısmi düşüş de GÖRÜNÜR olmalı — sessiz kırpma yok (bu deponun disiplini).
             _log.info("T2 anlatı: %d cümle guard'da düştü",
