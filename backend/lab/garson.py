@@ -118,6 +118,46 @@ SENARYOLAR: tuple[dict, ...] = (
         "olculen": (S9_ONARIM, S3_SUREKLILIK, S6_MAKBUZ),
     },
     {
+        # 🔴 `DA-2` — **ANLATICININ KENDİ SATIRI ÖLÇÜLMÜYORDU.**
+        #
+        # `TUM_SATIRLAR` on satır ilan ediyor ve rapor onları basıyor; ama `1·çapa`,
+        # `2·anlat`, `4·sosyal`, `7·geri dönüş` **hiçbir senaryonun** `olculen`'inde
+        # yoktu → sekiz raporun sekizinde de `0|0|0`. Yani **ölçülmemiş** ile
+        # **başarısız** aynı görünüyordu.
+        #
+        # En ağırı `2·anlat`: `G5` `t2_anlatici`'yi açtı ve o satır **yine 0 kaldı** —
+        # fazın amiral yeteneği, kendi kapısında görünmezdi. `G0.12`'nin *"alet körse G1
+        # başlamaz"* kırmızı çizgisi bu yüzden fiilen sınanamadı.
+        #
+        # ⚠ Tur sayısı **bilerek üç**: canlı kapı gerçek sağlayıcı çağırıyor ve bu bir
+        # yük testi değil. *Bir kapıyı pahalılaştırmak, onu atlanan bir kapıya çevirir.*
+        "ad": "anlati",
+        "aciklama": "Konuşma turu: cevabın ÜSTÜNDE konuşulur — yeni SQL yazılmaz, "
+                    "anlatı + olgular + devam chip'leri gelir. (`G5` inmeden KIRMIZI.)",
+        "turlar": ["bu yıl makine bazında oee",
+                   "bunu analiz et",
+                   "bu neden böyle?"],
+        "olculen": (S1_CAPA, S2_ANLAT, S3_SUREKLILIK, S6_MAKBUZ),
+    },
+    {
+        # 🔴 `DA-2`'nin kalan iki satırı. Kapı (`test_HER_SATIR_EN_AZ_BIR_SENARYODA…`)
+        # bunları da yakaladı — *bir kapıyı kurmanın ilk faydası, kendi eksiğini
+        # göstermesidir.*
+        #
+        # İkisi tek senaryoda toplandı çünkü ikisi de **tek turluk** ölçüm:
+        # · `4·sosyal` → *"teşekkürler"* bir veri sorusu DEĞİL: 0 LLM · 0 SQL beklenir.
+        # · `7·geri dönüş` → `("...", 0)` tuple'ı koşucuya *"0. kartın `cube_query`'sini
+        #   `/cube` ile yeniden koştur"* der; 0 LLM ile aynı rapora dönülmeli.
+        #
+        # ⚠ Toplam üç tur — canlı bütçe korunur.
+        "ad": "sosyal_ve_donus",
+        "aciklama": "Sosyal ifade motora hiç gitmez; her karta 0 LLM ile geri dönülebilir.",
+        "turlar": ["mart ayında toplam fire kg",
+                   "teşekkürler",              # sosyal → 0 LLM · 0 SQL
+                   ("__CUBE__", 0)],           # 0. karta geri dön → 0 LLM replay
+        "olculen": (S4_SOSYAL, S7_GERI_DONUS, S6_MAKBUZ),
+    },
+    {
         "ad": "kapasite",
         "aciklama": "Kapsam dışı bir soruda sistem yalnız «yapamam» mı diyor, "
                     "yoksa NE YAPABİLDİĞİNİ de söylüyor mu? (`G8` inmeden KIRMIZI.)",

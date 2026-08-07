@@ -1,21 +1,21 @@
 {
  "1·çapa: konuşma turu yeni SQL yazmaz": {
-  "gecti": 0,
+  "gecti": 1,
   "kaldi": 0,
   "olculemedi": 0
  },
  "2·anlat: ≥3 olgu + anlatı + ≥2 chip": {
-  "gecti": 0,
+  "gecti": 1,
   "kaldi": 0,
   "olculemedi": 0
  },
  "3·süreklilik: bağlam hiç kopmaz": {
-  "gecti": 2,
+  "gecti": 3,
   "kaldi": 0,
   "olculemedi": 0
  },
  "4·sosyal: 0 LLM · 0 SQL": {
-  "gecti": 0,
+  "gecti": 1,
   "kaldi": 0,
   "olculemedi": 0
  },
@@ -25,18 +25,18 @@
   "olculemedi": 0
  },
  "6·makbuz: her cevap gerekçeli": {
-  "gecti": 3,
+  "gecti": 5,
   "kaldi": 0,
   "olculemedi": 0
  },
  "7·geri dönüş: 0 LLM ile replay": {
-  "gecti": 0,
+  "gecti": 1,
   "kaldi": 0,
   "olculemedi": 0
  },
  "8·temellendirme: ne anladığını SÖYLER": {
-  "gecti": 1,
-  "kaldi": 1,
+  "gecti": 2,
+  "kaldi": 0,
   "olculemedi": 0
  },
  "9·onarım: tek slot düzelir, baştan başlamaz": {
@@ -45,8 +45,8 @@
   "olculemedi": 0
  },
  "10·menü: yapamadığında NE YAPABİLDİĞİNİ söyler": {
-  "gecti": 0,
-  "kaldi": 1,
+  "gecti": 1,
+  "kaldi": 0,
   "olculemedi": 0
  }
 }
