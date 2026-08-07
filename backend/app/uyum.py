@@ -280,7 +280,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
 
     # 6 · EŞİK — "1.000 üstü"
     if any(f.get("operator") not in ("gte", "lte") for f in niyet.filtreler) \
-            and not _esik_filtresi_var(filtreler):
+            and not _esik_filtresi_var(filtreler) and not ic.get("measure_having"):
         out.append(Ihlal(
             "esik",
             "bir **eşik** verdin (ör. *«1.000 üstü»*) ama filtreye çeviremedim",
@@ -356,6 +356,22 @@ def _zaman_ekseni_var(cq: dict, cube_meta: dict | None) -> bool:
     """Kırılımda bir ZAMAN boyutu var mı — trend gerçekten çizilebiliyor mu?"""
     zaman = set((cube_meta or {}).get("time_dimensions") or ["tarih"])
     return any(d in zaman or str(d).startswith("tarih") for d in (cq.get("dimensions") or []))
+
+
+#: 🔴 **EŞİK İKİ YERDE YAŞAR — ve kapı yalnız birine bakıyordu.** Curl'de ölçüldü
+#: (`§AJ4` sonrası): *"bu yıl 5 milyon üzeri ciro yapan müşteriler"* → `cq` artık
+#: `measure_having={"measure":"toplam_ciro","op":">","value":5000000}` **taşıyor**, ama
+#: `uyum` yine *"eşiği filtreye çeviremedim"* diyordu.
+#:
+#: ⊙ Sebep yapısal: **boyut** eşiği `filters`'a (WHERE), **ölçü** eşiği
+#: `measure_having`'e (HAVING) gider — ikisi farklı SQL kademesidir ve farklı alanlarda
+#: yaşar. Kapı yalnız `filters`'ı sayıyordu.
+#:
+#: ⚠ Ve bu, kapının en pahalı hata biçimiydi: sistem **doğru olanı yapmıştı** ve
+#: kullanıcıya *"yapamadım"* diyordu — yanlış bir özür, yanlış bir cevaptan daha çok
+#: güven tüketir çünkü kullanıcı çalışan bir yolu terk eder.
+#:
+#: *Bir niyetin karşılandığını sormak, onun nereye yazıldığını bilmeyi gerektirir.*
 
 
 def _esik_filtresi_var(filtreler: list[dict]) -> bool:

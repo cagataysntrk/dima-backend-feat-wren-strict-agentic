@@ -193,3 +193,39 @@ def test_UCTAN_UCA_EKSIK_NIYET_ALANI(client):
         pytest.skip("⊘ bu soru cube yolundan dönmedi")
     assert d.get("eksik_niyet"), "🔴 eksik niyet cevaba taşınmıyor"
     assert "eksik" in (d.get("note") or "").lower()
+
+
+def test_OLCU_ESIGI_DE_ESIKTIR(schema):
+    """🔴 **EŞİK İKİ YERDE YAŞAR — kapı yalnız birine bakıyordu.**
+
+    Curl'de ölçüldü (`§AJ4` sonrası): *"bu yıl 5 milyon üzeri ciro yapan müşteriler"* →
+    `cq` artık `measure_having` **taşıyor**, ama `uyum` yine *"eşiği filtreye
+    çeviremedim"* diyordu.
+
+    ⊙ Yapısal sebep: **boyut** eşiği `filters`'a (WHERE), **ölçü** eşiği
+    `measure_having`'e (HAVING) gider — farklı SQL kademeleri, farklı alanlar.
+
+    ⚠ Kapının en pahalı hata biçimi buydu: sistem **doğru olanı yapmıştı** ve kullanıcıya
+    *"yapamadım"* diyordu. *Yanlış bir özür, yanlış bir cevaptan daha çok güven tüketir —
+    çünkü kullanıcı çalışan bir yolu terk eder.*
+    """
+    from app.uyum import denetle
+
+    hit = {"cube_query": {
+        "cube": "parti", "measures": ["toplam_ciro"], "dimensions": ["musteri"],
+        "measure_having": {"measure": "toplam_ciro", "op": ">", "value": 5000000.0},
+        "filters": [{"dimension": "tarih", "operator": "gte", "value": "2026-01-01"}]}}
+    isaretler = {i.isaret for i in denetle("bu yil 5 milyon uzeri ciro yapan musteriler", hit)}
+    assert "esik" not in isaretler, (
+        f"🔴 eşik UYGULANDI ama kapı hâlâ eksik diyor: {isaretler}")
+
+
+def test_ESIK_GERCEKTEN_YOKSA_HALA_BEYAN_EDILIR(schema):
+    """⚠ Genişlemenin sınırı: `measure_having` **yoksa** beyan devam etmeli.
+    *Bir kuralı düzeltmek, komşusunu bozma hakkı vermez.*"""
+    from app.uyum import denetle
+
+    hit = {"cube_query": {"cube": "parti", "measures": ["toplam_ciro"],
+                          "dimensions": ["musteri"]}}
+    isaretler = {i.isaret for i in denetle("5 milyon uzeri ciro yapan musteriler", hit)}
+    assert "esik" in isaretler, "🔴 eşik uygulanmadı ama sessiz kalındı"
