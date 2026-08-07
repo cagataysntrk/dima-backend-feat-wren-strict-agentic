@@ -688,6 +688,39 @@ def is_period_optional(measure: str | None, cube_meta: dict | None) -> bool:
 _ADD_RE = re.compile(r"\b(ekle\w*|ayrica|bir de|yanina|ilave|dahil et|hem de)\b")
 
 
+def _kc_modul():
+    """`kiyas_cebiri` — **fonksiyon içi** import, çünkü o modül bizi çağırıyor
+    (`referans_uret` → `shift_period_back`). Döngü modül düzeyinde kırılmaz."""
+    from app import kiyas_cebiri
+
+    return kiyas_cebiri
+
+
+def blend_uyumlu(spec: dict, dims, zamanlar, filtreler) -> bool:
+    """🔴 `G6.5` — bir cube, **PAYLAŞILAN gruplama anahtarlarını** taşıyor mu?
+
+    `blend_sql`'in kendi sözleşmesi: *"Paylaşılan dimensions/timeDimensions/filters TÜM
+    cube'lara uygulanır (**çağıran, hepsinde var olduğunu garantiler**)."* Bugüne kadar
+    o garantiyi **tek çağıran** veriyordu (`cross_cube_add`, tek satırla ve yalnız
+    `dimensions` için). Intent-JSON'a `blend` girince ikinci bir çağıran doğdu — ve
+    garantiyi **iki yerde** vermek, bir gün yalnız birinde vermek demektir.
+
+    ⚠ Ve tek satırlık hâli **eksikti**: filtreler de tüm cube'lara uygulanıyor. Hedef
+    cube'da olmayan bir boyuta filtre, ya SQL'i patlatır ya da sessizce **filtresiz** bir
+    seri getirir — ikinci hâli, iki serinin farklı evrenlerden gelmesi demektir.
+    *Bir yan yana koymanın sessiz kusuru, sayının kendisinden büyüktür.*
+    """
+    d = set(spec.get("dimensions") or [])
+    z = set(spec.get("time_dimensions") or [])
+    if any(x not in d for x in dims or []):
+        return False
+    if any((td.get("dimension") if isinstance(td, dict) else td) not in z
+           for td in zamanlar or []):
+        return False
+    return all(f.get("dimension") in d or f.get("dimension") in z
+               for f in filtreler or [] if isinstance(f, dict))
+
+
 def cross_cube_add(prev: dict, q: str, schema: dict) -> dict | None:
     """CROSS-CUBE BLEND ("kâr da ekle"): mevcut cube'da OLMAYAN ama BAŞKA cube'da olan bir
     ölçüyü mevcut rapora `blend` olarak katar (konu değiştirme değil). Uyum: mevcut kırılım
@@ -713,8 +746,8 @@ def cross_cube_add(prev: dict, q: str, schema: dict) -> dict | None:
             m in (b.get("measures") or []) for b in prev.get("blend", []))
         if in_report:
             continue
-        if any(d not in (cm.get("dimensions") or []) for d in prev_dims):
-            continue  # hedef cube mevcut kırılımı taşımıyor → o grain'de blend olmaz
+        if not blend_uyumlu(cm, prev_dims, prev.get("timeDimensions"), prev.get("filters")):
+            continue  # hedef cube paylaşılan anahtarları taşımıyor → o grain'de blend olmaz
         import copy
 
         cq = copy.deepcopy(prev)
@@ -3851,6 +3884,15 @@ def parse_cube_query(text: str, index: dict) -> dict | None:
     # gerektiğinin kanıtıdır*). Kapsam kapalı: `app/yoy.py`'nin bildiği iki mod.
     if (kmod := cq.get("compare")) in ("yoy", "mom"):
         out["compare"] = kmod
+    # 🔴 `G6.3` — REFERANS EKSENİ. `compare` iki değerlik bir enum'dur; *"mart'ı şubatla"*
+    # gibi **adlandırılmış** iki uç onun içine sığmaz — ve sığmadığı için makbuz da o iki
+    # adı söyleyemiyordu. `referans` onları taşır, `compare` motoru sürer: aynı şeyin iki
+    # izdüşümü, **tek kaynaktan** (`kiyas_cebiri`, iki yönü de aynı kaydırıcıya sorar).
+    # ⚠ Derlenemeyen `referans` GEÇMEZ — geçseydi kıyassız bir sayı, kıyas etiketiyle
+    # sunulurdu. Reddedilen kıyas niyeti `uyum` tarafından etiketlenmeye devam eder.
+    if (_ref := _kc_modul().referans_dogrula(cq.get("referans"))) is not None:
+        out["referans"] = _ref
+        out.setdefault("compare", _kc_modul().referans_modu(_ref))
     # CROSS-CUBE BLEND: ek cube ölçüleri (paylaşılan kırılım prev'den taşınır). Her blend
     # cube'u + ölçüsü kataloğa karşı DOĞRULANIR (halüsinasyon yok); geçersiz entry atlanır.
     blend_out = []
@@ -3859,7 +3901,7 @@ def parse_cube_query(text: str, index: dict) -> dict | None:
         if not bspec:
             continue
         bms = [m for m in (b.get("measures") or []) if m in bspec.get("measures", [])]
-        if bms:
+        if bms and blend_uyumlu(bspec, dims, tds, filters):
             blend_out.append({"cube": b["cube"], "measures": bms})
     if blend_out:
         out["blend"] = blend_out

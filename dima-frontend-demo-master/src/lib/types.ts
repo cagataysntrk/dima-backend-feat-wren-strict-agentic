@@ -245,6 +245,11 @@ export interface AskResponse {
   temellendirme?: {
     cube?: string; olcu?: string; donem?: string; granulerlik?: string;
     kirilim?: string[]; filtreler?: string[];
+    // 🔴 `G6.3` — KIYAS. Makbuz bunu SÖYLEMİYORDU: `compare` uçtan uca akıyor, grafik
+    // çiziyor, chip düzenliyor — ama *"ne anladım"* muhasebesinde hiç yoktu. `referans`
+    // varsa iki UÇ yazılır (`2026-03 ↔ 2026-02`), yoksa modun insan okunuşu.
+    // ⚠ Bayrağa bağlı (`referans_dili`): kapalıyken alan HİÇ gelmez.
+    kiyas?: string;
   } | null;
   // 🔴 G2 — DİYALOG DURUMU. Sunucu oturum SAKLAMAZ; bu nesne cevapta gelir ve istemci
   // bir sonraki isteğe YANKILAR (`cube_query` ile aynı desen). JPMorgan 2026: tur-3

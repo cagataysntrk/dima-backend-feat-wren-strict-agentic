@@ -541,6 +541,11 @@ export function InterpretationBar({
         };
         return (
           <button
+            // 🔴 `G6.3` — makbuzun kıyas rozetinin İNİŞ NOKTASI. Çapa adı
+            // `temellendirme.kiyas`'ın `capa` değeriyle birebir aynı olmalı; ayrışırsa
+            // tıklama sessizce hiçbir şey yapmaz (kapı ikisini karşılaştırır).
+            data-capa="kiyas"
+            tabIndex={-1}
             onClick={() => setCompare(!active)}
             role="switch"
             aria-checked={active}

@@ -41,6 +41,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from app import soz
 from app.logging_setup import get_logger
 
 _log = get_logger("temellendirme")
@@ -60,8 +61,26 @@ def _ad(teknik: str, katalog: dict[str, str] | None) -> str:
     return teknik.split(".")[-1].replace("_", " ")
 
 
+def _pencere_adi(p: dict) -> str:
+    """`{gte, lte}` → insanın okuduğu dönem adı. Tam ay → `2026-03`, tam yıl → `2026`.
+
+    ⚠ Kısaltma **yalnız tam örtüşmede**: `2026-03-05 … 2026-03-28` bir mart değildir ve
+    *"mart"* demek, kullanıcının sormadığı bir aralığı sorduğu sanmasına yol açardı.
+    """
+    g, l = str(p.get("gte") or "")[:10], str(p.get("lte") or "")[:10]
+    if len(g) == 10 and len(l) == 10:
+        if g.endswith("-01-01") and l.endswith("-12-31") and g[:4] == l[:4]:
+            return g[:4]
+        if g[8:] == "01" and g[:7] == l[:7]:
+            from calendar import monthrange
+
+            if l[8:] == f"{monthrange(int(g[:4]), int(g[5:7]))[1]:02d}":
+                return g[:7]
+    return f"{g} … {l}"
+
+
 def kur(cube_query: dict | None, *, katalog: dict[str, str] | None = None,
-        cube_etiketi: str | None = None) -> dict[str, Any] | None:
+        cube_etiketi: str | None = None, kiyas: bool = False) -> dict[str, Any] | None:
     """`CubeQuery` → *"ne anladım"* muhasebesi. LLM YOK, sayı YOK.
 
     Döner: `{cube, olcu, donem, kirilim[], filtreler[]}` — ya da `None` (basılacak bir
@@ -102,7 +121,21 @@ def kur(cube_query: dict | None, *, katalog: dict[str, str] | None = None,
     kirilimlar = [_ad(b, katalog) for b in boyutlar
                   if not any(p in b.lower() for p in _DONEM_ADLARI)]
 
-    if not (olculer or donem or granul or kirilimlar):
+    # 🔴 `G6.3` — **MAKBUZ KIYASI SÖYLEMİYORDU.** `compare` uçtan uca akıyor, `viz`
+    # onu çiziyor, `yoy` onu hesaplıyor — ama *"ne anladım"* muhasebesinde **hiç yoktu**.
+    # Yani kıyas isteyen kullanıcı, kıyas anladığımızın yazılı beyanını göremiyordu.
+    # ⚠ `referans` varsa iki UCU söyleriz (`mom` bir mod kodudur, bir cevap değil);
+    # yoksa modun insan okunuşu. *Bir muhasebe, hesabın en pahalı kalemini atlayamaz.*
+    kiyas_metni = None
+    ref = cube_query.get("referans") if kiyas else None
+    if isinstance(ref, dict) and ref.get("kaynak") and ref.get("hedef"):
+        kiyas_metni = soz.soz("temellendirme.kiyas_cift",
+                              kaynak=_pencere_adi(ref["kaynak"]),
+                              hedef=_pencere_adi(ref["hedef"]))
+    elif kiyas and cube_query.get("compare") in ("yoy", "mom"):
+        kiyas_metni = soz.soz(f"temellendirme.kiyas_{cube_query['compare']}")
+
+    if not (olculer or donem or granul or kirilimlar or kiyas_metni):
         return None
 
     out: dict[str, Any] = {}
@@ -114,6 +147,8 @@ def kur(cube_query: dict | None, *, katalog: dict[str, str] | None = None,
         out["donem"] = donem
     if granul:
         out["granulerlik"] = granul
+    if kiyas_metni:
+        out["kiyas"] = kiyas_metni
     if kirilimlar:
         out["kirilim"] = list(dict.fromkeys(kirilimlar))
     if filtreler:

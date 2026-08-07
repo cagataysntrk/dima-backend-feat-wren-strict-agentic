@@ -149,6 +149,37 @@ class Niyet:
         return self.donem_sayisi > 1
 
     @property
+    def referans(self) -> dict | None:
+        """🔴 `G6.4` — KIYASIN İKİ UCU: `{eksen, kaynak, hedef}`. **TEK TEMSİL.**
+
+        ## Neden bir alan DEĞİL, bir türev
+
+        `referans` bir alan olsaydı, onu **kim doldurur** sorusu doğardı: `_coz_soru`
+        mu, `route()` mü, `parse_cube_query` mi? Üçü de dolduracak konumda ve üçü de
+        biraz farklı doldururdu — bu deponun bir numaralı kusur sınıfı (`KAT-1`,
+        *aynı kuralın iki sahibi*). Türev olduğunda **doldurulacak bir yer yoktur**:
+        soru neyse referans odur.
+
+        *Bir değeri iki yerden yazılabilir yapmak, iki değeri garanti etmektir.*
+
+        ## Sahibi neden `Niyet`
+
+        Planın `G6.4`'ü: *"`referans` bilgisi `app/niyet.py`'de doğar; ikinci sahip
+        yok."* Doğru yer burasıdır çünkü referans **sorunun** bir özelliğidir, sorgunun
+        değil: *"mart'ı şubatla kıyasla"* cümlesi, hangi cube'a gittiğinden bağımsız
+        olarak iki uç taşır. `CubeQuery`'deki `referans` bunun **izdüşümüdür**.
+
+        ⚠ Kapsamı `donem` ekseniyle sınırlı — kapalı sözlüğün öteki dördünün sahibi
+        başka modüller (`kiyas_cebiri.EKSENLER` tablosu). Burada bir eksen **icat
+        edilmez**; yalnız cebrin indirgeyebildiği ilan edilir.
+        """
+        if TUR_KIYAS not in self.turler:
+            return None
+        from app import kiyas_cebiri
+
+        return _guvenli(lambda: kiyas_cebiri.referans_uret(self.donemler), None)
+
+    @property
     def temsil_edilemeyen(self) -> list[str]:
         """🔴 **Bu nesnenin var olma sebebi.** Sorunun taşıdığı ama `CubeQuery`ye
         giremeyen niyet işaretleri.
@@ -158,7 +189,16 @@ class Niyet:
         kalıyor. Faz 2'de o hesap buraya taşınacak.
         """
         out = []
-        if self.cok_donem and len(self.donemler) <= 2:
+        # 🔴 `G6.4` — **KAYITLI BORÇ KAPANDI.** `test_r11_ifade_edilemez.py`'nin şerhi:
+        # *"`route()` indirgeme yapsa bile iz hâlâ «temsil-yok» yazar… iz YANILTICI."*
+        # Sebebi buydu: bu hesap **yalnız kaç dönem adlandığına** bakıyordu, o dönemlerin
+        # temsil edilip edilemediğine değil. Artık `referans` cevabı biliyor — ve o cevap
+        # cebrin kendi indirgeyicisinden geliyor, yani izle sorgu **aynı kaynağa** bakıyor.
+        #
+        # ⚠ İki uçlu kıyas indirgenebiliyorsa temsil edilebilir demektir: `compare`
+        # kurulur, `yoy.compute` iki seriyi hesaplar. *Bir eksiği bildirmeye devam etmek,
+        # o eksik kapandıktan sonra, kusurun kendisidir.*
+        if self.cok_donem and len(self.donemler) <= 2 and not self.referans:
             out.append("cok_donem")      # ≥2 dönem adlandı, en fazla bir aralık çözüldü
         if TUR_KIYAS in self.turler and not self.cok_donem:
             out.append("kiyas")          # kıyas fiili var, kıyaslanacak ikinci uç yok

@@ -50,6 +50,126 @@ from app.logging_setup import get_logger
 _log = get_logger("kiyas_cebiri")
 
 
+# ═══ REFERANS EKSENLERİ — kapalı sözlük, ve HER EKSENİN SAHİBİ YAZILI ═══════════
+#
+# 🔴 `G6.3`. Sözlük **doğumda kapanır**: bir ekseni sonradan eklemek, kaydedilmiş her
+# `referans`'ın anlamını geriye dönük değiştirir — yani bir şema göçüdür. Beşini birden
+# adlandırmak bedava; altıncıyı sonradan eklemek değil.
+#
+# ⚠ Ama **adlandırmak, derlemek değildir.** Bugün yalnız `donem`'in bir derleyicisi var;
+# ötekilerin sahibi başka modüller ve onlar bir `referans` alanı beklemiyor. Bu tablo
+# olmasaydı, ikinci bir sahip **fark edilmeden** doğardı:
+#
+# | eksen | bugünkü sahibi | derleyici |
+# |---|---|---|
+# | `donem` | **bu modül** (`indirge` + `referans_uret`) | ✅ |
+# | `hedef` | `app/hedef.py` — beyan yolu, `ADR-0028` (*hedef UYDURULMAZ*) | ⊘ beyan |
+# | `sabit` | eşik kıyası (`cube_router._measure_threshold`) | ⊘ filtre |
+# | `butce` | `butce` **cube'u** — bir veri kaynağı, bir alan değil | ⊘ katalog |
+# | `kohort` | yok (v2) | ⊘ |
+#
+# *Bir sözlüğü kapatmak ucuzdur; kapalı sanılan bir sözlüğü açmak pahalıdır.*
+EKSEN_DONEM = "donem"
+EKSEN_KOHORT = "kohort"
+EKSEN_HEDEF = "hedef"
+EKSEN_BUTCE = "butce"
+EKSEN_SABIT = "sabit"
+
+#: Tanınan eksenlerin tamamı — `referans.eksen` bunun dışına çıkamaz.
+EKSENLER = (EKSEN_DONEM, EKSEN_KOHORT, EKSEN_HEDEF, EKSEN_BUTCE, EKSEN_SABIT)
+
+#: 🔴 Bugün **derleyicisi olan** eksenler. `parse_cube_query` yalnız bunları geçirir:
+#: derleyicisi olmayan bir ekseni kabul etmek, sorguyu kıyassız çalıştırıp cevabı
+#: kıyasmış gibi sunmak olurdu — §6.1'in sessiz-yanlışı.
+DERLENEN_EKSENLER = (EKSEN_DONEM,)
+
+
+def _pencere(filtreler: list[dict] | None, time_dim: str) -> dict | None:
+    """Zaman filtrelerinin `{gte, lte}` penceresi — iki uç da yoksa `None`."""
+    p: dict = {}
+    for f in filtreler or []:
+        if isinstance(f, dict) and f.get("dimension") == time_dim and f.get("operator") in ("gte", "lte"):
+            p[f["operator"]] = str(f.get("value"))[:10]
+    return p if p.get("gte") and p.get("lte") else None
+
+
+def referans_uret(filtreler: list[dict] | None, time_dim: str = "tarih") -> dict | None:
+    """🔴 `G6.3` — kıyasın **İKİ UCUNU ADLANDIRIR**: `{eksen, kaynak, hedef}`.
+
+    `indirge` bir **mod** döndürür (`yoy`/`mom`); mod, motorun ihtiyacı olan şeydir ama
+    kullanıcının sorduğu şey değildir. *"Mart'ı şubatla kıyasla"* diyen biri `mom`
+    duymaz — **iki dönem adı** duyar. Makbuz, `uyum` ve netleştirme o iki adı ister.
+
+    ⚠ **`hedef` ucu ELLE HESAPLANMAZ, motorun kendi kaydırıcısından alınır**
+    (`shift_period_back`). Alternatifi *"aralığın ön kısmı"* idi ve **ölçülüp elendi**:
+    *"mart 2025 ile mart 2026"* çöküşünde ön kısım **12 aylık** bir penceredir, oysa
+    SQL'in kıyasladığı şey mart 2025'tir. İkinci bir hesap, ilkiyle **ayrışan** bir
+    etiket üretirdi — ve etiketle sayının ayrışması, sayının yanlış olmasından beterdir.
+
+    Döner `None` — indirgenemeyen kıyasta. O soru `uyum` tarafından **etiketli** kalır.
+    """
+    ind = indirge(filtreler, time_dim)
+    if not ind:
+        return None
+    baz, mod = ind
+    kaynak = _pencere(baz, time_dim)
+    if not kaynak:
+        return None
+    # ⚠ Modül-içi değil **fonksiyon-içi** import: `cube_router` bu modülü çağırıyor
+    # (`parse_cube_query`), tersi modül düzeyinde olsaydı döngü olurdu. `app/yoy.py`
+    # `mali_takvim`'i aynı sebeple böyle çağırıyor — desen kopyalanmadı, **izlendi**.
+    from app import cube_router as cr
+
+    hedef = _pencere(cr.shift_period_back(baz, mod, time_dim), time_dim)
+    if not hedef:
+        return None
+    return {"eksen": EKSEN_DONEM, "kaynak": kaynak, "hedef": hedef}
+
+
+def referans_dogrula(referans: object, time_dim: str = "tarih") -> dict | None:
+    """Dışarıdan gelen (LLM / pano / istemci) bir `referans`'ı **derlenebiliyorsa** geçirir.
+
+    🔴 **Derlenemeyen geçmez — ve bu, gevşeklik değil KATILIK.** Bir `referans`'ı taşıyıp
+    `compare`'ını kuramamak, sorguyu **kıyassız** çalıştırıp cevabı kıyasmış gibi
+    sunmaktır: kullanıcı iki dönem ister, tek sayı alır, üstelik makbuzda iki dönem adı
+    görür. §6.1'in sessiz-yanlışının en ikna edici biçimi bu olurdu.
+
+    ⚠ Bu yüzden `referans` ile `compare` **birlikte doğar ya da hiç doğmaz**. İkisi bir
+    şeyin iki izdüşümüdür: biri insanın okuduğu (*"mart ↔ şubat"*), öteki motorun
+    okuduğu (`mom`). *Bir çeviriden yalnız birini saklamak, çeviriyi kaybetmektir.*
+    """
+    if not isinstance(referans, dict) or referans.get("eksen") not in DERLENEN_EKSENLER:
+        return None
+    ref = {"eksen": referans["eksen"],
+           "kaynak": referans.get("kaynak"), "hedef": referans.get("hedef")}
+    return ref if referans_modu(ref, time_dim) else None
+
+
+def referans_modu(referans: dict | None, time_dim: str = "tarih") -> str | None:
+    """`{eksen, kaynak, hedef}` → `yoy`/`mom`; indirgenemezse `None`.
+
+    🔴 `referans_uret`'in **tersidir** ve bilerek aynı kaydırıcıyı kullanır: bir çevirici
+    çiftinin iki yönü farklı hesaplara dayanırsa, gidiş-dönüş bir gün **başka bir yere**
+    varır. Burada varamaz — iki yön de `shift_period_back`'e soruyor.
+    """
+    if not isinstance(referans, dict) or referans.get("eksen") != EKSEN_DONEM:
+        return None
+    kaynak, hedef = referans.get("kaynak"), referans.get("hedef")
+    if not isinstance(kaynak, dict) or not isinstance(hedef, dict):
+        return None
+    from app import cube_router as cr
+
+    baz = [{"dimension": time_dim, "operator": op, "value": kaynak.get(op)}
+           for op in ("gte", "lte") if kaynak.get(op)]
+    if len(baz) != 2:
+        return None
+    for mod in ("mom", "yoy"):
+        if _pencere(cr.shift_period_back(baz, mod, time_dim), time_dim) == {
+                "gte": str(hedef.get("gte"))[:10], "lte": str(hedef.get("lte"))[:10]}:
+            return mod
+    return None
+
+
 def _ay_sonu(y: int, a: int) -> date:
     return date(y, a, calendar.monthrange(y, a)[1])
 

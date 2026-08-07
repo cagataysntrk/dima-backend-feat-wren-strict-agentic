@@ -604,7 +604,7 @@ def _boyut_degerleri(resp) -> list[str]:
         return []
 
 
-def _temellendir(resp: AskResponse) -> None:
+def _temellendir(request: Any, resp: AskResponse) -> None:
     """🔴 `G1` — cevap **ne anladığını söyler**. 0 LLM · 0 token.
 
     ⚠ **Beyan kanalı PAYLAŞILIR:** `uyum.kismi_cevap_notu` bir ihlal bulduğunda zaten
@@ -635,10 +635,23 @@ def _temellendir(resp: AskResponse) -> None:
     try:
         from app.temellendirme import kur
 
+        # 🔴 `G6.3` — kıyas satırı **bayrağa bağlı** (`KURAL B`): kapalıyken makbuz
+        # bayt bayt bugünkü. `hedef_kiyasi`'nın hemen altındaki desenin aynısı — bir
+        # bayrağı okumanın ikinci bir biçimini icat etmek, iki bayrak yönetimi demektir.
+        from app.config import get_settings as _gs2
+        from app.features import resolve_for as _rf2
+
+        _kiyas = False
+        try:
+            _kiyas = "referans_dili" in _rf2(
+                _gs2(), getattr(getattr(request, "state", None), "principal", None))
+        except Exception:                                  # noqa: BLE001 — makbuz düşmez
+            _log.warning("referans_dili çözülemedi → kıyas satırı YOK", exc_info=True)
         resp.temellendirme = kur(
             resp.cube_query,
             katalog=getattr(resp, "_etiketler", None),
-            cube_etiketi=(resp.cube_query or {}).get("cube"))
+            cube_etiketi=(resp.cube_query or {}).get("cube"),
+            kiyas=_kiyas)
     except Exception:                                      # noqa: BLE001 — best-effort
         _log.warning("temellendirme kurulamadı (cevap etkilenmez)", exc_info=True)
 
@@ -1037,7 +1050,7 @@ def seal(resp: AskResponse, *, request: Request, principal, t0: float,
 
     # Sıra ÖNEMLİ: öneriler yorumun signal'larına bağımlı; explain ikisini de okur.
     _maybe_interpret(request, resp)
-    _temellendir(resp)
+    _temellendir(request, resp)
     _diyalog_durumu(resp, log_body)
     _attach_next_steps(request, resp)
     _attach_recommendations(request, resp)

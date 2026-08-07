@@ -483,6 +483,14 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "— aksi hâlde döküm isteyene dejenere tek toplam dönerdi.",
         "category": "Analiz",
     },
+    "referans_dili": {
+        "label": "Referans dili (kıyasın iki ucu)",
+        "description": "Kıyas artık bir MOD kodu (yoy/mom) değil, iki ADLANDIRILMIŞ uç "
+                       "olarak da taşınır: makbuz 'mart ↔ şubat' yazar, Intent-JSON "
+                       "çapraz-cube harmanı (blend) ifade edebilir. Kapalıyken kıyas "
+                       "bugünkü yedi dokunuşuyla akar ve şema eski biçimdedir.",
+        "category": "Anlama",
+    },
     "llm_sema_kisitli": {
         "label": "Şema-kısıtlı LLM çıktısı",
         "description": "Intent-JSON seçimi sağlayıcının native tool-use'una taşınır; "

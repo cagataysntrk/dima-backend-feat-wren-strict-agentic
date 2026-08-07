@@ -57,12 +57,34 @@ def test_BASARILI_route_TESHIS_URETMEZ(schema):
 # --- NİYET NESNESİ -----------------------------------------------------------------
 
 
-def test_NIYET_temsil_edilemeyeni_HESAPLIYOR():
-    """`KÖK-1 Faz 1`'de yazılan `Niyet.temsil_edilemeyen` kıyas/çok-dönem eksiğini
-    görüyor. ⚠ Ama bu **soruya** bakar, **sorguya** değil: `route()` indirgeme yapsa
-    bile iz hâlâ *"temsil-yok"* yazar. Zararsız (kapı `uyum`'dur ve o cq'yu görür) ama
-    **iz yanıltıcıdır** — `OPERASYON-DURUM.md`'de açık borç olarak yazılı."""
-    assert coz_soru("mart cirosunu şubat ile kıyasla").temsil_edilemeyen
+def test_NIYET_temsil_edilemeyeni_ARTIK_YANILTMIYOR():
+    """🔴 `G6.4` — **KAYITLI BORÇ KAPANDI, ve tuzağı TERSİNE ÇEVRİLDİ.**
+
+    Bu testin eski hâli `assert …temsil_edilemeyen` diyordu ve kendi şerhi kusuru
+    itiraf ediyordu: *"bu **soruya** bakar, **sorguya** değil: `route()` indirgeme yapsa
+    bile iz hâlâ «temsil-yok» yazar… iz YANILTICIDIR."* Yani yeşil olan şey, düzeltilmesi
+    gereken şeydi.
+
+    ⊙ Sebep ölçüldü: hesap yalnız **kaç dönem adlandığına** bakıyordu. `Niyet.referans`
+    artık cebrin indirgeyicisine soruyor — iz ile sorgu **aynı kaynağa** bakıyor.
+
+    ⚠ Ve kapı iki yönlü: indirgenemeyen kıyas hâlâ *temsil-yok* demeli. Tek yönlü bir
+    kapı, borcu kapatmak yerine **ters yöne** kaydırırdı.
+
+    *Kapananlar işaretlenmez — tuzakları TERSİNE çevrilir; yoksa kapanış, yalnızca
+    testin susturulması olur.*
+    """
+    # (a) indirgenebilir kıyas → temsil EDİLEBİLİR (eski hâlde burada "cok_donem" yazardı)
+    n = coz_soru("mart cirosunu şubat ile kıyasla")
+    assert n.referans and n.referans["eksen"] == "donem", "iki uç adlandırılmadı"
+    assert not n.temsil_edilemeyen, (
+        f"🔴 indirgenen kıyas hâlâ temsil-yok diyor: {n.temsil_edilemeyen} — "
+        f"borç kapandı sanılmış ama iz eski kaynaktan okuyor")
+
+    # (b) indirgenemeyen kıyas → temsil-YOK demeye DEVAM etmeli
+    n2 = coz_soru("ocak ve haziran cirosunu karşılaştır")
+    assert n2.referans is None, "5 ay arayla indirgeme YOK — cebir gevşemiş"
+    assert n2.temsil_edilemeyen, "🔴 indirgenemeyen kıyas sessizleşti"
 
 
 # --- 🔴 KIYASIN İKİ AKIBETİ — ikisi de dürüst --------------------------------------
@@ -120,8 +142,13 @@ def test_KIYAS_CEVABI_ARTIK_ETIKETSIZ_GITMIYOR(schema):
     # kazancının tek regresyon kapısı.
     # *Bir testin geçmesi, bir şeyi sınadığı anlamına gelmez — kaç kez sınadığını da
     # saymak gerekir.*
+    # 🔴 **VE SAYAÇ KENDİ İŞİNİ YAPTI — vakalar BAYATTI.** Eski iki soru `borc` ölçüsünü
+    # anıyordu; bu katalogda öyle bir ölçü **yok** (`mizan`'ınki `bakiye`), yani ikisi de
+    # `R1`'den düşüyordu ve kapı `olculen == 0` ile kırmızıya döndü. Sayaç eklenmeseydi
+    # bu dosya **yeşil görünmeye devam ederdi** — hiçbir şey ölçmeden.
+    # ⊙ *Bir kapının bayatlaması sessizdir: kırmızıya dönmez, ölçmeyi bırakır.*
     olculen = 0
-    for soru in ("borc mart ile nisanı kıyasla", "borc 2025 ile 2026 karşılaştır"):
+    for soru in ("ciro mart ile nisanı kıyasla", "fire mart ile nisanı kıyasla"):
         hit = cr.route(cr._norm(soru), schema)
         if hit is None:
             continue

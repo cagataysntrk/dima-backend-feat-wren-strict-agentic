@@ -45,6 +45,13 @@ def sema(index):
     return cr.cube_query_json_schema(index)
 
 
+@pytest.fixture(scope="module")
+def sema_harman(index):
+    """🔴 `G6.5` — `referans_dili` AÇIKKEN üretilen şema. Ayrı bir fixture olması
+    kill-switch'in kanıtıdır: `sema` (varsayılan) ile aralarındaki tek fark `blend`."""
+    return cr.cube_query_json_schema(index, harman=True)
+
+
 def _dal(sema, ad):
     return next((d for d in sema["oneOf"] if d.get("title") == ad), None)
 
@@ -106,11 +113,78 @@ def test_ZAMAN_boyutu_ve_GRANULERLIK_kisitli(sema, index):
 
 # --- KAPSAM: yalnız beş çekirdek alan --------------------------------------------
 
-def test_ORDER_LIMIT_BLEND_enumlanmaz(sema):
-    """`parse_cube_query` onları zaten HOŞGÖRÜYLE sessizce düşürüyor (geçersiz değer
-    sorguyu öldürmüyor) — enum'lamak kazanç getirmez, yalnız şemayı büyütür."""
-    for d in sema["oneOf"]:
-        assert not ({"order", "limit", "blend"} & set(d.get("properties") or {}))
+def test_ORDER_LIMIT_enumlanmaz_ama_BLEND_ENUMLANIR(sema, sema_harman, index):
+    """🔴 `G6.5` — **TUZAK TERSİNE ÇEVRİLDİ, ve gerekçe ikiye AYRIŞTI.**
+
+    Eski hâl üçünü bir arada tutuyordu: *"`parse_cube_query` zaten hoşgörüyle düşürüyor."*
+    O gerekçe `order`/`limit` için doğru kalır — onlar cevabın **sunumunu** değiştirir.
+    `blend` cevabın **kapsamını** değiştirir: düşünce kullanıcı iki seri ister, bir seri
+    alır ve bunu **fark edemez** (denetimin `Ç-14` maddesi).
+
+    ⊙ Ölçülen: harman **mutfakta çalışıyordu** (`blend_sql` + `cross_cube_add`) ama taze
+    soruda ifade edilemiyordu — *"verimlilik ve ciro"* `{cube: null}`'a düşüyordu (`Ö11`).
+    *Bir yeteneği söyleyememek, ona sahip olmamakla aynı sonucu verir.*
+    """
+    for d in sema_harman["oneOf"]:
+        assert not ({"order", "limit"} & set(d.get("properties") or {}))
+    if len(index) > 1:
+        assert all("blend" in (d.get("properties") or {}) for d in sema_harman["oneOf"][1:]), (
+            "🔴 `blend` cube dallarından düşmüş — `Ö11` yeniden bloke")
+        assert sema_harman["oneOf"][0]["properties"].keys() == {"cube"}, (
+            "🔴 REDDETME dalına alan eklenmiş: *hiçbiri* seçeneği koşulsuz kalmalı")
+
+    # 🔴 KILL-SWITCH (`KURAL B`): bayrak kapalıyken şema **bugünküyle birebir**.
+    # ⚠ Kapsam kaybı değil, kapsam **eskisi**: kapalı bir bayrağın yanından geçen tek
+    # çağrı, bayrağı iptal eder — bu yüzden `harman` varsayılanı KAPALI.
+    assert all("blend" not in (d.get("properties") or {}) for d in sema["oneOf"])
+    assert "$defs" not in sema, "🔴 kapalı bayrak `$defs` sızdırıyor"
+
+
+def test_BLEND_defs_ILE_kurulur_cunku_satir_ici_N_KARE(sema_harman, index):
+    """🔴 Boyut bir tercih değil **zorunluluktu**: satır içi harman `N²` alt şema demekti.
+
+    ⚠ Şema modele **her istekte** gönderilir; `N²` bir şema, kısıtın kazandırdığından
+    fazlasını token olarak geri alır. `$defs` ile `N`'e iner ve ölçü enum'ları
+    **cube'a göre dar** kalır (dal içi daralma kuralının aynısı)."""
+    ogeler = sema_harman["$defs"]["harman_ogesi"]["oneOf"]
+    assert len(ogeler) == len([a for a, s in index.items() if s.get("measures")])
+    for o in ogeler:
+        ad = o["properties"]["cube"]["const"]
+        assert set(o["properties"]["measures"]["items"]["enum"]) == set(
+            index[ad]["measures"]), f"🔴 {ad} harmanında ÇAPRAZ ölçü sızıntısı"
+
+
+def test_BLEND_grain_UYUMUNU_sema_DEGIL_KAPI_dogrular(schema, index):
+    """🔴 Sınır yazılı: şema *"hangi adlar"*ın, kapı *"birlikte anlamlı mı"*nın sahibi.
+
+    Şema bir dalın öteki alanlarını göremez — bir cube'un o kırılımı taşıyıp taşımadığı
+    ancak **tam sorgu** elde iken bilinir. `blend_sql`'in sözleşmesi bunu çağırandan
+    ister; `G6.5`'ten önce garantiyi **tek** çağıran veriyordu ve yalnız `dimensions`
+    için. *Bir garantiyi iki yerde vermek, bir gün yalnız birinde vermektir.*"""
+    hedef = next(a for a, s in index.items() if s.get("dimensions"))
+    boyut = index[hedef]["dimensions"][0]
+    yabanci = next((a for a, s in index.items()
+                    if a != hedef and boyut not in (s.get("dimensions") or [])
+                    and s.get("measures")), None)
+    if yabanci is None:
+        pytest.skip("⊘ katalogda uyumsuz çift yok — vaka bayat")
+    cq = {"cube": hedef, "measures": index[hedef]["measures"][:1],
+          "dimensions": [boyut],
+          "blend": [{"cube": yabanci, "measures": index[yabanci]["measures"][:1]}]}
+    import json
+
+    out = cr.parse_cube_query(json.dumps(cq), index)   # ⚠ METİN alır — şema-kısıtlı
+    assert out and "blend" not in out, (
+        f"🔴 {yabanci} `{boyut}` taşımıyor ama harmana girdi — o grain'de iki seri "
+        f"FARKLI evrenlerden gelirdi")
+
+    # ⚠ KARŞI YÖN — kapı her şeyi eleyerek de "yeşil" olabilirdi. Kırılımsız (yalnız
+    # ölçü) bir harman **geçmeli**: paylaşılan anahtar yoksa uyumsuzluk da yoktur.
+    # *Bir kapının kabul ettiği şeyi ölçmeden, reddettiği şey bir kanıt değildir.*
+    acik = {"cube": hedef, "measures": index[hedef]["measures"][:1],
+            "blend": [{"cube": yabanci, "measures": index[yabanci]["measures"][:1]}]}
+    out2 = cr.parse_cube_query(json.dumps(acik), index)
+    assert out2 and out2.get("blend"), "🔴 kapı uyumlu harmanı da eliyor — fazla dar"
 
 
 def test_OLCUSUZ_cube_dal_ACMAZ(sema):

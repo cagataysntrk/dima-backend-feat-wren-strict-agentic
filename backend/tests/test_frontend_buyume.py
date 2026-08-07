@@ -149,6 +149,18 @@ TAVANLAR = {
 
 #: `(dosya, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 MUAFIYET: list[tuple[str, int, str]] = [
+    ("lib/types.ts", 1,
+     "🔴 `G6.3` — `temellendirme.kiyas` alanı. ⚠ **TAŞINAMAZ:** bu dosya sunucu "
+     "sözleşmesinin **tek** aynasıdır; bir alanı ikinci bir tip dosyasına koymak, "
+     "sözleşmeyi iki yerden okumak olurdu. 🔴 Tek satır, tek alan, ve **bayrağa bağlı** "
+     "(`referans_dili` kapalıyken sunucu alanı hiç göndermez)."),
+    ("components/InterpretationBar.tsx", 2,
+     "🔴 `G6.3` — kıyas anahtarına `data-capa=\"kiyas\"` + `tabIndex` çapası. Makbuzun "
+     "yeni kıyas rozetinin **iniş noktası**; öteki dört çapanın (`olcu`·`granulerlik`·"
+     "`kirilim`·`donem`/`filtre`) birebir aynı deseni. ⚠ **TAŞINAMAZ:** çapa, düzenleyen "
+     "öğenin **üstünde** durmak zorundadır — ayrı bir bileşene çıkarmak, rozetin gideceği "
+     "yeri düzenleyenden **ayırmak** olurdu ve ikisi zamanla ayrışırdı. "
+     "🔴 Yeni davranış YOK: anahtar zaten vardı, yalnız **bulunabilir** oldu."),
     ("lib/api-client.ts", 14,
      "denetim F2 — pano ve widget GERİ ALMA sarmalayıcıları (`restoreDashboard`, "
      "`restoreDashboardWidget`). 🔴 Bu iki fonksiyon TAŞINAMAZ: `dima-frontend/CLAUDE.md` "

@@ -225,6 +225,41 @@ def gen_processes(schema):
     return procs, valid
 
 
+# 🔴 `G3.4` — YERİ ÖNEMLİ: bu blok bir kez `run_company`'nin GÖVDESİNE düştü ve
+# fonksiyonu ikiye böldü — süreç yarısı ölü koda, dönüş `None`'a çevrildi. Kapı
+# **`birlestir`de** patladı, yani kusur bulunduğu yerde doğmamıştı.
+# ⚠ Ve arada bir tur, ölçüm düştüğü için **taban güncellenmişti** (`dogru 83→69`).
+# *Bir aletin sessizce daralması, gerilemeden daha pahalıdır: gerileme kırmızı
+# verir, daralma yeni bir taban verir.*
+
+# 🔴 `G3.4` — **CEVAPSIZ KESME ORANI**: merdiveni erken bitiren tur oranı.
+#
+# `MIMARI §5`'in 18. yasağı: *"Merdiveni yalnız **pozitif cevap** ya da kullanıcının
+# **açık `yol_siniri`**'si bitirebilir."* Ölçüt doğrudan o cümleden türetildi —
+# uydurulmadı:
+#
+#   cevapsız kesme  =  cevap YOK  ∧  kullanıcı durdurmadı  ∧  **Discovery hiç koşmadı**
+#
+# Üçüncü şart ayırt edicidir ve olmadan ölçüt yanlış olurdu: merdiven **sonuna kadar
+# koşup** cevap bulamadıysa bu bir *kesme* değil bir **kapsam sınırıdır**. Kesme, altta
+# çalışabilir bir basamak **varken** durmaktır.
+#
+# ⚠ `yol_siniri` bu korpusta hiç gönderilmiyor → ikinci şart daima sağlanır. Yine de
+# koşula yazılı: ölçüt, korpusun bugünkü kurulumuna değil **yasağın tanımına** bağlı
+# kalmalı. *Bir ölçütü bugünkü koşullara göre sadeleştirmek, onu yarın yanlış yapar.*
+_DISCOVERY_IZI = "Discovery"
+
+
+def _cevapsiz_kesme(d: dict) -> bool:
+    """Bu tur merdiveni **erken** mi bitirdi?"""
+    if d.get("source"):
+        return False                       # pozitif cevap → meşru bitiş
+    if d.get("yol_siniri"):
+        return False                       # kullanıcının açık talimatı → meşru bitiş
+    iz = " ".join(str(x) for x in (d.get("trace") or []))
+    return _DISCOVERY_IZI not in iz        # Discovery hiç koşmadıysa → KESME
+
+
 def run_company(name, login, pw, slug, pay: int = 0, pay_sayisi: int = 1):
     """Bir şirketin korpusunu koşar. `pay_sayisi > 1` ise soruların YALNIZ `pay`.
     dilimini koşar (`liste[pay::pay_sayisi]`).
@@ -325,33 +360,6 @@ def run_company(name, login, pw, slug, pay: int = 0, pay_sayisi: int = 1):
         if any(s.startswith(x) for x in ("CUBE-SAPMA", "YANLIS", "HTTP", "BOŞ", "META-SAPMA", "NOTE")) \
                 and exp not in ("NOISE", "CAP"):
             fails[s].append((q, (d.get("note") or "")[:60], (d.get("trace") or [])[-1:]))
-
-# 🔴 `G3.4` — **CEVAPSIZ KESME ORANI**: merdiveni erken bitiren tur oranı.
-#
-# `MIMARI §5`'in 18. yasağı: *"Merdiveni yalnız **pozitif cevap** ya da kullanıcının
-# **açık `yol_siniri`**'si bitirebilir."* Ölçüt doğrudan o cümleden türetildi —
-# uydurulmadı:
-#
-#   cevapsız kesme  =  cevap YOK  ∧  kullanıcı durdurmadı  ∧  **Discovery hiç koşmadı**
-#
-# Üçüncü şart ayırt edicidir ve olmadan ölçüt yanlış olurdu: merdiven **sonuna kadar
-# koşup** cevap bulamadıysa bu bir *kesme* değil bir **kapsam sınırıdır**. Kesme, altta
-# çalışabilir bir basamak **varken** durmaktır.
-#
-# ⚠ `yol_siniri` bu korpusta hiç gönderilmiyor → ikinci şart daima sağlanır. Yine de
-# koşula yazılı: ölçüt, korpusun bugünkü kurulumuna değil **yasağın tanımına** bağlı
-# kalmalı. *Bir ölçütü bugünkü koşullara göre sadeleştirmek, onu yarın yanlış yapar.*
-_DISCOVERY_IZI = "Discovery"
-
-
-def _cevapsiz_kesme(d: dict) -> bool:
-    """Bu tur merdiveni **erken** mi bitirdi?"""
-    if d.get("source"):
-        return False                       # pozitif cevap → meşru bitiş
-    if d.get("yol_siniri"):
-        return False                       # kullanıcının açık talimatı → meşru bitiş
-    iz = " ".join(str(x) for x in (d.get("trace") or []))
-    return _DISCOVERY_IZI not in iz        # Discovery hiç koşmadıysa → KESME
 
 
     # süreç

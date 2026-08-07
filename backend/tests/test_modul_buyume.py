@@ -76,6 +76,12 @@ TABAN_CUBE_ROUTER_KOD = 1685  # 1703 ölçüldü − 18 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("G6.5/harman-bayragi", 2,
+     "🔴 Intent-JSON şeması `harman=` ile üretiliyor — `blend`'in kill-switch'i (`KURAL B`). "
+     "⚠ **TAŞINAMAZ:** şema **zaten burada** üretiliyor ve bayrak **zaten burada** "
+     "çözülüyor (`llm_sema_kisitli` aynı satırda); ikinci bir `resolve_for` çağrısı aynı "
+     "soruyu iki kez sormak olurdu. 🔴 `harman` varsayılanı **kapalı**: kapalı bir "
+     "kill-switch'in yanından geçen tek çağrı, kill-switch'i iptal eder."),
     ("G2.9/yuksek-duzey", 3,
      "🔴 `yuksek` düzeyinde **boyut** adaylarını da ekleyen üç satır. `G2.9` planda "
      "vardı ve **hiç uygulanmamıştı**; kodun kendi itirafı (*«kapı yalnız `kapali`'yı "
@@ -250,6 +256,21 @@ MUAFIYET_ASK_KOD = [
                       "dürüst olmayan bir mesajı SATIN ALMAZ"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("G6.3/referans-ekseni", 16,
+     "🔴 **KIYAS BİR MOD KODU DEĞİL, İKİ ADLANDIRILMIŞ UÇ.** `compare` iki değerlik bir "
+     "enum'dur (`yoy`/`mom`) — motor için doğru soyutlama, **kullanıcı için değil**. "
+     "*«Mart'ı şubatla kıyasla»* diyen biri `mom` duymaz. Bu Δ üç işi taşır: "
+     "(a) `referans` geçişi — ⚠ **derlenemeyen GEÇMEZ**, çünkü geçseydi sorgu kıyassız "
+     "çalışıp cevap kıyas etiketiyle sunulurdu (§6.1'in en ikna edici sessiz-yanlışı); "
+     "(b) `blend_uyumlu` — `blend_sql`'in sözleşmesi *«çağıran garantiler»* diyor ve "
+     "`G6.5`'e kadar **tek** çağıran vardı. İkinci çağıran (Intent-JSON) doğunca garanti "
+     "**iki yerde** verilecekti; bir yükleme çıkarıldı. 🔴 Ve eski tek satır **eksikti**: "
+     "yalnız `dimensions`'a bakıyordu, oysa **filtreler de** tüm cube'lara uygulanıyor — "
+     "hedef cube'da olmayan bir boyuta filtre, iki seriyi **farklı evrenlerden** getirirdi; "
+     "(c) `_kc_modul()` — `kiyas_cebiri` bizi çağırdığı için fonksiyon-içi import. "
+     "⚠ **TAŞINAMAZ:** cebir zaten `app/kiyas_cebiri.py`'de; buradaki Δ o cebrin **kapısı**, "
+     "ve kapı `parse_cube_query`'nin yanında durmak zorunda. *Bir garantiyi iki yerde "
+     "vermek, bir gün yalnız birinde vermektir.*"),
     ("G2.9/boyut-adaylari", 9,
      "🔴 **`yuksek` DÜZEYİN KALAN FARKI: BOYUT.** `app/netlestirme.py`'nin tablosu "
      "`yuksek` için *«belirsiz ölçü/**boyutta** da sorar»* diyor. Ölçü tarafı `normal`'da "

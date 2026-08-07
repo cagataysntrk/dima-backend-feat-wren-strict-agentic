@@ -22,7 +22,7 @@ from __future__ import annotations
 _GRAN_ENUM = ["year", "quarter", "month", "week", "day"]
 
 
-def cube_query_json_schema(index: dict) -> dict:
+def cube_query_json_schema(index: dict, *, harman: bool = False) -> dict:
     """FAZ 3a — CubeQuery'nin ŞEMA-KISITLI biçimi: adlar o ANKİ kataloğun **enum**'u.
 
     ## Neden (plan §4.6b-C)
@@ -50,9 +50,31 @@ def cube_query_json_schema(index: dict) -> dict:
 
     ## Kapsam: YALNIZ BEŞ ÇEKİRDEK ALAN
 
-    `order`/`limit`/`blend` **bilerek dışarıda** — `parse_cube_query` onları zaten
-    hoşgörüyle **sessizce düşürüyor** (geçersiz değer sorguyu öldürmüyor), dolayısıyla
-    enum'lamak kazanç getirmez, yalnız şemayı büyütür.
+    `order`/`limit` **bilerek dışarıda** — `parse_cube_query` onları zaten hoşgörüyle
+    **sessizce düşürüyor** (geçersiz değer sorguyu öldürmüyor), dolayısıyla enum'lamak
+    kazanç getirmez, yalnız şemayı büyütür.
+
+    🔴 **`blend` DIŞARIDAYDI, `G6.5` ile GİRDİ — ve gerekçe tersine döndü.** Denetimin
+    `Ç-14` maddesi: *"`blend` teşhiste var, çözümde sessizce düşüyor."* Ölçüldü ve
+    haklıydı: çapraz-cube harman **mutfakta çalışıyor** (`wren_service.blend_sql`,
+    `cross_cube_add`) ama **taze** bir soruda ifade edilemiyordu — *"verimlilik ve ciro"*
+    tek cube'a sığmadığı için `{cube: null}`'a, oradan Discovery'ye düşüyordu (`Ö11`).
+    Yani düşürülen şey geçersiz bir değer değil, **var olan bir yetenekti**.
+
+    ⚠ *"Sessizce düşüyor zaten"* gerekçesi `order`/`limit` için doğru kalır: onlar
+    cevabın **sunumunu** değiştirir. `blend` cevabın **kapsamını** değiştirir — düşünce
+    kullanıcı iki seri ister, bir seri alır ve bunu **fark edemez**.
+
+    ## Boyut: `$defs` ZORUNLULUKTU, tercih değil
+
+    Harman öğesini her cube dalına **satır içi** yazmak `N²` demekti (23 cube → 529 alt
+    şema). Tek bir `$defs/blend_ogesi` ile `N`'e iner (23). Şema modele **her istekte**
+    gönderilir; `N²` bir şema, kısıtın kazandırdığından fazlasını token olarak geri alır.
+
+    🔴 Ve `blend` **iki öğeyle sınırlı**: `blend_sql` her ek cube için bir `FULL OUTER
+    JOIN` üretir. Üç cube'un ortak anahtarda buluşması, `parse_cube_query`'nin grain
+    kapısından geçse bile **satır sayısını** öngörülemez kılar. *Bir birleşimin sınırı,
+    onu yazan yerde durmalı — çalıştıran yerde değil.*
     """
     dallar: list[dict] = [{
         "type": "object",
@@ -103,6 +125,21 @@ def cube_query_json_schema(index: dict) -> dict:
                                 "description": "Dönemsel kıyas: yoy=geçen yıla göre, "
                                                "mom=geçen aya göre. Soru bir KIYAS "
                                                "istemiyorsa BU ALANI HİÇ YAZMA."}
+        # 🔴 `G6.5` — ÇAPRAZ-CUBE HARMAN. Kendisi hariç her cube bir seçenektir; ölçü
+        # adları `$defs`'te o cube'un **kendi** enum'undan gelir (dal içi daralma kuralı,
+        # `oneOf`'un aynısı). ⚠ Grain uyumu burada **doğrulanamaz** (şema, sorgunun öteki
+        # alanlarını göremez) — onu `parse_cube_query.blend_uyumlu` yapar. Şema *"hangi
+        # adlar"* sorusunun, kapı *"birlikte anlamlı mı"* sorusunun sahibidir.
+        # ⚠ `harman` VARSAYILAN OLARAK KAPALI: bu fonksiyonun üç çağıranı var ve ikisi
+        # test. Varsayılanı açık yapmak, bayrağı **atlayan** bir yol bırakırdı — kapalı
+        # bir kill-switch'in yanından geçen tek çağrı, kill-switch'i iptal eder.
+        if harman and len(index or {}) > 1:
+            props["blend"] = {
+                "type": "array", "minItems": 1, "maxItems": 2,
+                "items": {"$ref": "#/$defs/harman_ogesi"},
+                "description": "Soru TEK cube'a sığmıyor ama iki cube'un ölçüleri ORTAK "
+                               "bir zaman/boyut ekseninde yan yana konabiliyorsa buraya "
+                               "ikinci cube'u yaz. Tek cube yetiyorsa BU ALANI HİÇ YAZMA."}
         if boyutlar:
             props["filters"] = {
                 "type": "array",
@@ -116,4 +153,14 @@ def cube_query_json_schema(index: dict) -> dict:
         dallar.append({"type": "object", "title": ad,
                        "properties": props, "required": ["cube", "measures"],
                        "additionalProperties": False})
-    return {"type": "object", "oneOf": dallar}
+    ogeler = [{"type": "object", "additionalProperties": False, "title": ad,
+               "properties": {"cube": {"const": ad},
+                              "measures": {"type": "array", "minItems": 1,
+                                           "items": {"type": "string", "enum": ms}}},
+               "required": ["cube", "measures"]}
+              for ad, spec in (index or {}).items()
+              if (ms := list(spec.get("measures") or []))]
+    out: dict = {"type": "object", "oneOf": dallar}
+    if harman and len(ogeler) > 1:
+        out["$defs"] = {"harman_ogesi": {"oneOf": ogeler}}
+    return out

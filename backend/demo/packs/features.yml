@@ -122,6 +122,10 @@ features:
                           # narration_guard ZORUNLU çıkış kapısı (fail-closed: eşleşmeyen
                           # sayı taşıyan cümle YAYIMLANMAZ). `off` — sıcak yola LLM çağrısı
                           # ekliyor; açılması bilinçli bir karar olmalı (KURAL B, testli).
+  referans_dili: beta  # 🔴 G6: kıyasın İKİ UCU + Intent-JSON'da `blend`.
+  # ⚠ `beta` — çünkü kazancı ölçülebilir ama ölçülMEDİ: `blend`'in taze soruda kaç `R1`'i
+  # kurtardığı **gerçek bir sağlayıcı** ister (`eval --slice llm`, bugün 4 vaka).
+  # Kapalıyken: makbuzda kıyas satırı YOK, şemada `blend` YOK → yanıt bayt bayt bugünkü.
   llm_sema_kisitli: beta  # FAZ 3a: Intent-JSON'u sağlayıcının NATIVE tool-use'una taşı —
                           # cube/ölçü/boyut adları o anki kataloğun ENUM'u olarak şemaya
                           # gömülür (enum CUBE'A GÖRE daralır; `cube:null` reddetme dalı

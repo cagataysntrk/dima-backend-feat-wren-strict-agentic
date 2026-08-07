@@ -59,6 +59,22 @@ JARGON = ("cube_query", "cube query", "discovery", "ham sql", "raw sql", "mdl",
 
 #: Katalog. **Kararlı ID** — metin değişebilir, ID değişmez (kayıtlar ID'ye bağlanır).
 KATALOG: dict[str, dict[str, Any]] = {
+    # --- TEMELLENDİRME: kıyası da "ne anladım"a yaz ------------------------------
+    "temellendirme.kiyas_cift": {
+        "metin": "{kaynak} ↔ {hedef}",
+        "kind": "bilgi",
+        "not": "🔴 `G6.3`: iki UÇ adlandırıldığında makbuz `mom` demez, dönemleri söyler.",
+    },
+    "temellendirme.kiyas_yoy": {
+        "metin": "geçen yıla göre",
+        "kind": "bilgi",
+        "not": "Göreli kıyas: iki uç adlandırılmadı, mod adlandırıldı.",
+    },
+    "temellendirme.kiyas_mom": {
+        "metin": "geçen aya göre",
+        "kind": "bilgi",
+        "not": "Göreli kıyas — `yoy`'un kardeşi; ikisi `app/yoy.py`'nin bildiği tek iki mod.",
+    },
     # --- NETLEŞTİRME: önce ne anladığını söyle, sonra sor -------------------------
     "netlestirme.donem": {
         "metin": "{ne} çıkarabilirim — hangi dönem için?",

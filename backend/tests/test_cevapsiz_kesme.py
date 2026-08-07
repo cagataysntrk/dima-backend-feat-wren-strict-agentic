@@ -96,3 +96,65 @@ def test_KORPUS_HAM_SAYILARI_da_RAPORLUYOR():
     assert '"kesme_sayi"' in src and '"kesme_payda"' in src, (
         "🔴 ham sayılar raporlanmıyor — yalnız oran, paydası bilinmeyen bir sayıdır")
     assert "kesme_sayi\": sum(" in src, "🔴 dilimler arasında toplanmıyor"
+
+
+# --- 🔴 ÖLÇÜM ARACININ KENDİ BÜTÜNLÜĞÜ -------------------------------------------
+
+def test_OLCUM_ARACINDA_ULASILAMAZ_KOD_YOK():
+    """🔴 **Bu kapı bir kusurdan doğdu ve kusuru ben yaptım.**
+
+    `_cevapsiz_kesme` eklenirken tanım `run_company`'nin **gövdesinin ortasına** düştü.
+    Python bunu şikâyet etmez: fonksiyon orada biter, kalan gövde yeni fonksiyonun
+    `return`'ünden **sonra** kalır ve **ölü koda** dönüşür. Sonuç:
+
+    * korpusun **süreç (çok turlu) yarısı hiç koşmadı**;
+    * `run_company` sessizce `None` döndü;
+    * kapı `birlestir`'de `AttributeError` ile patladı — yani **kusurun doğduğu yerde
+      değil, üç fonksiyon ötede**;
+    * ⚠ ve arada bir tur, ölçüm daraldığı için **taban güncellendi** (`dogru 83→69`,
+      *"korunum"* diye gerekçelendirildi).
+
+    *Bir aletin sessizce daralması, bir gerilemeden pahalıdır: gerileme kırmızı verir,
+    daralma yeni bir taban verir.*
+
+    Tarama genel: aynı blokta `return`/`raise`/`continue`/`break`'ten **sonra** gelen
+    çalıştırılabilir ifade. Yorum ve docstring sayılmaz.
+    """
+    import ast
+    import pathlib
+
+    kok = pathlib.Path(__file__).resolve().parent.parent / "lab"
+    suclu: list[str] = []
+    for yol in sorted(kok.glob("*.py")):
+        agac = ast.parse(yol.read_text(encoding="utf-8"))
+        for dugum in ast.walk(agac):
+            govde = getattr(dugum, "body", None)
+            if not isinstance(govde, list):
+                continue
+            for i, ifade in enumerate(govde[:-1]):
+                if isinstance(ifade, (ast.Return, ast.Raise, ast.Continue, ast.Break)):
+                    sonraki = govde[i + 1]
+                    if isinstance(sonraki, ast.Expr) and isinstance(
+                            getattr(sonraki, "value", None), ast.Constant):
+                        continue                      # yalnız bir metin — zararsız
+                    suclu.append(f"{yol.name}:{sonraki.lineno}")
+    assert not suclu, (
+        "🔴 ÖLÇÜM ARACINDA ULAŞILAMAZ KOD: " + ", ".join(suclu) +
+        " — bir ölçüm aracının sessizce daralması, ölçtüğü şeyin gerilemesinden "
+        "daha pahalıdır.")
+
+
+def test_RUN_COMPANY_SOZLUK_DONER():
+    """`birlestir` her dilimin bir sözlük olduğunu varsayar; `None` dönen tek bir dilim
+    **tüm şirketi** çökertir. Sözleşme burada yazılı."""
+    import ast
+    import inspect
+
+    from lab import nl_corpus
+
+    agac = ast.parse(inspect.getsource(nl_corpus.run_company))
+    fn = agac.body[0]
+    son = fn.body[-1]
+    assert isinstance(son, ast.Return) and son.value is not None, (
+        "🔴 `run_company` bir dönüş İFADESİYLE bitmiyor — düşen yol `None` üretir ve "
+        "`birlestir` onu üç fonksiyon ötede `AttributeError` olarak gösterir.")

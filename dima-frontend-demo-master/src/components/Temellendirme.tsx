@@ -59,6 +59,9 @@ export function Temellendirme({ item }: { item: AskResponse }) {
     { etiket: t.olcu ?? "", capa: "olcu" },
     { etiket: t.donem ?? "", capa: "donem" },
     { etiket: t.granulerlik ?? "", capa: "granulerlik" },
+    // 🔴 `G6.3` — kıyas rozeti düzenleme çubuğundaki **kıyas anahtarına** götürür.
+    // ⚠ Kendisi kıyası açıp kapatmaz: o anahtar `InterpretationBar`'da ve tek sahibi o.
+    { etiket: t.kiyas ?? "", capa: "kiyas" },
     ...(t.kirilim ?? []).map((x) => ({ etiket: x, capa: "kirilim" })),
     ...(t.filtreler ?? []).map((x) => ({ etiket: x, capa: "filtre" })),
   ].filter((r) => r.etiket);

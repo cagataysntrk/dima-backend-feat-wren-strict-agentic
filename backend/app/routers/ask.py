@@ -2904,7 +2904,12 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     if (getattr(llm_probe, "sema_kullanir", True)
                             and "llm_sema_kisitli" in resolve_for(settings, principal)):
                         try:
-                            _sema = cube_router.cube_query_json_schema(cube_index)
+                            # 🔴 `G6.5` — `blend` AYNI bayrak çözümünden geçer: şema
+                            # zaten burada üretiliyor, ikinci bir `resolve_for` çağrısı
+                            # aynı soruyu iki kez sormak olurdu.
+                            _sema = cube_router.cube_query_json_schema(
+                                cube_index,
+                                harman="referans_dili" in resolve_for(settings, principal))
                         except Exception:
                             _log.warning("şema üretilemedi → serbest-JSON yolu",
                                          exc_info=True)

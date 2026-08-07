@@ -370,3 +370,429 @@ docker exec dima-backend-core python -c "… oee.get('synonyms') …"
 # 5xx var mı
 docker logs dima-backend-core | grep -oE '\" [0-9]{3} ' | sort | uniq -c
 ```
+
+---
+---
+
+# EK DENETİM (aynı gün, 13:00–14:00 yerel) — *«anlamadım» bir cevap sınıfı olmamalı*
+
+**Talimat:** *"Kişi tamamen anlamsız bir şey yazmadıkça sistem «anlamadım» dememeli;
+en fazla «anladım, isteğiniz şu, ama şu anda bunu yapabilecek yeterliliğim yok»
+demeli. Yanlış anlama ve «şunu mu dediniz» de sıkıntı."*
+
+**Yöntem:** kod okuma + **yerinde ölçüm** (sıfır LLM, sıfır DB, ağ kapalı). Ölçümler
+kaynak ağacının **o anki hâlinden** kuruldu (`izole_proje_ayna` + `compose_and_build`);
+konteynerdeki imaj kullanılmadı — çünkü çalışma ağacında `cube_router` dâhil dokuz
+modül değişik. *(Bayat artefakttan ölçmenin bedeli 2026-08-06’da ödenmişti; tekrarlanmadı.)*
+
+> ⚠ Bu bölüm de bir **denetim raporudur**. Hiçbir kod değiştirilmedi.
+
+---
+
+## 8 · Yönetici özeti — talep haklı, ama kusur sanılan yerde değil
+
+| # | bulgu | kanıt |
+|---|---|---|
+| 🔴 **A** | **Niyetin LLM'e giden kanalı, başarısızlıkta BİR BİT genişliğinde.** Sözleşme `CubeQuery` **ya da** `{"cube":null}`. Modelin *anladığını yazacağı alan YOK* | `llm.py:354-372` · `intent_semasi.py:79-87` |
+| 🔴 **B** | **Sistem neden pes ettiğini BİLİYOR ve yalnız geliştiriciye söylüyor.** 10 kodluk teşhis tablosu → tek tüketici bir **telemetri kolonu** | `cube_router.py:3134` · `answer.py:234` |
+| 🔴 **C** | *"Ne anladım"* mekanizması (`temellendirme`, 0 token) **`cube_query` yoksa yapısal olarak susar** — yani tam da gerekli olduğu yerde | `answer.py:633` |
+| 🔴 **D** | *"Anladım ama yapamıyorum"* modülü **var** (`yetenek.py`) ama **sırası gelmiyor**: dört netleştirme çıkışı hem onu hem Discovery'yi atlatıyor | `ask.py:3596` ↔ `3644` |
+| ⚠ **E** | **Tek-ses kataloğu bu dört çıkışa bağlanmamış**; katalogun yumuşak cümlesi (`netlestirme.olcu`) **sıfır tüketicili** | `soz.py:89` · `ask.py`'de `soz=` 8 yerde |
+| ✅ **F** | Ön yüz **hazır**: `soz` ve `eksik_niyet` zaten çiziliyor. Boşluk **yalnız arka uçta** | `ReportCard.tsx:654,915` |
+
+🔴 **Tek cümlede:** *sistem, anladığı yarıyı atıyor; anlamadığı yarıyı kullanıcıya
+okuyor.* Bu bir model kusuru değil, bir **sözleşme kusuru**dur — ve talimat tam olarak
+o sözleşmeyi hedefliyor.
+
+---
+
+## 9 · Bulgu A — LLM'in *"anladım"* diyecek bir alanı yok
+
+Intent basamağının modelden istediği **tek** şey:
+
+```python
+# app/llm.py:354  _cube_select_system()
+"- SADECE JSON döndür (SQL YOK, açıklama YOK).\n"
+'- Biçim: {"cube":"<ad>","measures":[…],"dimensions":[…],…}\n'
+'- Soru tek bir cube ile yanıtlanamıyorsa … KESİNLİKLE {"cube":null} döndür.\n'
+```
+
+Ve şema-kısıtlı biçimde ilk dal:
+
+```python
+# app/intent_semasi.py:79
+dallar = [{"title": "cevaplanamaz",
+           "properties": {"cube": {"type": "null"}}, "required": ["cube"],
+           "additionalProperties": False}]     # ← başka alan YASAK
+```
+
+`additionalProperties: False` — yani model *"personel kırılımıyla verimlilik istiyor"*
+diye **yazmak istese bile şema onu reddeder**.
+
+### 9.1 Sağlayıcı protokolünün tamamı tarandı
+
+| yöntem | ne üretir | *"ne anladım"* taşır mı |
+|---|---|---|
+| `generate_sql` · `generate_followup_sql` · `repair` | SQL | ✗ |
+| `select_cube` · `refine_cube` | CubeQuery \| null | ✗ |
+| `anlat` | olgulardan düzyazı (**cevap varken**) | ✗ |
+| `plan_sec` | araç sırası | ✗ |
+| `sinonim_oner` | katalog bakımı | ✗ |
+| `prompt_enhance` | soruyu katalog terimleriyle **yeniden yazar** | ◐ **en yakın** |
+
+🔴 **Dokuz giriş noktası, sıfır anlama beyanı.** Tek yaklaşan `prompt_enhance` ve canlı
+kurulumda **kapalı** (§1.1: `prompt_enhancer = OFF`). Dahası kendi prompt'u (`llm.py:296`)
+*"katalogda GEÇEN terimlerle yeniden yaz"* diyor — yani **§1.3'ün eşanlamsız kataloğuna
+bağlı**. Aynı kök neden, ikinci LLM girişini de sakatlıyor.
+
+> *Bir modele «anladığını söyle» demeyen sistem, aldığı sessizliği anlayışsızlık sanar.*
+
+---
+
+## 10 · Bulgu B — teşhis üretiliyor, kullanıcıya değil **veritabanına** gidiyor
+
+`cube_router` reddin gerekçesini **kodlayarak** saklıyor:
+
+```python
+# app/cube_router.py:3134
+RED_KODLARI = {"R1": "cube eşleşmedi", "R2": "liste/döküm niyeti", "R3": "kıyas dili",
+               "R4": "ölçü eşleşmedi", "R5": "ortalama ölçü tanımlı değil",
+               "R6": "dışlama yarım", "R7": "boyut adayı tek değil",
+               "R8": "yarı-toplanabilir + zaman kovası", "R9": "kırılım istendi, boyut yok",
+               "R10": "kapsam kapısı — tanınmayan kelime"}
+```
+
+**Tüketici taraması:**
+
+```
+$ grep -rn "RED_KODLARI" app/          → 1 satır (kendi tanımı)
+$ grep -rn "red_gerekcesi\|teshis(" app/ → answer.py:235  (tek üretim tüketicisi)
+```
+
+```python
+# app/answer.py:234 — InteractionLog satırı
+reject_reason=_teshis(body.question, _sema(request)),
+```
+
+🔴 **Teşhis bir telemetri kolonudur.** Kullanıcıya dönen `note` alanı onu **hiç
+görmüyor**. Ve `soz.JARGON` listesi `"r1"`, `"r10"` dizgelerini kullanıcı metninde
+**yasaklıyor** — doğru bir yasak; ama on kodun **kullanıcı dilindeki karşılığı hiç
+yazılmadı**. Yasak var, çeviri yok.
+
+### 10.1 Ölçüm — teşhis ne diyor
+
+Gerçek-dünya korpusunun **elle yazılmış** 42 vakası (`lab/gercek_dunya.VAKALAR`),
+`route()` hepsini reddediyor:
+
+```
+ham kapı kodu → teshis()
+    21  R1  → R10
+    10  R10 → R10
+     5  R1  → R1
+     4  R4  → R10
+     1  R4  → R4
+     1  R9  → R10
+```
+
+⚠ **36/42 (%86) `R10`.** `teshis()` tanınmayan kelime varsa onu öne alıyor — `KÖK-9`'un
+kararı ve gerekçesi doğru. Ama sonuç şu: **kullanıcıya söylenebilecek en zengin bilgi
+(hangi ölçü eşleşti, hangi kırılım yok) teşhis kodunun içinde YOK**; kod yalnız
+*"bir kelimeyi tanımadım"* diyor. Yani B'nin çözümü *"R kodunu yaz"* değil — **eşleşmeyi
+yaz**.
+
+---
+
+## 11 · Bulgu C — *"ne anladım"* motoru retlerde YAPISAL OLARAK susuyor
+
+`app/temellendirme.py` bu talimatın tam karşılığı: **0 LLM · 0 token**, *"sistem ne
+anladığını söyler"*. Kapısı:
+
+```python
+# app/answer.py:633
+if not resp.cube_query:
+    return                     # ← düz retlerde cube_query BOŞ
+```
+
+Ve kapının kendi yorumu bunu **açıkça** yazıyor:
+
+> *"⚠ Gürültü riski yok: düz retlerde `cube_query` **boştur** (ölçüldü: `{}`)…"*
+
+🔴 O cümle, gürültü gerekçesiyle **tam da bu talimatın istediği davranışı** dışarıda
+bırakıyor: sistem *"anladığım şu"* diyebilmek için **önce bir sorgu kurabilmiş olmak**
+zorunda. Sorguyu kuramadığı an — yani kullanıcının açıklamaya en çok ihtiyaç duyduğu
+an — **susuyor**.
+
+⊙ Aynı asimetri `uyum.py`'de de var ve orada **doğru** çözülmüş: `eksik_niyet` +
+`kismi_cevap_notu` *"cevap gitti ama eksik"* der (korpus: `beyanli_kismi = 72`). Yani
+**«cevap var + eksik» beyanı yazıldı; «cevap yok + anladığım şu» beyanı yazılmadı.**
+İkisi aynı desenin iki yarısıdır.
+
+---
+
+## 12 · Bulgu D — *"yapamıyorum"* kapısı VAR ama sırası gelmiyor
+
+`app/yetenek.py` üç kutu tanımlıyor — ve **ikisini** uyguluyor:
+
+| kutu | sabit | durum |
+|---|---|---|
+| `anlamadim` | — | 🔴 **hiç yazılmadı** (docstring tablosunda var, kod yok) |
+| `yapamiyorum` | `KUTU_YAPAMIYORUM` | ✅ olumsuzluk |
+| `yapmiyorum` | `KUTU_YAPMIYORUM` | ✅ forecast · iki-cube |
+
+### 12.1 Sıra ölçüldü
+
+```
+ask.py:3596   fresh = _try_fresh_intent()   →  truthy dönerse RETURN
+ask.py:3629   yol sınırı (kullanıcı tercihi)
+ask.py:3644   _yetenek.kapsam_disi(...)     ←  YETENEK KAPISI
+ask.py:3651   _run_discovery()              ←  ikinci LLM
+```
+
+`_try_fresh_intent` (2688–3181) LLM pes ettikten sonra **dört truthy çıkış** taşıyor:
+
+| satır | kullanıcının gördüğü | sınıf |
+|---|---|---|
+| `3015` | *"«X» yerine «Y» mi demek istedin?"* | 🔴 yanlış-anlama önerisi |
+| `3100` | *"«X» başka bir konu gibi görünüyor."* / *"«X» kısmını anlayamadım."* | 🔴 anlamadım |
+| `3128` | *"…hangi ölçüyü istediğini anlayamadım."* | 🔴 anlamadım |
+| `3176` | *"Neyi karşılaştırmak/görmek istediğini anlayamadım…"* | 🔴 anlamadım |
+
+🔴 Bu dördünden biri ateşlediğinde **hem yetenek kapısı hem Discovery atlanır.** Yani
+kullanıcı, cevaplayabilecek ikinci LLM basamağını **görmeden** *"anlamadım"* alır —
+canlı turda ölçülen tam olarak buydu (§1.4).
+
+### 12.2 ⚠ Ama sıra düzeltmesi TEK BAŞINA az iş görür — ölçüldü
+
+42 vakalık gerçek-dünya korpusunda:
+
+```
+yetenek.kapsam_disi bir sınır BEYAN EDEBİLİYOR : 1 / 42
+netleştirmenin onu ÖRTTÜĞÜ vaka               : 0
+```
+
+> 🔴 **Sıra kusuru gerçek ama nüfusu küçük.** *"Kapıyı yukarı al"* refleksi bu vakada
+> neredeyse hiçbir şeyi düzeltmez; çünkü eksik olan **kapının yeri** değil,
+> **söylenecek cümlenin kendisi**. Bunu ölçmeden yapmak, doğru işi yanlış yerde
+> aramaktı.
+
+### 12.3 Çıkış dağılımı — nüfus
+
+Aynı 42 vaka, `_try_fresh_intent` merdiveni birebir taklit edilerek:
+
+```
+    20   47,6%   Discovery'ye geçiş
+     8   19,0%   ANLAMADIM: hiçbir konu tanınmadı
+     8   19,0%   ANLAMADIM: «X» kısmını anlayamadım
+     2    4,8%   ANLAMADIM: «X» başka bir konu
+     2    4,8%   SORU: hangi ölçü (konu belli)      ← meşru netleştirme
+     1    2,4%   SORU: «X» yerine «Y» mi
+     1    2,4%   cevap (yazım düzeltmesiyle)
+
+«anlamadım» sınıfı : 18 / 42  = %42,9
+"şunu mu dedin"    :  3 / 42  =  %7,1
+```
+
+⚠ **Payda seçimi kasıtlı.** Üretilmiş korpus (~2 300 vaka) **≥%97,1 katalog türevidir**
+(`tests/test_gercek_dunya_korpusu.py:5`) — yani sistemin **kendi kelimelerini** sorar ve
+bu soruda *"anlamadım"* oranını **yapay olarak düşürür**. Elle yazılmış 42 persona
+vakası, bu talimatın doğru paydasıdır. Üretilmiş korpusla koşum başlatıldı ve
+**bilerek durduruldu**; gerekçe budur.
+
+---
+
+## 13 · Bulgu E — tek-ses kataloğu bu dört çıkışa bağlı değil
+
+`app/soz.py:19` kuralı **birebir bu talimattır**:
+
+> **«Kural: ÖNCE NE ANLADIĞINI SÖYLE, SONRA SOR.»**
+>
+> | bugün | olacak |
+> |---|---|
+> | *"Hangi dönem için?"* | *"Fire toplamını çıkarabilirim — **hangi dönem?**"* |
+> | *"…tanıdığım konu geçmiyor"* | *"Bu soruda tanıdığım bir ölçü yakalayamadım. **Şunlardan biri mi?**"* |
+
+Ölçüm:
+
+```
+soz.KATALOG kaydı        : 15
+ask.py'de `soz=` atanan  :  8 yer
+§12.1'in dört çıkışında  :  0    ← hiçbiri katalogdan geçmiyor
+netlestirme.olcu tüketici:  0    ← katalogun YUMUŞAK cümlesi ölü
+```
+
+🔴 Katalogun *"olacak"* sütununa yazdığı cümle (`netlestirme.olcu`) **yazıldı ve hiç
+bağlanmadı**; onun yerine geçeceği *"form doğrulayıcısı"* cümle **hâlâ `ask.py:3176`'da
+satır içi**. Yani karar alındı, kayda geçti, **uygulanmadı**.
+
+⊙ İyi haber: desen zaten çalışıyor. `_period_gate` (`ask.py:2036`) `temellendirme`den
+*"anladığım ölçü"*yü çekip `netlestirme.donem`'in `{ne}` yuvasına koyuyor —
+*"Fire kg'yi çıkarabilirim — hangi dönem?"*. **Aynı üç satır**, dört red dalında yok.
+
+---
+
+## 14 · İki canlı sorunun yeniden okunması — sistem NE BİLİYORDU
+
+Ölçüm (taze şema, 23 cube):
+
+| soru | `route()` | ham→teşhis | `partial_unknowns` | `yetenek` |
+|---|---|---|---|---|
+| `personel verimliliklerini kıyasla` | pes | `R10→R10` | bilinmeyen=`[personel]` · **eşleşen ölçü=`ort_oee`** | — |
+| `şubatta ocağa göre ciro artışı…` | pes | `R4→R10` | bilinmeyen=`[ocaga, ciro]` · **eşleşen ölçü=`toplam_ciro`** | — |
+| `bu gidişle yılı nerede kapatırız` | pes | `R1→R10` | — | `yapmiyorum/forecast` |
+| `firesiz partiler kaç tane` | pes | `R4→R10` | — | `yapamiyorum/olumsuzluk` |
+| `fire ve rework birlikte` | pes | `R1→R10` | — | `yapmiyorum/iki_cube` |
+
+🔴 **İlk satır bu raporun özeti.** Sistem, *"personel verimliliklerini kıyasla"* için
+şunların **hepsini** biliyor:
+
+* `verimlilik` → **`oee.ort_oee`** eşleşti *(hits)*
+* `personel` → bu konuda **yok** *(unknown)*
+* soru bir **kıyas** *(`Niyet.turler = {kiyas}`)*
+
+ve kullanıcıya dediği: ***"«personel» başka bir konu gibi görünüyor."***
+
+Söylenebilecek olan — **yeni hiçbir bilgi gerektirmeden**:
+
+> *"Verimliliği (OEE) kıyaslayabilirim — ama «personel» kırılımı bu konuda yok.
+> Makine, hat ya da vardiya kırılımıyla bakabilirim."*
+
+⚠ Cümledeki üç kırılım **uydurulmadı**, katalogdan okundu: `oee.dimensions =
+[makine, hat, vardiya, hafta_gunu]` (`demo/packs/modul/oee/cubes/oee/metadata.yml:81`).
+Yani öneri, `_dogrulanmis_chipler` disiplininin **zaten** karşıladığı bir şeydir.
+
+### 14.1 Yan bulgu — `ciro` aynı anda «bilinmeyen» ve «eşleşen»
+
+İkinci satır: `partial_unknowns` `ciro`yu **bilinmeyen** listesine koyuyor **ve** aynı
+çağrıda `toplam_ciro`yu eşleşen ölçü olarak döndürüyor. İçeride bu tutarlı — *"seçilen
+cube'a göre bilinmiyor"* demek. Ama o liste **doğrudan kullanıcı metnine basılıyor**
+(`ask.py:3075`) ve canlı nota `"ocaga ciro" başka bir konu gibi görünüyor` diye
+sızıyor (§1.4).
+
+🔴 Yani kullanıcı, **eşleşmiş bir ölçünün adını** *tanınmayan kelime* olarak geri
+alıyor. İç doğru, dış yanlış — ve bu, *"yanlış anlama"* şikâyetinin somut kaynağı.
+
+### 14.2 `Niyet` nesnesi — çatı var, anlama yarısı boş
+
+`KÖK-1`'in niyet nesnesi (`app/niyet.py`) `coz(soru, schema)` ile zenginleşiyor. Ölçüldü:
+
+```
+personel verimliliklerini kıyasla
+    bilinmeyenler  = ['personel']          ← partial_unknowns'tan
+    olcu_adaylari  = []                    ← measure_cube_candidates'tan  🔴
+```
+
+⚠ İki alan **iki ayrı eşleştiriciden** doluyor: `bilinmeyenler` ← `partial_unknowns`,
+`olcu_adaylari` ← `measure_cube_candidates`. Birincisi *"`ort_oee` eşleşti"* diyor,
+ikincisi hiçbir şey bulmuyor — ve nesneye **yalnız ikincisinin sessizliği** yazılıyor.
+
+> 🔴 *Tek çatı, anladığını değil anlamadığını topluyor.* `Niyet`'in kendi docstring'i
+> *"bir sistemin temsil edemediği şeyi SAYABİLMESİ, onu görebilmesinin ilk adımıdır"*
+> diyor; bu satır o adımın **yarısının atılmadığını** gösteriyor.
+
+---
+
+## 15 · Olması gereken hâl — üç değişmez
+
+**1 · `{cube:null}` bir CEVAP değil, bir DEVİRDİR.**
+Yapısal red **içeride kalır** (§`intent_semasi`'nin gerekçesi doğrudur: *"hiçbiri"*
+seçeneği olmayan bir şema modeli yanlış seçime **zorlar**). Ama o dal artık kullanıcıya
+çıkan bir cümle üretmez; bir sonraki basamağa **devreder**.
+
+**2 · Kullanıcıya çıkan her ret üç parçalıdır.**
+
+```
+[anladığım]            ← temellendirme/partial_unknowns'un ZATEN ürettiği eşleşme
+[sınır]                ← teşhis + yetenek kutusu, KULLANICI DİLİNDE
+[yapabildiğim]         ← doğrulanmış chip (_dogrulanmis_chipler ZATEN var)
+```
+
+Üçünün de üreticisi **bugün mevcut**; eksik olan, red dalının onlara **bağlanmamış**
+olması.
+
+**3 · Tek istisna: veri niyeti taşımayan ifade.**
+*"teşekkürler"*, *"asdf zxcv"* → sosyal/menü yolu (`_SOSYAL`, `ask.py:2260`) zaten
+doğru davranıyor. Talimatın *"tamamen anlamsız"* kaydı **tam olarak budur** ve kapsamı
+dardır.
+
+---
+
+## 16 · Öneriler — sıralı, gerekçeli, ölçütlü
+
+| # | öneri | neden bu sırada | ölçütü |
+|---|---|---|---|
+| 🔴 **1** | **Red dalları `_honest_refusal` benzeri TEK huniden geçsin** ve huni `soz` + *"anladığım"* cümlesini eklesin | Dört dal bugün huniyi atlıyor (`3015·3100·3128·3176`); türetme chip'i de o yüzden görünmüyor (§13) | 42 vakada `soz` dolu ret oranı 0 → 100 |
+| 🔴 **2** | **`temellendirme.kur()` kapısı `cube_query` yerine `eşleşen ölçü` ile açılsın** | *"Ne anladım"* motoru zaten var ve **0 token**; tek engel §11'deki tek satırlık kapı | *"anladığım"* satırı taşıyan ret sayısı |
+| 🔴 **3** | **`Niyet.olcu_adaylari` `partial_unknowns`'un hits'iyle de beslensin** | İki eşleştirici aynı nesneye çelişik cevap veriyor (§14.2); *"anladığım"* cümlesinin **girdisi** budur | `personel verimliliklerini kıyasla` → `olcu_adaylari` boş DEĞİL |
+| 🔴 **4** | **Intent sözleşmesine `anladigim` + `eksik` metin alanları** — `{"cube":null,"anladigim":"…","eksik":"personel kırılımı"}` | LLM'in *"anladım"* diyebileceği tek yer; §1.3'ün eşanlam düzeltmesiyle **birlikte** ölçülmeli | `cube:null` cevaplarının kaçında `anladigim` dolu |
+| 5 | `netlestirme.olcu`'yu bağla; `ask.py:3176`'nın satır içi metnini kaldır | Karar alınmış, uygulanmamış (§13) | katalogda sıfır-tüketicili kayıt: 2 → 1 |
+| 6 | **Kapı testi:** kullanıcıya giden hiçbir metin, yanında *"anladığım"* cümlesi olmadan *"anlayamadım/anlamadım"* içeremez | `soz.JARGON` kapısının aynı deseni; beyan çürümesini **kapıyla** durdurur | yeni test kırmızıdan yeşile |
+| 7 | `partial_unknowns`'un çıktısı **kullanıcı metnine ham basılmasın** (§14.1) | *"Yanlış anlama"* şikâyetinin somut kaynağı | `"ocaga ciro"` gibi not üretilemez |
+| 8 | `prompt_enhancer`'ı §1.3 düzeltmesinden **sonra** aç | Bugün eşanlamsız katalogla çalışıyor; erken açmak ölçümü kirletir | `cube:null` oranı önce/sonra |
+
+### 16.1 Ölçülmeden yapılmaması gerekenler
+
+* ⛔ **`{cube:null}` dalını şemadan kaldırmak.** `intent_semasi`'nin gerekçesi ölçülmüş:
+  *"hiçbiri"* yoksa model **illa birini seçer** → sessiz-yanlış. Talimat bu dalı değil,
+  onun **kullanıcıya çıkan cümlesini** hedefliyor.
+* ⛔ **Yetenek kapısını yukarı almak — tek başına.** Ölçüldü: örtüşme **0/42** (§12.2).
+* ⛔ **Netleştirme dallarını kapatmak.** Chip'ler doğru üretiliyor; kusur **cümlede**.
+* ⛔ **`R11`'i geri getirmek.** Ölçüldü ve geri alındı (`tests/test_r11_ifade_edilemez.py`)
+  — çünkü **geliştirici teşhisini** örtüyordu. ⚠ Ama geri alınan şey **teşhis kodudur**,
+  bu raporun istediği **kullanıcı cümlesi değildir**. İkisi karıştırılmamalı: `R11`'in
+  kullanıcıya bakan yarısı **hiç yazılmadı**.
+
+---
+
+## 17 · Bu ek raporun sınırları
+
+* Nüfus ölçümü **42 elle yazılmış** persona vakası üstünde. Küçük bir paydadır; seçimi
+  §12.3'te gerekçelendirildi ama **dar** olduğu kabul edilir. Üretilmiş korpusla ikinci
+  bir tur, *"anlamadım"* oranını **düşük** gösterecektir — o sayı bu soru için yanıltıcıdır.
+* Çıkış merdiveni **taklit edilerek** ölçüldü (`_try_fresh_intent`'in dal koşulları
+  birebir kopyalandı), uçtan uca `/ask` koşulmadı: LLM ve DB kapalıydı. LLM açıkken
+  `cube:null` dönmeyen sorular bu dağılımdan **düşer** — canlı turda oran 9/9 `null`'du,
+  yani bugünkü kurulumda düşüş **beklenmez**.
+* §16'nın 4 numaralı önerisi (şemaya metin alanı) **ölçülmedi**; token maliyeti ve
+  sessiz-yanlış etkisi bilinmiyor. Serbest metin **hiçbir zaman sorguya dönüşmediği**
+  için yapısal riski düşük görünüyor — ama *"görünüyor"* bir ölçüm değildir.
+* ⚠ **Çalışma ağacı ölçüm sırasında canlıydı** (paylaşılan dizin, ikinci bir
+  geliştirici eş zamanlı çalışıyor). Ölçüm turu boyunca `MIMARI.md`,
+  `lab/nl_corpus.py` ve `tests/test_cevapsiz_kesme.py` değişti; ölçümün okuduğu
+  modüller (`cube_router` · `niyet` · `yetenek` · `typo_onerisi`) **değişmedi**,
+  ama tekrar üretimde ağacın **aynı** hâli kullanılmalıdır.
+* `yetenek.kapsam_disi` yalnız **üç** sınır tanıyor. *"Boyut yok"* (`personel`) sınıfı
+  hiçbir modülde yok; §16'nın 1–3'ü onu üretir, ama o üretim **yeni bir sınıf** açar ve
+  yanlış-pozitifi ölçülmeden açılmamalıdır.
+
+---
+
+## 18 · Kanıt komutları (yeniden üretmek için)
+
+```bash
+# Ölçüm konteyneri — ÇALIŞMA AĞACINDAN, salt-okunur, ağsız
+docker run --rm --network none \
+  -v "$PWD/backend":/work/backend:ro -v /tmp/olcum:/out \
+  -e DENETIM_KOK=/work/backend -e TMPDIR=/out/tmp -e DIMA_VQR_EMBEDDER=off \
+  -w /work/backend --entrypoint python \
+  dima-backend-feat-wren-strict-agentic_dima-backend /out/olc_anlamadim.py
+
+# LLM'in "anladım" diyecek alanı var mı
+sed -n '354,372p' backend/app/llm.py          # prompt sözleşmesi
+sed -n '79,87p'   backend/app/intent_semasi.py # additionalProperties: False
+
+# Teşhis kimin okuduğu
+grep -rn "RED_KODLARI\|red_gerekcesi\|teshis(" backend/app/
+
+# "Ne anladım" motorunun kapısı
+sed -n '630,640p' backend/app/answer.py
+
+# Tek-ses kataloğunun ölü kayıtları
+grep -rn "netlestirme.olcu" backend/app/ | grep -v soz.py   # → boş
+```
+
+⚠ **Ölçüm aracının kendi tuzağı (yeniden üretmek isteyene):** `lab/izolasyon.py` gerçek
+`demo/`deki **artakalan `wren-project.compose.lock`** dosyasını da aynaya sembolik bağla
+kopyalar. Salt-okunur kaynakta derleme `EROFS` verir; **yazılabilir** kaynakta ise
+"izole" iki koşum **aynı kilidi paylaşır** — yani izolasyon o noktada sızıyor. Ölçüm
+betiği bağı siliyor; kalıcı çözüm `_CIKTI` süzgecinin `*.compose.lock`'u da kapsaması
+olurdu. *(Kapsam dışı; tek cümlelik kayıt.)*

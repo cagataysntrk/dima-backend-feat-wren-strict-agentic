@@ -1738,6 +1738,99 @@ değişirse aynı satır yeniden anlam kazanır.
 yok edicisi değil: şemaya uyan ama yanlış bir cevap da şemaya uyar. Bu yüzden `iddia.py`
 ve hava boşluğu bayrağın yerine geçmez — onlar **başka** bir şeyi korur.
 
+### 🔴 ÖLÇÜM ARACI SESSİZCE DARALDI — ve taban onun üstüne yazıldı
+
+`G3.4`'te `_cevapsiz_kesme` eklenirken tanım `run_company`'nin **gövdesinin ortasına**
+düştü. Python bunu şikâyet etmez: fonksiyon orada biter, kalan gövde yeni fonksiyonun
+`return`'ünden **sonra** kalır ve ölü koda dönüşür.
+
+| sonuç | görünürlüğü |
+|---|---|
+| korpusun **süreç (çok turlu) yarısı hiç koşmadı** | ⊘ hiçbir yerde |
+| `run_company` sessizce `None` döndü | ⊘ |
+| kapı `birlestir`'de `AttributeError` verdi | 🔴 **üç fonksiyon ötede** |
+| ⚠ ve arada bir tur, ölçüm daraldığı için **taban güncellendi** | *"korunum"* diye gerekçelendirildi |
+
+🔴 **En pahalı kalem sonuncusu.** Bir gerileme kırmızı verir ve tartışılır; bir **daralma
+yeni bir taban verir** ve o taban gelecekteki gerilemeleri de meşrulaştırır.
+
+*Bir ölçüm aracının sessizce daralması, ölçtüğü şeyin gerilemesinden pahalıdır.*
+
+**Kapı:** `tests/test_cevapsiz_kesme.py` iki yeni kapı taşıyor —
+`test_OLCUM_ARACINDA_ULASILAMAZ_KOD_YOK` (genel: `lab/*.py`'de aynı blokta
+`return`/`raise`/`continue`/`break` sonrası çalıştırılabilir ifade) ve
+`test_RUN_COMPANY_SOZLUK_DONER` (sözleşme: her dilim bir sözlüktür).
+
+⊙ Onarım sonrası korpus: **%95,1 = taban %95,1** — süreç yarısı geri döndü, gerileme yok.
+
+### 🔴 `G6` — REFERANS DİLİ: kıyas bir MOD KODU değil, İKİ ADLANDIRILMIŞ UÇ
+
+`compare` iki değerlik bir enum'dur (`yoy`/`mom`) ve **motor için** doğru soyutlamadır:
+`app/yoy.py` bir dönemi geri kaydırır, `viz` çizer, chip düzenler. Ama **kullanıcı için
+değil**: *"mart'ı şubatla kıyasla"* diyen biri `mom` duymaz, iki dönem adı duyar. Üç
+sonucu ölçüldü:
+
+| yüzey | `compare` ile | eksik olan |
+|---|---|---|
+| makbuz (`temellendirme`) | kıyas **hiç yazmıyordu** | hangi iki dönem |
+| Intent-JSON | `compare` var, **`blend` yok** | çapraz-cube (`Ö11`/`Ç-14`) |
+| `Niyet` izi | *"temsil-yok"* diyordu, oysa temsil **vardı** | `referans` |
+
+#### Tek temsil — ve neden bir ALAN değil
+
+`referans` üç yerde doğabilirdi (`_coz_soru`, `route()`, `parse_cube_query`) ve üçü de
+biraz farklı doğururdu — bu deponun bir numaralı kusur sınıfı (`KAT-1`). Bu yüzden:
+
+* **cebir** tek yerde: `app/kiyas_cebiri.py`. İki yönü (`referans_uret` ↔ `referans_modu`)
+  **aynı kaydırıcıya** (`cube_router.shift_period_back`) sorar — bir çevirici çiftinin iki
+  yönü farklı hesaplara dayanırsa gidiş-dönüş bir gün **başka bir yere** varır.
+  ⊙ Ölçüldü: *"aralığın ön kısmı"* alternatifi elendi — *"mart 2025 ile mart 2026"*
+  çöküşünde ön kısım **12 aylık** bir penceredir, oysa SQL'in kıyasladığı mart 2025'tir.
+* **niyet tarafı** bir alan değil bir **türev**: `Niyet.referans` bir `@property`.
+  Doldurulacak bir yer yoksa iki değer de yoktur.
+* **sorgu tarafı** yalnız `parse_cube_query`'den girer ve 🔴 **derlenemeyen GEÇMEZ** —
+  geçseydi sorgu kıyassız çalışır, cevap kıyas etiketiyle sunulurdu.
+
+*Bir değeri iki yerden yazılabilir yapmak, iki değeri garanti etmektir.*
+
+#### Kapanan kayıtlı borç
+
+`test_r11_ifade_edilemez.py`'nin şerhi: *"`route()` indirgeme yapsa bile iz hâlâ
+«temsil-yok» yazar — iz YANILTICI."* Sebebi hesabın yalnız **kaç dönem adlandığına**
+bakmasıydı. `Niyet.referans` artık cebrin indirgeyicisine soruyor: iz ile sorgu **aynı
+kaynağa** bakıyor. Tuzak **tersine çevrildi** (kapananlar susturulmaz, ters kilitlenir).
+
+#### Ve kapı kendi bayatlamasını yakaladı
+
+Aynı dosyadaki `olculen` sayacı (bir önceki turda *"boşuna yeşil"* diye eklenmişti)
+**kırmızıya döndü**: vakalar `borc` ölçüsünü anıyordu ve bu katalogda öyle bir ölçü yok
+(`mizan`'ınki `bakiye`) → ikisi de `R1`'den düşüyordu. Sayaç olmasaydı dosya **hiçbir şey
+ölçmeden yeşil** kalırdı. *Bir kapının bayatlaması sessizdir: kırmızıya dönmez, ölçmeyi
+bırakır.*
+
+#### `blend` — `Ç-14` geri alındı, gerekçe İKİYE AYRIŞTI
+
+Eski kural üçünü bir arada tutuyordu: *"`order`/`limit`/`blend` enum'lanmaz, çünkü
+`parse_cube_query` zaten hoşgörüyle düşürüyor."* O gerekçe `order`/`limit` için **doğru
+kalır** — onlar cevabın **sunumunu** değiştirir. `blend` cevabın **kapsamını** değiştirir:
+düşünce kullanıcı iki seri ister, bir seri alır ve **fark edemez**.
+
+⚠ Boyut bir tercih değil zorunluluktu: satır içi harman `N²` alt şema demekti (23 cube →
+529). Tek bir `$defs/harman_ogesi` ile `N`'e iner. Şema modele **her istekte** gönderilir.
+
+🔴 Ve `blend_uyumlu` bir **yükleme çıkarıldı**: `blend_sql`'in sözleşmesi *"çağıran
+garantiler"* diyor ve `G6.5`'e kadar tek çağıran vardı. İkinci çağıran doğunca garanti iki
+yerde verilecekti. Eski tek satır ayrıca **eksikti** — yalnız `dimensions`'a bakıyordu,
+oysa **filtreler de** tüm cube'lara uygulanıyor; hedef cube'da olmayan bir boyuta filtre,
+iki seriyi **farklı evrenlerden** getirirdi.
+
+**GERİ AL.** `referans_dili: off` → makbuzda kıyas satırı yok, şemada `blend` yok,
+`referans` hiç üretilmez. Yanıt bayt bayt bugünkü (`KURAL B`).
+
+**⚠ KARŞILANMAYAN KAPI MADDESİ:** plan *"Intent-JSON `referans` üretebiliyor (**canlı**)"*
+diyor. Bu koşumda gerçek sağlayıcı yok ve karşılanmış gibi **gösterilmiyor** — kilitlenen
+şey mekanizmadır. Oranın ölçümü `eval --slice llm`'in işi ve o dilim **4 vaka**.
+
 ### 🔴 `G3`'ÜN ÖLÇÜMÜ SAĞLAYICIDAN KÖRDÜ — kararın neden ASKIDA olduğu
 
 18. yasağın (*"cevapsız bir dal cevaplı bir yolu KESEMEZ"*) tam uygulaması ölçüldü ve
@@ -2872,7 +2965,7 @@ enum'dan kötüdür: modele var olmayan bir adı **dayatırdı**.
 > ölçülemeyen bir kazanç doğrulanamaz. Oranın önce/sonra kıyası **Faz 0.5'in `--live`
 > modunun** işidir ve o faza girdi olarak taşınmıştır.
 
-19 test: `tests/test_sema_kisitli.py` · bayrak `llm_sema_kisitli` (KURAL B).
+23 test: `tests/test_sema_kisitli.py` · bayraklar `llm_sema_kisitli` **ve** `referans_dili` (KURAL B). 🔴 `G6.5` ile şemaya **`blend`** girdi — ama yalnız `referans_dili` açıkken (`harman=True`); kapalıyken şema **bayt bayt bugünkü** ve bunu ayrı bir fixture kilitliyor (`sema` ↔ `sema_harman`).
 
 > ⟳ **KAZANÇ ÖLÇÜLDÜ (3 Ağustos 2026, gerçek Gemini) — VE KAZANÇ YOK.**
 >
