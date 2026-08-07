@@ -1147,7 +1147,7 @@ yapılmaz** — bozulma merdiveninin 3. basamağına düşülür *(deterministik
 | **G0b.3** | Kanal envanteri | Üç kanal **zaten** `safe_call`'dan geçiyor *(sağlayıcı metodu seviyesinde)* — doğrulanır, yeniden bağlanmaz | AST: `safe_call`'suz sağlayıcı metodu **yok** |
 | **G0b.4** | AST kaçak kapısı | `safe_call` sarmayan yeni bir sağlayıcı metodu → **CI kırmızı** | Test yeşil |
 | **G0b.5** | PII maskesi | ✅ **ZATEN VAR** (`llm_guard.ihlalleri_bul`) — yalnız **regresyon testi** yazılır | 4 vaka yeşil |
-| **G0b.6** | Varlık çözümü | `value_index` ile çözülen değer → `{{ENT_i}}`; LLM'e **kural** olarak gider | Gerçek ad çıkmıyor |
+| **G0b.6** ✅ | Varlık çözümü | `value_index` ile çözülen değer → `{{ENT_i}}`; LLM'e **kural** olarak gider | ✅ **İNDİ** (`app/varlik.py` · `tests/test_varlik_perdesi.py`). ⊙ Ölçüm önce yapıldı ve **bir yarısı zaten kapalıydı**: `corrected_q` LLM'e hiç gitmiyor (artık kilitli). 🔴 Açık kapı **başkasıydı** — `build_catalog` boyut **değerlerini** prompt'a yazıyor; perde oraya kuruldu. ⚠ Ve ölçüm bir tuzak buldu: `ciro` bu katalogda **hem ölçü sinonimi hem boyut değeri** — perde onu yutunca sorudan ÖLÇÜ siliniyordu. Sözlükle çakışan değer artık perdelenmiyor (`typo_suggest`'in *çapraz-konu* kuralının aynısı) |
 | **G0b.7** | Korunan yayılım | Fact-Sheet'teki sayı ve boyut değeri → `{{NUM_i}}` / `{{DIM_i}}` | Fixture taraması temiz |
 | **G0b.8** | Geri koyma | Renderer haritadan gerçek değeri koyar; eksik/fazla yayılım → **cümle düşer** | Yapısal doğrulama |
 | **G0b.9** | Çıkış kütüğü | ✅ disiplin **zaten var** (`llm_guard`: değer loglanmaz) — yer tutucu **sayısı** eklenir | Kütükte değer yok |
@@ -1485,9 +1485,9 @@ Fact-Sheet 150–250 token; ham satır **hiç gitmez**. Model: `_select_model` (
 | **G5.7** | Bayrak `alpha` | `features.yml` → `t2_anlatici: "alpha"`, tek test kullanıcısı | Yalnız o kullanıcıda |
 | **G5.8** | 🔴 **İKİ KOŞUM ölç** *(KURAL G-1)* | `garson.py --live` ×2; kota planı: `LIVE_BEKLE` + `_kota_on_ucusu` | İki rapor |
 | **G5.9** | Karar | Kazanç varsa `beta`; yoksa `off` **+ gerekçe `MIMARI.md`'ye** | Karar yazılı |
-| **G5.10** | Akış *(kolay kazanç)* | `ask_async_discovery` açılır; anlatı **token token** akar *(`ask.py:3864` hattı hazır)* — bugün yalnız **iz adımı** taşıyor | Algılanan gecikme düştü |
-| **G5.10b** | 🖥 **ÖN YÜZ — akış tüketicisi** | `ChatPanel.tsx` + `api-client.ts:306 streamAskJob` + `DurdurDugmesi.tsx` **zaten yazılı** — bayrak açılınca **gerçekten** akıyor mu, elle doğrulanır | Yazıyor-animasyonu çalışıyor |
-| **G5.10c** | 🖥 **ÖN YÜZ — anlatı zaten bağlı** | `OutputInsight.tsx:82-93` (`narration`) + `ReportCard.tsx:945-955` (AI Act Md.50 işareti) — **yeni render YAZILMAZ**, yalnız doğrulanır | İşaret yalnız `narration` varken |
+| **G5.10** ✅ | Akış *(kolay kazanç)* | `ask_async_discovery` açılır; anlatı **token token** akar *(`ask.py:3864` hattı hazır)* — bugün yalnız **iz adımı** taşıyor | ✅ **İNDİ — ama YARISI ÖLÇÜLDÜ ve DÜŞTÜ.** `ask_async_discovery: beta` açıldı (hat **ve** ön yüz tüketicisi ikisi de yazılıydı, tek eksik bayraktı); iz adımları **canlı** akıyor. 🔴 **Anlatı akmıyor ve AKAMAZ**: (1) `app/llm.py`'de tek bir `stream` çağrısı yok — akıtılacak token dizisi üretilmiyor; (2) olsaydı bile `narration_guard` her cümledeki **her sayıyı** doğruluyor ve **yarım cümlenin sayısı doğrulanamaz**. `Ö1`'in *cümle-tamponlu* şartı tam budur; taşıma katmanı işi, faz `S` |
+| **G5.10b** ✅ | 🖥 **ÖN YÜZ — akış tüketicisi** | `ChatPanel.tsx` + `api-client.ts:306 streamAskJob` + `DurdurDugmesi.tsx` **zaten yazılı** — bayrak açılınca **gerçekten** akıyor mu, elle doğrulanır | Yazıyor-animasyonu çalışıyor |
+| **G5.10c** ✅ | 🖥 **ÖN YÜZ — anlatı zaten bağlı** | `OutputInsight.tsx:82-93` (`narration`) + `ReportCard.tsx:945-955` (AI Act Md.50 işareti) — **yeni render YAZILMAZ**, yalnız doğrulanır | İşaret yalnız `narration` varken |
 | **G5.11** | 🔴 **Doğruluk vetosu** | `eval` `sessiz_yanlis` **artmadı** · uydurma sayı **sıfır** | Kayıtlı |
 | **G5.12** | 📌 **COMMIT** | `feat(G5): anlatıcı — guard ve iddia kapısı altında` | §5/2 ve §5/7 yeşil |
 
@@ -1567,9 +1567,9 @@ varılmış; kabul ölçütleri oradan **aynen** alınır)*:
 |---|---|---|---|
 | **G6.1** | 🔴 **ÖNCE KAPI** | İki adlandırılmış dönem + kıyas fiili **aralık toplamına çökemez**. `uyum.py`'nin `kiyas`+`cok_donem` değişmezleri **temsil edilebilir** hâle gelir | `mart cirosunu şubat ile kıyasla` → **tek birleşik sayı DÖNMÜYOR** |
 | **G6.2** | Eşdeğerlik önce ölçülür *(Faz 2 deseni)* | `yoy`/`mom` → `referans`'a çevrildikten sonra **birebir aynı SQL** | SQL diff **boş** |
-| **G6.3** | Alan | `CubeQuery.referans: {eksen, kaynak, hedef}`; `eksen ∈ {dönem, kohort, hedef, bütçe, sabit}` | `parse_cube_query` beyaz listesinde |
-| **G6.4** | 🔴 **Taşıyıcı `Niyet`** | `referans` bilgisi `app/niyet.py`'de doğar *(`KÇ-0`'ın müşterisi)*; ikinci sahip **yok** | AST kapısı: tek temsil |
-| **G6.5** | Intent-JSON şeması | `intent_semasi.py` → **`compare` VE `blend`** girer. `oneOf` **korunur** *(§7.4/(c))* | Şema testi |
+| **G6.3** ✅ | Alan | `CubeQuery.referans: {eksen, kaynak, hedef}`; `eksen ∈ {dönem, kohort, hedef, bütçe, sabit}` | `parse_cube_query` beyaz listesinde |
+| **G6.4** ✅ | 🔴 **Taşıyıcı `Niyet`** | `referans` bilgisi `app/niyet.py`'de doğar *(`KÇ-0`'ın müşterisi)*; ikinci sahip **yok** | AST kapısı: tek temsil |
+| **G6.5** ✅ | Intent-JSON şeması | `intent_semasi.py` → **`compare` VE `blend`** girer. `oneOf` **korunur** *(§7.4/(c))* | Şema testi |
 | **G6.6** | `Ö9` — adlandırılmış dönem | `mart cirosunu şubata göre` → **iki seri + %değişim** | Denetimin kabul ölçütü |
 | **G6.7** | `Ö11` — `blend` | `verimlilik ve ciro` → iki seri **ya da** netleştirme; **R1 değil** | Denetimin kabul ölçütü |
 | **G6.8** | `Ö12` chip yarısı | *"ilişki mi, iki ayrı seri mi?"* netleştirmesi | Chip `route()` ile **doğrulanmış** |

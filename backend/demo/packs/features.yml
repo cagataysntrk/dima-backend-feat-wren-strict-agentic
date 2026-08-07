@@ -75,7 +75,14 @@ features:
   # yüzden ekleme DAVRANIŞ DEĞİŞTİRMEZ — ama *"bu bayrak var ve kapalı"* ile *"böyle bir
   # bayrak yok"* okuyucu için aynı şey değildir. 🔴 Yazılı olmayan bir varsayılan,
   # tartışılamayan bir varsayılandır.
-  ask_async_discovery: "off"   # Discovery'yi arka plana al (/ask/jobs kuyruğu)
+  ask_async_discovery: beta   # 🔴 G5.10 — AÇILDI. Discovery arka-plan işi + canlı akış.
+  # ⊙ Ölçülen kazanç: deterministik yol ~100–800 ms (akış gereksiz), **LLM yolu 2,8–5,5 sn**
+  # ve o süre bugün SESSİZ geçiyor. `AskJob.trace` aşamaları ZATEN taşıyordu; eksik olan
+  # onları **anında** iletmekti — `GET /ask/jobs/{id}/stream` ve ön yüz tüketicisi
+  # (`api-client.ts::streamAskJob` + `DurdurDugmesi`) **ikisi de yazılıydı ve kapalıydı**.
+  # ⚠ Bayrak neden bugüne kadar kapalıydı: `/ask`'in dönüş ŞEKLİNİ değiştiriyor. Artık
+  # kapalı değil çünkü tüketicisi tam: `job_id` → akış → `tamam` olayı → aynı `AskResponse`.
+  # 🔴 ANLATI AKIŞI BU BAYRAĞA DAHİL DEĞİL — sebebi ölçüldü, `Ö1` bölümüne bak.
   cekirdek_katman: "off"       # FAZ 2.1 — çekirdek katman derlemeye girer
   threaded_chat: "off"         # thread'li sohbet UI'ı
   # FAZ 2.5 — hedef kıyası. `off`: `resp.hedef` HİÇ üretilmez → yanıt bayt bayt bugünküyle
@@ -122,6 +129,9 @@ features:
                           # narration_guard ZORUNLU çıkış kapısı (fail-closed: eşleşmeyen
                           # sayı taşıyan cümle YAYIMLANMAZ). `off` — sıcak yola LLM çağrısı
                           # ekliyor; açılması bilinçli bir karar olmalı (KURAL B, testli).
+  varlik_perdesi: beta  # 🔴 G0b.6: hava boşluğu — gerçek değer sağlayıcıya HAM gitmez.
+  # ⚠ Bilgi KAYBI değil kazancı: ham değer *"bu ne?"* sorusunu açık bırakır, yer tutucu
+  # hangi boyuta ait olduğunu SÖYLER. Kapalıyken soru ham gider (bugünkü davranış).
   referans_dili: beta  # 🔴 G6: kıyasın İKİ UCU + Intent-JSON'da `blend`.
   # ⚠ `beta` — çünkü kazancı ölçülebilir ama ölçülMEDİ: `blend`'in taze soruda kaç `R1`'i
   # kurtardığı **gerçek bir sağlayıcı** ister (`eval --slice llm`, bugün 4 vaka).

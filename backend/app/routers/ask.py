@@ -18,6 +18,7 @@ from app import niyet as _niyet
 from app import turetme as _turetme
 from app import uyum as _uyum
 from app import yetenek as _yetenek
+from app import varlik
 from app import context as app_context
 from app import netlestirme as _netlestirme
 from app import prescribe
@@ -2913,8 +2914,16 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                         except Exception:
                             _log.warning("şema üretilemedi → serbest-JSON yolu",
                                          exc_info=True)
+                    # 🔴 `G0b.6` — VARLIK PERDESİ. Sorudaki katalog **değerleri**
+                    # `{{ENT_i}}`'ye çevrilir; modele değerin kendisi değil **hangi
+                    # boyuta ait olduğu** söylenir. Bilgi kaybı değil kazancıdır: ham
+                    # değer *"bu ne?"* sorusunu açık bırakır. Geri koyma **fail-closed**.
+                    _q_llm, _ent, _ent_kural = body.question, {}, ""
+                    if "varlik_perdesi" in resolve_for(settings, principal):
+                        _q_llm, _ent, _ent_kural = varlik.perdele(body.question, schema)
                     parsed, uyum, eksen, adaylar = _select_consistent(
-                        llm_probe, body.question, catalog_text, cube_index, k, _sema)
+                        llm_probe, _q_llm, catalog_text + _ent_kural, cube_index, k, _sema)
+                    parsed = varlik.geri_koy(parsed, _ent)
                     if parsed:
                         route_hit = {"cube_query": parsed, "order": None, "limit": None}
                         intent_source = "cube+llm"
@@ -3906,6 +3915,28 @@ def ask_job_stream(job_id: str, request: Request):
     korunur ama taşıma `fetch` + `ReadableStream`'dir: Bearer başlığı aynen çalışır, hiçbir
     değişmez gevşetilmez. Format aynı olduğu için ileride gerçek bir `EventSource`
     tüketicisi de eklenebilir — karar geri alınabilir kalır.
+
+    ## 🔴 ANLATI NEDEN AKMIYOR — `G5.10`'un ölçülen sınırı
+
+    Plan *"anlatı **token token** akar"* diyordu. Ölçüldü ve **bugün imkânsız**, iki
+    bağımsız sebeple:
+
+    1. **Sağlayıcı katmanında akış YOK.** `app/llm.py`'de tek bir `stream` çağrısı bile
+       yok; anlatı tek parça döner. Akıtılacak bir token dizisi **üretilmiyor**.
+    2. 🔴 **Ve olsaydı bile token token AKAMAZDI.** `narration_guard.guvenli_anlatim`
+       her cümledeki **her sayıyı** sonuç kümesiyle eşler; eşleşmeyen cümle **düşer**.
+       Yarım bir cümlenin sayısı doğrulanamaz — yani token akışı, kapının kendisini
+       atlatmak demektir. Denetimin `Ö1` maddesi tam bunu söylüyor: *"akış inerse
+       **cümle-tamponlu** olmak zorunda."*
+
+    ⊙ Yani `Ö1` bir kısıt değil, bir **tasarım kararının kaydı**: anlatı ancak **cümle
+    cümle**, ve **guard'dan geçtikten sonra** akabilir. O da bir taşıma katmanı işidir
+    (planın `S` fazı bunu dürüst fiyatıyla yazıyor) ve bu fazın kapsamı dışındadır.
+
+    *Bir sözü hızlandırmak için doğruluğunu ertelemek, hızlandırmak değil bozmaktır.*
+
+    Bu uç bugün **iz adımlarını** akıtır — ve sessizliğin tamamı zaten oradadır
+    (`route → intent → derleme → çalıştırma`), anlatı en sonda gelir.
 
     ## Sonlanma
 

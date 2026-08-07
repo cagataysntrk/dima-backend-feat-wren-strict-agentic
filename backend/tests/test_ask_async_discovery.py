@@ -58,16 +58,53 @@ def _poll_job(client, job_id: str, *, max_tries: int = 100, delay: float = 0.15)
     pytest.fail(f"AskJob {job_id} zaman aşımına uğradı (poll)")
 
 
-def test_flag_off_by_default_discovery_stays_synchronous(client):
-    """Regresyon kilidi: bayrak override'sız (varsayılan hal) /ask HİÇBİR ZAMAN job_id
-    döndürmez — Discovery senkron çalışır, tam AskResponse ilk çağrıda gelir."""
+def test_BAYRAK_KAPATILINCA_DISCOVERY_YINE_SENKRON(client, monkeypatch):
+    """🔴 `G5.10` — **TUZAK TERSİNE ÇEVRİLDİ.** Eski hâli *"varsayılan KAPALI"*yı
+    kilitliyordu; `G5.10` bayrağı **açtı** (`beta`), yani o kilit artık kararın kendisiyle
+    çelişiyordu.
+
+    ⚠ Ama kilidin **koruduğu şey** hâlâ değerli: geri alma yolu. Bu yüzden test
+    susturulmadı, **yönü çevrildi** — artık bayrağı KAPATINCA senkron davranışın bayt
+    bayt döndüğünü ölçüyor (`KURAL B`).
+
+    *Kapananlar işaretlenmez, tuzakları tersine çevrilir; yoksa kapanış yalnızca testin
+    susturulması olur.*
+    """
+    import app.features as features_mod
+
+    original = features_mod.resolve_for
+
+    def fake(settings, principal=None):
+        flags = original(settings, principal)
+        flags.pop("ask_async_discovery", None)      # `off` = sette hiç yok
+        return flags
+
+    monkeypatch.setattr(features_mod, "resolve_for", fake)
     r = client.post("/ask", json={"question": "asdf zxcv listele", "execute": True,
                                   "session_id": "eval-sync-default"})
     assert r.status_code == 200, r.text
     body = r.json()
-    assert body.get("job_id") is None
+    assert body.get("job_id") is None, (
+        "🔴 GERİ ALMA YOLU KIRIK: bayrak kapalıyken hâlâ arka-plan işi kuruluyor")
     # Discovery'ye düştüğü ve normal şekilde cevaplandığı (kural-tabanlı sağlayıcı testte)
     assert body["source"] is not None
+
+
+def test_BAYRAK_ARTIK_ACIK_ve_VARSAYILAN_ASENKRON(client):
+    """🔴 `G5.10`'un kararı: akış hattı **ve** ön yüz tüketicisi ikisi de yazılıydı, tek
+    eksik bayraktı.
+
+    ⊙ Ölçülen kazanç: deterministik yol ~100–800 ms (akış gereksiz), **LLM yolu 2,8–5,5
+    sn** — ve o süre bugüne kadar **sessiz** geçiyordu.
+
+    ⚠ Bu test bayrağı **taklit etmez**: `demo/packs/features.yml`'in gerçek değerini
+    ölçer. Taklit etseydi, bayrağın açık olduğunu değil, açılabildiğini kanıtlardı.
+    """
+    r = client.post("/ask", json={"question": "asdf zxcv listele", "execute": True,
+                                  "session_id": "eval-async-default"})
+    assert r.status_code == 200, r.text
+    assert r.json().get("job_id"), (
+        "🔴 `ask_async_discovery` kapanmış — `G5.10` geri alınmış olabilir")
 
 
 def test_ask_queues_background_job_when_flag_on(client, monkeypatch):

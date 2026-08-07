@@ -76,6 +76,15 @@ TABAN_CUBE_ROUTER_KOD = 1685  # 1703 ölçüldü − 18 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("G0b.6/varlik-perdesi", 4,
+     "🔴 **HAVA BOŞLUĞU: gerçek değer sağlayıcıya HAM gitmez.** Mekanizmanın tamamı "
+     "`app/varlik.py`'de (perdele + fail-closed geri koyma); burada kalan **yalnız üç "
+     "satır**: bayrak, çağrı, geri koyma. ⚠ **TAŞINAMAZ:** perdelenecek metin "
+     "(`body.question`), süzgeç bağlamı (`schema`) ve geri konacak sonuç (`parsed`) "
+     "**yalnız burada** bir aradadır — bir modüle çıkarmak, LLM çağrısını da o modüle "
+     "taşımak olurdu. 🔴 Ve `parsed = varlik.geri_koy(...)` çağrının **hemen altında** "
+     "durmak zorunda: araya giren tek bir satır, yuvaları çözülmemiş bir sorguyu "
+     "tüketiciye açardı. *Yanlış bir boşluk, görünür bir hatadan beterdir.*"),
     ("G6.5/harman-bayragi", 2,
      "🔴 Intent-JSON şeması `harman=` ile üretiliyor — `blend`'in kill-switch'i (`KURAL B`). "
      "⚠ **TAŞINAMAZ:** şema **zaten burada** üretiliyor ve bayrak **zaten burada** "

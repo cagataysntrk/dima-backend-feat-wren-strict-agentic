@@ -483,6 +483,14 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "— aksi hâlde döküm isteyene dejenere tek toplam dönerdi.",
         "category": "Analiz",
     },
+    "varlik_perdesi": {
+        "label": "Varlık perdesi (gerçek değer sağlayıcıya gitmez)",
+        "description": "Sorudaki katalog DEĞERLERİ `{{ENT_i}}` ile perdelenir ve LLM'e "
+                       "değerin kendisi değil hangi BOYUTA ait olduğu söylenir. Model "
+                       "yer tutucuyu filtreye birebir yazar, gerçek değer geri konur; "
+                       "çözülemeyen yuva varsa sorgu DÜŞÜRÜLÜR (fail-closed).",
+        "category": "Güvenlik",
+    },
     "referans_dili": {
         "label": "Referans dili (kıyasın iki ucu)",
         "description": "Kıyas artık bir MOD kodu (yoy/mom) değil, iki ADLANDIRILMIŞ uç "

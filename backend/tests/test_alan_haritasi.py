@@ -137,6 +137,10 @@ def test_SINIFSIZ_MODUL_BIRAKILAMAZ():
         # 🌉 KÖPRÜ — biri üretir, öteki tüketir
         "interpret.py": "🌉 mutfak üretir, garson tüketir (ham satır SIZDIRMAZ)",
         "value_index.py": "🌉 veri değeri okur, garson kullanır",
+        # 🔴 `G0b.6` — `value_index`'in KARDEŞİ ve aynı sınıf: veri değerlerini okur
+        # (`sensitivity` süzgeciyle) ama onları **garson için** perdeler. Sayı hesaplamaz,
+        # SQL yazmaz, katalog dışına çıkmaz — köprünün tanımı budur.
+        "varlik.py": "🌉 veri değeri okur, garson için PERDELER",
         "vqr.py": "🌉 soru→sorgu belleği",
         # 🎨 SUNUM
         "viz.py": "🎨", "report.py": "🎨", "prescribe.py": "🎨", "fmt.py": "🎨",
