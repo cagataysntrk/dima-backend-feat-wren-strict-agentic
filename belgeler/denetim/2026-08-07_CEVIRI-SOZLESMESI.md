@@ -2220,3 +2220,37 @@ ve `A4` (grafik dönüşümü, 0 LLM) **tam istendiği gibi** çalışıyor.
 
 🔴 Yani kullanıcının *"agentic"* dediği yeteneklerin **mutfağı hazır**; kaybedilen turlar
 **dil kapısında** kaybediliyor — `§AJ4`'ün *"garsonun fişi"* teşhisiyle aynı yöne bakıyor.
+
+### 30.7 · Koşum — üçüncü parti
+
+| tur | soru | sonuç |
+|---|---|---|
+| **A7/1** | `2026 ciro` | ◐ dönem soruyor (çıplak yıl — kayıtlı karar, `§28.4/P3`) |
+| **A7/2** | `sadece ilk çeyrek` | ✅ `2026-01-01..03-31` · ₺27.767.945,12 · **0 LLM** |
+| **A16/1** | `kalite red oranı nedir` *(yeni konu)* | 🔴 **takip sanıldı** |
+
+#### 🔴 KUSUR V — KONU DEĞİŞİMİ TAKİP SANILDI
+
+```
+bağlam: {parti · toplam_ciro · 2026 Q1}
+soru  : "kalite red oranı nedir"
+cq    : {parti · [toplam_ciro, fire_orani_yuzde] · 2026 Q1}   🔴 CİRO KORUNDU
+iz    : "Takip: LLM-destekli yapısal düzenleme"
+```
+
+🔴 Kullanıcı **artık ciro sormuyor**; yeni bir konu açtı. Sistem eskisini **koruyup**
+üstüne ekledi — ve özet *"ciro: ₺27.767.945,12. 2 ölçü…"* diyerek **sorulmayan sayıyı
+başa** koydu.
+
+⚠ Ve `cube` **`parti`** kaldı: kullanıcı *"kalite"* dedi, cevap `parti` cube'undan geldi.
+`fire_orani_yuzde` bir yakınsama olabilir ama **kalite cube'u ayrı bir cube**.
+
+⊙ `followup.sinifla`'nın `konu_degisimi` sınıfı **var** ve bu turda çalışmadı: soru
+`nedir` ile bitiyor (dolgu), `kalite` bir **cube adı** — yani konu değişiminin en güçlü
+sinyali (rakip cube kimliği) elde olmasına rağmen takip kazandı.
+
+> **Kural adayı:** takip düzenlemesi, sorunun **başka bir cube'un kimliğini** taşıdığı
+> durumda kazanamaz — o bir düzenleme değil **yeni bir sorudur**.
+
+*Bir raporu düzenlemek ile yeni bir rapor istemek arasındaki farkı kaçıran sistem,
+kullanıcının sormadığı sayıyı ona ilk satırda gösterir.*
