@@ -1254,3 +1254,102 @@ Ve tüketici de var: `route():3651` `cq["measure_having"]`'i kuruyor.
 `I` ve `L` **aynı sınıf**: ayrıştırıcı ✅ · tüketici ✅ · **çağrı koşulu** 🔴. Önce o
 koşullar okunmalı (`_coverage_ok` · `bilinmeyen` kapıları), sonra `K` (özetin kıyası
 görmesi), sonra `J` (`limit`→`order` eşleşmesi).
+
+---
+
+## 21 · 🔴🔴 KÖK NEDEN BULUNDU — *"bağlam 2. turdan sonra kopuyor"*
+
+> **Kullanıcının şikâyeti birebir üretildi** ve tek bir satırda çözüldü. Bu bölüm
+> kanıtlarıyla eksiksizdir: bağlam kaybolsa bile buradan devam edilebilir.
+
+### 21.1 · Üretim — `T-C` threadi, curl, tek tek
+
+| tur | soru | sonuç | süre |
+|---|---|---|---|
+| 1 | `bu yıl toplam ciro` | ✅ `cube` · `gte 2026-01-01` | 510 ms |
+| 2 | `müşteri bazında göster` | ✅ `cube` · dönem korundu + `dimensions:[musteri]` | 431 ms |
+| 3 | `en yüksek 3 ünü getir` | 🔴 **`source=None` · `cq={}`** | 3 325 ms |
+
+Turun tam çıktısı:
+
+```
+note : "Bu takip mesajını önceki raporla ilişkilendiremedim. Yeni bir soru olarak sorar mısın?"
+iz   : "Takip: deterministik/LLM düzenleme tükendi → dürüst ret"
+       "niyet: tür=ustunluk · üstünlük=3 · bilinmeyen=unu"
+```
+
+🔴 **`bilinmeyen=unu`** — kök neden bu üç karakter.
+
+### 21.2 · Kanıt: ayrıştırıcı ÇALIŞIYOR, kapı ÖLDÜRÜYOR
+
+Doğrudan ölçüldü (izole konteyner, `cube_router` üzerinde):
+
+```
+'en yuksek 3 unu getir'  →  _top_n = 3     ✅
+'en yuksek 3 tanesi'     →  _top_n = 3     ✅
+'en yuksek 3 unu'        →  _top_n = 3     ✅
+'ilk 3 unu'              →  _top_n = 3     ✅
+```
+
+Ve tüketici de yerinde: `deterministic_refine:1346` tam bu durumda `cq["limit"]`'i kurar.
+
+> 🔴 Yani sayı **okunuyor**, limit **kurulabiliyor** — ama tur `unu` kelimesi yüzünden
+> kapsam kapısından geçemiyor ve **tüm takip zinciri** düşüyor.
+
+*Bir yolun iki ucu da çalışırken yol çalışmıyorsa, kusur uçlarda değil kapıdadır.*
+
+### 21.3 · Ve emsal KODUN İÇİNDE duruyor
+
+`cube_router:3636-3638` — eşik için **tam bu bağışıklık** zaten yazılmış:
+
+```python
+having = _measure_threshold(q)
+if having:
+    known |= _gecenler(q, _TH_WORDS)     # eşik kelimeleri KAPSAMDAN SAYILIR
+```
+
+🔴 Aynı bağışıklık **`_top_n` için verilmemiş**. Sabitler hazır: `_TOPN_CUE` mevcut.
+
+⊙ Bu, `§20.2` (`I` — *"en yüksek 3 tanesi"* 23,5 sn) ve `§20.5` (`L` — eşik uygulanmadı)
+kusurlarının da **aynı sınıfı**: ayrıştırıcı ✅ · tüketici ✅ · **kapsam kapısı** 🔴.
+
+### 21.4 · Türkçe boyutu — `ocağa` ile AYNI ders
+
+`3'ünü` → normalize `3 unu`. Ek (`-ünü`) sayıdan koparak **bağımsız bir kelime** oluyor ve
+katalogda karşılığı olmadığı için *"bilinmeyen"* sayılıyor. `ocak`+ünlü → `ocağa` vakasının
+(§`Ö10`) birebir kardeşi: **çekim eki, kapsam kapısını tetikliyor.**
+
+⚠ Ek üretiminin sahibi `app/ek.py` (G7) — **üretiyor ama sökmüyor**. Sökme tarafı bu
+depoda üç kez ısırdı: `ocağa` · `3'ünü` · `çeyreklere`.
+
+*Bir dilin eklerini üretebilen sistem, onları sökebilmelidir de; yoksa kendi ürettiği
+biçimi tanımaz.*
+
+### 21.5 · 🔴 DÜZELTME REÇETESİ (sonraki tur — kanıtlarıyla hazır)
+
+1. `_top_n` eşleştiğinde `known |= _gecenler(q, _TOPN_CUE)` — **eşiğin emsaliyle
+   birebir aynı desen**, yeni sözlük yok.
+2. Sayıya bitişen çekim ekini (`3 unu` · `3 tanesi` · `5 ini`) kapsam kapısında **sayının
+   parçası** say — bir sayıyı okuyabilen kapı, onun ekini de tanımalı.
+3. `§20.3` (`limit` var `order` yok) aynı turda kapanmalı: `_top_n` bir **sıralama
+   niyeti**dir; limit kurulurken `order` da kurulmalı.
+4. Sonra `§20.4` (kıyas koştu ama söylenmedi) ve `§20.5` (eşik).
+
+### 21.6 · ⚠ YENİ SENARYO SINIFI — kök-neden ANLATIMI (henüz test edilmedi)
+
+Kullanıcının talebi, kayda geçiyor:
+
+> *"OEE istedin, RAM-3 düşük geldi. «Neden düşük» deyince gerçekten analiz yapmasa bile
+> diğerlerine oranla düşük çıkmasına sebep olan kök nedenleri **listeleyebilmeli,
+> sunabilmeli, anlatabilmeli**: «vardiya 1'de mal beklediği için hep geç başlamış» gibi."*
+
+⊙ Bugünkü davranış (§20 T-A/1 turu): *"`ort_oee` bir ortalama/oran — parçaların toplamı
+bütünü vermez — katkı payı matematiksel olarak tanımsız"*. **Dürüst ama yetersiz**:
+ortalama için katkı payı gerçekten tanımsızdır, ama *"neden düşük"* sorusunun cevabı
+katkı payı **değildir** — kırılım karşılaştırmasıdır (vardiya · duruş nedeni · hat).
+
+🔴 Yani sınır **doğru yerde ama fazla geniş**: hesaplanamayan şey `contribution`, ama
+`drill.py` + `makine_duruslari` + `oee.dimensions` ile *"RAM-3'ü ötekilerden ayıran
+boyut hangisi"* **deterministik olarak** yanıtlanabilir.
+
+**Sonraki tur bunu senaryo olarak koşacak** ve ölçecek.
