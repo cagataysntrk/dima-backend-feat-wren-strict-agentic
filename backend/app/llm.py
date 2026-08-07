@@ -32,6 +32,59 @@ from app.logging_setup import get_logger
 _log = get_logger("llm")
 
 _FENCE = re.compile(r"^```[a-zA-Z]*\n?|\n?```$")
+
+
+class SaglayiciYaniti(RuntimeError):
+    """Sağlayıcı **HTTP 200 döndürdü ama cevap kullanılabilir değil.**"""
+
+
+def _icerik_cikar(data: dict, saglayici: str, model: str) -> str:
+    """OpenAI-uyumlu yanıttan metni çıkar — **teşhisli**.
+
+    ## Ölçülen kusur (2026-08-07, `G0` ön uçuşu)
+
+    Eski hâli tek satırdı: `data["choices"][0]["message"]["content"]`. OpenRouter'ın
+    ücretsiz katmanı kısıtlandığında **HTTP 200** ile `{"error": {...}}` döndürüyor;
+    `raise_for_status()` bunu geçiriyor ve satır **`KeyError: 'choices'`** ile patlıyordu.
+    Yukarıdaki ön uçuş o hatayı görünce *"kota tükenmiş **ya da** anahtar geçersiz
+    olabilir"* diye **tahmin** yazdı — teşhis değil, tahmin. ADR-0020'nin *"sessiz yutma
+    yok"* kuralı opak hatayı da kapsar: **bir hata, ne olduğunu söylemiyorsa yutulmuştur.**
+
+    ## Üç ayrı durum, üç ayrı mesaj
+
+    | Yanıt | Anlamı |
+    |---|---|
+    | `{"error": ...}` | sağlayıcı **reddetti** (kota · kısıtlama · geçersiz istek) |
+    | `choices` yok | yanıt **beklenen biçimde değil** (sağlayıcı/sürüm uyumsuzluğu) |
+    | `content` boş + `finish_reason=length` | 🔴 **AKIL YÜRÜTEN MODEL**: bütçe `reasoning`'e gitti |
+
+    Üçüncüsü bu turda ölçüldü: `nemotron-3-ultra` *"yalnız TAMAM yaz"* isteğine 16
+    token'ın tamamını `reasoning`'e harcayıp `content="T"` döndürdü. Bunu *"boş cevap"*
+    diye raporlamak, kusurun **modelde** değil **istekte** olduğunu gizlerdi.
+    """
+    hata = data.get("error")
+    if hata:
+        mesaj = hata.get("message") if isinstance(hata, dict) else str(hata)
+        raise SaglayiciYaniti(
+            f"{saglayici} REDDETTİ (model={model}, HTTP 200 gövdesinde error): {mesaj}")
+    secenekler = data.get("choices")
+    if not secenekler:
+        raise SaglayiciYaniti(
+            f"{saglayici} yanıtında `choices` YOK (model={model}). "
+            f"Gelen anahtarlar: {sorted(data)}")
+    ileti = (secenekler[0] or {}).get("message") or {}
+    icerik = (ileti.get("content") or "").strip()
+    if not icerik:
+        bitis = (secenekler[0] or {}).get("finish_reason")
+        akil = bool(ileti.get("reasoning") or ileti.get("reasoning_details"))
+        if akil or bitis == "length":
+            raise SaglayiciYaniti(
+                f"{saglayici} BOŞ içerik döndürdü (model={model}, finish_reason={bitis}). "
+                "Model AKIL YÜRÜTÜYOR ve token bütçesi `reasoning`'e gitti — "
+                "bu model sıcak yola uygun değil ya da `max_tokens` yükseltilmeli.")
+        raise SaglayiciYaniti(
+            f"{saglayici} BOŞ içerik döndürdü (model={model}, finish_reason={bitis}).")
+    return _FENCE.sub("", icerik).strip()
 # Diakritik düzleştirme + KESME İŞARETLERİ silinir: "mart'tan"→"marttan", "2026'da"→"2026da"
 # (çekim ekleri kesmeyle ayrılınca desen eşleşmeleri kaçıyordu — canlı log kanıtı).
 _TR = str.maketrans("ışğüöçİâîû", "isguociaiu", "'’`")
@@ -537,8 +590,7 @@ class OpenAICompatibleSqlGenerator:
         except Exception:
             pass
         _log.info("%s API başarılı (model=%s, %dms)", self._provider, use_model, elapsed_ms)
-        content = data["choices"][0]["message"]["content"]
-        return _FENCE.sub("", content.strip()).strip()
+        return _icerik_cikar(data, self._provider, use_model)
 
     def generate_sql(self, question: str, schema: dict) -> str:
         return self._chat(_build_system(schema, self._dialect), question)

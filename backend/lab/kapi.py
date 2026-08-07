@@ -370,7 +370,21 @@ def hizli(degisen: list[str]) -> int:
 
 #: Tüm adımlar — anahtar, `--sadece` ile seçmek için. **Sıra anlamlıdır:** korpus
 #: BAŞTA, çünkü yerel kapının tek adımı odur ve `--hepsi`'de de önce o konuşmalıdır.
-ADIM_ANAHTARLARI = ("korpus", "gercek", "suit", "eval", "senaryo")
+ADIM_ANAHTARLARI = ("korpus", "gercek", "suit", "eval", "senaryo", "garson")
+
+#: 🔴 **`garson` HİÇBİR TOPLU KOŞUMDA YOK — ne yerelde ne `--hepsi`'de.**
+#:
+#: Sebebi bir tercih değil, bir **tabiat farkı** (yol haritası §12.2b): öteki beş adım
+#: **belirlenimlidir** ve LLM'siz koşar; `garson` ise `--live` ister, kotaya bağlıdır ve
+#: **belirlenimsizdir**. Onu `--hepsi`'ye koymak iki şeyi birden bozardı: gecelik CI
+#: kotaya çarpar, ve *"kapı yeşil"* cümlesi belirlenimsiz bir ölçüme dayanır.
+#:
+#: ⚠ Ve **KURAL G-1**: bu adım tek koşumla karar vermez — en az iki koşum, ayrışırsa `⊘`.
+#: Bu yüzden bir *kapı adımı* değil, bir **faz-sonu ölçümüdür**:
+#:
+#:     python lab/kapi.py --tam --sadece garson     # açıkça istenirse
+#:     python lab/garson.py --live --muhur k1       # asıl kullanım
+GARSON_TOPLUDA_YOK = "garson"
 
 #: 🔴 **YEREL DEMET KAPISI = KORPUS + GERÇEK-DÜNYA** (2026-08-05'te ikinciyle genişledi).
 #:
@@ -434,6 +448,9 @@ def tam(sadece: tuple[str, ...] = (), *, hepsi: bool = False) -> int:
         # **hiçbir koşulda kırmızı veremez** (ölçüldü: `returncode == 0`, senaryo tümden
         # çökse bile). Dört bileşenli bir kapının dörtte biri sessizce **dekordu**.
         ([sys.executable, "lab/konusma_senaryolari.py", "--kapi"], "konuşma senaryoları"),
+        # 🔴 GARSON KAPISI — yalnız `--sadece garson` ile. `--live` ve ağ ister; ötekiler
+        # `--network none` ile koşar. Toplu koşuma girmemesi bilinçlidir (yukarı bak).
+        ([sys.executable, "lab/garson.py", "--live"], "garson kapısı"),
     )
     # 🔴 Yerel kapı **daraltılmış**: `--sadece` verilmediyse ve `--hepsi` denmediyse
     # YALNIZ korpus koşar. Bu bir kırpma DEĞİL, ilan edilmiş bir kapsam — ve aşağıda
@@ -446,6 +463,13 @@ def tam(sadece: tuple[str, ...] = (), *, hepsi: bool = False) -> int:
         adimlar = tuple(k for k, ad in zip(adimlar, ADIM_ANAHTARLARI, strict=True)
                         if ad in YEREL_KAPI)
         sadece = ()
+    elif hepsi:
+        # 🔴 `--hepsi` garson'u ATLAR — ve bunu YAZAR. Sessizce atlanan bir adım,
+        # atlanmamış gibi okunur (bu dosyanın kendi dersi).
+        print("▶ `--hepsi`: garson kapısı ATLANDI — `--live` + kota ister, "
+              "belirlenimsizdir. Yeri faz sonudur: `--sadece garson`.\n")
+        adimlar = tuple(k for k, ad in zip(adimlar, ADIM_ANAHTARLARI, strict=True)
+                        if ad != GARSON_TOPLUDA_YOK)
     if sadece:
         gecersiz = [a for a in sadece if a not in ADIM_ANAHTARLARI]
         if gecersiz:

@@ -1,14 +1,22 @@
 # OPERASYON DURUMU — *nerede kaldık*
 
 > 🔴 **BAĞLAM SIFIRLANDIYSA BURADAN BAŞLA.** Sırayla oku:
-> 1. **`OPERASYON.md`** — kural seti (nasıl çalışılır)
+> 1. **`OPERASYON.md`** — kural seti (nasıl çalışılır) · **sıra `OPERASYON.md §10`'dadır**
 > 2. **bu dosya** — nerede kaldık
-> 3. **`~/.claude/plans/DIMA-V1-YOL-HARITASI.md`** — ne yapılacak *(§10'daki sıra)*
-> 4. `backend/MIMARI.md` — mimari değişmezler
+> 3. 🔴 **`~/.claude/plans/DIMA-GARSON-ARA-FAZ.md`** — **AKTİF FAZ** (garson/insani katman;
+>    kendi test ve geliştirme politikasını §12/§13'te taşır)
+> 4. **`~/.claude/plans/DIMA-V1-YOL-HARITASI.md`** — v1 gövdesi + §G (ara faz onu yeniden
+>    sıralar, yerine geçmez)
+> 5. `backend/MIMARI.md` — mimari değişmezler *(çelişkide **o** kazanır)*
 >
-> Bu dört dosya operasyonun **tam durumunu** taşır. Sohbet geçmişine ihtiyaç YOKTUR.
+> Bu beş dosya operasyonun **tam durumunu** taşır. Sohbet geçmişine ihtiyaç YOKTUR.
+>
+> ⚠ **Düzeltilmiş çapraz atıf:** eskiden burada *"yol haritası — ne yapılacak (§10'daki
+> sıra)"* yazıyordu; **yol haritasında §10 YOKTUR**, kastedilen `OPERASYON.md · §10`'dur.
+> Bu satırı takip eden bir ajan sırayı bulamıyordu.
 
-**Son güncelleme:** 2026-08-05 · HEAD → 🎉 **FAZ 6 KAPANDI** @`2df7675`
+**Son güncelleme:** 2026-08-07 · HEAD @`294eb67` *(2026-08-06)* ·
+🔵 **AKTİF: GARSON ARA FAZI — planlama bitti, `G0` bekliyor**
 
 ⚠ **Bu başlık BİR KEZ BAYATLADI ve bir denetim onu yakaladı:** *"HEAD → FAZ 0 · adım 1"*
 yazıyordu, gerçek HEAD **FAZ 4.4**'teydi. Bu dosya *"bağlam sıfırlanırsa buradan başla"*
@@ -21,11 +29,25 @@ devam ettirir. 🔴 **Kural: her faz commit'inden sonra bu blok güncellenir.**
 
 | | |
 |---|---|
-| **Aktif faz** | **v1 KAPANIŞ TURU** *(FAZ 0…8 ✅; FAZ 7.3/7.7'nin kalanı açık)* |
-| **Korpus** | 🟢 **%93,1** (taban %93,2) — **on demet** boyunca sabit |
-| **Süit** | **3527 test · 247 kapı dosyası** *(1. ölçüm turunda 3347 · 233)* |
-| **§C ölçütü** | **10 yeşil · 5 sarı · 1 kırmızı** (ölçüt 4) · 13 ⊘ *(kod değil)* |
+| **Aktif faz** | 🔵 **GARSON ARA FAZI** — `~/.claude/plans/DIMA-GARSON-ARA-FAZ.md` · **planlama BİTTİ**, sıradaki madde **`G0` (ölçüm aleti)** · 🔴 *G0 inmeden kod yazılmaz* |
+| **Önceki** | v1 gövdesi ✅ *(FAZ 0…8; FAZ 7.3/7.7'nin kalanı ve `3.0` tenant açılışı açık)* |
+| **Korpus** | 🟢 **%95,1** — kapı çıktısı `kapi.py --tam` *(şirket kırılımı `backend/lab/reports/nl_corpus.md`)* |
+| **Gerçek-dünya** | kabul **1150** · doğru **83** · sessiz_yanlış **12** · beyanlı_kısmi **58** |
+| **Süit** | **3869 yeşil** · `eval` **+0,0 / +0,0 / +0,0** |
+| **§C ölçütü** | **10 yeşil · 5 sarı · 1 kırmızı** (ölçüt 4 — `motor_cls` hâlâ `off`) · 13 ⊘ *(kod değil)* |
 | **Push** | ✅ `origin/wren-bağımsız` ile **fark 0** |
+| **Sağlayıcı** | 🔴 **OpenRouter + NVIDIA açık kaynak model** *(karar 2026-08-07)* — mimari sonucu: `llm_sema_kisitli` bu sağlayıcıda **NO-OP** (ara faz §7.4) |
+
+### 🔴 GARSON FAZININ AÇIK BORÇLARI *(ara faz belgesinden)*
+
+| # | Ne | Nerede |
+|---|---|---|
+| **B-G1** | `lab/garson.py --live` **yok** — garsonu görebilen tek alet kurulmadı; `konusma_senaryolari` sekiz koşumun sekizinde de `⊘ ÖLÇÜLEMEDİ` verdi | ara faz `G0` |
+| **B-G2** | `0.5b` FAZ 0'da ✅ ilan edilmiş ama **kodda sıfır iz** (`netlestirme.birlestir` · `bekleyen_netlestirme` → 0 isabet) → `AJ0b` **sıfırdan** yazılacak | ara faz `G2` |
+| **B-G3** | `app/iddia.py` **yok** — `t2_anlatici` bu kapı olmadan açılamaz | ara faz `G4` |
+| **B-G4** | Intent-JSON'da `compare`/`blend`/çoklu dönem **yok** → `5.6` (peer) **BLOKE**, v1 §G'siz kapanamıyor | ara faz `G6` |
+| **B-G5** | `MIMARI.md` §5 (*18. yasak ⟳ UYGULANMADI*) ile `:442` (*inmiş + ölçülmüş geri alma*) **çelişiyor** — biri bayat | ara faz `G3` + §13.6 |
+| **B-G6** | `KÇ-7` (*"anlamadım" ≠ "yapamıyorum"*) denetim belgesinden **açık** | ara faz `G8` |
 
 ### ✅ BU TURDA KAPANANLAR
 

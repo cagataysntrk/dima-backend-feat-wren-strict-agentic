@@ -1293,6 +1293,41 @@ desteği **yoktu**). İkinci ölçüm, `google/gemma-4-31b-it` ile:
 | openrouter · gemma-4-31b (90 çağrı) | 14/15 | **15/15** | **1** · kaybedilen 0 |
 | openrouter · nemotron-3-ultra | ⊘ | ⊘ | **54 × 429** — ücretsiz katman doydu |
 
+### 🔴 SAĞLAYICI KARARI — GARSON FAZI (2026-08-07, `G0`)
+
+Garson fazının sağlayıcısı **OpenRouter** olarak sabitlendi (`DIMA_LLM_PROVIDER=openrouter`,
+tek model). Model seçimi **tahminle değil ölçümle** yapıldı:
+
+| model | tek çağrı | içerik | akıl yürütüyor mu | karar |
+|---|---|---|---|---|
+| `nvidia/nemotron-3-ultra-550b:free` | **19,3 sn** | `"T"` — **kesik** | 🔴 **evet** | ❌ **elendi** |
+| `deepseek/deepseek-v4-flash` | **0,8 sn** | `"TAMAM"` | hayır | ✅ **seçildi** |
+
+🔴 **`nemotron` bir AKIL YÜRÜTEN modeldir** ve token bütçesini `reasoning`'e harcayıp
+`content`'i boş/kesik bırakıyor (`finish_reason=length`). Yukarıdaki `54 × 429` satırı
+aynı modelin **daha önce de** ölçüm yapamadığını kaydetmişti — iki bağımsız turda iki
+ayrı sebeple ölçülemedi. *Sıcak yolda akıl yürüten model kullanılmaz.*
+
+⚠ **Ve prompt caching ÖLÇÜLDÜ:** `deepseek-v4-flash` yanıtında `cached_tokens: 8/17` —
+OpenRouter'da önbellek **çalışıyor**. (Garson yol haritası §7.4/3 onu *"ölçülene kadar
+sıfır say"* diye yazmıştı; ölçüldü, sıfır değil.)
+
+⚠ **Soğuk başlangıç:** ilk çağrı **41 sn** ölçüldü, sonrakiler 2–7 sn. Gecikme bütçesi
+(garson §7.2) bu ayrımı **ayrı** ölçmelidir — ortalama ikisini de gizler.
+
+### 🔴 TEŞHİS KUSURU — `KeyError: 'choices'` (aynı tur, düzeltildi)
+
+`OpenAICompatibleSqlGenerator._chat` yanıtı tek satırda indeksliyordu. OpenRouter
+kısıtlarken **HTTP 200 + `{"error": …}`** döndürüyor → `raise_for_status()` geçiyor →
+opak **`KeyError: 'choices'`**. Kota ön uçuşu bunu görüp *"kota tükenmiş **ya da**
+anahtar geçersiz **olabilir**"* diye **tahmin** yazdı — teşhis değil.
+
+→ `app/llm.py::_icerik_cikar()` üç durumu **ayırır**: sağlayıcı reddi · biçim uyumsuzluğu ·
+**akıl yürüten model**. Kapı: `tests/test_saglayici_yaniti.py` (7 test).
+🔴 **ADR-0020 genişledi:** *sessiz yutma yok* kuralı **opak hatayı** da kapsar —
+*bir hata, ne olduğunu söylemiyorsa yutulmuştur.*
+
+
 **İki koşum da aynı yöne işaret ediyor:** Intent-JSON, doğal ifadelerin **13–14/15**'ini
 **zaten** cevaplıyor → enhancer'ın hedef nüfusu neredeyse **boş**. Tek kurtarma da
 korpus etiketinden **farklı** bir ölçü seçti (*"ne kadar borçlu"* → `toplam_borc`, etiket

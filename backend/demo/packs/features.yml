@@ -52,7 +52,13 @@ features:
   # uygulamamaktır.
   embed: "off"
   # FAZ 5.14 — Hızlı ↔ Derin. `off`: `mod` alanı yok sayılır, bugünkü davranış birebir.
-  hizli_derin: "off"
+  hizli_derin: beta   # 🔴 G0.14 — ÖLÜ KONTROL CANLANDIRILDI (2026-08-07).
+  #   Ölçüldü: UI'da iki konumlu anahtar VARDI (`ChatPanel.tsx`), kullanıcı tıklıyordu,
+  #   sunucu alanı YOK SAYIYORDU (`ask.py:2563`) — çalışıyormuş gibi görünen ölü kontrol.
+  #   Açmak SIFIR yeni davranış getirir: `hizli` ≡ `yol_siniri="deterministik"`,
+  #   yani zaten kurulu ve testli bir kapıya **ikinci bir ad**. Kod da bunu yazıyor:
+  #   *"Aynı davranışa iki ad vermek meşrudur; iki UYGULAMA vermek değildir."*
+  #   Alternatif (UI'dan kaldırmak) reddedildi: kontrol yanlış değil, yalnız kapalıydı.
   # 🔴 FAZ 4.3 borcu — takipte çıplak ikinci ölçü adı. **AÇILDI (beta)** — ve açış
   # ölçüme dayanıyor, iyimserliğe değil:
   #   · çok-turlu düşüş  −%18,2 → **−%4,5** (hedef −%10) · karar `kaldi` → **`gecti`**
