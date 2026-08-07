@@ -613,6 +613,91 @@ geciktirmektir.*
 
 ---
 
+## 14 · CANLI THREAD KOŞUMU — 6 thread · 12 tur · tek tek API üzerinden
+
+> Tenant `boyahane` · `:8001` · gerçek HTTP · her turun logu izlendi.
+> Sağlayıcı: `openrouter / deepseek-v4-flash`.
+
+| # | tur | soru | `source` | satır | **süre** | anlatı | not |
+|---|---|---|---|---|---|---|---|
+| 1 | T1 | `makine bazında oee son 3 ay` | 🟢 `cube` | 11 | **5 420 ms** | LLM | intent 0 LLM |
+| 1 | T2 | `aylara göre` | 🟢 `cube` | 22 | 🔴 **24 285 ms** | LLM | `deterministic_refine` |
+| 2 | T1 | `bu ay toplam üretim` | 🟢 `cube` | 1 | **602 ms** | LLM | ⚠ *"«uretim» birden fazla yerde tanımlı"* — **belirsizlik beyanı** ✅ |
+| 2 | T2 | `hat bazında` | 🟢 `cube` | **0** | **568 ms** | — | boş sonuç **dürüstçe** anlatıldı ✅ |
+| 3 | T1 | `son 3 ay fire` | 🟢 `cube` | 1 | **10 109 ms** | LLM | *"«fire» birden fazla yerde"* ✅ |
+| 3 | T2 | `bir de ciro ekle` | 🟢 `cube` | 1 | **12 098 ms** | LLM | **çapraz-cube harman** 0 LLM ✅ |
+| 4 | T1 | `duruş nedenlerine göre toplam süre bu ay` | 🔴 `cube+llm` | 0 | 🔴 **16 687 ms** | — | **kendi açılış chip'imiz** |
+| 4 | T2 | `en yüksek 5` | 🟢 `cube` | 0 | **655 ms** | — | `entity_limit` takipte **çalışıyor** |
+| 5 | T1 | `şubatta ciro ocağa göre nasıl değişti` | 🟡 **`vqr`** | 30 | **434 ms** | LLM | 🔴 `eksik_niyet=['kiyas','trend']` |
+| 6 | T1 | `yılbaşından bugüne hasılat` | 🔴 `cube+llm` | 1 | 🔴 **24 269 ms** | LLM | |
+| 6 | T2 | `çeyreklere böl` | 🔴 `cube+llm` | 2 | 🔴🔴 **69 399 ms** | LLM | *"Takip: **LLM-destekli** yapısal düzenleme"* |
+
+### 14.1 · 🔴 Süre dağılımı — asıl bulgu
+
+| yol | süre aralığı |
+|---|---|
+| 🟢 intent 0 LLM **+ anlatı yok** | **434 – 655 ms** |
+| 🟢 intent 0 LLM **+ anlatı LLM** | **5 420 – 24 285 ms** |
+| 🔴 intent LLM **+ anlatı LLM** | **16 687 – 69 399 ms** |
+
+> 🔴 **Anlatıcıyı kapatmak, en hızlı turu 434 ms'de tutuyor; açmak aynı işi 24 saniyeye
+> çıkarıyor.** Ve 0 satır dönen turlarda anlatı **zaten çalışmıyor** (T2.2 · T4.1 · T4.2)
+> — yani mekanizma **zaten koşullu**, koşulu **yanlış** (boş-mu? diye soruyor,
+> **karmaşık-mı?** diye sormuyor).
+
+### 14.2 · 🔴🔴 69 saniyelik tur — `çeyreklere böl`
+
+`deterministic_refine` bu düzenlemeyi **çözemedi** → `refine_cube`'e (LLM) düştü
+(*"Takip: LLM-destekli yapısal düzenleme"*), sonra üstüne anlatı LLM'i bindi.
+
+⚠ Oysa *"çeyreklere böl"* bir **granülerlik** düzenlemesidir ve `_time_gran` `quarter`'ı
+tanıyor. Yani **iki LLM çağrısı**, deterministik olarak çözülebilecek bir istek için.
+
+### 14.3 · 🔴 VQR EKSİK BİR CEVABI ÖNBELLEKLİYOR
+
+Thread 5 · `source=vqr` · **434 ms** — ve beraberinde:
+
+```
+eksik_niyet : ['kiyas', 'trend']
+note        : ⚠ Sayı doğru ama eksik —
+              · iki dönemi kıyaslamanı istedin ama tek bir toplam üretebildim
+              · değişimi/trendi istedin …
+```
+
+🔴 **Doğrulanmış soru deposu, *"beyanlı kısmi"* bir cevabı dondurmuş.** Yani bu soru
+artık **her seferinde** eksik cevaplanacak ve deterministik yol iyileşse bile VQR onu
+**es geçecek** — merdivenin ilk basamağı olduğu için.
+
+⚠ Kapı önerisi: VQR'a yazma koşuluna *"`eksik_niyet` boş olmalı"* eklenmeli.
+*Bir önbellek, doğruladığı şeyin eksik olduğunu bilmiyorsa, eksikliği kalıcılaştırır.*
+
+### 14.4 · İYİ ÇALIŞAN ÜÇ ŞEY — kayda geçsin
+
+| ne | kanıt |
+|---|---|
+| **Belirsizlik beyanı** | *"«uretim» birden fazla yerde tanımlı — bu cevap **OEE** tanımıyla; diğerleri: uretim (parti)"* — sessiz seçim **yok** |
+| **Boş sonuç dürüstlüğü** | *"Rapor doğru kuruldu — elimdeki veri 01.01.2024–30.06.2026"* — *"veri yok"* demiyor, **sınırı** söylüyor |
+| **Çapraz-cube harman** | `bir de ciro ekle` → iki ölçü tek tabloda, **0 LLM** (`cross_cube_add`) |
+
+### 14.5 · ⚠ CANLI ÖRNEK ESKİ KOD KOŞUYOR
+
+`yılbaşından bugüne hasılat` canlıda **`cube+llm`** (24,3 sn) — oysa depodaki onarılmış
+`route()` bunu **deterministik** çözüyor (§ YTD onarımı). Yani canlı konteyner
+(`dima-backend-core`, ~1 saattir ayakta) bu turdaki düzeltmeleri **taşımıyor**.
+
+🔴 Ölçüm okunurken bu ayrım korunmalı: **canlı sayılar bugünkü kodun değil, dünkü kodun
+faturasıdır.** Yeniden derleme sonrası aynı 12 tur tekrarlanmalı.
+
+### 14.6 · ⚠ SAĞLAYICI GECİKMESİ AYRI BİR BULGU
+
+`deepseek-v4-flash` tek çağrıda **2,9 sn → 22,6 sn → 69,4 sn** aralığında salındı.
+*"Flash"* sınıfı bir modelde bu bir **sapma**; zaman aşımı eşiği ve failover sırası
+ayrıca ölçülmeli. ⚠ Ölçümlerin bir kısmı sağlayıcıya ait olabilir — anlatı merdiveni
+kararı bundan **bağımsız** olarak doğrudur (0 satırda zaten çalışmıyor).
+
+
+---
+
 *Ölçüm kaynakları: `app/cube_router.py` (anahtar taraması · `parse_cube_query` ·
 `_measure_threshold` · `_top_n` · marjinler `:908`·`:932`·`:937`·`:947`) ·
 `app/intent_semasi.py` (şema alanları) · `app/llm.py` (`_cube_select_system` ↔
