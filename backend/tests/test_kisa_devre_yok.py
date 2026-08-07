@@ -50,6 +50,9 @@ KAYNAK = ASK.read_text(encoding="utf-8")
 #:
 #: 🔴 Listeye eklemek **geri alma değil, gerekçeli istisnadır** ve listede **görünür**
 #: kalır (yol haritası AJ0'ın kendi cümlesi).
+#: Bu test dosyasının kendi kaynağı — ölçüm kaydının varlığını denetlemek için.
+KAYNAK_TEST = pathlib.Path(__file__).read_text(encoding="utf-8")
+
 MUAF: list[tuple[str, str]] = [
     # ── KULLANICININ AÇIK KARARI — sözleşmenin izin verdiği İKİ bitiriciden biri ──
     ("_yol_siniri_notu('discovery')",
@@ -71,15 +74,15 @@ MUAF: list[tuple[str, str]] = [
      "önünü kesiyor. Sınıfın kurucu örneği. ⊘ Adaya çevrilmesi DENENDİ ve iki yönlü "
      "çıktı — bkz. `test_DAVRANIS_DONUSUMU_OLCULDU_VE_ERTELENDI`."),
     ("Birden fazla konu anlaşıldı",
-     "🔴 KISA DEVRE (kısmen kapandı): çapraz-konu netleştirmesi. `_try_fresh_intent` içinden döner ve artık `_bitirici` onu ADAYA çevirir — yani dışarı sızmıyor."),
+     "🔴 KISA DEVRE: çapraz-konu netleştirmesi (`_try_fresh_intent` içinden). ⚠ Bu satır bir zamanlar «`_bitirici` onu ADAYA çevirir» diyordu — **KARŞILIKSIZDI**: `grep _bitirici app/` → 0 isabet, ve `git log -S_bitirici` → hiç commit edilmemiş. Geri alınan deneyin açıklaması silinmeden kalmış (2026-08-07 düzeltmesi)."),
     ("Bu ifade birden fazla konud",
      "🔴 KISA DEVRE: çapraz-konu netleştirmesi, ikinci dal (Intent-JSON öncesi)."),
     ("için hangi ölçüyü istiyorsun",
-     "🔴 KISA DEVRE (kısmen kapandı): cube belirlendi, ölçü belirsiz. `_bitirici` üzerinden aday olur; merdiven Discovery'ye kadar devam eder."),
+     "🔴 KISA DEVRE: cube belirlendi, ölçü belirsiz. ⚠ «`_bitirici` üzerinden aday olur» iddiası KARŞILIKSIZDI (2026-08-07 düzeltmesi)."),
     ("ile ilgili görün",
-     "🔴 KISA DEVRE (kısmen kapandı): konu daraltıldı. Aynı şekilde `_bitirici`den geçer ve merdiveni artık kesmez."),
+     "🔴 KISA DEVRE: konu daraltıldı. ⚠ «`_bitirici`den geçer, kesmez» iddiası KARŞILIKSIZDI (2026-08-07 düzeltmesi)."),
     ("suggestions=_dogrulanm",
-     "🔴 KISA DEVRE (kısmen kapandı): kısmi anlama ve katalog dökümü dalları — ikisi de `_try_fresh_intent` içinden döner ve `_bitirici` ile adaya çevrilir."),
+     "🔴 KISA DEVRE: kısmi anlama ve katalog dökümü dalları. ⚠ «`_bitirici` ile adaya çevrilir» iddiası KARŞILIKSIZDI (2026-08-07 düzeltmesi)."),
     ("Bu raporu hangi kırılıma gö",
      "🔴 KISA DEVRE: kırılım netleştirmesi (takip yolu) — rapor var, kırılım sorusu kesiyor."),
     ("next_",
@@ -171,9 +174,23 @@ def test_SINIFIN_BUYUKLUGU_YAZILI():
     # ⊙ 11 — ve bu sayı bu demette DÜŞMEDİ. Düşürme denendi, ölçüldü, geri alındı:
     # `test_DAVRANIS_DONUSUMU_OLCULDU_VE_ERTELENDI` tam dökümü taşıyor.
     # *Kapatılmamış bir kusurun büyüklüğünü yazmamak, onu kapatılmış saymaya en kısa yoldur.*
+    # ⟳ **CIRCIR TERSİNE ÇEVRİLDİ (2026-08-07, `G3`).**
+    #
+    # Eskiden `== 11` idi: sayı **dondurulmuştu**. Bu, artışı engelliyordu ama azalmayı da
+    # **kırmızı** yapıyordu — yani bir kusuru kapatan geliştirici, kapıyı kırmakla
+    # cezalandırılıyordu. *Bir cırcır, yalnız yanlış yöne dönmeyi engellemelidir.*
+    #
+    # 🔴 Yeni kural: **artamaz, azalabilir.** Azaldığında tavan **çekilir** ve gerekçe
+    # yazılır — `test_frontend_buyume`'nin tavan disipliniyle aynı desen.
+    assert len(kisa) <= 11, (
+        f"🔴 kısa devre sayısı {len(kisa)} — tavan 11. YENİ bir dal Discovery'nin "
+        "üstünde `source=None` ile RETURN ediyor. Ya MUAF listesine gerekçesiyle yaz, "
+        "ya dalı aday'a çevir.")
+    # ⊙ Bugün 11. Düştüğü gün bu satır kırmızı verir ve **tavanı çekmeye** zorlar —
+    # boşluk bırakmak, kapıyı sağır yapardı.
     assert len(kisa) == 11, (
-        f"🔴 kısa devre sayısı {len(kisa)} — 11'di. Azaldıysa bu bir KAZANÇTIR: "
-        "envanteri ve bu sayıyı güncelle, gerekçeyi yaz.")
+        f"🟢 kısa devre sayısı {len(kisa)}'e DÜŞTÜ — bu bir KAZANÇ. Tavanı bu değere "
+        "çek, envanteri güncelle ve neyin kapandığını yaz.")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -222,9 +239,49 @@ def test_DAVRANIS_DONUSUMU_OLCULDU_VE_ERTELENDI():
     🔴 **Sonuç:** bu demet **sınıfı dondurur**, davranışı değiştirmez. Davranış dönüşümü
     morfoloji ayrımını bekliyor ve o ayrım olmadan her yön bir başkasını bozuyor.
     *Bir sarkacın iki ucu da yanlışsa, eksik olan bir denge değil bir eksendir.*
+
+    ## ⟳ EKSEN İNDİ — ve sınıfın KURUCU ÖRNEĞİ ADAYLIKLA DEĞİL, KAYNAĞINDA kapandı
+
+    *(2026-08-07, `G3`. Yukarıdaki kayıt duruyor; bu, onun **devamıdır**.)*
+
+    Beklenen eksen `294eb67`'de indi: `turetme.fiil_bicimi_mi` →
+    `typo_onerisi.fiil_uydurmasi_mi`. Ve sonuç, bu kaydın öngördüğünden **farklı** oldu:
+
+    | öngörü *(yol haritası)* | gerçekleşen |
+    |---|---|
+    | Dal **adaya** çevrilecek, merdiven devam edecek | 🔴 Dal **yanlış yerde ateşlenmiyor** |
+
+    ⊙ `arttı→parti` · `veren→renk` · `işledik→iplik` · `sattık→hattı` **dördü de
+    bastırıldı**; `fıre→fire` ve `muterileri→müşteri` **korundu**. `xfail` kaldırıldı.
+
+    🔴 **Bunun sonucu bu maddenin kapsamını daraltıyor:** bugün `typo_suggestion` dalı
+    yalnız (a) fiil çekimi **olmayan** ve (b) `cevap_aciyor_mu`'dan geçen — yani
+    **gerçekten cevap açan** bir öneriyle ateşleniyor. Öyle bir dalı adaya çevirmenin
+    kazancı yok; ölçülen kaybı (`muterileri` daha belirsiz bir cevap alıyor) ise duruyor.
+
+    ⚠ **Ve genel ders sınıfın tamamına uygulanır:** doğru soru *"bu dal aday mı olmalı"*
+    değil, **"bu dal ateşlenmeli mi"**dir. Kötü bir chip'in yarışıp kaybetmesini
+    beklemektense, kötü chip'in **üretilmemesi** daha ucuz ve daha doğrudur.
+    *Bir yarışı kazanmanın en temiz yolu, yanlış yarışmacıyı sahaya hiç çıkarmamaktır.*
     """
     import pathlib
 
-    assert not (pathlib.Path(__file__).resolve().parents[1] / "app" / "merdiven.py").exists(), (
-        "⟳ aday mekanizması geri gelmiş — ölçülen bedeli yukarıda. Sayıları YENİDEN ölç "
-        "ve bu kaydı güncelle; özellikle `artti→parti` ile `muterileri→müşteri` ayrımını.")
+    # ⟳ **DOSYA YASAĞI KALDIRILDI (2026-08-07, `G3`) — ÖLÇÜM ŞARTINA çevrildi.**
+    #
+    # Eski hâli `assert not (app/merdiven.py).exists()` idi: bir **dosyanın var olmasını**
+    # yasaklıyordu. 🔴 Bir test bir **güvenlik sınırı** koyabilir; bir **mimari tercihi**
+    # donduramaz. Ölçülen bir geri alma, o yolun **bir daha denenemeyeceği** anlamına
+    # gelmez — yalnız **ölçülmeden** denenemeyeceği anlamına gelir.
+    #
+    # ⚠ Ve o ölçüm **yanlış ortamda** yapılmıştı: kapı ortamında Discovery
+    # `DIMA_LLM_PROVIDER=rule` — anahtarsız, boyahaneye gömülü, kasıtlı aptal bir yedek.
+    # Yani ölçülen şey *"aday mekanizması kötü"* değil, *"aptal yedeğe düşmek kötü"*ydü.
+    #
+    # 🔴 Yerine geçen şart: aday mekanizması dönerse **kaydı bu dosyada güncellenmiş
+    # olmalı** — sayılarla ve **hangi sağlayıcıyla** ölçüldüğü yazılı.
+    merdiven = pathlib.Path(__file__).resolve().parents[1] / "app" / "merdiven.py"
+    if merdiven.exists():
+        assert "ÖLÇÜM ORTAMI" in KAYNAK_TEST, (
+            "⟳ aday mekanizması geri gelmiş ama bu dosyada YENİ bir ölçüm kaydı yok. "
+            "Sayıları yeniden ölç — ve HANGİ SAĞLAYICIYLA ölçtüğünü yaz: `rule` ile "
+            "ölçülmüş bir geri alma, ölçülmüş sayılmaz.")

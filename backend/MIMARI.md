@@ -1432,6 +1432,57 @@ Bu, deponun defalarca ısırıldığı desenin aynısı (`gitas` düştü → do
    **dondurulmaz**, kapı **geçmez**. *Ölçmediğini ölçmüş gibi göstermek, hiç ölçmemekten
    kötüdür.*
 
+### 🔴 KISA DEVRE SINIFI (`G3`) — kurucu örnek ADAYLIKLA DEĞİL, KAYNAĞINDA kapandı
+
+**Beklenen çözüm ile gerçekleşen farklı çıktı — ve gerçekleşen daha iyi.**
+
+| yol haritasının öngörüsü | gerçekleşen |
+|---|---|
+| Dal **adaya** çevrilecek, merdiven Discovery'ye devam edecek | 🔴 Dal **yanlış yerde ateşlenmiyor** |
+
+`test_kisa_devre_yok`'un geri alma kaydı şunu yazmıştı: *"Davranış dönüşümü **morfoloji
+ayrımını** bekliyor; o ayrım olmadan her yön bir başkasını bozuyor. Bir sarkacın iki ucu
+da yanlışsa, eksik olan bir denge değil bir **EKSENDİR**."*
+
+O eksen `294eb67`'de indi (`turetme.fiil_bicimi_mi` → `typo_onerisi.fiil_uydurmasi_mi`).
+⊙ `arttı→parti` · `veren→renk` · `işledik→iplik` · `sattık→hattı` **bastırıldı**;
+`fıre→fire` ve `muterileri→müşteri` **korundu**; `xfail` **kaldırıldı**.
+
+🔴 **Sonuç sınıfın kapsamını daraltıyor:** bugün `typo_suggestion` dalı yalnız (a) fiil
+çekimi **olmayan** ve (b) `cevap_aciyor_mu`'dan geçen — yani **gerçekten cevap açan** bir
+öneriyle ateşleniyor. Öyle bir dalı adaya çevirmenin kazancı yok.
+
+⚠ **Genel ders:** doğru soru *"bu dal aday mı olmalı"* değil, **"bu dal ateşlenmeli
+mi"**dir. *Bir yarışı kazanmanın en temiz yolu, yanlış yarışmacıyı sahaya hiç
+çıkarmamaktır.*
+
+#### İki kapı düzeltmesi
+
+**1 · Cırcır ters çevrildi.** `assert len(kisa) == 11` sayıyı **donduruyordu** — artışı
+engelliyor ama **azalmayı da kırmızı yapıyordu**. Yani bir kusuru kapatan geliştirici,
+kapıyı kırmakla cezalandırılıyordu. Yeni kural: **artamaz, azalabilir**; azaldığında
+tavan **çekilir** (frontend tavan disiplininin aynısı).
+
+**2 · Dosya yasağı → ölçüm şartı.** `assert not (app/merdiven.py).exists()` bir
+**dosyanın var olmasını** yasaklıyordu. 🔴 Bir test bir **güvenlik sınırı** koyabilir;
+bir **mimari tercihi** donduramaz. Ve o yasağın dayandığı ölçüm **yanlış ortamdaydı**:
+kapı ortamında Discovery `DIMA_LLM_PROVIDER=rule` — yani ölçülen şey *"aday mekanizması
+kötü"* değil, *"aptal yedeğe düşmek kötü"*ydü. Yerine geçen şart: mekanizma dönerse
+**yeni ölçüm kaydı** ve **hangi sağlayıcıyla** ölçüldüğü yazılı olmalı.
+
+#### ⚠ Envanterin dört satırı YALAN SÖYLÜYORDU
+
+Dört muafiyet *"kısmen kapandı — `_bitirici` üzerinden aday olur"* diyordu.
+⊙ `grep _bitirici app/` → **0 isabet**; `git log -S_bitirici` → **hiç commit edilmemiş**.
+Geri alınan deneyin açıklaması silinmeden kalmış. Gerçek durum `4/11 kısmen` değil,
+**0/11**. Düzeltildi. *Bir muafiyetin gerekçesi bayatlarsa, muafiyet bir yalana dönüşür.*
+
+#### 📌 Açık borç — sessizce değil, yazılı
+
+**«Cevapsız kesme oranı»** metriği (`nl_corpus`'ta, şirket başına) `G3`'te **inmedi**.
+Statik envanter (11 dal) sınıfı görünür tutuyor ama **çalışma anındaki** oranı ölçmüyor.
+Yeri `nl_corpus`'tur ve bir lab değişikliği ister.
+
 ### 🔴 ALAN HARİTASI — garson ↔ mutfak, ve kapılar
 
 `tests/test_alan_haritasi.py` sınırı **AST ile** kilitler: 🗣 garson modülü motora
