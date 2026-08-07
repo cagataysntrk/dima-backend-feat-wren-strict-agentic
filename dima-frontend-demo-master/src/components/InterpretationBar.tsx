@@ -297,7 +297,7 @@ export function InterpretationBar({
       </span>
 
       {measures.map((m) => (
-        <span key={m} className={chip} title="Ölçü">
+        <span key={m} data-capa="olcu" tabIndex={-1} className={chip} title="Ölçü">
           <span className="text-accent">◆</span> {m}
           {(measures.length > 1 || blend.length > 0) && (
             <button onClick={() => removeMeasure(m)} className={xBtn} aria-label={`${m} ölçüsünü kaldır`}>×</button>
@@ -321,7 +321,7 @@ export function InterpretationBar({
         const GRAN_TR: Record<string, string> = { day: "gün", week: "hafta", month: "ay", quarter: "çeyrek", year: "yıl" };
         const open = openFilter === "kova";
         return (
-          <span key={t.dimension} className={`relative ${chip}`} title="Zaman kovası — tıkla: değiştir">
+          <span key={t.dimension} data-capa="granulerlik" tabIndex={-1} className={`relative ${chip}`} title="Zaman kovası — tıkla: değiştir">
             <button
               onClick={() => setOpenFilter(open ? null : "kova")}
               className="inline-flex items-center gap-1 hover:text-foreground"
@@ -370,7 +370,7 @@ export function InterpretationBar({
             ? `kırılım: ${d} · ${selected.length}/${opts.length}`
             : `kırılım: ${d}`;
         return (
-          <span key={d} className={`relative ${chip}`} title="Kırılım — tıkla: değerleri seç">
+          <span key={d} data-capa="kirilim" tabIndex={-1} className={`relative ${chip}`} title="Kırılım — tıkla: değerleri seç">
             <button
               onClick={() => setOpenFilter(open ? null : `dim:${d}`)}
               className="inline-flex items-center gap-1 hover:text-foreground"
@@ -420,7 +420,7 @@ export function InterpretationBar({
         const opts = valuesFor(f.dimension);
         const open = openFilter === f.dimension;
         return (
-          <span key={f.dimension} className={`relative ${chip}`} title="Filtre — tıkla: değiştir">
+          <span key={f.dimension} data-capa={String(f.dimension).includes("tarih") ? "donem" : "filtre"} tabIndex={-1} className={`relative ${chip}`} title="Filtre — tıkla: değiştir">
             <button
               onClick={() => setOpenFilter(open ? null : f.dimension)}
               className="inline-flex items-center gap-1 hover:text-foreground"

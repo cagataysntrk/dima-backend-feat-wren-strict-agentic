@@ -141,7 +141,68 @@ def test_KAPSAM_ROZETI_EKRANDA():
         import pytest
         pytest.skip("⊘ frontend mount edilmemiş")
     kaynak = (fe / "components" / "Temellendirme.tsx").read_text(encoding="utf-8")
-    i = kaynak.index("const rozetler = [")
-    liste = kaynak[i:kaynak.index("]", i)]
+    # ⚠ Liste `G1.7`'de **nesne dizisine** döndü (`{etiket, capa}`) çünkü rozetler artık
+    # düzenleme çubuğuna götürüyor. Çapa `const rozetler` — sabit metin değil, o yüzden
+    # `index()` yerine varlık kontrolü.
+    i = kaynak.index("const rozetler")
+    liste = kaynak[i:kaynak.index("].filter", i)]
     for alan in ("t.cube", "t.olcu", "t.donem"):
         assert alan in liste, f"🔴 `{alan}` rozet listesinde yok — üretilen alan ekranda YOK"
+
+
+def test_ROZET_CAPALARI_DUZENLEME_CUBUGUYLA_ESLESIYOR():
+    """🔴 `G1.7` — rozetler tıklanabilir, **ama düzenlemez: düzenleyene götürür.**
+
+    Plan *"her rozet → o alanı değiştiren chip"* diyordu. Ölçüldü ve **olduğu gibi
+    uygulanamaz**: `InterpretationBar` o alanların dördünü **zaten** düzenliyor
+    (`next.measures` · `next.dimensions` · `next.filters` · `next.timeDimensions`).
+    İkinci bir düzenleme yüzeyi, bu deponun bir numaralı kusurunu (*aynı kuralın iki
+    sahibi*) doğrudan üretirdi ve iki yüzey zamanla **ayrışırdı**.
+
+    *Bir yeteneği iki yere koymak, onu iki kez kazanmak değil; iki kez bakmaktır.*
+
+    🔴 Bu kapının varlık sebebi: çapa adları ayrışırsa tıklama **sessizce hiçbir şey
+    yapmaz** — kullanıcı için *"bozuk düğme"*, gelişt* için görünmez bir kusur.
+    """
+    import pathlib
+    import re
+
+    fe = pathlib.Path(__file__).resolve().parents[2] / "dima-frontend-demo-master/src"
+    if not fe.is_dir():
+        import pytest
+        pytest.skip("⊘ frontend mount edilmemiş")
+
+    tem = (fe / "components/Temellendirme.tsx").read_text(encoding="utf-8")
+    ib = (fe / "components/InterpretationBar.tsx").read_text(encoding="utf-8")
+
+    i = tem.index("const rozetler")
+    isteyen = set(re.findall(r'capa:\s*"(\w+)"', tem[i:tem.index("].filter", i)]))
+    # ⚠ Çapa **dinamik** de olabilir: `data-capa={... ? "donem" : "filtre"}`. Yalnız
+    # sabit dizgeyi aramak, gerçek bir çapayı görmezden gelir ve kapı **sahte kırmızı**
+    # verir — ilk yazımda tam bu oldu.
+    # *Bir kapının ölçütü, ölçtüğü şeyin bütün yazım biçimlerini tanımak zorundadır.*
+    veren = set()
+    for blok in re.findall(r'data-capa=(\{[^}]*\}|"[^"]*")', ib):
+        veren |= set(re.findall(r'"(\w+)"', blok))
+
+    assert isteyen, "⊘ ölçüm tabanı çöktü: rozetlerde çapa yok"
+    eksik = isteyen - veren
+    assert not eksik, (
+        f"🔴 ÇAPA AYRIŞMASI: rozet {sorted(eksik)} çapasına götürmek istiyor ama "
+        f"`InterpretationBar`'da öyle bir `data-capa` YOK (mevcut: {sorted(veren)}). "
+        "Tıklama sessizce hiçbir şey yapar — bozuk bir düğme, olmayan bir düğmeden kötüdür.")
+
+
+def test_CUBE_ROZETI_TIKLANMAZ():
+    """⚠ Sınır: `cube`'u değiştirmek bir **düzenleme değil, yeni bir sorudur** —
+    `InterpretationBar` da onu düzenlemiyor. Yanlış cube'da doğru yol **netleştirmedir**.
+    *Her rozeti tıklanabilir yapmak, tıklamanın anlamını da düzleştirir.*"""
+    import pathlib
+
+    fe = pathlib.Path(__file__).resolve().parents[2] / "dima-frontend-demo-master/src"
+    if not fe.is_dir():
+        import pytest
+        pytest.skip("⊘ frontend mount edilmemiş")
+    tem = (fe / "components/Temellendirme.tsx").read_text(encoding="utf-8")
+    assert 'capa: null' in tem and 't.cube' in tem, (
+        "🔴 `cube` rozeti tıklanabilir yapılmış — cube değişimi bir düzenleme değildir")
