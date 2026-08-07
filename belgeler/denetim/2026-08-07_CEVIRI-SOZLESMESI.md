@@ -2176,3 +2176,47 @@ morfoloji vakası.
 
 ⊙ Ve bu iki soru, kullanıcının *"agentic"* dediği sınıfın **tam merkezi**: birden çok
 ölçü + sıralı işlem. Sistem bugün onları **ilk adımda** kaybediyor.
+
+### 30.4 · Koşum — ikinci parti
+
+| tur | soru | sonuç |
+|---|---|---|
+| **A5/1** | `bu yıl aylık ciro ve fire birlikte` | ✅✅ iki ölçü tek sorguda · aylık kova · belirsizlik beyanı |
+| **A6/1** | `bu ay nasıl gidiyoruz` | ✅ dürüst: *"tanıdığım bir konu geçmiyor — şunlardan biri mi?"* + öneriler |
+| **A8/1** | `bu yıl makine bazında oee` | ✅ 11 satır |
+| **A8/2** | `bir de fire ekle` | ✅✅ ölçü eklendi · dönem+kırılım korundu · belirsizlik beyanı · **0 LLM** |
+| **A13/1** | `bu yıl en çok fire veren 3 aşama` | 🔴 *"«veren» başka bir konu gibi görünüyor"* |
+
+⚠ **Ortam:** A5/A6 ilk denemede **tamamen boş** döndü — `{"detail":"Geçersiz veya süresi
+dolmuş token"}`. `§0.3`'ün kayıtlı tuzağı; ürün kusuru **değil**. *Kayıtlı bir tuzağı
+ikinci kez bulgu sanmamak, kaydın tek işlevidir.*
+
+### 30.5 · 🔴 ONBİRİNCİ MORFOLOJİ VAKASI — ve artık bir DESEN
+
+`veren` (sıfat-fiil, *vermek*) — `en çok fire **veren** 3 aşama`.
+
+⊙ Biriken liste: `ocağa` · `3'ünü` · `çeyreklere` · `üretildi` · `3 tanesi` ·
+`5 milyon üzeri` · `yıkama` · `makinede` · `karlılığa/analiz` · `personel süreleri` ·
+**`veren`**.
+
+🔴 **Onbir vakanın onu tek bir sınıf**: katalogda karşılığı olan ya da dilbilgisel bir
+öğe, **çekimli** hâliyle tanınmıyor ve kapsam kapısı turu düşürüyor.
+
+⚠ Ve `§26.1` bağlayıcı: **dolgu sınıfını genişletmek yasak** (sessiz-yanlış 12 → 13).
+Yani çözüm liste değil **morfoloji**: `app/ek.py` (G7) ekleri **üretiyor ama sökmüyor** —
+bu belgede **dördüncü kez** yazılıyor.
+
+> **Kök çözüm adayı:** kapsam kapısı bir kelimeyi bilinmeyen saymadan önce, **ek
+> soyulmuş** kökünü katalogda aramalı. `_covers`/`_syn_hit` zaten ek zinciri doğruluyor
+> (üretim yönü); eksik olan **ters yön**: verilen kelimeden köke inmek.
+
+*Bir dilin eklerini üretebilen sistem, onları sökebilmelidir de; yoksa kendi ürettiği
+biçimi tanımaz.*
+
+### 30.6 · ⊙ VE İYİ HABER: agentic çekirdek ÇALIŞIYOR
+
+`A5` (çok ölçü + zaman kovası), `A8` (ölçü ekleme, cube'lar arası belirsizlik beyanıyla)
+ve `A4` (grafik dönüşümü, 0 LLM) **tam istendiği gibi** çalışıyor.
+
+🔴 Yani kullanıcının *"agentic"* dediği yeteneklerin **mutfağı hazır**; kaybedilen turlar
+**dil kapısında** kaybediliyor — `§AJ4`'ün *"garsonun fişi"* teşhisiyle aynı yöne bakıyor.
