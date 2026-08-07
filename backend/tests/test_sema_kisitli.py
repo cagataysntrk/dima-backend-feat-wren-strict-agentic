@@ -125,8 +125,17 @@ def test_ORDER_LIMIT_enumlanmaz_ama_BLEND_ENUMLANIR(sema, sema_harman, index):
     soruda ifade edilemiyordu — *"verimlilik ve ciro"* `{cube: null}`'a düşüyordu (`Ö11`).
     *Bir yeteneği söyleyememek, ona sahip olmamakla aynı sonucu verir.*
     """
-    for d in sema_harman["oneOf"]:
-        assert not ({"order", "limit"} & set(d.get("properties") or {}))
+    # ⟳ **TUZAK YİNE TERSİNE ÇEVRİLDİ — `§AJ4`.** Ölçüldü: `route()` bir sorguya **12
+    # anahtar** yazabiliyor, şema **7** tanıyordu. `order`+`limit` **birlikte kapsamdır**:
+    # *"en yüksek 5 müşteri"* beş satır demek, bir sunum tercihi değil. Ve ikisi
+    # ayrılamaz — sıralamasız bir limit **kuyruğu keser, sonucu değil** (`§20.3`).
+    # 🔴 Dışarıda kalan tek şey artık yok: `blend`(G6.5) · `period_expr`(AJ3.3) ·
+    # `order`/`limit`/`measure_having`(AJ4) girdi.
+    for d in sema_harman["oneOf"][1:]:
+        assert {"order", "limit", "measure_having"} <= set(d.get("properties") or {}), (
+            "🔴 kapsam alanları şemadan düşmüş — model *«en yüksek 5»*i söyleyemez")
+    assert sema_harman["oneOf"][0]["properties"].keys() == {"cube"}, (
+        "🔴 REDDETME dalına alan eklenmiş: *hiçbiri* seçeneği koşulsuz kalmalı")
     if len(index) > 1:
         assert all("blend" in (d.get("properties") or {}) for d in sema_harman["oneOf"][1:]), (
             "🔴 `blend` cube dallarından düşmüş — `Ö11` yeniden bloke")

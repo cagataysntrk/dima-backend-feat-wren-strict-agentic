@@ -151,6 +151,34 @@ def cube_query_json_schema(index: dict, *, harman: bool = False) -> dict:
                 "description": "Sorudaki dönem/tarih ifadesi AYNEN («geçen çeyrek», "
                                "«yılbaşından bugüne»). Tarihi SEN hesaplama. Dönem "
                                "geçmiyorsa null."}
+        # 🔴 `§AJ4` — **GARSONUN FİŞİ EKSİKTİ: mutfak 12 anahtar yazıyor, şema 7 tanıyordu.**
+        #
+        # ⊙ Ayrım `G6.5`'te kurulan kuralın aynısı: *"zaten sessizce düşüyor"* gerekçesi
+        # **sunumu** değiştiren alanlar için doğru kalır, **kapsamı** değiştirenler için
+        # değil — düşünce kullanıcı bir şey ister, başkasını alır ve **fark edemez**.
+        #
+        # `order`+`limit` birlikte **kapsamdır**: *"en yüksek 5 müşteri"* beş satır demek,
+        # bir sıralama tercihi değil. Tek başına `order` sunumdur ama ikisi ayrılamaz —
+        # sıralamasız bir limit **kuyruğu keser, sonucu değil** (`§20.3`).
+        props["order"] = {
+            "type": "object", "additionalProperties": False,
+            "properties": {"measure": {"type": "string", "enum": olculer},
+                           "direction": {"type": "string", "enum": ["asc", "desc"]}},
+            "required": ["measure", "direction"],
+            "description": "Sıralama. *«en yüksek/en düşük»* dendiyse yaz — `limit` ile "
+                           "birlikte kullan, yalnız biri sonucu belirsiz bırakır."}
+        props["limit"] = {
+            "type": "integer", "minimum": 1, "maximum": 1000,
+            "description": "Satır sayısı. *«ilk 5»*, *«en yüksek 3»* gibi bir sayı "
+                           "geçtiyse yaz; geçmediyse BU ALANI HİÇ YAZMA."}
+        props["measure_having"] = {
+            "type": "object", "additionalProperties": False,
+            "properties": {"measure": {"type": "string", "enum": olculer},
+                           "op": {"type": "string", "enum": [">", ">=", "<", "<="]},
+                           "value": {"type": "number"}},
+            "required": ["measure", "op", "value"],
+            "description": "ÖLÇÜ eşiği (*«10 milyon üzeri»*, *«100 binin altında»*). "
+                           "Boyut değeri filtresi DEĞİL — o `filters`'a gider."}
         if boyutlar:
             props["filters"] = {
                 "type": "array",

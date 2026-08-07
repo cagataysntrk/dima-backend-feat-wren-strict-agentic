@@ -4045,6 +4045,16 @@ def parse_cube_query(text: str, index: dict) -> dict | None:
     # şeyin aynısı. *Bir alanı düşürmek, onu hiç istememekle aynı sonucu verir.*
     if isinstance(pe := cq.get("period_expr"), str) and pe.strip():
         out["period_expr"] = pe.strip()[:120]
+    # 🔴 `§AJ4` — ÖLÇÜ EŞİĞİ geçirilir. Beyaz liste onu düşürüyordu, yani model *"10
+    # milyon üzeri"*yi doğru anlasa bile eşik mutfak kapısında ölüyordu — `compare`'ın
+    # başına gelen şeyin aynısı. Kapsam değiştiren bir alanın sessizce düşmesi, kullanıcı
+    # için **fark edilemez** bir kayıptır.
+    mh = cq.get("measure_having")
+    if (isinstance(mh, dict) and mh.get("measure") in spec.get("measures", [])
+            and mh.get("op") in (">", ">=", "<", "<=")
+            and isinstance(mh.get("value"), (int, float))):
+        out["measure_having"] = {"measure": mh["measure"], "op": mh["op"],
+                                 "value": float(mh["value"])}
     # 🔴 `B-G4` — DÖNEMSEL KIYAS geçirilir. Beyaz liste onu **düşürüyordu**, yani LLM
     # doğru cevabı üretse bile kıyas mutfak kapısında ölüyordu (`dashboards.py:187` bunu
     # bilip elle geri ekliyor — *bir alanı geri eklemek zorunda kalmak, onun düşürülmemesi

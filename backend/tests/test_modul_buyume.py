@@ -316,6 +316,16 @@ MUAFIYET_ASK_KOD = [
                       "dürüst olmayan bir mesajı SATIN ALMAZ"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("AJ4/measure-having-beyaz-liste", 6,
+     "🔴 **GARSONUN FİŞİ EKSİKTİ.** Ölçüldü (`§AJ4`): `route()` bir sorguya **12 anahtar** "
+     "yazabiliyor, LLM'e sunulan şema **7** tanıyordu — ve beyaz liste `measure_having`'i "
+     "**düşürüyordu**. Yani model *«10 milyon üzeri»*yi doğru anlasa bile eşik mutfak "
+     "kapısında ölüyordu: `compare`'ın başına gelen şeyin aynısı (`dashboards.py` onu elle "
+     "geri eklemek zorunda kalmıştı). "
+     "⚠ **TAŞINAMAZ:** beyaz liste `parse_cube_query`'nin **kendisidir** ve doğrulama "
+     "`spec[\"measures\"]`'a karşı yapılıyor — o da bu fonksiyonun yerel değişkeni. "
+     "🔴 Kapsam değiştiren bir alanın sessizce düşmesi, kullanıcı için **fark edilemez** "
+     "bir kayıptır — `G6.5`'te kurulan *sunum vs kapsam* ayrımının aynısı."),
     ("donem/goreli-ceyrek", 14,
      "🔴 **KÖK ÇÖZÜM: bir birim, bir ailede tanınıp ötekinde tanınmıyordu.** Curl'de "
      "ölçüldü: `2. çeyrek toplam fire` ✅ (`_QUARTER_RE`) ama `geçen çeyrek toplam fire` → "
