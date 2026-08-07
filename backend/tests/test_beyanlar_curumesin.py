@@ -478,10 +478,12 @@ _YURURLUKTE_TUZAKLARI = [
     # `test_TERS_TUZAK_FAZ_6_2_YAZMA_ARACLARI_AYAKTA`.
     # ⟳ `§5-grain` **TERS ÇEVRİLDİ** — FAZ 2.1(a)/(b) indi (grain sözleşmesi fail-closed
     # ve `cari`'de gerçek pack'ler üstünde ateşliyor); aynı ters-tuzağa taşındı.
-    ("§5-18.yasak", "§G/AJ0",
-     lambda: "if typo_suggestion:" not in
-             (APP / "routers/ask.py").read_text(encoding="utf-8"),
-     "cevapsız dal cevaplı yolu kesemez (KAT-2)"),
+    # ⟳ `§5-18.yasak` **TERS ÇEVRİLDİ** (`B-G5`, 2026-08-07) — satır §0'dan SİLİNDİ çünkü
+    # yasak indi: `MIMARI:442` yasağı, envanter kapısını (`test_kisa_devre_yok.py`, 13 dal
+    # gerekçeli) ve adıyla anılan vakanın (`değişti→eğitim`) aday'a çevrilmesini anlatıyor.
+    # ⚠ **Tam uygulaması ölçülüp GERİ ALINDI** (korpus %95,1→%93,5 · eval −%1,8 · süitte 7
+    # kırmızı) ve yasağın **dördüncü koşulu** oradan doğdu. Tuzak SİLİNMEDİ, ters çevrildi:
+    # `test_TERS_TUZAK_18_YASAK_ENVANTER_AYAKTA`.
     # ⟳ `§7-CI` **TERS ÇEVRİLDİ** — FAZ 0.15 indi, tuzak
     # `test_TERS_TUZAK_FAZ_0_15_CI_KAPILARI_AYAKTA`'ya taşındı (silinmedi).
     # §0'ın `§7` satırı DARALDI: geriye **risk-kapsam eğrisi** (FAZ 4.2) kaldı ve
@@ -1031,3 +1033,29 @@ def test_YURURLUKTE_BLOGU_KURAL_BEYAN_ETMIYOR():
     # satırları "yapılmış" sanabilir ve blok tam da engellemek için var olduğu şeyi doğurur.
     assert "BU BLOK BİR KURAL BEYAN ETMEZ" in blok, \
         "bloğun kendi sınır ilanı silinmiş — okuyucu satırları «yapılmış» sanabilir"
+
+
+
+def test_TERS_TUZAK_18_YASAK_ENVANTER_AYAKTA():
+    """⟳ **TERS TUZAK** — `§5-18.yasak` §0'dan çıktı; bu test onun *"indi"* beyanının
+    çürümediğini kanıtlar.
+
+    `⟳` satırı bir **işaretçidir** ve `Durum` hücresi yalnız *"UYGULANMADI"* diyebilir.
+    Yasak indiği için satır listede kalamazdı — ama bir beyanı listeden çıkarmak onu
+    **korumasız** bırakır. Bu deponun cevabı: *kapananlar işaretlenir, silinmez;*
+    tuzak **ters çevrilir**.
+
+    İnen üç şey burada kilitlenir: (1) envanter kapısının kendisi, (2) her dalın
+    gerekçeli olması, (3) yasağın **dördüncü koşulunun** yazılı olması — o koşul ölçülmüş
+    bir geri almadan doğdu ve kaybı en kolay olan parçadır.
+    """
+    kapi = pathlib.Path(__file__).resolve().parent / "test_kisa_devre_yok.py"
+    assert kapi.exists(), "🔴 kısa devre envanter kapısı SİLİNMİŞ — yasak korumasız kaldı"
+    src = kapi.read_text(encoding="utf-8")
+    assert "MUAF" in src, "🔴 envanterde gerekçeli muafiyet listesi yok"
+
+    mimari = (APP.parent / "MIMARI.md").read_text(encoding="utf-8")
+    assert "dördüncü koşulu" in mimari, (
+        "🔴 yasağın DÖRDÜNCÜ KOŞULU (*bir sonraki basamak gerçekten daha yetenekli "
+        "olmalı*) `MIMARI.md`'den düşmüş — o koşul ölçülmüş bir geri almadan doğdu "
+        "(korpus %95,1→%93,5) ve kaybı en kolay olan parçadır.")

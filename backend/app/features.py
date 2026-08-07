@@ -37,6 +37,19 @@ _SCOPE_ORDER = ("global", "sector", "tenant", "role", "user")
 #   3) Tüketen yüzeyi `useFeature("<key>")` ile geçitle (frontend).
 #   4) Gerekiyorsa admin panelden tenant/rol/kullanıcı override'ı ile aç.
 FLAG_REGISTRY: dict[str, dict[str, str]] = {
+    "diyalog_bellegi": {
+        "label": "Diyalog belleği — sistem sorduğunu hatırlar",
+        "description": "🔴 `G2`. Sistem bir yuva sorduğunda (*«hangi dönem?»*) durumu "
+                       "cevapta döndürür, istemci geri yollar ve bir sonraki tur "
+                       "**kaldığı yerden** devam eder (`KURAL_DEVAM`). Sunucu oturum "
+                       "SAKLAMAZ — sessiz bir sunucu-yanı depo, thread/UI gruplamasının "
+                       "semantik sınır taşımasına yol açardı. ⚠ Kapalıyken durum sunucuya "
+                       "HİÇ girmez → davranış `G2` öncesiyle birebir aynıdır. "
+                       "⊙ Canlı kapıda üç koşum yeşil: `3·süreklilik` 3/3 · `9·onarım` 1/1. "
+                       "🔴 Bu bayrak bir denetimde EKSİK bulundu: katman inmişti, "
+                       "kill-switch'i yoktu — *bir kill-switch yalnız KODDA varsa yarımdır*.",
+        "category": "deneyim",
+    },
     "hedef_kiyasi": {
         "label": "Hedef kıyası (`target:` beyanı)",
         "description": "Grafikteki referans çizgisi bugün HEDEF DEĞİL, ortalamadır — kod "

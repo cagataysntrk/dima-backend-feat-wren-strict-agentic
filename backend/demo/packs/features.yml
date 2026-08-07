@@ -106,7 +106,10 @@ features:
   #   ⚠ `on`: katman canlı kapıda üç koşum yeşil verdi (`3·süreklilik` 3/3, `9·onarım` 1/1)
   #   ve istemci yankısı `Z` turunda bağlandı; kapalı tutmak ölçülmüş bir kazancı
   #   saklamak olurdu.
-  diyalog_bellegi: on
+  #   ⚠ **`on` YAZILAMAZ:** YAML `on/off/yes/no`'yu **BOOLEAN** okur ve `resolve_for` onu
+  #   elemez → bayrak sessizce açık kalır (kapı: `test_YAML_off_TUZAGI_kapali`). Geçerli
+  #   aşamalar: `off` · `alpha` · `beta` · `prod`.
+  diyalog_bellegi: prod
   t2_anlatici: alpha   # 🔴 G5 — AÇILDI (2026-08-07). Kapalılığın sebebi bir KARAR
   #   değil, ÖLÇÜLMEMİŞLİKTİ: MIMARI §6.19z'de kazanç ölçümü "⊘ ÖLÇÜLEMEDİ — kota".
   #   Üç ön koşul da sağlandı ve üçü de FAIL-CLOSED:

@@ -62,7 +62,12 @@ MUAF: list[tuple[str, str]] = [
      "🟢 MEŞRU: aynı gerekçe, bir basamak yukarısı."),
 
     # ── NETLEŞTİRME DALLARI — hepsi ADAY olmalı, bugün RETURN ediyor ──
-    ("_PERIOD_TEXT",
+    # ⚠ İMZA DEĞİŞTİ (`DA-10`, 2026-08-07): dal artık `_PERIOD_TEXT` sabitini değil
+    # **katalogdan** okunan metni basıyor (`netlestirme.donem`: *"{ne} çıkarabilirim —
+    # hangi dönem için?"*). Sabit yedek olarak duruyor ama imza olarak **ölü**.
+    # 🔴 Dalın kendisi DEĞİŞMEDİ — yalnız cümlesi düzeldi; kısa devre sınıfı aynen açık.
+    # *Bir imzayı güncellemek, imzaladığı şeyi kapatmak değildir.*
+    ("note=_donem_soru",
      "🔴 KISA DEVRE: dönem netleştirmesi. Discovery bu soruyu cevaplayabilirdi. "
      "Aday'a çevrilecek (davranış demeti)."),
     ("Saydığın ayl",

@@ -64,9 +64,25 @@
 > Tuzaklar **silinmedi, TERS ÇEVRİLDİ**: `test_TERS_TUZAK_FAZ_2_1_CEKIRDEK_KATMAN_AYAKTA`.
 
 | **§3.4** | **`SessionProperty` TÜM çağrı sitelerinde** — bugün 36 `query`/`dry_plan` çağrısı kimlik geçmiyor *(CLS `off`, bkz. §6.3c)* | **FAZ 1.2 kuyruğu** | ⟳ UYGULANMADI |
-| **§5** | **18. yasak**: *"cevapsız bir dal, cevaplı bir yolu KESEMEZ"* (`KAT-2`) | **§G/AJ0** | ◐ **KISMEN İNDİ** — ayrıntı `:442` |
 | **§9** | hedef mimari — **metrik katmanı** merdivene giriyor | **FAZ 0.18 · 2.1** | ⟳ UYGULANMADI |
 | **§11** | agentic — **onaylı yazma aksiyonları** | **FAZ 6.1** | ⟳ UYGULANMADI |
+
+> ⛔ **LİSTEDEN ÇIKAN BİR SATIR — `18. yasak` (`B-G5`, 2026-08-07):**
+> Bu satır uzun süre `⟳ UYGULANMADI` diye durdu ve `:442` ile **çelişti**: orada yasak
+> inmiş, ölçülmüş ve bir geri alma gerekçesiyle birlikte anlatılıyor. Çelişkiyi bir
+> denetim yakaladı (`B-G5`).
+>
+> 🔴 İlk düzeltmem satırın `Durum` hücresini *"◐ KISMEN İNDİ"* yaptı — ve **kapı onu da
+> reddetti**, haklı olarak: `⟳` satırı bir **İŞARETÇİdir**, hücresi yalnız *"UYGULANMADI"*
+> diyebilir. *"Kısmen indi"* bir **beyandır** ve beyanın yeri ilgili bölümdür, işaretçi
+> tablosu değil (`test_YURURLUKTE_SATIRLARI_ISARETCI_bicimini_KORUYOR`).
+>
+> → Satır **listeden çıkarıldı**; kaydın tamamı `§5`'in kendi maddesinde (`:442`): yasak +
+> envanter kapısı + adıyla anılan vakanın aday'a çevrilmesi indi; **tam uygulaması**
+> ölçülüp geri alındı (korpus %95,1→%93,5, eval −%1,8, süitte 7 kırmızı) ve yasağın
+> **dördüncü koşulu** (*bir sonraki basamak gerçekten daha yetenekli olmalı*) oradan doğdu.
+> *Bir çelişkiyi düzeltmenin yolu, iki satırı da doğru yapmak değil; hangisinin yeri
+> olduğunu bulmaktır.*
 
 > ⛔ **BU LİSTEDE OLMAYAN ama sorulabilecek bir satır — kayda geçiyor:**
 > *"§9.2 — ölçü + başka cube'un BOYUTU ifade edilemez"* bir ⟳ satırı **DEĞİLDİR**, çünkü

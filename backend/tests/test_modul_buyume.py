@@ -76,6 +76,19 @@ TABAN_CUBE_ROUTER_KOD = 1685  # 1703 ölçüldü − 18 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("garson/DA-5+DA-10", 9,
+     "🔴 İKİ DENETİM BULGUSU, ikisi de `ask()` gövdesinde ve ikisi de TAŞINAMAZ. "
+     "**(a) `DA-5` — `G2`'nin kill-switch'i (`diyalog_bellegi`).** Katman inmişti, bayrağı "
+     "YOKTU: GERİ AL sözleşmesi (*«off → davranış birebir bugünkü»*) uygulanamaz "
+     "durumdaydı. `MIMARI §9.11`: *bir kill-switch yalnız KODDA varsa yarımdır.* Kesme "
+     "noktası **girişte** ve TEK: durum sunucuya hiç girmezse `devam_edilebilir(None)` "
+     "zaten `None` döner. Bir modüle çıkarmak, bir `if`'i bir dolaylamaya çevirirdi. "
+     "**(b) `DA-10` — dönem netleştirmesi katalogdan okuyor.** `soz.py:19`'un kendi kuralı "
+     "(*«ÖNCE NE ANLADIĞINI SÖYLE, SONRA SOR»*) katalogda yazılıydı ama üretimde "
+     "`_PERIOD_TEXT` sabiti basılıyordu; katalog girdisinin **hiç çağıranı yoktu**. "
+     "⊙ Ağırlığı ölçülü: netleştirmelerin **%79'u** dönem sorusudur (`donem_capasi.py:8`). "
+     "`{ne}` yuvasını `temellendirme` doldurur — ikinci bir adlandırıcı yazmak `KAT-1` "
+     "olurdu; yani satırlar burada, **karar noktasında** kalmak zorunda."),
     ("9a138a9", 11, "0.5 · çapa zinciri — `coz(..., capalar=…)` bağlandı; "
                     "bayrak `capa_zinciri`, varsayılan `off`"),
     ("98a5071", 1, "0.12/0.13/0.6 · gerçek kill-switch + kanıt geçmişi"),
@@ -307,6 +320,19 @@ MUAFIYET_CUBE_ROUTER_KOD = [
 #: değil sessiz bir tavan artışıdır* (bu dosyanın kendi cümlesi). Dosya muafiyeti bu yüzden
 #: **ayrı** sayılır ve `ask()` tavanına **dokunmaz**.
 MUAFIYET_ASK_DOSYA = [
+    ("garson/DA-5+DA-10", 7,
+     "🔴 İKİ DENETİM BULGUSU, ikisi de `ask()` gövdesinde ve ikisi de TAŞINAMAZ. "
+     "**(a) `DA-5` — `G2`'nin kill-switch'i (`diyalog_bellegi`).** Katman inmişti, bayrağı "
+     "YOKTU: GERİ AL sözleşmesi (*«off → davranış birebir bugünkü»*) uygulanamaz "
+     "durumdaydı. `MIMARI §9.11`: *bir kill-switch yalnız KODDA varsa yarımdır.* Kesme "
+     "noktası **girişte** ve TEK: durum sunucuya hiç girmezse `devam_edilebilir(None)` "
+     "zaten `None` döner. Bir modüle çıkarmak, bir `if`'i bir dolaylamaya çevirirdi. "
+     "**(b) `DA-10` — dönem netleştirmesi katalogdan okuyor.** `soz.py:19`'un kendi kuralı "
+     "(*«ÖNCE NE ANLADIĞINI SÖYLE, SONRA SOR»*) katalogda yazılıydı ama üretimde "
+     "`_PERIOD_TEXT` sabiti basılıyordu; katalog girdisinin **hiç çağıranı yoktu**. "
+     "⊙ Ağırlığı ölçülü: netleştirmelerin **%79'u** dönem sorusudur (`donem_capasi.py:8`). "
+     "`{ne}` yuvasını `temellendirme` doldurur — ikinci bir adlandırıcı yazmak `KAT-1` "
+     "olurdu; yani satırlar burada, **karar noktasında** kalmak zorunda."),
     ("AJ0/merdiven-baglantisi", 3,
      "🔴 AJ0 kısa devre yasağının MODÜL-DÜZEYİ bağlantısı: `app/merdiven.py`'den üç ad "
      "(`Merdiven` · `ZORUNLU` · `ADAY_IZI`) import edilir. Mekanizmanın TAMAMI o "
