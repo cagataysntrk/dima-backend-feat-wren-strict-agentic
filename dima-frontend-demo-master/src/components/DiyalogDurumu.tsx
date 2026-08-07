@@ -21,7 +21,7 @@
  * - `sorulan` varsa o öne çıkar; yoksa açık yuvalar listelenir.
  */
 
-import type { AskItem } from "@/lib/types";
+import type { AskResponse } from "@/lib/types";
 
 const ETIKET: Record<string, string> = {
   cube: "konu",
@@ -29,7 +29,7 @@ const ETIKET: Record<string, string> = {
   donem: "dönem",
 };
 
-export function DiyalogDurumu({ item }: { item: AskItem }) {
+export function DiyalogDurumu({ item }: { item: AskResponse }) {
   const d = item.diyalog_durumu;
   if (!d) return null;
 

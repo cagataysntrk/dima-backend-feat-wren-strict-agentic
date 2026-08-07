@@ -1617,6 +1617,105 @@ yanlış yazardı.
    (kalın, düzenli) ama `dikkat`→`dikkati` (ince) — **aynı yazım, farklı çekim**.
    *Bir dilin istisnası bir kuralın eksiği değil, sözlüğün kendisidir.*
 
+### 🔴 `G6` — KIYAS CEBİRİ: bir niyeti SÖKEBİLEN sistem onu SAYABİLMELİDİR
+
+#### Ölçülen kusur — iki kural, tek sessizlik
+
+`_KIYAS_FIIL` (`cube_router.py:1447`) yıllardır var ve `strip_compare` kıyas fiilini
+sorudan **söküyor**. Ama hiçbir yerde *"kıyas istendi"* diye bir **yüklem** yoktu:
+`TUR_KIYAS`'ın tek kaynağı `compare_mode`'du ve o **göreli** kıyastır (`yoy`/`mom`).
+İki uçlu kıyasa `None` der. Buna `" ile "`nin `_ARALIK` içinde olması eklendi:
+
+| soru | eski davranış |
+|---|---|
+| *"mart cirosunu şubat ile kıyasla"* | 🔴 **1 Şubat–31 Mart TOPLAMI**, hiçbir etiket yok |
+| *"2025 ve 2026 ciro karşılaştır"* | 🔴 **hiç dönem filtresi yok** |
+
+⚠ Deliği bir test **gizliyordu**: `test_AYNI_KAYIP_IKI_KEZ_ANLATILMIYOR` tam bu soruyu
+kullanıp `not (A and B)` diyordu — hiçbiri ateşlemediğinde de yeşil.
+*Boşuna yeşil bir test, olmayan bir testten pahalıdır: yerini doldurur.*
+
+Bu, defterdeki **`göre`/`bazında` aşırı-yüklenmesinin** aynı sınıfı: bir bağlaç iki iş
+görüyor ve biri ötekini yutuyor. Çözüm kelime eklemek değil, iki sahip arasında bir
+**öncelik** kurmaktı — kıyas fiili varsa `" ile "` **birliktelik** okunur.
+
+#### Kapı yarısı — A/B ile ölçüldü (408 kıyas sorusu)
+
+| | etiketlenen | **sessiz** |
+|---|---|---|
+| eski | 61 | 🔴 **244** |
+| yeni | **305** | **0** |
+
+Ters yön: kıyas **istemeyen** 554 cevaplanan soruda **0 yeni etiket** — meşru aralık
+(*"ocak ile mart arası ciro"*) dâhil. *Bir kapıyı genişletmenin bedeli, genişlemenin
+dışında kalanlarda ölçülmeden bilinmez.*
+
+#### Kapsam yarısı — MOTOR YENİ DEĞİL, CEBİR YENİ
+
+`app/yoy.py` + `shift_period_back` zaten bir dönemi geri kaydırıyordu ve `compare`
+uçtan uca akıyordu (`viz.py:395` · `report.py:56` · `dashboards.py:189,326` ·
+`contribution.py:445` · chip yolu). Yani *"mart'ı şubat ile kıyasla"* aslında
+**"mart cirosu + `mom`"**tur — eksik olan tek şey **indirgeme**ydi.
+
+`app/kiyas_cebiri.py` (🍳 mutfak — `yoy.py`'nin ikizi) çökmüş aralığı geri açar ve **fail-closed**tır: yalnız bitişik ay
+(`mom`), aynı ay bir yıl arayla (`yoy`), ardışık iki yıl (`yoy`). *"Ocak ve haziran"*
+indirgenmez — `mom` orada **yanlış** iki dönemi kıyaslardı. *Yaklaşık bir kıyas, kıyas
+olmamaktan kötüdür: kullanıcı sayıya bakar, hangi iki dönemin kıyaslandığına bakmaz.*
+
+⊙ Sonuç: 305 cevaplanan kıyas sorusunun **122'si gerçek kıyas hesaplıyor**, 183'ü
+**etiketli**, sessiz **0**.
+
+#### Üç kapı reddi, üç daha ucuz çözüm
+
+1. 🔴 **`R11` ÖLÇÜLDÜ ve GERİ ALINDI.** *"Anlaşıldı ama ifade edilemez"* kodu yazıldı,
+   nüfusu ölçüldü (**30/408**), makul görünüyordu. Kapı çürüttü
+   (`test_TANINAN_SORUDA_HAM_KOD_KORUNUYOR`): o sorularda **gerçek** gerekçe zaten vardı
+   (`R9`, `R1`, …) ve `R11` onu **örtüyordu** — geliştiriciyi cebire yolluyordu, oysa
+   cebir zaten inmişti ve o sorular başka sebepten düşüyordu. `KÖK-9`'un kendi cümlesi:
+   *kusuru gizlemekten daha kötüsü yanlış yeri işaret etmektir.*
+   ⊙ Ders: *bir sayının varlığı, o sayının doğru şeyi saydığının kanıtı değildir* —
+   30 vaka gerçekti, **etiketleri** gerçek değildi. *(İlk yazımı ayrıca niyet katmanını
+   çağırıp `KÖK-1 Faz 1` kapısını da kırmızıya çevirmişti.)*
+2. `route()` `compare` üretmeye başlayınca **tüketicisi yoktu**: cevap Mart toplamı olur,
+   `compare` yutulur ve `uyum` `compare` dolu diye ihlali de **bastırırdı** — kapattığımız
+   sınıfın yeni bir örneği. `_kiyas_cevabi`'nin **üçüncü çağıranı** bağlandı (gövde
+   kopyalanmadı; karar `kiyas_cebiri.ayikla`'da, `ask()`'te yalnız çağrı ve dönüş).
+3. Satır bütçesi iki kez kırmızı verdi ve ikisinde de **taşıma** doğru cevaptı.
+
+*Bir kapının reddi çoğu zaman daha ucuz bir çözümün adresidir.*
+
+#### 🔴 R3 ZATEN KURTARILIYORDU — ölçüm bir "fırsatı" çürüttü
+
+Tarama `R3`'ü en büyük red sınıfı gösterdi (243/880, %27,6) ve *"kıyas cube'a sığmaz"*
+yorumu `yoy.py`'den **önce** yazılmıştı. Açmaya niyetlendim; `ask.py:2693` okundu:
+route `_COMPARE_HINTS`'te **bilerek** `None` döner, `ask()` `strip_compare` ile temiz
+metni yeniden route eder ve `_kiyas_cevabi`'ye verir. O 243 soru **LLM'e gitmiyor**.
+Dokunulmadı. *Bir sayının büyüklüğü, onun bir kayıp olduğunun kanıtı değildir.*
+
+### 🔴 FRONTEND İKİ DEMETTİR DERLENMİYORDU — ve kapı bunu göremezdi
+
+`G6`'da `tsc` ilk kez çağrıldı ve **dört hata** çıktı; hiçbiri o gün doğmamıştı:
+
+| dosya | hata | kaynak faz |
+|---|---|---|
+| `ReportCard.tsx` | `TS1005` — iki kardeş JSX elemanı **fragment'sız** | `G2` |
+| `DiyalogDurumu.tsx` · `Temellendirme.tsx` | `TS2305` — var olmayan tip `AskItem` | `G1`/`G2` |
+| `DiyalogDurumu.tsx` | `TS7006` — örtük `any` | `G2` |
+
+🔴 Yerel kapı yalnız `pytest` koşuyor. *Bir dilin derleyicisi koşulmuyorsa, o dilde
+yazılan her şey denetimsizdir* — ve testler yeşil kaldığı için kusur **iki demet**
+görünmedi. Bu, *"kullanılamayan kapı kapatılır"* deseninin bir adım ötesi: kapı
+kapatılmamıştı bile, **hiç açılmamıştı**.
+
+→ `tests/test_frontend_derlenir.py` **iki katman**: (1) `@/lib/types`'tan alınan her tip
+adı gerçekten dışa aktarılmış mı — saf metin, her yerde koşar, `AskItem`'ı yakalardı;
+(2) `tsc --noEmit` — `npx` varsa koşar, test imajında `node` olmadığı için orada `skip`.
+Üçüncü bir denetim koşullu JSX'in **tek kök** kuralını girinti üzerinden ölçer (ilk
+sezgisel sürüm beş yanlış-pozitif verdi ve düzeltildi: *yanlış-pozitif veren bir kapı
+kullanılamaz*).
+
+⚠ Açık borç: `tsc` **gecelik CI'da koşmalı**. Bugün yalnız geliştirici makinesinde koşar.
+
 ### 🔴 ALAN HARİTASI — garson ↔ mutfak, ve kapılar
 
 `tests/test_alan_haritasi.py` sınırı **AST ile** kilitler: 🗣 garson modülü motora

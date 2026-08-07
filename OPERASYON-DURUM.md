@@ -2425,3 +2425,56 @@ Reddedilen bir soruda `partial_unknowns` **4 kez** koşuyordu. İki iş yapıld�
 Kalan **tek** doğrudan çağrı `ask.py:2959` — `unknown` ve `hits`i **birlikte** kullanıyor.
 `Niyet`e `hits` alanı eklenirse 3 → 2 olur; eklemeden yarım taşımak, alanı iki yerde
 tutmak olurdu.
+
+---
+
+## ⟳ GARSON FAZI — `G6` KIYAS CEBİRİ (2026-08-07)
+
+### İnen üç şey
+
+| # | Ne | Ölçü |
+|---|---|---|
+| 1 | **Kapı yarısı** — kıyas fiili artık *sayılıyor*, `" ile "` aşırı-yüklenmesi çözüldü | sessiz **244 → 0** |
+| 2 | **Kapsam yarısı** — `app/kiyas_cebiri.py`: mutlak kıyas → göreli kıyas indirgemesi | **122** soru gerçek kıyas hesaplıyor |
+| 3 | **`B-G4` kapandı** — Intent-JSON'a `compare` girdi, `parse_cube_query` artık düşürmüyor | `5.6` (peer) **açıldı** |
+
+⊙ 408 kıyas sorusu: reddedilen 103 · cevaplandı 305 → *(122 kıyaslı · 183 etiketli ·
+**0 sessiz**)*.
+
+### ⊘ `R11` DENENDİ ve GERİ ALINDI — kapı bir kararı çürüttü
+
+*"Anlaşıldı ama ifade edilemez"* kodu yazıldı; tarama **30/408** nüfus gösterdi. Kapı
+(`test_TANINAN_SORUDA_HAM_KOD_KORUNUYOR`) çürüttü: o sorularda **gerçek** gerekçe zaten
+vardı (`R9`, `R1`, …) ve `R11` onu **örtüyordu**. `KÖK-9`'un dersi birebir geçerli:
+*kusuru gizlemekten daha kötüsü yanlış yeri işaret etmektir.*
+
+⊙ **Ders:** *bir sayının varlığı, o sayının doğru şeyi saydığının kanıtı değildir.* Ters yön: kıyas **istemeyen** 554 soruda **0 yeni etiket**.
+
+### 🔴 BU DEMETİN EN PAHALI DERSİ — frontend iki demettir DERLENMİYORDU
+
+`G6`'da `tsc` **ilk kez** çağrıldı. Dört hata çıktı, hiçbiri o gün doğmamıştı:
+`ReportCard.tsx` `TS1005` (fragment'sız kardeş JSX — `G2`) · `DiyalogDurumu.tsx` +
+`Temellendirme.tsx` `TS2305` (var olmayan tip `AskItem` — `G1`/`G2`) · `TS7006` (örtük
+`any`). Testler **yeşildi**, çünkü yerel kapı yalnız `pytest` koşuyor.
+
+*Bir dilin derleyicisi koşulmuyorsa, o dilde yazılan her şey denetimsizdir.*
+
+→ `tests/test_frontend_derlenir.py` (tip-adı denetimi + koşullu JSX tek-kök + `tsc`).
+⚠ **Açık borç:** `tsc` **gecelik CI'da koşmuyor**; bugün yalnız geliştirici makinesinde.
+
+### Ölçüm bir "fırsatı" çürüttü — `R3`
+
+Tarama `R3`'ü en büyük red sınıfı gösterdi (**243/880**, %27,6). Açmaya niyetlendim;
+`ask.py:2693` okundu: `route()` `_COMPARE_HINTS`'te **bilerek** `None` döner ve `ask()`
+`strip_compare` + yeniden route + `_kiyas_cevabi` ile onu **zaten kurtarıyor**. O 243
+soru LLM'e gitmiyor. Dokunulmadı.
+*Bir sayının büyüklüğü, onun bir kayıp olduğunun kanıtı değildir.*
+
+### Borç durumu — dürüst muhasebe
+
+| borç | durum |
+|---|---|
+| **#17** *(«değişim» istendi, TOPLAM verildi)* | ◐ **YARIM.** *"Uyarı da yok"* yarısı **KÖK-3** ile zaten kapanmıştı (ölçüldü: `eksik=['trend']` + yol gösteren not). `G6` **iki uçlu kıyas** eksenini kapatır; bu vakanın kalanı bir **zaman ekseni** işidir ve açık kalır |
+| **B-G4** | ✅ **KAPANDI** — `compare` Intent-JSON şemasına (yalnız zaman boyutlu dalda, `oneOf` korunarak) ve `parse_cube_query` beyaz listesine girdi. `5.6` (peer) bloğu kalktı |
+| **yeni** | 🔴 `tsc` gecelik CI'da koşmuyor |
+| **yeni** | ⚠ `Niyet.temsil_edilemeyen` izi, `route`'un indirgeme yaptığını **bilmez** (soruya bakar, sorguya değil): kıyas kurulmuş bir cevapta iz hâlâ `temsil-yok=cok_donem` yazar. Zararsız — `uyum` cq'yu görüp doğru susuyor — ama **iz yanıltıcı** |

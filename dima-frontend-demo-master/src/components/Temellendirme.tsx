@@ -22,9 +22,9 @@
  * (bozulma merdiveninin 3. basamağı).
  */
 
-import type { AskItem } from "@/lib/types";
+import type { AskResponse } from "@/lib/types";
 
-export function Temellendirme({ item }: { item: AskItem }) {
+export function Temellendirme({ item }: { item: AskResponse }) {
   const t = item.temellendirme;
   if (!t) return null;
 

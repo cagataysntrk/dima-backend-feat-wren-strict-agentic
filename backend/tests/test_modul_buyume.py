@@ -211,6 +211,18 @@ MUAFIYET_ASK_KOD = [
                       "dürüst olmayan bir mesajı SATIN ALMAZ"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("G6/kiyas-cebiri-cagrisi", 4,
+     "🔴 **MUTLAK KIYAS → GÖRELİ KIYAS.** `route()` iki dönem adını **tek aralığa "
+     "çöktürüyordu**: *«mart cirosunu şubat ile kıyasla»* → `gte 2026-02-01` + "
+     "`lte 2026-03-31`, yani **iki ayın TOPLAMI**. ⊙ Ölçüldü: 408 kıyas sorusunun "
+     "**305**'i bu yoldan cevaplanıyordu; cebir bağlandıktan sonra **122**'si gerçek "
+     "kıyas hesaplıyor, kalanı `uyum` tarafından **etiketli** (sessiz **0**). "
+     "⚠ **Cebrin kendisi burada DEĞİL** — `app/kiyas_cebiri.py`'de (saf fonksiyon, 13 "
+     "test). Bu dosyada kalan yalnız ÇAĞRI: kararın verileceği yer, `filters` ile "
+     "`cq`'nun ikisinin birden elde olduğu tek nokta. Motor da yeni değil: `app/yoy.py` "
+     "+ `shift_period_back` zaten vardı ve `compare` uçtan uca akıyordu (`viz` · "
+     "`report` · `dashboards` · `contribution` · chip yolu). *Eksik olan motor değil, "
+     "iki uçlu bir ifadeyi göreli bir ifadeye çeviren cebirdi.*"),
     ("G6/kiyas-niyeti+R11", 6,
      "🔴 **KIYAS FİİLİ SÖKÜLÜYORDU AMA SAYILMIYORDU.** `_KIYAS_FIIL` bu modülde 2019'dan "
      "beri var ve `strip_compare` onu sorudan **söküyor**; ama hiçbir yerde *«kıyas "

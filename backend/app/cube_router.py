@@ -3152,19 +3152,17 @@ def teshis(q: str, schema: dict) -> str | None:
     # ayrıntısıdır, kullanıcının sorununun adı değil.
     if bilinmeyen:
         return "R10"
-    # 🔴 **R11 — «ANLAŞILDI ama İFADE EDİLEMEZ»** (`G6`, 2026-08-07).
+    # ⊘ **R11 DENENDİ ve GERİ ALINDI** (`G6`, 2026-08-07) — kayıt için.
     #
-    # Tanınmayan kelime YOK — sistem soruyu **anladı** — ama yine de pes etti. `R1`
-    # *"kelimeyi bilmiyorum"* der ve geliştiriciyi **kataloğa** yollar; `R11` *"biliyorum
-    # ama söyleyemiyorum"* der ve **CEBİRE** yollar. İkisi aynı kovaya düşerse kıyas
-    # cebirinin hedef nüfusu **hiç görünmez**.
+    # *"Anlaşıldı ama ifade edilemez"* diye ayrı bir kod eklendi: tanınmayan kelime yok,
+    # kıyas fiili var, route yine de pes etti. Tarama **30/408** nüfus gösterdi ve makul
+    # görünüyordu. **Kapı çürüttü** (`test_TANINAN_SORUDA_HAM_KOD_KORUNUYOR`): o sorularda
+    # gerçek gerekçe zaten vardı (`R9`, `R1`, …) ve `R11` onu **örtüyordu**.
     #
-    # ⚠ İlk yazım niyet katmanının `temsil_edilemeyen`'ini çağırdı ve `KÖK-1 Faz 1`'in *"sıfır
-    # müdahale"* kapısı **haklı olarak** kırmızı verdi: yön tek yönlüdür (`niyet →
-    # cube_router`), tersi bir döngüdür. Sinyal zaten burada: `kiyas_niyeti` bu modülün
-    # kendi yüklemi. *Bir kapının reddi çoğu zaman daha ucuz bir çözümün adresidir.*
-    if kiyas_niyeti(q):
-        return "R11"
+    # 🔴 `KÖK-9`'un kendi dersi: *kusuru gizlemekten daha kötüsü yanlış yeri işaret
+    # etmektir.* `R11` geliştiriciyi **cebire** yolluyordu; oysa cebir zaten indi
+    # (`app/kiyas_cebiri.py`) ve o sorular başka bir sebepten düşüyordu.
+    # *Bir sayının varlığı, o sayının doğru şeyi saydığının kanıtı değildir.*
     return ham
 
 
@@ -3484,6 +3482,17 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
         gran = gran if gran in ("month",) else "month"
     if gran:
         cq["timeDimensions"] = [{"dimension": time_dim, "granularity": gran}]
+    # 🔴 `G6` — MUTLAK KIYAS → GÖRELİ KIYAS. Kullanıcı iki dönem adladı ve *"kıyasla"*
+    # dedi; yukarıdaki dallar o iki dönemi **tek aralığa çöktürdü** (ölçüldü: 408 kıyas
+    # sorusunun 305'i böyle cevaplanıyordu — *"mart cirosunu şubat ile kıyasla"* →
+    # **1 Şubat–31 Mart TOPLAMI**). Çöküş geri döndürülebilir ve motor (`app/yoy.py`)
+    # zaten hazır: o soru aslında *"mart cirosu + `mom`"*tur. Cebir `app/kiyas_cebiri.py`
+    # (fail-closed: yalnız TAM indirgenebilen; ötekiler `uyum` tarafından etiketli kalır).
+    if filters and not ayrik and kiyas_niyeti(q):
+        from app.kiyas_cebiri import indirge
+
+        if (_ind := indirge(filters, time_dim)) is not None:
+            filters, cq["compare"] = _ind
     if filters:
         cq["filters"] = filters
     if ayrik:
@@ -3797,6 +3806,12 @@ def parse_cube_query(text: str, index: dict) -> dict | None:
     lim = cq.get("limit")
     if isinstance(lim, int) and 0 < lim <= 1000:
         out["limit"] = lim
+    # 🔴 `B-G4` — DÖNEMSEL KIYAS geçirilir. Beyaz liste onu **düşürüyordu**, yani LLM
+    # doğru cevabı üretse bile kıyas mutfak kapısında ölüyordu (`dashboards.py:187` bunu
+    # bilip elle geri ekliyor — *bir alanı geri eklemek zorunda kalmak, onun düşürülmemesi
+    # gerektiğinin kanıtıdır*). Kapsam kapalı: `app/yoy.py`'nin bildiği iki mod.
+    if (kmod := cq.get("compare")) in ("yoy", "mom"):
+        out["compare"] = kmod
     # CROSS-CUBE BLEND: ek cube ölçüleri (paylaşılan kırılım prev'den taşınır). Her blend
     # cube'u + ölçüsü kataloğa karşı DOĞRULANIR (halüsinasyon yok); geçersiz entry atlanır.
     blend_out = []

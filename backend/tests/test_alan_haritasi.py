@@ -41,6 +41,10 @@ GARSON = {
 MUTFAK = {
     "wren_service.py", "compose.py", "contracts.py", "rls.py", "fanout.py",
     "katman_b.py", "stats.py", "contribution.py", "yoy.py", "kpi.py",
+    # G6 — `yoy.py`'nin İKİZİ: filtre listesi üstünde saf cebir (çökmüş iki-dönem
+    # aralığını `mom`/`yoy` bazına geri açar). Dil okumaz, motora dokunmaz; girdisi
+    # bir CubeQuery parçası, çıktısı bir CubeQuery parçası — tanım gereği mutfak.
+    "kiyas_cebiri.py",
     "statements.py", "drill.py", "audit_zinciri.py", "lineage.py", "tazelik.py",
     "veri_araligi.py", "result_shape.py", "sensitivity.py",
 }

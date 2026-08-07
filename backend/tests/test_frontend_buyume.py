@@ -70,7 +70,16 @@ TAVANLAR = {
     # boşluk bırakmayı yasaklıyor: *kırmızı veremeyen bir kapı, olmayan bir kapıdır.*
     # ⊙ 1032 → 1035 (`G2`): `<DiyalogDurumu item={item} />` + import + yorum. Render
     # ZATEN bileşene çıkarılmış hâlde geldi (G1'in dersi) — burada kalan yalnız ÇAĞRI.
-    "components/ReportCard.tsx": 1035,
+        # ⊙ +2 · `G6` FRAGMENT SARMALAYICISI (`<>` + `</>`) — **derleme için zorunlu**.
+    #   `G2` `<DiyalogDurumu>`'yu `<NextStepChips>`'in yanına sarmalayıcısız koydu ve dosya
+    #   **TS1005 ile derlenmiyordu**; kusur bir demet boyunca görünmedi çünkü yerel kapı
+    #   yalnız `pytest` koşuyor — `tsc` bu operasyonda **hiç çağrılmamıştı**.
+    #   🔴 TAŞINAMAZ: iki satır bir davranış değil bir **sözdizimi zorunluluğudur**. Tavanın
+    #   amacı davranış birikimini durdurmaktır, derleyicinin dilbilgisini değil. Bir
+    #   bileşene çıkarmak, iki satırdan kaçmak için bir dosya açmak olurdu.
+    #   Kapısı: `tests/test_frontend_derlenir.py`.
+    #   *Bir dilin derleyicisi koşulmuyorsa, o dilde yazılan her şey denetimsizdir.*
+"components/ReportCard.tsx": 1037,
     "lib/api-client.ts": 778,
     "lib/chart.ts": 688,
     # ⊙ 579 → 581: +1 `eksik_niyet?: string[]` (KÖK-3) · +1 `Suggestion.kind?` (KÖK-9).

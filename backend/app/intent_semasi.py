@@ -85,6 +85,24 @@ def cube_query_json_schema(index: dict) -> dict:
                               "dimension": {"type": "string", "enum": zamanlar},
                               "granularity": {"type": "string", "enum": _GRAN_ENUM}},
                           "required": ["dimension", "granularity"]}}
+        if zamanlar:
+            # 🔴 `B-G4` (`G6`) — DÖNEMSEL KIYAS ŞEMAYA GİRDİ.
+            #
+            # Borç şöyle yazılmıştı: *"Intent-JSON'da `compare`/`blend` YOK → `5.6` (peer)
+            # BLOKE."* Küp yolu kıyası artık kurabiliyor (`app/kiyas_cebiri.py`), ama LLM
+            # yolu onu **ifade bile edemiyordu**: `parse_cube_query` beyaz listeyle çalışır
+            # ve `compare`'ı **düşürürdü** (`dashboards.py:187` bunu bilip elle geri ekler).
+            #
+            # ⚠ Yalnız **zaman boyutu olan** dalda açılır: `compare` `shift_period_back` ile
+            # bir dönemi geri kaydırır; zaman ekseni olmayan bir cube'da o kaydırma
+            # **tanımsızdır** — ve modele tanımsız bir seçenek sunmak, onu kullanmaya davettir.
+            #
+            # Kapsam **kapalı**: `yoy`/`mom`. `app/yoy.py`'nin bildiği tek iki mod bunlar;
+            # üçüncü bir değer, motorun sessizce yutacağı bir söz olurdu.
+            props["compare"] = {"type": "string", "enum": ["yoy", "mom"],
+                                "description": "Dönemsel kıyas: yoy=geçen yıla göre, "
+                                               "mom=geçen aya göre. Soru bir KIYAS "
+                                               "istemiyorsa BU ALANI HİÇ YAZMA."}
         if boyutlar:
             props["filters"] = {
                 "type": "array",

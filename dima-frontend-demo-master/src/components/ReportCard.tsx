@@ -638,10 +638,17 @@ export function ReportCard({
             akışına gömülü kalmasın. */}
         {/* FAZ 5.17 — `soz ?? note`: yeni metin varsa o, yoksa bugünkü davranış
             BİREBİR. Geri alma bedava; eski kayıtlar (yalnız `note` taşıyan
-            `payload_json` geçmişi) aynen çalışır. */}
-        {(item.soz ?? item.note) && !item.kpi && !item.eylem_onerisi && (
+            `payload_json` geçmişi) aynen çalışır.
+            🔴 `G6` — `??` DEĞİL `||`. `??` yalnız null/undefined'da düşer: `soz` bir gün
+            BOŞ DİZGE gelirse (`""`) not **sessizce yutulurdu**. Bugün `soz` null geliyor
+            (ölçüldü) yani davranış birebir aynı — ama `G6` bu notu 5 kat sıklaştırdı:
+            `uyum` kısmi-cevap notu 61 → 305 soruda basılıyor ve o not kullanıcının
+            **ne kaybettiğini ve ne yapabileceğini** söyleyen tek metin.
+            *Bugün doğru çalışan bir ifade, yarın yanlış çalışacak biçimde yazılmışsa
+            bugünden yanlıştır.* */}
+        {(item.soz || item.note) && !item.kpi && !item.eylem_onerisi && (
           <div className="mt-3 border-l-2 border-amber-500/50 bg-amber-500/[0.04] py-1.5 pl-3 font-mono text-[12px] leading-snug text-neutral-500">
-            {item.soz ?? item.note}
+            {item.soz || item.note}
           </div>
         )}
         {/* FAZ H — ONAY KARTI. Ajan yazma işini ÇALIŞTIRMAZ, önerir; yazma yalnız bu
@@ -1160,11 +1167,18 @@ export function ReportCard({
           zaman. Tıklama mevcut deterministik /cube yolunu kullanır (LLM yok). */}
       {/* Konuşma cevabında (`contribution` dolu) bu blok GİZLENİR: bulgular cevabın
           GÖVDESİDİR ve yukarıda zengin haliyle duruyor. Burada da göstermek aynı listeyi
-          İKİ KEZ, üstelik ikincisini YANLIŞ BAŞLIKLA ("sonraki adım") sunardı. */}
+          İKİ KEZ, üstelik ikincisini YANLIŞ BAŞLIKLA ("sonraki adım") sunardı.
+          🔴 `G6` — FRAGMENT ZORUNLU. `G2`'de `<DiyalogDurumu>` buraya eklenirken iki
+          kardeş eleman sarmalayıcısız bırakıldı ve dosya **derlenmiyordu** (TS1005).
+          Kusur bir demet boyunca görünmedi çünkü kapı yalnız `pytest` koşuyor; `tsc`
+          bu operasyonda hiç çağrılmamıştı. Kapısı: `test_frontend_derlenir.py`.
+          *Bir dilin derleyicisi koşulmuyorsa, o dilde yazılan her şey denetimsizdir.* */}
       {!item.contribution && onCubeEdit && (
-        <NextStepChips steps={item.next_steps} onCubeEdit={onCubeEdit} />
-        {/* 🔴 G2 — bekleyen yuva. Chip satırının ALTINDA, yeni panel YOK (PK-1). */}
-        <DiyalogDurumu item={item} />
+        <>
+          <NextStepChips steps={item.next_steps} onCubeEdit={onCubeEdit} />
+          {/* 🔴 G2 — bekleyen yuva. Chip satırının ALTINDA, yeni panel YOK (PK-1). */}
+          <DiyalogDurumu item={item} />
+        </>
       )}
 
       <div className="mt-5 flex items-center justify-between">

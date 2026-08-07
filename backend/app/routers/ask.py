@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 import time as _time
 
 from app import donem_capasi as _capa
+from app import kiyas_cebiri
 from app import niyet as _niyet
 from app import turetme as _turetme
 from app import uyum as _uyum
@@ -2860,6 +2861,14 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                             body.question, eksen, adaylar, schema, uyum, k))
                 except Exception:
                     _log.warning("LLM Intent-JSON seçimi başarısız (best-effort)", exc_info=True)
+
+        # 🔴 `G6` — MUTLAK KIYAS. Karar `app/kiyas_cebiri.ayikla`'da (gerekçe orada);
+        # burada kalan yalnız ÇAĞRI ve DÖNÜŞ, çünkü `_kiyas_cevabi` bir kapanıştır ve
+        # gövdesi kopyalanamaz — kopyalansa iki dal zamanla ayrışırdı.
+        if (_ayr := kiyas_cebiri.ayikla(route_hit)) is not None:
+            route_hit = {**route_hit, "cube_query": _ayr[0]}
+            if (_k := _kiyas_cevabi(*_ayr, "Intent-path: mutlak kıyas")) is not None:
+                return _k
 
         if route_hit:
             cq = route_hit["cube_query"]

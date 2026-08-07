@@ -1,22 +1,23 @@
-"""🔴 `G6` — **R11: «anlaşıldı ama İFADE EDİLEMEZ»**.
+"""🔴 `G6` — KIYAS EKSENİ, ve **`R11`'in ÖLÇÜLÜP GERİ ALINMASI**.
 
-## Neden ayrı bir kod
+## Dosya adı bir kararın kaydıdır
 
-`R1` *"kelimeyi bilmiyorum"* der ve geliştiriciyi **kataloğa** yollar.
-`R11` *"biliyorum ama söyleyemiyorum"* der ve **CEBİRE** yollar.
+Bu dosya `R11` (*"anlaşıldı ama ifade edilemez"*) kodu için açıldı. Kod yazıldı, nüfusu
+ölçüldü (**30/408**), makul görünüyordu — ve **kapı çürüttü**:
 
-İkisi aynı koda düşerse `referans` alanının **hedef nüfusu hiç görünmez** — ve bir alanın
-kaç soruyu kurtaracağı, o alan **yazılmadan** ölçülebilmelidir.
+> `test_TANINAN_SORUDA_HAM_KOD_KORUNUYOR`: *"tanınmayan kelime **yoksa** ham kapı kodu
+> **olduğu gibi** kalır. Her reddi R10 yapmak, teşhisi ikinci kez yanlış yapardı."*
 
-## ⚠ Fikstür UYDURULMAZ
+`R11` tam bunu yapıyordu: `R9` diye gerçek bir gerekçe varken onu **örtüp** geliştiriciyi
+cebire yolluyordu — oysa cebir zaten indi (`app/kiyas_cebiri.py`) ve o sorular **başka**
+bir sebepten düşüyordu. `KÖK-9`'un kendi cümlesi: *kusuru gizlemekten daha kötüsü yanlış
+yeri işaret etmektir.*
 
-İlk sürüm elle bir `schema` sözlüğü yazdı ve `TypeError: unhashable type: 'dict'`
-patladı: `cube_router` boyutları **düz ad listesi** bekliyor, benim yazdığım
-`[{"name": ...}]`'ti. Şemanın şekli bir **varsayım** değil, derlenmiş bir **olgudur** —
-`conftest`'in `schema` fikstürü onu gerçek MDL'den verir. *Bir şemayı hatırlamak,
-onu okumaktan her zaman daha pahalıdır.*
+⊙ **Ders:** *bir sayının varlığı, o sayının doğru şeyi saydığının kanıtı değildir.*
+30 vaka gerçekti; **etiketleri** gerçek değildi.
 
-⚠ **Yalnız ölçüm**: davranış değişmez, `route()` yine `None` döner.
+Dosya **silinmedi** (*kapananlar işaretlenir, silinmez* — `MIMARI §10`): adı kararın
+kaydını taşır, içeriği ayakta kalan **kıyas ekseni** kapılarıdır.
 """
 
 from __future__ import annotations
@@ -27,102 +28,75 @@ from app import cube_router as cr
 from app.niyet import coz_soru
 
 
-def test_NIYET_temsil_edilemeyeni_ZATEN_hesapliyor():
-    """🔴 `R11` yeni bir hesap DEĞİL — var olan bir hesabın **adlandırılmasıdır**.
-
-    `KÖK-1 Faz 1`'de yazılan `Niyet.temsil_edilemeyen` bugün `cok_donem`/`kiyas`
-    döndürüyor ama **hiçbir teşhis kodu** onu okumuyordu: sistem temsil edemediği şeyi
-    sayabiliyor, ama o sayı **red gerekçesine** ulaşmıyordu."""
-    n = coz_soru("mart cirosunu şubat ile kıyasla")
-    assert n.temsil_edilemeyen, "Niyet kıyas/çok-dönem eksiğini görmüyor"
+# --- ⊘ GERİ ALINAN KARAR KİLİTLENDİ ------------------------------------------------
 
 
-@pytest.mark.parametrize("soru", [
-    "bu ay ile geçen ayı kıyasla",
-    "borc mart ile nisanı kıyasla",
-])
-def test_R11_anlasilan_ama_ifade_edilemeyen(schema, soru):
-    """Anlaşılan ama ifade edilemeyen sorular `R11` almalı."""
-    if cr.route(cr._norm(soru), schema) is not None:
-        pytest.skip(f"vaka bayat — {soru!r} artık cevaplanıyor")
-    kod = cr.teshis(cr._norm(soru), schema)
-    assert kod == "R11", (
-        f"{soru!r} → {kod}. Beklenen R11: her kelime tanındı, niyet anlaşıldı, "
-        f"eksik olan CEBİR. temsil_edilemeyen={coz_soru(cr._norm(soru)).temsil_edilemeyen}")
+def test_R11_GERI_ALINDI_ve_geri_gelmemeli():
+    """🔴 Teşhis, `route()`'un **gerçekten** hangi dalda durduğunu söyler; bir yüklemin
+    varlığından türetilen kod, o gerçeği örter."""
+    kaynak = (cr.__file__ and open(cr.__file__, encoding="utf-8").read()) or ""
+    assert 'return "R11"' not in kaynak, (
+        "🔴 `R11` geri gelmiş. Ölçüldü ve geri alındı: gerçek gerekçeyi (`R9`, `R1`, …) "
+        "ÖRTÜYORDU. Yeniden eklenecekse önce `test_TANINAN_SORUDA_HAM_KOD_KORUNUYOR`'un "
+        "kuralı karşılanmalı — ham kod tanınan soruda korunur.")
+    assert "R11 DENENDİ ve GERİ ALINDI" in kaynak, "kararın kaydı silinmiş"
 
 
-def test_TANINMAYAN_KELIME_hala_R10(schema):
-    """🔴 Öncelik korunur: tanınmayan kelime varsa teşhis **R10**'dur.
-    `R11` yalnız *"her kelime tanındı ama yine de olmadı"* durumunda çıkar — yoksa
-    katalog eksiği ile cebir eksiği aynı kovaya düşer ve ikisi de görünmez olur."""
+def test_TANINMAYAN_KELIME_R10(schema):
+    """Öncelik değişmedi: tanınmayan kelime varsa teşhis **R10**'dur."""
     q = cr._norm("zxqw plmk asdf")
     cr.route(q, schema)
     assert cr.teshis(q, schema) == "R10"
 
 
-def test_DAVRANIS_DEGISMEDI(schema):
-    """⚠ `R11` **yalnız ölçümdür**. `route()` yine `None` döner, cevap yolu aynı —
-    bir alanın hedef nüfusu, o alan yazılmadan **önce** sayılabilmelidir."""
-    q = cr._norm("bu ay ile geçen ayı kıyasla")
-    assert cr.route(q, schema) is None
+def test_BASARILI_route_TESHIS_URETMEZ(schema):
+    assert cr.route("bu yıl toplam ciro", schema) is not None
+    assert cr.teshis("bu yıl toplam ciro", schema) is None
 
 
-# --- 🔴 ÖLÇÜLEN SINIR: R11 tehlikenin YARISIDIR ------------------------------------
+# --- NİYET NESNESİ -----------------------------------------------------------------
 
 
-@pytest.mark.parametrize("soru", [
-    "mart cirosunu şubat ile kıyasla",
-    "2025 ve 2026 ciro karşılaştır",
+def test_NIYET_temsil_edilemeyeni_HESAPLIYOR():
+    """`KÖK-1 Faz 1`'de yazılan `Niyet.temsil_edilemeyen` kıyas/çok-dönem eksiğini
+    görüyor. ⚠ Ama bu **soruya** bakar, **sorguya** değil: `route()` indirgeme yapsa
+    bile iz hâlâ *"temsil-yok"* yazar. Zararsız (kapı `uyum`'dur ve o cq'yu görür) ama
+    **iz yanıltıcıdır** — `OPERASYON-DURUM.md`'de açık borç olarak yazılı."""
+    assert coz_soru("mart cirosunu şubat ile kıyasla").temsil_edilemeyen
+
+
+# --- 🔴 KIYASIN İKİ AKIBETİ — ikisi de dürüst --------------------------------------
+
+
+@pytest.mark.parametrize("soru,indirgenir", [
+    ("mart cirosunu şubat ile kıyasla", True),            # bitişik ay → `mom`
+    ("ocak ve haziran cirosunu karşılaştır", False),      # 5 ay arayla → indirgenemez
 ])
-def test_SESSIZ_YARIM_R11_DEGILDIR_ve_bu_bir_SINIRDIR(schema, soru):
-    """🔴 **Ölçüldü (10 kıyas sorusu): red 3 · SESSİZ YARIM 5 · temiz 2.**
+def test_KIYASIN_IKI_AKIBETI(schema, soru, indirgenir):
+    """⊙ Ölçüldü (408 kıyas sorusu): red 103 · cevaplandı 305.
 
-    Yani kıyas niyetinin **çoğunluğu reddedilmiyor** — *cevaplanıyor*, ve kıyas
-    **sessizce düşüyor**. `2025 ve 2026 ciro karşılaştır` sorusu bugün **hiç dönem
-    filtresi olmadan** cevaplanıyor: kullanıcı iki yıl adlandırdı, sorgu sıfır yıl taşıdı.
+    `G6` öncesinde o cevapların kıyası **sessizce düşüyordu**: *"mart cirosunu şubat ile
+    kıyasla"* **1 Şubat–31 Mart TOPLAMINI** döndürüyordu. Artık iki akıbet var:
 
-    ⚠ `R11` bunları **görmez ve görmemelidir**: teşhis yalnız `route()` pes ettiğinde
-    hesaplanır. Bu sınıfın sahibi `uyum.denetle`'dir (BEYAN-AÇIK: cevabı öldürmez,
-    **etiketler**). İki kapı iki farklı soruyu yanıtlar:
-
-    | kapı | soru |
-    |---|---|
-    | `R11` | *"anladım ama söyleyemedim — kaç kez?"* |
-    | `uyum` | *"söyledim ama eksik söyledim — kaç kez?"* |
-
-    ⊙ **Katalog genelinde ölçüldü (408 kıyas sorusu):** `R11` **30** · `R10` **73** ·
-    **cevaplandı 305**. Yani kıyas niyetinin **%75'i reddedilmiyor** — asıl kütle burada.
-
-    *Reddedilen bir soru sayılabilir; sessizce yarım cevaplanan bir soru, sayılmadıkça
-    başarı gibi görünür.*
+    | | sonuç | sahibi |
+    |---|---|---|
+    | indirgenebilir | `compare` kurulur, **kıyas gerçekten hesaplanır** | `kiyas_cebiri` |
+    | indirgenemez | ihlal **etiketlenir**, cevap yaşar | `uyum` (BEYAN-AÇIK) |
     """
     from app.uyum import denetle
 
     q = cr._norm(soru)
     hit = cr.route(q, schema)
-    assert hit is not None, f"vaka bayat — {soru!r} artık reddediliyor"
-    assert cr.teshis(q, schema) != "R11", "cevaplanan soru teşhis üretmemeli"
-    isaretler = {i.isaret for i in denetle(soru, hit)}
-    assert isaretler & {"kiyas", "cok_donem"}, (
-        f"{soru!r} sessizce yarım cevaplandı ve HİÇBİR kapı etiketlemedi: {isaretler}")
-
-
-def test_BOS_SEMA_TUZAGINA_dusmez():
-    """Şema okunamayıp `{}` gelirse teşhis **ham koda** düşer (`KÖK-9`'un kendi kapanı).
-    `R11` o tuzağın arkasında durmalı: boş şemada `partial_unknowns` her kelimeyi
-    tanınmaz sayar ve teşhis bir **yankı** üretir, bir bilgi değil."""
-    q = cr._norm("mart cirosunu şubat ile kıyasla")
-    cr.route(q, {})
-    assert cr.teshis(q, {}) != "R11"
-
-
-def test_BASARILI_route_R11_URETMEZ(schema):
-    """Cevaplanan bir soru hiçbir teşhis üretmez — `R11` de dahil."""
-    assert cr.route("bu yıl toplam ciro", schema) is not None
-    assert cr.teshis("bu yıl toplam ciro", schema) is None
-
-
-# --- 🔴 SESSİZLİĞİN KAPANIŞI — A/B ile ölçüldü -------------------------------------
+    if hit is None:
+        pytest.skip("⊘ route reddetti — vaka bayat")
+    ic = hit.get("cube_query") or {}
+    if indirgenir:
+        assert ic.get("compare") in ("mom", "yoy"), (
+            f"🔴 {soru!r} indirgenebilirdi ama kıyas kurulmadı: {ic.get('filters')}")
+        assert not denetle(soru, hit), "kıyas kurulduysa ihlal kalmamalı"
+    else:
+        assert {i.isaret for i in denetle(soru, hit)} & {"kiyas", "cok_donem"}, (
+            f"🔴 {soru!r} indirgenemedi ve ETİKETSİZ gitti")
 
 
 def test_KIYAS_CEVABI_ARTIK_ETIKETSIZ_GITMIYOR(schema):
@@ -137,25 +111,24 @@ def test_KIYAS_CEVABI_ARTIK_ETIKETSIZ_GITMIYOR(schema):
 
     İki kural: (1) `TUR_KIYAS` artık kıyas **fiilini** de görüyor (`kiyas_niyeti`),
     (2) `" ile "` kıyas fiili varken **birliktelik** okunuyor, aralık değil.
-
-    ⚠ Ters yön de ölçüldü: kıyas **istemeyen** 554 cevaplanan soruda **0 yeni etiket** —
-    gerçek aralık (*"ocak ile mart arası ciro"*) dâhil. *Bir kapıyı genişletmenin bedeli,
-    genişlemenin dışında kalanlarda ölçülmeden bilinmez.*
     """
     from app.uyum import denetle
 
-    for soru in ("borc mart ile nisanı kıyasla",
-                 "borc 2025 ile 2026 karşılaştır"):
+    for soru in ("borc mart ile nisanı kıyasla", "borc 2025 ile 2026 karşılaştır"):
         hit = cr.route(cr._norm(soru), schema)
         if hit is None:
             continue
-        assert denetle(soru, hit), f"🔴 {soru!r} kıyassız cevaplandı ve ETİKETSİZ gitti"
+        ic = hit.get("cube_query") or {}
+        assert ic.get("compare") or denetle(soru, hit), (
+            f"🔴 {soru!r} kıyassız cevaplandı ve ETİKETSİZ gitti")
 
 
 def test_GERCEK_ARALIK_ETIKETLENMIYOR(schema):
     """⚠ Genişlemenin sınırı: *"ocak ile mart arası"* bir **aralıktır**, kıyas değil.
-    `" ile "` yalnız kıyas fiili varken birliktelik okunur — yoksa bu kural meşru
-    aralıkları kırmızıya boğar ve *"kullanılamayan kapı kapatılır"*."""
+
+    ⊙ Ters yön ölçüldü: kıyas **istemeyen** 554 cevaplanan soruda **0 yeni etiket**.
+    *Bir kapıyı genişletmenin bedeli, genişlemenin dışında kalanlarda ölçülmeden
+    bilinmez* — ve kullanılamayan bir kapı kapatılır."""
     from app.uyum import denetle
 
     soru = "ocak ile mart arası ciro"
@@ -171,10 +144,11 @@ def test_KIYAS_NIYETI_YENI_SOZLUK_DEGIL():
     """🔴 `ADR-0008` — dile kelime listesiyle yetişilmez. `kiyas_niyeti` yeni bir sözlük
     kurmaz, var olan `_KIYAS_FIIL`'i bir **yüklem** olarak açar. İkinci bir liste,
     `strip_compare` ile bu yüklemin **ayrışması** demekti: sistem bir fiili söker ama
-    saymaz — bugünkü kusurun ta kendisi."""
+    saymaz — düzelttiğimiz kusurun ta kendisi."""
     import inspect
 
     src = inspect.getsource(cr.kiyas_niyeti)
     assert "_KIYAS_FIIL" in src, "kıyas fiilinin sahibi `_KIYAS_FIIL` olmalı"
-    govde = [l for l in src.splitlines() if l.strip() and not l.strip().startswith(("#", '"'))]
+    govde = [l for l in src.splitlines()
+             if l.strip() and not l.strip().startswith(("#", '"'))]
     assert not any('"' in l and "=" in l for l in govde), "ikinci bir sözlük yazılmış"
