@@ -151,7 +151,7 @@ Bunlar `cube_query` alanı değil — ayrı yollar, LLM'in tetikleyebileceği bi
 
 | yetenek | modülü | LLM erişimi |
 |---|---|---|
-| katkı ayrıştırması (*"neden değişti?"*) | `contribution.py` | ⊘ |
+| katkı ayrıştırması (*"neden değişti?"*) | `contribution.py` | ◐ **takipte VAR** (§17.1) · tazede ⊘ |
 | kök-neden kırılımı (drill) | `drill.py` | ⊘ |
 | çapraz-cube KPI | `kpi.py` | ⊘ |
 | gelir tablosu / bilanço | `statements.py` | ⊘ |
@@ -944,6 +944,109 @@ alanına giren ham `\n`). Bu, `curl | jq` ya da herhangi bir katı JSON çözüc
 
 ⚠ **Regresyon kapısı önerisi:** sosyal sınıf kapısına *"istekte `cube_query` varsa sosyal
 sınıf kapalıdır"* şartı. Bir thread'in içinde veda edilmez.
+
+
+---
+
+## 17 · THREAD 8–9 — bir DÜZELTME, iki YENİ KUSUR
+
+### 17.1 · ✅ DÜZELTME: kök-neden analizi ÇALIŞIYOR *(§3.2 kısmen yanlıştı)*
+
+```
+soru : "neden bu kadar fark var"        (T8, 2. tur)
+iz   : Takip: üçüncü sınıf → cevap üstünde konuşma (neden, LLM'siz)
+note : "Değişimi en çok sürükleyen segmentler aşağıda — her biri tıklanınca
+        tek başına açılır ve kendi kanıtını üretir."
+süre : 3 018 ms · 0 LLM
+```
+
+🔴 **§3.2'nin *"`contribution.py` → LLM erişimi ⊘"* satırı DÜZELTİLİR:** katkı
+ayrıştırması **takip yolundan** erişilebiliyor (`followup.py`'nin `NEDEN` sınıfı) ve
+**0 LLM** ile çalışıyor. Erişilemeyen şey **taze** soruda tetiklenmesi.
+
+### 17.2 · 🔴🔴 VE BU, `peki` KUSURUNU KESİNLEŞTİRİYOR
+
+Aynı niyet, iki thread, iki farklı akıbet:
+
+| soru | `source` | cevap |
+|---|---|---|
+| `neden bu kadar fark var` | ✅ takip/`NEDEN` | **katkı ayrıştırması** — doğru |
+| `peki bu neden düşük` | 🔴 `meta` | **"Görüşürüz!"** |
+
+> 🔴 Tek fark **`peki`**. Sistem *"neden?"* sorusunu **cevaplayabiliyor** — ama başına
+> bir bağlaç geldiğinde onu **vedaya** çeviriyor.
+
+*Bir niyeti cevaplayabilen sistemin, aynı niyeti bir kelime yüzünden kaybetmesi, kapsam
+sorunu değil sınıflandırma sorunudur.*
+
+### 17.3 · 🔴 KUSUR C — netleştirme YANLIŞ ÖLÇÜ öneriyor
+
+```
+soru : "personel verimliliklerini kıyasla"
+iz   : Intent-path: dönem belirsiz → netleştirme (LLM'siz)
+note : "toplam agirlik kg çıkarabilirim — hangi dönem için?"
+süre : 21 403 ms
+```
+
+🔴 Kullanıcı **personel verimliliği** sordu; sistem **`toplam ağırlık kg`** öneriyor —
+alakasız bir ölçü. Ve *"hangi dönem için?"* diye soruyor, yani **yanlış ölçüyü
+varsayılmış kabul edip** üstüne dönem istiyor.
+
+⊙ Daha önce ölçülmüştü: bu soruda sistem `ort_oee`'yi eşleştiriyor ve `personel`'i
+bilinmeyen sayıyor. Canlıda **üçüncü** bir ölçü öneriliyor — yani netleştirmenin ölçü
+seçimi ile `route()`'un eşleştirmesi **ayrışmış** durumda.
+
+⚠ Ve 21,4 sn: netleştirme *"LLM'siz"* diyor, ama süre bir LLM çağrısına işaret ediyor
+(muhtemelen önce Intent-JSON denendi, sonra netleştirmeye düşüldü).
+
+### 17.4 · 🔴 KUSUR D — YETENEK SINIRI ATLANIYOR *(tahmin sorusu)*
+
+```
+soru : "gelecek ay ciro tahmini"
+iz   : VQR eşleşme bulundu: dönem belirsiz → netleştirme (LLM'siz)
+note : "toplam ciro çıkarabilirim — hangi dönem için?"
+```
+
+🔴 Kullanıcı **tahmin** istedi. Sistemde tahmin **yok** ve `app/yetenek.py` bunun için
+bir sınır beyanı taşıyor (*"forecast yok"*). Ama beyan **hiç konuşmadı**: netleştirme
+önce fırladı ve *"hangi dönem için?"* diye sordu.
+
+> 🔴 Kullanıcı **gelecek** sordu, sistem **geçmiş** için dönem soruyor. Ve bir dönem
+> söylerse, yapamadığı şeyi yapmış gibi bir sayı dönecek.
+
+⚠ Bu, denetimin *"netleştirme çıkışları yetenek kapısını atlatıyor"* bulgusunun **canlı
+doğrulaması**. Sıra kusuru: `yetenek.kapsam_disi` `ask.py:3690`'da — netleştirme
+dallarının **çok sonrasında**.
+
+*Bir sınırı bilmek, onu doğru anda söylemekten farklıdır; geç söylenen sınır,
+söylenmemiş sınırdır.*
+
+### 17.5 · ⚠ KOŞUM NOTU — token 15 dakikada doluyor
+
+Thread 8–10'un ilk denemesi **5–8 ms**'de boş döndü; ham yanıt:
+`HTTP 401 {"detail":"Geçersiz veya süresi dolmuş token"}`.
+
+🔴 `access_ttl_seconds = 15 * 60`. Uzun koşumlarda **token yenilenmeli**, yoksa boş
+`source=None` satırları **bulgu sanılır**. Runbook'a girdi (§15.1).
+
+```bash
+# her ~10 dakikada bir, ya da HTTP 401 görünce
+TK=$(curl -s -X POST localhost:8001/auth/login -H 'Content-Type: application/json' \
+  -d '{"email":"demo-boyahane@usedima.com","password":"dima-demo-1234"}' \
+  | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
+```
+
+⚠ Ve `ask()` kabuğu **HTTP kodunu da basmalı** (`-w "%{http_code}"`) — aksi hâlde 401
+sessizce *"cevap yok"* gibi okunur.
+
+### 17.6 · Kabul tablosuna eklenenler
+
+| # | soru | bugün | beklenen |
+|---|---|---|---|
+| 8·T1 | `ocak ve haziran cirosunu karşılaştır` | 🟡 `cube` · `eksik_niyet=['kiyas']` · 1 642 ms | `ayrik_aylar` ile **iki ayrı seri** |
+| 8·T2 | `neden bu kadar fark var` | ✅ katkı ayrıştırması · 0 LLM | korunmalı — **regresyon kapısı** |
+| 9·T1 | `personel verimliliklerini kıyasla` | 🔴 *"toplam agirlik kg çıkarabilirim"* | ya doğru ölçü ya **sınır beyanı** |
+| 9·T2 | `gelecek ay ciro tahmini` | 🔴 *"hangi dönem için?"* | 🔴 **yetenek sınırı**: *"tahmin yapamıyorum"* |
 
 
 ---
