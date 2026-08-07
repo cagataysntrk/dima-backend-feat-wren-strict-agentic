@@ -292,8 +292,25 @@ def _coz_soru(soru: str) -> Niyet:
     if ustunluk or ustunluk_var:
         turler.add(TUR_USTUNLUK)
 
+    # 🔴 `Ö10` — *"…-e **göre**"* HER ZAMAN KIRILIM DEĞİL. Ölçülen kusur:
+    # *"şubatta ciro **ocağa göre** nasıl değişti"* → `tür=kirilim+trend`, ve `uyum`
+    # kullanıcıya *«bir kırılım istedin ama boyut taşıyamadım»* diyordu. Kullanıcı kırılım
+    # **istemedi**; `gore` bir kıyas edatıydı.
+    #
+    # 🔴 Yanlış bir beyan, sessizlikten kötüdür: sistem kullanıcıya **onun söylemediği bir
+    # şeyi söylediğini** söylüyor — ve bu, güvenin en hızlı tükendiği yerdir.
+    #
+    # ⚠ Ayrım `cube_router.gore_donem_mi`'de ve **yapısal**: `gore`'den önce çözülebilir
+    # bir dönem ifadesi varsa o `gore` kırılım işareti değildir. Ölçüt `date_filters`'ın
+    # kendisi — ikinci bir dönem tanıyıcısı yazılmaz.
+    #
+    # ⚠ Kapsam **bilinçli olarak dar**: yalnız NİYET tarafı (yani beyan). `route()`'un
+    # kendi `_BREAKDOWN_HINTS` korumaları (`:994` · `:1328` · `:3578`) dokunulmadan
+    # bırakıldı — onlar sessiz-yanlış kapılarıdır ve kapsamları korpusla ölçülür.
+    # *Bir ayrımı önce beyanda düzeltmek, onu yönlendirmede düzeltmekten ucuzdur.*
     kirilim_istendi = bool(_guvenli(
-        lambda: cr._herhangi(q, cr._BREAKDOWN_HINTS), False))
+        lambda: cr._herhangi(q, cr._BREAKDOWN_HINTS)
+        and not cr.gore_donem_mi(q), False))
     dislama = bool(_guvenli(
         lambda: cr._herhangi(q, cr._EXCLUDE_MARKERS), False))
     if kirilim_istendi:

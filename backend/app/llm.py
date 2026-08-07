@@ -362,13 +362,41 @@ def _cube_select_system(catalog: str) -> str:
         '"timeDimensions":[{"dimension":"<zaman>","granularity":"year|quarter|month|week|day"}],'
         '"filters":[{"dimension":"<boyut>","operator":"eq","value":"<değer>"}]}\n'
         "- SADECE yukarıda listelenen ölçü/boyut adlarını kullan.\n"
-        '- Soru tek bir cube ile yanıtlanamıyorsa (liste, çapraz-cube, karmaşık, tanımsız) '
-        'KESİNLİKLE {"cube":null} döndür.\n'
+        # 🔴 `AJ3.4` — **KARŞI AĞIRLIK.** Ölçüldü: bu prompt modele reddetmeyi ÜÇ kez
+        # söylüyordu (metinde *"KESİNLİKLE null"*, şemada red **ilk** dal, araç
+        # açıklamasında bir kez daha) ve yorumlamayı **bir kez bile** söylemiyordu.
+        # Canlı sonuç: **9/9 `{"cube":null}`** — model yanlış anlamadı, hiç anlamaya
+        # ÇALIŞMADI. *Bir modele üç kez hayır demeyi öğretip bir kez evet demeyi
+        # öğretmemek, onu susturmaktır.*
+        "- 🔴 ASIL İŞİN: günlük Türkçeyi bu kataloğun diline ÇEVİRMEK. Kullanıcı ölçü "
+        "adı bilmez — *«işler nasıl»*, *«ne kadar kaybettik»*, *«iyi miyiz»* der. "
+        "Katalogda makul bir karşılık VARSA onu seç; kelimesi kelimesine eşleşme arama.\n"
+        '- {"cube":null} bir KAÇIŞ değil, bir KARARDIR: soru gerçekten tek bir cube ile '
+        "yanıtlanamıyorsa (birden çok konunun ölçüsü, tanımsız bir kavram, katalogda "
+        "karşılığı olmayan bir istek) onu seç. Emin olamadığın için değil, "
+        "**yanıtlanamadığı için**.\n"
         "- FİLTRE UYDURMA: filters'ı yalnız kullanıcı bir değeri AÇIKÇA yazdıysa kullan — "
         "katalogdaki değer listeleri seçenek dökümüdür, varsayılan filtre değildir.\n"
-        "- TARİH filtresi ASLA yazma (sistem hesaplar); timeDimensions'ı yalnız kullanıcı "
-        "zaman kovası istediyse (aylık/haftalık/günlük/trend) ekle.\n"
-        "- Sıralama/limit ekleme; yalnız ölçü + boyut + zaman + filtre seç."
+        # 🔴 `AJ3.3` — **İFADE BOŞLUĞU.** *"Tarih yazma"* doğru bir kuraldı ama yarımdı:
+        # dönemi yazacak bir ALAN yoktu. Model *"geçen çeyrek"*i hiçbir yere koyamıyordu,
+        # tutarlı tek davranışı onu düşürmek ya da tüm soruyu reddetmekti. Takip yolunda
+        # (`_cube_refine_user`) bu **çözülmüş** bir problemdi — tasarım oradan alındı.
+        "- TARİH HESAPLAMA (sistem yapar) — ama dönemi SÖYLE: sorudaki dönem ifadesini "
+        'AYNEN `period_expr` alanına kopyala (*«geçen çeyrek»*, *«yılbaşından bugüne»*). '
+        "Yoksa null bırak. `filters` içine tarih YAZMA.\n"
+        "- timeDimensions'ı yalnız kullanıcı zaman KOVASI istediyse ekle "
+        "(aylık/haftalık/günlük/trend) — bir dönem ifadesi kova demek değildir.\n"
+        "- Sıralama/limit ekleme; yalnız ölçü + boyut + zaman + filtre seç.\n"
+        # 🔴 `AJ3.5` — ÖRNEKLER. Ölçüldü: dar düzenleme yapan `refine_cube` prompt'unda
+        # **4 örnek** vardı, doğal dili yorumlayan bu prompt'ta **0**. Zor işi yapana
+        # örnek verilmemişti.
+        "\nÖrnekler (biçim için — cube/ölçü adları YUKARIDAKİ katalogdan gelir):\n"
+        '- «geçen çeyrek nasıl gidiyoruz» → ilgili özet ölçü + '
+        '"period_expr":"geçen çeyrek"\n'
+        '- «hat bazında verimlilik» → verim ölçüsü + "dimensions":["hat"]\n'
+        '- «aylık ciro trendi» → ciro ölçüsü + timeDimensions granularity="month"\n'
+        '- «hem cironun hem personel maliyetinin ilişkisi» → {"cube":null} '
+        "(iki ayrı konu + ilişki hesabı)"
     )
 
 

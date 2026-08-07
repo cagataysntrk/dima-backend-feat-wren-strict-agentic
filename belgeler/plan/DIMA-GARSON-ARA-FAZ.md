@@ -2798,6 +2798,78 @@ model boyut **adlarını** zaten görüyor.
 
 ---
 
+## §AJ3 · LLM NİYETİ NEDEN SEÇEMİYOR — üç kusur, bir ÖLÇÜM TUZAĞI, bir çürütülen öneri
+
+> **Kaynak:** canlı denetim ajanı (iki tur, ikincisi **kendi önerisini çürüterek**).
+> Her sayı yerinde doğrulandı; ikisi **düzeltildi**.
+
+### Önce: merdiven darboğaz DEĞİL
+
+İlk tur *"netleştirme/sınır dalları LLM'i kesiyor"* demişti. **Ölçüldü, öyle değil**
+(42 gerçek soru): `route()` çözdü **%0** · netleştirme kesti **%0** · yetenek sınırı
+kesti **%2,4** · **LLM'e gidiyor %97,6**. Ve `netlestirme_onceligi` bugün `off`.
+
+🔴 Yani soru LLM'e **ulaşıyor** ve LLM **reddediyor** (canlı: 9/9 `{"cube":null}`).
+*Elimizde "LLM yanlış anlıyor" diye bir kanıt yok; elimizdeki kanıt "LLM'in konuşmasına
+izin verilmiyor".*
+
+### 🔴 ÇÜRÜTÜLEN ÖNERİ — ve neden kaydı değerli
+
+İkinci tur *"sistemin kendi anladığını da gönder"* diye öneri getirdi (`route()`'un
+kısmi tahmini: *"randiman = ort_oee, takıldığım kelime `kotu`"*). Sonra **kendi ölçtü**:
+
+| | vaka | oran |
+|---|---|---|
+| kısmi tahmin **hiç yok** | 31 | **%74** |
+| tahmin var, yer gerçeği başka cube diyor | 9 | %21 |
+| 🔴 tahmin var ve **YANLIŞ** | 2 | **%18'i (11 içinde)** |
+
+`ne kadar fire verdik` → sistem `oee.toplam_fire_kg` diyor, doğrusu `parti`. Bunu modele
+*"ben şunu anladım"* diye vermek, onu **ölçülmüş bir hataya çapalamak** olurdu.
+
+> *Bir tahmini paylaşmak, onu doğrulamak değil yaymaktır.*
+
+⚠ Ayrım net: **tahmin** gönderilmez, **olgu** gönderilir. Konuşma geçmişi · önceki
+`cube_query` · diyalog belleği tahmin değildir ve **bugün hiç gitmiyor** —
+`select_cube` çağrısı `(system=katalog, user=ham soru)`'dan ibaret, yani çok turlu bir
+konuşmada model **her turda sıfırdan** başlıyor.
+
+### 🔴🔴 EN AĞIR UYARI: ölçüm korpusu bu mimarinin TERSİNİ kodluyor
+
+42 vakanın kabul ölçütleri: `netlestirme` **38** · `durust_ret` **19** · `dogru` **22** —
+ve 🔴 **20/42'sinde cevap vermek YASAK**:
+
+```
+"işler nasıl gidiyor"        → kabul=[netlestirme, durust_ret]
+                               yasak="rastgele ölçü seçip kendinden emin sayı vermek"
+"bu ay iyi miyiz kötü müyüz" → yasak="iyi/kötü yargısını bir eşik uydurarak vermek"
+```
+
+🔴 **Mimariyi *"LLM niyeti seçsin"* yönünde değiştirirsen, korpus her iyileşmeyi
+GERİLEME diye raporlar.** Bu depoda tam bu sınıftan bir olay yaşandı (`gitas` düştü,
+doğruluk **yükseldi**). Karar verilmeden **önce** kapatılması gereken şey budur.
+
+### ADIMLAR
+
+| # | Adım | Durum |
+|---|---|---|
+| **AJ3.1** ✅ | 🔴 **Oy paydası** — `{cube:null}` oyları paydadan düşüyordu: 1 cevap + 2 *"bilmiyorum"* → uyum **1,0**. *Şüphe en yüksekken sistem en emin görünüyordu*, ve `MIMARI` bunu açıkça yasaklıyor (*"kalibre edilmemiş sayı bir güven değil bir süstür"*) | ✅ Mekanizma indi, bayrak **`off`** — eşik aynı orandan geçiyor, kapsam bedeli **ölçülemez** (`eval --slice llm` 4 vaka). *Ölçülemeyen bir takası varsayılan yapmak, kullanıcı adına karar vermektir* |
+| **AJ3.2** ✅ | 🔴 **YTD sessiz-yanlışı** — *"yılbaşından bugüne"* → `gte 2026-08-07` (**bugünden İLERİYE**). `bugune` çekimi `bugun` kuralına takılıyordu; rozet `◆ CUBE`, güven yüksek, sayı **yanlış** | ✅ `mali_takvim.yil_basi` + `lte bugün`. Yeni sözlük YOK — var olan sahip **bağlandı** |
+| **AJ3.3** 🔴 | **İfade boşluğu** — taze yolda dönem yazılacak **alan yok** (`period_expr` yalnız takip yolunda). Model *"geçen çeyrek"*i hiçbir yere koyamıyor; tutarlı tek davranışı dönemi düşürmek ya da `{cube:null}` | ⊘ Kazancı **bugünkü aletlerle ölçülemez** |
+| **AJ3.4** 🔴 | **Red yanlılığı** — prompt *"karmaşıksa **KESİNLİKLE** null"* diyor; *"yorumlamak senin işin"* diyen tek satır yok, şemada red **ilk** dal. Model üç kez reddetmeye davet ediliyor, bir kez bile yorumlamaya değil | ⊘ aynı |
+| **AJ3.5** 🔴 | **Sıfır örnek** — `refine_cube`'de 4 örnek var, `select_cube`'de **0**. Dar düzenleme yapana örnek verilmiş, doğal dili yorumlayana verilmemiş | ⊘ aynı |
+| **AJ3.6** 🔴 | **İki red aynı koda düşüyor** — `cq is None` hem *"model reddetti"* hem *"model uydurdu, beyaz liste düşürdü"* demek. Hangisinin kaç kez olduğu **bilinmiyor** → 3.3–3.5'in hangisinin işe yaradığı **ölçülemez** | ⊘ **3.3–3.5'in ön koşulu** |
+| **AJ3.7** 🔴 | **Olgu devri** — konuşma geçmişi · önceki `cube_query` · diyalog belleği `select_cube`'e **hiç** gitmiyor. Bunlar tahmin değil **olgu**, çapa riski yok | ⊘ |
+| **AJ3.8** 🔴🔴 | **ÖLÇÜM TUZAĞI** — korpusun 20/42 vakasında cevap vermek **yasak**. Mimari değişirse korpus iyileşmeyi **gerileme** sayar | ⊘ **Hepsinin üstünde duran ön koşul** |
+
+⚠ `AJ3.3…3.8`'in ortak engeli tektir ve bu belgede üçüncü kez yazılıyor (`G3.2` · `§AJ2` ·
+burada): **`eval --slice llm` 4 vaka**, `nl_corpus` tanımı gereği `rule` sağlayıcıyla
+koşuyor. Bu maddeleri **uygulamak kolay, doğru olduğunu göstermek imkânsız.**
+
+*Bir düzeltmeyi ölçemeden uygulamak, kusurun yerini değiştirmenin pahalı bir biçimidir.*
+
+---
+
 ## KAPANIŞ — BU FAZIN TEK CÜMLESİ
 
 > Mutfak, **dünyanın en katı ucunda** kuruldu: on üründen dokuzunun taklit etmeye çalıştığı

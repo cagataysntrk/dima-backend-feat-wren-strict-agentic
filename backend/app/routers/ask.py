@@ -774,14 +774,42 @@ def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
         c = one(0)
         return c, (1.0 if c else 0.0), None, ([c] if c else [])
     with cf.ThreadPoolExecutor(max_workers=k) as ex:
-        cands = [c for c in ex.map(one, range(k)) if c]
+        oylar = list(ex.map(one, range(k)))
+    cands = [c for c in oylar if c]
     if not cands:
         return None, 0.0, None, []
     votes: dict[str, list[dict]] = {}
     for c in cands:
         votes.setdefault(_canon_cq(c), []).append(c)
     best = max(votes.values(), key=len)
-    agreement = len(best) / len(cands)
+    # 🔴 **PAYDA ÇEKİMSERLERİ DE SAYAR — ve eskiden saymıyordu.**
+    #
+    # Eski hesap `len(best) / len(cands)` idi ve `cands` **`{cube:null}` oylarını
+    # eliyordu**. Sonuç: 3 çağrının 1'i cevap, 2'si *"bilmiyorum"* ise uyum **1,0**
+    # çıkıyordu. Yani **şüphenin en yüksek olduğu durum, sistemin en emin göründüğü
+    # durumdu** — ve `MIMARI`'nin açık kararı bunu yasaklıyor: *"kalibre edilmediği
+    # sürece o sayı bir güven değil bir SÜSTÜR."*
+    #
+    # ⚠ Çekimser bir **bilgi**dir, gürültü değil: `{cube:null}` *"bu soru tek bir cube
+    # ile yanıtlanamaz"* demektir. Onu paydadan düşürmek, hayır oylarını saymadan
+    # oy birliği ilan etmektir.
+    #
+    # 🔴 Bayrağa bağlı (`KURAL B`) çünkü karar eşiği de bu orandan geçiyor (`>= 2/3`):
+    # payda büyüyünce bazı cevaplar netleştirmeye düşer. Yön **doğru** (tahmin yerine
+    # soru — kullanıcının açık tercihi) ama kapsam bedeli **bu koşumda ölçülemez**:
+    # `nl_corpus` tanımı gereği `rule` sağlayıcıyla koşuyor, `eval --slice llm` 4 vaka.
+    # *Ölçülemeyen bir takası varsayılan yapmak, kullanıcı adına karar vermektir.*
+    # ⚠ **İmza en dar kapsama göre**: bu fonksiyon `principal` almıyor ve almamalı da —
+    # bir oylama hesabı kimlik bilmez. Bayrak **global** kapsamda çözülür. Bu turda aynı
+    # tuzağa bir kez düşüldü (`katalog_metni` zorunlu `settings` istedi, iki çağıranda o
+    # isim yoktu ve `NameError` yutuldu); ders **burada uygulandı**.
+    from app.features import resolve_for as _rf4
+
+    try:
+        _tam_payda = "oylama_paydasi" in _rf4(get_settings(), None)
+    except Exception:                                  # noqa: BLE001 — oylama düşmez
+        _tam_payda = False
+    agreement = len(best) / (len(oylar) if _tam_payda else len(cands))
     if len(votes) == 1 or agreement >= 2 / 3:
         return best[0], agreement, None, [v[0] for v in votes.values()]
     distinct_cqs = [v[0] for v in votes.values()]
@@ -2925,6 +2953,14 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     parsed, uyum, eksen, adaylar = _select_consistent(
                         llm_probe, _q_llm, catalog_text + _ent_kural, cube_index, k, _sema)
                     parsed = varlik.geri_koy(parsed, _ent)
+                    # 🔴 `AJ3.3` — dönem ifadesi **taze yolda da** çözülür ve çözücü
+                    # takip yolunun **aynısıdır** (`_resolve_period` → `date_filters`).
+                    # İkinci bir çözücü yazmak, aynı ifadenin iki farklı tarihe çözülmesi
+                    # demekti. ⚠ Alan sorgudan **çıkarılır**: o bir niyet taşıyıcısıdır,
+                    # bir sorgu alanı değil — `cube_sql` onu tanımaz.
+                    if parsed and parsed.get("period_expr"):
+                        _pe = parsed.pop("period_expr")
+                        parsed, _ = _resolve_period(None, parsed, _pe, q_norm)
                     if parsed:
                         route_hit = {"cube_query": parsed, "order": None, "limit": None}
                         intent_source = "cube+llm"

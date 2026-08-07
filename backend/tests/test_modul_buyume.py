@@ -82,6 +82,8 @@ TABAN_CUBE_ROUTER_KOD = 1664  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("AJ3.3/donem-ifadesi", 2,
+     "🔴 **İFADE BOŞLUĞU — model dönemi hiçbir yere KOYAMIYORDU.** Prompt *«tarih yazma (sistem hesaplar)»* diyordu ve dönemi yazacak bir **alan yoktu**; tutarlı tek davranışı dönemi düşürmek ya da tüm soruyu reddetmekti (canlı: **9/9 `{cube:null}`**). ⚠ **TAŞINAMAZ:** çözüm `_resolve_period`'ün işi ve o **zaten var** (takip yolu); burada kalan yalnız **çağrı** ve alanın sorgudan çıkarılması. İkinci bir çözücü yazmak, aynı ifadenin iki farklı tarihe çözülmesi demekti. 🔴 Tasarım **icat edilmedi**, takip yolundan alındı (`period_expr`) — orada ölçülmüş ve çalışıyor."),
     ("katalog-sozlugu/tek-cozum", 2,
      "🔴 `catalog_text` **dört** çağrı yerinde üretiliyor (planlayıcı · `llm.select_cube` · "
      "Intent-JSON · `refine_cube`) ve dördü de `katalog_metni.metin_ve_indeks`'ten geçiyor. "
@@ -278,6 +280,38 @@ MUAFIYET_ASK_KOD = [
                       "dürüst olmayan bir mesajı SATIN ALMAZ"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("Ö10/gore-ayrimi", 18,
+     "🔴 **KULLANICININ KENDİ VAKASI.** *«şubatta ciro ocağa göre nasıl değişti»* → "
+     "`tür=**kirilim**+trend`, cevap *«şubat toplamı»*, ve `uyum` kullanıcıya *«bir kırılım "
+     "istedin ama boyut taşıyamadım»* diyordu. Kullanıcı kırılım **istemedi**; `gore` bir "
+     "kıyas edatıydı. *Yanlış bir beyan, sessizlikten kötüdür: sistem kullanıcıya onun "
+     "söylemediği bir şeyi söylediğini söylüyor.* "
+     "Δ iki kusuru birden kapatıyor: (a) `gore_donem_mi` — `gore`'den önce **adlandırılmış** "
+     "bir dönem varsa o `gore` kırılım işareti değildir; (b) ünsüz yumuşaması — `ocağa` hiç "
+     "tanınmıyordu (`ocak`+ünlü → `k`→`ğ`). "
+     "⚠ **TAŞINAMAZ:** ölçüt `date_filters`'ın **kendisidir** ve o bu dosyada; bir modüle "
+     "çıkarmak ikinci bir dönem tanıyıcısı doğururdu (`KAT-1`). Ve `_MONTH_ALT` zaten "
+     "burada — ay adlarının ikinci bir kopyası, bir ayın iki numaraya çözülmesi demekti. "
+     "🔴 Kapsam `Ö10`'un **kendi sözüyle** sınırlı (**ay adı**, göreli ifade değil): "
+     "*«son N ay'a göre»* bu depoyu **üç kez** ısırdı ve kapı onu dışarıda tutuyor. "
+     "*Bir ayrımı, ayrımın yapıldığı belgeden daha geniş kurmak düzeltme değil kumardır.*"),
+    ("AJ3.3/period-expr-beyaz-liste", 2,
+     "🔴 Dönem ifadesi **taşınır, çözülmez**. Beyaz listeden geçmezse alan **düşerdi** ve "
+     "model dönemi söylese bile sistem duymazdı — `compare`'ın başına gelen şeyin aynısı "
+     "(`dashboards.py` onu elle geri eklemek zorunda kalmıştı). "
+     "⚠ **TAŞINAMAZ:** beyaz liste `parse_cube_query`'nin **kendisidir**. "
+     "*Bir alanı düşürmek, onu hiç istememekle aynı sonucu verir.*"),
+    ("YTD/sessiz-yanlis", 6,
+     "🔴 **ÖLÇÜLEN SESSİZ-YANLIŞ.** *«yılbaşından bugüne hasılat»* → `gte 2026-08-07`: "
+     "`bugune` çekimi `_current_period_filter`'ın `bugun` kuralına takılıyor ve *«bugün ve "
+     "sonrası»* filtresi kuruluyordu. Kullanıcı **yıl başından bugüne** sorup **bugünden "
+     "ileriye** bakan bir sayı alıyordu — rozet `◆ CUBE`, güven yüksek, sayı **yanlış**. "
+     "⚠ **TAŞINAMAZ:** kural `date_filters`'ın **sırasında** durmak zorunda — "
+     "`_current_period_filter`'dan önce, `_prev_period_filters`'tan sonra. Bir modüle "
+     "çıkarmak, sırayı iki dosyaya bölmek olurdu ve o sıra kuralın **kendisidir**. "
+     "🔴 Yeni sözlük YAZILMADI: *«yıl başı»*nın sahibi `app/mali_takvim.py` ve `yoy.compute` "
+     "YTD'yi tam böyle kuruyor — burada yalnız bir **bağ** var. `ADR-0008` sözlük icat "
+     "etmeyi yasaklar, sahibini çağırmayı değil."),
     ("G6.3/referans-ekseni", 16,
      "🔴 **KIYAS BİR MOD KODU DEĞİL, İKİ ADLANDIRILMIŞ UÇ.** `compare` iki değerlik bir "
      "enum'dur (`yoy`/`mom`) — motor için doğru soyutlama, **kullanıcı için değil**. "

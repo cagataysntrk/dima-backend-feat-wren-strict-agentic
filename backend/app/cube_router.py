@@ -162,7 +162,10 @@ def _quarter_period_filters(q: str, time_dim: str) -> list[dict] | None:
     ]
 
 
-_MONTHS = {"ocak": 1, "subat": 2, "mart": 3, "nisan": 4, "mayis": 5, "haziran": 6,
+#: ⚠ `ocag`/`aralig` yumuşamış kökleri **aynı sözlükte**: ikinci bir eşleme tablosu,
+#: bir gün bir ayın iki farklı numaraya çözülmesi demekti (`KAT-1`).
+_MONTHS = {"ocak": 1, "ocag": 1, "aralig": 12,
+           "subat": 2, "mart": 3, "nisan": 4, "mayis": 5, "haziran": 6,
            "temmuz": 7, "agustos": 8, "eylul": 9, "ekim": 10, "kasim": 11, "aralik": 12}
 
 
@@ -381,7 +384,19 @@ def _month_range_filters(q: str, time_dim: str) -> list[dict] | None:
     ]
 
 
-_MONTH_ALT = "ocak|subat|mart|nisan|mayis|haziran|temmuz|agustos|eylul|ekim|kasim|aralik"
+#: 🔴 **ÜNSÜZ YUMUŞAMASI — ölçülen kusur.** *"şubatta ciro **ocağa** göre nasıl değişti"*
+#: sorusunda `ocağa` **hiç tanınmıyordu**: `ocak` + ünlüyle başlayan ek → `k`→`ğ`
+#: (`oca**ğ**a`), ve `ocak\w*` bunu yakalamaz. Sonuç: iki dönemli bir kıyas sorusunda
+#: sistem **tek dönem** görüyor ve *"şubat toplamı"* dönüyordu.
+#:
+#: ⚠ Yeni sözlük DEĞİL, bir **kural**: `k` ile biten ay adları (`ocak` · `aralik`) ek
+#: aldığında yumuşar. Kural `app/ek.py`'nin (G7) belgelediği ünsüz yumuşamasının **ters
+#: yönü** — o üretir, bu **söker**. `ADR-0008` sözlük icat etmeyi yasaklar; bir çekim
+#: kuralını uygulamayı değil.
+#:
+#: *Bir dili kelime listesiyle kovalamak yasaktır; kuralını yazmak zorunluluktur.*
+_MONTH_ALT = ("oca[kğ]|subat|mart|nisan|mayis|haziran|temmuz|agustos|eylul|ekim|kasim|"
+              "arali[kğ]")
 # "1 ocak 31 mart arası", "ocak - mart arası", "ocak ile haziran arasında"
 _RANGE_RE = re.compile(
     rf"(?:(\d{{1,2}})\s+)?({_MONTH_ALT})(?:\s+(20\d{{2}}))?"
@@ -416,6 +431,20 @@ def _explicit_range_filters(q: str, time_dim: str) -> list[dict] | None:
 _OPEN_START_RE = re.compile(
     rf"(?:(\d{{1,2}})\s+)?({_MONTH_ALT})\w*(?:\s+(20\d{{2}})\S*)?\s+(?:itibaren|beri|baslay\w*)"
 )
+#: 🔴 **YTD İFADESİ — ölçülen SESSİZ-YANLIŞ.** *"yılbaşından bugüne hasılat"* için
+#: `date_filters` **`gte 2026-08-07`** üretiyordu: `bugune` çekimi `_current_period_filter`'ın
+#: `bugun` kuralına takılıyor ve *"bugün ve sonrası"* filtresi kuruluyordu. Yani kullanıcı
+#: **yıl başından bugüne** sorup **bugünden ileriye** bakan bir sayı alıyordu — ve o sayı
+#: neredeyse her zaman **boş** olduğu için *"veri yok"* gibi okunuyordu.
+#:
+#: ⚠ Yeni bir sözlük DEĞİL: *"yıl başı"* kavramının sahibi zaten `app/mali_takvim.py`
+#: (`yoy.compute` de YTD'yi tam böyle kuruyor). Burada yapılan, var olan sahibi bir ifadeye
+#: **bağlamaktır** — `ADR-0008`'in yasakladığı şey sözlük icat etmektir, sahibi çağırmak değil.
+#:
+#: 🔴 Ve `lte bugün` **zorunlu**: yalnız `gte` koysaydık gelecek tarihli kayıtlar
+#: (bütçe/hedef/planlanan sevkiyat) sessizce toplama girerdi.
+_YTD_RE = re.compile(r"\byil\s?bas[iı]\w*\b.{0,20}?\b(?:bugune|simdiye|su\s?ana)\b")
+
 _OPEN_END_RE = re.compile(
     rf"(?:(\d{{1,2}})\s+)?({_MONTH_ALT})\w*(?:\s+(20\d{{2}})\S*)?\s+(?:kadar|dek)"
 )
@@ -503,6 +532,13 @@ def date_filters(q: str, time_dim: str = "tarih") -> list[dict]:
     opn = _open_range_filters(q, time_dim)  # "1 marttan itibaren" / "15 nisana kadar"
     if opn:
         return opn
+    if _YTD_RE.search(q):
+        # 🔴 YTD — *"yılbaşından bugüne"*. `_current_period_filter`'dan **önce** durmak
+        # zorunda: orada `bugune` çekimi `bugun` kuralına takılıp aralığı TERS çeviriyor.
+        _bg = date.today()
+        return [{"dimension": time_dim, "operator": "gte",
+                 "value": mali_takvim.yil_basi(_bg).isoformat()},
+                {"dimension": time_dim, "operator": "lte", "value": _bg.isoformat()}]
     prev = _prev_period_filters(q, time_dim)  # "geçen ay" / "bir önceki yıl" / "dün"
     if prev:
         return prev
@@ -1491,8 +1527,77 @@ _KIYAS_FIIL = ("kiyasla", "kiyaslama", "kiyas", "karsilastir", "karsilastirma",
 _ACIK_KIYAS = ("yoy", "mom")
 
 
+#: `gore`'den ÖNCEKİ pencere — bir dönem ifadesi sığacak kadar, bir cümle sığmayacak
+#: kadar. Ölçüldü: *"son 3 aya göre"* 11 karakter, *"ocaga göre"* 5.
+_GORE_PENCERE = 24
+
+
+def gore_donem_mi(q: str) -> bool:
+    """🔴 `Ö10` — *"…-e **göre**"* bir DÖNEM referansı mı, bir KIRILIM mı?
+
+    ## Ölçülen kusur
+
+    *"şubatta ciro **ocağa göre** nasıl değişti"* → `niyet: tür=kirilim+trend`, cevap
+    *"şubat toplamı"* + iki **yanlış** beyan: *«bir kırılım istedin ama boyut
+    taşıyamadım»*. Kullanıcı kırılım **istemedi**; `gore` bir kıyas edatıydı.
+
+    🔴 Yanlış bir beyan, sessizlikten kötüdür: sistem kullanıcıya **onun söylemediği bir
+    şeyi söylediğini** söylüyor.
+
+    ## Kural — liste değil YAPI
+
+    `gore` bu depoda **üç yönlü aşırı yüklü** (kırılım · granülerlik · dönem-aralığı) ve
+    bu üç kez ısırdı. Ayrımı bir kelime listesi yapamaz; **yapı** yapar:
+
+    > `gore`'den önceki pencerede **çözülebilir bir dönem ifadesi** varsa, o `gore` bir
+    > kırılım işareti **değildir**.
+
+    Ölçüt `date_filters`'ın kendisidir — yani ikinci bir dönem tanıyıcısı yazılmaz
+    (`KAT-1`). *Bir ayrımı, ayrımın bir tarafını zaten tanıyan koda sorarak yap.*
+
+    ⚠ **Karşı yön kilitli:** *"makineye göre"* / *"hat bazında"* etkilenmez —
+    `date_filters("makineye")` boş döner. Ve *"son 3 aya göre"* de dönem sayılır: o
+    ifade bu depoyu **üç kez** ısırdı ve her seferinde kırılım DEĞİLDİ.
+    """
+    for m in _re_gore.finditer(q):
+        onceki = q[max(0, m.start() - _GORE_PENCERE):m.start()]
+        if onceki.strip() and _guvenli_donem(onceki):
+            return True
+    return False
+
+
+_re_gore = re.compile(r"\bgore\b")
+
+
+#: 🔴 Kapsam `Ö10`'un **kendi sözüyle** sınırlı: *"`göre`'den sonra gelen **AY ADI** boyut
+#: adayı sayılmasın."* Yani **adlandırılmış** dönem (ay · yıl · çeyrek), göreli ifade
+#: DEĞİL.
+#:
+#: ⚠ Sebep ölçülü ve bu depoya **üç kez** mal oldu: *"son N ay'a göre"* göreli bir
+#: **aralıktır**, bir kıyas ucu değil. `date_filters` ikisini de çözer — yani tek başına
+#: onu ölçüt yapmak, kapsamı `Ö10`'un istediğinden geniş tutardı ve bilinen tuzağa
+#: doğrudan basardı.
+#:
+#: *Bir ayrımı, ayrımın yapıldığı belgeden daha geniş kurmak, düzeltme değil kumardır.*
+_ADLI_DONEM_RE = re.compile(rf"\b(?:{_MONTH_ALT})\w*|\b20\d{{2}}\b|\bceyre\w*")
+
+
+def _guvenli_donem(parca: str) -> bool:
+    if not _ADLI_DONEM_RE.search(parca):
+        return False
+    try:
+        return bool(date_filters(parca))
+    except Exception:                                  # noqa: BLE001 — ayrım cevabı düşürmez
+        return False
+
+
 def kiyas_niyeti(q: str) -> bool:
     """Soru bir **kıyas** istiyor mu? — *"kıyasla"*, *"karşılaştır"*, *"mukayese"*.
+
+    🔴 **Ve *"…-e göre"*.** Ölçüldü: *"şubatta ciro ocağa göre nasıl değişti"* bir kıyas
+    sorusudur ve `_KIYAS_FIIL`'in hiçbir kelimesini içermez — fiil *"değişti"*, edat
+    *"göre"*. Yüklem `gore_donem_mi`'ye devredilir: yeni bir sözlük değil, `date_filters`'a
+    sorulan **yapısal** bir soru. *Bir niyeti sökebilen sistem onu saymalıdır da.*
 
     🔴 `compare_mode()`'dan **DAHA GENİŞ**, ve fark ölçüldü: `compare_mode` yalnız
     **göreli** kıyası (`yoy`/`mom`) tanır çünkü tüketicileri onunla göreli SQL kurar.
@@ -1513,7 +1618,7 @@ def kiyas_niyeti(q: str) -> bool:
     listeyi *"göreli dönem kökü yanında mı"* diye sorar, bu ise *"hiç var mı"* diye.
     *Aynı sözlüğe iki soru sormak, iki sözlük tutmak değildir.*
     """
-    return any(_syn_hit(q, f) for f in _KIYAS_FIIL)
+    return any(_syn_hit(q, f) for f in _KIYAS_FIIL) or gore_donem_mi(q)
 
 
 def _kiyas_spanlari(q: str, kokler) -> list[tuple[int, int]]:
@@ -3859,6 +3964,12 @@ def parse_cube_query(text: str, index: dict) -> dict | None:
     lim = cq.get("limit")
     if isinstance(lim, int) and 0 < lim <= 1000:
         out["limit"] = lim
+    # 🔴 `AJ3.3` — DÖNEM İFADESİ TAŞINIR, ÇÖZÜLMEZ. Çözüm `ask._resolve_period`'ün işi
+    # (o da `date_filters`'a sorar — tek sahip). Burada beyaz listeden geçmezse alan
+    # **düşerdi** ve model dönemi söylese bile sistem duymazdı: `compare`'ın başına gelen
+    # şeyin aynısı. *Bir alanı düşürmek, onu hiç istememekle aynı sonucu verir.*
+    if isinstance(pe := cq.get("period_expr"), str) and pe.strip():
+        out["period_expr"] = pe.strip()[:120]
     # 🔴 `B-G4` — DÖNEMSEL KIYAS geçirilir. Beyaz liste onu **düşürüyordu**, yani LLM
     # doğru cevabı üretse bile kıyas mutfak kapısında ölüyordu (`dashboards.py:187` bunu
     # bilip elle geri ekliyor — *bir alanı geri eklemek zorunda kalmak, onun düşürülmemesi

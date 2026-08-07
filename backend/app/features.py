@@ -483,6 +483,14 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "— aksi hâlde döküm isteyene dejenere tek toplam dönerdi.",
         "category": "Analiz",
     },
+    "oylama_paydasi": {
+        "label": "Oylama paydası çekimserleri de sayar",
+        "description": "Self-consistency uyum oranı `{cube:null}` (bilmiyorum) oylarını "
+                       "da paydaya katar. Kapalıyken 1 cevap + 2 bilmiyorum → uyum %100 "
+                       "görünür; yani şüphenin en yüksek olduğu durum en emin görünür. "
+                       "Açıkken bazı cevaplar netleştirmeye düşer (kapsam ↓, güven ↑).",
+        "category": "Doğruluk",
+    },
     "katalog_sozlugu": {
         "label": "Katalog sözlüğü (LLM Türkçe eşanlamları görür)",
         "description": "LLM'e giden cube kataloğuna şemanın ZATEN beyan ettiği Türkçe "

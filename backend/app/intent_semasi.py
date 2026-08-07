@@ -140,6 +140,17 @@ def cube_query_json_schema(index: dict, *, harman: bool = False) -> dict:
                 "description": "Soru TEK cube'a sığmıyor ama iki cube'un ölçüleri ORTAK "
                                "bir zaman/boyut ekseninde yan yana konabiliyorsa buraya "
                                "ikinci cube'u yaz. Tek cube yetiyorsa BU ALANI HİÇ YAZMA."}
+        # 🔴 `AJ3.3` — DÖNEM İFADESİ. Enum **değil** ve olamaz: bu bir katalog adı değil
+        # kullanıcının **kendi sözü**. Model onu kopyalar, çözümü `date_filters` yapar
+        # (tek sahip) — takip yolundaki `period_expr`'in **aynısı**, ikinci bir çözücü yok.
+        # ⚠ Alan olmadan model dönemi hiçbir yere koyamıyordu ve prompt *"tarih yazma"*
+        # diyordu: tutarlı tek davranışı dönemi düşürmek ya da soruyu reddetmekti.
+        if zamanlar:
+            props["period_expr"] = {
+                "type": ["string", "null"],
+                "description": "Sorudaki dönem/tarih ifadesi AYNEN («geçen çeyrek», "
+                               "«yılbaşından bugüne»). Tarihi SEN hesaplama. Dönem "
+                               "geçmiyorsa null."}
         if boyutlar:
             props["filters"] = {
                 "type": "array",

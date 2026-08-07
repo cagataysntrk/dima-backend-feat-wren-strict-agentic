@@ -139,6 +139,13 @@ features:
                           # narration_guard ZORUNLU çıkış kapısı (fail-closed: eşleşmeyen
                           # sayı taşıyan cümle YAYIMLANMAZ). `off` — sıcak yola LLM çağrısı
                           # ekliyor; açılması bilinçli bir karar olmalı (KURAL B, testli).
+  oylama_paydasi: "off"  # 🔴 Kusur GERÇEK, takas ÖLÇÜLEMEZ — bu yüzden kapalı.
+  # ⊙ Doğrulandı: `agreement = len(best)/len(cands)` ve `cands` `{cube:null}` oylarını
+  # eliyor → 1 cevap + 2 "bilmiyorum" = uyum **1,0**. Şüphe en yüksekken sistem en emin.
+  # ⚠ Açmanın bedeli kapsam: eşik (`>= 2/3`) aynı orandan geçiyor. Yön doğru (tahmin
+  # yerine soru) ama bedel bu koşumda ÖLÇÜLEMEZ: `nl_corpus` `rule` ile koşar,
+  # `eval --slice llm` 4 vaka. *Ölçülemeyen bir takası varsayılan yapmak, kullanıcı
+  # adına karar vermektir.* ÖN KOŞUL: `eval --slice llm` büyüsün.
   katalog_sozlugu: beta  # 🔴 LLM artık Türkçe eşanlamları GÖRÜYOR.
   # ⊙ Ölçüldü: 23 cube'un 23'ünde `synonyms`+`measure_synonyms` beyan edilmiş, katalogda
   # `verim`/`randiman`/`verimlilik`/`hasılat`/`bordro` **0 kez** geçiyordu. Canlı sonuç:
