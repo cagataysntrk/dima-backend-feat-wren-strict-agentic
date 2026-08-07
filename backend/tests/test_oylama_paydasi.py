@@ -37,7 +37,13 @@ from app.routers import ask as ask_mod
 def test_PAYDA_CEKIMSERLERI_DE_SAYABILIYOR():
     """Mekanizma var: ham oy listesi tutuluyor ve payda ondan seçilebiliyor."""
     src = inspect.getsource(ask_mod._select_consistent)
-    assert "oylar = list(" in src, "🔴 ham oy listesi tutulmuyor — çekimser sayılamaz"
+    # ⟳ ÇAPA KAYDI: liste artık `submit`/`result(timeout=)` ile **tek tek** toplanıyor
+    # (Intent bütçesi, §22.5/N). Aşan oy `None` olarak listeye girer — yani çekimserle
+    # **aynı** muamele görür ve payda doğruluğu korunur. Kapı gevşetilmedi: ölçtüğü şey
+    # hâlâ *"ham oy listesi tutuluyor mu"*.
+    assert "oylar = []" in src and "oylar.append(" in src, (
+        "🔴 ham oy listesi tutulmuyor — çekimser sayılamaz")
+    assert "TimeoutError" in src, "🔴 Intent bütçesi yok — aşan oy sonsuz bekler"
     assert "len(oylar) if _tam_payda else len(cands)" in src, (
         "🔴 payda seçimi yok — kusur ya hiç düzelmemiş ya bayraksız açılmış")
 

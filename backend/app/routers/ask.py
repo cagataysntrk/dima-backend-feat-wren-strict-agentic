@@ -787,8 +787,28 @@ def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
     if k <= 1:
         c = one(0)
         return c, (1.0 if c else 0.0), None, ([c] if c else [])
+    # 🔴 **INTENT'İN DE BÜTÇESİ VAR — canlı ölçüm: 98.176 ms.**
+    #
+    # `t2_sablon`/`H` için konan bütçe **yalnız anlatıcıyı** kapsıyordu; Intent çağrısı
+    # sınırsızdı. Ölçüldü: kullanıcı **1,5 dakika** bekledi ve sonunda *"anlayamadım"*
+    # aldı. ⚠ `requests`'in `timeout=30`'u **okuma başına**dır — yavaş ama sürekli akan
+    # bir yanıt onu hiç tetiklemez.
+    #
+    # ⚠ Aşımda oy **düşer, tur düşmez**: elde kalan oylarla devam edilir, hiç oy yoksa
+    # merdiven bir alt basamağa iner. Yani en kötü durum *"LLM'siz ama cevaplı"* —
+    # `narration_guard`'ın ve şablon anlatıcının aynı en-kötü-durumu.
+    #
+    # *Bir bütçeyi yalnız bir basamağa koymak, ötekini sınırsız ilan etmektir.*
+    _intent_azami = float(getattr(get_settings(), "intent_azami_saniye", 20.0) or 20.0)
+    oylar = []
     with cf.ThreadPoolExecutor(max_workers=k) as ex:
-        oylar = list(ex.map(one, range(k)))
+        _isler = [ex.submit(one, i) for i in range(k)]
+        for _f in _isler:
+            try:
+                oylar.append(_f.result(timeout=_intent_azami))
+            except cf.TimeoutError:
+                _log.warning("Intent oyu BÜTÇEYİ AŞTI (%.0f sn) — oy düştü", _intent_azami)
+                oylar.append(None)
     cands = [c for c in oylar if c]
     if not cands:
         return None, 0.0, None, []

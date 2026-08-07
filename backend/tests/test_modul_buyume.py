@@ -314,6 +314,18 @@ MUAFIYET_ASK_KOD = [
                       "dürüst olmayan bir mesajı SATIN ALMAZ"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("kapsam/ayristirici-tuketti", 5,
+     "🔴🔴 **ALTI KUSURUN TEK KÖKÜ** — canlı curl turunda bulundu: `3'ünü` · `3 tanesi` · "
+     "`üretildi` · `çeyreklere` · `ocağa` · `5 milyon üzeri`. Hepsinde ayrıştırıcı ✅ ve "
+     "tüketici ✅ çalışıyordu; tur, ayrıştırıcının **zaten tükettiği** kelime *bilinmeyen* "
+     "sayıldığı için kapsam kapısında ölüyordu — ve kullanıcının bildirdiği **bağlam "
+     "kopması** (*«bu takip mesajını ilişkilendiremedim»*) tam buydu. "
+     "⊙ **Emsal ÜSTTEKİ ÜÇ SATIR**: eşik için bu bağışıklık zaten veriliyordu, `_top_n` "
+     "için verilmemişti. ⚠ **TAŞINAMAZ:** `known` kümesi bu fonksiyonun yerel değişkeni ve "
+     "kapı iki satır aşağıda; bir modüle çıkarmak kümeyi dışarı vermek olurdu. "
+     "🔴 Yeni sözlük YOK (`_TOPN_CUE` mevcut) ve kapsam dar: yalnız `_top_n` **gerçekten "
+     "eşleştiyse**. *Bir yolun iki ucu da çalışırken yol çalışmıyorsa, kusur uçlarda değil "
+     "kapıdadır.*"),
     ("Ö10/gore-ayrimi", 18,
      "🔴 **KULLANICININ KENDİ VAKASI.** *«şubatta ciro ocağa göre nasıl değişti»* → "
      "`tür=**kirilim**+trend`, cevap *«şubat toplamı»*, ve `uyum` kullanıcıya *«bir kırılım "

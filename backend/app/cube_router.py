@@ -3636,6 +3636,27 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
     having = _measure_threshold(q)
     if having:
         known |= _gecenler(q, _TH_WORDS)
+    # 🔴 **KURAL: BİR AYRIŞTIRICI BİR KELİMEYİ TÜKETTİYSE, O KELİME KAPSAM KAPISINDA
+    # «BİLİNMEYEN» SAYILAMAZ.** — canlı curl turunun **altı** kusurunun tek kökü:
+    # `3'ünü` · `3 tanesi` · `üretildi` · `çeyreklere` · `ocağa` · `5 milyon üzeri`.
+    #
+    # ⊙ Emsal **üstteki üç satırdı**: eşik için bu bağışıklık zaten veriliyordu, `_top_n`
+    # için verilmemişti. Ölçüldü: `_top_n("en yuksek 3 unu getir")` → **3** (ayrıştırıcı
+    # ✅), `deterministic_refine:1346` limiti kurar (tüketici ✅) — ama tur `unu` yüzünden
+    # burada ölüyordu ve **tüm takip zinciri** düşüyordu (*"bu takip mesajını
+    # ilişkilendiremedim"* — kullanıcının bildirdiği bağlam kopması).
+    #
+    # ⚠ Yeni sözlük YOK: `_TOPN_CUE` ile sayı-eki deseni zaten mevcut. Ve kapsam dar —
+    # yalnız `_top_n` **gerçekten eşleştiyse**; eşleşmediyse kelime bilinmeyen kalır.
+    #
+    # *Bir yolun iki ucu da çalışırken yol çalışmıyorsa, kusur uçlarda değil kapıdadır.*
+    if _top_n(q, cube_meta):
+        known.update(w for m in _TOPN_CUE.finditer(q)
+                     for w in re.findall(r"[a-z]+", m.group(0)))
+        # Sayıya bitişen çekim eki (`3 unu` · `3 tanesi` · `5 ini`) — sayıyı okuyabilen
+        # kapı, onun ekini de tanımalı. Sayının **hemen ardındaki** tek kelimeyle sınırlı.
+        for m in re.finditer(r"\b\d+\s+([a-z]{1,6})\b", q):
+            known.add(m.group(1))
     # LİSTE NİYETİ kelimeleri ("listele"/"detay"/"dökümü") — niyet ANLAŞILDIYSA kapsamı
     # delmemeli. Yukarıdaki R2 dalı bu soruyu geçirdiyse kırılım gerçekten eşleşmiş
     # demektir; o hâlde kelime dolgudur. Aynı `_LISTE_RE`'den okunur ki iki taraf

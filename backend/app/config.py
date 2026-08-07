@@ -150,6 +150,13 @@ class Settings(BaseSettings):
     # Aşılırsa anlatı **düşer**, cevap **düşmez** — en kötü durum yine *"süssüz ama doğru"*.
     #
     # *Bir süsün bütçesi, süslediği şeyin süresini aşamaz.*
+    # 🔴 **INTENT'İN BÜTÇESİ.** Ölçüldü (canlı, openrouter): tek bir Intent çağrısı
+    # **98.176 ms**. Kullanıcı 1,5 dakika bekleyip *"anlayamadım"* aldı.
+    # ⚠ Anlatıdan (8 sn) gevşek, çünkü Intent bir **süs değil cevabın kendisi**: erken
+    # kesmek kapsamı düşürür. Ama sınırsız da olamaz.
+    # ⚠ `requests`'in `timeout`'u **okuma başına**dır; toplam süreyi ancak çağıran sınırlar.
+    intent_azami_saniye: float = 20.0
+
     anlati_azami_saniye: float = 8.0
 
     vqr_acik: bool = False
