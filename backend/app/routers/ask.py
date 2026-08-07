@@ -2007,8 +2007,33 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         if _capa.tasi_yerinde(cq, body.cube_query or None, body.question, cube_meta):
             return None
 
+        # 🔴 `DA-10` — **ÖNCE NE ANLADIĞINI SÖYLE, SONRA SOR.**
+        #
+        # `_PERIOD_TEXT` elle yazılmış bir dizeydi ve yalnız **soruyordu**:
+        # *"Hangi dönem için?"*. `app/soz.py:19`'un kendi kuralı bunu bir **form
+        # doğrulayıcısı** kipi diye reddediyor ve katalogda düzeltilmiş metni **zaten
+        # taşıyor** (`netlestirme.donem`: *"{ne} çıkarabilirim — hangi dönem için?"*).
+        # Ama o girdinin üretimde **hiçbir çağıranı yoktu** — bir denetim ajanı buldu.
+        #
+        # ⊙ Ağırlığı ölçülü: netleştirmelerin **%79'u** dönem sorusudur
+        # (`app/donem_capasi.py:8`). Yani katalogun en çok kullanılan cümlesi ölüydü.
+        #
+        # `{ne}` yuvasını `temellendirme` doldurur — *"anladığım şu"*yu üreten aynı
+        # hesap; ikinci bir adlandırıcı yazmak `KAT-1` olurdu. Ölçü çıkarılamazsa
+        # `donem_sade`'ye düşer: *"Bunu çıkarabilirim — hangi dönem için?"* — yine önce
+        # yapabileceğini söyler.
+        _ne = None
+        try:
+            from app.temellendirme import kur as _tkur
+
+            _ne = (_tkur(cq, cube_etiketi=(cq or {}).get("cube")) or {}).get("olcu")
+        except Exception:                                  # noqa: BLE001 — metin cevabı düşürmez
+            _log.warning("dönem netleştirmesi için ölçü adı çıkarılamadı", exc_info=True)
+        _donem_soru = (_soz.soz("netlestirme.donem", ne=_ne) if _ne
+                       else _soz.soz("netlestirme.donem_sade")) or _PERIOD_TEXT
         return _finish(AskResponse(
-            question=body.question, source=None, note=_PERIOD_TEXT, cube_query=cq,
+            question=body.question, source=None, note=_donem_soru, soz=_donem_soru,
+            cube_query=cq,
             suggestions=[Suggestion(**s) for s in _PERIOD_SUGGESTIONS],
             trace=[f"{trace_prefix}: dönem belirsiz → netleştirme (LLM'siz)"],
         ))

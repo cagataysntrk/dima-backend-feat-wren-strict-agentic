@@ -125,3 +125,39 @@ def test_KATALOG_bir_VERI_MODULU():
         f"MODÜLÜDÜR — sözlük + üç alan, başka bir şey değil.")
     fonksiyonlar = {n.name for n in ast.walk(agac) if isinstance(n, ast.FunctionDef)}
     assert fonksiyonlar <= {"soz", "tur"}, f"beklenmedik fonksiyon: {fonksiyonlar}"
+
+
+# --- 🔴 DA-10 — KATALOGUN EN ÇOK KULLANILAN CÜMLESİ ÖLÜYDÜ -------------------------
+
+
+def test_DONEM_NETLESTIRMESI_KATALOGDAN_okunuyor():
+    """🔴 Bir denetim ajanı buldu: `netlestirme.donem` katalogda **düzeltilmiş** hâliyle
+    duruyordu (*"{ne} çıkarabilirim — hangi dönem için?"*) ama üretimde **hiçbir çağıranı
+    yoktu**; `ask.py` elle yazılmış `_PERIOD_TEXT`'i basıyordu.
+
+    ⊙ Ağırlığı ölçülü: netleştirmelerin **%79'u** dönem sorusudur (`donem_capasi.py:8`).
+    Yani katalogun en çok kullanılan cümlesi ölü koddu — ve `soz.py:19`'un kendi kuralı
+    (*"ÖNCE NE ANLADIĞINI SÖYLE, SONRA SOR"*) o %79'da hiç uygulanmıyordu.
+    """
+    import pathlib
+
+    kaynak = (pathlib.Path(__file__).resolve().parents[1]
+              / "app/routers/ask.py").read_text(encoding="utf-8")
+    assert 'soz("netlestirme.donem"' in kaynak, (
+        "🔴 dönem netleştirmesi katalogdan okumuyor — elle yazılmış metin geri gelmiş")
+    assert 'soz("netlestirme.donem_sade")' in kaynak, (
+        "🔴 ölçü çıkarılamadığında yedek katalog girdisi kullanılmıyor")
+
+
+def test_UCTAN_UCA_DONEM_SORUSU_NE_ANLADIGINI_SOYLUYOR(client):
+    """Uçtan uca: *"fire kg"* → sistem önce **ne yapabileceğini** söyler, sonra sorar."""
+    from tests.conftest import ask
+
+    d = ask(client, "fire kg", session_id="soz-donem")
+    metin = (d.get("soz") or d.get("note") or "")
+    if not metin or (d.get("cube_query") or {}).get("measures") is None:
+        import pytest
+        pytest.skip(f"⊘ vaka bayat: {metin[:60]!r}")
+    assert "çıkarabilirim" in metin, (
+        f"🔴 yalnız soruyor, ne yapabileceğini söylemiyor: {metin!r}")
+    assert "hangi dönem" in metin.lower()

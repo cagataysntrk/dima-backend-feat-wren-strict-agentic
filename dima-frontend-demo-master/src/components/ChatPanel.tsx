@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { vurguSuz } from "@/lib/vurgu";
 import type { Thread } from "@/lib/threads";
 import type { CubeQuery } from "@/lib/types";
 import { CaretInput } from "@/components/CaretInput";
@@ -289,7 +290,10 @@ export function ChatPanel({
                       <SourceBadge source={reportable.source} sertifika={reportable.explain?.sertifika} />
                     </>
                   ) : last.note ? (
-                    <span className="truncate text-amber-600">{last.note}</span>
+                    // 🔴 `DA-8` — tek satırlık önizlemede biçimleme yapılamaz (kırpma
+                    // doğru davranıştır: bu bir thread LİSTESİ, cevabın okunduğu yer değil).
+                    // Ama `**` işaretleri burada da görünürdü → sökülür.
+                    <span className="truncate text-amber-600">{vurguSuz(last.note)}</span>
                   ) : null}
                   {t.items.length > 1 && (
                     <span className="ml-auto shrink-0 text-neutral-400">{t.items.length} mesaj</span>

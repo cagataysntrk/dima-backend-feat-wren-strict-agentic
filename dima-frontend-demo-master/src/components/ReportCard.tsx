@@ -29,6 +29,7 @@ import { AdhocBadge, SourceBadge } from "@/components/ChatPanel";
 import { useAdSor } from "@/components/AdSor";
 import { Makbuz, MakbuzDuz } from "@/components/Makbuz";
 import { Temellendirme } from "@/components/Temellendirme";
+import { vurgula } from "@/lib/vurgu";
 import { SertifikaBandi } from "@/components/SertifikaBandi";
 
 // §B Adım 2 (1 Ağustos 2026) — tek-rapor kartı: bugünkü ReportPanel'in TÜM gövdesi + tüm
@@ -329,7 +330,11 @@ export function ReportCard({
             )}
             <h2 className="font-mono text-[15px] leading-snug text-foreground">{item.question}</h2>
           </div>
-          <div ref={actionsRef} className="flex shrink-0 items-center gap-1.5 pt-0.5">
+          {/* 🔴 `flex-wrap` — rozet çubuğu `shrink-0` idi ve SARMIYORDU: `Temellendirme`
+              rozetleri (kırılım+filtre sayısı sınırsız) çubuğu taşırıp kardeş sütundaki
+              soru başlığını (`min-w-0 flex-1`) sıfıra eziyordu. Sarmak, sınırsız bir
+              listeyi sınırlı bir alana sığdırmanın DOĞRU yoludur; kırpmak bilgiyi siler. */}
+          <div ref={actionsRef} className="flex shrink-0 flex-wrap items-center justify-end gap-1.5 pt-0.5">
             {schedStage && canSchedule && item.cube_query && item.source && (
               <span className="relative">
                 <button
@@ -647,8 +652,12 @@ export function ReportCard({
             *Bugün doğru çalışan bir ifade, yarın yanlış çalışacak biçimde yazılmışsa
             bugünden yanlıştır.* */}
         {(item.soz || item.note) && !item.kpi && !item.eylem_onerisi && (
-          <div className="mt-3 border-l-2 border-amber-500/50 bg-amber-500/[0.04] py-1.5 pl-3 font-mono text-[12px] leading-snug text-neutral-500">
-            {item.soz || item.note}
+          // 🔴 `DA-8` — `vurgula` + `whitespace-pre-line`. Backend bu metinlerde
+          // `**kalın**` ve `\n\n` kullanıyor; ikisi de yorumlanmadan basılıyordu →
+          // kullanıcı yıldızları okuyor ve paragraflar tek satıra çöküyordu.
+          // *Bir vurgu işareti, yorumlanmadığında vurgunun tersini yapar.*
+          <div className="mt-3 whitespace-pre-line border-l-2 border-amber-500/50 bg-amber-500/[0.04] py-1.5 pl-3 font-mono text-[12px] leading-snug text-neutral-500">
+            {vurgula(item.soz || item.note)}
           </div>
         )}
         {/* FAZ H — ONAY KARTI. Ajan yazma işini ÇALIŞTIRMAZ, önerir; yazma yalnız bu

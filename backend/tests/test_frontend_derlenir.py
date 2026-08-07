@@ -123,3 +123,36 @@ def test_KOSULLU_JSX_TEK_KOK():
                 kusurlu.append(f"{p.name}:{i + 1}")
     assert not kusurlu, ("🔴 koşullu JSX'te sarmalayıcısız kardeş eleman (TS1005):\n  "
                          + "\n  ".join(kusurlu))
+
+
+def test_MARKDOWN_ISARETI_YORUMLANIYOR():
+    """🔴 `DA-8` — **backend markdown yazıyor, ekranda yorumlayıcı YOKTU.**
+
+    Kullanıcıya giden metinler `**kalın**` taşıyor (`app/yetenek.py` · `app/uyum.py` ·
+    `app/soz.py`) ve not blokları düz metin basıyordu: kullanıcı **yıldızları okuyordu**.
+
+    *Bir vurgu işareti, yorumlanmadığında vurgunun tersini yapar: gözü tam da kritik
+    kelimeden kaçırır.*
+
+    Bu kapı iki yönü birden tutar: (1) backend gerçekten `**` üretiyor mu — üretmiyorsa
+    kapı bir hayaleti korumaktadır ve düşmeli; (2) o metni basan yüzey `vurgula`'dan
+    geçiyor mu.
+    """
+    import pathlib
+
+    kok = pathlib.Path(__file__).resolve().parents[1] / "app"
+    uretenler = [p.name for p in (kok / "yetenek.py", kok / "uyum.py", kok / "soz.py")
+                 if p.exists() and "**" in p.read_text(encoding="utf-8")]
+    if not uretenler:
+        pytest.skip("⊘ backend artık `**` üretmiyor — kapı konusuz")
+
+    vurgu = _SRC / "lib" / "vurgu.tsx"
+    assert vurgu.exists(), (
+        f"🔴 {uretenler} `**` üretiyor ama `src/lib/vurgu.tsx` yok — kullanıcı ham "
+        "yıldız okuyor.")
+
+    kart = (_SRC / "components" / "ReportCard.tsx").read_text(encoding="utf-8")
+    assert "vurgula(item.soz || item.note)" in kart, (
+        "🔴 not bloğu `vurgula`'dan geçmiyor — `**` ham basılır")
+    assert "whitespace-pre-line" in kart, (
+        "🔴 not bloğunda satır sonu korunmuyor — `\\n\\n` paragrafları tek satıra çöker")

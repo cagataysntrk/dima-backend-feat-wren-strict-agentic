@@ -122,3 +122,26 @@ def test_DUZ_RETTE_GURULTU_YOK(client):
         import pytest
         pytest.skip("⊘ bu soru kısmi sorgu üretti — vaka uygun değil")
     assert not d.get("temellendirme")
+
+
+def test_KAPSAM_ROZETI_EKRANDA():
+    """🔴 `DA-7` — `temellendirme.cube` üretiliyor, testleniyor, **tipli**… ve
+    render EDİLMİYORDU.
+
+    `G1`'in varlık gerekçesi ölçülmüş `WRONG_SCOPE` **%14,4**'tü: *"hangi konuyu
+    anladım"* bu rozetin tam olarak cevapladığı soru. Kapsamı söylemeyen bir
+    temellendirme, **en sık yanlışı** görünmez bırakır.
+
+    *Bir beyanın en önemli parçasını düşürmek, beyanı süse çevirir.*
+    """
+    import pathlib
+
+    fe = pathlib.Path(__file__).resolve().parents[2] / "dima-frontend-demo-master/src"
+    if not fe.is_dir():
+        import pytest
+        pytest.skip("⊘ frontend mount edilmemiş")
+    kaynak = (fe / "components" / "Temellendirme.tsx").read_text(encoding="utf-8")
+    i = kaynak.index("const rozetler = [")
+    liste = kaynak[i:kaynak.index("]", i)]
+    for alan in ("t.cube", "t.olcu", "t.donem"):
+        assert alan in liste, f"🔴 `{alan}` rozet listesinde yok — üretilen alan ekranda YOK"

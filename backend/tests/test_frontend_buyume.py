@@ -79,7 +79,18 @@ TAVANLAR = {
     #   bileşene çıkarmak, iki satırdan kaçmak için bir dosya açmak olurdu.
     #   Kapısı: `tests/test_frontend_derlenir.py`.
     #   *Bir dilin derleyicisi koşulmuyorsa, o dilde yazılan her şey denetimsizdir.*
-"components/ReportCard.tsx": 1037,
+    # ⊙ +1 · `DA-8` — `vurgula` içe aktarımı. Backend `**kalın**` yazıyor, ekranda
+    #   yorumlayıcı yoktu → kullanıcı **yıldızları okuyordu**. Yorumlayıcı bir bileşene
+    #   değil `src/lib/vurgu.tsx`'e çıkarıldı (tavanın kendi talimatı); burada kalan
+    #   yalnız **bir içe aktarım satırı**. *Bir vurgu işareti, yorumlanmadığında
+    #   vurgunun tersini yapar.*
+    # ⊙ +2 · `DA-7`/`flex-wrap` — rozet çubuğu `shrink-0` idi ve SARMIYORDU: `Temellendirme`
+    #   rozetleri (kırılım+filtre sayısı sınırsız) çubuğu taşırıp kardeş sütundaki soru
+    #   başlığını (`min-w-0 flex-1`) sıfıra eziyordu. **Taşınamaz:** bu bir bileşen değil
+    #   kardeş sütunlar arası bir **düzen kuralı**; bir bileşene çıkarmak kuralı ait
+    #   olduğu yerden koparırdı. *Sarmak, sınırsız bir listeyi sınırlı bir alana
+    #   sığdırmanın doğru yoludur; kırpmak bilgiyi siler.*
+    "components/ReportCard.tsx": 1040,
     "lib/api-client.ts": 778,
     "lib/chart.ts": 688,
     # ⊙ 579 → 581: +1 `eksik_niyet?: string[]` (KÖK-3) · +1 `Suggestion.kind?` (KÖK-9).
@@ -99,9 +110,25 @@ TAVANLAR = {
     # ⊙ 585 → 588 (`G2`): +3 `diyalog_durumu?: {acik_slotlar, sorulan, dolu, tur_no}`.
     #   Aynı gerekçe: bir ALAN BEYANI. Ve `test_cevap_alani_yetim_degil` onu ZORUNLU
     #   kılıyor — tipi yazmamak, alanı yetim bırakmak olurdu.
-    "lib/types.ts": 588,
+    # ⊙ +6 · 🔴 `G2` — `DiyalogDurumu` **paylaşılan** tipe çıktı ve `AskRequest`'e girdi.
+    #   Alan bir demet boyunca yalnız `AskResponse`'ta vardı; istek tarafı yoktu ve
+    #   `KURAL_DEVAM` üretimde hiç ateşlenmedi. `kismi_cq` de eklendi — o olmadan
+    #   `devam_edilebilir` (hem `sorulan` hem `kismi_cq` ister) yine `None` döner, yani
+    #   yankıyı tipli nesneden kuran biri **kapattığını sanır**.
+    #   ⚠ Bir tipi bölmek onu küçültmez; iki yönde AYNI şekli garanti eder.
+    "lib/types.ts": 594,
     "components/ReviewPanel.tsx": 555,
-    "app/page.tsx": 534,
+    # ⊙ +9 · 🔴 `G2` DİYALOG DURUMU YANKISI — **taşınamaz, çünkü bir davranış değil bir
+    #   TELDİR.** Backend'in bellek zinciri (`AskRequest.diyalog_durumu` → `context.py::
+    #   KURAL_DEVAM`) tamamen yazılmış ve testliydi; istemci onu **göndermiyordu**, yani
+    #   `KURAL_DEVAM` üretimde **hiç ateşlenmedi**. Üç denetim ajanının ikisi bağımsız
+    #   buldu. İnen: 1 durum kancası + 5 yaşam-döngüsü noktası + 3 gönderim.
+    #   ⚠ Bir kancaya (`useDialogState`) çıkarmak `contextCq` ile arasındaki **kardeşlik**
+    #   ilişkisini gizlerdi — ikisi aynı anda kurulup aynı anda sıfırlanmak ZORUNDA ve o
+    #   eşleşme yan yana durduğu için görünür. *Bir tavanın amacı davranış birikimini
+    #   durdurmaktır; bir yetimi kapatan teli değil.*
+    #   Kapısı: `tests/test_cevap_alani_yetim_degil.py::test_K2c_ISTEK_ALANI_GONDERILIYOR_mu`.
+    "app/page.tsx": 543,
     "components/ResultView.tsx": 476,
     "components/InterpretationBar.tsx": 472,
 }
