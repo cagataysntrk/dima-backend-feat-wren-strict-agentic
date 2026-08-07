@@ -713,8 +713,25 @@ canlıda `cube+llm`, depoda deterministik). Kaynak bind-mount **edilmiyor**.
 ```bash
 docker ps --format '{{.Names}}\t{{.Status}}\t{{.Ports}}' | grep dima-backend
 # → dima-backend-core  Up X  0.0.0.0:8001->8000/tcp
-docker restart dima-backend-core     # (imaj yeniden derlendiyse: down/up)
 curl -s localhost:8001/health        # → {"status":"ok"}
+```
+
+🔴 **KOD DEĞİŞTİYSE `restart` YETMEZ — YENİDEN DERLE.** Kaynak bind-mount edilmiyor;
+`docker restart` **aynı imajı** yeniden başlatır, yani dünkü kodu ölçmeye devam edersin
+(§14.5'te tam bu oldu). Doğru komut:
+
+```bash
+export DOCKER_BUILDKIT=0 && export COMPOSE_DOCKER_CLI_BUILD=0 && \
+docker-compose build dima-backend && \
+docker rm -f dima-backend-core && \
+docker-compose up -d dima-backend
+```
+
+⚠ Derleme sonrası **`/health` 200 dönene kadar bekle** (VQR embedder soğuk açılışta
+dakikalarca askıda kalabiliyor — bilinen kusur):
+
+```bash
+until curl -sf localhost:8001/health >/dev/null; do sleep 3; done && echo "hazır"
 ```
 
 ⚠ `:8000` **başka bir uygulamadır** (`akis-main`); Dima `:8001`.
