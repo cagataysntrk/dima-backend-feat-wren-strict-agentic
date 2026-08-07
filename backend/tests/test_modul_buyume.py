@@ -76,6 +76,18 @@ TABAN_CUBE_ROUTER_KOD = 1685  # 1703 ölçüldü − 18 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("G2.9/yuksek-duzey", 3,
+     "🔴 `yuksek` düzeyinde **boyut** adaylarını da ekleyen üç satır. `G2.9` planda "
+     "vardı ve **hiç uygulanmamıştı**; kodun kendi itirafı (*«kapı yalnız `kapali`'yı "
+     "uygular»*) yerinde duruyordu. "
+     "⚠ **TAŞINAMAZ:** karar noktası burasıdır — `request`'ten düzeyi çözen "
+     "`_netlestirme_duzeyi` ile aday listesinin **ikisinin birden** elde olduğu tek yer. "
+     "Bir modüle çıkarmak, isteğe bağlı bir ayarı okumak için istek nesnesini bir modüle "
+     "taşımak olurdu. "
+     "🔴 `normal`'da davranış **birebir bugünkü** (`KURAL B`) — modülün kendi uyarısı "
+     "`yuksek` için *«kapsam düşer, sessiz-yanlış da»* diyor; bu bir **takas** ve takası "
+     "seçen **kiracıdır**. *Bir kapsam kaybını varsayılan yapmak, kullanıcı adına karar "
+     "vermektir.*"),
     ("B5/sema-israfi", 1,
      "🔴 **ŞEMA ÜRETİLİP ATILIYORDU.** `llm_sema_kisitli: beta` açık ve `ask()` her "
      "istekte `cube_query_json_schema` çağırıyordu; ama aktif sağlayıcı "
@@ -238,6 +250,20 @@ MUAFIYET_ASK_KOD = [
                       "dürüst olmayan bir mesajı SATIN ALMAZ"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("G2.9/boyut-adaylari", 9,
+     "🔴 **`yuksek` DÜZEYİN KALAN FARKI: BOYUT.** `app/netlestirme.py`'nin tablosu "
+     "`yuksek` için *«belirsiz ölçü/**boyutta** da sorar»* diyor. Ölçü tarafı `normal`'da "
+     "bile zaten soruluyor (`ask.py`'nin kendi şerhi: modülün modeli sevk edilen "
+     "davranışla çelişiyordu, kazanan sevk edilen davranış oldu) — yani `yuksek`'in "
+     "gerçek deltası **boyut belirsizliğiydi** ve o **hiç uygulanmamıştı**. "
+     "⚠ **TAŞINAMAZ:** `dimension_cube_candidates`, `measure_cube_candidates`'in "
+     "**ikizidir** ve onun **iki satır yanında** durmak zorunda. Bir modüle çıkarmak, "
+     "aynı soruya (*«bu terim birden çok cube'a mı ait?»*) cevap veren iki fonksiyonu "
+     "**iki dosyaya** bölerdi — ve ikisi zamanla iki farklı cevap verirdi. "
+     "🔴 Yeni tarayıcı **yazılmadı**: eşleştirmeyi `_match_dims` yapıyor, bu fonksiyon "
+     "yalnız *«kaç cube sahiplendi»* diye sayıyor. *Bir soruyu iki kez sormak, iki kez "
+     "cevaplamayı göze almaktır.* "
+     "⚠ Ve `yuksek` **varsayılan değil**: `normal`'da davranış birebir bugünkü (`KURAL B`)."),
     ("G6/kiyas-cebiri-cagrisi", 4,
      "🔴 **MUTLAK KIYAS → GÖRELİ KIYAS.** `route()` iki dönem adını **tek aralığa "
      "çöktürüyordu**: *«mart cirosunu şubat ile kıyasla»* → `gte 2026-02-01` + "

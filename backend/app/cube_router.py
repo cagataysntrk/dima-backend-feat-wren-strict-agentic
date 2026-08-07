@@ -1911,6 +1911,36 @@ def measure_cube_candidates(q: str, schema: dict) -> list[tuple[dict, str]]:
     return out
 
 
+def dimension_cube_candidates(q: str, schema: dict) -> list[tuple[dict, str]]:
+    """🔴 `G2.9` — Bir **BOYUT** sinonimi geçen ama cube-düzeyi sinonim geçMEyen cube'lar.
+
+    `measure_cube_candidates`'in **ikizidir** ve bilerek onun şeklini taşır: aynı soruya
+    (*"bu terim birden çok cube'a mı ait?"*) iki farklı biçimde cevap veren iki fonksiyon,
+    zamanla iki farklı cevap verirdi.
+
+    ## Neden bu fonksiyon var — `yuksek` düzeyinin KALAN farkı
+
+    `app/netlestirme.py`'nin tablosu: `yuksek` = *"sorar **+ belirsiz ölçü/boyutta da
+    sorar**"*. Ama ölçü tarafı **zaten** soruluyor (`normal`'da bile —
+    `test_netlestirme_onceligi` kilitliyor). Yani `yuksek`'in gerçek deltası **boyut**.
+
+    ⚠ Yeni tarayıcı **yazılmadı**: eşleştirmeyi `_match_dims` yapıyor, bu fonksiyon yalnız
+    *"kaç cube sahiplendi"* diye sayıyor. *Bir soruyu iki kez sormak, iki kez cevaplamayı
+    göze almaktır.*
+
+    ⚠ Ve kapsamı dar: cube-düzeyi sinonim geçen cube'lar **hariç** (onlar `route()`'un
+    işi) — ikizindeki kuralın aynısı.
+    """
+    out: list[tuple[dict, str]] = []
+    for c in schema.get("cubes", []):
+        if _any_hit(q, c.get("synonyms")):
+            continue                      # cube-düzeyi eşleşme → route halleder
+        dims = _match_dims(q, c)
+        if dims:
+            out.append((c, dims[0]))
+    return out
+
+
 # Bir adayı ayırt etmek için denenecek EN FAZLA sinonim sayısı. Her deneme tam bir
 # `route()` koşusudur (LLM'siz ama bedava değil); 8 denemede ayırt edilemeyen bir aday
 # pratikte ayırt edilemez.

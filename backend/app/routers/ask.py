@@ -2655,6 +2655,20 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             return None
         try:
             cands = cube_router.measure_cube_candidates(q_norm, schema)
+            # 🔴 `G2.9` — **`yuksek` DÜZEYİN KALAN FARKI: BOYUT.**
+            #
+            # `app/netlestirme.py`'nin tablosu `yuksek` için *"belirsiz ölçü/**boyutta**
+            # da sorar"* diyor. Ölçü tarafı `normal`'da bile zaten soruluyor (yukarıdaki
+            # şerh) — yani `yuksek`'in gerçek deltası **boyut belirsizliğiydi** ve o
+            # **hiç uygulanmamıştı**. Planın `G2.9`'u tam bunu istiyordu.
+            #
+            # ⚠ `yuksek` **varsayılan değil**: `normal`'da davranış **birebir bugünkü**
+            # kalır (`KURAL B`). Bu, modülün kendi uyarısının da gereği: *"kapsam düşer,
+            # sessiz-yanlış da"* — yani bu bir **takas**, ve takası seçen kiracıdır.
+            # *Bir kapsam kaybını varsayılan yapmak, kullanıcı adına karar vermektir.*
+            if _netlestirme_duzeyi(request) == "yuksek":
+                cands = list(cands) + list(
+                    cube_router.dimension_cube_candidates(q_norm, schema))
         except Exception:
             return None
         distinct_cubes = {c["name"]: (c, m) for c, m in cands}
