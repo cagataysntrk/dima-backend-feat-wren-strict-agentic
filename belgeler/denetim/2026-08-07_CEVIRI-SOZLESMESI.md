@@ -1944,3 +1944,48 @@ ve bir turu yanlış kusur sınıfına harcadım.
 **Kalan gerçek iş:** red **cümlesi**. Kullanıcı *"«hangi etti» başka bir konu"* değil,
 *"iade diye bir ölçüm yok; şunlar var…"* duymalı — ve o cümlenin sahibi `app/yetenek.py`
 (kapasite beyanı), netleştirme değil.
+
+---
+
+## 28 · İKİ SORU, İKİ LİSTE — ve bütçe bir SON TARİH oldu
+
+### 28.1 · ✅ `S` — Intent bütçesi son tarihe çevrildi
+
+Ölçüm ilk tasarımı çürütmüştü (`§27.2`): `intent_azami_saniye=20` konulu hâlde tek çağrı
+**47 544 ms**. Sebep: her oy için ayrı `result(timeout=azami)` ve her çağrı **kendi
+anından** sayıyor.
+
+*Bir bütçeyi parça başına vermek, bütçeyi parça sayısıyla çarpmaktır.*
+
+Son tarih **gönderimden önce** hesaplanıyor — sonra hesaplamak, iş kuyrukta beklerken
+geçen süreyi bütçe dışında bırakırdı. Kapı üç şartı da ölçüyor.
+
+### 28.2 · ✅ Anlamsız red cümlesi kapandı
+
+```
+"bu yıl hangi müşteri en çok iade etti"
+önce  🔴 "«hangi etti» başka bir konu gibi görünüyor. Hangisini istiyorsun?"
+sonra ✅ "Birden fazla konu anlaşıldı — hangisini istiyorsun?"
+```
+
+🔴 **Kök: bir liste, iki soru.** `unknown` **kapsam kapısının** listesidir (*"kaç kelimeyi
+açıklayamadım"*); kullanıcıya gösterilecek liste başka bir sorunun cevabıdır (*"neyi
+anlamadım"*).
+
+⚠ Ve kapı onları **saymak zorunda**: `hangi`/`etti`'yi dolgu sınıfına eklemek denendi ve
+`sessiz_yanlis` **12 → 13** çıktı (`§26.1`). Yani **sayılmalı ama gösterilmemeli**.
+
+*Aynı kelime bir kapıda kanıt, bir cümlede gürültü olabilir; listeyi soruya göre ayırmak,
+kelimeyi iki kez tanımlamaktan ucuzdur.*
+
+⊙ Yedek cümleler **zaten yazılıydı**: `netlestirme.olcu` (bir denetim ajanının bulduğu
+**sıfır tüketicili** söz) ve `netlestirme.konu`. Çözüm yeni metin değil, **devir**.
+
+### 28.3 · ⚠ Ve düzeltme bir kez YARIM kaldı
+
+Süzgeci önce yalnız *kısmi anlama* dalına uyguladım; curl aynı cümleyi **aynen**
+döndürdü — ölçülen vaka `other_topic` dalından geçiyordu.
+
+*Bir düzeltmeyi tek dala uygulamak, iki dalı olan bir kusuru yarım kapatır.*
+
+Kapı artık **her iki** dalın yedeğini ayrı ayrı ölçüyor.

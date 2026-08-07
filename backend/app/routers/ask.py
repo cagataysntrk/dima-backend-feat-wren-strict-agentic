@@ -715,6 +715,28 @@ def _guvenli_kapsam_disi(soru: str, schema: dict):
         return None
 
 
+#: 🔴 **YALNIZ GÖSTERİM SÜZGECİ — kapsam kapısına ASLA dokunmaz.**
+#:
+#: Türkçenin kapalı dilbilgisi sınıfları: soru sözcükleri ve `<ad> et-` bileşiğinin
+#: yardımcı öğesi. Bunlar kullanıcının **sorusunun konusu değildir**; *"«hangi etti»
+#: kısmını anlayamadım"* cümlesi kullanıcıya hiçbir şey söylemez.
+#:
+#: ⚠ **Kapsam kapısına eklenemezler** — denendi ve ölçüldü (`§26.1`): dolgu sınıfını
+#: genişletmek kapıyı gevşetti ve `sessiz_yanlis` **12 → 13** çıktı. Yani bu kelimeler
+#: **sayılmalı ama gösterilmemeli**.
+#:
+#: *Aynı kelime bir kapıda kanıt, bir cümlede gürültü olabilir; listeyi soruya göre
+#: ayırmak, kelimeyi iki kez tanımlamaktan ucuzdur.*
+_ISLEV_SOZCUKLERI = frozenset({
+    "hangi", "hangisi", "hangileri", "kim", "kimin", "kime",
+    "etti", "ettik", "ettiler", "etmis", "ediyor", "eden", "edildi",
+})
+
+
+def _islev_sozcugu(w: str) -> bool:
+    return str(w).lower() in _ISLEV_SOZCUKLERI
+
+
 def _resolve_period(prev: dict | None, cq: dict, period_expr, q_norm: str) -> tuple[dict, bool]:
     """ADR-0008 K3: LLM tarih YAZMAZ; dönem sırasıyla period_expr → mesaj metni →
     önceki raporun dönemi'nden PYTHON'la çözülür. Açık ifade çözülemezse (True):
@@ -3269,10 +3291,55 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             trace_msg = ("Intent-path: çapraz konu (rakip cube kimliği) → netleştirme "
                         "(LLM'siz)" if other_topic else
                         "Intent-path: kısmi anlama → rapor düşülmedi, netleştirme (LLM'siz)")
-            note = (f"\"{' '.join(unknown)}\" başka bir konu gibi görünüyor. "
-                   "Hangisini istiyorsun?" if other_topic else
-                   f"\"{' '.join(unknown)}\" kısmını anlayamadım, bu yüzden rapor "
-                   "düşülmedi. Ne demek istediğini biraz daha açar mısın?")
+            # 🔴 **CÜMLE, TANINMAYAN KELİMEYİ DEĞİL ANLAŞILMAYANI SÖYLER.**
+            #
+            # Curl'de ölçüldü (`§27.4`): *"bu yıl hangi müşteri en çok iade etti"* →
+            # ***"«hangi etti» başka bir konu gibi görünüyor"***. Kullanıcı ne yaptığını
+            # anlamaz: `hangi` bir soru sözcüğü, `etti` bir yardımcı fiil — ikisi de
+            # **onun sorusunun konusu değil**. Anlaşılmayan şey `iade`ydi.
+            #
+            # ⊙ Kök: `unknown` **kapsam kapısının** listesidir (dolgu olmayan her kelime),
+            # kullanıcıya gösterilecek liste değil. Kapı onu **saymak** için üretir;
+            # cümle onu **okumak** için kullanamaz.
+            #
+            # 🔴 Çözüm bir liste değil bir **devir**: `soz.py` bu cümleyi **zaten**
+            # taşıyor (`netlestirme.olcu`) ve bir denetim ajanı onun **sıfır tüketicili**
+            # olduğunu bulmuştu. Kelimeleri saymak yerine *"tanıdığım bir ölçü
+            # yakalayamadım — şunlardan biri mi?"* demek hem doğru hem zaten yazılı.
+            #
+            # ⚠ `other_topic` dalı **korunuyor**: orada gerçekten rakip bir cube kimliği
+            # var ve etiketleri (`labels`) göstermek anlamlı — o cümle kelime saymıyor.
+            #
+            # *Bir kapının iç listesi, kullanıcıya gösterilecek bir metin değildir:
+            # biri saymak için, öteki anlatmak için vardır.*
+            # 🔴 **İKİ SORU, İKİ LİSTE.** `unknown` **kapsam kapısının** listesidir:
+            # *"kaç kelimeyi açıklayamadım"*. Kullanıcıya gösterilecek liste başka bir
+            # sorunun cevabıdır: *"neyi anlamadım"*. Kapı `hangi`/`etti` gibi işlev
+            # sözcüklerini **saymak zorunda** (yoksa kapsam gevşer ve sessiz-yanlış
+            # artar — ölçüldü, `§26.1`: 12 → 13); ama onları **göstermek** anlamsızdır.
+            #
+            # ⚠ Bu yüzden süzgeç **yalnız gösterimde**: `unknown`'a dokunulmuyor.
+            # Ölçülen iki uç:
+            #   *"…hangi müşteri en çok iade etti"* → gösterilecek içerik kelimesi YOK
+            #     → *"tanıdığım bir ölçü yakalayamadım"* (`netlestirme.olcu`, ve o söz
+            #     bir denetim ajanının bulduğu **sıfır tüketicili** cümleydi)
+            #   *"…fizibilite…"* → içerik kelimesi VAR → adıyla söylenir (altın testler)
+            #
+            # *Bir kapının iç listesi, kullanıcıya gösterilecek bir metin değildir:
+            # biri saymak için, öteki anlatmak için vardır.*
+            _gosterilecek = [w for w in unknown if not _islev_sozcugu(w)]
+            # ⚠ Süzgeç **HER İKİ** dala uygulanır — ilk yazımda yalnız birine uyguladım
+            # ve curl *"«hangi etti» başka bir konu gibi görünüyor"*u aynen döndürdü:
+            # ölçülen vaka `other_topic` dalından geçiyordu.
+            # 🔴 Gösterilecek içerik kelimesi kalmayınca cümle **konuyu** söyler
+            # (`netlestirme.konu`) — çünkü rakip cube kimliği zaten `labels`'ta duruyor.
+            # *Bir düzeltmeyi tek dala uygulamak, iki dalı olan bir kusuru yarım kapatır.*
+            note = ((f"\"{' '.join(_gosterilecek)}\" başka bir konu gibi görünüyor. "
+                     "Hangisini istiyorsun?" if _gosterilecek
+                     else _soz.soz("netlestirme.konu")) if other_topic else
+                   (f"\"{' '.join(_gosterilecek)}\" kısmını anlayamadım, bu yüzden rapor "
+                    "düşülmedi. Ne demek istediğini biraz daha açar mısın?"
+                    if _gosterilecek else _soz.soz("netlestirme.olcu")))
             # ÇAPRAZ-ALAN PİLOTU BURADA DA DENENİR — canlı turda ölçüldü (3 Ağustos).
             #
             # `other_topic=True` demek: soruda **rakip bir cube kimliği** var — yani bu,

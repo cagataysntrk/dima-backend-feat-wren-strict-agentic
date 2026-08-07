@@ -161,3 +161,52 @@ def test_UCTAN_UCA_DONEM_SORUSU_NE_ANLADIGINI_SOYLUYOR(client):
     assert "çıkarabilirim" in metin, (
         f"🔴 yalnız soruyor, ne yapabileceğini söylemiyor: {metin!r}")
     assert "hangi dönem" in metin.lower()
+
+
+def test_KISMI_ANLAMA_CUMLESI_KELIME_SAYMIYOR():
+    """🔴 **Cümle, tanınmayan kelimeyi değil ANLAŞILMAYANI söyler** (`§27.4`).
+
+    Curl'de ölçüldü: *"bu yıl hangi müşteri en çok iade etti"* →
+    ***"«hangi etti» başka bir konu gibi görünüyor"***. Kullanıcı ne yaptığını anlamaz:
+    `hangi` bir soru sözcüğü, `etti` bir yardımcı fiil — ikisi de **sorusunun konusu
+    değil**. Anlaşılmayan şey `iade`ydi.
+
+    ⊙ Kök: `unknown` **kapsam kapısının** listesidir (dolgu olmayan her kelime), gösterim
+    listesi değil. Kapı onu **saymak** için üretir; cümle onu **okumak** için kullanamaz.
+
+    🔴 Çözüm bir liste değil bir **devir**: `netlestirme.olcu` bu cümleyi **zaten**
+    taşıyordu ve bir denetim ajanı onun **sıfır tüketicili** olduğunu bulmuştu.
+
+    *Bir kapının iç listesi, kullanıcıya gösterilecek bir metin değildir: biri saymak
+    için, öteki anlatmak için vardır.*
+    """
+    import inspect
+
+    from app.routers import ask as ask_mod
+
+    src = inspect.getsource(ask_mod)
+    i = src.index("_gosterilecek = [w for w in unknown")
+    blok = src[max(0, i - 200):i + 1600]
+    assert "_gosterilecek = [w for w in unknown if not _islev_sozcugu(w)]" in blok, (
+        "🔴 gösterim süzgeci yok — işlev sözcükleri kullanıcıya basılıyor")
+    # 🔴 **HER İKİ dalda** yedek cümle olmalı: `other_topic` → `netlestirme.konu`,
+    # kısmi anlama → `netlestirme.olcu`. İlk yazımda yalnız birine uygulandı ve curl
+    # *"«hangi etti» başka bir konu gibi görünüyor"*u aynen döndürdü.
+    # *Bir düzeltmeyi tek dala uygulamak, iki dalı olan bir kusuru yarım kapatır.*
+    for yedek in ('_soz.soz("netlestirme.olcu")', '_soz.soz("netlestirme.konu")'):
+        assert yedek in blok, f"🔴 yedek cümle yok: {yedek}"
+    # 🔴 Süzgeç YALNIZ gösterimde: `unknown`'a dokunmak kapsam kapısını gevşetir ve
+    # `sessiz_yanlis` 12 → 13 çıkar (ölçüldü, §26.1).
+    assert "unknown = [w for w in unknown" not in src, (
+        "🔴 süzgeç kapsam kapısına sızmış — sessiz-yanlış artar")
+
+
+def test_CAPRAZ_KONU_DALI_KORUNDU():
+    """⚠ Genişlemenin sınırı: `other_topic` dalında gerçekten **rakip bir cube kimliği**
+    var ve etiketleri göstermek anlamlı — o cümle kelime saymıyor.
+    *Bir kuralı düzeltmek, komşusunu bozma hakkı vermez.*"""
+    import inspect
+
+    from app.routers import ask as ask_mod
+
+    assert "başka bir konu gibi görünüyor" in inspect.getsource(ask_mod)
