@@ -526,9 +526,96 @@ uygulanabilir.
 
 ---
 
+## 13 · 🔴🔴 CANLI KOŞUM — TEŞHİS DEĞİŞTİ: LLM **INTENT'TE DEĞİL, ANLATIDA**
+
+> Canlı örneğe (`:8001`, tenant `boyahane`) **gerçek HTTP** ile iki tur atıldı ve
+> konteyner logları satır satır izlendi. Aşağıdaki her sayı o koşumdan.
+
+### 13.1 · Tur 1 — `makine bazında oee son 3 ay` *(taze, thread YOK)*
+
+```
+13:42:52  BAĞLAM  kural=taze:capa-yok  cube=None  eksen=()
+13:42:52  İSTEK   q='makine bazında oee son 3 ay'  followup=False
+13:42:54  yayilim: perdeleme: 2 metin · 5 yer tutucu     ← ANLATI maskeleme
+13:42:57  dima.llm: openrouter BAŞARILI (deepseek-v4-flash, 2936ms)   ← 🔴 LLM
+13:42:58  CEVAP   source=cube  satır=11  süre=5420ms
+```
+
+| ölçüt | değer |
+|---|---|
+| `source` | **`cube`** |
+| `explain.path` | *"cube (`route()` — **LLM'siz, sıfır maliyet**)"* · güven **1.0** |
+| `trace` | *"Intent-path: `cube_router.route()` (LLM'siz)"* · *"niyet: tür=kirilim · kırılım=makine,donem"* |
+| LLM çağrısı | **1** — ve **intent'ten SONRA**, `yayilim.perdele`'nin hemen ardından |
+
+🔴 **Intent için LLM ÇAĞRILMADI.** Tek LLM çağrısı **anlatıcı** (T2) — ve toplam sürenin
+**%54'ü** (2936/5420 ms).
+
+### 13.2 · Tur 2 — `aylara göre` *(aynı thread, `cube_query` yankılanmış)*
+
+```
+13:43:18  BAĞLAM  kural=yapisal:cube_query  cube=oee  eksen=('makine',)
+13:43:18  İSTEK   q='aylara göre'  followup=True(yapısal=True)
+13:43:19  yayilim: perdeleme: 1 metin · 1 yer tutucu     ← ANLATI maskeleme
+13:43:41  dima.llm: openrouter BAŞARILI (deepseek-v4-flash, 22564ms)  ← 🔴🔴 LLM
+13:43:42  CEVAP   source=cube  satır=22  süre=24285ms
+```
+
+| ölçüt | değer |
+|---|---|
+| `source` | **`cube`** |
+| `trace` | *"refine → **deterministik** düzenleme"* — `deterministic_refine`, 0 LLM |
+| cevabın kendisi | ~**1 saniye** (istek → 22 satır) |
+| 🔴 anlatıcı LLM | **22 564 ms** — toplam sürenin **%93'ü** |
+
+### 13.3 · 🔴 SONUÇ — hipotez A ÇÜRÜDÜ, gerçek sebep başka
+
+| iddia | ölçüm |
+|---|---|
+| *"Thread içinde deterministik soru LLM'e düşüyor"* (§11.2/A) | ❌ **ÇÜRÜDÜ** — `deterministic_refine` çalıştı, 0 LLM |
+| *"Intent LLM'e gidiyor"* | ❌ **ÇÜRÜDÜ** — iki turda da `route()`/`refine` çözdü |
+| 🔴 *"Her istekte LLM çağrısı var"* | ✅ **DOĞRU** — ama **anlatıcı**, intent değil |
+
+> 🔴 **Kullanıcının gördüğü LLM çağrısı gerçek; attığı yer yanlıştı.** Garson siparişi
+> **almıyor** — garson tabağı **anlatıyor**. Ve anlatmak, yemeği pişirmekten **20 kat**
+> uzun sürüyor.
+
+### 13.4 · Ve deterministik özet ZATEN ORADA — yeterli
+
+Aynı cevapta iki metin birden üretiliyor:
+
+| kaynak | metin | maliyet |
+|---|---|---|
+| 🟢 `interpret()` — **deterministik** | *"En yüksek makine: DİJİTAL BASKI (0,63 %). En düşük: RAM-3 (0,55 %); 11 kalem."* | **0 LLM · 0 ms** |
+| 🔴 `t2_anlatici` — **LLM** | *"Geçen 3 aylık dönemde en yüksek OEE değerine sahip makine DİJİTAL BASKI oldu ve 0,63% seviyesinde gerçekleşti. En düşük OEE ise RAM-3 makinesinde 0,55%…"* | **2 936 ms** *(T2'de 22 564 ms)* |
+
+🔴 **İkisi aynı üç olguyu söylüyor.** LLM'in kattığı şey **üslup**, bilgi değil — ve bu
+vakada üslubun fiyatı cevabın kendisinin **20 katı**.
+
+### 13.5 · YAPILACAK — anlatı merdiveni *(§7'ye 1.5 olarak girer, en yüksek öncelik)*
+
+Bu, canlı denetimin ilk turunda da bulunmuştu (*"anlatıda deterministik ilk basamak
+yok"*) ve şimdi **fiyatlandı**:
+
+| # | iş |
+|---|---|
+| **1.5a** | 🔴 **Basit vakada anlatı `interpret()`'in `summary`'sinden gelsin** — tek ölçü · ≤1 kırılım · kıyas yok. Ölçülen kazanç: **−2,9 sn** (T1) · **−22,6 sn** (T2) |
+| **1.5b** | LLM anlatıcısı yalnız **karmaşık** vakaya kalsın (çok ölçü · kıyas + segment · katkı ayrıştırması) — *"ne yüksek ne düşük"* zaten şablonla söylenebiliyor |
+| **1.5c** | Karmaşıklık ölçütü **yapıdan** okunsun (`measures` · `dimensions` · `compare` · `blend` sayısı), metinden değil — ikinci bir dil ayrıştırıcısı doğmasın |
+| **1.5d** | ⚠ Sağlayıcı gecikmesi ayrıca bakılmalı: `deepseek-v4-flash` **22,5 sn** sürdü. *"Flash"* bir modelde bu bir sapma; failover/zaman aşımı eşiği ölçülmeli |
+
+⚠ Ve `narration_guard` korunur: deterministik özet zaten **sayıyı sistemden** alıyor,
+yani guard'ın koruduğu şey **yapısal olarak** garanti — LLM anlatısında olmayan bir güvence.
+
+*Bir cevabı süslemek için, cevabın kendisinden yirmi kat uzun beklemek, süslemek değil
+geciktirmektir.*
+
+
+---
+
 *Ölçüm kaynakları: `app/cube_router.py` (anahtar taraması · `parse_cube_query` ·
 `_measure_threshold` · `_top_n` · marjinler `:908`·`:932`·`:937`·`:947`) ·
 `app/intent_semasi.py` (şema alanları) · `app/llm.py` (`_cube_select_system` ↔
 `_cube_refine_user`) · `app/uyum.py:212` · `app/routers/ask.py:2080`·`2194`·`2509`·`2734`·`2895` ·
-`demo/packs/starters.yml` (10 chip, route ölçümü) · `lab/reports/gercek_dunya.md`
+`demo/packs/starters.yml` (10 chip, route ölçümü) · **canlı koşum** (`:8001`, tenant `boyahane`, 2 tur, konteyner logları) · `lab/reports/gercek_dunya.md`
 (2285 vaka · kademe kırılımı) · canlı Intent turu (9 çağrı).*
