@@ -93,6 +93,30 @@ class Sinir:
 #: olmadığı ilan edilmiş bir yeteneğin** en yaygın çağırma biçimlerini adlandırmaktır.
 #: Kaçan bir biçim Discovery'ye düşer — yani **bugünkü davranış**; bu kapı hiçbir şeyi
 #: kötüleştirmez, yalnız yakaladığını dürüstçe reddeder.
+#: 🔴 **YARGI SINIRI — canlı bulgu (§18.2).** *"bu ay iyi miyiz kötü müyüz"* →
+#: *"ort oee çıkarabilirim — hangi dönem için?"*. Kullanıcı **yargı** istedi; sistemde
+#: eşik/hedef yok ve korpusun **açık yasağı** var: *"iyi/kötü yargısını bir eşik
+#: uydurarak vermek."*
+#:
+#: ⚠ Bu bir **sınırdır, bir kapsam eksiği değil**: sayıyı verebiliriz, **yargıyı**
+#: veremeyiz. Beyan edilmiş bir referans varsa sahibi `app/hedef.py` (`ADR-0028`:
+#: **hedef UYDURULMAZ**) — o beyan geldiğinde bu sınır kendiliğinden dar alır.
+#:
+#: *Bir eşiği uydurarak verilen yargı, yanlış bir sayıdan daha zor fark edilir: sayı
+#: sorgulanır, yargı benimsenir.*
+_YARGI = (
+    "iyi mi", "iyi miyiz", "kotu mu", "kötü mü", "kotu muyuz", "kötü müyüz",
+    "iyi gidiyor mu", "kotu gidiyor mu", "kötü gidiyor mu",
+    "yeterli mi", "normal mi", "basarili mi", "başarılı mı",
+)
+
+
+def _yargi_mi(q: str) -> bool:
+    """Soru bir **yargı** istiyor mu — sayı değil, hüküm?"""
+    qn = _norm(q)
+    return any(_norm(w) in qn for w in _YARGI)
+
+
 _FORECAST = (
     "bu gidisle", "bu gidişle", "gidisat", "gidişat",
     "tahmin", "ongoru", "öngörü", "ongor", "öngör",
@@ -339,6 +363,22 @@ def kapsam_disi(q: str, schema: dict) -> Sinir | None:
                    "sıfır olan grubu görebiliriz."),
             gerekce="olumsuzluk filtresi (neq/not_in) v1'de bağlı değil",
             oneriler=onerileri_kur(schema, tur="olumsuzluk"))
+
+    if _yargi_mi(q):
+        # 🔴 §18.2 — sınır **netleştirmeden önce** konuşur (`_guvenli_kapsam_disi`
+        # dönem dalından da çağrılıyor). Aksi hâlde sistem ölçü + dönem sorar, kullanıcı
+        # ikisini de verir, ve sonunda **yargı yerine bir sayı** alır.
+        return Sinir(
+            tur="yargi", kutu=KUTU_YAPMIYORUM,
+            mesaj=("Bu bir **yargı** sorusu — *iyi mi, kötü mü*. Sayıyı verebilirim ama "
+                   "hükmü veremem: bunun için bir **eşik ya da hedef** gerekir ve "
+                   "katalogda beyan edilmiş bir hedef yok.\n\n"
+                   "Bir eşik **uydurmam** — uydurulmuş bir eşikle verilen yargı, yanlış "
+                   "bir sayıdan daha zor fark edilir; sayı sorgulanır, yargı benimsenir."
+                   "\n\nYapabildiğim: sayıyı ve **değişimini** göstermek — "
+                   "*«geçen aya göre»* dersen yönü birlikte okuruz."),
+            gerekce="yargı için beyan edilmiş eşik/hedef yok (ADR-0028)",
+            oneriler=onerileri_kur(schema, tur="yargi"))
 
     ikili = _iki_cube_olcusu(q, schema)
     if ikili:

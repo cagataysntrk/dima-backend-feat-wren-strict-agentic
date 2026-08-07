@@ -510,7 +510,11 @@ class AnthropicSqlGenerator:
 
     def anlat(self, soru: str, gercekler: list[str]) -> str:
         """T2 anlatıcı (FAZ 5). Çıktı ÇAĞIRAN tarafından `narration_guard`'tan GEÇİRİLİR —
-        bu metodun dönüşü HAM'dır ve doğrudan yayımlanamaz."""
+        bu metodun dönüşü HAM'dır ve doğrudan yayımlanamaz.
+
+        ⚠ Zaman bütçesi çağıranda (`answer._anlati_ekle`), burada değil: bütçe bir **ürün
+        kararıdır** (*"süs ne kadar bekletebilir"*), sağlayıcı ayrıntısı değil.
+        """
         return self._ask(_anlati_system(), _anlati_user(soru, gercekler),
                          model=self._select_model)
 

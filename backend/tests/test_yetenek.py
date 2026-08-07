@@ -170,8 +170,26 @@ def test_KAPI_DISCOVERY_ONUNDE_BAGLI():
 
     src = (pathlib.Path(__file__).resolve().parents[1]
            / "app" / "routers" / "ask.py").read_text(encoding="utf-8")
+    # ⟳ **ÇAPA KAYDI.** Çağrı artık `_guvenli_kapsam_disi(` sarmalayıcısından geçiyor
+    # (iki çağıran, tek `try/except` sözleşmesi — `KAT-1`). Eski çapa `_yetenek.kapsam_disi(`
+    # artık **yalnız sarmalayıcının gövdesinde** geçiyor ve o, dosyanın başında duruyor;
+    # kapı bu yüzden kırmızı verdi ve **haklıydı**: ölçtüğü şey konum, çapası kaymıştı.
+    #
+    # 🔴 Kapı GEVŞETİLMEDİ, **genişletildi**: artık `kapsam_disi`'yi çağıran **her yer**
+    # Discovery'den önce olmak zorunda. İkinci çağıran (`AJ`/§17.4 — dönem netleştirmesi
+    # sınırı **önce** sorar) bu yüzden ayrıca ölçülüyor.
+    #
+    # *Bir kapının çapası kayınca doğru tepki onu silmek değil, yeniden çakmaktır.*
     i_yol = src.index('_yol_izinli("discovery")')
-    i_yet = src.index("_yetenek.kapsam_disi(")
     i_disc = src.index("def _run_discovery(")
-    assert i_yol < i_yet < i_disc, \
-        "🔴 yetenek kapısı Discovery'nin önünde değil — konum bozulmuş"
+    cagrilar = [m for m in range(len(src))
+                if src.startswith("_guvenli_kapsam_disi(", m)
+                and not src.startswith("def _guvenli_kapsam_disi(", max(0, m - 4))]
+    assert len(cagrilar) >= 2, (
+        f"🔴 beklenen iki çağıran (asıl kapı + dönem netleştirmesi) yok: {len(cagrilar)}")
+    assert max(cagrilar) < i_disc, (
+        "🔴 bir `kapsam_disi` çağrısı Discovery'den SONRA — o dal sınırı hiç duymaz")
+    # Asıl kapı hâlâ `_yol_izinli("discovery")`'den sonra: erken bağlanırsa cevaplanabilir
+    # sorular kesilir. ⚠ Dönem netleştirmesi ondan ÖNCEdir ve bu **kasıtlıdır** (§17.4).
+    assert any(c > i_yol for c in cagrilar), (
+        "🔴 asıl kapı Discovery yol izninden önce — cevaplanabilir sorular kesilir")

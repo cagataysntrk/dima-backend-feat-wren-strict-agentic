@@ -82,6 +82,8 @@ TABAN_CUBE_ROUTER_KOD = 1664  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("sinir-once/3", 3,
+     "🔴 **CANLI CURL BULGUSU: sınır GEÇ konuştu, yani hiç konuşmadı.** *«gelecek ay ciro tahmini»* → *«toplam ciro çıkarabilirim — hangi dönem için?»*. Kullanıcı **gelecek** sordu, sistem **geçmiş** için dönem soruyor; bir dönem söylerse sistem **yapamadığı şeyi yapmış gibi** sayı döner. ⊙ Sınır **vardı** (`kapsam_disi` → `forecast`), kapısı bu daldan çok sonra duruyordu. ⚠ **TAŞINAMAZ:** kapı yukarı **taşınmadı** — yalnız dönem netleştirmesi ona soruyor. Taşımak `route()`/Intent-JSON'un cevapladığı soruları da sınır beyanına çevirebilirdi ve o takas **ölçülmedi**. *Bir sırayı düzeltmek, sırayı baştan yazmak değildir.* *Bir sınırı bilmek, onu doğru anda söylemekten farklıdır; geç söylenen sınır, söylenmemiş sınırdır.*"),
     ("sosyal/baglam-kapisi", 2,
      "🔴 **CANLI CURL BULGUSU: kök-neden sorusu VEDA sanıldı.** *«peki bu neden düşük»* → "
      "*«Görüşürüz! İstediğin zaman buradayım.»* — 371 ms, 0 LLM, kendinden emin: en ucuz, "
@@ -465,6 +467,8 @@ MUAFIYET_CUBE_ROUTER_KOD = [
 #: değil sessiz bir tavan artışıdır* (bu dosyanın kendi cümlesi). Dosya muafiyeti bu yüzden
 #: **ayrı** sayılır ve `ask()` tavanına **dokunmaz**.
 MUAFIYET_ASK_DOSYA = [
+    ("sinir-once/6", 6,
+     "🔴 **CANLI CURL BULGUSU: sınır GEÇ konuştu, yani hiç konuşmadı.** *«gelecek ay ciro tahmini»* → *«toplam ciro çıkarabilirim — hangi dönem için?»*. Kullanıcı **gelecek** sordu, sistem **geçmiş** için dönem soruyor; bir dönem söylerse sistem **yapamadığı şeyi yapmış gibi** sayı döner. ⊙ Sınır **vardı** (`kapsam_disi` → `forecast`), kapısı bu daldan çok sonra duruyordu. ⚠ **TAŞINAMAZ:** kapı yukarı **taşınmadı** — yalnız dönem netleştirmesi ona soruyor. Taşımak `route()`/Intent-JSON'un cevapladığı soruları da sınır beyanına çevirebilirdi ve o takas **ölçülmedi**. *Bir sırayı düzeltmek, sırayı baştan yazmak değildir.* *Bir sınırı bilmek, onu doğru anda söylemekten farklıdır; geç söylenen sınır, söylenmemiş sınırdır.*"),
     ("garson/DA-5+DA-10", 7,
      "🔴 İKİ DENETİM BULGUSU, ikisi de `ask()` gövdesinde ve ikisi de TAŞINAMAZ. "
      "**(a) `DA-5` — `G2`'nin kill-switch'i (`diyalog_bellegi`).** Katman inmişti, bayrağı "

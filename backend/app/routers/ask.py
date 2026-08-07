@@ -701,6 +701,20 @@ def _drop_invented(cq: dict, q_norm: str, prev: dict | None = None) -> dict:
     return out
 
 
+def _guvenli_kapsam_disi(soru: str, schema: dict):
+    """`yetenek.kapsam_disi` — patlarsa `None` (cevap yolu **kesilmez**).
+
+    🔴 Neden ayrı: iki çağıranı var (dönem netleştirmesi ve `:3690`'daki asıl kapı) ve
+    ikisi de *"sınır varsa söyle, yoksa devam et"* sözleşmesini paylaşıyor. Aynı
+    `try/except`'i iki kez yazmak, bir gün yalnız birinde yazmak demekti.
+    """
+    try:
+        return _yetenek.kapsam_disi(soru, schema)
+    except Exception:                                  # noqa: BLE001 — sınır cevabı DÜŞÜRMEZ
+        _log.warning("yetenek sınırı sorulamadı (best-effort)", exc_info=True)
+        return None
+
+
 def _resolve_period(prev: dict | None, cq: dict, period_expr, q_norm: str) -> tuple[dict, bool]:
     """ADR-0008 K3: LLM tarih YAZMAZ; dönem sırasıyla period_expr → mesaj metni →
     önceki raporun dönemi'nden PYTHON'la çözülür. Açık ifade çözülemezse (True):
@@ -2061,6 +2075,26 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # hesap; ikinci bir adlandırıcı yazmak `KAT-1` olurdu. Ölçü çıkarılamazsa
         # `donem_sade`'ye düşer: *"Bunu çıkarabilirim — hangi dönem için?"* — yine önce
         # yapabileceğini söyler.
+        # 🔴 **SINIRI ÖNCE SÖYLE — canlı curl bulgusu (§17.4).**
+        #
+        # Ölçüldü: *"gelecek ay ciro tahmini"* → *"toplam ciro çıkarabilirim — hangi dönem
+        # için?"*. Kullanıcı **gelecek** sordu, sistem **geçmiş** için dönem soruyor. Ve
+        # bir dönem söylerse, sistem **yapamadığı şeyi yapmış gibi** bir sayı dönecek.
+        #
+        # ⊙ Sınır **vardı**: `yetenek.kapsam_disi("gelecek ay ciro tahmini")` → `forecast`.
+        # Konuşmadı çünkü kapısı bu daldan **çok sonra** duruyor (`:3690`).
+        #
+        # *Bir sınırı bilmek, onu doğru anda söylemekten farklıdır; geç söylenen sınır,
+        # söylenmemiş sınırdır.*
+        #
+        # ⚠ Kapsam **dar tutuldu**: kapı yukarı **taşınmadı**, yalnız bu dal ona soruyor.
+        # Taşımak `route()`/Intent-JSON'un cevapladığı soruları da sınır beyanına
+        # çevirebilirdi — ve o takas ölçülmedi. *Bir sırayı düzeltmek, sırayı baştan
+        # yazmak değildir.*
+        if (_sinir_once := _guvenli_kapsam_disi(body.question or "", schema)) is not None:
+            return _finish(AskResponse(
+                **_yetenek.yanit_alanlari(_sinir_once, body.question, schema)))
+
         _ne = None
         try:
             from app.temellendirme import kur as _tkur
@@ -3726,7 +3760,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     # ⚠ KONUM BAĞLAYICI: burası `route()` ve Intent-JSON'ın İKİSİ de pes ettikten sonra.
     # Yani cevaplanabilen hiçbir soru bu kapıya uğramaz — modülün güvencesi kodunda
     # değil, **çağrıldığı yerde** yaşıyor.
-    if (_sinir := _yetenek.kapsam_disi(body.question or "", schema)) is not None:
+    if (_sinir := _guvenli_kapsam_disi(body.question or "", schema)) is not None:
         return _finish(AskResponse(
             **_yetenek.yanit_alanlari(_sinir, body.question, schema)))
 

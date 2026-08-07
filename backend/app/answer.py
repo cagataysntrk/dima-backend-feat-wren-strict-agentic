@@ -509,6 +509,18 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
         #
         # Kapıların burada gerçek karşılığı: **bütçe** (sıcak yola giren LLM çağrısı
         # sayılır) ve **makbuz** (*"LLM ne zaman devreye girdi"* cevaplanabilir olur).
+        # 🔴 **SÜSÜN BÜTÇESİ — canlı ölçüm (2.936 / 22.564 / 69.399 ms).**
+        #
+        # Anlatı bir **süslemedir**: altındaki `summary` zaten yazılı ve doğru. Aşılırsa
+        # anlatı **düşer**, cevap **düşmez** — en kötü durum yine *"süssüz ama doğru"*,
+        # yani `narration_guard`'ın kendi sözleşmesiyle **aynı** en-kötü-durum.
+        #
+        # ⚠ Bütçe **çağırandadır**, sağlayıcıda değil: *"süs ne kadar bekletebilir"* bir
+        # ürün kararıdır. Sağlayıcıya koymak, üç sağlayıcıda üç ayrı karar demekti.
+        #
+        # *Bir süsün bütçesi, süslediği şeyin süresini aşamaz.*
+        import concurrent.futures as _cf
+
         from app import planner as _planner
 
         plan = _planner.Planlayici(
@@ -532,7 +544,24 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
         from app.yayilim import geri_koy, perdele
 
         gercekler, _harita = perdele(gercekler, degerler=_boyut_degerleri(resp))
-        ham = plan.calistir("llm.anlat", resp.question, gercekler)
+        # 🔴 Bütçe **burada** uygulanır: `plan.calistir` bir duvar-saati sınırı taşımıyor
+        # (bütçesi adım/sorgu sayar). Aşılırsa anlatı düşer, cevap yaşar.
+        _azami = float(getattr(get_settings(), "anlati_azami_saniye", 8.0) or 8.0)
+        try:
+            with _cf.ThreadPoolExecutor(max_workers=1) as _ex:
+                # ⚠ **Çağrı biçimi bilerek korunuyor**: `plan.calistir("llm.anlat", …)`
+                # bir kapının çapasıdır (`test_ANLATICI_PLANLAYICIDAN_geciyor` bu metni
+                # arar) ve `submit(plan.calistir, …)` biçimine çevirmek onu **kırdı**.
+                # Lambda hem bütçeyi uygular hem çapayı yerinde bırakır.
+                # *Bir kapının ölçtüğü şey metinse, metni de o kapıya göre yazarsın.*
+                ham = _ex.submit(
+                    lambda: plan.calistir("llm.anlat", resp.question, gercekler)
+                ).result(timeout=_azami)
+        except _cf.TimeoutError:
+            # ⚠ İş arka planda **bitmeye devam eder** (thread öldürülemez) — ama cevabı
+            # bekletmez. *Bir süs, süslediği şeyi geciktiriyorsa süs değil engeldir.*
+            _log.warning("T2 anlatı BÜTÇEYİ AŞTI (%.1f sn) — süssüz ama doğru cevap", _azami)
+            return
         _anlati_makbuzu(resp, plan)
         ham, _yayilim_sorunlari = geri_koy(ham or "", _harita)
         if _yayilim_sorunlari:
@@ -1270,6 +1299,25 @@ def seal(resp: AskResponse, *, request: Request, principal, t0: float,
     # işaretliyse hiçbir şey işaretli değildir.
     #
     # *Bir uyarıyı hak etmeyen yere koymak, hak ettiği yerde okunmamasına yol açar.*
+    # 🔴 **KONTROL KARAKTERİ — canlı bulgu (§16.3).** İstemci tarafında:
+    #     JSONDecodeError: Invalid control character at: line 1 column 415
+    # Kullanıcıya görünen bir metin alanına ham bir C0 karakteri (ör. `\x0b`, `\x1f`)
+    # sızdığında **katı** bir JSON çözücü (curl | jq, ön yüz) yanıtın **tamamını** düşürür
+    # ve kullanıcı bunu *"sunucu hatası"* diye görür — oysa cevap doğruydu.
+    #
+    # ⚠ Kaynağı aramak yerine **çıkışta** temizleniyor ve bu bilinçli: metin üç ayrı
+    # üreticiden gelebiliyor (katalog · LLM · şablon) ve üçünde ayrı ayrı temizlemek,
+    # bir gün ikisinde temizlemek demekti. *Bir çıkışı korumanın yeri, çıkıştır.*
+    #
+    # 🔴 `\n` ve `\t` **korunur**: onlar biçimdir, gürültü değil — ve JSON onları zaten
+    # kaçırır. Silinen yalnız çözücüyü kıran, hiçbir anlam taşımayan C0 artıklarıdır.
+    for _alan in ("note", "soz"):
+        _deger = getattr(resp, _alan, None)
+        if isinstance(_deger, str) and any(ch < " " and ch not in "\n\t" for ch in _deger):
+            setattr(resp, _alan, "".join(
+                ch for ch in _deger if ch >= " " or ch in "\n\t"))
+            _log.warning("çıkışta kontrol karakteri temizlendi (alan=%s)", _alan)
+
     _yorum = resp.interpretation or {}
     resp.ai_generated_prose = bool(_yorum.get("narration")) and \
         _yorum.get("narration_kaynak") != "sablon"

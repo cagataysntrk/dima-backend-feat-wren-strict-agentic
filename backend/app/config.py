@@ -128,6 +128,16 @@ class Settings(BaseSettings):
     #
     # *Bir öğrenme deposu, öğrendiğini ne zaman unutacağını bilmiyorsa, öğrenmez —
     # ezberler; ve ezber, düzeltilen kusuru da korur.*
+    # 🔴 **ANLATININ ZAMAN BÜTÇESİ** — canlı ölçüm (2026-08-07): aynı sağlayıcı aynı iş
+    # için **2.936 ms ↔ 22.564 ms ↔ 69.399 ms** yaptı, ve *flash* adlı bir modelde.
+    #
+    # ⚠ Anlatı bir **süslemedir**: altındaki `summary` zaten yazılı ve doğru. 22 saniyelik
+    # bir üslup için kullanıcıyı bekletmek, cevabı geciktirmenin karşılığı olmayan biçimi.
+    # Aşılırsa anlatı **düşer**, cevap **düşmez** — en kötü durum yine *"süssüz ama doğru"*.
+    #
+    # *Bir süsün bütçesi, süslediği şeyin süresini aşamaz.*
+    anlati_azami_saniye: float = 8.0
+
     vqr_acik: bool = False
 
     # Verified Query Repository dosyası (boş = <proje>/knowledge/verified/queries.jsonl).
