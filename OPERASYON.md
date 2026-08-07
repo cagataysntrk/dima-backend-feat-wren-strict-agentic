@@ -294,6 +294,42 @@ yeniden üretilir.
 10. **Paylaşılan repo:** her git işleminden önce durum yeniden kontrol edilir; ana dizinde
     **asla** `checkout`/`stash` yapılmaz.
 
+### 🔴 `K1…K8` — GARSON FAZININ BEDELİ ÖDENMİŞ SEKİZ KURALI *(2026-08-07)*
+
+> Hepsi bu turda **gerçek bir kusurdan** doğdu; hiçbiri önlem değil **fatura**.
+> Kaynak: `DIKKAT-EDILECEKLER.md §3` + üç denetim ajanının bulguları.
+
+11. **`K1` · Ajan raporu İKİNCİ EL KANITTIR.** Üç ajanın 13 bulgusundan **biri yanlıştı**
+    (`DA-6`); kodu okumadan uygulasaydım **çalışan bir meta-kapıyı sökmüş** olurdum.
+    *Kodu okumadan uygulanan bir düzeltme, olmayan bir kusuru «düzelterek» gerçek bir
+    kapıyı söker.*
+12. **`K2` · `except Exception` YAZILMAMIŞ KODU DA GİZLER.** Bir `NameError` bir demet
+    boyunca yutuldu ve iddia kapısı **şemasız** koştu. → Bir `except`'in kapsadığı çağrı
+    testte **en az bir kez gerçekten** koşmalı (yapısal kapı: AST ile import denetimi).
+13. **`K3` · Bir dilin derleyicisi koşulmuyorsa, o dilde yazılan her şey DENETİMSİZDİR.**
+    `tsc` bu operasyonda **ilk kez** çağrıldı; frontend iki demettir derlenmiyordu ve
+    Python süiti yeşildi. ⚠ Açık borç: `tsc` gecelik CI'da hâlâ koşmuyor.
+14. **`K4` · Her cevapta dolu olan bir alan, bir AYRIM ÖLÇÜTÜ olamaz.** `kanit_sinifi`
+    raporlanabilirlik kapısını totolojiye çevirmişti. *İki kusur üst üste bindiğinde,
+    birini kapatmak ötekini bulur* — altından `soz` çıktı.
+15. **`K5` · Bir alanın VAR OLMASI, taşınması demek değildir.** `G2`'nin bellek zinciri
+    tamamen yazılmış ve testliydi; istemci tipinde **tek satır** eksikti ve `KURAL_DEVAM`
+    üretimde **hiç ateşlenmedi**. Yetim kapısı da yeşil veriyordu (sınıf körlüğü):
+    cevap alanı **okunur**, istek alanı **doldurulup gönderilir** — kanıt sınıfa göre değişir.
+16. **`K6` · Bir satırı RAPORLAMAK, onu ölçmek değildir.** Ölçüm aleti on satır basıyor,
+    dördünü hiç ölçmüyordu; `0|0|0` **başarısız** gibi okunuyordu. *Raporlanan ölçülmemiş
+    bir satır, başarısız bir satırdan zararlıdır: sessizdir.*
+17. **`K7` · Merkezî dosyaya dokunan DEMETİ KÜÇÜK TUT.** Bu turda dokuz kırmızı en sona
+    kadar görünmedi. ⚠ Bu, `--hepsi`'yi **sıklaştırmak** demek DEĞİL — o yerelde koşulmaz
+    (`CLAUDE.md`, ihlal edildi ve bedeli ~40 dk oldu). Doğru okuma: demeti küçük tut,
+    sonunda **bir kez** ölç. *Bir kapıyı sona bırakmak onu teftişe çevirir; sık koşmak ise
+    atlanan bir kapıya.*
+18. **`K8` · Bir kill-switch YAML'de GÖRÜNMESİ yetmez, OKUNDUĞU ölçülmeli.**
+    `diyalog_bellegi: on` → YAML bunu **boolean** okur, `resolve_for` elemez → bayrak
+    **sessizce açık** kalır. Yani kapatmak için yazılmış madde kendi kusurunu üretti.
+    → Geçerli aşamalar yalnız `off` · `alpha` · `beta` · `prod`; bayrak ayrıca
+    `FLAG_REGISTRY`'de **adlandırılmış** olmalı.
+
 ---
 
 ## 7 · 🔴 ARKA PLAN DENETİMİ — üç ajan, her faz sonunda
@@ -388,6 +424,59 @@ FAZ  8     AÇILMA (8.1 kod değil, takvim penceresi — FAZ 1'den sonra AÇILIR
 
 ⚠ **Kalan 10 belge kusuru** (sayı çelişkileri · 4 ölü bayrak · `II-D.1b` · iki biçim
 hatası · FAZ 7 kapsamı) **ayrı tur açılmadan**, ilgili faza gelindiğinde düzeltilir.
+
+---
+
+## 10b · 🔴 SIRADAKİ FAZ — ŞEMA BUDAMASI *(`B1…B6`, tasarım hazır)*
+
+> **Tasarım `DIKKAT-EDILECEKLER.md §4`'te** — dört ölçümle yazıldı. Buraya **kopyalanmaz**
+> (`D1`: kaynağı güncelle, kopyalama); buraya giren yalnız **bağlayıcı sıra ve şartlar**.
+
+### Neden bu faz
+
+Ölçüldü (23 cube'luk demo): intent yolunun katalog metni **4.038 token**, Discovery şema
+prompt'u **16.767 token**, ve `oneOf` şeması **10.038 token** — sonuncusu üretilip
+**atılıyordu** (`B5` ✅ kapandı: sağlayıcı artık `sema_kullanir` ile yeteneğini beyan
+ediyor). Kalan iki kalem **hiç ele alınmadı**; planın kendisi budamadan **söz etmiyor**
+(`P3`).
+
+⚠ Bu **23 cube**'luk bir demo. 100 cube'lu bir müşteride sayı ~4 katına çıkar.
+
+### 🔴 ÜÇ BAĞLAYICI ÖN KOŞUL — bunlar olmadan `prod` YASAK
+
+1. **Etiketli route-BAŞARISIZLIK korpusu (~100 vaka).** Bugün elde **2** var.
+   🔴 Sebep bir ölçüm hatasıdır ve adı konulmalı: mevcut yer gerçeği `route()`'un
+   **başarısından** geliyor — oysa budama yalnız **`route()` pes ettiğinde** önemlidir
+   (LLM ancak o zaman çağrılır). *Bir ölçümün sayısı değil, hangi nüfustan geldiği karar
+   verir.*
+2. **Bayrak + FAIL-OPEN.** `sema_budama: alpha`; seçim **boş** dönerse **tam katalog**.
+   Ölçüldü: yalnız `ilgili_cubelar` ile budama vakaların **%13,4'ünde doğru cube'u
+   DÜŞÜRÜYOR** — bazılarında boş dönüyor. Doğru cube budanırsa LLM **yanlış menüyü**
+   görür ve **sessiz-yanlış** üretir: bu deponun en pahalı hata sınıfı.
+3. **`KURAL G-1`** — canlı sağlayıcıyla **iki koşum**; ayrışırsa karar yok (`⊘`).
+
+### Tasarım kararı — tek sinyal DEĞİL, BİRLEŞİM
+
+`ilgili_cubelar` (cube kimliği **ve boyut** sinonimleri) ∪ `measure_cube_candidates`
+(**ölçü** sinonimleri). Üç bağımsız kümede ölçüldü: birleşim **%100 recall · 0 kayıp ·
+%83–88 tasarruf**; tek sinyaller sırasıyla %95,8 (15 kayıp) ve %89,7 (37 kayıp).
+*İki sinyal farklı eksenlerden bakıyor; birini seçmek ötekinin gördüğünü kör etmektir.*
+
+### Sıra ve kapıları
+
+| adım | ne | kapı |
+|---|---|---|
+| `B1` | `budanmis_index(q, schema)` — **saf fonksiyon**, birleşim + fail-open | birim test: üç küme, **recall %100** |
+| `B2` | Etiketli route-başarısızlık korpusu (~100 vaka) | `test_budama_recall.py` — **kayıp 0** şartı |
+| `B3` | `ask.py`'de **bayrak arkasında** bağla | korpus gerilemesin · `sessiz_yanlis` **artmasın** |
+| `B4` | Token ölçümü: gerçek çağrıda önce/sonra | `lab/` raporu — **beyan değil SAYI** |
+| `B5` | ✅ **KAPANDI** — boşuna üretilen `oneOf` şeması | `test_sema_kisitli.py` |
+| `B6` | Prompt caching — **üç katmanlı önek** | ⚠ aşağıdaki gerilim |
+
+🔴 **`B6`'nın gerilimi yazılı olsun:** budama her sorguda **farklı** önek üretir, caching
+**sabit** önek ister. İkisi *"iki kaldıraç"* diye **toplanamaz** — kısmen birbirini iptal
+eder. Çözüm katmanlamadır: sabit kurallar · **yarı-sabit tenant kataloğu (BUDANMAZ)** ·
+değişken soru. Budama **değişken** katmanda kalır.
 
 ---
 

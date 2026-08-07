@@ -486,6 +486,10 @@ class AnthropicSqlGenerator:
         return self._ask(_anlati_system(), _anlati_user(soru, gercekler),
                          model=self._select_model)
 
+    #: 🔴 **YETENEK BEYANI — `B5`.** Bu sağlayıcı native tool-use ile şema kısıtını
+    #: **gerçekten uyguluyor**; şema üretmeye değer.
+    sema_kullanir = True
+
     def select_cube(self, question: str, catalog: str, sema: dict | None = None) -> str:
         """FAZ 3a — `sema` verilirse sağlayıcının NATIVE tool-use'u kullanılır: cube/ölçü/
         boyut adları o anki kataloğun **enum**'u olarak şemaya gömülür ve model şemanın
@@ -622,6 +626,16 @@ class OpenAICompatibleSqlGenerator:
         """T2 anlatıcı (FAZ 5) — bkz. `AnthropicSqlGenerator.anlat`."""
         return self._chat(_anlati_system(), _anlati_user(soru, gercekler),
                           model=self._select_model)
+
+    #: 🔴 **YETENEK BEYANI — `B5`.** Bu sağlayıcı `oneOf` desteklemiyor, yani `sema`
+    #: argümanını **hiç okumuyor**. Ama çağıran bunu bilmiyordu ve şemayı **her istekte
+    #: üretiyordu**: ölçüldü, 23 cube'luk demoda **~10.000 token**lık bir yapı kuruluyor
+    #: ve **atılıyor**.
+    #:
+    #: ⚠ Çözüm çağıranda bir `isinstance` DEĞİL: *aynı kuralın iki sahibi olmaz.* Bir
+    #: sağlayıcının şema kullanıp kullanmadığını **kendisi** bilir; çağıran sorar.
+    #: *Bir yeteneği dışarıdan tahmin etmek, onu iki yerde tanımlamaktır.*
+    sema_kullanir = False
 
     def select_cube(self, question: str, catalog: str, sema: dict | None = None) -> str:
         """FAZ 3a — `sema` KABUL EDİLİR ama BU SAĞLAYICIDA KULLANILMAZ (bilinçli).

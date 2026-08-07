@@ -1400,8 +1400,21 @@ yuvasına çevrilir, harita **çağıranda kalır**, dönen metinde `geri_koy` i
 | uydurma sayı mümkün mü | tolerans içinde **evet** | 🔴 **hayır — rakam üretemez ki** |
 
 ⚠ **Ve bir sınır dürüstçe yazılı:** kullanıcının **sorusu** LLM'e gitmek zorundadır —
-anlaşılacak şey odur. Orada `pii.py` maskeleri ve `value_index` varlık çözümü çalışır;
-kalan risk `yol_siniri` ile kapatılabilir.
+anlaşılacak şey odur. Orada `pii.py` maskeleri çalışır ve kalan risk `yol_siniri` ile
+kapatılabilir.
+
+🔴 **DÜZELTME (2026-08-07, `S5`) — bu cümle bir mekanizmayı VAR GİBİ okutuyordu.**
+Eski hâli *"`value_index` **varlık çözümü** çalışır"* diyordu. `G0b.6`'nın planladığı
+**`{{ENT_i}}` varlık perdesi İNMEDİ**: `app/yayilim.py` yalnız `{{NUM_i}}` ve `{{DIM_i}}`
+üretiyor (`grep ENT_ app/` → **0 isabet**). `value_index` bir **eşleştirme** aracıdır,
+bir perde değil — kullanıcının yazdığı *"Aylin Bulut"* soruda **olduğu gibi** LLM'e gider.
+
+Yani bugün hava boşluğu **cevabı** perdeler, **soruyu** perdelemez. Bu bir kusur değil bir
+**sınırdır** — ama sınırı bir yetenek gibi yazmak, kapatılmamış bir riski kapatılmış
+göstermektir. *Mimari otoritenin yanlış olması, kodun yanlış olmasından pahalıdır: kod
+kırmızı verir, belge güven verir.*
+
+→ Borç: `OPERASYON-DURUM.md` · `{{ENT_i}}` varlık perdesi.
 
 **Yeni sahiplik kuralı — ve bunu bir kapı öğretti.** Perdeleme ilk olarak
 `llm_guard.py`'ye yazıldı; `test_llm_guard.py::test_DESEN_SOZLUGU_KOPYALANMAMIS` **haklı

@@ -294,3 +294,37 @@ def test_BAYRAK_ADMIN_PANELINDE_adli(monkeypatch):
     kayit = FLAG_REGISTRY.get("llm_sema_kisitli")
     assert kayit, "bayrak admin panelinde ADSIZ (`snake_case`, kategori 'Diğer')"
     assert kayit["label"] and kayit["description"] and kayit["category"] != "Diğer"
+
+
+# --- 🔴 B5 — ŞEMA ÜRETİLİP ATILIYORDU ---------------------------------------------
+
+
+def test_SAGLAYICI_YETENEGINI_KENDI_BEYAN_EDER():
+    """🔴 Ölçüldü: aktif sağlayıcı (`openrouter` → `OpenAICompatibleSqlGenerator`) `sema`
+    argümanını **hiç okumuyor** — kendi docstring'i söylüyor (*"BU SAĞLAYICIDA
+    KULLANILMAZ"*). Ama `llm_sema_kisitli` bayrağı açık olduğu için `ask.py` şemayı **her
+    istekte** kuruyordu: 23 cube'luk demoda ~**10.000 token**lık bir yapı, üretilip
+    **atılıyor**.
+
+    ⚠ Çözüm çağıranda bir `isinstance` **değil**: *aynı kuralın iki sahibi olmaz.* Bir
+    sağlayıcının şema kullanıp kullanmadığını **kendisi** bilir.
+    *Bir yeteneği dışarıdan tahmin etmek, onu iki yerde tanımlamaktır.*
+    """
+    from app.llm import AnthropicSqlGenerator, OpenAICompatibleSqlGenerator
+
+    assert OpenAICompatibleSqlGenerator.sema_kullanir is False, (
+        "🔴 `oneOf` desteklemeyen sağlayıcı şema kullanıyor diye beyan ediyor")
+    assert AnthropicSqlGenerator.sema_kullanir is True, (
+        "🔴 native tool-use'lu sağlayıcı şemayı kullanmıyor diye beyan ediyor")
+
+
+def test_SEMA_YALNIZ_OKUYACAK_OLAN_ICIN_URETILIR():
+    """⚠ **Fail-open:** bilinmeyen bir sağlayıcıda varsayılan `True` — şüphede şema
+    üretilir ve davranış bugünküyle **birebir aynı** kalır. Bir optimizasyon, bilmediği
+    bir sağlayıcıda yeteneği sessizce kapatmamalıdır."""
+    import pathlib
+
+    kaynak = (pathlib.Path(__file__).resolve().parents[1]
+              / "app/routers/ask.py").read_text(encoding="utf-8")
+    assert 'getattr(llm_probe, "sema_kullanir", True)' in kaynak, (
+        "🔴 çağıran sağlayıcıya sormuyor ya da fail-open varsayılanı kaybolmuş")

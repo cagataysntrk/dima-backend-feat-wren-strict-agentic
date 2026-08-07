@@ -2868,8 +2868,27 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     # O ANKİ hâlinden üretilir: cube yeniden adlandırılırsa/ölçü
                     # eklenirse enum kendiliğinden güncel kalır (bayat enum, olmayan
                     # enum'dan kötüdür — modele var olmayan bir adı DAYATIRDI).
+                    # 🔴 `B5` — ŞEMAYI YALNIZ OKUYACAK OLAN İÇİN ÜRET. Ölçüldü: aktif
+                    # sağlayıcı (`openrouter` → `OpenAICompatible…`) `sema` argümanını
+                    # **hiç okumuyor** (`oneOf` desteklemiyor — kendi docstring'i söylüyor),
+                    # ama bayrak açık olduğu için şema **her istekte** kuruluyordu: 23
+                    # cube'luk demoda ~**10.000 token**lık bir yapı, üretilip **atılıyor**.
+                    #
+                    # ⚠ Karar `isinstance` ile verilmiyor: sağlayıcı yeteneğini **kendisi**
+                    # beyan ediyor (`sema_kullanir`), çağıran sorar. Bilinmeyen sağlayıcıda
+                    # varsayılan **True** → şüphede şema üretilir, davranış birebir aynı
+                    # (fail-open). *Bir yeteneği dışarıdan tahmin etmek, onu iki yerde
+                    # tanımlamaktır.*
+                    #
+                    # ⚠ Ve `_sema = None` bu satırların **hemen altında** durmak zorunda:
+                    # `test_BAYRAK_KAPALIYKEN_sema_URETILMIYOR` iki ifade arasındaki
+                    # mesafeyi ölçüyor. Yorumu araya koymak kapıyı kırmızıya çevirdi ve
+                    # **haklıydı** — kill-switch'in yarım olmadığını okuyarak görebilmek
+                    # gerekiyor. *Bir kapının ölçtüğü şey metinse, metni de o kapıya göre
+                    # yazarsın.*
                     _sema = None
-                    if "llm_sema_kisitli" in resolve_for(settings, principal):
+                    if (getattr(llm_probe, "sema_kullanir", True)
+                            and "llm_sema_kisitli" in resolve_for(settings, principal)):
                         try:
                             _sema = cube_router.cube_query_json_schema(cube_index)
                         except Exception:

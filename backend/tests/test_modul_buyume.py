@@ -76,6 +76,20 @@ TABAN_CUBE_ROUTER_KOD = 1685  # 1703 ölçüldü − 18 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("B5/sema-israfi", 1,
+     "🔴 **ŞEMA ÜRETİLİP ATILIYORDU.** `llm_sema_kisitli: beta` açık ve `ask()` her "
+     "istekte `cube_query_json_schema` çağırıyordu; ama aktif sağlayıcı "
+     "(`openrouter` → `OpenAICompatibleSqlGenerator`) `sema` argümanını **hiç okumuyor** — "
+     "kendi docstring'i söylüyor: *«BU SAĞLAYICIDA KULLANILMAZ»* (`oneOf` desteklenmiyor). "
+     "⊙ Ölçüldü: 23 cube'luk demoda ~**10.000 token**lık bir yapı kuruluyor ve atılıyor. "
+     "⚠ **TAŞINAMAZ:** eklenen tek satır bir `and` koşuludur ve `_sema = None` ile bayrak "
+     "kontrolü **arasında** durmak zorunda — `test_BAYRAK_KAPALIYKEN_sema_URETILMIYOR` iki "
+     "ifade arasındaki mesafeyi ölçüyor. Bir modüle çıkarmak bu yakınlığı kırar, yani "
+     "kill-switch'in yarım olmadığını **okuyarak görme** imkânını yok eder. "
+     "🔴 Karar `isinstance` ile verilmiyor: sağlayıcı yeteneğini **kendisi** beyan ediyor "
+     "(`llm.py::sema_kullanir`), çağıran sorar; bilinmeyen sağlayıcıda varsayılan **True** "
+     "(fail-open, davranış birebir aynı). *Bir yeteneği dışarıdan tahmin etmek, onu iki "
+     "yerde tanımlamaktır.*"),
     ("garson/DA-5+DA-10", 9,
      "🔴 İKİ DENETİM BULGUSU, ikisi de `ask()` gövdesinde ve ikisi de TAŞINAMAZ. "
      "**(a) `DA-5` — `G2`'nin kill-switch'i (`diyalog_bellegi`).** Katman inmişti, bayrağı "
