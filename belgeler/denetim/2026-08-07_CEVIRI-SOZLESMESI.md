@@ -3994,3 +3994,33 @@ sözlüğüne** geçtim (`measure_synonyms` + `_syn_hit` — route neyi görüyo
 
 ⚠ Ve bu, `§0.3`'ün ölçüm disiplininin aynısı: *bir düzeltmeyi denemeden önce, düzeltmenin
 gireceği yerin ne gördüğünü ölç.* İki demettir bunu atladım.
+
+### 71.5 · Sondaj yapıldı — ve BAYAT ARTEFAKTA düştü *(tuzak ikinci kez ısırdı)*
+
+`§71.4`'ün dediği gibi kör yama bırakılıp sondaj yapıldı. Çıktı:
+
+```
+bu yil oee ve kullanilabilirligi …  | cube: oee
+   measure_synonyms anahtar sayısı: 0
+   _syn_hit ile eşleşen ölçüler: []
+   _match_measure (tekil): (None, None)
+```
+
+🔴 `_match_measure` **`(None, None)`** dönüyor — oysa **canlı sistem aynı soruda
+`ort_kullanilabilirlik`'i buluyor**. Yani sondaj, sistemin gerçekten kullandığı şemayı
+okumuyor: kaynak `demo/wren-project`, ve `CLAUDE.md`'nin açıkça uyardığı **gitignore'lu
+derleme artefaktı**.
+
+⊙ Bu, `project_olcum_araci_bayat_sema` hafızasının **birebir** tekrarı — ve bu oturumda
+**ikinci** kez oldu (`§31` sondajında da olmuştu).
+
+> *Bir ölçüm aracının yanlış kaynaktan okuması, yanlış bir cevaptan sinsidir: yanlış cevap
+> sorgulanır, yanlış kaynak güvenilir görünür.*
+
+**Sıradaki adım (kayıtlı):** sondaj **canlı konteynerin** şemasıyla yapılmalı — `/ask`
+akışının kullandığı derlenmiş şirket şeması. Doğru yol: konteyner içinde
+`app.state`/`WrenService`'ten şemayı almak ya da `/ask`'in kendi loguna `_gecen` sayısını
+geçici olarak yazdırmak.
+
+⚠ **Ve `§71` üçüncü kez körlemesine denenmeyecek:** önce bu sondaj doğru kaynaktan
+koşacak, ne gördüğü **yazılacak**, ancak ondan sonra kod değişecek.
