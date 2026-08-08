@@ -3922,3 +3922,51 @@ filtre yoksa **beyan edilir**. Yalnız beyan; cevap öldürülmez (`KÖK-3`).
 
 ⊙ Ve bu, `§0.0`'ın eksen ayrımının **üçüncü** biçimi: kusur **mutfakta** (kavram yok) ama
 onarım **siparişte** (beyan). *Bir eksikliği kapatamıyorsan, hiç değilse adını koy.*
+
+---
+
+# K TURU
+
+## §71 · ÖLÇÜ KAYBI — kök **izole edildi**, çözüm **geri alındı**
+
+### 71.1 · Kanıt kusursuz: route son ölçüyü tutar, öncekini atar
+
+| soru | yol | sonuç |
+|---|---|---|
+| `bu yıl **ciro ve fire oranını** makine bazında ver` | `route` **1.134 ms** | yalnız `fire_orani_yuzde` — **`ciro` düştü** |
+| `bu yıl **oee ve kullanılabilirliği** vardiya bazında ver` | `route` **718 ms** | yalnız `ort_kullanilabilirlik` — **`oee` düştü** |
+| `bu yıl **ciro kar ve fire** birlikte` | **garson** 24.576 ms | ✅ **üç ölçü de var** |
+
+⊙ Üçüncü satır bir **karşı-kanıt** ve tanıyı kesinleştiriyor: garson hepsini taşıyor,
+route taşımıyor. Ve kayıp **sessiz** — hiçbir `eksik_niyet` üretilmiyor.
+
+🔴 `§0.0` birebir uygulanır: **route yarım duydu, garson gitmeli.** Ama route "başarılı"
+göründüğü (dönem var, ölçü var, boyut var) için `route_supheli` ateşlemiyor.
+
+### 71.2 · 🔴 Denediğim çözüm ve NEDEN GERİ ALINDI
+
+`route_supheli`'ye bir sinyal daha ekledim: *"sorudaki ölçü adı sayısı `cq`'nun
+taşıdığından çoksa şüphe vardır"* — ölçü adlarını `measure_synonyms_display`'den sayarak.
+
+**Ölçüm iki yönde de tatmin etmedi:**
+
+| soru | sonuç |
+|---|---|
+| `ciro ve fire oranını…` | ◐ sessiz kayıp → **netleştirme** (*"Hangisini istiyorsun?"*). Doktrine göre **daha iyi** (sessiz-yanlış → dürüst soru) ama **istenen değil**: iki ölçü de gelmeliydi |
+| `oee ve kullanılabilirliği…` | 🔴 **hiç değişmedi** — sinyal ateşlemedi |
+
+Sebep: yüklem **görünen adı** (`ort oee`) soruda alt-dize olarak arıyor; kullanıcı **kısa
+adı** (`oee`) yazıyor. Yani sinyalin kendisi eşanlamlı sözlüğünü yanlış uçtan okuyor.
+
+**Geri alındı.** Bu deponun kuralı: yarım çalışan bir düzeltme, ölçülmüş bir kazanç
+değildir. *Bir kusuru yarı yarıya kapatan bir yama, kusurun ölçüsünü de yarıya indirir —
+ve bir dahaki sefere daha zor bulunur.*
+
+### 71.3 · Sıradaki iş için kayıtlı yön
+
+Sinyal **eşleştiriciden** okunmalı, görünen addan değil: `cube_router`'ın soruda kaç
+**ayrı ölçü** eşleştirdiğini söyleyen bir sayaç (`_match_measure` ailesinin kendi
+sonucu). O sayaç `cq`'nun ölçü sayısından büyükse şüphe vardır.
+
+⚠ Ve asıl kök hâlâ `route()`'un kendisinde: **son eşleşen ölçü öncekini eziyor.** Ama
+`§0.0` gereği orayı düzeltmiyoruz — garsonu çağırmak yeterli olmalı.
