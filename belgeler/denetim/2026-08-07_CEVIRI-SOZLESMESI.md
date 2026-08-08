@@ -3743,3 +3743,80 @@ farklı sözcüklerle sorulduğunda garson/route onu bulamıyor.
 | eşikli soru küp seçimini bozuyor | `h16` · `h15` |
 | çoklu ölçü + kırılım birlikte istenince ölçü sorusu | `h18` · `h20` |
 | iki-dönem/çok-dönem *(6. kanıt)* | `h2` `2025 ve 2026 cirolarını ayrı ayrı ver` → `eksik:['cok_donem']` *(dürüst)* |
+
+---
+
+# I TURU — 20 senaryo · ve baskın kusurun KÖKÜ
+
+## §65 · 🔴🔴 GARSON CEVAP VERDİ, **UYUM EŞİĞİ ONU ATTI**
+
+### 65.1 · Ölçüm — `§47`'nin logu tek satırda gösterdi
+
+I turunun **beş** senaryosu aynı cümleyle bitti: *"«…» ile ilgili görünüyor ama **hangi
+ölçüyü** istediğini anlayamadım"* (`i8`·`i9`·`i11`·`i14`, ayrıca `h3`·`h13`·`h18`·`h20`).
+
+Logdan okunan sebep:
+
+```
+intent: 3 oy · 2 farklı aday · kazanan 1 oy
+intent: 3 oy · 3 farklı aday · kazanan 1 oy
+```
+
+⊙ **Garson sustuğu için değil, UYUŞMADIĞI için** cevap yok. Üç oy da bir `cq` üretti;
+uyum oranı `1/3` olduğu için eşik (`≥ 2/3`) tutmadı ve `parsed` `None` kaldı. Sistem
+kullanıcıya *"anlamadım"* dedi — oysa elinde **üç somut cevap** vardı.
+
+🔴 Bu, `§0.0`'ın *"kullanıcı asla cevapsız kalmaz"* şartının doğrudan ihlali. Ve `§47`
+olmasaydı **hiç görünmeyecekti**: dışarıdan bakınca *"LLM anlamadı"* gibi duruyor.
+
+### 65.2 · Kök çözüm yönü *(sıradaki iş)*
+
+Uyuşmazlık **tek eksende** ise chip zaten üretiliyor (`_intent_uyusmazlik_chipi`).
+Eksik olan **çok eksenli** uyuşmazlık: bugün **sessiz düşüş**. Doğru davranış:
+
+* ya **çoğunluk adayı** ile cevapla ve belirsizliği **beyan et** (`beyanlı kısmi`),
+* ya da **farklı adayları chip olarak sun** — kullanıcı seçsin.
+
+Ama **asla** *"hangi ölçüyü istiyorsun"* deme: garson zaten söyledi, üç kere.
+
+⚠ Ve `2/3` eşiğinin kendisi de sorgulanmalı: `consistency_k=3`'te **iki farklı aday**
+%67'lik bir uyum üretemez; eşik pratikte *"üç oyun ikisi birebir aynı"* demektir ve
+serbest-metin bir JSON'da bu **nadir**dir.
+
+### 65.3 · Yan bulgu — model soruyu geri yankıladı
+
+```
+intent: whitelist REDDİ (sema=kapali) — ham=Bu yıl kalite puanı en yüksek vardiya
+```
+
+Bir oy JSON yerine **sorunun kendisini** döndürdü. Beyaz liste onu düşürdü (doğru) ama
+bu, `sema` (şema-kısıtlı çıktı) bayrağının **neden açılması gerektiğinin** ölçülmüş
+gerekçesidir.
+
+## §66 · I turunun envanteri
+
+### Çalışan (8)
+
+`i1` eşikli soru + dürüst `esik` beyanı · `i2` kar marjı × müşteri · **`i3` `enerji
+tüketimi en yüksek 4 makine` → `order:desc` + `limit:4` ✅✅** · `i5` **486 ms** ·
+`i6` renk bazında kâr (`order:desc`) · `i10` kalite puanı × vardiya · `i12` **499 ms** ·
+`i13` **470 ms**
+
+### 🔴 Sözcük SIRASI kusuru — iki cümle, aynı anlam, farklı sonuç
+
+| cümle | sonuç |
+|---|---|
+| `enerji tüketimi **en yüksek 4 makine**` | ✅ `order:desc` + `limit:4` · 4 satır |
+| `**en yüksek 4 makineyi** enerji tüketimine göre sırala` | 🔴 *"hangi ölçüyü istiyorsun?"* |
+
+Aynı biçimde: `kar marjı yüzde 20 **altında olan**` ✅ · `… **altındaki**` 🔴.
+
+⊙ İkisi de `§65`'in belirtisi: route yetişemiyor, garson uyuşmuyor, sistem susuyor.
+**Route'a sözcük sırası öğretmek çözüm değildir** (`§0.0`) — çözüm garsonun cevabını
+**atmamaktır**.
+
+### Kalan kökler *(değişmedi, kanıt sayıları arttı)*
+
+`§49` iki-dönem kıyası **7. kanıt** (`i7`'de üstelik **yanlış** beyan: kullanıcı iki
+**ölçü** kıyaslamak istedi, sistem *"iki dönem"* dedi) · `kaç kg` ölçüye bağlanmıyor
+(`i4`) · çoklu ölçü tek cümlede (`i12` yalnız `toplam_ciro` aldı, `kar` düştü).
