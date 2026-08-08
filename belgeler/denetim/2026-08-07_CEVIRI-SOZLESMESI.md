@@ -2902,3 +2902,62 @@ Huniye bağlanması beyanlı-kısmiyi **tam cevaba** çevirir ve sıradaki adım
 |---|---|---|
 | `c1` | `kumaş türüne göre **ortalama** parti ağırlığı` | ⚠ `toplam_agirlik_kg` verildi — **toplulaştırma türü** `uyum.py`'nin altı ihlal sınıfında **yok** |
 | `c3` | `geçen yılın aynı dönemiyle kıyasla` | ✅ *"hangi ölçüyü istiyorsun?"* + chip'ler `period_expr: "geçen yılın aynı dönemi"` taşıyor |
+
+## §42 · YANLIŞ BEYAN — sınıfın eksik bir üyesi yüzünden
+
+**Ölçüm (`c10`):** `2025 ile 2026 **ilk yarısını** kıyasla` → `eksik_niyet:['ustunluk']`
+ve cevapta *«**en yüksek/en çok** dedin ama sıralama uygulayamadım»*.
+🔴 Kullanıcı öyle bir şey **demedi**.
+
+**Kök:** `_ustunluk_mu`'nun kuralı **zaten doğruydu** — *"ipucundan sonra bir zaman birimi
+geliyorsa üstünlük değildir"* (`son 3 ay` bu sayede geçiyor). Eksik olan **sınıfın bir
+üyesiydi**: `_ZAMAN_BIRIMI` `yarı`/`yarıyıl`ı tanımıyordu.
+
+> *Bir kuralın yanlış çalışması her zaman kuralın yanlışlığından gelmez; bazen kuralın
+> baktığı kümenin eksikliğindendir.*
+
+**Doğrulama:** `2025 ile 2026 ilk yarısını kıyasla` → ✅ *"Hangi ölçüyü istiyorsun?"* +
+chip'ler `period_expr: "2025 ile 2026 ilk yarısı"` taşıyor. Yanlış beyan **kayboldu**.
+
+⚠ **KAYITLI BORÇ:** `ilk yarı` bir **dönem olarak da çözülmüyor** (`date_filters("ilk
+yari")` boş; oysa `ilk ceyrek` dolu). Bu madde yalnız yanlış beyanı kapatır.
+
+## §43 · SAÇMA BİR YAZIM ÖNERİSİ BİR THREAD'İ ÖLDÜRDÜ
+
+### 43.1 · Ölçüm (`c7`) — ve bedelin iki turda katlanması
+
+```
+T1: bu yıl renk bazında ciro dağılımı
+    → «"dagilimi" yerine "agirlik" mi demek istedin?»   (rapor YOK)
+T2: bunu pie olarak göster
+    → source=llm:openrouter · cube=adhoc · toplam_vardiya × gun · 19.836 ms
+```
+
+🔴 T1 rapor üretmeyince T2 **çapasız** kaldı ve merdivenin en alt basamağı — **uydurma** —
+devreye girdi: LLM alakasız bir `adhoc` sorgu kurdu.
+
+> *Bir turun boş dönmesi o turda bitmez: sonraki tur çapasını kaybeder.*
+
+### 43.2 · Kök
+
+`dağılım` bir ölçü adı değil, bir **görünüm niyetidir** — *"kırılımı göster"* demenin
+başka biçimi, `dökümü`·`detay`·`listele` ile **aynı kapalı sınıf**. Sınıf `_LISTE_RE`'de
+zaten yaşıyor; eksik olan bir üyeydi. Terim tanınmayınca yazım düzeltici devreye girdi ve
+katalogdan en yakın bulduğunu (`agirlik`) önerdi.
+
+### 43.3 · Doğrulama
+
+| tur | önce | **sonra** |
+|---|---|---|
+| T1 | saçma öneri, rapor yok | ✅ **1.291 ms · `source=cube` · 0 LLM** · `cq={parti, toplam_ciro, dims:[renk]}` |
+| T2 | 19.836 ms · uydurma `adhoc` | ✅ **559 ms · `source=cube`** · `view_hint: pie` · 5 satır korundu |
+
+## §44 · C turunun kalan bulguları (kayıtlı, açık)
+
+| # | soru | bulgu |
+|---|---|---|
+| `c4` | `mart ile nisan arasındaki fire **farkını** açıkla` | 🔴 `fark` bir **ölçü adı** (`enerji_sapma`) sanıldı → çapraz-konu reddi. Oysa iki adlı dönem + *"arasındaki fark"* ders kitabı **kıyas**tır. Sözcük çakışması sınıfı (`varlik.py`'deki `ciro` ile aynı) |
+| `c11` | `ciro ve fire arasında **ilişki** var mı` | ⚠ İki ölçü döndü, ilişki ne hesaplandı ne **reddedildi**. `c4`'te aynı sınır **güzelce** konuşuyor (*"ilişki bir çıkarımdır"*) — demek sınır yalnız **çapraz-cube**'da ateşleniyor, aynı cube'da susuyor |
+| `c5` T2 | `neden diğerlerinden iyi` | ✅ §36 çalıştı (585 ms, 0 LLM) + **matematiksel olarak dürüst** red (*"ort_oee bir oran — katkı payı tanımsız"*). ⚠ Ama *ne yapabileceğini* söylemiyor |
+| `c6` | `duruş süresi en yüksek 5 makine` → `bunların oee'si ne` | ✅ **gerçek agentic zincir**: 518 ms top-5, sonra **aynı 5 makineye** ölçü eklendi, sıra+limit korundu |
+| `c9` | `kalite red oranı nedir` | ⚠ `fire_orani_yuzde`'ye eşlendi; ikame **beyan edilmiyor** |

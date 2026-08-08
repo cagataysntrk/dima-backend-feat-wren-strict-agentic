@@ -299,7 +299,27 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
 
 
 #: Zaman birimleri — `_TOPN_CUE`nun ("son") yanlış-pozitifini kapatır.
-_ZAMAN_BIRIMI = r"(ay|gun|gün|hafta|yil|yıl|ceyrek|çeyrek|donem|dönem|saat|dakika)"
+#: 🔴 **`§42` — SINIFIN EKSİK ÜYESİ BİR YANLIŞ BEYAN ÜRETTİ.**
+#:
+#: Ölçüldü: `2025 ile 2026 **ilk yarısını** kıyasla` → `eksik_niyet:['ustunluk']` ve
+#: cevapta *«**en yüksek/en çok** dedin ama sıralama uygulayamadım»*. Kullanıcı öyle bir
+#: şey **demedi**; `ilk` orada bir sıra sayısıdır ve `yarı` bir **zaman birimidir**.
+#:
+#: ⊙ `_ustunluk_mu`'nun kuralı zaten doğruydu (*"ipucundan sonra bir zaman birimi
+#: geliyorsa üstünlük değildir"*) — eksik olan **sınıfın bir üyesiydi**: `yarı`/`yarıyıl`.
+#:
+#: 🔴 Ve `Ö10`'un kuralı burada da geçerli: *yanlış bir beyan sessizlikten kötüdür* —
+#: sistem kullanıcıya **onun söylemediği bir şeyi söylediğini** söylüyor.
+#:
+#: *Bir kuralın yanlış çalışması her zaman kuralın yanlışlığından gelmez; bazen kuralın
+#: baktığı kümenin eksikliğindendir.*
+#:
+#: ⚠ **KAYITLI BORÇ:** `ilk yarı`/`ikinci yarı` bir **dönem olarak da çözülmüyor**
+#: (`date_filters("ilk yari")` → boş; oysa `ilk ceyrek` → dolu). Bu ayrı bir iştir; bu
+#: madde yalnız **yanlış beyanı** kapatır, dönemi çözmez. İkisini karıştırmak, kapatılan
+#: kusurun ölçüsünü kaybettirirdi.
+_ZAMAN_BIRIMI = (r"(ay|gun|gün|hafta|yil|yıl|ceyrek|çeyrek|donem|dönem|saat|dakika"
+                 r"|yari|yarı|yariyil|yarıyıl)")
 
 
 def _olcu_sinonim_araliklari(qn: str, ic: dict, cube_meta: dict | None) -> list[tuple[int, int]]:

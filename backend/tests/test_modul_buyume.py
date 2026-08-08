@@ -337,6 +337,15 @@ MUAFIYET_ASK_KOD = [
      "makbuza yazılmazsa, kullanıcı onu kendi yazdığını sanır"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("faz-43-dagilim-sarma", 1,
+     "⚠ **BİR SATIRLIK SARMA — davranış değil BİÇİM.** `§43` `_LISTE_RE`'ye `dagili\\w*` "
+     "ekledi (görünüm niyeti sınıfının eksik üyesi); desen tek satırda **104 karakter** "
+     "oldu ve `line-length = 100` sınırını aştı, ikinci satıra sarıldı. "
+     "⊙ Bu bir borç değil bir **sarma**dır; listede olması, *«neden tavan bir arttı?»* "
+     "sorusunun cevabının kaybolmaması içindir. "
+     "⚠ **TAŞINAMAZ:** desenin evi `liste_niyeti`'nin yanıdır; iki satırı ayırmak "
+     "okunaklılığı düşürür, modüle taşımak tek bir regex için bir dosya açmak olurdu. "
+     "*Bir tavan biçimsel bir satırı da sayar — saymasaydı, biçim bir kaçış yolu olurdu.*"),
     ("morfoloji/fiil-cekimi", 6,
      "🔴 **ENVANTERİN EKSİK YARISI.** `_SUFFIX_ATOMS` **ad** çekimini biliyordu (hâl · çoğul "
      "· iyelik); `üretildi`·`işlenen`·`veren` gibi **fiil** biçimleri hiç tanınmıyordu ve "

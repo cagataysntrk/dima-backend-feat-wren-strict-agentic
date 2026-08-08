@@ -3505,7 +3505,23 @@ def teshis(q: str, schema: dict) -> str | None:
 #: Liste/döküm niyeti. KELİME-SINIRLI: `dokum` altdizisi "DOKUMa"yı (kumaş!) yakalıyordu;
 #: genel "göster" ise liste niyeti DEĞİL (dolgu). Tek kaynak — hem R2 dalı hem kapsam
 #: kapısı bunu okur; ayrışırlarsa niyet "anlaşıldı" sayılıp kelime yine de kapsamı deler.
-_LISTE_RE = re.compile(r"\b(listele\w*|liste\b|hangileri|detay\w*|dokum(u|un|unu|ler\w*)?\b)")
+#: 🔴 **`§43` — `dağılım` BU SINIFIN ÜYESİDİR ve yokluğu bir THREAD'İ ÖLDÜRDÜ.**
+#:
+#: Ölçüldü (`c7`): `bu yıl renk bazında ciro **dağılımı**` → *«"dagilimi" yerine
+#: "agirlik" mi demek istedin?»* — saçma bir yazım önerisi. Ve bedeli tek turla
+#: kalmadı: T1 rapor üretmeyince T2 (`bunu pie olarak göster`) **çapasız** kaldı,
+#: LLM `cube:adhoc` bir sorgu **uydurdu** (`toplam_vardiya` × `gun`, 19.836 ms).
+#:
+#: ⊙ *Bir turun boş dönmesi o turda bitmez: sonraki tur çapasını kaybeder ve
+#: merdivenin en alt basamağı — uydurma — devreye girer.*
+#:
+#: `dağılım` bir ölçü adı değil, bir **görünüm niyetidir**: *"kırılımı göster"* demenin
+#: bir başka biçimi — `dökümü`·`detay`·`listele` ile aynı sınıf. Sınıf zaten kapalı ve
+#: burada yaşıyor; eksik olan bir üyeydi.
+#:
+#: ⚠ `§26.1` bağlayıcı: her genişleme korpusla sınanır, `sessiz_yanlis` artarsa geri alınır.
+_LISTE_RE = re.compile(r"\b(listele\w*|liste\b|hangileri|detay\w*|dagili\w*"
+                       r"|dokum(u|un|unu|ler\w*)?\b)")
 
 
 def liste_niyeti(q: str) -> bool:
