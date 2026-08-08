@@ -275,3 +275,35 @@ def test_EK_PENCERESI_SINIRSIZ_DEGIL():
     import re as _re
     # "ayrintili" (9 harf: ay + 7) bir zaman birimi DEĞİLDİR
     assert not _re.match(rf"\s*\d*\s*{_ZAMAN_BIRIMI}\w{{0,4}}\b", " ayrintili")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# §70 · KISITLAMA — "sadece …" dedi, hiçbir şey kısıtlanmadı
+#
+# Ölçüldü iki kez (e16T2 · j4T2): `sadece hafta içi günleri al` → satırlar AYNEN döndü,
+# filtre yok, beyan da yok. Sebebi bir mutfak eksiği (`hafta içi` katalogda bir DEĞER
+# değil) ama bu susmayı haklı çıkarmaz.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@pytest.mark.parametrize("q", [
+    "sadece hafta ici gunleri al",
+    "yalnizca gece vardiyasi",
+    "only weekdays",
+])
+def test_KISITLAMA_UYGULANMADIYSA_BEYAN_EDILIR(q):
+    from app.uyum import denetle
+    cq = {"cube": "oee", "measures": ["toplam_uretim_kg"],
+          "filters": [{"dimension": "tarih", "operator": "gte", "value": "2026-01-01"}]}
+    isaretler = {i.isaret for i in denetle(q, cq, None)}
+    assert "kisitlama" in isaretler, (
+        f"🔴 «{q}» bir kısıtlama istiyor ve sorguda karşılığı yok — susmak sessiz-yanlıştır")
+
+
+def test_KISITLAMA_UYGULANDIYSA_SUSAR():
+    """⚠ Gevşemenin sınırı: gerçek bir kategorik filtre varsa beyan **edilmez**."""
+    from app.uyum import denetle
+    cq = {"cube": "parti", "measures": ["toplam_ciro"],
+          "filters": [{"dimension": "tarih", "operator": "gte", "value": "2026-01-01"},
+                      {"dimension": "renk", "operator": "eq", "value": "Siyah"}]}
+    isaretler = {i.isaret for i in denetle("sadece siyah renk", cq, None)}
+    assert "kisitlama" not in isaretler, "🔴 uygulanmış bir kısıtlama beyan edilmemeli"

@@ -3898,3 +3898,27 @@ tarafı `\b` ile kapatmak deseni **yalın hâle hapseder**.
 **Kalan kökler:** `sadece hafta içi` filtresi **yine** sessizce düştü *(2. kanıt, `j4`T2)*
 · zamir/tekilleştirme *(`j7` → 66 satır)* · *"ortalamanın üstünde"* eşiği uygulanmıyor
 *(`j9`)* · `Hangisini istiyorsun?` küp beraberliği *(`j5`·`j11`)* · ölçü kaybı *(§67.1)*.
+
+## §70 · *"SADECE …"* DEDİ, HİÇBİR ŞEY KISITLANMADI — iki kez sessizce
+
+**Ölçüldü (`e16`T2 · `j4`T2):** `aylık üretim` → `**sadece** hafta içi günleri al` →
+**satırlar aynen** döndü, filtre uygulanmadı, **hiçbir şey beyan edilmedi**.
+
+⊙ Sebebi bir **mutfak** eksiği: `hafta içi` katalogda bir **değer değil** (`hafta_gunu`
+boyutunun değerleri tek tek günlerdir), yani **garson da onu ifade edemiyor**. Ama bu,
+susmayı haklı çıkarmaz: kullanıcı bir kısıtlama istedi ve **kısıtlanmamış** bir sayı
+gördü — sessiz-yanlışın tanımı.
+
+**Dokuzuncu ihlal sınıfı** (`kisitlama`): kısıtlayıcı zarf var (`sadece`·`yalnız`·
+`yalnızca`·`only`·`just` — kapalı dilbilgisi sınıfı) ama `cq`'da **tarih dışı** hiçbir
+filtre yoksa **beyan edilir**. Yalnız beyan; cevap öldürülmez (`KÖK-3`).
+
+| soru | önce | **sonra** |
+|---|---|---|
+| `sadece hafta içi günleri al` | 6 satır, **beyan yok** | ✅ *"**sadece …** dedin ama sorguya bir kısıtlama taşıyamadım — sayı **tüm** kayıtları kapsıyor"* · `eksik:['kisitlama']` |
+| `bu yıl sadece siyah renkli partilerin cirosu` *(gevşemenin sınırı)* | ✅ | ✅ **511 ms**, 2 filtre, beyan **yok** — doğru |
+
+> *Bir kısıtlamayı uygulayamamak bir sınırdır; uygulamadığını söylememek bir hatadır.*
+
+⊙ Ve bu, `§0.0`'ın eksen ayrımının **üçüncü** biçimi: kusur **mutfakta** (kavram yok) ama
+onarım **siparişte** (beyan). *Bir eksikliği kapatamıyorsan, hiç değilse adını koy.*

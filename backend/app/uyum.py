@@ -367,6 +367,34 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
                 "(*«ortalama …»* biçiminde tanımlı bir ölçü)."))
             break
 
+    # 9 · 🔴 **KISITLAMA — «sadece …» dedi, hiçbir şey kısıtlanmadı (2 kanıt).**
+    #
+    # Ölçüldü: `aylık üretim` → `**sadece** hafta içi günleri al` → **satırlar aynen**
+    # döndü, filtre uygulanmadı ve **hiçbir şey beyan edilmedi** (`e16`T2 · `j4`T2).
+    #
+    # ⊙ Sebebi bir **mutfak** eksiği: `hafta içi` katalogda bir **değer değil** (boyut
+    # `hafta_gunu`'nun değerleri tek tek günlerdir), yani garson da onu ifade edemiyor.
+    # Ama bu, susmayı **haklı çıkarmaz**: kullanıcı bir kısıtlama istedi ve kısıtlanmamış
+    # bir sayı gördü — sessiz-yanlışın tanımı.
+    #
+    # ⚠ Yüklem dar ve **kapalı bir dilbilgisi sınıfına** dayanır: kısıtlayıcı zarflar
+    # (`sadece`·`yalnız`·`yalnızca`·`only`·`just`). Ölçüt yapısal: `cq`'da **tarih dışı**
+    # hiçbir filtre yoksa kısıtlama gerçekleşmemiştir.
+    #
+    # ⚠ Yalnız **beyan eder**, cevabı öldürmez (`KÖK-3`).
+    #
+    # *Bir kısıtlamayı uygulayamamak bir sınırdır; uygulamadığını söylememek bir hatadır.*
+    if re.search(r"\b(sadece|yalniz|yalnizca|only|just)\b", qn) and not any(
+            f.get("dimension") and f.get("dimension") != "tarih"
+            and f.get("operator") not in ("gte", "lte")
+            for f in filtreler):
+        out.append(Ihlal(
+            "kisitlama",
+            "**sadece …** dedin ama sorguya bir kısıtlama taşıyamadım — sayı **tüm**"
+            " kayıtları kapsıyor",
+            "Kısıtlamayı katalogdaki bir değerle yazarsan (*«sadece Siyah renk»*) "
+            "uygularım."))
+
     # 7 · DIŞLAMA — "X hariç"
     if (niyet.dislama_istendi
             and not any(str(f.get("operator")) in ("neq", "not_in", "!=")
