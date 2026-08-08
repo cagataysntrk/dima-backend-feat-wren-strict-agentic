@@ -4520,3 +4520,57 @@ Kip elde olduğu için `§77`'nin kapalı bayrağı (`oylama_cogunluk`) ve `oyla
 ⚠ Maliyet dürüstçe: 25 senaryo × 3 koşum × tur arası 5 sn — **uzun**. Ama `§77`'nin bayrağı
 o sayı olmadan **hiç** açılamaz; ölçmeden açmak, deponun kendi kuralını çiğnemektir
 (*"ölçülemeyen bir takası varsayılan yapmak, kullanıcı adına karar vermektir"*).
+
+---
+
+# M TURU — `KURAL G-1` ilk kez ayrımı YAPTI
+
+## §80 · İki koşum, dört doğrulanmış bulgu
+
+20 senaryo koşuldu; netleştirmeyle biten dördü `KURAL G-1` gereği **ikinci kez** koşuldu:
+
+| soru | 1. koşum | 2. koşum | karar |
+|---|---|---|---|
+| `toplam duruş dakikasını hat bazında sırala` | *"Hangisini istiyorsun?"* | **aynı** | 🔴 **bulgu** |
+| `en çok enerji harcayan 3 makineyi bul` | *"Hangi ölçüyü…"* | **aynı** | 🔴 **bulgu** |
+| `fire oranı en düşük vardiya hangisi` | İK/İSG/kalite küpleri | **aynı** | 🔴 **bulgu** |
+| `bakım süresi en uzun makine` | *"Hangisini istiyorsun?"* | **aynı** | 🔴 **bulgu** |
+
+⊙ **İlk kez** bir turda *"kırık"* ile *"o an kırık"* ayrıldı. `§75.3`'ün şişik sayımı
+(`11 kırık`) bu usulle olsaydı hiç yazılmazdı.
+
+🔴 **En ağırı üçüncüsü:** `fire oranı en düşük vardiya` → **İK / İSG / kalite** küpleri
+öneriliyor. Oysa aynı turda `kumaş cinsine göre ortalama fire oranı` (`m17`)
+`fire_orani_yuzde` × `kumas_cinsi` ile **10.829 ms**'de çözüldü. Aynı ölçü, farklı kırılım
+— biri çalışıyor, öteki bambaşka küplere gidiyor. **İki kez.**
+
+## §81 · M turunun çalışan tarafı (12)
+
+`m1` kâr marjı × kumaş (`order:desc`) · `m3` kalite × vardiya · **`m6` 487 ms** ·
+**`m7` 582 ms · iki boyut · 40 satır** · **`m8` 808 ms** · `m9` renk sayımı ·
+**`m10` `§60` sahada** (*"ortalama sordun ama toplam"*) · **`m11` `oee ve üretim birlikte`
+→ İKİ ÖLÇÜ** ✅✅ · **`m14` `ciro ve fire birlikte çizgi grafik` → iki ölçü + `view: line`**
+✅✅ · **`m15` 464 ms** · `m16` en kârlı ay · **`m18` 486 ms**
+
+⊙ `m11` ve `m14`, `§71`'in *"ölçü kaybı"* sınıfının **garson çözdüğünde çalıştığını**
+gösteriyor — iki ölçü de `cq`'ya giriyor.
+
+## §82 · TABAN KARARLILIK — ilk beş senaryo
+
+`--live --kararlilik 3` koşumu sürüyor; şu ana kadar:
+
+```
+temellendirme      farklı=1  hâkim=3/3
+sureklilik_slot    farklı=1  hâkim=3/3
+onarim             farklı=1  hâkim=3/3
+anlati             farklı=1  hâkim=3/3
+sosyal_ve_donus    farklı=1  hâkim=3/3
+konu_degisimi      farklı=1  hâkim=3/3   (§79)
+```
+
+🔴 **Altı senaryonun altısı da TAM KARARLI.** `§75.6`'nın *"asıl kusur salınımın kendisi"*
+tezi giderek daralıyor: salınım **senaryo kümesinde görünmüyor**; L turunda gördüğüm
+oynaklık, kümede olmayan **serbest** sorularda.
+
+> *Bir kusurun sınırı, onu aramadığın yerde değil, aradığın yerde bulunmamasıyla
+> belirlenir.*
