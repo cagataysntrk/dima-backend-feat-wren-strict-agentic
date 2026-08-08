@@ -4054,3 +4054,26 @@ bir sözlüğü** sayıyordum. Sinyal yanlış değildi; **kaynağı yoktu**.
 geçişi mi (`typo_correct` sonrası), `prompt_enhancer` mı, yoksa sinonim katmanı mı
 (`app/synonyms`·`value_index`·`archetypes`). Sayaç **oradan** okunacak.
 ⚠ Sondaj satırı **kaldırıldı** (geçiciydi); tekrar gerekirse aynı yere konur.
+
+## §72 · YABANCI DİL BİR HEDEF DEĞİL, BİR **ÖLÇÜM ALETİ** *(kullanıcı düzeltmesi)*
+
+> *"Meselemiz dil sayısını artırmak değil. Farklı diller **route'tan bağımsız** olduğu
+> için, LLM'in işini mükemmelce yapıp yapmadığını daha rahat anlamamızı sağlıyor."*
+
+⊙ Bu, önceki turların **okunuşunu** düzeltiyor: *"yedi dil çalışıyor"* bir ürün kazancı
+değil, **garsonun sağlam olduğunun kanıtıdır**. Türkçe bir soru çalıştığında bunu route
+mu garson mu yaptı belirsizdir; **Arapça bir soru çalıştığında yapan kesinlikle
+garsondur.**
+
+**Sonuç — okuma kuralı:**
+
+| gözlem | doğru okuma |
+|---|---|
+| yabancı dilde soru **çalışıyor** | ✅ garson yolu sağlam |
+| yabancı dilde soru **çalışmıyor** | 🔴 **garson yolu o soruda kırık** — bir *"dil eksiği"* değil |
+
+Dolayısıyla `k5` (`hoeveel omzet hebben we dit jaar` → *"Hangisini istiyorsun?"*) bir
+Hollandaca eksiği **değil**: garson devreye girmedi ya da cevabı atıldı. Aynı sınıf
+`§65`'in ölçtüğü şey.
+
+> *Bir aleti ürün sanmak, ölçtüğü şeyi kaybetmektir.*
