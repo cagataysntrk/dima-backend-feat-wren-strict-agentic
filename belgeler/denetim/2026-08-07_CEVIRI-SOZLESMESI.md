@@ -3054,3 +3054,25 @@ sosyal kapı) ve `KAT-1` ikinci bir sahip yasaklıyor.
 |---|---|---|
 | `…fire oranını kıyasla ve listele ve en yüksek olanı analiz et` | menü dökümü | ✅ **913 ms · `source=cube` · 0 LLM** · RAM-2 %22,12 · `order:desc + limit:1` · tek eksik (`kiyas`) **beyan edildi** |
 | `neler sorabilirim` *(gerileme kontrolü)* | katalog | ✅ **aynı**, 375 ms |
+
+### 46.5 · KORPUS KIPIRDADI — ve doğru yönde
+
+`§46` bu operasyonda korpus sayılarını **oynatan ilk değişiklik** oldu:
+
+| ölçüt | önce | **sonra** | okuma |
+|---|---|---|---|
+| `dogru` | 91 | **93** | 🔴 **+2 — en katı ölçüt yükseldi** |
+| `beyanli_kismi` | 50 | **51** | +1 — bir vaka dürüst beyana dönüştü |
+| `kabul` | 1156 | 1153 | −3 (yukarıdaki üçü buradan çıktı) |
+| `sessiz_yanlis` | 12 | **12** | ✅ sabit — doğruluk vetosu geçildi |
+| doğru-cube | %95,1 | %95,1 | sabit |
+
+⊙ Üç vaka *"kabul"*ten çıktı: **ikisi doğru cevaba**, biri **beyanlı kısmiye**. `kabul`
+düşerken `dogru` yükselmesi bir kayıp değil bir **keskinleşme**dir: aynı sorular artık
+daha kesin sınıflanıyor.
+
+⚠ Ve `CLAUDE.md`'nin uyardığı tersi desen **burada yok**: orada *"sistem bozulurken sayı
+iyileşir"* (payda düşerse doğruluk yükselir) anlatılıyor. Burada **payda sabit** (2285) ve
+yükselen şey mutlak sayı — yani iyileşme gerçek.
+
+> *Bir metriğin yükselmesi ancak paydası sabitken bir kazançtır.*
