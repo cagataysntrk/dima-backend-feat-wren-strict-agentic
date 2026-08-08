@@ -323,6 +323,48 @@ def _capaya_deger(q: str, capa_degerleri: frozenset[str] | None) -> bool:
     return any(d and d in q for d in capa_degerleri)
 
 
+def konusma_sozcukleri(q: str) -> set[str]:
+    """🔴 **`§46` — KONUŞMA FİİLLERİ BİR KONU DEĞİLDİR.**
+
+    ## Ölçülen kusur
+
+    | soru | sonuç |
+    |---|---|
+    | `bu yıl kar marjı en düşük 3 müşteri ve nedenini **analiz et**` | *«"analiz" başka bir konu gibi görünüyor»* |
+    | `bu yıl makine bazında fire oranını kıyasla ve listele ve en yüksek olanı **analiz et**` | 🔴 `source=catalog` — **tüm menü dökümü** |
+    | `bu yıl vardiya bazında oee **yorumla**` | ✅ çalışıyor |
+
+    Üçü de aynı yapıda; ikisi düşüyor. Ve düşenler **kullanıcının kendi örnek cümle
+    tarzı** (*"…en düşüğün neden diğerlerinden düşük olduğunu bul analiz et"*).
+
+    ## Kök
+
+    `_ANLAT` **`analiz et`'i zaten tanıyor** — ama `sinifla()` yalnız **takip** turunda
+    koşar. **Taze** bir soruda `route()`'un kapsam kapısı `analiz`/`et` sözcüklerini
+    *"tanımadığım bir konu"* sayar ve soruyu — geri kalanı tamamen anlaşılmışken —
+    reddeder.
+
+    ⊙ Bu, bu depoda ölçülmüş *"ayrıştırıcı tüketti → bilinen sayılır"* kuralının
+    **üçüncü** örneği (`ustunluk_sozcukleri` · `_LISTE_RE` · şimdi bu). Kelime listesi
+    **yazılmıyor**: sınıflandırıcının **kendi** kalıpları okunuyor, yani iki taraf
+    ayrışamaz (`KAT-1`).
+
+    *Bir cümlenin ne yapılacağını söyleyen kısmı, neyin sorulduğunu söyleyen kısmı
+    gölgelememelidir.*
+
+    ⚠ Kapsam **dar**: yalnız *"cevabın üstünde konuşma"* fiilleri (`ANLAT`·`NEDEN`·
+    `NE_YAPMALI`). `TAKIP`/`PAYLAS` **dışarıda** — onlar bir **eylem** ister (bildirim,
+    mail) ve bir veri sorusunda geçmeleri gerçekten yeni bir konudur.
+    """
+    out: set[str] = set()
+    qn = _norm(q or "")
+    for kaliplar in (_ANLAT, _NEDEN, _NE_YAPMALI):
+        for k in kaliplar:
+            if k in qn:
+                out.update(re.findall(r"[a-z]+", k))
+    return out
+
+
 def _kisa_soru(q: str) -> bool:
     """Çok kısa takip soruları ("neden?", "niye?") zaten eldeki cevaba dairdir —
     yeni bir konu üç kelimeden az ifade edilmez. Zamir aramak burada gereksiz katılık

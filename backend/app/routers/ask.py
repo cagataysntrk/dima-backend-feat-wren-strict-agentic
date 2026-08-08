@@ -2607,7 +2607,20 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             trace=[f"kalıcı sunum tercihi ({_tercih_adayi.anahtar}="
                    f"{_tercih_adayi.deger}) → onay bekliyor (LLM'siz, SQL'siz)"],
         ))
-    if _is_catalog_query(q_norm):
+    # 🔴 **`§46` — KATALOG KEŞFİ KAPISI VERİ SORUSUNU YUTUYORDU.**
+    #
+    # Ölçüldü: `bu yıl makine bazında fire oranını kıyasla ve **listele** ve en yüksek
+    # olanı **analiz et**` → `source=catalog`, **tüm menü dökümü**. Desen
+    # `(hangi|listele|…)**.***(…|analiz|oran|…)` ve o `.*` **sınırsız**: cümlenin başındaki
+    # `listele` ile sonundaki `analiz` eşleşiyor, aralarındaki gerçek soru görünmüyor.
+    #
+    # ⊙ Ayrım **yapısal**: katalog keşfi katalog **hakkında** bir sorudur; veri sorusu
+    # katalog **ile** sorulur. Soruda gerçek bir ölçü/boyut/dönem varsa kullanıcı ne
+    # sorabileceğini değil, **cevabı** istiyordur. Yüklem yeni yazılmadı — `veri_niyeti_var`
+    # zaten bu iş için var (`D1`, sosyal kapı) ve `KAT-1` ikinci bir sahip yasaklıyor.
+    #
+    # *Bir menüyü, yemeği söyleyen müşteriye uzatmak, onu dinlememektir.*
+    if _is_catalog_query(q_norm) and not cube_router.veri_niyeti_var(q_norm, schema):
         return _finish(AskResponse(
             question=body.question, source="catalog", note=_catalog_listing(schema),
             suggestions=[Suggestion(**s) for s in _catalog_all_suggestions(schema)],

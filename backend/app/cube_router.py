@@ -1475,6 +1475,7 @@ def deterministic_refine(prev: dict, q: str, schema: dict,
         # 🔴 `§22.4` — üstünlük yapısı (`en` + sıfat) sıralama niyetine gider; kapsam
         # kapısında **konu** sayılamaz. Kapsam dar: yalnız yapı gerçekten eşleştiyse.
         known |= ustunluk_sozcukleri(q)
+    known |= _konusma_sozcukleri(q)   # `§46` — sınıflandırıcının tükettiği fiiller
     if _top_n(q, cube_meta):
         known.update(w for m in _TOPN_CUE.finditer(q)
                      for w in re.findall(r"[a-z]+", m.group(0)))
@@ -1799,6 +1800,20 @@ _USTUNLUK_RE = re.compile(r"\ben\s+([a-z]+)")
 #: `en <sıfat>` yapısında **azlık** bildiren kutup. Kapalı ve küçük; kalan her sıfat
 #: **çokluk** okunur — çünkü *"en X"* günlük dilde ezici çoğunlukla *"en fazla X"*tır.
 _AZLIK_KUTBU = frozenset({"dusuk", "az", "kotu", "verimsiz", "kisa", "kucuk", "yavas"})
+
+
+def _konusma_sozcukleri(q: str) -> set[str]:
+    """`§46` — konuşma fiillerini **sınıflandırıcının kendi kalıplarından** okur.
+
+    ⚠ Burada bir liste **yazılmaz**: `followup`'ın kalıpları çağrılır, yoksa iki taraf
+    ayrışır (`KAT-1`) ve *"analiz et"* bir yerde tanınıp öbüründe tanınmaz olurdu —
+    ki kusur tam olarak buydu, bir kat aşağıda.
+    """
+    # ⚠ **TEMBEL import ZORUNLU:** `followup.py:57` bu modülü import ediyor
+    # (`from app.cube_router import _norm, _syn_hit`) — modül düzeyinde bir import
+    # **döngü** olurdu. Risk profili `ustunluk_sozcukleri` ile aynı: saf regex.
+    from app.followup import konusma_sozcukleri
+    return konusma_sozcukleri(q)
 
 
 def ustunluk_sozcukleri(q: str) -> set[str]:
@@ -3829,6 +3844,7 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
         # 🔴 `§22.4` — üstünlük yapısı (`en` + sıfat) sıralama niyetine gider; kapsam
         # kapısında **konu** sayılamaz. Kapsam dar: yalnız yapı gerçekten eşleştiyse.
         known |= ustunluk_sozcukleri(q)
+    known |= _konusma_sozcukleri(q)   # `§46` — sınıflandırıcının tükettiği fiiller
     if _top_n(q, cube_meta):
         known.update(w for m in _TOPN_CUE.finditer(q)
                      for w in re.findall(r"[a-z]+", m.group(0)))

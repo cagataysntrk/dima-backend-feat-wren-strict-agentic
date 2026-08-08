@@ -3004,3 +3004,53 @@ cube-belirsizliği açıklaması kaldı (14.053 ms).
 
 **Yeni kapılar (11):** yedi dönem ifadesi üstünlük **sayılmayacak** · üç gerçek üstünlük
 **sayılmaya devam edecek** (gevşemenin sınırı) · ek penceresi **sınırsız olmayacak**.
+
+## §46 · KATALOG KEŞFİ KAPISI VERİ SORUSUNU YUTUYORDU — sınırsız bir `.*`
+
+### 46.1 · Ölçüm — ve düşen cümleler kullanıcının KENDİ tarzı
+
+| soru | sonuç |
+|---|---|
+| `bu yıl makine bazında fire oranını kıyasla ve **listele** ve en yüksek olanı **analiz et**` | 🔴 `source=catalog` — **tüm menü dökümü** |
+| `bu yıl kar marjı en düşük 3 müşteri ve nedenini **analiz et**` | 🔴 *«"analiz" başka bir konu gibi görünüyor»* |
+| `bu yıl vardiya bazında oee **yorumla**` | ✅ çalışıyor |
+
+Kullanıcının bu tur için verdiği örnek aynen böyleydi: *"…en düşüğün neden diğerlerinden
+düşük olduğunu bul **analiz et**"*.
+
+### 46.2 · İki kök, iki kat
+
+**(a) Kapsam kapısı konuşma fiillerini bilinmeyen sayıyordu.** `_ANLAT` `analiz et`'i
+**zaten** tanıyor — ama `followup.sinifla()` yalnız **takip** turunda koşar; taze soruda
+`route()` o sözcükleri *"tanımadığım bir konu"* sayıyordu.
+⊙ Depoda ölçülmüş *"ayrıştırıcı tüketti → bilinen sayılır"* kuralının **üçüncü** örneği
+(`ustunluk_sozcukleri` · `_LISTE_RE` · bu).
+⚠ **Kelime listesi yazılmadı:** sınıflandırıcının **kendi** kalıpları çağrılıyor
+(`followup.konusma_sozcukleri`), yoksa iki taraf ayrışırdı — ki kusur bir kat aşağıda tam
+olarak buydu.
+
+**(b) 🔴 Asıl kök: `_is_catalog_query`'de SINIRSIZ bir `.*`.**
+
+```python
+r"\b(hangi|neler|ne\s+tur|listele|liste|mevcut)\b.*(kpi|rapor|metrik|olcu|analiz|oran|…)"
+```
+
+Cümlenin **başındaki** `listele` ile **sonundaki** `analiz` eşleşiyor; aradaki gerçek soru
+görünmüyor. Yani iki yaygın sözcüğü içeren her uzun cümle bir *"katalog keşfi"* sayılıyordu.
+
+### 46.3 · Kök çözüm — yapısal ayrım
+
+> Katalog keşfi katalog **hakkında** bir sorudur; veri sorusu katalog **ile** sorulur.
+
+Soruda gerçek bir ölçü/boyut/dönem varsa kullanıcı *ne sorabileceğini* değil **cevabı**
+istiyordur. Yüklem **yeni yazılmadı**: `veri_niyeti_var` zaten bu iş için var (`D1`,
+sosyal kapı) ve `KAT-1` ikinci bir sahip yasaklıyor.
+
+> *Bir menüyü, yemeği söyleyen müşteriye uzatmak, onu dinlememektir.*
+
+### 46.4 · Doğrulama — iki yön
+
+| soru | önce | **sonra** |
+|---|---|---|
+| `…fire oranını kıyasla ve listele ve en yüksek olanı analiz et` | menü dökümü | ✅ **913 ms · `source=cube` · 0 LLM** · RAM-2 %22,12 · `order:desc + limit:1` · tek eksik (`kiyas`) **beyan edildi** |
+| `neler sorabilirim` *(gerileme kontrolü)* | katalog | ✅ **aynı**, 375 ms |

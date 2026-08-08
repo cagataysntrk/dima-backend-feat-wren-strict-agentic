@@ -337,6 +337,21 @@ MUAFIYET_ASK_KOD = [
      "makbuza yazılmazsa, kullanıcı onu kendi yazdığını sanır"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("faz-46-konusma-fiilleri", 5,
+     "🔴 **KONUŞMA FİİLLERİ BİR KONU DEĞİLDİR.** Ölçüldü: `…en yüksek olanı **analiz et**` "
+     "→ `source=catalog` (**tüm menü dökümü**); `…nedenini analiz et` → *«analiz başka bir "
+     "konu gibi görünüyor»*. Geri kalan tamamen anlaşılmışken soru reddediliyordu — ve "
+     "düşen cümleler kullanıcının **kendi örnek tarzı**. "
+     "⊙ `_ANLAT` `analiz et`'i **zaten** tanıyor; ama `sinifla()` yalnız TAKİP turunda "
+     "koşar, taze soruda kapsam kapısı o sözcükleri bilinmeyen sayar. Bu, depoda ölçülmüş "
+     "*«ayrıştırıcı tüketti → bilinen sayılır»* kuralının **üçüncü** örneği "
+     "(`ustunluk_sozcukleri` · `_LISTE_RE` · bu). "
+     "⚠ **KELİME LİSTESİ YAZILMADI:** sınıflandırıcının kendi kalıpları çağrılıyor, yoksa "
+     "iki taraf ayrışır (`KAT-1`) — ki kusur tam olarak buydu, bir kat aşağıda. "
+     "⚠ **TAŞINAMAZ:** kapsam kapısının bilinen-sözcük katkıları burada yaşıyor "
+     "(`ustunluk_sozcukleri` kardeşi); köprü **tembel** import eder çünkü `followup.py:57` "
+     "bu modülü import ediyor — modül düzeyinde bir döngü olurdu. Δ = 3 (köprü) + 2 (iki "
+     "kapsam kapısı çağrısı)"),
     ("faz-43-dagilim-sarma", 1,
      "⚠ **BİR SATIRLIK SARMA — davranış değil BİÇİM.** `§43` `_LISTE_RE`'ye `dagili\\w*` "
      "ekledi (görünüm niyeti sınıfının eksik üyesi); desen tek satırda **104 karakter** "
