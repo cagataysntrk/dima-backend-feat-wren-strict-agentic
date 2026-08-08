@@ -4964,3 +4964,171 @@ o dizeye eşit olamayacağı için sorgu **sessizce boş** dönebilir — yani `
 
 *Bir değer eşleştiricisi, eşleştiremediğinde durmayı bilmiyorsa bir eşleştirici değil bir
 uydurucudur.*
+
+---
+
+## §87 · O TURU — 20 yeni senaryo · ve deponun kendi kaydı bir hipotezimi çürüttü
+
+*(Kullanıcının turun ortasında verdiği senaryo `o1` olarak ilk sıraya alındı.)*
+
+### §87.1 · O1 — `şubatta ocağa göre ciro değişimi` **[kullanıcının senaryosu]**
+
+**İki koşum, birebir aynı** (`KURAL G-1` ✅ — yani salınım değil, **gerçek ve kararlı**):
+
+    not   = "Hangisini istiyorsun?"
+    trace = self-consistency uyuşmazlığı (%33 uyum / 3 örnek, eksen=None)
+            niyet: tür=kiyas+trend · 🔴temsil-yok=kiyas · dönem=1 · bilinmeyen=ocaga
+
+Sistem soruyu **anlıyor** (`tür=kiyas+trend`), temsil edemediğini de **biliyor**
+(`temsil-yok=kiyas`) — ve kullanıcıya bunların hiçbirini söylemeden *"Hangisini
+istiyorsun?"* diyor.
+
+### §87.2 · 🔴 Ve iki senaryo, kökü **çürütücü** biçimde aydınlattı
+
+| # | soru | sonuç |
+|---|---|---|
+| `o8` **[EN]** | `compare february and january revenue` | 🟢 **2 satır** · Ocak + Şubat ciro · **%100 uyum** |
+| `o19` **[takip]** | `bu ay fire` → `geçen aya göre nasıl` | 🟢 `Takip: dönemsel kıyas (mom, LLM'siz)` · `toplam_fire_kg`+`_gecen`+`_degisim_yuzde` |
+
+⊙ Birincisi: **`CubeQuery` iki dönemi temsil EDEBİLİYOR** (ay granülerliği + kapsayan
+aralık). Yani `o1`'in kusuru bir **temsil** kusuru değil.
+⊙ İkincisi: **kıyas makinesi VAR ve çalışıyor** — ama yalnız **takip** yolunda
+(`kiyas_cebiri`/`mom`). Taze soru ona **erişemiyor**.
+
+🔴 **KÖK-O4 · KİMLİK ASİMETRİSİ, ÜÇÜNCÜ KEZ.** `MIMARI §6.1h`'nin adını koyduğu desen:
+bir yetenek takip yolunda var, taze yolda yok. Daha önce **Discovery** için ve
+**çapraz-alan pilotu** için ölçülmüştü; bu üçüncüsü. Ve `§72` tam da bunun için:
+**İngilizce soru, Türkçe sorunun gizlediği şeyi gösterdi** — eksik olan dil değil, **yol**.
+
+*Bir yeteneğin iki yoldan yalnız birinde bulunması, o yeteneğin yarısının olmamasıdır.*
+
+⚠ Bu tur **yazılmadı** — ölçüldü, adı kondu, `P` turuna devredildi. Kör yama yok.
+
+### §87.3 · 🔴 Deponun kendi kaydı hipotezimi çürüttü — turun **dördüncü** öz-düzeltmesi
+
+`o7` (`2025 ve 2026 fire kg farkı`) *"«fark» (enerji_sapma) + «fire»"* diye iki konu
+gördü. *"«fark» bir kıyas sözcüğü, dolgu sözlüğüne eklenmeli"* diye yazmak üzereydim.
+`_misc_hit_words`'ün docstring'i:
+
+> **`fark` BİLEREK EKLENMEDİ** — ölçüldü: `enerji_sapma.toplam_enpg`'nin **gerçek ölçü
+> sinonimi**. Dolgu saymak onu gölgelerdi; `2a-1`'in (`elektrik`) tam olarak ölçümle
+> reddedilen hatası.
+
+**Reddedilmiş bir deneyi tekrarlayacaktım.** `YAZMADAN ÖNCE ARA` kuralı dördüncü kez
+kurtardı.
+
+⊙ Doğru okuma başka: `niyet` o soruda **`dönem=2(çözülemedi)`** yazıyor. Yani ayırt edici
+işaret sözcük değil **yapı**: *soruda iki dönem varsa, bir kıyas sözcüğü kıyas
+sözcüğüdür.* Bu bir hipotezdir ve **ölçülmeden yazılmayacaktır**.
+
+### §87.4 · KÖK-O2 — beyan sınıfı belgede vardı, **kodda yoktu**
+
+`uyum.py`'nin `olcu_ikamesi` yükleminin docstring'i dört sınıf sayıyor:
+`maliyet`·`₺`·`ortalama`·**`oran`**·**`yüzde`**. Kodu **ikisini** uyguluyordu.
+
+Ölçüldü (`o16`): `iş kazası **oranı** yıllara göre nasıl değişti` → `isg.kaza_adedi`
+(birim **boş** — bir sayım), 5 satır, **hiçbir beyan yok**. `niyet` biliyordu:
+`bilinmeyen=orani`.
+
+🔴 Bu, `§86`'nın **kardeşidir**: orada bir **geri alma**, burada bir **beyan sınıfı**
+yazılmış ama yapılmamıştı. Deponun kendi cümlesi: *"belgelenmiş davranışla kodun
+ayrışması, bu depoda tekrar eden en pahalı hata sınıfıdır."*
+
+**Curl doğrulaması:**
+
+> *"⚠ Sayı doğru ama **eksik**: bir **oran/yüzde** sordun ama `kaza_adedi` bir **adet** —
+> payda katalogda tanımlı değil."*
+
+Cevap **yaşıyor** (5 satır), ikame **beyan ediliyor** — `KÖK-3` sözleşmesi aynen.
+
+### §87.5 · KÖK-O3 — sıralamayı kurtardık, **sayıyı yerde bıraktık**
+
+Sondaj (canlı akışa geçici log, **iki koşum birebir** — `G-1` ✅):
+
+    o11: `en az arıza veren 5 makine`
+    SONDAJ-O11: order=None limit=None cq_limit=None dims=['makine'] gran=None
+    niyet:      tür=kirilim+ustunluk · üstünlük=5
+
+`route()` **ikisini birden** düşürdü; `§34` (`siralama.tamamla`) sıralamayı geri koydu,
+**sayıyı kimse geri koymadı**. Kullanıcı *"5"* dedi, sıralanmış ama **kesilmemiş** bir
+tablo aldı.
+
+⊙ Ve `§34`'ün kendi sınırı bunu **zaten** ayırıyordu: *"**sayı vermediyse** kesmemek
+doğrudur"*, ve kendi tablosunun 4. satırı (`en az üretim yapan 3 makine → order:asc +
+limit:3`) sayının verildiği hâli **beklenen davranış** diye gösteriyor. Kural iki durumu
+ayırıyordu; **uygulaması ayırmıyordu**.
+
+Bu, `§N4`'ün **taze yoldaki ikizidir** ve aynı seri-koruma kaydını taşır.
+
+**Curl doğrulaması:** `cq` artık `… order:asc, **limit: 5**`.
+
+*Sayı verilmişse kesmek bilgi çıkarmaz — sözü yerine getirir.*
+
+### §87.6 · O turu tablosu
+
+| # | soru | sonuç |
+|---|---|---|
+| O1 | `şubatta ocağa göre ciro değişimi` **[kullanıcı]** | 🔴 kararlı — KÖK-O4 |
+| O2 | `hangi hatta en çok rework var` | ◐ doğru `cq`, dönem sorusu |
+| O3 | `kalite maliyeti nedir` | ◐ dürüst *"şunları çıkarabilirim"* |
+| O4·O5 | `bu yıl OEE` → `hat bazında` | ✅ 8 satır |
+| O6 | `en düşük olanı hangisi` | ◐ sıralı 8 satır (`§34` kararı: kesmiyor) |
+| O7 | `2025 ve 2026 fire kg farkı` | 🔴 `«fark»`=ölçü — **hipotezim çürüdü**, bkz. §87.3 |
+| O8 **[EN]** | `compare february and january revenue` | 🟢 **2 satır, %100** |
+| O9 **[DE]** | `Wie hoch war der Ausschuss im letzten Monat?` | 🔴 %33 salınım |
+| O10 | `geçen hafta üretim adedi` | 🔴 %50 salınım |
+| O11 | `en az arıza veren 5 makine` | 🔴→🟢 KÖK-O3 |
+| O12 | `ortalama çözüm süresi kaç gün` | ✅ doğru `cq` |
+| O13·O14·O15 | `toplam ciro` → `müşteriye göre böl` → `en yüksek 5'i` | ✅ `limit:5` |
+| O16 | `iş kazası oranı yıllara göre nasıl değişti` | 🔴→🟢 KÖK-O2 |
+| O17 | `en çok eğitim alan personel` | ◐ sıralı, sayısız (doğru) |
+| O18 | `bu ay fire` | ✅ dürüst boş-aralık beyanı |
+| O19 | `geçen aya göre nasıl` | 🟢 **mom kıyası çalıştı** |
+| O20 | `hedefin altında kalan hatlar` | 🔴 %50 salınım |
+
+**Discovery ateşlemesi: 0.** (E=4 · F=1 · G=1 · N=1 · **O=0**)
+
+### §87.7 · 🔴 EN BÜYÜK **SINIF**: garson salınımı — 4/20
+
+`o1` %33 · `o9` %33 · `o10` %50 · `o20` %50. Dördünde de garson **cevap üretti**, oylar
+uzlaşmadı ve kullanıcı **hiçbir şey** almadı.
+
+⚠ `§77`'nin `oylama_cogunluk` bayrağı bu sınıf için yazılmıştı ama **çare değil**:
+%33 (1-1-1) ve %50 (1-1) beraberliklerinde çoğunluk **yok**. Ölçülecek asıl kaldıraç
+`consistency_k` (3 → 5): daha çok örnek, daha net çoğunluk. **Ölçülmeden açılmayacak.**
+
+⊙ Ve `kartaban`ın `%100 (25/25)` taban kararlılığı bu dördünü **görmüyor** — çünkü o
+küme zaten çalışan soruları ölçüyor (`§85.0`).
+
+### §87.8 · O demetinin kapısı — **tek** `--hepsi` koşumu
+
+| ölçüt | `§86` sonrası taban | **O demeti** |
+|---|---|---|
+| `vaka` | 2285 | 2285 |
+| `kabul` | 1153 | **1153** |
+| `dogru` | 93 | **93** |
+| `sessiz_yanlis` | 12 | **12** ✅ doğruluk vetosu |
+| `beyanli_kismi` | 51 | **51** |
+| tam süit | 4257 yeşil | **4257 yeşil · 32 atlandı** |
+| `eval` | +0,0% | **precision +0,0% · coverage +0,0%** |
+
+⊙ Okuma: iki düzeltme (`§O2` beyan sınıfı · `§O3` sayı kurtarma) **korpusu hiç
+oynatmadan** iki ölçülmüş canlı kusuru kapattı. `beyanli_kismi` **artmadı** — yeni beyan
+sınıfı korpusta yanlış-pozitif üretmiyor; canlıda ise `o16`'da ateşliyor. *Dar bir
+yüklem, geniş bir yüklemin veremeyeceği güveni verir.*
+
+### §87.9 · Turun bilançosu — iki demet, dört düzeltme, iki keşif
+
+| # | ne | ölçülen |
+|---|---|---|
+| `§85.2` | sıralanmamış listeye dilim | fire sorusuna `brüt maaş` chip'i → `şikayet adedi · iade · çözüm süresi` |
+| `§85.3` | hakem konuştu, kararı duyulmadı | *"Hangisini istiyorsun?"* → tam kurulmuş `cq` (+ uydurma filtre yok oldu) |
+| `§85.4` | `üstünlük=3` niyette, `limit` yok *(takip)* | 12 satır → **3 satır** |
+| `§O3` | aynı kusurun **taze yol** ikizi | `limit` yok → **`limit: 5`** |
+| `§O2` | beyan sınıfı belgede vardı, kodda yoktu | sessiz ikame → **beyanlı ikame** |
+| `§86` | **geri alma yazılmış, yapılmamış** | `dogru` 91 → **93** · **4 kırmızı test kapandı** |
+
+**Açık kökler (P turuna):** `KÖK-O4` kimlik asimetrisi (kıyas yalnız takip yolunda) ·
+garson salınımı 4/20 (`consistency_k` 3→5 ölçülecek) · fiil/cümle bir kategori değeri
+sanılıyor (`§86.8`) · `temsil-yok=kiyas` takip yolunda **yanlış-pozitif** (kıyas
+çalışırken bile beyan ediliyor).

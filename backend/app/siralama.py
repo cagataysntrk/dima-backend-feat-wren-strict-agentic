@@ -102,4 +102,31 @@ def tamamla(cq: dict, q: str, cube_meta: dict | None = None, *,
         return False
     cq["order"] = {"measure": olcut(qn, olculer, cube_meta),
                    "direction": "asc" if yon == "ASC" else "desc"}
+    # 🔴 **`§O3` — SIRALAMAYI KURTARDIK, SAYIYI YERDE BIRAKTIK.**
+    #
+    # Yukarıdaki sınır *"**sayı vermediyse** kesmemek doğrudur"* diyor — ve kendi
+    # tablosunun 4. satırı (`en az üretim yapan 3 makine → order:asc + limit:3`) sayının
+    # **verildiği** hâli **beklenen davranış** olarak gösteriyor. Yani kural zaten iki
+    # durumu ayırıyordu; **uygulaması ayırmıyordu**.
+    #
+    # Ölçüldü (O turu, `o11`, **iki koşum birebir** — `KURAL G-1`): `en az arıza veren 5
+    # makine` →
+    #
+    #     SONDAJ-O11: order=None limit=None cq_limit=None dims=['makine'] gran=None
+    #     niyet: tür=kirilim+ustunluk · kırılım=makine,ariza_tipi · üstünlük=5
+    #
+    # `route()` **ikisini birden** düşürdü (yönü bulamayınca sayı da düştü); bu fonksiyon
+    # sıralamayı geri koydu, **sayıyı kimse geri koymadı**. Kullanıcı *"5"* dedi ve
+    # sıralanmış ama **kesilmemiş** bir tablo aldı. `niyet` sayıyı biliyordu.
+    #
+    # ⚠ Bu, `§N4`'ün **taze yoldaki ikizidir** (`§N4` takip/refine yolunu düzeltmişti) —
+    # ve aynı seri-koruma kaydını taşır: zaman kovası **başka bir boyutla** birlikteyse
+    # satır limiti seriyi keser, orada konmaz (`entity_limit`'in işi).
+    #
+    # ⚠ Sayı **çıkarımla değil, kullanıcının ağzından** gelir (`_top_n`). *Sayı verilmişse
+    # kesmek bilgi çıkarmaz — sözü yerine getirir.*
+    if not cq.get("limit"):
+        _n = _cr()._top_n(qn, cube_meta)
+        if _n and not (cq.get("timeDimensions") and cq.get("dimensions")):
+            cq["limit"] = _n
     return True

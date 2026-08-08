@@ -335,6 +335,26 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
         _birim_bekleniyor = "₺"
     _toplulastirma_bekleniyor = ("ort" if re.search(r"\b(ortalama|ort\b|vasati)", qn)
                                  else None)
+    # 🔴🔴 **`§O2` — BU YÜKLEMİN DOCSTRING'İ DÖRT SINIF SAYIYOR, KODU İKİSİNİ YAZIYORDU.**
+    #
+    # Yukarıdaki açıklama aynen şöyle diyor: *"soruda bir birim/toplulaştırma sözcüğü
+    # geçiyor (`maliyet`·`₺`·`tl`·`ortalama`·**`oran`**·**`yüzde`**)"*. `oran` ve `yüzde`
+    # **hiç yazılmamıştı** — beyan sınıfı belgede vardı, kodda yoktu.
+    #
+    # Ölçüldü (O turu, `o16`): `iş kazası **oranı** yıllara göre nasıl değişti` →
+    # `isg.kaza_adedi` (birim **boş**, bir **sayım**) döndü, 5 satır, **hiçbir beyan yok**.
+    # Kullanıcı bir **oran** sordu, bir **adet** aldı ve bunu söyleyen olmadı.
+    # `niyet` bile biliyordu: `bilinmeyen=orani`.
+    #
+    # ⊙ Bu, `§86`'nın kardeşidir ve deponun kendi cümlesiyle: *"belgelenmiş davranışla
+    # kodun ayrışması, bu depoda tekrar eden en pahalı hata sınıfıdır."* Orada bir **geri
+    # alma**, burada bir **beyan sınıfı** yazılmış ama yapılmamıştı.
+    #
+    # ⚠ Ölçüt yine **tek sahipten** okunur (`viz._unit_of`) ve tür testidir, eşitlik
+    # değil — `§60`'ın kendi yanlış-pozitif dersi (`₺/kg` de bir tutardır).
+    # ⚠ `oranla` **dışarıda**: o bir kıyas edatıdır (*"geçen yıla oranla"*), bir birim
+    # talebi değil. Sınır dilbilgiseldir, sözlüksel değil.
+    _oran_bekleniyor = bool(re.search(r"\b(oran(?!la\b)\w*|yuzde\w*|%)", qn))
     # ⚠ **BİRİM TEK SAHİPTEN OKUNUR.** İlk yazımda `cube_meta["measure_meta"][m]["unit"]`
     # diye bir yol uydurdum ve kapı sessizce hiç ateşlemedi — o anahtar **yok**. Birimin
     # sahibi `viz._unit_of`'tur (MDL `units` sözlüğü, yoksa regex yedeği) ve ikinci bir
@@ -358,6 +378,14 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
                 f"**{_birim}** cinsinden (`{_m}`)",
                 "O birimde bir ölçü katalogda yoksa hesabı ben uyduramam — "
                 "başka bir ölçü adıyla sorabilirsin."))
+            break
+        if _oran_bekleniyor and not re.search(r"(%|yuzde|oran)", _birim + _m, re.I):
+            out.append(Ihlal(
+                "olcu_ikamesi",
+                f"bir **oran/yüzde** sordun ama `{_m}` bir "
+                f"**{_birim or 'sayım'}** — payda katalogda tanımlı değil",
+                "Oranı katalogda varsa adıyla sorabilirsin (*«… oranı»* biçiminde "
+                "tanımlı bir ölçü); yoksa payı ve paydayı ayrı ayrı isteyebilirsin."))
             break
         if _toplulastirma_bekleniyor and _m.startswith("toplam_"):
             out.append(Ihlal(
