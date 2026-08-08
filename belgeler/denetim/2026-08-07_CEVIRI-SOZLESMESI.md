@@ -27,6 +27,68 @@
 > Bu bölüm belgenin **başında** durur çünkü geri kalan her ölçüm ona dayanır. Bağlam
 > sıfırlansa bile buradan devam edilir.
 
+### 0.0 · 🔴🔴 EN ÜST KURAL — **GARSON DEVRİ** *(kullanıcı kararı 2026-08-08)*
+
+> *"Route hatalarını düzeltmeye kalksak sonsuza kadar sürer ve route'a — yani NLP'ye —
+> Türkçe öğretmemiz gerekir ki bu gereksiz. NLP bizim için güvenilir olmayan bir araç;
+> sadece **kesin doğrulukla** sonuç getirirse cevabına güveniyoruz. Biliyorsun ki
+> çoğunlukla hata yapıyor, anlamıyor — **anlama yok zaten**, sadece kelimeleri
+> kurallamaktan ibaret.*
+>
+> *O yüzden intent algılamada asıl **LLM'e** güveniyoruz: tam bir dil modeli ve gerçekten
+> bir sözü anlıyor — ister Türkçe ister Arapça, kullanıcı **ne'ce** yazarsa yazsın.*
+>
+> *Bu turun asıl amacı: siparişte **en ufak %5'lik bir şüphe** bile varsa, azıcık bile
+> anlamama varsa, **hemen LLM çalışsın, garson gitsin siparişi düzgün alsın**. Asıl
+> güvendiğimiz hakem devreye girsin."*
+
+#### Üç rol — ve ikisi ASLA karıştırılmaz
+
+| rol | kim | ne yapar | tutum |
+|---|---|---|---|
+| 🗣 **GARSON** | **Intent LLM** (`select_cube` → Intent-JSON) | Kullanıcının sözünü **sistem diline çevirir** — küp · ölçü · boyut · dönem | ✅ **ASIL GÜVENDİĞİMİZ HAKEM** |
+| 🍳 **AŞÇI** | küpler + `route()` | Yemeği **kendisi** yapar; sayıyı **her zaman** o koyar | ✅ Mutfakta LLM'e hiç güvenmiyoruz |
+| 🥡 **YAN DÜKKÂN** | **Discovery LLM** (ham SQL) | Aşçının yapamadığını dışarıdan sipariş eder | ⚠ İstemediğimiz son çare |
+
+🔴 **BU TURLARIN KONUSU GARSONDUR. DISCOVERY DEĞİL.**
+
+#### Kural
+
+> Müşteri aşçıya bağırdı. Aşçı **kesinlikle** duyduysa (NLP %100 anladıysa) hemen yapar.
+> **En ufak anlamama varsa garson gider, siparişi düzgün alır.**
+
+**Devir tetikleyicileri — herhangi biri yeterlidir:**
+kısmi kapsam · bilinmeyen token · belirsiz eşleşme · yazım şüphesi · morfolojik ıskalama ·
+çapraz-konu şüphesi · **ve *"anlayamadım"* üretecek her dal**.
+
+🔴 **KULLANICI ASLA CEVAPSIZ KALMAZ.** *"…kısmını anlayamadım"* bir **son cevap
+olamaz** — garsona sorulmadan o cümle yayımlanmaz.
+
+#### Bu belgenin kendi turları bu kuralı ihlal etti
+
+`§32` (fiil çekimi) · `§42` (`yarı` sınıfı) · `§45` (ek + ünsüz yumuşaması) · `§43`
+(`dağılım` sözcüğü) — **dördü de route'a Türkçe öğretme** işiydi. Hiçbirinin yamanması
+gerekmiyordu: dördü de garsona gitseydi **ilk turda** doğru cevap gelirdi.
+
+⊙ Ve ölçüt bunu zaten gösteriyordu: `şubattan ocağa` yumuşaması route'ta bilinmiyor →
+route'a öğretmek yerine **devretmek** gerekirdi. Kullanıcı İngilizce/Arapça yazsa route
+**tamamen** çaresizdir; garson için fark etmez.
+
+> *Bir dili kurallarla yakalamaya çalışmak, ufka doğru yürümektir; dili bilen birine
+> sormak ise bir adımdır.*
+
+#### Sınırlar — kural neyi BOZMAZ
+
+* ⚠ **Garson yalnız ÇEVİRİR.** Sayıyı yine küp koyar; guard'lar · beyanlar · doğruluk
+  vetosu **aynen** yürürlükte. Garson bir **cevap** değil bir **sipariş** üretir.
+* ⚠ Devir bir **bayrakla** kapatılabilir olmalı; kapalıyken davranış bugünküyle birebir
+  (`KURAL B`).
+* ⚠ Uygulanabilmesi için `route()`'un **derece** kavramı olmalı — bugün yok
+  (`§AJ4.6`: marj hesaplanıp **atılıyor**, *"eminim"* aslında %98,9). Devir kuralının
+  ön koşulu budur.
+
+---
+
 ### 0.1 · DÖNGÜ — sırası değişmez
 
 1. **≥20 ÖZGÜN senaryo** yaz: öncekileri **tekrar etmeyen**, **basitten zora**,

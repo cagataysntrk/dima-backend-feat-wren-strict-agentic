@@ -20,6 +20,37 @@
 > `belgeler/devir/*` tarihsel kayıttır; `belgeler/urun/Dima-0-100-Gorev-Takip.md` ürün şartnamesidir,
 > mimari otorite değildir.
 
+## 🔴🔴 EN ÜST KURAL — GARSON DEVRİ *(kullanıcı kararı 2026-08-08)*
+
+> *"Route'a — yani NLP'ye — Türkçe öğretmemiz gerekir ki bu gereksiz. NLP güvenilir bir
+> araç değil; **anlama yok zaten**, kelimeleri kurallamaktan ibaret. İntent algılamada
+> asıl **LLM'e** güveniyoruz: kullanıcı **ne'ce** yazarsa yazsın gerçekten anlıyor.
+> Siparişte **en ufak %5'lik şüphe** bile varsa hemen garson gitsin, siparişi düzgün alsın."*
+
+| rol | kim | tutum |
+|---|---|---|
+| 🗣 **GARSON** | Intent LLM (`select_cube` → Intent-JSON) — sözü **sistem diline çevirir** | ✅ **asıl hakem** |
+| 🍳 **AŞÇI** | küpler + `route()` — sayıyı **her zaman** o koyar | ✅ mutfakta LLM'e güven yok |
+| 🥡 **YAN DÜKKÂN** | Discovery LLM (ham SQL) | ⚠ istemediğimiz son çare |
+
+🔴 **Garson ile Discovery ASLA karıştırılmaz.** Odak garsondur.
+
+**Kural:** aşçı **kesinlikle** duyduysa hemen yapar; **en ufak anlamama varsa garson gider.**
+Tetikleyiciler: kısmi kapsam · bilinmeyen token · belirsiz eşleşme · yazım şüphesi ·
+morfolojik ıskalama · çapraz-konu şüphesi · *"anlayamadım"* üretecek **her** dal.
+
+🔴 **route'a dil kuralı EKLEME** (morfoloji · ek · yumuşama · eşanlam · sözcük sınıfı)
+zaruri olmadıkça. Bir cümle anlaşılmıyorsa çözüm route'u genişletmek değil **devri
+tetiklemektir**. 🔴 **Kullanıcı asla cevapsız kalmaz:** *"anlayamadım"* bir son cevap
+olamaz.
+
+⚠ Garson yalnız **çevirir** — guard'lar, beyanlar, doğruluk vetosu aynen yürürlükte.
+⚠ Ön koşul: `route()`'un **derece** kavramı yok (marj hesaplanıp atılıyor); devir bunu ister.
+⚠ `KURAL B`: bayrak kapalıyken davranış bugünküyle birebir.
+
+*Bir dili kurallarla yakalamaya çalışmak, ufka doğru yürümektir; dili bilen birine
+sormak ise bir adımdır.*
+
 ## Rol
 `dima-frontend-demo` ile `dima-wrenai` (Wren semantik SQL motoru) arasındaki **ince HTTP köprüsü**.
 İş mantığı minimum: SQL üretimi (LLM), doğrulama (motor), çalıştırma (motor), guard'lar.
