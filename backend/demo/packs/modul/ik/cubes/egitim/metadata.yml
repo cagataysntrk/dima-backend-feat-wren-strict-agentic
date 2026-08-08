@@ -11,6 +11,13 @@ base_object: egitim_katilim
 synonyms: [eğitim, eğitimler, kurs, gelişim, sertifikasyon, eğitim programı,
            eğitim saati, yetkinlik]
 
+# 🔴 `M-2` — VARSAYILAN ÖLÇÜ. Sistem her şeyi biliyorken (dönem·kırılım·üstünlük)
+# yalnız *«hangi ölçü»* diye sorup pes ediyordu; `cube_router` R4'te bu alanı zaten
+# okuyor, alan **yoktu**. Gerekçe: eğitim **saati** küpün birincil ölçüsü; `o17`'de route zaten onu seçti.
+# ⚠ Gerçekten belirsiz küplere (`ik` brüt/net · `cari` borç/alacak · `maliyet` ·
+# `parti`) BİLEREK yazılmadı — orada sormak doğru davranıştır.
+default_measure: toplam_egitim_saati
+
 measures:
   - name: toplam_egitim_saati
     expression: SUM(saat)

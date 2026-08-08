@@ -14,6 +14,13 @@ base_object: firsatlar
 synonyms: [fırsat, fırsatlar, huni, satış hunisi, pipeline, potansiyel, teklif aşaması,
            kazanma oranı, kayıp, kaybedilen iş]
 
+# 🔴 `M-2` — VARSAYILAN ÖLÇÜ. Sistem her şeyi biliyorken (dönem·kırılım·üstünlük)
+# yalnız *«hangi ölçü»* diye sorup pes ediyordu; `cube_router` R4'te bu alanı zaten
+# okuyor, alan **yoktu**. Gerekçe: fırsat **adedi** küpün kimliği; tutar bir niteliktir.
+# ⚠ Gerçekten belirsiz küplere (`ik` brüt/net · `cari` borç/alacak · `maliyet` ·
+# `parti`) BİLEREK yazılmadı — orada sormak doğru davranıştır.
+default_measure: firsat_adedi
+
 measures:
   - name: firsat_adedi
     expression: "COUNT(DISTINCT firsat_no)"

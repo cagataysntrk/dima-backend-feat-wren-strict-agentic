@@ -19,6 +19,8 @@ farklıdır.*
 
 from __future__ import annotations
 
+from app import cube_operatorleri as _ops  # `M-6` — operatör kümesinin TEK sahibi
+
 _GRAN_ENUM = ["year", "quarter", "month", "week", "day"]
 
 
@@ -185,8 +187,20 @@ def cube_query_json_schema(index: dict, *, harman: bool = False) -> dict:
                 "items": {"type": "object", "additionalProperties": False,
                           "properties": {
                               "dimension": {"type": "string", "enum": boyutlar},
+                              # 🔴 `M-6` — ELLE YAZILMIŞ 7'LİK LİSTE SİLİNDİ, TEK KAYNAĞA
+                              # BAĞLANDI. Eski liste `["eq","ne","gt","gte","lt","lte","in"]`
+                              # idi ve iki kusuru vardı: (1) **`ne` motorda YOK** — canlı
+                              # `/cube` sondajı (iki koşum) HTTP **400** ve motorun kendi
+                              # cümlesi: *"unknown variant `ne`, expected one of `eq`,
+                              # `neq`, …"* — yani şema, modele motorun **reddedeceği** bir
+                              # ad yazdırıyordu; (2) motorun **ölçülmüş** 12 operatörünün
+                              # beşi (`neq`·`not_in`·`contains`·`starts_with`·`is_null`/
+                              # `is_not_null`) fişte yoktu → garson *"beyaz hariç"*,
+                              # *"adı X ile başlayanlar"*, *"kodu boş olanlar"* niyetlerini
+                              # **ifade edemiyor** ve Discovery'ye düşüyordu. Mutfak o
+                              # yemeği yapabiliyor; **menüde yazmıyordu**.
                               "operator": {"type": "string",
-                                           "enum": ["eq", "ne", "gt", "gte", "lt", "lte", "in"]},
+                                           "enum": list(_ops.MOTOR_OPERATORLERI)},
                               "value": {}},
                           "required": ["dimension", "operator", "value"]}}
         dallar.append({"type": "object", "title": ad,

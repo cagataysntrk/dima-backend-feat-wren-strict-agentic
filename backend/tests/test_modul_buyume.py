@@ -413,6 +413,20 @@ MUAFIYET_ASK_KOD = [
      "makbuza yazılmazsa, kullanıcı onu kendi yazdığını sanır"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("m6-operator-de-denetlenir", 3,
+     "🔴 **`parse_cube_query` OPERATÖRÜ HİÇ DENETLEMİYORDU.** `dimension` beyaz listeden "
+     "geçiyor, `operator` olduğu gibi motora gidiyordu. Ölçüldü (canlı `/cube`, iki "
+     "koşum): Intent-JSON şemasının modele yazdırdığı `ne` operatörü motorda **yok** ve "
+     "tur HTTP **400** ile ölüyor — motorun kendi cümlesi: *«unknown variant `ne`, "
+     "expected one of `eq`, `neq`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, `contains`, "
+     "`starts_with`, `is_null`, `is_not_null`»*. Denetim burada olsaydı o oy **daha "
+     "ucuza** ve **loglanarak** düşerdi (`intent: whitelist REDDİ`). "
+     "⚠ Filtre **düşürülmez, sorgu reddedilir**: sessiz düşürme bu depoda `compare`'ın "
+     "ve `measure_having`'in başına geldi ve ikisi de aynı dersi yazdı — *«düşürülen şey "
+     "geçersiz bir değer değil, var olan bir yetenekti»*. "
+     "Küme `app/cube_operatorleri.py`'de **tek sahiptedir**; üç kopyası vardı "
+     "(`intent_semasi` 7 üyeyle ve **yanlış** bir adla, test dosyası 12 üyeyle) ve "
+     "üçü ayrışmıştı. *Bir kümenin üç kopyası, üç farklı küme demektir.*"),
     ("m7-menu-pusulasi-on-kosulu-sozlesmeye-cevrildi", 2,
      "🔴🔴 **MENÜ PUSULASI BOZUKTU — yazılmamış bir ön koşul, denetleyeni olmayan.** "
      "`_uncovered` kelimeleri `re.findall(r\"[a-z]+\", q)` ile ayırıyor; Türkçe harfler "

@@ -5409,3 +5409,104 @@ düzeltmenin **hepsi** o iki yolda.
 vetosu görevini yapıyor. Eksik olan **ikinci bir ölçü**: garson yolunu ölçen bir korpus.
 `lab/garson.py --kararlilik`'in tabanı **%100 (25/25)** ve `§85.0`'da yazıldığı gibi o
 küme **zaten çalışan** soruları ölçüyor. Sıradaki alet işi budur.
+
+---
+
+## §90 · MUTFAK DEMETİ 1 — **M-6 tamam · M-2 yarım ve yarısı ölçüldü**
+
+Kullanıcı kararı: mutfak raporunun kökleri **üç demette** inecek, tek hamlede değil
+(§86'nın dersi: yedi kök birlikte inerse gerileme **kime ait** bilinemez). Demet 1 =
+`M-6` + `M-2` — raporun *"ikisi de dar temaslı, tek demette inebilir"* notu.
+
+### §90.1 · M-6 — operatör sözlüğü tek kaynaktan · **UYGULANDI**
+
+Rapor bunu 🔍 *kod okuması* diye işaretlemişti (*"canlıda tetiklenmedi"*). Bu tur
+**ölçüldü** — çalışan konteynerin `/cube` ucuna on üç aday **tek tek** gönderilerek:
+
+    eq neq in not_in gt gte lt lte contains starts_with is_null is_not_null  → 12'si OK
+    ne                                                                       → HTTP 400
+
+Ve motor reddederken **geçerli kümeyi kendisi saydı**:
+
+    ValueError: Invalid CubeQuery JSON: unknown variant `ne`, expected one of
+    `eq`, `neq`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`,
+    `contains`, `starts_with`, `is_null`, `is_not_null`
+
+⊙ Yani yeni modülün demeti bir tahmin değil, **motorun kendi ağzından** alınmıştır.
+
+**Üç kopya vardı ve üçü ayrışmıştı:** `intent_semasi` (7 üye, içinde motorda **olmayan**
+`ne`), `tests/test_filtre_operatorleri` (12 üye, elle), ve motor (12). `parse_cube_query`
+ise operatörü **hiç denetlemiyordu** — yalnız `dimension` beyaz listesi vardı.
+
+**Bedeli iki türlü:** (1) şema modele motorun **reddedeceği** bir ad yazdırıyordu; (2)
+motorun 12 adından **beşi** (`neq`·`not_in`·`contains`·`starts_with`·`is_null`/
+`is_not_null`) fişte **hiç yoktu** → garson *"beyaz hariç"*, *"adı X ile başlayanlar"*,
+*"kodu boş olanlar"* niyetlerini **ifade edemiyor** ve Discovery'ye düşüyordu.
+**Mutfak o yemeği yapabiliyor; menüde yazmıyordu.**
+
+**Düzeltme:** `app/cube_operatorleri.py` (tek sahip) · şema oradan üretiliyor ·
+`parse_cube_query` operatörü doğruluyor ve tanımadığında **sorguyu reddediyor**
+(düşürmüyor — sessiz düşürme `compare`'ın ve `measure_having`'in başına geldi) ·
+`test_M6_SEMA_ile_MOTOR_ayni_kumeyi_konusur` kapısı ayrışmayı **imkânsız** kılıyor.
+
+🔴 **Ve ilk yazımım burada yanıldı — turun beşinci ölçüm-aleti hatası.** *"`ne` sessizce
+boş dönüyor"* diye yazmıştım; sondaj yazıcım **HTTP durum kodunu okumuyordu** ve 400'ü
+`0 satır` sanmıştı. Motor sessiz değil, **aletim sağırdı**. Yorumlar düzeltildi.
+*Bir aracın okumadığı alan, olmayan bir davranış uydurur.*
+
+### §90.2 · M-2 — **yarısı uygulandı, öteki yarısı ÖLÇÜLEREK reddedildi**
+
+Raporun reçetesi iki katmanlı: küp düzeyi `default_measure` **ve** ölçü düzeyi
+`rol`+`birincil` (kapalı 7 değerli sözlük).
+
+🔴 **`rol` katmanı bu demette AÇILAMADI ve sebebi yapısal:** MDL'de bir ölçünün alanları
+**sabittir** — `name·expression·type·unit·synonyms`. `rol`/`birincil` diye bir kanal
+**yok**; menü dosyasına yazılsa ya düşerdi ya motor projeyi reddederdi (motorun `serde`'si
+bilinmeyen alanı **gürültüyle** reddediyor — `ne` sondajı bunu gösterdi). Rol katmanı
+**yeni bir metadata kanalı** ister ve o kendi demetidir. *Ölmüş doğacak bir satırı
+yazmak, yazmamaktan pahalıdır.*
+
+**Uygulanan yarı:** `default_measure` uçtan uca **çalışan** bir kanal (yml → MDL →
+`/schema` → `cube_router` R4 yedeği) ve **25 küpte boştu**. Dokuz küpe gerekçesiyle
+yazıldı; canlı şemada **3 → 11**.
+
+⚠ **Gerçekten belirsiz küplere BİLEREK yazılmadı** (`ik` brüt/net/işveren · `cari`
+borç/alacak/bakiye · `maliyet` · `butce` · `parti`) — orada **sormak doğru davranıştır**
+ve `parti`'nin menü dosyası bunu zaten yazılı olarak reddediyordu.
+
+### §90.3 · 🔴 Kapı bir küpü GERİ ALDIRDI — ve tam bu sınıfın bekçisiydi
+
+`kalite`'ye `toplam_rework_kg` varsayılanı verilince `test_YANLIS_CUBE_BUYUMEDI` kırmızı:
+
+    YENİ sinonim çakışması doğdu:  'hatali': oee → kalite
+
+Varsayılan ölçü o küpü **açgözlü** yaptı ve `oee`'nin bir ölçü sinonimini kaptı. Dokuz
+denemeden **sekizi** temiz geçti; çakışan yalnız bu oldu, çünkü kalite terimleri `oee`'nin
+kalite bileşeniyle **aynı alanı** paylaşıyor. Geri alındı, gerekçesi küpün kendi menü
+dosyasında.
+
+> *Bir küpe varsayılan vermek, ona komşusunun sorularını da cevaplama izni verebilir.*
+
+### §90.4 · Kazancın DÜRÜST ölçüsü — ve raporun bir iddiasının çürümesi
+
+| ölçüt | önce | sonra | okuma |
+|---|---|---|---|
+| sinonim taraması · `R4` | 3 | **1** | iki soru artık *"ölçü yok"* demiyor |
+| sinonim taraması · `R10` | 12 | **14** | …ama aynı iki soru **kapsam kapısına** takılıyor |
+| **toplam cevapsız** | **116** | **116** | 🔴 **bu taramada erişim kazancı SIFIR** |
+| canlı curl | LLM'e düşüyordu | `route()` · **LLM'siz** | `bu yıl iş emri` **129** · `bu ay şikayet` · `bu yıl sevkiyat` **105** |
+| korpus | 93/12/51 | **93/12/51** | veto geçildi, gerileme yok |
+| tam süit | 4257 | **4259** | +2 yeni kapı (M-6) |
+
+⊙ İki popülasyon, iki farklı cevap ve **ikisi de doğru**: tarama yalnız **çıplak ölçü
+sinonimlerini** dener; `default_measure`'ın işe yaradığı yer **küp kimliği geçen ama ölçü
+kelimesi geçmeyen** sorulardır. *Bir sayının değişmemesi, hiçbir şeyin değişmediği
+anlamına gelmez — ölçtüğü şeyin değişmediği anlamına gelir.*
+
+🔴 **Ve raporun bir attribution'ı ÇÜRÜDÜ:** rapor `p14`'ü (*"en çok enerji harcayan 3
+makine"*) M-2'ye bağlıyordu. Canlı trace (iki koşum) tıkanmanın **R4'te değil küp
+seçiminde** olduğunu gösterdi: bir koşumda garson uyuşmazlığı (%50, `eksen=measures`),
+ötekinde `ilgili_cubelar` dalı. Rapor mesajın **metninden** çıkarım yapmış
+(*"Hangi ölçüyü istiyorsun?"*), trace'ten değil. `p14`'ün evi **M-1**'dir.
+
+*Bir teşhisi cevabın metninden okumak, hastayı tarifinden tedavi etmektir.*

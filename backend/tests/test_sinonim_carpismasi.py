@@ -120,7 +120,31 @@ YANLIS_CUBE = {
 #: 🔴 EN SERT KAPI GEÇTİ: `test_DOGRU_SAYISI_DUSMEDI` yeşil — doğru çözülen sinonim
 #: sayısı DÜŞMEDİ. Raporun A2 anti-çözümünün (kimlik silme → 388 cevap kaybı) bu
 #: temizlikte tekrarlanmadığının kanıtı odur, bu dağılım değil.
-CEVAPSIZ_RED = {"R1": 99, "R4": 3, "R10": 12, "R9": 2}
+#: ⟳ **`M-2` (2026-08-08) — `default_measure` 3 → 11 küpe yazıldı.** Bu taramadaki etkisi
+#: **dürüstçe şudur: SIFIR ERİŞİM KAZANCI.**
+#:
+#:   R4  3 → 1    iki soru artık *"ölçü yok"* diye reddedilmiyor (varsayılan bulundu)
+#:   R10 12 → 14  …ama aynı iki soru bu kez **kapsam kapısına** takılıyor
+#:   toplam cevapsız **116 → 116**
+#:
+#: 🔴 Yani bu taramada iki soru **R4'ten R10'a taşındı, cevaplanmadı**. Kazanç başka bir
+#: popülasyondadır ve orada ölçüldü: bu tarama yalnız **çıplak ölçü sinonimlerini**
+#: (`bu yil <sinonim>`) dener; `default_measure`'ın işe yaradığı yer ise **küp kimliği
+#: geçen ama ölçü kelimesi geçmeyen** sorulardır. Canlı curl (üç soru, üçü de önce
+#: LLM'e düşüyordu):
+#:
+#:   `bu yıl iş emri`  → `bakim_is_emri.is_emri_adedi` = 129   `route()` · LLM'siz
+#:   `bu ay şikayet`   → `sikayet.sikayet_adedi`                `route()` · LLM'siz
+#:   `bu yıl sevkiyat` → `sevkiyat.sevkiyat_adedi` = 105        `route()` · LLM'siz
+#:
+#: ⚠ Ve bir küp **geri alındı**: `kalite`'ye varsayılan verilince `test_YANLIS_CUBE_BUYUMEDI`
+#: yeni bir çakışma gösterdi (`'hatali': oee → kalite`) — varsayılan ölçü o küpü
+#: **açgözlü** yapmıştı. Dokuz denemeden **sekizi** temiz geçti; gerekçe küpün kendi
+#: menü dosyasında.
+#:
+#: *Bir sayının değişmemesi, hiçbir şeyin değişmediği anlamına gelmez — ölçtüğü şeyin
+#: değişmediği anlamına gelir.*
+CEVAPSIZ_RED = {"R1": 99, "R4": 1, "R10": 14, "R9": 2}
 
 #: Toplam ölçü sinonimi ve doğru çözülen sayısı.  ⟳ Faz 2a-3: 291 → 340 (+49).
 TOPLAM_SINONIM, DOGRU = 470, 340

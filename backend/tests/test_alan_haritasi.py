@@ -58,6 +58,13 @@ MUTFAK = {
     "kiyas_cebiri.py",
     "statements.py", "drill.py", "audit_zinciri.py", "lineage.py", "tazelik.py",
     "veri_araligi.py", "result_shape.py", "sensitivity.py",
+    # `M-6` — MOTORUN OPERATÖR ADLARI. Dil değil, **motorun kendi sözlüğü**: küme
+    # motorun hata mesajından birebir alındı (*"expected one of `eq`, `neq`, …"*) ve on
+    # üç aday tek tek `/cube`'a gönderilerek ölçüldü. Bir cümle okumaz, bir sayı
+    # hesaplamaz; yalnız *"motor bu adı tanır mı"* sorusuna cevap verir — tanım gereği
+    # mutfak. ⚠ Bir 🗣 modülü (`intent_semasi`) onu **import eder**; bu ters yön kapının
+    # yasakladığı yön DEĞİLDİR (yasak: mutfak → dil).
+    "cube_operatorleri.py",
 }
 
 #: 🍳 modüllerin ASLA import edemeyeceği 🗣 modüller — *"mutfak dil ayrıştıramaz"*.

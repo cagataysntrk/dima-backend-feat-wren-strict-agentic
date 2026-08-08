@@ -13,6 +13,13 @@ base_object: sevkiyat_emirleri
 # yiyen bir kalemdir; onu ölçmeyen bir maliyet tablosu kârı olduğundan yüksek gösterir.
 synonyms: [sevkiyat, nakliye, lojistik, taşıma, sevk, gönderi, dağıtım, araç]
 
+# 🔴 `M-2` — VARSAYILAN ÖLÇÜ. Sistem her şeyi biliyorken (dönem·kırılım·üstünlük)
+# yalnız *«hangi ölçü»* diye sorup pes ediyordu; `cube_router` R4'te bu alanı zaten
+# okuyor, alan **yoktu**. Gerekçe: sevkiyat **adedi** küpün kimliği.
+# ⚠ Gerçekten belirsiz küplere (`ik` brüt/net · `cari` borç/alacak · `maliyet` ·
+# `parti`) BİLEREK yazılmadı — orada sormak doğru davranıştır.
+default_measure: sevkiyat_adedi
+
 measures:
   - name: sevkiyat_adedi
     expression: "COUNT(DISTINCT sevkiyat_no)"

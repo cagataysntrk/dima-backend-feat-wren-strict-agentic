@@ -15,6 +15,13 @@ base_object: is_kazalari
 synonyms: [isg, iş kazası, kaza, kazalar, iş güvenliği, güvenlik, ramak kala,
            iş sağlığı, olay]
 
+# 🔴 `M-2` — VARSAYILAN ÖLÇÜ. Sistem her şeyi biliyorken (dönem·kırılım·üstünlük)
+# yalnız *«hangi ölçü»* diye sorup pes ediyordu; `cube_router` R4'te bu alanı zaten
+# okuyor, alan **yoktu**. Gerekçe: İSG küpünün konusu **kaza sayısıdır**; canlıda route zaten onu seçiyor (`n16`).
+# ⚠ Gerçekten belirsiz küplere (`ik` brüt/net · `cari` borç/alacak · `maliyet` ·
+# `parti`) BİLEREK yazılmadı — orada sormak doğru davranıştır.
+default_measure: kaza_adedi
+
 measures:
   - name: kaza_adedi
     expression: "COUNT(*)"

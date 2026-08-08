@@ -21,9 +21,13 @@ import pytest
 
 from app import cube_router
 
-# Motorun GERÇEKTEN uyguladığı operatörler (çalıştırılarak ölçüldü, 2 Ağustos 2026).
-MOTOR_OPERATORLERI = ["eq", "neq", "in", "not_in", "gt", "gte", "lt", "lte",
-                      "contains", "starts_with", "is_null", "is_not_null"]
+# 🔴 `M-6` — **ÜÇÜNCÜ KOPYA BURADAYDI.** Bu liste elle yazılmıştı ve aynı küme
+# `app/intent_semasi.py`'de (7 üyeyle, **yanlış** bir adla) bir kez daha duruyordu.
+# `MUTFAK-DENETIMI` raporunun teşhisi: *"bir kümenin üç kopyası, üç farklı küme
+# demektir"* — ve gerçekten ayrışmışlardı. Artık tek sahip `app/cube_operatorleri.py`.
+from app.cube_operatorleri import MOTOR_OPERATORLERI as _MOTOR
+
+MOTOR_OPERATORLERI = list(_MOTOR)
 
 
 @pytest.fixture(scope="module")
@@ -47,6 +51,51 @@ def test_motor_12_operatoru_UYGULUYOR(svc, op):
     deger = (["Beyaz", "Siyah"] if op in ("in", "not_in")
              else None if op in ("is_null", "is_not_null") else "Beyaz")
     assert svc.dry_plan(svc.cube_sql(_cq(op, deger)))
+
+
+def test_M6_SEMA_ile_MOTOR_ayni_kumeyi_konusur():
+    """🔴 `M-6` KAPISI — sipariş fişi mutfaktan **dar ya da yanlış** olamaz.
+
+    Ölçülen kusur: Intent-JSON şeması modele `ne` yazdırıyordu; motor `ne` **tanımıyor**
+    ve turu HTTP 400 ile öldürüyordu (*"unknown variant `ne`, expected one of `eq`,
+    `neq`, …"*). Ayrıca motorun 12 adından **beşi** (`neq`·`not_in`·`contains`·
+    `starts_with`·`is_null`/`is_not_null`) fişte hiç yoktu — garson *"beyaz hariç"*,
+    *"adı X ile başlayanlar"*, *"kodu boş olanlar"* niyetlerini **ifade edemiyordu** ve
+    Discovery'ye düşüyordu. **Mutfak o yemeği yapabiliyor; menüde yazmıyordu.**
+
+    Bu kapı, kümenin **yeniden ayrışmasını** imkânsız kılar: şema tek kaynaktan üretilir
+    ve burada eşitliği ölçülür.
+    """
+    from app.cube_operatorleri import MOTOR_OPERATORLERI
+    from app.intent_semasi import cube_query_json_schema
+
+    sema = cube_query_json_schema({"kalite": {"measures": ["toplam_rework_kg"],
+                                              "dimensions": ["renk"]}})
+    bulunan: set[str] = set()
+
+    def _gez(d):
+        if isinstance(d, dict):
+            if isinstance(d.get("enum"), list) and d.get("type") == "string":
+                if set(d["enum"]) & set(MOTOR_OPERATORLERI):
+                    bulunan.update(d["enum"])
+            for v in d.values():
+                _gez(v)
+        elif isinstance(d, list):
+            for v in d:
+                _gez(v)
+
+    _gez(sema)
+    assert bulunan, "şemada operatör enum'u bulunamadı — kapı kör kalmasın"
+    fazla = bulunan - set(MOTOR_OPERATORLERI)
+    assert not fazla, (
+        f"🔴 şema motorda OLMAYAN operatör yazdırıyor: {sorted(fazla)}. "
+        "Motorun kendi hata mesajı geçerli kümeyi sayar; tek kaynak "
+        "`app/cube_operatorleri.MOTOR_OPERATORLERI`.")
+    eksik = set(MOTOR_OPERATORLERI) - bulunan
+    assert not eksik, (
+        f"🔴 motor destekliyor ama fiş yazmıyor: {sorted(eksik)}. "
+        "Garson ifade edemediği niyeti Discovery'ye taşır — mutfak eksikliği değil, "
+        "MENÜ eksikliği doğar.")
 
 
 def test_gecersiz_operator_GURULTULU_reddedilir(svc):

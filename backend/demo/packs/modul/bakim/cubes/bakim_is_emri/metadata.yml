@@ -19,6 +19,13 @@ base_object: bakim_is_emirleri
 synonyms: [bakım, bakım iş emri, onarım, arıza müdahalesi, planlı bakım,
            plansız bakım, bakım emri, iş emri]
 
+# 🔴 `M-2` — VARSAYILAN ÖLÇÜ. Sistem her şeyi biliyorken (dönem·kırılım·üstünlük)
+# yalnız *«hangi ölçü»* diye sorup pes ediyordu; `cube_router` R4'te bu alanı zaten
+# okuyor, alan **yoktu**. Gerekçe: iş emri **adedi** bu küpün kimliğidir (küp adı `bakim_is_emri`); süre/maliyet onun nitelikleridir.
+# ⚠ Gerçekten belirsiz küplere (`ik` brüt/net · `cari` borç/alacak · `maliyet` ·
+# `parti`) BİLEREK yazılmadı — orada sormak doğru davranıştır.
+default_measure: is_emri_adedi
+
 measures:
   - name: is_emri_adedi
     expression: "COUNT(DISTINCT is_emri_no)"

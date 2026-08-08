@@ -27,6 +27,13 @@ base_object: musteri_sikayetleri
 synonyms: [şikayet, şikâyet, müşteri şikayeti, geri bildirim, iade, reklamasyon,
            müşteri itirazı, kalite şikayeti, memnuniyetsizlik]
 
+# 🔴 `M-2` — VARSAYILAN ÖLÇÜ. Sistem her şeyi biliyorken (dönem·kırılım·üstünlük)
+# yalnız *«hangi ölçü»* diye sorup pes ediyordu; `cube_router` R4'te bu alanı zaten
+# okuyor, alan **yoktu**. Gerekçe: şikâyet **adedi** küpün kimliği; canlıda route zaten onu seçiyor.
+# ⚠ Gerçekten belirsiz küplere (`ik` brüt/net · `cari` borç/alacak · `maliyet` ·
+# `parti`) BİLEREK yazılmadı — orada sormak doğru davranıştır.
+default_measure: sikayet_adedi
+
 measures:
   - name: sikayet_adedi
     expression: "COUNT(DISTINCT sikayet_no)"

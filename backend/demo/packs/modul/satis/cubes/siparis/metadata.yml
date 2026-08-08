@@ -18,6 +18,13 @@ base_object: satis_siparisleri
 synonyms: [sipariş, siparişler, termin, teslimat, sevk termini, sipariş defteri,
            açık sipariş, teslim tarihi]
 
+# 🔴 `M-2` — VARSAYILAN ÖLÇÜ. Sistem her şeyi biliyorken (dönem·kırılım·üstünlük)
+# yalnız *«hangi ölçü»* diye sorup pes ediyordu; `cube_router` R4'te bu alanı zaten
+# okuyor, alan **yoktu**. Gerekçe: sipariş **adedi** küpün kimliği; `r1`'de route zaten onu seçti.
+# ⚠ Gerçekten belirsiz küplere (`ik` brüt/net · `cari` borç/alacak · `maliyet` ·
+# `parti`) BİLEREK yazılmadı — orada sormak doğru davranıştır.
+default_measure: siparis_adedi
+
 measures:
   - name: siparis_adedi
     expression: "COUNT(DISTINCT siparis_no)"

@@ -11,6 +11,15 @@ base_object: tamir_rework
 synonyms: [rework, tamir, yeniden işlem, ikinci banyo, hata, hatalı, ret,
            sebep, tekrar, düzeltme, reprocess, kalite hatası]
 
+# 🔴 `M-2` — **`default_measure` BİLEREK YAZILMADI ve bu bir ÖLÇÜMÜN sonucudur.**
+# İlk denememde `toplam_rework_kg` yazıldı; kapı (`test_YANLIS_CUBE_BUYUMEDI`) **yeni bir
+# sinonim çakışması** doğduğunu gösterdi: `'hatali': oee → kalite`. Yani varsayılan ölçü
+# bu küpü **açgözlü** yaptı ve `oee`'nin bir ölçü sinonimini kaptı.
+# ⊙ Ders: varsayılan ölçü, küpün kimliği **başka bir küpün ölçü sözlüğüyle örtüşmüyorsa**
+# güvenlidir. Dokuz küpten sekizi (adet/süre küpleri) temiz geçti; çakışan **yalnız bu**
+# oldu — çünkü kalite terimleri `oee`'nin kalite bileşeniyle aynı alanı paylaşıyor.
+# *Bir küpe varsayılan vermek, ona komşusunun sorularını da cevaplama izni verebilir.*
+
 measures:
   - name: toplam_rework_kg
     expression: SUM(kg)

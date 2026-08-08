@@ -4298,6 +4298,17 @@ def parse_cube_query(text: str, index: dict) -> dict | None:
     allowed_filter_dims = set(spec.get("dimensions", [])) | set(spec.get("time_dimensions", []))
     if any(f.get("dimension") not in allowed_filter_dims for f in filters):
         return None
+    # 🔴 `M-6` — **OPERATÖR DE DENETLENİR.** Bu satıra kadar yalnız `dimension` beyaz
+    # listeden geçiyordu; operatör **hiç** denetlenmiyordu ve olduğu gibi motora
+    # gidiyordu. Canlı sondaj (iki koşum, `KURAL G-1`): şemanın modele yazdırdığı `ne`
+    # operatörü motorda **yok** ve tur HTTP **400** ile ölüyor (*"unknown variant `ne`"*).
+    # Denetim burada olsaydı o oy **daha ucuza** ve **loglanarak** düşerdi.
+    # ⚠ Filtre **düşürülmez, sorgu reddedilir**: sessiz düşürme bu depoda `compare`'ın ve
+    # `measure_having`'in başına geldi. Red logda görünür (`intent: whitelist REDDİ`),
+    # sessiz bir düşüş görünmez.
+    from app import cube_operatorleri as _ops
+    if any(not _ops.gecerli(f.get("operator")) for f in filters):
+        return None
     out: dict = {"cube": cube, "measures": measures}
     if dims:
         out["dimensions"] = dims
