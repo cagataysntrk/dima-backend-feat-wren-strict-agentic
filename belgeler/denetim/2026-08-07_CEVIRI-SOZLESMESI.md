@@ -4433,3 +4433,48 @@ borcu: *"`eval --slice llm` 4 vaka; LLM yolunda hiçbir şey ölçülemez"*).
 
 > *Bir turun ürünü her zaman kod değildir; bazen bir sonraki turun neyi yapmaması
 > gerektiğidir.*
+
+## §78 · KURALI DEPO ÇOKTAN YAZMIŞ — `§75.3` bir KEŞİF DEĞİL, bir YENİDEN KEŞİF
+
+`§77.1`'de *"LLM yolunun kararlılığını ölçen alet yok"* diye borç yazdım ve yeni bir
+koşucu yazmaya hazırlandım. Önce `lab/`'a baktım — ve **zaten vardı**:
+
+`lab/garson.py`, açılış notunda:
+
+> ## 🔴 KURAL G-1 — tek koşumla karar YOK
+> Bu kapı **belirlenimsizdir** (LLM'e bağlı). Ölçüldü: Power BI'da 1000 aynı sorgunun en
+> sık cevabı yalnız **78 kez** çıkmış; bu deponun kendi tarihinde `prompt_enhancer`
+> kararı tek koşumla verilip **ikinci sağlayıcıda tersine dönmüştü** (14/15 → 15/15).
+> → **En az iki koşum.** İkisi ayrışırsa karar **verilmez**: `⊘` yazılır.
+
+⊙ Yani `§75.3`'te *"yeni usul"* diye yazdığım kural **aynen buradaydı** — hem gerekçesi
+hem sayısal kanıtıyla. Ve ben onu iki demet boyunca **iki kez ihlal ettim** (`§75.3`
+şişik sayım · `§75.4` yanlış imza teşhisi).
+
+> *Bir depoda yazılı olan bir kural, okunmadığı sürece yazılı değildir — ve onu yeniden
+> keşfetmenin bedeli, öğrenmenin bedelinden yüksektir.*
+
+### 78.1 · Gerçek boşluk daha dar — ve yeri belli
+
+`garson.py` **iki koşumu karşılaştırır** (`--muhur` damgası + `_tabani_dondur`). Eksik
+olan, `§77`'nin ihtiyacı: **soru başına N koşumluk kararlılık oranı** (aynı `cq` / farklı
+`cq`).
+
+⚠ Ve bu, **yeni bir dosya değil** `garson.py`'nin bir kipi olmalı (`KAT-1`): canlı ortam
+kurulumu, tur koşucusu ve üçüncü-durum sabitleri orada; ikinci bir kopya `--live`'ın
+sessizce `rule`'a düşmesi kusurunu geri getirir (dosyanın kendi notu bunu yazıyor).
+
+**Kayıtlı iş:** `lab/garson.py --kararlilik N` — sabit soru kümesini N kez koşar, soru
+başına *"kaç farklı `cq`"* ve toplam **kararlılık oranı** üretir; `oylama_cogunluk` ve
+`oylama_paydasi` bayrakları ancak bu sayı varken açılıp kapanabilir.
+
+### 78.2 · Bu turun kazancı
+
+Kod yazılmadı — ve **doğrusu buydu**: yazsaydım `garson.py`'nin ikizi doğacaktı. Yerine
+üç şey oldu:
+
+1. `§75.3`'ün *"yeni kural"* sanılan maddesi **`KURAL G-1`'in kopyası** olarak işaretlendi
+2. `§77.1`'in *"alet yok"* borcu **daraltıldı**: alet var, **kipi** yok
+3. `KAT-1` bir kez daha **önlendi** — yazmadan önce arayarak
+
+> *Bir aletin eksik olduğunu söylemeden önce, laboratuvara bakmak gerekir.*
