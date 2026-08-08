@@ -186,7 +186,14 @@ def test_KISMI_ANLAMA_CUMLESI_KELIME_SAYMIYOR():
 
     src = inspect.getsource(ask_mod)
     i = src.index("_gosterilecek = [w for w in unknown")
-    blok = src[max(0, i - 200):i + 1600]
+    # ⟳ **PENCERE GENİŞLETİLDİ (`§54`)** — silinmedi. `§54` bu satırın hemen ardına bir
+    # kapı ve gerekçesini koydu (*"adlandırılacak konu kalmadıysa dal düşer"*) ve
+    # `netlestirme.olcu` yedeği pencerenin **dışına** taştı. Kapının ölçtüğü şey değişmedi:
+    # *"kısmi anlama cümlesi bir yedek taşıyor mu"*.
+    # ⚠ Sabit genişlikli bir pencere, koruduğu koda yorum eklendikçe kayar; doğru tepki
+    # onu **koda göre** genişletmektir. *Bir çapa, çakıldığı tahta büyüdükçe yerini
+    # korumaz — yeniden çakılır.*
+    blok = src[max(0, i - 200):i + 2800]
     assert "_gosterilecek = [w for w in unknown if not _islev_sozcugu(w)]" in blok, (
         "🔴 gösterim süzgeci yok — işlev sözcükleri kullanıcıya basılıyor")
     # 🔴 **HER İKİ dalda** yedek cümle olmalı: `other_topic` → `netlestirme.konu`,

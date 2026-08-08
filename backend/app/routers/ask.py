@@ -777,51 +777,7 @@ def _guvenli_kapsam_disi(soru: str, schema: dict):
 #:
 #: *Aynı kelime bir kapıda kanıt, bir cümlede gürültü olabilir; listeyi soruya göre
 #: ayırmak, kelimeyi iki kez tanımlamaktan ucuzdur.*
-#: 🔴 **`§54` — İŞLEV SÖZCÜKLERİ BİR KONU DEĞİLDİR ve süzgeç YALNIZ GÖSTERİMDEYDİ.**
-#:
-#: Ölçüldü (E turu, **dört** kanıt): `aylık üretim ve enerji tüketimini **birlikte**
-#: göster` → *«"birlikte" başka bir konu gibi görünüyor»*; `bakım maliyeti ile arıza
-#: sayısı **ilişkili** mi` → *«"bakim maliyeti iliskili" başka bir konu»*; `which machines
-#: had the highest downtime last month` → *«"which had the highest last month" başka bir
-#: konu»*.
-#:
-#: ⊙ Süzgeç vardı ama **yalnız cümleyi güzelleştiriyordu**; dalın **ateşlenmesini**
-#: engellemiyordu. Yani sistem anlamadığını gizliyor, ama yine de reddediyordu.
-#:
-#: 🔴 **İngilizce işlev sözcükleri de eklendi** ve bu `ADR-0008`'e uygundur: `which`·`the`·
-#: `had`·`by`·`as` bir **kapalı dilbilgisi sınıfıdır** (artikel · yardımcı fiil · soru
-#: sözcüğü · edat), bir alan sözlüğü değil. Ve `§0.0` gereği: kullanıcı İngilizce
-#: yazdığında sistem *"bu başka bir konu"* diyemez — o cümlenin konusu **vardır**,
-#: yalnız dili farklıdır.
-#:
-#: *Bir cümlenin dilbilgisi, o cümlenin konusu değildir.*
-_ISLEV_SOZCUKLERI = frozenset({
-    "hangi", "hangisi", "hangileri", "kim", "kimin", "kime",
-    "etti", "ettik", "ettiler", "etmis", "ediyor", "eden", "edildi",
-    # bağlaç · zarf — bir konu adı değil, iki şeyi birbirine bağlayan sözcük
-    "birlikte", "beraber", "ayrica", "ayni", "anda", "iliskili", "iliski", "arasindaki",
-    "arasinda", "kiyasla", "karsilastir", "gore",
-    # 🔴 İngilizce kapalı sınıf: artikel · yardımcı · soru · edat · bağlaç
-    "which", "what", "who", "the", "a", "an", "is", "are", "was", "were", "had", "has",
-    "have", "do", "does", "did", "show", "me", "my", "our", "by", "as", "with", "and",
-    "or", "of", "for", "to", "in", "on", "at", "this", "that", "them", "their", "it",
-    "highest", "lowest", "top", "best", "worst", "most", "least", "compare", "between",
-    # zaman — İngilizcenin kapalı dönem sözcükleri (Türkçedeki `_ZAMAN_BIRIMI`'nin ikizi)
-    "last", "next", "previous", "current", "this", "past", "month", "months", "year",
-    "years", "week", "weeks", "day", "days", "quarter", "quarters", "today", "yesterday",
-    "since", "until", "ago", "now",
-})
-#: ⚠ **VE BU LİSTE UZAMAMALI — kalıcı çözüm bu değil.** Her yeni dilde yeni bir kapalı
-#: sınıf yazmak, `§0.0`'ın yasakladığı *"route'a dil öğretme"*nin bir başka biçimidir.
-#: Yapısal çözüm: **garson bir aday üretmişse Türkçe kapsam reddi hiç koşmamalıdır** —
-#: çünkü o reddin dayanağı Türkçe bir sözlüktür ve soru Türkçe değildir.
-#: `§56` olarak kayıtlı, sıradaki iş.
-#:
-#: *Bir listeyi uzatmak, listenin yanlış araç olduğunu gizler.*
-
-
-def _islev_sozcugu(w: str) -> bool:
-    return str(w).lower() in _ISLEV_SOZCUKLERI
+from app.islev_sozcukleri import _islev_sozcugu  # `§54` — liste modülde (bkz. `§56` borcu)
 
 
 def _resolve_period(prev: dict | None, cq: dict, period_expr, q_norm: str) -> tuple[dict, bool]:
@@ -3006,6 +2962,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             return kpi_resp
         route_hit: dict | None = None
         intent_source: str | None = None
+        _garson_konustu = False   # `§56` — garson bir aday ürettiyse Türkçe reddi susar
         typo_fix_trace: str | None = None
         typo_suggestion: dict | None = None
         # FAZ 2a-5 (KURAL B) — liste/döküm niyetini kırılıma çevirme yetkisi. Bir kez
@@ -3269,6 +3226,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     _q_llm, _ent, _ent_kural = body.question, {}, ""
                     if "varlik_perdesi" in resolve_for(settings, principal):
                         _q_llm, _ent, _ent_kural = varlik.perdele(body.question, schema)
+                    _garson_konustu = True   # `§56` — hakem konuştu; kararı aşağıda tartılır
                     parsed, uyum, eksen, adaylar = _select_consistent(
                         llm_probe, _q_llm, catalog_text + _ent_kural, cube_index, k, _sema)
                     parsed = varlik.geri_koy(parsed, _ent)
@@ -3414,10 +3372,30 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         if _belirsiz is not None:
             return _finish(_belirsiz)
 
-        try:
-            unknown, hits = cube_router.partial_unknowns(q_norm, schema)
-        except Exception:
+        # 🔴🔴 **`§56` — GARSON KONUŞTUYSA TÜRKÇE KAPSAM REDDİ SUSAR.**
+        #
+        # Aşağıdaki dal *"«X» başka bir konu gibi görünüyor"* der ve `X`'i **kapsam
+        # kapısının bilinmeyen listesinden** alır. O liste **Türkçe bir sözlüğe** dayanır:
+        # soru İngilizce ya da Arapça olduğunda **her sözcük** bilinmeyen görünür ve
+        # cevaplanabilir bir soru reddedilir. `§54` bunu bir kelime listesiyle yamadı ve
+        # o yamanın kendisi bir borç olarak kaydedildi (*"liste uzamamalı"*).
+        #
+        # ⊙ Yapısal cevap: **garson bir aday ürettiyse** (`intent_source` LLM'i gösteriyor
+        # ya da bir `parsed` geldi) o cümlenin konusu **vardır** — yalnız dili farklıdır.
+        # Türkçe sözlüğe dayanan bir reddin orada söz hakkı yoktur.
+        #
+        # ⚠ Kapsam **dar**: garson **hiç** konuşmadıysa (kota yok, bayrak kapalı, oy yok)
+        # dal aynen çalışır — yani en kötü durum bugünkü davranış (`KURAL B`).
+        #
+        # *Bir cümleyi tanımayan sözlük, o cümle hakkında hüküm veremez.*
+        if _garson_konustu:
+            _log.info("çapraz-konu reddi ATLANDI: garson bir aday üretti (§56)")
             unknown, hits = [], []
+        else:
+            try:
+                unknown, hits = cube_router.partial_unknowns(q_norm, schema)
+            except Exception:
+                unknown, hits = [], []
         if unknown and hits:
             labels = []
             for c, m in hits:

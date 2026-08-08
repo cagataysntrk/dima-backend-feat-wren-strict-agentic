@@ -89,6 +89,20 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("faz-56-garson-konustuysa", 6,
+     "🔴🔴 **EN ÜST KURALIN (`§0.0`) YAPISAL HÂLİ — ve `§54`'ün kelime listesini "
+     "GEREKSİZ KILAN madde.** Çapraz-konu reddi *«X başka bir konu gibi görünüyor»* der "
+     "ve `X`'i kapsam kapısının bilinmeyen listesinden alır; o liste **Türkçe bir "
+     "sözlüğe** dayanır. Soru İngilizce/Arapça olduğunda her sözcük bilinmeyen görünür ve "
+     "**cevaplanabilir** bir soru reddedilir (E turu, dört kanıt). "
+     "⊙ Garson bir aday ürettiyse o cümlenin **konusu vardır**, yalnız dili farklıdır — "
+     "Türkçe sözlüğe dayanan bir reddin orada söz hakkı yoktur. "
+     "⊙ Δ = 6: bayrak tanımı (1) + garson dalında işaretleme (1) + `if/log/atama` (3) + "
+     "`else` (1). "
+     "⚠ **TAŞINAMAZ:** bayrak `_try_fresh_intent`'in **yerel akış durumudur** — garsonun "
+     "o turda konuşup konuşmadığı bilgisi başka hiçbir yerde yok. "
+     "⚠ Kapsam dar: garson hiç konuşmadıysa dal aynen çalışır (`KURAL B`). "
+     "*Bir cümleyi tanımayan sözlük, o cümle hakkında hüküm veremez.*"),
     ("faz-55-discovery-butcesi", 9,
      "🔴 **EN GÜVENMEDİĞİMİZ BASAMAK EN UZUN BEKLETİYORDU.** `§33` iki bütçe onardı "
      "(Intent oyları · T2 anlatısı) ama Discovery açıkta kaldı. Ölçüldü (E turu): "

@@ -3496,3 +3496,39 @@ ve `§0.0`'a göre o *"yan dükkândan sipariş"*, yani **hiç güvenmediğimiz*
 ⊙ Ve `§0.0`'ın okumasıyla: bu dört tur (`ortalama parti süresi` · `enerji maliyeti` ·
 `stok devir hızı` · çeyrek kıyası) birer **mutfak eksiği raporudur**. Bütçe onları
 **susturmaz**, yalnız faturasını düşürür — asıl iş küplere o ölçüleri **eklemektir**.
+
+## §56 · GARSON KONUŞTUYSA TÜRKÇE KAPSAM REDDİ SUSAR — `§54`'ün listesini gereksiz kılan madde
+
+`§54` kelime listesiyle yamamıştı ve o yamanın kendisi borç olarak kaydedilmişti
+(*"liste uzamamalı"*). Yapısal cevap:
+
+> **Garson bir aday ürettiyse o cümlenin konusu VARDIR — yalnız dili farklıdır.**
+> Türkçe sözlüğe dayanan bir reddin orada söz hakkı yoktur.
+
+⚠ Kapsam dar: garson **hiç** konuşmadıysa (kota yok, bayrak kapalı) dal aynen çalışır —
+en kötü durum bugünkü davranış (`KURAL B`).
+
+| soru | önce | **sonra** |
+|---|---|---|
+| `bakım maliyeti ile arıza sayısı ilişkili mi` | *"«bakim maliyeti iliskili» başka bir konu"* | ✅ **30 satır cevap** |
+| `personel çalışma süreleri ve verimliliklerini kıyasla` | *"«personel sureleri» başka bir konu"* | ✅ **29 satır cevap** |
+
+⊙ İkisi de `cube=adhoc` — yani `§0.0`'a göre birer **mutfak eksiği raporu**. Bu **doğru
+davranıştır**: kullanıcı artık reddedilmiyor, eksik olan **görünür** oluyor.
+
+> *Bir cümleyi tanımayan sözlük, o cümle hakkında hüküm veremez.*
+
+⚠ **Yeni kayıt:** `bakim_is_emri` küpünde `bakim_maliyeti` ölçüsü **var** (chip'lerde
+görüldü) — garson yanlış küpe gitti. Yani bu vaka bir mutfak eksiği **değil**, bir
+**sipariş** kusuru; `§53`'ün eksen ayrımı bunu bir sonraki turda ayırmalı.
+
+## §57 · Kapı kırmızısı ve onarımı *(E demeti)*
+
+| kırmızı | sınıf | onarım |
+|---|---|---|
+| `test_KISMI_ANLAMA_CUMLESI_KELIME_SAYMIYOR` | çapa kayması — `§54` yorumları `+1600` penceresini taşırdı | pencere **genişletildi** (silinmedi): *bir çapa, çakıldığı tahta büyüdükçe yerini korumaz* |
+| `test_ASK_PY_DOSYASI_ASK_DISINDA_SESSIZCE_SISMIYOR` | dosya tavanı — kelime listesi modül düzeyinde büyüdü | liste **`app/islev_sozcukleri.py`'ye taşındı** — kapının kendi talimatı |
+
+⊙ İkinci onarım bir yan kazanç verdi: borç artık **kendi dosyasında** ve o dosyanın
+docstring'i **kapanış koşulunu** taşıyor (*"`§56` yapıldığında bu dosya silinir"*).
+*Bir dosyanın adı, içindeki şeyin ne olduğunu söyler.*
