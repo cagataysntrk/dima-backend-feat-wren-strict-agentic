@@ -29,14 +29,36 @@
 
 ### 0.1 · DÖNGÜ — sırası değişmez
 
-1. **10–15 ÖZGÜN senaryo** yaz: öncekileri **tekrar etmeyen**, **basitten zora**,
+1. **≥20 ÖZGÜN senaryo** yaz: öncekileri **tekrar etmeyen**, **basitten zora**,
    **kısadan uzun zincire** (çok turlu thread'ler dahil).
 2. **`curl` ile TEK TEK koş.** 🔴 **Toplu koşum YASAK.** Her turdan sonra dur, çıktıyı
    **ve konteyner loglarını anbean** oku.
 3. **Her turu tek tek raporla ve bu belgeye yaz.**
-4. **Ancak ondan sonra** teşhise geç: kök neden → geliştirme.
-5. Düzeltmeden sonra **aynı senaryoları `curl` ile tekrar koş**, emin ol, raporla.
-6. **Durmadan tekrarla** — en zor senaryolarda bile thread'ler mükemmel akana kadar.
+4. **Ancak ondan sonra** teşhise geç: **TÜM** kök nedenleri çıkar.
+5. **TÜM** düzeltmeleri yaz — 🔴 **aralarında KAPI KOŞMA** (yalnız hedefli
+   `pytest tests/test_x.py`, 3–15 sn).
+6. **BİR kez** docker tazele → **BİR kez** curl ile hepsini doğrula → **BİR kez** kapı koş.
+7. **Durmadan tekrarla** — en zor senaryolarda bile thread'ler mükemmel akana kadar.
+
+#### 🔴🔴 0.1.a · KAPI **TOPLU** KOŞULUR *(kullanıcı kararı 2026-08-08, BAĞLAYICI)*
+
+> *"Sen tek tek düzeltip tek tek uzun testlere sebep oluyorsun. Sakın bir daha böyle
+> yapma. **En az 20 senaryo ve toplu düzeltme sonrası** test yapabilirsin. Teste bu kadar
+> vakit harcayamayız — tam kapı, demet kapısı vs. **toplu** yapılmalı, tek tek değil."*
+
+🔴 **YASAK:** her kök için ayrı `--hepsi` / ayrı `--tam` / ayrı `--hizli`.
+
+**Ölçülen israf (bu belgenin kendi turu, `§40`–`§46`):** beş kök için **beş ayrı tam
+kapı** koşuldu — her biri ~7 dk, toplam **≈35 dakika**. Aynı beş kök **tek** koşumla
+**7 dakikada** doğrulanabilirdi. **Beş kat maliyet, sıfır ek bilgi:** hiçbir koşum
+öncekinin görmediği bir şey görmedi.
+
+⚠ **Hedefli test bir kapı DEĞİLDİR ve serbesttir** (`pytest tests/test_x.py`, 3–15 sn) —
+düzeltmeyi yazarken kullanılır. Kapı olan üç şey `--hizli`, `--tam`, `--hepsi`'dir ve
+üçü de **yalnız 6. adımda** koşar.
+
+> *Bir kapıyı her düzeltmeden sonra koşmak onu beş kat güvenli yapmaz — beş kat pahalı
+> yapar. Ve pahalı bir kapı, atlanan bir kapıya dönüşür.*
 
 ### 0.2 · İki değişmez
 
@@ -66,11 +88,14 @@ until curl -sf localhost:8001/health >/dev/null; do sleep 3; done && echo hazır
 
 ### 0.4 · Yerel test kapısı — üç seviye, başkası yok
 
-| ne zaman | komut | süre |
-|---|---|---|
-| her düzenlemeden sonra | `pytest tests/test_x.py` (yalnız hedef) | 3–15 sn |
-| **demet sonunda, bir kez** | `lab/kapi.py --hizli --degisen <dosyalar>` → sonra `--tam` | ~2 + ~2 dk |
-| gecelik CI | `--hepsi` | 🔴 **yerelde ASLA** |
+| ne zaman | komut | süre | kapı mı? |
+|---|---|---|---|
+| düzeltmeyi yazarken, serbestçe | `pytest tests/test_x.py` (yalnız hedef) | 3–15 sn | ❌ hayır |
+| 🔴 **TÜM düzeltmeler bittikten sonra, BİR kez** | `lab/kapi.py --hizli --degisen <hepsi>` → `--tam` | ~2 + ~2 dk | ✅ evet |
+| gecelik CI | `--hepsi` | 🔴 **yerelde ASLA** *(istisna: merkezî dosya + davranış değişikliği → demet sonunda BİR kez)* | ✅ evet |
+
+🔴 **Ve `--degisen`'e demetin TÜM dosyaları birlikte verilir** — dosya başına ayrı koşum
+`§0.1.a`'nın yasakladığı şeyin ta kendisidir.
 
 🔴 Ve bu belgenin kendi dersi: **birim testleri bu kusurların hiçbirini görmedi.**
 *"Bağlam 2. turdan sonra kopuyor"* · *"kök-neden sorusu veda sanıldı"* · *"anlatıcı 24

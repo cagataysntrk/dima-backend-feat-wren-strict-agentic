@@ -114,11 +114,37 @@ uvicorn app.main:app --reload --port 8000   # dev
 > zamanlarda, sıklığı düşük, demet sonu gibi. Çok daha hızlı geliştirmeliyiz;
 > fazları hızlıca ama mükemmelce tamamlamalıyız."*
 
+### 🔴🔴 SIFIRINCI KURAL — **KAPI TOPLU KOŞULUR** *(kullanıcı kararı 2026-08-08)*
+
+> *"Sen tek tek düzeltip tek tek uzun testlere sebep oluyorsun. Sakın bir daha böyle
+> yapma. **En az 20 senaryo ve toplu düzeltme sonrası** test yapabilirsin. Teste bu kadar
+> vakit harcayamayız — tam kapı, demet kapısı vs. **toplu** yapılmalı, tek tek değil."*
+
+**Bağlayıcı sıra — kapı ancak SON adımda koşar:**
+
+1. ≥20 özgün senaryo curl ile koş · logla · raporla
+2. **TÜM** kök teşhisleri
+3. **TÜM** düzeltmeler — 🔴 aralarında **kapı yok** (yalnız hedefli `pytest tests/test_x.py`)
+4. **BİR** kez docker tazele → **BİR** kez curl doğrulama → **BİR** kez kapı
+
+🔴 **YASAK:** her kök için ayrı `--hepsi` / `--tam` / `--hizli`. Ve `--degisen`'e demetin
+**tüm** dosyaları birlikte verilir — dosya başına ayrı koşum aynı yasağın içindedir.
+
+**Ölçülen israf (2026-08-08):** beş kök için beş ayrı tam kapı ≈ **35 dk**; aynı beş kök
+tek koşumla **7 dk**. Beş kat maliyet, **sıfır ek bilgi** — hiçbir koşum öncekinin
+görmediği bir şey görmedi.
+
+⚠ **Hedefli test bir kapı değildir** (`pytest tests/test_x.py`, 3–15 sn) ve serbesttir.
+Kapı olan üç şey `--hizli` · `--tam` · `--hepsi`'dir.
+
+*Bir kapıyı her düzeltmeden sonra koşmak onu beş kat güvenli yapmaz — beş kat pahalı
+yapar. Ve pahalı bir kapı, atlanan bir kapıya dönüşür.*
+
 ### Kural — üç seviye, başka seviye YOK
 
 | # | Ne zaman | Komut | Ne koşar | Süre |
 |---|---|---|---|---|
-| **1** | **her düzenlemeden sonra** | `python lab/kapi.py --hizli --degisen <dosyalar>` | değişen modüle bağımlı testler + çekirdek duman | **~15-60 sn** |
+| **1** | ⟳ ~~her düzenlemeden sonra~~ → **TÜM düzeltmeler bitince, BİR kez** (SIFIRINCI KURAL) | `python lab/kapi.py --hizli --degisen <demetin TÜM dosyaları>` | değişen modüllere bağımlı testler + çekirdek duman | **~15-60 sn** |
 | **2** | **DEMET SONUNDA, bir kez** | `python lab/kapi.py --tam` | 🔴 **YALNIZ KORPUS** | **1 dk 50 sn** *(ölçüldü)* |
 | **3** | **gecelik CI** *(insan beklemez)* | `python lab/kapi.py --hepsi` | korpus + süit + `eval` + senaryo | **4 dk 06 sn** *(ölçüldü)* |
 
