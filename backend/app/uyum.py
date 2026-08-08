@@ -415,6 +415,39 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
     # *Var olmayan bir alanı okuyan kod sessizce hiçbir şey yapar — ve testi geçer.*
     from app.viz import _unit_of as _vbirim
     _units = (cube_meta or {}).get("units") or {}
+    # 🔴🔴 **`§U1` — İSTEĞİ KARŞILAYAN KOLONU GÖRMEDEN «EKSİK» İLAN ETMEK.**
+    #
+    # Aşağıdaki döngü ölçüleri **tek tek** geziyor ve ilk uyuşmayanda beyan ediyordu.
+    # İki şeyi hiç sormuyordu: *(a)* listedeki **başka bir ölçü** isteği zaten karşılıyor
+    # mu, *(b)* `pencere`/`turev` alanı istenen kolonu zaten **üretiyor** mu.
+    #
+    # Ölçüldü (U turu, **dört** kanıt):
+    #
+    #   `u8`  cevapta `_p_pay_toplam_rework_kg = 24,7`   → yine *"oran sordun ama kg"*
+    #   `u9`  cevapta `_t_oran_… = 302,3` (ortalama parti kg) → *"ortalama sordun ama toplam"*
+    #   `u14` ölçüler `[toplam_ciro, **fire_orani_yuzde**]` → *"oran sordun ama ₺"*
+    #   `u15` aynı, `limit 3` ile
+    #
+    # 🔴 Sonuç **doğru bir cevabı eksik ilan etmek**tir — ve bu, beyansızlıktan kötüdür:
+    # kullanıcı elindeki sayının yanlış olduğunu sanır. `§89.3`'te kendi `kesme`
+    # yüklemim aynı hatayı yapmıştı ve ders orada yazılı:
+    # *"Bir kusuru ilan eden yüklem, kendi yanlış-pozitifini üretirse, ilan ettiği
+    # kusurdan daha pahalıdır."*
+    #
+    # ⚠ Yeni sözlük yok: `pencere`/`turev` alanları `§91`'de zaten `cq`'da taşınıyor;
+    # burada yalnız **okunuyorlar**.
+    _pn_kip = str((ic.get("pencere") or {}).get("kip") or "")
+    _tv_kip = str((ic.get("turev") or {}).get("kip") or "")
+    #: Oran/yüzde isteği **karşılanmış** sayılır: bir ölçü zaten oran ise, ya da `pay`
+    #: penceresi / `yuzde`·`oran` türevi kolonu üretiyorsa.
+    _oran_karsilandi = (
+        _pn_kip == "pay" or _tv_kip in ("yuzde", "oran")
+        or any(re.search(r"(%|yuzde|oran)", (_vbirim(_x, _units) or "") + _x, re.I)
+               for _x in (ic.get("measures") or [])))
+    #: Ortalama isteği karşılanmış sayılır: `ort_` ile başlayan bir ölçü var, ya da
+    #: `oran` türevi (pay/payda) bir ortalama üretiyor (`u9`: toplam kg ÷ parti sayısı).
+    _ort_karsilandi = (_tv_kip == "oran"
+                       or any(str(_x).startswith("ort_") for _x in (ic.get("measures") or [])))
     for _m in (ic.get("measures") or []):
         _birim = _vbirim(_m, _units) or ""
         # 🔴 **VE İLK YAZIMIM YANLIŞ-POZİTİF ÜRETTİ — kapı yakaladı.** Test
@@ -432,7 +465,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
                 "O birimde bir ölçü katalogda yoksa hesabı ben uyduramam — "
                 "başka bir ölçü adıyla sorabilirsin."))
             break
-        if _oran_bekleniyor and not re.search(r"(%|yuzde|oran)", _birim + _m, re.I):
+        if _oran_bekleniyor and not _oran_karsilandi:
             out.append(Ihlal(
                 "olcu_ikamesi",
                 f"bir **oran/yüzde** sordun ama `{_m}` bir "
@@ -440,7 +473,7 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
                 "Oranı katalogda varsa adıyla sorabilirsin (*«… oranı»* biçiminde "
                 "tanımlı bir ölçü); yoksa payı ve paydayı ayrı ayrı isteyebilirsin."))
             break
-        if _toplulastirma_bekleniyor and _m.startswith("toplam_"):
+        if _toplulastirma_bekleniyor and not _ort_karsilandi and _m.startswith("toplam_"):
             out.append(Ihlal(
                 "olcu_ikamesi",
                 f"**ortalama** sordun ama `{_m}` bir **toplam**",

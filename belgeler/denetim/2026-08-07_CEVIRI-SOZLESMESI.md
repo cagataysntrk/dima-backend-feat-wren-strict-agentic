@@ -6330,3 +6330,88 @@ kelimenin **cümledeki işlevine** bakmıyor.
 
     korpus doğru-cube %94.9 (taban %94.4) ✅ · sessiz_yanlis 10 ·
     gerçek-dünya {2287 · kabul 1145 · dogru 90} · süit **4267 yeşil** · eval +0,0%
+
+---
+
+## §101 · U TURU — **doğru bir cevabı «eksik» ilan etmek** · ve *"bu nasıl hesaplandı?"*
+
+Bu turda kullanıcının istediği yeni bir sınıf denendi: **kullanıcı bir sayı/grafik
+görünce hesabın kendisini sorar.** Beş senaryo o sınıftan.
+
+### §101.1 · 🔴🔴 KÖK-U1 — beyan, isteği KARŞILAYAN kolonu görmüyordu (4 kanıt)
+
+`uyum.olcu_ikamesi` ölçüleri **tek tek** geziyor ve ilk uyuşmayanda beyan ediyordu. İki
+şeyi hiç sormuyordu: *(a)* listedeki **başka bir ölçü** isteği zaten karşılıyor mu,
+*(b)* `pencere`/`turev` alanı istenen kolonu zaten **üretiyor** mu.
+
+| # | cevapta olan | yine de denilen |
+|---|---|---|
+| `u8` | `_p_pay_toplam_rework_kg = **24,7**` | *"oran sordun ama kg"* |
+| `u9` | `_t_oran_… = **302,3**` (ortalama parti kg) | *"ortalama sordun ama toplam"* |
+| `u14` | ölçüler `[toplam_ciro, **fire_orani_yuzde**]` | *"oran sordun ama ₺"* |
+| `u15` | aynı, `limit 3` ile | aynı |
+
+🔴 Sonuç **doğru bir cevabı eksik ilan etmek**tir — ve bu beyansızlıktan **kötüdür**:
+kullanıcı elindeki sayının yanlış olduğunu sanır.
+
+⊙ Ve bu, `§89.3`'te **kendi** `kesme` yüklemimin yaptığı hatanın aynısı. Ders orada
+yazılıydı ve ikinci kez uygulandı:
+
+> *Bir kusuru ilan eden yüklem, kendi yanlış-pozitifini üretirse, ilan ettiği kusurdan
+> daha pahalıdır.*
+
+**Düzeltme:** iki *"karşılandı mı"* yüklemi eklendi — `pencere.kip == 'pay'` ·
+`turev.kip ∈ {yuzde, oran}` · listede oran birimli bir ölçü · `ort_` ile başlayan bir
+ölçü. Yeni sözlük yok: alanlar `§91`'de zaten `cq`'da taşınıyor, burada **okunuyorlar**.
+
+**Curl:** `u9` ve `u14` artık **beyansız** (cevap doğru, damga yok); gerçek ikame
+beyanları süit kapılarıyla (`test_uyum_kapisi` · `test_olcu_beyani` ·
+`test_beyanlar_curumesin`, **170 yeşil**) kilitli.
+
+### §101.2 · U turu tablosu (20 senaryo · 13'ü thread · 5'i «nasıl hesaplandı» sınıfı)
+
+| # | senaryo | sonuç |
+|---|---|---|
+| U1 | `bu yıl hat bazında OEE göster` | 🟢 `route()` LLM'siz |
+| **U2** | `bu nasıl hesaplandı?` | 🔴 *"veri sorgusu ile yanıtlanamaz"* — oysa `calculation_explanation` alanı **var** |
+| U3 | `bu sayıya hangi makineler dahil?` | 🟢 makine kırılımına indi |
+| U4 | `RAM 3 neden en düşük?` | ◐ RAM 3'e filtreledi, bileşen açıklaması yok |
+| **U5** | `bunu bileşenlerine ayır` | 🔴 OEE'nin **4 bileşeni ölçü olarak tanımlı**, eklenmedi |
+| U6 | `hangi renk en çok rework aldı` | 🟢 sıralı |
+| **U7** | `bu güvenilir mi, kaç kayıttan hesaplandı?` | 🟢🟢 `rework_sayisi`'nı **kayıt sayısı** olarak ekledi |
+| U8 | `aynı grafiği yüzde olarak göster` | 🟢 pay penceresi · 🔴→🟢 **KÖK-U1** |
+| U9 | `ortalama parti ağırlığı kaç kg` | 🟢🟢 `turev: oran` → **302 kg** · 🔴→🟢 **KÖK-U1** |
+| U10 | `en fazla iş emri açılan makine` | 🟢 `_p_sira_… = 1` (ŞARDON-1) |
+| U11 | `o makinenin bakım maliyetini de ekle` | ◐ ölçü eklendi, makine çapası kayıp |
+| **U12 [EN]** | `monthly scrap rate with a 3-month moving average` | 🟢🟢 hareketli ortalama |
+| **U13 [DE]** | `Welche Schicht hat die höchste Ausschussquote?` | 🟢🟢 *Schicht*→`vardiya` · *Ausschussquote*→`fire_orani_yuzde` · **3. Vardiya %26,7** |
+| U14·U15 | `ciro ve fire oranını birlikte` → `en yüksek üçünü işaretle` | 🔴→🟢 **KÖK-U1** · `limit 3` ✓ |
+| U16 | `haftanın hangi günü daha çok duruş` | 🟢 `hafta_gunu` → Salı |
+| U17 | `geçen yıl ile bu yıl aynı grafikte` | ◐ **dürüst beyan** (§49 bilinen kök) |
+| U18 | `…ortalamanın ne kadar üstünde` | 🔴 küp belirsizliği |
+| **U19** | `kümülatif ciroyu aylık göster` | 🟢🟢 `pencere: kumulatif` |
+| U20 | `çözüm süresi ve şikayet adedini yan yana` | 🔴 küp belirsizliği |
+
+**Discovery ateşlemesi: 0.**
+
+⊙ `§91`'in pencere/türev katmanı bu turda **beş** ayrı soruda, **üç dilde** (TR·EN·DE)
+garson tarafından kendiliğinden sipariş edildi.
+
+### §101.3 · Açık kökler (V turuna)
+
+1. 🔴 **`bu nasıl hesaplandı?` reddediliyor** (`u2`) — oysa `calculation_explanation` ·
+   `temellendirme` · `explain` alanları cevapta **zaten üretiliyor**. Bu bir **veri**
+   sorusu değil, bir **makbuz** sorusudur ve makbuz elimizde. *Kullanıcının en meşru
+   sorusu, cevabın kendisine dair olandır.*
+2. 🔴 **`bileşenlerine ayır`** (`u5`) — `oee`'nin `ort_kullanilabilirlik` ·
+   `ort_performans` · `ort_kalite` ölçüleri **tanımlı**; niyet anlaşılıyor, ölçüler
+   eklenmiyor.
+3. 🔴 **sıfat/fiil bir kategori değeri değildir** — üç kanıt (`t19` `ortalama`→`ORTA` ·
+   `§86.8` `açıkla`→`Açık` · `hariç tut`→cümlenin kendisi). **Sondaj bekliyor.**
+4. ◐ takipte **çapa kaybı** (`u11` makine · `t17`) · küp belirsizliğinde çok-ölçülü
+   istek (`u18` · `u20`).
+
+### §101.4 · Kapı
+
+    korpus doğru-cube %94.9 (taban %94.4) ✅ · sessiz_yanlis 10 ·
+    gerçek-dünya {2287 · kabul 1145 · dogru 90} · süit **4266 yeşil** · eval +0,0%
