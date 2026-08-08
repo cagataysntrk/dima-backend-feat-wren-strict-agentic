@@ -6247,3 +6247,86 @@ kullanıcının kendi `s8` senaryosu.
 mesajı yanlış** (`s4`) · grain sorusu (`s11` — satır düzeyi zaman) · iki-küp yan yana
 (`s17`) · küp belirsizliğinde `payını` kaybı (`s20`) · `kWh/kg + tesis ortalaması`
 (`s16` — genel ortalamayı satırın yanına koyma; `pay` penceresinin kardeşi).
+
+---
+
+## §100 · T TURU — **sistem cevabı hesaplıyor, chip'e yazıyor ve «anlamadım» diyordu**
+
+### §100.1 · 🔴🔴 KÖK-T1 — beş kanıt, tek desen
+
+| # | soru | not | `next_steps` |
+|---|---|---|---|
+| `t1` | `hangi müşteri bize en çok kâr bıraktı` | *"Hangisini istiyorsun?"* | `parti · kar · müşteri` |
+| `t11` | `vardiya bazında kaza sayısını sırala` | *"Hangisini istiyorsun?"* | `İSG · kaza adedi · vardiya` |
+| `t13` **[AR]** | `أكثر استهلاكاً للطاقة` | *"Hangi ölçüyü istiyorsun?"* | `elektrik` · `tep` |
+| `t16` | `her makinenin toplam duruş içindeki payı` | *"Hangisini istiyorsun?"* | `duruş nedenleri · toplam duruş dakikası · makine` |
+| `t18` | `geçen çeyrek ile bu çeyreği hat bazında kıyasla` | *"Hangisini istiyorsun?"* | `parti · fire oranı · hat` |
+
+Dördünde chip listesi **TEK ELEMANLI**. Yani sorulacak bir şey yok — sistem cevabı
+**hesaplamış**, chip'e **yazmış**, ve kullanıcıya *"anlamadım"* demiş.
+
+**Kök:** oy `_canon_cq` ile **tam `cq`** üzerinde sayılıyor. İki oy önemsiz bir alanda
+ayrılınca (biri `order` yazmış, öteki yazmamış) uyum **%50**'ye düşüyor ve kazanan ilan
+edilmiyor — oysa **kullanıcının sorduğu şey** (küp · ölçü · kırılım) ikisinde de
+**birebir aynı**. Chip listesinin tekilleşmesi bunun **kanıtıdır**.
+
+**Düzeltme:** chip listesi ikiden azsa netleştirme **atlanır**, ilk aday cevaplanır.
+
+⚠ Bu bir **çoğunluk kuralı DEĞİLDİR** (`§77`'nin ölçülerek reddedilen yolu): oylar
+arasında **tercih** yapılmıyor; adayların anlamca **aynı** olduğu chip listesinin
+kendisiyle **gösteriliyor**. Gerçek belirsizlikte (`t13`: `elektrik` vs `tep` → **iki**
+chip) dal aynen sorar.
+
+> *Bir soruyu sormak için önce iki farklı cevabın olması gerekir.*
+
+**Curl doğrulaması:**
+
+    t1  → EGE KNIT · **4.916.014 ₺** kâr · sıralı
+    t11 → `kaza_vardiya` + **`_p_sira_kaza_adedi: 1`**  ← sistem SIRA penceresini kullandı
+    t16 → **`_p_pay_toplam_sure_dk: 9.57`** — RAM-1 toplam duruşun %9,57'si
+    t13 [AR] → `enerji_makine.toplam_tep` · dönem soruyor  (sahte belirsizlik kalktı)
+
+### §100.2 · T turu tablosu (20 senaryo · 14'ü thread)
+
+| # | senaryo | sonuç |
+|---|---|---|
+| T1 | `hangi müşteri bize en çok kâr bıraktı` | 🔴→🟢 **KÖK-T1** |
+| T2 | `bu üçünün fire oranlarını da yanına koy` | ◐ çapa yoktu (T1 cevapsızdı) |
+| T3·T4·T5 | `kâr marjı en düşük 5 müşteri` → `renkleri kır` → `renk bazında sırala` | 🟢 `limit:5` · çapa korundu · kırılım değişti |
+| T6 | `enerji yoğunluğu en yüksek makine` | 🔴 chip'te sunduğu kelimeyi soruda tanımıyor |
+| T7·T8 | `o makinenin OEE'si` → `aylık göster` | ◐ makine çapası kayıp · aylık ✓ |
+| **T9** | `kaza sayısı en yüksek departman` | 🟢 `isg × departman`, sıralı |
+| **T10** | `o departmanın eğitim saatleri` | 🟢🟢 **küpler arası takip** (`isg`→`egitim`) · dönem çapası **beyanlı** taşındı · yazım düzeltmesi |
+| T11 | `vardiya bazında kaza sayısını sırala` | 🔴→🟢 **KÖK-T1** |
+| **T12 [EN]** | `which supplier has the worst first pass yield` | 🟢🟢 yeni `tedarikci` boyutu · belirsizlik **beyanlı** |
+| T13 **[AR]** | `أكثر استهلاكاً للطاقة` | 🔴→◐ sahte belirsizlik kalktı |
+| **T14** | `son 6 ayda fire oranı **artan** makineleri bul` | 🟢🟢 garson kendiliğinden `pencere: degisim_yuzde` üretti |
+| T15 | `bakım maliyeti ile arıza sayısı ilişkisi` | 🔴 Discovery bütçe aşımı |
+| T16 | `her makinenin toplam duruş içindeki payı` | 🔴→🟢 **KÖK-T1** + pay penceresi |
+| T17 | `payı %10 üstünde olanlar` | 🔴 çapa kayıp → Discovery |
+| T18 | `çeyrek kıyası, hat bazında` | 🔴→◐ **KÖK-T1** |
+| **T19** | `ortalama çözüm süresi en uzun 3 şikayet konusu` | 🔴 **uydurma filtre**: `siddet='ORTA'` + `renk='Orta'` ← *"**ortalama**"* |
+| **T20** | `3 aylık hareketli ortalamasını çiz` | 🟢🟢 garson `pencere: hareketli_ort, pencere_boyu: 3` üretti |
+
+**Discovery ateşlemesi: 2** (T15 · T17).
+
+⊙ **Garson artık pencere yeteneğini doğal dilden kendisi sipariş ediyor** (`t14` · `t20`)
+— `§91`'de inen katman, iki turda kullanıcı diliyle doğrulandı.
+
+### §100.3 · Açık kalan kök (U turuna) — **sıfat bir kategori değeri değildir**
+
+`t19`: *"**ortalama** çözüm süresi en uzun 3 şikayet konusu"* →
+
+    filters: [{siddet eq "ORTA"}, {renk eq "Orta"}]
+
+*"Ortalama"* bir **ölçü niteleyicisidir**; `ORTA` bir **şiddet değeri**, `Orta` bir
+**renk**. Sistem üçünü karıştırdı ve cevabı **sessizce** o iki filtreye daralttı.
+
+⊙ Bu, `§86.8`'in (fiil bir kategori değeri değildir — `açıkla` → `renk="Açık"`) **sıfat
+tarafındaki ikizidir** ve artık **iki** kanıtı var. Ortak kök: değer eşleştiricisi,
+kelimenin **cümledeki işlevine** bakmıyor.
+
+### §100.4 · Kapı
+
+    korpus doğru-cube %94.9 (taban %94.4) ✅ · sessiz_yanlis 10 ·
+    gerçek-dünya {2287 · kabul 1145 · dogru 90} · süit **4267 yeşil** · eval +0,0%

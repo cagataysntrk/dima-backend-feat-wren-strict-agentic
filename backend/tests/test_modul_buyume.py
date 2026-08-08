@@ -89,6 +89,20 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("t1-etiketleri-ayni-adaylar-belirsizlik-degildir", 6,
+     "🔴🔴 **SİSTEM CEVABI HESAPLIYOR, CHIP OLARAK GÖSTERİYOR VE «ANLAMADIM» DİYORDU.** "
+     "Ölçüldü (T turu, **beş** kanıt — `t1`·`t11`·`t13`·`t16`·`t18`): "
+     "`not = «Hangisini istiyorsun?»` ve yanında **TEK** bir chip: "
+     "`[\"İSG / iş kazası · kaza adedi · vardiya\"]`. "
+     "⊙ Sebep: oy `_canon_cq` ile **tam `cq`** üzerinde sayılıyor; iki oy önemsiz bir "
+     "alanda ayrılınca (biri `order` yazmış, öteki yazmamış) uyum %50'ye düşüyor ve "
+     "kazanan ilan edilmiyor — oysa **kullanıcının sorduğu şey** (küp · ölçü · kırılım) "
+     "ikisinde de **birebir aynı**. "
+     "🔴 `§0.0`: *kullanıcı asla cevapsız kalmaz.* Sorulacak bir şey yoksa soru sorulmaz. "
+     "⚠ Bu bir **çoğunluk kuralı DEĞİLDİR** (`§77`'nin reddedilen yolu): oylar arasında "
+     "tercih yapılmıyor, adayların **anlamca aynı** olduğu chip listesinin kendisiyle "
+     "**gösteriliyor**. Gerçek belirsizlikte (`t13`: `elektrik` vs `tep` → iki chip) dal "
+     "aynen sorar. *Bir soruyu sormak için önce iki farklı cevabın olması gerekir.*"),
     ("m4-capa-yoksa-beyanli-varsayim", 3,
      "🔴 **`M-4` — SORMAK TEK SEÇENEK DEĞİL.** Korpusun **%13,7'si** `CLARIFY:dönem`; "
      "canlı turlarda **on** kez ölçü·kırılım·sıralama çözülmüşken tek eksik dönem "

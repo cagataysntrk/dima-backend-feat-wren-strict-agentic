@@ -3405,8 +3405,40 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                         # beraberlik chip'iyle aynı felsefe: belirsizlik bir cevap değil,
                         # bir sorudur. Eksen birden çoksa chip anlaşılmaz olur → sessiz
                         # düşüş (aşağıdaki Discovery merdiveni devralır).
-                        return _finish(_intent_uyusmazlik_chipi(
-                            body.question, eksen, adaylar, schema, uyum, k))
+                        #
+                        # 🔴🔴 **`§T1` — ETİKETLERİ AYNI OLAN ADAYLAR BİR BELİRSİZLİK
+                        # DEĞİLDİR.** Ölçüldü (T turu, **beş** kanıt: `t1`·`t11`·`t13`·
+                        # `t16`·`t18`): sistem *"Hangisini istiyorsun?"* diyor ve yanına
+                        # **TEK** bir chip koyuyordu:
+                        #
+                        #     not  = "Hangisini istiyorsun?"
+                        #     chip = ["İSG / iş kazası · kaza adedi · vardiya"]   ← bir tane
+                        #
+                        # ⊙ Sebep: oy `_canon_cq` ile **tam `cq`** üzerinde sayılıyor. İki
+                        # oy önemsiz bir alanda ayrılınca (biri `order` yazmış, öteki
+                        # yazmamış) uyum %50'ye düşüyor ve kazanan ilan edilmiyor — oysa
+                        # **kullanıcının sorduğu şey** (küp · ölçü · kırılım) ikisinde de
+                        # **birebir aynı**. Sistem cevabı hesaplıyor, chip olarak
+                        # gösteriyor ve *"anlamadım"* diyor.
+                        #
+                        # 🔴 `§0.0`: *kullanıcı asla cevapsız kalmaz.* Sorulacak bir şey
+                        # yoksa soru sorulmaz.
+                        #
+                        # ⚠ Bu bir **çoğunluk kuralı değildir** (`§77`'nin reddedilen
+                        # yolu): burada oylar arasında **tercih** yapılmıyor; adayların
+                        # anlamca **aynı** olduğu gösterildiği için ilki alınıyor. Gerçek
+                        # belirsizlikte (`t13`: `elektrik` vs `tep` — iki ayrı chip) dal
+                        # aynen sorar.
+                        #
+                        # *Bir soruyu sormak için önce iki farklı cevabın olması gerekir.*
+                        _chip = _intent_uyusmazlik_chipi(
+                            body.question, eksen, adaylar, schema, uyum, k)
+                        if len(_chip.next_steps or []) >= 2:
+                            return _finish(_chip)
+                        _log.info("intent: adaylar ANLAMCA AYNI (%d chip) → netleştirme "
+                                  "atlandı, cevap veriliyor (§T1)", len(_chip.next_steps or []))
+                        route_hit = {"cube_query": adaylar[0], "order": None, "limit": None}
+                        intent_source = "cube+llm"
                 except Exception:
                     _log.warning("LLM Intent-JSON seçimi başarısız (best-effort)", exc_info=True)
 
