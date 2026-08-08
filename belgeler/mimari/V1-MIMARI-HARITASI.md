@@ -444,8 +444,8 @@ zorundadır**. `interpret.py` ve `value_index.py` **köprüdür** — mutfak ür
 
 | # | Restoranda | DİMA'da **BÖYLE DEĞİL** |
 |---|---|---|
-| **1** | Garson mutfağa **giremez** | 🔴 **Girebiliyor: Discovery.** 7. basamakta LLM ham SQL yazar. Bu bir tasarım tercihi değil, **kapatılmamış bir kapsam boşluğudur** — ve her kullanımı bir **terfi adayıdır** *(§5.2)* |
-| **2** | Garson **tek kişidir** | 🔴 Garson **beş sağlayıcılı bir zincirdir** *(`anthropic → gemini → groq → xai → openrouter → ollama`)*, ve `rule` sağlayıcısı **zincirde DEĞİLDİR** *(demo şemasına gömülü, kasıtlı aptal)*. ⚠ Bu ayrım bir kez **ölçümü kirletti**: kısa devre yasağının *"korpusu düşürdüğü"* bulgusu, aslında *"garsonun yerine mutfağın en aptal yedeğini koyunca"* ölçülmüştü |
+| **1** Discovery.** 7. basamakta LLM ham SQL yazar. Bu bir tasarım tercihi değil, **kapatılmamış bir kapsam boşluğudur** — ve her kullanımı bir **terfi adayıdır** *(§5.2)* | Aslında discovery yan dükkandan sipariş etmek demektir. Ve o durumda  mutfakta pişirmemek demektir. Sonra aşçı o yemeği yapmayı öğrenir bizim mutfağı geliştirmekle. 
+| **2** | Garson **tek kişidir** | 🔴 Garson **beş sağlayıcılı bir zincirdir** *(`anthropic → gemini → groq → xai → openrouter → ollama`)*, ve `rule` sağlayıcısı **zincirde DEĞİLDİR** *(demo şemasına gömülü, kasıtlı aptal)*. ⚠ Bu ayrım bir kez **ölçümü kirletti**: kısa devre yasağının *"korpusu düşürdüğü"* bulgusu, aslında *"garsonun yerine mutfağın en aptal yedeğini koyunca"* ölçülmüştü | Garson sistemde mantık olarak tektir ama farklı kişilikleri vardır.  
 | **3** | Aşçı **bir kişidir**, reçeteyi bilir | 🔴 Mutfak **altı katmanın bileşimidir** *(kaynak⊕modül⊕sektör⊕kesişim⊕çekirdek⊕şirket)* ve aynı ad **farklı grain'de** pişebilir. *"Üç şirkette karşılaştırılamaz üç sayı"* yangını tam buradan çıktı → **GRAIN sözleşmesi** |
 | **4** | Müşteri **tek masada** oturur | 🔴 Aynı prompt **eş zamanlı çok tenant · çok rol · çok mercek** altında koşar. Bayrak kapsamı **beş kademelidir** *(global < sektör < tenant < rol < kullanıcı)*; *"bir müşteri, bir sipariş"* sezgisi **burada yanıltır** |
 
