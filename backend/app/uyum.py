@@ -227,7 +227,28 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
                 or ic.get("limit") or ic.get("entity_limit"))
 
     # 1 · KIYAS — "şubata göre", "geçen yılla kıyasla"
-    if TUR_KIYAS in niyet.turler and not (ic.get("compare") or ic.get("compare_mode")):
+    #
+    # 🔴 **`§67` — «KIYASLA» HER ZAMAN İKİ DÖNEM DEMEK DEĞİLDİR (8 kanıt).**
+    #
+    # Ölçüldü: `ciro ile kar marjını makine bazında **kıyasla**` → *«iki dönemi
+    # kıyaslamanı istedin ama tek bir toplam üretebildim»*. Kullanıcı **iki ölçüyü**
+    # kıyaslamak istedi; ortada dönem yok. Aynı desen `i7`·`d9`·`f2`·`g10`… sekiz kez.
+    #
+    # 🔴 Ve `Ö10`'un kuralı burada da geçerli: **yanlış bir beyan sessizlikten kötüdür** —
+    # sistem kullanıcıya **onun söylemediği bir şeyi söylediğini** söylüyor.
+    #
+    # ⊙ Ayrım **yapısal**: kıyasın **nesnesi** ne? Sorguda **iki ya da daha çok ölçü**
+    # varsa ve soru birden çok dönem saymıyorsa (`cok_donem` yok), o kıyas **ölçüler
+    # arasıdır** ve sorguda **zaten karşılanmıştır** — iki ölçü yan yana duruyor.
+    #
+    # ⚠ Dar tutuldu: yalnız `cok_donem` **yokken** ve `cq` **çok ölçülüyken** susar.
+    # `geçen yıla göre kıyasla` (tek ölçü, iki dönem) aynen ihlal sayılır.
+    #
+    # *Bir kıyasın eksik olduğunu söylemeden önce, neyin kıyaslandığına bakmak gerekir.*
+    _olcu_kiyasi = (len([m for m in (ic.get("measures") or []) if m]) >= 2
+                    and not niyet.cok_donem)
+    if (TUR_KIYAS in niyet.turler and not _olcu_kiyasi
+            and not (ic.get("compare") or ic.get("compare_mode"))):
         out.append(Ihlal(
             "kiyas",
             "iki dönemi **kıyaslamanı** istedin ama tek bir toplam üretebildim",

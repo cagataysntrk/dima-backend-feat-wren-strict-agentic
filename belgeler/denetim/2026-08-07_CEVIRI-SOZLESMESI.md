@@ -3843,3 +3843,58 @@ olacak · **oy dağılımı loglanmaya devam edecek** *(bu kusur tam olarak o sa
 bulundu — log giderse kusur geri döner ve görünmez olur)*.
 
 > *Üç farklı cevabı olan bir soruya «anlamadım» demek, cevapları saklamaktır.*
+
+---
+
+# J TURU
+
+## §67 · *"KIYASLA"* HER ZAMAN İKİ DÖNEM DEMEK DEĞİL — ve teşhisimin yarısı yanlıştı
+
+**Ölçüldü (8 kanıt):** `ciro ile kar marjını makine bazında **kıyasla**` → *"iki dönemi
+kıyaslamanı istedin ama tek bir toplam üretebildim"*. Kullanıcı **iki ölçüyü** kıyaslamak
+istedi; ortada dönem yok. `Ö10`'un kuralı: **yanlış bir beyan sessizlikten kötüdür**.
+
+**Yapılan:** `kiyas` ihlali, sorguda **iki ya da daha çok ölçü** varken ve soru birden çok
+dönem saymıyorken **susar** — o kıyas ölçüler arasıdır ve sorguda **zaten karşılanmıştır**.
+
+### 67.1 · 🔴 Doğrulama teşhisimi düzeltti
+
+Düzeltmeden sonra aynı soru **hâlâ** `eksik:['kiyas']` beyan etti. Sebep: `cq`'da **tek**
+ölçü var — **`ciro` düşmüş**. Yani bu vakada asıl kusur beyan değil, **ölçü kaybı**:
+cümlede iki ölçü adı geçiyor, sorguya biri giriyor.
+
+⊙ `§67` yine de doğru bir daraltma (iki ölçü **gerçekten** varken artık susacak), ama bu
+vakayı kapatan şey **olmayacak**. *Bir beyanı susturmak, beyanın işaret ettiği eksikliği
+kapatmaz — yalnız yanlış adlandırmayı düzeltir.*
+
+**Kayıtlı kök (öncelikli):** *"iki ölçü adı geçen cümlede biri düşüyor"* — `i12` `toplam
+ciro ve toplam kar` *(J turunda `j1`'de düzelmiş görünüyor: iki ölçü de geldi)* · `v67`
+`ciro ile kar marjı` · `i7` `fire oranı ve oee`.
+
+## §68 · `\b` KUSURU BİR KAT YUKARIDA TEKRARLADI
+
+**Ölçüldü (`j12`):** `aylık fire trendini **alan grafikle** ver` → `view: chart` (genel),
+çünkü `\balan grafi\b` deseni `grafi` ile `k` arasında sınır arıyor — orada sınır **yok**.
+
+🔴 Bu `§45`'in **birebir aynı kusuru**, farklı bir sözlükte. Türkçede her ad ek alır; sağ
+tarafı `\b` ile kapatmak deseni **yalın hâle hapseder**.
+
+⚠ Sol sınır `\b` **kalır**: `bar`ın `barkod`u tutmaması ona bağlı (`§37`).
+
+**Doğrulama:** `alan grafikle` → ✅ **`view: area`**.
+
+> *Aynı kusur iki farklı sözlükte çıktıysa, üçüncü bir sözlükte de vardır.*
+
+## §69 · J turunun envanteri
+
+**Çalışan (8):** `j1` iki ölçü birlikte · `j2` `kaç kilogram kumaş` → `toplam_agirlik_kg`
+**5.400 ms** · **`j8` `quanto abbiamo prodotto quest'anno` — İTALYANCA ✅✅** ·
+`j4`T1 **480 ms** · `j6` **524 ms** · `j9` fire oranı × makine · **`j10` iki boyut,
+504 ms, 33 satır** · `j12` alan grafik *(§68 sonrası)*
+
+⊙ **YEDİ DİL:** Türkçe · İngilizce · Arapça · Almanca · Fransızca · İspanyolca ·
+**İtalyanca**.
+
+**Kalan kökler:** `sadece hafta içi` filtresi **yine** sessizce düştü *(2. kanıt, `j4`T2)*
+· zamir/tekilleştirme *(`j7` → 66 satır)* · *"ortalamanın üstünde"* eşiği uygulanmıyor
+*(`j9`)* · `Hangisini istiyorsun?` küp beraberliği *(`j5`·`j11`)* · ölçü kaybı *(§67.1)*.

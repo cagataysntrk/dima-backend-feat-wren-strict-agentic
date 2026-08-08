@@ -568,7 +568,13 @@ _VIZ_MAP = (
 _VIZ_TAM = (("bar", "bar"), ("pie", "pie"), ("line", "line"),
             ("donut", "pie"), ("halka", "pie"), ("scatter", "scatter"),
             ("area", "area"), ("alan grafi", "area"))
-_VIZ_TAM_RE = tuple((re.compile(rf"\b{re.escape(k)}\b"), v) for k, v in _VIZ_TAM)
+#: ⚠ `§68` — **SAĞ SINIR `\b` DEĞİL, EK TOLERANSLI.** Ölçüldü (`j12`): `aylık fire
+#: trendini **alan grafikle** ver` → `view: chart` (genel), çünkü `\balan grafi\b` deseni
+#: `grafi` ile `k` arasında sınır arar ve orada sınır **yoktur**. Bu, `§45`'in birebir
+#: aynı kusuru — bir kat yukarıda. Türkçede her ad ek alır; sağ tarafı `\b` ile kapatmak
+#: deseni **yalın hâle** hapseder.
+#: ⚠ Sol sınır `\b` **kalır**: `bar`ın `barkod`u tutmaması ona bağlı.
+_VIZ_TAM_RE = tuple((re.compile(rf"\b{re.escape(k)}\w{{0,4}}\b"), v) for k, v in _VIZ_TAM)
 #: Görünüm kelimelerini SÖKEN desen. Bir takip mesajı yalnız görünüm istiyorsa
 #: (`"pasta grafik"`) geriye anlamlı kelime kalmaz; `"pasta grafik olarak müşteri
 #: bazında"` gibi bir istek ise YAPISAL bir düzenlemedir ve normal zincire gitmelidir.
