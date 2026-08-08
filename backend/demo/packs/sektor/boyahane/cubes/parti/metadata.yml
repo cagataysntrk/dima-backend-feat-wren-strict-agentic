@@ -129,6 +129,29 @@ pvm:
     price_label: birim fiyat (TL/kg)
 
 dimensions:
+  # 🔴🔴 `M-1` — BU BOYUT TABLODA **ZATEN VARDI**, KÜP ONU BEYAN ETMİYORDU.
+  #
+  # Raporun amiral örneği (*"bu yıl vardiya bazında fire oranı"*) beş modüllük bir
+  # **uyumlu boyut mimarisi** ile açıklanıyordu: *"ölçü bir küpte, boyut başka küpte."*
+  # Ölçüldü (MDL, `partiler` tablosu): `vardiya` **INTEGER** ve `vardiya_ad` **VARCHAR**
+  # kolonları bu küpün **kendi taban tablosunda**. Yani ölçü ile boyut **aynı küpte**;
+  # eksik olan bir birleşme yolu değil, **bir satır beyandı**.
+  #
+  # ⊙ Sistematik tarama: 46 ortak-boyut kolonu (`vardiya`·`musteri_ad`·`personel`·
+  # `bolum`…) sekiz küpün taban tablosunda **var**, boyut olarak **beyan edilmemiş**.
+  # Rapor semptomu (*"kelime 11 küpte"*) doğru teşhis etmiş, ama kendi amiral vakasının
+  # sebebi menü **mimarisi** değil menü **eksikliğiydi**.
+  #
+  # ⚠ `vardiya_ad` seçildi, `vardiya` değil: ikincisi INTEGER (1/2/3) ve `oee` onu bir
+  # `CASE` ile okunur etikete çeviriyor. Burada etiket **zaten kolon olarak var** —
+  # ikinci bir çevirici yazmak `KAT-1` olurdu.
+  #
+  # *Bir mimariyi kurmadan önce, çözeceği vakanın gerçekten mimari olduğunu ölç.*
+  - name: vardiya
+    expression: vardiya_ad
+    type: VARCHAR
+    label: vardiya
+    synonyms: [vardiya, vardiyalar, vardiyası, hangi vardiya]
   - name: makine
     expression: makine
     type: VARCHAR

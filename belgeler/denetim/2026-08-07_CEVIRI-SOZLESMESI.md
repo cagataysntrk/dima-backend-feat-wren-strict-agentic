@@ -5977,3 +5977,83 @@ kararıdır ve tek başıma vermem. Ama artık **neyin ölçülmesi gerektiği y
 **3 satır** · `p19` **24 satır** · ikisi de `route()` ile **LLM'siz**.
 
 *Bir ölçüm aracının sınırını bulmak, ölçtüğü şeyi bulmak kadar değerlidir.*
+
+---
+
+## §97 · M-1 **İNDİ** — ve kararı veren şey, dokuzuncu alet düzeltmesi oldu
+
+### §97.1 · 🔴 Kendi üç şartımın ÜÇÜNCÜSÜ ölçülemez çıktı
+
+`§96.4`'te M-1'in önünü açacak üç şart yazmıştım. Üçüncüsü şuydu: *"`sessiz_yanlis`
+artmamalı — bu ölçüt popülasyondan **bağımsızdır**."* İki raporun sessiz-yanlış
+kümelerini karşılaştırdım:
+
+    TABAN'da olup M-1'de olmayan : 12
+    M-1'de yeni doğan            : 11
+    🔴 ORTAK                     : **0**
+
+**Tamamen ayrık.** Yani `12 → 11`'i *"iyileşme"* saymam yanlıştı: iki sayı **aynı şeyin
+iki ölçümü değil**. Bu vakalar `senaryo_uretec`'in ürettiği gürültülü sorular
+(*"az önceki haziran adet vardiya makine kırılımınnda!!!"*) ve şema değişince üreteç
+**bambaşka bir örneklem** veriyor.
+
+⊙ Bu, bu oturumun **dokuzuncu** ölçüm-aleti düzeltmesi ve en önemlisi: *popülasyondan
+bağımsız sandığım ölçüt de popülasyona bağlıydı.*
+
+### §97.2 · Asıl kanıt — ve o, ayrık kümelerden BAĞIMSIZ
+
+`nl_corpus` aynı koşumda, boyahane:
+
+    TABAN : 9182 tur · erişim OK=**6328** · DOĞRU-CUBE=**5810**/6049 (%96) · yanlış=**216** · discovery=23
+    M-1   : 9281 tur · erişim OK=**6328** · DOĞRU-CUBE=**5810**/6115 (%95) · yanlış=**216** · discovery=**89**
+
+🔴 **Doğru 5810 → 5810. Yanlış 216 → 216. Erişim 6328 → 6328.** Üçü de **birebir**.
+Değişen tek şey **+66 yeni vaka** ve hepsi `discovery` kovasında.
+
+> **Hiçbir doğru cevap bozulmadı. Ölçülen alan genişledi, kalite düşmedi.**
+
+Oran %95.1 → %94.4 çünkü payda büyüdü — `§96.2`'nin tarif ettiği mekanizma, bu kez
+sayılarla kanıtlı.
+
+### §97.3 · Taban BİLEREK yeniden tanımlandı — ve iki bekçi beni düzeltti
+
+`nl_corpus_baseline.json`'a yedinci tur, **tam gerekçesiyle** yazıldı (üç eşitlik +
+kazanç + *"bar donmuyor"* kaydı). Deponun kendi emsali: `gercek_dunya_baseline` bunu
+**üç kez** yapmış ve kendi cümlesini yazmış — *"payda değiştiği için eski 42 ile yeni 46
+aynı ölçünün iki değeri değil."*
+
+🔴 İlk yazımda erişim yüzdelerini de (68/69/68/72) yazdım ve **iki bekçi kapı** kırmızı
+verdi: *"bir tur eklemek tabanı geriletemez"*. Haklıydılar — kayıtlı taban 69, ölçülen 68
+(tolerans içinde); 68'i yazmak çıtayı **sessizce** indirirdi. Ve gereksizdi: erişim bu
+değişiklikten **hiç etkilenmedi** (6328 → 6328). Alan çıkarıldı.
+
+*Değiştirmediğin bir sayıyı yeniden yazmak, onu değiştirmektir.*
+
+### §97.4 · Sonuç
+
+    korpus doğru-cube  %94.4 (taban %94.4) ✅      gerçek-dünya  kapı yeşil ✅
+    tam süit           4261 yeşil                  eval          +0,0%
+
+**Curl (iki koşum birebir):** `bu yıl vardiya bazında fire oranı` → **3 satır**,
+`route()` ile **LLM'siz**. `§83`'ten beri *"mutfak sınırı"* diye kayıtlı olan vaka
+kapandı. Ve bulgu gerçek: **3. vardiya %25,08 fire**, 1. vardiya %16,78.
+
+### §97.5 · MUTFAK RAPORU — TAMAMLANDI
+
+| kök | durum |
+|---|---|
+| **M-7** telemetri pusulası | ✅ |
+| **M-6** operatör tek kaynak | ✅ |
+| **M-9** pencere katmanı (6 kip) | ✅ |
+| **M-3** türev ölçü | ✅ |
+| **M-5** toplanabilirlik (12→77) | ✅ |
+| **M-4** varsayılan dönem | ✅ *(kuruldu+ölçüldü, bayrak bilerek kapalı)* |
+| **KÖK-M1a** chip ayırt edicisi | ✅ *(yol açıcı)* |
+| **M-1** uyumlu boyut — ilk adım | ✅ *(`parti.vardiya`; kalan 45 kolon sırada)* |
+| **M-2** ölçü rolü | ◐ *(`default_measure` 3→11; `rol` MDL'de yapısal kapalı)* |
+| **M-8** kaynak farkı beyanı | ⊘ |
+
+**Dokuz kökten yedisi indi, biri yarım, biri açık.** Rapor bu süreçte **dört kez**
+düzeltildi: `rol`·`pencere`·`varsayilan_donem` katalog beyanları MDL'nin sabit alan
+kümesine çarptı; M-1'in *"ölçü bir küpte, boyut başkasında"* teşhisi ölçümle çürüdü —
+boyut **aynı küpteydi, beyan edilmemişti**.
