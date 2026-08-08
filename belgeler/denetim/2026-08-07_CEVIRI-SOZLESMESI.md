@@ -4341,3 +4341,46 @@ diye kendini işaretleyerek kullanıcıya soru sordu.
 
 ⊙ Bu, `§0.0`'ın ihlali: soruda **iki kırılım adı** (`renk`, `makine`) ve bir **görselleştirme**
 isteği var; eksik olan yalnız ölçü. Garsona sorulmadan kullanıcıya sorulmuş.
+
+### 75.5 · 🔴 VE `§75.4`'Ü DE SONDAJ ÇÜRÜTTÜ — iki turda ikinci kez
+
+`§75.4`'te `renk ve makine kırılımını ısı haritasıyla ver` için şunu yazmıştım:
+
+> *"Tek koşumluk salınım **değil**, dalın kendi imzası — garsona sorulmadan kullanıcıya
+> soruluyor."*
+
+Aynı soruyu bir kez daha koşup logu okudum:
+
+```
+intent: 3 oy · 1 farklı aday · kazanan 1 oy
+CEVAP: source=cube+llm · satır=55 · 20.750 ms          ✅ TAM CEVAP
+```
+
+⊙ **Garson çalıştı ve bu koşum başarılı oldu.** *"Dalın imzası"* dediğim şey de
+**salınımdı** — ve bunu, bir turda önce kendi koyduğum kuralı (`§75.3`: *"iki kez koş"*)
+uygulamadan yazmıştım.
+
+> *Bir kuralı koymak onu uygulamak değildir; ve en zor uygulandığı yer, kuralı koyan
+> kişinin kendi bulgusudur.*
+
+### 75.6 · İki turun BİLEŞİK sonucu — asıl kusur SALINIMIN KENDİSİ
+
+Üç ayrı sondaj (`§75.3` iki soru · `§75.5` bir soru) aynı şeyi söyledi: **L turunda
+"kırık" diye kaydettiğim vakaların büyük kısmı yeniden koşulunca geçiyor.**
+
+Yani sistemin baskın sorunu belirli bir dal, belirli bir sözcük ya da belirli bir küp
+**değil**:
+
+> 🔴 **Aynı soru, aynı sistem, aynı dakika — bazen tam cevap, bazen netleştirme.**
+> Kullanıcının gördüğü kalite bir **yazı-tura**.
+
+Ve bu, `§0.0`'ın en üst kuralıyla doğrudan çelişir: garson **hakemdir**, ama hakemin
+kararı üç örneklemin rastgele uyuşmasına bağlanmıştır.
+
+**Sonuç — sıradaki işin tanımı netleşti:** dal yamamak değil, **salınımı yönetmek**:
+1. uyuşmazlıkta **çoğunluk adayıyla cevapla + belirsizliği beyan et** (`beyanlı kısmi`),
+2. `k` ve eşiği yeniden değerlendir (`k=3` + `2/3` bir **oy birliği** şartıdır),
+3. ⚠ `KURAL B` + korpus hakem — ve `§73.7`: **yeşil bir veto, yeşil bir karar değildir.**
+
+*Belirlenimsiz bir sistemde tek tek dalları yamamak, dalgalı bir denizde tek tek dalgaları
+düzeltmeye benzer.*
