@@ -5866,3 +5866,55 @@ ise **ölçümle** çürüdü (`§94.1`).
 > *Bir denetim raporunun değeri, önerdiği çözümlerin doğruluğunda değil, gösterdiği
 > yerin doğruluğundadır. Bu rapor yeri doğru gösterdi; çözümlerin üçü yanlış kapıydı ve
 > bunu ancak uygulamaya çalışınca öğrendik.*
+
+---
+
+## §95 · KÖK-M1a · **CHIP, TESADÜFİ BİR AYIRT EDİCİYE BAĞLIYDI** — ve M-1'in ikinci engeli
+
+### §95.1 · Kök ve düzeltme
+
+`_calisan_sorgu` netleştirme chip'inin sorgusunu `{küp sinonimi} {ölçünün GÖRÜNEN ADI}`
+kalıbıyla kuruyordu. İki küp aynı görünen adı taşıdığında (`oee` ve `parti` → ikisi de
+*"fire"*) o ad ayırt etmez; chip ancak bir küp sinonimi **tesadüfen tekil** ise ayakta
+kalır.
+
+    TABAN : oee → sorgu = "vardiya fire"     ← `vardiya` o gün oee'ye özgüydü
+    M-1'LE: oee → sorgu = None → chip düştü → 6 sinonim Discovery'ye kaydı
+
+**Düzeltme:** ölçünün **öteki sinonimleri** de denenir. `oee.toplam_fire_kg` sinonimleri
+`fire · hatali · hurda · waste · scrap · defect`; `hatali` ve `hurda` **oee'ye özgüdür** —
+ayırt edici bilgi elimizde **vardı**, sorulmuyordu. Yeni sözlük yazılmadı; sıra ucuzdan
+pahalıya (önce çıplak sinonim, sonra en kısa üç küp adıyla nitelenmiş hâli).
+
+**Curl doğrulaması:** `bu yıl scrap` → *"«scrap» birden fazla yerde tanımlı — bu cevap
+**parti** tanımıyla hesaplandı. Diğerleri: scrap (OEE)."* Belirsizlik artık **beyanlı**.
+
+**Kapı:** korpus `{2285 · kabul 1153 · dogru 93 · sessiz_yanlis 12 · beyanli_kismi 51}` ·
+süit **4262 yeşil** · doğru-cube **%95.1** (taban %95.1).
+
+⚠ Ölçülen bedel: süit ~7 dk 07 sn (öncesi ~6 dk 50 sn) — ek `route()` çağrıları. Kabul
+edilebilir; ama üçüncü bir kademe eklenirse **ölçülmelidir**.
+
+### §95.2 · 🔴 VE M-1 YİNE İNMEDİ — ikinci engel, birincisinden BAĞIMSIZ
+
+`KÖK-M1a` düzeltilince `parti.vardiya` geri kondu ve **chip testleri yeşile döndü**
+(41 test). Ama tam kapı yine kırmızı verdi ve sayılar **birebir** aynıydı:
+
+    korpus  {vaka **2266** · kabul 1142 · dogru 87 · sessiz_yanlis 11 · beyanli_kismi **32**}
+    doğru-cube %95.1 → **%94.4**
+
+🔴 **Payda −19, `beyanli_kismi` −19.** Aynı sayı. Yani `parti`ye bir boyut eklemek
+korpusun **kendi vaka kümesini** değiştiriyor: 19 vaka üretilmiyor.
+
+⊙ Ve `feedback_test_kapisi_disiplini`'nin kuralı burada bağlayıcı: **payda kutsaldır.**
+Payda oynayan bir ölçüm, öncesi ile sonrası **kıyaslanamaz** hâle gelir — kazanç da
+kayıp da görünmez olur.
+
+**Karar:** `parti.vardiya` **ikinci kez geri alındı**; `KÖK-M1a` düzeltmesi **tutuldu**
+(kendi başına yeşil ve bağımsız bir kırılganlığı kapatıyor).
+
+**Devreden kök — `KÖK-M1b`:** *bir boyut beyanı korpus paydasını neden 19 azaltıyor?*
+Cevap `lab/nl_corpus.py`'nin vaka üretecindedir ve **ölçülmeden** M-1 inemez. Sıradaki
+turun ilk işi budur.
+
+*Bir kazancı ölçemiyorsan, kazandığını da bilemezsin.*

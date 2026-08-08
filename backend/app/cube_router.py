@@ -1978,7 +1978,7 @@ def olcu_netlestirme(adaylar: list[tuple[dict, str]],
         # SORGU: HER İKİ dalda da doğrulanır. Çakışma olmasa bile ham etiket tek başına
         # çözülmeyebiliyor (ölçüldü: "dE", "sapma yüzdesi" → R1/R10) ve tıklanınca
         # çalışmayan bir chip, çakışmadan bağımsız olarak kötüdür.
-        sorgu = _calisan_sorgu(c, etiket, schema)
+        sorgu = _calisan_sorgu(c, etiket, schema, _m)
         if sorgu is None:
             # FAZ 9.3: çözülemeyen chip HİÇ ÜRETİLMEZ. Tıklanınca kullanıcıyı aynı duvara
             # ikinci kez çarptıran bir chip, chip olmamasından kötüdür. Sessiz değil:
@@ -2096,7 +2096,8 @@ def chip_cozuluyor_mu(etiket: str, schema: dict | None) -> bool:
 
 
 @_sonda_reddi_korur
-def _calisan_sorgu(cube: dict, etiket: str, schema: dict | None) -> str | None:
+def _calisan_sorgu(cube: dict, etiket: str, schema: dict | None,
+                   olcu: str | None = None) -> str | None:
     """Chip'in `query`'si: `route()` ile DOĞRULANMIŞ bir "cube + ölçü" ifadesi.
 
     ## Neden `display` yetmiyor (ölçüldü)
@@ -2144,10 +2145,46 @@ def _calisan_sorgu(cube: dict, etiket: str, schema: dict | None) -> str | None:
     #    Kısa ad önce: en az gürültülü, kapsam kapısına en az takılan.
     adlar = [str(s).removesuffix("!") for s in (cube.get("synonyms") or [])]
     adlar.append(str(hedef or ""))
-    for ad in sorted({a.strip() for a in adlar if a.strip()}, key=len):
+    adlar_sirali = sorted({a.strip() for a in adlar if a.strip()}, key=len)
+    for ad in adlar_sirali:
         aday = f"{ad} {etiket}"
         if _cozuluyor(aday):
             return aday
+    # 3) 🔴🔴 **`KÖK-M1a` — CHIP TESADÜFİ BİR AYIRT EDİCİYE BAĞLIYDI.**
+    #
+    # Yukarıdaki iki kademe ölçünün **yalnız GÖRÜNEN ADINI** deniyor. İki cube aynı
+    # görünen adı taşıyorsa (`oee.toplam_fire_kg` ve `parti.toplam_fire_kg` → ikisi de
+    # *"fire"*), o ad tek başına ayırt etmez ve chip yalnız **cube sinonimlerinden
+    # birinin tesadüfen tekil olması** sayesinde ayakta kalır.
+    #
+    # Ölçüldü (`M-1` denemesi, kapının kendi fikstürüyle):
+    #
+    #     TABAN : oee → sorgu = **"vardiya fire"**      ← `vardiya` o gün oee'ye özgüydü
+    #     parti'ye `vardiya` boyutu eklenince:
+    #             oee → sorgu = **None** → chip DÜŞTÜ → `scrap`/`waste`/`defect` ailesi
+    #                    (6 sinonim) netleştirme yerine **Discovery'ye** düştü
+    #
+    # ⊙ Yani bir küpü yetenekli yapmak, bir kelimeyi ayırt edici olmaktan çıkarıyordu ve
+    # netleştirme sessizce ölüyordu. Kusur `M-1`'in değil, **bu fonksiyonun**: ölçünün
+    # **öteki sinonimlerini** hiç denemiyordu.
+    #
+    # `oee.toplam_fire_kg` sinonimleri: `fire · hatali · hurda · waste · scrap · defect`.
+    # `hatali` ve `hurda` **oee'ye özgüdür** — yani ayırt edici bilgi elimizde **vardı**.
+    #
+    # ⚠ Yeni sözlük yazılmadı: katalogun **kendi** sinonimleri okunuyor. Ve sıra ucuzdan
+    # pahalıya: önce çıplak öteki sinonim (tek `route()`), sonra cube adıyla nitelenmiş
+    # hâli. *Elindeki ayırt ediciyi denemeden tesadüfe güvenmek, ölçmeden varsaymaktır.*
+    digerleri = [str(s).removesuffix("!").strip()
+                 for s in ((cube.get("measure_synonyms") or {}).get(olcu or "") or [])]
+    digerleri = sorted({s for s in digerleri if s and _norm(s) != _norm(etiket)}, key=len)
+    for sy in digerleri:
+        if _cozuluyor(sy):
+            return sy
+    for sy in digerleri:
+        for ad in adlar_sirali[:3]:
+            aday = f"{ad} {sy}"
+            if _cozuluyor(aday):
+                return aday
     # 3) Hiçbiri çalışmıyor → **chip ÜRETİLMEZ** (`None`).
     #
     # ⟳ FAZ 9.3: eskiden ham etiket dönüyordu, gerekçesi *"chip yine bir İPUCU taşır"*.

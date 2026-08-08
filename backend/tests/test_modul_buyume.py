@@ -438,6 +438,23 @@ MUAFIYET_ASK_KOD = [
      "makbuza yazılmazsa, kullanıcı onu kendi yazdığını sanır"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("m1a-chip-tesadufi-ayirt-ediciye-bagliydi", 13,
+     "🔴🔴 **NETLEŞTİRME CHIP'İ TESADÜFİ BİR AYIRT EDİCİYE BAĞLIYDI.** `_calisan_sorgu` "
+     "ölçünün yalnız **görünen adını** deniyordu; iki küp aynı adı taşıyorsa (`oee` ve "
+     "`parti` → ikisi de *«fire»*) chip ancak bir küp sinonimi **tesadüfen tekil** ise "
+     "ayakta kalıyordu. "
+     "⊙ Ölçüldü (`M-1` denemesi, kapının kendi fikstürüyle): TABAN'da `oee`nin chip "
+     "sorgusu **«vardiya fire»**'ydi; `parti`ye `vardiya` boyutu eklenince `oee` → "
+     "`sorgu=None` → chip **düştü** ve `scrap`/`waste`/`defect` ailesi (6 sinonim) "
+     "netleştirme yerine **Discovery'ye** kaydı. "
+     "🔴 *Bir küpü yetenekli yapmak, bir kelimeyi ayırt edici olmaktan çıkarır* — ve "
+     "kusur o küpün değil, **bu fonksiyonun**dı: ölçünün ÖTEKİ sinonimlerini hiç "
+     "denemiyordu. `oee.toplam_fire_kg` → `hatali`·`hurda` **oee'ye özgüdür**; ayırt "
+     "edici bilgi elimizde **vardı**. "
+     "⚠ Yeni sözlük yazılmadı (katalogun kendi sinonimleri) ve sıra ucuzdan pahalıya: "
+     "önce çıplak öteki sinonim (tek `route()`), sonra küp adıyla nitelenmiş hâli, en "
+     "fazla üç küp adıyla. *Elindeki ayırt ediciyi denemeden tesadüfe güvenmek, ölçmeden "
+     "varsaymaktır.*"),
     ("m9-m3-pencere-ve-turev-fisi-gecirilir", 18,
      "🔴🔴 **PENCERE VE TÜREV ALANLARI SİPARİŞ FİŞİNDEN GEÇİRİLİR.** `wren_service` "
      "kümülatifi · hareketli ortalamayı · grup-içi sırayı · oran/pay'ı **sarabiliyor**; "
