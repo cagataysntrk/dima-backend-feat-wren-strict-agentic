@@ -77,6 +77,35 @@ route'a öğretmek yerine **devretmek** gerekirdi. Kullanıcı İngilizce/Arapç
 > *Bir dili kurallarla yakalamaya çalışmak, ufka doğru yürümektir; dili bilen birine
 > sormak ise bir adımdır.*
 
+#### 🔴 İKİ EKSEN — ve aralarındaki TEŞHİS KURALI
+
+Geliştirme **iki** eksende yürür ve **karıştırılmaz**:
+
+| # | eksen | hedef | araç |
+|---|---|---|---|
+| **1** | 🗣 **SİPARİŞ ALMA** | Kullanıcı **ne'ce** yazarsa yazsın niyet doğru alınsın. **«Anlamadım» YOK** — Arapça bile yazılsa. | **Garson LLM** *(hakem, güvendiğimiz)* |
+| **2** | 🍳 **MUTFAK** | Küpler **her yemeği** sunabilsin; Discovery'ye hiç düşülmesin. | Küp / semantik katman geliştirme |
+
+> **Teşhis kuralı:** *"Garson devreye girdi ve sisteme sorunsuz, doğru bir girdi sağladı —
+> ama yine çalışmadıysa, sorun küplerde, **mutfaktadır**. O zaman mutfağı geliştiririz."*
+
+| gözlem | eksen | doğru iş |
+|---|---|---|
+| niyet yanlış/eksik alındı · *"anlayamadım"* · yabancı dil | **1 · sipariş** | garsona **devret** — route'a dil öğretme |
+| niyet **doğru** ama küp o soruyu karşılayamıyor | **2 · mutfak** | küpü / ölçüyü / boyutu **geliştir** |
+| `source=llm:*` ya da `cube=adhoc` görüldü | **2 · mutfak eksiği** | 🔴 bir çözüm değil, bir **arıza raporu** |
+
+🔴 **Discovery'nin her ateşlenmesi bir MUTFAK EKSİKLİĞİ RAPORUDUR.** Onu bir yol değil bir
+**ölçü** olarak okuyun: hangi yemeği yapamadığımızı söyler. Hedef, oranını **sıfıra**
+yaklaştırmaktır.
+
+⚠ **İki LLM'in güven derecesi ZITTIR ve bu bilinçlidir:** birincisi (**garson**) *asıl
+güvendiğimiz hakem*; ikincisi (**Discovery**) *hiç güvenmediğimiz*. Aynı teknolojinin iki
+role konması bir çelişki değil bir **iş bölümüdür**: biri **anlar**, öteki **uydurabilir**.
+
+> *Bir siparişi yanlış almakla, doğru alıp yapamamak aynı kusur değildir — ve aynı yerde
+> düzeltilmezler.*
+
 #### Sınırlar — kural neyi BOZMAZ
 
 * ⚠ **Garson yalnız ÇEVİRİR.** Sayıyı yine küp koyar; guard'lar · beyanlar · doğruluk
