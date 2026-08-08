@@ -381,9 +381,25 @@ def _cube_select_system(catalog: str) -> str:
         # dönemi yazacak bir ALAN yoktu. Model *"geçen çeyrek"*i hiçbir yere koyamıyordu,
         # tutarlı tek davranışı onu düşürmek ya da tüm soruyu reddetmekti. Takip yolunda
         # (`_cube_refine_user`) bu **çözülmüş** bir problemdi — tasarım oradan alındı.
-        "- TARİH HESAPLAMA (sistem yapar) — ama dönemi SÖYLE: sorudaki dönem ifadesini "
-        'AYNEN `period_expr` alanına kopyala (*«geçen çeyrek»*, *«yılbaşından bugüne»*). '
-        "Yoksa null bırak. `filters` içine tarih YAZMA.\n"
+        # 🔴 **`§48` — «AYNEN KOPYALA» YARIM BİR TALİMATTI ve yabancı dilde kusurluydu.**
+        #
+        # Ölçüldü: `show me total revenue by customer this year` → garson **oybirliğiyle**
+        # doğru çevirdi (`intent: 3 oy · 1 aday · kazanan 3 oy`, `{parti, toplam_ciro,
+        # dims:[musteri]}`) ama `period_expr` **"this year"** olarak geldi; Python'un
+        # `date_filters`'ı Türkçe-only olduğu için boş döndü ve kullanıcı *"hangi dönem
+        # için?"* gördü. Arapça `لهذا العام` ile aynı sonuç.
+        #
+        # ⊙ `ADR-0008 K3` (*"LLM tarih YAZMAZ"*) **doğru** ve korunuyor: tarihi yine
+        # Python hesaplıyor. Eksik olan, garsonun **asıl işiydi** — çeviri. Dönem ifadesi
+        # de kullanıcının dilinden **sistemin diline** çevrilmelidir; tıpkı ölçü ve boyut
+        # adları gibi.
+        #
+        # *Bir çevirmenden cümlenin yarısını çevirip yarısını olduğu gibi bırakmasını
+        # istemek, çevirinin ne işe yaradığını unutmaktır.*
+        "- TARİH HESAPLAMA (sistem yapar) — ama dönemi SÖYLE: dönem ifadesini "
+        "`period_expr` alanına yaz. Yoksa null bırak. `filters` içine tarih YAZMA.\n"
+        "- 🔴 DÖNEMİ **TÜRKÇEYE ÇEVİR** (`§48`): soru başka bir dildeyse dönem ifadesini sistemin dilinde yaz — `this year`→«bu yıl», `last quarter`→«geçen çeyrek», `هذا العام`→«bu yıl», `since January`→«ocaktan beri». Soru zaten Türkçeyse **AYNEN kopyala**. TARİHİ YİNE SEN HESAPLAMA — çeviriyorsun, hesaplamıyorsun.\n"
+
         "- timeDimensions'ı yalnız kullanıcı zaman KOVASI istediyse ekle "
         "(aylık/haftalık/günlük/trend) — bir dönem ifadesi kova demek değildir.\n"
         "- Sıralama/limit ekleme; yalnız ölçü + boyut + zaman + filtre seç.\n"
@@ -418,7 +434,10 @@ def _cube_refine_user(prev_cq_json: str, message: str) -> str:
         "KURALLAR:\n"
         "- TARİH HESAPLAMA ve tarih filtresi YAZMA (filters'a tarih dimension'ı EKLEME). "
         'Dönem ifadesi görürsen ("son 6 ay", "1 ocak 31 mart arası", "geçen bayram") '
-        "period_expr'e AYNEN kopyala — hesabı sistem yapar.\n"
+        "period_expr'e yaz — hesabı sistem yapar.\n"
+        # 🔴 `§48` — takip yolunda da aynı: garson dönemi **sistemin diline** çevirir.
+        "- 🔴 DÖNEMİ **TÜRKÇEYE ÇEVİR** (`§48`): soru başka bir dildeyse dönem ifadesini sistemin dilinde yaz — `this year`→«bu yıl», `last quarter`→«geçen çeyrek», `هذا العام`→«bu yıl», `since January`→«ocaktan beri». Soru zaten Türkçeyse **AYNEN kopyala**. TARİHİ YİNE SEN HESAPLAMA — çeviriyorsun, hesaplamıyorsun.\n"
+
         "- cube_query yalnız katalogdaki ölçü/boyut adlarını kullanır. Sıralama: "
         '"order":{"measure":"<ölçü>","direction":"asc|desc"}; limit: "limit":N '
         '("en düşük"→asc, "ilk 5"→limit 5).\n'

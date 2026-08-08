@@ -3259,3 +3259,55 @@ garsonun oraya dokunması `MIMARI`'nin *"LLM önerir, motor doğrular"* ilkesini
 anlayamadım"*, ikincisinde *"hangi dönem için?"*. Aynı soru, aynı sistem, **iki farklı
 cevap**. Bu, garsonun belirlenimsizliğinin **kullanıcıya sızdığını** gösterir ve
 `consistency_k=3` oylamasının onu tamamen örtmediğini.
+
+### 48.5 · Kök çözüm — **garson dönemi de ÇEVİRİR** *(ADR-0008 K3 korunarak)*
+
+Prompt'taki talimat *"dönem ifadesini **AYNEN kopyala**"* idi. Bu, garsondan **cümlenin
+yarısını çevirip yarısını olduğu gibi bırakmasını** istemekti.
+
+Yeni talimat (her iki prompt'ta da):
+
+> *Soru başka bir dildeyse dönem ifadesini **sistemin dilinde** yaz — `this year`→«bu
+> yıl», `هذا العام`→«bu yıl», `since January`→«ocaktan beri». Soru zaten Türkçeyse aynen
+> kopyala. **TARİHİ YİNE SEN HESAPLAMA** — çeviriyorsun, hesaplamıyorsun.*
+
+🔴 **`ADR-0008 K3` (*"LLM tarih YAZMAZ"*) bozulmadı, GEREĞİ yapıldı:** tarihi hâlâ Python
+hesaplıyor; garson yalnız **kullanıcının dilinden sistemin diline** çeviriyor — tıpkı
+ölçü ve boyut adlarında yaptığı gibi. Dönem, katalogda olmayan **tek** alandı ve tam da o
+yüzden yabancı dilde düşüyordu.
+
+### 48.6 · Doğrulama
+
+| # | soru | önce | **sonra** |
+|---|---|---|---|
+| `v48a` | `show me total revenue by customer this year` | *"anlayamadım"* / *"hangi dönem?"* | ✅ **7.552 ms · 8 satır** · `filters:[tarih ≥ 2026-01-01]` |
+| `v48b` | `ما هو إجمالي الإيرادات لهذا العام` | *"hangi dönem?"* | ✅ **12.374 ms** · `toplam_ciro` + doğru yıl filtresi |
+| `v48c` | `compare this year with last year revenue` | *"anlayamadım"* | 🔴 **hâlâ kırık** — ayrı kök *(aşağıda)* |
+
+## §49 · KALAN KÖK — **İKİ-DÖNEM KIYASI** *(sonraki demet)*
+
+Aynı desen iki dilde:
+
+| soru | sonuç |
+|---|---|
+| `compare this year with last year revenue` *(İngilizce)* | 🔴 *"anlayamadım"* |
+| `şubattan ocağa fire nasıl değişti` *(Türkçe)* | 🔴 yalnız **şubat** kaldı; *"ocağa"* düştü, `eksik_niyet:['trend']` |
+
+⊙ Yani kusur **dilden bağımsız**: `period_expr` **tek** bir dönem taşıyabiliyor; iki
+dönemli bir kıyas ifadesi ya yarısını kaybediyor ya tamamen çözülemiyor.
+
+⚠ Depoda karşılığı **var**: `kiyas_cebiri` · `compare_mode` · `referans` ekseni. Yani bu
+bir **mutfak eksiği değil**, bir **taşıma** eksiği: garsonun anladığı iki dönem `cq`'ya
+girecek alanı bulamıyor (`§AJ4.1`'in kayıtlı borcu: `referans` Intent-JSON şemasında yok).
+
+## §50 · D TURUNUN ÇALIŞAN TARAFI — kanıt için
+
+| # | soru | sonuç |
+|---|---|---|
+| `d4` | `hangi makine en çok bozuluyor **ya**` *(argo)* | ✅ `bakim` · `ariza_sayisi` · `dims:[makine]` · **`order:desc`** — 8.032 ms |
+| `d6` | `makinlerin **frie** oranlarnı listele` *(ağır yazım hatası)* | ✅ `fire_orani_yuzde` × `makine` — 3.924 ms |
+| `d7` | `which shift has the lowest efficiency and why` *(İngilizce)* | ◐ küp/boyut **doğru** (`oee` × `vardiya`, 4 ölçü); `lowest` sıralamaya, `why` kök-nedene **bağlanmadı** |
+| `d8` | `bu yıl müşteri bazında kar marjı ve bunu pasta yap` | ✅ veri doğru (`kar_marji_yuzde` × `musteri`, bu yıl) |
+
+⊙ Argo · ağır yazım hatası · yabancı dil — üçünde de **garson işini yaptı**. Bu, en üst
+kuralın lehine doğrudan kanıttır: route bu üç sınıfın hiçbirini tek başına çözemezdi.
