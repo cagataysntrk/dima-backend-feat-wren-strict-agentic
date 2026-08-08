@@ -5918,3 +5918,62 @@ Cevap `lab/nl_corpus.py`'nin vaka üretecindedir ve **ölçülmeden** M-1 inemez
 turun ilk işi budur.
 
 *Bir kazancı ölçemiyorsan, kazandığını da bilemezsin.*
+
+---
+
+## §96 · KÖK-M1b · **PAYDA NEDEN OYNADI** — ve bulgu, ölçüm aracının kendisi hakkında
+
+### §96.1 · İki yanlış hipotez, sonra ölçüm
+
+`parti`ye bir boyut eklemek korpus paydasını **2285 → 2266** (−19) ve `beyanli_kismi`'yi
+**51 → 32** (−19) düşürüyordu. İkisi de **birebir tekrarlanabilir** (iki M-1 koşumu aynı,
+dört taban koşumu aynı) — yani varyans değil.
+
+| # | hipotez | ölçüm |
+|---|---|---|
+| 1 | *"19 vaka **hata** veriyor"* (`toplam` sayacı `__hata__`da artmıyor) | ❌ raporda hata yok |
+| 2 | *"`vardiya` etiketleri **sızıntı** kuralını tetikliyor"* | ❌ sızan kelimeler `kar`(26)·`bakiye`(16)·`birim`(1) — **vardiya yok** |
+
+### §96.2 · Gerçek sebep — korpus **şemadan türeyen** bir kümedir
+
+`lab/gercek_dunya.py`:
+
+    uret_vakalar, kapsam_raporu = senaryo_uretec.uret(schema)
+    havuz += uret_vakalar
+
+Vakalar **şemadan üretiliyor**: (küp × ölçü × **boyut** × niyet) bileşimleri. Bir boyut
+eklemek yeni bileşimler doğurur → korpus **başka sorular sorar** → ne payda ne oran
+öncekiyle **doğrudan** kıyaslanabilir.
+
+⊙ Ve bu, neden `M-2` (9 küpe `default_measure`) ile `M-5` (65 `additive` beyanı) paydayı
+**hiç** oynatmadığını da açıklıyor: ikisi de yeni **bileşim** doğurmuyor. Bir **boyut**
+doğuruyor.
+
+### §96.3 · 🔴 Sonuç: bu kapı bir BOYUT eklemesini hakemleyemez
+
+> **Gerileme dedektörü sabit bir şema varsayar.** Menü değişince ölçtüğü **popülasyon**
+> da değişir; `doğru-cube %95.1 → %94.4` bir gerileme **gibi görünür** ama iki farklı
+> soru kümesi üzerinden hesaplanmıştır.
+
+⚠ Bu, *"payda kutsaldır"* kuralının **iptali değil**, kapsamının netleşmesidir. Kural
+şunu yasaklar: **kazanç uydurmak için paydayı kırpmak.** Burada payda kırpılmıyor,
+**yeniden tanımlanıyor** — ve bu ancak **bilerek ve yazılı** yapılabilir.
+
+### §96.4 · M-1'in önü nasıl açılır — üç şart
+
+1. **Yeni taban bilerek kaydedilir** (`M-2`'deki `CEVAPSIZ_RED` dağılımının aynısı:
+   sayı + **gerekçe** + neyin değiştiği).
+2. Kayıttan önce **cinsine bakılır**: yeni popülasyondaki *yanlış-cube* vakaları
+   **eskisinin üstüne mi** çıkıyor, yoksa yalnız yeni sorular mı eklendi? `gercek_dunya.md`
+   bu listeyi zaten yazıyor.
+3. `sessiz_yanlis` **artmamalı** — bu ölçüt popülasyondan bağımsızdır ve M-1 koşumunda
+   **12 → 11** oldu, yani **düştü**.
+
+⊙ Üçüncü madde önemli: M-1'in ölçülen tek doğruluk göstergesi **iyileşme** yönünde.
+
+**Karar:** `parti.vardiya` bu turda **inmedi** — taban yeniden tanımlamak bir kapı
+kararıdır ve tek başıma vermem. Ama artık **neyin ölçülmesi gerektiği yazılı**: yukarıdaki
+üç şart. Ve M-1'in kazancı ölçülmüş durumda (`§94.2`): `vardiya bazında fire oranı`
+**3 satır** · `p19` **24 satır** · ikisi de `route()` ile **LLM'siz**.
+
+*Bir ölçüm aracının sınırını bulmak, ölçtüğü şeyi bulmak kadar değerlidir.*
