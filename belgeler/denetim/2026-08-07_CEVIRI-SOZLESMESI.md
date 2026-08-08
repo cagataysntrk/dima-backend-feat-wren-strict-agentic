@@ -3532,3 +3532,61 @@ görüldü) — garson yanlış küpe gitti. Yani bu vaka bir mutfak eksiği **d
 ⊙ İkinci onarım bir yan kazanç verdi: borç artık **kendi dosyasında** ve o dosyanın
 docstring'i **kapanış koşulunu** taşıyor (*"`§56` yapıldığında bu dosya silinir"*).
 *Bir dosyanın adı, içindeki şeyin ne olduğunu söyler.*
+
+---
+
+# F TURU — 20 yeni özgün senaryo
+
+## §58 · ÖZEL TİP, GENEL SÖZCÜĞE YENİLİYORDU
+
+**Ölçüldü (`f19`):** `bunu **bar** grafikle göster` → `view_hint: **chart**`.
+Sıra kusuru: `_VIZ_MAP` önce taranıyor ve orada `grafi` **var**; `bar` ise `_VIZ_TAM`'da,
+yani **sonra**. Kullanıcı *"bar"* dedi, sistem *"grafik"* duydu.
+
+**Kural:** özel bir tür adı, genel bir tür sözcüğünü **yener**. `bar grafik` bir grafik
+isteğidir ama **hangi** grafik olduğu da söylenmiştir; genel olanı seçmek, cümlenin daha
+bilgilendirici yarısını atmaktır.
+
+> *İki ad aynı şeyi gösteriyorsa, dar olanı seçilir — geniş olan zaten onun içindedir.*
+
+## §59 · F turunun envanteri
+
+### Çalışan (11)
+
+| # | soru | sonuç |
+|---|---|---|
+| `f1` | `bu yıl hangi hat en çok çalıştı` | ✅ 9.543 ms · `order:desc` · 8 satır |
+| `f6`T1 | `kumaş cinsine göre fire` | ✅ **492 ms** |
+| `f7` | `wie hoch war der Umsatz dieses Jahr` *(**Almanca**)* | ✅✅ **13.935 ms** · `toplam_ciro` + yıl filtresi — `§48` **genelleşti** |
+| `f9` | `bu yıl günlük enerji tüketimi` | ✅ **523 ms** · 155 satır |
+| `f11` | `hangi operatör en az hata yapıyor` | ✅ `kalite` × `operator` · **`order:asc`** *(doğru kutup)* · 9 satır |
+| `f12` | `bu yıl aylık ciro` → `tabloya çevir` | ✅ 493 ms → **448 ms** · `view: table` |
+| `f13` | `ortalama sipariş büyüklüğü` | ✅ **490 ms** |
+| `f14` | `makine bazında oee` → `en düşük ikisini al` | ✅✅ 501 ms → `order:asc` + **`limit:2`** · 2 satır |
+| `f16` | `show me a breakdown of waste by fabric type` *(İngilizce)* | ✅ 4.178 ms · doğru `cq` |
+| `f18` | `haftanın hangi günü en verimliyiz` | ✅✅ `hafta_gunu` × `order:desc` · 6 satır |
+| `f19`T1 | `enerji yoğunluğu trendi` | ✅ **487 ms** |
+
+⊙ `f18` ayrıca bir **kanıt**: `hafta_gunu` boyutu **var** — yani `e16`'daki *"sadece
+hafta içi"* sessiz atlaması gerçek bir kusurdu, bir kapasite sınırı değil.
+
+### Kalan kökler
+
+| # | kanıt | sınıf |
+|---|---|---|
+| **RF-a** `kır` bir KIRILIM isteğidir | `f14`T3 `bunların duruş nedenlerini **kır**` → kök-neden reddi döndü (*"oran — katkı payı tanımsız"*); oysa istenen `neden` boyutunu eklemekti | 🗣 sipariş |
+| **RF-b** ölçü ikamesi **beyan edilmiyor** *(5. kanıt)* | `f4` `bakım maliyetleri` → **`ort_birim_maliyet`** (708 ms, `source=cube`, sessiz) | 🗣 sipariş |
+| **RF-c** saçma yazım önerisi *(3. kanıt)* | `f3` `kaç farklı müşteri` → *"«kac farkli» yerine «kac yas» mi?"* | 🗣 sipariş |
+| **RF-d** iki-dönem kıyası *(§49, 4. kanıt)* | `f2` `ilk çeyrek ile ikinci çeyreği karşılaştır` → **İK/bordro** küpü | 🗣 sipariş |
+| **RF-e** kapsam dışı soru Discovery'ye düşüyor | `f17` `sektör ortalamasının üstünde mi` → `adhoc` uydurma ölçü; oysa doğru cevap *"sektör kıyas verim yok"* | 🍳 mutfak sınırı |
+| **RF-f** ilişki sorusu ne cevaplanıyor ne reddediliyor *(3. kanıt)* | `f10` `üretim ile fire arasında ters orantı var mı` | 🗣 sipariş |
+| **RF-g** *"en iyi ve en kötü"* tekilleştirilmiyor | `f15` → 6 satır (tüm aylar) | 🗣 sipariş |
+| **RF-h** zamir tekilleştirmiyor *(2. kanıt)* | `f6`T2 `en yüksek **olanın** aylık trendi` → 42 satır (tüm kumaş cinsleri × ay) | 🗣 sipariş |
+
+⊙ **Eksen dağılımı:** 7 sipariş · 1 mutfak. `§0.0`'ın ayrımı bu turda da temiz çalıştı —
+ve dağılım, işin ağırlığının hâlâ **garson tarafında** olduğunu söylüyor.
+
+✅ **Mutfak eksikleri bu turda azaldı:** `ort_siparis_buyuklugu`·`enerji_yogunlugu_kwh_kg`·
+`rework_sayisi`·`hafta_gunu` hepsi **vardı** ve doğru bulundu. E turundaki dört `adhoc`
+düşüşünün üçü küp eksiğiydi; F turunda yalnız **bir** (`f17`, ve o da gerçek bir kapsam
+dışı).

@@ -611,8 +611,24 @@ def _viz_hint(q_norm: str) -> str | None:
     # `line` diye okunuyordu — yani kullanıcının **bıraktığı** tipi seçiyordu.
     # ⚠ Sıra bilgisi kelimenin kendisinde değil, `yerine`'nin **konumunda**dır.
     # *Bir tercihte, terk edilen ile seçilen aynı cümlede durur; ayıran şey edattır.*
-    _bulunan = [(q_norm.find(k), v) for k, v in _VIZ_MAP if k in q_norm]
-    _bulunan += [(m.start(), v) for r, v in _VIZ_TAM_RE if (m := r.search(q_norm))]
+    # 🔴 **`§58` — ÖZEL TİP, GENEL SÖZCÜĞE YENİLİYORDU.**
+    #
+    # Ölçüldü (`f19`): `bunu **bar** grafikle göster` → `view_hint: **chart**`. Sebep sıra:
+    # `_VIZ_MAP` önce taranıyor ve orada `grafi` **var** (`grafik`/`grafiğe` tutsun diye);
+    # `bar` ise `_VIZ_TAM`'da, yani **sonra** geliyor. Sonuç: kullanıcı *"bar"* dedi,
+    # sistem *"grafik"* duydu.
+    #
+    # ⊙ Kural: **özel bir tür adı, genel bir tür sözcüğünü yener.** `bar grafik` bir
+    # grafik isteğidir ama **hangi** grafik olduğu da söylenmiştir; genel olanı seçmek,
+    # cümlenin daha bilgilendirici yarısını atmaktır.
+    #
+    # *İki ad aynı şeyi gösteriyorsa, dar olanı seçilir — geniş olan zaten onun içindedir.*
+    _GENEL = {"chart"}
+    _bulunan = [(m.start(), v) for r, v in _VIZ_TAM_RE if (m := r.search(q_norm))]
+    _bulunan += [(q_norm.find(k), v) for k, v in _VIZ_MAP
+                 if k in q_norm and v not in _GENEL]
+    _bulunan += [(q_norm.find(k), v) for k, v in _VIZ_MAP
+                 if k in q_norm and v in _GENEL]
     _y = q_norm.find("yerine")
     if _y >= 0 and (_sonra := [x for x in _bulunan if x[0] > _y]):
         return min(_sonra)[1]
