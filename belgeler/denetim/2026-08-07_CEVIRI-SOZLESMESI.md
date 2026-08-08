@@ -3311,3 +3311,75 @@ girecek alanı bulamıyor (`§AJ4.1`'in kayıtlı borcu: `referans` Intent-JSON 
 
 ⊙ Argo · ağır yazım hatası · yabancı dil — üçünde de **garson işini yaptı**. Bu, en üst
 kuralın lehine doğrudan kanıttır: route bu üç sınıfın hiçbirini tek başına çözemezdi.
+
+## §51 · ŞÜPHE GARSONU ÇAĞIRIR — en üst kuralın ilk uygulaması *(KISMEN AÇIK)*
+
+### 51.1 · Ölçülen kök
+
+`_try_fresh_intent`'in garson dalı `route_hit is None` ile bağlıydı: **route herhangi
+bir şey bulduysa**, o şey ne kadar eksik olursa olsun, garson **hiç** devreye girmiyordu.
+
+| soru | route ne yaptı | kullanıcı ne gördü |
+|---|---|---|
+| `top 5 customers by profit this quarter` | ölçü+boyut buldu; `top 5` ve `this quarter` **düştü** | *"hangi dönem için?"* |
+| `en çok duruş yaşayan hattı bul ve nedenini **açıkla**` | 🔴 **uydurma** değer filtresi: `neden = "Açık"` *(«açıkla» → «Açık»)* | *"hangi dönem için?"* |
+| `geçen hafta hangi gün en verimliydi` | yanlış küpler önerdi (bakım/cari/kalite) | *"hangi ölçüyü istiyorsun?"* |
+
+⊙ `§0.0`: *"aşçı **kesinlikle** duyduysa hemen yapar; en ufak anlamama varsa garson
+gider."* **Yarım duymak bir duyma değildir** — ve `d10`'da yarım duyma bir **uydurmaya**
+dönüştü: sahte kesinlik garsonu engelledi.
+
+### 51.2 · Uygulama
+
+* Yüklem `niyet_tasima.route_supheli` — route'un `cq`'sunda dönem yoksa ya da üstünlük
+  istenip sıralama kurulmadıysa **şüphe** vardır.
+* Koşul `route_hit is None` → **`route_hit is None or _supheli`**.
+* ⚠ Garsonun sonucu **yalnız şüpheyi gideriyorsa** alınır: *bir devir, elde olanı
+  kötüleştirmemelidir.*
+
+### 51.3 · 🔴 VE İLK YAZIMIM KENDİ KURALINI ÇİĞNEDİ
+
+Şüphe yüklemi ilk hâlinde `\b(bu|gecen|son|ilk|…)\b` diye bir **Türkçe** dönem sözcüğü
+arıyordu. Ölçüldü: `top 5 customers by profit this quarter` → hiçbir Türkçe sözcük yok →
+şüphe **yok** sayıldı → garson **yine** çağrılmadı.
+
+> *Bir kuralın uygulaması, kuralın yasakladığı şeyi yapmamalıdır.*
+
+Dil-bağımsız hâle getirildi: **route dönemi hiç kuramadıysa şüphe vardır.** Kullanıcının
+dönemden söz edip etmediğini anlamak **garsonun** işidir, bu yüklemin değil.
+
+### 51.4 · Durum — açık, kanıtıyla
+
+✅ **Garson artık şüphede çağrılıyor.** Log kanıtı (`§47` sayesinde görünür):
+
+```
+intent: 3 oy · 1 farklı aday · kazanan 2 oy      ← garson çağrıldı
+```
+
+🔴 **Ama vaka kapanmadı:** cevap hâlâ *"hangi dönem için?"*. Garsonun `cq`'su da dönemsiz
+geldiği için *"yalnız daha iyisini al"* süzgeci onu reddetti. İki olası sebep, ikisi de
+ölçülmeli:
+
+1. `period_expr` üretilmedi ya da `bu çeyrek` çevirisi yapılmadı *(§48'in kapsamı)*
+2. uyum oranı **2/3** — eşiğin tam sınırında; oy dağılımı `1 farklı aday` olduğuna göre
+   üçüncü oy **çekimser** (`{cube:null}`) olmalı
+
+⊙ Sıradaki iş bu ikisini ayırmaktır — ve `§47`'nin log satırı artık bunu **tek turda**
+söyleyebilecek durumda.
+
+### 51.5 · D turunun tam envanteri (20 senaryo)
+
+**Çalışan (7):** `d4` argo · `d6` ağır yazım hatası · `d8` veri+grafik · `d11` hedef
+(kısmi) · `d13` **İngilizce takip** (5.011 ms, ölçü eklendi) · `d18` en iyi 3 + renk ·
+`d20` boş aralık beyanı
+
+**Kırık (kök sınıfına göre):**
+
+| kök | kanıt |
+|---|---|
+| **§49 iki-dönem kıyası** | `d3` `şubattan ocağa` · `d5` `compare this year with last year` · `d9` `geçen yıl ile bu yılı kıyasla` |
+| **§51 route'un yarım başarısı** | `d10` · `d12` · `d15` |
+| **ölçü ikamesi beyan edilmiyor** | `d16` *"fire **maliyetimiz**"* → `toplam_fire_kg` (**kg**, ₺ değil) · `c1` ortalama→toplam · `c9` kalite red→fire oranı |
+| **`analiz`/`ilişki` çapraz-konu reddi** *(§46 yarım kaldı)* | `d17` `…ilişkiyi **analiz et**` → *"«arasindaki analiz» başka bir konu"* |
+| **paylaş/özetle Discovery'ye düşüyor** | `d19` `bu raporu müdüre 3 cümleyle özetle` → `cube=adhoc` 🔴 **mutfak eksiği raporu** |
+| **yanlış kırılım beyanı** | `d9` `ciro **bazında**` → `eksik_niyet:['kirilim']` |

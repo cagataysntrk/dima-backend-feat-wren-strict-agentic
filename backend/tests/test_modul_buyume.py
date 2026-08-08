@@ -89,6 +89,20 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("faz-51-supheli-devir", 5,
+     "🔴🔴 **EN ÜST KURALIN (`§0.0`) UYGULAMASI — şüphe garsonu çağırır.** Koşul "
+     "`route_hit is None` idi: route **herhangi bir şey** bulduysa, o şey ne kadar eksik "
+     "olursa olsun garson hiç devreye girmiyordu. Ölçüldü: `top 5 customers by profit "
+     "this quarter` → route ölçü+boyut buldu, `top 5` ve `this quarter` düştü, kullanıcı "
+     "*«hangi dönem için?»* gördü — garsona **sorulmadan**. `en çok duruş yaşayan hattı "
+     "bul ve nedenini **açıkla**` → route **uydurma** bir değer filtresi üretti "
+     "(`neden = \"Açık\"`) ve o sahte kesinlik garsonu engelledi. "
+     "⊙ Kural: *«aşçı KESİNLİKLE duyduysa hemen yapar; en ufak anlamama varsa garson "
+     "gider.»* Yarım duymak bir duyma değildir. "
+     "⚠ **TAŞINAMAZ:** yüklem (`route_supheli`) **modülde** — burada kalan yalnız çağrı "
+     "(1), iz kaydı (2: `if` + `log`) ve devirden dönen sonucu **yalnız daha iyiyse** "
+     "kabul eden iki satır. Sonuncusu zorunlu: bir devir, elde olanı KÖTÜLEŞTİRMEMELİDİR. "
+     "Δ = 1 (şüphe) + 2 (iz) + 2 (daha-iyi süzgeci)"),
     ("gosterim-suzgeci/2", 2,
      "🔴 **İKİ SORU, İKİ LİSTE.** Curl'de ölçüldü: *«bu yıl hangi müşteri en çok iade etti»* → ***«hangi etti» kısmını anlayamadım***. Kullanıcı ne yaptığını anlamaz: `hangi` bir soru sözcüğü, `etti` bir yardımcı fiil — ikisi de **sorusunun konusu değil**. ⊙ `unknown` **kapsam kapısının** listesidir (*kaç kelimeyi açıklayamadım*); gösterim başka bir sorunun cevabıdır (*neyi anlamadım*). 🔴 Kapı onları **saymak zorunda**: dolgu sınıfına eklemek denendi ve `sessiz_yanlis` **12 → 13** çıktı (`§26.1`). Yani **sayılmalı ama gösterilmemeli**. ⚠ **TAŞINAMAZ:** süzgeç `unknown` ile `note`'un **ikisinin birden** elde olduğu tek yer; yardımcı (`_islev_sozcugu`) zaten modül düzeyine çıkarıldı. *Aynı kelime bir kapıda kanıt, bir cümlede gürültü olabilir.*"),
     ("kok-cozum/capa-degerleri", 7,

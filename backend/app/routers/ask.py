@@ -3159,7 +3159,22 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                                                           schema)) is not None:
             return _finish(AskResponse(
                 **_yetenek.yanit_alanlari(_sinir_llm_oncesi, body.question, schema)))
-        if route_hit is None and "ask_intent_first" in resolve_for(settings, principal):
+        # 🔴 **`§51` — ŞÜPHE DE GARSONU ÇAĞIRIR.** Bu koşul `route_hit is None` idi: route
+        # **herhangi bir şey** bulduysa, o şey ne kadar eksik olursa olsun, garson hiç
+        # devreye girmiyordu. Ölçüldü: `top 5 customers by profit this quarter` → route
+        # ölçü+boyut buldu, `top 5` ve `this quarter` düştü, kullanıcı *"hangi dönem
+        # için?"* gördü — garsona **sorulmadan**.
+        #
+        # `§0.0`: *"aşçı KESİNLİKLE duyduysa hemen yapar; en ufak anlamama varsa garson
+        # gider."* Yarım duymak bir duyma değildir.
+        #
+        # ⚠ Şüpheli yolda garsonun sonucu **yalnız daha iyiyse** alınır (aşağıda);
+        # şüphe yoksa davranış birebir bugünkü (`KURAL B`).
+        _supheli = route_hit is not None and _niyet_tasima.route_supheli(
+            route_hit.get("cube_query"), body.question or "")
+        if _supheli:
+            _log.info("intent: route ŞÜPHELİ → garson çağrılıyor (§51)")
+        if (route_hit is None or _supheli) and "ask_intent_first" in resolve_for(settings, principal):
             llm_probe = getattr(request.app.state, "llm", None)
             if llm_probe is not None and hasattr(llm_probe, "select_cube"):
                 try:
@@ -3228,7 +3243,11 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     if parsed and parsed.get("period_expr"):
                         _pe = parsed.pop("period_expr")
                         parsed, _ = _resolve_period(None, parsed, _pe, q_norm)
-                    if parsed:
+                    # ⚠ `§51` — ŞÜPHELİ yolda garsonun sonucu **yalnız şüpheyi
+                    # gideriyorsa** alınır. Almazsa route'un cevabı yerinde kalır: bir
+                    # devir, elde olanı **kötüleştirmemelidir**.
+                    if parsed and (not _supheli
+                                   or not _niyet_tasima.route_supheli(parsed, body.question or "")):
                         route_hit = {"cube_query": parsed, "order": None, "limit": None}
                         intent_source = "cube+llm"
                         if k > 1:
