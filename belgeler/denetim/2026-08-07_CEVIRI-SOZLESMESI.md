@@ -3383,3 +3383,74 @@ söyleyebilecek durumda.
 | **`analiz`/`ilişki` çapraz-konu reddi** *(§46 yarım kaldı)* | `d17` `…ilişkiyi **analiz et**` → *"«arasindaki analiz» başka bir konu"* |
 | **paylaş/özetle Discovery'ye düşüyor** | `d19` `bu raporu müdüre 3 cümleyle özetle` → `cube=adhoc` 🔴 **mutfak eksiği raporu** |
 | **yanlış kırılım beyanı** | `d9` `ciro **bazında**` → `eksik_niyet:['kirilim']` |
+
+---
+
+# E TURU — 20 özgün senaryo · thread'li · agentic
+
+## §52 · Envanter
+
+### Çalışan (8)
+
+| # | soru | sonuç |
+|---|---|---|
+| `e1`T1 | `makinelerin bu yılki verimliliğini göster` | ✅ **1.263 ms** `cube` |
+| `e1`T3 | `en zayıf olanı nasıl iyileştiririz` | ✅ **494 ms · 0 LLM** · dürüst matematiksel red (*"oran — katkı payı tanımsız"*) |
+| `e7` | `bu yıl haftalık fire` → `ısı haritası yap` | ✅ 514 ms → **469 ms** · `view_hint: heatmap` · rapor korundu |
+| `e13` | `bu yıl hangi renkte en çok fire veriyoruz` | ✅ 8.269 ms · `order:desc` · 5 satır |
+| `e16`T1 | `bu yıl günlük üretim trendi` | ✅ **478 ms** · 155 satır |
+| `e17` | `show downtime by line as a pie chart` *(İngilizce)* | ✅ küp+ölçü+boyut doğru (`makine_duruslari` × `hat`) |
+| `e18` | `en yüksek ve en düşük vardiyayı aynı grafikte` | ✅ 3 satır sıralı · `view: chart` |
+| `e20` | `bu yıl ciro` → `aylara böl` → `en kötü ayı bul…` | ✅ **uzun zincir**: 495 ms → 6 satır → `order:asc + limit:1` |
+
+### Kök sınıfları (5)
+
+**🔴 R-E1 · ÇAPRAZ-KONU REDDİ İŞLEV SÖZCÜKLERİNİ KONU SANIYOR — 4 kanıt (bu turun baskın kusuru)**
+
+| soru | reddedilen "konu" |
+|---|---|
+| `aylık üretim ve enerji tüketimini **birlikte** göster` | *"«birlikte» başka bir konu gibi görünüyor"* |
+| `which machines had the highest downtime last month` | *"«which had the highest last month» başka bir konu"* |
+| `bakım maliyeti ile arıza sayısı **ilişkili** mi` | *"«bakim maliyeti iliskili» başka bir konu"* |
+| `personel çalışma süreleri…` | *"«personel sureleri» başka bir konu"* |
+
+⊙ `§46` bu sınıfı **iki** dalda kapatmıştı (kapsam kapısı + katalog dökümü); **üçüncü**
+dal — `partial_unknowns` çapraz-konu reddi — açık kaldı. `birlikte`·`ilişkili` bağlaç ve
+sıfattır; İngilizce sözcükler ise **hiçbir konunun** adı değildir.
+
+**🔴 R-E2 · DISCOVERY ATEŞLEMESİ = MUTFAK EKSİĞİ RAPORU — 4 kanıt**
+
+| soru | uydurulan ölçü | süre |
+|---|---|---|
+| `ortalama parti süresi nedir` | `toplam_ortalama_parti_suresi_dk` | 16.655 ms |
+| `bu yıl enerji maliyetimiz ne kadar` | `toplam_toplam_enerji_maliyeti_tl` | **49.311 ms** |
+| `stok devir hızımız ne` | `toplam_stok_devir_hizi_kg` | 🔴 **63.526 ms** |
+| `bu çeyrek geçen çeyreğe göre nasıl` | `toplam_bu_ceyrek_oee` | 31.005 ms |
+
+⊙ `§0.0`'a göre bunlar **çözüm değil arıza raporudur**: mutfakta *ortalama parti süresi*,
+*enerji maliyeti*, *stok devir hızı* ölçüleri **yok**.
+🔴 Ve ikinci bir kusur: **Discovery yolunda bütçe yok** — 63,5 sn'lik bir tur `§33`'ün
+kapattığı iki bütçenin de dışında.
+
+**⚠ R-E3 · SESSİZCE UYGULANMAYAN FİLTRE** — `sadece hafta içi günleri göster` → **155
+satır aynen** döndü, filtre uygulanmadı, **beyan da edilmedi**. (`hafta_gunu` boyutu
+katalogda **var**.)
+
+**⚠ R-E4 · ÜSTÜNLÜK+SAYI yabancı dilde/parafrazda düşüyor** — `أفضل 5 آلات` (Arapça
+*"en iyi 5 makine"*) → küp/ölçü/boyut doğru, **sıra ve limit yok**; `en çok ciro getiren
+3 müşteri` → `order` var, `limit 3` yok.
+
+**⚠ R-E5 · ZAMİR KIRILIMI TAŞIMIYOR** — `bunların karlılığa etkisi ne` → küp doğru
+değişti (`oee`→`maliyet`) ama **`makine` kırılımı düştü**; sonuç tek bir toplam.
+
+## §53 · Bu turun okuması — iki eksenin ölçülmüş dağılımı
+
+`§0.0`'ın teşhis kuralı bu 20 senaryoyu **temiz** ayırıyor:
+
+| eksen | kaç kök | ne yapılacak |
+|---|---|---|
+| 🗣 **sipariş alma** (garson) | R-E1 · R-E4 · R-E5 | garsona devret / niyeti taşı — **route'a dil öğretme** |
+| 🍳 **mutfak** (küpler) | R-E2 *(4 eksik ölçü)* · R-E3 | küpe ölçü/filtre **ekle** |
+
+⊙ Yani bu tur, kullanıcının kurduğu ayrımın **işlediğini** gösteriyor: bir kusura bakıp
+hangi eksene ait olduğunu söylemek artık bir tartışma değil, bir **okuma**.
