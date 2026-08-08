@@ -38,6 +38,9 @@ GARSON = {
     # `§34` — üstünlük **yapısını** okur (`en` + sıfat) ve bir `cq` parçası üretir.
     # Hiçbir şey çalıştırmaz, motora dokunmaz: tanım gereği garson.
     "siralama.py",
+    # `§40` — ikizi; soruda tanınan niyet parçasını `cq`'ya yerleştirir. Aynı sınıf,
+    # aynı kapsam: dil okur, hiçbir şey çalıştırmaz.
+    "niyet_tasima.py",
 }
 
 #: 🍳 MUTFAK — veri/sorgu ile çalışır, **dil bilmez**.

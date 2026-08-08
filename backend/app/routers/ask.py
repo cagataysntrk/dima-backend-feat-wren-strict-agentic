@@ -28,6 +28,7 @@ from app import ask_jobs, cekirdek, followup, istek_kimligi, katman_b, typo_oner
 from app import soz as _soz
 from app import cube_router
 from app import siralama as _siralama
+from app import niyet_tasima as _niyet_tasima
 from app import eylem, gorsel_ekleme, pii, tercih, viz, yoy
 from app.answer import (
     _attach_next_steps,
@@ -2220,6 +2221,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # adına bitişikti (`3 makine`). *Bir niyetin taşınması, cümledeki kelime sırasına
         # bağlı olmamalıdır.*
         _siralama.tamamla(cq, body.question or "", cube_meta)
+        _niyet_tasima.esik(cq, body.question or "")   # `§40` — aynı sınıf, ikinci parça
         return _finish(AskResponse(
             question=body.question, source=None, note=_donem_soru, soz=_donem_soru,
             cube_query=cq,

@@ -2835,3 +2835,70 @@ her zaman kolaydır; `KAT-1` tam olarak bu kolaylıktan doğar.*
 | **G2** | zamir bir **değere** bağlanmıyor: `onun aylık trendini` → 11 makine × 6 ay = 66 satır | `b2` T2 |
 | **G4** | *"toplam ciro **nasıl hesaplanıyor**"* bir **tanım** sorusu; sistem *"hangi dönem için?"* diyor — katalog tanımı taşıyor, sorunun evi yok | `b17` |
 | **G5** | `bir de **fire ve oee** ekle` → yalnız `fire` eklendi; `ort_oee` chip'te duruyor ama sorguya girmedi | `b14` T2 |
+
+---
+
+# C TURU (başladı)
+
+## §40 · SESSİZ YANLIŞ — ve `§34`'ün kapatmadığı SINIF
+
+### 40.1 · Ölçüm
+
+```
+T1: fire oranı yüzde 5 üzerindeki partileri listele  →  "hangi dönem için?"
+T2: bu yıl                                            →  tek sayı: 19.79
+```
+
+Eşik uygulanmadı, liste gelmedi, **ve hiçbir şey beyan edilmedi** (`eksik_niyet` boş).
+Kullanıcı **19.79'u cevap sanabilir** — `sessiz_yanlis` sınıfının tanımı.
+
+### 40.2 · Ayrıştırıcı kusursuzdu — kayıp netleştirme turundaydı
+
+Tek atışlık sondaj:
+
+```
+_measure_threshold("fire orani yuzde 5 uzerindeki partileri listele")
+  → {'op': '>', 'value': 5.0}     ✅
+_measure_threshold("5 milyon uzerinde ciro yapan musterileri listele")
+  → {'op': '>', 'value': 5000000.0} ✅
+```
+
+Ve `Niyet` de eşiği **sayıyordu**. Kayıp yeri: uyum kapısı **o turun** sorusuna bakar ve
+o tur *"bu yıl"*dır — içinde hiçbir eşik yoktur.
+
+🔴 **Bu, `§34.2`'nin birebir aynı sınıfı.** Orada üstünlük niyeti aynı şekilde düşüyordu
+ve çözüm **yalnız `order`'a** uygulanmıştı.
+
+> *Bir sınıfı bir örneğinde kapatmak, sınıfı kapatmaz — yalnız bir sonraki örneğini daha
+> şaşırtıcı yapar.*
+
+### 40.3 · Kök çözüm — `app/niyet_tasima.py` + KAYITLI BİRLEŞME KURALI
+
+Yeni modül `esik(cq, q)` taşır ve docstring'i borcu **yazılı** bırakır:
+`siralama.tamamla` ile aynı sınıftır; **üçüncü** parça geldiğinde ikisi tek bir
+`parcalar` kaydında (`(ad, tanı, yerleştir)` üçlüsü) birleşir. Üç kopyaya izin yok.
+
+⚠ Kapı bunu `cube_router`'da bırakmadı (+11 satır → tavan kırmızı) ve **haklıydı**:
+kural bir modüle çıktı, harita sınıfı yazıldı (🗣 GARSON).
+
+### 40.4 · Doğrulama
+
+| soru | sonuç |
+|---|---|
+| `bu yıl fire oranı yüzde 5 üzerindeki makineleri listele` | ✅ 11 satır **doğru veri** + `eksik_niyet:['esik']` + dürüst not — **beyanlı kısmi**, sessiz yanlış değil |
+| netleştirme yolu | ✅ eşik artık `cq`'ya yerleşiyor (`esik_tamamla`), niyet turdan sağ çıkıyor |
+
+### 40.5 · Kayıtlı, HENÜZ KAPANMAMIŞ adım
+
+Eşik hâlâ yalnız **beyan ediliyor**, **uygulanmıyor**: `§34`'te `siralama.tamamla` hem
+netleştirmeye hem **ortak huniye** bağlanmıştı; `esik` şimdilik yalnız netleştirmede.
+Huniye bağlanması beyanlı-kısmiyi **tam cevaba** çevirir ve sıradaki adımdır.
+
+*Bir düzeltmeyi ikizinin yarısı kadar bağlamak, sınıfın yarısını açık bırakmaktır.*
+
+## §41 · C turunun diğer bulguları (kayıtlı)
+
+| # | soru | bulgu |
+|---|---|---|
+| `c1` | `kumaş türüne göre **ortalama** parti ağırlığı` | ⚠ `toplam_agirlik_kg` verildi — **toplulaştırma türü** `uyum.py`'nin altı ihlal sınıfında **yok** |
+| `c3` | `geçen yılın aynı dönemiyle kıyasla` | ✅ *"hangi ölçüyü istiyorsun?"* + chip'ler `period_expr: "geçen yılın aynı dönemi"` taşıyor |

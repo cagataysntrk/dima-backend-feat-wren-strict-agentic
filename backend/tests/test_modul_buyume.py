@@ -323,11 +323,12 @@ MUAFIYET_ASK_KOD = [
                       "(2). Reddi onarıma bırakmak 2 satır kazandırırdı ama bir yetki "
                       "sınırını 'güvenilir bir sorgu üretemedim' diye raporlardı — tavan, "
                       "dürüst olmayan bir mesajı SATIN ALMAZ"),
-    ("faz-34-siralama", 3,
+    ("faz-34-siralama", 4,
      "🔴 **ÜSTÜNLÜK SIRALAMASININ İKİ ÇAĞRI YERİ** — kuralın kendisi `app/siralama.py`'de "
      "(bu kapının istediği gibi **modüle çıkarıldı**); `ask()`'te kalan yalnız iki çağrı: "
      "ortak huni (`_answer_from_cube_query`, 2 satır — biri çağrı biri **iz kaydı**) ve "
-     "dönem netleştirmesi (1 satır). "
+     "dönem netleştirmesi (1 satır) — ve `§40`'ta aynı yere EŞİK taşıma çağrısı "
+     "eklendi (1 satır): niyet parçaları netleştirmeden birlikte sağ çıkmalı. "
      "⚠ **TAŞINAMAZ:** ikisi de *bir cq'nun hayatındaki AN*'dır, bir hesap değil. Huni "
      "zaten dört üreticinin tek buluşma noktası (kendi docstring'i: *«her yeni Intent-path "
      "kaynağında yeniden yazılmasın»*); netleştirme ise `cq`'yu **cevaba koymadan önceki** "
