@@ -986,6 +986,17 @@ def _intent_uyusmazlik_chipi(question: str, eksen: str, adaylar: list[dict],
     def _etiket(cq: dict) -> str:
         cm = cubes.get(cq.get("cube")) or {}
         cad = cm.get("display") or cq.get("cube") or "?"
+        if eksen is None:
+            # 🔴 **`§65` — ÇOK EKSENLİ UYUŞMAZLIK ARTIK SESSİZCE DÜŞMÜYOR.**
+            # Adaylar birden çok eksende ayrışıyorsa tek bir eksen adı yetmez; etiket
+            # **bileşik** kurulur (küp · ölçü · kırılım) ki kullanıcı **neyi** seçtiğini
+            # görsün. *Üç farklı cevabı olan bir soruya «anlamadım» demek, cevapları
+            # saklamaktır.*
+            _disp = cm.get("measure_synonyms_display") or {}
+            _lbl = cm.get("dimension_labels") or {}
+            _ol = " + ".join(_disp.get(m) or m for m in (cq.get("measures") or []))
+            _kr = " × ".join(_lbl.get(d) or d for d in (cq.get("dimensions") or []))
+            return " · ".join(x for x in (cad, _ol, _kr or None) if x)
         if eksen == "cube":
             return cad
         if eksen == "measures":
@@ -3267,7 +3278,15 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                             _uyum_notu = f"self-consistency %{uyum*100:.0f} ({k} örnek)"
                             typo_fix_trace = (f"{typo_fix_trace} · {_uyum_notu}"
                                               if typo_fix_trace else _uyum_notu)
-                    elif adaylar and eksen:
+                    # 🔴 **`§65`** — koşuldan `and eksen` **kaldırıldı**. Ölçüldü:
+                    # `intent: 3 oy · 3 farklı aday · kazanan 1 oy` → eksen birden çok
+                    # olduğu için chip üretilmiyor, dal **sessizce düşüyor** ve kullanıcı
+                    # *"hangi ölçüyü istediğini anlayamadım"* görüyordu — oysa garson
+                    # **üç somut cevap** vermişti. `§0.0`: *kullanıcı asla cevapsız
+                    # kalmaz.*
+                    # ⚠ Tahmin **yok**: adaylar chip olarak sunulur, seçen kullanıcıdır
+                    # ve seçim `/cube` ile **LLM'siz** koşar.
+                    elif adaylar:
                         # UYUŞMAZLIK TEK EKSENDE → tahmin etme, SOR. Faz 3.1'in cube
                         # beraberlik chip'iyle aynı felsefe: belirsizlik bir cevap değil,
                         # bir sorudur. Eksen birden çoksa chip anlaşılmaz olur → sessiz

@@ -3820,3 +3820,26 @@ Aynı biçimde: `kar marjı yüzde 20 **altında olan**` ✅ · `… **altındak
 `§49` iki-dönem kıyası **7. kanıt** (`i7`'de üstelik **yanlış** beyan: kullanıcı iki
 **ölçü** kıyaslamak istedi, sistem *"iki dönem"* dedi) · `kaç kg` ölçüye bağlanmıyor
 (`i4`) · çoklu ölçü tek cümlede (`i12` yalnız `toplam_ciro` aldı, `kar` düştü).
+
+### 65.4 · Kök çözüm ve doğrulama
+
+Koşuldan `and eksen` **kaldırıldı**: adaylar varsa, eksen tek olmasa da chip üretilir.
+Çok eksenli hâlde etiket **bileşik** kurulur (küp · ölçü · kırılım) ki kullanıcı **neyi**
+seçtiğini görsün.
+
+⚠ **Tahmin yok:** adaylar sunulur, seçen kullanıcıdır ve seçim `/cube` ile **LLM'siz**
+koşar — ikinci bir LLM turu doğmaz.
+
+| soru | önce | **sonra** |
+|---|---|---|
+| `bu yıl hangi makine en az duruş yaşadı` | *"…hangi ölçüyü istediğini anlayamadım"* | ✅ **tam cevap**: `makine_duruslari` × `makine` · **`order:asc`** *(doğru kutup)* · 11 satır |
+| `bu yıl en uzun süren 5 partiyi göster` | *"…anlayamadım"* | ◐ hâlâ netleştirme — ama **dürüst**: *parti süresi* diye bir ölçü katalogda yok |
+
+⊙ İkinci satır bir **eksen ayrımı** örneği: birincisi sipariş kusuruydu ve kapandı;
+ikincisi bir **mutfak** eksiği ve netleştirme orada **doğru** cevaptır.
+
+**Üç yeni kapı:** çok eksenli uyuşmazlık sessizce düşmeyecek · etiket çok eksende bileşik
+olacak · **oy dağılımı loglanmaya devam edecek** *(bu kusur tam olarak o satır sayesinde
+bulundu — log giderse kusur geri döner ve görünmez olur)*.
+
+> *Üç farklı cevabı olan bir soruya «anlamadım» demek, cevapları saklamaktır.*

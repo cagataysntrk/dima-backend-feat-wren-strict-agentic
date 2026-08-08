@@ -115,3 +115,44 @@ def test_BUTCE_SON_TARIH_OY_BASINA_PAY_DEGIL():
         "🔴 son tarih gönderimden SONRA hesaplanıyor — kuyruk süresi bütçe dışı kalır")
     assert "wait=False" in bsrc and "cancel_futures=True" in bsrc, (
         "🔴 çıkışta BEKLENİYOR — `§33`'ün kökü tam olarak buydu")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# §65 · GARSON CEVAP VERDİ, UYUM EŞİĞİ ONU ATTI
+#
+# Ölçüldü (I turu, beş senaryo): `intent: 3 oy · 3 farklı aday · kazanan 1 oy` →
+# kullanıcı *"hangi ölçüyü istediğini anlayamadım"* gördü. Garson SUSMADI, UYUŞMADI.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def test_COK_EKSENLI_UYUSMAZLIK_SESSIZCE_DUSMEZ():
+    """🔴 Adaylar varsa **eksen tek olmasa da** chip üretilir — sessiz düşüş yasak."""
+    import inspect
+
+    from app.routers import ask as ask_mod
+
+    src = inspect.getsource(ask_mod.ask)
+    assert "elif adaylar:" in src, (
+        "🔴 `elif adaylar and eksen:` geri geldi — çok eksenli uyuşmazlıkta garsonun "
+        "ürettiği adaylar SESSİZCE atılır ve kullanıcı 'anlamadım' görür (§65)")
+
+
+def test_ETIKET_COK_EKSENDE_BILESIK():
+    """⚠ Eksen yoksa etiket tek bir eksen adına dayanamaz — küp · ölçü · kırılım."""
+    import inspect
+
+    from app.routers import ask as ask_mod
+
+    src = inspect.getsource(ask_mod._intent_uyusmazlik_chipi)
+    assert "eksen is None" in src, "🔴 çok eksenli etiket dalı yok"
+
+
+def test_OY_DAGILIMI_LOGLANIYOR():
+    """🔴 `§47` — bu kusur ancak log sayesinde görüldü. Log giderse kusur geri döner
+    ve **görünmez** olur."""
+    import inspect
+
+    from app.routers import ask as ask_mod
+
+    src = inspect.getsource(ask_mod._select_consistent)
+    assert "farklı aday" in src, (
+        "🔴 oy dağılımı loglanmıyor — §65 tam olarak bu satır sayesinde bulundu")
