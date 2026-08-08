@@ -82,7 +82,47 @@ def gecerli_oneri(typo_fixes: list[dict[str, Any]], schema: dict,
     aday = next((f for f in typo_fixes or [] if f.get("kind") == "suggest"), None)
     if fiil_uydurmasi_mi(aday):
         return None
+    if zaten_katalogda_mi(aday, schema):
+        return None
     return aday if cevap_aciyor_mu(aday, schema, liste_kirilimi=liste_kirilimi) else None
+
+
+def zaten_katalogda_mi(aday: dict[str, Any] | None, schema: dict) -> bool:
+    """🔴 **`§61` — GEÇERLİ BİR TERİMİ «DÜZELTMEK» EN KÖTÜ ÖNERİDİR.**
+
+    ## Ölçülen kusur
+
+    | soru | öneri |
+    |---|---|
+    | `bu yıl **vardiyalara** göre fire oranı` | *"«vardiyalara gore» yerine «calisanlara gore» mi?"* |
+    | `bu yıl **kaç farklı** müşteriye satış yaptık` | *"«kac farkli» yerine «kac yas» mi?"* |
+    | `renk bazında ciro **dağılımı**` | *"«dagilimi» yerine «agirlik» mi?"* |
+
+    🔴 Birincisi en ağırı: **`vardiya` katalogda var** ve onlarca soruda doğru çalışıyor.
+    Sistem, kendi bildiği bir terimi *"acaba başka bir şey mi demek istedin"* diye
+    sorguluyor — yani kullanıcıya **kendi kataloğunu** yanlış tanıtıyor.
+
+    ## Kural
+
+    > Bir sözcük katalogda **karşılığı olan** bir terimi kapsıyorsa, o sözcük bir yazım
+    > hatası **değildir**. Öneri düşer.
+
+    ⚠ Ölçüt `_covers`'tır — yani `vardiyalara` → `vardiya` çekimini de yakalar. İkinci bir
+    eşleştirici yazılmaz (`KAT-1`): `cube_router` bu işin sahibidir.
+
+    *Bir sözlüğün kendi kelimesini yanlış sayması, sözlüğe duyulan güveni bitirir.*
+    """
+    span = str((aday or {}).get("from") or "").strip()
+    if not span:
+        return False
+    try:
+        from app.cube_router import _catalog_vocabulary, _covers, _norm
+        sn = _norm(span)
+        _kat = _catalog_vocabulary(schema)
+        return any(_covers(t, w) for t in _kat
+                   for w in sn.split() if len(w) > 2)
+    except Exception:                                  # noqa: BLE001 — öneri kararı düşmez
+        return False
 
 
 def fiil_uydurmasi_mi(aday: dict[str, Any] | None) -> bool:

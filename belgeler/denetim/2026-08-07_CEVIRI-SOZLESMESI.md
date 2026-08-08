@@ -3629,3 +3629,59 @@ taşıyor mu? *Bir türü eşitlikle sınamak, o türün bütün biçimlerini re
 |---|---|---|
 | `bu yılki fire maliyetimiz ne kadar` | sessizce `toplam_fire_kg` (**kg**) | ✅ *"Birim maliyet / kârlılık, parti ile ilgili görünüyor — hangi ölçüyü istiyorsun?"* |
 | `bu yıl birim maliyet ne kadar` *(yanlış-pozitif kontrolü)* | ✅ | ✅ **918 ms** · `ort_birim_maliyet` — beyan **yok**, doğru |
+
+---
+
+# G TURU — 20 yeni özgün senaryo
+
+## §61 · GEÇERLİ BİR TERİMİ *"DÜZELTMEK"* — en kötü öneri
+
+| soru | öneri |
+|---|---|
+| `bu yıl **vardiyalara** göre fire oranı` | 🔴 *"«vardiyalara gore» yerine «calisanlara gore» mi?"* |
+| `bu yıl **kaç farklı** müşteriye satış yaptık` | *"«kac farkli» yerine «kac yas» mi?"* |
+| `renk bazında ciro **dağılımı»** *(§43'te ayrı çözüldü)* | *"«dagilimi» yerine «agirlik» mi?"* |
+
+🔴 Birincisi en ağırı: **`vardiya` katalogda var** ve onlarca soruda doğru çalışıyor.
+Sistem, **kendi bildiği** bir terimi *"acaba başka bir şey mi demek istedin"* diye
+sorguluyordu — yani kullanıcıya **kendi kataloğunu yanlış tanıtıyordu**.
+
+**Kural:** bir sözcük katalogda karşılığı olan bir terimi **kapsıyorsa**, o sözcük bir
+yazım hatası **değildir**. Ölçüt `_covers` (çekimi de yakalar); sözlük `cube_router`'ın
+kendi `_catalog_vocabulary`'si — ikinci bir eşleştirici yazılmadı (`KAT-1`).
+
+> *Bir sözlüğün kendi kelimesini yanlış sayması, sözlüğe duyulan güveni bitirir.*
+
+**Doğrulama:** ikisinde de saçma öneri **kayboldu**; yerine dürüst beyan
+(`eksik_niyet:['kirilim']`) ve doğru küpleri sunan netleştirme geldi.
+
+## §62 · G turunun envanteri
+
+### Çalışan (13)
+
+`g1` parti sayısı · **`g4` `quel est le chiffre d'affaires de cette année` — FRANSIZCA
+✅✅ 7.710 ms** · `g5` en çok kâr eden ay (`order:desc`) · `g6` **olumsuzluk sınırı
+dürüstçe beyan** (*"«plansız» bir olumsuzluk ifadesi ve bunu henüz sorguya
+çeviremiyorum"*) · `g8` makine başına ort. duruş · `g9` `koyu renk` **değer filtresi
+uygulandı** · `g11` iki boyut + **`view: heatmap`** 35 satır · `g13` boş-aralık beyanı ·
+`g14` kâr marjı × müşteri · `g16` `en az fire` → **`order:asc`** · `g17` vardiya
+performansı · **`g19` `müşteri bazında ciro` → `ilk beşini pasta yap` → `order:desc` +
+`limit:5` + `view: pie`** ✅✅
+
+⊙ **Dört dil doğrulandı:** Türkçe · İngilizce · Arapça · Almanca · **Fransızca**.
+`§48`'in *"dönemi sistemin diline çevir"* talimatı **dilden bağımsız** olduğu için her
+yeni dil kendiliğinden çalışıyor — kullanıcının *"ne'ce yazarsa yazsın"* şartı artık
+**ölçülmüş** durumda.
+
+### Kalan kökler
+
+| # | kanıt | eksen |
+|---|---|---|
+| §49 iki-dönem kıyası *(**5. kanıt**)* | `g10` `geçen ay ile bu ayı ciro açısından kıyasla` → yalnız temmuz, `eksik:['kiyas']` | 🗣 sipariş |
+| `limit N` sayı boyut adına bitişik değilse düşüyor *(3. kanıt)* | `g12` `en yüksek **3 makinenin** duruş sürelerini de göster` | 🗣 sipariş |
+| trend sorusu zaman ekseni kurmuyor | `g18` `geçen 6 ayda üretim arttı mı azaldı mı` → `eksik:['trend']` | 🗣 sipariş |
+| gecikme kavramı yanlış küplere gidiyor | `g2` `hangi müşterinin siparişi en çok gecikti` | 🍳 mutfak |
+| `vardiyalara göre` kırılımı taşınmıyor *(§61 sonrası)* | `v61a` → `eksik:['kirilim']` | 🗣 sipariş |
+
+⊙ **Eksen dağılımı:** 4 sipariş · 1 mutfak. Mutfak eksikleri turdan tura azalıyor
+(E: 4 · F: 1 · G: 1).
