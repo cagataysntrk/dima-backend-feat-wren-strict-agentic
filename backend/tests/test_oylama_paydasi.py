@@ -41,9 +41,13 @@ def test_PAYDA_CEKIMSERLERI_DE_SAYABILIYOR():
     # (Intent bütçesi, §22.5/N). Aşan oy `None` olarak listeye girer — yani çekimserle
     # **aynı** muamele görür ve payda doğruluğu korunur. Kapı gevşetilmedi: ölçtüğü şey
     # hâlâ *"ham oy listesi tutuluyor mu"*.
-    assert "oylar = []" in src and "oylar.append(" in src, (
-        "🔴 ham oy listesi tutulmuyor — çekimser sayılamaz")
-    assert "TimeoutError" in src, "🔴 Intent bütçesi yok — aşan oy sonsuz bekler"
+    # ⟳ **ÇAPA İKİNCİ KEZ TAŞINDI (`§33`)** — uygulama `app/butce.py`'ye çıktı, çünkü
+    # `answer.py`'deki ikizi **aynı kusuru** taşıyordu (`KAT-1`). Ölçtüğü şey değişmedi:
+    # *"ham oy listesi tutuluyor mu"*. Aşan oy `ASIM` döner, çağıran onu `None`'a çevirir
+    # — yani çekimserle **aynı** muamele görür ve payda doğruluğu korunur.
+    assert "oylar = [" in src and "_butce.kos(" in src, (
+        "🔴 ham oy listesi tutulmuyor ya da bütçe sahibinden geçmiyor")
+    assert "_butce.ASIM" in src, "🔴 Intent bütçesi yok — aşan oy sonsuz bekler"
     assert "len(oylar) if _tam_payda else len(cands)" in src, (
         "🔴 payda seçimi yok — kusur ya hiç düzelmemiş ya bayraksız açılmış")
 
@@ -86,15 +90,28 @@ def test_BUTCE_SON_TARIH_OY_BASINA_PAY_DEGIL():
 
     ⚠ Son tarih **gönderimden önce** hesaplanmalı: `submit`'ten sonra hesaplamak, iş
     kuyrukta beklerken geçen süreyi bütçenin dışında bırakırdı.
+
+    ⟳ **VE SON TARİH DE YETMEDİ (`§33`).** Bu kapı yeşilken bütçe **yine** çalışmıyordu:
+    `with cf.ThreadPoolExecutor(...)` bloğu çıkışta `shutdown(wait=True)` çağırıyor ve
+    `result(timeout=)`'un kestiği beklemeyi **geri koyuyordu**. Canlı ölçüm: bütçe 20 sn,
+    tur **39.115 ms**. Uygulama `app/butce.py`'ye taşındı; çapa oraya çakıldı ve yanına
+    **davranışsal** bir kapı kondu (`test_BUTCE_GERCEKTEN_BEKLEMEZ`) — metin değil süre
+    ölçen. *Bir metin çapası, metnin anlattığı davranışı kanıtlamaz; onu yalnız iddia eder.*
     """
     import inspect
 
+    from app import butce as butce_mod
     from app.routers import ask as ask_mod
 
     src = inspect.getsource(ask_mod._select_consistent)
-    assert "_bitis = _time.monotonic() + _intent_azami" in src, (
+    assert "saniye=_intent_azami" in src, (
+        "🔴 Intent bütçesi bütçe sahibine verilmiyor — toplam süre sınırsız kalır")
+    bsrc = inspect.getsource(butce_mod.kos)
+    assert "bitis = _time.monotonic() + max(0.0, saniye)" in bsrc, (
         "🔴 bütçe hâlâ oy başına — toplam süre sınırsız kalır")
-    assert "_bitis - _time.monotonic()" in src, "🔴 kalan süre hesaplanmıyor"
-    i_bitis, i_submit = src.index("_bitis ="), src.index("ex.submit(one")
+    assert "bitis - _time.monotonic()" in bsrc, "🔴 kalan süre hesaplanmıyor"
+    i_bitis, i_submit = bsrc.index("bitis ="), bsrc.index("ex.submit(f)")
     assert i_bitis < i_submit, (
         "🔴 son tarih gönderimden SONRA hesaplanıyor — kuyruk süresi bütçe dışı kalır")
+    assert "wait=False" in bsrc and "cancel_futures=True" in bsrc, (
+        "🔴 çıkışta BEKLENİYOR — `§33`'ün kökü tam olarak buydu")

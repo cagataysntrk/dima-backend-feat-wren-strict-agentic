@@ -553,6 +553,21 @@ _VIZ_MAP = (
     ("ayri ayri", "facet"), ("icin ayri", "facet"), ("ayri grafik", "facet"),
     ("grafi", "chart"), ("chart", "chart"), ("gorsel", "chart"),
 )
+#: 🔴 **`§37` — GRAFİK TÜRLERİNİN İNGİLİZCE ADLARI, kelime sınırıyla.**
+#:
+#: Kullanıcının kendi örneği *"bar yerine pie gibi"*ydi ve **hiçbiri sözlükte yoktu**:
+#: `_VIZ_MAP` yalnız `pasta`/`sutun`/`cizgi` tanıyordu. Türkiye'de bu türler günlük
+#: konuşmada İngilizce adlarıyla anılır; `pasta`'yı tanıyıp `pie`'ı tanımamak, aynı
+#: nesnenin bir adını bilip öbürünü bilmemektir.
+#:
+#: ⚠ **Ayrı liste, çünkü ayrı eşleşme kuralı:** `_VIZ_MAP` alt-dize eşler (`grafi` →
+#: `grafik`/`grafiğe` tutsun diye). Aynı kuralı `bar`'a uygulamak **`barkod`**'u grafik
+#: isteği sanardı. Bunlar tam kelime eşleşir — ve bu bir katılık değil, kısalıklarının
+#: doğal bedelidir (`§32`'nin dersi: *kısa bir dizge her yere sığar*).
+_VIZ_TAM = (("bar", "bar"), ("pie", "pie"), ("line", "line"),
+            ("donut", "pie"), ("halka", "pie"), ("scatter", "scatter"),
+            ("area", "area"), ("alan grafi", "area"))
+_VIZ_TAM_RE = tuple((re.compile(rf"\b{re.escape(k)}\b"), v) for k, v in _VIZ_TAM)
 #: Görünüm kelimelerini SÖKEN desen. Bir takip mesajı yalnız görünüm istiyorsa
 #: (`"pasta grafik"`) geriye anlamlı kelime kalmaz; `"pasta grafik olarak müşteri
 #: bazında"` gibi bir istek ise YAPISAL bir düzenlemedir ve normal zincire gitmelidir.
@@ -564,15 +579,47 @@ _VIZ_LABELS = {"chart": "grafik", "table": "tablo", "line": "çizgi grafik",
                "facet": "panelli görünüm"}
 
 
+#: 🔴 **`§37` — İSTEĞİN KENDİ İŞLEV SÖZCÜKLERİ DE SÖKÜLÜR.**
+#:
+#: Ölçüldü, iki tur, iki yön: `bunu pasta grafik yap` (6.520 ms) ve `çizgi yerine bar yap`
+#: (8.633 ms) — **ikisi de LLM'e gitti ve grafik değişmedi**. Oysa saf-görünüm dalı
+#: `:3663`'te **vardı** ve tam doğru şeyi yapıyor (raporu LLM'siz aynen döndürüp yalnız
+#: `view_hint`'i değiştiriyor). Ateşlenmedi çünkü kapsam kapısı artakalanı reddetti:
+#: `bunu pasta grafik yap` → artakalan **`bunu`**; `çizgi yerine bar yap` → **`yerine`**.
+#:
+#: ⊙ Ve bu artakalanlar **isteğin dilbilgisidir**: işaret zamiri hangi raporu, `yerine`
+#: hangi yönü söyler. İkisi de bu dalın kendi ayrıştırıcısı tarafından **tüketilir** —
+#: yani depoda ölçülmüş *"ayrıştırıcı tüketti → bilinen sayılır"* kuralının aynısı.
+#:
+#: ⚠ Kapsam **dar**: bu desen YALNIZ `_viz_hint()` bir tip döndürdüğünde, yani soru zaten
+#: bir görünüm isteğiyken kullanılır. Genel kapsam kapısına dokunmaz.
+#:
+#: *Bir isteği anlamayı, isteğin kendi kelimelerinin engellemesi olmaz.*
 _VIZ_TEMIZ_RE = re.compile(
     "|".join(sorted((re.escape(k) for k, _ in _VIZ_MAP), key=len, reverse=True))
-    + r"|\b(grafik|gorunum|olarak|ver|yap|goster|cevir|istiyorum|lutfen)\b")
+    + "|" + "|".join(sorted((rf"\b{re.escape(k)}\b" for k, _ in _VIZ_TAM),
+                            key=len, reverse=True))
+    + r"|\b(grafik|gorunum|olarak|ver|yap|goster|cevir|istiyorum|lutfen"
+    + r"|yerine|donustur|olsun|gorunsun|sekline|halinde"
+    + r"|bunu|sunu|bunlari|bu|su|onu)\b")
 
 
 def _viz_hint(q_norm: str) -> str | None:
-    for k, v in _VIZ_MAP:
-        if k in q_norm:
-            return v
+    # 🔴 `§37` — *"ÇİZGİ **YERİNE** BAR"* → istenen **ikincisidir**.
+    # Ölçüldü: bu sıralamada ilk eşleşme kazanıyordu ve `çizgi yerine bar yap` isteği
+    # `line` diye okunuyordu — yani kullanıcının **bıraktığı** tipi seçiyordu.
+    # ⚠ Sıra bilgisi kelimenin kendisinde değil, `yerine`'nin **konumunda**dır.
+    # *Bir tercihte, terk edilen ile seçilen aynı cümlede durur; ayıran şey edattır.*
+    _bulunan = [(q_norm.find(k), v) for k, v in _VIZ_MAP if k in q_norm]
+    _bulunan += [(m.start(), v) for r, v in _VIZ_TAM_RE if (m := r.search(q_norm))]
+    _y = q_norm.find("yerine")
+    if _y >= 0 and (_sonra := [x for x in _bulunan if x[0] > _y]):
+        return min(_sonra)[1]
+    if _bulunan:
+        # ⚠ Sıra `_VIZ_MAP`'in kendi sırasıdır (`tablo` → `pasta` → …), konum değil:
+        # *"dökümü pasta grafik yap"* derse pasta kazanmalı. Yalnız `_VIZ_TAM`
+        # eşleşmeleri sona eklenir — tam-kelime oldukları için çakışmaları nadirdir.
+        return _bulunan[0][1]
     # FAZ 2a-5 — LİSTE NİYETİ BİR GÖRÜNÜM NİYETİDİR. *"listele"* / *"dökümü"* / *"detay"*
     # diyen kullanıcı SATIRLARI görmek istiyor; deterministik grafik kararı (ADR-0024) o
     # sonuca `bar` diyor ve teknik olarak haklı — ama kullanıcının AÇIKÇA söylediği şey

@@ -123,8 +123,21 @@ def bos_mu(result: dict | None, cube_query: dict | None) -> bool:
     *Boş bir küme üstündeki toplam, bir sayı değil bir yokluktur — ve yokluk «1 satır»
     diye sunulamaz.*
     """
-    r = (result or {}).get("rows") or []
-    if not r or (result or {}).get("row_count") == 0:
+    # 🔴 **ÖLÇÜLMEMİŞ ≠ BOŞ — ve bu satır bir GERİLEMEYİ onarıyor.**
+    #
+    # İlk yazımda `result is None` de "boş" sayılıyordu. Tam süit bunu yakaladı
+    # (`test_execute_false_sql_uretir_ama_calistirmaz`): `execute=false` ile sorgu
+    # **hiç çalıştırılmaz**, `result` `None`'dır — ve "boş" denince boş-sonuç notu
+    # devreye girip veri aralığını ölçmek için **SQL çalıştırıyordu**. Yani
+    # *"çalıştırma"* diyen bayrak, tam da benim eklediğim satır yüzünden çalıştırıyordu.
+    #
+    # ⊙ Bu, `§33`'ün `ASIM is not None` dersinin birebir tekrarı: iki farklı sebebi tek
+    # değere çökertmek ikisini de kaybettirir. *Bir ölçüm yapılmadıysa «boş» denemez;
+    # ölçülmemiş bir küme, boş bir küme değildir.*
+    if result is None:
+        return False
+    r = result.get("rows") or []
+    if not r or result.get("row_count") == 0:
         return True
     olculer = [m for m in ((cube_query or {}).get("measures") or []) if m]
     gorulen = [(s, m) for s in r if isinstance(s, dict) for m in olculer if m in s]

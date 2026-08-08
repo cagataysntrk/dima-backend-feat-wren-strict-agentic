@@ -35,6 +35,9 @@ GARSON = {
     "diyalog.py",         # G2 — slot durumu; saf fonksiyon, LLM YOK, motora dokunmaz
     "ek.py",              # G7 — Türkçe ek ÜRETİMİ (doğrulama değil); saf, LLM YOK
     "sinonim_onerici.py", "archetypes.py", "starters.py",
+    # `§34` — üstünlük **yapısını** okur (`en` + sıfat) ve bir `cq` parçası üretir.
+    # Hiçbir şey çalıştırmaz, motora dokunmaz: tanım gereği garson.
+    "siralama.py",
 }
 
 #: 🍳 MUTFAK — veri/sorgu ile çalışır, **dil bilmez**.
@@ -129,6 +132,11 @@ def test_SINIFSIZ_MODUL_BIRAKILAMAZ():
         "uyum.py": "🚪 niyet↔sorgu uyum kapısı (beyan-açık)",
         "pii.py": "🚪 maskeleme, tek çıkış",
         "planner.py": "🚪 dört kapı (kayıt·yetki·det-önce·bütçe)",
+        # 🚪 `§33` — **duvar-saati bütçesi.** Ne dil okur ne sorgu kurar; yalnız bir
+        # beklemeyi keser. `planner.py`'nin bütçesi ADIM/SORGU sayar, bu SANİYE sayar —
+        # ikisi farklı büyüklüklerdir ve tek modülde toplanmaları onları karıştırırdı.
+        # *Ölçüsü farklı olan iki sınır, aynı sahibin altında birbirini gizler.*
+        "butce.py": "🚪 duvar-saati bütçesi — beklemeyi keser, işi öldürmez (§33)",
         "tools.py": "🚪 araç kaydı",
         "cube_router.py": "🚪+🗣 route() garson · parse_cube_query KAPI — bilinçli, §1.2c",
         "answer.py": "🚪 KAPANIŞ ZİNCİRİ — her cevap `seal()`'den geçer",

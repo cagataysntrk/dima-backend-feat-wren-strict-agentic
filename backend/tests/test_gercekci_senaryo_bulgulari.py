@@ -61,7 +61,11 @@ def test_A_MEVCUT_NOTU_EZMEZ(client):
 
     # KOŞULUN KENDİSİ aranır, "yakınında bir yerde" değil: yorum bloğu uzadıkça kayan
     # bir pencere, kapının doğru şeyi ölçtüğünü GARANTİ ETMEZ (bu turda tam olarak oldu).
-    kosul = re.search(r'if \(result or \{\}\)\.get\("row_count"\) == 0([^\n:]*):',
+    # ⟳ **ÇAPA TAŞINDI (`§35`)** — koşul `row_count == 0`'dan `bos_mu`'ya genişledi:
+    # gruplamasız bir toplulaştırma boş kümede **bir NULL satır** döndürür, sıfır satır
+    # değil, ve eski koşul boşluğun en sık biçimini kaçırıyordu. Çapa silinmedi,
+    # yüklemin yeni adına **yeniden çakıldı**; koruduğu şey aynı: mevcut not ezilmemeli.
+    kosul = re.search(r'if _va\.bos_mu\(result, cq\)([^\n:]*):',
                       inspect.getsource(m.ask))
     assert kosul, "boş-sonuç kapısı bulunamadı — desen mi değişti?"
     assert "not resp.note" in kosul.group(1), (

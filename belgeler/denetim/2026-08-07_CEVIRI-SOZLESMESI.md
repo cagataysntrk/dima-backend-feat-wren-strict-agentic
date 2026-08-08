@@ -2645,3 +2645,125 @@ Bir sonucu yanlışlıkla *"kayıt yok"* diye örtmek, göstermekten kötüdür.
 
 Kapılar: 6 yeni (tek-NULL · çok-ölçülü NULL · bir dolu değer varsa boş **değil** ·
 fail-open · `interpret` yokluğu sonuç sanmaz · **yüklem tek sahipli**).
+
+## §36 · *"NEDEN"* SORUSU BİR SIRALAMAYA ÇEVRİLİYORDU — kök: eksik bir ZAMİR SINIFI
+
+### 36.1 · Ölçüm
+
+`b2` zinciri, T3: `neden diğerlerinden yüksek` → `cq`'ya yalnız `order:{desc}` eklendi,
+satırlar **aynı 66**, anlatı **önceki turun birebir kopyası**, süre **23.646 ms**.
+Kullanıcı yeni bir soru sordu, **eski cevabı** aldı.
+
+### 36.2 · İki aday kök — ve hangisi olduğunu TEK curl ayırdı
+
+Bu depo *"bir kusuru doğru teşhis edip yanlış katmanda düzeltme"*yi iki kez ödedi. Bu
+yüzden tahmin edilmedi, **ayrıştırıldı**: aynı soru **zamirli** yazıldı.
+
+```
+bu neden yüksek   →  2.202 ms · 0 LLM · GERÇEK kök-neden:
+   «iplik grubu: Örme Kumaş — 35.583 kg arttı (net değişimin %100'ü)»
+   «hat: RAM 2 — 19.111 kg arttı (net değişimin %53,7'si)»
+```
+
+⊙ **Makine kusursuz çalışıyordu. Kapı açılmıyordu.**
+
+### 36.3 · Kök
+
+`followup.py`'nin takip şartı `_ISARET_ZAMIRI` — yani yalnız **işaret** zamirleri
+(`bu`·`şu`·`buradaki`). *"Diğerleri"* bir **belgisiz zamirdir** ve listede yoktu;
+`_kisa_soru` eşiği 2 kelime, cümle 3 kelime; `_capaya_deger` de tutmadı (*"diğerlerinden"*
+bir boyut değeri değil).
+
+🔴 Ve bu bağlamda belgisiz zamir, işaret zamirinden **daha güçlü** bir çapadır:
+*"şu"* bir şeyi işaret eder, *"diğerleri"* **ekranda kalan satırlardan başka bir şey
+olamaz**.
+
+⚠ Gövde eşlemesi (`diger|oteki|beriki` + herhangi bir ek) bilerek: çekimleri tek tek
+yazmak bir **kelime listesi** olurdu, gövdeyi yazmak bir **kapalı sınıf** — `ADR-0008`'in
+açıkça serbest bıraktığı şey. Aynı biçim `_USTUNLUK_RE`'de de kullanılıyor.
+
+⚠ Kapsam `TUR_NEDEN` + `baglam_var` ile sınırlı: `ANLAT`/`TAKİP`'te aynı gevşeme konu
+değişimini çalardı (*"diğer makineleri göster"* yeni bir sorudur).
+
+### 36.4 · Doğrulama
+
+| | önce | **sonra** |
+|---|---|---|
+| `neden diğerlerinden yüksek` | 23.646 ms · LLM · sıralamaya çevrildi · anlatı kopya | ✅ **1.033 ms · 0 LLM** · *«Örme Kumaş net değişimin %100'ü · RAM 2 %53,7»* |
+
+**23 kat hızlı — ve cevabı sistem veriyor, LLM yalnız garson.**
+
+## §37 · GRAFİK DÖNÜŞÜMÜ — dal VARDI, ateşlenmiyordu
+
+### 37.1 · Ölçüm
+
+| soru | ne oldu | süre |
+|---|---|---|
+| `bunu pasta grafik yap` | LLM'e gitti, `view_hint` yok, grafik değişmedi | 6.520 ms |
+| `çizgi yerine bar yap` | LLM'e gitti, grafik değişmedi | 8.633 ms |
+
+### 37.2 · İlk teşhisim YANLIŞTI — ve neredeyse ikinci bir sahip yazıyordum
+
+*"Sunum talebinin evi yok"* diye teşhis edip `app/gorsel_talep.py` diye **yeni bir modül**
+yazdım. Sonra kaynağı okudum: `ask.py:3648`'de **`SAF GÖRÜNÜM DEĞİŞİKLİĞİ`** dalı zaten
+var ve tam doğru şeyi yapıyor — raporu **LLM'siz aynen** döndürüp yalnız `view_hint`'i
+değiştiriyor. Modül silindi.
+
+> *Bir evi olmadığını sanıp ikinci bir ev yapmak, `KAT-1`'in kendisidir — ve bu turda
+> bir dosya yazıldıktan sonra fark edildi.*
+
+### 37.3 · Gerçek kök — İKİ tane, ikisi de dar
+
+**(a) İsteğin kendi işlev sözcükleri kapsam kapısını kapatıyordu.** Dalın koşulu
+*"görünüm kelimeleri sökülünce geriye anlamlı kelime kalmasın"*. Ama artakalan
+`bunu pasta grafik yap` → **`bunu`**, `çizgi yerine bar yap` → **`yerine`** idi. İkisi de
+**isteğin dilbilgisidir**: işaret zamiri hangi raporu, `yerine` hangi yönü söyler —
+ve ikisi de bu dalın kendi ayrıştırıcısı tarafından **tüketilir**. Depoda ölçülmüş
+*"ayrıştırıcı tüketti → bilinen sayılır"* kuralının aynısı.
+
+**(b) `bar` ve `pie` sözlükte HİÇ YOKTU.** `_VIZ_MAP` yalnız `pasta`·`sutun`·`cizgi`
+tanıyor. Kullanıcının kendi örneği *"bar yerine pie gibi"*ydi ve **iki kelimesi de
+tanınmıyordu**. Ayrıca `çizgi yerine bar` sorusunda ilk eşleşme kazanıyor, yani sistem
+kullanıcının **terk ettiği** tipi seçiyordu.
+
+⚠ Yeni adlar **ayrı listede** (`_VIZ_TAM`), çünkü **ayrı eşleşme kuralı**: `_VIZ_MAP`
+alt-dize eşler (`grafi` → `grafik`/`grafiğe` tutsun diye); aynı kuralı `bar`'a uygulamak
+**`barkod`**'u grafik isteği sanardı. `§32`'nin dersi burada da geçerli: *kısa bir dizge
+her yere sığar.*
+
+### 37.4 · Doğrulama
+
+| soru | önce | **sonra** |
+|---|---|---|
+| `bunu pasta grafik yap` | 6.520 ms · LLM · değişiklik yok | ✅ **439 ms · 0 LLM** · `view_hint: pie` · iz: *«saf görünüm değişikliği → pie (rapor korunur, LLM'siz)»* |
+| `çizgi yerine bar yap` | 8.633 ms · LLM · değişiklik yok | ✅ **442 ms · 0 LLM** · `view_hint: **bar**` — doğru yön |
+
+## §38 · TAM KAPININ FATURASI — ve ÖLÇÜM ARACINA SIZAN KALINTI
+
+`--hepsi` koşuldu: korpus **yeşil** (`sessiz_yanlis` 12 sabit) ama süit
+**5 kırmızı + 15 error** verdi. Beşi de benimdi ve beşi de haklıydı:
+
+| # | ne | sınıf |
+|---|---|---|
+| 1 | `execute=false` iken `bos_mu` "boş" deyip **SQL çalıştırıyordu** | 🔴 **gerçek gerileme** |
+| 2 | `butce.py`·`siralama.py` **sınıfsız modül** (garson/mutfak/muaf) | harita borcu |
+| 3 | boş-sonuç çapası `row_count == 0` metnini arıyordu | çapa kayması |
+| 4-5 | oylama kapıları `oylar = []` / `_bitis = …` metnini arıyordu | çapa kayması |
+
+🔴 **(1) en pahalısı ve dersi `§33`'ün birebir tekrarı:** `result is None` (ölçüm
+yapılmadı) ile `rows == []` (ölçüldü, boş) aynı değere çökertilmişti. *Bir ölçüm
+yapılmadıysa «boş» denemez; ölçülmemiş bir küme, boş bir küme değildir.*
+
+### 38.1 · 15 error — ölçüm aracına sızan test kalıntısı
+
+Hepsi `test_measure_preview`/`promote`'un teardown'ıydı: geçici bir eval vakası
+(`faz2d-test-gecici-vaka`) **altın dosyada kalmıştı**.
+
+⊙ Sebep bende: iki kapı koşumunu (`kkR`, `kkS`) **ortasında öldürdüm** — teardown
+çalışmadı — ve sonraki `git add -A` kalıntıyı **commit etti**. Yani bir test fikstürü
+ölçüm korpusuna kalıcı olarak girdi.
+
+> *Bir kapıyı yarıda kesmek onu koşmamaktan kötüdür: koşmayan kapı bir şey söylemez,
+> yarıda kesilen kapı arkasında bir kalıntı bırakır — ve `git add -A` onu gerçek sanar.*
+
+Kalıntı `eval/cases.yaml`'dan silindi; 15 error'ın hepsi kapandı.

@@ -164,6 +164,24 @@ _ANLAT = ("analiz et", "analiz eder", "analizini", "yorumla", "yorumlar misin",
 _ISARET_ZAMIRI = ("bu", "bunu", "bunun", "buradaki", "su", "sunu", "sunun",
                   "yukaridaki", "bu rapor", "bu tablo", "bu grafik", "bu sonuc")
 
+#: 🔴 **BELGİSİZ ZAMİRLER — dilbilgisinin KAPALI sınıfı (`ADR-0008` bunu açıkça serbest
+#: bırakır: kelime listesiyle dile yetişilmez, ama gramerin kapalı sınıfları listelenir).**
+#:
+#: Ölçüldü (`§36`): `neden diğerlerinden yüksek` → kök-neden yoluna **hiç girmedi**,
+#: LLM'e düştü (23.646 ms) ve cevap önceki turun **birebir kopyası** oldu. Oysa aynı soru
+#: zamirli yazılınca (`bu neden yüksek`) sistem **2.202 ms**'de gerçek bir katkı
+#: ayrıştırması üretti: *«iplik grubu: Örme Kumaş — net değişimin %100'ü»*.
+#:
+#: ⊙ Yani makine kusursuz çalışıyordu; kapı açılmıyordu. Ve açılmama sebebi
+#: `_ISARET_ZAMIRI`'nin yalnız **işaret** zamirlerini tanımasıydı — oysa *"diğerleri"*
+#: de bir zamirdir ve bu bağlamda **daha güçlü** bir çapadır: *"şu"* bir şeyi işaret
+#: eder, *"diğerleri"* **ekranda kalan satırlardan başka bir şey olamaz**.
+#:
+#: ⚠ Gövde eşlemesi bilerek: `diger`·`digerleri`·`digerlerinden`·`digerine` hepsi aynı
+#: zamirin çekimidir. Çekimleri tek tek yazmak bir **kelime listesi** olurdu; gövdeyi
+#: yazmak bir **kapalı sınıf**tır. Aynı biçim `_USTUNLUK_RE`'de de kullanılıyor.
+_BELGISIZ_ZAMIR = re.compile(r"\b(diger|oteki|beriki)\w*\b")
+
 # YAPISAL düzenleme sinyalleri — bunlar varsa soru sorguyu DEĞİŞTİRMEK istiyordur ve
 # konuşma sınıfına ALINMAZ. Çakışma gerçektir: "aylık neden düştü?" hem düzenleme hem
 # konuşma gibi görünür; öncelik YAPISALDA olmalıdır çünkü kullanıcı yeni sayılar bekler.
@@ -258,8 +276,15 @@ def sinifla(soru: str, *, baglam_var: bool,
                 # taşımaz zaten, ama sınırı **yazarak** koymak gerekiyor.
                 # 🔴 Ekrandaki raporun bir satırını adlandırmak, zamirden **güçlü**
                 # bir bağdır: zamir *"şu"* der, değer **hangisi** olduğunu söyler.
+                # 🔴 Ve bir **belgisiz zamir** de zamirdir (`§36`): *"diğerlerinden"*
+                # takip turunda ekrandaki kalan satırlardan başka bir şeye işaret edemez.
+                # ⚠ Kapsam `TUR_NEDEN` + `baglam_var` ile **sınırlı**: `ANLAT`/`TAKİP`'te
+                # aynı gevşeme konu değişimini çalardı (*"diğer makineleri göster"* yeni
+                # bir sorudur). *Bir gevşemeyi ölçülen türle sınırlamak, onu bir sonraki
+                # turda geri almak zorunda kalmamaktır.*
                 and not (tur == TUR_NEDEN and baglam_var
-                         and _capaya_deger(q, capa_degerleri))):
+                         and (_capaya_deger(q, capa_degerleri)
+                              or _BELGISIZ_ZAMIR.search(q)))):
             continue
         return Niyet(sinif=SINIF_KONUSMA, tur=tur, kural=f"konusma:{tur}", kanit=k)
 
