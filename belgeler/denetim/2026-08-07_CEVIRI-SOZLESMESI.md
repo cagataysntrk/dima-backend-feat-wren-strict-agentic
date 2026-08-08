@@ -2796,3 +2796,42 @@ oynatır — yani bu sayı bir gerileme sinyali **değildir**, bir ölçüm eksi
 İki koşumda da aynı çıktığı için bu demetin ürünü de değildir.
 
 > *Paydası üç haneli olmayan bir yüzde, bir ölçüm değil bir izlenimdir.*
+
+## §39 · B TURUNUN BİLANÇOSU — 20 senaryo, 6 kök, hepsi kapandı
+
+**Kapı (son koşum, `--hepsi`):** ✅ **4237 test yeşil** · korpus `{vaka 2285, kabul 1156,
+dogru 91, sessiz_yanlis **12**, beyanli_kismi 50}` · `eval` **+0,0%**.
+
+| § | kök | ölçülen (önce → sonra) |
+|---|---|---|
+| 33 | iki bütçe `with ThreadPoolExecutor` içinde — aşımı ilan edip yine bekliyordu | 39.115 → **21.276 ms** · 82.049 → **22.224 ms** |
+| 34 | sıralama, kesme sayısına bağlanmıştı | 4 vaka sırasız → **hepsi sıralı**, `eksik_niyet` kayboldu |
+| 35 | boşluk `row_count == 0` sanılıyordu | *«1 satırlık sonuç.»* → **dürüst aralık beyanı** |
+| 36 | belgisiz zamir sınıfı yoktu → *"neden"* soruları LLM'e düşüyordu | 23.646 → **1.033 ms** (23×), cevabı **sistem** veriyor |
+| 37 | görünüm dalı kendi işlev sözcükleri yüzünden ateşlenmiyordu; `bar`/`pie` sözlükte yoktu | 6.520 → **439 ms** · 8.633 → **442 ms**, ikisi de 0 LLM |
+| 38 | `ölçülmemiş` ile `boş` aynı değere çökmüştü | `execute=false` artık SQL koşmuyor |
+
+### Bu turun üç dersi
+
+🔴 **1 · Aynı ders üç kez geldi: iki farklı sebebi tek değere çökertme.**
+`ASIM`↔`None` (§33) · `ölçülmemiş`↔`boş` (§38) · `interpret`'in `None`'ı (§38.2).
+Üçünde de kusur *"iki durum aynı görünüyor"*du ve üçünde de çözüm ayrımı **isimlendirmek**
+oldu. *Bir ayrımın değeri, iki tarafın ondan farklı şeyler isteyebilmesidir.*
+
+🔴 **2 · Metin çapası bir davranışı kanıtlamaz.** `§33`'te üç kapı yeşilken bütçe
+çalışmıyordu, çünkü üçü de kaynağa bakıyordu. Yanlarına **süre ölçen** bir kapı kondu ve
+kusur **sınıfının** kapısı yazıldı (`with ThreadPoolExecutor` + `result(timeout=)`
+birleşimi `app/` altında yasak).
+
+🔴 **3 · Bir evi olmadığını sanmadan önce kaynağı oku.** `§37`'de *"sunum talebinin evi
+yok"* diye teşhis edip **yeni bir modül yazdım**; dal `ask.py:3648`'de zaten vardı. Modül
+silindi — ama bir dosya yazıldıktan **sonra**. *Yeni bir sahip yazmak, eskisini aramaktan
+her zaman kolaydır; `KAT-1` tam olarak bu kolaylıktan doğar.*
+
+### Kapanmayan, kayıtlı kalan üç borç
+
+| # | ne | kanıt |
+|---|---|---|
+| **G2** | zamir bir **değere** bağlanmıyor: `onun aylık trendini` → 11 makine × 6 ay = 66 satır | `b2` T2 |
+| **G4** | *"toplam ciro **nasıl hesaplanıyor**"* bir **tanım** sorusu; sistem *"hangi dönem için?"* diyor — katalog tanımı taşıyor, sorunun evi yok | `b17` |
+| **G5** | `bir de **fire ve oee** ekle` → yalnız `fire` eklendi; `ort_oee` chip'te duruyor ama sorguya girmedi | `b14` T2 |
