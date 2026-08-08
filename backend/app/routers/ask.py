@@ -2285,11 +2285,14 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         #
         # Not DETERMİNİSTİKTİR ve UYDURMAZ: yalnız sorgunun KENDİ dönem filtresini okur.
         # "Veri yok" demez — *"bu aralıkta kayıt bulunamadı"* der; ikisi farklı iddialardır.
-        if (result or {}).get("row_count") == 0 and not resp.note:
+        # ⟳ Koşul `row_count == 0`'dan **`bos_mu`**'ya genişledi (`§35`): gruplamasız bir
+        # toplulaştırma boş kümede **bir NULL satır** döndürür, sıfır satır değil — ve bu
+        # yüzden not en çok sorulan soru biçiminde tam olarak susuyordu.
+        from app import veri_araligi as _va
+        if _va.bos_mu(result, cq) and not resp.note:
             # 🔴 KÖK-8b (denetim KN-5) — not VARDI ama YOL yoktu: veri 30.06.2026'da
             # bitiyor, bugün 05.08.2026. Metin ve aralık ölçümü `app/veri_araligi.py`de
             # (tek sahip); buraya kalan çağrı ve atama.
-            from app import veri_araligi as _va
             resp.note = _va.bos_sonuc_notu(service, cq, schema)
 
         # 🔴🔴 KÖK-2 + KÖK-3 — UYUM KAPISI ve BEYANLI KISMİ CEVAP.

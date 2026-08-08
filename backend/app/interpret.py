@@ -410,7 +410,12 @@ def interpret(result: dict | None, cube_query: dict | None = None,
     if kpi:
         facts = _kpi_facts(kpi)
         return {"facts": facts, "summary": " · ".join(f["text"] for f in facts)}
-    if not result or not result.get("rows"):
+    # 🔴 `§35` — boşluk **satır sayısı değil ölçü değeri** meselesidir. `[{"ciro": null}]`
+    # bir sonuç değil bir **yokluktur**; aşağıdaki yol onu *"1 satırlık sonuç."* diye
+    # özetliyordu. Yüklem tek sahiptedir (`veri_araligi.bos_mu`) — burada ikinci bir
+    # kopya yazmak, aynı boşluğun iki tanımı demekti.
+    from app.veri_araligi import bos_mu
+    if bos_mu(result, cube_query):
         return None
     rows, cols = result["rows"], result.get("columns") or list(result["rows"][0].keys())
     # OTORİTE GEÇİRİLİYOR (Faz C1): `cube_query` zaten elimizdeydi ama yalnız `measures`

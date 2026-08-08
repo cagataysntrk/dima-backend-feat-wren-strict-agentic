@@ -2596,3 +2596,52 @@ hedefli test dosyası o huniyi adıyla çağırmıyor. Arama modüle taşındı 
 `next(c for c in schema["cubes"] …)` kalıbı zaten **beş kez** tekrarlanıyor).
 
 > *Bir aramanın tekrarı, aranan şeyin sahibinin belirsiz olduğunun işaretidir.*
+
+## §35 · BOŞLUK, SATIR SAYISI DEĞİL — ÖLÇÜ DEĞERİ MESELESİ
+
+### 35.1 · Ölçüm — iki tur, tek kök
+
+| soru | dönen | kullanıcının okuduğu |
+|---|---|---|
+| `b13` `geçen ay ciro düştü mü` | `[{"toplam_ciro": null}]` | **«1 satırlık sonuç.»** |
+| `b7` `bu ay neye dikkat etmeliyim` | `[{ort_oee:null, plansiz_durus:null, fire:null}]` | **«1 satırlık sonuç.»** · anlatı: **«1 satır.»** |
+
+Dürüst boş-sonuç notu (*«Bu aralıkta kayıt bulunamadı… elimdeki veri 01.01.2024 –
+30.06.2026»*) **ikisinde de sustu**.
+
+### 35.2 · Kök — SQL'in kendisi
+
+> **Gruplamasız bir toplulaştırma boş kümede sıfır satır değil, BİR NULL satır döndürür.**
+
+`SUM(x)` üzerinde `WHERE` hiçbir şey tutmazsa sonuç `[(None,)]`'dır. Dedektörün koşulu
+`row_count == 0` idi — yani boşluğun **en sık** biçimini tam olarak kaçırıyordu:
+kırılımsız, tek dönemli soruyu. Ki en çok sorulan soru odur.
+
+⚠ Ve aynı kusur `m32a`'da **görünmüyordu**: `geçen ay kaç parti üretildi` bir
+`granularity: month` taşıyordu — gruplanmıştı, gerçekten 0 satır döndü, not oradaki tek
+doğru cevabını verdi.
+
+> *Bir dedektörün çalıştığı vaka, çalışmadığı vakayı gizleyebilir.*
+
+### 35.3 · Kök çözüm — `veri_araligi.bos_mu`, iki tüketici
+
+Yüklem, metnin zaten sahibi olan modüle kondu (`KAT-1`) ve **iki** tüketici çağırıyor:
+
+1. `ask.py`'nin boş-sonuç notu — `row_count == 0` yerine
+2. `interpret()` — *"1 satırlık sonuç."* özeti bir **yokluğun** özeti olamaz
+
+⚠ **FAIL-OPEN:** ölçü adı satırlarda hiç görünmüyorsa (takma ad/ham SQL) **boş denmez**.
+Bir sonucu yanlışlıkla *"kayıt yok"* diye örtmek, göstermekten kötüdür.
+
+> *Boş bir küme üstündeki toplam, bir sayı değil bir yokluktur — ve yokluk «1 satır»
+> diye sunulamaz.*
+
+### 35.4 · Doğrulama
+
+| soru | önce | **sonra** |
+|---|---|---|
+| `geçen ay ciro düştü mü` | *«1 satırlık sonuç.»* | ✅ *«Bu aralıkta (2026-07-01 – 2026-07-31) kayıt bulunamadı… Elimdeki veri **01.01.2024 – 30.06.2026**»* — yanıltıcı özet **kayboldu** |
+| `bu ay neye dikkat etmeliyim` | `null,null,null` + *«1 satırlık sonuç.»* | ✅ *«sorunda tanıdığım bir konu geçmiyor — şunlardan birini mi demek istedin?»* 9.284 ms |
+
+Kapılar: 6 yeni (tek-NULL · çok-ölçülü NULL · bir dolu değer varsa boş **değil** ·
+fail-open · `interpret` yokluğu sonuç sanmaz · **yüklem tek sahipli**).

@@ -116,3 +116,62 @@ def test_ONBELLEK_TEK_SORGU(wren, schema):
     oee = next(c for c in schema["cubes"] if c["name"] == "oee")
     va.aralik(wren, oee)
     assert "oee" in va._ONBELLEK
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# §35 · BOŞLUK, SATIR SAYISI DEĞİL ÖLÇÜ DEĞERİ MESELESİDİR
+#
+# Ölçülen: `geçen ay ciro düştü mü` → `[{"toplam_ciro": null}]` → kullanıcı
+# *"1 satırlık sonuç."* okudu. Dürüst boş-sonuç notu sustu çünkü koşulu
+# `row_count == 0` idi ve gruplamasız bir toplulaştırma boş kümede **bir NULL
+# satır** döndürür, sıfır satır değil.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def test_TEK_NULL_SATIR_BOSTUR():
+    """🔴 `SUM(x)` üzerinde `WHERE` hiçbir şey tutmazsa sonuç `[(None,)]`'dır."""
+    from app.veri_araligi import bos_mu
+    assert bos_mu({"rows": [{"toplam_ciro": None}], "row_count": 1},
+                  {"measures": ["toplam_ciro"]}) is True
+
+
+def test_COK_OLCULU_HEPSI_NULL_BOSTUR():
+    from app.veri_araligi import bos_mu
+    assert bos_mu({"rows": [{"a": None, "b": None}], "row_count": 1},
+                  {"measures": ["a", "b"]}) is True
+
+
+def test_BIR_TANE_DOLU_DEGER_BOS_DEGILDIR():
+    """⚠ Tek bir gerçek sayı varsa sonuç **vardır** — örtmek göstermekten kötüdür."""
+    from app.veri_araligi import bos_mu
+    assert bos_mu({"rows": [{"a": None, "b": 0}], "row_count": 1},
+                  {"measures": ["a", "b"]}) is False
+    assert bos_mu({"rows": [{"a": None}, {"a": 5}], "row_count": 2},
+                  {"measures": ["a"]}) is False
+
+
+def test_OLCU_GORUNMUYORSA_BOS_DENMEZ():
+    """🔴 **FAIL-OPEN.** Takma ad/ham SQL yüzünden ölçü adı satırlarda yoksa, bir sonucu
+    yanlışlıkla *"kayıt yok"* diye örtmektense göstermek doğrudur."""
+    from app.veri_araligi import bos_mu
+    assert bos_mu({"rows": [{"baska_kolon": 3}], "row_count": 1},
+                  {"measures": ["toplam_ciro"]}) is False
+
+
+def test_INTERPRET_YOKLUGU_SONUC_SANMAZ():
+    """⊙ Aynı yüklem `interpret`te de geçerli: *"1 satırlık sonuç."* bir **yokluğun**
+    özeti olamaz. Yüklem TEK sahiptedir — ikinci bir tanım, aynı boşluğun iki tanımıdır."""
+    from app.interpret import interpret
+    assert interpret({"rows": [{"toplam_ciro": None}], "row_count": 1},
+                     {"measures": ["toplam_ciro"]}) is None
+
+
+def test_BOS_YUKLEMI_TEK_SAHIPLI():
+    """🔴 `KAT-1` kapısı: boşluk yüklemi yalnız `veri_araligi`de tanımlanır; tüketiciler
+    onu **çağırır**. `row_count == 0` biçiminde ikinci bir yüklem geri gelirse kırmızı."""
+    import inspect
+
+    from app import interpret as _i
+    from app.routers import ask as _a
+    for mod, ad in ((_i, "interpret"), (_a, "ask")):
+        src = inspect.getsource(mod)
+        assert "bos_mu" in src, f"🔴 {ad} boşluk yüklemini çağırmıyor"

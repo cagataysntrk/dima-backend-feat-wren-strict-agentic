@@ -92,6 +92,47 @@ def aralik(service, cube_meta: dict) -> tuple[str, str] | None:
     return sonuc
 
 
+def bos_mu(result: dict | None, cube_query: dict | None) -> bool:
+    """🔴 **BOŞLUK, SATIR SAYISI DEĞİL ÖLÇÜ DEĞERİ MESELESİDİR.**
+
+    ## Ölçülen kusur — iki tur, tek kök
+
+    | soru | dönen | kullanıcının gördüğü |
+    |---|---|---|
+    | `geçen ay ciro düştü mü` | `[{"toplam_ciro": null}]` | *«1 satırlık sonuç.»* |
+    | `bu ay neye dikkat etmeliyim` | `[{ort_oee:null, plansiz_durus:null, fire:null}]` | *«1 satırlık sonuç.»* |
+
+    Dürüst boş-sonuç notu (*«Bu aralıkta kayıt bulunamadı… elimdeki veri 01.01.2024 –
+    30.06.2026»*) **ikisinde de susmuştu**, çünkü koşulu `row_count == 0` idi.
+
+    ⊙ Sebep SQL'in kendisi: **gruplamasız bir toplulaştırma boş kümede sıfır satır
+    değil, BİR NULL satır döndürür.** `SUM(x)` üzerinde `WHERE` hiçbir şey tutmazsa
+    sonuç `[(None,)]`'dır. Yani dedektör, boşluğun **en sık** biçimini tam olarak
+    kaçırıyordu: kırılımsız, tek dönemli soruyu — ki en çok sorulan soru odur.
+
+    ⚠ Ve aynı kusur `m32a`'da **görünmüyordu**: `geçen ay kaç parti üretildi` bir
+    `granularity: month` taşıyordu, yani **gruplanmıştı** ve gerçekten 0 satır döndü —
+    not oradaki tek doğru cevabını verdi. *Bir dedektörün çalıştığı vaka, çalışmadığı
+    vakayı gizleyebilir.*
+
+    ## Sınır: FAIL-OPEN
+
+    Ölçü adları satırlarda hiç görünmüyorsa (takma ad, ham SQL) **boş DENMEZ**. Bir
+    sonucu yanlışlıkla *"kayıt yok"* diye örtmek, onu göstermekten kötüdür.
+
+    *Boş bir küme üstündeki toplam, bir sayı değil bir yokluktur — ve yokluk «1 satır»
+    diye sunulamaz.*
+    """
+    r = (result or {}).get("rows") or []
+    if not r or (result or {}).get("row_count") == 0:
+        return True
+    olculer = [m for m in ((cube_query or {}).get("measures") or []) if m]
+    gorulen = [(s, m) for s in r if isinstance(s, dict) for m in olculer if m in s]
+    if not gorulen:
+        return False
+    return all(s.get(m) is None for s, m in gorulen)
+
+
 def bos_sonuc_notu(service, cube_query: dict, schema: dict) -> str:
     """0 satır dönen bir cube sorgusunun **tam** notu — dönem aralığı + veri aralığı.
 
