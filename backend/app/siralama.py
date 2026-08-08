@@ -125,8 +125,34 @@ def tamamla(cq: dict, q: str, cube_meta: dict | None = None, *,
     #
     # ⚠ Sayı **çıkarımla değil, kullanıcının ağzından** gelir (`_top_n`). *Sayı verilmişse
     # kesmek bilgi çıkarmaz — sözü yerine getirir.*
-    if not cq.get("limit"):
+    if not cq.get("limit") and not cq.get("entity_limit"):
         _n = _cr()._top_n(qn, cube_meta)
-        if _n and not (cq.get("timeDimensions") and cq.get("dimensions")):
+        _gran, _boy = bool(cq.get("timeDimensions")), bool(cq.get("dimensions"))
+        if _n and not (_gran and _boy):
             cq["limit"] = _n
+        elif _n:
+            # 🔴 **`§R1b` — «SERİYİ KESER» DEDİM VE ORADA DURDUM; OYSA O DURUMUN ZATEN BİR
+            # SAHİBİ VARDI.** `§O3`'te satır limitini zaman kovası + boyut birlikteyken
+            # engelledim — gerekçe doğruydu (satır limiti seriyi ortadan keser) ama
+            # **eksikti**: o durum bir *"yapılamaz"* değil, `entity_limit`'in **tam
+            # tanımıdır** (ilk N **varlık** seçilir, serileri korunur; `ask.py`
+            # `_resolve_entity_limit` ile iki adımda çözer).
+            #
+            # Ölçüldü (`r11`): `bu yıl en çok rework yapılan **3** makineyi bul` →
+            # `üstünlük=3`, `order` kondu, kesme **hiç** olmadı → **11 satır**.
+            # `route()` bu vakayı doğru çözüyor (`cube_router` `gran and dims and n and
+            # direction` → `entity_limit`); garson yolundan gelen `cq` o dala hiç
+            # uğramıyordu. Yani kural vardı, **ikinci yolda yoktu**.
+            #
+            # ⚠ Ölçüt route'un kendi ölçütüyle **aynı** tutuldu (ilk boyut · aynı ölçü ·
+            # aynı yön) — ikinci bir top-N tanımı yazmak `KAT-1` olurdu.
+            #
+            # *Bir yeteneğin iki yoldan yalnız birinde bulunması, o yeteneğin yarısının
+            # olmamasıdır.*
+            cq["entity_limit"] = {
+                "dimension": (cq.get("dimensions") or [None])[0],
+                "measure": cq["order"]["measure"],
+                "direction": cq["order"]["direction"],
+                "n": _n,
+            }
     return True

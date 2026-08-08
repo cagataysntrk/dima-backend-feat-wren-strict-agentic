@@ -225,6 +225,50 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
     boyutlar = ic.get("dimensions") or []
     siralama = (disi.get("order") or disi.get("limit") or ic.get("order")
                 or ic.get("limit") or ic.get("entity_limit"))
+    # 🔴🔴 **`§R1` — SIRALAMA İLE KESME AYNI YÜKLEMDE BİRLEŞTİRİLMİŞTİ (9 kanıt).**
+    #
+    # `siralama` yukarıda beş alanın **herhangi biri** doluysa doğrudur. Sonuç: `order`
+    # kondu ama `limit` konmadıysa sistem *"bir şey yaptım"* sayıp **susuyor** — oysa
+    # kullanıcı bir **SAYI** vermişti.
+    #
+    # Ölçüldü (R turu, `r11`): `bu yıl en çok rework yapılan **3** makineyi bul` →
+    #
+    #     "üstünlük: sıralama sistem tarafından tamamlandı"
+    #     niyet: üstünlük=3        cq: order ✅  limit ✗       →  **11 SATIR**
+    #
+    # ve **hiçbir beyan yok**. Aynı desen `r16` [EN] (`5 customers`) · `r4` (*"üç
+    # müşteri"* — sayı **yazıyla**) · `p18` [EN] (`top 3`). Dört kanıt yalnız bu sınıfta.
+    #
+    # 🔴 Ve `§34`'ün kendi öğüdü bir **söz**dür: *"«en yüksek 5 makine» gibi sayı verirsen
+    # sıralayıp **KESERİM**."* Sistem sıralıyor, kesmiyor, ve sözünü tutmadığını
+    # söylemiyor.
+    #
+    # ⚠ Yeni sözlük **yok**: kesme talebi `niyet.ustunluk`'tan okunur — sistemin **zaten
+    # hesapladığı** sayı. İki alanı karşılaştırmak, üçüncü bir alan uydurmaktan farklıdır.
+    #
+    # *Bir sözü yarım tutmak, hiç tutmamaktan daha sessizdir.*
+    # 🔴 **VE İLK YAZIMIM YALAN SÖYLEDİ — kendi ölçümüm yakaladı (üç koşum).**
+    #
+    # Yüklem yalnız `limit`/`entity_limit` alanlarına bakıyordu. Ama `entity_limit`
+    # **çözülünce alan olmaktan çıkar**: `ask.py::_resolve_entity_limit` onu sıralanan
+    # boyut üzerinde bir **değer filtresine** dönüştürür ve alan `cq`'dan düşer. Ölçüldü:
+    #
+    #     satır=3  limit=None  entity_limit=False  filtre_boyut=['makine']  → BEYAN ATEŞLEDİ
+    #     satır=3  limit=3     entity_limit=False  filtre_boyut=[]          → susar (doğru)
+    #
+    # Yani **kesme yapılmışken** sistem *"kesemedim"* diyordu — bir beyan olarak
+    # **beyansızlıktan kötü**, çünkü doğru bir cevabı eksik ilan ediyor.
+    #
+    # ⚠ Ölçüt kesmenin **izine** bakar, alanına değil: sıralanan boyut üzerinde bir değer
+    # filtresi varsa kesme **gerçekleşmiştir**. Yanlış-negatif tarafı güvenlidir
+    # (kullanıcının kendi koyduğu bir boyut filtresi de beyanı susturur — susmak,
+    # uydurmaktan iyidir).
+    #
+    # *Bir kusuru ilan eden yüklem, kendi yanlış-pozitifini üretirse, ilan ettiği kusurdan
+    # daha pahalıdır.*
+    _kesme_izi = any(f.get("dimension") in boyutlar for f in filtreler)
+    kesme = (disi.get("limit") or ic.get("limit") or ic.get("entity_limit")
+             or _kesme_izi)
 
     # 1 · KIYAS — "şubata göre", "geçen yılla kıyasla"
     #
@@ -298,6 +342,15 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
             "ustunluk",
             "**en yüksek/en çok** dedin ama sıralama uygulayamadım",
             "*«en yüksek 5 makine»* gibi sayı verirsen sıralayıp keserim."))
+    # `§R1` — SAYI VERİLDİ, KESİLMEDİ. Yukarıdaki beyandan **ayrı** bir kusurdur:
+    # orada sıralama hiç yapılamamıştır, burada yapılmış ama **sayı tutulmamıştır**.
+    elif niyet.ustunluk and not kesme:
+        out.append(Ihlal(
+            "kesme",
+            f"**{niyet.ustunluk}** dedin ama listeyi o sayıya **kesemedim** — "
+            f"sıralı ama **tam** liste görüyorsun",
+            "Kırılımı tek bir boyuta indirirsen (*«makine bazında»*) ilk "
+            f"{niyet.ustunluk} kaydı keserim."))
 
     # 6 · EŞİK — "1.000 üstü"
     if any(f.get("operator") not in ("gte", "lte") for f in niyet.filtreler) \

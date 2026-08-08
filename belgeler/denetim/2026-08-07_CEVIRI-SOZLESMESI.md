@@ -5278,3 +5278,134 @@ değildir.*
 ⊙ Raporun bir iddiası **çürüdü ve bu iyi bir haber**: *"bu yıl toplam üretimin yüzde kaçı
 fire → cevapsız"* dediği vaka **artık %19,79 döndürüyor** (`p13`). Rapor eski kütükten
 okuduğu için son turların kazancını göremiyordu. *Bir denetim raporu da bayatlar.*
+
+---
+
+## §89 · R TURU — üç agentic zincir · ve **sözünü yarım tutan sistem**
+
+### §89.1 · R turu tablosu (20 senaryo · 14'ü thread)
+
+| # | senaryo | sonuç |
+|---|---|---|
+| R1 | `geciken siparişlerin müşteri bazında dağılımı` | 🟢 `geciken` → `termin_durumu ≠ ZAMANINDA` |
+| R2 | `bunların toplam tutarı ne kadar` | 🟢 filtre korundu, ölçü değişti |
+| R3 | `bu yıl` *(çip)* | 🟢 dürüst boş-aralık beyanı (`28.11.2023 – 22.06.2026`) |
+| **R4** | `en çok geciken **üç** müşteriyi ayrı ayrı incele` | 🔴 sayı **yazıyla** → `üstünlük` çözülmedi |
+| R5 | `bunun zaman içinde nasıl değiştiğini göster` | 🟢 aylık trend uygulandı |
+| R6 | `enerji maliyetinin toplam üretim maliyeti içindeki payı` | 🔴 Discovery bütçe aşımı (25 sn) |
+| R7·R8 | `hangi bölüm en çok tüketiyor` → `bu yıl` | 🟢 5 bölüm, sıralı |
+| **R9** | `o bölümün tüketimini geçen yılla kıyasla` | 🟢🟢 **YoY çalıştı** — `_gecen` + `_degisim_yuzde` |
+| **R10** | `ikisini tek grafikte üst üste bindir` | 🔴 kıyas kolonları **sessizce düştü** |
+| **R11** | `bu yıl en çok rework yapılan **3** makineyi bul` | 🔴→🟢 **KÖK-R1** |
+| R12 | `her biri için en sık rework sebebini göster` | 🟢 66 satır, `facet` görünüm ◐ *(grup-içi ilk-1 yok — M-9)* |
+| R13 | `sebep dağılımını yüzde olarak ver` | 🟢 **`§O2` beyanı takipte de ateşledi** |
+| **R14** | `bunu ısı haritasına çevir` | 🔴 `viz.kind` değişmedi (`stacked` kaldı) |
+| R15 | `bu ay en düşük OEE'ye sahip hattı bul` | 🟢 `order: asc` **doğru** |
+| **R16 [EN]** | `which 5 customers contributed most to revenue growth this year` | 🔴 `5` **ve** `growth` — ikisi de sessizce düştü |
+| **R17 [AR]** | `أعطني نسبة الهدر لكل خط إنتاج هذا الشهر` | 🟢🟢 `parti.fire_orani_yuzde` × `hat` — **garson Arapçada işini yaptı** |
+| **R18** | `son 12 ayın hareketli 3 aylık fire ortalamasını çiz` | 🔴 `hareketli` sessizce düştü (M-9) |
+| R19 | `makine ve vardiya kırılımında duruş süresini çapraz tablo yap` | ◐ iki boyut doğru, `çapraz` bilinmiyor |
+| **R20** | `fire oranı hedefi %5 iken bu yıl hangi hatlar aştı` | 🔴 eşik **hiç uygulanmadı**, beyan yok |
+
+**Discovery ateşlemesi: 1** (R6, bütçe aşımıyla). *(E=4·F=1·G=1·N=1·O=0·P=1·R=1)*
+
+### §89.2 · 🔴🔴 KÖK-R1 — **SIRALAMA İLE KESME AYNI YÜKLEMDE BİRLEŞTİRİLMİŞTİ**
+
+`uyum.py:226`:
+
+    siralama = order OR limit OR entity_limit
+
+Beş alanın **herhangi biri** doluysa doğru. Sonuç: `order` kondu ama `limit` konmadıysa
+sistem *"bir şey yaptım"* sayıp **susuyor** — oysa kullanıcı bir **SAYI** vermişti.
+
+Ölçüldü (`r11`, `bu yıl en çok rework yapılan **3** makineyi bul`):
+
+    trace: "üstünlük: sıralama sistem tarafından tamamlandı"
+    niyet: üstünlük=3     cq: order ✅   limit ✗     →  **11 SATIR**, hiçbir beyan yok
+
+Aynı desen dört kez: `r11` · `r16` [EN] (`5 customers`) · `r4` (*"üç"* — sayı **yazıyla**)
+· `p18` [EN] (`top 3`).
+
+🔴 Ve `§34`'ün kendi öğüdü bir **sözdür**: *"«en yüksek 5 makine» gibi sayı verirsen
+sıralayıp **KESERİM**."* Sistem sıralıyor, kesmiyor, ve **sözünü tutmadığını
+söylemiyor**.
+
+**Düzeltme iki yarımdır — önce sözü tut, tutamıyorsan söyle:**
+
+1. **`§R1b` — sözü TUT.** `§O3`'te satır limitini `timeDimensions ∧ dimensions` varken
+   engellemiştim; gerekçe doğruydu (satır limiti seriyi keser) ama **eksikti**: o durum
+   bir *"yapılamaz"* değil, **`entity_limit`'in tam tanımıdır** (ilk N **varlık**, seriler
+   korunur). `route()` bu vakayı zaten doğru çözüyordu; **garson yolundan gelen `cq` o
+   dala hiç uğramıyordu.** Kural vardı, **ikinci yolda yoktu**.
+2. **`§R1a` — tutamıyorsan SÖYLE.** `kesme` yüklemi `siralama`dan **ayrıldı**: sayı
+   verilmiş ve kesilmemişse beyan edilir (`KÖK-3`: cevabı öldürmez, etiketler).
+
+**Curl doğrulaması:** `r11` → **11 satır → 3 satır**.
+
+*Bir sözü yarım tutmak, hiç tutmamaktan daha sessizdir.*
+
+### §89.3 · 🔴 VE İLK YAZIMIM YALAN SÖYLEDİ — kendi ölçümüm yakaladı
+
+Yeni `kesme` yüklemi yalnız `limit`/`entity_limit` **alanlarına** bakıyordu. Ama
+`entity_limit` **çözülünce alan olmaktan çıkar**: `_resolve_entity_limit` onu sıralanan
+boyut üzerinde bir **değer filtresine** dönüştürür ve alan `cq`'dan düşer. Üç koşum:
+
+    satır=3  limit=None  entity_limit=False  filtre_boyut=['makine']  → 🔴 BEYAN ATEŞLEDİ
+    satır=3  limit=3     entity_limit=False  filtre_boyut=[]          → ✅ susar
+
+Yani **kesme yapılmışken** sistem *"kesemedim"* diyordu. Bir beyan olarak bu
+**beyansızlıktan kötüdür**: doğru bir cevabı eksik ilan eder.
+
+**Düzeltme:** ölçüt kesmenin **alanına** değil **izine** bakar — sıralanan boyut üzerinde
+bir değer filtresi varsa kesme gerçekleşmiştir. Yanlış-negatif tarafı güvenlidir.
+**Curl doğrulaması: üç koşumda da yanlış beyan yok.**
+
+*Bir kusuru ilan eden yüklem, kendi yanlış-pozitifini üretirse, ilan ettiği kusurdan daha
+pahalıdır.*
+
+### §89.4 · 🔴 BASKIN SINIF — **SESSİZ KAPSAM DARALMASI** (iki turda 9 kanıt)
+
+| tur | soru | düşen talep | beyan |
+|---|---|---|---|
+| P2 | `karlılığa etkisini analiz et` | karlılık ekseni | ✗ |
+| P15 | `aylık **kümülatif** fire` | kümülatif | ✗ |
+| P16 | `her hattın **payı**` | pay | ✗ *(→ `§O2` kısmen kapattı)* |
+| R10 | `ikisini **üst üste bindir**` | kıyas kolonları | ✗ |
+| R11 | `**3** makine` | kesme | ✗ → 🟢 **`§R1`** |
+| R14 | `**ısı haritasına** çevir` | grafik türü | ✗ |
+| R16 | `**5** customers · **growth**` | ikisi de | ✗ → 🟢 kesme yarısı |
+| R18 | `**hareketli** 3 aylık ortalama` | pencere | ✗ |
+| R20 | `hedefi **%5** iken aştı` | eşik | ✗ |
+
+⊙ Dokuzunda da `niyet.bilinmeyenler` düşen kelimeyi **yazıyor**. Yani sinyal **var** ve
+okunmuyor. `§R1` bu sınıfın **kesme** üyesini kapattı; kalan yedisi **kendi yüklemlerini**
+bekliyor — ve her biri ayrı ayrı yazılmalı, çünkü ortak bir *"bilinmeyen varsa beyan et"*
+kuralı `bul`·`hangi`·`bunu` gibi zararsız kelimelerde **gürültü** üretir.
+
+🔴 **Ve sınıfın adı önemlidir:** bunlar *"anlamadım"* değildir — sistem cevap verir,
+**doğru** verir, ama **sorulanın bir parçasına** verir ve farkı söylemez. `KÖK-3`'ün
+(beyan-açık) kapsamadığı bölge tam burasıdır.
+
+*Bir sorunun yarısını cevaplayıp hangi yarısı olduğunu söylememek, cevap vermemekten daha
+zor fark edilir.*
+
+### §89.5 · R demetinin kapısı ve **dördüncü kez sabit kalan korpus**
+
+    korpus  {vaka 2285, kabul 1153, dogru 93, sessiz_yanlis 12, beyanli_kismi 51}
+    süit    4257 yeşil · 32 atlandı
+    eval    precision +0,0% · coverage +0,0% · korpus doğru-cube %95.1 (taban %95.1)
+
+🔴 **Bu, üst üste DÖRDÜNCÜ demet** (`§85` · `§87` · `§88` · `§89`) ve korpus **hiç
+oynamadı**. Dört demette **on bir** ölçülmüş canlı kusur kapandı.
+
+`§88.6`'da yazılan sınır artık bir gözlem değil bir **ölçüm**: korpus `rule` sağlayıcıyla
+koşuyor, yani **garson yolunu ve takip yolunun LLM dalını hiç görmüyor**. Son on bir
+düzeltmenin **hepsi** o iki yolda.
+
+> **Kapımızın ölçmediği bir bölge var ve orası tam da son dört turda çalıştığımız bölge.**
+> Yeşil kalması bir onay değil, bir **sessizlik**tir.
+
+⚠ Bu bir *"kapıyı gevşetelim"* çağrısı **değildir** — korpus payda kutsaldır ve gerileme
+vetosu görevini yapıyor. Eksik olan **ikinci bir ölçü**: garson yolunu ölçen bir korpus.
+`lab/garson.py --kararlilik`'in tabanı **%100 (25/25)** ve `§85.0`'da yazıldığı gibi o
+küme **zaten çalışan** soruları ölçüyor. Sıradaki alet işi budur.
