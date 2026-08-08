@@ -519,8 +519,6 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
         # ürün kararıdır. Sağlayıcıya koymak, üç sağlayıcıda üç ayrı karar demekti.
         #
         # *Bir süsün bütçesi, süslediği şeyin süresini aşamaz.*
-        import concurrent.futures as _cf
-
         from app import planner as _planner
 
         plan = _planner.Planlayici(
@@ -547,21 +545,28 @@ def _anlati_ekle(request: Request, resp: AskResponse) -> None:
         # 🔴 Bütçe **burada** uygulanır: `plan.calistir` bir duvar-saati sınırı taşımıyor
         # (bütçesi adım/sorgu sayar). Aşılırsa anlatı düşer, cevap yaşar.
         _azami = float(getattr(get_settings(), "anlati_azami_saniye", 8.0) or 8.0)
-        try:
-            with _cf.ThreadPoolExecutor(max_workers=1) as _ex:
-                # ⚠ **Çağrı biçimi bilerek korunuyor**: `plan.calistir("llm.anlat", …)`
-                # bir kapının çapasıdır (`test_ANLATICI_PLANLAYICIDAN_geciyor` bu metni
-                # arar) ve `submit(plan.calistir, …)` biçimine çevirmek onu **kırdı**.
-                # Lambda hem bütçeyi uygular hem çapayı yerinde bırakır.
-                # *Bir kapının ölçtüğü şey metinse, metni de o kapıya göre yazarsın.*
-                ham = _ex.submit(
-                    lambda: plan.calistir("llm.anlat", resp.question, gercekler)
-                ).result(timeout=_azami)
-        except _cf.TimeoutError:
-            # ⚠ İş arka planda **bitmeye devam eder** (thread öldürülemez) — ama cevabı
-            # bekletmez. *Bir süs, süslediği şeyi geciktiriyorsa süs değil engeldir.*
-            _log.warning("T2 anlatı BÜTÇEYİ AŞTI (%.1f sn) — süssüz ama doğru cevap", _azami)
+        # ⚠ **Çağrı biçimi bilerek korunuyor**: `plan.calistir("llm.anlat", …)` bir
+        # kapının çapasıdır (`test_ANLATICI_PLANLAYICIDAN_geciyor` bu metni arar) ve
+        # `submit(plan.calistir, …)` biçimine çevirmek onu **kırdı**. Lambda hem bütçeyi
+        # uygular hem çapayı yerinde bırakır.
+        # *Bir kapının ölçtüğü şey metinse, metni de o kapıya göre yazarsın.*
+        #
+        # 🔴 **VE BU BÜTÇE ÇALIŞMIYORDU — aşağıdaki yorum kodun YAPMADIĞI şeyi anlatıyordu.**
+        # *"İş arka planda bitmeye devam eder — ama cevabı bekletmez"* yazıyordu; oysa
+        # `with _cf.ThreadPoolExecutor(...)` çıkışta `shutdown(wait=True)` çağırıyor ve
+        # cevabı tam olarak **bekletiyordu**. Ölçüldü (`§33`): bütçe 8 sn, anlatı çağrısı
+        # **66.202 ms**, tur **81.656 ms** — ve `BÜTÇEYİ AŞTI` satırı 66. saniyede
+        # yazıldı, 8.'de değil. Uygulama tek sahibe taşındı: `app/butce.py`.
+        # *Bir yorumun anlattığı davranış ölçülmemişse, o bir belge değil bir dilektir.*
+        from app import butce as _butce
+        _sonuc = _butce.kos(
+            [lambda: plan.calistir("llm.anlat", resp.question, gercekler)],
+            saniye=_azami, ad="T2 anlatı", log=_log)[0]
+        if _sonuc is _butce.ASIM:
+            # İş arka planda biter (thread öldürülemez) ama cevabı **artık** bekletmez.
+            # *Bir süs, süslediği şeyi geciktiriyorsa süs değil engeldir.*
             return
+        ham = _sonuc
         _anlati_makbuzu(resp, plan)
         ham, _yayilim_sorunlari = geri_koy(ham or "", _harita)
         if _yayilim_sorunlari:

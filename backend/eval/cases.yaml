@@ -678,3 +678,8 @@
   tags: [llm, chip-capraz]
   slice: llm
   expect: chip
+- id: faz2d-test-gecici-vaka
+  q: test geçici azami fire bu yıl
+  tags: [faz2d-test]
+  expect: answer
+  shape: {cube: parti, measures: [test_faz2d_gecici_olcu]}

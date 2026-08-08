@@ -1370,9 +1370,11 @@ def deterministic_refine(prev: dict, q: str, schema: dict,
             cq.pop("limit", None)  # satır limiti değil varlık limiti
             changed = True
 
-    direction = _direction(q)
-    if direction and cq.get("measures") and not topn:
-        cq["order"] = {"measure": cq["measures"][0], "direction": "asc" if direction == "ASC" else "desc"}
+    # ⟳ Kural `siralama_tamamla`'ya taşındı — **tek sahip** (`KAT-1`). Burada bir kopya
+    # duruyordu ve `route()`'da bir üçüncüsü; canlı ölçüm üçünün de **aynı** üstünlük
+    # cümlesine farklı davrandığını gösterdi (`§34`).
+    from app import siralama as _sir
+    if not topn and _sir.tamamla(cq, q, cube_meta):
         changed = True
 
     # Satır limiti ("... 5 cari"): yalnız zaman kovasız raporda — kovalı seride satır

@@ -26,7 +26,9 @@ from app import prescribe
 from app import planner as _planner
 from app import ask_jobs, cekirdek, followup, istek_kimligi, katman_b, typo_onerisi
 from app import soz as _soz
-from app import cube_router, eylem, gorsel_ekleme, pii, tercih, viz, yoy
+from app import cube_router
+from app import siralama as _siralama
+from app import eylem, gorsel_ekleme, pii, tercih, viz, yoy
 from app.answer import (
     _attach_next_steps,
     _attach_recommendations,
@@ -788,8 +790,6 @@ def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
     `sema` (FAZ 3a): şema-kısıtlı çıktı. `None` = bugünkü serbest-JSON yolu, birebir.
 
     Döner: (kazanan|None, uyum_orani, uyusmazlik_ekseni|None, farklı_adaylar)."""
-    import concurrent.futures as cf
-
     def one(_i):
         try:
             ham = llm.select_cube(question, catalog, sema) if sema is not None \
@@ -833,17 +833,19 @@ def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
     #
     # ⚠ Son tarih **gönderimden önce** hesaplanır: `submit`'ten sonra hesaplamak, iş
     # kuyrukta beklerken geçen süreyi bütçenin dışında bırakırdı.
-    _bitis = _time.monotonic() + _intent_azami
-    oylar = []
-    with cf.ThreadPoolExecutor(max_workers=k) as ex:
-        _isler = [ex.submit(one, i) for i in range(k)]
-        for _f in _isler:
-            try:
-                oylar.append(_f.result(timeout=max(0.0, _bitis - _time.monotonic())))
-            except cf.TimeoutError:
-                _log.warning("Intent oyu BÜTÇEYİ AŞTI (toplam %.0f sn) — oy düştü",
-                             _intent_azami)
-                oylar.append(None)
+    # 🔴 **VE SON TARİH DE YETMEDİ — `with` onu sessizce iptal etti.**
+    #
+    # Yukarıdaki son-tarih doğruydu ama `with cf.ThreadPoolExecutor(...)` bloğu çıkışta
+    # `shutdown(wait=True)` çağırır. Ölçüldü (`§33`): bütçe 20 sn, tur **39.115 ms** —
+    # log *"oy düştü"* yazdı, süreç yine sonuna kadar bekledi. En keskin hâli: iki oy
+    # **6.775 ms**'de uzlaştı, üçüncüsü **37.840 ms** sürdü ve **aynı** cevabı verdi.
+    #
+    # Uygulama `app/butce.py`'ye taşındı — çünkü `answer.py`'deki anlatı bütçesi **aynı
+    # kusuru** taşıyordu (`KAT-1`: aynı kuralın iki sahibi, aynı hatayı iki kez).
+    from app import butce as _butce
+    oylar = [None if _o is _butce.ASIM else _o
+             for _o in _butce.kos([(lambda _i=i: one(_i)) for i in range(k)],
+                                  saniye=_intent_azami, ad="Intent oyu", log=_log)]
     cands = [c for c in oylar if c]
     if not cands:
         return None, 0.0, None, []
@@ -2159,6 +2161,18 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             _log.warning("dönem netleştirmesi için ölçü adı çıkarılamadı", exc_info=True)
         _donem_soru = (_soz.soz("netlestirme.donem", ne=_ne) if _ne
                        else _soz.soz("netlestirme.donem_sade")) or _PERIOD_TEXT
+        # 🔴 **NİYET NETLEŞTİRMEDEN SAĞ ÇIKMALI (`§34.2`).**
+        #
+        # Ölçüldü: `ciromun en büyük 3 kaynağı olan müşterilerimi bul` → *"hangi dönem
+        # için?"*. Kullanıcı *"bu yıl"* dedi ve **8 müşteri sırasız** geldi — *"en büyük
+        # 3"* niyeti netleştirme turunda **sessizce düştü**, çünkü sonraki tur bu `cq`'yu
+        # taban alır ve *"bu yıl"*da hiçbir üstünlük yoktur.
+        #
+        # ⚠ Bu, kıyaslama için en keskin çift: `en az üretim yapan 3 makine` **aynı**
+        # netleştirmeye gidiyor ve `order`+`limit`'i **taşıyor** — çünkü orada sayı boyut
+        # adına bitişikti (`3 makine`). *Bir niyetin taşınması, cümledeki kelime sırasına
+        # bağlı olmamalıdır.*
+        _siralama.tamamla(cq, body.question or "", cube_meta)
         return _finish(AskResponse(
             question=body.question, source=None, note=_donem_soru, soz=_donem_soru,
             cube_query=cq,
@@ -2185,6 +2199,18 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # gösterdi ve teşhisi o verdi. *Bir ölçüm aracının yakaladığı sayı, bazen
         # ölçtüğü şey değil, ölçemediği şeydir.*
         note, trace = _capa.notu_al(cq, note, trace)
+        # 🔴 **ÜSTÜNLÜK SIRALAMASI — HUNİDE, çünkü kusur ÜRETİCİDEN BAĞIMSIZ (`§34`).**
+        #
+        # Ölçüldü: `en çok fire veren makine hangisi` (Intent-JSON yolu) ve
+        # `bu üçüne en çok hangi renkleri` (takip yolu) **ikisi de** sırasız tablo verdi
+        # ve ikisi de `eksik_niyet:['ustunluk']` beyan etti. Yani kusur bir üreticinin
+        # değil, **hepsinin ortak son adımının** eksiğiydi.
+        #
+        # ⚠ Bu huninin sözleşmesi zaten *"her yeni Intent-path kaynağında yeniden
+        # yazılmasın"* (docstring). Kuralı buraya koymak o sözleşmenin gereğidir;
+        # üreticilere tek tek koymak dördüncü bir kopya olurdu.
+        if _siralama.tamamla(cq, q_norm, sema=schema):
+            trace = [*trace, "üstünlük: sıralama sistem tarafından tamamlandı"]
         # KALICI GRANÜLERLİK TERCİHİ (FAZ E) — SQL derlenmeden ÖNCE uygulanır ki
         # cevaptaki sayı ile `cube_query` BİREBİR aynı şeyi anlatsın (sonradan
         # uygulansaydı makbuz ile rapor ayrışırdı).

@@ -2446,3 +2446,153 @@ uyuştu, cevap doğru çıktı.
 
 > *Bir uydurmanın sessizce düşürülmesi bir kayıp değil, kapının tek görünür kanıtıdır —
 > ve bu satır loga yazıldığı için görünür.*
+
+---
+
+# B TURU · 20 agentic senaryo — *"sıralı işlemler, grafik dönüşümü, sohbet"*
+
+Kullanıcının bu tur için koyduğu çıta: *"artık daha karmaşık… aslında agentic
+diyebileceğimiz sıralı işlemler… sohbet tarzı öneriler isteyelim, grafik dönüşümü
+isteyelim bar yerine pie gibi."*
+
+## §33 · BÜTÇE YAZILIYDI, ÇALIŞMIYORDU — iki yerde, tek satırlık kök
+
+### 33.1 · Ölçüm
+
+| senaryo | bütçe | **ölçülen** | log |
+|---|---|---|---|
+| `b2` `bu yıl en çok fire veren makine hangisi` | Intent 20 sn | **30.408 ms** | *«oy düştü»* |
+| `b5` `personel çalışma süreleri…` | Intent 20 sn | **39.115 ms** | *«oy düştü»* |
+| `b3` `ikisini tek grafikte çift eksende göster` | anlatı 8 sn | **82.049 ms** | *«süssüz ama doğru»* |
+| `b6` `ciromun en büyük 3 kaynağı…` | — | 🔴 **656.689 ms** | — |
+
+⊙ Üçü de aşımı **doğru tespit etti, logladı** — sonra yine sonuna kadar bekledi.
+
+🔴 **En keskin tek ölçüm (`b5`):** iki oy **6.775 ms**'de aynı cevapta uzlaştı
+(`{"cube":null}` — dürüst red). Üçüncü oy **37.840 ms** sürdü ve **aynı** cevabı verdi.
+Kullanıcı, sistemin **6,7 saniyede bildiği** cevap için **39 saniye** bekledi.
+
+### 33.2 · Kök — ve bir yorumun kendi kodunu yalanlaması
+
+```python
+with cf.ThreadPoolExecutor(...) as ex:      # ← çıkışta shutdown(wait=True)
+    fut.result(timeout=kalan)               # ← TimeoutError atar, oy düşer
+# ← ve BURADA yavaş iş parçacığı beklenir
+```
+
+`future.result(timeout=…)` **beklemeyi** keser, **işi** değil. `__exit__` →
+`shutdown(wait=True)` onu geri koyar.
+
+🔴 `answer.py`'de bu, kodun **kendi yorumuyla** çelişiyordu:
+
+> *«⚠ İş arka planda bitmeye devam eder (thread öldürülemez) — ama cevabı bekletmez.»*
+
+Niyet doğruydu; `with` onu sessizce iptal ediyordu.
+
+> *Bir bütçe, çıkışında bekleyen bir bağlam yöneticisinin içindeyse bütçe değildir —
+> yalnız bir log satırıdır.*
+>
+> *Bir yorumun anlattığı davranış ölçülmemişse, o bir belge değil bir dilektir.*
+
+### 33.3 · Kök çözüm — `app/butce.py`, tek sahip
+
+İki kopya vardı ve **ikisi de aynı hatayı** taşıyordu (`KAT-1`). Uygulama tek modüle
+taşındı; `finally: ex.shutdown(wait=False, cancel_futures=True)`.
+
+⚠ **Sınır yazılı:** bu bir **iptal değil vazgeçiş**tir — thread öldürülemez, iş arka
+planda biter ve sonucu atılır. Nitekim `b6`'nın terk edilen anlatı çağrısı loglara
+`45.282 ms` diye düştü: tasarım **görünür**.
+
+⚠ **`ASIM` sentinel `None` DEĞİL:** `None` meşru bir sonuçtur (model çekimser kalabilir).
+İkisini tek değere çökertmek *"bilmiyor"* ile *"geç kaldı"*yı kaybetmek olurdu.
+
+### 33.4 · Doğrulama (tazelenmiş konteyner)
+
+| senaryo | önce | **sonra** |
+|---|---|---|
+| `b5` Intent bütçesi | 39.115 ms | **21.276 ms** (aşımdan 0,2 sn sonra döndü) |
+| `b3` anlatı bütçesi | 82.049 ms | **22.224 ms** (aşım tam 8. saniyede) |
+
+Log artık `BÜTÇEYİ AŞTI (20.0 sn) — BEKLENMİYOR` diyor ve **gerçekten beklemiyor**.
+
+### 33.5 · Kapılar — metin çapası neden yetmedi
+
+Eski üç kapı **yeşildi** ve bütçe çalışmıyordu, çünkü **üçü de kaynağa bakıyordu**.
+Çapalar taşındı (silinmedi) ve yanlarına **davranışsal** biri kondu:
+
+- `test_BUTCE_GERCEKTEN_BEKLEMEZ` — 0,3 sn bütçeli çağrı 3 sn'lik işi beklemeyecek
+- `test_ASIM_NONE_DEGILDIR` — çekimserlik ile aşım ayrı kalacak
+- `test_HICBIR_BUTCE_WITH_EXECUTOR_ICINDE_DEGIL` — **kusur sınıfının** kapısı: `app/`
+  altında hiçbir yerde `with ThreadPoolExecutor` + `result(timeout=` birleşimi olmayacak
+
+> *Bir metin çapası, metnin anlattığı davranışı kanıtlamaz; onu yalnız iddia eder.*
+
+## §34 · SIRALAMA, KESME SAYISINA BAĞLANMIŞTI
+
+### 34.1 · Ölçüm — dört tur, tek kök
+
+| soru | `cq` | beyan |
+|---|---|---|
+| `bu yıl en çok fire veren makine hangisi` | sırasız, 11 satır | `eksik_niyet:['ustunluk']` |
+| `bu üçüne en çok hangi renkleri sattığımı göster` | sırasız, 40 satır | `eksik_niyet:['ustunluk']` |
+| `ciromun en büyük 3 kaynağı olan müşterilerimi bul` | sırasız, 8 satır | — |
+| `en az üretim yapan 3 makine` | ✅ `order:asc` + `limit:3` | — |
+
+Dördüncüsü çalışıyordu, ilk üçü değil. Ve sistemin **kendi cevabı** kusuru yazıyordu:
+
+> *«en yüksek/en çok dedin ama sıralama uygulayamadım. **«en yüksek 5 makine» gibi sayı
+> verirsen** sıralayıp keserim.»*
+
+🔴 **Sıralama bir kesme sayısına ihtiyaç duymaz.** *"En çok fire veren makine hangisi"*
+sorusunun cevabı **sıralı bir tablonun ilk satırıdır**; sayı kaç satır **gösterileceğini**
+söyler, hangisinin **önce** geleceğini değil.
+
+⊙ Ve sistem her şeyi **biliyordu**: `uyum.py` eksikliği tespit edip beyan ediyor, yön
+`_direction(q)`'dan deterministik geliyor, ölçüt `cq`'nun kendi ölçüsü. Elinde her şey
+vardı; yalnız **uygulamıyordu**.
+
+> *Bir eksikliği doğru teşhis edip yalnız anlatmak, onu kapatmanın yerine geçmez.*
+
+### 34.2 · İkinci yarı — niyet netleştirmeden sağ çıkmıyordu
+
+`ciromun en büyük 3 kaynağı…` → *"hangi dönem için?"* → kullanıcı *"bu yıl"* dedi →
+**8 müşteri sırasız**. Üstünlük niyeti netleştirme turunda **sessizce düştü**, çünkü
+sonraki tur o `cq`'yu taban alır ve *"bu yıl"*da hiçbir üstünlük yoktur.
+
+⚠ En keskin çift: `en az üretim yapan 3 makine` **aynı** netleştirmeye gidiyor ve
+`order`+`limit`'i **taşıyor** — çünkü orada sayı boyut adına bitişikti (`3 makine`).
+
+> *Bir niyetin taşınması, cümledeki kelime sırasına bağlı olmamalıdır.*
+
+### 34.3 · Kök çözüm — `app/siralama.py`, üç tüketici
+
+Kural üç yerde yaşıyordu (`route` · `deterministic_refine` · Intent-JSON sonrası **hiç**)
+ve üçü aynı cümleye farklı davranıyordu. Tek sahibe taşındı; tüketiciler:
+
+1. `cube_router.deterministic_refine` (takip yolu)
+2. `ask.py`'nin **ortak hunisi** `_answer_from_cube_query` — kendi docstring'i zaten
+   *"her yeni Intent-path kaynağında yeniden yazılmasın"* diyor
+3. dönem netleştirmesi — `cq`'yu cevaba koymadan **önceki son an**
+
+⚠ **Yalnız sıralama konur, `limit` konmaz:** *sıralamak bilgi ekler, kesmek bilgi çıkarır
+— ikisi aynı izinle yapılmaz.*
+
+### 34.4 · Doğrulama (tazelenmiş konteyner)
+
+| senaryo | önce | **sonra** |
+|---|---|---|
+| `bu yıl en çok fire veren makine hangisi` | sırasız, `eksik_niyet` | ✅ `order:desc`, RAM-2 → RAM-1 → RAM-3, beyan **temiz**, 11.276 ms |
+| `ciromun en büyük 3 kaynağı…` → `bu yıl` | sırasız 8 satır | ✅ EGE KNIT 13,4M → AKDENİZ 10,9M → MAVİ 9,9M — **ilk üç satır tam olarak istenen üç** |
+| `bu üçüne en çok hangi renkleri…` | sırasız 40 satır | ✅ sıralı, `eksik_niyet` kayboldu |
+| `en az üretim yapan 3 makine` *(gerileme)* | `order:asc`+`limit:3` | ✅ **aynı**, 474 ms |
+
+### 34.5 · Bu turun kendi dersi — hedefli test yetmedi
+
+İlk bağlamada `_answer_from_cube_query` içinde `cube_meta` kapsamda değildi →
+**`NameError` → HTTP 500**. Hedefli seçtiğim **101 test yeşildi**; kusuru **curl** buldu.
+
+⊙ Sebep yapısal: değiştirdiğim şey *dört üreticinin buluştuğu huni*ydi ve hiçbir
+hedefli test dosyası o huniyi adıyla çağırmıyor. Arama modüle taşındı (`ask.py`'de o
+`next(c for c in schema["cubes"] …)` kalıbı zaten **beş kez** tekrarlanıyor).
+
+> *Bir aramanın tekrarı, aranan şeyin sahibinin belirsiz olduğunun işaretidir.*

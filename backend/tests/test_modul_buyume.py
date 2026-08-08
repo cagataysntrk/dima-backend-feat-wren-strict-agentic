@@ -71,7 +71,14 @@ TABAN_ASK_IC_FN = 19          # iç fonksiyon (closure) sayısı
 #: ölçülen değerin **İÇİNDE** zaten var — onları bir kez daha eklemek **çifte sayımdır**.
 #: Doğru taban: `ölçülen (1703) − Σmuafiyet (18) = 1685`, ve tavan yine tam 1703.
 #: *Bir formülü düzeltmeden bir sayıyı düzeltmek, sayıyı ikinci kez yanlış yapar.*
-TABAN_CUBE_ROUTER_KOD = 1664  # 1739 ölçüldü − 75 muafiyet = taban; tavan tam 1739
+TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan tam 1739
+#: 🔴 **1664 → 1663 (`§34`): SIRALAMA KURALI ÇIKTI, PAY İNDİ.**
+#: *"Üstünlük istendi ve sıralama yok"* kuralı `app/siralama.py`'ye taşındı. Taşıma
+#: dosyaya **net −1** kod satırı bıraktı (4 satırlık blok → 3 satırlık devir) ve
+#: meta-kapı boşluğu anında kırmızı verdi: `assert not 1815 <= 1815`.
+#: ⚠ Doğru tepki payı **yerinde bırakmak değil**: bırakılsaydı bir sonraki artış
+#: sessizce kabul edilirdi. *Bir taşımadan artan boşluk, bir sonraki borcun peşin
+#: ödenmiş faturasıdır — ve o fatura kimseye kesilmemelidir.*
 #: 🔴 **1685 → 1664 (2026-08-07): TAVAN YİNE İNDİ — ve yine bir KURAL GEREĞİ.**
 #: `build_catalog` `app/katalog_metni.py`'ye taşındı (LLM'in gördüğü METNİN sahibi
 #: `cube_router` değil); dosya 1760'tan 1739'a düştü ve tavanda **21 satır boşluk**
@@ -316,6 +323,17 @@ MUAFIYET_ASK_KOD = [
                       "(2). Reddi onarıma bırakmak 2 satır kazandırırdı ama bir yetki "
                       "sınırını 'güvenilir bir sorgu üretemedim' diye raporlardı — tavan, "
                       "dürüst olmayan bir mesajı SATIN ALMAZ"),
+    ("faz-34-siralama", 3,
+     "🔴 **ÜSTÜNLÜK SIRALAMASININ İKİ ÇAĞRI YERİ** — kuralın kendisi `app/siralama.py`'de "
+     "(bu kapının istediği gibi **modüle çıkarıldı**); `ask()`'te kalan yalnız iki çağrı: "
+     "ortak huni (`_answer_from_cube_query`, 2 satır — biri çağrı biri **iz kaydı**) ve "
+     "dönem netleştirmesi (1 satır). "
+     "⚠ **TAŞINAMAZ:** ikisi de *bir cq'nun hayatındaki AN*'dır, bir hesap değil. Huni "
+     "zaten dört üreticinin tek buluşma noktası (kendi docstring'i: *«her yeni Intent-path "
+     "kaynağında yeniden yazılmasın»*); netleştirme ise `cq`'yu **cevaba koymadan önceki** "
+     "son andır. Çağrıyı dışarı almak, çağrının **yerini** kaybetmek olurdu. "
+     "⊙ İz satırı bilerek burada: kullanıcının gördüğü sıralamayı **sistemin koyduğu** "
+     "makbuza yazılmazsa, kullanıcı onu kendi yazdığını sanır"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
     ("morfoloji/fiil-cekimi", 6,
