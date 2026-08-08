@@ -4024,3 +4024,33 @@ geçici olarak yazdırmak.
 
 ⚠ **Ve `§71` üçüncü kez körlemesine denenmeyecek:** önce bu sondaj doğru kaynaktan
 koşacak, ne gördüğü **yazılacak**, ancak ondan sonra kod değişecek.
+
+### 71.6 · CANLI SONDAJ — ve iki başarısızlığın tek açıklaması
+
+Geçici bir log satırı `/ask`'in **kendi akışına** kondu (`route()`'un ilk çağrısının hemen
+ardına) ve tek turda cevabı verdi:
+
+```
+SONDAJ71: cube=None  syn=0  eslesen=[]  cq_olcu=None
+```
+
+**İki gerçek çıktı:**
+
+1. 🔴 **`route()`'un ilk geçişi HİÇBİR ŞEY bulmuyor** (`cube=None`) — oysa aynı soru
+   canlıda **902 ms**'de `source=cube` ile cevaplanıyor. Yani ölçüyü çözen şey ilk
+   `route()` değil, **sonraki bir geçiş** (yazım düzeltmeli tekrar ya da
+   `prompt_enhancer`).
+2. 🔴 **`measure_synonyms` bu kurulumda BOŞ** (`syn=0`). Eşleştirme bu sözlükten
+   yapılmıyor; başka bir katmandan geliyor.
+
+⊙ **Ve bu, `§71.2` ile `§71.4`'ün ikisini birden açıklıyor:** her iki denemem de
+`measure_synonyms`/`measure_synonyms_display` üzerine kuruluydu — yani **hiç dolu olmayan
+bir sözlüğü** sayıyordum. Sinyal yanlış değildi; **kaynağı yoktu**.
+
+> *İki kez aynı yerde yanılmak bir tesadüf değildir; ikisinin de aynı boş kovadan su
+> çekmesidir.*
+
+**Sıradaki adım (kesin):** ölçüyü gerçekten kimin eşleştirdiğini bul — `route()`'un ikinci
+geçişi mi (`typo_correct` sonrası), `prompt_enhancer` mı, yoksa sinonim katmanı mı
+(`app/synonyms`·`value_index`·`archetypes`). Sayaç **oradan** okunacak.
+⚠ Sondaj satırı **kaldırıldı** (geçiciydi); tekrar gerekirse aynı yere konur.
