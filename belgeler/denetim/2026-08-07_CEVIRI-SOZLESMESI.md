@@ -6057,3 +6057,93 @@ kapandı. Ve bulgu gerçek: **3. vardiya %25,08 fire**, 1. vardiya %16,78.
 düzeltildi: `rol`·`pencere`·`varsayilan_donem` katalog beyanları MDL'nin sabit alan
 kümesine çarptı; M-1'in *"ölçü bir küpte, boyut başkasında"* teşhisi ölçümle çürüdü —
 boyut **aynı küpteydi, beyan edilmemişti**.
+
+---
+
+## §98 · MUTFAK RAPORU **KAPANDI** — M-1 tamamlandı, M-8 ölçülerek kapsam dışına alındı
+
+### §98.1 · 🔴 "45 kolon" bir ALTDİZE YANILGISIYDI — onuncu alet düzeltmesi
+
+`§94.1`'de *"46 ortak-boyut kolonu beyan edilmemiş"* diye ölçmüştüm. O tarama **altdize**
+eşleşmesi yapıyordu: `hat` ⊂ `hat`**ali**, `vardiya` ⊂ `vardiya`**_suresi_dk**,
+`makine` ⊂ `makine`**ler**. Tam ad eşleşmesiyle yeniden ölçüldü:
+
+| küp | gerçek boşluk |
+|---|---|
+| `ik` | `personel` — bir **ilişki** (join), boyut değil → aday değil |
+| `isg` | ⊘ zaten beyanlı: `kaza_vardiya` (`expression: vardiya`) |
+| `kalite` | ⊘ zaten beyanlı: `musteri` (`expression: musteri_ad`) |
+| `parti` | ⊘ `§97`'de kapandı |
+| **`surdurulebilirlik`** | 🔴 **`vardiya_ad`** — tek gerçek boşluk |
+
+**Gerçek sayı: 46 değil, 1.** *Bir eksikliği saymak, onu adıyla saymaktır.*
+
+### §98.2 · Son boyut indi — ve korpus YÜKSELDİ
+
+`surdurulebilirlik` küpü `partiler` tabanını `parti` ile paylaşıyor; `vardiya_ad` orada
+**zaten vardı**.
+
+| ölçüt | `§97` sonrası | **son** |
+|---|---|---|
+| `kabul` | 1142 | **1146** (+4) |
+| `dogru` | 87 | **90** (+3) |
+| `sessiz_yanlis` | 11 | **11** ✅ |
+| `beyanli_kismi` | 32 | 33 |
+| doğru-cube | %94.4 | **%94.4** (taban %94.4) ✅ |
+| tam süit | 4261 | **4262 yeşil** |
+
+⊙ Bu sefer payda **oynamadı** (2266 → 2266) ve `kabul`+`dogru` **yükseldi** — yani
+kazanç bu kez **doğrudan kıyaslanabilir**.
+
+### §98.3 · M-8 — ölçüldü ve **tarif edildiği gibi uygulanamaz**
+
+Raporun teşhisi: *"`demo/packs/kaynak/*/gereksinim.yml` dosyaları **mevcut**. Eksik olan,
+o beyanın **çalışma zamanında** okunması."*
+
+**Ölçüldü — iki engel:**
+
+1. 🔴 `gereksinim.yml` bir **yetenek beyanı değil**, bir **tablo/kolon manifestosudur**
+   (`modeller: [{name, tablo, primary_key, kolonlar}]`). *"Bu ölçü senin ERP'nde yok"*
+   diyebilmek için **ölçü → tablo → gereksinim** zinciri gerekir ve o zincir **veri
+   olarak yok**. Dahası `app/compose.py:270` bu dosyayı derlemede **bilerek atlıyor** —
+   o bir **kod üretimi** girdisidir (`lab/generate_models.py`), çalışma zamanı girdisi
+   değil.
+2. 🔴 Raporun kendi sınır notu: canlı örnekte tek geçerli kiracı `demo-boyahane` ve
+   `demo-geri-donusum`; farkın ölçüldüğü `gitas`/`atiksan` **korpus-içi** şirketlerdir,
+   **giriş hesapları yoktur**. Yani M-8 bu kurulumda **canlıda doğrulanamaz** bile.
+
+**Karar:** M-8 kapsam dışına alındı ve gerekçesi yazıldı. Uygulanabilir hâli **yeni bir
+veri** ister (ölçü-düzeyi kaynak gereksinimi beyanı) ve o, raporun tarif ettiği iş değil
+**başka bir iştir**. *Var olan bir dosyayı okumak ile olmayan bir alanı üretmek aynı iş
+değildir.*
+
+### §98.4 · 🔴 MUTFAK RAPORUNUN KAPANIŞ BİLANÇOSU
+
+| kök | rapor önceliği | durum |
+|---|---|---|
+| **M-7** telemetri pusulası | 1 | ✅ *(+ raporun görmediği ikiz)* |
+| **M-2** ölçü rolü + varsayılan | 2 | ◐ `default_measure` **3→11**; `rol` katmanı **MDL'de yapısal kapalı** |
+| **M-5** toplanabilirlik | 3 | ✅ beyan **12→77**, `non_additive` **0→56** |
+| **M-4** varsayılan dönem | 4 | ✅ kuruldu+ölçüldü, bayrak **bilerek kapalı** (6 altın sözleşme) |
+| **M-6** operatör tek kaynak | 5 | ✅ motorun 12 adı **ölçüldü**, `ne` ayıklandı, 5 yetenek fişe girdi |
+| **M-3** türev ölçü | 6 | ✅ `yuzde`·`oran`·`fark` + kendine-oran gürültülü red |
+| **M-9** pencere katmanı | 7 | ✅ **altı kip** canlıda ölçüldü |
+| **M-1** uyumlu boyut | 8 | ✅ `parti` + `surdurulebilirlik`; gerçek boşluk kalmadı |
+| **M-8** kaynak farkı beyanı | 9 | ⊘ **ölçülerek kapsam dışı** (§98.3) |
+| **KÖK-M1a** chip ayırt edicisi | *(türedi)* | ✅ M-1'in yolunu açtı |
+
+**Dokuz kökten yedisi indi, biri yarım (yapısal engel), biri ölçülerek kapsam dışı.**
+
+### §98.5 · Ve raporun kendisi hakkında — beş düzeltme
+
+| # | raporun dediği | ölçüm |
+|---|---|---|
+| 1 | `rol`+`birincil` menüye yazılsın | MDL ölçü alanları **sabit** → kanal yok |
+| 2 | `pencere:` menüye yazılsın | aynı duvar → **CubeQuery alanı** olarak indi (daha iyi: önceden tanımlı olmak zorunda değil) |
+| 3 | `varsayilan_donem:` menüye yazılsın | aynı duvar → **veriden türetildi** (bayatlamaz) |
+| 4 | M-1: *"ölçü bir küpte, boyut başkasında"* | boyut **aynı küpteydi**, beyan edilmemişti |
+| 5 | M-8: *"`gereksinim.yml` var, tüketicisi yok"* | o dosya bir **tablo manifestosu**, yetenek beyanı değil |
+
+> *Bir denetim raporunun değeri, önerdiği çözümlerin doğruluğunda değil, gösterdiği yerin
+> doğruluğundadır. Bu rapor dokuz yerin dokuzunu da doğru gösterdi; çözümlerin beşi
+> yanlış kapıydı ve bunu ancak uygulamaya çalışınca öğrendik.*

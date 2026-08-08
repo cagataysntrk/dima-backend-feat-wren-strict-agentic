@@ -106,6 +106,20 @@ measures:
     lower_is_better: true
 
 dimensions:
+  # 🔴 `M-1` — SON ORTAK-BOYUT BOŞLUĞU. Bu küp `partiler` tabanını `parti` ile
+  # **paylaşıyor** ve o tabloda `vardiya_ad` (VARCHAR, okunur etiket) **zaten var**;
+  # beyan edilmemişti. `parti.vardiya` indikten sonra (§97) geriye kalan **tek** gerçek
+  # boşluk buydu.
+  # ⚠ Daha önce raporlanan *"45 kolon"* sayısı bir **ALTDİZE eşleşmesi** yanılgısıydı
+  # (`hat` ⊂ `hatali`, `vardiya` ⊂ `vardiya_suresi_dk`); tam ad eşleşmesiyle ölçülünce
+  # gerçek boşluk **bir** çıktı. Ötekiler zaten farklı adla beyanlı: `isg.kaza_vardiya`
+  # (expression `vardiya`) · `kalite.musteri` (expression `musteri_ad`).
+  # *Bir eksikliği saymak, onu adıyla saymaktır.*
+  - name: vardiya
+    expression: vardiya_ad
+    type: VARCHAR
+    label: vardiya
+    synonyms: [vardiya, vardiyalar, vardiyası, hangi vardiya]
   - name: makine
     expression: makine
     type: VARCHAR
