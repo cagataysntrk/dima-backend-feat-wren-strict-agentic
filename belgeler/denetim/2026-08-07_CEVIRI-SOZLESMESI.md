@@ -4306,3 +4306,38 @@ kabiliyet değil, **eşik**.
 
 **Kırık (11):** `l2`·`l5`·`l7`·`l8`·`l10`·`l11`·`l14`·`l15`·`l16`·`l17`·`l19` — hepsi
 netleştirme, hepsi `§75` sınıfı.
+
+### 75.3 · 🔴 SONDAJ KENDİ SINIFLANDIRMAMI DÜZELTTİ — *"11 kırık"* ŞİŞİRİLMİŞTİ
+
+`§76`'da L turunun 11 senaryosunu *"netleştirmeyle bitti, hepsi `§75` sınıfı"* diye
+yazdım. Sonra aynı soruları tek tek yeniden koşup **izlerini** okudum:
+
+| soru | iz | gerçek okuma |
+|---|---|---|
+| `toplam üretimin yüzde kaçı fire` | `self-consistency **%67** (3 örnek)` + 6 chip | ✅ **bu koşumda GEÇTİ** — L turundaki başarısızlık **oy salınımıydı** |
+| `en çok hangi makinede rework oldu` | `self-consistency %67` · 11 satır | ✅ aynı — **iki koşum, iki sonuç** |
+| `renk ve makine kırılımını ısı haritasıyla ver` | `cube belirlendi, ölçü belirsiz → netleştirme **(LLM'siz)**` | ⊘ farklı sınıf: garson **iz bırakmadı** |
+
+⊙ **İki ders:**
+
+1. **`§75`'in tezi güçlendi:** aynı soru koşumdan koşuma geçiyor/kalıyor — kusur
+   kabiliyet değil **salınım**. Eşik tartışması yerinde.
+2. 🔴 **Ama sayım şişikti:** *"11 kırık"* dediğim kümenin bir kısmı **o koşumda** kırıktı,
+   sistemik olarak değil. Bir turu bir kez koşup *"şu kadar kırık"* demek, salınımlı bir
+   sistemde **bir ölçüm değil bir fotoğraftır**.
+
+> *Belirlenimsiz bir sistemi tek koşumla saymak, zarı bir kez atıp «bu zar hep üç gelir»
+> demektir.*
+
+⚠ **Usul düzeltmesi (bundan sonra):** LLM yolundan geçen bir senaryo **kırık** diye
+kaydedilmeden önce **en az iki kez** koşulmalı. Tek koşumluk kırmızı, bir **aday**dır —
+bir bulgu değil.
+
+### 75.4 · Ayrı ve gerçek bir kusur: `netleştirme (LLM'siz)`
+
+`renk ve makine kırılımını ısı haritasıyla ver` izinde **hiç** `self-consistency` satırı
+yok — yani garson o turda ya hiç konuşmadı ya da tüm oyları düştü, ve dal *"(LLM'siz)"*
+diye kendini işaretleyerek kullanıcıya soru sordu.
+
+⊙ Bu, `§0.0`'ın ihlali: soruda **iki kırılım adı** (`renk`, `makine`) ve bir **görselleştirme**
+isteği var; eksik olan yalnız ölçü. Garsona sorulmadan kullanıcıya sorulmuş.
