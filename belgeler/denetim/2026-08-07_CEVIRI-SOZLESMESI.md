@@ -4077,3 +4077,62 @@ Hollandaca eksiği **değil**: garson devreye girmedi ya da cevabı atıldı. Ay
 `§65`'in ölçtüğü şey.
 
 > *Bir aleti ürün sanmak, ölçtüğü şeyi kaybetmektir.*
+
+## §73 · `kar ⊂ karşılaştır` — YAPIM EKİ, ÇEKİM EKİ SANILDI
+
+**Ölçüm (`k12`):** `bu yıl en verimli 2 makineyi seç ve **karşılaştır**` → *"Bu soru
+**iki ayrı konunun** ölçüsünü birlikte istiyor («**kar**» (parti) + «verim» (oee))"*.
+Kullanıcı kârdan hiç söz etmedi; `kar` ölçüsü **`karşılaştır`** sözcüğünün içinde eşleşti.
+
+**Sondaj** (canlı konteyner — kör yama yapılmadan, `§71.4`'ün kuralı gereği):
+
+```
+_syn_hit(kar)                  → True
+_covers("kar", "karsilastir")  → True
+_ek_gecerli("silastir")        → True      ← kökün ta kendisi
+```
+
+### 73.1 · Kök — dilbilgisel ve keskin
+
+`_SUFFIX_ATOMS` envanteri **çekim** ile **yapım** ekini ayırmıyor:
+
+| ek türü | örnek | kimliği korur mu? |
+|---|---|---|
+| **çekim** (hâl · çoğul · iyelik) | `kar` → `kar**ın**`, `kar**lar**` | ✅ hâlâ *kâr* |
+| **yapım** (isimden fiil/isim) | `kar` → `kar**şılaştır**`, `kar**lı**`, `kar**sal**` | 🔴 **başka bir sözcük** |
+
+> *Bir sözcüğü çekmek onu kendisi olarak bırakır; ondan yeni bir sözcük türetmek başka bir
+> şeye çevirir. Bir eşleştirici bu ikisini ayırmıyorsa, kelimeleri değil harfleri eşler.*
+
+⊙ Ve bu, `§32`'nin **ters yönü**: orada katalog teriminden yapım eki **soymuştum**
+(`uretim → uret`); burada yapım eki **eklenmiş** bir sözcük kökün çekimi sanılıyor.
+
+### 73.2 · Çözüm yönü — **kod DEĞİŞMEDİ**, korpus hakemliği şart
+
+`_SUFFIX_ATOMS` ikiye ayrılmalı: kimliği koruyan **çekim** atomları (eşleşmeye izin) ve
+kimliği değiştiren **yapım** atomları (`-laş`·`-lan`·`-lı`·`-sal`·`-cı`·`-lık` — eşleşmeyi
+**keser**).
+
+⚠ Bu deponun **en merkezî** eşleştiricisi. `§26.1` bağlayıcı: korpus `sessiz_yanlis`'i
+artırırsa geri alınır. Ve `§32`'nin `_kok()` yolu bundan **etkilenir** — ikisi **birlikte**
+ölçülmeli. Bu yüzden bu turda **yazılmadı**: tek başına bir demete sığmaz.
+
+## §74 · K turunun envanteri (20 senaryo)
+
+**Çalışan (9):** `k3` üç ölçü birlikte · `k4` müşteri başına parti (`order:desc`) ·
+`k6` **517 ms** · `k10` **dürüst olumsuzluk sınırı** · `k11` **dürüst çapraz-küp sınırı**
+(862 ms) · `k15`T1 **495 ms** · `k16` **764 ms** · **`k18` `ciro dağılımını pasta yap` →
+`view: pie` + müşteri kırılımı ✅✅** · `k9` doğru şekil + dürüst boş-aralık
+
+**Kökler:**
+
+| # | kanıt |
+|---|---|
+| **§73** `kar ⊂ karşılaştır` | `k12` |
+| **ters cevap** — `en yükseğini **çıkar** kalanları göster` → tam tersi (`limit:1`) | `k15`T2 · `çıkar` *dışla* değil *üret* okundu |
+| `limit N` kaybı *(4. kanıt)* | `k8` `en yüksek **3** hattın aylık trendi` → 48 satır |
+| **ölçü netleştirmesi baskın sınıf** *(6 kanıt)* | `k5`(NL) · `k7` · `k14` · `k17` · `k19` · `k20` |
+| `§49` iki-dönem/YoY *(8. kanıt)* | `k13` `geçen yılın aynı ayıyla yan yana` |
+
+⊙ `§72` gereği `k5` bir **Hollandaca eksiği değil**: garson yolunun o soruda kırık
+olduğunun kanıtı — ve `§65`'in sınıfına ait.
