@@ -318,7 +318,11 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
 #: (`date_filters("ilk yari")` → boş; oysa `ilk ceyrek` → dolu). Bu ayrı bir iştir; bu
 #: madde yalnız **yanlış beyanı** kapatır, dönemi çözmez. İkisini karıştırmak, kapatılan
 #: kusurun ölçüsünü kaybettirirdi.
-_ZAMAN_BIRIMI = (r"(ay|gun|gün|hafta|yil|yıl|ceyrek|çeyrek|donem|dönem|saat|dakika"
+#: ⚠ `§45` — **ÜNSÜZ YUMUŞAMASI da bir yüzey biçimidir.** Kapı `son çeyreğin karlılığı`
+#: ile kırmızı verdi: `çeyrek` + ek → `çeyreğ`, ve `k` biten kök `\w{0,4}` ile
+#: yakalanamaz çünkü **kökün kendisi değişmiştir**. Türkçede `k→ğ`·`p→b`·`t→d`·`ç→c`
+#: kural gereğidir; kökü tanıyıp yumuşamışını tanımamak, aynı kelimenin yarısını bilmektir.
+_ZAMAN_BIRIMI = (r"(ay|gun|gün|hafta|yil|yıl|ceyre[kg]|çeyre[kğ]|donem|dönem|saat|dakika"
                  r"|yari|yarı|yariyil|yarıyıl)")
 
 
@@ -364,8 +368,26 @@ def _ustunluk_mu(qn: str, topn_cue, ic: dict | None = None,
     olcu_araliklari = _olcu_sinonim_araliklari(qn, ic or {}, cube_meta)
     for m in re.finditer(topn_cue.pattern, qn):
         kuyruk = qn[m.end():m.end() + 24]
-        if re.match(rf"\s*\d*\s*{_ZAMAN_BIRIMI}\b", kuyruk):
-            continue                       # "son 3 ay" → dönem
+        # 🔴 **`§45` — `\b` TÜRKÇE EKİ GÖREMİYOR ve kural yarısında ölüydü.**
+        #
+        # Ölçüldü: `son 3 **ay** ciro` ✅ geçiyor ama `son 3 **ayın** ortalama günlük
+        # üretimi` 🔴 geçmiyordu → *«en yüksek/en çok dedin ama sıralama uygulayamadım»*.
+        # Kullanıcı öyle bir şey **demedi**.
+        #
+        # ⊙ Sebep tek karakter: `ay\b` deseni `ayin`de **`y` ile `i` arasında** bir sözcük
+        # sınırı arar ve orada sınır **yoktur**. Yani kural, zaman biriminin **çekimsiz**
+        # hâlinde çalışıyor, çekimli hâlinde susuyordu — ve Türkçede dönem ifadeleri
+        # neredeyse **her zaman** çekimlidir (`ayın`·`ayda`·`aylık`·`yılın`·`çeyreğin`).
+        #
+        # ⚠ `\w{0,4}` bilerek **sınırlı**: eksiz de olabilir (`ay`), en fazla dört harflik
+        # bir ek alabilir (`aylık`). Sınırsız bırakmak `ay` ile başlayan her kelimeyi
+        # (`ayrıntı`) zaman birimi sayardı — `§32`'nin dersi: *kısa bir dizge her yere
+        # sığar*, o yüzden sağı **açık değil dar** bırakılır.
+        #
+        # *Bir sınır kontrolü, sınırladığı dilin biçimbilgisini tanımıyorsa yalnız o dilin
+        # en yalın hâlinde çalışır — ve gerçek cümleler yalın değildir.*
+        if re.match(rf"\s*\d*\s*{_ZAMAN_BIRIMI}\w{{0,4}}\b", kuyruk):
+            continue                       # "son 3 ay" / "son 3 ayın" → dönem
         if any(a <= m.start() and m.end() <= b for a, b in olcu_araliklari):
             continue                       # "en yüksek kur" → ölçünün ADI
         return True

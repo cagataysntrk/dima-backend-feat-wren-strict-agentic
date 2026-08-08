@@ -2961,3 +2961,46 @@ katalogdan en yakın bulduğunu (`agirlik`) önerdi.
 | `c5` T2 | `neden diğerlerinden iyi` | ✅ §36 çalıştı (585 ms, 0 LLM) + **matematiksel olarak dürüst** red (*"ort_oee bir oran — katkı payı tanımsız"*). ⚠ Ama *ne yapabileceğini* söylemiyor |
 | `c6` | `duruş süresi en yüksek 5 makine` → `bunların oee'si ne` | ✅ **gerçek agentic zincir**: 518 ms top-5, sonra **aynı 5 makineye** ölçü eklendi, sıra+limit korundu |
 | `c9` | `kalite red oranı nedir` | ⚠ `fire_orani_yuzde`'ye eşlendi; ikame **beyan edilmiyor** |
+
+## §45 · `\b` TÜRKÇE EKİ GÖREMİYOR — kural yarısında ölüydü
+
+### 45.1 · Ölçüm
+
+`§42` konduktan **hemen sonra** aynı yanlış beyan başka bir cümlede çıktı:
+
+| soru | eskiden | sebep |
+|---|---|---|
+| `son 3 **ay** ciro` | ✅ geçiyordu | ek yok |
+| `son 3 **ayın** ortalama günlük üretimi` | 🔴 *«en yüksek/en çok dedin»* | **ek var** |
+
+### 45.2 · Kök — tek karakter
+
+`_ustunluk_mu`'nun deseni `{_ZAMAN_BIRIMI}\b` idi. `ay\b`, `ayin` içinde **`y` ile `i`
+arasında** bir sözcük sınırı arar — ve orada sınır **yoktur**. Yani kural zaman biriminin
+**çekimsiz** hâlinde çalışıyor, **çekimli** hâlinde susuyordu.
+
+🔴 Ve Türkçede dönem ifadeleri neredeyse **her zaman** çekimlidir: `ayın`·`ayda`·`aylık`·
+`yılın`·`çeyreğin`. Yani kural, gerçek cümlelerin çoğunda **hiç çalışmıyordu**.
+
+> *Bir sınır kontrolü, sınırladığı dilin biçimbilgisini tanımıyorsa yalnız o dilin en
+> yalın hâlinde çalışır — ve gerçek cümleler yalın değildir.*
+
+### 45.3 · Ve kapı bir ikinci katmanı daha buldu — ÜNSÜZ YUMUŞAMASI
+
+`\w{0,4}` eklendikten sonra yeni yazdığım kapı `son çeyreğin karlılığı` ile **kırmızı**
+verdi: `çeyrek` + ek → **`çeyreğ`**. Kök `k` ile bitiyor ve ek alınca **kökün kendisi
+değişiyor** (`k→ğ`), yani hiçbir sağ-taraf genişlemesi onu yakalayamaz.
+
+`ceyre[kg]` yazıldı. *Bir kökü tanıyıp yumuşamışını tanımamak, aynı kelimenin yarısını
+bilmektir.*
+
+⚠ **Sağ taraf bilerek DAR** (`\w{0,4}`): sınırsız olsaydı `ay` ile başlayan her kelime
+(`ayrıntılı`) zaman birimi sayılırdı — `§32`'nin dersi. Kapı bunu ayrıca sınıyor.
+
+### 45.4 · Doğrulama
+
+`son 3 ayın ortalama günlük üretimi` → ✅ yanlış beyan **kayboldu**; notta yalnız meşru
+cube-belirsizliği açıklaması kaldı (14.053 ms).
+
+**Yeni kapılar (11):** yedi dönem ifadesi üstünlük **sayılmayacak** · üç gerçek üstünlük
+**sayılmaya devam edecek** (gevşemenin sınırı) · ek penceresi **sınırsız olmayacak**.

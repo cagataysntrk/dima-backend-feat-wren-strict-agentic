@@ -21,6 +21,7 @@ olduğu hiçbir yerde denetlenmiyordu. `ocak ve haziran ciro karşılaştır` �
 from __future__ import annotations
 
 import pytest
+import pytest
 
 from app.cube_router import route
 from app.uyum import denetle, kismi_cevap_notu
@@ -229,3 +230,48 @@ def test_ESIK_GERCEKTEN_YOKSA_HALA_BEYAN_EDILIR(schema):
                           "dimensions": ["musteri"]}}
     isaretler = {i.isaret for i in denetle("5 milyon uzeri ciro yapan musteriler", hit)}
     assert "esik" in isaretler, "🔴 eşik uygulanmadı ama sessiz kalındı"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# §42/§45 · YANLIŞ ÜSTÜNLÜK BEYANI — sınıfın eksik üyesi + çekim körlüğü
+#
+# *Yanlış bir beyan sessizlikten kötüdür: sistem kullanıcıya ONUN SÖYLEMEDİĞİ bir
+# şeyi söylediğini söyler.*
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@pytest.mark.parametrize("q", [
+    "son 3 ay ciro",                       # çekimsiz — eskiden de geçiyordu
+    "son 3 ayin ortalama gunluk uretimi",  # §45: çekimli — GEÇMİYORDU
+    "son 3 ayda toplam fire",
+    "son 6 aylik trend",
+    "2025 ile 2026 ilk yarisini kiyasla",  # §42: `yarı` sınıfta yoktu
+    "ilk yariyil cirosu",
+    "son ceyregin karliligi",
+])
+def test_DONEM_IFADESI_USTUNLUK_SAYILMAZ(q):
+    from app.cube_router import _TOPN_CUE
+    from app.uyum import _ustunluk_mu
+    assert _ustunluk_mu(q, _TOPN_CUE, None, None) is False, (
+        f"🔴 «{q}» bir DÖNEM ifadesidir; üstünlük beyanı yanlış bir beyandır")
+
+
+@pytest.mark.parametrize("q", [
+    "ilk 5 makine",
+    "en yuksek 3 musteri",
+    "son 5 parti",                         # ⚠ burada `son` GERÇEKTEN üstünlüktür
+])
+def test_GERCEK_USTUNLUK_HALA_SAYILIR(q):
+    """⚠ Gevşetmenin sınırı: ipucundan sonra bir **zaman birimi** gelmiyorsa üstünlüktür.
+    Bu kapı olmadan `§45` sessizce kapsamı daraltabilirdi."""
+    from app.cube_router import _TOPN_CUE
+    from app.uyum import _ustunluk_mu
+    assert _ustunluk_mu(q, _TOPN_CUE, None, None) is True, f"🔴 «{q}» bir üstünlük isteğidir"
+
+
+def test_EK_PENCERESI_SINIRSIZ_DEGIL():
+    """🔴 `§32`'nin dersi burada da: *kısa bir dizge her yere sığar.* Sağ taraf **dört
+    harfle** sınırlı; sınırsız olsaydı `ay` ile başlayan her kelime zaman birimi olurdu."""
+    from app.uyum import _ZAMAN_BIRIMI
+    import re as _re
+    # "ayrintili" (9 harf: ay + 7) bir zaman birimi DEĞİLDİR
+    assert not _re.match(rf"\s*\d*\s*{_ZAMAN_BIRIMI}\w{{0,4}}\b", " ayrintili")
