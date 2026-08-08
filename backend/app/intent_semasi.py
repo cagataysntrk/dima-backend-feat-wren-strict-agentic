@@ -173,6 +173,36 @@ def cube_query_json_schema(index: dict, *, harman: bool = False) -> dict:
             "type": "integer", "minimum": 1, "maximum": 1000,
             "description": "Satır sayısı. *«ilk 5»*, *«en yüksek 3»* gibi bir sayı "
                            "geçtiyse yaz; geçmediyse BU ALANI HİÇ YAZMA."}
+        # 🔴 `M-9`/`M-3` — PENCERE ve TÜREV FİŞE YAZILDI. `M-6`'nın dersi birebir burada:
+        # *mutfak o yemeği yapabiliyor ama menüde yazmıyordu.* `wren_service` kümülatifi,
+        # hareketli ortalamayı, grup-içi sırayı ve oran/pay'ı **sarabiliyor**; garsonun
+        # onu **isteyebileceği bir alan yoktu**, dolayısıyla `kümülatif`·`hareketli`·`pay`
+        # nitelemeleri cevaptan sessizce düşüyordu (`p15`·`p16`·`r18`·`r12`).
+        props["pencere"] = {
+            "type": "object", "additionalProperties": False,
+            "properties": {
+                "taban": {"type": "string", "enum": olculer},
+                "kip": {"type": "string", "enum": list(_ops.PENCERE_KIPLERI)},
+                "pencere_boyu": {"type": "integer", "minimum": 2, "maximum": 24},
+                "bolum": {"type": "array", "items": {"type": "string", "enum": boyutlar}}
+                          if boyutlar else {"type": "array", "items": {"type": "string"}},
+                "yon": {"type": "string", "enum": ["asc", "desc"]}},
+            "required": ["taban", "kip"],
+            "description": "Zaman/grup PENCERESİ. *«kümülatif»*→`kumulatif`, *«hareketli "
+                           "N aylık ortalama»*→`hareketli_ort`+`pencere_boyu`, *«her X "
+                           "için en yüksek»*→`sira`+`bolum`, *«önceki döneme göre yüzde "
+                           "değişim»*→`degisim_yuzde`. `kumulatif`/`hareketli_ort`/"
+                           "`degisim_yuzde` bir ZAMAN KOVASI ister (`timeDimensions`)."}
+        props["turev"] = {
+            "type": "object", "additionalProperties": False,
+            "properties": {"pay": {"type": "string", "enum": olculer},
+                           "payda": {"type": "string", "enum": olculer},
+                           "kip": {"type": "string", "enum": list(_ops.TUREV_KIPLERI)}},
+            "required": ["pay", "kip"],
+            "description": "TÜREV ölçü — iki ölçü arasında oran/pay/fark. *«üretimin yüzde "
+                           "kaçı fire»*, *«toplam içindeki payı»* → `kip:yuzde` ve iki "
+                           "ölçüyü de `measures`'a yaz. Katalogda hazır bir oran ölçüsü "
+                           "VARSA (ör. `…_orani_yuzde`) onu tercih et, bunu yazma."}
         props["measure_having"] = {
             "type": "object", "additionalProperties": False,
             "properties": {"measure": {"type": "string", "enum": olculer},

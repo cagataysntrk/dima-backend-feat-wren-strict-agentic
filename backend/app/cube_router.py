@@ -4340,6 +4340,29 @@ def parse_cube_query(text: str, index: dict) -> dict | None:
             and isinstance(mh.get("value"), (int, float))):
         out["measure_having"] = {"measure": mh["measure"], "op": mh["op"],
                                  "value": float(mh["value"])}
+    # 🔴 `M-9`/`M-3` — PENCERE ve TÜREV geçirilir. Bu satırlar olmadan mutfak yeteneği
+    # **erişilemez** kalırdı: `wren_service` sarmayı biliyor, sipariş fişi alanı
+    # taşımıyor. Yukarıdaki üç yorumun (`period_expr`·`measure_having`·`compare`) hepsi
+    # aynı dersi yazıyor — *"bir alanı düşürmek, onu hiç istememekle aynı sonucu verir."*
+    # ⚠ Doğrulama **dar**: taban/pay/payda bu cube'un ölçüsü olmalı, kip kapalı kümede.
+    from app import cube_operatorleri as _cebir
+    from app import cube_operatorleri as _cebir
+    pn = cq.get("pencere")
+    if (isinstance(pn, dict) and pn.get("taban") in spec.get("measures", [])
+            and pn.get("kip") in _cebir.PENCERE_KIPLERI):
+        _p = {"taban": pn["taban"], "kip": pn["kip"]}
+        if isinstance(pn.get("pencere_boyu"), int):
+            _p["pencere_boyu"] = pn["pencere_boyu"]
+        if isinstance(pn.get("bolum"), list):
+            _p["bolum"] = [b for b in pn["bolum"] if b in spec.get("dimensions", [])]
+        if str(pn.get("yon") or "").lower() in ("asc", "desc"):
+            _p["yon"] = str(pn["yon"]).lower()
+        out["pencere"] = _p
+    tv = cq.get("turev")
+    if (isinstance(tv, dict) and tv.get("pay") in spec.get("measures", [])
+            and tv.get("kip") in _cebir.TUREV_KIPLERI
+            and (tv.get("kip") == "fark" or tv.get("payda") in spec.get("measures", []))):
+        out["turev"] = {"pay": tv["pay"], "payda": tv.get("payda"), "kip": tv["kip"]}
     # 🔴 `B-G4` — DÖNEMSEL KIYAS geçirilir. Beyaz liste onu **düşürüyordu**, yani LLM
     # doğru cevabı üretse bile kıyas mutfak kapısında ölüyordu (`dashboards.py:187` bunu
     # bilip elle geri ekliyor — *bir alanı geri eklemek zorunda kalmak, onun düşürülmemesi

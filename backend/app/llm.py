@@ -403,6 +403,21 @@ def _cube_select_system(catalog: str) -> str:
         "- timeDimensions'ı yalnız kullanıcı zaman KOVASI istediyse ekle "
         "(aylık/haftalık/günlük/trend) — bir dönem ifadesi kova demek değildir.\n"
         "- Sıralama/limit ekleme; yalnız ölçü + boyut + zaman + filtre seç.\n"
+        # 🔴🔴 `M-9`/`M-3` — VE İLK YAZIMIM BU İKİ SATIRI **YANLIŞ İSTEME** KOYDU.
+        # Kuralları `_cube_refine_user`'a (takip yolu) yazmıştım; taze yol onları hiç
+        # görmüyordu. Canlı uçtan uca sınama gösterdi: `bu yıl aylık **kümülatif** fire`
+        # → `cq`'da `pencere` **yok**, `bilinmeyen=kumulatif`. *Bir kuralı yanlış isteme
+        # yazmak, hiç yazmamaktır* — ve bunu ancak zinciri sonuna kadar koşarak görürsün.
+        '- PENCERE: "pencere":{"taban":"<ölçü>","kip":"kumulatif|hareketli_ort|sira|'
+        'onceki|degisim_yuzde|pay"}. «kümülatif/birikimli»→kumulatif; «hareketli N aylık '
+        'ortalama»→hareketli_ort + "pencere_boyu":N; «her X için en yüksek»→sira + '
+        '"bolum":["<boyut>"]; «önceki döneme göre yüzde değişim»→degisim_yuzde; '
+        '«toplam içindeki payı / yüzde kaçı» → **pay** (turev DEĞİL). '
+        "kumulatif/hareketli_ort/degisim_yuzde bir ZAMAN KOVASI ister (timeDimensions).\n"
+        '- TÜREV (oran/pay): "turev":{"pay":"<ölçü>","payda":"<ölçü>","kip":"yuzde|oran|'
+        'fark"} ve İKİ ölçüyü de measures\'a yaz. «üretimin yüzde kaçı fire», «toplam '
+        "içindeki payı» bunun içindir. ⚠ Katalogda hazır bir oran ölçüsü VARSA "
+        "(ör. `…_orani_yuzde`) **onu** seç, turev yazma.\n"
         # 🔴 `AJ3.5` — ÖRNEKLER. Ölçüldü: dar düzenleme yapan `refine_cube` prompt'unda
         # **4 örnek** vardı, doğal dili yorumlayan bu prompt'ta **0**. Zor işi yapana
         # örnek verilmemişti.
@@ -441,6 +456,20 @@ def _cube_refine_user(prev_cq_json: str, message: str) -> str:
         "- cube_query yalnız katalogdaki ölçü/boyut adlarını kullanır. Sıralama: "
         '"order":{"measure":"<ölçü>","direction":"asc|desc"}; limit: "limit":N '
         '("en düşük"→asc, "ilk 5"→limit 5).\n'
+        # 🔴 `M-9`/`M-3` — PENCERE ve TÜREV **fişe yazıldı**. `M-6`'nın dersi: mutfak
+        # yemeği yapabiliyorsa menüde de yazmalı; yoksa garson isteyemez ve niteleme
+        # cevaptan **sessizce düşer** (ölçüldü: `p15` kümülatif · `r18` hareketli ·
+        # `p16` pay · `r12` grup-içi ilk-1 — dördünde de `niyet` kelimeyi biliyordu).
+        '- PENCERE: "pencere":{"taban":"<ölçü>","kip":"kumulatif|hareketli_ort|sira|'
+        'onceki|degisim_yuzde|pay"}. «kümülatif/birikimli»→kumulatif; «hareketli N aylık '
+        'ortalama»→hareketli_ort + "pencere_boyu":N; «her X için en yüksek»→sira + '
+        '"bolum":["<boyut>"]; «önceki döneme göre yüzde değişim»→degisim_yuzde; '
+        '«toplam içindeki payı / yüzde kaçı» → **pay** (turev DEĞİL). '
+        "kumulatif/hareketli_ort/degisim_yuzde bir ZAMAN KOVASI ister (timeDimensions).\n"
+        '- TÜREV (oran/pay): "turev":{"pay":"<ölçü>","payda":"<ölçü>","kip":"yuzde|oran|'
+        'fark"} ve İKİ ölçüyü de measures\'a yaz. «üretimin yüzde kaçı fire», «toplam '
+        "içindeki payı» bunun içindir. ⚠ Katalogda hazır bir oran ölçüsü VARSA "
+        "(ör. `…_orani_yuzde`) **onu** seç, turev yazma.\n"
         "- Mesaj mevcut raporla ilgisiz YENİ bir konuysa action=new.\n"
         "- İstenen alan katalogda YOKSA action=unavailable + reason. UYDURMA.\n"
         '- Görünüm isteği ("grafik/tablo/panelli...") view alanına; görünüm TEK başınaysa '

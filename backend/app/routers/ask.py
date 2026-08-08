@@ -3252,8 +3252,38 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         #
         # ⚠ Şüpheli yolda garsonun sonucu **yalnız daha iyiyse** alınır (aşağıda);
         # şüphe yoksa davranış birebir bugünkü (`KURAL B`).
-        _supheli = route_hit is not None and _niyet_tasima.route_supheli(
-            route_hit.get("cube_query"), body.question or "")
+        # 🔴🔴 **`§M9a` — ŞÜPHE, DEVİR KARARINDAN SONRA KEŞFEDİLİYORDU.**
+        #
+        # `route_supheli` yalnız `cq`'nun **eksikliğine** bakar (dönem yok · sıralama yok).
+        # Ama üçüncü bir şüphe türü var ve o **soruda** yaşıyor: *route cümlenin bir
+        # parçasını hiç kapsamadı.* Ölçüldü (iki koşum birebir, `KURAL G-1`):
+        #
+        #   `bu yıl aylık **kümülatif** fire toplamını göster`
+        #     route: parti + toplam_fire_kg + ay kovası + tarih filtresi  → şüphe YOK
+        #     ve tur sonra şu cümleyle ölüyor: *«"kumulatif" kısmını anlayamadım»* (LLM'siz)
+        #
+        #   `bu yıl her hattın toplam fire içindeki **payı**`
+        #     → *«"payi" başka bir konu gibi görünüyor»* (LLM'siz)
+        #
+        # ⊙ Yani route **kendinden emin** göründüğü için garson çağrılmıyor; şüphe ise
+        # **daha aşağıda**, kapsam kapısında ortaya çıkıyor ve orada garsona sorulmadan
+        # bir red cümlesi yazılıyor. `§0.0`'ın devir tetikleyicileri listesi bu dalı
+        # **adıyla** sayıyor: *"«anlayamadım» üretecek her dal"*.
+        #
+        # ⚠ Ve bedeli bu turda somut: mutfak kümülatifi **yapabiliyor** (`M-9`), sipariş
+        # fişi alanı **taşıyor**, garsonun istemi onu **biliyor** — tur `kumulatif`
+        # kelimesinde, garson hiç konuşmadan ölüyordu. *Bir yeteneği üç katmanda kurup
+        # dördüncüde kapıda bırakmak, onu hiç kurmamaktır.*
+        #
+        # ⚠ Maliyet sınırlı: tarama zaten aşağıda (`:3505`) koşuyor, burada bir kez
+        # koşup **yeniden kullanılıyor**; şüphe yoksa davranış birebir bugünkü (`KURAL B`).
+        try:
+            _kapsam_disi, _kapsam_hits = cube_router.partial_unknowns(q_norm, schema)
+        except Exception:                                  # noqa: BLE001 — tur düşmez
+            _kapsam_disi, _kapsam_hits = [], []
+        _supheli = route_hit is not None and (
+            _niyet_tasima.route_supheli(route_hit.get("cube_query"), body.question or "")
+            or bool(_kapsam_disi))
         if _supheli:
             _log.info("intent: route ŞÜPHELİ → garson çağrılıyor (§51)")
         if (route_hit is None or _supheli) and "ask_intent_first" in resolve_for(settings, principal):
@@ -3502,8 +3532,10 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             _log.info("çapraz-konu reddi ATLANDI: garson bir aday üretti (§56)")
             unknown, hits = [], []
         else:
+            # `§M9a` — tarama yukarıda **bir kez** koşuldu; ikinci koşum aynı cevabı
+            # üretirdi. *Bir soruyu iki kez sormak, iki kez cevaplamayı göze almaktır.*
             try:
-                unknown, hits = cube_router.partial_unknowns(q_norm, schema)
+                unknown, hits = _kapsam_disi, _kapsam_hits
             except Exception:
                 unknown, hits = [], []
         if unknown and hits:

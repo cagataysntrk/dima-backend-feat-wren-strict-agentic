@@ -5510,3 +5510,112 @@ seçiminde** olduğunu gösterdi: bir koşumda garson uyuşmazlığı (%50, `eks
 (*"Hangi ölçüyü istiyorsun?"*), trace'ten değil. `p14`'ün evi **M-1**'dir.
 
 *Bir teşhisi cevabın metninden okumak, hastayı tarifinden tedavi etmektir.*
+
+---
+
+## §91 · MUTFAK DEMETİ 2 — **PENCERE ve TÜREV katmanı** (M-9 + M-3)
+
+Rapor bu ikisinin **birlikte** inmesini şart koşuyordu (*"aynı ölçü-cebri alanını açar,
+ayrı inerlerse ikinci sahip doğar"*). Doğru çıktı: `pay` kipinin **hangi katmana ait
+olduğu** ancak ikisi birden yazılınca görüldü (§91.4).
+
+### §91.1 · 🔴 Raporun FORMU düzeltildi — ve düzeltmenin sebebi ÖLÇÜLDÜ
+
+Rapor `pencere`yi **menü dosyasına** (ölçü düzeyi `pencere:`) koyuyordu. `M-2`'de
+ölçüldü ki **MDL'de bir ölçünün alanları sabittir** (`name·expression·type·unit·
+synonyms`); yeni bir anahtar ya derlemede düşer ya motorun `serde`'si tüm projeyi
+reddeder — `ne` sondajı bu reddi **gürültüyle** gösterdi.
+
+⊙ Oysa deponun **kendi kalıbı** doğru yeri gösteriyordu: `measure_having` · `ayrik_aylar`
+· `entity_limit` · `blend` — dördü de **CubeQuery alanıdır**, kataloğa hiç girmezler.
+`pencere` ve `turev` de öyle yazıldı. **Yan kazanç:** bir oran artık *önceden tanımlanmış*
+olmak zorunda değil, kullanıcının o anki sorusundan doğabiliyor.
+
+*Bir yeteneği kataloğa yazmak, onu birinin önceden yazmış olmasına bağlamaktır.*
+
+### §91.2 · Dört katman, ve dördü de gerekliydi
+
+| katman | ne yapıldı | kanıt |
+|---|---|---|
+| 🍳 **mutfak** | `wren_service._pencere_sar` / `_turev_sar` — `ayrik_aylar` ile **aynı sarma kalıbı** | `/cube` ile altı kip tek tek koşuldu |
+| 📋 **sipariş fişi** | `parse_cube_query` iki alanı doğrular ve **taşır** | beyaz listede olmayan alan **düşer** — üç yorum bu dersi zaten yazmış |
+| 🗣 **garsonun istemi** | `_cube_select_system` + `_cube_refine_user` | — |
+| 🚦 **devir** | `§M9a` — kapsam-dışı bir kelime artık **şüphe sayılır** | aşağıda |
+
+🔴 **Ve ilk yazımım kuralları YANLIŞ İSTEME koydu.** `pencere`/`turev` anlatımını
+`_cube_refine_user`'a (takip yolu) yazmıştım; taze yol onları **hiç görmüyordu**. Uçtan
+uca sınama gösterdi: `bu yıl aylık kümülatif fire` → `cq`'da `pencere` **yok**.
+*Bir kuralı yanlış isteme yazmak, hiç yazmamaktır — ve bunu ancak zinciri sonuna kadar
+koşarak görürsün.*
+
+### §91.3 · 🔴🔴 `§M9a` — ŞÜPHE, DEVİR KARARINDAN **SONRA** KEŞFEDİLİYORDU
+
+Dört katman kurulduktan sonra bile `p15` çalışmadı. Sebebi (iki koşum birebir, `G-1`):
+
+    `bu yıl aylık **kümülatif** fire toplamını göster`
+      route: parti + toplam_fire_kg + ay kovası + tarih filtresi  → route_supheli = FALSE
+      → garson HİÇ ÇAĞRILMADI
+      → tur şu cümleyle öldü: «"kumulatif" kısmını anlayamadım»  (LLM'siz)
+
+    `bu yıl her hattın toplam fire içindeki **payı**`
+      → «"payi" başka bir konu gibi görünüyor»  (LLM'siz)
+
+⊙ `route_supheli` yalnız `cq`'nun **eksikliğine** bakıyordu (dönem yok · sıralama yok).
+Üçüncü bir şüphe türü ise **soruda** yaşıyor: *route cümlenin bir parçasını hiç
+kapsamadı.* Route kendinden emin göründüğü için devir yapılmıyor, şüphe **daha aşağıda**
+ortaya çıkıyor ve orada garsona sorulmadan bir **red cümlesi** yazılıyordu.
+
+🔴 `feedback_garson_devri_kurali`'nin devir tetikleyicileri listesi bu dalı **adıyla**
+sayıyor: *"«anlayamadım» üretecek her dal"*.
+
+**Düzeltme:** kapsam-dışı kelime `_supheli`'ye **üçüncü işaret** olarak eklendi. Tarama
+zaten aşağıda koşuyordu; yukarı alındı ve **yeniden kullanıldı** (ikinci koşum kaldırıldı).
+
+**Curl (iki koşum birebir):**
+
+    ÖNCE : «"kumulatif" kısmını anlayamadım»
+    SONRA: 6 satır · `_p_kumulatif_toplam_fire_kg` = 43.869 → 95.934 → 174.775 → 277.045
+
+*Bir yeteneği üç katmanda kurup dördüncüde kapıda bırakmak, onu hiç kurmamaktır.*
+
+### §91.4 · 🔴 GARSON EKSİK ALETİ GÖSTERDİ — `pay` bir türev değil, bir PENCERE
+
+`p16` ilk koşumda `turev` üretti ama: `pay = payda = toplam_fire_kg` → **her satır %100**.
+
+⊙ Teşhis: *"toplam içindeki payı"* bir **iki-ölçü oranı değildir**; bölen satırın kendisi
+değil **bütün**dür → `x / SUM(x) OVER (…)`. Yani doğru ev **pencere** katmanı ve o kip
+**yoktu**. Garson eldeki yanlış aleti kullandı.
+
+**İki düzeltme birden:** `pay` kipi eklendi · `turev`'de `pay == payda` artık
+**gürültüyle reddediliyor** (sessizce %100 döndürmek küp rozetli bir sessiz-yanlıştır).
+
+**Curl doğrulaması:** sekiz hattın payı **tam 100.0** ediyor (`13.96 + 22.68 + 3.86 + …`).
+
+*Bir aleti vermezsen, eldeki alet yanlış kullanılır.*
+
+### §91.5 · Altı pencere kipi — hepsi canlıda ölçüldü
+
+| kip | canlı sonuç |
+|---|---|
+| `kumulatif` | 43.869 → 95.934 → 174.775 → 277.045 ✅ |
+| `hareketli_ort` (3) | 59.583 → 57.572 → 58.583 ✅ |
+| `degisim_yuzde` | `null` → **18.68** → **51.43** ✅ (`LAG`) |
+| `sira` (grup-içi) | `hat` başına 1·2·3 ✅ |
+| `pay` | sekiz hat, toplam **100.0** ✅ |
+| `turev` (yüzde) | `fire/ağırlık` → **20.73** — `fire_orani_yuzde` ile **birebir aynı** ✅ |
+
+⊙ Son satır bağımsız bir doğrulamadır: türev cebri, katalogda **elle yazılmış** oran
+ölçüsüyle aynı sayıyı üretti.
+
+⚠ Ve `sira` kipi ilk denemede **gürültüyle** düştü (HTTP 400): yüklemim tüm kiplere
+zaman ekseni dayatıyordu, oysa `sira` ölçüye göre sıralar. Fail-closed **tam çalıştı** —
+kusur yüklemin kendisindeydi. *Bir ön koşulu tüm kiplere dayatmak, kipleri ayırmamaktır.*
+
+### §91.6 · Demet 2 kapısı
+
+    korpus  {vaka 2285, kabul 1153, dogru 93, sessiz_yanlis 12, beyanli_kismi 51}
+    süit    4260 yeşil · 31 atlandı        eval  precision +0,0% · coverage +0,0%
+
+Korpus yine sabit — ve sebebi `§88.6`'da yazılı: korpus `rule` sağlayıcıyla koşuyor,
+pencere/türev **garson yolunda** yaşıyor. Kazanç canlı curl'de ölçüldü ve yukarıda satır
+satır yazılı.

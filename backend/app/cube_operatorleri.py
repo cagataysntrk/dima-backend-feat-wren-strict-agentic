@@ -71,6 +71,26 @@ MOTOR_OPERATORLERI: tuple[str, ...] = (
 DEGERSIZ: frozenset[str] = frozenset({"is_null", "is_not_null"})
 
 
+#: 🔴 `M-9` — PENCERE KİPLERİ. Her biri bir `OVER (…)` sarmasıdır; gövde
+#: `wren_service._pencere_sar`'da, **kümenin sahibi burası**.
+#:
+#: ⚠ Neden burada: `cube_router` (sipariş fişini doğrular) ile `wren_service` (SQL'i
+#: sarar) **aynı** kümeyi bilmek zorunda, ama `cube_router` bir motor modülünü **import
+#: edemez** (`test_alan_haritasi`: 🗣 modüller motora dokunamaz). Küme üçüncü bir yerde
+#: yaşamazsa iki kopya doğardı — `M-6`'nın tam olarak ölçtüğü kusur.
+PENCERE_KIPLERI: tuple[str, ...] = (
+    "kumulatif", "hareketli_ort", "sira", "onceki", "degisim_yuzde",
+    # 🔴 `pay` — *"toplam içindeki payı"*. Ölçülen kusur: bu alet **yoktu** ve garson
+    # eksiği `turev` ile kapatmaya çalıştı: `pay=payda=toplam_fire_kg` → her satır
+    # **%100** (canlı, `p16`). Pay bir **iki-ölçü oranı değil**, bir pencere işlemidir:
+    # `x / SUM(x) OVER (…)`. *Bir aleti vermezsen, eldeki alet yanlış kullanılır.*
+    "pay",
+)
+
+#: 🔴 `M-3` — TÜREV KİPLERİ (ölçü cebri: bölme/çıkarma). Gövde `_turev_sar`'da.
+TUREV_KIPLERI: tuple[str, ...] = ("yuzde", "oran", "fark")
+
+
 def gecerli(op) -> bool:
     """Operatör motorun tanıdığı bir ad mı?
 

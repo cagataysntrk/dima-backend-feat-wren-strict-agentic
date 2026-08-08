@@ -89,6 +89,21 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("m9a-kapsam-disi-bir-supheDIR-garsona-devret", 5,
+     "🔴🔴 **ŞÜPHE, DEVİR KARARINDAN SONRA KEŞFEDİLİYORDU.** `route_supheli` yalnız "
+     "`cq`'nun eksikliğine bakar (dönem yok · sıralama yok); üçüncü bir şüphe türü ise "
+     "**soruda** yaşıyor: *route cümlenin bir parçasını hiç kapsamadı.* "
+     "Ölçüldü (iki koşum birebir, `KURAL G-1`): `bu yıl aylık **kümülatif** fire` → route "
+     "eksiksiz görünen bir `cq` üretti (dönem + ay kovası) → **şüphe yok** → garson "
+     "çağrılmadı → tur *«\"kumulatif\" kısmını anlayamadım»* ile öldü (**LLM'siz**). "
+     "İkizi: `her hattın **payı**` → *«\"payi\" başka bir konu gibi görünüyor»*. "
+     "⊙ `§0.0`'ın devir tetikleyicileri listesi bu dalı **adıyla** sayıyor: *«anlayamadım» "
+     "üretecek her dal*. Bir red cümlesi, hakeme sorulmadan yazılamaz. "
+     "⚠ Bedeli bu turda somut: mutfak kümülatifi **yapabiliyor** (`M-9`), fiş alanı "
+     "**taşıyor**, garsonun istemi onu **biliyor** — tur `kumulatif` kelimesinde ölüyordu. "
+     "*Bir yeteneği üç katmanda kurup dördüncüde kapıda bırakmak, onu hiç kurmamaktır.* "
+     "⚠ Maliyet sınırlı: tarama zaten aşağıda koşuyordu, yukarı alınıp **yeniden "
+     "kullanıldı** (ikinci koşum kaldırıldı); şüphe yoksa davranış birebir bugünkü."),
     ("p1-adhoc-capa-degildir", 1,
      "🔴🔴 **DISCOVERY CEVABI THREAD'İ ÖLDÜRÜYORDU — 3/3 takip turu.** Ölçüldü (P turu, "
      "`T-P2`): `personel çalışma süreleri ve verimliliklerini kıyasla` Discovery'ye düştü "
@@ -413,6 +428,22 @@ MUAFIYET_ASK_KOD = [
      "makbuza yazılmazsa, kullanıcı onu kendi yazdığını sanır"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("m9-m3-pencere-ve-turev-fisi-gecirilir", 18,
+     "🔴🔴 **PENCERE VE TÜREV ALANLARI SİPARİŞ FİŞİNDEN GEÇİRİLİR.** `wren_service` "
+     "kümülatifi · hareketli ortalamayı · grup-içi sırayı · oran/pay'ı **sarabiliyor**; "
+     "bu satırlar olmadan o yetenek **erişilemez** kalırdı — çünkü `parse_cube_query` "
+     "beyaz listesinde olmayan her alanı **düşürür**. "
+     "⊙ Bu dosyanın hemen üstündeki üç yorum (`period_expr` · `measure_having` · "
+     "`compare`) **aynı dersi üç kez** yazmış: *«bir alanı düşürmek, onu hiç istememekle "
+     "aynı sonucu verir.»* Dördüncü kez yazılmasın diye buradalar. "
+     "Ölçülen kusur (canlı, dört kanıt): `p15` *«aylık **kümülatif** fire»* → düz seri · "
+     "`r18` *«**hareketli** 3 aylık ortalama»* → düz seri · `p16` *«her hattın **payı**»* "
+     "→ mutlak kg · `r12` *«her biri için **en sık** sebep»* → 66 satır. Dördünde de "
+     "`niyet.bilinmeyenler` düşen kelimeyi **yazıyordu**; cevap *«anlamadım»* değil, "
+     "**sorulanın bir parçasına** verilmiş doğru bir cevaptı — `KÖK-3`'ün kapsamadığı "
+     "bölge. ⚠ Doğrulama **dar**: taban/pay/payda bu küpün ölçüsü olmalı, kip kapalı "
+     "kümede (`app/cube_operatorleri.py` — tek sahip, çünkü `cube_router` bir motor "
+     "modülünü import **edemez**: `test_alan_haritasi`)."),
     ("m6-operator-de-denetlenir", 3,
      "🔴 **`parse_cube_query` OPERATÖRÜ HİÇ DENETLEMİYORDU.** `dimension` beyaz listeden "
      "geçiyor, `operator` olduğu gibi motora gidiyordu. Ölçüldü (canlı `/cube`, iki "

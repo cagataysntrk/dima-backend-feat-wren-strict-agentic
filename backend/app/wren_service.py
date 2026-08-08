@@ -1181,10 +1181,18 @@ class WrenService:
         # kesilmiş kolona DIŞARIDAN filtre uygula — toplama gruplamadan ÖNCE bittiği için
         # sonuç kesindir (`measure_having` ile AYNI sarma kalıbı).
         emb_ayrik = cq.pop("ayrik_aylar", None)
+        # 🔴 `M-9`/`M-3` — PENCERE ve TÜREV: `ayrik_aylar` ile **aynı sarma kalıbı**.
+        # Gerekçe ve neden kataloğa DEĞİL buraya kondukları `_pencere_sar`'da.
+        emb_pencere = cq.pop("pencere", None)
+        emb_turev = cq.pop("turev", None)
         base = cube_query_to_sql(json.dumps(cq), self._mdl_bytes().decode())
         base = self._inject_always_filter(base, cq.get("cube"))
         if emb_ayrik:
             base = self._ayrik_ay_sar(base, cq, emb_ayrik)
+        if emb_turev:
+            base = self._turev_sar(base, cq, emb_turev)
+        if emb_pencere:
+            base = self._pencere_sar(base, cq, emb_pencere)
         if isinstance(emb_having, dict) and emb_having.get("measure") and emb_having.get("op"):
             _op = {">": ">", "<": "<", ">=": ">=", "<=": "<="}.get(emb_having["op"], ">")
             base = (f"SELECT * FROM ({base}) AS _hv "
@@ -1222,6 +1230,159 @@ class WrenService:
                 f"düşmek araya giren ayları da katardı.")
         kume = ", ".join(f"DATE '{a}'" for a in aylar)
         return f"SELECT * FROM ({base}) AS _ay WHERE {dim}__month IN ({kume})"
+
+    #: 🔴 `M-9` — PENCERE KİPLERİ. **Kapalı küme**: her biri bir `OVER (…)` ifadesidir ve
+    #: motorun kendi cebri değil, onun **üstüne** yazılan bir sarmadır.
+    from app.cube_operatorleri import PENCERE_KIPLERI as _PENCERE_KIPLERI
+
+    @classmethod
+    def _pencere_sar(cls, base: str, cq: dict[str, Any], istek: dict[str, Any]) -> str:
+        """🔴🔴 **`M-9` — PENCERE KATMANI.** [FAIL-CLOSED]
+
+        ## Ölçülen kusur
+
+        `CubeQuery` yalnız **GROUP BY** cebri konuşuyor. `OVER (PARTITION BY … ORDER BY …)`
+        ailesi — kümülatif · hareketli ortalama · grup-içi sıra · önceki dönem — **hiçbir
+        katmanda yoktu** (`app/` içinde `PARTITION BY` **sıfır** kez geçiyordu). Sonuç,
+        canlı turlarda **sessiz kapsam daralması**:
+
+            p15  `bu yıl aylık **kümülatif** fire toplamını göster`  → düz aylık seri
+            r18  `son 12 ayın **hareketli** 3 aylık ortalaması`      → düz aylık seri
+            r12  `her biri için **en sık** rework sebebi`            → 66 satır (grup-içi ilk-1 yok)
+
+        Üçünde de `niyet.bilinmeyenler` düşen kelimeyi **yazıyordu** ve cevap sessizce
+        dar geliyordu — *"anlamadım"* değil, **sorulanın bir parçasına** verilmiş doğru
+        bir cevap. `KÖK-3`'ün kapsamadığı bölge.
+
+        ## 🔴 Raporun formu DÜZELTİLDİ — ve düzeltmenin sebebi ÖLÇÜLDÜ
+
+        `MUTFAK-DENETIMI` bu alanı **menü dosyasına** (ölçü düzeyi `pencere:`) koyuyordu.
+        `M-2`'de ölçüldü ki **MDL'de bir ölçünün alanları sabittir**
+        (`name·expression·type·unit·synonyms`); yeni bir anahtar ya derlemede düşer ya
+        motorun `serde`'si tüm projeyi reddeder (*"unknown variant"*).
+
+        ⊙ Oysa bu deponun **kendi kalıbı** zaten doğru yeri gösteriyor: `measure_having` ·
+        `ayrik_aylar` · `entity_limit` · `blend` — dördü de **CubeQuery alanıdır**,
+        kataloğa hiç girmezler. `pencere` de öyle olmalı. Ve bunun bir **yan kazancı** var:
+        pencere artık *önceden tanımlanmış* olmak zorunda değil — kullanıcının o anki
+        sorusundan doğabilir.
+
+        *Bir yeteneği kataloğa yazmak, onu birinin önceden yazmış olmasına bağlamaktır.*
+
+        ## Sınır — fail-closed
+
+        ⚠ Sıralama ekseni **uydurulmaz**: açıkça verilmemişse `timeDimensions`'tan
+        türetilir (`<boyut>__<granülerlik>` — tabanın gerçek kolon adı). İkisi de yoksa
+        `ValueError`. *Sırasız bir pencere, rastgele bir birikimdir.*
+
+        ⚠ Pencereli sonuç **toplanamaz** (`M-5`): kümülatif bir seriyi ikinci kez toplamak
+        küp rozetli bir sessiz-yanlış üretir. Bu yüzden sarma **en dışta** durur ve türev
+        kolon adı `_p_` önekiyle ayrılır — bir sonraki katmanın onu ham ölçü sanmaması için.
+        """
+        kip = str(istek.get("kip") or "")
+        taban = str(istek.get("taban") or "")
+        if kip not in cls._PENCERE_KIPLERI:
+            raise ValueError(f"pencere kipi tanınmıyor: {kip!r} — {cls._PENCERE_KIPLERI}")
+        if not taban:
+            raise ValueError(f"pencere işareti eksik: taban yok ({istek!r})")
+        sira = str(istek.get("siralama") or "") or cls._zaman_kolonu(cq)
+        # ⚠ `sira` kipi **ölçüye göre** sıralar (grup-içi rütbe); zaman eksenine ihtiyacı
+        # yoktur. İlk yazımım onu da zorunlu tutuyordu ve canlı sondaj bunu **gürültüyle**
+        # gösterdi (HTTP 400 + `ValueError`) — yani fail-closed tam çalıştı, kusur
+        # yüklemin kendisindeydi. *Bir ön koşulu tüm kiplere dayatmak, kipleri
+        # ayırmamaktır.*
+        if not sira and kip not in ("sira", "pay"):
+            raise ValueError(
+                "pencere işareti var ama sıralama ekseni YOK: ne `siralama` verildi ne de "
+                "`timeDimensions` var. Sırasız bir pencere rastgele bir birikimdir.")
+        bolum = [str(b) for b in (istek.get("bolum") or []) if b]
+        part = f"PARTITION BY {', '.join(bolum)} " if bolum else ""
+        ad = f"_p_{kip}_{taban}"
+        if kip == "kumulatif":
+            ifade = (f"SUM({taban}) OVER ({part}ORDER BY {sira} "
+                     f"ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)")
+        elif kip == "hareketli_ort":
+            n = int(istek.get("pencere_boyu") or 3)
+            if n < 2:
+                raise ValueError(f"hareketli ortalama için pencere_boyu >= 2 olmalı ({n})")
+            ifade = (f"AVG({taban}) OVER ({part}ORDER BY {sira} "
+                     f"ROWS BETWEEN {n - 1} PRECEDING AND CURRENT ROW)")
+        elif kip == "sira":
+            yon = "ASC" if str(istek.get("yon") or "desc").lower().startswith("a") else "DESC"
+            ifade = f"ROW_NUMBER() OVER ({part}ORDER BY {taban} {yon})"
+        elif kip == "pay":
+            # *"toplam içindeki payı"* — bölen, satırın kendisi değil **bütün**tür.
+            # `bolum` verilmezse payda TÜM sonucun toplamıdır (`OVER ()`).
+            ifade = (f"ROUND(100.0 * {taban} / "
+                     f"NULLIF(SUM({taban}) OVER ({part.rstrip()}), 0), 2)")
+        elif kip == "onceki":
+            ifade = f"LAG({taban}) OVER ({part}ORDER BY {sira})"
+        else:  # degisim_yuzde — önceki döneme göre yüzde değişim
+            onc = f"LAG({taban}) OVER ({part}ORDER BY {sira})"
+            ifade = f"ROUND(100.0 * ({taban} - {onc}) / NULLIF({onc}, 0), 2)"
+        return f"SELECT *, {ifade} AS {ad} FROM ({base}) AS _pn"
+
+    #: 🔴 `M-3` — TÜREV KİPLERİ. `yuzde`/`oran` bir **bölme**, `fark` bir çıkarma.
+    from app.cube_operatorleri import TUREV_KIPLERI as _TUREV_KIPLERI
+
+    @classmethod
+    def _turev_sar(cls, base: str, cq: dict[str, Any], istek: dict[str, Any]) -> str:
+        """🔴 **`M-3` — TÜREV ÖLÇÜ: oran · pay · fark.** [FAIL-CLOSED]
+
+        Ölçülen kusur: `CubeQuery`'nin ölçü alanı bir **ad listesidir**; ölçü **aritmetiği**
+        için yer yok. *"Toplam üretimin yüzde kaçı fire"* sorusuna sistem ancak biri
+        `fire_orani_yuzde`'yi **önceden yazdıysa** cevap verebiliyordu. Yani türev ölçü
+        kapasitesi = *birinin önceden yazmış olması*.
+
+        ⊙ Ve bu, `p16` (`her hattın toplam fire içindeki **payı**`) ile `o7`'de canlıda
+        ölçüldü: `payı` `bilinmeyen`'e yazıldı, cevap **mutlak kg** döndü, **beyan yok**.
+
+        ⚠ **Neden ham `expression:` yazmak yanlış çözüm** (raporun kendi gerekçesi):
+        ham SQL **toplanabilirlik bilgisini taşımaz** — `SUM(a)/SUM(b)` ile `AVG(a/b)`
+        arasındaki fark SQL'de görünmez, **ölçü cebrinde** görünür. Burada bölme
+        **gruplamadan sonra** yapılır, yani `SUM(pay)/SUM(payda)` semantiği korunur:
+        taban zaten gruplanmış gelir.
+
+        ⚠ Fail-closed: pay ve payda **tabanın kolonlarında** olmalı; olmadığı hâlde
+        sarmak, motorun tanımadığı bir ada bölme yazmak olurdu.
+        """
+        kip = str(istek.get("kip") or "yuzde")
+        pay, payda = str(istek.get("pay") or ""), str(istek.get("payda") or "")
+        if kip not in cls._TUREV_KIPLERI:
+            raise ValueError(f"türev kipi tanınmıyor: {kip!r} — {cls._TUREV_KIPLERI}")
+        olculer = [str(m) for m in (cq.get("measures") or [])]
+        if kip != "fark" and pay and pay == payda:
+            # 🔴 Ölçüldü (`p16`, canlı): garson *"toplam içindeki payı"* için
+            # `pay=payda=toplam_fire_kg` üretti → her satır **%100**. Bir ölçünün kendine
+            # oranı hiçbir zaman kastedilen şey değildir; ve asıl istenen **pencere**
+            # kipidir (`pay`). Sessizce %100 döndürmek küp rozetli bir sessiz-yanlıştır.
+            raise ValueError(
+                f"türev pay ve payda AYNI ölçü ({pay!r}) — sonuç her satırda %100 olurdu. "
+                f"«toplam içindeki payı» için `pencere:{{kip:'pay'}}` kullanılır.")
+        if pay not in olculer or (kip != "fark" and payda not in olculer):
+            raise ValueError(
+                f"türev işareti tabanda olmayan ölçüye bakıyor (pay={pay!r} payda={payda!r}, "
+                f"measures={olculer!r}). Sessizce düşmek yerine reddedilir.")
+        if kip == "fark":
+            ifade, ad = f"({pay} - {payda})", f"_t_fark_{pay}"
+        elif kip == "oran":
+            ifade, ad = f"(1.0 * {pay} / NULLIF({payda}, 0))", f"_t_oran_{pay}"
+        else:
+            ifade, ad = (f"ROUND(100.0 * {pay} / NULLIF({payda}, 0), 2)",
+                         f"_t_yuzde_{pay}")
+        return f"SELECT *, {ifade} AS {ad} FROM ({base}) AS _tv"
+
+    @staticmethod
+    def _zaman_kolonu(cq: dict[str, Any]) -> str:
+        """Tabanın zaman kolonunun **gerçek adı** (`tarih__month`) — tek sahip.
+
+        ⚠ İkinci bir ad üretici yazılmadı: bu biçim `cube_query_to_sql`'in çıktısında
+        kullanılıyor ve `_ayrik_ay_sar` de aynı biçimi varsayıyor (`{dim}__month`)."""
+        for t in (cq.get("timeDimensions") or []):
+            d, g = t.get("dimension"), t.get("granularity")
+            if d and g:
+                return f"{d}__{g}"
+        return ""
 
     def blend_sql(self, cube_query: dict[str, Any]) -> str:
         """CROSS-CUBE BLEND: birden çok cube'un ölçüsünü PAYLAŞILAN gruplama anahtarlarında
