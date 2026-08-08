@@ -777,10 +777,47 @@ def _guvenli_kapsam_disi(soru: str, schema: dict):
 #:
 #: *Aynı kelime bir kapıda kanıt, bir cümlede gürültü olabilir; listeyi soruya göre
 #: ayırmak, kelimeyi iki kez tanımlamaktan ucuzdur.*
+#: 🔴 **`§54` — İŞLEV SÖZCÜKLERİ BİR KONU DEĞİLDİR ve süzgeç YALNIZ GÖSTERİMDEYDİ.**
+#:
+#: Ölçüldü (E turu, **dört** kanıt): `aylık üretim ve enerji tüketimini **birlikte**
+#: göster` → *«"birlikte" başka bir konu gibi görünüyor»*; `bakım maliyeti ile arıza
+#: sayısı **ilişkili** mi` → *«"bakim maliyeti iliskili" başka bir konu»*; `which machines
+#: had the highest downtime last month` → *«"which had the highest last month" başka bir
+#: konu»*.
+#:
+#: ⊙ Süzgeç vardı ama **yalnız cümleyi güzelleştiriyordu**; dalın **ateşlenmesini**
+#: engellemiyordu. Yani sistem anlamadığını gizliyor, ama yine de reddediyordu.
+#:
+#: 🔴 **İngilizce işlev sözcükleri de eklendi** ve bu `ADR-0008`'e uygundur: `which`·`the`·
+#: `had`·`by`·`as` bir **kapalı dilbilgisi sınıfıdır** (artikel · yardımcı fiil · soru
+#: sözcüğü · edat), bir alan sözlüğü değil. Ve `§0.0` gereği: kullanıcı İngilizce
+#: yazdığında sistem *"bu başka bir konu"* diyemez — o cümlenin konusu **vardır**,
+#: yalnız dili farklıdır.
+#:
+#: *Bir cümlenin dilbilgisi, o cümlenin konusu değildir.*
 _ISLEV_SOZCUKLERI = frozenset({
     "hangi", "hangisi", "hangileri", "kim", "kimin", "kime",
     "etti", "ettik", "ettiler", "etmis", "ediyor", "eden", "edildi",
+    # bağlaç · zarf — bir konu adı değil, iki şeyi birbirine bağlayan sözcük
+    "birlikte", "beraber", "ayrica", "ayni", "anda", "iliskili", "iliski", "arasindaki",
+    "arasinda", "kiyasla", "karsilastir", "gore",
+    # 🔴 İngilizce kapalı sınıf: artikel · yardımcı · soru · edat · bağlaç
+    "which", "what", "who", "the", "a", "an", "is", "are", "was", "were", "had", "has",
+    "have", "do", "does", "did", "show", "me", "my", "our", "by", "as", "with", "and",
+    "or", "of", "for", "to", "in", "on", "at", "this", "that", "them", "their", "it",
+    "highest", "lowest", "top", "best", "worst", "most", "least", "compare", "between",
+    # zaman — İngilizcenin kapalı dönem sözcükleri (Türkçedeki `_ZAMAN_BIRIMI`'nin ikizi)
+    "last", "next", "previous", "current", "this", "past", "month", "months", "year",
+    "years", "week", "weeks", "day", "days", "quarter", "quarters", "today", "yesterday",
+    "since", "until", "ago", "now",
 })
+#: ⚠ **VE BU LİSTE UZAMAMALI — kalıcı çözüm bu değil.** Her yeni dilde yeni bir kapalı
+#: sınıf yazmak, `§0.0`'ın yasakladığı *"route'a dil öğretme"*nin bir başka biçimidir.
+#: Yapısal çözüm: **garson bir aday üretmişse Türkçe kapsam reddi hiç koşmamalıdır** —
+#: çünkü o reddin dayanağı Türkçe bir sözlüktür ve soru Türkçe değildir.
+#: `§56` olarak kayıtlı, sıradaki iş.
+#:
+#: *Bir listeyi uzatmak, listenin yanlış araç olduğunu gizler.*
 
 
 def _islev_sozcugu(w: str) -> bool:
@@ -3456,6 +3493,18 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             # *Bir kapının iç listesi, kullanıcıya gösterilecek bir metin değildir:
             # biri saymak için, öteki anlatmak için vardır.*
             _gosterilecek = [w for w in unknown if not _islev_sozcugu(w)]
+            # 🔴 **`§54` — SÜZGEÇ ARTIK KAPI.** Geriye adlandırılacak hiçbir şey
+            # kalmadıysa *"«…» başka bir konu"* demek, **boş bir suçlamadır**: sistem
+            # neyi anlamadığını söyleyemiyor ama yine de reddediyor. Bu dal düşer ve
+            # merdivenin sonraki basamağı devralır — kullanıcı cevapsız kalmaz (`§0.0`).
+            #
+            # ⚠ `unknown`'a **hâlâ dokunulmuyor**: kapsam kapısının kendi listesi odur ve
+            # onu kırpmak `§26.1`'in ölçtüğü sessiz-yanlış riskini geri getirirdi.
+            # *Bir cümleyi reddetmek için, reddedilen şeyin adı olmalıdır.*
+            if not _gosterilecek:
+                _log.info("çapraz-konu reddi DÜŞTÜ: adlandırılacak konu yok (§54)")
+                other_topic = False
+                unknown = []
             # ⚠ Süzgeç **HER İKİ** dala uygulanır — ilk yazımda yalnız birine uyguladım
             # ve curl *"«hangi etti» başka bir konu gibi görünüyor"*u aynen döndürdü:
             # ölçülen vaka `other_topic` dalından geçiyordu.
@@ -4078,8 +4127,30 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 prompt_schema = {**schema, "golden_sql": "\n\n".join(
                     s for s in (schema.get("golden_sql"), few_shot) if s)}
             try:
-                wren_sql = llm.generate_sql(
-                    _with_extra_context(body.question, body.extra_context), prompt_schema)
+                # 🔴 **`§55` — DISCOVERY YOLUNDA BÜTÇE YOKTU.** `§33` iki bütçe onardı
+                # (Intent oyları · T2 anlatısı) ama **en yavaş** yol açıkta kaldı.
+                # Ölçüldü (E turu): `stok devir hızımız ne` → **63.526 ms**;
+                # `enerji maliyetimiz` → **49.311 ms**. İkisi de `cube=adhoc`, yani
+                # `§0.0`'a göre birer **mutfak eksiği raporu** — ve kullanıcı o raporu
+                # bir dakikaya yakın bekliyordu.
+                #
+                # ⚠ Aşımda **cevap düşmez**, yol düşer: dürüst ret zaten burada duruyor
+                # (`_honest_refusal`). Yani en kötü durum *"yapamadım"* — bir dakika
+                # bekletip *"yapamadım"* demekten iyidir.
+                #
+                # *En güvenmediğimiz basamağın en uzun bütçeye sahip olması, bir sıralama
+                # hatasıdır.*
+                from app import butce as _b
+                _dsn = float(getattr(settings, "discovery_azami_saniye", 25.0) or 25.0)
+                _sonuc = _b.kos([lambda: llm.generate_sql(
+                    _with_extra_context(body.question, body.extra_context), prompt_schema)],
+                    saniye=_dsn, ad="Discovery SQL", log=_log)[0]
+                if _sonuc is _b.ASIM:
+                    return _honest_refusal(
+                        note="Bu soru için zamanında güvenilir bir sorgu üretemedim. "
+                             "Daha dar bir soru dener misin?",
+                        trace=[f"Discovery: bütçe aşıldı ({_dsn:.0f} sn) → dürüst ret"])
+                wren_sql = _sonuc
             except Exception as exc:
                 _log.warning("Discovery SQL üretimi başarısız", exc_info=True)
                 return _honest_refusal(

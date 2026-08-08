@@ -3454,3 +3454,45 @@ değişti (`oee`→`maliyet`) ama **`makine` kırılımı düştü**; sonuç tek
 
 ⊙ Yani bu tur, kullanıcının kurduğu ayrımın **işlediğini** gösteriyor: bir kusura bakıp
 hangi eksene ait olduğunu söylemek artık bir tartışma değil, bir **okuma**.
+
+## §54 · İŞLEV SÖZCÜKLERİ BİR KONU DEĞİLDİR — süzgeç **yalnız gösterimdeydi**
+
+Süzgeç (`_islev_sozcugu`) vardı ama **cümleyi güzelleştiriyordu**; dalın **ateşlenmesini**
+engellemiyordu. Sistem anlamadığını **gizliyor**, yine de **reddediyordu**.
+
+Yapılan: süzgeç **kapıya** çevrildi (adlandırılacak konu kalmadıysa dal düşer, merdiven
+devam eder) + İngilizcenin **kapalı** sınıfları eklendi (artikel · yardımcı · soru
+sözcüğü · edat · **zaman birimi**) — `ADR-0008` bunu serbest bırakır, çünkü bunlar bir
+alan sözlüğü değil **dilbilgisidir**.
+
+| soru | önce | **sonra** |
+|---|---|---|
+| `aylık üretim ve enerji tüketimini **birlikte** göster` | *"«birlikte» başka bir konu"* | ✅ **9.596 ms** · 30 satır |
+| `which machines had the highest downtime last month` | *"«which had the highest last month» başka bir konu"* | ✅ **14.168 ms** · `makine_duruslari` × `makine` + temmuz filtresi + dürüst boş-aralık beyanı |
+
+> *Bir cümlenin dilbilgisi, o cümlenin konusu değildir.*
+> *Bir cümleyi reddetmek için, reddedilen şeyin adı olmalıdır.*
+
+⚠ **§56 · KAYITLI BORÇ — bu liste UZAMAMALI.** Her yeni dilde yeni bir kapalı sınıf
+yazmak, `§0.0`'ın yasakladığı *"route'a dil öğretme"*nin başka bir biçimidir. Yapısal
+çözüm: **garson bir aday ürettiyse Türkçe kapsam reddi hiç koşmamalı** — o reddin dayanağı
+Türkçe bir sözlüktür ve soru Türkçe değildir. *Bir listeyi uzatmak, listenin yanlış araç
+olduğunu gizler.*
+
+## §55 · EN GÜVENMEDİĞİMİZ BASAMAK EN UZUN BEKLETİYORDU
+
+`§33` iki bütçe onarmıştı (Intent oyları · T2 anlatısı) ama **Discovery açıkta kaldı** —
+ve `§0.0`'a göre o *"yan dükkândan sipariş"*, yani **hiç güvenmediğimiz** basamak.
+
+| soru | önce | **sonra** |
+|---|---|---|
+| `stok devir hızımız ne` | 🔴 **63.526 ms** → uydurma `adhoc` ölçü | ✅ **34.301 ms** → *"zamanında güvenilir bir sorgu üretemedim"* |
+
+⚠ Aşımda **cevap düşmez, yol düşer**: dürüst ret zaten oradaydı. En kötü durum
+*"yapamadım"* — bir dakika bekletip *"yapamadım"* demekten iyidir.
+
+> *En güvenmediğimiz basamağın en uzun bütçeye sahip olması, bir sıralama hatasıdır.*
+
+⊙ Ve `§0.0`'ın okumasıyla: bu dört tur (`ortalama parti süresi` · `enerji maliyeti` ·
+`stok devir hızı` · çeyrek kıyası) birer **mutfak eksiği raporudur**. Bütçe onları
+**susturmaz**, yalnız faturasını düşürür — asıl iş küplere o ölçüleri **eklemektir**.

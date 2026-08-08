@@ -89,6 +89,29 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("faz-55-discovery-butcesi", 9,
+     "🔴 **EN GÜVENMEDİĞİMİZ BASAMAK EN UZUN BEKLETİYORDU.** `§33` iki bütçe onardı "
+     "(Intent oyları · T2 anlatısı) ama Discovery açıkta kaldı. Ölçüldü (E turu): "
+     "`stok devir hızımız ne` → **63.526 ms**, `enerji maliyetimiz` → **49.311 ms**; "
+     "ikisi de `cube=adhoc`, yani `§0.0`'a göre birer **mutfak eksiği raporu** — ve "
+     "kullanıcı o raporu bir dakikaya yakın bekliyordu. "
+     "⊙ Δ = 9: bütçe okuma (2) + `butce.kos` çağrısı (3) + aşım dalı (4: `if` + üç "
+     "satırlık dürüst ret) + `wren_sql` ataması (1) − eski tek satır. "
+     "⚠ **TAŞINAMAZ:** aşım dalı `_honest_refusal`'a döner ve o `ask()`'in kendi "
+     "kapanış sözleşmesidir; bütçenin KENDİSİ zaten `app/butce.py`'de (tek sahip). "
+     "*En güvenmediğimiz basamağın en uzun bütçeye sahip olması, bir sıralama hatasıdır.*"),
+    ("faz-54-islev-kapisi", 4,
+     "🔴 **İŞLEV SÖZCÜKLERİ BİR KONU DEĞİLDİR — süzgeç YALNIZ GÖSTERİMDEYDİ.** Ölçüldü "
+     "(E turu, dört kanıt): *«birlikte» başka bir konu gibi görünüyor* · *«bakim maliyeti "
+     "iliskili» başka bir konu* · *«which had the highest last month» başka bir konu*. "
+     "Süzgeç vardı ama yalnız cümleyi güzelleştiriyordu; dalın ATEŞLENMESİNİ "
+     "engellemiyordu — sistem anlamadığını gizliyor, yine de reddediyordu. "
+     "⊙ Δ = 4: `if not _gosterilecek` (1) + iz kaydı (1) + `other_topic=False` (1) + "
+     "`unknown=[]` (1). "
+     "⚠ **TAŞINAMAZ:** üçü de bu dalın **yerel durumudur** (`other_topic` ve `unknown` "
+     "aşağıdaki iki cümleyi seçer); bir modüle taşımak, dalın kararını dalın dışına "
+     "çıkarmak olurdu. "
+     "*Bir cümleyi reddetmek için, reddedilen şeyin adı olmalıdır.*"),
     ("faz-51-supheli-devir", 5,
      "🔴🔴 **EN ÜST KURALIN (`§0.0`) UYGULAMASI — şüphe garsonu çağırır.** Koşul "
      "`route_hit is None` idi: route **herhangi bir şey** bulduysa, o şey ne kadar eksik "

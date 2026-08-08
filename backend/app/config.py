@@ -157,6 +157,11 @@ class Settings(BaseSettings):
     # ⚠ `requests`'in `timeout`'u **okuma başına**dır; toplam süreyi ancak çağıran sınırlar.
     intent_azami_saniye: float = 20.0
 
+    #: 🔴 `§55` — **Discovery'nin duvar-saati bütçesi.** En güvenmediğimiz basamak
+    #: (`§0.0`: *"yan dükkândan sipariş"*) en uzun bekleten basamaktı: ölçüldü 63.526 ms.
+    #: ⚠ Aşımda cevap düşmez, **yol** düşer — dürüst ret zaten oradadır.
+    discovery_azami_saniye: float = 25.0
+
     anlati_azami_saniye: float = 8.0
 
     vqr_acik: bool = False
