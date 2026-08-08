@@ -4667,3 +4667,300 @@ sonuç verdi ve üçünde de sonucu **gerçek sandım**.
 ⚠ Ve bu, `§83.1(a)`'yı da şüpheli kılar: *"`vardiya` hem `oee` hem `parti`'de"* iddiası da
 aynı bayat şemadan geliyordu. Beraberliğin gerçek olup olmadığı **yeniden** ölçülmeli —
 bu kez doğru yoldan.
+
+---
+
+## §85 · N TURU — 20 özgün senaryo, üç kök, ve **ölçüm aletinin üç kez yanılması**
+
+> Kullanıcının turun ortasında verdiği senaryo (`şubat ayı personel verimlilikleri`)
+> kökü açan anahtar oldu. Bir soru, üç ayrı kusuru aynı anda gösterdi.
+
+### §85.0 · Taban kararlılık — **ölçüldü ve tez ÇÜRÜDÜ**
+
+    ▶ kararlılık oranı: 100% (25/25 senaryo tam kararlı)
+
+`lab/garson.py --kararlilik 3`, 25 senaryo, 75 koşum. **Sıfır** salınım.
+
+🔴 Ve bu sayı, benim *"salınım baskın kusurdur"* tezimi **çürütür** — ama yalnız
+**ölçülen küme** için. Aynı dakikada, canlı `/ask` üzerinde `bu yıl vardiya bazında fire
+oranı` iki koşumda **iki farklı yol** izledi (biri 8 satırlık tam cevap, öteki
+netleştirme). Yani:
+
+> **Alet %100 diyor çünkü zaten çalışan soruları ölçüyor.**
+
+*Bir kararlılık ölçütü, yalnız kararlı olanları içeriyorsa bir ölçüt değil bir aynadır.*
+
+### §85.1 · Ölçüm aletim bu turda **ÜÇ KEZ** yanıldı — üçü de yazılmadan yakalandı
+
+| # | yanlış okuma | gerçek | nasıl yakalandı |
+|---|---|---|---|
+| 1 | *"thread'li turlar bağlamı kaybediyor"* | `AskRequest`'te **`thread_id` bağlam taşımaz**; bağlam `history`+`cube_query` ile taşınır — testim thread **kurmamıştı** | şemayı okudum |
+| 2 | *"her sorgu 0 satır dönüyor"* | satırlar `result.rows` altında; ben `rows` okuyordum | tam JSON dökümü |
+| 3 | *"garson yolunda DÖNEM cq'ya yazılmıyor"* (3 kanıt!) | dönem **yazılıyor**; yazıcım `filters` alanını basmıyordu | tam `cq` + `sql` dökümü |
+
+🔴 Üçü de **kök neden ilan edilmek üzereydi**. Üçüncüsü en tehlikelisiydi: elimde
+*"üç bağımsız kanıt"* vardı ve üçü de aynı **alet kusurundan** doğmuştu.
+
+*Aynı yönde üç kanıt, üçü de aynı aletten geliyorsa bir kanıt değil bir kalibrasyon
+hatasıdır.*
+
+### §85.2 · KÖK-N1 — **sıralanmamış bir listeye dilim atmak bir seçim değil, bir kuradır**
+
+Sondaj (canlı akışa geçici log, `§83.4` yol-1 — **dosyadan şema yüklenmedi**):
+
+    q='bu yil vardiya bazinda fire orani'
+    ilgili=['ik','isg','kalite','makine_duruslari','oee','parti']
+    ölçü_sahibi=[]  boyut_sahibi=[('ik','personel_vardiya'),('isg','kaza_vardiya'),
+                                  ('kalite','vardiya'),('makine_duruslari','vardiya')]
+
+`ilgili_cubelar` **altı** küp döndürdü; çağıran `[:3]` dedi. Ölçünün gerçek sahipleri
+(`parti.fire_orani_yuzde`, `oee.toplam_fire_kg`) listenin **5. ve 6.** sırasındaydı — ve
+o sıra **`schema["cubes"]`'in dosya sırasıydı**, bir güç sırası değil.
+
+Kullanıcının gördüğü:
+
+| soru | sunulan konular | sunulan chip'ler |
+|---|---|---|
+| `…fire oranı` | İK / bordro · İSG · kalite | **brüt maaş · net maaş · işveren maliyeti** |
+| `…kaç şikayet geldi` | cari hesap · Satış hunisi · kalite | **borç · alacak · bakiye** |
+
+İkincisinde `sikayet` küpü **vardı** ve gösterilmedi.
+
+**Düzeltme:** sıra artık üç mevcut sinyalden okunur (ölçü sahipliği · küp-düzeyi isabet ·
+boyut-düzeyi isabet). **Yeni kelime listesi yazılmadı** (`ADR-0008`); eşitlikte Python'un
+kararlı sıralaması dosya sırasını korur.
+
+**Curl doğrulaması (aynı sorular, düzeltmeden sonra):**
+
+| soru | sunulan konular | sunulan chip'ler |
+|---|---|---|
+| `…fire oranı` | **OEE · parti** · İK | **oee · kullanılabilirlik · performans · fire…** |
+| `…kaç şikayet geldi` | **Müşteri şikâyeti** · parti · cari | **şikayet adedi · iade · çözüm süresi** |
+
+*Bir listeyi kesmeden önce sıralamak, kesmenin kendisinden daha önemlidir.*
+
+### §85.3 · KÖK-N2 — 🔴🔴 **HAKEM KONUŞTU, KARARI DUYULMADI**
+
+Canlı log zinciri, **tek istek**, soru `bakım süresi en uzun makine`:
+
+    route ŞÜPHELİ → garson çağrılıyor (§51)      ← route yarım duydu
+    intent: 3 oy · 1 farklı aday · kazanan 2 oy  ← garson OYBİRLİĞİYLE geçerli cevap
+    CEVAP: not='Hangisini istiyorsun?'           ← ikisi de çöpe
+
+`§51`'in *"garsonun sonucu yalnız daha iyiyse alınır"* süzgeci, uygulamada
+*"garsonun cevabı **kusursuz** mu"* diye soruyordu. Ölçüt: **dönem var mı**. Soruda hiç
+dönem yoksa — ki bu sorunun bir özelliğidir, cevabın kusuru değil — cevap **her zaman**
+*"hayır"* çıkıyordu. Sonuç: **dönemsiz her soruda garsonun kararı otomatik eleniyordu.**
+
+🔴 Ve bedeli yalnız sessizlik değil. Aynı süzgeç route'un **uydurduğu** filtreyi de
+hayatta bırakıyordu:
+
+| soru | route'un ürettiği filtre |
+|---|---|
+| `en verimsiz hattı bul ve nedenini **açıkla**` | `hat = "Açık"` ← *"açıkla"* fiilinden |
+| `en düşük OEE'ye sahip makineyi **hariç tut**` | `makine ≠ "en düşük OEE'ye sahip makine"` |
+
+Birincisi `§51`'in **kendi kanıt tablosundaki 2. satırdır** — yamandığı sanılan kusur,
+süzgeç yüzünden hâlâ kullanıcıya gidiyordu.
+
+**Düzeltme:** süzgeç **mutlaktan karşılaştırmalıya** çevrildi. `niyet_tasima.eksiklik`
+artık bir `bool` değil **adlandırılmış eksiklikler kümesi** döndürür; garsonun cevabı,
+bıraktığı eksik route'unkinin **altkümesiyse** kabul edilir. `route_supheli` aynen durur
+ve o kümenin boşluğunu okur — **tek sahip** (`KAT-1`).
+
+**Curl doğrulaması** (`bakım süresi en uzun makine`, **iki koşum, birebir aynı** — `G-1` ✅):
+
+    ÖNCE:  not='Hangisini istiyorsun?'                         cq = yok
+    SONRA: not='toplam sure dk çıkarabilirim — hangi dönem?'   cq = {makine_duruslari,
+           toplam_sure_dk, dims=[makine], filters=[bolum eq "Bakım"], order=desc}
+
+Netleştirme hâlâ dönem soruyor — **doğrusu bu**, soruda dönem yok. Ama artık chip'e
+basıldığında elde **doğru kurulmuş** bir rapor var; önce hiçbir şey yoktu.
+
+Ve `en verimsiz hattı bul ve nedenini açıkla`'daki `hat="Açık"` filtresi **yok oldu**.
+(Soru şimdi Discovery'ye düşüyor — bu bir **mutfak eksikliği raporudur**, ama *sessiz bir
+yanlış* değil **görünür bir eksiktir**. Takas bilinçlidir.)
+
+*Bir eleme ölçütü, elenenin yerine ne konacağını bilmiyorsa bir ölçüt değil bir kayıptır.*
+
+### §85.4 · KÖK-N4 — **sistem sayabildiği şeyi temsil edemiyordu**
+
+`niyet` nesnesi `üstünlük=3` yazıyor, `cube_query.limit` boş kalıyordu:
+
+    T1·5  `en yüksek 3 ayı göster`
+    niyet: tür=kirilim+ustunluk · kırılım=donem · üstünlük=3
+    cq:    order=desc  ·  limit=YOK      →  kullanıcıya **12 satır**
+
+Sebep: satır limiti *"zaman kovası varsa seriyi keser"* diye **hiç** konmuyordu. Gerekçe
+doğru, **kapsamı geniş**: limit seriyi ancak seri **başka bir boyut** üzerinde akıyorsa
+keser. Zaman **tek** kırılımsa sıralanan varlık ayın kendisidir.
+
+**Düzeltme:** engel `timeDimensions ∧ dimensions`'a daraltıldı. `dimensions` doluyken
+davranış **birebir** korunur (`entity_limit` zaten o işin sahibi).
+
+**Curl doğrulaması:** `limit: 3` · **3 satır** (önce 12).
+
+### §85.5 · N turu tablosu — 20 senaryo
+
+| # | soru | sonuç |
+|---|---|---|
+| N1 | `geçen ay kaç adet üretim yaptık` | ◐ cevap var; garsonun 2 oyu **uydurma küp** (`uretim`) → beyaz liste reddi |
+| N2 | `en yüksek fireli 5 parti` | ◐ dönem sorusu; `5` boyutsuz olduğu için limit anlamsız (ayrı kök) |
+| N3 | `bu yıl vardiya bazında fire oranı` | 🔴→🟢 KÖK-N1 |
+| N4 | `şubat ayı personel verimlilikleri` *(kullanıcının senaryosu)* | 🔴→◐ KÖK-N1 düzeldi; **mutfak sınırı gerçek** (aşağıda) |
+| N5·N13 | `toplam duruş dakikasını hat bazında sırala` | 🔴 `sırala` kayıp — **açık kök** |
+| N6 | `bakım süresi en uzun makine` | 🔴→🟢 KÖK-N2 |
+| N7 | `en çok enerji harcayan 3 makineyi bul` | ◐ salınım (2/3 aday) |
+| N8 | `bu yıl toplam fire kg` | ✅ |
+| N9 | `peki geçen yıl?` *(takip)* | ✅ **ölçü korundu**, dönem taşındı |
+| N10 | `ikisini karşılaştır` *(takip)* | 🔴 `temsil-yok=kiyas` içeride yazılı, **kullanıcıya beyan yok** |
+| N11 | `bunu aylara böl` *(takip)* | ✅ |
+| N12 | `en yüksek 3 ayı göster` *(takip)* | 🔴→🟢 KÖK-N4 |
+| N14 | `which machine had the most downtime last month?` **[EN]** | ✅ + dürüst boş-aralık beyanı |
+| N15 | `ما هو إجمالي الإنتاج هذا العام؟` **[AR]** | ✅ (küp seçiminde salınım) |
+| N16 | `iyi çalışmalar, bu ay kaç iş kazası oldu` | ✅ sosyal+veri ayrımı çalıştı |
+| N17 | `geçen çeyrek OEE ortalaması kaç` | ✅ |
+| N18 | `en verimsiz hattı bul ve nedenini açıkla` | 🔴→🟢 uydurma filtre yok oldu |
+| N19 | `en düşük OEE'ye sahip makineyi hariç tut` | 🔴 uydurma filtre — **açık kök** |
+| N20 | `son 3 ayda hangi müşteriden kaç şikayet geldi` | 🔴→🟢 KÖK-N1 |
+
+**Discovery ateşlemesi (mutfak eksikliği raporu): E=4 · F=1 · G=1 · N=1.**
+
+### §85.6 · Ve bir MUTFAK sınırı — garson suçsuz, `§0.0`'ın teşhis kuralı işledi
+
+Canlı şemadan (çalışan konteynerin `/schema` ucu) okundu:
+
+| istek | ölçü nerede | kırılım nerede | tek küpte buluşuyor mu |
+|---|---|---|---|
+| `vardiya bazında fire oranı` | `parti.fire_orani_yuzde` | `vardiya` → `oee`·`kalite`·`isg`·`ik` | ❌ |
+| `personel verimlilikleri` | `oee.ort_oee` | `personel` → `parti`·`ik`·`egitim` | ❌ |
+
+Garson `{"cube": null}` derken **doğruyu söylemişti**: hiçbir küp siparişi tek başına
+karşılayamıyor. `§0.0`'ın teşhis kuralı aynen: *"garson doğru girdi sağladı ve yine
+çalışmadıysa kusur **mutfaktadır**."*
+
+🔴 Ama sistemin kullanıcıya söylediği cümle bir **yalan**: *"hangi **ölçüyü** istediğini
+anlayamadım."* Ölçüyü biliyor — **birleştiremiyor**. Doğru cümle bunu söylemelidir
+(`KÖK-3`, beyan-açık). **Açık borç.**
+
+*Bilmediğini söylemek dürüstlüktür; bildiğini bilmediğini söylemek değildir.*
+
+---
+
+## §86 · 🔴🔴 GERİ ALINMIŞ SAYILAN BİR DEĞİŞİKLİK, GERİ ALINMAMIŞTI
+
+### §86.1 · Nasıl ortaya çıktı — **tabanı ölçmeden okumayı reddederek**
+
+`§85`'in kapısı `dogru: 91` verdi. Belgede yazılı son sayı **93**'tü. Doğruluk vetosunun
+kuralı açık (`§73.7`): *"`sessiz_yanlis` sabit kalsa bile `dogru` düşerse geri alınır."*
+Yani üç düzeltmeyi geri almak üzereydim.
+
+🔴 **Almadım — çünkü tabanı ölçmemiştim.** İzole bir `git worktree`de HEAD (`0ec34da`)
+aynı kapıyla koşuldu:
+
+| ölçüt | HEAD **tabanı** | `§85` demeti | okuma |
+|---|---|---|---|
+| `vaka` | 2285 | 2285 | payda sabit |
+| `kabul` | 1157 | 1157 | — |
+| `dogru` | **91** | **91** | ✅ düşüş **benim demetimin değil** |
+| `sessiz_yanlis` | 12 | 12 | ✅ veto geçildi |
+| `beyanli_kismi` | 49 | 49 | — |
+
+**Birebir aynı.** Yani üç düzeltme korpusu ne iyileştirdi ne bozdu — ve `93 → 91` düşüşü
+**çok daha önce** olmuştu.
+
+*Bir sayının düştüğünü görmek, onu senin düşürdüğün anlamına gelmez. Tabanı ölçmeden
+verilen geri-alma kararı, doğru bir kuralın yanlış uygulanmasıdır.*
+
+### §86.2 · Kök — belgeye yazılmış bir geri alma, geri alma değildir
+
+`git log`:
+
+    9c4d0f5  revert(§73): korpus hakemlik etti — dogru 93→91, süit 4 kırmızı, GERİ ALINDI
+
+Commit mesajı ölçümü satır satır taşıyor. **Dokunduğu dosyalar:**
+
+    belgeler/denetim/2026-08-07_CEVIRI-SOZLESMESI.md | 37 +
+    belgeler/mimari/V1-MIMARI-HARITASI.md            | 15 +
+
+🔴 **Koda sıfır satır.** `§73`'ün tek satırlık kod farkı (`_SUFFIX_ATOMS`'tan
+`y`·`n`·`s`·`m` çıkarılması) HEAD'de **hâlâ duruyordu**:
+
+    git diff 761928d^ HEAD -- backend/app/cube_router.py
+    -    "i", "u", "e", "a", "y", "n", "s", "m",
+    +    "i", "u", "e", "a",
+
+Ve HEAD'in korpus sayıları (`1157 · 91 · 49`) **§73'ün tedavi sayılarının birebir aynısı**.
+Dört ölçütün dördünün rastlantıyla eşleşmesi mümkün değil: **tedavi hâlâ uygulanmış
+hâldeydi.**
+
+### §86.3 · Neden on commit boyunca görünmedi
+
+Çünkü **kapı toplu koşuluyor** (`SIFIRINCI KURAL`) ve `9c4d0f5` ile `0ec34da` arasında
+hiç koşmadı. Kural doğrudur ve beş kat israfı önlemiştir — ama bir yan etkisi ölçüldü:
+
+> **Toplu kapı, aradaki bir kararın uygulanıp uygulanmadığını sormaz.**
+
+Bu, deponun `KAT-1` sınıfının (*"aynı kuralın iki sahibi"*) **süreç düzeyindeki** hâlidir:
+karar iki yerde yaşıyordu — **belgede** ve **kodda** — ve ikisi ayrıştı. Belge *"Geri
+alındı."* diyordu; o cümle **yanlıştı** ve on commit boyunca doğru sanıldı.
+
+⚠ Bedeli yalnız iki puan değil: `§73.7` *"tam süit **4 kırmızı**"* diye ölçmüştü. O dört
+test, geri alma uygulanmadığı için **hâlâ kırmızıydı** — ve `--hepsi` yerelde koşulmadığı
+için görünmüyordu.
+
+### §86.4 · Karar UYGULANDI
+
+`y`·`n`·`s`·`m` envantere **döndürüldü**. Bedeli bilinçli: `kar ⊂ karşılaştır` kusuru geri
+geldi ve **açık bırakıldı** — `§0.0` onu route'ta değil **garsonda** çözmeyi emrediyor.
+
+*Bir ölçüm, kararını koda dokundurmadıysa bir ölçüm değil bir anıdır.*
+
+### §86.5 · Ve bu turun kendi dersi
+
+Bu tur üç kez ölçüm aletine (`§85.1`), bir kez de **tabana** yanıldı. Dördünde de aynı
+şey kurtardı: *iddiayı yazmadan önce ölç.* Dördünün de yazılmış hâli bir **kök neden**
+olacaktı ve dördü de **yanlış** olacaktı.
+
+> 🔴 **YENİ BAĞLAYICI (`§86.6`):** bir kapı sayısı beklenenden düşükse, **önce tabanı
+> ölç** — izole `worktree` + aynı kapı + aynı artefakt. Taban ölçülmeden verilen bir
+> geri-alma kararı, doğru düzeltmeleri de çöpe atar.
+
+### §86.7 · Demetin kapanış tablosu — **tek** `--hepsi` koşumu
+
+| ölçüt | HEAD tabanı | `§85` demeti | **+ `§86` geri alma** |
+|---|---|---|---|
+| `vaka` | 2285 | 2285 | 2285 |
+| `kabul` | 1157 | 1157 | 1153 |
+| `dogru` | 91 | 91 | **93** (+2) |
+| `sessiz_yanlis` | 12 | 12 | **12** ✅ doğruluk vetosu |
+| `beyanli_kismi` | 49 | 49 | 51 |
+| tam süit | — | — | **4257 yeşil · 32 atlandı** |
+| `eval` | — | — | precision **+0,0%** · coverage **+0,0%** |
+| korpus doğru-cube | %95.1 | %95.1 | **%95.1** (taban %95.1) |
+
+⊙ Okuma: `§85`'in üç düzeltmesi korpusu **hiç oynatmadan** dört ölçülmüş canlı kusuru
+kapattı; `§86`'nın uygulanmamış geri alması `dogru`'yu **+2** yükseltti ve `§73.7`'nin
+ölçtüğü **dört kırmızı testi** kapattı. İkisi ayrı ayrı ölçüldüğü için hangi kazancın
+kimin olduğu **karışmadı**.
+
+### §86.8 · 🔴 AÇIK KÖK (O turuna devreder) — **bir fiil, bir kategori değeri değildir**
+
+Geri almadan sonra aynı sorunun **yeni kılıkta** ürettiği uydurma filtre:
+
+| soru | üretilen filtre | gerçek |
+|---|---|---|
+| `en verimsiz hattı bul ve nedenini **açıkla**` | `renk = "Açık"` | *"açıkla"* bir **fiil** |
+| `en düşük OEE'ye sahip makineyi **hariç tut**` | `makine ≠ "en düşük OEE'ye sahip makine"` | değer değil, **cümlenin kendisi** |
+
+⊙ Bu, `§G/AJ0`'ın yazım önerisinde çözdüğü ayrımın **değer eşleştirmesindeki** hâlidir
+(*«arttı» bir FİİL, yazım hatası DEĞİL*). Orada bir sahip var; burada yok — yani `KAT-1`
+değil, **sahipsizlik**. Çözüm yeri route'un değer eşleştiricisidir ve ölçütü zaten
+yazılmıştır: *çekimli bir fiil biçimi bir kategori değeri olamaz.*
+
+⚠ İkincisi daha ağır: filtre değeri **kullanıcının kendi cümlesi**. Hiçbir katalog değeri
+o dizeye eşit olamayacağı için sorgu **sessizce boş** dönebilir — yani `KÖK-3`'ün
+(beyan-açık) kapsamadığı bir sessiz yanlış.
+
+*Bir değer eşleştiricisi, eşleştiremediğinde durmayı bilmiyorsa bir eşleştirici değil bir
+uydurucudur.*

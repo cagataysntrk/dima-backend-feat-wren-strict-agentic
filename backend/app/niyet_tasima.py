@@ -108,10 +108,54 @@ def route_supheli(cq: dict | None, q: str) -> bool:
     *Yarım duymak, duymamaktan daha tehlikelidir: duymadığını bilen sorar, yarım duyan
     emin olur.*
     """
+    return bool(eksiklik(cq, q))
+
+
+#: Şüphenin **adları**. Bir küme döndürmenin bir `bool` döndürmekten farkı: iki cevabı
+#: **karşılaştırabilmek**. `§N2` bunu ölçtü — bkz. `eksiklik`.
+EKSIK_DONEM = "donem"
+EKSIK_SIRALAMA = "siralama"
+EKSIK_TUMU = "yok"          # `cq` hiç yok → her şey eksik
+
+
+def eksiklik(cq: dict | None, q: str) -> frozenset[str]:
+    """🔴 **`§N2` — «YALNIZ DAHA İYİSİNİ AL» SÜZGECİ, ELDE HİÇBİR ŞEY YOKKEN DE ELİYORDU.**
+
+    ## Ölçülen kusur — canlı log zinciri, tek istek
+
+        route ŞÜPHELİ → garson çağrılıyor (§51)     ← route yarım duydu
+        intent: 3 oy · 1 farklı aday · kazanan 2 oy ← garson OYBİRLİĞİYLE geçerli cevap
+        CEVAP: not='Hangisini istiyorsun?'          ← ikisi de çöpe
+
+    Soru: `bakım süresi en uzun makine`. **Soruda dönem YOK** — ne route ne garson tarih
+    üretebilir. `route_supheli` dönemsizliği şüphe sayıyor, çağıran da garsonun cevabını
+    *"hâlâ şüpheli"* diye eliyordu. Sonuç: hakem konuştu, kararı **duyulmadı**.
+
+    ⊙ Ve bedeli yalnız sessizlik değil: aynı süzgeç, route'un **uydurduğu** filtreyi de
+    hayatta bırakıyor. Ölçüldü — `en verimsiz hattı bul ve nedenini **açıkla**` →
+    `filters:[{hat eq "Açık"}]`. Garsonun temiz cevabı elenince kullanıcıya giden şey
+    uydurma filtreli rapor oluyor (`§51`'in kendi kanıt tablosundaki 2. satır, **hâlâ**).
+
+    ## Kök — mutlak ölçüt, karşılaştırmalı sorunun yerine konmuş
+
+    Süzgecin sorusu *"garsonun cevabı **daha iyi mi**"* olmalıydı; uygulaması *"garsonun
+    cevabı **kusursuz mu**"* diye soruyordu. Route'un elinde hiçbir şey yokken bile aynı
+    çıtayı tutuyordu — oysa **hiçbir şeyden kötü bir cevap yoktur**.
+
+    ⚠ Bu yüzden yüklem `bool` değil **küme** döndürür: iki cevabı ancak adlandırılmış
+    eksiklikler karşılaştırılabilir. `route_supheli` aynen korunur ve bu kümenin
+    boşluğunu okur — **tek sahip** (`KAT-1`).
+
+    ⚠ Ölçüt yine **dil-bağımsız**: hiçbir Türkçe sözcük aranmaz (`§51`'in kendi dersi).
+
+    *Bir eleme ölçütü, elenenin yerine ne konacağını bilmiyorsa bir ölçüt değil bir
+    kayıptır.*
+    """
     if not isinstance(cq, dict):
-        return True
+        return frozenset({EKSIK_TUMU})
     cr = _cr()
     qn = cr._norm(q or "")
+    eksik: set[str] = set()
     tarih_var = bool(cq.get("timeDimensions")) or any(
         f.get("operator") in ("gte", "lte") for f in (cq.get("filters") or []))
     # 🔴 **VE İLK YAZIMIM KENDİ KURALINI ÇİĞNEDİ.** Burada `\b(bu|gecen|son|ilk|…)\b`
@@ -126,7 +170,7 @@ def route_supheli(cq: dict | None, q: str) -> bool:
     # iyisini al"* süzgeci route'un cevabını korur — maliyet bir LLM çağrısı, kazanç
     # kullanıcının cevapsız kalmaması.
     if not tarih_var:
-        return True
+        eksik.add(EKSIK_DONEM)
     if cr._direction(qn) and not (cq.get("order") or cq.get("entity_limit")):
-        return True
-    return False
+        eksik.add(EKSIK_SIRALAMA)
+    return frozenset(eksik)

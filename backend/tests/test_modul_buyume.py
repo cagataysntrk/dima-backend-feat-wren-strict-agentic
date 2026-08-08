@@ -89,6 +89,20 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("n2-garsonun-karari-karsilastirmali-tartilir", 2,
+     "🔴🔴 **HAKEM KONUŞTU, KARARI DUYULMADI — `§0.0`'ın en pahalı ihlali.** Canlı log "
+     "zinciri, tek istek (`bakım süresi en uzun makine`): `route ŞÜPHELİ → garson "
+     "çağrılıyor (§51)` → `intent: 3 oy · 1 farklı aday · kazanan 2 oy` → kullanıcıya "
+     "giden cümle *«Hangisini istiyorsun?»*. Garson **oybirliğiyle geçerli** bir cevap "
+     "üretti ve o cevap eleme süzgecinde çöpe gitti. "
+     "⊙ Sebep: süzgeç *«garsonun cevabı DAHA İYİ mi»* diye sorması gerekirken "
+     "*«KUSURSUZ mu»* diye soruyordu — soruda hiç dönem yoksa cevap her zaman *«hayır»*. "
+     "Yani **dönemsiz her soruda** garsonun kararı otomatik olarak elenıyordu. "
+     "⚠ Ve bedeli yalnız sessizlik değil: aynı süzgeç route'un **uydurduğu** filtreyi de "
+     "hayatta bırakıyor (`en verimsiz hattı bul ve nedenini **açıkla**` → "
+     "`filters:[{hat eq \"Açık\"}]`) — `§51`'in kendi kanıt tablosundaki 2. satır, hâlâ. "
+     "İki satır: eksiklik kümelerini al, altküme ise garsonu kabul et. Ölçüt "
+     "`app/niyet_tasima.eksiklik`'te **tek sahiptedir** ve `route_supheli` onu okur."),
     ("faz-56-garson-konustuysa", 6,
      "🔴🔴 **EN ÜST KURALIN (`§0.0`) YAPISAL HÂLİ — ve `§54`'ün kelime listesini "
      "GEREKSİZ KILAN madde.** Çapraz-konu reddi *«X başka bir konu gibi görünüyor»* der "
@@ -388,6 +402,28 @@ MUAFIYET_ASK_KOD = [
      "makbuza yazılmazsa, kullanıcı onu kendi yazdığını sanır"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("n1-ilgili-cubelar-siralanir", 10,
+     "🔴 **SIRALANMAMIŞ BİR LİSTEYE DİLİM ATMAK BİR SEÇİM DEĞİL, BİR KURADIR.** "
+     "`ilgili_cubelar` `schema[\"cubes\"]` **dosya sırasında** dönüyordu; üç çağıranın "
+     "üçü de `[:3]`/`[:4]` diyerek onu sıralıymış gibi kesiyordu. Ölçüldü (canlı akışa "
+     "geçici log, `§83.4` yol-1): `q='bu yil vardiya bazinda fire orani'` → "
+     "`ilgili=['ik','isg','kalite','makine_duruslari','oee','parti']` — ölçünün gerçek "
+     "sahipleri (`parti.fire_orani_yuzde`, `oee.toplam_fire_kg`) **5. ve 6.** sırada, "
+     "yani kesilen kısımda. Kullanıcı bir **fire** sorusuna `brüt maaş · net maaş · "
+     "işveren maliyeti` chip'i gördü. İkinci kanıt: *«son 3 ayda hangi müşteriden kaç "
+     "şikayet geldi»* → `sikayet` küpü var, listede yok. "
+     "⚠ **YENİ SİNYAL ÜRETİLMEDİ** (`ADR-0008`): sıra zaten hesaplanan üç şeyden okunur — "
+     "ölçü sahipliği · küp-düzeyi isabet · boyut-düzeyi isabet. Eşitlikte Python'un "
+     "kararlı sıralaması dosya sırasını korur, hiçbir eşitlik yeni keyfilik doğurmaz."),
+    ("n4-zaman-tek-kirilimsa-satir-limiti-serisi-kesmez", 1,
+     "🔴 **«SERİYİ KESER» GEREKÇESİ, SERİ OLMAYAN DURUMA DA UYGULANIYORDU.** Satır limiti "
+     "zaman kovası varken **hiç** konmuyordu; oysa limit seriyi ancak seri BAŞKA bir "
+     "boyut üzerinde akıyorsa keser. Zaman **tek** kırılımsa sıralanan varlık ayın "
+     "kendisidir. Ölçüldü (thread T1·5, `en yüksek 3 ayı göster`): `niyet` "
+     "**`üstünlük=3`** yazdı, `order` kondu, `limit` konmadı → kullanıcı **12 satır** "
+     "aldı. *Sistem sayabildiği şeyi temsil edemiyordu.* "
+     "⚠ Kapsam dar: `dimensions` doluyken davranış **birebir** korunur — orada gerekçe "
+     "hâlâ geçerli ve `entity_limit` zaten o işin sahibi."),
     ("faz-46-konusma-fiilleri", 5,
      "🔴 **KONUŞMA FİİLLERİ BİR KONU DEĞİLDİR.** Ölçüldü: `…en yüksek olanı **analiz et**` "
      "→ `source=catalog` (**tüm menü dökümü**); `…nedenini analiz et` → *«analiz başka bir "

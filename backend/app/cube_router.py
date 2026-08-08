@@ -1380,7 +1380,21 @@ def deterministic_refine(prev: dict, q: str, schema: dict,
     # Satır limiti ("... 5 cari"): yalnız zaman kovasız raporda — kovalı seride satır
     # limiti seriyi keser (o durum entity_limit'in işi, yukarıda).
     n_lim = _top_n(q, cube_meta)
-    if n_lim and not topn and not cq.get("timeDimensions") and cq.get("limit") != n_lim:
+    # 🔴 **`§N4` — «SERİYİ KESER» GEREKÇESİ, SERİ OLMAYAN DURUMA DA UYGULANIYORDU.**
+    #
+    # Koşul `not cq.get("timeDimensions")` idi: zaman kovası varsa satır limiti **hiç**
+    # konmuyordu. Gerekçe doğru ama **kapsamı geniş**: satır limiti seriyi ancak seri bir
+    # BAŞKA boyut üzerinde akıyorsa keser. Zaman **tek** kırılımsa sıralanan varlık ayın
+    # kendisidir ve *"en yüksek 3 ay"* tam olarak üç satır demektir.
+    #
+    # Ölçüldü (thread T1·5, `en yüksek 3 ayı göster`): `niyet` **`üstünlük=3`** yazdı,
+    # `order` kondu, `limit` **konmadı** → kullanıcı **12 satır** aldı. Sistem sayabildiği
+    # şeyi temsil edemiyordu. Aynı desen `en çok enerji harcayan 3 makine`de de görüldü.
+    #
+    # ⚠ Kapsam dar tutuldu: `dimensions` doluysa eski davranış **birebir** korunur —
+    # orada gerekçe hâlâ geçerlidir ve `entity_limit` zaten o işin sahibidir.
+    _seri_kesilir = bool(cq.get("timeDimensions")) and bool(cq.get("dimensions"))
+    if n_lim and not topn and not _seri_kesilir and cq.get("limit") != n_lim:
         cq["limit"] = n_lim
         changed = True
 
@@ -2867,7 +2881,35 @@ _SUFFIX_ATOMS = (
     #
     # *Bir ek envanterinde tek harflik bir ünsüz, envanteri bir doğrulayıcı olmaktan
     # çıkarıp bir onaylayıcıya çevirir.*
-    "i", "u", "e", "a",
+    #
+    # ────────────────────────────────────────────────────────────────────────────────
+    # 🔴🔴 **`§86` — VE BU DEĞİŞİKLİK GERİ ALINMIŞ SAYILIYORDU. ALINMAMIŞTI.**
+    #
+    # `9c4d0f5` commit'inin adı `revert(§73)`, mesajı ölçümü satır satır taşıyor
+    # (`dogru 93 → 91  🔴 EN KATI ÖLÇÜT DÜŞTÜ`, `tam süit yeşil → 4 kırmızı`), belge
+    # *«Geri alındı.»* diyor. Commit'in **dokunduğu dosyalar**:
+    #
+    #     belgeler/denetim/2026-08-07_CEVIRI-SOZLESMESI.md | 37 +
+    #     belgeler/mimari/V1-MIMARI-HARITASI.md            | 15 +
+    #
+    # **Koda sıfır satır.** Geri alma *yazılmış*, *yapılmamıştı* — ve on commit boyunca
+    # kimse fark etmedi, çünkü kapı toplu koşuluyor ve arada hiç koşmadı.
+    #
+    # ⊙ Nasıl yakalandı: `§85`'in kapısı `dogru 91` verdi, ben 93 bekliyordum. Tabanı
+    # **ölçmeden** *"benim değişikliğim düşürdü"* diye okuyup üç düzeltmeyi geri almak
+    # üzereydim. İzole worktree'de HEAD ölçüldü → **birebir 91**. Yani düşüşün sahibi
+    # benim demetim değil, **uygulanmamış bir geri alma**ydı.
+    #
+    # 🔴 Bu, deponun `KAT-1` sınıfının **süreç düzeyindeki** hâli: bir karar iki yerde
+    # yaşıyor — belgede ve kodda — ve ikisi ayrıştı. Belgeye yazılmış bir geri alma, geri
+    # alma değildir.
+    #
+    # **`§73.7`'nin kararı şimdi UYGULANDI** (`y`·`n`·`s`·`m` envantere döndü). Bedeli
+    # bilinçlidir: `kar ⊂ karşılaştır` kusuru geri geldi ve **açık bırakıldı** — çünkü
+    # `§0.0` onu route'ta değil **garsonda** çözmeyi emrediyor.
+    #
+    # *Bir ölçüm, kararını koda dokundurmadıysa bir ölçüm değil bir anıdır.*
+    "i", "u", "e", "a", "y", "n", "s", "m",
 )
 # 🔴 `ku` KÖK-7a'da eklendi ve **ölçüyle zorunlu oldu**: `in q` yasağı uygulanınca
 # `bugunku ciro` **dönem filtresini kaybetti** (`bugun` alt-dize olarak geçiyordu ama
@@ -3121,6 +3163,41 @@ def ilgili_cubelar(q: str, schema: dict, haric: set[str] | None = None) -> list[
                       for syns in (c.get("dimension_synonyms") or {}).values())
         if _syn_hit_words(konu_metni, c.get("synonyms")) or dim_hit:
             out.append(c)
+    # 🔴 **`§N1` — SIRALANMAMIŞ BİR LİSTEYE DİLİM ATMAK BİR SEÇİM DEĞİL, BİR KURADIR.**
+    #
+    # Bu fonksiyon `schema["cubes"]` **dosya sırasında** dönüyordu; çağıranların üçü de
+    # (`ask.py` 3 yerde) `[:3]`/`[:4]` diyerek onu **sıralıymış gibi** kesiyordu. Yani
+    # kullanıcıya *"şu konularla ilgili görünüyor"* diye sunulan üç küp, katalogda en
+    # **önce yazılmış** üç küptü — sinyali en güçlü olanlar değil.
+    #
+    # Ölçüldü (canlı akışa geçici log, `§83.4` yol-1):
+    #
+    #     q='bu yil vardiya bazinda fire orani'
+    #     ilgili=['ik','isg','kalite','makine_duruslari','oee','parti']
+    #
+    # Ölçünün gerçek sahipleri (`parti.fire_orani_yuzde`, `oee.toplam_fire_kg`) listenin
+    # **5. ve 6.** sırasında → `[:3]` onları kesti. Kullanıcı bir **fire** sorusuna
+    # *"İK / bordro, İSG, kalite ile ilgili görünüyor"* ve `brüt maaş · net maaş · işveren
+    # maliyeti` chip'leri gördü. İkinci kanıt: *"son 3 ayda hangi müşteriden kaç şikayet
+    # geldi"* → `sikayet` küpü **var**, listede **gösterilmedi**.
+    #
+    # ⚠ Yeni sinyal **üretilmedi**, yeni kelime listesi **yazılmadı** (`ADR-0008`): sıra
+    # zaten hesaplanan üç şeyden okunur — ölçü sahipliği · küp-düzeyi isabet sayısı ·
+    # boyut-düzeyi isabet sayısı. Eşitlikte Python'un **kararlı** sıralaması dosya sırasını
+    # korur, yani hiçbir eşitlik yeni bir keyfilik doğurmaz.
+    #
+    # *Bir listeyi kesmeden önce sıralamak, kesmenin kendisinden daha önemlidir.*
+    def _guc(c: dict) -> tuple[int, int, int]:
+        try:
+            olcu = 1 if _match_measure(konu_metni, c)[0] else 0
+        except Exception:                                  # noqa: BLE001 — sıra düşmez
+            olcu = 0
+        kup = len(_syn_hit_words(konu_metni, c.get("synonyms")))
+        boy = sum(len(_syn_hit_words(konu_metni, syns))
+                  for syns in (c.get("dimension_synonyms") or {}).values())
+        return (olcu, kup, boy)
+
+    out.sort(key=_guc, reverse=True)
     return out
 
 

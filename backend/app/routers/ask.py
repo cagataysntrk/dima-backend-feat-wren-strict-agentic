@@ -3307,8 +3307,22 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     # ⚠ `§51` — ŞÜPHELİ yolda garsonun sonucu **yalnız şüpheyi
                     # gideriyorsa** alınır. Almazsa route'un cevabı yerinde kalır: bir
                     # devir, elde olanı **kötüleştirmemelidir**.
-                    if parsed and (not _supheli
-                                   or not _niyet_tasima.route_supheli(parsed, body.question or "")):
+                    # 🔴 **`§N2` — SÜZGEÇ MUTLAKTAN KARŞILAŞTIRMALIYA ÇEVRİLDİ.**
+                    # Eski koşul *"garsonun cevabı hâlâ şüpheli mi"* diye soruyordu ve
+                    # **soruda hiç dönem yoksa** cevap her zaman *"evet"*ti — yani
+                    # dönemsiz her soruda garsonun kararı, oybirliğiyle bile olsa,
+                    # otomatik çöpe gidiyordu. Ölçüldü (`bakım süresi en uzun makine`):
+                    # `3 oy · 1 farklı aday · kazanan 2 oy` → kullanıcı *"Hangisini
+                    # istiyorsun?"* gördü. Gerekçe `niyet_tasima.eksiklik`'te.
+                    #
+                    # Doğru soru **karşılaştırmalıdır**: garsonun bıraktığı eksik, route'un
+                    # bıraktığından **fazla değilse** garsonun cevabı alınır. Hiçbir şeyden
+                    # kötü bir cevap yoktur; eşit kötülükte olan da route'un uydurmasını
+                    # taşımıyor olabilir (`hat eq "Açık"`).
+                    _g_eksik = _niyet_tasima.eksiklik(parsed, body.question or "")
+                    _r_eksik = _niyet_tasima.eksiklik(
+                        (route_hit or {}).get("cube_query"), body.question or "")
+                    if parsed and (not _supheli or _g_eksik <= _r_eksik):
                         route_hit = {"cube_query": parsed, "order": None, "limit": None}
                         intent_source = "cube+llm"
                         if k > 1:
