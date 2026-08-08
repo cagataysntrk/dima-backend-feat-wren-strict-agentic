@@ -4625,3 +4625,45 @@ ki orada birden çok geçerli cevap **gerçekten** vardır.
 
 > *Belirsiz bir soruya verilen cevabın koşumdan koşuma değişmesi, modelin kararsızlığı
 > değil sorunun kendisinin çok cevaplı olmasıdır.*
+
+### 83.3 · 🔴 `§83.1(b)` YANLIŞTI — ve sebebi ÜÇÜNCÜ KEZ aynı tuzak
+
+`§83.1(b)`'de şunu yazdım:
+
+> *"`ilgili_cubelar` doğru cevabı biliyor (`['oee','parti']`) ama kullanıcı İK/İSG/kalite
+> görüyor. Sistem doğru adayları hesaplayıp **başkalarını** gösteriyor."*
+
+Mesajın sahibini aradım (`§78.2`: yazmadan önce ara) ve `ask.py:3606`'da buldum:
+
+```python
+ilgili = cube_router.ilgili_cubelar(q_norm, schema)
+...
+konular = ", ".join(c.get("display") ... for c in ilgili[:3])
+```
+
+⊙ **Dal zaten `ilgili_cubelar`'ı kullanıyor.** Yani *"başka bir kaynaktan okuyor"* iddiam
+yanlış. O hâlde çalışma anında `ilgili_cubelar` **gerçekten** İK/İSG/kalite döndürüyor —
+ve benim sondajımın `['oee','parti']` demesinin tek açıklaması, **iki şemanın farklı
+olması**.
+
+🔴 **Bu, aynı tuzağın ÜÇÜNCÜ ısırığı:** `§71.5` (`demo/wren-project` bayat artefakt) ·
+`§71.6` (per-şirket dosyası da çalışma anıyla aynı değil) · şimdi bu. Sondajlarım
+**çalışma anının gördüğü şemayı** okumuyor.
+
+> *Bir ölçüm aracının yanlış kaynaktan okuması bir kez talihsizlik, üç kez bir yöntem
+> hatasıdır.*
+
+### 83.4 · Bağlayıcı düzeltme — sondajın TEK meşru yeri
+
+Bundan sonra bir eşleştirme sorusu **yalnız** şu iki yoldan biriyle ölçülür:
+
+1. **Canlı akışa geçici log** (`§71.6`'da işe yaradı: tek satır, tek tur, kesin cevap)
+2. **Çalışan konteynerin `/ask` cevabı ve izi** (`trace` alanı hangi dalın konuştuğunu
+   söylüyor)
+
+🔴 **Dosyadan şema yükleyip `cube_router`'ı doğrudan çağırmak YASAK** — üç kez yanlış
+sonuç verdi ve üçünde de sonucu **gerçek sandım**.
+
+⚠ Ve bu, `§83.1(a)`'yı da şüpheli kılar: *"`vardiya` hem `oee` hem `parti`'de"* iddiası da
+aynı bayat şemadan geliyordu. Beraberliğin gerçek olup olmadığı **yeniden** ölçülmeli —
+bu kez doğru yoldan.
