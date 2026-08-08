@@ -4136,3 +4136,39 @@ artırırsa geri alınır. Ve `§32`'nin `_kok()` yolu bundan **etkilenir** — 
 
 ⊙ `§72` gereği `k5` bir **Hollandaca eksiği değil**: garson yolunun o soruda kırık
 olduğunun kanıtı — ve `§65`'in sınıfına ait.
+
+### 73.3 · 🔴 SONDAJ HİPOTEZİMİ ÇÜRÜTTÜ — kök çekim/yapım değil, **TEK HARFLİK ATOM**
+
+`§73.2`'de çözüm yönünü *"envanteri çekim/yapım diye ikiye ayır"* diye yazmıştım. Bir
+sonraki adım olarak — kendi kuralıma uyup kod yazmadan — ayrışmayı **ölçtüm**:
+
+```
+silastir → ('si', 'la', 's', 'tir')      ← suçlu: TEK HARFLİK 's'
+lasma    → ('la', 's', 'm', 'a')
+lanma    → ('la', 'n', 'm', 'a')
+atom sayısı: 85
+```
+
+🔴 **Envanterde tek harflik atomlar var** (`s`·`m`·`a`·`n`) ve bunlar neredeyse **her**
+harf dizisini geçerli bir ek zinciri yapıyor. `kar ⊂ karşılaştır` bir yapım eki sorunu
+**değil**; `s` tek harfli olduğu için zincir kapanıyor.
+
+⊙ Bu, `§32`'nin dersinin **uç noktası**: orada *"iki harflik bir ek zincirde her yere
+sığar"* demiştim ve kısa ekleri düşürmüştüm. **Tek harflik bir atom ise her yerdedir.**
+
+> *Bir ek envanterinde tek harflik bir üye, envanteri bir doğrulayıcı olmaktan çıkarıp
+> bir onaylayıcıya çevirir.*
+
+⚠ **Ve bu, iki demettir tekrarlanan hatamın üçüncü örneği:** çözüm yönünü **ölçmeden**
+yazdım (`§71.2` görünen ad · `§71.4` boş sözlük · şimdi bu). Üçünde de sondaj tek turda
+doğruyu verdi. *Bir çözüm yönü, ölçülmeden yazıldığında bir tahmindir — ve tahminler
+belgeye yazılınca gerçek görünür.*
+
+### 73.4 · Düzeltilmiş çözüm yönü *(kod hâlâ DEĞİŞMEDİ)*
+
+Tek harflik atomlar **kaynaştırma harfleridir** (`y`·`n`·`s`·`ş`) ve Türkçede yalnız **iki
+ünlü arasında** görünürler. Kural: bir zincirde tek harflik atom **tek başına bir adım
+olamaz** — ancak komşu atomların arasında bir tampon olarak geçerlidir.
+
+⚠ Uygulama hâlâ **korpus hakemliği** ister (`§26.1`) ve `§32`'nin `_kok()` yolunu etkiler;
+ikisi birlikte ölçülmeli. Ama artık **doğru şeyi** ölçeceğiz.
