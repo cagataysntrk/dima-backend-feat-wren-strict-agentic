@@ -143,6 +143,11 @@ features:
   # ⚠ Sayıya dokunmaz: cümleyi `interpret()`'in KENDİ metinlerinden kurar, yani guard'dan
   # geçmesi tesadüf değil yapısal. Tanımadığı olgu türünü görünce turu LLM'e DEVREDER —
   # görmezden gelip kalanı anlatmak, *eksik ama tam görünen* bir özet vermek olurdu.
+  # 🔴 `§75` — SALINIM YÖNETİMİ. Üç sondajla ölçüldü: aynı soru aynı dakikada bazen tam
+  # cevap bazen netleştirme veriyor; `k=3` + `2/3` pratikte bir OY BİRLİĞİ şartıdır.
+  # Açıkken uyuşmazlıkta ÇOĞUNLUK adayıyla cevaplanır, uyum oranı ize yazılır ve
+  # `uyum.py` eksikleri ayrıca beyan eder. Kapalı doğar: takas korpusla ölçülecek.
+  oylama_cogunluk: "off"
   oylama_paydasi: "off"  # 🔴 Kusur GERÇEK, takas ÖLÇÜLEMEZ — bu yüzden kapalı.
   # ⊙ Doğrulandı: `agreement = len(best)/len(cands)` ve `cands` `{cube:null}` oylarını
   # eliyor → 1 cevap + 2 "bilmiyorum" = uyum **1,0**. Şüphe en yüksekken sistem en emin.

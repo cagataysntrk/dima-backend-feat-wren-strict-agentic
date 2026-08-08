@@ -4384,3 +4384,52 @@ kararı üç örneklemin rastgele uyuşmasına bağlanmıştır.
 
 *Belirlenimsiz bir sistemde tek tek dalları yamamak, dalgalı bir denizde tek tek dalgaları
 düzeltmeye benzer.*
+
+## §77 · SALINIM YÖNETİMİ YAZILDI — ve **ölçülemediği** için KAPALI doğdu
+
+`§75.6`'nın tanımladığı iş yazıldı: uyuşmazlıkta **çoğunluk adayıyla** cevapla, uyum
+oranını ize yaz, eksikleri `uyum.py` beyan etsin.
+
+* `_select_consistent` artık eşiğin altında **çoğunluk adayını** dönebiliyor
+* Bayrak `oylama_cogunluk`, `features.yml`'de **`off`**, kayıt `FLAGS`'te gerekçesiyle
+* `KURAL B`: kapalıyken davranış **bayt bayt bugünkü**
+
+### 77.1 · 🔴 AMA TAKAS ÖLÇÜLEMİYOR — ve bu, bayrağı kapalı tutmanın SEBEBİ
+
+Doğrulamak için aynı soruyu bayrak kapalıyken iki kez koştum:
+
+```
+q1  «toplam üretimin yüzde kaçı fire»  8.604 ms  ✅
+q2  «toplam üretimin yüzde kaçı fire»  8.052 ms  ✅
+```
+
+İkisi de geçti — yani o soru **o an salınmıyordu**. Salınımı **isteğe bağlı** üretecek bir
+soru yok; salınım tanımı gereği **rastlantısaldır**.
+
+⊙ Ve asıl sınır daha derin: **korpus bu bayrağı ölçemez.** `nl_corpus` tanımı gereği
+`rule` sağlayıcıyla koşar (LLM'siz) ve `eval --slice llm` **4 vaka**dır. Yani bu bayrağın
+kazancı da kaybı da bugünkü aletlerle **görünmez**.
+
+🔴 Bu, `oylama_paydasi`'nın **aynı** sebeple kapalı durmasının tekrarı — ve deponun kendi
+kuralı bağlayıcı:
+
+> *"Ölçülemeyen bir takası varsayılan yapmak, kullanıcı adına karar vermektir."*
+
+**Kapalı kalıyor.** Açılması için önce **ölçüm aleti** gerekir: LLM yolunu tekrar tekrar
+koşan, aynı soruyu N kez sorup **kararlılık oranı** üreten bir koşucu (`§AJ3.4`'ün kayıtlı
+borcu: *"`eval --slice llm` 4 vaka; LLM yolunda hiçbir şey ölçülemez"*).
+
+### 77.2 · Bu üç turun dürüst bilançosu
+
+| tur | yazılan | akıbet |
+|---|---|---|
+| `§71` | ölçü kaybı sinyali (iki deneme) | **geri alındı** — sinyal boş sözlükten okuyordu |
+| `§73` | kaynaştırma ünsüzleri | **geri alındı** — korpus `dogru` 93→91, süit 4 kırmızı |
+| `§75/§77` | salınım yönetimi | **yazıldı, KAPALI** — takas ölçülemiyor |
+
+⊙ Üç turda **kalıcı davranış değişikliği sıfır**. Ama kazanç sıfır değil: dört yeni kural
+(`§73.8` üç ders + `§75.3` iki-kez-koş), üç çürütülmüş hipotez ve **asıl kusurun adı**
+(`salınım`) elde edildi.
+
+> *Bir turun ürünü her zaman kod değildir; bazen bir sonraki turun neyi yapmaması
+> gerektiğidir.*

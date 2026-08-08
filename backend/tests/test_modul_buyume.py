@@ -667,6 +667,17 @@ MUAFIYET_CUBE_ROUTER_KOD = [
 #: değil sessiz bir tavan artışıdır* (bu dosyanın kendi cümlesi). Dosya muafiyeti bu yüzden
 #: **ayrı** sayılır ve `ask()` tavanına **dokunmaz**.
 MUAFIYET_ASK_DOSYA = [
+    ("faz-75-salinim-yonetimi", 5,
+     "🔴 **SALINIMI YÖNETMEK, DALLARI YAMAMAKTAN ÖNCE GELİR.** Üç sondajla ölçüldü: "
+     "**aynı soru, aynı sistem, aynı dakika** — bazen tam cevap, bazen netleştirme "
+     "(`3 oy · 2 farklı aday · kazanan 1 oy` → *«hangi ölçüyü istiyorsun»*; `3 oy · 1 "
+     "aday · kazanan 3 oy` → 11 satır). Kusur **anlama** değil **eşik**: `k=3`'te `2/3` "
+     "pratikte *«üç örneklemin ikisi birebir aynı JSON»* demektir. "
+     "⊙ Δ = 5: bayrak çözümü (3 satır `try/except`) + çoğunluk dalı (2: `if` + `return`); "
+     "`_log` satırı ize yazılan **dereceyi** görünür kılar. "
+     "⚠ **TAŞINAMAZ:** karar `_select_consistent`'in **kendi dönüş sözleşmesidir**; "
+     "dışarı almak, oy sayımıyla oyun sonucunu iki dosyaya bölerdi. "
+     "⚠ `KURAL B` + korpus hakem (`§73.7`: yeşil bir veto, yeşil bir karar değildir)."),
     ("gosterim-suzgeci/20", 20,
      "🔴 **İKİ SORU, İKİ LİSTE.** Curl'de ölçüldü: *«bu yıl hangi müşteri en çok iade etti»* → ***«hangi etti» kısmını anlayamadım***. Kullanıcı ne yaptığını anlamaz: `hangi` bir soru sözcüğü, `etti` bir yardımcı fiil — ikisi de **sorusunun konusu değil**. ⊙ `unknown` **kapsam kapısının** listesidir (*kaç kelimeyi açıklayamadım*); gösterim başka bir sorunun cevabıdır (*neyi anlamadım*). 🔴 Kapı onları **saymak zorunda**: dolgu sınıfına eklemek denendi ve `sessiz_yanlis` **12 → 13** çıktı (`§26.1`). Yani **sayılmalı ama gösterilmemeli**. ⚠ **TAŞINAMAZ:** süzgeç `unknown` ile `note`'un **ikisinin birden** elde olduğu tek yer; yardımcı (`_islev_sozcugu`) zaten modül düzeyine çıkarıldı. *Aynı kelime bir kapıda kanıt, bir cümlede gürültü olabilir.*"),
     ("kok-cozum/capa-degerleri", 7,

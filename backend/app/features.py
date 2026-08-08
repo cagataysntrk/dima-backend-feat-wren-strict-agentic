@@ -491,6 +491,18 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "`t2_anlatici`'ya DEVREDER; sayıya hiç dokunmaz.",
         "category": "Anlama",
     },
+    "oylama_cogunluk": {
+        "label": "Uyuşmazlıkta çoğunluk adayıyla cevapla",
+        "description": "🔴 `§75` — üç sondajla ölçüldü: AYNI soru, aynı sistem, aynı "
+                       "dakika, bazen tam cevap bazen netleştirme. `k=3` + `2/3` eşiği "
+                       "pratikte *«üç örneklemin ikisi BİREBİR aynı JSON»* demektir ve "
+                       "serbest metinde nadirdir. Açıkken uyuşmazlıkta ÇOĞUNLUK adayı "
+                       "uygulanır; uyum oranı ize yazılır ve `uyum.py` eksikleri ayrıca "
+                       "beyan eder — yani tahmin edilmez, hakemin en çok oy alan kararı "
+                       "uygulanır ve DERECESİ görünür kalır. "
+                       "Kapalıyken davranış bayt bayt bugünkü (`KURAL B`).",
+        "category": "Anlama",
+    },
     "oylama_paydasi": {
         "label": "Oylama paydası çekimserleri de sayar",
         "description": "Self-consistency uyum oranı `{cube:null}` (bilmiyorum) oylarını "

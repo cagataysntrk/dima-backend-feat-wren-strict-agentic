@@ -970,6 +970,39 @@ def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
         if len({json.dumps(c.get(f), sort_keys=True, ensure_ascii=False) for c in distinct_cqs}) > 1
     ]
     axis = axes[0] if len(axes) == 1 else None
+    # 🔴 **`§75` — SALINIMI YÖNETMEK, DALLARI YAMAMAKTAN ÖNCE GELİR.** [bayrak: `oylama_cogunluk`]
+    #
+    # Üç sondajla ölçüldü: **aynı soru, aynı sistem, aynı dakika** — bazen tam cevap,
+    # bazen netleştirme. Örnek (log, `§47` sayesinde görünür):
+    #
+    #     09:08:18  3 oy · 2 farklı aday · kazanan 1 oy → *"Hangi ölçüyü istiyorsun?"*
+    #     09:08:56  3 oy · 1 farklı aday · kazanan 3 oy → `source=cube+llm` · 11 satır
+    #
+    # ⊙ Kusur **anlama** değil **eşik**: `k=3`'te `2/3` pratikte *"üç örneklemin ikisi
+    # BİREBİR aynı JSON"* demektir ve serbest metin üreten bir modelde bu **nadir**dir.
+    # `§0.0`'a göre garson **asıl güvendiğimiz hakemdir**; cevabını üç örneklem uyuşmadı
+    # diye atmak, tam olarak ona güvenmemektir.
+    #
+    # Bayrak açıkken **çoğunluk adayı** döner: cevap üretilir, belirsizlik **atılmaz** —
+    # uyum oranı zaten ize yazılıyor (*"self-consistency %33 (3 örnek)"*) ve `uyum.py`'nin
+    # beyan kapıları eksikleri ayrıca söyler. Yani *"tahmin etme, sor"* ilkesi **korunur**:
+    # tahmin edilmiyor, **hakemin en çok oy alan kararı** uygulanıyor ve derecesi
+    # **görünür** kalıyor.
+    #
+    # ⚠ `KURAL B`: bayrak kapalıyken davranış **bayt bayt bugünkü** (`None` döner, chip
+    # dalı çalışır). Ve `§73.7`'nin dersi bağlayıcı: **yeşil bir veto, yeşil bir karar
+    # değildir** — korpus `dogru`'yu düşürürse geri alınır.
+    #
+    # *Bir hakemin kararını üç kez sorup ikisi aynı çıkmadı diye atmak, hakemi hiç
+    # çağırmamaktan farksızdır — yalnız üç kat pahalıdır.*
+    try:
+        _cogunluk = "oylama_cogunluk" in _rf4(get_settings(), None)
+    except Exception:                                  # noqa: BLE001 — oylama düşmez
+        _cogunluk = False
+    if _cogunluk and best:
+        _log.info("intent: uyum %.0f%% < eşik — ÇOĞUNLUK adayı ile cevaplanıyor (§75)",
+                  agreement * 100)
+        return best[0], agreement, axis, distinct_cqs
     return None, agreement, axis, distinct_cqs
 
 
