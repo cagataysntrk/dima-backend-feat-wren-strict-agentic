@@ -2767,3 +2767,32 @@ Hepsi `test_measure_preview`/`promote`'un teardown'ıydı: geçici bir eval vaka
 > yarıda kesilen kapı arkasında bir kalıntı bırakır — ve `git add -A` onu gerçek sanar.*
 
 Kalıntı `eval/cases.yaml`'dan silindi; 15 error'ın hepsi kapandı.
+
+### 38.2 · İkinci `--hepsi` — ve aynı dersin ÜÇÜNCÜ tekrarı
+
+Beş kırmızı onarıldıktan sonra tam kapı **1 kırmızıya** indi:
+
+```
+FAILED tests/test_interpret.py::test_empty_result_returns_none
+TypeError: 'NoneType' object is not subscriptable
+```
+
+`bos_mu(None, …)`'ı `False` yapınca (`§38`'in 1 numaralı onarımı) `interpret`'in
+`result is None` erken dönüşü **kayboldu** ve `result["rows"]` patladı.
+
+⊙ Ama bu bir tasarım hatası değil, **ayrımın kendisinin kanıtı**: iki tüketici aynı
+yüklemden farklı şey istiyor —
+- `ask.py`'nin not dalı: `None` iken **konuşmamalı** (aksi hâlde `execute=false` SQL koşar)
+- `interpret`: `None` iken de **susmalı** (yorumlanacak bir şey yok)
+
+> *Bir ayrımın değeri, iki tarafın ondan farklı şeyler isteyebilmesidir.* Ayrım
+> olmasaydı biri ötekinin davranışını taşımak zorunda kalırdı — ki kusur tam olarak oydu.
+
+### 38.3 · Ölçülemeyen kalem — dürüstçe kayıtta
+
+`eval LLM dilimi` her iki koşumda da `coverage -66,7%` verdi ve kapı **yeşil** saydı.
+Sebep `§AJ3.4`'ün kayıtlı borcu: **dilim 4 vaka**. Tek bir vakanın yönü %25, üçü %75
+oynatır — yani bu sayı bir gerileme sinyali **değildir**, bir ölçüm eksikliğidir.
+İki koşumda da aynı çıktığı için bu demetin ürünü de değildir.
+
+> *Paydası üç haneli olmayan bir yüzde, bir ölçüm değil bir izlenimdir.*

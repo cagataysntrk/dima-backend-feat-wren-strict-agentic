@@ -415,7 +415,16 @@ def interpret(result: dict | None, cube_query: dict | None = None,
     # özetliyordu. Yüklem tek sahiptedir (`veri_araligi.bos_mu`) — burada ikinci bir
     # kopya yazmak, aynı boşluğun iki tanımı demekti.
     from app.veri_araligi import bos_mu
-    if bos_mu(result, cube_query):
+    # 🔴 **VE `None` BURADA DA AYRI — dersin ÜÇÜNCÜ tekrarı (`§38.2`).**
+    #
+    # `bos_mu(None, …)` bilerek `False` döner: *"ölçüm yapılmadı"* ile *"ölçüldü, boş"*
+    # ayrı şeylerdir (`execute=false` yolu buna dayanıyor). Ama **bu** tüketici için
+    # ikisinin de cevabı aynı: yorumlanacak bir şey yok. İki tüketicinin aynı yüklemden
+    # farklı sonuç istemesi bir çelişki değil — yüklemin **doğru** ayrımı yapmasının
+    # kanıtıdır; ayrım olmasaydı biri ötekinin davranışını taşımak zorunda kalırdı.
+    #
+    # *Bir ayrımın değeri, iki tarafın ondan farklı şeyler isteyebilmesidir.*
+    if result is None or bos_mu(result, cube_query):
         return None
     rows, cols = result["rows"], result.get("columns") or list(result["rows"][0].keys())
     # OTORİTE GEÇİRİLİYOR (Faz C1): `cube_query` zaten elimizdeydi ama yalnız `measures`
