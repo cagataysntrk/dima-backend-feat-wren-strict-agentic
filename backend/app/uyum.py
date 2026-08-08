@@ -286,6 +286,66 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
             "bir **eşik** verdin (ör. *«1.000 üstü»*) ama filtreye çeviremedim",
             "Eşiği ölçü adıyla birlikte yazarsan (*«cirosu 1.000 üstü»*) uygularım."))
 
+    # 8 · 🔴 **ÖLÇÜ İKAMESİ — beş kez ölçüldü, hiç beyan edilmedi.**
+    #
+    # | soru | istenen | verilen |
+    # |---|---|---|
+    # | `bu yıl **bakım maliyetleri**ni makine bazında` | bakım maliyeti | **`ort_birim_maliyet`** |
+    # | `bu yılki fire **maliyetimiz**` | ₺ | **`toplam_fire_kg`** (kg) |
+    # | `kumaş türüne göre **ortalama** parti ağırlığı` | ortalama | **`toplam_agirlik_kg`** |
+    # | `**kalite red oranı** nedir` | red oranı | `fire_orani_yuzde` |
+    #
+    # ⊙ Beşinde de cevap **sessizce** başka bir ölçüyle geldi. Bu, `KÖK-3`'ün tanımladığı
+    # **sessiz-yanlış adayının** ta kendisidir: sayı doğru hesaplanmıştır ama **başka bir
+    # şeyin** sayısıdır.
+    #
+    # ⚠ Yüklem **dar ve yapısal**: soruda bir **birim/toplulaştırma sözcüğü** geçiyor
+    # (`maliyet`·`₺`·`tl`·`ortalama`·`oran`·`yüzde`) ama seçilen ölçünün **birimi ya da
+    # toplulaştırması** onunla uyuşmuyorsa beyan edilir. Katalogdan okunur — ikinci bir
+    # sözlük yazılmaz.
+    #
+    # ⚠ **Yalnız BEYAN eder, cevabı öldürmez** (`KÖK-3`'ün beyan-açık sözleşmesi):
+    # kullanıcı sayıyı görür ve **neyin** sayısı olduğunu da görür.
+    #
+    # *Bir sayıyı doğru hesaplayıp yanlış şeyin adıyla sunmak, yanlış hesaplamaktan daha
+    # zor fark edilir.*
+    _birim_bekleniyor = None
+    if re.search(r"\b(maliyet\w*|tl\b|₺|tutar\w*|para\w*)", qn):
+        _birim_bekleniyor = "₺"
+    _toplulastirma_bekleniyor = ("ort" if re.search(r"\b(ortalama|ort\b|vasati)", qn)
+                                 else None)
+    # ⚠ **BİRİM TEK SAHİPTEN OKUNUR.** İlk yazımda `cube_meta["measure_meta"][m]["unit"]`
+    # diye bir yol uydurdum ve kapı sessizce hiç ateşlemedi — o anahtar **yok**. Birimin
+    # sahibi `viz._unit_of`'tur (MDL `units` sözlüğü, yoksa regex yedeği) ve ikinci bir
+    # çözücü yazmak `KAT-1` olurdu.
+    # *Var olmayan bir alanı okuyan kod sessizce hiçbir şey yapar — ve testi geçer.*
+    from app.viz import _unit_of as _vbirim
+    _units = (cube_meta or {}).get("units") or {}
+    for _m in (ic.get("measures") or []):
+        _birim = _vbirim(_m, _units) or ""
+        # 🔴 **VE İLK YAZIMIM YANLIŞ-POZİTİF ÜRETTİ — kapı yakaladı.** Test
+        # `_birim != "₺"` idi; `birim maliyet` ölçüsünün birimi **`₺/kg`** olduğu için
+        # meşru bir soru *"ikame"* diye damgalandı (**beş** korpus vakası).
+        # ⊙ Doğru test **eşitlik değil TÜR**: birim bir **para** işareti taşıyor mu?
+        # `₺/kg` de bir tutardır. *Bir türü eşitlikle sınamak, o türün bütün
+        # biçimlerini reddetmektir.*
+        _para_mi = bool(re.search(r"(₺|tl|\$|€|lira)", _birim, re.I))
+        if _birim_bekleniyor and _birim and not _para_mi:
+            out.append(Ihlal(
+                "olcu_ikamesi",
+                f"bir **{_birim_bekleniyor} tutarı** sordun ama elimdeki ölçü "
+                f"**{_birim}** cinsinden (`{_m}`)",
+                "O birimde bir ölçü katalogda yoksa hesabı ben uyduramam — "
+                "başka bir ölçü adıyla sorabilirsin."))
+            break
+        if _toplulastirma_bekleniyor and _m.startswith("toplam_"):
+            out.append(Ihlal(
+                "olcu_ikamesi",
+                f"**ortalama** sordun ama `{_m}` bir **toplam**",
+                "Ortalaması katalogda varsa adıyla sorabilirsin "
+                "(*«ortalama …»* biçiminde tanımlı bir ölçü)."))
+            break
+
     # 7 · DIŞLAMA — "X hariç"
     if (niyet.dislama_istendi
             and not any(str(f.get("operator")) in ("neq", "not_in", "!=")

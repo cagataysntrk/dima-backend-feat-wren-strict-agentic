@@ -3590,3 +3590,42 @@ ve dağılım, işin ağırlığının hâlâ **garson tarafında** olduğunu s�
 `rework_sayisi`·`hafta_gunu` hepsi **vardı** ve doğru bulundu. E turundaki dört `adhoc`
 düşüşünün üçü küp eksiğiydi; F turunda yalnız **bir** (`f17`, ve o da gerçek bir kapsam
 dışı).
+
+## §60 · ÖLÇÜ İKAMESİ — beş kez ölçüldü, hiç beyan edilmedi
+
+| soru | istenen | **verilen** |
+|---|---|---|
+| `bakım maliyetleri`ni makine bazında | bakım maliyeti | `ort_birim_maliyet` |
+| `fire **maliyetimiz**` | ₺ | **`toplam_fire_kg`** (kg) |
+| `**ortalama** parti ağırlığı` | ortalama | `toplam_agirlik_kg` |
+| `kalite red oranı` | red oranı | `fire_orani_yuzde` |
+
+⊙ Beşinde de cevap **sessizce** başka bir ölçüyle geldi — `KÖK-3`'ün tanımladığı
+**sessiz-yanlış adayının** tam tanımı: sayı doğru hesaplanmıştır ama **başka bir şeyin**
+sayısıdır.
+
+`uyum.py`'ye sekizinci ihlal sınıfı kondu (`olcu_ikamesi`): soruda bir birim/toplulaştırma
+sözcüğü geçiyor ama seçilen ölçünün **birimi** ya da **toplulaştırması** onunla uyuşmuyorsa
+**beyan edilir** — cevap öldürülmez (`KÖK-3`'ün beyan-açık sözleşmesi).
+
+> *Bir sayıyı doğru hesaplayıp yanlış şeyin adıyla sunmak, yanlış hesaplamaktan daha zor
+> fark edilir.*
+
+### 60.1 · İki kez yanıldım, kapı ikisini de yakaladı
+
+**(a) Var olmayan bir alanı okudum.** İlk yazımda `cube_meta["measure_meta"][m]["unit"]`
+diye bir yol uydurdum; o anahtar **yok** ve kapı sessizce hiç ateşlemedi. Birimin sahibi
+`viz._unit_of`'tur (MDL `units`, yoksa regex yedeği) — ikinci bir çözücü `KAT-1` olurdu.
+*Var olmayan bir alanı okuyan kod sessizce hiçbir şey yapar — ve testi geçer.*
+
+**(b) Türü eşitlikle sınadım.** Test `_birim != "₺"` idi; `birim maliyet` ölçüsünün birimi
+**`₺/kg`** olduğu için **meşru** bir soru *"ikame"* diye damgalandı — kapı **beş korpus
+vakasıyla** kırmızı verdi. Doğru test eşitlik değil **tür**: birim bir para işareti
+taşıyor mu? *Bir türü eşitlikle sınamak, o türün bütün biçimlerini reddetmektir.*
+
+### 60.2 · Doğrulama
+
+| soru | önce | **sonra** |
+|---|---|---|
+| `bu yılki fire maliyetimiz ne kadar` | sessizce `toplam_fire_kg` (**kg**) | ✅ *"Birim maliyet / kârlılık, parti ile ilgili görünüyor — hangi ölçüyü istiyorsun?"* |
+| `bu yıl birim maliyet ne kadar` *(yanlış-pozitif kontrolü)* | ✅ | ✅ **918 ms** · `ort_birim_maliyet` — beyan **yok**, doğru |
