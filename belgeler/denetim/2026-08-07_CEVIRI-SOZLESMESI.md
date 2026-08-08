@@ -4211,3 +4211,40 @@ var.
 
 ⚠ Sıradaki adım yine **sondaj**: `_match_measure`'ın ham ve normalize girdiyle ne
 döndürdüğünü ölç, sonra düzelt. Kör yama yok.
+
+### 73.7 · 🔴 KORPUS HAKEMLİK ETTİ — **GERİ ALINDI**
+
+| ölçüt | önce | **§73 ile** | okuma |
+|---|---|---|---|
+| `sessiz_yanlis` | 12 | **12** | ✅ doğruluk vetosu geçildi |
+| `kabul` | 1153 | **1157** (+4) | daha çok soru cevaplandı |
+| `dogru` | 93 | **91** (−2) | 🔴 **en katı ölçüt DÜŞTÜ** |
+| `beyanli_kismi` | 51 | 49 (−2) | |
+| tam süit | yeşil | 🔴 **4 kırmızı** | |
+
+⊙ `§46.5`'te *"kabul düşerken `dogru` yükselmesi bir **keskinleşme**"* diye yazmıştım.
+Burada tam **tersi** oldu: `kabul` yükseldi, `dogru` düştü — yani **körelme**. Dört
+kırmızı testle birlikte karar tartışmasız.
+
+**Geri alındı.** Ve gerekçe yalnız sayı değil, **doktrin**:
+
+> `§73` bir **route'a Türkçe öğretme** işidir — `§0.0`'ın önceliksizleştirdiği eksen.
+> `kar ⊂ karşılaştır` gerçek bir kusurdur ama doğru onarımı morfolojiyi sıkmak değil,
+> **garsona sormaktır**: bir dil modeli `karşılaştır`ı asla *"kâr"* diye okumaz.
+
+⚠ **Kusur AÇIK kalıyor ve bu bilinçli:** kapatmak için doğru yer sipariş ekseni.
+
+### 73.8 · Bu üç turun asıl kazancı — üç ölçülmüş ders
+
+`§71`·`§73` boyunca **üç düzeltme yazıldı ve üçü de geri alındı**. Kod net sıfır; ama
+üç ders **ölçülerek** kazanıldı:
+
+1. **Çözüm yönünü ölçmeden yazma** (`§71.2` görünen ad · `§71.4` boş sözlük · `§73.2`
+   yanlış hipotez). Üçünde de tek bir sondaj doğruyu verdi.
+2. **Sondajın kaynağı da ölçülür** (`§71.5`): `demo/wren-project` bayat artefakt;
+   canlı akışa konan **tek log satırı** cevabı tek turda verdi.
+3. **Yeşil bir veto, yeşil bir karar değildir** (`§73.7`): `sessiz_yanlis` sabit kaldı
+   ama `dogru` düştü. Veto bir **alt sınır**dır, bir onay değil.
+
+> *Geri alınan bir düzeltme bir başarısızlık değildir; ölçülmemiş bir düzeltmeyi
+> bırakmak başarısızlıktır.*

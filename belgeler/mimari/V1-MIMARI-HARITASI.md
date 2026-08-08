@@ -1,9 +1,15 @@
 # DİMA — v1 MİMARİ HARİTASI
+## 🍽 *Bir restoran olarak okunur:* **garson konuşur · aşçı pişirir · kapılar arada durur**
 
 **Bir prompt girildiğinde arkada ne oluyor · katmanlar · tüm dallar · test edilecek her şey**
+**+ §0: 🔴 RESTORAN ANALOJİSİ — her parçanın tam karşılığı, ve analojinin NEREDE KIRILDIĞI**
 **+ §16–17: v2 ve v3'te bu haritanın NERESİNE NE eklenecek**
 
-Damga: `2026-08-05` · HEAD `eb48c40` · aktif faz **FAZ 4**
+Damga: `2026-08-08` · HEAD `761928d` · **GARSON ARA FAZI KAPANDI** *(§6.Ω · 113 adım indi ·
+3 bilerek ertelendi)* → sıradaki kapı **v2**
+⟳ **Önceki damga:** `2026-08-05` @`eb48c40` · *"aktif faz FAZ 4"* — **ara fazdan ÖNCEYDİ.**
+Bu turda güncellenen bölümler `⟳ 2026-08-08` işaretini taşır; **özgün metin silinmedi**,
+üstüne yazıldı — çünkü bir haritanın *neyi yanlış bildiği* de bilgidir.
 
 ---
 
@@ -16,8 +22,14 @@ Damga: `2026-08-05` · HEAD `eb48c40` · aktif faz **FAZ 4**
 | **Kod** (`app/`, `tests/`, `demo/packs/`) | 🥇 **Nihai gerçek** | **Kod kazanır.** Belge yanlıştır |
 | `backend/MIMARI.md` | 🥈 Mimari otorite | **MIMARI kazanır** |
 | `belgeler/plan/DIMA-V1-YOL-HARITASI.md` | 🥉 Plan otoritesi | **Yol haritası kazanır** |
+| ⟳ `belgeler/plan/DIMA-GARSON-ARA-FAZ.md` | 🥉 **Ara faz plan otoritesi** *(garson katmanı)* | **Ara faz kazanır** |
 | `OPERASYON-DURUM.md` | Durum kaydı | **Durum kaydı kazanır** |
 | **BU BELGE** | ❌ **YOK** | — |
+
+> ⟳ **2026-08-08 — analojinin kendisi de bir otorite DEĞİLDİR.** §0'daki restoran
+> haritası bir **öğretme aracıdır**; sınırları **§0.9'da yazılıdır** ve orada bilerek
+> *"analoji burada kırılır"* denen dört yer var. Bir benzetmeyi mimari gerekçe yerine
+> koymak, bu deponun avladığı *"beyan var, kod onu tanımıyor"* sınıfının en tatlı hâlidir.
 
 **Neden kıymeti yok — dört somut sebep:**
 
@@ -43,6 +55,7 @@ Damga: `2026-08-05` · HEAD `eb48c40` · aktif faz **FAZ 4**
 
 | § | Başlık |
 |---|---|
+| [0](#0--restoran--analojinin-tam-haritası) | 🔴 **RESTORAN — analojinin TAM haritası** *(⟳ yeni)* |
 | [1](#1-üç-düzlem--sistem-mimarisi) | Üç düzlem — sistem mimarisi |
 | [2](#2-yedi-katman--v1-sonundaki-hâli) | Yedi katman — v1 sonundaki hâli |
 | [3](#3-derleme-zinciri--bir-katalog-nasıl-doğar) | Derleme zinciri — bir katalog nasıl doğar |
