@@ -3192,3 +3192,70 @@ iyileşir"* (payda düşerse doğruluk yükselir) anlatılıyor. Burada **payda 
 yükselen şey mutlak sayı — yani iyileşme gerçek.
 
 > *Bir metriğin yükselmesi ancak paydası sabitken bir kazançtır.*
+
+---
+
+# D TURU — **EN ÜST KURALIN İLK ÖLÇÜMÜ**
+
+## §47 · GARSONUN KARARI GÖRÜNMEZDİ *(ölçüm aleti onarımı)*
+
+**Ölçüldü:** `show me total revenue by customer this year` → *"anlayamadım"*. Logda:
+**üç LLM çağrısı başarılı**, **sıfır** whitelist reddi, **sıfır** uyuşmazlık chip'i.
+Yani üç oy bir yere gitti ve **nereye gittiği hiçbir yerde yazmıyordu**.
+
+Sebep: `_select_consistent.one()`'ın `except Exception: return None` dalı — **log yok**
+(`ADR-0020` *"sessiz yutma yok"* ihlali). Ve kazanan oyun **oranı** da yazılmıyordu.
+
+> *Bir çağrının başarısı loglanıp başarısızlığı yutuluyorsa, log bir kanıt değil bir
+> reklamdır.*
+
+Onarıldı: düşen oy `WARNING` + `exc_info`; her turda `intent: N oy · M farklı aday ·
+kazanan K oy`. **Ve bu satır kökü tek turda gösterdi.**
+
+## §48 · 🔴🔴 GARSON ANLADI, MUTFAĞA GİDEN GİRDİ **SİSTEMİN KENDİ AYRIŞTIRICISINDA** BOZULDU
+
+### 48.1 · Ölçüm — iki dil, tek desen
+
+| # | soru | garson ne yaptı | kullanıcı ne gördü |
+|---|---|---|---|
+| `d1` | `show me total revenue by customer this year` *(İngilizce)* | ✅ `intent: 3 oy · 1 farklı aday · **kazanan 3 oy**` → `{parti, toplam_ciro, dims:[musteri]}` | 🔴 *"toplam ciro çıkarabilirim — **hangi dönem için?**"* |
+| `d2` | `ما هو إجمالي الإيرادات لهذا العام` *(Arapça)* | ✅ 3 oy → `{parti, toplam_ciro}` | 🔴 *"…**hangi dönem için?**"* |
+
+⊙ **Garson kusursuz çalıştı.** Oybirliği. Ölçüyü de, kırılımı da doğru çevirdi — hem
+İngilizceden hem Arapçadan. `this year` / `لهذا العام` ifadesini de **anladı**.
+
+🔴 **Kaybolan yer:** dönem, `cq`'ya **çözülmüş bir filtre olarak değil**, `period_expr`
+diye **serbest metin** olarak giriyor; sistem onu **`date_filters` ile — yani Türkçe-only
+deterministik ayrıştırıcıyla — yeniden çözüyor**. İngilizce/Arapça metin orada boş döner,
+dönem düşer, `_period_gate` ateşlenir.
+
+### 48.2 · Bu, EN ÜST KURALIN tam olarak tarif ettiği kusur
+
+`§0.0`'ın teşhis kuralı: *"Garson devreye girdi ve sisteme sorunsuz doğru bir girdi
+sağladıysa ama yine çalışmadıysa, sorun mutfaktadır."*
+
+Burada garson doğru girdiyi sağladı **ama sınırda geri alındı**: sistem, dil modelinin
+anladığı şeyi kendi kelime kuralına **yeniden sordu** ve cevabı beğenmeyince attı.
+
+> *Bir çevirmene güvenip çevirisini kendi sözlüğünle yeniden denetlemek, çevirmeni hiç
+> çağırmamakla aynı sonucu verir — yalnız daha pahalıya.*
+
+### 48.3 · Kök çözüm yönü *(sıradaki iş)*
+
+Dönem, garsonun **anladığı** biçimde `cq`'ya girmeli:
+* ya garson **çözülmüş** `filters` (ISO tarih) üretir — sistem ona **bugünün tarihini**
+  verir, çünkü tarihi bilen sistemdir;
+* ya da `period_expr` çözülemediğinde **garsona normalize ettirilir** — asla *"hangi
+  dönem?"* diye kullanıcıya dönülmez.
+
+⚠ Değişmez korunur: **sayıyı yine küp koyar.** Tarih bir **filtredir**, bir sayı değil —
+garsonun oraya dokunması `MIMARI`'nin *"LLM önerir, motor doğrular"* ilkesini bozmaz.
+
+⚠ `KURAL B`: bayrakla kapatılabilir, kapalıyken davranış birebir bugünkü.
+
+### 48.4 · Yan bulgu — aynı turda LLM belirsizliği
+
+`d1` **iki kez** koşuldu: ilkinde *"«show total customer this year» kısmını
+anlayamadım"*, ikincisinde *"hangi dönem için?"*. Aynı soru, aynı sistem, **iki farklı
+cevap**. Bu, garsonun belirlenimsizliğinin **kullanıcıya sızdığını** gösterir ve
+`consistency_k=3` oylamasının onu tamamen örtmediğini.

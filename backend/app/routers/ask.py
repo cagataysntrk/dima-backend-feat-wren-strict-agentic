@@ -852,6 +852,19 @@ def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
                           "acik" if sema is not None else "kapali", ham)
             return cq
         except Exception:
+            # 🔴 **`§47` — GARSONUN DÜŞMESİ GÖRÜNMEZDİ ve bu `ADR-0020` ihlaliydi**
+            # (*"sessiz yutma yok"*). Ölçüldü: İngilizce bir soru (`show me total revenue
+            # by customer this year`) → *"anlayamadım"*; logda **üç LLM çağrısı başarılı**,
+            # **sıfır** red, **sıfır** uyuşmazlık. Yani üç oy da bir yere gitti ve nereye
+            # gittiği **hiçbir yerde yazmıyordu**.
+            #
+            # ⊙ En üst kural (`§0.0`) garsonu **hakem** yapıyor; bir hakemin kararı
+            # görünmezse ne denetlenebilir ne geliştirilebilir.
+            #
+            # *Bir çağrının başarısı loglanıp başarısızlığı yutuluyorsa, log bir kanıt
+            # değil bir reklamdır.*
+            _log.warning("intent: OY DÜŞTÜ (istisna) — garsonun kararı kayboldu",
+                         exc_info=True)
             return None
 
     if k <= 1:
@@ -901,6 +914,11 @@ def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
     for c in cands:
         votes.setdefault(_canon_cq(c), []).append(c)
     best = max(votes.values(), key=len)
+    # 🔴 `§47` — **KARARIN KENDİSİ DE LOGLANIR.** Ölçüldü: üç oy başarıyla döndü, hiçbir
+    # red/uyuşmazlık yazılmadı ve cevap yine *"anlayamadım"* oldu. Uyum oranı ve oy
+    # dağılımı görünmediği sürece o cümlenin **neden** üretildiği bilinemez.
+    _log.info("intent: %d oy · %d farklı aday · kazanan %d oy", len(oylar), len(votes),
+              len(best))
     # 🔴 **PAYDA ÇEKİMSERLERİ DE SAYAR — ve eskiden saymıyordu.**
     #
     # Eski hesap `len(best) / len(cands)` idi ve `cands` **`{cube:null}` oylarını
