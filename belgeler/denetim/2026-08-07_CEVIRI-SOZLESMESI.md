@@ -4478,3 +4478,45 @@ Kod yazılmadı — ve **doğrusu buydu**: yazsaydım `garson.py`'nin ikizi doğ
 3. `KAT-1` bir kez daha **önlendi** — yazmadan önce arayarak
 
 > *Bir aletin eksik olduğunu söylemeden önce, laboratuvara bakmak gerekir.*
+
+## §79 · KARARLILIK KİPİ ÇALIŞIYOR — ve ilk ölçüm `§75.6`'yı DARALTIYOR
+
+`§78.1`'in tanımladığı kip `lab/garson.py`'ye eklendi (**yeni dosya değil**, `KAT-1`:
+canlı ortam kurulumu ve tur koşucusu zaten orada).
+
+### 79.1 · Alet önce kendi doğruluğuyla sınandı
+
+| koşum | beklenen | ölçülen |
+|---|---|---|
+| belirlenimli duman (LLM yok) | tam kararlı | ✅ **%100 · 25/25 senaryo** |
+
+⊙ Bilinen bir gerçeği yeniden üretti — `§A3`'ün kuralı (*"alet bilinen bir farkı yeniden
+üretebilmeli"*) sağlandı.
+
+### 79.2 · İlk CANLI ölçüm — ve tezimin daralması
+
+Gerçek sağlayıcıyla (`openrouter`), 3 koşum:
+
+```
+konu_degisimi    farklı=1   hâkim=3/3     → kararlılık %100
+```
+
+🔴 **Bu senaryo TAM KARARLI.** Yani `§75.6`'da yazdığım *"asıl kusur salınımın kendisi"*
+tezi **fazla geniş**ti: salınım **her yerde değil**, belirli soru sınıflarında.
+
+> *Bir kusuru «sistemik» ilan etmek, onu ölçmekten kolaydır — ve ölçüm çoğu zaman sınırını
+> daraltır.*
+
+### 79.3 · Artık cevaplanabilir olan soru
+
+Kip elde olduğu için `§77`'nin kapalı bayrağı (`oylama_cogunluk`) ve `oylama_paydasi`
+**ölçülebilir** hâle geldi. Sıradaki iş, tanımı net:
+
+1. `--live --kararlilik 3` **tüm** senaryo kümesinde koş → **taban** kararlılık oranı
+2. `oylama_cogunluk` **açık** aynı koşum → fark
+3. Karar: kararlılık yükseliyorsa **ve** korpus `dogru`'yu düşürmüyorsa aç
+   *(`§73.7`: yeşil bir veto, yeşil bir karar değildir)*
+
+⚠ Maliyet dürüstçe: 25 senaryo × 3 koşum × tur arası 5 sn — **uzun**. Ama `§77`'nin bayrağı
+o sayı olmadan **hiç** açılamaz; ölçmeden açmak, deponun kendi kuralını çiğnemektir
+(*"ölçülemeyen bir takası varsayılan yapmak, kullanıcı adına karar vermektir"*).
