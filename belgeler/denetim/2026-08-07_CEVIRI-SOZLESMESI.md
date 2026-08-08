@@ -3970,3 +3970,27 @@ sonucu). O sayaç `cq`'nun ölçü sayısından büyükse şüphe vardır.
 
 ⚠ Ve asıl kök hâlâ `route()`'un kendisinde: **son eşleşen ölçü öncekini eziyor.** Ama
 `§0.0` gereği orayı düzeltmiyoruz — garsonu çağırmak yeterli olmalı.
+
+### 71.4 · İKİNCİ deneme de ateşlemedi — ve buradan çıkan ders
+
+İlk deneme görünen addan okuyordu (`§71.2`); ikincisinde **eşleştiricinin kendi
+sözlüğüne** geçtim (`measure_synonyms` + `_syn_hit` — route neyi görüyorsa onu say).
+
+| soru | sonuç |
+|---|---|
+| `ciro ve fire oranını makine bazında ver` | ◐ davranış **değişti** (küp beraberliği chip'i) → şüphe **ateşledi** |
+| `oee ve kullanılabilirliği vardiya bazında ver` | 🔴 **902 ms, `source=cube`** → garson **hiç çağrılmadı**; şüphe **ateşlemedi** |
+
+⊙ İkisi de aynı yüklemden geçiyor ve biri ateşliyor, öteki ateşlemiyor. Yani yüklem
+**çalışıyor ama girdisi eksik** — büyük olasılıkla `_cm` (küp meta) bulunamıyor ya da
+`measure_synonyms` beklediğim şekle sahip değil.
+
+🔴 **Geri alındı (ikinci kez).** Ve asıl ders bu:
+
+> *Aynı kökte iki kör deneme, kökün orada olmadığını değil, benim ona bakmadığımı
+> gösterir.* Sıradaki adım bir **yama denemesi değil, doğrudan bir sondaj** olmalı:
+> `route_supheli`'nin o iki soru için ne gördüğünü (`_cm` var mı, `_gecen` kaç eleman)
+> tek atışta yazdırmak.
+
+⚠ Ve bu, `§0.3`'ün ölçüm disiplininin aynısı: *bir düzeltmeyi denemeden önce, düzeltmenin
+gireceği yerin ne gördüğünü ölç.* İki demettir bunu atladım.
