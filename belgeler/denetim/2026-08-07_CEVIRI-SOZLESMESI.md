@@ -4172,3 +4172,42 @@ olamaz** — ancak komşu atomların arasında bir tampon olarak geçerlidir.
 
 ⚠ Uygulama hâlâ **korpus hakemliği** ister (`§26.1`) ve `§32`'nin `_kok()` yolunu etkiler;
 ikisi birlikte ölçülmeli. Ama artık **doğru şeyi** ölçeceğiz.
+
+### 73.5 · YAZILDI — kaynaştırma ünsüzleri envanterden çıkarıldı
+
+Sondaj (kod yazılmadan **önce**, `§71`'in üç kez ısırdığı dersin gereği) iki yönlü ölçüm
+verdi ve ancak ondan sonra yazıldı:
+
+| | ölçüm |
+|---|---|
+| **sahte zincirler** | `silastir`·`go`·`iyeti`·`sal`·`lasma` → **beşi de reddedildi** ✅ |
+| **meşru çekimler** | 30 biçim (`lar`·`leri`·`ndan`·`sini`·`imiz`·`deki`…) → **hepsi geçti** ✅ |
+
+⚠ İlk denemede `ndan`·`nda` kırılıyordu; sondaj bunu **önceden** gösterdi ve kaynaştırma
+bileşikleri (`ndan`·`nden`·`nda`·`nde`·`sini`·`sindan`…) envantere eklendi. Ünlüler
+(`i`·`u`·`e`·`a`) gerçek tek harflik eklerdir ve **kaldı**.
+
+**Doğrulama (canlı):**
+```
+_covers("kar", "karsilastir")  → False ✅   (önce True)
+_syn_hit(q, "kar")             → False ✅
+_ek_gecerli("silastir")        → False ✅
+```
+Ve gerileme kontrolü: `bu yıl makinelerin fire oranlarını göster` → **946 ms**, 11 satır,
+doğru `cq` — meşru çekim (`oranlarını`) bozulmadı.
+
+### 73.6 · 🔴 AMA BİR TÜKETİCİ HÂLÂ SAHTE EŞLEŞME ÜRETİYOR
+
+`bu yıl en verimli 2 makineyi seç ve karşılaştır` **hâlâ** *"iki ayrı konu: «kar» +
+«verim»"* diyor — oysa çekirdek eşleştirici artık reddediyor.
+
+Sahibi `yetenek._iki_cube_olcusu` ve o, `_match_measure(q, c)` çağırıyor — **ham `q` ile**,
+normalize edilmiş `qn` ile değil. Yani aynı sorunun iki farklı girdiyle iki farklı cevabı
+var.
+
+⊙ Bu, deponun `KAT-1` sınıfının bir alt biçimi: **aynı eşleştirici, farklı ön işlemle**.
+
+> *Bir eşleştiriciyi düzeltmek yetmez; onu kimin nasıl çağırdığını da bilmek gerekir.*
+
+⚠ Sıradaki adım yine **sondaj**: `_match_measure`'ın ham ve normalize girdiyle ne
+döndürdüğünü ölç, sonra düzelt. Kör yama yok.

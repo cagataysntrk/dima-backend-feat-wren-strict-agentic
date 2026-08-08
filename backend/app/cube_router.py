@@ -2843,7 +2843,31 @@ _SUFFIX_ATOMS = (
     "en", "an",                       # sıfat-fiil: "ver"+"en"
     "dik", "dık", "duk", "dük",       # ortaç: "işle"+"dik"
     "yor",                            # şimdiki zaman
-    "i", "u", "e", "a", "y", "n", "s", "m",
+    # 🔴 **`§73` — KAYNAŞTIRMA ÜNSÜZLERİ (`y`·`n`·`s`·`m`) BURADAN ÇIKARILDI.**
+    #
+    # Ölçüldü (`k12`): `en verimli 2 makineyi seç ve **karşılaştır**` → sistem *"iki ayrı
+    # konu: «**kar**» + «verim»"* dedi; kullanıcı kârdan söz etmemişti. Sondaj (canlı
+    # konteyner, **kod yazılmadan önce** — `§71`'in üç kez ısırdığı dersin gereği):
+    #
+    #     silastir → ('si', 'la', **'s'**, 'tir')      ← suçlu tek harflik `s`
+    #     lasma    → ('la', 's', 'm', 'a')
+    #
+    # ⊙ Tek harflik **ünsüz** atomlar neredeyse **her** harf dizisini geçerli bir ek
+    # zinciri yapıyordu. Türkçede `y`·`n`·`s`·`ş` **kaynaştırma** harfidir: yalnız iki
+    # ünlü **arasında** görünürler, tek başlarına bir ek değildirler. Ünlüler
+    # (`i`·`u`·`e`·`a`) ise gerçek tek harflik eklerdir (yönelme/belirtme) ve **kaldı**.
+    #
+    # ⚠ Çıkarılınca kaynaştırma+hâl bileşikleri (`ndan`·`nda`·`sini`…) kırılıyordu;
+    # sondaj bunu **önceden** gösterdi ve bileşikler yukarıya eklendi. İki yönlü ölçüm:
+    # beş sahte zincir (`silastir`·`go`·`iyeti`·`sal`·`lasma`) **reddedildi**, otuz meşru
+    # çekim **geçti**.
+    #
+    # 🔴 `§32`'de *"iki harflik bir ek zincirde her yere sığar"* demiştim; **tek harflik
+    # bir ünsüz ise her yerdedir.**
+    #
+    # *Bir ek envanterinde tek harflik bir ünsüz, envanteri bir doğrulayıcı olmaktan
+    # çıkarıp bir onaylayıcıya çevirir.*
+    "i", "u", "e", "a",
 )
 # 🔴 `ku` KÖK-7a'da eklendi ve **ölçüyle zorunlu oldu**: `in q` yasağı uygulanınca
 # `bugunku ciro` **dönem filtresini kaybetti** (`bugun` alt-dize olarak geçiyordu ama
