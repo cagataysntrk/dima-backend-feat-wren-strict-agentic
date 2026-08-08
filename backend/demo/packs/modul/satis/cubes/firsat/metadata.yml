@@ -26,6 +26,7 @@ measures:
     expression: "COUNT(DISTINCT firsat_no)"
     type: DOUBLE
     unit: "adet"
+    additive: non
     synonyms: [fırsat adedi, fırsat sayısı, kaç fırsat, huni büyüklüğü]
   - name: firsat_tutari
     expression: SUM(tahmini_tutar)
@@ -46,6 +47,7 @@ measures:
     expression: "ROUND(100.0 * SUM(CASE WHEN asama = 'Kazanıldı' THEN 1 ELSE 0 END) / NULLIF(SUM(CASE WHEN asama IN ('Kazanıldı','Kaybedildi') THEN 1 ELSE 0 END),0), 1)"
     type: DOUBLE
     unit: "%"
+    additive: non
     # ⚠ `başarı oranı` KALDIRILDI → `egitim.basari_orani_yuzde`nin (sınav geçme oranı).
     synonyms: [kazanma oranı, dönüşüm oranı, kazanç oranı, win rate, fırsat başarısı]
   - name: kaybedilen_tutar

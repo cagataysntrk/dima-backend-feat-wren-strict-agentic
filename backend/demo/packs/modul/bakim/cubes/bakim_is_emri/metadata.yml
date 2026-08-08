@@ -31,6 +31,7 @@ measures:
     expression: "COUNT(DISTINCT is_emri_no)"
     type: DOUBLE
     unit: "adet"
+    additive: non
     synonyms: [iş emri adedi, bakım adedi, kaç bakım, müdahale sayısı]
   - name: toplam_bakim_suresi
     expression: SUM(sure_dk)
@@ -47,11 +48,13 @@ measures:
     expression: "ROUND(100.0 * SUM(CASE WHEN tur = 'PLANLI' THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1)"
     type: DOUBLE
     unit: "%"
+    additive: non
     synonyms: [planlı bakım oranı, planlı oran, önleyici bakım oranı, bakım olgunluğu]
   - name: ort_mudahale_suresi
     expression: "ROUND(AVG(sure_dk),1)"
     type: DOUBLE
     unit: "dk"
+    additive: non
     # ⚠ `mttr` KALDIRILDI → `bakim.ort_durus_dakika`nın (MTTR arıza ONARIM süresidir).
     synonyms: [ortalama müdahale, ortalama bakım süresi, ne kadar sürüyor]
 

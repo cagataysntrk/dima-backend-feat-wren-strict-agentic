@@ -30,6 +30,7 @@ measures:
     expression: "ROUND(AVG(hedef_tutar),0)"
     type: DOUBLE
     unit: "₺"
+    additive: non
     synonyms: [ortalama hedef, aylık ortalama bütçe, hedef ortalaması]
   - name: hedef_miktar_toplam
     expression: SUM(hedef_miktar)
@@ -40,6 +41,7 @@ measures:
     expression: "COUNT(DISTINCT kalem)"
     type: DOUBLE
     unit: "adet"
+    additive: non
     synonyms: [kalem sayısı, kaç kalem, bütçe kalemi]
 
 dimensions:

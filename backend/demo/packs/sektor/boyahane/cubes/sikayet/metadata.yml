@@ -39,6 +39,7 @@ measures:
     expression: "COUNT(DISTINCT sikayet_no)"
     type: DOUBLE
     unit: "adet"
+    additive: non
     synonyms: [şikayet adedi, şikayet sayısı, kaç şikayet, reklamasyon sayısı]
   # 🔴 KÖK-5c (denetim KN-6, 2026-08-05) — ÖLÇÜ ADI `iade_kg` idi ve kendi ifadesindeki
   # KOLON adıyla aynıydı. Motor bunu derlemede kabul ediyor, `mdl.json` üretiliyor,
@@ -57,6 +58,7 @@ measures:
     expression: "ROUND(AVG(cozum_suresi_gun),1)"
     type: DOUBLE
     unit: "gün"
+    additive: non
     synonyms: [çözüm süresi, kapanma süresi, kaç günde çözülüyor, yanıt süresi]
   - name: acik_sikayet
     expression: "SUM(CASE WHEN durum = 'AÇIK' THEN 1 ELSE 0 END)"
@@ -67,11 +69,13 @@ measures:
     expression: "ROUND(100.0 * SUM(CASE WHEN siddet = 'AĞIR' THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1)"
     type: DOUBLE
     unit: "%"
+    additive: non
     synonyms: [ağır şikayet oranı, ciddi şikayet oranı, kritik şikayet]
   - name: ort_sapma_dE
     expression: "ROUND(AVG(sapma_dE),3)"
     type: DOUBLE
     unit: "dE"
+    additive: non
     # 🔴 DARALTILDI: `sapma`·`renk sapması`·`ortalama sapma`·`delta e` çıplak hâlleriyle
     # `kalite.ort_dE` ve `parti.ort_renk_sapmasi`nın. Buradaki ölçü **şikâyete konu**
     # sapmadır — terim de bunu söylemeli. *Bir eş anlamlı, sahibi olmayan bir kelimeyi

@@ -52,11 +52,13 @@ measures:
     expression: "SUM(CASE WHEN sth_tip = 1 THEN sth_tutar ELSE 0 END) / NULLIF(SUM(CASE WHEN sth_tip = 1 THEN sth_miktar ELSE 0 END), 0)"
     type: DOUBLE
     unit: "₺"
+    additive: non
     synonyms: [ortalama satış fiyatı, ortalama fiyat, birim fiyat, satış fiyatı, ortalama satış]
   - name: ort_alis_fiyati
     expression: "SUM(CASE WHEN sth_tip = 0 THEN sth_tutar ELSE 0 END) / NULLIF(SUM(CASE WHEN sth_tip = 0 THEN sth_miktar ELSE 0 END), 0)"
     type: DOUBLE
     unit: "₺"
+    additive: non
     synonyms: [ortalama alış fiyatı, ortalama maliyet, birim maliyet, alış fiyatı]
 
 dimensions:

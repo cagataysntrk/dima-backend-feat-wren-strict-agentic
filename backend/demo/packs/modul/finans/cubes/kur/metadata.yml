@@ -20,6 +20,7 @@ measures:
     expression: "ROUND(AVG(kur),4)"
     type: DOUBLE
     unit: "₺"
+    additive: non
     synonyms: [kur, ortalama kur, döviz kuru, kaç lira]
   - name: kapanis_kuru
     # ⚠ Son gözlem — `MAX(tarih)` değil `LAST` semantiği gerekir; DuckDB'de

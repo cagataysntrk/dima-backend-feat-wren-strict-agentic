@@ -22,24 +22,28 @@ measures:
     expression: "(1.0*SUM(calisma_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)) * (SUM(performans_PV*planli_uretim_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)) * (1.0*SUM(uretim_kg - hatali_kg)/NULLIF(SUM(uretim_kg),0))"
     type: DOUBLE
     unit: "%"
+    additive: non
     synonyms: [oee, verim, randıman, toplam ekipman etkinliği]
   - name: ort_kullanilabilirlik
     # Availability = APT/PBT (ISO 22400 6.8) = çalışma/planlı-üretim süresi
     expression: "1.0*SUM(calisma_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)"
     type: DOUBLE
     unit: "%"
+    additive: non
     synonyms: [kullanılabilirlik, availability]
   - name: ort_performans
     # Effectiveness (ISO 22400 6.9) — planlı-süre ağırlıklı performans (teorik hız yok)
     expression: "SUM(performans_PV*planli_uretim_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)"
     type: DOUBLE
     unit: "%"
+    additive: non
     synonyms: [performans]
   - name: ort_kalite
     # Quality ratio = GQ/PQ (ISO 22400 6.10) = sağlam/toplam üretim
     expression: "1.0*SUM(uretim_kg - hatali_kg)/NULLIF(SUM(uretim_kg),0)"
     type: DOUBLE
     unit: "%"
+    additive: non
     synonyms: [kalite]
   - name: toplam_durus_dakika
     # Toplam duruş = planlı + plansız (arıza). Aksiyon plansızdadır ama "duruş" = tümü.
@@ -71,6 +75,7 @@ measures:
     expression: "ROUND(SUM(ilk_seferde_tamam)*100.0/NULLIF(SUM(parti_sayisi),0),2)"
     type: DOUBLE
     unit: "%"
+    additive: non
     synonyms: [ilk seferde tamam, rft, ilk sefer]
   - name: toplam_parti
     expression: SUM(parti_sayisi)

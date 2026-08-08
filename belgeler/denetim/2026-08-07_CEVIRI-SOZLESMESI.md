@@ -5619,3 +5619,64 @@ kusur yüklemin kendisindeydi. *Bir ön koşulu tüm kiplere dayatmak, kipleri a
 Korpus yine sabit — ve sebebi `§88.6`'da yazılı: korpus `rule` sağlayıcıyla koşuyor,
 pencere/türev **garson yolunda** yaşıyor. Kazanç canlı curl'de ölçüldü ve yukarıda satır
 satır yazılı.
+
+---
+
+## §92 · M-5 · TOPLANABİLİRLİK BEYANI — *"küp rozetli sessiz-yanlışın açık kapısı"*
+
+### §92.1 · Ölçüm önce — ve ALETİM ALTINCI KEZ YANILDI
+
+İlk ölçümü **canlı şemadan** yaptım ve şu çıktı: *"135 ölçü, 2 beyanlı, 133 beyansız."*
+Rapor ise *"172 ölçü, 12 beyanlı"* diyordu. Aradaki fark bir çelişki değil, **benim
+aletimin körlüğüydü**: `schema()` yalnız `semi_additive`/`non_additive` **listelerini**
+yayınlıyor; `additive: full` beyan eden bir ölçü **hiçbir listede görünmez** ve dışarıdan
+*"beyansız"* sanılır.
+
+⊙ Somut kanıt: `cari.toplam_borc` benim ölçümümde *"beyansız, aday semi"* göründü —
+oysa menü dosyasında **`additive: full`** yazılı. Yani neredeyse **doğru bir beyanı
+yanlışıyla değiştirecektim** (muhasebede `borç` bir **hareket** toplamıdır, `bakiye` gibi
+snapshot değildir; katalog bunu benden iyi biliyordu).
+
+Kaynaktan sayınca rapor **birebir** doğrulandı: **172 ölçü · 12 beyanlı (6 `full` +
+6 `semi`) · 160 beyansız.**
+
+*Bir alanı yayınlamayan uç, o alanın yokluğunu kanıtlamaz.*
+
+### §92.2 · 🔴 Raporun reçetesi UYGULANMADI — ve gerekçesi ölçüldü
+
+Rapor *"`additive:` her ölçüde **zorunlu** olsun, beyansız küp **derlenmesin**"* diyordu.
+İki sebeple olduğu gibi uygulanmadı:
+
+1. **160 ölçüyü birden zorunlu kılmak derlemeyi kırardı** — ve kırılan bir kapı, atlanan
+   bir kapıya dönüşür.
+2. Beyanların çoğu bir **insan kararı** ister: `toplam_borc` `full` mü `semi` mi?
+   Yukarıdaki kendi hatam bunun canlı kanıtı.
+
+**Uygulanan:** kapı, **kanıtlanabilir** olanı zorunlu kılar. Ölçüt **ada değil İFADEYE**
+bakar — `AVG(` · `COUNT(DISTINCT` · `/NULLIF(` · `100.0 * …/` içeren bir ölçü toplanamaz
+olduğunu **kendi SQL'inde söyler**; orada tahmin yoktur.
+
+### §92.3 · Sonuç
+
+| ölçüt | önce | sonra |
+|---|---|---|
+| beyanlı ölçü | **12** / 172 | **77** / 172 |
+| canlı şemada `non_additive` | **0** | **56** |
+| canlı şemada `semi_additive` | 2 | 2 *(dokunulmadı)* |
+| yanlış-pozitif denetimi | — | **0** *(65'inin hepsinde bölme/ortalama/DISTINCT var)* |
+
+⚠ **Ve `non` beyanı KAPSAM DARALTMAZ** — ölçüldü: `R8` yalnız `semi_additive`'e bakıyor.
+`non`'un tek etkisi yanlış **grafiği** (`viz._additive` → yığma/pay yasak) ve yanlış
+**katkı ayrıştırmasını** (`contribution.py`) durdurmak; yani **fail-closed** yönde.
+Doğrulandı: `bu yıl aylık OEE trendi` → hâlâ `route()` · 6 satır · LLM'siz.
+
+> *Bir beyan cevabı kısıtlamıyorsa, onu ertelemenin gerekçesi yoktur.*
+
+### §92.4 · Kapı ve çürüme koruması
+
+    korpus  {2285, kabul 1153, dogru 93, sessiz_yanlis 12, beyanli_kismi 51}
+    süit    4261 yeşil   ·   eval +0,0%
+
+İki yeni kapı eklendi: `test_M5_TOPLANAMAZ_OLCU_BEYAN_ETMEK_ZORUNDA` (ifadesi kanıtlayan
+her ölçü beyan etmek **zorunda**) ve `test_M5_BEYAN_DEGERI_GECERLI` (`full|semi|non`
+dışı bir değer üç tüketicide de **sessizce** hiçbir şey yapar).

@@ -44,6 +44,7 @@ measures:
     expression: "ROUND(AVG(dE),2)"
     type: DOUBLE
     unit: "dE"
+    additive: non
     # "dE!" TAM-KELİME (sonu "!"): 2 harfli kısa sinonim substring-eşleşmede tehlikeli
     # (ör. "neDEnlerine" içinde "de" geçiyor → yanlış ölçü eşleşmesi — parti cube'undaki
     # ort_renk_sapmasi'nde AYNI desen gözlemlendi, bkz. BASELINE_RECONCILIATION).

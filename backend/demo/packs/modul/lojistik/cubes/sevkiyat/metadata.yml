@@ -25,6 +25,7 @@ measures:
     expression: "COUNT(DISTINCT sevkiyat_no)"
     type: DOUBLE
     unit: "adet"
+    additive: non
     synonyms: [sevkiyat adedi, sevkiyat sayısı, kaç sevkiyat, gönderi sayısı]
   - name: nakliye_maliyeti
     expression: SUM(nakliye_tutar)
@@ -40,11 +41,13 @@ measures:
     expression: "ROUND(SUM(nakliye_tutar) / NULLIF(SUM(mesafe_km),0), 2)"
     type: DOUBLE
     unit: "₺/km"
+    additive: non
     synonyms: [km başı maliyet, kilometre maliyeti, birim nakliye]
   - name: gecikmeli_sevkiyat_yuzde
     expression: "ROUND(100.0 * SUM(CASE WHEN gecikme_gun > 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1)"
     type: DOUBLE
     unit: "%"
+    additive: non
     synonyms: [gecikme oranı, geç sevkiyat oranı, gecikmeli sevkiyat]
 
 dimensions:

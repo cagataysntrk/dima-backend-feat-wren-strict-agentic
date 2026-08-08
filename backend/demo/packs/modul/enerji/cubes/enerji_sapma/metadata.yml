@@ -22,6 +22,7 @@ measures:
     expression: "ROUND(SUM(enpg)*100.0/NULLIF(SUM(beklenen),0),1)"
     type: DOUBLE
     unit: "%"
+    additive: non
     synonyms: [sapma yüzdesi, sapma oranı, performans sapması yüzde]
     lower_is_better: true
   - name: toplam_gerceklesen

@@ -63,6 +63,7 @@ measures:
     expression: "ROUND(SUM(CASE WHEN ilk_seferde_tamam = 0 THEN kg ELSE 0 END)*100.0/NULLIF(SUM(kg),0),2)"
     type: DOUBLE
     unit: "%"
+    additive: non
     synonyms: [fire oranı, fire yüzdesi, hata oranı]
     lower_is_better: true
   - name: toplam_agirlik_kg
@@ -92,12 +93,14 @@ measures:
     expression: "ROUND(SUM(ciro_tl - enerji_toplam_tl - kimyasal_tl)*100.0/NULLIF(SUM(ciro_tl),0),2)"
     type: DOUBLE
     unit: "%"
+    additive: non
     synonyms: [kar oranı, kar yüzdesi, kâr marjı, kar marjı, karlılık oranı, karlılık, marj]
   # ORAN ölçüsü = TOPLAM/TOPLAM (ISO tarzı, satır-AVG değil). renk sapması = uretim_dE.
   - name: ort_renk_sapmasi
     expression: AVG(uretim_dE)
     type: DOUBLE
     unit: "dE"
+    additive: non
     # "dE!" TAM-KELİME (sonu "!"): 2 harfli kısa sinonim substring-eşleşmede tehlikeli
     # ("saDEce" içinde "de" geçiyor → yanlış ölçü eşleşmesi, log: "sadece beyaz ve
     # siyah renk ver" deterministic_refine'ı yanlışlıkla ölçü-değişimi sanıp bail ediyordu).
@@ -108,6 +111,7 @@ measures:
     expression: "ROUND(SUM(ilk_seferde_tamam)*100.0/NULLIF(COUNT(*),0),2)"
     type: DOUBLE
     unit: "%"
+    additive: non
     synonyms: [ilk seferde tamam, rft, ilk sefer, ilk seferde]
   - name: parti_sayisi
     expression: COUNT(*)

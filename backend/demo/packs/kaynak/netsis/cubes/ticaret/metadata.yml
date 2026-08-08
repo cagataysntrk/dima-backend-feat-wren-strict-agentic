@@ -53,12 +53,14 @@ measures:
     expression: "SUM(CASE WHEN FTIRSIP = '1' THEN GENELTOPLAM ELSE 0 END) / NULLIF(SUM(CASE WHEN FTIRSIP = '1' THEN 1 ELSE 0 END), 0)"
     type: DOUBLE
     unit: "₺"
+    additive: non
     synonyms: [ortalama fatura, ortalama sepet, sepet tutarı, aov,
                ortalama fatura tutarı, fatura başına, ortalama işlem tutarı]
   - name: iade_orani_yuzde
     expression: "ROUND(SUM(CASE WHEN FTIRSIP = '3' THEN GENELTOPLAM ELSE 0 END) * 100.0 / NULLIF(SUM(CASE WHEN FTIRSIP = '1' THEN GENELTOPLAM ELSE 0 END), 0), 2)"
     type: DOUBLE
     unit: "%"
+    additive: non
     lower_is_better: true
     synonyms: [iade oranı, iade yüzdesi, iade orani]
 

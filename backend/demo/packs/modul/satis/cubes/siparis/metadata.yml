@@ -30,6 +30,7 @@ measures:
     expression: "COUNT(DISTINCT siparis_no)"
     type: DOUBLE
     unit: "adet"
+    additive: non
     synonyms: [sipariş adedi, sipariş sayısı, kaç sipariş, sipariş adet]
   - name: siparis_tutari
     expression: SUM(toplam_tutar)
@@ -45,6 +46,7 @@ measures:
     expression: "ROUND(AVG(gecikme_gun),1)"
     type: DOUBLE
     unit: "gün"
+    additive: non
     synonyms: [ortalama gecikme, gecikme, kaç gün geç, gecikme günü, termin sapması]
   - name: zamaninda_teslim_yuzde
     # OTIF'in (on-time-in-full) termin yarısı. ⚠ Payda TÜM siparişler — "zamanında
@@ -52,12 +54,14 @@ measures:
     expression: "ROUND(100.0 * SUM(CASE WHEN gecikme_gun <= 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1)"
     type: DOUBLE
     unit: "%"
+    additive: non
     synonyms: [zamanında teslim, termin performansı, otif, zamanında teslimat oranı,
                teslimat performansı, termine uyum]
   - name: ort_siparis_buyuklugu
     expression: "ROUND(AVG(toplam_tutar),0)"
     type: DOUBLE
     unit: "₺"
+    additive: non
     synonyms: [ortalama sipariş, sipariş ortalaması, ortalama sipariş büyüklüğü]
 
 dimensions:

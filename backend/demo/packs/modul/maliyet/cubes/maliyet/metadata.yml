@@ -23,12 +23,14 @@ measures:
     expression: "ROUND(AVG(toplam_maliyet_tl_kg),3)"
     type: DOUBLE
     unit: "₺/kg"
+    additive: non
     synonyms: [birim maliyet, kilo maliyeti, maliyet, ortalama maliyet, kg maliyeti,
                birim maliyetimiz]
   - name: ort_kar_marji_yuzde
     expression: "ROUND(AVG(kar_marji_yuzde),2)"
     type: DOUBLE
     unit: "%"
+    additive: non
     # 🔴 KN-2 ÇAKIŞMASI — çıplak `kâr marjı`·`karlılık`·`marj`·`kar oranı` KALDIRILDI.
     #
     # Aynı gerekçe, üçüncü kez (bkz. `toplam üretim`, `kimyasal/enerji maliyeti`):
@@ -46,11 +48,13 @@ measures:
     expression: "ROUND(AVG(birim_kar_tl_kg),3)"
     type: DOUBLE
     unit: "₺/kg"
+    additive: non
     synonyms: [birim kâr, kilo başına kâr, birim kazanç]
   - name: kimyasal_maliyet_kg
     expression: "ROUND(AVG(kimyasal_tl_kg),3)"
     type: DOUBLE
     unit: "₺/kg"
+    additive: non
     # 🔴 KN-2 ÇAKIŞMASI — çıplak `kimyasal maliyeti`/`boya maliyeti` KALDIRILDI.
     # Ölçüldü (eval `ny-kimyasal-maliyet-renk`): golden `surdurulebilirlik.toplam_kimyasal_tl`
     # bekliyor ve bu cube o soruyu **cevaplayamaz bile** — yalnız `makine` boyutu var,
@@ -67,6 +71,7 @@ measures:
     expression: "ROUND(AVG(elektrik_tl_kg + dogalgaz_tl_kg),3)"
     type: DOUBLE
     unit: "₺/kg"
+    additive: non
     # 🔴 Aynı gerekçe (eval `ny-enerji-maliyet-asama`): çıplak `enerji maliyeti`
     # `surdurulebilirlik.toplam_enerji_tl`in; burası ₺/kg birim maliyettir.
     # ⚠ `kg başına enerji` KALDIRILDI — `surdurulebilirlik.enerji_yogunlugu_kwh_kg`in.
@@ -75,6 +80,7 @@ measures:
     expression: "ROUND(AVG(iscilik_tl_kg),3)"
     type: DOUBLE
     unit: "₺/kg"
+    additive: non
     synonyms: [işçilik maliyeti, işçilik birim maliyet, emek maliyeti]
   - name: toplam_uretim_kg
     expression: SUM(uretim_kg)

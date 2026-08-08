@@ -56,11 +56,13 @@ measures:
     expression: "ROUND(AVG(brut_maas),0)"
     type: DOUBLE
     unit: "₺"
+    additive: non
     synonyms: [ortalama maaş, ortalama brüt, ortalama ücret, maaş ortalaması]
   - name: personel_sayisi
     expression: "COUNT(DISTINCT personel_kodu)"
     type: DOUBLE
     unit: "adet"
+    additive: non
     synonyms: [personel sayısı, çalışan sayısı, kaç kişi, kadro, headcount, mevcut]
 
 # PVM (Faz 5.1): bordro maliyeti = kişi başı maliyet × kadro. "İşçilik neden arttı"

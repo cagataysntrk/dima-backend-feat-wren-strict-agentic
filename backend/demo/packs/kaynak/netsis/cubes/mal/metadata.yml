@@ -51,11 +51,13 @@ measures:
     expression: "SUM(CASE WHEN STHAR_GCKOD = 'C' THEN STHAR_GCMIK * STHAR_NF ELSE 0 END) / NULLIF(SUM(CASE WHEN STHAR_GCKOD = 'C' THEN STHAR_GCMIK ELSE 0 END), 0)"
     type: DOUBLE
     unit: "₺"
+    additive: non
     synonyms: [ortalama satış fiyatı, ortalama fiyat, birim fiyat, satış fiyatı, ort satış fiyatı]
   - name: ort_alis_fiyati
     expression: "SUM(CASE WHEN STHAR_GCKOD = 'G' THEN STHAR_GCMIK * STHAR_NF ELSE 0 END) / NULLIF(SUM(CASE WHEN STHAR_GCKOD = 'G' THEN STHAR_GCMIK ELSE 0 END), 0)"
     type: DOUBLE
     unit: "₺"
+    additive: non
     synonyms: [ortalama alış fiyatı, ortalama maliyet, birim maliyet, alış fiyatı, ort alış fiyatı]
 
 dimensions:

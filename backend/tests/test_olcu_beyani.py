@@ -34,6 +34,7 @@ sahiplenirse, derlemede **ayırt edilebilirliğini kanıtlamak** zorundadır.
 
 from __future__ import annotations
 
+import re
 import pathlib
 
 import pytest
@@ -60,6 +61,61 @@ def test_HER_OLCU_BIRIM_TASIYOR():
             for y, c, m in _tum_olculer() if not m.get("unit")]
     assert not kotu, ("🔴 birimsiz ölçü:\n  " + "\n  ".join(kotu[:20])
                       + f"\n  … toplam {len(kotu)}")
+
+
+#: 🔴 `M-5` — TOPLANAMAZLIĞIN **KANITI İFADENİN KENDİSİDİR**, adı değil.
+#: Bir ölçü `AVG(`, bir **bölme** ya da `COUNT(DISTINCT` içeriyorsa dönemler/kırılımlar
+#: arasında **toplanamaz** — bu bir isimlendirme tercihi değil, bir aritmetik olgudur.
+_TOPLANAMAZ_KANITI = re.compile(
+    r"(AVG\s*\(|COUNT\s*\(\s*DISTINCT|/\s*NULLIF\s*\(|\)\s*/\s*SUM\s*\(|100\.0\s*\*)", re.I)
+
+
+def test_M5_TOPLANAMAZ_OLCU_BEYAN_ETMEK_ZORUNDA():
+    """🔴🔴 **`M-5` KAPISI — küp rozetli sessiz-yanlışın açık kapısı.**
+
+    ## Ölçülen kusur
+
+    `MUTFAK-DENETIMI`: **172 ölçünün 12'si** `additive:` beyan ediyordu (6 `full`,
+    6 `semi`). Kalan **160** için varsayılan **tam toplanabilir**. Beyan edilmediği
+    sürece bir ortalamanın ya da oranın aylık kovada düz `SUM`'ı alınabiliyordu:
+    **`◆ CUBE` rozetli, güven 1.0, makbuz tam — ve sayı yanlış.**
+
+    Beyanı okuyan **üç** tüketici zaten vardı ve üçü de **%93 boş** bir alandan
+    besleniyordu: `viz._additive` (yığma/pay grafiği) · `contribution.py` (katkı
+    ayrıştırma) · `cube_router` `R8`.
+
+    ## 🔴 Neden `additive:` TÜM ölçülerde zorunlu KILINMADI
+
+    Rapor bunu öneriyordu. 160 ölçüyü birden zorunlu kılmak **derlemeyi kırardı** ve
+    beyanların çoğu bir **insan kararı** ister (`full` mü `semi` mi?). Bunun yerine kapı
+    **kanıtlanabilir** olanı zorunlu kılar: ifadesi `AVG(`/bölme/`DISTINCT` içeren bir
+    ölçü **toplanamaz olduğunu bilir** — orada tahmin yoktur.
+
+    ⚠ Ve `non` beyanı **kapsam daraltmaz**: `R8` yalnız `semi_additive`'e bakar (ölçüldü).
+    `non`'un tek etkisi yanlış **grafiği** ve yanlış **katkı ayrıştırmasını** durdurmaktır
+    — yani fail-closed yönde. *Bir beyan cevabı kısıtlamıyorsa, onu ertelemenin gerekçesi
+    yoktur.*
+
+    Bu tur: **12 → 77** ölçü beyanlı (65'i ifadeyle kanıtlanarak `non`).
+    """
+    kotu = [f"{c}.{m['name']}  [{str(m.get('expression'))[:45]}…]"
+            for y, c, m in _tum_olculer()
+            if isinstance(m, dict) and not m.get("additive")
+            and _TOPLANAMAZ_KANITI.search(str(m.get("expression") or ""))]
+    assert not kotu, (
+        "🔴 İFADESİ TOPLANAMAZ olduğunu söyleyen ölçü `additive:` BEYAN ETMİYOR:\n  "
+        + "\n  ".join(kotu[:20]) + f"\n  … toplam {len(kotu)}\n"
+        "Bir ortalamanın/oranın zaman kovasında SUM'ı `◆ CUBE` rozetiyle sunulur ve "
+        "**yanlıştır**. `additive: non` yaz.")
+
+
+def test_M5_BEYAN_DEGERI_GECERLI():
+    """Beyan edilen değer kapalı kümede olmalı — `full|semi|non` dışında bir şey,
+    okuyan üç tüketicide de **sessizce** hiçbir şey yapar."""
+    kotu = [f"{c}.{m['name']}={m.get('additive')!r}" for y, c, m in _tum_olculer()
+            if isinstance(m, dict) and m.get("additive")
+            and m["additive"] not in ("full", "semi", "non")]
+    assert not kotu, "🔴 geçersiz `additive:` değeri:\n  " + "\n  ".join(kotu)
 
 
 def test_BIRIM_DEGERI_SAGLAM():
