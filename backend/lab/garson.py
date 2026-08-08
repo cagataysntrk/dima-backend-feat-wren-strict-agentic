@@ -545,6 +545,69 @@ def _rapor_yaz(sonuclar: list[dict], ozet: dict, sema: dict,
     return yol
 
 
+def _kararlilik(c, secili: list[dict], n: int, *, live: bool) -> dict:
+    """🔴 **`§78.1` — SORU BAŞINA KARARLILIK ORANI.** [`--kararlilik N`]
+
+    ## Neden bir KİP, yeni bir dosya değil
+
+    `KURAL G-1` bu dosyada zaten yazılı: *"tek koşumla karar YOK; iki koşum ayrışırsa
+    karar verilmez"*. Ama o kural **iki damgayı** karşılaştırır (`--muhur`); soru başına
+    **kaç farklı cevap** çıktığını saymaz.
+
+    ⊙ Eksik olan tam olarak buydu ve `§77`'yi ölçülemez bırakıyordu: `oylama_cogunluk`
+    ve `oylama_paydasi` bayrakları *"takas ölçülemiyor"* diye **kapalı** duruyor, çünkü
+    korpus `rule` sağlayıcıyla koşar (LLM'siz) ve `eval --slice llm` dört vakadır.
+
+    ⚠ **Yeni dosya YAZILMADI** (`KAT-1`): canlı ortam kurulumu, tur koşucusu (`kos`) ve
+    üçüncü-durum sabitleri bu dosyada; ikinci bir kopya, dosyanın kendi notunda yazan
+    *"`--live` sessizce `rule`'a düşer"* kusurunu geri getirirdi.
+
+    ## Ölçü
+
+    Her senaryo `n` kez koşulur; her koşumun **cevap dizisi** (turların `cube_query`'leri,
+    kanonik JSON) tek bir imzaya indirgenir. Soru başına:
+
+    * `farkli` — kaç ayrı imza çıktı (1 = tam kararlı)
+    * `hakim_pay` — en sık imzanın payı (`1.0` = tam kararlı)
+
+    Toplam **kararlılık oranı** = tam kararlı senaryo sayısı / senaryo sayısı.
+
+    🔴 **Bu sayı bir doğruluk ölçüsü DEĞİLDİR.** Bir sistem tutarlı biçimde **yanlış**
+    olabilir. Kararlılık, doğruluğun **ön koşuludur**: kararsız bir sistemde ölçülen her
+    doğruluk sayısı bir fotoğraftır.
+
+    *Aynı soruya iki farklı cevap veren bir sistemde, hangi cevabın ölçüldüğü bir
+    tercih değil bir tesadüftür.*
+    """
+    import json as _json
+
+    def _imza(turlar: list[dict]) -> str:
+        return _json.dumps([t.get("cq") for t in turlar], sort_keys=True,
+                           ensure_ascii=False)
+
+    rapor: list[dict] = []
+    for senaryo in secili:
+        imzalar: list[str] = []
+        for i in range(n):
+            r = kos(c, senaryo, live=live)
+            imzalar.append(_imza(r["turlar"]))
+            if live and i < n - 1:
+                time.sleep(LIVE_BEKLE)
+        sayim: dict[str, int] = {}
+        for im in imzalar:
+            sayim[im] = sayim.get(im, 0) + 1
+        hakim = max(sayim.values())
+        rapor.append({"ad": senaryo["ad"], "koşum": n, "farkli": len(sayim),
+                      "hakim_pay": round(hakim / n, 3)})
+        print(f"  {senaryo['ad']:<28} farklı={len(sayim)}  hâkim={hakim}/{n}", flush=True)
+        if live:
+            time.sleep(LIVE_BEKLE)
+    kararli = sum(1 for r in rapor if r["farkli"] == 1)
+    oran = round(kararli / len(rapor), 3) if rapor else 0.0
+    return {"senaryo": len(rapor), "tam_kararli": kararli, "kararlilik_orani": oran,
+            "ayrinti": rapor}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Garson kapısı — konuşma katmanı ölçümü")
     ap.add_argument("--live", action="store_true",
@@ -552,6 +615,8 @@ def main() -> int:
     ap.add_argument("--senaryo", help="yalnız bu senaryo")
     ap.add_argument("--kaset", action="store_true", help="sağlayıcı yanıtlarını kaydet")
     ap.add_argument("--muhur", default="", help="koşum damgası (KURAL G-1)")
+    ap.add_argument("--kararlilik", type=int, default=0, metavar="N",
+                    help="§78.1 — her senaryoyu N kez koş, KARARLILIK ORANI üret")
     ap.add_argument("--taban-dondur", action="store_true",
                     help="bu koşumu taban olarak yaz")
     args = ap.parse_args()
@@ -597,6 +662,18 @@ def main() -> int:
     c.headers["Authorization"] = f"Bearer {_r.json()['access_token']}"
 
     secili = [s for s in SENARYOLAR if not args.senaryo or s["ad"] == args.senaryo]
+    if args.kararlilik:
+        # 🔴 `§78.1` — kararlılık kipi: kapı DEĞİL, bir ÖLÇÜ. Karar vermez, sayı üretir.
+        print(f"▶ KARARLILIK KİPİ — {len(secili)} senaryo × {args.kararlilik} koşum",
+              flush=True)
+        k = _kararlilik(c, secili, args.kararlilik, live=args.live)
+        print(f"\n▶ kararlılık oranı: {k['kararlilik_orani']:.0%} "
+              f"({k['tam_kararli']}/{k['senaryo']} senaryo tam kararlı)", flush=True)
+        _yol = Path(__file__).resolve().parent / "reports" / "garson_kararlilik.json"
+        _yol.parent.mkdir(parents=True, exist_ok=True)
+        _yol.write_text(json.dumps(k, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"  → {_yol}", flush=True)
+        return 0
     sonuclar = []
     for senaryo in secili:
         print(f"▸ {senaryo['ad']}", flush=True)
