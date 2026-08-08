@@ -4574,3 +4574,54 @@ oynaklık, kümede olmayan **serbest** sorularda.
 
 > *Bir kusurun sınırı, onu aramadığın yerde değil, aradığın yerde bulunmamasıyla
 > belirlenir.*
+
+## §83 · NETLEŞTİRME YANLIŞ KÜPLERİ SUNUYOR — sondajla ayrıştı
+
+`§80`'in en ağır bulgusu (`fire oranı en düşük vardiya hangisi` → **İK/İSG/kalite**)
+sondalandı — kör yama yapılmadan, canlı konteynerin şemasıyla:
+
+```
+'fire orani en dusuk vardiya hangisi'      _match_cube: None   ilgili_cubelar: ['oee','parti']
+'kumas cinsine gore ortalama fire orani'   _match_cube: parti  ilgili_cubelar: ['parti']
+'vardiya bazinda fire orani'               _match_cube: None   ilgili_cubelar: ['oee','parti']
+```
+
+### 83.1 · İki ayrı gerçek — biri kusur DEĞİL
+
+**(a) Beraberlik GERÇEK ve doğru.** `vardiya` **hem `oee` hem `parti`**'de bir boyut;
+`fire` de ikisinde birden bir ölçü. Yani *"vardiya bazında fire oranı"* **hakikaten**
+belirsizdir ve netleştirme **doğru** cevaptır. Karşı örnek bunu kanıtlıyor: `kumaş cinsi`
+yalnız `parti`'de olduğu için o soru **tek küpe** çözülüyor.
+
+⊙ Yani `§80`'de *"aynı ölçü, biri çalışıyor öteki çalışmıyor"* diye yazdığım şey bir
+tutarsızlık **değil** — iki sorunun **belirsizlik derecesi farklı**.
+
+**(b) 🔴 AMA SUNULAN KÜPLER YANLIŞ.** `ilgili_cubelar` doğru cevabı biliyor
+(`['oee','parti']`) ama kullanıcı **İK / İSG / kalite** görüyor. Yani sistem doğru adayları
+hesaplıyor ve **başkalarını gösteriyor**.
+
+> *Belirsizliği sormak doğrudur; yanlış seçenekleri sunmak, soruyu bir engele çevirir.*
+
+### 83.2 · Kök çözüm yönü *(kod DEĞİŞMEDİ — sahibi bulunmalı)*
+
+Netleştirme mesajını kuran yer, adayları `ilgili_cubelar`'dan **almıyor** olmalı; ikinci
+bir kaynak kullanıyor (`KAT-1` kokusu). Sıradaki adım: o mesajın sahibini bulup adayları
+**tek kaynaktan** okutmak.
+
+⚠ Ve `§78.2`'nin kuralı geçerli: **yazmadan önce ara** — mesajı üreten dal `yetenek.py`
+mi, `ask.py`'nin `cube_tie_candidates`'i mi, önce o belirlensin.
+
+## §84 · TABAN KARARLILIK — dokuz senaryo, dokuzu da tam kararlı
+
+```
+temellendirme · sureklilik_slot · onarim · anlati · sosyal_ve_donus
+kapasite · capa_neden · capa_normal_mi · capa_ne_yapmali        → hepsi 3/3
+```
+
+🔴 **Dokuzda dokuz.** `§75.6`'nın *"asıl kusur salınımın kendisi"* tezi artık **iyice
+dar**: senaryo kümesinde salınım **yok**. L turundaki oynaklık kümede olmayan **serbest**
+sorularda ve muhtemelen **belirsiz** sorularda (`§83`'ün beraberlik sınıfı) yoğunlaşıyor —
+ki orada birden çok geçerli cevap **gerçekten** vardır.
+
+> *Belirsiz bir soruya verilen cevabın koşumdan koşuma değişmesi, modelin kararsızlığı
+> değil sorunun kendisinin çok cevaplı olmasıdır.*
