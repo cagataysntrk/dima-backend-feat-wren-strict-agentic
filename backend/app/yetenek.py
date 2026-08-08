@@ -162,8 +162,27 @@ def _olumsuzluk(q: str, schema: dict) -> str | None:
     """
     from app.cube_router import _NEGATION_SUFFIXES
 
+    # 🔴 **`§63` — «EN» ÖNÜNDEYSE O BİR ÜSTÜNLÜK, OLUMSUZLUK DEĞİL.**
+    #
+    # Ölçüldü (`h12`): `bu yıl **en verimsiz** hattı bul ve o hattın makinelerini listele`
+    # → *"«verimsiz (= «verim» olmayan)» bir olumsuzluk ifadesi ve bunu henüz sorguya
+    # çeviremiyorum"*. Oysa kullanıcı *"verimi olmayan"* demedi; **"en düşük verimli"**
+    # dedi — ve `cube_router._AZLIK_KUTBU` `verimsiz`'i zaten **azlık kutbu** olarak
+    # tanıyor, yani `_direction` ondan `ASC` üretiyor.
+    #
+    # ⊙ İki okuma da dilbilgisel olarak mümkün; ayıran şey **yapı**: `en` + sıfat bir
+    # **üstünlük derecesidir** ve Türkçede olumsuz sıfatın üstünlüğü (`en verimsiz`,
+    # `en kârsız`, `en hatasız`) **sıralanabilir** bir niteliktir, bir yokluk değil.
+    #
+    # ⚠ Kapsam dar: yalnız token'ın **hemen öncesinde** `en` varsa. `firesiz partiler`
+    # (üstünlüksüz) aynen olumsuzluk sayılır — o soru gerçekten *"firesi olmayan"* der.
+    #
+    # *Bir sıfatı derecelendirmek, onu yok saymaktan başka bir şeydir.*
     bilinen = _katalog_terimleri(schema)
-    for tok in _TOKEN.findall(_norm(q)):
+    _tokenlar = _TOKEN.findall(_norm(q))
+    for _i, tok in enumerate(_tokenlar):
+        if _i > 0 and _tokenlar[_i - 1] == "en":
+            continue
         for ek in _NEGATION_SUFFIXES:
             if len(tok) > len(ek) + 2 and tok.endswith(ek):
                 govde = tok[: -len(ek)]

@@ -3685,3 +3685,61 @@ yeni dil kendiliğinden çalışıyor — kullanıcının *"ne'ce yazarsa yazsı
 
 ⊙ **Eksen dağılımı:** 4 sipariş · 1 mutfak. Mutfak eksikleri turdan tura azalıyor
 (E: 4 · F: 1 · G: 1).
+
+---
+
+# H TURU — 20 yeni özgün senaryo
+
+## §63 · *"EN"* ÖNÜNDEYSE O BİR ÜSTÜNLÜK, OLUMSUZLUK DEĞİL
+
+**Ölçüldü (`h12`):** `bu yıl **en verimsiz** hattı bul` → *"«verimsiz (= «verim» olmayan)»
+bir **olumsuzluk** ifadesi ve bunu henüz sorguya çeviremiyorum"*.
+
+Oysa kullanıcı *"verimi olmayan"* demedi; **"en düşük verimli"** dedi — ve
+`cube_router._AZLIK_KUTBU` `verimsiz`'i **zaten azlık kutbu** olarak tanıyor, yani
+`_direction` ondan `ASC` üretiyor. İki okuma da dilbilgisel olarak mümkün; ayıran şey
+**yapı**: `en` + sıfat bir **üstünlük derecesidir**, bir yokluk değil.
+
+⚠ Kapsam dar: yalnız token'ın **hemen öncesinde** `en` varsa. `firesiz partiler`
+(üstünlüksüz) aynen olumsuzluk sayılır — o soru gerçekten *"firesi olmayan"* der.
+
+> *Bir sıfatı derecelendirmek, onu yok saymaktan başka bir şeydir.*
+
+**Doğrulama:** `en verimsiz hattı bul` → red **kalktı**; `firesiz partiler kaç tane` →
+olumsuzluk beyanı **korundu** (1.055 ms).
+
+## §64 · H turunun envanteri
+
+### Çalışan (10)
+
+`h1` ortalama fire oranı · `h4` en çok rework (`order:desc`) · **`h6` `parti başına
+ortalama ciro` → `eksik_niyet:['olcu_ikamesi']`** *(🔴 `§60` **sahada** çalıştı:
+«ortalama sordun ama `toplam_ciro` bir toplam»)* · **`h7` `¿cuál fue la producción total
+este año?` — İSPANYOLCA ✅✅** · **`h8` `aylara göre ciro` → `en yüksek **üç** ayı seç` →
+`order:desc` + `limit:3`** *(yazıyla sayı!)* · `h10` **`toplam_enerji_tl` 423 ms** ·
+`h11` `su_yogunlugu_lt_kg` + dürüst `kirilim` beyanı · `h14` **530 ms · `view: line`** ·
+`h17` geçen yıl üretim · `h19` en fazla parti işlenen ay
+
+⊙ **ALTI DİL doğrulandı:** Türkçe · İngilizce · Arapça · Almanca · Fransızca ·
+**İspanyolca**.
+
+### 🔴 Bir sınıflandırma hatamı düzeltiyorum
+
+`§52`'de `enerji maliyeti`'ni **mutfak eksiği** diye kaydetmiştim. `h10` gösterdi ki
+**`toplam_enerji_tl` katalogda VAR** ve `bu yıl toplam enerji maliyeti ne kadar tl`
+sorusu **423 ms**'de çözülüyor. Yani o vaka bir **sipariş** kusuruydu: aynı kavram
+farklı sözcüklerle sorulduğunda garson/route onu bulamıyor.
+
+> *Bir kusuru yanlış eksene yazmak, onu yanlış yerde aramaya mahkûm eder.*
+
+⊙ Ve `§0.0`'ın ayrımı bu düzeltmeyi **mümkün kıldı**: eksen sorusu sorulmasaydı, o vaka
+"küpte yok" diye kapanırdı.
+
+### Kalan kökler
+
+| # | kanıt |
+|---|---|
+| ölçü **cümlede adıyla geçiyor** ama bulunamıyor | `h3` `…enerji tüketimine göre sırala` → *"hangi ölçüyü istiyorsun?"* · `h13` `kaç **kg** kumaş boyadık` · `h16` `**kar marjı** yüzde 20 altındaki` *(oysa `g14`'te `kar_marji_yuzde` çalıştı)* |
+| eşikli soru küp seçimini bozuyor | `h16` · `h15` |
+| çoklu ölçü + kırılım birlikte istenince ölçü sorusu | `h18` · `h20` |
+| iki-dönem/çok-dönem *(6. kanıt)* | `h2` `2025 ve 2026 cirolarını ayrı ayrı ver` → `eksik:['cok_donem']` *(dürüst)* |
