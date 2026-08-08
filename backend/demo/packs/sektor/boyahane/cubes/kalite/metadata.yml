@@ -91,9 +91,19 @@ dimensions:
     expression: musteri_ad
     type: VARCHAR
     synonyms: [müşteri, firma]
+  # 🔴 `M-1` — AYNI KAVRAM, İKİ KÜPTE İKİ TÜRLÜ GÖSTERİLİYORDU. Canlıda ölçüldü:
+  #   `oee`    → "1. Vardiya (08-16)"   (CASE ile okunur etiket)
+  #   `kalite` → **"1"**                (ham CAST)
+  # Kullanıcı aynı kırılımı iki küpte sorduğunda **iki farklı dil** görüyordu. Uyumlu
+  # boyutun (`M-1`) görünür yarısı budur: bir kavram her yerde **aynı adla** anılmalı.
+  # ⚠ Sunum kararı küpte kalır (etiketler demo VARDIYALAR sözlüğünden gelir, veriden
+  # değil). Ama bu **ikinci kopya**dır ve borç kaydı düşülüyor: üçüncü bir küp aynı
+  # `CASE`i yazmak zorunda kalırsa ortak bir yere taşınmalıdır.
+  # *İki kopya bir desen, üç kopya bir borçtur.*
   - name: vardiya
-    expression: "CAST(vardiya AS VARCHAR)"
+    expression: "CASE vardiya WHEN 1 THEN '1. Vardiya (08-16)' WHEN 2 THEN '2. Vardiya (16-24)' WHEN 3 THEN '3. Vardiya (00-08)' ELSE CAST(vardiya AS VARCHAR) END"
     type: VARCHAR
+    label: vardiya
     synonyms: [vardiya, vardiyalar]
 
   - name: hafta_gunu

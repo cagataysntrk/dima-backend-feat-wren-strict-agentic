@@ -5749,3 +5749,120 @@ paylaşınca kanal sebebi de taşımak zorundadır. Taşıyıcı `(not, iz)` çi
 
     korpus  {2285, kabul 1153, dogru 93, sessiz_yanlis 12, beyanli_kismi 51}
     süit    4261 yeşil   ·   eval +0,0%
+
+---
+
+## §94 · M-1 · UYUMLU BOYUT — **raporun teşhisi düzeltildi, çözümü ölçüldü, GERİ ALINDI**
+
+Bu bölüm bir **başarısızlığın** kaydı değil; bir **ölçümün** kaydı. Rapor M-1'i *"en büyük
+kazanç, en büyük değişiklik"* diye işaretlemişti ve haklıydı — ama **iki yerde**.
+
+### §94.1 · 🔴 Raporun teşhisi ÖLÇÜMLE DÜZELTİLDİ
+
+Rapor amiral vakasını (*"bu yıl vardiya bazında fire oranı"*) şöyle açıklıyordu:
+
+> *"Sığmayan şey (ölçü, boyut) çiftidir — ölçü bir küpte, boyut başka küpte."*
+
+Ve çözüm olarak **beş modülü** etkileyen bir **uyumlu boyut mimarisi** öneriyordu
+(`demo/packs/cekirdek/boyutlar/musteri.yml` + küplerde `uses:` referansı).
+
+**Ölçüldü (MDL, `partiler` tablosu):**
+
+    parti.baseObject = partiler
+    partiler kolonları:  vardiya (INTEGER) · vardiya_ad (VARCHAR) · musteri_ad · personel …
+    parti.dimensions  :  makine · hat · kumas_cinsi · … · hafta_gunu   ← **vardiya YOK**
+
+🔴 Yani ölçü ile boyut **aynı küpte**. Eksik olan bir birleşme yolu ya da bir mimari
+değil, **bir satır beyandı**.
+
+**Sistematik tarama:** sekiz küpün taban tablosunda **46 ortak-boyut kolonu** var ve
+boyut olarak **beyan edilmemiş** (`vardiya` · `musteri_ad` · `personel` · `bolum` …).
+
+*Bir mimariyi kurmadan önce, çözeceği vakanın gerçekten mimari olduğunu ölç.*
+
+### §94.2 · Ve tek satır ÇALIŞTI — üç vaka birden
+
+`parti`ye `vardiya` (`expression: vardiya_ad`) eklendi. Curl, **iki koşum birebir**:
+
+| soru | önce | sonra |
+|---|---|---|
+| `bu yıl vardiya bazında fire oranı` | *"…hangi ölçüyü istediğini anlayamadım"* | **3 satır** · `route()` · **LLM'siz** |
+| `bu yıl vardiya ve hat kırılımında fire oranı` (`p19`) | aynı | **24 satır** · çapraz kırılım · `route()` |
+| `bu yıl vardiya bazında rework kg` | ham `"1"` | `"1. Vardiya (08-16)"` |
+
+Ve cevap gerçek bir iş bulgusu taşıyor: **3. vardiya %25,08 fire**, 1. vardiya %16,78.
+
+⊙ Not: soru artık **`route()`** ile çözülüyor — en ucuz yol. `§83`'ten beri *"mutfak
+sınırı"* diye kayıtlı olan vaka, bir menü satırıyla **deterministik** hâle geldi.
+
+### §94.3 · 🔴🔴 AMA KAPI KIRMIZI — ve sebebi bu bölümün asıl dersi
+
+    korpus doğru-cube  %95.1 → **%94.4**  ❌ GERİLEME
+    tam süit           test_HICBIR_belirsizlik_SESSIZ_kalmiyor ❌
+      "6 belirsiz sinonim chip üretmiyor → Discovery'ye düşüyor:
+       defect, defect rate, scrap, scrap rate, waste, waste rate"
+
+Sondaj (kapının **kendi fikstürüyle**, taban ile karşılaştırmalı):
+
+    TABAN : CHIPLER = [('fire (OEE)', 'vardiya fire'), ('fire (parti)', 'fire')]
+    M-1'LE: CHIPLER = [('fire (parti)', 'fire')]
+            oee → sorgu=None  → chip DÜŞTÜ
+
+🔴 **`oee`'nin netleştirme chip'inin sorgusu `"vardiya fire"`'ydı** — çünkü `vardiya`,
+`fire` sahipleri arasında `oee`'yi **ayırt eden** kelimeydi. `parti`ye vardiya verilince
+o ayırt edicilik **yok oldu** ve chip üretilemedi.
+
+> **Bir küpü yetenekli yapmak, bir kelimeyi ayırt edici olmaktan çıkarır.**
+
+⊙ Ve ironi kayda değer: M-1'in beyanı **bir Discovery tetikleyicisini kapattı**
+(`vardiya × fire oranı`) ve **bir başkasını açtı** (`scrap`/`waste`/`defect` ailesi).
+
+### §94.4 · Karar — ve kurtarılan yarı
+
+**Geri alındı** (`parti.vardiya`). Doğruluk vetosu ve kırmızı süit tartışmasızdır; kırmızı
+bir kapı commit edilmez.
+
+**Kurtarılan:** `kalite.vardiya`'nın **etiketi** düzeltildi (`"1"` → `"1. Vardiya
+(08-16)"`) — yeni boyut yok, yeni sinonim yok, ayırt edicilik değişmiyor. Kapı yeşil.
+Bu, uyumlu boyutun **görünür yarısıdır**: bir kavram her yerde **aynı adla** anılmalı.
+
+### §94.5 · Devredilen kök — ve artık adı var
+
+🔴 **`KÖK-M1a` · NETLEŞTİRME CHIP'İ TESADÜFİ BİR AYIRT EDİCİYE BAĞLI.**
+`_calisan_sorgu` chip sorgusunu `{küp sinonimi} {ölçü ETİKETİ}` kalıbıyla kuruyor ve
+ölçünün **öteki sinonimlerini** hiç denemiyor. `oee` için `"oee fire"` **tabanda da**
+çözülmüyordu; chip yalnız `vardiya`'nın tesadüfen tekil olması sayesinde ayaktaydı.
+
+⚠ Bu kök **M-1'den önce** gelmelidir: çözülmeden her uyumlu-boyut beyanı bir chip
+ailesini sessizce düşürür. Ve çözümü ölçülebilir: `oee.toplam_fire_kg`'nin öteki
+sinonimleri (`hatali` · `hurda`) `oee`'ye özgüdür.
+
+*Bir yeteneği eklemeden önce, o yeteneğin kimin ayırt ediciliğini yediğini sor.*
+
+### §94.6 · Kapı (kurtarılan yarı)
+
+    korpus  {2285, kabul 1153, dogru 93, sessiz_yanlis 12, beyanli_kismi 51}   ← taban geri
+    süit    4261 yeşil   ·   doğru-cube %95.1 (taban %95.1) ✅   ·   eval +0,0%
+
+### §94.7 · MUTFAK RAPORUNUN BİLANÇOSU
+
+| kök | rapor önceliği | durum | not |
+|---|---|---|---|
+| **M-7** telemetri pusulası | 1 | ✅ | + raporun görmediği ikiz |
+| **M-2** ölçü rolü + varsayılan | 2 | ◐ | `default_measure` **3 → 11**; `rol` katmanı **yapısal olarak kapalı** |
+| **M-5** toplanabilirlik | 3 | ✅ | beyan **12 → 77**, `non_additive` **0 → 56** |
+| **M-4** varsayılan dönem | 4 | ✅ | kuruldu + ölçüldü, bayrak **bilerek kapalı** (6 altın sözleşme) |
+| **M-6** operatör tek kaynak | 5 | ✅ | motorun 12 adı **ölçüldü**, `ne` ayıklandı, 5 yetenek fişe girdi |
+| **M-3** türev ölçü | 6 | ✅ | `yuzde`·`oran`·`fark` + `pay==payda` gürültülü red |
+| **M-9** pencere katmanı | 7 | ✅ | **altı kip** canlıda ölçüldü |
+| **M-1** uyumlu boyut | 8 | ⊘ | teşhis **düzeltildi**, çözüm **çalıştı**, kapı **geri aldırdı** (`§94.3`) |
+| **M-8** kaynak farkı beyanı | 9 | ⊘ | M-1'e bağlı — sırası gelmedi |
+
+**Yedi kökten altısı indi; ikisi ölçülerek sınırlandı.** Ve rapor bu turda **üç kez**
+düzeltildi: `rol`·`pencere`·`varsayilan_donem` katalog beyanları MDL'nin sabit alan
+kümesine çarptı (`§91.1`·`§93.1`), M-1'in *"ölçü bir küpte, boyut başkasında"* teşhisi
+ise **ölçümle** çürüdü (`§94.1`).
+
+> *Bir denetim raporunun değeri, önerdiği çözümlerin doğruluğunda değil, gösterdiği
+> yerin doğruluğundadır. Bu rapor yeri doğru gösterdi; çözümlerin üçü yanlış kapıydı ve
+> bunu ancak uygulamaya çalışınca öğrendik.*
