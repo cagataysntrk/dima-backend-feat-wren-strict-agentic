@@ -77,7 +77,390 @@ Bu turda güncellenen bölümler `⟳ 2026-08-08` işaretini taşır; **özgün 
 
 ---
 
+# 0 · RESTORAN — analojinin TAM haritası
+
+> ⟳ **2026-08-08 · YENİ BÖLÜM.** Bu belgenin önceki sürümü *ara faz öncesinde* donmuştu ve
+> sistemi **yalnız mutfak metrikleriyle** anlatıyordu. Ara faz (`DIMA-GARSON-ARA-FAZ.md`,
+> 113 adım) o eksiği kapattı. Aşağısı, **her mimari parçanın restorandaki tam karşılığıdır**.
+
+## 0.1 · Tek cümle — ve üç yasak
+
+> 🔴 **«Garson olarak LLM'e güveniyoruz KESİNLİKLE; mutfakta HİÇ güvenmiyoruz.»**
+> *(Kullanıcı kararı, `DIMA-GARSON-ARA-FAZ.md` §1.1c — bu fazın en önemli cümlesi.)*
+
+Ve bu bir benzetme olarak **sonradan** uydurulmadı: deponun kendi denetimi, bu sohbetten
+bağımsız olarak aynı cümleyi kurmuştu —
+
+> *"Ürünün tezi (**«LLM garson, küp aşçı»**) doğru — ama bugün **garson yok, siparişi aşçı
+> alıyor.**"* — `belgeler/denetim/2026-08-05_ANLAMA-KATMANI.md`
+
+**Ara fazın tanımı buydu:** çözümleme işini eşleştiriciden almak ve **ona ait olan katmana**
+vermek. `route()` kötü bir eşleştirici değil; **yanlış işi yapan iyi bir eşleştiriciydi.**
+
+```
+┌─ ÜÇ YASAK — hepsi teste bağlı ────────────────────────────────────────────┐
+│  1 · GARSON TENCEREYE KARIŞAMAZ                                           │
+│      LLM sayı koyamaz · SQL yazamaz · motora dokunamaz · ham satır görmez │
+│                                    kapı: parse_cube_query · narration_guard│
+│  2 · AŞÇI SALONA ÇIKAMAZ                                                  │
+│      Mutfak modülü doğal dil ayrıştıramaz · kullanıcıya cümle yazamaz     │
+│                                    kapı: tests/test_alan_haritasi.py (AST)│
+│  3 · İKİSİNİ BİRDEN YAPAN HER ŞEY «KAPI» OLMAK ZORUNDADIR                 │
+│      Kapı olmayan bir "ikisi de", TANIMI GEREĞİ bir kusurdur    (KAT-1)   │
+└───────────────────────────────────────────────────────────────────────────┘
+```
+
+## 0.2 · Bir siparişin tam yolculuğu — ana şema
+
+```mermaid
+flowchart TB
+    M(["👤 <b>MÜŞTERİ</b><br/>serbest Türkçe · dağınık · eksik · yazım hatalı"])
+
+    subgraph SALON["🪑 SALON — app/routers/ask.py · POST /ask"]
+        direction TB
+        KAP{"<b>KAPIDA KARŞILAMA</b><br/>🚩 sosyal_sinif <i>prod</i><br/><i>'teşekkürler' → 0 LLM · 0 SQL</i>"}
+        DEF["<b>GARSONUN DEFTERİ</b> — K2 · 0 token<br/>context.coz · followup.sinifla<br/><b>diyalog.py</b> 🚩 diyalog_bellegi <i>prod</i><br/><i>slot · devam · onarım · çapa</i>"]
+    end
+
+    subgraph GARSON["🗣 GARSON — K3a · ANLAMA · 'hangi sorgu koşacak?'"]
+        direction TB
+        NIY["<b>niyet.py</b> — çözümleme<br/><i>şemasız · salt dilbilgisi</i>"]
+        ESL["<b>cube_router.route()</b> — eşleştirme<br/>🔴 <b>hızlı yol, kapı bekçisi DEĞİL</b>"]
+        SOR["<b>SORAR</b> — netleştirme chip'i<br/>eşsizlik ∨ dar marjin"]
+        LLM["<b>Intent-JSON</b> — LLM yapı doldurur<br/><i>SQL YAZMAZ</i>"]
+        NIY --> ESL
+        NIY --> SOR
+        NIY --> LLM
+    end
+
+    FIS["📋 <b>SİPARİŞ FİŞİ = CubeQuery</b><br/>cube · measures · dimensions · filters<br/>timeDimensions · <b>referans</b><br/><i>hangi daldan geldiği AŞAĞIDAN GÖRÜNMEZ</i>"]
+
+    KAPI1["🚪 <b>SERVİS PENCERESİ</b><br/><code>parse_cube_query()</code><br/>🔴 <b>KATI BEYAZ LİSTE</b><br/><i>menüde olmayan yemek fişe yazılamaz</i>"]
+
+    subgraph MUTFAK["🍳 MUTFAK — K1 · %100 deterministik · DOKUNULMAZ"]
+        direction TB
+        REC["<b>REÇETE DEFTERİ</b><br/>compose() ⟵ kaynak⊕modül⊕sektör<br/>⊕kesişim⊕çekirdek⊕şirket<br/><i>GRAIN sözleşmesi — fail-closed</i>"]
+        OCAK["<b>OCAK</b> — wren-core<br/>dry_plan → SQL → lehçe"]
+        TART["<b>TARTI</b> — stats · interpret<br/><i>trend · anomali · pay · eşik</i>"]
+        REC --> OCAK --> TART
+    end
+
+    HIJ["🧼 <b>HİJYEN</b> — L0 GÜVENCE<br/>authorize() · RLS · CLS · always_filter<br/>audit · PII · Query Contract mührü"]
+
+    HAVA["🔴 <b>HAVA BOŞLUĞU</b> — llm_guard.safe_call + yayilim.py<br/>ham satır ⛔ ASLA ÇIKMAZ<br/>12.430 → <code>&#123;&#123;NUM_1&#125;&#125;</code> · 'RAM 3' → <code>&#123;&#123;DIM_1&#125;&#125;</code><br/>'Ahmet Tekstil' → <code>&#123;&#123;ENT_1&#125;&#125;</code><br/><i>garsona menü ezberletilir; KASA gösterilmez</i>"]
+
+    subgraph SERVIS["🍽 GARSON — K3b · SERVİS · 'insana ne diyeceğiz?'"]
+        direction TB
+        TEM["<b>SİPARİŞİ TEKRARLA</b> — temellendirme.py<br/>🔴 <b>0 token</b> — LLM düşse bile YAŞAR"]
+        ANL["<b>TABAĞI ANLAT</b> — anlatici.py<br/>🚩 t2_anlatici <i>alpha</i>"]
+        EK["<b>EK MOTORU</b> — ek.py<br/><i>'Mart'ta' · 'fire'yi'</i>"]
+        MEN["<b>MENÜYÜ BİL</b> — yetenek.py<br/><i>yapamadığında NE yapabildiğini söyler</i>"]
+    end
+
+    subgraph PASS["🔒 PASS — üç kapı, fail-closed, çıkıştan ÖNCE"]
+        direction TB
+        P1["① <b>GERİ KOYMA</b> — yayilim.geri_koy<br/><code>&#123;&#123;NUM_1&#125;&#125;</code> → 12.430<br/>eksik/fazla yer tutucu → <b>cümle DÜŞER</b>"]
+        P2["② <b>narration_guard</b><br/>her SAYI ±%2 → <b>cümle DÜŞER</b>"]
+        P3["③ <b>iddia.py</b><br/>her İDDİA şemaya karşı"]
+        P1 --> P2 --> P3
+    end
+
+    SEAL["🔒 <b>answer.py::seal()</b> — TEK ÇIKIŞ<br/><i>adisyon: makbuz · PII maskesi · audit · sözleşme</i>"]
+
+    M --> KAP
+    KAP -->|"veri niyeti VAR"| DEF
+    KAP -->|"YOK"| SEAL
+    DEF --> GARSON
+    SOR -.->|"❓ CEVAP DEĞİL, SORU"| SEAL
+    ESL --> FIS
+    LLM --> FIS
+    FIS --> KAPI1
+    KAPI1 -->|"✅ geçti"| MUTFAK
+    KAPI1 -->|"🔴 uydurulmuş ad"| RED(["<b>DÜRÜST RET</b><br/>source=null"])
+    HIJ -.-> MUTFAK
+    MUTFAK -->|"FACT-SHEET ~150-250 token"| HAVA
+    HAVA --> SERVIS
+    SERVIS --> PASS
+    PASS --> SEAL
+    RED --> SEAL
+    SEAL --> OUT(["👤 rozet · <b>TEMELLENDİRME</b> · tablo/grafik<br/><b>ANLATI</b> · chip'ler · <b>MAKBUZ</b>"])
+
+    style MUTFAK fill:#1b5e20,color:#fff
+    style GARSON fill:#4a148c,color:#fff
+    style SERVIS fill:#4a148c,color:#fff
+    style KAPI1 fill:#b71c1c,color:#fff
+    style HAVA fill:#7d1128,color:#fff
+    style PASS fill:#b71c1c,color:#fff
+    style SEAL fill:#4a148c,color:#fff
+    style HIJ fill:#37474f,color:#fff
+    style SALON fill:#0d3b66,color:#fff
+    style FIS fill:#004d40,color:#fff
+    style RED fill:#37474f,color:#fff
+```
+
+## 0.3 · 🔴 TAM KARŞILIK TABLOSU — restorandaki her şeyin DİMA'daki yeri
+
+> **Kural:** *etiketsiz kutu yoktur.* Bir satırın **modülü** ya da **kapısı** boşsa, o parça
+> ya yoktur ya da sahibi belirsizdir — ikisi de bu depoda **bulgu**dur.
+
+### 🪑 SALON — müşterinin gördüğü yer
+
+| Restoranda | DİMA'da | Modül / uç | Kapı | Durum |
+|---|---|---|---|---|
+| Kapıda karşılama | sosyal sınıf ayrımı | `ask.py` merdiven basamağı 0 | 🚩 `sosyal_sinif` **prod** | ✅ |
+| Masaya oturma | oturum + JWT | `POST /ask` · `authorize()` | `query:run` | ✅ |
+| Masadaki tabaklar | önceki cevap kartları | `context.coz()` çapa kuralları | `KURAL_CELISKI` → **SOR** | ✅ |
+| *"Şu tabaktan bir de…"* | karta yanıt | 🚩 `capa_zinciri` | `reply_to_cube_query` | ⚫ off |
+| Salonun kendisi | PUBLIC düzlem | `app/` · `uvicorn app.main:app` | JWT | ✅ |
+| Müdür odası *(ayrı kapı, ayrı anahtar)* | ADMIN düzlem | `admin_app/` — **ayrı süreç, Wren'siz** | ayrı JWT secret + `sa` + **2FA** | ✅ |
+| İşletme defterleri *(personel · yetki · kasa)* | CONTROL-PLANE | `control_plane/` — **kütüphane** | `authorize()` matrisi | ✅ |
+
+### 🗣 GARSON — dil işi *(K3 · LLM'e TAM güven)*
+
+| Restoranda | DİMA'da | Modül | Kapı | Durum |
+|---|---|---|---|---|
+| **Siparişi kendi dilinle almak** | NL → niyet çözümleme | `niyet.py` *(401 satır)* | — *(şemasız, salt dilbilgisi)* | ✅ ara faz |
+| Menüdeki adı bilmek | terim → katalog eşleştirme | `cube_router.route()` | 🔴 **hızlı yol, bekçi DEĞİL** | ✅ |
+| Ezberlediği müdavim siparişi | VQR replay | `vqr.py` | ölçü tutarlılığı | ✅ |
+| **Siparişi TEKRARLAMAK** | temellendirme | `temellendirme.py` *(157)* | 🔴 **0 token** | ✅ `G1` |
+| **Emin değilse SORMAK** | netleştirme chip'i | `belirsizlik_chipi.py` · `netlestirme.py` | eşsizlik ∨ **marjin** | ✅ |
+| **Sorduğunu HATIRLAMAK** | diyalog belleği | `diyalog.py` *(177)* | 🚩 `diyalog_bellegi` **prod** | ✅ `G2` |
+| **Düzeltilmek** *("hayır, fire demiştim")* | onarım — TEK slot düzelir | `diyalog.py` onarım dalı | deterministik test | ✅ `G2` |
+| Yazım hatasını anlamak | typo önerisi | `typo_onerisi.py` | 🔴 **merdiveni KESEMEZ** (`KAT-2`) | ✅ `G3` |
+| **Tabağı ANLATMAK** | T2 anlatısı | `anlatici.py` *(133)* | 🚩 `t2_anlatici` **alpha** | ◐ |
+| Türkçe konuşmak *(çekim ekleri)* | ek motoru | `ek.py` *(202)* | özel ad kipi *(TDK)* | ✅ `G7` |
+| **MENÜYÜ BİLMEK** | kapasite beyanı | `yetenek.py` · `katalog_metni.py` | `iddia.py` denetler | ✅ `G8` |
+| Tek ses tonu | metin katalogu | `soz.py` | — | ◐ *(5.17)* |
+| Kıyas dili *("geçen yıla göre")* | kıyas cebiri | `kiyas_cebiri.py` *(265)* | 🚩 `referans_dili` **beta** | ✅ `G6` |
+
+### 📋 SİPARİŞ FİŞİ — garsonla mutfağın **tek** ortak dili
+
+| Restoranda | DİMA'da | Modül | Kapı |
+|---|---|---|---|
+| Fişin kendisi | `CubeQuery` — **CEBİR, form değil** | `schemas.py` · L2 DİL | — |
+| Fişin şablonu | Intent şeması | `intent_semasi.py` *(`oneOf` — her cube kendi dalı)* | 🚩 `llm_sema_kisitli` ⚠ **NO-OP** |
+| Fişteki *"yanına bir de…"* | `cross_cube_add` *(blend)* | `ask.py` basamak 4 | grain-**FARKINDA** |
+| Fişteki *"aynısı ama X bazında"* | `deterministic_refine()` | `ask.py` basamak 3 | **LLM YOK** |
+| Fişteki *"geçen seferkine göre"* | `referans` alanı | `kiyas_cebiri.py` | 🚩 `referans_dili` |
+| 🔴 **Fişin mutfağa girdiği delik** | `parse_cube_query()` | `cube_router.py:3715` | 🔴 **KATI BEYAZ LİSTE** |
+
+> 🔴 **Bu satır mimarinin bel kemiğidir:** hangi daldan geldiği *(route · Intent-JSON ·
+> chip · refine)* **fişin altında görünmez**. Mutfak **kimin yazdığını bilmez**, yalnız
+> **geçerli mi** ona bakar. *Sağlayıcıdan bağımsız asıl emniyet ağı budur* — model uydurma
+> bir ölçü adı üretebilir; sistem onu **çalıştıramaz**.
+
+### 🍳 MUTFAK — sayı işi *(K1 · LLM'e SIFIR güven · 🔴 DOKUNULMAZ)*
+
+| Restoranda | DİMA'da | Modül | Kapı |
+|---|---|---|---|
+| **Reçete defteri** | semantik katalog | `compose()` — kaynak⊕modül⊕sektör⊕kesişim⊕çekirdek⊕şirket | **FAIL-CLOSED** |
+| Reçetenin porsiyon birimi | **GRAIN sözleşmesi** | `compose.py` | 🔴 `GrainIhlali` → **iki ayrı metrik** |
+| Aynı adı taşıyan iki reçete | metrik hakemi | `metrik_kaydi.py` | 🚩 `metrik_kaydi` |
+| Kiler / mise-en-place | `target/mdl.json` *(base64)* | `mdl_writer.py` · `materialize()` | **DB → dosya, TEK YÖNLÜ** |
+| **Ocak** | WrenEngine — in-process | `wren_service.py` | `dry_plan` — **çalıştırmadan doğrula** |
+| Ocağın emniyet valfi | `guard_sql` | yalnız `SELECT`/`WITH` + lehçe çevirisi | fail-closed |
+| **Tartı** | istatistik + olgu çıkarımı | `stats.py` · `interpret.py:359` | 🔴 **ham satır değil, OLGU** |
+| Ayrıştırma *("artışın %kaçı kimden")* | PVM ayrıştırması | `contribution.py` | `ayristirilabilir_mi` — **`AVG` ayrıştırılamaz** |
+| Dolaptaki müşteri dosyaları | ham satırlar | — | 🔴 **binadan ÇIKMAZ** |
+| 🔴 **Garson mutfağa girerse** | **Discovery** — LLM ham SQL yazar | `discovery_kuyrugu.py` | ⚠ **§0.7'ye bak: bu bir İSTİSNA** |
+
+### 🧼 HİJYEN — L0 GÜVENCE *(görünmez, ama her tabakta var)*
+
+| Restoranda | DİMA'da | Modül | Kapı |
+|---|---|---|---|
+| Personel kartı | `Principal` | `control_plane/` | `authorize()` matrisi |
+| *"Bu masaya yalnız bu garson bakar"* | satır seviyesi izolasyon | `rls.py` · `always_filter` | 🚩 `motor_rls` — gölge |
+| *"Bu kolonu kimse görmez"* | CLS | `katman_b.py` | 🔴 **`motor_cls` KİLİTLİ** — §13/1 |
+| Kişisel veri | PII maskesi | `pii.py` | `seal()` içinde + **ayrı audit** |
+| **HACCP kaydı** | audit zinciri | `audit_zinciri.py` | 🔴 **FAIL-CLOSED** |
+| **Adisyon mührü** | Query Contract | `contracts.py` | SHA-256 + MDL sürümü |
+| Tazelik etiketi | tazelik kademesi | `tazelik.py` | 🚩 `tazelik` ⚫ off |
+| Ürünün kaynağı | lineage | `lineage.py` | 🚩 `lineage` ⚫ off |
+| Reçeteyi kim onayladı | metrik sertifikası | `certification.py` | 🚩 `metrik_sertifikasi` ⚫ off |
+
+### 🔴 HAVA BOŞLUĞU — mutfakla dış dünya arasındaki **tek** geçit
+
+| Restoranda | DİMA'da | Modül | Durum |
+|---|---|---|---|
+| Garsona menü ezberletirsin | soru + katalog **adları** LLM'e gider | `llm_guard.safe_call` | ✅ |
+| **Kasayı gösterme** | gerçek sayı → `{{NUM_i}}` | `yayilim.py` *(198)* | ✅ `G0b` |
+| **Müşteri dosyasını gösterme** | boyut değeri → `{{DIM_i}}` · varlık → `{{ENT_i}}` | `yayilim.py` · `varlik.py` | ✅ / ⚠ `S5` |
+| TCKN · e-posta · telefon · IBAN | PII kalıpları | `pii.py` | ✅ |
+| Çıkış kütüğü | **tür + SAYI**, değer YAZILMAZ | `llm_guard.py` | ✅ |
+| Düşme oranı alarmı | guard telemetrisi | `guard_alarmi.py` + `/health/ready` | ✅ `Ö5` |
+
+### 🔒 PASS ve ADİSYON — çıkış
+
+| Restoranda | DİMA'da | Modül | Kapı |
+|---|---|---|---|
+| Yer tutucuları geri koyma | `{{NUM_1}}` → `12.430` | `yayilim.geri_koy` | 🔴 eksik/fazla → **cümle DÜŞER** |
+| Şefin son kontrolü — **sayı** | anlatıdaki her sayı ±%2 | `narration_guard.py` | 🔴 fail-closed → cümle düşer |
+| Şefin son kontrolü — **iddia** | *"olmayan yetenek vaadi"* | `iddia.py` *(221)* | 🔴 fail-closed | 
+| **Pass — tek pencere** | `seal()` | `answer.py::seal()` | 🔒 **TEK ÇIKIŞ NOKTASI** |
+| Adisyon | makbuz + `explain` | `answer.koken()` · `contracts` | Query Contract kaydı |
+| *"Bugün bu yok"* | **dürüst red** | `source=null` | 🔴 *"anlamadığını bil"* |
+
+### 🏢 İŞLETME — salonun dışında kalanlar
+
+| Restoranda | DİMA'da | Modül |
+|---|---|---|
+| Şefin kural defteri | ADR'ler + `KAT-1…KAT-5` | `MIMARI.md` · `docs/adr/` ⚠ **0 dosya** |
+| Yeni şube açılışı | tenant açılış zinciri | `db_introspect` → `coldstart.oner()` → `ReviewPanel` |
+| Menü genişletme kuyruğu | terfi kuyruğu | `terfi_kapanis.py` · `measures` router |
+| Paket servis | rapor · pano · zamanlama | `report.py` · `dashboards` · `schedules` |
+| Sipariş defterinin arşivi | sohbet + `interaction_log` | `conversations` router |
+| Mutfak yükü | LLM sağlayıcı zinciri | `llm.py` — ⟳ **karar: OpenRouter + NVIDIA açık kaynak** |
+
+## 0.4 · 🔴 GÜVEN MODELİ — iki eksen, ve ikisi de bağlayıcı
+
+**Eksen 1 — LLM neyi YAPAR:**
+
+| İş | LLM'e güven | Gerekçe |
+|---|---|---|
+| **GARSON İŞİ** — anlamak · sormak · hatırlamak · anlatmak | 🟢 **TAM** | Dilde LLM `route()`'tan **açık ara** iyidir. Ölçüldü: 41 gerçek cümlenin **0'ında** `route()` cevap üretiyor |
+| **MUTFAK İŞİ** — sayı · hesap · SQL · yetki | 🔴 **SIFIR** | Sayı yalnız küpten. `parse_cube_query` · `dry_plan` · RLS · sözleşme mührü — **hiçbiri LLM'e sormaz** |
+
+**Eksen 2 — LLM neyi GÖRÜR** *(ara fazın eklediği, daha önce bu haritada HİÇ yoktu)*:
+
+| | LLM ne **YAPAR** | LLM ne **GÖRÜR** |
+|---|---|---|
+| **Garson işi** | 🟢 tam güven | ⚠ **sınırlı** — soru + katalog **adları** + `{{yer tutucu}}`lar |
+| **Mutfak işi** | 🔴 sıfır | 🔴 **hiç** — ham satır · gerçek değer · gerçek sayı **çıkmaz** |
+
+> *Bir garsona menüyü ezberletirsiniz; **kasayı ve müşteri dosyalarını göstermezsiniz.***
+
+🔴 **Ve bir yanlış okuma, bu belgenin önceki sürümünün de düştüğü hata:** *"LLM'e
+güvenilmediği için ancak çok eminken LLM'siz gidiyoruz"* **DEĞİL**. Gerçek bunun tersi:
+LLM'siz niyet algılamak **zordur** — güven duyulmayan `route()`'tur. `route()` yalnız
+**maliyet ve hız** için, ve **yalnız kendini ispat edebildiği yerde** kullanılır.
+**İspat yükü `route()`'un üzerindedir, LLM'in değil. Şüphede LLM'e düşülür.**
+
+⚠ **Bunun ölçüm sonucu:** `doğru-cube %` bir **kalite** ölçüsü değil, bir **MALİYET**
+ölçüsüdür — *"mutfak, garsona hiç uğramadan kaç siparişi karşıladı?"* **Maliyet ölçüsü
+ürünü veto edemez** *(§2.3 kabul rejimi)*.
+
+## 0.5 · 🚪 KAPILAR — hijyen bariyerlerinin tam listesi
+
+| Kapı | Yön | Ne zorlar | Durum |
+|---|---|---|---|
+| `parse_cube_query` `cube_router.py:3715` | 🗣→🍳 | 🔴 **Katı beyaz liste** — şema dışı ad **çalıştırılamaz** | ✅ |
+| `uyum.denetle` `uyum.py:169` | 🗣→🍳 | Niyet ↔ sorgu uyumu · **beyan-açık** | ✅ |
+| `dry_plan` `wren_service.py:1504` | 🍳 içi | Sorgu **çalıştırılmadan** motorca doğrulanır | ✅ |
+| `planner` dört kapı | her araç | kayıt · yetki · **det-önce** · bütçe | ✅ |
+| `interpret()` `interpret.py:359` | 🍳→🗣 | 🔴 **Ham satır değil, OLGU çıkar** | ✅ |
+| `llm_guard.safe_call` | 🗣→🌐 | PII fail-closed · `_ask`/`_arac_ile`/`_chat`'i sarar | ✅ |
+| `yayilim.py` **korunan yayılım** | 🍳→🌐 | Gerçek **DEĞER ve SAYI** da çıkmaz | ✅ ⟳ `G0b` |
+| `narration_guard` | 🗣→👤 | Metindeki her **SAYI** ±%2 → cümle düşer | ✅ |
+| `iddia.py` | 🗣→👤 | Her **İDDİA** şemaya karşı | ✅ ⟳ `G4` |
+| `pii.py` | sistem→👤 | Maskeleme, tek çıkış | ✅ |
+| `answer.seal()` | herkes→👤 | 🔒 **TEK ÇIKIŞ** — makbuz · audit · sözleşme | ✅ |
+| `tests/test_alan_haritasi.py` | **AST** | 🗣 modülü `wren_service` import **edemez**; 🍳 modülü `llm`/`soz` import **edemez** | ✅ ⟳ |
+
+> 🔴 **Ayrım testi — üç soru, herkes uygulayabilir:**
+> ① Bu modül **doğal dil** okuyor ya da yazıyor mu? → 🗣 **GARSON**
+> ② Bu modül **veri/sorgu/motor** ile mi çalışıyor? → 🍳 **MUTFAK**
+> ③ **İKİSİ DE** mi? → 🔴 **O zaman KAPI olmak ZORUNDA.** Kapı olmayan bir *"ikisi de"*,
+> tanımı gereği bir **KUSURDUR**.
+
+⚠ **Üç bilinçli tehlikeli vaka:** `cube_router.py` *(4277 satır)* **iki alanı birden**
+barındırır — `route()` 🗣, `parse_cube_query()` 🚪. Bu kusur değil *(kapı, koruduğu şeyin
+yanında durur)* ama **risktir**: dosyayı düzenleyen **hangi tarafta olduğunu bilmek
+zorundadır**. `interpret.py` ve `value_index.py` **köprüdür** — mutfak üretir, garson tüketir.
+
+## 0.6 · 🔻 BOZULMA MERDİVENİ — *"garson hastalanırsa"*
+
+**Her basamakta cevap hâlâ DOĞRUdur; kaybedilen tek şey AKICILIKTIR.**
+
+| # | Ne bozuldu | Sistem ne yapar | Müşteri ne görür |
+|---|---|---|---|
+| **0** | — | tam akış | 🟢 **Tam garson** — anlar · sorar · hatırlar · anlatır |
+| **1** | Guard bir cümleyi düşürdü | o cümle yayımlanmaz | anlatı **kısalır**, sayılar doğru |
+| **2** | Guard/`iddia` **tüm** cümleleri düşürdü | anlatı hiç eklenmez | `interpret.summary` — *"süssüz ama doğru"* |
+| **3** | **LLM erişilemez** *(kota · ağ · 429)* | Intent-JSON yok → `route()` tek başına | deterministik cevap **+ temellendirme** |
+| **4** | `route()` de çözemedi | **dürüst red + MENÜ** | *"bunu yapamam — ama şunu yapabilirim"* |
+| **5** | Katalogda hiç karşılık yok | dürüst red + terfi kuyruğuna kayıt | *"kapsam dışı"* — ve yönetici görür |
+
+> 🔴 **Tasarımın en önemli özelliği bu tablodadır:** `temellendirme` **0 token** olduğu için
+> **3. basamakta bile hayatta kalır.** *Garson hastalanırsa **mutfak yine de siparişi tekrar
+> eder**.*
+> ⚠ Ve **hiçbir basamakta yanlış sayı yok.** Bozulma **akıcılığı** düşürür, **doğruluğu**
+> değil.
+
+## 0.7 · Cevaplama merdiveninin restoran okuması — §5'in aynası
+
+| # | Basamak | Restoranda ne oluyor | `source` |
+|---|---|---|---|
+| 0 | sosyal sınıf | *"İyi akşamlar"* — mutfağa hiç haber gitmez | `meta` |
+| 1 | meta · katalog | Müşteri **menüyü okuyor** | `catalog` `statement` |
+| 2 | VQR replay | *"Her zamankinden"* — garson zaten biliyor | `vqr` |
+| 3 | `route()` | Garson **menüdeki adı tanıdı**, fişi hemen yazdı | `cube` |
+| 4 | `deterministic_refine` | *"Aynısı ama az tuzlu"* — fiş **düzenlenir**, yeniden yazılmaz | `cube` |
+| 5 | `cross_cube_add` | *"Yanına bir de X"* — ⚠ **blend, gerçek JOIN değil** | `cube` |
+| — | netleştirme chip'i | 🔴 **Garson SORUYOR** — cevap değil, **SORU** | chip |
+| 6 | **Intent-JSON** | Garson **fişi kendi doldurdu**, mutfağa verdi | `cube+llm` |
+| 7 | ⚠ **Discovery** | 🔴 **GARSON MUTFAĞA GİRDİ, kendi tabağını yaptı** | `llm:<sağlayıcı>` |
+| 8 | dürüst red | *"Bunu yapamam"* — **+ menü** *(`G8`)* | `null` |
+
+> 🔴 **7. basamak neden bir ANOMALİDİR — analojinin en öğretici satırı:** Discovery'de
+> yemek çıkar, ama **reçetesi yok, tartısı yok, fişi yok**. Kod karşılığı birebir budur:
+> `cube_query` üretilmez → `next_steps` **BOŞ** · `recommendations` **BOŞ** ·
+> `calculation_explanation` **BOŞ** · `/ask/drill` **dürüstçe reddeder**.
+> **Ölçülen fatura:** Discovery **12.567 ms / 24.352 token** ⟷ aynı tenant'ın cube yolu
+> **145–434 ms / 0 token**.
+> **Her Discovery cevabı, belgelenmiş bir kapsam boşluğudur ve bir terfi adayıdır.**
+
+## 0.8 · ⟳ ARA FAZIN BU HARİTAYA GETİRDİĞİ DELTA — *bu belge neyi yanlış biliyordu*
+
+**Bu belgenin ara faz öncesi hâli aşağıdaki satırları yazıyordu. Sağ sütun bugün ölçülendir.**
+
+| Bu belgenin ESKİ iddiası | ⟳ **2026-08-08 · ölçülen** | Kanıt |
+|---|---|---|
+| *"§2 — v1'de gerçekten yeni olan dört şey, hepsi `[YOK]`"* | 🔴 **Üçü İNDİ** — `iddia.py` **221 satır** · diyalog katmanı `diyalog.py` **177** · referans cebiri `kiyas_cebiri.py` **265** | `wc -l app/*.py` @`761928d` |
+| *"`R11` yok — v1'de yazılacak"* | ⊘ **DENENDİ ve GERİ ALINDI** — gerçek gerekçe (`R9`,`R1`) zaten vardı, `R11` onu **örtüyordu** | `cube_router.py:3530-3538` |
+| *"`app/iddia.py` YOK — tek kapatılmamış uydurma"* | ✅ **KAPANDI** (`G4`); ⚠ ayrıca `yetenek` beyanı bu kapıyı **atlıyordu**, o da kapatıldı (`G8.4`) | ara faz §DURUM |
+| *"`AJ0` typo kısa devresi — Discovery'ye hiç gidilmiyor"* | ✅ **`G3` indi** — cırcır artık **tavan+azalma** yönünde (`<= 11` ∧ `== 11` meta-kapı) | `tests/test_kisa_devre_yok.py:190,196` |
+| *"25 bayrak · 21 YAML · **ölü bayrak 2**"* | ⟳ **49 kayıt · 48 YAML · ölü bayrak 1** *(`ayni_grain_gocu` — **derleme zamanı**, bilinçli)* | `FLAG_REGISTRY` ↔ `features.yml` @`761928d` |
+| *"`hedef_kiyasi` bayrağı kayıtta YOK"* *(§13/8)* | ✅ **KAPANDI** — `features.py:53` **ve** `features.yml:100` | `grep hedef_kiyasi` |
+| *"66 HTTP ucu"* | ⟳ **75 uç** | `grep -rhoE '@router\.(get\|post\|put\|delete\|patch)' app/routers/*.py \| wc -l` |
+| *"`ask()` = 1147 satır"* | ⟳ `app/routers/ask.py` **4938 satır** — 🔴 **tavan borcu BÜYÜDÜ** | `wc -l` |
+| *(hava boşluğu kavramı **hiç yoktu**)* | 🔴 **YENİ KATMAN** — `yayilim.py` · `guard_alarmi.py` · `varlik.py` | `G0b` · `Ö5` |
+| *(temellendirme kavramı **hiç yoktu**)* | 🔴 **YENİ** — `temellendirme.py`, **0 token**, bozulmanın 3. basamağında yaşar | `G1` |
+| *"§10 — dört kapı, iki rejim"* | ⟳ **BEŞİNCİ ALET:** `lab/garson.py --live` — **garsonu görebilen ilk ölçüm** | `lab/reports/garson/*.md` |
+| *(sağlayıcı kararı yoktu)* | ⟳ **OpenRouter + NVIDIA açık kaynak, TEK MODEL.** Sonucu: 🔴 `llm_sema_kisitli` **kalıcı NO-OP** *(OpenAI-uyumlu uçlar `oneOf` desteklemiyor)* | ara faz §7.4 |
+
+🔴 **Ve bir uyarı, ara fazın kendi öz-eleştirisinden — bu haritayı okuyan herkes bilmeli:**
+
+> *"Bu fazda koşulan **her kapı `route()`'u ölçtü.** Korpus `dogru_cube` · `sessiz_yanlis` ·
+> `gercek_dunya` — üçü de **deterministik yolun** metriği. Sonuç: **varsayılan yolu (LLM)
+> neredeyse hiç ölçmüyoruz.***
+> **Bir mimaride varsayılan olan yol, en az ölçülen yol olmamalıdır — yoksa ölçüm sistemi,
+> sistemin kendisinden farklı bir şeye inanmaya başlar.***"
+
+## 0.9 · 🔴 ANALOJİ NEREDE KIRILIR — dört yer
+
+> Bir benzetmenin en tehlikeli anı, **açıkladığı şeyin yerine geçtiği** andır. Aşağısı,
+> restoran resminin **yanlış** olduğu yerlerdir; bunları bilmeden analojiyi kullanmak,
+> bu deponun avladığı *"beyan var, kod onu tanımıyor"* sınıfını üretir.
+
+| # | Restoranda | DİMA'da **BÖYLE DEĞİL** |
+|---|---|---|
+| **1** | Garson mutfağa **giremez** | 🔴 **Girebiliyor: Discovery.** 7. basamakta LLM ham SQL yazar. Bu bir tasarım tercihi değil, **kapatılmamış bir kapsam boşluğudur** — ve her kullanımı bir **terfi adayıdır** *(§5.2)* |
+| **2** | Garson **tek kişidir** | 🔴 Garson **beş sağlayıcılı bir zincirdir** *(`anthropic → gemini → groq → xai → openrouter → ollama`)*, ve `rule` sağlayıcısı **zincirde DEĞİLDİR** *(demo şemasına gömülü, kasıtlı aptal)*. ⚠ Bu ayrım bir kez **ölçümü kirletti**: kısa devre yasağının *"korpusu düşürdüğü"* bulgusu, aslında *"garsonun yerine mutfağın en aptal yedeğini koyunca"* ölçülmüştü |
+| **3** | Aşçı **bir kişidir**, reçeteyi bilir | 🔴 Mutfak **altı katmanın bileşimidir** *(kaynak⊕modül⊕sektör⊕kesişim⊕çekirdek⊕şirket)* ve aynı ad **farklı grain'de** pişebilir. *"Üç şirkette karşılaştırılamaz üç sayı"* yangını tam buradan çıktı → **GRAIN sözleşmesi** |
+| **4** | Müşteri **tek masada** oturur | 🔴 Aynı prompt **eş zamanlı çok tenant · çok rol · çok mercek** altında koşar. Bayrak kapsamı **beş kademelidir** *(global < sektör < tenant < rol < kullanıcı)*; *"bir müşteri, bir sipariş"* sezgisi **burada yanıltır** |
+
+> ⚠ **Beşinci ve en sinsi kırılma — analojinin kendisi hakkında:** restoran resmi
+> **anlatmakta iyi, ölçmekte kötüdür.** Hiçbir kapı bu bölümü koşmaz, hiçbir test onu
+> kırmızı veremez. §0'ın tamamı **yönelimdir**; karar mercii **kod ve alettir**.
+
+---
+
 # 1. Üç düzlem — sistem mimarisi
+
+> ⟳ **Restoran okuması:** 🪑 **PUBLIC = SALON** *(müşterinin girdiği yer)* ·
+> 🔐 **ADMIN = MÜDÜR ODASI** *(ayrı kapı, ayrı anahtar, zorunlu 2FA)* ·
+> 📚 **CONTROL-PLANE = İŞLETME DEFTERLERİ** *(personel · yetki · kasa — ikisi de okur)* ·
+> ⚙ **MOTOR = MUTFAK.** Tam karşılıklar §0.3'te.
 
 ```mermaid
 flowchart TB
@@ -169,15 +552,22 @@ o kapıdan dokunur.*
 
 ### Katman × madde × durum
 
-| # | Katman | v1'deki maddeler | Durum @`eb48c40` |
-|---|---|---|---|
-| **6** | ARTEFAKT | `6.1` onay akışı · `6.2` yazma araçları · `AJ6` bileşik rapor | 🔵 FAZ 6 — **yapılmadı** |
-| **5** | ANLAMA | `AJ1` iddia kapısı · `AJ3` tur yöneticisi · `AJ5` planlayıcı | 🔵 §G — **yapılmadı** |
-| **4** | DİYALOG | `AJ0b` diyalog yöneticisi | 🔵 §G — **atlanmış katman** |
-| **3** | YÜRÜTME | — | ✅ **kurulu** |
-| **2** | DİL | `AJ2` referans cebiri | 🔵 §G — **yapılmadı** |
-| **1** | ANLAM | `0.18` metrik hakemi · `2.1` çekirdek katman · `2.2b` yüzey | ✅ **indi** *(bayrak `off`)* |
-| **0** | GÜVENCE | `1.1` RLS · `1.2` CLS · `1.3` yetki · `1.8` audit · `1.12` AI Act | ✅ **indi** *(CLS kilitli — §13)* |
+⟳ **Restoran sütunu eklendi; sağdaki durum sütunu ara faz sonrası yeniden ölçüldü.**
+
+| # | Katman | 🍽 Restoranda | v1'deki maddeler | ⟳ Durum @`761928d` |
+|---|---|---|---|---|
+| **6** | ARTEFAKT | **paket servis** — kutulanıp gönderilen | `6.1` onay akışı · `6.2` yazma araçları · `AJ6` bileşik rapor | ◐ `onay_akisi.py` · `yazma_araclari.py` **indi**, FAZ 6 açık |
+| **5** | ANLAMA | 🗣 **GARSONUN KULAĞI** | `AJ1` iddia kapısı · `AJ3` tur yöneticisi · `AJ5` planlayıcı | ✅ `iddia.py` **indi** *(G4)* · `AJ3`/`AJ5` 🔵 |
+| **4** | DİYALOG | 🗣 **GARSONUN DEFTERİ** | `AJ0b` diyalog yöneticisi | ✅ **`diyalog.py` indi** *(G2 · 🚩 prod)* — *atlanmış katman kapandı* |
+| **3** | YÜRÜTME | 🍳 **OCAK** | — | ✅ **kurulu** |
+| **2** | DİL | 📋 **SİPARİŞ FİŞİNİN DİLİ** | `AJ2` referans cebiri | ✅ **`kiyas_cebiri.py` indi** *(G6 · 🚩 `referans_dili` beta)* |
+| **1** | ANLAM | 🍳 **REÇETE DEFTERİ + KİLER** | `0.18` metrik hakemi · `2.1` çekirdek katman · `2.2b` yüzey | ✅ **indi** *(bayrak `off`)* |
+| **0** | GÜVENCE | 🧼 **HİJYEN + KASA** | `1.1` RLS · `1.2` CLS · `1.3` yetki · `1.8` audit · `1.12` AI Act | ✅ **indi** *(CLS kilitli — §13)* |
+
+> ⟳ **Ve ara faz yedi katmana YENİ BİR KATMAN EKLEMEDİ** — bir **SINIR** ekledi:
+> 🔴 **hava boşluğu**, katman 1 ile katman 5 arasında durur *(`yayilim.py`)*. Yedi katman
+> *"kim ne yapar"*ı söylüyordu; hava boşluğu *"kim ne **GÖRÜR**"*ü söylüyor. **İkinci eksen**
+> *(§0.4)* bu belgede daha önce **hiç yoktu.**
 
 ### v1'de GERÇEKTEN yeni olan yalnız dört şey
 
@@ -190,6 +580,23 @@ o kapıdan dokunur.*
 └──────────────────────────────────────────────────────────────────┘
   Geri kalan her şey ya KURULU ya YAZILIP KAPALI.
 ```
+
+> ⟳ **2026-08-08 — YUKARIDAKİ KUTU BAYAT. Ölçülen:**
+>
+> ```
+> ┌──────────────────────────────────────────────────────────────────────────┐
+> │  1 · app/iddia.py        221 satır                       [İNDİ · G4]     │
+> │  2 · diyalog katmanı     app/diyalog.py 177 + temellendirme.py 157       │
+> │                                                          [İNDİ · G2/G1]  │
+> │  3 · referans cebiri     app/kiyas_cebiri.py 265         [İNDİ · G6]     │
+> │  4 · R11 red kodu        DENENDİ → GERİ ALINDI            [⊘ kayıtlı]    │
+> │      gerekçe: gerçek red kodu (R9·R1) zaten vardı, R11 onu ÖRTÜYORDU     │
+> │                                        (cube_router.py:3530-3538)        │
+> │  ⟳ 5 · BEŞİNCİSİ — plan yazılırken YOKTU:                                │
+> │      hava boşluğu  app/yayilim.py 198 + guard_alarmi.py  [İNDİ · G0b]    │
+> └──────────────────────────────────────────────────────────────────────────┘
+> ```
+> **Kanıt:** `wc -l app/*.py` @`761928d` · `grep -n R11 app/cube_router.py`
 
 ### Dört mimari kural — `KAT-1…KAT-5`
 
@@ -265,6 +672,21 @@ flowchart TD
 
 Bu, `app/routers/ask.py::ask()`'in **tam dallanmasıdır**. Sıra **bağlayıcıdır**; yeni
 basamak eklemek `MIMARI.md`'nin güncellenmesini gerektirir.
+
+> ⟳ **2026-08-08 · BU BÖLÜM ARA FAZ ÖNCESİNİN DALLANMASIDIR ve dört parçayı GÖSTERMEZ.**
+> Aşağıdaki şemalar hâlâ doğrudur *(hiçbir dal silinmedi)* ama **eksiktir**. Restorandaki tam
+> yolculuk için **§0.2**'ye bakın. Eksik olanlar:
+>
+> | Eksik | Nerede durur | Modül |
+> |---|---|---|
+> | 🗣 **Diyalog belleği** *(onarım · açık slot · devam)* | merdivenden **ÖNCE**, `context.coz()`'ün yanında | `diyalog.py` 🚩 **prod** |
+> | 🗣 **Temellendirme** *("anladığım şu: …")* | `seal()`'dan **önce**, **0 token** | `temellendirme.py` |
+> | 🔴 **Hava boşluğu** | mutfak ile LLM arasında — **her** LLM çağrısında | `yayilim.py` · `llm_guard.safe_call` |
+> | 🔒 **İddia kapısı** | çıkış kapılarının **ikincisi** | `iddia.py` |
+> | 🗣 **Menü** *(kapasite beyanı)* | **8. basamağın içinde** — dürüst ret artık **sessiz değil** | `yetenek.py` |
+>
+> ⚠ *Bir dallanma şeması, eklenen katmanları göstermezse **kod doğru çalışırken belge yanlış
+> öğretir** — bu deponun `[DOĞRULANMADI]` yazması gereken sınıf.*
 
 ## 4.1 · Üst düzey akış
 
@@ -474,10 +896,25 @@ Intent-JSON için ayrı ve **daha ucuz** bir model kullanılabilir (`*_select_mo
 > **iki iş** yapıyor: *öneri üretmek* **ve** *merdiveni bitirme yetkisi*. Korpusta bu
 > ölçüldü: `acik borc` → *"«cari borc» mi demek istedin?"* → Discovery'ye **hiç gidilmiyor**.
 > Bu, `KAT-2`'nin doğrudan ihlali.
+>
+> ⟳ **2026-08-08 — KAPANDI (`G3`).** Yazım-benzerliği artık **aday kaydeder, merdiveni
+> KESMEZ** *(`KAT-2`'nin kendi cümlesi)*. Kısa devre sayısı bir **meta-kapıyla** korunuyor:
+> `assert len(kisa) <= 11` **tavan** ∧ `assert len(kisa) == 11` **cırcır** — yani sayı
+> düşerse test *"bu bir KAZANÇ, tavanı bu değere çek"* diyerek kırmızı verir
+> *(`tests/test_kisa_devre_yok.py:190,196`)*.
+> ⚠ Bir denetim ajanı bu deseni *"cırcır ters"* diye raporladı; **bulgu reddedildi** (`DA-6`)
+> — meta-kapı deseni doğrudur. *Restoranda karşılığı: garson artık **"şunu mu demek
+> istediniz?"** diye sorarken **siparişi iptal etmiyor**.*
 
 ---
 
 # 5. Cevaplama merdiveni — 8 basamak (normatif)
+
+> ⟳ **Restoran okuması §0.7'de** — her basamağın salonda karşılığı nedir, ve
+> **7. basamak (Discovery) neden bir ANOMALİdir.**
+> 🔴 **Ve merdivenin okunuşu ara fazda TERSİNE DÖNDÜ:** `route()` artık *"LLM'e düşmeden
+> önce denenen"* değil, **ispatlı istisnadır**. `route()` yalnız **maliyet ve hız** için,
+> **yalnız kendini ispat edebildiği yerde** koşar. *İspat yükü `route()`'un üzerindedir.*
 
 | # | Basamak | `source` | LLM? | Taşıdığı garanti |
 |---|---|---|---|---|
@@ -544,6 +981,13 @@ cube_query üretmez  →  next_steps         BOŞ
 | `R10` | **kapsam kapısı** — tanınmayan kelime (ADR-0008) | dürüst ret |
 | 🔴 `R11` | **YOK — v1'de yazılacak**: *"ifade edemiyorum"* ≠ *"anlamadım"* | **eksik yetenek SAYILAMIYOR** |
 
+> ⟳ **2026-08-08 · `R11` DENENDİ ve GERİ ALINDI** *(`G6`, kayıt: `cube_router.py:3530-3538`)*.
+> **Gerekçe:** gerçek red gerekçesi zaten vardı *(`R9` · `R1` · …)* ve `R11` onu **örtüyordu**;
+> geliştiriciyi **cebire** yolluyordu, oysa cebir *(`kiyas_cebiri.py`)* aynı fazda indi.
+> 🔴 **Yani eksiklik bir RED KODUYLA değil, bir YETENEKLE kapandı** — ve restorandaki
+> karşılığı tam olarak `G8`'dir: *"bunu ifade edemiyorum"* demek yerine garson **menüyü
+> okuyor**: *"bunu yapamam — ama şunu yapabilirim."* **Sessiz red, sesli rede döndü.**
+
 ### Risk-kapsam eğrisi — kapılar üstünde, skaler `confidence` **UYDURULMADAN**
 
 ```mermaid
@@ -567,6 +1011,30 @@ flowchart LR
 ---
 
 # 7. Bayrak envanteri — 25 bayrak, tam durum
+
+> ⟳ **2026-08-08 · SAYI BAYAT — yeniden ölçüldü @`761928d`:**
+>
+> | | Bu belgenin dediği | ⟳ **Ölçülen** |
+> |---|---|---|
+> | `FLAG_REGISTRY` | 25 | **49** |
+> | `features.yml` | 21 | **48** |
+> | 🔴 **ölü bayrak** *(kayıtta var, YAML'de yok)* | **2** | **1** — yalnız `ayni_grain_gocu` |
+> | Aşama dağılımı | — | `prod` **3** · `beta` **19** · `alpha` **1** · `off` **25** |
+>
+> **Komut:** `FLAG_REGISTRY` ↔ `yaml.safe_load(features.yml)["features"]` anahtar farkı.
+> 🔴 **§C ölçüt 10 *(ölü bayrak = 0)* neredeyse kapandı:** kalan tek kayıt `ayni_grain_gocu`
+> ve o **derleme-zamanı ayarıdır** — `compose()`'un `principal`'ı yok, tenant bayrağı
+> **olamaz**. *§7.2'nin iki ölü bayrağı (`ask_async_discovery` · `threaded_chat`) artık
+> YAML'de.*
+>
+> **⟳ Ara fazda doğan bayraklar** *(bu belgede hiç yoktu)*:
+> `diyalog_bellegi` 🟢 **prod** · `t2_anlatici` 🔵 **alpha** · `referans_dili` 🔵 **beta** ·
+> `olcu_ekleme_takibi` 🔵 **beta**.
+> 🔴 **Ve bir bayrak ölü kontrole düştü:** `llm_sema_kisitli` **beta görünüyor, etkisi
+> SIFIR** — seçilen sağlayıcı *(OpenRouter, OpenAI-uyumlu uç)* `oneOf` desteklemiyor ve
+> intent şeması **tümüyle `oneOf` üzerine kurulu** *(`intent_semasi.py:101`)*.
+> ⚠ **Kaybedilen bir GÜVENLİK garantisi değil, bir MALİYET garantisidir** — asıl emniyet
+> ağı `parse_cube_query`'nin beyaz listesi ve o **sağlayıcıdan bağımsızdır**.
 
 **Kapsam sırası (soldan sağa artar, en spesifik kazanır):**
 
@@ -621,7 +1089,7 @@ tenant/rol/kullanıcı override'ı ile açılır.*
 
 | Roadmap'te yazan | `FLAG_REGISTRY` | Gerçek durum @`eb48c40` |
 |---|---|---|
-| `hedef_kiyasi` *(2.5)* | ❌ **yok** | ⚠ **`app/hedef.py` indi ve `answer.py:647`'den ÇAĞRILIYOR — ama bayrak kayıtta yok.** Kapı **beyanın kendisi**: `target:` yoksa çizgi `Ort.` kalır. *Bu, belgenin `[DOĞRULANMADI]` demesi gereken cinsten bir ayrışmadır — kaynağı koş, belgeye güvenme.* |
+| `hedef_kiyasi` *(2.5)* | ⟳ ✅ **VAR** *(eskiden ❌)* | ⟳ **2026-08-08 · KAPANDI** — `app/features.py:53` **ve** `demo/packs/features.yml:100` *(`off`)*. ⚠ *Bu satır bu belgenin kendi denetiminde bulunmuştu ve **ölçüm haklı çıktı**: ayrışma gerçekti, ve kapandı. Özgün iddia kayıt için duruyor: "`app/hedef.py` indi ve `answer.py:647`'den ÇAĞRILIYOR — ama bayrak kayıtta yok."* |
 | `ui_metrik_yonetimi` *(2.2b)* | ❌ yok | yüzey indi, bayrak kayıtsız |
 | `coldstart_metrik` *(3.6)* | ❌ yok | `app/coldstart.py` indi, bayrak kayıtsız |
 | `netlestirme_kapanisi` *(0.5b)* | ❌ yok | — |
@@ -845,6 +1313,27 @@ TEŞHİS: "kimliği kaldırmak sahipliği ÇÖZMEDİ."
 
 ## 10.1 · Dört kapı, iki rejim
 
+> ⟳ **2026-08-08 · BEŞİNCİ ALET İNDİ: `lab/garson.py --live`.**
+> **Neden:** ölçüldü ki `konusma_senaryolari` **sekiz koşumun sekizinde de** `⊘ ÖLÇÜLEMEDİ`
+> veriyordu ve `deneyim.py` kendi çıktısında *"yapısal duman — **KAPI DEĞİL**"* diyordu.
+> 🔴 **Yani garsonu görebilecek iki aletin ikisi de hiç koşmamıştı; garson hakkında alınan
+> HER karar yalnız mutfak metrikleriyle alınmıştı.**
+>
+> | Alet | Ölçtüğü | Rejim |
+> |---|---|---|
+> | ⟳ `lab/garson.py --live` | **§5'in sekiz satırı** — karşılar · sipariş alır · **tekrarlar** · sorar · **hatırlar** · düzeltilir · **anlatır** · **menüyü bilir** | 🔴 `--live` **zorunlu**; `--live`'sız **yeşil vermez, `⊘` verir** |
+> | ⟳ kaset modu | sağlayıcısız tekrar oynatma *(`lab/kasetler/*.json`)* | belirlenimli |
+>
+> **Kör alet kapısı:** `t2_anlatici` açık/kapalı arasında §5/7 satırı **farklı çıkmalı**;
+> çıkmıyorsa **alet kördür** ve düzeltilene kadar hiçbir faz inmez. ⚠ Bu kapı **gerçekten
+> ateşledi**: `2·anlat` satırı `narration or summary` okuduğu için ayırt edici değildi
+> *(`G0.12`)*.
+> 🔴 **`KURAL G-1`:** belirlenimsiz bir kapı **tek koşumla karar vermez** — iki koşum
+> ayrışırsa karar **verilmez**, `⊘` + borç kaydı yazılır.
+>
+> ⚠ **Ve yerel kapı politikası DEĞİŞMEDİ:** `--garson` yeni bir **seviye değil**, yeni bir
+> **hedeftir** *(yalnız açık talep)*. `--tam` süresi **değişmedi**.
+
 ```mermaid
 flowchart TB
     subgraph LOCAL["🖥️ YEREL — geliştirme"]
@@ -944,7 +1433,7 @@ docker wait dima-k1 && docker logs dima-k1 && docker rm -f dima-k1
 | 7 | **Yetim uç / alan** | **⊘ ÖLÇÜLEMEDİ** | **0** · K1-K5 **kör noktasız** |
 | 8 | **Ölçüm kapıları CI'da** | ✅ **hedefe ulaştı** *(`nightly.yml` indi)* | 4 kapı gecelik |
 | 9 | **Konuşma türleri** | **5** *(NEDEN·NORMAL·NE_YAPMALI·ISARET·ANLAT)* | 🔴 **v1 = 7** *(+takip +paylaş)* |
-| 10 | **Ölü bayrak** | **2** *(`ask_async_discovery` · `threaded_chat`)* | **0** |
+| 10 | **Ölü bayrak** | **2** *(`ask_async_discovery` · `threaded_chat`)* → ⟳ **1** @`761928d` *(`ayni_grain_gocu` — derleme zamanı)* | **0** |
 | 11 | **Panel sayısı** | **export 13 · dosya 12** | tavan **13 export** |
 | 12 | **Tazelik** | **0** | her cevapta 4 kademe |
 
@@ -1137,6 +1626,22 @@ flowchart LR
 
 ## 12.6 · §G — AJAN KATMANI *(v1'e paralel)*
 
+> ⟳ **2026-08-08 · §G'nin YERİNİ «GARSON ARA FAZI» ALDI.** Ara faz §G'yi **iptal etmedi**;
+> *ölçülmüş gerçeklikle yeniden sıraladı* ve **dokuz maddesini** `G0…G8` olarak indirdi
+> *(113 adım · 3 bilerek ertelendi)*. Karşılık:
+>
+> | §G maddesi | ⟳ Ara fazdaki karşılığı | Durum |
+> |---|---|---|
+> | `AJ0` kısa devre yasağı | **`G3` merdiven** | ✅ indi |
+> | `AJ0b` diyalog yöneticisi | **`G2` diyalog belleği** *(`diyalog.py` 🚩 prod)* | ✅ indi |
+> | `AJ1` iddia kapısı | **`G4`** *(`iddia.py` 221 satır)* | ✅ indi |
+> | `AJ2` referans cebiri | **`G6` kıyas cebiri** *(`kiyas_cebiri.py` 265)* | ✅ indi |
+> | *(§G'de yoktu)* | 🔴 **`G0` alet** · **`G0b` hava boşluğu** · **`G1` temellendirme** · **`G5` anlatıcı** · **`G7` ek motoru** · **`G8` menü** | ✅ indi |
+> | `AJ3` tur yöneticisi · `AJ3b` çalışırken sorma · `AJ4` oturumlar-arası · `AJ5`/`AJ5b` planlayıcı · `AJ6` bileşik rapor | **ara fazın KAPSAMI DIŞINDA** *(gerekçesiyle)* | 🔵 açık |
+>
+> 🔴 **Sıra bağlayıcıydı ve sebebi tek cümleydi:** *"`G0` inmeden hiçbir kod yazılmaz —
+> ölçemediğimiz bir şeyi geliştiremeyiz."*
+
 | Madde | Ne | Bayrak | Not |
 |---|---|---|---|
 | **`AJ0`** | 🔴 **KISA DEVRE YASAĞI** — MIMARI §5'in **18. yasağı** | bayraksız: **değişmez** | 🔴 **ÖNCE BU İNER** — yazım-benzerliği chip'i merdiveni **kesiyor** |
@@ -1156,6 +1661,10 @@ flowchart LR
 
 ## 13.1 · 🔴 Bugün açık — v1'i bloke edenler
 
+> ⟳ **2026-08-08 · dokuz borcun DÖRDÜ kapandı.** Aşağıdaki tablo **özgün hâliyle duruyor**;
+> kapananlar altına işaretlendi. *Bir borcun kapandığını yazmak, açıldığını yazmak kadar
+> zorunludur — yoksa harita kendi ilerlemesini de yanlış öğretir.*
+
 | # | Ne | Etki | Nerede kapanır |
 |---|---|---|---|
 | 1 | 🔴 **36 çağrı sitesi `principal` geçmiyor** | **`motor_cls=on` KİLİTLİ** — kapı engelliyor | FAZ 1.2 |
@@ -1167,6 +1676,32 @@ flowchart LR
 | 7 | 🔴 **7 güvenlik kontrol noktası, tek cümlelik sınır tanımı YOK** | `guard_sql` · `strict_sql_policy` · `always_filter` · **Katman B** · RLS · CLS · `pii` — her biri gerekçeli ama **bileşke** yazılı değil | `1.3c` yalnız `strict_sql_policy` için yazdı |
 | 8 | ⚠ **`hedef_kiyasi` bayrağı kayıtta yok** | `app/hedef.py` indi ve çağrılıyor; bayrak **`FLAG_REGISTRY`'de bulunamadı** | *bu belgenin kendi ölçümü — **kaynağı koş**, bkz. §7.3* |
 | 9 | ⚠ **`docs/adr/` — 20 kimlik, 252 atıf, 0 dosya** | 🔴 **ADR-0007-K3, §C'nin 3. çıkış ölçütünü taşıyor** — yani v1'in kırmızı çizgisi **var olmayan bir belgeye** dayanıyor | `4.6` |
+
+### ⟳ 2026-08-08 · dokuz borcun durumu — yeniden ölçüldü
+
+| # | Özgün borç | ⟳ Bugün | Kanıt |
+|---|---|---|---|
+| 1 | `motor_cls=on` KİLİTLİ *(36 çağrı `principal` geçmiyor)* | 🔴 **AÇIK** | `features.py:124` hâlâ *"açılması 36 …"* diyor |
+| 2 | `AJ0` typo kısa devresi | ✅ **KAPANDI** *(`G3`)* | `test_kisa_devre_yok.py:190,196` meta-kapı |
+| 3 | `app/iddia.py` YOK | ✅ **KAPANDI** *(`G4`)* — **221 satır** | `wc -l app/iddia.py` |
+| 4 | `R11` yok | ⊘ **DENENDİ → GERİ ALINDI**, gerekçesiyle | `cube_router.py:3530` |
+| 5 | Ölü bayrak **2** | ◐ **1'e düştü** — kalan `ayni_grain_gocu` **derleme zamanı**, bilinçli | `FLAG_REGISTRY` ↔ `features.yml` |
+| 6 | `ask()` monoliti | 🔴 **BÜYÜDÜ** — `app/routers/ask.py` **4938 satır** *(belge 1147 diyordu)* | `wc -l` |
+| 7 | 7 güvenlik noktası, **bileşke tanım yok** | ◐ **§0.5 ilk bileşke listeyi yazdı** — ama bir **belge**, kapı değil; `1.3c` borcu **açık** | bu belge §0.5 |
+| 8 | `hedef_kiyasi` kayıtta yok | ✅ **KAPANDI** | `features.py:53` |
+| 9 | `docs/adr/` — 0 dosya | 🔴 **AÇIK** | `4.6` |
+
+**⟳ Ve ara fazın DOĞURDUĞU yeni borçlar** *(kaynak: `DIMA-GARSON-ARA-FAZ.md` §6.Ω/b)*:
+
+| # | Ne | Ağırlık |
+|---|---|---|
+| `B2` | 🔴 **LLM yolunun ilk gerçek metriği yok** — koşulan her kapı `route()`'u ölçüyor. **2 116 etiketli vaka var, ayıklanmadı** | 🔴 yüksek |
+| `Ö5` | Guard **düşme oranı** agrege alarmı | ◐ `guard_alarmi.py` indi, eşik borcu açık |
+| `tsc` | Frontend tip kontrolü **gecelik CI'da HİÇ koşmuyor** *(node adımı yok)* → `test_TSC_TEMIZ` **her zaman atlanıyor** | 🔴 yüksek |
+| `B1·B3` | Şema budaması **ASKIYA ALINDI** — doğru nüfusta recall **%78,1 · 464 KAYIP** *(n=2 116)* | ⊘ yeni sinyal gerekiyor |
+| `S5` | `{{ENT_i}}` **varlık perdesi inmedi** — hava boşluğunun eksik yarısı | orta |
+| `diyalog.py` | Fazın **en büyük yeni katmanının** `MIMARI.md` kaydı **yok** | orta |
+| `kapasite` | 🔴 **Plan kendi içinde çelişiyor** — `§13.5b` alanı şart koşuyor, `§13.5c` yasaklıyor; kod ikincisini seçip **testle kilitledi**, `lab/garson.py` hâlâ birincisini okuyor → **ölü dal** | orta |
 
 ## 13.2 · Yinelenen kusur sınıfları — bu operasyonda ölçüldü
 
@@ -1269,6 +1804,13 @@ python lab/bayrak_profilleri.py              # profil ölçümü
 # ── CANLI (kota: 10 sn / 10 istek · Intent turu = 3 çağrı) ─────────
 python lab/deneyim.py --live
 python lab/konusma_senaryolari.py --live
+
+# ── ⟳ GARSON KAPISI (2026-08-08 · beşinci alet) ────────────────────
+python lab/garson.py --live          # §5'in 8 satırı — --live ZORUNLU
+python lab/kapi.py --garson          # hedef, YENİ SEVİYE DEĞİL
+#   ⚠ --live olmadan: yeşil vermez, ⊘ verir
+#   🔴 KURAL G-1: iki koşum ayrışırsa KARAR VERİLMEZ
+#   çıktı: lab/reports/garson/*.md  ·  taban: lab/garson_baseline.json
 ```
 
 ---
@@ -1393,6 +1935,11 @@ olarak kullanır *(30 gün cevapsızlık → ağırlık düşür + eskalasyon)*.
 ## 15.6 · Uç envanteri + adlar
 
 **66 HTTP ucu · 16 router.** *(`grep -rhoE '@router\.(get|post|put|delete|patch)'`)*
+
+> ⟳ **2026-08-08 · yeniden sayıldı: 75 uç** @`761928d` *(aynı komut)*. Fark **+9** ve ara
+> fazın yüzeyini taşıyor. ⚠ **Yetim uç kapısı** *(`test_uc_yetim_degil`)* bu artışın
+> **frontend tüketicisi olduğunu** iddia ediyor — ama 🔴 **`tsc` gecelik CI'da hiç
+> koşmuyor**, yani arayüz tarafının derlendiği **doğrulanmıyor** *(§13.1 yeni borç)*.
 
 | Router | Uç sayısı | Öne çıkan |
 |---|---|---|
@@ -1694,6 +2241,22 @@ biri **sabit renk**; etki/güven **yalnız opaklık** ekseninde *(PK-13)*.
 
 # 18. Tek bakışta: v1 → v2 → v3 birikimi
 
+> ⟳ **2026-08-08 · ARADA BİR DURAK VAR ve bu belge onu bilmiyordu:**
+>
+> ```
+>    v1  ──────────►  🍽 GARSON ARA FAZI  ──────────►  v2
+>  MUTFAK              (G0…G8 · 113 adım)             ANALİST
+>  kuruldu             insani katman                  + KARAR
+>
+>    "sayı doğru,        "…ve anlaşılır"              "ne olacak,
+>     mühürlü,                                         ne yapmalıyım"
+>     RLS'li, kanıtlı"
+> ```
+>
+> **Ara faz v2'nin bir parçası DEĞİL, ön koşuludur:** *"Mutfak dünyanın en katı ucunda
+> kuruldu… eksik olan, o sesin **anlaşılır** olması."* Ve hiçbir maddesi **sayıya
+> dokunmadı** — bu yüzden §16–17'nin v2/v3 deltaları **aynen geçerlidir**.
+
 ```mermaid
 flowchart LR
     subgraph V1["v1 — 'Konuşan, kanıtlayan, güvenli şirket beyni'"]
@@ -1743,3 +2306,29 @@ durdurmaz. Bir şemanın doğru görünmesi, kodun öyle çalıştığı anlamı
 
 > **Bu belgeye dayanarak bir karar verme.**
 > Kodu oku, aleti koş, sayıyı gör.
+
+---
+
+## 🍽 ⟳ KAPANIŞ NOTU — analojinin kendi sınırı *(2026-08-08)*
+
+Bu turda belgeye giren **tek yeni fikir**, sistemin **bir restoran gibi okunabileceğidir**:
+garson konuşur, aşçı pişirir, kapılar arada durur, ve **hiçbir kapı gevşemez**.
+
+Analoji iki iş yapıyor ve **ikisi de meşru**:
+
+1. **Öğretiyor.** *"Garson tencereye karışamaz"* cümlesi, `parse_cube_query`'nin katı beyaz
+   listesini bir mimarlık tartışması olmadan anlatır.
+2. **Ayrım testi veriyor.** *"Bu modül dil mi okuyor, veri mi?"* — ve **ikisi de** ise
+   **kapı olmak zorundadır**. Bu, `KAT-1`'in gündelik dile çevrilmiş hâlidir.
+
+🔴 **Ama üçüncü bir iş YAPMAZ: karar vermez.** Bir benzetme kırmızı veremez, koşulamaz,
+bir bayrağı açamaz. §0.9 bunun için yazıldı — **analojinin kırıldığı dört yer** orada,
+ve beşincisi şudur:
+
+> ***Restoran resmi anlatmakta iyi, ölçmekte kötüdür.***
+> Ve bu belgenin en dürüst cümlesi, ara fazın kendi öz-eleştirisinden ödünç alınmıştır:
+> **bir mimaride varsayılan olan yol, en az ölçülen yol olmamalıdır** — yoksa ölçüm
+> sistemi, sistemin kendisinden farklı bir şeye inanmaya başlar.
+>
+> Bugün **varsayılan yol garsondur** *(LLM)*, ve **en az ölçülen yol da odur**.
+> Bu haritanın işaret ettiği bir sonraki iş, yeni bir yetenek değil: **o ölçüm**.

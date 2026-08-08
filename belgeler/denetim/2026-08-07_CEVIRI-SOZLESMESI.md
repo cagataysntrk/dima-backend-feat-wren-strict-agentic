@@ -4248,3 +4248,61 @@ kırmızı testle birlikte karar tartışmasız.
 
 > *Geri alınan bir düzeltme bir başarısızlık değildir; ölçülmemiş bir düzeltmeyi
 > bırakmak başarısızlıktır.*
+
+---
+
+# L TURU — ve baskın kusurun ASIL kökü
+
+## §75 · AYNI SORU, ARKA ARKAYA İKİ KOŞUM, İKİ BAMBAŞKA CEVAP
+
+L turunun 20 senaryosunun **11'i** *"hangi ölçüyü / hangisini istiyorsun?"* ile bitti.
+Sınıfı ölçmek için aynı soruyu iki kez koştum:
+
+```
+09:08:18  intent: 3 oy · 2 farklı aday · kazanan 1 oy  → "Hangi ölçüyü istiyorsun?"  17.165 ms
+09:08:56  intent: 3 oy · 1 farklı aday · kazanan 3 oy  → source=cube+llm · 11 satır  15.337 ms
+```
+
+🔴 **Aynı soru. Aynı sistem. Aynı dakika. Biri netleştirme, öteki tam ve doğru cevap.**
+Tek fark: **oyların rastgele uyuşup uyuşmaması.**
+
+### 75.1 · Kök — anlama değil, EŞİK
+
+Baskın kusur sınıfı *"garson anlamıyor"* **değil**:
+
+> **`2/3` uyum eşiği, anlamayı bir yazı-turaya çeviriyor.** Üç oy üç **geçerli** `cq`
+> ürettiğinde cevap **atılıyor**; tesadüfen aynı JSON'u ürettiklerinde cevap kusursuz.
+
+⊙ Ve `k=3`'te matematik acımasız: **iki farklı aday %67 uyum üretemez** (en iyi hâl 2/3 =
+tam eşik). Yani eşik pratikte *"üç örneklemin ikisi **birebir aynı JSON**"* demektir —
+serbest metin üreten bir modelde bu **nadir**dir.
+
+🔴 `§0.0`'a göre garson **asıl güvendiğimiz hakemdir**. Cevabını üç örneklem uyuşmadı diye
+atmak, tam olarak ona **güvenmemektir**.
+
+> *Bir hakemin kararını üç kez sorup ikisi aynı çıkmadı diye atmak, hakemi hiç
+> çağırmamaktan farksızdır — yalnız üç kat pahalıdır.*
+
+### 75.2 · Çözüm yönü *(ölçülecek, yazılmadı)*
+
+* Uyuşmazlıkta **çoğunluk adayıyla cevapla + belirsizliği beyan et** (`beyanlı kısmi`) —
+  ya da adayları chip yap; **asla** *"hangi ölçüyü istiyorsun"* deme.
+* Eşiğin kendisi yeniden değerlendirilmeli: `k=3` + `2/3` bir **oy birliği** şartıdır.
+* ⚠ `KURAL B` + korpus hakem (`§73.7`'nin dersi: **yeşil bir veto, yeşil bir karar
+  değildir** — `dogru` düşerse geri alınır).
+
+## §76 · L turunun envanteri (20 senaryo)
+
+**Çalışan (9):** **`l1` §60 sahada** (*"ortalama sordun ama `toplam_fire_kg` bir toplam"*) ·
+**`l3` §60'ın BİRİM dalı sahada** (*"₺ tutarı sordun ama ölçü **dk** cinsinden"*) ·
+`l4` rework × kumaş (`order:desc`) · `l6` vardiya payları · `l9` `ilk çeyrekte` çözüldü ·
+**`l12` `en yüksek fireli 3 partinin müşterisi` → `order:desc` + `limit:3`** ✅✅ ·
+`l13` 6.343 ms · **`l18` `kaç adet parti ve toplam kaç kg` → İKİ ÖLÇÜ birden** ✅✅ ·
+**`l20` 501 ms · `view: line`** ✅✅
+
+⊙ **Karşıtlık kanıt niteliğinde:** garson cevabı **kullanıldığında** sonuçlar kusursuz
+(`limit:3` · iki ölçü · doğru grafik); **atıldığında** kullanıcı soru alıyor. Aradaki fark
+kabiliyet değil, **eşik**.
+
+**Kırık (11):** `l2`·`l5`·`l7`·`l8`·`l10`·`l11`·`l14`·`l15`·`l16`·`l17`·`l19` — hepsi
+netleştirme, hepsi `§75` sınıfı.
