@@ -59,6 +59,17 @@ measures:
     lower_is_better: true
 
 dimensions:
+  # 🔴 `KÖK-S2` — TEDARİKÇİ TABLODA VAR, MENÜDE YOK. Ölçüldü (`s7`): *"Tedarikçi bazında
+  # ilk seferde doğru oranını göster"* → **tedarikçi boyutu tamamen düştü**, soru çapraz-konu
+  # netleştirmesine gitti. Oysa `tamir_rework` tablosunda `tedarikci_ad` **VARCHAR** olarak duruyor.
+  # ⚠ `tedarikci` bugün `cari`/`ticaret` küplerinde `cari_tip`'in bir **DEĞERİ** olarak
+  # sinonim (*"müşteri mi tedarikçi mi"*). Burada ise bir **ADdır** — aynı kelime, iki
+  # farklı kavram. Çakışma kapısı bunu ölçtü ve geçti; geçmeseydi bu satır yazılmazdı.
+  - name: tedarikci
+    expression: tedarikci_ad
+    type: VARCHAR
+    label: tedarikçi
+    synonyms: [tedarikçi, tedarikçiler, tedarikçisi, hangi tedarikçi]
   - name: sebep
     expression: sebep
     type: VARCHAR

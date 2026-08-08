@@ -6147,3 +6147,103 @@ değildir.*
 > *Bir denetim raporunun değeri, önerdiği çözümlerin doğruluğunda değil, gösterdiği yerin
 > doğruluğundadır. Bu rapor dokuz yerin dokuzunu da doğru gösterdi; çözümlerin beşi
 > yanlış kapıydı ve bunu ancak uygulamaya çalışınca öğrendik.*
+
+---
+
+## §99 · S TURU — kullanıcının 12 senaryosu + 8 takip · ve **menü, tablodakini beyan etmiyordu**
+
+### §99.1 · S turu tablosu (20 senaryo · 12'si kullanıcının)
+
+| # | senaryo | sonuç |
+|---|---|---|
+| S1 | `Nisan ayında makine bazında toplam üretim kaç kg?` | 🟢 11 satır + belirsizlik beyanı |
+| S2 | `Nisan ayında tüm hatların günlük OEE trendini göster` | 🟢🟢 **208 satır** · `route()` **LLM'siz** |
+| S3 | `Hangi hattın OEE'si en düşük ve sebebi hangi bileşen?` | ◐ doğru şekil (OEE + **4 bileşen**, `asc`) · dönem sorusu |
+| S4 | `bunun kümülatifini göster` *(takip)* | ◐ reddetti — **doğru** (zaman ekseni yok) ama mesaj yanlış |
+| S5 | `geçen aya göre yüzde değişimi göster` *(takip)* | 🟢 `mom` · RAM-1 **+%27,3** |
+| **S6** | `RAM 3'te renk derinliğine göre ortalama hızı karşılaştır` | 🔴→◐ **KÖK-S2** |
+| **S7** | `Tedarikçi bazında ilk seferde doğru oranını göster` | 🔴→🟢 **KÖK-S2** |
+| S8·S9 | `En çok tekrarlanan tamir sebepleri neler?` → `bu yıl` | 🟢 6 sebep, sıralı |
+| **S10** | `her sebebin toplam içindeki payını göster` | 🟢🟢 **pay penceresi** — `En/Gramaj Sapması` **%27,88** |
+| S11 | `1 Nisan'da RAM 3 hangi saatte başladı, partiler arası boşluklar?` | 🔴 **grain** sorusu — küp katmanı satır düzeyi vermez |
+| S12 | `Vardiya bazında ilk parti başlangıç gecikmesi` | ◐ Discovery (71,6 dk) — mutfak eksikliği |
+| S13·S14 | `Duruş nedenlerini süreye göre sırala` → `bu yıl` | ◐ `sırala` kayıp *(R turundan açık kök)* |
+| S15 | `en uzun 3 nedeni al` | 🟢 `limit:3` |
+| S16 | `Makine bazında kWh/kg + tesis ortalaması` | ◐ Discovery — mutfak eksikliği |
+| S17 | `Müşteri bazında rework oranı + ciro katkısı` | 🔴 iki küp — **beyanlı** sınır |
+| **S18** | `Rework'ün aylık maliyetini hesapla` | 🟢 **`§O2` beyanı**: *"₺ sordun, elimdeki ölçü **dk**"* |
+| **S19** | `son 3 ayın hareketli ortalamasını çiz` | 🟢🟢 **hareketli ortalama penceresi** |
+| S20 | `en çok rework yapılan müşteri + payı` | 🔴 küp belirsizliği |
+
+**Discovery ateşlemesi: 2** (S12 · S16).
+
+⊙ `§91`'de inen iki yetenek **canlıda kullanıcı sorusuyla** doğrulandı: **pay** (S10) ve
+**hareketli ortalama** (S19). İkisi de **takip turunda, garson yoluyla**.
+
+### §99.2 · 🔴 KÖK-S2 — MENÜ, TABLODAKİ ÖLÇÜ VE BOYUTU BEYAN ETMİYORDU
+
+`M-1`'in dersi bir kez daha, bu kez **ölçü** tarafında da:
+
+| eksik | tabloda | sonuç |
+|---|---|---|
+| `parti.tedarikci` · `kalite.tedarikci` | `tedarikci_ad` **VARCHAR** | `s7` → tedarikçi boyutu **tamamen düştü** |
+| `parti.ort_hiz_m_dk` | `hiz_m_dk` **DOUBLE** | `s6` → küp ✓ kırılım ✓ **ölçü yok** (`bilinmeyen=hizi`) |
+
+Sistematik tarama: **66 beyansız sayısal kolon** (çoğu gürültü — `id`·`kdv_orani`·ara
+değerler); ölçülmüş kırmızılara karşılık gelen **üçü** beyan edildi.
+
+**Curl:** `tedarikçi bazında ilk seferde tamam oranı` → **5 tedarikçi**, `SELÇUK TEKSTİL`
+**%62,22**. `ort_hiz_m_dk × renk_derinlik` + `hat = RAM 3` filtresi doğru kuruluyor.
+
+### §99.3 · 🔴 VE ÇIPLAK `hız` BİR GERİLEME ÜRETTİ — kapı yakaladı, üçüncü kez
+
+İlk yazımda sinonimler `[hız, hızı, ortalama hız, …]` idi. `test_agent_plan_secimi_…`
+kırmızı verdi: *"pilot HİÇ çağrılmadı"*. Sebep: o testin sorusu **`stok devir hızımız
+nedir`** ve çıplak `hız` onu `parti.ort_hiz_m_dk`'ya çekiyordu.
+
+🔴 **Stok devir hızı ile makine hızı aynı şey değildir.** Bu bir test kaprisi değil, bir
+**ürün gerilemesiydi** — kapı onu bir ürün sorusunda yakaladı.
+
+⊙ Ve o testin **kendi tarihi** bunu üçüncü kez yazıyor: soru iki kez yeniden seçilmiş,
+ikisinde de sebep *"route() cevaplıyor, pilot hiç çağrılmıyor"*. Bir menü eklemesi, başka
+bir kapının **ölçtüğü şeyi** susturabiliyor.
+
+**Düzeltme:** sinonim `[ortalama hız, makine hızı, üretim hızı, metre dakika, çalışma
+hızı]`'ya daraltıldı. **Takas ölçüldü:** `s6` artık doğrudan cevap yerine `ortalama hız`
+**chip'i** sunuyor — tahmin yerine soru; `stok devir hızı` yanlış cevabı **kapandı**.
+*Doğruluk, kolaylıktan önce gelir.*
+
+### §99.4 · 🔴 KÖK-S3 — DİLSEL KAPSAM ÜRETİM SIRASINA BAĞLIYDI
+
+`test_DILSEL_KAPSAM_hicbir_ozellik_bos_kalmaz` kırmızı: `iy.3cogul` (3. çoğul iyelik,
+`-ları/-leri`) **hiç üretilmiyor**. Taban ölçüldü (`§86.6`): tabanda o biçim **üretilmiş**
+kümede vardı, **statik** kümede yoktu.
+
+> Yani bir dilbilgisi biçiminin sınanması **tesadüfe** bağlıydı: menüye bir boyut eklenince
+> üreteç başka sorular kurdu ve o biçim **sessizce kayboldu**.
+
+⊙ Bu, `KÖK-M1a`'nın (chip tesadüfi bir ayırt ediciye bağlıydı) **dilbilgisi tarafındaki
+ikizidir**: *bir güvencenin tesadüfe bağlı olması, o güvencenin olmamasıdır.*
+
+**Düzeltme — ve neden üreteç DEĞİŞTİRİLMEDİ:** üreteç bir **ölçüm aracıdır**; onu her menü
+değişiminde ayarlamak, ölçtüğü şeyi ölçüme uydurmaktır. Bunun yerine biçim **statik**
+kümeye alındı (menüden bağımsız → kapsam **yapısal olarak** garantili). Kardeş kapı
+*"bir kapsam bir yanılsamadır"* deyip **beş** istedi; beşi de **gerçek iş sorusu**, biri
+kullanıcının kendi `s8` senaryosu.
+
+### §99.5 · Kapı — ve ölçütler YÜKSELDİ
+
+| ölçüt | önce | **sonra** |
+|---|---|---|
+| korpus doğru-cube | %94.4 | **%94.9** (taban %94.4) ✅ |
+| `sessiz_yanlis` | 11 | **10** |
+| `kabul` · `dogru` | 1146 · 90 | 1145 · **90** |
+| tam süit | 4262 | **4266 yeşil** |
+| `eval` | +0,0% | **+0,0%** |
+
+### §99.6 · Açık kalan kökler (T turuna)
+
+`sırala` → `order` üretmiyor (`s13`, R turundan) · takipte `kümülatif` reddi **doğru ama
+mesajı yanlış** (`s4`) · grain sorusu (`s11` — satır düzeyi zaman) · iki-küp yan yana
+(`s17`) · küp belirsizliğinde `payını` kaybı (`s20`) · `kWh/kg + tesis ortalaması`
+(`s16` — genel ortalamayı satırın yanına koyma; `pay` penceresinin kardeşi).

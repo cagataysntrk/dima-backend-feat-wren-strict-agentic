@@ -117,6 +117,49 @@ def _v(persona: str, kademe: str, soru: str, *, kabul: list[str], yasak: str,
 #: **%70'ten fazla** örtüşen iki vaka kapıyı kırar. Elle *"benzer değil"* demek yetmez —
 #: benzerlik yazarın gözünde değil, **kelimelerde** ölçülür.
 VAKALAR: list[dict[str, Any]] = [
+    # 🔴 **`KÖK-S3` — DİLSEL KAPSAM ÜRETİM SIRASINA BAĞLI OLAMAZ.**
+    #
+    # Ölçüldü: `test_DILSEL_KAPSAM_hicbir_ozellik_bos_kalmaz` kırmızı verdi —
+    # `iy.3cogul` (3. çoğul iyelik, `-ları/-leri`) **hiç üretilmiyor**. Taban ölçüldü
+    # (§86.6): tabanda o özellik **ÜRETİLMİŞ** kümede vardı, statik kümede yoktu. Yani
+    # kapsam bir **tesadüfe** bağlıydı: menüye bir boyut/ölçü eklenince üreteç başka
+    # sorular kurdu ve o dilbilgisi biçimi **sessizce kayboldu**.
+    #
+    # ⊙ Bu, `KÖK-M1a`'nın (chip tesadüfi bir ayırt ediciye bağlıydı) dilbilgisi
+    # tarafındaki **ikizidir** ve aynı cümleyle özetlenir: *bir güvencenin tesadüfe
+    # bağlı olması, o güvencenin olmamasıdır.*
+    #
+    # ⚠ Çözüm üreteci değiştirmek DEĞİL — üreteç bir **ölçüm aracıdır** ve onu her
+    # menü değişiminde ayarlamak, ölçtüğü şeyi ölçüme uydurmaktır. Bunun yerine biçim
+    # **statik** kümeye alındı: statik vakalar menüden bağımsızdır, dolayısıyla kapsam
+    # artık **yapısal olarak** garantilidir.
+    #
+    # ⚠ Ve soru uydurulmadı: bu, kullanıcının kendi verdiği senaryolardan biridir
+    # (`s8`) — gerçek bir iş sorusu, gerçek bir dilbilgisi biçimi.
+    _v("kalite", "K2", "en çok tekrarlanan tamir sebepleri neler",
+       kabul=[DOGRU, NETLESTIRME],
+       yasak="sebep kırılımını atlayıp tek bir toplam vermek",
+       kaynak="kullanıcı senaryosu · s8 — dilsel çapa: iy.3cogul (-leri)"),
+    # ⚠ **BİR VAKA YETMEZ** — kardeş kapı (`test_DILSEL_KAPSAM_zayif_ozellik_yok`)
+    # en az **beş** ister ve gerekçesi kendi cümlesinde: *"sıfır kapsam bir delik, BİR
+    # kapsam bir yanılsamadır."* Tek örnek, o biçimin çalıştığını değil yalnız **bir kez**
+    # denendiğini kanıtlar. Dördü daha eklendi; hepsi gerçek iş sorusu, hiçbiri uydurma.
+    _v("uretim", "K2", "bu yıl en çok duran makineleri listele",
+       kabul=[DOGRU, NETLESTIRME],
+       yasak="duruş süresini sıralamadan tek toplam vermek",
+       kaynak="dilsel çapa: iy.3cogul (-leri)"),
+    _v("kalite", "K2", "geçen ay fire oranı en yüksek hatları göster",
+       kabul=[DOGRU, NETLESTIRME],
+       yasak="hat kırılımını atlayıp tesis toplamı vermek",
+       kaynak="dilsel çapa: iy.3cogul (-ları)"),
+    _v("satis", "K2", "bu yıl en çok iade eden müşterileri bul",
+       kabul=[DOGRU, NETLESTIRME],
+       yasak="müşteri kırılımı olmadan iade toplamı vermek",
+       kaynak="dilsel çapa: iy.3cogul (-leri)"),
+    _v("kalite", "K3", "bu yıl ilk seferde doğru oranı en düşük tedarikçileri sırala",
+       kabul=[DOGRU, NETLESTIRME],
+       yasak="tedarikçi kırılımını atlamak",
+       kaynak="dilsel çapa: iy.3cogul (-leri) · KÖK-S2 tedarikçi boyutu"),
     # ═══ CEO — ölçü adı KULLANMAZ, sonuç ister ═══════════════════════════════════
     _v("ceo", "K1", "işler nasıl gidiyor",
        kabul=[NETLESTIRME, DURUST_RET],

@@ -50,6 +50,29 @@ synonyms: [fire, ciro, gelir, tutar, satış, kar!, kârımız, karımız, kârl
 # default_measure YOK: ölçü kelimesi eşleşmezse LLM'e düşülür.
 
 measures:
+  # 🔴 `KÖK-S2` — HIZ ÖLÇÜSÜ TABLODA VAR, MENÜDE YOK. Ölçüldü (`s6`): *"RAM 3'te renk
+  # derinliğine göre ortalama hızı karşılaştır"* → küp **doğru** (`parti`), kırılım
+  # **doğru** (`renk_derinlik`), eksik olan tek şey **ölçü**: `bilinmeyen=hizi`.
+  # `partiler` tablosunda `hiz_m_dk` (DOUBLE) ve `teorik_hiz_m_dk` **duruyor**.
+  # ⚠ `additive: non` ZORUNLU (`M-5`): bir ortalama hız dönemler arasında toplanamaz —
+  # ve ifadenin kendisi (`AVG(`) bunu zaten söylüyor, kapı da bunu dayatıyor.
+  - name: ort_hiz_m_dk
+    expression: "ROUND(AVG(hiz_m_dk),1)"
+    type: DOUBLE
+    unit: "m/dk"
+    additive: non
+    # ⚠ **ÇIPLAK `hız` BİLEREK YOK — ölçüldü.** İlk yazımda vardı ve bir kapı
+    # yakaladı: `test_agent_plan_secimi_yapisal_olmayan_turda_cokmez`'in sorusu
+    # *«stok devir **hızımız** nedir»* bu ölçüye çekildi. **Stok devir hızı ile
+    # makine hızı aynı şey değildir**; çıplak `hız` bu küpü komşusunun sorusuna
+    # cevap verir hâle getiriyordu — `M-2`'de `kalite`nin başına gelenin aynısı.
+    # ⊙ Ve o testin kendi tarihi bunu **üçüncü kez** yazıyor: soru iki kez
+    # yeniden seçilmiş, ikisinde de sebep *«route() cevaplıyor, pilot hiç
+    # çağrılmıyor»*. Bir menü eklemesi, başka bir kapının ölçtüğü şeyi susturabilir.
+    # *Bir sinonimi geniş yazmak, o küpe komşusunun sorularını da cevaplama izni
+    # vermektir.*
+    synonyms: [ortalama hız, makine hızı, üretim hızı, metre dakika, çalışma hızı]
+    lower_is_better: false
   # lower_is_better: görselleştirme yön semantiği (yüksek=KÖTÜ → ısı haritasında kırmızı).
   # FİRE (parti düzeyi): gerçek fire_kg kolonu yok → ilk-seferde-tamamlanamayan (rework'e
   # giden) partilerin kg'ı fire proxy'sidir. Ağırlık-bazlı rework `kalite` cube'unda.
@@ -129,6 +152,17 @@ pvm:
     price_label: birim fiyat (TL/kg)
 
 dimensions:
+  # 🔴 `KÖK-S2` — TEDARİKÇİ TABLODA VAR, MENÜDE YOK. Ölçüldü (`s7`): *"Tedarikçi bazında
+  # ilk seferde doğru oranını göster"* → **tedarikçi boyutu tamamen düştü**, soru çapraz-konu
+  # netleştirmesine gitti. Oysa `partiler` tablosunda `tedarikci_ad` **VARCHAR** olarak duruyor.
+  # ⚠ `tedarikci` bugün `cari`/`ticaret` küplerinde `cari_tip`'in bir **DEĞERİ** olarak
+  # sinonim (*"müşteri mi tedarikçi mi"*). Burada ise bir **ADdır** — aynı kelime, iki
+  # farklı kavram. Çakışma kapısı bunu ölçtü ve geçti; geçmeseydi bu satır yazılmazdı.
+  - name: tedarikci
+    expression: tedarikci_ad
+    type: VARCHAR
+    label: tedarikçi
+    synonyms: [tedarikçi, tedarikçiler, tedarikçisi, hangi tedarikçi]
   # 🔴🔴 `M-1` — BU BOYUT TABLODA **ZATEN VARDI**, KÜP ONU BEYAN ETMİYORDU.
   #
   # Raporun amiral örneği (*"bu yıl vardiya bazında fire oranı"*) beş modüllük bir
