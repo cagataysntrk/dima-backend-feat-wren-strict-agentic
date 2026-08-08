@@ -1764,7 +1764,29 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     # gönderiyor demektir ("bu rapora devam"), `history` dolu olması ŞART değil (gerçek
     # eval koşumu bunu ortaya çıkardı: conftest.py'nin `ask()` yardımcısı history
     # göndermeden cube_query gönderiyor — history yalnızca ham-SQL takibi için ek sinyal).
-    structural_followup = bool(body.cube_query)
+    # 🔴🔴 **`§P1` — DISCOVERY CEVABI THREAD'İ ÖLDÜRÜYORDU (3/3 takip turu).**
+    #
+    # Ölçüldü (P turu, `T-P2`): `personel çalışma süreleri ve verimliliklerini kıyasla`
+    # Discovery'ye düştü ve **iyi bir cevap verdi** (29 satır, `cube:"adhoc"`). Sonraki
+    # **üç** turun **üçü de** şunu aldı:
+    #
+    #     "Önceki rapor artık çalıştırılamadı (şema değişmiş olabilir)."
+    #
+    # ⊙ Sebep: `adhoc` şemada bir küp **değildir**, bu yüzden *"bayat cube_query"*
+    # koruması (`:3803`, Gitaş 500'ü için yazılmıştı) **her** Discovery takibinde
+    # ateşliyordu. Ve cümle bir **yalandı**: şema değişmemişti.
+    #
+    # 🔴 `adhoc` bayat bir `cq` **değildir** — yeniden çalıştırılabilir bir **yapısı**
+    # olmayan bir cevaptır. İkisi aynı şey sanılınca, kullanıcı bir cevap alıp onun
+    # üstüne **tek kelime** edemez hâle geliyor.
+    #
+    # Doğru davranış `§0.0`'dan gelir (*kullanıcı asla cevapsız kalmaz*): çapa yoksa tur
+    # **taze**dir ve garson devreye girer. Yanlış bir gerekçeyle reddetmektense, soruyu
+    # baştan sormak dürüsttür.
+    #
+    # *Bir cevabın üstüne devam edilemiyorsa sebebi söylenir; sebebi uydurulmaz.*
+    _capa_adhoc = str((body.cube_query or {}).get("cube") or "") == "adhoc"
+    structural_followup = bool(body.cube_query) and not _capa_adhoc
     raw_followup = bool(prev_sql) and bool(body.history) and not structural_followup
     is_followup = structural_followup or raw_followup
     prev_question = body.history[-1] if body.history else ""

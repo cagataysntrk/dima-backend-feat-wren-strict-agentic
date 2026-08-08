@@ -2166,7 +2166,14 @@ def measure_cube_candidates(q: str, schema: dict) -> list[tuple[dict, str]]:
     (ADR-0018 §2-2 + belirsizlikte-sor): "bu yıl satış" → hem ticaret (satış tutarı)
     hem mal (satış miktarı) → [(ticaret, satis_tutari), (mal, satis_miktari)].
     Tek aday → route zaten seçti; ≥2 → ask.py "hangisi?" chip'i sorar (LLM tahmin
-    etmez). Cube-düzeyi sinonim geçen cube'lar hariç (onlar route'un işi)."""
+    etmez). Cube-düzeyi sinonim geçen cube'lar hariç (onlar route'un işi).
+
+    ⚠ `§M7`'nin **aynı ön koşulu** burada da yazılmamıştı: `_syn_hit`/`_match_measure`
+    normalize girdi varsayar (`[a-z0-9]` kalıpları) ve `app/answer.py:181` bu fonksiyona
+    da **ham** metin gönderiyor — yani `aday_cubelar` telemetrisi de `uncovered_words`
+    ile aynı körlüğü taşıyordu. Düzeltme `partial_unknowns`'unkiyle **aynı satırdır**;
+    `_norm` idempotent olduğu için normalize gönderen çağıranlar etkilenmez."""
+    q = _norm(q)                                   # `§M7` — ön koşul sözleşmeye çevrildi
     out: list[tuple[dict, str]] = []
     for c in schema.get("cubes", []):
         if _any_hit(q, c.get("synonyms")):
@@ -3262,7 +3269,32 @@ def partial_unknowns(q: str, schema: dict) -> tuple[list[str], list[tuple[dict, 
     "kar oranı sürdürülebilirlik" → (["surdurulebilirlik"], [(parti, kar_marji_yuzde)]).
     İkisi de doluysa serbest-SQL'e DÜŞÜLMEZ: LLM tanımadığı kavram için istenmemiş
     çok-metrikli rapor uydurabiliyor (log 2026-07-20) — tanınan kısım chip'lenir,
-    tanınmayan açıkça söylenir."""
+    tanınmayan açıkça söylenir.
+
+    🔴🔴 **`§M7` — MENÜ PUSULASI BOZUKTU: bu fonksiyonun YAZILMAMIŞ bir ön koşulu vardı.**
+
+    Ön koşul *"`q` normalize gelmeli"*ydi ve **hiçbir muhafız onu denetlemiyordu**.
+    `_uncovered` kelimeleri `re.findall(r"[a-z]+", q)` ile ayırıyor; Türkçe harfler
+    `[a-z]` dışında olduğu için ham metin **kelimenin ortasından** bölünüyordu:
+
+        müşteri → teri · bazında → baz + nda · şubatta → ubatta · çeyrek → eyrek
+
+    Altı çağıranın beşi normalize gönderiyordu, `app/answer.py:181` **ham** gönderiyordu —
+    ve orası tam olarak **telemetriyi** yazan yer. Ölçüldü (canlı kütük, 769 tur):
+    `uncovered_words` dolu **196 satırın 115'i (%58,7)** parça içeriyor. En sık
+    *"bilinmeyen kelimelerimiz"*: `nda` (36) · `baz` (29) · `duru` (16) · `nas` (13).
+
+    🔴 Bu bir görüntü kusuru değil bir **körlük** kusurudur: menüyü hangi yönde
+    büyüteceğimize karar verirken baktığımız **tek sinyal** budur, ve o sinyal
+    *"kullanıcılar en çok «nda» diye soruyor"* diyordu.
+
+    ⚠ Çözüm ön koşulu **belgelemek değil ORTADAN KALDIRMAKTIR**: `_norm` idempotenttir,
+    yani normalize gelen beş çağıran **hiç etkilenmez**, ham gelen çağıran **düzelir**.
+    *Bir ön koşulu ortadan kaldırmak, onu doğrulamaktan ucuzdur.*
+
+    ⚠ Kütükteki 115 bayat satır **düzelmez**; ölçüm bu satırdan sonra yeniden başlar.
+    """
+    q = _norm(q)          # ← ön koşulu SÖZLEŞMEYE çevir (`§M7`); `_norm` idempotent
     known: set[str] = set()
     hits: list[tuple[dict, str]] = []
     # route()'un KENDİ kapsam-kapısıyla AYNI standart: bir cube adı yalnız KATALOGDA var

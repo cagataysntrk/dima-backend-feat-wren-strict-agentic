@@ -89,6 +89,17 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("p1-adhoc-capa-degildir", 1,
+     "🔴🔴 **DISCOVERY CEVABI THREAD'İ ÖLDÜRÜYORDU — 3/3 takip turu.** Ölçüldü (P turu, "
+     "`T-P2`): `personel çalışma süreleri ve verimliliklerini kıyasla` Discovery'ye düştü "
+     "ve **iyi bir cevap verdi** (29 satır, `cube:\"adhoc\"`); sonraki **üç** turun üçü de "
+     "*«Önceki rapor artık çalıştırılamadı (şema değişmiş olabilir)»* aldı. "
+     "⊙ Sebep: `adhoc` şemada bir küp **değildir**, bu yüzden Gitaş 500'ü için yazılmış "
+     "*bayat cube_query* koruması **her** Discovery takibinde ateşliyordu — ve cümle bir "
+     "**yalandı**, şema değişmemişti. `adhoc` bayat bir `cq` değil, yeniden "
+     "çalıştırılabilir **yapısı olmayan** bir cevaptır. Tek satır: çapa `adhoc` ise "
+     "yapısal takip sayılmaz, tur **taze**dir ve garson devreye girer (`§0.0`). "
+     "*Bir cevabın üstüne devam edilemiyorsa sebebi söylenir; sebebi uydurulmaz.*"),
     ("n2-garsonun-karari-karsilastirmali-tartilir", 2,
      "🔴🔴 **HAKEM KONUŞTU, KARARI DUYULMADI — `§0.0`'ın en pahalı ihlali.** Canlı log "
      "zinciri, tek istek (`bakım süresi en uzun makine`): `route ŞÜPHELİ → garson "
@@ -402,6 +413,20 @@ MUAFIYET_ASK_KOD = [
      "makbuza yazılmazsa, kullanıcı onu kendi yazdığını sanır"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("m7-menu-pusulasi-on-kosulu-sozlesmeye-cevrildi", 2,
+     "🔴🔴 **MENÜ PUSULASI BOZUKTU — yazılmamış bir ön koşul, denetleyeni olmayan.** "
+     "`_uncovered` kelimeleri `re.findall(r\"[a-z]+\", q)` ile ayırıyor; Türkçe harfler "
+     "`[a-z]` dışında olduğu için ham metin kelimenin **ortasından** bölünüyordu: "
+     "`müşteri`→`teri` · `bazında`→`baz`+`nda` · `çeyrek`→`eyrek`. Altı çağıranın beşi "
+     "normalize gönderiyordu; `app/answer.py:181` **ham** gönderiyordu — ve orası tam "
+     "olarak **telemetriyi** yazan yer. Ölçüldü (canlı kütük, 769 tur): `uncovered_words` "
+     "dolu **196 satırın 115'i (%58,7)** parça içeriyor; en sık *«bilinmeyen "
+     "kelimelerimiz»* `nda` (36) · `baz` (29) · `duru` (16). "
+     "🔴 Görüntü kusuru değil **körlük** kusuru: menüyü hangi yönde büyüteceğimize karar "
+     "verirken baktığımız TEK sinyal budur. İki satır (ikiz `measure_cube_candidates` "
+     "aynı ön koşulu taşıyordu, aynı çağrı satırından ham besleniyordu). "
+     "⚠ `_norm` idempotent → normalize gönderen beş çağıran **hiç etkilenmez**. "
+     "*Bir ön koşulu ortadan kaldırmak, onu doğrulamaktan ucuzdur.*"),
     ("n1-ilgili-cubelar-siralanir", 10,
      "🔴 **SIRALANMAMIŞ BİR LİSTEYE DİLİM ATMAK BİR SEÇİM DEĞİL, BİR KURADIR.** "
      "`ilgili_cubelar` `schema[\"cubes\"]` **dosya sırasında** dönüyordu; üç çağıranın "

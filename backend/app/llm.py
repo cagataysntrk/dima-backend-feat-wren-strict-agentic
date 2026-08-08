@@ -718,8 +718,31 @@ class OpenAICompatibleSqlGenerator:
         return self._chat(_cube_select_system(catalog), question, model=self._select_model)
 
     def refine_cube(self, prev_cq_json: str, message: str, catalog: str) -> str:
-        return self._chat(_cube_select_system(catalog), _cube_refine_user(prev_cq_json, message),
-                          model=self._select_model)
+        """🔴 **`§P5` — TEK ÇAĞRI, YEDEĞİ YOK: bir boş yanıt BÜTÜN takip turunu öldürüyor.**
+
+        Ölçüldü (P turu, `p4` — `aynı grafikte hem verimliliği hem karlılığı göster`):
+
+            SaglayiciYaniti: openrouter BOŞ içerik döndürdü (finish_reason=stop).
+            Model AKIL YÜRÜTÜYOR ve token bütçesi `reasoning`'e gitti.
+            → "Bu takip mesajını önceki raporla ilişkilendiremedim."
+
+        ⊙ Kardeşi olan `select_cube` bu dersi **zaten öğrenmişti**: `_select_consistent`
+        onu `k` kez örnekliyor, bir örneğin düşmesi turu düşürmüyor. `refine_cube` ise
+        **tek** çağrıdır ve tek bir boş yanıt kullanıcıya *"anlamadım"* olarak dönüyor —
+        `§0.0`'ın yasakladığı cümle, hem de **modelin bir tökezlemesi** yüzünden.
+
+        ⚠ Yeniden deneme **bir kez**dir ve yalnız **boş yanıt** için: bir ağ/kota hatası
+        tekrarlanınca da aynı hatayı verir, oysa boş içerik **örnekleme kaynaklıdır** ve
+        ikinci örnekte gelmeyebilir. *Her hatayı yeniden denemek, hiçbirini denememektir.*
+
+        ⚠ Ve yedek **sessiz değildir**: düşen ilk deneme loglanır (`ADR-0020`).
+        """
+        _sis, _kul = _cube_select_system(catalog), _cube_refine_user(prev_cq_json, message)
+        try:
+            return self._chat(_sis, _kul, model=self._select_model)
+        except SaglayiciYaniti as _e:
+            _log.info("refine_cube boş yanıt → BİR kez yeniden deneniyor (%s)", _e)
+            return self._chat(_sis, _kul, model=self._select_model)
 
 
 # --- Kural-tabanlı (anahtarsız) — boyahane demo şeması ----------------------

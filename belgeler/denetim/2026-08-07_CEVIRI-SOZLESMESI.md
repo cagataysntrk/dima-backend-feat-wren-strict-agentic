@@ -5132,3 +5132,149 @@ yüklem, geniş bir yüklemin veremeyeceği güveni verir.*
 garson salınımı 4/20 (`consistency_k` 3→5 ölçülecek) · fiil/cümle bir kategori değeri
 sanılıyor (`§86.8`) · `temsil-yok=kiyas` takip yolunda **yanlış-pozitif** (kıyas
 çalışırken bile beyan ediliyor).
+
+---
+
+## §88 · P TURU — agentic zincirler · ve MUTFAK DENETİMİ raporunun ilk demeti
+
+Bu tur iki girdiyle kuruldu: **(1)** kullanıcının üç agentic örneği birer **thread
+zinciri** olarak, **(2)** `belgeler/denetim/2026-08-08_MUTFAK-DENETIMI.md`'nin kök
+listesini canlıda yoklayan dört tur. 20 senaryonun 12'si thread, 8'i tekil.
+
+### §88.1 · P turu tablosu
+
+| # | senaryo | sonuç |
+|---|---|---|
+| P1 | `makine verimliliklerini listele` | ◐ doğru `cq`, dönem sorusu |
+| **P2** | `bunların bu yılki karlılığa etkisini analiz et` | 🔴 **karlılık sessizce düştü** — `Ajan koşusu: 0 adım · 0 sorgu`, beyan yok |
+| P3 | `en çok etkileyen üçünü grafikte göster` | 🟢 `limit:3` (`§O3` çalışıyor) |
+| **P4** | `aynı grafikte hem verimliliği hem karlılığı göster` | 🔴→🟢 KÖK-P5 |
+| P5 | `personel çalışma süreleri ve verimliliklerini kıyasla ve listele` | ◐ Discovery **iyi cevap verdi** (29 satır) — mutfak eksikliği |
+| **P6·P7·P8** | `en düşüğü hangisi` · `neden düşük olduğunu analiz et` · `dağılım grafiğine çevir` | 🔴→🟢 **üçü de ÖLÜ** — KÖK-P1 |
+| P9 | `ciromun en büyük 3 kaynağı olan müşterilerimi bul` | 🟢 `limit:3` |
+| **P10** | `bunlara en çok neler sattığımı karşılaştır` | 🔴 `limit` **3 → 100**, çapa kayıp |
+| P11 | `bu yıl` *(çip cevabı)* | ◐ 8 satır ama `limit:100` **kalıcı** |
+| **P12** | `üçü için de ayrı ayrı göster` | 🔴 `ort_renk_sapmasi` **uyduruldu**, `üçü` anlaşılmadı |
+| P13 | `bu yıl toplam üretimin yüzde kaçı fire` | 🟢 **%19,79** — raporun *"cevapsız"* dediği vaka **artık çalışıyor** |
+| P14 | `bu yıl en çok enerji harcayan 3 makineyi bul` | 🔴 **M-2 canlıda doğrulandı** |
+| **P15** | `bu yıl aylık kümülatif fire toplamını göster` | 🔴 `kümülatif` **sessizce düştü** |
+| **P16** | `bu yıl her hattın toplam fire içindeki payı` | 🔴 `payı` **sessizce düştü** |
+| P17 | `hedefin üzerinde kalan makineleri bul ve nedenlerini sırala` | 🔴 «kalan» → `cari/mizan` ölçüsü |
+| **P18 [EN]** | `show me the top 3 lines by OEE and their scrap rate side by side` | 🔴 `üstünlük=3` **bulundu**, `order`/`limit` **yok** |
+| P19 | `vardiya ve hat kırılımında fire oranını ısı haritası yap` | 🔴 M-1 ortak boyut |
+| P20 | `son 6 ayda fire artan makineleri artış yüzdesiyle sırala` | 🔴 M-9 pencere |
+
+**Discovery ateşlemesi: 1** (P5). *(E=4 · F=1 · G=1 · N=1 · O=0 · P=1)*
+
+### §88.2 · 🔴🔴 KÖK-P1 — **DISCOVERY CEVABI THREAD'İ ÖLDÜRÜYOR** (3/3)
+
+`T-P2` zincirinde Discovery **iyi bir cevap verdi** — 29 satır, personel çalışma saati +
+ortalama OEE, tam da `M-1`'in *"ölçü bir küpte, boyut başkasında"* vakası. Sonraki **üç**
+turun **üçü de** şunu aldı:
+
+    "Önceki rapor artık çalıştırılamadı (şema değişmiş olabilir). Yeni bir soru olarak sorar mısın?"
+
+⊙ Kök: `adhoc` şemada bir küp **değildir**, bu yüzden Gitaş 500'ü için yazılmış *"bayat
+`cube_query`"* koruması (`ask.py:3803`) **her** Discovery takibinde ateşliyordu. Ve cümle
+bir **yalandı** — şema değişmemişti.
+
+🔴 `adhoc` **bayat bir `cq` değildir**; yeniden çalıştırılabilir bir **yapısı olmayan**
+bir cevaptır. İkisi aynı sanılınca kullanıcı bir cevap alıp üstüne **tek kelime** edemez
+hâle geliyor — yani sistemin en çok yardıma muhtaç olduğu anda thread **tamamen** ölüyor.
+
+**Düzeltme:** çapa `adhoc` ise yapısal takip sayılmaz; tur **tazedir** ve garson devreye
+girer (`§0.0`: *kullanıcı asla cevapsız kalmaz*).
+
+**Curl doğrulaması (dalın doğrudan sınanması):**
+
+    ÖNCE : "Önceki rapor artık çalıştırılamadı (şema değişmiş olabilir)."
+    SONRA: "is emri adedi çıkarabilirim — hangi dönem için?"   yeni_konu=True
+
+*Bir cevabın üstüne devam edilemiyorsa sebebi söylenir; sebebi uydurulmaz.*
+
+### §88.3 · KÖK-P5 — `refine_cube` tek çağrı, yedeği yok
+
+`p4`'ün logu:
+
+    SaglayiciYaniti: openrouter BOŞ içerik döndürdü (finish_reason=stop).
+    Model AKIL YÜRÜTÜYOR ve token bütçesi `reasoning`'e gitti.
+    → "Bu takip mesajını önceki raporla ilişkilendiremedim."
+
+⊙ Kardeşi `select_cube` bu dersi **zaten öğrenmişti** (`_select_consistent` onu `k` kez
+örnekler, bir örneğin düşmesi turu düşürmez). `refine_cube` **tek** çağrıdır: modelin bir
+tökezlemesi, kullanıcıya `§0.0`'ın yasakladığı cümle olarak dönüyordu.
+
+**Düzeltme:** yalnız **boş yanıt** için **bir kez** yeniden deneme, ve düşen deneme
+loglanır (`ADR-0020`). *Her hatayı yeniden denemek, hiçbirini denememektir.*
+
+### §88.4 · M-7 UYGULANDI — **menü pusulası** *(raporun 1 numaralı önceliği)*
+
+Rapor doğrulandı ve koda karşı sınandı: `_uncovered` kelimeleri `re.findall(r"[a-z]+")`
+ile ayırıyor; Türkçe harfler `[a-z]` dışında olduğu için ham metin kelimenin
+**ortasından** bölünüyor (`müşteri`→`teri` · `bazında`→`baz`+`nda`). Altı çağıranın beşi
+normalize gönderiyor, `app/answer.py:181` **ham** gönderiyor — ve orası tam olarak
+**telemetriyi** yazan yer.
+
+⊙ Ve raporun görmediği bir yarısı daha var: **aynı satırdaki** `measure_cube_candidates`
+de ham besleniyor ve `_syn_hit` de normalize girdi varsayıyor (`[a-z0-9]` kalıpları) —
+yani `aday_cubelar` telemetrisi de aynı körlüğü taşıyordu. Düzeltme **ikisine birden**
+uygulandı.
+
+**Ölçülen bedel (canlı kütük, 769 tur):** `uncovered_words` dolu **196 satırın 115'i
+(%58,7)** parça içeriyor; en sık *"bilinmeyen kelimelerimiz"* `nda` (36) · `baz` (29) ·
+`duru` (16) · `nas` (13). Menüyü hangi yönde büyüteceğimize karar verirken baktığımız
+**tek sinyal** budur.
+
+⚠ **Geriye dönük değildir:** kütükteki 115 bayat satır düzelmez, ölçüm bu commit'ten
+sonra yeniden başlar. *Bir ön koşulu ortadan kaldırmak, onu doğrulamaktan ucuzdur.*
+
+### §88.5 · Ölçülüp YAZILMAYAN kökler — P turunun devri
+
+| kök | kanıt | neden bu turda yazılmadı |
+|---|---|---|
+| **P2 · agentic kapsam sessizce daralıyor** | `karlılığa etkisini` → `Ajan koşusu: 0 adım`, OEE raporu yeniden yorumlandı, **beyan yok** | yüklem dar yazılmalı; `bilinmeyenler`'in **hangi** üyesi bir dönüşüm talebidir? |
+| **P15·P16 · aynı sınıf** | `kümülatif` · `payı` → `bilinmeyen`'e yazıldı, cevaptan düştü, beyan yok | ⇧ aynı yüklem |
+| **P10·P11 · `limit` çapası 3→100** | `limit:100` nereden geliyor, sondajlanmadı | 🔴 KÖR YAMA YASAK |
+| **P18 · [EN] top-N kayıp** | garson 3 oyun **2'sinde çekimser**, hayatta kalan oy `order`/`limit` taşımıyor | kök garsonun **istem metni**nde (`§48` sınıfı), route'ta değil |
+| **P14 · M-2 varsayılan ölçü** | `üstünlük=3`+`kırılım=makine`+`dönem=1` tam, eksik olan **menü** | menü dosyası işi — kendi demetinde inmeli |
+| **`en düşüğü` → `order:desc`** | doğrulama turunda görüldü: *en düşük* isteniyor, **azalan** sıralanıyor | tek koşum — `KURAL G-1` gereği ikinci koşum bekliyor |
+
+*Bir turda ölçülen her kusuru yazmak, hiçbirini doğru yazmamaktır.*
+
+### §88.6 · P demetinin kapısı — **tek** `--hepsi` koşumu
+
+| ölçüt | O sonrası taban | **P demeti** |
+|---|---|---|
+| `vaka` · `kabul` | 2285 · 1153 | **2285 · 1153** |
+| `dogru` | 93 | **93** |
+| `sessiz_yanlis` | 12 | **12** ✅ doğruluk vetosu |
+| `beyanli_kismi` | 51 | **51** |
+| tam süit | 4257 yeşil | **4257 yeşil · 32 atlandı** |
+| `eval` | +0,0% | **precision +0,0% · coverage +0,0%** |
+
+⊙ Üç düzeltme (`KÖK-P1` · `KÖK-P5` · `M-7`), **sıfır** korpus hareketi. Üçü de canlı
+yoldaki bir **ölü uç**u kapatıyor ve hiçbiri korpusun ölçtüğü şeye dokunmuyor — çünkü
+korpus `rule` sağlayıcıyla koşuyor, yani takip yolunun LLM dalını **hiç görmüyor**.
+
+🔴 **Bu, korpusun bir sınırıdır ve kayda geçirilir:** son **üç** demette de korpus
+**tamamen** sabit kaldı (`93/12/51`), oysa üçünde de canlı davranış **ölçülebilir**
+biçimde düzeldi. *Bir kapı, ölçmediği bir yerde yeşil kalır — ve bu yeşil bir onay
+değildir.*
+
+### §88.7 · MUTFAK DENETİMİ raporunun durumu
+
+| kök | rapor önceliği | durum |
+|---|---|---|
+| **M-7** telemetri normalizasyonu | 1 | ✅ **UYGULANDI** (+ raporun görmediği ikiz `measure_cube_candidates`) |
+| **M-2** ölçü rolü + varsayılan | 2 | 🔴 canlıda **doğrulandı** (`p14`) — menü demeti, sırada |
+| **M-5** toplanabilirlik beyanı | 3 | ⏳ sınanmadı (`E` ailesi) |
+| **M-4** varsayılan dönem | 4 | 🔴 P turunda **8 senaryoda** görüldü (*"hangi dönem için?"*) |
+| **M-6** operatör tek kaynak | 5 | ⏳ bugün NO-OP |
+| **M-3** türev ölçü | 6 | ◐ `p13` **artık çalışıyor**; `p16` (`payı`) hâlâ düşüyor |
+| **M-9** pencere katmanı | 7 | 🔴 `p15` (`kümülatif`) · `p20` (artış %) doğrulandı |
+| **M-1** uyumlu boyut | 8 | 🔴 `p19` · `p5` (Discovery bu yüzden ateşledi) doğrulandı |
+| **M-8** kaynak farkı beyanı | 9 | ⏳ |
+
+⊙ Raporun bir iddiası **çürüdü ve bu iyi bir haber**: *"bu yıl toplam üretimin yüzde kaçı
+fire → cevapsız"* dediği vaka **artık %19,79 döndürüyor** (`p13`). Rapor eski kütükten
+okuduğu için son turların kazancını göremiyordu. *Bir denetim raporu da bayatlar.*
