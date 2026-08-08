@@ -183,14 +183,99 @@ def tasi_yerinde(cq: dict, onceki_cq: dict | None, soru: str,
     if not tasindi:
         return False
     cq["filters"] = yeni.get("filters") or []
-    cq[_TASIYICI] = not_metni(cq["filters"])
+    cq[_TASIYICI] = (not_metni(cq["filters"]), IZ)
+    return True
+
+
+IZ_VARSAYILAN = "dönem belirtilmedi → verinin son 12 ayı BEYANLA varsayıldı (M-4)"
+
+#: `M-4` — varsayılan pencerenin uzunluğu. Bir **ürün kararıdır** ve bu yüzden tek bir
+#: yerde, adıyla durur: on iki ay, mevsimsellik taşıyan her iş sorusunun en küçük
+#: dürüst penceresidir (bir yıllık döngü tam kapanır).
+VARSAYILAN_AY = 12
+
+
+def varsayilan_yerinde(cq: dict, service, cube_meta: dict | None) -> bool:
+    """🔴🔴 **`M-4` — SORMAK VARSAYILAN DAVRANIŞTI; ARTIK BEYANLI VARSAYIM DA VAR.**
+
+    ## Ölçülen kusur
+
+    Korpusun **%13,7'si** `CLARIFY:dönem`. P/R turlarında **on** senaryoda görüldü ve
+    hepsinde aynı desen: ölçü **çözülmüş**, kırılım **çözülmüş**, sıralama **çözülmüş** —
+    tek eksik dönem, ve sistem cevabı **tutup soruyor**:
+
+        toplam duruş dakikasını hat bazında sırala → «toplam sure dk çıkarabilirim —
+                                                      hangi dönem için?»
+
+    Politika (`ADR-0007`) savunulabilir; raporun tespiti şuydu: **bedeli ölçülmedi.**
+
+    ## 🔴 Raporun formu ÜÇÜNCÜ KEZ düzeltildi — ve sebebi yine yapısal
+
+    Rapor küp düzeyinde `varsayilan_donem:` beyanı öneriyordu. `M-2` (`rol`) ve `M-9`
+    (`pencere`) ile **aynı duvar**: MDL'de küp alanları da sabittir
+    (`name·label·baseObject·synonyms·defaultMeasure·measures·dimensions·timeDimensions`);
+    yeni bir anahtar ya derlemede düşer ya motorun `serde`'si projeyi reddeder.
+
+    ⊙ Ama raporun **kendi cümlesi** çıkışı gösteriyordu: *"`veri_araligi` verinin gerçek
+    aralığını **zaten biliyor**."* Varsayılanın kataloğa yazılmasına gerek yok — **veriden
+    türetilir**. Bu, katalog beyanından **daha iyi**dir: bayat bir beyan yanlış bir
+    pencere üretir, veri kendini günceller.
+
+    ## Sözleşme
+
+    * **Bayraklı** (`varsayilan_donem`, varsayılan **kapalı**) → `KURAL B`: bayrak
+      kapalıyken davranış **birebir** bugünküdür.
+    * **Beyanlı**: pencere `_TASIYICI` ile cevaba yazılır — *sessiz varsayım yasak,
+      beyanlı varsayım deponun kendi deseni* (`ADR-0027`'nin ihlali değil, uygulaması).
+    * **Veriden**: aralık `veri_araligi.aralik` ile ölçülür; **ölçülemezse hiçbir şey
+      yapılmaz** ve kapı bugünkü gibi sorar (fail-closed).
+    * Netleştirme **kalkmaz**; ikinci seçenek olur.
+
+    *Bir varsayımı yapmak değil, yaptığını söylememek yasaktır.*
+    """
+    if not isinstance(cq, dict) or cq.get("filters") and _donem_filtreleri(cq):
+        return False
+    zaman = _zaman_boyutu(cq, cube_meta)
+    if not zaman or service is None or not cube_meta:
+        return False
+    try:
+        from app import veri_araligi as _va
+        sinir = _va.aralik(service, cube_meta)
+    except Exception:                                   # noqa: BLE001 — tur düşmez
+        sinir = None
+    if not sinir:
+        return False                                    # ⚠ ölçemediysek varsayma
+    _min, _max = sinir[0][:10], sinir[1][:10]
+    try:
+        from datetime import date as _d
+        y, a, g = (int(x) for x in (_max[:4], _max[5:7], _max[8:10]))
+        _ay = a - VARSAYILAN_AY
+        _bas = _d(y + (_ay - 1) // 12, (_ay - 1) % 12 + 1, 1).isoformat()
+    except Exception:                                   # noqa: BLE001
+        return False
+    bas = max(_bas, _min)
+    cq["filters"] = [*(cq.get("filters") or []),
+                     {"dimension": zaman, "operator": "gte", "value": bas},
+                     {"dimension": zaman, "operator": "lte", "value": _max}]
+    cq[_TASIYICI] = (
+        (f"⏱ Dönem belirtmedin — **verinin son {VARSAYILAN_AY} ayı** alındı "
+         f"({_gun(bas)} – {_gun(_max)}). Başka bir dönem yazarsan onu uygularım."),
+        IZ_VARSAYILAN)
     return True
 
 
 def notu_al(cq: dict, note: str | None, trace: list[str]) -> tuple[str | None, list[str]]:
     """Taşıyıcıyı **boşalt** ve notu/izi cevaba kat. *Bir taşıyıcı alan, taşıdığı yere
     varınca boşaltılmalıdır.*"""
-    metin = cq.pop(_TASIYICI, None) if isinstance(cq, dict) else None
+    tasinan = cq.pop(_TASIYICI, None) if isinstance(cq, dict) else None
+    if not tasinan:
+        return note, trace
+    # 🔴 İZ ARTIK TAŞIYICIDAN GELİR — canlıda ölçüldü: `M-4`'ün beyanlı varsayımı
+    # cevaba **doğru** notu yazıyordu ama ize *"önceki turdan taşındı (KÖK-4)"* diye
+    # **yanlış gerekçe** basıyordu, çünkü `IZ` bu satıra sabit gömülüydü. İki farklı
+    # sebep aynı kanalı paylaşınca, kanalın kendisi sebebi de taşımalıdır.
+    # *Doğru bir notun yanında yanlış bir iz, notu da şüpheli yapar.*
+    metin, iz = tasinan if isinstance(tasinan, tuple) else (tasinan, IZ)
     if not metin:
         return note, trace
-    return " ".join(x for x in [note, metin] if x), [*trace, IZ]
+    return " ".join(x for x in [note, metin] if x), [*trace, iz]

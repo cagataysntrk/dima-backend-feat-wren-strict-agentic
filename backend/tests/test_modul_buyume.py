@@ -89,6 +89,16 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("m4-capa-yoksa-beyanli-varsayim", 3,
+     "🔴 **`M-4` — SORMAK TEK SEÇENEK DEĞİL.** Korpusun **%13,7'si** `CLARIFY:dönem`; "
+     "canlı turlarda **on** kez ölçü·kırılım·sıralama çözülmüşken tek eksik dönem "
+     "yüzünden cevap **tutuldu**. Bu üç satır, çapa taşınamadığında **beyanlı bir "
+     "varsayım** dener; gövde `donem_capasi.varsayilan_yerinde`'de (router'da yalnız "
+     "ÇAĞRI kalır — *taşınabilir olan her şey modüle gider*). "
+     "⚠ Bayrak kapalıyken hiç koşmaz (`KURAL B`) ve netleştirme **aynen** durur: "
+     "kaldırılmadı, **ikinci seçenek** oldu. "
+     "⚠ Varsayım kataloğa değil **veriye** bağlı — raporun `varsayilan_donem:` menü "
+     "alanı `M-2`/`M-9` ile aynı duvara çarpıyordu (MDL küp alanları sabit)."),
     ("m9a-kapsam-disi-bir-supheDIR-garsona-devret", 5,
      "🔴🔴 **ŞÜPHE, DEVİR KARARINDAN SONRA KEŞFEDİLİYORDU.** `route_supheli` yalnız "
      "`cq`'nun eksikliğine bakar (dönem yok · sıralama yok); üçüncü bir şüphe türü ise "

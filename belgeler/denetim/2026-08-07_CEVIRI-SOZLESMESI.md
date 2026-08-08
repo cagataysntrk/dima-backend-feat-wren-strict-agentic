@@ -5680,3 +5680,72 @@ Doğrulandı: `bu yıl aylık OEE trendi` → hâlâ `route()` · 6 satır · LL
 İki yeni kapı eklendi: `test_M5_TOPLANAMAZ_OLCU_BEYAN_ETMEK_ZORUNDA` (ifadesi kanıtlayan
 her ölçü beyan etmek **zorunda**) ve `test_M5_BEYAN_DEGERI_GECERLI` (`full|semi|non`
 dışı bir değer üç tüketicide de **sessizce** hiçbir şey yapar).
+
+---
+
+## §93 · M-4 · VARSAYILAN DÖNEM — **kuruldu, ölçüldü, BİLEREK KAPALI**
+
+### §93.1 · 🔴 Raporun formu ÜÇÜNCÜ KEZ aynı duvara çarptı
+
+Rapor küp düzeyinde `varsayilan_donem:` beyanı öneriyordu. `M-2` (`rol`) ve `M-9`
+(`pencere`) ile **birebir aynı** yapısal engel: MDL'de küp alanları da sabittir
+(`name·label·baseObject·synonyms·defaultMeasure·measures·dimensions·timeDimensions`).
+
+⊙ Ama raporun **kendi cümlesi** çıkışı gösteriyordu: *"`veri_araligi` verinin gerçek
+aralığını **zaten biliyor**."* Varsayılan kataloğa yazılmadı, **veriden türetildi** — ve
+bu katalog beyanından **daha iyidir**: bayat bir beyan yanlış bir pencere üretir, veri
+kendini günceller.
+
+### §93.2 · Kanal da açılmadı — **zaten vardı**
+
+Beyanı kullanıcıya taşıyacak mekanizma `donem_capasi`'nde **hazırdı** (`_TASIYICI` →
+`notu_al`) ve modül zaten **dönem** hakkında. İkinci bir not kanalı açmak `KAT-1` olurdu;
+sibling bir fonksiyon yazıldı.
+
+### §93.3 · Ölçülen KAZANÇ (iki koşum birebir, `KURAL G-1`)
+
+    ÖNCE : «toplam sure dk çıkarabilirim — hangi dönem için?»            0 satır
+    SONRA: «⏱ Dönem belirtmedin — **verinin son 12 ayı** alındı
+            (01.06.2025 – 30.06.2026). Başka bir dönem yazarsan onu uygularım.»  8 satır
+
+### §93.4 · Ölçülen BEDEL — ve kararın kendisi
+
+Bayrak `beta`ya alınıp süit koşulunca **6 altın test kırmızı**. En açık olanı:
+
+    test_clarify_toplam_uretim
+    beklenen chip'ler : ['Bugün','Bu hafta','Bu ay','Bu yıl','Tümü']
+    ölçülen           : ['uretim (parti)']
+
+Yani `toplam üretim` artık dönem **sormuyor**, varsayılan pencereyle **cevaplıyor**.
+Bu bir kusur değil — bayrağın **var oluş sebebi** olan davranış değişikliğinin ta
+kendisi. Ama altı altın test **bugünkü sözleşmeyi** yazıyor ve o sözleşmeyi değiştirmek
+bir **ürün kararıdır**, bir yan etki değil.
+
+**Karar: bayrak `off` kalır.** Yetenek kuruldu, kazanç ve bedel **ölçüldü**, açma kararı
+sözleşme sahibinindir. `KURAL B` gereği kapalıyken davranış **birebir** bugünküdür —
+curl ile doğrulandı.
+
+> *Bir yeteneği kurmak ile onu açmak aynı karar değildir; ikincisi ölçüyü ister,
+> birincisi yalnız emeği.*
+
+### §93.5 · Ve bir iz yalan söylüyordu — canlıda yakalandı
+
+İlk koşumda not **doğru**, iz **yanlıştı**: `dönem çapası önceki turdan taşındı (KÖK-4)`.
+Sebep, `IZ` sabitinin `notu_al` içine **gömülü** olmasıydı; iki farklı sebep aynı kanalı
+paylaşınca kanal sebebi de taşımak zorundadır. Taşıyıcı `(not, iz)` çiftine çevrildi.
+
+*Doğru bir notun yanında yanlış bir iz, notu da şüpheli yapar.*
+
+### §93.6 · Ve bir tuzağa dosyanın kendi uyarısına rağmen düştüm
+
+`features.yml`'ye `varsayilan_donem: off` yazdım. Dosyanın **kendi yorumu** şunu diyor:
+*"⚠ YAML `on/off/yes/no`'yu **BOOLEAN** okur."* Kapı yakaladı:
+`geçersiz aşama: {'varsayilan_donem': False}`. Tırnak eklendi.
+
+⚠ İkinci kapı da konuştu ve daha önemliydi: `FLAG_REGISTRY`'de metadata yoktu —
+*"bir kill-switch yalnız KOD'da varsa yarımdır"*. Admin paneli girdisi yazıldı.
+
+### §93.7 · Kapı (bayrak kapalı)
+
+    korpus  {2285, kabul 1153, dogru 93, sessiz_yanlis 12, beyanli_kismi 51}
+    süit    4261 yeşil   ·   eval +0,0%

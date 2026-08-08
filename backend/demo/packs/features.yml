@@ -127,6 +127,17 @@ features:
   #   elemez → bayrak sessizce açık kalır (kapı: `test_YAML_off_TUZAGI_kapali`). Geçerli
   #   aşamalar: `off` · `alpha` · `beta` · `prod`.
   diyalog_bellegi: prod
+  # 🔴 `M-4` — DÖNEM BELİRTİLMEDİYSE **BEYANLI VARSAYIM** (verinin son 12 ayı).
+  #   Ölçülen kusur: korpusun **%13,7'si** `CLARIFY:dönem`; P/R turlarında **on**
+  #   senaryoda ölçü·kırılım·sıralama çözülmüşken tek eksik dönem yüzünden cevap
+  #   tutuldu. Mekanizma `donem_capasi.varsayilan_yerinde` (gerekçe orada).
+  #   ⚠ `off` bilinçli ve `KURAL B` gereği: bu bir **davranış değişikliğidir** —
+  #   "sormak" yerine "varsayıp söylemek". Kazanç (kapsam) ile bedel (`sessiz_yanlis`)
+  #   ölçülmeden `alpha` olmaz; doğruluk vetosu kutsaldır.
+  #   ⚠ Varsayım **kataloğa değil VERİYE** bağlı: bayat bir beyan yanlış pencere üretir,
+  #   veri kendini günceller. Ölçülemezse hiçbir şey yapılmaz (fail-closed) ve
+  #   netleştirme aynen çalışır — kaldırılmadı, ikinci seçenek oldu.
+  varsayilan_donem: "off"   # ⚠ TIRNAK ŞART: YAML 1.1 çıplak `off`u BOOLEAN okur
   t2_anlatici: alpha   # 🔴 G5 — AÇILDI (2026-08-07). Kapalılığın sebebi bir KARAR
   #   değil, ÖLÇÜLMEMİŞLİKTİ: MIMARI §6.19z'de kazanç ölçümü "⊘ ÖLÇÜLEMEDİ — kota".
   #   Üç ön koşul da sağlandı ve üçü de FAIL-CLOSED:

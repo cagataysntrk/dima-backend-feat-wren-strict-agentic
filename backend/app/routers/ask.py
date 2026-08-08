@@ -2264,6 +2264,15 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         if _capa.tasi_yerinde(cq, body.cube_query or None, body.question, cube_meta):
             return None
 
+        # 🔴 `M-4` — ÇAPA YOKSA **BEYANLI VARSAYIM**: sormak tek seçenek değil.
+        # Gerekçe, sınır ve *"neden kataloğa değil veriye bağlandı"* `donem_capasi.
+        # varsayilan_yerinde` docstring'inde. ⚠ Bayrak kapalıyken bu satır hiç koşmaz
+        # (`KURAL B`) ve netleştirme aşağıda **aynen** durur — kaldırılmadı, ikinci
+        # seçenek oldu.
+        if ("varsayilan_donem" in resolve_for(settings, principal)
+                and _capa.varsayilan_yerinde(cq, service, cube_meta)):
+            return None
+
         # 🔴 `DA-10` — **ÖNCE NE ANLADIĞINI SÖYLE, SONRA SOR.**
         #
         # `_PERIOD_TEXT` elle yazılmış bir dizeydi ve yalnız **soruyordu**:

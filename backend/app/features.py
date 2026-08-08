@@ -37,6 +37,26 @@ _SCOPE_ORDER = ("global", "sector", "tenant", "role", "user")
 #   3) Tüketen yüzeyi `useFeature("<key>")` ile geçitle (frontend).
 #   4) Gerekiyorsa admin panelden tenant/rol/kullanıcı override'ı ile aç.
 FLAG_REGISTRY: dict[str, dict[str, str]] = {
+    "varsayilan_donem": {
+        "label": "Varsayılan dönem — sormak yerine BEYANLA varsay",
+        "description": "🔴 `M-4`. Dönem belirtilmemiş bir soruda sistem bugün cevabı "
+                       "**tutup soruyor** (*«… çıkarabilirim — hangi dönem için?»*). "
+                       "Ölçüldü: korpusun **%13,7'si** bu netleştirme; canlı turlarda "
+                       "**on** kez ölçü·kırılım·sıralama çözülmüşken tek eksik dönem "
+                       "yüzünden cevap gelmedi. Açıkken sistem **verinin son 12 ayını** "
+                       "alır ve bunu **görünür biçimde söyler** — *«Dönem belirtmedin — "
+                       "verinin son 12 ayı alındı (01.07.2025 – 30.06.2026).»* "
+                       "⚠ Varsayım **kataloğa değil VERİYE** bağlıdır (`veri_araligi`): "
+                       "bayat bir beyan yanlış pencere üretir, veri kendini günceller. "
+                       "⚠ Aralık **ölçülemezse hiçbir şey yapılmaz** ve netleştirme "
+                       "bugünkü gibi çalışır (fail-closed). Netleştirme **kaldırılmadı**, "
+                       "ikinci seçenek oldu. "
+                       "🔴 `off` bilinçli: bu bir **davranış değişikliğidir** ve kazancı "
+                       "(kapsam) ile bedeli (`sessiz_yanlis`) ölçülmeden açılmaz — "
+                       "doğruluk vetosu kutsaldır. *Bir varsayımı yapmak değil, "
+                       "yaptığını söylememek yasaktır.*",
+        "category": "deneyim",
+    },
     "diyalog_bellegi": {
         "label": "Diyalog belleği — sistem sorduğunu hatırlar",
         "description": "🔴 `G2`. Sistem bir yuva sorduğunda (*«hangi dönem?»*) durumu "
