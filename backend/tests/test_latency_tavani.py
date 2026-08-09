@@ -69,7 +69,7 @@ def _kayitli_p50() -> tuple[float | None, int]:
     ⚠ Kaynak **koşum değil kayıttır**: bu kapı bir sağlayıcı çağırmaz, bir konteyner
     başlatmaz, bir sayı uydurmaz. Kayıt yoksa test **atlanır** ve bunu **söyler**.
     """
-    kayit = Path(__file__).resolve().parent.parent / "lab" / "reports" / "latency.md"
+    kayit = Path(__file__).resolve().parent.parent / "lab" / "olcumler" / "latency.md"
     try:
         m = _P50.search(kayit.read_text(encoding="utf-8"))
     except OSError:
@@ -83,7 +83,7 @@ def test_LATENCY_TAVANI_ASILMIYOR():
     """🔴 `/ask` medyan gecikmesi tavanın altında mı — **sessiz erozyon kapısı**."""
     p50, n = _kayitli_p50()
     if p50 is None or n < 50:
-        pytest.skip("gecikme kaydı yok (lab/reports/latency.md) — kapı ölçemediğini söyler")
+        pytest.skip("gecikme kaydı yok (lab/olcumler/latency.md) — kapı ölçemediğini söyler")
     assert p50 <= TAVAN_P50_MS, (
         f"🔴 `/ask` medyan gecikmesi **{p50:.0f} ms** — tavan {TAVAN_P50_MS} ms "
         f"(taban {TABAN_P50_MS} ms, {n} örnek).\n"
