@@ -53,8 +53,35 @@ from typing import Any
 
 _log = logging.getLogger("dima.plan_garson")
 
-#: Bayrak adı. ⚠ Tek yerde yazılı: `sarmala()` dışında kimse bu dizeyi okumaz.
+#: Bayrak adı. ⚠ Tek yerde yazılı: `acik_mi()` dışında kimse bu dizeyi okumaz.
 BAYRAK = "orkestrator_plan"
+
+#: 🔴 **`O-12` — PLAN TELEMETRİSİ.** Bu katmanda **tek bir sayaç yoktu**: bayrak
+#: açıldığında *«kaç plan denendi, kaçı reddedildi, hangi sebeple, kaç adımlıydı»*
+#: sorusunun cevabı yoktu ve `EE` turunun A/B'si bunu **konteyner logundan elle**
+#: çıkarmak zorunda kaldı.
+#:
+#: ⚠ `payda kutsaldır` kuralının bu katmandaki karşılığı: `denendi` payda, geri kalanı
+#: paydır. Biri olmadan öteki okunamaz. *Sayamadığın şeyi geliştiremezsin; ve
+#: sayamadığın bir şeyin iyileştiğini iddia etmek, ölçmemenin en pahalı hâlidir.*
+#:
+#: ⊙ Süreç ömürlü ve **kilitsiz**: bu sayaçlar bir karar vermez, bir ölçüm verir. Bir
+#: yarışta bir sayının kaybolması, kilit maliyetinden ucuzdur.
+SAYAC: dict[str, int] = {
+    "denendi": 0,          # `plan_kur` çağrıldı
+    "gecerli": 0,          # ilk denemede şema-geçerli
+    "onarildi": 0,         # tek düzeltme turu kurtardı
+    "dustu": 0,            # ikisinde de olmadı
+    "tek_adimli": 0,       # 🔴 `R2`'nin ölçüsü: basit soru basit kaldı mı
+    "cok_adimli": 0,
+    "adim_toplami": 0,     # ortalama adım = adim_toplami / (tek+cok)
+}
+
+
+def sayaclar() -> dict[str, int]:
+    """Ölçüm okuyucusu — **kopyasını** verir. Doğrudan sözlüğü vermek, okuyanın
+    yazabilmesi demekti."""
+    return dict(SAYAC)
 
 
 def plan_uret(llm: Any, question: str, catalog: str, index: dict,
@@ -70,6 +97,7 @@ def plan_uret(llm: Any, question: str, catalog: str, index: dict,
         if getattr(llm, "sema_kullanir", False):
             from app.plan_semasi import plan_json_schema
             _sema = plan_json_schema(index, azami_adim=azami_adim)
+        SAYAC["denendi"] += 1
         _neden: list[str] = []
         plan = _plani_oku(llm.plan_kur(question, catalog, _sema), neden=_neden)
         if plan is None:
@@ -89,10 +117,17 @@ def plan_uret(llm: Any, question: str, catalog: str, index: dict,
                        + "\nAynı soruyu, bu kez sözleşmeye UYARAK yeniden planla.")
             plan = _plani_oku(llm.plan_kur(_duzelt, catalog, _sema))
             if plan is None:
+                SAYAC["dustu"] += 1
                 _log.info("plan: düzeltme turundan sonra da kullanılabilir plan yok")
                 return None
+            SAYAC["onarildi"] += 1
             _log.info("plan: DÜZELTME TURU işe yaradı")
-        _log.info("plan: %d adım (%s)", len(plan["adimlar"]),
+        else:
+            SAYAC["gecerli"] += 1
+        _n = len(plan["adimlar"])
+        SAYAC["adim_toplami"] += _n
+        SAYAC["tek_adimli" if _n == 1 else "cok_adimli"] += 1
+        _log.info("plan: %d adım (%s)", _n,
                   "·".join(a.get("fiil", "?") for a in plan["adimlar"]))
         return plan
     except Exception:
@@ -158,6 +193,78 @@ def _plani_oku(ham: str, *, neden: list[str] | None = None) -> dict | None:
                 + f" — yalnız şunlar yazılabilir: {', '.join(sorted(_serbest - {'fiil'}))}")
             return None
     return {"adimlar": adimlar}
+
+
+class PlanGarsonu:
+    """🔴🔴 **`O-14` — GARSON = ORKESTRATÖR.** Bugünkü `select_cube` sözleşmesini konuşur,
+    altında **plan** üretir.
+
+    ## Neden bir basamak DEĞİL, bir çıktı biçimi
+
+        bugünkü tasarım : route → garson → [orkestratör]   ← 3 yollu karar, YENİ sınırlar
+        KARAR           : route → garson(= orkestratör)     ← 2 yollu, sınır AYNI
+                                    └ çıktı 1 adım ya da N adım
+
+    ⊙ Değişen şey *hangi yola gidilir* değil, **garsonun çıktısının şekli**. route↔garson
+    ayrımı — ~100 testin koruduğu sınır — **dokunulmadan** kalır. *Bir yeteneği bir basamak
+    olarak eklemek karar yüzeyini büyütür; bir çıktı biçimi olarak eklemek büyütmez.*
+
+    🔴 **Ve LLM çağrı sayısı DEĞİŞMEZ** — ölçülmüş bir gerçek, bir umut değil: garson zaten
+    yalnız `route_hit is None` dalında çağrılıyor (`ask.py:3579`). Göç *ne zaman* çağrıldığını
+    değil *ne döndürdüğünü* değiştiriyor. `E6`'nın (gecikme çarpılır) riski azaltılmıyor,
+    **yapısal olarak sıfırlanıyor**.
+
+    ## ⟳ `B` koşumunun `-10` puanı bu tasarımı çürütmüyor — YARIM hâlini çürüttü
+
+    `_select_consistent` `k` örneği **tek** kaynaktan çeker ve oylar. `B`'de plan araya
+    girince örneklerin bir kısmı plandan, bir kısmı `select_cube` **yedeğinden** geliyordu:
+    iki farklı dağılım aynı sandıkta. *Bir oylamanın geçerliliği örneklerin özdeşliğine
+    dayanır.*
+
+    🔴 Bu yüzden burada **`select_cube` yedeği YOKTUR**: model çok adımlı dediyse çok
+    adımlıdır ve plan **koşulur** — ikinci bir görüş sorulmaz. Karışımı kaldıran şey budur.
+    ⚠ Yedek yalnız **arıza** hâlinde var (`except`): bir genişleme, genişlettiği şeyi bozamaz.
+
+    ## Çok adımlı plan bir oy DÜŞÜŞÜ değil, bir CEVAPTIR
+
+    `B`'de çok adımlı plan cevabı yok ediyordu çünkü fiillerin dördü **ölüydü** (`O-10`) ve
+    sözleşme modele **öğretilmemişti** (`O-11`). İkisi kapandı; artık plan **koşabiliyor** ve
+    `plan_tuketici` onu bir cevaba çeviriyor. Plan `request.state`'e bırakılır — çağıranın
+    yereline değil, çünkü bu kancaya **yukarıdaki her yoldan** gelinir (`EE19`'un dersi).
+    """
+
+    def __init__(self, ic: Any, index: dict, istek: Any = None) -> None:
+        self._ic, self._index, self._istek = ic, index or {}, istek
+
+    def __getattr__(self, ad: str) -> Any:      # pragma: no cover - saydamlık
+        return getattr(self._ic, ad)
+
+    def select_cube(self, question: str, catalog: str, sema: dict | None = None) -> str:
+        try:
+            plan = plan_uret(self._ic, question, catalog, self._index)
+            if plan is None:
+                return self._ic.select_cube(question, catalog, sema)
+            from app.plan_semasi import tek_adimli
+            cq = tek_adimli(plan)
+            if cq is not None:
+                return json.dumps(cq, ensure_ascii=False)
+            # ⚠ Çok adımlı: oy düşer (kanonik bir `CubeQuery` yok — `R1`) ve karar
+            # `plan_kosucu.dogrula()`'ya geçer: tip·DAG·bütçe denetimi oylamadan **sert**.
+            if self._istek is not None:
+                _var = getattr(self._istek, "state", None)
+                if _var is not None:
+                    _var.plan_taslagi = plan
+            return "{}"
+        except Exception:
+            _log.warning("plan garsonu düştü → bugünkü select_cube", exc_info=True)
+            return self._ic.select_cube(question, catalog, sema)
+
+
+def sarmala(llm: Any, index: dict, settings: Any, principal: Any = None,
+            istek: Any = None) -> Any:
+    """🔴 `KURAL B`'nin tek satırı: kapalıyken **nesnenin kendisi** döner."""
+    return (PlanGarsonu(llm, index, istek)
+            if acik_mi(settings, principal, llm) else llm)
 
 
 def acik_mi(settings: Any, principal: Any = None, llm: Any = None) -> bool:

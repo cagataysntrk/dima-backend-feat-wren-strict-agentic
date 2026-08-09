@@ -160,7 +160,53 @@ def cube_satiri(c: dict, *, sozluk: bool) -> str:
     return line
 
 
-def build_catalog(schema: dict, *, sozluk: bool = False) -> tuple[str, dict]:
+def cok_sahipli_olculer(cubes: list[dict]) -> dict[str, list[str]]:
+    """Birden çok küpte tanımlı ölçü adları → sahipleri. **Ölçülür, beyan edilmez.**
+
+    ⊙ Ölçüldü (2026-08-09, boyahane): 127 ölçü adının **9'u** çok sahipli
+    (`toplam_fire_kg` · `ilk_seferde_tamam_yuzde` · `bakiye` · `toplam_durus_dakika` …).
+    Ve modelin kararsızlığının **tamamı** bu dokuzun etrafında dönüyor.
+    """
+    from collections import defaultdict
+
+    sahip: dict[str, list[str]] = defaultdict(list)
+    for c in (cubes or []):
+        for m in (c.get("measures") or []):
+            sahip[str(m)].append(str(c.get("name")))
+    return {m: v for m, v in sorted(sahip.items()) if len(v) > 1}
+
+
+def _belirsizlik_bloku(cubes: list[dict]) -> str:
+    """🔴🔴 **BELİRSİZLİĞİ MODELE GÖSTER — çünkü seçemediği için değil, belirsiz
+    olduğunu BİLMEDİĞİ için savruluyor.**
+
+    Ölçüldü: aynı soru iki kez sorulduğunda üretim yolu (k=3 oylama) **8'de 1**
+    farklı `cube_query` üretiyor; ham tek çağrıda **8'de 2**. Sapan soruların hepsi
+    çok sahipli bir ölçü içeriyordu. Katalog o güne kadar bu ölçülerin **birden çok
+    küpte** olduğunu hiçbir yerde söylemiyordu — model iki geçerli seçenek arasında
+    yazı-tura atıyordu ve bunu bilmiyordu bile.
+
+    🔴 **İşaret ölçü adına BİTİŞİK DEĞİL — ve bu bir üslup tercihi değil, ödenmiş bir
+    faturadır.** `§CC-D`'de yön işareti (`↓`) ölçü adının yanına yazılmıştı; model onu
+    **adın parçası** sandı (`toplam_su_lt↓`) ve beyaz liste her `↓` taşıyan ölçüyü
+    reddetti. *Bir metne konan her işaret, o metnin bir parçası olarak okunabilir —
+    o yüzden işaretler ayrı bir bölümde durur.*
+
+    ⚠ Bu blok bir **karar vermez**: hangisinin doğru olduğunu söylemez, yalnız
+    *«burada bir seçim var»* der. Sahiplik bir **alan kararıdır** ve onu araca
+    verdirmek dayatmadır (`r1_envanteri`'nin ölçtüğü ders: karar araca bırakılınca
+    korpus %93,2 → %92,6).
+    """
+    cok = cok_sahipli_olculer(cubes)
+    if not cok:
+        return ""
+    satirlar = "\n".join(f"  {m}: {' | '.join(v)}" for m, v in cok.items())
+    return ("\n\n⚠ AYNI ADI TAŞIYAN ÖLÇÜLER (birden çok cube'da tanımlı — hangisini "
+            "kastettiğini SORUDAN çıkar, rastgele seçme):\n" + satirlar)
+
+
+def build_catalog(schema: dict, *, sozluk: bool = False,
+                  belirsizlik: bool = False) -> tuple[str, dict]:
     """LLM prompt'u için cube kataloğu metni + doğrulama indeksi.
 
     ⚠ **İki dönüş, iki farklı sözleşme.** Metin sağlayıcıya gider ve **değişebilir**;
@@ -190,6 +236,9 @@ def build_catalog(schema: dict, *, sozluk: bool = False) -> tuple[str, dict]:
                    f"AYNI şeyin başka adlarıdır (cevapta teknik adı kullan):\n" + catalog)
     if enum_lines:
         catalog += "\n\nFiltre değerleri (birebir kullan):\n" + "\n".join(enum_lines)
+    # ⚠ `KURAL B`: bayrak kapalıyken **tek karakter** eklenmez → istem bayt bayt bugünkü.
+    if belirsizlik:
+        catalog += _belirsizlik_bloku(cubes)
     return catalog, index
 
 
@@ -217,9 +266,15 @@ def metin_ve_indeks(schema: dict, principal, settings=None) -> tuple[str, dict]:
     from app.config import get_settings
     from app.features import resolve_for
 
+    # ⚠ İkisi de `try`'dan ÖNCE bağlanır. Yalnız `try` içinde bağlamak, `except`
+    # dalında `UnboundLocalError` demekti — bu oturumda **üçüncü** kez çıkan sınıf
+    # (`llm_probe` · `AZAMI_SORGU` · bu). *Koşullu bağlanan bir ad, tanımsız bir addan
+    # daha sinsidir: statik olarak var, çalışırken yok.*
+    acik = _bel = False
     try:
-        acik = "katalog_sozlugu" in resolve_for(settings or get_settings(), principal)
+        _bayraklar = resolve_for(settings or get_settings(), principal)
+        acik = "katalog_sozlugu" in _bayraklar
+        _bel = "katalog_belirsizlik" in _bayraklar
     except Exception:                                      # noqa: BLE001 — katalog düşmez
-        _log.warning("katalog_sozlugu çözülemedi → sözlüksüz katalog", exc_info=True)
-        acik = False
-    return build_catalog(schema, sozluk=acik)
+        _log.warning("katalog bayrakları çözülemedi → sade katalog", exc_info=True)
+    return build_catalog(schema, sozluk=acik, belirsizlik=_bel)

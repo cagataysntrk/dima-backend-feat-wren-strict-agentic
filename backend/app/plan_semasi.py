@@ -421,13 +421,44 @@ def plan_sistem_metni(catalog: str) -> str:
         "- Aritmetik, koşul, döngü YAZAMAZSIN. Yalnız fiiller ve adım referansları.\n"
         "- Tarih YAZMA: dönemi `period_expr` alanına kullanıcının kendi ifadesiyle "
         "(sistemin diline çevirerek) koy; tarihi Python hesaplar.\n"
-        "- Katalogda karşılığı olmayan bir adım UYDURMA: o adımı hiç yazma.\n"
+        # 🔴 Bu satır `_cube_select_system`'den **ödünç alındı** ve gerekçesi ölçüldü:
+        # plan istemi *"uydurma"* diyordu ama *"YALNIZ listelenenleri kullan"* demiyordu.
+        # `O-13`: model `cube: "uretim"` / `toplam_miktar` uydurdu (ikisi de katalogda
+        # YOK) ve beyaz listeden düştü — oysa **aynı katalogla** bugünkü istem uydurmuyor.
+        # *Bir yasak, olumlu karşılığı yazılmadan yarım kalır.*
+        "- 🔴 SADECE yukarıda listelenen cube / ölçü / boyut ADLARINI kullan. Katalogda "
+        "karşılığı olmayan bir adım UYDURMA: o adımı hiç yazma.\n"
         "- 🔴 HER ADIMDA O FİİLİN ZORUNLU ALANLARININ HEPSİNİ YAZ. Eksik bir alan planı "
         "geçersiz kılar; fazladan bir alan da geçersiz kılar.\n"
-        "\nÖRNEK — «en kötü makineyi bul ve neden öyle olduğunu araştır»:\n"
+        "- 🔴 SIRALAMA ve LİMİT bir `SORGU` adımının İÇİNDEDİR (`order`/`limit`), ayrı bir "
+        "adım DEĞİLDİR. *«en yüksek 5 müşteri»* TEK adımdır.\n"
+        # ⟳ Kural **iki kez** düzeltildi ve ikisi de `O-13` denklik kapısında ölçüldü:
+        # (1) örnekteki `period_expr` her sorguya kopyalanıyordu → örnekten çıkarıldı;
+        # (2) *"dönem uydurma"* denince model `period_expr`'i **tamamen bıraktı** ve
+        # dönemi `timeDimensions`'a yazmaya başladı — aşırı düzeltme. İkisinin **ayrı**
+        # işler olduğu artık açıkça yazılı. *Bir yasağı, yerine ne konacağını söylemeden
+        # koymak, kusuru başka bir alana taşır.*
+        "- 🔴 DÖNEM: kullanıcı bir dönem YAZDIYSA (*«bu yıl»*, *«geçen ay»*) onu "
+        "`period_expr`'e **kullanıcının kendi ifadesiyle** yaz. YAZMADIYSA hiç koyma — "
+        "*«makinelere göre ortalama oee»* dönemsizdir ve öyle kalmalıdır.\n"
+        "- 🔴 `timeDimensions` DÖNEM FİLTRESİ DEĞİLDİR, **kırılımdır**: yalnız *«aylara "
+        "göre»* / *«çeyreklere göre»* gibi bir zaman EKSENİ istendiğinde konur. Dönem "
+        "`period_expr`'e gider, `timeDimensions`'a değil.\n"
+        "- 🔴 KIRILIM (`dimensions`) ve zaman ekseni de tek bir `SORGU` adımının "
+        "içindedir. *«aylara göre üretim»* TEK adımdır.\n"
+        # 🔴 **İKİ ÖRNEK, VE BİRİNCİSİ TEK ADIMLI — sıra bilinçli.**
+        # Ölçüldü (`O-13` denklik kapısı): tek örnek çok adımlı olduğunda model basit
+        # soruyu da bölüyordu (*«en yüksek cirolu 5 müşteri»* → çok adımlı). Ve ilk
+        # örnekteki `period_expr` **her** sorguya kopyalanıyordu — kullanıcı dönem
+        # yazmadığı hâlde. *Bir örnek bir tarif değil bir kalıptır; içine koyduğun her
+        # alan, koymadığın her sorguda da görünür.*
+        "\nÖRNEK 1 — «makinelere göre ortalama oee» (TEK ADIM, dönem YOK):\n"
+        '{"adimlar":[{"fiil":"SORGU","cube_query":'
+        '{"cube":"oee","measures":["ort_oee"],"dimensions":["makine"]}}]}\n'
+        "\nÖRNEK 2 — «en kötü makineyi bul ve neden öyle olduğunu araştır»:\n"
         '{"adimlar":[\n'
         '  {"fiil":"SORGU","cube_query":{"cube":"oee","measures":["ort_oee"],'
-        '"dimensions":["makine"],"period_expr":"bu yıl"}},\n'
+        '"dimensions":["makine"]}},\n'
         '  {"fiil":"BAGLA","kaynak":"$1","boyut":"makine","olcu":"ort_oee"},\n'
         '  {"fiil":"HESAPLA","kaynak":"$1","hedef":"$2","boyut":"makine","olcu":"ort_oee"},\n'
         '  {"fiil":"SUZ","cube_query":"$1","boyut":"makine","deger":"$2"},\n'

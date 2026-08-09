@@ -204,6 +204,19 @@ features:
   # fiillerinin çalıştırıcıları henüz bağlı değil, ve serbest-JSON sağlayıcı adım
   # sözleşmesine uymuyor (`ZORUNLU_ALANLAR` onları düşürüyor — doğru davranış).
   # ⚠ Bir bayrağı *"belki bir işe yarar"* diye açık bırakmak, ölçmemenin kibar hâlidir.
+  # 🔴 ÖLÇÜLMÜŞ BİR KUSURUN KARŞI ÖNLEMİ — aynı soru, farklı cevap.
+  # Ölçüldü (2026-08-09, 8 soru × 2 koşum): ham tek çağrıda **2/8**, üretim yolunda
+  # (k=3 oylama) **1/8** farklı `cube_query`. Sapan soruların hepsi **çok sahipli** bir
+  # ölçü içeriyordu — 127 ölçü adının **9'u** birden çok küpte tanımlı ve katalog bunu
+  # hiçbir yerde söylemiyordu. Model seçemediği için değil, **belirsiz olduğunu
+  # bilmediği** için savruluyordu.
+  # ⚠ Blok ölçü adına BİTİŞİK DEĞİL, ayrı bir bölümde (`§CC-D`: `↓` işareti ada
+  # bitişik yazılınca model onu adın parçası sandı ve beyaz liste hepsini reddetti).
+  # ⚠ Blok bir KARAR VERMEZ: hangisinin doğru olduğunu söylemez, *«burada bir seçim
+  # var»* der. Sahiplik bir alan kararıdır (`metrik_kaydi.hakem` + `sahiplenilen_terimler`).
+  # 🔴 "off" — kazancı HENÜZ ölçülmedi (ölçüm zaman aşımına uğradı). Kapalıyken katalog
+  # metnine **tek karakter** eklenmez → istem bayt bayt bugünkü.
+  katalog_belirsizlik: "off"
   orkestrator_plan: "off"
   llm_sema_kisitli: beta  # FAZ 3a: Intent-JSON'u sağlayıcının NATIVE tool-use'una taşı —
                           # cube/ölçü/boyut adları o anki kataloğun ENUM'u olarak şemaya

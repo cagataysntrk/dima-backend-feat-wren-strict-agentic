@@ -212,3 +212,64 @@ def test_YARDIMCININ_IMZASI_EN_DAR_KAPSAMA_GORE(schema):
     # Ve gerçekten `settings`siz çalışmalı:
     metin, idx = km.metin_ve_indeks(schema, None)
     assert metin and idx
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BELİRSİZLİK BLOKU — kararsızlığın ölçülmüş karşı önlemi
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def test_BELIRSIZLIK_BLOKU_BAYRAGA_BAGLI():
+    """🔴 `KURAL B` — kapalıyken katalog metnine **tek karakter** eklenmez."""
+    from app.katalog_metni import build_catalog
+    sema = {"cubes": [{"name": "oee", "measures": ["fire"], "dimensions": []},
+                      {"name": "parti", "measures": ["fire"], "dimensions": []}],
+            "models": []}
+    kapali, _ = build_catalog(sema)
+    acik, _ = build_catalog(sema, belirsizlik=True)
+    assert "AYNI ADI TAŞIYAN" not in kapali
+    assert "AYNI ADI TAŞIYAN" in acik and acik.startswith(kapali), (
+        "açık hâl kapalı hâlin ÜSTÜNE eklemiyor — istem yeniden yazılmış")
+
+
+def test_ISARET_OLCU_ADINA_BITISIK_DEGIL():
+    """🔴🔴 `§CC-D`'nin ödenmiş faturası.
+
+    Yön işareti (`↓`) ölçü adının **yanına** yazılmıştı; model onu **adın parçası**
+    sandı (`toplam_su_lt↓`) ve beyaz liste her `↓` taşıyan ölçüyü reddetti — fire,
+    duruş, maliyet, karbon **sessizce ulaşılamaz** oldu.
+
+    *Bir metne konan her işaret, o metnin bir parçası olarak okunabilir — o yüzden
+    işaretler ayrı bir bölümde durur.*
+    """
+    from app.katalog_metni import build_catalog
+    sema = {"cubes": [{"name": "oee", "measures": ["fire"], "dimensions": []},
+                      {"name": "parti", "measures": ["fire"], "dimensions": []}],
+            "models": []}
+    acik, _ = build_catalog(sema, belirsizlik=True)
+    govde, blok = acik.split("⚠ AYNI ADI TAŞIYAN", 1)
+    # Cube satırlarında ölçü adı **süssüz** kalmalı.
+    assert "fire]" in govde or "fire," in govde or "fire " in govde
+    assert "⚠" not in govde and "|" not in govde.split("measures[")[-1].split("]")[0]
+
+
+def test_BLOK_KARAR_VERMEZ():
+    """⚠ Blok *«hangisi doğru»* demez, *«burada bir seçim var»* der.
+
+    Sahiplik bir **alan kararıdır** ve onu araca verdirmek dayatmadır —
+    `r1_envanteri`'nin ölçtüğü ders: karar araca bırakılınca korpus %93,2 → %92,6.
+    """
+    from app.katalog_metni import _belirsizlik_bloku
+    blok = _belirsizlik_bloku([{"name": "oee", "measures": ["fire"]},
+                               {"name": "parti", "measures": ["fire"]}])
+    assert "oee | parti" in blok
+    for yasak in ("kullan:", "doğrusu", "tercih et", "her zaman"):
+        assert yasak not in blok, f"blok karar veriyor: `{yasak}`"
+
+
+def test_COK_SAHIPLI_OLCU_OLCULUR_BEYAN_EDILMEZ():
+    """⊙ Liste elle yazılsaydı katalog değişince **bayatlardı** — ve bu deponun bir
+    numaralı kusur sınıfı."""
+    from app.katalog_metni import cok_sahipli_olculer
+    r = cok_sahipli_olculer([{"name": "a", "measures": ["x", "y"]},
+                             {"name": "b", "measures": ["x"]}])
+    assert r == {"x": ["a", "b"]}, r

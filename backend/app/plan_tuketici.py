@@ -225,7 +225,12 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     except Exception:
         _log.warning("katalog kurulamadı → boşluk kapanmadı", exc_info=True)
         return None
-    plan = plan_garson.plan_uret(llm, soru, catalog, index)
+    # 🔴 `O-14` — garson zaten bir plan ürettiyse **ikinci kez sorma**. `request.state`
+    # okunuyor çünkü bu kancaya yukarıdaki HER yoldan gelinir ve çağıranın yereli
+    # garantili değil (`EE19`'un `UnboundLocalError` dersi).
+    plan = getattr(getattr(request, "state", None), "plan_taslagi", None)
+    if not plan:
+        plan = plan_garson.plan_uret(llm, soru, catalog, index)
     if not plan:
         return None
     _n = len(plan["adimlar"])

@@ -89,6 +89,16 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("o14-garson-orkestrator-oldu", 1,
+     "🔴🔴 **`O-14` — GARSON = ORKESTRATÖR.** Tek satır: `_g = sarmala(...)`. ⊙ Bu bir "
+     "**basamak eklemesi değil**, garsonun **çıktı biçiminin** genişlemesi — karar yüzeyi "
+     "(route↔garson, ~100 testin koruduğu sınır) **dokunulmadan** kalıyor. *Bir yeteneği "
+     "bir basamak olarak eklemek karar yüzeyini büyütür; bir çıktı biçimi olarak eklemek "
+     "büyütmez.* ⚠ Satır `_select_consistent`'ın **argümanı** olduğu için ayrı: üç "
+     "satırlık bir çağrıya sıkıştırmak yerine adlandırıldı, çünkü `sarmala()` bayrak "
+     "çözümünü de yapıyor ve o karar okunabilir kalmalı. 🔴 LLM çağrı sayısı DEĞİŞMİYOR: "
+     "garson zaten yalnız `route_hit is None` dalında çağrılıyor — göç *ne zaman* "
+     "çağrıldığını değil *ne döndürdüğünü* değiştiriyor."),
     ("f821-capraz-alan-pilotu-ic-fonksiyonu-cagiriyordu", 1,
      "🔴 **GİZLİ BİR `NameError` KAPATILDI.** `_capraz_alan_pilotu` modül düzeyindeydi ama "
      "`ask()`in **iç** fonksiyonu `_answer_from_cube_query`'yi çağırıyordu: pilot bir cevap "

@@ -23,7 +23,7 @@ from app import varlik
 from app import context as app_context
 from app import netlestirme as _netlestirme
 from app import prescribe
-from app import plan_tuketici as _plan_tuketici
+from app import plan_garson as _plan_garson, plan_tuketici as _plan_tuketici
 from app import planner as _planner
 from app import ask_jobs, cekirdek, followup, istek_kimligi, katman_b, typo_onerisi
 from app import soz as _soz
@@ -3692,8 +3692,12 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     # kaldırıldı**: plan `select_cube`'un yerine geçince oylamanın
                     # örnekleri iki farklı süreçten geliyordu ve arıza oranı %55 → %65'e
                     # ÇIKTI. Plan artık yalnız **boşlukta** çalışıyor (aşağıda).
+                    # 🔴 `O-14` — GARSON = ORKESTRATÖR. Bir basamak DEĞİL, garsonun
+                    # çıktı biçimi: karar yüzeyi (route↔garson) bayt bayt aynı kalır.
+                    # Bayrak kapalıysa `sarmala()` nesnenin kendisini döndürür.
+                    _g = _plan_garson.sarmala(llm_probe, cube_index, settings, principal, request)
                     parsed, uyum, eksen, adaylar = _select_consistent(
-                        llm_probe, _q_llm, catalog_text + _ent_kural, cube_index, k, _sema)
+                        _g, _q_llm, catalog_text + _ent_kural, cube_index, k, _sema)
                     parsed = varlik.geri_koy(parsed, _ent)
                     # 🔴 `AJ3.3` — dönem ifadesi **taze yolda da** çözülür ve çözücü
                     # takip yolunun **aynısıdır** (`_resolve_period` → `date_filters`).

@@ -576,6 +576,15 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "bugünkü yedi dokunuşuyla akar ve şema eski biçimdedir.",
         "category": "Anlama",
     },
+    "katalog_belirsizlik": {
+        "label": "Belirsiz ölçüleri katalogda göster",
+        "description": "Birden çok cube'da aynı adı taşıyan ölçüler (ör. «toplam fire» "
+                       "hem oee hem parti'de) katalog metninde AYRI bir bölümde "
+                       "listelenir. Model seçimi yine kendisi yapar — blok yalnız "
+                       "«burada bir seçim var» der. Ölçülen kusur: aynı soru iki kez "
+                       "sorulduğunda 8'de 1 farklı sorgu üretiliyordu.",
+        "category": "Doğruluk",
+    },
     "orkestrator_plan": {
         "label": "Planlayıcı = garson (çok adımlı plan)",
         "description": "Garson bir tek-cube sorgusu yerine ADIMLARDAN oluşan bir plan "
