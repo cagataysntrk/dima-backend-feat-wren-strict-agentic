@@ -310,6 +310,35 @@ boşa gider** — `sarmala()` çok adımlı planda `"{}"` döndürür ve `R1` ge
 planın **kanonik biçimi yoktur**, yani oylanamaz. Üç pahalı üretim, sonucu atılmak
 üzere yapılıyor. Gerçek kazanç oradadır ve **henüz alınmadı** (açık borç).
 
+#### ⟳🔴 2.0.5 · MERDİVENİN DÖRT BASAMAĞI — kullanıcı tarifi ve KODDAKİ KARŞILIĞI
+
+Kullanıcı (2026-08-10) merdiveni şöyle tarif etti ve bu bölüm onun **denetimidir**:
+
+> *"route bir şeyi kesinlikle bilip cevaplayabiliyorsa o cevaplar; yoksa hakem olarak
+> garson LLM'e düşer; garson **tek fişle** (cube_query) mükemmelce doğru yanıt
+> üretebiliyorsa bununla halleder; **tek fişte olmuyorsa orkestre eder**, parçalara
+> ayırır ve öylece bütünler."*
+
+| # | basamak | kod | koşul |
+|---|---|---|---|
+| 1 | **route** — kesin bilgi | `cube_router.route()` | `route_hit` doldu → cevap (`source=cube`, 0 LLM) |
+| 2 | **garson** — hakem | `_select_consistent(PlanGarsonu…)` | `route_hit is None` **ya da** `_supheli` |
+| 3 | **tek fiş** | `plan_semasi.tek_adimli(plan)` | plan 1 adımsa `cube_query` döner — eski `select_cube` sözleşmesi |
+| 4 | **orkestre** | `plan_tuketici.cevap()` | plan çok adımlıysa saklanır, tüketici koşar |
+
+**Ve denetim üç kusur buldu — üçü de bu sıranın ihlaliydi:**
+
+* 🔴 `O-17`: 4. basamak 1.'nin **önünde** duruyordu (çağrı koşulsuzdu). *«en yüksek
+  cirolu 5 müşteri»* route'ta `order DESC · limit 5` ile hazırken **cevapsız** kaldı.
+* 🔴 `O-21`: 4. basamak oylamada **görünmüyordu** — çok adımlı plan `"{}"` döndürüp
+  **çekimser** sayılıyor, bir *«tek fiş»* örneği iki *«orkestre»* örneğini eziyordu.
+  Şekil kararı (*"tek fiş yeter mi?"*) artık **oylanıyor**; içerik değil, **şekil**.
+* 🔴 `O-20/Y`: yeni yola konan denetçi (`uyum`) planın **kendi araçlarını** tanımıyordu
+  ve `BAGLA` ile karşılanan üstünlüğü *«uygulayamadım»* diye beyan ediyordu.
+
+*Bir merdivenin sırası, her basamağın kendi ön koşulunu uygulamasıyla korunur —
+yorumla değil.*
+
 #### Değişmezler — orkestratöre özel
 
 | # | değişmez | nerede |
@@ -326,6 +355,10 @@ planın **kanonik biçimi yoktur**, yani oylanamaz. Üç pahalı üretim, sonucu
 | **O10** | `period_expr` motora **gitmez**, çözülür — ve çözücü `ask()` ile **aynıdır** | `_resolve_period` |
 | **O11** | Geç gelen bir plan **atılmaz**: kullanım anında yeniden okunur (zaman aşımı görevi iptal etmez) | `plan_tuketici.cevap()` |
 | **O12** | ⟳ *(boş — `O-16` denendi ve **çürütüldü**; gerekçe §2.0.4'te durur)* | — |
+| **O13** | Orkestratör **yalnız boşlukta** konuşur ve bunu **kendisi** uygular | `plan_tuketici.cevap(route_hit=…)` |
+| **O14** | Plan **şekli** oylanır (*"tek fiş yeter mi?"*); içeriği oylanamaz (`R1`) | `state.plan_sekil` |
+| **O15** | Planın **adımla** karşıladığı niyet işareti beyan edilmez (yanlış *«eksik»* yok) | `_karsilanan` |
+| **O16** | Plan yolu da `uyum` beyan kapısından geçer — ikame sessiz kalamaz | `uyum.denetle` |
 
 #### Kabul ölçütü: A/B değil **DENKLİK**
 

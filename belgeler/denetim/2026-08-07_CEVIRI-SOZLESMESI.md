@@ -8177,3 +8177,68 @@ beraberlikti — yani bayrak tek başına o vakayı **çözmezdi**. Ölçülüp 
 | 4 uzun | *«bakım maliyeti en yüksek makine ve oee'si»* | 🟢 6 adım · iki küp |
 
 **Kapı (tur başı):** 4462 yeşil · korpus **%94.9** · `sessiz_yanlis` **10** · eval **+0.0%**.
+
+---
+
+## `VI` TURU — **MERDİVEN DENETİMİ**: kullanıcının tarifi ↔ koddaki karşılığı *(2026-08-10)*
+
+Kullanıcı merdiveni tarif etti ve bu tur onun **denetimi** oldu:
+
+> *"route kesinlikle bilip cevaplayabiliyorsa o cevaplar; yoksa garson LLM'e düşer;
+> garson tek fişle üretebiliyorsa bununla halleder; tek fişte olmuyorsa **orkestre
+> eder**, parçalara ayırır ve öylece bütünler."*
+
+Yapı kodda **birebir** duruyor. Ama üç kusur çıktı ve üçü de **sıranın ihlaliydi**.
+
+### 🔴🔴 `O-21` — 4. basamak oylamada GÖRÜNMÜYORDU
+
+Log damgaları (aynı istek):
+
+```
+22:33:14  plan: 1 adım (SORGU)                  ← bir örnek «tek fiş yeter»
+22:33:15  plan: 3 adım (SORGU·SORGU·MATRIS)     ← ötekiler «orkestre gerekli»
+22:33:23  orkestratör: route zaten cevapladı → hiç konuşmuyorum
+22:33:24  CEVAP: «iki ayrı konunun ölçüsünü birlikte istiyor…»   🔴 RED
+```
+
+Çok adımlı plan `"{}"` döndürüyor; beyaz liste onu `None` yapıyor ve oy **çekimser**
+sayılıyor. Yani bir *«basit okuma»* örneği, iki *«orkestre gerekli»* örneğini
+**görünmez kılarak** eziyor — `§V2`'nin *"en yalın okuma kazanır"* eğriliğinin bir
+seviye yukarısı. Ve `O-17` ön koşulu o **azınlık** okumasını route'un cevabı sanıp
+geçerli bir planı susturuyordu.
+
+🔴 Çok adımlı planın **içeriği** oylanamaz (`R1`: kanonik biçimi yok) — ama **şekli**
+oylanabilir: *"tek fiş yeter mi?"* ikili bir sorudur. Sayaç garsonda tutuluyor, karar
+tüketicide. *Bir kararı oylanamaz ilan etmek, onu tek bir örneğe bırakmaktır.*
+
+⚠ Gevşemenin **sınırı yazılı**: yalnız `route_hit` garsonun kendi tek-fiş okumasıyla
+**birebir aynıysa** devreye girer. Başka bir yoldan gelen `route_hit`'e dokunmaz.
+
+### 🔴 `O-20/Y` — kendi eklediğim beyan YANLIŞ POZİTİF üretti
+
+*«en çok fire veren makineyi bul ve o makinenin vardiya dağılımını göster»* → plan
+6 adım koştu, `BAGLA` en çok fire vereni **seçti** (`RAM-2`), ve cevabın altına
+*«en yüksek/en çok dedin ama **sıralama uygulayamadım**»* yazıldı. **Yanlış** —
+uygulandı, yalnız `order` alanıyla değil bir **adımla**.
+
+`uyum.denetle` bir `CubeQuery` denetleyicisidir; üstünlüğü `order`/`limit`'te arar.
+Planın `BAGLA`/`SIRALA`/`TREND`/`KIR` ile taşıdığı niyeti **göremez**. Kapı
+kaldırılmadı; planın **karşıladığı** işaretler ondan düşüldü.
+
+*Bir denetçiyi yeni bir yola koyarken o yolun kendi araçlarını da tanıtmak gerekir;
+yoksa tanımadığı her çözümü bir eksiklik sanar.*
+
+### Doğrulama
+
+| soru | önce | **sonra** |
+|---|---|---|
+| *«iade oranı en yüksek 3 müşteri **ve** ciro payları»* | 🔴 `iki_cube` reddi | 🟢 **4 adım** · `SORGU×2→RAPOR→ANLAT` · 2 bölüm |
+| *«en çok fire veren makineyi bul ve vardiya dağılımı»* | ⚠ yanlış *«eksik»* beyanı | 🟢 **5 adım** · beyan yok |
+
+### ⚠ KENDİ KURAL İHLALİM — kayda geçiyor
+
+Bu turda **kapı koşarken repoya yazdım** (`app/plan_garson.py`, `app/plan_tuketici.py`,
+test dosyası). Kural açık: *"kapı koşarken repoya YAZILMAZ — mount canlıdır, ölçüm
+karışır."* Koşum **kirlendi** ve sonucu okumadan **iptal edildi**; tazeleme sonrası
+temiz bir kapı koşuldu. *Kirli bir ölçümü okumak, hiç ölçmemekten kötüdür — çünkü
+okunan sayı bir güven üretir.*

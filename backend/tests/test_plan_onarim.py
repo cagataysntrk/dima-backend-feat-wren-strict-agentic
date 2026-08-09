@@ -521,3 +521,80 @@ def test_TREND_KUPUN_KENDI_ZAMAN_EKSENINI_KULLANIR():
         _app.yoy = _asil
     assert gorulen == ["donem_tarih"], (
         f"`TREND` küpün kendi zaman eksenini kullanmalı, sabit `tarih` değil: {gorulen}")
+
+
+def test_TEK_FIS_OKUMASI_AZINLIKTAYSA_PLAN_KONUSUR():
+    """🔴🔴 `O-21` — çok adımlı plan oylamada **görünmüyordu**.
+
+    Ölçüldü (canlı `VI`, log damgalarıyla):
+
+        22:33:14  plan: 1 adım (SORGU)                  ← bir örnek «tek fiş»
+        22:33:15  plan: 3 adım (SORGU·SORGU·MATRIS)     ← öteki «orkestre»
+        22:33:23  orkestratör: route zaten cevapladı → hiç konuşmuyorum
+
+    Çok adımlı örnek `"{}"` döndürüyor, beyaz liste onu `None` yapıyor ve oy
+    **çekimser** sayılıyor. Bir *«basit okuma»* örneği iki *«orkestre gerekli»*
+    örneğini **görünmez kılarak** eziyor; `O-17` ön koşulu da o azınlık okumasını
+    route'un cevabı sanıp geçerli bir planı susturuyordu.
+
+    *Bir kararı oylanamaz ilan etmek, onu tek bir örneğe bırakmaktır.*
+    """
+    from app import plan_tuketici
+
+    TEK = {"cube": "parti", "measures": ["toplam_fire_kg"]}
+
+    class _Istek:
+        class state:      # noqa: N801
+            plan_sekil = {"tek": 1, "cok": 2}
+            plan_tek_cq = TEK
+            plan_taslagi = None
+
+        class app:        # noqa: N801
+            class state:  # noqa: N801
+                llm = None
+
+    # Azınlık okuması → ön koşul GEÇMELİ (llm yok diye ilerisi None döner ama
+    # kapının ölçtüğü şey ön koşulun kesip kesmediği; log satırı ayırt eder).
+    import app.plan_garson as _pg
+
+    _asil = _pg.acik_mi
+    _pg.acik_mi = lambda *a, **k: True
+    try:
+        out = plan_tuketici.cevap(_Istek, service=None, schema={"cubes": []},
+                                  soru="x", route_hit={"cube_query": TEK})
+    finally:
+        _pg.acik_mi = _asil
+    assert out is None    # llm yok → ilerisi zaten durur
+
+    # Çoğunluk tek-fiş dediyse ön koşul KESMELİ — plan konuşmamalı.
+    _Istek.state.plan_sekil = {"tek": 2, "cok": 1}
+    assert plan_tuketici.cevap(_Istek, service=None, schema={"cubes": []}, soru="x",
+                               route_hit={"cube_query": TEK}) is None
+
+    # Başka bir yoldan gelen `route_hit`'e ASLA dokunulmaz (sınır yazılı olmalı).
+    import inspect
+
+    src = inspect.getsource(plan_tuketici.cevap)
+    assert "route_hit.get(\"cube_query\") == _tek_cq" in src, \
+        "gevşemenin sınırı yazılı değil — başka bir route_hit'i de yutardı"
+
+
+def test_PLANIN_KARSILADIGI_ISARET_BEYAN_EDILMEZ():
+    """🔴 `O-20/Y` — `BAGLA` üstünlüğü **uyguluyor**; *«sıralama uygulayamadım»* yanlış.
+
+    Ölçüldü (canlı `VI`): plan 6 adım koştu, `BAGLA` en çok fire vereni seçti (`RAM-2`)
+    ve cevabın altına *«en yüksek/en çok dedin ama sıralama uygulayamadım»* yazıldı.
+    `uyum.denetle` bir **`CubeQuery`** denetleyicisidir; üstünlüğü `order`/`limit`
+    alanlarında arar ve planın **adımla** taşıdığı niyeti göremez.
+
+    *Bir denetçiyi yeni bir yola koyarken o yolun araçlarını da tanıtmak gerekir;
+    yoksa tanımadığı her çözümü bir eksiklik sanar.*
+    """
+    import inspect
+
+    from app import plan_tuketici
+
+    src = inspect.getsource(plan_tuketici.cevap)
+    _i = src.index("_karsilanan")
+    assert '"BAGLA", "SIRALA"' in src[_i:_i + 900], "BAGLA/SIRALA üstünlüğü karşılıyor"
+    assert '"ustunluk", "kesme"' in src[_i:_i + 900], "yanlış beyan hâlâ çıkabilir"

@@ -300,6 +300,33 @@ class PlanGarsonu:
                 return self._ic.select_cube(question, catalog, sema)
             from app.plan_semasi import tek_adimli
             cq = tek_adimli(plan)
+            # 🔴🔴 `O-21` — **ŞEKİL SAYIMI: «tek fiş yeter mi?» sorusu OYLANABİLİR.**
+            #
+            # ⊙ Ölçüldü (canlı `VI`, log damgalarıyla — *«iade oranı en yüksek 3 müşteri
+            # **ve** ciro payları»*):
+            #
+            #     22:33:14  plan: 1 adım (SORGU)                  ← bir örnek «tek fiş»
+            #     22:33:15  plan: 3 adım (SORGU·SORGU·MATRIS)     ← öteki «orkestre»
+            #     22:33:23  orkestratör: route zaten cevapladı → hiç konuşmuyorum
+            #
+            # Çok adımlı örnek `"{}"` döndürüyor; beyaz liste onu `None` yapıyor ve oy
+            # **çekimser** sayılıyor. Yani bir *«basit okuma»* örneği, iki *«orkestre
+            # gerekli»* örneğini **görünmez** kılarak eziyor — `§V2`'nin *"en yalın
+            # okuma kazanır"* eğriliğinin bir seviye yukarısı.
+            #
+            # 🔴 Çok adımlı planın **içeriği** oylanamaz (`R1`: kanonik biçimi yok) —
+            # ama **şekli** oylanabilir: *"tek fiş yeter mi?"* ikili bir sorudur ve
+            # kanonik biçimi kendisidir. Sayaç burada tutulur çünkü örnekleri **yalnız
+            # bu nesne** görür.
+            #
+            # *Bir kararı oylanamaz ilan etmek, onu tek bir örneğe bırakmaktır.*
+            _st = getattr(self._istek, "state", None) if self._istek is not None else None
+            if _st is not None:
+                _sekil = getattr(_st, "plan_sekil", None) or {"tek": 0, "cok": 0}
+                _sekil["tek" if cq is not None else "cok"] += 1
+                _st.plan_sekil = _sekil
+                if cq is not None:
+                    _st.plan_tek_cq = cq
             if cq is not None:
                 return json.dumps(cq, ensure_ascii=False)
             # ⚠ Çok adımlı: oy düşer (kanonik bir `CubeQuery` yok — `R1`) ve karar

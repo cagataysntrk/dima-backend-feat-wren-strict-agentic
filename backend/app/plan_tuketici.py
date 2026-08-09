@@ -339,8 +339,34 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     # çağıranın hatırlamasına bırakmak, onu bir gün unutulacak bir âdete çevirir.
     # *Bir modül kendi ön koşulunu uygulamıyorsa, o bir ön koşul değil bir dilektir.*
     if route_hit is not None:
-        _log.info("orkestratör: route zaten cevapladı → boşluk YOK, hiç konuşmuyorum")
-        return None
+        # 🔴🔴 `O-21` — **AMA «route cevapladı» İLE «garsonun azınlık okuması» AYNI ŞEY
+        # DEĞİLDİR.** `O-17` ön koşulu doğruydu ve fazla genişti: `route_hit` iki farklı
+        # yerden gelebiliyor ve ikisi aynı ağırlıkta değil.
+        #
+        # ⊙ Ölçüldü (canlı `VI`): bir örnek *«1 adım»*, ötekiler *«3 adım
+        # (SORGU·SORGU·MATRIS)»* dedi. Çok adımlılar `"{}"` döndürüp **çekimser**
+        # sayıldığı için tek adımlı okuma oy kazandı, `route_hit` oldu ve bu ön koşul
+        # **geçerli bir planı susturdu**. Cevap: `iki_cube` reddi.
+        #
+        # 🔴 Ayrım: `route_hit` **garsonun kendi tek-fiş okumasıysa** ve garsonun
+        # örneklerinin **çoğunluğu** *"orkestre gerekli"* dediyse, o okuma bir cevap
+        # değil bir **azınlıktır** — plan konuşur. `route()`'un deterministik cevabı
+        # (ya da garsonun çoğunlukla desteklenen tek-fişi) **her zaman** kazanır.
+        #
+        # ⚠ Karşılaştırma `plan_tek_cq` ile **birebir**: başka bir yoldan gelen bir
+        # `route_hit`'e dokunmaz. *Bir ön koşulu gevşetirken, gevşemenin sınırını da
+        # yazmak gerekir; yoksa gevşeme bir delik olur.*
+        _st = getattr(request, "state", None)
+        _sekil = getattr(_st, "plan_sekil", None) or {}
+        _tek_cq = getattr(_st, "plan_tek_cq", None)
+        _azinlik = (_sekil.get("cok", 0) > _sekil.get("tek", 0)
+                    and _tek_cq is not None
+                    and route_hit.get("cube_query") == _tek_cq)
+        if not _azinlik:
+            _log.info("orkestratör: route zaten cevapladı → boşluk YOK, hiç konuşmuyorum")
+            return None
+        _log.info("orkestratör: tek-fiş okuması AZINLIKTA (tek=%d · çok=%d) → plan "
+                  "konuşuyor (`O-21`)", _sekil.get("tek", 0), _sekil.get("cok", 0))
     llm = getattr(getattr(getattr(request, "app", None), "state", None), "llm", None)
     _hazir = getattr(getattr(request, "state", None), "plan_taslagi", None)
     if not soru or llm is None:
@@ -492,6 +518,35 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     # çıktısını parçalayıp yeniden birleştirmek, kapının cümlesini kaybetmenin yoludur.
     _ihlaller: list = []
     _gorulen: set[str] = set()
+    # 🔴🔴 `O-20/Y` — **PLANIN BAŞKA YOLDAN KARŞILADIĞI İŞARET BEYAN EDİLMEZ.**
+    #
+    # ⊙ Ölçüldü (canlı `VI`, *«en çok fire veren makineyi bul ve o makinenin vardiya
+    # dağılımını göster»*): plan **6 adım** koştu, `BAGLA` en çok fire vereni **seçti**
+    # (`RAM-2`) — ve cevabın altına *«en yüksek/en çok dedin ama sıralama
+    # uygulayamadım»* yazıldı. **Yanlış.** Uygulandı; yalnız `order` alanıyla değil
+    # bir **adımla**.
+    #
+    # ⚠ `uyum.denetle` bir **`CubeQuery`** denetleyicisidir: üstünlüğü `order`/`limit`
+    # alanlarında arar. Plan yolunda aynı niyet `BAGLA` (tekini seç) ve `SIRALA` (çok
+    # ölçütle sırala) fiilleriyle taşınır — kapı onları **göremez**, çünkü bakmadığı
+    # bir yerdeler.
+    #
+    # 🔴 `§101.1` birebir: yanlış bir *«eksik»* beyanı, sustuğu durumdan pahalıdır —
+    # kullanıcıya doğru bir cevabı **yanlış** diye okutur. Kapıyı kaldırmıyoruz;
+    # **planın karşıladığını** ondan düşüyoruz.
+    #
+    # *Bir denetçiyi yeni bir yola koyarken, o yolun kendi araçlarını da tanıtmak
+    # gerekir; yoksa denetçi tanımadığı her çözümü bir eksiklik sanar.*
+    _fiiller = {str(a.get("fiil")) for a in (plan.get("adimlar") or [])}
+    _karsilanan: set[str] = set()
+    if _fiiller & {"BAGLA", "SIRALA"}:
+        _karsilanan |= {"ustunluk", "kesme"}
+    if "TREND" in _fiiller:
+        _karsilanan |= {"trend", "kiyas"}
+    if "KIR" in _fiiller or any(
+            (b.get("cube_query") or {}).get("dimensions") for b in _bolumler
+            if isinstance(b.get("cube_query"), dict)):
+        _karsilanan.add("kirilim")
     try:
         from app import uyum as _uyum
         for _b in _bolumler:
@@ -501,9 +556,10 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
             _bcm = next((c for c in (schema.get("cubes") or [])
                          if c.get("name") == _bcq.get("cube")), None)
             for _ih in _uyum.denetle(soru, {"cube_query": _bcq}, _bcm):
-                if _ih.isaret not in _gorulen:
-                    _gorulen.add(_ih.isaret)
-                    _ihlaller.append(_ih)
+                if _ih.isaret in _karsilanan or _ih.isaret in _gorulen:
+                    continue
+                _gorulen.add(_ih.isaret)
+                _ihlaller.append(_ih)
         _eksik_notu = ("\n\n" + _uyum.kismi_cevap_notu(_ihlaller)) if _ihlaller else ""
         if _ihlaller:
             _log.info("plan: beyanlı kısmi cevap (%s)", ", ".join(sorted(_gorulen)))
