@@ -173,3 +173,19 @@ def test_ISTEM_TIP_AKISINI_DA_OGRETIYOR():
             if beklenen:
                 assert f"{alan}: {beklenen}" in m, f"{fiil}.{alan} tip beklentisi yazılı değil"
     assert "SORGU → AYRISTIR → BOYUTSEC" in m, "somut zincir örneği yok"
+
+
+def test_ISTEM_SIK_YAPILAN_HATAYI_DA_GOSTERIYOR():
+    """🔴 Ölçüldü (canlı `HH3`): model `{"fiil":"SORGU","measures":[…],"dimensions":[…]}`
+    yazdı — alanları `cube_query`'nin **içine** değil adımın kendisine koydu.
+
+    Olumlu örnek yetmedi. *Bir kalıbı öğretmenin en hızlı yolu, yanlışını da
+    göstermektir.*
+    """
+    from app.plan_semasi import plan_sistem_metni
+    m = plan_sistem_metni("KATALOG")
+    assert "SIK YAPILAN HATA" in m
+    assert "YANLIŞ:" in m and "DOĞRU :" in m
+    # ⚠ Ve yanlış örnek gerçekten **yanlış** olmalı: `SORGU`nun tek alanı `cube_query`.
+    from app.plan_semasi import ZORUNLU_ALANLAR
+    assert ZORUNLU_ALANLAR["SORGU"] == ("cube_query",)

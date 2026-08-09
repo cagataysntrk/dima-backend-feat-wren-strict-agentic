@@ -7793,3 +7793,48 @@ iki oran ancak aynı sorularla karşılaştırılır ve bu iki tur farklı şeyl
 * `GG14` *«gelecek ay ciro»* → forecast **v1 dışı** kararı, uydurma projeksiyon yok
 * `GG15` üç ölçü **tek adımda** — orkestratör basit soruyu bölmedi (`R2`'nin kapısı)
 * `GG16` *«teşekkürler»* → sosyal sınıf, **0 LLM · 0 SQL**
+
+---
+
+## `HH` TURU — DERİNLİK SINAVI *(2026-08-09)*
+
+### 🟢 Üç seviyeli iniş — **11 adım**
+
+    soru: «en kötü oee'li makineyi bul, o makinede en kötü vardiyayı bul,
+           o vardiyada duruş nedenlerini göster»
+    → SORGU→BAGLA→SUZ→KIR→SORGU→BAGLA→SUZ→KIR→SORGU→…
+      11 adım · source=cube+llm · 6 satır · Discovery YOK
+
+`HH2` (*«hangi makineye yatırım yapmalıyız — oee, duruş, fire»*) → 3 adım, çok ölçütlü
+sıralama. `HH4` (*«grafiğe çevir»*) → 2 adım, `GORSEL`. `HH5` (*«bu ay toplam fire»*) →
+**tek adım** (basit soru basit kaldı — `R2`'nin kapısı tutuyor).
+
+### 🔴 Ve o 11 adımlık plan TAVANI AŞARAK koştu
+
+`AZAMI_ADIM = 8` idi ama plan **11** adımdı. Tavan yalnız `maxItems` olarak şemadaydı ve
+**serbest-JSON sağlayıcı şemayı uygulamıyor**.
+
+⊙ Bu, aynı desenin **üçüncü** görünüşü: `pattern` (referans alanı) · `additionalProperties`
+(fazla alan) · `maxItems` (plan uzunluğu) — üçü de yalnız şemayı uygulayan sağlayıcılarda
+geçerliydi. *Bir kısıtı şemaya yazıp doğrulayıcıya yazmamak, onu sağlayıcı seçimine
+bağlamaktır.*
+
+Tavan **8 → 12** (ölçülen en uzun meşru zincir 11 + 1 pay) ve artık `dogrula()` uyguluyor.
+`HH3` (dört seviye) canlıda doğru reddedildi: *«plan 13 adım istiyor, tavan 12»*.
+
+### Dört doğrulayıcının hepsi canlıda ateşledi
+
+    adım 4 (SORGU): tanımsız alan(lar): dimensions, measures — yalnız `cube_query`
+    adım 6 (BAGLA.kaynak) bir satirlar bekliyor ama `$5` bir sorgu üretiyor (SUZ)
+    adım 2 (BAGLA) hiçbir adım tarafından kullanılmıyor — koşulup atılırdı
+    plan 13 adım istiyor, tavan 12
+
+⊙ Ve red mesajları artık **teşhis**: *«`oee`'de şu boyut(lar) yok: vardiya»*. Önce
+*«tanımsız cube/ölçü/boyut»* diyordu — ne kullanıcı ne **onarım turu** neyi düzelteceğini
+bilebilirdi.
+
+### İstem: olumlu örnek yetmedi
+
+Model `{"fiil":"SORGU","measures":[…]}` yazıyordu — alanları `cube_query`'nin **içine**
+değil adıma koyuyordu. İsteme **olumsuz örnek** eklendi (`YANLIŞ:` / `DOĞRU :`).
+*Bir kalıbı öğretmenin en hızlı yolu, yanlışını da göstermektir.*

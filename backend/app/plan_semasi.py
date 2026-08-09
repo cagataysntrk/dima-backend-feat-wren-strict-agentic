@@ -519,7 +519,16 @@ def plan_sistem_metni(catalog: str) -> str:
         '  {"fiil":"ANLAT","kaynaklar":["$1","$3"]}\n'
         "]}\n"
         "⚠ Bu örnekteki `cube_query` **satır içi bir nesnedir**; `$1` yazılan yerler ise "
-        "**referanstır**. İkisini karıştırma."
+        "**referanstır**. İkisini karıştırma.\n"
+        # ⟳ Ölçüldü (canlı `HH3`): model `{"fiil":"SORGU","measures":[…],"dimensions":[…]}`
+        # yazdı — alanları `cube_query`'nin İÇİNE değil adımın kendisine koydu. Olumlu
+        # örnek yetmiyor; *bir kalıbı öğretmenin en hızlı yolu, yanlışını da göstermektir.*
+        "\n🔴 SIK YAPILAN HATA — `SORGU` adımının alanları:\n"
+        '  YANLIŞ: {"fiil":"SORGU","measures":["ort_oee"],"dimensions":["makine"]}\n'
+        '  DOĞRU : {"fiil":"SORGU","cube_query":{"cube":"oee","measures":["ort_oee"],'
+        '"dimensions":["makine"]}}\n'
+        "⚠ `SORGU` adımının **tek** alanı `cube_query`'dir; `measures`/`dimensions`/"
+        "`filters` onun **içine** yazılır."
     )
 
 
