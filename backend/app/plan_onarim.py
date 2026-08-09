@@ -153,3 +153,79 @@ def onar(cq: dict, spec: dict) -> tuple[dict, list[str]]:
         out["timeDimensions"] = _cikti
 
     return (out, beyan) if beyan else (cq, [])
+
+
+# ═══ TEŞHİS — *"neden geçmedi"* sorusunun tek sahibi ═══════════════════════════
+
+def gerekce(cq: dict, spec: dict | None) -> str:
+    """Bir `cube_query` beyaz listeden **neden** geçmedi — adıyla.
+
+    🔴 **Tek sahip.** Bu metin iki yerden isteniyor ve ikisi de aynı cümleyi kurmalı:
+    `plan_kosucu.dogrula` (plan **kurulurken** — onarım turu bunu okur) ve
+    `plan_tuketici` (plan **koşarken** — kullanıcı bunu okur). İki kopya yazmak,
+    modele bir cümle kullanıcıya başka bir cümle söylemekti (`KAT-1`).
+
+    ⚠ `parse_cube_query` bir **kapıdır**, bir tanıcı değil: `None` döner ve nedenini
+    söylemez — söylememelidir. Neden bilgisi burada üretilir çünkü aynı küp tanımı
+    burada da elde.
+
+    ⊙ Ölçüldü (canlı `II14`·`D2`): *«`parti` sorgusu beyaz listeden geçmedi»* içeriksiz
+    bir teşhisti ve **onarım turu da onu okuyordu** — model neyin olmadığını biliyor,
+    neyin **olduğunu** bilmiyordu; ikinci deneme de düştü.
+    """
+    if not spec:
+        return f"`{(cq or {}).get('cube') or '(cube yok)'}` diye bir cube YOK"
+    _c = spec.get("name") or (cq or {}).get("cube")
+    _o = set(spec.get("measures") or [])
+    _b = {str(d) for d in (spec.get("dimensions") or [])}
+    _z = {str(z) for z in (spec.get("time_dimensions") or [])}
+    parca: list[str] = []
+    _eksik_o = [m for m in ((cq or {}).get("measures") or []) if m not in _o]
+    if _eksik_o:
+        parca.append(f"`{_c}`'de şu ölçü(ler) yok: {', '.join(map(str, _eksik_o))}")
+    _eksik_b = [d for d in ((cq or {}).get("dimensions") or []) if d not in _b]
+    if _eksik_b:
+        parca.append(f"`{_c}`'de şu boyut(lar) yok: {', '.join(map(str, _eksik_b))}"
+                     + bilinen_boyutlar(spec, _eksik_b))
+    if not ((cq or {}).get("measures") or []):
+        parca.append(f"`{_c}` için hiç ölçü yazılmamış")
+    _bozuk_td = [td for td in ((cq or {}).get("timeDimensions") or [])
+                 if not isinstance(td, dict) or td.get("dimension") not in _z]
+    if _bozuk_td:
+        parca.append(f"`{_c}`'nin zaman ekseni {sorted(_z) or '(yok)'} — şu yazılmış: "
+                     + ", ".join(f"`{td.get('dimension') if isinstance(td, dict) else td}`"
+                                 for td in _bozuk_td))
+    _bozuk_f = [f for f in ((cq or {}).get("filters") or [])
+                if not isinstance(f, dict) or f.get("dimension") not in (_b | _z)]
+    if _bozuk_f:
+        parca.append(f"`{_c}`'de süzülemeyecek alan(lar): "
+                     + ", ".join(f"`{f.get('dimension') if isinstance(f, dict) else f}`"
+                                 for f in _bozuk_f))
+    try:
+        from app import cube_operatorleri as _ops
+        _bozuk_op = [str(f.get("operator")) for f in ((cq or {}).get("filters") or [])
+                     if isinstance(f, dict) and not _ops.gecerli(f.get("operator"))]
+    except Exception:
+        _bozuk_op = []
+    if _bozuk_op:
+        parca.append("tanınmayan süzgeç operatörü: " + ", ".join(f"`{o}`" for o in _bozuk_op))
+    return " · ".join(parca) or f"`{_c}` sorgusu beyaz listeden geçmedi"
+
+
+def bilinen_boyutlar(spec: dict, eksik: list | None = None) -> str:
+    """*«var olanlar: …»* kuyruğu — bir *«yok»* cümlesi yön göstermez.
+
+    ⚠ Liste **12'de kırpılır**: bir küpün 17 boyutunu red mesajına dökmek, mesajı
+    kataloğun kopyasına çevirir ve asıl teşhisi gömer.
+    """
+    _b = sorted(str(d) for d in (spec.get("dimensions") or []))
+    if not _b:
+        return ""
+    kuyruk = f" (var olanlar: {', '.join(_b[:12])}"
+    kuyruk += f" … +{len(_b) - 12})" if len(_b) > 12 else ")"
+    _z = [str(z) for z in (spec.get("time_dimensions") or [])]
+    _carpisan = [z for z in _z if z in (eksik or [])]
+    if _carpisan:
+        kuyruk += (f" — ⚠ `{', '.join(_carpisan)}` bir ZAMAN EKSENİdir: `dimensions`'a "
+                   f"değil `timeDimensions`'a yazılır")
+    return kuyruk

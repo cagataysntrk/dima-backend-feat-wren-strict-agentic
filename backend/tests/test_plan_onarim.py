@@ -255,3 +255,110 @@ def test_GEC_PLAN_KULLANIM_ANINDA_OKUNUR():
     _i = src.index("plan_garson.plan_uret(")
     assert "plan_taslagi" in src[max(0, _i - 400):_i], \
         "hazır plan `plan_uret` çağrısının HEMEN önünde okunmuyor — yarış geri geldi"
+
+
+def test_ORKESTRATOR_ROUTE_UN_ONUNE_GECEMEZ():
+    """🔴🔴 `O-17` — **`E3` DEĞİŞMEZİNİN İHLALİ**: orkestratör boşluğu doldurmuyor,
+    route'un **önünde duruyordu**.
+
+    Ölçüldü (canlı `IV` turu):
+
+    | soru | `route()` tek başına | HTTP yolu (önce) |
+    |---|---|---|
+    | *«makine bazında ortalama oee»* | ✅ `oee/ort_oee/makine` | `cube+llm` |
+    | *«en yüksek cirolu 5 müşteri»* | ✅ `order DESC · limit 5` | 🔴 **CEVAPSIZ** |
+
+    Üçüncü satır bedeli tek başına ölçüyor: route'un doğru bildiği bir soru cevapsız
+    kaldı, çünkü garson `satis` diye olmayan bir küp uydurdu.
+
+    ⚠ Kapı **iki ucu birden** tutar: modül ön koşulu uygular **ve** çağrı yeri
+    `route_hit`'i geçirir. Biri olmadan öteki bir dilektir.
+    """
+    import inspect
+
+    from app import plan_tuketici
+    from app.routers import ask as _ask
+
+    # (1) Modül kendi ön koşulunu uyguluyor mu
+    assert plan_tuketici.cevap(None, service=None, schema={}, soru="x",
+                               route_hit={"cube_query": {"cube": "parti"}}) is None, \
+        "route bir cevap bulduğu hâlde orkestratör konuştu — `E3` ihlali"
+
+    # (2) Çağrı yeri `route_hit`'i geçiriyor mu — yoksa (1) hiç tetiklenmez
+    src = inspect.getsource(_ask.ask)
+    _i = src.index("_plan_tuketici.cevap(")
+    _cagri = src[_i:src.index(")", src.index("limit=limit", _i))]
+    assert "route_hit=route_hit" in _cagri, \
+        f"çağrı yeri `route_hit`'i GEÇİRMİYOR — ön koşul hiç tetiklenemez: {_cagri!r}"
+
+
+def test_BOSLUKTA_ORKESTRATOR_YINE_KONUSUR():
+    """⚠ `§101.1` — düzeltme, düzelttiği şeyi kapatmamalı. `route_hit is None` iken
+    modül **yine** devreye girmeli; aksi hâlde orkestratör tümden susardı."""
+    import inspect
+
+    from app import plan_tuketici
+
+    src = inspect.getsource(plan_tuketici.cevap)
+    _i = src.index("if route_hit is not None:")
+    # Ön koşul `None` durumunu **kesmiyor**: `is not None` yazılı, `if route_hit`ten
+    # farkı boş bir sözlüğün de kapı sayılmasıdır — route boş sözlük döndürmez.
+    assert "is not None" in src[_i:_i + 40]
+    assert "llm = getattr" in src[_i:], "boşluk yolu ön koşulun ALTINDA kalmalı"
+
+
+def test_AD_DENETIMI_PLAN_KURULURKEN_YAPILIR():
+    """🔴🔴 `O-18` — **onarım turu ad hatasını GÖREMİYORDU.**
+
+    Ölçüldü (canlı `IV`, kullanıcının örneği *«ram 3 oee neden diğerlerine göre daha
+    düşük bu yıl»*): model **kusursuz** bir 7 adımlık kök-neden inişi kurdu, plan
+    doğrulamadan **geçti** (doğrulayıcı yapıya bakıyor, adlara bakmıyordu) ve beşinci
+    adımda `KIR(boyut="neden")` patladı — `oee`'de öyle bir boyut yok. **Dört adım
+    çoktan koşmuştu**, ve red koşum anında doğduğu için model hiçbir şey öğrenemedi.
+
+    ⚠ Kusur `cube_query`'nin İÇİNDE değil, bir **adım alanındaydı** (`KIR.boyut`) ve
+    küp **referans zinciriyle** çözülüyordu: `$4` → `SUZ($1)` → `SORGU({cube:"oee"})`.
+    """
+    from app.plan_kosucu import PlanHatasi, dogrula
+
+    plan = {"adimlar": [
+        {"fiil": "SORGU", "cube_query": {"cube": "parti", "measures": ["toplam_fire_kg"],
+                                         "dimensions": ["makine"]}},
+        {"fiil": "SUZ", "cube_query": "$1", "boyut": "makine", "deger": "RAM-3"},
+        {"fiil": "KIR", "cube_query": "$2", "boyut": "neden"},
+        {"fiil": "SORGU", "cube_query": "$3"}]}
+    dogrula(plan)                     # index YOK → bugünkü davranış, bayt bayt aynı
+    try:
+        dogrula(plan, index={"parti": PARTI})
+    except PlanHatasi as e:
+        assert "neden" in str(e) and "var olanlar" in str(e), \
+            f"red hangi boyutun olmadığını VE var olanları söylemeli: {e}"
+    else:
+        raise AssertionError("referans zinciriyle çözülen boyut denetlenmedi")
+
+
+def test_AD_DENETIMI_INDEX_YOKKEN_HIC_KOSMAZ():
+    """⚠ `KURAL B` — `index=None` iken `O-18` tek karakter davranış değiştirmez."""
+    from app.plan_kosucu import dogrula
+
+    plan = {"adimlar": [{"fiil": "SORGU", "cube_query": {"cube": "yok_boyle_bir_kup",
+                                                         "measures": ["m"]}}]}
+    assert dogrula(plan) == [[1]], "index'siz doğrulama eskisi gibi geçmeli"
+
+
+def test_AD_REDDI_YUMUSAKTIR_ADIM_ADIM_DURUSTLUK_KAYBOLMAZ():
+    """🔴 `O-18/Y` — ad reddi onarım turunu **tetikler**, planı **atmaz**.
+
+    Yapısal red edilmiş bir plan **koşulamaz**; ad reddi edilmiş bir plan **koşabilir**
+    ve bir adımda dürüstçe durur — o da `O-4`'ün ikinci başarı ölçütüdür. Bu ayrım
+    olmasaydı `O-18` bir kazanç değil bir **takas** olurdu.
+    """
+    import inspect
+
+    from app import plan_garson
+
+    src = inspect.getsource(plan_garson.plan_uret)
+    assert "_yedek" in src, "yedek plan yolu kaldırılmış — adım adım dürüstlük kaybolur"
+    _i = src.index("_yedek = ")
+    assert "_plani_oku(_ham)" in src[_i:_i + 80], \
+        "yedek plan `index`SİZ okunmalı — yapısal geçerlilik yeter"

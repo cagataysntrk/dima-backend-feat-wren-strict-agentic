@@ -7942,3 +7942,80 @@ matrisi) ilk kez uçtan uca gösterdi ve o soru düne kadar **hiç denenmeden** 
 ayrı bir tur.
 
 **Kapılar:** `tests/test_plan_onarim.py` — 12 kapı, hepsi **canlıda ölçülmüş** vakalar.
+
+---
+
+## `IV` TURU — **EN BASİTTEN EN ZORA** *(2026-08-10)*
+
+Kullanıcı isteği: *"route ile cevaplanması gereken LLM'e düşmemeli — mesela makine
+bazında ortalama oee gibi; ram 3 neden düşük diyince çalışmalı… en basitler bile
+kontrol edilmeli, en basitten zora, en kısa zincirden en uzuna."*
+
+Tur bu sıraya göre kuruldu ve **ilk kademe ilk soruda kırmızı verdi.**
+
+### 🔴🔴 KADEME 1 — route'un işi garsona gidiyordu (`E3` İHLALİ)
+
+`route()` **tek başına** ölçüldü (canlı şema, `cube_router.route` doğrudan):
+
+| soru | `route()` | HTTP yolu |
+|---|---|---|
+| *«makine bazında ortalama oee»* | ✅ `oee/ort_oee/makine` | 🔴 `cube+llm` — LLM çağrıldı |
+| *«bu yıl toplam ciro»* | ✅ `parti/toplam_ciro` | 🔴 `cube+llm` |
+| *«en yüksek cirolu 5 müşteri»* | ✅ `order DESC · limit 5` | 🔴🔴 **CEVAPSIZ** |
+| *«aylara göre fire»* | ✅ `parti/toplam_fire_kg` | 🔴 `cube+llm` |
+
+Üçüncü satır kusurun bedelini tek başına ölçüyor: **route'un doğru bildiği bir soru
+cevapsız kaldı**, çünkü garson `satis` diye olmayan bir küp uydurdu.
+
+**Kök:** `_plan_tuketici.cevap(...)` çağrısı `if route_hit:` dalının **üstünde** ve
+**koşulsuzdu**. Çağrı yerindeki iki yorum birbiriyle çelişiyordu:
+
+* *"Buraya `route_hit=None` ile gelinir"* — **yalan**
+* *"Bu kancaya YUKARIDAKİ HER yoldan gelinir"* — **doğru**
+
+Kod ikinciyi izliyordu, belge birinciyi. Yani `E3` (*orkestratör merdivenin yerine
+geçmez, boşluğunu doldurur*) bir **yorumla** korunuyordu.
+
+🔴 Ön koşul artık **sahibinin içinde** uygulanıyor (`plan_tuketici.cevap`), çağrı
+yerinde değil. *Bir modül kendi ön koşulunu uygulamıyorsa, o bir ön koşul değil bir
+dilektir.*
+
+⚠ **Ve tam kapı bunu GÖRMEDİ** (4454 yeşil): korpus `route()`'u doğrudan ölçüyor,
+HTTP merdiveninin **sırasını** değil. Kapının kendi bildiği körlük (CLAUDE.md) burada
+bir üretim kusuruna dönüştü.
+
+### 🔴 KADEME 2 — `O-18`: ad denetimi plan **kurulurken** yapılmıyordu
+
+*«ram 3 oee neden diğerlerine göre daha düşük bu yıl»* (kullanıcının örneği): model
+**kusursuz** bir 7 adımlık kök-neden inişi kurdu, plan doğrulamadan **geçti** ve
+beşinci adımda patladı — `KIR(boyut="neden")`, ama `oee`'de öyle bir boyut yok.
+**Dört adım çoktan koşmuştu**, ve red koşum anında doğduğu için **onarım turu onu
+hiç görmedi**.
+
+⚠ Kusur `cube_query`'nin içinde değil bir **adım alanındaydı** ve küp **referans
+zinciriyle** çözülüyordu: `$4` → `SUZ($1)` → `SORGU({cube:"oee"})`. Denetim artık
+zinciri çözüyor.
+
+🔴 **Ad reddi YUMUŞAK:** onarım turunu tetikler, planı **atmaz**. Yapısal red edilmiş
+bir plan koşulamaz; ad reddi edilmiş bir plan **koşabilir** ve bir adımda dürüstçe
+durur — o da bir üründür. Bu ayrım olmasaydı `O-18` bir kazanç değil bir **takas**
+olurdu: onarım turunu kazanıp adım-adım dürüstlüğü kaybederdik.
+
+### Doğrulama
+
+| soru | önce | **sonra** |
+|---|---|---|
+| *«bu yıl toplam ciro»* | `cube+llm` | ✅ **`cube` · 0 LLM** |
+| *«aylara göre fire»* | `cube+llm` | ✅ **`cube` · 0 LLM** · belirsizlik notlu |
+| *«bu yıl makine bazında ortalama oee»* | `cube+llm` | ✅ **`cube` · 0 LLM** |
+| *«ram 3 neden düşük»* | ✅ 4 adım | ✅ 4 adım |
+| *«ram 3 oee neden diğerlerine göre daha düşük bu yıl»* | 🔴 5. adımda patladı | 🟢 **6 adım · 33 satır** |
+
+### Açık bulgu — sonraki turun konusu
+
+Dönemsiz iki soru (*«makine bazında ortalama oee»*, *«en yüksek cirolu 5 müşteri»*)
+artık **dönem netleştirmesine** düşüyor (*«hangi dönem için?»*). Bu bir gerileme
+**değil**: orkestratör onu **maskeliyordu**, düzeltme görünür kıldı. Ama doktrinin
+kendi metni (`plan_semasi` ÖRNEK 1) *«makinelere göre ortalama oee» dönemsizdir ve
+öyle kalmalıdır* diyor — yani `period_optional` bu sınıfta ateşlenmeli. Ölçülüp
+karara bağlanacak.

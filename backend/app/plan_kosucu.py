@@ -28,6 +28,7 @@ yapmaktan daha az risklidir.*
 
 from __future__ import annotations
 
+import json
 import re
 from typing import Any
 
@@ -92,7 +93,8 @@ def _referanslar(adim: dict) -> list[tuple[str, int]]:
     return out
 
 
-def dogrula(plan: dict, *, azami_sorgu: int = AZAMI_SORGU) -> list[list[int]]:
+def dogrula(plan: dict, *, azami_sorgu: int = AZAMI_SORGU,
+            index: dict | None = None) -> list[list[int]]:
     """🔴🔴 **KOŞMADAN ÖNCE DOĞRULA** — ve aynı geçişte **DAG'ı kur**.
 
     Döner: topolojik **katmanlar** (adım numaraları, 1'den). Aynı katmandaki adımlar
@@ -226,6 +228,73 @@ def dogrula(plan: dict, *, azami_sorgu: int = AZAMI_SORGU) -> list[list[int]]:
         katmanlar.append(katman)
         bitmis |= set(katman)
         kalan = {i: b for i, b in kalan.items() if i not in bitmis}
+    # 🔴🔴 `O-18` — **AD DENETİMİ DE BURADA, ÇÜNKÜ ONARIM TURU BURAYI OKUYOR.**
+    #
+    # ⊙ Ölçüldü (canlı `IV`, kullanıcının örneği — *«ram 3 oee neden diğerlerine göre
+    # daha düşük bu yıl»*): model **kusursuz** bir 7 adımlık kök-neden inişi kurdu ve
+    # plan doğrulamadan **geçti** — çünkü doğrulayıcı yapıya bakıyor, **adlara**
+    # bakmıyordu. Sonra beşinci adımda `KIR(boyut="neden")` patladı: `oee` küpünün
+    # `neden` diye bir boyutu yok. **Dört adım çoktan koşmuştu.**
+    #
+    # Ve daha pahalısı: red **koşum anında** doğduğu için **onarım turu onu hiç
+    # görmedi**. Model, `oee`'nin boyutlarının ne olduğunu öğrenemeden düştü — oysa
+    # veri mutfakta **var** (`makine_duruslari.neden`); yapılması gereken tek şey
+    # `KIR` yerine o küpe yeni bir `SORGU` atmaktı.
+    #
+    # ⚠ Referanslı alanlar **zincir üzerinden** çözülür: `KIR(cube_query="$4")` →
+    # `SUZ("$1")` → `SORGU({cube:"oee"})`. Çözülemeyen bir zincirde **susulur** —
+    # `§101.1`: emin olunmayan bir red, kapattığı kusurdan pahalıdır.
+    # ⚠ `index=None` iken bu blok hiç koşmaz: bugünkü çağıranların hepsi bayt bayt aynı.
+    #
+    # *Bir hatayı koşum anında bulmak, onu bulmamak değildir — ama onu öğretilemeyecek
+    # kadar geç bulmaktır.*
+    if index:
+        # ⚠ `ADIM_REFERANSI` **sözleşmenin** sabiti (`plan_semasi`), çalıştırıcının
+        # değil: referans dilbilgisini burada yeniden yazmak ona ikinci bir sahip
+        # vermek olurdu. Import fonksiyon içinde — modül düzeyinde döngü kurardı.
+        from app import plan_onarim
+        from app.plan_semasi import ADIM_REFERANSI
+
+        def _kup(sira: int, derinlik: int = 0) -> str | None:
+            """Bir adımın **etkin küpü** — inline ise doğrudan, referanssa zincirden."""
+            if derinlik > len(adimlar) or not (1 <= sira <= len(adimlar)):
+                return None
+            _cq = (adimlar[sira - 1] or {}).get("cube_query")
+            if isinstance(_cq, dict):
+                return _cq.get("cube")
+            if isinstance(_cq, str) and re.fullmatch(ADIM_REFERANSI, _cq):
+                return _kup(int(_cq[1:]), derinlik + 1)
+            return None
+
+        for _i, _a in enumerate(adimlar, 1):
+            _cq = (_a or {}).get("cube_query")
+            _ad = _cq.get("cube") if isinstance(_cq, dict) else _kup(_i)
+            if _ad is None:
+                continue
+            _spec = index.get(_ad)
+            if _spec is None:
+                raise PlanHatasi(f"adım {_i}: `{_ad}` diye bir cube YOK")
+            if isinstance(_cq, dict):
+                from app.cube_router import parse_cube_query
+                if parse_cube_query(json.dumps(_cq, ensure_ascii=False), index) is None:
+                    raise PlanHatasi(f"adım {_i}: " + plan_onarim.gerekce(_cq, _spec))
+            # `boyut` / `olcu` / `olculer` adım alanlarıdır, `cube_query`'nin içinde
+            # değil — ve `IV` turunun kusuru **tam olarak** oradaydı.
+            _b = {str(d) for d in (_spec.get("dimensions") or [])} | {
+                str(z) for z in (_spec.get("time_dimensions") or [])}
+            for _alan in ("boyut",):
+                _v = _a.get(_alan)
+                if isinstance(_v, str) and not _v.startswith("$") and _v not in _b:
+                    raise PlanHatasi(
+                        f"adım {_i} (`{_a.get('fiil')}.{_alan}`): `{_ad}`'de `{_v}` diye "
+                        f"bir boyut yok{plan_onarim.bilinen_boyutlar(_spec, [_v])}")
+            _o = {str(m) for m in (_spec.get("measures") or [])}
+            _olculer = _a.get("olculer") if isinstance(_a.get("olculer"), list) else []
+            for _v in ([_a["olcu"]] if isinstance(_a.get("olcu"), str) else []) + _olculer:
+                if isinstance(_v, str) and not _v.startswith("$") and _v not in _o:
+                    raise PlanHatasi(
+                        f"adım {_i} (`{_a.get('fiil')}`): `{_ad}`'de `{_v}` diye bir ölçü "
+                        f"yok (var olanlar: {', '.join(sorted(_o)[:12])})")
     return katmanlar
 
 

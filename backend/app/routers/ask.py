@@ -3823,9 +3823,14 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 except Exception:
                     _log.warning("LLM Intent-JSON seçimi başarısız (best-effort)", exc_info=True)
 
-        # 🔴 `O-4` — **MERDİVENİN BOŞLUĞU BURASIDIR** (`E3`). Buraya `route_hit=None` ile
-        # gelinir: route boş döndü, garsonun tek-cube cevabı da yok. Yani bugünkü sonuç
-        # Discovery ya da dürüst rettir — bir yerde cevap varken bu dal hiç konuşmaz.
+        # 🔴 `O-4` — **MERDİVENİN BOŞLUĞU BURASIDIR** (`E3`): route boş döndü, garsonun
+        # tek-cube cevabı da yok. Yani bugünkü sonuç Discovery ya da dürüst rettir.
+        # ⟳🔴 **`O-17` — BU YORUM BİR ZAMANLAR YALAN SÖYLÜYORDU.** *"Buraya
+        # `route_hit=None` ile gelinir"* yazıyordu ama çağrı `if route_hit:` dalının
+        # ÜSTÜNDE ve **koşulsuzdu**; route cevap bulduğunda bile bu dal önce koşuyordu.
+        # Ön koşul artık `plan_tuketici.cevap`'ın **içinde** uygulanıyor (gerekçe ve
+        # ölçüm orada) ve `route_hit` ona **açıkça** geçiliyor — bir değişmezi yorumla
+        # korumak, onu korumamaktır.
         # ⚠ Karar ve metin `plan_tuketici`'de; burada yalnız **çağrı** var.
         # ⚠ `request` geçiliyor, `llm_probe` DEĞİL — ve bu bir kusurdan öğrenildi:
         # `llm_probe` yalnız garson dalında bağlanıyor, deterministik yolda hiç
@@ -3833,7 +3838,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # yoldan gelinir; o yüzden yalnız **her zaman bağlı** olan şey okunabilir.
         _pc = _plan_tuketici.cevap(request, service=service, schema=schema,
                                    soru=body.question, settings=settings,
-                                   principal=principal, limit=limit)
+                                   principal=principal, limit=limit, route_hit=route_hit)
         if _pc is not None:
             return _finish(_attach_viz(AskResponse(
                 question=body.question, source=_pc["source"], note=_pc["note"],

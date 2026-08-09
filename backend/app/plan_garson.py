@@ -99,7 +99,23 @@ def plan_uret(llm: Any, question: str, catalog: str, index: dict,
             _sema = plan_json_schema(index, azami_adim=azami_adim)
         SAYAC["denendi"] += 1
         _neden: list[str] = []
-        plan = _plani_oku(llm.plan_kur(question, catalog, _sema), neden=_neden)
+        _ham = llm.plan_kur(question, catalog, _sema)
+        plan = _plani_oku(_ham, neden=_neden, index=index)
+        # 🔴🔴 `O-18/Y` — **AD REDDİ YUMUŞAKTIR: onarım turunu tetikler, planı ATMAZ.**
+        #
+        # Ad denetimi (`dogrula(index=…)`) yapısal redden **farklı** bir sınıftır:
+        # yapısal red edilmiş bir plan **koşulamaz** (ileri referans, tip uyuşmazlığı,
+        # ulaşılamaz adım); ad reddi edilmiş bir plan **koşabilir** — yalnız bir adımda
+        # dürüstçe durur ve kullanıcı *"hangi adımda ne eksikti"* öğrenir. O da bir
+        # üründür (`O-4`'ün ikinci başarı ölçütü).
+        #
+        # ⚠ Bu ayrım olmasaydı `O-18` bir kazanç değil bir **takas** olurdu: onarım
+        # turunu kazanıp adım-adım dürüstlüğü kaybederdik — ve onarım tutmazsa soru
+        # Discovery'ye düşerdi. `KAT-2`: *cevapsız bir dal, cevaplı bir yolu kesemez.*
+        #
+        # *Bir reddi sertleştirmeden önce, reddedilenin ne kadarının yine de bir cevap
+        # olduğunu sormak gerekir.*
+        _yedek = _plani_oku(_ham) if plan is None and index else None
         if plan is None:
             # 🔴 **TEK ONARIM TURU — ve tam olarak bir tane.**
             #
@@ -115,13 +131,19 @@ def plan_uret(llm: Any, question: str, catalog: str, index: dict,
             _duzelt = (question + "\n\n🔴 ÖNCEKİ DENEMEN REDDEDİLDİ: "
                        + "; ".join(_neden)
                        + "\nAynı soruyu, bu kez sözleşmeye UYARAK yeniden planla.")
-            plan = _plani_oku(llm.plan_kur(_duzelt, catalog, _sema))
-            if plan is None:
+            plan = _plani_oku(llm.plan_kur(_duzelt, catalog, _sema), index=index)
+            if plan is None and _yedek is not None:
+                SAYAC["yedege_dondu"] = SAYAC.get("yedege_dondu", 0) + 1
+                _log.info("plan: onarım tutmadı → YAPISAL olarak geçerli ilk plana "
+                          "dönüldü (adım adım dürüst ret üretilecek)")
+                plan = _yedek
+            elif plan is None:
                 SAYAC["dustu"] += 1
                 _log.info("plan: düzeltme turundan sonra da kullanılabilir plan yok")
                 return None
-            SAYAC["onarildi"] += 1
-            _log.info("plan: DÜZELTME TURU işe yaradı")
+            else:
+                SAYAC["onarildi"] += 1
+                _log.info("plan: DÜZELTME TURU işe yaradı")
         else:
             SAYAC["gecerli"] += 1
         _n = len(plan["adimlar"])
@@ -135,7 +157,8 @@ def plan_uret(llm: Any, question: str, catalog: str, index: dict,
         return None
 
 
-def _plani_oku(ham: str, *, neden: list[str] | None = None) -> dict | None:
+def _plani_oku(ham: str, *, neden: list[str] | None = None,
+               index: dict | None = None) -> dict | None:
     """Ham metni plana çevirir — **kardeşi `parse_cube_query` ile aynı hoşgörüyle**.
 
     ⚠ Kod bloğu (```) soyma burada YOK ve olmamalı: sağlayıcı katmanı (`llm._FENCE`)
@@ -210,7 +233,8 @@ def _plani_oku(ham: str, *, neden: list[str] | None = None) -> dict | None:
     _plan = {"adimlar": adimlar}
     try:
         from app.plan_kosucu import dogrula
-        dogrula(_plan)
+        # ⚠ `index` geçilmezse ad denetimi hiç koşmaz — `O-18`'in kill-switch'i budur.
+        dogrula(_plan, index=index)
     except Exception as e:            # noqa: BLE001 — `PlanHatasi` dâhil her yapısal red
         _de(str(e))
         return None

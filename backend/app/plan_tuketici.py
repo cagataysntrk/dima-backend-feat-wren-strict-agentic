@@ -181,88 +181,21 @@ def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = 
     sorgular: list[dict] = []
 
     def _neden_dustu(cq: dict) -> str:
-        """🔴 **HANGİ ALAN tanımsız — «tanımsız cube/ölçü/boyut» bir teşhis değildir.**
+        """🔴 **TEK SAHİP** — metin `plan_onarim.gerekce`'de.
 
-        `parse_cube_query` bir beyaz listedir ve `None` döner; **neden**ini söylemez ve
-        söylememelidir (o bir kapıdır, bir tanıcı değil). Ama o bilgiye burada
-        **erişilebilir**: aynı indeks elimizde.
-
-        Ölçüldü (canlı `HH1`): *«adım 3: `oee` sorgusu katalogda karşılanmıyor»* — hangi
-        ölçü? hangi boyut? Ne kullanıcı bilebilirdi ne de **onarım turu**, çünkü model de
-        aynı mesajı okuyor. *Bir reddi gerekçesiz vermek, onu iki kez öğrenmeye razı
-        olmaktır.*
+        ⟳ `O-18` — bu fonksiyon bir zamanlar teşhisin **kendisiydi** ve `dogrula()`
+        aynı reddi başka kelimelerle veriyordu. İki kopya, modele bir cümle kullanıcıya
+        başka bir cümle söylemekti (`KAT-1`). *Aynı reddin iki metni varsa, biri er geç
+        ötekinden farklı bir şey öğretir.*
         """
         _c = (cq or {}).get("cube")
-        if not _c or _c not in index:
-            return f"`{_c or '(cube yok)'}` diye bir cube YOK"
-        _spec = index[_c] or {}
-        _bilinen_o = set(_spec.get("measures") or [])
-        _bilinen_b = set(_spec.get("dimensions") or [])
-        _eksik_o = [m for m in (cq.get("measures") or []) if m not in _bilinen_o]
-        _eksik_b = [d for d in (cq.get("dimensions") or []) if d not in _bilinen_b]
-        _parca = []
-        if _eksik_o:
-            _parca.append(f"`{_c}`'de şu ölçü(ler) yok: {', '.join(_eksik_o)}")
-        if _eksik_b:
-            # 🔴 `O-15/N` — **VAR OLANI DA SÖYLE.** Ölçüldü (canlı `II14`): mesaj
-            # *«`parti`'de şu boyut(lar) yok: sebep»* diyordu ve düzeltme turu **aynı
-            # bilgiyle** koşuyordu — model neyin **olduğunu** bilmiyordu, yalnız
-            # neyin olmadığını. İkinci deneme de düştü.
-            #
-            # ⚠ Liste kırpılır (12): bir küpün 17 boyutunu red mesajına dökmek, mesajı
-            # kataloğun kopyasına çevirir ve asıl teşhisi gömer.
-            # *Bir «yok» cümlesi, «şunlar var» cümlesi olmadan bir yön göstermez.*
-            _oneri = sorted(_bilinen_b)
-            _kuyruk = f" (var olanlar: {', '.join(_oneri[:12])}"
-            _kuyruk += f" … +{len(_oneri) - 12})" if len(_oneri) > 12 else ")"
-            _zaman = [str(z) for z in (_spec.get("time_dimensions") or [])]
-            if _zaman and any(d in _zaman for d in _eksik_b):
-                _kuyruk += (f" — ⚠ `{', '.join(z for z in _zaman if z in _eksik_b)}` bir "
-                            f"ZAMAN EKSENİdir: `dimensions`'a değil `timeDimensions`'a yazılır")
-            _parca.append(f"`{_c}`'de şu boyut(lar) yok: {', '.join(_eksik_b)}"
-                          + (_kuyruk if _oneri else ""))
-        if not (cq.get("measures") or []):
-            _parca.append(f"`{_c}` için hiç ölçü yazılmamış")
-        # 🔴🔴 `O-15/T` — **TEŞHİS BEYAZ LİSTENİN TÜM ÇIKIŞLARINI SAYMALI.**
-        #
-        # ⊙ Ölçüldü (canlı `D2`, *«2023 yılındaki toplam fire»*): mesaj *«`parti` sorgusu
-        # beyaz listeden geçmedi»* çıktı — yani bu fonksiyonun **kendi varlık sebebine**
-        # düşüldü. Cube · ölçü · boyut üçü de temizdi; kusur sayılmayan çıkışlardaydı.
-        #
-        # `parse_cube_query`'nin **yedi** reddi var; burada üçü sayılıyordu. Bir teşhis
-        # aracının kapsamı, tanıdığı şeyin kapsamından dar olamaz — dar olduğunda
-        # sessizce *"bilmiyorum"* der ve hem kullanıcı hem **düzeltme turu** aç kalır.
-        #
-        # *Bir teşhisin kör noktası, teşhis edilen kusurun sığındığı yerdir.*
-        _zaman = set(str(z) for z in (_spec.get("time_dimensions") or []))
-        _bozuk_td = [td for td in (cq.get("timeDimensions") or [])
-                     if not isinstance(td, dict) or td.get("dimension") not in _zaman]
-        if _bozuk_td:
-            _parca.append(
-                f"`{_c}`'nin zaman ekseni {sorted(_zaman) or '(yok)'} — şu yazılmış: "
-                + ", ".join(f"`{td.get('dimension') if isinstance(td, dict) else td}`"
-                            for td in _bozuk_td))
-        _izinli_f = _bilinen_b | _zaman
-        _bozuk_f = [f for f in (cq.get("filters") or [])
-                    if not isinstance(f, dict) or f.get("dimension") not in _izinli_f]
-        if _bozuk_f:
-            _parca.append(f"`{_c}`'de süzülemeyecek alan(lar): "
-                          + ", ".join(f"`{f.get('dimension') if isinstance(f, dict) else f}`"
-                                      for f in _bozuk_f))
-        try:
-            from app import cube_operatorleri as _ops
-            _bozuk_op = [str(f.get("operator")) for f in (cq.get("filters") or [])
-                         if isinstance(f, dict) and not _ops.gecerli(f.get("operator"))]
-        except Exception:
-            _bozuk_op = []
-        if _bozuk_op:
-            _parca.append("tanınmayan süzgeç operatörü: " + ", ".join(f"`{o}`" for o in _bozuk_op))
-        if not _parca:
-            # ⚠ Son çare: teşhis edemediysek **sorgunun kendisini** logla. Bir kör nokta
-            # ancak görülebiliyorsa kapatılır; *"geçmedi"* diye loglamak onu saklamaktır.
-            _log.info("plan: `%s` sorgusu beyaz listeden geçmedi — TEŞHİS EDİLEMEDİ: %s",
-                      _c, json.dumps(cq, ensure_ascii=False)[:500])
-        return " · ".join(_parca) or f"`{_c}` sorgusu beyaz listeden geçmedi"
+        _spec = index.get(_c) if _c else None
+        if not _spec:
+            # ⚠ Son çare: teşhis edilemeyen bir sorgu **loglanır**. Bir kör nokta ancak
+            # görülebiliyorsa kapatılır; *"geçmedi"* diye susmak onu saklamaktır.
+            _log.info("plan: teşhis edilemeyen sorgu: %s",
+                      json.dumps(cq, ensure_ascii=False)[:500])
+        return plan_onarim.gerekce(cq, _spec)
 
     def _sorgu_kos(cq: dict) -> list[dict]:
         # 🔴 `O-15/R` — ONARIM DOĞRULAMADAN ÖNCE. Tek anlamlı bir alan kayması bir
@@ -318,7 +251,8 @@ def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = 
 
 
 def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any = None,
-          principal: Any = None, limit: int | None = None) -> dict | None:
+          principal: Any = None, limit: int | None = None,
+          route_hit: dict | None = None) -> dict | None:
     """🔴 **BOŞLUĞUN TEK KAPISI** — `ask()` bundan başka bir şey bilmez.
 
     `None` döner ve **hiçbir şey yapmaz** eğer: bayrak kapalıysa, sağlayıcı plan
@@ -347,6 +281,36 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     # argüman çağrıdan **önce** değerlendirilir. ⚠ `ruff F821` bunu göremez: ad bir yerde
     # atanmış, yalnız **o yoldan gelinince** atanmamış oluyor. *Koşullu bağlanan bir ad,
     # tanımsız bir addan daha sinsidir: statik olarak var, çalışırken yok.*
+    # 🔴🔴 **`O-17` — BU MODÜL KENDİ ÖN KOŞULUNU ARTIK KENDİSİ UYGULUYOR.**
+    #
+    # Yukarıdaki docstring *"Buraya YALNIZ boşlukta gelinir"* diyor ve çağrı yerindeki
+    # yorum da öyle diyordu — ama **hiçbiri bunu ZORLAMIYORDU**. Çağrı `if route_hit:`
+    # dalının **üstünde** ve koşulsuzdu; yani route bir cevap bulduğunda bile bu modül
+    # önce koşuyor, bir plan üretiyor ve **route'un cevabını hiç konuşturmadan** dönüyordu.
+    #
+    # ⊙ Ölçüldü (canlı `IV` turu, kullanıcının işaret ettiği dört soru):
+    #
+    #   | soru | `route()` tek başına | HTTP yolu |
+    #   |---|---|---|
+    #   | *«makine bazında ortalama oee»* | ✅ `oee/ort_oee/makine` | `cube+llm` — LLM çağrıldı |
+    #   | *«bu yıl toplam ciro»* | ✅ `parti/toplam_ciro` | `cube+llm` |
+    #   | *«en yüksek cirolu 5 müşteri»* | ✅ `order DESC · limit 5` | 🔴 **CEVAPSIZ** — garson `satis` küpü uydurdu |
+    #   | *«aylara göre fire»* | ✅ `parti/toplam_fire_kg` | `cube+llm` |
+    #
+    # 🔴 Üçüncü satır kusurun bedelini tek başına ölçüyor: **route'un doğru bildiği bir
+    # soru cevapsız kaldı.** Öteki üçü sessizce bir LLM çağrısı ve yanlış bir rozet
+    # (`cube+llm` yerine `cube`) ödedi.
+    #
+    # ⚠ Ve çağrı yerindeki iki yorum **birbiriyle çelişiyordu**: biri *"buraya
+    # `route_hit=None` ile gelinir"*, öteki *"bu kancaya YUKARIDAKİ HER yoldan gelinir"*.
+    # İkincisi doğruydu; kod onu izliyordu, belge birincisini.
+    #
+    # 🔴 Ön koşul **sahibinin yanına** kondu, çağrı yerine değil: bir değişmezi her
+    # çağıranın hatırlamasına bırakmak, onu bir gün unutulacak bir âdete çevirir.
+    # *Bir modül kendi ön koşulunu uygulamıyorsa, o bir ön koşul değil bir dilektir.*
+    if route_hit is not None:
+        _log.info("orkestratör: route zaten cevapladı → boşluk YOK, hiç konuşmuyorum")
+        return None
     llm = getattr(getattr(getattr(request, "app", None), "state", None), "llm", None)
     _hazir = getattr(getattr(request, "state", None), "plan_taslagi", None)
     if not soru or llm is None:
