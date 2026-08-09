@@ -576,6 +576,16 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "bugünkü yedi dokunuşuyla akar ve şema eski biçimdedir.",
         "category": "Anlama",
     },
+    "orkestrator_plan": {
+        "label": "Planlayıcı = garson (çok adımlı plan)",
+        "description": "Garson bir tek-cube sorgusu yerine ADIMLARDAN oluşan bir plan "
+                       "çevirir — kapalı fiil kümesiyle (SORGU·KIYASLA·AYRISTIR·BAGLA·"
+                       "HESAPLA·TREND·ANLAT). LLM çağrısı ARTMAZ: plan, bugünkü niyet "
+                       "çağrısının YERİNE geçer ve tek adımlı plan bugünkü sorgunun ta "
+                       "kendisidir. Çok adımlı soruda merdiven bugünkü gibi akar, plan "
+                       "ayrıca saklanır — yani mevcut cevapların hiçbiri değişmez.",
+        "category": "Anlama",
+    },
     "llm_sema_kisitli": {
         "label": "Şema-kısıtlı LLM çıktısı",
         "description": "Intent-JSON seçimi sağlayıcının native tool-use'una taşınır; "

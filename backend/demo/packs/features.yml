@@ -186,6 +186,15 @@ features:
   # ⚠ `beta` — çünkü kazancı ölçülebilir ama ölçülMEDİ: `blend`'in taze soruda kaç `R1`'i
   # kurtardığı **gerçek bir sağlayıcı** ister (`eval --slice llm`, bugün 4 vaka).
   # Kapalıyken: makbuzda kıyas satırı YOK, şemada `blend` YOK → yanıt bayt bayt bugünkü.
+  # 🔴 FAZ O-4 — PLANLAYICI İLE GARSON AYNI KİŞİ. Garson bir `CubeQuery` yerine bir PLAN
+  # çevirir; tek `SORGU` adımlı plan bugünkü `CubeQuery`'nin ta kendisidir (`tek_adimli`),
+  # yani basit soruda çağrı sayısı da çıktı da BİREBİR aynı. Çok adımlı plan bugünkü
+  # yolda bir OY DÜŞÜŞÜDÜR — merdiven bugünkü gibi sürer, plan saklanır (E3: orkestratör
+  # merdivenin YERİNE değil BOŞLUĞUNA girer).
+  # ⚠ "off" — çünkü kazancı ÖLÇÜLMEDİ: kaç sorunun gerçekten çok adımlı olduğu ve plan
+  # uzunluğunun gecikmeye ne kattığı (E6/E9) canlı ölçüm ister. KAPALIYKEN `sarmala()`
+  # nesnenin kendisini döndürür → davranış bayt bayt bugünkü (KURAL B, testli).
+  orkestrator_plan: "off"
   llm_sema_kisitli: beta  # FAZ 3a: Intent-JSON'u sağlayıcının NATIVE tool-use'una taşı —
                           # cube/ölçü/boyut adları o anki kataloğun ENUM'u olarak şemaya
                           # gömülür (enum CUBE'A GÖRE daralır; `cube:null` reddetme dalı

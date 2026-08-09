@@ -613,9 +613,51 @@ class AnthropicSqlGenerator:
                          exc_info=True)
             return self._ask(_cube_select_system(catalog), question, model=self._select_model)
 
-    def _arac_ile(self, system: str, user: str, sema: dict) -> str:
-        """Anthropic tool-use ile ŞEMA-KISITLI CubeQuery. Dönüş bugünküyle AYNI sözleşme
-        (JSON metni) — çağıran taraf değişmez, yalnız o metnin ÜRETİLİŞ biçimi değişir."""
+    #: 🔴 **`O-4` — PLAN YETENEĞİ AYRI BEYAN EDİLİR.** `sema_kullanir`'ın yaptığı işin
+    #: aynısı: çağıran `isinstance` ile tahmin etmez, **sorar**. ⚠ Varsayılan `False`
+    #: (fail-closed): bilinmeyen bir sağlayıcıda plan yolu **hiç açılmaz**, bugünkü yol
+    #: kalır. `sema_kullanir`'ın varsayılanı `True` idi çünkü orada en kötü ihtimal
+    #: *"boşuna şema üretildi"*; burada en kötü ihtimal *"plan üretilemedi, tur düştü"*.
+    #: *Bir varsayılanı, yanlış çıktığında ne kaybedileceğine bakarak seçersin.*
+    plan_kurabilir = True
+
+    def plan_kur(self, question: str, catalog: str, sema: dict | None = None) -> str:
+        """`FAZ O-4` — garson bir `CubeQuery` yerine bir **PLAN** çevirir.
+
+        🔴 **`select_cube`'un YERİNE geçer, YANINA değil** (`E6` düzeltmesi): çağrı sayısı
+        artmaz, çünkü bu **aynı** turdaki **aynı** sorunun **aynı** modele sorulmasıdır —
+        yalnız çıktının biçimi genişler. Tek adımlı bir plan zaten bugünkü `CubeQuery`'dir
+        (`plan_semasi.tek_adimli`), yani basit sorularda maliyet de sonuç da **birebir**.
+
+        ⚠ Şema yoksa ya da tool-use düşerse **serbest-JSON**'a inilir — `select_cube`'un
+        kendi deseni. Plan orada da denetlenir: fiiller `plan_kosucu`'da beyaz listeden
+        geçer, katalog dışı ad `parse_cube_query`'de düşer. *Kısıtı şemada uygulayamadığın
+        yerde, doğrulamayı çalıştırıcıda uygularsın — vazgeçmezsin.*
+        """
+        from app.plan_semasi import plan_sistem_metni
+        _sis = plan_sistem_metni(catalog)
+        if sema is None:
+            return self._ask(_sis, question, model=self._select_model)
+        try:
+            return self._arac_ile(_sis, question, sema, arac_adi="plan",
+                                  arac_aciklama="Soruyu koşulabilir ADIMLARA ayır. Tek "
+                                                "adımla cevaplanıyorsa TEK adım yaz.")
+        except Exception:
+            _log.warning("şema-kısıtlı plan_kur başarısız → serbest-JSON yedeği",
+                         exc_info=True)
+            return self._ask(_sis, question, model=self._select_model)
+
+    def _arac_ile(self, system: str, user: str, sema: dict, *,
+                  arac_adi: str = "cube_query",
+                  arac_aciklama: str = "Soruyu yapısal bir CubeQuery'ye eşle. Soru TEK bir "
+                                       "cube ile yanıtlanamıyorsa cube=null dalını seç.") -> str:
+        """Anthropic tool-use ile ŞEMA-KISITLI yapısal çıktı. Dönüş bugünküyle AYNI
+        sözleşme (JSON metni) — çağıran taraf değişmez, yalnız o metnin ÜRETİLİŞ biçimi
+        değişir.
+
+        ⚠ `arac_adi`/`arac_aciklama` **varsayılanlı**: `select_cube`'un çağrısı bayt bayt
+        aynı kalır. Parametreleşme `O-4` içindir — plan şemasını *"cube_query"* adlı bir
+        araca koymak, modele **yanlış** bir iş tarif etmek olurdu."""
         import json as _json
 
         _t0 = time.monotonic()
@@ -624,10 +666,9 @@ class AnthropicSqlGenerator:
                 model=self._select_model or self._model,
                 max_tokens=1024, temperature=0, system=system,
                 messages=[{"role": "user", "content": user}],
-                tools=[{"name": "cube_query", "input_schema": sema,
-                        "description": "Soruyu yapısal bir CubeQuery'ye eşle. Soru TEK bir "
-                                       "cube ile yanıtlanamıyorsa cube=null dalını seç."}],
-                tool_choice={"type": "tool", "name": "cube_query"},
+                tools=[{"name": arac_adi, "input_schema": sema,
+                        "description": arac_aciklama}],
+                tool_choice={"type": "tool", "name": arac_adi},
             ),
             yuk=f"{system}\n{user}", ad="anthropic._arac_ile")
         elapsed_ms = int((time.monotonic() - _t0) * 1000)
@@ -801,6 +842,32 @@ class OpenAICompatibleSqlGenerator:
             return self._chat(_sis, question, model=self._select_model)
         except SaglayiciYaniti as _e:
             _log.info("select_cube boş yanıt → BİR kez yeniden deneniyor (%s)", _e)
+            return self._chat(_sis, question, model=self._select_model)
+
+    #: 🔴 **`O-4` — `sema_kullanir` FALSE ama `plan_kurabilir` TRUE, ve bu bir çelişki
+    #: değil.** İkisi ayrı şeyi beyan eder: birincisi *"`oneOf` kısıtını native olarak
+    #: uygulayabilir miyim"* (hayır — `strict` fonksiyon şeması `oneOf` tanımıyor),
+    #: ikincisi *"plan üretebilir miyim"* (evet — serbest JSON ile). Kısıtı yarım
+    #: uygulamak reddedildi; **doğrulamayı** çalıştırıcıya taşımak reddedilmedi.
+    #: ⚠ Ve bu ayrım ölçülebilir: aynı planı Anthropic şemayla, bu sağlayıcı metinle
+    #: üretir; ikisi de `plan_kosucu`'nun **aynı** beyaz listesinden geçer.
+    plan_kurabilir = True
+
+    def plan_kur(self, question: str, catalog: str, sema: dict | None = None) -> str:
+        """`FAZ O-4` — plan, **serbest JSON** ile. `sema` KABUL EDİLİR, KULLANILMAZ
+        (bkz. `select_cube`'un aynı gerekçesi: `oneOf` desteklenmiyor).
+
+        ⚠ `select_cube`'un boş-yanıt yeniden denemesi burada da var ve **aynı** biçimde:
+        `§V3`'ün dersi *"ortak sebepli arıza"*ydı ve plan turu da aynı modele, aynı akıl
+        yürütme bütçesine bağlı. *Bir dersi kardeş yollardan yalnız birine yazmak, onu
+        ötekinde yeniden öğrenmeye razı olmaktır.*
+        """
+        from app.plan_semasi import plan_sistem_metni
+        _sis = plan_sistem_metni(catalog)
+        try:
+            return self._chat(_sis, question, model=self._select_model)
+        except SaglayiciYaniti as _e:
+            _log.info("plan_kur boş yanıt → BİR kez yeniden deneniyor (%s)", _e)
             return self._chat(_sis, question, model=self._select_model)
 
     def refine_cube(self, prev_cq_json: str, message: str, catalog: str) -> str:
@@ -1456,6 +1523,26 @@ class FailoverSqlGenerator:
                 continue
         _log.error("FailoverSqlGenerator.select_cube: TÜM sağlayıcılar başarısız")
         raise RuntimeError("select_cube: tüm sağlayıcılar başarısız")
+
+    @property
+    def plan_kurabilir(self) -> bool:
+        """⚠ Yetenek **türetilir, beyan edilmez**: zincirde plan kurabilen **en az bir**
+        sağlayıcı varsa Failover da kurabilir. Sabit bir `True/False` yazmak, zincir
+        değiştiğinde bayatlayacak üçüncü bir sahip olurdu (`KAT-1`)."""
+        return any(getattr(g, "plan_kurabilir", False) for g in self._gens)
+
+    def plan_kur(self, question: str, catalog: str, sema: dict | None = None) -> str:
+        for g in self._gens:
+            if not getattr(g, "plan_kurabilir", False):
+                continue
+            try:
+                out = g.plan_kur(question, catalog, sema)
+                self._last = g
+                return out
+            except Exception:
+                continue
+        _log.error("FailoverSqlGenerator.plan_kur: TÜM sağlayıcılar başarısız")
+        raise RuntimeError("plan_kur: tüm sağlayıcılar başarısız")
 
     def refine_cube(self, prev_cq_json: str, message: str, catalog: str) -> str:
         for g in self._gens:

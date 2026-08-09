@@ -1035,6 +1035,18 @@ MUAFIYET_ASK_DOSYA = [
                      "adımı değildir. ⚠ Okunamazsa `normal` döner: varsayılan BUGÜNKÜ "
                      "davranıştır ve bir ayar okunamadığında davranışı değiştirmek "
                      "sessiz bir kapsam kaybı olurdu"),
+    ("o4-planlayici-ile-garson-ayni-kisi", 2,
+     "🔴 **`FAZ O-4` — PLANLAYICI İLE GARSON AYNI KİŞİ.** İki satır: `plan_garson` "
+     "importu (1) ve `_garson = _plan_garson.sarmala(...)` (1). ⊙ Neden bu iki satır "
+     "`ask.py`'den çıkarılamaz: `_select_consistent`'a **hangi nesnenin** verileceği "
+     "kararıdır ve o çağrı burada. ⊙ Alternatif ölçüldü ve daha PAHALI çıktı: "
+     "`_select_consistent`'ın gövdesini plan-farkında yapmak, bir OYLAMA yordamına ne "
+     "oyladığını öğretmek olurdu — oysa sarmalayıcı ona bugünkü sözleşmeyi konuşuyor ve "
+     "yordam **hiç değişmedi**. ⚠ Bayrak çözümü bilerek `ask.py`'de DEĞİL: bayrak adı "
+     "`plan_garson.BAYRAK`'ta tek sahipli kalsın ve `sarmala()` kapalıyken **nesnenin "
+     "kendisini** döndürebilsin diye (`KURAL B`'nin kanıtı «aynı davranış» değil «aynı "
+     "nesne»dir). *Bir kararı doğru yere koymanın bedeli iki satırsa, o bedel tavandan "
+     "ödenir — kararın yerinden değil.*"),
     ("faz-1.12", 9, "AI Act Md.14 durdurma ucu — karar+yazma `app/ask_jobs.py`'de; `ask.py`'de "
                 "kalan yalnız UÇ KAYDI (dekoratör 2 + imza 1 + delege 1 + `ask_jobs` "
                 "importu 1), `_bg`'nin iki dalındaki iptal kontrolü (2) ve akışın `iptal` "

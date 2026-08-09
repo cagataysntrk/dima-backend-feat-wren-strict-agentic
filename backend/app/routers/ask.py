@@ -23,6 +23,7 @@ from app import varlik
 from app import context as app_context
 from app import netlestirme as _netlestirme
 from app import prescribe
+from app import plan_garson as _plan_garson
 from app import planner as _planner
 from app import ask_jobs, cekirdek, followup, istek_kimligi, katman_b, typo_onerisi
 from app import soz as _soz
@@ -3684,8 +3685,14 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     if "varlik_perdesi" in resolve_for(settings, principal):
                         _q_llm, _ent, _ent_kural = varlik.perdele(body.question, schema)
                     _garson_konustu = True   # `§56` — hakem konuştu; kararı aşağıda tartılır
+                    # 🔴 `O-4` — PLANLAYICI İLE GARSON AYNI KİŞİ. Bayrak kapalıysa
+                    # `sarmala()` **nesnenin kendisini** döndürür; açıkken aynı çağrı
+                    # altında bir plan üretir ve tek adımlıysa bugünkü `CubeQuery`'ye
+                    # indirger. Bayrak çözümü `plan_garson`'da — bu gövde bir tavan
+                    # kapısına bağlı ve bayrak adı ikinci bir sahip kazanmasın diye.
+                    _garson = _plan_garson.sarmala(llm_probe, cube_index, settings, principal)
                     parsed, uyum, eksen, adaylar = _select_consistent(
-                        llm_probe, _q_llm, catalog_text + _ent_kural, cube_index, k, _sema)
+                        _garson, _q_llm, catalog_text + _ent_kural, cube_index, k, _sema)
                     parsed = varlik.geri_koy(parsed, _ent)
                     # 🔴 `AJ3.3` — dönem ifadesi **taze yolda da** çözülür ve çözücü
                     # takip yolunun **aynısıdır** (`_resolve_period` → `date_filters`).

@@ -35,9 +35,15 @@ from __future__ import annotations
 
 from typing import Any
 
-#: 🔴 **KAPALI FİİL KÜMESİ.** Yenisini plan **icat edemez** — `enum` bunu şema düzeyinde
-#: engeller. Her fiilin gövdesi **zaten var olan** bir modüldür; bu küme yeni bir motor
-#: açmaz, var olanları **birbirine geçirir**.
+#: 🔴 **KAPALI FİİL KÜMESİ — ve TEK SAHİPLİ.** Yenisini plan **icat edemez** (`enum` bunu
+#: şema düzeyinde engeller). Her fiilin gövdesi **zaten var olan** bir modüldür; bu küme
+#: yeni bir motor açmaz, var olanları **birbirine geçirir**.
+#:
+#: ⚠ Bu sözlük bir belge değil, **kaynağın kendisidir**: hem `FIILLER` hem modele giden
+#: istem (`plan_sistem_metni`) buradan türer. Fiil listesini bir yerde, o fiillerin
+#: modele anlatımını başka yerde tutmak `KAT-1`'in ta kendisiydi — bir fiil eklendiğinde
+#: **birinin bayatlaması** demekti. *Bir kümeyi tarif eden metin, kümeden üretilmiyorsa
+#: er ya da geç onu yanlış tarif eder.*
 #:
 #: | fiil | gövde | durum |
 #: |---|---|---|
@@ -48,9 +54,17 @@ from typing import Any
 #: | `HESAPLA` | `ilkeller.hesapla` | ✅ (`O-1`) |
 #: | `TREND` | `yoy.compute` | ✅ |
 #: | `ANLAT` | `answer.narration_guard` | ✅ |
-FIILLER: tuple[str, ...] = (
-    "SORGU", "KIYASLA", "AYRISTIR", "BAGLA", "HESAPLA", "TREND", "ANLAT",
-)
+FIIL_ANLAMI: dict[str, str] = {
+    "SORGU": "katalogdan veri çeker — gövdesi bugünkü cube sorgusunun ta kendisidir",
+    "KIYASLA": "bir varlığı akranlarıyla karşılaştırır (ortalamadan sapma)",
+    "AYRISTIR": "bir toplamı bileşenlerine ayırır (hangi kalem ne kadar katkı verdi)",
+    "BAGLA": "satırlar arasından bir varlık SEÇER — «en kötü hangisi» sorusunun cevabı",
+    "HESAPLA": "seçilmiş varlığın akran ortalamasına göre farkını çıkarır",
+    "TREND": "aynı ölçüyü önceki dönemle karşılaştırır",
+    "ANLAT": "bulguları cümleye çevirir — YALNIZ son adım olabilir",
+}
+
+FIILLER: tuple[str, ...] = tuple(FIIL_ANLAMI)
 
 #: Adım referansı: `$1` = birinci adımın çıktısı. **Tek biçim, tek anlam.**
 #: ⚠ Serbest bir ifade dili DEĞİL: `$` + sayı. Bir plan aritmetik yazamaz, koşul yazamaz,
@@ -127,6 +141,36 @@ def plan_json_schema(index: dict, *, azami_adim: int = 5) -> dict[str, Any]:
                         "items": {"type": "object", "oneOf": dallar}}},
         "required": ["adimlar"],
     }
+
+
+def plan_sistem_metni(catalog: str) -> str:
+    """Garsona **plan** dilini öğreten istem — fiil listesi `FIIL_ANLAMI`'ndan **üretilir**.
+
+    ⚠ Elle yazılmış bir fiil listesi burada olsaydı, `FIILLER`'e bir fiil eklendiğinde
+    model onu **hiç öğrenmezdi** ve kusur ancak canlıda, *"neden bu fiili hiç kullanmıyor"*
+    biçiminde görünürdü. `KAT-1`'in en sinsi türü budur: iki sahip **çelişmez**, biri
+    yalnızca **eksik** kalır.
+
+    🔴 Ve istem, şemanın söylediğini **tekrar etmez, gerekçelendirir**: şema neyin
+    yazılabileceğini kısıtlar (`enum`), istem *ne zaman* yazılacağını anlatır. İkisi
+    çakışsaydı biri gereksiz olurdu.
+    """
+    _fiiller = "\n".join(f"- {f}: {a}" for f, a in FIIL_ANLAMI.items())
+    return (
+        "Bir soruyu, YÖNETİLEN semantik katman üzerinde koşacak ADIMLARA ayırırsın.\n"
+        "Yalnızca aşağıdaki cube'lar, ölçüler ve boyutlar VARDIR:\n\n" + catalog + "\n\n"
+        "Kullanabileceğin TEK fiil kümesi (başka fiil YOKTUR):\n" + _fiiller + "\n\n"
+        "Kurallar:\n"
+        '- SADECE JSON döndür: {"adimlar":[{"fiil":"...", ...}]}\n'
+        "- 🔴 SORU TEK ADIMLA CEVAPLANIYORSA TEK ADIM YAZ. Plan uzunluğu bir maliyettir; "
+        "gereksiz adım cevabı iyileştirmez, yalnız yavaşlatır.\n"
+        "- Bir adım, önceki bir adımın çıktısına `$1` `$2` biçiminde işaret eder. "
+        "İLERİ referans YOKTUR: `$3` ancak dördüncü adımda yazılabilir.\n"
+        "- Aritmetik, koşul, döngü YAZAMAZSIN. Yalnız fiiller ve adım referansları.\n"
+        "- Tarih YAZMA: dönemi `period_expr` alanına kullanıcının kendi ifadesiyle "
+        "(sistemin diline çevirerek) koy; tarihi Python hesaplar.\n"
+        "- Katalogda karşılığı olmayan bir adım UYDURMA: o adımı hiç yazma."
+    )
 
 
 def tek_adimli(plan: dict | None) -> dict | None:

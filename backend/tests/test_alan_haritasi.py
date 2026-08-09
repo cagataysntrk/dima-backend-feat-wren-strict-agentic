@@ -38,6 +38,11 @@ GARSON = {
     # modül onun **üstünde** durur, yanında değil. *Bir sözleşmeyi genişletmek, onu ikinci
     # kez yazmak değildir.*
     "plan_semasi.py",
+    # 🔴 `FAZ O-4` — PLAN GARSONU. Tanım gereği garson: soruyu alır, sağlayıcıya verir,
+    # dönen METNİ okur. Motora hiç dokunmaz — bir adımı bile koşmaz, koşmayı
+    # `plan_kosucu`'ya bırakır. ⚠ Ve sınıf sınırı burada bir **tasarım kanıtıdır**:
+    # planlayıcı ile garson AYNI KİŞİ olduğu için planlayıcı da garson tarafında doğar.
+    "plan_garson.py",
     "temellendirme.py",   # G1 — CubeQuery → "anladığım şu" (0 LLM, motora dokunmaz)
     "diyalog.py",         # G2 — slot durumu; saf fonksiyon, LLM YOK, motora dokunmaz
     "ek.py",              # G7 — Türkçe ek ÜRETİMİ (doğrulama değil); saf, LLM YOK
