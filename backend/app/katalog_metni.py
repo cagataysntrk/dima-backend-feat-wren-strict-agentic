@@ -108,6 +108,27 @@ def _ek(adlar: list[str] | None, gorulen: set[str]) -> str:
     return f" {_AC}{', '.join(yeni)}{_KAPA}" if yeni else ""
 
 
+#: 🔴🔴 **`§W-C` — «EN KÖTÜ» BİR YÖNDÜR VE MENÜDE YAZMIYORDU.**
+#:
+#: Ölçüldü (`W19`): *«bu yıl kısım bazında karbon ayak izini **en kötüden iyiye** sırala»*
+#: → `order: {"direction": **"asc"**}`. Yani en **düşük** karbon en üste kondu: sistem
+#: kullanıcıya *«en iyiden kötüye»* verdi ve **öyle olduğunu söylemedi**.
+#:
+#: ⊙ Kusur garsonda değil **menüdeydi**: `lower_is_better` katalogda **beyan edilmiş** bir
+#: alandır (`wren_service.schema()` yayımlıyor, `uyum.py` ve reçete motoru okuyor) — ama
+#: garsonun okuduğu **katalog metninde hiç geçmiyordu**. Garson `toplam_tep` için
+#: *«az olan iyidir»*i bilemez; bilemeyince *«kötü»* kelimesi bir yön taşımaz.
+#:
+#: ⊙ `§M-6`'nın dersinin birebir tekrarı: *mutfak o yemeği yapabiliyorsa menüde de
+#: yazmalı; yoksa garson isteyemez ve niteleme cevaptan **sessizce** düşer.* Orada
+#: `pencere`/`turev` içindi, burada **yön** için.
+#:
+#: ⚠ İşaret bilerek **tek karakter** (`↓`): katalog metni her Intent çağrısında
+#: gönderiliyor, açıklama cümlesi eklemek token maliyetini ölçü sayısıyla çarpardı.
+#: Anlamı istemde **bir kez** yazılır.
+_AZ_IYI = "↓"
+
+
 def cube_satiri(c: dict, *, sozluk: bool) -> str:
     """Tek bir cube'un katalog satırı. `sozluk=False` → **bayt bayt bugünkü biçim**."""
     olculer = list(c.get("measures") or [])
@@ -126,8 +147,12 @@ def cube_satiri(c: dict, *, sozluk: bool) -> str:
     # `ort_oee`'de tekrar edilmez) — model önce konuyu, sonra ayrıntıyı okur.
     gorulen: set[str] = {str(c["name"]).lower()}
     ms = c.get("measure_synonyms") or {}
+    # `§W-C` — yön işareti ölçü **adına bitişik**: garson onu ölçüyle birlikte okur.
+    _az = set(c.get("lower_is_better") or [])
     line = f'- {c["name"]}{_ek(list(c.get("synonyms") or []), gorulen)}'
-    line += f': measures[{", ".join(m + _ek(ms.get(m), gorulen) for m in olculer)}]'
+    line += (f': measures['
+             + ", ".join(m + (_AZ_IYI if m in _az else "") + _ek(ms.get(m), gorulen)
+                         for m in olculer) + "]")
     if boyutlar:
         line += f'; dimensions[{", ".join(boyutlar)}]'
     if zamanlar:

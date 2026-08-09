@@ -466,6 +466,14 @@ def _cube_refine_user(prev_cq_json: str, message: str) -> str:
         "- cube_query yalnız katalogdaki ölçü/boyut adlarını kullanır. Sıralama: "
         '"order":{"measure":"<ölçü>","direction":"asc|desc"}; limit: "limit":N '
         '("en düşük"→asc, "ilk 5"→limit 5).\n'
+        # 🔴 `§W-C` — YÖN, BÜYÜKLÜKTEN FARKLIDIR. Ölçüldü (`W19`): *«karbon ayak izini
+        # EN KÖTÜDEN İYİYE sırala»* → `asc`, yani en TEMİZ kısım en üste kondu ve
+        # kullanıcı bunu cevaptan anlayamadı. Garson `toplam_tep` için «az olan iyidir»i
+        # bilmiyordu; katalog artık söylüyor (`↓`), anlamı burada **bir kez** yazılı.
+        "- 🔴 ÖLÇÜ ADINDAN SONRAKİ `↓` işareti *«bu ölçüde AZ olan İYİDİR»* demektir "
+        "(fire, duruş, maliyet, karbon…). *«en kötü/en yüksek sorun»* → `↓` ölçüde "
+        "**desc**, `↓`suz ölçüde **desc**; *«en iyi»* → `↓` ölçüde **asc**, `↓`suz "
+        "ölçüde **desc**. Yani yönü BÜYÜKLÜK değil, ölçünün İYİ YÖNÜ belirler.\n"
         # 🔴 `M-9`/`M-3` — PENCERE ve TÜREV **fişe yazıldı**. `M-6`'nın dersi: mutfak
         # yemeği yapabiliyorsa menüde de yazmalı; yoksa garson isteyemez ve niteleme
         # cevaptan **sessizce düşer** (ölçüldü: `p15` kümülatif · `r18` hareketli ·

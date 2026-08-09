@@ -881,8 +881,30 @@ def _canon_cq(cq: dict) -> str:
 _CEKIRDEK_ALANLAR = ("cube", "measures", "dimensions", "filters", "timeDimensions")
 #: `wren_service.cube_sql`'in `pop`ladığı gömülü alanlar + sunum alanları. Hepsi
 #: **niteleme**dir: kullanıcının sorduğu ŞEYİ değil, onun **nasıl** sunulacağını söyler.
+#: 🔴 **`§W-A` — `period_expr` LİSTEDE OLMAYINCA HİÇBİR YERDE OLMUYOR.**
+#:
+#: `§V2`'nin ilk yazımı `period_expr`'i **ne çekirdeğe ne zenginliğe** koymuştu. Sonuç:
+#: iki oy yalnız dönemde ayrılınca **aynı kovaya** düşüyor ve `best[0]` keyfî olarak
+#: seçiliyordu — yani dönemi **gören** oy, görmeyene yenilebiliyordu.
+#:
+#: ⊙ Ölçüldü (W turu, iki kanıt):
+#:
+#: | tur | soru | olan |
+#: |---|---|---|
+#: | `W6` | *«…worst first-pass yield **this year**»* | küp+ölçü+boyut bulundu, dönem düştü → *«hangi dönem?»* |
+#: | `W10` | *«**2026 ilk yarıda** … ve payı»* | garson `pencere:pay` dahil **TAM** cq üretti, dönem düştü |
+#:
+#: `§48`'in makinesi çalışıyor (logda `"period_expr":"bu yıl"` görüldü) — eksik olan,
+#: onu **oylamadan sağ çıkarmaktı**.
+#:
+#: ⚠ **Zenginlik olarak** eklendi, çekirdek olarak değil: çekirdeğe koymak `§V2`'nin
+#: kapattığı parçalanmayı geri getirirdi. Zenginlikte çelişki → alan **düşer** → dönem
+#: kapısı bugünkü gibi sorar. Yani en kötü durum **bugünkü davranış**.
+#:
+#: *Bir alanı iki listeden de dışarıda bırakmak, onu görünmez yapmaktır — ve görünmez
+#: bir alan, oylamanın kazasına terk edilmiştir.*
 _ZENGINLIK_ALANLAR = ("order", "limit", "pencere", "turev", "measure_having",
-                      "entity_limit", "ayrik_aylar", "blend")
+                      "entity_limit", "ayrik_aylar", "blend", "period_expr")
 
 
 def _canon_cekirdek(cq: dict) -> str:
@@ -1155,13 +1177,39 @@ def _intent_uyusmazlik_chipi(question: str, eksen: str, adaylar: list[dict],
         return (" × ".join(etiketler.get(d) or d for d in dims)
                 if dims else "kırılımsız (toplam)")
 
+    # 🔴🔴 `§W-B` — **SIRASI FARKLI OLAN İKİ ETİKET, İKİ SEÇENEK DEĞİLDİR.**
+    #
+    # Ölçüldü (`W5` — *«her vardiya için en çok duran makineyi bul»*):
+    #
+    #     not  = "Hangi kırılımı istiyorsun?"
+    #     chip = ["makine × vardiya",  "vardiya × makine"]      ← AYNI KÜME
+    #
+    # ⊙ Kullanıcıya **cevaplayamayacağı** bir soru soruluyor: iki seçenek aynı GROUP BY'ı
+    # tarif ediyor, yalnız **sütun sırası** farklı. Sütun sırası bir sunum tercihidir, bir
+    # niyet ayrımı değil — ve `_canon_cq` bunu zaten biliyor (`dimensions`'ı **sıralıyor**).
+    # Dedup ise **etiket dizisine** bakıyordu, yani aynı gerçeği iki modülden biri
+    # normalleştirip öteki normalleştirmiyordu (`KAT-1`).
+    #
+    # ⊙ `§T1`'in kuralının doğal devamı: *«bir soruyu sormak için önce İKİ FARKLI cevap
+    # gerekir»*. `§T1` etiketleri **birebir aynı** olanları eledi; sırası farklı olanlar
+    # o süzgeçten geçiyordu. Elendiklerinde chip sayısı 1'e düşer ve `§T1` dalı devralıp
+    # **cevap verir** — yani düzeltme kendi başına bir cevap üretmiyor, var olan doğru
+    # dalın önünü açıyor.
+    #
+    # ⚠ Görünen etiket **ilk adayın** sırasını korur: normalleştirme yalnız *"aynı mı"*
+    # sorusuna uygulanır, kullanıcıya gösterilen metne değil.
+    #
+    # *İki seçenek arasında seçim yapılamıyorsa, ortada seçenek değil tekrar vardır.*
+    def _kimlik(lb: str) -> str:
+        return " ".join(sorted(p.strip() for p in re.split(r"[×+]", lb)))
+
     gorulen: set[str] = set()
     adimlar: list[NextStep] = []
     for cq in adaylar:
         lb = _etiket(cq)
-        if lb in gorulen:
+        if (_k := _kimlik(lb)) in gorulen:
             continue
-        gorulen.add(lb)
+        gorulen.add(_k)
         adimlar.append(NextStep(
             label=lb,
             kind={"dimensions": "dimension", "measures": "measure"}.get(eksen, "measure"),

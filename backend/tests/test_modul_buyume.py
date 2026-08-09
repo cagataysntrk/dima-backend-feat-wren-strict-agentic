@@ -468,6 +468,24 @@ MUAFIYET_ASK_KOD = [
      "`V17`'nin kusuru tam da yeni sorgu koşmaktı. *Bir fişi okumak için mutfağa gidilmez.*"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("wc-en-kotu-bir-yondur-buyukluk-degil", 6,
+     "🔴🔴 **`lower_is_better` BEYANLI HER ÖLÇÜDE «EN KÖTÜ» TAM TERSİNİ VERİYORDU.** "
+     "`_AZLIK_KUTBU` iki farklı CİNS kelime taşıyordu: `dusuk/az/kisa/kucuk/yavas` bir "
+     "**BÜYÜKLÜK** bildirir (koşulsuz `ASC`), `kotu/verimsiz` ise bir **NİTELİK** "
+     "bildirir ve yönü ölçünün iyi yönüne bağlıdır — `toplam_ciro`'da «en kötü» = en AZ, "
+     "`toplam_fire_kg`'de «en kötü» = en ÇOK. "
+     "⊙ Ölçüldü (`W19` · `E3`): *«karbon ayak izini en kötüden iyiye sırala»* → `asc`, "
+     "yani EN TEMİZ kısım en üste kondu ve cevap bunu SÖYLEMEDİ (sessiz-yanlış). "
+     "⊙ `lower_is_better` katalogda HEP vardı; okuyan yoktu. Bir sıfatın yönünü "
+     "sözlükten okumak, ölçünün kendi beyanını görmezden gelmektir. "
+     "⚠ **SÖZLÜK BÜYÜMEDİ** — iki kelime bir kümeden ötekine TAŞINDI; `iyi`/`verimli` "
+     "bilerek eklenmedi (bugünkü `DESC` varsayılanlarının ölçülmüş bir kusuru yok; bir "
+     "kutbu simetri uğruna doldurmak ölçülmemiş bir değişikliktir). "
+     "⚠ **TAŞINAMAZ:** `_direction`'ın gövdesinde — kutupların **yanında** durmalı, "
+     "çünkü kusur tam olarak ikisinin aynı kümede yaşamasıydı; ayırmayı başka dosyaya "
+     "koymak ayrımı bir daha yan yana okunamaz kılardı. "
+     "⚠ İmza geriye uyumlu (`az_iyi=None` → bugünkü davranış): meta taşımayan iki çağıran "
+     "bayt bayt aynı kalır."),
     ("v5-sifat-fiil-kategori-degeri-degildir", 8,
      "🔴🔴 **BİR SIFAT/FİİL BİR KATEGORİ DEĞERİ DEĞİLDİR — üç kanıt, tek kök.** "
      "`t19` *«ortalama şiddet»* → `siddet eq 'ORTA'` + `renk eq 'Orta'` · "
@@ -933,6 +951,19 @@ MUAFIYET_ASK_DOSYA = [
                 "olayı (3 — durdurma `hata` değildir ve dalsız akış 6 dk açık kalırdı). "
                 "Bir HTTP uç kaydı router modülünden çıkarılamaz; çıkarmak `/ask/jobs` "
                 "kaynağını iki dosyaya bölerdi"),
+    ("wb-ayni-kume-iki-secenek-degildir", 2,
+     "🔴🔴 **KULLANICIYA CEVAPLAYAMAYACAĞI BİR SORU SORULUYORDU.** Ölçüldü (`W5` — *«her "
+     "vardiya için en çok duran makineyi bul»*): `not = «Hangi kırılımı istiyorsun?»` ve "
+     "chip'ler `[\"makine × vardiya\", \"vardiya × makine\"]` — **aynı küme**, yalnız "
+     "sütun sırası farklı. ⊙ Sütun sırası bir sunum tercihidir, bir niyet ayrımı değil; "
+     "`_canon_cq` bunu **zaten biliyor** (`dimensions`'ı sıralıyor) ama dedup etiket "
+     "**dizisine** bakıyordu — `KAT-1`: aynı gerçeği iki modülden biri normalleştiriyor, "
+     "öteki normalleştirmiyordu. ⊙ `§T1`'in doğal devamı (*«bir soruyu sormak için önce "
+     "İKİ FARKLI cevap gerekir»*): `§T1` birebir aynı etiketleri eledi, sırası farklı "
+     "olanlar süzgeçten geçiyordu. Elenince chip 1'e düşer ve `§T1` dalı devralıp CEVAP "
+     "VERİR — yani bu iki satır kendi başına cevap üretmiyor, var olan doğru dalın önünü "
+     "açıyor. ⚠ Gösterilen etiket ilk adayın sırasını korur: normalleştirme yalnız "
+     "*«aynı mı»* sorusuna uygulanır."),
     ("v2-oylama-zenginligi-cezalandiriyordu", 49,
      "🔴🔴 **OYLAMA, ZENGİN CEVABI KENDİ ZENGİNLİĞİ YÜZÜNDEN ELİYORDU.** Kanonik anahtar "
      "**tam `cq`** olduğu için `order`/`limit`/`pencere`/`turev` yazmayan iki oy "

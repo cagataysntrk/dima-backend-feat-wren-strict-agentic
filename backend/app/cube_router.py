@@ -1888,7 +1888,32 @@ _USTUNLUK_RE = re.compile(r"\ben\s+([a-z]+)")
 
 #: `en <sıfat>` yapısında **azlık** bildiren kutup. Kapalı ve küçük; kalan her sıfat
 #: **çokluk** okunur — çünkü *"en X"* günlük dilde ezici çoğunlukla *"en fazla X"*tır.
-_AZLIK_KUTBU = frozenset({"dusuk", "az", "kotu", "verimsiz", "kisa", "kucuk", "yavas"})
+#:
+#: 🔴🔴 **`§W-C` — BU KÜMEDE İKİ FARKLI CİNS KELİME VARDI ve biri sessiz-yanlış üretiyordu.**
+#:
+#: Küme şöyleydi: `{dusuk, az, **kotu**, **verimsiz**, kisa, kucuk, yavas}`.
+#: İlkler bir **BÜYÜKLÜK** bildirir (`düşük` her zaman `düşük`tür); `kötü`/`verimsiz` ise
+#: bir **NİTELİK** bildirir ve yönü ölçünün **iyi yönüne** bağlıdır:
+#:
+#: | ölçü | «en kötü» ne demek | doğru yön |
+#: |---|---|---|
+#: | `toplam_ciro` *(çok iyidir)* | en **az** ciro | `asc` |
+#: | `toplam_fire_kg` *(az iyidir)* | en **çok** fire | 🔴 `desc` |
+#:
+#: Yani `lower_is_better` beyanlı **her** ölçüde *"en kötü"* tam **tersini** veriyordu.
+#: Ölçüldü (`W19` · `E3`): *«karbon ayak izini en kötüden iyiye sırala»* → `asc`, yani
+#: **en temiz** kısım en üste kondu ve cevap bunu söylemedi.
+#:
+#: ⊙ `lower_is_better` bir **beyan**dır ve katalogda hep vardı; okuyan yoktu. Bir sıfatın
+#: yönünü sözlükten okumak, ölçünün kendi beyanını görmezden gelmektir.
+#:
+#: ⚠ **Sözlük BÜYÜTÜLMEDİ** — iki kelime bir kümeden ötekine **taşındı**. `iyi`/`verimli`
+#: bilerek eklenmedi: bugünkü davranışları (varsayılan `DESC`) `lower_is_better` OLMAYAN
+#: ölçülerde doğru ve ölçülmüş bir kusurları yok. *Bir kutbu simetri uğruna doldurmak,
+#: ölçülmemiş bir değişikliktir.*
+_AZLIK_KUTBU = frozenset({"dusuk", "az", "kisa", "kucuk", "yavas"})
+#: NİTELİK kutbu: yönü **ölçünün beyanı** belirler, sözlük değil (`§W-C`).
+_KOTULUK_KUTBU = frozenset({"kotu", "verimsiz"})
 
 
 def _konusma_sozcukleri(q: str) -> set[str]:
@@ -1915,7 +1940,14 @@ def ustunluk_sozcukleri(q: str) -> set[str]:
     return {w for m in _USTUNLUK_RE.finditer(q) for w in ("en", m.group(1))}
 
 
-def _direction(q: str):
+def _direction(q: str, az_iyi: bool | None = None):
+    """`az_iyi` (`§W-C`): sıralanan ölçüde **az olan iyi mi** (`lower_is_better`).
+
+    ⚠ Varsayılan `None` = *bilinmiyor* → nitelik kutbu bugünkü davranışını korur (`ASC`).
+    Böylece meta taşımayan çağıranlar (`niyet_tasima`, `cube_router:1563`) **bayt bayt**
+    aynı kalır; yalnız ölçüyü ve metasını bilen `siralama.tamamla` yeni bilgiyi kullanır.
+    *Bir imzayı genişletmek, çağıranların hepsini değiştirmek zorunda bırakmamalıdır.*
+    """
     # 🔴 **YAPI ÖNCE, KISAYOL SONRA — kapı bunu yakaladı.**
     # İlk yazımda `hangisi` kısayolu başta duruyordu ve *"en düşük hangisi"* sorusunu
     # **DESC** yapıyordu: kullanıcı en düşüğü istiyor, sistem en yükseği sıralıyor —
@@ -1929,7 +1961,14 @@ def _direction(q: str):
         # → `dusukleri` ∉ `_AZLIK_KUTBU` olduğu için DESC çıkıyordu. Eski liste
         # (`_herhangi`) zaten çekim toleranslıydı; yapıya geçerken o toleransı düşürmüşüm.
         # *Bir listeyi yapıya çevirirken, listenin sessizce yaptığı işi de taşımak gerekir.*
-        return "ASC" if any(m.group(1).startswith(k) for k in _AZLIK_KUTBU) else "DESC"
+        _s = m.group(1)
+        if any(_s.startswith(k) for k in _AZLIK_KUTBU):
+            return "ASC"                      # BÜYÜKLÜK — koşulsuz
+        if any(_s.startswith(k) for k in _KOTULUK_KUTBU):
+            # NİTELİK — yönü ölçünün beyanı belirler (`§W-C`). `az_iyi` bilinmiyorsa
+            # bugünkü davranış (`ASC`) korunur: bilgi yoksa değişiklik de yoktur.
+            return "DESC" if az_iyi else "ASC"
+        return "DESC"
     # `hangisi` tek başına da bir sıralama sorusudur (*"en yüksek"* örtük).
     return "DESC" if _syn_hit(q, "hangisi") else None
 

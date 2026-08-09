@@ -97,10 +97,17 @@ def tamamla(cq: dict, q: str, cube_meta: dict | None = None, *,
         cube_meta = next((c for c in (sema.get("cubes") or [])
                           if c.get("name") == cq.get("cube")), None)
     qn = _cr()._norm(q or "")
-    yon = _cr()._direction(qn)
+    # 🔴 `§W-C` — ÖLÇÜT ÖNCE, YÖN SONRA. Sıra bilerek ters çevrildi: *"en kötü"*nün yönü
+    # **hangi ölçünün** sıralandığına bağlı (`lower_is_better`), yani ölçüt bilinmeden yön
+    # bilinemez. Eskiden yön önce hesaplanıyordu ve ölçünün beyanı hiç sorulmuyordu —
+    # sonuç: `lower_is_better` beyanlı HER ölçüde *"en kötü"* tam tersini veriyordu.
+    # *Bir sıfatın yönünü sözlükten okumak, ölçünün kendi beyanını görmezden gelmektir.*
+    _olcut = olcut(qn, olculer, cube_meta)
+    _az_iyi = _olcut in set((cube_meta or {}).get("lower_is_better") or [])
+    yon = _cr()._direction(qn, _az_iyi)
     if not yon:
         return False
-    cq["order"] = {"measure": olcut(qn, olculer, cube_meta),
+    cq["order"] = {"measure": _olcut,
                    "direction": "asc" if yon == "ASC" else "desc"}
     # 🔴 **`§O3` — SIRALAMAYI KURTARDIK, SAYIYI YERDE BIRAKTIK.**
     #

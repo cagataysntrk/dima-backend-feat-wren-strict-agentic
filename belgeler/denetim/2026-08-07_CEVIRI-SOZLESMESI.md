@@ -6578,3 +6578,122 @@ koşulundaki bir uyuşmazlığı** gösteriyordu.
 *Bu oturumun on ikinci ölçüm-aleti yakalaması — ve altı sağlam kökü geri almaktan
 kurtardı. Bir sayının düştüğünü görmek, onu düşürenin siz olduğunuz anlamına gelmez;
 paydanın aynı koşulda ölçüldüğünü önce göstermek gerekir.*
+
+---
+
+## §103 · W TURU — 20 özgün senaryo (V düzeltmelerinin canlı sınavı dahil)
+
+| # | senaryo | sonuç |
+|---|---|---|
+| W1 | kumaş cinsi bazında ortalama renk sapması | 🟢 + eş-adlılık beyanı |
+| W2 | ↳ *bu nasıl hesaplandı, hangi formül* | 🟢🟢 **`AVG(uretim_dE)` · dE · `partiler`** |
+| W3 | ↳ en yüksek üç kumaşı tolerans aşımıyla | 🟢 çapraz-küp + `limit 3` + dönem çapası |
+| W4 | aylık fire oranı ve **3 aylık hareketli ortalaması** | 🟢🟢 `pencere:hareketli_ort · pencere_boyu:3` |
+| W5 | her vardiya için en çok duran makine | 🔴 chip'ler **ayırt edilemez**: `makine × vardiya` / `vardiya × makine` |
+| W6 | [EN] worst first-pass yield this year | 🔴 küp+ölçü+boyut **bulundu**, «this year» çözülmedi → *«hangi dönem?»* |
+| W7 | geçen ay müşteri bazında ciro | 🟢 boş aralık **dürüstçe** + veri aralığı beyanı |
+| W8 | ↳ *bu rakam neyi kapsıyor* | 🟢🟢 `SUM(ciro_tl)` · ₺ |
+| W9 | ↳ ilk 3'ün payını ekle | 🟢 **`order desc` + `limit 3`** — §V6 tuttu |
+| W10 | 2026 ilk yarıda müşteri cirosu **ve payı** | 🔴 garson **`pencere:pay` dahil TAM cq** üretti → dönem yüzünden **atıldı** |
+| W11 | bakım maliyeti en yüksek 5 makine + arıza sayıları | 🔴 konu daraltma *(iz artık dürüst: «garson çağrıldı»)* |
+| W12 | [DE] Wasserverbrauch pro Abteilung | 🟢 `toplam_su_lt × kisim` |
+| W13 | personel bazında **çalışma saati** | 🔴 **`egitim.toplam_egitim_saati`** — sessiz yanlış eşleşme |
+| W14 | ↳ en çok çalışanın durumu | 🟢 `pencere:sira` grup-içi |
+| W15 | ↳ *bu güvenilir mi, hangi tabloda* | 🟢🟢 `SUM(kg)` · kg |
+| W16 | enerji ile üretimi aynı grafikte | ◐ dürüst **yetenek sınırı** beyanı — ama chip'ler alakasız |
+| W17 | hangi renk en çok reworke gidiyor | ◐ **gerçek** belirsizlik (rework kg ↔ sayısı) |
+| W18 | [AR] أعلى ثلاث آلات من حيث التوقف | 🟢🟢 `makine_duruslari` + `limit 3` — **V20'nin Arapçası artık çalışıyor** |
+| W19 | karbon ayak izini **en kötüden iyiye** sırala | 🔴 `order: **asc**` — ters yön |
+| W20 | ↳ *bu sayı neye dayanıyor* | 🟢🟢 `SUM(tep)` · TEP |
+
+**Skor:** 12 🟢 · 2 ◐ *(ikisi de doğru davranış)* · 6 🔴 · **Discovery ateşlemesi: 0**
+
+### ✅ V turunun düzeltmeleri canlıda sınandı
+
+| kök | kanıt |
+|---|---|
+| `§V1` makbuz | **5/5** tam isabet (W2·W8·W15·W20 + D2) — hepsi *yeni sorgu YOK, LLM YOK* |
+| `§V2` oylama | W4 `hareketli_ort` · W10 `pay` · W9 `order+limit` — zenginlik artık **taşınıyor** |
+| `§V3` boş-yanıt | W18 (AR): V20'de üç oyu birden düşen soru **artık cevaplanıyor** |
+| `§V4` dürüst iz | W11'de *«garson çağrıldı — kullanılabilir bir karar dönmedi»* |
+| `§V6` `sira` sınırı | W9 düz `order+limit`, W14 grup-içi `sira` — **ikisi de doğru yerde** |
+
+### §103.1 · W TURUNUN DÖRT KÖKÜ — biri benim açtığım boşluktu
+
+| # | kök | kanıt | durum |
+|---|---|---|---|
+| **W-A** | `period_expr` **ne çekirdekte ne zenginlikte** → `best[0]`'dan keyfî alınıyor | W6 · W10 | ✅ çözüldü |
+| **W-B** | netleştirme chip'leri **ayırt edilemez** (aynı küme, farklı sıra) | V15 · W5 · W16 | ✅ çözüldü |
+| **W-C** | *«en kötü»* bir **yön**dür, büyüklük değil — `lower_is_better` okunmuyordu | W19 · E3 | ✅ çözüldü |
+| **W-D** | *«çalışma saati»* → `egitim.toplam_egitim_saati` sessiz eşleşme | W13 | ⏸ **bilerek ertelendi** |
+
+#### 🔴 §W-A — KENDİ DEĞİŞİKLİĞİMİN AÇTIĞI BOŞLUK
+
+`§V2` oyu çekirdeğe taşırken `period_expr`'i **iki listenin de dışında** bıraktı. Sonuç:
+iki oy yalnız dönemde ayrılınca aynı kovaya düşüyor ve `best[0]` keyfî seçiliyordu —
+**dönemi gören oy, görmeyene yenilebiliyordu.** `§48`'in makinesi çalışıyordu (logda
+`"period_expr":"bu yıl"` görüldü); eksik olan onu **oylamadan sağ çıkarmaktı**.
+
+✅ Canlı (`E2`): *«which supplier has the worst first-pass yield this year»* →
+**SELÇUK TEKSTİL %62,22**, dönem çözüldü, `limit 1`. W6 kapandı.
+
+*Bir alanı iki listeden de dışarıda bırakmak, onu oylamanın kazasına terk etmektir.*
+
+#### 🔴 §W-B — CEVAPLANAMAYAN BİR SORU, SORU DEĞİLDİR
+
+`W5` *«her vardiya için en çok duran makineyi bul»* → iki chip: `makine × vardiya` ve
+`vardiya × makine`. **Aynı küme, farklı sıra.** `_canon_cq` bunu zaten biliyor
+(`dimensions`'ı sıralıyor); dedup ise etiket **dizisine** bakıyordu — `KAT-1`.
+
+⊙ `§T1`'in doğal devamı: o **birebir aynı** etiketleri elemişti, sırası farklı olanlar
+süzgeçten geçiyordu. Elenince chip 1'e düşer ve `§T1` dalı devralıp **cevap verir** —
+yani düzeltme kendi başına cevap üretmiyor, var olan doğru dalın önünü açıyor.
+
+✅ Canlı (`E4`): aynı soru artık **33 satır** veriyor, `pencere:{kip:sira, bolum:[vardiya]}`.
+
+#### 🔴 §W-C — SÖZLÜKTE İKİ FARKLI CİNS KELİME VARDI
+
+    _AZLIK_KUTBU = {dusuk, az, **kotu**, **verimsiz**, kisa, kucuk, yavas}
+
+`düşük/az/kısa/küçük/yavaş` bir **BÜYÜKLÜK** bildirir — koşulsuz `ASC`.
+`kötü/verimsiz` bir **NİTELİK** bildirir ve yönü ölçünün iyi yönüne bağlıdır:
+
+| ölçü | «en kötü» | doğru yön |
+|---|---|---|
+| `toplam_ciro` | en **az** ciro | `asc` |
+| `toplam_fire_kg` *(az iyidir)* | en **çok** fire | 🔴 `desc` |
+
+Yani `lower_is_better` beyanlı **her** ölçüde *"en kötü"* **tam tersini** veriyordu, ve
+cevap bunu söylemiyordu — sessiz-yanlışın en doğrudan biçimi. `lower_is_better` katalogda
+**hep vardı**; okuyan yoktu.
+
+⚠ **Sözlük büyütülmedi**, iki kelime bir kümeden ötekine **taşındı**. `iyi`/`verimli`
+bilerek eklenmedi: bugünkü varsayılanlarının ölçülmüş bir kusuru yok. *Bir kutbu simetri
+uğruna doldurmak, ölçülmemiş bir değişikliktir.*
+
+Ek olarak yön işareti (`↓`) artık **katalog metninde**: garson da ölçünün iyi yönünü
+görüyor (`§M-6`: mutfak yapabiliyorsa menüde de yazmalı). Sondaj 9/9.
+
+#### ⏸ §W-D — ÖLÇÜLDÜ, ve BİLEREK YAPILMADI
+
+`W13` *«personel bazında çalışma saati»* → `egitim.toplam_egitim_saati` (**eğitim** saati,
+çalışma değil). Sondaj: katalogda *«çalışma saati»* diye bir ölçü **yok**; `egitim`'in
+sinonimlerinin hepsi açıkça *«eğitim …»*. Yani bu bir **mutfak eksikliği**dir.
+
+🔴 Temiz çözümü *"soru «çalışma» diyor, ölçü «eğitim» diyor"* ayrımını gerektirir — bu bir
+**anlam** kararıdır ve kelime listesi olmadan yazılamaz. Genel bir yüklem (*"ölçünün
+sözlüğünden hiçbir kelime soruda geçmiyorsa beyan et"*) denendiğinde **her yabancı dilli
+soruda** yanlış-pozitif üretir (`W12` Almanca `Wasserverbrauch` → `toplam_su_lt`: hiçbir
+Türkçe sinonim soruda geçmez).
+
+⊙ `§101.1` uygulandı: *bir kusuru ilan eden yüklem kendi yanlış-pozitifini üretirse, ilan
+ettiği kusurdan pahalıdır.* Kayda geçirildi, yapılmadı. *Yapılmayan bir işi gerekçesiyle
+yazmak, onu unutmamanın tek yoludur.*
+
+### §103.2 · W KAPISI YEŞİL — hiçbir sayı gerilemedi
+
+    korpus %94.9 (taban %94.4) ✅ · sessiz_yanlis 10 (sabit) · gerçek-dünya
+    {2287 · 1145 · 90 · 38} birebir aynı · süit 4267 · eval +0,0%
+
+`eval LLM dilimi −66,7%` yine göründü — ve `§V5.2`'de **HEAD'de birebir aynı** çıktığı
+ölçülmüştü: bayat taban, bir gerileme değil.
