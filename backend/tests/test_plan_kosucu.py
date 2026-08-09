@@ -48,8 +48,10 @@ def test_BAGLANMAMIS_FIIL_SESSIZCE_ATLANMAZ():
     # `ANLAT($1)` artık `dogrula`da ileri referans olarak düşüyor (kendi kendine
     # referans) ve o zaman bu kapı **başka bir şeyi** ölçmüş olurdu.
     with pytest.raises(PlanHatasi, match="O-4"):
+        # ⟳ `TREND`'in sözleşmesi `kaynak` → `cube_query` oldu (`FAZ 7` sonrası gövde
+        # uyumu). Bayat bir sözleşmeyle yazılmış test, ölçtüğü şeyi ölçmez.
         _kos({"adimlar": [{"fiil": "SORGU", "cube_query": {"cube": "oee"}},
-                          {"fiil": "TREND", "kaynak": "$1"}]})
+                          {"fiil": "TREND", "cube_query": "$1"}]})
 
 
 def test_SORGU_BUTCESI_ASILAMAZ():
@@ -402,3 +404,27 @@ def test_SORGU_ADIMINA_REFERANS_ONUN_SORGUSUDUR():
     assert len(gorulen) == 2
     assert {"dimension": "m", "operator": "eq", "value": "RAM-3"} in gorulen[1]["filters"], (
         f"`$1` çözülünce satır geldi, sorgu gelmedi: {gorulen[1]}")
+
+
+def test_REFERANS_ALANI_GERCEKTEN_REFERANS_OLMALI():
+    """🔴🔴 Şema o alanlara `pattern: ^\\$n$` koyuyor — ama **serbest-JSON sağlayıcıda
+    şema uygulanmıyor** ve doğrulayıcı yalnız alanın **varlığını** denetliyordu.
+
+    Ölçüldü (canlı `FF12`): model `BOYUTSEC(kaynak="parti")` yazdı — bir küp **adı**,
+    bir referans değil. Adım koştu, gövde boş liste aldı, cevap `source=cube+llm`
+    rozetiyle **0 satır** döndü.
+
+    *Bir alanın biçimini şemaya yazıp doğrulayıcıya yazmamak, şemayı yalnız şemayı
+    uygulayan sağlayıcılarda geçerli kılar.*
+    """
+    with pytest.raises(PlanHatasi, match="ADIM REFERANSI"):
+        dogrula({"adimlar": [{"fiil": "BOYUTSEC", "kaynak": "parti"}]})
+    with pytest.raises(PlanHatasi, match="ADIM REFERANSI"):
+        dogrula({"adimlar": [{"fiil": "SORGU", "cube_query": CQ},
+                             {"fiil": "BAGLA", "kaynak": "makine", "boyut": "m",
+                              "olcu": "v"}]})
+
+
+def test_SATIR_ICI_CUBE_QUERY_REFERANS_SAYILMAZ():
+    """⚠ `cube_query` istisna: satır içi bir **nesne** de olabilir (şema `oneOf`)."""
+    assert dogrula({"adimlar": [{"fiil": "KIR", "cube_query": CQ, "boyut": "m"}]}) == [[1]]

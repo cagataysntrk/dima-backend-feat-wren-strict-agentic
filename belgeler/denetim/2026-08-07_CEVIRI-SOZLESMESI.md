@@ -7677,3 +7677,27 @@ genişlemelidir — biri kalırsa orası kırılır.**
 canlıda *«tüketici hiç konuşmadı»* diye bir kör nokta üretti (`ADR-0020` ihlali).
 *Bir dalın sessizce kapanması, o dalın var olmadığı anlamına gelmez — yalnız
 görünmediği anlamına gelir.*
+
+### `FF` turu — dört sınıfsal kusur daha, hepsi düzeltildi
+
+| # | senaryo | bulgu | kök çözüm |
+|---|---|---|---|
+| `FF8` | *«geçen yıla göre ciro nasıl değişti»* | 🔴 `source=cube+llm` · **0 satır** · açıklama YOK | Bölümler **fiile göre değil TİPE göre** toplanıyor (`CIKTI_TIPI`). *Bir kusuru fiilin adıyla düzeltmek, aynı kusuru sıradaki fiilde yeniden yazmaya söz vermektir.* |
+| `FF10` | *«RAM-3 neden düşük»* | `SUZ.deger = {{ENT_1}}` | 🔴 **Varlık perdesi plana geri konmuyordu** — `geri_koy` yalnız `parsed`'a uygulanıyordu. *Bir perdeyi kaldırmayı bir yolda unutmak, o yolu perdenin arkasında bırakmaktır.* |
+| `FF12` | *«hangi kırılım açıklıyor»* | `BOYUTSEC(kaynak="parti")` — küp **adı**, referans değil | 🔴 Şema `pattern` koyuyor ama **serbest-JSON'da uygulanmıyor**; doğrulayıcı yalnız alanın varlığına bakıyordu |
+| `FF12` | aynı soru, ikinci tur | `BOYUTSEC(kaynak=$1)` — `$1` `satirlar`, `bulgular` isteniyor | 🔴 **Modelin tip akışını görmesinin hiçbir yolu yoktu.** İstem fiilleri ve alanları anlatıyordu, **neyin neye bağlanabileceğini** değil |
+
+### 🟢 Tip akışını öğretmenin etkisi — anında
+
+    önce : SORGU → BOYUTSEC            (reddedildi, üç koşumda)
+    sonra: SORGU → AYRISTIR → BOYUTSEC → SUZ → SORGU → AYRISTIR → BOYUTSEC → ANLAT
+           8 adım · 2 sorgu · source=cube+llm
+
+*Bir dili öğretirken kelimeleri vermek yetmez; hangi kelimenin hangisinden sonra
+gelebileceğini de vermek gerekir.*
+
+### Bu turda ölçülen route-düzeyi kusur (orkestratörden bağımsız)
+
+`FF9` *«enerji için bir pano taslağı **kur**»* → *"kur"* fiili **`kur` (döviz) küpüne**
+eşleşti. `§G` morfoloji sınıfı (*«arttı» bir FİİL, yazım hatası değil* ile aynı aile).
+Kayda geçirildi; orkestratörün konusu değil.

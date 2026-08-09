@@ -401,13 +401,40 @@ def plan_sistem_metni(catalog: str) -> str:
     # 🔴 En can alıcısı: eksik tarif edilen altı fiilden ikisi (`BAGLA`·`HESAPLA`)
     # kök-neden zincirinin tam ortasında. Sistem, en çok istediği zinciri üretmesi
     # **en zor** olan yerden tutuyordu.
+    # 🔴🔴 **TİP AKIŞI DA GÖSTERİLİR — modelin bunu bilmesinin BAŞKA YOLU YOK.**
+    #
+    # Ölçüldü (canlı `FF12`, üç koşum): model `BOYUTSEC(kaynak="$1")` yazdı; `$1` bir
+    # `SORGU` yani `satirlar`, oysa `BOYUTSEC` bir `bulgular` ister. Niyet **doğruydu**
+    # (*«bu satırlarda hangi kırılım açıklıyor»*) ama araya `AYRISTIR` gerektiğini
+    # görmesinin hiçbir yolu yoktu — istem fiilleri ve alanları anlatıyordu, **neyin
+    # neye bağlanabileceğini** anlatmıyordu.
+    #
+    # ⊙ Yine tek sahipten üretiliyor (`CIKTI_TIPI` + `GIRDI_TIPI`): elle yazılmış bir
+    # akış tablosu, bir fiil eklendiğinde **bayatlardı**.
+    #
+    # *Bir dili öğretirken kelimeleri vermek yetmez; hangi kelimenin hangisinden sonra
+    # gelebileceğini de vermek gerekir.*
+    def _tip_satiri(f: str) -> str:
+        _girdi = GIRDI_TIPI.get(f) or {}
+        _ister = ", ".join(f"{k}: {v or 'her tip'}" for k, v in _girdi.items()) or "—"
+        return f"  üretir: {CIKTI_TIPI.get(f, '?')}  ·  ister: {_ister}"
+
     _fiiller = "\n".join(
         f"- {f}: {a}\n  zorunlu alanlar: " + ", ".join(ZORUNLU_ALANLAR.get(f, ()))
+        + "\n" + _tip_satiri(f)
         for f, a in FIIL_ANLAMI.items())
+    _ureten: dict[str, list[str]] = {}
+    for _f, _t in CIKTI_TIPI.items():
+        _ureten.setdefault(_t, []).append(_f)
     return (
         "Bir soruyu, YÖNETİLEN semantik katman üzerinde koşacak ADIMLARA ayırırsın.\n"
         "Yalnızca aşağıdaki cube'lar, ölçüler ve boyutlar VARDIR:\n\n" + catalog + "\n\n"
         "Kullanabileceğin TEK fiil kümesi (başka fiil YOKTUR):\n" + _fiiller + "\n\n"
+        "🔴 TİP UYUŞMALI: bir alan hangi tipi istiyorsa, işaret ettiği adım o tipi "
+        "ÜRETMELİ. Hangi tipi kim üretir:\n"
+        + "\n".join(f"  {t}: {' | '.join(sorted(v))}" for t, v in sorted(_ureten.items()))
+        + "\n⚠ Örnek: `BOYUTSEC` bir **bulgular** ister; onu yalnız `AYRISTIR` üretir. "
+        "Yani zincir `SORGU → AYRISTIR → BOYUTSEC` olmalıdır, `SORGU → BOYUTSEC` değil.\n\n"
         "Kurallar:\n"
         '- SADECE JSON döndür: {"adimlar":[{"fiil":"...", ...}]}\n'
         "- 🔴 SORU TEK ADIMLA CEVAPLANIYORSA TEK ADIM YAZ. Plan uzunluğu bir maliyettir; "

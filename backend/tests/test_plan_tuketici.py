@@ -256,3 +256,28 @@ def test_ISTEGE_BAGLI_ALAN_DUSURULMEZ():
     from app.plan_garson import _plani_oku
     plan = {"adimlar": [{"fiil": "TREND", "cube_query": CQ, "mode": "mom"}]}
     assert _plani_oku(json.dumps(plan)) is not None, "isteğe bağlı `mode` düşürüldü"
+
+
+def test_BOLUMLER_FIILE_GORE_DEGIL_TIPE_GORE():
+    """🔴🔴 Ölçüldü (canlı `FF8`): tek `TREND` adımlı bir plan `yoy.compute` ile satır
+    **üretti** ama `sonuclar` yalnız `SORGU` topladığı için cevap `source=cube+llm`
+    rozetiyle **0 satır** döndü ve hiçbir şey söylemedi.
+
+    *Bir kusuru fiilin adıyla düzeltmek, aynı kusuru sıradaki fiilde yeniden yazmaya
+    söz vermektir.* — Toplama artık `CIKTI_TIPI`'ne bakıyor.
+    """
+    plan = {"adimlar": [{"fiil": "TREND", "cube_query": CQ}]}
+    c = _cevap(_Garson(plan))
+    assert c is not None and len(c["bolumler"]) == 1, c
+    assert c["result"]["row_count"] == 4, "TREND'in satırları cevaba girmedi"
+
+
+def test_BOS_SONUC_SESSIZ_KALMAZ():
+    """🔴 Boş bir cevabı açıklamadan vermek, kullanıcının onu bir **hata** sanmasına
+    izin vermektir. Merdivenin geri kalanı bunu zaten söylüyor."""
+    class _Bos(_Motor):
+        def query(self, sql, limit=None):
+            return {"columns": [], "rows": [], "row_count": 0}
+
+    c = _cevap(_Garson({"adimlar": [{"fiil": "SORGU", "cube_query": CQ}]}), _Bos())
+    assert "hiçbir adım satır döndürmedi" in c["note"], c["note"]

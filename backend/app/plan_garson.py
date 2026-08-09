@@ -255,8 +255,16 @@ class PlanGarsonu:
     yereline değil, çünkü bu kancaya **yukarıdaki her yoldan** gelinir (`EE19`'un dersi).
     """
 
-    def __init__(self, ic: Any, index: dict, istek: Any = None) -> None:
+    def __init__(self, ic: Any, index: dict, istek: Any = None,
+                 varliklar: dict | None = None) -> None:
         self._ic, self._index, self._istek = ic, index or {}, istek
+        #: 🔴 `G0b.6` — VARLIK PERDESİ. Sorudaki katalog **değerleri** `{{ENT_i}}`'ye
+        #: çevrilip modele öyle gidiyor; `ask.py` dönen `CubeQuery`'ye `varlik.geri_koy`
+        #: uyguluyor. Ama **plana uygulamıyordu**: ölçüldü (canlı `FF10`),
+        #: `SUZ.deger = "{{ENT_1}}"` olarak kaldı ve süzgeç hiçbir şeyle eşleşmedi.
+        #: *Bir perdeyi kaldırmayı bir yolda unutmak, o yolu perdenin arkasında
+        #: bırakmaktır.*
+        self._varliklar = varliklar or {}
 
     def __getattr__(self, ad: str) -> Any:      # pragma: no cover - saydamlık
         return getattr(self._ic, ad)
@@ -275,6 +283,17 @@ class PlanGarsonu:
             # ⚠ Plan **istek durumuna** bırakılır: `_select_consistent` `k` kez örnekler
             # ve her örnek kendi planını üretir; sonuncusu kalır. Bir oylama yapmıyoruz
             # çünkü çok adımlı planın kanonik biçimi yok (`R1`) — karar `dogrula()`'nın.
+            if self._varliklar:
+                from app import varlik
+                _acik = varlik.geri_koy(plan, self._varliklar)
+                if _acik is None:
+                    # ⚠ `geri_koy` **fail-closed**: çözülemeyen bir yuva varsa `None`
+                    # döner. Yarım geri konmuş bir süzgeç `{{ENT_1}}` arar, hiç satır
+                    # dönmez ve cevap *"veri yok"* olur — kullanıcı bunu bir **bulgu**
+                    # sanar. O yüzden plan **düşer**, yarım koşmaz.
+                    _log.info("plan: varlık perdesi kaldırılamadı → plan düştü")
+                    return self._ic.select_cube(question, catalog, sema)
+                plan = _acik
             _var = getattr(self._istek, "state", None) if self._istek is not None else None
             if _var is not None:
                 _var.plan_taslagi = plan
@@ -290,9 +309,9 @@ class PlanGarsonu:
 
 
 def sarmala(llm: Any, index: dict, settings: Any, principal: Any = None,
-            istek: Any = None) -> Any:
+            istek: Any = None, varliklar: dict | None = None) -> Any:
     """🔴 `KURAL B`'nin tek satırı: kapalıyken **nesnenin kendisi** döner."""
-    return (PlanGarsonu(llm, index, istek)
+    return (PlanGarsonu(llm, index, istek, varliklar)
             if acik_mi(settings, principal, llm) else llm)
 
 

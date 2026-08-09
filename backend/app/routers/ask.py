@@ -3695,7 +3695,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     # 🔴 `O-14` — GARSON = ORKESTRATÖR. Bir basamak DEĞİL, garsonun
                     # çıktı biçimi: karar yüzeyi (route↔garson) bayt bayt aynı kalır.
                     # Bayrak kapalıysa `sarmala()` nesnenin kendisini döndürür.
-                    _g = _plan_garson.sarmala(llm_probe, cube_index, settings, principal, request)
+                    _g = _plan_garson.sarmala(llm_probe, cube_index, settings, principal,
+                                              request, _ent)
                     parsed, uyum, eksen, adaylar = _select_consistent(
                         _g, _q_llm, catalog_text + _ent_kural, cube_index, k, _sema)
                     parsed = varlik.geri_koy(parsed, _ent)

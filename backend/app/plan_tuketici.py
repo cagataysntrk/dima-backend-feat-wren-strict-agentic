@@ -271,27 +271,63 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     # hepsi hesaplanıp yalnız **sonuncusu** dönüyordu; çok bölümlü rapor/pano için gereken
     # ara sonuçlar üretilip çöpe gidiyordu. *Bir maliyeti ödeyip ürününü atmak, onu hiç
     # ödememekten pahalıdır: hem para gider hem cevap.*
+    # 🔴🔴 **BÖLÜMLER FİİLE GÖRE DEĞİL, ÇIKTI TİPİNE GÖRE TOPLANIR.**
+    #
+    # İlk hâl yalnız `SORGU` adımlarını topluyordu. Ölçüldü (canlı `FF8` — *«geçen yılın
+    # aynı dönemine göre ciro nasıl değişti»*): plan tek bir `TREND` adımından ibaretti,
+    # `yoy.compute` satırları **üretti**, ama `sonuclar` boş kaldı → cevap `source=cube+llm`
+    # rozetiyle **0 satır** döndü ve hiçbir şey söylemedi.
+    #
+    # ⊙ Düzeltme fiile özel değil **sınıfsal**: `CIKTI_TIPI` zaten hangi fiilin `satirlar`
+    # ürettiğini söylüyor. Yarın sekizinci bir satır-üreten fiil eklenirse burası
+    # kendiliğinden doğru çalışır. *Bir kusuru fiilin adıyla düzeltmek, aynı kusuru
+    # sıradaki fiilde yeniden yazmaya söz vermektir.*
+    from app.plan_semasi import CIKTI_TIPI
+
     _sorgular = out.get("sorgular") or []
-    _son = out["sonuclar"][-1] if out["sonuclar"] else None
+    _bolumler: list[dict] = []
+    _sorgu_sirasi = 0
+    for adim, cikti in zip(plan["adimlar"], out.get("ciktilar") or []):
+        if CIKTI_TIPI.get(adim.get("fiil")) != "satirlar":
+            continue
+        if adim.get("fiil") == "SORGU":
+            _cq = _sorgular[_sorgu_sirasi] if _sorgu_sirasi < len(_sorgular) else None
+            _sorgu_sirasi += 1
+        else:
+            # ⚠ `TREND` gibi fiiller sorgularını **kendileri** koşar; adımın kendi
+            # `cube_query`'si o bölümün kimliğidir (referanssa çözülmüş hâli yok —
+            # o zaman `None` kalır ve kart yeniden koşulamaz, bu **dürüstçe** böyledir).
+            _cq = adim.get("cube_query") if isinstance(adim.get("cube_query"), dict) else None
+        _satirlar = [r for r in (cikti or []) if isinstance(r, dict)] \
+            if isinstance(cikti, list) else []
+        _bolumler.append({"cube_query": _cq,
+                          "result": {"columns": list(_satirlar[0]) if _satirlar else [],
+                                     "rows": _satirlar, "row_count": len(_satirlar)}})
+    _son = _bolumler[-1]["result"] if _bolumler else None
+    # 🔴 **BOŞ SONUÇ SESSİZ KALMAZ.** Merdivenin geri kalanı bunu zaten yapıyor
+    # (*«Bu aralıkta kayıt bulunamadı — rapor doğru kuruldu»*); plan yolu yapmıyordu ve
+    # `source=cube+llm` rozetiyle **0 satır** dönüyordu. *Boş bir cevabı açıklamadan
+    # vermek, kullanıcının onu bir hata sanmasına izin vermektir.*
+    _bos = bool(_bolumler) and all(b["result"]["row_count"] == 0 for b in _bolumler)
+    _uyari = ("\n\n⚠ Plan doğru kuruldu ve koştu ama **hiçbir adım satır döndürmedi** — "
+              "dönem ya da süzgeç veriyle örtüşmüyor olabilir." if _bos else "")
     return {
         "source": "cube+llm",
-        "note": makbuz(plan) + "\n\n" + _bulgu_metni(plan, out),
+        "note": makbuz(plan) + "\n\n" + _bulgu_metni(plan, out) + _uyari,
         "iz": [f"orkestratör: {_n} adımlık plan koştu ({out['sorgu_sayisi']} sorgu)"],
         "result": _son,
-        "cube_query": (_sorgular[-1] if _sorgular else None),
+        "cube_query": (_bolumler[-1]["cube_query"] if _bolumler else None),
         # ⊙ Her `SORGU` adımının TAM sonucu + onu üreten sorgu. `FAZ 6` (frontend adım
         # bileşeni) ve `FAZ 7` (rapor/pano) tüketicisi budur; ikisi de bunsuz kurulamaz.
         # ⚠ `cube_query` her bölümle birlikte taşınıyor ki her adım `/cube` ile **sıfır
         # LLM** yeniden koşulabilsin (`O-5`).
-        "bolumler": [{"cube_query": c, "result": r}
-                     for c, r in zip(_sorgular, out["sonuclar"])],
+        "bolumler": _bolumler,
         # 🔴 `FAZ 6` — cevabın **yapısı** kullanıcıya taşınır. `agent_run`'dan farkı:
         # o bir denetim izidir (geriye dönük, sonuçsuz), bu **cevabın kendisidir**.
         "plan": {
             "adimlar": [{"sira": i, "fiil": a.get("fiil"), "ozet": _adim_metni(a)}
                         for i, a in enumerate(plan["adimlar"], 1)],
-            "bolumler": [{"cube_query": c, "result": r}
-                         for c, r in zip(_sorgular, out["sonuclar"])],
+            "bolumler": _bolumler,
         },
     }
 

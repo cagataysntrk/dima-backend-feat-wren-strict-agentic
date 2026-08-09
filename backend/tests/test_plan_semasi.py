@@ -149,3 +149,24 @@ def test_ISTEM_FIIL_KUMESINDEN_URETILIYOR():
     # `cube_query` alanına koyabileceğini bilmezse iniş hiç kurulmaz.
     assert '"cube_query":"$2"' in metin.replace(" ", ""), "iniş halkası anlatılmamış"
     assert '"kaynaklar"' in metin.replace(" ", ""), "liste referansı anlatılmamış"
+
+
+def test_ISTEM_TIP_AKISINI_DA_OGRETIYOR():
+    """🔴🔴 Ölçüldü (canlı `FF12`, üç koşum): model `BOYUTSEC(kaynak="$1")` yazdı;
+    `$1` bir `SORGU` yani `satirlar`, oysa `BOYUTSEC` `bulgular` ister.
+
+    Niyet **doğruydu** — araya `AYRISTIR` gerektiğini görmesinin hiçbir yolu yoktu:
+    istem fiilleri ve alanları anlatıyordu, **neyin neye bağlanabileceğini** değil.
+
+    *Bir dili öğretirken kelimeleri vermek yetmez; hangi kelimenin hangisinden sonra
+    gelebileceğini de vermek gerekir.*
+    """
+    from app.plan_semasi import CIKTI_TIPI, GIRDI_TIPI, plan_sistem_metni
+    m = plan_sistem_metni("KATALOG")
+    for tip in set(CIKTI_TIPI.values()):
+        assert tip in m, f"`{tip}` tipi istemde hiç geçmiyor"
+    for fiil, alanlar in GIRDI_TIPI.items():
+        for alan, beklenen in alanlar.items():
+            if beklenen:
+                assert f"{alan}: {beklenen}" in m, f"{fiil}.{alan} tip beklentisi yazılı değil"
+    assert "SORGU → AYRISTIR → BOYUTSEC" in m, "somut zincir örneği yok"

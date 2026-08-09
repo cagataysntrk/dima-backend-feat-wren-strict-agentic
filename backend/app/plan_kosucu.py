@@ -137,6 +137,26 @@ def dogrula(plan: dict, *, azami_sorgu: int = AZAMI_SORGU) -> list[list[int]]:
             raise PlanHatasi(
                 f"`{fiil}` yalnız SON adım olabilir (adım {sira}/{n}) — bir anlatı, "
                 "anlatacağı bulgulardan önce yazılamaz")
+        # 🔴🔴 **REFERANS ALANI GERÇEKTEN REFERANS OLMALI.**
+        #
+        # Şema o alanlara `pattern: ^\$[1-9][0-9]?$` koyuyor — ama serbest-JSON
+        # sağlayıcıda şema **uygulanmıyor** ve `_plani_oku` yalnız alanın **varlığını**
+        # denetliyordu. Ölçüldü (canlı `FF12`): model `BOYUTSEC(kaynak="parti")` yazdı —
+        # bir küp **adı**, bir referans değil. Adım koştu, gövde boş liste aldı, cevap
+        # `source=cube+llm` rozetiyle **0 satır** döndü.
+        #
+        # ⚠ `cube_query` istisna: o **satır içi bir nesne** de olabilir (şema `oneOf`).
+        # *Bir alanın biçimini şemaya yazıp doğrulayıcıya yazmamak, şemayı yalnız
+        # şemayı uygulayan sağlayıcılarda geçerli kılar.*
+        for _alan, _bek in (GIRDI_TIPI.get(fiil) or {}).items():
+            _d = adim.get(_alan)
+            if _alan == "cube_query" and isinstance(_d, dict):
+                continue
+            for _tek in (_d if isinstance(_d, list) else [_d]):
+                if not (isinstance(_tek, str) and _REF.match(_tek)):
+                    raise PlanHatasi(
+                        f"adım {sira} (`{fiil}.{_alan}`) bir ADIM REFERANSI olmalı "
+                        f"(`$1` gibi) ama `{_tek}` yazılmış")
         for alan, hedef in _referanslar(adim):
             if hedef >= sira:
                 raise PlanHatasi(
