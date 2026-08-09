@@ -70,10 +70,28 @@ def plan_uret(llm: Any, question: str, catalog: str, index: dict,
         if getattr(llm, "sema_kullanir", False):
             from app.plan_semasi import plan_json_schema
             _sema = plan_json_schema(index, azami_adim=azami_adim)
-        plan = _plani_oku(llm.plan_kur(question, catalog, _sema))
+        _neden: list[str] = []
+        plan = _plani_oku(llm.plan_kur(question, catalog, _sema), neden=_neden)
         if plan is None:
-            _log.info("plan: kullanılabilir bir plan çıkmadı → boşluk kapanmadı")
-            return None
+            # 🔴 **TEK ONARIM TURU — ve tam olarak bir tane.**
+            #
+            # Red bugüne kadar **sessizdi**: hangi adımda hangi alanın eksik olduğu o
+            # anda **biliniyordu** ve atılıyordu. Buraya yalnız **boşlukta** gelinir
+            # (bugünkü cevap zaten yok), yani bir turun davranışsal maliyeti sıfır.
+            #
+            # ⚠ İkincisi YOK: ikinci deneme bir **döngüdür** ve döngü bu katmanın
+            # bilinçli olarak reddettiği şeydir. *Bir hatayı bir kez söylemek öğretmek,
+            # üç kez söylemek yalvarmaktır.*
+            _log.info("plan REDDEDİLDİ (%s) → bir kez düzeltme isteniyor",
+                      "; ".join(_neden) or "sebep yok")
+            _duzelt = (question + "\n\n🔴 ÖNCEKİ DENEMEN REDDEDİLDİ: "
+                       + "; ".join(_neden)
+                       + "\nAynı soruyu, bu kez sözleşmeye UYARAK yeniden planla.")
+            plan = _plani_oku(llm.plan_kur(_duzelt, catalog, _sema))
+            if plan is None:
+                _log.info("plan: düzeltme turundan sonra da kullanılabilir plan yok")
+                return None
+            _log.info("plan: DÜZELTME TURU işe yaradı")
         _log.info("plan: %d adım (%s)", len(plan["adimlar"]),
                   "·".join(a.get("fiil", "?") for a in plan["adimlar"]))
         return plan
@@ -82,7 +100,7 @@ def plan_uret(llm: Any, question: str, catalog: str, index: dict,
         return None
 
 
-def _plani_oku(ham: str) -> dict | None:
+def _plani_oku(ham: str, *, neden: list[str] | None = None) -> dict | None:
     """Ham metni plana çevirir — **kardeşi `parse_cube_query` ile aynı hoşgörüyle**.
 
     ⚠ Kod bloğu (```) soyma burada YOK ve olmamalı: sağlayıcı katmanı (`llm._FENCE`)
@@ -97,18 +115,27 @@ def _plani_oku(ham: str) -> dict | None:
     *Bir planı koşarken reddetmek, hiç kurmamaktan pahalıdır — ilk adım o ana kadar
     çoktan koşmuştur.*
     """
+    def _de(m: str) -> None:
+        if neden is not None:
+            neden.append(m)
+
     try:
         veri = json.loads(ham or "null")
     except Exception:
+        _de("çıktı geçerli bir JSON değil")
         return None
     if not isinstance(veri, dict):
+        _de("kök bir nesne olmalı")
         return None
     adimlar = veri.get("adimlar")
     if not isinstance(adimlar, list) or not adimlar:
+        _de("`adimlar` boş ya da bir dizi değil")
         return None
-    from app.plan_semasi import FIILLER, ZORUNLU_ALANLAR
-    for a in adimlar:
+    from app.plan_semasi import FIILLER, ISTEGE_BAGLI_ALANLAR, ZORUNLU_ALANLAR
+    for i, a in enumerate(adimlar, 1):
         if not isinstance(a, dict) or a.get("fiil") not in FIILLER:
+            _de(f"adım {i}: `{(a or {}).get('fiil') if isinstance(a, dict) else a}` "
+                "tanımlı bir fiil değil")
             return None
         _zorunlu = ZORUNLU_ALANLAR[a["fiil"]]
         # 🔴 **ADI DOĞRU, SÖZLEŞMESİ YANLIŞ.** Ölçüldü (`EE`, canlı): serbest-JSON
@@ -117,10 +144,19 @@ def _plani_oku(ham: str) -> dict | None:
         # Yalnız fiil adına bakan doğrulama bunları plan sanıyor, çalıştırıcı
         # `KeyError` ile düşüyordu. *Bir sözleşmenin adını doğrulamak, sözleşmeyi
         # doğrulamak değildir.*
-        if any(k not in a for k in _zorunlu):
+        _eksik = [k for k in _zorunlu if k not in a]
+        if _eksik:
+            _de(f"adım {i} (`{a['fiil']}`): şu zorunlu alan(lar) eksik: "
+                + ", ".join(_eksik))
             return None
-        if set(a) - {"fiil", *_zorunlu}:
-            return None    # uydurma alan → şemanın `additionalProperties: False`ı
+        # ⚠ İsteğe bağlı alanlar **aynı** sözlükten okunuyor; ayrı bir liste tutmak
+        # şemanın izin verdiği bir planı doğrulayıcının reddetmesi demekti.
+        _serbest = {"fiil", *_zorunlu, *ISTEGE_BAGLI_ALANLAR.get(a["fiil"], ())}
+        _fazla = sorted(set(a) - _serbest)
+        if _fazla:
+            _de(f"adım {i} (`{a['fiil']}`): tanımsız alan(lar): " + ", ".join(_fazla)
+                + f" — yalnız şunlar yazılabilir: {', '.join(sorted(_serbest - {'fiil'}))}")
+            return None
     return {"adimlar": adimlar}
 
 

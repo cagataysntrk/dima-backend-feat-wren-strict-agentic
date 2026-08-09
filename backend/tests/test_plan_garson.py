@@ -105,3 +105,47 @@ def test_PLAN_YOLU_DUSERSE_TUR_DUSMEZ():
         def plan_kur(self, question, catalog, sema=None):
             raise RuntimeError("sağlayıcı düştü")
     assert plan_uret(_Patlak(""), "q", "kat", IDX) is None
+
+
+def test_RED_SEBEBI_SOYLENIYOR():
+    """🔴 Red **sessizdi**: hangi adımda hangi alanın eksik olduğu o anda BİLİNİYOR ve
+    atılıyordu. Bilinen bir sebebi atmak, onu iki kez öğrenmeye razı olmaktır."""
+    from app.plan_garson import _plani_oku
+    n: list[str] = []
+    assert _plani_oku(json.dumps({"adimlar": [{"fiil": "BAGLA", "kaynak": "$1"}]}), neden=n) is None
+    assert any("boyut" in m and "olcu" in m for m in n), n
+    n2: list[str] = []
+    _plani_oku(json.dumps({"adimlar": [{"fiil": "SORGU", "cube_query": {}, "ek": 1}]}), neden=n2)
+    assert any("tanımsız alan" in m for m in n2), n2
+
+
+def test_TEK_ONARIM_TURU_VE_TAM_BIR_TANE():
+    """🔴 Bir hatayı bir kez söylemek **öğretmek**, üç kez söylemek **yalvarmaktır**.
+
+    ⚠ İkinci deneme bir **döngüdür** ve döngü bu katmanın bilinçle reddettiği şey.
+    """
+    cagrilar: list[str] = []
+
+    class _Inatci(_Sahte):
+        def plan_kur(self, question, catalog, sema=None):
+            cagrilar.append(question)
+            return json.dumps({"adimlar": [{"fiil": "BAGLA", "kaynak": "$1"}]})
+
+    assert plan_uret(_Inatci(""), "soru", "kat", IDX) is None
+    assert len(cagrilar) == 2, f"onarım turu sayısı yanlış: {len(cagrilar)}"
+    assert "REDDEDİLDİ" in cagrilar[1] and "boyut" in cagrilar[1], (
+        "düzeltme isteğinde SEBEP yok — model neyi düzelteceğini bilemez")
+
+
+def test_DUZELTME_TURU_ISE_YARARSA_PLAN_DONER():
+    sayac = {"n": 0}
+
+    class _Ogrenen(_Sahte):
+        def plan_kur(self, question, catalog, sema=None):
+            sayac["n"] += 1
+            if sayac["n"] == 1:
+                return json.dumps({"adimlar": [{"fiil": "SORGU"}]})
+            return json.dumps({"adimlar": [{"fiil": "SORGU", "cube_query": CQ}]})
+
+    assert plan_uret(_Ogrenen(""), "soru", "kat", IDX) is not None
+    assert sayac["n"] == 2

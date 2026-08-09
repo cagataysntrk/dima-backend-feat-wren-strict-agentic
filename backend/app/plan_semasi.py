@@ -96,9 +96,9 @@ ZORUNLU_ALANLAR: dict[str, tuple[str, ...]] = {
     "SORGU": ("cube_query",),
     "BAGLA": ("kaynak", "boyut", "olcu"),
     "HESAPLA": ("kaynak", "hedef", "boyut", "olcu"),
-    "KIYASLA": ("kaynak",),
-    "AYRISTIR": ("kaynak",),
-    "TREND": ("kaynak",),
+    "KIYASLA": ("cube_query",),
+    "AYRISTIR": ("cube_query",),
+    "TREND": ("cube_query",),
     "ANLAT": ("kaynaklar",),
     "KIR": ("cube_query", "boyut"),
     "SUZ": ("cube_query", "boyut", "deger"),
@@ -149,9 +149,9 @@ CIKTI_TIPI: dict[str, str] = {
 GIRDI_TIPI: dict[str, dict[str, str | None]] = {
     "BAGLA": {"kaynak": "satirlar"},
     "HESAPLA": {"kaynak": "satirlar", "hedef": "varlik"},
-    "KIYASLA": {"kaynak": "satirlar"},
-    "AYRISTIR": {"kaynak": "satirlar"},
-    "TREND": {"kaynak": "satirlar"},
+    "KIYASLA": {"cube_query": "sorgu"},
+    "AYRISTIR": {"cube_query": "sorgu"},
+    "TREND": {"cube_query": "sorgu"},
     "ANLAT": {"kaynaklar": None},
     "KIR": {"cube_query": "sorgu"},     # ⚠ referanssa bir SORGU olmalı; inline da olabilir
     "SUZ": {"cube_query": "sorgu"},
@@ -168,6 +168,17 @@ GIRDI_TIPI: dict[str, dict[str, str | None]] = {
 #: 🔴 Yalnız **son** adım olabilen fiiller. Şema bunu ifade EDEMEZ (`oneOf` konum bilmez);
 #: bugüne kadar yalnız istemde yazılıydı, yani **denetlenmiyordu**.
 SON_ADIM_FIILLERI: frozenset[str] = frozenset({"ANLAT"})
+
+#: 🔴 **İSTEĞE BAĞLI ALANLAR — ve neden ayrı bir sözlük.**
+#:
+#: `_plani_oku` fazladan alan taşıyan adımı düşürür (`additionalProperties: False`'ın
+#: serbest-JSON karşılığı). Bu doğru, ama **isteğe bağlı** bir alanı da düşürürdü —
+#: yani şemanın izin verdiği bir planı doğrulayıcı reddederdi. İki tarafın **aynı**
+#: sözlükten okuması bunu yapısal olarak imkânsız kılar.
+ISTEGE_BAGLI_ALANLAR: dict[str, tuple[str, ...]] = {
+    "AYRISTIR": ("mode",),      # "yoy" | "mom" — verilmezse `yoy`
+    "TREND": ("mode",),
+}
 
 #: Adım referansı: `$1` = birinci adımın çıktısı. **Tek biçim, tek anlam.**
 #: ⚠ Serbest bir ifade dili DEĞİL: `$` + sayı. Bir plan aritmetik yazamaz, koşul yazamaz,
@@ -262,17 +273,37 @@ def plan_json_schema(index: dict, *, azami_adim: int = AZAMI_ADIM) -> dict[str, 
                         "olcu": {"type": "string", "enum": olculer} if olculer
                                 else {"type": "string"}},
          "required": ["fiil", *ZORUNLU_ALANLAR["HESAPLA"]]},
+        # ⟳ **GÖVDE İLE ŞEMA AYRIŞMIŞTI (2026-08-09).** Şema `kaynak` (satırlar)
+        # veriyordu; gövde (`contribution`/`yoy`) bir **cube_query** okuyor. Yani
+        # şema-geçerli bir adım gövdeye **boş** varıyordu ve fiil yapısal olarak
+        # ÖLÜYDÜ. Ölçüldü: canlı plan üretiminde bu üçü **hiç** kullanılmadı.
+        # *İstem kusurunun ayna görüntüsü: orada model sözleşmeyi görmüyordu,
+        # burada gövde başka bir sözleşmeye göre yazılmıştı.*
         {"type": "object", "additionalProperties": False, "title": "KIYASLA",
          "properties": {"fiil": {"const": "KIYASLA"},
-                        "kaynak": _ref("hangi adımın satırları")},
+                        "cube_query": {"oneOf": [cq, _ref("kıyaslanacak sorgu")]}},
          "required": ["fiil", *ZORUNLU_ALANLAR["KIYASLA"]]},
+        # ⟳ **GÖVDE İLE ŞEMA AYRIŞMIŞTI (2026-08-09).** Şema `kaynak` (satırlar)
+        # veriyordu; gövde (`contribution`/`yoy`) bir **cube_query** okuyor. Yani
+        # şema-geçerli bir adım gövdeye **boş** varıyordu ve fiil yapısal olarak
+        # ÖLÜYDÜ. Ölçüldü: canlı plan üretiminde bu üçü **hiç** kullanılmadı.
+        # *İstem kusurunun ayna görüntüsü: orada model sözleşmeyi görmüyordu,
+        # burada gövde başka bir sözleşmeye göre yazılmıştı.*
         {"type": "object", "additionalProperties": False, "title": "AYRISTIR",
          "properties": {"fiil": {"const": "AYRISTIR"},
-                        "kaynak": _ref("hangi adımın satırları")},
+                        "mode": {"type": "string", "enum": ["yoy", "mom"]},
+                        "cube_query": {"oneOf": [cq, _ref("kıyaslanacak sorgu")]}},
          "required": ["fiil", *ZORUNLU_ALANLAR["AYRISTIR"]]},
+        # ⟳ **GÖVDE İLE ŞEMA AYRIŞMIŞTI (2026-08-09).** Şema `kaynak` (satırlar)
+        # veriyordu; gövde (`contribution`/`yoy`) bir **cube_query** okuyor. Yani
+        # şema-geçerli bir adım gövdeye **boş** varıyordu ve fiil yapısal olarak
+        # ÖLÜYDÜ. Ölçüldü: canlı plan üretiminde bu üçü **hiç** kullanılmadı.
+        # *İstem kusurunun ayna görüntüsü: orada model sözleşmeyi görmüyordu,
+        # burada gövde başka bir sözleşmeye göre yazılmıştı.*
         {"type": "object", "additionalProperties": False, "title": "TREND",
          "properties": {"fiil": {"const": "TREND"},
-                        "kaynak": _ref("hangi adımın satırları")},
+                        "mode": {"type": "string", "enum": ["yoy", "mom"]},
+                        "cube_query": {"oneOf": [cq, _ref("kıyaslanacak sorgu")]}},
          "required": ["fiil", *ZORUNLU_ALANLAR["TREND"]]},
         {"type": "object", "additionalProperties": False, "title": "KIR",
          "properties": {"fiil": {"const": "KIR"},
@@ -355,7 +386,24 @@ def plan_sistem_metni(catalog: str) -> str:
     yazılabileceğini kısıtlar (`enum`), istem *ne zaman* yazılacağını anlatır. İkisi
     çakışsaydı biri gereksiz olurdu.
     """
-    _fiiller = "\n".join(f"- {f}: {a}" for f, a in FIIL_ANLAMI.items())
+    # 🔴🔴 **ALANLAR DA ÜRETİLİR — ve bu satır ölçülmüş bir kusurdan doğdu.**
+    #
+    # İlk hâl yalnız `- FİİL: anlam` yazıyordu. Ölçüldü (2026-08-09): 15 fiilin
+    # **6'sının** zorunlu alanı istemde **bir kez bile** geçmiyordu — `BAGLA.olcu` ·
+    # `HESAPLA.hedef`+`olcu` · `SUZ.deger` · `SIRALA.olculer` · `RAPOR.baslik` ·
+    # `PANO.baslik`. Yani model, kendisine **hiç gösterilmemiş** bir sözleşmeye göre
+    # reddediliyordu (`_plani_oku` onları sessizce düşürüyordu).
+    #
+    # ⊙ Ve bu, bu docstring'in kendi uyardığı desendi: fiil **listesi** üretiliyordu,
+    # fiillerin **alanları** üretilmiyordu. *İki sahip çelişmez, biri yalnızca EKSİK
+    # kalır* — ve eksik olan taraf, kusuru bir **itaatsizlik** gibi gösterir.
+    #
+    # 🔴 En can alıcısı: eksik tarif edilen altı fiilden ikisi (`BAGLA`·`HESAPLA`)
+    # kök-neden zincirinin tam ortasında. Sistem, en çok istediği zinciri üretmesi
+    # **en zor** olan yerden tutuyordu.
+    _fiiller = "\n".join(
+        f"- {f}: {a}\n  zorunlu alanlar: " + ", ".join(ZORUNLU_ALANLAR.get(f, ()))
+        for f, a in FIIL_ANLAMI.items())
     return (
         "Bir soruyu, YÖNETİLEN semantik katman üzerinde koşacak ADIMLARA ayırırsın.\n"
         "Yalnızca aşağıdaki cube'lar, ölçüler ve boyutlar VARDIR:\n\n" + catalog + "\n\n"
@@ -373,7 +421,20 @@ def plan_sistem_metni(catalog: str) -> str:
         "- Aritmetik, koşul, döngü YAZAMAZSIN. Yalnız fiiller ve adım referansları.\n"
         "- Tarih YAZMA: dönemi `period_expr` alanına kullanıcının kendi ifadesiyle "
         "(sistemin diline çevirerek) koy; tarihi Python hesaplar.\n"
-        "- Katalogda karşılığı olmayan bir adım UYDURMA: o adımı hiç yazma."
+        "- Katalogda karşılığı olmayan bir adım UYDURMA: o adımı hiç yazma.\n"
+        "- 🔴 HER ADIMDA O FİİLİN ZORUNLU ALANLARININ HEPSİNİ YAZ. Eksik bir alan planı "
+        "geçersiz kılar; fazladan bir alan da geçersiz kılar.\n"
+        "\nÖRNEK — «en kötü makineyi bul ve neden öyle olduğunu araştır»:\n"
+        '{"adimlar":[\n'
+        '  {"fiil":"SORGU","cube_query":{"cube":"oee","measures":["ort_oee"],'
+        '"dimensions":["makine"],"period_expr":"bu yıl"}},\n'
+        '  {"fiil":"BAGLA","kaynak":"$1","boyut":"makine","olcu":"ort_oee"},\n'
+        '  {"fiil":"HESAPLA","kaynak":"$1","hedef":"$2","boyut":"makine","olcu":"ort_oee"},\n'
+        '  {"fiil":"SUZ","cube_query":"$1","boyut":"makine","deger":"$2"},\n'
+        '  {"fiil":"ANLAT","kaynaklar":["$1","$3"]}\n'
+        "]}\n"
+        "⚠ Bu örnekteki `cube_query` **satır içi bir nesnedir**; `$1` yazılan yerler ise "
+        "**referanstır**. İkisini karıştırma."
     )
 
 

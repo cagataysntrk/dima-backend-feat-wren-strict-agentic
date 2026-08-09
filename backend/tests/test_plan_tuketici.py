@@ -200,3 +200,59 @@ def test_HER_ADIMIN_SONUCU_DONUYOR():
     assert all(b["cube_query"] == CQ for b in c["bolumler"]), (
         "her bölüm kendi sorgusunu taşımalı — yoksa `/cube` ile yeniden koşulamaz (O-5)")
     assert all(b["result"]["row_count"] == 4 for b in c["bolumler"])
+
+
+def test_GOVDE_SEMANIN_YASAKLADIGI_ALANI_OKUMUYOR():
+    """🔴🔴 **ÜÇ FİİL YAPISAL OLARAK ÖLÜYDÜ — ve hiçbir kapı görmüyordu.**
+
+    Ölçüldü (2026-08-09, canlı plan üretimi): `KIYASLA`·`AYRISTIR`·`TREND` **hiç**
+    kullanılmadı. Sebep:
+
+    | fiil | şemanın verdiği | gövdenin okuduğu |
+    |---|---|---|
+    | `KIYASLA` | `kaynak` | `cube_query` |
+    | `AYRISTIR` | `kaynak` | `cube_query`, `mode` |
+    | `TREND` | `kaynak` | `cube_query`, `mode` |
+
+    `additionalProperties: False` + `_plani_oku`'nun fazla-alan reddi birleşince,
+    **şema-geçerli** bir adım gövdeye `cube_query = {}` olarak varıyordu. Fiil
+    bağlıydı, çağrılıyordu, ve **her zaman boş** dönüyordu.
+
+    ⊙ Bu, istem kusurunun **ayna görüntüsüydü**: orada model sözleşmeyi hiç görmüyordu,
+    burada **gövde** başka bir sözleşmeye göre yazılmıştı. Aynı `KAT-1`, iki uçta —
+    ve ikisi de *çelişki* değil **eksiklik** olarak göründü.
+
+    ⚠ Bu kapı bir daha olmasın diye var: gövde ne okuyorsa şema onu **verebilmeli**.
+    """
+    import inspect
+    import re
+
+    from app.plan_semasi import ISTEGE_BAGLI_ALANLAR, ZORUNLU_ALANLAR
+    from app import plan_tuketici
+
+    kaynak = inspect.getsource(plan_tuketici._govdeler)
+    # `_govdeler` her fiili bir iç fonksiyonda tutar; adı fiilden türemez, bu yüzden
+    # dönüş sözlüğünden eşleştiriyoruz — tek sahip orası.
+    esleme = dict(re.findall(r'"([A-Z]+)":\s*(_[a-z_]+)', kaynak.split("return {", 1)[1]))
+    assert len(esleme) >= 8, f"gövde eşlemesi okunamadı: {esleme}"
+
+    ihlal: dict[str, list[str]] = {}
+    for fiil, ad in esleme.items():
+        govde = kaynak.split(f"def {ad}", 1)[1].split("\n    def ", 1)[0]
+        okunan = set(re.findall(r"""a(?:\.get\(|\[)["']([a-z_]+)["']""", govde))
+        izin = set(ZORUNLU_ALANLAR.get(fiil, ())) | set(ISTEGE_BAGLI_ALANLAR.get(fiil, ()))
+        fark = sorted(okunan - izin)
+        if fark:
+            ihlal[fiil] = fark
+    assert not ihlal, (
+        f"🔴 Gövde şemanın VERMEDİĞİ alanı okuyor → fiil yapısal olarak ÖLÜ: {ihlal}\n"
+        "Ya şemaya ekle (`ZORUNLU_ALANLAR`/`ISTEGE_BAGLI_ALANLAR`) ya gövdeyi düzelt. "
+        "⚠ Bir fiili bağlamak, onu ulaşılabilir yapmaz.")
+
+
+def test_ISTEGE_BAGLI_ALAN_DUSURULMEZ():
+    """⚠ Şemanın izin verdiği bir planı **doğrulayıcının** reddetmesi, iki sahibin
+    ayrışmasıdır. İkisi de aynı sözlükten okuyor."""
+    from app.plan_garson import _plani_oku
+    plan = {"adimlar": [{"fiil": "TREND", "cube_query": CQ, "mode": "mom"}]}
+    assert _plani_oku(json.dumps(plan)) is not None, "isteğe bağlı `mode` düşürüldü"

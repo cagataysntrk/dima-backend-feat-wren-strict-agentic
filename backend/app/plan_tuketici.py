@@ -64,12 +64,13 @@ def _govdeler(service: Any, schema: dict, cube_meta: dict | None) -> dict[str, A
     kusur tam olarak buydu.
     """
     def _trend(a: dict) -> list[dict]:
+        # ⟳ `kaynak`tan `__cq` kazımaya çalışan hâl **kaldırıldı**: satırların içinde
+        # sorgusunu taşıyan bir alan hiç yoktu, yani o dal her zaman `{}` veriyordu.
+        # *Var olmayan bir alandan okumak, sessizce boş dönmenin en kibar yoludur.*
         from app import yoy
-        _satirlar = a.get("kaynak") or []
-        _cq = (_satirlar[0].get("__cq") if _satirlar and isinstance(_satirlar[0], dict)
-               else None) or a.get("cube_query") or {}
         _td = ((cube_meta or {}).get("time_dimensions") or ["tarih"])[0]
-        return (yoy.compute(service, _cq, a.get("mode") or "yoy", _td) or {}).get("rows") or []
+        return (yoy.compute(service, a.get("cube_query") or {},
+                            a.get("mode") or "yoy", _td) or {}).get("rows") or []
 
     def _ayristir(a: dict) -> dict:
         from app import contribution
