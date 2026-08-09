@@ -9,7 +9,7 @@ sınanmazsa, onu okuyacak faz geldiğinde kusurları o fazın hatası sanılır.
 
 from __future__ import annotations
 
-from app.plan_semasi import FIILLER, plan_json_schema, tek_adimli
+from app.plan_semasi import ADIM_REFERANSI, FIILLER, plan_json_schema, tek_adimli
 
 IDX = {"parti": {"measures": ["toplam_fire_kg", "fire_orani_yuzde"],
                  "dimensions": ["makine", "kisim"], "time_dimensions": ["tarih"]}}
@@ -98,4 +98,15 @@ def test_SORGU_GOVDESI_KOPYALANMADI():
     İkinci bir kopya, katalog değişince **birinin bayatlaması** demekti.
     """
     from app.intent_semasi import cube_query_json_schema
-    assert _dallar()["SORGU"]["properties"]["cube_query"] == cube_query_json_schema(IDX)
+
+    # ⟳ `FAZ 7` — `SORGU.cube_query` artık **inline nesne YA DA `$n` referansı**
+    # (`oneOf`), çünkü `KIR`/`SUZ` bir sorgu üretir ve `SORGU` onu koşar. İddia
+    # değişmedi, yalnız **yeri** değişti: cq şeması `oneOf`un bir üyesi olarak
+    # **aynen** durmalı. Kopyalansaydı bir alanı bile farklı olurdu.
+    _alan = _dallar()["SORGU"]["properties"]["cube_query"]
+    assert cube_query_json_schema(IDX) in _alan["oneOf"], (
+        "`cube_query` şeması ÇAĞRILMIYOR — bir kopya yazılmış olmalı (KAT-1)")
+    # ⚠ Ve öteki üye **yalnız** bir adım referansı olmalı: `SORGU`ya serbest bir dize
+    # kabul ettirmek, beyaz listeyi delerdi.
+    _oteki = [d for d in _alan["oneOf"] if d != cube_query_json_schema(IDX)]
+    assert len(_oteki) == 1 and _oteki[0].get("pattern") == ADIM_REFERANSI

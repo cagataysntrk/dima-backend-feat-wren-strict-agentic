@@ -62,6 +62,14 @@ FIIL_ANLAMI: dict[str, str] = {
     "HESAPLA": "seçilmiş varlığın akran ortalamasına göre farkını çıkarır",
     "TREND": "aynı ölçüyü önceki dönemle karşılaştırır",
     "ANLAT": "bulguları cümleye çevirir — YALNIZ son adım olabilir",
+    # ⟳ `FAZ 7` — KÖK-NEDEN İNİŞİ. Üçü de **yeni kod değil**: `drill.py` bu gezintiyi
+    # zaten yapıyordu, ama her adımı **kullanıcının tıklaması** tetikliyordu. Plana
+    # açılınca aynı gezinti bir **zincir** olur — ve derinlik plan uzunluğuyla sınırlı
+    # kalır, yani **döngü eklemeden** derinleşme. *Bir döngü eklemeden derinleşmenin
+    # yolu, derinliği plana yazdırmaktır.*
+    "KIR": "bir sorguya kırılım boyutu EKLER — çıktısı satır değil, yeni bir SORGU",
+    "SUZ": "bir sorguyu tek bir kategoriye daraltır — çıktısı yeni bir SORGU",
+    "BOYUTSEC": "hangi boyutun farkı en çok AÇIKLADIĞINI sıralar",
 }
 
 FIILLER: tuple[str, ...] = tuple(FIIL_ANLAMI)
@@ -83,6 +91,9 @@ ZORUNLU_ALANLAR: dict[str, tuple[str, ...]] = {
     "AYRISTIR": ("kaynak",),
     "TREND": ("kaynak",),
     "ANLAT": ("kaynaklar",),
+    "KIR": ("cube_query", "boyut"),
+    "SUZ": ("cube_query", "boyut", "deger"),
+    "BOYUTSEC": ("kaynak",),
 }
 
 #: 🔴 **HER FİİLİN ÇIKTI TİPİ — beyan edilir, tahmin edilmez.**
@@ -99,6 +110,12 @@ ZORUNLU_ALANLAR: dict[str, tuple[str, ...]] = {
 #: *Bir zinciri koşmadan denetlemenin bedeli, halkalarının neye benzediğini yazmaktır.*
 CIKTI_TIPI: dict[str, str] = {
     "SORGU": "satirlar",
+    # 🔴 `KIR`/`SUZ` **satır üretmez, SORGU üretir** — ve bu ayrım kök-neden inişinin
+    # bütün mekanizmasıdır: bir adım bir sorgu üretir, sonraki adım onu **koşar**.
+    # Tip sistemi olmasaydı `BAGLA($kir)` bir `cube_query` sözlüğünü satır sanardı.
+    "KIR": "sorgu",
+    "SUZ": "sorgu",
+    "BOYUTSEC": "bulgular",
     "TREND": "satirlar",      # dönem kaydırılmış satırlar — hâlâ satır
     "BAGLA": "varlik",
     "HESAPLA": "olcum",
@@ -117,6 +134,9 @@ GIRDI_TIPI: dict[str, dict[str, str | None]] = {
     "AYRISTIR": {"kaynak": "satirlar"},
     "TREND": {"kaynak": "satirlar"},
     "ANLAT": {"kaynaklar": None},
+    "KIR": {"cube_query": "sorgu"},     # ⚠ referanssa bir SORGU olmalı; inline da olabilir
+    "SUZ": {"cube_query": "sorgu"},
+    "BOYUTSEC": {"kaynak": "bulgular"},
 }
 
 #: 🔴 Yalnız **son** adım olabilen fiiller. Şema bunu ifade EDEMEZ (`oneOf` konum bilmez);
@@ -168,8 +188,13 @@ def plan_json_schema(index: dict, *, azami_adim: int = 5) -> dict[str, Any]:
     #: Her fiil kendi **zorunlu** alanlarını taşır — bir fiili parametresiz yazmak
     #: `B1`'in ta kendisiydi (*"parametresiz bir plan bir zincir değil bir sıralamadır"*).
     dallar: list[dict] = [
+        # 🔴 `FAZ 7` — `cube_query` artık **inline bir nesne YA DA bir `$n` referansı**
+        # olabilir. Kök-neden inişinin halkası budur: `KIR` bir sorgu üretir, `SORGU`
+        # onu koşar. ⚠ Genişleyen şey yine **çokluk değil yön**: referans dili aynı
+        # kaldı (`$n`), yalnız hangi alanda durabileceği genişledi.
         {"type": "object", "additionalProperties": False, "title": "SORGU",
-         "properties": {"fiil": {"const": "SORGU"}, "cube_query": cq},
+         "properties": {"fiil": {"const": "SORGU"},
+                        "cube_query": {"oneOf": [cq, _ref("koşulacak sorguyu üreten adım")]}},
          "required": ["fiil", *ZORUNLU_ALANLAR["SORGU"]]},
         {"type": "object", "additionalProperties": False, "title": "BAGLA",
          "properties": {"fiil": {"const": "BAGLA"},
@@ -200,6 +225,25 @@ def plan_json_schema(index: dict, *, azami_adim: int = 5) -> dict[str, Any]:
          "properties": {"fiil": {"const": "TREND"},
                         "kaynak": _ref("hangi adımın satırları")},
          "required": ["fiil", *ZORUNLU_ALANLAR["TREND"]]},
+        {"type": "object", "additionalProperties": False, "title": "KIR",
+         "properties": {"fiil": {"const": "KIR"},
+                        "cube_query": {"oneOf": [cq, _ref("kırılacak sorgu")]},
+                        "boyut": {"type": "string", "enum": boyutlar} if boyutlar
+                                 else {"type": "string"}},
+         "required": ["fiil", *ZORUNLU_ALANLAR["KIR"]]},
+        {"type": "object", "additionalProperties": False, "title": "SUZ",
+         "properties": {"fiil": {"const": "SUZ"},
+                        "cube_query": {"oneOf": [cq, _ref("daraltılacak sorgu")]},
+                        "boyut": {"type": "string", "enum": boyutlar} if boyutlar
+                                 else {"type": "string"},
+                        "deger": {"type": "string",
+                                  "description": "kullanıcının YAZDIĞI ya da bir adımın "
+                                                 "SEÇTİĞİ kategori"}},
+         "required": ["fiil", *ZORUNLU_ALANLAR["SUZ"]]},
+        {"type": "object", "additionalProperties": False, "title": "BOYUTSEC",
+         "properties": {"fiil": {"const": "BOYUTSEC"},
+                        "kaynak": _ref("hangi adımın ayrıştırma raporu")},
+         "required": ["fiil", *ZORUNLU_ALANLAR["BOYUTSEC"]]},
         {"type": "object", "additionalProperties": False, "title": "ANLAT",
          "properties": {"fiil": {"const": "ANLAT"},
                         "kaynaklar": _ref_listesi("hangi adımların bulguları")},

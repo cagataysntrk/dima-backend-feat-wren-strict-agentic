@@ -110,7 +110,32 @@ def _govdeler(service: Any, schema: dict, cube_meta: dict | None) -> dict[str, A
         # düşürür, metnin tamamını değil; yani en kötü durum *«süssüz ama doğru»*.
         return narration_guard.dogrula(_ozet, _sonuc).temiz_metin
 
-    return {"TREND": _trend, "AYRISTIR": _ayristir, "KIYASLA": _kiyasla, "ANLAT": _anlat}
+    # ── `FAZ 7` · KÖK-NEDEN İNİŞİ ────────────────────────────────────────────────
+    # Üçü de `drill.py`/`contribution.py`'de **zaten var**, testli ve deterministik.
+    # `drill.py`'nin kendi belgesi bu anı öngörmüştü: *«İleride bir agent'ın AYNI
+    # mekanizmayı otomatik gezebilmesi hedeflenir.»*
+    def _kir(a: dict) -> dict:
+        from app.drill import expand_cube_query
+        return expand_cube_query(a.get("cube_query") or {}, a["boyut"])
+
+    def _suz(a: dict) -> dict:
+        from app.drill import select_cube_query
+        _d = a.get("deger")
+        # ⚠ `BAGLA`'nın çıktısı `(varlık, değer)`; bir plan *«en kötüyü bul, ona süz»*
+        # derse `deger` oraya işaret eder. Aynı dönüşüm `HESAPLA`'da da var ve **tek
+        # sahibi burası**: `ilkeller` birbirini tanımaz.
+        if isinstance(_d, tuple):
+            _d = _d[0]
+        return select_cube_query(a.get("cube_query") or {}, a["boyut"], str(_d))
+
+    def _boyutsec(a: dict) -> dict:
+        from app.contribution import rank_dimensions
+        _k = a.get("kaynak") or {}
+        _rap = _k.get("raporlar") if isinstance(_k, dict) else None
+        return {"siralama": rank_dimensions(list(_rap or []))}
+
+    return {"TREND": _trend, "AYRISTIR": _ayristir, "KIYASLA": _kiyasla, "ANLAT": _anlat,
+            "KIR": _kir, "SUZ": _suz, "BOYUTSEC": _boyutsec}
 
 
 def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = None,

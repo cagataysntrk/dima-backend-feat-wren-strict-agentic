@@ -316,3 +316,58 @@ def test_TEK_SORGULU_KATMANDA_HAVUZ_KURULMAZ():
         _cf.ThreadPoolExecutor = _eski
     assert not kuruldu, "tek sorgulu katmanda havuz kuruldu"
     assert pk.AZAMI_ESZAMANLI >= 1
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FAZ 7 · KÖK-NEDEN İNİŞİ — döngü EKLEMEDEN derinleşme
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def test_KOK_NEDEN_INISI_ZINCIR_OLARAK_KURULUYOR():
+    """🔴🔴 `drill.py`'nin kendi belgesi bu anı öngörmüştü: *«İleride bir agent'ın AYNI
+    mekanizmayı otomatik gezebilmesi hedeflenir.»*
+
+    Bugüne kadar her `drill` adımı **kullanıcının tıklamasıyla** ve ayrı bir HTTP
+    çağrısıyla tetikleniyordu. Şimdi aynı gezinti bir **zincir**:
+
+        SORGU(taban) → BAGLA(en kötü) → SUZ(taban, makine=en kötü) → SORGU($3)
+
+    ⊙ Derinlik **plan uzunluğuyla** sınırlı — yani döngü eklemeden derinleşme.
+    *Bir döngü eklemeden derinleşmenin yolu, derinliği plana yazdırmaktır.*
+    """
+    TABAN = {"cube": "oee", "measures": ["v"], "dimensions": ["m"]}
+    plan = {"adimlar": [
+        {"fiil": "SORGU", "cube_query": TABAN},
+        {"fiil": "BAGLA", "kaynak": "$1", "boyut": "m", "olcu": "v"},
+        {"fiil": "SUZ", "cube_query": TABAN, "boyut": "m", "deger": "$2"},
+        {"fiil": "SORGU", "cube_query": "$3"}]}
+    kosulan: list[dict] = []
+
+    def _kos_sorgu(cq):
+        kosulan.append(cq)
+        return ROWS
+
+    from app.drill import select_cube_query
+    r = kos(plan, sorgu_kos=_kos_sorgu,
+            govdeler={"SUZ": lambda a: select_cube_query(
+                a["cube_query"], a["boyut"],
+                str(a["deger"][0] if isinstance(a["deger"], tuple) else a["deger"]))})
+    assert len(kosulan) == 2, "ikinci sorgu koşmadı — iniş kurulmadı"
+    _ikinci = kosulan[1]
+    assert {"dimension": "m", "operator": "eq", "value": "RAM-3"} in _ikinci["filters"], (
+        f"süzgeç `BAGLA`'nın seçtiği varlığa bağlanmadı: {_ikinci}")
+    assert "m" not in (_ikinci.get("dimensions") or []), "süzülen boyut kırılımda kaldı"
+    assert r["katmanlar"] == [[1], [2], [3], [4]]
+
+
+def test_KIR_SATIR_DEGIL_SORGU_URETIR():
+    """🔴 Tip sistemi olmasaydı `BAGLA($kir)` bir `cube_query` sözlüğünü **satır** sanardı.
+
+    Kök-neden inişinin bütün mekanizması bu ayrımda: bir adım bir sorgu üretir, sonraki
+    adım onu **koşar**.
+    """
+    from app.plan_semasi import CIKTI_TIPI
+    assert CIKTI_TIPI["KIR"] == "sorgu" and CIKTI_TIPI["SUZ"] == "sorgu"
+    plan = {"adimlar": [{"fiil": "KIR", "cube_query": {"cube": "oee"}, "boyut": "m"},
+                        {"fiil": "BAGLA", "kaynak": "$1", "boyut": "m", "olcu": "v"}]}
+    with pytest.raises(PlanHatasi, match="satirlar"):
+        dogrula(plan)

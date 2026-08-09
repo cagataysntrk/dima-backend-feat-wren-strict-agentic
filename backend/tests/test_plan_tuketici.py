@@ -163,9 +163,16 @@ def test_ANLAT_LLM_CAGIRMAZ():
 
     from app import plan_tuketici
     kaynak = inspect.getsource(plan_tuketici._govdeler)
-    _govde = kaynak.split("def _anlat")[1]
-    for yasak in ("llm", "anlat(", "select_cube", "generate"):
-        assert yasak not in _govde.replace("_anlat", ""), f"ANLAT gövdesinde `{yasak}` geçiyor"
+    # ⚠ Dilim **yalnız `_anlat`ın gövdesi** olmalı. İlk hâl `split("def _anlat")[1]`
+    # diyordu ve `FAZ 7` üç fonksiyon daha ekleyince `select_cube_query` (`SUZ`'ün
+    # gövdesi) `select_cube` diye okundu — kapı **kendi yanlış-pozitifini** üretti.
+    # *Bir kaynak dilimini fonksiyon sınırına değil metne göre kesmek, sonraki
+    # fonksiyonu da ölçmektir.*
+    _sonra = kaynak.split("def _anlat", 1)[1]
+    _govde = _sonra.split("\n    def ", 1)[0].split("\n    return ", 1)[0]
+    for yasak in ("llm.", "generate", "select_cube(", "_ask("):
+        assert yasak not in _govde, f"ANLAT gövdesinde `{yasak}` geçiyor"
+    assert "narration_guard" in _govde, "ANLAT guard'sız — sayı doğrulanmıyor"
 
 
 def test_HER_ADIMIN_SONUCU_DONUYOR():

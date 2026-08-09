@@ -225,7 +225,10 @@ def kos(plan: dict, *, sorgu_kos, govdeler: dict[str, Any] | None = None,
         try:
             if fiil == "SORGU":
                 # ⚠ Bütçe **ön-geçişte** TOPLAM olarak denetlendi; burada yalnız koşulur.
-                return sorgu_kos(adim["cube_query"])
+                # 🔴 `FAZ 7` — `cube_query` bir **referans** de olabilir (`KIR`/`SUZ`
+                # çıktısı). Kök-neden inişinin halkası budur: bir adım sorgu üretir,
+                # bu adım onu **koşar**.
+                return sorgu_kos(_coz(adim["cube_query"], ciktilar))
             if fiil == "BAGLA":
                 olcu = adim["olcu"]
                 return _ilk.bagla(_coz(adim["kaynak"], ciktilar), adim["boyut"], olcu,
