@@ -8320,3 +8320,78 @@ plandır. Sonraki turun konusu.
 
 **Kapı (tur başı, TEMİZ koşum):** 4467 yeşil · korpus **%94.9** · `sessiz_yanlis` **10**
 · eval **+0.0%**.
+
+---
+
+## `VIII` TURU — **GARSON TAKİP BAĞLAMINI HİÇ GÖRMÜYORDU** *(2026-08-10)*
+
+### Önceki turun düzeltmesi ÖLÇÜLDÜ — ve kazanç gerçek
+
+`"dE!"` kaldırıldıktan sonraki tam kapı:
+
+| ölçü | önce | **sonra** |
+|---|---|---|
+| `sessiz_yanlis` | 10 | 🟢 **8** |
+| `dogru` | 90 | 🟢 **96** |
+| `kabul` | 1145 | 🟢 **1147** |
+| `R1` (cevapsız) | 101 | 🟢 **99** |
+| `eval` coverage | — | ⚠ **−%0,9** |
+
+⊙ Yani iki harflik bir eşleşme yalnız **yanlış cevaplar üretmiyor**, doğru cevapların
+**önünü de kesiyordu**. Takas yazılı ve kabul edildi: bir kısaltmanın kaybına karşılık
+iki sessiz yanlış + altı doğru cevap. *Bir kapsam sayısı, kapsadığı şey yanlışsa bir
+kazanç değildir.*
+
+Taban fotoğrafı (`CEVAPSIZ_RED`) ölçümüyle birlikte güncellendi.
+
+### 🔴🔴 `O-22` — takip turunda garson bağlamsız kalıyordu
+
+Thread B'nin dördüncü turu `followup=True(**yapısal=True**)` diye loglanıyor — sistem
+takip olduğunu **biliyordu**. Ama garsona yalnız *«bir de gecikme ekle»* gitti:
+
+```
+cq = {"cube": "siparis", "measures": ["ort_gecikme_gun"]}     🔴 dönem yok · kırılım yok · ilk-3 yok
+```
+
+Üç turda kurulan bağlam **sessizce** düştü. ⚠ Deterministik takip yolu bağlamı
+**taşıyor**, garson yolu taşımıyordu — yani aynı thread, hangi basamağa düştüğüne göre
+bağlamlı ya da bağlamsız cevap veriyordu; kullanıcının göremeyeceği bir ayrım.
+*Bir bağlamı bir yolda taşıyıp ötekinde bırakmak, onu rastgele taşımaktır.*
+
+### ⚠ VE İLK DÜZELTMEM CANLIDA HİÇBİR ŞEY DEĞİŞTİRMEDİ
+
+`PlanGarsonu`'ya bağlam verildi, tazelendi, ölçüldü → **birebir aynı cevap**. Sebep:
+planı **iki** yer üretiyor ve o turda üreten **öteki**ydi (`plan_tuketici.cevap`,
+boşluk yolu, `plan_uret`'i doğrudan çağırıyor).
+
+> *Bir yolu düzeltip ötekini unutmak, düzeltmeyi yapmamakla aynı sonucu verir —
+> yalnız yapıldığını sanmakla farklıdır.*
+
+Bağlam kurucusu modül düzeyine **tek sahip** olarak çıkarıldı (`plan_garson.baglamli`)
+ve iki üretici de ona bağlandı; kapı ikisini birden okuyor.
+
+### Doğrulama — grain uyuşmazlığı bir KIRIK JOIN değil, İKİ BÖLÜM
+
+| tur | sonuç |
+|---|---|
+| *«bu yıl toplam ciro»* → *«müşteriye göre»* → *«en iyi 3»* | ✅ üçü de `cube` · 0 LLM |
+| *«bir de gecikme ekle»* | 🟢 **3 adım** · `SORGU(ciro·müşteri·dönem·ilk-3)` + `SORGU(gecikme·musteri_kod)` + `RAPOR` |
+
+⊙ `parti.musteri` (**ad**) ile `siparis.musteri_kod` (**kod**) aynı anahtar değil —
+harman yapısal olarak kurulamaz. Orkestratör bunu **iki bölümle** çözdü: her sayı
+kendi küpünden geldi, uydurma bir join kurulmadı. Kullanıcının tarifi birebir:
+*«tek fişte olmuyorsa orkestre eder, parçalara ayırır ve öylece bütünler.»*
+
+### ⚠ Açık borç — semantik katman
+
+«Müşteri» ekseni **dokuz küpte üç ayrı adla** duruyor:
+
+| ad | küpler |
+|---|---|
+| `musteri` (ad) | `parti` · `kalite` · `surdurulebilirlik` |
+| `musteri_kod` (kod) | `siparis` · `sevkiyat` · `sikayet` · `firsat` |
+| `cari_kodu` | `cari` · `ticaret` |
+
+Harman (`blend`) bu aileler arasında **yapısal olarak** kurulamıyor. Orkestratör
+bölümlerle telafi ediyor ama bu bir çare değil bir **köprü**; kanonik bir müşteri
+ekseni bir pack kararıdır ve ölçülerek verilmeli.

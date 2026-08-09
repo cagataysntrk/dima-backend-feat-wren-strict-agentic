@@ -165,7 +165,21 @@ YANLIS_CUBE = {
 #:
 #: *Bir kelimeyi iki sahipli ilan etmek, onu iki sahipli yapmaz — zaten öyle olduğunu
 #: söyler. Sayının artması, sistemin daha fazla bilmesindendir.*
-CEVAPSIZ_RED = {"R1": 101, "R4": 1, "R10": 14, "R9": 2}
+#: ⟳🔴 **101 → 99 (2026-08-10, `§SY`): İKİ SORU DAHA CEVAPLANIYOR.**
+#:
+#: `ΔE`'nin `"dE!"` sinonimi pack'ten kaldırıldı — normalleşince Türkçenin bağlaç eki
+#: `de` oluyordu ve *«bir **de** … ekle»* cümlelerinde **yanlış ölçü** eşleştiriyordu
+#: (canlı `VII/B4`: kullanıcı gecikme istedi, renk sapması aldı — beyansız).
+#:
+#: ⊙ Aynı koşumda ölçülen bütün: `sessiz_yanlis` **10 → 8** · `dogru` **90 → 96** ·
+#: `kabul` **1145 → 1147** · `R1` **101 → 99**. Yani kaldırılan sinonim yalnız yanlış
+#: cevaplar üretmiyor, doğru cevapların **önünü de kesiyordu**: iki harflik bir eşleşme
+#: cümlenin gerçek ölçüsünü gölgeliyordu.
+#:
+#: ⚠ `eval` coverage **−%0,9**: `dE` ile sorulan vaka(lar) artık eşleşmiyor. Takas
+#: yazılı ve **kabul edildi** — iki sessiz yanlış ve altı doğru cevap karşılığında bir
+#: kısaltmanın kaybı. *Bir kapsam sayısı, kapsadığı şey yanlışsa bir kazanç değildir.*
+CEVAPSIZ_RED = {"R1": 99, "R4": 1, "R10": 14, "R9": 2}
 
 #: Toplam ölçü sinonimi ve doğru çözülen sayısı.  ⟳ Faz 2a-3: 291 → 340 (+49).
 TOPLAM_SINONIM, DOGRU = 470, 340

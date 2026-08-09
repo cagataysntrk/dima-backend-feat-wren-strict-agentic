@@ -389,8 +389,12 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     # ⚠ `_hazir` fonksiyon başında da okundu (log satırı için) ama **karar burada
     # verilir**: arada `metin_ve_indeks` koşuyor ve o sırada geç bir oy planı saklamış
     # olabilir. Ölçüldü (`III7`): saklama tüketici başladıktan **2 sn sonra** oldu.
+    # 🔴 `O-22` — bu yol da bağlamı görmeli. Ölçüldü: yalnız `PlanGarsonu` bağlandığında
+    # canlıda **hiçbir şey değişmedi**, çünkü o turda planı **burası** üretiyordu.
+    _onceki = getattr(getattr(request, "state", None), "plan_onceki", None)
     plan = (getattr(getattr(request, "state", None), "plan_taslagi", None)
-            or plan_garson.plan_uret(llm, soru, catalog, index))
+            or plan_garson.plan_uret(llm, plan_garson.baglamli(soru, _onceki),
+                                     catalog, index))
     # 🔴 `O-15/Y` — **GEÇ GELEN PLAN ARTIK KAYBOLMUYOR.** Ölçüldü (canlı `II10`,
     # loglarla): garson `19:42:31`'de geçerli bir **4 adımlık** plan üretip sakladı
     # (`SORGU·BAGLA·SUZ·ANLAT`) — ama bu fonksiyon hazır planı `19:42:23`'te, yani

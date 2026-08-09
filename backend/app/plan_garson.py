@@ -84,6 +84,26 @@ def sayaclar() -> dict[str, int]:
     return dict(SAYAC)
 
 
+def baglamli(soru: str, onceki: dict | None) -> str:
+    """Takip turunda soruya **önceki sorguyu** iliştirir (`O-22`) — **TEK SAHİP**.
+
+    🔴 İki çağıranı var ve ikisi de aynı cümleyi kurmalı: `PlanGarsonu.select_cube`
+    (oylama yolu) ve `plan_tuketici.cevap` (boşluk yolu). ⊙ Ve bu ders **ölçülerek**
+    alındı: ilk yazımda yalnız birincisi bağlandı, canlıda hiçbir şey değişmedi —
+    çünkü o turda planı **ikincisi** üretiyordu. *Bir yolu düzeltip ötekini unutmak,
+    düzeltmeyi yapmamakla aynı sonucu verir; yalnız yapıldığını sanmakla farklıdır.*
+
+    ⚠ Soru **değiştirilmez**, üstüne bir bağlam satırı eklenir: kullanıcının cümlesini
+    yeniden yazmak onu yorumlamaktır ve yorum garsonun işidir.
+    ⚠ Önceki sorgu yoksa dize **bayt bayt aynı** döner (`KURAL B` disiplini).
+    """
+    if not (isinstance(onceki, dict) and onceki.get("cube")):
+        return soru
+    return (soru + "\n\n⊙ ÖNCEKİ CEVABIN SORGUSU (kullanıcı bunun ÜSTÜNE konuşuyor — "
+            "dönemi, kırılımı ve sıralamayı KORU, yalnız istenen değişikliği uygula):\n"
+            + json.dumps(onceki, ensure_ascii=False))
+
+
 def plan_uret(llm: Any, question: str, catalog: str, index: dict,
               *, azami_adim: int = 5) -> dict | None:
     """Garsona **plan** sorar. `None` = kullanılabilir bir plan çıkmadı.
@@ -280,8 +300,28 @@ class PlanGarsonu:
     """
 
     def __init__(self, ic: Any, index: dict, istek: Any = None,
-                 varliklar: dict | None = None) -> None:
+                 varliklar: dict | None = None, onceki: dict | None = None) -> None:
         self._ic, self._index, self._istek = ic, index or {}, istek
+        #: 🔴🔴 `O-22` — **GARSON TAKİP BAĞLAMINI HİÇ GÖRMÜYORDU.**
+        #:
+        #: ⊙ Ölçüldü (canlı `VII/B4`): thread'in dördüncü turunda `followup=True
+        #: (yapısal=True)` — sistem takip olduğunu **biliyordu** — ama garsona yalnız
+        #: *«bir de gecikme ekle»* gitti ve cevap bağlamsız bir toplam oldu: dönem yok,
+        #: `musteri` kırılımı yok, ilk-3 yok. Üç turda kurulan bağlam **sessizce**
+        #: düştü.
+        #:
+        #: ⚠ Deterministik takip yolu (`deterministic_refine`) bağlamı **taşıyor**;
+        #: garson yolu taşımıyordu. Yani aynı thread, hangi basamağa düştüğüne göre
+        #: bağlamlı ya da bağlamsız cevap veriyordu — kullanıcının göremeyeceği bir
+        #: ayrım. *Bir bağlamı bir yolda taşıyıp ötekinde bırakmak, onu rastgele
+        #: taşımaktır.*
+        self._onceki = onceki if isinstance(onceki, dict) and onceki.get("cube") else None
+        #: ⚠ Bağlam **istek durumuna** da yazılır: planı bu nesne değil, boşlukta
+        #: `plan_tuketici` üretiyor olabilir ve o `body`'yi görmez. Tek kaynak, iki
+        #: okuyucu.
+        _s0 = getattr(istek, "state", None)
+        if _s0 is not None and self._onceki is not None:
+            _s0.plan_onceki = self._onceki
         #: 🔴 `G0b.6` — VARLIK PERDESİ. Sorudaki katalog **değerleri** `{{ENT_i}}`'ye
         #: çevrilip modele öyle gidiyor; `ask.py` dönen `CubeQuery`'ye `varlik.geri_koy`
         #: uyguluyor. Ama **plana uygulamıyordu**: ölçüldü (canlı `FF10`),
@@ -293,9 +333,13 @@ class PlanGarsonu:
     def __getattr__(self, ad: str) -> Any:      # pragma: no cover - saydamlık
         return getattr(self._ic, ad)
 
+    def _baglamli(self, question: str) -> str:
+        """`baglamli`'nin nesne yüzü — mantık modül düzeyinde, **tek sahipli**."""
+        return baglamli(question, self._onceki)
+
     def select_cube(self, question: str, catalog: str, sema: dict | None = None) -> str:
         try:
-            plan = plan_uret(self._ic, question, catalog, self._index)
+            plan = plan_uret(self._ic, self._baglamli(question), catalog, self._index)
             if plan is None:
                 return self._ic.select_cube(question, catalog, sema)
             from app.plan_semasi import tek_adimli
@@ -360,7 +404,7 @@ class PlanGarsonu:
 
 
 def sarmala(llm: Any, index: dict, istek: Any = None,
-            varliklar: dict | None = None) -> Any:
+            varliklar: dict | None = None, onceki: dict | None = None) -> Any:
     """🔴 `KURAL B`'nin tek satırı: kapalıyken **nesnenin kendisi** döner.
 
     ⚠ `settings`/`principal` **istekten türetilir**, çağırandan alınmaz — ve bu yalnız
@@ -372,7 +416,7 @@ def sarmala(llm: Any, index: dict, istek: Any = None,
     from app.config import get_settings
 
     _p = getattr(getattr(istek, "state", None), "principal", None)
-    return (PlanGarsonu(llm, index, istek, varliklar)
+    return (PlanGarsonu(llm, index, istek, varliklar, onceki)
             if acik_mi(get_settings(), _p, llm) else llm)
 
 

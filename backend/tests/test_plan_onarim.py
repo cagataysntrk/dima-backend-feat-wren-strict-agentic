@@ -598,3 +598,66 @@ def test_PLANIN_KARSILADIGI_ISARET_BEYAN_EDILMEZ():
     _i = src.index("_karsilanan")
     assert '"BAGLA", "SIRALA"' in src[_i:_i + 900], "BAGLA/SIRALA üstünlüğü karşılıyor"
     assert '"ustunluk", "kesme"' in src[_i:_i + 900], "yanlış beyan hâlâ çıkabilir"
+
+
+def test_GARSON_TAKIP_BAGLAMINI_GORUR():
+    """🔴🔴 `O-22` — garson takip bağlamını **hiç görmüyordu**.
+
+    Ölçüldü (canlı `VII/B4`): thread'in dördüncü turunda `followup=True(yapısal=True)`
+    — sistem takip olduğunu **biliyordu** — ama garsona yalnız *«bir de gecikme ekle»*
+    gitti ve cevap bağlamsız bir toplam oldu: dönem yok, `musteri` kırılımı yok,
+    ilk-3 yok. Üç turda kurulan bağlam **sessizce** düştü.
+
+    ⚠ Deterministik takip yolu bağlamı taşıyor, garson yolu taşımıyordu — yani aynı
+    thread, hangi basamağa düştüğüne göre bağlamlı ya da bağlamsız cevap veriyordu.
+    *Bir bağlamı bir yolda taşıyıp ötekinde bırakmak, onu rastgele taşımaktır.*
+    """
+    from app.plan_garson import PlanGarsonu
+
+    ONCEKI = {"cube": "parti", "measures": ["toplam_ciro"], "dimensions": ["musteri"],
+              "limit": 3}
+    g = PlanGarsonu(object(), {}, None, None, ONCEKI)
+    metin = g._baglamli("bir de gecikme ekle")
+    assert metin.startswith("bir de gecikme ekle"), "kullanıcının cümlesi DEĞİŞTİRİLMEZ"
+    assert "toplam_ciro" in metin and "musteri" in metin, "önceki sorgu iliştirilmedi"
+    assert "KORU" in metin, "modele ne yapacağı söylenmedi"
+
+
+def test_BAGLAM_YOKSA_SORU_BAYT_BAYT_AYNI():
+    """⚠ `KURAL B` — taze soruda (önceki sorgu yok) dize **bayt bayt** aynı kalmalı."""
+    from app.plan_garson import PlanGarsonu
+
+    for onceki in (None, {}, {"measures": ["x"]}):   # `cube` yoksa bağlam sayılmaz
+        g = PlanGarsonu(object(), {}, None, None, onceki)
+        assert g._baglamli("bu yıl toplam ciro") == "bu yıl toplam ciro"
+
+
+def test_BAGLAM_CAGRI_YERINDEN_GECIRILIYOR():
+    """🔴 Sarmalayıcı bağlamı **alıyor** ama çağrı yeri geçirmiyorsa yol ölüdür."""
+    import inspect
+
+    from app.routers import ask as _ask
+
+    src = inspect.getsource(_ask.ask)
+    _i = src.index("_plan_garson.sarmala(")
+    assert "body.cube_query" in src[_i:_i + 120], \
+        "çağrı yeri önceki sorguyu GEÇİRMİYOR — garson yine bağlamsız kalır"
+
+
+def test_BAGLAM_IKI_URETICIYE_DE_BAGLI():
+    """🔴 `O-22` — planı **iki** yer üretiyor; birini bağlamak yetmedi.
+
+    Ölçüldü: yalnız `PlanGarsonu` bağlandığında canlıda **hiçbir şey değişmedi**,
+    çünkü o turda planı boşlukta `plan_tuketici` üretiyordu. *Bir yolu düzeltip ötekini
+    unutmak, düzeltmeyi yapmamakla aynı sonucu verir; yalnız yapıldığını sanmakla
+    farklıdır.*
+    """
+    import inspect
+
+    from app import plan_garson, plan_tuketici
+
+    assert "baglamli(question, self._onceki)" in inspect.getsource(
+        plan_garson.PlanGarsonu._baglamli), "oylama yolu bağlamsız"
+    src = inspect.getsource(plan_tuketici.cevap)
+    assert "plan_garson.baglamli(soru," in src, "boşluk yolu bağlamsız"
+    assert "plan_onceki" in src, "bağlam istek durumundan okunmuyor"
