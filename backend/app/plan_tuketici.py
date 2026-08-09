@@ -134,8 +134,21 @@ def _govdeler(service: Any, schema: dict, cube_meta: dict | None) -> dict[str, A
         _rap = _k.get("raporlar") if isinstance(_k, dict) else None
         return {"siralama": rank_dimensions(list(_rap or []))}
 
+    def _gorsel(a: dict) -> dict:
+        """`GORSEL` — grafik kararı **deterministik** (ADR-0024), modele sorulmuyor.
+
+        ⚠ `viz.recommend` semantik metadata'yı `cube_meta` olarak DEĞİL, açılmış hâliyle
+        ister (`units`/`lower_set`/…). `FAZ 0`'ın ölçtüğü kusur tam buydu; `meta_args`
+        o açmayı yapan tek yer."""
+        from app import viz
+        _k = a.get("kaynak")
+        _satirlar = [r for r in (_k or []) if isinstance(r, dict)] if isinstance(_k, list) else []
+        _sonuc = {"rows": _satirlar, "columns": list(_satirlar[0]) if _satirlar else []}
+        return viz.recommend(_sonuc, cube_query=a.get("cube_query") or {},
+                             **viz.meta_args(cube_meta or {})) or {}
+
     return {"TREND": _trend, "AYRISTIR": _ayristir, "KIYASLA": _kiyasla, "ANLAT": _anlat,
-            "KIR": _kir, "SUZ": _suz, "BOYUTSEC": _boyutsec}
+            "KIR": _kir, "SUZ": _suz, "BOYUTSEC": _boyutsec, "GORSEL": _gorsel}
 
 
 def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = None,

@@ -74,6 +74,11 @@ FIIL_ANLAMI: dict[str, str] = {
     # tablosudur: ölçütler katalogda VAR OLAN ölçülerdir, ağırlık YOKTUR.
     "MATRIS": "adayları ölçütlerle yan yana koyar (satır=aday, sütun=ölçüt)",
     "SIRALA": "adayları çok ölçütle sıralar — ağırlık YOK, hepsi EŞİT",
+    # ⟳ `FAZ 7c` — RAPOR. ⚠ Hiçbir şey hesaplamaz, koşmuş bölümleri **dizer**.
+    "RAPOR": "koşmuş bölümleri tek bir belgeye dizer",
+    "GORSEL": "bir bölüm için grafik kararı üretir (deterministik, LLM YOK)",
+    # ⟳ `FAZ 7d` — PANO. 🔴 **YAZMAZ**: yalnız taslak üretir; kalıcılaştırma onayla.
+    "PANO": "sorgulardan bir pano TASLAĞI kurar — hiçbir şey kaydetmez",
 }
 
 FIILLER: tuple[str, ...] = tuple(FIIL_ANLAMI)
@@ -100,6 +105,9 @@ ZORUNLU_ALANLAR: dict[str, tuple[str, ...]] = {
     "BOYUTSEC": ("kaynak",),
     "MATRIS": ("kaynaklar", "boyut"),
     "SIRALA": ("kaynak", "boyut", "olculer"),
+    "RAPOR": ("kaynaklar", "baslik"),
+    "GORSEL": ("kaynak", "cube_query"),
+    "PANO": ("kaynaklar", "baslik"),
 }
 
 #: 🔴 **HER FİİLİN ÇIKTI TİPİ — beyan edilir, tahmin edilmez.**
@@ -124,6 +132,9 @@ CIKTI_TIPI: dict[str, str] = {
     "BOYUTSEC": "bulgular",
     "MATRIS": "satirlar",
     "SIRALA": "satirlar",
+    "RAPOR": "bulgular",
+    "GORSEL": "bulgular",
+    "PANO": "bulgular",
     "TREND": "satirlar",      # dönem kaydırılmış satırlar — hâlâ satır
     "BAGLA": "varlik",
     "HESAPLA": "olcum",
@@ -147,6 +158,11 @@ GIRDI_TIPI: dict[str, dict[str, str | None]] = {
     "BOYUTSEC": {"kaynak": "bulgular"},
     "MATRIS": {"kaynaklar": "satirlar"},
     "SIRALA": {"kaynak": "satirlar"},
+    "RAPOR": {"kaynaklar": "satirlar"},
+    "GORSEL": {"kaynak": "satirlar"},
+    # 🔴 Widget'lar **satır değil SORGU** taşır: satır kaydetmek bir fotoğraf, sorgu
+    # kaydetmek bir pano yapar.
+    "PANO": {"kaynaklar": "sorgu"},
 }
 
 #: 🔴 Yalnız **son** adım olabilen fiiller. Şema bunu ifade EDEMEZ (`oneOf` konum bilmez);
@@ -273,6 +289,23 @@ def plan_json_schema(index: dict, *, azami_adim: int = 5) -> dict[str, Any]:
                                               if olculer else {"type": "string"}),
                                     "description": "hangi ölçütlere göre sıralanacak"}},
          "required": ["fiil", *ZORUNLU_ALANLAR["SIRALA"]]},
+        {"type": "object", "additionalProperties": False, "title": "RAPOR",
+         "properties": {"fiil": {"const": "RAPOR"},
+                        "kaynaklar": _ref_listesi("rapora girecek bölümler"),
+                        "baslik": {"type": "string"}},
+         "required": ["fiil", *ZORUNLU_ALANLAR["RAPOR"]]},
+        # ⚠ Grafik kararı **modele sorulmaz**: `viz.recommend` deterministik (ADR-0024).
+        # Fiilin işi *"hangi grafik"* demek değil, *"bu bölüme bir grafik kararı üret"*.
+        {"type": "object", "additionalProperties": False, "title": "GORSEL",
+         "properties": {"fiil": {"const": "GORSEL"},
+                        "kaynak": _ref("grafiği çizilecek bölüm"),
+                        "cube_query": {"oneOf": [cq, _ref("bölümü üreten sorgu")]}},
+         "required": ["fiil", *ZORUNLU_ALANLAR["GORSEL"]]},
+        {"type": "object", "additionalProperties": False, "title": "PANO",
+         "properties": {"fiil": {"const": "PANO"},
+                        "kaynaklar": _ref_listesi("panoya girecek SORGULAR"),
+                        "baslik": {"type": "string"}},
+         "required": ["fiil", *ZORUNLU_ALANLAR["PANO"]]},
         {"type": "object", "additionalProperties": False, "title": "ANLAT",
          "properties": {"fiil": {"const": "ANLAT"},
                         "kaynaklar": _ref_listesi("hangi adımların bulguları")},

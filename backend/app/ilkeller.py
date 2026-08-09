@@ -193,3 +193,78 @@ def sirala(rows: list[dict], boyut: str, olculer: list[str],
     # değerlendirilmiş göstermektir.
     return sorted(out, key=lambda r: (r["_skor"] is None, -(r["_skor"] or 0.0),
                                       str(r.get(boyut))))
+
+
+def rapor(bolumler: list[Any], baslik: str) -> dict:
+    """**`RAPOR` · SATIRLAR[] → BELGE** — koşmuş bölümleri tek bir belgeye dizer.
+
+    ## 🔴 Neden `report.compose_report` ÇAĞRILMIYOR
+
+    O fonksiyon bir **şartnameden** rapor üretir: blok başına `cube_query` alır ve her
+    bloğu **koşar**. Ama plan o sorguları **zaten koştu**; onu çağırmak aynı sorguları
+    ikinci kez ödemek olurdu — ve `E6`'nın (gecikme) tam da cezalandırdığı şey.
+
+    ⊙ Bölüşüm net: `report.compose_report` **HTTP `POST /report`** yolunun gövdesidir
+    (kullanıcı blokları kendi verir); bu ise **plan** yolunun gövdesi (bloklar zaten
+    koşmuştur). Aynı çıktıyı iki yoldan üretmek bir kopya değil, iki farklı **girdiden**
+    aynı yere varmaktır.
+
+    ⚠ Hiçbir şey **hesaplamaz**: sayıları koşmuş adımlar koydu. Bu fonksiyon yalnız
+    **dizer** — ve dizmek bir yorum değildir. *Bir raporu üretmekle, bir raporu
+    kurgulamak aynı şey değildir; ikincisi sayı uydurmanın kapısıdır.*
+    """
+    _b: list[dict] = []
+    for i, kaynak in enumerate(bolumler or [], 1):
+        satirlar = [r for r in (kaynak or []) if isinstance(r, dict)] \
+            if isinstance(kaynak, list) else []
+        _b.append({"sira": i, "satir_sayisi": len(satirlar),
+                   "kolonlar": list(satirlar[0]) if satirlar else [],
+                   "satirlar": satirlar})
+    return {"baslik": baslik, "bolumler": _b,
+            # ⚠ Boş bölüm **gizlenmez, sayılır**: bir raporun eksiğini saklamak, onu
+            # tam göstermektir.
+            "bos_bolum": sum(1 for b in _b if not b["satir_sayisi"])}
+
+
+def pano_taslagi(sorgular: list[Any], baslik: str) -> dict:
+    """**`PANO` · SORGU[] → TASLAK** — 🔴 **YAZMAZ.**
+
+    ## Neden bir taslak, neden kayıt değil
+
+    Çalıştırıcı bugün **salt-okunur ve idempotenttir**. İlk yan etkili fiil bu değişmezi
+    kırardı ve bedeli somut:
+
+    * yarıda kalan bir plan **yarım bir pano** bırakır
+    * aynı plan iki kez koşunca pano **ikilenir**
+    * `PlanHatasi` ile düşen bir tur, geri alınamayan bir yazma bırakır
+
+    Kalıcılaştırma çalıştırıcının **dışında**, kullanıcı onayıyla olur — `onay_akisi`
+    bayrağının ve `authorize()`ın zaten kurulu olduğu yerde. *Bir yan etkiyi bir
+    yorumlayıcıya koymak, geri alınamazlığı sessizce satın almaktır.*
+
+    ## Widget'lar satır değil **SORGU** taşır
+
+    Bir pano canlıdır: her açılışta yeniden koşar. Satır kaydetmek bir **fotoğraf**,
+    sorgu kaydetmek bir **pano** yapar. Bu yüzden `kaynaklar` tipi `sorgu`dur
+    (`KIR`/`SUZ` çıktısı ya da bir `SORGU` adımının kendi sorgusu).
+
+    ⚠ Aynı sorgu iki kez geçse bile **ikilenmez**: bir panoda aynı kartı iki kez
+    göstermek bir bilgi değil bir gürültüdür.
+    """
+    import json as _json
+
+    goruldu: set[str] = set()
+    widgetlar: list[dict] = []
+    for cq in (sorgular or []):
+        if not isinstance(cq, dict) or not cq.get("cube"):
+            continue
+        imza = _json.dumps(cq, sort_keys=True, ensure_ascii=False)
+        if imza in goruldu:
+            continue
+        goruldu.add(imza)
+        widgetlar.append({"sira": len(widgetlar) + 1, "cube_query": cq})
+    return {"baslik": baslik, "widgetlar": widgetlar,
+            # 🔴 Taslak olduğu **yazılı**: bir çıktının kalıcı olup olmadığını okuyanın
+            # tahmin etmesi gerekmemeli.
+            "kalici": False,
+            "not": "Bu bir TASLAKTIR — onaylanmadan hiçbir pano oluşturulmadı."}

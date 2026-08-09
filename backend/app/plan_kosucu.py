@@ -187,7 +187,7 @@ def _adim_coz(adim: dict, ciktilar: list[Any]) -> dict:
 #: kapı onları *«bağlanmamış»* sandı. *Bir kümeyi tarif eden liste, kümeden
 #: üretilmiyorsa er ya da geç onu yanlış tarif eder.*
 ICSEL_FIILLER: frozenset[str] = frozenset({
-    "SORGU", "BAGLA", "HESAPLA", "MATRIS", "SIRALA",
+    "SORGU", "BAGLA", "HESAPLA", "MATRIS", "SIRALA", "RAPOR", "PANO",
 })
 
 #: 🔴 **EŞ ZAMANLILIK TAVANI — ÖLÇÜLDÜ, seçilmedi.** (`lab/olcumler/motor_eszamanlilik.md`)
@@ -264,6 +264,13 @@ def kos(plan: dict, *, sorgu_kos, govdeler: dict[str, Any] | None = None,
             if fiil == "SIRALA":
                 return _ilk.sirala(_coz(adim["kaynak"], ciktilar), adim["boyut"],
                                    list(adim["olculer"]), az_iyi=_lower)
+            if fiil == "RAPOR":
+                return _ilk.rapor(_coz(adim["kaynaklar"], ciktilar), adim["baslik"])
+            if fiil == "PANO":
+                # 🔴 **YAZMAZ.** Çalıştırıcı salt-okunur ve idempotent kalıyor; ilk yan
+                # etkili fiil bu değişmezi kırardı (yarım pano · ikilenen pano · geri
+                # alınamayan yazma). Kalıcılaştırma onayla, dışarıda.
+                return _ilk.pano_taslagi(_coz(adim["kaynaklar"], ciktilar), adim["baslik"])
             if fiil in (govdeler or {}):
                 # ⟳ `FAZ 2` — kalan dört fiil enjekte edilen gövdelerle koşuyor. Adım
                 # çözülmüş olarak verilir; gövde `$n` diye bir şey bilmez.

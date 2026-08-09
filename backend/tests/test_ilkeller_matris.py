@@ -75,3 +75,75 @@ def test_SKORSUZ_ADAY_SILINMEZ_SONA_KONUR():
 def test_TEK_SATIRDA_BOLME_YOK():
     """⚠ Min=maks olduğunda normalleştirme sıfıra bölerdi."""
     assert sirala([{"m": "X", "ciro": 7}], "m", ["ciro"])[0]["_skor"] == 1.0
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FAZ 7c/7d · RAPOR · PANO — ve YAZMAMA yeminleri
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def test_RAPOR_HICBIR_SEY_HESAPLAMAZ():
+    """🔴 Sayıları koşmuş adımlar koydu; bu fiil yalnız **dizer**.
+
+    *Bir raporu üretmekle, bir raporu kurgulamak aynı şey değildir; ikincisi sayı
+    uydurmanın kapısıdır.*
+    """
+    from app.ilkeller import rapor
+    r = rapor([A, B], "Aylık")
+    assert r["baslik"] == "Aylık" and len(r["bolumler"]) == 2
+    assert r["bolumler"][0]["satirlar"] == A, "satırlar dokunulmadan geçmedi"
+    assert r["bolumler"][0]["kolonlar"] == ["m", "ciro"]
+
+
+def test_RAPOR_BOS_BOLUMU_SAYAR():
+    """⚠ Bir raporun eksiğini saklamak, onu tam göstermektir."""
+    from app.ilkeller import rapor
+    assert rapor([A, []], "x")["bos_bolum"] == 1
+
+
+def test_RAPOR_SORGULARI_YENIDEN_KOSMAZ():
+    """🔴 `report.compose_report` blok başına `cube_query` alıp her bloğu **koşar**.
+    Plan o sorguları ZATEN koştu; onu çağırmak aynı sorguları ikinci kez ödemekti
+    (`E6`'nın cezalandırdığı şey)."""
+    import inspect
+
+    from app import ilkeller
+    kaynak = inspect.getsource(ilkeller.rapor)
+    for yasak in ("compose_report", "service", "cube_sql", "query("):
+        assert yasak not in kaynak.split('"""')[-1], f"`{yasak}` sızmış — rapor koşuyor"
+
+
+def test_PANO_YAZMAZ_TASLAK_URETIR():
+    """🔴🔴 Çalıştırıcı **salt-okunur ve idempotent** kalıyor.
+
+    İlk yan etkili fiil bunu kırardı: yarıda kalan plan **yarım pano**, iki kez koşan
+    plan **ikilenen pano**, düşen tur **geri alınamayan yazma** bırakır.
+    *Bir yan etkiyi bir yorumlayıcıya koymak, geri alınamazlığı sessizce satın almaktır.*
+    """
+    import inspect
+
+    from app.ilkeller import pano_taslagi
+    import app.ilkeller as _ilk
+
+    t = pano_taslagi([{"cube": "oee", "measures": ["v"]}], "Panom")
+    assert t["kalici"] is False and "TASLAK" in t["not"]
+    assert len(t["widgetlar"]) == 1 and t["widgetlar"][0]["cube_query"]["cube"] == "oee"
+    kaynak = inspect.getsource(pano_taslagi).split('"""')[-1]
+    for yasak in ("Session", "commit", "add_widget", "create", "insert"):
+        assert yasak not in kaynak, f"pano taslağı `{yasak}` ile YAZIYOR"
+    assert not hasattr(_ilk, "pano_kaydet"), "kayıt fonksiyonu ilkellere sızmış"
+
+
+def test_PANO_AYNI_SORGUYU_IKILEMEZ():
+    """⚠ Bir panoda aynı kartı iki kez göstermek bir bilgi değil bir gürültüdür."""
+    from app.ilkeller import pano_taslagi
+    cq = {"cube": "oee", "measures": ["v"]}
+    assert len(pano_taslagi([cq, dict(cq), cq], "x")["widgetlar"]) == 1
+
+
+def test_PANO_SATIR_KABUL_ETMEZ():
+    """🔴 Widget'lar **satır değil SORGU** taşır: satır kaydetmek bir fotoğraf, sorgu
+    kaydetmek bir pano yapar. Tip sistemi bunu plan düzeyinde de kilitler."""
+    from app.ilkeller import pano_taslagi
+    from app.plan_semasi import GIRDI_TIPI
+    assert GIRDI_TIPI["PANO"]["kaynaklar"] == "sorgu"
+    assert pano_taslagi([{"m": "X", "ciro": 100}], "x")["widgetlar"] == []
