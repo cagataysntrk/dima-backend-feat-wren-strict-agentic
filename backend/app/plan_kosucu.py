@@ -175,8 +175,15 @@ def _adim_coz(adim: dict, ciktilar: list[Any]) -> dict:
     return {k: _coz(v, ciktilar) for k, v in (adim or {}).items()}
 
 
+#: 🔴 **EŞ ZAMANLILIK TAVANI — ÖLÇÜLDÜ, seçilmedi.** (`lab/olcumler/motor_eszamanlilik.md`)
+#: 4 işçi **2,52×**, 8 işçi **1,86×** hızlandırdı: sekiz işçi yalnız çekişme ekliyor.
+#: ⚠ Bir tavanı yükseltmek bir kazanç değildir; ölçülmeden yükseltmek bir borçtur.
+AZAMI_ESZAMANLI = 4
+
+
 def kos(plan: dict, *, sorgu_kos, govdeler: dict[str, Any] | None = None,
-        cube_meta: dict | None = None, azami_sorgu: int = 8) -> dict:
+        cube_meta: dict | None = None, azami_sorgu: int = 8,
+        paralel: bool = False) -> dict:
     """Planı koşar ve `{"ciktilar": [...], "makbuz": [...]}` döndürür.
 
     `sorgu_kos(cube_query) -> rows`: bilerek bir **parametre** — bu dosya `wren_service`'i
@@ -200,55 +207,80 @@ def kos(plan: dict, *, sorgu_kos, govdeler: dict[str, Any] | None = None,
     from app import ilkeller as _ilk
 
     # 🔴 **ÖNCE DOĞRULA, SONRA KOŞ.** Motor bir tek sorgu bile görmeden plan ya geçerlidir
-    # ya reddedilmiştir. `katmanlar` bugün yalnız makbuza yazılıyor; `FAZ 4` onu paralel
-    # `SORGU` için kullanacak.
+    # ya reddedilmiştir. `katmanlar` aynı geçişte çıkarılan DAG'dır.
     katmanlar = dogrula(plan, azami_sorgu=azami_sorgu)
     adimlar = plan["adimlar"]
     _lower = set((cube_meta or {}).get("lower_is_better") or [])
-    ciktilar: list[Any] = []
-    makbuz: list[dict] = []
+    # 🔴 **ÇIKTI ADIM SIRASINA YAZILIR, TAMAMLANMA SIRASINA DEĞİL.** Paralel koşumda
+    # `append` kullanmak `$2`'yi başka bir adımın çıktısına bağlardı — ve bu, tekrar
+    # üretilebilirliğin sessizce kaybolduğu yerdir. Ön tahsis bir üslup tercihi değil,
+    # bir **doğruluk şartı**.
+    ciktilar: list[Any] = [None] * len(adimlar)
+    makbuz: list[Any] = [None] * len(adimlar)
     sorgu_sayisi = 0
 
-    for sira, adim in enumerate(adimlar, 1):
+    def _adim_kos(sira: int) -> Any:
+        adim = adimlar[sira - 1]
         fiil = adim.get("fiil")
         try:
             if fiil == "SORGU":
-                # ⚠ Bütçe artık **ön-geçişte** (`dogrula`) TOPLAM olarak denetleniyor;
-                # burada yalnız sayılır. Eski hâl **artımlıydı**: ilk sorgular koşup
-                # sonra düşüyordu — yani aşımın bedeli zaten ödenmiş oluyordu.
-                sorgu_sayisi += 1
-                cikti = sorgu_kos(adim["cube_query"])
-            elif fiil == "BAGLA":
+                # ⚠ Bütçe **ön-geçişte** TOPLAM olarak denetlendi; burada yalnız koşulur.
+                return sorgu_kos(adim["cube_query"])
+            if fiil == "BAGLA":
                 olcu = adim["olcu"]
-                cikti = _ilk.bagla(_coz(adim["kaynak"], ciktilar), adim["boyut"], olcu,
-                                   en_iyi_az=olcu in _lower)
-            elif fiil == "HESAPLA":
+                return _ilk.bagla(_coz(adim["kaynak"], ciktilar), adim["boyut"], olcu,
+                                  en_iyi_az=olcu in _lower)
+            if fiil == "HESAPLA":
                 hedef = _coz(adim["hedef"], ciktilar)
                 # `BAGLA`'nın çıktısı `(varlık, değer)` — `HESAPLA` yalnız **varlığı**
                 # ister. Bu dönüşüm burada, çünkü iki ilkelin sözleşmesini bilen tek yer
                 # burası; `ilkeller` birbirini tanımaz ve tanımamalı (saf kalsın).
                 if isinstance(hedef, tuple):
                     hedef = hedef[0]
-                cikti = _ilk.hesapla(_coz(adim["kaynak"], ciktilar), adim["boyut"],
-                                     adim["olcu"], hedef)
-            elif fiil in (govdeler or {}):
-                # ⟳ `FAZ 2` — kalan dört fiil (`KIYASLA`·`AYRISTIR`·`TREND`·`ANLAT`)
-                # artık **enjekte edilen** gövdelerle koşuyor. Adım çözülmüş olarak
-                # verilir; gövde `$n` diye bir şey bilmez.
-                cikti = (govdeler or {})[fiil](_adim_coz(adim, ciktilar))
-            else:
-                # 🔴 Gövdesi verilmemiş bir fiil sessizce atlanmaz: tur **düşer** ve
-                # sebebi yazılır. *Bir fiili şemaya koyup çalıştırıcıda unutmak, onu
-                # sessizce yalan yapmaktır.*
-                raise PlanHatasi(
-                    f"`{fiil}` fiilinin çalıştırıcısı bu koşumda bağlı değil (O-4)")
+                return _ilk.hesapla(_coz(adim["kaynak"], ciktilar), adim["boyut"],
+                                    adim["olcu"], hedef)
+            if fiil in (govdeler or {}):
+                # ⟳ `FAZ 2` — kalan dört fiil enjekte edilen gövdelerle koşuyor. Adım
+                # çözülmüş olarak verilir; gövde `$n` diye bir şey bilmez.
+                return (govdeler or {})[fiil](_adim_coz(adim, ciktilar))
+            # 🔴 Gövdesi verilmemiş bir fiil sessizce atlanmaz: tur **düşer** ve sebebi
+            # yazılır. *Bir fiili şemaya koyup çalıştırıcıda unutmak, onu sessizce yalan
+            # yapmaktır.*
+            raise PlanHatasi(f"`{fiil}` fiilinin çalıştırıcısı bu koşumda bağlı değil (O-4)")
         except PlanHatasi:
             raise
         except (KeyError, TypeError, ValueError) as e:
             raise PlanHatasi(f"adım {sira} (`{fiil}`) koşulamadı: {e}") from e
-        ciktilar.append(cikti)
-        makbuz.append({"sira": sira, "fiil": fiil,
-                       "satir": len(cikti) if isinstance(cikti, list) else None})
+
+    for katman in katmanlar:
+        _sorgu_sayisi_katman = sum(1 for i in katman
+                                   if adimlar[i - 1].get("fiil") == "SORGU")
+        sorgu_sayisi += _sorgu_sayisi_katman
+        # ⚠ **Yalnız `SORGU` paralelleştirilir.** `BAGLA`/`HESAPLA`/`ANLAT` koşmuş satırlar
+        # üzerinde saf fonksiyonlardır — mikrosaniyeler. Onları iş parçacığına atmak net
+        # NEGATİF getiridir. Ve tek sorgulu bir katmanda havuz kurmak da öyle.
+        if paralel and _sorgu_sayisi_katman >= 2:
+            from concurrent.futures import ThreadPoolExecutor
+            hatalar: list[str] = []
+            with ThreadPoolExecutor(max_workers=min(AZAMI_ESZAMANLI, len(katman))) as _ex:
+                _isler = {i: _ex.submit(_adim_kos, i) for i in katman}
+            for i, _is in _isler.items():
+                try:
+                    ciktilar[i - 1] = _is.result()
+                except Exception as e:      # noqa: BLE001 — hepsi toplanır, ilki değil
+                    hatalar.append(f"adım {i}: {e}")
+            if hatalar:
+                # 🔴 Kardeşler **iptal edilmez, bitirilir** ve TÜM eksikler birlikte
+                # söylenir. Kullanıcıya bir eksiği söyleyip ötekini saklamak, ikinci turu
+                # boşa harcatır. ⚠ Kısmi sonuç **yayımlanmaz**: fail-closed sürüyor.
+                raise PlanHatasi(" · ".join(hatalar))
+        else:
+            for i in katman:
+                ciktilar[i - 1] = _adim_kos(i)
+        for i in katman:
+            _c = ciktilar[i - 1]
+            makbuz[i - 1] = {"sira": i, "fiil": adimlar[i - 1].get("fiil"),
+                             "satir": len(_c) if isinstance(_c, list) else None}
 
     _log.info("plan koştu: %d adım · %d sorgu · %d katman",
               len(adimlar), sorgu_sayisi, len(katmanlar))

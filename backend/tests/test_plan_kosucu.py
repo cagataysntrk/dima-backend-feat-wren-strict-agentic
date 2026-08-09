@@ -221,3 +221,98 @@ def test_REFERANS_DILI_HALA_IFADE_DILI_DEGIL():
     _p = _re.compile(ADIM_REFERANSI)
     for yasak in ("$1.gelir", "$1 * 2", "$1+$2", "${1}", "$1[0]"):
         assert not _p.match(yasak), f"`{yasak}` referans sayıldı — ifade dili sızdı"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FAZ 4 · PARALEL `SORGU` — ölçülmüş bir tavanla
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _iki_bagimsiz_sorgu():
+    return {"adimlar": [{"fiil": "SORGU", "cube_query": CQ},
+                        {"fiil": "SORGU", "cube_query": CQ},
+                        {"fiil": "ANLAT", "kaynaklar": ["$1", "$2"]}]}
+
+
+def test_CIKTI_ADIM_SIRASINA_YAZILIR_TAMAMLANMA_SIRASINA_DEGIL():
+    """🔴🔴 Paralel koşumun **en sinsi** kusuru burada kapanıyor.
+
+    `append` kullanılsaydı hızlı biten sorgu `$1`, yavaş olan `$2` olurdu — yani `$2`
+    her koşumda **başka bir adımın** çıktısına bağlanabilirdi. Tekrar üretilebilirliğin
+    sessizce kaybolduğu yer tam olarak orasıdır.
+
+    ⊙ Kapı: birinci sorgu bilerek **yavaş**, ikincisi hızlı. Sıra yine `[1, 2]` olmalı.
+    """
+    import time as _t
+
+    cagri = []
+
+    def _yavas(cq):
+        n = len(cagri)
+        cagri.append(cq)
+        _t.sleep(0.05 if n == 0 else 0.0)
+        return [{"i": n}]
+
+    r = kos(_iki_bagimsiz_sorgu(), sorgu_kos=_yavas, paralel=True,
+            govdeler={"ANLAT": lambda a: "x"})
+    assert r["ciktilar"][0] == [{"i": 0}] and r["ciktilar"][1] == [{"i": 1}], (
+        f"çıktılar tamamlanma sırasına yazıldı: {r['ciktilar'][:2]}")
+
+
+def test_PARALEL_VE_SERI_AYNI_SONUCU_VERIR():
+    """⚠ Asıl ölçüt hız değil **denklik**: aynı plan, aynı sonuç."""
+    seri = kos(_iki_bagimsiz_sorgu(), sorgu_kos=lambda cq: ROWS,
+               govdeler={"ANLAT": lambda a: "x"})
+    par = kos(_iki_bagimsiz_sorgu(), sorgu_kos=lambda cq: ROWS, paralel=True,
+              govdeler={"ANLAT": lambda a: "x"})
+    assert seri["ciktilar"] == par["ciktilar"]
+    assert seri["sorgu_sayisi"] == par["sorgu_sayisi"] == 2
+
+
+def test_PARALEL_KATMANDA_TUM_HATALAR_TOPLANIR():
+    """🔴 Kardeşler **iptal edilmez, bitirilir** ve TÜM eksikler birlikte söylenir.
+
+    Kullanıcıya bir eksiği söyleyip ötekini saklamak, ikinci turu boşa harcatır.
+    ⚠ Kısmi sonuç yine de **yayımlanmaz** — fail-closed sürüyor.
+    """
+    def _hep_patlar(cq):
+        raise ValueError("motor düştü")
+
+    with pytest.raises(PlanHatasi) as e:
+        kos(_iki_bagimsiz_sorgu(), sorgu_kos=_hep_patlar, paralel=True,
+            govdeler={"ANLAT": lambda a: "x"})
+    assert "adım 1" in str(e.value) and "adım 2" in str(e.value), (
+        f"yalnız ilk hata söylendi: {e.value}")
+
+
+def test_TAVAN_OLCULDU_SECILMEDI():
+    """⚠ `AZAMI_ESZAMANLI` bir tercih değil bir **ölçüm sonucudur**
+    (`lab/olcumler/motor_eszamanlilik.md`: 4 işçi 2,52× · 8 işçi 1,86×).
+
+    *Bir tavanı yükseltmek bir kazanç değildir; ölçülmeden yükseltmek bir borçtur.*
+    """
+    from app.plan_kosucu import AZAMI_ESZAMANLI
+    assert AZAMI_ESZAMANLI == 4
+
+
+def test_TEK_SORGULU_KATMANDA_HAVUZ_KURULMAZ():
+    """⚠ Bir iş için iş parçacığı havuzu kurmak net **negatif** getiridir."""
+    import app.plan_kosucu as pk
+
+    kuruldu = []
+    _asil = __import__("concurrent.futures", fromlist=["ThreadPoolExecutor"]).ThreadPoolExecutor
+
+    class _Casus(_asil):
+        def __init__(self, *a, **k):
+            kuruldu.append(True)
+            super().__init__(*a, **k)
+
+    import concurrent.futures as _cf
+    _eski, _cf.ThreadPoolExecutor = _cf.ThreadPoolExecutor, _Casus
+    try:
+        kos({"adimlar": [{"fiil": "SORGU", "cube_query": CQ},
+                         {"fiil": "BAGLA", "kaynak": "$1", "boyut": "m", "olcu": "v"}]},
+            sorgu_kos=lambda cq: ROWS, paralel=True)
+    finally:
+        _cf.ThreadPoolExecutor = _eski
+    assert not kuruldu, "tek sorgulu katmanda havuz kuruldu"
+    assert pk.AZAMI_ESZAMANLI >= 1

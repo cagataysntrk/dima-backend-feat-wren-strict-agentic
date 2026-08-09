@@ -166,3 +166,23 @@ def test_ANLAT_LLM_CAGIRMAZ():
     _govde = kaynak.split("def _anlat")[1]
     for yasak in ("llm", "anlat(", "select_cube", "generate"):
         assert yasak not in _govde.replace("_anlat", ""), f"ANLAT gövdesinde `{yasak}` geçiyor"
+
+
+def test_HER_ADIMIN_SONUCU_DONUYOR():
+    """🔴 `FAZ 5` — hesaplanan malzeme **atılmıyor**.
+
+    Bugüne kadar `plan_tuketici` her `SORGU`'nun sonucunu biriktiriyor ama yalnız
+    **sonuncusunu** döndürüyordu. Çok bölümlü rapor/pano için gereken ara sonuçlar
+    üretilip çöpe gidiyordu.
+
+    *Bir maliyeti ödeyip ürününü atmak, onu hiç ödememekten pahalıdır: hem para gider
+    hem cevap.*
+    """
+    plan = {"adimlar": [{"fiil": "SORGU", "cube_query": CQ},
+                        {"fiil": "SORGU", "cube_query": CQ},
+                        {"fiil": "ANLAT", "kaynaklar": ["$1", "$2"]}]}
+    c = _cevap(_Garson(plan))
+    assert len(c["bolumler"]) == 2, "iki sorgunun sonucu da dönmeliydi"
+    assert all(b["cube_query"] == CQ for b in c["bolumler"]), (
+        "her bölüm kendi sorgusunu taşımalı — yoksa `/cube` ile yeniden koşulamaz (O-5)")
+    assert all(b["result"]["row_count"] == 4 for b in c["bolumler"])

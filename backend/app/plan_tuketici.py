@@ -139,9 +139,13 @@ def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = 
         sonuclar.append(res)
         return res.get("rows") or []
 
+    # 🔴 `paralel=True` — ve bu bir tercih değil bir **ölçüm sonucudur**
+    # (`lab/olcumler/motor_eszamanlilik.md`): aynı `WrenService` üzerinde 32 eş zamanlı
+    # sorguda **0 hata · 0 sapma**, hızlanma 2,52×. ⚠ Yalnız aynı DAG katmanındaki
+    # `SORGU`lar, tavan 4, çıktılar adım sırasına yazılır.
     out = plan_kosucu.kos(plan, sorgu_kos=_sorgu_kos,
                           govdeler=_govdeler(service, schema or {}, cube_meta),
-                          cube_meta=cube_meta, azami_sorgu=azami_sorgu)
+                          cube_meta=cube_meta, azami_sorgu=azami_sorgu, paralel=True)
     out["sonuclar"] = sonuclar
     return out
 
@@ -200,6 +204,10 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
         # devam eder (Discovery / dürüst ret). Bir genişleme, genişlettiği şeyi bozamaz.
         _log.warning("plan tüketicisi düştü → bugünkü yol", exc_info=True)
         return None
+    # 🔴 `FAZ 5` — **HESAPLANAN MALZEME ARTIK ATILMIYOR.** Bugüne kadar `sonuclar`'ın
+    # hepsi hesaplanıp yalnız **sonuncusu** dönüyordu; çok bölümlü rapor/pano için gereken
+    # ara sonuçlar üretilip çöpe gidiyordu. *Bir maliyeti ödeyip ürününü atmak, onu hiç
+    # ödememekten pahalıdır: hem para gider hem cevap.*
     _son = out["sonuclar"][-1] if out["sonuclar"] else None
     _sorgu_adimlari = [a for a in plan["adimlar"] if a.get("fiil") == "SORGU"]
     return {
@@ -208,6 +216,12 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
         "iz": [f"orkestratör: {_n} adımlık plan koştu ({out['sorgu_sayisi']} sorgu)"],
         "result": _son,
         "cube_query": (_sorgu_adimlari[-1].get("cube_query") if _sorgu_adimlari else None),
+        # ⊙ Her `SORGU` adımının TAM sonucu + onu üreten sorgu. `FAZ 6` (frontend adım
+        # bileşeni) ve `FAZ 7` (rapor/pano) tüketicisi budur; ikisi de bunsuz kurulamaz.
+        # ⚠ `cube_query` her bölümle birlikte taşınıyor ki her adım `/cube` ile **sıfır
+        # LLM** yeniden koşulabilsin (`O-5`).
+        "bolumler": [{"cube_query": a.get("cube_query"), "result": r}
+                     for a, r in zip(_sorgu_adimlari, out["sonuclar"])],
     }
 
 
