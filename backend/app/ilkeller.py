@@ -101,3 +101,95 @@ def hesapla(rows: list[dict], boyut: str, olcu: str, hedef: str) -> dict | None:
             "fark": round(fark, 4),
             "fark_yuzde": round(100.0 * fark / ort, 1) if ort else None,
             "akran_sayisi": len(akranlar)}
+
+
+def matris(kaynaklar: list[list[dict]], boyut: str) -> list[dict]:
+    """**`MATRIS` · SATIRLAR[] → SATIRLAR** — adayları ölçütlerle yan yana koyar.
+
+    Her kaynak bir **ölçüt sütunu** getirir; `boyut` aday anahtarıdır. Saf ilişkisel
+    birleştirme: LLM yok, SQL yok, aritmetik yok — yalnız hizalama.
+
+    ## 🔴 SINIR — `MIMARI §12.9` ile çelişmez, onunla ÇİZİLMİŞTİR
+
+    O bölüm *"seçenekler × ölçütler × ağırlıklar"* matrisini **bilinçle reddediyor**:
+    *«kontrol edilebilirlik · uygulama maliyeti · risk … hiçbiri veride yok ve tahmin
+    edilemez … `source=cube` rozetiyle uydurma sıralama»*.
+
+    Buradaki matris o matris **değildir**:
+
+    | reddedilen | bu |
+    |---|---|
+    | ölçütler **uydurulur** (risk, çaba) | ölçütler **katalogda var olan ölçülerdir** |
+    | ağırlıklar modelden/sezgiden | ağırlık **yok** (bkz. `sirala`) |
+    | sıralama bir **yargıdır** | sıralama bir **ölçümdür** |
+
+    ⚠ Yani bu bir *karar* matrisi değil bir **karşılaştırma** tablosudur; kararı hâlâ
+    insan verir. *Bir tabloyu karar diye satmak, ölçemediğin şeyi ölçmüş gibi
+    göstermektir.*
+
+    ⊙ Eksik hücre `None` kalır — sıfır **yazılmaz**. Bir adayda o ölçü hiç yoksa
+    *"sıfır"* demek, yokluğu bir değere çevirmektir.
+    """
+    satirlar: dict[Any, dict] = {}
+    for kaynak in (kaynaklar or []):
+        for r in (kaynak or []):
+            if not isinstance(r, dict) or boyut not in r:
+                continue
+            anahtar = r[boyut]
+            hedef = satirlar.setdefault(anahtar, {boyut: anahtar})
+            for k, v in r.items():
+                if k != boyut and k not in hedef:
+                    hedef[k] = v
+    return list(satirlar.values())
+
+
+def sirala(rows: list[dict], boyut: str, olculer: list[str],
+           *, az_iyi: set[str] | frozenset[str] | None = None) -> list[dict]:
+    """**`SIRALA` · SATIRLAR → SATIRLAR** — adayları çok ölçütle sıralar. **Ağırlık YOK.**
+
+    🔴🔴 **AĞIRLIĞI MODEL KOYMAZ — ve burada hiç kimse koymaz.**
+
+    *«Sayıyı her zaman küp koyar»* ilkesinin karar-matrisi karşılığı budur. Bir `agirliklar`
+    alanı açmak, yasakladığımız aritmetiği **arka kapıdan** geri getirirdi: model bir sayı
+    uydurur, o sayı sıralamayı belirler ve sonuç `source=cube` rozetiyle döner.
+
+    Bu yüzden ağırlıklar **eşittir** ve bu bir varsayım değil bir **beyandır**: *"bu
+    sıralama bütün ölçütlere eşit ağırlık verir"* denilebilir; *"risk %30, maliyet %70"*
+    denemez, çünkü o oran hiçbir yerde ölçülmemiştir.
+
+    Yön **beyandan** okunur (`az_iyi` ← `lower_is_better`), sözlükten değil — `§W-C`'nin
+    dersi. Normalleştirme min-maks: tek satırda ya da sabit sütunda skor `1.0` (bölme
+    yok).
+
+    ⚠ Eksik hücre skora **girmez**, sıfır sayılmaz: eksik veriyle en kötü sıraya
+    düşürmek, ölçülmemiş olanı ölçülmüş gibi cezalandırmaktır. Payda satır başına
+    ayrı tutulur ve `_olcut_sayisi` olarak **yazılır** — kaç ölçütle sıralandığı
+    görünmeden sıra okunamaz.
+    """
+    _az = set(az_iyi or ())
+    _sinir: dict[str, tuple[float, float]] = {}
+    for m in (olculer or []):
+        _dgr = [sayi(r.get(m)) for r in (rows or [])]
+        _dgr = [d for d in _dgr if d is not None]
+        if _dgr:
+            _sinir[m] = (min(_dgr), max(_dgr))
+
+    out: list[dict] = []
+    for r in (rows or []):
+        toplam, n = 0.0, 0
+        for m in (olculer or []):
+            d = sayi(r.get(m))
+            if d is None or m not in _sinir:
+                continue
+            lo, hi = _sinir[m]
+            pay = 1.0 if hi == lo else (d - lo) / (hi - lo)
+            toplam += (1.0 - pay) if m in _az else pay
+            n += 1
+        yeni = dict(r)
+        yeni["_skor"] = round(toplam / n, 4) if n else None
+        yeni["_olcut_sayisi"] = n
+        out.append(yeni)
+    # ⚠ Skorsuz satırlar **silinmez**, sona konur: bir adayı listeden düşürmek, onu
+    # değerlendirilmiş göstermektir.
+    return sorted(out, key=lambda r: (r["_skor"] is None, -(r["_skor"] or 0.0),
+                                      str(r.get(boyut))))

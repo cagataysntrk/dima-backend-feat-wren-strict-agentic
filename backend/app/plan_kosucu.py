@@ -242,6 +242,13 @@ def kos(plan: dict, *, sorgu_kos, govdeler: dict[str, Any] | None = None,
                     hedef = hedef[0]
                 return _ilk.hesapla(_coz(adim["kaynak"], ciktilar), adim["boyut"],
                                     adim["olcu"], hedef)
+            if fiil == "MATRIS":
+                # ⚠ `BAGLA`/`HESAPLA` gibi **saf**: satır alır, satır verir. Enjeksiyon
+                # gerekmez, çünkü motora dokunmuyor.
+                return _ilk.matris(_coz(adim["kaynaklar"], ciktilar), adim["boyut"])
+            if fiil == "SIRALA":
+                return _ilk.sirala(_coz(adim["kaynak"], ciktilar), adim["boyut"],
+                                   list(adim["olculer"]), az_iyi=_lower)
             if fiil in (govdeler or {}):
                 # ⟳ `FAZ 2` — kalan dört fiil enjekte edilen gövdelerle koşuyor. Adım
                 # çözülmüş olarak verilir; gövde `$n` diye bir şey bilmez.

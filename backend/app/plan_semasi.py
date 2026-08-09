@@ -70,6 +70,10 @@ FIIL_ANLAMI: dict[str, str] = {
     "KIR": "bir sorguya kırılım boyutu EKLER — çıktısı satır değil, yeni bir SORGU",
     "SUZ": "bir sorguyu tek bir kategoriye daraltır — çıktısı yeni bir SORGU",
     "BOYUTSEC": "hangi boyutun farkı en çok AÇIKLADIĞINI sıralar",
+    # ⟳ `FAZ 7b` — KARAR MATRİSİ. ⚠ Bir *karar* matrisi değil bir **karşılaştırma**
+    # tablosudur: ölçütler katalogda VAR OLAN ölçülerdir, ağırlık YOKTUR.
+    "MATRIS": "adayları ölçütlerle yan yana koyar (satır=aday, sütun=ölçüt)",
+    "SIRALA": "adayları çok ölçütle sıralar — ağırlık YOK, hepsi EŞİT",
 }
 
 FIILLER: tuple[str, ...] = tuple(FIIL_ANLAMI)
@@ -94,6 +98,8 @@ ZORUNLU_ALANLAR: dict[str, tuple[str, ...]] = {
     "KIR": ("cube_query", "boyut"),
     "SUZ": ("cube_query", "boyut", "deger"),
     "BOYUTSEC": ("kaynak",),
+    "MATRIS": ("kaynaklar", "boyut"),
+    "SIRALA": ("kaynak", "boyut", "olculer"),
 }
 
 #: 🔴 **HER FİİLİN ÇIKTI TİPİ — beyan edilir, tahmin edilmez.**
@@ -116,6 +122,8 @@ CIKTI_TIPI: dict[str, str] = {
     "KIR": "sorgu",
     "SUZ": "sorgu",
     "BOYUTSEC": "bulgular",
+    "MATRIS": "satirlar",
+    "SIRALA": "satirlar",
     "TREND": "satirlar",      # dönem kaydırılmış satırlar — hâlâ satır
     "BAGLA": "varlik",
     "HESAPLA": "olcum",
@@ -137,6 +145,8 @@ GIRDI_TIPI: dict[str, dict[str, str | None]] = {
     "KIR": {"cube_query": "sorgu"},     # ⚠ referanssa bir SORGU olmalı; inline da olabilir
     "SUZ": {"cube_query": "sorgu"},
     "BOYUTSEC": {"kaynak": "bulgular"},
+    "MATRIS": {"kaynaklar": "satirlar"},
+    "SIRALA": {"kaynak": "satirlar"},
 }
 
 #: 🔴 Yalnız **son** adım olabilen fiiller. Şema bunu ifade EDEMEZ (`oneOf` konum bilmez);
@@ -244,6 +254,25 @@ def plan_json_schema(index: dict, *, azami_adim: int = 5) -> dict[str, Any]:
          "properties": {"fiil": {"const": "BOYUTSEC"},
                         "kaynak": _ref("hangi adımın ayrıştırma raporu")},
          "required": ["fiil", *ZORUNLU_ALANLAR["BOYUTSEC"]]},
+        {"type": "object", "additionalProperties": False, "title": "MATRIS",
+         "properties": {"fiil": {"const": "MATRIS"},
+                        "kaynaklar": _ref_listesi("hangi adımların satırları"),
+                        "boyut": {"type": "string", "enum": boyutlar} if boyutlar
+                                 else {"type": "string"}},
+         "required": ["fiil", *ZORUNLU_ALANLAR["MATRIS"]]},
+        # 🔴 `agirliklar` diye bir alan **YOK** ve olmayacak: bir ağırlık bir SAYIDIR ve
+        # modele sayı yazdırmak, `«sayıyı her zaman küp koyar»` ilkesini arka kapıdan
+        # deler. Ağırlıklar **eşittir** ve bu bir varsayım değil bir **beyandır**.
+        {"type": "object", "additionalProperties": False, "title": "SIRALA",
+         "properties": {"fiil": {"const": "SIRALA"},
+                        "kaynak": _ref("sıralanacak satırlar"),
+                        "boyut": {"type": "string", "enum": boyutlar} if boyutlar
+                                 else {"type": "string"},
+                        "olculer": {"type": "array", "minItems": 1,
+                                    "items": ({"type": "string", "enum": olculer}
+                                              if olculer else {"type": "string"}),
+                                    "description": "hangi ölçütlere göre sıralanacak"}},
+         "required": ["fiil", *ZORUNLU_ALANLAR["SIRALA"]]},
         {"type": "object", "additionalProperties": False, "title": "ANLAT",
          "properties": {"fiil": {"const": "ANLAT"},
                         "kaynaklar": _ref_listesi("hangi adımların bulguları")},
