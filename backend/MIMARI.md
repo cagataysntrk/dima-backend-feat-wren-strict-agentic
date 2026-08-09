@@ -202,8 +202,82 @@ her adımın gövdesi **zaten var olan** bir modüldür (aşağıdaki tablo).
 
 ⊙ `KIR`/`SUZ`'un çıktısı **satır değil sorgu**: bir adım sorgu üretir, sonraki adım onu
 **koşar**. Kök-neden inişinin bütün mekanizması bu tip ayrımındadır ve **döngü
-gerektirmez** — derinlik plan uzunluğuyla sınırlıdır (`AZAMI_ADIM = 8`, dört yeteneğin
-en kısa zincirinden **sayılarak**).
+gerektirmez** — derinlik plan uzunluğuyla sınırlıdır.
+
+⟳ **`AZAMI_ADIM`: 8 → 12 *(2026-08-09, `HH` turu)*.** Sayı tahmin değil **ölçüm**: en
+uzun meşru zincir canlıda **11 adım** koştu (üç seviyeli kök-neden inişi), tavana bir
+adım pay bırakıldı. ⚠ Ve tavan bir zamanlar **yalnız JSON şemasındaydı** — doğrulayıcı
+onu **hiç kontrol etmiyordu**; canlı sağlayıcı serbest-JSON yolunda koştuğu için şema
+kısıtı bağlayıcı değil bir **tavsiyeydi**. Bu, aynı sınıfın **üçüncü** vakasıdır
+(`pattern` · `additionalProperties` · `AZAMI_ADIM`). *Bir kısıtı yalnız şemaya yazmak,
+onu şemayı okumayan her yol için kaldırmaktır.* Kapı artık `dogrula()`'da.
+
+#### ⟳ 2.0.1 · ONARIM KATMANI — istem ile doğrulayıcı ARASI *(FAZ `O-15`, 2026-08-09)*
+
+Kullanıcı kararı: *"bu tarz kararsızlıkları kontrol edecek denetleyecek engelleyecek
+bir şeyler geliştir; bunu LLM'e bırakmak riskli, LLM'in de işini kolaylaştır."*
+
+İki seviye vardı ve **aralarında bir boşluk**:
+
+| # | seviye | maliyet | neyi çözer |
+|---|---|---|---|
+| 1 | **İSTEM** — doğrusunu öğret | bir kez | genel eğilim |
+| — | 🔴 *(boşluk)* → **`app/plan_onarim.py`** | **sıfır çağrı** | **mekanik kayma** |
+| 2 | **DOĞRULAYICI** — reddet + bir düzeltme turu | bir LLM çağrısı | gerçek belirsizlik |
+
+⊙ Ölçüldü (canlı `II` turu, 20 senaryo): reddedilen planların **üçte biri** bir
+belirsizlikten değil **tek anlamlı bir alan kaymasından** düşüyordu. `parti` küpünün
+zaman ekseni `tarih`; katalog satırı `…; dimensions[…]; time[tarih]` biçiminde iki
+listeyi **görsel olarak paralel** yazıyor ve model `tarih`i `dimensions`'a koyuyordu.
+Bunun **başka bir okuması yoktur** — o küpte `tarih` diye bir boyut yok.
+
+🔴 **Sessiz onarım yoktur:** her düzeltme bir beyan üretir ve ize (`trace`) düşer.
+Bu, onarımı bir **ölçüm aletine** de çevirir — bir onarım izde sıklaşıyorsa seviye 1
+(istem) yetersiz demektir. *Sessiz bir onarım, düzeltilmesi gereken bir istemi
+süresiz olarak gizler.*
+
+⚠ Sınır dar: onarım ancak (1) değer yazıldığı alanda **geçersizse**, (2) **tam olarak
+bir** geçerli yeri varsa, (3) taşıma sorgunun **anlamını değiştirmiyorsa** yazılır.
+`§101.1` gereği: *yanlış pozitif üreten bir yordam, kapattığı kusurdan pahalıdır.*
+
+#### 🔴🔴 2.0.2 · DÖNEM PLAN YOLUNDA DÜŞÜYORDU — *ölçülen en ağır kusur*
+
+⊙ Canlı (`K1`/`K2`, 2026-08-09): *«toplam fire»* ve *«**2023 yılındaki** toplam fire»*
+**aynı** sayıyı verdi (`1703818,39`). Yani plan yolu dönemi **sessizce yutuyordu** —
+`sessiz_yanlis` sınıfı, ve onu üreten şey kapatılamayan bir bayraktı.
+
+Mekanizma üç doğru parçanın arasındaki bir **sahipsizlikti**: istem modele dönemi
+`period_expr`'e yazdırıyor (doğru) · beyaz liste alanı **koruyor** (doğru) · ama
+`cube_sql` onu **tanımıyor** — o bir *niyet taşıyıcısıdır*, bir sorgu alanı değil.
+`ask()`in garson dalı çözüyordu; **plan dalı için hiç kimse çözmüyordu.**
+
+⚠ İkinci bir çözücü **yazılmadı**, aynısı çağrıldı (`_resolve_period`) ve `§X1` gereği
+küpün **kendi** zaman boyutu geçildi. *Bir alanı yeni bir yola taşımak, onu çözecek
+kişiyi taşımaz — ve çözülmeyen bir niyet taşıyıcısı, sessizce silinmiş bir kullanıcı
+isteğidir.* Kapı: `tests/test_plan_onarim.py::test_DONEM_PLAN_YOLUNDA_DUSMEZ`.
+
+#### ⟳ 2.0.3 · YETENEK SINIRI ARTIK **DEVREDİYOR** (`iki_cube`)
+
+⊙ Canlı (`II3`/`II4`): *«üretim, fire ve enerji için pano taslağı»* ve *«ciro, gecikme,
+iade ile sırala»* — ikisi de **erken** yetenek kapısında `iki_cube` diye reddedildi.
+Oysa kapının **kendi metni** şunu söylüyor: *«İkisini ortak bir eksende **yan yana**
+koyabilirim — ama aralarındaki **ilişkiyi** hesaplayamıyorum.»* Ve `PANO`/`RAPOR`/
+`MATRIS` tam olarak **yan yanadır**: her bölüm kendi küpünden gelir, hiçbir ilişki
+iddia edilmez. Kapı, metninde yapabildiğini söylediği şeyi reddediyordu.
+
+Bu, `yetenek.py`'nin `iki_cube` dalındaki kendi uyarısının **bir seviye yukarıdaki
+tekrarıdır**: *bir sınır beyanı, sınır değiştiğinde kendiliğinden güncellenmez.*
+
+🔴 **Sınır kaldırılmadı, ERTELENDİ** — ve bu yapısal olarak bedavaydı, çünkü **aynı
+kapı zaten iki kez soruluyordu** (`ask.py:3588` erken · `:4655` Discovery'nin hemen
+önünde) ve orkestratör tam **aralarında** duruyor. Erken kapı `DEVREDILEBILIR` türlerde
+susar; plan koşarsa cevap bölümlü gelir, koşmazsa **birebir aynı** `Sinir` geç kapıda
+konuşur ve Discovery'ye yine inilmez. En kötü durum bugünküyle **bayt bayt aynı**.
+
+⚠ Yalnız `iki_cube` ertelenir. `forecast`·`yargi`·`olumsuzluk` bir **çıktı biçimi**
+eksikliği değil bir **yetenek** eksikliğidir; plan da yapamaz. *Bir sınırı ertelemek
+ancak arkasında onu aşabilecek bir basamak varsa doğrudur; yoksa erteleme, reddi
+geciktirmekten başka bir şey değildir.*
 
 #### Değişmezler — orkestratöre özel
 
@@ -217,6 +291,9 @@ en kısa zincirinden **sayılarak**).
 | **O6** | Referans dili **ifade dili değil**: aritmetik yok, koşul yok, alan erişimi yok | `ADIM_REFERANSI` |
 | **O7** | Ağırlık **modelden gelmez** — `SIRALA`'da ağırlıklar **eşittir** ve bu bir beyandır | `ilkeller.sirala` |
 | **O8** | Gövdenin okuduğu her alan şemada **olmalı** (`ZORUNLU_ALANLAR` ∪ `ISTEGE_BAGLI_ALANLAR`) | kapı |
+| **O9** | Onarım **sessiz olamaz** — her mekanik düzeltme ize bir beyan yazar | `plan_onarim.onar()` |
+| **O10** | `period_expr` motora **gitmez**, çözülür — ve çözücü `ask()` ile **aynıdır** | `_resolve_period` |
+| **O11** | Geç gelen bir plan **atılmaz**: kullanım anında yeniden okunur (zaman aşımı görevi iptal etmez) | `plan_tuketici.cevap()` |
 
 #### Kabul ölçütü: A/B değil **DENKLİK**
 

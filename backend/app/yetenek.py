@@ -409,11 +409,41 @@ def onerileri_kur(schema: dict, *, tur: str, en_fazla: int = 3) -> list[dict]:
     return out
 
 
-def kapsam_disi(q: str, schema: dict) -> Sinir | None:
+#: 🔴🔴 `O-15/D` — **GARSONA DEVREDİLEBİLİR SINIRLAR.**
+#:
+#: `kapsam_disi` iki yerden çağrılıyor ve bu **bilinçli** (`ask.py:3582` erken · `:4655`
+#: Discovery'nin hemen önünde). Aradaki mesafede artık **orkestratör** duruyor.
+#:
+#: ⊙ Ölçüldü (canlı `II3`/`II4`): *«üretim, fire ve enerji için bir pano taslağı»* ve
+#: *«ciro, gecikme ve iade oranına birlikte bakarak sırala»* — ikisi de erken kapıda
+#: `iki_cube` diye **reddedildi**. Oysa kapının kendi metni şunu söylüyor:
+#:
+#:     *"İkisini **ortak bir eksende yan yana** koyabilirim — ama aralarındaki
+#:      **ilişkiyi** (etki, korelasyon) hesaplayamıyorum."*
+#:
+#: Ve `PANO`/`RAPOR`/`MATRIS` tam olarak **yan yana**dır: her bölüm kendi küpünden gelir,
+#: hiçbir ilişki iddia edilmez. Yani kapı, metninde **yapabildiğini söylediği** şeyi
+#: reddediyordu. Bu, bu dosyanın `iki_cube` dalındaki uyarısının **bir seviye yukarıdaki
+#: tekrarıdır**: *bir sınır beyanı, sınır değiştiğinde kendiliğinden güncellenmez.*
+#:
+#: ⚠ **Sınır KALDIRILMADI, ERTELENDİ.** Erken kapı bu türde susar; plan koşarsa cevap
+#: bölümlü gelir, koşmazsa **birebir aynı** `Sinir` geç kapıda konuşur ve Discovery'ye
+#: yine inilmez. Yani en kötü durum bugünküyle **bayt bayt aynı**, kazanç tek yönlü.
+#: ⚠ Ve yalnız `iki_cube`: `forecast`·`yargi`·`olumsuzluk` ertelenmez — onlar bir
+#: **çıktı biçimi** eksikliği değil, bir **yetenek** eksikliğidir ve plan da yapamaz.
+#: *Bir sınırı ertelemek ancak arkasında onu aşabilecek bir basamak varsa doğrudur;
+#: yoksa erteleme, reddi geciktirmekten başka bir şey değildir.*
+DEVREDILEBILIR = frozenset({"iki_cube"})
+
+
+def kapsam_disi(q: str, schema: dict, *, erken: bool = False) -> Sinir | None:
     """İlan edilmiş bir yetenek sınırına çarpıldı mı? Yoksa `None`.
 
     🔴 **Yalnız deterministik yol tükendiğinde çağrılır** (Discovery'nin hemen önünde).
     Bu, modülün en önemli güvencesidir ve kodda değil **çağrı yerinde** yaşar.
+
+    ⚠ `erken=True` → `DEVREDILEBILIR` türler `None` döner (orkestratöre yol verilir).
+    Varsayılan `False`; yani **geç** kapı ve tüm öteki çağıranlar bayt bayt aynı kalır.
     """
     if not q:
         return None
@@ -458,7 +488,10 @@ def kapsam_disi(q: str, schema: dict) -> Sinir | None:
             oneriler=onerileri_kur(schema, tur="yargi"))
 
     ikili = _iki_cube_olcusu(q, schema)
-    if ikili:
+    # ⚠ Koşul `DEVREDILEBILIR`'i **okur**, tür adını burada tekrar etmez: bir kümeyi
+    # tanımlayıp yanında sabit bir dize karşılaştırmak, kümeyi bir süse çevirir ve
+    # ikinci bir tür eklendiğinde iki yerden yalnız biri güncellenir.
+    if ikili and not (erken and "iki_cube" in DEVREDILEBILIR):
         # 🔴 `G6.8` (`Ö12`'nin chip yarısı) — **BU BEYAN BAYATLADI ve düzeltildi.**
         #
         # Eski metin *"onları tek bir tabloda birleştirmiyorum"* diyordu. `G6.5`'ten sonra

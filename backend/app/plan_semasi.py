@@ -491,6 +491,24 @@ def plan_sistem_metni(catalog: str) -> str:
         "- 🔴 `timeDimensions` DÖNEM FİLTRESİ DEĞİLDİR, **kırılımdır**: yalnız *«aylara "
         "göre»* / *«çeyreklere göre»* gibi bir zaman EKSENİ istendiğinde konur. Dönem "
         "`period_expr`'e gider, `timeDimensions`'a değil.\n"
+        # 🔴🔴 `O-15/Z` — **KATALOGDAKİ `time[…]` HANGİ ALANA GİDER: HİÇ YAZMIYORDU.**
+        #
+        # Katalog satırı `- parti: measures[…]; dimensions[a, b]; time[tarih]` biçiminde.
+        # İki liste **görsel olarak paralel** ve istem, `time[…]`'daki adın `dimensions`
+        # alanına yazılMAyacağını hiçbir yerde söylemiyordu. Model doğal olanı yaptı.
+        #
+        # ⊙ Ölçüldü (canlı `II` turu): 20 senaryonun **üçü** yalnız bunun yüzünden düştü
+        # (`II19`·`II20`), biri de sessizce dönemsiz kaldı (`II5`). Red mesajı bile
+        # doğruydu — *«`parti`'de şu boyut(lar) yok: tarih»* — ama modele hiçbir şey
+        # **öğretmiyordu**, çünkü model o adı katalogda **görmüştü**.
+        #
+        # *Bir listeyi göstermek, onun nereye yazılacağını söylemez; ve iki listeyi yan
+        # yana göstermek, ikisini aynı alanın adayları gibi okutur.*
+        "- 🔴🔴 KATALOGDAKİ İKİ LİSTE İKİ AYRI ALANA GİDER: `dimensions[…]`'daki adlar "
+        "`dimensions` alanına, `time[…]`'daki adlar **YALNIZ** `timeDimensions` alanına "
+        "yazılır. Bir zaman adını (`time[…]`) `dimensions`'a yazmak plan reddine yol "
+        "açar. Biçim: `\"timeDimensions\":[{\"dimension\":\"<time[…]'daki ad>\","
+        "\"granularity\":\"month\"}]` — `granularity` day|week|month|quarter|year.\n"
         "- 🔴 KIRILIM (`dimensions`) ve zaman ekseni de tek bir `SORGU` adımının "
         "içindedir. *«aylara göre üretim»* TEK adımdır.\n"
         # ⟳ Ölçüldü (canlı `FF4`): model `BAGLA` ile en kötüyü **buldu** ama sonra

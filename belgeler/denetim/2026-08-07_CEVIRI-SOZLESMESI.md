@@ -7838,3 +7838,107 @@ bilebilirdi.
 Model `{"fiil":"SORGU","measures":[…]}` yazıyordu — alanları `cube_query`'nin **içine**
 değil adıma koyuyordu. İsteme **olumsuz örnek** eklendi (`YANLIŞ:` / `DOĞRU :`).
 *Bir kalıbı öğretmenin en hızlı yolu, yanlışını da göstermektir.*
+
+---
+
+## `II` TURU — 20 SENARYO, ORKESTRATÖRÜN **HER PARÇASI** TEK TEK *(2026-08-09)*
+
+Kullanıcı isteği: *"ilk 20'li tur komple adım adım her parçasını kontrol etsin,
+göstersin sorunları bize."* 15 fiilin her biri için en az bir senaryo koşuldu; her
+biri `curl` ile **tek tek**, konteyner logu anbean okunarak.
+
+### Ölçüm — 20 senaryo
+
+| # | senaryo | sonuç |
+|---|---|---|
+| `II1` | *«bu ay toplam üretim»* | ✅ **1 adım** kaldı (basit soru bölünmedi) |
+| `II2` | *«üretim, fire ve sevkiyat özetini raporla»* | ✅ 3 adım · `SORGU×2→RAPOR` |
+| `II3` | *«üretim, fire ve enerji için pano taslağı»* | 🔴 **plan hiç koşmadı** — `iki_cube` |
+| `II4` | *«ciro, gecikme, iade ile sırala»* | 🔴 **plan hiç koşmadı** — `iki_cube` |
+| `II5` | *«aylık ciroyu grafiğe çevir»* | ⚠ 2 adım · `GORSEL` — ama **aylık kırılım düştü** |
+| `II6` | *«son 6 ayda fire trendi»* | ✅ 2 adım · `TREND→ANLAT` · 30 satır |
+| `II7` | *«fire artışının sebebini ayrıştır»* | ✅ `AYRISTIR` |
+| `II8` | *«bu ay ile geçen ayı kıyasla»* | 🔴 motor tip hatası — `timeDimensions:"This month"` |
+| `II9` | *«ciroyu müşteri kırılımında»* | ✅ 1 adım · 8 satır |
+| `II10` | *«en çok ciro yapanı bul, sonra onun aylık cirosu»* | 🔴 **Discovery** (iki `Binder Error`) |
+| `II11` | *«fire hangi boyutta yoğunlaşıyor»* | ✅ 4 adım · `SORGU→AYRISTIR→BOYUTSEC→ANLAT` |
+| `II12` | *«üretimi ve fireyi bir arada yorumla»* | ✅ 2 adım |
+| `II13` | *«fire oranının değişimini hesapla»* | ⚠ 3 × `null`, **hiçbir not** |
+| `II14` | üç seviye kök neden | 🔴 7 adım kuruldu — `sebep` ∉ `parti` |
+| `II15` | *«teşekkürler»* | ✅ `meta` · 0 LLM · 0 SQL |
+| `II16` | İngilizce, iki istekli | ✅ 3 adım — **garson devri çalıştı** |
+| `II17` | *«bu ayki firemiz ne kdar»* | ⚠ cevap verdi ama **dönemsiz** |
+| `II18` | *«çeyrek ciro tahmini»* | ✅ dürüst ret (forecast v1 dışı) |
+| `II19` | dört seviye kök neden | 🔴 7 adım kuruldu — `tarih` ∉ `parti.dimensions` |
+| `II20` | *«fire panosu: aylık, sebebe göre, en kötü partiler»* | 🔴 aynı — `tarih` |
+
+**Kapsam: 15/15 fiil yoklandı.** Ateşlenenler: `SORGU`·`RAPOR`·`PANO`·`MATRIS`·`SIRALA`·
+`GORSEL`·`TREND`·`AYRISTIR`·`KIYASLA`·`KIR`·`SUZ`·`BOYUTSEC`·`ANLAT`·`BAGLA`·`HESAPLA`.
+
+### 🔴🔴 EN AĞIR BULGU — turun kendisi tarafından ÜRETİLMEDİ, AÇIĞA ÇIKARILDI
+
+`II11` (dönemsiz *«fire»*) ve `II17` (*«**bu ayki** firemiz»*) **birebir aynı** sayıyı
+verdi: `1703818,3999999897`. Doğrulama sondajı kesinleştirdi:
+
+```
+K1  «toplam fire ne kadar»            → 1703818,3999999897
+K2  «2023 yılındaki toplam fire»      → 1703818,3999999897     🔴 AYNI
+```
+
+**Plan yolu dönemi sessizce yutuyordu** — yani `sessiz_yanlis` sınıfı bir kusur, ve onu
+üreten şey **bayrağı kapatılamayan** bir yol. Kaynağı üç *doğru* parçanın arasındaki bir
+**sahipsizlikti**: istem dönemi `period_expr`'e yazdırıyor ✅ · beyaz liste alanı
+koruyor ✅ · `cube_sql` onu **tanımıyor** (o bir niyet taşıyıcısı) ✅ — ve `ask()`in
+garson dalı çözerken **plan dalı için hiç kimse çözmüyordu**.
+
+> *Bir alanı yeni bir yola taşımak, onu çözecek kişiyi taşımaz — ve çözülmeyen bir niyet
+> taşıyıcısı, sessizce silinmiş bir kullanıcı isteğidir.*
+
+### Altı kök, altı düzeltme
+
+| kök | kaç senaryo | düzeltme |
+|---|---|---|
+| **G** dönem plan yolunda düşüyor | `II5`·`II17`·`K1`/`K2` | `_resolve_period` **çağrıldı** (ikinci çözücü yazılmadı) |
+| **A** `time[…]` adı `dimensions`'a yazılıyor | `II19`·`II20` | istem bağı kurdu **+** `plan_onarim` taşıyor |
+| **B** `timeDimensions` düz metin | `II8` | `plan_onarim` → `period_expr` |
+| **C** olmayan ad uyduruluyor | `II14`·`D5` | red mesajı artık **var olanları da** söylüyor |
+| **D** `iki_cube` orkestratörden önce reddediyor | `II3`·`II4` | sınır **ertelendi** (geç kapı aynen konuşur) |
+| **E** geç gelen plan yarışta kayboluyor | `II10` | kullanım anında yeniden okunur |
+
+### YENİ KATMAN — istem ile doğrulayıcı **arası** (`app/plan_onarim.py`)
+
+Kullanıcı kararı: *"bu tarz kararsızlıkları kontrol edecek denetleyecek engelleyecek
+bir şeyler geliştir; LLM'e bırakmak riskli, LLM'in de işini kolaylaştır."*
+
+Reddedilen planların **üçte biri** bir belirsizlikten değil **tek anlamlı bir alan
+kaymasından** düşüyordu. `dimensions:["tarih"]` yazan bir modelin başka bir kastı
+olamaz: o küpte `tarih` diye bir boyut **yok**. 🔴 Ve hiçbir onarım sessiz değil —
+her biri ize bir beyan yazar, böylece istemin yetersizliği **ölçülebilir** kalır.
+
+### Doğrulama turu — düzeltmelerden sonra
+
+| # | senaryo | önce | **sonra** |
+|---|---|---|---|
+| `D2'` | *«2023 yılındaki toplam fire»* | 🔴 `1703818` (**yanlış**) | ✅ `null` — o dönemde veri yok |
+| `D3` | `II20` tekrarı | 🔴 plan düştü | 🟢 **4 adım** · `SORGU×3→PANO` |
+| `D4` | `II4` tekrarı (**karar matrisi**) | 🔴 reddedildi | 🟢🟢 **6 adım** · üç ayrı küp → `MATRIS→SIRALA→ANLAT` · `_skor 0,8333` |
+| `D5` | `II3` tekrarı | 🔴 reddedildi | ✅ plan koştu, `enerji` küpü yok → **dürüst ret** |
+
+⊙ `D4` bu fazın **temeltaşı ilan edilen dört yeteneğinden birini** (agentic karar
+matrisi) ilk kez uçtan uca gösterdi ve o soru düne kadar **hiç denenmeden** reddediliyordu.
+
+### İki kusur daha — ve ikisini de KENDİ DÜZELTMEM açığa çıkardı
+
+1. `↓` (*«az olan iyidir»*) işareti **makbuza sızıyordu** (`toplam_fire_kg↓`). `§CC-D`
+   bunu `parse_cube_query`'de kapatmıştı; makbuz aynı ayıklamayı yapmıyordu.
+2. `D2'` artık **1 satır** ve tümü `null` dönüyor — ve `row_count == 1` olduğu için
+   boşluk yüklemi susuyordu. Kullanıcı boş bir hücreyi **arıza** sanar; oysa cevap
+   doğru. Yüklem *«tümü null»*'ü de sayacak şekilde genişletildi.
+
+> *Bir yolu açmak, o yolun üstündeki çukuru da devralmaktır.*
+
+**Açık borç (bu turda kapanmadı):** `II13`'ün `null`'ları **plan dışı** yolda (Intent
+`mom`) hâlâ notsuz dönüyor — yukarıdaki dürüstlük yalnız plan yolunda. Ayrı bir kök,
+ayrı bir tur.
+
+**Kapılar:** `tests/test_plan_onarim.py` — 12 kapı, hepsi **canlıda ölçülmüş** vakalar.

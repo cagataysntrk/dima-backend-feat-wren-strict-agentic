@@ -154,17 +154,25 @@ def _govdeler(service: Any, schema: dict, cube_meta: dict | None) -> dict[str, A
 
 def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = None,
              schema: dict | None = None, limit: int | None = None,
-             azami_sorgu: int | None = None) -> dict:
+             azami_sorgu: int | None = None, soru: str = "") -> dict:
     """Planı motora bağlayıp koşar.
 
     Döner: `plan_kosucu.kos`'un sözleşmesi **+ `sonuclar`** — her `SORGU` adımının TAM
     motor çıktısı (`columns`/`rows`). ⚠ Çalıştırıcı yalnız satırlarla ilgilenir (ilkeller
     satır bekler); sunum katmanı kolonları da ister. İkisini tek dönüşe sıkıştırmak,
     çalıştırıcıya sunumu öğretmek olurdu.
+
+    ⚠ `soru` **dönem çözümü için** gerekir ve varsayılanı boştur: `period_expr` yoksa
+    hiç okunmaz. Zorunlu yapmak, tek çağıranı olan bir alanı üç teste taşımak olurdu.
     """
+    from app import plan_onarim
     from app.cube_router import parse_cube_query
 
     sonuclar: list[dict] = []
+    #: 🔴 Onarım **beyanları** — sessiz düzeltme yoktur (gerekçe `plan_onarim`'in
+    #: başlığında). Buradan ize (`trace`) çıkar; kullanıcı kendisinin yazmadığı bir
+    #: varsayımla üretilmiş bir sayıyı, varsayımı görmeden okumaz.
+    onarimlar: list[str] = []
     #: 🔴 **ÇÖZÜLMÜŞ** sorgular. Adımdaki `cube_query` bir **referans** olabilir (`"$4"` —
     #: `KIR`/`SUZ`'ün ürettiği sorguyu koşan adım tam olarak öyle yazılır) ve o referansı
     #: cevaba koymak, kartı `/cube` ile yeniden koşulamaz yapardı. Üstelik `AskResponse.
@@ -196,15 +204,98 @@ def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = 
         if _eksik_o:
             _parca.append(f"`{_c}`'de şu ölçü(ler) yok: {', '.join(_eksik_o)}")
         if _eksik_b:
-            _parca.append(f"`{_c}`'de şu boyut(lar) yok: {', '.join(_eksik_b)}")
+            # 🔴 `O-15/N` — **VAR OLANI DA SÖYLE.** Ölçüldü (canlı `II14`): mesaj
+            # *«`parti`'de şu boyut(lar) yok: sebep»* diyordu ve düzeltme turu **aynı
+            # bilgiyle** koşuyordu — model neyin **olduğunu** bilmiyordu, yalnız
+            # neyin olmadığını. İkinci deneme de düştü.
+            #
+            # ⚠ Liste kırpılır (12): bir küpün 17 boyutunu red mesajına dökmek, mesajı
+            # kataloğun kopyasına çevirir ve asıl teşhisi gömer.
+            # *Bir «yok» cümlesi, «şunlar var» cümlesi olmadan bir yön göstermez.*
+            _oneri = sorted(_bilinen_b)
+            _kuyruk = f" (var olanlar: {', '.join(_oneri[:12])}"
+            _kuyruk += f" … +{len(_oneri) - 12})" if len(_oneri) > 12 else ")"
+            _zaman = [str(z) for z in (_spec.get("time_dimensions") or [])]
+            if _zaman and any(d in _zaman for d in _eksik_b):
+                _kuyruk += (f" — ⚠ `{', '.join(z for z in _zaman if z in _eksik_b)}` bir "
+                            f"ZAMAN EKSENİdir: `dimensions`'a değil `timeDimensions`'a yazılır")
+            _parca.append(f"`{_c}`'de şu boyut(lar) yok: {', '.join(_eksik_b)}"
+                          + (_kuyruk if _oneri else ""))
         if not (cq.get("measures") or []):
             _parca.append(f"`{_c}` için hiç ölçü yazılmamış")
+        # 🔴🔴 `O-15/T` — **TEŞHİS BEYAZ LİSTENİN TÜM ÇIKIŞLARINI SAYMALI.**
+        #
+        # ⊙ Ölçüldü (canlı `D2`, *«2023 yılındaki toplam fire»*): mesaj *«`parti` sorgusu
+        # beyaz listeden geçmedi»* çıktı — yani bu fonksiyonun **kendi varlık sebebine**
+        # düşüldü. Cube · ölçü · boyut üçü de temizdi; kusur sayılmayan çıkışlardaydı.
+        #
+        # `parse_cube_query`'nin **yedi** reddi var; burada üçü sayılıyordu. Bir teşhis
+        # aracının kapsamı, tanıdığı şeyin kapsamından dar olamaz — dar olduğunda
+        # sessizce *"bilmiyorum"* der ve hem kullanıcı hem **düzeltme turu** aç kalır.
+        #
+        # *Bir teşhisin kör noktası, teşhis edilen kusurun sığındığı yerdir.*
+        _zaman = set(str(z) for z in (_spec.get("time_dimensions") or []))
+        _bozuk_td = [td for td in (cq.get("timeDimensions") or [])
+                     if not isinstance(td, dict) or td.get("dimension") not in _zaman]
+        if _bozuk_td:
+            _parca.append(
+                f"`{_c}`'nin zaman ekseni {sorted(_zaman) or '(yok)'} — şu yazılmış: "
+                + ", ".join(f"`{td.get('dimension') if isinstance(td, dict) else td}`"
+                            for td in _bozuk_td))
+        _izinli_f = _bilinen_b | _zaman
+        _bozuk_f = [f for f in (cq.get("filters") or [])
+                    if not isinstance(f, dict) or f.get("dimension") not in _izinli_f]
+        if _bozuk_f:
+            _parca.append(f"`{_c}`'de süzülemeyecek alan(lar): "
+                          + ", ".join(f"`{f.get('dimension') if isinstance(f, dict) else f}`"
+                                      for f in _bozuk_f))
+        try:
+            from app import cube_operatorleri as _ops
+            _bozuk_op = [str(f.get("operator")) for f in (cq.get("filters") or [])
+                         if isinstance(f, dict) and not _ops.gecerli(f.get("operator"))]
+        except Exception:
+            _bozuk_op = []
+        if _bozuk_op:
+            _parca.append("tanınmayan süzgeç operatörü: " + ", ".join(f"`{o}`" for o in _bozuk_op))
+        if not _parca:
+            # ⚠ Son çare: teşhis edemediysek **sorgunun kendisini** logla. Bir kör nokta
+            # ancak görülebiliyorsa kapatılır; *"geçmedi"* diye loglamak onu saklamaktır.
+            _log.info("plan: `%s` sorgusu beyaz listeden geçmedi — TEŞHİS EDİLEMEDİ: %s",
+                      _c, json.dumps(cq, ensure_ascii=False)[:500])
         return " · ".join(_parca) or f"`{_c}` sorgusu beyaz listeden geçmedi"
 
     def _sorgu_kos(cq: dict) -> list[dict]:
+        # 🔴 `O-15/R` — ONARIM DOĞRULAMADAN ÖNCE. Tek anlamlı bir alan kayması bir
+        # belirsizlik değildir; onu beyaz listeye çarptırmak, bilinen bir cevabı bir
+        # düzeltme turuyla ikinci kez satın almaktır. Gerekçe `app/plan_onarim.py`'de.
+        _spec = (index.get((cq or {}).get("cube")) or {}) if isinstance(cq, dict) else {}
+        cq, _beyan = plan_onarim.onar(cq, _spec)
+        onarimlar.extend(_beyan)
         temiz = parse_cube_query(json.dumps(cq, ensure_ascii=False), index)
         if temiz is None:
             raise plan_kosucu.PlanHatasi(_neden_dustu(cq))
+        # 🔴🔴 `O-15/D` — **DÖNEM ARTIK DÜŞMÜYOR.** Ölçüldü (canlı `K1`/`K2`):
+        # *«toplam fire»* ve *«**2023 yılındaki** toplam fire»* **aynı** sayıyı
+        # veriyordu (`1703818.39…`) — yani plan yolu dönemi sessizce yutuyordu.
+        #
+        # Mekanizma: istem modele dönemi `period_expr`'e yazdırıyor (doğru), beyaz liste
+        # alanı **koruyor** (doğru), ama `cube_sql` onu **tanımıyor** — o bir niyet
+        # taşıyıcısı, bir sorgu alanı değil. `ask()`in garson dalı bunu çözüyordu; bu
+        # dal için **hiç kimse** çözmüyordu.
+        #
+        # ⚠ İkinci bir çözücü YAZILMADI, aynısı ÇAĞRILDI: aynı ifadenin iki farklı
+        # tarihe çözülmesi, bir kusurdan beter bir tutarsızlıktır. Ve `§X1` gereği
+        # küpün **kendi** zaman boyutu geçilir — sabit `"tarih"` `enerji_makine` gibi
+        # küplerde var olmayan bir kolona filtre yazardı.
+        #
+        # *Bir alanı taşımak, onu çözecek kişiyi de taşımaz — ve çözülmeyen bir niyet
+        # taşıyıcısı, sessizce silinmiş bir kullanıcı isteğidir.*
+        if temiz.get("period_expr"):
+            from app.cube_router import _norm
+            from app.routers.ask import _resolve_period
+            _td = (_spec.get("time_dimensions") or ["tarih"])[0]
+            temiz, _ = _resolve_period(None, temiz, temiz.pop("period_expr"),
+                                       _norm(soru or ""), _td)
         sql = service.cube_sql(temiz)
         service.dry_plan(sql)
         res = service.query(sql, limit=limit)
@@ -222,6 +313,7 @@ def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = 
                           **({"azami_sorgu": azami_sorgu} if azami_sorgu else {}))
     out["sonuclar"] = sonuclar
     out["sorgular"] = sorgular
+    out["onarimlar"] = onarimlar
     return out
 
 
@@ -275,6 +367,26 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     # okunuyor çünkü bu kancaya yukarıdaki HER yoldan gelinir ve çağıranın yereli
     # garantili değil (`EE19`'un `UnboundLocalError` dersi).
     plan = _hazir or plan_garson.plan_uret(llm, soru, catalog, index)
+    # 🔴 `O-15/Y` — **GEÇ GELEN PLAN ARTIK KAYBOLMUYOR.** Ölçüldü (canlı `II10`,
+    # loglarla): garson `19:42:31`'de geçerli bir **4 adımlık** plan üretip sakladı
+    # (`SORGU·BAGLA·SUZ·ANLAT`) — ama bu fonksiyon hazır planı `19:42:23`'te, yani
+    # **sekiz saniye önce** yoklamıştı. Kendi üretimi düştü, saklanan plan hiç
+    # okunmadı, ve soru **Discovery'ye** indi (iki `Binder Error` ile).
+    #
+    # Sebep bir yarıştır: oylama görevlerinin bütçesi (20 sn) aştı (`Intent oyu
+    # BÜTÇEYİ AŞTI` × 3), `ask()` yoluna devam etti, ama görevler **koşmayı sürdürdü**
+    # ve sonuçlarını geç yazdı. Bir zaman aşımı görevi **iptal etmez**.
+    #
+    # ⚠ Çözüm bütçeyi büyütmek değil (gecikme bir kullanıcı maliyetidir), **kullanım
+    # anında yeniden okumaktır**: geç gelmiş bir plan hâlâ bir plandır ve onu atmak,
+    # bedeli ödenmiş bir işi çöpe atmaktır.
+    # *Bir değeri başlangıçta okuyup sonda kullanmak, aradaki her şeyi görmezden
+    # gelmeye söz vermektir.*
+    if not plan:
+        plan = getattr(getattr(request, "state", None), "plan_taslagi", None)
+        if plan:
+            _log.info("orkestratör: plan GEÇ geldi (yarış) → kurtarıldı, %d adım",
+                      len(plan.get("adimlar") or []))
     if not plan:
         _log.info("orkestratör: kullanılabilir plan yok → merdiven bugünkü gibi")
         return None
@@ -284,7 +396,8 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
         for c in (schema.get("cubes") or []):
             _lower |= set(c.get("lower_is_better") or [])
         out = calistir(plan, service=service, index=index, schema=schema,
-                       cube_meta={"lower_is_better": sorted(_lower)}, limit=limit)
+                       cube_meta={"lower_is_better": sorted(_lower)}, limit=limit,
+                       soru=soru)
     except plan_kosucu.PlanHatasi as e:
         _log.info("plan KOŞAMADI (%d adım) → adım adım dürüst ret: %s", _n, e)
         return {"source": None, "note": neden_olmadi(plan, e),
@@ -336,12 +449,41 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     # `source=cube+llm` rozetiyle **0 satır** dönüyordu. *Boş bir cevabı açıklamadan
     # vermek, kullanıcının onu bir hata sanmasına izin vermektir.*
     _bos = bool(_bolumler) and all(b["result"]["row_count"] == 0 for b in _bolumler)
+    # 🔴🔴 **BOŞ OLMAYAN AMA TÜMÜ `null` BİR SATIR DA BİR SESSİZLİKTİR.**
+    #
+    # ⊙ Ölçüldü (canlı `D2'`): *«2023 yılındaki toplam fire»* → **1 satır**,
+    # `{"toplam_fire_kg": null}`, hiçbir not. `row_count == 1` olduğu için yukarıdaki
+    # boşluk yüklemi susuyordu; kullanıcı boş bir hücre görüyor ve onu bir **arıza**
+    # sanıyor — oysa cevap doğru: o dönemde veri yok (demo verisi 2024'te başlıyor).
+    #
+    # ⚠ Ve bu kusuru **kendi düzeltmem görünür kıldı**: dönem çözülmeden önce sorgu
+    # tüm zamanların toplamını veriyordu (sessiz **yanlış**); dönem çözülünce doğru
+    # ama **açıklamasız** bir boşluğa dönüştü. *Bir yolu açmak, o yolun üstündeki
+    # çukuru da devralmaktır.*
+    #
+    # ⚠ Yüklem dar: **her** satırın **her** ölçü değeri `null` olmalı. Tek bir dolu
+    # hücre varsa cevap doludur ve not yazılmaz (`§101.1` — yanlış pozitif üreten bir
+    # uyarı, sustuğu durumdan pahalıdır).
+    def _hepsi_bos(r: dict) -> bool:
+        _rows = r.get("rows") or []
+        return bool(_rows) and all(v is None for row in _rows for v in row.values())
+
+    _null = (not _bos) and bool(_bolumler) and all(
+        b["result"]["row_count"] == 0 or _hepsi_bos(b["result"]) for b in _bolumler)
     _uyari = ("\n\n⚠ Plan doğru kuruldu ve koştu ama **hiçbir adım satır döndürmedi** — "
-              "dönem ya da süzgeç veriyle örtüşmüyor olabilir." if _bos else "")
+              "dönem ya da süzgeç veriyle örtüşmüyor olabilir." if _bos else
+              "\n\n⚠ Plan doğru kuruldu ve koştu, satır da döndü — ama **tüm değerler "
+              "boş**. Bu bir arıza değil bir **bulgudur**: istenen dönem ya da süzgeç "
+              "için kayıt yok. Daha geniş bir dönem denemek sonucu değiştirebilir."
+              if _null else "")
     return {
         "source": "cube+llm",
         "note": makbuz(plan) + "\n\n" + _bulgu_metni(plan, out) + _uyari,
-        "iz": [f"orkestratör: {_n} adımlık plan koştu ({out['sorgu_sayisi']} sorgu)"],
+        # 🔴 Onarım beyanları izin **başına değil sonuna** eklenir: birinci satır
+        # *"kaç adım koştu"* sorusunun cevabıdır ve okuyucunun ilk aradığı odur.
+        # Beyan yoksa liste bayt bayt bugünküdür (`KURAL B` disiplini).
+        "iz": ([f"orkestratör: {_n} adımlık plan koştu ({out['sorgu_sayisi']} sorgu)"]
+               + [f"onarım: {b}" for b in (out.get("onarimlar") or [])]),
         "result": _son,
         "cube_query": (_bolumler[-1]["cube_query"] if _bolumler else None),
         # ⊙ Her `SORGU` adımının TAM sonucu + onu üreten sorgu. `FAZ 6` (frontend adım
@@ -410,7 +552,15 @@ def _adim_metni(adim: dict) -> str:
         if isinstance(cq, str):
             return f"**{fiil}** — `{cq}` adımının ürettiği sorguyu koşar"
         cq = cq or {}
-        _o = ", ".join(cq.get("measures") or []) or "?"
+        # 🔴 `§CC-D` MAKBUZ DÜZEYİNDE TEKRARLANDI. Ölçüldü (canlı `D2'`): makbuzda
+        # **`toplam_fire_kg↓`** yazıyordu — katalogun *«az olan iyidir»* işareti,
+        # kullanıcının okuduğu satıra sızmış. `parse_cube_query` onu **kimlikten**
+        # ayıklıyor (orada ölçülmüş bir kusurdu); makbuz aynı ayıklamayı yapmıyordu.
+        # *Bir süsü bir yerde temizlemek, onu üreten kaynağı temizlemez — ve o kaynak
+        # her yeni okuyucuya aynı süsü yeniden verir.*
+        from app.katalog_metni import _AZ_IYI as _AZ
+        _o = ", ".join(str(m).rstrip(_AZ).strip()
+                       for m in (cq.get("measures") or [])) or "?"
         _b = ", ".join(cq.get("dimensions") or [])
         return f"**{fiil}** — `{_o}`" + (f" · `{_b}` kırılımında" if _b else "")
     # ⚠ Değer bir sözlük (satır içi `cube_query`) olabilir; ham `dict` basmak makbuzu

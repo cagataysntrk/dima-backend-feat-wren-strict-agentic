@@ -774,15 +774,19 @@ def _drop_invented(cq: dict, q_norm: str, prev: dict | None = None) -> dict:
     return out
 
 
-def _guvenli_kapsam_disi(soru: str, schema: dict):
+def _guvenli_kapsam_disi(soru: str, schema: dict, *, erken: bool = False):
     """`yetenek.kapsam_disi` — patlarsa `None` (cevap yolu **kesilmez**).
 
     🔴 Neden ayrı: iki çağıranı var (dönem netleştirmesi ve `:3690`'daki asıl kapı) ve
     ikisi de *"sınır varsa söyle, yoksa devam et"* sözleşmesini paylaşıyor. Aynı
     `try/except`'i iki kez yazmak, bir gün yalnız birinde yazmak demekti.
+
+    🔴 `erken` — `yetenek.DEVREDILEBILIR` türleri **erken** kapıda sustur (gerekçe
+    orada). ⚠ Bayrak burada, `ask()` gövdesinde **değil**: karar yüzeyini büyütmeden
+    bir sınırın ne zaman konuşacağını seçmek, sınırı tanıyan modülün işidir.
     """
     try:
-        return _yetenek.kapsam_disi(soru, schema)
+        return _yetenek.kapsam_disi(soru, schema, erken=erken)
     except Exception:                                  # noqa: BLE001 — sınır cevabı DÜŞÜRMEZ
         _log.warning("yetenek sınırı sorulamadı (best-effort)", exc_info=True)
         return None
@@ -3580,8 +3584,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # *Bir basamağı daha yetenekli yapmak, ondan önceki sınırı daha erken sormayı
         # gerektirir — yoksa yeni yetenek, ilk olarak yapamadığımız şeyi yapmayı dener.*
         if route_hit is None and (
-                _sinir_llm_oncesi := _guvenli_kapsam_disi(body.question or "",
-                                                          schema)) is not None:
+                _sinir_llm_oncesi := _guvenli_kapsam_disi(body.question or "", schema,
+                                                          erken=True)) is not None:
             return _finish(AskResponse(
                 **_yetenek.yanit_alanlari(_sinir_llm_oncesi, body.question, schema)))
         # 🔴 **`§51` — ŞÜPHE DE GARSONU ÇAĞIRIR.** Bu koşul `route_hit is None` idi: route
