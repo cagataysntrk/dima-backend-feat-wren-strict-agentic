@@ -7072,3 +7072,47 @@ Paralel bir ajan test onarımı yapıyor; çakışmayı önlemek için **kapı k
 demetin doğrulaması **curl** ile yapıldı (üç canlı tur) ve hedefli `pytest` 116 yeşil
 verdi (`test_contribution` · `test_modul_buyume` · `test_ask_golden`). Ajan bitince
 kapı koşulacak ve sonucu buraya yazılacak.
+
+### §107.2 · AA'NIN KALAN KÖKLERİ — dördü daha kapandı
+
+| kök | ne | durum |
+|---|---|---|
+| §AA2 | `AA16` [NL] — makbuz yine *«LLM'siz»* diyordu | ✅ `§V4`'ün **ikinci dalı** kapandı |
+| §AA3 | `AA13` — `parti` *«miktar»*ı adlandırmıyordu → **sahte iki-küp sınırı** | ✅ menüye yazıldı |
+| §AA4 | `AA9` — **işaret zamirinin ÇOĞULU yoktu** | ✅ kapalı sınıf olarak eklendi |
+| §BB2 | sahiplik haritası küp başına tek ölçüye sayıyordu | ✅ tamamlandı |
+
+#### 🔴🔴 §AA4 — ZİNCİRİN EN ÇOK KULLANILAN BAĞI, TANINMAYAN TEK BAĞDI
+
+`AA9` (kullanıcının literal örneğinin ikinci adımı):
+
+    tur 1: «ciromun en büyük 3 kaynağı olan müşterilerimi bul»      → 3 müşteri ✅
+    tur 2: «**BUNLARA** en çok neleri sattığımı üçü için ayrı ayrı» → `sevkiyat × varis_il` 🔴
+
+⊙ `_ISARET_ZAMIRI` sekiz **tekil** biçim taşıyordu (`bu`·`bunu`·`bunun`·`şu`…) ve
+**çoğulunu hiç taşımıyordu**. Oysa çok-adımlı bir zincirde ekrandaki şey neredeyse her
+zaman bir **listedir** — yani en doğal ikinci cümle *"bunlara"*, *"bunların"*, *"onları"*.
+
+⚠ Gövde eşlemesi `_BELGISIZ_ZAMIR`'in (`diğer`/`öteki`) kurduğu desenle **aynı**; çekimleri
+tek tek yazmak kelime listesi olurdu, gövdeyi yazmak **kapalı sınıftır** (`ADR-0008` bunu
+açıkça serbest bırakıyor). Tekil `o` bilerek **dışarıda** — belirsiz.
+
+*Bir zinciri kuran şey soru değil, sorunun bir öncekine tutunma biçimidir.*
+
+#### 🔴 §AA3 — BİR SAHTE SINIR, BİR ADLANDIRMA EKSİĞİNDEN DOĞUYORDU
+
+`AA13`: *«fire oranı ile üretim miktarını aynı grafikte iki eksende»* → *«bu soru iki ayrı
+konunun ölçüsünü istiyor»*. Oysa `parti` **ikisini de** taşıyor; eksik olan tek şey
+`toplam_agirlik_kg`'nin *«miktar»* kelimesini **yazmamasıydı** (`üretim` yazılıydı).
+⚠ `§99.1` çiğnenmiyor: `miktar` zaten `oee`'nin sinonimi, yani kelime **çoktan iki
+sahipli** bir alana giriyor ve eş-adlılık beyanı bu turlarda canlıda **on kez** doğru
+çalıştı. Eklenen şey yeni bir belirsizlik değil, var olanın **eksik yarısı**.
+
+*Bir küpün taşıdığı kavramı adlandırmamak, onu taşımıyormuş gibi göstermektir.*
+
+#### ⏸ AÇIK KALAN İKİ KÖK — gerekçesiyle
+
+| kök | neden şimdi değil |
+|---|---|
+| `AA6`/`AA7` çapraz-küp kompozisyon | `agent_plan_secimi` pilotu **var ve kapalı**; açmanın takası **ölçülmeli** (kapsam kaybı ↔ kazanç), ölçmeden açmak kullanıcı adına karar vermektir |
+| `AA12` *«iki eksenle göster»* | görünüm kararı `viz.py`'nin işi; çift-eksen bir **grafik türü** ve v1'de tanımlı değil — bu bir mutfak işi, sonraki demete |

@@ -93,7 +93,19 @@ measures:
     expression: SUM(kg)
     type: DOUBLE
     unit: "kg"
-    synonyms: [ağırlık, kilo, tonaj, işlenen, üretim, üretilen]  # parti bağlamında üretim = işlenen kg
+    # 🔴 `§AA3` — **«miktar» EKLENDİ ve gerekçesi bir SAHTE SINIRDIR.**
+    # Ölçüldü (`AA13` — *«aylık fire oranı ile ÜRETİM MİKTARINI aynı grafikte iki eksende
+    # göster»*): sistem *«bu soru iki ayrı konunun ölçüsünü istiyor («fire» (parti) +
+    # «miktar» (oee))»* dedi ve **yapabildiği** bir işi yapamıyorum diye ilan etti — oysa
+    # `parti` ikisini de taşıyor (`fire_orani_yuzde` + bu ölçü). Sebep: `üretim` bu küpte
+    # yazılı ama **`miktar` yazılı değildi**; `oee` ikisini birden taşıyordu.
+    # ⚠ `§99.1` (*geniş sinonim küpü açgözlü yapar*) burada **çiğnenmiyor**: `miktar`
+    # zaten `oee.toplam_uretim_kg`'nin sinonimi, yani kelime **çoktan iki sahipli** bir
+    # alana giriyor ve eş-adlılık beyanı (*«… birden fazla yerde tanımlı»*) bu turda
+    # canlıda **on kez** doğru çalıştı. Eklenen şey bir belirsizlik değil, var olan
+    # belirsizliğin **eksik yarısı**.
+    # *Bir küpün taşıdığı kavramı adlandırmamak, onu taşımıyormuş gibi göstermektir.*
+    synonyms: [ağırlık, kilo, tonaj, işlenen, üretim, üretilen, miktar]  # parti bağlamında üretim = işlenen kg
   - name: toplam_metre
     expression: SUM(metre)
     type: DOUBLE

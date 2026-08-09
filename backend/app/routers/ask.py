@@ -3834,6 +3834,25 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
 
         _belirsiz = _olcu_belirsizligi_netlestir(q_norm, schema)
         if _belirsiz is not None:
+            # 🔴 `§AA2` — **`§V4`'ÜN İKİNCİ DALI: makbuz yine «LLM'siz» diyordu.**
+            #
+            # Ölçüldü (`AA16`, Hollandaca — *«Waarom is de OEE van RAM-3 lager dan de
+            # andere machines?»*): iz `çapraz konu → netleştirme (LLM'siz)` yazdı. Oysa
+            # `route_hit is None` olduğu için garson **yukarıda çağrılmıştı** (`:3569`) ve
+            # kullanılabilir bir karar üretemedi.
+            #
+            # ⊙ `§72` bu turu bir **ölçüm aleti** olarak kuruyor: yabancı dil bir ürün
+            # hedefi değil, *garsonun işini yapıp yapmadığının* temiz göstergesi. Ama iz
+            # *"LLM'siz"* dediği sürece gösterge **ters okunuyordu** — sanki garson hiç
+            # çağrılmamış gibi. `§V4`'te aynı kusur öteki dalda düzeltilmişti; bu dal o
+            # göçün dışında kalmıştı (`KAT-1`: aynı kuralın iki dalı, biri düzeltilmiş).
+            #
+            # *Bir ölçüm aletini yanlış etiketlemek, ölçtüğü şeyi görünmez yapar.*
+            if _garson_konustu and _belirsiz.trace:
+                _belirsiz.trace = [
+                    t.replace("(LLM'siz)", "(garson çağrıldı — kullanılabilir bir karar "
+                                           "dönmedi)")
+                    for t in _belirsiz.trace]
             return _finish(_belirsiz)
 
         # 🔴🔴 **`§56` — GARSON KONUŞTUYSA TÜRKÇE KAPSAM REDDİ SUSAR.**

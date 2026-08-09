@@ -246,6 +246,29 @@ _ISARET_ZAMIRI = ("bu", "bunu", "bunun", "buradaki", "su", "sunu", "sunun",
 #: yazmak bir **kapalı sınıf**tır. Aynı biçim `_USTUNLUK_RE`'de de kullanılıyor.
 _BELGISIZ_ZAMIR = re.compile(r"\b(diger|oteki|beriki)\w*\b")
 
+#: 🔴🔴 **`§AA4` — İŞARET ZAMİRİNİN ÇOĞULU YOKTU, ve agentic zincirler orada kopuyordu.**
+#:
+#: Ölçüldü (`AA9` — kullanıcının literal örneğinin ikinci adımı):
+#:
+#:     tur 1: «ciromun en büyük 3 kaynağı olan müşterilerimi bul»  → 3 müşteri ✅
+#:     tur 2: «**BUNLARA** en çok neleri sattığımı üçü için ayrı ayrı karşılaştır»
+#:            → `sevkiyat × varis_il` 🔴 — üç müşteriyle **hiçbir ilgisi yok**
+#:
+#: ⊙ `_ISARET_ZAMIRI` sekiz **tekil** biçim taşıyordu (`bu`·`bunu`·`bunun`·`şu`·`şunu`…)
+#: ve **çoğulunu hiç taşımıyordu**. Oysa çok-adımlı bir zincirde ekrandaki şey neredeyse
+#: her zaman bir **liste**dir — yani kullanıcının en doğal ikinci cümlesi *"bunlara"*,
+#: *"bunların"*, *"onları"*dır. Zincirin en çok kullanılan bağı, tanınmayan tek bağdı.
+#:
+#: ⚠ Gövde eşlemesi `_BELGISIZ_ZAMIR`'in kurduğu desenle **aynı**: `bunlar`·`sunlar`·
+#: `onlar` + çekim (`-a`·`-ı`·`-ın`·`-da`·`-dan`). Çekimleri tek tek yazmak bir **kelime
+#: listesi** olurdu; gövdeyi yazmak bir **kapalı sınıftır** ve `ADR-0008` kapalı
+#: dilbilgisi sınıflarını açıkça serbest bırakıyor.
+#: ⚠ `onlar` bilerek içeride: üçüncü şahıs çoğul zamiri de ekrandaki satırlara işaret
+#: eder (*"onları kıyasla"*) ve tekil `o` — belirsizliği yüzünden — bilerek **dışarıda**.
+#:
+#: *Bir zinciri kuran şey soru değil, sorunun bir öncekine tutunma biçimidir.*
+_COGUL_ISARET_ZAMIR = re.compile(r"\b(bunlar|sunlar|onlar)\w*\b")
+
 # YAPISAL düzenleme sinyalleri — bunlar varsa soru sorguyu DEĞİŞTİRMEK istiyordur ve
 # konuşma sınıfına ALINMAZ. Çakışma gerçektir: "aylık neden düştü?" hem düzenleme hem
 # konuşma gibi görünür; öncelik YAPISALDA olmalıdır çünkü kullanıcı yeni sayılar bekler.
@@ -342,7 +365,9 @@ def sinifla(soru: str, *, baglam_var: bool,
     if yapisal:
         return Niyet(sinif=SINIF_YAPISAL, kural="yapisal-sinyal", kanit=yapisal)
 
-    zamir = _hit(q, _ISARET_ZAMIRI)
+    # `§AA4` — çoğul işaret zamiri de bir çapadır ve tekil olanla **aynı işi** görür.
+    zamir = _hit(q, _ISARET_ZAMIRI) or (
+        _COGUL_ISARET_ZAMIR.search(q) and "bunlar/şunlar/onlar")
     for tur, kaliplar in ((TUR_PAYLAS, _PAYLAS),
                           (TUR_TAKIP, _TAKIP),
                           (TUR_NE_YAPMALI, _NE_YAPMALI),
