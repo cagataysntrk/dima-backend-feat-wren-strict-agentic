@@ -5,7 +5,8 @@
 **+ §0: 🔴 RESTORAN ANALOJİSİ — her parçanın tam karşılığı, ve analojinin NEREDE KIRILDIĞI**
 **+ §16–17: v2 ve v3'te bu haritanın NERESİNE NE eklenecek**
 
-Damga: `2026-08-09` · HEAD `7880563` · **ORKESTRATÖR FAZI** *(`O-0`…`O-9` · garson artık
+Damga: `2026-08-09` · HEAD `b1afd58` · **ORKESTRATÖR YÜRÜRLÜKTE** *(`O-0`…`O-16` · bayrak
+**`beta`** · garson artık
 tek bir fiş yerine bir **PLAN** çevirebiliyor — bayrak `off`, gerekçesi ölçülmüş)*
 ⟳ **Önceki damga:** `2026-08-08` @`761928d` · *"garson ara fazı kapandı"* — **orkestratörden
 ÖNCEYDİ.** Bu turda güncellenen bölümler `⟳ 2026-08-09` işaretini taşır.
@@ -235,7 +236,7 @@ flowchart TB
 | **MENÜYÜ BİLMEK** | kapasite beyanı | `yetenek.py` · `katalog_metni.py` | `iddia.py` denetler | ✅ `G8` |
 | Tek ses tonu | metin katalogu | `soz.py` | — | ◐ *(5.17)* |
 | Kıyas dili *("geçen yıla göre")* | kıyas cebiri | `kiyas_cebiri.py` *(265)* | 🚩 `referans_dili` **beta** | ✅ `G6` |
-| ⟳ **Siparişi ADIMLARA bölmek** *("önce şunu bak, sonra onu kıyasla")* | plan çevirisi — **fiş değil, fiş DİZİSİ** | `plan_garson.py` · `plan_semasi.py` | 🚩 `orkestrator_plan` **off** · 🔴 **kapalı fiil kümesi** *(`enum`)* | ◐ ⟳ `O-4` |
+| ⟳ **Siparişi ADIMLARA bölmek** *("önce şunu bak, sonra onu kıyasla")* | plan çevirisi — **fiş değil, fiş DİZİSİ** | `plan_garson.py` · `plan_semasi.py` | 🚩 `orkestrator_plan` **`beta` ✅** · 🔴 **kapalı fiil kümesi** — **15 fiil** *(`enum`)* | ✅ ⟳ `O-14` |
 
 ### 📋 SİPARİŞ FİŞİ — garsonla mutfağın **tek** ortak dili
 
@@ -785,7 +786,7 @@ flowchart TD
     REDP --> ORK
     INT -->|"off"| ORK
 
-    ORK{"⟳ <b>4e · ORKESTRATÖR</b> — 🚩 <code>orkestrator_plan</code> <i>off</i><br/>🔴 <b>MERDİVENİN BOŞLUĞU</b> (E3): buraya yalnız<br/>route BOŞ <b>ve</b> garsonun tek-cube cevabı YOK iken gelinir"}
+    ORK{"⟳ <b>6 · GARSON = ORKESTRATÖR</b> — 🚩 <code>orkestrator_plan</code> <i>beta</i><br/>🔴 <b>BASAMAK DEĞİL, ÇIKTI BİÇİMİ</b>: karar yüzeyi (route↔garson)<br/>bayt bayt AYNI — tek adımlı plan bugünkü CubeQuery'dir"}
     ORK -->|"off ∨ şema-geçerli plan yok"| D
     ORK -->|"plan çıktı"| PLAN["<b>PLAN KOŞUMU</b> — <code>plan_kosucu</code><br/>7 kapalı fiil · azami 5 adım · <code>$1</code> referansı<br/>🔴 her <code>SORGU</code> adımı <b>parse_cube_query</b>'den geçer"]
     PLAN -->|"tüm adımlar koştu"| SORK["✅ <code>source=cube+llm</code><br/>cevap + <b>adım adım makbuz</b>"]
@@ -931,6 +932,45 @@ Intent-JSON için ayrı ve **daha ucuz** bir model kullanılabilir (`*_select_mo
 
 ## 4.6 · ⟳ ORKESTRATÖR — *garson tek fiş yerine bir **FİŞ DİZİSİ** yazabilir*
 
+> 🟢🟢 **⟳ YÜRÜRLÜKTE (2026-08-09 akşamı) — bayrak `beta`, canlıda koşuyor.**
+>
+> Aşağıdaki *"bayrak `off`"* satırları **bayattır**; neyin değiştiği burada:
+>
+> | | eski | **bugün** |
+> |---|---|---|
+> | bayrak | `off` | **`beta`** |
+> | fiil | 7 (3'ü koşuyor) | **15 (15'i koşuyor)** |
+> | yerleşim | merdivenin **boşluğu** | 🔴 **garsonun ÇIKTI BİÇİMİ** (yeni basamak YOK) |
+> | kabul ölçütü | A/B (arıza oranı) | 🔴 **DENKLİK** — plan **0/5** · taban **1/5** |
+>
+> **Neden yerleşim değişti:** boşluk, mutfak iyileştikçe **küçülüyordu** (`§AA1` bir soru
+> sınıfını oradan aldı) ve *"cevap var"* ≠ *"en iyi cevap verildi"*. Karar yüzeyi ise
+> büyümüyor: değişen şey hangi yola gidildiği değil, **basamak 6'nın çıktısının şekli**.
+> *Bir yeteneği bir basamak olarak eklemek karar yüzeyini büyütür; bir çıktı biçimi
+> olarak eklemek büyütmez.*
+>
+> **Neden A/B değil denklik:** `EE` turunun `-10` puanı **yarım bir göçü** ölçmüştü —
+> plan ve `select_cube` bir aradaydı, oy iki dağılımdan besleniyordu. Tam göç
+> birlikteliği kaldırdı; simetrik ölçümde plan **daha kararlı** çıktı.
+>
+> **Canlı kanıt** *(`FF` turu, `belgeler/denetim/2026-08-07_CEVIRI-SOZLESMESI.md`)*:
+>
+> ```
+> «RAM-3 neden diğerlerinden düşük»
+>   6 adım → RAM-3 seçildi (0,513) · akran ort. 0,571 (10 akran) · %10,2 düşük
+>
+> «bu yıl fire artışını en çok hangi kırılım açıklıyor»
+>   8 adım → SORGU→AYRISTIR→BOYUTSEC→SUZ→SORGU→AYRISTIR→BOYUTSEC→ANLAT
+> ```
+>
+> ⚠ **Ve dört sınıfsal kusur canlıda bulundu, dördü de kategorisiyle kapatıldı:**
+> bölümler fiile göre toplanıyordu (→ `CIKTI_TIPI`) · varlık perdesi plana geri
+> konmuyordu · referans alanı referans olmayabiliyordu · modelin **tip akışını görmesinin
+> hiçbir yolu yoktu** (istem artık onu da üretiyor).
+>
+> 🔴 **Ayrıntı `backend/MIMARI.md §2.0`'da** — orada 15 fiilin gövde tablosu, sekiz
+> orkestratör değişmezi (`O1`…`O8`) ve kabul ölçütü yazılı.
+
 > ⟳ **2026-08-09 · YENİ BÖLÜM** *(`O-0`…`O-9`)*. Kaynak plan:
 > `belgeler/denetim/2026-08-09_ORKESTRATOR-KATMANI-VE-OLCEKLENME.md`.
 > **Bayrak `orkestrator_plan` = `off`** — ve bu bir tahmin değil, bir A/B'nin sonucudur.
@@ -1021,7 +1061,7 @@ ne eksikti** yazar. *Bir eksikliği adıyla söylemek, onu bir sonraki mutfak i�
 | 4 | `deterministic_refine()` — yapısal takip | `cube` | ❌ | aynı |
 | 5 | `cross_cube_add` / `cross_cube_dim_switch` | `cube` | ❌ | aynı *(blend, gerçek JOIN değil)* |
 | 6 | 🔴 **Intent-JSON** — LLM **yapı doldurur, SQL YAZMAZ** | **`cube+llm`** | ✅ *(küçük model)* | **tam yapısal · chip · kırılım · drill · Query Contract** |
-| ⟳ **6b** | 🚩 **ORKESTRATÖR PLANI** *(`orkestrator_plan` = `off`)* — LLM **soruyu böler**, SQL yazmaz | `cube+llm` | ✅ *(6'nın YERİNE değil, BOŞLUĞUNDA)* | 6'nın garantisi **her adım için ayrı ayrı** + adım adım makbuz |
+| ⟳ **6** | 🚩 **GARSON = ORKESTRATÖR** *(`orkestrator_plan` = **`beta`**)* — LLM **soruyu böler**, SQL yazmaz | `cube+llm` | ✅ *(6'nın **ÇIKTI BİÇİMİ** — yeni basamak YOK)* | 6'nın garantisi **her adım için ayrı ayrı** + adım adım makbuz |
 | 7 | ⚠️ **Discovery** — LLM ham SQL yazar | `llm:<sağlayıcı>` | ✅ | **tek atımlık düz tablo. Chip YOK, kırılım YOK, drill YOK** |
 | 8 | dürüst red | `null` | — | *"anlamadığını bil"* |
 

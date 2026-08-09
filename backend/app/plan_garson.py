@@ -308,11 +308,21 @@ class PlanGarsonu:
             return self._ic.select_cube(question, catalog, sema)
 
 
-def sarmala(llm: Any, index: dict, settings: Any, principal: Any = None,
-            istek: Any = None, varliklar: dict | None = None) -> Any:
-    """🔴 `KURAL B`'nin tek satırı: kapalıyken **nesnenin kendisi** döner."""
+def sarmala(llm: Any, index: dict, istek: Any = None,
+            varliklar: dict | None = None) -> Any:
+    """🔴 `KURAL B`'nin tek satırı: kapalıyken **nesnenin kendisi** döner.
+
+    ⚠ `settings`/`principal` **istekten türetilir**, çağırandan alınmaz — ve bu yalnız
+    kısalık değil: ikisi de `request`in zaten taşıdığı şeyler (`ask.py:140`'ın kendi
+    kalıbı). Çağırandan istemek, aynı gerçeği iki yerden okumaktı. *Bir bağlamı taşıyan
+    nesne elindeyken, o bağlamın parçalarını ayrıca istemek onları ayrışmaya davet
+    etmektir.*
+    """
+    from app.config import get_settings
+
+    _p = getattr(getattr(istek, "state", None), "principal", None)
     return (PlanGarsonu(llm, index, istek, varliklar)
-            if acik_mi(settings, principal, llm) else llm)
+            if acik_mi(get_settings(), _p, llm) else llm)
 
 
 def acik_mi(settings: Any, principal: Any = None, llm: Any = None) -> bool:
