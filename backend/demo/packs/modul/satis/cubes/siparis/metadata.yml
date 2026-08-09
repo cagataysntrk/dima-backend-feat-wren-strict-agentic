@@ -47,6 +47,14 @@ measures:
     type: DOUBLE
     unit: "gün"
     additive: non
+    # 🔴 BEYAN EKSİKTİ VE SESSİZ BİR YANLIŞ ÜRETİYORDU (ölçüldü 2026-08-09, `GG8`).
+    # «en çok geciken müşteriyi bul» sorusunda `ilkeller.bagla` yön beyanını okur;
+    # beyan yoksa "çok olan iyi" varsayar ve **en DÜŞÜK** değeri "en kötü" sanar.
+    # Canlı sonuç: `ort_gecikme_gun = -25,3` — yani **en ERKEN** teslim edilen müşteri
+    # «en çok geciken» diye gösterildi. ⚠ `§W-C`'nin tam olarak uyardığı sınıf: bir
+    # sıfatın yönünü sözlükten değil BEYANDAN okumak — ama beyan yoksa okunacak bir şey
+    # de yoktur. *Eksik bir beyan, yanlış bir beyandan daha sessizdir.*
+    lower_is_better: true
     synonyms: [ortalama gecikme, gecikme, kaç gün geç, gecikme günü, termin sapması]
   - name: zamaninda_teslim_yuzde
     # OTIF'in (on-time-in-full) termin yarısı. ⚠ Payda TÜM siparişler — "zamanında

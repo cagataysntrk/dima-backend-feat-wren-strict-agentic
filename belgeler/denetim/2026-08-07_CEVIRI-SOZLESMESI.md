@@ -7701,3 +7701,61 @@ gelebileceğini de vermek gerekir.*
 `FF9` *«enerji için bir pano taslağı **kur**»* → *"kur"* fiili **`kur` (döviz) küpüne**
 eşleşti. `§G` morfoloji sınıfı (*«arttı» bir FİİL, yazım hatası değil* ile aynı aile).
 Kayda geçirildi; orkestratörün konusu değil.
+
+---
+
+## `GG` TURU — DÖRT YETENEK DE CANLIDA · bayrak `beta` *(2026-08-09)*
+
+Tam kapı yeşil (4433 test · korpus **%94,9** · `sessiz_yanlis` **10** · eval **+0,0**)
+ve orkestratör açıkken koşuldu.
+
+### 🟢 Dört yeteneğin dördü de çalıştı
+
+| senaryo | plan | sonuç |
+|---|---|---|
+| `GG3` iki seviyeli iniş | `SORGU→BAGLA→SUZ→KIR→SORGU→ANLAT` **6 adım** | *Enerji Kesintisi · 1086 dk* |
+| `GG4` MATRIS | `SORGU→MATRIS→ANLAT` 3 adım | makineler yan yana, 11 satır |
+| `GG5` karar matrisi | `SORGU×2→MATRIS→SIRALA→ANLAT` **5 adım** | `_skor: 0,9531 · _olcut_sayisi: 2` |
+| `GG6` rapor | `SORGU×3→RAPOR` 4 adım | 3 bölüm |
+| `GG7` pano | `SORGU×2→PANO` 3 adım | **taslak** (yazmadı) |
+| `GG8` akran kıyası | `SORGU→BAGLA→HESAPLA→ANLAT` 4 adım | aşağı bkz. |
+
+### 🔴 `GG8` — ÖLÇÜLMÜŞ BİR SESSİZ YANLIŞ, ve orkestratörden ÖNCE de vardı
+
+    soru : «bu yıl en çok geciken müşteriyi bul»
+    önce : ort_gecikme_gun = **-25,3**   ← en ERKEN teslim edilen müşteri seçildi
+    sonra: ort_gecikme_gun = **-24,7**   ← en yüksek gecikme (doğru)
+
+Kök: `ort_gecikme_gun` ve `gecikmeli_sevkiyat_yuzde` için **`lower_is_better` beyanı
+yoktu**. `ilkeller.bagla` yönü **beyandan** okur (`§W-C`); beyan yoksa *«çok olan iyi»*
+varsayar ve en **düşük** değeri *«en kötü»* sanar.
+
+⊙ *`§W-C` bir sıfatın yönünü sözlükten değil beyandan okumayı öğretmişti. Ama beyan
+yoksa okunacak bir şey de yoktur. **Eksik bir beyan, yanlış bir beyandan daha
+sessizdir**: yanlış beyan tartışılır, eksik beyan varsayılır.*
+
+`lab/yon_beyani.py` bu sınıfın envanterini çıkarıyor — 🔴 bir **kapı değil**, bir
+**soru listesi**: adına bakıp yön çıkaran bir yüklem kendi yanlış-pozitiflerini
+üretirdi (ölçüldü: `ges_uretimi` → *"ret"*, `kazanma_orani` → *"kaza"*; kökler
+ayıklandı). Yön bir **alan kararıdır** — `iade` bir perakendecide kötüdür, bir
+kiralama şirketinde işin kendisidir.
+
+Tartışmasız yedi ölçü beyan edildi (kaza · kayıp gün · şikayet · iade); kalan **19**
+madde insana sorulmak üzere raporda.
+
+### ⚠ Ve ölçüm aracı yine bayat şemadan okudu
+
+Pack'ler düzeltildikten sonra `lab/yon_beyani.py` hâlâ eski sayıyı verdi — `demo/wren-project`
+gitignore'lu bir **derleme artefaktı**. Docker tazelenince düzeldi. Bu, deponun kayıtlı
+dersinin **ikinci** tekrarı: *beklenmedik bir sayıda önce artefaktı şüphelen.*
+
+### Route-düzeyi iki kusur (orkestratörün konusu değil, kayıtta)
+
+| senaryo | bulgu |
+|---|---|
+| `FF9` *«pano taslağı **kur**»* | *"kur"* fiili **`kur` (döviz)** küpüne eşleşti |
+| `GG2` *«ortalamadan **farkını** söyle»* | *"fark"* **`enerji_sapma`** küpüne eşleşti → iki-cube yetenek sınırı orkestratörden **önce** ateşledi |
+
+⊙ İkisi de `§G/AJ0` ailesinden (*«arttı» bir FİİL, yazım hatası değil*): **genel bir
+kelimenin küp eşanlamı olması**. Ve artık bir bedeli daha var — orkestratörün
+cevaplayabileceği soruyu **ona ulaşmadan** kesiyorlar.

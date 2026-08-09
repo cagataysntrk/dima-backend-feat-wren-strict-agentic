@@ -40,6 +40,8 @@ measures:
     type: DOUBLE
     unit: "adet"
     additive: non
+    # 🔴 `GG8` sınıfı: beyan yoksa `bagla` «çok olan iyi» varsayar.
+    lower_is_better: true
     synonyms: [şikayet adedi, şikayet sayısı, kaç şikayet, reklamasyon sayısı]
   # 🔴 KÖK-5c (denetim KN-6, 2026-08-05) — ÖLÇÜ ADI `iade_kg` idi ve kendi ifadesindeki
   # KOLON adıyla aynıydı. Motor bunu derlemede kabul ediyor, `mdl.json` üretiliyor,
@@ -53,6 +55,8 @@ measures:
     expression: SUM(iade_kg)
     type: DOUBLE
     unit: "kg"
+    # 🔴 `GG8` sınıfı: beyan yoksa `bagla` «çok olan iyi» varsayar.
+    lower_is_better: true
     synonyms: [iade, iade miktarı, iade kilosu, geri gelen, iade edilen]
   - name: ort_cozum_suresi
     expression: "ROUND(AVG(cozum_suresi_gun),1)"
@@ -64,6 +68,8 @@ measures:
     expression: "SUM(CASE WHEN durum = 'AÇIK' THEN 1 ELSE 0 END)"
     type: DOUBLE
     unit: "adet"
+    # 🔴 `GG8` sınıfı: beyan yoksa `bagla` «çok olan iyi» varsayar.
+    lower_is_better: true
     synonyms: [açık şikayet, çözülmemiş, bekleyen şikayet, kapanmamış]
   - name: agir_sikayet_yuzde
     expression: "ROUND(100.0 * SUM(CASE WHEN siddet = 'AĞIR' THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1)"

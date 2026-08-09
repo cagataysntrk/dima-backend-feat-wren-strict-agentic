@@ -27,16 +27,22 @@ measures:
     expression: "COUNT(*)"
     type: DOUBLE
     unit: "adet"
+    # 🔴 `GG8` sınıfı: beyan yoksa `bagla` «çok olan iyi» varsayar.
+    lower_is_better: true
     synonyms: [kaza adedi, kaza sayısı, kaç kaza, olay sayısı]
   - name: kayip_is_gunu
     expression: SUM(is_gunu_kaybi)
     type: DOUBLE
     unit: "gün"
+    # 🔴 `GG8` sınıfı: beyan yoksa `bagla` «çok olan iyi» varsayar.
+    lower_is_better: true
     synonyms: [kayıp iş günü, kayıp gün, iş günü kaybı, devamsızlık günü]
   - name: ciddi_kaza_adedi
     expression: "SUM(CASE WHEN siddet = 'CİDDİ' THEN 1 ELSE 0 END)"
     type: DOUBLE
     unit: "adet"
+    # 🔴 `GG8` sınıfı: beyan yoksa `bagla` «çok olan iyi» varsayar.
+    lower_is_better: true
     synonyms: [ciddi kaza, ağır kaza, kritik kaza]
   - name: ramak_kala_adedi
     expression: "SUM(CASE WHEN siddet = 'RAMAK KALA' THEN 1 ELSE 0 END)"
@@ -50,6 +56,8 @@ measures:
     additive: non
     # 🔴 `ağırlık` KALDIRILDI: `parti.toplam_agirlik_kg` (kg) o kelimenin sahibi ve
     # jenerik. Burada kastedilen *kaza ağırlığı*dır — o hâlde ADI da öyle olmalı.
+    # 🔴 `GG8` sınıfı: beyan yoksa `bagla` «çok olan iyi» varsayar.
+    lower_is_better: true
     synonyms: [ortalama kayıp gün, kaza başına kayıp, kaza ağırlığı]
 
 dimensions:
