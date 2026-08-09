@@ -7323,3 +7323,58 @@ girebilmesi. Sondaj 8/8, üç yanlış-pozitif adayı (*«3 makine bazında»*, 
 |---|---|---|
 | `§CC-B` çoklu çapa (*«birincisini ikincisiyle kıyasla»*) | `CC9` | İki **ayrı satıra** aynı anda çapa demek — bu bir **plan** işidir (`AA6`/`AA7` ile aynı kuyruk). Tek turluk bir yamayla kurulursa `§AA1`'in deterministik yolunu gölgeler; orkestratör raporunun `O-5` fazının konusu |
 | `§CC-C` *«duruş maliyeti»* beyansız | `CC11` | Menü **doğru ayrılmış** (`bakim`=yalnız parça · `bakim_is_emri`=işçilik+parça, menü notu bunu yazıyor). Eksik olan **kavramın kendisi** (kayıp üretim değeri). Beyanı yazmak *"soru X diyor, ölçü Y diyor"* ayrımını gerektirir — bu bir **anlam** kararıdır ve `§W-D`'de ölçülmüştü: genel yüklem **her yabancı dilli soruda** yanlış-pozitif üretiyor (`§101.1`) |
+
+### §109.2 · CC KAPISI YEŞİL
+
+    korpus %94.9 (taban %94.4) ✅ · sessiz_yanlis 10 (DOKUZ TURDUR sabit) ·
+    gerçek-dünya {2287 · 1145 · 90 · 38} birebir aynı · süit 4280 · eval +0,0%
+
+Kapı `cube_router` tavanını yakaladı (1887 ↔ 1881): `§CC-D`+`§CC-E`'nin 6 satırı
+muafiyetsizdi. Tek kayıtta gerekçelendirildi — ikisi de aynı dosyada, ikisi de **ölçülmüş**
+kök, ve ikisi de kendi yükleminin **yanında** durmak zorunda.
+
+---
+
+## §110 · ORKESTRATÖR RAPORU — okundu, sınandı, geliştirildi
+
+`belgeler/plan/2026-08-09_ORKESTRATOR-KATMANI-VE-OLCEKLENME.md` (538 → 591 satır).
+
+**Yargı: 🟢 uygulanabilir.** *"Reçete değil ilkel"* argümanı teknik olarak doğru —
+`+ − × ÷` sonludur ama **kapanış** sayesinde sonsuz ifade üretir; bir takımı güçlü yapan
+büyüklüğü değil **bileşebilirliğidir**.
+
+### Kaynaktan doğrulananlar ✅ *(koşmadan, `§83.4`)*
+
+`sec()` gerçekten `{"arac": ad, "neden": …}` döndürüyor → `B1` (plan parametresiz) **sağlam**
+· 23 araç kayıtlı → `B2` **sağlam** · dört kapı (kayıt·yetki·deterministik-önce·bütçe)
+`sec()`'in kendi docstring'inde **adıyla** kurulu.
+
+### 🔴 İKİ GELİŞTİRME
+
+**1 · `E6` yarıya indi — planlayıcı GARSONUN KENDİSİDİR.** Belge planı garsona **ek** bir
+çağrı sanıyordu. Oysa **tek adımlı bir plan zaten bugünkü `CubeQuery`'dir**: `plan_kur`,
+`select_cube`'un **yerine geçer**.
+
+⊙ Ve ikisi **aynı fiyatta değil** (canlı ölçüm): bir Intent turu `k=3` ile **~8-20 sn**,
+bir küp sorgusu **~150-600 ms**. Yani LLM turunu çarpmak, sorguyu çarpmaktan **bir
+mertebe** pahalı. Riski sorgu tarafına taşımak, `E6`'nın büyük kısmını **ölçümle değil
+tasarımla** çözer.
+
+*Bir riski azaltmanın en ucuz yolu, onu doğuran tasarım tercihini değiştirmektir.*
+
+**2 · Sıra değişti — `O-1` başa alındı.** `O-1` (`BAGLA`+`HESAPLA`) ne LLM çağırıyor ne
+sorgu koşuyor: iki **saf fonksiyon**, ve kabul ölçütü bir **davranış denkliği** —
+*«`§AA1`'in bugünkü çıktısı bu ikisi çağrılarak birebir üretilebiliyor»*. Yani bir yetenek
+eklemesi değil, **denkliği kanıtlanan bir refactor**.
+🔴 `O-0` (latency) ön koşul **kalır** ama `O-2`'nin ön koşuludur.
+*Bir ön koşul, ancak koşulladığı şeyin önünde durmalıdır.*
+
+### 🔴 EKLENEN RİSK — E9 · BU BELGE DE BİR YÜKLEM ÜRETİYOR
+
+`E7` yeni **yüklemlerin** yanlış-pozitifini sayıyor; ama belgenin kendisi de bir yüklem
+öneriyor: *«bu soru çok adımlıdır»*. Yanılırsa bedeli **farklı cinsten**: tek adımlık bir
+soruya üç adımlık plan kurulursa cevap **yanlış olmaz, pahalı olur** — ve `E6`'nın
+kapısına takılır, doğruluk vetosuna değil.
+
+**Karşı önlem:** plan uzunluğu bir **ölçüdür**; tek adımlı plan oranı korpusta izlenir.
+*Bir aklın fazla düşünmesi, az düşünmesi kadar ölçülmelidir.*

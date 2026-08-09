@@ -540,6 +540,25 @@ MUAFIYET_CUBE_ROUTER_KOD = [
      "koymak ayrımı bir daha yan yana okunamaz kılardı. "
      "⚠ İmza geriye uyumlu (`az_iyi=None` → bugünkü davranış): meta taşımayan iki çağıran "
      "bayt bayt aynı kalır."),
+    ("ccd-cce-isaret-sizintisi-ve-ayrilma-eki", 6,
+     "🔴🔴 **İKİ KÖK, İKİSİ DE `cube_router`'da ve ikisi de ÖLÇÜLDÜ.** "
+     "**`§CC-D`** — `§W-C`'de katalog metnine eklediğim yön işareti (`↓`) ölçü adına "
+     "SIZIYORDU: canlı log `intent: whitelist REDDİ — ham={\"measures\":"
+     "[\"toplam_su_lt↓\"]}`. Garson işareti ADIN PARÇASI sandı; beyaz liste DOĞRU "
+     "reddetti. `↓` taşıyan HER ölçü (fire · duruş · maliyet · karbon) sessizce "
+     "erişilemez olmuştu — `§72`'nin ampulü kırmızı yandı ama sebebi dil değil BENİM "
+     "eklediğim bir karakterdi. Çözüm işareti kaldırmak DEĞİL (`§W-C` ölçülmüş kazanç): "
+     "ad NORMALLEŞTİRİLİR — işaret sunumdur, kimlik değil. Sondaj 3/3. "
+     "*Bir ada eklenen her süs, o adın bir varyantını doğurur; doğrulayan taraf varyantı "
+     "bilmiyorsa süs bir kusura dönüşür.* "
+     "**`§CC-E`** — `_THRESHOLD_RE` *«dan az»*ı İKİ KELİME sanıyordu; oysa ayrılma hâli "
+     "bir EKTİR ve sayının ardından gelen İSME yapışır (*«100 partiden az»* · *«5 "
+     "makineden fazla»*). `CC17`'de eşik hiç uygulanmadı. Yeni kelime yok — eklenen şey "
+     "sayı ile karşılaştırıcı arasına EK ALMIŞ BİR İSMİN girebilmesi. Sondaj 8/8; "
+     "*«3 makine bazında»*/*«ilk 5 müşteri»*/*«2026 yılında»* temiz. "
+     "⚠ **TAŞINAMAZ:** ikisi de kendi yükleminin YANINDA — `_AZ_IYI_ISARETI` beyaz "
+     "listenin, eşik deseni `_measure_threshold`'un. Ayırmak, kuralı okuyan yerden "
+     "uzaklaştırırdı."),
     ("v5-sifat-fiil-kategori-degeri-degildir", 8,
      "🔴🔴 **BİR SIFAT/FİİL BİR KATEGORİ DEĞERİ DEĞİLDİR — üç kanıt, tek kök.** "
      "`t19` *«ortalama şiddet»* → `siddet eq 'ORTA'` + `renk eq 'Orta'` · "
