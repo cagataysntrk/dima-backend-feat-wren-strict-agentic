@@ -540,6 +540,23 @@ MUAFIYET_CUBE_ROUTER_KOD = [
      "koymak ayrımı bir daha yan yana okunamaz kılardı. "
      "⚠ İmza geriye uyumlu (`az_iyi=None` → bugünkü davranış): meta taşımayan iki çağıran "
      "bayt bayt aynı kalır."),
+    ("o6-ayrik-donem-on-kosulunu-kimse-kurmuyordu", 3,
+     "🔴🔴 **`FAZ O-6` — `§49`'UN TEŞHİSİ YARIM DOĞRUYMUŞ.** Rapor *«`CubeQuery` iki ayrık "
+     "dönemi TEMSİL EDEMİYOR»* diyordu (dokuz kanıt: `V12`·`X2`·`X11`·`X13`·`AA9`·`BB10`…). "
+     "⊙ Ölçüldü (canlı): mekanizma **zaten vardı** — `ayrik_aylar` işareti üretiliyor ve "
+     "`wren_service._ayrik_ay_sar` onu uyguluyor. Eksik olan **ay kovasıydı**: sarma ay "
+     "granülerliği yoksa çalışamıyor (fail-closed) ve sorgu sessizce **kapsayan aralığa** "
+     "düşüyordu. Yani `CubeQuery` iki dönemi TAŞIYABİLİYORDU; ön koşulunu kuran yoktu. "
+     "⊙ İKİNCİ KUSUR aynı satırda çıktı: *«bu yıl»* ayrık-ay tespitini **tamamen "
+     "kapatıyordu** — koşul *«zaman filtresi varsa ayrık arama»* idi ve yıl filtresini "
+     "*«kullanıcı aralık yazdı»* diye okuyordu. Oysa **yıl bir KAPSAM, aylar o kapsamın "
+     "İÇİNDEKİ seçimdir**; ikisi çelişmez, biri ötekini DARALTIR. Kural daraltıldı: "
+     "yalnız ay-düzeyinde bir çift (gte+lte) tespiti kapatır. "
+     "✅ Canlı: *«bu yıl ocak ve haziran ayında fire oranı»* → **2 satır** (ocak %20,47 + "
+     "haziran). Gerileme yok: aylık trend 6 satır, gerçekten toplanan soru hâlâ beyanlı. "
+     "⚠ **TAŞINAMAZ:** `ayrik` hesabının **hemen yanında** — ön koşul, koşulladığı şeyin "
+     "yanında kurulmalı; ayrı yere konsa aradaki her dal onu yine kapatabilirdi. "
+     "*Bir yeteneği kurup ön koşulunu kurmamak, onu hiç kurmamaktır.*"),
     ("ccd-cce-isaret-sizintisi-ve-ayrilma-eki", 6,
      "🔴🔴 **İKİ KÖK, İKİSİ DE `cube_router`'da ve ikisi de ÖLÇÜLDÜ.** "
      "**`§CC-D`** — `§W-C`'de katalog metnine eklediğim yön işareti (`↓`) ölçü adına "

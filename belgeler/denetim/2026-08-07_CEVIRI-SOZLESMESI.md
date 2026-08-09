@@ -7378,3 +7378,90 @@ kapısına takılır, doğruluk vetosuna değil.
 
 **Karşı önlem:** plan uzunluğu bir **ölçüdür**; tek adımlı plan oranı korpusta izlenir.
 *Bir aklın fazla düşünmesi, az düşünmesi kadar ölçülmelidir.*
+
+---
+
+## §111 · DD TURU — 20 senaryo · orkestratör raporunun ÖLÇÜM ALETİ
+
+**Skor:** 11 🟢 · 4 ◐ · 5 🔴 · Discovery **1**
+
+### ✅ ÜÇ KAZANÇ — ve ikisi kimse ayrıca uğraşmadan geldi
+
+| # | bulgu |
+|---|---|
+| `DD6` | 🟢🟢 **AMPUL YEŞİLE DÖNDÜ** — Arapça su sorusu artık çalışıyor (`limit 3`, Boyahane). `§CC-D`'nin gerçek etkisi: `↓` kimliğe sızmayı bırakınca garsonun kararı beyaz listeden **geçiyor** |
+| `DD13` | 🟢🟢 **AÇIK KÖK `u5` KAPANMIŞ** — *«oee'yi bileşenlerine ayır»* → `ort_kullanilabilirlik`+`ort_performans`+`ort_kalite`. Kimse ayrıca düzeltmedi; menü zenginleşmesi + `§V2` oylama birleştirmesi **birlikte** çözdü |
+| `DD18` | 🟢🟢 **`§Z2` canlıda**: *«soruda 2 ölçü geçiyor ama cevapta 1 var — `toplam_ciro` rapora girmedi»* |
+
+⊙ `DD8` ayrıca `E4`'ü doğruladı: **`§AA1` bozulmadan duruyor** (RAM-3 %10,7 düşük +
+sürükleyenler). Raporun *«mimari saflık için bozulmasın»* şartı **ölçülerek** karşılandı.
+
+### 🔴 MUTFAK SINIRI — ÜÇ SORU, ÜÇ FARKLI DAVRANIŞ *(`G2`'nin canlı ölçümü)*
+
+| soru | davranış | değerlendirme |
+|---|---|---|
+| `DD15` *«firenin maliyeti»* | `toplam_fire_kg` **verdi** | 🔴 **maliyet sorulmuş, kg dönmüş** — sessiz yanlış |
+| `DD16` *«müşteri yaşam boyu değeri»* | **Discovery** ateşledi | 🔴 mutfak eksikliği raporu |
+| `DD17` *«vardiya devir oranı»* | dürüstçe **netleştirdi** | 🟢 doğru davranış |
+
+⊙ **Aynı sınıftaki üç soru, üç ayrı yol izledi.** Bu, raporun `G2` boşluğunun (*yokluk ile
+yarımlık ayırt edilemiyor*) en net kanıtı: sistemin **tutarlı bir yokluk politikası yok**.
+`O-7` fazının gerekçesi artık ölçülmüş.
+
+*Bir sistemin bilmediğini üç farklı biçimde söylemesi, bilmediğini bilmediği anlamına gelir.*
+
+### 🔴 KALAN KÖKLER — raporun fazlarıyla eşleşiyor
+
+| kök | kanıt | raporun fazı |
+|---|---|---|
+| `HESAPLA` yok | `DD9` *«farkın kaç kg üretime mal olduğunu hesapla»* | **O-1** |
+| eşik takip yolunda | `DD3` · `DD4` | `§CC-E`'nin ikinci yarısı |
+| kıyas temsili | `DD12` *«ocak ile haziranı kıyasla»* | **O-6** |
+| yokluk politikası | `DD15`·`DD16`·`DD17` | **O-7** |
+| yabancı dilde dönem | `DD20` (2024 geldi) | garson istemi |
+
+---
+
+## §112 · ORKESTRATÖR FAZLARI — O-1 ve O-6 indi
+
+### ✅ O-1 · `BAGLA` + `HESAPLA` — denkliği kanıtlanan refactor
+
+`app/ilkeller.py` yazıldı: iki **saf fonksiyon**, LLM yok, SQL yok, ağ yok.
+`contribution._akran_kiyasi`'nin elle yazılmış gövdesi onlara **taşındı**.
+
+**Kabul ölçütü karşılandı — çıktı bayt bayt aynı:**
+
+    **RAM-3**, öteki 10 makine ortalamasından **%10,7 düşük** (0,5245 ↔ 0,5876)
+    • fire: 63.452 kg ↔ akran 39.103 kg (%62,3 fazla, kötü yönde)
+
+Aynı hedef · aynı akran sayısı · aynı yüzde · aynı sürükleyenler. `E4`'ün şartı
+(*«bileşim aynı sonucu verene kadar elle yazılmış sürüm yerinde kalır»*) **ölçülerek**
+karşılandı: sürüm silinmedi, **ilkellere taşındı**.
+
+⚠ Modül `MUTFAK` sınıfına yazıldı — kapı (`test_SINIFSIZ_MODUL_BIRAKILAMAZ`) sınıfsız
+bırakılmasına izin vermedi ve haklıydı: *sınıfsız bir modül, sınırı düşünülmemiş bir
+modüldür.*
+
+### ✅ O-6 · KIYAS TEMSİLİ — `§49`'un teşhisi YARIM DOĞRUYMUŞ
+
+Rapor *«`CubeQuery` iki ayrık dönemi temsil edemiyor»* diyordu (dokuz kanıt). Ölçüldü:
+**mekanizma zaten vardı** — `ayrik_aylar` işareti üretiliyor, `_ayrik_ay_sar` uyguluyor.
+Eksik olan **ay kovasıydı**; sarma granülerlik olmadan çalışamıyor (fail-closed) ve sorgu
+sessizce **kapsayan aralığa** düşüyordu.
+
+**Üç kusur, tek turda:**
+
+| # | kusur | çözüm |
+|---|---|---|
+| 1 | işaret var, **kova yok** → sarma çalışamıyor | kova işaretle **birlikte** açılır |
+| 2 | *«bu yıl»* ayrık-ay tespitini **tamamen** kapatıyordu | **yıl bir KAPSAM, aylar o kapsamın İÇİNDEKİ seçim** — yalnız ay-düzeyinde çift tespiti kapatır |
+| 3 | sistem ayırdı ama beyan hâlâ *«topladım»* diyordu | beyan artık cevabın **ne yaptığına** bakıyor (`ayrik_aylar` işareti) |
+
+✅ Canlı: *«bu yıl ocak ve haziran ayında fire oranı»* → **2 satır**. Gerileme yok:
+aylık trend 6 satır · gerçekten toplanan soru (*«ocak şubat mart nisan cirosu»*) hâlâ
+dürüstçe beyanlı.
+
+⊙ Üçüncü kusur `§X3`'ün bir kat yukarıdaki hâli: **doğru bir cevabı kusurlu ilan etmek**.
+Kullanıcı sayılara bakıp *«demek ki eksik»* diye düşünürdü — oysa tam istediği elindeydi.
+
+*Bir yeteneği kurup ön koşulunu kurmamak, onu hiç kurmamaktır.*

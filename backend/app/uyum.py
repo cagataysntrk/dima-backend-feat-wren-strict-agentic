@@ -382,7 +382,23 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
     _pad = f" {qn} "
     _aralik_ifadesi = any(w in _pad for w in _ARALIK) or (
         any(w in _pad for w in _ARALIK_BAGLAC) and TUR_KIYAS not in niyet.turler)
-    if (niyet.cok_donem and not _aralik_ifadesi
+    # FAZ O-6 — SISTEM AYIRDI AMA BEYAN HALA "TOPLADIM" DIYORDU.
+    #
+    # Olculdu (canli, O-6 duzeltmesinden HEMEN SONRA): "bu yil ocak ve haziran ayinda
+    # fire orani" -> 2 SATIR dondu (ocak %20,47 + haziran) ve yaninda su cumle vardi:
+    #     "birden cok donem saydin ama tek bir ARALIK olarak topladim"
+    #
+    # Cevap DOGRUYDU, beyan YANLISTI. Ve bu, beyan katmaninin en pahali hatasi: dogru bir
+    # cevabi kusurlu ilan etmek (§X3'un aynisi, bir kat yukarida). Kullanici sayilara
+    # bakip "demek ki eksik" diye dusunur — oysa tam da istedigi sey elindedir.
+    #
+    # Kok: yuklem yalnizca NIYETI (cok_donem) okuyordu, CEVABIN NE YAPTIGINI okumuyordu.
+    # `ayrik_aylar` isareti tam olarak "bu cevap donemleri AYIRDI" demektir.
+    #
+    # *Bir eksigi ilan etmeden once, cevabin onu zaten karsilayip karsilamadigina
+    # bakmak gerekir.*
+    _ayirdi = bool(ic.get("ayrik_aylar"))
+    if (niyet.cok_donem and not _aralik_ifadesi and not _ayirdi
             and not any(i.isaret == "kiyas" for i in out)
             and not (ic.get("compare") or ic.get("compare_mode"))):
         out.append(Ihlal(

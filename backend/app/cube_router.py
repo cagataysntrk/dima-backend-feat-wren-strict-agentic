@@ -4036,12 +4036,49 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
     # *"1 ocak 31 mart arası"* iki ay ADI taşır ve saf ay-taraması onu "ayrık" sanar —
     # oysa `_explicit_range_filters` onu zaten SÜREKLİ bir aralık olarak çözmüştür.
     # Ayrık-ay yolu bir YEDEKTİR, bir üst-katman değil.
-    ayrik = None if any(f.get("dimension") == time_dim for f in filters) \
-        else ayrik_ay_kovalari(q)
+    # FAZ O-6 (ikinci kusur) — "BU YIL" AYRIK-AY TESPITINI TAMAMEN KAPATIYORDU.
+    #
+    # Kosul "zaman filtresi VARSA ayrik ay arama" idi ve gerekcesi dogruydu: kullanici
+    # acik bir aralik yazdiysa ay isaretleri o araligin ICINDEDIR, ayrik degil.
+    # Ama olculdu (canli): "OCAK VE HAZIRAN ayinda fire orani" -> 2 SATIR (dogru) ·
+    # "BU YIL ocak ve haziran ayinda fire orani" -> 1 SATIR (yanlis kapsam).
+    #
+    # Fark tek kelime: "bu yil" bir YIL filtresi kuruyor ve kosul onu "kullanici araligi
+    # yazdi" diye okuyor. Oysa yil ile ay AYNI EKSENDE DEGIL — yil bir KAPSAM, aylar o
+    # kapsamin ICINDEKI secimdir. Ikisi celismez, biri otekini DARALTIR.
+    #
+    # Kural daraltildi: yalnizca AY-DUZEYINDE bir filtre (gte+lte cifti) ayrik tespitini
+    # kapatir; yil kapsamini bildiren tek bir gte kapatmaz.
+    # *Bir kapsami bir secimle karistirmak, secimi kapsama feda etmektir.*
+    _zaman_filtreleri = [f for f in filters if f.get("dimension") == time_dim]
+    _aralik_yazilmis = len(_zaman_filtreleri) >= 2
+    ayrik = None if _aralik_yazilmis else ayrik_ay_kovalari(q)
     if ayrik:
         filters.extend(_kapsayan_ay_araligi(ayrik, time_dim))
 
     gran = _time_gran(q)
+    # FAZ O-6 — AYRIK AYLAR SAYILDI AMA KOVA ACILMADIGI ICIN ARALIGA COKUYORDU.
+    #
+    # Olculdu (canli, O-6 sondaji — "bu yil OCAK VE HAZIRAN ayinda fire orani"):
+    #     tek satir · fire_orani_yuzde: 19.79
+    #     "birden cok donem saydin ama tek bir ARALIK olarak topladim"
+    #
+    # Beyan DURUSTTU ama cevap YANLIS KAPSAMLIYDI: kullanici iki ayi istedi, aradaki dort
+    # ay da toplama girdi. Ve mekanizma ZATEN VARDI — `ayrik_aylar` isareti uretiliyor,
+    # `wren_service._ayrik_ay_sar` onu uygulayacak. Eksik olan tek sey AY KOVASIYDI:
+    # sarma, ay granulerligi yoksa calisamiyor (fail-closed) ve sorgu sessizce kapsayan
+    # araliga dusuyordu.
+    #
+    # Yani §49'un "temsil edilemiyor" teshisi YARIM DOGRUYDU: CubeQuery iki ayrik donemi
+    # TASIYABILIYOR, yalniz tasiyabilmesi icin kovanin acik olmasi gerekiyordu ve onu
+    # acan kimse yoktu.
+    #
+    # Kova YALNIZ ayrik ay sayildiginda acilir; kullanici granulerlik yazdiysa onun
+    # tercihi korunur. Bu bir varsayim degil, isaretin KENDI ON KOSULUNU kurmasidir.
+    #
+    # *Bir yetenegi kurup on kosulunu kurmamak, onu hic kurmamaktir.*
+    if ayrik and not gran:
+        gran = "month"
 
     # SEMI-ADDITIVE koruması (panel P0, 6 model oybirliği): bakiye/stok ölçüleri zamanda
     # dönem-SONU (snapshot) değeridir. Düz SUM zaman kovasında ("aylara göre bakiye") ya da

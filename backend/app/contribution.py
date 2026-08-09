@@ -413,17 +413,29 @@ def _akran_kiyasi(service, cq: dict, cube_meta: dict, measure: str,
         _rows = (_r or {}).get("rows") or []
         return satir_donustur(_rows) if satir_donustur else _rows
 
+    # 🔴 **`FAZ O-1` — GÖVDE İKİ İLKELE TAŞINDI, DAVRANIŞ BİREBİR KORUNDU.**
+    #
+    # Bu satırlar önce burada, elle yazılıydı. Orkestratör planının ilk fazı (`O-1`) onları
+    # `app/ilkeller.py`'ye **saf fonksiyon** olarak çıkardı: `bagla` (SATIR → hangi varlık)
+    # ve `hesapla` (SATIR → akran farkı). ⊙ Amaç yeni bir yetenek DEĞİL: plan geldiğinde
+    # **aynı ilkelleri başka sırayla** dizebilsin diye zemin kurmak.
+    #
+    # ⚠ Kabul ölçütü raporda yazılı ve burada **uygulanıyor**: *«`§AA1`'in bugünkü çıktısı
+    # bu ikisi çağrılarak birebir üretilebiliyor»*. Eşikler (`len < 3`), yön kaynağı
+    # (`lower_is_better`) ve payda-sıfır kuralı **aynen taşındı** — denkliğin şartı bu.
+    # ⚠ `E4`: elle yazılmış sürüm **kaybolmadı**, ilkellere **taşındı**. Bir yolu
+    # silmeden genelleştirmek, geri dönüşü açık bırakmaktır.
+    from app import ilkeller as _ilk
+
     taban = _kos([measure])
-    _deg = {str(r.get(dim)): _sayi_ya_da_yok(r.get(measure)) for r in taban if r.get(dim) is not None}
-    _deg = {k: v for k, v in _deg.items() if v is not None}
-    if len(_deg) < 3:
-        return None                       # akran yoksa kıyas da yok (istatistik anlamsız)
     _az_iyi = measure in _lower
-    hedef = (max(_deg, key=_deg.get) if _az_iyi else min(_deg, key=_deg.get))
-    _akranlar = [v for k, v in _deg.items() if k != hedef]
-    _ort = sum(_akranlar) / len(_akranlar)
-    _fark = _deg[hedef] - _ort
-    _yuzde = round(100.0 * _fark / _ort, 1) if _ort else None
+    hedef, _hd = _ilk.bagla(taban, dim, measure, en_iyi_az=_az_iyi)
+    _k = _ilk.hesapla(taban, dim, measure, hedef) if hedef else None
+    if _k is None:
+        return None                       # akran yoksa kıyas da yok (istatistik anlamsız)
+    _ort, _fark, _yuzde = (_k["akran_ortalamasi"], _k["fark"], _k["fark_yuzde"])
+    _deg = {hedef: _k["hedef_deger"]}
+    _akranlar = [None] * _k["akran_sayisi"]
 
     # 2. SORGU — küpün öteki ölçüleri. Hedef ölçü ve toplanabilirliği bilinmeyenler dışta.
     _otekiler = [m for m in _tumu if m != measure][:12]

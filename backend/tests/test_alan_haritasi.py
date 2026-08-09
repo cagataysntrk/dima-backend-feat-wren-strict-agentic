@@ -65,6 +65,14 @@ MUTFAK = {
     # mutfak. ⚠ Bir 🗣 modülü (`intent_semasi`) onu **import eder**; bu ters yön kapının
     # yasakladığı yön DEĞİLDİR (yasak: mutfak → dil).
     "cube_operatorleri.py",
+    # 🔴 `FAZ O-1` — ORKESTRATÖRÜN İLKELLERİ (`BAGLA` · `HESAPLA`). Tanım gereği mutfak:
+    # girdisi **koşmuş satırlar**, çıktısı **sayı**. Bir cümle okumaz, bir katalog
+    # ayrıştırmaz, bir LLM çağırmaz, bir SQL yazmaz — yalnız *"bu satırlar içinde hangisi
+    # ve akranlarından ne kadar farklı"* sorusuna cevap verir.
+    # ⚠ `contribution.py`'nin (aynı sınıf) elle yazılmış gövdesinden **çıkarıldılar** ve
+    # davranış denkliği canlıda doğrulandı — yani bu bir sınır geçişi değil, aynı sınıf
+    # içinde bir **saflaştırma**. *Bir gövdeyi ilkelleştirmek, onun sınırını değiştirmez.*
+    "ilkeller.py",
 }
 
 #: 🍳 modüllerin ASLA import edemeyeceği 🗣 modüller — *"mutfak dil ayrıştıramaz"*.
