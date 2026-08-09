@@ -217,3 +217,37 @@ def test_GENIS_YANLIS_POZITIF_TABANI(schema):
     assert cozulen > 200, f"⊘ ölçüm tabanı çöktü: yalnız {cozulen} soru çözüldü"
     assert not kotu, (f"🔴 tek dönemli meşru soruda cok_donem ihlali "
                       f"({len(kotu)}/{cozulen}):\n  " + "\n  ".join(kotu[:10]))
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TAM-KELİME SINIRI — Türkçe alfabesiyle
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def test_TAM_KELIME_SINIRI_TURKCE_HARFI_SINIR_SANMAZ():
+    """🔴🔴 Ölçüldü (canlı `GG9`): *«nasıl **de**ğişti»* → `kalite.ort_dE` eşleşti.
+
+    Sebep `(?![a-z0-9])`: `ğ` bu sınıfta **yoktu**, yani `de` + `ğ` bir kelime sonu gibi
+    okundu ve `"dE!"` işaretinin (tam-kelime) koruması **tam da korumak için konduğu
+    yerde** çöktü. Pack'in kendi yorumu bu tehlikeyi yazmıştı: *«2 harfli kısa sinonim
+    substring-eşleşmede tehlikeli»*.
+
+    ⚠ Bu bir dil kuralı EKLEMEK değil, bir sınırı **doğru çizmek**: `ADR-0008` sözcük
+    listesi yasaklar, alfabe tanımını değil. *Bir kelime sınırını alfabesinin yarısıyla
+    tanımlamak, öteki yarısını sınır sanmaktır.*
+    """
+    from app.cube_router import _syn_hit
+
+    for kelime in ("değişti", "değişim", "dedi", "değer"):
+        assert not _syn_hit(kelime, "de!"), f"«{kelime}» içinde `de` tuttu"
+    # ⊙ Gerçek tam-kelime eşleşmesi KORUNDU — kapı bir yeteneği kısmıyor.
+    assert _syn_hit("de kaç", "de!")
+    assert _syn_hit("ortalama de degeri", "de!")
+
+
+def test_KISA_SINONIM_TURKCE_EKLE_YANILMIYOR():
+    """⚠ Aynı sınıfın kardeşleri: çekim eki Türkçe bir harfle başlıyorsa sınır yanılırdı."""
+    from app.cube_router import _syn_hit
+
+    for kelime, syn in (("şubatta", "su!"), ("çıktığı", "ci!"), ("göründü", "gor!"),
+                        ("ısınma", "is!"), ("üretim", "ur!")):
+        assert not _syn_hit(kelime, syn), f"«{kelime}» içinde `{syn}` tuttu"

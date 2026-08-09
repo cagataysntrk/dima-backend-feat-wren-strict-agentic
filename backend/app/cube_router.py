@@ -665,7 +665,22 @@ def _syn_hit(q: str, syn: str) -> bool:
     ek zinciri. Çok kelimeli sinonimlerde çekim son kelimeye gelir ("fire oranını" ✓).
     """
     if syn.endswith("!"):
-        return re.search(rf"{_KELIME_BASI}{re.escape(syn[:-1])}(?![a-z0-9])", q) is not None
+        # 🔴🔴 **SAĞ SINIR ASCII-ONLY'Dİ VE TÜRKÇE HARFİ KELİME SONU SANIYORDU.**
+        #
+        # Ölçüldü (canlı `GG9`): *«nasıl **de**ğişti»* → `kalite.ort_dE` eşleşti. Sebep
+        # `(?![a-z0-9])`: `ğ` bu sınıfta **yok**, yani `de` + `ğ` bir kelime sonu gibi
+        # okundu ve `"dE!"` işaretinin (tam-kelime) koruması **tam da korumak için
+        # konduğu yerde** çöktü.
+        #
+        # ⊙ İşlev normalize edilmiş `q` bekliyordu ama `_match_measure` **ham** soruyu
+        # veriyor. İki onarım vardı; sınırı düzeltmek seçildi çünkü **normalize edilmiş
+        # girdide de doğru** (no-op) ve çağıranın hafızasına güvenmiyor.
+        #
+        # ⚠ Bu bir dil kuralı EKLEMEK değil, bir sınırı **doğru çizmek**: `ADR-0008`
+        # sözcük listesi yasaklar, alfabe tanımını değil. *Bir kelime sınırını
+        # alfabesinin yarısıyla tanımlamak, öteki yarısını sınır sanmaktır.*
+        return re.search(rf"{_KELIME_BASI}{re.escape(syn[:-1])}(?![a-z0-9çğıöşüâîû])",
+                         q) is not None
     # `_ek_gecerli`/`_SUFFIX_CHAIN_RE` modülün ilerisinde tanımlı (biçimbirim bloğu bir arada
     # dursun diye); çağrı anında modül tam yüklü olduğundan ileri referans güvenlidir.
     return any(_ek_gecerli(m.group(1))

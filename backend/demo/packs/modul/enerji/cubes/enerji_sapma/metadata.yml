@@ -16,7 +16,12 @@ measures:
     expression: "ROUND(SUM(enpg),0)"
     type: DOUBLE
     unit: "kWh"
-    synonyms: [enpg, sapma, net sapma, fark, kümülatif fark, cusum]
+    # 🔴 `fark` ÇIKARILDI (`GG2`, canlı): *«ortalamadan **farkını** söyle»* bu ölçüye
+    # eşleşiyor ve soruyu iki-cube yetenek sınırına düşürüyordu — oysa soru tek küple
+    # cevaplanabilir. `§99.1`: geniş bir sinonim cube'u **açgözlü** yapar. Nitelikli
+    # hâli (`enerji farkı`) kaldı; çıplak `fark` bir ENERJİ terimi değil, bir
+    # matematik kelimesidir.
+    synonyms: [enpg, sapma, net sapma, enerji farkı, kümülatif fark, cusum]
     lower_is_better: true
   - name: sapma_yuzde
     expression: "ROUND(SUM(enpg)*100.0/NULLIF(SUM(beklenen),0),1)"
