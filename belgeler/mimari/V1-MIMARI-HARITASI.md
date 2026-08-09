@@ -5,10 +5,12 @@
 **+ §0: 🔴 RESTORAN ANALOJİSİ — her parçanın tam karşılığı, ve analojinin NEREDE KIRILDIĞI**
 **+ §16–17: v2 ve v3'te bu haritanın NERESİNE NE eklenecek**
 
-Damga: `2026-08-08` · HEAD `761928d` · **GARSON ARA FAZI KAPANDI** *(§6.Ω · 113 adım indi ·
-3 bilerek ertelendi)* → sıradaki kapı **v2**
-⟳ **Önceki damga:** `2026-08-05` @`eb48c40` · *"aktif faz FAZ 4"* — **ara fazdan ÖNCEYDİ.**
-Bu turda güncellenen bölümler `⟳ 2026-08-08` işaretini taşır; **özgün metin silinmedi**,
+Damga: `2026-08-09` · HEAD `7880563` · **ORKESTRATÖR FAZI** *(`O-0`…`O-9` · garson artık
+tek bir fiş yerine bir **PLAN** çevirebiliyor — bayrak `off`, gerekçesi ölçülmüş)*
+⟳ **Önceki damga:** `2026-08-08` @`761928d` · *"garson ara fazı kapandı"* — **orkestratörden
+ÖNCEYDİ.** Bu turda güncellenen bölümler `⟳ 2026-08-09` işaretini taşır.
+⟳ **Ondan önceki:** `2026-08-05` @`eb48c40` · *"aktif faz FAZ 4"* — **ara fazdan ÖNCEYDİ.**
+`⟳ 2026-08-08` işaretli satırlar o turun deltasıdır; **özgün metin silinmedi**,
 üstüne yazıldı — çünkü bir haritanın *neyi yanlış bildiği* de bilgidir.
 
 ---
@@ -23,6 +25,7 @@ Bu turda güncellenen bölümler `⟳ 2026-08-08` işaretini taşır; **özgün 
 | `backend/MIMARI.md` | 🥈 Mimari otorite | **MIMARI kazanır** |
 | `belgeler/plan/DIMA-V1-YOL-HARITASI.md` | 🥉 Plan otoritesi | **Yol haritası kazanır** |
 | ⟳ `belgeler/plan/DIMA-GARSON-ARA-FAZ.md` | 🥉 **Ara faz plan otoritesi** *(garson katmanı)* | **Ara faz kazanır** |
+| ⟳ `belgeler/denetim/2026-08-09_ORKESTRATOR-KATMANI-VE-OLCEKLENME.md` | 🥉 **Orkestratör faz otoritesi** *(`O-0`…`O-9`)* | **Rapor kazanır** — ⚠ *ama `E6` düzeltmesi bir A/B ile GERİ ALINDI; ölçüm rapordan da üstündür* |
 | `OPERASYON-DURUM.md` | Durum kaydı | **Durum kaydı kazanır** |
 | **BU BELGE** | ❌ **YOK** | — |
 
@@ -232,6 +235,7 @@ flowchart TB
 | **MENÜYÜ BİLMEK** | kapasite beyanı | `yetenek.py` · `katalog_metni.py` | `iddia.py` denetler | ✅ `G8` |
 | Tek ses tonu | metin katalogu | `soz.py` | — | ◐ *(5.17)* |
 | Kıyas dili *("geçen yıla göre")* | kıyas cebiri | `kiyas_cebiri.py` *(265)* | 🚩 `referans_dili` **beta** | ✅ `G6` |
+| ⟳ **Siparişi ADIMLARA bölmek** *("önce şunu bak, sonra onu kıyasla")* | plan çevirisi — **fiş değil, fiş DİZİSİ** | `plan_garson.py` · `plan_semasi.py` | 🚩 `orkestrator_plan` **off** · 🔴 **kapalı fiil kümesi** *(`enum`)* | ◐ ⟳ `O-4` |
 
 ### 📋 SİPARİŞ FİŞİ — garsonla mutfağın **tek** ortak dili
 
@@ -345,6 +349,7 @@ LLM'siz niyet algılamak **zordur** — güven duyulmayan `route()`'tur. `route(
 |---|---|---|---|
 | `parse_cube_query` `cube_router.py:3715` | 🗣→🍳 | 🔴 **Katı beyaz liste** — şema dışı ad **çalıştırılamaz** | ✅ |
 | `uyum.denetle` `uyum.py:169` | 🗣→🍳 | Niyet ↔ sorgu uyumu · **beyan-açık** | ✅ |
+| ⟳ `plan_semasi` `FIILLER` + `ZORUNLU_ALANLAR` | 🗣→🍳 | 🔴 **Kapalı fiil kümesi** — plan yeni fiil **icat edemez** (`enum`); adı doğru yazıp **parametresini uyduran** adım düşürülür | ✅ ⟳ `O-2` |
 | `dry_plan` `wren_service.py:1504` | 🍳 içi | Sorgu **çalıştırılmadan** motorca doğrulanır | ✅ |
 | `planner` dört kapı | her araç | kayıt · yetki · **det-önce** · bütçe | ✅ |
 | `interpret()` `interpret.py:359` | 🍳→🗣 | 🔴 **Ham satır değil, OLGU çıkar** | ✅ |
@@ -777,8 +782,14 @@ flowchart TD
     I --> PARSE{"<code>parse_cube_query()</code><br/><b>KATI BEYAZ LİSTE</b>"}
     PARSE -->|"geçti"| S7["✅ <code>source=cube+llm</code><br/><b>confidence 0.85</b><br/>tam yapısal · chip · drill · makbuz"]
     PARSE -->|"uydurulmuş alan"| REDP["🔴 <b>TÜM SORGU None</b><br/><i>LLM uydurduğunda cevap ÜRETİLMEZ</i>"]
-    REDP --> D
-    INT -->|"off"| D
+    REDP --> ORK
+    INT -->|"off"| ORK
+
+    ORK{"⟳ <b>4e · ORKESTRATÖR</b> — 🚩 <code>orkestrator_plan</code> <i>off</i><br/>🔴 <b>MERDİVENİN BOŞLUĞU</b> (E3): buraya yalnız<br/>route BOŞ <b>ve</b> garsonun tek-cube cevabı YOK iken gelinir"}
+    ORK -->|"off ∨ şema-geçerli plan yok"| D
+    ORK -->|"plan çıktı"| PLAN["<b>PLAN KOŞUMU</b> — <code>plan_kosucu</code><br/>7 kapalı fiil · azami 5 adım · <code>$1</code> referansı<br/>🔴 her <code>SORGU</code> adımı <b>parse_cube_query</b>'den geçer"]
+    PLAN -->|"tüm adımlar koştu"| SORK["✅ <code>source=cube+llm</code><br/>cevap + <b>adım adım makbuz</b>"]
+    PLAN -->|"bir adım koşamadı"| SORKX["◐ <b>ADIM ADIM RET</b><br/><i>hangi adımda NE eksikti</i><br/>— bugünkü tek satırlık rettin YERİNE"]
 
     D{"<b>_yol_izinli('discovery')</b><br/>🚩 <b>yol sınırı</b> — kullanıcı seçimi"}
     D -->|"yasak"| S8
@@ -806,6 +817,8 @@ flowchart TD
     S6 --> SEAL
     S7 --> SEAL
     SCHIP --> SEAL
+    SORK --> SEAL
+    SORKX --> SEAL
     S9 --> SEAL
     AC --> SEAL
     S8 --> SEAL
@@ -814,12 +827,21 @@ flowchart TD
 
     style S6 fill:#1b5e20,color:#fff
     style S7 fill:#33691e,color:#fff
+    style SORK fill:#33691e,color:#fff
+    style SORKX fill:#455a64,color:#fff
     style S9 fill:#e65100,color:#fff
     style S8 fill:#37474f,color:#fff
     style REDP fill:#b71c1c,color:#fff
     style SEAL fill:#4a148c,color:#fff
     style R fill:#0d3b66,color:#fff
 ```
+
+> 🔴 **⟳ `4e` neden 5'ten ÖNCE, 4c'den SONRA — `E3`.** Orkestratör merdivenin **yerine**
+> geçmez, **boşluğunu** doldurur. İlk tasarım onu `select_cube`'un *yerine* koymuştu ve
+> A/B **çürüttü**: `_select_consistent` `k` örneği **aynı** süreçten çekip oylar; plan
+> araya girince örneklerin bir kısmı plandan, bir kısmı yedekten geliyordu — arıza oranı
+> **%55 → %65**. *Bir oylamanın geçerliliği örneklerin özdeşliğine dayanır.* Bugünkü yerinde
+> cevaplanan hiçbir soru **bir çağrı bile** görmez; oylama planı **hiç görmez**.
 
 ## 4.3 · Çıkış kapısı — `seal()` neden TEK
 
@@ -889,6 +911,7 @@ Intent-JSON için ayrı ve **daha ucuz** bir model kullanılabilir (`*_select_mo
 | `hasılatımız` | 4c · Intent-JSON | `cube+llm` | ✅ | ✅ |
 | `depo bazında satış` *(depo yok)* | 4d · **kısmi anlama** | chip | ❌ | soru |
 | `acik borc` *(typo)* | ⚠ **yazım-benzerliği** — `AJ0` | `NOTE` | ❌ | 🔴 **merdiveni KESİYOR** |
+| ⟳ `en kötü makine hangisi, neden akranlarından düşük` | **4e · orkestratör** 🚩 `off` → bugün **5** ∨ **8** | `cube+llm` *(bayrak açıkken)* | ✅ | ✅ + **adım makbuzu** |
 | kapsam dışı serbest soru | 5 · Discovery | `llm:gemini` | ✅ | ❌ *(adhoc_cube hariç)* |
 | hiçbiri | 8 · dürüst ret | `null` | — | — |
 
@@ -905,6 +928,80 @@ Intent-JSON için ayrı ve **daha ucuz** bir model kullanılabilir (`*_select_mo
 > ⚠ Bir denetim ajanı bu deseni *"cırcır ters"* diye raporladı; **bulgu reddedildi** (`DA-6`)
 > — meta-kapı deseni doğrudur. *Restoranda karşılığı: garson artık **"şunu mu demek
 > istediniz?"** diye sorarken **siparişi iptal etmiyor**.*
+
+## 4.6 · ⟳ ORKESTRATÖR — *garson tek fiş yerine bir **FİŞ DİZİSİ** yazabilir*
+
+> ⟳ **2026-08-09 · YENİ BÖLÜM** *(`O-0`…`O-9`)*. Kaynak plan:
+> `belgeler/denetim/2026-08-09_ORKESTRATOR-KATMANI-VE-OLCEKLENME.md`.
+> **Bayrak `orkestrator_plan` = `off`** — ve bu bir tahmin değil, bir A/B'nin sonucudur.
+
+**Restoranda:** garson *"önce hangi makine en kötü, sonra onu akranlarıyla kıyasla"*
+diyen bir siparişi **tek fişe** yazamaz. Orkestratör, garsona **fiş dizisi** yazdırır;
+her fiş yine **aynı beyaz listeden** mutfağa girer.
+
+### Beş modül — ve her birinin sınırı yazılı
+
+| Modül | Ne yapar | 🔴 Ne YAPMAZ |
+|---|---|---|
+| `plan_semasi.py` | **Sözleşme** — kapalı fiil kümesi (`enum`) · `ZORUNLU_ALANLAR` · `$1` referansı | LLM çağırmaz, hiçbir şey koşturmaz |
+| `plan_garson.py` | Planı **çevirir** — garsonun kendisi, ayrı bir kişi değil | Yalnız **boşlukta** çağrılır; oylamaya girmez |
+| `plan_kosucu.py` | Adımları sırayla koşar, `$1`'i çözer, bütçe sayar | 🔴 **SQL yazmaz · aritmetik yapmaz** — sayıyı her zaman **küp** koyar |
+| `plan_tuketici.py` | Planı motora bağlar, sonucu **anlatır** | Bir yerde cevap varken **hiç konuşmaz** |
+| `ilkeller.py` | `bagla` *(SATIR→DEĞER)* · `hesapla` *(SATIR→SATIR)* — zincirin eksik halkası | Veriye dokunmaz, sorgu koşmaz *(saf fonksiyon)* |
+
+### Yedi fiil — liste **BÜYÜMEYECEK**
+
+`SORGU` · `KIYASLA` · `AYRISTIR` · `BAGLA` · `HESAPLA` · `TREND` · `ANLAT`
+*(`ANLAT` yalnız **son** adım olabilir.)*
+
+> 🔴 **Serbest plan YASAK.** Açık bırakılırsa plan üreten LLM, SQL üreten LLM'den **daha az**
+> denetlenebilir olur — hatası birkaç adım sonra, **birleşik sonuçta** görünür ve hangi
+> adımdan geldiği okunamaz. Sonluluk **şema düzeyinde** kurulur: model `enum` dışına çıkamaz.
+> ⚠ Ve `SORGU`'nun gövdesi `intent_semasi.cube_query_json_schema`'dır — **ikinci bir kopya
+> yazılmadı** *(`KAT-1`: iki yerde tanımlanan şema, iki farklı katalogla koşar)*.
+>
+> ⊙ **Discovery'den farkı tek cümlede:** *Discovery'de LLM **cevabı** üretir; burada LLM
+> **soruyu böler**, cevabı her parçada **küp** verir.*
+
+### `O-3` — araç kaydı **23 → 25**, ama liste **yer değiştiriyor**
+
+Bugünkü kaydın 10'u **REÇETEdir** (`yoy.compute` · `contribution.*` · `stats.*` · `kpi.resolve`).
+Bir reçete takımı **yazıldığı kadar** soru şekli karşılar; bir **ilkel** takım
+**bileşimlerinin tamamını**. İki ilkel girdi; reçeteler **silinmedi** *(uçları çalışıyor)*
+ama planlayıcının seçim listesinden kademeli çıkacaklar — `§99.1`: *uzun bir liste seçimi
+kötüleştirir*.
+
+⚠ `E4` koruması: `contribution._akran_kiyasi` bu iki ilkelin **üstüne** kuruldu ve çıktısı
+**bayt bayt** korundu. Yani `O-1` bir yetenek eklemesi değil, **denkliği kanıtlanan bir refactor**.
+
+### 🔴 ÖLÇÜLDÜ — ve bayrak kapalı bırakıldı *(`EE` turu · payda 20 · `curl` ile tek tek)*
+
+| koşum | 🍳 `cube` | 🗣 `cube+llm` | 🥡 Discovery/adhoc | 🔴 cevapsız | **arıza oranı** |
+|---|---|---|---|---|---|
+| **A** · bayrak kapalı | %10 | **%35** | %10 | %45 | **%55** |
+| **B** · plan `select_cube`'un **YERİNE** | %10 | %25 | 🔴 %25 | %40 | 🔴 **%65** *(+10)* |
+| **B2** · plan **YALNIZ boşlukta** | %10 | **%35** | %5 | %50 | **%55** *(+0,0)* |
+
+**Okuma — iki ayrı sonuç, ikisi de yazılı:**
+
+1. ✅ **Gerileme tamamen kapandı** *(`B` → `B2`)*: yer düzeltilince `cube+llm` %35'e döndü.
+2. ⚠ **Kazanç henüz SIFIR:** canlı iki denemede de **şema-geçerli bir plan çıkmadı**.
+   Sebebi tahmin değil, ölçüm:
+   * `TREND` · `AYRISTIR` · `KIYASLA` · `ANLAT` fiillerinin **çalıştırıcıları bağlı değil**;
+   * serbest-JSON sağlayıcı **adım sözleşmesine uymuyor** — fiili doğru yazıp parametresini
+     uyduruyor (`{"fiil":"SORGU"}` · `{"fiil":"AYRISTIR","ozellik":…}`). `ZORUNLU_ALANLAR`
+     bunları **düşürüyor** ve bu **doğru davranıştır**: *yarım bir planı koşmak, koşmamaktan kötüdür.*
+
+> 🔴 **Faz iptal DEĞİL, geliştirilecek** — raporun kendi kuralı: *«oran düşmezse faz
+> GELİŞTİRİLİR, iptal edilmez»*. Sıradaki iş yukarıdaki iki maddedir.
+> ⚠ *Bir bayrağı «belki bir işe yarar» diye açık bırakmak, ölçmemenin kibar hâlidir.*
+> Kanıt: `backend/lab/olcumler/orkestrator_ab.md`
+
+### İkinci çıktı da bir ürün: **adım adım ret**
+
+Plan koşamadığında bugünkü karşılık *"Bu soru için güvenilir bir sorgu üretemedim."* —
+kullanıcı **neyin** eksik olduğunu öğrenemez. `plan_tuketici` bunun yerine **hangi adımda
+ne eksikti** yazar. *Bir eksikliği adıyla söylemek, onu bir sonraki mutfak işine çevirir.*
 
 ---
 
@@ -924,8 +1021,14 @@ Intent-JSON için ayrı ve **daha ucuz** bir model kullanılabilir (`*_select_mo
 | 4 | `deterministic_refine()` — yapısal takip | `cube` | ❌ | aynı |
 | 5 | `cross_cube_add` / `cross_cube_dim_switch` | `cube` | ❌ | aynı *(blend, gerçek JOIN değil)* |
 | 6 | 🔴 **Intent-JSON** — LLM **yapı doldurur, SQL YAZMAZ** | **`cube+llm`** | ✅ *(küçük model)* | **tam yapısal · chip · kırılım · drill · Query Contract** |
+| ⟳ **6b** | 🚩 **ORKESTRATÖR PLANI** *(`orkestrator_plan` = `off`)* — LLM **soruyu böler**, SQL yazmaz | `cube+llm` | ✅ *(6'nın YERİNE değil, BOŞLUĞUNDA)* | 6'nın garantisi **her adım için ayrı ayrı** + adım adım makbuz |
 | 7 | ⚠️ **Discovery** — LLM ham SQL yazar | `llm:<sağlayıcı>` | ✅ | **tek atımlık düz tablo. Chip YOK, kırılım YOK, drill YOK** |
 | 8 | dürüst red | `null` | — | *"anlamadığını bil"* |
+
+> ⟳ **`6b` neden bir basamak DEĞİL, bir boşluk dolgusu** *(`E3` · §4.6)*: buraya yalnız
+> 6 **hiçbir şey üretemediğinde** gelinir — yani bugünkü sonuç zaten 7 ya da 8. Bir basamak
+> **ekleyerek** değil, iki basamak arasındaki **düşüşü** yakalayarak çalışır. Bayrak `off`;
+> A/B **gerileme 0, kazanç 0** ölçtü ve faz **geliştirilecek**, iptal edilmeyecek.
 
 ### 5.1 · Basamak 3 ve 6 neden **aynı** garantiyi taşıyor
 
@@ -1035,6 +1138,13 @@ flowchart LR
 > intent şeması **tümüyle `oneOf` üzerine kurulu** *(`intent_semasi.py:101`)*.
 > ⚠ **Kaybedilen bir GÜVENLİK garantisi değil, bir MALİYET garantisidir** — asıl emniyet
 > ağı `parse_cube_query`'nin beyaz listesi ve o **sağlayıcıdan bağımsızdır**.
+
+> ⟳ **2026-08-09 · SAYI YİNE BAYAT — yeniden ölçüldü @`7880563`:**
+> `FLAG_REGISTRY` **53** · `features.yml` **52** · 🔴 **ölü bayrak yine 1** *(değişmedi —
+> `ayni_grain_gocu`, derleme zamanı)* · aşama dağılımı `prod` **3** · `beta` **20** ·
+> `alpha` **1** · `off` **28**.
+> **⟳ Orkestratör fazının doğurduğu bayrak:** `orkestrator_plan` 🔴 **off** — *ölçüldü ve
+> kapalı bırakıldı*, gerekçesi §4.6'da ve `lab/olcumler/orkestrator_ab.md`'de.
 
 **Kapsam sırası (soldan sağa artar, en spesifik kazanır):**
 
@@ -1215,6 +1325,16 @@ yani sinonim zenginleşmesi, tazelik rozeti, kolon kökeni gibi şeyleri **göre
 | **2 · Kırmızı çizgi** | 🔴 **SEÇİM ≠ ÇALIŞTIRMA.** Dört kapı denetler |
 | **3 · Gizli risk** | Sıcak yola LLM çağrısı |
 
+### ⟳ 🔴 `orkestrator_plan` *(FAZ `O-4`)* — **ÖLÇÜLDÜ, `off` KALIYOR**
+
+| | |
+|---|---|
+| **1 · Kazanç** | Çok adımlı soru *(«en kötü makine hangisi, neden akranlarından düşük»)* bugün Discovery'ye ya da rette düşüyor; plan onu **adım adım** cevaplayabilir |
+| **2 · Kırmızı çizgi** | 🔴 **`E3` — merdivenin YERİNE değil BOŞLUĞUNA.** Cevaplanan bir soruya **bir çağrı bile** eklenemez. Ve **serbest plan yasak**: fiil kümesi `enum`, her `SORGU` adımı beyaz listeden geçer |
+| **3 · Gizli risk** | 🔴 **Oylamanın bozulması** — ölçüldü: plan `select_cube` ile yarışınca `_select_consistent`'ın örnekleri iki farklı süreçten gelir, arıza oranı **%55 → %65** |
+| **Elle bakılacak** | Kapalıyken davranış **bayt bayt** bugünkü mi *(`sarmala()` nesnenin kendisini döndürür — testli)*; açıkken **cevaplanan** bir soru bozuluyor mu |
+| **Kapalıyken** | `acik_mi()` `False` → modülün **hiçbir satırı** koşmaz |
+
 ### 🔴 `ossie_ithal` *(FAZ 3.4)*
 
 | | |
@@ -1269,6 +1389,7 @@ flowchart LR
 | `netlestirme_onceligi` | `--ab-kurtarma` | `--ab` | doğru kurtarma **> 0** | ✅ **ölçüldü** → `off` *(kurtarma 0, kayıp 5)* |
 | `prompt_enhancer` | `--ab-kurtarma` | `--ab` | kazanç > 0 | ⚠ **ölçüldü: kazanç YOK** *(kota sınırına çarpıldı)* |
 | `llm_sema_kisitli` | `faz3a_sema_kazanci.py` | `--ab` | kazanç > 0 | ✅ **ölçüldü: 0 kazanç** — mekanizma **yapısal** gerekçeyle kaldı |
+| ⟳ `orkestrator_plan` | `lab/discovery_orani.py --ab` | **aynı alet** *(payda kilitli)* | 🔴 **arıza oranı DÜŞMELİ**, hiçbir cevap bozulmamalı | ✅ **ölçüldü: gerileme 0, kazanç 0** → `off` *(bkz. §4.6)* |
 | `cekirdek_katman` | 🔴 **korpus ÖLÇEMEZ** → **manuel tur** | `mdl_diff` gölge derleme | **sayı-etkisi 0** + daha çok soru cevaplanıyor | ⬜ **HAKEM: KULLANICI** |
 | `t2_anlatici` | `narration_guard` red/yayım **oranı** | süit | **0 uydurma sayı** | ⬜ FAZ 5 |
 | `agent_plan_secimi` | **§G.6 kıyas sözleşmesi** | `--ab` | §G.6b | ⬜ §G |
@@ -1686,7 +1807,7 @@ flowchart LR
 | 3 | `app/iddia.py` YOK | ✅ **KAPANDI** *(`G4`)* — **221 satır** | `wc -l app/iddia.py` |
 | 4 | `R11` yok | ⊘ **DENENDİ → GERİ ALINDI**, gerekçesiyle | `cube_router.py:3530` |
 | 5 | Ölü bayrak **2** | ◐ **1'e düştü** — kalan `ayni_grain_gocu` **derleme zamanı**, bilinçli | `FLAG_REGISTRY` ↔ `features.yml` |
-| 6 | `ask()` monoliti | 🔴 **BÜYÜDÜ** — `app/routers/ask.py` **4938 satır** *(belge 1147 diyordu)* | `wc -l` |
+| 6 | `ask()` monoliti | 🔴 **BÜYÜDÜ** — `app/routers/ask.py` **4938 satır** *(belge 1147 diyordu)* · ⟳ **2026-08-09: 5485** — orkestratör dalı + `§BB-B` boş-cevap guard'ı | `wc -l` |
 | 7 | 7 güvenlik noktası, **bileşke tanım yok** | ◐ **§0.5 ilk bileşke listeyi yazdı** — ama bir **belge**, kapı değil; `1.3c` borcu **açık** | bu belge §0.5 |
 | 8 | `hedef_kiyasi` kayıtta yok | ✅ **KAPANDI** | `features.py:53` |
 | 9 | `docs/adr/` — 0 dosya | 🔴 **AÇIK** | `4.6` |
@@ -1702,6 +1823,16 @@ flowchart LR
 | `S5` | `{{ENT_i}}` **varlık perdesi inmedi** — hava boşluğunun eksik yarısı | orta |
 | `diyalog.py` | Fazın **en büyük yeni katmanının** `MIMARI.md` kaydı **yok** | orta |
 | `kapasite` | 🔴 **Plan kendi içinde çelişiyor** — `§13.5b` alanı şart koşuyor, `§13.5c` yasaklıyor; kod ikincisini seçip **testle kilitledi**, `lab/garson.py` hâlâ birincisini okuyor → **ölü dal** | orta |
+
+**⟳ 2026-08-09 · ORKESTRATÖR FAZININ doğurduğu borçlar** *(hepsi §4.6'da ölçülerek yazıldı)*:
+
+| # | Ne | Ağırlık |
+|---|---|---|
+| `O-a` | 🔴 **Dört fiilin çalıştırıcısı bağlı değil** — `TREND` · `AYRISTIR` · `KIYASLA` · `ANLAT`. Bayrağın kazancının bugün **sıfır** olmasının birinci sebebi | 🔴 yüksek |
+| `O-b` | 🔴 **Serbest-JSON sağlayıcı adım sözleşmesine uymuyor** — fiili doğru, parametreyi uydurma yazıyor; `ZORUNLU_ALANLAR` düşürüyor *(doğru davranış, ama plan hiç çıkmıyor)* | 🔴 yüksek |
+| `O-c` | ⚠ **Gecikme kaydı ELLE yazıldı** — `nl_corpus.py` `sure_sn`'i bir rapora yazmıyor; `test_latency_tavani.py` kayıt yoksa **atlanıyor** *(uydurma sayı üretmiyor)* | orta |
+| `G1·Y6` | 🔴 **Menüdeki boşluk sınıf DEĞİŞTİRDİ:** *«tamir süresi»* artık cevapsız değil, **YANLIŞ** — `bakim` yerine `kalite.toplam_ek_sure_dk`'dan cevaplanıyor. *Bir boşluğu kapatmanın en sessiz yolu, onu yanlış bir yemekle doldurmaktır* | 🔴 yüksek |
+| `G1·Z12` | *«şikayetleri bölgelere göre»* — `sikayet`+`bolge` mutfakta **var**, menüde çekim eşleşmiyor → cevapsız | orta |
 
 ## 13.2 · Yinelenen kusur sınıfları — bu operasyonda ölçüldü
 
@@ -1811,6 +1942,15 @@ python lab/kapi.py --garson          # hedef, YENİ SEVİYE DEĞİL
 #   ⚠ --live olmadan: yeşil vermez, ⊘ verir
 #   🔴 KURAL G-1: iki koşum ayrışırsa KARAR VERİLMEZ
 #   çıktı: lab/reports/garson/*.md  ·  taban: lab/garson_baseline.json
+
+# ── ⟳ ORKESTRATÖR ALETLERİ (2026-08-09 · O-8/O-9) ──────────────────
+python lab/menu.py --sirket demo-boyahane   # G1: mutfakta VAR, menüde YOK
+#   🔴 KARAR VERMEZ, kanıtlı İŞ LİSTESİ üretir (§99.1 · lab/r1_envanteri.py dersi)
+#   ⚠ şemayı TAZE derlemeden okur — demo/wren-project gitignore'lu bir ARTEFAKT
+python lab/discovery_orani.py --ab orkestrator_plan   # arıza oranı A/B
+#   🔴 PAYDA KUTSALDIR: paydalar eşitlenemezse KIYAS REDDEDİLİR
+#   okuma: llm:* ∨ cevapsız ∨ cube=adhoc  →  hepsi ARIZA RAPORU
+#   kayıt: lab/olcumler/{orkestrator_ab,menu,latency}.md  (lab/reports/ DEĞİL — ignore'lu)
 ```
 
 ---
