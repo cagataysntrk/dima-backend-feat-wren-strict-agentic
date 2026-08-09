@@ -307,6 +307,20 @@ export interface AskResponse {
     ulasildi: boolean;
     sapma_yuzde: number | null;
   } | null;
+  /** 🔴🔴 FAZ 6 — ÇOK ADIMLI CEVABIN YAPISI.
+   *
+   * `agent_run` ile KARIŞTIRILMAZ: o bir **denetim izidir** (geriye dönük, adım başına
+   * sonucu yok, makbuzun içinde). Bu **cevabın kendisidir**: kaç parçadan oluştu, her
+   * parça hangi sorgudan geldi.
+   *
+   * 🔴 Her bölüm kendi `cube_query`'sini taşır ki kart `POST /cube` ile **sıfır LLM**
+   * yeniden koşulabilsin — `onCubeEdit` zaten kurulu, yeni bir uç gerekmiyor.
+   *
+   * `null` = tek adımlı bugünkü cevap. */
+  plan?: {
+    adimlar: { sira: number; fiil: string; ozet: string }[];
+    bolumler: { cube_query: Record<string, unknown> | null; result: QueryResult | null }[];
+  } | null;
 }
 
 // Faz 4.1 — GET /ask/jobs/{id} yanıtı (yalnız api-client.ts::ask()'in dahili poll döngüsü kullanır).

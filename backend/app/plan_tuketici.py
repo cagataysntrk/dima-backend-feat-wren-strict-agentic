@@ -222,6 +222,14 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
         # LLM** yeniden koşulabilsin (`O-5`).
         "bolumler": [{"cube_query": a.get("cube_query"), "result": r}
                      for a, r in zip(_sorgu_adimlari, out["sonuclar"])],
+        # 🔴 `FAZ 6` — cevabın **yapısı** kullanıcıya taşınır. `agent_run`'dan farkı:
+        # o bir denetim izidir (geriye dönük, sonuçsuz), bu **cevabın kendisidir**.
+        "plan": {
+            "adimlar": [{"sira": i, "fiil": a.get("fiil"), "ozet": _adim_metni(a)}
+                        for i, a in enumerate(plan["adimlar"], 1)],
+            "bolumler": [{"cube_query": a.get("cube_query"), "result": r}
+                         for a, r in zip(_sorgu_adimlari, out["sonuclar"])],
+        },
     }
 
 

@@ -362,6 +362,20 @@ class AskResponse(BaseModel):
     # ÇİZİLMEZ: "hedef yok" ile "hedef 0" asla karıştırılmaz. Hedef UYDURULMAZ —
     # kullanıcının KENDİ sınırı okunur (MIMARI Faz G3).
     hedef: dict | None = None
+    #: 🔴🔴 **FAZ 6 — ÇOK ADIMLI CEVABIN TAŞIYICISI.** `{adimlar:[…], bolumler:[…]}`.
+    #:
+    #: Bugüne kadar çok adımlı bir cevabı taşıyacak **hiçbir alan yoktu**: elde olan tek
+    #: adım listesi `agent_run`'dı ve o bir **denetim izidir** — geriye dönük, adım başına
+    #: sonucu yok. Bu alan farklı bir şey söyler: *«cevabın kendisi kaç parçadan oluştu
+    #: ve her parça hangi sorgudan geldi»*.
+    #:
+    #: `adimlar[i]` = `{sira, fiil, ozet}` — kullanıcının okuyabileceği tek satır.
+    #: `bolumler[i]` = `{cube_query, result}` — 🔴 her bölüm **kendi sorgusunu** taşır ki
+    #: kart `/cube` ile **sıfır LLM** yeniden koşulabilsin (`O-5`).
+    #:
+    #: ⚠ `None` = tek adımlı bugünkü cevap. Alanın varlığı bir davranış değişikliği
+    #: değildir; **yokluğu** bir eksikti.
+    plan: dict | None = None
     #: 🔴 G0b — HAVA BOŞLUĞU makbuzu: `{yer_tutucu: N, bozulan: M}`.
     #: Kullanıcı **verisinin dışarı çıkmadığını GÖRMELİ** — görünmeyen güvenlik,
     #: satılamayan güvenliktir. Yalnız sayı taşır; **hangi değerin** perdelendiği

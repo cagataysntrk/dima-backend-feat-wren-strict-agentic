@@ -22,6 +22,7 @@ import { ContributionLayer } from "@/components/ContributionLayer";
 import { PrescriptionLayer } from "@/components/PrescriptionLayer";
 import { DrillDownPanel } from "@/components/DrillDownPanel";
 import { InterpretationBar } from "@/components/InterpretationBar";
+import { PlanAdimlari } from "@/components/PlanAdimlari";
 import { ResultView } from "@/components/ResultView";
 import { KpiCardView } from "@/components/KpiCard";
 import { OutputInsight } from "@/components/OutputInsight";
@@ -112,6 +113,8 @@ export function ReportCard({
   const closeDrill = () => { setDrillOpen(false); setDrillFilter(null); };
   // Query Contract keşif/replay paneli (doğrulama turu düzeltmesi, 1 Ağustos 2026, P1-9).
   const [contractOpen, setContractOpen] = useState(false);
+  //: Hangi kontrat açılacak — kartın kendisi mi, bir ADIMIN kanıtı mı. `null` = kart.
+  const [adimKontrati, setAdimKontrati] = useState<string | null>(null);
   // SQL gösterimi (sql_display bayrağı) — ham şeffaflık özelliği; kapalıysa buton yok.
   const sqlStage = useFeature("sql_display");
   // 🔴 KURAL B — bayrak KAPALIYKEN eski üç-yüzeyli davranış **birebir** döner: `?`
@@ -760,7 +763,7 @@ export function ReportCard({
           <Makbuz
             item={item}
             sqlAcik={Boolean(sqlStage && showSql)}
-            onContract={item.contract_id ? () => setContractOpen(true) : undefined}
+            onContract={(id) => { setAdimKontrati(id ?? null); setContractOpen(true); }}
           />
         ) : (
           showTrace && <MakbuzDuz item={item} />
@@ -771,6 +774,13 @@ export function ReportCard({
         ((item.cube_query as { measures?: unknown[] }).measures?.length ?? 0) > 0 && (
         <InterpretationBar cq={item.cube_query} onEdit={onCubeEdit} />
       )}
+
+      {/* 🔴 FAZ 6 — çok adımlı cevabın YAPISI. `Makbuz` ile karıştırılmaz: o
+          *"nasıl koştu"* (denetim izi), bu *"neyi gösteriyor"* (cevabın kendisi).
+          Varsayılan KAPALI — bir cevabı üç tabloyla açmak, cevabı gizlemenin bir
+          yoludur. Tek adımlı cevapta bileşen `null` döner, yani bugünkü kart
+          bayt bayt aynı kalır. */}
+      <PlanAdimlari item={item} onCubeEdit={onCubeEdit} />
 
       {/* Cross-cube KPI kartı (CCC / likidite) — cube tablosu değil bileşke skaler. */}
       {item.kpi && <KpiCardView card={item.kpi} />}
@@ -1227,7 +1237,10 @@ export function ReportCard({
         </pre>
       )}
       {contractOpen && item.contract_id && (
-        <ContractDetailPanel contractId={item.contract_id} onClose={() => setContractOpen(false)} />
+        <ContractDetailPanel
+          contractId={adimKontrati ?? item.contract_id}
+          onClose={() => { setContractOpen(false); setAdimKontrati(null); }}
+        />
       )}
       {drillOpen && item.cube_query && item.result && (
         <DrillDownPanel

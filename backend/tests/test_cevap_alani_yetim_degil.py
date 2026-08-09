@@ -273,8 +273,24 @@ def test_FAZ_0_8_MAKBUZ_KIMLIGI_render_ediliyor():
     adım seviyesinde **beyandan ibaret** kalır."""
     kart = _kart_agaci()
     assert "s.receipt" in kart, "adım makbuzu render EDİLMİYOR"
-    assert "/contracts/${s.receipt}" in kart, \
-        "makbuz kimliği KANITIN KENDİSİNE gitmiyor — tıklanamayan bir kimlik, kimlik değildir"
+    # ⟳ **BU KAPI ÖLÜ BİR BAĞLANTIYI ŞART KOŞUYORDU (düzeltildi 2026-08-09).**
+    #
+    # Eski iddia birebir şuydu: `"/contracts/${s.receipt}" in kart`. Ölçüldü:
+    # `src/app/` altında **`contracts/` diye bir rota YOK** — yani kapı, tıklayanın
+    # **404** aldığı bir bağlantının varlığını *"kanıta gidiyor"* diye onaylıyordu.
+    #
+    # 🔴 Bu, kapının kendi cümlesini çürütüyordu: *«tıklanamayan bir kimlik, kimlik
+    # değildir»*. Bağlantı tıklanabiliyordu ama **hiçbir yere** götürmüyordu.
+    #
+    # Doğru iddia **ulaşılabilirliktir**, belirli bir URL biçimi değil: kimlik ya
+    # kanıt panelini açar (`onContract(s.receipt)`) ya da hiç değilse **okunabilir**
+    # yazılır. Kanıt paneli (`ContractDetailPanel`) zaten kuruluydu.
+    #
+    # *Bir kapıyı yazarken çözümü şart koşarsan, çözüm bozulduğunda kapı seni değil
+    # kendini korur.*
+    assert "onContract(s.receipt" in kart or "makbuz {s.receipt}" in kart, \
+        ("makbuz kimliği ULAŞILAMAZ — ne kanıt panelini açıyor ne okunabilir yazılıyor. "
+         "⚠ Bir URL biçimi şart koşulMAZ: kapı ölü bir bağlantıyı onaylamasın diye.")
 
 
 def test_FAZ_0_9_EXPLAIN_PATH_render_ediliyor():

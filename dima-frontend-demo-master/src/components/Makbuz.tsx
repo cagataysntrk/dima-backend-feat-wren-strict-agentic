@@ -139,7 +139,10 @@ export function Makbuz({
   /** SQL yalnız `sql_gorunurlugu` kademesi açıkken katman 3'e girer — bir bayrağın
    *  kararı burada **tekrar** verilmez, çağırandan gelir. */
   sqlAcik: boolean;
-  onContract?: () => void;
+  /** 🔴 Kimlik **opsiyonel parametre**: kartın kendi kontratı için çağrılırsa boş,
+   *  bir ADIMIN kanıtı için çağrılırsa o adımın kimliği gelir. İkinci bir geri
+   *  çağrı eklemek, aynı işi iki sözleşmeyle yapmaktı. */
+  onContract?: (contractId?: string) => void;
 }) {
   const adimlar = item.agent_run?.step_count ?? item.trace?.length ?? 0;
   const ms = item.agent_run?.steps.reduce((t, s) => t + (s.ms ?? 0), 0) ?? 0;
@@ -294,14 +297,22 @@ export function Makbuz({
                       )}
                       {/* ⚠ FAZ 0.8'in yetim alanı: `receipt` **tıklanabilir** olmalı,
                           yoksa bir kimlik dizgisi olarak kalır ve kimse açamaz. */}
-                      {s.receipt && (
-                        <a
-                          href={`/contracts/${s.receipt}`}
+                      {/* 🔴 **ÖLÜ BAĞLANTI KAPATILDI (2026-08-09).** Buradaki
+                          `href="/contracts/{id}"` var olmayan bir rotaya gidiyordu —
+                          tıklayan kullanıcı **404** alıyordu. Kanıt paneli
+                          (`ContractDetailPanel`) zaten kuruluydu ve kartın kendi
+                          kontratı için kullanılıyordu; adım kanıtı da oraya bağlandı.
+                          *Tıklanabilir bir kimlik, açılamıyorsa tıklanabilir değildir —
+                          yalnız öyle görünür.* */}
+                      {s.receipt && onContract && (
+                        <button
+                          type="button"
+                          onClick={() => onContract(s.receipt ?? undefined)}
                           className="ml-1 text-neutral-400 underline-offset-2 hover:text-accent hover:underline"
                           title="Bu adımın kanıt kaydı"
                         >
                           · makbuz
-                        </a>
+                        </button>
                       )}
                     </li>
                   ))}
@@ -325,7 +336,7 @@ export function Makbuz({
             )}
             {item.contract_id && onContract && (
               <button
-                onClick={onContract}
+                onClick={() => onContract()}   /* ⚠ kimliksiz çağrı = KARTIN kendi kontratı */
                 className="font-mono text-[10px] tracking-wider text-neutral-400 underline-offset-2 transition-colors hover:text-foreground hover:underline"
                 title="Query Contract — bu raporun kanıt kaydı: soru + sorgu + sonuç özeti mühürlendi; sonradan yeniden oynatılıp doğrulanabilir"
               >
@@ -394,13 +405,13 @@ export function MakbuzDuz({ item }: { item: AskResponse }) {
                 <span className="mr-1 text-neutral-400">{s.tool}</span>
                 <span className="text-neutral-400">· {s.determinism} · {s.ms} ms</span>
                 {s.error && <span className="ml-1 text-amber-600">· {s.error}</span>}
+                {/* ⚠ `MakbuzDuz` bir geri çağrı almıyor (bayrak kapalı yol) — ölü
+                    bağlantı yerine **kimliğin kendisi** yazılır. Açılamayan bir
+                    bağlantıdan, açıkça kopyalanabilir bir kimlik iyidir. */}
                 {s.receipt && (
-                  <a
-                    href={`/contracts/${s.receipt}`}
-                    className="ml-1 text-neutral-400 underline-offset-2 hover:text-accent hover:underline"
-                  >
-                    · makbuz
-                  </a>
+                  <span className="ml-1 text-neutral-400" title="kanıt kaydı kimliği">
+                    · makbuz {s.receipt}
+                  </span>
                 )}
               </li>
             ))}
