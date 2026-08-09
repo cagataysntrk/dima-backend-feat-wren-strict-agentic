@@ -192,7 +192,29 @@ def _plani_oku(ham: str, *, neden: list[str] | None = None) -> dict | None:
             _de(f"adım {i} (`{a['fiil']}`): tanımsız alan(lar): " + ", ".join(_fazla)
                 + f" — yalnız şunlar yazılabilir: {', '.join(sorted(_serbest - {'fiil'}))}")
             return None
-    return {"adimlar": adimlar}
+
+    # 🔴🔴 **YAPISAL DOĞRULAMA DA BURADA — ve bu bir birleştirme, bir ekleme değil.**
+    #
+    # `dogrula()` (ileri referans · tip · `ANLAT` konumu · bütçe · **ulaşılamaz adım**)
+    # koşum anında çalışıyordu. Sonuç: model bu hataları **hiç öğrenemiyordu**, çünkü
+    # onarım turu yalnız alan hatalarını görüyordu.
+    #
+    # Ölçüldü (canlı, `FF4` — *«en çok fire veren makineyi bul sonra o makinede hangi
+    # vardiyada olduğunu göster»*): model en kötü makineyi `BAGLA` ile **buldu** ama
+    # sonra **kullanmadı** — üçüncü adımda vardiyaya *global* sorgu attı. `dogrula()`
+    # bunu doğru reddetti (*«koşulup atılırdı»*) ama red **öğretici olmadı**.
+    #
+    # ⊙ Tek kapı, tek onarım turu: iki doğrulayıcının aynı yerde durması, modele
+    # *"neyi düzelteceğini"* tek seferde söyler. *Bir hatayı geç söylemek, onu hiç
+    # söylememenin pahalı hâlidir.*
+    _plan = {"adimlar": adimlar}
+    try:
+        from app.plan_kosucu import dogrula
+        dogrula(_plan)
+    except Exception as e:            # noqa: BLE001 — `PlanHatasi` dâhil her yapısal red
+        _de(str(e))
+        return None
+    return _plan
 
 
 class PlanGarsonu:
@@ -250,10 +272,17 @@ class PlanGarsonu:
                 return json.dumps(cq, ensure_ascii=False)
             # ⚠ Çok adımlı: oy düşer (kanonik bir `CubeQuery` yok — `R1`) ve karar
             # `plan_kosucu.dogrula()`'ya geçer: tip·DAG·bütçe denetimi oylamadan **sert**.
-            if self._istek is not None:
-                _var = getattr(self._istek, "state", None)
-                if _var is not None:
-                    _var.plan_taslagi = plan
+            # ⚠ Plan **istek durumuna** bırakılır: `_select_consistent` `k` kez örnekler
+            # ve her örnek kendi planını üretir; sonuncusu kalır. Bir oylama yapmıyoruz
+            # çünkü çok adımlı planın kanonik biçimi yok (`R1`) — karar `dogrula()`'nın.
+            _var = getattr(self._istek, "state", None) if self._istek is not None else None
+            if _var is not None:
+                _var.plan_taslagi = plan
+                _log.info("plan: %d adım SAKLANDI (çok adımlı → tüketici koşacak)",
+                          len(plan["adimlar"]))
+            else:
+                _log.warning("plan üretildi ama SAKLANAMADI (istek yok) — tüketici "
+                             "onu yeniden üretmek zorunda kalacak")
             return "{}"
         except Exception:
             _log.warning("plan garsonu düştü → bugünkü select_cube", exc_info=True)

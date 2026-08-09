@@ -418,6 +418,12 @@ def plan_sistem_metni(catalog: str) -> str:
         "- `KIR` ve `SUZ` satır DEĞİL yeni bir SORGU üretir; onu koşmak için sonraki "
         "adımda `{\"fiil\":\"SORGU\",\"cube_query\":\"$2\"}` yaz. Kök nedene inmenin "
         "yolu budur: sorgula → en kötüyü seç → oraya süz → yeniden sorgula.\n"
+        # ⟳ Ölçüldü (canlı `FF4`, üç koşum): model ısrarla `SUZ(cube_query="$1")`
+        # yazıyordu ve reddediliyordu. Yazdığı **doğruydu** — tip tablosu yanlıştı.
+        # Artık geçerli; istem de açıkça söylüyor ki model tereddüt etmesin.
+        "- Bir `cube_query` alanında bir `SORGU` adımına da işaret edebilirsin: `\"$1\"` "
+        "o adımın **sorgusu** demektir (satırları değil). *«O makinede hangi vardiyada»* "
+        "→ `SUZ` ile `$1`'in sorgusunu o makineye daralt, sonra yeniden `SORGU` at.\n"
         "- Aritmetik, koşul, döngü YAZAMAZSIN. Yalnız fiiller ve adım referansları.\n"
         "- Tarih YAZMA: dönemi `period_expr` alanına kullanıcının kendi ifadesiyle "
         "(sistemin diline çevirerek) koy; tarihi Python hesaplar.\n"
@@ -446,6 +452,13 @@ def plan_sistem_metni(catalog: str) -> str:
         "`period_expr`'e gider, `timeDimensions`'a değil.\n"
         "- 🔴 KIRILIM (`dimensions`) ve zaman ekseni de tek bir `SORGU` adımının "
         "içindedir. *«aylara göre üretim»* TEK adımdır.\n"
+        # ⟳ Ölçüldü (canlı `FF4`): model `BAGLA` ile en kötüyü **buldu** ama sonra
+        # **kullanmadı** — bir sonraki `SORGU`yu global attı. Plan reddedildi çünkü
+        # `BAGLA` çıktısı ulaşılamaz kaldı.
+        "- 🔴 HER ADIMIN ÇIKTISI KULLANILMALI: bir adım hiçbir adım tarafından "
+        "gösterilmiyorsa ve son adım değilse plan REDDEDİLİR. `BAGLA` ile bir varlık "
+        "seçtiysen onu **kullan** — *«o makinede»* demek için `SUZ` ile o varlığa süz, "
+        "sonra yeniden `SORGU` at.\n"
         # 🔴 **İKİ ÖRNEK, VE BİRİNCİSİ TEK ADIMLI — sıra bilinçli.**
         # Ölçüldü (`O-13` denklik kapısı): tek örnek çok adımlı olduğunda model basit
         # soruyu da bölüyordu (*«en yüksek cirolu 5 müşteri»* → çok adımlı). Ve ilk

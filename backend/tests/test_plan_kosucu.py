@@ -371,3 +371,34 @@ def test_KIR_SATIR_DEGIL_SORGU_URETIR():
                         {"fiil": "BAGLA", "kaynak": "$1", "boyut": "m", "olcu": "v"}]}
     with pytest.raises(PlanHatasi, match="satirlar"):
         dogrula(plan)
+
+
+def test_SORGU_ADIMINA_REFERANS_ONUN_SORGUSUDUR():
+    """🔴🔴 **EN DOĞAL İFADE ARTIK GEÇERLİ — ve reddeden şey benim tip tablomdu.**
+
+    Ölçüldü (canlı `FF4`, **üç ayrı koşumda**): model ısrarla `SUZ(cube_query="$1")`
+    yazdı — *«birinci adımın sorgusunu daralt»*. Semantik olarak tam doğru; ama
+    `CIKTI_TIPI["SORGU"] == "satirlar"` olduğu için `sorgu` bekleyen alan onu almıyordu.
+
+    ⊙ Bir `SORGU` adımı **iki şey** taşır: koştuğu sorgu ve döndürdüğü satırlar. Alan
+    `sorgu` bekliyorsa kastedilen birincisidir ve o **yazılı** olarak elimizdedir.
+
+    *En doğal ifadeyi yasaklayan bir tip sistemi, modeli eğitmez — ona yalvarır.*
+    """
+    TABAN = {"cube": "oee", "measures": ["v"], "dimensions": ["m"]}
+    plan = {"adimlar": [
+        {"fiil": "SORGU", "cube_query": TABAN},
+        {"fiil": "BAGLA", "kaynak": "$1", "boyut": "m", "olcu": "v"},
+        {"fiil": "SUZ", "cube_query": "$1", "boyut": "m", "deger": "$2"},
+        {"fiil": "SORGU", "cube_query": "$3"}]}
+    assert dogrula(plan) == [[1], [2], [3], [4]], "tip sistemi doğal ifadeyi reddetti"
+
+    gorulen = []
+    from app.drill import select_cube_query
+    kos(plan, sorgu_kos=lambda cq: gorulen.append(cq) or ROWS,
+        govdeler={"SUZ": lambda a: select_cube_query(
+            a["cube_query"], a["boyut"],
+            str(a["deger"][0] if isinstance(a["deger"], tuple) else a["deger"]))})
+    assert len(gorulen) == 2
+    assert {"dimension": "m", "operator": "eq", "value": "RAM-3"} in gorulen[1]["filters"], (
+        f"`$1` çözülünce satır geldi, sorgu gelmedi: {gorulen[1]}")

@@ -165,6 +165,12 @@ def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = 
     from app.cube_router import parse_cube_query
 
     sonuclar: list[dict] = []
+    #: 🔴 **ÇÖZÜLMÜŞ** sorgular. Adımdaki `cube_query` bir **referans** olabilir (`"$4"` —
+    #: `KIR`/`SUZ`'ün ürettiği sorguyu koşan adım tam olarak öyle yazılır) ve o referansı
+    #: cevaba koymak, kartı `/cube` ile yeniden koşulamaz yapardı. Üstelik `AskResponse.
+    #: cube_query` bir **sözlük** bekler: canlıda Pydantic `input_value='$4'` diye düştü.
+    #: *Bir alanın tipi genişlediğinde, onu okuyan her yer de genişlemelidir.*
+    sorgular: list[dict] = []
 
     def _sorgu_kos(cq: dict) -> list[dict]:
         temiz = parse_cube_query(json.dumps(cq, ensure_ascii=False), index)
@@ -176,6 +182,7 @@ def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = 
         service.dry_plan(sql)
         res = service.query(sql, limit=limit)
         sonuclar.append(res)
+        sorgular.append(temiz)
         return res.get("rows") or []
 
     # 🔴 `paralel=True` — ve bu bir tercih değil bir **ölçüm sonucudur**
@@ -187,6 +194,7 @@ def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = 
                           cube_meta=cube_meta, paralel=True,
                           **({"azami_sorgu": azami_sorgu} if azami_sorgu else {}))
     out["sonuclar"] = sonuclar
+    out["sorgular"] = sorgular
     return out
 
 
@@ -210,6 +218,10 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     """
     from app import plan_garson
 
+    # ⚠ **SESSİZ DAL KALMASIN (`ADR-0020`).** Bu fonksiyon `None` döndüğünde neden
+    # döndüğü hiçbir yerde yazmıyordu; canlıda *"tüketici hiç konuşmadı"* diye bir kör
+    # nokta üretti. *Bir dalın sessizce kapanması, o dalın var olmadığı anlamına gelmez —
+    # yalnız görünmediği anlamına gelir.*
     # 🔴 Sağlayıcı **uygulamanın durumundan** okunur, çağıranın yerelinden değil. Ölçüldü
     # (`EE19`, canlı): `llm_probe` yalnız garson dalında bağlanıyor; deterministik yoldan
     # gelindiğinde `UnboundLocalError` — ve bu bayrak KAPALIYKEN de patlıyordu, çünkü
@@ -217,8 +229,15 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     # atanmış, yalnız **o yoldan gelinince** atanmamış oluyor. *Koşullu bağlanan bir ad,
     # tanımsız bir addan daha sinsidir: statik olarak var, çalışırken yok.*
     llm = getattr(getattr(getattr(request, "app", None), "state", None), "llm", None)
-    if not (soru and llm is not None and plan_garson.acik_mi(settings, principal, llm)):
+    _hazir = getattr(getattr(request, "state", None), "plan_taslagi", None)
+    if not soru or llm is None:
+        _log.info("orkestratör: soru/sağlayıcı yok (soru=%s llm=%s)",
+                  bool(soru), llm is not None)
         return None
+    if not plan_garson.acik_mi(settings, principal, llm):
+        _log.info("orkestratör: bayrak kapalı ya da sağlayıcı plan kuramıyor")
+        return None
+    _log.info("orkestratör: DEVREDE (hazır plan=%s)", bool(_hazir))
     try:
         from app.katalog_metni import metin_ve_indeks
         catalog, index = metin_ve_indeks(schema, principal)
@@ -228,10 +247,9 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     # 🔴 `O-14` — garson zaten bir plan ürettiyse **ikinci kez sorma**. `request.state`
     # okunuyor çünkü bu kancaya yukarıdaki HER yoldan gelinir ve çağıranın yereli
     # garantili değil (`EE19`'un `UnboundLocalError` dersi).
-    plan = getattr(getattr(request, "state", None), "plan_taslagi", None)
+    plan = _hazir or plan_garson.plan_uret(llm, soru, catalog, index)
     if not plan:
-        plan = plan_garson.plan_uret(llm, soru, catalog, index)
-    if not plan:
+        _log.info("orkestratör: kullanılabilir plan yok → merdiven bugünkü gibi")
         return None
     _n = len(plan["adimlar"])
     try:
@@ -253,27 +271,27 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     # hepsi hesaplanıp yalnız **sonuncusu** dönüyordu; çok bölümlü rapor/pano için gereken
     # ara sonuçlar üretilip çöpe gidiyordu. *Bir maliyeti ödeyip ürününü atmak, onu hiç
     # ödememekten pahalıdır: hem para gider hem cevap.*
+    _sorgular = out.get("sorgular") or []
     _son = out["sonuclar"][-1] if out["sonuclar"] else None
-    _sorgu_adimlari = [a for a in plan["adimlar"] if a.get("fiil") == "SORGU"]
     return {
         "source": "cube+llm",
         "note": makbuz(plan) + "\n\n" + _bulgu_metni(plan, out),
         "iz": [f"orkestratör: {_n} adımlık plan koştu ({out['sorgu_sayisi']} sorgu)"],
         "result": _son,
-        "cube_query": (_sorgu_adimlari[-1].get("cube_query") if _sorgu_adimlari else None),
+        "cube_query": (_sorgular[-1] if _sorgular else None),
         # ⊙ Her `SORGU` adımının TAM sonucu + onu üreten sorgu. `FAZ 6` (frontend adım
         # bileşeni) ve `FAZ 7` (rapor/pano) tüketicisi budur; ikisi de bunsuz kurulamaz.
         # ⚠ `cube_query` her bölümle birlikte taşınıyor ki her adım `/cube` ile **sıfır
         # LLM** yeniden koşulabilsin (`O-5`).
-        "bolumler": [{"cube_query": a.get("cube_query"), "result": r}
-                     for a, r in zip(_sorgu_adimlari, out["sonuclar"])],
+        "bolumler": [{"cube_query": c, "result": r}
+                     for c, r in zip(_sorgular, out["sonuclar"])],
         # 🔴 `FAZ 6` — cevabın **yapısı** kullanıcıya taşınır. `agent_run`'dan farkı:
         # o bir denetim izidir (geriye dönük, sonuçsuz), bu **cevabın kendisidir**.
         "plan": {
             "adimlar": [{"sira": i, "fiil": a.get("fiil"), "ozet": _adim_metni(a)}
                         for i, a in enumerate(plan["adimlar"], 1)],
-            "bolumler": [{"cube_query": a.get("cube_query"), "result": r}
-                         for a, r in zip(_sorgu_adimlari, out["sonuclar"])],
+            "bolumler": [{"cube_query": c, "result": r}
+                         for c, r in zip(_sorgular, out["sonuclar"])],
         },
     }
 
@@ -321,11 +339,27 @@ def _adim_metni(adim: dict) -> str:
     fiil = adim.get("fiil", "?")
     anlam = FIIL_ANLAMI.get(fiil, "")
     if fiil == "SORGU":
-        cq = adim.get("cube_query") or {}
+        # ⚠ `cube_query` bir **referans dizesi** de olabilir (`"$3"`) — `KIR`/`SUZ`'ün
+        # ürettiği sorguyu koşan adım tam olarak öyle yazılır. Sözlük varsayan hâl
+        # canlıda patladı (`AttributeError`). *Bir alanın tipi genişlediğinde, onu
+        # okuyan her yer de genişlemelidir — biri kalırsa orası kırılır.*
+        cq = adim.get("cube_query")
+        if isinstance(cq, str):
+            return f"**{fiil}** — `{cq}` adımının ürettiği sorguyu koşar"
+        cq = cq or {}
         _o = ", ".join(cq.get("measures") or []) or "?"
         _b = ", ".join(cq.get("dimensions") or [])
         return f"**{fiil}** — `{_o}`" + (f" · `{_b}` kırılımında" if _b else "")
-    _ek = " · ".join(f"`{k}`=`{v}`" for k, v in adim.items() if k != "fiil")
+    # ⚠ Değer bir sözlük (satır içi `cube_query`) olabilir; ham `dict` basmak makbuzu
+    # okunmaz yapar. Kısaltılır — makbuz bir **özet**tir, bir döküm değil.
+    def _kisa(v: Any) -> str:
+        if isinstance(v, dict):
+            return str(v.get("cube") or "sorgu")
+        if isinstance(v, (list, tuple)):
+            return ", ".join(str(x) for x in v)
+        return str(v)
+
+    _ek = " · ".join(f"`{k}`=`{_kisa(v)}`" for k, v in adim.items() if k != "fiil")
     return f"**{fiil}** — {anlam}" + (f" ({_ek})" if _ek else "")
 
 

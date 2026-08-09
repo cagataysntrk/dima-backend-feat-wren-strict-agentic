@@ -7634,3 +7634,46 @@ temiz kanıtı: aynı soru, aynı veri, **iki farklı cevap** — ve ikisi de ro
 * `EE13` (İngilizce) — `surdurulebilirlik.toplam_enerji_tl`, geçen çeyrek. Garson çevirdi.
 * `EE6` — *«hiç iş kazası oldu mu»* → `{kaza_adedi: 0}`; ve boş aralıkta veri sınırını
   dürüstçe söylüyor.
+
+---
+
+## `FF` TURU — ORKESTRATÖR CANLIDA · bayrak **AÇIK** *(2026-08-09)*
+
+Bu tur öncekilerden farklı: senaryolar orkestratörün **her parçasını adım adım**
+sınıyor ve bayrak `beta`. Ölçüm kayıtları `backend/lab/olcumler/plan_denklik.md`.
+
+### 🟢 KÖK-NEDEN İNİŞİ UÇTAN UCA KOŞTU
+
+    soru: «en çok fire veren makineyi bul sonra o makinede hangi vardiyada olduğunu göster»
+
+    1. SORGU  → toplam_fire_kg · makine kırılımında
+    2. BAGLA  → en kötü makine seçildi              RAM-2
+    3. SUZ    → sorgu RAM-2'ye daraltıldı           (yeni SORGU)
+    4. KIR    → vardiya kırılımı eklendi            (yeni SORGU)
+    5. SORGU  → $4'ün ürettiği sorguyu koştu
+    6. ANLAT  → $2 ve $5 anlatıldı
+
+    source = cube+llm  ·  3 satır  ·  Discovery'ye HİÇ düşülmedi
+    cq = {parti, toplam_fire_kg, dims:[vardiya], filters:[makine eq RAM-2]}
+
+⊙ Aynı soru bir gün önce `llm:openrouter` + `cube=adhoc` ile cevaplanıyordu — yani
+**rozetsiz**. Şimdi her adımı yazılı, her sayısı küpten.
+
+### Bu turda bulunan ve düzeltilen dört kusur — üçü BENİM tasarım kusurum
+
+| # | kusur | kök |
+|---|---|---|
+| 1 | Yapısal doğrulama **onarım turunu görmüyordu** | `dogrula()` koşum anında çalışıyordu; model *«adım 2 kullanılmıyor»* hatasını **hiç öğrenemiyordu**. Tek kapı, tek onarım turu yapıldı |
+| 2 | 🔴 **En doğal ifade yasaktı** | Model üç koşumda ısrarla `SUZ(cube_query="$1")` yazdı — *«1. adımın sorgusunu daralt»*, semantik olarak **tam doğru**. Reddeden şey benim tip tablomdu. *En doğal ifadeyi yasaklayan bir tip sistemi, modeli eğitmez — ona yalvarır.* |
+| 3 | Makbuz **sözlük varsayıyordu** | `cube_query` artık referans dizesi de olabiliyor → `AttributeError` |
+| 4 | Cevap **çözülmemiş referans** taşıyordu | `AskResponse.cube_query` sözlük bekler; `'$4'` gitti → Pydantic reddi. Kart `/cube` ile yeniden koşulamaz olurdu |
+
+🔴 2, 3 ve 4 aynı sınıf: **bir alanın tipi genişlediğinde onu okuyan her yer de
+genişlemelidir — biri kalırsa orası kırılır.**
+
+### Tüketicide sessiz dal vardı
+
+`plan_tuketici.cevap()` `None` döndüğünde **neden** döndüğü hiçbir yerde yazmıyordu ve
+canlıda *«tüketici hiç konuşmadı»* diye bir kör nokta üretti (`ADR-0020` ihlali).
+*Bir dalın sessizce kapanması, o dalın var olmadığı anlamına gelmez — yalnız
+görünmediği anlamına gelir.*

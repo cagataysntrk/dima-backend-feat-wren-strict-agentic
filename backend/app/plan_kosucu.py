@@ -145,7 +145,23 @@ def dogrula(plan: dict, *, azami_sorgu: int = AZAMI_SORGU) -> list[list[int]]:
             kenarlar[sira].add(hedef)
             kullanilan.add(hedef)
             beklenen = (GIRDI_TIPI.get(fiil) or {}).get(alan)
-            gelen = CIKTI_TIPI.get(adimlar[hedef - 1].get("fiil"))
+            _hedef_fiil = adimlar[hedef - 1].get("fiil")
+            gelen = CIKTI_TIPI.get(_hedef_fiil)
+            # 🔴🔴 **BİR `SORGU` ADIMINA REFERANS, ONUN SORGUSUNA DA REFERANSTIR.**
+            #
+            # Ölçüldü (canlı `FF4`, **üç ayrı koşumda**): model ısrarla
+            # `SUZ(cube_query="$1")` yazıyor — yani *«birinci adımın sorgusunu daralt»*.
+            # Semantik olarak **tam doğru**; reddeden şey benim tip tablomdu: `SORGU`'nun
+            # çıktısı `satirlar` sayılıyordu ve `sorgu` bekleyen alan onu almıyordu.
+            #
+            # ⊙ Ama bir `SORGU` adımı **iki şey** taşır: koştuğu sorgu ve döndürdüğü
+            # satırlar. Alan `sorgu` bekliyorsa kastedilen birincisidir ve o **yazılı**
+            # olarak elimizdedir (`adim["cube_query"]`).
+            #
+            # *En doğal ifadeyi yasaklayan bir tip sistemi, modeli eğitmez — ona
+            # yalvarır.*
+            if beklenen == "sorgu" and _hedef_fiil == "SORGU":
+                gelen = "sorgu"
             if beklenen is not None and gelen is not None and beklenen != gelen:
                 raise PlanHatasi(
                     f"adım {sira} (`{fiil}.{alan}`) bir **{beklenen}** bekliyor ama "
@@ -177,10 +193,31 @@ def dogrula(plan: dict, *, azami_sorgu: int = AZAMI_SORGU) -> list[list[int]]:
     return katmanlar
 
 
-def _adim_coz(adim: dict, ciktilar: list[Any]) -> dict:
+def _sorgu_coz(deger: Any, adimlar: list[dict], ciktilar: list[Any]) -> Any:
+    """`cube_query` alanına özel çözümleme: referans bir **`SORGU` adımını** gösteriyorsa
+    o adımın **sorgusu** verilir, satırları değil.
+
+    ⚠ Ve o adımın kendi `cube_query`'si de bir referans olabilir (`SORGU($3)` gibi) —
+    o yüzden özyinelemeli. Zincir sonludur: ileri referans yasağı döngüyü imkânsız kılar.
+    """
+    if isinstance(deger, str):
+        m = _REF.match(deger)
+        if m:
+            i = int(m.group(1))
+            if 1 <= i <= len(adimlar) and adimlar[i - 1].get("fiil") == "SORGU":
+                return _sorgu_coz(adimlar[i - 1].get("cube_query"), adimlar, ciktilar)
+    return _coz(deger, ciktilar)
+
+
+def _adim_coz(adim: dict, adimlar: list[dict], ciktilar: list[Any]) -> dict:
     """Adımın **bütün** `$n` alanlarını çözer. Referans çözmek yorumlayıcının işidir;
-    çözülmüş adımı ne yapacağı gövdenin."""
-    return {k: _coz(v, ciktilar) for k, v in (adim or {}).items()}
+    çözülmüş adımı ne yapacağı gövdenin.
+
+    ⚠ `cube_query` alanı **ayrı** çözülür (`_sorgu_coz`): orada bir referans satır değil
+    **sorgu** demektir."""
+    return {k: (_sorgu_coz(v, adimlar, ciktilar) if k == "cube_query"
+                else _coz(v, ciktilar))
+            for k, v in (adim or {}).items()}
 
 
 #: 🔴 **YORUMLAYICININ KENDİ BİLDİĞİ FİİLLER — TEK SAHİP.**
@@ -251,7 +288,7 @@ def kos(plan: dict, *, sorgu_kos, govdeler: dict[str, Any] | None = None,
                 # 🔴 `FAZ 7` — `cube_query` bir **referans** de olabilir (`KIR`/`SUZ`
                 # çıktısı). Kök-neden inişinin halkası budur: bir adım sorgu üretir,
                 # bu adım onu **koşar**.
-                return sorgu_kos(_coz(adim["cube_query"], ciktilar))
+                return sorgu_kos(_sorgu_coz(adim["cube_query"], adimlar, ciktilar))
             if fiil == "BAGLA":
                 olcu = adim["olcu"]
                 return _ilk.bagla(_coz(adim["kaynak"], ciktilar), adim["boyut"], olcu,
@@ -282,7 +319,7 @@ def kos(plan: dict, *, sorgu_kos, govdeler: dict[str, Any] | None = None,
             if fiil in (govdeler or {}):
                 # ⟳ `FAZ 2` — kalan dört fiil enjekte edilen gövdelerle koşuyor. Adım
                 # çözülmüş olarak verilir; gövde `$n` diye bir şey bilmez.
-                return (govdeler or {})[fiil](_adim_coz(adim, ciktilar))
+                return (govdeler or {})[fiil](_adim_coz(adim, adimlar, ciktilar))
             # 🔴 Gövdesi verilmemiş bir fiil sessizce atlanmaz: tur **düşer** ve sebebi
             # yazılır. *Bir fiili şemaya koyup çalıştırıcıda unutmak, onu sessizce yalan
             # yapmaktır.*
