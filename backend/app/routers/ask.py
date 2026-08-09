@@ -2094,6 +2094,47 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         return (f"“{tercih.etiketle(tercih.ANAHTAR_GORUNUM, deger)} göster” tercihiniz "
                 "uygulandı (kaldırmak için: ayarlar › tercihler)")
 
+    def _bos_cevap_olamaz(resp: AskResponse) -> AskResponse:
+        """🔴🔴 **`§BB-B` — MERDİVEN BOŞ BİR CEVAP DÖNDÜREBİLİYORDU.**
+
+        Ölçüldü (`BB19` · `BB20`, canlıda tekrarlandı):
+
+            source = None · note = None · trace = [] · chip = 0 · satır = 0
+
+        ⊙ Kullanıcı ekranda **hiçbir şey** görüyordu — ne cevap, ne soru, ne red. Bu
+        `§0.0`'ın en açık ihlali: *kullanıcı asla cevapsız kalmaz.* Ve en sinsi biçimi,
+        çünkü bir hata bile değil: sistem *"başarıyla"* boş döndü.
+
+        ⊙ Kusurun yeri bir dal **değil**: merdivenin herhangi bir basamağı boş bir nesne
+        üretebilir ve hepsini tek tek denetlemek, `KAT-1`'in kendisidir. Değişmez **ucun**
+        değişmezidir, dolayısıyla kapanışta durur — `_finish` zaten *"hangi basamaktan
+        çıkılırsa çıkılsın buradan geçilir"* diye seçilmiş tek huni.
+
+        ⚠ Uydurmuyor: yalnız **bilinen** iki şeyi söylüyor — cevap üretilemediği ve
+        sistemin ne yapabildiği. Bir cevap icat etmekle, cevap olmadığını söylemek
+        arasındaki farkı koruyor.
+
+        *Sessiz bir boşluk, yanlış bir cevaptan daha kötüdür: yanlış cevap sorgulanır,
+        boşluk kullanıcıya kendi sorusunu suçlatır.*
+        """
+        # ⚠ `trace` ve `source` bilerek **sayılmaz**: ikisi de **makbuz**tur, cevap
+        # değil. İlk yazımda onları da saydım ve guard sessiz kaldı — iz doluydu ama
+        # kullanıcının ekranında yine **hiçbir şey** yoktu. Bir cevabın var olup
+        # olmadığına, cevabı görecek olanın göreceği alanlara bakarak karar verilir.
+        _gorunur = (resp.note or resp.soz or resp.suggestions or resp.next_steps
+                    or ((resp.result.rows if resp.result else None) or None))
+        if _gorunur:
+            return resp
+        _log.warning("BOŞ CEVAP yakalandı ve dürüst redde çevrildi (§BB-B) — q=%.120s",
+                     body.question or "")
+        resp.note = ("Bu soruyu cevaplayamadım ve **nedenini de söyleyemiyorum** — "
+                     "merdivenin hiçbir basamağı bir sonuç ya da bir gerekçe üretmedi.\n\n"
+                     "Soruyu daha dar sormayı deneyebilirsin (tek ölçü · tek kırılım · "
+                     "açık bir dönem). Bu tur **kayda geçti**: cevapsız kalan bir soru "
+                     "bizim için bir eksiklik raporudur.")
+        resp.trace = ["🔴 BOŞ CEVAP — merdiven sonuç da gerekçe de üretmedi (§BB-B)"]
+        return resp
+
     def _finish(resp: AskResponse) -> AskResponse:
         """`/ask`'in kapanışı — gövdesi `app/answer.py::seal`'dedir (Faz A4).
 
@@ -2108,7 +2149,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # şeyin yarısını görmemek olurdu.
         if "niyet_izi" in resolve_for(settings, principal):
             resp.trace = [*(resp.trace or []), *_niyet_izi(body.question, schema)]
-        return seal(resp, request=request, principal=principal, t0=t0,
+        # `§BB-B` — mühürden ÖNCE: boş bir cevap mühürlenirse artık bir **kayıt**tır.
+        return seal(_bos_cevap_olamaz(resp), request=request, principal=principal, t0=t0,
                     session_id=body.session_id, log_body=body,
                     thread_id=body.thread_id, reply_to_label=body.reply_to_label,
                     is_new_topic=not is_followup, endpoint="ask")

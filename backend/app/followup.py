@@ -269,6 +269,11 @@ _BELGISIZ_ZAMIR = re.compile(r"\b(diger|oteki|beriki)\w*\b")
 #: *Bir zinciri kuran şey soru değil, sorunun bir öncekine tutunma biçimidir.*
 _COGUL_ISARET_ZAMIR = re.compile(r"\b(bunlar|sunlar|onlar)\w*\b")
 
+#: `§BB-A` — üstünlük çapası. `cube_router._USTUNLUK_RE` ile **aynı yapı** (`en <sıfat>`)
+#: + adlaşmış biçimi (*«en kötüSÜ»*, *«en düşüĞÜ»*). Sahibi orası; burada yalnız
+#: **çapa** olarak okunuyor — sözlük değil, aynı gramerin ikinci tüketicisi.
+_USTUNLUK_CAPA = re.compile(r"\ben\s+[a-z]+\w*\b")
+
 # YAPISAL düzenleme sinyalleri — bunlar varsa soru sorguyu DEĞİŞTİRMEK istiyordur ve
 # konuşma sınıfına ALINMAZ. Çakışma gerçektir: "aylık neden düştü?" hem düzenleme hem
 # konuşma gibi görünür; öncelik YAPISALDA olmalıdır çünkü kullanıcı yeni sayılar bekler.
@@ -410,9 +415,30 @@ def sinifla(soru: str, *, baglam_var: bool,
                 # aynı gevşeme konu değişimini çalardı (*"diğer makineleri göster"* yeni
                 # bir sorudur). *Bir gevşemeyi ölçülen türle sınırlamak, onu bir sonraki
                 # turda geri almak zorunda kalmamaktır.*
+                # 🔴🔴 `§BB-A` — **ÜSTÜNLÜK İFADESİ DE BİR ÇAPADIR.**
+                #
+                # Ölçüldü (BB turu, iki kanıt): *«en kötü vardiya neden geride»* (`BB2`) ve
+                # *«en kötüsünün rework sebeplerini kır»* (`BB9`). İkisi de ekrandaki
+                # raporun **bir satırını** gösteriyor — ama zamir taşımadıkları için
+                # konuşma sınıfına hiç girmediler ve `§AA1`'in akran kıyası **ateşlemedi**.
+                #
+                # ⊙ Oysa bu bağ zamirden **güçlüdür**: *"şu"* bir şeyi işaret eder,
+                # *«en kötü»* ekrandaki satırlardan **hangisi olduğunu hesaplar**. Bu
+                # dosyanın kendi gerekçesi bunu zaten kuruyor (*"ekrandaki raporun bir
+                # satırını adlandırmak, zamirden güçlü bir bağdır"*) ama yalnız **değer
+                # adı** için; **üstünlük** o kapsamın dışında kalmıştı.
+                #
+                # ⚠ Yeni sözlük **yok**: `_USTUNLUK_RE` `cube_router`'ın — çekimin tek
+                # sahibi orası ve buraya ikinci bir kopya yazılmıyor.
+                # ⚠ Kapsam `TUR_NEDEN` + `baglam_var` ile sınırlı, kardeş gevşemelerle
+                # birebir aynı: ekranda rapor yoksa *«en kötü X neden»* yeni bir sorudur.
+                #
+                # *Bir satırı adıyla göstermekle, onu üstünlüğüyle göstermek arasında
+                # kullanıcı açısından hiçbir fark yoktur.*
                 and not (tur == TUR_NEDEN and baglam_var
                          and (_capaya_deger(q, capa_degerleri)
-                              or _BELGISIZ_ZAMIR.search(q)))):
+                              or _BELGISIZ_ZAMIR.search(q)
+                              or _USTUNLUK_CAPA.search(q)))):
             continue
         return Niyet(sinif=SINIF_KONUSMA, tur=tur, kural=f"konusma:{tur}", kanit=k)
 

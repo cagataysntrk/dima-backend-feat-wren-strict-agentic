@@ -7145,3 +7145,58 @@ kavramı **adlandırmamasıydı**. Ve **en sert kapı yeşil kaldı**
 
 *Bir kelimeyi iki sahipli ilan etmek, onu iki sahipli yapmaz — zaten öyle olduğunu
 söyler. Sayının artması, sistemin daha fazla bilmesindendir.*
+
+---
+
+## §108 · BB TURU — 20 senaryo · dört zincir, üç yeni dil
+
+**Skor:** 12 🟢 · 1 ◐ · 7 🔴 · Discovery **1**
+🌍 **Danca · Korece · Yunanca** üçü de doğru cevaplandı (`nedetid`→`makine_duruslari` ·
+`전력 소비량`→`enerji_makine` · `νερό`→`toplam_su_lt`). `§72`'nin ölçüm aleti temiz.
+🧾 Makbuz üç kez daha isabetli: `BB4` **tam OEE formülünü** gösterdi, `BB17`
+`COUNT(DISTINCT sevkiyat_no)`.
+
+### 🔴🔴 §BB-A — ÜSTÜNLÜK İFADESİ DE BİR ÇAPADIR *(2 kanıt)*
+
+`BB2` *«en kötü vardiya neden geride»* · `BB9` *«en kötüsünün rework sebeplerini kır»* —
+ikisi de ekrandaki raporun **bir satırını** gösteriyor ama zamir taşımadıkları için
+konuşma sınıfına hiç girmediler ve `§AA1`'in akran kıyası **ateşlemedi**.
+
+⊙ Oysa bu bağ zamirden **güçlüdür**: *"şu"* bir şeyi işaret eder, *«en kötü»* ekrandaki
+satırlardan **hangisi olduğunu hesaplar**. Bu dosyanın kendi gerekçesi bunu zaten
+kuruyordu — ama yalnız **değer adı** için; **üstünlük** o kapsamın dışında kalmıştı.
+⚠ Yeni sözlük yok: `_USTUNLUK_RE`'nin yapısı `cube_router`'ın, buraya ikinci kopya yazılmadı.
+
+✅ Canlı: *«en kötü vardiya neden geride»* → **3. Vardiya, akran ortalamasından %9,3 düşük;
+fire 192.004 kg ↔ akran 131.237 kg (%46,3 fazla, kötü yönde)**.
+
+*Bir satırı adıyla göstermekle, onu üstünlüğüyle göstermek arasında kullanıcı açısından
+hiçbir fark yoktur.*
+
+### 🔴🔴 §BB-B — MERDİVEN BOŞ BİR CEVAP DÖNDÜREBİLİYORDU
+
+`BB19`/`BB20`, canlıda tekrarlandı:
+
+    source = None · note = None · trace = [] · chip = 0 · satır = 0
+
+⊙ Kullanıcı ekranda **hiçbir şey** görüyordu — ne cevap, ne soru, ne red. `§0.0`'ın en
+açık ihlali (*kullanıcı asla cevapsız kalmaz*) ve en sinsi biçimi: bir hata bile değil,
+sistem *"başarıyla"* boş döndü.
+
+⊙ Kusurun yeri bir **dal değil**: merdivenin herhangi bir basamağı boş bir nesne
+üretebilir. Değişmez **ucun** değişmezidir → kapanış hunisinde (`_finish`) durur.
+
+⚠ **Ve ilk yazımım guard'ı sağır bıraktı:** `trace`/`source`'u da *"içerik"* saydım —
+iz doluydu, kullanıcının ekranı yine **boştu**. İkisi de **makbuz**tur, cevap değil.
+*Bir cevabın var olup olmadığına, cevabı görecek olanın göreceği alanlara bakılarak
+karar verilir.*
+
+*Sessiz bir boşluk, yanlış bir cevaptan daha kötüdür: yanlış cevap sorgulanır, boşluk
+kullanıcıya kendi sorusunu suçlatır.*
+
+### ⏸ BB'NİN İKİ KÖKÜ — ölçüldü, GEREKÇESİYLE yapılmadı
+
+| kök | ölçüm | neden yapılmadı |
+|---|---|---|
+| `BB14` *«kaç sevkiyat zamanında teslim edildi»* | `sevkiyat`ta yalnız **`gecikmeli_sevkiyat_yuzde`** var | *«zamanında»* onun **tümleyeni**, ayrı bir ölçü değil. O adı ona vermek `Y4`'ün tuzağı olurdu: **yarımı tam diye sunmak** |
+| `BB10` çeyrek kıyası · `BB9` Discovery | `temsil-yok=kiyas` (bilinen `§49` kökü) | `agent_plan_secimi` / çapraz-küp kompozisyonuyla **aynı kuyrukta**; takas **ölçülmeden** açılmaz |
