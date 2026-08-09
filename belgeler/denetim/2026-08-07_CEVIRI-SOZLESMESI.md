@@ -8019,3 +8019,82 @@ artık **dönem netleştirmesine** düşüyor (*«hangi dönem için?»*). Bu bi
 kendi metni (`plan_semasi` ÖRNEK 1) *«makinelere göre ortalama oee» dönemsizdir ve
 öyle kalmalıdır* diyor — yani `period_optional` bu sınıfta ateşlenmeli. Ölçülüp
 karara bağlanacak.
+
+---
+
+## `IV` TURU · İKİNCİ YARI — **DÜRÜST RED BİR BAŞARI DEĞİLDİR** *(2026-08-10)*
+
+Kullanıcı kararı bu turun ölçütünü değiştirdi:
+
+> *"Dürüst redler bizim geliştirilecek yanlarımız. Red vermek güzel bir şey ama o reddi
+> çözmek zorundayız eğer cevaplamamız gereken bir soruysa — yani **red vermeyi mutlak
+> başarı sayamazsın**."*
+
+Önceki turlarda ✅ diye işaretlediğim redler yeniden açıldı ve **hepsi çözüldü**:
+
+| red | eski durum | **yeni** |
+|---|---|---|
+| *«üretim, fire ve enerji için pano taslağı»* | 🔴 `enerji` küpü uyduruldu | 🟢 **4 adım · 3 bölüm** — `O-18` modeli gerçek küplere yöneltti |
+| *«iade oranı en yüksek 3 müşteri ve ciro payları»* | 🔴 *«Hangi ölçüyü istiyorsun?»* | 🟢 cevap verdi (⚠ **yarım** — aşağıya bkz.) |
+| *«hangi vardiyada kalite sorunları yoğunlaşıyor»* | 🔴 aynı | 🟢 `%100 uyum` · `toplam_rework_kg` · vardiya |
+| *«makine bazında ortalama oee»* (dönemsiz) | ⚠ netleştirme | ✅ **kapılı ürün politikası** — 5 chip taşıyor, chip akışı uçtan uca çalıştı (11 satır, doğru filtre) |
+
+### 🔴🔴 `O-19` — AYRIK ÖLÇÜ KÜMELERİ BİR BELİRSİZLİK DEĞİL, BİR **ÇOKLUK**
+
+İki red aynı kökten geliyordu:
+
+```
+Intent-path: self-consistency uyuşmazlığı (%50 uyum / 3 örnek, eksen=measures)
+note = "Hangi ölçüyü istiyorsun?"
+```
+
+Oyların hikâyesi şudur: biri **çekimser** kalıyor (*«bu soru tek bir cube ile
+yanıtlanamaz»* — ve **haklı**), ikisi **farklı** küplerden **farklı** ölçüler seçiyor.
+Yani üç oy da doğru: soru gerçekten **iki parçalı** ve cevabı bir **plandır**.
+
+| oylar | ne demek | doğru cevap |
+|---|---|---|
+| aynı ölçü adı, **farklı küp** (`eksen=cube`) | 🔴 **belirsizlik** | sor |
+| **ayrık** ölçü kümeleri (`eksen=measures`) | ⊙ **çokluk** | **planla** |
+
+⚠ Kesişen kümeler çokluk sayılmaz: `{ciro}` ↔ `{ciro, fire}` bir **zenginlik farkıdır**
+(`§V2`'nin konusu), iki ayrı istek değil. `§101.1` gereği şüphede susulur.
+
+🔴 **Kayıpsız:** plan cevap veremezse **birebir aynı** chip konuşur. Bu, `iki_cube`
+ertelemesinin (`O-15/D`) aynı deseni — *bir sınırı ertelemek ancak arkasında onu
+aşabilecek bir basamak varsa doğrudur.*
+
+### ⚠ Yarım kalan cevap → `O-19/K` KAPSAMA KURALI
+
+*«iade oranı en yüksek 3 müşteriyi **ve** ciro paylarını göster»* artık cevap veriyor
+ama **tek adım** kuruyor: iadeyi veriyor, ciro payını **sessizce düşürüyor**.
+
+İstem *«gereksiz adım yazma»* diyordu (doğru) ama *«eksik adım da yazma»* demiyordu.
+Bir kısıtı tek yönlü yazmak, öteki yönü serbest bırakmaktır — ve model daima ucuz olan
+yöne kayar. Kapsama kuralı eklendi.
+
+*Bir cevabın yarısı, yanlış bir cevaptan yalnızca daha kibardır.*
+
+### THREAD — ve bir ÖLÇÜM ARACI HATASI
+
+Thread'i `thread_id`/`session_id` ile kurmaya çalıştım; `/ask` o alanları **tanımıyor**
+(`history` + `cube_query` + `prev_sql` alıyor). Her tur `yeni_konu=True` göründü ve
+*"thread dönemi kaybediyor"* diye bir kusur **uydurmuş oldum**. Doğru araçla tekrar:
+
+| tur | sonuç |
+|---|---|
+| *«bu yıl makine bazında ortalama oee»* | ✅ `cube` · 0 LLM · 11 satır |
+| *«en düşük olan hangisi»* | ✅ `cube` · 0 LLM · **dönem korundu** · RAM-3 |
+| *«neden düşük»* | ✅ RAM-3 akranlarından **%10.7 düşük**; fire **%62.3 fazla** |
+| *«bir de fire ekle»* | ✅ iki ölçü · dönem korundu · belirsizlik notlu |
+
+⊙ Kendi kuralım işledi: *beklenmedik bir sayıda önce **aracı** şüphele, kodu geri alma.*
+
+### Zor kademe — çapraz küp zincirleri
+
+| soru | sonuç |
+|---|---|
+| *«en çok duruş yaşayan makinede duruş nedenlerini kır»* | 🟢 **5 adım** |
+| *«bakım maliyeti en yüksek makine hangisi ve oee'si ne»* | 🟢 **6 adım** · iki küp |
+
+**Kapı:** 4458 yeşil · korpus **%94.9** · `sessiz_yanlis` **10** · eval **+0.0%**.

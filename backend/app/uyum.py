@@ -785,3 +785,47 @@ def kismi_cevap_notu(ihlaller: list[Ihlal]) -> str:
     satirlar = "\n".join(f"· {i.aciklama}" for i in ihlaller)
     return ("⚠ Sayı doğru ama **eksik** — sorunun şu kısımlarını yerine getiremedim:\n"
             f"{satirlar}\n\n{ihlaller[0].oneri}")
+
+
+def cokluk_mu(eksen: str | None, adaylar: list) -> bool:
+    """🔴🔴 `O-19` — **AYRIK ÖLÇÜ KÜMELERİ BİR BELİRSİZLİK DEĞİL, BİR ÇOKLUKTUR.**
+
+    ⊙ Ölçüldü (canlı `IV` turu, iki soru): *«iade oranı en yüksek 3 müşteriyi **ve**
+    ciro paylarını göster»* ve *«hangi vardiyada kalite sorunları yoğunlaşıyor bu yıl»*
+    → ikisi de *«Hangi ölçüyü istiyorsun?»* ile **cevapsız** kaldı:
+
+        Intent-path: self-consistency uyuşmazlığı (%50 uyum / 3 örnek, eksen=measures)
+
+    Oyların hikâyesi şudur: biri **çekimser** kalıyor (*«bu soru tek bir cube ile
+    yanıtlanamaz»* — ve **haklı**), ikisi **farklı** küplerden **farklı** ölçüler
+    seçiyor. Yani üç oy da doğru: soru gerçekten **iki parçalı**.
+
+    🔴 Ayrım keskin ve deterministiktir:
+
+    | oylar | ne demek | doğru cevap |
+    |---|---|---|
+    | aynı ölçü adı, **farklı küp** (`eksen=cube`) | 🔴 **belirsizlik** | sor |
+    | **ayrık** ölçü kümeleri (`eksen=measures`) | ⊙ **çokluk** | **planla** |
+
+    Birincisinde kullanıcı bir şey istedi, iki sahip çıktı. İkincisinde kullanıcı **iki
+    şey** istedi ve her oy **birini** yakaladı. İkisine aynı soruyu sormak, ikinci
+    kullanıcıya kendi cümlesini tekrar ettirmektir.
+
+    ⚠ Kesişen kümeler **çokluk sayılmaz**: `{ciro}` ↔ `{ciro, fire}` bir oyun ötekinden
+    **daha zengin** okumasıdır (`§V2`'nin konusu), iki ayrı istek değil. `§101.1` gereği
+    şüphede **susulur** ve netleştirme aynen konuşur.
+
+    *Bir soruyu sormak için önce iki farklı cevabın olması gerekir — iki EKSİK cevabın
+    değil.*
+    """
+    if eksen != "measures" or len(adaylar or []) < 2:
+        return False
+    kumeler = [frozenset(str(m) for m in ((a or {}).get("measures") or []))
+               for a in adaylar]
+    if any(not k for k in kumeler):
+        return False
+    for i, a in enumerate(kumeler):
+        for b in kumeler[i + 1:]:
+            if a & b:                 # kesişiyorsa zenginlik farkı — çokluk DEĞİL
+                return False
+    return True

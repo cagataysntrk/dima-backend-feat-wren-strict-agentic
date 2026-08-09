@@ -514,6 +514,22 @@ def plan_sistem_metni(catalog: str) -> str:
         # ⟳ Ölçüldü (canlı `FF4`): model `BAGLA` ile en kötüyü **buldu** ama sonra
         # **kullanmadı** — bir sonraki `SORGU`yu global attı. Plan reddedildi çünkü
         # `BAGLA` çıktısı ulaşılamaz kaldı.
+        # 🔴🔴 `O-19/K` — **KAPSAMA KURALI: SORUNUN HER PARÇASI KARŞILANMALI.**
+        #
+        # ⊙ Ölçüldü (canlı `IV`): *«iade oranı en yüksek 3 müşteriyi **ve** ciro
+        # paylarını göster»* → plan **tek adım** kurdu ve yalnız iadeyi verdi. Soru iki
+        # şey istiyordu; cevap birini karşıladı ve öteki **sessizce düştü**.
+        #
+        # ⚠ İstem *"gereksiz adım yazma"* diyordu (doğru) ama *"eksik adım da yazma"*
+        # demiyordu. Bir kısıtı tek yönlü yazmak, öteki yönü serbest bırakmaktır — ve
+        # model daima ucuz olan yöne kayar.
+        #
+        # *Bir cevabın yarısı, yanlış bir cevaptan yalnızca daha kibardır.*
+        "- 🔴 KAPSAMA: sorunun **her parçası** planda karşılanmalı. Kullanıcı iki şey "
+        "istediyse (*«X'i ve Y'yi göster»*) iki `SORGU` yaz ve ikisini `RAPOR` ya da "
+        "`MATRIS` ile birleştir — birini yazıp ötekini atlamak, cevabı yarım vermektir. "
+        "⚠ Bu, yukarıdaki *«gereksiz adım yazma»* kuralının ZITTI değil ikizidir: "
+        "gereksiz adım da eksik adım da bir kusurdur.\n"
         "- 🔴 HER ADIMIN ÇIKTISI KULLANILMALI: bir adım hiçbir adım tarafından "
         "gösterilmiyorsa ve son adım değilse plan REDDEDİLİR. `BAGLA` ile bir varlık "
         "seçtiysen onu **kullan** — *«o makinede»* demek için `SUZ` ile o varlığa süz, "

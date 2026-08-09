@@ -3422,6 +3422,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         intent_source: str | None = None
         _garson_konustu = False   # `§56` — garson bir aday ürettiyse Türkçe reddi susar
         typo_fix_trace: str | None = None
+        _ertelenen_chip = None    # `O-19` — çoklukta ertelenen netleştirme
         typo_suggestion: dict | None = None
         # FAZ 2a-5 (KURAL B) — liste/döküm niyetini kırılıma çevirme yetkisi. Bir kez
         # çözülür ve BU FONKSİYONDAKİ HER `route()` çağrısına geçirilir: biri atlanırsa
@@ -3815,7 +3816,11 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                         _chip = _intent_uyusmazlik_chipi(
                             body.question, eksen, adaylar, schema, uyum, k)
                         if len(_chip.next_steps or []) >= 2:
-                            return _finish(_chip)
+                            # 🔴 `O-19` — çoklukta netleştirme **ertelenir** (gerekçe
+                            # `_cokluk_mu`'da); plan cevap veremezse aynen konuşur.
+                            if not _uyum.cokluk_mu(eksen, adaylar):
+                                return _finish(_chip)
+                            _ertelenen_chip = _chip
                         _log.info("intent: adaylar ANLAMCA AYNI (%d chip) → netleştirme "
                                   "atlandı, cevap veriliyor (§T1)", len(_chip.next_steps or []))
                         route_hit = {"cube_query": adaylar[0], "order": None, "limit": None}
@@ -3839,6 +3844,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         _pc = _plan_tuketici.cevap(request, service=service, schema=schema,
                                    soru=body.question, settings=settings,
                                    principal=principal, limit=limit, route_hit=route_hit)
+        if _pc is None and _ertelenen_chip is not None:
+            return _finish(_ertelenen_chip)   # `O-19` — plan da yapamadı, sınır konuşur
         if _pc is not None:
             return _finish(_attach_viz(AskResponse(
                 question=body.question, source=_pc["source"], note=_pc["note"],

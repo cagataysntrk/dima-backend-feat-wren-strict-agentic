@@ -362,3 +362,54 @@ def test_AD_REDDI_YUMUSAKTIR_ADIM_ADIM_DURUSTLUK_KAYBOLMAZ():
     _i = src.index("_yedek = ")
     assert "_plani_oku(_ham)" in src[_i:_i + 80], \
         "yedek plan `index`SİZ okunmalı — yapısal geçerlilik yeter"
+
+
+def test_COKLUK_BELIRSIZLIK_DEGILDIR():
+    """🔴🔴 `O-19` — ayrık ölçü kümeleri bir **çokluktur**, belirsizlik değil.
+
+    Ölçüldü (canlı `IV`): *«iade oranı en yüksek 3 müşteriyi **ve** ciro paylarını
+    göster»* → `%50 uyum · eksen=measures` → *«Hangi ölçüyü istiyorsun?»*. Oylardan
+    biri çekimser (*«tek cube ile olmaz»* — haklı), ikisi farklı küplerden farklı
+    ölçüler seçti. Üç oy da doğru: soru **iki parçalı**, cevabı bir **plan**.
+    """
+    from app import uyum
+
+    assert uyum.cokluk_mu("measures", [{"cube": "sikayet", "measures": ["iade_orani"]},
+                                       {"cube": "parti", "measures": ["toplam_ciro"]}])
+
+
+def test_ZENGINLIK_FARKI_COKLUK_DEGILDIR():
+    """⚠ `§101.1` — kesişen kümeler **çokluk sayılmaz**: `{ciro}` ↔ `{ciro, fire}` bir
+    oyun ötekinden daha zengin okumasıdır (`§V2`'nin konusu), iki ayrı istek değil."""
+    from app import uyum
+
+    assert not uyum.cokluk_mu("measures", [{"measures": ["toplam_ciro"]},
+                                           {"measures": ["toplam_ciro", "toplam_fire_kg"]}])
+
+
+def test_AYNI_OLCU_IKI_SAHIP_YINE_SORULUR():
+    """🔴 `eksen=cube` (aynı ölçü adı, iki küp) **gerçek** bir belirsizliktir ve aynen
+    sorulur. *Bir soruyu sormak için önce iki farklı cevabın olması gerekir.*"""
+    from app import uyum
+
+    assert not uyum.cokluk_mu("cube", [{"cube": "parti", "measures": ["toplam_fire_kg"]},
+                                       {"cube": "oee", "measures": ["toplam_fire_kg"]}])
+    assert not uyum.cokluk_mu(None, [{"measures": ["a"]}, {"measures": ["b"]}])
+
+
+def test_COKLUK_ERTELEMESI_KAYIPSIZ():
+    """⚠ Plan cevap veremezse **birebir aynı** chip konuşur — kaynaktan doğrulanır.
+
+    En kötü durum bugünküyle bayt bayt aynı olmalı; aksi hâlde erteleme bir **takas**
+    olurdu. *Bir sınırı ertelemek ancak arkasında onu aşabilecek bir basamak varsa
+    doğrudur.*
+    """
+    import inspect
+
+    from app.routers import ask as _ask
+
+    src = inspect.getsource(_ask.ask)
+    assert "_ertelenen_chip = _chip" in src, "chip saklanmıyor"
+    _i = src.index("_pc is None and _ertelenen_chip is not None")
+    assert "_finish(_ertelenen_chip)" in src[_i:_i + 200], \
+        "ertelenen chip plan başarısız olunca KONUŞMUYOR — erteleme kayıplı olurdu"

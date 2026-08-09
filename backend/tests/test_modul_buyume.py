@@ -89,6 +89,25 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("o19-cokluk-netlestirmeyi-erteler", 5,
+     "🔴🔴 **`O-19` — AYRIK ÖLÇÜ KÜMELERİ BİR BELİRSİZLİK DEĞİL, BİR ÇOKLUKTUR.** "
+     "⊙ Ölçüldü (canlı `IV` turu, iki soru): *«iade oranı en yüksek 3 müşteriyi **ve** "
+     "ciro paylarını göster»* ve *«hangi vardiyada kalite sorunları yoğunlaşıyor»* → "
+     "ikisi de `%50 uyum · eksen=measures` ile **cevapsız** kaldı. Oyların hikâyesi: "
+     "biri **çekimser** (*«tek cube ile olmaz»* — haklı), ikisi **farklı** küplerden "
+     "**farklı** ölçüler seçiyor. Üç oy da doğru: soru gerçekten **iki parçalı** ve "
+     "doğru cevap bir **plandır**. "
+     "⊙ Δ = 5: ilklendirme (1) · çokluk dalı (2: `if` + saklama) · plan cevap veremezse "
+     "ertelenen chip (2: `if` + `return`). "
+     "⚠ **TAŞINAMAZ:** karar `ask()`in **akış sırasıdır** — netleştirmeyi erteleyip "
+     "planı denemek, sonra ertelenmişi konuşturmak. Dışarı almak, bir dalın *nerede* "
+     "döndüğünü iki dosyaya bölerdi. Yüklemin kendisi (`uyum.cokluk_mu`) **taşındı** ve "
+     "tavan yalnız akış satırlarını sayıyor. "
+     "⚠ **`§101.1` disiplini yüklemde:** kesişen kümeler çokluk sayılmaz "
+     "(`{ciro}` ↔ `{ciro, fire}` bir zenginlik farkıdır, iki istek değil) ve "
+     "`eksen=cube` (aynı ölçü, iki sahip) **aynen sorar**. "
+     "⚠ **KAYIPSIZ:** plan cevap veremezse **birebir aynı** chip konuşur — en kötü "
+     "durum bugünküyle bayt bayt aynı. `sha=7fbf8a2`"),
     ("o14-garson-orkestrator-oldu", 1,
      "🔴🔴 **`O-14` — GARSON = ORKESTRATÖR.** Tek satır: `_g = sarmala(...)`. ⊙ Bu bir "
      "**basamak eklemesi değil**, garsonun **çıktı biçiminin** genişlemesi — karar yüzeyi "
@@ -1003,6 +1022,25 @@ MUAFIYET_CUBE_ROUTER_KOD = [
 #: değil sessiz bir tavan artışıdır* (bu dosyanın kendi cümlesi). Dosya muafiyeti bu yüzden
 #: **ayrı** sayılır ve `ask()` tavanına **dokunmaz**.
 MUAFIYET_ASK_DOSYA = [
+    ("o19-cokluk-netlestirmeyi-erteler", 5,
+     "🔴🔴 **`O-19` — AYRIK ÖLÇÜ KÜMELERİ BİR BELİRSİZLİK DEĞİL, BİR ÇOKLUKTUR.** "
+     "⊙ Ölçüldü (canlı `IV` turu, iki soru): *«iade oranı en yüksek 3 müşteriyi **ve** "
+     "ciro paylarını göster»* ve *«hangi vardiyada kalite sorunları yoğunlaşıyor»* → "
+     "ikisi de `%50 uyum · eksen=measures` ile **cevapsız** kaldı. Oyların hikâyesi: "
+     "biri **çekimser** (*«tek cube ile olmaz»* — haklı), ikisi **farklı** küplerden "
+     "**farklı** ölçüler seçiyor. Üç oy da doğru: soru gerçekten **iki parçalı** ve "
+     "doğru cevap bir **plandır**. "
+     "⊙ Δ = 5: ilklendirme (1) · çokluk dalı (2: `if` + saklama) · plan cevap veremezse "
+     "ertelenen chip (2: `if` + `return`). "
+     "⚠ **TAŞINAMAZ:** karar `ask()`in **akış sırasıdır** — netleştirmeyi erteleyip "
+     "planı denemek, sonra ertelenmişi konuşturmak. Dışarı almak, bir dalın *nerede* "
+     "döndüğünü iki dosyaya bölerdi. Yüklemin kendisi (`uyum.cokluk_mu`) **taşındı** ve "
+     "tavan yalnız akış satırlarını sayıyor. "
+     "⚠ **`§101.1` disiplini yüklemde:** kesişen kümeler çokluk sayılmaz "
+     "(`{ciro}` ↔ `{ciro, fire}` bir zenginlik farkıdır, iki istek değil) ve "
+     "`eksen=cube` (aynı ölçü, iki sahip) **aynen sorar**. "
+     "⚠ **KAYIPSIZ:** plan cevap veremezse **birebir aynı** chip konuşur — en kötü "
+     "durum bugünküyle bayt bayt aynı. `sha=7fbf8a2`"),
     ("faz-75-salinim-yonetimi", 5,
      "🔴 **SALINIMI YÖNETMEK, DALLARI YAMAMAKTAN ÖNCE GELİR.** Üç sondajla ölçüldü: "
      "**aynı soru, aynı sistem, aynı dakika** — bazen tam cevap, bazen netleştirme "
