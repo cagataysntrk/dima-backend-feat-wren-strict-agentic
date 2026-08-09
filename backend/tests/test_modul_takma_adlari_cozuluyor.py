@@ -1,94 +1,80 @@
-"""🔴 **BİR MODÜL TAKMA ADI, KULLANILDIĞI YERDE TANIMLI MI?**
+"""🔴 **ÇÖZÜLMEYEN İSİM YOK** — `F821`, ve sıfır tabanla.
 
-## Neden bu kapı var — ölçülmüş bir kusurdan doğdu
+## Bu kapı ölçülmüş dört kusurdan doğdu, ve ikisi ÜRÜN kusuruydu
 
-`O-4`'te `ask.py`'ye `_plan_tuketici.cevap(...)` yazıldı ve **importu unutuldu**. Sonuç:
+`O-4`'te `ask.py`'ye bir çağrı yazıldı, importu unutuldu ve canlı `curl` turunun
+**birinci** sorusunda patladı. Elle bir AST kapısı yazdım; o kapı **ikinci** kusuru
+(`trace`) kaçırdı — çünkü modül geneline bakıyordu, **kapsama** değil. Sonra `ruff`'ın
+`F821`'i denendi ve ikisini de tek satırda buldu — üstüne **beş** tane daha:
 
-    NameError: name '_plan_tuketici' is not defined   (ask.py:3799, CANLI)
+| yer | isim | sonuç |
+|---|---|---|
+| `ask.py:3799` | `_plan_tuketici` | 🔴 `NameError` — benim kusurum, canlı yakalandı |
+| `ask.py:3804` | `trace` | 🔴 `NameError` — elle yazdığım kapı **göremedi** |
+| `ask.py:1391…1401` | `_MAX_UPLOAD` · `_UPLOAD_DIR` | 🔴🔴 **`POST /ask/upload` HER İSTEKTE 500** *(canlı doğrulandı)* |
+| `ask.py:394` | `_answer_from_cube_query` | 🔴 çapraz-alan pilotu cevap üretirse çöker |
+| `answer.py:192` | `AskRequest` | ⚠ yalnız açıklama (annotation) — çökmez, ama yanlış |
 
-⊙ Ve bunu **hiçbir şey görmedi**:
-* `import app.routers.ask` **başarılı** — `NameError` modül yüklenirken değil, o
-  fonksiyon **koştuğunda** doğar.
-* Hedefli testler **yeşil** — dal `_try_fresh_intent` içinde ve oraya ancak gerçek bir
-  LLM turuyla girilir; süitin hiçbir testi oraya girmiyor.
-* Bayrak **kapalıydı** ve yine de patladı: çağrı koşulsuz, `None` dönüşü içeride
-  kararlaşıyordu. Yani `KURAL B` bir **isim hatasıyla** çiğnendi.
+⊙ **`/ask/upload` bir demet boyunca değil, kim bilir ne kadardır kırıktı** ve süit onu
+hiç görmedi. Bu, deponun kendi yazılı dersinin (*"bir HTTP ucu bir demet boyunca kırıktı
+ve kimse görmedi"*) birebir tekrarı.
 
-Kusur canlı `curl` turunda, birinci soruda çıktı.
+## Neden `ruff`, neden elle yazılmış bir yüklem DEĞİL
 
-## Ne ölçüyor — ve neden yanlış-pozitif üretemez
+Elle yazdığım kapı çalışıyordu — ama **kapsam bilmiyordu**. `ruff` Python'un kapsam
+kurallarını zaten uyguluyor. İkisini birlikte tutmak `KAT-1` olurdu: aynı kuralın iki
+sahibi, biri **eksik**. Zayıf olan kaldırıldı.
 
-Modül **gerçekten import edilir**, sonra kaynağındaki `_ad.oznitelik` biçimindeki her
-kullanım için `hasattr(modül, "_ad")` sorulur. Yani bu bir sezgi değil, **çalıştırılmış
-bir gerçektir** (`§101.1`: kendi yanlış-pozitifini üreten bir yüklem, kusurdan pahalıdır).
+*Kendi yazdığın bir yüklem, kaçırdığını sana söylemez; kaçırdığını ancak onu geçen bir
+kusur söyler.*
 
-⚠ Yalnız `_` ile başlayan adlar bakılır: yerel değişkenler de `_` ile başlayabilir, bu
-yüzden **atanan** her ad hariç tutulur. Geriye yalnız *"hiçbir yerde atanmamış ama
-kullanılmış"* adlar kalır — bir modül takma adının tam tanımı.
+## Taban SIFIR — ve sıfır kalmalı
 
-*Bir ismin çözülüp çözülmediğini, o satır koşana kadar bekleyerek öğrenmek, en pahalı
-öğrenme biçimidir.*
+Yedi bulgunun **yedisi de düzeltildi**. Bir muafiyet listesi bilerek yok: bir istisna
+listesi olsaydı, sıradaki `NameError` oraya yazılarak susturulabilirdi.
 """
 
 from __future__ import annotations
 
-import ast
-import importlib
 import pathlib
+import subprocess
+import sys
 
-import pytest
-
-APP = pathlib.Path(__file__).resolve().parents[1] / "app"
-
-#: Bu kusur sınıfının yaşadığı yerler: **büyük** ve **çok takma adlı** modüller.
-MODULLER = [
-    ("app.routers.ask", APP / "routers" / "ask.py"),
-    ("app.cube_router", APP / "cube_router.py"),
-    ("app.answer", APP / "answer.py"),
-    ("app.llm", APP / "llm.py"),
-]
+BACKEND = pathlib.Path(__file__).resolve().parents[1]
+ALANLAR = ("app", "control_plane", "admin_app", "lab", "eval")
 
 
-def _cozulmemis(kaynak: str, modul) -> set[str]:
-    agac = ast.parse(kaynak)
-    atanan: set[str] = set()
-    kullanilan: set[str] = set()
-    for d in ast.walk(agac):
-        if isinstance(d, ast.Name) and isinstance(d.ctx, (ast.Store, ast.Del)):
-            atanan.add(d.id)
-        elif isinstance(d, (ast.Import, ast.ImportFrom)):
-            atanan |= {(a.asname or a.name).split(".")[0] for a in d.names}
-        elif isinstance(d, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            atanan.add(d.name)
-        elif isinstance(d, ast.arg):
-            atanan.add(d.arg)
-        elif isinstance(d, ast.ExceptHandler) and d.name:
-            atanan.add(d.name)
-        elif isinstance(d, ast.Attribute) and isinstance(d.value, ast.Name):
-            if d.value.id.startswith("_"):
-                kullanilan.add(d.value.id)
-    return {a for a in kullanilan - atanan if not hasattr(modul, a)}
+def _f821(hedefler: list[str]) -> str:
+    p = subprocess.run(
+        [sys.executable, "-m", "ruff", "check", "--no-cache",
+         "--output-format=concise", "--select", "F821", *hedefler],
+        cwd=BACKEND, capture_output=True, text=True)
+    return (p.stdout or "") + (p.stderr or "")
 
 
-@pytest.mark.parametrize("ad,yol", MODULLER, ids=[m[0] for m in MODULLER])
-def test_KULLANILAN_HER_TAKMA_AD_TANIMLI(ad: str, yol: pathlib.Path):
-    """🔴 `_ad.oznitelik` yazılmışsa `_ad` **gerçekten** çözülebilmeli."""
-    modul = importlib.import_module(ad)
-    eksik = _cozulmemis(yol.read_text(encoding="utf-8"), modul)
-    assert not eksik, (
-        f"🔴 `{ad}` içinde çözülemeyen modül takma adı: {sorted(eksik)}.\n"
-        "Kullanılmış ama hiçbir yerde atanmamış/import edilmemiş — o satır koştuğu an "
-        "`NameError`. Bir bayrak kapalı olsa bile patlar: çağrı koşulsuzdur.")
+def test_COZULMEYEN_ISIM_YOK():
+    """🔴 `NameError` bir çalıştırma sürprizi değil, **okunabilir** bir gerçektir."""
+    cikti = _f821([a for a in ALANLAR if (BACKEND / a).is_dir()])
+    satirlar = [s for s in cikti.splitlines() if ": F821" in s]
+    assert not satirlar, (
+        "🔴 Çözülemeyen isim(ler) — o satır koştuğu an `NameError`:\n"
+        + "\n".join(satirlar)
+        + "\n\nBir bayrak kapalı olsa bile patlar: çağrı koşulsuzdur.\n"
+          "⚠ Bu kapının muafiyet listesi YOKTUR ve olmamalıdır — bir istisna listesi, "
+          "sıradaki `NameError`'ın susturulacağı yerdir.")
 
 
-def test_KAPI_GERCEKTEN_KAPI_MI():
+def test_KAPI_GERCEKTEN_KAPI_MI(tmp_path):
     """⚠ Meta-kapı: yüklem **gerçek bir eksiği** yakalıyor mu?
 
-    Bu olmasaydı, `_cozulmemis` bir gün boş küme döndürmeye başlar ve kapı sessizce
-    **her şeyi onaylayan** bir kapıya dönüşürdü.
+    Bu olmasaydı kapı bir gün sessizce **her şeyi onaylayan** bir kapıya dönüşür ve
+    yeşil kalarak yanlış bir güven üretirdi (bu depoda ölçülmüş bir desen: *sistem
+    bozulurken sayı iyileşir*).
     """
-    import app.routers.ask as _m
-    sahte = "def f():\n    return _hic_olmayan_modul.bir_sey()\n"
-    assert _cozulmemis(sahte, _m) == {"_hic_olmayan_modul"}
-    assert _cozulmemis("def f():\n    _x = 1\n    return _x.y\n", _m) == set(), (
-        "yerel değişken takma ad sanıldı — yanlış-pozitif")
+    kotu = tmp_path / "kotu.py"
+    kotu.write_text("def f():\n    return _hic_olmayan.bir_sey()\n", encoding="utf-8")
+    assert "F821" in _f821([str(kotu)]), "kapı sahte bir eksiği bile görmedi"
+
+    iyi = tmp_path / "iyi.py"
+    iyi.write_text("def f():\n    _x = 1\n    return _x\n", encoding="utf-8")
+    assert "F821" not in _f821([str(iyi)]), "yerel değişken çözülemedi sanıldı"

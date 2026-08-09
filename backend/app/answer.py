@@ -43,7 +43,7 @@ from fastapi import Request
 
 from app.config import get_settings
 from app.logging_setup import get_logger
-from app.schemas import AskResponse, Explain
+from app.schemas import AskRequest, AskResponse, Explain
 
 _log = get_logger("ask")
 

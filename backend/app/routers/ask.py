@@ -296,7 +296,7 @@ def _prompt_enhance_dene(request, ham_soru: str, q_norm: str, schema: dict, prin
 
 
 def _capraz_alan_pilotu(request, body, q_norm: str, schema: dict, principal,
-                        migration_trace: list[str]):
+                        migration_trace: list[str], cevapla=None):
     """FAZ 4 — planlayıcı ÖNERİR, dört kapı DENETLER, makbuz KOŞUMU kaydeder.
 
     Döner: `AskResponse | None`. `None` = pilot bir şey üretemedi → **bugünkü davranış**
@@ -391,7 +391,7 @@ def _capraz_alan_pilotu(request, body, q_norm: str, schema: dict, principal,
         "Ajan: plan seçildi → " + " → ".join(a["arac"] for a in adimlar),
         "Ajan: her adım dört kapıdan geçti (kayıt · yetki · deterministik-önce · bütçe)",
     ]
-    resp = _answer_from_cube_query(sonuc["cube_query"], source="cube", trace=iz)
+    resp = cevapla(sonuc["cube_query"], source="cube", trace=iz) if cevapla else None
     if resp is not None:
         # MAKBUZ: koşumun kendisi cevabın YANINDA taşınır — "hangi araçlar, hangi sırayla,
         # kaç ms, hangi adım reddedildi" sorusu cevaplanabilir olsun. Reddedilen adımlar
@@ -1378,7 +1378,10 @@ def upload_dataset(request: Request, body: UploadRequest) -> UploadResponse:
     gelirse yüklenen veriyi sorgular. Ham dosya bulut LLM'e gitmez (yerel DuckDB)."""
     import time
 
-    from app import dataset
+    # 🔴 `_MAX_UPLOAD`/`_UPLOAD_DIR` **hiç import edilmemişti**: `/ask/upload` her istekte
+    # `NameError` ile 500 dönüyordu (ölçüldü, canlı). Modül üzerinden erişiliyor ki tavan
+    # kapısına yeni bir satır yüklenmesin — ikisi de `answer.py`'nin sabitleri.
+    from app import answer as _cvp, dataset
 
     t0 = time.monotonic()
     _log.info("İSTEK /ask/upload: filename=%r session=%s boyut=%dB",
@@ -1388,17 +1391,17 @@ def upload_dataset(request: Request, body: UploadRequest) -> UploadResponse:
     except Exception:
         _log.warning("/ask/upload: geçersiz base64 (filename=%r)", body.filename, exc_info=True)
         raise HTTPException(status_code=400, detail="Geçersiz base64 içerik")
-    if len(raw) > _MAX_UPLOAD:
+    if len(raw) > _cvp._MAX_UPLOAD:
         _log.warning("/ask/upload: dosya çok büyük (%dB > %dB, filename=%r)",
-                    len(raw), _MAX_UPLOAD, body.filename)
+                    len(raw), _cvp._MAX_UPLOAD, body.filename)
         raise HTTPException(status_code=413,
-                            detail=f"Dosya çok büyük (>{_MAX_UPLOAD // 1024 // 1024} MB)")
+                            detail=f"Dosya çok büyük (>{_cvp._MAX_UPLOAD // 1024 // 1024} MB)")
     safe = re.sub(r"[^A-Za-z0-9_-]", "_", body.session_id)[:80]
     label = Path(body.filename).stem[:40] or "veri"
     try:
-        info = dataset.ingest_file(raw, body.filename, _UPLOAD_DIR / safe)
+        info = dataset.ingest_file(raw, body.filename, _cvp._UPLOAD_DIR / safe)
         mdl = dataset.build_mdl(info, cube_name="veri", label=label)
-        svc = dataset.build_service(_UPLOAD_DIR / safe, mdl)
+        svc = dataset.build_service(_cvp._UPLOAD_DIR / safe, mdl)
     except Exception as exc:  # noqa: BLE001 — kullanıcıya dürüst hata, sunucuyu düşürme
         # ÖNCEDEN bu blok hiç loglamıyordu — dosya işleme (DuckDB ingest/MDL/servis kurulumu)
         # patladığında kullanıcı yalnız "Dosya işlenemedi" görürdü, sunucu tarafında İZ YOKTU.
@@ -3801,7 +3804,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             return _finish(_attach_viz(AskResponse(
                 question=body.question, source=_pc["source"], note=_pc["note"],
                 result=_pc.get("result"), cube_query=_pc.get("cube_query"),
-                trace=trace + _pc["iz"]), _pc.get("result"), _pc.get("cube_query")))
+                trace=_pc["iz"]), _pc.get("result"), _pc.get("cube_query")))
         if route_hit:
             cq = route_hit["cube_query"]
             # Gitaş logu 2026-07-24: order/limit route()'tan AYRI alanlar olarak
@@ -4074,7 +4077,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             # (`agent_plan_secimi`, varsayılan **off**) kapalıyken bu blok hiç koşmaz —
             # KURAL B.
             if other_topic and "agent_plan_secimi" in resolve_for(settings, principal):
-                _pilot = _capraz_alan_pilotu(request, body, q_norm, schema, principal, [])
+                _pilot = _capraz_alan_pilotu(request, body, q_norm, schema, principal,
+                                             [], _answer_from_cube_query)
                 if _pilot is not None:
                     return _pilot
             return _finish(AskResponse(
@@ -4611,7 +4615,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     # edilebilir. Planlayıcı o iki adımı önerir; **dört kapı** onu denetler.
     if "agent_plan_secimi" in resolve_for(settings, principal):
         _agent = _capraz_alan_pilotu(request, body, q_norm, schema, principal,
-                                     migration_trace)
+                                     migration_trace, _answer_from_cube_query)
         if _agent is not None:
             return _agent
 

@@ -89,6 +89,15 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("f821-capraz-alan-pilotu-ic-fonksiyonu-cagiriyordu", 1,
+     "🔴 **GİZLİ BİR `NameError` KAPATILDI.** `_capraz_alan_pilotu` modül düzeyindeydi ama "
+     "`ask()`in **iç** fonksiyonu `_answer_from_cube_query`'yi çağırıyordu: pilot bir cevap "
+     "ürettiği an `NameError`. `ruff F821` buldu (`ask.py:394`), `agent_plan_secimi` kapalı "
+     "olduğu için bugüne kadar hiç koşmamıştı. ⊙ Çözüm iç fonksiyonu **parametre** yapmak: "
+     "iki çağrı yerinden biri tek satıra sığmadı, bedel **bir** satır. Alternatif "
+     "(`_answer_from_cube_query`i modül düzeyine taşımak) çok daha pahalıydı — o fonksiyon "
+     "`ask()`in on kadar yerel değişkenini okuyor. *Bir çağrının nereden geldiğini "
+     "parametreyle söylemek, çağrılanı taşımaktan ucuzdur.*"),
     ("o4-merdivenin-boslugu-tek-kapidan", 7,
      "🔴 **`FAZ O-4` — MERDİVENİN BOŞLUĞU (`E3`).** Yedi satır: `_garson` başlangıcı (1), "
      "`_plan_tuketici.cevap(...)` çağrısı (2), `if` + `AskResponse` dönüşü (4). ⊙ Neden "
