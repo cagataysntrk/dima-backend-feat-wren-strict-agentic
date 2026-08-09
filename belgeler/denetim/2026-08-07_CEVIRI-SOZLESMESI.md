@@ -6971,3 +6971,104 @@ kataloğun kaç ADI olduğuyla değil, kaç ŞEY olduğuyla ölçülür.*
 | X | 10 | 3 | 7 | 1 | — |
 | Y | 15 | 1 | 4 | 0 | 2 |
 | Z | 14 | 0 | 6 | 1 | **8** |
+
+---
+
+## §107 · AA TURU — 20 senaryo · **AGENTIC / ÇOK ADIMLI** (kullanıcı önceliği başta)
+
+| # | senaryo | sonuç |
+|---|---|---|
+| AA1 | makine bazında ortalama OEE | 🟢 LLM'siz |
+| **AA2** | ↳ 🔴**ÖNCELİK** *«RAM-3 neden diğerlerinden düşük»* | 🔴 *«ort_oee toplanabilir değil… katkı payı tanımsız»* |
+| AA3 | ↳ duruş süresi mi sebep, hangi vardiyada | 🟢 33 satır makine×vardiya |
+| AA4 | ↳ duruş nedenlerinin dökümünü ver | ◐ küp değişti ama **kırılım kayboldu** (1 satır) |
+| AA5 | ↳ *bu analiz nasıl yapıldı* | 🔴 makbuz tanınmadı (*«nasıl yapıldı»* kalıpta yok) |
+| AA6 | *makine verimliliklerinin kârlılığa etkisini analiz et* | 🔴 konu daraltma **(kullanıcının literal örneği)** |
+| AA7 | ↳ en verimsizin kârlılığa etkisini rakamla göster | 🔴 **Discovery 25 sn** → ret |
+| AA8 | ciromun en büyük 3 kaynağı olan müşteriler | 🟢 EGE KNIT 13,4M₺ |
+| AA9 | ↳ *bunlara* en çok neleri sattığımı üçü için ayrı ayrı | 🔴 **çapa tamamen koptu** → `sevkiyat × varis_il` |
+| AA10 | personel çalışma süreleri ve verimliliklerini kıyasla | 🟢 operatör × (ağırlık, fire oranı) |
+| AA11 | ↳ *en düşüğün neden diğerlerinden düşük olduğunu bul* | 🔴 en düşüğü verdi, **«neden» sessizce düştü** |
+| AA12 | ↳ bunu bir grafikte **iki eksenle** göster | 🔴 aynı tek satır, görünüm değişmedi |
+| AA13 | fire oranı ile üretim miktarını **iki eksende** | ◐ *«iki ayrı konu»* — oysa **ikisi de `parti`de** |
+| AA14 | makine × vardiya **ısı haritası** OEE | 🟢 33 satır, LLM'siz |
+| AA15 | bölüm bazında elektrik **halka grafik** | 🟢 5 satır + eş-adlılık beyanı |
+| AA16 | [NL] *Waarom is de OEE van RAM-3 lager…* | 🔴 çapraz konu → netleştirme, **garson gitmedi** |
+| AA17 | [ZH] 今年各部门的用电量是多少？ | 🟢 `enerji_makine × bolum` |
+| AA18 | makine OEE + önceki aya göre değişim | 🟢🟢 **dönemsel kıyas (mom), LLM'siz** |
+| AA19 | ↳ en çok kötüleşenin sebebini ayrıştır | 🔴 netleştirme |
+| AA20 | ↳ bu bulguyu müdüre 3 cümleyle özetle | ◐ üç ölçü döndü, anlatı yok |
+
+**Skor:** 8 🟢 · 3 ◐ · 9 🔴 · Discovery **1**
+*(Tur bilerek en zor kuruldu: agentic çok-adımlı, çok-eksenli, zamir çapalı, altı dil.)*
+
+### §107.1 · AA TURUNUN KÖKLERİ — kullanıcı önceliği ÇÖZÜLDÜ
+
+#### 🔴🔴 §AA1 — «NEDEN DÜŞÜK?» BİR AYRIŞTIRMA DEĞİL, BİR KIYASTIR *(kullanıcı bildirdi)*
+
+    önce: «ort_oee toplanabilir değil (non_additive) — katkı payı tanımsız olur»
+
+⊙ Cümle **doğru** ama **başka bir sorunun** cevabı. Katkı payı *"toplamın yüzde kaçı bu
+segmentten geldi?"* diye sorar — bir ortalamada gerçekten tanımsız. Kullanıcının sorduğu
+*"bu neden ÖTEKİLERDEN düşük?"* ise bir **karşılaştırmadır** ve ortalamada **tanımlıdır**.
+🔴 Sistem, cevaplayabileceği bir soruyu, **sormadığı** bir sorunun imkânsızlığıyla
+reddediyordu — `§1.5`'in en pahalı biçimi: doğru bir kapı, yanlış kapıya konmuş.
+
+**Çözüm yeni motor değil, var olanın kompozisyonu** (iki deterministik sorgu, **0 LLM**):
+akran ortalamasıyla fark + aynı küpün öteki ölçülerinde hedefin **oransal sapması**;
+yön `lower_is_better` beyanından (`§W-C` ile aynı kaynak).
+
+✅ Canlı:
+
+    **RAM-3**, öteki 10 makine ortalamasından **%10,7 düşük** (0,5245 ↔ akran ort. 0,5876).
+    **Farkı en çok açıklayanlar** — aynı kırılımda, akran ortalamasına göre:
+    • **fire**: 63.452 kg — akran ort. 39.103 kg (**%62,3 fazla**, kötü yönde)
+    • **performans**: 0,7405 — akran ort. 0,81 (**%9,1 az**, kötü yönde)
+    • **ilk seferde tamam**: %78,79 — akran ort. %80,88 (**%2,6 az**, kötü yönde)
+
+✅ Ve yayıldı: `fire_orani_yuzde` için de çalışıyor (`BB1`: OSMAN ÇELİK %26,61 ↔ akran
+%18,95, sürükleyen fire %37,3 fazla).
+⚠ Katkı **payı** hâlâ üretilmiyor ve gerekçesi korunuyor — sınır aşılmadı, **yanına doğru
+soru kondu**.
+
+**Yol boyunca ÜÇ kendi hatam sondajla yakalandı:**
+1. `_sayi` adını **çakıştırdım** — modülde zaten vardı ve sözleşmesi **tersiydi** (eksiği
+   `0.0` sayar). Kapı `float - None` ile patladı. `KAT-1`'in en sinsi biçimi: aynı kuralın
+   iki sahibi değil, **aynı adın iki sözleşmesi**. *Bir ada sahip çıkmadan sözleşme yazılmaz.*
+2. `hedef`/`surukleyenler` diye **yeni anahtarlar** döndürdüm; `ContributionResponse`
+   **sabit alanlı** ve canlıda **sessizce düştüler** — kullanıcıya yalnız *"akran kıyası
+   yapıldı"* ulaştı, işin **kendisi** değil. *Bir cevabı üretmek, onu taşıyan alana
+   koymakla tamamlanır.*
+3. Ekrana `0.5245118291704627` · `63452.000000000044` düştü. *Okunamayan bir sayı
+   sorgulanmaz, atlanır.*
+
+#### 🔴 §BB1 — «NASIL» + EDİLGEN GEÇMİŞ, KAPALI BİR DİLBİLGİSİ AİLESİDİR
+
+`AA5` (*«bu analiz **nasıl yapıldı**»*): makbuz türü doğmadı. `_MAKBUZ` sekiz *«nasıl …»*
+girdisi taşıyordu, **`yapıldı` yoktu**. Dokuzuncusunu eklemek onuncuyu bekletirdi
+(`ADR-0008`). Yapısal olgu: *«nasıl»* + **edilgen geçmiş** bir **yöntem** sorusudur ve
+ekranda rapor varken o raporun yapılışını sormaktan başka bir şey olamaz. Sondaj 8/8
+(*«iade edildi mi»* ve *«kaç parti üretildi»* dışarıda kaldı — *«nasıl»* şartı zorunlu).
+
+*Bir listeye sekizinci kelimeyi eklemek, dokuzuncuyu beklemeye karar vermektir.*
+
+#### ◐ §BB2 — «İKİ KAVRAMI TAŞIYAN BİR KÜP, İKİ KÜP DEĞİLDİR»
+
+`_iki_cube_olcusu` sahiplik haritasını `_match_measure` ile kuruyordu ve o **küp başına
+tek** ölçü döndürür; iki ölçüyü de taşıyan bir küp yalnız birine sayılıyor, kesişim
+**yapay olarak** boşalıyordu. Harita tamamlandı (yeni kelime/eşik/sözlük **yok**;
+yanlış-pozitif korumaları aynen yürürlükte).
+
+⚠ **Ama `AA13`'ü açmadı ve sebebi dürüstçe yazılıyor:** `parti.toplam_agirlik_kg`
+sinonimleri arasında *«miktar»* **yok**; *«üretim miktarı»* kataloğda yalnız `oee`'nin
+kelimesi. Yani `AA13` bir mantık kusuru değil, `Y6` ile aynı sınıf: **menü adlandırma**
+eksikliği. Değişiklik doğru ve yerinde duruyor, ama bu vakayı çözen o değil.
+
+*Bir düzeltmenin doğru olması, aradığınız kusuru kapattığı anlamına gelmez.*
+
+### ⏸ KAPI ERTELENDİ (kullanıcı talimatı)
+
+Paralel bir ajan test onarımı yapıyor; çakışmayı önlemek için **kapı koşulmadı**. Bu
+demetin doğrulaması **curl** ile yapıldı (üç canlı tur) ve hedefli `pytest` 116 yeşil
+verdi (`test_contribution` · `test_modul_buyume` · `test_ask_golden`). Ajan bitince
+kapı koşulacak ve sonucu buraya yazılacak.

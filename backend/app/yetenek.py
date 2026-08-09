@@ -312,6 +312,39 @@ def _iki_cube_olcusu(q: str, schema: dict) -> str | None:
     # hepsi bu boşluktan geliyordu. *`«ariza sayisi»` ve `«ariza»` iki kavram değil,
     # aynı kavramın iki taneliliğidir* (`bakim.ariza_sayisi` ↔ `oee.toplam_durus_dakika`).
     # Bir sinonim başka bir eşleşmiş sinonimin İÇİNDE geçiyorsa, ayrı bir istek sayılmaz.
+    # 🔴🔴 **`§BB2` — `_match_measure` KÜP BAŞINA TEK ÖLÇÜ DÖNDÜRÜR; iki ölçüyü de
+    # taşıyan küp, yalnız BİRİNE sayılıyordu ve kesişim yapay olarak boşalıyordu.**
+    #
+    # Ölçüldü (`AA13` — *«aylık fire oranı ile üretim miktarını aynı grafikte iki eksende
+    # göster»*):
+    #
+    #     «Bu soru **iki ayrı konunun** ölçüsünü birlikte istiyor
+    #      («fire» (parti) + «miktar» (oee)) … ilişkiyi hesaplayamıyorum»
+    #
+    # 🔴 Oysa `parti` küpü **ikisini birden** taşıyor: `fire_orani_yuzde` **ve**
+    # `toplam_agirlik_kg`. `_match_measure(q, parti)` en iyi eşleşme olarak yalnız `fire`i
+    # döndürünce `parti`, *«miktar»* kelimesinin sahipleri arasında **hiç görünmedi**;
+    # kesişim boş çıktı ve sistem yapabildiği bir işi **yapamıyorum** diye ilan etti.
+    #
+    # ⊙ Bu fonksiyonun kendi docstring'i tam da bu tuzağı başka bir yüzüyle anlatıyor
+    # (*"iki sahibi olan bir kavram, iki kavram değildir"*); eksik olan simetriği:
+    # **iki kavramı taşıyan bir küp, iki küp değildir.**
+    #
+    # ⚠ Yanlış-pozitif koruması **korunur**: aşağıdaki *kapsanan kelime* elemesi ve
+    # *"en az iki AYRI eşleşen kelime"* şartı aynen yürürlükte. Burada yalnız sahiplik
+    # haritası **tamamlanıyor** — yeni bir kelime, yeni bir eşik, yeni bir sözlük yok.
+    #
+    # *Bir sınırı ilan etmeden önce, sınırın gerçekten orada olup olmadığına bakmak gerekir.*
+    for _c in schema.get("cubes") or []:
+        _ad = str(_c.get("name") or "")
+        for _m in (_c.get("measures") or []):
+            if not isinstance(_m, dict):
+                continue
+            for _t in [_m.get("name"), *(_m.get("synonyms") or [])]:
+                _tn = _norm(str(_t or ""))
+                if _tn in sahipler and _syn_benzeri(q, str(_t)):
+                    sahipler[_tn].add(_ad)
+
     kelimeler = sorted(sahipler, key=len, reverse=True)
     kapsanan = {k for k in kelimeler
                 if any(k != u and k in u for u in kelimeler)}

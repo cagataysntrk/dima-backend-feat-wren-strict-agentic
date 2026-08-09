@@ -357,6 +357,108 @@ def rank_dimensions(raporlar: list[dict]) -> list[dict]:
 # de çağırabilir. Kural (MIMARI §5): aynı kural iki yerde yaşamasın.
 
 
+def _sayi_ya_da_yok(v):
+    """Satır değerini sayıya çevirir; çevrilemiyorsa **`None`** (uydurma yok).
+
+    🔴 **`_sayi` DEĞİL — ve bu ayrım bir kapı yakalamasıyla öğrenildi.** İlk yazımda bu
+    fonksiyonu `_sayi` diye tanımladım; modülde **zaten bir `_sayi` vardı** (`:53`) ve
+    sözleşmesi **tam tersiydi**: eksik değeri `0.0` sayar (*"eksik geçen dönem SIFIR
+    sayılır"*, kendi kapısı var). Python son tanımı kazandırdı ve katkı ayrıştırması
+    `float - None` ile **patladı**.
+    ⊙ `KAT-1`'in en sinsi biçimi: aynı kuralın iki sahibi değil, **aynı adın iki
+    sözleşmesi**. Ve fark bir yazım değil bir **politikadır**: biri eksiği sıfır sayar,
+    öteki eksiği **reddeder**. İkisi de doğru — ama farklı sorular için.
+    *Bir ada sahip çıkmadan bir sözleşme yazılmaz.*
+    """
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _akran_kiyasi(service, cq: dict, cube_meta: dict, measure: str,
+                  satir_donustur=None) -> dict | None:
+    """`§AA1` — hedefi AKRANLARIYLA kıyaslar ve farkı en çok açıklayan ölçüyü bulur.
+
+    İki deterministik sorgu, **sıfır LLM**:
+      1. `measure × boyut` → hedefin değeri ↔ ötekilerin ortalaması (fark, %)
+      2. aynı boyutta küpün **öteki** ölçüleri → hedefin akran ortalamasından **oransal
+         sapması**; en büyük sapmalar *"sürükleyen"* olarak sıralanır.
+
+    ⚠ Oransal sapma bilerek: ölçüler farklı birimlerdedir (`dk` · `%` · `kg`) ve mutlak
+    fark onları kıyaslanamaz kılar. Payda **akran ortalamasıdır**, sıfırsa o ölçü **elenir**
+    (bölme uydurulmaz).
+    ⚠ Yön `lower_is_better` beyanından okunur (`§W-C` ile aynı kaynak): duruşun **fazla**
+    olması kötüdür, OEE'nin fazla olması iyidir. Yönsüz bir sapma bir açıklama değildir.
+    ⚠ Hedef seçilemezse (`None`) çağıran eski davranışına döner — kapsam kaybı yok.
+    """
+    dims = [d for d in (cq.get("dimensions") or []) if d]
+    if not dims:
+        return None
+    dim = dims[0]
+    _tumu = list((cube_meta.get("measures") or []))
+    _lower = set(cube_meta.get("lower_is_better") or [])
+    _units = cube_meta.get("units") or {}
+    _disp = cube_meta.get("measure_synonyms_display") or {}
+
+    def _kos(olculer: list[str]) -> list[dict]:
+        _q = {**cq, "measures": olculer, "dimensions": [dim]}
+        for _k in ("order", "limit", "pencere", "turev", "entity_limit"):
+            _q.pop(_k, None)
+        try:
+            _r = service.query(service.cube_sql(_q))
+        except Exception:                                  # noqa: BLE001 — tur düşmez
+            _log.warning("akran kıyası sorgusu düştü (best-effort)", exc_info=True)
+            return []
+        _rows = (_r or {}).get("rows") or []
+        return satir_donustur(_rows) if satir_donustur else _rows
+
+    taban = _kos([measure])
+    _deg = {str(r.get(dim)): _sayi_ya_da_yok(r.get(measure)) for r in taban if r.get(dim) is not None}
+    _deg = {k: v for k, v in _deg.items() if v is not None}
+    if len(_deg) < 3:
+        return None                       # akran yoksa kıyas da yok (istatistik anlamsız)
+    _az_iyi = measure in _lower
+    hedef = (max(_deg, key=_deg.get) if _az_iyi else min(_deg, key=_deg.get))
+    _akranlar = [v for k, v in _deg.items() if k != hedef]
+    _ort = sum(_akranlar) / len(_akranlar)
+    _fark = _deg[hedef] - _ort
+    _yuzde = round(100.0 * _fark / _ort, 1) if _ort else None
+
+    # 2. SORGU — küpün öteki ölçüleri. Hedef ölçü ve toplanabilirliği bilinmeyenler dışta.
+    _otekiler = [m for m in _tumu if m != measure][:12]
+    surukleyenler: list[dict] = []
+    if _otekiler:
+        for r in _kos(_otekiler):
+            if str(r.get(dim)) != hedef:
+                continue
+            for m in _otekiler:
+                hv = _sayi_ya_da_yok(r.get(m))
+                if hv is None:
+                    continue
+                _ak = [_sayi_ya_da_yok(x.get(m)) for x in _kos([m]) if str(x.get(dim)) != hedef]
+                _ak = [x for x in _ak if x is not None]
+                if not _ak:
+                    continue
+                _o = sum(_ak) / len(_ak)
+                if not _o:
+                    continue                       # payda sıfır → bölme UYDURULMAZ
+                _sp = round(100.0 * (hv - _o) / _o, 1)
+                surukleyenler.append({
+                    "measure": m, "label": _disp.get(m) or m, "unit": _units.get(m),
+                    "hedef": hv, "akran_ort": round(_o, 2), "sapma_yuzde": _sp,
+                    # 🔴 Yön beyandan: sapmanın **kötü** olup olmadığını sayı söylemez.
+                    "kotu_yonde": (_sp > 0) if m in _lower else (_sp < 0)})
+            break
+    surukleyenler = sorted(
+        [s for s in surukleyenler if s["kotu_yonde"]],
+        key=lambda s: abs(s["sapma_yuzde"]), reverse=True)[:3]
+    return {"hedef": hedef, "boyut": dim, "hedef_deger": _deg[hedef],
+            "akran_ortalamasi": round(_ort, 4), "fark": round(_fark, 4),
+            "fark_yuzde": _yuzde, "akran_sayisi": len(_akranlar),
+            "surukleyenler": surukleyenler}
+
+
 def arastir(service, schema: dict, cube_query: dict, *, mode: str = "yoy",
             kind: str = "segment", max_dimensions: int | None = None,
             kaydet=None, satir_donustur=None) -> dict:
@@ -411,6 +513,88 @@ def arastir(service, schema: dict, cube_query: dict, *, mode: str = "yoy",
     else:
         ok, neden = ayristirilabilir_mi(measure, cube_meta)
         if not ok:
+            # 🔴🔴 **`§AA1` — «NEDEN DÜŞÜK?» BİR AYRIŞTIRMA DEĞİL, BİR KIYASTIR.**
+            #
+            # Kullanıcı bildirdi, canlıda birebir doğrulandı (`AA2`):
+            #
+            #     soru : «RAM-3 neden diğerlerinden düşük»
+            #     cevap: «ort_oee toplanabilir değil (non_additive) — katkı payı
+            #             matematiksel olarak tanımsız olur»
+            #
+            # ⊙ Cümle **doğru** ama **başka bir sorunun** cevabı. Katkı payı şunu sorar:
+            # *"toplamın yüzde kaçı bu segmentten geldi?"* — bir ortalamada bu gerçekten
+            # tanımsızdır. Kullanıcının sorduğu ise: *"bu neden ÖTEKİLERDEN düşük?"* —
+            # bu bir **karşılaştırmadır** ve bir ortalamada **pekâlâ tanımlıdır**.
+            #
+            # 🔴 Yani sistem, cevaplayabileceği bir soruyu, **sormadığı** bir sorunun
+            # imkânsızlığıyla reddediyordu. `§1.5`'in en pahalı biçimi: doğru bir kapı,
+            # yanlış kapıya konmuş.
+            #
+            # ⊙ Çözüm yeni bir motor DEĞİL, var olan iki şeyin kompozisyonu:
+            #   1. **akran kıyası** — hedefin değeri ↔ ötekilerin ortalaması (fark, %)
+            #   2. **sürükleyen ölçü** — aynı küpün ÖTEKİ ölçülerinde hedefin akranlardan
+            #      en çok saptığı ölçü. `oee` için bunlar `ort_kullanilabilirlik` ·
+            #      `ort_performans` · `ort_kalite` · `plansiz_durus_dakika`'dır ve hepsi
+            #      **zaten tanımlı** — yani mutfak bu yemeği yapabiliyordu, tabağa
+            #      koyacak kimse yoktu.
+            #
+            # ⚠ Katkı **payı** hâlâ üretilmez ve gerekçesi **korunur** (`YOK` sınıfı
+            # doğrudur): dönen nesne bir *"yüzde kaçı"* iddiası taşımaz, yalnız **fark**
+            # ve **sapma** taşır. Bir sınırı aşmıyoruz, yanına doğru soruyu koyuyoruz.
+            #
+            # *Bir sorunun cevaplanamaz olduğunu söylemeden önce, sorulan sorunun o soru
+            # olduğundan emin olmak gerekir.*
+            _akran = _akran_kiyasi(service, cq, cube_meta, measure, satir_donustur)
+            if _akran is not None:
+                # ⚠ **Bulgu `note`'a YAZILIR, ek alana değil** — ve bu bir sondaj
+                # bulgusudur: `ContributionResponse` **sabit alanlıdır** (`arastir`'ın
+                # kendi docstring'i *"dönen sözlük onun alanlarıyla birebir aynıdır"*
+                # diyor). İlk yazımda `hedef`/`surukleyenler` diye yeni anahtarlar
+                # döndürdüm; canlıda **sessizce düştüler** ve kullanıcıya yalnız
+                # *"akran kıyası yapıldı"* cümlesi ulaştı — yapılan işin **kendisi**
+                # değil. *Bir cevabı üretmek, onu taşıyan alana koymakla tamamlanır.*
+                _b = _akran
+
+                # ⚠ **Biçimlendirme burada, çünkü metin burada üretiliyor.** İlk canlı
+                # koşumda ekrana `0.5245118291704627` ve `63452.000000000044` düştü —
+                # kayan nokta gürültüsü. Bir makbuz cümlesi doğru olmakla yetinmez,
+                # **okunabilir** de olmalı; okunamayan bir sayı sorgulanmaz, atlanır.
+                def _b3(x):
+                    try:
+                        _f = float(x)
+                    except (TypeError, ValueError):
+                        return str(x)
+                    if abs(_f) >= 1000:
+                        return f"{_f:,.0f}".replace(",", ".")
+                    return f"{_f:.4g}".rstrip("0").rstrip(".") if _f else "0"
+
+                _yon = "düşük" if _b["fark"] < 0 else "yüksek"
+                _sat = [f"**{_b['hedef']}**, öteki {_b['akran_sayisi']} "
+                        f"{(cube_meta.get('dimension_labels') or {}).get(_b['boyut']) or _b['boyut']} "
+                        f"ortalamasından **%{abs(_b['fark_yuzde'] or 0)} {_yon}** "
+                        f"({_b3(_b['hedef_deger'])} ↔ akran ort. {_b3(_b['akran_ortalamasi'])}).", ""]
+                if _b["surukleyenler"]:
+                    _sat.append("**Farkı en çok açıklayanlar** — aynı kırılımda, akran "
+                                "ortalamasına göre:")
+                    for _s in _b["surukleyenler"]:
+                        _br = f" {_s['unit']}" if _s.get("unit") else ""
+                        _sat.append(
+                            f"• **{_s['label']}**: {_b3(_s['hedef'])}{_br} — akran ortalaması "
+                            f"{_b3(_s['akran_ort'])}{_br} (**%{abs(_s['sapma_yuzde'])} "
+                            f"{'fazla' if _s['sapma_yuzde'] > 0 else 'az'}**, kötü yönde)")
+                    _sat.append("")
+                    _sat.append("Ayrıntı için: *«… nedenlerini kır»* ya da *«hangi "
+                                "vardiyada»* diye devam edebilirsin.")
+                else:
+                    _sat.append("⚠ Aynı küpün öteki ölçülerinde akranlardan **kötü yönde "
+                                "belirgin bir sapma bulunamadı** — fark bu küpteki "
+                                "ölçülerle açıklanamıyor.")
+                _akran.update({
+                    "measure": measure, "mode": mode, "kind": "akran",
+                    "raporlar": [], "pvm_raporlar": [], "contract_ids": [],
+                    "taranmayan_boyut": 0, "taranmayan_adlar": [],
+                    "note": "\n".join(_sat)})
+                return _akran
             return {"measure": measure, "mode": mode, "kind": kind, "note": neden}
         cift = None
 

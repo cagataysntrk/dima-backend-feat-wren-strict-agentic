@@ -190,6 +190,32 @@ _MAKBUZ = ("nasil hesaplandi", "nasil hesapladin", "nasil hesaplanir", "nasil bu
            "bu guvenilir mi", "guvenilir mi", "emin misin", "dogru mu bu",
            "kanit", "makbuz", "hangi tabloda", "hangi kolon")
 
+#: 🔴🔴 **`§BB1` — «NASIL» + EDİLGEN GEÇMİŞ, KAPALI BİR DİLBİLGİSİ AİLESİDİR.**
+#:
+#: Ölçüldü (`AA5` — *«bu analiz **nasıl yapıldı**, hangi sayılara baktın»*): makbuz türü
+#: **doğmadı**, soru yapısal bir düzenleme sanıldı ve aynı tablo yeniden koştu.
+#:
+#: ⊙ Sebep `_MAKBUZ`'un altı *«nasıl …»* girdisi taşıması ama **yedincisini taşımaması**:
+#: `hesaplandı` · `hesapladın` · `hesaplanır` · `buldun` · `bulundu` · `çıktı` · `oluştu` ·
+#: `geldi` var, **`yapıldı`** yok. Sekizincisini eklemek de yalnız dokuzuncuyu bekletirdi
+#: (`ADR-0008`: *dile kelime listesiyle yetişilmez*).
+#:
+#: ⊙ Asıl olgu **yapısal**: *«nasıl»* + **edilgen geçmiş** (`-ıldı/-ildi/-uldu/-üldü` ya da
+#: `-ndı/-ndi`) bir **eylemin geçmişte nasıl gerçekleştiğini** sorar. Ekranda bir rapor
+#: varken bu, o raporun **yapılış biçimini** sormaktan başka bir şey olamaz — yani bir
+#: makbuz sorusudur. Edilgen çatı Türkçenin **kapalı** bir eki ve `ADR-0008` kapalı
+#: sınıfları açıkça serbest bırakıyor.
+#:
+#: ⚠ *«nasıl»* şartı **zorunlu**: tek başına edilgen geçmiş (*«iade edildi»*) bir veri
+#: sorusudur. İki öge **birlikte** aranır ve *«nasıl»* soruyu bir **yönteme** çevirir.
+#:
+#: *Bir listeye sekizinci kelimeyi eklemek, dokuzuncuyu beklemeye karar vermektir.*
+#: ⚠ Ekler `_norm` **sonrası** biçimde: `ı→i`, `ü→u`. Ünsüzden sonra `-ildi/-indi/-uldu/
+#: -undu` (yap+ILDI · al+INDI · bul+UNDU), ünlüden sonra `-ndi` (hesapla+NDI · özetle+NDI);
+#: `-ilmis/-inmis/-ulmus/-unmus` aynı çatının duyulan geçmişi.
+_MAKBUZ_EDILGEN = re.compile(
+    r"\bnasil\b[^.?!]{0,40}?\b\w{2,}(?:ildi|indi|uldu|undu|ndi|ilmis|inmis|ulmus|unmus)\b")
+
 _ANLAT = ("analiz et", "analiz eder", "analizini", "yorumla", "yorumlar misin",
           "yorumun", "yorumlasana", "degerlendir", "aciklar misin", "acikla",
           "ozetle", "ozetler misin", "ne diyor", "ne anlama gel", "ne anlama geliyor",
@@ -304,7 +330,7 @@ def sinifla(soru: str, *, baglam_var: bool,
     # öncelik yapısalda kalsaydı **kullanıcının literal örneği** yeni bir sorguya düşerdi.
     #
     # *Bir önceliği koyan gerekçe geçerliliğini yitirdiğinde, öncelik de yitirir.*
-    _mkb = _hit(q, _MAKBUZ)
+    _mkb = _hit(q, _MAKBUZ) or (_MAKBUZ_EDILGEN.search(q) and "nasıl <edilgen geçmiş>")
     if _mkb:
         return Niyet(sinif=SINIF_KONUSMA, tur=TUR_MAKBUZ,
                      kural=f"konusma:{TUR_MAKBUZ}", kanit=_mkb)
