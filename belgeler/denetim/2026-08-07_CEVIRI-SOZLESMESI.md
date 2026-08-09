@@ -7759,3 +7759,37 @@ dersinin **ikinci** tekrarı: *beklenmedik bir sayıda önce artefaktı şüphel
 ⊙ İkisi de `§G/AJ0` ailesinden (*«arttı» bir FİİL, yazım hatası değil*): **genel bir
 kelimenin küp eşanlamı olması**. Ve artık bir bedeli daha var — orkestratörün
 cevaplayabileceği soruyu **ona ulaşmadan** kesiyorlar.
+
+### `GG` turu — kapanış ölçümü ve iki düzeltmenin canlı doğrulaması
+
+Tam kapı **yeşil** (4435 test · korpus **%94,9** · `sessiz_yanlis` **10** · eval **+0,0**)
+ve düzeltmeler canlıda doğrulandı:
+
+| senaryo | önce | sonra |
+|---|---|---|
+| `GG2` *«ortalamadan farkını söyle»* | iki-cube sınırı → **cevapsız** | ✅ 4 adımlık plan |
+| `GG9` *«nasıl değişti»* | `de` → `kalite` eşleşmesi → **cevapsız** | ✅ 4 adımlık plan |
+
+#### Turun dağılımı (payda 19)
+
+| | oran |
+|---|---|
+| 🗣 `cube+llm` (garson/orkestratör) | **%68,4** |
+| 🍳 `cube` (0 LLM) | %5,3 |
+| 🥡 **Discovery** | 🟢 **%0** — tur boyunca **hiç** ateşlenmedi |
+| 🔴 cevapsız | %26,3 — **beşinin beşi de dürüst ret** |
+
+⊙ Cevapsızların hiçbiri bir **başarısızlık** değil: forecast kapsam kararı (2) · rapor
+yokken makbuz sorusu (1) · yetenek sınırı (2). Yani `MIMARI`'nin ölçüsüyle **mutfak
+eksikliği raporu sıfır**.
+
+⚠ **`EE` turuyla doğrudan karşılaştırılamaz** — farklı soru kümesi. *Payda kutsaldır:*
+iki oran ancak aynı sorularla karşılaştırılır ve bu iki tur farklı şeyleri sınadı
+(`EE` merdivenin boşluğunu, `GG` orkestratörün yeteneklerini).
+
+#### Doğru çalışan, kayda değer
+
+* `GG13` rapor yokken makbuz sorusu → **sorgu YOK, LLM YOK**, dürüst cevap
+* `GG14` *«gelecek ay ciro»* → forecast **v1 dışı** kararı, uydurma projeksiyon yok
+* `GG15` üç ölçü **tek adımda** — orkestratör basit soruyu bölmedi (`R2`'nin kapısı)
+* `GG16` *«teşekkürler»* → sosyal sınıf, **0 LLM · 0 SQL**
