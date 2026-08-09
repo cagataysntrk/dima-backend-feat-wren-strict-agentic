@@ -85,6 +85,44 @@ ZORUNLU_ALANLAR: dict[str, tuple[str, ...]] = {
     "ANLAT": ("kaynak",),
 }
 
+#: 🔴 **HER FİİLİN ÇIKTI TİPİ — beyan edilir, tahmin edilmez.**
+#:
+#: ⚠ Bu beyan olmadan bir plan **koşmadan doğrulanamaz**: `HESAPLA.hedef` bir *varlık*
+#: bekler, ama `$2` bir `SORGU` adımını gösteriyorsa oraya **satırlar** gider ve kusur
+#: ancak `ilkeller.hesapla` içinde, koşum anında, üstelik önceki `SORGU` motora çoktan
+#: gitmişken bulunur.
+#:
+#: Tipler bilinçli olarak **beş** tanedir; genişlemesi bir tasarım kararıdır:
+#:   `satirlar` (list[dict]) · `varlik` ((ad, deger)) · `olcum` (dict[str, sayı]) ·
+#:   `bulgular` (ayrıştırma raporu) · `metin` (str)
+#:
+#: *Bir zinciri koşmadan denetlemenin bedeli, halkalarının neye benzediğini yazmaktır.*
+CIKTI_TIPI: dict[str, str] = {
+    "SORGU": "satirlar",
+    "TREND": "satirlar",      # dönem kaydırılmış satırlar — hâlâ satır
+    "BAGLA": "varlik",
+    "HESAPLA": "olcum",
+    "KIYASLA": "olcum",
+    "AYRISTIR": "bulgular",
+    "ANLAT": "metin",
+}
+
+#: Hangi alan hangi tipi bekler. `None` = **her tip kabul** (`ANLAT` her bulguyu anlatır).
+#: ⚠ Yalnız **referans taşıyan** alanlar burada; `boyut`/`olcu` gibi sabit alanlar şemanın
+#: `enum`'uyla zaten kısıtlı.
+GIRDI_TIPI: dict[str, dict[str, str | None]] = {
+    "BAGLA": {"kaynak": "satirlar"},
+    "HESAPLA": {"kaynak": "satirlar", "hedef": "varlik"},
+    "KIYASLA": {"kaynak": "satirlar"},
+    "AYRISTIR": {"kaynak": "satirlar"},
+    "TREND": {"kaynak": "satirlar"},
+    "ANLAT": {"kaynak": None},
+}
+
+#: 🔴 Yalnız **son** adım olabilen fiiller. Şema bunu ifade EDEMEZ (`oneOf` konum bilmez);
+#: bugüne kadar yalnız istemde yazılıydı, yani **denetlenmiyordu**.
+SON_ADIM_FIILLERI: frozenset[str] = frozenset({"ANLAT"})
+
 #: Adım referansı: `$1` = birinci adımın çıktısı. **Tek biçim, tek anlam.**
 #: ⚠ Serbest bir ifade dili DEĞİL: `$` + sayı. Bir plan aritmetik yazamaz, koşul yazamaz,
 #: döngü kuramaz. *Bir referans dilini genişletmek, onu bir programlama diline çevirir —

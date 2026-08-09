@@ -65,6 +65,103 @@ def _coz(deger: Any, ciktilar: list[Any]) -> Any:
     return ciktilar[i - 1]
 
 
+def _referanslar(adim: dict) -> list[tuple[str, int]]:
+    """Bir adımın taşıdığı `(alan, hedef_adım_no)` referansları. Tek kanal `$n`'dir."""
+    out: list[tuple[str, int]] = []
+    for alan, deger in (adim or {}).items():
+        if alan == "fiil" or not isinstance(deger, str):
+            continue
+        m = _REF.match(deger)
+        if m:
+            out.append((alan, int(m.group(1))))
+    return out
+
+
+def dogrula(plan: dict, *, azami_sorgu: int = 8) -> list[list[int]]:
+    """🔴🔴 **KOŞMADAN ÖNCE DOĞRULA** — ve aynı geçişte **DAG'ı kur**.
+
+    Döner: topolojik **katmanlar** (adım numaraları, 1'den). Aynı katmandaki adımlar
+    birbirinden bağımsızdır. Bugün koşum hâlâ sıralı; katmanlar `FAZ 4`'ün (paralel
+    `SORGU`) zeminidir. ⚠ Bir kez yazılıp iki iş görür: doğrulayıcı **ve** zamanlayıcı.
+
+    ## Neden bu geçiş şart — ölçülmüş bir çelişki
+
+    `plan_garson` şunu yazıyordu: *"Bir planı koşarken reddetmek, hiç kurmamaktan
+    pahalıdır — ilk adım o ana kadar çoktan koşmuştur."* Ama ileri referans denetimi
+    `_coz` içindeydi, yani **tam da koşum anında**: `$3` hatası, birinci `SORGU` motora
+    gitmişken patlıyordu. Bu fonksiyon o çelişkiyi kapatır.
+
+    ## Şemanın **yapısal olarak** ifade edemedikleri
+
+    | denetim | neden şema yapamaz |
+    |---|---|
+    | ileri referans | JSON Schema **sıra** bilmez |
+    | tip uyumu (`HESAPLA.hedef` bir `varlik` ister) | çıktı tipleri şemada değil, `CIKTI_TIPI`'nde |
+    | `ANLAT` yalnız son adım | `oneOf` **konum** bilmez |
+    | toplam sorgu bütçesi | bütçe koşum-zamanı bir sayaçtı; artımlı sayıldığı için ilk sorgular koşup **sonra** düşüyordu |
+    | ulaşılamaz adım | plan uzunluğu bir **maliyettir** (`E9`) |
+
+    *Bir zinciri koşmadan denetlemek, halkalarının neye benzediğini yazmakla mümkündür.*
+    """
+    from app.plan_semasi import CIKTI_TIPI, GIRDI_TIPI, SON_ADIM_FIILLERI
+
+    adimlar = (plan or {}).get("adimlar") or []
+    if not adimlar:
+        raise PlanHatasi("plan boş — koşulacak adım yok")
+
+    n = len(adimlar)
+    kenarlar: dict[int, set[int]] = {i: set() for i in range(1, n + 1)}
+    kullanilan: set[int] = set()
+    sorgu_sayisi = 0
+
+    for sira, adim in enumerate(adimlar, 1):
+        fiil = adim.get("fiil")
+        if fiil == "SORGU":
+            sorgu_sayisi += 1
+        if fiil in SON_ADIM_FIILLERI and sira != n:
+            raise PlanHatasi(
+                f"`{fiil}` yalnız SON adım olabilir (adım {sira}/{n}) — bir anlatı, "
+                "anlatacağı bulgulardan önce yazılamaz")
+        for alan, hedef in _referanslar(adim):
+            if hedef >= sira:
+                raise PlanHatasi(
+                    f"adım {sira} (`{fiil}`) `${hedef}` diyor — o adım henüz koşmamış "
+                    "olurdu (ileri referans)")
+            kenarlar[sira].add(hedef)
+            kullanilan.add(hedef)
+            beklenen = (GIRDI_TIPI.get(fiil) or {}).get(alan)
+            gelen = CIKTI_TIPI.get(adimlar[hedef - 1].get("fiil"))
+            if beklenen is not None and gelen is not None and beklenen != gelen:
+                raise PlanHatasi(
+                    f"adım {sira} (`{fiil}.{alan}`) bir **{beklenen}** bekliyor ama "
+                    f"`${hedef}` bir **{gelen}** üretiyor "
+                    f"(`{adimlar[hedef - 1].get('fiil')}`)")
+
+    if sorgu_sayisi > azami_sorgu:
+        raise PlanHatasi(f"plan {sorgu_sayisi} sorgu istiyor, bütçe {azami_sorgu}")
+
+    # ⚠ Ulaşılamaz adım: kimsenin referans etmediği ve **son** da olmayan bir adım
+    # koşulur, ödenir ve **atılır**. `E9`: plan uzunluğu bir ölçüdür.
+    for sira in range(1, n):
+        if sira not in kullanilan:
+            raise PlanHatasi(
+                f"adım {sira} (`{adimlar[sira - 1].get('fiil')}`) hiçbir adım tarafından "
+                "kullanılmıyor ve son adım da değil — koşulup atılırdı")
+
+    # Kahn katmanları. `$n` tek veri kanalı olduğu için grafik **eksiksizdir**.
+    kalan = dict(kenarlar)
+    bitmis: set[int] = set()
+    katmanlar: list[list[int]] = []
+    while kalan:
+        katman = sorted(i for i, bag in kalan.items() if bag <= bitmis)
+        if not katman:      # pragma: no cover - ileri referans yasağı döngüyü imkânsız kılar
+            raise PlanHatasi("planda çözülemeyen bir bağımlılık döngüsü var")
+        katmanlar.append(katman)
+        bitmis |= set(katman)
+        kalan = {i: b for i, b in kalan.items() if i not in bitmis}
+    return katmanlar
+
+
 def kos(plan: dict, *, sorgu_kos, cube_meta: dict | None = None,
         azami_sorgu: int = 8) -> dict:
     """Planı koşar ve `{"ciktilar": [...], "makbuz": [...]}` döndürür.
@@ -79,9 +176,11 @@ def kos(plan: dict, *, sorgu_kos, cube_meta: dict | None = None,
     """
     from app import ilkeller as _ilk
 
-    adimlar = (plan or {}).get("adimlar") or []
-    if not adimlar:
-        raise PlanHatasi("plan boş — koşulacak adım yok")
+    # 🔴 **ÖNCE DOĞRULA, SONRA KOŞ.** Motor bir tek sorgu bile görmeden plan ya geçerlidir
+    # ya reddedilmiştir. `katmanlar` bugün yalnız makbuza yazılıyor; `FAZ 4` onu paralel
+    # `SORGU` için kullanacak.
+    katmanlar = dogrula(plan, azami_sorgu=azami_sorgu)
+    adimlar = plan["adimlar"]
     _lower = set((cube_meta or {}).get("lower_is_better") or [])
     ciktilar: list[Any] = []
     makbuz: list[dict] = []
@@ -91,10 +190,10 @@ def kos(plan: dict, *, sorgu_kos, cube_meta: dict | None = None,
         fiil = adim.get("fiil")
         try:
             if fiil == "SORGU":
+                # ⚠ Bütçe artık **ön-geçişte** (`dogrula`) TOPLAM olarak denetleniyor;
+                # burada yalnız sayılır. Eski hâl **artımlıydı**: ilk sorgular koşup
+                # sonra düşüyordu — yani aşımın bedeli zaten ödenmiş oluyordu.
                 sorgu_sayisi += 1
-                if sorgu_sayisi > azami_sorgu:
-                    raise PlanHatasi(
-                        f"plan {sorgu_sayisi} sorgu istiyor, bütçe {azami_sorgu}")
                 cikti = sorgu_kos(adim["cube_query"])
             elif fiil == "BAGLA":
                 olcu = adim["olcu"]
@@ -124,5 +223,7 @@ def kos(plan: dict, *, sorgu_kos, cube_meta: dict | None = None,
         makbuz.append({"sira": sira, "fiil": fiil,
                        "satir": len(cikti) if isinstance(cikti, list) else None})
 
-    _log.info("plan koştu: %d adım · %d sorgu", len(adimlar), sorgu_sayisi)
-    return {"ciktilar": ciktilar, "makbuz": makbuz, "sorgu_sayisi": sorgu_sayisi}
+    _log.info("plan koştu: %d adım · %d sorgu · %d katman",
+              len(adimlar), sorgu_sayisi, len(katmanlar))
+    return {"ciktilar": ciktilar, "makbuz": makbuz, "sorgu_sayisi": sorgu_sayisi,
+            "katmanlar": katmanlar}

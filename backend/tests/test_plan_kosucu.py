@@ -44,8 +44,12 @@ def test_BAGLANMAMIS_FIIL_SESSIZCE_ATLANMAZ():
 
     *Bir fiili şemaya koyup çalıştırıcıda unutmak, onu sessizce yalan yapmaktır.*
     """
+    # ⟳ Plan **geçerli** olmalı ki test bağlanmamış fiili ölçebilsin: tek adımlık
+    # `ANLAT($1)` artık `dogrula`da ileri referans olarak düşüyor (kendi kendine
+    # referans) ve o zaman bu kapı **başka bir şeyi** ölçmüş olurdu.
     with pytest.raises(PlanHatasi, match="O-4"):
-        _kos({"adimlar": [{"fiil": "ANLAT", "kaynak": "$1"}]})
+        _kos({"adimlar": [{"fiil": "SORGU", "cube_query": {"cube": "oee"}},
+                          {"fiil": "TREND", "kaynak": "$1"}]})
 
 
 def test_SORGU_BUTCESI_ASILAMAZ():
@@ -71,3 +75,100 @@ def test_YON_BEYANDAN_OKUNUR():
     assert _kos(plan)["ciktilar"][1][0] == "RAM-3"          # yüksek iyi → en düşüğü seç
     assert _kos(plan, cube_meta={"lower_is_better": ["v"]}
                 )["ciktilar"][1][0] == "RAM-2"              # az iyi → en yükseği seç
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FAZ 1 · `dogrula()` — KOŞMADAN ÖNCE, ve aynı geçişte DAG
+# ═══════════════════════════════════════════════════════════════════════════════
+
+from app.plan_kosucu import dogrula                                    # noqa: E402
+
+CQ = {"cube": "oee", "measures": ["v"]}
+
+
+def _sorgu(n=1):
+    return [{"fiil": "SORGU", "cube_query": CQ} for _ in range(n)]
+
+
+def test_DOGRULAMA_MOTORA_HIC_DOKUNMADAN_REDDEDER():
+    """🔴🔴 Ölçülmüş çelişki kapandı.
+
+    `plan_garson` şunu yazıyordu: *«Bir planı koşarken reddetmek, hiç kurmamaktan
+    pahalıdır — ilk adım o ana kadar çoktan koşmuştur.»* Ama ileri referans denetimi
+    `_coz` içindeydi, yani **tam da koşum anında**.
+
+    Bu kapı, sahte koşucunun **hiç çağrılmadığını** iddia eder.
+    """
+    cagri = []
+    plan = {"adimlar": [{"fiil": "SORGU", "cube_query": CQ},
+                        {"fiil": "BAGLA", "kaynak": "$5", "boyut": "m", "olcu": "v"}]}
+    with pytest.raises(PlanHatasi, match=r"\$5"):
+        kos(plan, sorgu_kos=lambda cq: cagri.append(cq) or ROWS)
+    assert cagri == [], "plan reddedildi ama motor ZATEN sorgulanmıştı"
+
+
+def test_TIP_UYUSMAZLIGI_KOSUM_ONCESI_YAKALANIR():
+    """🔴 `HESAPLA.hedef` bir **varlık** ister; `$1` bir `SORGU` ise **satırlar** gider.
+
+    Şema bunu göremez: çıktı tipleri şemada değil, `plan_semasi.CIKTI_TIPI`'nde.
+    Görmezse kusur `ilkeller.hesapla` içinde, koşum anında bulunurdu.
+    """
+    plan = {"adimlar": [{"fiil": "SORGU", "cube_query": CQ},
+                        {"fiil": "HESAPLA", "kaynak": "$1", "hedef": "$1",
+                         "boyut": "m", "olcu": "v"}]}
+    with pytest.raises(PlanHatasi, match="varlik"):
+        dogrula(plan)
+
+
+def test_ANLAT_YALNIZ_SON_ADIM():
+    """🔴 `oneOf` **konum** bilmez; bu kural bugüne kadar yalnız İSTEMDE yazılıydı —
+    yani beyan ediliyor ama **denetlenmiyordu**."""
+    plan = {"adimlar": [{"fiil": "SORGU", "cube_query": CQ},
+                        {"fiil": "ANLAT", "kaynak": "$1"},
+                        {"fiil": "BAGLA", "kaynak": "$1", "boyut": "m", "olcu": "v"}]}
+    with pytest.raises(PlanHatasi, match="SON adım"):
+        dogrula(plan)
+
+
+def test_BUTCE_TOPLAM_OLARAK_ONCEDEN_DENETLENIR():
+    """⚠ Eski hâl **artımlıydı**: ilk sorgular koşup sonra düşüyordu — aşımın bedeli
+    zaten ödenmiş oluyordu."""
+    cagri = []
+    plan = {"adimlar": _sorgu(3)}
+    with pytest.raises(PlanHatasi, match="bütçe"):
+        kos(plan, sorgu_kos=lambda cq: cagri.append(cq) or ROWS, azami_sorgu=2)
+    assert cagri == [], "bütçe aşıldı ama sorgular ZATEN koşmuştu"
+
+
+def test_ULASILAMAZ_ADIM_REDDEDILIR():
+    """⚠ `E9` — plan uzunluğu bir **ölçüdür**. Kimsenin kullanmadığı bir adım koşulur,
+    ödenir ve **atılır**."""
+    plan = {"adimlar": [{"fiil": "SORGU", "cube_query": CQ},
+                        {"fiil": "SORGU", "cube_query": CQ},
+                        {"fiil": "BAGLA", "kaynak": "$2", "boyut": "m", "olcu": "v"}]}
+    with pytest.raises(PlanHatasi, match="hiçbir adım"):
+        dogrula(plan)
+
+
+def test_DAG_KATMANLARI_BAGIMSIZLIGI_GOSTERIR():
+    """🔴 `$n` **tek** veri kanalı olduğu için bağımlılık grafiği EKSİKSİZDİR — ve
+    `depends_on` diye bir alan **eklenmeyecek**: bağımlılık çıkarılır, sorulmaz.
+
+    ⊙ İki bağımsız `SORGU` **aynı katmanda**; onları kullanan adım bir sonrakinde.
+    Bu, `FAZ 4`'ün paralel koşumunun zeminidir.
+    """
+    plan = {"adimlar": [{"fiil": "SORGU", "cube_query": CQ},
+                        {"fiil": "SORGU", "cube_query": CQ},
+                        {"fiil": "BAGLA", "kaynak": "$1", "boyut": "m", "olcu": "v"},
+                        {"fiil": "HESAPLA", "kaynak": "$2", "hedef": "$3",
+                         "boyut": "m", "olcu": "v"}]}
+    assert dogrula(plan) == [[1, 2], [3], [4]]
+
+
+def test_ZINCIR_TEK_KATMANLI_DEGIL():
+    """⚠ Bağımlı adımlar **ayrı** katmanlarda — yoksa paralelleştirme veriyi bozardı."""
+    plan = {"adimlar": [{"fiil": "SORGU", "cube_query": CQ},
+                        {"fiil": "BAGLA", "kaynak": "$1", "boyut": "m", "olcu": "v"},
+                        {"fiil": "HESAPLA", "kaynak": "$1", "hedef": "$2",
+                         "boyut": "m", "olcu": "v"}]}
+    assert dogrula(plan) == [[1], [2], [3]]
