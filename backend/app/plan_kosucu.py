@@ -53,6 +53,8 @@ def _coz(deger: Any, ciktilar: list[Any]) -> Any:
     ⚠ **İleri referans yasak**: `$3` üçüncü adımdayken henüz yoktur. Şema bunu
     engellemiyor (JSON Schema sıra bilmez), o yüzden kapı **burada**.
     """
+    if isinstance(deger, list):
+        return [_coz(t, ciktilar) for t in deger]
     if not isinstance(deger, str):
         return deger
     m = _REF.match(deger)
@@ -66,14 +68,19 @@ def _coz(deger: Any, ciktilar: list[Any]) -> Any:
 
 
 def _referanslar(adim: dict) -> list[tuple[str, int]]:
-    """Bir adımın taşıdığı `(alan, hedef_adım_no)` referansları. Tek kanal `$n`'dir."""
+    """Bir adımın taşıdığı `(alan, hedef_adım_no)` referansları. Tek kanal `$n`'dir.
+
+    ⚠ `FAZ 3` — bir alan **liste** de olabilir (`kaynaklar: ["$1","$3"]`). O zaman her
+    öğe ayrı bir kenardır; alan adı aynı kalır ki tip denetimi hepsini aynı beklentiye
+    karşı sınasın.
+    """
     out: list[tuple[str, int]] = []
     for alan, deger in (adim or {}).items():
-        if alan == "fiil" or not isinstance(deger, str):
+        if alan == "fiil":
             continue
-        m = _REF.match(deger)
-        if m:
-            out.append((alan, int(m.group(1))))
+        for tek in (deger if isinstance(deger, list) else [deger]):
+            if isinstance(tek, str) and (m := _REF.match(tek)):
+                out.append((alan, int(m.group(1))))
     return out
 
 

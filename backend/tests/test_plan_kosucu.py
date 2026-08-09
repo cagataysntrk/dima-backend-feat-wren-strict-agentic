@@ -172,3 +172,52 @@ def test_ZINCIR_TEK_KATMANLI_DEGIL():
                         {"fiil": "HESAPLA", "kaynak": "$1", "hedef": "$2",
                          "boyut": "m", "olcu": "v"}]}
     assert dogrula(plan) == [[1], [2], [3]]
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FAZ 3 · LİSTE DEĞERLİ REFERANS — referans dilinin TEK genişlemesi
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def test_LISTE_REFERANSI_HER_OGESI_BIR_KENAR():
+    """🔴 `kaynaklar: ["$1","$2"]` → **iki** kenar. Bağımlılık hâlâ ÇIKARILIYOR.
+
+    ⊙ Aynı katmanda koşabilen iki `SORGU`, onları birlikte anlatan bir adımı bir sonraki
+    katmana iter — yani liste genişlemesi DAG'ı bozmuyor, besliyor.
+    """
+    plan = {"adimlar": [{"fiil": "SORGU", "cube_query": CQ},
+                        {"fiil": "SORGU", "cube_query": CQ},
+                        {"fiil": "ANLAT", "kaynaklar": ["$1", "$2"]}]}
+    assert dogrula(plan) == [[1, 2], [3]]
+
+
+def test_LISTE_ICINDEKI_ILERI_REFERANS_DA_YAKALANIR():
+    """⚠ Genişleyen bir dil, genişlemeyen bir denetimle **sessiz bir delik** açar."""
+    plan = {"adimlar": [{"fiil": "SORGU", "cube_query": CQ},
+                        {"fiil": "ANLAT", "kaynaklar": ["$1", "$9"]}]}
+    with pytest.raises(PlanHatasi, match=r"\$9"):
+        dogrula(plan)
+
+
+def test_LISTE_REFERANSI_COZULUYOR():
+    """⊙ Yorumlayıcı listeyi **öğe öğe** çözer; gövde `$n` diye bir şey görmez."""
+    gorulen = {}
+    plan = {"adimlar": [{"fiil": "SORGU", "cube_query": CQ},
+                        {"fiil": "SORGU", "cube_query": CQ},
+                        {"fiil": "ANLAT", "kaynaklar": ["$1", "$2"]}]}
+    kos(plan, sorgu_kos=lambda cq: ROWS,
+        govdeler={"ANLAT": lambda a: gorulen.update(a) or "x"})
+    assert gorulen["kaynaklar"] == [ROWS, ROWS], "liste çözülmedi"
+
+
+def test_REFERANS_DILI_HALA_IFADE_DILI_DEGIL():
+    """🔴 Genişleyen şey **çokluk**, ifade gücü DEĞİL.
+
+    `plan_semasi`'nin kendi uyarısı: *«Bir referans dilini genişletmek, onu bir
+    programlama diline çevirir — ve o dilin denetimi artık şemada değil,
+    yorumlayıcıdadır.»* Bu kapı o sınırı kilitler.
+    """
+    from app.plan_semasi import ADIM_REFERANSI
+    import re as _re
+    _p = _re.compile(ADIM_REFERANSI)
+    for yasak in ("$1.gelir", "$1 * 2", "$1+$2", "${1}", "$1[0]"):
+        assert not _p.match(yasak), f"`{yasak}` referans sayıldı — ifade dili sızdı"

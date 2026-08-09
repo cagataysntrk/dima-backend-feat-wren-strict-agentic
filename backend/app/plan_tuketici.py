@@ -88,9 +88,15 @@ def _govdeler(service: Any, schema: dict, cube_meta: dict | None) -> dict[str, A
     def _anlat(a: dict) -> str:
         from app import interpret as _yorum
         from app import narration_guard
-        _kaynak = a.get("kaynak")
-        _sonuc = ({"rows": _kaynak, "columns": list((_kaynak or [{}])[0])}
-                  if isinstance(_kaynak, list) else None)
+        # ⚠ `FAZ 3` — `kaynaklar` bir **liste**dir; her öğe bir adımın çıktısı. Yalnız
+        # **satır** üretenler anlatılır: bir `varlik`ı ya da `olcum`u tabloya çevirmek,
+        # `interpret`e olmayan bir sonuç kümesi uydurmak olurdu.
+        _satirlar: list[dict] = []
+        for _c in (a.get("kaynaklar") or []):
+            if isinstance(_c, list):
+                _satirlar.extend(x for x in _c if isinstance(x, dict))
+        _sonuc = ({"rows": _satirlar, "columns": list(_satirlar[0])}
+                  if _satirlar else None)
         _ozet = ""
         try:
             # ⚠ `interpret` → `{facts:[...], summary:"Türkçe"} | None`. **Özet** alınıyor,

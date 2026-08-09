@@ -82,7 +82,7 @@ ZORUNLU_ALANLAR: dict[str, tuple[str, ...]] = {
     "KIYASLA": ("kaynak",),
     "AYRISTIR": ("kaynak",),
     "TREND": ("kaynak",),
-    "ANLAT": ("kaynak",),
+    "ANLAT": ("kaynaklar",),
 }
 
 #: 🔴 **HER FİİLİN ÇIKTI TİPİ — beyan edilir, tahmin edilmez.**
@@ -116,7 +116,7 @@ GIRDI_TIPI: dict[str, dict[str, str | None]] = {
     "KIYASLA": {"kaynak": "satirlar"},
     "AYRISTIR": {"kaynak": "satirlar"},
     "TREND": {"kaynak": "satirlar"},
-    "ANLAT": {"kaynak": None},
+    "ANLAT": {"kaynaklar": None},
 }
 
 #: 🔴 Yalnız **son** adım olabilen fiiller. Şema bunu ifade EDEMEZ (`oneOf` konum bilmez);
@@ -150,6 +150,20 @@ def plan_json_schema(index: dict, *, azami_adim: int = 5) -> dict[str, Any]:
 
     def _ref(aciklama: str) -> dict:
         return {"type": "string", "pattern": ADIM_REFERANSI, "description": aciklama}
+
+    def _ref_listesi(aciklama: str) -> dict:
+        """🔴 **REFERANS DİLİNİN TEK VE BİLİNÇLİ GENİŞLEMESİ.**
+
+        Bir anlatı — ve `FAZ 7`'nin rapor/pano/matris fiilleri — **birden çok** adımın
+        çıktısına dayanır. Tek referansla bunu ifade etmenin yolu yok.
+
+        ⚠ Genişleyen şey **çokluk**, ifade gücü değil: hâlâ aritmetik yok, koşul yok,
+        alan erişimi yok. `["$1","$3"]` bir listedir, bir ifade değil. *Bir referans
+        dilini genişletmek, onu bir programlama diline çevirmenin ilk adımıdır — o yüzden
+        genişleme çokluğa kadar, oraya kadar.*
+        """
+        return {"type": "array", "minItems": 1, "maxItems": azami_adim,
+                "items": _ref(aciklama), "description": aciklama}
 
     #: Her fiil kendi **zorunlu** alanlarını taşır — bir fiili parametresiz yazmak
     #: `B1`'in ta kendisiydi (*"parametresiz bir plan bir zincir değil bir sıralamadır"*).
@@ -188,7 +202,7 @@ def plan_json_schema(index: dict, *, azami_adim: int = 5) -> dict[str, Any]:
          "required": ["fiil", *ZORUNLU_ALANLAR["TREND"]]},
         {"type": "object", "additionalProperties": False, "title": "ANLAT",
          "properties": {"fiil": {"const": "ANLAT"},
-                        "kaynak": _ref("hangi adımın bulguları")},
+                        "kaynaklar": _ref_listesi("hangi adımların bulguları")},
          "required": ["fiil", *ZORUNLU_ALANLAR["ANLAT"]]},
     ]
     return {
