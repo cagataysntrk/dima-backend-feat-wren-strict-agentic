@@ -444,9 +444,35 @@ class Planlayici:
                     hata="SEÇİM REDDİ: kayıtta yok ya da yetki dışı"))
                 continue
             if ad not in {a["arac"] for a in temiz}:
-                temiz.append({"arac": ad,
-                              "neden": (x.get("neden") or x.get("why") or "")[:120]
-                              if isinstance(x, dict) else ""})
+                # FAZ O-2 (B1) — PLAN PARAMETRESIZDI: adim yalniz ARAC ADI tasiyordu.
+                #
+                # `sec()` bugune kadar LLM'in adim nesnesinden yalniz `arac` ve `neden`i
+                # aliyor, kalanini DUSURUYORDU. Yani plan su cumleyi kurabiliyordu:
+                # "once route, sonra contribution" — ama SUNU kuramiyordu:
+                # "contribution'i MAKINE boyutunda, FIRE olcusunde calistir".
+                #
+                # Parametresiz bir plan, bir zincir degil bir SIRALAMADIR: adimlar
+                # birbirine deger gecirmez, her biri kendi varsayimiyla kosar.
+                #
+                # Burada YALNIZ TASINIYOR — tuketici YOK. Bu bilincli: KURAL B geregi
+                # davranis bayt bayt bugunku kalir, ve parametreleri okuyacak taraf
+                # (plan semasi + calistirici) kendi faziyla, kendi bayragiyla gelir.
+                # *Bir alani once tasimak, sonra okumak; ikisini birden yapmaktan
+                # daha az riskli ve daha kolay geri alinabilirdir.*
+                #
+                # GUVENLIK DEGISMEDI: `arac` adi yine beyaz listeden geciyor (yukarida),
+                # dort kapi (kayit·yetki·deterministik-once·butce) aynen yurulukte.
+                # Parametreler bir ARAC ADI degildir; bir arac uydurmaya yaramaz.
+                _par = x.get("parametreler") or x.get("params") or x.get("args") \
+                    if isinstance(x, dict) else None
+                _adim = {"arac": ad,
+                         "neden": (x.get("neden") or x.get("why") or "")[:120]
+                         if isinstance(x, dict) else ""}
+                # Sozluk DISI bir sey tasinmaz: liste/metin/sayi bir parametre kumesi
+                # degildir ve sessizce kabul edilirse tuketici tarafinda sasirtir.
+                if isinstance(_par, dict) and _par:
+                    _adim["parametreler"] = _par
+                temiz.append(_adim)
         if not temiz:
             return [{"arac": "route", "neden": "geçerli adım kalmadı → deterministik yedek"}]
         # DETERMİNİSTİK-ÖNCE, PLAN SEVİYESİNDE: `route` öneride yoksa BAŞA eklenir.

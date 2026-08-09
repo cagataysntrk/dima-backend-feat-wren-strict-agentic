@@ -7482,3 +7482,50 @@ beyan ediyordu. `G2` boşluğunun kanıtı `DD15` değil, **`DD16` (Discovery) i
 (netleştirme) arasındaki tutarsızlıktır** — aynı sınıftan iki soru, iki ayrı yol.
 
 *Bir eksiği kapatmadan önce, onun gerçekten açık olup olmadığına bakmak gerekir.*
+
+### ✅ O-0 · LATENCY TAVANI — ve devralınan taban ÖLÇÜMLE düzeltildi
+
+Taban **kapının kendi kütüğünden** okundu (`answer.py` her cevaba `süre=…ms` yazıyor):
+
+    n=15.149   min=77   p50=445   p90=801   p99=1923   max=3472 ms
+
+⟳ Bu, bağımsız ajanın *«47 → 177 ms»* iddiasını **düzeltiyor** — ve ikisi **çelişmiyor**:
+ajan bir örneklemin (400 istek), bu **tam korpusun** (15.149) medyanını ölçüyor. Korpus
+daha zor soruları da içerir (netleştirme · çapraz-konu · kapsam kapısı · garson turu).
+
+Tavan **700 ms** — bir hedef değil bir **cırcır**: bugünkü davranışı dondurmak değil,
+**sessiz erozyonu** yakalamak için. İkinci test cırcırın kendisini denetliyor
+(`taban < tavan < 2×taban`) — dar tavan gürültüye boğar, geniş tavan süse döner.
+
+**⟳ İki kez kendi hatamı ölçtüm:**
+1. Kapı **ham örnek** (`süre=…ms`) arıyordu ve hep **atlıyordu** — oysa elimde 15.149 ham
+   satır değil, onlardan **çıkarılmış bir p50** vardı. *Bir kaydı okumak için ham veriyi
+   aramak, kaydın ne olduğunu anlamamaktır.*
+2. Kaydı `lab/reports/`e yazdım; `git add` **reddetti** — orası **gitignore'lu bir derleme
+   çıktısı**. Yani kapı temiz bir klonda kaydı bulamaz ve **sessizce atlardı**.
+   🔴 Bu, `CLAUDE.md`'nin adıyla kaydettiği `demo/wren-project` dersinin **birebir
+   kardeşi**, bu depoda **ikinci kez**. → `lab/olcumler/latency.md` (izlenen).
+
+*Bir ölçümü izlenmeyen bir yere yazmak, onu ölçmemekle aynı kapıya çıkar — ama daha
+kötüdür, çünkü ölçülmüş görünür.*
+
+### ✅ O-2 (birinci yarı · B1) · PLAN ARTIK PARAMETRE TAŞIYOR
+
+`sec()` LLM'in adım nesnesinden **yalnız `arac` ve `neden`**'i alıyor, kalanını
+**düşürüyordu**. Yani plan şunu kurabiliyordu — *«önce route, sonra contribution»* — ama
+şunu **kuramıyordu**: *«contribution'ı **makine** boyutunda, **fire** ölçüsünde çalıştır»*.
+
+⊙ **Parametresiz bir plan, bir zincir değil bir sıralamadır:** adımlar birbirine değer
+geçirmez, her biri kendi varsayımıyla koşar.
+
+⚠ Şimdilik **yalnız taşınıyor, tüketici yok** — ve bu bilinçli: `KURAL B` gereği davranış
+bayt bayt bugünkü kalır. ✅ Canlı doğrulandı: `§AA1` hâlâ RAM-3 **%10,7**, `O-6` hâlâ
+**2 satır**. Hedefli testler **100 yeşil**.
+⚠ Güvenlik değişmedi: `arac` adı yine beyaz listeden geçiyor, dört kapı aynen yürürlükte.
+Parametreler bir **araç adı değildir**; bir araç uydurmaya yaramaz.
+
+*Bir alanı önce taşımak, sonra okumak; ikisini birden yapmaktan daha az riskli ve daha
+kolay geri alınabilirdir.*
+
+🔴 **O-2'nin ikinci yarısı (plan `select_cube`'un yerine geçsin) AÇIK** — plan şeması +
+çalıştırıcı ister; kendi fazıyla, kendi bayrağıyla gelecek.
