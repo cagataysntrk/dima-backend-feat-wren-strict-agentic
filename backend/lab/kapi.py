@@ -386,6 +386,33 @@ ADIM_ANAHTARLARI = ("korpus", "gercek", "suit", "eval", "senaryo", "garson", "ev
 #:     python lab/garson.py --live --muhur k1       # asıl kullanım
 GARSON_TOPLUDA_YOK = "garson"
 
+#: 🔴 **TOPLU KOŞUMA GİRMEYEN ADIMLAR — bir KÜME, tek bir ad değil** (2026-08-09).
+#:
+#: ## Ölçülen kusur: adımın belgesi *"girmez"* diyordu, kod onu KOŞUYORDU
+#:
+#: Süzgeç tek elemanlı bir **dizeye** (`GARSON_TOPLUDA_YOK`) bağlıydı ve `--hepsi` yalnız
+#: onu eliyordu. Ama `eval_llm`'in kendi docstring'i (aşağıda, `adimlar` içinde) şunu
+#: yazıyor:
+#:
+#: > *"Toplu koşuma girmez ve sebebi `garson` ile aynı: gerçek sağlayıcı + anahtar ister,
+#: > `--hepsi` ise `--network none` ile koşar. Yeri **faz sonu**dur."*
+#:
+#: Canlı kütükte (`dima-kapi-z`, 2026-08-09 03:29:38) **`▶ eval LLM dilimi` koşuyordu** —
+#: ağ + kota isteyen, **belirlenimsiz** bir adım `--hepsi`'nin içindeydi ve *"tam kapı
+#: yeşil"* cümlesi belirlenimsiz bir ölçüme dayanıyordu.
+#:
+#: 🔴 Bu, bu dosyanın **kendi dersinin üçüncü tekrarıdır**: `konusma_senaryolari`
+#: bayraksız koşumda hiç kırmızı veremiyordu (*"dörtte biri sessizce dekordu"*),
+#: `gercek_dunya` aynı tuzağa düşmesin diye `--kapi` zorunlu kılındı — ve `eval_llm`
+#: belgesinin tersini yapıyordu. *Bir kuralı tek elemanlı bir dizeye yazmak, ikinci
+#: üyeyi eklemeyi unutturur; kümeye yazmak unutturmaz.*
+#:
+#: ⚠ İkisi de **SİLİNMEDİ**, yalnız toplu koşumdan çıkarıldı (MIMARI §10):
+#:
+#:     python lab/kapi.py --tam --sadece garson     # açıkça istenirse
+#:     python lab/kapi.py --tam --sadece eval_llm   # faz sonu, gerçek sağlayıcıyla
+TOPLUDA_YOK = ("garson", "eval_llm")
+
 #: 🔴 **YEREL DEMET KAPISI = KORPUS + GERÇEK-DÜNYA** (2026-08-05'te ikinciyle genişledi).
 #:
 #: ## Neden ikinci bir korpus adımı — ve neden yereldeki tek ekleme bu
@@ -476,12 +503,12 @@ def tam(sadece: tuple[str, ...] = (), *, hepsi: bool = False) -> int:
                         if ad in YEREL_KAPI)
         sadece = ()
     elif hepsi:
-        # 🔴 `--hepsi` garson'u ATLAR — ve bunu YAZAR. Sessizce atlanan bir adım,
-        # atlanmamış gibi okunur (bu dosyanın kendi dersi).
-        print("▶ `--hepsi`: garson kapısı ATLANDI — `--live` + kota ister, "
-              "belirlenimsizdir. Yeri faz sonudur: `--sadece garson`.\n")
+        # 🔴 `--hepsi` **belirlenimsiz adımların HEPSİNİ** atlar — ve bunu YAZAR.
+        # Sessizce atlanan bir adım, atlanmamış gibi okunur (bu dosyanın kendi dersi).
+        print(f"▶ `--hepsi`: {' · '.join(TOPLUDA_YOK)} ATLANDI — gerçek sağlayıcı + "
+              "kota ister, BELİRLENİMSİZDİR. Yeri faz sonudur: `--sadece <adım>`.\n")
         adimlar = tuple(k for k, ad in zip(adimlar, ADIM_ANAHTARLARI, strict=True)
-                        if ad != GARSON_TOPLUDA_YOK)
+                        if ad not in TOPLUDA_YOK)
     if sadece:
         gecersiz = [a for a in sadece if a not in ADIM_ANAHTARLARI]
         if gecersiz:
@@ -556,8 +583,12 @@ def tam(sadece: tuple[str, ...] = (), *, hepsi: bool = False) -> int:
         print("\n" + ("✓ KISMİ KOŞUM YEŞİL — ama bu bir DEMET KAPISI DEĞİL"
                       if kotu == 0 else "✗ KISMİ KOŞUM KIRMIZI"))
     elif hepsi:
-        print("\n" + ("✓ TAM KAPI (dört adım) YEŞİL" if kotu == 0
-                      else "✗ TAM KAPI (dört adım) KIRMIZI"))
+        # ⚠ Adım sayısı **SAYILIR, yazılmaz**: burada `"dört adım"` yazıyordu ama
+        # `--hepsi` beş adım koşuyor (`gercek` 2026-08-05'te eklendi ve bu cümle
+        # güncellenmedi). *Bir özetin içindeki elle yazılmış sayı, ilk değişiklikte yalan
+        # olur* — bu dosyanın `_AGIR` sabitiyle aynı sınıf kusur.
+        print("\n" + (f"{'✓' if kotu == 0 else '✗'} TAM KAPI ({len(adimlar)} adım) "
+                      f"{'YEŞİL' if kotu == 0 else 'KIRMIZI'}"))
     else:
         print("\n" + ("✓ DEMET KAPISI (korpus) YEŞİL" if kotu == 0
                       else "✗ DEMET KAPISI (korpus) KIRMIZI"))

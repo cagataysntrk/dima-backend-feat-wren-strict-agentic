@@ -19,6 +19,7 @@ import json
 import multiprocessing as mp
 import os
 import sys
+import time as _time
 from collections import Counter, defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
@@ -582,15 +583,132 @@ def kapi_degerlendir(reports: list[dict]) -> tuple[bool, list[str]]:
 #: Dilim sayısı serbestçe artırılamaz: her dilim kendi aynasını kurup compose+build
 #: yapar (~25 sn sabit maliyet). Çok ince dilim = bootstrap baskın. Aşağıdaki dağılım
 #: 16 süreci tam doldurur ve en uzun dilimi ~60 sn'de tutar.
+#:
+#: 🔴🔴 **BU SABİT BAYATLADI — ve artık yalnız bir YEDEKTİR** (2026-08-09).
+#:
+#: Yukarıdaki tablo **5306 turluk** bir boyahane'nin fotoğrafıydı. Ölçüldü
+#: (`belgeler/denetim/2026-08-09_KAPI-YAVASLAMASI-TESHISI.md`): boyahane **9413 tura**
+#: çıktı (+%77) ve dokuz dilime bölününce dilim başına **589 → 1046 tur** oldu.
+#: *"En uzun dilimi ~60 sn'de tutar"* vaadi sessizce yalan oldu.
+#:
+#: ⚠ Ve sabit **kendi bayatlığını haber veremezdi**, çünkü rapor süre kaydetmiyordu:
+#: doğruluğu ölçen bir araç, **kendi maliyetini** ölçmüyordu. Onun için önce `sure_sn`
+#: eklendi (`_calis`), sonra dağılım ondan türetildi (`_dilim_dagilimi`).
+#:
+#: *Elle yazılmış her sabit, ölçtüğü şey büyüdüğünde bir gelecekteki yanlıştır —
+#: çözüm sabiti güncellemek değil, onu ÖLÇÜMDEN TÜRETMEKTİR.*
 _AGIR = {"boyahane": 9, "gitas": 3, "gulteks": 2, "atiksan": 2}
+
+#: Ölçüm yokken kullanılacak **göreli maliyet** ağırlıkları. 2026-08-04 ölçümünden:
+#: boyahane soru başına **2,2×** yavaş (10,0 q/sn ↔ ~22 q/sn). ⚠ Bu da bir fotoğraftır;
+#: yalnız `sure_sn` HENÜZ YOKKEN (ilk koşum) kullanılır, sonra ölçüm devralır.
+_AGIRLIK = {"boyahane": 2.2}
+
+#: Ölçümün okunacağı yer. ⚠ **gitignore'lu bir artefakttır** (`backend/.gitignore:32`) —
+#: taze bir klonda / CI'da **yoktur** ve olmaması normaldir; o zaman yedeğe düşülür.
+_RAPOR = Path(__file__).resolve().parents[1] / "lab" / "reports" / "nl_corpus.json"
+
+
+def _olculen_yuk() -> dict[str, float]:
+    """Son koşumdan şirket başına **iş yükü**. Bulunamazsa boş sözlük.
+
+    Öncelik: `sure_sn` (gerçek ölçüm) → tur sayısı × `_AGIRLIK` (ilk koşum tahmini).
+
+    ⚠ **Hiçbir hata yükseltilmez.** Bu bir çizelgeleme ipucudur; okunamazsa kapı yine
+    koşmalıdır (yalnız yedek dağılımla). *Bir hızlandırmanın arızası, ölçümün kendisini
+    düşürmemelidir.*
+    """
+    try:
+        kayitlar = json.loads(_RAPOR.read_text(encoding="utf-8"))
+    except Exception:                                   # noqa: BLE001 — yedeğe düş
+        return {}
+    yuk: dict[str, float] = {}
+    for r in kayitlar:
+        ad = r.get("company")
+        if not ad or r.get("error"):
+            continue
+        if r.get("sure_sn"):                            # ölçülmüş iş yükü
+            yuk[ad] = float(r["sure_sn"])
+        elif r.get("cats"):                             # ilk koşum: tur × ağırlık
+            yuk[ad] = sum(r["cats"].values()) * _AGIRLIK.get(ad, 1.0)
+    return yuk
+
+
+def _dilim_dagilimi(paralel: int) -> tuple[dict[str, int], str]:
+    """Şirket → dilim sayısı, **ölçülen iş yüküne orantılı**. (dağılım, kaynak) döner.
+
+    ## Neden `paralel` dilimden fazlası ÜRETİLMEZ
+
+    Her dilim kendi aynasını kurar (**~25 sn sabit bootstrap**). Süreçten çok dilim
+    açmak hem bootstrap'i çoğaltır hem kuyruk üretir: bir süreç iki dilim koşarsa duvar
+    saati **iki dilim** olur. Bu yüzden toplam **tam olarak `paralel`**'dir — daha ince
+    bölmek değil, **daha adil** bölmek hedeflenir.
+
+    ## 🔴 Hedef ORTALAMA değil, **EN UZUN DİLİM** — ve bu ayrım ölçülerek bulundu
+
+    İlk yazımım payı **iş yüküne orantılı** dağıtıyordu (largest-remainder). Kuru prova
+    onu **çürüttü**: orantısal dağıtım boyahane'ye 13 dilim verip ötekilere 1'er
+    bırakıyor, ve o anda **gitas'ın tek dilimi** (2479 birim) en uzun dilim oluyordu —
+    yani sonuç bugünkünden **%8 DAHA KÖTÜ**.
+
+    > *Orantısal dağıtım ORTALAMAYI iyileştirir; ama duvar saatini EN UZUN dilim belirler.
+    > Yanlış büyüklüğü eniyileyen bir hızlandırma, bir yavaşlatmadır.*
+
+    Doğru hedef **makespan**'dir ve doğru araç açgözlü bölmedir: herkes 1 dilimle başlar,
+    her ek dilim o an **en ağır dilime sahip** şirkete gider. Ölçülen fark (bugünkü
+    korpus verisiyle):
+
+        bugün  {boyahane 9, gitas 3, gulteks 2, atiksan 2}  → en uzun dilim 2301 birim
+        yeni   {boyahane 12, gitas 2, gulteks 1, atiksan 1} → en uzun dilim 1726 birim
+                                                              ⇒ **%25 kısalma**
+
+    ⊙ Ve bir çapraz doğrulama: aynı açgözlü, **ağırlıksız** (yalnız tur sayısıyla)
+    çalıştırılınca bugünkü `_AGIR` sabitini **birebir yeniden üretiyor** — yani sabit
+    zamanında doğru yöntemle türetilmişti, sonra **veri altından kaydı**.
+
+    ## Neden her şirkete en az 1 dilim
+
+    Sıfır dilim o şirketi korpustan **düşürürdü** ve bu deponun en pahalı dersi tam olarak
+    budur — *`gitas` düşünce payda 445→342 indi ve doğruluk %93,2→%94,3'e ÇIKTI; sistem
+    bozulurken sayı iyileşti.*
+
+    🔴 **PAYDAYA DOKUNMAZ.** Bu yalnız *hangi sorunun hangi süreçte koşacağını* değiştirir;
+    hiçbir soru eklenmez, çıkarılmaz. `birlestir()` dilimleri toplar (KURAL A).
+    """
+    sirketler = [c[0] for c in COMPANIES]
+    if paralel <= 1:
+        return {ad: 1 for ad in sirketler}, "seri"
+    yuk = _olculen_yuk()
+    if not yuk or not all(yuk.get(ad) for ad in sirketler):
+        # Yedek: elle yazılmış sabit. Tavana `paralel` ile kırpılır.
+        return ({ad: min(_AGIR.get(ad, 1), paralel) for ad in sirketler},
+                "YEDEK sabit `_AGIR` (ölçüm yok/eksik — ilk koşum olabilir)")
+    dagilim = {ad: 1 for ad in sirketler}
+    for _ in range(max(0, paralel - len(sirketler))):
+        dagilim[max(sirketler, key=lambda a: yuk[a] / dagilim[a])] += 1
+    return dagilim, "ÖLÇÜM (lab/reports/nl_corpus.json)"
 
 
 def _is_listesi(paralel: int) -> list[tuple]:
-    """(şirket, pay, pay_sayısı) görev listesi — ağır şirket daha çok dilime bölünür."""
+    """(şirket, pay, pay_sayısı) görev listesi — ağır şirket daha çok dilime bölünür.
+
+    ⚡ **AĞIR DİLİM ÖNCE gönderilir** (2026-08-09). `ProcessPoolExecutor` işleri sırayla
+    dağıtır; en uzun iş **sona** kalırsa öteki süreçler biter ve o tek başına koşar
+    (klasik LPT çizelgeleme). Sıralama **kararlıdır** → bir şirketin dilimleri kendi
+    aralarında `0,1,2…` sırasını korur; `birlestir()`'in *"dilim sırasına göre"*
+    determinizm sözleşmesi bozulmaz.
+    """
+    dagilim, kaynak = _dilim_dagilimi(paralel)
+    if paralel > 1:
+        print(f"⚡ dilim dağılımı [{kaynak}]: "
+              + " · ".join(f"{ad}={dagilim[ad]}" for ad, *_ in COMPANIES), flush=True)
     isler = []
     for name, login, pw, slug in COMPANIES:
-        n = min(_AGIR.get(name, 1), max(1, paralel)) if paralel > 1 else 1
+        n = dagilim.get(name, 1) if paralel > 1 else 1
         isler.extend((name, login, pw, slug, i, n) for i in range(n))
+    # Ağır şirketin dilimleri önce (kararlı sıralama — şirket içi sıra korunur).
+    yuk = _olculen_yuk()
+    isler.sort(key=lambda t: -(yuk.get(t[0], 0.0) / max(1, t[5])))
     return isler
 
 
@@ -599,10 +717,18 @@ def _calis(is_: tuple) -> dict:
     name, login, pw, slug, pay, n = is_
     if n > 1 or os.environ.get("DIMA_KORPUS_IZOLE") == "1":
         os.environ["DIMA_PROJECT_DIR"] = izole_proje_ayna(f"{name}-{pay}")
+    # ⚡ **DİLİMİN KENDİ SÜRESİ ÖLÇÜLÜR** (2026-08-09). Bu satıra kadar rapor doğruluğu
+    # ölçüyor ama **kendi maliyetini** ölçmüyordu — ve `_AGIR` sabitinin bayatladığı tam
+    # bu yüzden görülmedi (aşağıdaki `_dilim_dagilimi` docstring'i faturayı yazıyor).
+    # *Kendi maliyetini ölçmeyen bir araç, pahalılaştığını da öğrenemez.*
+    _t0 = _time.perf_counter()
     try:
-        return run_company(name, login, pw, slug, pay, n)
+        rapor = run_company(name, login, pw, slug, pay, n)
     except Exception as exc:
-        return {"company": name, "error": f"{type(exc).__name__}: {exc}"}
+        return {"company": name, "error": f"{type(exc).__name__}: {exc}",
+                "sure_sn": round(_time.perf_counter() - _t0, 1)}
+    rapor["sure_sn"] = round(_time.perf_counter() - _t0, 1)
+    return rapor
 
 
 def birlestir(dilimler: list[dict]) -> dict:
@@ -642,7 +768,18 @@ def birlestir(dilimler: list[dict]) -> dict:
             "dogru_cube": dict(dogru), "yanlis_cube_ornek": yanlis[:20],
             "vaka_toplam": len(vaka),
             "vaka_dogru": sum(1 for v in vaka.values() if v),
-            "discovery_ornek": disc[:20]}
+            "discovery_ornek": disc[:20],
+            # ⚡ İKİ AYRI SÜRE, ve ikisi de gerekli (2026-08-09):
+            #   `sure_sn`            = dilimlerin TOPLAMI → bu şirketin **iş yükü**;
+            #                          dilim dağılımını besleyen sayı budur.
+            #   `sure_en_uzun_dilim` = dilimlerin EN UZUNU → **duvar saati**;
+            #                          dengenin iyi olup olmadığı buradan okunur.
+            # ⚠ İkisini tek alana katlamak dengesizliği görünmez kılardı: toplam sabit
+            # kalırken en uzun dilim büyüyebilir — *dengesizlik, toplamda görünmeyen
+            # bir maliyettir.*
+            "sure_sn": round(sum(d.get("sure_sn") or 0.0 for d in dilimler), 1),
+            "sure_en_uzun_dilim_sn": round(
+                max((d.get("sure_sn") or 0.0 for d in dilimler), default=0.0), 1)}
 
 
 def main():
@@ -651,6 +788,21 @@ def main():
     # (`session=None thread=None`), şirketler de öyle → iş utanç verici derecede
     # paralel. GİL yüzünden THREAD işe yaramaz (yönlendirme saf Python CPU işi),
     # bu yüzden SÜREÇ kullanılır.
+    # ⚡ **KORPUS `INFO` YAZMAZ** (2026-08-09) — kapsamdan değil **gürültüden** alınan hız.
+    # Tek koşum **54 180 `INFO` satırı** üretiyordu ve her satır dört katmandan geçiyordu
+    # (`logging` → `stdout` → docker `json-file` → kapının satır satır Python okuması).
+    # Korpus sonucu HTTP yanıtlarından çıkarır; o satırların **hiçbirini okumaz**.
+    #
+    # 🔴 **`main()` İÇİNDE, modül seviyesinde DEĞİL** — ve bu bilinçli bir yer seçimidir:
+    # bu depoda testler `lab` modüllerini import ediyor (`test_ci_kapilari` · `conftest`),
+    # ve modül seviyesindeki bir `setdefault` `test_ask_router_logging` gibi **log
+    # seviyesine bağlı** testleri sessizce etkileyebilirdi. Burada yalnız **betik olarak
+    # koşulunca** çalışır. *Bir hızlandırma, kendi kapsamının dışına taşarsa risktir.*
+    #
+    # ⚠ `spawn` alt süreçleri ortamı **oluşturulma anında** miras alır → havuz aşağıda
+    # kurulduğu için dilimler de sessiz koşar.
+    # ⚠ Geri açma tek env: `DIMA_LOG_LEVEL=INFO python lab/nl_corpus.py`
+    os.environ.setdefault("DIMA_LOG_LEVEL", "WARNING")
     paralel = _paralel_sayisi()
     isler = _is_listesi(paralel)
     reports = []
