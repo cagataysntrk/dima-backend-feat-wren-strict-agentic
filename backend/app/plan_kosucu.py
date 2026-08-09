@@ -37,6 +37,14 @@ _log = get_logger("plan_kosucu")
 
 _REF = re.compile(r"^\$([1-9][0-9]?)$")
 
+#: 🔴 **SORGU BÜTÇESİ.** `Butce`'nin sorgu ayağının bu katmandaki karşılığı.
+#: ⚠ `plan_semasi.AZAMI_ADIM` ile aynı sayı olması **tesadüf değil**: 8 adımlık bir
+#: planın hepsi `SORGU` olabilir (rapor yeteneği tam da öyle bir plandır). Daha küçük
+#: bir bütçe, şemanın izin verdiği bir planı koşum anında reddederdi — ve o red
+#: `dogrula`'da bile olsa **geç**tir: plan kurulmuş, model çağrılmış olurdu.
+AZAMI_SORGU = 8
+
+
 
 class PlanHatasi(Exception):
     """Bir adım koşulamadı — **fail-closed**. Sessizce atlanmaz, tur düşürülür.
@@ -84,7 +92,7 @@ def _referanslar(adim: dict) -> list[tuple[str, int]]:
     return out
 
 
-def dogrula(plan: dict, *, azami_sorgu: int = 8) -> list[list[int]]:
+def dogrula(plan: dict, *, azami_sorgu: int = AZAMI_SORGU) -> list[list[int]]:
     """🔴🔴 **KOŞMADAN ÖNCE DOĞRULA** — ve aynı geçişte **DAG'ı kur**.
 
     Döner: topolojik **katmanlar** (adım numaraları, 1'den). Aynı katmandaki adımlar
@@ -197,7 +205,7 @@ AZAMI_ESZAMANLI = 4
 
 
 def kos(plan: dict, *, sorgu_kos, govdeler: dict[str, Any] | None = None,
-        cube_meta: dict | None = None, azami_sorgu: int = 8,
+        cube_meta: dict | None = None, azami_sorgu: int = AZAMI_SORGU,
         paralel: bool = False) -> dict:
     """Planı koşar ve `{"ciktilar": [...], "makbuz": [...]}` döndürür.
 

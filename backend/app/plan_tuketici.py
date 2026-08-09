@@ -153,7 +153,7 @@ def _govdeler(service: Any, schema: dict, cube_meta: dict | None) -> dict[str, A
 
 def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = None,
              schema: dict | None = None, limit: int | None = None,
-             azami_sorgu: int = 8) -> dict:
+             azami_sorgu: int | None = None) -> dict:
     """Planı motora bağlayıp koşar.
 
     Döner: `plan_kosucu.kos`'un sözleşmesi **+ `sonuclar`** — her `SORGU` adımının TAM
@@ -183,7 +183,8 @@ def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = 
     # `SORGU`lar, tavan 4, çıktılar adım sırasına yazılır.
     out = plan_kosucu.kos(plan, sorgu_kos=_sorgu_kos,
                           govdeler=_govdeler(service, schema or {}, cube_meta),
-                          cube_meta=cube_meta, azami_sorgu=azami_sorgu, paralel=True)
+                          cube_meta=cube_meta, paralel=True,
+                          **({"azami_sorgu": azami_sorgu} if azami_sorgu else {}))
     out["sonuclar"] = sonuclar
     return out
 

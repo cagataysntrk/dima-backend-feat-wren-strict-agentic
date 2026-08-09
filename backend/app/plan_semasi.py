@@ -176,7 +176,30 @@ SON_ADIM_FIILLERI: frozenset[str] = frozenset({"ANLAT"})
 ADIM_REFERANSI = r"^\$[1-9][0-9]?$"
 
 
-def plan_json_schema(index: dict, *, azami_adim: int = 5) -> dict[str, Any]:
+#: 🔴 **PLAN UZUNLUĞU TAVANI — DÖRT YETENEĞİN EN KISA ZİNCİRİNDEN TÜRETİLDİ.**
+#:
+#: `E9` haklı: plan uzunluğu bir **maliyettir**. Ama bir tavan, taşıması gereken işi
+#: kesiyorsa maliyeti değil **yeteneği** kısar. Dört yeteneğin **en kısa** zincirleri
+#: sayıldı (uydurulmadı):
+#:
+#: | yetenek | en kısa zincir | adım |
+#: |---|---|---|
+#: | kök-neden | `SORGU→BAGLA→SUZ→SORGU→AYRISTIR→ANLAT` | **6** |
+#: | karar matrisi | `SORGU→SORGU→MATRIS→SIRALA→ANLAT` | 5 |
+#: | rapor | `SORGU×3→RAPOR→ANLAT` | 5 |
+#: | pano | `SORGU→KIR→KIR→PANO` | 4 |
+#:
+#: ⚠ Eski tavan **5**'ti, yani kök-neden inişini **yapısal olarak** imkânsız kılıyordu:
+#: fiiller bağlanmış ama plan hiç kurulamamış olurdu. 6 + 2 pay = **8**; pay bilinçli
+#: ve dar (bir `KIR` daha, bir `GORSEL` daha).
+#:
+#: 🔴 Tek küresel tavan bilerek korundu: yetenek profili şu an **ölçülemiyor** (hangi
+#: sorunun kök-neden olduğunu kim söyleyecek?). *Ölçemediğin bir ayrımı yapılandırmaya
+#: koymak, onu bir varsayım olarak sabitlemektir.*
+AZAMI_ADIM = 8
+
+
+def plan_json_schema(index: dict, *, azami_adim: int = AZAMI_ADIM) -> dict[str, Any]:
     """Plan için **şema-kısıtlı** JSON sözleşmesi üretir.
 
     `index`: `katalog_metni.metin_ve_indeks`'in ürettiği beyaz liste — **aynı** indeks.
@@ -343,6 +366,10 @@ def plan_sistem_metni(catalog: str) -> str:
         "gereksiz adım cevabı iyileştirmez, yalnız yavaşlatır.\n"
         "- Bir adım, önceki bir adımın çıktısına `$1` `$2` biçiminde işaret eder. "
         "İLERİ referans YOKTUR: `$3` ancak dördüncü adımda yazılabilir.\n"
+        "- Bazı alanlar birden ÇOK adıma işaret eder: `\"kaynaklar\": [\"$1\",\"$3\"]`.\n"
+        "- `KIR` ve `SUZ` satır DEĞİL yeni bir SORGU üretir; onu koşmak için sonraki "
+        "adımda `{\"fiil\":\"SORGU\",\"cube_query\":\"$2\"}` yaz. Kök nedene inmenin "
+        "yolu budur: sorgula → en kötüyü seç → oraya süz → yeniden sorgula.\n"
         "- Aritmetik, koşul, döngü YAZAMAZSIN. Yalnız fiiller ve adım referansları.\n"
         "- Tarih YAZMA: dönemi `period_expr` alanına kullanıcının kendi ifadesiyle "
         "(sistemin diline çevirerek) koy; tarihi Python hesaplar.\n"

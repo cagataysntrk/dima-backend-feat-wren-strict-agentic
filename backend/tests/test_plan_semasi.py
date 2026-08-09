@@ -70,9 +70,17 @@ def test_PLAN_UZUNLUGU_TAVANLI():
     *«Bu soru çok adımlıdır»* yanlışsa cevap **yanlış olmaz, pahalı olur** ve `E6`'nın
     kapısına takılır. Şema burada sert bir tavan koyar.
     """
+    # ⟳ Sayı **elle yazılmıyor** artık: `AZAMI_ADIM` tek sahip. İlk hâl `== 5` diyordu
+    # ve tavan dört yeteneğin en kısa zincirine göre 8'e çıkınca **bayatladı** — kapı
+    # bir sayıyı değil bir **kararı** korumalı. *Bir sabiti iki yerde yazmak, birini
+    # eskitmeye söz vermektir.*
+    from app.plan_semasi import AZAMI_ADIM
     s = plan_json_schema(IDX)
-    assert s["properties"]["adimlar"]["maxItems"] == 5
+    assert s["properties"]["adimlar"]["maxItems"] == AZAMI_ADIM
     assert s["properties"]["adimlar"]["minItems"] == 1
+    # ⚠ Ve tavanın **var olduğu** iddiası korunuyor: sınırsız bir plan uzunluğu,
+    # `E9`'un tam olarak yasakladığı şey.
+    assert 1 < AZAMI_ADIM <= 12, "tavan ya yok ya anlamsız derecede geniş"
 
 
 def test_TEK_ADIMLI_PLAN_BUGUNKU_CUBEQUERY():
@@ -110,3 +118,34 @@ def test_SORGU_GOVDESI_KOPYALANMADI():
     # kabul ettirmek, beyaz listeyi delerdi.
     _oteki = [d for d in _alan["oneOf"] if d != cube_query_json_schema(IDX)]
     assert len(_oteki) == 1 and _oteki[0].get("pattern") == ADIM_REFERANSI
+
+
+def test_TAVAN_YETENEGI_KESMIYOR():
+    """🔴 Bir tavan, taşıması gereken işi kesiyorsa maliyeti değil **yeteneği** kısar.
+
+    Eski tavan **5**'ti ve kök-neden inişinin en kısa zinciri **6** adım:
+    `SORGU→BAGLA→SUZ→SORGU→AYRISTIR→ANLAT`. Yani fiiller bağlanmış ama plan hiç
+    kurulamamış olurdu — **yapısal** bir imkânsızlık, sessiz bir tanesi.
+
+    ⚠ Tavan yine de bir maliyet kapısıdır (`E9`): pay dar tutuldu (6 + 2).
+    """
+    from app.plan_semasi import AZAMI_ADIM
+    EN_KISA = {"kok_neden": 6, "karar_matrisi": 5, "rapor": 5, "pano": 4}
+    assert AZAMI_ADIM >= max(EN_KISA.values()), (
+        f"tavan {AZAMI_ADIM} — en uzun 'en kısa zincir' {max(EN_KISA.values())}; "
+        "bir yetenek yapısal olarak ifade EDİLEMEZ")
+    assert AZAMI_ADIM <= max(EN_KISA.values()) + 2, (
+        "tavan gereğinden geniş — plan uzunluğu bir maliyettir (E9)")
+
+
+def test_ISTEM_FIIL_KUMESINDEN_URETILIYOR():
+    """🔴 `KAT-1` — istem elle yazılsaydı, küme 7'den 14'e çıkınca model yeni fiilleri
+    **hiç öğrenmezdi** ve kusur ancak canlıda görünürdü."""
+    from app.plan_semasi import FIILLER, plan_sistem_metni
+    metin = plan_sistem_metni("KATALOG")
+    eksik = [f for f in FIILLER if f not in metin]
+    assert not eksik, f"istem şu fiilleri hiç anlatmıyor: {eksik}"
+    # ⚠ Ve kök-neden halkası istemde **açıkça** yazılı olmalı: model `$n`'i bir
+    # `cube_query` alanına koyabileceğini bilmezse iniş hiç kurulmaz.
+    assert '"cube_query":"$2"' in metin.replace(" ", ""), "iniş halkası anlatılmamış"
+    assert '"kaynaklar"' in metin.replace(" ", ""), "liste referansı anlatılmamış"
