@@ -443,7 +443,16 @@ def test_ARAC_SAYISI_KAYITLI():
 
     acik = str(getattr(get_settings(), "yazma_araclari", "") or "").lower() in (
         "1", "true", "on", "yes")
-    beklenen = 26 if acik else 23
+    # ⟳ FAZ O-3 — 23 → 25. Orkestratörün iki ilkeli (`bagla` · `hesapla`) kayda girdi.
+    # ⊙ Bu bir ÜRÜN KARARIDIR ve gerekçesi raporda yazılı: bugünkü kaydın 23 aracının
+    # 10'u REÇETEDİR ve bir reçete takımı YAZILDIĞI KADAR soru şeklini karşılar; ilkel
+    # bir takım BİLEŞİMLERİNİN TAMAMINI.
+    # ⚠ E2 koruması: liste BÜYÜMÜYOR, YER DEĞİŞTİRİYOR — reçeteler silinmeyecek (uçları
+    # çalışmaya devam edecek) ama planlayıcının seçim listesinden kademeli çıkacaklar.
+    # §99.1'in emsali: uzun bir liste, seçimi KÖTÜLEŞTİRİR.
+    # ⚠ İkisi de maliyet="sifir" · yan_etki="yok": veriye dokunmuyorlar, sorgu
+    # koşmuyorlar — bütçe muhasebesi bozulmaz.
+    beklenen = 28 if acik else 25
     assert len(tools.hepsi()) == beklenen, (
         f"araç sayısı {len(tools.hepsi())}, beklenen {beklenen} — kayıt değiştiyse bu "
         f"bir ÜRÜN kararıdır ve beyanı da değişmeli.")

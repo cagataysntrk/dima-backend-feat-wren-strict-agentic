@@ -7529,3 +7529,26 @@ kolay geri alınabilirdir.*
 
 🔴 **O-2'nin ikinci yarısı (plan `select_cube`'un yerine geçsin) AÇIK** — plan şeması +
 çalıştırıcı ister; kendi fazıyla, kendi bayrağıyla gelecek.
+
+### ✅ O-3 · İLKELLER KAYDA GİRDİ — 23 → 25
+
+`bagla` ve `hesapla` `tools.KAYIT`'a yazıldı; artık dört kapıdan (kayıt · yetki ·
+deterministik-önce · bütçe) geçiyorlar ve planlayıcı onları **adıyla** seçebiliyor.
+
+⊙ Gerekçe raporda: bugünkü kaydın 23 aracının **10'u reçetedir**. Bir reçete takımı
+**yazıldığı kadar** soru şeklini karşılar; ilkel bir takım **bileşimlerinin tamamını**.
+
+⚠ `E2` koruması yazılı: liste **büyümüyor, yer değiştiriyor** — reçeteler silinmeyecek
+(uçları çalışmaya devam edecek) ama planlayıcının seçim listesinden kademeli çıkacaklar.
+`§99.1`'in emsali: **uzun bir liste, seçimi kötüleştirir.**
+⚠ İkisi de `maliyet="sifir"` · `yan_etki="yok"` — veriye dokunmuyorlar, sorgu koşmuyorlar;
+bütçe muhasebesi bozulmaz.
+
+**Kapı iki şey yakaladı ve ikisi de haklıydı:**
+1. `ozet` **dört bileşen** ister ve `[Erişim:` etiketi **Türkçe karakterle** yazılmalı —
+   benimki `[Erisim:` idi. *Bir aracın ne yaptığını söylemek onu seçtirir; ne zaman
+   kullanılmayacağını söylemek yanlış seçimi önler.*
+2. Araç sayısı **beyanda yazılı** — 23'ten 25'e çıkarken gerekçesi de yazıldı.
+
+✅ Canlı gerileme yok: `§AA1` RAM-3 **%10,7** · `O-6` **2 satır**. Hedefli testler
+**196 yeşil**.

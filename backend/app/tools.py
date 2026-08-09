@@ -126,6 +126,59 @@ class Arac:
 
 KAYIT: tuple[Arac, ...] = (
     # --- sorgu ÜRETENLER (merdiven) ---------------------------------------------
+    # FAZ O-3 — ORKESTRATORUN ILKELLERI KAYDA GIRDI.
+    #
+    # Rapor (belgeler/plan/2026-08-09_ORKESTRATOR-KATMANI-VE-OLCEKLENME.md) su ayrimi
+    # kuruyor: bugunku kayit 23 aracin 10'u RECETEDIR (yoy.compute · contribution.* ·
+    # stats.* · kpi.resolve …). Bir recete takimi YAZILDIGI KADAR soru sekli karsilar;
+    # bir ILKEL takim BILESIMLERININ TAMAMINI.
+    #
+    # Bu iki ilkel zincirin eksik halkasiydi: mutfak her adimi yapabiliyordu ama bir
+    # adimin CIKTISINI otekinin GIRDISINE ceviren bir sey yoktu.
+    #
+    # E2 KORUMASI: liste BUYUMUYOR, YER DEGISTIRIYOR. Iki ilkel giriyor; receteler
+    # SILINMIYOR (uclari calismaya devam ediyor) ama planlayicinin secim listesinden
+    # kademeli cikacaklar. §99.1'in emsali burada da gecerli: uzun bir liste, secimi
+    # kotulestirir.
+    #
+    # ⚠ Ikisi de `dis_maliyet="sifir"` ve `yan_etki="yok"`: veriye DOKUNMUYORLAR, ellerine
+    # verilen satirlar uzerinde saf hesap yapiyorlar. Sorgu saymazlar — cunku sorgu
+    # kosmazlar. Butce muhasebesi bu yuzden bozulmaz.
+    Arac(
+        ad="bagla",
+        ozet="Koşmuş satırlardan BİR VARLIĞI seçip değerini döndürür — zincirin SATIR→DEĞER halkası. [Erişim: ELDEKİ SATIRLAR — yeni sorgu YOK, LLM YOK] "
+             "[Ne zaman: bir adımın çıktısındaki «hangisi» sorusunu cevaplayıp sonraki "
+             "adıma TEK BİR AD vermek gerektiğinde] [NE ZAMAN KULLANILMAZ: satır yoksa; "
+             "bir sıralama isteniyorsa (o `order`'ın işi)]",
+        girdi={"rows": "koşmuş sorgunun satırları",
+               "boyut": "hangi kolondan varlık seçilecek",
+               "olcu": "hangi ölçüye göre",
+               "en_iyi_az": "ölçüde az olan iyi mi (lower_is_better beyanı)"},
+        cikti="(varlık, değer) — satır yoksa (None, None)",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.ilkeller", fonksiyon="bagla",
+        notlar="Yon SOZLUKTEN degil BEYANDAN okunur (`lower_is_better`) — §W-C'nin dersi. "
+               "Uydurmaz: satir yoksa None doner.",
+        etiketler=("ilkel", "llmsiz", "zincir"),
+    ),
+    Arac(
+        ad="hesapla",
+        ozet="Bir hedefi AKRANLARIYLA kıyaslar: fark, yüzde ve akran sayısı. [Erişim: "
+             "ELDEKİ SATIRLAR — yeni sorgu YOK, LLM YOK] [Ne zaman: «X neden ötekilerden düşük/yüksek» ailesinde, `bagla` hedefi sectikten SONRA] "
+             "[NE ZAMAN KULLANILMAZ: ikiden az akran varsa — o bir kıyas değil ikinci "
+             "bir sayıdır]",
+        girdi={"rows": "koşmuş sorgunun satırları",
+               "boyut": "kırılım kolonu", "olcu": "kıyaslanan ölçü",
+               "hedef": "`bagla`'nın seçtiği varlık"},
+        cikti="{hedef_deger, akran_ortalamasi, fark, fark_yuzde, akran_sayisi} ya da None",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        izin="query:run", makbuz=None,
+        modul="app.ilkeller", fonksiyon="hesapla",
+        notlar="§AA1'in canli calisan gövdesi BUNUN uzerine kuruldu ve ciktisi bayt bayt "
+               "korundu (E4). Payda sifirsa `fark_yuzde` None kalir — bolme uydurulmaz.",
+        etiketler=("ilkel", "llmsiz", "zincir"),
+    ),
     Arac(
         ad="route",
         ozet="Türkçe soruyu SIFIR LLM ile bir CubeQuery'ye çözer; çözemezse None döner. [Erişim: yalnız KATALOG (ölçü/boyut adları) — ham veri YOK] [Ne zaman: her soruda İLK basamak] [NE ZAMAN KULLANILMAZ: takip mesajlarında (o `deterministic_refine`'ın işi); bir cevabın ÜSTÜNDE konuşurken]",
