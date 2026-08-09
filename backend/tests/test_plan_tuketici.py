@@ -107,12 +107,16 @@ def test_KOSAMAYINCA_ADIM_ADIM_SOYLUYOR():
 
     Bugünkü karşılığı: *«Bu soru için güvenilir bir sorgu üretemedim.»*
     """
-    plan = {"adimlar": [{"fiil": "SORGU", "cube_query": CQ},
-                        {"fiil": "TREND", "kaynak": "$1"}]}
+    # ⟳ Eskiden burada `TREND` vardı — `FAZ 2`'de **bağlandı**, yani artık koşuyor ve
+    # bu kapı başka bir şeyi ölçmeye başlamıştı. Koşamayan gerçek bir durum seçildi:
+    # katalogda karşılığı olmayan bir cube. *Bir kapının varsayımı da bayatlar.*
+    plan = {"adimlar": [{"fiil": "SORGU", "cube_query": {"cube": "uydurma_kup"}},
+                        {"fiil": "BAGLA", "kaynak": "$1", "boyut": "makine",
+                         "olcu": "ort_oee"}]}
     c = _cevap(_Garson(plan))
     assert c["source"] is None, "koşamayan bir plan CEVAP VERMİŞ gibi görünemez"
     assert "1." in c["note"] and "2." in c["note"], "adımlar sayılmamış"
-    assert "TREND" in c["note"] and "tamamlayamadım" in c["note"]
+    assert "tamamlayamadım" in c["note"] and "katalogda karşılanmıyor" in c["note"]
 
 
 def test_KATALOG_DISI_SORGU_MOTORA_GITMEZ():
@@ -127,3 +131,38 @@ def test_BEKLENMEYEN_ARIZA_MERDIVENI_BOZMAZ():
     class _Patlak(_Motor):
         def query(self, sql, limit=None): raise RuntimeError("motor düştü")
     assert _cevap(_Garson(PLAN), _Patlak()) is None
+
+
+def test_YEDI_FIILIN_YEDISI_DE_BAGLI():
+    """🔴🔴 `FAZ 2`'nin ASIL İDDİASI — kapalı fiil kümesinin **tamamı** koşuyor.
+
+    Ölçüldü (`FAZ O` sonu): 7 fiilin **3'ü** koşuyordu; `TREND`·`AYRISTIR`·`KIYASLA`·
+    `ANLAT` `PlanHatasi` veriyordu ve bayrağın kazancının sıfır olmasının **tek** sebebi
+    buydu — gövdeleri hazırdı, yalnız bağlı değildi.
+
+    ⚠ Bu kapı gövdelerin **doğru** çalıştığını değil, **bağlı** olduğunu ölçer. Doğruluk
+    her gövdenin kendi testinde (`yoy` · `contribution` · `narration_guard`).
+    """
+    from app.plan_semasi import FIILLER
+    from app.plan_tuketici import _govdeler
+
+    g = _govdeler(_Motor(), SCHEMA, {"lower_is_better": []})
+    ic_gorenler = {"SORGU", "BAGLA", "HESAPLA"}      # yorumlayıcının kendi bildikleri
+    eksik = set(FIILLER) - ic_gorenler - set(g)
+    assert not eksik, f"🔴 gövdesi bağlanmamış fiil(ler): {sorted(eksik)}"
+
+
+def test_ANLAT_LLM_CAGIRMAZ():
+    """🔴 Bir anlatı fiilini LLM'e bağlamak, planın her turuna bir çağrı daha eklerdi —
+    tam da `E6`'nın ve bu turun A/B'sinin cezalandırdığı şey.
+
+    *Bir cümleyi model kurmadan da doğru kurabiliyorsan, modeli çağırmak bir yetenek
+    değil bir masraftır.*
+    """
+    import inspect
+
+    from app import plan_tuketici
+    kaynak = inspect.getsource(plan_tuketici._govdeler)
+    _govde = kaynak.split("def _anlat")[1]
+    for yasak in ("llm", "anlat(", "select_cube", "generate"):
+        assert yasak not in _govde.replace("_anlat", ""), f"ANLAT gövdesinde `{yasak}` geçiyor"

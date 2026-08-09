@@ -42,8 +42,74 @@ from app import plan_kosucu
 _log = logging.getLogger("dima.plan_tuketici")
 
 
+def _govdeler(service: Any, schema: dict, cube_meta: dict | None) -> dict[str, Any]:
+    """`FAZ 2` — dört fiilin gövdeleri. **Hiçbiri yeni kod değil**; hepsi zaten var olan,
+    testli, deterministik fonksiyonlar. Bu sözlük onları plana **bağlar**, yazmaz.
+
+    | fiil | gövde | not |
+    |---|---|---|
+    | `TREND` | `yoy.compute` | dönem kaydırıp kıyas kolonu ekler — çıktı yine **satırlar** |
+    | `AYRISTIR` | `contribution.arastir` | kullanılmayan boyutları tarar (**pahalı**) |
+    | `KIYASLA` | `contribution._akran_kiyasi` | `§AA1` — akran ortalamasından sapma |
+    | `ANLAT` | `interpret` + `narration_guard` | 🔴 **LLM YOK** (aşağı bkz.) |
+
+    🔴 **`ANLAT` neden LLM'siz.** Bir anlatı fiilini `llm.anlat`'a bağlamak, planın her
+    turuna bir LLM çağrısı daha eklerdi — tam da `E6`'nın ve bu turun A/B'sinin cezalandırdığı
+    şey. `interpret` zaten deterministik olgular üretiyor ve `narration_guard` cümleyi
+    sayılara karşı doğruluyor. *Bir cümleyi model kurmadan da doğru kurabiliyorsan,
+    modeli çağırmak bir yetenek değil bir masraftır.*
+
+    ⚠ Gövdeler `PlanHatasi` fırlatmaz; yorumlayıcı zaten `TypeError`/`ValueError`'ı
+    sarıyor. Buradaki tek iş **adı doğru parametreye bağlamak** — `FAZ 0`'ın ölçtüğü
+    kusur tam olarak buydu.
+    """
+    def _trend(a: dict) -> list[dict]:
+        from app import yoy
+        _satirlar = a.get("kaynak") or []
+        _cq = (_satirlar[0].get("__cq") if _satirlar and isinstance(_satirlar[0], dict)
+               else None) or a.get("cube_query") or {}
+        _td = ((cube_meta or {}).get("time_dimensions") or ["tarih"])[0]
+        return (yoy.compute(service, _cq, a.get("mode") or "yoy", _td) or {}).get("rows") or []
+
+    def _ayristir(a: dict) -> dict:
+        from app import contribution
+        return contribution.arastir(service, schema, a.get("cube_query") or {},
+                                    mode=a.get("mode") or "yoy")
+
+    def _kiyasla(a: dict) -> dict:
+        from app import contribution
+        _cq = a.get("cube_query") or {}
+        _olcu = (_cq.get("measures") or [None])[0]
+        out = contribution._akran_kiyasi(service, _cq, cube_meta or {}, _olcu)
+        if out is None:
+            raise ValueError("akran kıyası yapılamadı — ayrıştırılabilir bir ölçü yok")
+        return out
+
+    def _anlat(a: dict) -> str:
+        from app import interpret as _yorum
+        from app import narration_guard
+        _kaynak = a.get("kaynak")
+        _sonuc = ({"rows": _kaynak, "columns": list((_kaynak or [{}])[0])}
+                  if isinstance(_kaynak, list) else None)
+        _ozet = ""
+        try:
+            # ⚠ `interpret` → `{facts:[...], summary:"Türkçe"} | None`. **Özet** alınıyor,
+            # olgular değil: olgular yapısal kayıtlardır, `summary` zaten cümledir.
+            _ozet = ((_yorum.interpret(_sonuc) or {}) or {}).get("summary") or ""
+        except Exception:
+            _log.info("interpret özet üretemedi — anlatı boş kalır", exc_info=True)
+        if not _ozet:
+            return ""
+        # 🔴 `temiz_metin` — `Rapor`un yayımlanabilir alanı. Guard doğrulanamayan **cümleyi**
+        # düşürür, metnin tamamını değil; yani en kötü durum *«süssüz ama doğru»*.
+        return narration_guard.dogrula(_ozet, _sonuc).temiz_metin
+
+    return {"TREND": _trend, "AYRISTIR": _ayristir, "KIYASLA": _kiyasla, "ANLAT": _anlat}
+
+
 def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = None,
-             limit: int | None = None, azami_sorgu: int = 8) -> dict:
+             schema: dict | None = None, limit: int | None = None,
+             azami_sorgu: int = 8) -> dict:
     """Planı motora bağlayıp koşar.
 
     Döner: `plan_kosucu.kos`'un sözleşmesi **+ `sonuclar`** — her `SORGU` adımının TAM
@@ -67,8 +133,9 @@ def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = 
         sonuclar.append(res)
         return res.get("rows") or []
 
-    out = plan_kosucu.kos(plan, sorgu_kos=_sorgu_kos, cube_meta=cube_meta,
-                          azami_sorgu=azami_sorgu)
+    out = plan_kosucu.kos(plan, sorgu_kos=_sorgu_kos,
+                          govdeler=_govdeler(service, schema or {}, cube_meta),
+                          cube_meta=cube_meta, azami_sorgu=azami_sorgu)
     out["sonuclar"] = sonuclar
     return out
 
@@ -116,7 +183,7 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
         _lower: set[str] = set()
         for c in (schema.get("cubes") or []):
             _lower |= set(c.get("lower_is_better") or [])
-        out = calistir(plan, service=service, index=index,
+        out = calistir(plan, service=service, index=index, schema=schema,
                        cube_meta={"lower_is_better": sorted(_lower)}, limit=limit)
     except plan_kosucu.PlanHatasi as e:
         _log.info("plan KOŞAMADI (%d adım) → adım adım dürüst ret: %s", _n, e)

@@ -162,13 +162,29 @@ def dogrula(plan: dict, *, azami_sorgu: int = 8) -> list[list[int]]:
     return katmanlar
 
 
-def kos(plan: dict, *, sorgu_kos, cube_meta: dict | None = None,
-        azami_sorgu: int = 8) -> dict:
+def _adim_coz(adim: dict, ciktilar: list[Any]) -> dict:
+    """Adımın **bütün** `$n` alanlarını çözer. Referans çözmek yorumlayıcının işidir;
+    çözülmüş adımı ne yapacağı gövdenin."""
+    return {k: _coz(v, ciktilar) for k, v in (adim or {}).items()}
+
+
+def kos(plan: dict, *, sorgu_kos, govdeler: dict[str, Any] | None = None,
+        cube_meta: dict | None = None, azami_sorgu: int = 8) -> dict:
     """Planı koşar ve `{"ciktilar": [...], "makbuz": [...]}` döndürür.
 
-    `sorgu_kos(cube_query) -> rows`: **tek** dış bağımlılık ve bilerek bir **parametre** —
-    bu dosya `wren_service`'i tanımaz. Böylece testte sahte bir koşucuyla, üründe gerçek
-    motorla aynı yorumlayıcı çalışır.
+    `sorgu_kos(cube_query) -> rows`: bilerek bir **parametre** — bu dosya `wren_service`'i
+    tanımaz. Böylece testte sahte bir koşucuyla, üründe gerçek motorla aynı yorumlayıcı
+    çalışır.
+
+    `govdeler`: `fiil → f(çözülmüş_adım) -> çıktı`. 🔴 **Aynı enjeksiyon deseni, aynı
+    sebep:** `TREND`/`AYRISTIR`/`KIYASLA` gövdeleri (`yoy.compute` ·
+    `contribution.arastir` · `contribution._akran_kiyasi`) bir **motor** istiyor. Onları
+    burada import etmek yorumlayıcıyı motora bağlardı. ⚠ `BAGLA`/`HESAPLA` istisna:
+    gövdeleri `ilkeller`de ve **saf** — satır alır, değer verir.
+
+    ⊙ Bölüşüm: **yorumlayıcı** referansı çözer, sırayı ve tipi denetler, bütçeyi sayar;
+    **gövde** çözülmüş adımı alıp işini yapar. *Bir yorumlayıcının bilmesi gereken şey
+    adımların ne YAPTIĞI değil, birbirine nasıl BAĞLANDIĞIDIR.*
 
     ⚠ `azami_sorgu`: `Butce`'nin sorgu ayağının bu katmandaki karşılığı. Aşımda
     `PlanHatasi` — çünkü bir planın yarısını koşup *"işte kısmi cevap"* demek, hangi
@@ -208,13 +224,17 @@ def kos(plan: dict, *, sorgu_kos, cube_meta: dict | None = None,
                     hedef = hedef[0]
                 cikti = _ilk.hesapla(_coz(adim["kaynak"], ciktilar), adim["boyut"],
                                      adim["olcu"], hedef)
+            elif fiil in (govdeler or {}):
+                # ⟳ `FAZ 2` — kalan dört fiil (`KIYASLA`·`AYRISTIR`·`TREND`·`ANLAT`)
+                # artık **enjekte edilen** gövdelerle koşuyor. Adım çözülmüş olarak
+                # verilir; gövde `$n` diye bir şey bilmez.
+                cikti = (govdeler or {})[fiil](_adim_coz(adim, ciktilar))
             else:
-                # 🔴 Kalan fiiller (`KIYASLA` · `AYRISTIR` · `TREND` · `ANLAT`) gövdelerini
-                # `contribution`/`yoy`/`answer`'dan alacak ve **bağlanması `O-4`'ün işi**.
-                # Burada sessizce atlanmıyorlar: bir plan onları isterse tur **düşer** ve
+                # 🔴 Gövdesi verilmemiş bir fiil sessizce atlanmaz: tur **düşer** ve
                 # sebebi yazılır. *Bir fiili şemaya koyup çalıştırıcıda unutmak, onu
                 # sessizce yalan yapmaktır.*
-                raise PlanHatasi(f"`{fiil}` fiilinin çalıştırıcısı henüz bağlanmadı (O-4)")
+                raise PlanHatasi(
+                    f"`{fiil}` fiilinin çalıştırıcısı bu koşumda bağlı değil (O-4)")
         except PlanHatasi:
             raise
         except (KeyError, TypeError, ValueError) as e:
