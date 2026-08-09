@@ -7552,3 +7552,34 @@ bütçe muhasebesi bozulmaz.
 
 ✅ Canlı gerileme yok: `§AA1` RAM-3 **%10,7** · `O-6` **2 satır**. Hedefli testler
 **196 yeşil**.
+
+### ✅ O-2 (ikinci yarı · PLAN ŞEMASI) · `app/plan_semasi.py`
+
+**Kapalı fiil kümesi — 7 fiil**, hepsinin gövdesi **zaten var**:
+`SORGU`(`cube_sql`) · `KIYASLA`(`§AA1`) · `AYRISTIR`(`contribution.arastir`) ·
+`BAGLA`+`HESAPLA`(`O-1`) · `TREND`(`yoy`) · `ANLAT`(`narration_guard`).
+Bu küme **yeni bir motor açmaz**, var olanları **birbirine geçirir**.
+
+⊙ Raporun taşıyıcı kolonu şema düzeyinde kuruldu: model kelime **uyduramaz**, `enum`
+dışına çıkamaz. *Serbest bırakılsaydı plan üreten LLM, SQL üreten LLM'den **daha az**
+denetlenebilir olurdu — hatası birkaç adım sonra, birleşik sonuçta ortaya çıkar.*
+
+**Dört tasarım kararı, dördü de kapıya bağlı:**
+
+| karar | kapı | gerekçe |
+|---|---|---|
+| fiil kümesi **kapalı** | `test_FIIL_KUMESI_KAPALI` | `additionalProperties: False` — şemanın bilmediği alan hiçbir kapıdan geçmez |
+| her fiil **parametre zorunlu** kılar | `test_HER_FIIL_PARAMETRE_ZORUNLU_KILAR` | `B1`: parametresiz plan bir zincir değil **sıralamadır** |
+| referans dili **dar** (`$1`) | `test_ADIM_REFERANSI_SERBEST_IFADE_DEGIL` | genişletmek denetimi şemadan **yorumlayıcıya** kaydırırdı |
+| plan uzunluğu **tavanlı** (5) | `test_PLAN_UZUNLUGU_TAVANLI` | `E9`: yanlış plan cevabı bozmaz, **pahalı** yapar |
+
+🔴 **Ve denklik köprüsü kuruldu** (`tek_adimli`): tek `SORGU` adımlı bir plan **bugünkü
+`CubeQuery`'yi** döndürüyor. Yani `plan_kur` `select_cube`'un yerine geçtiğinde geçiş bir
+**davranış değişikliği değil, temsil genişlemesidir** — bugünkü yol, planın **özel hâli**.
+
+⚠ `cube_query` şeması **çağrılıyor, kopyalanmıyor** (`KAT-1`) ve bu da kapıda
+(`test_SORGU_GOVDESI_KOPYALANMADI`): ikinci bir kopya, katalog değişince **birinin
+bayatlaması** demekti.
+⚠ `KURAL B`: hiçbir yol bu şemayı **bugün okumuyor** — davranış bayt bayt bugünkü.
+
+*Bir sözleşmeyi bağlamadan önce sınamak, iki kusuru birbirine karıştırmamanın tek yoludur.*

@@ -31,6 +31,13 @@ GARSON = {
     "niyet.py", "turetme.py", "typo_onerisi.py", "followup.py", "context.py",
     "donem_capasi.py", "netlestirme.py", "belirsizlik_chipi.py", "soz.py",
     "intent_semasi.py", "kapsam.py", "embed_kapsam.py", "yetenek.py",
+    # 🔴 `FAZ O-2` — PLAN ŞEMASI. `intent_semasi.py` ile **aynı sınıf ve aynı sebep**:
+    # ikisi de garsonun **ne söyleyebileceğini** sınırlayan bir sözleşme üretir. Katalogdan
+    # enum türetir, LLM'in çıktısını daraltır, hiçbir sayı hesaplamaz, hiçbir sorgu koşmaz.
+    # ⚠ `SORGU` fiilinin gövdesi `intent_semasi`'den **çağrılır** (kopyalanmaz) — yani bu
+    # modül onun **üstünde** durur, yanında değil. *Bir sözleşmeyi genişletmek, onu ikinci
+    # kez yazmak değildir.*
+    "plan_semasi.py",
     "temellendirme.py",   # G1 — CubeQuery → "anladığım şu" (0 LLM, motora dokunmaz)
     "diyalog.py",         # G2 — slot durumu; saf fonksiyon, LLM YOK, motora dokunmaz
     "ek.py",              # G7 — Türkçe ek ÜRETİMİ (doğrulama değil); saf, LLM YOK
