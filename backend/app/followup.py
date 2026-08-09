@@ -267,6 +267,29 @@ def sinifla(soru: str, *, baglam_var: bool,
     if not q.strip():
         return Niyet(sinif=SINIF_YENI, kural="bos-soru")
     if not baglam_var:
+        # 🔴🔴 **`§X4` — BAĞLAMSIZ BİR MAKBUZ SORUSU DISCOVERY'YE DÜŞÜYORDU.**
+        #
+        # Ölçüldü (`X3` — önceki tur cevapsız kalmıştı, sonra *«bu kıyas hangi tarih
+        # aralığını kapsıyor»*):
+        #
+        #     Discovery: bütçe aşıldı (25 sn) → dürüst ret
+        #     "Bu soru için zamanında güvenilir bir sorgu üretemedim."
+        #
+        # ⊙ İki kayıp birden: (1) **25 saniye** ve bir Discovery ateşlemesi — `§0.0`'a
+        # göre her ateşleme bir **mutfak eksikliği raporudur** ve bu, raporlanacak bir
+        # eksiklik bile değildi; (2) cevap **yanlış cinsten**: Discovery ham SQL üretir,
+        # oysa ortada **sorgulanacak bir rapor yok**. Hiçbir SQL *"ekranda ne var"*
+        # sorusunu cevaplayamaz.
+        #
+        # ⊙ Doğru cevap tek satırlık ve **kesin olarak bilinen** bir olgudur: *ekranda bir
+        # rapor yok.* Onu söylemek için ne LLM ne sorgu gerekir.
+        #
+        # ⚠ Sınıf `SINIF_YENI` **kalır** (yol değişmez); yalnız `kural` alanı gerçeği
+        # söyler ki çağıran bu turu bir veri sorusu sanıp merdiveni sonuna kadar
+        # inmesin. *Bir niyetin adını doğru koymak, onu doğru yere göndermenin ön koşuludur.*
+        if _hit(q, _MAKBUZ):
+            return Niyet(sinif=SINIF_YENI, kural="makbuz-baglamsiz",
+                         kanit="hesabı sorulacak bir rapor yok")
         return Niyet(sinif=SINIF_YENI, kural="baglam-yok",
                      kanit="konuşulacak bir cevap yok")
 

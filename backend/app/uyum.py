@@ -440,8 +440,19 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
     _tv_kip = str((ic.get("turev") or {}).get("kip") or "")
     #: Oran/yüzde isteği **karşılanmış** sayılır: bir ölçü zaten oran ise, ya da `pay`
     #: penceresi / `yuzde`·`oran` türevi kolonu üretiyorsa.
+    # 🔴 **`§X3` — `degisim_yuzde` DE BİR YÜZDEDİR ve beyan onu saymıyordu.**
+    #
+    # Ölçüldü (`X18` — *«aylık üretim ve önceki aya göre yüzde değişim»*): sistem
+    # `pencere:{kip:"degisim_yuzde"}` üretti, `_p_degisim_yuzde_…` kolonunu **döndürdü**,
+    # ve sonra *«bir oran/yüzde sordun ama `toplam_agirlik_kg` bir kg»* diye **kendi
+    # verdiği cevabı eksik ilan etti**.
+    #
+    # ⊙ Kusur `§U1`'in kendi listesindeydi: `pay`/`yuzde`/`oran` sayılmış, `degisim_yuzde`
+    # **unutulmuştu** — oysa adı da çıktısı da bir yüzdedir. `§101.1`'in tersi bir zarar:
+    # yanlış-pozitif bir **beyan**, doğru bir cevabı kusurlu gösterir ve kullanıcı ona
+    # güvenmez. *Bir cevabı haksız yere eksik ilan etmek, eksik bir cevap kadar pahalıdır.*
     _oran_karsilandi = (
-        _pn_kip == "pay" or _tv_kip in ("yuzde", "oran")
+        _pn_kip in ("pay", "degisim_yuzde") or _tv_kip in ("yuzde", "oran")
         or any(re.search(r"(%|yuzde|oran)", (_vbirim(_x, _units) or "") + _x, re.I)
                for _x in (ic.get("measures") or [])))
     #: Ortalama isteği karşılanmış sayılır: `ort_` ile başlayan bir ölçü var, ya da

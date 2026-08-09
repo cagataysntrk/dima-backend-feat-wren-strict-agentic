@@ -180,8 +180,33 @@ def _olumsuzluk(q: str, schema: dict) -> str | None:
     # *Bir sıfatı derecelendirmek, onu yok saymaktan başka bir şeydir.*
     bilinen = _katalog_terimleri(schema)
     _tokenlar = _TOKEN.findall(_norm(q))
+    # 🔴🔴 **`§X2` — KATALOGDA ADI OLAN BİR KELİME, BİR YOKLUK DEĞİLDİR.**
+    #
+    # Ölçüldü (`X10` — *«makine bazında planlı ve plansız duruşu yan yana göster»*):
+    #
+    #     «plansiz (= «plan» olmayan)» bir olumsuzluk ifadesi ve bunu henüz
+    #     sorguya çeviremiyorum.
+    #
+    # 🔴 Oysa `oee.plansiz_durus_dakika` **VAR** ve sinonimi **birebir «plansız duruş»**
+    # (`expression: SUM(plansiz_durus_dk)`). Yani bir **yetenek sınırı beyanı**, var olan
+    # bir ölçüyü gölgeliyordu — `§1.5`'in dersinin bu daldaki hâli: *truthy bir beyan,
+    # daha yetenekli bir adımı sessizce öldürür.*
+    #
+    # ⊙ Ayrım `§63`'ün guard'ıyla **aynı biçimde** yapısal: orada *«`en` önündeyse
+    # üstünlüktür»*, burada *«kelimenin KENDİSİ katalogda geçiyorsa bir ADdır»*. Katalog
+    # yazarı bir ölçüye *«plansız duruş»* adını verdiyse, o kelime o katalogda **olumlu**
+    # bir şeyi gösterir; onu ekine bakıp yokluk saymak, yazarın beyanını ezmektir.
+    #
+    # ⚠ Yanlış-pozitif kapalı kalır: `firesiz` hiçbir katalog teriminde geçmez, dolayısıyla
+    # *«firesiz partiler»* aynen olumsuzluk sayılır (`fire` gövdesi + `firesiz` adı YOK).
+    # Kural bir kelime listesi değil, kataloğun kendi sözlüğüne yapılan bir sorgudur.
+    #
+    # *Bir ekin anlamı, kelimenin katalogda bir adı olup olmadığına bakılmadan okunamaz.*
+    _katalog_kelimeleri = {w for t in bilinen for w in t.split()}
     for _i, tok in enumerate(_tokenlar):
         if _i > 0 and _tokenlar[_i - 1] == "en":
+            continue
+        if tok in _katalog_kelimeleri:
             continue
         for ek in _NEGATION_SUFFIXES:
             if len(tok) > len(ek) + 2 and tok.endswith(ek):

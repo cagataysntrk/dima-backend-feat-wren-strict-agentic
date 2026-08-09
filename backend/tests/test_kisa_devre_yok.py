@@ -60,6 +60,20 @@ MUAF: list[tuple[str, str]] = [
      "bir merdiven bitiricisi sayar — kesen bir tahmin değil, bir TALİMAT."),
     ("_yol_siniri_notu('intent')",
      "🟢 MEŞRU: aynı gerekçe, bir basamak yukarısı."),
+    ("Bir sayının **nasıl hesaplandığını** soruyorsun",
+     "🟡 ÜÇÜNCÜ CİNS (`§X4`) — **altında kesilecek bir cevap YOK, ve bu ÖLÇÜLDÜ.** Soru "
+     "*«bu nasıl hesaplandı»* biçiminde ve ortada **rapor YOK**; yani sorulan şey veriye "
+     "değil **ekrandakine** dairdir. Discovery ham SQL üretir ve hiçbir SQL *«ortada rapor "
+     "var mı»*yı cevaplayamaz — bu dal cevaplı bir yolu kesmiyor, **cevapsız** bir yolu "
+     "kesiyor. "
+     "⊙ Ölçüldü (`X3`): kesilmediğinde ne oluyor → `Discovery: bütçe aşıldı (25 sn) → "
+     "dürüst ret`. Yani merdivenin devamı 25 saniye yanıp **aynı** sonuca varıyordu; "
+     "üstelik bir Discovery ateşlemesi (`§0.0`: her ateşleme bir mutfak eksikliği "
+     "raporudur) boşuna harcanıyordu. "
+     "⚠ Bu muafiyetin sınırı DAR: yalnız `followup.sinifla` `makbuz-baglamsiz` derse, yani "
+     "**hem** makbuz kalıbı eşleşmiş **hem** `baglam_var=False` ise. Bağlam varsa dal hiç "
+     "doğmaz ve `TUR_MAKBUZ` gerçek bir fiş cevabı üretir. "
+     "*Bir dalı kısa devre yapan şey erken dönmesi değil, dönerken bir CEVABI atmasıdır.*"),
 
     # ── NETLEŞTİRME DALLARI — hepsi ADAY olmalı, bugün RETURN ediyor ──
     # ⚠ İMZA DEĞİŞTİ (`DA-10`, 2026-08-07): dal artık `_PERIOD_TEXT` sabitini değil
@@ -149,8 +163,13 @@ def test_HER_MUAFIYET_GEREKCELI():
     """⚠ Gerekçesiz bir muafiyet, muafiyet değil **sessiz bir izindir**."""
     for imza, gerekce in MUAF:
         assert len(gerekce) > 40, f"🔴 gerekçe çok kısa: {imza}"
-        assert gerekce.startswith(("🟢", "🔴")), \
-            f"🔴 {imza}: meşru mu (🟢) kısa devre mi (🔴) — işaretlenmemiş"
+        # ⟳ `§X4` — üçüncü işaret eklendi: 🟡 *"altında kesilecek cevap YOK, ÖLÇÜLDÜ"*.
+        # Sınıfın ispat yükümlülüğü `test_SINIFIN_BUYUKLUGU_YAZILI`'da: 🟡 bir gerekçe
+        # ölçüm cümlesi taşımazsa kapı kırmızı verir. *Bir işaret eklemek, onun kapısını
+        # da eklemektir.*
+        assert gerekce.startswith(("🟢", "🔴", "🟡")), \
+            f"🔴 {imza}: meşru mu (🟢) · ölçülmüş-boş mu (🟡) · kısa devre mi (🔴) — " \
+            "işaretlenmemiş"
 
 
 def test_MESRU_OLANLAR_YALNIZ_KULLANICI_KARARI():
@@ -176,6 +195,33 @@ def test_SINIFIN_BUYUKLUGU_YAZILI():
     kisa = [g for _i, g in MUAF if g.startswith("🔴")]
     mesru = [g for _i, g in MUAF if g.startswith("🟢")]
     assert len(mesru) == 2, f"meşru dal sayısı değişti: {len(mesru)}"
+    # 🟡 **ÜÇÜNCÜ CİNS — ve sözleşmenin ikilisi bilerek KORUNDU.**
+    #
+    # `test_MESRU_OLANLAR_YALNIZ_KULLANICI_KARARI` şunu söylüyor: merdiveni yalnız iki şey
+    # bitirebilir — pozitif cevap ya da kullanıcının `yol_siniri`'si. Bu kural, her erken
+    # dönüşün **saklanmış bir cevabı** olduğu şüphesinden doğdu ve o şüphe haklıdır.
+    #
+    # ⊙ `§X4` bu şüpheyi **ölçerek** çürüten ilk dal: bağlamsız bir makbuz sorusunda
+    # merdivenin altı **boş**. Kanıt bir tahmin değil, bir koşum (`X3`):
+    #
+    #     Discovery: bütçe aşıldı (25 sn) → "zamanında güvenilir bir sorgu üretemedim"
+    #
+    # Yani dal kesilmeseydi 25 saniye yanıp **aynı** yere varıyordu. Ve yapısal olarak da
+    # varmak zorundaydı: Discovery **ham SQL** üretir, soru ise **ekrandakine** dairdir —
+    # hiçbir SQL *"ortada rapor var mı"*yı cevaplayamaz.
+    #
+    # 🔴 Sınıfın sınırı DAR ve kapıyla korunuyor: 🟡 bir muafiyet **ölçüm cümlesi taşımak
+    # zorundadır** (aşağıdaki kapı). Ölçmeden *"altı boş"* demek, tam da bu sözleşmenin
+    # engellediği tahmindir — yalnız bir kat yukarıda söylenmiş hâli.
+    #
+    # *İki bitirici kuralı bir yasak değil, bir ispat yükümlülüğüdür: üçüncüsünü isteyen,
+    # altının boş olduğunu ölçmek zorundadır.*
+    olculdu = [g for _i, g in MUAF if g.startswith("🟡")]
+    assert len(olculdu) == 1, f"ölçülmüş-boş dal sayısı değişti: {len(olculdu)}"
+    for g in olculdu:
+        assert "ÖLÇÜLDÜ" in g and "sn" in g, (
+            "🔴 🟡 bir muafiyet, merdivenin altının boş olduğunu **ÖLÇÜMLE** göstermeli "
+            "(hangi koşum, ne kadar sürdü, ne döndü) — yoksa bu bir tahmindir.")
     # ⊙ 11 — ve bu sayı bu demette DÜŞMEDİ. Düşürme denendi, ölçüldü, geri alındı:
     # `test_DAVRANIS_DONUSUMU_OLCULDU_VE_ERTELENDI` tam dökümü taşıyor.
     # *Kapatılmamış bir kusurun büyüklüğünü yazmamak, onu kapatılmış saymaya en kısa yoldur.*

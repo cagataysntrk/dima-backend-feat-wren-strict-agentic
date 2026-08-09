@@ -450,6 +450,31 @@ MUAFIYET_ASK_KOD = [
      "son andır. Çağrıyı dışarı almak, çağrının **yerini** kaybetmek olurdu. "
      "⊙ İz satırı bilerek burada: kullanıcının gördüğü sıralamayı **sistemin koyduğu** "
      "makbuza yazılmazsa, kullanıcı onu kendi yazdığını sanır"),
+    ("x5-kapi-neden-atesledigini-soylemiyordu", 3,
+     "🔴 **BİR KAPININ KARARI, GİRDİSİYLE BİRLİKTE LOGLANMAZSA DENETLENEMEZ** "
+     "(`ADR-0020`: sessiz yutma yok). Ölçüldü (`X5` Fransızca · `X19` Rusça · `Y1`): "
+     "cevap dönem filtresini **taşıyordu** ve kapı yine *«hangi dönem için?»* dedi — "
+     "hangi zaman boyutuna bakıldığı, elde hangi filtrelerin olduğu ve `period_optional`'ın "
+     "ne olduğu **hiçbir yerde yazmıyordu**. Sonuç: teşhis üç turda da tahmine kaldı ve "
+     "`§X1` (sabit `\"tarih\"`) ancak kaynağı **okuyarak** bulunabildi. "
+     "⚠ **TAŞINAMAZ:** kararın verildiği yerde, `return`'ün hemen öncesinde — bir karar "
+     "logunun değeri, kararla **aynı** kod noktasında olmasından gelir; başka yere "
+     "konursa aradaki her dal onu geçersiz kılabilir. "
+     "⊙ `§47`'nin (*«garsonun kararı kayboldu»*) aynı dersinin dönem kapısındaki hâli."),
+    ("x4-hesabi-sorulacak-rapor-yoksa-merdivene-inilmez", 15,
+     "🔴🔴 **BAĞLAMSIZ BİR MAKBUZ SORUSU DISCOVERY'DE 25 SANİYE YANDI.** Ölçüldü (`X3` — "
+     "*«bu kıyas hangi tarih aralığını kapsıyor»*, önceki tur cevapsız kalmıştı): "
+     "`Discovery: bütçe aşıldı (25 sn) → dürüst ret`. "
+     "⊙ İki kayıp: (1) 25 sn + bir Discovery ateşlemesi — `§0.0`'a göre her ateşleme bir "
+     "MUTFAK EKSİKLİĞİ RAPORUDUR, ve bu raporlanacak bir eksiklik bile değildi; "
+     "(2) cevap YANLIŞ CİNSTEN — Discovery ham SQL üretir, oysa soru veriye değil "
+     "EKRANDAKİNE dair; hiçbir SQL *«ortada rapor var mı»*yı cevaplayamaz. "
+     "⊙ Doğru cevap tek satırlık ve KESİN OLARAK BİLİNEN bir olgu: ekranda rapor yok. "
+     "Onu söylemek için ne LLM ne sorgu gerekir (0 ms). "
+     "⚠ **TAŞINAMAZ:** `sinifla()` çağrısının **hemen ardında** durmalı — kusur tam olarak "
+     "niyetin doğru sınıflanıp yanlış basamağa gönderilmesiydi; kararı çağrıdan uzağa "
+     "koymak aradaki her dalın yeniden aynı tuzağa düşmesine kapı açardı. "
+     "⚠ Uydurma yok: yalnız bilinen olgu + ne yapılabileceği (`D4` proaktif sınır deseni)."),
     ("v1-makbuz-sorusu-8-konusma-turu", 31,
      "🔴🔴 **SİSTEM CEVABI ÜRETİYOR AMA ONA ULAŞAN KAPI YOKTU — üç kanıt.** "
      "`u2` *«bu nasıl hesaplandı?»* → dürüst ret · `V2` *«bu rakama neler dahil, nasıl "
@@ -964,6 +989,21 @@ MUAFIYET_ASK_DOSYA = [
      "VERİR — yani bu iki satır kendi başına cevap üretmiyor, var olan doğru dalın önünü "
      "açıyor. ⚠ Gösterilen etiket ilk adayın sırasını korur: normalleştirme yalnız "
      "*«aynı mı»* sorusuna uygulanır."),
+    ("x1-tarih-sabit-kodluydu-kodun-kendi-ongordugu-kusur", 2,
+     "🔴🔴 **`_resolve_period` «tarih» ADINI SABİT KODLUYORDU — ve bunu KODUN KENDİSİ "
+     "ÖNGÖRMÜŞTÜ.** Kardeş dalın yorumu bugüne kadar şunu yazıyordu: *«`_resolve_period` "
+     "doğrudan çağrılMADI çünkü o «tarih» adını SABİT kodluyor; zaman boyutu farklı adlı "
+     "bir cube'da VAR OLMAYAN BİR KOLONA filtre yazardı.»* Kardeş dal kendini korudu, "
+     "`§48` dalı aynı fonksiyonu DOĞRUDAN çağırdı. "
+     "⊙ Ölçüldü (`X5` Fransızca · `X19` Rusça — *«cette année»* / *«в этом году»*): cq "
+     "`enerji_makine`'ye çözüldü, dönem filtresi `tarih`'e yazıldı — o küpün zaman boyutu "
+     "**`donem_tarih`**. Sonuç iki katmanlı: filtre YANLIŞ KOLONA yazıldı, ve dönem kapısı "
+     "`donem_tarih`'te filtre bulamayıp *«hangi dönem için?»* dedi — kullanıcı dönemi "
+     "SÖYLEMİŞTİ, cevap TAŞIYORDU, sistem yine sordu. "
+     "⚠ Ve bu kusuru KENDİ DÜZELTMEM görünür kıldı: `§W-A` `period_expr`'i oylamadan sağ "
+     "çıkarınca bu dal daha sık koşar oldu. *Bir yolu açmak, üstündeki çukuru devralmaktır.* "
+     "⚠ İki satır: imza (`time_dim` parametresi) — gövde sabitleri parametreye ÇEVRİLDİ, "
+     "eklenmedi. Varsayılan `\"tarih\"` → çağıranların hepsi bayt bayt aynı. Sondaj 3/3."),
     ("v2-oylama-zenginligi-cezalandiriyordu", 49,
      "🔴🔴 **OYLAMA, ZENGİN CEVABI KENDİ ZENGİNLİĞİ YÜZÜNDEN ELİYORDU.** Kanonik anahtar "
      "**tam `cq`** olduğu için `order`/`limit`/`pencere`/`turev` yazmayan iki oy "

@@ -6697,3 +6697,120 @@ yazmak, onu unutmamanın tek yoludur.*
 
 `eval LLM dilimi −66,7%` yine göründü — ve `§V5.2`'de **HEAD'de birebir aynı** çıktığı
 ölçülmüştü: bayat taban, bir gerileme değil.
+
+---
+
+## §104 · X TURU — 20 özgün senaryo (beş dil, makbuz refleksi, agentic zincir)
+
+| # | senaryo | sonuç |
+|---|---|---|
+| X1 | fire kg **en kötüden iyiye** *(§W-C canlı sınavı)* | 🟢 `desc` — Boyahane 198.013 kg başta |
+| X2 | geçen yıl ile bu yılı üretim açısından kıyasla | 🔴 konu daraltma (`temsil-yok=kiyas`) |
+| X3 | ↳ *bu kıyas hangi tarih aralığını kapsıyor* | 🔴 **Discovery'de 25 sn yandı** |
+| X4 | en **verimsiz** 3 vardiya | 🟢🟢 `ort_oee` en düşük — nitelik kutbu doğru |
+| X5 | [FR] Quelle machine a consommé le plus d'électricité **cette année** | 🔴 filtre **yanlış kolona** yazıldı |
+| X6 | haftanın hangi gününde en çok arıza | ◐ `hafta_gunu` yerine gün granülerliği (60 satır) |
+| X7 | kimyasal maliyetinin toplam maliyete oranı | 🔴 konu daraltma |
+| X8 | en çok mesai ücreti alan 5 personel | 🔴 konu daraltma (`ik.toplam_mesai_ucreti` var) |
+| X9 | [ES] consumo de agua por departamento **este año** | 🔴 dönem çözülmedi |
+| X10 | planlı ve **plansız** duruşu yan yana | 🔴 var olan ölçü *«olumsuzluk»* diye reddedildi |
+| X11 | geçen aya göre elektrik değişimi | ◐ boş dönem + dürüst beyan |
+| X12 | en yüksek dE'li 5 renk | 🟢 (`renk="Açık"` **meşru** bir değer olarak korundu) |
+| X13 | ocak şubat mart ayrı ayrı fire | 🟢 3 satır, ay granülerliği |
+| X14 | tedarikçi bazında ortalama hız | 🟢 **LLM'siz** |
+| X15 | ↳ *bu ortalama nasıl hesaplandı* | 🟢🟢 **`ROUND(AVG(hiz_m_dk),1)`** — *«ağırlıklı mı»*ya cevap |
+| X16 | ↳ en yavaş olanın parti sayısını ekle | 🟢 deterministik + eş-adlılık beyanı |
+| X17 | kâr marjı en düşük 3 müşteri | 🟢 |
+| X18 | aylık üretim + önceki aya göre yüzde değişim | ◐ `degisim_yuzde` **üretildi** ama beyan onu saymadı |
+| X19 | [RU] Какой отдел потребил больше всего электроэнергии | 🔴 `X5` ile aynı kök |
+| X20 | aylık su tüketimini **kümülatif** göster | 🟢🟢 `pencere:kumulatif` |
+
+**Skor:** 10 🟢 · 3 ◐ · 7 🔴 · Discovery ateşlemesi **1** (X3 — ve o bir kök oldu)
+
+### §104.1 · X TURUNUN DÖRT KÖKÜ — ikisi kendi düzeltmelerimin kenarında
+
+#### 🔴🔴 §X1 — `_resolve_period` «tarih»i SABİT KODLUYORDU, ve KOD BUNU ÖNGÖRMÜŞTÜ
+
+Kardeş dalın yorumu bugüne kadar aynen şunu yazıyordu:
+
+> *"`_resolve_period` doğrudan çağrılMADI çünkü o «tarih» adını SABİT kodluyor; zaman
+> boyutu farklı adlı bir cube'da **var olmayan bir kolona filtre yazardı**."*
+
+Kardeş dal kendini korudu; `§48` dalı **aynı fonksiyonu doğrudan çağırdı.**
+
+Ölçüldü (`X5` Fransızca · `X19` Rusça): cq `enerji_makine`'ye çözüldü, filtre `tarih`'e
+yazıldı — o küpün zaman boyutu **`donem_tarih`**. İki katmanlı zarar: filtre **yanlış
+kolona** yazıldı, **ve** dönem kapısı `donem_tarih`'te filtre bulamayıp *«hangi dönem
+için?»* dedi. Kullanıcı dönemi **söylemişti**, cevap **taşıyordu**, sistem yine sordu.
+
+⚠ Ve bu kusuru **kendi düzeltmem görünür kıldı**: `§W-A` `period_expr`'i oylamadan sağ
+çıkarınca bu dal daha sık koşar oldu. *Bir yolu açmak, üstündeki çukuru da devralmaktır.*
+Sondaj 3/3.
+
+#### 🔴 §X2 — KATALOGDA ADI OLAN BİR KELİME, BİR YOKLUK DEĞİLDİR
+
+`X10`: *«plansız duruş»* → *«bir olumsuzluk ifadesi, bunu henüz sorguya çeviremiyorum»*.
+🔴 Oysa `oee.plansiz_durus_dakika` **VAR** ve sinonimi **birebir «plansız duruş»**. Bir
+**yetenek sınırı beyanı**, var olan bir ölçüyü gölgeliyordu (`§1.5`'in bu daldaki hâli).
+
+⊙ Ayrım `§63`'ün guard'ıyla aynı biçimde yapısal: orada *«`en` önündeyse üstünlüktür»*,
+burada *«kelimenin KENDİSİ katalogda geçiyorsa bir ADdır»*. Katalog yazarı bir ölçüye
+*«plansız duruş»* adını verdiyse, o kelime o katalogda **olumlu** bir şeyi gösterir.
+⚠ `firesiz`/`hatasiz` hiçbir katalog teriminde geçmez → aynen olumsuzluk kalır. Sondaj 5/5.
+
+#### 🔴 §X3 — DOĞRU CEVABI HAKSIZ YERE EKSİK İLAN ETMEK
+
+`X18`: sistem `pencere:{kip:"degisim_yuzde"}` üretti, `_p_degisim_yuzde_…` kolonunu
+**döndürdü**, sonra *«bir oran/yüzde sordun ama `toplam_agirlik_kg` bir kg»* diye **kendi
+verdiği cevabı** eksik ilan etti. Kusur `§U1`'in kendi listesindeydi: `pay`/`yuzde`/`oran`
+sayılmış, `degisim_yuzde` **unutulmuştu**.
+
+*Bir cevabı haksız yere eksik ilan etmek, eksik bir cevap kadar pahalıdır — çünkü doğru
+olanı da şüpheli yapar.*
+
+#### 🔴 §X4 — HESABI SORULACAK BİR RAPOR YOKSA MERDİVENE HİÇ İNİLMEZ
+
+`X3`: bağlamsız bir makbuz sorusu merdivenin sonuna kadar indi ve **Discovery'de 25 sn
+yandı**. İki kayıp: 25 saniye + bir Discovery ateşlemesi *(ve `§0.0`'a göre her ateşleme
+bir mutfak eksikliği raporudur — bu raporlanacak bir eksiklik bile değildi)*; ve cevap
+**yanlış cinsten** — Discovery ham SQL üretir, oysa soru **ekrandakine** dair. Hiçbir SQL
+*"ortada rapor var mı"* sorusunu cevaplayamaz.
+
+*Bir soruyu cevaplamanın en ucuz yolu, bazen cevabın ortada olmadığını söylemektir.*
+
+### §104.2 · X KAPISI İKİ KEZ BENİ YAKALADI — ve ikisi de haklıydı
+
+İlk koşum **kırmızı** verdi (2 test) ve ikisi de bu demetin kendi değişiklikleriydi:
+
+**1 · `test_YENI_KISA_DEVRE_EKLENMEDI`** — `§X4` dalı `source=None` ile erken dönüyor,
+yani sözleşmeye göre bir **kısa devre adayı**. Kapı gerekçe istedi. Doğru istedi.
+
+⊙ Ama sözleşmenin ikilisi bu vakayı taşımıyordu: *"merdiveni yalnız pozitif cevap ya da
+kullanıcının `yol_siniri`'si bitirebilir"*. `§X4` **hiçbirine** girmiyor — kesin olarak
+**kesecek bir cevabı yok**. Üçüncü bir cins açıldı (🟡) ve **kendi ispat yükümlülüğüyle**:
+
+> 🟡 bir muafiyet, merdivenin altının boş olduğunu **ölçümle** göstermek zorundadır
+> (hangi koşum · ne kadar sürdü · ne döndü). Kapı bunu denetliyor.
+
+Kanıt bir tahmin değil, bir koşum (`X3`): `Discovery: bütçe aşıldı (25 sn) → dürüst ret`.
+Dal kesilmeseydi 25 saniye yanıp **aynı** yere varıyordu — ve yapısal olarak varmak
+zorundaydı, çünkü Discovery ham SQL üretir ve hiçbir SQL *"ortada rapor var mı"*yı
+cevaplayamaz.
+
+⚠ İki cırcır (🟢 = 2 · 🔴 = 11) **bozulmadan** korundu.
+
+*İki bitirici kuralı bir yasak değil, bir ispat yükümlülüğüdür: üçüncüsünü isteyen,
+altının boş olduğunu ölçmek zorundadır.*
+
+**2 · `test_COZUCU_IKINCI_KEZ_YAZILMADI`** — kapı `period_expr` ile `_resolve_period`
+arasındaki dilimi okuyor; araya koyduğum **uzun yorum** onu *"ikinci bir çözücü yazılmış"*
+sanmıştı. Yorum `if`'in üstüne alındı.
+
+*Bir kapının okuduğu pencereyi, açıklamayla doldurmak da daraltır.*
+
+### §104.3 · X KAPISI YEŞİL (ikinci koşum)
+
+    korpus %94.9 (taban %94.4) ✅ · sessiz_yanlis 10 (sabit) · gerçek-dünya
+    {2287 · 1145 · 90 · 38} birebir aynı · süit 4267 · eval +0,0%
+
+Üç turun (V·W·X) **hiçbirinde** taban gerilemedi; `sessiz_yanlis` üç turdur **10**'da sabit.

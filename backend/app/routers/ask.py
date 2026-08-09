@@ -802,25 +802,51 @@ def _guvenli_kapsam_disi(soru: str, schema: dict):
 from app.islev_sozcukleri import _islev_sozcugu  # `§54` — liste modülde (bkz. `§56` borcu)
 
 
-def _resolve_period(prev: dict | None, cq: dict, period_expr, q_norm: str) -> tuple[dict, bool]:
+def _resolve_period(prev: dict | None, cq: dict, period_expr, q_norm: str,
+                    time_dim: str = "tarih") -> tuple[dict, bool]:
     """ADR-0008 K3: LLM tarih YAZMAZ; dönem sırasıyla period_expr → mesaj metni →
     önceki raporun dönemi'nden PYTHON'la çözülür. Açık ifade çözülemezse (True):
-    sistem tahmin etmez, sorar."""
+    sistem tahmin etmez, sorar.
+
+    🔴🔴 **`§X1` — «tarih» SABİT KODLUYDU ve bu, KODUN KENDİ ÖNGÖRDÜĞÜ kusurdu.**
+
+    Kardeş dalın (`:3600`) yorumu bugüne kadar şunu yazıyordu:
+
+        *"`_resolve_period` doğrudan çağrılMADI çünkü o «tarih» adını SABİT kodluyor;
+        zaman boyutu farklı adlı bir cube'da **var olmayan bir kolona filtre yazardı**."*
+
+    Kardeş dal kendini korudu, `§48` dalı **aynı fonksiyonu doğrudan çağırdı**.
+
+    ⊙ Ölçüldü (`X5`, Fransızca — *«Quelle machine a consommé le plus d'électricité **cette
+    année**?»*): cq **`enerji_makine`** küpüne çözüldü, dönem filtresi **`tarih`**'e
+    yazıldı — oysa o küpün zaman boyutu **`donem_tarih`**. Sonuç iki katmanlı:
+      1. filtre **yanlış kolona** yazıldı (küpün zaman ekseni süzülmedi),
+      2. dönem kapısı `donem_tarih`'te filtre bulamayıp *«hangi dönem için?»* dedi —
+         yani kullanıcı dönemi **söylemişti**, cevap **taşıyordu**, sistem yine sordu.
+
+    ⚠ Ve bu kusuru **kendi düzeltmem görünür kıldı**: `§W-A` `period_expr`'i oylamadan
+    sağ çıkarınca bu dal **daha sık** koşar oldu. *Bir yolu açmak, o yolun üstündeki
+    çukuru da devralmaktır.*
+
+    ⚠ Varsayılan `"tarih"` — çağıranların hepsi bayt bayt aynı kalır; yalnız küpünün
+    zaman boyutunu **bilen** çağıran onu geçer.
+    """
     from app import cube_router as cr
 
-    base = [f for f in cq.get("filters", []) if f.get("dimension") != "tarih"]
-    prev_dates = [f for f in (prev or {}).get("filters", []) if f.get("dimension") == "tarih"]
+    base = [f for f in cq.get("filters", []) if f.get("dimension") != time_dim]
+    prev_dates = [f for f in (prev or {}).get("filters", []) if f.get("dimension") == time_dim]
     expr_n = cr._norm(period_expr.strip()) if isinstance(period_expr, str) and period_expr.strip() else ""
     unresolved = False
     if expr_n:
         if cr.is_all_time(expr_n):
             dates: list = []
         else:
-            dates = cr.date_filters(expr_n, "tarih") or cr.date_filters(q_norm, "tarih")
+            dates = (cr.date_filters(expr_n, time_dim)
+                     or cr.date_filters(q_norm, time_dim))
             if not dates:
                 dates, unresolved = prev_dates, True
     else:
-        dates = cr.date_filters(q_norm, "tarih") or prev_dates
+        dates = cr.date_filters(q_norm, time_dim) or prev_dates
     out = dict(cq)
     allf = base + dates
     if allf:
@@ -2537,6 +2563,14 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # netleştirmeye gidiyor ve `order`+`limit`'i **taşıyor** — çünkü orada sayı boyut
         # adına bitişikti (`3 makine`). *Bir niyetin taşınması, cümledeki kelime sırasına
         # bağlı olmamalıdır.*
+        # 🔴 `§X5` — KAPI NEDEN ATEŞLEDİĞİNİ SÖYLEMİYORDU (`ADR-0020`: sessiz yutma yok).
+        # `X5`/`X19`'da cevap **dönem filtresini taşıyordu** ve kapı yine sordu; hangi
+        # zaman boyutuna bakıldığı ve elde ne olduğu **hiçbir yerde yazmıyordu**, dolayısıyla
+        # teşhis üç turda da tahmine kaldı. Bir kapının kararı, kararının **girdisiyle**
+        # birlikte loglanmazsa denetlenemez.
+        _log.info("dönem kapısı ATEŞLEDİ (%s): cube=%s zaman_boyutu=%s filtreler=%s "
+                  "period_optional=%s", trace_prefix, cq.get("cube"), time_dim,
+                  [f.get("dimension") for f in (cq.get("filters") or [])], period_optional)
         _siralama.tamamla(cq, body.question or "", cube_meta)
         _niyet_tasima.esik(cq, body.question or "")   # `§40` — aynı sınıf, ikinci parça
         return _finish(AskResponse(
@@ -2845,6 +2879,34 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         _log.warning("çapa değerleri okunamadı (best-effort)", exc_info=True)
     niyet = followup.sinifla(body.question, baglam_var=bool(is_followup),
                              capa_degerleri=_capa_degerleri)
+
+    # 🔴🔴 `§X4` — HESABI SORULACAK BİR RAPOR YOKSA, MERDİVENE HİÇ İNİLMEZ.
+    #
+    # Ölçüldü (`X3`): bağlamsız bir makbuz sorusu (*«bu kıyas hangi tarih aralığını
+    # kapsıyor»*) merdivenin sonuna kadar indi ve **Discovery'de 25 saniye yandı**, sonra
+    # *«zamanında güvenilir bir sorgu üretemedim»* dedi.
+    #
+    # ⊙ Discovery ham SQL üretir; oysa soru **veriye** değil **ekrandakine** dair. Hiçbir
+    # SQL *"ortada rapor var mı"* sorusunu cevaplayamaz — yani en pahalı basamak, en
+    # baştan **yanlış cinsten** bir basamaktı. Ve `§0.0`'a göre her Discovery ateşlemesi
+    # bir mutfak eksikliği raporudur; bu, raporlanacak bir eksiklik bile değildi.
+    #
+    # ⚠ Cevap **uydurmuyor**: yalnız kesin olarak bilinen bir olguyu söylüyor ve ne
+    # yapılabileceğini ekliyor (`D4`'ün proaktif sınır deseni). LLM yok, sorgu yok, 0 ms.
+    #
+    # *Bir soruyu cevaplamanın en ucuz yolu, bazen cevabın ortada olmadığını söylemektir.*
+    if niyet.kural == "makbuz-baglamsiz":
+        _log.info("makbuz: bağlam yok → merdivene inilmedi (§X4)")
+        return _finish(AskResponse(
+            question=body.question, source=None,
+            note="Bir sayının **nasıl hesaplandığını** soruyorsun ama ekranda henüz bir "
+                 "rapor yok — hesabını gösterebileceğim bir sonuç bulunmuyor.\n\n"
+                 "Önce bir soru sor (ör. *«bu yıl bölüm bazında elektrik tüketimi»*); "
+                 "cevabın altında **hangi ölçü · hangi formül · hangi tablo · hangi "
+                 "süzgeçler** kullanıldığını olduğu gibi gösterebilirim.",
+            trace=["Takip: MAKBUZ sorusu ama ortada rapor YOK → dürüst cevap "
+                   "(sorgu YOK, LLM YOK) — §X4"],
+        ))
 
     _eylem_karar = eylem.degerlendir(q_norm, body.cube_query, schema=schema)
     # 🔴 FAZ 5.1 — **6. TÜR: *"bunu takip et"***. `degerlendir()` bunu tanımaz (teslim
@@ -3571,9 +3633,21 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     # İkinci bir çözücü yazmak, aynı ifadenin iki farklı tarihe çözülmesi
                     # demekti. ⚠ Alan sorgudan **çıkarılır**: o bir niyet taşıyıcısıdır,
                     # bir sorgu alanı değil — `cube_sql` onu tanımaz.
+                    # 🔴 `§X1` — küpün **KENDİ** zaman boyutu geçilir. Sabit `"tarih"`,
+                    # `enerji_makine` (`donem_tarih`) gibi küplerde var olmayan bir kolona
+                    # filtre yazıyordu; kardeş dal bunu yorumunda **öngörmüş** ama bu dal
+                    # aynı fonksiyonu doğrudan çağırıyordu.
+                    # ⚠ Yorum `if`'in **üstünde**: `test_COZUCU_IKINCI_KEZ_YAZILMADI`
+                    # `period_expr` ile `_resolve_period` arasındaki dilimi okuyor ve
+                    # araya giren uzun bir yorum onu *"ikinci bir çözücü yazılmış"*
+                    # sanıyordu. *Bir kapının okuduğu pencereyi, açıklamayla doldurmak da
+                    # daraltır.*
                     if parsed and parsed.get("period_expr"):
+                        _pm = next((c for c in (schema.get("cubes") or [])
+                                    if c.get("name") == parsed.get("cube")), None)
+                        _ptd = ((_pm or {}).get("time_dimensions") or ["tarih"])[0]
                         _pe = parsed.pop("period_expr")
-                        parsed, _ = _resolve_period(None, parsed, _pe, q_norm)
+                        parsed, _ = _resolve_period(None, parsed, _pe, q_norm, _ptd)
                     # ⚠ `§51` — ŞÜPHELİ yolda garsonun sonucu **yalnız şüpheyi
                     # gideriyorsa** alınır. Almazsa route'un cevabı yerinde kalır: bir
                     # devir, elde olanı **kötüleştirmemelidir**.
