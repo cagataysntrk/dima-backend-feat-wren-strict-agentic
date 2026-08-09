@@ -156,12 +156,6 @@ class Settings(BaseSettings):
     # kesmek kapsamı düşürür. Ama sınırsız da olamaz.
     # ⚠ `requests`'in `timeout`'u **okuma başına**dır; toplam süreyi ancak çağıran sınırlar.
     intent_azami_saniye: float = 20.0
-    #: 🔴 `O-16` — garsonun çıktısı bir **plan** olduğunda bütçe. Ölçüldü (canlı `III3`):
-    #: geçerli bir 5 adımlık plan **41. saniyede** geldi ve 20 sn'lik bütçe onu attı;
-    #: tur yine **62 sn** sürdü çünkü aşım turu bitirmiyor, yalnız işi tekrarlatıyor.
-    #: Tavan ölçülen değerin (41) hemen üstünde: pay bırakmak gecikmeyi ödemek değil,
-    #: **ödenmiş bir işi teslim almaktır**.
-    plan_azami_saniye: float = 45.0
 
     #: 🔴 `§55` — **Discovery'nin duvar-saati bütçesi.** En güvenmediğimiz basamak
     #: (`§0.0`: *"yan dükkândan sipariş"*) en uzun bekleten basamaktı: ölçüldü 63.526 ms.

@@ -212,40 +212,46 @@ def test_DOLU_HUCRE_VARSA_UYARI_YAZILMAZ():
     assert not all(v is None for r in _rows for v in r.values())
 
 
-def test_BUTCE_CIKTININ_SEKLINE_GORE():
-    """🔴🔴 `O-16` — bütçe **tek bir `CubeQuery`** için kalibre edilmişti.
+def test_O16_GERI_ALINDI_VE_KAYDI_DURUYOR():
+    """⟳ `O-16` denendi, **canlıda ölçüldü ve ÇÜRÜTÜLDÜ**, geri alındı.
 
-    Ölçüldü (canlı `III3`, log damgalarıyla): üç oyun üçü de 20 sn'yi aştı, oylar
-    atıldı, tüketici kendi planını üretti (28 sn), o da düştü, **Discovery** koştu.
-    Ve geçerli bir 5 adımlık plan **41. saniyede** geldi — üretilmiş, bedeli ödenmiş,
-    kimse dinlemiyordu. Tur **62 sn** sürdü.
+    Hipotez: *"bütçe (20 sn) tek bir `CubeQuery` için kalibre; plan daha uzun, o yüzden
+    aşıyor."* `45 sn`'ye çıkarıldı ve canlıda ölçüldü (`III7`):
 
-    ⚠ Bütçeyi büyütmek gecikmeyi artırmaz **azaltır**: aşım turu bitirmiyor, yalnız
-    aynı işi baştan yaptırıyor. *Bir zaman aşımı görevi iptal etmez.*
-    """
-    from app.config import get_settings
+        20:44:13 istek · 20:44:58 üç oyun ÜÇÜ DE 45 sn'yi de aştı
+        20:45:23 geç bir oy 5 adımlık planı SAKLADI  ← cevap BUNDAN çıktı
+        20:46:05 cevap · **111.870 ms**
 
-    s = get_settings()
-    assert getattr(s, "plan_azami_saniye", 0) > getattr(s, "intent_azami_saniye", 0), \
-        "plan bütçesi tek-sorgu bütçesinden BÜYÜK olmalı — çıktı daha uzun"
-    assert s.plan_azami_saniye >= 41, \
-        "ölçülen en uzun meşru plan üretimi 41 sn — tavan onun ALTINDA olamaz"
+    İki şey birden yanlış çıktı: oylar plan uzun olduğu için değil, **üç eşzamanlı
+    uzun-çıktı çağrısı sağlayıcıda kuyruğa girdiği** için aşıyor; ve `III7`'yi düzelten
+    şey bütçe değil `O-15/Y` geç-plan kurtarmasıydı. Yükseltme **25 sn saf bekleme**,
+    sıfır doğruluk.
 
-
-def test_PLAN_BUTCESI_YALNIZ_GARSON_ICIN():
-    """⚠ `KURAL B` — orkestratör devrede değilken bütçe **bayt bayt bugünkü**.
-
-    Kapı kaynağı okur: yükseltme `isinstance(llm, PlanGarsonu)` koşuluna bağlı olmalı,
-    koşulsuz bir atama olmamalı. *Bir bütçeyi koşulsuz büyütmek, onu her yol için
-    büyütmektir — ve ölçülmemiş bir yol için büyütülen bütçe bir gerileme riskidir.*
+    Kapı iki şeyi birden korur: ayar **geri alınmış** olmalı **ve** çürütmenin kaydı
+    kaynakta **durmalı**. *Çürütülmüş bir hipotezi silmek, bir sonraki turun onu
+    yeniden satın almasına izin vermektir.*
     """
     import inspect
 
+    from app.config import Settings
     from app.routers import ask as _ask
 
-    src = inspect.getsource(_ask._select_consistent)
-    assert "plan_azami_saniye" in src
-    _i = src.index("plan_azami_saniye")
-    _once = src[:_i]
-    assert "PlanGarsonu" in _once, \
-        "plan bütçesi garson koşuluna bağlı DEĞİL — bayrak kapalıyken de büyürdü"
+    assert not hasattr(Settings(), "plan_azami_saniye"), "ayar geri alınmadı"
+    assert "`O-16` DENENDİ" in inspect.getsource(_ask._select_consistent), \
+        "çürütmenin kaydı kaynaktan silinmiş"
+
+
+def test_GEC_PLAN_KULLANIM_ANINDA_OKUNUR():
+    """🔴 `O-15/Y` — `III7`'yi gerçekten düzelten kapı.
+
+    Kaynak okunur: hazır plan **karar anında** okunmalı, fonksiyon başında okunup
+    saklanmamalı. Ölçüldü: saklama, tüketici başladıktan **2 sn sonra** oldu.
+    """
+    import inspect
+
+    from app import plan_tuketici
+
+    src = inspect.getsource(plan_tuketici.cevap)
+    _i = src.index("plan_garson.plan_uret(")
+    assert "plan_taslagi" in src[max(0, _i - 400):_i], \
+        "hazır plan `plan_uret` çağrısının HEMEN önünde okunmuyor — yarış geri geldi"

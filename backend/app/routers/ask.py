@@ -1103,28 +1103,29 @@ def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
     #
     # *Bir bütçeyi yalnız bir basamağa koymak, ötekini sınırsız ilan etmektir.*
     _intent_azami = float(getattr(get_settings(), "intent_azami_saniye", 20.0) or 20.0)
-    # 🔴🔴 `O-16` — **BÜTÇE ÇIKTININ ŞEKLİNE GÖRE ÖLÇÜLÜR.** `20 sn` tek bir
-    # `CubeQuery` için kalibre edilmişti; garsonun çıktısı bir **plan** olduğunda aynı
-    # sayı bir tavan değil bir **bıçak** oldu.
+    # ⟳🔴 **`O-16` DENENDİ, ÖLÇÜLDÜ, GERİ ALINDI — ve kaydı BURADA kalıyor.**
     #
-    # ⊙ Ölçüldü (canlı `III3`, log damgalarıyla): üç oyun **üçü de** 20 sn'yi aştı →
-    # oylar atıldı → tüketici kendi planını üretti (28 sn) → o da düştü → **Discovery**.
-    # Ve geçerli bir 5 adımlık plan (`SORGU·BAGLA·SUZ·KIR·SORGU`) **41. saniyede** geldi:
-    # üretilmişti, bedeli ödenmişti, kimse dinlemiyordu. Turun toplamı **62 sn**.
+    # Hipotez: *"bütçe (20 sn) tek bir `CubeQuery` için kalibre; plan daha uzun, o yüzden
+    # aşıyor."* Bütçe `45 sn`'ye çıkarıldı ve **canlıda ölçüldü** (`III7`):
     #
-    # ⚠ Bütçeyi büyütmek burada gecikmeyi **artırmaz, azaltır**: bugünkü hâlde aşım
-    # turu bitirmiyor — yalnız işi çöpe atıp aynı işi baştan yaptırıyor. 62 sn + uydurma
-    # riski yerine ~41 sn + küp güvencesi.
+    #     20:44:13 istek · 20:44:58 üç oyun ÜÇÜ DE 45 sn'yi de aştı
+    #     20:45:00 geç bir oy 4 adımlık planı SAKLADI   ← tüketici çoktan başlamıştı
+    #     20:45:23 geç bir oy 5 adımlık planı SAKLADI   ← cevap BUNDAN çıktı
+    #     20:46:05 cevap · **111.870 ms**
     #
-    # *Bir zaman aşımı görevi iptal etmez; yalnız onu dinlemeyi bırakır. Ve dinlenmeyen
-    # bir görev, ödenmiş ama teslim alınmamış bir iştir.*
-    try:
-        from app import plan_garson as _pg_b
-        if isinstance(llm, _pg_b.PlanGarsonu):
-            _intent_azami = float(
-                getattr(get_settings(), "plan_azami_saniye", 45.0) or 45.0)
-    except Exception:                                  # noqa: BLE001 — bütçe turu düşürmez
-        pass
+    # ⊙ İki şey birden yanlış çıktı:
+    #   1. Oylar **plan uzun olduğu için** aşmıyor — üç eşzamanlı uzun-çıktı çağrısı
+    #      sağlayıcıda kuyruğa giriyor. 45 sn de yetmedi, 60 da yetmezdi.
+    #   2. `III7`'yi düzelten şey bütçe **değildi**: `O-15/Y` geç-plan kurtarması. Yani
+    #      yükseltme **25 sn saf bekleme** ekledi ve **hiçbir** doğruluk kazandırmadı.
+    #
+    # 🔴 Asıl kök başka ve yazılı kalsın: çok adımlı bir soruda `k=3` oylama **yapısal
+    # olarak boşa gider** — `sarmala()` çok adımlı planda `"{}"` döndürür ve `R1` gereği
+    # çok adımlı planın kanonik biçimi **yoktur**, yani oylanamaz. Üç pahalı üretim,
+    # sonucu atılmak üzere yapılıyor.
+    #
+    # *Bir hipotezi ölçüp çürütmek bir kayıp değildir; çürütülmüş hipotezi silmek
+    # kayıptır — çünkü o zaman bir sonraki tur aynı hipotezi yeniden satın alır.*
     # 🔴 **BÜTÇE BİR SON TARİHTİR, OY BAŞINA PAY DEĞİL — canlı ölçüm çürüttü.**
     #
     # İlk yazım her oy için ayrı `result(timeout=azami)` çağırıyordu ve her çağrı **kendi

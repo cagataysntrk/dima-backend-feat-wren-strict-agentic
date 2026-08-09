@@ -366,7 +366,11 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     # 🔴 `O-14` — garson zaten bir plan ürettiyse **ikinci kez sorma**. `request.state`
     # okunuyor çünkü bu kancaya yukarıdaki HER yoldan gelinir ve çağıranın yereli
     # garantili değil (`EE19`'un `UnboundLocalError` dersi).
-    plan = _hazir or plan_garson.plan_uret(llm, soru, catalog, index)
+    # ⚠ `_hazir` fonksiyon başında da okundu (log satırı için) ama **karar burada
+    # verilir**: arada `metin_ve_indeks` koşuyor ve o sırada geç bir oy planı saklamış
+    # olabilir. Ölçüldü (`III7`): saklama tüketici başladıktan **2 sn sonra** oldu.
+    plan = (getattr(getattr(request, "state", None), "plan_taslagi", None)
+            or plan_garson.plan_uret(llm, soru, catalog, index))
     # 🔴 `O-15/Y` — **GEÇ GELEN PLAN ARTIK KAYBOLMUYOR.** Ölçüldü (canlı `II10`,
     # loglarla): garson `19:42:31`'de geçerli bir **4 adımlık** plan üretip sakladı
     # (`SORGU·BAGLA·SUZ·ANLAT`) — ama bu fonksiyon hazır planı `19:42:23`'te, yani

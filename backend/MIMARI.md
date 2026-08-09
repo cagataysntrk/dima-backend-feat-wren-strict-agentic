@@ -279,20 +279,36 @@ eksikliği değil bir **yetenek** eksikliğidir; plan da yapamaz. *Bir sınırı
 ancak arkasında onu aşabilecek bir basamak varsa doğrudur; yoksa erteleme, reddi
 geciktirmekten başka bir şey değildir.*
 
-#### ⟳ 2.0.4 · BÜTÇE ÇIKTININ ŞEKLİNE GÖRE — `O-16`
+#### ⟳🔴 2.0.4 · `O-16` — BİR HİPOTEZ, ÖLÇÜLDÜ VE **ÇÜRÜTÜLDÜ**
 
-⊙ Ölçüldü (canlı `III3`, log damgalarıyla): `intent_azami_saniye = 20` tek bir
-`CubeQuery` için kalibre edilmişti. Garsonun çıktısı bir **plan** olduğunda aynı sayı
-bir tavan değil bir **bıçak** oldu: üç oyun **üçü de** aştı → oylar atıldı → tüketici
-kendi planını üretti (28 sn) → o da düştü → **Discovery** koştu. Ve geçerli bir 5
-adımlık plan (`SORGU·BAGLA·SUZ·KIR·SORGU`) **41. saniyede** geldi — üretilmiş, bedeli
-ödenmiş, kimse dinlemiyordu. Turun toplamı **62 sn**.
+Hipotez: *"`intent_azami_saniye = 20` tek bir `CubeQuery` için kalibre edilmişti;
+garsonun çıktısı bir **plan** olduğunda dar kalıyor."* Bütçe `45 sn`'ye çıkarıldı ve
+canlıda ölçüldü (`III7`, log damgalarıyla):
 
-⚠ Bütçeyi büyütmek burada gecikmeyi **artırmaz, azaltır**: aşım turu bitirmiyor, yalnız
-aynı işi baştan yaptırıyor. 62 sn + Discovery yerine ~41 sn + küp güvencesi.
+```
+20:44:13 istek
+20:44:58 üç oyun ÜÇÜ DE 45 sn'yi DE aştı          ← hipotez burada öldü
+20:45:00 geç bir oy 4 adımlık planı SAKLADI
+20:45:23 geç bir oy 5 adımlık planı SAKLADI       ← cevap BUNDAN çıktı
+20:46:05 cevap · 111.870 ms
+```
 
-*Bir zaman aşımı görevi iptal etmez; yalnız onu dinlemeyi bırakır. Ve dinlenmeyen bir
-görev, ödenmiş ama teslim alınmamış bir iştir.*
+İki şey birden yanlış çıktı:
+
+1. Oylar **plan uzun olduğu için** aşmıyor — üç eşzamanlı uzun-çıktı çağrısı
+   sağlayıcıda **kuyruğa giriyor**. 45 sn de yetmedi; 60 da yetmezdi.
+2. `III7`'yi düzelten şey bütçe **değildi**: `O-15/Y` **geç-plan kurtarması**. Yani
+   yükseltme **25 sn saf bekleme** ekledi ve sıfır doğruluk kazandırdı.
+
+**Geri alındı.** Ama kayıt duruyor — kaynakta (`_select_consistent`) ve kapıda
+(`test_O16_GERI_ALINDI_VE_KAYDI_DURUYOR`). *Bir hipotezi ölçüp çürütmek bir kayıp
+değildir; çürütülmüş hipotezi silmek kayıptır — çünkü o zaman bir sonraki tur aynı
+hipotezi yeniden satın alır.*
+
+🔴 **Ve asıl kök yazılı kalsın:** çok adımlı bir soruda `k=3` oylama **yapısal olarak
+boşa gider** — `sarmala()` çok adımlı planda `"{}"` döndürür ve `R1` gereği çok adımlı
+planın **kanonik biçimi yoktur**, yani oylanamaz. Üç pahalı üretim, sonucu atılmak
+üzere yapılıyor. Gerçek kazanç oradadır ve **henüz alınmadı** (açık borç).
 
 #### Değişmezler — orkestratöre özel
 
@@ -309,7 +325,7 @@ görev, ödenmiş ama teslim alınmamış bir iştir.*
 | **O9** | Onarım **sessiz olamaz** — her mekanik düzeltme ize bir beyan yazar | `plan_onarim.onar()` |
 | **O10** | `period_expr` motora **gitmez**, çözülür — ve çözücü `ask()` ile **aynıdır** | `_resolve_period` |
 | **O11** | Geç gelen bir plan **atılmaz**: kullanım anında yeniden okunur (zaman aşımı görevi iptal etmez) | `plan_tuketici.cevap()` |
-| **O12** | Oy **bütçesi çıktının şekline göre** ölçülür — plan ≠ tek `CubeQuery` (`45 sn` ↔ `20 sn`) | `plan_azami_saniye` |
+| **O12** | ⟳ *(boş — `O-16` denendi ve **çürütüldü**; gerekçe §2.0.4'te durur)* | — |
 
 #### Kabul ölçütü: A/B değil **DENKLİK**
 
