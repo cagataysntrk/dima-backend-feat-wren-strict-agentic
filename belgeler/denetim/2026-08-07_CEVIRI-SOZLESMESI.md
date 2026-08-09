@@ -6814,3 +6814,71 @@ sanmıştı. Yorum `if`'in üstüne alındı.
     {2287 · 1145 · 90 · 38} birebir aynı · süit 4267 · eval +0,0%
 
 Üç turun (V·W·X) **hiçbirinde** taban gerilemedi; `sessiz_yanlis` üç turdur **10**'da sabit.
+
+---
+
+## §105 · Y TURU — 20 özgün senaryo · **EN İYİ TUR**
+
+| # | senaryo | sonuç |
+|---|---|---|
+| Y1 | hat bazında ilk seferde tamam oranı | 🟢 + eş-adlılık beyanı |
+| Y2 | ↳ *bu oranın **payı ve paydası** ne* | 🟢🟢 **`ROUND(SUM(ilk_seferde_tamam)*100.0/NULLIF(SUM(parti_sayisi)…))`** |
+| Y3 | ↳ en düşük hattın makineleri | 🟢 deterministik |
+| Y4 | bölüm bazında **bakım maliyeti** | 🔴 `ik.toplam_isveren_maliyeti` (personel maliyeti) |
+| Y5 | + her bölümün toplam içindeki payı | 🔴 konu daraltma |
+| Y6 | arıza başına ortalama tamir süresi (MTTR) | 🔴 konu daraltma |
+| Y7 | hangi kumaşta rework ek süresi en yüksek | 🟢 |
+| Y8 | vardiya bazında fire oranı + parti sayısı | 🟢 |
+| Y9 | [IT] consumo di gas naturale per reparto | 🟢🟢 `enerji_makine` — **dönem çözüldü (§X1)** |
+| Y10 | ilk çeyrekte müşteri bazında satılan kg | 🔴 netleştirme, chip yok |
+| Y11 | aylık ciro trendi çizgi grafik | 🟢 **LLM'siz** |
+| Y12 | en çok şikayet alan 5 müşteri | 🟢 |
+| Y13 | ↳ çözüm sürelerini ekle, en yavaştan sırala | 🟢🟢 iki ölçü + doğru yön |
+| Y14 | ↳ *bu sıralama neye göre yapıldı* | 🟢🟢 iki ölçünün SQL'i — **ve bir kusur gösterdi** |
+| Y15 | departman bazında eğitim saati | 🟢 **LLM'siz** |
+| Y16 | son 3 ayda en çok elektrik harcayan makine | 🟢🟢 + eş-adlılık beyanı |
+| Y17 | renk derinliğine göre ort. dE + tolerans aşımı | 🟢🟢 |
+| Y18 | her ay için en çok fire veren kısım | ◐ 30 satır (grup-içi sıra yerine çapraz kırılım) |
+| Y19 | [PT] consumo de energia por setor este ano | 🟢🟢 **dönem çözüldü** |
+| Y20 | en çok iade alan 3 müşteri | 🟢 |
+
+**Skor:** 15 🟢 · 1 ◐ · 4 🔴 · **Discovery ateşlemesi: 0**
+*(V: 10/3/7 · W: 12/2/6 · X: 10/3/7 → **Y: 15/1/4**. Düzeltmeler birikiyor.)*
+
+### 🔴🔴 §Y1 — MAKBUZ, KENDİ FİLTRESİ HAKKINDA YANLIŞ KONUŞUYORDU
+
+`Y14` (canlı, `sikayet` küpü, filtre `acilis_tarihi` **gte** `2026-01-01`):
+
+    "…ölçüsünün **acilis_tarihi = 2026-01-01** olan müşteri bazında kırılımıdır"
+
+⊙ İki kusur, tek kök: zaman boyutu adları **sabit kodluydu** (`tarih`·`donem`·`dönem`) →
+`acilis_tarihi` tarih dalına hiç girmedi; ve yakalanmayan her operatör `else` dalında
+**`=`** diye yazıldı. Yani `gte` bir **eşitlik** gibi sunuldu: rapor *"1 Ocak'tan
+itibaren"*i kapsıyordu, makbuz *"yalnız 1 Ocak"* dedi.
+
+🔴 Bu, `§V1`'in var olma sebebini doğrudan çürütür: bir makbuzun **tek işi** eldeki
+sayının kapsamını doğru söylemektir. ⊙ Ve sabit ad listesi `§X1`'in birebir kardeşi —
+aynı depoda, aynı hafta, **ikinci kez**; çözüm de aynı: **küpün kendi beyanı** okunur.
+Sondaj 4/4 (`gte`→*"tarihinden itibaren"* · `neq`→`≠` · `not_in`→*"OLMAYAN"*).
+
+*Bir makbuzun yanılması, sayının yanılmasından daha sinsidir: sayı sorgulanır, makbuz
+güvenilir.*
+
+### §105.1 · Y KAPISI YEŞİL — ve dört turun eğrisi
+
+    korpus %94.9 (taban %94.4) ✅ · sessiz_yanlis 10 (dört turdur SABİT) ·
+    gerçek-dünya {2287 · 1145 · 90 · 38} birebir aynı · süit 4268 · eval +0,0%
+
+| tur | 🟢 | ◐ | 🔴 | Discovery |
+|---|---|---|---|---|
+| V | 10 | 3 | 7 | 0 |
+| W | 12 | 2 | 6 | 0 |
+| X | 10 | 3 | 7 | 1 |
+| **Y** | **15** | **1** | **4** | **0** |
+
+⊙ **Dokuz dil denendi** (TR·EN·DE·AR·FR·ES·RU·IT·PT) ve garson eksenine **hiç Türkçe
+öğretilmeden** altısı doğru cevaplandı — `§72`'nin ölçüm aleti olarak işlevi tam olarak bu.
+
+⊙ Kalan üç kırmızının **üçü de aynı sınıf**: mutfakta o ölçü **yok**, sistem en yakınını
+veriyor (`Y4` bakım maliyeti → İK maliyeti · `Y6` MTTR · `Y5`). Bu `§W-D`'nin sınıfıdır ve
+gerekçesiyle **ertelenmiş** durumda — `§101.1`.

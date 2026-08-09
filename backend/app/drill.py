@@ -49,23 +49,56 @@ def formula_explanation(cube_query: dict, cube_meta: dict | None) -> str:
 
     measure_txt = ", ".join(m_disp.get(m) or m for m in measures) or "değer"
 
+    # 🔴🔴 **`§Y1` — MAKBUZ, KENDİ FİLTRESİ HAKKINDA YANLIŞ KONUŞUYORDU.**
+    #
+    # Ölçüldü (`Y14`, canlı — `sikayet` küpü, filtre `acilis_tarihi **gte** 2026-01-01`):
+    #
+    #     "…ölçüsünün **acilis_tarihi = 2026-01-01** olan müşteri bazında kırılımıdır"
+    #
+    # ⊙ İki ayrı kusur, tek kök: (1) zaman boyutu adları **sabit kodluydu** (`tarih` ·
+    # `donem` · `dönem`) — `acilis_tarihi` listede olmadığı için tarih dalına hiç
+    # girmedi; (2) yakalanmayan her operatör `else` dalında **`=`** diye yazılıyordu.
+    # Yani `gte` bir **eşitlik** gibi sunuldu: rapor *"1 Ocak'tan itibaren"*i kapsıyordu,
+    # makbuz *"yalnız 1 Ocak"* dedi.
+    #
+    # 🔴 Bu, `§V1`'in var olma sebebini doğrudan çürütür: bir makbuzun tek işi **eldeki
+    # sayının kapsamını doğru söylemek**tir. Yanlış konuşan bir makbuz, olmayan bir
+    # makbuzdan **kötüdür** — çünkü doğrulanmış gibi görünür.
+    #
+    # ⊙ Sabit ad listesi `§X1`'in birebir kardeşi (`_resolve_period`'ün sabit `"tarih"`i):
+    # aynı depoda, aynı hafta, **ikinci kez** — bu yüzden burada da çözüm aynı: **küpün
+    # kendi beyanı** okunur.
+    #
+    # *Bir makbuzun yanılması, sayının yanılmasından daha sinsidir: sayı sorgulanır,
+    # makbuz güvenilir.*
+    _zaman = set((cube_meta or {}).get("time_dimensions") or ()) | {"tarih", "donem", "dönem"}
+    _OP_SOZ = {"eq": "=", "neq": "≠", "gt": ">", "gte": "≥", "lt": "<", "lte": "≤",
+               "contains": "içeren", "starts_with": "ile başlayan"}
     scope_bits: list[str] = []
     for f in filters:
         dim = f.get("dimension")
         label = d_labels.get(dim) or dim
         op = f.get("operator", "eq")
         val = f.get("value")
-        if dim in ("tarih", "donem", "dönem"):
+        if dim in _zaman:
             if op == "gte":
                 scope_bits.append(f"{val} tarihinden itibaren")
+            elif op == "lte":
+                scope_bits.append(f"{val} tarihine kadar")
             elif op == "between" and isinstance(val, (list, tuple)) and len(val) == 2:
                 scope_bits.append(f"{val[0]} – {val[1]} aralığında")
             else:
                 scope_bits.append(f"{val} tarihli")
         elif op == "in" and isinstance(val, list):
             scope_bits.append(f"{label} değeri {', '.join(str(v) for v in val)} olan")
+        elif op == "not_in" and isinstance(val, list):
+            scope_bits.append(f"{label} değeri {', '.join(str(v) for v in val)} OLMAYAN")
+        elif op in ("is_null", "is_not_null"):
+            scope_bits.append(f"{label} {'boş' if op == 'is_null' else 'dolu'} olan")
         else:
-            scope_bits.append(f"{label} = {val} olan")
+            # ⚠ Operatör **olduğu gibi** yazılır; tanınmayan bir operatörü `=` diye
+            # sunmak, makbuzun tek işini yapmamaktır.
+            scope_bits.append(f"{label} {_OP_SOZ.get(op, op)} {val} olan")
     for td in time_dims:
         gran = td.get("granularity")
         if gran:
