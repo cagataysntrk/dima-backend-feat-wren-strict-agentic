@@ -73,12 +73,16 @@ def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = 
     return out
 
 
-def cevap(garson: Any, *, service: Any, schema: dict,
-          limit: int | None = None) -> dict | None:
+def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any = None,
+          principal: Any = None, limit: int | None = None) -> dict | None:
     """🔴 **BOŞLUĞUN TEK KAPISI** — `ask()` bundan başka bir şey bilmez.
 
-    `None` döner ve **hiçbir şey yapmaz** eğer: garson sarmalanmadıysa (bayrak kapalı),
-    ya da çok adımlı bir plan üretilmediyse. Yani `KURAL B` bu tarafta da tek satırdır.
+    `None` döner ve **hiçbir şey yapmaz** eğer: bayrak kapalıysa, sağlayıcı plan
+    kuramıyorsa, ya da kullanılabilir bir plan çıkmadıysa.
+
+    🔴 **Buraya YALNIZ boşlukta gelinir** ve LLM çağrısı **burada** yapılır — yani
+    cevaplanan hiçbir soruya bir çağrı eklenmez. Ölçüm bu yerleşimi zorunlu kıldı:
+    `select_cube`'un yerine geçtiğinde arıza oranı %55 → %65'e **çıkmıştı**.
 
     ⚠ `index` ve `cube_meta` **burada** türetilir, çağırandan alınmaz: `ask()`in o
     noktasında ikisi de garantili değil ve *"belki tanımlıdır"* diye bir değişken okumak,
@@ -87,13 +91,28 @@ def cevap(garson: Any, *, service: Any, schema: dict,
     Döner: `{source, note, iz, result?, cube_query?}` — `ask()` bunu doğrudan bir
     `AskResponse`'a çevirir, karar vermez.
     """
-    plan = getattr(garson, "cok_adimli_plan", lambda: None)()
-    if not plan:
+    from app import plan_garson
+
+    # 🔴 Sağlayıcı **uygulamanın durumundan** okunur, çağıranın yerelinden değil. Ölçüldü
+    # (`EE19`, canlı): `llm_probe` yalnız garson dalında bağlanıyor; deterministik yoldan
+    # gelindiğinde `UnboundLocalError` — ve bu bayrak KAPALIYKEN de patlıyordu, çünkü
+    # argüman çağrıdan **önce** değerlendirilir. ⚠ `ruff F821` bunu göremez: ad bir yerde
+    # atanmış, yalnız **o yoldan gelinince** atanmamış oluyor. *Koşullu bağlanan bir ad,
+    # tanımsız bir addan daha sinsidir: statik olarak var, çalışırken yok.*
+    llm = getattr(getattr(getattr(request, "app", None), "state", None), "llm", None)
+    if not (soru and llm is not None and plan_garson.acik_mi(settings, principal, llm)):
         return None
-    _n = len(plan.get("adimlar") or [])
     try:
         from app.katalog_metni import metin_ve_indeks
-        _, index = metin_ve_indeks(schema, None)
+        catalog, index = metin_ve_indeks(schema, principal)
+    except Exception:
+        _log.warning("katalog kurulamadı → boşluk kapanmadı", exc_info=True)
+        return None
+    plan = plan_garson.plan_uret(llm, soru, catalog, index)
+    if not plan:
+        return None
+    _n = len(plan["adimlar"])
+    try:
         _lower: set[str] = set()
         for c in (schema.get("cubes") or []):
             _lower |= set(c.get("lower_is_better") or [])

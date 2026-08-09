@@ -7583,3 +7583,54 @@ bayatlaması** demekti.
 ⚠ `KURAL B`: hiçbir yol bu şemayı **bugün okumuyor** — davranış bayt bayt bugünkü.
 
 *Bir sözleşmeyi bağlamadan önce sınamak, iki kusuru birbirine karıştırmamanın tek yoludur.*
+
+---
+
+## `EE` TURU — ORKESTRATÖR CANLI DOĞRULAMA + A/B *(2026-08-09, 20 özgün senaryo)*
+
+Bu tur öncekilerden **bir bakımdan farklı**: senaryolar iki kez koşuldu (bayrak kapalı /
+açık) ve tur bir **karar** üretti, yalnız bir kusur listesi değil. Ölçüm kayıtları
+`backend/lab/olcumler/orkestrator_ab.md` ve `…/menu.md`'de.
+
+### Turun ürettiği KENDİ kusurlarım — üçü de canlıda, hiçbiri testte
+
+| # | kusur | nasıl görünmedi |
+|---|---|---|
+| 1 | `_plan_tuketici` **import edilmemişti** | `import app.routers.ask` başarılı; `NameError` yalnız o fonksiyon koşunca |
+| 2 | `trace` o kapsamda **yok** | elle yazdığım AST kapısı modül geneline bakıyordu, **kapsama** değil |
+| 3 | `llm_probe` **koşullu bağlı** | `ruff F821` göremez: ad bir yerde atanmış, yalnız **o yoldan** gelinince atanmamış |
+
+🔴 Üçü de **bayrak KAPALIYKEN** patlıyordu: argümanlar çağrıdan **önce** değerlendirilir,
+yani `KURAL B` bir mantık hatasıyla değil bir **isim** hatasıyla çiğnendi. Ders:
+*bir kancayı yukarıdaki HER yoldan gelinen bir noktaya koyuyorsan, yalnız **her zaman
+bağlı** olanı okuyabilirsin.*
+
+### Ve aramadığım bir yerde bulunan kusur
+
+`ruff F821` tabanı ölçülürken **`/ask/upload` her istekte 500 dönüyordu**
+(`_MAX_UPLOAD` hiç import edilmemiş). Canlı `curl` ile doğrulandı, düzeltildi, yine
+`curl` ile onaylandı (2 satırlık CSV → kolonlar tiplendi, öneriler üretildi).
+⊙ Deponun kendi yazılı dersinin tekrarı: *"bir HTTP ucu bir demet boyunca kırıktı ve
+kimse görmedi."*
+
+### Ürün kusurları — sınıflarıyla
+
+| # | senaryo | gözlem | sınıf |
+|---|---|---|---|
+| `EE15` | *«bakım maliyetlerini yüksekten düşüğe sırala»* | `ik` / *«toplam işveren maliyeti»* — sonra `maliyet` / *«ort birim maliyet»* | 🔴 **yanlış konu** (`G2`) |
+| `EE14` | *«geçen yılın aynı dönemine göre ciromuz büyüdü mü»* | tek toplam; *«büyüdü mü»* karşılanmadı | 🔴 `TREND` temsili yok |
+| `EE19` | *«ocak ile haziranın fire miktarını kıyasla»* | *«iki dönemi kıyaslamanı istedin ama tek toplam»* | 🔴 `cok_donem` (kayıtlı) |
+| `EE18` | *«en çok duruş yaşayan makineyi bul ve ortalamaya göre ne kadar kötü»* | konu daraldı, ölçü seçilemedi | 🟡 çok adımlı |
+| `EE17` | *«stok devir hızımız kaç»* | Discovery `1435.5` ve `10.09` — **iki koşumda iki farklı sayı** | 🔴 mutfak eksiği |
+| `EE20` | *«özetle bu yıl işler nasıl gidiyor»* | üç koşumda `parti` · `oee` · *«hangisini istiyorsun»* | ⚠ kararsızlık |
+
+⊙ `EE17`'nin iki farklı sayısı, Discovery'nin neden bir **arıza raporu** sayıldığının en
+temiz kanıtı: aynı soru, aynı veri, **iki farklı cevap** — ve ikisi de rozetsiz.
+
+### Doğru çalışan, kayda değer
+
+* `EE8`/`EE9` — takip zinciri kusursuz: *«çizgi grafikte göster»* **yeni SQL üretmeden**
+  `viz.kind=line`, ardından *«nasıl hesaplandı»* → **fiş okundu, LLM yok, sorgu yok**.
+* `EE13` (İngilizce) — `surdurulebilirlik.toplam_enerji_tl`, geçen çeyrek. Garson çevirdi.
+* `EE6` — *«hiç iş kazası oldu mu»* → `{kaza_adedi: 0}`; ve boş aralıkta veri sınırını
+  dürüstçe söylüyor.

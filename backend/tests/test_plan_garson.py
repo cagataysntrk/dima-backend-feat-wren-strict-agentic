@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 
-from app.plan_garson import PlanGarsonu, sarmala
+from app.plan_garson import acik_mi, plan_uret
 
 CQ = {"cube": "oee", "measures": ["ort_oee"]}
 
@@ -32,47 +32,41 @@ class _Sahte:
         return json.dumps(CQ)
 
 
+IDX = {"oee": {"measures": ["ort_oee"], "dimensions": ["makine"]}}
+
+
 def _g(yanit):
     ic = _Sahte(yanit)
-    return PlanGarsonu(ic, {"oee": {"measures": ["ort_oee"], "dimensions": ["makine"]}}), ic
+    return ic, (lambda: plan_uret(ic, "q", "kat", IDX))
 
 
-def test_TEK_ADIMLI_PLAN_BUGUNKU_CEVAPLA_DENK():
-    """🔴🔴 `E6`'nın yarısı burada siliniyor — basit soruda çıktı **bire bir** aynı."""
-    g, ic = _g(json.dumps({"adimlar": [{"fiil": "SORGU", "cube_query": CQ}]}))
-    assert json.loads(g.select_cube("q", "kat")) == CQ
-    assert g.planlar == [], "tek adımlı plan saklanmamalı — o zaten CubeQuery olarak döndü"
+def test_PLAN_SELECT_CUBE_ILE_YARISMAZ():
+    """🔴🔴 **ÖLÇÜMÜN ZORUNLU KILDIĞI YERLEŞİM.** Plan `select_cube`'un yerine geçtiğinde
+    `EE` turunun A/B'si arıza oranını **%55 → %65** ölçtü (+10 puan).
 
+    ⊙ Mekanizma: `_select_consistent` `k` örneği **aynı** süreçten çeker ve oylar. Plan
+    araya girince örneklerin bir kısmı plandan, bir kısmı `select_cube` yedeğinden
+    geliyordu. *Bir oylamanın geçerliliği örneklerin özdeşliğine dayanır.*
 
-def test_LLM_TURU_ARTMIYOR():
-    """🔴 Planlayıcı `select_cube`'un **YERİNE** geçer, yanına değil.
-
-    *Bir yeteneği eklemenin en sessiz bedeli, her soruya bir çağrı daha eklemektir —
-    ve o bedel ancak sayılırsa görünür.*
+    Bu kapı yerleşimi kilitler: plan üretimi `select_cube`'u **hiç çağırmaz**.
     """
-    g, ic = _g(json.dumps({"adimlar": [{"fiil": "SORGU", "cube_query": CQ}]}))
-    g.select_cube("q", "kat")
-    assert (ic.sayac["plan"], ic.sayac["cube"]) == (1, 0), (
-        f"tek soru için {sum(ic.sayac.values())} çağrı yapıldı: {ic.sayac}")
+    ic, uret = _g(json.dumps({"adimlar": [{"fiil": "SORGU", "cube_query": CQ}]}))
+    uret()
+    assert ic.sayac["cube"] == 0, (
+        "plan üretimi `select_cube`'a dokundu — oylama iki farklı süreçten beslenir")
 
 
-def test_COK_ADIMLI_PLAN_BUGUNKU_CEVABI_YOK_ETMEZ():
-    """🔴🔴 `E3` — ve bu kapı **ölçümden** doğdu, tasarımdan değil.
+def test_BAYRAK_KAPALIYKEN_HIC_KOSMAZ():
+    """🔴🔴 `KURAL B` — kapalıyken bu modülün hiçbir satırı koşmaz."""
+    assert acik_mi(None, None, _Sahte("{}")) is False
 
-    İlk hâl burada `"{}"` döndürüyordu (*«çok adımlı bir soru zaten tek cube ile
-    cevaplanamaz»*). `EE` turunun A/B'si çürüttü: `EE6` *«geçen hafta hiç iş kazası oldu
-    mu»* bayrak kapalıyken `isg`/`{kaza_adedi: 0}` veriyor, açıkken **cevapsız** kalıyordu.
 
-    ⊙ Orkestratör merdivenin **boşluğuna** girmeliydi; **yerine** geçmişti.
-    """
-    plan = {"adimlar": [{"fiil": "SORGU", "cube_query": CQ},
-                        {"fiil": "BAGLA", "kaynak": "$1", "boyut": "makine",
-                         "olcu": "ort_oee"}]}
-    g, ic = _g(json.dumps(plan))
-    assert json.loads(g.select_cube("q", "kat")) == CQ, (
-        "çok adımlı plan BUGÜNKÜ cevabı yok etti — E3 ihlali")
-    assert ic.sayac["cube"] == 1, "bugünkü yol AYRICA sorulmalıydı"
-    assert g.cok_adimli_plan() == plan, "plan saklanmadı — boşluk dolduralamaz"
+def test_SAGLAYICI_PLAN_KURAMIYORSA_ACILMAZ():
+    """⚠ Yetenek **sorulur**, tahmin edilmez — ve varsayılan `False` (fail-closed)."""
+    class _Yeteneksiz:
+        plan_kurabilir = False
+    assert acik_mi(None, None, _Yeteneksiz()) is False
+    assert acik_mi(None, None, object()) is False
 
 
 def test_SOZLESMESI_EKSIK_ADIM_PLAN_SAYILMAZ():
@@ -87,43 +81,27 @@ def test_SOZLESMESI_EKSIK_ADIM_PLAN_SAYILMAZ():
     for kotu in ({"fiil": "SORGU"},
                  {"fiil": "AYRISTIR", "ozellik": "maliyet", "detay": "x"},
                  {"fiil": "BAGLA", "kaynak": "$1"}):
-        g, ic = _g(json.dumps({"adimlar": [kotu]}))
-        assert json.loads(g.select_cube("q", "kat")) == CQ, f"{kotu} plan sayıldı"
-        assert ic.sayac["cube"] == 1
+        _, uret = _g(json.dumps({"adimlar": [kotu]}))
+        assert uret() is None, f"{kotu} plan sayıldı"
+
+
+def test_GECERLI_PLAN_URETILIYOR():
+    plan = {"adimlar": [{"fiil": "SORGU", "cube_query": CQ},
+                        {"fiil": "BAGLA", "kaynak": "$1", "boyut": "makine",
+                         "olcu": "ort_oee"}]}
+    _, uret = _g(json.dumps(plan))
+    assert uret() == plan
 
 
 def test_BILINMEYEN_FIIL_PLANI_HIC_DOGMAZ():
     """⚠ Beyaz liste çalıştırıcıdan **önce**: ilk adım koşmadan reddedilir."""
-    g, ic = _g(json.dumps({"adimlar": [{"fiil": "SQL_YAZ", "kaynak": "$1"}]}))
-    assert json.loads(g.select_cube("q", "kat")) == CQ, "bugünkü yola inilmeliydi"
-    assert ic.sayac["cube"] == 1
+    _, uret = _g(json.dumps({"adimlar": [{"fiil": "SQL_YAZ", "kaynak": "$1"}]}))
+    assert uret() is None
 
 
-def test_PLAN_YOLU_DUSERSE_BUGUNKU_YOL_KALIR():
+def test_PLAN_YOLU_DUSERSE_TUR_DUSMEZ():
     """🔴 Fail-open: bir genişleme, genişlettiği şeyi **bozamaz**."""
     class _Patlak(_Sahte):
         def plan_kur(self, question, catalog, sema=None):
             raise RuntimeError("sağlayıcı düştü")
-
-    ic = _Patlak("")
-    g = PlanGarsonu(ic, {})
-    assert json.loads(g.select_cube("q", "kat")) == CQ
-    assert ic.sayac["cube"] == 1
-
-
-def test_BAYRAK_KAPALIYKEN_SARMALANMAZ():
-    """🔴🔴 `KURAL B` — kapalıyken **nesnenin kendisi** döner, bir sarmalayıcı bile değil.
-
-    *Bir kill-switch'in kanıtı «aynı davranış» değil, «aynı nesne»dir.*
-    """
-    ic = _Sahte("{}")
-    assert sarmala(ic, {}, None, None) is ic
-
-
-def test_SAYDAM_SARMALAYICI():
-    """⚠ Sarmalayıcı, sarmaladığı yüzeyi **daraltmaz**."""
-    ic = _Sahte("{}")
-    ic.refine_cube = lambda *a: "x"
-    g = PlanGarsonu(ic, {})
-    assert g.refine_cube("a", "b", "c") == "x"
-    assert g.sema_kullanir is False
+    assert plan_uret(_Patlak(""), "q", "kat", IDX) is None

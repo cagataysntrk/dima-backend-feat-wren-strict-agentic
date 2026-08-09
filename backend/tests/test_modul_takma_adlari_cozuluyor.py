@@ -41,7 +41,11 @@ import subprocess
 import sys
 
 BACKEND = pathlib.Path(__file__).resolve().parents[1]
-ALANLAR = ("app", "control_plane", "admin_app", "lab", "eval")
+#: ⚠ `tests` de dahil — ve bu bir ölçümden geldi: `test_plan_tuketici.py`'de `import json`
+#: unutuldu, hata **fail-open bir `except`e düştü** ve test *"cevap None döndü"* diye
+#: kırıldı. Yani asıl sebep bir başka kusur gibi göründü. *Fail-open bir dal, içindeki
+#: isim hatasını da açık bırakır — o yüzden isimler dalın DIŞINDA doğrulanmalıdır.*
+ALANLAR = ("app", "control_plane", "admin_app", "lab", "eval", "tests")
 
 
 def _f821(hedefler: list[str]) -> str:

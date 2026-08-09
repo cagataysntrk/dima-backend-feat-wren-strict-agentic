@@ -23,7 +23,7 @@ from app import varlik
 from app import context as app_context
 from app import netlestirme as _netlestirme
 from app import prescribe
-from app import plan_garson as _plan_garson, plan_tuketici as _plan_tuketici
+from app import plan_tuketici as _plan_tuketici
 from app import planner as _planner
 from app import ask_jobs, cekirdek, followup, istek_kimligi, katman_b, typo_onerisi
 from app import soz as _soz
@@ -3393,7 +3393,6 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             return kpi_resp
         route_hit: dict | None = None
         intent_source: str | None = None
-        _garson = None   # `O-4` — plan garsonu (bayrak kapalıysa hiç kurulmaz)
         _garson_konustu = False   # `§56` — garson bir aday ürettiyse Türkçe reddi susar
         typo_fix_trace: str | None = None
         typo_suggestion: dict | None = None
@@ -3689,14 +3688,12 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     if "varlik_perdesi" in resolve_for(settings, principal):
                         _q_llm, _ent, _ent_kural = varlik.perdele(body.question, schema)
                     _garson_konustu = True   # `§56` — hakem konuştu; kararı aşağıda tartılır
-                    # 🔴 `O-4` — PLANLAYICI İLE GARSON AYNI KİŞİ. Bayrak kapalıysa
-                    # `sarmala()` **nesnenin kendisini** döndürür; açıkken aynı çağrı
-                    # altında bir plan üretir ve tek adımlıysa bugünkü `CubeQuery`'ye
-                    # indirger. Bayrak çözümü `plan_garson`'da — bu gövde bir tavan
-                    # kapısına bağlı ve bayrak adı ikinci bir sahip kazanmasın diye.
-                    _garson = _plan_garson.sarmala(llm_probe, cube_index, settings, principal)
+                    # ⟳ `O-4` — burada bir zamanlar plan garsonu duruyordu ve **ölçümle
+                    # kaldırıldı**: plan `select_cube`'un yerine geçince oylamanın
+                    # örnekleri iki farklı süreçten geliyordu ve arıza oranı %55 → %65'e
+                    # ÇIKTI. Plan artık yalnız **boşlukta** çalışıyor (aşağıda).
                     parsed, uyum, eksen, adaylar = _select_consistent(
-                        _garson, _q_llm, catalog_text + _ent_kural, cube_index, k, _sema)
+                        llm_probe, _q_llm, catalog_text + _ent_kural, cube_index, k, _sema)
                     parsed = varlik.geri_koy(parsed, _ent)
                     # 🔴 `AJ3.3` — dönem ifadesi **taze yolda da** çözülür ve çözücü
                     # takip yolunun **aynısıdır** (`_resolve_period` → `date_filters`).
@@ -3799,7 +3796,13 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # gelinir: route boş döndü, garsonun tek-cube cevabı da yok. Yani bugünkü sonuç
         # Discovery ya da dürüst rettir — bir yerde cevap varken bu dal hiç konuşmaz.
         # ⚠ Karar ve metin `plan_tuketici`'de; burada yalnız **çağrı** var.
-        _pc = _plan_tuketici.cevap(_garson, service=service, schema=schema, limit=limit)
+        # ⚠ `request` geçiliyor, `llm_probe` DEĞİL — ve bu bir kusurdan öğrenildi:
+        # `llm_probe` yalnız garson dalında bağlanıyor, deterministik yolda hiç
+        # bağlanmıyor (`UnboundLocalError`, canlı `EE19`). Bu kancaya YUKARIDAKİ HER
+        # yoldan gelinir; o yüzden yalnız **her zaman bağlı** olan şey okunabilir.
+        _pc = _plan_tuketici.cevap(request, service=service, schema=schema,
+                                   soru=body.question, settings=settings,
+                                   principal=principal, limit=limit)
         if _pc is not None:
             return _finish(_attach_viz(AskResponse(
                 question=body.question, source=_pc["source"], note=_pc["note"],

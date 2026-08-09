@@ -7,6 +7,8 @@ cümlelik bir rettir ve kullanıcı ondan hiçbir şey öğrenemez.
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from app import plan_tuketici as pt
@@ -32,19 +34,60 @@ class _Motor:
 
 
 class _Garson:
+    """Sağlayıcı taklidi: `plan_kur` bir plan METNİ döndürür (gerçek sözleşme)."""
+
+    sema_kullanir = False
+    plan_kurabilir = True
+
     def __init__(self, plan): self._p = plan
-    def cok_adimli_plan(self): return self._p
+
+    def plan_kur(self, question, catalog, sema=None):
+        return json.dumps(self._p) if self._p else "{}"
 
 
-def test_BAYRAK_KAPALIYKEN_HIC_KONUSMAZ():
-    """🔴🔴 `KURAL B` — sarmalanmamış bir garsonda dal **hiç açılmaz**."""
-    assert pt.cevap(object(), service=_Motor(), schema=SCHEMA) is None
-    assert pt.cevap(_Garson(None), service=_Motor(), schema=SCHEMA) is None
+@pytest.fixture(autouse=True)
+def _bayrak_acik(monkeypatch):
+    """⚠ Bayrak testte AÇIK tutulur — kapalı hâlin kendi kapısı ayrı (`test_BAYRAK…`)."""
+    from app import plan_garson
+    monkeypatch.setattr(plan_garson, "acik_mi", lambda *a, **k: True)
+
+
+class _Istek:
+    """`request.app.state.llm` — üretimdeki tek gerçek kaynak."""
+
+    def __init__(self, llm):
+        self.app = type("A", (), {"state": type("S", (), {"llm": llm})()})()
+
+
+def _cevap(g, motor=None, soru="q"):
+    return pt.cevap(_Istek(g), service=motor or _Motor(), schema=SCHEMA, soru=soru)
+
+
+def test_BAYRAK_KAPALIYKEN_HIC_KONUSMAZ(monkeypatch):
+    """🔴🔴 `KURAL B` — bayrak kapalıyken dal **hiç açılmaz**."""
+    from app import plan_garson
+    monkeypatch.setattr(plan_garson, "acik_mi", lambda *a, **k: False)
+    assert _cevap(_Garson(PLAN)) is None
+
+
+def test_PLAN_CIKMAZSA_MERDIVEN_BUGUNKU_GIBI():
+    assert _cevap(_Garson(None)) is None
+
+
+def test_SAGLAYICI_YOKSA_PATLAMAZ():
+    """🔴 Ölçüldü (`EE19`, canlı): sağlayıcı çağıranın **yerelinden** okunuyordu ve
+    deterministik yoldan gelindiğinde `UnboundLocalError` — bayrak KAPALIYKEN de.
+
+    *Koşullu bağlanan bir ad, tanımsız bir addan daha sinsidir: statik olarak var,
+    çalışırken yok.*
+    """
+    assert pt.cevap(_Istek(None), service=_Motor(), schema=SCHEMA, soru="q") is None
+    assert pt.cevap(object(), service=_Motor(), schema=SCHEMA, soru="q") is None
 
 
 def test_BOSLUKTA_CEVAP_URETIYOR():
     """🔴 Üç adım koştu, tek sorgu, ve cevabın içinde **bulgu** var — makbuz değil sonuç."""
-    c = pt.cevap(_Garson(PLAN), service=_Motor(), schema=SCHEMA)
+    c = _cevap(_Garson(PLAN))
     assert c["source"] == "cube+llm"
     assert "3 adımda üretildi" in c["note"]
     assert "RAM-3" in c["note"], "BAGLA'nın seçtiği varlık cevaba girmedi"
@@ -55,7 +98,7 @@ def test_BOSLUKTA_CEVAP_URETIYOR():
 
 def test_HAM_FLOAT_SIZMAZ():
     """⚠ `§AA1`'in dersi: `0.5245118291704627` bir cevap değil, bir sızıntıdır."""
-    c = pt.cevap(_Garson(PLAN), service=_Motor(), schema=SCHEMA)
+    c = _cevap(_Garson(PLAN))
     assert "0.5245118" not in c["note"]
 
 
@@ -66,7 +109,7 @@ def test_KOSAMAYINCA_ADIM_ADIM_SOYLUYOR():
     """
     plan = {"adimlar": [{"fiil": "SORGU", "cube_query": CQ},
                         {"fiil": "TREND", "kaynak": "$1"}]}
-    c = pt.cevap(_Garson(plan), service=_Motor(), schema=SCHEMA)
+    c = _cevap(_Garson(plan))
     assert c["source"] is None, "koşamayan bir plan CEVAP VERMİŞ gibi görünemez"
     assert "1." in c["note"] and "2." in c["note"], "adımlar sayılmamış"
     assert "TREND" in c["note"] and "tamamlayamadım" in c["note"]
@@ -83,4 +126,4 @@ def test_BEKLENMEYEN_ARIZA_MERDIVENI_BOZMAZ():
     """⚠ Fail-open: tüketici düşerse `None` döner ve bugünkü yol aynen sürer."""
     class _Patlak(_Motor):
         def query(self, sql, limit=None): raise RuntimeError("motor düştü")
-    assert pt.cevap(_Garson(PLAN), service=_Patlak(), schema=SCHEMA) is None
+    assert _cevap(_Garson(PLAN), _Patlak()) is None
