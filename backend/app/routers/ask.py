@@ -23,7 +23,7 @@ from app import varlik
 from app import context as app_context
 from app import netlestirme as _netlestirme
 from app import prescribe
-from app import plan_garson as _plan_garson
+from app import plan_garson as _plan_garson, plan_tuketici as _plan_tuketici
 from app import planner as _planner
 from app import ask_jobs, cekirdek, followup, istek_kimligi, katman_b, typo_onerisi
 from app import soz as _soz
