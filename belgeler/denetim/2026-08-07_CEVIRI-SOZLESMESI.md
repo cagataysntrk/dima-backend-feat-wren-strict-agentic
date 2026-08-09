@@ -7277,3 +7277,49 @@ hacim ilk kez soruldu ve karşılandı.
 | `§CC-C` duruş maliyeti | `CC11` | `Y4`/`BB14` sınıfı: kavram yok, **en yakınını vermek yanlış** |
 | `§CC-D` ampul kırmızı | `CC19` (2024 geldi) · `CC20` (AR dönem çözülmedi) | garson dönemi çeviremedi |
 | `§CC-E` eşik | `CC17` *«100 partiden az olanları çıkar»* | `measure_having` uygulanmadı |
+
+### §109.1 · CC'NİN KALAN KÖKLERİ
+
+#### 🔴🔴 §CC-D — KATALOG İŞARETİ ÖLÇÜ ADINA SIZIYORDU *(kendi kusurum)*
+
+Canlı log (`CC20`, Arapça su sorusu):
+
+    intent: whitelist REDDİ — ham={"measures":["toplam_su_lt↓"], …}
+
+⊙ `§W-C`'de katalog metnine bir **yön işareti** (`↓` = *«az olan iyidir»*) ekledim ve onu
+ölçü adına **bitişik** yazdım ki garson ölçüyle birlikte okusun. Garson okudu — ve **adın
+parçası sandı**. Beyaz liste **doğru** çalıştı; katalogda `toplam_su_lt↓` diye bir ölçü yok.
+
+🔴 Yani `§72`'nin ampulü kırmızı yandı ama sebebi **dil değil, benim eklediğim bir
+karakterdi**. Ölçüm aleti tam da bunun için var: *route'tan bağımsız olduğu için garsonun
+işini yapıp yapmadığını temiz gösteriyor* — ve gösterdiği şey benim kusurumdu.
+
+⚠ Çözüm işareti **kaldırmak değil** (`§W-C` ölçülmüş bir kazanç): ad **normalleştirilir**.
+İşaret sunumdur, kimlik değil — ve kimliği doğrulayan yer onu tanımak zorundadır.
+Sondaj 3/3 (işaretli ad tanınır · gerçek olmayan ölçü hâlâ reddedilir).
+
+*Bir ada eklenen her süs, o adın bir varyantını doğurur; doğrulayan taraf varyantı
+bilmiyorsa süs bir kusura dönüşür.*
+
+#### 🔴 §CC-E — AYRILMA EKİ İSME YAPIŞIK GELİR
+
+`CC17` *«**100 partiden az** olanları çıkar»* → eşik hiç uygulanmadı. Sondaj:
+
+    "100 den az parti"     → ✅   (ek AYRI token)
+    "100 partiden az"      → 🔴   (ek İSME yapışık)
+    "100 partinin altinda" → 🔴
+
+⊙ Kural `dan az`/`den az`'ı **iki kelime** sanıyordu. Oysa ayrılma hâli bir **ektir** ve
+sayının ardından gelen **isme** yapışır — kullanıcının doğal cümlesi tam da bu.
+⚠ Yeni kelime yok; eklenen şey sayı ile karşılaştırıcı arasına **ek almış bir ismin**
+girebilmesi. Sondaj 8/8, üç yanlış-pozitif adayı (*«3 makine bazında»*, *«ilk 5 müşteri»*,
+*«2026 yılında»*) temiz.
+
+*Bir eki iki kelime sanmak, o ekin taşındığı her ismi görmemektir.*
+
+#### ⏸ §CC-B · §CC-C — ÖLÇÜLDÜ, GEREKÇESİYLE YAPILMADI
+
+| kök | ölçüm | neden bu demette değil |
+|---|---|---|
+| `§CC-B` çoklu çapa (*«birincisini ikincisiyle kıyasla»*) | `CC9` | İki **ayrı satıra** aynı anda çapa demek — bu bir **plan** işidir (`AA6`/`AA7` ile aynı kuyruk). Tek turluk bir yamayla kurulursa `§AA1`'in deterministik yolunu gölgeler; orkestratör raporunun `O-5` fazının konusu |
+| `§CC-C` *«duruş maliyeti»* beyansız | `CC11` | Menü **doğru ayrılmış** (`bakim`=yalnız parça · `bakim_is_emri`=işçilik+parça, menü notu bunu yazıyor). Eksik olan **kavramın kendisi** (kayıp üretim değeri). Beyanı yazmak *"soru X diyor, ölçü Y diyor"* ayrımını gerektirir — bu bir **anlam** kararıdır ve `§W-D`'de ölçülmüştü: genel yüklem **her yabancı dilli soruda** yanlış-pozitif üretiyor (`§101.1`) |

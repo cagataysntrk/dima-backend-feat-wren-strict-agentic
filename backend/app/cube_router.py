@@ -3646,11 +3646,31 @@ def typo_correct(q: str, schema: dict) -> tuple[str, list[dict]]:
 
 # ÖLÇÜ EŞİĞİ (HAVING): "10 milyon üzeri / 100 bin altında / 5 milyon TL'den fazla".
 # cube derleyici HAVING üretmez → cube_sql agregat ölçü alias'ına dış WHERE ile uygular.
+#: 🔴🔴 **`§CC-E` — AYRILMA EKİ İSME YAPIŞIK GELİR ve kural onu ayrı token bekliyordu.**
+#:
+#: Ölçüldü (`CC17` — *«**100 partiden az** olanları çıkar»*): eşik **hiç uygulanmadı**,
+#: yedi satır olduğu gibi döndü. Sondaj kökü tek satırda gösterdi:
+#:
+#:     "100 den az parti"      → ✅ eşleşti      (ek AYRI token)
+#:     "100 partiden az"       → 🔴 eşleşmedi    (ek İSME yapışık)
+#:     "100 partinin altinda"  → 🔴 eşleşmedi
+#:
+#: ⊙ Kural `dan az`/`den az`'ı **iki kelime** sanıyordu. Oysa Türkçede ayrılma hâli bir
+#: **ektir** ve sayının ardından gelen **isme** yapışır: *«100 **parti**den az»*,
+#: *«5 **makine**den fazla»*, *«3 **ay**dan kısa»*. Kullanıcının doğal cümlesi tam da bu.
+#:
+#: ⚠ Yeni kelime **yok**: karşılaştırıcı sözlüğü aynı. Eklenen şey, sayı ile
+#: karşılaştırıcı arasına **ek almış bir isim** girebilmesi — yani bir **dilbilgisi
+#: olgusu**, bir kelime değil. `\w{2,}(?:dan|den|tan|ten|nin|nun|in|un)` kapalı bir hâl
+#: ekleri kümesidir (`ADR-0008` kapalı sınıfları serbest bırakır).
+#:
+#: *Bir eki iki kelime sanmak, o ekin taşındığı her ismi görmemektir.*
 _THRESHOLD_RE = re.compile(
     r"\b(\d+(?:[.,]\d+)?)\s*(milyar|milyon|bin|k|m)?\s*(?:tl\w*|lira\w*|₺)?\s*"
+    r"(?:\w{2,}(?:dan|den|tan|ten|nin|nun|in|un)\s+)?"
     r"(uzerindeki|uzerinde|uzeri|ustu|asan|gecen|dan fazla|den fazla|dan buyuk|den buyuk|"
     r"dan yuksek|den yuksek|altindaki|altinda|alti|dan az|den az|dan kucuk|den kucuk|"
-    r"dan dusuk|den dusuk)")
+    r"dan dusuk|den dusuk|fazla|az|buyuk|kucuk|yuksek|dusuk)")
 _TH_MULT = {"milyar": 1e9, "milyon": 1e6, "m": 1e6, "bin": 1e3, "k": 1e3}
 # TAM ifadeler (alt-dizi DEĞİL): "az" 'den f**az**la' içinde yanlış eşleşiyordu → '<' hatası.
 _TH_LESS = {"alti", "altinda", "altindaki", "dan az", "den az", "dan kucuk", "den kucuk",
@@ -4419,6 +4439,11 @@ def recommend_actions(signals: list[dict], cube_query: dict, spec: dict | None) 
 from app.intent_semasi import cube_query_json_schema  # noqa: E402,F401
 
 
+#: `§CC-D` — `katalog_metni._AZ_IYI` ile aynı karakter; tek kaynak orası, burada
+#: yalnız **tanınır**. İkinci bir tanım yazmak, işaretin iki sahibi olması olurdu.
+_AZ_IYI_ISARETI = "\u2193"
+
+
 def parse_cube_query(text: str, index: dict) -> dict | None:
     """LLM'in ürettiği CubeQuery JSON'ını cube tanımına karşı DOĞRULAR.
 
@@ -4436,7 +4461,29 @@ def parse_cube_query(text: str, index: dict) -> dict | None:
     if not cube or cube not in index:
         return None
     spec = index[cube]
-    measures = cq.get("measures") or []
+    # 🔴🔴 **`§CC-D` — KATALOG İŞARETİ ÖLÇÜ ADINA SIZIYORDU. KENDİ KUSURUM.**
+    #
+    # `§W-C`'de katalog metnine bir **yön işareti** (`↓` = *«az olan iyidir»*) ekledim ve
+    # onu ölçü adına **bitişik** yazdım (`toplam_tep↓`) ki garson ölçüyle birlikte okusun.
+    # Garson okudu — ve **adın parçası sandı**. Canlı log (`CC20`, Arapça su sorusu):
+    #
+    #     intent: whitelist REDDİ — ham={"measures":["toplam_su_lt↓"], …}
+    #
+    # ⊙ Yani beyaz liste **doğru** çalıştı: katalogda `toplam_su_lt↓` diye bir ölçü yok.
+    # Kusur işaretin **kendisinde**: bir sunum niteliğini ada bitiştirmek, onu **adın
+    # parçası** yapar. `§72`'nin ampulü bu yüzden kırmızı yandı — dil kusuru değil,
+    # benim eklediğim bir karakterdi.
+    #
+    # ⚠ Çözüm işareti **kaldırmak değil** (yön bilgisi `§W-C`'de ölçülmüş bir kazanç):
+    # ad **normalleştirilir**. İşaret sunumdur, kimlik değil — ve kimliği doğrulayan yer
+    # onu tanımak zorundadır. *Bir ada eklenen her süs, o adın bir varyantını doğurur;
+    # doğrulayan taraf varyantı bilmiyorsa süs bir kusura dönüşür.*
+    def _ad(m):
+        return str(m).rstrip(_AZ_IYI_ISARETI).strip() if isinstance(m, str) else m
+
+    measures = [_ad(m) for m in (cq.get("measures") or [])]
+    if measures:
+        cq["measures"] = measures
     if not measures or any(m not in spec.get("measures", []) for m in measures):
         return None
     dims = cq.get("dimensions") or []
