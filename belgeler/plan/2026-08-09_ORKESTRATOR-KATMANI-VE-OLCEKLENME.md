@@ -671,3 +671,385 @@ izlenir. Oran düşerse (plan gereksiz yere uzuyorsa) istem daraltılır.
 
 🟢 **Belge uygulanabilir.** Sıra: `O-1` → `O-0` → `O-2` → … Demet **tek kapıyla** kapanır;
 fazlar arasında ara kapı koşulmaz (`SIFIRINCI KURAL`).
+
+---
+---
+
+# ⟳ EK — MİMARİ KARAR: ORKESTRATÖR NEREYE OTURUR
+
+**Tarih:** 2026-08-09 (ikinci oturum) · **Taban commit:** `51bfccb` · **Dal:** `wren-bağımsız`
+**Belge türü:** teşhis + **mimari karar** + fazlandırma. **Kod değişikliği içermez.**
+
+> ⚠ Bu ek, yukarıdaki belgenin **yerine geçmez** — onun iki kararını **ölçüyle düzeltir**
+> (`§E3` ve `§E6`) ve dört **yeni** kusur kaydeder. Yukarıdaki metin **olduğu gibi
+> korunmuştur**; hangi iddianın ne zaman çürüdüğü ancak ikisi yan yana durursa okunur.
+
+---
+
+## E0 · TEK CÜMLE
+
+Orkestratörün yeteneği **kurulmuş**, tetiği **yanlış yere bağlanmış**, üç fiilinin kablosu
+**yanlış uca takılmış** ve modele sözleşmesi **hiç öğretilmemiştir**. Karar: orkestratör bir
+**basamak değil, garsonun çıktı biçimidir** — ve kabul ölçütü bir A/B değil bir **denkliktir**.
+
+---
+
+## 🔴🔴 E0.1 · YÖNETİCİ KURAL — `off` BİR SEÇENEK DEĞİLDİR
+
+> **Kullanıcı kararı, bağlayıcı:** *"Bu özellik `off` kalamaz — çünkü bundan sonrakilerin
+> temeli bu, bu olmadan ilerleyemeyiz. Ve mimari doğruysa testlerde eksik çıkıyorsak, demek
+> ki **geliştirmemiz devam ediyor** demektir — mimariyi değiştirmeden."*
+
+Bu iki cümle, **ölçüm sonuçlarının nasıl okunacağını** değiştirir ve bu belgedeki her fazın
+üstünde durur:
+
+| ölçüm sonucu | ~~eski okuma~~ | 🔴 **doğru okuma** |
+|---|---|---|
+| plan üretilemedi | *"model yapamıyor"* | **istem/sözleşme henüz yetersiz** → `O-11` |
+| plan koşamadı | *"fiil çalışmıyor"* | **kablo yanlış uçta** → `O-10` |
+| oran iyileşmedi | *"faz iptal"* | **payda yanlış soru sınıfı** → `§E8` |
+| denklik tutmadı | *"göç yanlış"* | **göç HENÜZ açılamaz** → `O-13` tekrar |
+
+⊙ **Neden bu ayrım meşru:** mimari karar (`§E7`) bir **ölçüm** değil bir **türetmedir** —
+`tek_adimli()`'nin denkliğinden ve karar yüzeyinin sabit kalmasından çıkar. Bir türetmeyi
+çürütecek şey bir oran değil, bir **karşı-türetmedir**. Oran yalnız *uygulamanın ne kadar
+olgunlaştığını* söyler.
+
+### ⚠ Ama bu kuralın SINIRI yazılmalı — yoksa ölçüm tiyatroya döner
+
+Ölçüm **mimariyi** veto edemez; ama bir **uygulamayı** veto edebilmeye devam eder. Yoksa
+*"ölç"* kelimesi anlamını kaybeder. Bu belgede yanlışlanabilir kalan **tek** şey şudur ve
+öyle kalmalıdır:
+
+> 🔴 **`O-13` denklik kapısı geçilmeden `O-14` açılamaz.** Bu bir tercih değil bir kilittir.
+> Denklik tutmuyorsa göç **beklemeye devam eder** — süresiz. Mimari yanlış olmaz; **hazır
+> olmaz**.
+
+Ve `off` yasağının **`KURAL B` ile çelişmediği** kayda geçer: `O-10`…`O-13` boyunca bayrak
+kapalıdır **çünkü henüz açılacak bir şey yoktur** (üç fiil ölü, sözleşme öğretilmemiş) —
+kararsızlıktan değil, **sıradan**. Bayrağın açılacağı an `O-14`'tür ve o an **kapıyla**
+belirlenir, tereddütle değil.
+
+*Bir kararı ölçüme açık bırakmak dürüstlüktür; her ölçümde kararı yeniden açmak
+kararsızlıktır. Aradaki fark, neyin yanlışlanabilir olduğunun ÖNCEDEN yazılmasıdır.*
+
+---
+
+## E1 · TETİKLEYİCİ SORU
+
+> *"«RAM 3 neden düşük» — diğerleriyle kıyaslamam lazım, hangi değerin düşüşe sebep
+> olduğunu bulmam lazım, o değerin hangi kırılımlarında ortaya çıktığını kontrol etmeliyim.
+> Bunları tek bir soruda, insan zihni gibi yapıp sonuca ulaşabiliyor mu?"*
+
+Cevap ölçüldü: **3 adımın 2'sini yapıyor.**
+
+| kullanıcının adımı | sistem | maliyet | kaynak |
+|---|---|---|---|
+| *"diğerleriyle kıyasla"* | ✅ akran kıyası — fark, % | **0 LLM** | `contribution._akran_kiyasi` 1. sorgu |
+| *"hangi değer sebep oldu"* | ✅ sürükleyen ölçü — en çok sapan | **0 LLM** | aynı fonksiyon, 2. sorgu |
+| *"hangi kırılımda çıkıyor"* | 🔴 **YAPMIYOR** | — | — |
+
+Ve üçüncüyü nasıl bıraktığı ✅ **OKUNDU** (`app/contribution.py`, `§AA1` metin üretimi):
+
+```
+"Ayrıntı için: «… nedenlerini kır» ya da «hangi vardiyada» diye devam edebilirsin."
+```
+
+🔴 **Sistem sıradaki adımın ne olduğunu BİLİYOR — cümlede adıyla yazıyor — ve atmıyor;
+kullanıcıya ödev olarak veriyor.**
+
+---
+
+## E2 · 🔴 EN PAHALI BULGU — «cevap var» ≠ «en iyi cevap verildi»
+
+`§E3`'ün (*"orkestratör merdivenin yerine değil boşluğuna girer"*) ölçülmüş bedeli budur:
+
+1. `§AA1` bu soruya bir cevap **üretiyor** → merdivende **boşluk yok**
+2. Orkestratör yalnız boşlukta koşuyor → bu soruyu **hiç görmüyor**
+3. Bayrak açılsa **bile** görmüyor
+4. Cevap `source=cube+llm` rozetiyle dönüyor → **arıza oranı bunu ✅ BAŞARI sayıyor**
+
+⊙ Yani kayıp **hiçbir metriğe düşmüyor**. Sistemin sicilinde bu soru *"cevaplandı"* yazıyor;
+üçte birinin eksik olduğu **hiçbir yerde** görünmüyor.
+
+> **Bugünkü alet *«cevap var mı»* diye soruyor. Sorulması gereken *«cevap tam mı»*. İkincisini
+> ölçen hiçbir şey yok.**
+
+### E2.1 · Ve boşluk bir konum değil, bir **gerileme**
+
+Mutfak iyileştikçe boşluk **küçülür**. `§AA1` bir soru sınıfını oradan **aldı**; bir sonraki
+`§` bir tane daha alacak.
+
+> Bölgesi *"her şeyin başarısız olduğu yer"* olan bir bileşen, sistem düzeldikçe **kötüleşir**.
+> Bu bir konum değil, bir kalıntıdır.
+
+**Karar:** `§E3`'ün *"boşluğa gir"* lafzı **iptal**. Gerekçesi (*"cevaplanan hiçbir soruyu
+bozma"*) **korunur** — ama o gerekçe artık **denklikle** sağlanacak, konumla değil (`§E7`).
+
+---
+
+## E3 · 🔴 ÜÇ FİİL YAPISAL OLARAK ÖLÜ ✅ OKUNDU + 📊 KOŞTURULDU
+
+Gövdelerin okuduğu alanlar ile şemanın izin verdiği alanlar karşılaştırıldı:
+
+| fiil | şemanın **izin verdiği** (`ZORUNLU_ALANLAR`) | gövdenin **okuduğu** (`plan_tuketici._govdeler`) | |
+|---|---|---|---|
+| **KIYASLA** | `kaynak` | `cube_query` | 🔴 ulaşılamaz |
+| **AYRISTIR** | `kaynak` | `cube_query`, `mode` | 🔴 ulaşılamaz |
+| **TREND** | `kaynak` | `cube_query`, `mode`, `kaynak` | 🔴 kısmen ulaşılamaz |
+| ANLAT · KIR · SUZ · BOYUTSEC · GORSEL | — | — | ✅ uyumlu |
+
+Şema `additionalProperties: False`; `plan_garson._plani_oku` da fazladan alan taşıyan adımı
+**düşürüyor**. Yani **şema-geçerli** bir `KIYASLA` adımı gövdeye `cube_query = {}` olarak varır.
+Koşturuldu:
+
+```
+KIYASLA({'fiil':'KIYASLA','kaynak':[{'makine':'RAM-3','ort_oee':41.0}]})
+  -> ValueError: akran kıyası yapılamadı — ayrıştırılabilir bir ölçü yok
+```
+
+🔴 **Ve bu üç fiil tam olarak *«kıyasla · ayrıştır · trendine bak»* — yani `§E1`'deki sorunun
+anlamsal çekirdeği.** `«15/15 fiil bağlı»` iddiası doğru ama **eksik**: bağlı, fakat üçü
+**yanlış sözleşmeye** bağlı.
+
+⚠ `§4.2`'nin *"gerçek boşluklar"* listesi bu kusuru **göremezdi**: orada fiillerin *bağlı olup
+olmadığı* sayılıyordu, *doğru alana* bağlı olup olmadığı değil.
+
+---
+
+## E4 · 🔴 SÖZLEŞME MODELE HİÇ ÖĞRETİLMİYOR ✅ OKUNDU + 📊 KOŞTURULDU
+
+`ZORUNLU_ALANLAR` yalnız `plan_json_schema()` içinde `required`'a dönüşüyor. O şema da yalnız
+`llm.sema_kullanir=True` ise üretiliyor (`plan_garson.py:70`). Canlı sağlayıcı OpenRouter →
+`sema_kullanir = False` (`llm.py:808`). Yani `plan_kur` `sema=None` alıyor ve modele giden
+**tek** metin `plan_sistem_metni(catalog)` oluyor — 2113 karakter.
+
+Fiil başına alan kapsamı sayıldı:
+
+```
+TAM = 9 fiil · KISMİ = 6 fiil · (HİÇ = 0)
+istemde BİR KEZ BİLE geçmeyen alanlar: olcu · hedef · deger · olculer · baslik
+```
+
+| fiil | zorunlu alanlar | istemde |
+|---|---|---|
+| **BAGLA** | kaynak · boyut · **olcu** | 🔴 kısmi |
+| **HESAPLA** | kaynak · **hedef** · boyut · **olcu** | 🔴 kısmi |
+| **SUZ** | cube_query · boyut · **deger** | 🔴 kısmi |
+| SIRALA · RAPOR · PANO | … `olculer` · `baslik` | 🔴 kısmi |
+
+🔴 **Yani model, kendisine hiç gösterilmemiş bir sözleşmeye göre yargılanıyor.** `EE` turunun
+kaydettiği arıza şekli (`{"fiil":"SORGU"}` — `cube_query` yok) bir **itaatsizlik değil**:
+model kendisine söylenen her şeyi yazıyor. `cube_query` istemde yalnız **bir** yerde geçiyor —
+`KIR`/`SUZ` cümlesinde, hem de `"cube_query":"$2"` yani **referans** olarak. Satır içi bir
+`cube_query` nesnesinin neye benzediği modele **hiç gösterilmemiş**.
+
+⊙ Ve bu, deponun kendi `KAT-1` deseni: `plan_sistem_metni` fiil **listesini** `FIIL_ANLAMI`'ndan
+doğru biçimde **üretiyor**, fiillerin **alanlarını** `ZORUNLU_ALANLAR`'dan **üretmiyor**.
+Docstring'in kendi cümlesi: *«iki sahip çelişmez, biri yalnızca EKSİK kalır.»*
+
+⚠ `§E3` ile birlikte okunmalı: biri **modele**, öteki **gövdeye** yanlış sözleşme veriyor.
+Aynı kusur, zincirin iki ucunda.
+
+---
+
+## E5 · TELEMETRİ SIFIR ✅ OKUNDU
+
+`plan_garson` · `plan_kosucu` · `plan_tuketici` — üçünde de **tek sayaç yok**. Bayrak
+açıldığında *"kaç plan denendi, kaçı reddedildi, hangi adımda, hangi alan yüzünden, kaç adım
+çıktı"* sorularının cevabı **yok**; `EE` turunun A/B'si bunu konteyner logundan **elle**
+çıkarmış.
+
+🔴 Ve `§E9`'un karşı önlemi (*"tek adımlı plan oranı korpusta izlenir"*) **uygulanamaz
+durumda**: o oranı sayan hiçbir şey yok.
+
+> Sayamadığın şeyi geliştiremezsin. Ve `payda kutsaldır` kuralının burada karşılığı yok.
+
+**Ek boşluk:** plan üretimi için **çevrimdışı** ölçüm aleti yok. `lab/discovery_orani.py` curl
+çıktısı okur — motor, docker, kota ister. *"20 soru ver, kaçı şema-geçerli plan üretiyor"*
+diye soran, motorsuz koşan bir alet **yok**. En ucuz geri besleme döngüsü eksik olan tam bu.
+
+---
+
+## E6 · BAYRAK AÇIKLAMASI BAYAT ✅ OKUNDU
+
+`app/features.py:579` — panelde şu yazıyor:
+
+| iddia | gerçek |
+|---|---|
+| *"7 fiil (SORGU·KIYASLA·AYRISTIR·BAGLA·HESAPLA·TREND·ANLAT)"* | **15 fiil** |
+| *"plan bugünkü niyet çağrısının YERİNE geçer"* | ölçümle çürütüldü, **boşluğa** alındı |
+| *"çok adımlı soruda merdiven bugünkü gibi akar, plan ayrıca saklanır"* | plan artık **cevabın kendisini** üretiyor |
+
+🔴 Bayrağı açacak kişi **yanlış bir sözleşme** okuyor — ve o kişi çoğu zaman biz oluyoruz.
+
+---
+
+## E7 · 🔴 MİMARİ KARAR — ORKESTRATÖR BİR BASAMAK DEĞİL, GARSONUN ÇIKTI BİÇİMİDİR
+
+### E7.1 · Kullanıcının önerisi
+
+> *"«Normal» diye bir şey olmayıp, LLM varsa her şey orkestre edilebilir mi zaten? Tek
+> adımlıksa orkestrasyon da tek adım çıkar, çok adımlıysa çok adımlı çıkar — değişen bir şey
+> olmayabilir."*
+
+### E7.2 · Bu fikir **repoda zaten yazılı**, ama hiç bağlanmamış ✅ OKUNDU
+
+`plan_semasi.tek_adimli()` docstring'i birebir aynı cümle:
+
+> *"Tek adımlı bir plan, ZATEN bugünkü `CubeQuery`'dir. … geçiş bir davranış değişikliği
+> değil, bir **temsil genişlemesi** olur: bugünkü yol planın **özel hâlidir**, alternatifi
+> değil."*
+
+⚠ Ve bu fonksiyonun **üründe tek bir çağıranı yok** — yalnız `tests/test_plan_semasi.py`.
+Tam olarak bu göç için yazılmış, sonra **bağlanmamış**.
+
+### E7.3 · Karar yüzeyi BÜYÜMÜYOR — `§E2`'nin ve *"kodu şişirir"* endişesinin cevabı
+
+```
+bugünkü tasarım : route → garson → [orkestratör]   ← 3 yollu karar, YENİ sınır vakaları
+KARAR           : route → garson(= orkestratör)     ← 2 yollu, sınır AYNI
+                            └ çıktı 1 adım ya da N adım
+```
+
+⊙ Değişen şey *hangi yola gidilir* değil, **garsonun çıktısının şekli**.
+
+🔴 Bu, kullanıcının en pahalı endişesinin doğrudan cevabıdır: *"route yerine garsona düşmesi
+için ~100 test ile uğraştık; üçüncü basamak o ayrımı yeniden açar."* Açmıyor — çünkü ayrım
+noktası **dokunulmadan** kalıyor. *Bir yeteneği bir basamak olarak eklemek karar yüzeyini
+büyütür; bir çıktı biçimi olarak eklemek büyütmez.*
+
+Ve *"boşlukta kalırsa kodu şişirir"* endişesi de böyle kapanır: **boşluk diye bir dal kalmaz.**
+
+### E7.4 · ⟳ `B` KOŞUMUNUN `-10` PUANI BU KARARI ÇÜRÜTMÜYOR
+
+`_select_consistent` ✅ **OKUNDU** (`app/routers/ask.py:1048`): `one(_i)` `k` örneğin
+**hepsini** `llm.select_cube`'tan çekiyor — tek kaynak, tek dağılım. `B`'de plan araya
+girdiğinde örneklerin bir kısmı plandan, bir kısmı `select_cube` **yedeğinden** geliyordu.
+A/B raporunun kendi cümlesi:
+
+> *"Bir oylamanın geçerliliği örneklerin özdeşliğine dayanır; iki farklı süreci aynı sandığa
+> atmak, oylamayı gürültüye çevirir."*
+
+⊙ **`B` yarım bir göçü ölçtü**: plan ve `select_cube` **bir arada** yaşadı. Kirlenme tam olarak
+*birlikte var olmanın* eseri. **Tam göç** — `one()` içinde `plan_kur` → `tek_adimli()` → aynı
+kanonik `CubeQuery` — o kirlenmeyi **yapısal olarak imkânsız** kılar: üç oy da tek kaynaktan.
+
+> **`-10` puan planları yargılamadı, birlikteliği yargıladı. Ve tam göç, birlikteliğin
+> kendisini kaldırıyor.**
+
+⟳ Bu, yukarıdaki `§E6`'nın (*"planlayıcı garsonun kendisidir"*) **iade-i itibarıdır**: fikir
+doğruydu, **yarım uygulaması** yanlıştı.
+
+### E7.5 · Tetik: **boşluk değil, cevabın EL VERDİĞİ yer**
+
+`«…diye devam edebilirsin»` bir kusur değil, bir **işarettir**: sistemin *"sıradaki adımı
+biliyorum ama atmıyorum"* dediği yer. Bu işaret deterministik, **sayılabilir** ve kodda
+**zaten var** — `contribution.py`'de 14 yerde, artı `AskResponse.next_steps` alanı.
+
+⊙ Orkestratör `§AA1`'in **yerine geçmez** (o 0 LLM — `§E4`'ün korunma şartı) — `§AA1`'in
+**bıraktığı yerden devam eder**: `SUZ → SORGU → BOYUTSEC`. Kullanıcının yazacağı ikinci mesajı
+sistem kendi atar.
+
+🔴 Ve bu bölge **büyür**: mutfak zenginleştikçe *"devam edebilirsin"* işaretleri artar.
+**Boşluğun tam tersi.**
+
+### E7.6 · Üç gerçek risk — ve karşı önlemleri
+
+| # | risk | karşı önlem |
+|---|---|---|
+| **R1** | Çok adımlı plan **oylanamaz** — kanonik biçim yok, uzay geniş, 3 örneğin uyuşması düşer | Oylama yalnız **1 adımlık** planlarda bugünkü gibi. Çok adımlıda karar `plan_kosucu.dogrula()`'nın — tip·DAG·bütçe denetimi oylamadan **sert** |
+| **R2** | İstem büyüyor (1 biçim → 15 fiil) → **basit soru bozulabilir** | İstemdeki *«TEK ADIMLA CEVAPLANIYORSA TEK ADIM YAZ»* bugün bir **dilek**; `O-13` onu **kapıya** çeviriyor |
+| **R3** | Maliyet: `§AA1` bugün **0 LLM**, göç sonrası 1 çağrı | Gerçek ve yazılıyor. `§AA1`'in kendi yolu **korunur** (`§E4`); orkestratör yalnız **devamını** alır (`§E7.5`) |
+
+---
+
+## E8 · KABUL ÖLÇÜTÜ — A/B DEĞİL, **DENKLİK**
+
+`EE` turunun aleti (arıza oranı) bu karar için **yanlış alettir**: paydası küçülüyor (`§E2.1`),
+LLM'e/kotaya/konteynere bağımlı, ve *"cevap tam mı"*yı **göremiyor** (`§E2`).
+
+Göçün kapısı tek cümledir:
+
+> 🔴 Bugün tek adımda cevaplanan **her** korpus sorusu için, plan **1 adım** çıkarmalı ve
+> `tek_adimli()`'nin döndürdüğü `cube_query`, bugünkü `select_cube`'un ürettiğiyle **birebir
+> aynı** olmalı.
+
+Üç işi birden yapıyor:
+
+* ~100 testin kazandığı route↔garson sınırını **koruyor** — bozulursa **kapı** kırmızı yanar, canlı değil
+* `R2`'yi bir dilekten bir **kapıya** çeviriyor
+* `payda kutsaldır` kuralına uyuyor: aynı sorular, aynı sırayla, tek payda
+
+---
+
+## E9 · FAZLANDIRMA
+
+> ⚠ **Sıra bağlayıcıdır.** `O-10` ve `O-11` kapanmadan `O-14`'ü açmak, plan kurulup
+> **koşamaması** demektir (`§E3` + `§E4`). `O-12` olmadan `O-13` ölçülemez.
+> 🔴 **`O-10` … `O-13` arası canlı davranışa DOKUNMAZ ve bayrak `off` kalır** — `KURAL B`
+> bütünüyle yürürlükte.
+
+| faz | iş | LLM | canlı davranış | kapı |
+|---|---|---|---|---|
+| **O-10 · KABLO** | `KIYASLA`·`AYRISTIR`·`TREND` gövdelerini şemanın sözleşmesine bağla | ❌ | değişmez | gövdenin okuduğu her alan `ZORUNLU_ALANLAR`'da **olmalı** — yeni kapı |
+| **O-11 · SÖZLEŞME** | İstemi `ZORUNLU_ALANLAR`'dan **ürettir** + 1 işlenmiş kök-neden örneği + redde **tek** geri-besleme turu | ❌ (üretim) | değişmez | her fiilin her zorunlu alanı istemde **geçmeli** — üretilen metin sınanır |
+| **O-12 · SAYAÇ** | Plan telemetrisi: denendi · reddedildi (**sebebiyle**) · koştu · adım sayısı · **tek-adımlı oranı** | ❌ | değişmez | `§E9`'un karşı önlemi ölçülebilir hâle gelir |
+| **O-13 · DENKLİK** | Çevrimdışı plan harness'i + korpus denklik kapısı (`§E8`) | ✅ (tur başına bir kez) | değişmez | 🔴 **göçün ön şartı** — geçmeden `O-14` açılmaz |
+| **O-14 · GÖÇ** | `garson = orkestratör`. `one()` içinde `plan_kur` → `tek_adimli()`. Oy **tek kaynaktan** (`§E7.4`) | ✅ | 🔴 **değişir** | denklik kapısı + 20-senaryo curl turu |
+| **O-15 · EL VERME** | `«devam edebilirsin»` işaretini tetiğe bağla — `§AA1`'in bıraktığı yerden `SUZ→SORGU→BOYUTSEC` | ✅ | 🔴 değişir | `§E1`'in 3/3'ü curl ile doğrulanır |
+| **O-16 · TEMİZLİK** | Bayrak açıklaması (`§E6`) · takip turu sürekliliği · `agent_run` denetim kaydı | ❌ | küçük | — |
+
+### E9.1 · Fazların **bağımsız değeri**
+
+Her faz tek başına da kazançlıdır — sonraki gelmese bile:
+
+* `O-10` üç ölü fiili canlandırır → mevcut bayrak açılırsa **koşabilir** hâle gelir
+* `O-11` `KAT-1` sınıfı bir kusuru kapatır → fiil eklendiğinde model onu **öğrenir**
+* `O-12` `§E9`'un yazılı ama **uygulanamayan** karşı önlemini uygulanabilir yapar
+* `O-13` göç olmasa **bile** bugünkü garsonun regresyon ağıdır
+
+### E9.2 · Geri dönüş
+
+`O-14` tek bayrakla geri alınır ve `O-10`…`O-13`'ün hiçbiri geri alınmaz — çünkü hiçbiri
+canlı davranışa dokunmadı. *Bir göçün geri dönüşünü ucuz kılan şey, önündeki fazların
+davranışa dokunmamış olmasıdır.*
+
+---
+
+## E10 · ⟳ BU EKİN KENDİ DÜZELTMESİ
+
+Bu oturumda **kendi bulgularımdan birini çürüttüm** ve kayda geçiriyorum:
+
+> 🔴 *"`dima-frontend-demo-master/` yok → `test_cevap_alani_yetim_degil.py` sessizce
+> `skip` ediyor → `plan` alanının tüketicisi doğrulanamıyor."*
+
+**YANLIŞ.** Frontend kaynağı **var** ve `plan` alanı **okunuyor**:
+`dima-frontend-demo-master/src/components/PlanAdimlari.tsx:44` (`const plan = item.plan`) ve
+`src/lib/types.ts:320`. İddia, kabuk çalışma dizininin bir üst klasöre kaymasından doğdu —
+yani bir **ölçüm artefaktı**, bir kod kusuru değil.
+
+⊙ Ve bu, deponun kendi kayıtlı dersinin tekrarıdır (`lab` ölçüm aleti bayat şemadan
+okuyordu): **beklenmedik bir yoklukta önce aleti/ortamı şüphelen, kodu değil.**
+
+*Bir denetimin ilk kurbanı, denetimin kendi ortamıdır.*
+
+---
+
+## E11 · ÖZET — ALTI CÜMLE
+
+1. Sistem `«RAM 3 neden düşük»` zincirinin **2/3'ünü** bugün, **LLM'siz**, kanıtlanabilir
+   yapıyor; üçüncüyü **biliyor ama atmıyor**, kullanıcıya ödev veriyor.
+2. Orkestratör o üçüncü adımı yapabilir — ama **boşlukta** durduğu için o soruyu **hiç
+   görmüyor**, ve kayıp **hiçbir metriğe düşmüyor**.
+3. Üç fiil (`KIYASLA`·`AYRISTIR`·`TREND`) gövdesi şemanın **yasakladığı** alanı okuyor →
+   yapısal olarak **ölü**.
+4. Modele parametre sözleşmesi **hiç öğretilmiyor**; `EE` turundaki *"model uymuyor"* teşhisi
+   bir **istem kusurunun** faturasıydı.
+5. Karar: orkestratör bir **basamak değil, garsonun çıktı biçimidir** — karar yüzeyi
+   büyümez, `B`'nin `-10`'u **birlikteliği** yargılamıştı, tam göç onu ortadan kaldırır.
+6. Kapı bir A/B değil bir **denkliktir**: tek adımlı her soru, tek adımlı ve **birebir aynı**
+   `cube_query`'yi üretmelidir.
+
+> *Bir yeteneği doğru yere koymak, onu doğru yazmaktan önce gelir — ve bu belgenin ilk hâli
+> yeri yanlış koymuştu. Ölçü, yazıyı düzeltti.*
