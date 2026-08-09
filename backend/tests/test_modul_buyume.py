@@ -450,6 +450,22 @@ MUAFIYET_ASK_KOD = [
      "son andır. Çağrıyı dışarı almak, çağrının **yerini** kaybetmek olurdu. "
      "⊙ İz satırı bilerek burada: kullanıcının gördüğü sıralamayı **sistemin koyduğu** "
      "makbuza yazılmazsa, kullanıcı onu kendi yazdığını sanır"),
+    ("bbb-merdiven-bos-cevap-dondurebiliyordu", 1,
+     "🔴🔴 **MERDİVEN BOŞ BİR CEVAP DÖNDÜREBİLİYORDU.** Ölçüldü (`BB19`/`BB20`, canlıda "
+     "tekrarlandı): `source=None · note=None · trace=[] · chip=0 · satır=0` — kullanıcı "
+     "ekranda HİÇBİR ŞEY görüyordu. `§0.0`'ın en açık ihlali (*kullanıcı asla cevapsız "
+     "kalmaz*) ve en sinsi biçimi: bir hata bile değil, sistem «başarıyla» boş döndü. "
+     "⊙ Kusurun yeri bir DAL DEĞİL — merdivenin herhangi bir basamağı boş bir nesne "
+     "üretebilir ve hepsini tek tek denetlemek `KAT-1`'in kendisidir. Değişmez UCUN "
+     "değişmezidir → kapanış hunisinde durur (`_finish` zaten *«hangi basamaktan "
+     "çıkılırsa çıkılsın buradan geçilir»* diye seçilmiş tek huni). "
+     "⚠ **TAŞINAMAZ:** mühürden (`seal`) hemen önce olmalı — sonra konsa boş cevap zaten "
+     "mühürlenmiş, yani KAYDEDİLMİŞ olurdu. "
+     "⚠ Yüklem İKİ KEZ yanlış yazıldı ve ikisi de ölçüldü: (1) `trace`/`source` içerik "
+     "sayıldı → guard sessiz kaldı; (2) alanlar ELLE sayıldı ve `kpi` unutuldu → geçerli "
+     "bir KPI cevabının üstüne yazdı (`§101.1`). Nihai yüklem TERSİNE çevrildi: cevap, "
+     "`question` dışındaki HER alanı boş olduğunda boştur — yarın eklenen bir alan "
+     "guard'ı kendiliğinden doğru tutar. ⚠ **VE KAPI BANA NEREYE KOYACAĞIMI DA SÖYLEDİ:** ilk yazımda `ask()` içinde bir closure'dı ve `test_ASK_IC_FONKSIYON_SAYISI_ARTMIYOR` kırmızı verdi — o ölçütün muafiyet listesi BOŞTUR ve boş kalması bir başarıdır. Kapının kendi cümlesi: *«yeni bir yardımcı gerekiyorsa MODÜL DÜZEYİNE al: saf bir fonksiyon test edilebilir, closure edilemez»*. Taşındı; `ask()` içinde kalan tek satır **çağrının kendisidir**. *Bir kapı yalnız hayır demez, bazen nereye koyacağını da söyler.*"),
     ("aa2-v4un-ikinci-dali-makbuz-yine-llmsiz-diyordu", 5,
      "🔴 **`§V4`'ÜN İKİNCİ DALI — ve `§72`'nin ölçüm aletini TERS okutuyordu.** Ölçüldü "
      "(`AA16`, Hollandaca — *«Waarom is de OEE van RAM-3 lager dan de andere machines?»*): "
@@ -1017,6 +1033,19 @@ MUAFIYET_ASK_DOSYA = [
      "çıkarınca bu dal daha sık koşar oldu. *Bir yolu açmak, üstündeki çukuru devralmaktır.* "
      "⚠ İki satır: imza (`time_dim` parametresi) — gövde sabitleri parametreye ÇEVRİLDİ, "
      "eklenmedi. Varsayılan `\"tarih\"` → çağıranların hepsi bayt bayt aynı. Sondaj 3/3."),
+    ("bbb-bos-cevap-guardi-ask-DISINDA", 16,
+     "🔴🔴 **`§BB-B`'nin gövdesi `ask()` DIŞINDA — ve orada olması kapının kendi "
+     "TALİMATIDIR.** `test_ASK_IC_FONKSIYON_SAYISI_ARTMIYOR` kırmızı verdi ve cümlesi "
+     "şuydu: *«yeni bir yardımcı gerekiyorsa MODÜL DÜZEYİNE al: saf bir fonksiyon test "
+     "edilebilir, closure edilemez»*. O ölçütün muafiyet listesi BOŞTUR ve boş kalması "
+     "bir başarıdır — bu yüzden borç `ask()`'e değil dosyaya yazıldı. "
+     "⊙ Ve taşıma fonksiyonu GERÇEKTEN saflaştırdı: tek bağımlılığı `body.question`'dı, "
+     "artık bir parametre. Kapsam paylaşmıyor, tek başına test edilebilir. "
+     "⚠ **TAŞINAMAZ (dosya dışına):** `AskResponse`'un boşluk tanımı `/ask`'in "
+     "sözleşmesidir; başka bir modüle koymak, cevabın ne olduğunu bilen yerden "
+     "uzaklaştırırdı. `_canon_cq`'nun yanında duruyor — ikisi de saf, ikisi de bu ucun "
+     "değişmezlerini taşıyor. "
+     "*Bir kapı yalnız hayır demez, bazen nereye koyacağını da söyler.*"),
     ("v2-oylama-zenginligi-cezalandiriyordu", 49,
      "🔴🔴 **OYLAMA, ZENGİN CEVABI KENDİ ZENGİNLİĞİ YÜZÜNDEN ELİYORDU.** Kanonik anahtar "
      "**tam `cq`** olduğu için `order`/`limit`/`pencere`/`turev` yazmayan iki oy "

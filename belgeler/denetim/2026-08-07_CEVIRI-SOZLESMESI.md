@@ -7200,3 +7200,32 @@ kullanıcıya kendi sorusunu suçlatır.*
 |---|---|---|
 | `BB14` *«kaç sevkiyat zamanında teslim edildi»* | `sevkiyat`ta yalnız **`gecikmeli_sevkiyat_yuzde`** var | *«zamanında»* onun **tümleyeni**, ayrı bir ölçü değil. O adı ona vermek `Y4`'ün tuzağı olurdu: **yarımı tam diye sunmak** |
 | `BB10` çeyrek kıyası · `BB9` Discovery | `temsil-yok=kiyas` (bilinen `§49` kökü) | `agent_plan_secimi` / çapraz-küp kompozisyonuyla **aynı kuyrukta**; takas **ölçülmeden** açılmaz |
+
+### §108.1 · BB KAPISI YEŞİL — ve kapı beni DÖRT kez yakaladı
+
+| yakalama | ne oldu |
+|---|---|
+| 3 büyüme tavanı | `§BB-B`'nin satırları + **yeni bir iç fonksiyon** |
+| 🔴 `test_ask_wires_kpi_match_to_resolve_kpi` | guard'ım geçerli bir **KPI cevabını ezdi** |
+
+#### 🔴 YÜKLEMİ İKİ KEZ YANLIŞ YAZDIM — ikisi de ölçüldü
+
+1. `trace`/`source`'u *"içerik"* saydım → guard **sessiz kaldı**: iz doluydu, ekran boştu.
+2. Görünür alanları **elle saydım** ve `kpi`'yi unuttum → geçerli bir cevabın üstüne
+   *"cevaplayamadım"* yazdım. `§101.1` birebir.
+
+⊙ Ders: **alan saymak yanlış yöntem.** Cevap şekilleri zamanla artıyor (`kpi`·`agent_run`·
+`prescription`…) ve her yenisi listeyi sessizce eskitiyor. Yüklem **tersine** çevrildi:
+*cevap, `question` dışındaki **her** alanı boş olduğunda boştur.*
+
+*Bir listeyi tam tutmak, listenin olmadığı bir kuralı yazmaktan zordur.*
+
+#### 🔴 VE KAPI BANA NEREYE KOYACAĞIMI DA SÖYLEDİ
+
+Guard'ı `ask()` içinde closure yazmıştım; `test_ASK_IC_FONKSIYON_SAYISI_ARTMIYOR` kırmızı
+verdi — o ölçütün muafiyet listesi **boştur ve boş kalması bir başarıdır**. Kapının kendi
+cümlesi: *«yeni bir yardımcı gerekiyorsa **modül düzeyine** al: saf bir fonksiyon test
+edilebilir, closure edilemez»*. Taşındı — ve taşıma fonksiyonu **gerçekten saflaştırdı**:
+tek bağımlılığı `body.question`'dı, artık bir parametre.
+
+*Bir kapı yalnız hayır demez, bazen nereye koyacağını da söyler.*
