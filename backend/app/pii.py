@@ -124,10 +124,15 @@ def mask_query_result(result: dict, principal=None) -> tuple[dict, bool]:
 #: **maskelemektir**; muaf tutmak **açık bir karar** ister ve karar burada durur.
 #:
 #: ⚠ Ölçüldü (2026-08-04): `apply_to_ask_response` yalnız `result.rows` · `facts[].text` ·
-#: `summary` maskeliyordu. `AskResponse`'un o gün **29**, bugün **31** alanı var (FAZ 1.12
-#: `ai_generated_prose` + `kanit_sinifi`, FAZ 2.6 `mali_donem`, FAZ 2.5 `hedef`
-#: ekledi) — ve bu **tümleyenin işe yaradığının kanıtıdır**: DÖRT yeni alan için hiçbir şey
-#: yazılmadı, yine de kapsandılar. Kapı her seferinde bayat notu yakaladı.
+#: `summary` maskeliyordu. `AskResponse`'un o gün **29**, bugün **43** alanı var (FAZ 1.12
+#: `ai_generated_prose` + `kanit_sinifi`, FAZ 2.6 `mali_donem`, FAZ 2.5 `hedef`, `FAZ 6`
+#: `plan` … ekledi) — ve bu **tümleyenin işe yaradığının kanıtıdır**: ON DÖRT yeni alan
+#: için hiçbir şey yazılmadı, yine de kapsandılar. Kapı her seferinde bayat notu yakaladı.
+#:
+#: 🔴 `FAZ 6`'nın `plan` alanı bu iddianın en sert sınavıydı: içinde `bolumler[].result`
+#: var, yani **satırlar** — maskelemenin asıl hedefi. Sayılan bir liste olsaydı yeni bir
+#: kap altındaki satırlar sessizce dışarıda kalırdı. *Bir tümleyeni, kapsamı büyüdükçe
+#: değil, kapsamı büyüdüğünde SUSTUĞUNDA sınarsın.*
 #: Sayılan bir liste olsaydı ikisi de sessizce dışarıda kalırdı. Geri kalanı — `narration`
 #: (LLM metni, olgulardan üretilir) · `contribution` (**cevabın gövdesi**, bkz. `0.23`) ·
 #: `next_steps` · `suggestions` · `prescription` — **hiç maskelenmiyordu**.

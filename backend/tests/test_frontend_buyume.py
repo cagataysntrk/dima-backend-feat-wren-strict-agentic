@@ -90,7 +90,23 @@ TAVANLAR = {
     #   kardeş sütunlar arası bir **düzen kuralı**; bir bileşene çıkarmak kuralı ait
     #   olduğu yerden koparırdı. *Sarmak, sınırsız bir listeyi sınırlı bir alana
     #   sığdırmanın doğru yoludur; kırpmak bilgiyi siler.*
-    "components/ReportCard.tsx": 1040,
+    # 🔴 **1040 → 1048 (`FAZ 6`, 2026-08-09).** ⚠ Tavan `MUAFIYET` listesine DEĞİL
+    # buraya yazıldı ve bu bir tercih değil bir **zorunluluk**: `test_KAPI_GERCEKTEN_
+    # KIRMIZI_VERIYOR` bu dosyayı **doğrudan tablodan** okur (`n == TAVANLAR[dosya]`),
+    # çünkü kapının kırmızı verebildiğini kanıtlamak için tavanda **boşluk olmamalı**.
+    # Muafiyetle yükseltmek tavanı 1048 yapar ama tabloyu 1040'ta bırakır — meta-kapı
+    # o boşluğu görür ve haklı olarak *"kapı büyümeyi durdurmuyor"* der.
+    #
+    # ⊙ Sekiz satırın hesabı: davranışın kendisi zaten bir bileşene **çıkarıldı**
+    # (`PlanAdimlari.tsx`, 123 satır); burada kalan yalnız **kablo** — import (1) ·
+    # bileşen çağrısı (1) · adım kanıtı için iki durum satırı (2) · panelin kimlik
+    # seçimi (4). Bunları da çıkarmak, kartın hangi paneli açtığını karttan **ayırmak**
+    # olurdu; `InterpretationBar` çapasının muafiyetiyle birebir aynı gerekçe.
+    #
+    # 🔴 Ve dördü bir kusuru **gidermek** için: ölü `/contracts/{id}` bağlantısı (404)
+    # kapatıldı. *Bir kusuru gidermenin bedeli de tavandan ödenir — ama ödenmiş olması
+    # yazılmalıdır.*
+    "components/ReportCard.tsx": 1048,
     "lib/api-client.ts": 778,
     "lib/chart.ts": 688,
     # ⊙ 579 → 581: +1 `eksik_niyet?: string[]` (KÖK-3) · +1 `Suggestion.kind?` (KÖK-9).
@@ -149,6 +165,12 @@ TAVANLAR = {
 
 #: `(dosya, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 MUAFIYET: list[tuple[str, int, str]] = [
+    ("lib/types.ts", 4,
+     "🔴 `FAZ 6` — `AskResponse.plan` alanı (çok adımlı cevabın taşıyıcısı). "
+     "⚠ **TAŞINAMAZ** ve gerekçesi bu dosyanın kendi muafiyetinde zaten yazılı: bu "
+     "dosya sunucu sözleşmesinin **tek** aynasıdır; bir alanı ikinci bir tip dosyasına "
+     "koymak sözleşmeyi iki yerden okumak olurdu. 🔴 Dört satır, tek alan ve `null` "
+     "varsayılan: tek adımlı cevapta hiç dolmaz, yani bugünkü kart bayt bayt aynı."),
     ("lib/types.ts", 1,
      "🔴 `G6.3` — `temellendirme.kiyas` alanı. ⚠ **TAŞINAMAZ:** bu dosya sunucu "
      "sözleşmesinin **tek** aynasıdır; bir alanı ikinci bir tip dosyasına koymak, "

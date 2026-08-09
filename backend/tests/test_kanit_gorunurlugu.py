@@ -146,8 +146,21 @@ def test_K1_REDDEDILEN_adimlar_gizlenmiyor():
 def test_K1_YETIM_ALAN_receipt_TIKLANABILIR():
     """FAZ 0.8'in yetim alanı: `agent_run.steps[].receipt` bir kimlik dizgisi olarak
     kalırsa **kimse açamaz**."""
+    # ⟳ **BU KAPI DA ÖLÜ BİR BAĞLANTIYI ŞART KOŞUYORDU (düzeltildi 2026-08-09).**
+    # `src/app/` altında `contracts/` diye bir rota YOK; iddia edilen `href` tıklayana
+    # **404** veriyordu. Yani kapı, kendi cümlesini (*«kimse açamaz»*) çürüten bir
+    # bağlantıyı *«açılabilir»* diye onaylıyordu.
+    #
+    # ⊙ Bu, aynı kusurun **ikinci** kapısıydı: `test_cevap_alani_yetim_degil.py`'deki
+    # kardeşi de aynı dizgeyi istiyordu. Bir yanlışı iki kapıya yazmak, onu iki kat
+    # doğru yapmaz — yalnız iki kat kalıcı yapar.
+    #
+    # Doğru iddia **ulaşılabilirliktir**: kimlik ya kanıt panelini açar ya okunabilir
+    # yazılır. *Bir kapıyı yazarken çözümü şart koşarsan, çözüm bozulduğunda kapı seni
+    # değil kendini korur.*
     src = fe_dosyalari()["components/Makbuz.tsx"]
-    assert 'href={`/contracts/${s.receipt}`}' in src
+    assert "onContract(s.receipt" in src or "makbuz {s.receipt}" in src, \
+        "makbuz kimliği ULAŞILAMAZ — ne panel açıyor ne okunabilir yazılıyor"
 
 
 def test_K1_UC_KOPUK_YUZEY_birlesti():
