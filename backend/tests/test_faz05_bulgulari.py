@@ -45,14 +45,36 @@ def test_DEGISIM_ailesi_DOLGU(kelime):
 
 
 def test_FARK_dolgu_DEGIL(schema):
-    """`fark` `enerji_sapma.toplam_enpg`'nin GERÇEK ölçü sinonimi — dolgu saymak onu
-    gölgelerdi (2a-1'in ölçümle reddedilen hatası). Bu test o kararı kilitler."""
-    assert "fark" not in cr._misc_hit_words("bu yil fark")
-    sahipli = any(cr._norm(str(s)) == "fark"
+    """`fark` **dolgu değildir** — ve bu karar hâlâ geçerli.
+
+    ## ⟳ İKİNCİ İDDİA GÖZDEN GEÇİRİLDİ — testin kendi daveti üzerine (2026-08-09)
+
+    Bu test iki şey iddia ediyordu: (1) `fark` bir dolgu kelime değil, (2) `fark`
+    `enerji_sapma.toplam_enpg`'nin **katalog sinonimi**. İkincisi kaldırıldı ve testin
+    kendi mesajı bunu **öngörmüştü**: *«vaka bayat: `fark` artık katalog sinonimi değil,
+    karar gözden geçirilmeli»*.
+
+    **Gözden geçirme — ölçümle:**
+
+    | | |
+    |---|---|
+    | canlı kusur (`GG2`) | *«ortalamadan **farkını** söyle»* → `enerji_sapma` eşleşti → soru **iki-cube yetenek sınırına** düştü ve cevapsız kaldı |
+    | çıplak `fark` ne demek | bir **enerji terimi değil**, bir **matematik kelimesi** — `§99.1`: geniş sinonim cube'u açgözlü yapar |
+    | kaldırmanın bedeli | 🔴 **ÖLÇÜLDÜ: korpus %94,9 → %94,9 (değişmedi)** |
+    | nitelikli hâl | `enerji farkı` · `kümülatif fark` · `sapma` **korundu** |
+
+    ⊙ Yani ilk iddia (dolgu değil) **korunuyor**, ikincisi (sinonim) ölçümle
+    **düşürüldü**. *Bir kararı kilitleyen test, kilidin dayanağı değiştiğinde onu
+    söylemelidir — bu test tam olarak onu yaptı.*
+    """
+    assert "fark" not in cr._misc_hit_words("bu yil fark"), (
+        "`fark` dolgu sayıldı — nitelikli hâlleri (`enerji farkı`) gölgelenir")
+    # ⚠ Nitelikli hâl HÂLÂ sahipli olmalı: kaldırılan yalnız **çıplak** `fark`.
+    sahipli = any("fark" in cr._norm(str(s))
                   for c in schema["cubes"]
                   for syns in (c.get("measure_synonyms") or {}).values()
                   for s in syns)
-    assert sahipli, "vaka bayat: `fark` artık katalog sinonimi değil, karar gözden geçirilmeli"
+    assert sahipli, "`fark` içeren HİÇBİR nitelikli sinonim kalmamış — fazla budandı"
 
 
 def test_DEGISIM_TRENDI_sorusu_CEVAPLANIYOR(schema):

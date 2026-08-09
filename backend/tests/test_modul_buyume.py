@@ -552,6 +552,19 @@ MUAFIYET_ASK_KOD = [
      "`V17`'nin kusuru tam da yeni sorgu koşmaktı. *Bir fişi okumak için mutfağa gidilmez.*"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("gg9-tam-kelime-siniri-alfabesinin-yarisini-taniyordu", 1,
+     "🔴🔴 **TAM-KELİME SINIRI ASCII-ONLY'Dİ.** Ölçüldü (canlı `GG9`): *«nasıl "
+     "**de**ğişti»* → `kalite.ort_dE` eşleşti ve soru iki-cube yetenek sınırına düştü. "
+     "Sebep `(?![a-z0-9])`: `ğ` bu sınıfta YOK, yani `de` + `ğ` bir **kelime sonu** gibi "
+     "okundu ve `\"dE!\"` işaretinin (tam-kelime) koruması **tam da korumak için konduğu "
+     "yerde** çöktü. ⊙ Pack bu tehlikeyi ÖNCEDEN yazmıştı: *«2 harfli kısa sinonim "
+     "substring-eşleşmede tehlikeli»* — koruma vardı, sınır yanlıştı. "
+     "⚠ Bedel **bir** satır: regex çok satıra yayıldı (100 karakter sınırı). "
+     "Alternatif — `_match_measure`'ün normalize etmesi — reddedildi: o, çağıranın "
+     "hafızasına güvenmek olurdu; bu sınır normalize edilmiş girdide de **doğru** "
+     "(no-op). 🔴 Ve bu bir dil kuralı EKLEMEK değil: `ADR-0008` sözcük listesi "
+     "yasaklar, **alfabe tanımını** değil. *Bir kelime sınırını alfabesinin yarısıyla "
+     "tanımlamak, öteki yarısını sınır sanmaktır.*"),
     ("wc-en-kotu-bir-yondur-buyukluk-degil", 6,
      "🔴🔴 **`lower_is_better` BEYANLI HER ÖLÇÜDE «EN KÖTÜ» TAM TERSİNİ VERİYORDU.** "
      "`_AZLIK_KUTBU` iki farklı CİNS kelime taşıyordu: `dusuk/az/kisa/kucuk/yavas` bir "
