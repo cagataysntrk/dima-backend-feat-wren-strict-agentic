@@ -279,6 +279,21 @@ eksikliği değil bir **yetenek** eksikliğidir; plan da yapamaz. *Bir sınırı
 ancak arkasında onu aşabilecek bir basamak varsa doğrudur; yoksa erteleme, reddi
 geciktirmekten başka bir şey değildir.*
 
+#### ⟳ 2.0.4 · BÜTÇE ÇIKTININ ŞEKLİNE GÖRE — `O-16`
+
+⊙ Ölçüldü (canlı `III3`, log damgalarıyla): `intent_azami_saniye = 20` tek bir
+`CubeQuery` için kalibre edilmişti. Garsonun çıktısı bir **plan** olduğunda aynı sayı
+bir tavan değil bir **bıçak** oldu: üç oyun **üçü de** aştı → oylar atıldı → tüketici
+kendi planını üretti (28 sn) → o da düştü → **Discovery** koştu. Ve geçerli bir 5
+adımlık plan (`SORGU·BAGLA·SUZ·KIR·SORGU`) **41. saniyede** geldi — üretilmiş, bedeli
+ödenmiş, kimse dinlemiyordu. Turun toplamı **62 sn**.
+
+⚠ Bütçeyi büyütmek burada gecikmeyi **artırmaz, azaltır**: aşım turu bitirmiyor, yalnız
+aynı işi baştan yaptırıyor. 62 sn + Discovery yerine ~41 sn + küp güvencesi.
+
+*Bir zaman aşımı görevi iptal etmez; yalnız onu dinlemeyi bırakır. Ve dinlenmeyen bir
+görev, ödenmiş ama teslim alınmamış bir iştir.*
+
 #### Değişmezler — orkestratöre özel
 
 | # | değişmez | nerede |
@@ -294,6 +309,7 @@ geciktirmekten başka bir şey değildir.*
 | **O9** | Onarım **sessiz olamaz** — her mekanik düzeltme ize bir beyan yazar | `plan_onarim.onar()` |
 | **O10** | `period_expr` motora **gitmez**, çözülür — ve çözücü `ask()` ile **aynıdır** | `_resolve_period` |
 | **O11** | Geç gelen bir plan **atılmaz**: kullanım anında yeniden okunur (zaman aşımı görevi iptal etmez) | `plan_tuketici.cevap()` |
+| **O12** | Oy **bütçesi çıktının şekline göre** ölçülür — plan ≠ tek `CubeQuery` (`45 sn` ↔ `20 sn`) | `plan_azami_saniye` |
 
 #### Kabul ölçütü: A/B değil **DENKLİK**
 

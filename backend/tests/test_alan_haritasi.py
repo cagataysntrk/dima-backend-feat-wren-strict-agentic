@@ -98,6 +98,17 @@ MUTFAK = {
     # OKUMUYOR — kapının yasakladığı yön budur (mutfak → dil ayrıştırma). Ürettiği
     # cümleler kendi çıktısının rakamlarından kuruluyor; hiçbir soru cümlesi okunmuyor.
     "plan_tuketici.py",
+    # 🔴 `FAZ O-15` — PLAN ONARICISI. **Mutfak, ve sınıfı bir tasarım kanıtıdır:**
+    # kullanıcının cümlesini hiç görmez. Girdisi bir `cube_query` ile bir **küp
+    # tanımıdır**; kararı *"bu ad bu küpte hangi alana ait"* sorusunun cevabıdır ve o
+    # cevap katalogda **yazılıdır**. Sıfır LLM, sıfır dil, sıfır tahmin.
+    #
+    # ⚠ Bu ayrım kapının yasakladığı yönü kurmadığını **yapısal olarak** gösterir:
+    # `onar(cq, spec)` imzasında bir soru cümlesi için yer yoktur. Modül dile
+    # bakmak isteseydi, imzasını değiştirmesi gerekirdi — ve o değişiklik burada
+    # görünürdü. *Bir sınırı en iyi koruyan şey, onu ihlal etmek için imza
+    # değiştirmeyi zorunlu kılmaktır.*
+    "plan_onarim.py",
 }
 
 #: 🍳 modüllerin ASLA import edemeyeceği 🗣 modüller — *"mutfak dil ayrıştıramaz"*.

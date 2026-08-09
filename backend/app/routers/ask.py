@@ -1103,6 +1103,28 @@ def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
     #
     # *Bir bütçeyi yalnız bir basamağa koymak, ötekini sınırsız ilan etmektir.*
     _intent_azami = float(getattr(get_settings(), "intent_azami_saniye", 20.0) or 20.0)
+    # 🔴🔴 `O-16` — **BÜTÇE ÇIKTININ ŞEKLİNE GÖRE ÖLÇÜLÜR.** `20 sn` tek bir
+    # `CubeQuery` için kalibre edilmişti; garsonun çıktısı bir **plan** olduğunda aynı
+    # sayı bir tavan değil bir **bıçak** oldu.
+    #
+    # ⊙ Ölçüldü (canlı `III3`, log damgalarıyla): üç oyun **üçü de** 20 sn'yi aştı →
+    # oylar atıldı → tüketici kendi planını üretti (28 sn) → o da düştü → **Discovery**.
+    # Ve geçerli bir 5 adımlık plan (`SORGU·BAGLA·SUZ·KIR·SORGU`) **41. saniyede** geldi:
+    # üretilmişti, bedeli ödenmişti, kimse dinlemiyordu. Turun toplamı **62 sn**.
+    #
+    # ⚠ Bütçeyi büyütmek burada gecikmeyi **artırmaz, azaltır**: bugünkü hâlde aşım
+    # turu bitirmiyor — yalnız işi çöpe atıp aynı işi baştan yaptırıyor. 62 sn + uydurma
+    # riski yerine ~41 sn + küp güvencesi.
+    #
+    # *Bir zaman aşımı görevi iptal etmez; yalnız onu dinlemeyi bırakır. Ve dinlenmeyen
+    # bir görev, ödenmiş ama teslim alınmamış bir iştir.*
+    try:
+        from app import plan_garson as _pg_b
+        if isinstance(llm, _pg_b.PlanGarsonu):
+            _intent_azami = float(
+                getattr(get_settings(), "plan_azami_saniye", 45.0) or 45.0)
+    except Exception:                                  # noqa: BLE001 — bütçe turu düşürmez
+        pass
     # 🔴 **BÜTÇE BİR SON TARİHTİR, OY BAŞINA PAY DEĞİL — canlı ölçüm çürüttü.**
     #
     # İlk yazım her oy için ayrı `result(timeout=azami)` çağırıyordu ve her çağrı **kendi

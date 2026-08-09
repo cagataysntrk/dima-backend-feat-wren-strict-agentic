@@ -788,7 +788,7 @@ flowchart TD
 
     ORK{"⟳ <b>6 · GARSON = ORKESTRATÖR</b> — 🚩 <code>orkestrator_plan</code> <i>beta</i><br/>🔴 <b>BASAMAK DEĞİL, ÇIKTI BİÇİMİ</b>: karar yüzeyi (route↔garson)<br/>bayt bayt AYNI — tek adımlı plan bugünkü CubeQuery'dir"}
     ORK -->|"off ∨ şema-geçerli plan yok"| D
-    ORK -->|"plan çıktı"| PLAN["<b>PLAN KOŞUMU</b> — <code>plan_kosucu</code><br/>7 kapalı fiil · azami 5 adım · <code>$1</code> referansı<br/>🔴 her <code>SORGU</code> adımı <b>parse_cube_query</b>'den geçer"]
+    ORK -->|"plan çıktı"| PLAN["<b>PLAN KOŞUMU</b> — <code>plan_kosucu</code><br/>15 kapalı fiil · azami 12 adım · <code>$1</code> referansı<br/>🔴 her <code>SORGU</code> adımı <b>parse_cube_query</b>'den geçer"]
     PLAN -->|"tüm adımlar koştu"| SORK["✅ <code>source=cube+llm</code><br/>cevap + <b>adım adım makbuz</b>"]
     PLAN -->|"bir adım koşamadı"| SORKX["◐ <b>ADIM ADIM RET</b><br/><i>hangi adımda NE eksikti</i><br/>— bugünkü tek satırlık rettin YERİNE"]
 
@@ -973,13 +973,17 @@ Intent-JSON için ayrı ve **daha ucuz** bir model kullanılabilir (`*_select_mo
 
 > ⟳ **2026-08-09 · YENİ BÖLÜM** *(`O-0`…`O-9`)*. Kaynak plan:
 > `belgeler/denetim/2026-08-09_ORKESTRATOR-KATMANI-VE-OLCEKLENME.md`.
-> **Bayrak `orkestrator_plan` = `off`** — ve bu bir tahmin değil, bir A/B'nin sonucudur.
+> ⟳ **Bayrak `orkestrator_plan` = `beta` *(2026-08-09 akşamı)*.** `off` idi ve o da bir
+> A/B'nin sonucuydu; **açılması da öyle**: gerileme diye ölçülen −10 puanın kaynağı plan
+> kalitesi değil **oylamada iki dağılımın karışmasıydı**. Tam göç karışmayı kaldırdı ve
+> denklik ölçümü plan yolunu bugünkünden **daha kararlı** buldu (sapma 0/5 ↔ 1/5).
+> *Bir ölçümün sonucunu, ölçüm düzeneğini düzeltmeden okumak, düzeneği ölçmektir.*
 
 **Restoranda:** garson *"önce hangi makine en kötü, sonra onu akranlarıyla kıyasla"*
 diyen bir siparişi **tek fişe** yazamaz. Orkestratör, garsona **fiş dizisi** yazdırır;
 her fiş yine **aynı beyaz listeden** mutfağa girer.
 
-### Beş modül — ve her birinin sınırı yazılı
+### Altı modül — ve her birinin sınırı yazılı
 
 | Modül | Ne yapar | 🔴 Ne YAPMAZ |
 |---|---|---|
@@ -987,9 +991,10 @@ her fiş yine **aynı beyaz listeden** mutfağa girer.
 | `plan_garson.py` | Planı **çevirir** — garsonun kendisi, ayrı bir kişi değil | Yalnız **boşlukta** çağrılır; oylamaya girmez |
 | `plan_kosucu.py` | Adımları sırayla koşar, `$1`'i çözer, bütçe sayar | 🔴 **SQL yazmaz · aritmetik yapmaz** — sayıyı her zaman **küp** koyar |
 | `plan_tuketici.py` | Planı motora bağlar, sonucu **anlatır** | Bir yerde cevap varken **hiç konuşmaz** |
-| `ilkeller.py` | `bagla` *(SATIR→DEĞER)* · `hesapla` *(SATIR→SATIR)* — zincirin eksik halkası | Veriye dokunmaz, sorgu koşmaz *(saf fonksiyon)* |
+| `ilkeller.py` | `bagla` *(SATIR→DEĞER)* · `hesapla` *(SATIR→SATIR)* · `matris` · `sirala` · `rapor` · `pano_taslagi` | Veriye dokunmaz, sorgu koşmaz *(saf fonksiyon)*; `PANO` bile **yazmaz** |
+| ⟳ `plan_onarim.py` *(`O-15`)* | Modelin **tek anlamlı** alan kaymalarını düzeltir — istemle doğrulayıcı **arası** üçüncü seviye | 🔴 Kullanıcının cümlesini **hiç görmez** (imzası `onar(cq, spec)`); hiçbir onarım **sessiz** değil |
 
-### Yedi fiil — liste **BÜYÜMEYECEK**
+### ⟳ On beş fiil — liste **KAPALI** *(7 → 15, `O-5`…`O-9`)*
 
 `SORGU` · `KIYASLA` · `AYRISTIR` · `BAGLA` · `HESAPLA` · `TREND` · `ANLAT`
 *(`ANLAT` yalnız **son** adım olabilir.)*

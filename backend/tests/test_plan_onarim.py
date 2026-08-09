@@ -210,3 +210,42 @@ def test_DOLU_HUCRE_VARSA_UYARI_YAZILMAZ():
     Tek bir dolu hücre varsa cevap doludur."""
     _rows = [{"a": None, "b": 3}]
     assert not all(v is None for r in _rows for v in r.values())
+
+
+def test_BUTCE_CIKTININ_SEKLINE_GORE():
+    """🔴🔴 `O-16` — bütçe **tek bir `CubeQuery`** için kalibre edilmişti.
+
+    Ölçüldü (canlı `III3`, log damgalarıyla): üç oyun üçü de 20 sn'yi aştı, oylar
+    atıldı, tüketici kendi planını üretti (28 sn), o da düştü, **Discovery** koştu.
+    Ve geçerli bir 5 adımlık plan **41. saniyede** geldi — üretilmiş, bedeli ödenmiş,
+    kimse dinlemiyordu. Tur **62 sn** sürdü.
+
+    ⚠ Bütçeyi büyütmek gecikmeyi artırmaz **azaltır**: aşım turu bitirmiyor, yalnız
+    aynı işi baştan yaptırıyor. *Bir zaman aşımı görevi iptal etmez.*
+    """
+    from app.config import get_settings
+
+    s = get_settings()
+    assert getattr(s, "plan_azami_saniye", 0) > getattr(s, "intent_azami_saniye", 0), \
+        "plan bütçesi tek-sorgu bütçesinden BÜYÜK olmalı — çıktı daha uzun"
+    assert s.plan_azami_saniye >= 41, \
+        "ölçülen en uzun meşru plan üretimi 41 sn — tavan onun ALTINDA olamaz"
+
+
+def test_PLAN_BUTCESI_YALNIZ_GARSON_ICIN():
+    """⚠ `KURAL B` — orkestratör devrede değilken bütçe **bayt bayt bugünkü**.
+
+    Kapı kaynağı okur: yükseltme `isinstance(llm, PlanGarsonu)` koşuluna bağlı olmalı,
+    koşulsuz bir atama olmamalı. *Bir bütçeyi koşulsuz büyütmek, onu her yol için
+    büyütmektir — ve ölçülmemiş bir yol için büyütülen bütçe bir gerileme riskidir.*
+    """
+    import inspect
+
+    from app.routers import ask as _ask
+
+    src = inspect.getsource(_ask._select_consistent)
+    assert "plan_azami_saniye" in src
+    _i = src.index("plan_azami_saniye")
+    _once = src[:_i]
+    assert "PlanGarsonu" in _once, \
+        "plan bütçesi garson koşuluna bağlı DEĞİL — bayrak kapalıyken de büyürdü"
