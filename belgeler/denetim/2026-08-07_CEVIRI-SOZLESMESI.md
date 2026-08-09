@@ -7465,3 +7465,20 @@ dürüstçe beyanlı.
 Kullanıcı sayılara bakıp *«demek ki eksik»* diye düşünürdü — oysa tam istediği elindeydi.
 
 *Bir yeteneği kurup ön koşulunu kurmamak, onu hiç kurmamaktır.*
+
+### ⟳ O-7 · MÜKERRER YAZDIM — ve bu bir ÖLÇÜMDÜ
+
+`DD15` (*«firenin maliyeti»* → `toplam_fire_kg`) için bir `para_birimi_yok` yüklemi yazdım.
+Canlıda ateşledi — **ve yanında zaten var olan bir beyan çıktı**:
+
+    ⚠ bir **maliyet/tutar** sordun ama elimdeki ölçü **kg** cinsinden …   ← benim yazdığım
+    ⚠ bir **₺ tutarı** sordun ama elimdeki ölçü **kg** cinsinden …        ← ZATEN VARDI
+
+Kaynak okundu: `_birim_bekleniyor` (`uyum.py:471`) `maliyet|tl|₺|tutar|para` desenini
+**zaten** taşıyor ve `olcu_ikamesi` ihlalini **zaten** üretiyor. Kaldırıldı.
+
+🔴 **Ve bu, `DD15`'in GERÇEK teşhisini değiştiriyor:** sistem **sessiz değildi**, dürüstçe
+beyan ediyordu. `G2` boşluğunun kanıtı `DD15` değil, **`DD16` (Discovery) ile `DD17`
+(netleştirme) arasındaki tutarsızlıktır** — aynı sınıftan iki soru, iki ayrı yol.
+
+*Bir eksiği kapatmadan önce, onun gerçekten açık olup olmadığına bakmak gerekir.*

@@ -500,6 +500,26 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
     # *Var olmayan bir alanı okuyan kod sessizce hiçbir şey yapar — ve testi geçer.*
     from app.viz import _unit_of as _vbirim
     _units = (cube_meta or {}).get("units") or {}
+
+    # FAZ O-7 — MUKERRER YAZDIM, VE BU BIR OLCUMDU.
+    #
+    # DD15 ("firenin maliyeti" -> toplam_fire_kg, sessiz) icin buraya bir `para_birimi_yok`
+    # yuklemi yazdim. Canlida ateslendi — VE YANINDA ZATEN VAR OLAN BIR BEYAN CIKTI:
+    #     "bir ₺ tutari sordun ama elimdeki olcu kg cinsinden (toplam_fire_kg)"
+    #
+    # Kaynak okundu: `_birim_bekleniyor` (:471) `maliyet|tl|₺|tutar|para` desenini ZATEN
+    # tasiyor ve `olcu_ikamesi` ihlali ZATEN uretiyor. Yani DD15'in kusuru bir BEYAN
+    # EKSIKLIGI DEGILDI — beyan vardi, ben onu aramadan ikincisini yazdim.
+    #
+    # YAZMADAN ONCE ARA kuralinin bu turdaki faturasi: iki cumle, ayni sey, ust uste.
+    # Kaldirildi.
+    #
+    # ⊙ Ve bu, DD15'in GERCEK teshisini degistiriyor: sistem sessiz DEGILDI, DURUSTCE
+    # beyan ediyordu. G2 boslugunun kaniti DD15 degil, DD16 (Discovery) ile DD17
+    # (netlestirme) arasindaki TUTARSIZLIKTIR — ayni sinif, iki ayri yol.
+    #
+    # *Bir eksigi kapatmadan once, onun gercekten acik olup olmadigina bakmak gerekir.*
+
     # 🔴🔴 **`§U1` — İSTEĞİ KARŞILAYAN KOLONU GÖRMEDEN «EKSİK» İLAN ETMEK.**
     #
     # Aşağıdaki döngü ölçüleri **tek tek** geziyor ve ilk uyuşmayanda beyan ediyordu.
