@@ -277,9 +277,30 @@ _USTUNLUK_CAPA = re.compile(r"\ben\s+[a-z]+\w*\b")
 # YAPISAL düzenleme sinyalleri — bunlar varsa soru sorguyu DEĞİŞTİRMEK istiyordur ve
 # konuşma sınıfına ALINMAZ. Çakışma gerçektir: "aylık neden düştü?" hem düzenleme hem
 # konuşma gibi görünür; öncelik YAPISALDA olmalıdır çünkü kullanıcı yeni sayılar bekler.
-_YAPISAL = ("bazinda", "bazli", "kirilim", "aylik", "haftalik", "gunluk", "yillik",
+#: 🔴🔴 **`§CC-A` — «KIR» BİR FİİLDİR ve `kirilim`in ta kendisidir.**
+#:
+#: Ölçüldü (CC turu, **iki kanıt**): *«bu farkın sebebini bir kat daha aç»* (`CC5`) ve
+#: *«RAM 2'nin fire **nedenlerini KIR**»* (`CC6`) → ikisi de **akran kıyasını tekrarladı**,
+#: istenen kırılımı vermedi.
+#:
+#: ⊙ Sebep `§BB-A`'nın **kenar etkisi**: üstünlüğü/değeri çapa yapınca, içinde *«neden»*
+#: geçen **her** takip `TUR_NEDEN`'e düşer oldu. Ama *«nedenlerini kır»* bir **açıklama
+#: isteği değil**, bir **yapısal düzenlemedir** — kullanıcı yeni satırlar bekliyor.
+#: `_YAPISAL` sözlüğü `kirilim` adını taşıyordu, **fiilini** taşımıyordu.
+#:
+#: ⚠ Yeni kelime **değil**: `kir` ile `kirilim` aynı gövdedir ve `_syn_hit`'in ek zinciri
+#: `kir`+`ilim`i zaten aynı köke bağlıyor. Eksik olan, **emir kipinin** sözlükte
+#: olmamasıydı — sistemin adını bildiği şeyin **fiilini** bilmemesi.
+#:
+#: ⊙ Ve `_YAPISAL` önceliği bu yüzden var (kendi notu): *"kullanıcı yeni sayılar
+#: bekliyorsa önce onları vermek gerekir — konuşma bir sonraki turda hâlâ mümkündür,
+#: ama yanlış sayı geri alınamaz."*
+#:
+#: *Bir düzeltme, kapattığı kapının yanında yeni bir kapı açabilir; kenarını da ölçmek
+#: gerekir.*
+_YAPISAL = ("bazinda", "bazli", "kirilim", "kir", "aylik", "haftalik", "gunluk", "yillik",
             "ceyrek", "sirala", "ilk ", "en yuksek", "en dusuk", "top ", "grafik",
-            "tablo", "pasta", "cizgi")
+            "tablo", "pasta", "cizgi", "dagilimini", "ayri ayri")
 
 
 @dataclass(frozen=True)

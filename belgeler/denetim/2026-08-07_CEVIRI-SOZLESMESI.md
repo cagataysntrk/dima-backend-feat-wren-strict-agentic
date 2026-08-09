@@ -7229,3 +7229,51 @@ edilebilir, closure edilemez»*. Taşındı — ve taşıma fonksiyonu **gerçek
 tek bağımlılığı `body.question`'dı, artık bir parametre.
 
 *Bir kapı yalnız hayır demez, bazen nereye koyacağını da söyler.*
+
+---
+
+## §109 · CC TURU — 20 senaryo · 18 Türkçe + 2 ampul
+
+**Skor:** 9 🟢 · 3 ◐ · 8 🔴
+*(Dil artık **hedef değil ampul**: kullanıcı kararı — «diller umurumda değil, sadece LLM
+çalışıyor mu diye ölçüyoruz». Tur ağırlığı Türkçeye çekildi.)*
+
+### 🔴🔴 §CC-A — «KIR» BİR FİİLDİR ve `kirilim`in ta kendisidir *(2 kanıt · KENDİ kenar etkim)*
+
+`CC5` *«bu farkın sebebini bir kat daha aç»* · `CC6` *«RAM 2'nin fire **nedenlerini KIR**»*
+→ ikisi de **akran kıyasını tekrarladı**, istenen kırılımı vermedi.
+
+⊙ Sebep `§BB-A`'nın **kenar etkisi**: üstünlüğü/değeri çapa yapınca içinde *«neden»* geçen
+**her** takip `TUR_NEDEN`'e düşer oldu. Ama *«nedenlerini kır»* bir açıklama isteği
+**değil**, bir **yapısal düzenlemedir** — kullanıcı yeni satırlar bekliyor.
+`_YAPISAL` sözlüğü `kirilim` **adını** taşıyordu, **fiilini** taşımıyordu.
+
+⚠ Yeni kelime değil: `kir` ile `kirilim` **aynı gövde**. Sondaj 7/7 — ve `kırmızı`/`kiraz`
+**temiz kaldı**: ek zinciri disiplini yanlış-pozitifi kendiliğinden kesiyor.
+
+*Bir düzeltme, kapattığı kapının yanında yeni bir kapı açabilir; kenarını da ölçmek gerekir.*
+
+### ✅ MUTFAK ENVANTERİ ÖLÇÜLDÜ *(kullanıcının istediği tarama)*
+
+| kavram | durum |
+|---|---|
+| enerji birim maliyeti | 🟢 **`birim_elektrik_tl_kwh` VAR** — 4,04 ₺/kWh |
+| müşteri kârlılığı | 🟢 **`kar_marji_yuzde` VAR** — LLM'siz çözüldü |
+| kapasite kullanım oranı | ⊘ **yok** — netleştirmeye düştü |
+| stok devir hızı | ⊘ **yok** — Discovery bütçesi aştı, dürüst ret |
+| duruş maliyeti | 🔴 **yok — ama sistem `yedek_parca_maliyet` verdi** *(sessiz yanlış, `Y4` sınıfı)* |
+
+### ✅ MAKBUZUN GÜVEN BOYUTU 🟢🟢
+
+`CC16` *«bu sayıya güvenebilir miyim, kaç partiden hesaplandı»* → `parti_sayisi` **1099**
+eklendi. Makbuz artık **formülü de hacmi de** veriyor — beş turdur formül veriyordu,
+hacim ilk kez soruldu ve karşılandı.
+
+### ⏸ CC'NİN DÖRT KÖKÜ — sıradaki demete
+
+| kök | kanıt | not |
+|---|---|---|
+| `§CC-B` çoklu çapa | `CC9` *«birincisini ikincisiyle kıyasla»* | iki ayrı satıra çapa — `§AA4`'ün ötesi |
+| `§CC-C` duruş maliyeti | `CC11` | `Y4`/`BB14` sınıfı: kavram yok, **en yakınını vermek yanlış** |
+| `§CC-D` ampul kırmızı | `CC19` (2024 geldi) · `CC20` (AR dönem çözülmedi) | garson dönemi çeviremedi |
+| `§CC-E` eşik | `CC17` *«100 partiden az olanları çıkar»* | `measure_having` uygulanmadı |
