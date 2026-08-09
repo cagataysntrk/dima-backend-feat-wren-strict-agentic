@@ -143,13 +143,20 @@ def test_YEDI_FIILIN_YEDISI_DE_BAGLI():
     ⚠ Bu kapı gövdelerin **doğru** çalıştığını değil, **bağlı** olduğunu ölçer. Doğruluk
     her gövdenin kendi testinde (`yoy` · `contribution` · `narration_guard`).
     """
+    from app.plan_kosucu import ICSEL_FIILLER
     from app.plan_semasi import FIILLER
     from app.plan_tuketici import _govdeler
 
+    # ⚠ İçsel fiil listesi **elle yazılmıyor**, `plan_kosucu`'dan okunuyor. İlk hâli bir
+    # kopyaydı ve `FAZ 7b`'de `MATRIS`/`SIRALA` eklenince **bayatladı**: kapı onları
+    # *«bağlanmamış»* sandı. *Bir kümeyi tarif eden liste, kümeden üretilmiyorsa er ya
+    # da geç onu yanlış tarif eder.*
     g = _govdeler(_Motor(), SCHEMA, {"lower_is_better": []})
-    ic_gorenler = {"SORGU", "BAGLA", "HESAPLA"}      # yorumlayıcının kendi bildikleri
-    eksik = set(FIILLER) - ic_gorenler - set(g)
+    eksik = set(FIILLER) - set(ICSEL_FIILLER) - set(g)
     assert not eksik, f"🔴 gövdesi bağlanmamış fiil(ler): {sorted(eksik)}"
+    # 🔴 Ve ters yön: içsel ilan edilen bir fiil gerçekten koşabiliyor mu?
+    assert set(ICSEL_FIILLER) <= set(FIILLER), (
+        "içsel ilan edilen bir fiil kapalı kümede YOK — şema onu hiç üretemez")
 
 
 def test_ANLAT_LLM_CAGIRMAZ():

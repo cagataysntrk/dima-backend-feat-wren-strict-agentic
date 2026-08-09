@@ -175,6 +175,21 @@ def _adim_coz(adim: dict, ciktilar: list[Any]) -> dict:
     return {k: _coz(v, ciktilar) for k, v in (adim or {}).items()}
 
 
+#: 🔴 **YORUMLAYICININ KENDİ BİLDİĞİ FİİLLER — TEK SAHİP.**
+#:
+#: Gövdeleri ya `sorgu_kos`'tan (`SORGU`) ya `ilkeller`den gelir; ikincisi **saf**tır —
+#: satır alır, değer verir, motora dokunmaz. Kalan fiiller `govdeler` ile **enjekte**
+#: edilir çünkü bir motor isterler.
+#:
+#: ⚠ Bu demet bir belge değil **kaynağın kendisidir**: `plan_tuketici`'nin kapısı
+#: (*«yedi fiilin yedisi de bağlı»*) buradan okur. Elle yazılmış bir kopya, bir fiil
+#: buraya eklendiğinde **bayatlardı** — ve bayatladı da: `MATRIS`/`SIRALA` eklenince
+#: kapı onları *«bağlanmamış»* sandı. *Bir kümeyi tarif eden liste, kümeden
+#: üretilmiyorsa er ya da geç onu yanlış tarif eder.*
+ICSEL_FIILLER: frozenset[str] = frozenset({
+    "SORGU", "BAGLA", "HESAPLA", "MATRIS", "SIRALA",
+})
+
 #: 🔴 **EŞ ZAMANLILIK TAVANI — ÖLÇÜLDÜ, seçilmedi.** (`lab/olcumler/motor_eszamanlilik.md`)
 #: 4 işçi **2,52×**, 8 işçi **1,86×** hızlandırdı: sekiz işçi yalnız çekişme ekliyor.
 #: ⚠ Bir tavanı yükseltmek bir kazanç değildir; ölçülmeden yükseltmek bir borçtur.
