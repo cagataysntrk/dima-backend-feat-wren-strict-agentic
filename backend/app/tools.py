@@ -75,6 +75,21 @@ class Arac:
     #   "servis:wren" → `WrenService` örneğine bağlı metot (istek başına)
     #   "servis:llm"  → LLM sağlayıcısına bağlı metot (ördek-tipli, sağlayıcı değişir)
     baglanma: Literal["modul", "servis:wren", "servis:llm"] = "modul"
+    # 🔴 **ÇALIŞTIRICININ VERDİĞİ PARAMETRELER — model ASLA vermez.**
+    #
+    # Ölçüldü (2026-08-09, `FAZ O` demeti): 25 aracın **yedisinin** `girdi` beyanı gerçek
+    # imzayla uyuşmuyordu. İki ayrı sınıf çıktı ve ikisi de bu alan olmadan ayırt
+    # edilemiyordu:
+    #   · `girdi`de olup imzada OLMAYAN ad → LLM onu yazarsa `TypeError` (gerçek kusur)
+    #   · imzada ZORUNLU olup `girdi`de olmayan ad → ya kusur ya **enjeksiyon**
+    #
+    # `svc`/`service`/`schema` gibi parametreler istek kapsamından gelir; onları `girdi`ye
+    # yazmak modele *"bir motor nesnesi uydur"* demek olurdu. Bu alan o ayrımı **beyan
+    # edilebilir** yapar ve kapı (`test_arac_beyani_imzayla_uyusur.py`) onu ölçer.
+    #
+    # *Bir sözleşmenin iki tarafı vardır: modelin verdiği ve çalıştırıcının verdiği.
+    # İkisini ayırmayan bir beyan, ikisi hakkında da yalan söyler.*
+    enjekte: tuple[str, ...] = field(default_factory=tuple)
     notlar: str = ""                # sınırlar, tuzaklar — planlayıcı bilmeli
     # 🔴 FAZ 6.2 — **GERİ ALMA REFERANSI.** `yan_etki="yazar"` bir araç bunu **taşımak
     # zorundadır**; `None` ise eylem **geri alınamaz** demektir ve bu **açıkça** böyle
@@ -324,8 +339,12 @@ KAYIT: tuple[Arac, ...] = (
     Arac(
         ad="viz.recommend",
         ozet="Sonucun doğru görselleştirmesini DETERMİNİSTİK seçer (Show-Me/Cleveland-McGill). [Erişim: sonuç + cube metadata (birim/additive)] [Ne zaman: sonuç dolu olduğunda] [NE ZAMAN KULLANILMAZ: grafik türünü LLM'e SEÇTİRMEK için — karar deterministiktir (ADR-0024)]",
-        girdi={"result": "sorgu sonucu", "cube_query": "CubeQuery",
-               "cube_meta": "semantik metadata (units, lower_is_better…)"},
+        # ⟳ `cube_meta` **YANLIŞTI**: `recommend`'in böyle bir parametresi yok. Semantik
+        # metadata `viz.meta_args(cube_meta)` ile `units`/`lower_set`/`non_additive`/
+        # `hedefler`e AÇILIR ve öyle geçilir. *Bir kolaylık fonksiyonunun girdisini,
+        # sardığı fonksiyonun girdisi diye beyan etmek, çağrıyı imkânsız kılar.*
+        girdi={"result": "sorgu sonucu", "cube_query": "CubeQuery"},
+        enjekte=("units", "lower_set", "non_additive", "hedefler"),
         cikti="VizSpec",
         determinizm="deterministik", maliyet="sifir", yan_etki="yok",
         izin="query:run", makbuz=None,
@@ -397,7 +416,9 @@ KAYIT: tuple[Arac, ...] = (
         ozet="Bir anlatı metnindeki HER sayıyı sonuç kümesine karşı doğrular — KAPIDIR. [Erişim: anlatı metni + sonuç kümesi] [Ne zaman: her LLM anlatısından SONRA — KAPIDIR, seçenek değil] [NE ZAMAN KULLANILMAZ: atlanamaz; atlanırsa uydurma sayı yayımlanır]",
         girdi={"metin": "yayımlanmak istenen düz metin",
                "result": "cevabın sonuç kümesi (rows/columns)",
-               "ek": "beyan edilmiş ek türetmeler (ör. yeni bir metriğin ara değerleri)"},
+               # ⟳ `ek` → `ek_degerler`: imzadaki ad bu. Bir **ad kayması**, ve en
+               # sinsi tür — anlam doğru, çağrı imkânsız.
+               "ek_degerler": "beyan edilmiş ek türetmeler (ör. ara değerler)"},
         cikti="Rapor{gecti, temiz_metin, reddedilen, dogrulanamayan_sayilar}",
         determinizm="deterministik", maliyet="sifir", yan_etki="yok",
         izin="query:run", makbuz=None,
@@ -458,7 +479,12 @@ KAYITSIZ_OLANLAR: tuple[Arac, ...] = (
              "[Ne zaman: 'ne yapmalıyız?' türü bir soruda] "
              "[NE ZAMAN KULLANILMAZ: sinyal yokken (reçete uydurur); bir SAYI sorusuna "
              "cevap olarak]",
-        girdi={"signals": "sinyal listesi (JSON)", "cube_query": "bağlam CubeQuery"},
+        # 🔴 ⟳ **BEYAN TAMAMEN YANLIŞTI.** `recete(rapor, *, lower_is_better, azami, esik)`
+        # imzasında ne `signals` ne `cube_query` var; girdi bir **`ContributionReport`
+        # sözlüğüdür**. Bu araç bir plandan çağrılsaydı `TypeError` alırdı.
+        girdi={"rapor": "ContributionReport sözlüğü "
+                        "({net_degisim, brut_hareket, bulgular:[…]})"},
+        enjekte=("lower_is_better",),
         cikti="seçenekler + gerekçe",
         determinizm="deterministik", maliyet="sifir", yan_etki="yok",
         izin="query:run", makbuz=None,
@@ -473,6 +499,7 @@ KAYITSIZ_OLANLAR: tuple[Arac, ...] = (
              "[Ne zaman: kullanıcı bir MALİ TABLO istediğinde] "
              "[NE ZAMAN KULLANILMAZ: tek bir ölçü sorusu için (aşırı ağır); mali tablo "
              "tanımı olmayan tenant'ta]",
+        enjekte=("svc",),   # istek kapsamlı motor — model bir motor nesnesi uyduramaz
         girdi={"kind": "gelir_tablosu | bilanco",
                "extra_filters": "isteğe bağlı ek filtreler"},
         cikti="satır hiyerarşili mali tablo",
@@ -498,6 +525,7 @@ KAYITSIZ_OLANLAR: tuple[Arac, ...] = (
              "[NE ZAMAN KULLANILMAZ: formülü UYDURMAK için — tanımsız bir KPI "
              "hesaplanmaz, sorulur]",
         girdi={"spec": "KPI tanımı (JSON)", "where": "isteğe bağlı filtre"},
+        enjekte=("svc",),
         cikti="KPI değeri + bileşenler",
         determinizm="deterministik", maliyet="pahali", yan_etki="yok",
         # ⚠ `contribution:scan` bu deponun **var olan** "pahalı çok-sorgulu tarama"
@@ -518,6 +546,7 @@ KAYITSIZ_OLANLAR: tuple[Arac, ...] = (
              "[Ne zaman: kullanıcı birden çok raporu tek belgede istediğinde] "
              "[NE ZAMAN KULLANILMAZ: tek bir soru için; blok sayısı tavanı aşarsa]",
         girdi={"spec": "rapor şartnamesi (başlık + bloklar)"},
+        enjekte=("service", "schema"),
         cikti="sayfalanmış rapor + kaynak listesi",
         determinizm="deterministik", maliyet="pahali", yan_etki="yok",
         # ⚠ Aynı gerekçe (`kpi.resolve`): blok başına bir sorgu koşar.
@@ -533,7 +562,10 @@ KAYITSIZ_OLANLAR: tuple[Arac, ...] = (
              "[Ne zaman: bir eşik/anomali ihlali bildirilirken] "
              "[NE ZAMAN KULLANILMAZ: ihlal yokken; tıklanabilir sorgu üretmek için — "
              "bildirim gövdesi sorgu TAŞIMAZ]",
-        girdi={"result": "alarm sonucu", "measure": "ölçü adı"},
+        # 🔴 ⟳ **BEYAN TAMAMEN YANLIŞTI.** İmza `uyari_nedeni(svc, cq, threshold)`;
+        # ne `result` ne `measure` var. `svc` istek kapsamlı motordur → **enjekte**.
+        girdi={"cq": "alarmın CubeQuery'si", "threshold": "eşik tanımı (JSON | None)"},
+        enjekte=("svc",),
         cikti="maskeli neden satırları + kırpma notu",
         determinizm="deterministik", maliyet="sifir", yan_etki="yok",
         izin="query:run", makbuz=None,
