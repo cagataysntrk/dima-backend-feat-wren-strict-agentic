@@ -45,12 +45,17 @@ SONDALAR: tuple[str, ...] = (
     "bu yıl toplam ciro",
     "makinelere göre ortalama oee",
     "geçen ay toplam fire",
-    "müşterilere göre ciro bu yıl",
-    "bu yıl aylara göre üretim miktarı",
     "en yüksek cirolu 5 müşteri",
     "vardiyaya göre ilk seferde tamam oranı",
-    "bu çeyrek toplam enerji tüketimi",
 )
+
+#: ⚠ Sonda sayısı **beş** ve bu bir kırpma değil bir **bütçe**: üretim yolu ölçümü soru
+#: başına `2 × k × 2` = 12 LLM çağrısı yapar (iki taraf, iki koşum, k=3). Sekiz soru
+#: bir ölçümü 10 dakikanın üstüne çıkarıyordu ve o noktada **ölçüm koşulmaz olur** —
+#: koşulmayan bir kapı, olmayan bir kapıdır. Payda değişirse **yazılır**: bu beşi
+#: `§CC-D` sonrası ölçülen sapmaların tamamını temsil ediyor (üçü çok sahipli ölçü
+#: içeriyor, ikisi içermiyor). *Bir paydayı küçültmek meşrudur; sessizce küçültmek
+#: değil.*
 
 #: 🔴🔴 **EŞİK MUTLAK DEĞİL, TABANA GÖRELİDİR — ve bu bir gevşetme değil, bir DÜZELTMEDİR.**
 #:
@@ -82,7 +87,47 @@ def _kur():
     return build_generator(s), catalog, index
 
 
-def olc(sorular, llm, catalog, index) -> dict:
+def _plan_uretim_yolu(llm, q, catalog, index, k: int = 3):
+    """🔴🔴 **PLANI DA ÜRETİM YOLUNDAN ÖLÇ — aynı hatayı ikinci kez yapmamak için.**
+
+    `O-14` sonrası üretimde `_select_consistent` **`PlanGarsonu`'yu** `k` kez örnekliyor
+    ve oyluyor. Planı **tek** çağrıyla ölçüp tabanı oylamalı ölçmek, iki farklı
+    mekanizmayı karşılaştırmaktı — ve *"plan daha kararsız"* diye bir sonuç üretirdi ki
+    o sonuç plandan değil **ölçüm asimetrisinden** gelirdi.
+
+    *İki şeyi karşılaştırırken birine verdiğin imkânı ötekine de vermelisin; yoksa
+    ölçtüğün şey fark değil, ayrımcılıktır.*
+    """
+    from collections import Counter
+
+    from app import plan_garson
+    from app.cube_router import parse_cube_query
+    from app.plan_semasi import tek_adimli
+    from app.routers.ask import _canon_cq
+
+    adaylar, planlar = [], []
+    for _ in range(k):
+        plan = plan_garson.plan_uret(llm, q, catalog, index)
+        if plan is None:
+            continue
+        planlar.append(plan)
+        cq = tek_adimli(plan)
+        if cq is None:
+            continue
+        temiz = parse_cube_query(json.dumps(cq, ensure_ascii=False), index)
+        if temiz is not None:
+            adaylar.append(temiz)
+    if not adaylar:
+        return None, planlar
+    sayim = Counter(_canon_cq(c) for c in adaylar)
+    kazanan = sayim.most_common(1)[0][0]
+    for c in adaylar:
+        if _canon_cq(c) == kazanan:
+            return c, planlar
+    return adaylar[0], planlar
+
+
+def olc(sorular, llm, catalog, index, *, uretim: bool = True) -> dict:
     from app import plan_garson
     from app.cube_router import parse_cube_query
     from app.routers.ask import _canon_cq   # ⚠ ÇAĞRILIYOR: ikinci bir «aynı» tanımı KAT-1 olurdu
@@ -90,11 +135,17 @@ def olc(sorular, llm, catalog, index) -> dict:
 
     ayni, sapan, cok_adimli, cevapsiz = [], [], [], []
     for q in sorular:
-        bugun = parse_cube_query(llm.select_cube(q, catalog, None), index)
-        plan = plan_garson.plan_uret(llm, q, catalog, index)
-        yeni_cq = tek_adimli(plan) if plan else None
-        yeni = parse_cube_query(json.dumps(yeni_cq, ensure_ascii=False), index) \
-            if yeni_cq else None
+        # ⚠ İKİ TARAF DA AYNI MEKANİZMADAN: `uretim=True` ise ikisi de k=3 oylamalı.
+        if uretim:
+            bugun = _uretim_yolu(llm, q, catalog, index)
+            yeni, planlar = _plan_uretim_yolu(llm, q, catalog, index)
+            plan = planlar[0] if planlar else None
+        else:
+            bugun = parse_cube_query(llm.select_cube(q, catalog, None), index)
+            plan = plan_garson.plan_uret(llm, q, catalog, index)
+            yeni_cq = tek_adimli(plan) if plan else None
+            yeni = parse_cube_query(json.dumps(yeni_cq, ensure_ascii=False), index) \
+                if yeni_cq else None
         if bugun is None:
             # ⚠ Bugün cevaplanamayan soru **paydaya girmez**: denklik, bugünkü davranışın
             # korunmasını ölçer; olmayan bir cevabı korumak diye bir şey yok.
@@ -185,6 +236,8 @@ def main() -> int:
     ap.add_argument("--kapi", action="store_true")
     ap.add_argument("--taban", action="store_true",
                     help="bugünkü yolun KENDİ sapmasını ölç (§86.6)")
+    ap.add_argument("--ham", action="store_true",
+                    help="ölçümü HAM tek çağrıyla yap (varsayılan: üretim yolu, k=3)")
     ap.add_argument("--uretim", action="store_true",
                     help="ölçümü ÜRETİM yolundan yap (k=3 oylama) — ham tek çağrı değil")
     a = ap.parse_args()
@@ -203,7 +256,7 @@ def main() -> int:
         print("⊙ Plan sapması bu sayıdan büyük değilse, fark plandan DEĞİL modelin "
               "kararsızlığından gelir.")
         return 0
-    r = olc(sorular, llm, catalog, index)
+    r = olc(sorular, llm, catalog, index, uretim=not a.ham)
     n = len(sorular)
     print(f"\npayda {n}  (bugün cevapsız {len(r['cevapsiz'])} → paydadan düştü)")
     print(f"  ✅ BİREBİR AYNI      {len(r['ayni']):>3}")
@@ -213,7 +266,7 @@ def main() -> int:
         print(f"      • «{q}» → {neden[:150]}")
     # 🔴 Çok adımlı olmak da bir **sapmadır**: basit bir soru basit kalmalı (`R2`).
     _sapma = len(r["sapan"]) + len(r["cok_adimli"])
-    t = oz_tutarlilik(sorular, llm, catalog, index)
+    t = oz_tutarlilik(sorular, llm, catalog, index, uretim=not a.ham)
     _taban = len(t["farkli"])
     print(f"\nPLAN SAPMASI  {_sapma}")
     print(f"TABAN SAPMASI {_taban}   {t['farkli']}")

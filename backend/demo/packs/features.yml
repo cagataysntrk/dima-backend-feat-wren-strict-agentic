@@ -194,30 +194,45 @@ features:
   # ⚠ "off" — çünkü kazancı ÖLÇÜLMEDİ: kaç sorunun gerçekten çok adımlı olduğu ve plan
   # uzunluğunun gecikmeye ne kattığı (E6/E9) canlı ölçüm ister. KAPALIYKEN `sarmala()`
   # nesnenin kendisini döndürür → davranış bayt bayt bugünkü (KURAL B, testli).
-  # 🔴 ÖLÇÜLDÜ VE KAPALI BIRAKILDI (`EE` turu, 2026-08-09). Karar bir tahmin değil, bir
-  # A/B'nin sonucudur — ve kararın kendisi raporun kuralına uyuyor: *«oran düşmezse faz
-  # GELİŞTİRİLİR, iptal edilmez»*.
-  #   · ilk tasarım (plan `select_cube`'un YERİNE): arıza oranı %55 → 🔴 **%65** (+10 puan)
-  #   · düzeltilmiş (plan YALNIZ boşlukta):        arıza oranı %55 → **%55** (+0,0)
-  # ⊙ Yani gerileme kapatıldı ama **kazanç henüz sıfır**: canlı iki denemede de şema-geçerli
-  # bir plan çıkmadı. Sebep yazılı ve sıradaki iş: `TREND`·`AYRISTIR`·`KIYASLA`·`ANLAT`
-  # fiillerinin çalıştırıcıları henüz bağlı değil, ve serbest-JSON sağlayıcı adım
-  # sözleşmesine uymuyor (`ZORUNLU_ALANLAR` onları düşürüyor — doğru davranış).
-  # ⚠ Bir bayrağı *"belki bir işe yarar"* diye açık bırakmak, ölçmemenin kibar hâlidir.
   # 🔴 ÖLÇÜLMÜŞ BİR KUSURUN KARŞI ÖNLEMİ — aynı soru, farklı cevap.
-  # Ölçüldü (2026-08-09, 8 soru × 2 koşum): ham tek çağrıda **2/8**, üretim yolunda
-  # (k=3 oylama) **1/8** farklı `cube_query`. Sapan soruların hepsi **çok sahipli** bir
-  # ölçü içeriyordu — 127 ölçü adının **9'u** birden çok küpte tanımlı ve katalog bunu
-  # hiçbir yerde söylemiyordu. Model seçemediği için değil, **belirsiz olduğunu
-  # bilmediği** için savruluyordu.
-  # ⚠ Blok ölçü adına BİTİŞİK DEĞİL, ayrı bir bölümde (`§CC-D`: `↓` işareti ada
-  # bitişik yazılınca model onu adın parçası sandı ve beyaz liste hepsini reddetti).
-  # ⚠ Blok bir KARAR VERMEZ: hangisinin doğru olduğunu söylemez, *«burada bir seçim
-  # var»* der. Sahiplik bir alan kararıdır (`metrik_kaydi.hakem` + `sahiplenilen_terimler`).
-  # 🔴 "off" — kazancı HENÜZ ölçülmedi (ölçüm zaman aşımına uğradı). Kapalıyken katalog
-  # metnine **tek karakter** eklenmez → istem bayt bayt bugünkü.
+  # Ölçüldü (2026-08-09): ham tek çağrıda **2/8**, üretim yolunda (k=3 oylama) **1/8**
+  # farklı `cube_query`. Sapan soruların hepsi **çok sahipli** bir ölçü içeriyordu —
+  # 127 ölçü adının **9'u** birden çok küpte tanımlı ve katalog bunu hiç söylemiyordu.
+  # Model seçemediği için değil, **belirsiz olduğunu bilmediği** için savruluyordu.
+  # ⚠ Blok ölçü adına BİTİŞİK DEĞİL (`§CC-D`: `↓` ada bitişik yazılınca model onu adın
+  # parçası sandı ve beyaz liste fire/duruş/maliyet/karbon'u sessizce ulaşılamaz yaptı).
+  # ⚠ Blok KARAR VERMEZ: *«burada bir seçim var»* der. Sahiplik bir alan kararıdır
+  # (`metrik_kaydi.hakem` + `sahiplenilen_terimler`, bugün boş).
+  # 🔴 "off" — **kazancı bu sonda kümesinde GÖSTERİLEMEZ**: denklik ölçümünde plan
+  # sapması zaten 0/5 ve tabanın tek sapması (`en yüksek cirolu 5 müşteri`) çok sahipli
+  # bir ölçüden değil sıralama/limitten geliyor. *Bir kazancı gösteremeyen bir ölçümle
+  # bayrak açmak, ölçmemekle aynı şeydir.* Kendi sonda kümesi yazılınca açılacak.
   katalog_belirsizlik: "off"
-  orkestrator_plan: "off"
+  # 🔴🔴 **AÇILDI (2026-08-09) — ve gerekçesi bir umut değil bir SAYI.**
+  #
+  # ⟳ Bir kez kapalı bırakılmıştı: `EE` turunun A/B'si arıza oranını %55 → **%65**
+  # ölçmüştü. O ölçüm **yarım bir göçü** ölçüyordu — plan ve `select_cube` bir aradaydı
+  # ve `_select_consistent`'ın oyu **iki farklı dağılımdan** besleniyordu. Yani `-10`
+  # puan planları değil **birlikteliği** yargıladı.
+  #
+  # Tam göç (`O-14`) birlikteliği kaldırdı: `PlanGarsonu`'da `select_cube` **yedeği
+  # yok**, üç oy da tek kaynaktan. Ve denklik kapısı (`O-13`, `lab/plan_denklik.py`)
+  # simetrik ölçtü — iki taraf da üretim yolundan (k=3 oylama):
+  #
+  #     PLAN  sapması : 0/5        ← beş sorunun beşinde cube_query BİREBİR aynı
+  #     TABAN sapması : 1/5        ← bugünkü yol kendisiyle bile anlaşmıyor
+  #     ölçüt `plan ≤ taban`  →  ✅ GEÇTİ
+  #
+  # ⊙ Yani plan yolu bugünkü yoldan **daha kararlı**. Ve `route → garson` karar yüzeyi
+  # **dokunulmadı**: değişen şey hangi yola gidildiği değil, garsonun **çıktı biçimi**.
+  # LLM çağrı sayısı da değişmiyor — garson zaten yalnız `route_hit is None` dalında
+  # çağrılıyor.
+  #
+  # ⚠ `beta`: fabrika varsayılanı açık, tenant/rol override'ı hâlâ mümkün. Geri alma
+  # tek satır. 🔴 Ön koşulları kapalı: `O-10` (üç ölü fiil) · `O-11` (istem sözleşmesi)
+  # · `O-12` (sayaçlar) · `O-13` (denklik). Bunlar olmadan bayrak açılsaydı plan kurulur
+  # ama **koşamazdı**.
+  orkestrator_plan: beta
   llm_sema_kisitli: beta  # FAZ 3a: Intent-JSON'u sağlayıcının NATIVE tool-use'una taşı —
                           # cube/ölçü/boyut adları o anki kataloğun ENUM'u olarak şemaya
                           # gömülür (enum CUBE'A GÖRE daralır; `cube:null` reddetme dalı

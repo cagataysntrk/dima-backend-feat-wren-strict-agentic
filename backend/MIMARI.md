@@ -161,6 +161,78 @@ güncellenmesini gerektirir.
 | 7 | **Discovery** — LLM ham SQL yazar | `llm:<sağlayıcı>` | evet | **tek atımlık düz tablo. Chip YOK, kırılım YOK, drill YOK.** |
 | 8 | dürüst red | `null` | — | "anlamadığını bil" — yanlış öneri, önerisizlikten kötüdür |
 
+### ⟳ 2.0 · BASAMAK 6 GENİŞLEDİ — ORKESTRATÖR BİR BASAMAK **DEĞİL** *(2026-08-09)*
+
+🔴 **Merdivene yeni bir basamak EKLENMEDİ** ve bu bilinçli bir mimari karardır:
+
+```
+reddedilen : route → garson → [orkestratör]   ← 3 yollu karar, YENİ sınır vakaları
+KARAR      : route → garson(= orkestratör)     ← 2 yollu, sınır AYNI
+                       └ çıktı 1 adım ya da N adım
+```
+
+⊙ Değişen şey *hangi yola gidilir* değil, **basamak 6'nın çıktısının şekli**. `route`↔garson
+ayrımı — bu deponun ~100 testle kazandığı sınır — **dokunulmadan** kalır.
+*Bir yeteneği bir basamak olarak eklemek karar yüzeyini büyütür; bir çıktı biçimi olarak
+eklemek büyütmez.*
+
+**Tek adımlı bir plan, basamak 6'nın bugünkü `CubeQuery`'sidir** (`plan_semasi.tek_adimli`)
+ve aynı `parse_cube_query` beyaz listesinden geçer. Çok adımlı planda adımlar sırayla koşar;
+her adımın gövdesi **zaten var olan** bir modüldür (aşağıdaki tablo).
+
+🔴 **LLM çağrı sayısı DEĞİŞMEZ** — ölçülmüş: garson zaten yalnız `route_hit is None` dalında
+çağrılıyor. Göç *ne zaman* çağrıldığını değil *ne döndürdüğünü* değiştiriyor.
+
+#### Kapalı fiil kümesi — 15 fiil, ve hiçbiri yeni motor açmaz
+
+| fiil | gövde | çıktı tipi |
+|---|---|---|
+| `SORGU` | `wren_service.cube_sql` | `satirlar` |
+| `BAGLA` · `HESAPLA` | `ilkeller.bagla` / `hesapla` (**saf**) | `varlik` · `olcum` |
+| `KIYASLA` | `contribution._akran_kiyasi` (`§AA1`) | `olcum` |
+| `AYRISTIR` | `contribution.arastir` | `bulgular` |
+| `TREND` | `yoy.compute` | `satirlar` |
+| `KIR` · `SUZ` | `drill.expand_cube_query` / `select_cube_query` | 🔴 **`sorgu`** |
+| `BOYUTSEC` | `contribution.rank_dimensions` | `bulgular` |
+| `MATRIS` · `SIRALA` | `ilkeller.matris` / `sirala` (**saf**) | `satirlar` |
+| `RAPOR` | `ilkeller.rapor` (**saf**) | `bulgular` |
+| `GORSEL` | `viz.recommend` (deterministik, ADR-0024) | `bulgular` |
+| `PANO` | `ilkeller.pano_taslagi` — 🔴 **YAZMAZ** | `bulgular` |
+| `ANLAT` | `interpret` + `narration_guard` — 🔴 **LLM YOK** | `metin` |
+
+⊙ `KIR`/`SUZ`'un çıktısı **satır değil sorgu**: bir adım sorgu üretir, sonraki adım onu
+**koşar**. Kök-neden inişinin bütün mekanizması bu tip ayrımındadır ve **döngü
+gerektirmez** — derinlik plan uzunluğuyla sınırlıdır (`AZAMI_ADIM = 8`, dört yeteneğin
+en kısa zincirinden **sayılarak**).
+
+#### Değişmezler — orkestratöre özel
+
+| # | değişmez | nerede |
+|---|---|---|
+| **O1** | Plan **koşmadan önce doğrulanır**: ileri referans · tip · `ANLAT` yalnız son · toplam bütçe · ulaşılamaz adım | `plan_kosucu.dogrula()` |
+| **O2** | Bağımlılık **çıkarılır, sorulmaz** — `depends_on` diye bir alan **yoktur** (`$n` tek veri kanalı) | `dogrula()` → Kahn katmanları |
+| **O3** | Paralellik yalnız **`SORGU`**, yalnız aynı katman, tavan **4** (ölçüldü: 4 işçi 2,52× · 8 işçi 1,86×) | `AZAMI_ESZAMANLI` |
+| **O4** | Çıktı **adım sırasına** yazılır, tamamlanma sırasına değil | `ciktilar[i-1]` ön tahsisli |
+| **O5** | Çalıştırıcı **salt-okunur ve idempotent** — `PANO` bile yalnız taslak üretir | `ilkeller.pano_taslagi` |
+| **O6** | Referans dili **ifade dili değil**: aritmetik yok, koşul yok, alan erişimi yok | `ADIM_REFERANSI` |
+| **O7** | Ağırlık **modelden gelmez** — `SIRALA`'da ağırlıklar **eşittir** ve bu bir beyandır | `ilkeller.sirala` |
+| **O8** | Gövdenin okuduğu her alan şemada **olmalı** (`ZORUNLU_ALANLAR` ∪ `ISTEGE_BAGLI_ALANLAR`) | kapı |
+
+#### Kabul ölçütü: A/B değil **DENKLİK**
+
+> Bugün tek adımda cevaplanan **her** soru için plan **1 adım** çıkarmalı ve `cube_query`
+> **birebir aynı** olmalı.
+
+Ölçüldü (`lab/plan_denklik.py`, iki taraf da üretim yolundan — k=3 oylama):
+**plan sapması 0/5 · taban sapması 1/5** → plan yolu bugünkünden **daha kararlı**.
+
+⚠ Ve buraya gelene kadar **aynı ölçüm hatası iki kez** yapıldı: bir kez taban ham tek
+çağrıyla, bir kez plan oylamasız ölçüldü. *İki şeyi karşılaştırırken birine verdiğin
+imkânı ötekine de vermelisin; yoksa ölçtüğün şey fark değil, ayrımcılıktır.*
+
+Bayrak: `orkestrator_plan` (**`beta`**, 2026-08-09). Kapalıyken `sarmala()` nesnenin
+kendisini döndürür → davranış bayt bayt bugünkü.
+
 **Tek çıkış noktası `app/answer.py::seal()`** — yorum, next_steps, öneriler, `explain`,
 PII maskesi (+ görüldüyse ayrı audit), sohbet kaydı, `interaction_log` ve **fail-closed
 audit** oradan geçer. Makbuz kaydı da tek uygulamadır: `answer.record_contract()`.

@@ -588,11 +588,14 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
     "orkestrator_plan": {
         "label": "Planlayıcı = garson (çok adımlı plan)",
         "description": "Garson bir tek-cube sorgusu yerine ADIMLARDAN oluşan bir plan "
-                       "çevirir — kapalı fiil kümesiyle (SORGU·KIYASLA·AYRISTIR·BAGLA·"
-                       "HESAPLA·TREND·ANLAT). LLM çağrısı ARTMAZ: plan, bugünkü niyet "
-                       "çağrısının YERİNE geçer ve tek adımlı plan bugünkü sorgunun ta "
-                       "kendisidir. Çok adımlı soruda merdiven bugünkü gibi akar, plan "
-                       "ayrıca saklanır — yani mevcut cevapların hiçbiri değişmez.",
+                       "çevirir — 15 fiillik KAPALI küme (SORGU·KIYASLA·AYRISTIR·BAGLA·"
+                       "HESAPLA·TREND·ANLAT·KIR·SUZ·BOYUTSEC·MATRIS·SIRALA·RAPOR·GORSEL·"
+                       "PANO). Bu bir BASAMAK değil, garsonun ÇIKTI BİÇİMİ: route↔garson "
+                       "karar yüzeyi dokunulmadan kalır ve LLM çağrı sayısı DEĞİŞMEZ. "
+                       "Tek adımlı plan bugünkü sorgunun ta kendisidir; ölçüldü: beş "
+                       "sorunun beşinde cube_query birebir aynı (taban kendisiyle 5'te "
+                       "1 anlaşmıyor). Çok adımlı soruda plan koşulur ve cevap adım adım "
+                       "gösterilir. PANO fiili YAZMAZ, taslak üretir.",
         "category": "Anlama",
     },
     "llm_sema_kisitli": {
