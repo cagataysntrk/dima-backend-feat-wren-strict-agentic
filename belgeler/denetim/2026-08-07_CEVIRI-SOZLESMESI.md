@@ -6882,3 +6882,79 @@ güvenilir.*
 ⊙ Kalan üç kırmızının **üçü de aynı sınıf**: mutfakta o ölçü **yok**, sistem en yakınını
 veriyor (`Y4` bakım maliyeti → İK maliyeti · `Y6` MTTR · `Y5`). Bu `§W-D`'nin sınıfıdır ve
 gerekçesiyle **ertelenmiş** durumda — `§101.1`.
+
+### ⟳ §105.2 · Y TEŞHİSİM YANLIŞTI — envanter okundu, düzeltiliyor
+
+Yukarıda *"kalan üç kırmızının üçü de aynı sınıf: mutfakta o ölçü **yok**"* yazmıştım.
+`bakim` küpünün envanteri **okundu** (`§83.4` — koşmadan, kaynaktan) ve iddia çürüdü:
+
+| soru | iddia ettiğim | GERÇEK |
+|---|---|---|
+| `Y6` arıza başına ortalama tamir süresi | ölçü yok | 🔴 **`ort_durus_dakika` VAR** — sinonimleri arasında **`mttr`** ve *"ortalama onarım"* bile var |
+| `Y4` bakım maliyeti | ölçü yok | ◐ `toplam_yedek_parca_maliyet` var — ama **bakım maliyetinin tamamı değil** |
+
+⊙ Yani `Y6` bir **mutfak eksikliği değil**, bir **menü adlandırma** eksikliği: ölçü
+kullanıcının kelimesiyle (*"tamir süresi"*) anılmıyor. Bu, `konusma_ifadeleri`'nin kendi
+gerekçesinin bir kat aşağıdaki hâli: *"sözlük tasarımcının kelimelerinden kuruldu,
+kullanıcının ifadelerinden değil."*
+
+⚠ `Y4` ise **gerçekten** yarım: `toplam_yedek_parca_maliyet` bakım maliyetinin **bir
+parçasıdır** (işçilik yok). Ona *"bakım maliyeti"* sinonimini vermek `§99.1`'in
+yasakladığı genişlemedir **ve** anlamca yanlış olurdu — yarımı tam diye sunmak.
+
+*Bir eksikliği yanlış sınıfa koymak, onu yanlış yerde aramaktır.*
+
+---
+
+## §106 · Z TURU — 20 özgün senaryo (mutfak envanteri sınandı)
+
+| # | senaryo | sonuç |
+|---|---|---|
+| Z1 | makine bazında **MTTR** | 🟢🟢 `ort_durus_dakika` — **LLM'siz** |
+| Z2 | ortalama onarım süresi en yüksek 3 makine | 🟢🟢 |
+| Z3 | arıza tipine göre yedek parça maliyeti | 🟢 **LLM'siz** |
+| Z4 | ↳ *bu maliyete neler dahil* | 🟢🟢 **`SUM(yedek_parca_maliyet)`** — *"işçilik dahil mi"*ye cevap |
+| Z5 | ↳ en pahalının makine dağılımı | 🟢 |
+| Z6 | müdahale edene göre arıza sayısı | 🟢 **LLM'siz** |
+| Z7 | haftanın gününe göre arıza | 🟢 **LLM'siz** |
+| Z8 | [EN] MTTR by machine for the last quarter | 🟢🟢 |
+| Z9 | **bölge** bazında şikayet adedi | 🔴 `siddet` kırılımı verildi |
+| Z10 | ↳ en çok şikayet gelen bölgenin konuları | 🔴 **Discovery** ateşledi |
+| Z11 | ↳ *bu sayı nasıl hesaplandı* | 🔴 Discovery cevabında **makbuz yok** → bağlam koptu |
+| Z12 | bölgelere göre şikayet sayısı | 🔴 konu daraltma |
+| Z13 | şiddeti ağır olan şikayetlerin çözüm süresi | 🟢 değer filtresi doğru |
+| Z14 | kumaş cinsine göre ort. parti ağırlığı | 🔴 gerçek belirsizlik |
+| Z15 | varış iline göre sevkiyat | 🟢 **LLM'siz** |
+| Z16 | aylık ortalama OEE | 🟢 **LLM'siz** |
+| Z17 | vardiya ve ay bazında OEE | 🟢 **LLM'siz** |
+| Z18 | aylık toplam **elektrik ve su** | 🔴 **iki ölçü istendi, biri verildi, BEYAN YOK** |
+| Z19 | ↳ *bu iki sayı hangi tablodan* | 🟢 makbuz |
+| Z20 | ↳ elektriği kümülatif de ekle | 🟢🟢 `pencere:kumulatif` |
+
+**Skor:** 14 🟢 · 0 ◐ · 6 🔴 · Discovery **1**
+⊙ **Sekiz cevap tamamen LLM'siz** — mutfak, garsonu hiç çağırmadan sekiz yemek yaptı.
+
+### 🔴🔴 §Z2 — İKİ ÖLÇÜ İSTENDİ, BİRİ VERİLDİ, HİÇBİR ŞEY SÖYLENMEDİ
+
+`Z18` (canlı): `niyet: ölçü=2` · `cq.measures: ["toplam_su_lt"]` · **beyan: YOK**.
+Kullanıcı iki şey istedi, birini aldı ve **bunu cevaptan anlayamaz**: eksik olan sütun
+görünmez, çünkü orada olmayan bir şeyin izi yoktur. `§98.1` (*eksikliği ADIYLA say*)
+dönem sayısını, kıyası, oranı, sıralamayı ve kesmeyi sayıyordu — **ölçünün kendisini**
+saymıyordu.
+
+**Ve bu düzeltme iki kez sondajda düzeltildi — ikisi de sevk edilmeden:**
+
+1. İlk yazım `niyet.olcu_adaylari`'na dayandı; sondaj (4 vaka) beyanın **hiç
+   ateşlemediğini** gösterdi: o alan şemayı bilen ayrı bir adımda doluyor,
+   `denetle`'nin çağırdığı `coz_soru(q)` onu **boş** bırakıyor.
+   *Bir alanın var olması, dolu olması değildir.*
+2. İkinci yazım `cube_meta`'dan okudu ve **yanlış-pozitif** üretti: *«vardiya bazında
+   **fire oranı**»* → `fire_orani_yuzde` **ve** `toplam_fire_kg` (sinonimi `fire`) →
+   *"soruda 2 ölçü geçiyor"*. `§101.1` birebir.
+   ⊙ Çözüm modülün **kendi notundaydı**: *"Bir ipucu, başka bir şeyin adının içindeyse,
+   ipucu değildir."* — `_match_cube`'un **en-uzun-eşleşme** kuralı bu karara uygulandı.
+
+Sondaj 5/5.
+
+*Bir cevabın eksik olduğunu ancak istenenle karşılaştırarak bilebilirsiniz — ve istenen,
+kataloğun kaç ADI olduğuyla değil, kaç ŞEY olduğuyla ölçülür.*
