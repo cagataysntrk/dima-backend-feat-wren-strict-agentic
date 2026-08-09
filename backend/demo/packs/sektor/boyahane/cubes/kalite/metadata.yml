@@ -48,7 +48,14 @@ measures:
     # "dE!" TAM-KELİME (sonu "!"): 2 harfli kısa sinonim substring-eşleşmede tehlikeli
     # (ör. "neDEnlerine" içinde "de" geçiyor → yanlış ölçü eşleşmesi — parti cube'undaki
     # ort_renk_sapmasi'nde AYNI desen gözlemlendi, bkz. BASELINE_RECONCILIATION).
-    synonyms: ["dE!", delta E, renk farkı, ortalama sapma, renk sapması]
+    # 🔴 `"dE!"` KALDIRILDI — normalleşince Türkçenin «de» EKİ oluyor.
+    # ⊙ Ölçüldü (canlı `VII/B4`): *«bir **de** gecikme ekle»* → `ort_renk_sapmasi`
+    # eklendi (eşleşen sinonim: `de`), üstelik **beyansız** ve `source=cube`
+    # rozetiyle. Kullanıcı gecikme istedi, renk sapması aldı.
+    # ⚠ Kayıp YOK: `delta E` · `renk farkı` · `renk sapması` duruyor.
+    # *İki harflik bir kısaltma, dilin kapalı sınıfıyla çarpışıyorsa bir ad değil
+    # bir tuzaktır.*
+    synonyms: [delta E, renk farkı, ortalama sapma, renk sapması]
     lower_is_better: true
   - name: tolerans_asma_sayisi
     # dE toleransı aşan rework adedi — müşteri şartnamesi ihlali.

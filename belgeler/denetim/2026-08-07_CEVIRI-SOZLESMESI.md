@@ -8242,3 +8242,81 @@ test dosyası). Kural açık: *"kapı koşarken repoya YAZILMAZ — mount canlı
 karışır."* Koşum **kirlendi** ve sonucu okumadan **iptal edildi**; tazeleme sonrası
 temiz bir kapı koşuldu. *Kirli bir ölçümü okumak, hiç ölçmemekten kötüdür — çünkü
 okunan sayı bir güven üretir.*
+
+---
+
+## `VII` TURU — THREAD'LER, ve **BİR HARFİN AÇTIĞI SESSİZ YANLIŞ** *(2026-08-10)*
+
+### Thread A · kalite — 4 tur, temiz
+
+| tur | sonuç |
+|---|---|
+| *«bu yıl toplam fire»* | ✅ `cube` · 0 LLM · dönem + belirsizlik ifşası |
+| *«makineye göre kır»* | ✅ kırılım eklendi, dönem korundu |
+| *«en kötüsü hangisi»* | ✅ `cube` · 0 LLM · `order desc` |
+| *«neden»* | ✅ katkı segmentleri **chip olarak** geldi (*«iplik grubu: Örme Kumaş — 33.947 kg arttı, net değişimin %100'ü»*) |
+
+### 🔴🔴 Thread B · ticari — dördüncü tur SESSİZ YANLIŞ verdi
+
+| tur | sonuç |
+|---|---|
+| *«bu yıl toplam ciro»* | ✅ `cube` |
+| *«müşteriye göre»* | ✅ `cube` · 8 satır |
+| *«en iyi 3»* | ✅ `cube` · `order`+`limit` birikti |
+| *«bir de **gecikme** ekle»* | 🔴 **`ort_renk_sapmasi`** (renk sapması) eklendi — beyansız, `source=cube` |
+
+Kullanıcı **gecikme** istedi, **renk sapması** aldı. Ve en güvendiğimiz basamakta.
+
+**Kök — bir harf:**
+
+```
+_match_measure("bir de gecikme ekle", parti) → ('ort_renk_sapmasi', 'de')
+```
+
+`ΔE` pack'te `"dE!"` diye yazılmış; normalleşince Türkçenin **bağlaç eki** `de` oluyor
+ve *«bir **de** … ekle»* cümlesindeki eki yakalıyor.
+
+### ⚠ VE ÇAREYİ, ÇARENİN KENDİSİ DOĞURDU
+
+Pack'in **kendi yorumu** şunu diyordu:
+
+> *«`dE!` TAM-KELİME (sonu `!`): 2 harfli kısa sinonim substring-eşleşmede tehlikeli»*
+
+Yani tehlike **biliniyordu** ve `!` işareti bir **önlem** olarak konmuştu. Ama `!` tam
+tersini yapar: sinonimu **tam kelime** olarak eşleştirir — ve `de` tam olarak bir tam
+kelimedir, üstelik Türkçenin en sık ekidir. *Bir tehlikeyi daraltarak çözmek, bazen
+onu tam olarak isabet ettirmektir.*
+
+🔴 `"dE!"` **iki pack'ten de kaldırıldı** — kayıp sıfır (`delta E` · `delta` ·
+`renk farkı` · `renk sapması` duruyor). Ve sınıf **kapıya bağlandı**
+(`tests/test_sinonim_kapali_sinif.py`): bir sinonim Türkçenin **kapalı sınıfıyla**
+(bağlaç · işaret sıfatı · soru eki) çarpışamaz. ⚠ Kelime listesi değil — kapalı
+sınıflar sonlu ve tarihsel olarak sabittir (ADR-0008 buna izin verir).
+
+**Tarama sonucu — dört çarpışma, biri canlı:**
+
+| sinonim | sahip | durum |
+|---|---|---|
+| `dE!` | `kalite.ort_dE` · `parti.ort_renk_sapmasi` | 🔴 **canlı** → kaldırıldı |
+| `su!` | `surdurulebilirlik` (küp + `toplam_su_lt`) | ⚠ **gizli** — `şu` normalleşince `su` |
+
+`su` canlıda sınandı (*«şu makinede fire ne kadar»*, *«şu ay toplam üretim»*): ikisi de
+**doğru küpe** çözüldü, su ölçüsü ateşlenmedi. Yazılı muafiyet + ölçüm kapıda duruyor.
+*Ölçülmemiş bir riski gidermek için ölçülmüş bir yeteneği atmak bir takas değil kayıptır.*
+
+### Doğrulama ve YENİ açık borç
+
+Düzeltmeden sonra B4: 🟢 `siparis.ort_gecikme_gun` — **doğru ölçü**.
+
+⚠ Ama **bağlam kayboldu**: cevap `{"cube":"siparis","measures":["ort_gecikme_gun"]}` —
+dönem yok, `musteri` kırılımı yok, ilk-3 yok. Kullanıcı *«bir de … **ekle**»* dedi,
+yani mevcut tablonun **yanına** istedi.
+
+**Kök (ölçüldü):** `cross_cube_add` ortak kırılım şartını arıyor ve `parti.musteri`
+(ad) ile `siparis.musteri_kod` (kod) **aynı anahtar değil** — `blend_uyumlu` düşüyor,
+harman kurulamıyor ve soru garsona iniyor; garson da bağlamsız bir toplam veriyor.
+Bu bir **grain uyuşmazlığıdır** ve doğru cevabı ya bir harman ya da iki bölümlü bir
+plandır. Sonraki turun konusu.
+
+**Kapı (tur başı, TEMİZ koşum):** 4467 yeşil · korpus **%94.9** · `sessiz_yanlis` **10**
+· eval **+0.0%**.
