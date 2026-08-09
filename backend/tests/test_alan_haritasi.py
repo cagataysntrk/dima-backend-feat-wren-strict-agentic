@@ -93,6 +93,11 @@ MUTFAK = {
     # (söylenenin **nasıl koşacağı**). Aynı fazın iki ucu, iki ayrı sınıf — ve bu
     # ayrım kapının yasakladığı yönü (mutfak → dil) hiç kurmuyor.
     "plan_kosucu.py",
+    # 🔴 `FAZ O-4` — PLAN TÜKETİCİSİ. Planı motora bağlar (`cube_sql` → `dry_plan` →
+    # `query`) ve çıktısını **kullanıcı metnine** çevirir. ⚠ Metin ÜRETİYOR ama dil
+    # OKUMUYOR — kapının yasakladığı yön budur (mutfak → dil ayrıştırma). Ürettiği
+    # cümleler kendi çıktısının rakamlarından kuruluyor; hiçbir soru cümlesi okunmuyor.
+    "plan_tuketici.py",
 }
 
 #: 🍳 modüllerin ASLA import edemeyeceği 🗣 modüller — *"mutfak dil ayrıştıramaz"*.

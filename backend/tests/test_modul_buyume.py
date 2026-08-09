@@ -89,6 +89,17 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("o4-merdivenin-boslugu-tek-kapidan", 7,
+     "🔴 **`FAZ O-4` — MERDİVENİN BOŞLUĞU (`E3`).** Yedi satır: `_garson` başlangıcı (1), "
+     "`_plan_tuketici.cevap(...)` çağrısı (2), `if` + `AskResponse` dönüşü (4). ⊙ Neden "
+     "burada: bu dal **yalnız** `route_hit=None` iken, yani bugünkü sonucun Discovery ya "
+     "da dürüst ret olduğu noktada çalışır — konumun kendisi `E3`'ün şartıdır ve konum "
+     "`ask()`in akışında tanımlıdır, dışarı taşınamaz. ⊙ Karar, metin, hata sınıflaması "
+     "ve `KURAL B` çözümü **hiç burada değil**: `plan_tuketici.cevap()` sarmalanmamış bir "
+     "garsonda `None` döner, `ask()` onu bilmez bile. ⚠ `index`/`cube_meta` bilerek "
+     "GEÇİRİLMEDİ: `ask()`in o noktasında ikisi de garantili tanımlı değil ve *«belki "
+     "tanımlıdır»* diye bir değişken okumak, bir `NameError`'ı üretim kusuruna çevirmenin "
+     "en kısa yoludur — `schema` geçilir, türetme tüketicide yapılır."),
     ("t1-etiketleri-ayni-adaylar-belirsizlik-degildir", 6,
      "🔴🔴 **SİSTEM CEVABI HESAPLIYOR, CHIP OLARAK GÖSTERİYOR VE «ANLAMADIM» DİYORDU.** "
      "Ölçüldü (T turu, **beş** kanıt — `t1`·`t11`·`t13`·`t16`·`t18`): "

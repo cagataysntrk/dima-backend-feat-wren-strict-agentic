@@ -3390,6 +3390,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             return kpi_resp
         route_hit: dict | None = None
         intent_source: str | None = None
+        _garson = None   # `O-4` — plan garsonu (bayrak kapalıysa hiç kurulmaz)
         _garson_konustu = False   # `§56` — garson bir aday ürettiyse Türkçe reddi susar
         typo_fix_trace: str | None = None
         typo_suggestion: dict | None = None
@@ -3791,6 +3792,16 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 except Exception:
                     _log.warning("LLM Intent-JSON seçimi başarısız (best-effort)", exc_info=True)
 
+        # 🔴 `O-4` — **MERDİVENİN BOŞLUĞU BURASIDIR** (`E3`). Buraya `route_hit=None` ile
+        # gelinir: route boş döndü, garsonun tek-cube cevabı da yok. Yani bugünkü sonuç
+        # Discovery ya da dürüst rettir — bir yerde cevap varken bu dal hiç konuşmaz.
+        # ⚠ Karar ve metin `plan_tuketici`'de; burada yalnız **çağrı** var.
+        _pc = _plan_tuketici.cevap(_garson, service=service, schema=schema, limit=limit)
+        if _pc is not None:
+            return _finish(_attach_viz(AskResponse(
+                question=body.question, source=_pc["source"], note=_pc["note"],
+                result=_pc.get("result"), trace=trace + _pc["iz"]),
+                _pc.get("result"), _pc.get("cube_query")))
         if route_hit:
             cq = route_hit["cube_query"]
             # Gitaş logu 2026-07-24: order/limit route()'tan AYRI alanlar olarak
