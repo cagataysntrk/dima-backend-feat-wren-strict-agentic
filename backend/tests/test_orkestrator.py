@@ -364,6 +364,14 @@ def test_agent_plan_secimi_yapisal_olmayan_turda_cokmez(client, monkeypatch):
         LİTERALİNİ geçiyor, yani hatalı kodda bile çökmüyor. Hata geri konularak ölçüldü:
         test **YEŞİL** kaldı. Bir kapı, ölçmediği bir şeyi *"geçti"* diye raporlayamaz.
     Bu yüzden aşağıda **çağrı YERİ de** iddia edilir — pilotun çağrılmış olması yetmez."""
+    # ⟳ **İMZA BÜYÜDÜ ve casus da büyüdü** (`O-4`, 2026-08-09): `_capraz_alan_pilotu`
+    # modül düzeyindeyken `ask()`in **iç** fonksiyonu `_answer_from_cube_query`'yi
+    # çağırıyordu — pilot bir cevap ürettiği an `NameError` (`ruff F821` buldu, bu dal
+    # `agent_plan_secimi` kapalı olduğu için hiç koşmamıştı). İç fonksiyon **parametre**
+    # oldu; casusun onu da alıp **geçirmesi** şart, yoksa testin ölçtüğü şey (gerçek
+    # gövdenin koşması) sessizce değişirdi.
+    # ⊙ Ve yeni argüman bu testin kendi mantığını **güçlendiriyor**: çağrının
+    # değerlendirilebilmiş olması artık İKİ ismin bağlı olduğunu kanıtlıyor.
     import inspect as _inspect
     import pathlib
 
@@ -374,7 +382,7 @@ def test_agent_plan_secimi_yapisal_olmayan_turda_cokmez(client, monkeypatch):
     cagri_satirlari: list[str] = []
     gercek = ask_mod._capraz_alan_pilotu
 
-    def _casus(request, body, q_norm, schema, principal, migration_trace):
+    def _casus(request, body, q_norm, schema, principal, migration_trace, cevapla=None):
         # Çağrının KENDİSİ kanıttır: argüman değerlendirilebildi → isim BAĞLI.
         # ⚠ `code_context` TEK satır verir; 4b'deki çağrı İKİ satıra yayılıdır ve
         # `lineno` ilk satırı gösterir → `migration_trace` o tek satırda GÖRÜNMEZ.
@@ -383,7 +391,7 @@ def test_agent_plan_secimi_yapisal_olmayan_turda_cokmez(client, monkeypatch):
         ust = _inspect.stack()[1]
         kaynak = pathlib.Path(ust.filename).read_text(encoding="utf-8").splitlines()
         cagri_satirlari.append("\n".join(kaynak[max(0, ust.lineno - 1):ust.lineno + 2]))
-        return gercek(request, body, q_norm, schema, principal, migration_trace)
+        return gercek(request, body, q_norm, schema, principal, migration_trace, cevapla)
 
     monkeypatch.setattr(ask_mod, "_capraz_alan_pilotu", _casus)
 

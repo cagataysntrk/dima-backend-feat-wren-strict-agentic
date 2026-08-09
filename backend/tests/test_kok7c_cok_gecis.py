@@ -133,7 +133,22 @@ def test_COK_DONEM_SESSIZCE_CEVAPLANMIYOR(q, _, schema):
     ic = (cq.get("cube_query") or cq)
     cm = next((c for c in schema["cubes"] if c["name"] == ic.get("cube")), None)
     isaretler = [i.isaret for i in denetle(q, cq, cm)]
-    assert "cok_donem" in isaretler or isaretler, \
+    # ⟳ **ÜÇÜNCÜ KABUL YOLU EKLENDİ — ve sistem iyileştiği için** (`O-6`, 2026-08-09).
+    #
+    # Testin ilk sözleşmesi ikiliydi: *ya `route()` reddeder ya `uyum` etiketler.* Üçüncü
+    # bir ihtimal yoktu çünkü o gün sistem dönemleri **ayıramıyordu**. `O-6` sonrası
+    # *«ocak ve haziran ciro»* → `ayrik_aylar: [2026-01, 2026-06]`, yani cevap iki ayrı
+    # satır veriyor.
+    #
+    # 🔴 O durumda `cok_donem` etiketi basmak **YANLIŞ BİR BEYAN** olurdu: *«tek bir aralık
+    # olarak topladım»* diyen bir uyarı, ayrılmış bir cevabın altında yalandır. `uyum.py`
+    # bunu zaten biliyor (`_ayirdi = bool(ic.get("ayrik_aylar"))`) ve bilerek susuyor.
+    #
+    # ⚠ Kapı ZAYIFLAMADI: asıl kusur — *«sessizce TEK sayıya çökmek»* — hâlâ kırmızı verir,
+    # çünkü ayırmayan bir cevapta `ayrik_aylar` yoktur. *Bir kapıyı gevşetmekle, ölçtüğü
+    # şeyin daha iyisini kabul etmek aynı şey değildir.*
+    _ayirdi = bool(ic.get("ayrik_aylar"))
+    assert isaretler or _ayirdi, \
         f"🔴 «{q}» sessizce tek sayıya çöktü — filtreler: {ic.get('filters')}"
 
 
