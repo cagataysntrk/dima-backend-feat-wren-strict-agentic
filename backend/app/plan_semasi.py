@@ -204,10 +204,24 @@ ADIM_REFERANSI = r"^\$[1-9][0-9]?$"
 #: fiiller bağlanmış ama plan hiç kurulamamış olurdu. 6 + 2 pay = **8**; pay bilinçli
 #: ve dar (bir `KIR` daha, bir `GORSEL` daha).
 #:
+#: ⟳ **8 → 12 (2026-08-09 akşamı) — ve yine SAYILARAK, seçilerek değil.**
+#:
+#: `HH1` (*«en kötü makineyi bul, o makinede en kötü vardiyayı bul, o vardiyada duruş
+#: nedenlerini göster»*) canlıda **11 adımlık** bir zincir kurdu ve **koştu**:
+#: `SORGU→BAGLA→SUZ→KIR→SORGU→BAGLA→SUZ→KIR→SORGU→…`. Üç seviyeli bir iniş, her
+#: seviyede dört adım.
+#:
+#: 🔴 Ve o plan tavanı **aşarak** koştu: tavan yalnız `maxItems` olarak şemadaydı,
+#: serbest-JSON sağlayıcı şemayı uygulamıyor. Yani tavan bir **temenniydi** — şimdi
+#: `plan_kosucu.dogrula()` onu uyguluyor.
+#:
+#: 11 + 1 pay = **12**. ⚠ Pay dar: dördüncü bir seviye (15 adım) **kabul edilmiyor**,
+#: çünkü o noktada plan uzunluğu bir cevaptan çok bir keşif gezisidir (`E9`).
+#:
 #: 🔴 Tek küresel tavan bilerek korundu: yetenek profili şu an **ölçülemiyor** (hangi
 #: sorunun kök-neden olduğunu kim söyleyecek?). *Ölçemediğin bir ayrımı yapılandırmaya
 #: koymak, onu bir varsayım olarak sabitlemektir.*
-AZAMI_ADIM = 8
+AZAMI_ADIM = 12
 
 
 def plan_json_schema(index: dict, *, azami_adim: int = AZAMI_ADIM) -> dict[str, Any]:

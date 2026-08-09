@@ -428,3 +428,28 @@ def test_REFERANS_ALANI_GERCEKTEN_REFERANS_OLMALI():
 def test_SATIR_ICI_CUBE_QUERY_REFERANS_SAYILMAZ():
     """⚠ `cube_query` istisna: satır içi bir **nesne** de olabilir (şema `oneOf`)."""
     assert dogrula({"adimlar": [{"fiil": "KIR", "cube_query": CQ, "boyut": "m"}]}) == [[1]]
+
+
+def test_PLAN_UZUNLUGU_DOGRULAYICIDA_DA_UYGULANIR():
+    """🔴🔴 Şemaya yazmak YETMİYOR — serbest-JSON sağlayıcı şemayı uygulamıyor.
+
+    Ölçüldü (canlı `HH1`): tavan **8** iken **11 adımlık** bir plan koştu. `E9` plan
+    uzunluğunu bir **maliyet** sayıyor; uygulanmayan bir tavan bir maliyet kapısı değil
+    bir **temennidir**.
+
+    ⊙ Bu dosyada **üçüncü** kez aynı desen: `pattern` · `additionalProperties` ·
+    `maxItems` — üçü de yalnız şemayı uygulayan sağlayıcılarda geçerliydi.
+    *Bir kısıtı şemaya yazıp doğrulayıcıya yazmamak, onu sağlayıcı seçimine bağlamaktır.*
+    """
+    from app.plan_semasi import AZAMI_ADIM
+
+    uzun = {"adimlar": [{"fiil": "SORGU", "cube_query": CQ}]
+                       + [{"fiil": "ANLAT", "kaynaklar": ["$1"]}]}
+    # Tavanı aşan bir zincir: `AZAMI_ADIM + 1` adım.
+    _z = [{"fiil": "SORGU", "cube_query": CQ}]
+    for i in range(AZAMI_ADIM):
+        _z.append({"fiil": "BAGLA", "kaynak": f"${len(_z)}", "boyut": "m", "olcu": "v"}
+                  if False else {"fiil": "SORGU", "cube_query": CQ})
+    with pytest.raises(PlanHatasi, match="tavan"):
+        dogrula({"adimlar": _z}, azami_sorgu=99)
+    assert dogrula(uzun) == [[1], [2]]

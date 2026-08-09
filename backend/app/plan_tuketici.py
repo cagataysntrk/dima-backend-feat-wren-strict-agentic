@@ -172,12 +172,39 @@ def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = 
     #: *Bir alanın tipi genişlediğinde, onu okuyan her yer de genişlemelidir.*
     sorgular: list[dict] = []
 
+    def _neden_dustu(cq: dict) -> str:
+        """🔴 **HANGİ ALAN tanımsız — «tanımsız cube/ölçü/boyut» bir teşhis değildir.**
+
+        `parse_cube_query` bir beyaz listedir ve `None` döner; **neden**ini söylemez ve
+        söylememelidir (o bir kapıdır, bir tanıcı değil). Ama o bilgiye burada
+        **erişilebilir**: aynı indeks elimizde.
+
+        Ölçüldü (canlı `HH1`): *«adım 3: `oee` sorgusu katalogda karşılanmıyor»* — hangi
+        ölçü? hangi boyut? Ne kullanıcı bilebilirdi ne de **onarım turu**, çünkü model de
+        aynı mesajı okuyor. *Bir reddi gerekçesiz vermek, onu iki kez öğrenmeye razı
+        olmaktır.*
+        """
+        _c = (cq or {}).get("cube")
+        if not _c or _c not in index:
+            return f"`{_c or '(cube yok)'}` diye bir cube YOK"
+        _spec = index[_c] or {}
+        _bilinen_o = set(_spec.get("measures") or [])
+        _bilinen_b = set(_spec.get("dimensions") or [])
+        _eksik_o = [m for m in (cq.get("measures") or []) if m not in _bilinen_o]
+        _eksik_b = [d for d in (cq.get("dimensions") or []) if d not in _bilinen_b]
+        _parca = []
+        if _eksik_o:
+            _parca.append(f"`{_c}`'de şu ölçü(ler) yok: {', '.join(_eksik_o)}")
+        if _eksik_b:
+            _parca.append(f"`{_c}`'de şu boyut(lar) yok: {', '.join(_eksik_b)}")
+        if not (cq.get("measures") or []):
+            _parca.append(f"`{_c}` için hiç ölçü yazılmamış")
+        return " · ".join(_parca) or f"`{_c}` sorgusu beyaz listeden geçmedi"
+
     def _sorgu_kos(cq: dict) -> list[dict]:
         temiz = parse_cube_query(json.dumps(cq, ensure_ascii=False), index)
         if temiz is None:
-            raise plan_kosucu.PlanHatasi(
-                f"`{(cq or {}).get('cube') or '?'}` sorgusu katalogda karşılanmıyor "
-                "(tanımsız cube/ölçü/boyut)")
+            raise plan_kosucu.PlanHatasi(_neden_dustu(cq))
         sql = service.cube_sql(temiz)
         service.dry_plan(sql)
         res = service.query(sql, limit=limit)

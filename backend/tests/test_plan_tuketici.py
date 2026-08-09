@@ -116,13 +116,17 @@ def test_KOSAMAYINCA_ADIM_ADIM_SOYLUYOR():
     c = _cevap(_Garson(plan))
     assert c["source"] is None, "koşamayan bir plan CEVAP VERMİŞ gibi görünemez"
     assert "1." in c["note"] and "2." in c["note"], "adımlar sayılmamış"
-    assert "tamamlayamadım" in c["note"] and "katalogda karşılanmıyor" in c["note"]
+    # ⟳ Red mesajı **kesinleşti**: artık *"katalogda karşılanmıyor"* değil, hangi
+    # alanın tanımsız olduğunu söylüyor. *Bir kapının beklediği metin, kapının ölçtüğü
+    # davranışın kendisi değildir — davranış iyileşince metin de değişir.*
+    assert "tamamlayamadım" in c["note"] and "diye bir cube YOK" in c["note"]
 
 
 def test_KATALOG_DISI_SORGU_MOTORA_GITMEZ():
     """🔴 Beyaz liste planın İÇİNDE de geçerli — bir adım Discovery'ye dönüşemez."""
     plan = {"adimlar": [{"fiil": "SORGU", "cube_query": {"cube": "uydurma"}}]}
-    with pytest.raises(PlanHatasi, match="katalogda karşılanmıyor"):
+    # ⟳ Mesaj kesinleşti (bkz. `test_RED_HANGI_ALANIN_TANIMSIZ_OLDUGUNU_SOYLER`).
+    with pytest.raises(PlanHatasi, match="diye bir cube YOK"):
         pt.calistir(plan, service=_Motor(), index={"oee": {"measures": ["ort_oee"]}})
 
 
@@ -281,3 +285,30 @@ def test_BOS_SONUC_SESSIZ_KALMAZ():
 
     c = _cevap(_Garson({"adimlar": [{"fiil": "SORGU", "cube_query": CQ}]}), _Bos())
     assert "hiçbir adım satır döndürmedi" in c["note"], c["note"]
+
+
+def test_RED_HANGI_ALANIN_TANIMSIZ_OLDUGUNU_SOYLER():
+    """🔴 *«tanımsız cube/ölçü/boyut»* bir teşhis değildir.
+
+    Ölçüldü (canlı `HH1`): *«adım 3: `oee` sorgusu katalogda karşılanmıyor»* — hangi
+    ölçü? hangi boyut? Ne kullanıcı bilebilirdi ne de **onarım turu**, çünkü model de
+    aynı mesajı okuyor.
+
+    ⚠ `parse_cube_query` **değişmedi**: o bir kapıdır, bir tanıcı değil. Teşhis onun
+    **yanında** üretiliyor — aynı indeksten. *Bir reddi gerekçesiz vermek, onu iki kez
+    öğrenmeye razı olmaktır.*
+    """
+    from app.plan_kosucu import PlanHatasi
+    import pytest as _pt
+
+    IDX = {"oee": {"measures": ["ort_oee"], "dimensions": ["makine"]}}
+    with _pt.raises(PlanHatasi, match="diye bir cube YOK"):
+        pt.calistir({"adimlar": [{"fiil": "SORGU", "cube_query": {"cube": "yok"}}]},
+                    service=_Motor(), index=IDX)
+    with _pt.raises(PlanHatasi, match="boyut"):
+        pt.calistir({"adimlar": [{"fiil": "SORGU", "cube_query": {
+            "cube": "oee", "measures": ["ort_oee"], "dimensions": ["vardiya"]}}]},
+            service=_Motor(), index=IDX)
+    with _pt.raises(PlanHatasi, match="ölçü"):
+        pt.calistir({"adimlar": [{"fiil": "SORGU", "cube_query": {
+            "cube": "oee", "measures": ["uydurma"]}}]}, service=_Motor(), index=IDX)

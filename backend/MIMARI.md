@@ -233,6 +233,31 @@ imkânı ötekine de vermelisin; yoksa ölçtüğün şey fark değil, ayrımcı
 Bayrak: `orkestrator_plan` (**`beta`**, 2026-08-09). Kapalıyken `sarmala()` nesnenin
 kendisini döndürür → davranış bayt bayt bugünkü.
 
+#### ⟳ CANLI ÖLÇÜM — `GG` turu, bayrak açıkken *(payda 19)*
+
+| | oran |
+|---|---|
+| 🗣 `cube+llm` (garson = orkestratör) | **%68,4** |
+| 🍳 `cube` (0 LLM) | %5,3 |
+| 🥡 **Discovery** | 🟢 **%0** — tur boyunca **hiç** ateşlenmedi |
+| 🔴 cevapsız | %26,3 — **beşinin beşi de dürüst ret** |
+
+⊙ `§2.2`'nin *"Discovery neden ölü"* cümlesi artık bir **ölçüme** dayanıyor: cevapsız
+kalanların hiçbiri başarısızlık değil (forecast kapsam kararı · rapor yokken makbuz ·
+yetenek sınırı). Bu belgenin kendi ölçüsüyle **mutfak eksikliği raporu sıfır**.
+
+⚠ Bu sayı `EE` turuyla **karşılaştırılamaz**: farklı soru kümesi. *Payda kutsaldır* —
+iki oran ancak aynı sorularla karşılaştırılır.
+
+Canlı zincir örnekleri *(`belgeler/denetim/2026-08-07_CEVIRI-SOZLESMESI.md`)*:
+
+```
+«RAM-3 neden diğerlerinden düşük»            → 6 adım · 0,513 vs akran 0,571 (%10,2 düşük)
+«en çok duruş yaşayan makinede nedenleri kır» → 6 adım · Enerji Kesintisi 1086 dk
+«fire artışını hangi kırılım açıklıyor»       → 8 adım · iki seviyeli iniş
+«makineleri oee ve fire ile puanla»           → 5 adım · MATRIS→SIRALA (_skor 0,9531)
+```
+
 **Tek çıkış noktası `app/answer.py::seal()`** — yorum, next_steps, öneriler, `explain`,
 PII maskesi (+ görüldüyse ayrı audit), sohbet kaydı, `interaction_log` ve **fail-closed
 audit** oradan geçer. Makbuz kaydı da tek uygulamadır: `answer.record_contract()`.

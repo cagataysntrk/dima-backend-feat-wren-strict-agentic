@@ -191,6 +191,22 @@ def dogrula(plan: dict, *, azami_sorgu: int = AZAMI_SORGU) -> list[list[int]]:
     if sorgu_sayisi > azami_sorgu:
         raise PlanHatasi(f"plan {sorgu_sayisi} sorgu istiyor, bütçe {azami_sorgu}")
 
+    # 🔴🔴 **PLAN UZUNLUĞU TAVANI BURADA DA UYGULANIR — şemada olması YETMİYORDU.**
+    #
+    # `plan_json_schema` `maxItems: AZAMI_ADIM` koyuyor, ama serbest-JSON sağlayıcıda
+    # şema **uygulanmıyor**. Ölçüldü (canlı `HH1`): tavan **8** iken **11 adımlık** bir
+    # plan koştu. `E9` plan uzunluğunu bir **maliyet** sayıyor; uygulanmayan bir tavan
+    # bir maliyet kapısı değil, bir **temenni**dir.
+    #
+    # ⊙ Bu, bu dosyada **üçüncü** kez görülen desen: şemaya yazılmış bir kısıt
+    # (`pattern` · `additionalProperties` · `maxItems`) yalnız şemayı uygulayan
+    # sağlayıcılarda geçerliydi. *Bir kısıtı şemaya yazıp doğrulayıcıya yazmamak, onu
+    # sağlayıcı seçimine bağlamaktır.*
+    from app.plan_semasi import AZAMI_ADIM
+    if n > AZAMI_ADIM:
+        raise PlanHatasi(f"plan {n} adım istiyor, tavan {AZAMI_ADIM} — daha kısa bir "
+                         "zincir kur (gereksiz adım cevabı iyileştirmez, yavaşlatır)")
+
     # ⚠ Ulaşılamaz adım: kimsenin referans etmediği ve **son** da olmayan bir adım
     # koşulur, ödenir ve **atılır**. `E9`: plan uzunluğu bir ölçüdür.
     for sira in range(1, n):

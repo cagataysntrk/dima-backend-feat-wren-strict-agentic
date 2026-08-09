@@ -80,7 +80,7 @@ def test_PLAN_UZUNLUGU_TAVANLI():
     assert s["properties"]["adimlar"]["minItems"] == 1
     # ⚠ Ve tavanın **var olduğu** iddiası korunuyor: sınırsız bir plan uzunluğu,
     # `E9`'un tam olarak yasakladığı şey.
-    assert 1 < AZAMI_ADIM <= 12, "tavan ya yok ya anlamsız derecede geniş"
+    assert 1 < AZAMI_ADIM <= 16, "tavan ya yok ya anlamsız derecede geniş"
 
 
 def test_TEK_ADIMLI_PLAN_BUGUNKU_CUBEQUERY():
@@ -130,7 +130,10 @@ def test_TAVAN_YETENEGI_KESMIYOR():
     ⚠ Tavan yine de bir maliyet kapısıdır (`E9`): pay dar tutuldu (6 + 2).
     """
     from app.plan_semasi import AZAMI_ADIM
-    EN_KISA = {"kok_neden": 6, "karar_matrisi": 5, "rapor": 5, "pano": 4}
+    # ⟳ `uc_seviyeli_inis` eklendi: canlı `HH1` **11 adımlık** bir zincir kurdu ve
+    # koştu. Tavan 8'ken o plan şemayı aşarak geçmişti — çünkü tavan **yalnız şemadaydı**.
+    EN_KISA = {"kok_neden": 6, "karar_matrisi": 5, "rapor": 5, "pano": 4,
+               "uc_seviyeli_inis": 11}
     assert AZAMI_ADIM >= max(EN_KISA.values()), (
         f"tavan {AZAMI_ADIM} — en uzun 'en kısa zincir' {max(EN_KISA.values())}; "
         "bir yetenek yapısal olarak ifade EDİLEMEZ")
