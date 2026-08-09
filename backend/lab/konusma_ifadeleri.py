@@ -163,6 +163,25 @@ IFADELER: dict[str, tuple[str, ...]] = {
         "iki cümle yaz",
         "sunuma koy",
     ),
+    # 🔴 `§V1` — MAKBUZ SORUSU. Bu korpusun **kendi gerekçesinin** birebir tekrarı:
+    # *"kalıp sözlüğü tasarımcının kelimelerinden kuruldu, kullanıcının ifadelerinden
+    # değil"*. Aşağıdaki varyantların **üçü canlı turdan** alındı (`u2` · `V2` · `V17`),
+    # uydurulmadı — ve üçü de o turlarda **dürüst redde** ya da aynı tablonun ikinci kez
+    # sunulmasına yol açmıştı.
+    "makbuz": (
+        "bu nasıl hesaplandı",                         # u2 — canlı
+        "bu rakama neler dahil, nasıl bulundu",        # V2 — canlı
+        "bu sayı neyi kapsıyor, hangi tarih aralığı kullanıldı",   # V17 — canlı
+        "bu grafik nasıl hesaplandı",
+        "bu sayıya ne dahil",
+        "nelerden oluşuyor",
+        "hangi verilerden geldi",
+        "formülü ne",
+        "hesaplama yöntemi nedir",
+        "bu güvenilir mi",
+        "nereden geliyor bu",
+        "hangi tabloda duruyor",
+    ),
 }
 
 #: 🔴 **ÇIKARILAN VARYANTLAR — gerekçesiyle.** Bir varyant yanlış-pozitif ürettiğinde

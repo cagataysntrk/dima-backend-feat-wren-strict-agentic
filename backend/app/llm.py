@@ -412,6 +412,16 @@ def _cube_select_system(catalog: str) -> str:
         'onceki|degisim_yuzde|pay"}. «kümülatif/birikimli»→kumulatif; «hareketli N aylık '
         'ortalama»→hareketli_ort + "pencere_boyu":N; «her X için en yüksek»→sira + '
         '"bolum":["<boyut>"]; «önceki döneme göre yüzde değişim»→degisim_yuzde; '
+        # 🔴 `§V6` — `sira` AÇGÖZLÜYDÜ ve kural İKİ istemde birden yazılı (`KAT-1`).
+        # Ölçüldü (`V13`/`D3`, canlı): *«duruş süresini AZALAN SIRADA İLK 5»* → garson
+        # `pencere:sira` yazdı, `order`+`limit` yazmadı → **11 satır**, hepsi sıra
+        # numaralı ama sıralanmamış ve kesilmemiş. ⊙ İkisi farklı şeydir: `sira` bir
+        # **sütun** üretir (ROW_NUMBER), `order`+`limit` **sonucu** belirler. Kuraldaki
+        # *«her X için»* bir sınırdı ama istemde bir **örnek** gibi duruyordu.
+        # *Bir örnek, kural sanılırsa genişler.*
+        '🔴 `sira` YALNIZ GRUP-İÇİ sıralamadır ve `"bolum"` ŞARTTIR («her makine için '
+        'en yüksek vardiya»). Düz bir «en yüksek/ilk N» isteğinde `sira` DEĞİL '
+        '`order`+`limit` yaz. '
         '«toplam içindeki payı / yüzde kaçı» → **pay** (turev DEĞİL). '
         "kumulatif/hareketli_ort/degisim_yuzde bir ZAMAN KOVASI ister (timeDimensions).\n"
         '- TÜREV (oran/pay): "turev":{"pay":"<ölçü>","payda":"<ölçü>","kip":"yuzde|oran|'
@@ -464,6 +474,16 @@ def _cube_refine_user(prev_cq_json: str, message: str) -> str:
         'onceki|degisim_yuzde|pay"}. «kümülatif/birikimli»→kumulatif; «hareketli N aylık '
         'ortalama»→hareketli_ort + "pencere_boyu":N; «her X için en yüksek»→sira + '
         '"bolum":["<boyut>"]; «önceki döneme göre yüzde değişim»→degisim_yuzde; '
+        # 🔴 `§V6` — `sira` AÇGÖZLÜYDÜ ve kural İKİ istemde birden yazılı (`KAT-1`).
+        # Ölçüldü (`V13`/`D3`, canlı): *«duruş süresini AZALAN SIRADA İLK 5»* → garson
+        # `pencere:sira` yazdı, `order`+`limit` yazmadı → **11 satır**, hepsi sıra
+        # numaralı ama sıralanmamış ve kesilmemiş. ⊙ İkisi farklı şeydir: `sira` bir
+        # **sütun** üretir (ROW_NUMBER), `order`+`limit` **sonucu** belirler. Kuraldaki
+        # *«her X için»* bir sınırdı ama istemde bir **örnek** gibi duruyordu.
+        # *Bir örnek, kural sanılırsa genişler.*
+        '🔴 `sira` YALNIZ GRUP-İÇİ sıralamadır ve `"bolum"` ŞARTTIR («her makine için '
+        'en yüksek vardiya»). Düz bir «en yüksek/ilk N» isteğinde `sira` DEĞİL '
+        '`order`+`limit` yaz. '
         '«toplam içindeki payı / yüzde kaçı» → **pay** (turev DEĞİL). '
         "kumulatif/hareketli_ort/degisim_yuzde bir ZAMAN KOVASI ister (timeDimensions).\n"
         '- TÜREV (oran/pay): "turev":{"pay":"<ölçü>","payda":"<ölçü>","kip":"yuzde|oran|'
@@ -743,8 +763,37 @@ class OpenAICompatibleSqlGenerator:
         OpenAI-uyumlu uçların `strict` fonksiyon şeması `oneOf`'u desteklemiyor; kısıtı
         yarım uygulamak, uygulamamaktan **kötüdür** (model geçerli ama yanlış bir dala
         zorlanabilirdi). Bugünkü serbest-JSON yolu korunur ve `parse_cube_query` zaten
-        doğruluyor. İmza uyumlu kalır ki `FailoverSqlGenerator` ayrım yapmasın."""
-        return self._chat(_cube_select_system(catalog), question, model=self._select_model)
+        doğruluyor. İmza uyumlu kalır ki `FailoverSqlGenerator` ayrım yapmasın.
+
+        🔴 **`§V3` — ÖRNEKLEM BİR YEDEK DEĞİLDİR: canlı log yazılı varsayımı ÇÜRÜTTÜ.**
+
+        Aşağıdaki `refine_cube`'un docstring'i şunu iddia ediyordu:
+
+            *"Kardeşi olan `select_cube` bu dersi **zaten öğrenmişti**:
+            `_select_consistent` onu `k` kez örnekliyor, bir örneğin düşmesi
+            turu düşürmüyor."*
+
+        Ölçüldü (`V20` — *«en çok duruşa yol açan 3 nedeni bul»*, konteyner logu):
+
+            23:43:02 WARNING intent: OY DÜŞTÜ (istisna) … SaglayiciYaniti
+            23:43:03 WARNING intent: OY DÜŞTÜ (istisna) … SaglayiciYaniti
+
+        ⊙ **Üç oyun üçü de bir saniye içinde AYNI şekilde düştü.** Çünkü boş-yanıt
+        arızası **bağımsız değil, ORTAK SEBEPLİDİR**: aynı model, aynı istem, aynı akıl
+        yürütme bütçesi. Çoklu örneklem yalnız *bağımsız* gürültüye karşı sigortadır;
+        ortak sebepli bir arızada üç örnek, bir örnek kadar korur — yani hiç.
+
+        ⚠ Ve bedeli iki kat oldu: tur öldü **ve** makbuz *"LLM'siz"* yazdı (`§V4`).
+
+        *Bir riski üç kez örneklemek, üç bağımsız deneme demek değildir; sebebi ortaksa
+        yalnız aynı hatayı üç kez ödemektir.*
+        """
+        _sis = _cube_select_system(catalog)
+        try:
+            return self._chat(_sis, question, model=self._select_model)
+        except SaglayiciYaniti as _e:
+            _log.info("select_cube boş yanıt → BİR kez yeniden deneniyor (%s)", _e)
+            return self._chat(_sis, question, model=self._select_model)
 
     def refine_cube(self, prev_cq_json: str, message: str, catalog: str) -> str:
         """🔴 **`§P5` — TEK ÇAĞRI, YEDEĞİ YOK: bir boş yanıt BÜTÜN takip turunu öldürüyor.**
@@ -755,10 +804,13 @@ class OpenAICompatibleSqlGenerator:
             Model AKIL YÜRÜTÜYOR ve token bütçesi `reasoning`'e gitti.
             → "Bu takip mesajını önceki raporla ilişkilendiremedim."
 
-        ⊙ Kardeşi olan `select_cube` bu dersi **zaten öğrenmişti**: `_select_consistent`
-        onu `k` kez örnekliyor, bir örneğin düşmesi turu düşürmüyor. `refine_cube` ise
-        **tek** çağrıdır ve tek bir boş yanıt kullanıcıya *"anlamadım"* olarak dönüyor —
-        `§0.0`'ın yasakladığı cümle, hem de **modelin bir tökezlemesi** yüzünden.
+        ⟳ **`§V3` — BU PARAGRAFIN İLK HÂLİ YANLIŞTI ve ölçümle düzeltildi.** Burada
+        *"kardeşi olan `select_cube` bu dersi zaten öğrenmişti: `_select_consistent`
+        onu `k` kez örnekliyor"* yazıyordu. Canlı log (`V20`) bunu çürüttü: **üç oyun
+        üçü de** bir saniye içinde aynı `SaglayiciYaniti` ile düştü. Örneklem yalnız
+        **bağımsız** gürültüye karşı sigortadır; boş-yanıt ortak sebeplidir. `select_cube`
+        artık **kendi** yeniden denemesini taşıyor (yukarı bkz.) — yani bu ders iki
+        kardeşte de **aynı** yerde, aynı biçimde yazılı (`KAT-1`).
 
         ⚠ Yeniden deneme **bir kez**dir ve yalnız **boş yanıt** için: bir ağ/kota hatası
         tekrarlanınca da aynı hatayı verir, oysa boş içerik **örnekleme kaynaklıdır** ve

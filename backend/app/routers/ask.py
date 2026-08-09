@@ -844,6 +844,100 @@ def _canon_cq(cq: dict) -> str:
     return json.dumps(c, sort_keys=True, ensure_ascii=False)
 
 
+#: 🔴🔴 **`§V2` — OYLAMA ZENGİNLİĞİ CEZALANDIRIYORDU: kökün kendisi.**
+#:
+#: `§T1` bu kusuru **teşhis etmişti** ve şunu yazmıştı: *"oy `_canon_cq` ile **tam `cq`**
+#: üzerinde sayılıyor; iki oy önemsiz bir alanda ayrılınca (biri `order` yazmış, öteki
+#: yazmamış) uyum %50'ye düşüyor"*. Ama düzeltme **semptomdaydı**: netleştirmeyi atla,
+#: `adaylar[0]`'ı al. Kanonik anahtar yerinde kaldı — ve `adaylar[0]` **keyfî** bir oydur.
+#:
+#: ⊙ Ölçüldü (V turu, konteyner logu — on Intent turu):
+#:
+#:     kazanan 3 oy → 1 kez        kazanan 2 oy → 1 kez        kazanan 1 oy → **7 kez**
+#:
+#: Yani uzlaşma **kural değil istisna**. Ve uzlaşma kurulduğunda **en yalın** okuma
+#: kazanır: `order` yazmayan iki oy birbiriyle **bedavaya** uyuşur, onu yazan tek oy
+#: yalnız kalır. **Zengin cevap kendi zenginliği yüzünden oy kaybediyor.**
+#:
+#: Canlı bedeli (V turu, iki kanıt):
+#:
+#: | soru | kaybolan | sonuç |
+#: |---|---|---|
+#: | `V13` *«duruş süresini azalan sırada ilk 5»* | `order`+`limit` | **11 satır** döndü |
+#: | `V14` *«toplam üretimin yüzde kaçını RAM»* | `pencere:pay` | *"oran sordun ama…"* |
+#:
+#: ⊙ **Ayrım:** bir oyun ötekinde olmayan bir alan yazması bir **anlaşmazlık değil, ek
+#: bilgidir**. Anlaşmazlık, aynı alana **iki farklı değer** yazılmasıdır. Eski anahtar bu
+#: ikisini ayırt etmiyordu; yenisi ayırıyor — çekirdeğe oy verilir, **zenginlik
+#: birleştirilir**.
+#:
+#: ⚠ Ve birleştirme **fail-closed**: aynı zenginlik alanına iki farklı değer geldiyse o
+#: alan **düşer** (uydurulmaz), `uyum.py` eksikliği zaten adıyla beyan eder (`§98.1`).
+#: ⚠ Zenginlik yalnız **kazanan çekirdeğin** sözlüğüyle uyumluysa alınır: `order.measure`
+#: kazananın ölçülerinde yoksa alınmaz. *Bir alanı taşımak, referanslarını taşımaz.*
+#:
+#: *Bir oylamada eksik bilgi çoğunluk kurar, çünkü hiçbir şey söylememek üzerinde
+#: anlaşmak kolaydır.*
+_CEKIRDEK_ALANLAR = ("cube", "measures", "dimensions", "filters", "timeDimensions")
+#: `wren_service.cube_sql`'in `pop`ladığı gömülü alanlar + sunum alanları. Hepsi
+#: **niteleme**dir: kullanıcının sorduğu ŞEYİ değil, onun **nasıl** sunulacağını söyler.
+_ZENGINLIK_ALANLAR = ("order", "limit", "pencere", "turev", "measure_having",
+                      "entity_limit", "ayrik_aylar", "blend")
+
+
+def _canon_cekirdek(cq: dict) -> str:
+    """`_canon_cq`'nun ÇEKİRDEK'i — zenginlik alanları anahtarın dışında."""
+    return _canon_cq({k: v for k, v in cq.items() if k in _CEKIRDEK_ALANLAR})
+
+
+def _zenginlik_referansi_gecerli(ad: str, deger, cekirdek: dict) -> bool:
+    """Zenginlik alanı yalnız kazanan çekirdeğin sözlüğüne oturuyorsa taşınabilir."""
+    olculer = set(cekirdek.get("measures") or [])
+    boyutlar = set(cekirdek.get("dimensions") or [])
+    if not isinstance(deger, dict):
+        return True                              # limit gibi skaler alan — referans yok
+    if ad == "order":
+        return str(deger.get("measure") or "") in olculer
+    if ad == "measure_having":
+        return str(deger.get("measure") or "") in olculer
+    if ad == "pencere":
+        return (str(deger.get("taban") or "") in olculer
+                and all(str(b) in boyutlar for b in (deger.get("bolum") or [])))
+    if ad == "turev":
+        # 🔴 `turev` İKİ ölçü ister ve ikisi de `measures`'ta olmalı. Kazananın ölçü
+        # listesi bunu taşımıyorsa bu bir **zenginlik değil, başka bir çekirdektir** —
+        # taşımak, kullanıcının sormadığı bir paydayı sessizce eklemek olurdu.
+        return (str(deger.get("pay") or "") in olculer
+                and (not deger.get("payda") or str(deger["payda"]) in olculer))
+    return True
+
+
+def _zenginligi_birlestir(kova: list[dict]) -> dict:
+    """Kazanan çekirdek kovasındaki oyların zenginlik alanlarını **birleştirir**.
+
+    Tek değer → alınır. İki farklı değer → **düşer** (fail-closed, uydurma yok).
+    """
+    kazanan = dict(kova[0])
+    for ad in _ZENGINLIK_ALANLAR:
+        gorulen = {json.dumps(o[ad], sort_keys=True, ensure_ascii=False): o[ad]
+                   for o in kova if o.get(ad) not in (None, [], {})}
+        if len(gorulen) != 1:
+            if len(gorulen) > 1:
+                _log.info("intent: «%s» oylar arasında ÇELİŞTİ (%d farklı) → düşürüldü "
+                          "(§V2, fail-closed)", ad, len(gorulen))
+                kazanan.pop(ad, None)
+            continue
+        deger = next(iter(gorulen.values()))
+        if not _zenginlik_referansi_gecerli(ad, deger, kazanan):
+            _log.info("intent: «%s» kazanan çekirdeğin sözlüğüne oturmadı → alınmadı "
+                      "(§V2)", ad)
+            continue
+        if kazanan.get(ad) != deger:
+            _log.info("intent: «%s» azınlık oyundan DEVRALINDI (§V2)", ad)
+        kazanan[ad] = deger
+    return kazanan
+
+
 def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
                        sema: dict | None = None):
     """CubeQuery SELF-CONSISTENCY (literatür #1 / ClarifyGPT deseni): k örnekleme →
@@ -925,10 +1019,25 @@ def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
     cands = [c for c in oylar if c]
     if not cands:
         return None, 0.0, None, []
+    # 🔴 `§V2` — ÇEKİRDEĞE OY VER, ZENGİNLİĞİ BİRLEŞTİR. Bayrak kapalıyken anahtar
+    # **tam `cq`**'dir ve davranış birebir bugünküdür (`KURAL B`).
+    from app.features import resolve_for as _rf5
+
+    try:
+        _cekirdek_oy = "oylama_cekirdek" in _rf5(get_settings(), None)
+    except Exception:                                  # noqa: BLE001 — oylama düşmez
+        _cekirdek_oy = False
+    _anahtar = _canon_cekirdek if _cekirdek_oy else _canon_cq
     votes: dict[str, list[dict]] = {}
     for c in cands:
-        votes.setdefault(_canon_cq(c), []).append(c)
+        votes.setdefault(_anahtar(c), []).append(c)
     best = max(votes.values(), key=len)
+    if _cekirdek_oy and len(best) > 1:
+        # ⚠ **YERİNDE** değiştirilir: `adaylar` aşağıda `[v[0] for v in votes.values()]`
+        # ile üretiliyor ve `§T1` dalı `adaylar[0]`'ı kullanıyor. Yeni bir liste kurmak,
+        # birleştirmeyi kazanan yoluna verip netleştirme yolundan **saklardı** — yani
+        # düzeltilen kusurun aynısı, bir dal aşağıda tekrarlanırdı.
+        best[0] = _zenginligi_birlestir(best)
     # 🔴 `§47` — **KARARIN KENDİSİ DE LOGLANIR.** Ölçüldü: üç oy başarıyla döndü, hiçbir
     # red/uyuşmazlık yazılmadı ve cevap yine *"anlayamadım"* oldu. Uyum oranı ve oy
     # dağılımı görünmediği sürece o cümlenin **neden** üretildiği bilinemez.
@@ -2067,6 +2176,58 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                                trace=iz + [_plan_izi(plan)],
                                contribution=katki.model_dump(),
                                prescription=recete_payload)
+
+        # 🔴🔴 `§V1` — MAKBUZ SORUSU: **FİŞİ OKU, MUTFAĞA GİTME.**
+        #
+        # *«bu nasıl hesaplandı»* · *«neler dahil»* · *«hangi tarih aralığı»* bir **veri**
+        # sorusu değildir; eldeki sayının **fişini** ister. Bu yüzden burada:
+        #
+        #   • yeni sorgu **koşulmaz** — `prev_cq` bayt bayt korunur
+        #   • LLM **çağrılmaz** — üç kaynak da deterministik
+        #   • satırlar **yeniden sunulmaz** (`V17`'nin kusuru tam da buydu: aynı tabak)
+        #
+        # ⊙ Üç kaynak da **zaten vardı** ve hiçbiri yeni yazılmadı:
+        #   `drill.formula_explanation` (düz-dil hesap) · cube kataloğunun `expression`ı
+        #   (ölçünün SQL karşılığı) · `prev_cq.filters` (kapsam). Eksik olan **kapıydı**.
+        #
+        # ⚠ `expression` bilerek gösteriliyor: kullanıcı *"neye bölündü"* diye sorduğunda
+        # `ROUND(AVG(dE),2)` cümlelerin en dürüstüdür. Gizlemek, makbuzu **süse** çevirir.
+        if tur == followup.TUR_MAKBUZ:
+            from app.drill import formula_explanation as _fx
+
+            _mad: list[str] = []
+            _mdisp = (cube_meta or {}).get("measure_synonyms_display") or {}
+            _mexpr = (cube_meta or {}).get("measure_expressions") or {}
+            # ⚠ Anahtar `units` — `measure_units` DEĞİL. (İlk yazımda ikincisini
+            # yazmıştım; `wren_service.schema()` okundu ve düzeltildi. Var olmayan bir
+            # anahtar `{}` döner ve **sessizce boş** bir makbuz üretirdi — yani kusur
+            # ancak makbuza bakan biri tarafından fark edilirdi.)
+            _munit = (cube_meta or {}).get("units") or {}
+            for _m in (prev_cq.get("measures") or []):
+                _ad = _mdisp.get(_m) or _m
+                _ek = f" `{_mexpr[_m]}`" if _mexpr.get(_m) else ""
+                _br = f" — birim: {_munit[_m]}" if _munit.get(_m) else ""
+                _mad.append(f"• **{_ad}** (`{_m}`){_ek}{_br}")
+            _kapsam = _fx(prev_cq, cube_meta)
+            _kaynak = (cube_meta or {}).get("base_object") or prev_cq.get("cube")
+            _satir = [f"**{_kapsam}**", "",
+                      "**Ölçü(ler) ve SQL karşılığı**", *_mad, "",
+                      f"**Kaynak tablo:** `{_kaynak}`"]
+            if prev_cq.get("filters"):
+                _satir += ["", "**Uygulanan süzgeçler**"]
+                _satir += [f"• `{f.get('dimension')}` {f.get('operator')} "
+                           f"`{f.get('value')}`" for f in prev_cq["filters"]]
+            # 🔴 Sınırı da yaz: makbuz neyi **kapsamadığını** da söylemelidir. Kapsanmayanı
+            # susarak geçmek, kapsanmış gibi okunur (`§98.1` — eksikliği ADIYLA say).
+            if not prev_cq.get("filters"):
+                _satir += ["", "⚠ Hiçbir süzgeç uygulanmadı — **tüm kayıtlar** dahil."]
+            return _finish(AskResponse(
+                question=body.question, source="cube", cube_query=prev_cq,
+                note="\n".join(_satir),
+                calculation_explanation=_kapsam,
+                trace=iz + ["Takip: MAKBUZ sorusu → eldeki fiş okundu "
+                            "(yeni sorgu YOK, LLM YOK) — §V1"],
+                next_steps=[], session_id=session_id))
 
         # NORMAL Mİ → dönemsel kıyas. Yeni bir "normallik" tanımı UYDURULMAZ: elimizdeki
         # tek nesnel zemin geçen dönemle kıyastır ve cevap onu böyle sunar.
@@ -3730,7 +3891,26 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     note=f"{konular} ile ilgili görünüyor ama hangi ölçüyü istediğini "
                          "anlayamadım. Şunlardan biri mi?",
                     suggestions=_dogrulanmis_chipler(dar_labels, schema, en_fazla=8),
-                    trace=["Intent-path: konu daraltıldı (zayıf cube/boyut sinyali, LLM'siz)"],
+                    # 🔴 `§V4` — **MAKBUZ YALAN SÖYLÜYORDU.** Bu iz sabit *"LLM'siz"*
+                    # yazıyordu. Ölçüldü (`V20`, konteyner logu 23:43:02-03): garson
+                    # **çağrıldı**, üç oyunun **üçü de** `SaglayiciYaniti` ile düştü, ve
+                    # kullanıcıya dönen makbuz *"LLM'siz"* dedi.
+                    #
+                    # ⊙ İki ayrı dünya aynı cümleye sığdırılmıştı: *"garson hiç
+                    # çağrılmadı"* ile *"garson çağrıldı ve konuşamadı"*. Birincisi bir
+                    # tasarım kararı, ikincisi bir **arıza**dır — ve ayırt edilemedikleri
+                    # sürece ikincisi hiç onarılmaz, çünkü hiç görünmez. (`§V3`'ün boş-yanıt
+                    # yeniden denemesi tam da bu logdan çıktı; iz doğru olsaydı **daha
+                    # erken** çıkardı.)
+                    #
+                    # *Bir makbuzun en pahalı hatası eksik olmak değil, olmayan bir şeyi
+                    # olmuş gibi yazmaktır.*
+                    #
+                    # ⚠ İz **yalnız olguyu** söyler (*"garson çağrıldı"*), sebebini değil:
+                    # oyların neden düştüğü logda durur, makbuzda tahmin edilmez.
+                    trace=["Intent-path: konu daraltıldı (zayıf cube/boyut sinyali, "
+                           + ("garson çağrıldı — kullanılabilir bir karar dönmedi"
+                              if _garson_konustu else "LLM'siz") + ")"],
                 ))
             # (2) DISCOVERY BİR SEÇENEK OLSUN — ama GÜVENLE. Yapısal-takip zinciri bu
             # kapıyı zaten doğru kuruyor (`_match_cube is not None` ise Discovery'ye düş);

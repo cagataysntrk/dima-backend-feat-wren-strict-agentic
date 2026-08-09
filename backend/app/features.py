@@ -523,6 +523,26 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "Kapalıyken davranış bayt bayt bugünkü (`KURAL B`).",
         "category": "Anlama",
     },
+    "oylama_cekirdek": {
+        "label": "Oy çekirdeğe verilir, zenginlik birleştirilir",
+        "description": "🔴🔴 `§V2` — **oylama zenginliği CEZALANDIRIYORDU.** Kanonik "
+                       "anahtar **tam `cq`** olduğu için `order`/`limit`/`pencere`/"
+                       "`turev` yazmayan iki oy birbiriyle **bedavaya** uyuşuyor, onu "
+                       "yazan tek oy yalnız kalıyordu — yani **en yalın okuma kazanıyor**. "
+                       "Ölçüldü (V turu, 10 Intent turu): kazanan 1 oy → **7 kez**. "
+                       "Canlı bedeli: `V13` *«azalan sırada ilk 5»* → `order`+`limit` "
+                       "düştü, **11 satır**; `V14` *«yüzde kaçını»* → `pencere:pay` düştü. "
+                       "⊙ Ayrım: bir oyun fazladan alan yazması bir **anlaşmazlık değil, "
+                       "ek bilgidir**; anlaşmazlık aynı alana **iki farklı değer** "
+                       "yazmaktır. Açıkken oy ÇEKİRDEĞE (küp·ölçü·kırılım·filtre·zaman) "
+                       "verilir ve zenginlik kazanan kovada **birleştirilir** — çelişki "
+                       "varsa alan **düşer** (fail-closed, uydurma yok) ve referansları "
+                       "kazananın sözlüğüne oturmayan alan **alınmaz**. "
+                       "⟳ `§T1` bu kökü teşhis etmişti ama semptomu yamamıştı "
+                       "(*«anlamca aynıysa ilkini al»* — ilki KEYFÎ bir oydur). "
+                       "Kapalıyken davranış bayt bayt bugünkü (`KURAL B`).",
+        "category": "Anlama",
+    },
     "oylama_paydasi": {
         "label": "Oylama paydası çekimserleri de sayar",
         "description": "Self-consistency uyum oranı `{cube:null}` (bilmiyorum) oylarını "

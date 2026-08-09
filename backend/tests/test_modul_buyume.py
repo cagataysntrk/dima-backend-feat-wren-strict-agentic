@@ -450,8 +450,46 @@ MUAFIYET_ASK_KOD = [
      "son andır. Çağrıyı dışarı almak, çağrının **yerini** kaybetmek olurdu. "
      "⊙ İz satırı bilerek burada: kullanıcının gördüğü sıralamayı **sistemin koyduğu** "
      "makbuza yazılmazsa, kullanıcı onu kendi yazdığını sanır"),
+    ("v1-makbuz-sorusu-8-konusma-turu", 31,
+     "🔴🔴 **SİSTEM CEVABI ÜRETİYOR AMA ONA ULAŞAN KAPI YOKTU — üç kanıt.** "
+     "`u2` *«bu nasıl hesaplandı?»* → dürüst ret · `V2` *«bu rakama neler dahil, nasıl "
+     "bulundu»* → dürüst ret · `V17` *«bu sayı neyi kapsıyor, hangi tarih aralığı»* → "
+     "**aynı tablo ikinci kez sunuldu**. ⊙ `V2`'nin reddi en öğreticiydi: sistem soruyu "
+     "*«mevcut raporun hesaplama yöntemini sorguluyor»* diye **doğru tarif edip** attı. "
+     "🔴 Oysa cevap ZATEN üretiliyor: `drill.formula_explanation` her cevaba "
+     "`calculation_explanation` olarak yazılıyor; `temellendirme` ve `explain` de dolu. "
+     "Üç alan doluydu, **konuşma türü yoktu**. "
+     "⚠ **TAŞINAMAZ:** bu bir hesap değil, `_cevap_ustunde_konus`'un altıncı **dalıdır** — "
+     "kardeşleri (`NEDEN`/`NORMAL`/`NE_YAPMALI`) de burada duruyor ve hepsi aynı üç şeyi "
+     "paylaşıyor: `prev_cq` · `cube_meta` · `_finish`. Dalı dışarı almak bu üçünü "
+     "parametre olarak taşımak olurdu — yani closure'ı elle yeniden kurmak. "
+     "⊙ Dalın kendisi **yeni motor açmıyor**: üç kaynağın üçü de var olan katalog "
+     "alanları (`measure_expressions` · `units` · `base_object`) ve yeni sorgu koşmuyor — "
+     "`V17`'nin kusuru tam da yeni sorgu koşmaktı. *Bir fişi okumak için mutfağa gidilmez.*"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("v5-sifat-fiil-kategori-degeri-degildir", 8,
+     "🔴🔴 **BİR SIFAT/FİİL BİR KATEGORİ DEĞERİ DEĞİLDİR — üç kanıt, tek kök.** "
+     "`t19` *«ortalama şiddet»* → `siddet eq 'ORTA'` + `renk eq 'Orta'` · "
+     "`§86.8` *«bu grafiği açıkla»* → `renk_derinlik eq 'Açık'` · *«hariç tut»* → "
+     "cümlenin kendisi filtreye dönüyordu. "
+     "⊙ Sondaj (kaynak okundu, koşulmadı) kökü tek satırda gösterdi: `_value_token_hit` "
+     "`\\b{nv}\\w*` ile **SINIRSIZ** ek kabul ediyordu; kardeşi `_syn_hit` ise "
+     "`_ek_gecerli` → `_SUFFIX_CHAIN_RE` disiplinini kullanıyor. Yani `KAT-1`: **aynı "
+     "sorunun iki sahibi** — `_syn_hit` iki kez (Faz 0.4 · D3) düz alt-dizeden "
+     "kurtarıldı, DEĞER eşleştiricisi o göçün dışında kaldı. "
+     "⚠ Zincire geçmek yetmedi (`lama` = `la`+`m`+`a`, üçü de atom): ikinci kural "
+     "**isimden fiil yapan ek bir ÇEKİM DEĞİLDİR** — `_NEGATION_SUFFIXES`'in gerekçesiyle "
+     "birebir aynı mantık (*«ek anlamı tersine çevirir: fire ≠ firesiz»*), burada ek "
+     "**sözcük sınıfını** çevirir: `orta` sıfat, `ortala-` fiil. "
+     "⊙ `ADR-0008` kelime listesini yasaklar, gramerin **kapalı sınıflarını** serbest "
+     "bırakır ve Türkçenin isimden-fiil ekleri sonludur. "
+     "⚠ **TAŞINAMAZ:** `_value_token_hit`'in yanında durmalı — ayrılırsa `_syn_hit` ile "
+     "arasındaki *«hangi disiplin nerede geçerli»* ayrımı bir daha yan yana okunamaz; "
+     "bugüne kadar görünmemesinin sebebi tam olarak buydu. "
+     "⚠ Bilinen bedel yazıldı: ünsüzle biten değerden sonra vasıta hâli de `-la` alır "
+     "(*«kamyonla»*) ve **korpus bunu ÖLÇEMEZ** (soruları katalogdan üretir). "
+     "Kazanç üç kanıtlı, kayıp varsayımsal."),
     ("m1a-chip-tesadufi-ayirt-ediciye-bagliydi", 13,
      "🔴🔴 **NETLEŞTİRME CHIP'İ TESADÜFİ BİR AYIRT EDİCİYE BAĞLIYDI.** `_calisan_sorgu` "
      "ölçünün yalnız **görünen adını** deniyordu; iki küp aynı adı taşıyorsa (`oee` ve "
@@ -895,6 +933,23 @@ MUAFIYET_ASK_DOSYA = [
                 "olayı (3 — durdurma `hata` değildir ve dalsız akış 6 dk açık kalırdı). "
                 "Bir HTTP uç kaydı router modülünden çıkarılamaz; çıkarmak `/ask/jobs` "
                 "kaynağını iki dosyaya bölerdi"),
+    ("v2-oylama-zenginligi-cezalandiriyordu", 49,
+     "🔴🔴 **OYLAMA, ZENGİN CEVABI KENDİ ZENGİNLİĞİ YÜZÜNDEN ELİYORDU.** Kanonik anahtar "
+     "**tam `cq`** olduğu için `order`/`limit`/`pencere`/`turev` yazmayan iki oy "
+     "birbiriyle **bedavaya** uyuşuyor, onu yazan tek oy yalnız kalıyordu. "
+     "⊙ Ölçüldü (V turu, konteyner logu, on Intent turu): kazanan 3 oy → 1 kez · "
+     "2 oy → 1 kez · **1 oy → 7 kez**. Yani uzlaşma kural değil istisna, ve kurulduğunda "
+     "**en yalın okuma** kazanıyor. Canlı bedeli: `V13` *«azalan sırada ilk 5»* → "
+     "`order`+`limit` düştü, **11 satır**; `V14` *«yüzde kaçını»* → `pencere:pay` düştü. "
+     "⟳ `§T1` bu kökü **teşhis etmişti** ama semptomu yamadı (*«anlamca aynıysa ilkini "
+     "al»* — ilki KEYFÎ bir oydur, ve V13'te `order`'ı gören oy tam da atılan oydu). "
+     "⊙ Ayrım: fazladan alan yazmak bir **anlaşmazlık değil, ek bilgidir**; anlaşmazlık "
+     "aynı alana **iki farklı değer** yazmaktır. "
+     "⚠ **`ask()` DIŞINDA, modül düzeyinde** (üç saf fonksiyon) ve `_canon_cq`'nun tam "
+     "yanında — ikisi **aynı sorunun iki cevabıdır**; ayrı dosyalara konsalardı "
+     "hangisinin ne saydığı bir daha yan yana okunamazdı. "
+     "⚠ Fail-closed: çelişkide alan **düşer** (en kötü durum bugünkü davranış) ve "
+     "referansları kazananın sözlüğüne oturmayan alan **alınmaz**."),
 ]
 #: 🔴 `0619bfd` (0.22 · `migration_trace` `UnboundLocalError`) ham satırda **+8** getirdi
 #: ama **kod satırında 0**: bildirim `if` bloğundan gövde başına **TAŞINDI**. Bir taşıma

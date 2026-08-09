@@ -188,9 +188,13 @@ def cube_query_json_schema(index: dict, *, harman: bool = False) -> dict:
                           if boyutlar else {"type": "array", "items": {"type": "string"}},
                 "yon": {"type": "string", "enum": ["asc", "desc"]}},
             "required": ["taban", "kip"],
+            # 🔴 `§V6` — aynı sınır burada da yazılı: kural iki yerde yaşıyorsa ikisi de
+            # aynı şeyi söylemeli, yoksa hangisinin okunduğuna göre davranış değişir.
             "description": "Zaman/grup PENCERESİ. *«kümülatif»*→`kumulatif`, *«hareketli "
                            "N aylık ortalama»*→`hareketli_ort`+`pencere_boyu`, *«her X "
-                           "için en yüksek»*→`sira`+`bolum`, *«önceki döneme göre yüzde "
+                           "için en yüksek»*→`sira`+`bolum` (🔴 `sira` YALNIZ grup-içidir "
+                           "ve `bolum` ŞARTTIR; düz bir *«ilk N»* isteğinde `sira` değil "
+                           "`order`+`limit` kullan), *«önceki döneme göre yüzde "
                            "değişim»*→`degisim_yuzde`. `kumulatif`/`hareketli_ort`/"
                            "`degisim_yuzde` bir ZAMAN KOVASI ister (`timeDimensions`)."}
         props["turev"] = {

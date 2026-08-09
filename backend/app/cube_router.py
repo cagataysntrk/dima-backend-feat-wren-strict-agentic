@@ -731,12 +731,87 @@ def _value_token_hit(q: str, nv: str) -> bool:
                 continue  # "3 adet / 5 milyon / 2 ay" → miktar/dönem, kategori değil
             return True
         return False
-    m = re.search(rf"\b{re.escape(nv)}\w*", q)
+    m = re.search(rf"\b{re.escape(nv)}([a-z0-9]*)", q)
     if not m:
+        return False
+    if not _deger_eki_gecerli(m.group(1)):
         return False
     period = _period_hit_words(q)
     toks = re.findall(r"[a-z0-9]+", m.group(0))
     return not any(t in period for t in toks)
+
+
+#: 🔴🔴 **`§V5` — BİR SIFAT/FİİL, BİR KATEGORİ DEĞERİ DEĞİLDİR. Üç kanıt, tek kök.**
+#:
+#: | soru | değer | boyut | üretilen |
+#: |---|---|---|---|
+#: | *«**ortalama** şiddet»* (`t19`) | `ORTA` · `Orta` | `siddet` · `renk` | 🔴 `eq 'ORTA'` |
+#: | *«bu grafiği **açıkla**»* (`§86.8`) | `Açık` | `renk_derinlik` | 🔴 `eq 'Açık'` |
+#: | *«**hariç tut**»* | — | — | 🔴 cümlenin kendisi |
+#:
+#: ⊙ **Sondaj (`§83.4`, kaynak okundu — koşulmadı) kökü tek satırda gösterdi:**
+#:
+#:     _value_token_hit:  re.search(rf"\b{nv}\w*", q)        ← SINIRSIZ ek
+#:     _syn_hit:          _ek_gecerli(...)  → _SUFFIX_CHAIN_RE ← DİSİPLİNLİ zincir
+#:
+#: Yani `KAT-1`: **aynı sorunun iki sahibi.** `_syn_hit` iki kez (Faz 0.4 · D3) düz
+#: alt-dizeden kurtarıldı; **değer** eşleştiricisi o göçün dışında kaldı ve bugüne kadar
+#: `\w*` ile koştu. `orta` + `\w*` → `ortalama`·`ortaklık`·`ortam` hepsini yutar.
+#:
+#: ⚠ Ama zincire geçmek **yetmiyor**: `lama` = `la`+`m`+`a` ve üçü de `_SUFFIX_ATOMS`'ta.
+#: Bu yüzden ikinci bir kural gerekiyor — ve o kural bir **kelime listesi değil**:
+#:
+#: 🔴 **İSİMDEN FİİL YAPAN EK BİR ÇEKİM DEĞİLDİR — SÖZCÜK SINIFINI DEĞİŞTİRİR.**
+#: `_NEGATION_SUFFIXES`'in gerekçesiyle **birebir aynı** mantık (*"olumsuzluk eki çekim
+#: sayılmaz — anlamı tersine çevirir: `fire` ≠ `firesiz`"*): `orta` bir sıfattır,
+#: `ortala-` bir fiildir; `açık` bir renk derinliğidir, `açıkla-` bir eylemdir. Çekim eki
+#: kelimenin **hâlini** değiştirir, yapım eki **kendisini**.
+#:
+#: ⊙ `ADR-0008` kelime listesini yasaklar ama **gramerin kapalı sınıflarını açıkça
+#: serbest bırakır** — Türkçenin isimden-fiil yapan ekleri sonlu ve sayılıdır.
+#:
+#: ⚠ **Kapsam bilerek DAR: yalnız DEĞER eşleşmesi, sinonim değil.** Bir sinonim yazarın
+#: seçtiği katalog terimidir; bir değer **verinin içindeki keyfî metindir**. Ve bilinen
+#: bedel yazılıyor: ünsüzle biten bir değerden sonra vasıta hâli de `-la/-le` alır
+#: (*«kamyonla sevkiyat»* → `Kamyon` artık eşleşmez). ⚠ **Bu bedeli korpus ÖLÇEMEZ** —
+#: korpus sorularını katalogdan üretir, yani hep *"doğru yazılmış"*tır ve böyle bir
+#: çekim orada hiç doğmaz (korpusun yazılı körlüğü, `CLAUDE.md`). Ünlüyle biten değerler
+#: `-yla/-yle` aldığı için **etkilenmez**; risk yalnız ünsüzle bitenlerde ve **ölçülen
+#: kazanç üç kanıtlı**, ölçülemeyen kayıp varsayımsal.
+#:
+#: *Bir eki tanımak, kelimeyi tanımak değildir: `-la` bazen «ile» der, bazen bir ismi
+#: fiile çevirir — ve ikincisinde artık o isim ortada yoktur.*
+_YAPIM_EK_UZANTILARI = ("lan", "len", "las", "les", "lat", "let")   # -lan/-leş/-laş/-lat
+
+#: 🔴🔴 **`§V5.1` — YÜKLEM KENDİ YANLIŞ-POZİTİFİNİ ÜRETTİ (`§101.1` birebir).**
+#:
+#: İlk yazım *"kalan `la`/`le` ile başlıyorsa yapım ekidir"* diyordu. **ÇOĞUL EKİ DE
+#: `la`/`le` ile başlar** — ve bu bir ayrıntı değil, Türkçenin en sık ekidir:
+#:
+#:     performans + LARINI     makine + LER     renk + LERİ     müşteri + LER
+#:
+#: Kapı bunu **aynı koşumda** yakaladı: `eval --slice llm` coverage **-66,7%**
+#: (`llm-parafraz-verimlilik` · `llm-karsilastirma-lag`, ikisi de `answer` → `chip`).
+#: Yani üç kanıtlı bir kusuru kapatan yüklem, kapatırken **daha yaygın** bir kusur açtı.
+#:
+#: ⊙ Ayrım tek harfte: yapım eki `-la/-le`'dir, çoğul `-lar/-ler`. Sınır **`r`**.
+#: `-lık/-lik/-luk` zaten `li`/`lu` ile başlar, çakışmaz.
+#:
+#: *Bir kusuru ilan eden yüklem, ilan ettiği kusurdan daha sık yanılıyorsa, kusurun
+#: kendisinden pahalıdır — ve bunu ancak payda sabitken bir kapı gösterebilir.*
+_YAPIM_EK_RE = re.compile(r"^l[ae](?!r)")
+
+
+def _deger_eki_gecerli(kalan: str) -> bool:
+    """Bir kategori DEĞERİnin arkasındaki `kalan` geçerli bir **çekim** mi?
+
+    `_ek_gecerli`'nin kuralı + yapım eki reddi. Yapım eki sözcük sınıfını değiştirir;
+    değiştirdiği anda ortada o kategori değeri **yoktur**. ⚠ Çoğul (`-lar/-ler`) bir
+    yapım eki DEĞİLDİR ve dışarıda tutulur (`§V5.1`).
+    """
+    if kalan.startswith(_YAPIM_EK_UZANTILARI) or _YAPIM_EK_RE.match(kalan):
+        return False
+    return _ek_gecerli(kalan)
 
 
 def _cube_meta(schema: dict, name: str) -> dict | None:

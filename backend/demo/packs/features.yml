@@ -159,6 +159,13 @@ features:
   # Açıkken uyuşmazlıkta ÇOĞUNLUK adayıyla cevaplanır, uyum oranı ize yazılır ve
   # `uyum.py` eksikleri ayrıca beyan eder. Kapalı doğar: takas korpusla ölçülecek.
   oylama_cogunluk: "off"
+  # 🔴🔴 `§V2` — oy ÇEKİRDEĞE verilir, zenginlik BİRLEŞTİRİLİR. Ölçüldü (V turu, on
+  # Intent turu): **kazanan 1 oy → 7 kez**. Sebep kanonik anahtarın **tam `cq`** olması:
+  # `order` yazmayan iki oy bedavaya uyuşur, yazan tek oy yalnız kalır — zengin cevap
+  # kendi zenginliği yüzünden oy kaybeder. Canlı bedeli `V13` (11 satır) ve `V14`.
+  # ⚠ Açık doğar: kusur ölçüldü, takas **tek yönlü** (bir alan ya taşınır ya düşer;
+  # çelişkide düşer — yani en kötü durum bugünkü davranış).
+  oylama_cekirdek: beta
   oylama_paydasi: "off"  # 🔴 Kusur GERÇEK, takas ÖLÇÜLEMEZ — bu yüzden kapalı.
   # ⊙ Doğrulandı: `agreement = len(best)/len(cands)` ve `cands` `{cube:null}` oylarını
   # eliyor → 1 cevap + 2 "bilmiyorum" = uyum **1,0**. Şüphe en yüksekken sistem en emin.

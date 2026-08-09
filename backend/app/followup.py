@@ -69,6 +69,7 @@ TUR_ISARET = "isaret"          # "şu düşüş ne?"    → grafiğe çapa (G2)
 TUR_ANLAT = "anlat"            # "bunu analiz et"  → ELDEKİ cevabı AÇ (Faz D2)
 TUR_TAKIP = "takip"            # "bunu takip et"   → ZAMANLA ÖNERİSİ (FAZ 5.1)
 TUR_PAYLAS = "paylas"          # "müdüre 3 cümle"  → PAYLAŞILABİLİR LİNK (FAZ 5.2)
+TUR_MAKBUZ = "makbuz"          # "bu nasıl hesaplandı?" → FİŞİ OKU (§V1)
 
 # Kalıplar `_norm` sonrası (ASCII, küçük harf) yazılır. Sonu "!" olanlar TAM KELİME
 # eşleşir — Faz D3'ün `_syn_hit` disiplini; kalanlar geçerli ek zinciri kabul eder.
@@ -152,6 +153,43 @@ _PAYLAS = ("paylas", "paylasabilir", "link ver", "link olustur", "linkini",
            "uc cumle", "3 cumle", "iki cumle", "2 cumle", "bir paragraf",
            "kisaca yaz", "kisa bir ozet yaz", "sunuma koy")
 
+#: 🔴🔴 **`§V1` — 8. TÜR: MAKBUZ SORUSU. Üç kanıt, ve sistem cevabı ZATEN taşıyordu.**
+#:
+#: | tur | soru | dönen |
+#: |---|---|---|
+#: | `u2` | *«bu nasıl hesaplandı?»* | 🔴 dürüst ret |
+#: | `V2` | *«bu rakama neler dahil, nasıl bulundu»* | 🔴 dürüst ret |
+#: | `V17` | *«bu sayı neyi kapsıyor, hangi tarih aralığı kullanıldı»* | 🔴 **aynı tabak tekrar** |
+#:
+#: ⊙ `V2`'nin cevabı en öğreticiydi — sistem soruyu **doğru tarif edip** reddetti:
+#: *«Bu soru mevcut raporun içeriğini ve hesaplama yöntemini sorgulamaktadır; doğrudan
+#: bir değişiklik talebi değildir.»* Yani anladı, sınıflandırdı, ve **karşılığı olmadığı
+#: için** attı.
+#:
+#: 🔴 Oysa cevap **zaten üretiliyor**: `drill.formula_explanation` bir `cube_query`'den
+#: deterministik, düz-dil bir hesap anlatımı çıkarır ve `gorsel_ekleme.py` onu her cevaba
+#: `calculation_explanation` olarak **yazar**. `temellendirme` ve `explain` de aynı turda
+#: dolar. Üç alan doluydu, onlara **ulaşan bir konuşma türü yoktu**.
+#:
+#: ⊙ Ayrım şu: bu bir **VERİ sorusu değil**, bir **MAKBUZ sorusudur.** Kullanıcı yeni bir
+#: sayı istemiyor; eldeki sayının **fişini** istiyor. Yeni sorgu koşmak yanlış cevaptır —
+#: `V17`'de tam olarak bu oldu ve aynı tablo ikinci kez sunuldu.
+#:
+#: ⚠ **Zamir şartından MUAF** (`TUR_PAYLAS` gibi): *«nasıl hesaplandı»* edilgen geçmiş
+#: zamandır ve **hesaplanmış bir şeye** işaret etmekten başka bir şey yapamaz. Şart
+#: konsaydı en doğal ifade yine kapalı kalırdı — düzeltilen kusurun aynısı, bir kat aşağıda.
+#: ⚠ `baglam_var` kapısı zaten yukarıda: ekranda rapor yoksa bu tür hiç doğmaz, yani
+#: *«fire nasıl hesaplanır?»* (tanım sorusu) yeni konu olarak kalır.
+_MAKBUZ = ("nasil hesaplandi", "nasil hesapladin", "nasil hesaplanir", "nasil buldun",
+           "nasil bulundu", "nasil cikti", "nasil olustu", "nasil geldi",
+           "neler dahil", "ne dahil", "nelerden olusuyor", "neyi kapsiyor",
+           "neyi iceriyor", "nelere bakti", "hangi verilerden", "hangi veriden",
+           "hangi kayitlardan", "hangi tarih araligi", "hangi donem kullanildi",
+           "kaynagi ne", "nereden geliyor", "nereden aldin", "hangi formul",
+           "formulu ne", "formul ne", "hesap yontemi", "hesaplama yontemi",
+           "bu guvenilir mi", "guvenilir mi", "emin misin", "dogru mu bu",
+           "kanit", "makbuz", "hangi tabloda", "hangi kolon")
+
 _ANLAT = ("analiz et", "analiz eder", "analizini", "yorumla", "yorumlar misin",
           "yorumun", "yorumlasana", "degerlendir", "aciklar misin", "acikla",
           "ozetle", "ozetler misin", "ne diyor", "ne anlama gel", "ne anlama geliyor",
@@ -231,6 +269,22 @@ def sinifla(soru: str, *, baglam_var: bool,
     if not baglam_var:
         return Niyet(sinif=SINIF_YENI, kural="baglam-yok",
                      kanit="konuşulacak bir cevap yok")
+
+    # 🔴 `§V1` — **MAKBUZ, YAPISALDAN ÖNCE GELİR ve bu bir istisna değil, kuralın kendisi.**
+    #
+    # `_YAPISAL`'ın gerekçesi şu: *"kullanıcı yeni sayılar bekliyorsa önce onları vermek
+    # gerekir"*. Makbuz sorusunda bu gerekçe **tersine döner** — kullanıcı yeni sayı
+    # istemiyor, eldeki sayının fişini istiyor.
+    #
+    # ⚠ Ve bu soyut bir ihtimal değil: kullanıcının kendi cümlesi *«bir **GRAFİK** gelince
+    # bu nasıl hesaplandıya da cevap verebilmeli»*. `grafik` `_YAPISAL`'da bir sinyaldir;
+    # öncelik yapısalda kalsaydı **kullanıcının literal örneği** yeni bir sorguya düşerdi.
+    #
+    # *Bir önceliği koyan gerekçe geçerliliğini yitirdiğinde, öncelik de yitirir.*
+    _mkb = _hit(q, _MAKBUZ)
+    if _mkb:
+        return Niyet(sinif=SINIF_KONUSMA, tur=TUR_MAKBUZ,
+                     kural=f"konusma:{TUR_MAKBUZ}", kanit=_mkb)
 
     # YAPISAL ÖNCELİĞİ. "aylık neden düştü?" hem düzenleme hem konuşma gibi görünür;
     # kullanıcı yeni sayılar bekliyorsa önce onları vermek gerekir — konuşma bir sonraki

@@ -6415,3 +6415,166 @@ garson tarafından kendiliğinden sipariş edildi.
 
     korpus doğru-cube %94.9 (taban %94.4) ✅ · sessiz_yanlis 10 ·
     gerçek-dünya {2287 · kabul 1145 · dogru 90} · süit **4266 yeşil** · eval +0,0%
+
+---
+
+## §102 · V TURU — 20 özgün senaryo (thread ağırlıklı, «makbuz refleksi» dahil)
+
+| # | senaryo | sonuç |
+|---|---|---|
+| V1 | bu yıl bölüm bazında elektrik tüketimi | 🟢 `enerji_makine × bolum`, 5 satır, **LLM'siz** |
+| V2 | ↳ *bu rakama neler dahil, nasıl bulundu* | 🔴 **dürüst ret** — makbuz sorusu |
+| V3 | ↳ Boyahane'nin payı ne kadar | 🟢 `_p_pay_… = 43.81` (pencere) |
+| V4 | ↳ bunu pasta grafik yap | 🟢 saf görünüm, rapor korundu, LLM'siz |
+| V5 | parti sayısı + ort. parti ağırlığı kumaş cinsine göre | 🟢 `turev:oran = 300.04` + belirsizlik beyanı |
+| V6 | geçen ay hangi gün en çok üretim | ◐ **gerçek** belirsizlik → 2 chip (doğru) |
+| V7 | bu yıl iade edilen kg | 🟢 `cozum_sekli eq İade`, LLM'siz |
+| V8 | ↳ müşteri bazında kır, en yükseğe göre sırala | 🟢 8 satır + dönem çapası **beyanlı** |
+| V9 | ↳ ilk üçünün ort. çözüm süresini de getir | 🟢 `limit 3` + ikinci ölçü — **agentic zincir** |
+| V10 | [EN] compare energy intensity across departments | 🟢 + eş-adlılık beyanı |
+| V11 | [AR] كم عدد الحوادث في كل قسم | ◐ **gerçek** belirsizlik (İSG kaza ↔ bakım arıza) |
+| V12 | 1. çeyrek ile 3. çeyreği fire açısından kıyasla | ◐ kıyas temsil-yok — **dürüst beyan** (§49) |
+| V13 | makine bazında duruş süresi, azalan sırada ilk 5 | 🔴 **order üretilmedi**, 11 satır |
+| V14 | toplam üretimin yüzde kaçını RAM hatları yaptı | 🔴 `pencere:pay` **VAR ama kullanılmadı** |
+| V15 | her ay kaç şikayet, önceki aya göre değişim | 🔴 çapraz-konu netleştirmesi **alakasız chip** (dE·sapma) |
+| V16 | bu yıl bölüm bazında iş kazası sayısı | 🟢 `isg × departman` |
+| V17 | ↳ *bu sayı neyi kapsıyor, hangi tarih aralığı* | 🔴 reddetmedi ama **cevaplamadı** — aynı tabak |
+| V18 | ↳ kayıp gün sayısını da ekle | 🟢 deterministik ölçü ekleme |
+| V19 | ay ay üretim **ve kümülatif toplamı** | 🔴 `bilinmeyen=kumulatif` → netleştirme |
+| V20 | en çok duruşa yol açan 3 neden, her biri için makine dağılımı | 🔴 `makine_duruslari` yerine **oee'ye daraldı** |
+
+**Skor:** 10 🟢 · 3 ◐ *(üçü de doğru davranış: gerçek belirsizlik ya da dürüst beyan)* · 7 🔴
+**Discovery ateşlemesi: 0.** Yan dükkân V turunda **hiç** açılmadı.
+
+### §102.1 · V turunun ALTI KÖKÜ — teşhis, ve ikisini CANLI LOG kanıtladı
+
+| # | kök | kanıt | nerede |
+|---|---|---|---|
+| **V1** | **makbuz sorusu**nun konuşma türü yok | `u2` · `V2` · `V17` | `followup.py` |
+| **V2** | oylama **zenginliği cezalandırıyor** | 10 turun **7'sinde** «kazanan 1 oy» | `ask.py::_canon_cq` |
+| **V3** | `select_cube`'da boş-yanıt yeniden denemesi yok | canlı traceback | `llm.py` |
+| **V4** | garson düşünce makbuz **«LLM'siz»** yazıyor | canlı log (V20) | `ask.py` |
+| **V5** | değer eşleştiricisi **sınırsız ek** kabul ediyor | `t19` · `§86.8` · «hariç tut» | `cube_router.py` |
+| **V6** | `sira` açgözlü — düz «ilk N»i de yutuyor | `V13`/`D3` | `llm.py` istem |
+
+#### 🔴🔴 §V2 — kökün kendisi, ve §T1'in yamadığı semptom
+
+`§T1` bu kusuru **teşhis etmişti**: *«oy `_canon_cq` ile tam `cq` üzerinde sayılıyor; iki
+oy önemsiz bir alanda ayrılınca uyum %50'ye düşüyor»*. Ama düzeltme semptomdaydı —
+netleştirmeyi atla, `adaylar[0]`'ı al. **`adaylar[0]` keyfî bir oydur** ve `V13`'te tam
+da `order`'ı gören oy atılan oydu.
+
+Ölçüldü (V turu, konteyner logu, on Intent turu):
+
+    kazanan 3 oy → 1 kez     kazanan 2 oy → 1 kez     kazanan 1 oy → **7 kez**
+
+⊙ Uzlaşma **kural değil istisna**; kurulduğunda da **en yalın okuma** kazanıyor, çünkü
+`order` yazmayan iki oy birbiriyle **bedavaya** uyuşur. *Zengin cevap kendi zenginliği
+yüzünden oy kaybediyor.* Ayrım: fazladan alan yazmak bir **anlaşmazlık değil, ek
+bilgidir**; anlaşmazlık aynı alana **iki farklı değer** yazmaktır.
+
+**Çözüm:** oy **çekirdeğe** verilir (küp·ölçü·kırılım·filtre·zaman), zenginlik kazanan
+kovada **birleştirilir**; çelişkide alan **düşer** (fail-closed) ve referansları
+kazananın sözlüğüne oturmayan alan **alınmaz**. Bayrak `oylama_cekirdek`.
+
+#### 🔴 §V3 — CANLI LOG YAZILI BİR VARSAYIMI ÇÜRÜTTÜ
+
+`refine_cube`'un kendi docstring'i şöyle diyordu: *«Kardeşi olan `select_cube` bu dersi
+zaten öğrenmişti: `_select_consistent` onu `k` kez örnekliyor, bir örneğin düşmesi turu
+düşürmüyor.»* Log (V20):
+
+    23:43:02 WARNING intent: OY DÜŞTÜ (istisna) … SaglayiciYaniti
+    23:43:03 WARNING intent: OY DÜŞTÜ (istisna) … SaglayiciYaniti
+
+⊙ **Üç oyun üçü de bir saniyede aynı şekilde düştü** — çünkü boş-yanıt arızası bağımsız
+değil, **ortak sebeplidir** (aynı model, aynı istem, aynı akıl yürütme bütçesi). Çoklu
+örneklem yalnız *bağımsız* gürültüye karşı sigortadır.
+
+*Bir riski üç kez örneklemek, üç bağımsız deneme demek değildir.*
+
+#### 🔴 §V4 — ve makbuz bunu SAKLIYORDU
+
+Aynı turun izi *«konu daraltıldı (zayıf sinyal, **LLM'siz**)»* diyordu. İki ayrı dünya
+tek cümleye sığdırılmıştı: *«garson hiç çağrılmadı»* ile *«garson çağrıldı ve
+konuşamadı»*. Birincisi bir tasarım kararı, ikincisi bir **arıza** — ve ayırt
+edilemedikleri sürece ikincisi hiç onarılmaz, çünkü hiç görünmez.
+
+⊙ Düzeltmeden **hemen sonra** kendini ödedi: `D4` turunda iz *«garson çağrıldı —
+kullanılabilir bir karar dönmedi»* dedi ve çekimserlik ilk kez **makbuzda** göründü.
+
+*Bir makbuzun en pahalı hatası eksik olmak değil, olmayan bir şeyi olmuş gibi yazmaktır.*
+
+#### 🔴 §V5 — sondaj önce yapıldı, kelime listesi YAZILMADI
+
+Kullanıcının talimatı: *«ÖNCE SONDALA (route'un değer eşleştiricisi), kelime listesi
+YAZMA»*. Sondaj (kaynak **okundu**, koşulmadı) kökü tek satırda gösterdi:
+
+    _value_token_hit:  re.search(rf"\b{nv}\w*", q)          ← SINIRSIZ ek
+    _syn_hit:          _ek_gecerli(...) → _SUFFIX_CHAIN_RE   ← DİSİPLİNLİ zincir
+
+`KAT-1`: **aynı sorunun iki sahibi.** `_syn_hit` iki kez düz alt-dizeden kurtarıldı;
+DEĞER eşleştiricisi o göçün **dışında kaldı**. Ve zincire geçmek yetmedi (`lama` =
+`la`+`m`+`a`, üçü de atom) — ikinci kural: **isimden fiil yapan ek bir ÇEKİM DEĞİLDİR.**
+`_NEGATION_SUFFIXES`'in gerekçesiyle birebir aynı mantık; orada ek **anlamı**, burada
+**sözcük sınıfını** çeviriyor: `orta` sıfat, `ortala-` fiil.
+
+⚠ Bilinen bedel **yazıldı**: ünsüzle biten değerden sonra vasıta hâli de `-la` alır
+(*«kamyonla»*) ve **korpus bunu ölçemez** (sorularını katalogdan üretir → hep doğru
+yazılmıştır). Kazanç üç kanıtlı, kayıp varsayımsal.
+
+**Sondaj sonucu (7/7):** `ortalama`↛`Orta` ✅ · `açıkla`↛`Açık` ✅ · `kodlama`↛`Kod` ✅ ·
+`orta şiddetli`→`Orta` ✅ · `antrasitte`→`Antrasit` ✅ · `açık renkli`→`Açık` ✅
+
+#### ✅ CANLI DOĞRULAMA (tazeleme sonrası)
+
+| tur | sonuç |
+|---|---|
+| `D2` *«bu sayı neyi kapsıyor, hangi tarih aralığı»* | 🟢 **`COUNT(*)` · birim adet · kaynak `is_kazalari` · süzgeçler** — `source=cube`, **yeni sorgu YOK, LLM YOK**, `cube_query` bayt bayt korundu |
+| `D3` *«azalan sırada ilk 5»* | ◐ `pencere` azınlık oyundan **devralındı**, uyum %33→**%67** (§V2 çalışıyor); kalan kusur `sira`nın açgözlülüğü → `§V6` |
+| `D4` | ◐ garson çekimser — ama artık **makbuzda görünüyor** (`§V4`) |
+
+### §102.2 · KAPI YEŞİL — ve iki ölçüm dersi
+
+    korpus doğru-cube %94.9 (taban %94.4) ✅ · sessiz_yanlis 10 · gerçek-dünya
+    {vaka 2287 · kabul 1145 · dogru 90 · beyanli_kismi 38} · süit 4267 · eval +0,0%
+
+Altı kökün altısı da tabanı **geriletmedi**: `sessiz_yanlis` 10'da sabit, gerçek-dünya
+sayıları birebir aynı, korpus %94,9'da. Süit 4266→**4267**: `makbuz` türünün korpusu
+`test_HER_TUR_icin_EN_AZ_ON_gercek_varyant`'a bir parametre ekledi.
+
+#### 🔴 §V5.1 — YÜKLEM KENDİ YANLIŞ-POZİTİFİNİ ÜRETTİ (§101.1 birebir)
+
+Yazdığım kural *"kalan `la`/`le` ile başlıyorsa yapım ekidir"* diyordu. **Çoğul eki de
+`la`/`le` ile başlar** — ve o Türkçenin en sık ekidir:
+
+    performans + LARINI     makine + LER     renk + LERİ     müşteri + LER
+
+Yani üç kanıtlı bir kusuru kapatan yüklem, kapatırken **daha yaygın** bir kusur açtı.
+Ayrım tek harfte: yapım eki `-la/-le`, çoğul `-lar/-ler` → sınır **`r`**.
+Sondaj 11/11: çoğul geri geldi, `ortalama`↛`Orta` · `açıkla`↛`Açık` · `temizleme`↛`Temiz`
+kapalı kaldı.
+
+⚠ **Ve bu kusuru HİÇBİR KAPI GÖRMEDİ** — tam kapı çoğul hatası içindeyken **yeşil**
+koştu. Sebebi dürüstçe: `_value_token_hit` yalnız **veri DEĞERLERİ** için çağrılıyor ve
+bugünkü katalogda `makine`/`performans` birer boyut **adı**, değer değil. Yani kusur
+fonksiyonun sözleşmesinde **gerçek**, bugünkü katalogda **erişilemez**. Düzeltildi —
+bir sözleşmenin doğruluğu, bugün hangi verinin geldiğine bağlı olmamalı.
+
+#### 🔴 §V5.2 — «eval LLM dilimi −66,7%» BENİM DEĞİLDİ: BAYAT TABAN
+
+Kapı `coverage −66,7%` yazdı ve bu, altı kökü geri almaya değecek bir sayı gibi durdu.
+**§86.6 uygulandı — önce taban ölçüldü:** `HEAD (f2e34dc)` izole bir worktree'de, **aynı
+koşulda** (`--network none`) koşuldu:
+
+| | coverage | başarısız |
+|---|---|---|
+| değişiklikli | 33,3% | `llm-parafraz-verimlilik` · `llm-karsilastirma-lag` |
+| **HEAD f2e34dc** | **33,3%** | **birebir aynı ikisi** |
+
+⊙ Fark **sıfır**. Sebep: bu dilim **garsonu** gerektiriyor, kapı ise `--network none`
+koşuyor; taban ise ağ varken kaydedilmiş. Yani sayı bir gerilemeyi değil, **ölçüm
+koşulundaki bir uyuşmazlığı** gösteriyordu.
+
+*Bu oturumun on ikinci ölçüm-aleti yakalaması — ve altı sağlam kökü geri almaktan
+kurtardı. Bir sayının düştüğünü görmek, onu düşürenin siz olduğunuz anlamına gelmez;
+paydanın aynı koşulda ölçüldüğünü önce göstermek gerekir.*
