@@ -7116,3 +7116,32 @@ sahipli** bir alana giriyor ve eş-adlılık beyanı bu turlarda canlıda **on k
 |---|---|
 | `AA6`/`AA7` çapraz-küp kompozisyon | `agent_plan_secimi` pilotu **var ve kapalı**; açmanın takası **ölçülmeli** (kapsam kaybı ↔ kazanç), ölçmeden açmak kullanıcı adına karar vermektir |
 | `AA12` *«iki eksenle göster»* | görünüm kararı `viz.py`'nin işi; çift-eksen bir **grafik türü** ve v1'de tanımlı değil — bu bir mutfak işi, sonraki demete |
+
+### §107.3 · AA KAPISI YEŞİL — ve kapı beni ÜÇ kez yakaladı
+
+    korpus %94.9 (taban %94.4) ✅ · sessiz_yanlis 10 (ALTI TURDUR sabit) ·
+    gerçek-dünya {2287 · 1145 · 90 · 38} birebir aynı · süit 4279 · eval +0,0%
+
+⚡ **Hızlandırma ölçüldü:** korpus ~13 dk → **~10 dk** (ölçülmüş dilim dağılımı, ajanın
+öngördüğü %25'e yakın). `eval_llm` `--hepsi`'den çıktı — belirlenimsiz bir adım artık
+*"kapı yeşil"* cümlesinin içinde değil.
+
+| yakalama | ne oldu |
+|---|---|
+| iki büyüme tavanı | `§AA2`'nin 5 satırı muafiyetsizdi |
+| **`test_CEVAPSIZ_RED_DAGILIMI_sabit`** | `miktar` sinonimim **R1 99 → 101** yaptı |
+| meta-kapı | **sıfır-delta** bir muafiyet yazdım — *"muafiyet değil, sessiz bir izin"* |
+
+#### 🔴 İKİNCİSİ ÖĞRETİCİYDİ — ve bir KAYIP DEĞİL
+
+Testin kendi cümlesi R1'i şöyle tanımlıyor: *"çıplak ölçü adının iki cube'da birden
+iddia edildiği **GERÇEK belirsizlikler**; `route()` tahmin etmeyi **doğru** reddediyor."*
+`miktar`'ı `parti`'ye de yazınca kelime **gerçekten** iki sahipli oldu ve iki çıplak
+sorgu netleştirmeye düştü.
+
+⊙ Önceki hâl daha az R1 üretiyordu ama sebebi doğruluk değil, `parti`'nin taşıdığı
+kavramı **adlandırmamasıydı**. Ve **en sert kapı yeşil kaldı**
+(`test_DOGRU_SAYISI_DUSMEDI`): doğru çözülen sinonim sayısı **düşmedi**.
+
+*Bir kelimeyi iki sahipli ilan etmek, onu iki sahipli yapmaz — zaten öyle olduğunu
+söyler. Sayının artması, sistemin daha fazla bilmesindendir.*

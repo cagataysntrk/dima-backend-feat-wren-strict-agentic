@@ -144,7 +144,28 @@ YANLIS_CUBE = {
 #:
 #: *Bir sayının değişmemesi, hiçbir şeyin değişmediği anlamına gelmez — ölçtüğü şeyin
 #: değişmediği anlamına gelir.*
-CEVAPSIZ_RED = {"R1": 99, "R4": 1, "R10": 14, "R9": 2}
+#: ⟳ **`§AA3` (2026-08-09) — `miktar`, `parti`ye de yazıldı: R1 99 → 101.**
+#:
+#: Sebep `AA13`'te ölçüldü: *«fire oranı ile ÜRETİM MİKTARINI aynı grafikte iki eksende»*
+#: → sistem *«bu soru iki ayrı konunun ölçüsünü istiyor»* diyerek **yapabildiği** bir işi
+#: reddediyordu; oysa `parti` ikisini de taşıyor ve eksik olan tek şey `miktar` kelimesini
+#: **yazmamasıydı**.
+#:
+#: 🔴 **Bu iki satırlık kayma bir KAYIP değil, kelimenin gerçek durumunun İTİRAFIDIR.**
+#: Bu bloğun kendi cümlesi R1'i şöyle tanımlıyor: *"çıplak ölçü adının iki cube'da birden
+#: iddia edildiği **GERÇEK belirsizlikler**; `route()` tahmin etmeyi **doğru** reddediyor"*.
+#: `miktar` artık gerçekten iki sahipli — ve **öyle olduğu için** iki çıplak sorgu
+#: netleştirmeye düşüyor. Önceki hâl daha az R1 üretiyordu ama sebebi doğruluk değil,
+#: `parti`'nin taşıdığı kavramı **adlandırmamasıydı**.
+#:
+#: ⚠ En sert kapı **yeşil kaldı**: `test_DOGRU_SAYISI_DUSMEDI` — doğru çözülen sinonim
+#: sayısı DÜŞMEDİ. Yani kazanılan iki belirsizlik, kaybedilen bir cevap değil.
+#: ⚠ Ve `§99.1` çiğnenmedi: `miktar` **zaten** `oee.toplam_uretim_kg`'nin sinonimiydi;
+#: eklenen şey yeni bir belirsizlik değil, var olanın **eksik yarısı**.
+#:
+#: *Bir kelimeyi iki sahipli ilan etmek, onu iki sahipli yapmaz — zaten öyle olduğunu
+#: söyler. Sayının artması, sistemin daha fazla bilmesindendir.*
+CEVAPSIZ_RED = {"R1": 101, "R4": 1, "R10": 14, "R9": 2}
 
 #: Toplam ölçü sinonimi ve doğru çözülen sayısı.  ⟳ Faz 2a-3: 291 → 340 (+49).
 TOPLAM_SINONIM, DOGRU = 470, 340

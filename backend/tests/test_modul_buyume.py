@@ -450,6 +450,19 @@ MUAFIYET_ASK_KOD = [
      "son andır. Çağrıyı dışarı almak, çağrının **yerini** kaybetmek olurdu. "
      "⊙ İz satırı bilerek burada: kullanıcının gördüğü sıralamayı **sistemin koyduğu** "
      "makbuza yazılmazsa, kullanıcı onu kendi yazdığını sanır"),
+    ("aa2-v4un-ikinci-dali-makbuz-yine-llmsiz-diyordu", 5,
+     "🔴 **`§V4`'ÜN İKİNCİ DALI — ve `§72`'nin ölçüm aletini TERS okutuyordu.** Ölçüldü "
+     "(`AA16`, Hollandaca — *«Waarom is de OEE van RAM-3 lager dan de andere machines?»*): "
+     "iz `çapraz konu → netleştirme (LLM'siz)` yazdı; oysa `route_hit is None` olduğu için "
+     "garson YUKARIDA çağrılmıştı ve kullanılabilir bir karar üretemedi. "
+     "⊙ `§72` yabancı dili bir ÜRÜN HEDEFİ değil bir ÖLÇÜM ALETİ olarak kuruyor: "
+     "route'tan bağımsız olduğu için garsonun işini yapıp yapmadığını temiz gösterir. "
+     "Ama iz *«LLM'siz»* dediği sürece gösterge TERS okunuyordu — sanki garson hiç "
+     "çağrılmamış gibi. `§V4` bu kusuru ÖTEKİ dalda düzeltmişti; bu dal o göçün dışında "
+     "kalmıştı (`KAT-1`: aynı kuralın iki dalı, biri düzeltilmiş). "
+     "⚠ **TAŞINAMAZ:** düzeltme `_belirsiz`in DÖNDÜĞÜ yerde olmalı — iz orada üretiliyor "
+     "ve `_garson_konustu` yalnız orada kapsamda. "
+     "*Bir ölçüm aletini yanlış etiketlemek, ölçtüğü şeyi görünmez yapar.*"),
     ("x5-kapi-neden-atesledigini-soylemiyordu", 3,
      "🔴 **BİR KAPININ KARARI, GİRDİSİYLE BİRLİKTE LOGLANMAZSA DENETLENEMEZ** "
      "(`ADR-0020`: sessiz yutma yok). Ölçüldü (`X5` Fransızca · `X19` Rusça · `Y1`): "
