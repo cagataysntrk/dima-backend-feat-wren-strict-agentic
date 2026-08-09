@@ -80,6 +80,14 @@ MUTFAK = {
     # davranış denkliği canlıda doğrulandı — yani bu bir sınır geçişi değil, aynı sınıf
     # içinde bir **saflaştırma**. *Bir gövdeyi ilkelleştirmek, onun sınırını değiştirmez.*
     "ilkeller.py",
+    # 🔴 `FAZ O-2` — PLAN ÇALIŞTIRICISI. Tanım gereği mutfak: koşmuş satırlar üzerinde
+    # adımları sırayla koşar, referansları çözer, ilkelleri çağırır. Bir cümle okumaz,
+    # bir LLM çağırmaz, bir SQL YAZMAZ — sorguyu bile kendisi koşmaz, `sorgu_kos`
+    # **parametre olarak** verilir (bu yüzden `wren_service`'i hiç tanımaz).
+    # ⚠ `plan_semasi.py` 🗣 tarafta (garsonun **ne söyleyebileceği**), bu 🍳 tarafta
+    # (söylenenin **nasıl koşacağı**). Aynı fazın iki ucu, iki ayrı sınıf — ve bu
+    # ayrım kapının yasakladığı yönü (mutfak → dil) hiç kurmuyor.
+    "plan_kosucu.py",
 }
 
 #: 🍳 modüllerin ASLA import edemeyeceği 🗣 modüller — *"mutfak dil ayrıştıramaz"*.
