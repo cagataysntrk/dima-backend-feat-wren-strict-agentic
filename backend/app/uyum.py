@@ -289,6 +289,75 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
     # `geçen yıla göre kıyasla` (tek ölçü, iki dönem) aynen ihlal sayılır.
     #
     # *Bir kıyasın eksik olduğunu söylemeden önce, neyin kıyaslandığına bakmak gerekir.*
+    # 🔴🔴 **`§Z2` — İKİ ÖLÇÜ İSTENDİ, BİRİ VERİLDİ, HİÇBİR ŞEY SÖYLENMEDİ.**
+    #
+    # Ölçüldü (`Z18`, canlı — *«bu yıl aylık toplam **elektrik ve su** tüketimi»*):
+    #
+    #     niyet: ölçü=2          cq.measures: ["toplam_su_lt"]        beyan: YOK
+    #
+    # ⊙ Kullanıcı iki şey istedi, birini aldı ve **bunu cevaptan anlayamaz**: eksik olan
+    # sütun görünmez, çünkü orada olmayan bir şeyin izi yoktur. `§98.1` bu yüzden yazıldı
+    # (*eksikliği ADIYLA say*) ama ölçü sayısı sayılmıyordu — dönem sayısı, kıyas, oran,
+    # sıralama ve kesme sayılıyordu, **ölçünün kendisi** değil.
+    #
+    # 🔴 **Ve ham sayı sayılamaz** (`§101.1`): `olcu_adaylari` `(cube, ölçü)` çiftleridir;
+    # tek bir kelime iki küpte eşleşince aday sayısı **2** olur ve *"iki ölçü istedin"*
+    # demek her eş-adlılıkta bir yanlış-pozitif üretirdi. Bu yüzden sayım **cevaplayan
+    # küple sınırlı**: aynı küp içinde adı geçen **farklı** ölçüler.
+    #
+    #     «elektrik ve su» → surdurulebilirlik içinde {enerji, su} = 2 ✅ beyan
+    #     «fire»          → parti içinde {toplam_fire_kg}          = 1 ✅ sessiz
+    #
+    # ⚠ Cevap **öldürülmez** (`KÖK-3`): ihlal etiketler, susturmaz.
+    #
+    # *Bir cevabın eksik olduğunu ancak istenenle karşılaştırarak bilebilirsiniz; ve
+    # istenen, sistemin kendi kataloğunda kaç ADI olduğuyla değil, kaç ŞEY olduğuyla ölçülür.*
+    # ⚠ Kaynak `niyet.olcu_adaylari` **DEĞİL**: o alan şemayı bilen ayrı bir adımda
+    # doldurulur ve `denetle`'nin çağırdığı `coz_soru(q)` onu **boş** bırakır — ilk yazımda
+    # bunu varsaydım, sondaj (4 vaka) beyanın hiç ateşlemediğini gösterdi. Elde olan
+    # `cube_meta`'dır ve cevabı **o** taşıyor. *Bir alanın var olması, dolu olması değildir.*
+    # ⚠ Eşleşme **`_syn_hit`** ile: alt-dize taraması bu kararı veremez (`KÖK-7a`) —
+    # bir beyanın yanlış-pozitifi, beyan ettiği kusurdan pahalıdır (`§101.1`). Çekimin
+    # tek sahibi `cube_router`'dır ve buraya **ikinci bir kopya yazılmaz**; tembel import
+    # `yetenek.py`'nin desenidir (döngüyü kırar, kuralı tekleştirir).
+    from app.cube_router import _syn_hit as _sh
+
+    # 🔴 **İÇ İÇE SİNONİM — ve bu modülün KENDİ notu bunu zaten söylüyordu:**
+    # *"Bir ipucu, başka bir şeyin adının içindeyse, ipucu değildir."* (`_olcu_araliklari`)
+    #
+    # Sondaj (ilk yazımda) kusuru **sevk edilmeden** yakaladı: *«vardiya bazında **fire
+    # oranı**»* → `fire_orani_yuzde` ✓ **ve** `toplam_fire_kg` (sinonimi `fire`) → sistem
+    # *"soruda 2 ölçü geçiyor"* diye **yanlış** beyan üretti. Kullanıcı tek bir şey
+    # istemişti. `§101.1` birebir: bir kusuru ilan eden yüklem, kendi yanlış-pozitifini
+    # üretirse ilan ettiği kusurdan pahalıdır.
+    #
+    # ⊙ Çözüm `_match_cube`'un kuralının aynısı: **en uzun eşleşme kazanır.** Bir ölçünün
+    # bütün eşleşmeleri, başka bir ölçünün **daha uzun** eşleşmesinin içinde kalıyorsa o
+    # ölçü sayılmaz. Yeni bir kural değil, var olan kuralın bu karara **uygulanmasıdır**.
+    _verilen_olculer = {m for m in (ic.get("measures") or []) if m}
+    _esles: dict[str, list[tuple[int, int]]] = {}
+    for _m, _syns in ((cube_meta or {}).get("measure_synonyms") or {}).items():
+        for _s in (_syns or []):
+            _t = _norm(str(_s).removesuffix("!"))
+            if len(_t) >= 3 and _sh(qn, _t):
+                for _mt in re.finditer(re.escape(_t), qn):
+                    _esles.setdefault(_m, []).append(_mt.span())
+    _istenen_olculer = {
+        _m for _m, _sp in _esles.items()
+        if any(not any(_o != _m and any(_b <= _s2 and _e2 <= _e and (_e - _b) > (_e2 - _s2)
+                                        for _b, _e in _oth)
+                       for _o, _oth in _esles.items())
+               for _s2, _e2 in _sp)} | _verilen_olculer
+    if len(_istenen_olculer) >= 2 and len(_verilen_olculer) < len(_istenen_olculer):
+        _dusen = sorted(_istenen_olculer - _verilen_olculer)
+        _ad = ", ".join(f"`{_m}`" for _m in _dusen)
+        out.append(Ihlal(
+            "olcu_dustu",
+            f"soruda **{len(_istenen_olculer)} ölçü** geçiyor ama cevapta "
+            f"**{len(_verilen_olculer)}** var — {_ad} rapora girmedi",
+            "Düşen ölçüyü ayrıca sorabilirsin; ya da takip turunda "
+            "*«… ölçüsünü de ekle»* diyerek aynı rapora ekletebilirsin."))
+
     _olcu_kiyasi = (len([m for m in (ic.get("measures") or []) if m]) >= 2
                     and not niyet.cok_donem)
     if (TUR_KIYAS in niyet.turler and not _olcu_kiyasi

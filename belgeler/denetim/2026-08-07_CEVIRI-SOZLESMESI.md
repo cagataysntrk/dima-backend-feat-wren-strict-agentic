@@ -6958,3 +6958,16 @@ Sondaj 5/5.
 
 *Bir cevabın eksik olduğunu ancak istenenle karşılaştırarak bilebilirsiniz — ve istenen,
 kataloğun kaç ADI olduğuyla değil, kaç ŞEY olduğuyla ölçülür.*
+
+### §106.1 · Z KAPISI YEŞİL
+
+    korpus %94.9 (taban %94.4) ✅ · sessiz_yanlis 10 (BEŞ TURDUR sabit) ·
+    gerçek-dünya {2287 · 1145 · 90 · 38} birebir aynı · süit 4267 · eval +0,0%
+
+| tur | 🟢 | ◐ | 🔴 | Discovery | LLM'siz |
+|---|---|---|---|---|---|
+| V | 10 | 3 | 7 | 0 | — |
+| W | 12 | 2 | 6 | 0 | — |
+| X | 10 | 3 | 7 | 1 | — |
+| Y | 15 | 1 | 4 | 0 | 2 |
+| Z | 14 | 0 | 6 | 1 | **8** |
