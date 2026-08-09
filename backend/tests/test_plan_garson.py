@@ -56,18 +56,40 @@ def test_LLM_TURU_ARTMIYOR():
         f"tek soru için {sum(ic.sayac.values())} çağrı yapıldı: {ic.sayac}")
 
 
-def test_COK_ADIMLI_PLAN_MERDIVENI_YERINDEN_ETMEZ():
-    """🔴 `E3` — orkestratör merdivenin **yerine değil boşluğuna** girer.
+def test_COK_ADIMLI_PLAN_BUGUNKU_CEVABI_YOK_ETMEZ():
+    """🔴🔴 `E3` — ve bu kapı **ölçümden** doğdu, tasarımdan değil.
 
-    Çok adımlı planda uydurma bir tek-cube cevabı üretmek, doğruluk vetosunun tam olarak
-    yasakladığı şey. Oy **düşer**, plan **saklanır**.
+    İlk hâl burada `"{}"` döndürüyordu (*«çok adımlı bir soru zaten tek cube ile
+    cevaplanamaz»*). `EE` turunun A/B'si çürüttü: `EE6` *«geçen hafta hiç iş kazası oldu
+    mu»* bayrak kapalıyken `isg`/`{kaza_adedi: 0}` veriyor, açıkken **cevapsız** kalıyordu.
+
+    ⊙ Orkestratör merdivenin **boşluğuna** girmeliydi; **yerine** geçmişti.
     """
     plan = {"adimlar": [{"fiil": "SORGU", "cube_query": CQ},
                         {"fiil": "BAGLA", "kaynak": "$1", "boyut": "makine",
                          "olcu": "ort_oee"}]}
-    g, _ = _g(json.dumps(plan))
-    assert g.select_cube("q", "kat") == "{}", "çok adımlı plan bir CubeQuery'ye SIKIŞTIRILAMAZ"
-    assert g.cok_adimli_plan() == plan
+    g, ic = _g(json.dumps(plan))
+    assert json.loads(g.select_cube("q", "kat")) == CQ, (
+        "çok adımlı plan BUGÜNKÜ cevabı yok etti — E3 ihlali")
+    assert ic.sayac["cube"] == 1, "bugünkü yol AYRICA sorulmalıydı"
+    assert g.cok_adimli_plan() == plan, "plan saklanmadı — boşluk dolduralamaz"
+
+
+def test_SOZLESMESI_EKSIK_ADIM_PLAN_SAYILMAZ():
+    """🔴 **ADI DOĞRU, SÖZLEŞMESİ YANLIŞ.** Ölçüldü (`EE`, canlı serbest-JSON):
+
+        {"fiil":"SORGU"}                          ← `cube_query` YOK
+        {"fiil":"AYRISTIR","ozellik":…,"detay":…} ← uydurma alanlar
+
+    Yalnız fiil adına bakan doğrulama bunları plan sanıyordu; çalıştırıcı `KeyError` ile
+    düşüyor ve **cevaplanabilir** bir soru cevapsız kalıyordu.
+    """
+    for kotu in ({"fiil": "SORGU"},
+                 {"fiil": "AYRISTIR", "ozellik": "maliyet", "detay": "x"},
+                 {"fiil": "BAGLA", "kaynak": "$1"}):
+        g, ic = _g(json.dumps({"adimlar": [kotu]}))
+        assert json.loads(g.select_cube("q", "kat")) == CQ, f"{kotu} plan sayıldı"
+        assert ic.sayac["cube"] == 1
 
 
 def test_BILINMEYEN_FIIL_PLANI_HIC_DOGMAZ():

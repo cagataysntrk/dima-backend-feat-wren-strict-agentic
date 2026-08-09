@@ -5,9 +5,12 @@
 > *"Planlayıcı ile LLM intent — yani garson — aynı kişi olabilir; çünkü LLM'e iki istek
 > yerine tek cevapta bunu halledebiliriz."*
 
-Doğru, ve raporun `E6` riskinin (**gecikme çarpılır**) yarısını **tasarımla** siliyor.
-Ayrı bir planlayıcı turu, her soruya bir LLM çağrısı daha eklerdi; oysa garson zaten
+Doğru, ve raporun `E6` riskinin (**gecikme çarpılır**) büyük kısmını **tasarımla** siliyor.
+Ayrı bir planlayıcı turu, **her** soruya bir LLM çağrısı daha eklerdi; oysa garson zaten
 soruyu okuyor. Ondan istenen şey değişmiyor — **çıktısının biçimi** genişliyor.
+
+⚠ *"Hiç artmaz"* değil, **"tek adımlıda artmaz"**: bu ayrım ölçümle kondu, iyimserlikle
+değil (aşağıda `E3` notu).
 
 ## 🔴 Neden bir SARMALAYICI, neden `_select_consistent` değiştirilmedi
 
@@ -28,9 +31,23 @@ indirgenir ve aynı `parse_cube_query`'den geçer. Yani basit sorularda:
 * çıktı **aynı** (aynı beyaz liste, aynı ayrıştırıcı)
 * oylama **aynı** (kanonik `CubeQuery` üzerinde)
 
-Çok adımlı bir plan bugünkü yolda **bir oy düşüşüdür** — yani merdiven bugünkü gibi
-devam eder. Plan kaybolmaz, `planlar` listesinde saklanır: orkestratör merdivenin
-**yerine değil boşluğuna** girer (`E3`).
+## 🔴🔴 `E3` ÖLÇÜMLE DÜZELTİLDİ — ilk tasarım CEVAP YOK EDİYORDU
+
+İlk hâlde çok adımlı bir plan bugünkü yolda **bir oy düşüşüydü**: *"bu soru zaten tek cube
+ile cevaplanamaz"* varsayımıyla boş bir `CubeQuery` dönülüyordu. `EE` turunun A/B'si bunu
+çürüttü:
+
+    EE6 «geçen hafta hiç iş kazası oldu mu»
+      A (bayrak kapalı): `cube+llm` · `isg` · `{kaza_adedi: 0}`   ✅
+      B (bayrak açık)  : plan üretildi, oy düştü → 🔴 CEVAPSIZ
+
+⊙ Yani model bir soruyu *"çok adımlı"* sandığında, **bugün cevaplanabilen** bir soru
+cevapsız kalıyordu. `E3`'ün şartı tam tersini söylüyordu ve tam tersi oluyordu:
+orkestratör merdivenin **boşluğuna** değil **yerine** geçmişti.
+
+Bugün: çok adımlı planda bugünkü yol **ayrıca** sorulur, plan `planlar`da saklanır ve
+yalnız merdiven **gerçekten** boş kaldığında konuşur. Bedeli dürüstçe: o dalda bir çağrı
+daha. *Bir maliyeti hiç ödememek için bir cevabı kaybetmek, ucuz değil pahalıdır.*
 
 ⚠ `KURAL B`: bayrak kapalıyken `sarmala()` sarmalamaz, **nesnenin kendisini** döndürür —
 tek satırlık bir kimlik fonksiyonu. Kapalı davranış bayt bayt bugünküdür.
@@ -90,13 +107,25 @@ class PlanGarsonu:
                 _log.info("plan: TEK ADIM → bugünkü CubeQuery ile denk")
                 return json.dumps(cq, ensure_ascii=False)
             self.planlar.append(plan)
-            _log.info("plan: %d ADIM (%s) — merdiven bugünkü gibi sürüyor, plan saklandı",
+            _log.info("plan: %d ADIM (%s) — bugünkü yol AYRICA soruluyor (E3)",
                       len(plan.get("adimlar") or []),
                       "·".join(a.get("fiil", "?") for a in (plan.get("adimlar") or [])))
-            # ⚠ Çok adımlı planda **boş** bir CubeQuery dönmek, oyu düşürmektir — ve bu
-            # doğrudur: bu soru zaten tek bir cube sorgusuyla cevaplanamıyor. Uydurma bir
-            # tek-cube cevabı üretmek, `E3`'ün (doğruluk vetosu) tam olarak yasakladığı şey.
-            return "{}"
+            # 🔴🔴 **`E3` BURADA ÖLÇÜMLE DÜZELTİLDİ — ve düzeltmeden önce plan CEVAP YOK
+            # EDİYORDU.** İlk tasarım burada `"{}"` döndürüyordu: *"çok adımlı bir soru
+            # zaten tek cube ile cevaplanamaz"*. `EE` turunun A/B'si bunu çürüttü:
+            #
+            #   EE6 «geçen hafta hiç iş kazası oldu mu»
+            #     A (kapalı): `cube+llm` · `isg` · `{kaza_adedi: 0}`   ✅
+            #     B (açık)  : plan üretildi, oy düştü → 🔴 CEVAPSIZ
+            #
+            # ⊙ Yani model bir soruyu *"çok adımlı"* sandığında, bugün cevaplanabilen bir
+            # soru cevapsız kalıyordu. `E3`'ün şartı buydu ve tam tersi oluyordu:
+            # orkestratör merdivenin **boşluğuna** değil **yerine** geçmişti.
+            #
+            # ⚠ Bedeli dürüstçe yazıyorum: bu dalda **bir çağrı daha** yapılır. Ama yalnız
+            # burada — tek adımlı planda (soruların ezici çoğunluğu) sayı **değişmez**.
+            # *Bir maliyeti hiç ödememek için bir cevabı kaybetmek, ucuz değil pahalıdır.*
+            return self._ic.select_cube(question, catalog, sema)
         except Exception:
             _log.warning("plan yolu düştü → bugünkü select_cube", exc_info=True)
             return self._ic.select_cube(question, catalog, sema)
@@ -120,9 +149,13 @@ def _plani_oku(ham: str) -> dict | None:
     yanıtı çağırana vermeden **zaten** soyuyor. İkinci bir soyucu yazmak, birincisi
     değiştiğinde sessizce ayrışacak bir kopya olurdu (`KAT-1`).
 
-    🔴 Fiil beyaz listesi **burada** uygulanır, çalıştırıcıdan önce: bilinmeyen bir fiil
-    taşıyan plan hiç doğmaz. *Bir planı koşarken reddetmek, hiç kurmamaktan pahalıdır —
-    ilk adım o ana kadar çoktan koşmuştur.*
+    🔴 Beyaz liste **burada** uygulanır, çalıştırıcıdan önce — ve **iki katmanlı**:
+    fiil adı kapalı kümede mi, **ve** o fiilin zorunlu alanları yerinde mi
+    (`plan_semasi.ZORUNLU_ALANLAR`). Uydurma bir alan taşıyan adım da düşer; şemanın
+    `additionalProperties: False`ının serbest-JSON'daki karşılığı budur.
+
+    *Bir planı koşarken reddetmek, hiç kurmamaktan pahalıdır — ilk adım o ana kadar
+    çoktan koşmuştur.*
     """
     try:
         veri = json.loads(ham or "null")
@@ -133,10 +166,21 @@ def _plani_oku(ham: str) -> dict | None:
     adimlar = veri.get("adimlar")
     if not isinstance(adimlar, list) or not adimlar:
         return None
-    from app.plan_semasi import FIILLER
+    from app.plan_semasi import FIILLER, ZORUNLU_ALANLAR
     for a in adimlar:
         if not isinstance(a, dict) or a.get("fiil") not in FIILLER:
             return None
+        _zorunlu = ZORUNLU_ALANLAR[a["fiil"]]
+        # 🔴 **ADI DOĞRU, SÖZLEŞMESİ YANLIŞ.** Ölçüldü (`EE`, canlı): serbest-JSON
+        # sağlayıcı fiili doğru yazıp parametrelerini **uyduruyor** —
+        # `{"fiil":"SORGU"}` (`cube_query` YOK) · `{"fiil":"AYRISTIR","ozellik":…}`.
+        # Yalnız fiil adına bakan doğrulama bunları plan sanıyor, çalıştırıcı
+        # `KeyError` ile düşüyordu. *Bir sözleşmenin adını doğrulamak, sözleşmeyi
+        # doğrulamak değildir.*
+        if any(k not in a for k in _zorunlu):
+            return None
+        if set(a) - {"fiil", *_zorunlu}:
+            return None    # uydurma alan → şemanın `additionalProperties: False`ı
     return {"adimlar": adimlar}
 
 

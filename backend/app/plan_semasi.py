@@ -66,6 +66,25 @@ FIIL_ANLAMI: dict[str, str] = {
 
 FIILLER: tuple[str, ...] = tuple(FIIL_ANLAMI)
 
+#: 🔴 **HER FİİLİN ZORUNLU ALANLARI — TEK SAHİP.** Hem şema (`required`) hem serbest-JSON
+#: doğrulaması (`plan_garson._plani_oku`) buradan okur.
+#:
+#: ⚠ Ölçüldü (`EE` turu, canlı, serbest-JSON sağlayıcı): şema uygulanamayan bir sağlayıcıda
+#: model **fiil adını doğru, parametrelerini uydurma** yazıyor —
+#: `{"fiil":"SORGU"}` (`cube_query` YOK) · `{"fiil":"AYRISTIR","ozellik":…,"detay":…}`.
+#: Yalnız fiil adına bakan bir doğrulama bunları **plan sanıyordu** ve çalıştırıcı
+#: `KeyError` ile düşüyordu. *Bir sözleşmenin adını doğrulamak, sözleşmeyi doğrulamak
+#: değildir.*
+ZORUNLU_ALANLAR: dict[str, tuple[str, ...]] = {
+    "SORGU": ("cube_query",),
+    "BAGLA": ("kaynak", "boyut", "olcu"),
+    "HESAPLA": ("kaynak", "hedef", "boyut", "olcu"),
+    "KIYASLA": ("kaynak",),
+    "AYRISTIR": ("kaynak",),
+    "TREND": ("kaynak",),
+    "ANLAT": ("kaynak",),
+}
+
 #: Adım referansı: `$1` = birinci adımın çıktısı. **Tek biçim, tek anlam.**
 #: ⚠ Serbest bir ifade dili DEĞİL: `$` + sayı. Bir plan aritmetik yazamaz, koşul yazamaz,
 #: döngü kuramaz. *Bir referans dilini genişletmek, onu bir programlama diline çevirir —
@@ -99,7 +118,7 @@ def plan_json_schema(index: dict, *, azami_adim: int = 5) -> dict[str, Any]:
     dallar: list[dict] = [
         {"type": "object", "additionalProperties": False, "title": "SORGU",
          "properties": {"fiil": {"const": "SORGU"}, "cube_query": cq},
-         "required": ["fiil", "cube_query"]},
+         "required": ["fiil", *ZORUNLU_ALANLAR["SORGU"]]},
         {"type": "object", "additionalProperties": False, "title": "BAGLA",
          "properties": {"fiil": {"const": "BAGLA"},
                         "kaynak": _ref("hangi adımın satırları"),
@@ -107,7 +126,7 @@ def plan_json_schema(index: dict, *, azami_adim: int = 5) -> dict[str, Any]:
                                  else {"type": "string"},
                         "olcu": {"type": "string", "enum": olculer} if olculer
                                 else {"type": "string"}},
-         "required": ["fiil", "kaynak", "boyut", "olcu"]},
+         "required": ["fiil", *ZORUNLU_ALANLAR["BAGLA"]]},
         {"type": "object", "additionalProperties": False, "title": "HESAPLA",
          "properties": {"fiil": {"const": "HESAPLA"},
                         "kaynak": _ref("hangi adımın satırları"),
@@ -116,23 +135,23 @@ def plan_json_schema(index: dict, *, azami_adim: int = 5) -> dict[str, Any]:
                                  else {"type": "string"},
                         "olcu": {"type": "string", "enum": olculer} if olculer
                                 else {"type": "string"}},
-         "required": ["fiil", "kaynak", "hedef", "boyut", "olcu"]},
+         "required": ["fiil", *ZORUNLU_ALANLAR["HESAPLA"]]},
         {"type": "object", "additionalProperties": False, "title": "KIYASLA",
          "properties": {"fiil": {"const": "KIYASLA"},
                         "kaynak": _ref("hangi adımın satırları")},
-         "required": ["fiil", "kaynak"]},
+         "required": ["fiil", *ZORUNLU_ALANLAR["KIYASLA"]]},
         {"type": "object", "additionalProperties": False, "title": "AYRISTIR",
          "properties": {"fiil": {"const": "AYRISTIR"},
                         "kaynak": _ref("hangi adımın satırları")},
-         "required": ["fiil", "kaynak"]},
+         "required": ["fiil", *ZORUNLU_ALANLAR["AYRISTIR"]]},
         {"type": "object", "additionalProperties": False, "title": "TREND",
          "properties": {"fiil": {"const": "TREND"},
                         "kaynak": _ref("hangi adımın satırları")},
-         "required": ["fiil", "kaynak"]},
+         "required": ["fiil", *ZORUNLU_ALANLAR["TREND"]]},
         {"type": "object", "additionalProperties": False, "title": "ANLAT",
          "properties": {"fiil": {"const": "ANLAT"},
                         "kaynak": _ref("hangi adımın bulguları")},
-         "required": ["fiil", "kaynak"]},
+         "required": ["fiil", *ZORUNLU_ALANLAR["ANLAT"]]},
     ]
     return {
         "type": "object", "additionalProperties": False,
