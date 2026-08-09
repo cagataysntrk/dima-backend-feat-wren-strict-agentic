@@ -63,12 +63,42 @@ def _govdeler(service: Any, schema: dict, cube_meta: dict | None) -> dict[str, A
     sarıyor. Buradaki tek iş **adı doğru parametreye bağlamak** — `FAZ 0`'ın ölçtüğü
     kusur tam olarak buydu.
     """
+    # 🔴 `§X1` — küp → **kendi** zaman ekseni. Bir kez kurulur, gövdeler yalnız okur.
+    _zaman_ekseni: dict[str, str] = {
+        str(c.get("name")): (c.get("time_dimensions") or [None])[0]
+        for c in (schema.get("cubes") or []) if (c.get("time_dimensions") or [])}
+    _varsayilan_eksen = ((cube_meta or {}).get("time_dimensions") or ["tarih"])[0]
+
     def _trend(a: dict) -> list[dict]:
         # ⟳ `kaynak`tan `__cq` kazımaya çalışan hâl **kaldırıldı**: satırların içinde
         # sorgusunu taşıyan bir alan hiç yoktu, yani o dal her zaman `{}` veriyordu.
         # *Var olmayan bir alandan okumak, sessizce boş dönmenin en kibar yoludur.*
+        #
+        # 🔴🔴 `§X1` — **ÜÇÜNCÜ TEKRAR, ve bu kez sessizce yanlış kolona yazmadı,
+        # tur ÖLDÜ.** Ölçüldü (canlı `V`, *«personel devir oranı bu yıl nasıl»*):
+        #
+        #     adım 2 (`TREND`) koşulamadı: Unknown filter dimension 'tarih' in cube 'ik'
+        #
+        # ⊙ `cube_meta` bu çağrıya `{"lower_is_better": [...]}` olarak geliyor —
+        # `time_dimensions` anahtarı **hiç yok**. Yani yedek (`["tarih"]`) her zaman
+        # kazanıyordu ve `ik` (`donem_tarih`) · `enerji_makine` (`donem_tarih`) gibi
+        # küplerde `TREND` **yapısal olarak** koşamıyordu.
+        #
+        # ⚠ Doğru kaynak **sorgunun kendi küpü**dür, bir yan kanaldan gelen sözlük
+        # değil: aynı planda iki farklı küpe `TREND` atılabilir ve tek bir eksen adı
+        # ikisini birden doğru anlatamaz.
+        #
+        # *Var olmayan bir anahtarı `or` ile yedeklemek, yedeği varsayılan yapar — ve
+        # varsayılan yanlışsa kusur asla görünmez, yalnız tekrarlar.*
         from app import yoy
-        _td = ((cube_meta or {}).get("time_dimensions") or ["tarih"])[0]
+        _cqt = a.get("cube_query") if isinstance(a.get("cube_query"), dict) else {}
+        # ⚠ Eşleme **gövdenin dışında** kurulur (aşağıda `_zaman_ekseni`): kapı
+        # (`test_GOVDE_SEMANIN_YASAKLADIGI_ALANI_OKUMUYOR`) gövdedeki her `.get("…")`
+        # çağrısını **adımın alanı** sanıyor ve şemada olmayan bir ad görünce fiili ölü
+        # ilan ediyor — haklı bir yüklem, çünkü bir gövdenin adımdan başka bir yerden
+        # okuması tam da o kapının yasakladığı şey. Şemayı burada gezmek yerine
+        # **önceden** çözmek hem kapıyı hem okuyucuyu doğru tutar.
+        _td = _zaman_ekseni.get(_cqt.get("cube")) or _varsayilan_eksen
         return (yoy.compute(service, a.get("cube_query") or {},
                             a.get("mode") or "yoy", _td) or {}).get("rows") or []
 
@@ -438,6 +468,48 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
 
     _null = (not _bos) and bool(_bolumler) and all(
         b["result"]["row_count"] == 0 or _hepsi_bos(b["result"]) for b in _bolumler)
+    # 🔴🔴 `O-20` — **DÜRÜSTLÜK KAPISI PLAN YOLUNU HİÇ GÖRMÜYORDU.**
+    #
+    # ⊙ Ölçüldü (canlı `V` turu): *«personel **devir oranı** bu yıl nasıl»* → cevap
+    # **`personel_sayisi`** (baş sayısı) döndü. Soru bir **oran** istiyordu, cevap bir
+    # **sayım** verdi ve **hiçbir beyan yoktu** — `sessiz_yanlis` sınıfı, ve onu üreten
+    # şey bayrağı kapatılamayan bir yol.
+    #
+    # ⚠ Kusur yeni değil: `uyum.py` bu sınıfı **zaten tanıyor** (`o16`: *«iş kazası
+    # ORANI»* → `kaza_adedi`, beyansız) ve kapısı yazılı. Ama o kapı `ask()`in
+    # kapanışında duruyor ve plan yolu oradan **hiç geçmiyor** — yani bir gardiyan var,
+    # yeni açılan kapıda değil.
+    #
+    # ⚠ Model **uydurmadı**: `personel_sayisi` katalogda **var**. Yaptığı şey bir
+    # **ikame**dir — istenen kavram yoksa en yakınını koymak. Beyaz liste ikameyi
+    # göremez (ad geçerli), ad denetimi de göremez (`O-18` adın varlığına bakar).
+    # Görebilen tek yer, **soruyla cevabı karşılaştıran** yerdir.
+    #
+    # *Bir kapıyı yazmak onu her yola koymaz — ve yeni bir yol, eski kapıların
+    # arkasından değil, YANINDAN geçer.*
+    # ⚠ `Ihlal` **nesnesi** taşınır, `isaret` dizesi değil: kullanıcıya giden metin
+    # `aciklama` alanındadır ve nesneyi yeniden kurmak onu **boşaltırdı**. Bir kapının
+    # çıktısını parçalayıp yeniden birleştirmek, kapının cümlesini kaybetmenin yoludur.
+    _ihlaller: list = []
+    _gorulen: set[str] = set()
+    try:
+        from app import uyum as _uyum
+        for _b in _bolumler:
+            _bcq = _b.get("cube_query")
+            if not isinstance(_bcq, dict):
+                continue
+            _bcm = next((c for c in (schema.get("cubes") or [])
+                         if c.get("name") == _bcq.get("cube")), None)
+            for _ih in _uyum.denetle(soru, {"cube_query": _bcq}, _bcm):
+                if _ih.isaret not in _gorulen:
+                    _gorulen.add(_ih.isaret)
+                    _ihlaller.append(_ih)
+        _eksik_notu = ("\n\n" + _uyum.kismi_cevap_notu(_ihlaller)) if _ihlaller else ""
+        if _ihlaller:
+            _log.info("plan: beyanlı kısmi cevap (%s)", ", ".join(sorted(_gorulen)))
+    except Exception:                          # noqa: BLE001 — beyan turu DÜŞÜRMEZ
+        _log.info("uyum denetimi yapılamadı (beyan atlandı)", exc_info=True)
+        _eksik_notu = ""
     _uyari = ("\n\n⚠ Plan doğru kuruldu ve koştu ama **hiçbir adım satır döndürmedi** — "
               "dönem ya da süzgeç veriyle örtüşmüyor olabilir." if _bos else
               "\n\n⚠ Plan doğru kuruldu ve koştu, satır da döndü — ama **tüm değerler "
@@ -446,7 +518,7 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
               if _null else "")
     return {
         "source": "cube+llm",
-        "note": makbuz(plan) + "\n\n" + _bulgu_metni(plan, out) + _uyari,
+        "note": makbuz(plan) + "\n\n" + _bulgu_metni(plan, out) + _uyari + _eksik_notu,
         # 🔴 Onarım beyanları izin **başına değil sonuna** eklenir: birinci satır
         # *"kaç adım koştu"* sorusunun cevabıdır ve okuyucunun ilk aradığı odur.
         # Beyan yoksa liste bayt bayt bugünküdür (`KURAL B` disiplini).

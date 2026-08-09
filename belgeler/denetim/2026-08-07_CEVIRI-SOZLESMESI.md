@@ -8098,3 +8098,82 @@ Thread'i `thread_id`/`session_id` ile kurmaya çalıştım; `/ask` o alanları *
 | *«bakım maliyeti en yüksek makine hangisi ve oee'si ne»* | 🟢 **6 adım** · iki küp |
 
 **Kapı:** 4458 yeşil · korpus **%94.9** · `sessiz_yanlis` **10** · eval **+0.0%**.
+
+---
+
+## `V` TURU — **SESSİZ YANLIŞ, SALINIM VE ÜÇÜNCÜ `§X1`** *(2026-08-10)*
+
+### 🔴🔴 EN AĞIR — soru başka, cevap başka, beyan YOK
+
+*«personel **devir oranı** bu yıl nasıl»* → cevap **`personel_sayisi`** (baş sayısı).
+Bir **oran** istendi, bir **sayım** verildi, **hiçbir not yok**. `sessiz_yanlis` sınıfı —
+ve onu üreten şey bayrağı kapatılamayan bir yol.
+
+⚠ Model **uydurmadı**: `personel_sayisi` katalogda **var**. Yaptığı bir **ikamedir** —
+istenen kavram yoksa en yakınını koymak. Ve bu yüzden üç kapının **üçü de** kördü:
+
+| kapı | neden görmedi |
+|---|---|
+| beyaz liste (`parse_cube_query`) | ad **geçerli** |
+| ad denetimi (`O-18`) | adın **varlığına** bakar, uygunluğuna değil |
+| `uyum` beyan kapısı | `ask()`in **kapanışında** duruyor, plan yolu oradan geçmiyor |
+
+`uyum.py` bu sınıfı **zaten tanıyor** (`o16`: *«iş kazası ORANI»* → `kaza_adedi`,
+beyansız) ve kapısı yazılı. Ama gardiyan yeni açılan kapıda değildi.
+
+🔴 **`O-20`:** plan yolu artık her bölümünün `cube_query`'si için `uyum.denetle`'den
+geçiyor; beyanlar cevabın notuna ekleniyor. *Bir kapıyı yazmak onu her yola koymaz —
+yeni bir yol, eski kapıların arkasından değil YANINDAN geçer.*
+
+### 🔴🔴 `§X1` ÜÇÜNCÜ KEZ — ve bu kez tur ÖLDÜ
+
+Aynı soru düzeltmeden sonra şunu verdi:
+
+```
+adım 2 (`TREND`) koşulamadı: Unknown filter dimension 'tarih' in cube 'ik'
+```
+
+`_trend` gövdesi zaman eksenini `cube_meta`'dan okuyordu; o sözlük bu çağrıya
+`{"lower_is_better": […]}` olarak geliyor — `time_dimensions` anahtarı **hiç yok**.
+Yani yedek (`["tarih"]`) **her zaman** kazanıyordu ve `ik`·`enerji_makine` gibi
+`donem_tarih` küplerinde `TREND` **yapısal olarak** koşamıyordu.
+
+*Var olmayan bir anahtarı `or` ile yedeklemek, yedeği varsayılan yapar — ve varsayılan
+yanlışsa kusur asla görünmez, yalnız tekrarlar.*
+
+### ⚠ SALINIM ÖLÇÜLDÜ — red bir bilgi eksikliği değil, bir KARARSIZLIK
+
+*«bu yıl en yüksek fireli 5 makine»* **altı kez** koşuldu:
+
+| koşum | sonuç |
+|---|---|
+| 1 | `source=cube` · 5 satır |
+| 2·3·6 | `cube+llm` · 5 satır · belirsizlik ifşalı |
+| 4·5 | `cube+llm` · 5 satır · *«2 ölçü geçiyor»* beyanlı |
+| *(ayrı bir koşumda)* | 🔴 *«Hangi ölçüyü istiyorsun?»* |
+
+⊙ Yani sistem bu soruyu **çoğu zaman doğru** cevaplıyor; red bir azınlık **salınımıdır**.
+`k=3` + `2/3` eşiği pratikte *«üç örneklemin ikisi birebir aynı JSON»* demek ve serbest
+metinde bu nadir.
+
+**Açık borç:** `oylama_cogunluk` bayrağı **kapalı** ve tam bu salınım için yazılmış.
+⚠ Ama körlemesine açılamaz: `best` bir **1-1-1 beraberliğinde** keyfî bir kova seçer.
+Doğru hâli **kesin çoğunluk** şartıdır (`len(best) > ikinci`), ve ölçülen vaka bir
+beraberlikti — yani bayrak tek başına o vakayı **çözmezdi**. Ölçülüp karara bağlanacak.
+
+**Açık borç (mutfak):** `ik` küpünde **devir oranı yok** (`personel_sayisi` ·
+`toplam_brut_maas` · … 8 ölçü). Bu bir sipariş kusuru değil bir **mutfak eksikliğidir**.
+
+### Kademe kademe — V turu tablosu
+
+| kademe | soru | sonuç |
+|---|---|---|
+| 1 route | *«bu ay toplam sevkiyat adedi»* | ✅ `cube` · 0 LLM |
+| 1 route | *«vardiyaya göre ortalama oee bu yıl»* | ✅ `cube` · 0 LLM · 3 satır |
+| 2 kısa | *«iş kazalarının kök nedenleri bu yıl»* | ✅ `%100 uyum` · 5 satır |
+| 2 kısa | *«enerji tüketimi en yüksek makine»* | ⚠ dönem netleştirmesi (chip'li) |
+| 3 orta | *«iade oranı en yüksek 3 müşteri **ve** ciro payları»* | 🟢 **3 adım** · `SORGU×2→MATRIS` *(`O-19/K` kapsama kuralı)* |
+| 4 uzun | *«en çok duruş yaşayan makinede nedenleri kır»* | 🟢 5 adım |
+| 4 uzun | *«bakım maliyeti en yüksek makine ve oee'si»* | 🟢 6 adım · iki küp |
+
+**Kapı (tur başı):** 4462 yeşil · korpus **%94.9** · `sessiz_yanlis` **10** · eval **+0.0%**.

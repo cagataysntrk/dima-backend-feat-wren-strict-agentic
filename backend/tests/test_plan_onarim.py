@@ -413,3 +413,111 @@ def test_COKLUK_ERTELEMESI_KAYIPSIZ():
     _i = src.index("_pc is None and _ertelenen_chip is not None")
     assert "_finish(_ertelenen_chip)" in src[_i:_i + 200], \
         "ertelenen chip plan başarısız olunca KONUŞMUYOR — erteleme kayıplı olurdu"
+
+
+def test_PLAN_YOLU_DURUSTLUK_KAPISINDAN_GECER():
+    """🔴🔴 `O-20` — **`uyum` kapısı plan yolunu hiç görmüyordu.**
+
+    Ölçüldü (canlı `V` turu): *«personel **devir oranı** bu yıl nasıl»* → cevap
+    **`personel_sayisi`** (baş sayısı) döndü. Soru bir **oran** istedi, cevap bir
+    **sayım** verdi, **hiçbir beyan yoktu** — `sessiz_yanlis`, ve onu üreten şey
+    bayrağı kapatılamayan bir yol.
+
+    ⚠ Model **uydurmadı**: `personel_sayisi` katalogda var. Yaptığı bir **ikamedir** —
+    istenen kavram yoksa en yakınını koymak. Beyaz liste ikameyi göremez (ad geçerli),
+    `O-18` ad denetimi de göremez (adın **varlığına** bakar). Görebilen tek yer,
+    **soruyla cevabı karşılaştıran** yerdir.
+
+    *Bir kapıyı yazmak onu her yola koymaz — yeni bir yol, eski kapıların arkasından
+    değil YANINDAN geçer.*
+    """
+    from app import plan_tuketici
+
+    class _Motor:
+        def cube_sql(self, cq):
+            return "SELECT 1"
+
+        def dry_plan(self, sql):
+            return None
+
+        def query(self, sql, limit=None):
+            return {"columns": ["personel_sayisi"], "rows": [{"personel_sayisi": 29}]}
+
+    IK = {"name": "ik", "measures": ["personel_sayisi"],
+          "dimensions": ["departman"], "time_dimensions": ["donem_tarih"]}
+
+    class _Garson:
+        sema_kullanir = False
+        plan_kurabilir = True
+
+        def plan_kur(self, *a, **k):
+            import json as _j
+            return _j.dumps({"adimlar": [{"fiil": "SORGU", "cube_query": {
+                "cube": "ik", "measures": ["personel_sayisi"]}}]})
+
+    class _Istek:
+        class state:      # noqa: N801
+            plan_taslagi = None
+
+        class app:        # noqa: N801
+            class state:  # noqa: N801
+                llm = _Garson()
+
+    # ⚠ Bayrak **açık** koşulur: `skip` ile yeşil görünen bir kapı, kapı değildir.
+    # `acik_mi` `resolve_for`'dan okuyor; kapı onu yamalar ve yerine koyar.
+    import app.plan_garson as _pg
+
+    _asil = _pg.acik_mi
+    _pg.acik_mi = lambda *a, **k: True
+    try:
+        out = plan_tuketici.cevap(_Istek, service=_Motor(), schema={"cubes": [IK]},
+                                  soru="personel devir oranı bu yıl nasıl",
+                                  settings=None, principal=None)
+    finally:
+        _pg.acik_mi = _asil
+    assert out is not None, "plan yolu hiç koşmadı — kapı konusuz kaldı"
+    assert "eksik" in (out["note"] or "").lower(), (
+        "bir ORAN istendi ve bir SAYIM döndü — cevap beyansız çıkamaz:\n"
+        + (out["note"] or "")[:400])
+
+
+def test_TREND_KUPUN_KENDI_ZAMAN_EKSENINI_KULLANIR():
+    """🔴🔴 `§X1` **ÜÇÜNCÜ TEKRAR** — ve bu kez tur öldü.
+
+    Ölçüldü (canlı `V`, *«personel devir oranı bu yıl nasıl»*):
+
+        adım 2 (`TREND`) koşulamadı: Unknown filter dimension 'tarih' in cube 'ik'
+
+    `cube_meta` bu çağrıya `{"lower_is_better": […]}` olarak geliyor — `time_dimensions`
+    anahtarı **hiç yok**. Yedek (`["tarih"]`) her zaman kazanıyordu, yani `ik`
+    (`donem_tarih`) gibi küplerde `TREND` **yapısal olarak** koşamıyordu.
+
+    *Var olmayan bir anahtarı `or` ile yedeklemek, yedeği varsayılan yapar — ve
+    varsayılan yanlışsa kusur asla görünmez, yalnız tekrarlar.*
+    """
+    from app import plan_tuketici
+
+    IK = {"name": "ik", "measures": ["personel_sayisi"], "dimensions": ["departman"],
+          "time_dimensions": ["donem_tarih"]}
+    gorulen: list[str] = []
+
+    class _SahteYoy:
+        @staticmethod
+        def compute(service, cq, mode, td):
+            gorulen.append(td)
+            return {"rows": []}
+
+    # ⚠ `from app import yoy` **paketin niteliğini** okur, `sys.modules`'ı değil —
+    # ilk yazımda `sys.modules` yamalandı ve yama hiç görülmedi. *Bir importu
+    # yamalarken, onu çözen mekanizmayı yamalamak gerekir.*
+    import app as _app
+
+    _asil = _app.yoy
+    _app.yoy = _SahteYoy
+    try:
+        g = plan_tuketici._govdeler(None, {"cubes": [IK]}, {"lower_is_better": []})
+        g["TREND"]({"cube_query": {"cube": "ik", "measures": ["personel_sayisi"]}})
+    finally:
+        _app.yoy = _asil
+    assert gorulen == ["donem_tarih"], (
+        f"`TREND` küpün kendi zaman eksenini kullanmalı, sabit `tarih` değil: {gorulen}")
