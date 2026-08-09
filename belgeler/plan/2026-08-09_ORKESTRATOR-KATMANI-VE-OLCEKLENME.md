@@ -441,9 +441,43 @@ sınıfındandır.
 | **O-5** | Makbuz kullanıcıya — **zorunlu** *(E1)* | — | her `CALISTIR` tıklanır, `/cube` ile **sıfır LLM** koşar |
 | **O-6** | `KIYAS` ilkelini tamamla *(G4)* | | *«ocak ile haziranı kıyasla»* iki dönemi yan yana veriyor |
 | **O-7** | Yokluk/yarımlık beyanı *(G2)* | pack beyanı, MDL'e alan **eklenmez** | `W13` 🔴 **eğitim saati VERMİYOR** |
-| **O-8** | Menü ölçüm aleti *(G1)* | sinonim **şişirilmez** | rapor `Y6·AA13·X8·Z12`'yi **kendiliğinden** listeliyor |
-| **O-9** | Discovery oranı A/B *(G6)* | | oran **düşüyor**; düşmezse faz **geliştirilir, iptal edilmez** |
+| **O-8** | Menü ölçüm aleti *(G1)* | sinonim **şişirilmez** | ✅ `lab/menu.py`. ⟳ Ölçüm iki beklentiyi düzeltti: `X8` **kapanmış**, `AA13`'ün beklentisi bayattı. 🔴 Ve `Y6` *cevapsız* değil **yanlış** çıktı (`kalite` veriyor) — `G1` sessizce `G2`'ye dönüşmüş |
+| **O-9** | Discovery oranı A/B *(G6)* | payda **kutsal** — eşit değilse karşılaştırma reddedilir | ✅ `lab/discovery_orani.py`. Ölçüldü: %55 → 🔴%65 (yanlış yerleşim) → **%55** (düzeltilmiş). Kural uygulandı: faz **geliştirilir, iptal edilmez** |
 | **O-10** | Onaylı yazma *(G7)* | **v1 dışı** | — |
+
+#### 🔴🔴 ⟳ `E6` DÜZELTMESİ **ÖLÇÜMLE GERİ ALINDI** *(EE turu, 2026-08-09)*
+
+Yukarıdaki `O-2` satırı *"`select_cube`'un **YERİNE** geçer · LLM turu ARTMAZ"* diyor.
+Uygulandı, canlı A/B koşuldu ve **çürüdü**. Satır artık okunmalı ama **uygulanmamalıdır**;
+doğru hâli aşağıdadır.
+
+| koşum | 🗣 `cube+llm` | 🥡 Discovery/adhoc | **arıza oranı** |
+|---|---|---|---|
+| **A** · bayrak kapalı | **%35** | %10 | **%55** |
+| **B** · plan `select_cube` YERİNE | %25 | 🔴 %25 | 🔴 **%65** *(+10 puan)* |
+| **B2** · plan **yalnız boşlukta** | **%35** | %5 | **%55** *(+0,0)* |
+
+⊙ **Mekanizma:** `_select_consistent` `k` örneği **aynı** süreçten çeker ve oylar. Plan
+araya girince örneklerin bir kısmı plandan, bir kısmı `select_cube` yedeğinden geliyordu —
+oy artık **aynı dağılımdan** çekilmiyordu. *Bir oylamanın geçerliliği örneklerin
+özdeşliğine dayanır; iki farklı süreci aynı sandığa atmak, oylamayı gürültüye çevirir.*
+
+Somut kayıplar: `EE6` *«hiç iş kazası oldu mu»* A'da `{kaza_adedi: 0}` → B'de **cevapsız**
+· `EE14` *«ciromuz büyüdü mü»* → **İK'ya** düştü · `EE4` 10 satır → cevapsız.
+
+**Doğru yerleşim `E3`'ün lafzıydı:** plan yalnız **boşlukta** (route boş **ve** garsonun
+tek-cube cevabı yok). Böylece cevaplanan hiçbir soruya bir çağrı bile eklenmez — yani
+`E6`'nın riski **tasarımla sıfırlanır**, `E6` düzeltmesinin aradığı şey de zaten buydu;
+yalnız yeri yanlış seçilmişti.
+
+⚠ **Ve kazanç henüz SIFIR.** Canlı iki plan denemesinde de şema-geçerli plan çıkmadı:
+(1) `TREND`·`AYRISTIR`·`KIYASLA`·`ANLAT` çalıştırıcıları bağlı değil, (2) serbest-JSON
+sağlayıcı adım **sözleşmesine** uymuyor (fiili doğru yazıp parametrelerini uyduruyor) ve
+`ZORUNLU_ALANLAR` onları düşürüyor — **doğru davranış**. Karar, raporun kendi kuralıyla:
+bayrak `off`, faz **geliştirilir, iptal edilmez**.
+
+*Bir tasarım kararının doğruluğu, onu yazan aklın gücüyle değil, ölçüldüğü koşumla
+belirlenir.*
 
 #### ⟳ SIRA DEĞİŞTİ — `O-1` başa alındı *(2026-08-09)*
 
