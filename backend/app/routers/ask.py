@@ -3800,8 +3800,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         if _pc is not None:
             return _finish(_attach_viz(AskResponse(
                 question=body.question, source=_pc["source"], note=_pc["note"],
-                result=_pc.get("result"), trace=trace + _pc["iz"]),
-                _pc.get("result"), _pc.get("cube_query")))
+                result=_pc.get("result"), cube_query=_pc.get("cube_query"),
+                trace=trace + _pc["iz"]), _pc.get("result"), _pc.get("cube_query")))
         if route_hit:
             cq = route_hit["cube_query"]
             # Gitaş logu 2026-07-24: order/limit route()'tan AYRI alanlar olarak
