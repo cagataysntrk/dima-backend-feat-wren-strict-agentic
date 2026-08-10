@@ -72,12 +72,18 @@ Madde başına doğrulama tavanı **~1 dakikadır**; aşıyorsa kural çiğneniy
 
 ### `T` · TABAN BORÇLARI — kaynak: [`belgeler/denetim/2026-08-10_TABAN-BORCLARI-ve-KATALOG-KOKU.md`](belgeler/denetim/2026-08-10_TABAN-BORCLARI-ve-KATALOG-KOKU.md)
 
+> ✅ **ÇIKIŞ ÖLÇÜTÜ, o raporun `§6b` KONTROL LİSTESİDİR** — `A1…A11` (ölçüm altyapısı) ·
+> `B1…B10` (taban) · `C1…C6` (sinonim) · `D1…D10` (bayrak fazları) · `E1…E3` (performans).
+> 🔴 **`A` bölümü olmadan B/C/D'nin hiçbiri kanıtlanamaz.** Bir kalem ancak
+> `OPERASYON-DURUM.md`'ye **sayı + HEAD damgasıyla** yazıldığında işaretlenir;
+> *«iyileştirildi» diye işaretlenen bir kalem, işaretlenmemiş bir kalemdir.*
+
 **Teşhis:** orkestratör bir **tavan** açtı, tabanı yükseltmedi. Tabanı `route()` +
 **katalog** belirliyor; ölçülen sessiz-yanlışların kökü orkestratörde değil **katalogda**.
 
 | # | borç | demet kapanışında sorulacak soru |
 |---|---|---|
-| **T-1** | **garson korpusu yok** — `eval --slice llm` **4 vaka**, `nl_corpus` `rule` sağlayıcıyla koşuyor (LLM **yok**) | payda büyüdü mü? Bu turun `§`-kodlu canlı bulguları vakaya çevrildi mi? |
+| **T-1** | **garson korpusu yok** — `eval --slice llm` **4 vaka**, `nl_corpus` `rule` sağlayıcıyla koşuyor (LLM **yok**). 🔴 **Payda CANLI ÇAĞRIYLA büyütülmez** (API tıkanır — kullanıcı kısıtı): canlı yanıt `--live --kaset` ile **bir kez** kaydedilir, sonraki koşumlar **diskten** → **koşum başına sıfır API**. ⚠ Kaset **kaliteyi değil tesisatı** ölçer; **curl döngüsü kaldırılmaz** (gerçeği o ölçer), kaset yalnız **gerilemeyi** durdurur | Bu turun `§`-kodlu canlı bulguları **kasete** çevrildi mi? Kaset (soru+istem sürümü) ile anahtarlı mı? |
 | **T-0** | **katalog envanteri tek sayı vermiyor** (127 / 132 / 141 — üç yüzey, üç sayı) | envanter + kapı indi mi? Sayı hangi yüzeyden okundu? |
 | **T-2** | **route'un kesinliği çürütülemez** — çok sahipli/dilbilgisiyle çakışan token'da çekilmiyor | bu turun eşleşmelerinden kaçı tek-sahiplilik kanıtı taşıyor? |
 | **T-3** | **kanonik varlık ekseni yok** — «müşteri» **5 ad, 3 ayrık aile**; `blend` yapısal olarak kurulamıyor | `cekirdek/varlik_sozlugu` kararı alındı mı? |
@@ -85,9 +91,10 @@ Madde başına doğrulama tavanı **~1 dakikadır**; aşıyorsa kural çiğneniy
 | **T-5** | **yön beyanı eksik** — `lower_is_better` **125/173**'te yok; *«en kötü»* sessizce ters cevaplanıyor | oran düştü mü? Yeni ölçü kapısı var mı? |
 | **T-6** | **ifade edilemezler** — `her <boyut>` (beyan var, yetenek yok) · `compare` hâlâ enum (`5.6` bloke) · mutfak **12** anahtar üretiyor, garsona **7** sunuluyor | yetenek envanteri kapısı indi mi? |
 | **T-7** | **odak varlığı yok** — *«o makinede»* takibi üç yerleşimde de başarısız; eksik olan **bilgi**, kanca değil | diyalog durumuna odak varlığı girdi mi? |
-| **T-8** | **ters yön ölçülmedi** — `prompt_enhancer` **`off`**; üç *"kazanç yok"* kaydının **üçü de** bir şey ölçmemiş (yanlış nüfus · LLM'siz koşum · tek koşum). ⊙ Sinonim korpusunun **%55'i** (788/1432) elle yazılmamalıydı; kalan **B2 sınıfı** (`zayiat`↔`fire`, `iade`↔`şikâyet`) **LLM'in bilemeyeceği yerel sözleşmedir** | `--ab-kurtarma --live` **iki koşum** yapıldı mı? Başarılı yeniden yazımlar **aday kuyruğuna** hasat ediliyor mu? |
+| **T-8** | **ters yön — taşıyıcı YANLIŞ, fikir DOĞRU.** ⊙ Sinonim korpusunun **%55'i** (788/1432) elle yazılmamalıydı; kalan **B2 sınıfı** (`zayiat`↔`fire`, `iade`↔`şikâyet`) **LLM'in bilemeyeceği yerel sözleşmedir**. 🔴 **`prompt_enhancer` AÇILMAZ** — ikinci bir **seri** LLM turudur (`consistency_k=3` paralel koşar, yani Intent **tek tur**; enhancer **iki** yapar) ve gerçek dilde route **%93,3** pes ettiği için *"yalnız route boşsa"* bir güvence **değildir**. Bütçe: `llm` **20.000 ms**, Discovery **12.567 ms** → kullanıcı **iki kez** bekler 🟢 **Doğru biçim: AÇIK ÜRETİM değil KAPALI SEÇİM** — *«soruyu çevir»* değil, *«bu kelimenin katalogda karşılığı var mı, yoksa hiçbiri mi?»*. Girdisi **hazır**: `cube_router.partial_unknowns()` artakalan kelimeleri **deterministik** veriyor; `uncovered_words` kütükte **sıklık sıralı** birikiyor (`§M7` ile yeni düzeltildi). 🟢 **Bu yüzden sıcak yolda HİÇ koşmaz:** çevrimdışı, toplu, günde bir → aday kuyruğu → onay → overlay. Maliyet **soru başına değil kelime başına bir kez** | Çevrimdışı hasat koştu mu? `eslesen_terim` alanı Intent turuna girdi mi? ⚠ Çok eşleşen kelime kuyruğa **girmemeli** (o bir belirsizlik, `netlestirme_onceligi`'nin konusu); *«hiçbiri»* bir başarısızlık değil **menü boşluğu** sinyalidir. *(Enhancer'ın `on` olması bir hedef DEĞİLDİR)* |
 | **T-9** | 🔴 **PLAN REDDİ — `plan_semasi`'de `operator` kelimesi SIFIR kez geçiyor.** Intent şeması operatörü **enum** olarak veriyor, plan istemi **hiç** vermiyor → model `equals` yazıyor, red yiyor, bir LLM turu harcanıyor. Süzgeç **biçimi** de (`dimension`/`operator`/`value`) plan isteminde yok → `dimension: None`. Onarım turu *"yanlış"*ı söylüyor, *"doğru"*yu söylemiyor — oysa çözüm aynı fonksiyonda `bilinen_boyutlar()` olarak **zaten var** | red oranı **sayılıyor mu** (`plan_garson.SAYAC` kapısız)? Sebep dağılımı yayımlandı mı? `ALAN_REHBERI` süzgeç bölümü indi mi? |
 
+| **T-10/F** | 🔴🔴 **BAYRAK AÇMA FAZLARI PLANLANDI** — raporun `§4h`'i sekiz faz taşıyor. ⊙ En önemli bulgu: **ölçüm aleti zaten var** (`lab/nl_accuracy.py --ab <bayrak>` gerileme · `--ab-kurtarma` kazanç) → çoğu bayrak **haftalık değil saatlik** iş. Sıra: `F6` ucuz demet (`hizli_derin`·`hedef_kiyasi`·`tur_takip`·`tur_paylas` — ikisi **sıfır davranış değişikliği**) → `F2` `oylama_paydasi` → `F1` `varsayilan_donem` → `F7` `oylama_cekirdek` **kapı** (`beta` ama **0 test!**) → `F5` `tazelik` (**8 test/7 kod, kapalı — gerekçesi hiçbir yerde yazılı DEĞİL**) → `F3` netleştirme ikilisi + `T-4` → `F8` sağlayıcı → `F4` çekirdek + `T-3` | Bu turda hangi faz ilerledi? `F1`/`F2` korpusta **kayıp** gösterecek — `(a)/(b)/(c)` ayrımı yapıldı mı? |
 | **T-10** | 🔴🔴 **49 BAYRAK, `on` OLAN SIFIR.** 21 `beta` · 28 `off` · **5'i `features.yml`'de bile yok** (`diyalog_bellegi`·`niyet_izi`·`sosyal_sinif`·`t2_anlatici`·`ayni_grain_gocu` → **hiçbir kiracı açamaz**). Ölçülmüş sorunlarımızı çözen kapalı yetenekler: **`varsayilan_donem`** (korpusun **%13,7'si** dönem netleştirmesi) · **`oylama_paydasi`** (*1 cevap + 2 «bilmiyorum» → uyum **%100** görünüyor*) · **`netlestirme_onceligi`** (`T-2`'nin çalışma-zamanı yarısı, **yazılmış**) · **`katalog_belirsizlik`** · **`cekirdek_katman`** (`T-3`'ün evi) · `tazelik` · `hedef_kiyasi` · `tur_takip`/`tur_paylas` | Bu turda hangi bayrak bir kademe ilerledi? İlerlemeyene **gerekçe** yazıldı mı? |
 
 ---
@@ -106,6 +113,7 @@ Madde başına doğrulama tavanı **~1 dakikadır**; aşıyorsa kural çiğneniy
 | **E-5** | LLM'li her kararda **iki koşum** (`KURAL G-1`). Ölçüldü: `prompt_enhancer` kararı tek koşumla verildi, **ikinci sağlayıcıda tersine döndü** |
 | **E-6** | Rollout yüzeyi olmayan bayrak **yoktur**. *Bir kill-switch yalnız kodda varsa yarımdır* — **açma anahtarı** için de aynısı |
 | **E-7** | Sıcak yola maliyet eklemek **ayrı bir karardır**: kalite ve gecikme **birlikte** raporlanır (`/ask` 47→177 ms, tavan kapısı yok) |
+| 🔴🔴 **E-8** | **SICAK YOLA SERİ İKİNCİ LLM TURU EKLENEMEZ — ölçümle bile açılmaz.** Takas değil **sınır**. `consistency_k=3` örnekleri **paralel** koşar → Intent **tek turdur**; girdisi bir öncekinin çıktısı olan mekanizma **paralelleştirilemez**. Ölçüldü: `llm` bütçesi **20.000 ms** · Discovery **12.567 ms** · gerçek dilde route **%93,3** pes ediyor (yani *"yalnız route boşsa"* güvence değil). 🔴 Böyle bir bayrak `off` bırakılmaz, **YENİDEN TASARLANIR**: yetenek var olan turun **içine bir alan** olarak girer. ⚠ Aynı sınıf: `agent_plan_secimi` — `stats.py`'nin ölçümü *"kapalı dört LLM bayrağının gerekçesi **üç kez aynı cümle**: «sıcak yola LLM çağrısı ekliyor»"*. *Fikir doğruysa taşıyıcısı değişir, fikir atılmaz* |
 
 ### 🔴🔴 `K` · KORPUS BU KARARLARDA HAKEM DEĞİLDİR — **düşüş bazen BAŞARIDIR**
 
@@ -126,6 +134,92 @@ kapsamın ölçüsü korpustur; **yol dağılımının** ölçüsü değildir.
 🔴 **Yapısal düzeltme — kapı çıktısı ikiye ayrılır:**
 `route %X (n)` · `garson %Y (n)` · `devir %Z` · `sessiz_yanlış N`.
 *Tek sayı iki yolun ortalamasıdır ve hangi yolun bozulduğunu gizler.*
+
+### 🔴 `K-2` · KAPININ YETKİSİ DARALTILDI — *«20 dakika bize ne katıyor?»*
+
+⊙ **Kapının bu operasyondaki gerçek hesabı:** `eval.run` **0** kırmızı · senaryolar
+**0** · tam süit *"aynı kusurları seviye 1 de yakaladı"* · **korpus 2 gerçek yakalama**
+(payda `445→342` iken doğruluğun `%93,2→%94,3` **çıkması**; `§EB/A`'da `sessiz_yanlis`
+`12→18`) **ve 1 yanlış kırmızı** (`G3` — `(b)` sınıfı düşüş, üretimde kazançtı).
+
+| korpus şunu ölçerken | yetkisi |
+|---|---|
+| **payda** *(kaç soru cevaplanabiliyor)* — bunu ondan başka **hiçbir şey görmüyor** | ✅ **VETO** |
+| **`sessiz_yanlis`** | ✅ **VETO** (`E-3`) |
+| **doğruluk %** *(kalite arttı mı)* | 🔴 **VETO YOK** — LLM'siz koşuyor, devir kayıp görünüyor, sorular **≥%97,1 katalog türevi** |
+
+⚠ **Ve 13–20 dk'nın sebebi kapı DEĞİL ÜRÜN:** kapı `1:50 → 13:00` çıkarken payda
+**+%38** büyüdü; yavaşlayan `/ask` (**47→177 ms**). Kapıyı kısaltmak yanlış hedef,
+`P-2` (latency tavanı) doğru hedef.
+
+🔨 **Eklenecek — KAPI DEFTERİ:** her koşumda *ne yakaladı / hangi kararı yanlış
+verdirdi*. Bugün **2 haklı ↔ 1 haksız** ve bu tally **hiçbir yerde tutulmuyor**.
+*Bir ölçüm aracının değeri kaç kez kırmızı verdiğiyle değil, kaç kez **haklı** kırmızı
+verdiğiyle ölçülür.*
+
+### 🔴🔴 `K-3` · YENİ KAPI DÜZENİ — **seyrek ve TEŞHİS EDİLEBİLİR** *(kullanıcı kararı, 2026-08-10)*
+
+> *"Bu test mentalini değiştirebiliriz — çok fazla vakit kaybı. Tam kapı çok daha az
+> sıklıkta ve **teşhis edilebilir** hâlde."*
+
+**Gerekçe ölçülmüş:** kapı `1:50 → 13:00` çıktı ve sebebi **kapı değil ürün**
+(`/ask` 47→177 ms); ayrıca korpusun doğruluk-yüzdesi ekseni zaten **veto yetkisini
+kaybetti** (`K-2`). Yani en pahalı adım, en az güvenilir sayı için ödeniyordu.
+
+| kademe | hangi soruya cevap verir | kapsam | süre | **ne zaman** |
+|---|---|---|---|---|
+| **0 · anlık** | *dokunduğum şey bozuldu mu* | hedefli `pytest` | 5–15 sn | her düzenlemeden sonra |
+| **1 · hızlı** | *yakın çevre bozuldu mu* | `kapi.py --hizli --degisen` | 15–60 sn | geliştirme sırasında |
+| 🟢 **2 · GARSON KORPUSU (kasetli)** — 🔴 **YENİ MERKEZ** | ***kalite*** — route **+** garson **+** devir **+** `sessiz_yanlis`, **tam `/ask` yolu** | kaset kümesi *(ilan edilmiş, sürümlenmiş payda)* | dk'lar · 🔴 **sıfır API** | **her tur/demet sonunda** |
+| 🆕 **2b · NABIZ** | *felaket var mı* — şirket düştü mü, `sessiz_yanlis` fırladı mı | sabit tohumlu alt küme | ~2 dk | ~2 saatte bir |
+| 🔵 **3 · ROUTE KORPUSU (tam payda, LLM'siz)** | ***kapsam*** — ~10.800 sorunun kaçı cevaplanabiliyor (`gitas`ı yakalayan tek şey) | tam korpus | 13–20 dk | 🔴 **DEĞİŞİKLİK TETİKLİ**: `cube_router` · katalog · `demo/packs/**` **+** günde 1 |
+| 🟠 **C · CURL (canlı)** | ***gerçek*** — ürün ne yapıyor, insan yargısıyla | döngü kuralı | canlı API | **değişmez** |
+
+🔴 **Neden garson korpusu merkeze alınabilir:** `/ask`'te **`route()` her zaman denenir**
+(bayraktan bağımsız) — yani tam yoldan koşan bir garson korpusu **route'u da koşturur**
+ve bugünkü LLM'siz korpusun ölçtüğü her şeyi **artı devri** ölçer. *Bugünkü korpus,
+garson korpusunun LLM'i sökülmüş hâlidir.*
+
+⚠ **Kasetin iki sınırı kapının parçasıdır:** (1) payda **kayıt kümesidir** — ilan
+edilir, sürümlenir, *«korpus %»* demek **onun hakkı değildir**; (2) kaset **istem
+sürümüne** bağlıdır — istem değişince (`§AR/Ö` gibi) **bayattır** ve küçük bir canlı
+turla **yeniden kaydedilir**, yoksa kapı **eski kanıtla yeşil** verir.
+
+🟢 Ve bu düzen `K-2`'yi **tamamlar**: doğruluk ekseni veto yetkisini LLM'siz koştuğu
+için kaybetmişti; kasetli garson korpusunda **LLM var** → o eksen **yetkisini geri
+kazanır**. *Bir sayıya güvenmemek onu atmak değil, ölçtüğü şeyi düzeltmektir.*
+
+#### ⚠ *"Seyreltme yasağı"* ile ÇELİŞMEZ — ve ayrım önemlidir
+
+Yasağın gerekçesi şuydu: `gitas` korpustan **kazara** düştü, payda `445→342` indi ve
+doğruluk **yükseldi**. 🔴 **Günah seyreltmek değil, paydanın FARK EDİLMEDEN
+değişmesiydi.**
+
+| | payda | meşru mu |
+|---|---|---|
+| kazara düşen şirket | **değişken**, gizli | 🔴 hayır — kapının yakaladığı kusur budur |
+| **sabit tohumlu, sürümlenmiş alt küme** | **sabit**, ilan edilmiş | ✅ evet |
+
+🔴 **İki kademe iki AYRI sayı basar ve ikisi asla karşılaştırılmaz.** `NABIZ`
+kendi tabanına göre okunur; *"korpus %"* demek **yalnız kademe 3'ün** hakkıdır.
+`NABIZ` bir kapsam ölçüsü **değildir** — bir **felaket alarmıdır**.
+
+#### 🔴 TEŞHİS EDİLEBİLİRLİK — bugünkü tek yüzde yerine
+
+| bugün | olması gereken |
+|---|---|
+| `%94,3` | `route %X (n)` · `garson %Y (n)` · `devir %Z` · `sessiz_yanlış N` · **şirket başı payda** |
+| *"düştü"* | 🔴 **DEĞİŞEN SORULARIN LİSTESİ** — yeşil→kırmızı **ve** kırmızı→yeşil, her biri route kararıyla |
+| yorum insana kalır | 🟢 **her değişim otomatik etiketlenir** |
+
+🔴🔴 **Ve `(a)/(b)` ayrımı ARTIK HESAPLANABİLİR — kural olmaktan çıkıp sayı olur:**
+bir soru `source=cube` → `source=llm` diye değiştiyse bu bir **gerileme değil DEVİRdir**
+`(b)`; `source` aynı kalıp sonuç bozulduysa **gerçek gerileme** `(a)`.
+*`G3` tam olarak bu satırın yokluğu yüzünden geri alındı.* Rozet zaten kayıtlı —
+yalnız **fark raporunda gösterilmiyor**.
+
+*Bir ölçüm ancak neyin değiştiğini söylüyorsa karar aracıdır; yalnız bir sayı
+veriyorsa bir kaygı kaynağıdır.*
 
 ---
 
