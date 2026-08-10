@@ -1,0 +1,55 @@
+{
+  "name": "dima-marketing-agent-task-pack",
+  "version": "1.0.0",
+  "status": "ready-for-agent-execution",
+  "updated": "2026-08-10",
+  "implementationTarget": "dima-frontend/apps/web",
+  "research": {
+    "competitors": 21,
+    "scopedUrlRecords": 2202,
+    "fullPageScreenshots": 2198,
+    "originBlockedRecords": 4,
+    "unresolvedCaptureFailures": 0,
+    "rawArtifactRoot": "/tmp/dima-competitor-research"
+  },
+  "launchRoutes": [
+    "/",
+    "/product",
+    "/how-it-works",
+    "/solutions",
+    "/solutions/textile-dyehouse",
+    "/security",
+    "/integrations",
+    "/about",
+    "/contact",
+    "/privacy",
+    "/terms"
+  ],
+  "deferredRoutes": [
+    "/pricing",
+    "/blog",
+    "/docs",
+    "/case-studies",
+    "/changelog"
+  ],
+  "stages": [
+    "00_PREFLIGHT_AND_EVIDENCE",
+    "01_ROUTE_PROVIDER_AND_AUTH_BOUNDARIES",
+    "02_CONTENT_I18N_METADATA_AND_SEO",
+    "03_DESIGN_TOKENS_AND_MARKETING_PRIMITIVES",
+    "04_SHARED_MARKETING_SHELL",
+    "05_HOMEPAGE_AND_PRODUCT_PROOF",
+    "06_PRODUCT_AND_HOW_IT_WORKS",
+    "07_SOLUTIONS_AND_TEXTILE_VERTICAL",
+    "08_SECURITY_INTEGRATIONS_AND_TRUST",
+    "09_ABOUT_CONTACT_AND_LEGAL",
+    "10_QUALITY_ANALYTICS_PERFORMANCE_AND_RELEASE"
+  ],
+  "nonNegotiables": [
+    "Preserve authenticated product, API proxy, tenant/session, and security behavior.",
+    "Use local typed sanitized product proof; no anonymous production API calls.",
+    "No fabricated customers, metrics, certifications, pricing, connector counts, or security guarantees.",
+    "Use Editorial Industrial Intelligence with existing Dima tokens.",
+    "Stop after each stage and return a stage completion report."
+  ]
+}
