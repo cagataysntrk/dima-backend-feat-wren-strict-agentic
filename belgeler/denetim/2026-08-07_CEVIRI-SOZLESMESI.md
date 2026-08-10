@@ -8981,3 +8981,26 @@ tuttu. ⊙ Kalan baskın sınıf **`boyut_yok`**: model küpte olmayan bir boyut
 Sonraki kök adayı bu.
 
 > *Sebebi sayılmayan bir red, düzeltildiğinde de sayılamaz.*
+
+### `XVIII/b` · `§SB` — *«yok»* demek yetmez, *«şu küpte var»* da denmeli
+
+`A9` sayacı ilk koşumda baskın sınıfı gösterdi: **`boyut_yok` 3**, ve üçü de **aynı** —
+`parti`'de `sebep` isteniyor. Kullanıcı *«fire neden arttı»* diyor; doğal kırılım
+**sebep**tir, `parti` onu taşımıyor ama `kalite` taşıyor.
+
+⊙ Red *«yok»* deyip susunca düzeltme turu **aynı küpte** başka bir boyut arıyor; doğru
+hamle **öteki küpe bir adım daha** yazmaktır — orkestratörün var oluş sebebi.
+Yönlendirme **şemadan üretiliyor**; yeni bir küp eklendiğinde kendiliğinden doğru kalır.
+
+**Curl:** *«bu yıl fire neden arttı sebep kırılımında göster»* → model doğrudan `kalite`
+küpüne gitti, 6 satır, red %100 kurtarıldı.
+
+### ⚠ VE CURL YENİ BİR EKSİKLİK GÖSTERDİ — *fire × sebep katalogda YOK*
+
+Cevap `rework_sayisi` ile geldi: kullanıcı **fire** sordu, **rework** aldı.
+Katalogda `parti` fire'ı taşıyor **ama sebebi yok**; `kalite` sebebi taşıyor **ama
+fire'ı yok**. Yani *«fire'yi sebebe göre kır»* **ifade edilemez** ve bu bir sipariş
+kusuru değil bir **mutfak eksikliğidir**.
+
+🔴 Açık borç: ikame **beyan edilmiyor**. `uyum`'un `olcu_ikamesi` işareti var ama bu
+turda ateşlemedi — *«fire isteniyordu, rework verildi»* denmeliydi. Sonraki kök.

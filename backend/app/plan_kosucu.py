@@ -249,6 +249,9 @@ def dogrula(plan: dict, *, azami_sorgu: int = AZAMI_SORGU,
     # *Bir hatayı koşum anında bulmak, onu bulmamak değildir — ama onu öğretilemeyecek
     # kadar geç bulmaktır.*
     if index:
+        # ⚠ Şema, yönlendirme (`§SB`) için indeksten **türetilir**: `index` küp adı →
+        # tanım eşlemesidir, `gerekce` ise *«bu boyut hangi küpte var»* diye sorar.
+        _sema_ref = {"cubes": list(index.values())}
         # ⚠ `ADIM_REFERANSI` **sözleşmenin** sabiti (`plan_semasi`), çalıştırıcının
         # değil: referans dilbilgisini burada yeniden yazmak ona ikinci bir sahip
         # vermek olurdu. Import fonksiyon içinde — modül düzeyinde döngü kurardı.
@@ -277,7 +280,7 @@ def dogrula(plan: dict, *, azami_sorgu: int = AZAMI_SORGU,
             if isinstance(_cq, dict):
                 from app.cube_router import parse_cube_query
                 if parse_cube_query(json.dumps(_cq, ensure_ascii=False), index) is None:
-                    raise PlanHatasi(f"adım {_i}: " + plan_onarim.gerekce(_cq, _spec))
+                    raise PlanHatasi(f"adım {_i}: " + plan_onarim.gerekce(_cq, _spec, _sema_ref))
             # `boyut` / `olcu` / `olculer` adım alanlarıdır, `cube_query`'nin içinde
             # değil — ve `IV` turunun kusuru **tam olarak** oradaydı.
             _b = {str(d) for d in (_spec.get("dimensions") or [])} | {

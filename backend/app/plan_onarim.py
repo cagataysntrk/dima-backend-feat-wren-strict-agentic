@@ -197,7 +197,7 @@ def onar(cq: dict, spec: dict) -> tuple[dict, list[str]]:
 
 # ═══ TEŞHİS — *"neden geçmedi"* sorusunun tek sahibi ═══════════════════════════
 
-def gerekce(cq: dict, spec: dict | None) -> str:
+def gerekce(cq: dict, spec: dict | None, sema: dict | None = None) -> str:
     """Bir `cube_query` beyaz listeden **neden** geçmedi — adıyla.
 
     🔴 **Tek sahip.** Bu metin iki yerden isteniyor ve ikisi de aynı cümleyi kurmalı:
@@ -226,7 +226,8 @@ def gerekce(cq: dict, spec: dict | None) -> str:
     _eksik_b = [d for d in ((cq or {}).get("dimensions") or []) if d not in _b]
     if _eksik_b:
         parca.append(f"`{_c}`'de şu boyut(lar) yok: {', '.join(map(str, _eksik_b))}"
-                     + bilinen_boyutlar(spec, _eksik_b))
+                     + bilinen_boyutlar(spec, _eksik_b)
+                     + _sahibini_soyle(_eksik_b, _c, sema))
     if not ((cq or {}).get("measures") or []):
         parca.append(f"`{_c}` için hiç ölçü yazılmamış")
     _bozuk_td = [td for td in ((cq or {}).get("timeDimensions") or [])
@@ -269,6 +270,40 @@ def gerekce(cq: dict, spec: dict | None) -> str:
         parca.append("tanınmayan süzgeç operatörü: "
                      + ", ".join(f"`{o}`" for o in _bozuk_op) + _kuyruk)
     return " · ".join(parca) or f"`{_c}` sorgusu beyaz listeden geçmedi"
+
+
+def _sahibini_soyle(eksik: list, kup: str | None, sema: dict | None) -> str:
+    """🔴🔴 `§SB` — **«BU BOYUT YOK» YETMEZ: «ŞU KÜPTE VAR» DA SÖYLENMELİ.**
+
+    ⊙ Ölçüldü (`A9` sayacı, ilk koşum): plan redlerinin **baskın sınıfı** `boyut_yok`
+    ve üçünün **üçü de aynı**: `parti`'de `sebep` isteniyor. Kullanıcı *«fire neden
+    arttı»* diyor; doğal kırılım **sebep**tir ve `parti` onu taşımıyor — ama
+    `kalite.sebep` ve `makine_duruslari.neden` taşıyor.
+
+    ⊙ Bu bir **mutfak eksikliği** değil bir **yönlendirme** eksikliğidir: veri var,
+    başka küpte. Red *«yok»* deyip susunca düzeltme turu **aynı küpte** başka bir boyut
+    arıyor; oysa doğru hamle **öteki küpe bir adım daha** yazmak — orkestratörün tam
+    olarak var oluş sebebi.
+
+    ⚠ Metin **şemadan üretilir**, elle liste yazılmaz: yeni bir küp eklendiğinde
+    yönlendirme kendiliğinden doğru kalır. *Bir yönlendirmeyi elle yazmak, onu bir
+    sonraki küpte yanlış yazmaktır.*
+    """
+    if not sema or not eksik:
+        return ""
+    sahip: dict[str, list[str]] = {}
+    for c in (sema.get("cubes") or []):
+        if c.get("name") == kup:
+            continue
+        _var = {str(d) for d in (c.get("dimensions") or [])}
+        for d in eksik:
+            if str(d) in _var:
+                sahip.setdefault(str(d), []).append(str(c.get("name")))
+    if not sahip:
+        return ""
+    return (" — ⊙ ama " + " · ".join(
+        f"`{d}` şu küplerde VAR: {', '.join(k[:3])}" for d, k in sorted(sahip.items()))
+        + ". O kırılım için **ayrı bir `SORGU` adımı** yaz (aynı küpte zorlama).")
 
 
 def bilinen_boyutlar(spec: dict, eksik: list | None = None) -> str:

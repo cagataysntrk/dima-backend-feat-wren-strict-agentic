@@ -225,7 +225,7 @@ def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = 
             # görülebiliyorsa kapatılır; *"geçmedi"* diye susmak onu saklamaktır.
             _log.info("plan: teşhis edilemeyen sorgu: %s",
                       json.dumps(cq, ensure_ascii=False)[:500])
-        return plan_onarim.gerekce(cq, _spec)
+        return plan_onarim.gerekce(cq, _spec, {"cubes": list(index.values())})
 
     def _sorgu_kos(cq: dict) -> list[dict]:
         # 🔴 `O-15/R` — ONARIM DOĞRULAMADAN ÖNCE. Tek anlamlı bir alan kayması bir

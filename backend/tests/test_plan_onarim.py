@@ -863,3 +863,43 @@ def test_SAYAC_UCU_BAGLI():
 
     src = inspect.getsource(_stats)
     assert "/plan" in src and "sayaclar" in src, "`/stats/plan` ucu bağlı değil"
+
+
+def test_EKSIK_BOYUTUN_SAHIBI_SOYLENIR():
+    """🔴🔴 `§SB` — *«bu boyut yok»* yetmez, *«şu küpte var»* da söylenmeli.
+
+    ⊙ Ölçüldü (`A9` sayacı, ilk koşum): plan redlerinin **baskın sınıfı** `boyut_yok`
+    ve üçünün **üçü de aynı** — `parti`'de `sebep` isteniyor. Kullanıcı *«fire neden
+    arttı»* diyor; doğal kırılım **sebep** ve `parti` onu taşımıyor, ama `kalite`
+    taşıyor. Red *«yok»* deyip susunca düzeltme turu **aynı küpte** başka bir boyut
+    arıyor; doğru hamle **öteki küpe bir adım daha** yazmak.
+
+    ⚠ Metin **şemadan üretilir**: yeni bir küp eklendiğinde yönlendirme kendiliğinden
+    doğru kalır. *Bir yönlendirmeyi elle yazmak, onu bir sonraki küpte yanlış yazmaktır.*
+    """
+    from app.plan_onarim import gerekce
+
+    KALITE = {"name": "kalite", "measures": ["toplam_rework_kg"],
+              "dimensions": ["sebep", "makine"], "time_dimensions": ["tarih"]}
+    metin = gerekce({"cube": "parti", "measures": ["toplam_fire_kg"],
+                     "dimensions": ["sebep"]}, PARTI,
+                    {"cubes": [PARTI, KALITE]})
+    assert "kalite" in metin, f"sahibi söylenmiyor: {metin}"
+    assert "ayrı bir `SORGU` adımı" in metin, "ne yapılacağı söylenmiyor"
+
+
+def test_SAHIPSIZ_BOYUTTA_YONLENDIRME_YAPILMAZ():
+    """⚠ `§101.1` — hiçbir küpte yoksa uydurma bir yönlendirme yazılmaz."""
+    from app.plan_onarim import gerekce
+
+    metin = gerekce({"cube": "parti", "measures": ["toplam_fire_kg"],
+                     "dimensions": ["boyle_bir_sey_yok"]}, PARTI, {"cubes": [PARTI]})
+    assert "VAR:" not in metin, metin
+
+
+def test_SEMA_YOKSA_MESAJ_BAYT_BAYT_AYNI():
+    """⚠ `KURAL B` — şema geçilmezse metin eskisiyle **aynı** kalır."""
+    from app.plan_onarim import gerekce
+
+    cq = {"cube": "parti", "measures": ["toplam_fire_kg"], "dimensions": ["sebep"]}
+    assert gerekce(cq, PARTI) == gerekce(cq, PARTI, None)
