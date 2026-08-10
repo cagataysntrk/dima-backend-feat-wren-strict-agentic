@@ -706,6 +706,44 @@ def _sapma_haritasi(sonuc: dict[str, Any]) -> dict[str, str]:
             if a.get("sinif") and a["sinif"] != DOGRU}
 
 
+def nufus_imzasi(sonuc: dict[str, Any]) -> str:
+    """🔴🔴 `A12` — **PAYDANIN BİLEŞİMİ DE BİR DEĞİŞKENDİR.**
+
+    ## Ölçülen kusur (2026-08-10, ve bedeli DÖRT kapı koşumu)
+
+    `D8` turunda kataloğa **üç boyut** eklendi. Kapı `doğru 95→79 · sessiz_yanlis 8→10`
+    dedi ve **GERİLEME** etiketi bastı. Üç ayrı biçim denendi, üçü de kırmızı.
+
+    ⊙ Sonra in-process A/B koşuldu (aynı şema, tek fark üç boyut): **1072 gerçek korpus
+    sorusunda DEĞİŞEN: 0.** Route davranışı **birebir aynıydı**.
+
+    🔴 Sebep: korpus sorularını **katalogdan türetiyor**. Katalog büyüyünce üretilen soru
+    kümesi **baştan sona kaydı** — farklı sorular, farklı sınıflar. Toplam sayılar iki
+    **farklı popülasyondan** geliyordu ve kıyaslanamazdı.
+
+    ⚠ Bu, bu deponun `KAPI-DEFTERI`'ndeki ilk kaydının **ayna görüntüsüdür**: orada
+    `gitas` düşünce payda 445→342 indi ve doğruluk **YÜKSELDİ** (sistem bozulurken sayı
+    iyileşti). Burada sistem **hiç değişmedi** ve sayı **kötüleşti**.
+
+    ## Çözüm — yeni bir eşik değil, bir KIYASLANABİLİRLİK ÖN KOŞULU
+
+    Bu imza soru kümesinin kimliğidir. Taban ile bugün **ayrışıyorsa** toplam sayılar
+    kıyaslanamaz ve kapı bunu `⊘ KIYASLANAMAZ` diye söyler — deponun **zaten sahip
+    olduğu** `⊘ ÖLÇÜLEMEDİ` kavramının kardeşi. ⚠ Ve **yeşil değildir**: fail-closed.
+
+    ⊙ Neden tam liste değil **özet**: liste ~2286 anahtar (~140 KB) ve her katalog
+    değişiminde git'te çalkalanır; oysa gereken bilgi tek bir bit — *«aynı popülasyon
+    mu?»*. Hangi soruların değiştiği zaten `_degisim_listesi`'nde basılıyor.
+
+    *Bir metriğin kıpırdaması, ölçtüğü şeyin kıpırdadığı anlamına gelmez.*
+    """
+    import hashlib
+
+    anahtarlar = sorted(str(a.get("soru", "")) for a in sonuc.get("ayrinti", []))
+    ozet = hashlib.sha256("\n".join(anahtarlar).encode("utf-8")).hexdigest()[:16]
+    return f"{len(anahtarlar)}:{ozet}"
+
+
 def _degisim_listesi(eski: dict[str, str], yeni: dict[str, str],
                      *, tavan: int = 25) -> list[str]:
     """🔴 `A5` — **değişen soruların listesi**, iki yönde. `tavan` aşılırsa **söylenir**.
@@ -797,7 +835,8 @@ def kapi(sonuc: dict[str, Any], *, yaz: bool = False) -> tuple[int, str]:
     harita = _sapma_haritasi(sonuc)
     if yaz or not TABAN_YOLU.exists():
         TABAN_YOLU.write_text(
-            json.dumps({**yeni, "_sapmalar": harita}, ensure_ascii=False, indent=1),
+            json.dumps({**yeni, "_sapmalar": harita,
+                        "_nufus": nufus_imzasi(sonuc)}, ensure_ascii=False, indent=1),
             encoding="utf-8")
         # 🔴 DEKOR TUZAĞININ İKİNCİ KILIĞI — ve bu, kapının kendisinden daha sinsi.
         #
@@ -814,6 +853,41 @@ def kapi(sonuc: dict[str, Any], *, yaz: bool = False) -> tuple[int, str]:
             "HİÇBİR ZAMAN yakalanmaz — kapı yeşil görünür, hiçbir şey sınamaz.")
     eski = json.loads(TABAN_YOLU.read_text(encoding="utf-8"))
     eski_harita = eski.pop("_sapmalar", None)
+    eski_nufus = eski.pop("_nufus", None)
+    # 🔴🔴 `A12` — **KIYASLANABİLİRLİK ÖN KOŞULU: aynı popülasyon mu?**
+    #
+    # Toplam sayılar ancak **aynı soru kümesinden** geliyorsa kıyaslanabilir. Korpus
+    # sorularını katalogdan türetiyor; katalog değişince üretilen küme baştan sona
+    # kayar ve `dogru`/`devir`/`sessiz_yanlis` sayıları **iki farklı popülasyondan**
+    # gelir. Bu kontrol olmadan kapı *«ürün geriledi»* ile *«katalog büyüdü»*yü
+    # ayıramaz — ve 2026-08-10'da bu ayrımı yapamamak **dört kapı koşumuna** mal oldu:
+    # üç kırmızının hiçbiri bir davranış değişikliğinden gelmiyordu (in-process A/B:
+    # 1072 gerçek soruda **DEĞİŞEN: 0**).
+    #
+    # ⚠ **Fail-closed ve yeşil DEĞİL:** çıkış kodu `1`. *«Kıyaslayamıyorum»* bir geçiş
+    # sebebi olamaz — `BILINMIYOR` dalının aynı dersi (`test_KAPI_kirmizi_VEREBILIR_
+    # dekor_degil`). Ama etiketi **GERİLEME de değildir**: neyin ne olduğu bilinmiyor.
+    #
+    # ⊙ Ve yolu açık: sapma listesi yine basılır (hangi sorular değişti), taban
+    # `--taban-yaz` ile yenilenir. *Bir ölçümü yenilemek, onu görmezden gelmekten
+    # farklıdır — birincisi bir karar, ikincisi bir kaza.*
+    yeni_nufus = nufus_imzasi(sonuc)
+    if eski_nufus and eski_nufus != yeni_nufus:
+        dokum_n = (f"doğru={yeni['dogru']} · devir={yeni['devir']} · "
+                   f"🔴 sessiz_yanlış={yeni['sessiz_yanlis']} · payda={yeni['vaka']}")
+        degisim_n = (_degisim_listesi(eski_harita, harita)
+                     if eski_harita is not None else [])
+        kuyruk_n = ("\n  değişen sorular:\n    " + "\n    ".join(degisim_n)
+                    ) if degisim_n else ""
+        return 1, (
+            "⊘ KIYASLANAMAZ — **soru popülasyonu değişti**, bu bir GERİLEME DEĞİL.\n"
+            f"  taban nüfus: {eski_nufus}\n  bugün nüfus : {yeni_nufus}\n"
+            f"  {dokum_n}\n"
+            "  ⚠ Korpus sorularını KATALOGDAN türetir; katalog değişince üretilen küme\n"
+            "     kayar ve toplam sayılar iki FARKLI popülasyondan gelir.\n"
+            "  ⊙ Karar için aşağıdaki soru-bazlı listeye bak; taban kasıtlı değiştiyse\n"
+            "     `--taban-yaz` ile yenile (ve o kararı gerekçesiyle kaydet)."
+            + kuyruk_n)
     sinif, gerekce = _degisim_sinifi(eski, yeni)
     # 🔴🔴 **«SINIFLANDIRAMIYORUM» BİR GEÇİŞ SEBEBİ DEĞİLDİR.**
     #
