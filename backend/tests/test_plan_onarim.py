@@ -903,3 +903,58 @@ def test_SEMA_YOKSA_MESAJ_BAYT_BAYT_AYNI():
 
     cq = {"cube": "parti", "measures": ["toplam_fire_kg"], "dimensions": ["sebep"]}
     assert gerekce(cq, PARTI) == gerekce(cq, PARTI, None)
+
+
+def test_CAPRAZ_KUP_OLCU_IKAMESI_BEYAN_EDILIR():
+    """🔴🔴 `§Cİ` — kapsama denetimi **küp-yereldi**; cevap küp değiştirince terim
+    **izsiz** kayboluyordu.
+
+    ⊙ Ölçüldü (canlı, `A9` sayacının açtığı iz): *«bu yıl **fire** neden arttı sebep
+    kırılımında göster»* → cevap `kalite.rework_sayisi`. Kullanıcı **fire** sordu,
+    **rework** aldı, **hiçbir beyan yoktu**. Sebep: `_match_measure("…fire…", kalite)`
+    → `(None, None)` — sayaç yalnız **cevabın küpüne** bakıyor.
+
+    *Bir terimi yalnız cevabın küpünde aramak, cevabın küp değiştirdiği anı görmemeyi
+    seçmektir.*
+    """
+    from app.uyum import denetle
+
+    PARTI_M = {"name": "parti", "measures": ["toplam_fire_kg"],
+               "measure_synonyms": {"toplam_fire_kg": ["fire", "hurda"]},
+               "dimensions": ["makine"], "time_dimensions": ["tarih"]}
+    KALITE = {"name": "kalite", "measures": ["rework_sayisi"],
+              "measure_synonyms": {"rework_sayisi": ["rework", "yeniden isleme"]},
+              "dimensions": ["sebep"], "time_dimensions": ["tarih"]}
+    cq = {"cube": "kalite", "measures": ["rework_sayisi"], "dimensions": ["sebep"]}
+    ih = denetle("bu yil fire neden artti sebep kiriliminda goster",
+                 {"cube_query": cq}, KALITE, {"cubes": [PARTI_M, KALITE]})
+    assert "olcu_ikamesi" in {i.isaret for i in ih}, \
+        f"çapraz-küp ikamesi beyan edilmedi: {[i.isaret for i in ih]}"
+    metin = " ".join(i.aciklama + i.oneri for i in ih if i.isaret == "olcu_ikamesi")
+    assert "parti" in metin, "sahibi söylenmiyor"
+
+
+def test_TERIM_CEVABIN_KUPUNDE_KARSILANIYORSA_BEYAN_YOK():
+    """⚠ `§101.1` — cevap terimi **başka adla** karşılıyorsa (`fire` → `fire_orani_yuzde`)
+    beyan yazılmaz; yanlış bir *«eksik»* doğru bir cevabı kusurlu gösterir."""
+    from app.uyum import denetle
+
+    PARTI_M = {"name": "parti", "measures": ["fire_orani_yuzde", "toplam_fire_kg"],
+               "measure_synonyms": {"fire_orani_yuzde": ["fire orani", "fire"],
+                                    "toplam_fire_kg": ["fire"]},
+               "dimensions": ["makine"], "time_dimensions": ["tarih"]}
+    cq = {"cube": "parti", "measures": ["fire_orani_yuzde"], "dimensions": ["makine"]}
+    ih = denetle("bu yil fire orani makine kiriliminda", {"cube_query": cq},
+                 PARTI_M, {"cubes": [PARTI_M]})
+    assert "olcu_ikamesi" not in {i.isaret for i in ih}
+
+
+def test_SEMA_GECILMEZSE_DAVRANIS_AYNI():
+    """⚠ `KURAL B` — `sema` yoksa yeni işaret **hiç** üretilmez; çağıranlar aynı kalır."""
+    from app.uyum import denetle
+
+    KALITE = {"name": "kalite", "measures": ["rework_sayisi"],
+              "dimensions": ["sebep"], "time_dimensions": ["tarih"]}
+    cq = {"cube": "kalite", "measures": ["rework_sayisi"], "dimensions": ["sebep"]}
+    ih = denetle("bu yil fire neden artti", {"cube_query": cq}, KALITE)
+    assert "olcu_ikamesi" not in {i.isaret for i in ih}

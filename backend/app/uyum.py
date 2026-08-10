@@ -201,7 +201,32 @@ def _grup_basina_istendi(qn: str, boyutlar) -> bool:
     return False
 
 
-def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
+def _capraz_kup_ikamesi(qn: str, cq: dict, cube_meta: dict,
+                        sema: dict) -> tuple[str, list[str]] | None:
+    """Soruda anılan bir ölçü terimi cevabın küpünde **yok**, başka küpte **var** mı?
+
+    Döner: `(terim, sahip_küpler)` ya da `None`. ⚠ Terim, cevabın küpünde herhangi bir
+    ölçüye eşleşiyorsa `None` döner — ikame değil, **karşılanmış** demektir.
+    """
+    from app.cube_router import _match_measure
+
+    # Cevabın küpü terimi zaten karşılıyorsa ikame yoktur.
+    if _match_measure(qn, cube_meta)[0]:
+        return None
+    for c in (sema.get("cubes") or []):
+        if c.get("name") == cube_meta.get("name"):
+            continue
+        _ad, _terim = _match_measure(qn, c)
+        if not _ad or _ad in (cq.get("measures") or []):
+            continue
+        sahipler = [str(k.get("name")) for k in (sema.get("cubes") or [])
+                    if _match_measure(qn, k)[0]]
+        return str(_terim or _ad), sahipler
+    return None
+
+
+def denetle(q: str, cq: dict, cube_meta: dict | None = None,
+            sema: dict | None = None) -> list[Ihlal]:
     """Sorudaki niyet işaretlerinin **sorguda karşılığı var mı?**
 
     🔴 Boş liste = uyumlu. Dolu liste = **sessiz-yanlış adayı**: cevap üretildi ama
@@ -326,6 +351,38 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
             oneri=("Grup başına sıralama (her makinenin kendi en kötü vardiyası) v1'de "
                    "yok. Tek bir grubu sorarsan tam cevap veririm: *«RAM-2'de vardiya "
                    "kırılımı»*.")))
+
+    # 0b · ÇAPRAZ-KÜP ÖLÇÜ İKAMESİ — *«fire sordu, rework aldı»*
+    #
+    # 🔴🔴 `§Cİ` — **KAPSAMA DENETİMİ KÜP-YERELDİ; CEVAP KÜP DEĞİŞTİRİNCE TERİM
+    # İZSİZ KAYBOLUYORDU.**
+    #
+    # ⊙ Ölçüldü (canlı, `A9` sayacının açtığı iz): *«bu yıl **fire** neden arttı sebep
+    # kırılımında göster»* → cevap `kalite.rework_sayisi`. Kullanıcı **fire** sordu,
+    # **rework** aldı ve **hiçbir beyan yoktu**.
+    #
+    # ⊙ Sebep ölçüldü: `_match_measure("…fire…", kalite)` → `(None, None)`. Yani
+    # düşen-ölçü sayacı terimi **göremiyor**, çünkü yalnız **cevabın küpüne** bakıyor.
+    # Terim başka bir küpün ölçüsü olduğunda sayaç onu hiç saymıyor.
+    #
+    # ⚠ Yüklem dar: terim cevabın küpünde **hiçbir ölçüye** eşleşmemeli **ve** başka
+    # bir küpte bir ölçüye eşleşmeli. Cevap o terimi başka adla karşılıyorsa (`fire`
+    # → `fire_orani_yuzde`) `_match_measure` onu bulur ve beyan **yazılmaz**.
+    # `§101.1`: yanlış bir *«eksik»*, doğru bir cevabı kusurlu gösterir.
+    #
+    # *Bir terimi yalnız cevabın küpünde aramak, cevabın küp değiştirdiği anı görmemeyi
+    # seçmektir.*
+    if sema and cube_meta:
+        _ikame = _capraz_kup_ikamesi(qn, ic, cube_meta, sema)
+        if _ikame:
+            _terim, _sahipler = _ikame
+            out.append(Ihlal(
+                isaret="olcu_ikamesi",
+                aciklama=(f"Soruda **«{_terim}»** geçiyor ama bu cevap onu **içermiyor** — "
+                          f"«{_terim}» bu küpte tanımlı değil."),
+                oneri=(f"«{_terim}» şu küplerde var: {', '.join(_sahipler[:3])}. "
+                       f"Onu ayrıca sorabilirsin; aynı kırılımda birleştirmek her zaman "
+                       f"mümkün olmayabilir.")))
 
     # 1 · KIYAS — "şubata göre", "geçen yılla kıyasla"
     #

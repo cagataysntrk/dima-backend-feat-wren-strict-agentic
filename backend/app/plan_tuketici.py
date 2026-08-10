@@ -559,7 +559,9 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
                 continue
             _bcm = next((c for c in (schema.get("cubes") or [])
                          if c.get("name") == _bcq.get("cube")), None)
-            for _ih in _uyum.denetle(soru, {"cube_query": _bcq}, _bcm):
+            # ⚠ `§Cİ` — şema geçilir: çapraz-küp ikamesi ancak öteki küpler görülerek
+            # anlaşılır (ölçüldü: `_match_measure("…fire…", kalite)` → `None`).
+            for _ih in _uyum.denetle(soru, {"cube_query": _bcq}, _bcm, schema):
                 if _ih.isaret in _karsilanan or _ih.isaret in _gorulen:
                     continue
                 _gorulen.add(_ih.isaret)
