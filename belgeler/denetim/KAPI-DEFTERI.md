@@ -149,10 +149,18 @@ bir teşhis zinciri kurdu:
 | 3 | etiket yok, sinonim = teknik ad | `doğru 79` — **2 ile BİREBİR aynı** | 🎯 sorun sinonimde **değil**, boyutun **varlığında** |
 
 ⊙ **Üçüncü kırmızı en değerlisiydi: iki koşumun AYNI sayıyı vermesi bir teşhistir.**
-Sinonim biçimini değiştirmek hiçbir şeyi kıpırdatmayınca aranacak yer daraldı ve kök
-bulundu — `_match_cube`'un *«bu kırılımı YALNIZ bu küp yapabilir»* tie-break'i
-(`dim_owners == 1`). Paylaşılan bir boyutu üç küpe daha eklemek, o kırılımı isteyen
-**her** soruda tie-break'i susturuyor.
+Sinonim biçimini değiştirmek hiçbir şeyi kıpırdatmayınca aranacak yer daraldı.
+
+⟳ **VE İLK TEŞHİSİM YANLIŞTI — kendi ölçümüm çürüttü.** `_match_cube`'un
+`dim_owners == 1` tie-break'ini suçlamış ve bunu **doğrulamadan** deftere yazmıştım.
+Sonra in-process A/B koştum (aynı şema, tek fark üç boyut): **1072 gerçek korpus
+sorusunda DEĞİŞEN: 0**. Route davranışı kanıtlanabilir biçimde **aynı**.
+
+🎯 Yani kapı haklıydı ama **gösterdiği yer** ürünün cevapları değil, **korpusun
+ürettiği soru kümesiydi** — üreteç soruları da beklentileri de katalogdan türetiyor.
+🔴 Bu, bu defterin ilk kaydının **ayna görüntüsü**: `gitas`'ta sistem bozulurken sayı
+**iyileşmişti**; burada sistem değişmedi, sayı **kötüleşti**.
+*Bir metriğin kıpırdaması, ölçtüğü şeyin kıpırdadığı anlamına gelmez.*
 
 **Eksen:** sessiz-yanlış — ve `E-2` gereği **veto yetkisi olan tek eksen**.
 
