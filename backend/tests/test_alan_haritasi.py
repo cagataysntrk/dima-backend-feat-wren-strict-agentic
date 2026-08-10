@@ -58,6 +58,18 @@ GARSON = {
     # `§40` — ikizi; soruda tanınan niyet parçasını `cq`'ya yerleştirir. Aynı sınıf,
     # aynı kapsam: dil okur, hiçbir şey çalıştırmaz.
     "niyet_tasima.py",
+    # 🔴 `§DK-2/§NT/§ÇE/§DK-5` — **SÜZGEÇ DEĞERİ ÇAPASI.** Sınırda duruyor ve sınıfı
+    # bilerek garson: girdisi bir `cube_query` **ve kullanıcının cümlesi**, çıktısı bir
+    # **beyan cümlesi** ya da bir netleştirme sorusudur. Katalog enum'unu **okur**
+    # (şema, veri değil) ve hiçbir sorgu koşmaz — motora hiç dokunmaz. *Bir modülü
+    # sınıflandıran şey neye baktığı değil, ne ürettiğidir.*
+    "deger_capasi.py",
+    # `§DK-3` — yukarıdakinin eşleştirme yarısı: kullanıcının yazdığı metni kataloğun
+    # görünen etiketlerine bağlar. Saf dizgi işi, LLM yok, motor yok.
+    "deger_eslesme.py",
+    # `C1/C3` — ters yön: bilinmeyen bir terimi kataloğun bir hedefine eşler. Dil okur,
+    # bir `cq` parçası üretir; hiçbir şey çalıştırmaz.
+    "ters_yon.py",
 }
 
 #: 🍳 MUTFAK — veri/sorgu ile çalışır, **dil bilmez**.
@@ -187,6 +199,11 @@ def test_SINIFSIZ_MODUL_BIRAKILAMAZ():
         # yalnız iki kapının çıktısını sayar. *Ölçen bir modül, ölçtüğü tarafa ait
         # değildir; aksi hâlde kendi sonucunu etkiler.*
         "guard_alarmi.py": "📊 telemetri — guard düşme oranı (Ö5), karara girmez",
+        # 📊 `A1` — **ÖLÇÜM ALTYAPISI.** Sağlayıcının TAŞIMA metodunu sarar ve
+        # cevaplarını kasete alır. Ne dil okur ne sorgu kurar; yalnız bir teli dinler.
+        # `guard_alarmi` ile aynı sınıf ve aynı gerekçe: *ölçen bir modül, ölçtüğü
+        # tarafa ait değildir.*
+        "kaset.py": "📊 ölçüm altyapısı — sağlayıcı taşımasını kasete alır (A1)",
         "iddia.py": "🚪 metin→İDDİA kapısı (G4) — §4'ün değişmezinin ikinci yarısı",
         "uyum.py": "🚪 niyet↔sorgu uyum kapısı (beyan-açık)",
         "pii.py": "🚪 maskeleme, tek çıkış",

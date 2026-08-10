@@ -1660,6 +1660,43 @@ class WrenService:
         # dokunmaz, mssql connector'ın flatten'ı basit ORDER BY 1'i doğru işler (alias/CASE
         # ORDER BY'ı upstream bug yüzünden bozuyordu). Anahtarsız (toplam) blend → sırasız.
         order = " ORDER BY 1" if key_cols else ""
+        # 🔴🔴 `§KS` — **HARMAN `order` VE `limit`'İ YUTUYORDU: «en kötü üçü» → 11 SIRASIZ SATIR.**
+        #
+        # ⊙ Canlı ölçüm (curl `N` turu, 2026-08-10 · üç turluk thread):
+        #
+        #     tur 1  «bu yıl makinelere göre fire kg»      → 11 satır
+        #     tur 2  «bir de oee ekle»                     → blend kuruldu ✅
+        #     tur 3  «en kötü üçünü göster»
+        #            cq: order=toplam_fire_kg desc · limit=3   ← fiş DOĞRU
+        #            sonuç: **11 satır**, ilk satır en büyük DEĞİL   ← 🔴 sessiz yanlış
+        #
+        # 🔴 Kök buradaydı: bu fonksiyon `cube_query`'den yalnız `cube · measures ·
+        # dimensions · timeDimensions · filters` okuyor. `order`/`limit` **hiç
+        # okunmuyordu** — ne CTE'lere, ne dış SELECT'e. Yani fiş doğru yazılmış, mutfak
+        # onun iki satırını **görmemişti**.
+        #
+        # ⚠ Sıra CTE'de değil **dışarıda** kurulmalı: her CTE kendi cube'undan toplanır ve
+        # sıralanacak ölçü başka bir CTE'den geliyor olabilir (tam da harmanın sebebi).
+        # Dış SELECT hepsini görür; doğru yer orasıdır.
+        #
+        # ⚠ FAIL-CLOSED: sıralanmak istenen ölçü harmanın **teslim ettiği** kolonlar
+        # arasında değilse sıra kurulmaz (uydurma bir kolon adı SQL'i patlatırdı) — ve
+        # `limit` de uygulanmaz, çünkü **sırasız bir kesme rastgele bir örneklemdir** ve
+        # onu «en kötü üçü» diye sunmak, bu düzeltmenin kapattığı kusurun ta kendisidir.
+        #
+        # *Bir fişin doğru yazılması, okunduğu anlamına gelmez; ve okunmayan bir satır,
+        # hiç yazılmamış bir satırdan daha tehlikelidir — çünkü makbuzda görünür.*
+        _sirala = cube_query.get("order") or {}
+        _olcu = str(_sirala.get("measure") or "")
+        _yon = "DESC" if str(_sirala.get("direction") or "").lower() == "desc" else "ASC"
+        _kesme = cube_query.get("limit")
+        # ⚠ `key_cols` şartı üstteki satırın kendi gerekçesinin devamıdır: anahtarsız
+        # (toplam) harman **tek satırdır** ve tek satırı sıralamak bir işlem değil bir
+        # süstür. Kapı bunu yakaladı — yüklemi gevşetmek yerine kodu daralttım.
+        if _olcu and _olcu in seen_measures and key_cols:
+            order = f" ORDER BY {_olcu} {_yon}"
+            if isinstance(_kesme, int) and _kesme > 0:
+                order += f" LIMIT {_kesme}"
         blend = f"WITH {with_clause} SELECT {', '.join(sel)} FROM {frm}{order}"
         if self.datasource in ("duckdb", "", None):
             return blend

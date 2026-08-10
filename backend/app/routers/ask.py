@@ -2850,7 +2850,10 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # ⊙ Kararın kendisi `deger_capasi.huni_karari`'da: *bir modül büyüme kapısı
         # «tavanı yükseltme, modüle çıkar» dedi ve haklıydı.*
         if "deger_capasi" in resolve_for(settings, principal):
-            _duz, _netlestir = _degerler.huni_karari(cq, schema)
+            # `§DK-5` — soru metni **kanıttır**: kullanıcı gerçek değeri yazmışsa
+            # netleştirmeye hiç gerek kalmaz. Ham soru geçilir (normalizasyonu çapa
+            # kendi yapar) ki iki taraf aynı `_norm`'a baksın.
+            _duz, _netlestir = _degerler.huni_karari(cq, schema, body.question or "")
             if _duz:
                 note = " ".join(x for x in [note, _duz] if x)
                 trace = [*trace, "süzgeç değeri katalogla eşleştirildi (§DK-2, LLM'siz)"]
@@ -2927,12 +2930,13 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # ⟳ Koşul `row_count == 0`'dan **`bos_mu`**'ya genişledi (`§35`): gruplamasız bir
         # toplulaştırma boş kümede **bir NULL satır** döndürür, sıfır satır değil — ve bu
         # yüzden not en çok sorulan soru biçiminde tam olarak susuyordu.
+        # 🔴 KÖK-8b (denetim KN-5) + `§SD` — **YOKLUĞUN İKİ BİÇİMİ, TEK SAHİP.**
+        # Toplulaştırma boş kümede `NULL` döner (`bos_mu` görür); `COUNT` **0** döner ve
+        # o sıfır bir olgu gibi okunur. İkisinin de kararı — ve aralarındaki öncelik —
+        # `veri_araligi.yokluk_notu`'nda; buraya kalan çağrı ve atama.
         from app import veri_araligi as _va
-        if _va.bos_mu(result, cq) and not resp.note:
-            # 🔴 KÖK-8b (denetim KN-5) — not VARDI ama YOL yoktu: veri 30.06.2026'da
-            # bitiyor, bugün 05.08.2026. Metin ve aralık ölçümü `app/veri_araligi.py`de
-            # (tek sahip); buraya kalan çağrı ve atama.
-            resp.note = _va.bos_sonuc_notu(service, cq, schema)
+        if not resp.note:
+            resp.note = _va.yokluk_notu(service, result, cq, schema) or resp.note
 
         # 🔴🔴 KÖK-2 + KÖK-3 — UYUM KAPISI ve BEYANLI KISMİ CEVAP.
         #
@@ -3127,13 +3131,13 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     # ⚠ Çağrı yukarı taşındı ama **hiçbir yol kesilmedi** (KAT-2).
     # 🔴 **ÇAPA DEĞERLERİ** — *"ekranda hangi satırlar var"*. Sahibi **bağlam katmanı**
     # (`app/context.py`), sınıflandırıcı değil (`KAT-1`); burada kalan yalnız çağrı.
-    try:
-        _capa_degerleri = app_context.capa_degerleri(body.cube_query, schema)
-    except Exception:                                  # noqa: BLE001 — sınıflandırma düşmez
-        _capa_degerleri = None
-        _log.warning("çapa değerleri okunamadı (best-effort)", exc_info=True)
+    # ⊙ İkisi tek çağrıda (`§NÇ`): *«ekranda hangi satırlar var»* + *«hangi boyut YOK»*.
+    # Sınıflandırıcı **yarım bir ekran** üstünde karar vermemeli; ve büyüme kapısı da
+    # bunu istedi — karar bağlam katmanında, burada yalnız çağrı.
+    _capa_degerleri, _acik_boyutlar = app_context.sinif_ipuclari(body.cube_query, schema)
     niyet = followup.sinifla(body.question, baglam_var=bool(is_followup),
-                             capa_degerleri=_capa_degerleri)
+                             capa_degerleri=_capa_degerleri,
+                             acik_boyutlar=_acik_boyutlar)
 
     # 🔴🔴 `§X4` — HESABI SORULACAK BİR RAPOR YOKSA, MERDİVENE HİÇ İNİLMEZ.
     #
@@ -3817,8 +3821,13 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             _kapsam_disi, _kapsam_hits = cube_router.partial_unknowns(q_norm, schema)
         except Exception:                                  # noqa: BLE001 — tur düşmez
             _kapsam_disi, _kapsam_hits = [], []
+        # ⊙ `schema` geçilince **kırılım şüphesi** de sayılır (`§KD`): soru bir boyut
+        # adıyla bitiyor ama fişte hiç kırılım yok — route bir **liste** sorusuna
+        # **toplam** cevap veriyor. Route'un cevabı iptal edilmez, yalnız *«kesin»*
+        # sayılmaz ve hakem çağrılır (`§0.0`). Yüklemin tek sahibi `niyet_tasima`.
         _supheli = route_hit is not None and (
-            _niyet_tasima.route_supheli(route_hit.get("cube_query"), body.question or "")
+            _niyet_tasima.route_supheli(route_hit.get("cube_query"),
+                                        body.question or "", schema)
             or bool(_kapsam_disi))
         if _supheli:
             _log.info("intent: route ŞÜPHELİ → garson çağrılıyor (§51)")

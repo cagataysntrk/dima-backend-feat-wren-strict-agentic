@@ -103,6 +103,27 @@ class Bulgu:
     #: 🔴 `§TK` — sıralı operatör + metin enum. **Anlamsızlığı KANITLI** olduğu için
     #: netleştirme değil **düşürme** gerektirir (bkz. `duzelt_yerinde`).
     tur_hatasi: bool = False
+    #: 🔴🔴 `§NT` — **DIŞLAMA OPERATÖRÜNDE «YOK» BİR BELİRSİZLİK DEĞİL, BİR YOK-İŞLEMDİR.**
+    #:
+    #: ⊙ Canlı ölçüm (curl `N` turu, 2026-08-10): *«bu yıl en kötü bakım maliyeti hangi
+    #: makinede»* → garson `{"dimension":"makine","operator":"neq","value":"Bakım"}`
+    #: üretti. `§DK-2` bunu *«listede yok»* diye yakaladı ve **kullanıcıya sordu** —
+    #: oysa sorulacak bir şey yoktu.
+    #:
+    #: 🔴 Ayrım **kanıt sınıfıdır**, üslup değil:
+    #:
+    #: | operatör | değer listede yok | ne demektir |
+    #: |---|---|---|
+    #: | `eq` / `in` | ⊙ **belirsizlik** | kullanıcı gerçekten o değeri kastetmiş olabilir → **sor** |
+    #: | `neq` / `nin` | ✅ **yok-işlem** | var olmayan bir değeri dışlamak **hiçbir satırı** dışlamaz → **düşür** |
+    #:
+    #: İkincisinde düşürmek davranışı **birebir korur** (kanıtlı), yani bir kapsam
+    #: değişikliği değildir. `§TK-2`'nin sınıfı: *kanıtlı anlamsız bir süzgeç
+    #: düşürülür ve söylenir.*
+    #:
+    #: *Aynı gözlem («bu değer listede yok») iki operatörde iki ayrı şey kanıtlar; ikisine
+    #: aynı kararı vermek, kanıta değil kelimeye bakmaktır.*
+    bos_islem: bool = False
 
 
 def _norm(s: str) -> str:
@@ -167,11 +188,85 @@ def _yakin(deger: str, gecerliler: list[str]) -> str | None:
     return onekler[0] if len(onekler) == 1 else None
 
 
-def denetle(cq: dict, schema: dict | None) -> list[Bulgu]:
+def _sorudan_kurtar(soru: str, gecerliler: list[str]) -> str | None:
+    """🔴🔴 `§DK-5` — **KULLANICI DEĞERİ ZATEN YAZMIŞSA SORMAK BİR KUSURDUR.**
+
+    ⊙ Canlı ölçüm (curl `N` turu, 2026-08-10):
+
+        «AKDENİZ ÖRME için bu yıl ciro»
+          → garson: musteri eq "M1001"        ← UYDURMA kod
+          → §DK-2 : «M1001 listede yok» + 8 gerçek ad chip
+
+    Davranış dürüsttü ama **gereksizdi**: kullanıcı gerçek adın (`AKDENİZ ÖRME TEKSTİL
+    A.Ş.`) tam önekini **kendi eliyle yazmıştı**. Sistem elindeki cevabı sordu.
+
+    ## Neden `_yakin` bunu bulamıyor — ve kök bu
+
+    `_yakin` **garsonun ürettiği değere** bakar (`M1001`). O değer hiçbir şeye yakın
+    değildir; olması da gerekmez — çünkü kanıt orada değil, **kullanıcının cümlesinde**.
+    Yani kusur bir eşik ayarı değil, **yanlış yüzeye bakmak**.
+
+    ⊙ Doğru yüklem depoda **zaten var**: `deger_eslesme.deger_eslesmeleri` route'un aynı
+    işi için yazıldı (tam eşleşme, yoksa **tekil** çekirdek eşleşmesi) ve `§DK-3`'te
+    kapılandı. İkinci bir eşleştirici yazmak `KAT-1` olurdu — o kavram **çağrılır**.
+
+    ⚠ Sınır **tekillik**: soruda iki geçerli değer birden anılıyorsa `None` döner ve
+    netleştirme aynen çalışır. *Belirsizlikte tahmin etmemek bu deponun tek kuralıdır
+    ve bir kurtarma yolu onun istisnası olamaz.*
+
+    *Bir soruyu sormadan önce, cevabın soruyu soranın cümlesinde yazılı olup olmadığına
+    bakmak gerekir.*
+    """
+    if not soru:
+        return None
+    import re as _re
+
+    from app import deger_eslesme as _de
+
+    qn = _norm(soru)
+    eslesme = _de.deger_eslesmeleri(qn, list(gecerliler))
+    if len(eslesme) == 1:
+        return eslesme[0]
+    if eslesme:
+        return None                      # ⚠ iki tam eşleşme → belirsizlik, tahmin YOK
+    # 🔴 **ÖNEK YOLU — ve neden ayrı bir kural.**
+    #
+    # `deger_eslesmeleri` değerin **tamamını** (ya da çekirdeğini) arar ve bu bilinçli:
+    # `§DK-3`'ün ölçümü `«EGE KNIT DIŞ TİCARET LTD. ŞTİ.»`nin kuyruğunun bir açıklama
+    # değil **adın parçası** olduğunu kaydetti. Ama hiçbir kullanıcı şirketin tam
+    # ticari unvanını yazmaz — *«AKDENİZ ÖRME»* yazar.
+    #
+    # ⚠ Bu yüzden önek **kelime** sayar, harf değil: tek kelimelik bir önek
+    # (*«akdeniz»*, *«ege»*) cümlenin ortasında tesadüfen bulunabilir; **iki** kelimelik
+    # bitişik bir dizi bir tesadüf değil bir **atıftır**.
+    # ⚠ Ve **tekillik** yine şart: iki değerin aynı iki-kelimelik öneki varsa `None`.
+    en_iyi: tuple[int, str] | None = None
+    esit = False
+    for g in gecerliler:
+        kelimeler = [w for w in _norm(g).split() if w]
+        k = 0
+        for n in range(len(kelimeler), 1, -1):
+            onek = " ".join(kelimeler[:n])
+            if _re.search(rf"(?:^|\W){_re.escape(onek)}(?:\W|$)", qn):
+                k = n
+                break
+        if not k:
+            continue
+        if en_iyi is None or k > en_iyi[0]:
+            en_iyi, esit = (k, g), False
+        elif k == en_iyi[0]:
+            esit = True
+    return None if (en_iyi is None or esit) else en_iyi[1]
+
+
+def denetle(cq: dict, schema: dict | None, soru: str = "") -> list[Bulgu]:
     """Süzgeç değerlerini kataloğun **tam** enum'una karşı doğrula.
 
     Boş liste = *"itiraz yok"*. Bu bir iyimserlik değil bir **kapsam beyanıdır**: enum'u
     olmayan boyutta yargı **verilmez**.
+
+    `soru` verilirse (`§DK-5`) karşılıksız bir değer için önce **kullanıcının kendi
+    cümlesi** yoklanır — orada tekil bir karşılık varsa netleştirmeye hiç gerek kalmaz.
     """
     if not isinstance(cq, dict):
         return []
@@ -207,10 +302,88 @@ def denetle(cq: dict, schema: dict | None) -> list[Bulgu]:
                 continue
             if _norm(str(d)) in bilinen:
                 continue
+            # 🔴 `§NT` — DIŞLAMADA «yok» = **yok-işlem**, kapsayışta «yok» = belirsizlik.
+            # Var olmayan bir değeri dışlamak hiçbir satırı dışlamaz; kanıt tamdır ve
+            # düşürmek davranışı birebir korur. Bkz. `Bulgu.bos_islem`.
+            if op in ("neq", "nin"):
+                out.append(Bulgu(boyut=boyut, deger=str(d), oneri=None,
+                                 gecerliler=list(gecerliler), bos_islem=True))
+                continue
             out.append(Bulgu(boyut=boyut, deger=str(d),
-                             oneri=_yakin(str(d), gecerliler),
+                             # `§DK-5`: önce garsonun değerine (yazım yakınlığı), sonra
+                             # **kullanıcının cümlesine** bak. Sıra bilinçli: yakın yazım
+                             # bir düzeltmedir, sorudan kurtarma bir **kanıttır** — ama
+                             # yakın yazım zaten doğruysa ikincisini koşmak israftır.
+                             oneri=(_yakin(str(d), gecerliler)
+                                    or _sorudan_kurtar(soru, gecerliler)),
                              gecerliler=list(gecerliler)))
     return out
+
+
+def _coklu_esitlik_birlestir(cq: dict) -> str | None:
+    """🔴🔴 `§ÇE` — **AYNI BOYUTA ÜST ÜSTE `eq` YAZMAK BİR SÜZGEÇ DEĞİL, BİR ÇELİŞKİDİR.**
+
+    ⊙ Canlı ölçüm (curl `N` turu, 2026-08-10): *«ram makinesinin bu yıl fire oranı»* →
+    garson üç ayrı süzgeç yazdı:
+
+        makine eq "RAM-1"  AND  makine eq "RAM-2"  AND  makine eq "RAM-3"
+
+    Süzgeçler `AND`'lenir; bir satırın `makine` alanı aynı anda üç değer **olamaz** →
+    sonuç **yapısal olarak** boş. Ve cevabın notu şunu yazdı:
+
+        «Bu aralıkta kayıt bulunamadı — dönemi genişletmek ister misin?»
+
+    🔴 Boşluğun sebebi dönem **değildi**; beyan suçu yanlış yere attı. *Bir boşluğu
+    yanlış sebebe bağlamak, boşluğun kendisinden pahalıdır: kullanıcı doğru olan
+    dönemi değiştirmeye çalışır.*
+
+    ## Neden `in` — ve neden bu bir tahmin değil
+
+    `A eq X AND A eq Y` (X≠Y) **her zaman** boş döner: bilgi taşımayan bir sorgudur.
+    Geriye iki okuma kalır — birini **düşürmek** (kullanıcının andığı bir değeri
+    sessizce atmak) ya da **birleştirmek** (`in [X, Y]`). İkincisi anılan **her**
+    değeri korur, yani kanıta daha sadıktır; ve **beyan edilir**.
+
+    ⚠ Kapsam dar: yalnız `eq`, yalnız **farklı** değerler, yalnız aynı boyut. Aynı değer
+    tekrarlanmışsa (`A eq X AND A eq X`) anlam değişmez → sessizce tekilleştirilir.
+    ⚠ `denetle`'den **bağımsızdır**: çelişki sorgunun kendisinden kanıtlanır, enum
+    gerektirmez. Bu yüzden enum'suz boyutlarda da çalışır.
+    """
+    filtreler = [f for f in (cq.get("filters") or []) if isinstance(f, dict)]
+    sayac: dict[str, list[dict]] = {}
+    for f in filtreler:
+        if str(f.get("operator") or "") == "eq":
+            sayac.setdefault(str(f.get("dimension") or ""), []).append(f)
+    hedefler = {b: fs for b, fs in sayac.items() if len(fs) > 1}
+    if not hedefler:
+        return None
+    soylenen: list[str] = []
+    yeni: list[dict] = []
+    goruldu: set[str] = set()
+    for f in filtreler:
+        boyut = str(f.get("dimension") or "")
+        if boyut not in hedefler or str(f.get("operator") or "") != "eq":
+            yeni.append(f)
+            continue
+        if boyut in goruldu:
+            continue
+        goruldu.add(boyut)
+        degerler: list = []
+        for g in hedefler[boyut]:
+            v = g.get("value")
+            if v not in degerler:
+                degerler.append(v)
+        if len(degerler) == 1:
+            yeni.append({"dimension": boyut, "operator": "eq", "value": degerler[0]})
+            continue                     # aynı değer tekrarı → anlam değişmedi, susulur
+        yeni.append({"dimension": boyut, "operator": "in", "value": degerler})
+        soylenen.append(f"**{boyut}**: " + " · ".join(f"«{d}»" for d in degerler))
+    cq["filters"] = yeni
+    if not soylenen:
+        return None
+    return ("🔎 Aynı boyuta birden çok eşitlik yazılmıştı (hiçbir satır iki değeri birden "
+            "taşıyamaz) — hepsi tek bir **çoklu seçim** olarak uygulandı: "
+            + " · ".join(soylenen) + ".")
 
 
 def duzelt_yerinde(cq: dict, bulgular: list[Bulgu]) -> str | None:
@@ -242,9 +415,38 @@ def duzelt_yerinde(cq: dict, bulgular: list[Bulgu]) -> str | None:
                          if not (isinstance(f, dict)
                                  and (str(f.get("dimension") or ""),
                                       _norm(str(f.get("value")))) in _at)]
+    # 🔴 `§NT` — YOK-İŞLEM DIŞLAMALARI DÜŞÜRÜLÜR. `tur_hatasi`'ndan **ayrı** tutulur
+    # çünkü beyanı da ayrıdır: orada bir **anlamsızlık** vardı, burada bir **etkisizlik**.
+    # ⚠ Liste operatöründe (`nin`) yalnız karşılıksız üyeler atılır; kalanlar gerçek
+    # birer dışlamadır ve düşürülmeleri kapsamı değiştirirdi.
+    bos = [b for b in bulgular if b.bos_islem]
+    if bos:
+        _atB: dict[str, set[str]] = {}
+        for b in bos:
+            _atB.setdefault(b.boyut, set()).add(_norm(b.deger))
+        kalan: list = []
+        for f in (cq.get("filters") or []):
+            if not isinstance(f, dict) or str(f.get("dimension") or "") not in _atB:
+                kalan.append(f)
+                continue
+            _hedef = _atB[str(f.get("dimension") or "")]
+            ham = f.get("value")
+            if isinstance(ham, (list, tuple)):
+                kalanlar = [d for d in ham if _norm(str(d)) not in _hedef]
+                if kalanlar:
+                    f["value"] = kalanlar
+                    kalan.append(f)
+                continue
+            if _norm(str(ham)) not in _hedef:
+                kalan.append(f)
+        cq["filters"] = kalan
     esleme = {(b.boyut, _norm(b.deger)): b.oneri for b in bulgular if b.oneri}
-    if not esleme and not dusen:
+    if not esleme and not dusen and not bos:
         return None
+    if bos and not esleme and not dusen:
+        adlar = " · ".join(f"«{b.deger}» ∉ **{b.boyut}**" for b in bos)
+        return (f"⚠ Etkisiz bir dışlama düşürüldü ({adlar}): listede olmayan bir değeri "
+                f"dışlamak hiçbir kaydı elemez.")
     if dusen and not esleme:
         adlar = " · ".join(f"«{b.deger}» → **{b.boyut}**" for b in dusen)
         # ⚠ **YAPTIĞIMDAN FAZLASINI SÖYLEME.** İlk yazım *«Eşik ölçünün kendisine
@@ -287,7 +489,7 @@ def netlestirme_metni(bulgular: list[Bulgu]) -> str:
     🔴 *"Anlamadım"* demez: neyin bulunmadığını **adıyla** söyler ve neyin bulunduğunu
     gösterir. Bir sınırı söylemek, onu gizlemekten her zaman daha kullanışlıdır.
     """
-    yok = [b for b in bulgular if not b.oneri and not b.tur_hatasi]
+    yok = [b for b in bulgular if not b.oneri and not b.tur_hatasi and not b.bos_islem]
     if not yok:
         return ""
     # 🔴 **BOYUTA GÖRE GRUPLANIR — ve bunu canlı bir ölçüm istedi.**
@@ -324,14 +526,15 @@ def secenekler(bulgular: list[Bulgu]) -> list[dict]:
     """Netleştirme chip'leri — **gerçek** değerlerden üretilir, uydurulmaz."""
     out: list[dict] = []
     for b in bulgular:
-        if b.oneri or b.tur_hatasi:
+        if b.oneri or b.tur_hatasi or b.bos_islem:
             continue
         for g in b.gecerliler[:EN_FAZLA_SECENEK]:
             out.append({"label": str(g), "query": str(g), "kind": "deger"})
     return out[:EN_FAZLA_SECENEK]
 
 
-def huni_karari(cq: dict, schema: dict | None) -> tuple[str | None, dict | None]:
+def huni_karari(cq: dict, schema: dict | None,
+                soru: str = "") -> tuple[str | None, dict | None]:
     """🔴 Huninin **tek çağrısı**: `(beyan_notu, netleştirme_alanları)`.
 
     ⊙ Bu fonksiyon `ask()`'ten **çıkarıldı** ve bunu bir kapı istedi: modül büyüme
@@ -346,16 +549,25 @@ def huni_karari(cq: dict, schema: dict | None) -> tuple[str | None, dict | None]
       * `(not, alanlar)` → karşılıksız değer var, sorgu **koşturulmayacak**
       * `(None, None)`  → itiraz yok (`KURAL B`: bayrak kapalıyken zaten çağrılmaz)
     """
-    bulgular = denetle(cq, schema)
+    # `§ÇE` — çelişki **enum gerektirmez**, sorgunun kendisinden kanıtlanır; bu yüzden
+    # `denetle`'den ÖNCE koşar. Sırası da anlamlı: birleştirilen `in` listesi sonra
+    # `denetle`'nin kimlik kapısından geçer, yani iki kural birbirini görmüş olur.
+    birlestirme = _coklu_esitlik_birlestir(cq)
+    bulgular = denetle(cq, schema, soru)
     if not bulgular:
-        return None, None
+        return birlestirme, None
     duzeltme = duzelt_yerinde(cq, bulgular)
+    duzeltme = " ".join(x for x in (birlestirme, duzeltme) if x) or None
     # 🔴 `§TK-2` — **tür hatası netleştirme SEBEBİ DEĞİLDİR:** anlamsızlığı kanıtlı bir
     # süzgeç `duzelt_yerinde` tarafından **düşürüldü** ve beyan edildi; geriye sorulacak
     # bir şey kalmaz. ⚠ Bu satır ilk yazımda atlanmıştı ve canlıda ölçüldü: süzgeç
     # düşüyordu ama tur yine **boş** dönüyordu — *bir kararı değiştirmek, o kararı veren
     # her satırı değiştirmektir.*
-    if any(not b.oneri and not b.tur_hatasi for b in bulgular):
+    # ⚠ `§NT` aynı satırın ikinci sahibidir ve **atlanması** aynı kusuru üretirdi:
+    # yok-işlem `duzelt_yerinde` tarafından düşürüldü, geriye sorulacak bir şey kalmaz.
+    # *Bir kararı değiştirmek, o kararı veren her satırı değiştirmektir* — bu ders bu
+    # dosyada bugün **ikinci** kez uygulanıyor (`§TK-2`'nin şerhine bak).
+    if any(not b.oneri and not b.tur_hatasi and not b.bos_islem for b in bulgular):
         return duzeltme, {"note": netlestirme_metni(bulgular),
                           "secenekler": secenekler(bulgular)}
     return duzeltme, None

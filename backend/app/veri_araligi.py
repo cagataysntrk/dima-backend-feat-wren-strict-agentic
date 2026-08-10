@@ -193,6 +193,102 @@ def bos_sonuc_notu(service, cube_query: dict, schema: dict) -> str:
             f"dönemi genişletmek ya da filtreyi gevşetmek ister misin?{ek}")
 
 
+def yokluk_notu(service, result, cube_query: dict, schema: dict) -> str | None:
+    """🔴 **BİR CEVABIN NEDEN BOŞ GÖRÜNDÜĞÜNÜN TEK SAHİBİ.**
+
+    İki yokluk biçimi vardır ve ikisi de aynı soruyu cevaplar (*«bu sayı neden böyle»*):
+
+    | biçim | nasıl görünür | yüklem |
+    |---|---|---|
+    | toplulaştırma boş kümede | `NULL` ya da 0 satır | `bos_mu` |
+    | pencere veri ufkunun dışında | **sıfır** — bir olgu gibi | `donem_disi_notu` |
+
+    ⚠ Bu fonksiyon `ask()`'ten **çıkarıldı** ve bunu bir kapı istedi: modül büyüme
+    tavanı kırmızı verdi ve kendi mesajını yazdı — *«yeni davranışı modüle çıkar, tavanı
+    yükseltme.»* Ayrım yapısal olarak da doğru: `ask()` **sırayı** yönetir, bu dosya
+    **yokluğun cinsini** bilir. Ve ikisini tek çağrıya toplamak, aralarındaki
+    **öncelik** kuralını da tek bir yerde tutar: boşluk beyanı varsa dönem-dışı beyanı
+    yazılmaz — aynı yokluğu iki kez anlatmak iki ayrı sorun varmış gibi görünürdü.
+
+    Döner: yazılacak not ya da `None` (*"söylenecek bir şey yok"*).
+    """
+    if bos_mu(result, cube_query):
+        return bos_sonuc_notu(service, cube_query, schema)
+    if result is None:
+        return None
+    return donem_disi_notu(service, cube_query, schema)
+
+
+def donem_disi_notu(service, cube_query: dict, schema: dict) -> str | None:
+    """🔴🔴 `§SD` — **SIFIR BİR CEVAPTIR, «VERİ YOK» BİR YOKLUKTUR; SAYIM İKİSİNİ BİRLEŞTİRİR.**
+
+    ## Ölçülen kusur (curl `N` turu, 2026-08-10)
+
+        «bu ay kaç parti üretildi»  →  {"parti_sayisi": 0}   ·  beyan: YOK
+
+    Kullanıcı bunu *«bu ay hiç parti üretmemişiz»* diye okur. Gerçek şu: `partiler`
+    verisi **30.06.2026**'da bitiyor, sorulan ay **Ağustos 2026**. Yani sıfır bir olgu
+    değil, bir **veri ufkudur**.
+
+    ⊙ Ve bir kardeş soru **doğru** cevaplanıyordu: *«geçen ay ortalama oee»* →
+    *«Bu aralıkta kayıt bulunamadı… elimdeki veri 01.01.2024 – 30.06.2026»*. Fark
+    ölçünün türünde: `AVG` boş kümede **NULL** döner ve `bos_mu` NULL'u görür; `COUNT`
+    boş kümede **0** döner ve sıfır, bir yokluk gibi **görünmez**.
+
+    🔴 Ve sıfırı *«boş»* saymak bir çözüm **değildir**: gerçek bir sıfır (o ay hakikaten
+    üretim yoksa) meşru bir cevaptır ve onu susturmak yeni bir sessiz-yanlış olurdu.
+
+    ## Yüklem — sonuca değil, KAPSAMA bakar
+
+    Sorgunun dönem penceresi ile küpün **ölçülmüş** veri aralığı **hiç kesişmiyorsa**
+    beyan yazılır; sonucun ne döndüğüne bakılmaz. Kanıt tamdır: kesişim boşsa o pencerede
+    hiçbir kayıt **olamaz** — sıfır da, sayı da, NULL da aynı şeyi söyler.
+
+    ⚠ Kısmî kesişimde **susar**: pencere aralığa değiyorsa sayı gerçek bir sayıdır.
+    ⚠ Aralık ölçülemezse (`aralik` → `None`) susar — *bir ölçümün susması, ölçtüğü şeyin
+    yokluğu değildir.*
+
+    *Bir sıfırın anlamı, sıfırın kendisinde değil sorulan pencerededir.*
+    """
+    from datetime import date, datetime
+
+    cm = next((c for c in (schema.get("cubes") or [])
+               if c.get("name") == cube_query.get("cube")), None)
+    if not cm:
+        return None
+    ar = aralik(service, cm)
+    if not ar or not ar[0] or not ar[1]:
+        return None
+
+    def _tar(v):
+        if isinstance(v, datetime):
+            return v.date()
+        if isinstance(v, date):
+            return v
+        try:
+            return datetime.fromisoformat(str(v)[:10]).date()
+        except (TypeError, ValueError):
+            return None
+
+    veri_bas, veri_son = _tar(ar[0]), _tar(ar[1])
+    if not veri_bas or not veri_son:
+        return None
+    dnm = [f for f in (cube_query.get("filters") or [])
+           if isinstance(f, dict) and f.get("operator") in ("gte", "lte")]
+    bas = next((_tar(f["value"]) for f in dnm if f["operator"] == "gte"), None)
+    son = next((_tar(f["value"]) for f in dnm if f["operator"] == "lte"), None)
+    if bas is None and son is None:
+        return None
+    # Kesişim boş mu? Açık uçlu pencere, açık ucundan sonsuza uzanır.
+    if (son is not None and son < veri_bas) or (bas is not None and bas > veri_son):
+        pencere = (f"{bas:%d.%m.%Y} – {son:%d.%m.%Y}" if bas and son
+                   else (f"{bas:%d.%m.%Y} sonrası" if bas else f"{son:%d.%m.%Y} öncesi"))
+        return (f"⏱ Sorduğun dönem (**{pencere}**) elimdeki verinin **tamamen dışında** — "
+                f"veri **{_gun(ar[0])} – {_gun(ar[1])}** aralığını kapsıyor. Buradaki "
+                f"sıfır bir ölçüm değil, bir **veri sınırıdır**.")
+    return None
+
+
 # ⟳ `bos_sonuc_aciklamasi` + `_istenen_ust_sinir` KALDIRILDI (aynı turda).
 # İlk tasarımda not `answer.py::seal`de kuruluyordu; `ask.py`nin ZATEN bir boş-sonuç
 # notu ürettiği ölçülünce tasarım `bos_sonuc_notu`ya toplandı ve o ikisi ölü kaldı.

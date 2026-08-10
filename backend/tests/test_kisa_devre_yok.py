@@ -92,6 +92,24 @@ MUAF: list[tuple[str, str]] = [
      "`enerji kaynağı→enerji tep`. Bir yazım TAHMİNİ, cevap üretebilecek bir yolun "
      "önünü kesiyor. Sınıfın kurucu örneği. ⊘ Adaya çevrilmesi DENENDİ ve iki yönlü "
      "çıktı — bkz. `test_DAVRANIS_DONUSUMU_OLCULDU_VE_ERTELENDI`."),
+    ("note=_netlestir['note']",
+     "🟡 ÜÇÜNCÜ CİNS (`§DK-2`) — **altında kesilecek bir cevap YOK, ve bu ÖLÇÜLDÜ.** "
+     "Süzgeç değeri kataloğun **tam** enum'unda bulunamadı; yani o değeri taşıyan bir "
+     "kayıt **yoktur**. "
+     "⊙ Karşı-olgu koşuldu (2026-08-10, `POST /cube` ile dal atlanarak — aynı `cq`, "
+     "`musteri eq «ZZZ HOLDİNG»`): **0 satır · not YOK · 0,018 sn**. Yani dal "
+     "kesilmeseydi kullanıcı **açıklamasız boş bir tablo** görecekti; dal bir cevabı "
+     "değil, bir **sessizliği** kesiyor ve yerine gerçek değerleri **chip** koyuyor. "
+     "⚠ Ve merdivenin altı yapısal olarak da boş: bu noktada garson **zaten** bir `cq` "
+     "üretmiştir, yani Discovery hiç çağrılmayacaktı — kesilen şey Discovery değil, "
+     "sıfır satırlık bir cube cevabıdır. "
+     "⚠ Sınırı bu turda **iyice daraldı** ve bu daralma ölçüldü: `§DK-5` (soru "
+     "metninden kurtarma) ve `§NT` (yok-işlem dışlamayı düşürme) eklendikten sonra dal "
+     "yalnız *gerçekten* belirsiz kalan `eq`/`in` değerlerinde ateşliyor. "
+     "⊙ Canlı kanıt: *«AKDENİZ ÖRME için bu yıl ciro»* eskiden bu dala düşüyordu, "
+     "şimdi ₺10.915.915 ile **cevaplanıyor**. "
+     "*Bir kısa devreyi meşrulaştıran şey gerekçesi değil, gerekçesinin ne kadar dar "
+     "olduğudur — ve o darlık ölçülebilmelidir.*"),
     ("Birden fazla konu anlaşıldı",
      "🔴 KISA DEVRE: çapraz-konu netleştirmesi (`_try_fresh_intent` içinden). ⚠ Bu satır bir zamanlar «`_bitirici` onu ADAYA çevirir» diyordu — **KARŞILIKSIZDI**: `grep _bitirici app/` → 0 isabet, ve `git log -S_bitirici` → hiç commit edilmemiş. Geri alınan deneyin açıklaması silinmeden kalmış (2026-08-07 düzeltmesi)."),
     ("Bu ifade birden fazla konud",
@@ -216,8 +234,16 @@ def test_SINIFIN_BUYUKLUGU_YAZILI():
     #
     # *İki bitirici kuralı bir yasak değil, bir ispat yükümlülüğüdür: üçüncüsünü isteyen,
     # altının boş olduğunu ölçmek zorundadır.*
+    # ⟳ **1 → 2 (2026-08-10, `§DK-2`).** Sayı bir tavan değil bir **sayaçtır**: 🟡 sınıfı
+    # büyüyebilir, ama her büyüme **bir ölçüm koşumuyla** gelir ve bu satırda **elle**
+    # kabul edilir. Kapı tam da bunu istedi ve haklıydı: `§DK-2`'yi ilk yazışımda gerekçe
+    # yalnız yapısal bir akıl yürütmeydi (*"Discovery de aynı sıfırı üretirdi"*) ve kapı
+    # onu **ölçüm cümlesi yok** diye reddetti. Karşı-olgu sonra koşuldu: 0 satır · 0,018 sn.
+    #
+    # *Bir sınıfın büyümesini yasaklamak onu gizler; her büyümeyi elle imzalatmak
+    # görünür tutar — ve imza atmak için ölçmek gerekir.*
     olculdu = [g for _i, g in MUAF if g.startswith("🟡")]
-    assert len(olculdu) == 1, f"ölçülmüş-boş dal sayısı değişti: {len(olculdu)}"
+    assert len(olculdu) == 2, f"ölçülmüş-boş dal sayısı değişti: {len(olculdu)}"
     for g in olculdu:
         assert "ÖLÇÜLDÜ" in g and "sn" in g, (
             "🔴 🟡 bir muafiyet, merdivenin altının boş olduğunu **ÖLÇÜMLE** göstermeli "

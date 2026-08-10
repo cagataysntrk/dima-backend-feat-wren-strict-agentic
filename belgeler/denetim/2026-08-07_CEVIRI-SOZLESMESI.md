@@ -9958,3 +9958,212 @@ sınıflar. İkincisinin anlamsızlığı **kanıtlıdır** (bir metin sayıdan 
 yüzden düşürülebilir. Birincisinde kullanıcı o değeri gerçekten kastetmiş **olabilir**;
 düşürmek sessiz bir kapsam değişikliği olurdu. *Bir kuralı, kanıtın bittiği yerde
 genişletmek onu bir tahmine çevirir.*
+
+# 🔴🔴 `N` TURU — 2026-08-10 · 20 SENARYO · **BİR KANIT İKİ KEZ SAYILAMAZ**
+
+> Klasik döngü, en basitten en zora: 5 taban route sorusu → 5 değer ekseni → 4 beyan
+> doğruluğu → 3 eşik/huni → **üç thread** (3+4+5 tur). Toplam **32 curl**, tek tek,
+> loglar anbean okundu.
+
+## 0 · TURUN TEK CÜMLESİ
+
+Sekiz kusurun **altısı** doğru bir cevabın üstüne yazılmış **yanlış bir beyandı** ya da
+doğru yazılmış bir fişin **okunmamış** bir satırıydı. Yani mutfak çalışıyordu; **fişi
+okuyan** ve **cevabı anlatan** katmanlar çalışmıyordu.
+
+## 1 · SENARYOLAR VE SONUÇLARI
+
+| # | senaryo | sonuç |
+|---|---|---|
+| N1 | *bu yıl toplam ciro* | ✅ route, LLM'siz, ₺74.022.836 |
+| N2 | *bu ay kaç parti üretildi* | 🔴 `parti_sayisi: 0` · **beyan yok** → `§SD` |
+| N3 | *makinelere göre bu yıl fire kg* | ✅ route, 11 satır |
+| N4 | *en yüksek fire oranı hangi makinede* | ✅ garson · `RAM-2 %22,12` (`§ÜK` tuttu) |
+| N5 | *geçen ay ortalama oee* | ✅ boş-aralık beyanı tam |
+| N6 | *bu yıl 1. vardiyada fire oranı* | ✅ `§DK-3` canlı: `vardiya eq «1. Vardiya (08-16)»` |
+| N7 | *AKDENİZ ÖRME için bu yıl ciro* | 🔴 garson `M1001` **uydurdu**, huni **sordu** → `§DK-5` |
+| N8 | *bu yıl enerji sapması ne durumda* | ⊙ garson %33'te bölündü → netleştirme (dürüst) |
+| N9 | *RAM-1 makinesinin toplam duruş süresi* | 🔴 doğru cevap + **yalan beyan** (*«1 dedin…»*) → `§SR` |
+| N10 | *ram makinesinin fire oranı* | 🔴 aynı boyuta **üç `eq`** → 0 satır, suç **döneme** atıldı → `§ÇE` |
+| N11 | *en çok duruşa yol açan 3 neden* | ✅ `§UY/K` tuttu — yanlış *«eksik»* beyanı yok |
+| N12 | *en kötü bakım maliyeti hangi makinede* | 🔴 `makine neq «Bakım»` — yok-işlem **soruldu** → `§NT` |
+| N13 | *fire oranı nedir* | ✅ `§BD` beyanı tam |
+| N14 | *müşteri memnuniyeti kaç* | ⊙ şikayet adedi verildi, beyan yok → **teşhis: sahipsiz terim** (aşağıda) |
+| N15 | *fire oranı %20 üstü olan hatlar* | ✅ `§EŞ-2`, 3 satır |
+| N16 | *cirosu 5 milyon üzeri müşteriler* | ✅ **iddiam çürütüldü** (aşağıda) |
+| N17 | *bu yıl bakiye* | ✅ sahiplik beyanı **+ chip** (`F`'nin şikâyeti kapandı) |
+| N18 | thread A (3 tur) | 🔴🔴 `§KB` + `§KS` — turun en ağırı |
+| N19 | thread B (4 tur) | ✅ yoy `+%10,6` · katkı · reçete — üçü de LLM'siz |
+| N20 | thread C (5 tur) | 🔴 `§KD` + `§NÇ` |
+
+## 2 · ⚠ ÖNCE: BİR KÖK İDDİASI ÖLÇÜMLE ÇÜRÜTÜLDÜ *(bugün dördüncü kez)*
+
+`N16`'da *«5 milyon eşiği sessizce düştü»* diye bir kök yazmak üzereydim. Ölçtüm:
+
+```
+measure_having = {'measure':'toplam_ciro','op':'>','value':5000000.0}   ← KURULU
+rows (milyon ₺) = [13,41 · 10,92 · 9,90 · 9,15 · 8,95 · 8,39 · 7,48 · 5,83]
+```
+
+Sekizinin **hepsi** 5 M üstü. Kusur kodda değil **benim yazıcımdaydı**: anahtar
+filtresine `measure_having` konmamıştı.
+
+> *Önce ölçüm yüzeyinden şüphelen* — bugün **dördüncü** kez ve dördünde de ölçüm beni
+> yanlış bir kök yazmaktan alıkoydu.
+
+## 3 · SEKİZ KÖK — VE ARALARINDAKİ TEK İLKE
+
+`KAT-1` *«bir kuralın iki sahibi olmaz»* der. Bu turun ölçtüğü şey onun **çalışma-zamanı
+ikizidir**: **aynı kanıtın iki tüketicisi**, ya da **cevabın kendisinden başka bir
+yüzeye sorulan** bir soru.
+
+| kök | sınıf | ölçülen | kanıt sınıfı |
+|---|---|---|---|
+| 🔴🔴 `§KS` | harman `order`/`limit`'i **hiç okumuyordu** | *«en kötü üçü»* → **11 sırasız satır** | okunmamış fiş satırı |
+| 🔴🔴 `§KD` | boyut adıyla biten soruya **toplam** cevap | *«duruş nedenleri»* → tek sayı, rozet `source=cube` | route'un yarım kesinliği |
+| 🔴 `§KB` | uyum yüklemi **bayat yüzeye** bakıyordu | harman başarılı, beyan *«içermiyor»* | yanlış ölçüm yüzeyi |
+| 🔴 `§SR` | rakam **iki kez** okundu | `RAM-1`'in **1**'i hem süzgeç hem top-N | harcanmış kanıt |
+| 🔴 `§ÇE` | aynı boyuta üst üste `eq` | yapısal olarak **0 satır** | kanıtlı çelişki |
+| 🔴 `§NT` | `neq <yok>` bir **yok-işlemdir** | soruldu, oysa hiçbir şey elemiyordu | kanıt sınıfı ayrımı |
+| 🔴 `§DK-5` | cevap **kullanıcının cümlesinde** yazılıydı | `M1001` soruldu, `AKDENİZ ÖRME` yazılıydı | yanlış yüzey |
+| 🔴 `§NÇ` | `neden` **iki kelimedir** | *«nedeni hangi makinede»* → katkı analizi | kapsam ≠ sözlük |
+| ◐ `§SD` | `COUNT` yokluğu **sıfıra** çevirir | *«bu ay 0 parti»* bir olgu gibi okunur | ölçü türü |
+
+### 🔴 `§NT` — aynı gözlem, iki ayrı kanıt
+
+| operatör | değer listede yok | ne kanıtlar | karar |
+|---|---|---|---|
+| `eq` / `in` | ⊙ **belirsizlik** | kullanıcı onu gerçekten kastetmiş **olabilir** | **sor** |
+| `neq` / `nin` | ✅ **yok-işlem** | var olmayanı dışlamak **hiçbir satırı** elemez | **düşür + söyle** |
+
+*Aynı gözlem iki operatörde iki ayrı şey kanıtlar; ikisine aynı kararı vermek kanıta
+değil kelimeye bakmaktır.*
+
+### 🔴🔴 `§KD` ve `§NÇ` — ve neden ikisi de route'a DİL ÖĞRETMİYOR
+
+İkisinin de yüklemi **katalogdan** okunur, sözlükten değil:
+
+* `§KD`: *sorunun **son** kelimesi seçilen küpün bir boyutuna mı düşüyor?* — ve düşüyorsa
+  route **kesin** sayılmaz, **hakem** çağrılır (`§0.0`'ın kendi kuralı).
+* `§NÇ`: *takip sorusu, raporda **bulunmayan** bir boyutu mu anıyor?* — anıyorsa
+  açıklanacak şey ekranda yoktur; kullanıcı **yeni satırlar** istiyordur.
+
+Konum ve kapsam birer **dil kuralı değil**: biri bir **yer** bilgisi (Türkçede tamlamanın
+başı sondadır), öteki bir **küme karşılaştırması**. ADR-0008'in yasakladığı sınıfa girmez.
+
+## 4 · CANLI DOĞRULAMA — sekiz kökün sekizi
+
+```
+§DK-5  «AKDENİZ ÖRME için ciro»      → ❌ netleştirme  →  ✅ ₺10.915.915  + «M1001 → AKDENİZ ÖRME TEKSTİL A.Ş.»
+§ÇE    «ram makinesinin fire oranı»  → ❌ 0 satır      →  ✅ 3 satır, `in [RAM-1,RAM-2,RAM-3]`
+§SR    «RAM-1 … duruş süresi»        → 🔴 yalan beyan  →  ✅ beyan SUSTU, cevap aynı
+§SD    «bu ay parti sayısı»          → 🔴 sessiz 0     →  ✅ «sıfır bir ölçüm değil, bir VERİ SINIRIDIR»
+                                        (üç küpte, her küp KENDİ ufkuyla: şikayet 19.07.2026)
+§KD    «bu yıl duruş nedenleri»      → 🔴 tek toplam   →  ✅ 6 satırlık kırılım (garson karar verdi)
+§NÇ    «en büyük nedeni hangi makinede» → 🔴 katkı analizi → ✅ `neden × makine`, tepe `Malzeme/Parti Bekleme × RAM-1`
+§KB    «bir de oee ekle»             → 🔴 «içermiyor»  →  ✅ beyan SUSTU, `ort_oee` satırlarda
+§KS    «en kötü üçünü göster»        → 🔴 11 SIRASIZ   →  ✅ 3 satır sıralı, tepe `RAM-2 · 70.056 kg`
+§NT    «en kötü bakım maliyeti…»     → 🔴 uydurma dışlama sorusu → ✅ orkestratör 2 adımda cevapladı
+```
+
+## 5 · ⚠ AÇIK KAYITLAR — kapatılmadı, ÖLÇÜLDÜ
+
+### `§OB` · orkestratör yolunda **beyan yok** *(sıradaki turun ilk kökü)*
+
+`«bu yıl en kötü bakım maliyeti hangi makinede»` → orkestratör `ort_birim_maliyet`
+seçti ve `ROTASYON BASKI` dedi. Ama katalogda **gerçek** bir karşılık var — ölçüldü:
+
+```
+«bu yıl bakım maliyeti en yüksek makine»
+  → next: «Bakım iş emri (planlı/plansız) · bakım maliyeti · makine»
+          «Birim maliyet / kârlılık · birim maliyet · makine»
+```
+
+Yani bir **ölçü ikamesi** yapıldı ve `§Cİ`'nin beyanı **yazılmadı** — çünkü `uyum`
+orkestratör yolunda koşmuyor. Bu, bugünün **dördüncü** aynı-sınıf bulgusu:
+*bir kural yalnız bir basamakta geçerliyse, o kural değil bir tesadüftür.*
+
+### `§SA` · sahipsiz terim — `N14`
+
+*«müşteri memnuniyeti»* → **şikayet adedi**, beyan yok. `§UY/K` bir **gerileme değil**:
+`_capraz_kup_ikamesi` bir **sahip** arar ve `memnuniyet`i ölçen küp **hiç yok**. Yani
+bu, *«başkası ölçüyor»* değil *«kimse ölçmüyor»* sınıfı — ve o sınıfın beyanı yok.
+⚠ Kapatılmadı çünkü yanlış-pozitif riski yüksek (`bul`·`kaç`·`göster` gibi dolgu
+kelimeler de bilinmeyendir) ve `§101.1` bu turda zaten üç kez faturalandı.
+
+### `§SS` · soru sözcükleri bilinmeyen sayılıyor
+
+`hangi` · `kaç` her wh-sorusunda `bilinmeyen`e düşüyor ve garsonu tetikliyor (3 LLM
+çağrısı). Doktrine göre **yanlış değil** — ama ölçülmemiş bir maliyet. Kayda geçti.
+
+## 6 · 🔴🔴 KAPI KIRMIZI VERDİ — VE FATURANIN **%88'İ** BU TURA AİT DEĞİLDİ
+
+⚠ **Önce kendi hatam:** kapı çıktısında *«KAPI YEŞİL»* okuyup öyle rapor ettim. O satır
+**korpus alt-kapısınındı**; tam kapı `✗ TAM KAPI (5 adım) KIRMIZI · 16 failed` diyordu.
+*Bir çıktının hangi kapıya ait olduğunu okumadan onu bir karar sanmak, ölçüm yüzeyi
+hatasının beşinci biçimidir.*
+
+### Ölçüm: 16 kırmızı, izole worktree ile `HEAD`'e karşı A/B
+
+`git worktree add /tmp/dima-head-olcum HEAD --detach` — ana dizine **hiç dokunulmadan**
+(paylaşılan depo kuralı), aynı süit iki ağaçta koşuldu.
+
+| kırmızı | `HEAD`'de | sınıf |
+|---|---|---|
+| `test_ask_golden` × 6 | 🔴 **aynı** | önceki borç |
+| `test_sinir_once_konusur::MESRU_DONEM` | 🔴 **aynı** | önceki borç |
+| `test_kok5d_katalog_taban_baglantisi` | 🔴 **aynı** | önceki borç |
+| `test_eval_gate::precision_dusmez` | 🔴 **aynı** | önceki borç |
+| `test_explain` × 2 | 🔴 **aynı** | önceki borç |
+| `test_soz_katalogu::UCTAN_UCA_DONEM` | 🔴 **aynı** | önceki borç |
+| `test_alan_haritasi::SINIFSIZ_MODUL` | 🔴 **aynı** | **bugünün** borcu (4 modül sınıfsız) |
+| `test_kisa_devre_yok::YENI_KISA_DEVRE` | 🔴 **aynı** | **bugünün** borcu (`§DK-2` muafiyetsiz) |
+| `test_modul_buyume` × 2 | ✅ **yeşildi** | 🔴 **BU TURUN ÜRÜNÜ** |
+
+⊙ **14/16 önceden vardı.** Ve `eval`'in `precision −5,2%`'si de öyle: iki ağaçta
+**birebir** aynı dört kırmızı, birebir aynı süre (109,4 sn ↔ 109,6 sn).
+
+> 🔴 Bu, `CLAUDE.md`'nin kendi yazdığı **faturanın** ikinci tahsilatıdır: *«15 test
+> kırmızıydı. Hiçbiri o gün kırılmamıştı; hepsi görünmüyordu.»* Yerel kapı politikası
+> korpusa indirgenmiş durumda ve korpus bu on iki kırmızının **hiçbirini** görmüyor.
+
+### Bu turda kapatılanlar — tavan **yükseltilmedi**, iş **modüle çıkarıldı**
+
+Kapının kendi mesajı: *«yeni davranışı modüle çıkar, tavanı yükseltme. Tavanı
+yükseltmek kapıyı kapının kendisiyle çürütür.»* Üç birleştirme yapıldı ve **üçü de
+tek-sahip ilkesini güçlendirdi**:
+
+| ne | nereye | neden bu doğru yer |
+|---|---|---|
+| iki yokluk beyanı | `veri_araligi.yokluk_notu` | `ask()` **sırayı** yönetir, bu dosya **yokluğun cinsini** bilir — ve aralarındaki **öncelik** artık tek yerde |
+| iki bağlam okuması | `context.sinif_ipuclari` | sınıflandırıcı **yarım bir ekran** üstünde karar vermemeli |
+| kırılım şüphesi | `niyet_tasima.route_supheli` | *«route şüpheli mi»* sorusunun **iki cevabı olamaz** (`KAT-1`, bugün dördüncü kez) |
+
+Sonuç: `ask()` **1386 → tavan altı**, `ask.py` toplamı tavan altı.
+
+### `§DK-2` muafiyeti — ve kapının bana ÖLÇÜM yaptırması
+
+Muafiyeti önce **yapısal akıl yürütmeyle** yazdım (*«Discovery de aynı sıfırı
+üretirdi»*). Kapı reddetti: 🟡 bir muafiyet **ölçüm cümlesi taşımak zorundadır**.
+Haklıydı. Karşı-olgu koşuldu:
+
+```
+POST /cube  {musteri eq «ZZZ HOLDİNG», tarih gte 2026-01-01}
+  → 0 satır · not YOK · 0,018 sn
+```
+
+Yani dal saklı bir cevabı değil, **açıklamasız bir boşluğu** kesiyor. Ve 🟡 sayacı
+`1 → 2` yapılırken bu **elle imzalandı**:
+
+> *Bir sınıfın büyümesini yasaklamak onu gizler; her büyümeyi elle imzalatmak görünür
+> tutar — ve imza atmak için ölçmek gerekir.*
+
+### ⚠ SIRADAKİ TURUN AÇILIŞI — on iki kırmızının **tek kökü** olabilir
+
+Altı golden + `explain` × 2 + `soz_katalogu` + `sinir_once_konusur` hepsi aynı imzayı
+veriyor: eskiden **netleştirme** bekleniyordu, şimdi `⏱ Dönemi çözemedim — verinin son
+12 ayı alındı` ile **cevap** geliyor. Bu `varsayilan_donem` davranışıdır (`F1`).
+
+⊙ Yani muhtemelen **bir** karar on iki kapıyı bayatlattı ve hiçbiri koşulmadığı için
+görünmedi. Bir sonraki tur bunu tek kök olarak sınayacak — ve `§OB` ile birlikte iki
+açılış maddesi var.

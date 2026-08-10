@@ -73,7 +73,7 @@ def esik(cq: dict, q: str) -> bool:
     return True
 
 
-def route_supheli(cq: dict | None, q: str) -> bool:
+def route_supheli(cq: dict | None, q: str, schema: dict | None = None) -> bool:
     """🔴 **`§51` — ROUTE'UN YARIM BAŞARISI GARSONU ENGELLİYOR.**
 
     ## Ölçülen kusur — üç kanıt, tek desen
@@ -105,10 +105,15 @@ def route_supheli(cq: dict | None, q: str) -> bool:
     ⚠ **Fail-open:** şüphe yoksa `False` döner ve davranış **birebir bugünkü** kalır
     (`KURAL B`). Şüphe varsa çağıran garsona sorar ve **yalnız daha iyisini** alır.
 
+    ⚠ `schema` verilirse **kırılım şüphesi** de sayılır (`§KD`): soru bir boyut adıyla
+    bitiyor ama fişte hiç kırılım yok. Ayrı bir yüklem olarak çağrılabilirdi; **tek
+    sahip** olması bilinçli — *«route şüpheli mi»* sorusunun iki cevabı olamaz, yoksa
+    çağıranların biri şüpheyi görür öteki görmez (`KAT-1`, bu turda dördüncü kez).
+
     *Yarım duymak, duymamaktan daha tehlikelidir: duymadığını bilen sorar, yarım duyan
     emin olur.*
     """
-    return bool(eksiklik(cq, q))
+    return bool(eksiklik(cq, q)) or kirilim_suphesi(cq, q, schema)
 
 
 #: Şüphenin **adları**. Bir küme döndürmenin bir `bool` döndürmekten farkı: iki cevabı
@@ -231,4 +236,70 @@ def _atif_cozulmemis(cq: dict | None, q: str) -> bool:
         m = _re.search(rf"{_KELIME_BASI}(?:{isaret})\s+{_re.escape(_n(str(d)))}([a-z]*)", qn)
         if m and _ek_gecerli(m.group(1)):
             return True
+    return False
+
+
+def kirilim_suphesi(cq: dict | None, q: str, schema: dict | None) -> bool:
+    """🔴🔴 `§KD` — **SORU BİR BOYUT ADIYLA BİTİYORSA, TOPLAM BİR CEVAP DEĞİLDİR.**
+
+    ## Ölçülen kusur (curl `N` turu, 2026-08-10 · beş turluk thread'in ilk turu)
+
+        «bu yıl duruş nedenleri»
+          route → makine_duruslari.toplam_sure_dk · dimensions: YOK
+          sonuç → **tek satır: 235.129 dk** · beyan: YOK · rozet: source=cube
+
+    Kullanıcı *«nedenler»* (çoğul, bir **liste**) sordu; sistem tek bir **toplam**
+    verdi ve bunu en güvendiğimiz rozetle sundu.
+
+    ## Neden `uyum`'un kırılım kapısı bunu görmüyor
+
+    O kapı `niyet.kirilim_istendi`'ye bakar ve o sinyal *«…-e göre»* / *«… bazında»*
+    ister. Burada öyle bir belirteç **yok** — kırılım isteği belirteçte değil, cümlenin
+    **nesnesinde**: sorulan şeyin kendisi bir boyuttur.
+
+    ## Ve çözüm neden route'a bir dil kuralı DEĞİL
+
+    `§0.0`: *route'a dil öğretme; en ufak anlamama varsa **garson gider**.* Burada
+    yapılan tam olarak budur — route'un cevabı **iptal edilmez**, yalnız *«kesin»*
+    sayılmaz ve hakem çağrılır. Yüklem de dilbilgisel değil **kapsamsal**: sorunun son
+    kelimesi kataloğun bir boyutuna mı düşüyor? Bunu küp söyler, bir sözlük değil.
+
+    ## Yüklem — üç şart, üçü de dar
+
+    1. sorunun **son** içerik kelimesi, seçilen küpün bir boyutuna (adı ∨ sinonimi) düşer
+    2. fişte **hiçbir** kırılım yok (`dimensions` ∧ `timeDimensions` boş)
+    3. o boyuta bir **süzgeç** de kurulmamış — kurulmuşsa boyut zaten *tüketilmiştir*
+       (`§SR`'nin *harcanmış kanıt* ilkesi, ikinci kez)
+
+    ⚠ **Son** kelimeyle sınırlı olması `§101.1`'in gereği: `musteri`/`makine` gibi adlar
+    cümlenin ortasında **çok** geçer (*«müşteri memnuniyeti»*, *«makinesinin fire
+    oranı»*) ve orada bir kırılım istenmez. Türkçede tamlamanın **başı sondadır**:
+    sorulan şey en sonda durur. Konum bir dil kuralı değil, bir **yer** bilgisidir.
+
+    *Bir listeyi soran cümleye tek bir sayı vermek, cevabın yanlış olmasından daha
+    sinsidir: sayı doğrudur, sorulan şey değildir.*
+    """
+    if not cq or not schema:
+        return False
+    from app.cube_router import _norm as _n
+    from app.cube_router import _syn_hit
+
+    if (cq.get("dimensions") or cq.get("timeDimensions")):
+        return False
+    kelimeler = [w for w in _n(q or "").split() if w]
+    if not kelimeler:
+        return False
+    son = kelimeler[-1]
+    suzulen = {str(f.get("dimension")) for f in (cq.get("filters") or [])
+               if isinstance(f, dict)}
+    for c in (schema.get("cubes") or []):
+        if c.get("name") != cq.get("cube"):
+            continue
+        sinonimler = c.get("dimension_synonyms") or {}
+        for d in (c.get("dimensions") or []):
+            if str(d) in suzulen:
+                continue                       # boyut süzgeçte tüketildi (`§SR` ilkesi)
+            adaylar = [str(d), *(str(s) for s in (sinonimler.get(d) or []))]
+            if any(" " not in a and _syn_hit(son, _n(a)) for a in adaylar):
+                return True
     return False

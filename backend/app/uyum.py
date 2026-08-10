@@ -259,17 +259,39 @@ def _capraz_kup_ikamesi(qn: str, cq: dict, cube_meta: dict,
     # 🔴 Asıl kök yine de kataloğun: iki küp aynı kavrama iki ad vermiş (`B8`).
     # Bu kapı o borcu **kapatmaz**, yalnız yanlış beyanı susturur.
     # *Bir yanlışı söylemeyi bırakmak, doğruyu söylemek değildir.*
+    # 🔴🔴 `§KB` — **HARMAN BAŞARILI OLDU, BEYAN «İÇERMİYOR» DEDİ.**
+    #
+    # ⊙ Canlı ölçüm (curl `N` turu, 2026-08-10 · thread tur 2): *«bir de oee ekle»* →
+    # çapraz-cube harman **çalıştı**, satırlar `{makine, toplam_fire_kg, ort_oee}` geldi.
+    # Ve notun yazdığı cümle şuydu:
+    #
+    #     ⚠ Sayı doğru ama EKSİK: soruda «oee» geçiyor ama bu cevap onu İÇERMİYOR
+    #
+    # 🔴 İçeriyordu. Kök: bu yüklem **bayat bir yüzeye** bakıyordu — harmanın ölçüleri
+    # `cq["measures"]`'da değil `cq["blend"][*]["measures"]`'dadır. Yani beyan, cevabın
+    # **teslim ettiği** kolonları değil, cevabın bir **parçasını** okuyordu.
+    #
+    # ⊙ Bugün dördüncü kez aynı ders (`§UY/K` · `§ÜK` · `§ÖB` · bu): *önce ölçüm
+    # yüzeyinden şüphelen.* Ve `§101.1`: kusur bazen olur, yanlış-pozitif her seferinde.
+    #
+    # *Bir cevabın neyi içerdiğini, cevabın kendisinden başka bir yere sorarsanız,
+    # er ya da geç ona ait olmayan bir eksiklik yazarsınız.*
+    _harman = [p for p in (cq.get("blend") or []) if isinstance(p, dict)]
+    _harman_kupler = {str(p.get("cube")) for p in _harman if p.get("cube")}
     _mevcut = {str(m) for m in (cq.get("measures") or [])}
+    _mevcut |= {str(m) for p in _harman for m in (p.get("measures") or [])}
     if _mevcut:
         for c in (sema.get("cubes") or []):
             _ad2, _ = _match_measure(qn, c)
             if _ad2 and _ad2 in _mevcut:
                 return None
     for c in (sema.get("cubes") or []):
-        if c.get("name") == cube_meta.get("name"):
+        # Harmana katılan bir cube, cevabın küpü kadar **cevabın içindedir**; onu
+        # «başka küp» sayan bir döngü kendi teslimatını yabancı ilan eder.
+        if c.get("name") == cube_meta.get("name") or c.get("name") in _harman_kupler:
             continue
         _ad, _terim = _match_measure(qn, c)
-        if not _ad or _ad in (cq.get("measures") or []):
+        if not _ad or _ad in _mevcut:      # `§KB`: harman ölçüleri de «mevcut»tur
             continue
         # 🔴🔴 **`§UY/K` — ÖBEK EŞLEŞMEZ AMA KELİME KAPSANIR: yüklem YANLIŞ-POZİTİF
         # veriyordu ve DOĞRU bir cevabı «eksik» diye etiketliyordu.**
@@ -679,7 +701,9 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
             "*«aylık»* yazarsan hangisi olduğunu gösteririm."))
     # `§R1` — SAYI VERİLDİ, KESİLMEDİ. Yukarıdaki beyandan **ayrı** bir kusurdur:
     # orada sıralama hiç yapılamamıştır, burada yapılmış ama **sayı tutulmamıştır**.
-    elif niyet.ustunluk and not kesme:
+    # `§SR` — sayı bir değer süzgecine girmişse burada **yok**tur; tükenmiş bir kanıtın
+    # üstüne beyan yazmak, doğru bir cevabı kusurlu ilan etmektir (`§101.1`).
+    elif niyet.ustunluk and not kesme and not _ustunluk_harcandi(qn, ic, niyet.ustunluk):
         out.append(Ihlal(
             "kesme",
             f"**{niyet.ustunluk}** dedin ama listeyi o sayıya **kesemedim** — "
@@ -938,6 +962,67 @@ def _olcu_sinonim_araliklari(qn: str, ic: dict, cube_meta: dict | None) -> list[
             for mt in re.finditer(re.escape(t), qn):
                 araliklar.append(mt.span())
     return araliklar
+
+
+def _ustunluk_harcandi(qn: str, ic: dict | None, sayi: int | None) -> bool:
+    """🔴🔴 `§SR` — **BİR RAKAM İKİ KEZ OKUNAMAZ: değer süzgecine giren sayı TÜKENMİŞTİR.**
+
+    ## Ölçülen kusur (curl `N` turu, 2026-08-10)
+
+        «RAM-1 makinesinin bu yıl toplam duruş süresi»
+          → cq: makine eq "RAM-1" · 41.104 dk        ✅ CEVAP DOĞRU
+          → not: «**1** dedin ama listeyi o sayıya kesemedim»   🔴 YALAN BEYAN
+
+    `RAM-1` içindeki **1** hem bir makine adının parçası olarak süzgece girdi, hem de
+    *«en iyi 1»* sayısı olarak `niyet.ustunluk`'a. Aynı karakter iki ayrı niyeti besledi
+    ve ikincisi **doğru bir cevabın üstüne bir eksiklik yazdı**.
+
+    ## Neden bu, `KAT-1`'in çalışma-zamanı ikizi
+
+    `KAT-1` *«bir kuralın iki sahibi olmaz»* der; buradaki kusur bir **kanıtın** iki
+    tüketicisi olmasıdır. Depo bu ayrımı zaten bir kez yapmıştı — `_ustunluk_mu`'ya
+    `cube_meta` verilmesinin gerekçesi birebir aynıdır: *«ipucu bir ölçü adının
+    içindeyse ipucu değildir»* (`kur` cube'unun ölçüsü literal olarak *«en yüksek
+    kur»*). Aynı disiplin **değer** tarafında kurulmamıştı.
+
+    ## Yüklem — konumsal, sözlüksüz
+
+    Sayının soruda geçtiği **her** yer, kimlik süzgeçlerinden birinin değerinin
+    içindeyse sayı tükenmiştir. Bir yerde bile serbest geçiyorsa **tüketilmemiştir** —
+    o zaman gerçek bir üstünlük sayısı olabilir (*«RAM-1 ve RAM-2'nin en kötü 1 ayı»*).
+
+    ⚠ Yeni dil kuralı **yok**: yalnız iki dizgenin konumu kıyaslanıyor. ADR-0008 kapsamı
+    dışında — bu bir morfoloji değil, bir **muhasebe**.
+
+    *Bir kanıt harcandığında biter; iki kez sayılan bir kanıt, kanıt değil bir
+    yankıdır.*
+    """
+    if not isinstance(ic, dict) or not sayi:
+        return False
+    from app.cube_router import _norm as _n
+
+    metin = str(sayi)
+    araliklar: list[tuple[int, int]] = []
+    for f in (ic.get("filters") or []):
+        if not isinstance(f, dict):
+            continue
+        if str(f.get("operator") or "") not in ("eq", "neq", "in", "nin"):
+            continue
+        ham = f.get("value")
+        for d in (ham if isinstance(ham, (list, tuple)) else [ham]):
+            nd = _n(str(d))
+            if not nd or metin not in nd:
+                continue
+            i = qn.find(nd)
+            while i >= 0:
+                araliklar.append((i, i + len(nd)))
+                i = qn.find(nd, i + 1)
+    if not araliklar:
+        return False
+    yerler = [m.span() for m in re.finditer(rf"\b{re.escape(metin)}\b", qn)]
+    if not yerler:
+        return False
+    return all(any(a <= s and e <= b for a, b in araliklar) for s, e in yerler)
 
 
 def _ustunluk_mu(qn: str, topn_cue, ic: dict | None = None,

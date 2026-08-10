@@ -1,0 +1,123 @@
+"""🔴🔴 `§KD` + `§NÇ` — **BİR LİSTEYİ SORAN CÜMLEYE TEK BİR SAYI VERMEK.**
+
+İki kusur, tek desen: sorulan şey bir **boyut**, verilen şey bir **toplam** ya da
+**başka bir sorunun** cevabı. İkisi de aynı beş turluk canlı thread'de ölçüldü.
+
+| tur | soru | sistem ne yaptı | doğrusu |
+|---|---|---|---|
+| 1 | *«bu yıl duruş **nedenleri**»* | tek satır **235.129 dk**, beyan yok, rozet `source=cube` | kırılım — ya da hakem |
+| 3 | *«en büyük **nedeni** hangi **makinede**»* | `TUR_NEDEN` → **katkı analizi** (*«X nedeni 46.524 dk azaldı»*) | yapısal: makine kırılımı |
+
+⊙ İkisinin kökü de Türkçenin aynı yerinde: `neden` **iki** kelimedir (soru zarfı ∧
+isim) ve `nedenleri` bir **nesnedir**. Ama çözüm iki kez de bir **dil kuralı değil**,
+bir **kapsam karşılaştırmasıdır** — hangi boyutların var olduğunu ve hangilerinin
+raporda bulunduğunu **küp** söyler.
+
+*Route'a dil öğretmiyoruz; route'un ne zaman emin OLMADIĞINI öğreniyoruz* (`§0.0`).
+"""
+
+from app import context as app_context
+from app import followup
+from app.niyet_tasima import kirilim_suphesi as suphe
+
+_SEMA = {"cubes": [{
+    "name": "makine_duruslari",
+    "measures": ["toplam_sure_dk"],
+    "dimensions": ["neden", "makine", "vardiya"],
+    "dimension_synonyms": {"neden": ["sebep"], "makine": ["hat"]},
+    "dimension_values": {"makine": ["RAM-1", "RAM-2"]},
+}]}
+_TOPLAM = {"cube": "makine_duruslari", "measures": ["toplam_sure_dk"],
+           "filters": [{"dimension": "tarih", "operator": "gte", "value": "2026-01-01"}]}
+
+
+# --- `§KD` · ROUTE'UN KIRILIM ŞÜPHESİ ---------------------------------------------
+
+def test_BOYUT_ADIYLA_BITEN_SORU_SUPHELIDIR():
+    """🔴 **Kapının kalbi.** *«duruş nedenleri»* bir liste ister; toplam bir cevap değil."""
+    assert suphe(_TOPLAM, "bu yıl duruş nedenleri", _SEMA) is True
+
+
+def test_SINONIM_DE_SAYILIR():
+    """Boyutun sinonimi de boyuttur — katalog neyi biliyorsa yüklem de onu bilir."""
+    assert suphe(_TOPLAM, "bu yıl duruş sebepleri", _SEMA) is True
+
+
+def test_ORTADA_GECEN_BOYUT_ADI_SUPHE_URETMEZ():
+    """🔴🔴 **Kapının en önemli satırı (`§101.1`).**
+
+    `musteri`/`makine` gibi adlar cümlenin **ortasında** çok geçer (*«makinesinin fire
+    oranı»*) ve orada bir kırılım istenmez. Türkçede tamlamanın **başı sondadır**:
+    sorulan şey en sonda durur. Konum bir dil kuralı değil, bir **yer** bilgisidir.
+    """
+    assert suphe(_TOPLAM, "makine duruş süresi toplamı", _SEMA) is False
+
+
+def test_KIRILIM_ZATEN_VARSA_SUPHE_YOK():
+    """Fişte kırılım varsa sorulan şey **zaten** verilmiştir."""
+    cq = {**_TOPLAM, "dimensions": ["neden"]}
+    assert suphe(cq, "bu yıl duruş nedenleri", _SEMA) is False
+
+
+def test_ZAMAN_KIRILIMI_DA_BIR_KIRILIMDIR():
+    """⚠ `timeDimensions` de bir kırılımdır — *«aylık duruş nedenleri»* zaten bir liste
+    döndürür ve orada ikinci bir şüphe üretmek yanlış-pozitif olurdu."""
+    cq = {**_TOPLAM, "timeDimensions": [{"dimension": "tarih", "granularity": "month"}]}
+    assert suphe(cq, "aylık duruş nedenleri", _SEMA) is False
+
+
+def test_SUZGECTE_TUKENEN_BOYUT_SAYILMAZ():
+    """🔴 `§SR`'nin *harcanmış kanıt* ilkesi, ikinci kez: boyuta süzgeç kurulmuşsa o
+    boyut **tüketilmiştir** ve bir kırılım isteği sayılamaz."""
+    cq = {**_TOPLAM, "filters": [{"dimension": "makine", "operator": "eq", "value": "RAM-1"}]}
+    assert suphe(cq, "duruş süresi RAM-1 makine", _SEMA) is False
+
+
+def test_OLCU_ADIYLA_BITEN_SORU_SUPHELI_DEGIL():
+    """`ciro`/`süresi` bir ölçüdür, boyut değil — kapı **katalogdan** okur, tahminden değil."""
+    assert suphe(_TOPLAM, "bu yıl toplam duruş süresi", _SEMA) is False
+
+
+def test_SEMASIZ_CAGRIDA_SUSAR():
+    """*Bir ölçümün susması, ölçtüğü şeyin yokluğu değildir* — şema yoksa şüphe yok."""
+    assert suphe(_TOPLAM, "bu yıl duruş nedenleri", None) is False
+
+
+# --- `§NÇ` · «NEDEN» İKİ KELİMEDİR -------------------------------------------------
+
+def test_EKRANDA_OLMAYAN_BOYUT_YAPISALA_GIDER():
+    """🔴 Ölçülen kusurun kendisi: *«hangi makinede»* yeni satırlar ister, açıklama değil."""
+    niyet = followup.sinifla("en büyük nedeni hangi makinede", baglam_var=True,
+                             acik_boyutlar=frozenset({"makine", "vardiya"}))
+    assert niyet.sinif == followup.SINIF_YAPISAL
+    assert niyet.kural == "§NÇ:ekranda-olmayan-boyut"
+
+
+def test_GERCEK_NEDEN_TAKIBI_BOZULMAZ():
+    """🔴🔴 **Gerçek pozitif korunur.** *«bu neden düştü»* bir boyut anmaz ve eldeki
+    cevabı açıklar — bu tur `TUR_NEDEN` kalmalıdır, yoksa katkı analizi ölürdü."""
+    niyet = followup.sinifla("bu neden düştü", baglam_var=True,
+                             acik_boyutlar=frozenset({"makine", "vardiya"}))
+    assert niyet.sinif == followup.SINIF_KONUSMA
+    assert niyet.tur == followup.TUR_NEDEN
+
+
+def test_ACIK_BOYUT_YOKSA_DAVRANIS_BIREBIR_AYNI():
+    """`KURAL B`: yeni argüman verilmezse yol birebir bugünküdür."""
+    niyet = followup.sinifla("bu neden düştü", baglam_var=True)
+    assert niyet.sinif == followup.SINIF_KONUSMA and niyet.tur == followup.TUR_NEDEN
+
+
+def test_ACIK_BOYUTLAR_FISTEKILERI_ELER():
+    """`context.acik_boyutlar` yalnız **eksik** olanları verir — raporda bulunan bir
+    boyutun anılması gerçek bir açıklama isteğidir ve bozulmamalıdır."""
+    cq = {"cube": "makine_duruslari", "dimensions": ["makine"]}
+    acik = app_context.acik_boyutlar(cq, _SEMA)
+    assert acik is not None
+    assert "makine" not in acik and "neden" in acik
+
+
+def test_ACIK_BOYUTLAR_KUPSUZ_CAGRIDA_SUSAR():
+    """Rapor yoksa *«ekranda ne yok»* sorusu tanımsızdır — `capa_degerleri` ile aynı sınır."""
+    assert app_context.acik_boyutlar(None, _SEMA) is None
+    assert app_context.acik_boyutlar({"cube": "yok"}, _SEMA) is None

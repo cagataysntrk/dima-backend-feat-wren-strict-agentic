@@ -312,3 +312,99 @@ def capa_degerleri(cube_query: dict | None, schema: dict | None) -> frozenset[st
     # ⚠ En az üç harf: kısa bir değer (`A`, `12`) cümlenin ortasında tesadüfen geçer ve
     # alakasız bir soruyu takip sanardık. *Bir bağ, tesadüfen kurulabiliyorsa bağ değildir.*
     return frozenset(x for x in out if len(x) >= 3) or None
+
+
+def sinif_ipuclari(cube_query: dict | None,
+                   schema: dict | None) -> tuple[frozenset[str] | None, frozenset[str] | None]:
+    """🔴 **SINIFLANDIRICININ EKRANDAN İSTEDİĞİ HER ŞEY — tek çağrı, tek sahip.**
+
+    Döner: `(çapa_değerleri, açık_boyutlar)` — *«ekranda hangi satırlar var»* ve
+    *«ekranda hangi boyut YOK»*.
+
+    ⚠ İkisini tek çağrıya toplamak bir kolaylık değil bir **sınır** kararıdır: ikisi de
+    aynı soruyu (*«ekranda ne var»*) farklı yönden sorar ve `followup.sinifla`'nın tek
+    bir bağlam görüntüsü görmesi gerekir. Ayrı çağrılarda biri düşüp öteki dursaydı
+    sınıflandırıcı **yarım bir ekran** üstünde karar verirdi.
+
+    ⚠ Ve `ask()`'in büyüme kapısı bunu ayrıca istedi: iki ayrı `try/except` orada
+    **altı kod satırıydı**; karar burada, çağrı orada. *Bir cevabın bağlamını kuran yer,
+    onu kuran TEK yer olmalıdır* (`bos_sonuc_notu`'nun aynı gerekçesi).
+
+    ⚠ **Best-effort:** okunamayan taraf `None` döner ve o eksen bugünkü davranışına
+    düşer (`KURAL B`) — sınıflandırma **düşmez**.
+    """
+    from app.logging_setup import get_logger
+
+    log = get_logger("dima.ask")
+    try:
+        capa = capa_degerleri(cube_query, schema)
+    except Exception:                                  # noqa: BLE001 — sınıflandırma düşmez
+        capa = None
+        log.warning("çapa değerleri okunamadı (best-effort)", exc_info=True)
+    try:
+        acik = acik_boyutlar(cube_query, schema)
+    except Exception:                                  # noqa: BLE001 — sınıflandırma düşmez
+        acik = None
+        log.warning("açık boyutlar okunamadı (best-effort)", exc_info=True)
+    return capa, acik
+
+
+def acik_boyutlar(cube_query: dict | None, schema: dict | None) -> frozenset[str] | None:
+    """🔴🔴 `§NÇ` — **EKRANDA OLMAYAN BİR BOYUTU ANMAK, «NEDEN» SORMAK DEĞİLDİR.**
+
+    Mevcut küpün, **raporda henüz bulunmayan** boyut adları (+ sinonimleri).
+
+    ## Ölçülen kusur (curl `N` turu, 2026-08-10 · beş turluk thread)
+
+        tur 1  «bu yıl duruş nedenleri»              → tek toplam
+        tur 3  «en büyük **nedeni** hangi makinede»
+               → sınıf: TUR_NEDEN  → **katkı analizi** koştu
+               → cevap: «duruş nedeni X — 46.524 dk AZALDI (net değişimin %83,6'sı)»
+
+    Kullanıcı *«hangi makinede»* diye sordu; sistem *«hangi neden ne kadar değişti»*
+    diye cevapladı. **Başka bir sorunun** doğru cevabı.
+
+    🔴 Kök: Türkçede `neden` iki ayrı kelimedir — **soru zarfı** (*«neden düştü?»*) ve
+    **isim** (*«duruşun nedeni»*). `_syn_hit` ek zincirini takip eder ve `nedeni`yi
+    `neden`e bağlar; ikisi ayrılamaz hâle gelir.
+
+    ## Neden çözüm bir kelime kuralı DEĞİL
+
+    `-i` ekini yasaklamak `«bu farkın sebebini aç»`ı da kırardı — o **gerçek** bir
+    *neden* takibidir. Ayrım ekte değil, sorunun **neye** işaret ettiğinde:
+
+    > Bir *«neden»* takibi **eldeki cevabı** açıklar. Soru, o cevapta **bulunmayan** bir
+    > boyutu anıyorsa, açıklanacak şey ekranda yoktur — yeni satırlar isteniyordur.
+
+    ⊙ Bu yüklem **katalogdan** okunur, sözlükten değil: hangi boyutların var olduğunu ve
+    hangilerinin raporda bulunduğunu küp söyler. Yani ADR-0008'in yasakladığı sınıfa
+    girmez — bu bir dil kuralı değil, bir **kapsam karşılaştırmasıdır**.
+
+    ⚠ Sahibi **bağlam katmanıdır**, sınıflandırıcı değil (`KAT-1`) — `capa_degerleri`
+    ile birebir aynı gerekçe ve birebir aynı kalıp. Sınıflandırıcı yalnız tüketir.
+
+    ⚠ Raporda **zaten olan** boyutlar dışarıda: *«makine bazında bak — makine neden
+    kötü»* gerçek bir açıklama isteğidir ve bozulmamalıdır.
+
+    *Bir cevabın üstünde konuşmak, o cevabın içinde olan şeyler hakkında konuşmaktır.*
+    """
+    from app import cube_router as cr
+
+    cube = (cube_query or {}).get("cube")
+    if not cube:
+        return None
+    mevcut = {str(d) for d in ((cube_query or {}).get("dimensions") or [])}
+    mevcut |= {str(t.get("dimension")) for t in ((cube_query or {}).get("timeDimensions") or [])
+               if isinstance(t, dict)}
+    out: set[str] = set()
+    for c in (schema or {}).get("cubes") or []:
+        if c.get("name") != cube:
+            continue
+        sinonimler = c.get("dimension_synonyms") or {}
+        for ad in (c.get("dimensions") or []):
+            if str(ad) in mevcut:
+                continue
+            out.add(cr._norm(str(ad)))
+            out |= {cr._norm(str(s)) for s in (sinonimler.get(ad) or [])}
+    # ⚠ `capa_degerleri` ile aynı üç-harf disiplini: kısa bir ad cümlede tesadüfen geçer.
+    return frozenset(x for x in out if len(x) >= 3) or None

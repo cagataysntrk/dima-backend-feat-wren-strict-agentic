@@ -441,7 +441,8 @@ def niyet_kalibi_var(soru: str) -> str | None:
 
 
 def sinifla(soru: str, *, baglam_var: bool,
-            capa_degerleri: frozenset[str] | None = None) -> Niyet:
+            capa_degerleri: frozenset[str] | None = None,
+            acik_boyutlar: frozenset[str] | None = None) -> Niyet:
     """Takip sorusunu üç sınıftan birine ayırır. **Saf fonksiyon, LLM YOK.**
 
     `baglam_var`: elde bir cevap (cube_query) var mı? Yoksa "cevap üstünde konuşma"
@@ -515,6 +516,28 @@ def sinifla(soru: str, *, baglam_var: bool,
         k = _hit(q, kaliplar)
         if not k:
             continue
+        # 🔴🔴 `§NÇ` — **«NEDEN» İKİ KELİMEDİR: soru zarfı ve isim.**
+        #
+        # ⊙ Canlı ölçüm (curl `N` turu, 2026-08-10): *«en büyük **nedeni** hangi
+        # makinede»* → `TUR_NEDEN` → **katkı analizi**. Kullanıcı *«hangi makinede»*
+        # sordu, sistem *«hangi neden ne kadar değişti»* cevapladı.
+        #
+        # ⊙ Ayrım ekte değil **işarette**: bir *neden* takibi **eldeki cevabı** açıklar.
+        # Soru, o cevapta **bulunmayan** bir boyutu anıyorsa açıklanacak şey ekranda
+        # yoktur — kullanıcı yeni satırlar istiyordur. Yüklem katalogdan okunur
+        # (`context.acik_boyutlar`), sözlükten değil: ADR-0008'in yasakladığı sınıfa
+        # girmez, bu bir **kapsam karşılaştırmasıdır**.
+        #
+        # ⚠ Kapsam **yalnız `TUR_NEDEN`**: `NORMAL`/`NE_YAPMALI` eldeki sonuca dairdir ve
+        # yanlarında bir boyut adı geçmesi onları yeni soru yapmaz. Dar tutulmasının
+        # sebebi `§101.1`: bu kapı ne kadar genişse o kadar çok **doğru** konuşmayı
+        # yapısala sürükler.
+        #
+        # *Bir cevabın üstünde konuşmak, o cevabın içinde olan şeyler hakkında
+        # konuşmaktır; dışındakini sormak yeni bir sipariştir.*
+        if tur == TUR_NEDEN and acik_boyutlar and any(
+                _syn_hit(q, b) for b in acik_boyutlar):
+            return Niyet(sinif=SINIF_YAPISAL, kural="§NÇ:ekranda-olmayan-boyut")
         # "ne yapmalıyız?" ve "normal mi?" zaten ELDEKİ sonuca dairdir — zamir aranmaz.
         # "neden"/"düşüş" ise tek başına yeni bir soru olabilir ("fire neden yüksek olur?"),
         # o yüzden mevcut cevaba bağlayan bir işaret zamiri istenir.
