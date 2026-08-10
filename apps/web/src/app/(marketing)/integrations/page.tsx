@@ -1,7 +1,6 @@
 import { getLocale } from "next-intl/server";
 import { EvidenceDetailPage } from "@/components/marketing/EvidenceDetailPage";
-import { PageVisualStage } from "@/components/marketing/VisualAssets";
 import { getMarketingContent } from "@/content/marketing";
 import { pageMetadata } from "@/lib/marketing/metadata";
 export async function generateMetadata() { const p = getMarketingContent(await getLocale()).pages.integrations; return pageMetadata(p, "/integrations"); }
-export default async function Page() { const c = getMarketingContent(await getLocale()); return <EvidenceDetailPage kind="integrations" page={c.pages.integrations} content={c} heroVisual={<PageVisualStage variant="integration" locale={c.locale} />} />; }
+export default async function Page() { const c = getMarketingContent(await getLocale()); return <EvidenceDetailPage kind="integrations" page={c.pages.integrations} content={c} />; }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { MarketingEditorialImage } from "@/components/marketing/MarketingAssets";
 import { Reveal } from "@/components/marketing/MarketingMotion";
 import { Button } from "@/components/ui/button";
 import type { CapabilityStatus, MarketingContent, PageContent } from "@/content/marketing";
@@ -65,15 +66,20 @@ export function StatusBadge({ status, content }: { status?: CapabilityStatus; co
 export function FinalCta({ content, label }: { content: MarketingContent; label?: string }) {
   return (
     <section className="relative overflow-hidden border-t bg-foreground py-16 text-background sm:py-24">
-      <Container className="relative z-10 flex flex-col items-start justify-between gap-8 md:flex-row md:items-end">
+      <Container className="relative z-10 grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
         <div>
           <p className="font-mono text-xs font-medium tracking-[0.12em] text-background/80">{content.common.demo}</p>
           <h2 className="mt-4 max-w-2xl font-display text-4xl leading-tight sm:text-5xl">{content.common.finalTitle}</h2>
           <p className="mt-4 max-w-xl text-background/70">{content.common.finalBody}</p>
+          <Button asChild variant="brand" size="lg" className="mt-8 min-h-11 max-w-full overflow-hidden whitespace-normal text-center shadow-lg transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-xl focus-visible:-translate-y-0.5 focus-visible:shadow-xl">
+            <Link href="/contact">{label ?? content.common.demo}<ArrowRight aria-hidden="true" /></Link>
+          </Button>
         </div>
-        <Button asChild variant="brand" size="lg" className="min-h-11 max-w-full overflow-hidden whitespace-normal text-center shadow-lg transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-xl focus-visible:-translate-y-0.5 focus-visible:shadow-xl">
-          <Link href="/contact">{label ?? content.common.demo}<ArrowRight aria-hidden="true" /></Link>
-        </Button>
+        <div aria-hidden="true" className="relative overflow-hidden rounded-lg border border-background/15">
+          <MarketingEditorialImage asset="quality" className="aspect-[16/9] opacity-80" sizes="(min-width: 1024px) 36vw, 100vw" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-foreground/65 via-transparent to-foreground/15" />
+          <span className="absolute bottom-4 left-4 font-mono text-micro uppercase tracking-[0.16em] text-background/70">dima / next question</span>
+        </div>
       </Container>
     </section>
   );

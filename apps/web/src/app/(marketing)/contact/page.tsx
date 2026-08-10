@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import { ArrowDown, Braces, Database, Mail, MessageSquareText } from "lucide-react";
+import { Mail } from "lucide-react";
 import { getLocale } from "next-intl/server";
 import { ContactForm } from "@/components/marketing/ContactForm";
-import { AnimatedList, MagicCard } from "@/components/marketing/MagicUI";
 import { MarketingEditorialImage } from "@/components/marketing/MarketingAssets";
 import { Reveal } from "@/components/marketing/MarketingMotion";
-import { Container, Eyebrow, TileBody } from "@/components/marketing/MarketingPrimitives";
+import { Container, Eyebrow } from "@/components/marketing/MarketingPrimitives";
 import { getMarketingContent } from "@/content/marketing";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -31,44 +30,23 @@ export default async function ContactPage() {
   const content = getMarketingContent(await getLocale());
   const tr = content.locale === "tr";
   return (
-    <section className="relative overflow-hidden py-20 sm:py-28">
-      <div aria-hidden="true" className="marketing-grid absolute inset-0 opacity-45 [mask-image:linear-gradient(to_bottom,black,transparent)]" />
+    <section className="relative overflow-hidden border-b bg-foreground py-16 text-background sm:py-24">
+      <div aria-hidden="true" className="marketing-grid absolute inset-0 opacity-20 [mask-image:linear-gradient(to_bottom,black,transparent)]" />
       <Container className="relative grid gap-12 lg:grid-cols-[0.92fr_1.08fr] lg:items-start">
         <Reveal>
           <Eyebrow>{tr ? "İletişim" : "Contact"}</Eyebrow>
           <h1 className="mt-5 text-balance font-display text-5xl leading-[1.02] tracking-[-0.04em] sm:text-6xl">{tr ? "Gerçek bir iş sorusuyla tanışalım." : "Let’s meet through a real business question."}</h1>
-          <p className="mt-6 max-w-lg text-lg leading-8 text-muted-foreground">{tr ? "Veri kaynağınızı, mevcut rapor akışınızı ve yanıtlamak istediğiniz ilk soruyu paylaşın." : "Tell us about your data source, reporting flow, and the first question you want to answer."}</p>
-          <a className="mt-8 inline-flex items-center gap-2 text-sm underline-offset-4 hover:underline focus-visible:underline" href="mailto:contact@upcytech.com"><Mail className="size-4 shrink-0 text-brand" /><span className="break-anywhere">contact@upcytech.com</span></a>
-          <div className="relative mt-10 aspect-[16/10] overflow-hidden rounded-xl border shadow-lg">
-            <MarketingEditorialImage asset="archive" className="marketing-editorial-image" priority />
-            <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-foreground/20 to-transparent" />
+          <p className="mt-6 max-w-lg text-lg leading-8 text-background/68">{tr ? "Veri kaynağınızı, mevcut rapor akışınızı ve yanıtlamak istediğiniz ilk soruyu paylaşın." : "Tell us about your data source, reporting flow, and the first question you want to answer."}</p>
+          <a className="mt-8 inline-flex items-center gap-2 text-sm text-background underline-offset-4 hover:underline focus-visible:underline" href="mailto:contact@upcytech.com"><Mail className="size-4 shrink-0 text-chart-2" /><span className="break-anywhere">contact@upcytech.com</span></a>
+          <div className="relative mt-10 overflow-hidden rounded-[1.15rem] border border-background/15">
+            <MarketingEditorialImage asset="review" alt={tr ? "Operasyon ekibi demo konuşması" : "Operations team discussing a demo"} className="marketing-editorial-image aspect-[16/10]" priority sizes="(min-width: 1024px) 44vw, 100vw" />
+            <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-foreground/70 to-transparent" />
+            <span className="absolute inset-x-5 bottom-5 text-sm font-medium text-background sm:inset-x-6 sm:bottom-6">{tr ? "İlk soruyu, verinin gerçek bağlamını ve beklenen çıktıyı birlikte netleştirelim." : "Let’s clarify the first question, its real context, and the output you need."}</span>
           </div>
-          <MagicCard className="@container/tile mt-12" tilt={false}>
-            <p className="border-b px-4 py-3 font-mono text-micro uppercase tracking-[0.16em] text-muted-foreground">{tr ? "Demo kapsamı" : "Demo scope"}</p>
-            <AnimatedList className="grid gap-px bg-border @lg/tile:grid-cols-3">
-              {[[Database, tr ? "Veri kaynağı" : "Data source"], [MessageSquareText, tr ? "İlk iş sorusu" : "First question"], [Braces, tr ? "Doğrulama akışı" : "Validation flow"]].map(([Icon, label], index) => { const StepIcon = Icon as typeof Database; return (
-                <div className="relative h-full bg-background p-4" key={String(label)}>
-                  <TileBody
-                    top={
-                      <>
-                        <StepIcon className="size-4 shrink-0 text-brand" aria-hidden="true" />
-                        <span className="font-mono text-micro text-muted-foreground">0{index + 1}</span>
-                      </>
-                    }
-                  >
-                    <p className="text-xs font-semibold">{String(label)}</p>
-                  </TileBody>
-                  {/* Bağlayıcı ok sağa dönük olduğu halde hücrenin ALTINA, ortaya
-                      konumlanmıştı — yatay 3'lü ızgarada yetim chevron'lar çıkıyordu.
-                      Artık hücreler arası hairline'ın üzerinde, dikey ortada. */}
-                  {index < 2 ? <ArrowDown aria-hidden="true" className="absolute right-0 top-1/2 z-10 hidden size-3 -translate-y-1/2 translate-x-1/2 -rotate-90 text-brand @lg/tile:block" /> : null}
-                </div>
-              ); })}
-            </AnimatedList>
-          </MagicCard>
+          <div className="mt-10 border-y border-background/15"><p className="py-4 font-mono text-micro uppercase tracking-[0.16em] text-background/45">{tr ? "Demo kapsamı" : "Demo scope"}</p><ol className="grid border-t border-background/15 sm:grid-cols-3">{[tr ? "Veri kaynağı" : "Data source", tr ? "İlk iş sorusu" : "First question", tr ? "Doğrulama akışı" : "Validation flow"].map((label, index) => <li className="border-b border-background/15 py-4 last:border-b-0 sm:border-b-0 sm:border-r sm:px-4 sm:first:pl-0 sm:last:border-r-0" key={label}><span className="font-mono text-micro text-chart-2">0{index + 1}</span><p className="mt-2 text-sm text-background/75">{label}</p></li>)}</ol></div>
         </Reveal>
         <Reveal delay={0.1} y={16} className="lg:sticky lg:top-24">
-          <div className="marketing-surface rounded-xl border bg-card p-6 shadow-lg"><ContactForm locale={content.locale} /></div>
+          <div className="marketing-surface rounded-xl border border-background/10 bg-background p-6 text-foreground shadow-2xl sm:p-8"><ContactForm locale={content.locale} /></div>
         </Reveal>
       </Container>
     </section>

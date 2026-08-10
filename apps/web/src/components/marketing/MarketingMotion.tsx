@@ -31,8 +31,12 @@ export function Reveal({
   return (
     <m.div
       data-marketing-reveal
+      data-marketing-reveal-y={y}
       className={className}
-      initial={{ opacity: 0, y }}
+      // Motion enhances a visible document. Keeping the server/first paint
+      // visible prevents a long blank page when JS or IntersectionObserver is
+      // delayed, disabled, or a full-page screenshot is taken.
+      initial={false}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.18 }}
       transition={{ ...revealTransition, delay }}
@@ -53,7 +57,7 @@ export function Stagger({
     <m.div
       data-marketing-reveal
       className={className}
-      initial="hidden"
+      initial={false}
       whileInView="visible"
       viewport={{ once: true, amount: 0.16 }}
       variants={{

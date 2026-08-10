@@ -1,13 +1,34 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
-export type MarketingAssetKey = "hero" | "decisions" | "archive";
+export type MarketingAssetKey =
+  | "hero"
+  | "quality"
+  | "floor"
+  | "review"
+  | "decisions"
+  | "archive";
 
 const assets = {
   hero: {
-    src: "/marketing/hero-data-atlas.avif",
-    width: 1680,
-    height: 945,
+    src: "/marketing/dyehouse-operator-hero.avif",
+    width: 1672,
+    height: 941,
+  },
+  quality: {
+    src: "/marketing/fabric-quality-inspection.avif",
+    width: 1448,
+    height: 1086,
+  },
+  floor: {
+    src: "/marketing/dyehouse-machine-floor.avif",
+    width: 1672,
+    height: 941,
+  },
+  review: {
+    src: "/marketing/operations-review.avif",
+    width: 1727,
+    height: 911,
   },
   decisions: {
     src: "/marketing/decision-field.avif",

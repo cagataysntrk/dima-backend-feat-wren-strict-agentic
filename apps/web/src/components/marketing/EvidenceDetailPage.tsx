@@ -1,345 +1,131 @@
-import { Fragment } from "react";
 import Link from "next/link";
-import {
-  ArrowDown,
-  BarChart3,
-  Braces,
-  Check,
-  CircleGauge,
-  Database,
-  Fingerprint,
-  KeyRound,
-  Layers3,
-  LockKeyhole,
-  MessageSquareText,
-  Network,
-  RefreshCw,
-  ShieldCheck,
-  Table2,
-  Timer,
-} from "lucide-react";
-import { AnimatedList, MagicCard } from "@/components/marketing/MagicUI";
-import { MarketingEditorialImage } from "@/components/marketing/MarketingAssets";
+import { ArrowDown, ArrowRight, Check, Sparkles } from "lucide-react";
+import { MarketingEditorialImage, type MarketingAssetKey } from "@/components/marketing/MarketingAssets";
 import { Reveal } from "@/components/marketing/MarketingMotion";
-import { Container, FinalCta, PageHero, StatusBadge, TileBody } from "@/components/marketing/MarketingPrimitives";
-import type {
-  MarketingContent,
-  MarketingLocale,
-  MarketingSceneKey,
-  PageContent,
-} from "@/content/marketing";
+import { Container, Eyebrow, FinalCta, StatusBadge } from "@/components/marketing/MarketingPrimitives";
+import { ProductProof } from "@/components/marketing/ProductProof";
+import type { MarketingContent, PageContent } from "@/content/marketing";
 
 type PageKind = "product" | "how" | "solutions" | "textile" | "security" | "integrations" | "about";
 
-const pageScenes: Record<PageKind, Record<string, MarketingSceneKey>> = {
-  product: { ask: "question", model: "definitions", validate: "checks", explore: "results", verify: "source", reuse: "reuse", govern: "access", integrate: "connection" },
-  how: { problem: "question", onboarding: "connection", semantics: "definitions", interpretation: "definitions", guard: "checks", permissions: "access", "dry-plan": "checks", execute: "source", provenance: "source", limits: "audit", planned: "deployment" },
-  solutions: { executive: "priority", operations: "coordination", production: "coordination", finance: "priority", sales: "memory", inventory: "memory" },
-  textile: { question: "question", production: "coordination", recipe: "definitions", quality: "checks", orders: "priority", integration: "connection" },
-  security: { "read-only": "checks", session: "session", tenant: "access", audit: "audit", flow: "data-flow", deployment: "deployment" },
-  integrations: { duckdb: "database", postgres: "database", engine: "support", process: "connection", status: "support" },
-  about: { purpose: "purpose", principles: "principles", company: "company", truth: "truth" },
+const pageVisuals: Record<PageKind, { hero: MarketingAssetKey; sections: MarketingAssetKey[] }> = {
+  product: { hero: "hero", sections: ["quality", "floor", "review", "quality", "review", "floor", "review", "floor"] },
+  how: { hero: "review", sections: ["review", "floor", "quality", "review", "floor", "quality", "floor", "review", "quality", "floor"] },
+  solutions: { hero: "review", sections: ["review", "floor", "quality", "floor", "quality", "review"] },
+  textile: { hero: "floor", sections: ["floor", "quality", "review", "floor", "quality", "review"] },
+  security: { hero: "review", sections: ["review", "floor", "quality", "review", "floor", "quality"] },
+  integrations: { hero: "floor", sections: ["floor", "review", "quality", "floor", "review"] },
+  about: { hero: "review", sections: ["review", "quality", "floor", "review"] },
 };
 
-const ui = {
-  tr: {
-    question: "Brüt kârı hedefin altında kalan gruplar hangileri?",
-    modeled: "Onaylı iş tanımları",
-    verified: "ön kontrol tamamlandı",
-    target: "hedef",
-    current: "güncel",
-    evidence: "kanıt görünümü",
-  },
-  en: {
-    question: "Which groups are below gross-margin target?",
-    modeled: "Approved business definitions",
-    verified: "pre-check complete",
-    target: "target",
-    current: "current",
-    evidence: "evidence view",
-  },
-} as const;
+const railLabels: Record<PageKind, { tr: string[]; en: string[] }> = {
+  product: { tr: ["Soru", "Tanım", "Cevap"], en: ["Question", "Definition", "Answer"] },
+  how: { tr: ["Anlam", "Kontrol", "Kaynak"], en: ["Meaning", "Guard", "Source"] },
+  solutions: { tr: ["Öncelik", "Operasyon", "Karar"], en: ["Priority", "Operations", "Decision"] },
+  textile: { tr: ["Parti", "Reçete", "Termin"], en: ["Batch", "Recipe", "Deadline"] },
+  security: { tr: ["Kapsam", "Yetki", "İz"], en: ["Scope", "Access", "Trace"] },
+  integrations: { tr: ["Kaynak", "Model", "Bağlantı"], en: ["Source", "Model", "Connection"] },
+  about: { tr: ["Merak", "Açıklık", "Hesap verebilirlik"], en: ["Curiosity", "Clarity", "Accountability"] },
+};
 
-function EvidenceFrame({
-  children,
-  caption,
-  labelledBy,
-  description,
-}: {
-  children: React.ReactNode;
-  caption: string;
-  labelledBy: string;
-  description: string;
-}) {
+function EditorialHero({ page, content, kind }: { page: PageContent; content: MarketingContent; kind: PageKind }) {
+  const tr = content.locale === "tr";
+  const visual = pageVisuals[kind];
   return (
-    <figure aria-labelledby={labelledBy} aria-describedby={`${labelledBy}-description`} className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      {/* @container/stage — iç düzenler pencereye değil bu kutunun genişliğine
-          göre kırılır. Bu sütun lg'de ~448px, 1440px'te ~576px; aynı JSX ayrıca
-          sayfa hero'sunda çok daha geniş render ediliyor. */}
-      <p className="sr-only" id={`${labelledBy}-description`}>{description}</p>
-      <div aria-hidden="true" className="@container/stage flex-1">{children}</div>
-      <figcaption className="shrink-0 border-t bg-muted/20 px-5 py-3 font-mono text-micro uppercase tracking-wider text-muted-foreground">
-        {caption}
+    <section className="relative overflow-hidden border-b bg-foreground text-background">
+      <div aria-hidden="true" className="marketing-grid absolute inset-0 opacity-20 [mask-image:linear-gradient(to_bottom,black,transparent_90%)]" />
+      <Container className="relative grid gap-10 py-16 sm:py-24 lg:min-h-[42rem] lg:grid-cols-[0.78fr_1.22fr] lg:items-center lg:gap-16 lg:py-28">
+        <Reveal>
+          <Eyebrow>{page.eyebrow}</Eyebrow>
+          <h1 className="mt-5 max-w-3xl text-balance font-display text-5xl leading-[0.94] tracking-[-0.045em] sm:text-6xl lg:text-7xl">{page.title}</h1>
+          <p className="mt-7 max-w-xl text-pretty text-lg leading-8 text-background/68">{page.description}</p>
+          <Link className="mt-8 inline-flex min-h-11 items-center gap-2 rounded-md bg-background px-5 py-3 text-sm font-semibold text-foreground transition-transform duration-200 hover:-translate-y-0.5 focus-visible:-translate-y-0.5" href="/contact">{page.cta}<ArrowRight aria-hidden="true" className="size-4" /></Link>
+        </Reveal>
+        <Reveal delay={0.08} y={18}>
+          <EditorialFigure asset={visual.hero} priority label={tr ? "Dima çalışma sahnesi" : "Dima working scene"} caption={tr ? "İşin içinden gelen cevaplar" : "Answers grounded in the work"} dark />
+        </Reveal>
+      </Container>
+    </section>
+  );
+}
+
+function EditorialFigure({ asset, label, caption, priority = false, dark = false, compact = false }: { asset: MarketingAssetKey; label: string; caption: string; priority?: boolean; dark?: boolean; compact?: boolean }) {
+  return (
+    <figure className={`group relative overflow-hidden border ${dark ? "border-background/15 bg-background/5" : "border-border bg-card"} ${compact ? "rounded-lg" : "rounded-[1.15rem]"}`}>
+      <MarketingEditorialImage asset={asset} alt={label} className={`marketing-editorial-image transition-transform duration-700 ease-out group-hover:scale-[1.025] ${compact ? "aspect-[4/3]" : "aspect-[16/10]"}`} priority={priority} sizes={compact ? "(min-width: 1024px) 36vw, 100vw" : "(min-width: 1024px) 58vw, 100vw"} />
+      <div aria-hidden="true" className={`absolute inset-0 bg-gradient-to-t ${dark ? "from-foreground/70 via-foreground/5 to-transparent" : "from-foreground/45 via-transparent to-transparent"}`} />
+      <figcaption className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-4 sm:inset-x-6 sm:bottom-6">
+        <span className="max-w-[75%] text-sm font-medium text-background">{caption}</span>
+        <span className="shrink-0 font-mono text-micro uppercase tracking-[0.16em] text-background/65">{dark ? "dima / field" : "dima / scene"}</span>
       </figcaption>
     </figure>
   );
 }
 
-function AskVisual({ locale }: { locale: MarketingLocale }) {
-  const t = ui[locale];
-  const tags = locale === "tr"
-    ? ["brüt kâr", "ürün grubu", "bu çeyrek"]
-    : ["gross margin", "product group", "this quarter"];
-  const prompts = locale === "tr"
-    ? ["↳ hedef", "↳ dönem", "↳ grup"]
-    : ["↳ target", "↳ period", "↳ group"];
+function StoryRail({ content, kind }: { content: MarketingContent; kind: PageKind }) {
+  const labels = railLabels[kind][content.locale];
   return (
-    <div className="space-y-3 p-4 @lg/stage:p-5">
-      <div className="max-w-[88%] rounded-lg border bg-background p-4 text-sm font-medium">{t.question}</div>
-      <div className="ml-auto max-w-[92%] rounded-lg border border-brand/30 bg-brand/5 p-4">
-        <div className="flex items-center gap-2 font-mono text-micro uppercase text-brand"><Layers3 className="size-3 shrink-0" />{t.modeled}</div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {tags.map((tag) => <span className="rounded-full border bg-background px-2 py-1 font-mono text-xs" key={tag}>{tag}</span>)}
-        </div>
-      </div>
-      {/* flex-wrap: üstteki etiket şeridinde var, burada yoktu — uzun bir etiket
-          dar kartta taşıyordu. */}
-      <div className="flex flex-wrap gap-2">
-        {prompts.map((item) => <span className="rounded-md border px-2 py-1 text-xs text-muted-foreground" key={item}>{item}</span>)}
-      </div>
-    </div>
+    <section className="border-b bg-foreground text-background" aria-label={content.locale === "tr" ? "Sayfa akışı" : "Page sequence"}>
+      <Container>
+        <ol className="grid divide-y divide-background/15 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          {labels.map((label, index) => <li className="flex items-center gap-4 px-1 py-5 sm:px-6 sm:first:pl-0" key={label}><span className="font-mono text-micro text-chart-2">0{index + 1}</span><span className="text-sm text-background/72">{label}</span><ArrowRight aria-hidden="true" className="ml-auto size-4 text-background/28" /></li>)}
+        </ol>
+      </Container>
+    </section>
   );
 }
 
-function SemanticVisual({ locale }: { locale: MarketingLocale }) {
-  const tr = locale === "tr";
+function StorySection({ page, content, kind, index }: { page: PageContent; content: MarketingContent; kind: PageKind; index: number }) {
+  const section = page.sections[index];
+  const visual = pageVisuals[kind].sections[index % pageVisuals[kind].sections.length];
+  const tr = content.locale === "tr";
+  const reversed = index % 2 === 1;
   return (
-    <div className="marketing-grid relative grid gap-4 p-5 @2xl/stage:grid-cols-[1fr_1.2fr_1fr] @2xl/stage:items-center">
-      <div className="space-y-3">
-        <Node label={tr ? "Satışlar" : "Sales"} meta={tr ? "veri kaynağı" : "data source"} />
-        <Node label={tr ? "Müşteriler" : "Customers"} meta={tr ? "veri kaynağı" : "data source"} />
-      </div>
-      <div className="rounded-xl border border-brand/40 bg-background p-5 text-center shadow-md">
-        <Network className="mx-auto size-5 text-brand" />
-        <p className="mt-2 text-sm font-semibold">{tr ? "Ortak iş tanımları" : "Shared business definitions"}</p>
-        <p className="mt-2 font-mono text-micro text-muted-foreground">{tr ? "ölçü × ayrıntı × ilişki" : "metric × detail × relationship"}</p>
-      </div>
-      <div className="space-y-3">
-        <Node label={tr ? "Brüt kâr" : "Gross margin"} meta={tr ? "iş tanımı" : "business definition"} />
-        <Node label={tr ? "Dönem" : "Period"} meta={tr ? "iş tanımı" : "business definition"} />
-      </div>
-    </div>
-  );
-}
-
-// w-full: sütun modunda `items-center` altında üç kutunun üç farklı genişlikte
-// çıkmasını engeller; satır modunda çağıran taraf flex-1 verir.
-function Node({ label, meta, className = "" }: { label: string; meta: string; className?: string }) {
-  return <div className={`w-full min-w-0 rounded-lg border bg-background p-4 ${className}`}><p className="font-mono text-micro uppercase text-muted-foreground">{meta}</p><p className="mt-1 text-xs font-semibold">{label}</p></div>;
-}
-
-function ValidationVisual({ locale }: { locale: MarketingLocale }) {
-  const labels = locale === "tr"
-    ? [["Yapay zekâ önerisi", "aday sorgu"], ["İş tanımları", "ölçü + ayrıntı"], ["Yalnızca okuma", "izin kontrolü"], ["Ön kontrol", "çalıştırılabilir"]]
-    : [["AI proposal", "candidate query"], ["Business definitions", "metric + detail"], ["Read-only access", "permission check"], ["Pre-check", "ready to run"]];
-  return (
-    <div className="grid gap-px bg-border @sm/stage:grid-cols-2">
-      {labels.map(([title, detail], index) => (
-        <div className="bg-background p-4" key={title}>
-          <TileBody
-            top={
-              <>
-                <span className="font-mono text-micro text-brand">0{index + 1}</span>
-                {index > 0 ? <Check className="size-3 shrink-0 text-chart-2" /> : null}
-              </>
-            }
-          >
-            <p className="text-xs font-semibold">{title}</p>
-            <p className="mt-1 font-mono text-xs text-muted-foreground">{detail}</p>
-          </TileBody>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ExploreVisual({ locale }: { locale: MarketingLocale }) {
-  const t = ui[locale];
-  return (
-    // minmax(11rem, …): `font-display text-2xl` "31.4%" ~60px genişliğinde ve
-    // bölünecek yeri yok — taban olmadan 57px'lik kutuya düşüp kırpılıyordu.
-    <div className="grid gap-px bg-border @lg/stage:grid-cols-[minmax(11rem,0.8fr)_1.2fr]">
-      <div className="grid grid-cols-2 gap-px bg-border">
-        {[["31.4%", "margin"], ["12", "groups"], ["3", "below"], ["Q3", t.current]].map(([value, label]) => (
-          <div className="bg-background p-4" key={label}><p className="font-display text-2xl">{value}</p><p className="mt-1 text-xs text-muted-foreground">{label}</p></div>
-        ))}
-      </div>
-      <div className="bg-background p-5">
-        <div className="flex h-32 items-end gap-2">
-          {[72, 48, 86, 61, 93, 67].map((height, index) => <div className="relative flex h-full flex-1 items-end" key={index}><div className="w-full rounded-t-sm bg-brand/25" style={{ height: `${height}%` }} /></div>)}
-        </div>
-        <div className="mt-3 flex justify-between gap-2 font-mono text-micro text-muted-foreground"><span>{t.target}</span><span>{t.current}</span></div>
-      </div>
-    </div>
-  );
-}
-
-function TraceVisual({ locale }: { locale: MarketingLocale }) {
-  const items = locale === "tr"
-    ? ["iş tanımı eşleşti", "yalnızca okuma kontrolü geçti", "ön kontrol tamamlandı", "sonuç üretildi"]
-    : ["business definition matched", "read-only check passed", "pre-check completed", "result produced"];
-  // min-w-0: flex öğesinin varsayılan min-width:auto'su yüzünden uzun etiketler
-  // ("yalnızca okuma kontrolü geçti") daralamayıp karttan taşıyordu.
-  return <div className="p-5">{items.map((item, index) => <div className="flex gap-4 border-b py-3 last:border-0" key={item}><span className="flex size-7 shrink-0 items-center justify-center rounded-full border font-mono text-micro text-brand">{index + 1}</span><div className="min-w-0"><p className="text-xs font-medium">{item}</p><p className="mt-1 font-mono text-micro text-muted-foreground">{locale === "tr" ? "adım" : "step"}/{String(index + 1).padStart(2, "0")} · {locale === "tr" ? "TAMAM" : "PASS"}</p></div></div>)}</div>;
-}
-
-function ReuseVisual({ locale }: { locale: MarketingLocale }) {
-  const items = locale === "tr"
-    ? [[RefreshCw, "Yeniden çalıştır", "aynı tanım"], [Timer, "Zamanla", "Pilot kapsamı"], [CircleGauge, "Bildirim al", "Pilot kapsamı"]]
-    : [[RefreshCw, "Run again", "same definition"], [Timer, "Schedule", "Pilot scope"], [CircleGauge, "Get notified", "Pilot scope"]];
-  return <div className="grid gap-px bg-border @xl/stage:grid-cols-3">{items.map(([Icon, title, meta]) => { const VisualIcon = Icon as typeof RefreshCw; return <div className="bg-background p-5" key={String(title)}><TileBody top={<VisualIcon className="size-4 shrink-0 text-brand" />}><p className="text-sm font-semibold">{String(title)}</p><p className="mt-1 font-mono text-xs text-muted-foreground">{String(meta)}</p></TileBody></div>; })}</div>;
-}
-
-function GovernVisual({ locale }: { locale: MarketingLocale }) {
-  const items = locale === "tr"
-    ? [[Fingerprint, "Oturum", "bellekte erişim"], [KeyRound, "Yetki", "sunucu kaynağı"], [ShieldCheck, "Kurum kapsamı", "sınırlandırılmış istek"]]
-    : [[Fingerprint, "Session", "in-memory access"], [KeyRound, "Permission", "server source"], [ShieldCheck, "Organization scope", "scoped request"]];
-  // ReuseVisual ile yapısal olarak aynı — orada text-sm/mt-8, burada text-xs/mt-7
-  // vardı; gerekçesiz ayrışmaydı, tek biçime alındı.
-  return <div className="grid gap-px bg-border @xl/stage:grid-cols-3">{items.map(([Icon, title, meta]) => { const VisualIcon = Icon as typeof Fingerprint; return <div className="bg-background p-5" key={String(title)}><TileBody top={<VisualIcon className="size-4 shrink-0 text-brand" />}><p className="text-sm font-semibold">{String(title)}</p><p className="mt-1 font-mono text-xs text-muted-foreground">{String(meta)}</p></TileBody></div>; })}</div>;
-}
-
-function SolutionVisual({ id, locale }: { id: string; locale: MarketingLocale }) {
-  const tr = locale === "tr";
-  if (id === "executive") {
-    const priorities = tr
-      ? [["Brüt kâr", "−7,2 puan"], ["Nakit dönüşümü", "+6 gün"], ["Stok seviyesi", "3 kritik"]]
-      : [["Gross margin", "−7.2 pts"], ["Cash conversion", "+6 days"], ["Inventory level", "3 critical"]];
-    return <AnimatedList className="space-y-2 p-5">{priorities.map(([label, value], index) => <div className="flex items-center justify-between gap-3 rounded-lg border bg-background p-4" key={label}><span className="flex min-w-0 items-center gap-3 text-xs font-medium"><span className="shrink-0 font-mono text-micro text-brand">0{index + 1}</span>{label}</span><span className="shrink-0 font-mono text-xs">{value}</span></div>)}</AnimatedList>;
-  }
-  if (id === "operations") {
-    const teams = tr ? ["Finans", "Satış", "Stok"] : ["Finance", "Sales", "Inventory"];
-    return <div className="flex flex-col items-center gap-3 p-6 @lg/stage:flex-row">{teams.map((team, index) => <div className="contents" key={team}><Node className="@lg/stage:flex-1" label={team} meta={tr ? "aynı tanım" : "shared definition"} />{index < teams.length - 1 ? <ArrowDown className="size-4 shrink-0 text-brand @lg/stage:-rotate-90" /> : null}</div>)}</div>;
-  }
-  const saved = tr
-    ? ["Haftalık hedef sapmaları", "Brüt kâr kırılımı", "Kritik stoklar"]
-    : ["Weekly target gaps", "Gross-margin breakdown", "Critical inventory"];
-  return <AnimatedList className="space-y-2 p-5">{saved.map((item, index) => <div className="flex items-center gap-3 rounded-lg border bg-background p-4" key={item}><RefreshCw className="size-4 shrink-0 text-brand" /><span className="min-w-0 text-xs font-medium">{item}</span><span className="ml-auto shrink-0 font-mono text-micro text-muted-foreground">0{index + 1}</span></div>)}</AnimatedList>;
-}
-
-function SecurityVisual({ id, locale }: { id: string; locale: MarketingLocale }) {
-  const tr = locale === "tr";
-  if (id === "session") {
-    const steps = tr
-      ? [[MessageSquareText, "İstek"], [LockKeyhole, "Oturum kontrolü"], [RefreshCw, "Güvenli yenileme"], [ShieldCheck, "Devam"]]
-      : [[MessageSquareText, "Request"], [LockKeyhole, "Session check"], [RefreshCw, "Secure refresh"], [ShieldCheck, "Continue"]];
-    return <div className="grid grid-cols-2 gap-px bg-border @xl/stage:grid-cols-4">{steps.map(([Icon, label], i) => { const VisualIcon = Icon as typeof MessageSquareText; return <div className="bg-background p-4" key={String(label)}><TileBody top={<span className="font-mono text-micro text-brand">0{i + 1}</span>}><VisualIcon className="size-4 shrink-0 text-brand" /><p className="mt-2 text-xs font-semibold">{String(label)}</p></TileBody></div>; })}</div>;
-  }
-  if (id === "flow") return <ValidationVisual locale={locale} />;
-  if (id === "deployment") return <div className="grid gap-4 p-5 @sm/stage:grid-cols-2"><Node label={tr ? "Bulut kurulumu" : "Cloud deployment"} meta={tr ? "kullanılabilir" : "available"} /><div className="rounded-lg border border-dashed p-4"><p className="font-mono text-micro text-muted-foreground">{tr ? "planlanıyor" : "planned"}</p><p className="mt-1 text-xs font-semibold">{tr ? "Kurum içi hibrit bağlantı" : "Hybrid on-premises connection"}</p></div></div>;
-  return <GovernVisual locale={locale} />;
-}
-
-function IntegrationVisual({ id, locale }: { id: string; locale: MarketingLocale }) {
-  const tr = locale === "tr";
-  if (["duckdb", "postgres", "engine"].includes(id)) {
-    const rows = tr
-      ? [["DuckDB", "örnek kaynak"], ["Postgres", "Dima’da doğrulandı"], ["MSSQL / Oracle", "teknik olarak mümkün"]]
-      : [["DuckDB", "sample source"], ["Postgres", "Verified in Dima"], ["MSSQL / Oracle", "Engine capable"]];
-    return <div className="space-y-2 p-5">{rows.map(([name, status]) => <div className="flex items-center justify-between gap-3 rounded-lg border bg-background p-4" key={name}><span className="flex min-w-0 items-center gap-2 text-xs font-semibold"><Database className="size-3.5 shrink-0 text-brand" />{name}</span><span className="shrink-0 font-mono text-xs text-muted-foreground">{status}</span></div>)}</div>;
-  }
-  const steps = tr
-    ? [[Database, "kaynak"], [Table2, "tablolar"], [Network, "iş tanımları"], [Braces, "kontrol"], [BarChart3, "erişim"]]
-    : [[Database, "source"], [Table2, "tables"], [Network, "definitions"], [Braces, "checks"], [BarChart3, "access"]];
-  // 5'li şerit yalnızca gerçekten geniş sahnede; eskiden sm:grid-cols-5 dar
-  // sütunda hücre başına ~57px bırakıp "01 / iş tanımları"nı zorla sarıyordu.
-  return <div className="grid grid-cols-2 gap-px bg-border @sm/stage:grid-cols-3 @2xl/stage:grid-cols-5">{steps.map(([Icon, label], i) => { const VisualIcon = Icon as typeof Database; return <div className="bg-background p-4" key={String(label)}><TileBody top={<VisualIcon className="size-4 shrink-0 text-brand" />}><p className="font-mono text-xs">0{i + 1} / {String(label)}</p></TileBody></div>; })}</div>;
-}
-
-function AboutVisual({ id, locale }: { id: string; locale: MarketingLocale }) {
-  const tr = locale === "tr";
-  if (id === "principles") return <div className="grid grid-cols-2 gap-px bg-border @xl/stage:grid-cols-4">{["D", "I", "M", "A"].map((letter, i) => <div className="bg-background p-5" key={letter}><TileBody top={<span className="font-display text-4xl leading-none text-muted-foreground/50">{letter.toLowerCase()}</span>}><p className="font-mono text-micro text-brand">0{i + 1} / {tr ? "ilke" : "principle"}</p></TileBody></div>)}</div>;
-  return <div className="flex flex-col items-center gap-3 p-6 @lg/stage:flex-row"><Node className="@lg/stage:flex-1" label={tr ? "İş sorusu" : "Business question"} meta={tr ? "açıklık" : "clarity"} /><ArrowDown className="size-4 shrink-0 text-brand @lg/stage:-rotate-90" /><Node className="@lg/stage:flex-1" label="dima" meta={tr ? "tanımlı + kontrollü" : "defined + checked"} /><ArrowDown className="size-4 shrink-0 text-brand @lg/stage:-rotate-90" /><Node className="@lg/stage:flex-1" label={tr ? "İncelenebilir cevap" : "Reviewable answer"} meta={tr ? "kaynak" : "source"} /></div>;
-}
-
-function SectionVisual({ scene, id, locale }: { scene: MarketingSceneKey; id: string; locale: MarketingLocale }) {
-  if (scene === "question") return <AskVisual locale={locale} />;
-  if (scene === "definitions") return <SemanticVisual locale={locale} />;
-  if (scene === "checks") return <ValidationVisual locale={locale} />;
-  if (scene === "results") return <ExploreVisual locale={locale} />;
-  if (scene === "source") return <TraceVisual locale={locale} />;
-  if (scene === "reuse") return <ReuseVisual locale={locale} />;
-  if (scene === "access") return <GovernVisual locale={locale} />;
-  if (["priority", "coordination", "memory"].includes(scene)) return <SolutionVisual id={id} locale={locale} />;
-  if (["session", "audit", "data-flow", "deployment"].includes(scene)) return <SecurityVisual id={id} locale={locale} />;
-  if (["database", "connection", "support"].includes(scene)) return <IntegrationVisual id={id} locale={locale} />;
-  return <AboutVisual id={id} locale={locale} />;
-}
-
-export function EvidenceDetailPage({ page, content, kind, heroVisual }: { page: PageContent; content: MarketingContent; kind: PageKind; heroVisual?: React.ReactNode }) {
-  const fallbackHero = kind === "solutions"
-    ? (
-      <div className="relative aspect-[16/10] overflow-hidden rounded-xl border bg-card shadow-xl">
-        <MarketingEditorialImage asset="decisions" className="marketing-editorial-image" priority />
-        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-foreground/25 via-transparent to-transparent" />
-      </div>
-    )
-    : kind === "about"
-      ? (
-        <div className="relative aspect-[4/3] overflow-hidden rounded-xl border bg-card shadow-xl">
-        <MarketingEditorialImage asset="archive" className="marketing-editorial-image" priority />
-        </div>
-      )
-      : undefined;
-
-  return (
-    <>
-      <PageHero page={page} media={heroVisual ?? fallbackHero} />
-      <Container className="py-16 sm:py-24">
-        <div className="space-y-20 sm:space-y-28">
-          {page.sections.map((section, index) => {
-            const scene = section.visual?.key ?? pageScenes[kind][section.id];
-            if (!scene) return null;
-            return (
-              <section className="scroll-mt-24" id={section.id} key={section.id}>
-                {/* items-center YOK: stretch varsayılanı geri geldi, böylece metin
-                    sütunu ile kartın üstleri her bölümde hizalanıyor (eskiden ofset
-                    bölümden bölüme yön değiştiriyordu). */}
-                <div className={`grid gap-8 lg:grid-cols-2 lg:gap-10 [&>*]:min-w-0 ${index % 2 ? "lg:[&>*:first-child]:order-2" : ""}`}>
-                  <Reveal>
-                    <div className="flex flex-wrap items-center gap-3">
-                      {kind === "how" ? <span className="font-mono text-xs text-brand">{String(index + 1).padStart(2, "0")}</span> : null}
-                      <StatusBadge status={section.status} content={content} />
-                    </div>
-                    <h2 className="mt-4 text-balance text-3xl font-semibold tracking-tight sm:text-4xl" id={`${kind}-${section.id}-title`}>{section.title}</h2>
-                    <p className="mt-5 max-w-xl leading-7 text-muted-foreground">{section.body}</p>
-                    {section.points ? <AnimatedList as="ul" className="mt-6 grid gap-2" itemClassName="flex gap-3 text-sm">{section.points.map((point) => <Fragment key={point}><Check className="mt-0.5 size-4 shrink-0 text-brand" />{point}</Fragment>)}</AnimatedList> : null}
-                  </Reveal>
-                  <Reveal delay={0.08} y={18} className="flex">
-                    <MagicCard className="w-full" tilt={false}>
-                      {/* caption artık section.body'yi tekrarlamıyor — aynı cümle
-                          ekranda iki kez basılıyordu ve kart yüksekliğini veriye
-                          bağlıyordu. Kısa, sabit bir görsel etiket kaldı. */}
-                      <EvidenceFrame labelledBy={`${kind}-${section.id}-title`} caption={section.visual?.caption ?? section.title} description={section.visual?.technicalNote ?? section.body}>
-                        <SectionVisual scene={scene} id={section.id} locale={content.locale} />
-                      </EvidenceFrame>
-                    </MagicCard>
-                  </Reveal>
-                </div>
-              </section>
-            );
-          })}
+    <section className="scroll-mt-24 border-b py-16 sm:py-24" id={section.id}>
+      <Container>
+        <div className="grid gap-9 lg:grid-cols-[0.12fr_0.63fr_1.25fr] lg:items-center lg:gap-10">
+          <Reveal className="flex items-start gap-3 lg:block">
+            <span className="font-mono text-xs tabular-nums text-brand">{String(index + 1).padStart(2, "0")}</span>
+            <div className="mt-0 lg:mt-5"><StatusBadge status={section.status} content={content} /></div>
+          </Reveal>
+          <Reveal delay={0.04} className={reversed ? "lg:order-3" : undefined}>
+            <h2 className="max-w-2xl text-balance text-3xl font-semibold tracking-[-0.025em] sm:text-4xl" id={`${kind}-${section.id}-title`}>{section.title}</h2>
+            <p className="mt-5 max-w-xl leading-7 text-muted-foreground">{section.body}</p>
+            {section.points?.length ? <ul className="mt-6 flex max-w-xl flex-wrap gap-x-5 gap-y-3 text-sm text-muted-foreground">{section.points.map((point) => <li className="flex items-start gap-2" key={point}><Check aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-brand" />{point}</li>)}</ul> : null}
+          </Reveal>
+          <Reveal delay={0.1} y={18} className={reversed ? "lg:order-2" : undefined}>
+            <EditorialFigure asset={visual} label={section.title} caption={section.visual?.caption ?? (tr ? "Sanitized çalışma sahnesi" : "Sanitized working scene")} compact />
+          </Reveal>
         </div>
       </Container>
+    </section>
+  );
+}
+
+function QuietSignal({ page, content }: { page: PageContent; content: MarketingContent }) {
+  const tr = content.locale === "tr";
+  return (
+    <section className="border-b bg-muted/25 py-14 sm:py-20">
+      <Container className="grid gap-8 lg:grid-cols-[0.6fr_1.4fr] lg:items-center">
+        <Reveal><div className="flex items-center gap-3"><Sparkles aria-hidden="true" className="size-5 text-brand" /><Eyebrow>{tr ? "Tek bir zincir" : "One visible chain"}</Eyebrow></div><h2 className="mt-4 max-w-xl text-balance font-display text-3xl leading-tight sm:text-4xl">{tr ? "İş sorusu, kontrol ve dayanak aynı hikâyede." : "Question, guard, and source stay in the same story."}</h2></Reveal>
+        <Reveal delay={0.08}><div className="grid border-y sm:grid-cols-3">{page.sections.slice(0, 3).map((section, index) => <div className="border-b py-5 last:border-b-0 sm:border-b-0 sm:border-r sm:px-5 sm:first:pl-0 sm:last:border-r-0" key={section.id}><span className="font-mono text-micro text-brand">0{index + 1}</span><p className="mt-3 text-sm font-medium">{section.title}</p></div>)}</div></Reveal>
+      </Container>
+    </section>
+  );
+}
+
+export function EvidenceDetailPage({ page, content, kind }: { page: PageContent; content: MarketingContent; kind: PageKind }) {
+  return (
+    <>
+      <EditorialHero content={content} kind={kind} page={page} />
+      <StoryRail content={content} kind={kind} />
+      {kind === "product" ? <section className="border-b py-16 sm:py-24" aria-labelledby="product-proof-title"><Container><Reveal><Eyebrow>{content.locale === "tr" ? "Ürünün içi" : "Inside the product"}</Eyebrow><h2 id="product-proof-title" className="mt-4 max-w-3xl text-balance font-display text-4xl leading-tight sm:text-5xl">{content.locale === "tr" ? "Cevabın içini adım adım inceleyin." : "Inspect the answer, step by step."}</h2></Reveal><Reveal delay={0.08} className="mt-10"><ProductProof locale={content.locale} /></Reveal></Container></section> : null}
+      <div>{page.sections.map((section, index) => <StorySection content={content} index={index} kind={kind} key={section.id} page={page} />)}</div>
+      <QuietSignal content={content} page={page} />
       {kind === "textile" ? (
-        <Container className="pb-16 sm:pb-24">
+        <Container className="py-12 sm:py-16">
           <nav aria-label={content.locale === "tr" ? "İlgili dima sayfaları" : "Related dima pages"} className="grid gap-3 border-y py-6 sm:grid-cols-4">
-            {[
-              [content.nav.product, "/product"],
-              [content.nav.how, "/how-it-works"],
-              [content.nav.security, "/security"],
-              [content.footer.contact, "/contact"],
-            ].map(([label, href]) => <Link className="inline-flex min-h-11 items-center justify-between rounded-md border bg-card px-4 text-sm font-medium transition-colors hover:border-brand/40 hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring" href={href} key={href}>{label}<ArrowDown aria-hidden="true" className="-rotate-90 text-brand" /></Link>)}
+            {[[content.nav.product, "/product"], [content.nav.how, "/how-it-works"], [content.nav.security, "/security"], [content.footer.contact, "/contact"]].map(([label, href]) => <Link className="group inline-flex min-h-11 items-center justify-between border-b py-3 text-sm font-medium transition-colors hover:text-brand focus-visible:text-brand sm:border-b-0" href={href} key={href}>{label}<ArrowDown aria-hidden="true" className="size-4 -rotate-90 text-brand transition-transform group-hover:translate-x-1" /></Link>)}
           </nav>
         </Container>
       ) : null}
