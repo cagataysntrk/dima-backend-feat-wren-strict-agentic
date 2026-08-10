@@ -10346,3 +10346,98 @@ değil. Ve bu bir **ikame değil** bir **özgüllük kaybıdır**: `olcu_ikamesi
 (*«bu cevap onu içermiyor»*) burada **yalan** olurdu.
 
 *Bir kusuru en yakın komşusunun adıyla anmak, iki kusuru da görünmez yapar.*
+
+# 🔴🔴 `N+2` TURU — 2026-08-10 · **BİR TERİMİN TAMAMI MI KARŞILANDI?**
+
+## 0 · TURUN TEK CÜMLESİ
+
+Üç kusur da *«kullanıcının yazdığı şeyin bir **PARÇASI**»* üstünden çalışıyordu — ve
+üçünün de çözümü bir **sözlük değil**: bir **kapsama ilişkisi**, bir **yazım imzası**,
+bir **tür ayrımı**.
+
+| kök | ölçülen | kök çözüm |
+|---|---|---|
+| 🔴 `§UT` | *«bakım maliyeti»* → `maliyet.ort_birim_maliyet`, beyan **yok** | terim **kapsaması** (ek-toleranslı) |
+| 🔴 `§SB` | *«ortalama dE»* → **R4**, hiçbir küp eşleşmedi | **sözcük içi büyük harf** imzası |
+| 🔴 `§YT` | not kullanıcıya **`{{ENT_1}}`** yazdı | yuva ≠ değer |
+
+## 1 · `§UT` — NİTELEYENİ DÜŞEN TAMLAMA
+
+```
+«bu yıl en kötü bakım maliyeti hangi makinede» → maliyet.ort_birim_maliyet · beyan YOK
+
+ÖLÇÜLDÜ:
+  bakim_is_emri  → bakim_maliyeti      terim='bakim maliyeti'   ← 2 kelime, TAM
+  maliyet        → ort_birim_maliyet   terim='maliyet'          ← 1 kelime, PARÇA
+```
+
+`_capraz_kup_ikamesi` susuyordu çünkü ilk satırı *«cevabın küpü terimi karşılıyor mu»*
+diye soruyor — ***«TAM MI karşılıyor»*** diye değil. Ve bu bir **ikame değil** bir
+**özgüllük kaybıdır**: `olcu_ikamesi` cümlesi (*«bu cevap onu içermiyor»*) burada
+**yalan** olurdu. Ayrı işaret (`olcu_ozgullugu`), ayrı cümle.
+
+### 🔴 Ve kapı **kendi yüklemimdeki kusuru** yakaladı
+
+İlk yazımda ölçüt küme alt-kümesiydi (`kendi < oteki`). Ölçüldü ve **çalışmadı**:
+
+```
+kendi = ['maliyet']            oteki = ['bakim', 'maliyet**i**']
+{maliyet} ⊄ {bakim, maliyeti}                      ← iyelik eki
+```
+
+Türkçede tamlamanın **başı iyelik eki alır** — yani kural, **tam olarak geçerli olduğu
+yerde** sessizce yanlış çıkıyordu. Doğru yüklem depoda zaten vardı (`_syn_hit`, ek
+zincirini bilir); ikinci bir ek kuralı yazmak `KAT-1` olurdu.
+
+> *Bir dilbilgisi kuralını atlayan yüklem, atladığı yerde en çok gerekendir.*
+
+Canlı: *«Soruda «bakim maliyeti» geçiyor ama bu cevap onun yalnız bir **parçasıyla**
+hesaplandı — daha özgül bir karşılık var. … `bakim_is_emri` küpünü sorabilirsin.»*
+
+## 2 · `§SB` — TEKNİK SİMGE, NORMALİZASYONDA YOK OLUYOR
+
+```
+«müşteri bazında ortalama dE bu yıl»
+  _norm → 'musteri bazinda ortalama **de** bu yil'
+  hiçbir küp eşleşmedi → R4 · kullanıcı: «parti için hangi ölçüyü istiyorsun?» (dE YOK)
+```
+
+`dE` bir **simgedir**; `de` Türkçede bir **bağlaçtır**. Yani terim yalnız kaybolmuyor,
+geri getirmesi de **tehlikeli**: `de`'yi sinonim yazmak her cümlede ateşlerdi (`§73`'ün
+tek-harf felaketinin kardeşi). Kullanıcının kuralı birebir: *«tek tek sinonim yazmak
+aptallık»*.
+
+**İmza — kapalı, yapısal, ölçülmüş:** Türkçe sözcüklerde **sözcük içi büyük harf
+yoktur**. Ölçüldü:
+
+```
+'…ortalama dE bu yıl'  → {'dE'}      'aylık kWh tüketimi' → {'kWh'}
+'bu yıl toplam ciro'   → set()       'makine bazında OEE' → set()   ← tümü-büyük kapsam DIŞI
+katalogda simge taşıyan kimlik: TAM İKİ — kalite.ort_dE · sikayet.ort_sapma_dE
+```
+
+⚠ Bu bir **yönlendirme değil görünürlük** düzeltmesidir: hiçbir küp seçilmez, simgenin
+sahipleri netleştirmeye **chip** olarak katılır.
+
+## 3 · `§YT` — VE `§UT`'nin CANLI DOĞRULAMASI YENİ BİR KUSUR İFŞA ETTİ
+
+```
+⚠ Etkisiz bir dışlama düşürüldü («{{ENT_1}}» ∉ **makine**)
+```
+
+Bir perdeleme **yuvası** geri konmadan garsonun süzgecine, oradan da beyana sızmış.
+İki kusur, tek imza: (1) yuva geri konmamış; (2) beyan onu **gerçek bir değer gibi**
+adlandırıyor. İkincisi kanıtlı yanlıştır — bir yuva hiçbir katalogda bulunamaz, çünkü
+**hiçbir zaman bir değer değildi**.
+
+Tanıyıcı (`yayilim.yuva_mu`) **üreticinin yanına** kondu (`_yt`) ki biçim değişirse
+ikisi birlikte değişsin. Yuva sessizce düşer; gerçek bir değerde `§NT` beyanı **aynen**
+yazılır (kapılı).
+
+> ⊙ **Bir düzeltmenin kendi doğrulaması bir kusur bulabilir** — ve bu, beyan katmanının
+> neden değerli olduğunun kanıtıdır: `§NT` olmasaydı bu yuva **sessizce** düşecekti.
+
+## 4 · ⚠ VE BİR KÖK DAHA ÇÜRÜTÜLDÜ — `§OB` YOK
+
+Bkz. §8 (önceki tur): `plan_tuketici` **zaten** `uyum.denetle` koşuyor. Bugün **beşinci**
+kez bir kök iddiası ölçümle düştü — ve beşinde de ölçüm yanlış bir kök yazmamı önledi.
