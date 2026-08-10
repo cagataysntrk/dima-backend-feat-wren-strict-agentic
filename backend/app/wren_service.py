@@ -81,6 +81,56 @@ def guard_sql(sql: str) -> str:
 _CLAC_ONBELLEK: dict[str, tuple[bytes, int]] = {}
 
 
+def _etiket_belirsizligini_ayikla(sinonimler: dict[str, list[str]],
+                                  beyan: dict[str, set[str]],
+                                  etiketten: dict[str, set[str]]) -> dict[str, list[str]]:
+    """🔴🔴 `§EB` — **ETİKETTEN TÜREYEN BELİRSİZ TOKEN SİNONİM OLAMAZ.**
+
+    ## Ölçülen kusur (canlı `XII`, 2026-08-10)
+
+    *«**renk grubuna** göre fire bu yıl»* → kırılım **üç** boyut:
+
+        dimensions: ["ham_grup", "renk", "yas_grubu"]
+
+    Kullanıcı **renk** sordu, cevaba **personel yaş grubu** da girdi. Rozet
+    `source=cube` — deterministik yol — ve **hiçbir beyan yok**.
+
+    ⊙ Sebep: `_with_label` etiketi kelimelere bölüp **her birini** sinonim yapıyor.
+    *«Ham Grubu»* → `ham`, **`grubu`**; *«Yaş Grubu»* → `yas`, **`grubu`**. Yani çıplak
+    `grubu` pack'te **yazmıyor**, sistem **kendisi üretiyor** — ve iki ayrı boyuta
+    veriyor. `grubu` tek başına hiçbir şeyi adlandırmaz: bir *kategori kategorisidir*.
+
+    🔴 Taranınca sınıf çıktı — **altı** çarpışma (`cari` ×2 · `tipi` · `renk` ·
+    `hesap` · `grubu`), hepsi aynı mekanizmadan.
+
+    ## Kural — kelime listesi YOK, yapısal
+
+    Bir token **aynı küpte iki boyutun** sinonim kümesindeyse hiçbirini ayırt etmiyor
+    demektir; **etiketten türemişse** düşer. ⚠ Pack'in **açıkça beyan ettiği** sinonim
+    asla düşmez: beyan bir karardır, türetme bir tahmindir. *Bir kararı bir tahmin
+    yüzünden geri almak, karar verenin yerine geçmektir.*
+
+    *Hiçbir şeyi ayırt etmeyen bir ad, bir ad değildir.*
+    """
+    from collections import defaultdict
+
+    sahip: dict[str, list[str]] = defaultdict(list)
+    for dim, syns in sinonimler.items():
+        for s in syns:
+            sahip[s].append(dim)
+    belirsiz = {t for t, ds in sahip.items() if len(ds) > 1}
+    if not belirsiz:
+        return sinonimler
+    out: dict[str, list[str]] = {}
+    for dim, syns in sinonimler.items():
+        out[dim] = [s for s in syns
+                    if s not in belirsiz
+                    or s in beyan.get(dim, ())          # beyan korunur
+                    or s not in etiketten.get(dim, ())  # etiketten gelmiyorsa dokunma
+                    or s == dim]                        # boyutun kendi adı korunur
+    return out
+
+
 class WrenService:
     # Kategorik (düşük kardinalite) kolonlarda tutulacak azami farklı değer sayısı.
     # DETERMİNİSTİK değer-eşleştirme (typo düzeltme + çok-değerli filtre) yalnız bu eşiğin
@@ -561,6 +611,19 @@ class WrenService:
         _LABEL_STOP = {"gore", "bazinda", "adet", "sayi", "sayisi", "toplam", "orani",
                        "kodu", "kod", "tutari", "tutar", "miktari", "miktar"}
 
+        def _label_tokens(label: str | None) -> list[str]:
+            """Etiketten **türetilen** token'lar — `_with_label`'ın eklediklerinin aynısı.
+
+            ⚠ Ayrı bir fonksiyon çünkü sonradan *"bu token beyan mı, türetme mi"*
+            sorusuna cevap gerekiyor (`§EB`). Kural `_with_label` ile **birebir** aynı
+            tutulur; ikisi ayrışırsa ayıklama yanlış token'ı düşürür.
+            """
+            if not label:
+                return []
+            nl = _norm(str(label).rstrip("!"))
+            return [c for c in [nl, *nl.split()]
+                    if c and (c == nl or (len(c) >= 3 and c not in _LABEL_STOP))]
+
         def _with_label(label: str | None, syns: list[str]) -> list[str]:
             out = list(syns)
             if not label:
@@ -708,12 +771,17 @@ class WrenService:
                     d["name"]: str(d.get("label") or (d.get("synonyms") or [d["name"]])[0]).rstrip("!")
                     for d in c.get("dimensions", [])
                 },
-                "dimension_synonyms": {
-                    d["name"]: _merge_syns(
+                # 🔴🔴 `§EB` — **ETİKETTEN TÜREYEN BELİRSİZ TOKEN SİNONİM OLAMAZ.**
+                # Gerekçe ve ölçüm `_etiket_belirsizligini_ayikla`'da.
+                "dimension_synonyms": _etiket_belirsizligini_ayikla(
+                    {d["name"]: _merge_syns(
                         _with_label(d.get("label"), _syns(d.get("synonyms"))),
                         _dim_i18n(d["name"]))  # §7b: yerel (YAML) ⊕ yardımcı-teknik dil
-                    for d in c.get("dimensions", [])
-                },
+                     for d in c.get("dimensions", [])},
+                    {d["name"]: set(_syns(d.get("synonyms")))
+                     for d in c.get("dimensions", [])},
+                    {d["name"]: set(_label_tokens(d.get("label")))
+                     for d in c.get("dimensions", [])}),
                 # PROVENANCE (Faz 1.3): boyut cube'un KENDİ base_object'inden mi geliyor,
                 # yoksa bir İLİŞKİ üzerinden mi? `_compose_relationship_dimensions`
                 # üretilen boyuta `properties.origin` yazar; burası onu router/UI'a açar.

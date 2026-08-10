@@ -8563,3 +8563,70 @@ oturumun tek cümlelik özetidir: *bir tasarım gerçeği okunarak bulunur, bir 
 gerçeği yalnız koşularak.*
 
 **Kapı (tur başı):** 4477 yeşil · korpus **%94.9** · `sessiz_yanlis` **8** · eval +0.0%.
+
+---
+
+## `XII` TURU — **SİSTEMİN KENDİ ÜRETTİĞİ SESSİZ YANLIŞ** *(2026-08-10)*
+
+Üç turdur aynı iplikteydim; kuralın gereği **enine** dönüldü ve ilk kademede kusur çıktı.
+
+### Kademe 1 — dördün üçü kusursuz, biri sessiz yanlış
+
+| soru | sonuç |
+|---|---|
+| *«bu yıl ortalama oee»* | ✅ `cube` · 0 LLM |
+| *«hatlara göre üretim miktarı bu yıl»* | ✅ `cube` · 0 LLM · 8 satır |
+| *«bu yıl toplam nakliye maliyeti»* | ✅ `cube` · 0 LLM |
+| *«**renk grubuna** göre fire bu yıl»* | 🔴 kırılım **`ham_grup, renk, yas_grubu`** |
+
+Kullanıcı **renk** sordu; cevaba **personel yaş grubu** girdi. Rozet `source=cube` —
+deterministik yol — ve **hiçbir beyan yok**.
+
+### 🔴🔴 KÖK: pack masum, **makine suçlu**
+
+Pack'lerde çıplak `grubu` **yazmıyor**; hepsi nitelenmiş (`ham grubu` · `iplik grubu` ·
+`yaş grubu`). Çıplak token'ı **sistem üretiyor**:
+
+```python
+_with_label:  for cand in [nl, *nl.split()]:   # «Ham Grubu» → ham, grubu
+                  out.append(cand)             # «Yaş Grubu» → yas, grubu
+```
+
+Yani etiket kelimelere bölünüp **her biri** sinonim yapılıyor — ve `grubu` iki ayrı
+boyuta birden veriliyor. Oysa `grubu` tek başına hiçbir şeyi adlandırmaz: bir
+**kategori kategorisidir**.
+
+⊙ Taranınca sınıf çıktı — **altı** çarpışma, hepsi aynı mekanizmadan:
+
+| küp | token | sahipler |
+|---|---|---|
+| `parti` | `grubu` | `ham_grup` · `yas_grubu` |
+| `cari` | `cari` | `cari_kodu` · `cari_tip` |
+| `cari` | `tipi` | `cari_tip` · `evrak_tip` |
+| `kalite` | `renk` | `renk` · `renk_derinlik` |
+| `mizan` | `hesap` | `hesap_kodu` · `hesap_adi` |
+| `ticaret` | `cari` | `cari_tip` · `cari_kodu` |
+
+### Kural — kelime listesi YOK, **yapısal**
+
+Bir token aynı küpte **iki boyutun** sinonim kümesindeyse hiçbirini ayırt etmiyor
+demektir; **etiketten türemişse** düşer. ⚠ Pack'in **açıkça beyan ettiği** sinonim asla
+düşmez ve bir boyutun **kendi adı** asla düşmez.
+
+> *Beyan bir karardır, türetme bir tahmindir. Bir kararı bir tahmin yüzünden geri
+> almak, karar verenin yerine geçmektir.*
+>
+> *Hiçbir şeyi ayırt etmeyen bir ad, bir ad değildir.*
+
+### Doğrulama — kazanç var, kayıp yok
+
+| soru | önce | **sonra** |
+|---|---|---|
+| *«renk grubuna göre fire»* | 🔴 `ham_grup, renk, yas_grubu` | 🟢 **yalnız `renk`** · 5 satır |
+| *«iplik grubuna göre fire»* | `ham_grup` | ✅ `ham_grup` |
+| *«yaş grubuna göre fire»* | `yas_grubu` | ✅ `yas_grubu` |
+
+⊙ Ve doğru cevap **doktrinin tarif ettiği yoldan** geldi: route emin olamadı (`cube+llm`),
+garson devraldı ve doğru çözdü.
+
+**Kapı (tur başı):** 4477 yeşil · korpus **%94.9** · `sessiz_yanlis` **8** · eval +0.0%.
