@@ -56,6 +56,7 @@ kesmektir; iş arka planda biter ve sonucu atılır. Yani bütçe bir **iptal** 
 from __future__ import annotations
 
 import concurrent.futures as _cf
+import os as _os
 import time as _time
 from collections.abc import Callable
 from typing import Any
@@ -85,8 +86,39 @@ def kos(isler: list[Callable[[], Any]], *, saniye: float,
     """
     if not isler:
         return []
+    # 🔴🔴 **KASET KAYDEDİLİRKEN BÜTÇE KESMEZ** — ve bu bir gevşetme değil, bir
+    # **doğruluk** şartıdır.
+    #
+    # ⊙ Ölçüldü (`A1`): kayıt turunda `T2 anlatı BÜTÇEYİ AŞTI (8.0 sn)` ateşledi; çağrı
+    # terk edildi, iş parçacığı kaset dosyası **yazıldıktan sonra** bitti ve o yanıt
+    # kasete hiç girmedi. Oynatma diskten koştuğu için anlık — aynı çağrı bu kez
+    # bütçeye **giriyor** ve kasette karşılığını bulamıyordu. Sonuç: ısrarcı **1 ıska**,
+    # üç koşum boyunca kovalanan.
+    #
+    # Bütçe bir **duvar saati** korumasıdır: kullanıcı beklemesin diye vardır. Bir
+    # kayıt turunda bekleyen kullanıcı yoktur; oradaki ölçüt **eksiksizlik**tir.
+    # ⚠ Oynatmada da kesmemeli: diskten dönen yanıtlar zaten anlıktır, ama bir kesme
+    # oynatmayı kayıttan **ayrıştırırdı**.
+    #
+    # *Bir ölçümün aleti, ölçtüğü şeyi kısaltmamalıdır.*
+    if _os.environ.get("DIMA_KASET") in ("kayit", "oynat"):
+        saniye = float("inf")
     bitis = _time.monotonic() + max(0.0, saniye)
-    ex = _cf.ThreadPoolExecutor(max_workers=len(isler))
+    # 🔴🔴 **KASET MODUNDA TEK İŞÇİ — tekrarlanabilirlik paralellikten önemlidir.**
+    #
+    # ⊙ Ölçüldü: aynı kasetin ardışık ağsız oynatmaları `50/2`, `51/3`, `48/0` verdi;
+    # temiz durumla da, kilitle de sürdü. Sebep: `consistency_k` örnekleri **paralel**
+    # gönderiliyor ve hangi iş parçacığının hangi kayıtlı örneği (`#0`,`#1`,`#2`)
+    # alacağı **zamanlamaya** bağlı. Örnekler farklı cevaplar taşıdığında oylamanın
+    # gördüğü **sıra** değişiyor ve şekil-oylaması (`O-21`) sıraya duyarlı.
+    #
+    # ⚠ Oynatma **diskten** okur: paralellik oraya hiçbir hız katmaz, yalnız
+    # tekrarlanabilirliği bozar. Kayıtta da tek işçi kullanılır ki kayıt ile oynatma
+    # **aynı** sırayı görsün — yoksa kaset kendi kaydettiği turu tekrar edemez.
+    #
+    # *Bir ölçüm, hızlı olmak zorunda değildir; ama aynı olmak zorundadır.*
+    _kaset = _os.environ.get("DIMA_KASET") in ("kayit", "oynat")
+    ex = _cf.ThreadPoolExecutor(max_workers=1 if _kaset else len(isler))
     try:
         gonderilen = [ex.submit(f) for f in isler]
         cikti: list[Any] = []

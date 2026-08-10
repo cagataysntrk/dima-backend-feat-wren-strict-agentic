@@ -91,7 +91,25 @@ def perdele(metinler: list[str], *,
 
     metinler = list(metinler)
     temiz = [str(d) for d in degerler if d is not None and str(d).strip()]
-    for d in sorted(set(temiz), key=len, reverse=True):
+    # 🔴🔴 **SIRALAMA TOPLAM OLMALI — yoksa maskeleme SÜREÇLER ARASI KAYAR.**
+    #
+    # Önce `key=len` idi: yalnız **uzunluğa** göre. Aynı uzunluktaki değerler `set`'in
+    # sırasında kalıyordu ve Python dizge hash'ini süreç başına rastgeleleştirdiği için
+    # (`PYTHONHASHSEED`) o sıra **her koşumda farklı** oluyordu. Sonuç: aynı soru için
+    # `{{DIM_1}}`/`{{DIM_2}}` — ve onlara bağlı `{{NUM_i}}` numaraları — yer değiştiriyordu.
+    #
+    # ⊙ Kusur bir kaset ıskası olarak ortaya çıktı: aynı kasetin **iki ardışık**
+    # oynatması `48` ve `50` isabet verdi ve tek bir istem hiçbir zaman tutmadı. Ama
+    # zararı ölçümle sınırlı DEĞİL: loglarda `yayılım bozuldu: eksik:{{NUM_1}}` uyarısı
+    # zaten vardı — yani **kullanıcıya giden anlatı**, aynı soruda bazen düşüyordu.
+    #
+    # ⚠ `key=(-len, d)` bir davranış değişikliği değil, var olan davranışın **kararlı**
+    # hâlidir: uzun değer önce (kısa olanın uzunun içinde maskelenmesini önler), eşit
+    # uzunlukta alfabetik.
+    #
+    # *Kararsız bir sıralama, olmayan bir sıralama değildir — her koşumda başka bir
+    # sıralamadır ve bu daha kötüdür: kusur ancak tekrarlandığında görünür.*
+    for d in sorted(set(temiz), key=lambda x: (-len(x), x)):
         for i, m in enumerate(metinler):
             if d in m:
                 metinler[i] = m.replace(d, _yuva("DIM", d))

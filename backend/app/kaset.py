@@ -63,6 +63,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -115,6 +116,9 @@ class Kaset:
         self.yol = Path(yol)
         self.mod = mod
         self.kayitlar: dict[str, str] = {}
+        #: 🔴 Teşhis defteri: anahtar → istemin ilk satırları. Bir ıskanın **hangi**
+        #: kayda benzediğini görmeden kök bulunamıyor; üç koşum bunu tahminle kovaladım.
+        self.etiketler: dict[str, str] = {}
         self.muhur: str = ""
         #: Oynatmada **istatistik**: kaç isabet, kaç ıska. Kapı bunu basar.
         self.isabet = 0
@@ -133,6 +137,21 @@ class Kaset:
         #: *Bir kayıt, söylenenleri değil **söyleniş sırasını** da tutmalıdır; yoksa
         #: tekrarı bir koro değil tek bir ses olarak çalar.*
         self.sayac: dict[str, int] = {}
+        #: 🔴🔴 **KİLİT — `k=3` OYLAMASI PARALEL KOŞAR.**
+        #:
+        #: `butce.kos` üç örneği bir `ThreadPoolExecutor` ile **eşzamanlı** gönderir.
+        #: `sayac`/`kayitlar` kilitsizken üç iş parçacığı aynı anda okuyup yazıyordu:
+        #: tekrar indisi (`#0`,`#1`,`#2`) yarışa göre dağılıyor, hatta ikisi **aynı**
+        #: indisi alabiliyordu. Ölçüldü: aynı kasetin üç ardışık ağsız oynatması
+        #: `50/0`, `51/0`, `45/3` verdi — yani ölçüm **kendi kendiyle** tutarsızdı.
+        #:
+        #: ⚠ Kilit indis **dağılımını** belirlemez (hangi iş parçacığının `#0` alacağı
+        #: yine sıraya bağlıdır) ama örnekler **birbirinin dengi**dir: üçü de aynı
+        #: istemin bağımsız örnekleridir ve oylama bir **çokluk** üzerinde çalışır.
+        #: Kilidin garantisi şudur: üç ayrı indis dağıtılır, hiçbiri kaybolmaz.
+        #:
+        #: *Paylaşılan bir sayaç, kilitsizse bir sayaç değil bir tahmindir.*
+        self._kilit = threading.Lock()
         #: 🔴 Kayıt modu **BİRİKTİRİR**, sıfırlamaz.
         #:
         #: İlk yazımda her `--kaydet` dosyayı sıfırdan yazıyordu. Sonucu ölçüldü:
@@ -149,6 +168,7 @@ class Kaset:
                 raise KasetEksik(
                     f"kaset sürümü {ham.get('surum')} ≠ {SURUM} — BAYAT, yeniden kaydet")
             self.kayitlar = dict(ham.get("kayitlar") or {})
+            self.etiketler = dict(ham.get("etiketler") or {})
             self.muhur = str(ham.get("muhur") or "")
         elif mod == "oynat":
             raise KasetEksik(f"kaset dosyası yok: {self.yol}")
@@ -158,24 +178,33 @@ class Kaset:
         self.yol.parent.mkdir(parents=True, exist_ok=True)
         self.yol.write_text(json.dumps(
             {"surum": SURUM, "muhur": muhur or self.muhur,
-             "kayitlar": self.kayitlar}, ensure_ascii=False, indent=1), encoding="utf-8")
+             "kayitlar": self.kayitlar, "etiketler": self.etiketler},
+            ensure_ascii=False, indent=1), encoding="utf-8")
         return self.yol
 
     # ── ortak yüzey ────────────────────────────────────────────────────────────
-    def coz(self, anahtar: str, uret) -> str:
+    def coz(self, anahtar: str, uret, etiket: str = "") -> str:
         """Kayıttan oku, yoksa **moda göre** ya üret-ve-kaydet ya da patla.
 
         ⚠ Anahtar burada **tekrar sırasıyla** genişletilir (`…#0`, `…#1`, `…#2`):
         `consistency_k` örneklemesi ancak böyle birebir tekrar oynatılabilir.
         """
-        n = self.sayac.get(anahtar, 0)
-        self.sayac[anahtar] = n + 1
+        with self._kilit:
+            n = self.sayac.get(anahtar, 0)
+            self.sayac[anahtar] = n + 1
         anahtar = f"{anahtar}#{n}"
         if self.mod == "oynat":
             if anahtar not in self.kayitlar:
                 self.iska += 1
+                # 🔴 Iska **kimliğini söyler**. İlk hâli yalnız anahtar özetini
+                # basıyordu ve ısrarcı tek bir ıskayı üç koşum boyunca **tahmin ederek**
+                # kovaladım. *Bir hata mesajı, sahibini söylemiyorsa bir bilmecedir.*
+                # Aynı yüzeyden kayıtlı **benzer** etiketleri göster: fark oradadır.
+                _benzer = [f"\n      KAYITLI: {v}" for k, v in self.etiketler.items()
+                           if etiket[:14] and v.startswith(etiket[:14])][:3]
                 raise KasetEksik(
-                    f"kasette kayıt yok (anahtar={anahtar[:12]}…). Bu soru "
+                    f"kasette kayıt yok (anahtar={anahtar[:12]}… · {etiket})"
+                    + "".join(_benzer) + ". Bu soru "
                     "kaydedilmemiş — kaseti yeniden kaydet ya da soruyu korpustan çıkar. "
                     "⚠ Sessizce geçmek, ölçülmemiş bir soruda YEŞİL vermek olurdu.")
             self.isabet += 1
@@ -185,7 +214,10 @@ class Kaset:
             return self.kayitlar[anahtar]
         self.iska += 1
         cevap = uret()
-        self.kayitlar[anahtar] = cevap
+        with self._kilit:
+            self.kayitlar[anahtar] = cevap
+            if etiket:
+                self.etiketler[anahtar] = etiket
         return cevap
 
 
@@ -220,7 +252,8 @@ def _sar_tasima(uretec: Any, kaset: Kaset) -> bool:
         def yeni(system: str, user: str, model: str | None = None,
                  _ozgun=ozgun, _ad=ad) -> str:
             return kaset.coz(_anahtar(_ad, system, user, model or ""),
-                             lambda: _ozgun(system, user, model))
+                             lambda: _ozgun(system, user, model),
+                             etiket=f"{_ad} ← {user[:220]!r}")
 
         yeni._kasetli = True                                   # type: ignore[attr-defined]
         setattr(uretec, ad, yeni)

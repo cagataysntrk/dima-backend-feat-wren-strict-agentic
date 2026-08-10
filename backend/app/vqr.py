@@ -24,6 +24,7 @@ eşlemede İKİ tarafa da "query: " öneki. Model yoksa F5-token sözlüksel fal
 
 from __future__ import annotations
 
+import os as _os
 import json
 import threading
 from datetime import datetime
@@ -269,8 +270,26 @@ class VQR:
           akışının doğrulanmış SQL'i; olduğu gibi saklanır (tarih genelde SQL'in
           içindedir, ayrıca düşürülemez).
 
+        🔴🔴 **KASET MODUNDA ÖĞRENME KAPALIDIR — ölçüm ölçtüğünü değiştiremez.**
+
+        ⊙ Ölçüldü (`A1`): aynı kasetin **iki ardışık ağsız oynatması** `51/2 ıska` ve
+        `52/0 ıska` verdi — yani ikinci koşum birincisinden **farklı** davrandı. Sebep
+        bu depo: VQR kalıcı bir dosyada yaşar ve koşumlar arasında **paylaşılır**;
+        birinci tur öğrendiğini ikinci tura taşıyor, ikinci tur o soruyu artık
+        `source=vqr` ile (yani LLM'siz) cevaplıyor ve çağrı kümesi değişiyor.
+
+        ⚠ Zararı iki katlı: (1) kaset ıskaları rastgele görünür, (2) `route` payı
+        koşum sayısıyla **kendiliğinden şişer** — sistem gelişmeden sayı iyileşir. Bu
+        deponun en sık tekrarlayan tuzağı tam olarak budur (*"gitas düştü, doğruluk
+        YÜKSELDİ"*).
+
+        *Bir ölçüm aracının belleği varsa, ölçtüğü şey artık sistem değil; sistemin
+        o araçla geçirdiği geçmiştir.*
+
         ``extra``: kayda eklenecek kimlik/iz alanları (ör. verified_by, tenant_id) —
         kim doğrulamış görünür olsun (KVKK erişim izi + küratörlük)."""
+        if _os.environ.get("DIMA_KASET") in ("kayit", "oynat"):
+            return False
         q = (question or "").strip()
         if not q or not payload:
             return False
