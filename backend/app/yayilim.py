@@ -64,6 +64,31 @@ def _yt(tur: str, no: int) -> str:
     return "{{%s_%d}}" % (tur, no)
 
 
+#: 🔴🔴 `§YT` — **BİR YUVA, BİR DEĞER DEĞİLDİR.**
+#:
+#: ⊙ Canlı ölçüm (curl `N+2` turu, 2026-08-10): `§NT` beyanı kullanıcıya şunu yazdı:
+#:
+#:     ⚠ Etkisiz bir dışlama düşürüldü («{{ENT_1}}» ∉ **makine**)
+#:
+#: Yani perdeleme yuvası **geri konmadan** garsonun süzgecine girmiş, oradan da beyan
+#: metnine sızmış. Kullanıcı iç mekanizmayı görüyor.
+#:
+#: ⊙ İki ayrı kusur, tek imza: (1) yuva geri konmamış — bu `geri_koy`'un işi; (2) beyan
+#: onu **gerçek bir değer gibi** adlandırıyor. İkincisi kanıtlı biçimde yanlıştır: bir
+#: yuva hiçbir katalogda bulunamaz, çünkü **hiçbir zaman bir değer değildi**.
+#:
+#: ⚠ Desen burada, `_yt`'nin **hemen yanında** durur ki üretici ile tanıyıcı ayrışamasın
+#: (`KAT-1`). Biçim değişirse ikisi birlikte değişir.
+#:
+#: *Bir maskeyi değer sanan kod, maskenin var olma sebebini de kaybeder.*
+YUVA_RE = re.compile(r"^\{\{[A-Z]+_\d+\}\}$")
+
+
+def yuva_mu(x) -> bool:
+    """Bu bir perdeleme **yuvası** mı? (yani hiçbir zaman bir kullanıcı değeri değil)"""
+    return bool(YUVA_RE.match(str(x or "").strip()))
+
+
 def perdele(metinler: list[str], *,
             degerler: Iterable[str] = ()) -> tuple[list[str], dict[str, str]]:
     """Gerçek **değer** ve **sayı**ları yer tutucuya çevir. Döner: `(perdeli, harita)`.

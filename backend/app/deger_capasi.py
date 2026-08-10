@@ -55,6 +55,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from app import yayilim as _yayilim
+
 #: Enum üyeliği sorulabilen operatörler. ⚠ Liste **kapalı**: yeni bir operatör
 #: eklendiğinde bu kapı ona sessizce uygulanmasın — sessiz genişleme, ölçülmemiş
 #: davranış demektir.
@@ -124,6 +126,9 @@ class Bulgu:
     #: *Aynı gözlem («bu değer listede yok») iki operatörde iki ayrı şey kanıtlar; ikisine
     #: aynı kararı vermek, kanıta değil kelimeye bakmaktır.*
     bos_islem: bool = False
+    #: 🔴 `§YT` — değer bir **perdeleme yuvasıdır** (`{{ENT_1}}`), yani hiçbir zaman bir
+    #: kullanıcı değeri değildi. `bos_islem` gibi düşürülür ama **adı yazılmaz**.
+    yuva: bool = False
 
 
 def _norm(s: str) -> str:
@@ -300,6 +305,17 @@ def denetle(cq: dict, schema: dict | None, soru: str = "") -> list[Bulgu]:
         for d in degerler:
             if d is None or not str(d).strip():
                 continue
+            # 🔴 `§YT` — **BİR YUVA, BİR DEĞER DEĞİLDİR.** Perdeleme yuvası (`{{ENT_1}}`)
+            # geri konmadan süzgece girmişse bu bir kullanıcı belirsizliği değil bir
+            # **taşıma kusurudur**; onu adıyla anmak kullanıcıya iç mekanizmayı gösterir.
+            # ⊙ Canlıda ölçüldü: *«⚠ Etkisiz bir dışlama düşürüldü («{{ENT_1}}» ∉ makine)»*.
+            # Desen `yayilim`'ın (üreticinin) yanında durur — ikinci bir tanıyıcı `KAT-1`
+            # olurdu. Süzgeç yine düşer (yuva hiçbir kaydı seçemez), yalnız **sessizce**.
+            if _yayilim.yuva_mu(d):
+                out.append(Bulgu(boyut=boyut, deger=str(d), oneri=None,
+                                 gecerliler=list(gecerliler), bos_islem=True,
+                                 yuva=True))
+                continue
             if _norm(str(d)) in bilinen:
                 continue
             # 🔴 `§NT` — DIŞLAMADA «yok» = **yok-işlem**, kapsayışta «yok» = belirsizlik.
@@ -444,7 +460,12 @@ def duzelt_yerinde(cq: dict, bulgular: list[Bulgu]) -> str | None:
     if not esleme and not dusen and not bos:
         return None
     if bos and not esleme and not dusen:
-        adlar = " · ".join(f"«{b.deger}» ∉ **{b.boyut}**" for b in bos)
+        # `§YT` — yuvalar **adlandırılmaz**: kullanıcıya iç mekanizma gösterilmez.
+        # Hepsi yuvaysa beyan da yazılmaz; söylenecek bir kullanıcı bilgisi yoktur.
+        adlandirilabilir = [b for b in bos if not b.yuva]
+        if not adlandirilabilir:
+            return None
+        adlar = " · ".join(f"«{b.deger}» ∉ **{b.boyut}**" for b in adlandirilabilir)
         return (f"⚠ Etkisiz bir dışlama düşürüldü ({adlar}): listede olmayan bir değeri "
                 f"dışlamak hiçbir kaydı elemez.")
     if dusen and not esleme:

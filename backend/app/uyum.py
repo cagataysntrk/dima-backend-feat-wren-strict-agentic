@@ -229,6 +229,77 @@ def _kup_sozlugunde_kelime(terim: str, cube_meta: dict) -> bool:
     return bool(hedef) and hedef <= kelimeler
 
 
+def _daha_ozgul_sahip(qn: str, cube_meta: dict, sema: dict) -> tuple[str, list[str]] | None:
+    """🔴🔴 `§UT` — **NİTELEYENİ DÜŞEN TAMLAMA: «bakım maliyeti» sorup «maliyet» almak.**
+
+    ## Ölçülen kusur (curl `N+2` turu, 2026-08-10)
+
+        «bu yıl en kötü bakım maliyeti hangi makinede»
+          → orkestratör: maliyet.ort_birim_maliyet · «ROTASYON BASKI · 30,83»
+          → beyan: **YOK**
+
+    Katalogda **tam** karşılığı vardı — ölçüldü:
+
+        bakim_is_emri  → bakim_maliyeti      terim='bakim maliyeti'   ← 2 kelime, TAM
+        maliyet        → ort_birim_maliyet   terim='maliyet'          ← 1 kelime, PARÇA
+
+    Kullanıcı iki kelimelik bir tamlama yazdı; sistem **niteleyeni düşürüp** bir kelimelik
+    bir eşleşmeyle cevapladı ve bunu hiç söylemedi.
+
+    ## Neden `§Ci` bunu göremiyordu
+
+    `_capraz_kup_ikamesi`'nin ilk satırı: *«cevabın küpü terimi zaten karşılıyorsa ikame
+    yoktur»*. `maliyet` küpü *«maliyet»*i gerçekten karşılıyor — yüklem **doğru**, ama
+    sorduğu soru eksik: *«karşılıyor mu»* diye soruyor, *«TAM MI karşılıyor»* diye değil.
+
+    ⚠ Ve bu bir **ikame değil** bir **özgüllük kaybıdır**; o yüzden `olcu_ikamesi`
+    cümlesi (*«bu cevap onu içermiyor»*) burada **yalan** olurdu — cevap bir maliyet
+    içeriyor, yalnız **istenen** maliyeti değil. Ayrı işaret, ayrı cümle.
+    *Bir kusuru en yakın komşusunun adıyla anmak, iki kusuru da görünmez yapar.*
+
+    ## Yüklem — kanıtlı, katalogdan, sözlüksüz
+
+    Başka bir küp, cevabın küpünün eşleştiği terimin **her kelimesini içeren ve daha
+    uzun** bir terimle eşleşiyorsa, o küp **kesin olarak daha özgüldür**. Kanıt tamdır:
+    `_match_measure` terimin soruda **gerçekten geçtiğini** garanti eder — yani kullanıcı
+    o uzun ifadeyi **yazmıştır**.
+
+    ⚠ Eşit uzunlukta ya da kesişmeyen terimler **sayılmaz**: onlar bir özgüllük ilişkisi
+    değil, iki ayrı kavramdır ve oraya `§Ci` bakar.
+    ⚠ Ve bu bir **beyandır**, bir yönlendirme değil: cevap değişmez, yanına *«daha özgül
+    bir karşılık var»* yazılır. Yönlendirmeyi değiştirmek korpus A/B'si ister.
+    """
+    from app.cube_router import _match_measure, _syn_hit
+
+    _kendi_ad, _kendi_terim = _match_measure(qn, cube_meta)
+    kendi = [w for w in re.findall(r"[a-z0-9]+", _norm(str(_kendi_terim or ""))) if w]
+    if not kendi:
+        return None
+    for c in (sema.get("cubes") or []):
+        if c.get("name") == cube_meta.get("name"):
+            continue
+        _ad, _terim = _match_measure(qn, c)
+        if not _ad:
+            continue
+        oteki_metin = _norm(str(_terim or _ad))
+        oteki = [w for w in re.findall(r"[a-z0-9]+", oteki_metin) if w]
+        # 🔴 **HAM KÜME KIYASI TAM DA BURADA KIRILIYOR — ve bunu kapı yakaladı.**
+        #
+        # İlk yazımda yüklem `kendi < oteki` (küme alt-kümesi) idi ve ölçüldüğünde
+        # **çalışmadı**: katalogdaki terim `«bakim maliyeti»`, ötekinin terimi
+        # `«maliyet»` — Türkçede tamlamanın **başı iyelik eki alır** (`maliyet` →
+        # `maliyeti`) ve `{maliyet} ⊄ {bakim, maliyeti}`.
+        #
+        # ⊙ Yani kural **tam olarak geçerli olduğu yerde** sessizce yanlış çıkıyordu.
+        # Doğru yüklem depoda **zaten var**: `_syn_hit` ek zincirini bilir ve bütün depo
+        # onunla eşleşir. İkinci bir ek kuralı yazmak `KAT-1` olurdu.
+        #
+        # *Bir dilbilgisi kuralını atlayan yüklem, atladığı yerde en çok gerekendir.*
+        if len(oteki) > len(kendi) and all(_syn_hit(oteki_metin, w) for w in kendi):
+            return str(_terim or _ad), [str(c.get("name"))]
+    return None
+
+
 def _capraz_kup_ikamesi(qn: str, cq: dict, cube_meta: dict,
                         sema: dict) -> tuple[str, list[str]] | None:
     """Soruda anılan bir ölçü terimi cevabın küpünde **yok**, başka küpte **var** mı?
@@ -239,6 +310,8 @@ def _capraz_kup_ikamesi(qn: str, cq: dict, cube_meta: dict,
     from app.cube_router import _match_measure
 
     # Cevabın küpü terimi zaten karşılıyorsa ikame yoktur.
+    # ⚠ `§UT` — ama *«karşılıyor mu»* ile *«TAM MI karşılıyor»* aynı soru değildir; ayrımı
+    # `_daha_ozgul_sahip` yapar ve bulursa **ayrı bir işaretle** döner.
     if _match_measure(qn, cube_meta)[0]:
         return None
     # 🔴🔴 **AYNI KAVRAM, İKİ AD** — ve beyan bunu göremeyince YALAN SÖYLÜYORDU.
@@ -473,6 +546,19 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
     # *Bir terimi yalnız cevabın küpünde aramak, cevabın küp değiştirdiği anı görmemeyi
     # seçmektir.*
     if sema and cube_meta:
+        # 🔴 `§UT` — **ÖNCE ÖZGÜLLÜK, SONRA İKAME.** Sıra bilinçli: bir tamlamanın
+        # niteleyeni düşmüşse ortada bir *ikame* yoktur (cevap kavramı ölçüyor), bir
+        # **özgüllük kaybı** vardır ve cümlesi başkadır. Ters sırada `_capraz_kup_ikamesi`
+        # zaten `None` döneceği için bu dal hiç konuşamazdı.
+        _ozgul = _daha_ozgul_sahip(qn, cube_meta, sema)
+        if _ozgul:
+            _terim2, _sahip2 = _ozgul
+            out.append(Ihlal(
+                isaret="olcu_ozgullugu",
+                aciklama=(f"Soruda **«{_terim2}»** geçiyor ama bu cevap onun yalnız bir "
+                          f"**parçasıyla** hesaplandı — daha özgül bir karşılık var."),
+                oneri=(f"**«{_terim2}»** için {', '.join(_sahip2[:2])} küpünü "
+                       f"sorabilirsin; oradaki ölçü tam olarak bunu ölçüyor.")))
         _ikame = _capraz_kup_ikamesi(qn, ic, cube_meta, sema)
         if _ikame:
             _terim, _sahipler = _ikame

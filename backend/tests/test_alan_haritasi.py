@@ -67,6 +67,9 @@ GARSON = {
     # `§DK-3` — yukarıdakinin eşleştirme yarısı: kullanıcının yazdığı metni kataloğun
     # görünen etiketlerine bağlar. Saf dizgi işi, LLM yok, motor yok.
     "deger_eslesme.py",
+    # `§SB` — teknik simge yazım sınıfı (`dE`·`kWh`·`pH`). Dil okur, hiçbir şey
+    # çalıştırmaz; `cube_router`'ın büyüme tavanı onu buraya çıkarttı.
+    "simge.py",
     # `C1/C3` — ters yön: bilinmeyen bir terimi kataloğun bir hedefine eşler. Dil okur,
     # bir `cq` parçası üretir; hiçbir şey çalıştırmaz.
     "ters_yon.py",

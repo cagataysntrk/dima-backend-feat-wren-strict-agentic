@@ -16,6 +16,7 @@ from app import deger_capasi as _degerler
 from app import ters_yon as _ters
 from app import diyalog as _diyalog
 from app import donem_capasi as _capa
+from app import simge as _simge
 from app import kiyas_cebiri
 from app import niyet as _niyet
 from app import turetme as _turetme
@@ -4137,6 +4138,10 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 mdisp = (only_cube.get("measure_synonyms_display") or {}).get(m) or m
                 if mdisp not in labels:
                     labels.append(mdisp)
+            # `§SB` — kullanıcının yazdığı **teknik simge** (`dE`·`kWh`·`pH`) normalize
+            # edilirken yok oluyor; sahibi başka bir küpteyse listede hiç görünmüyordu.
+            # Yönlendirme değişmez, yalnız **görünürlük**: sahipler chip olur.
+            labels += _simge.sahipler(body.question or "", schema, haric=only_cube.get("name"))
             cube_label = only_cube.get("display") or only_cube.get("name") or ""
             return _finish(AskResponse(
                 question=body.question, source=None,
