@@ -177,6 +177,30 @@ def ustunluk_istendi(qn: str) -> bool:
     return bool(_ustunluk_mu(qn, _TOPN_CUE, None, None))
 
 
+#: 🔴 `§HB` — Türkçenin **belgisiz sıfatı** `her`. Kapalı sınıf, tek sözcük.
+#: ⚠ Kelime listesi değil: `her` bir dilbilgisi işaretidir ve bir **boyut adının
+#: önünde** aranır — *«her zaman»* · *«her ay»* bir boyut adı taşımadığı için giremez.
+HER_ISARETI = "her"
+
+
+def _grup_basina_istendi(qn: str, boyutlar) -> bool:
+    """*«her <boyut>»* denmiş mi? (`§HB`)
+
+    ⚠ Çekim toleransı `cube_router._ek_gecerli`'den — **tek sahip**. Türkçe ek
+    kurallarını burada ikinci kez yazmak, ikisinin zamanla ayrışması demekti.
+    """
+    import re as _re
+
+    from app.cube_router import _KELIME_BASI, _ek_gecerli
+    from app.cube_router import _norm as _n
+
+    for d in (boyutlar or []):
+        m = _re.search(rf"{_KELIME_BASI}{HER_ISARETI}\s+{_re.escape(_n(str(d)))}([a-z]*)", qn)
+        if m and _ek_gecerli(m.group(1)):
+            return True
+    return False
+
+
 def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
     """Sorudaki niyet işaretlerinin **sorguda karşılığı var mı?**
 
@@ -269,6 +293,39 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None) -> list[Ihlal]:
     _kesme_izi = any(f.get("dimension") in boyutlar for f in filtreler)
     kesme = (disi.get("limit") or ic.get("limit") or ic.get("entity_limit")
              or _kesme_izi)
+
+    # 0 · GRUP BAŞINA ÜSTÜNLÜK — *«HER makinede en kötü vardiya»*
+    #
+    # 🔴🔴 **`§HB` — «her <boyut>» SESSİZCE GLOBAL TEK SATIRA İNDİRGENİYOR.**
+    #
+    # ⊙ Ölçüldü (canlı `XII`, iki soru):
+    #
+    #   | soru | üretilen | dönen |
+    #   |---|---|---|
+    #   | *«**her makinede** en kötü vardiya»* | `dims:[makine,vardiya] · order · limit 1` | **1 satır** |
+    #   | *«**her vardiyada** en kötü makine»* | aynı | **1 satır** |
+    #
+    # Kullanıcı **11 makine için 11 satır** bekliyor; **bir** satır alıyor — ve rozet
+    # `source=cube`, **beyan yok**. Yani doğru gibi görünen bir cevap, sorulan sorunun
+    # onda birini karşılıyor.
+    #
+    # ⚠ Bu bir **ifade edememe**dir, bir eşleşme hatası değil: grup başına sıralama bir
+    # **pencere fonksiyonu** ister ve `CubeQuery` onu taşımıyor. Yani düzeltme bu turda
+    # bir **beyandır** — cevabı öldürmez, **etiketler** (`KÖK-3`'ün disiplini).
+    #
+    # ⚠ Yüklem dar: `her` **bir boyut adının önünde** olmalı (kapalı sınıf: Türkçede
+    # `her` bir belgisiz sıfattır) **ve** sorguda bir kesme (`limit`) bulunmalı. *«her
+    # zaman»* · *«her ay»* gibi kullanımlar bir boyut adı taşımadığı için giremez.
+    #
+    # *Bir soruyu onda bir cevaplamak, cevaplamamaktan yalnızca daha ikna edicidir.*
+    if _grup_basina_istendi(qn, boyutlar) and (disi.get("limit") or ic.get("limit")):
+        out.append(Ihlal(
+            isaret="grup_basina",
+            aciklama=("**her** dedin — yani grup başına bir sonuç istedin; ama "
+                      "üretebildiğim şey **tek** bir satır (genel en iyi/en kötü)."),
+            oneri=("Grup başına sıralama (her makinenin kendi en kötü vardiyası) v1'de "
+                   "yok. Tek bir grubu sorarsan tam cevap veririm: *«RAM-2'de vardiya "
+                   "kırılımı»*.")))
 
     # 1 · KIYAS — "şubata göre", "geçen yılla kıyasla"
     #

@@ -133,3 +133,50 @@ def test_DUSEN_TOKEN_DAGARCIKTA_KALIR(schema):
     assert "grubu" not in bilinmeyen, (
         "«grubu» düşürüldü ama dağarcıkta da kalmadı → kapsam kapısı onu «başka bir "
         f"konu» sanar (ölçülen canlı kusur): {bilinmeyen}")
+
+
+def test_GRUP_BASINA_USTUNLUK_BEYAN_EDILIR():
+    """🔴🔴 `§HB` — *«her <boyut>»* **sessizce** global tek satıra indirgeniyordu.
+
+    Ölçüldü (canlı `XII`, iki soru):
+
+    | soru | üretilen | dönen |
+    |---|---|---|
+    | *«**her makinede** en kötü vardiya»* | `dims:[makine,vardiya] · order · limit 1` | **1 satır** |
+    | *«**her vardiyada** en kötü makine»* | aynı | **1 satır** |
+
+    Kullanıcı 11 satır bekliyor, **bir** satır alıyor — rozet `source=cube`, beyan yok.
+
+    *Bir soruyu onda bir cevaplamak, cevaplamamaktan yalnızca daha ikna edicidir.*
+    """
+    from app.uyum import denetle
+
+    cq = {"cube": "oee", "measures": ["ort_oee"],
+          "dimensions": ["makine", "vardiya"],
+          "order": {"measure": "ort_oee", "direction": "asc"}, "limit": 1}
+    isaretler = {i.isaret for i in denetle("her makinede en kötü vardiya hangisi bu yıl",
+                                           {"cube_query": cq})}
+    assert "grup_basina" in isaretler, f"beyan ateşlemedi: {isaretler}"
+
+
+def test_HER_ZAMAN_HER_AY_BEYAN_URETMEZ():
+    """⚠ `§101.1` — yüklem **dar**: `her` bir **boyut adının önünde** olmalı.
+
+    *«her zaman»* ve *«her ay»* bir boyut adı taşımaz; beyan üretirlerse her dönem
+    sorusu *«eksik»* damgası yerdi — ve yanlış bir beyan sessizlikten kötüdür.
+    """
+    from app.uyum import denetle
+
+    cq = {"cube": "parti", "measures": ["toplam_fire_kg"], "dimensions": ["makine"],
+          "limit": 5, "order": {"measure": "toplam_fire_kg", "direction": "desc"}}
+    for q in ("her zaman en çok fire veren 5 makine", "her ay en çok fire veren 5 makine"):
+        assert "grup_basina" not in {i.isaret for i in denetle(q, {"cube_query": cq})}, q
+
+
+def test_KESME_YOKSA_BEYAN_URETMEZ():
+    """⚠ Kesme yoksa indirgeme de yoktur: *«her makinede fire»* zaten grup başına döner."""
+    from app.uyum import denetle
+
+    cq = {"cube": "parti", "measures": ["toplam_fire_kg"], "dimensions": ["makine"]}
+    assert "grup_basina" not in {i.isaret for i in denetle("her makinede fire ne kadar",
+                                                           {"cube_query": cq})}

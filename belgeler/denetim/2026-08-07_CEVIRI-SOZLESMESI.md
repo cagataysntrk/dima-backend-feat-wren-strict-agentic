@@ -8737,3 +8737,39 @@ kullanıcının yazacağı biçimde (`yaş grubu`).
 ⊙ Ve bu turda kapı **ilk kez** benim bir düzeltmemi yakaladı — canlı curl değil.
 Sebep yapısal: `§EB/A` bir **kapsam** değişikliğiydi ve kapsamın ölçüsü korpustur.
 *Canlı tur bir yolun çalışıp çalışmadığını söyler; korpus kaç yolun kaldığını.*
+
+---
+
+## `XIV` TURU — **`§HB`: «her <boyut>» artık beyan ediliyor** *(2026-08-10)*
+
+Ölçülen kusur (canlı `XII`, iki soru):
+
+| soru | üretilen | dönen |
+|---|---|---|
+| *«**her makinede** en kötü vardiya»* | `dims:[makine,vardiya] · order · limit 1` | **1 satır** |
+| *«**her vardiyada** en kötü makine»* | aynı | **1 satır** |
+
+Kullanıcı **11 satır** bekliyor, **bir** satır alıyor — ve rozet `source=cube`, **beyan
+yok**. Yani doğru gibi görünen bir cevap sorulanın onda birini karşılıyor.
+
+⚠ Bu bir **ifade edememe**dir, bir eşleşme hatası değil: grup başına sıralama bir
+**pencere fonksiyonu** ister ve `CubeQuery` onu taşımıyor. O yüzden bu turun düzeltmesi
+bir **beyandır** — cevabı öldürmez, **etiketler** (`KÖK-3`'ün disiplini).
+
+**Sonuç (canlı):**
+
+```
+⚠ Sayı doğru ama eksik: «her» dedin — yani grup başına bir sonuç istedin;
+  ama üretebildiğim şey tek bir satır (genel en iyi/en kötü).
+  Grup başına sıralama v1'de yok. Tek bir grubu sorarsan tam cevap veririm:
+  «RAM-2'de vardiya kırılımı».
+```
+
+⚠ Yüklem **dar** ve kapılı: `her` bir **boyut adının önünde** olmalı (kapalı sınıf —
+Türkçede `her` bir belgisiz sıfattır) **ve** sorguda bir kesme bulunmalı. *«her zaman»*
+· *«her ay»* bir boyut adı taşımadığı için giremez; kesme yoksa indirgeme de yoktur.
+
+> *Bir soruyu onda bir cevaplamak, cevaplamamaktan yalnızca daha ikna edicidir.*
+
+**Kapı (tur başı):** 4484 yeşil · korpus **%94.9** · `sessiz_yanlis` **8** · `dogru`
+**96** · eval +0.0%.
