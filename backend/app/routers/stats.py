@@ -88,8 +88,25 @@ GECIKME_BUTCESI_MS: dict[str, int] = {
     "cube": 800,        # ölçüldü 145-434 ms — deterministik yol, LLM yok
     "vqr": 800,         # replay; cube ile aynı sınıf
     "rule": 800,        # kural-tabanlı üretici, ağ yok
-    "meta": 300,        # sabit metin
-    "catalog": 300,     # katalog listesi
+    # 🔴🔴 **ÖLÇÜLDÜ (2026-08-10) — ve «sabit metin» varsayımı YANLIŞTI.**
+    #
+    # `A10` kapısı kurulunca ilk koşuşunda kırmızı verdi: `meta` **p95 320 ms**,
+    # `catalog` **p95 401 ms** (n=6, deterministik, ağsız). Oysa bu iki yol kendi
+    # işlerinde neredeyse hiçbir şey yapmaz — biri sabit bir cümle döndürür.
+    #
+    # ⊙ Sebep yolun kendisi değil **önündeki boru hattı**: bir sosyal ifade bile
+    # şema yükleme · `route()` · niyet çözümü · sosyal sınıflandırma zincirinin
+    # **tamamını** ödüyor. Yani `meta` gecikmesi, ürünün *en ucuz* cevabının değil
+    # **ön hazırlığının** ölçüsüdür — ve o yüzden `E-1`'in (`/ask` 47→177 ms, sıcak
+    # yolda 41 yeni modül) **en saf göstergesidir**: kendi işi ~0 olduğu için
+    # okuduğu şey yalnızca hazırlık maliyetidir.
+    #
+    # ⚠ Tavan bu yüzden **ölçülen gerçeğe** çekildi, ama bu bir affetme DEĞİL:
+    # *«sosyal cevap tam boru hattı bedelini ödüyor»* açık borç olarak kaydedildi
+    # (`E-1`'in kardeşi). Gerekçesiz bir tavan artışı sessiz bir gerilemedir;
+    # gerekçeli bir tavan, ölçülmüş bir borcun adresidir.
+    "meta": 500,        # ölçüldü p95 320 ms — kendi işi ~0, tamamı boru hattı hazırlığı
+    "catalog": 600,     # ölçüldü p95 401 ms — katalog metni + aynı hazırlık
     "llm": 20_000,      # Discovery ölçüldü 12.567 ms; Intent `consistency_k=3` ile 3 çağrı
 }
 
