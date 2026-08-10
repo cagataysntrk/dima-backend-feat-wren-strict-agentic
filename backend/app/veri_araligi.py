@@ -78,7 +78,17 @@ def aralik(service, cube_meta: dict) -> tuple[str, str] | None:
         taban = cube_meta.get("base_object")
         if tds and taban:
             td = tds[0]
-            sql = f'SELECT MIN("{td}") AS min_t, MAX("{td}") AS max_t FROM "{taban}"'
+            # 🔴 `§DK-4` — **AD DEĞİL İFADE.** Üç küp (`enerji_makine`·`enerji_sapma`·
+            # `cusum`) zaman eksenini bir türevle tanımlıyor
+            # (`donem_tarih = make_date(yil, ay, 1)`); adı sorgulamak
+            # `Binder Error: Referenced column "donem_tarih" not found` veriyordu ve
+            # aralık **hiç ölçülemiyordu** → `varsayilan_donem` fail-close ediyor,
+            # o küplerde her dönem sorusu netleştirmeye düşüyordu.
+            # ⊙ Bugünün dördüncü aynı-sınıf bulgusu (`§DK` · `§DK-3` · bu).
+            ifade = (cube_meta.get("time_dimension_expressions") or {}).get(td)
+            secim = ifade if ifade else f'"{td}"'
+            sql = (f'SELECT MIN({secim}) AS min_t, MAX({secim}) AS max_t '
+                   f'FROM "{taban}"')
             r = service.query(sql, limit=1)
             satir = (r.get("rows") or [{}])[0]
             a, b = satir.get("min_t"), satir.get("max_t")

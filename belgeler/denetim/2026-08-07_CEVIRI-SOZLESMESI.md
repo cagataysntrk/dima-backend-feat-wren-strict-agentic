@@ -9548,3 +9548,80 @@ Boyut route'un eşleşme yüzeyinden **tamamen** çıkmalı; sinonimini silmek y
 
 *Bugün o kavramı üç kez taklit etmeye çalıştım — etiketle, sessizlikle, teknik adla.
 Kapı üç kez aynı şeyi söyledi: **kavramı yaz.***
+
+---
+
+# TUR — 2026-08-10 · **KLASİK CURL DÖNGÜSÜ** (belge kapandıktan sonra)
+
+## Yeşiller — bugünün emeği tuttu
+
+| basamak | senaryolar | sonuç |
+|---|---|---|
+| sosyal · meta | `selam` · `sağ ol` · `sen ne yapabiliyorsun` | ✅ 3/3 `source=meta`, 0 LLM |
+| route | `bu yıl toplam ciro` · `bu ay makine bazında oee` · `geçen yıl hat bazında fire` | ✅ 3/3 |
+| bugünkü düzeltmeler | `1. vardiyada fire` **%16,78** · `zayiat`→`toplam_fire_kg` izli · `bunu nasıl yorumlarsın` cevaplandı | ✅ 3/3 |
+| belirsizlik · yön | `bakiye` ifşa+chip · `ilk seferde tamam` **çifte beyan** (dönem + sahiplik) | ✅ |
+| 5 turluk zincir | `ciro` → `en yükseği` → `+fire oranı` → `+geçen yıl` → `ne yapmalıyız` | ✅ **4/5 `source=cube`** |
+
+⊙ Ve bir endişem **yersiz çıktı**: `bu ay … oee` **0 satır** döndü ama sistem zaten
+beyan ediyordu — *«Bu aralıkta (2026-08-01 sonrası) kayıt bulunamadı… Elimdeki veri
+01.01.2024 – 30.06.2026 aralığında.»* Uydurma yokluk **yok**.
+
+---
+
+## 🔴 `§D2/K` — `D2`'nin yalanı KILIK DEĞİŞTİRMİŞ hâlde hayattaydı
+
+```
+«bunu nasıl yorumlarsın» → trace: self-consistency %33 (3 örnek) → CEVAP VERDİ
+```
+
+`D2` (`oylama_paydasi`) *sayıyı* düzeltmişti: 1 cevap + 2 çekimser artık `%100` değil
+`%33` **yazılıyor**. Ama *kararı* düzeltmemişti:
+
+```python
+if len(votes) == 1 or agreement >= 2 / 3:   # ← «tek aday» eşiği HİÇ SORMUYOR
+```
+
+⊙ Makbuz *«%33 uyum»* yazarken sistem **oy birliğiyle davranıyordu** — raporun `D2` için
+yazdığı cümle birebir geçerli: *şüphenin en yüksek olduğu durum, sistemin en emin
+göründüğü durumdu.*
+
+**Düzeltme:** kısayol kaldırıldı. ⚠ `KURAL B` **bedavaya** sağlandı: bayrak kapalıyken
+payda `cands`'tir ve tek adayda oran **her zaman 1.0** — yani eski davranış birebir
+korunuyor, yeni koşul **yalnız bayrak açıkken** ısırıyor.
+*Bir sayıyı dürüst yazmak, ona göre davranmakla aynı şey değildir.*
+
+---
+
+## 🔴 `§DK-4` — ZAMAN EKSENİ DE BİR İFADE OLABİLİR *(bugünün DÖRDÜNCÜ aynı-sınıf bulgusu)*
+
+```
+«en kötü elektrik tüketimi» → «toplam elektrik kwh çıkarabilirim — hangi dönem için?»
+```
+
+Kök:
+
+```
+enerji_makine.timeDimensions = [{name: "donem_tarih",
+                                 expression: "make_date(yil, ay, 1)"}]
+veri_araligi:  SELECT MIN("donem_tarih") FROM …   ← ADI kullanıyor
+               → Binder Error: column not found → aralık ÖLÇÜLEMİYOR
+               → `varsayilan_donem` fail-close → her dönem sorusu netleştirmeye
+```
+
+⊙ **Bugün dördüncü kez aynı desen:** `§DK` (enum) · `§DK-3` (route değerleri) · `§DK-4`.
+Üçünde de bir tüketici, **ifadenin** gerektiği yerde **adı** okuyordu.
+
+⚠ Ve `A11` envanteri *«zaman ekseni olmayan küp: 0»* diyordu — **doğruydu ama
+yanıltıcıydı**: küpler bir eksen **beyan ediyor**, o eksen **çözülmüyor**. Yüklem
+beyanı ölçüyordu, **çözülebilirliği** değil.
+
+```
+ÖNCE : enerji_makine → aralık = None
+SONRA: enerji_makine → ('2024-01-01', '2026-06-01')  ✅
+       enerji_sapma  → ('2024-01-01', '2026-06-01')  ✅
+       «en kötü elektrik tüketimi» → RAM-1 · 606.387 kWh + dönem beyanı ✅
+```
+
+*Bir adın ardında bir ifade varsa, o adı kullanan her tüketici o ifadeyi de bilmek
+zorundadır — yoksa aynı katalog iki farklı şey anlatır.*

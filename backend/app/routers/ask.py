@@ -1243,7 +1243,30 @@ def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
     except Exception:                                  # noqa: BLE001 — oylama düşmez
         _tam_payda = False
     agreement = len(best) / (len(oylar) if _tam_payda else len(cands))
-    if len(votes) == 1 or agreement >= 2 / 3:
+    # 🔴🔴 **`§D2/K` — «TEK ADAY» KISAYOLU EŞİĞİ ATLIYORDU, ve bu `D2`'nin YALANININ
+    # KILIK DEĞİŞTİRMİŞ HÂLİYDİ.**
+    #
+    # `oylama_paydasi` (`D2`) *sayıyı* düzeltti: 1 cevap + 2 çekimser artık `%100` değil
+    # `%33` diye **yazılıyor**. Ama *kararı* düzeltmedi — `len(votes) == 1` dalı eşiği
+    # hiç sormadan dönüyordu. Canlı kanıt (curl, 2026-08-10):
+    #
+    #     «bunu nasıl yorumlarsın» → trace: self-consistency %33 (3 örnek) → CEVAP VERDİ
+    #
+    # ⊙ Yani makbuz *«%33 uyum»* yazarken sistem oy birliğiyle davranıyordu. Raporun
+    # `D2` için yazdığı cümle burada birebir geçerli: *şüphenin en yüksek olduğu durum,
+    # sistemin en emin göründüğü durumdu.*
+    #
+    # ⚠ `len(votes) == 1` **anlamlı bir kısayoldur** — ama yalnız *«cevap veren örnekler
+    # hemfikir»* der. Kaç örneğin **cevap verdiği** ayrı bir sorudur ve çekimserler
+    # sayılıyorsa (bayrak açık) o soru sorulmak zorundadır.
+    #
+    # ⚠ `KURAL B`: bayrak kapalıyken `_tam_payda` `False` ve `agreement` eski paydayla
+    # hesaplanıyor → `len(best)/len(cands)` ve tek adayda bu **her zaman 1.0**; yani
+    # kısayolu kaldırmak davranışı **birebir korur**. Yeni koşul yalnız bayrak açıkken
+    # ısırır — ölçülen kusurun tam olarak yaşandığı yerde.
+    #
+    # *Bir sayıyı dürüst yazmak, ona göre davranmakla aynı şey değildir.*
+    if agreement >= 2 / 3:
         return best[0], agreement, None, [v[0] for v in votes.values()]
     distinct_cqs = [v[0] for v in votes.values()]
     axes = [

@@ -688,6 +688,34 @@ class WrenService:
                 "measures": [m.get("name") for m in c.get("measures", [])],
                 "dimensions": [d.get("name") for d in c.get("dimensions", [])],
                 "time_dimensions": [t.get("name") for t in c.get("timeDimensions", [])],
+                # 🔴🔴 `§DK-4` — **ZAMAN EKSENİ DE BİR İFADE OLABİLİR, ve üç küpte ÖYLE.**
+                #
+                # Ölçüldü (2026-08-10): `enerji_makine` · `enerji_sapma` · `cusum`
+                # zaman eksenini bir **türev ifadeyle** tanımlıyor:
+                #
+                #     timeDimensions: [{name: "donem_tarih",
+                #                       expression: "make_date(yil, ay, 1)"}]
+                #
+                # `veri_araligi.aralik()` ise `SELECT MIN("donem_tarih") FROM …` diye
+                # **adı** kullanıyordu → `Binder Error: Referenced column "donem_tarih"
+                # not found` → aralık **ölçülemiyor** → `varsayilan_donem` fail-close
+                # ediyor ve o küplerde **her dönem sorusu** netleştirmeye düşüyor.
+                #
+                # ⊙ Bu, bugünün **dördüncü** aynı-sınıf bulgusu: `§DK` (enum) · `§DK-3`
+                # (route değerleri) · ve bu. Üçünde de bir tüketici, **ifadenin**
+                # gerektiği yerde **adı** okuyordu.
+                #
+                # ⚠ `A11` envanteri *«zaman ekseni olmayan küp: 0»* diyordu ve **doğruydu**
+                # — ama yanıltıcıydı: küpler bir eksen **beyan ediyor**, o eksen
+                # **çözülmüyor**. Yüklem beyanı ölçüyordu, çözülebilirliği değil.
+                #
+                # *Bir adın ardında bir ifade varsa, o adı kullanan her tüketici o
+                # ifadeyi de bilmek zorundadır — yoksa aynı katalog iki farklı şey anlatır.*
+                "time_dimension_expressions": {
+                    t.get("name"): t.get("expression")
+                    for t in c.get("timeDimensions", [])
+                    if t.get("expression") and t.get("expression") != t.get("name")
+                },
                 "synonyms": _syns(c.get("synonyms")),
                 "default_measure": c.get("defaultMeasure"),
                 # İNSANCA görünüm (chip/not etiketleri): label > ilk ham sinonim
