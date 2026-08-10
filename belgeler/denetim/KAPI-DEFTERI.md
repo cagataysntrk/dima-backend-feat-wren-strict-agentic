@@ -203,6 +203,46 @@ söylemek yapmanın yerine geçmez.*
 
 ---
 
+### 2026-08-10 · korpus · ⚪ YEŞİL — *ve `A12` İLK KEZ GERÇEKTEN ÇALIŞTI*
+
+`§UY/K` + `§D2/K` + `§DK-4` + **203 satırlık refactor** (iki yeni modül) tek demette:
+
+```
+kapı yeşil · ✅ sabit: dogru +0 · sessiz_yanlis 0 · devir +0
+%95.1 (taban %94.4) · payda 2286 · nüfus imzası TUTTU — «ATIL» uyarısı YOK
+```
+
+⊙ **Bu koşumun değeri sayıda değil, sayının ANLAMINDA.** Önceki koşumlarda kapı
+*«değişmedi»* diyordu ve bu bir **varsayımdı**: soru kümesinin aynı kaldığını kimse
+sınamıyordu. Bugün imza tuttu, yani *«aynı soruları sordum ve aynı cevapları aldım»*
+cümlesi **kanıtlandı**.
+
+🔴 Ve aynı gün bu kapının **yokluğu** dört koşuma mal olmuştu (`D8`): katalog büyüyünce
+sayılar kaydı, kapı **GERİLEME** dedi, ben üç ayrı düzeltme denedim — ve sonunda
+in-process A/B *«1072 soruda DEĞİŞEN: 0»* dedi. Aynı gün içinde bir kapı **eksikliğiyle**
+ve **varlığıyla** ölçüldü.
+
+*Bir ölçümün değeri, verdiği sayıda değil, o sayının neyi ölçtüğünü bilmesindedir.*
+
+### 2026-08-10 · modül büyüme tavanı · ✅ HAKLI — *ve tavan YÜKSELTİLMEDİ*
+
+Günün birikimi üç tavanı birden aştı: `ask()` **1369>1345** · `cube_router`
+**1964>1893** · `ask.py` **2792>2758**.
+
+⊙ Kapının kendi mesajı yolu gösterdi: *«yeni davranışı MODÜLE ÇIKAR, tavanı yükseltme.
+Tavanı yükseltmek kapıyı kapının kendisiyle çürütür.»* → **203 satır** iki yeni modüle
+çıkarıldı (`ters_yon` 141 · `deger_eslesme` 62) ve `huni_karari` ile `ask()`ten 17 satır
+daha indi. Taşınamaz kalan **4 kalem** `sha + Δ + gerekçe` ile yazıldı.
+
+⚠ **Bu kapı bir «stil» kapısı değil bir MİMARİ kapısıdır:** çıkarma sırasında ayrımlar
+kendiliğinden doğru yere düştü — `cube_router` *«bu soru hangi sorguya çevrilir»*
+sorusunu **cevaplar**, `ters_yon` *«kullanıcının sözü hangi ada karşılık gelir»*
+sorusunu **kaydeder**. Biri çalışır, öteki öğrenir.
+
+*Bir tavanı yükseltmek bir kazanç değildir; ölçülmeden yükseltmek bir borçtur.*
+
+---
+
 ---
 
 ## Nasıl eklenir
