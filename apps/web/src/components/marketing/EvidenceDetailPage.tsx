@@ -8,14 +8,14 @@ import type { MarketingContent, PageContent } from "@/content/marketing";
 
 type PageKind = "product" | "how" | "solutions" | "textile" | "security" | "integrations" | "about";
 
-const pageVisuals: Record<PageKind, { hero: MarketingAssetKey; sections: MarketingAssetKey[] }> = {
-  product: { hero: "hero", sections: ["quality", "floor", "review", "quality", "review", "floor", "review", "floor"] },
-  how: { hero: "review", sections: ["review", "floor", "quality", "review", "floor", "quality", "floor", "review", "quality", "floor"] },
-  solutions: { hero: "review", sections: ["review", "floor", "quality", "floor", "quality", "review"] },
-  textile: { hero: "floor", sections: ["floor", "quality", "review", "floor", "quality", "review"] },
-  security: { hero: "review", sections: ["review", "floor", "quality", "review", "floor", "quality"] },
-  integrations: { hero: "floor", sections: ["floor", "review", "quality", "floor", "review"] },
-  about: { hero: "review", sections: ["review", "quality", "floor", "review"] },
+const pageVisuals: Record<PageKind, MarketingAssetKey> = {
+  product: "productHero",
+  how: "howHero",
+  solutions: "solutionsHero",
+  textile: "textileHero",
+  security: "securityHero",
+  integrations: "integrationsHero",
+  about: "aboutHero",
 };
 
 const railLabels: Record<PageKind, { tr: string[]; en: string[] }> = {
@@ -42,7 +42,7 @@ function EditorialHero({ page, content, kind }: { page: PageContent; content: Ma
           <Link className="mt-8 inline-flex min-h-11 items-center gap-2 rounded-md bg-background px-5 py-3 text-sm font-semibold text-foreground transition-transform duration-200 hover:-translate-y-0.5 focus-visible:-translate-y-0.5" href="/contact">{page.cta}<ArrowRight aria-hidden="true" className="size-4" /></Link>
         </Reveal>
         <Reveal delay={0.08} y={18}>
-          <EditorialFigure asset={visual.hero} priority label={tr ? "Dima çalışma sahnesi" : "Dima working scene"} caption={tr ? "İşin içinden gelen cevaplar" : "Answers grounded in the work"} dark />
+          <EditorialFigure asset={visual} priority label={tr ? "Dima çalışma sahnesi" : "Dima working scene"} caption={tr ? "İşin içinden gelen cevaplar" : "Answers grounded in the work"} dark />
         </Reveal>
       </Container>
     </section>
@@ -56,7 +56,7 @@ function EditorialFigure({ asset, label, caption, priority = false, dark = false
       <div aria-hidden="true" className={`absolute inset-0 bg-gradient-to-t ${dark ? "from-foreground/70 via-foreground/5 to-transparent" : "from-foreground/45 via-transparent to-transparent"}`} />
       <figcaption className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-4 sm:inset-x-6 sm:bottom-6">
         <span className="max-w-[75%] text-sm font-medium text-background">{caption}</span>
-        <span className="shrink-0 font-mono text-micro uppercase tracking-[0.16em] text-background/65">{dark ? "dima / field" : "dima / scene"}</span>
+        <span className="shrink-0 font-mono text-micro text-background/65">{dark ? "dima / field" : "dima / scene"}</span>
       </figcaption>
     </figure>
   );
@@ -75,10 +75,40 @@ function StoryRail({ content, kind }: { content: MarketingContent; kind: PageKin
   );
 }
 
+function StorySignal({ section, content, kind, index }: { section: PageContent["sections"][number]; content: MarketingContent; kind: PageKind; index: number }) {
+  const tr = content.locale === "tr";
+  const labels = railLabels[kind][content.locale];
+  const activeLabel = labels[index % labels.length];
+  const signalPoints = section.points?.slice(0, 3) ?? labels;
+  return (
+    <div className="relative overflow-hidden rounded-lg border border-foreground/10 bg-foreground p-5 text-background sm:p-7">
+      <div aria-hidden="true" className="marketing-grid absolute inset-0 opacity-25 [mask-image:linear-gradient(to_bottom,black,transparent_88%)]" />
+      <div className="relative">
+        <div className="flex items-center justify-between gap-4 border-b border-background/15 pb-4">
+          <span className="font-mono text-micro uppercase tracking-[0.16em] text-chart-2">{kind} / {String(index + 1).padStart(2, "0")}</span>
+          <span className="font-mono text-micro uppercase tracking-[0.14em] text-background/48">{section.status ? content.common[section.status] : tr ? "Sürekli akış" : "Continuous flow"}</span>
+        </div>
+        <div className="mt-8 grid grid-cols-[2.5rem_1fr] gap-4 sm:grid-cols-[3.5rem_1fr] sm:gap-6">
+          <span className="font-display text-5xl leading-none text-background/22 sm:text-6xl">{String(index + 1).padStart(2, "0")}</span>
+          <div>
+            <div className="flex items-center gap-2 font-mono text-micro uppercase tracking-[0.14em] text-background/58"><span aria-hidden="true" className="size-2 rounded-full bg-chart-2 shadow-[0_0_0_5px_hsl(var(--chart-2)/0.14)]" />{tr ? "Kanıt hattı" : "Evidence line"}</div>
+            <div aria-hidden="true" className="mt-6 grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-2">
+              <span className="h-px bg-chart-2/70" /><span className="size-2 rounded-full border border-chart-2 bg-foreground" /><span className="h-px bg-chart-2/70" /><span className="size-2 rounded-full border border-chart-2 bg-foreground" /><span className="h-px bg-chart-2/70" />
+            </div>
+            <p className="mt-5 text-lg font-medium leading-7 text-background/90">{activeLabel}</p>
+          </div>
+        </div>
+        <div className="mt-8 grid border-t border-background/15 pt-5 sm:grid-cols-3">
+          {signalPoints.map((point, pointIndex) => <div className="border-b border-background/15 py-3 last:border-b-0 sm:border-b-0 sm:border-r sm:px-4 sm:first:pl-0 sm:last:border-r-0" key={point}><span className="font-mono text-micro text-chart-2">0{pointIndex + 1}</span><p className="mt-2 text-sm leading-6 text-background/62">{point}</p></div>)}
+        </div>
+        <p className="mt-6 max-w-md text-sm leading-6 text-background/52">{section.visual?.caption ?? (tr ? "İş sorusundan dayanağa uzanan görünür akış." : "A visible line from the business question to its basis.")}</p>
+      </div>
+    </div>
+  );
+}
+
 function StorySection({ page, content, kind, index }: { page: PageContent; content: MarketingContent; kind: PageKind; index: number }) {
   const section = page.sections[index];
-  const visual = pageVisuals[kind].sections[index % pageVisuals[kind].sections.length];
-  const tr = content.locale === "tr";
   const reversed = index % 2 === 1;
   return (
     <section className="scroll-mt-24 border-b py-16 sm:py-24" id={section.id}>
@@ -94,7 +124,7 @@ function StorySection({ page, content, kind, index }: { page: PageContent; conte
             {section.points?.length ? <ul className="mt-6 flex max-w-xl flex-wrap gap-x-5 gap-y-3 text-sm text-muted-foreground">{section.points.map((point) => <li className="flex items-start gap-2" key={point}><Check aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-brand" />{point}</li>)}</ul> : null}
           </Reveal>
           <Reveal delay={0.1} y={18} className={reversed ? "lg:order-2" : undefined}>
-            <EditorialFigure asset={visual} label={section.title} caption={section.visual?.caption ?? (tr ? "Sanitized çalışma sahnesi" : "Sanitized working scene")} compact />
+            <StorySignal content={content} index={index} kind={kind} section={section} />
           </Reveal>
         </div>
       </Container>

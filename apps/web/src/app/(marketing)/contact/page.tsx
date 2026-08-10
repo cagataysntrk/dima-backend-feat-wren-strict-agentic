@@ -39,7 +39,7 @@ export default async function ContactPage() {
           <p className="mt-6 max-w-lg text-lg leading-8 text-background/68">{tr ? "Veri kaynağınızı, mevcut rapor akışınızı ve yanıtlamak istediğiniz ilk soruyu paylaşın." : "Tell us about your data source, reporting flow, and the first question you want to answer."}</p>
           <a className="mt-8 inline-flex items-center gap-2 text-sm text-background underline-offset-4 hover:underline focus-visible:underline" href="mailto:contact@upcytech.com"><Mail className="size-4 shrink-0 text-chart-2" /><span className="break-anywhere">contact@upcytech.com</span></a>
           <div className="relative mt-10 overflow-hidden rounded-[1.15rem] border border-background/15">
-            <MarketingEditorialImage asset="review" alt={tr ? "Operasyon ekibi demo konuşması" : "Operations team discussing a demo"} className="marketing-editorial-image aspect-[16/10]" priority sizes="(min-width: 1024px) 44vw, 100vw" />
+            <MarketingEditorialImage asset="contactHero" alt={tr ? "İki kişinin mor kumaş numunesi üzerinden konuşması" : "Two people discussing a purple textile sample"} className="marketing-editorial-image aspect-[16/10]" priority sizes="(min-width: 1024px) 44vw, 100vw" />
             <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-foreground/70 to-transparent" />
             <span className="absolute inset-x-5 bottom-5 text-sm font-medium text-background sm:inset-x-6 sm:bottom-6">{tr ? "İlk soruyu, verinin gerçek bağlamını ve beklenen çıktıyı birlikte netleştirelim." : "Let’s clarify the first question, its real context, and the output you need."}</span>
           </div>
