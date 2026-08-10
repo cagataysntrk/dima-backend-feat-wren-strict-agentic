@@ -9747,3 +9747,48 @@ SONRA: «en kötü fire»       → «fire» birden fazla yerde tanımlı — bu
 meselesidir ve o eksenin kendi kapısı zaten var — *«2 ölçü istedin»* demek değil.
 
 *Bir talebi, cevabın kendisinden türetmek; sınavı kendi cevap anahtarından yazmaktır.*
+
+---
+
+# TUR — 2026-08-10 · **7 TURLUK ZİNCİR** ve `§AA2`
+
+## Altı tur kusursuz aktı
+
+| tur | soru | sonuç |
+|---|---|---|
+| 1-2 | `hat bazında fire oranı` → `en kötüsü hangisi` | **RAM 2 · %22,12** ✓ |
+| 3 | `o hatta hangi makine sorumlu` | **beyanlı odak**: *«RAM 2 üzerinden yanıtlandı — bir önceki turun seçtiği hat»* ✓ |
+| 4 | `peki neden böyle` | çapa korundu ✓ |
+| 5 | `geçen yıla göre daha mı kötü` | **%22,12 vs %18,6 · değişim +%18,9** ✓ |
+| 6 | `bir de ciro ekle` | **+10.247.596 ₺** — kompozisyon birikiyor ✓ |
+| 7 | `özetle ne yapmalıyız` | 🔴 **BOMBOŞ** |
+
+## 🔴 `§AA2` — BİR TEKNİĞİN REDDİ, TURUN REDDİ OLAMAZ
+
+```
+source=None · rows=0 · interpretation=YOK · next_steps=[]
+note: «fire_orani_yuzde toplanabilir değil (non_additive) — katkı payı
+       matematiksel olarak tanımsız olur»
+```
+
+Cümle **doğru**: bir oranda katkı payı gerçekten tanımsızdır. Ama kullanıcı *katkı payı*
+istemedi, **özet** istedi — ve özet **elde vardı**: aynı sistem *«bunu nasıl
+yorumlarsın»*a 2 olgu + 6 chip veriyor.
+
+⊙ Ve bu, kardeş dosyanın (`contribution.py` `§AA1`) yazdığı dersin **birebir tekrarı**:
+*«Bir sınırı aşmıyoruz, yanına doğru soruyu koyuyoruz.»* Orada uygulanmış, burada
+uygulanmamıştı.
+
+**Çözüm yeni bir motor değil:** eldeki fişi **LLM'siz yeniden koş** (`D4`'ün checkpoint
+yeteneği) → satırlar döner → `_maybe_interpret` olguları ve chip'leri **kendiliğinden**
+üretir. ⚠ Yalnız katkı raporu üretilemediğinde koşar; katkı çalıştıysa gövde zaten
+zengindir ve ikinci sorgu boşuna maliyettir (`E6`).
+
+```
+SONRA: rows=1 · {RAM 2 · %22,12 · 10.247.596 ₺}
+       olgular: «En yüksek hat: RAM 2 (22,12 %)» · «2 ölçü: fire_orani_yuzde, toplam_ciro»
+       next: 3 devam adımı
+       note: red KORUNDU — ama artık tek başına değil
+```
+
+*«Yapamam» bir cevap değildir; «şunu yapamam ama şunu biliyorum» bir cevaptır.*
