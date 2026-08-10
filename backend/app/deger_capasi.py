@@ -217,13 +217,29 @@ def netlestirme_metni(bulgular: list[Bulgu]) -> str:
     yok = [b for b in bulgular if not b.oneri]
     if not yok:
         return ""
-    parcalar = []
+    # 🔴 **BOYUTA GÖRE GRUPLANIR — ve bunu canlı bir ölçüm istedi.**
+    #
+    # `D8` turunda garson bir süzgece **beş** geçersiz değer koydu (`T-101`·`T-204`…)
+    # ve kapı geçerli listeyi **beş kez** bastı. Doğru olan bir cevaptı ama okunmuyordu.
+    #
+    # ⊙ *Bir sınırı söylemek ile onu beş kez söylemek aynı şey değildir: ikincisi
+    # kullanıcıya cümleyi atlatır ve sınır yine görülmemiş olur.*
+    gruplar: dict[str, tuple[list[str], list[str]]] = {}
     for b in yok:
-        ornek = " · ".join(b.gecerliler[:EN_FAZLA_SECENEK])
-        artan = len(b.gecerliler) - EN_FAZLA_SECENEK
+        degerler, gecerliler = gruplar.setdefault(b.boyut, ([], b.gecerliler))
+        degerler.append(b.deger)
+    parcalar = []
+    for boyut, (degerler, gecerliler) in gruplar.items():
+        ornek = " · ".join(gecerliler[:EN_FAZLA_SECENEK])
+        artan = len(gecerliler) - EN_FAZLA_SECENEK
         if artan > 0:
             ornek += f" … (+{artan})"
-        parcalar.append(f"«{b.deger}» **{b.boyut}** listesinde yok. Var olanlar: {ornek}")
+        adlar = " · ".join(f"«{d}»" for d in degerler[:EN_FAZLA_SECENEK])
+        if len(degerler) > EN_FAZLA_SECENEK:
+            adlar += f" … (+{len(degerler) - EN_FAZLA_SECENEK})"
+        cogul = "değerleri" if len(degerler) > 1 else "değeri"
+        parcalar.append(f"{adlar} — bu {cogul} **{boyut}** listesinde yok. "
+                        f"Var olanlar: {ornek}")
     return " ".join(parcalar) + " Hangisini istersin?"
 
 

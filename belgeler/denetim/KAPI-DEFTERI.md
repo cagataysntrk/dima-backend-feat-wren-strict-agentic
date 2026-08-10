@@ -136,6 +136,45 @@ saymak değil, kapının **ne gösterdiğini** kaydetmek. *Bir aletin en ucuz bu
 
 ---
 
+### 2026-08-10 · korpus · ✅ HAKLI ×3 — *aynı değişiklikte, üst üste, ve her biri BAŞKA bir şey öğretti*
+
+`D8` (kanonik müşteri anahtarı) üç biçimde denendi; kapı üçünde de **kırmızı** verdi ve
+üçü de **haklıydı**. Bu satır defterin en öğretici kaydı, çünkü kırmızıların **sırası**
+bir teşhis zinciri kurdu:
+
+| # | denenen biçim | kapının ölçtüğü | öğrettiği |
+|---|---|---|---|
+| 1 | `label: müşteri kodu` + geniş sinonim | `doğru 95→80` · `sessiz 8→10` · `payda +11` | `_with_label` etiketi **kelimelerine de ayırıyor** → `musteri` belirsiz token oldu |
+| 2 | etiket **ve** sinonim yok | `doğru 79` · `payda 2288` | boyut **adlandırılamaz** oldu; üreteç ham adıyla sordu, route **kendi boyutunu tanımadı** |
+| 3 | etiket yok, sinonim = teknik ad | `doğru 79` — **2 ile BİREBİR aynı** | 🎯 sorun sinonimde **değil**, boyutun **varlığında** |
+
+⊙ **Üçüncü kırmızı en değerlisiydi: iki koşumun AYNI sayıyı vermesi bir teşhistir.**
+Sinonim biçimini değiştirmek hiçbir şeyi kıpırdatmayınca aranacak yer daraldı ve kök
+bulundu — `_match_cube`'un *«bu kırılımı YALNIZ bu küp yapabilir»* tie-break'i
+(`dim_owners == 1`). Paylaşılan bir boyutu üç küpe daha eklemek, o kırılımı isteyen
+**her** soruda tie-break'i susturuyor.
+
+**Eksen:** sessiz-yanlış — ve `E-2` gereği **veto yetkisi olan tek eksen**.
+
+⚠ **Bir yanlış-pozitif değildi ve bu önemli:** yetenek **gerçekti** (7 küp tek anahtarda,
+orkestratör `{M1001 · ciro ₺40.480.479 · şikayet 928}` üretti). Kapı *«bu çalışmıyor»*
+demedi, *«bunun bedeli şu»* dedi. Karar geri almaktı çünkü `F1.1` bağlayıcı:
+**kapsam kazancı sessiz-yanlışla satın alınmaz.**
+
+### 2026-08-10 · korpus · ⚪ YEŞİL — *ve bir izolasyonun kanıtı*
+
+Geri alma sonrası: `doğru=95 · devir=2142 · 🔴sessiz_yanlış=8 · payda=2286` — son yeşil
+tabanla **birebir**. ⊙ Bu koşum aynı zamanda `C3-D` ve `§FÇ`'nin (kapısız commit edilmiş
+iki demet) **korpus-nötr** olduğunu kanıtladı; yani gerilemenin **tamamı** pack
+değişikliğiydi. *Bir değişikliği geri almak bir kayıp değildir; neyin ne yaptığını
+öğrenmenin en kesin yoludur.*
+
+⚠ Ve bir maliyet kaydı: bu teşhis **dört kapı koşumu** (≈32 dk) tuttu. Üçü zorunluydu
+(her biri yeni bilgi verdi), dördüncüsü kapısız commit edilmiş iki demetin **ertelenmiş**
+kapısıydı. *Kapıyı ertelemek onu ödememek değildir; faizli ödemektir.*
+
+---
+
 ---
 
 ## Nasıl eklenir

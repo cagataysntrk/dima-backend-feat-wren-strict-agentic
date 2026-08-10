@@ -9509,3 +9509,42 @@ T4 «bunu değerlendirir misin»       → source=cube · aynı çapa
 
 ⊙ Üçü de eldeki rapora **çapalandı** — sosyal kapanışa da Discovery'ye de düşmedi.
 `R2` sınıfı (*«Görüşürüz!»*) kapandı. **239 hedefli test yeşil.**
+
+---
+
+# 🔴 `D8` — YETENEK GERÇEKTİ, BEDELİ DE GERÇEKTİ *(ve kapı üç kez haklı çıktı)*
+
+## Ölçüm zinciri
+
+1. **Tarif yanlıştı.** `F4` *«en büyük iş»* diye planlanmıştı. `§DK` enum'ları
+   düzeltince: anahtar **her iki ailenin tablosunda duruyor** (`partiler.musteri_kod`,
+   `tamir_rework.musteri`). Gereken bir dolayım katmanı değil **bir satır beyandı**.
+2. **Yetenek kanıtlandı.** 7 küp tek anahtarda → *«müşteri kodu bazında ciro ve şikayet
+   sayısı»* → **3 adım** (SORGU+SORGU+MATRIS) → `{M1001 · ₺40.480.479 · 928}`.
+3. 🔴 **Bedel ölçüldü, üç koşumda kararlı:** `doğru 95→79` · `sessiz_yanlış 8→10`.
+4. 🎯 **Kök:** `_match_cube`'un `dim_owners == 1` tie-break'i — paylaşılan bir boyutu üç
+   küpe daha eklemek, o kırılımı isteyen **her** soruda tie-break'i susturuyor.
+5. **Karar: geri alındı.** `F1.1` bağlayıcı — *kapsam kazancı sessiz-yanlışla satın
+   alınmaz*. Geri alma sonrası taban **birebir** geri geldi.
+
+## ⊙ Ve üç kırmızının SIRASI bir teşhis kurdu
+
+İkinci ve üçüncü koşum **birebir aynı sayıyı** verdi. Sinonim biçimini değiştirmek
+hiçbir şeyi kıpırdatmayınca aranacak yer daraldı — *iki ölçümün aynı çıkması bir
+tekrar değil bir bilgidir.*
+
+## Kalan iş — artık ölçümle tarif edilmiş
+
+Boyut route'un eşleşme yüzeyinden **tamamen** çıkmalı; sinonimini silmek yetmiyor
+(silince adlandırılamaz oluyor ve üreteç ham adıyla soruyor). Gereken **beyan**:
+
+```yaml
+  - name: musteri_kod
+    birlesme_anahtari: true      # ← bugün OLMAYAN kavram
+```
+
+→ `_match_dims` · `dimension_synonyms` · `belirsiz_boyut_tokenlari` · korpus üreteci
+**dışında**; `blend` ve garson kataloğu **içinde**.
+
+*Bugün o kavramı üç kez taklit etmeye çalıştım — etiketle, sessizlikle, teknik adla.
+Kapı üç kez aynı şeyi söyledi: **kavramı yaz.***

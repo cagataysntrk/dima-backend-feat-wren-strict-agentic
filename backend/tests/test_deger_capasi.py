@@ -134,3 +134,25 @@ def test_COK_ADAYLI_ONEK_COZULMEZ_SORULUR():
     sormak doğru kalır — *gevşetilen bir kural, gevşetildiği yerde tahmin üretir.*"""
     b = dk.denetle(_cq(dimension="makine", operator="eq", value="RAM"), _SEMA)
     assert b and b[0].oneri is None
+
+
+def test_AYNI_BOYUTTAKI_COKLU_HATA_TEK_KEZ_LISTELENIR():
+    """🔴 Canlı `D8` turu istedi: garson bir süzgece **beş** geçersiz değer koydu ve kapı
+    geçerli listeyi **beş kez** bastı. Doğru bir cevaptı ama okunmuyordu.
+
+    *Bir sınırı söylemek ile onu beş kez söylemek aynı şey değildir: ikincisi kullanıcıya
+    cümleyi atlatır ve sınır yine görülmemiş olur.*
+    """
+    cq = _cq(dimension="makine", operator="in", value=["Bakım", "Depo", "Kalite"])
+    b = dk.denetle(cq, _SEMA)
+    metin = dk.netlestirme_metni(b)
+    assert metin.count("Var olanlar") == 1, metin
+    for d in ("Bakım", "Depo", "Kalite"):
+        assert f"«{d}»" in metin
+    assert "değerleri" in metin, "çoğul dilbilgisi"
+
+
+def test_TEK_HATADA_TEKIL_DILBILGISI():
+    """⚠ Gruplama tekil vakayı bozmamalı — *«bu değeri»*, *«bu değerleri»* değil."""
+    b = dk.denetle(_cq(dimension="makine", operator="eq", value="Bakım"), _SEMA)
+    assert "bu değeri" in dk.netlestirme_metni(b)
