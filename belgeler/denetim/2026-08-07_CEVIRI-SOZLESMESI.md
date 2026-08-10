@@ -10441,3 +10441,117 @@ yazılır (kapılı).
 
 Bkz. §8 (önceki tur): `plan_tuketici` **zaten** `uyum.denetle` koşuyor. Bugün **beşinci**
 kez bir kök iddiası ölçümle düştü — ve beşinde de ölçüm yanlış bir kök yazmamı önledi.
+
+# 🔴 `O` TURU — 2026-08-10 · 17 SENARYO + 3 THREAD (29 curl) · **7 KIRMIZI**
+
+| # | senaryo | sonuç |
+|---|---|---|
+| O1 | *bu yıl toplam fire kg* | ✅ route · 454.478 kg + sahiplik beyanı |
+| O2 | *hangi müşteriye en çok satış* | ✅ `EGE KNIT · ₺13.410.234` |
+| O3 | *geçen yıl aylara göre ciro* | ✅ route · 12 satır |
+| O4 | *bu yıl ortalama oee* | ✅ route |
+| O5 | *bakım maliyeti en yüksek makine* | 🔴 `§CT` — chip'te tanıyor, cevapta tanımıyor |
+| O6 | *ortalama dE müşteri bazında* | ⊙ netleştirme **gerçek seçeneklerle** (`§SB` sonrası) |
+| O7 | *bu ay kaç iş emri* | ✅ `§SD` — «sıfır bir ölçüm değil, veri sınırı» |
+| O8 | *RAM-2 fire oranı* | ✅ `§SR` — yalan beyan yok |
+| O9 | *kontinü makinelerinin duruş süresi* | 🔴 doğru cevaba *«bu küpte tanımlı değil»* |
+| O10 | *bu yıl duruş sebepleri* | ✅ `§KD` — 6 satır kırılım |
+| O11 | *oee %70 altında olan makineler* | 🔴 eşik **sessizce düştü**, beyan yok |
+| O12 | *en çok iade eden 3 müşteri* | 🔴 `musteri_kod = M1003` — **ad değil kod** |
+| O13 | *enerji tüketimi nedir* | ✅ `§BD` + `§TZ` |
+| O14 | *çalışan devir oranı* | 🔴🔴 **Discovery ateşledi** (`cube=adhoc`) |
+| O15 | thread D (3 tur) | ✅ `§KS` — `limit 2` uygulandı, sıralı |
+| O16 | thread E (3 tur) | ✅ yoy `+%6` · katkı |
+| O17 | thread F (5 tur) | 🔴🔴 t2 `§AY` · 🔴 t5 sert red |
+
+## 🔴 KÖKLER — teşhis
+
+### `§CT` · CHIP'TE TANIYIP CEVAPTA TANIMAMAK *(O5)*
+
+```
+«bu yıl bakım maliyeti en yüksek makine»
+  → «… hangi ölçüyü istediğini anlayamadım. Şunlardan biri mi?»
+  → chip: «iş emri adedi» · «bakım süresi» · **«bakım maliyeti»**   ← kullanıcının YAZDIĞI terim
+```
+
+Sistem kullanıcının **birebir yazdığı** terimi bir seçenek olarak sunuyor — yani onu
+**tanıyor** — ve yine de soruyor. *Bir seçeneği üretebilen sistem, o seçeneği zaten
+bilmektedir; onu sormak bilgiyi saklamaktır.*
+
+### `§AY` · ANLATILACAK ŞEY YOKKEN DISCOVERY *(O17-t2)*
+
+```
+t1 «bu yıl kalite sorunları»  → netleştirme (ortada RAPOR YOK)
+t2 «bunu yorumla»             → 🔴 Discovery: 18 satır vardiya×gün OEE — alakasız
+```
+
+`§X4` bu kuralı **yazmıştı**: bağlamsız bir makbuz sorusu merdivene inmez. Ama yalnız
+`TUR_MAKBUZ`'a uygulandı. *Bir kural yalnız bir basamakta geçerliyse, o kural değil bir
+tesadüftür* — bugün **altıncı** kez.
+
+### 🔴🔴 `O14` · DISCOVERY BİR CEVAP DEĞİL, BİR **ARIZA RAPORUDUR**
+
+`«çalışan devir oranı»` → `source=llm:openrouter · cube=adhoc · devir_orani: 0.3448`.
+`§0.0`'a göre bu bir yol değil bir **ölçü**: mutfak bu yemeği yapamıyor. `ik` modülü var
+ama devir oranı ölçüsü yok. **Kayda geçti** — katalog borcu.
+
+### Kalan üç kırmızı
+
+* **O9** — doğru cevap (`makine_duruslari.toplam_sure_dk`), yalan beyan (*«durus suresi
+  bu küpte tanımlı değil»*). Katalog `süre` yerine `dakika` yazıyor; `§101.1` sınıfı.
+* **O11** — `%70 altında` eşiği uygulanmadı **ve beyan edilmedi**. ⚠ Ayrıca birim
+  uyuşmazlığı var: `ort_oee` **0–1** ölçekli, eşik **70**.
+* **O12** — `musteri_kod` (`M1003`) seçildi; kullanıcı *«müşteri»* dedi. `B3` (kanonik
+  varlık ekseni) borcunun canlı yüzü.
+* **O17-t5** — `«en kötü üçünü grafikle göster»` geçerli bir raporun üstünde **sert red**
+  (*«ilişkilendiremedim»*), oysa thread D'de `«en düşük ikisini göster»` **çalıştı**.
+
+## `§AY` KAPATILDI — ve `O11` iddiam ölçümle düzeltildi
+
+### ✅ `§AY` — bağlamsız konuşma artık merdivene inmiyor
+
+```
+t1 «bu yıl kalite sorunları» → netleştirme
+t2 «bunu yorumla»
+   ÖNCE : 🔴 Discovery · 18 satır alakasız · adhoc thread'in ÇAPASI oldu
+   SONRA: ✅ «Yorumlayabileceğim bir rapor ekranda yok — … Önce bir soru sor …»
+          trace: bağlamsız (konusma-baglamsiz) → dürüst cevap (sorgu YOK, LLM YOK)
+```
+
+⊙ `O17-t5`'in sert reddi **bunun alt sonucuydu**: izole bir thread'de üç yazımın üçü de
+(`«en kötü üçünü grafikle göster»` dâhil) **çalışıyor** — ölçüldü. Yani kök tek.
+
+⚠ Ve kapı yine iki kez konuştu, ikisinde de haklıydı:
+1. `ask()` tavanı **+8** verdi → doğru hamle **iki dalı birleştirmek** oldu
+   (`makbuz-baglamsiz` ∪ `konusma-baglamsiz`) ve net **−14 satır**. Üstelik `§X4`'ün
+   cümlesi `ask.py`'den (🚪) `followup`'a (🗣) taşındı — alan haritasının gereği.
+2. Kısa devre muafiyetinin imzası öldü → yeni adrese çakıldı, gerekçesi **iki kuralı**
+   kapsayacak biçimde genişletildi.
+
+*İki dalın aynı şeyi söylediği yerde, iki dal değil bir dal vardır.*
+
+### ⚠ `O11` — «eşik sessizce düştü» iddiam YANLIŞTI (bugün altıncı ölçüm düzeltmesi)
+
+```
+measure_having = {'measure': 'ort_oee', 'op': '<', 'value': 70.0}   ← KURULU
+rows = 11 (hepsi)                                                   ← ama HİÇBİRİNİ elemedi
+```
+
+Eşik **uygulanmış**; işe yaramamış. Sebep **birim uyuşmazlığı**: kullanıcı `%70` yazdı,
+`ort_oee` **0–1** ölçekli (0,58). Katalog `units: {ort_oee: '%'}` diyor ama saklanan
+değer bir **orandır** — yani birim alanı tek başına ayırt edici değil (`fire_orani_yuzde`
+de `%` ve o **0–100**).
+
+🔴 O yüzden sessizce ölçeklemek bir **tahmin** olurdu. Kanıtlı olan şu: **teslim edilen
+satırlar elde** — eşik hiçbirini elemiyorsa bu ölçülebilir bir olgudur.
+
+**Sıradaki turun kökü `§Bİ`:** *bir eşik hiçbir satırı elemiyorsa bu bir süzgeç değil bir
+süstür* — beyan edilir ve yeniden ölçeklenmiş değer **chip** olarak sunulur (`§TZ`
+deseni: beyan + tek tık, tahmin yok).
+
+### 📋 Kayda geçen katalog borçları *(mutfak ekseni)*
+
+* **O9** — `makine_duruslari` «süre» yerine «dakika» yazıyor → doğru cevaba yalan beyan
+* **O12** — `sikayet.musteri_kod` (`M1003`) seçiliyor; kullanıcı *«müşteri»* dedi (`B3`)
+* **O14** — `«çalışan devir oranı»` → **Discovery** (`cube=adhoc`): `ik` modülünde devir
+  oranı ölçüsü **yok**. `§0.0`: her ateşleme bir **mutfak eksikliği raporudur**.

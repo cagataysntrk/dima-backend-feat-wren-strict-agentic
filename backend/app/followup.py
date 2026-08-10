@@ -440,6 +440,69 @@ def niyet_kalibi_var(soru: str) -> str | None:
     return None
 
 
+#: `§AY` — bağlamsız konuşma türlerinin **kullanıcı cümlesi**. Metnin sahibi burasıdır
+#: (bu bir 🗣 modüldür); `ask()` yalnız çağırır ve atar. İkinci bir yazar, bir gün ikinci
+#: bir cümle demektir.
+_BAGLAMSIZ_METIN: dict[str, str] = {
+    TUR_ANLAT: "Yorumlayabileceğim bir rapor **ekranda yok** — henüz bir sonuç üretmedim.",
+    TUR_NORMAL: "*«Normal mi»* diye sorabileceğim bir sayı **ekranda yok**.",
+    TUR_NE_YAPMALI: "Öneri çıkarabileceğim bir sonuç **ekranda yok**.",
+    TUR_ISARET: "İşaret ettiğin şeyi görebileceğim bir grafik/rapor **ekranda yok**.",
+}
+
+
+#: `§X4`'ün makbuz cümlesi — `ask.py`'den **buraya taşındı**. Gerekçe iki katlı:
+#: (1) `ask()`'in büyüme tavanı iki neredeyse-aynı dalı reddetti ve doğru hamle onları
+#: **birleştirmekti**; (2) `ask.py` bir 🚪 dosyadır, kullanıcı dili yazmak 🗣 tarafın
+#: işidir. *İki dalın aynı şeyi söylediği yerde, iki dal değil bir dal vardır.*
+_MAKBUZ_BAGLAMSIZ = (
+    "Bir sayının **nasıl hesaplandığını** soruyorsun ama ekranda henüz bir rapor yok — "
+    "hesabını gösterebileceğim bir sonuç bulunmuyor.")
+
+
+def baglamsiz_metni(tur: str | None, kural: str | None = None) -> str:
+    """`§AY`+`§X4` — *«ortada rapor yok»*u **türüne göre** söyler ve ne yapılacağını ekler.
+
+    ⚠ Cevap **uydurmaz**: yalnız kesin olarak bilinen bir olguyu söyler. LLM yok, sorgu
+    yok, 0 ms. Ve iki kuralın **tek yazarı** burasıdır — ikinci bir yazar, bir gün ikinci
+    bir cümle demektir.
+    """
+    if kural == "makbuz-baglamsiz":
+        bas = _MAKBUZ_BAGLAMSIZ
+        kuyruk = ("\n\nÖnce bir soru sor (ör. *«bu yıl bölüm bazında elektrik "
+                  "tüketimi»*); cevabın altında **hangi ölçü · hangi formül · hangi "
+                  "tablo · hangi süzgeçler** kullanıldığını olduğu gibi gösterebilirim.")
+    else:
+        bas = _BAGLAMSIZ_METIN.get(str(tur or ""), _BAGLAMSIZ_METIN[TUR_ANLAT])
+        kuyruk = ("\n\nÖnce bir soru sor (ör. *«bu yıl makine bazında oee»*); cevabın "
+                  "üstünde *«bunu yorumla»* · *«neden böyle»* · *«ne yapmalıyız»* "
+                  "diyebilirsin.")
+    return bas + kuyruk
+
+
+def _konusma_baglamsiz(q: str) -> str | None:
+    """`§AY` — bağlam yokken bile **tanınan** bir konuşma türü var mı? → tür adı.
+
+    ⚠ Zamir/kısalık şartı `sinifla`'nın bağlamlı dalıyla **birebir aynı** tutulur: orada
+    bu şart *«fire analizini yap»* gibi bir **konu değişimini** konuşma sanmayı önlüyor;
+    burada da aynı işi görür. Şartı gevşetmek, kullanıcının yeni sorusunu bir *«rapor
+    yok»* cümlesine çevirirdi — yani bir kusuru düzeltirken daha görünür bir tanesini
+    açardı.
+
+    ⚠ `_NEDEN` **dışarıda**: *«neden fire yüksek olur»* bağlamsız da olsa gerçek bir
+    veri sorusudur ve merdivenin cevaplaması gerekir. Ötekiler (`anlat`·`normal mi`·
+    `ne yapmalı`·`işaret`) **tanım gereği** ekrandaki bir sonuca dairdir.
+    """
+    zamir = _hit(q, _ISARET_ZAMIRI) or bool(_COGUL_ISARET_ZAMIR.search(q))
+    for tur, kaliplar in ((TUR_ANLAT, _ANLAT), (TUR_NORMAL, _NORMAL),
+                          (TUR_NE_YAPMALI, _NE_YAPMALI), (TUR_ISARET, _ISARET)):
+        if not _hit(q, kaliplar):
+            continue
+        if tur in (TUR_NORMAL, TUR_NE_YAPMALI) or zamir or _kisa_soru(q):
+            return tur
+    return None
+
+
 def sinifla(soru: str, *, baglam_var: bool,
             capa_degerleri: frozenset[str] | None = None,
             acik_boyutlar: frozenset[str] | None = None) -> Niyet:
@@ -477,6 +540,34 @@ def sinifla(soru: str, *, baglam_var: bool,
         if _hit(q, _MAKBUZ):
             return Niyet(sinif=SINIF_YENI, kural="makbuz-baglamsiz",
                          kanit="hesabı sorulacak bir rapor yok")
+        # 🔴🔴 `§AY` — **YORUMLANACAK ŞEY YOKKEN DISCOVERY ATEŞLİYORDU.**
+        #
+        # ⊙ Canlı ölçüm (curl `O` turu, 2026-08-10 · beş turluk thread):
+        #
+        #     t1 «bu yıl kalite sorunları» → netleştirme (ortada RAPOR YOK)
+        #     t2 «bunu yorumla»            → 🔴 Discovery: 18 satır vardiya×gün OEE
+        #
+        # Kullanıcı **ekrandaki** cevabı yorumlamak istedi; ekranda cevap yoktu; sistem
+        # ham SQL yazıp **alakasız** bir tablo üretti. Ve bedeli turla sınırlı kalmadı:
+        # `adhoc` cevap thread'in **çapası** oldu ve sonraki turlar
+        # *«bu takip mesajını ilişkilendiremedim»* ile öldü.
+        #
+        # ⊙ `§X4` bu kuralı **zaten yazmıştı** — ama yalnız `TUR_MAKBUZ`'a. Aynı gerekçe
+        # bütün **konuşma** türleri için geçerlidir ve daha güçlüdür: *yok olan bir
+        # raporu yorumlamak, açıklamak ya da «normal mi» diye sormak tanımsızdır.*
+        # Hiçbir SQL bu soruları cevaplayamaz, çünkü sordukları şey veride değil
+        # **ekranda**dır. Bugün altıncı kez: *bir kural yalnız bir basamakta geçerliyse,
+        # o kural değil bir tesadüftür.*
+        #
+        # ⚠ Sınıf yine `SINIF_YENI` **kalır** (yol değişmez); yalnız `kural` gerçeği
+        # söyler ki çağıran merdiveni sonuna kadar inmesin.
+        # ⚠ Ve kapsam **dar**: yalnız zamir/kısalık şartını geçen ifadeler. *«fire
+        # analizini yap»* bir konu değişimidir ve buraya girmez — `_konusma_baglamsiz`
+        # o şartı `sinifla`'nın bağlamlı dalıyla **aynı** biçimde uygular.
+        _ky = _konusma_baglamsiz(q)
+        if _ky:
+            return Niyet(sinif=SINIF_YENI, kural="konusma-baglamsiz", tur=_ky,
+                         kanit="konuşulacak bir rapor yok")
         return Niyet(sinif=SINIF_YENI, kural="baglam-yok",
                      kanit="konuşulacak bir cevap yok")
 

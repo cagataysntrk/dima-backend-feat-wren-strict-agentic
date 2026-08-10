@@ -60,8 +60,18 @@ MUAF: list[tuple[str, str]] = [
      "bir merdiven bitiricisi sayar — kesen bir tahmin değil, bir TALİMAT."),
     ("_yol_siniri_notu('intent')",
      "🟢 MEŞRU: aynı gerekçe, bir basamak yukarısı."),
-    ("Bir sayının **nasıl hesaplandığını** soruyorsun",
-     "🟡 ÜÇÜNCÜ CİNS (`§X4`) — **altında kesilecek bir cevap YOK, ve bu ÖLÇÜLDÜ.** Soru "
+    ("note=followup.baglamsiz_metni(niyet.tur, niyet.kural)",
+     "🟡 ÜÇÜNCÜ CİNS (`§X4`+`§AY`) — **altında kesilecek bir cevap YOK, ve bu ÖLÇÜLDÜ.** "
+     "⟳ **DAL BİRLEŞTİ (2026-08-10, `§AY`).** Eskiden yalnız `TUR_MAKBUZ` bağlamsızken "
+     "kesiyordu; ölçüldü ki aynı boşluk **bütün konuşma türlerinde** var: `«bunu "
+     "yorumla»` bağlamsızken **Discovery ateşliyor** ve 18 satır alakasız tablo "
+     "üretiyordu — üstelik o `adhoc` cevap thread'in ÇAPASI olup sonraki turları da "
+     "öldürüyordu. İki dal tek dala indi; metnin tek yazarı `followup` (🗣). "
+     "*İki dalın aynı şeyi söylediği yerde, iki dal değil bir dal vardır.* "
+     "⚠ Kapsam dar: `_NEDEN` **dışarıda** (*«neden fire yüksek olur»* gerçek bir veri "
+     "sorusudur) ve zamir/kısalık şartı bağlamlı dalla birebir aynı — *«fire analizini "
+     "yap»* bir konu değişimidir ve buraya girmez. "
+     "⊙ Özgün ölçüm (`§X4`) aynen geçerli: Soru "
      "*«bu nasıl hesaplandı»* biçiminde ve ortada **rapor YOK**; yani sorulan şey veriye "
      "değil **ekrandakine** dairdir. Discovery ham SQL üretir ve hiçbir SQL *«ortada rapor "
      "var mı»*yı cevaplayamaz — bu dal cevaplı bir yolu kesmiyor, **cevapsız** bir yolu "

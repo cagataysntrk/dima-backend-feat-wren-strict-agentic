@@ -3168,17 +3168,18 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     # yapılabileceğini ekliyor (`D4`'ün proaktif sınır deseni). LLM yok, sorgu yok, 0 ms.
     #
     # *Bir soruyu cevaplamanın en ucuz yolu, bazen cevabın ortada olmadığını söylemektir.*
-    if niyet.kural == "makbuz-baglamsiz":
-        _log.info("makbuz: bağlam yok → merdivene inilmedi (§X4)")
+    # `§AY`+`§X4` — **BAĞLAM YOKSA MERDİVENE HİÇ İNİLMEZ.** İki kural tek dalda:
+    # ikisi de aynı kesin olguyu söyler (*ekranda rapor yok*) ve hiçbir SQL onu
+    # cevaplayamaz — sorulan şey veride değil **ekranda**dır. Metnin tek yazarı
+    # `followup` (🗣); buraya kalan çağrı. *İki dalın aynı şeyi söylediği yerde, iki
+    # dal değil bir dal vardır.*
+    if niyet.kural in ("makbuz-baglamsiz", "konusma-baglamsiz"):
+        _log.info("bağlam yok → merdivene inilmedi (%s)", niyet.kural)
         return _finish(AskResponse(
             question=body.question, source=None,
-            note="Bir sayının **nasıl hesaplandığını** soruyorsun ama ekranda henüz bir "
-                 "rapor yok — hesabını gösterebileceğim bir sonuç bulunmuyor.\n\n"
-                 "Önce bir soru sor (ör. *«bu yıl bölüm bazında elektrik tüketimi»*); "
-                 "cevabın altında **hangi ölçü · hangi formül · hangi tablo · hangi "
-                 "süzgeçler** kullanıldığını olduğu gibi gösterebilirim.",
-            trace=["Takip: MAKBUZ sorusu ama ortada rapor YOK → dürüst cevap "
-                   "(sorgu YOK, LLM YOK) — §X4"],
+            note=followup.baglamsiz_metni(niyet.tur, niyet.kural),
+            trace=[f"Takip: bağlamsız ({niyet.kural}) → dürüst cevap "
+                   f"(sorgu YOK, LLM YOK) — §X4/§AY"],
         ))
 
     _eylem_karar = eylem.degerlendir(q_norm, body.cube_query, schema=schema)
