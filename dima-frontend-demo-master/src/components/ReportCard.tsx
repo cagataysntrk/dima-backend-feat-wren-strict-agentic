@@ -6,7 +6,7 @@ import { useFeature } from "@/lib/useFeature";
 import { usePermission } from "@/lib/usePermission";
 import { NextStepChips } from "@/components/NextStepChips";
 import { DiyalogDurumu } from "@/components/DiyalogDurumu";
-import type { AskResponse, CubeQuery, DashboardListItem } from "@/lib/types";
+import type { AskResponse, CubeQuery, DashboardListItem, Report } from "@/lib/types";
 import {
   addDashboardWidget,
   askVerify,
@@ -62,6 +62,7 @@ export function ReportCard({
   threadId,
   viewHint,
   onCubeEdit,
+  onRaporAc,
   precedingLabel,
   sessionId,
   fb,
@@ -81,6 +82,10 @@ export function ReportCard({
   // item.view_hint'ini kullanır (bkz. ReportPanel'in yalnız son karta geçirme mantığı).
   viewHint?: { kind: string; nonce: number } | null;
   onCubeEdit?: (edit: { cq: CubeQuery; label: string }) => void;
+  /** `§RP` — agentic raporu tam sayfa açar. Verilmezse düğme **hiç render edilmez**
+   * (`?.` ile çağrılır ama koşul `item.rapor` üzerinde), yani bu prop'u geçirmeyen
+   * çağıranlar bugünkü davranışını birebir korur. */
+  onRaporAc?: (rapor: Report) => void;
   // §B Adım 2: sayfa-seviyeli tek `verifyLabel` state'i KALDIRILDI — her kart KENDİ
   // thread'inde, kendi indeksinden GERİYE doğru "chip:" ile başlamayan en yakın soruyu
   // ReportPanel'den (nearestRealQuestion) alır.
@@ -781,6 +786,27 @@ export function ReportCard({
           yoludur. Tek adımlı cevapta bileşen `null` döner, yani bugünkü kart
           bayt bayt aynı kalır. */}
       <PlanAdimlari item={item} onCubeEdit={onCubeEdit} />
+
+      {/* 🔴🔴 `§RP` — **AGENTIC RAPOR/PANO.** Orkestratör bir belge fiili (`RAPOR`/`PANO`)
+          koştuysa cevap çok bölümlü bir `Report` taşır ve **var olan** `ReportView` onu
+          çizer — yeni render kodu YOK, ikinci bir belge biçimi YOK.
+
+          ⚠ Kart bir **kapı** açar, belgeyi kartın içine gömmez: bir sohbet kartı bir
+          rapor sayfası değildir ve beş bloğu oraya sığdırmak ikisini de bozardı.
+          ⚠ `plan.bolumler` (ham) ile karıştırılmaz — o `PlanAdimlari`'nın işi.
+          ⚠ `rapor` yoksa bu blok HİÇ render edilmez → bugünkü kart bayt bayt aynı. */}
+      {item.rapor && (item.rapor.block_count ?? 0) > 0 && (
+        <button
+          onClick={() => onRaporAc?.(item.rapor!)}
+          className="mt-2 flex h-[26px] w-full items-center justify-between border border-hairline px-2 font-mono text-[11px] text-neutral-400 transition-colors hover:text-foreground"
+          title="Raporu tam sayfa aç (yazdırılabilir)"
+        >
+          <span>▤ {item.rapor.title}</span>
+          <span className="text-neutral-500">
+            {item.rapor.block_count} blok · {(item.rapor.pages ?? []).length} sayfa · aç →
+          </span>
+        </button>
+      )}
 
       {/* Cross-cube KPI kartı (CCC / likidite) — cube tablosu değil bileşke skaler. */}
       {item.kpi && <KpiCardView card={item.kpi} />}

@@ -106,7 +106,15 @@ TAVANLAR = {
     # 🔴 Ve dördü bir kusuru **gidermek** için: ölü `/contracts/{id}` bağlantısı (404)
     # kapatıldı. *Bir kusuru gidermenin bedeli de tavandan ödenir — ama ödenmiş olması
     # yazılmalıdır.*
-    "components/ReportCard.tsx": 1048,
+    # ⟳ **1048 → 1064 (`§RP`, 2026-08-10).** Bu dosyada tavan **ölçülen değere çekilir**
+    # (`test_KAPI_GERCEKTEN_KIRMIZI_VERIYOR` sıfır boşluk şart koşar) — yani artış burada
+    # görünür olmak **zorundadır**, muafiyet listesine saklanamaz.
+    # 🔴 Δ=16: agentic raporu **tam sayfa açan kapı**. ⚠ **YENİ RENDER KODU YOK** — belgeyi
+    # `ReportView` çizer (`AnalysisCanvas`/`DashboardView` ile AYNI desen). Onaltı satırın
+    # çoğu, düğmenin **neden kartın içine gömülmediğini** yazan şerh: bir sohbet kartı bir
+    # rapor sayfası değildir ve beş bloğu oraya sığdırmak ikisini de bozardı.
+    # 🔴 Koşul `item.rapor` üzerinde: alan boşken blok **hiç render edilmez** (`KURAL B`).
+    "components/ReportCard.tsx": 1064,
     "lib/api-client.ts": 778,
     "lib/chart.ts": 688,
     # ⊙ 579 → 581: +1 `eksik_niyet?: string[]` (KÖK-3) · +1 `Suggestion.kind?` (KÖK-9).
@@ -165,6 +173,16 @@ TAVANLAR = {
 
 #: `(dosya, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 MUAFIYET: list[tuple[str, int, str]] = [
+    # ═══ `§RP` — AGENTIC RAPOR/PANO (2026-08-10) ═══
+    ("lib/types.ts", 13,
+     "🔴🔴 `§RP` — `AskResponse.rapor` alanı: orkestratörün ürettiği **çok bölümlü "
+     "belge** (`Report`). ⚠ **TAŞINAMAZ** ve gerekçesi bu dosyanın kendi muafiyet "
+     "geleneğinde yazılı: bu dosya sunucu sözleşmesinin **tek** aynasıdır. 🔴 Onüç "
+     "satırın **oniki**si yorum ve hepsi bir ayrımı korumak için: `plan.bolumler` "
+     "(ham) ≠ `rapor` (belge) ≠ `viz_paketi` (tek sonucun çok grafiği). Bu üçü "
+     "karıştırıldığında üç kavram birden kaybolur — ve bu depoda tam olarak o desen "
+     "ölçüldü. *Adı bir şeyi söyleyen bir alana başka bir şey koymak, iki kavramı "
+     "birden kaybetmektir.* Alan `null` varsayılan: belge fiili yoksa hiç dolmaz."),
     ("lib/types.ts", 4,
      "🔴 `FAZ 6` — `AskResponse.plan` alanı (çok adımlı cevabın taşıyıcısı). "
      "⚠ **TAŞINAMAZ** ve gerekçesi bu dosyanın kendi muafiyetinde zaten yazılı: bu "

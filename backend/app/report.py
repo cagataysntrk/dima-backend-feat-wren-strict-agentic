@@ -151,3 +151,72 @@ def yapi(spec: dict, blocks: list[dict]) -> dict[str, Any]:
         # "ölçülemez" ilan etmek, ölçmemenin en kolay yoludur.*
         "olculemeyen_formatlar": ["word", "excel"],
     }
+
+
+def bolumlerden_kur(bolumler: list[dict], *, baslik: str, schema: dict,
+                    page_size: int | None = None) -> dict[str, Any]:
+    """🔴🔴 `§RP` — **KOŞMUŞ BÖLÜMLERİ, YENİDEN KOŞMADAN, `Report` BİÇİMİNE DİZ.**
+
+    ## Ölçülen kusur (araştırma turu, 2026-08-10)
+
+        «son 2 yıl satış raporu hazırla»
+          plan   : SORGU×4 + RAPOR      ← DÖRT bölüm hesaplandı
+          cevap  : tek tablo            ← 🔴 üçü ATILDI
+
+    Orkestratör bölümleri **zaten** üretiyor (`plan_tuketici._bolumler`: her biri
+    `{cube_query, result}`), sonra `_son = _bolumler[-1]` ile yalnız sonuncusu dönüyordu.
+    *Mutfak dört yemek pişirdi, birini servis etti.*
+
+    ## Neden `compose_report` DEĞİL de bu
+
+    `compose_report` bir **spec**ten yola çıkar ve her bloğu **koşar** (`cube_sql` →
+    `query`). Burada sonuçlar **elde**: yeniden koşmak hem israf, hem de aynı soruya iki
+    farklı sayı üretme riski (arada veri değişebilir). *Bir sonucu iki kez hesaplamak,
+    onu bir kez yanlış hesaplamanın en kolay yoludur.*
+
+    ⚠ Ama **biçimin tek sahibi yine bu dosya**: sayfalara bölme, `viz` kararı ve
+    `yapi()` (kapak · yönetici özeti · kaynak listesi) aynı fonksiyonlardan geçer.
+    İkinci bir `Report` üreticisi `KAT-1` olurdu — ve frontend'in (`ReportView.tsx`)
+    tanıdığı **tek** biçim budur.
+
+    ⚠ `viz` kararı burada da **birim-farkındadır** (`viz.meta_args(cmeta)`): aynı
+    anahtar hatası (`measure_units` ↔ `units`) bu yolda tekrarlanmasın diye üstteki
+    çağrıyla birebir aynı yazıldı.
+    """
+    from app import viz
+
+    cubes = {c.get("name"): c for c in (schema.get("cubes") or [])}
+    blocks: list[dict] = []
+    for b in (bolumler or [])[:_MAX_BLOCKS]:
+        cq = b.get("cube_query") if isinstance(b.get("cube_query"), dict) else None
+        sonuc = b.get("result")
+        block: dict[str, Any] = {
+            "title": b.get("baslik") or b.get("title"),
+            "cube_query": cq,
+            "period": None,
+            "view_hint": None,
+            "result": sonuc,
+            "viz": None,
+            "error": None,
+        }
+        # ⚠ `viz` yalnız **satır varsa** kurulur; boş bir bölümü grafiğe çevirmek
+        # kullanıcıya boş bir eksen göstermektir. Ve hata bölümü DÜŞÜRMEZ (üstteki
+        # `compose_report`'un aynı kararı): bir bloğun çizilememesi raporu öldürmez.
+        try:
+            if sonuc and (sonuc.get("rows") or sonuc.get("row_count")):
+                cmeta = cubes.get((cq or {}).get("cube")) or {}
+                block["viz"] = viz.recommend(sonuc, cube_query=cq or {},
+                                             **viz.meta_args(cmeta))
+        except Exception as exc:                      # noqa: BLE001 — blok hatası izole
+            block["error"] = str(exc)[:200]
+        blocks.append(block)
+
+    boy = max(1, int(page_size or _DEFAULT_PAGE_SIZE))
+    pages = [blocks[i:i + boy] for i in range(0, len(blocks), boy)] or [[]]
+    spec = {"title": baslik or "Rapor"}
+    return {
+        "title": spec["title"],
+        "pages": pages,
+        "block_count": len(blocks),
+        **yapi(spec, blocks),
+    }

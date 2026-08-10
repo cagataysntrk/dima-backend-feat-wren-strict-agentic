@@ -472,6 +472,19 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
                           "result": {"columns": list(_satirlar[0]) if _satirlar else [],
                                      "rows": _satirlar, "row_count": len(_satirlar)}})
     _son = _bolumler[-1]["result"] if _bolumler else None
+    # `§RP` — belge fiili varsa bölümleri `Report` biçimine diz (tek sahip: `report.py`).
+    _belge_fiili = next((str(a.get("fiil")) for a in (plan.get("adimlar") or [])
+                         if str(a.get("fiil")) in ("RAPOR", "PANO")), None)
+    _rapor = None
+    if _belge_fiili and _bolumler:
+        from app import report as _report
+        _baslik = next((str(a.get("baslik")) for a in (plan.get("adimlar") or [])
+                        if str(a.get("fiil")) == _belge_fiili and a.get("baslik")), None)
+        try:
+            _rapor = _report.bolumlerden_kur(
+                _bolumler, baslik=_baslik or soru or "Rapor", schema=schema)
+        except Exception:                     # noqa: BLE001 — belge kurulamazsa tur DÜŞMEZ
+            _log.warning("rapor derlenemedi (best-effort)", exc_info=True)
     # 🔴 **BOŞ SONUÇ SESSİZ KALMAZ.** Merdivenin geri kalanı bunu zaten yapıyor
     # (*«Bu aralıkta kayıt bulunamadı — rapor doğru kuruldu»*); plan yolu yapmıyordu ve
     # `source=cube+llm` rozetiyle **0 satır** dönüyordu. *Boş bir cevabı açıklamadan
@@ -593,6 +606,25 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
         # ⚠ `cube_query` her bölümle birlikte taşınıyor ki her adım `/cube` ile **sıfır
         # LLM** yeniden koşulabilsin (`O-5`).
         "bolumler": _bolumler,
+        # 🔴🔴 `§RP` — **ÇOK BÖLÜMLÜ BELGE, FRONTEND'İN TANIDIĞI BİÇİMDE.**
+        #
+        # ⊙ Ölçüldü (2026-08-10): *«son 2 yıl satış raporu hazırla»* → plan `SORGU×4 +
+        # RAPOR` koştu ve dört bölüm hesaplandı. Bölümler cevaba **ulaşıyordu**
+        # (`plan.bolumler`) — ama **ham** hâlde: başlıksız, `viz`siz, sayfasız. Yani
+        # `ReportView.tsx`'in çizebileceği bir **belge** yoktu; yalnız bir veri yığını.
+        #
+        # ⚠ İlk teşhisim *«bölümler atılıyor»* idi ve **ölçümle düzeldi** (bugün 7.
+        # kez). Kusur taşımada değil **derlemede**: bir yığın, bir belge değildir.
+        #
+        # ⚠ Biçimin tek sahibi `report.py` (`ReportView.tsx`'in tanıdığı `Report`);
+        # burada yalnız **çağrı** var. Ve `bolumlerden_kur` sonuçları **yeniden
+        # koşmaz** — elde olanı dizer. *Bir sonucu iki kez hesaplamak, onu bir kez
+        # yanlış hesaplamanın en kolay yoludur.*
+        #
+        # ⚠ Yalnız plan gerçekten bir **belge** fiili taşıyorsa kurulur: `RAPOR`/`PANO`
+        # yoksa bu bir rapor değil sıradan bir çok-adımlı cevaptır ve ona belge muamelesi
+        # yapmak kullanıcıya olmayan bir şeyi vaat etmek olurdu.
+        "rapor": _rapor,
         # 🔴 `FAZ 6` — cevabın **yapısı** kullanıcıya taşınır. `agent_run`'dan farkı:
         # o bir denetim izidir (geriye dönük, sonuçsuz), bu **cevabın kendisidir**.
         "plan": {

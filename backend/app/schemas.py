@@ -327,6 +327,19 @@ class AskResponse(BaseModel):
     #: kapalıyken bu alan `None` kalır ve tekil kart **bugünkü hâliyle** görünür.
     #: *Tekil dönüş her zaman geçerlidir.*
     viz_paketi: list[dict[str, Any]] | None = None
+    #: 🔴🔴 `§RP` — **ORKESTRATÖRÜN ÇOK BÖLÜMLÜ BELGESİ.**
+    #:
+    #: ⊙ Ölçüldü (2026-08-10): *«son 2 yıl satış raporu hazırla»* → plan `SORGU×4 +
+    #: RAPOR` koştu, **dört bölüm hesaplandı**, cevaba **tek tablo** çıktı. Yetenek üç
+    #: katmanda kuruluydu (`plan_semasi` → `plan_kosucu` → `ilkeller`) ve dördüncüde,
+    #: **taşımada**, ölüyordu.
+    #:
+    #: ⚠ Biçim **yeni değil**: `report.compose_report`'un ürettiği ve `ReportView.tsx`'in
+    #: **zaten çizdiği** `Report`. İkinci bir belge biçimi `KAT-1` olurdu.
+    #: ⚠ `viz_paketi` ile karıştırılmaz: o **tek bir sonucun** birden çok grafiğidir
+    #: (`gorsel_ekleme`), bu **birden çok bölümdür**. *Adı bir şeyi söyleyen bir alana
+    #: başka bir şey koymak, iki kavramı birden kaybetmektir.*
+    rapor: dict[str, Any] | None = None
     #: 🔴 **FAZ 5.13a — HAYALET SERİ.** Aynı sorgunun **bir önceki** koşumu:
     #: `{contract_id, ts, row_count, result_hash}`.
     #:

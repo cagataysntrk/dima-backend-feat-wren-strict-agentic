@@ -124,7 +124,7 @@ def mask_query_result(result: dict, principal=None) -> tuple[dict, bool]:
 #: **maskelemektir**; muaf tutmak **açık bir karar** ister ve karar burada durur.
 #:
 #: ⚠ Ölçüldü (2026-08-04): `apply_to_ask_response` yalnız `result.rows` · `facts[].text` ·
-#: `summary` maskeliyordu. `AskResponse`'un o gün **29**, bugün **43** alanı var (FAZ 1.12
+#: `summary` maskeliyordu. `AskResponse`'un o gün **29**, bugün **44** alanı var (FAZ 1.12
 #: `ai_generated_prose` + `kanit_sinifi`, FAZ 2.6 `mali_donem`, FAZ 2.5 `hedef`, `FAZ 6`
 #: `plan` … ekledi) — ve bu **tümleyenin işe yaradığının kanıtıdır**: ON DÖRT yeni alan
 #: için hiçbir şey yazılmadı, yine de kapsandılar. Kapı her seferinde bayat notu yakaladı.
@@ -133,6 +133,17 @@ def mask_query_result(result: dict, principal=None) -> tuple[dict, bool]:
 #: var, yani **satırlar** — maskelemenin asıl hedefi. Sayılan bir liste olsaydı yeni bir
 #: kap altındaki satırlar sessizce dışarıda kalırdı. *Bir tümleyeni, kapsamı büyüdükçe
 #: değil, kapsamı büyüdüğünde SUSTUĞUNDA sınarsın.*
+#:
+#: ⟳ **VE SINAV İKİNCİ KEZ VERİLDİ (2026-08-10, `§RP`).** Agentic rapor alanı (`rapor`)
+#: eklendi ve içinde `pages[][].result.rows` var — yine **satırlar**, yine maskelemenin
+#: asıl hedefi. Bu dosyaya **tek satır** yazılmadı; tümleyen onu kendiliğinden kapsadı.
+#: Kapı yalnız yukarıdaki **sayıyı** bayat buldu ve okumaya zorladı — yaptığı iş tam da
+#: buydu: *bir kapsamı doğrulamanın yolu, kapsamın kendisini değil, onu okumaya
+#: zorlayan şeyi kurmaktır.*
+#:
+#: ⚠ Muafiyet **verilmedi**: `rapor` kullanıcıya giden gerçek değerler taşır ve
+#: `cube_query` muafiyetinin gerekçesi (*yapısal alan, `/cube` onu yeniden koşar*)
+#: burada geçerli değildir — rapor bir sorgu değil, bir **çıktıdır**.
 #: Sayılan bir liste olsaydı ikisi de sessizce dışarıda kalırdı. Geri kalanı — `narration`
 #: (LLM metni, olgulardan üretilir) · `contribution` (**cevabın gövdesi**, bkz. `0.23`) ·
 #: `next_steps` · `suggestions` · `prescription` — **hiç maskelenmiyordu**.
@@ -210,7 +221,7 @@ def apply_to_ask_response(resp, principal) -> bool:
             else:
                 resp.result.rows = masked_rows
     # ⟳ **FAZ 1.2c — SAYMA, KAPAT.** Eskiden burada yalnız `facts[].text` ve `summary`
-    # maskeleniyordu; `AskResponse`'un (o gün 29, bugün 42) alanının geri kalanı — `narration` (LLM metni,
+    # maskeleniyordu; `AskResponse`'un (o gün 29, bugün 44) alanının geri kalanı — `narration` (LLM metni,
     # olgulardan üretilir) · `contribution` (**cevabın gövdesi**) · `next_steps` ·
     # `suggestions` · `prescription` — **hiç** maskelenmiyordu. Sayılan bir liste, yeni
     # alanı sessizce dışarıda bırakır; tümleyen bırakmaz.

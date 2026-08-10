@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import type { AskResponse, CubeQuery } from "@/lib/types";
+import type { AskResponse, CubeQuery, Report } from "@/lib/types";
 import type { Thread } from "@/lib/threads";
 import { BrandMark } from "@/components/BrandMark";
 import { CaretInput } from "@/components/CaretInput";
 import { DurdurDugmesi } from "@/components/DurdurDugmesi";
 import { NextStepChips } from "@/components/NextStepChips";
 import { ReportCard } from "@/components/ReportCard";
+import { ReportView } from "@/components/ReportView";
 
 // ⚠️ FAZ 0.23 — RAPORLANABİLİRLİK TEK SAHİPTE.
 //
@@ -155,6 +156,11 @@ export function ReportPanel({
   // Verify geri bildirimi ("✓ doğru"/"✗ yanlış") İÇERİK-ANAHTARLI (verifyKey = label::sql) —
   // bu yüzden TÜM kartlar (hatta thread'ler) arasında GÜVENLE paylaşılabilir tek bir map.
   const [fb, setFb] = useState<Record<string, "ok" | "bad">>({});
+  // 🔴 `§RP` — agentic rapor tam sayfa açılır. `AnalysisCanvas`/`DashboardView`'in
+  // **aynı** deseni (`postReport → ReportView`); burada kaynak `/report` değil
+  // orkestratörün cevabı. *Aynı belgeyi iki farklı görüntüleyiciyle çizmek, iki farklı
+  // ürün yapmaktır.*
+  const [acikRapor, setAcikRapor] = useState<Report | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   // §B düzeltmesi (1 Ağustos 2026) — çoklu-seçim bağlam: hangi kartların seçili olduğu
   // (index'e göre, thread'in KENDİ item dizisindeki konum) + iki alt-komposer'ın metni.
@@ -240,6 +246,12 @@ export function ReportPanel({
   };
 
   return (
+    <>
+    {acikRapor && (
+      <div className="fixed inset-0 z-50 bg-background">
+        <ReportView report={acikRapor} onClose={() => setAcikRapor(null)} />
+      </div>
+    )}
     <div className="flex h-full min-h-0 flex-col">
       {/* §B DÜZELTMESİ (1 Ağustos 2026, 2. tur) — üst çubuk: SOLDA aktif bağlam göstergesi
           (eski sol chat'ten taşındı), SAĞDA seçim modu toggle'ı + sayaç. Thread değişince
@@ -290,6 +302,7 @@ export function ReportPanel({
               <ReportCard
                 key={`${thread.id}-${i}`}
                 item={it}
+                onRaporAc={setAcikRapor}
                 index={i}
                 threadId={thread.id}
                 viewHint={i === lastReportableIdx ? viewHint : null}
@@ -428,6 +441,7 @@ export function ReportPanel({
         )
       )}
     </div>
+    </>
   );
 }
 

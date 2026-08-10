@@ -10555,3 +10555,148 @@ deseni: beyan + tek tık, tahmin yok).
 * **O12** — `sikayet.musteri_kod` (`M1003`) seçiliyor; kullanıcı *«müşteri»* dedi (`B3`)
 * **O14** — `«çalışan devir oranı»` → **Discovery** (`cube=adhoc`): `ik` modülünde devir
   oranı ölçüsü **yok**. `§0.0`: her ateşleme bir **mutfak eksikliği raporudur**.
+
+# 🔴🔴 `§RP` — AGENTIC RAPOR/PANO: **ARAŞTIRMA ÖNCE** *(kullanıcı isteği, 2026-08-10)*
+
+> *"agentic rapor oluşturma ve agentic dashboard oluşturma özelliklerini hem backend hem
+> frontend olarak mükemmelce geliştir … önce bunu nasıl geliştireceğiz araştır"*
+
+## 0 · ARAŞTIRMANIN TEK CÜMLESİ
+
+**Yetenek zaten var; eksik olan TAŞIYICI.** Orkestratör bir cümleden çok bölümlü bir
+rapor planı üretiyor, bölümleri **hesaplıyor**, sonra **yalnız sonuncusunu** döndürüyor.
+
+> 🔴 *Mutfak dört yemek pişirdi, birini servis etti.*
+
+## 1 · ÖLÇÜLEN ENVANTER — ne var, ne yok
+
+| katman | durum | kanıt |
+|---|---|---|
+| Plan fiilleri `RAPOR` · `PANO` | ✅ **tam kurulu** | `plan_semasi` (anlam+gövde+çıktı tipi) → `plan_kosucu:469-471` → `ilkeller:199,230` |
+| Cümleden plan üretimi | ✅ **ölçüldü** | *«son 2 yıl satış raporu hazırla»* → **5 adım** (4 `SORGU` + `RAPOR`); *«bana bir satış panosu oluştur»* → **6 adım** (5 `SORGU` + `PANO`) |
+| Bölümlerin hesaplanması | ✅ | `plan_tuketici._bolumler` — her biri `{cube_query, result}` |
+| **Bölümlerin cevaba taşınması** | 🔴 **YOK** | `_son = _bolumler[-1]` — gerisi **atılıyor**; cevapta `bolumler`/`rapor` alanı yok |
+| Çok sayfalı belge motoru | ✅ | `report.compose_report` — ama **`POST /report`** yolunda |
+| Frontend render | ✅ **tam** | `ReportView.tsx` `Report` tipini (`kapak · yonetici_ozeti · pages[][] · block_count`) zaten çiziyor; her blok `ResultView` ile |
+| Canvas'ta **etkileşimli düzenleme** | 🔴 yok | bölüm ekle/çıkar/yeniden koş |
+
+⊙ Canlı kanıt (curl):
+```
+«son 2 yıl satış raporu hazırla»
+  plan   : SORGU×4 + RAPOR          ← 4 bölüm HESAPLANDI
+  result : tek tablo (tarih__month, toplam_ciro)
+  anahtarlar: [... plan, result, viz ...]      ← `rapor` YOK
+```
+
+## 2 · YANLIŞ YOL — ve neden reddedildi
+
+⊘ **`viz_paketi`'ni taşıyıcı yapmak.** Ölçüldü: o alan **tek bir sonucun birden çok
+grafiğini** taşır (`gorsel_ekleme:138`, `ReportCard.tsx:859`), çok bölümlü bir belgeyi
+değil. Kullanmak, adı bir şeyi söyleyen bir alana başka bir şey koymak olurdu.
+
+⊘ **Yeni bir rapor motoru yazmak.** `compose_report` + `ReportView` **zaten** var ve
+uçtan uca çalışıyor. İkinci bir belge biçimi `KAT-1` ihlali olurdu.
+
+## 3 · KÖK ÇÖZÜM — *«hesaplananı, frontend'in zaten bildiği biçimde taşı»*
+
+1. `AskResponse.rapor: Report | None` — **var olan** `Report` biçimi
+2. `report.bolumlerden_kur(bolumler, baslik, schema)` — sayfalara bölme + viz kararı
+   **yeniden koşmadan** (sonuçlar elde); biçimin tek sahibi yine `report.py`
+3. `plan_tuketici`: plan `RAPOR`/`PANO` içeriyorsa `_bolumler` → `resp.rapor`
+4. Frontend: `rapor` doluysa **var olan** `ReportView` açılır; her bölüm kendi
+   `cube_query`'sini taşır → *«buradan devam et»* (`POST /cube`, **0 LLM**) ve düzenleme
+
+⊙ Yeni render kodu **sıfır**. Yeni belge biçimi **sıfır**. Eklenen tek şey bir **alan**
+ve onu dolduran **dört satır**.
+
+*Bir yeteneği üç katmanda kurup dördüncüde taşımamak, onu hiç kurmamaktır.*
+
+## `§RP` GELİŞTİRİLDİ — ve teşhis cümlem **ölçümle düzeldi** *(bugün 7.)*
+
+### ⚠ Önce düzeltme: *«bölümler atılıyor»* YANLIŞTI
+
+`ask.py:4041` `plan=_pc.get("plan")` ile bölümleri **taşıyor** (`plan.bolumler`). Kusur
+**taşımada değil derlemede**: bölümler **ham** geliyordu — başlıksız, `viz`siz, sayfasız.
+Yani `ReportView.tsx`'in çizebileceği bir **belge** yoktu, yalnız bir **yığın**.
+
+> *Bir yığın, bir belge değildir.*
+
+### Yapılan — üç dosya, sıfır yeni motor
+
+| ne | nerede | neden orada |
+|---|---|---|
+| `bolumlerden_kur(bolumler, baslik, schema)` | `report.py` | biçimin **tek sahibi**; `yapi()` (kapak·özet·kaynak) aynı fonksiyondan geçer |
+| belge fiili varsa derle | `plan_tuketici` | `RAPOR`/`PANO` yoksa bu bir rapor değildir — belge muamelesi yapmak olmayan bir şeyi vaat etmek olurdu |
+| `AskResponse.rapor` | `schemas.py` | `viz_paketi` (tek sonucun çok grafiği) ile **karıştırılmaz** |
+| `onRaporAc` + tam sayfa `ReportView` | `ReportCard` · `ReportPanel` | **yeni render kodu yok**; `AnalysisCanvas`/`DashboardView` ile aynı desen |
+
+🔴 **Sonuçlar yeniden koşulmaz** — ve bu bir imza kararıyla kilitlendi: `bolumlerden_kur`
+`service` **almaz**, yani bir sorgu **koşamaz**. *Bir sınırı en iyi koruyan şey, onu
+ihlal etmek için imza değiştirmeyi zorunlu kılmaktır.*
+
+### ✅ CANLI DOĞRULAMA — curl, üç senaryo
+
+```
+«son 2 yıl satış raporu hazırla»
+  → Son 2 Yıl Satış Raporu · 3 blok · 1 sayfa
+      parti·toplam_ciro                    1 satır   viz=kpi
+      parti·toplam_ciro × musteri          8 satır   viz=bar
+      parti·toplam_ciro × musteri          3 satır   viz=bar
+  → kapak: {baslik, tarih: 2026-08-10}
+
+«satış performansı raporu oluştur: ciro, kârlılık ve müşteri kırılımı olsun»
+  → Satış Performans Raporu · KULLANICININ İSTEDİĞİ ÜÇÜ DE:
+      toplam_ciro + kar_marji_yuzde × musteri · 8 satır · viz=scatter
+
+«bana bir satış panosu hazırla»
+  → Satış Panosu · 5 blok · 2 SAYFA
+      siparis · firsat×asama · parti×musteri · parti · sikayet
+```
+
+⊙ İkinci senaryo kullanıcının şartını doğruluyor: *«kullanıcı çok spesifik olarak raporda
+olmasını istediklerini de belirtebilir»* — belirtti ve **üçü de** rapora girdi.
+
+⚠ **Açık kalan (sıradaki tur):** *«sonra düzenleme isteyebilir»* — bölüm ekle/çıkar/
+yeniden koş. Zemin hazır: her blok kendi `cube_query`'sini taşıyor, yani `POST /cube`
+ile **0 LLM** yeniden koşulabilir (`D4` checkpoint deseni).
+
+### ⚠ `§RP` KAPI FATURASI — dördü de **beyan** istedi, biri **güvenlik sorusuydu**
+
+| kapı | ne istedi | sonuç |
+|---|---|---|
+| `test_maskeleme_tumleyeni` | `AskResponse` **44 alan** oldu → maskeleme kapsamını **yeniden oku** | ✅ `rapor` **otomatik kapsanıyor** — tümleyen bir liste değil |
+| `test_frontend_buyume` × 2 | `types.ts` +13, `ReportCard.tsx` +16 → **gerekçe yaz** | ✅ yazıldı |
+| `…KAPI_GERCEKTEN_KIRMIZI_VERIYOR` | `ReportCard` tavanında **sıfır boşluk** | ✅ tavan ölçülene çekildi (1048→**1064**) |
+
+🔴 **Maskeleme kapısı asıl soruyu sordu:** `rapor` içinde `pages[][].result.rows` var —
+yani **gerçek satırlar**, maskelemenin asıl hedefi. Ölçüldü: `pii.apply_to_ask_response`
+bir **tümleyendir** (`for alan in model_fields` − `MUAF_ALANLAR`), sayılan bir liste
+değil. Bu dosyaya **tek satır yazılmadı** ve alan kendiliğinden kapsandı.
+
+⊙ Bu, `FAZ 6`'nın `plan` alanından sonra **ikinci** kez aynı sınavın verilmesidir:
+
+> *Bir kapsamı doğrulamanın yolu, kapsamın kendisini değil, onu okumaya zorlayan şeyi
+> kurmaktır.*
+
+⚠ Ve muafiyet **verilmedi**: `cube_query`'nin muafiyet gerekçesi (*yapısal alan, `/cube`
+onu yeniden koşar*) burada geçerli değil — rapor bir sorgu değil bir **çıktıdır**.
+
+## 🔴 SIRADAKİ: `§RG` — belge isteği **tek fişle** cevaplanamaz *(ölçüldü)*
+
+```
+«son 2 yıl satış raporu hazırla» × 5 koşum:
+  SORGU,SORGU,RAPOR              → 2 blok  ✅
+  (plan YOK)                     → rapor YOK  🔴
+  SORGU,SORGU,SORGU,RAPOR        → 3 blok  ✅
+  SORGU,SORGU,SORGU,RAPOR        → 3 blok  ✅
+  SORGU,SORGU,SORGU,SORGU,RAPOR  → 4 blok  ✅
+```
+
+**5'te 4.** Bir koşumda route/garson tek fişle cevapladı ve `plan_tuketici` sustu
+(*«route zaten cevapladı → boşluk YOK»*). Ama bir **belge** tanımı gereği çok bölümlüdür:
+tek fiş onu **karşılayamaz**. Merdivenin kendi kuralı bunu zaten söylüyor —
+*«tek fişte olmuyorsa orkestre eder»*.
+
+⊙ Ve `«rapora kârlılık da ekle»` ölçüldü: `source=cube`, tek satır, `rapor` **yok** —
+yani **düzenleme** de henüz yok. İkisi aynı kökten: sistem *«belge»*yi bir **teslimat
+türü** olarak tanımıyor.

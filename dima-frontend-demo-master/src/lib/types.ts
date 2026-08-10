@@ -321,6 +321,17 @@ export interface AskResponse {
     adimlar: { sira: number; fiil: string; ozet: string }[];
     bolumler: { cube_query: Record<string, unknown> | null; result: QueryResult | null }[];
   } | null;
+  /** 🔴🔴 `§RP` — **AGENTIC RAPOR/PANO: çok bölümlü BELGE.**
+   *
+   * Orkestratörün planı `RAPOR`/`PANO` fiili taşıyorsa, koşmuş bölümler backend'de
+   * `Report` biçimine dizilir (`report.bolumlerden_kur`) ve burada gelir.
+   *
+   * ⚠ `plan.bolumler` ile karıştırılmaz: o **ham** bölümlerdir (başlıksız, viz'siz);
+   * bu, `ReportView`'in çizebildiği **belgedir** (kapak · yönetici özeti · sayfalar).
+   * ⚠ Ve `viz_paketi` ile de karıştırılmaz: o **tek bir sonucun** birden çok grafiği.
+   *
+   * `null` = bu cevap bir belge değil. */
+  rapor?: Report | null;
 }
 
 // Faz 4.1 — GET /ask/jobs/{id} yanıtı (yalnız api-client.ts::ask()'in dahili poll döngüsü kullanır).
