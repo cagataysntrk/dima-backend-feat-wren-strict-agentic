@@ -1250,8 +1250,8 @@ gerektirmiyor, ve **her red bir LLM çağrısı + gecikme** demek — yani bedel
 
 | ☐ | # | iş |
 |---|---|---|
-| ☐ | `E1` | `/ask` **47→177 ms** gerilemesinin kökü *(sıcak yolda 41 yeni modül, `cube_router`'da **sıfır** memoizasyon)* |
-| ☐ | `E2` | Latency tavanı kapısı *(= `A10`)* |
+| ✅ | `E1` | `/ask` **47→177 ms** gerilemesinin kökü | 🎯 **BULUNDU ve ÖLÇÜLDÜ.** cProfile (10 istek, hepsi *«teşekkürler»* — ürün ~hiçbir iş yapmıyor): `ask()` **903 ms/istek**, `%65`'i `_niyet_izi`, içinde `_syn_hit` **istek başına 5.094** çağrı ve `re._compile` **60.720** kez → **5,66 s**. ⊙ Sebep: `_syn_hit` deseni her çağrıda **yerinde** kuruyordu; Python'un 512'lik desen önbelleği yüzlerce sinonimle **her turda çöpe dönüyordu**. Rapor bunu adıyla yazmıştı (*«sıfır memoizasyon»*) — teşhis doğruydu, **ölçüsü yoktu**. `_syn_desen` (`lru_cache`) eklendi: **903 → 316 ms (2,9×)**, davranış **birebir aynı**. *Bir kuralı her sorduğunda yeniden yazmak, kuralı değiştirmez — yalnız sormayı pahalı yapar* |
+| ✅ | `E2` | Latency tavanı kapısı *(= `A10`)* | `A10` ile kapandı: `test_gecikme_tavani.py`, bütçenin tek sahibi `stats.GECIKME_BUTCESI_MS`, yalnız LLM'siz yollar. ⊙ Ve o kapı `E1`'in **ölçüsünü** verdi — *bir kökü aramak için önce onu görecek bir alet gerekir* |
 | ☐ | `E3` | Kapı süresi: **13–20 dk → hedef**, ve düşüşün **ürün hızlanmasından** geldiği doğrulanır *(kapsam kırpılarak değil)* |
 
 ---

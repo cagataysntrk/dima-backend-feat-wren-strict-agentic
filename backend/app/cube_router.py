@@ -18,6 +18,7 @@ import calendar
 import contextvars
 import difflib
 import logging
+import functools
 import re
 from datetime import date, timedelta
 
@@ -641,6 +642,37 @@ def is_capability_query(q: str) -> bool:
 _KELIME_BASI = r"(?<![a-z0-9])"
 
 
+@functools.lru_cache(maxsize=8192)
+def _syn_desen(syn: str, tam: bool) -> re.Pattern[str]:
+    """🔴🔴 `E1` — **DESEN BİR KEZ DERLENİR.** Ölçülmüş kusurun kökü burasıydı.
+
+    ## Ölçüm (2026-08-10, cProfile, 10 istek — hepsi *«teşekkürler»*)
+
+    ```
+    ask()            903 ms/istek
+      _niyet_izi     %65
+        _syn_hit     ×50.940   (istek başına **5.094**)
+          re._compile ×60.720  →  **5,66 s**
+    ```
+
+    ⊙ Yani bir **selamlaşma** için istek başına altı bin regex derleniyordu. Sebep
+    `_syn_hit`'in deseni her çağrıda `rf"…{re.escape(syn)}…"` ile **yerinde** kurmasıydı:
+    Python `re` modülü derlenmiş desenleri önbelleğe alır ama önbellek **512 kalemdir**
+    ve bu depoda yüzlerce sinonim var — önbellek her turda **çöpe dönüyordu**.
+
+    ⚠ Rapor `E-1` bunu adıyla yazmıştı: *"`/ask` 47 → 177 ms (×3,8) · sıcak yolda 41 yeni
+    modül, **`cube_router`'da SIFIR memoizasyon**"*. Teşhis doğruydu, ölçüsü yoktu;
+    `A10` kapısı ölçüyü verdi (`meta` p95 **320 ms**, kendi işi ~0).
+
+    🔴 Bu bir davranış değişikliği **değildir**: aynı desen, aynı sonuç. Yalnız bir kez
+    derlenir. *Bir kuralı her sorduğunda yeniden yazmak, kuralı değiştirmez — yalnız
+    sormayı pahalı yapar.*
+    """
+    if tam:
+        return re.compile(rf"{_KELIME_BASI}{re.escape(syn)}(?![a-z0-9çğıöşüâîû])")
+    return re.compile(rf"{_KELIME_BASI}{re.escape(syn)}([a-z]*)")
+
+
 def _syn_hit(q: str, syn: str) -> bool:
     """Sinonim q'da geçiyor mu? — `_covers` ile AYNI biçimbirim disiplini (Faz D3).
 
@@ -679,12 +711,10 @@ def _syn_hit(q: str, syn: str) -> bool:
         # ⚠ Bu bir dil kuralı EKLEMEK değil, bir sınırı **doğru çizmek**: `ADR-0008`
         # sözcük listesi yasaklar, alfabe tanımını değil. *Bir kelime sınırını
         # alfabesinin yarısıyla tanımlamak, öteki yarısını sınır sanmaktır.*
-        return re.search(rf"{_KELIME_BASI}{re.escape(syn[:-1])}(?![a-z0-9çğıöşüâîû])",
-                         q) is not None
+        return _syn_desen(syn[:-1], True).search(q) is not None
     # `_ek_gecerli`/`_SUFFIX_CHAIN_RE` modülün ilerisinde tanımlı (biçimbirim bloğu bir arada
     # dursun diye); çağrı anında modül tam yüklü olduğundan ileri referans güvenlidir.
-    return any(_ek_gecerli(m.group(1))
-               for m in re.finditer(rf"{_KELIME_BASI}{re.escape(syn)}([a-z]*)", q))
+    return any(_ek_gecerli(m.group(1)) for m in _syn_desen(syn, False).finditer(q))
 
 
 def _herhangi(q: str, kelimeler) -> bool:
