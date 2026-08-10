@@ -183,6 +183,26 @@ kapısıydı. *Kapıyı ertelemek onu ödememek değildir; faizli ödemektir.*
 
 ---
 
+### 2026-08-10 · korpus (`§D2/K` + `§DK-4`) · ⚪ YEŞİL — *ve `A12` ilk kez KONUŞTU*
+
+`§D2/K` (oylama eşiği kısayolu) + `§DK-4` (zaman ekseni ifadesi) demeti:
+**%95.1** (taban %94.4) ✅ · `doğru=95 · devir=2142 · 🔴sessiz_yanlış=8 · payda=2286`
+— taban **birebir**, doğruluk **yükseldi** (%95,0 → %95,1).
+
+⊙ Ve koşum kütüğünde bu satır çıktı:
+
+> *⚠ taban `_nufus` taşımıyor (bu alandan önce yazılmış) → `A12` KIYASLANABİLİRLİK ÖN
+> KOŞULU bu koşumda **ATIL**.*
+
+🎯 **`A12` daha ilk koşumunda kendi eksikliğini ilan etti.** Yeni bir kapının en tehlikeli
+hâli *«yazıldı ama hiç ateşlemiyor»*tur; bu satır o hâli **görünür** kıldı. ⚠ Ama
+görünür-atıl da hâlâ atıldır: taban `--taban-yaz` ile yenilenerek kapı canlandırıldı.
+
+*Bir kapının neyi sınamadığını söylemesi, sınadıklarını saymasından önemlidir — ama
+söylemek yapmanın yerine geçmez.*
+
+---
+
 ---
 
 ## Nasıl eklenir
