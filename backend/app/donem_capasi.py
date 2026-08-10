@@ -288,12 +288,48 @@ def varsayilan_yerinde(cq: dict, service, cube_meta: dict | None) -> bool:
     return True
 
 
-def notu_al(cq: dict, note: str | None, trace: list[str]) -> tuple[str | None, list[str]]:
-    """Taşıyıcıyı **boşalt** ve notu/izi cevaba kat. *Bir taşıyıcı alan, taşıdığı yere
-    varınca boşaltılmalıdır.*"""
+#: 🔴🔴 `§TZ` — **BEYANIN YANINDA BİR TIK OLMALI.**
+#:
+#: ## Ölçülen kusur (curl `N+1` turu, 2026-08-10)
+#:
+#:     «makine bazında ortalama oee»
+#:       note: ⏱ Dönemi çözemedim — verinin son 12 ayı alındı … **başka bir dönem
+#:             YAZARSAN** onu uygularım
+#:       suggestions: **[]**
+#:
+#: `D3` (`varsayilan_donem` → `beta`) doğru bir karardı ve ölçülmüştü: sormak yerine
+#: **beyanla varsaymak** kullanıcıyı cevapsız bırakmıyor. Ama kararın **yan etkisi**
+#: ölçülmemişti: netleştirme dalı ölünce onun **chip'leri de** öldü. Yani düzeltme
+#: yolu bir **tıktan** bir **yazma** eylemine düştü.
+#:
+#: ⊙ Ve bu, beş bayat kapının aslında neyi koruduğunu gösteriyor: `test_ask_golden`
+#: *«Tümü chip'i olmalı»* diyordu ve **haklıydı** — yanlış olan tek şey, o chip'in
+#: bir **netleştirme** turunda gelmesi gerektiği varsayımıydı. Yetenek doğruydu, akış
+#: değil. *Bayat bir kapı bazen yanlış cevabı değil, doğru cevabın eski adresini tutar.*
+#:
+#: ⚠ Liste **yeniden yazılmadı**: `ask.py`'nin netleştirme dalında zaten duran aynı
+#: seçenekler buraya taşındı ve iki çağıran da buradan okuyor (`KAT-1`). Böylece
+#: *«hangi dönemleri tek tıkla seçebilirim»* sorusunun **tek** cevabı var.
+DONEM_SECENEKLERI: tuple[dict[str, str], ...] = (
+    {"label": "Bugün", "query": "bugün"},
+    {"label": "Bu hafta", "query": "bu hafta"},
+    {"label": "Bu ay", "query": "bu ay"},
+    {"label": "Bu yıl", "query": "bu yıl"},
+    {"label": "Tümü", "query": "tüm zamanlar"},
+)
+
+
+def notu_al(cq: dict, note: str | None,
+            trace: list[str]) -> tuple[str | None, list[str], list[dict[str, str]]]:
+    """Taşıyıcıyı **boşalt** ve notu/izi/seçenekleri cevaba kat. *Bir taşıyıcı alan,
+    taşıdığı yere varınca boşaltılmalıdır.*
+
+    Üçüncü dönüş (`§TZ`): beyanlı bir varsayım yapıldıysa **düzeltme chip'leri**. Boş
+    liste = *"düzeltilecek bir varsayım yok"*.
+    """
     tasinan = cq.pop(_TASIYICI, None) if isinstance(cq, dict) else None
     if not tasinan:
-        return note, trace
+        return note, trace, []
     # 🔴 İZ ARTIK TAŞIYICIDAN GELİR — canlıda ölçüldü: `M-4`'ün beyanlı varsayımı
     # cevaba **doğru** notu yazıyordu ama ize *"önceki turdan taşındı (KÖK-4)"* diye
     # **yanlış gerekçe** basıyordu, çünkü `IZ` bu satıra sabit gömülüydü. İki farklı
@@ -301,5 +337,9 @@ def notu_al(cq: dict, note: str | None, trace: list[str]) -> tuple[str | None, l
     # *Doğru bir notun yanında yanlış bir iz, notu da şüpheli yapar.*
     metin, iz = tasinan if isinstance(tasinan, tuple) else (tasinan, IZ)
     if not metin:
-        return note, trace
-    return " ".join(x for x in [note, metin] if x), [*trace, iz]
+        return note, trace, []
+    # ⚠ Chip yalnız **varsayım** izinde: taşıyıcının öteki kullanıcısı (`KÖK-4`, önceki
+    # turdan taşınan dönem) bir varsayım değil bir **süreklilik**tir — orada düzeltme
+    # önerisi, kullanıcının kendi seçtiği dönemi geri almasını önerirdi.
+    secenekler = [dict(x) for x in DONEM_SECENEKLERI] if iz == IZ_VARSAYILAN else []
+    return " ".join(x for x in [note, metin] if x), [*trace, iz], secenekler

@@ -661,13 +661,12 @@ def _viz_hint(q_norm: str) -> str | None:
 
 # Faz C — dönem belirsizse (pür toplam, dönem yok) sorulur; chip'ler deterministik uygulanır.
 _PERIOD_TEXT = "Hangi dönem için? Bir dönem seç ya da yaz (ör. “son 3 ay”, “geçen yıl”)."
-_PERIOD_SUGGESTIONS = [
-    {"label": "Bugün", "query": "bugün"},
-    {"label": "Bu hafta", "query": "bu hafta"},
-    {"label": "Bu ay", "query": "bu ay"},
-    {"label": "Bu yıl", "query": "bu yıl"},
-    {"label": "Tümü", "query": "tüm zamanlar"},
-]
+#: ⟳ `§TZ` — **TEK SAHİP `donem_capasi`.** Liste burada elle yazılıydı ve `varsayilan_donem`
+#: açılınca (`D3`) yalnız **netleştirme** dalında kaldı; beyanlı varsayım dalının chip'i
+#: **yoktu** ve kullanıcı tek tık yerine yazmak zorunda kaldı. İki dalın aynı seçenekleri
+#: sunması gerekiyorsa listenin de tek olması gerekir.
+#: *Aynı menüyü iki yerde tutmak, bir gün yalnız birini güncellemektir.*
+_PERIOD_SUGGESTIONS = [dict(x) for x in _capa.DONEM_SECENEKLERI]
 
 
 def _catalog_suggestions(schema: dict) -> list[dict]:
@@ -1900,8 +1899,14 @@ def _with_extra_context(question: str, extra_context: list[str] | None) -> str:
 from app.discovery_kuyrugu import kuyrukla as _queue_discovery_job  # noqa: E402,F401
 
 
-def _belirsizlik_beyani(resp, q_norm: str, cq: dict, cube_meta, schema: dict):
+def _belirsizlik_beyani(resp, q_norm: str, cq: dict, cube_meta, schema: dict,
+                        donem_chipleri: list[dict] | None = None):
     """🔴 KÖK-9 — cevaba **bilinen belirsizliğin** chip'ini ve notunu ekler.
+
+    `§TZ` — ve **beyanlı dönem varsayımının düzeltme chip'lerini**. İkisi aynı yerde
+    çünkü ikisi de aynı cümlenin devamı: *"şunu varsaydım — istersen değiştir."* Ayrı
+    çağrılarda biri ötekini **ezme** riski taşırdı ve bu dosyanın kendi kuralı bunu
+    yasaklıyor (aşağıdaki *«VAR OLAN CHIP'LER EZİLMEZ»*).
 
     Döner: `resp.suggestions` için yeni liste (belirsizlik yoksa **olduğu gibi**).
 
@@ -1921,24 +1926,29 @@ def _belirsizlik_beyani(resp, q_norm: str, cq: dict, cube_meta, schema: dict):
     from app import belirsizlik_chipi as _bc
     from app.schemas import Suggestion
 
+    # `§TZ` — dönem chip'leri belirsizlik chip'inden **bağımsız** eklenir: aşağıdaki
+    # erken dönüşlerin hepsi *"anlamsal belirsizlik yok"* der, *"varsayım yok"* demez.
+    # İlk yazımda bu satır aşağıya konsaydı chip'ler o dönüşlerde **sessizce** düşerdi.
+    taban = [*(resp.suggestions or []),
+             *[Suggestion(**c) for c in (donem_chipleri or [])]]
     kayit = schema.get("metrik_kaydi")
     if not kayit or cube_meta is None:
-        return resp.suggestions
+        return taban
     terim = cube_router._match_measure(q_norm, cube_meta)[1]
     if not terim:
-        return resp.suggestions
+        return taban
     oteki = _bc.alternatifler(terim, kayit, cq.get("cube"))
     if not oteki:
-        return resp.suggestions
+        return taban
 
     yeni = _bc.chipler(terim, oteki, schema)
     if not yeni:
-        return resp.suggestions
+        return taban
     resp.note = " ".join(x for x in [
         resp.note,
         _bc.not_metni(terim, _bc.cube_etiketi(cube_meta), [c["label"] for c in yeni]),
     ] if x)
-    return [*(resp.suggestions or []), *[Suggestion(**c) for c in yeni]]
+    return [*taban, *[Suggestion(**c) for c in yeni]]
 
 
 def _niyet_izi(soru: str, schema: dict) -> list[str]:
@@ -2758,7 +2768,9 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # deyimiyse docstring sayar. Büyüme kapısı bunu 6 "yeni kod satırı" olarak
         # gösterdi ve teşhisi o verdi. *Bir ölçüm aracının yakaladığı sayı, bazen
         # ölçtüğü şey değil, ölçemediği şeydir.*
-        note, trace = _capa.notu_al(cq, note, trace)
+        # `§TZ` — beyanın yanında **bir tık**: varsayım yapıldıysa düzeltme chip'leri de
+        # gelir. Liste `donem_capasi`'nın (tek sahip); buraya kalan taşıma.
+        note, trace, _donem_chipleri = _capa.notu_al(cq, note, trace)
         # 🔴 `C1`+`C3` — **TAŞIYICI BURADA BOŞALTILIR ve EŞLEME İZE YAZILIR.**
         #
         # `B-8`'in sert sınırı: *eşleme izde görünür*. Sessiz bir öğrenme bir öğrenme
@@ -2979,7 +2991,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # hiçbir yerden öğrenemiyordu. ⚠ Reddetmek DEĞİL — o ölçüldü ve korpusu
         # %94,3 → %83,6 düşürdü. Raporun ölçütü *"belirsizlik sıraya değil CHİP'e"*:
         # cevap gider, alternatif chip olur, kapsam maliyeti SIFIRDIR.
-        resp.suggestions = _belirsizlik_beyani(resp, q_norm, cq, _cm_uyum, schema)
+        resp.suggestions = _belirsizlik_beyani(resp, q_norm, cq, _cm_uyum, schema,
+                                               _donem_chipleri)
         # 🔴 **EKSİK NİYETLİ CEVAP «DOĞRULANMIŞ» SAYILAMAZ.** Canlı denetimde bulundu:
         # *"şubatta ciro ocağa göre nasıl değişti"* → `source=vqr`, 434 ms, ve
         # `eksik_niyet=['kiyas','trend']`. Yani **beyanlı kısmi** bir cevap doğrulanmış

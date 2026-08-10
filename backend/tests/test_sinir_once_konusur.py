@@ -43,10 +43,25 @@ def test_TAHMIN_SORUSU_DONEM_SORMUYOR(client, schema, soru):
 
 
 def test_MESRU_DONEM_SORUSU_BOZULMADI(client):
-    """⚠ Genişlemenin sınırı: gerçekten dönemi eksik bir soru **hâlâ** dönem sormalı.
-    *Bir kuralı düzeltmek, komşusunu bozma hakkı vermez.*"""
+    """⚠ Genişlemenin sınırı: gerçekten dönemi eksik bir soru **hâlâ dönemi konuşmalı**.
+    *Bir kuralı düzeltmek, komşusunu bozma hakkı vermez.*
+
+    ⟳ **POLİTİKA DEVRİ (`D3` → `§TZ`).** Bu satır *«hangi dönem»* metnini arıyordu, yani
+    bir **soru** kipini. `varsayilan_donem` açılınca (korpus A/B ile ölçüldü) sistem
+    artık soruyor değil **beyan ediyor**: *«⏱ Dönemi çözemedim — verinin son 12 ayı
+    alındı … başka bir dönem yazarsan onu uygularım»* + tek-tık chip'ler.
+
+    🔴 Bu testin **korumak istediği şey** kaybolmadı: dönemin eksikliği kullanıcıdan
+    gizlenmiyor. Değişen yalnız **kip** — soru yerine beyan. O yüzden ölçüt metinden
+    **garantiye** çevrildi: dönem konuşulur **ve** düzeltilebilir.
+
+    *Bir kapıyı bir cümleye bağlamak, cümle değişince kapıyı da kaybetmektir.*
+    """
     d = ask(client, "kumaş türlerine göre fire oranı")
-    assert "hangi dönem" in (d.get("note") or "").lower(), d.get("note")
+    not_metni = (d.get("note") or "").lower()
+    assert "dönem" in not_metni, f"🔴 dönemin eksikliği hiç konuşulmuyor: {d.get('note')}"
+    assert any(s["label"] == "Tümü" for s in (d.get("suggestions") or [])), (
+        f"🔴 `§TZ`: dönem beyanının yanında tek-tık düzeltme yok: {d.get('suggestions')}")
 
 
 def test_TEK_SOZLESME_IKI_CAGIRAN():

@@ -133,6 +133,39 @@ def _build_explain(resp: AskResponse) -> Explain | None:
             "Dönem açıkça belirtilmedi — kullanıcı \"tüm zamanlar\"ı seçti/onayladı "
             "(filtresiz, tüm-zamanlar toplama)."
         )
+    # 🔴🔴 `§MV` — **NOT SÖYLÜYORDU, MAKBUZ SUSUYORDU.**
+    #
+    # ⊙ Ölçüldü (curl `N+1` turu, 2026-08-10 · kapı testinin yakaladığı hâliyle):
+    #
+    #     «makine bazında ortalama oee»
+    #       note    : ⏱ Dönemi çözemedim — verinin son 12 ayı alındı …
+    #       explain : {confidence: 1.0, assumptions: **[]**}
+    #
+    # Yani `varsayilan_donem` (`D3`) bir varsayım yapıyor, cevabın **metni** onu dürüstçe
+    # itiraf ediyor, ama **makbuz** hiç haberdar değil: rozet açıkça tarih verilmiş bir
+    # cevapla **aynı** kesinliği gösteriyordu (`1.0`).
+    #
+    # 🔴 Ve makbuz denetlenebilir yüzeydir: `interaction_log`'a yazılan, frontend'in
+    # rozetlediği, *"bu sayıya ne kadar güvenebilirim"* sorusunun cevabı odur. Bir metin
+    # cümlesi okunmayabilir; makbuz **her zaman** okunur.
+    #
+    # ⚠ Kaynak **izdir**, `note` metni değil: metin bir gün değişebilir (bugün üç kez
+    # değişti — `§BD`), iz bir **sabittir** ve taşıyıcının kendi yazdığı şeydir.
+    # İkinci bir yüklem yazmak `KAT-1` olurdu.
+    #
+    # ⊙ Ve hemen aşağıdaki kural bunu **zaten** bekliyordu: *"sessiz bir varsayım
+    # yapıldıysa güven bir kademe DÜŞÜRÜLÜR"*. Kural yazılıydı, girdisi eksikti.
+    #
+    # *Bir varsayımı cevabın metninde itiraf edip makbuzunda gizlemek, itirafın kendisini
+    # bir üsluba çevirir.*
+    else:
+        from app.donem_capasi import IZ_VARSAYILAN
+
+        if IZ_VARSAYILAN in (resp.trace or []):
+            assumptions.append(
+                "Dönem çözülemedi — verinin son 12 ayı BEYANLA varsayıldı "
+                "(kullanıcı onaylamadı; tek tıkla değiştirilebilir)."
+            )
     # Faz 4.13a (1 Ağustos 2026) — dış yol haritası 2.17 "güven rozeti": sessiz bir
     # varsayım yapıldıysa (yukarıdaki `assumptions`, ör. "tüm zamanlar" otomatik seçildi)
     # güven bir kademe DÜŞÜRÜLÜR — aynı `source`'tan gelen ama varsayımsız bir yanıttan

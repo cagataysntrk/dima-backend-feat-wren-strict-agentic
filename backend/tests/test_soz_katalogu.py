@@ -158,9 +158,19 @@ def test_UCTAN_UCA_DONEM_SORUSU_NE_ANLADIGINI_SOYLUYOR(client):
     if not metin or (d.get("cube_query") or {}).get("measures") is None:
         import pytest
         pytest.skip(f"⊘ vaka bayat: {metin[:60]!r}")
-    assert "çıkarabilirim" in metin, (
-        f"🔴 yalnız soruyor, ne yapabileceğini söylemiyor: {metin!r}")
-    assert "hangi dönem" in metin.lower()
+    # ⟳ **POLİTİKA DEVRİ (`D3` → `§TZ`).** `DA-10`'un kuralı — *«önce ne anladığını söyle,
+    # sonra sor»* — kaybolmadı, **bir adım ileri gitti**: sistem artık ne anladığını
+    # söylüyor, ne varsaydığını da söylüyor ve **sormuyor** çünkü cevabı zaten veriyor.
+    # ⊙ `varsayilan_donem` korpus A/B'siyle ölçüldü (`D3`): doğru-cube %94,9→%95,0,
+    # `sessiz_yanlis` 8→8. Ve `§TZ` düzeltme chip'lerini geri getirdi.
+    # 🔴 Ölçüt bu yüzden *«hangi dönem»* metninden **garantiye** çevrildi: dönem hakkında
+    # ne bilindiği/ne varsayıldığı **söylenir**, ve düzeltme **tek tıktır**.
+    # *Bir sözün kipini kilitlemek, o sözün gelişmesini yasaklamaktır.*
+    assert "dönem" in metin.lower(), (
+        f"🔴 dönem hakkında hiçbir şey söylenmiyor: {metin!r}")
+    assert ("çıkarabilirim" in metin
+            or any(s["label"] == "Tümü" for s in (d.get("suggestions") or []))), (
+        f"🔴 ne yapabileceğini de söylemiyor, düzeltme tıkı da sunmuyor: {metin!r}")
 
 
 def test_KISMI_ANLAMA_CUMLESI_KELIME_SAYMIYOR():

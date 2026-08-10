@@ -65,12 +65,34 @@ def test_A_MEVCUT_NOTU_EZMEZ(client):
     # gruplamasız bir toplulaştırma boş kümede **bir NULL satır** döndürür, sıfır satır
     # değil, ve eski koşul boşluğun en sık biçimini kaçırıyordu. Çapa silinmedi,
     # yüklemin yeni adına **yeniden çakıldı**; koruduğu şey aynı: mevcut not ezilmemeli.
-    kosul = re.search(r'if _va\.bos_mu\(result, cq\)([^\n:]*):',
-                      inspect.getsource(m.ask))
+    #
+    # ⟳ **ÇAPA İKİNCİ KEZ TAŞINDI (`§SD`, 2026-08-10).** Yokluğun **iki** biçimi olduğu
+    # ölçüldü: toplulaştırma `NULL` döndürür (`bos_mu` görür) ama `COUNT` boş kümede
+    # **0** döndürür ve o sıfır bir olgu gibi okunur (*«bu ay hiç parti üretmemişiz»*).
+    # İkisinin kararı — ve aralarındaki **öncelik** — `veri_araligi.yokluk_notu`'na
+    # toplandı; `ask()`'te kalan yalnız çağrı. Modül büyüme kapısı da bunu istedi.
+    #
+    # 🔴 **Bu kapının koruduğu şey DEĞİŞMEDİ** ve tam da bu yüzden çapa yeni ada
+    # çakılıyor: *mevcut bir not ezilmemeli.* Guard hâlâ çağıranda (`if not resp.note`)
+    # çünkü *"zaten bir şey söylendi mi"* sorusunun cevabı **cevabın kendisindedir**,
+    # yokluk modülünde değil.
+    #
+    # *Bir kapıyı bir fonksiyon adına bağlamak, o fonksiyon taşınınca kapıyı kaybetmek
+    # demektir — ama çapayı yeniden çakmak, kapıyı gevşetmek değildir: korunan cümle
+    # aynı kaldığı sürece adres değişebilir.*
+    kaynak = inspect.getsource(m.ask)
+    kosul = re.search(r'if ([^\n:]*):\n\s*resp\.note = _va\.yokluk_notu\(', kaynak)
     assert kosul, "boş-sonuç kapısı bulunamadı — desen mi değişti?"
     assert "not resp.note" in kosul.group(1), (
         "boş-sonuç notu mevcut notu EZİYOR: var olan bir not (netleştirme/konu değişimi) "
         "daha bilgilendiricidir")
+    # 🔴 `§SD`'nin ikinci yarısı da kapılı: yokluğun **iki** biçimi tek sahipte olmalı.
+    # Ayrılırlarsa aralarındaki öncelik iki yerde yazılır ve bir gün yalnız biri
+    # güncellenir (`KAT-1`).
+    from app import veri_araligi as _va_mod
+    _yokluk = inspect.getsource(_va_mod.yokluk_notu)
+    assert "bos_mu(" in _yokluk and "donem_disi_notu(" in _yokluk, (
+        "🔴 yokluğun iki biçimi tek sahipte değil — öncelik kuralı ikiye bölünmüş")
 
 
 # --- B · TAKVİM YILI -----------------------------------------------------------------

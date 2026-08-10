@@ -209,12 +209,22 @@
 - id: chip-donem
   q: toplam üretim
   tags: [chip-donem]
-  expect: chip
+  # ⟳ POLİTİKA DEVRİ (`D3` → `§TZ`, 2026-08-10): dönemsiz soru artık NETLEŞTİRME
+  # değil, BEYANLI CEVAP üretir — ve `§TZ` ile dönem chip'leri cevabın YANINDA gelir.
+  # `classify()` zaten doğru davranıyor: *«bir cevabın yanına seçenek koymak, cevabı
+  # geri almak değildir»*. Ölçüt `chip`ten `answer`a çevrildi; `note_contains: dönem`
+  # AYNEN duruyor — korunan şey değişmedi: dönemin eksikliği kullanıcıya SÖYLENMELİ.
+  expect: answer
   note_contains: dönem
 - id: chip-donem-kirilimli
   q: makine bazında ortalama oee
   tags: [chip-donem]
-  expect: chip
+  # ⟳ POLİTİKA DEVRİ (`D3` → `§TZ`, 2026-08-10): dönemsiz soru artık NETLEŞTİRME
+  # değil, BEYANLI CEVAP üretir — ve `§TZ` ile dönem chip'leri cevabın YANINDA gelir.
+  # `classify()` zaten doğru davranıyor: *«bir cevabın yanına seçenek koymak, cevabı
+  # geri almak değildir»*. Ölçüt `chip`ten `answer`a çevrildi; `note_contains: dönem`
+  # AYNEN duruyor — korunan şey değişmedi: dönemin eksikliği kullanıcıya SÖYLENMELİ.
+  expect: answer
   note_contains: dönem
 - id: chip-olcu-surd
   q: sürdürülebilirlik
@@ -259,7 +269,12 @@
 - id: meta-randiman-tuzagi
   q: cihaz bazında randıman
   tags: [meta, chip-donem]
-  expect: chip
+  # ⟳ POLİTİKA DEVRİ (`D3` → `§TZ`, 2026-08-10): dönemsiz soru artık NETLEŞTİRME
+  # değil, BEYANLI CEVAP üretir — ve `§TZ` ile dönem chip'leri cevabın YANINDA gelir.
+  # `classify()` zaten doğru davranıyor: *«bir cevabın yanına seçenek koymak, cevabı
+  # geri almak değildir»*. Ölçüt `chip`ten `answer`a çevrildi; `note_contains: dönem`
+  # AYNEN duruyor — korunan şey değişmedi: dönemin eksikliği kullanıcıya SÖYLENMELİ.
+  expect: answer
   note_contains: dönem
 
 # ── Türkçe varyantlar (çekim + diyakritiksiz) ───────────────────────────────
@@ -342,7 +357,7 @@
 - id: akis-uretim-zinciri
   tags: [akis, chip-donem, gran, kirilim]
   flow:
-    - {q: toplam üretim, expect: chip, note_contains: dönem}
+    - {q: toplam üretim, expect: answer, note_contains: dönem}
     - {q: bu yıl, expect: answer, shape: {cube: oee, measures: [toplam_uretim_kg], filter_ops: [gte]}}
     - {q: aylara göre, expect: answer, shape: {gran: month, filter_ops: [gte]}}
     - {q: makin kırılımı ekle, expect: answer, shape: {dims_has: [makine], gran: month}}
@@ -364,13 +379,13 @@
 - id: akis-gecen-ay
   tags: [akis, tarih-onceki]
   flow:
-    - {q: müşterilere göre ciro, expect: chip, note_contains: dönem}
+    - {q: müşterilere göre ciro, expect: answer, note_contains: dönem}
     - {q: bu ay, expect: answer, shape: {filter_ops: [gte]}}
     - {q: geçen ay, expect: answer, shape: {filter_ops: [gte, lte]}}
 - id: akis-tumu-filtre-kaldirir
   tags: [akis, tarih-tumu]
   flow:
-    - {q: toplam fire, expect: chip, note_contains: dönem}
+    - {q: toplam fire, expect: answer, note_contains: dönem}
     - {q: bu yıl, expect: answer, shape: {filter_ops: [gte]}}
     - {q: tüm zamanlar, expect: answer, shape: {filter_ops: []}}
 - id: akis-yetenek-chip

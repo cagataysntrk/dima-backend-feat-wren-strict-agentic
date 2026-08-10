@@ -10167,3 +10167,182 @@ veriyor: eskiden **netleştirme** bekleniyordu, şimdi `⏱ Dönemi çözemedim 
 ⊙ Yani muhtemelen **bir** karar on iki kapıyı bayatlattı ve hiçbiri koşulmadığı için
 görünmedi. Bir sonraki tur bunu tek kök olarak sınayacak — ve `§OB` ile birlikte iki
 açılış maddesi var.
+
+# 🔴🔴 `N+1` TURU — 2026-08-10 · **ON İKİ BAYAT KAPININ TEK KÖKÜ — ve ikisi HAKLIYDI**
+
+## 0 · TURUN TEK CÜMLESİ
+
+On iki kırmızının hepsi **tek** bir karardan (`D3` · `varsayilan_donem` → `beta`)
+doğmuştu; ve o kararın **ölçülmemiş bir yan etkisi** vardı: netleştirme dalı ölünce
+onun **chip'leri de** öldü. Kapılar bozulmamıştı — **haklıydılar**, yalnız korudukları
+yeteneğin **eski adresini** tutuyorlardı.
+
+## 1 · TEŞHİS — beş dosya, tek imza
+
+Beş test dosyası da aynı şeyi bekliyordu: dönemsiz soruda *«hangi dönem?»*. Sistem ise
+`⏱ Dönemi çözemedim — verinin son 12 ayı alındı` diyordu.
+
+⊙ `D3` bilinçli ve **ölçülmüş** bir karardı (`TABAN-BORCLARI` §6b): korpus A/B'de
+doğru-cube **%94,9 → %95,0**, `sessiz_yanlis` **8 → 8 (değişmedi)**. Yani bayrak bir
+kaza değil.
+
+## 2 · 🔴 AMA İÇİNDE GERÇEK BİR KAYIP VARDI — ölçüldü
+
+```
+«makine bazında ortalama oee»
+  note        : ⏱ Dönemi çözemedim — … Başka bir dönem **YAZARSAN** onu uygularım.
+  suggestions : []          ← 🔴 TEK TIK KAYBOLDU
+```
+
+Düzeltme yolu bir **tıktan** bir **yazma** eylemine düşmüştü. Ve `test_ask_golden`
+tam olarak bunu koruyordu: *«Tümü chip'i olmalı»*.
+
+> 🔴 **`§TZ`** — beyan tek başına yetmez. *Bayat bir kapı bazen yanlış cevabı değil,
+> doğru cevabın eski adresini tutar.*
+
+**Kök çözüm:** chip listesi `ask.py`'de elle yazılıydı ve yalnız netleştirme dalını
+besliyordu. Liste `donem_capasi.DONEM_SECENEKLERI`'ne taşındı (**tek sahip**, `KAT-1`);
+`notu_al` üçüncü bir dönüş verir oldu ve iki dal da aynı menüden okuyor.
+*Aynı menüyü iki yerde tutmak, bir gün yalnız birini güncellemektir.*
+
+⚠ Sınır dar: chip yalnız **varsayım** izinde. Taşıyıcının öteki kullanıcısı (`KÖK-4`,
+önceki turdan taşınan dönem) bir varsayım değil bir **sürekliliktir** — orada düzeltme
+önerisi, kullanıcının **kendi seçtiği** dönemi geri almasını önerirdi.
+
+## 3 · 🔴🔴 VE YENİ KAPI KENDİ YAZDIĞIM BİR KUSURU YAKALADI — `§MV`
+
+`§TZ`'yi kapıya çevirirken *«makbuz varsayımı yazmalı»* diye bir satır yazdım. **Kırmızı
+verdi:**
+
+```
+explain = {"confidence": 1.0, "assumptions": []}     ← 🔴 varsayım YAPILDI, makbuz SUSUYOR
+```
+
+Yani `varsayilan_donem` bir varsayım yapıyor, cevabın **metni** onu dürüstçe itiraf
+ediyor, ama **makbuz** haberdar değil: rozet açıkça tarih verilmiş bir cevapla **aynı**
+kesinliği gösteriyordu.
+
+⊙ Ve hemen altındaki kural bunu **zaten bekliyordu**: *«sessiz bir varsayım yapıldıysa
+güven bir kademe DÜŞÜRÜLÜR»*. Kural yazılıydı, **girdisi eksikti**.
+
+⚠ Kaynak olarak `note` metni değil **iz** seçildi: metin bugün **üç kez** değişti
+(`§BD`), iz bir **sabittir** ve taşıyıcının kendi yazdığı şeydir.
+
+Canlı doğrulama:
+```
+assumptions: ["Dönem çözülemedi — verinin son 12 ayı BEYANLA varsayıldı …"]
+confidence : 0.85 → **0.70**
+```
+
+> *Bir varsayımı cevabın metninde itiraf edip makbuzunda gizlemek, itirafın kendisini
+> bir üsluba çevirir.*
+
+## 4 · DÖRT KAPI DEVREDİLDİ — silinmedi, **çürüten ölçümle işaretlendi**
+
+Kalan dördü gerçekten **eski akışı** şart koşuyordu (bir **soru** kipi istiyorlardı).
+Beklenti gevşetilmedi; **garantiye** çevrildi ve gerekçesi `D3` ölçümüne bağlandı:
+
+| kapı | eski ölçüt | yeni ölçüt |
+|---|---|---|
+| `test_clarify_toplam_uretim` | chip listesi **tam eşit** | dönem chip'leri **önekte** (ölçü ifşası da eklenebilsin) |
+| `test_explain_none_for_clarification_response` | `explain is None` | makbuz **VAR** ve **varsayımı yazıyor** |
+| `test_MESRU_DONEM_SORUSU_BOZULMADI` | *«hangi dönem»* metni | dönem **konuşulur** ∧ **tek tıkla düzeltilir** |
+| `test_UCTAN_UCA_DONEM_SORUSU…` | *«çıkarabilirim»* + *«hangi dönem»* | dönem söylenir ∧ (ne yapabileceğini söyler ∨ tık sunar) |
+
+⊙ Birincinin dersi ayrıca kaydedildi: tam eşitlik iddiası **iki ayrı yeteneğin** (dönem
+düzeltmesi + ölçü ifşası) aynı kanalı paylaşmasını bir gerileme sayıyordu.
+*Bir kapı, koruduğu şeyi değil onun O GÜNKÜ BİÇİMİNİ kilitlerse, ikinci yeteneği yasaklar.*
+
+## 5 · VE BUGÜNÜN SON BORCU: taban gerekçesi
+
+`test_TABANLAR_GEREKCE_TASIYOR` kırmızıydı çünkü `A12` nüfus imzasını yazmış ama
+**gerekçeyi** yazmamıştı. `gercek_dunya_baseline.json`'a 1.305 karakterlik gerekçe
+eklendi: sayıların ne olduğu, **neden «devir» büyük «doğru» küçük** (politika sonucu,
+kayıp değil), `_nufus`'un ne işe yaradığı ve tazeleme şartı.
+
+*Gerekçesiz bir taban, bir ölçümü değil bir KABULÜ kaydeder.*
+
+## 6 · SONUÇ
+
+```
+188 passed, 0 failed  (test_ask_golden · test_explain · test_sinir_once_konusur ·
+                        test_soz_katalogu · test_kok5d · test_modul_buyume ·
+                        test_donem_varsayimi_chipli · test_nufus_kiyaslanabilirligi)
+```
+
+**8 kırmızı yeteneği geri vererek**, **4'ü devrederek** kapandı. Hiçbiri beklenti
+gevşetilerek geçirilmedi.
+
+⚠ **Açık:** `§OB` (orkestratör yolunda `uyum` hiç koşmuyor) sıradaki turun ilk kökü.
+
+## 7 · TAM KAPI — **16 KIRMIZI → 0**, ve iki ders
+
+```
+✓ korpus kapısı        TOPLAM doğru-cube: %95.1 (taban %94.4)
+✓ gerçek-dünya korpusu doğru=95 · devir=2142 · netleştirme=0 · beyanlı_kısmi=41 ·
+                        🔴 sessiz_yanlış=8 · payda=2286        ← BİT-SABİT
+  tam süit             16 failed → **2 failed** → **0**
+✓ eval.run             3/3 kapı yeşil
+```
+
+### ⟳ Ders 1 — bir çapa **taşınabilir**, ama gevşetilemez
+
+`test_A_MEVCUT_NOTU_EZMEZ` kırmızı verdi: `§SD` yeniden çıkarması `if _va.bos_mu(result,
+cq)` desenini `ask()`'ten aldı. Kapının **kendi şerhi** ne yapılacağını yazmıştı:
+*«çapa silinmedi, yüklemin yeni adına yeniden çakıldı; koruduğu şey aynı»*.
+
+Çapa yeni adrese çakıldı **ve bir kapı daha eklendi**: yokluğun iki biçimi (`bos_mu` ∧
+`donem_disi_notu`) **tek sahipte** olmalı — ayrılırlarsa aralarındaki öncelik iki yerde
+yazılır ve bir gün yalnız biri güncellenir.
+
+> *Bir kapıyı bir fonksiyon adına bağlamak, o fonksiyon taşınınca kapıyı kaybetmektir —
+> ama çapayı yeniden çakmak kapıyı gevşetmek değildir: korunan cümle aynı kaldığı
+> sürece adres değişebilir.*
+
+### ⟳ Ders 2 — `eval` vakaları da **politikaya** bağlıdır
+
+`eval` yedi vaka düşürüyordu; **altısı** birebir aynı imzayı taşıyordu:
+`bekl=chip oldu=answer · ⏱ Dönemi çözemedim…`. Yani `D3` kararı **üç ayrı yüzeyde**
+(birim testi · golden · eval) aynı bayatlığı üretmişti ve hiçbiri koşulmadığı için
+görünmemişti.
+
+Altısı devredildi: ölçüt `chip` → `answer`, **`note_contains: dönem` AYNEN korunarak**.
+Korunan şey değişmedi — *dönemin eksikliği kullanıcıya söylenmeli*. Ve `classify()`
+zaten doğru davranıyordu: *«bir cevabın yanına seçenek koymak, cevabı geri almak
+değildir.»*
+
+### 🔴 YEDİNCİSİ GİZLENMEDİ — `ny-dE-musteri`
+
+```
+«müşteri bazında ortalama dE bu yıl» → «parti için hangi ölçüyü istiyorsun?»
+```
+
+Taban yeniden dondurulmadı. Ölçüldü: `dE` **üç sahipli** —
+`parti.ort_renk_sapmasi` · `kalite.ort_dE` · `sikayet.ort_sapma_dE`. Yani dürüst bir
+belirsizlik, ama **cevaplanması gereken** bir soru. Sıradaki turun kökü.
+
+## 8 · ⚠ VE BİR KÖK İDDİASI DAHA ÇÜRÜTÜLDÜ — `§OB` YOK
+
+Önceki turda *«orkestratör yolunda `uyum` hiç koşmuyor»* diye bir kök yazmıştım.
+Ölçüldü: `plan_tuketici` **zaten** `uyum.denetle` koşuyor — hem de şema geçerek (`§Cİ`)
+ve planın kendi fiillerinin karşıladığı işaretleri düşerek (`O-20/Y`).
+
+⊙ **Bugün beşinci kez** aynı ders. Ama ölçüm gerçek kökü de verdi:
+
+### 🔴 `§UT` — NİTELEYENİ DÜŞEN TAMLAMA *(sıradaki turun ikinci kökü)*
+
+```
+«bu yıl en kötü bakım maliyeti hangi makinede» → maliyet.ort_birim_maliyet · beyan YOK
+
+ÖLÇÜLDÜ:
+  bakim_is_emri  → bakim_maliyeti      terim='bakim maliyeti'   ← 2 kelime, TAM
+  maliyet        → ort_birim_maliyet   terim='maliyet'          ← 1 kelime, PARÇA
+```
+
+Kullanıcı iki kelimelik bir tamlama yazdı; sistem **niteleyeni düşürüp** bir kelimelik
+eşleşmeyle cevapladı ve bunu hiç söylemedi. `_capraz_kup_ikamesi` susuyor çünkü ilk
+satırı *«cevabın küpü terimi karşılıyor mu»* diye soruyor — *«TAM MI karşılıyor»* diye
+değil. Ve bu bir **ikame değil** bir **özgüllük kaybıdır**: `olcu_ikamesi` cümlesi
+(*«bu cevap onu içermiyor»*) burada **yalan** olurdu.
+
+*Bir kusuru en yakın komşusunun adıyla anmak, iki kusuru da görünmez yapar.*

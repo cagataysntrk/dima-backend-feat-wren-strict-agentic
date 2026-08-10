@@ -235,9 +235,23 @@ def test_typo_sessiz_yanlis_cube_donmez(client):
 # --- Faz C: dönem clarification + chip ---------------------------------------
 
 def test_clarify_toplam_uretim(client):
+    """⟳ **POLİTİKA DEVRİ (`D3` → `§TZ`): eşitlik yerine KAPSAMA.**
+
+    Eski satır chip listesinin **tam eşit** olmasını istiyordu. `varsayilan_donem`
+    açılınca (`D3`, korpus A/B: doğru-cube %94,9→%95,0 · `sessiz_yanlis` 8→8) cevap artık
+    beyanlı bir varsayımla geliyor ve **yanına ölçü belirsizliği chip'i de** ekleniyor
+    (*«uretim (parti)»* — `KÖK-9`). Yani liste **büyüdü**, kaybolmadı.
+
+    🔴 Tam eşitlik iddiası bu yüzden **yanlış ölçüttü**: iki ayrı yeteneğin (dönem
+    düzeltmesi + ölçü ifşası) aynı kanalı paylaşmasını bir gerileme sayıyordu.
+    *Bir kapı, koruduğu şeyi değil onun O GÜNKÜ biçimini kilitlerse, ikinci yeteneği
+    yasaklar.*
+    """
     d = ask(client, "toplam üretim")
     assert d["note"] and "dönem" in d["note"].lower()
-    assert [s["label"] for s in d["suggestions"]] == ["Bugün", "Bu hafta", "Bu ay", "Bu yıl", "Tümü"]
+    etiketler = [s["label"] for s in d["suggestions"]]
+    assert etiketler[:5] == ["Bugün", "Bu hafta", "Bu ay", "Bu yıl", "Tümü"], (
+        f"🔴 dönem düzeltme chip'leri kayboldu — beyan tek başına yetmez: {etiketler}")
     assert d["cube_query"]["measures"] == ["toplam_uretim_kg"]  # kısmi durum taşınır
 
 
