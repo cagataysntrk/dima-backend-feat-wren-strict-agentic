@@ -9842,3 +9842,59 @@ uygularım»*): sınır daralmadı, yalnız **iddia dürüstleşti**.
 
 *Bir beyan, ölçebildiğinden fazlasını söylediği anda bir varsayıma dönüşür — ve beyanın
 işi tam olarak varsayımı görünür kılmaktı.*
+
+---
+
+# TUR — 2026-08-10 · EŞİK · KIYAS · ve `§EŞ` + `§TK`
+
+## Yeşiller
+
+```
+«ocak ile şubat ciroyu kıyasla» → 8.878.649 vs 6.152.918 · +%44,3   ✅
+«son 3 ayda makine bazında oee» → tarih ≥ 2026-05-10                ✅
+```
+
+## 🔴 `§EŞ` — YETENEK VARDI, GARSONUN MENÜSÜNDE YOKTU
+
+```
+«bu yıl fire oranı %20 üstü olan hatlar» → 8 hattın HEPSİ döndü
+note: «⚠ bir eşik verdin ama filtreye çeviremedim»
+```
+
+Beyan **doğruydu** — ama *dürüst bir red bir başarı değil, çözülecek bir borçtur*.
+Ve yetenek **zaten vardı**: `cube_router` `measure_having` üretiyor, `cube_sql` onu
+HAVING'e çeviriyor, `niyet_tasima` takipte taşıyor. **Route yapabiliyordu, garson
+bilmiyordu.**
+
+⚠ Alan **beyan edilmişti ama yanlış kanalda**: `plan_semasi` şemasında var, o şema
+`llm_sema_kisitli`'ye bağlı, o bayrak da aktif sağlayıcıda **NO-OP** (`D7`'de ölçüldü).
+Yetenek, garsona **hiç ulaşmayan** bir kanaldan duyuruluyordu.
+
+⊙ *Bir menüde olmayan yemek, mutfakta pişebiliyor olsa da sipariş edilemez.*
+
+## 🔴 `§TK` — VE PROMPT YETMEDİ: SIRALI OPERATÖR, KATEGORİK BOYUTTA TÜR HATASI
+
+İstem düzeltildikten sonra garson şunu üretti:
+
+```
+{"dimension":"hat","operator":"gt","value":"20"}   ← hat ADINI 20 ile karşılaştırıyor
+→ 8 satırın hepsi döndü, süzgeç hiçbir şey yapmadı, beyan YOK
+```
+
+⚠ Ve **kendi kapım bunu kaçırıyordu**: `gt` bir üyelik sormaz, o yüzden
+`KIMLIK_OPERATORLERI` dışındaydı. Ama hata **kanıtlanabilir**: boyutun tam enum'unda
+**hiçbir değer sayı değilse**, sıralı bir karşılaştırma tanımsızdır.
+
+```
+SONRA: sorgu KOŞTURULMADI · «20» hat listesinde yok · 8 gerçek hat CHIP olarak sunuldu
+```
+
+⚠ Fail-closed korundu: enum yoksa yargı yok; enum'da **bir tek sayı** bile varsa yargı
+yok (kod-benzeri boyutlar `«1»·«2»` gerçekten sıralanabilir).
+
+⊙ Ve eski test *«sıralı operatörler hiç yargılanmaz»* diyordu — ölçüm o beklentiyi
+**çürüttü**. *Bir kapının kapsamı, kaçırdığı kusurla ölçülür.*
+
+⚠ Bir de dil kusuru çıktı ve düzeltildi: *««20» — bu değeri hat listesinde yok»* — tekil
+ve çoğul **iki ayrı cümledir**, tek şablona sıkıştırılamaz. *Bir doğru bilgiyi bozuk bir
+cümleyle vermek, onu yarı yarıya vermektir.*

@@ -362,7 +362,29 @@ def _cube_select_system(catalog: str) -> str:
         "- SADECE JSON döndür (SQL YOK, açıklama YOK).\n"
         '- Biçim: {"cube":"<ad>","measures":["<ölçü>"],"dimensions":["<boyut>"],'
         '"timeDimensions":[{"dimension":"<zaman>","granularity":"year|quarter|month|week|day"}],'
-        '"filters":[{"dimension":"<boyut>","operator":"eq","value":"<değer>"}]}\n'
+        '"filters":[{"dimension":"<boyut>","operator":"eq","value":"<değer>"}],'
+        '"measure_having":{"measure":"<ölçü>","op":">","value":<sayı>}}\n'
+        # 🔴🔴 `§EŞ` — **YETENEK VARDI, GARSONUN MENÜSÜNDE YOKTU.**
+        #
+        # ⊙ Canlı ölçüm (curl turu, 2026-08-10): *«bu yıl fire oranı %20 üstü olan
+        # hatlar»* → **8 hattın hepsi** döndü ve not dürüstçe *«bir eşik verdin ama
+        # filtreye çeviremedim»* dedi. Beyan doğruydu — ama kullanıcının kuralı gereği
+        # *dürüst bir red bir başarı değil, çözülecek bir borçtur*.
+        #
+        # 🔴 Ve yetenek **zaten vardı**: `cube_router:4306` `measure_having` üretiyor,
+        # `wren_service.cube_sql` onu HAVING'e çeviriyor, `niyet_tasima` takip turlarında
+        # taşıyor. Yani **route yapabiliyordu, garson bilmiyordu**.
+        #
+        # ⚠ Ve alan **beyan edilmişti** — ama yanlış kanalda: `plan_semasi` şemasında var
+        # (`test_sema_kisitli`) ve o şema `llm_sema_kisitli` bayrağına bağlı, o bayrak da
+        # aktif sağlayıcıda **NO-OP** (`D7`'de ölçüldü). Yani yetenek, garsona **hiç
+        # ulaşmayan** bir kanaldan duyuruluyordu.
+        #
+        # *Bir menüde olmayan yemek, mutfakta pişebiliyor olsa da sipariş edilemez.*
+        '- EŞİK (ölçü üstünde): *«fire oranı %20 üstü»* · *«cirosu 1 milyon üzeri»* → '
+        '"measure_having":{"measure":"<ölçü>","op":">"|">="|"<"|"<=","value":<sayı>}. '
+        "⚠ Bu bir SATIR süzgeci değil, ölçünün TOPLANMIŞ değerine bir eşiktir (HAVING); "
+        "kullanıcı eşik vermediyse alanı hiç yazma.\n"
         "- SADECE yukarıda listelenen ölçü/boyut adlarını kullan.\n"
         # 🔴 `AJ3.4` — **KARŞI AĞIRLIK.** Ölçüldü: bu prompt modele reddetmeyi ÜÇ kez
         # söylüyordu (metinde *"KESİNLİKLE null"*, şemada red **ilk** dal, araç

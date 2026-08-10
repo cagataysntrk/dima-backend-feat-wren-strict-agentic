@@ -83,10 +83,38 @@ def test_ZAMAN_BOYUTU_ENUM_DEGILDIR():
                       _SEMA) == []
 
 
-def test_SIRALI_OPERATORLER_ENUM_UYELIGI_SORMAZ():
-    """`gte`/`lt` bir **aralık** sorar, bir üyelik değil. `contains` bir **alt-dizedir**."""
-    for op in ("gte", "lte", "gt", "lt", "contains"):
-        assert dk.denetle(_cq(dimension="makine", operator=op, value="RAM"), _SEMA) == [], op
+def test_ALT_DIZE_OPERATORU_UYELIK_SORMAZ():
+    """`contains` bir **alt-dizedir**, enum üyeliği sormaz."""
+    assert dk.denetle(_cq(dimension="makine", operator="contains", value="RAM"),
+                      _SEMA) == []
+
+
+def test_SIRALI_OPERATOR_METIN_ENUMDA_TUR_HATASIDIR():
+    """🔴🔴 `§TK` — canlı ölçüm: garson *«%20 üstü»* için
+    `{"dimension":"hat","operator":"gt","value":"20"}` üretti — **hat adını 20 ile
+    karşılaştırdı**. Sekiz hattın hepsi döndü, süzgeç hiçbir şey yapmadı, beyan yok.
+
+    ⚠ Eski beklenti *«sıralı operatörler hiç yargılanmaz»* idi ve bu kusuru **görmüyordu**;
+    ölçüm o beklentiyi çürüttü. *Bir kapının kapsamı, kaçırdığı kusurla ölçülür.*
+    """
+    b = dk.denetle(_cq(dimension="makine", operator="gt", value="20"), _SEMA)
+    assert b and b[0].boyut == "makine"
+    assert "listesinde yok" in dk.netlestirme_metni(b)
+
+
+def test_SAYISAL_ENUMDA_SIRALI_OPERATOR_MESRUDUR():
+    """⚠ **Fail-closed:** enum'da bir tek sayı bile varsa yargı **verilmez** — kod-benzeri
+    boyutlar (`«1»·«2»·«3»`) gerçekten sıralanabilir."""
+    sema = {"cubes": [{"name": "maliyet", "time_dimensions": ["tarih"],
+                       "dimension_values": {"kademe": ["1", "2", "3"]}}]}
+    cq = {"cube": "maliyet", "filters": [{"dimension": "kademe", "operator": "gt",
+                                          "value": "1"}]}
+    assert dk.denetle(cq, sema) == []
+
+
+def test_ENUMSUZ_BOYUTTA_SIRALI_OPERATOR_YARGILANMAZ():
+    """⚠ Enum yoksa *«bilmiyorum»* — `§101.1`'in aynı disiplini."""
+    assert dk.denetle(_cq(dimension="musteri", operator="gt", value="20"), _SEMA) == []
 
 
 def test_IN_LISTESININ_HER_ELEMANI_AYRI_YARGILANIR():
@@ -150,9 +178,17 @@ def test_AYNI_BOYUTTAKI_COKLU_HATA_TEK_KEZ_LISTELENIR():
     for d in ("Bakım", "Depo", "Kalite"):
         assert f"«{d}»" in metin
     assert "değerleri" in metin, "çoğul dilbilgisi"
+    assert "bu değerleri" not in metin, "🔴 bozuk cümle («bu değerleri … yok»)"
 
 
-def test_TEK_HATADA_TEKIL_DILBILGISI():
-    """⚠ Gruplama tekil vakayı bozmamalı — *«bu değeri»*, *«bu değerleri»* değil."""
-    b = dk.denetle(_cq(dimension="makine", operator="eq", value="Bakım"), _SEMA)
-    assert "bu değeri" in dk.netlestirme_metni(b)
+def test_TEK_HATADA_CUMLE_DUZGUN():
+    """⚠ Tekil vaka **kendi cümlesini** kurar: *«Bakım» makine listesinde yok.*
+
+    ⊙ İlk yazımda tek şablona sıkıştırılmıştı ve canlıda *«20» — bu değeri hat
+    listesinde yok»* gibi bozuk bir cümle çıktı. *Bir doğru bilgiyi bozuk bir cümleyle
+    vermek, onu yarı yarıya vermektir.*
+    """
+    metin = dk.netlestirme_metni(
+        dk.denetle(_cq(dimension="makine", operator="eq", value="Bakım"), _SEMA))
+    assert "«Bakım» **makine** listesinde yok" in metin
+    assert "bu değeri" not in metin

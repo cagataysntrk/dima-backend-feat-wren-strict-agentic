@@ -60,6 +60,27 @@ from dataclasses import dataclass, field
 #: davranış demektir.
 KIMLIK_OPERATORLERI: frozenset[str] = frozenset({"eq", "neq", "in", "nin"})
 
+#: 🔴🔴 `§TK` — **SIRALI OPERATÖR, KATEGORİK BOYUTTA BİR TÜR HATASIDIR.**
+#:
+#: ⊙ Canlı ölçüm (curl turu, 2026-08-10): *«bu yıl fire oranı %20 üstü olan hatlar»* →
+#: garson `{"dimension":"hat","operator":"gt","value":"20"}` üretti — yani **hat adını
+#: 20 ile karşılaştırdı**. Sekiz hattın hepsi döndü, süzgeç hiçbir şey yapmadı, beyan yok.
+#:
+#: ⚠ Kimlik kapısı (`§DK-2`) bunu **göremiyordu**: `gt` bir üyelik sormaz, o yüzden
+#: `KIMLIK_OPERATORLERI` dışındaydı ve atlanıyordu. Ama hata **kanıtlanabilir**: boyutun
+#: **tam enum'u** varsa ve o enum'da **hiçbir değer sayı değilse**, sıralı bir
+#: karşılaştırma tanımsızdır — bir metin etiketi *«20'den büyük»* olamaz.
+#:
+#: ⊙ Ve bu, kullanıcının asıl istediğinin **ölçü eşiği** (`measure_having`) olduğunun da
+#: işaretidir: *«%20 üstü»* bir satırın değil, **toplanmış ölçünün** eşiğidir.
+#:
+#: ⚠ Fail-closed: enum yoksa **yargı yok**; enum'da bir tek sayı bile varsa **yargı yok**
+#: (kod-benzeri boyutlar `«1»·«2»` gerçekten sıralanabilir).
+#:
+#: *Bir süzgeç, karşılaştırdığı iki şeyin aynı türden olduğunu varsayar; bu varsayım
+#: yanlışsa sonuç boş değil ANLAMSIZDIR — ve anlamsız bir sonuç sessizce doğru görünür.*
+SIRALI_OPERATORLER: frozenset[str] = frozenset({"gt", "gte", "lt", "lte"})
+
 #: Yakın-eşleşme eşiği. `value_index._ratio` ile aynı ölçek. 0.82 seçildi çünkü
 #: `«Bakim» ↔ «Bakım»` (tek harf) geçmeli, `«Bakım» ↔ «RAM-1»` geçmemeli.
 YAKINLIK_ESIGI: float = 0.82
@@ -85,6 +106,15 @@ def _norm(s: str) -> str:
     from app import cube_router as cr
 
     return cr._norm(str(s))
+
+
+def _sayi_mi(x) -> bool:
+    """Değer bir sayı olarak okunabiliyor mu? — `§TK`'nin fail-closed yüklemi."""
+    try:
+        float(str(x).replace(",", "."))
+    except (TypeError, ValueError):
+        return False
+    return True
 
 
 def _enum(cq: dict, schema: dict | None) -> dict[str, list[str]]:
@@ -152,11 +182,19 @@ def denetle(cq: dict, schema: dict | None) -> list[Bulgu]:
             continue
         boyut = str(f.get("dimension") or "")
         op = str(f.get("operator") or "")
-        if op not in KIMLIK_OPERATORLERI or boyut in zamanlar:
+        if boyut in zamanlar:
             continue
         gecerliler = enumlar.get(boyut)
         if not gecerliler:
             continue                                 # ⚠ enum yok → yargı yok
+        # 🔴 `§TK` — sıralı operatör + tamamen metin enum = **tür hatası**.
+        if op in SIRALI_OPERATORLER:
+            if not any(_sayi_mi(g) for g in gecerliler):
+                out.append(Bulgu(boyut=boyut, deger=str(f.get("value")),
+                                 oneri=None, gecerliler=list(gecerliler)))
+            continue
+        if op not in KIMLIK_OPERATORLERI:
+            continue
         bilinen = {_norm(g) for g in gecerliler}
         ham = f.get("value")
         degerler = ham if isinstance(ham, (list, tuple)) else [ham]
@@ -237,9 +275,13 @@ def netlestirme_metni(bulgular: list[Bulgu]) -> str:
         adlar = " · ".join(f"«{d}»" for d in degerler[:EN_FAZLA_SECENEK])
         if len(degerler) > EN_FAZLA_SECENEK:
             adlar += f" … (+{len(degerler) - EN_FAZLA_SECENEK})"
-        cogul = "değerleri" if len(degerler) > 1 else "değeri"
-        parcalar.append(f"{adlar} — bu {cogul} **{boyut}** listesinde yok. "
-                        f"Var olanlar: {ornek}")
+        # ⚠ Cümle **iki ayrı biçimdir**, tek şablonun içine sıkıştırılamaz: ilk yazımda
+        # *««20» — bu değeri hat listesinde yok»* çıktı (canlı, `§TK` turu) — dilbilgisi
+        # bozuk. *Bir doğru bilgiyi bozuk bir cümleyle vermek, onu yarı yarıya vermektir.*
+        parcalar.append(
+            (f"{adlar} değerleri **{boyut}** listesinde yok. Var olanlar: {ornek}")
+            if len(degerler) > 1 else
+            (f"{adlar} **{boyut}** listesinde yok. Var olanlar: {ornek}"))
     return " ".join(parcalar) + " Hangisini istersin?"
 
 
