@@ -625,6 +625,27 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "bugünkü yedi dokunuşuyla akar ve şema eski biçimdedir.",
         "category": "Anlama",
     },
+    "ters_yon_alani": {
+        # 🔴 `E-4`/`D9` — **YAZILI `on` ŞARTI.**
+        "on_sarti": "Canlı turda üç şey birden görülmeli: (1) eşleme **izde** görünmeli (`ters-yön eşlemesi: «…» → `…``), (2) `oylama` uyum oranı **düşmemeli** — alan bir makbuzdur, kimlik değil; `_canon_cq` onu elediği için beklenen fark **sıfırdır** ve sıfır olduğu ÖLÇÜLMELİ (kaset A/B), (3) ≥2 sahipli bir terim (ör. `bakiye`) için üretilen eşleme kuyruğa **DÜŞMEMELİ**. ⚠ Ve `hasat` tarafı bağlanmadan `on` verilmez: kuyruğa girmeyen bir eşleme yalnız bir iz satırıdır — *ölçülen ama kullanılmayan bir sinyal, ölçülmemiş sayılır*.",
+        "label": "Ters yön alanı — garson kendi çevirisini SÖYLER (0 ek tur)",
+        "description": "🔴 `C1`+`C3`. Kullanıcı katalogda olmayan bir kelime yazdığında "
+                       "(*«zayiat»*) garson onu zaten bir ölçüye eşliyor "
+                       "(`toplam_fire_kg`) — ama bunu **söylemiyordu**, yani eşleme her "
+                       "turda yeniden ve **LLM'le** yapılıyordu. Alan o eşlemeyi "
+                       "görünür kılar; onaylanınca `_apply_synonym_overlays` ile "
+                       "deploy'suz canlıya biner ve o kelime **bir daha hiç LLM "
+                       "gerektirmez**. "
+                       "⚠ Biçim **kapalı seçim**: katalogdan bir ad ya da «hiçbiri» — "
+                       "serbest yeniden-yazım DEĞİL. Açık üretimin çıktısı "
+                       "doğrulanamaz (`route()` yeniden koşulmadan anlaşılmaz); kapalı "
+                       "seçimin çıktısı beyaz listede **deterministik** sınanır. "
+                       "⚠ `prompt_enhancer`'ın (`C6`, `off`) yerini almaz, onu **gereksiz "
+                       "kılar**: enhancer +1 tur ister, bu alan **0**. "
+                       "*Bir sistemin sözlüğünü elle yazmak, onu her gün yeniden "
+                       "yazmaya razı olmaktır.*",
+        "category": "Anlama",
+    },
     "deger_capasi": {
         # 🔴 `E-4`/`D9` — **YAZILI `on` ŞARTI.**
         "on_sarti": "Canlı turda üç sonucun **üçü de** görülmeli: (1) geçerli değer dokunulmadan geçmeli, (2) tek yakın karşılık düzeltilip **beyan edilmeli**, (3) karşılıksız değerde sorgu koşmayıp gerçek değerler chip olmalı. ⚠ Ve `on` şartı bir sayı taşır: korpusta `sessiz_yanlis` **artmamalı** — bu kapı sessiz-yanlış kapatmak için var; bir tanesini bile üretirse amacının tersine çalışıyor demektir. 🔴 Ön koşul `§DK`: enum'lar veriye eşit olmadan bu kapı doğruları reddeder.",

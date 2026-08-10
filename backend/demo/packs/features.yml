@@ -277,6 +277,23 @@ features:
   # söylüyordu (`parti.musteri` → `M1001…`, oysa veri *TOROS ÖRME…* tutuyor) ve kapı
   # DOĞRU sorguları reddederdi. *Bir doğrulayıcı, doğruladığı kaynaktan güvenilir olamaz.*
   deger_capasi: "beta"
+  # 🔴🔴 `C1`+`C3` — TERS YÖN ALANI: sistem sözlüğünü **kullanımdan** yazar.
+  #
+  # Kullanıcı kararı (`E-7`): *«belki bunu sorgu içinde çözeriz, ayrı LLM sorgusu
+  # olmayacak — çok vakit ve maliyet kaybı olur.»* Bugünkü `prompt_enhancer` bir
+  # **ikinci tur**dur; bu alan **0 ek tur** ister: Intent çağrısı kataloğu zaten görüyor
+  # ve model `zayiat → toplam_fire_kg` eşlemesini **zaten yapıyor** — ondan istenen tek
+  # şey onu **söylemesi**.
+  #
+  # Biçim bilinçli (`C1`, kullanıcı: *«katalogdaki kelimelerden birinin eş anlamlısı var
+  # mı diye bakacak — nokta atışı»*): çıktı serbest metin değil **katalogdan bir ad**;
+  # `eslesen_terim_oku` onu beyaz listede sınar → model ad **uyduramaz, seçer**.
+  #
+  # ⚠ `cube_query`'nin parçası DEĞİL: alt çizgili taşıyıcı olarak okunur, `_canon_cq`
+  # onu kimlikten saymaz (oy bölünmez), huni boşaltır, derleyiciye gitmez.
+  # ⚠ `B-8`'in sert sınırı: eşleme **izde görünür** — sessiz bir öğrenme bir sızıntıdır.
+  # ⚠ Belirsizlik burada ÇÖZÜLMEZ: `bakiye` gibi ≥2 sahipli terim kuyruğa DÜŞMEZ.
+  ters_yon_alani: "beta"
   # 🔴🔴 **AÇILDI (2026-08-09) — ve gerekçesi bir umut değil bir SAYI.**
   #
   # ⟳ Bir kez kapalı bırakılmıştı: `EE` turunun A/B'si arıza oranını %55 → **%65**

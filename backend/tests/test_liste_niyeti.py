@@ -170,9 +170,34 @@ def test_ACIK_GRAFIK_istegi_TABLOYU_yener(client):
     assert d.get("view_hint") == "pie"
 
 
-def test_DONEMSIZ_liste_hala_DONEM_soruyor(client):
-    """Liste niyeti dönem kapısını devre dışı bırakmamalı."""
+def test_DONEMSIZ_liste_DONEMI_BEYAN_EDER(client):
+    """Liste niyeti dönem kapısını devre dışı bırakmamalı.
+
+    ⟳ **BEKLENTİ GÜNCELLENDİ (2026-08-10, `D3`) — ve gerekçesi bir ÖLÇÜMdür.**
+
+    Bu test *«hâlâ SORUYOR mu»* diye kilitliyordu ve `varsayilan_donem` **kapalıyken**
+    doğruydu. Bayrak `D3`'te ölçülüp **açıldı**: korpus doğru-cube **%94,9 → %95,0**,
+    🔴 `sessiz_yanlis` **8 → 8 (değişmedi)** → `F1.1`'in durdurma şartı tetiklenmedi.
+
+    ⊙ Değişmeyen şey **kapının kendisi**: dönem hâlâ bir karar noktası ve cevap hâlâ
+    onu **beyan ediyor** — yalnız artık *sormak* yerine *söyleyerek varsayıyor*:
+    *«⏱ Dönem belirtmedin — verinin son 12 ayı alındı (…). Başka bir dönem yazarsan
+    onu uygularım.»* Netleştirme **kaldırılmadı**, ikinci seçenek oldu (aralık
+    ölçülemezse fail-closed olarak yine sorar).
+
+    🔴 Bu yüzden kilit **gevşetilmedi, YÖNÜ değişti**: eskiden *«soru soruyor mu»*,
+    şimdi *«dönemi beyan ediyor mu»*. İkisi de aynı şeyi korur — **sessiz bir dönem
+    varsayımı yasaktır**. *Bir varsayımı yapmak değil, yaptığını söylememek yasaktır.*
+
+    ⚠ `D1`'in dersi burada uygulandı: bir bayrağın durumunu teste bağlamak değiştirmeyi
+    zorlaştırmak için değil, **değiştirenin gerekçe yazmasını zorunlu kılmak** içindir.
+    """
     d = client.post("/ask", json={"question": "müşteri bazında ciro listele",
                                   "session_id": "r2p", "execute": True}).json()
-    assert d.get("note") and "dönem" in d["note"].lower()
-    assert [s["label"] for s in (d.get("suggestions") or [])]
+    assert d.get("note") and "dönem" in d["note"].lower(), \
+        "🔴 dönem sessizce varsayıldı — beyan YOK"
+    # 🔴 Ya cevap üretilip dönem BEYAN edilir, ya da netleştirme chip'leri sunulur.
+    # İkisi de olmuyorsa dönem sessizce seçilmiş demektir ve o yasak.
+    assert (d.get("cube_query") or {}).get("filters") \
+        or [s["label"] for s in (d.get("suggestions") or [])], \
+        "🔴 ne dönem süzgeci ne netleştirme — kapı fiilen kalkmış"

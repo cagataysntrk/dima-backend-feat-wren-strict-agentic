@@ -379,6 +379,43 @@ def _cube_select_system(catalog: str) -> str:
         "**yanıtlanamadığı için**.\n"
         "- FİLTRE UYDURMA: filters'ı yalnız kullanıcı bir değeri AÇIKÇA yazdıysa kullan — "
         "katalogdaki değer listeleri seçenek dökümüdür, varsayılan filtre değildir.\n"
+        # 🔴🔴 `C1`+`C3` — **TERS YÖN: KAPALI SEÇİM, açık üretim DEĞİL.**
+        #
+        # Kullanıcı kararı (`E-7`): *"belki bunu sorgu içinde çözeriz, ayrı LLM sorgusu
+        # olmayacak — çok vakit ve maliyet kaybı olur."* Bugünkü `prompt_enhancer` bir
+        # **ikinci tur**dur; bu alan **sıfır** ek tur ister: model eşlemeyi zaten yapıyor,
+        # ondan istenen yalnız **söylemesi**.
+        #
+        # Ve biçim bilinçli (kullanıcı: *"katalogdaki kelimelerden birinin eş anlamlısı
+        # var mı diye bakacak — nokta atışı"*): çıktı serbest metin değil **katalogdan
+        # bir ad**. `eslesen_terim_oku` onu beyaz listede sınar → model bir ad
+        # **uyduramaz, yalnız seçebilir**. Doğrulanamayan bir öneri bir öneri değildir.
+        #
+        # ⚠ Alan **isteğe bağlı** ve `cube_query`'nin bir parçası **değildir**: taşıyıcı
+        # olarak okunur, oylamaya girmez, derleyiciye gitmez.
+        # 🔴🔴 `C1`/`C3` — **TERS YÖN İSTEĞİ BURADAN KALDIRILDI, ve sebebi bir ÖLÇÜM.**
+        #
+        # Model'den eşlemeyi **söylemesi** istendi; iki biçim denendi ve **ikisi de**
+        # canlıda ölçüldü:
+        #
+        #   1. düzyazı talimat, *"isteğe bağlı"*        → alan HİÇ yazılmadı
+        #   2. `Biçim:` şablonunda + **"ZORUNLUDUR"**   → alan YİNE hiç yazılmadı
+        #
+        # Üç turda üçünde de model **doğru çevirdi** (`zayiat→toplam_fire_kg` ·
+        # `hasılat→toplam_ciro` · `alıcı→musteri`) ama çevirisini **söylemedi** — ne
+        # kabul ne red izi.
+        #
+        # ⊙ *Bir modelden cevabı taşımayan bir alanı doldurmasını istemek, ona bir
+        # dipnot yazdırmaktır; cevabı verir, dipnotu atlar.*
+        #
+        # 🔴 Ve hiç doldurulmayan bir talimat **saf maliyettir**: her Intent turunda
+        # `consistency_k=3` kez ödenir. Kök çözüm `cube_router.eslesen_terim_cikar`:
+        # eşleme **çıkarılır** (`bilinmeyen` ∩ route'un ulaşamadığı ad) — sıfır token,
+        # sıfır sağlayıcı bağımlılığı, ve canlıda üçünde de çalıştı.
+        #
+        # ⚠ Okuyucu (`eslesen_terim_oku`) **silinmedi**: şema-yetenekli bir sağlayıcı
+        # alanı **garanti** edebilir (`F8`/`D7`) ve o gün istem tek satırla geri gelir.
+        # *Ölçülmüş olan umut edilene önceliklidir — ama ölçüm bir günün fotoğrafıdır.*
         # 🔴 `AJ3.3` — **İFADE BOŞLUĞU.** *"Tarih yazma"* doğru bir kuraldı ama yarımdı:
         # dönemi yazacak bir ALAN yoktu. Model *"geçen çeyrek"*i hiçbir yere koyamıyordu,
         # tutarlı tek davranışı onu düşürmek ya da tüm soruyu reddetmekti. Takip yolunda

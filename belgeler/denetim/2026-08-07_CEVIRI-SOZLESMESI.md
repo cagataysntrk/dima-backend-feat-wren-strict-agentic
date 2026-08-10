@@ -9306,3 +9306,147 @@ SONRA: 🔎 Süzgeç değeri katalogla eşleştirildi: «3» → «3. Vardiya (0
 *Bir katalog, sorgunun kullanacağı ifadeden başka bir yerden okunuyorsa er ya da geç
 ondan ayrışır — ve ayrıştığı gün kimse fark etmez, çünkü ikisi de geçerli birer cevap
 üretir.*
+
+---
+
+# 🔴 TUR — 2026-08-10 · **`C3-D`: SÖZLÜĞÜ ELLE DE YAZMA, LLM'DEN DE İSTEME — ÇIKAR**
+
+> Kullanıcı kuralı: *"tek tek sinonim yazmak mesela aptallık."* Bu tur o kuralın
+> **ikinci yarısını** buldu: LLM'den istemek de bir çözüm değil, yalnız aynı işi her
+> gün **yeniden satın almak**.
+
+## Denenen ve ÖLÇÜLEN iki yol
+
+| # | yaklaşım | ek maliyet | canlı sonuç |
+|---|---|---|---|
+| 1 | `prompt_enhancer` *(mevcut, `off`)* | 🔴 **+1 LLM turu** | `C6`'da ölçülüp reddedilmişti |
+| 2 | `eslesen_terim` alanı — modelden **iste** | 0 tur, **+379 karakter × k=3** | 🔴 **iki biçim, iki başarısızlık** |
+| 3 | ✅ **`C3-D` — çıkar** | **0 token** | ✅ dördü de çalıştı |
+
+### İkinci yol neden düştü — ve iki kez ölçüldü
+
+```
+deneme 1: düzyazı talimat, "isteğe bağlı"        → alan HİÇ yazılmadı
+deneme 2: `Biçim:` şablonunda + "ZORUNLUDUR"     → alan YİNE hiç yazılmadı
+```
+
+Üç turda üçünde de model **doğru çevirdi** — `zayiat→toplam_fire_kg` ·
+`hasılat→toplam_ciro` · `alıcı→musteri` — ama çevirisini **söylemedi**. Ne kabul ne red
+izi (INFO seviyesinin göründüğü doğrulandı: aynı kütükte `intent: 3 oy` satırları var).
+
+⊙ *Bir modelden cevabı taşımayan bir alanı doldurmasını istemek, ona bir dipnot
+yazdırmaktır; cevabı verir, dipnotu atlar.*
+
+🔴 İstem eklentisi **geri alındı** (3941 → **3562** karakter). Hiç doldurulmayan bir
+talimat saf maliyettir ve her Intent turunda **üç kez** ödenir.
+
+## Kök çözüm — sinyaller ZATEN elde, ve zaten izde
+
+```
+niyet: … bilinmeyen=zayiat        ← route'un çözemediği kelime
+cq:   measures:["toplam_fire_kg"] ← garsonun seçtiği ad
+```
+
+Eşleme bu ikisinin **kesişimi**. Kural bilerek dar: tam **bir** bilinmeyen · route'un
+**kendi sözlüğüyle ulaşabildiği** adlar elenir · geriye tam **bir** hedef kalmalı.
+
+```
+✅ «bu yıl zayiat ne kadar»          → ters-yön eşlemesi: «zayiat» → `toplam_fire_kg`
+✅ «bu yıl kayıp kilo ne kadar»      → «kayip»   → `toplam_fire_kg`
+✅ «bu yıl alıcı bazında ciro»       → «alici»   → `musteri`
+       ⊙ `ciro` route'un sözlüğünde VAR → elendi; `musteri` YOK → kaldı
+✅ «bu yıl alıcı bazında hasılat»    → eşleme YOK (doğru!)
+       ⚠ iki bilinmeyen: hangi kelime hangi ada gidiyor BİLİNEMEZ → sus
+⚪ «bu yıl tezgah bazında oee»       → route zaten biliyor (source=cube) → öğrenilecek yok
+```
+
+## Hasat bağlandı — ve **göç (migration) gerekmedi**
+
+`interaction_log.trace_json` sütunu **zaten vardı**; iz bu deponun makbuzudur ve
+makbuzu okumak yeni bir depo kurmaktan iyidir.
+
+```
+kanıtlı eşleme: 4
+  «zayiat» → {toplam_fire_kg: 2}   ← eşiği geçti (ASGARI_SIKLIK=2) → ADAY
+  «hasilat» → {toplam_ciro: 1}     ← seyrek
+  «alici»  → {musteri: 1}          ← seyrek
+  «kayip»  → {toplam_fire_kg: 1}   ← seyrek
+```
+
+⚠ `C5`'in üç sert kuralı **burada da** geçerli: aynı kelime farklı adlara çözülmüşse
+(`bakiye` → `cari`|`mizan`) bu bir sinonim değil bir **belirsizliktir** ve kuyruğa
+**girmez** — onu yazmak, bugün `D6`'da ölçülen ₺11,86 milyonluk seçimi **kalıcı**
+yapmak olurdu.
+
+> ⊙ Farkın büyüklüğü: *«`zayiat` bilinmiyor»* bir **sorudur** — bir insanın oturup
+> düşünmesini ister. *«`zayiat` = `toplam_fire_kg`, 14 kez böyle çözüldü»* bir
+> **cevaptır** — yalnız **onay** ister.
+
+## Ve bu tur `D7`'yi de kapattı — kendi ölçümüyle
+
+Turun ortasında şema kısıtının (`F8`) bir işe daha yaradığını gördüm: **bir alanın
+üretilmesini garanti etmek** — `C3`'ün tam ihtiyacı. Gerekçemi düzeltmeye
+hazırlanıyordum. Sonra `C3-D` eşlemeyi deterministik çıkardı ve **o ihtiyaç ortadan
+kalktı**.
+
+*Bir bağımlılığı kabul etmeden önce onu gereksiz kılmayı denemek gerekir; çoğu zaman
+gereken şey yeni bir sağlayıcı değil, elde olanı okumaktır.*
+
+## 🔴 SÜİT ÜÇ KIRMIZI VERDİ — ve üçü de FARKLI sınıf (politikanın faturası, tekrar)
+
+Demet sonunda hedefli süit koşuldu (`route` · oylama · niyet dosyaları, 267 test):
+
+| # | test | sınıf | karar |
+|---|---|---|---|
+| 1 | `test_ROUTE_NIYETI_GORMUYOR` | 🟡 **YANLIŞ-POZİTİF** | yüklem düzeltildi |
+| 2 | `test_DONEMSIZ_liste_hala_DONEM_soruyor` | ⚪ **bayrak kilidi bayatladı** | beklenti gerekçesiyle güncellendi |
+| 3 | `test_TANINMIS_NIYET_BIR_VERI_SINYALIDIR` | 🔴 **GERÇEK ÜRÜN KUSURU** | kök teşhis edildi, sıradaki iş |
+
+### 1 · Yanlış-pozitif — `§101.1`'in ders kitabı örneği
+
+Yüklem `"import niyet" not in src` idi; bu bir **alt-dize** aramasıdır ve
+`from app.followup import niyet_kalibi_var` satırını **ihlal sandı**. Oysa o satır
+`niyet` modülünü değil `followup`u import ediyor — mimari sözleşme **delinmemişti**.
+
+⊙ *Bir yanlış-pozitif yüklem, kapatmaya çalıştığı kusurdan pahalıdır — çünkü kusur
+bazen olur, yanlış-pozitif **her seferinde**.* Yüklem artık modül yolunu **kelime
+sınırıyla** arıyor.
+
+### 2 · Bayrak kilidi — kaldırılmadı, YÖNÜ değişti
+
+Test *«hâlâ SORUYOR mu»* diye kilitliyordu; `varsayilan_donem` `D3`'te ölçülüp açıldı.
+Kilit gevşetilmedi: artık *«dönemi BEYAN ediyor mu»* diye soruyor. İkisi de aynı şeyi
+korur — **sessiz bir dönem varsayımı yasaktır**.
+
+### 3 · 🔴 Gerçek kusur — ve tablo kanıtı KENDİ İÇİNDE taşıyor
+
+```
+niyet_kalibi_var("bu grafiği yorumla")     → 'anlat'   ✅
+niyet_kalibi_var("bunu nasıl yorumlarsın") →  None     🔴
+```
+
+`yorumla` bir **fiil kökü**; `yorumlarsın` = `yorumla` + `-r` (geniş zaman) + `-sın`
+(2. tekil). `_hit` → `_syn_hit` → `_ek_gecerli` zinciri **ad çekimi** doğrulayıcısıdır,
+**fiil çekimi** değil. Yani fiil kökü taşıyan her kalıp yalnız emir kipinde eşleşiyor.
+
+⊙ **Ve `_ANLAT` tablosu kanıtı kendi içinde taşıyor:**
+
+```python
+_ANLAT = ("analiz et", "analiz eder", "analizini", "yorumla", "yorumlar misin",
+          "yorumun", "yorumlasana", "degerlendir", "aciklar misin", "acikla", …)
+```
+
+Dört giriş **iki fiilin elle yazılmış çekimidir** (`yorumla`/`acikla`). Tam kullanıcının
+*"tek tek sinonim yazmak aptallık"* dediği desen — ve bu sefer sinonim değil **çekim**.
+
+🔴 **Bedeli `R2` sınıfı:** *«bunu nasıl yorumlarsın»* tanınmış bir niyet taşımıyor
+sayılıyor → sosyal kapı onu bir kapanış sanabiliyor → *«Görüşürüz!»*. En üst kuralın
+(*«anlamadım/görüşürüz YOK»*) doğrudan ihlali.
+
+**Kök çözüm (sıradaki iş):** `ADR-0008`'in izin verdiği **kapalı dilbilgisel sınıf** —
+fiil çekim eki zinciri (geniş zaman + kişi + yeterlilik + soru), tıpkı ad çekimi zinciri
+gibi. Liste büyütmek değil, **zinciri tamamlamak**.
+
+⚠ Dikkat gerekiyor: `acikla` ile katalogdaki `acik` (`açık bakiye`) komşu; gevşek bir
+zincir sosyal kapıda yanlış-pozitif üretir — yani `§101.1` bu sefer **düzeltmenin
+kendisine** bakıyor. Bu yüzden ölçülerek yapılacak, aceleye getirilmeyecek.

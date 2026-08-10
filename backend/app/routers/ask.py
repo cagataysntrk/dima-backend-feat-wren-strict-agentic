@@ -922,8 +922,22 @@ def _bos_cevap_olamaz(resp: AskResponse, soru: str = "") -> AskResponse:
 
 
 def _canon_cq(cq: dict) -> str:
-    """Oylama için kanonik CubeQuery formu (liste sıraları normalize)."""
+    """Oylama için kanonik CubeQuery formu (liste sıraları normalize).
+
+    🔴 **ALT ÇİZGİ = TAŞIYICI, KİMLİK DEĞİL.** Bu depo taşıyıcı alanları zaten alt
+    çizgiyle adlandırıyordu (`donem_capasi._TASIYICI = "_capa_notu"`) ama kural **yazılı
+    değildi** — ve yazılı olmayan bir konvansiyon, ona uymayan bir satır yazılana kadar
+    çalışır. Oylamadan **önce** iliştirilen herhangi bir taşıyıcı üç örneği üç ayrı kovaya
+    düşürür, uyum oranını düşürür ve doğru bir cevabı netleştirmeye çevirirdi.
+
+    ⊙ `C3`'ün (`_eslesen_terim`) bunu **zorunlu** kıldı: eşleme örnekten örneğe değişir,
+    çünkü kullanıcının hangi sözünü rapor edeceği modelin tercihidir. Bir **makbuz
+    alanının** oyu bölmesi, makbuzu bir sorgu alanı sanmaktır.
+
+    *Bir kimliği tanımlarken neyin kimlik OLMADIĞINI da söylemek gerekir.*
+    """
     c = json.loads(json.dumps(cq, sort_keys=True))
+    c = {k: v for k, v in c.items() if not str(k).startswith("_")}
     for key in ("measures", "dimensions"):
         if key in c:
             c[key] = sorted(c[key])
@@ -1072,6 +1086,28 @@ def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
             if cq is None:
                 _log.info("intent: whitelist REDDİ (sema=%s) — ham=%.200s",
                           "acik" if sema is not None else "kapali", ham)
+            # 🔴 `C1`+`C3` — **TERS YÖN ALANI: 0 ek tur.** Model `zayiat → toplam_fire_kg`
+            # eşlemesini **zaten yapıyor**; ondan istenen tek şey onu **söylemesi**.
+            # Alan **kapalı seçim**dir (katalogdan bir ad ya da hiçbiri) ve `eslesen_
+            # terim_oku` onu beyaz listede sınar — model bir ad **uyduramaz, seçer**.
+            #
+            # ⚠ Taşıyıcı alt çizgiyle iliştirilir → `_canon_cq` onu **kimlikten sayMAZ**,
+            # yani oy bölünmez. Bir makbuz alanının oyu bölmesi, makbuzu bir sorgu alanı
+            # sanmaktır.
+            if cq is not None:
+                try:
+                    _t = cube_router.eslesen_terim_oku(ham, index, cq.get("cube"))
+                    if _t:
+                        cq[cube_router.TERIM_TASIYICI] = _t
+                        # 🔴 `ADR-0020` — sessiz yutma yok: alanın **doldurulup
+                        # doldurulmadığı** ölçülebilir olmalı, yoksa `on` şartındaki
+                        # *«kuyruğa kaç aday düştü»* sorusu cevapsız kalır.
+                        _log.info("intent: ters yön «%s» → %s", _t["soz"], _t["ad"])
+                    elif '"eslesen_terim"' in (ham or ""):
+                        _log.info("intent: ters yön alanı REDDEDİLDİ (kapalı seçim "
+                                  "doğrulaması) — ham=%.160s", ham)
+                except Exception:                      # noqa: BLE001 — tur düşmez
+                    _log.warning("ters yön alanı okunamadı (best-effort)", exc_info=True)
             return cq
         except Exception:
             # 🔴 **`§47` — GARSONUN DÜŞMESİ GÖRÜNMEZDİ ve bu `ADR-0020` ihlaliydi**
@@ -2691,6 +2727,29 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # gösterdi ve teşhisi o verdi. *Bir ölçüm aracının yakaladığı sayı, bazen
         # ölçtüğü şey değil, ölçemediği şeydir.*
         note, trace = _capa.notu_al(cq, note, trace)
+        # 🔴 `C1`+`C3` — **TAŞIYICI BURADA BOŞALTILIR ve EŞLEME İZE YAZILIR.**
+        #
+        # `B-8`'in sert sınırı: *eşleme izde görünür*. Sessiz bir öğrenme bir öğrenme
+        # değil bir **sızıntıdır** — ve bir sinonim kuyruğa girecekse kanıtı görünür
+        # olmalı. İz `trace_json` ile `interaction_log`'a **zaten** yazılıyor, yani
+        # kalıcılık için yeni bir sütun (ve bir göç) gerekmiyor: `sinonim_hasadi` onu
+        # sabit önekten okur.
+        #
+        # ⚠ Boşaltma **zorunlu**: kalırsa `cube_query` cevaba sızar ve daha kötüsü SQL
+        # derleyicisine bilinmeyen bir alan olarak gider (`KÖK-4`'ün aynı dersi).
+        _terim = cq.pop(cube_router.TERIM_TASIYICI, None) if isinstance(cq, dict) else None
+        # 🔴 `C3-D` — **ÇIKARIM ÖNCE GELİR.** Modelin bildirdiği alan iki canlı ölçümde
+        # de **hiç gelmedi** (bkz. `eslesen_terim_cikar` docstring'i); çıkarım ise
+        # deterministik, sağlayıcıdan bağımsız ve **sıfır ek token**. Bildirilen alan
+        # yalnız çıkarım susunca kullanılır — *ölçülmüş olan, umut edilene önceliklidir.*
+        if not _terim and source and source.endswith("llm"):
+            try:
+                _terim = cube_router.eslesen_terim_cikar(q_norm, cq, schema)
+            except Exception:                          # noqa: BLE001 — tur düşmez
+                _log.warning("ters yön çıkarımı başarısız (best-effort)", exc_info=True)
+        if _terim and "ters_yon_alani" in resolve_for(settings, principal):
+            trace = [*trace, f"{cube_router.TERIM_IZ_ONEKI}"
+                             f"«{_terim['soz']}» → `{_terim['ad']}`"]
         # 🔴🔴 `B9` — **ODAK VARLIK HUNİDE ÇÖZÜLÜR** (`§34`'ün aynı gerekçesi).
         #
         # Ölçülen kusur — canlıda İKİ thread'de, aynı kök:

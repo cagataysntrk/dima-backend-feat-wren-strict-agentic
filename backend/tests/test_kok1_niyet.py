@@ -111,12 +111,30 @@ def test_ROUTE_DAVRANISI_DEGISMEDI(q, schema):
 
 def test_ROUTE_NIYETI_GORMUYOR():
     """🔴 **Yapısal güvence**: `cube_router` bu modülü import ETMEMELİ. Bir gün ederse
-    Faz 1'in *"sıfır müdahale"* sözleşmesi sessizce delinmiş olur."""
+    Faz 1'in *"sıfır müdahale"* sözleşmesi sessizce delinmiş olur.
+
+    ⟳ **YÜKLEM DÜZELTİLDİ (2026-08-10) — kapı YANLIŞ-POZİTİF veriyordu (`§101.1`).**
+
+    İlk yazım `"import niyet" not in src` diyordu; bu bir **alt-dize** aramasıdır ve
+    `from app.followup import niyet_kalibi_var` satırını **ihlal sanıyordu**. Oysa o
+    satır bu modülü değil `followup`u import ediyor — sözleşme **delinmemişti**.
+
+    ⊙ Ve maliyeti gerçek: kapı, kendisini hiç ilgilendirmeyen bir değişiklikte kırmızı
+    verdi; bir sonraki okuyanın önce *"gerçek bir ihlal mi?"* diye araştırması gerekti.
+    *Bir yanlış-pozitif yüklem, kapatmaya çalıştığı kusurdan pahalıdır — çünkü kusur
+    bazen olur, yanlış-pozitif HER SEFERİNDE.*
+
+    Yeni yüklem **modül yolunu** arıyor: `app.niyet` ya da `from .niyet` / `import niyet`
+    **kelime sınırıyla** — `niyet_kalibi_var` gibi başka bir adın öneki olamaz.
+    """
+    import re
+
     from app import cube_router as cr
 
     src = pathlib.Path(cr.__file__).read_text(encoding="utf-8")
-    assert "app.niyet" not in src and "import niyet" not in src, \
-        "🔴 route() niyet nesnesini görüyor — Faz 1 sözleşmesi delindi"
+    ihlal = re.search(r"\b(?:from\s+(?:app\.)?niyet\b|import\s+niyet\b(?!_))", src)
+    assert not ihlal, \
+        f"🔴 route() niyet nesnesini görüyor — Faz 1 sözleşmesi delindi: {ihlal!r}"
 
 
 def test_NIYET_DEGISTIRILEMEZ():

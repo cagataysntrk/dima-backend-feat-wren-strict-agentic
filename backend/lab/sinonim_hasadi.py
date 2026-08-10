@@ -116,6 +116,73 @@ def _sorulari_oku() -> list[str]:
         return [str(q) for q in oturum.exec(select(InteractionLog.question)).all() if q]
 
 
+def eslesmeleri_oku() -> dict[str, dict[str, int]]:
+    """🔴🔴 `C3-D` — **KANITLI ADAYLAR: garsonun ÇÖZDÜĞÜ eşlemeler.**
+
+    Hasadın bugüne kadarki tek girdisi *"hangi kelime bilinmiyordu"*ydu — yani bir
+    **eksiklik listesi**. Ama sistem her turda eksikliğin **karşılığını da** buluyor:
+    garson `zayiat`ı `toplam_fire_kg`'ye çeviriyor ve `§C3-D` bunu **çıkarıp ize
+    yazıyor** (`ters-yön eşlemesi: «zayiat» → `toplam_fire_kg``).
+
+    ⊙ Fark büyük: *"`zayiat` bilinmiyor"* bir **soru**dur; *"`zayiat` = `toplam_fire_kg`
+    ve bu 14 kez böyle çözüldü"* bir **cevaptır**. İlki bir insanın oturup düşünmesini
+    ister, ikincisi yalnız **onay** ister.
+
+    ⚠ Kaynak `trace_json` ve sütun **zaten var** — bir göç (migration) gerekmedi. İz bu
+    deponun makbuzudur; makbuzu okumak yeni bir depo kurmaktan iyidir.
+
+    Döner: `{kelime: {katalog_adi: kaç_kez}}`.
+    """
+    import json as _json
+    import re as _re
+
+    try:
+        from sqlmodel import select
+
+        from control_plane.db import get_session
+        from control_plane.models import InteractionLog
+    except Exception:                                        # noqa: BLE001
+        return {}
+    from app.cube_router import TERIM_IZ_ONEKI
+
+    desen = _re.compile(_re.escape(TERIM_IZ_ONEKI) + r"«(.+?)» → `(.+?)`")
+    out: dict[str, dict[str, int]] = {}
+    with next(get_session()) as oturum:                      # type: ignore[call-overload]
+        for ham in oturum.exec(select(InteractionLog.trace_json)).all():
+            if not ham or TERIM_IZ_ONEKI not in str(ham):
+                continue
+            try:
+                izler = _json.loads(ham)
+            except Exception:                                # noqa: BLE001
+                continue
+            for iz in izler if isinstance(izler, list) else []:
+                m = desen.search(str(iz))
+                if m:
+                    out.setdefault(m.group(1), {})
+                    out[m.group(1)][m.group(2)] = out[m.group(1)].get(m.group(2), 0) + 1
+    return out
+
+
+def eslesme_sinifi(kelime: str, hedefler: dict[str, int], schema: dict) -> str:
+    """Kanıtlı bir eşlemenin sınıfı — ve `C5`'in üç sert kuralı **burada da** geçerli.
+
+    * 🔴 **çelişkili**: aynı kelime farklı turlarda farklı adlara çözülmüşse bu bir
+      sinonim değil bir **belirsizliktir**. Onu sözlüğe yazmak, `bakiye`'nin ₺11,86
+      milyonluk seçimini **kalıcı** yapmakla aynı hatadır.
+    * ⚠ **seyrek**: tek görülen bir eşleme bir örüntü değil bir **olaydır**.
+    * ✅ **aday**: tutarlı ve yeterince görülmüş → onaya hazır.
+
+    ⚠ Ve `siniflandir` yine sorulur: kelimenin katalogda **≥2 sahibi** varsa eşleme
+    tutarlı görünse bile kuyruğa **girmez**.
+    """
+    if len(hedefler) > 1:
+        return "celiskili"
+    if sum(hedefler.values()) < ASGARI_SIKLIK:
+        return "seyrek"
+    sinif, _sahipler = siniflandir(kelime, schema)
+    return "aday" if sinif == "aday" else sinif
+
+
 def siniflandir(kelime: str, schema: dict) -> tuple[str, list[str]]:
     """Kelime **aday** mı, **belirsizlik** mi, **menü boşluğu** mu? → `(sınıf, sahipler)`.
 
