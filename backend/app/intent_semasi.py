@@ -63,6 +63,24 @@ ALAN_REHBERI = (
     'fark"} ve İKİ ölçüyü de measures\'a yaz. «üretimin yüzde kaçı fire», «toplam '
     "içindeki payı» bunun içindir. ⚠ Katalogda hazır bir oran ölçüsü VARSA "
     "(ör. `…_orani_yuzde`) **onu** seç, turev yazma.\n"
+    # 🔴🔴 `§AR/Ö` — **KURAL VARDI, ÖRNEK YOKTU — ve bu depo aynı kusuru bir kez
+    # ölçmüştü** (`AJ3.5`: *«dar düzenleme yapan `refine_cube` prompt'unda 4 örnek
+    # vardı, doğal dili yorumlayan bu prompt'ta 0. Zor işi yapana örnek verilmemişti»*).
+    #
+    # ⊙ Ölçüldü (canlı `XV`, üç ayrı ifade): *«toplam ciromun yüzde kaçı ilk 3
+    # müşteriden»* · *«her müşterinin toplam ciro içindeki payı»* · *«müşterilerin ciro
+    # payı yüzde olarak»* → `pencere` **hiçbirinde** yazılmadı, hepsi `null`. Oysa kural
+    # üç satır yukarıda yazılı ve **Intent istemi onu yıllardır taşıyor**.
+    #
+    # ⚠ Örnek **rehberin içinde** duruyor, `llm.py`'nin örnek bloğunda değil: rehber
+    # iki istem tarafından okunuyor (`§AR`) ve kuralı örneğinden ayırmak, ikisinden
+    # birini taşımayı unutmaya davettir.
+    #
+    # *Bir kuralı yazmak onu okunur yapar; bir örnek vermek uygulanabilir.*
+    "  ⊙ ÖRNEK: «toplam cironun yüzde kaçı ilk 3 müşteriden» → "
+    '{"measures":["<ciro>"],"dimensions":["<müşteri>"],'
+    '"pencere":{"taban":"<ciro>","kip":"pay"},'
+    '"order":{"measure":"<ciro>","direction":"desc"},"limit":3}\n'
 )
 
 

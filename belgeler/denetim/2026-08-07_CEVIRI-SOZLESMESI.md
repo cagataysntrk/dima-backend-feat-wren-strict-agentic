@@ -8816,3 +8816,40 @@ ya da route tarafında deterministik bir *«payı/yüzde kaçı»* → `pencere:
 ikincisi `§99.1` riski taşır, ölçülmeli.
 
 **Kapı (tur başı):** 4487 yeşil · korpus **%94.9** · `sessiz_yanlis` **8** · eval +0.0%.
+
+---
+
+## `XVI` TURU — **KURAL YETMEDİ, ÖRNEK ÇÖZDÜ** *(2026-08-10)*
+
+Geçen tur `pencere:pay`'ın *«öğretilmiş ama kullanılmıyor»* olduğunu ölçüp açık borç
+yazmıştım. Bu tur sebebi bulundu ve **bu depo aynı kusuru bir kez ölçmüştü**:
+
+> `AJ3.5`: *«dar düzenleme yapan `refine_cube` prompt'unda **4 örnek** vardı, doğal dili
+> yorumlayan bu prompt'ta **0**. Zor işi yapana örnek verilmemişti.»*
+
+Bugünkü hâli birebir aynı: kural üç satır yazılıydı (*«toplam içindeki payı / yüzde
+kaçı» → **pay***), **örnek yoktu**.
+
+### Ölçüm — öncesi ve sonrası
+
+| soru | önce | **sonra** |
+|---|---|---|
+| *«bu yıl toplam ciromun **yüzde kaçı** ilk 3 müşteriden»* | `pencere=null` · 3 adımlık dolambaç | 🟢 **3 satır** · `pencere:{taban,kip:pay}` · `_p_pay = %18,12` |
+| *«bu yıl müşterilerin **ciro payı yüzde olarak**»* | `pencere=null` · 8 satır, pay yok | 🟢 **8 satır** · pay sütunlu |
+
+⊙ Aynı kural, aynı model, aynı katalog — değişen tek şey **bir örnek**.
+
+> *Bir kuralı yazmak onu okunur yapar; bir örnek vermek uygulanabilir.*
+
+⚠ Örnek **rehberin içine** kondu (`intent_semasi.ALAN_REHBERI`), `llm.py`'nin örnek
+bloğuna değil: rehberi iki istem birden okuyor (`§AR`) ve kuralı örneğinden ayırmak,
+ikisinden birini taşımayı unutmaya davettir.
+
+### Ve geçen turun dürüstlüğü karşılığını verdi
+
+Geçen tur *«kazanç ölçülmedi ve ölçülmediği yazıldı»* diye kaydetmiştim. O kayıt bu
+turun **başlangıç noktası** oldu: borç adıyla duruyordu, sebebi arandı, bulundu.
+
+*Ölçülmemiş bir kazancı ölçülmüş gibi yazmak, onu bir daha aramamaktır.*
+
+**Kapı (tur başı):** 4489 yeşil · korpus **%94.9** · `sessiz_yanlis` **8** · eval +0.0%.
