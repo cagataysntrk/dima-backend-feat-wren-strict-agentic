@@ -74,12 +74,22 @@ measures:
   - name: agir_sikayet_yuzde
     expression: "ROUND(100.0 * SUM(CASE WHEN siddet = 'AĞIR' THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1)"
     type: DOUBLE
+    # 🔴 `§YB` — YÖN BEYANI. Beyan yoksa *«en kötü»* **en DÜŞÜĞÜ** seçer.
+    # ⊙ Ölçüldü (canlı): *«bu yıl en kötü bakım maliyeti olan makine»* →
+    # `direction: asc` → **en ucuz** makine döndü, `source=cube`, beyansız.
+    # Bir maliyet için *«çok olan iyidir»* varsaymak, cevabı tersine çevirir.
+    lower_is_better: true
     unit: "%"
     additive: non
     synonyms: [ağır şikayet oranı, ciddi şikayet oranı, kritik şikayet]
   - name: ort_sapma_dE
     expression: "ROUND(AVG(sapma_dE),3)"
     type: DOUBLE
+    # 🔴 `§YB` — YÖN BEYANI. Beyan yoksa *«en kötü»* **en DÜŞÜĞÜ** seçer.
+    # ⊙ Ölçüldü (canlı): *«bu yıl en kötü bakım maliyeti olan makine»* →
+    # `direction: asc` → **en ucuz** makine döndü, `source=cube`, beyansız.
+    # Bir maliyet için *«çok olan iyidir»* varsaymak, cevabı tersine çevirir.
+    lower_is_better: true
     unit: "dE"
     additive: non
     # 🔴 DARALTILDI: `sapma`·`renk sapması`·`ortalama sapma`·`delta e` çıplak hâlleriyle

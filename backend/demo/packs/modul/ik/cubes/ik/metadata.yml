@@ -30,6 +30,11 @@ measures:
     # İşverene toplam maliyet = brüt + SGK işveren payı (bordro maliyeti).
     expression: "SUM(brut_maas + sgk_isveren)"
     type: DOUBLE
+    # 🔴 `§YB` — YÖN BEYANI. Beyan yoksa *«en kötü»* **en DÜŞÜĞÜ** seçer.
+    # ⊙ Ölçüldü (canlı): *«bu yıl en kötü bakım maliyeti olan makine»* →
+    # `direction: asc` → **en ucuz** makine döndü, `source=cube`, beyansız.
+    # Bir maliyet için *«çok olan iyidir»* varsaymak, cevabı tersine çevirir.
+    lower_is_better: true
     unit: "₺"
     # ⚠ `işçilik maliyeti` KALDIRILDI → `maliyet.iscilik_maliyet_kg`in (kg başına birim
     # maliyet, ürün maliyetlendirmesinin parçası). Burası BORDRO toplamıdır.
@@ -40,6 +45,11 @@ measures:
   - name: toplam_mesai_ucreti
     expression: SUM(mesai_ucreti)
     type: DOUBLE
+    # 🔴 `§YB` — YÖN BEYANI. Beyan yoksa *«en kötü»* **en DÜŞÜĞÜ** seçer.
+    # ⊙ Ölçüldü (canlı): *«bu yıl en kötü bakım maliyeti olan makine»* →
+    # `direction: asc` → **en ucuz** makine döndü, `source=cube`, beyansız.
+    # Bir maliyet için *«çok olan iyidir»* varsaymak, cevabı tersine çevirir.
+    lower_is_better: true
     unit: "₺"
     synonyms: [mesai, fazla mesai, mesai ücreti, ek mesai]
   - name: toplam_prim

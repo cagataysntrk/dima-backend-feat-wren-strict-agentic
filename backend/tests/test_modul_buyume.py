@@ -571,6 +571,19 @@ MUAFIYET_ASK_KOD = [
      "`V17`'nin kusuru tam da yeni sorgu koşmaktı. *Bir fişi okumak için mutfağa gidilmez.*"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("yb-yon-beyani-cagirana-gecirildi", 1,
+     "🔴🔴 **`§YB` — BEYAN VARDI, ÇAĞIRAN OKUMUYORDU.** `_direction`'ın `az_iyi` "
+     "parametresi `§W-C`'de eklendi ve doğru çalışıyor (*«en kötü»* + `lower_is_better` "
+     "→ `DESC`); ama route'un **kendi** sıralaması onu hiç geçirmiyordu — `siralama."
+     "tamamla` dışında kimse geçirmiyordu. "
+     "⊙ Ölçüldü (canlı curl): *«bu yıl **en kötü** bakım maliyeti olan makine»* → "
+     "`direction: asc` → **ROTASYON BASKI · 15.161 ₺**, yani **EN UCUZ** makine; "
+     "`source=cube`, beyan yok. Bir maliyette *«en kötü»* en yükseğidir. "
+     "⚠ Ve beyan **eksik değildi**: `bakim_maliyeti` pack'te ilan edilmiş ve şemaya "
+     "ulaşıyordu. Kusur bilgide değil, bilgiyi **okumayan çağırandaydı**. "
+     "⊙ Δ = 1: `direction = _direction(q, <az_iyi>)` tek satıra sığdı. "
+     "⚠ **TAŞINAMAZ:** karar `route()`in **kendi** sıralama satırıdır. "
+     "*Bir beyanı bir çağıranda okumak, onu beyan etmiş saymaz.* `sha=f9cd3cb`"),
     ("eb-t-ayirt-etmeyen-token-taninir", 1,
      "🔴 **`§EB/T` — AYIRT ETMEYEN AMA TANINAN TOKEN.** ⊙ Ölçüldü: `grubu` iki boyutun "
      "**etiketinden** türediği için kırılım seçiminden düşürüldü (`§EB`) — ve o anda "

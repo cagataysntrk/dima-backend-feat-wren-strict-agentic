@@ -22,6 +22,11 @@ measures:
   - name: ort_birim_maliyet
     expression: "ROUND(AVG(toplam_maliyet_tl_kg),3)"
     type: DOUBLE
+    # 🔴 `§YB` — YÖN BEYANI. Beyan yoksa *«en kötü»* **en DÜŞÜĞÜ** seçer.
+    # ⊙ Ölçüldü (canlı): *«bu yıl en kötü bakım maliyeti olan makine»* →
+    # `direction: asc` → **en ucuz** makine döndü, `source=cube`, beyansız.
+    # Bir maliyet için *«çok olan iyidir»* varsaymak, cevabı tersine çevirir.
+    lower_is_better: true
     unit: "₺/kg"
     additive: non
     synonyms: [birim maliyet, kilo maliyeti, maliyet, ortalama maliyet, kg maliyeti,
@@ -53,6 +58,11 @@ measures:
   - name: kimyasal_maliyet_kg
     expression: "ROUND(AVG(kimyasal_tl_kg),3)"
     type: DOUBLE
+    # 🔴 `§YB` — YÖN BEYANI. Beyan yoksa *«en kötü»* **en DÜŞÜĞÜ** seçer.
+    # ⊙ Ölçüldü (canlı): *«bu yıl en kötü bakım maliyeti olan makine»* →
+    # `direction: asc` → **en ucuz** makine döndü, `source=cube`, beyansız.
+    # Bir maliyet için *«çok olan iyidir»* varsaymak, cevabı tersine çevirir.
+    lower_is_better: true
     unit: "₺/kg"
     additive: non
     # 🔴 KN-2 ÇAKIŞMASI — çıplak `kimyasal maliyeti`/`boya maliyeti` KALDIRILDI.
@@ -70,6 +80,11 @@ measures:
   - name: enerji_maliyet_kg
     expression: "ROUND(AVG(elektrik_tl_kg + dogalgaz_tl_kg),3)"
     type: DOUBLE
+    # 🔴 `§YB` — YÖN BEYANI. Beyan yoksa *«en kötü»* **en DÜŞÜĞÜ** seçer.
+    # ⊙ Ölçüldü (canlı): *«bu yıl en kötü bakım maliyeti olan makine»* →
+    # `direction: asc` → **en ucuz** makine döndü, `source=cube`, beyansız.
+    # Bir maliyet için *«çok olan iyidir»* varsaymak, cevabı tersine çevirir.
+    lower_is_better: true
     unit: "₺/kg"
     additive: non
     # 🔴 Aynı gerekçe (eval `ny-enerji-maliyet-asama`): çıplak `enerji maliyeti`
@@ -79,6 +94,11 @@ measures:
   - name: iscilik_maliyet_kg
     expression: "ROUND(AVG(iscilik_tl_kg),3)"
     type: DOUBLE
+    # 🔴 `§YB` — YÖN BEYANI. Beyan yoksa *«en kötü»* **en DÜŞÜĞÜ** seçer.
+    # ⊙ Ölçüldü (canlı): *«bu yıl en kötü bakım maliyeti olan makine»* →
+    # `direction: asc` → **en ucuz** makine döndü, `source=cube`, beyansız.
+    # Bir maliyet için *«çok olan iyidir»* varsaymak, cevabı tersine çevirir.
+    lower_is_better: true
     unit: "₺/kg"
     additive: non
     synonyms: [işçilik maliyeti, işçilik birim maliyet, emek maliyeti]

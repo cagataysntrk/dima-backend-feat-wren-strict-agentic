@@ -30,6 +30,11 @@ measures:
   - name: nakliye_maliyeti
     expression: SUM(nakliye_tutar)
     type: DOUBLE
+    # 🔴 `§YB` — YÖN BEYANI. Beyan yoksa *«en kötü»* **en DÜŞÜĞÜ** seçer.
+    # ⊙ Ölçüldü (canlı): *«bu yıl en kötü bakım maliyeti olan makine»* →
+    # `direction: asc` → **en ucuz** makine döndü, `source=cube`, beyansız.
+    # Bir maliyet için *«çok olan iyidir»* varsaymak, cevabı tersine çevirir.
+    lower_is_better: true
     unit: "₺"
     synonyms: [nakliye maliyeti, taşıma maliyeti, nakliye gideri, kargo maliyeti]
   - name: toplam_mesafe
@@ -40,6 +45,11 @@ measures:
   - name: km_basi_maliyet
     expression: "ROUND(SUM(nakliye_tutar) / NULLIF(SUM(mesafe_km),0), 2)"
     type: DOUBLE
+    # 🔴 `§YB` — YÖN BEYANI. Beyan yoksa *«en kötü»* **en DÜŞÜĞÜ** seçer.
+    # ⊙ Ölçüldü (canlı): *«bu yıl en kötü bakım maliyeti olan makine»* →
+    # `direction: asc` → **en ucuz** makine döndü, `source=cube`, beyansız.
+    # Bir maliyet için *«çok olan iyidir»* varsaymak, cevabı tersine çevirir.
+    lower_is_better: true
     unit: "₺/km"
     additive: non
     synonyms: [km başı maliyet, kilometre maliyeti, birim nakliye]

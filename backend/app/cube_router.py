@@ -4253,8 +4253,23 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
     if ayrik:
         cq["ayrik_aylar"] = {"dimension": time_dim, "aylar": ayrik}
 
-    # Sıralama/limit (cube SQL'i dışarıdan sarılır — bkz. ask.py)
-    direction = _direction(q)
+    # 🔴🔴 `§YB` — **BEYAN VARDI, BU ÇAĞIRAN GEÇİRMİYORDU.**
+    #
+    # `_direction`'ın `az_iyi` parametresi `§W-C`'de eklendi ve doğru çalışıyor:
+    # *«en kötü»* + `lower_is_better` → `DESC`. Ama route'un **kendi** sıralaması onu
+    # hiç geçirmiyordu; `siralama.tamamla` dışında kimse geçirmiyordu.
+    #
+    # ⊙ Ölçüldü (canlı): *«bu yıl **en kötü** bakım maliyeti olan makine»* →
+    # `direction: asc` → **ROTASYON BASKI · 15.161 ₺**, yani **en ucuz** makine.
+    # `source=cube`, beyan yok. Bir maliyette *«en kötü»* en yükseğidir.
+    #
+    # ⚠ Ve beyan **eksik değildi**: `bakim_maliyeti` pack'te ilan edilmişti ve şemaya
+    # ulaşıyordu. Kusur bilgide değil, bilgiyi **okumayan çağırandaydı** — bu geceki
+    # desenin aynısı: mekanizma var, tek tüketici kullanıyor.
+    #
+    # *Bir beyanı bir çağıranda okumak, onu beyan etmiş saymaz.*
+    direction = _direction(q, measure in (cube_meta.get("lower_is_better") or [])
+                           if measure and cube_meta else None)
     n = _top_n(q, cube_meta)
     has_group = bool(dims or gran)
     # VARLIK top-N: zaman kovalı kırılımda satır limiti seriyi ortadan keser

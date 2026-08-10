@@ -81,6 +81,7 @@ devam ettirir. 🔴 **Kural: her faz commit'inden sonra bu blok güncellenir.**
 | **`3.0`** | tenant açılışı — v1'in **tek sessizce atlanan** maddesi | 🔨 kod |
 | **Bayrak** | `public_api` · `threaded_chat` **kapısız**; `cekirdek_katman` **iki sahipli** | 🔨 kod |
 | **F2 kalanı** | bağlantı · tercih geri alma — ⚠ **gerekçesi yazılı**: ikisi de yeniden kurulabilir | ◐ karar |
+| 🔴🔴 **TABAN BORÇLARI `T-0…T-7`** | **DÖNGÜ KURALINA GİRDİ** (`OPERASYON.md §2c`) — rapor: [`belgeler/denetim/2026-08-10_TABAN-BORCLARI-ve-KATALOG-KOKU.md`](belgeler/denetim/2026-08-10_TABAN-BORCLARI-ve-KATALOG-KOKU.md). Teşhis: *orkestratör bir **tavan** açtı, tabanı yükseltmedi* — taban `route()`+**katalog**, ve bu turun iki sessiz-yanlışının **ikisi de** katalogdan geldi. ⊙ Taze statik ölçüm: **173 ölçü / 141 benzersiz ad / 13 çok sahipli · yön beyanı 125'te YOK (%72)** · «müşteri» **5 ad, 3 ayrık aile** → `blend` yapısal olarak kurulamıyor · `cekirdek/`'te `metrikler` var **`varliklar` YOK** · `eval --slice llm` **4 vaka**. 🔴 Sıra **`T-1` (garson korpusu) birinci**: kurulmadan öteki hiçbir kararın kazancı okunamaz (`G3`'ün haksız geri alınması bu yüzdendi). ⚠ Her demet kapanışında **durumu buraya sayıyla yazılır** | 🔨 kod + ◐ karar |
 
 ### 🔴 KULLANICI TESPİTİ — *"bayrakları hep `off` tuttuk, hiç değişiklik olmadı"*
 

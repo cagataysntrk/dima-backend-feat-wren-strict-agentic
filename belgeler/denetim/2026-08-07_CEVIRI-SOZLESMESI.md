@@ -8853,3 +8853,86 @@ turun **başlangıç noktası** oldu: borç adıyla duruyordu, sebebi arandı, b
 *Ölçülmemiş bir kazancı ölçülmüş gibi yazmak, onu bir daha aramamaktır.*
 
 **Kapı (tur başı):** 4489 yeşil · korpus **%94.9** · `sessiz_yanlis` **8** · eval +0.0%.
+
+---
+
+## `XVII` TURU — **KORPUS ÜRÜNÜ ÖLÇMÜYOR, ve «EN KÖTÜ» TERS CEVAPLANIYORDU** *(2026-08-10)*
+
+Kullanıcı iki şeyi düzeltti ve ikisi de ölçümle doğrulandı.
+
+### 1 · Kapı ritmi — kabul edilen hata
+
+Her turda bir tam kapı koştum. Kural bunun tam tersini söylüyor (*«≥20 senaryo + TÜM
+düzeltmeler → **BİR** kapı»*) ve ölçülmüş bedeli var (5 ayrı kapı ≈35 dk ↔ tek koşum
+7 dk). **Ritim düzeltildi:** biriktir, sonda bir kez koş.
+
+### 2 · Korpus ürünü ölçmüyor — **ölçüldü**
+
+`lab/gercek_dunya.py`'nin **kendi raporu** yazıyor: *«Ölçülen katman: `route()` — yani
+SIFIR-LLM yol.»* Sekiz `sessiz_yanlis` vakası tek tek sınandı:
+
+| ne olduğu | kaç |
+|---|---|
+| üründe `_supheli` ile **garsona** gidiyor | **3** |
+| üründe **belirsizlik ifşasıyla** cevaplanıyor (curl'le doğrulandı) | **≥2** |
+| gerçek sessiz yanlış | **~3** |
+
+⊙ Yani korpusun **8**'i, ürünün ~**3**'üne denk. Aracın ölçtüğü katman `route()`; ifşa
+`ask()`'in kapanışında, devir `_supheli`'de — ikisini de göremiyor.
+
+🔴 **Ama bir ayrım korundu:** `sessiz_yanlis` **artışı** yine de kötüdür — route emin
+olup yanılıyorsa `if route_hit:` merdiveni keser ve garson o soruyu **hiç görmez**.
+Kullanıcının argümanı `dogru` düşüşü / `netlestirme` artışı için geçerlidir (onlar
+garsona gider), `sessiz_yanlis` artışı için değil.
+
+### 3 · 🔴🔴 «EN KÖTÜ» TERSİNE CEVAPLANIYORDU
+
+```
+«bu yıl en kötü bakım maliyeti olan makine»
+  → order = {"measure":"bakim_maliyeti","direction":"asc"}
+  → ROTASYON BASKI · 15.161 ₺          ← EN UCUZ makine
+  → source=cube · beyan YOK
+```
+
+**İki katmanlı kök:**
+
+1. **Beyan eksikti** — 11 maliyet/kusur ölçüsünde `lower_is_better` yoktu. Pack'in kendi
+   yorumu kusuru zaten adlandırmış (*«beyan yoksa `bagla` çok olanı iyi varsayar»*) ama
+   yalnız bir modülde uygulanmış. **11 ölçüye eklendi.**
+2. 🔴 **Ve beyan yetmedi:** `_direction`'ın `az_iyi` parametresi `§W-C`'de eklenmiş,
+   doğru çalışıyor — ama **route'un kendi sıralaması onu hiç geçirmiyordu**. Beyan
+   şemaya ulaşıyordu; okuyan yoktu.
+
+> *Bir beyanı bir çağıranda okumak, onu beyan etmiş saymaz.*
+
+**Curl doğrulaması (üç soru, biri kontrol):**
+
+| soru | önce | **sonra** |
+|---|---|---|
+| en kötü **bakım maliyeti** | 🔴 15.161 ₺ (en ucuz) | 🟢 **SANTEX · 74.754 ₺** |
+| en kötü **fire oranı** | — | 🟢 RAM-2 · %22,12 |
+| en **iyi** oee *(kontrol)* | — | ✅ ÖRGÜ HAT · 0,646 |
+
+### 4 · Yüklem üç kez yanlış yazıldı — üçünü de kapı yakaladı
+
+| # | yazım | kusur |
+|---|---|---|
+| 1 | `ret` deseni | *«u**ret**im»*in içinde eşleşti → 3 yanlış pozitif |
+| 2 | sıkı sınır (`$\|_`) | `bakim_maliyet**i**`'yi (iyelik eki) **kaçırdı** |
+| 3 | *«en fazla 3 harf ek»* | `kaza` → *«**kaza**nma»* |
+
+⊙ Dördüncü yazım morfoloji **yazmıyor**: ad ekleri kapalı ve küçük bir kümedir ve
+fiilden isim yapan `-ma/-me` **kasten dışarıda**. *Bir dilin tamamını modellemek
+gerekmiyorsa, modellememek gerekir.*
+
+### 5 · Ajan raporu — denetlendi
+
+| iddia | yargı |
+|---|---|
+| `lower_is_better` yaygın olarak eksik | ✅ **doğrulandı** — ve curl'le sessiz-yanlış üretiyordu |
+| katalog route'un sözlüğü değil **garsonun menüsü** (kanıt: sözlüksüz 9/9 `cube:null`) | ✅ tez düzeltmesi yerinde |
+| `plan_semasi`'de `operator` kelimesi **0 kez** geçiyor → `equals` reddi | ✅ **canlı logda görüldü** (`tanınmayan süzgeç operatörü: equals`) |
+| `plan_garson.SAYAC` var, **hiçbir kapı okumuyor** | ✅ red oranı gerçekten gözle sayıldı |
+
+**Sıradaki:** operatör sözlüğünün `ALAN_REHBERI`'ne bağlanması (`§AR`'nin dördüncü
+tüketicisi) ve `SAYAC`'ın bir kapıya bağlanması.

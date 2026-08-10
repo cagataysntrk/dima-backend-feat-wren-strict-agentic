@@ -62,6 +62,98 @@ Madde başına doğrulama tavanı **~1 dakikadır**; aşıyorsa kural çiğneniy
 
 ---
 
+## 2c · 🔴🔴 DÖNGÜNÜN SABİT DENETİM LİSTESİ — **her demet kapanışında, istisnasız**
+
+> Aşağıdaki kalemler bir öneri listesi **değildir**. Döngü **her demet kapanışında**
+> bunları **kontrol eder, denetler ve geliştirir**; hangisinin kıpırdadığı
+> `OPERASYON-DURUM.md`'ye **sayıyla + HEAD damgasıyla** yazılır.
+> 🔴 **Ölçülmemiş bir kapanış, kapanış değildir** — ve bir kalem *"geçersiz"*
+> bulunursa **silinmez**, çürüten ölçümle işaretlenir (`MIMARI.md §10`).
+
+### `T` · TABAN BORÇLARI — kaynak: [`belgeler/denetim/2026-08-10_TABAN-BORCLARI-ve-KATALOG-KOKU.md`](belgeler/denetim/2026-08-10_TABAN-BORCLARI-ve-KATALOG-KOKU.md)
+
+**Teşhis:** orkestratör bir **tavan** açtı, tabanı yükseltmedi. Tabanı `route()` +
+**katalog** belirliyor; ölçülen sessiz-yanlışların kökü orkestratörde değil **katalogda**.
+
+| # | borç | demet kapanışında sorulacak soru |
+|---|---|---|
+| **T-1** | **garson korpusu yok** — `eval --slice llm` **4 vaka**, `nl_corpus` `rule` sağlayıcıyla koşuyor (LLM **yok**) | payda büyüdü mü? Bu turun `§`-kodlu canlı bulguları vakaya çevrildi mi? |
+| **T-0** | **katalog envanteri tek sayı vermiyor** (127 / 132 / 141 — üç yüzey, üç sayı) | envanter + kapı indi mi? Sayı hangi yüzeyden okundu? |
+| **T-2** | **route'un kesinliği çürütülemez** — çok sahipli/dilbilgisiyle çakışan token'da çekilmiyor | bu turun eşleşmelerinden kaçı tek-sahiplilik kanıtı taşıyor? |
+| **T-3** | **kanonik varlık ekseni yok** — «müşteri» **5 ad, 3 ayrık aile**; `blend` yapısal olarak kurulamıyor | `cekirdek/varlik_sozlugu` kararı alındı mı? |
+| **T-4** | **çok sahipli ölçülerde sahip beyanı boş** (13 ad; `bakiye` vakası **₺11,86 milyon** sessiz seçim) | kaç kalem beyanlandı? |
+| **T-5** | **yön beyanı eksik** — `lower_is_better` **125/173**'te yok; *«en kötü»* sessizce ters cevaplanıyor | oran düştü mü? Yeni ölçü kapısı var mı? |
+| **T-6** | **ifade edilemezler** — `her <boyut>` (beyan var, yetenek yok) · `compare` hâlâ enum (`5.6` bloke) · mutfak **12** anahtar üretiyor, garsona **7** sunuluyor | yetenek envanteri kapısı indi mi? |
+| **T-7** | **odak varlığı yok** — *«o makinede»* takibi üç yerleşimde de başarısız; eksik olan **bilgi**, kanca değil | diyalog durumuna odak varlığı girdi mi? |
+| **T-8** | **ters yön ölçülmedi** — `prompt_enhancer` **`off`**; üç *"kazanç yok"* kaydının **üçü de** bir şey ölçmemiş (yanlış nüfus · LLM'siz koşum · tek koşum). ⊙ Sinonim korpusunun **%55'i** (788/1432) elle yazılmamalıydı; kalan **B2 sınıfı** (`zayiat`↔`fire`, `iade`↔`şikâyet`) **LLM'in bilemeyeceği yerel sözleşmedir** | `--ab-kurtarma --live` **iki koşum** yapıldı mı? Başarılı yeniden yazımlar **aday kuyruğuna** hasat ediliyor mu? |
+| **T-9** | 🔴 **PLAN REDDİ — `plan_semasi`'de `operator` kelimesi SIFIR kez geçiyor.** Intent şeması operatörü **enum** olarak veriyor, plan istemi **hiç** vermiyor → model `equals` yazıyor, red yiyor, bir LLM turu harcanıyor. Süzgeç **biçimi** de (`dimension`/`operator`/`value`) plan isteminde yok → `dimension: None`. Onarım turu *"yanlış"*ı söylüyor, *"doğru"*yu söylemiyor — oysa çözüm aynı fonksiyonda `bilinen_boyutlar()` olarak **zaten var** | red oranı **sayılıyor mu** (`plan_garson.SAYAC` kapısız)? Sebep dağılımı yayımlandı mı? `ALAN_REHBERI` süzgeç bölümü indi mi? |
+
+| **T-10** | 🔴🔴 **49 BAYRAK, `on` OLAN SIFIR.** 21 `beta` · 28 `off` · **5'i `features.yml`'de bile yok** (`diyalog_bellegi`·`niyet_izi`·`sosyal_sinif`·`t2_anlatici`·`ayni_grain_gocu` → **hiçbir kiracı açamaz**). Ölçülmüş sorunlarımızı çözen kapalı yetenekler: **`varsayilan_donem`** (korpusun **%13,7'si** dönem netleştirmesi) · **`oylama_paydasi`** (*1 cevap + 2 «bilmiyorum» → uyum **%100** görünüyor*) · **`netlestirme_onceligi`** (`T-2`'nin çalışma-zamanı yarısı, **yazılmış**) · **`katalog_belirsizlik`** · **`cekirdek_katman`** (`T-3`'ün evi) · `tazelik` · `hedef_kiyasi` · `tur_takip`/`tur_paylas` | Bu turda hangi bayrak bir kademe ilerledi? İlerlemeyene **gerekçe** yazıldı mı? |
+
+---
+
+### 🔴🔴 `E` · BAYRAK GELİŞTİRME DOKTRİNİ — **kullanıcı emri, 2026-08-10**
+
+> *"Bir özellik sorun çözecekse geliştirmesi emirdir; o bayrak `on` olana kadar devam
+> edilir. Korpusla, kapıyla vazgeçmeyiz."*
+
+| # | emir |
+|---|---|
+| **E-1** | Bir bayrak **ölçülmüş** bir sorunu çözüyorsa **geliştirmek EMİRDİR**. `off` bırakmak bir karar değil bir **erteleme**dir; ertelemenin sahibi ve gerekçesi olmak zorundadır. *Ödenmiş, testli, kapalı duran bir yetenek harcanmış emektir* |
+| **E-2** | 🔴 **Hiçbir bayrak `nl_corpus` (rule) tek başına düştü diye REDDEDİLEMEZ.** Red üçlü ister: (1) korpus, (2) `--slice llm`/canlı, (3) düşüşün `(a)/(b)/(c)` ayrımı. Ayrım yoksa karar **verilmez** → `⊘` |
+| **E-3** | `sessiz_yanlis` **mutlak vetodur**, korpus yüzdesi değildir. Kapsamı düşürüp `sessiz_yanlis`'ı düşüren bayrak **kazançtır** — *bir soruyu cevaplamamak, yanlış cevaplamaktan iyidir* |
+| **E-4** | Her bayrağın yazılı bir **`on` ŞARTI** olmalı (`app/features.py`). Şartsız bayrak `beta`'da süresiz yaşar — bugün **21** bayrak öyle |
+| **E-5** | LLM'li her kararda **iki koşum** (`KURAL G-1`). Ölçüldü: `prompt_enhancer` kararı tek koşumla verildi, **ikinci sağlayıcıda tersine döndü** |
+| **E-6** | Rollout yüzeyi olmayan bayrak **yoktur**. *Bir kill-switch yalnız kodda varsa yarımdır* — **açma anahtarı** için de aynısı |
+| **E-7** | Sıcak yola maliyet eklemek **ayrı bir karardır**: kalite ve gecikme **birlikte** raporlanır (`/ask` 47→177 ms, tavan kapısı yok) |
+
+### 🔴🔴 `K` · KORPUS BU KARARLARDA HAKEM DEĞİLDİR — **düşüş bazen BAŞARIDIR**
+
+`nl_corpus` **`rule` sağlayıcıyla** koşar — **içinde hiç LLM yoktur**. Bir düşüş üç
+ayrı olayın toplamıdır ve **ayrıştırılmadan karar verilemez**:
+
+| | sebep | üretimdeki karşılığı |
+|---|---|---|
+| **(a)** | gerçek gerileme | 🔴 geri al |
+| **(b)** | **route çekildi, tur garsona devredildi** | 🟢 **KAZANÇ** — üretimde orada gerçek bir LLM var ve doğru cevaplıyor; korpusta LLM olmadığı için **kayıp görünür** |
+| **(c)** | **totolojik doğrular düştü** — korpus sorularının **≥%97,1'i katalog türevi**: soru da beklenen cevap da aynı kaynaktan. Route'un emin biçimde yanlış eşleştiği vaka **DOĞRU sayılabiliyor**; garsona geçince korpus düşer çünkü **sessiz-yanlış sayılmayı bırakır** | 🟢 **KAZANÇ** |
+
+⊙ **Ödenmiş fatura:** `G3` korpus `%95,1→%93,5` dedi diye geri alındı; o `%1,6`'nın
+**(a)** mı **(b)** mi olduğu **hiç sorulmadı** — mekanizma olarak **(b)** idi.
+⊙ **Karşı örnek:** `§EB/A`'da korpus **haklıydı** — o bir **kapsam** değişikliğiydi ve
+kapsamın ölçüsü korpustur; **yol dağılımının** ölçüsü değildir.
+
+🔴 **Yapısal düzeltme — kapı çıktısı ikiye ayrılır:**
+`route %X (n)` · `garson %Y (n)` · `devir %Z` · `sessiz_yanlış N`.
+*Tek sayı iki yolun ortalamasıdır ve hangi yolun bozulduğunu gizler.*
+
+---
+
+🔴 **T-9 SIRADA T-1'DEN DE ÖNCEDİR:** dört adımının üçü mekanik (istem eki · mesaj
+kuyruğu · eşleme tablosu), karar gerektirmiyor, ve bedeli **her red için bir LLM
+çağrısı + gecikme** olarak *her gün* ödeniyor. ⚠ `plan_onarim.py`'nin kendi uyarısı
+zaten bunu söylüyordu ve kimse okumamıştı: *"izde bir onarım sık görünüyorsa istem
+(seviye 1) yetersiz demektir."*
+
+🔴 **T-1 SIRADA BİRİNCİDİR ve gerekçesi ölçülmüştür:** garson yolunun paydası
+kurulmadan, `T-2`'nin kazancı **okunamaz** — `G3` tam bu yüzden haksız yere geri alındı
+(korpus `%95,1→%93,5` dedi; kaybın gerçek anlamı *"turu LLM'siz yedeğe devretmenin
+maliyeti"*ydi).
+
+### `P` · PERFORMANS — kaynak: [`belgeler/denetim/2026-08-09_KAPI-YAVASLAMASI-TESHISI.md`](belgeler/denetim/2026-08-09_KAPI-YAVASLAMASI-TESHISI.md)
+
+⚠ **Bu rapor indekste *"DÖNGÜ KURALINA DAHİL"* yazılıydı ama bu dosyada hiç
+geçmiyordu** — yani döngüye dahil **değildi**. *Bir belgeyi «döngüye dahil» ilan etmek,
+onu döngüye koymak değildir.* Bağlandı:
+
+| # | borç | demet kapanışında sorulacak soru |
+|---|---|---|
+| **P-1** | `/ask` **47 → 177 ms** (×3,8); kapı **1:50 → 13:00**. Sebep kapı değil **ürün** | bu demet gecikmeyi artırdı mı? |
+| **P-2** | **latency tavanı kapısı YOK** — yavaşlama görünmedi çünkü ölçen kapı yoktu | kapı indi mi? |
+| **P-3** | `cube_router`'da **sıfır** memoizasyon · sıcak yolda **41 yeni modül** | sıcak yola modül eklendi mi? |
+
+---
+
 ## 3 · 🔴 TEST KAPISI — **YENİ POLİTİKA (kullanıcı kararı, 2026-08-04)**
 
 > *"Kapı testlerini iptal edelim, sadece korpus koşsun — o da sadece en gerekli
