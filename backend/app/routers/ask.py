@@ -4441,23 +4441,30 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         except Exception:
             _log.warning("deterministic_refine hata verdi (best-effort)", exc_info=True)
             refined = None
-        # ⟳🔴 **`§AT` KANCASI DENENDİ, CANLIDA ÖLÇÜLDÜ, GERİ ALINDI.**
+        # ⟳🔴🔴 **`§AT` — ÜÇ YERLEŞİM DENENDİ, ÜÇÜ DE ÖLÇÜLDÜ, ÜÇÜ DE GERİ ALINDI.**
         #
-        # Buraya *«`refined` atlanırsa `llm.refine_cube` devralır»* diye bir kanca
-        # kondu — ve **ölçüm eksikti**: `refine_cube` gerçekten zincirin sonunda, ama
-        # arada `cross_cube_add` ve `cross_cube_dim_switch` var. Canlıda (`X`):
+        # Kusur gerçek ve ölçülü (canlı `IX`): *«**RAM-2 için** vardiya kırılımı»* →
+        # süzgeç kuruluyor, **3 satır**; *«**o makinede** vardiya kırılımı»* → süzgeç
+        # **yok**, **33 satır**, üstelik ilk satır `RAM-3`.
         #
-        #     «o makinede vardiya kırılımı» → source=cube · **cube=oee** · 33 satır
-        #     not = "Konu değişti: parti → OEE"     🔴 ölçü de değişti (fire → oee)
+        # | # | yerleşim | ölçülen sonuç |
+        # |---|---|---|
+        # | 1 | yalnız `refined` atlandı | 🔴 `dim_switch` devraldı → `parti` **→ `oee`**, ölçü değişti |
+        # | 2 | ilk **dört** basamak atlandı | ⚠ ölçü doğru ama **aynı 33 satır** + bir LLM çağrısı |
+        # | 3 | `refine_cube` de atlandı | 🔴 yine `oee`'ye kaydı |
         #
-        # ⊙ Yani düzeltme vakayı **kötüleştirdi**: önce doğru ölçünün fazla satırı
-        # geliyordu, sonra **yanlış ölçünün** fazla satırı gelmeye başladı.
+        # ⊙ **Kök, yerleşim değil: BİLGİ YOK.** *«o makine»* = `RAM-2` çıkarımı
+        # yalnız **önceki cevabın ilk satırından** gelir; `prev_cq` bunu taşımaz
+        # (`order desc` var, **seçilmiş varlık** yok) ve zincirdeki hiçbir basamak onu
+        # bilemez. Orkestratör `SORGU → BAGLA → SUZ` ile **ifade edebilir** ama o da
+        # neyin seçildiğini söyleyen bir girdi ister.
         #
-        # ⚠ Yüklem (`niyet_tasima.EKSIK_ATIF`) **duruyor**, kapılı ve **taze** dalda
-        # etkin; kusurlu olan yüklem değil bu **yerleşim**. Doğru kanca, deterministik
-        # zincirin tamamını atlayıp `refine_cube`'a geçmektir ve o kendi turunu ister.
+        # 🔴 Eksik olan bir kanca değil bir **kavram**: diyalog durumunda **odak
+        # varlığı** yok. Yüklem (`niyet_tasima.EKSIK_ATIF`) kurulu, kapılı ve **taze**
+        # dalda etkin; takip dalına bağlanması odak varlığı geldiğinde anlam kazanır.
         #
-        # *Bir düşüşün nereye düştüğünü okumak, düştüğü ilk basamağı okumak değildir.*
+        # *Bir yordamı üç ayrı yere koyup üçünde de işe yaramıyorsa, eksik olan yer
+        # değil bilgidir.*
         if refined:
             gate = _period_gate(refined, prev_cube_meta, None, "Takip")
             if gate:

@@ -710,22 +710,23 @@ def test_ISARETSIZ_SORU_SUPHE_URETMEZ():
         assert EKSIK_ATIF not in eksiklik(CQ, q), q
 
 
-def test_AT_KANCASI_GERI_ALINDI_KAYDI_DURUYOR():
-    """⟳🔴 `§AT` kancası **canlıda ölçüldü ve vakayı KÖTÜLEŞTİRDİ** → geri alındı.
+def test_AT_UC_YERLESIM_DE_OLCULDU_KAYDI_DURUYOR():
+    """⟳🔴🔴 `§AT` — **üç yerleşim denendi, üçü de ölçüldü, üçü de geri alındı.**
 
-    Kanca *«`refined` atlanırsa `llm.refine_cube` devralır»* varsayımına dayanıyordu ve
-    ölçüm **eksikti**: `refine_cube` zincirin sonunda, ama arada `cross_cube_add` ve
-    `cross_cube_dim_switch` var. Canlıda:
+    | # | yerleşim | ölçülen sonuç |
+    |---|---|---|
+    | 1 | yalnız `refined` atlandı | 🔴 `dim_switch` devraldı → `parti` **→ `oee`** |
+    | 2 | ilk **dört** basamak atlandı | ⚠ ölçü doğru ama **aynı 33 satır** + LLM çağrısı |
+    | 3 | `refine_cube` de atlandı | 🔴 yine `oee`'ye kaydı |
 
-        «o makinede vardiya kırılımı» → cube=**oee** · 33 satır
-        not = "Konu değişti: parti → OEE"        🔴 ölçü de değişti (fire → oee)
+    ⊙ **Kök, yerleşim değil: BİLGİ YOK.** *«o makine»* = `RAM-2` çıkarımı yalnız
+    **önceki cevabın ilk satırından** gelir; `prev_cq` bunu taşımaz (`order desc` var,
+    **seçilmiş varlık** yok) ve zincirdeki hiçbir basamak onu bilemez.
 
-    Yani önce **doğru ölçünün** fazla satırı geliyordu, sonra **yanlış ölçünün** fazla
-    satırı gelmeye başladı. *Bir düşüşün nereye düştüğünü okumak, düştüğü ilk basamağı
-    okumak değildir.*
+    🔴 Eksik olan bir kanca değil bir **kavram**: diyalog durumunda **odak varlığı** yok.
 
-    ⚠ Yüklem **duruyor** ve taze dalda etkin; kusurlu olan yüklem değil **yerleşim**.
-    Kapı iki şeyi birden korur: kanca geri alınmış olmalı **ve** kaydı kaynakta durmalı.
+    *Bir yordamı üç ayrı yere koyup üçünde de işe yaramıyorsa, eksik olan yer değil
+    bilgidir.*
     """
     import inspect
 
@@ -733,11 +734,10 @@ def test_AT_KANCASI_GERI_ALINDI_KAYDI_DURUYOR():
     from app.routers import ask as _ask
 
     src = inspect.getsource(_ask.ask)
-    assert "GERİ ALINDI" in src, "çürütmenin kaydı kaynaktan silinmiş"
-    _i = src.index("`§AT` KANCASI DENENDİ")
-    _pencere = src[_i:_i + 1400]
-    assert "refined = None" not in _pencere, "kanca hâlâ takılı — vaka kötüleşir"
+    assert "ÜÇ YERLEŞİM DENENDİ" in src, "üç ölçümün kaydı kaynaktan silinmiş"
+    assert "_atif_ref" not in src, "kanca hâlâ takılı — üçü de ölçülüp geri alınmıştı"
 
-    # ⚠ Ve yüklem YAŞIYOR: geri alınan yerleşimdi, kural değil.
+    # ⚠ Yüklem YAŞIYOR ve taze dalda etkin: geri alınan yerleşimdi, kural değil.
     CQ = {"cube": "parti", "measures": ["fire_orani_yuzde"], "dimensions": ["makine"]}
     assert EKSIK_ATIF in eksiklik(CQ, "o makinede vardiya kırılımı")
+    assert EKSIK_ATIF not in eksiklik(CQ, "makineye göre fire")

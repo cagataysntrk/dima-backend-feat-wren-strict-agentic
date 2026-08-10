@@ -8504,3 +8504,62 @@ kapı değil. Bu, bu deponun kendi kuralının kanıtı: *bir tasarım gerçeği
 okunarak bulunur — ama bir **yerleşim** gerçeği yalnız **koşularak** bulunur.*
 
 **Kapı (tur başı):** 4476 yeşil · korpus **%94.9** · `sessiz_yanlis` **8** · eval +0.0%.
+
+---
+
+## `XI` TURU — **ÜÇ YERLEŞİM, ÜÇ ÖLÇÜM, BİR KÖK** *(2026-08-10)*
+
+`§AT` yüklemi doğru; **hiçbir yerleşimi işe yaramadı** — ve üçüncüde sebebi anlaşıldı.
+
+### Zincir sonuna kadar haritalandı — ve merdiven TAKİPTE DE TAM
+
+```
+deterministic_refine → cross_cube_add → cross_cube_dim_switch → fresh_route
+    → llm.refine_cube → _try_fresh_intent()  →  route → garson → tek fiş → ORKESTRE
+```
+
+⊙ Yani kullanıcının tarif ettiği dört basamak takip turunda da **eksiksiz** duruyor.
+İki turdur *"takip dalında orkestratör yok"* diye düşünüyordum — **yanlıştı**, altıncı
+basamak onu çağırıyor.
+
+### Üç yerleşim, üç ölçüm
+
+| # | yerleşim | canlı sonuç |
+|---|---|---|
+| 1 | yalnız `refined` atlandı | 🔴 `dim_switch` devraldı → `parti` **→ `oee`**, **ölçü değişti** |
+| 2 | ilk **dört** basamak atlandı | ⚠ ölçü doğru, konu kaymadı — ama **aynı 33 satır** + bir LLM çağrısı |
+| 3 | `refine_cube` de atlandı | 🔴 yine `oee`'ye kaydı |
+
+**Üçü de geri alındı.** Başlangıç durumuna dönüldüğü doğrulandı (`parti` · doğru ölçü ·
+`source=cube` · 0 LLM).
+
+### 🔴 KÖK: yerleşim değil, **BİLGİ YOK**
+
+*«o makine»* = `RAM-2` çıkarımı yalnız **önceki cevabın ilk satırından** gelir.
+`prev_cq` bunu taşımaz: içinde `order desc` var ama **seçilmiş varlık** yok. Zincirdeki
+hiçbir basamak — `refine_cube` dâhil — o satırı görmüyor. Orkestratör
+`SORGU → BAGLA → SUZ` ile **ifade edebilir**, ama o da neyin seçildiğini söyleyen bir
+girdi ister.
+
+> **Eksik olan bir kanca değil bir KAVRAM: diyalog durumunda ODAK VARLIĞI yok.**
+>
+> *Bir yordamı üç ayrı yere koyup üçünde de işe yaramıyorsa, eksik olan yer değil
+> bilgidir.*
+
+Yüklem (`niyet_tasima.EKSIK_ATIF`) kurulu, kapılı ve **taze** dalda etkin; takip
+dalına bağlanması odak varlığı geldiğinde anlam kazanır. Kayıt üç yerde: kaynak
+(`ask.py`, karşılaştırma tablosuyla), kapı (`test_AT_UC_YERLESIM_DE_OLCULDU…`), bu belge.
+
+### Bu oturumun asıl dersi — beş kez aynı desen
+
+| # | düzeltme | ilk yerleşim | nasıl anlaşıldı |
+|---|---|---|---|
+| `O-16` | oy bütçesi | doğru yer, yanlış hipotez | **canlı ölçüm** |
+| `O-22` | takip bağlamı | yalnız bir üretici | **canlı ölçüm** |
+| `§AT` ①②③ | işaret sıfatı | üç ayrı basamak | **canlı ölçüm** |
+
+⊙ Beşinde de **kapı yeşildi** ve beşini de yalnız **canlı curl** yakaladı. Bu, bu
+oturumun tek cümlelik özetidir: *bir tasarım gerçeği okunarak bulunur, bir yerleşim
+gerçeği yalnız koşularak.*
+
+**Kapı (tur başı):** 4477 yeşil · korpus **%94.9** · `sessiz_yanlis` **8** · eval +0.0%.
