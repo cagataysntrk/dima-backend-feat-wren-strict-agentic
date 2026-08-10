@@ -89,6 +89,23 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("b9-odak-varlik-hunide", 2,
+     "🔴🔴 **`B9` — ODAK VARLIK.** ⊙ Kusur canlıda İKİ thread'de ölçüldü ve ikisinde de "
+     "kök aynıydı: bir önceki tur bir varlığı **adıyla seçmişti**, bir sonraki tur ona "
+     "*«o …»* / *«peki neden …»* diye atıfta bulundu, ama diyalog durumunda taşınacak "
+     "bir **odak** yoktu. A/3 *«peki neden düşük»* → 11 makinenin hepsi (olmalıydı: "
+     "RAM-3) · B/5 *«o ayda hangi makine»* → yılın tamamı, 66 satır (olmalıydı: tur "
+     "4'ün ayı, 11 satır). Taze sorulduğunda sistem doğru çalışıyordu — kaybolan soru "
+     "değil **referanstı**. "
+     "⊙ Δ = 2: `odak_uygula(...)` çağrısı, iki satıra sarılmış. **Bu, tavanı yükselten "
+     "değil, kapının kendi talimatını izleyen bir kalemdir**: kapı *«yeni davranışı "
+     "modüle çıkar»* dedi ve karar da (`odak_suzgeci`), uygulama da (`odak_uygula`), "
+     "en-iyi-çaba sarmalayıcısı da `app/diyalog.py`'ye taşındı — `ask()`te yalnız "
+     "**çağrı** kaldı ve o indirilemez. İlk hâli 20 satırdı; 2'ye inen kısım budur. "
+     "⚠ **TAŞINAMAZ:** çağrının yeri `_answer_from_cube_query` hunisidir, çünkü kusur "
+     "üreticiden bağımsızdır (`§34`'ün birebir gerekçesi): route · Intent · takip · "
+     "orkestratör — hepsi oraya çıkar. Bir üreticiye koymak, kalan üçünde referansı "
+     "yine kaybettirirdi."),
     ("o19-cokluk-netlestirmeyi-erteler", 5,
      "🔴🔴 **`O-19` — AYRIK ÖLÇÜ KÜMELERİ BİR BELİRSİZLİK DEĞİL, BİR ÇOKLUKTUR.** "
      "⊙ Ölçüldü (canlı `IV` turu, iki soru): *«iade oranı en yüksek 3 müşteriyi **ve** "

@@ -1195,15 +1195,15 @@ gerektirmiyor, ve **her red bir LLM çağrısı + gecikme** demek — yani bedel
 |---|---|---|---|
 | ☐ | `A1` | **Kaset katmanı** — `§`-kodlu canlı bulgular kasete çevrilir (`--live --kaset`) | `--slice llm` paydası **4 → ≥40**, kaset **(soru+istem sürümü)** ile anahtarlı |
 | ☐ | `A2` | **Kasetli garson korpusu** kapının merkezine alınır (`§4i`) | tek koşum route+garson+devir+`sessiz_yanlis` basıyor, **sıfır API** |
-| ☐ | `A3` | **Kapı çıktısı ayrıştırılır** — `route %X (n)` · `garson %Y (n)` · `devir %Z` · `sessiz_yanlış N` · şirket başı payda | tek yüzde **basılmıyor** |
-| ☐ | `A4` | 🔴 **`(a)/(b)` otomatik etiketleme** — `source=cube→llm` = **devir**, gerileme değil | fark raporu her değişimi etiketliyor *(`G3` bu satırın yokluğundan geri alındı)* |
-| ☐ | `A5` | **Değişen soruların listesi** — yeşil→kırmızı **ve** kırmızı→yeşil, route kararıyla | *"düştü"* yerine **liste** |
+| ✅ | `A3` | **Kapı çıktısı ayrıştırılır** — `doğru · devir · netleştirme · beyanlı_kısmi · 🔴sessiz_yanlış · payda` | `gercek_dunya._ozet` beş sınıfın **üçünü** sayıyordu; `netlestirme`+`durust_ret` yalnız toplu `kabul` içindeydi → her devir *«düştü»* diye okunuyordu |
+| ✅ | `A4` | 🔴 **`(a)/(b)` otomatik etiketleme** — `_degisim_sinifi` → `GERILEME · DEVIR · KAZANC · SABIT · BILINMIYOR` | `sessiz_yanlis↓ + devir↑` = **KAZANÇ**; `dogru↓` karşılığı varsa **DEVİR** (fiyatı basılır), yoksa **GERİLEME**. Eski tabanda etiket **uydurulmaz** |
+| ✅ | `A5` | **Değişen soruların listesi** — iki yönde, `_sapma_haritasi` + `_degisim_listesi` | harita yalnız `dogru` OLMAYANLARI tutar (yokluk = `dogru`): temsil eksiksiz, git gürültüsü yok. Kırpma **sessiz olamaz** |
 | ☐ | `A6` | **NABIZ kademesi** — sabit tohumlu alt küme, ~2 dk, ~2 saatte bir | kendi tabanı ayrı ilan edilmiş; *"korpus %"* demiyor |
 | ☐ | `A7` | **Route korpusu değişiklik-tetikli** olur (`cube_router`·katalog·`packs/**`) + günde 1 | `kapi.py --degisen` kuralına bağlandı |
 | ☐ | `A8` | **KAPI DEFTERİ** — her koşumda *ne yakaladı / hangi kararı yanlış verdirdi* | bugünkü **2 haklı ↔ 1 haksız** kayda geçti |
 | ✅ | `A9` | **`plan_garson.SAYAC` yayımlanır** — red sayısı · onarım tutma oranı · **sebep dağılımı** | red oranı bir izlenim değil **sayı** · **KAPANDI** `sha=892de28`: `/stats/plan` ucu + `red_nedenleri` sınıflandırıcısı (16 kapalı sınıf, **kendi mesajlarımızdan**). İlk ölçüm: `red_orani=%19` · `onarim_tutma=%100` · `boyut_yok 3 · ad_yok 1 · ulasilmaz 1` — ve **`operator`/`suzgec_alani` reddi SIFIR**, yani `B1`–`B4` ölçülebilir biçimde tuttu |
 | ☐ | `A10` | **Latency tavanı kapısı** (`P-2`) | `/ask` p95 bütçesi kırmızı verebiliyor *(47→177 ms görünmedi çünkü ölçen yoktu)* |
-| ☐ | `A11` | **Katalog envanteri + kapı** (`B-0`) | küp·ölçü·benzersiz·çok sahipli·yön oranı **tek kaynaktan**; 127/132/141 çelişkisi bitti |
+| ✅ | `A11` | **Katalog envanteri tek kaynaktan** — `katalog_metni.envanter` + `/stats/katalog` | çelişki bir kusur DEĞİLDİ, **adsızlıktı**: canlı **23 küp · 136 ölçü tanımı · 127 benzersiz · 9 çok sahipli · 121/58 boyut · 72 yön beyansız**. `127/132/141` bitti |
 
 ### B · TABAN BORÇLARI
 
@@ -1217,7 +1217,7 @@ gerektirmiyor, ve **her red bir LLM çağrısı + gecikme** demek — yani bedel
 | ☐ | `B6` | **`T-4` sahip beyanı** — 13 çok sahipli ad için sahip **ya da** *"beyan yok → sor"* | boş bırakılan kalem **0** |
 | ◐ | `B7` | **`T-5` yön beyanı** — 125 kalem + **yeni ölçü kapısı** | `lower_is_better` beyansız oran ↓, kapı var · **KISMİ** `sha=d58b5b2`: adı **kesin olumsuz** 11 ölçüye `lower_is_better` eklendi **ve** kök kusur bulundu — beyan vardı, `route()` onu `_direction`'a **geçirmiyordu**. Curl: *«en kötü bakım maliyeti»* 15.161 ₺ (en ucuz) → **74.754 ₺** (en pahalı). Kalan: adı belirsiz ölçüler. Kapı: `test_yon_beyani_zorunlu.py` |
 | ☐ | `B8` | **`T-3` kanonik varlık ekseni** — `cekirdek/varlik_sozlugu.yml` + boyut bağlama + `blend` anahtarı | çapraz-aile müşteri sorusu **kuruluyor** |
-| ☐ | `B9` | **`T-7` odak varlığı** — diyalog durumuna `{boyut, deger, kaynak}` | *«o makinede»* takibi doğru süzüyor |
+| ✅ | `B9` | **Odak varlık** — `diyalog.odak_belirle` (yazar) + `odak_suzgeci` (okur) | canlıda İKİ thread'de ölçüldü ve ikisi de kapandı: A/3 *«peki neden düşük»* → RAM-3 · B/5 *«o ayda»* → 66 satır→**11**. Zaman odağı **yarı açık aralık** |
 | ☐ | `B10` | **`T-6` yetenek envanteri kapısı** — mutfağın ürettiği her alan garsonun şemasında **var** ya da **bilerek dışarıda** | `12 anahtar ↔ 7 alan` farkı kapıda |
 
 ### C · SİNONİM / TERS YÖN *(`T-8`)*

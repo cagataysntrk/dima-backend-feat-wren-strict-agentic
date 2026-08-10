@@ -278,3 +278,46 @@ def metin_ve_indeks(schema: dict, principal, settings=None) -> tuple[str, dict]:
     except Exception:                                      # noqa: BLE001 — katalog düşmez
         _log.warning("katalog bayrakları çözülemedi → sade katalog", exc_info=True)
     return build_catalog(schema, sozluk=acik, belirsizlik=_bel)
+
+
+def envanter(schema: dict) -> dict:
+    """🔴🔴 `A11`/`B-0` — **KATALOĞUN KAÇ ÖLÇÜSÜ OLDUĞUNUN TEK CEVABI.**
+
+    ## Ölçülen kusur — ve çelişki bir kusur DEĞİLDİ
+
+    Rapor (`§B-0`) üç ayrı sayı buldu: **127** · **132** · **141**. Aynı soruya üç
+    cevap, çünkü **üç ayrı soru** tek bir adla anılıyordu:
+
+    | soru | bugünkü cevap |
+    |---|---|
+    | kaç **benzersiz ölçü adı** var | **127** |
+    | kaç **ölçü tanımı** var (aynı ad iki küpte iki tanımdır) | **136** |
+    | pack'lerde kaç ölçü **yazılı** (yüklü olmayan küpler dâhil) | daha büyük |
+
+    ⊙ Yani sayılar tutarsız değil, **adsızdı**. Bir envanteri düzeltmenin yolu sayıyı
+    değiştirmek değil, **hangi sayı olduğunu söylemektir**.
+
+    ⚠ Bu fonksiyon **çözülmüş şemayı** sayar — yani bu kiracıya **yüklü** olanı. Pack'te
+    yazılı olup yüklenmeyen bir küp burada **yoktur** ve olmamalıdır: kullanıcının
+    sorabileceği şey yüklü olandır.
+
+    *Sayısı olmayan bir borç kapanamaz; adı olmayan bir sayı ise kapandığını sanır.*
+    """
+    cubes = schema.get("cubes") or []
+    olcu_tanimi = [m for c in cubes for m in (c.get("measures") or [])]
+    boyut_tanimi = [d for c in cubes for d in (c.get("dimensions") or [])]
+    cok_sahipli = cok_sahipli_olculer(cubes)
+    yon_beyanli = {m for c in cubes for m in (c.get("lower_is_better") or [])}
+    zamansiz = [c["name"] for c in cubes if not (c.get("time_dimensions") or [])]
+    return {
+        "kup": len(cubes),
+        "olcu_tanimi": len(olcu_tanimi),
+        "benzersiz_olcu": len(set(olcu_tanimi)),
+        "cok_sahipli_olcu": len(cok_sahipli),
+        "cok_sahipli_adlar": sorted(cok_sahipli),
+        "boyut_tanimi": len(boyut_tanimi),
+        "benzersiz_boyut": len(set(boyut_tanimi)),
+        "yon_beyanli_olcu": len(yon_beyanli),
+        "yon_beyansiz_olcu": len(set(olcu_tanimi)) - len(yon_beyanli & set(olcu_tanimi)),
+        "zaman_ekseni_olmayan_kup": zamansiz,
+    }

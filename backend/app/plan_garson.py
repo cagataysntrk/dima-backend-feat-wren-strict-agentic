@@ -106,6 +106,10 @@ RED_SINIFLARI: tuple[tuple[str, str], ...] = (
     ("olcu_yok",       "ölçü(ler) yok"),
     ("boyut_yok",      "boyut(lar) yok"),
     ("suzgec_alani",   "`dimension` alanı hiç yazılmamış"),
+    # 🔴 `R1` — çözülmemiş adım referansı. Canlıda **0 satır + 5 adımlık makbuz**
+    # üretiyordu; sınıfı olmadan bir daha görünmezdi.
+    # *Sayılmayan bir red, olmayan bir red gibi davranır.*
+    ("cozulmemis_referans", "çözülmemiş referans"),
 )
 
 #: Sebep sayacı — `RED_SINIFLARI`'nın anahtarlarıyla + `bilinmeyen`.

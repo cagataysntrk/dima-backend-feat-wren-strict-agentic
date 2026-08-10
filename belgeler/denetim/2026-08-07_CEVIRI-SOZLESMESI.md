@@ -9004,3 +9004,91 @@ kusuru değil bir **mutfak eksikliğidir**.
 
 🔴 Açık borç: ikame **beyan edilmiyor**. `uyum`'un `olcu_ikamesi` işareti var ama bu
 turda ateşlemedi — *«fire isteniyordu, rework verildi»* denmeliydi. Sonraki kök.
+
+---
+
+## TUR — 2026-08-10 · 20 senaryo · **odak varlık ve beyansız ikame**
+
+Ölçüm aracı: `curl` · tek tek · loglar okunarak. Sıra: en basitten en zora, en kısa
+zincirden en uzuna, tek soru → 3 turluk thread → 5 turluk thread.
+
+### Sonuç tablosu
+
+| # | senaryo | sonuç |
+|---|---|---|
+| 1 | `makine bazında ortalama oee` | ✅ netleştirme, **LLM'siz** (dönem soruldu) |
+| 2 | `ram 3 neden düşük` | ✅ 9 adımlık plan · RAM-3'e süzdü · vardiya kırılımı |
+| 3 | `ram 3 oee neden diğerlerine göre daha düşük bu yıl` | ✅ 7 adımlık plan · 7 ölçü |
+| 4 | `müşteri bazında ortalama dE bu yıl` | ✅ **DEVİR**: route çekildi, garson `kalite.ort_dE` verdi |
+| 5 | `bakiye ne kadar` | ✅ çok sahipli ölçü **beyan edildi** + chip |
+| 6 | `bir de gecikme ekle` | ✅ kullanıcının bildirdiği sessiz-yanlış **kapalı** |
+| 7 | `renk grubuna göre fire` | ✅ ikinci sessiz-yanlış **kapalı** (3 boyut → 1) |
+| 8 | `en çok fire veren makine hangisi bu yıl` | ✅ `limit 1` + `fire` çok sahiplilik beyanı |
+| 9 | `geçen yıla göre ciro nasıl değişti` | ✅ `+%10,6` |
+| 10-12 | **thread A** (3 tur) | ✅✅🔴 → tur 3 `B9`'u yakaladı |
+| 13-17 | **thread B** (5 tur) | ✅✅✅⚠🔴 → tur 5 `B9`'u yakaladı |
+| 18 | `sebep bazında fire bu yıl` | 🔴 **beyansız ikame** (`fire` → `rework`) |
+| 19 | `ما هو إجمالي الإيرادات هذا العام` | ✅ Arapça → `parti.toplam_ciro` · kusursuz |
+| 20 | `makine bazında karlılık ve enerji tüketimi` | ✅ 3 adım · `plan.bolumler` iki bölümü de taşıyor |
+
+### Teşhisler — ve akıbetleri
+
+| # | teşhis | kök | akıbet |
+|---|---|---|---|
+| `D4` | 🔴 **beyansız ölçü ikamesi**: *«sebep bazında fire»* → `kalite.toplam_rework_kg`. İz `bilinmeyen=fire` diyordu, **cevap demiyordu** | `§Cİ` tek sahipli ama **iki tüketiciden biri** ona `sema` geçmiyordu — sınır `niyet.py:241`'de **yazılıydı** | ✅ `§Cİ/T` — düzeltildi, canlı doğrulandı |
+| `B9` | 🔴 **odak varlık yok**: A/3 *«peki neden düşük»* → 11 makine · B/5 *«o ayda»* → yılın tamamı | diyalog durumunda taşınacak bir **odak** yoktu; daha önce üç kez adım *atlayarak* denenip geri alınmıştı | ✅ `diyalog.odak_belirle` + `odak_suzgeci`, ikisi de canlı doğrulandı |
+| `D3` | ⚠ *«en kötü ay»* iki ölçü arasından **sessizce** ciro'yu seçti, `limit` de koymadı | üstünlük yükleminin çok-ölçülü sorguda sahibi belirsiz | ⚠ **açık borç** |
+| `D1` | ⚠ dönem netleştirmesinin **iki politikası** var: Intent yolu soruyor, orkestratör sormuyor | tek kural, iki sahip | ⚠ **açık borç** |
+| `D2` | ⚠ `temsil-yok=kiyas` TREND adımı kıyası karşılarken de yanıyor | yüklem plan adımlarını görmüyor | ⚠ açık borç (beyan bastırılıyor, zarar yok) |
+| `D5` | — | — | ❌ **çürütüldü**: `plan.bolumler` iki bölümü de taşıyor; kusur ölçüm yardımcımdaydı |
+| — | ⚠ aynı soru bir kez `RAPOR`, bir kez `MATRIS` planı üretti | oylama salınımı (`oylama_cogunluk` kapalı) | ⚠ açık borç |
+
+### 🔴 Kendi yüklemim iki kez yanlış çıktı — ve ikisini de **kapı** yakaladı
+
+1. *«**bu** yıl toplam ciro»* odak süzgeci aldı → `bu` bir işaret sıfatı sanıldı.
+2. Tek harflik `o`, çekim ekiyle arandığı için **`oee`** kelimesinin içinde eşleşti.
+
+Onarım liste yazarak değil **sınıfı doğru tarif ederek** yapıldı: işaret sıfatı
+çekimsizdir (ek alınca *zamir* olur), yani tam-kelime aranır; ve `bu` baskın olarak bir
+zaman ismine bağlandığı için kümeden **çıkarıldı** (gerekçe `diyalog.ISARET_SIFATLARI`
+başında). *İki hatadan biri sorulur, öteki inanılır.*
+
+
+
+---
+
+## TUR — 2026-08-10 (ikinci) · 15 senaryo · **yer tutucu sızıntısı ve yalan beyan**
+
+| # | senaryo | sonuç |
+|---|---|---|
+| 1 | `bu yıl toplam üretim kg` | ✅ çok sahiplilik beyanlı (`oee` / `parti`) |
+| 2 | `bu yıl toplam duruş dakika` | 🔴 **kendiyle çelişen beyan** → `§Cİ/K` |
+| 3 | `bu yıl ilk seferde tamam yüzde` | ⚠ *«Hangi konuyu kastettin?»* — iki sahip, ayrım yok (`B6` borcu) |
+| 4-6 | `doğalgaz` · `toplam alacak` · `arıza duruşu` | ✅ üçü de sahibini beyan etti |
+| 7 | `neler sorabilirim` | ✅ `source=catalog` — yetenek listesi + chip'ler |
+| 8 | `personel bazında verimlilik` | ✅ **beyanlı** kısmi (katalog boşluğu, gizlenmiyor) |
+| 9 | `bu yıl fire açısından en kötü ay` | ✅ yön doğru (`desc`) · ⚠ `limit` yok |
+| 10-15 | **thread C** (6 tur) | ✅✅✅🔴🔴🔴 |
+
+### 🔴 Üç ağır kusur — üçü de thread C'nin kuyruğunda
+
+| # | kusur | kök | akıbet |
+|---|---|---|---|
+| `R1` | **`$2` yer tutucusu SQL'e sızdı**: `makine = "$2"` → **0 satır**, üstünde *«5 adımda üretildi»* makbuzu | referanslar yalnız adımın **üst düzeyinde** çözülüyor; `cube_query` **içine** yazılan `$n` ne DAG kenarı olur ne çözülür | ✅ doğrulayıcı artık **reddediyor**, gerekçe garsona yol gösteriyor; `A9` sınıfı `cozulmemis_referans` |
+| `R2` | `peki ne yapmalıyız` → **«Görüşürüz!»** (`sosyal sınıf (kapanis)`) | `peki` bir **kapanış** sanılıyor; oysa Türkçede takip sorusu açan bir **bağlaçtır** ve `ne yapmalıyız` tanınan bir takip türüdür | ⚠ **açık borç** — sosyal sınıf tanınmış veri niyetine yol vermeli |
+| `R3` | `toplam duruş dakika` doğru cevaplandı ama not *«bu küpte tanımlı değil»* dedi | `makine_duruslari.toplam_sure_dk` ile `bakim/oee.toplam_durus_dakika` **aynı kavram, iki ad** (`B8`) | ✅ `§Cİ/K` — beyan artık **ad** değil **kapsam** kıyaslıyor |
+
+⚠ `R3`'ün asıl kökü kataloğun: iki küp aynı kavrama iki ad vermiş. Kapı o borcu
+**kapatmaz**, yalnız yanlış beyanı susturur. *Bir yanlışı söylemeyi bırakmak, doğruyu
+söylemek değildir.*
+
+### 🔴 Kapı beni yakaladı — ve haklıydı
+
+`A4`'ü kurarken `BILINMIYOR` (etiket üretilemedi) durumunu **yeşil** saymışım;
+`test_KAPI_kirmizi_VEREBILIR_dekor_degil` eski şemalı bir tabanla `sessiz_yanlis` 0→7
+artarken kapının yeşil verdiğini gösterdi. Onarıldı: etiket üretilemiyorsa **daha katı**
+olana düşülür. *Bir ölçümün susması, ölçtüğü şeyin yokluğu değildir.*
+
+Ayrıca büyüme kapısı `B9`'u geri çevirdi (*«modüle çıkar, tavanı yükseltme»*) — karar,
+uygulama ve en-iyi-çaba sarmalayıcısı `diyalog.py`'ye taşındı; `ask()`te 20 satır yerine
+**2** kaldı ve muafiyet o 2 için yazıldı.

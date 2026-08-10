@@ -76,6 +76,26 @@ def _coz(deger: Any, ciktilar: list[Any]) -> Any:
     return ciktilar[i - 1]
 
 
+def _cozulmemis_referans(dugum: Any) -> str | None:
+    """Bir `cube_query` ağacının **herhangi bir yerinde** kalmış `$n` var mı? → ilki.
+
+    ⚠ Yalnız `cube_query` için çağrılır: adım alanlarındaki `$n` **meşrudur** ve
+    `_referanslar` onları DAG kenarı olarak çözer. Buradaki ise çözülemez, çünkü
+    hiçbir kenar üretmez — ve doğrudan SQL'e derlenir.
+    """
+    if isinstance(dugum, str):
+        return dugum if _REF.match(dugum) else None
+    if isinstance(dugum, dict):
+        for _v in dugum.values():
+            if (bulunan := _cozulmemis_referans(_v)):
+                return bulunan
+    elif isinstance(dugum, list):
+        for _v in dugum:
+            if (bulunan := _cozulmemis_referans(_v)):
+                return bulunan
+    return None
+
+
 def _referanslar(adim: dict) -> list[tuple[str, int]]:
     """Bir adımın taşıdığı `(alan, hedef_adım_no)` referansları. Tek kanal `$n`'dir.
 
@@ -278,6 +298,35 @@ def dogrula(plan: dict, *, azami_sorgu: int = AZAMI_SORGU,
             if _spec is None:
                 raise PlanHatasi(f"adım {_i}: `{_ad}` diye bir cube YOK")
             if isinstance(_cq, dict):
+                # 🔴🔴 **ÇÖZÜLMEMİŞ REFERANS SQL'E GİDEMEZ.**
+                #
+                # ⊙ Canlıda ölçüldü (`thread C/4` ve taze *«ne yapmalıyız»*):
+                #   filters: [{"dimension":"makine","operator":"eq","value":"$2"}]
+                # → **0 satır**, ve üstünde *«Bu cevap 5 adımda üretildi»* makbuzu.
+                # Yani kullanıcı, boş bir tabloyu **çalışmış bir plan** sanıyordu.
+                #
+                # Sebep: `_referanslar` yalnız adımın **ÜST DÜZEY** alanlarını tarıyor
+                # (`_REF.match(tek)` bütün bir dizgeyi bekler). `cube_query`'nin
+                # **içine** yazılmış bir `$n` ne DAG'a kenar olarak girer, ne çözülür —
+                # sonra düz metin olarak süzgeç değeri olur ve hiçbir satırla eşleşmez.
+                # Şema da zaten bunu yazmıyor: referans `{"cube_query":"$2"}` biçiminde,
+                # **bütün alan** olarak konur (`plan_semasi` §referans).
+                #
+                # ⚠ Çözmek DEĞİL **reddetmek** seçildi: iç içe bir referansa çözümleme
+                # semantiği uydurmak, garsonun yazmadığı bir anlamı ona atfetmek olurdu.
+                # Red gerekçesi garsona geri gider ve plan yeniden yazılır — merdivenin
+                # kendi onarım yolu budur.
+                #
+                # *Boş bir sonuç bir cevap değildir; makbuzlu boş bir sonuç ise bir
+                # yanlıştır — çünkü doğruluğunun kanıtı gibi görünür.*
+                if (_kacak := _cozulmemis_referans(_cq)):
+                    raise PlanHatasi(
+                        f"adım {_i}: `cube_query` içinde çözülmemiş referans "
+                        f"`{_kacak}` var. Bir adım referansı bir alanın **tamamı** "
+                        f'olmalıdır (`"cube_query": "$1"`); bir süzgeç değerinin '
+                        f"içine yazılamaz. Önceki adımın seçtiği varlığı süzgeç yapmak "
+                        f"için `BAGLA` çıktısını `HESAPLA`/`SORGU` adımının `hedef` "
+                        f"alanında kullan.")
                 from app.cube_router import parse_cube_query
                 if parse_cube_query(json.dumps(_cq, ensure_ascii=False), index) is None:
                     raise PlanHatasi(f"adım {_i}: " + plan_onarim.gerekce(_cq, _spec, _sema_ref))

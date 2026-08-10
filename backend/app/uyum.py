@@ -213,6 +213,30 @@ def _capraz_kup_ikamesi(qn: str, cq: dict, cube_meta: dict,
     # Cevabın küpü terimi zaten karşılıyorsa ikame yoktur.
     if _match_measure(qn, cube_meta)[0]:
         return None
+    # 🔴🔴 **AYNI KAVRAM, İKİ AD** — ve beyan bunu göremeyince YALAN SÖYLÜYORDU.
+    #
+    # ⊙ Canlıda ölçüldü: *«bu yıl toplam duruş dakika»* → `bakim.toplam_durus_dakika`
+    # ile **doğru** cevaplandı, ama notta *«toplam durus bu küpte tanımlı değil»*
+    # yazdı. Sebep: `toplam durus` aslında `makine_duruslari.toplam_sure_dk`'nın
+    # sinonimi — **başka bir ad**, aynı kavram. Ad karşılaştırması onları iki ayrı şey
+    # sanıyordu, oysa cevap zaten o kavramı ölçmüştü.
+    #
+    # Kural: terim, sorguda **zaten bulunan** bir ölçünün — herhangi bir küpteki —
+    # sinonimlerine uyuyorsa **karşılanmıştır**. Ad değil **kapsam** kıyaslanır.
+    #
+    # ⚠ Buradaki birleştirme yalnız **beyan** içindir; eşleştirmeye (routing)
+    # dokunmaz. Sinonimleri küplere yaymak onları açgözlü yapardı (`§99.1`) — oysa
+    # düzeltilmesi gereken şey bir yönlendirme değil, bir **cümleydi**.
+    #
+    # 🔴 Asıl kök yine de kataloğun: iki küp aynı kavrama iki ad vermiş (`B8`).
+    # Bu kapı o borcu **kapatmaz**, yalnız yanlış beyanı susturur.
+    # *Bir yanlışı söylemeyi bırakmak, doğruyu söylemek değildir.*
+    _mevcut = {str(m) for m in (cq.get("measures") or [])}
+    if _mevcut:
+        for c in (sema.get("cubes") or []):
+            _ad2, _ = _match_measure(qn, c)
+            if _ad2 and _ad2 in _mevcut:
+                return None
     for c in (sema.get("cubes") or []):
         if c.get("name") == cube_meta.get("name"):
             continue

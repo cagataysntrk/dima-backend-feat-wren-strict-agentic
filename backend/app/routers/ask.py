@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 import time as _time
 
+from app import diyalog as _diyalog
 from app import donem_capasi as _capa
 from app import kiyas_cebiri
 from app import niyet as _niyet
@@ -2689,6 +2690,18 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # gösterdi ve teşhisi o verdi. *Bir ölçüm aracının yakaladığı sayı, bazen
         # ölçtüğü şey değil, ölçemediği şeydir.*
         note, trace = _capa.notu_al(cq, note, trace)
+        # 🔴🔴 `B9` — **ODAK VARLIK HUNİDE ÇÖZÜLÜR** (`§34`'ün aynı gerekçesi).
+        #
+        # Ölçülen kusur — canlıda İKİ thread'de, aynı kök:
+        #   A/3 «peki neden düşük»      → 11 makine  (olmalıydı: tur 2'nin RAM-3'ü)
+        #   B/5 «o ayda hangi makine …» → yılın tamamı (olmalıydı: tur 4'ün ayı)
+        # Kaybolan şey soru değil **referans**tı — ve referans hiçbir üreticinin değil,
+        # hepsinin ortak son adımının eksiğiydi.
+        #
+        # ⚠ Karar ve uygulama **tek evde**: `diyalog.odak_uygula` (büyüme kapısının
+        # kararı — *"yeni davranışı modüle çıkar, tavanı yükseltme"*).
+        cq, note, trace = _diyalog.odak_uygula(
+            body.question, cq, getattr(body, "diyalog_durumu", None), schema, note, trace)
         # 🔴 **ÜSTÜNLÜK SIRALAMASI — HUNİDE, çünkü kusur ÜRETİCİDEN BAĞIMSIZ (`§34`).**
         #
         # Ölçüldü: `en çok fire veren makine hangisi` (Intent-JSON yolu) ve
@@ -2799,8 +2812,24 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # notuyla aynı düzeltme; ikisi de aynı kapsam yanılgısına düşmüştü).
         _cm_uyum = next((c for c in (schema.get("cubes") or [])
                          if c.get("name") == cq.get("cube")), None)
+        # 🔴 `§Cİ/T` — **ŞEMA BURAYA GEÇMİYORDU VE BU YAZILIYDI.**
+        #
+        # `niyet.py:241` sınırı kendi kaydetmişti: *"`uyum.denetle(q, cq, cube_meta)`
+        # **şema almıyor** — yalnız tek bir `cube_meta`."* `§Cİ` (çapraz-küp ölçü
+        # ikamesi) `sema` olmadan **hiçbir şey döndüremez**, yani bu yolda yapısal
+        # olarak ÖLÜYDÜ. Tek sahip, iki tüketici — ve tüketicilerden biri sessizce
+        # kısıtlıydı.
+        #
+        # ⊙ Bedeli canlı ölçüldü: *«sebep bazında fire bu yıl»* → `kalite.
+        # toplam_rework_kg`. Kullanıcı **fire** dedi, sistem **rework** ölçtü; iz
+        # `bilinmeyen=fire` diyordu ama **cevap bunu söylemiyordu**. `toplam_fire_kg`
+        # `parti` ve `oee`'de VAR, `kalite`'de yok — tam da `§Cİ`'nin sınıfı.
+        #
+        # ⚠ *Bir kuralı yazmak, onu iki çağrı yerinin ikisinde de kurmak değildir; ve
+        # eksik kurulan yer, kuralın hiç olmadığı yerden daha tehlikelidir — çünkü
+        # kural yazılı olduğu için orada da işlediği sanılır.*
         _ihlaller = _uyum.denetle(q_norm, {"cube_query": cq, "order": order,
-                                           "limit": limit_val}, _cm_uyum)
+                                           "limit": limit_val}, _cm_uyum, schema)
         if _ihlaller:
             resp.eksik_niyet = [i.isaret for i in _ihlaller]
             resp.note = " ".join(x for x in [resp.note, _uyum.kismi_cevap_notu(_ihlaller)] if x)

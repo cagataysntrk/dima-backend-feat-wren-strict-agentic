@@ -52,6 +52,22 @@ from tests.kapi_ortak import fe_kaynak, tam_yol_deseni, tuketiliyor
 SARMALAYICI_MUAF: dict[str, str] = {}
 
 API_ONLY: dict[str, str] = {
+    "/stats/plan": "🔴 `A9` — bir **ÖLÇÜM ALETİDİR**, bir ürün özelliği değil. Garson "
+                   "planlarının red sınıflarını (`boyut_yok` · `olcu_yok` · `operator` …) "
+                   "ve onarım tutma oranını yayımlar; tüketicisi kapıyı koşan "
+                   "**operatördür**, son kullanıcı değil. Bir panele bağlamak, "
+                   "kullanıcıya *«planlarımızın %19'u reddediliyor»* demek olurdu — "
+                   "sıfır değer, ekran tavanına bir satır. ⚠ Kullanıcının bu bilgiye "
+                   "karşılığı zaten var: red hâlinde cevabın kendisi gerekçesini söyler "
+                   "(`plan_onarim.gerekce`), yani sayı değil **o soruya ait sebep** "
+                   "gösteriliyor — doğru katman budur.",
+    "/stats/katalog": "🔴 `A11` — kataloğun **envanteri**; `/stats/plan` ile aynı sınıf: "
+                      "ölçüm aleti. Rapor `§B-0` üç çelişkili sayı (127/132/141) "
+                      "bulmuştu; bu uç tek kaynağı yayımlar (`katalog_metni.envanter`). "
+                      "Tüketicisi kapı ve denetim ajanıdır. Kullanıcının *«neyi "
+                      "sorabilirim»* sorusunun karşılığı bu sayı DEĞİL, zaten var olan "
+                      "katalog listesi ve dürüst reddin yanındaki yetenek beyanıdır — "
+                      "*bir envanter sayısı, bir yetenek cevabı değildir.*",
     "/mcp/tools": "FAZ 4.5 — MCP bir **MAKİNE YÜZEYİDİR**: tüketicisi kendi UI'ımız "
                   "değil, kullanıcının kendi ajanıdır (Claude Desktop · dbt · Cube MCP "
                   "istemcileri). Bunu bir panele bağlamak, *«bizim UI'ımızdan bizim "

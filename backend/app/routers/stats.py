@@ -174,3 +174,20 @@ def stats_plan() -> dict:
     from app.plan_garson import sayaclar
 
     return sayaclar()
+
+
+@router.get("/katalog", dependencies=[Depends(require("query:run")), Depends(require_company)])
+def stats_katalog(request: Request) -> dict:
+    """🔴 `A11`/`B-0` — kataloğun envanteri **tek kaynaktan** (`katalog_metni.envanter`).
+
+    ⊙ Rapor üç ayrı sayı bulmuştu (127/132/141); çelişki bir kusur değil **adsızlıktı**:
+    *benzersiz ölçü adı* ≠ *ölçü tanımı* ≠ *pack'te yazılı*. Bu uç **çözülmüş şemayı**
+    (bu kiracıya yüklü olanı) sayar ve alanlarını adıyla verir.
+    """
+    # ⚠ Servis **kiracıya göre** çözülür: `request.state.wren` yalnız varsayılan
+    # olmayan tenant'ta set edilir ve `app.state`'i doğrudan okumak, bu deponun bir kez
+    # ölçtüğü kusuru (VQR'ın tek şirket dışında sessizce kapanması) tekrarlardı.
+    from app.company_registry import wren_for_request
+    from app.katalog_metni import envanter
+
+    return envanter(wren_for_request(request).schema())

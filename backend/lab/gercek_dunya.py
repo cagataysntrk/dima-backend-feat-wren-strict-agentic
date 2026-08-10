@@ -648,15 +648,128 @@ TABAN_YOLU = pathlib.Path(__file__).resolve().parent / "gercek_dunya_baseline.js
 
 
 def _ozet(sonuc: dict[str, Any]) -> dict[str, int]:
-    """Tabanla kıyaslanacak **anlam taşıyan** sayılar."""
-    t = {"vaka": 0, "kabul": 0, "dogru": 0, "sessiz_yanlis": 0, "beyanli_kismi": 0}
+    """🔴 `A3` — tabanla kıyaslanacak **anlam taşıyan** sayılar; **beş sınıfın hepsi**.
+
+    ## Ölçülen kusur
+
+    Bu fonksiyon önce **üç** sınıfı sayıyordu (`dogru` · `sessiz_yanlis` ·
+    `beyanli_kismi`) ve `netlestirme` ile `durust_ret`'i yalnız toplu `kabul` içinde
+    görüyordu. Sonuç: route bir **sessiz yanlışı** bırakıp garsona **çekildiğinde** —
+    yani sistemin tam olarak **istenen** yönde geliştiği anda — kapının söyleyebildiği
+    tek cümle *"düştü"* oluyordu. Kullanıcının teşhisi harfiyen buydu:
+
+    > *"route sessiz yanlışlar yapıyor, bunlar garsona geçmesi lazımdı; bunlar geçse
+    > corpus tabii ki gerileyecek."*
+
+    ⊙ Yani gerilemenin kendisi bir **ölçüm artefaktıydı**: devir sınıfı sayılmadığı için
+    her devir bir kayıp gibi görünüyordu. Sayılmayan bir sınıf, olmayan bir sınıf gibi
+    davranır — ve onun yönüne doğru yapılan her iyileştirme **kırmızı** verir.
+
+    ⚠ `devir` = `durust_ret`: `route()` çekildi. Bu bir **cevapsızlık değil**, merdivenin
+    bir sonraki basamağıdır (garson). Adı bu yüzden `durust_ret` değil `devir`.
+    """
+    t = {"vaka": 0, "kabul": 0, "dogru": 0, "sessiz_yanlis": 0, "beyanli_kismi": 0,
+         "netlestirme": 0, "devir": 0}
     for kademe in sonuc.get("sayac", {}).values():
         t["vaka"] += kademe.get("toplam", 0)
         t["kabul"] += kademe.get("kabul", 0)
         t["dogru"] += kademe.get(DOGRU, 0)
         t["sessiz_yanlis"] += kademe.get(SESSIZ_YANLIS, 0)
         t["beyanli_kismi"] += kademe.get(BEYANLI_KISMI, 0)
+        t["netlestirme"] += kademe.get(NETLESTIRME, 0)
+        t["devir"] += kademe.get(DURUST_RET, 0)
     return t
+
+
+def _sapma_haritasi(sonuc: dict[str, Any]) -> dict[str, str]:
+    """🔴 `A5` — soru → sınıf, ama **yalnız `dogru` OLMAYANLAR**.
+
+    ## Neden yokluk = `dogru`
+
+    Korpus ~10 700 vaka üretiyor. Hepsini tabana yazmak, her koşumda yüz binlerce
+    baytlık bir git değişimi doğurur ve **gürültü, sinyali gömerdi** — üstelik
+    saklananın %90'ı hiç değişmeyen `dogru` satırlarıdır.
+
+    ⊙ Bu yüzden harita **sapmaları** taşır: bir soru haritada **yoksa** `dogru`
+    demektir. Temsil eksiksizdir (iki yön de türetilebilir) ama yalnız azınlığı yazar.
+
+    | tabanda | bugün | okuma |
+    |---|---|---|
+    | yok | var | 🔴 `dogru` idi, artık değil (yön: hangi sınıfa gitti) |
+    | var | yok | ✅ sapmaydı, artık `dogru` |
+    | var | var, **farklı** | ⚠ sınıf değişti (ör. `sessiz_yanlis` → `devir`) |
+
+    *Bir kapının «düştü» demesi bir ölçüm değil bir şikâyettir; ölçüm, **hangi soruların**
+    düştüğünü söyleyendir.*
+    """
+    return {a["soru"]: a["sinif"] for a in sonuc.get("ayrinti", [])
+            if a.get("sinif") and a["sinif"] != DOGRU}
+
+
+def _degisim_listesi(eski: dict[str, str], yeni: dict[str, str],
+                     *, tavan: int = 25) -> list[str]:
+    """🔴 `A5` — **değişen soruların listesi**, iki yönde. `tavan` aşılırsa **söylenir**.
+
+    ⚠ Sessiz kırpma yasak (raporun kendi kuralı): kesilen sayı satır olarak basılır,
+    yoksa *"25 değişim"* ile *"25 gösterildi, 400 var"* aynı görünür.
+    """
+    satir = []
+    for soru in sorted(set(eski) | set(yeni)):
+        e, y = eski.get(soru, DOGRU), yeni.get(soru, DOGRU)
+        if e == y:
+            continue
+        ok = "🔴" if y == SESSIZ_YANLIS else ("✅" if y == DOGRU else "⚠")
+        satir.append(f"{ok} `{soru}` · {e} → {y}")
+    if len(satir) > tavan:
+        kesilen = len(satir) - tavan
+        satir = satir[:tavan] + [f"… ve {kesilen} değişim daha (tavan={tavan}) — "
+                                 "kırpıldı, tamamı için `--degisim-tam`"]
+    return satir
+
+
+def _degisim_sinifi(eski: dict[str, int], yeni: dict[str, int]) -> tuple[str, str]:
+    """🔴🔴 `A4` — **`(a)/(b)` OTOMATİK ETİKETLEME.** Dönen: `(sınıf, gerekçe)`.
+
+    ## Neden bir etiket, bir eşikten daha önemli
+
+    `route()`'un doğru cevabı bırakıp garsona çekilmesi ile **yeteneğini kaybetmesi**
+    aynı sayıyı üretir: `dogru` düşer. Ama bunlar **zıt** olaylardır —
+    biri merdivenin çalışması, öteki bozulmasıdır. Etiketsiz bir kapı ikisini de
+    *"gerileme"* diye okur ve doğru yönde yapılan işi geri aldırır. Bu depoda bir kez
+    **oldu**: rapor `G3`'ün bu satırın yokluğundan geri alındığını kaydediyor.
+
+    | gözlem | sınıf | neden |
+    |---|---|---|
+    | `sessiz_yanlis` ARTTI | 🔴 `GERILEME` | *yanlış cevap veren sistem, sustuğunu bilenden tehlikelidir* |
+    | `dogru` düştü, **karşılığı yok** | 🔴 `GERILEME` | yetenek gerçekten kayboldu |
+    | `dogru` düştü, **devir/netleştirme** aynı kadar arttı | ⚠ `DEVIR` | cevap hâlâ geliyor — ama **LLM turu fiyatıyla** |
+    | `sessiz_yanlis` düştü, `devir` arttı | ✅ `KAZANC` | kullanıcının istediği yön |
+
+    ⚠ `DEVIR` bir **başarı değil**: sayı korunur ama gecikme ve kota ödenir. Kapı onu
+    geçirir ve **fiyatını yazar** — çünkü sessizce geçirmek, onu bedava sanmaktır.
+
+    🔴 Taban dosyası eski (yeni anahtarlar yok) ise bu çözümleme **koşulmaz**: eksik
+    veriden etiket üretmek, ölçmediğini bilmemekten kötüdür.
+    """
+    if "devir" not in eski:
+        return "BILINMIYOR", ("taban dosyası `devir`/`netlestirme` içermiyor (eski şema) "
+                              "— devir çözümlemesi KOŞULMADI, yeniden taban yaz")
+    d_dogru = yeni["dogru"] - eski["dogru"]
+    d_sessiz = yeni["sessiz_yanlis"] - eski["sessiz_yanlis"]
+    d_devir = (yeni["devir"] - eski["devir"]) + (yeni["netlestirme"] - eski["netlestirme"])
+    if d_sessiz > 0:
+        return "GERILEME", f"sessiz_yanlis +{d_sessiz} — en ağır sınıf"
+    if d_sessiz < 0 and d_devir > 0:
+        return "KAZANC", (f"sessiz_yanlis {d_sessiz} · devir+netleştirme +{d_devir} — "
+                          "route çekildi, garson devraldı: istenen yön")
+    if d_dogru < 0:
+        if d_devir >= -d_dogru:
+            return "DEVIR", (f"dogru {d_dogru} ama devir+netleştirme +{d_devir} — "
+                             f"kayıp değil DEVİR. ⚠ fiyatı: {-d_dogru} soru artık bir "
+                             "LLM turu ödüyor")
+        return "GERILEME", (f"dogru {d_dogru}, devir yalnız +{d_devir} — "
+                            f"{-d_dogru - max(d_devir, 0)} soru **karşılıksız** kayboldu")
+    return "SABIT", f"dogru +{d_dogru} · sessiz_yanlis {d_sessiz} · devir {d_devir:+d}"
 
 
 def kapi(sonuc: dict[str, Any], *, yaz: bool = False) -> tuple[int, str]:
@@ -678,9 +791,14 @@ def kapi(sonuc: dict[str, Any], *, yaz: bool = False) -> tuple[int, str]:
     hiçbir hedef koymaz: *dün ne kadardıysa bugün ondan az olmasın* der.
     """
     yeni = _ozet(sonuc)
+    # 🔴 `A5` — sapma haritası tabanın **parçasıdır**; sayılarla aynı dosyada tutulur ki
+    # ikisi asla ayrı tarihlere ait olamasın. *İki ayrı dosyada tutulan bir taban, bir
+    # gün yarısı güncellenir ve o günden sonra ölçtüğü şey bilinmez.*
+    harita = _sapma_haritasi(sonuc)
     if yaz or not TABAN_YOLU.exists():
-        TABAN_YOLU.write_text(json.dumps(yeni, ensure_ascii=False, indent=1),
-                              encoding="utf-8")
+        TABAN_YOLU.write_text(
+            json.dumps({**yeni, "_sapmalar": harita}, ensure_ascii=False, indent=1),
+            encoding="utf-8")
         # 🔴 DEKOR TUZAĞININ İKİNCİ KILIĞI — ve bu, kapının kendisinden daha sinsi.
         #
         # Taban dosyası **commit edilmezse** her koşum onu yeniden yazar ve kıyaslama
@@ -695,18 +813,46 @@ def kapi(sonuc: dict[str, Any], *, yaz: bool = False) -> tuple[int, str]:
             "     Commit edilmezse her koşum yeni taban yazar ve gerileme "
             "HİÇBİR ZAMAN yakalanmaz — kapı yeşil görünür, hiçbir şey sınamaz.")
     eski = json.loads(TABAN_YOLU.read_text(encoding="utf-8"))
-    dusen = []
-    for anahtar in ("kabul", "dogru"):
-        if yeni[anahtar] < eski.get(anahtar, 0):
-            dusen.append(f"{anahtar}: {eski[anahtar]} → {yeni[anahtar]}")
-    # 🔴 Sessiz-yanlış ARTIŞI da gerilemedir — ve en ağırıdır: *yanlış cevap veren
-    # bir sistem, sustuğunu bilen bir sistemden tehlikelidir.*
-    if yeni["sessiz_yanlis"] > eski.get("sessiz_yanlis", 0):
-        dusen.append(f"🔴 sessiz_yanlis ARTTI: "
-                     f"{eski.get('sessiz_yanlis', 0)} → {yeni['sessiz_yanlis']}")
-    if dusen:
-        return 1, "KAPI KIRMIZI — gerileme:\n  " + "\n  ".join(dusen)
-    return 0, f"kapı yeşil · {yeni}"
+    eski_harita = eski.pop("_sapmalar", None)
+    sinif, gerekce = _degisim_sinifi(eski, yeni)
+    # 🔴🔴 **«SINIFLANDIRAMIYORUM» BİR GEÇİŞ SEBEBİ DEĞİLDİR.**
+    #
+    # İlk yazımda `BILINMIYOR` kapıyı **geçiriyordu** ve `test_KAPI_kirmizi_VEREBILIR_
+    # dekor_degil` bunu yakaladı: eski şemalı bir tabanla `sessiz_yanlis` 0→7 artarken
+    # kapı **yeşil** verdi. Yani `A4`'ü kurarken kapının kırmızı verme yeteneğini
+    # sınıflandırıcıya bağımlı kılmıştım — tam da o testin var olma sebebi olan tuzak.
+    #
+    # ⊙ Doğru semantik: etiket üretilemiyorsa **daha katı** olana düşülür (eski kural),
+    # daha gevşek olana değil. *Bir ölçümün susması, ölçtüğü şeyin yokluğu değildir.*
+    if sinif == "BILINMIYOR":
+        kati = []
+        for anahtar in ("kabul", "dogru"):
+            if yeni[anahtar] < eski.get(anahtar, 0):
+                kati.append(f"{anahtar}: {eski[anahtar]} → {yeni[anahtar]}")
+        if yeni["sessiz_yanlis"] > eski.get("sessiz_yanlis", 0):
+            kati.append(f"🔴 sessiz_yanlis ARTTI: {eski.get('sessiz_yanlis', 0)} → "
+                        f"{yeni['sessiz_yanlis']}")
+        if kati:
+            return 1, ("KAPI KIRMIZI — gerileme (⚠ taban eski şema, devir çözümlemesi "
+                       "KOŞULMADI; katı kurala düşüldü):\n  " + "\n  ".join(kati))
+    # 🔴 `A5` — taban eski şemadaysa harita **yok**; uydurulmaz, yokluğu söylenir.
+    degisim = (_degisim_listesi(eski_harita, harita) if eski_harita is not None
+               else ["⚠ taban sapma haritası içermiyor (eski şema) — "
+                     "değişim listesi ÜRETİLEMEDİ, yeniden taban yaz"])
+    # 🔴 `A3` — tek yüzde yerine **sınıf dökümü**. Bir sayı, hangi sınıftan geldiği
+    # yazılmadan okunursa, iyileşme ile bozulma aynı işareti taşır.
+    dokum = (f"doğru={yeni['dogru']} · devir={yeni['devir']} · "
+             f"netleştirme={yeni['netlestirme']} · beyanlı_kısmi={yeni['beyanli_kismi']} · "
+             f"🔴 sessiz_yanlış={yeni['sessiz_yanlis']} · payda={yeni['vaka']}")
+    kuyruk = ("\n  değişen sorular:\n    " + "\n    ".join(degisim)) if degisim else ""
+    if sinif == "GERILEME":
+        return 1, f"KAPI KIRMIZI — 🔴 GERİLEME: {gerekce}\n  {dokum}{kuyruk}"
+    # ⚠ `DEVIR` ve `KAZANC` kapıyı **geçer** — ama sessizce değil: etiketi ve fiyatı
+    # basılır. *Bedava sanılan bir maliyet, ödenmediği için değil GÖRÜLMEDİĞİ için
+    # birikir.*
+    isaret = {"KAZANC": "✅ KAZANÇ", "DEVIR": "⚠ DEVİR (gerileme DEĞİL)",
+              "SABIT": "✅ sabit", "BILINMIYOR": "⚠ ÇÖZÜMLENEMEDİ"}[sinif]
+    return 0, f"kapı yeşil · {isaret}: {gerekce}\n  {dokum}{kuyruk}"
 
 
 def main() -> int:

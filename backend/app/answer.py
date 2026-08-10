@@ -777,8 +777,18 @@ def _diyalog_durumu(resp: AskResponse, log_body: Any) -> None:
                 if isinstance(aday, dict) and (aday.get("cube") or aday.get("measures")):
                     kismi = aday
                     break
+        # 🔴 `B9` — odak varlık. Kararı `diyalog.odak_belirle` verir (tek sahip);
+        # burada yalnız **hammadde** toplanır: cevabın sorgusu, satırları ve planı.
+        from app.diyalog import odak_belirle
+
+        _satirlar = ((resp.result or {}).get("rows")
+                     if isinstance(resp.result, dict) else None)
+        if _satirlar is None:
+            _satirlar = getattr(getattr(resp, "result", None), "rows", None)
+        _plan = resp.plan if isinstance(getattr(resp, "plan", None), dict) else None
         resp.diyalog_durumu = durum(resp.cube_query, sorulan=sorulan, onceki=onceki,
-                                    kismi_cq=kismi)
+                                    kismi_cq=kismi,
+                                    odak=odak_belirle(resp.cube_query, _satirlar, _plan))
     except Exception:                                      # noqa: BLE001 — best-effort
         _log.warning("diyalog durumu kurulamadı (cevap etkilenmez)", exc_info=True)
 
