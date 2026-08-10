@@ -258,7 +258,31 @@ def varsayilan_yerinde(cq: dict, service, cube_meta: dict | None) -> bool:
                      {"dimension": zaman, "operator": "gte", "value": bas},
                      {"dimension": zaman, "operator": "lte", "value": _max}]
     cq[_TASIYICI] = (
-        (f"⏱ Dönem belirtmedin — **verinin son {VARSAYILAN_AY} ayı** alındı "
+        # 🔴🔴 `§BD` — **BEYAN, KULLANICI HAKKINDA DEĞİL KENDİ YAPTIĞI HAKKINDA KONUŞUR.**
+        #
+        # ⊙ Canlı ölçüm (çok-dilli curl turu, 2026-08-10):
+        #
+        #     «لهذا العام إجمالي الإيرادات»  (= «bu yıl toplam ciro»)
+        #       → 137.588.350 (son 12 ay)   · doğrusu 74.022.836 (bu yıl)
+        #       → not: «⏱ Dönem BELİRTMEDİN …»
+        #
+        # 🔴 Kullanıcı dönemi **belirtti** — başka bir dilde. Garson ölçüyü çevirdi
+        # (`إجمالي الإيرادات → toplam_ciro`) ama dönemi çeviremedi (istem `هذا العام`
+        # örneğini taşıyor, kullanıcı ön ekli `لهذا العام` yazdı). Sonuç yalnız yanlış
+        # bir sayı değil, **yanlış bir BEYAN**: sistem kullanıcıya *«sen söylemedin»*
+        # dedi, oysa söylemişti.
+        #
+        # ⊙ Kök çözüm bir çeviri yaması değil — o modelin oynaklığıdır ve istem zaten
+        # doğru talimatı taşıyor. Kök, **beyanın kendisinin fazla iddialı olmasıdır**:
+        # sistem kullanıcının ne söylediğini **bilmez**, yalnız kendi **çözemediğini**
+        # bilir. Yeni metin yalnız ikincisini söyler ve **her dilde doğrudur**.
+        #
+        # ⚠ Kullanıcıya sunulan seçenek aynen duruyor: *«başka bir dönem yazarsan onu
+        # uygularım»* — sınır daralmadı, yalnız iddia dürüstleşti.
+        #
+        # *Bir beyan, ölçebildiğinden fazlasını söylediği anda bir varsayıma dönüşür —
+        # ve beyanın işi tam olarak varsayımı görünür kılmaktı.*
+        (f"⏱ Dönemi çözemedim — **verinin son {VARSAYILAN_AY} ayı** alındı "
          f"({_gun(bas)} – {_gun(_max)}). Başka bir dönem yazarsan onu uygularım."),
         IZ_VARSAYILAN)
     return True

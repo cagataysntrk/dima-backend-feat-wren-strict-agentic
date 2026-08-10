@@ -9792,3 +9792,53 @@ SONRA: rows=1 · {RAM 2 · %22,12 · 10.247.596 ₺}
 ```
 
 *«Yapamam» bir cevap değildir; «şunu yapamam ama şunu biliyorum» bir cevaptır.*
+
+---
+
+# TUR — 2026-08-10 · **ÇOK DİLLİ + BOZUK YAZIM** ve `§BD`
+
+## En üst kural sınandı: *«kullanıcı ne'ce yazarsa yazsın»*
+
+| soru | sonuç |
+|---|---|
+| `show me total revenue by customer this year` | ✅ 8 satır, doğru |
+| `bu yl makna bazinda oee` *(iki yazım hatası)* | ✅ 11 satır, doğru |
+| `TOPLAM CİRO NE KADAR` *(büyük harf)* | ✅ doğru |
+| `makine bazinda fıre oranı` *(noktasız ı)* | ✅ doğru |
+| `لهذا العام إجمالي الإيرادات` *(Arapça)* | ✅ ölçü doğru — 🔴 **dönem değil** |
+
+⊙ **«Anlamadım» sıfır.** Garson doktrini beş dilde/biçimde tuttu.
+
+## 🔴 `§BD` — BEYAN, KULLANICI HAKKINDA DEĞİL KENDİ YAPTIĞI HAKKINDA KONUŞUR
+
+```
+«لهذا العام إجمالي الإيرادات»  (= «bu yıl toplam ciro»)
+  → 137.588.350 (son 12 ay)   ·  doğrusu 74.022.836 (bu yıl)
+  → not: «⏱ Dönem BELİRTMEDİN — verinin son 12 ayı alındı»
+```
+
+Kullanıcı dönemi **belirtti** — başka bir dilde. Garson ölçüyü çevirdi
+(`إجمالي الإيرادات → toplam_ciro`) ama dönemi çeviremedi: istem `هذا العام` örneğini
+taşıyor, kullanıcı ön ekli `لهذا العام` yazdı.
+
+⚠ **Karşılaştırma ölçüldü** — İngilizce yol **çalışıyor**:
+
+```
+«show me total revenue this year» → 74.022.836 ✅  (§48'in çevirisi tuttu)
+«bu yıl toplam ciro»              → 74.022.836 ✅
+«لهذا العام …»                    → 137.588.350 🔴
+```
+
+⊙ **Kök bir çeviri yaması değil** — o modelin oynaklığıdır ve istem zaten doğru
+talimatı taşıyor. Kök, **beyanın fazla iddialı olmasıdır**: sistem kullanıcının ne
+söylediğini **bilmez**, yalnız kendi **çözemediğini** bilir.
+
+```
+SONRA: «⏱ Dönemi çözemedim — verinin son 12 ayı alındı (…)»   ← her dilde DOĞRU
+```
+
+⚠ Kullanıcıya sunulan seçenek aynen duruyor (*«başka bir dönem yazarsan onu
+uygularım»*): sınır daralmadı, yalnız **iddia dürüstleşti**.
+
+*Bir beyan, ölçebildiğinden fazlasını söylediği anda bir varsayıma dönüşür — ve beyanın
+işi tam olarak varsayımı görünür kılmaktı.*

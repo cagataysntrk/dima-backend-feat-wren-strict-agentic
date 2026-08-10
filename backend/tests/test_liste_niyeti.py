@@ -32,6 +32,8 @@ principal görmez, bayrağı çağıran çözer. Varsayılan = **bugünkü davra
 
 from __future__ import annotations
 
+import pathlib
+
 import pytest
 
 from app import cube_router as cr
@@ -181,7 +183,7 @@ def test_DONEMSIZ_liste_DONEMI_BEYAN_EDER(client):
 
     ⊙ Değişmeyen şey **kapının kendisi**: dönem hâlâ bir karar noktası ve cevap hâlâ
     onu **beyan ediyor** — yalnız artık *sormak* yerine *söyleyerek varsayıyor*:
-    *«⏱ Dönem belirtmedin — verinin son 12 ayı alındı (…). Başka bir dönem yazarsan
+    *«⏱ Dönemi çözemedim — verinin son 12 ayı alındı (…). Başka bir dönem yazarsan
     onu uygularım.»* Netleştirme **kaldırılmadı**, ikinci seçenek oldu (aralık
     ölçülemezse fail-closed olarak yine sorar).
 
@@ -201,3 +203,27 @@ def test_DONEMSIZ_liste_DONEMI_BEYAN_EDER(client):
     assert (d.get("cube_query") or {}).get("filters") \
         or [s["label"] for s in (d.get("suggestions") or [])], \
         "🔴 ne dönem süzgeci ne netleştirme — kapı fiilen kalkmış"
+
+
+def test_DONEM_BEYANI_KULLANICI_HAKKINDA_KONUSMAZ():
+    """🔴🔴 `§BD` — **BEYAN, KULLANICI HAKKINDA DEĞİL KENDİ YAPTIĞI HAKKINDA KONUŞUR.**
+
+    ⊙ Canlı ölçüm (çok-dilli curl turu, 2026-08-10):
+
+        «لهذا العام إجمالي الإيرادات» (= «bu yıl toplam ciro»)
+          → 137.588.350 (son 12 ay) · doğrusu 74.022.836 (bu yıl)
+          → not: «⏱ Dönem BELİRTMEDİN …»
+
+    Kullanıcı dönemi **belirtti** — başka bir dilde. Yanlış olan yalnız sayı değil,
+    **beyanın kendisiydi**: sistem kullanıcının ne söylediğini **bilmez**, yalnız kendi
+    **çözemediğini** bilir.
+
+    *Bir beyan, ölçebildiğinden fazlasını söylediği anda bir varsayıma dönüşür — ve
+    beyanın işi tam olarak varsayımı görünür kılmaktı.*
+    """
+    from app import donem_capasi
+
+    kaynak = pathlib.Path(donem_capasi.__file__).read_text(encoding="utf-8")
+    assert "Dönemi çözemedim" in kaynak
+    assert "Dönem belirtmedin" not in kaynak, \
+        "🔴 beyan yine kullanıcının ne söylediği hakkında iddiada bulunuyor"

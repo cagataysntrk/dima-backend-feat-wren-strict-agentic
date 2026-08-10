@@ -47,7 +47,7 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "Ölçüldü: korpusun **%13,7'si** bu netleştirme; canlı turlarda "
                        "**on** kez ölçü·kırılım·sıralama çözülmüşken tek eksik dönem "
                        "yüzünden cevap gelmedi. Açıkken sistem **verinin son 12 ayını** "
-                       "alır ve bunu **görünür biçimde söyler** — *«Dönem belirtmedin — "
+                       "alır ve bunu **görünür biçimde söyler** — *«Dönemi çözemedim — "
                        "verinin son 12 ayı alındı (01.07.2025 – 30.06.2026).»* "
                        "⚠ Varsayım **kataloğa değil VERİYE** bağlıdır (`veri_araligi`): "
                        "bayat bir beyan yanlış pencere üretir, veri kendini günceller. "
