@@ -356,12 +356,33 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
         # ⚠ Karşılaştırma `plan_tek_cq` ile **birebir**: başka bir yoldan gelen bir
         # `route_hit`'e dokunmaz. *Bir ön koşulu gevşetirken, gevşemenin sınırını da
         # yazmak gerekir; yoksa gevşeme bir delik olur.*
+        from app.plan_semasi import belge_istegi as _belge_yuklemi
+        _belge_istegi = _belge_yuklemi(soru or "")
         _st = getattr(request, "state", None)
         _sekil = getattr(_st, "plan_sekil", None) or {}
         _tek_cq = getattr(_st, "plan_tek_cq", None)
         _azinlik = (_sekil.get("cok", 0) > _sekil.get("tek", 0)
                     and _tek_cq is not None
                     and route_hit.get("cube_query") == _tek_cq)
+        # 🔴🔴 `§RG` — **BİR BELGE, TEK FİŞLE KARŞILANAMAZ.**
+        #
+        # ⊙ Ölçüldü (5 koşum): *«son 2 yıl satış raporu hazırla»* → 4 koşumda belge, **1
+        # koşumda hiç plan yok** — route/garson tek fişle cevapladı ve bu blok sustu.
+        # Kullanıcı bir **belge** istedi, bir **tablo** aldı; hangisini alacağı modelin o
+        # anki tercihine kalmıştı.
+        #
+        # 🔴 Oysa bir rapor **tanımı gereği** çok bölümlüdür: tek bir sorgu onu
+        # karşılayamaz. Merdivenin kendi kuralı bunu zaten söylüyor — *«tek fişte
+        # olmuyorsa orkestre eder»* (`§0.0`).
+        #
+        # ⚠ Yüklem bir sözlük değil **yetenek listesidir**: `plan_semasi.BELGE_FIILLERI`
+        # bu dosyanın kendi fiilleridir (`FIILLER` kadar kapalı). `simge.sahipler`'in
+        # katalog kimliklerine, `§KD`'nin boyut adlarına bakması gibi.
+        # ⚠ Ve route'un cevabı **iptal edilmez**: plan koşamazsa aşağıdaki dallar yine
+        # ona döner (`KURAL B`).
+        if not _azinlik and _belge_istegi:
+            _log.info("orkestratör: BELGE istendi (%s) → tek fiş yetmez (§RG)", _belge_istegi)
+            _azinlik = True
         if not _azinlik:
             _log.info("orkestratör: route zaten cevapladı → boşluk YOK, hiç konuşmuyorum")
             return None

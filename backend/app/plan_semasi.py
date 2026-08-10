@@ -606,3 +606,52 @@ def tek_adimli(plan: dict | None) -> dict | None:
     if len(adimlar) == 1 and adimlar[0].get("fiil") == "SORGU":
         return adimlar[0].get("cube_query")
     return None
+
+
+#: 🔴🔴 `§RG` — **BİR BELGE, TEK FİŞLE KARŞILANAMAZ.**
+#:
+#: ## Ölçülen kusur (curl, 2026-08-10 · beş koşum)
+#:
+#:     «son 2 yıl satış raporu hazırla»
+#:       SORGU,SORGU,RAPOR              → 2 blok  ✅
+#:       (plan YOK)                     → rapor YOK   🔴
+#:       SORGU×3,RAPOR                  → 3 blok  ✅
+#:       SORGU×3,RAPOR                  → 3 blok  ✅
+#:       SORGU×4,RAPOR                  → 4 blok  ✅
+#:
+#: **5'te 4.** Bir koşumda route/garson tek fişle cevapladı ve `plan_tuketici` sustu
+#: (*«route zaten cevapladı → boşluk YOK»*). Kullanıcı bir **belge** istedi, bir **tablo**
+#: aldı — ve hangisini alacağı **modelin o anki tercihine** kalmıştı.
+#:
+#: ## Yüklem — sözlük değil, **yetenek listesi**
+#:
+#: Aranan şey bir Türkçe kelime değil, **bu sistemin ürettiği teslimat türlerinin adı**:
+#: `RAPOR` ve `PANO` bu dosyanın kendi `FIILLER`'inde yazılı. Yani yüklem kataloğa bakar —
+#: `simge.sahipler`'in katalog kimliklerine, `§KD`'nin boyut adlarına baktığı gibi.
+#: ADR-0008'in yasakladığı **açık uçlu sözlük** değildir: küme `FIILLER` kadar kapalıdır.
+#:
+#: ⚠ Ve karar **cevabı iptal etmez**: yalnız *«tek fiş yeterli değil»* der ve merdivenin
+#: kendi kuralını uygular — *«tek fişte olmuyorsa orkestre eder»* (`§0.0`).
+#:
+#: ⚠ Kapsam **taze soruyla** sınırlı: *«bu raporu nasıl yorumlarsın»* bir takiptir ve
+#: oraya `followup` bakar. Bir belgeyi **istemek** ile bir belge **hakkında konuşmak**
+#: aynı şey değildir.
+#:
+#: *Bir teslimat türünü tanımayan sistem, onu ancak tesadüfen üretir.*
+BELGE_FIILLERI: tuple[str, ...] = ("RAPOR", "PANO")
+
+
+def belge_istegi(soru: str) -> str | None:
+    """Soru bu sistemin ürettiği bir **teslimat türünü** adıyla istiyor mu? → fiil adı.
+
+    ⚠ `cube_router._syn_hit` çağrılır (yeniden yazılmaz): kelime başı + geçerli ek
+    zinciri disiplini bütün depoda aynıdır — *«raporu»*, *«panosu»*, *«raporunu»* geçer;
+    *«raportaj»* geçmez.
+    """
+    from app.cube_router import _norm, _syn_hit
+
+    q = _norm(soru or "")
+    for fiil in BELGE_FIILLERI:
+        if _syn_hit(q, fiil.lower()):
+            return fiil
+    return None

@@ -10700,3 +10700,29 @@ tek fiş onu **karşılayamaz**. Merdivenin kendi kuralı bunu zaten söylüyor 
 ⊙ Ve `«rapora kârlılık da ekle»` ölçüldü: `source=cube`, tek satır, `rapor` **yok** —
 yani **düzenleme** de henüz yok. İkisi aynı kökten: sistem *«belge»*yi bir **teslimat
 türü** olarak tanımıyor.
+
+## ✅ `§RG` KAPATILDI — **4/5 → 5/5**
+
+```
+ÖNCE                                        SONRA
+SORGU,SORGU,RAPOR             → 2 blok      SORGU×3,RAPOR → 3 blok
+(plan YOK)                    → 🔴 YOK      SORGU×3,RAPOR → 3 blok
+SORGU×3,RAPOR                 → 3 blok      SORGU×3,RAPOR → 3 blok
+SORGU×3,RAPOR                 → 3 blok      SORGU×3,RAPOR → 3 blok
+SORGU×4,RAPOR                 → 4 blok      SORGU×3,RAPOR → 3 blok
+```
+
+Beş koşumun **beşi** de belge üretiyor **ve aynı şekli** üretiyor — yani yalnız
+güvenilirlik değil, **kararlılık** da geldi.
+
+**Kök çözüm:** `plan_tuketici` route cevapladığında susuyordu; artık soru bir **teslimat
+türü** adlandırıyorsa (`plan_semasi.belge_istegi`) tek fiş **yeterli sayılmıyor**.
+Merdivenin kendi kuralı zaten buydu — *«tek fişte olmuyorsa orkestre eder»*.
+
+⚠ **Yüklem bir sözlük değil bir yetenek listesidir:** `BELGE_FIILLERI ⊆ FIILLER`, yani
+küme sistemin kendi fiilleri kadar **kapalı** (kapılı: `test_KUME_FIILLERLE_TUTARLI`).
+`simge.sahipler`'in katalog kimliklerine, `§KD`'nin boyut adlarına bakması gibi.
+
+⚠ Ve route'un cevabı **iptal edilmiyor**: plan koşamazsa alt dallar yine ona döner.
+
+> *Bir teslimat türünü tanımayan sistem, onu ancak tesadüfen üretir.*
