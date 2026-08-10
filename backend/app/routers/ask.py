@@ -2806,6 +2806,26 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # üreticilere tek tek koymak dördüncü bir kopya olurdu.
         if _siralama.tamamla(cq, q_norm, sema=schema):
             trace = [*trace, "üstünlük: sıralama sistem tarafından tamamlandı"]
+        # 🔴🔴 `§EŞ-2` — **EŞİK KURALI YALNIZ BİR DALDA GEÇERLİYDİ.**
+        #
+        # ⊙ Canlı ölçüm (curl turu, 2026-08-10): *«bu yıl fire oranı %20 üstü olan
+        # hatlar»* → 8 hattın **hepsi** döndü ve `uyum` dürüstçe *«eşiği filtreye
+        # çeviremedim»* dedi. Oysa ayrıştırıcı **kusursuz**: `_measure_threshold`
+        # beş ayrı yazımda da `{'op':'>','value':20.0}` üretiyor (ölçüldü).
+        #
+        # 🔴 Kök: `niyet_tasima.esik` **yalnız dönem-netleştirme dalında** çağrılıyordu
+        # (`§40`'ın kendi vakası). Normal cevap yolunda hiç koşmuyordu — yani kural
+        # yazılmıştı ama **tek bir dalda** yaşıyordu.
+        #
+        # ⊙ Bugünün üçüncü aynı-sınıf bulgusu (`§DK-2` route-yalnız · `§AA1` çağıran
+        # tarafta yok · bu): *bir kural yalnız bir basamakta geçerliyse, o kural değil
+        # bir tesadüftür.* Huni, kuralın **her** yolda geçerli olduğu tek yerdir.
+        #
+        # ⚠ Sınırı `niyet_tasima.esik`'in kendisinde: zaten `measure_having` varsa
+        # dokunmaz, ölçü yoksa hiçbir şey yapmaz — eşik neyin eşiği olduğu bilinmeden
+        # uygulanamaz.
+        if _niyet_tasima.esik(cq, body.question or ""):
+            trace = [*trace, "eşik ölçüye uygulandı (§EŞ-2, LLM'siz)"]
         # KALICI GRANÜLERLİK TERCİHİ (FAZ E) — SQL derlenmeden ÖNCE uygulanır ki
         # cevaptaki sayı ile `cube_query` BİREBİR aynı şeyi anlatsın (sonradan
         # uygulansaydı makbuz ile rapor ayrışırdı).

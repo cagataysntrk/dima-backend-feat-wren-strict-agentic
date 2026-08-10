@@ -100,6 +100,9 @@ class Bulgu:
     oneri: str | None = None
     #: Boyutun tam enum'u (kırpılmamış) — çağıran chip üretirken kırpar.
     gecerliler: list[str] = field(default_factory=list)
+    #: 🔴 `§TK` — sıralı operatör + metin enum. **Anlamsızlığı KANITLI** olduğu için
+    #: netleştirme değil **düşürme** gerektirir (bkz. `duzelt_yerinde`).
+    tur_hatasi: bool = False
 
 
 def _norm(s: str) -> str:
@@ -191,7 +194,8 @@ def denetle(cq: dict, schema: dict | None) -> list[Bulgu]:
         if op in SIRALI_OPERATORLER:
             if not any(_sayi_mi(g) for g in gecerliler):
                 out.append(Bulgu(boyut=boyut, deger=str(f.get("value")),
-                                 oneri=None, gecerliler=list(gecerliler)))
+                                 oneri=None, gecerliler=list(gecerliler),
+                                 tur_hatasi=True))
             continue
         if op not in KIMLIK_OPERATORLERI:
             continue
@@ -216,9 +220,40 @@ def duzelt_yerinde(cq: dict, bulgular: list[Bulgu]) -> str | None:
     ⚠ `cq` yerinde değişir çünkü bu deponun süzgeç düzeltme deseni odur
     (`donem_capasi.tasi_yerinde`); ikinci bir dönüş türü her çağıranı değiştirirdi.
     """
+    # 🔴🔴 `§TK-2` — **ANLAMSIZ BİR SÜZGEÇ DÜŞÜRÜLÜR, TURU DÜŞÜRMEZ.**
+    #
+    # ⊙ Canlı ölçüm (curl turu, 2026-08-10): *«%20 üstü olan hatlar»* → garson
+    # `{"dimension":"hat","operator":"gt","value":"20"}` üretti. `§TK` bunu yakaladı ve
+    # **sorguyu bloke etti** — ama aynı turda deterministik eşik zaten uygulanmıştı
+    # (`niyet_tasima.esik`, huni sırası: eşik 2735 → değer çapası 2832 → derleme 2849).
+    # Yani doğru cevap **hazırdı** ve kapı onu tutuyordu.
+    #
+    # ⊙ Ayrım şu: *«bu değer listede yok»* bir **belirsizliktir** — kullanıcı gerçekten
+    # o değeri kastetmiş olabilir, sormak gerekir. Ama *«hat adı > 20»* bir **tür
+    # hatasıdır** ve anlamsızlığı **kanıtlıdır**: bir metin etiketi bir sayıdan büyük
+    # olamaz. Kanıtlı anlamsız bir süzgeç, kullanıcının kastettiği şey **olamaz**.
+    #
+    # ⚠ Bu yüzden düşürülür **ve söylenir** — sessizce değil. *Bir sınırı aşmıyoruz;
+    # anlamsız bir şeyi anlamlıymış gibi davranmayı bırakıyoruz.*
+    dusen = [b for b in bulgular if b.tur_hatasi]
+    if dusen:
+        _at = {(b.boyut, _norm(b.deger)) for b in dusen}
+        cq["filters"] = [f for f in (cq.get("filters") or [])
+                         if not (isinstance(f, dict)
+                                 and (str(f.get("dimension") or ""),
+                                      _norm(str(f.get("value")))) in _at)]
     esleme = {(b.boyut, _norm(b.deger)): b.oneri for b in bulgular if b.oneri}
-    if not esleme:
+    if not esleme and not dusen:
         return None
+    if dusen and not esleme:
+        adlar = " · ".join(f"«{b.deger}» → **{b.boyut}**" for b in dusen)
+        # ⚠ **YAPTIĞIMDAN FAZLASINI SÖYLEME.** İlk yazım *«Eşik ölçünün kendisine
+        # uygulandı»* diyordu — ama bu fonksiyon eşiği **uygulamaz**, yalnız anlamsız
+        # süzgeci düşürür. Canlıda ölçüldü ve cümle o an **yalandı**. Bugün üçüncü kez
+        # aynı ders (`§BD` · `§UY/K` · bu): *bir beyan, ölçebildiğinden fazlasını
+        # söylediği anda bir varsayıma dönüşür.*
+        return (f"⚠ Anlamsız bir süzgeç düşürüldü ({adlar}): bir metin etiketi bir "
+                f"sayıyla karşılaştırılamaz.")
     soylenen: list[str] = []
     for f in cq.get("filters") or []:
         if not isinstance(f, dict):
@@ -252,7 +287,7 @@ def netlestirme_metni(bulgular: list[Bulgu]) -> str:
     🔴 *"Anlamadım"* demez: neyin bulunmadığını **adıyla** söyler ve neyin bulunduğunu
     gösterir. Bir sınırı söylemek, onu gizlemekten her zaman daha kullanışlıdır.
     """
-    yok = [b for b in bulgular if not b.oneri]
+    yok = [b for b in bulgular if not b.oneri and not b.tur_hatasi]
     if not yok:
         return ""
     # 🔴 **BOYUTA GÖRE GRUPLANIR — ve bunu canlı bir ölçüm istedi.**
@@ -289,7 +324,7 @@ def secenekler(bulgular: list[Bulgu]) -> list[dict]:
     """Netleştirme chip'leri — **gerçek** değerlerden üretilir, uydurulmaz."""
     out: list[dict] = []
     for b in bulgular:
-        if b.oneri:
+        if b.oneri or b.tur_hatasi:
             continue
         for g in b.gecerliler[:EN_FAZLA_SECENEK]:
             out.append({"label": str(g), "query": str(g), "kind": "deger"})
@@ -315,7 +350,12 @@ def huni_karari(cq: dict, schema: dict | None) -> tuple[str | None, dict | None]
     if not bulgular:
         return None, None
     duzeltme = duzelt_yerinde(cq, bulgular)
-    if any(not b.oneri for b in bulgular):
+    # 🔴 `§TK-2` — **tür hatası netleştirme SEBEBİ DEĞİLDİR:** anlamsızlığı kanıtlı bir
+    # süzgeç `duzelt_yerinde` tarafından **düşürüldü** ve beyan edildi; geriye sorulacak
+    # bir şey kalmaz. ⚠ Bu satır ilk yazımda atlanmıştı ve canlıda ölçüldü: süzgeç
+    # düşüyordu ama tur yine **boş** dönüyordu — *bir kararı değiştirmek, o kararı veren
+    # her satırı değiştirmektir.*
+    if any(not b.oneri and not b.tur_hatasi for b in bulgular):
         return duzeltme, {"note": netlestirme_metni(bulgular),
                           "secenekler": secenekler(bulgular)}
     return duzeltme, None

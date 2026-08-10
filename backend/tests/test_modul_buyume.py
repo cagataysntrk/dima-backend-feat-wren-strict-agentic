@@ -89,6 +89,20 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("es2-esik-hunide", 2,
+     "🔴🔴 **`§EŞ-2` — EŞİK KURALI YALNIZ BİR DALDA GEÇERLİYDİ.** Canlı: *«bu yıl fire "
+     "oranı %20 üstü olan hatlar»* → 8 hattın **hepsi** döndü ve `uyum` dürüstçe *«eşiği "
+     "filtreye çeviremedim»* dedi. Oysa ayrıştırıcı **kusursuz**: `_measure_threshold` "
+     "beş ayrı yazımda da `{'op':'>','value':20.0}` üretiyor (ölçüldü). "
+     "🔴 Kök: `niyet_tasima.esik` **yalnız dönem-netleştirme dalında** çağrılıyordu "
+     "(`§40`'ın kendi vakası); normal cevap yolunda hiç koşmuyordu. Kural yazılmıştı ama "
+     "**tek bir dalda** yaşıyordu. "
+     "⊙ Bugünün üçüncü aynı-sınıf bulgusu (`§DK-2` route-yalnız · `§AA1` çağıranda yok · "
+     "bu): *bir kural yalnız bir basamakta geçerliyse, o kural değil bir tesadüftür.* "
+     "⊙ Δ = 2: **gövde zaten modülde** (`niyet_tasima.esik`); burada kalan çağrı ve izi. "
+     "⚠ **TAŞINAMAZ:** huni, kuralın **her** yolda geçerli olduğu tek yerdir — taşımak "
+     "onu yine tek bir dala hapsetmek olurdu. "
+     f"`sha=c5e7b38`"),
     ("aa2-red-yaninda-rapor", 6,
      "🔴🔴 **`§AA2` — BİR TEKNİĞİN REDDİ, TURUN REDDİ OLAMAZ.** Canlı 7 turluk zincirde "
      "ölçüldü: altı tur kusursuz aktı (odak beyanlı, yoy hesaplandı, ciro eklendi) ve "

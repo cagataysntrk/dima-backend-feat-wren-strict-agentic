@@ -9898,3 +9898,37 @@ yok (kod-benzeri boyutlar `«1»·«2»` gerçekten sıralanabilir).
 ⚠ Bir de dil kusuru çıktı ve düzeltildi: *««20» — bu değeri hat listesinde yok»* — tekil
 ve çoğul **iki ayrı cümledir**, tek şablona sıkıştırılamaz. *Bir doğru bilgiyi bozuk bir
 cümleyle vermek, onu yarı yarıya vermektir.*
+
+## 🔴 `§EŞ-2` + `§TK-2` — EŞİK ÜÇ ADIMDA ÇÖZÜLDÜ, VE ÜÇÜ DE FARKLI KÖK
+
+| adım | ne denendi | sonuç |
+|---|---|---|
+| 1 · `§EŞ` | alanı **isteme** ekle (`measure_having` şablonda) | 🔴 garson `hat gt "20"` üretti — tür hatası |
+| 2 · `§TK` | tür hatasını **yakala** | 🔴 doğru ama **sorguyu bloke etti** — cevap hazırdı, kapı tutuyordu |
+| 3 · `§TK-2` + `§EŞ-2` | anlamsız süzgeci **düşür** + eşiği **huniye** taşı | ✅ **8 satır → 3 satır**, hepsi %20 üstü |
+
+### `§TK-2` — anlamsız bir süzgeç düşürülür, turu düşürmez
+
+⊙ Ayrım: *«bu değer listede yok»* bir **belirsizliktir** (sormak gerekir); *«hat adı >
+20»* bir **tür hatasıdır** ve anlamsızlığı **kanıtlıdır** — kullanıcının kastettiği şey
+**olamaz**. Kanıtlı anlamsız bir süzgeç düşürülür **ve söylenir**.
+
+⚠ Ve `huni_karari`'yi güncellemeyi **atlamıştım**: süzgeç düşüyordu ama tur yine boş
+dönüyordu. *Bir kararı değiştirmek, o kararı veren her satırı değiştirmektir.*
+
+### `§EŞ-2` — kural yalnız BİR dalda geçerliydi
+
+Ayrıştırıcı **kusursuz** çalışıyordu (`_measure_threshold` beş yazımda da
+`{'op':'>','value':20.0}`), ama `niyet_tasima.esik` **yalnız dönem-netleştirme dalında**
+çağrılıyordu. Normal cevap yolunda hiç koşmuyordu.
+
+⊙ **Bugünün üçüncü aynı-sınıf bulgusu** (`§DK-2` route-yalnız · `§AA1` çağıranda yok ·
+bu): *bir kural yalnız bir basamakta geçerliyse, o kural değil bir tesadüftür.* Huni,
+kuralın **her** yolda geçerli olduğu tek yerdir.
+
+### ⚠ Ve kendi beyanım bir kez yalan söyledi
+
+İlk yazımda not *«Eşik ölçünün kendisine uygulandı»* diyordu — ama o fonksiyon eşiği
+**uygulamaz**, yalnız anlamsız süzgeci düşürür. Canlıda ölçüldü ve cümle o an **yalandı**;
+kaldırıldı. Bugün üçüncü kez aynı ders (`§BD` · `§UY/K` · bu):
+*bir beyan, ölçebildiğinden fazlasını söylediği anda bir varsayıma dönüşür.*

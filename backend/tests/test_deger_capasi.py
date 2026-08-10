@@ -89,6 +89,28 @@ def test_ALT_DIZE_OPERATORU_UYELIK_SORMAZ():
                       _SEMA) == []
 
 
+def test_TUR_HATASI_DUSURULUR_TURU_DUSURMEZ():
+    """🔴🔴 `§TK-2` — **ANLAMSIZ BİR SÜZGEÇ DÜŞÜRÜLÜR, TURU DÜŞÜRMEZ.**
+
+    ⊙ Canlı: *«%20 üstü olan hatlar»* → garson `hat gt "20"` üretti; `§TK` yakaladı ve
+    **sorguyu bloke etti** — ama aynı turda deterministik eşik zaten uygulanmıştı
+    (`niyet_tasima.esik`). Doğru cevap **hazırdı** ve kapı onu tutuyordu.
+
+    ⊙ Ayrım: *«bu değer listede yok»* bir **belirsizliktir** (sormak gerekir); *«hat adı
+    > 20»* bir **tür hatasıdır** ve anlamsızlığı **kanıtlıdır** — kullanıcının
+    kastettiği şey **olamaz**.
+
+    *Bir sınırı aşmıyoruz; anlamsız bir şeyi anlamlıymış gibi davranmayı bırakıyoruz.*
+    """
+    cq = _cq(dimension="makine", operator="gt", value="20")
+    b = dk.denetle(cq, _SEMA)
+    metin = dk.duzelt_yerinde(cq, b)
+    assert cq["filters"] == [], "🔴 anlamsız süzgeç düşürülmedi"
+    assert metin and "Anlamsız bir süzgeç düşürüldü" in metin
+    assert dk.netlestirme_metni(b) == "", "🔴 tür hatası netleştirme ÜRETMEMELİ"
+    assert dk.secenekler(b) == []
+
+
 def test_SIRALI_OPERATOR_METIN_ENUMDA_TUR_HATASIDIR():
     """🔴🔴 `§TK` — canlı ölçüm: garson *«%20 üstü»* için
     `{"dimension":"hat","operator":"gt","value":"20"}` üretti — **hat adını 20 ile
@@ -98,8 +120,7 @@ def test_SIRALI_OPERATOR_METIN_ENUMDA_TUR_HATASIDIR():
     ölçüm o beklentiyi çürüttü. *Bir kapının kapsamı, kaçırdığı kusurla ölçülür.*
     """
     b = dk.denetle(_cq(dimension="makine", operator="gt", value="20"), _SEMA)
-    assert b and b[0].boyut == "makine"
-    assert "listesinde yok" in dk.netlestirme_metni(b)
+    assert b and b[0].boyut == "makine" and b[0].tur_hatasi is True
 
 
 def test_SAYISAL_ENUMDA_SIRALI_OPERATOR_MESRUDUR():
@@ -192,3 +213,26 @@ def test_TEK_HATADA_CUMLE_DUZGUN():
         dk.denetle(_cq(dimension="makine", operator="eq", value="Bakım"), _SEMA))
     assert "«Bakım» **makine** listesinde yok" in metin
     assert "bu değeri" not in metin
+
+
+def test_HUNI_KARARI_TUR_HATASINDA_NETLESTIRMEZ():
+    """🔴 `§TK-2`'nin ikinci yarısı — ve ilk yazımda **atlanmıştı**.
+
+    Süzgeç düşürülüyordu ama `huni_karari` hâlâ *«karşılığı yok → netleştir»* diyordu;
+    canlıda ölçüldü: süzgeç düştü, tur yine **boş** döndü.
+
+    *Bir kararı değiştirmek, o kararı veren her satırı değiştirmektir.*
+    """
+    cq = _cq(dimension="makine", operator="gt", value="20")
+    duz, netlestir = dk.huni_karari(cq, _SEMA)
+    assert netlestir is None, "🔴 tür hatası hâlâ netleştirmeye düşürüyor"
+    assert duz and "Anlamsız bir süzgeç düşürüldü" in duz
+    assert cq["filters"] == []
+
+
+def test_HUNI_KARARI_GERCEK_BELIRSIZLIKTE_NETLESTIRIR():
+    """⚠ Kapı fazla ileri gitmemeli: *«Bakım» makine listesinde yok* hâlâ bir
+    **belirsizliktir** ve sorulmalıdır."""
+    cq = _cq(dimension="makine", operator="eq", value="Bakım")
+    _duz, netlestir = dk.huni_karari(cq, _SEMA)
+    assert netlestir is not None and netlestir["secenekler"]
