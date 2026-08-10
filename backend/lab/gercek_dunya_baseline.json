@@ -1,11 +1,11 @@
 {
  "vaka": 2286,
- "kabul": 1147,
- "dogru": 96,
+ "kabul": 1146,
+ "dogru": 95,
  "sessiz_yanlis": 8,
  "beyanli_kismi": 41,
  "netlestirme": 0,
- "devir": 2141,
+ "devir": 2142,
  "_sapmalar": {
   "en çok tekrarlanan tamir sebepleri neler": "durust_ret",
   "bu yıl en çok duran makineleri listele": "durust_ret",
@@ -1705,6 +1705,7 @@
   "demin dediğin geri gelen trendi aralık ayında  listele yani çıkar 1,5 milyon üzeri": "durust_ret",
   "bunu may ıstan bugüne toplam borc toplami hesapla yani kıyasla": "durust_ret",
   "E OCAK AYINDA ATIKSU IYI Mi kötü mü listele yani ölç": "durust_ret",
+  "hangi vardiya bazında 3. çeyrek kaza adedi 50.000 altı": "durust_ret",
   "yukarıdaki bir de suresi nasıl gidiyor": "durust_ret",
   "yani 2025'te defect iyi mi kötü mü ?!": "durust_ret",
   "yukarıdaki duruş sayısı trendi yıl başından bugüne ölç yani getir": "durust_ret",
@@ -2195,5 +2196,6 @@
   "MŞT BZND 2025'TE KM BASi maliyet, vrd ayrımıyla": "durust_ret",
   "e açık şikayet önü müzdeki ay ne olur": "durust_ret",
   "peki ocak ayında enerji yogunlugu ve ayrıca stage bazında km basi maliyet lazım 🙏": "durust_ret"
- }
+ },
+ "_nufus": "2286:952160adf9bde2fd"
 }
