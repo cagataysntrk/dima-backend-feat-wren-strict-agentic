@@ -302,6 +302,32 @@ features:
   # Yani alan bilgisi KAYBOLMAZ, yalnız DAYATILMAZ. Bayrak açık ama tenant kararı yoksa
   # davranış BİREBİR bugünkü — korpusla doğrulandı.
   metrik_kaydi: beta
+  # 🔴🔴 `D5` — **NEDEN KAPALI OLDUĞU BUGÜN ARAŞTIRILDI VE ÖLÇÜLDÜ (2026-08-10).**
+  #
+  # Rapor `F5`: *"8 test dosyası · 7 kod dosyası — ve hâlâ `off`. Neden kapalı olduğu
+  # HİÇBİR YERDE yazılı değil. İlk iş gerekçeyi bulmak; gerekçe yoksa bugün açılabilir."*
+  # Gerekçe **vardı ama yazılmamıştı**; işte:
+  #
+  # ⊙ ÖLÇÜM (canlı control-plane): `DbConnection` **0 satır** · `SyncState` **0 satır**.
+  # Tazelik `SyncState.last_synced_at`'ten okunur (`answer.py::_tazelik_blogu`).
+  # Kayıt yoksa kademe **`bilinmiyor`** olur ve o kademede — tasarım gereği —
+  # **SAYI GÖSTERİLMEZ**. Yani bu bayrak bugün açılsaydı ürün **hiçbir sayı
+  # göstermezdi**. Bu bir gerileme değil, bir **karartma** olurdu.
+  #
+  # 🔴 VE ASIL KUSUR BURADA: bayrak *«senkron bilinmiyor»* ile *«veri bayat»*ı **aynı
+  # kademeye** koyuyor. Dosya-tabanlı (DuckDB) bir kiracıda senkron diye bir kavram
+  # YOKTUR — bilinmemesi bir bayatlık işareti değil, **sorunun geçersizliğidir**.
+  # `B4` (*"bilinmeyen tazelik taze DEĞİLDİR"*) doğru bir kuraldır ama **bağlanabilir**
+  # kiracılar için yazılmıştır; dosya kiracısına uygulanınca *ölçülemeyeni kötü
+  # varsaymaya* dönüşüyor — ki o da bir uydurmadır, ters yönde.
+  #
+  # 🔴 `on` ŞARTI (`E-4`): (1) kiracının **gerçek bir bağlantısı** olmalı
+  # (`DbConnection` + `SyncState` dolu), **ya da** (2) dosya kiracıları için `bilinmiyor`
+  # kademesi *«sayıyı gizle»* yerine *«tazelik kavramı yok»* diye ayrılmalı.
+  # ⚠ İkincisi bir kod işidir ve `F5`'in gerçek içeriği odur — bayrağı çevirmek değil.
+  #
+  # *Bir yeteneğin kapalı olması bazen bir unutulmuşluk, bazen tek yazılmamış bir
+  # gerekçedir; ikisini ayırmanın tek yolu aramaktır.*
   tazelik: "off"          # FAZ 1.7: "bu sayı ne kadar eski?" — dört kademe.
                           # 🔴 `hata` VE `bilinmiyor` kademelerinde SAYI GÖSTERİLMEZ.
                           # Kapalıyken alanlar `None` → davranış birebir bugünkü.
