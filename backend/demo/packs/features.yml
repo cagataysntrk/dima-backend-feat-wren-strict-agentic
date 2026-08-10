@@ -33,7 +33,13 @@ features:
   # FAZ 4.5 — MCP yüzeyi. `off`: /mcp/* 404 döner, HTTP yolu ETKİLENMEZ.
   mcp_yuzeyi: "off"
   # FAZ 5.1 — 6. konuşma türü ("bunu takip et"). `off`: tür tanınmaz, davranış birebir.
-  tur_takip: "off"
+  # 🔴 `F6`/`D1` — **AÇILDI (2026-08-10).** Rapor: *«yeni motor yazılmadı, yalnız
+  # ERİŞİM açılıyor»* — `zamanla.olustur` zaten var ve testli (`test_tur_takip.py`).
+  # ⊙ Kapalı kalmasının sebebi bir tasarım kararı değil, bir **unutulmuşluktu**:
+  # ödenmiş, testli bir yetenek kullanıcıya kapalı duruyordu — `E-1`'in tarifi
+  # (*«ödenmiş, testli, kapalı duran bir yetenek harcanmış bir emektir»*).
+  # 🔴 `on` ŞARTI: canlı turda bir takip kurulup **tetiklendiği** görülmeli.
+  tur_takip: beta
   # FAZ 5.10 — KPI pin. `off`: pano bugünkü davranışında, pinler SİLİNMEZ görünmez olur.
   kpi_pin: "off"
   # FAZ 5.12 — içgörü paketi. `off`: `viz_paketi` None, tekil kart birebir bugünkü hâlde.
@@ -68,7 +74,11 @@ features:
   # mümkün — geri alma tek satır.
   olcu_ekleme_takibi: beta
   # FAZ 5.2 — 7. konuşma türü ("paylaş"). `off`: kalıplar eşleşmez, TUR_ANLAT birebir.
-  tur_paylas: "off"
+  # 🔴 `F6`/`D1` — **AÇILDI (2026-08-10).** Raporun kendi cümlesi: *«çalışan, testli
+  # bir yetenek BİR KELİME yüzünden kullanıcıya kapalıydı»*.
+  # 🔴 `on` ŞARTI: paylaşım bağlantısının **yetki sınırını** koruduğu canlı turda
+  # doğrulanmalı — paylaşım bir RLS gevşemesi DEĞİLDİR.
+  tur_paylas: beta
   # ⚠ AŞAĞIDAKİ ÜÇÜ FAZ 4.6'DA EKLENDİ — bir denetim ölçtü: `FLAG_REGISTRY`'de kayıtlı
   # ama bu dosyada YOKLARDI, yani varsayılanları hiçbir yerde YAZILI DEĞİLDİ. Yokluk ile
   # `"off"` çözümlemede aynı sonucu verir (`resolve_for` `off`u kümeden düşürür), bu
@@ -97,7 +107,22 @@ features:
   threaded_chat: "off"         # thread'li sohbet UI'ı
   # FAZ 2.5 — hedef kıyası. `off`: `resp.hedef` HİÇ üretilmez → yanıt bayt bayt bugünküyle
   # aynı (KURAL B). 🔴 Açıkken bile hedef UYDURULMAZ: `target:` beyanı yoksa `None`.
-  hedef_kiyasi: "off"
+  # 🔴 `F6`/`D1` — **AÇILDI (2026-08-10) ve açmanın bedeli KANITLANDI, tahmin edilmedi.**
+  #
+  # ⊙ Ölçüldü: `hedefler:` beyan eden küp sayısı **0**. `hedef.blok()` beyan yoksa
+  # `None` döner → `resp.hedef` üretilmez → yanıt **bayt bayt bugünküyle aynı**.
+  # Yani bu açılış bugün **sıfır davranış** değiştirir; ilk `hedefler:` beyanıyla
+  # birlikte canlanır.
+  #
+  # ⚠ Rapor `F6` şartı *"önce KAPI, sonra aç"*: `tests/test_hedef_kiyasi.py` (9 kapı)
+  # yazıldı. Sözleşmenin üç sert kuralı kilitli: beyan yoksa **uydurma yok** ·
+  # `None ≠ 0` (*sıfır hedef ULAŞILMIŞ bir hedeftir, hedefsizlik ölçülemezliktir*) ·
+  # `gerceklesen` **sonuçtan** okunur.
+  #
+  # 🔴 **`on` ŞARTI (`E-4`):** en az bir küp `hedefler:` beyan etmiş **ve** canlı bir
+  # turda blok doğru görünmüş olmalı (`ulasildi` yönü `lower_is_better` ile tutarlı).
+  # ⚠ Ön koşulu `B-5`'tir: yön beyanı yanlışsa *«hedefe ulaşıldı»* kararı TERS çıkar.
+  hedef_kiyasi: beta
   cikti_yorumlama: beta   # evrensel çıktı yorumu — her tablo/grafik/rapor/KPI
   sql_display: beta       # üretilen SQL'i kullanıcıya göster ('+ sql göster')
   verify_button: beta     # ✓/✗ doğrulama — VQR öğrenme (eskiden boyahane sektöründe)

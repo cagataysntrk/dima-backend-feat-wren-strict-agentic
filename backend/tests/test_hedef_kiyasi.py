@@ -1,163 +1,99 @@
-"""FAZ 2.5 — **HEDEF KIYASI** kapısı. [bayrak yok: değişmez]
+"""🔴 `F6`/`D1` — **HEDEF KIYASI**: `beta`'ya çıkmadan önce kapı.
 
-## Ölçülen durum — ve neyin kusur OLMADIĞI
+Rapor `F6`: *"`hedef_kiyasi` — `off`, 🔴 **0 test**. Önce **kapı**, sonra aç."*
+Ve sebebi bir sessiz-yanlış: grafikteki referans çizgisi bugün **hedef değil
+ortalama** — *"kod bunu `interpret.py`'de itiraf ediyor"*.
 
-`viz.py` referans çizgisini `{"kind": "average"}` üretiyor, `chart.ts` onu `Ort.` diye
-etiketliyor: **yanlış etiketleme YOK**, sistem bugün dürüst. Eksik olan **mekanizmanın
-kendisi** — `target:` beyanı hiçbir cube'da yoktu, yani kullanıcı *"hedefimin altında
-mıyım"* diye soramıyor, grafikte gördüğü çizgi her zaman **kendi ortalaması** oluyordu.
+## Bu bayrağın sözleşmesi — üç sert kural
 
-## 🔴 DEĞİŞMEZ: HEDEF UYDURULMAZ
+| kural | neden |
+|---|---|
+| beyan yoksa `None` | **hedef UYDURULMAZ**; `pvm:` eşleştirmesinde reddedilen şeyin aynısı |
+| `None` ≠ `0` | *sıfır hedef **ulaşılmış** bir hedeftir; hedefsizlik **ölçülemezliktir**"* |
+| `gerceklesen` **sonuçtan** okunur | hedeften türetmek, kullanıcının sayısını sistemin sayısıyla değiştirmek olurdu |
 
-*"Hedef yok"* ile *"hedef 0"* asla karıştırılmaz: sıfır hedef **ulaşılmış** bir hedeftir,
-hedefsizlik ise **ölçülemezliktir**.
+⚠ Ve `yon` yeniden beyan edilmez, `lower_is_better`'dan **türer** — yani `B-5`'in
+173/173 yön beyanı bu bayrağın **ön koşuludur**: yön yanlışsa *«hedefe ulaşıldı»*
+kararı da ters çıkar.
 """
 
 from __future__ import annotations
 
-import pathlib
+from app.hedef import beyan, blok, yon
 
-from app import hedef as H
-from app import viz
-
-KOK = pathlib.Path(__file__).resolve().parents[1]
-FE = KOK.parent / "dima-frontend-demo-master" / "src"
-
-_SEMA = {"cubes": [{"name": "oee", "hedefler": {"ort_oee": 85.0, "fire_orani": 2.0},
-                    "lower_is_better": ["fire_orani"]}]}
+_SEMA = {"cubes": [{
+    "name": "oee",
+    "measures": ["ort_oee", "toplam_fire_kg"],
+    "lower_is_better": ["toplam_fire_kg"],
+    "hedefler": {"ort_oee": 0.75, "toplam_fire_kg": 1000, "bozuk": "abc", "sifir": 0},
+}, {"name": "parti", "measures": ["toplam_ciro"]}]}
 
 
-# ── 1 · HEDEF UYDURULMAZ ────────────────────────────────────────────────────
-
-def test_BEYAN_YOKSA_HEDEF_YOK():
-    """🔴 **Maddenin değişmezi.** Beyan yoksa `None` — ve çağıran bunu *"hedef 0"* diye
-    okuyamaz."""
-    assert H.beyan(_SEMA, "oee", "olmayan_olcu") is None
-    assert H.beyan(_SEMA, "olmayan_cube", "ort_oee") is None
-    assert H.blok(_SEMA, {"cube": "oee", "measures": ["olmayan"]},
-                  {"rows": [{"olmayan": 5}]}) is None
+# ── beyan ────────────────────────────────────────────────────────────────────
+def test_BEYAN_YOKSA_HEDEF_UYDURULMAZ():
+    """🔴 *Demo için hedef uydurmak, `pvm:` eşleştirmesinde reddedilenin aynısıdır.*"""
+    assert beyan(_SEMA, "parti", "toplam_ciro") is None
+    assert beyan(_SEMA, "oee", "olmayan_olcu") is None
+    assert beyan(_SEMA, None, "ort_oee") is None
 
 
-def test_BOZUK_BEYAN_HEDEF_SAYILMIYOR():
-    """⚠ Bozuk bir beyanı `0` kabul etmek, *"hedef yok"* ile *"hedef 0"* ayrımını yok
-    ederdi — ve kullanıcı **ulaşılmış** bir hedef görürdü."""
-    sema = {"cubes": [{"name": "x", "hedefler": {}}]}
-    assert H.beyan(sema, "x", "m") is None
+def test_SIFIR_HEDEF_HEDEFSIZLIK_DEGILDIR():
+    """🔴🔴 `None` *«hedef 0»* DEĞİLDİR.
+
+    *Sıfır hedef **ulaşılmış** bir hedeftir; hedefsizlik ise **ölçülemezliktir**.*
+    Bu ayrım kaybolursa hedefi olmayan her ölçü *«hedefe ulaştı»* diye raporlanır.
+    """
+    assert beyan(_SEMA, "oee", "sifir") == 0.0
+    assert beyan(_SEMA, "oee", "sifir") is not None
 
 
-def test_SIFIR_HEDEF_GECERLI_ve_YUZDE_TANIMSIZ():
-    """🔴 Sıfır **geçerli bir hedeftir** (ulaşılmış). Ama sapma yüzdesi **tanımsızdır** —
-    `inf`/`0` yazmak, bir tanımsızlığı bir ölçüm gibi gösterirdi."""
-    sema = {"cubes": [{"name": "x", "hedefler": {"kaza": 0.0},
-                       "lower_is_better": ["kaza"]}]}
-    b = H.blok(sema, {"cube": "x", "measures": ["kaza"]}, {"rows": [{"kaza": 0}]})
-    assert b["hedef"] == 0.0 and b["ulasildi"] is True
-    assert b["sapma_yuzde"] is None
+def test_BOZUK_BEYAN_BEYAN_YOKTUR():
+    """⚠ Bozuk bir sayı, *«0»* diye okunsaydı sessizce ulaşılmış bir hedef üretirdi."""
+    assert beyan(_SEMA, "oee", "bozuk") is None
 
 
-# ── 2 · YÖN, İKİNCİ KEZ BEYAN EDİLMİYOR ─────────────────────────────────────
+# ── yön ──────────────────────────────────────────────────────────────────────
+def test_YON_YENIDEN_BEYAN_EDILMEZ_TUREYIR():
+    """🔴 `B-5`'in 173/173 yön beyanı bu bayrağın ÖN KOŞULUDUR.
 
-def test_YON_LOWER_IS_BETTER_DAN_TURUYOR():
-    """⚠ İkinci bir yön beyanı yazmak, iki yönün **ayrışması** demekti — biri *"85 iyi"*
-    derken öteki *"85 kötü"* gösterirdi."""
-    assert H.yon(_SEMA, "oee", "fire_orani") == H.YON_DUSUK_IYI
-    assert H.yon(_SEMA, "oee", "ort_oee") == H.YON_YUKSEK_IYI
-    alt = H.blok(_SEMA, {"cube": "oee", "measures": ["fire_orani"]},
-                 {"rows": [{"fire_orani": 1.5}]})
-    assert alt["ulasildi"] is True, "düşük-iyi ölçüde hedefin ALTI başarıdır"
+    Yön yanlışsa *«hedefe ulaşıldı»* kararı da **ters** çıkar — ve o, doğru görünen
+    bir yanlıştır.
+    """
+    assert yon(_SEMA, "oee", "toplam_fire_kg") != yon(_SEMA, "oee", "ort_oee")
 
 
-def test_HEDEFE_ULASILMADI():
-    b = H.blok(_SEMA, {"cube": "oee", "measures": ["ort_oee"]}, {"rows": [{"ort_oee": 78}]})
-    assert b["ulasildi"] is False and b["sapma_yuzde"] == -8.24
+# ── blok ─────────────────────────────────────────────────────────────────────
+def test_COK_OLCULU_RAPORDA_BLOK_URETILMEZ():
+    """⚠ *Hangi hedef?* — belirsiz. Birini seçmek sessiz bir karar olurdu."""
+    cq = {"cube": "oee", "measures": ["ort_oee", "toplam_fire_kg"]}
+    assert blok(_SEMA, cq, {"rows": [{"ort_oee": 0.8, "toplam_fire_kg": 5}]}) is None
 
 
-# ── 3 · BELİRSİZLİK SESSİZCE ÇÖZÜLMÜYOR ────────────────────────────────────
-
-def test_COK_OLCULU_RAPORDA_HEDEF_YOK():
-    """🔴 İki ölçülü bir raporda *"hangi hedef"* sorusunun cevabı **yoktur**. Birini
-    seçmek, kullanıcının sormadığı bir kıyası cevabın yerine koymak olurdu."""
-    assert H.blok(_SEMA, {"cube": "oee", "measures": ["ort_oee", "fire_orani"]},
-                  {"rows": [{"ort_oee": 78, "fire_orani": 1}]}) is None
+def test_SATIR_YOKSA_BLOK_URETILMEZ():
+    cq = {"cube": "oee", "measures": ["ort_oee"]}
+    assert blok(_SEMA, cq, {"rows": []}) is None
 
 
-def test_SONUC_YOKSA_HEDEF_YOK():
-    """`gerceklesen` **sonuçtan** okunur, hedeften türetilmez: hedefe göre normalize
-    edilmiş bir *"gerçekleşen"* uydurmak, kullanıcının sayısını sistemin sayısıyla
-    değiştirmek olurdu."""
-    assert H.blok(_SEMA, {"cube": "oee", "measures": ["ort_oee"]}, {"rows": []}) is None
+def test_GERCEKLESEN_SONUCTAN_OKUNUR():
+    """🔴 Hedeften türetmek, kullanıcının sayısını sistemin sayısıyla değiştirmektir."""
+    cq = {"cube": "oee", "measures": ["ort_oee"]}
+    b = blok(_SEMA, cq, {"rows": [{"ort_oee": 0.60}, {"ort_oee": 0.80}]})
+    assert b is not None
+    assert abs(b["gerceklesen"] - 0.70) < 1e-9, "iki satırın ortalaması alınmalı"
+    assert b["hedef"] == 0.75
+    assert b["ulasildi"] is False, "0.70 < 0.75 ve yüksek=iyi → ulaşılmadı"
 
 
-# ── 4 · GRAFİK: hedef yoksa çizgi HÂLÂ ORTALAMA ve ÖYLE ETİKETLİ ───────────
-
-def test_HEDEFSIZ_OLCUDE_CIZGI_ORTALAMA_KALIYOR():
-    """🔴 **Maddenin kapısı, birebir:** *"hedefi olmayan metrikte referans çizgisi hâlâ
-    ortalama ve öyle etiketleniyor"*."""
-    sonuc = {"columns": ["makine", "uretim"],
-             "rows": [{"makine": f"M{i}", "uretim": 10 + i} for i in range(6)]}
-    spec = viz.recommend(sonuc, cube_query={"cube": "x", "measures": ["uretim"],
-                                            "dimensions": ["makine"]},
-                         hedefler={})
-    ref = (spec or {}).get("reference_line")
-    assert ref and ref["kind"] == "average", f"hedefsiz ölçüde çizgi hedef sanılmış: {ref}"
+def test_DUSUK_IYI_OLCUDE_ULASILDI_TERS_CALISIR():
+    """🔴 Yönün asıl sınavı: fire'de **az** olmak hedefe ulaşmaktır."""
+    cq = {"cube": "oee", "measures": ["toplam_fire_kg"]}
+    b = blok(_SEMA, cq, {"rows": [{"toplam_fire_kg": 800}]})
+    assert b is not None and b["ulasildi"] is True, b
+    kotu = blok(_SEMA, cq, {"rows": [{"toplam_fire_kg": 1200}]})
+    assert kotu is not None and kotu["ulasildi"] is False
 
 
-def test_HEDEFLI_OLCUDE_CIZGI_HEDEF():
-    sonuc = {"columns": ["makine", "uretim"],
-             "rows": [{"makine": f"M{i}", "uretim": 10 + i} for i in range(6)]}
-    spec = viz.recommend(sonuc, cube_query={"cube": "x", "measures": ["uretim"],
-                                            "dimensions": ["makine"]},
-                         hedefler={"uretim": 20.0})
-    ref = (spec or {}).get("reference_line")
-    assert ref["kind"] == "target" and ref["value"] == 20.0
-
-
-def test_META_ARGS_TEK_KAYNAK():
-    """⚠ Hedefler `meta_args`'a eklendi: **altı** çağrı yerinin hiçbirine dokunmadan
-    hepsi hedefi görür. Bu fonksiyonun var olma sebebi tam olarak budur — bir alanın
-    beşinci çağıranını unutmak imkânsız olsun diye."""
-    assert viz.meta_args({"hedefler": {"m": 1.0}})["hedefler"] == {"m": 1.0}
-    assert viz.meta_args(None)["hedefler"] == {}
-
-
-# ── 5 · KAPSAM SINIRI YAZILI ────────────────────────────────────────────────
-
-def test_KAPSAM_SINIRI_YAZILI():
-    """⚠ Yol haritası `MetricTarget`'ı SCD-2 olarak tanımlıyor (kapsam · tarih ·
-    `as_of` yeniden oynatma). Bu dilim **yalnız beyan yolunu** açar; sınırı yazmamak,
-    *yarım inmiş bir mekanizmayı tam gibi göstermek* olurdu."""
-    kaynak = (KOK / "app" / "hedef.py").read_text(encoding="utf-8")
-    assert "SCD-2" in kaynak and "ayrı bir dilimdir" in kaynak
-
-
-def test_SOZLESME_ALANI_VAR():
-    from app.schemas import AskResponse
-
-    assert AskResponse(question="x").hedef is None, "varsayılan DOLU — hedef uydurulmuş"
-
-
-# ── 6 · K2 · EKRAN: etiket `kind`'a bağlı, ikinci karar YOK ────────────────
-
-def test_GRAFIK_ETIKETI_KIND_A_BAGLI():
-    """🔴 Bir hedef çizgisini *"Ort."* diye etiketlemek (ya da tersi) kullanıcıya **yanlış
-    bir kıyas** yaptırırdı: kendi ortalamasının üstünde olmakla **hedefinin** üstünde olmak
-    aynı şey değildir."""
-    import pytest
-
-    if not FE.exists():
-        pytest.skip("frontend bu koşumda mount edilmemiş")
-    ch = (FE / "lib" / "chart.ts").read_text(encoding="utf-8")
-    assert 'ref.kind === "target" ? "Hedef" : "Ort."' in ch, "etiket hâlâ SABİT"
-
-
-def test_UI_IKINCI_HEDEF_KARARI_VERMIYOR():
-    """⚠ Karar backend'de (`app/hedef.py`). UI'da ikinci bir eşik/yön hesabı, iki kararın
-    **ayrışması** demekti — biri *"ulaşıldı"* derken öteki kırmızı gösterirdi."""
-    import pytest
-
-    if not FE.exists():
-        pytest.skip("frontend mount edilmemiş")
-    kart = (FE / "components" / "ReportCard.tsx").read_text(encoding="utf-8")
-    assert "item.hedef" in kart, "hedef hiçbir yerde GÖSTERİLMİYOR"
-    for sizinti in ("lower_is_better", "yuksek_iyi ?", "> hedef", "< hedef"):
-        assert sizinti not in kart, f"hedef kararı UI'a KOPYALANMIŞ ({sizinti!r})"
+def test_HEDEFSIZ_KUP_BLOK_URETMEZ():
+    """`KURAL B`'nin veri tarafı: beyansız küpte bayrak açık olsa bile çıktı **yok**."""
+    cq = {"cube": "parti", "measures": ["toplam_ciro"]}
+    assert blok(_SEMA, cq, {"rows": [{"toplam_ciro": 100}]}) is None

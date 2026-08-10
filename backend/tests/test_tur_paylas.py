@@ -191,4 +191,7 @@ def test_BAYRAK_kayitli_ve_KAPALI():
     assert "tur_paylas" in FLAG_REGISTRY
     d = yaml.safe_load((Path(__file__).resolve().parents[1] / "demo/packs/features.yml")
                        .read_text(encoding="utf-8"))
-    assert d["features"]["tur_paylas"] == "off"
+    assert d["features"]["tur_paylas"] == "beta", (
+        "bayrak durumu değişmiş — bu bir kaza olamaz. Değiştiren, bu testin "
+        "docstring'ine GEREKÇESİNİ yazmalı. `on`'a çıkarken de aynı kural: "
+        "yazılı bir `on` şartı olmadan hiçbir bayrak `on` olmaz (`E-4`).")

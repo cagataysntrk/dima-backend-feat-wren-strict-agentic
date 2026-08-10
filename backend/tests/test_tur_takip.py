@@ -137,8 +137,20 @@ def test_ZAMANLA_eylemi_KAYITTA_ve_yetkisi_dogru():
     assert b.uc == "schedules.create_schedule"
 
 
-def test_BAYRAK_kayitli_ve_KAPALI():
-    """KURAL B — kapalıyken tür tanınmaz, davranış birebir bugünkü."""
+def test_BAYRAK_kayitli_ve_ACIK():
+    """🔴 `F6`/`D1` — **AÇILDI (2026-08-10) ve bu test onun KAYDIDIR.**
+
+    Bu kapı bayrağın **kapalı** olduğunu kilitliyordu ve doğru yapıyordu: bir
+    bayrağın durumu, kimsenin farkına varmadan değişebilecek bir şey olmamalı.
+    Açmak **bilinçli bir edimdir** ve bedeli bu satırı gerekçesiyle güncellemektir.
+
+    ⊙ Gerekçe: *«yeni motor yazılmadı, yalnız ERİŞİM açılıyor»* — `zamanla.olustur`
+    zaten var ve bu dosyanın kalan testleriyle kapılı. Kapalı kalmasının sebebi bir
+    tasarım kararı değil bir **unutulmuşluktu**.
+
+    *Bir bayrağın durumunu bir teste bağlamak, onu değiştirmeyi zorlaştırmak için
+    değil; değiştirenin gerekçe yazmasını zorunlu kılmak içindir.*
+    """
     from app.features import FLAG_REGISTRY
 
     assert "tur_takip" in FLAG_REGISTRY
@@ -147,4 +159,7 @@ def test_BAYRAK_kayitli_ve_KAPALI():
 
     d = yaml.safe_load((Path(__file__).resolve().parents[1] / "demo/packs/features.yml")
                        .read_text(encoding="utf-8"))
-    assert d["features"]["tur_takip"] == "off"
+    assert d["features"]["tur_takip"] == "beta", (
+        "bayrak durumu değişmiş — bu bir kaza olamaz. Değiştiren, bu testin "
+        "docstring'ine GEREKÇESİNİ yazmalı. `on`'a çıkarken de aynı kural: "
+        "yazılı bir `on` şartı olmadan hiçbir bayrak `on` olmaz (`E-4`).")
