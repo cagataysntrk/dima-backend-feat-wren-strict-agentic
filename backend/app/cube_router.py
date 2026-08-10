@@ -3486,6 +3486,12 @@ def partial_unknowns(q: str, schema: dict) -> tuple[list[str], list[tuple[dict, 
         if in_scope:
             for syns in (c.get("dimension_synonyms") or {}).values():
                 known |= _syn_hit_words(q, syns)
+            # 🔴 `§EB/T` — **AYIRT ETMEYEN AMA TANINAN** token'lar. `grubu` iki boyutun
+            # etiketinden türediği için kırılım seçiminden düşürüldü (`§EB`); ama o
+            # hâlâ **bizim kelimemiz** ve kapsam kapısı onu *«başka bir konu»* sanmamalı.
+            # ⊙ Ölçüldü: düşürüldüğü an `yas_grubu bazında` sorusu netleştirmeye düştü.
+            # *Bir kelimeyi tanımak ile onunla bir şeyi seçmek aynı yetenek değildir.*
+            known |= _syn_hit_words(q, c.get("belirsiz_boyut_tokenlari"))
             for vals in (c.get("dimension_values") or {}).values():
                 for v in vals or []:
                     nv = _norm(str(v))

@@ -8630,3 +8630,69 @@ düşmez ve bir boyutun **kendi adı** asla düşmez.
 garson devraldı ve doğru çözdü.
 
 **Kapı (tur başı):** 4477 yeşil · korpus **%94.9** · `sessiz_yanlis` **8** · eval +0.0%.
+
+---
+
+## `XII` TURU · İKİNCİ YARI — **BİR DÜZELTMENİN ÜÇ KATMANI** *(2026-08-10)*
+
+`§EB` (etiket-türevi belirsiz token) kapıya çarptı ve **iki gizli sözleşme** açığa çıktı.
+
+### 🔴 Kapı kırmızı verdi — ve haklıydı
+
+```
+FAILED test_iliski_uzerinden_kirilim_TOPLAMI_DEGISTIRMEZ[yas_grubu]
+  «bu yıl yas_grubu bazında işlenen kg» → "grubu" başka bir konu gibi görünüyor
+```
+
+⊙ **Birinci gizli sözleşme (`§EB/T`):** `grubu` sinonimden düşünce **kapsam kapısı** da
+onu kaybetti. `partial_unknowns` *«bu kelime dağarcığımızda mı»* diye sorar;
+`_match_dimension` *«hangi boyutu adlandırıyor»* diye. **İkisi aynı listeden okuyordu.**
+
+> *Bir kelimeyi tanımak ile onunla bir şeyi seçmek aynı yetenek değildir; birini
+> kaldırmak ötekini de kaldırıyorsa liste iki iş yapıyordur.*
+
+Düşen token'lar artık şemada ayrı bir alanda (`belirsiz_boyut_tokenlari`): **ayırt
+etmezler ama tanınırlar.**
+
+⚠ Ve ilk yazımım **boş** kaldı: alanı sözlük değişmezinde `dimension_synonyms`'ten
+**önce** koymuştum; Python kaynak sırasıyla değerlendirir, yani anlık görüntü küme
+dolmadan alınıyordu. *Bir anlık görüntünün doğruluğu, ne zaman alındığına bağlıdır.*
+
+### 🔴 İkinci gizli sözleşme — test KAZARA geçiyormuş
+
+Düzeltilince mesaj değişti: *«başka bir konu»* → *«anlayamadım»*. Yani kelime artık
+tanınıyordu ama **boyut hâlâ bulunamıyordu**. Sebep:
+
+⊙ `yas_grubu` boyutunun sinonim listesinde **kendi adı yoktu** (`['yas','yas grubu',
+'yasa gore','yas araligi','kac yas','grubu',…]`) ve `_norm` alt çizgiyi **koruyor** —
+yani `yas grubu` (boşluklu) `yas_grubu`'yu karşılamıyor. Test yıllardır **kazara**
+`grubu` üzerinden geçiyormuş.
+
+🔴 `§EB/A`: **bir boyut her zaman kendi adıyla anılabilir.** Ad küp içinde benzersizdir;
+yeni bir belirsizlik doğurmaz, doğurduğu tek şey bir **kesinliktir**.
+
+> *Bir şeyin adıyla çağrılamaması, adının olmaması demektir.*
+
+### Ders — bir düzeltme üç katman açtı
+
+| katman | ne çıktı |
+|---|---|
+| `§EB` | makine, etiketi bölüp **belirsiz token üretiyordu** (6 çarpışma) |
+| `§EB/T` | aynı liste **iki iş** yapıyordu (tanıma ↔ ayırt etme) |
+| `§EB/A` | boyutlar **kendi adlarıyla anılamıyordu** — bir kapı bunu kazara örtüyordu |
+
+⊙ Üçü de tek bir curl'den doğdu. *Bir kusuru düzeltmek, onu gizleyen sözleşmeleri de
+açığa çıkarır — ve o sözleşmeler yazılı olmadığı için ancak kırılınca görünürler.*
+
+### Yeni bulgular — sonraki turun konusu
+
+| soru | sonuç |
+|---|---|
+| *«bu yılın fire oranı geçen yıla göre nasıl değişti»* | ✅ 2 adım · `TREND→ANLAT` · `-2,1%` |
+| *«toplam ciromun yüzde kaçı ilk 3 müşteriden»* | ⚠ 3 adım, **dürüstçe eksik beyan etti** (pay hesaplanmadı) |
+| *«**her makinede** en kötü vardiya»* | 🔴 **tek satır** (`limit:1`) — 11 satır olmalıydı, **beyansız** |
+| *«**her vardiyada** en kötü makine»* | 🔴 aynı — sınıf sistematik |
+
+🔴 **`her <boyut>` = grup başına üstünlük** ifade edilemiyor ve **sessizce** global
+tek satıra indirgeniyor. Üretilen sorgu: `dimensions:[makine,vardiya] · order asc ·
+limit 1`. En az bir **beyan** borcu var; tam çözüm pencere fonksiyonu ister.

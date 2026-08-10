@@ -83,7 +83,8 @@ _CLAC_ONBELLEK: dict[str, tuple[bytes, int]] = {}
 
 def _etiket_belirsizligini_ayikla(sinonimler: dict[str, list[str]],
                                   beyan: dict[str, set[str]],
-                                  etiketten: dict[str, set[str]]) -> dict[str, list[str]]:
+                                  etiketten: dict[str, set[str]],
+                                  dusenler: set[str] | None = None) -> dict[str, list[str]]:
     """🔴🔴 `§EB` — **ETİKETTEN TÜREYEN BELİRSİZ TOKEN SİNONİM OLAMAZ.**
 
     ## Ölçülen kusur (canlı `XII`, 2026-08-10)
@@ -121,6 +122,20 @@ def _etiket_belirsizligini_ayikla(sinonimler: dict[str, list[str]],
     belirsiz = {t for t, ds in sahip.items() if len(ds) > 1}
     if not belirsiz:
         return sinonimler
+    # 🔴🔴 `§EB/T` — **DÜŞEN TOKEN KELİME DAĞARCIĞINDA KALIR.**
+    #
+    # ⊙ Ölçüldü (kapı, `test_iliski_uzerinden_kirilim_TOPLAMI_DEGISTIRMEZ[yas_grubu]`):
+    # `grubu` sinonim kümesinden düşünce **kapsam kapısı** da onu kaybetti ve
+    # *«bu yıl yas_grubu bazında işlenen kg»* → *«"grubu" başka bir konu gibi görünüyor»*.
+    #
+    # ⊙ Kusur ayrımda: `partial_unknowns` *"bu kelime bizim dağarcığımızda mı"* diye
+    # sorar; `_match_dimension` *"bu kelime hangi boyutu adlandırıyor"* diye. İkisini
+    # aynı listeden okumak, **tanınabilir** ile **ayırt edici**yi bir sayar.
+    #
+    # *Bir kelimeyi tanımak ile onunla bir şeyi seçmek aynı yetenek değildir; birini
+    # kaldırmak ötekini de kaldırıyorsa liste iki iş yapıyordur.*
+    if dusenler is not None:
+        dusenler |= belirsiz
     out: dict[str, list[str]] = {}
     for dim, syns in sinonimler.items():
         out[dim] = [s for s in syns
@@ -644,6 +659,9 @@ class WrenService:
             return out
 
         _langs = self._active_langs()  # tenant aktif dil seti (company.yml diller:) §7b
+        #: `§EB/T` — küp başına **düşen** belirsiz token'lar. Ayırt etmezler ama
+        #: dağarcıkta kalırlar (`partial_unknowns` onları tanır).
+        _dusen: dict[str, set[str]] = {}
 
         def _archetype_syns(measure_name: str) -> list[str]:
             # Ölçü arketip sözlüğü (ADR-0018 kaldıraç b): ölçü adı = arketip anahtarı.
@@ -774,14 +792,32 @@ class WrenService:
                 # 🔴🔴 `§EB` — **ETİKETTEN TÜREYEN BELİRSİZ TOKEN SİNONİM OLAMAZ.**
                 # Gerekçe ve ölçüm `_etiket_belirsizligini_ayikla`'da.
                 "dimension_synonyms": _etiket_belirsizligini_ayikla(
+                    # 🔴 `§EB/A` — **BİR BOYUT HER ZAMAN KENDİ ADIYLA ANILABİLİR.**
+                    # ⊙ Ölçüldü: *«… yas_grubu bazında …»* yalnız **kazara** çalışıyordu
+                    # — eşleşen token `grubu` idi (iki boyutun etiketinden türemiş,
+                    # `§EB` onu düşürdü) ve boyutun **kendi adı** sinonim listesinde
+                    # **hiç yoktu**. `_norm` alt çizgiyi koruduğu için `yas grubu`
+                    # (boşluklu) `yas_grubu`'yu karşılamıyor.
+                    # ⚠ Ad küp içinde **benzersizdir**, yani yeni bir belirsizlik
+                    # doğurmaz — doğurduğu tek şey bir **kesinliktir**.
+                    # *Bir şeyin adıyla çağrılamaması, adının olmaması demektir.*
                     {d["name"]: _merge_syns(
+                        [_norm(d["name"])],
                         _with_label(d.get("label"), _syns(d.get("synonyms"))),
                         _dim_i18n(d["name"]))  # §7b: yerel (YAML) ⊕ yardımcı-teknik dil
                      for d in c.get("dimensions", [])},
                     {d["name"]: set(_syns(d.get("synonyms")))
                      for d in c.get("dimensions", [])},
                     {d["name"]: set(_label_tokens(d.get("label")))
-                     for d in c.get("dimensions", [])}),
+                     for d in c.get("dimensions", [])},
+                    _dusen.setdefault(c.get("name"), set())),
+                # ⚠ `dimension_synonyms`'ten **SONRA** gelmeli: sözlük değişmezi kaynak
+                # sırasıyla değerlendirilir ve bu anlık görüntü, kümeyi dolduran çağrı
+                # koştuktan sonra alınmalı. İlk yazımda üstteydi ve **boş** kalıyordu —
+                # kapı bunu yakaladı. *Bir anlık görüntünün doğruluğu, ne zaman
+                # alındığına bağlıdır.*
+                "belirsiz_boyut_tokenlari": sorted(
+                    _dusen.setdefault(c.get("name"), set())),
                 # PROVENANCE (Faz 1.3): boyut cube'un KENDİ base_object'inden mi geliyor,
                 # yoksa bir İLİŞKİ üzerinden mi? `_compose_relationship_dimensions`
                 # üretilen boyuta `properties.origin` yazar; burası onu router/UI'a açar.

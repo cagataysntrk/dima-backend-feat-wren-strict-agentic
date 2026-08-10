@@ -84,3 +84,56 @@ def test_CANLI_SEMADA_CARPISMA_KALMADI(schema):
     assert not kalan, (
         "🔴 Aynı küpte iki boyut aynı token'ı paylaşıyor — o token hiçbirini ayırt "
         "etmiyor ve her ikisini birden kırılıma sokuyor:\n  " + "\n  ".join(kalan))
+
+
+def test_BOYUT_KENDI_ADIYLA_ANILABILIR(schema):
+    """🔴 `§EB/A` — **bir boyut her zaman kendi adıyla anılabilmeli.**
+
+    ⊙ Ölçüldü: *«… yas_grubu bazında …»* yalnız **kazara** çalışıyordu — eşleşen token
+    `grubu` idi (iki boyutun etiketinden türemiş) ve boyutun **kendi adı** sinonim
+    listesinde **hiç yoktu**. `§EB` kazayı kaldırınca soru cevapsız kaldı ve kapı
+    (`test_iliski_uzerinden_kirilim_TOPLAMI_DEGISTIRMEZ`) bunu yakaladı.
+
+    ⚠ Ad küp içinde **benzersizdir**; yeni bir belirsizlik doğurmaz.
+    *Bir şeyin adıyla çağrılamaması, adının olmaması demektir.*
+    """
+    from app.cube_router import _norm
+
+    eksik = []
+    for c in (schema.get("cubes") or []):
+        ds = c.get("dimension_synonyms") or {}
+        for d in (c.get("dimensions") or []):
+            if _norm(str(d)) not in (ds.get(d) or []):
+                eksik.append(f"{c['name']}.{d}")
+    assert not eksik, ("🔴 Şu boyutlar kendi adlarıyla anılamıyor:\n  "
+                       + "\n  ".join(eksik[:20]))
+
+
+def test_DUSEN_TOKEN_DAGARCIKTA_KALIR(schema):
+    """🔴 `§EB/T` — düşen token **ayırt etmez ama tanınır**.
+
+    ⊙ Ölçüldü: `grubu` sinonimden düşünce kapsam kapısı da onu kaybetti ve
+    *«… yas_grubu bazında …»* → *«"grubu" başka bir konu gibi görünüyor»*.
+    `partial_unknowns` *"bu kelime dağarcığımızda mı"* diye sorar; `_match_dimension`
+    *"hangi boyutu adlandırıyor"* diye. İkisini aynı listeden okumak, **tanınabilir**
+    ile **ayırt edici**yi bir saymaktı.
+
+    *Bir kelimeyi tanımak ile onunla bir şeyi seçmek aynı yetenek değildir.*
+    """
+    tokenli = [c["name"] for c in (schema.get("cubes") or [])
+               if c.get("belirsiz_boyut_tokenlari")]
+    assert tokenli, ("hiçbir küpte düşen token yok — ya ayıklama koşmuyor ya alan "
+                     "şemaya yazılmıyor; `§EB` sessizce ölmüş olurdu")
+    from app.cube_router import partial_unknowns
+
+    # ⚠ Yüklem **ölçülen vakaya** bağlı: `partial_unknowns` yalnız sorunun çözüldüğü
+    # küpün dağarcığını okur. Her düşen token'ı rastgele bir cümlede aramak, başka bir
+    # küpe ait token için yanlış kırmızı verirdi (ölçüldü: `cari.tipi`, soru `parti`'ye
+    # çözülüyor). *Bir kapının kapsamı, ölçtüğü mekanizmanın kapsamından geniş olamaz.*
+    parti = next((c for c in (schema.get("cubes") or []) if c["name"] == "parti"), None)
+    assert parti is not None and "grubu" in (parti.get("belirsiz_boyut_tokenlari") or []), \
+        "ölçülen vaka (`parti.grubu`) düşen token listesinde yok — kapı konusuz"
+    bilinmeyen, _ = partial_unknowns("bu yıl yas_grubu bazında işlenen kg", schema)
+    assert "grubu" not in bilinmeyen, (
+        "«grubu» düşürüldü ama dağarcıkta da kalmadı → kapsam kapısı onu «başka bir "
+        f"konu» sanar (ölçülen canlı kusur): {bilinmeyen}")
