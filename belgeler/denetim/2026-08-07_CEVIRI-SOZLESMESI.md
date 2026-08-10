@@ -8456,3 +8456,51 @@ Yüklem bugün kurulu, kapılı ve **taze** dalda etkin; takip dalına bağlanma
 Aynı sınıf — istenen bir parça sessizce düşüyor.
 
 **Kapı (tur başı):** 4473 yeşil · korpus **%94.9** · `sessiz_yanlis` **8** · eval +0.0%.
+
+---
+
+## `X` TURU — **BİR DÜZELTMEYİ ÖLÇTÜM, KÖTÜLEŞTİRDİĞİNİ GÖRDÜM, GERİ ALDIM** *(2026-08-10)*
+
+`§AT` yüklemi doğruydu; **yerleşimi** yanlıştı.
+
+### Ölçüm önce yapıldı — ama EKSİK yapıldı
+
+Kancayı takmadan önce *«düşülecek yol nereye gidiyor»* diye kaynağı okudum ve şunu
+gördüm: deterministik zincir tükenince `llm.refine_cube` geliyor — Discovery değil,
+red değil, **önceki sorguyu bilen** yapısal düzenleme. *"Güvenli"* diye yazdım.
+
+**Eksikti.** `refine_cube` zincirin **sonunda**, ama arada `cross_cube_add` ve
+`cross_cube_dim_switch` var. Canlıda:
+
+```
+«o makinede vardiya kırılımı» → source=cube · cube=**oee** · 33 satır
+not = "Konu değişti: parti → OEE"          🔴 ölçü de değişti (fire → oee)
+```
+
+⊙ Yani düzeltme vakayı **kötüleştirdi**: önce *doğru ölçünün* fazla satırı geliyordu,
+sonra **yanlış ölçünün** fazla satırı gelmeye başladı.
+
+> *Bir düşüşün nereye düştüğünü okumak, düştüğü ilk basamağı okumak değildir.*
+
+**Geri alındı.** Yüklem (`niyet_tasima.EKSIK_ATIF`) **duruyor**, kapılı, ve **taze**
+dalda etkin — kusurlu olan yüklem değil **yerleşim**. Doğru kanca deterministik
+zincirin **tamamını** atlayıp `refine_cube`'a geçmektir ve o kendi ölçüm turunu ister.
+
+Kayıt üç yerde: kaynak (`ask.py`), kapı (`test_AT_KANCASI_GERI_ALINDI_KAYDI_DURUYOR`),
+bu belge. *Çürütülmüş bir yerleşimi silmek, bir sonraki turun onu yeniden denemesine
+izin vermektir.*
+
+### Bu oturumun deseni — dört kez aynı ders
+
+| # | düzeltme | ilk yerleşim | sonuç |
+|---|---|---|---|
+| `O-16` | oy bütçesi | doğru yer, **yanlış hipotez** | ölçüldü → geri alındı |
+| `O-22` | takip bağlamı | **yalnız bir üretici** | ölçüldü → ikincisi bağlandı |
+| `§AT` (1) | işaret sıfatı | **yalnız taze dal** | ölçüldü → takip dalı denendi |
+| `§AT` (2) | aynı | **yanlış basamağa düşürdü** | ölçüldü → geri alındı |
+
+⊙ Dördünde de **kod doğruydu, yer yanlıştı** — ve dördünü de **canlı ölçüm** yakaladı,
+kapı değil. Bu, bu deponun kendi kuralının kanıtı: *bir tasarım gerçeği koşularak değil
+okunarak bulunur — ama bir **yerleşim** gerçeği yalnız **koşularak** bulunur.*
+
+**Kapı (tur başı):** 4476 yeşil · korpus **%94.9** · `sessiz_yanlis` **8** · eval +0.0%.

@@ -4441,6 +4441,23 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         except Exception:
             _log.warning("deterministic_refine hata verdi (best-effort)", exc_info=True)
             refined = None
+        # ⟳🔴 **`§AT` KANCASI DENENDİ, CANLIDA ÖLÇÜLDÜ, GERİ ALINDI.**
+        #
+        # Buraya *«`refined` atlanırsa `llm.refine_cube` devralır»* diye bir kanca
+        # kondu — ve **ölçüm eksikti**: `refine_cube` gerçekten zincirin sonunda, ama
+        # arada `cross_cube_add` ve `cross_cube_dim_switch` var. Canlıda (`X`):
+        #
+        #     «o makinede vardiya kırılımı» → source=cube · **cube=oee** · 33 satır
+        #     not = "Konu değişti: parti → OEE"     🔴 ölçü de değişti (fire → oee)
+        #
+        # ⊙ Yani düzeltme vakayı **kötüleştirdi**: önce doğru ölçünün fazla satırı
+        # geliyordu, sonra **yanlış ölçünün** fazla satırı gelmeye başladı.
+        #
+        # ⚠ Yüklem (`niyet_tasima.EKSIK_ATIF`) **duruyor**, kapılı ve **taze** dalda
+        # etkin; kusurlu olan yüklem değil bu **yerleşim**. Doğru kanca, deterministik
+        # zincirin tamamını atlayıp `refine_cube`'a geçmektir ve o kendi turunu ister.
+        #
+        # *Bir düşüşün nereye düştüğünü okumak, düştüğü ilk basamağı okumak değildir.*
         if refined:
             gate = _period_gate(refined, prev_cube_meta, None, "Takip")
             if gate:
