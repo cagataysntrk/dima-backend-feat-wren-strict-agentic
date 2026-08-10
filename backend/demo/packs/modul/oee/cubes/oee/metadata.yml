@@ -19,12 +19,14 @@ default_measure: ort_oee
 # ortalama (satır-AVG değil). OEE = A×P×Q (ISO 22400 6.6).
 measures:
   - name: ort_oee
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "(1.0*SUM(calisma_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)) * (SUM(performans_PV*planli_uretim_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)) * (1.0*SUM(uretim_kg - hatali_kg)/NULLIF(SUM(uretim_kg),0))"
     type: DOUBLE
     unit: "%"
     additive: non
     synonyms: [oee, verim, randıman, toplam ekipman etkinliği]
   - name: ort_kullanilabilirlik
+    lower_is_better: false   # B-5 · yüksek = İYİ
     # Availability = APT/PBT (ISO 22400 6.8) = çalışma/planlı-üretim süresi
     expression: "1.0*SUM(calisma_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)"
     type: DOUBLE
@@ -32,6 +34,7 @@ measures:
     additive: non
     synonyms: [kullanılabilirlik, availability]
   - name: ort_performans
+    lower_is_better: false   # B-5 · yüksek = İYİ
     # Effectiveness (ISO 22400 6.9) — planlı-süre ağırlıklı performans (teorik hız yok)
     expression: "SUM(performans_PV*planli_uretim_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)"
     type: DOUBLE
@@ -39,6 +42,7 @@ measures:
     additive: non
     synonyms: [performans]
   - name: ort_kalite
+    lower_is_better: false   # B-5 · yüksek = İYİ
     # Quality ratio = GQ/PQ (ISO 22400 6.10) = sağlam/toplam üretim
     expression: "1.0*SUM(uretim_kg - hatali_kg)/NULLIF(SUM(uretim_kg),0)"
     type: DOUBLE
@@ -59,6 +63,7 @@ measures:
     synonyms: [plansız duruş, arıza duruşu, beklenmedik duruş]
     lower_is_better: true
   - name: toplam_uretim_kg
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: SUM(uretim_kg)
     type: DOUBLE
     unit: "kg"
@@ -71,6 +76,7 @@ measures:
     synonyms: [fire, hatalı, hurda]
     lower_is_better: true
   - name: ilk_seferde_tamam_yuzde
+    lower_is_better: false   # B-5 · yüksek = İYİ
     # RFT (Right First Time) — vardiya bazında ilk seferde tamamlanan parti oranı.
     expression: "ROUND(SUM(ilk_seferde_tamam)*100.0/NULLIF(SUM(parti_sayisi),0),2)"
     type: DOUBLE
@@ -78,6 +84,7 @@ measures:
     additive: non
     synonyms: [ilk seferde tamam, rft, ilk sefer]
   - name: toplam_parti
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: SUM(parti_sayisi)
     type: DOUBLE
     unit: "parti"

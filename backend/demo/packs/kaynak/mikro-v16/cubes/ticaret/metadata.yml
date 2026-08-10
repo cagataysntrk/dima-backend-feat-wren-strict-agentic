@@ -17,44 +17,52 @@ synonyms: [satış, satis, ciro, gelir, alım, alim, alış, alis, sevk, sevkiya
 # amacı değildir.
 measures:
   - name: satis_tutari_hareket
+    lower_is_better: false   # B-5 · yüksek = İYİ
     cekirdek_metrik: satis_tutari
     expression: "SUM(CASE WHEN sth_tip = 1 THEN sth_tutar ELSE 0 END)"
     type: DOUBLE
     unit: "₺"
     synonyms: [satış, ciro, gelir, satış tutarı]
   - name: satis_miktari
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "SUM(CASE WHEN sth_tip = 1 THEN sth_miktar ELSE 0 END)"
     type: DOUBLE
     unit: "kg"
     synonyms: [satış miktarı, satılan, sevk edilen]
   - name: alim_tutari
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "SUM(CASE WHEN sth_tip = 0 THEN sth_tutar ELSE 0 END)"
     type: DOUBLE
     unit: "₺"
     synonyms: [alım, alış, alım tutarı, hurda alımı]
   - name: alim_miktari
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "SUM(CASE WHEN sth_tip = 0 THEN sth_miktar ELSE 0 END)"
     type: DOUBLE
     unit: "kg"
     synonyms: [alım miktarı, alınan, toplanan]
   - name: net_miktar
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "SUM(CASE WHEN sth_tip = 0 THEN sth_miktar ELSE -sth_miktar END)"
     type: DOUBLE
     unit: "kg"
     synonyms: [net miktar, stok değişimi]
   - name: islem_sayisi
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: COUNT(*)
     type: DOUBLE
     unit: "adet"
     synonyms: [işlem sayısı, kaç işlem, işlem adedi]
   # P0 satış genişletme: realize edilmiş ortalama fiyatlar (tutar/miktar, tek-ifade oran).
   - name: ort_satis_fiyati
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "SUM(CASE WHEN sth_tip = 1 THEN sth_tutar ELSE 0 END) / NULLIF(SUM(CASE WHEN sth_tip = 1 THEN sth_miktar ELSE 0 END), 0)"
     type: DOUBLE
     unit: "₺"
     additive: non
     synonyms: [ortalama satış fiyatı, ortalama fiyat, birim fiyat, satış fiyatı, ortalama satış]
   - name: ort_alis_fiyati
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "SUM(CASE WHEN sth_tip = 0 THEN sth_tutar ELSE 0 END) / NULLIF(SUM(CASE WHEN sth_tip = 0 THEN sth_miktar ELSE 0 END), 0)"
     type: DOUBLE
     unit: "₺"

@@ -1193,8 +1193,8 @@ gerektirmiyor, ve **her red bir LLM çağrısı + gecikme** demek — yani bedel
 
 | ☐ | # | iş | biten sayılır: |
 |---|---|---|---|
-| ☐ | `A1` | **Kaset katmanı** — `§`-kodlu canlı bulgular kasete çevrilir (`--live --kaset`) | `--slice llm` paydası **4 → ≥40**, kaset **(soru+istem sürümü)** ile anahtarlı |
-| ☐ | `A2` | **Kasetli garson korpusu** kapının merkezine alınır (`§4i`) | tek koşum route+garson+devir+`sessiz_yanlis` basıyor, **sıfır API** |
+| ✅ | `A1` | **Kaset katmanı** — `app/kaset.py`, sağlayıcının **TAŞIMA** metodunu (`_chat`/`_ask`) sarar | anahtar `(istem, model, kaçıncı_kez)` — istem değişince kaset **kendiliğinden** bayat. ⚠ İlk tasarım **anlam** yüzeylerini sarıyordu ve canlıda **0 kayıt** verdi: `llm.py`'de 11+ anlam yüzeyi var, ağa çıkan yer **2**. *Bir kaset anlamı değil TELİ dinlemelidir* |
+| ✅ | `A2` | **Kasetli garson korpusu** — `lab/garson_korpusu.py`, tam `/ask` yolu, 21 senaryo (3 ve 5 turluk thread'ler dâhil) | `route · garson · orkestra · netleştirme · sosyal · 🥡discovery` dökümü, **`--network none` altında koşuyor**. Ölçülen: `route 9 · orkestra 9 · garson 1 · discovery 0`. ⚠ 1 anlatı ıskası açık — sınıflandırmayı değiştirmiyor |
 | ✅ | `A3` | **Kapı çıktısı ayrıştırılır** — `doğru · devir · netleştirme · beyanlı_kısmi · 🔴sessiz_yanlış · payda` | `gercek_dunya._ozet` beş sınıfın **üçünü** sayıyordu; `netlestirme`+`durust_ret` yalnız toplu `kabul` içindeydi → her devir *«düştü»* diye okunuyordu |
 | ✅ | `A4` | 🔴 **`(a)/(b)` otomatik etiketleme** — `_degisim_sinifi` → `GERILEME · DEVIR · KAZANC · SABIT · BILINMIYOR` | `sessiz_yanlis↓ + devir↑` = **KAZANÇ**; `dogru↓` karşılığı varsa **DEVİR** (fiyatı basılır), yoksa **GERİLEME**. Eski tabanda etiket **uydurulmaz** |
 | ✅ | `A5` | **Değişen soruların listesi** — iki yönde, `_sapma_haritasi` + `_degisim_listesi` | harita yalnız `dogru` OLMAYANLARI tutar (yokluk = `dogru`): temsil eksiksiz, git gürültüsü yok. Kırpma **sessiz olamaz** |

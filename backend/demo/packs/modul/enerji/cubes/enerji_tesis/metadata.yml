@@ -22,6 +22,7 @@ measures:
     synonyms: [set, tep/ton, tep ton, spesifik enerji, enerji yoğunluğu tesis, birim enerji]
     lower_is_better: true
   - name: ges_payi_yuzde
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "ROUND(SUM(ges_kwh)*100.0/NULLIF(SUM(toplam_elektrik_kwh),0),1)"
     type: DOUBLE
     unit: "%"
@@ -56,6 +57,7 @@ measures:
     synonyms: [atıksu yoğunluğu, atıksu lt kg, deşarj yoğunluğu]
     lower_is_better: true
   - name: biyokutle_tep_payi
+    lower_is_better: false   # B-5 · yüksek = İYİ
     # Katı yakıt (fındık kabuğu) TEP payı — yakıt dönüşümü göstergesi (YGG slayt 6).
     expression: "ROUND(SUM(kati_yakit_tep)*100.0/NULLIF(SUM(toplam_tep),0),1)"
     type: DOUBLE
@@ -65,21 +67,25 @@ measures:
   # NOT: ölçü adı KOLON adından FARKLI olmalı (Wren aksi halde döngü/circular görür) —
   # mizan/cari deseni. View kolonları toplam_elektrik_kwh/sebeke_kwh/ges_kwh/toplam_tep.
   - name: elektrik_tuketimi_kwh
+    lower_is_better: true   # B-5 · yüksek = KÖTÜ
     expression: SUM(toplam_elektrik_kwh)
     type: DOUBLE
     unit: "kWh"
     synonyms: [toplam elektrik, elektrik tüketimi tesis, tesis elektrik]
   - name: sebeke_tuketimi_kwh
+    lower_is_better: true   # B-5 · yüksek = KÖTÜ
     expression: SUM(sebeke_kwh)
     type: DOUBLE
     unit: "kWh"
     synonyms: [şebeke, şebekeden çekilen, şebeke elektriği, çekilen aktif]
   - name: ges_uretimi_kwh
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: SUM(ges_kwh)
     type: DOUBLE
     unit: "kWh"
     synonyms: [ges üretimi, güneş üretimi, ges kwh, öz tüketim]
   - name: tep_toplam
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: SUM(toplam_tep)
     type: DOUBLE
     unit: "TEP"

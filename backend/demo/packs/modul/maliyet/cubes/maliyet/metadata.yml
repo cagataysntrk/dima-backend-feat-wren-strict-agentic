@@ -32,6 +32,7 @@ measures:
     synonyms: [birim maliyet, kilo maliyeti, maliyet, ortalama maliyet, kg maliyeti,
                birim maliyetimiz]
   - name: ort_kar_marji_yuzde
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "ROUND(AVG(kar_marji_yuzde),2)"
     type: DOUBLE
     unit: "%"
@@ -50,6 +51,7 @@ measures:
     # sordurur — ve o soruyu soramaz, çünkü iki tanım olduğunu bilmez.*
     synonyms: [ortalama kâr marjı, ortalama karlılık, aylık marj, brüt marj]
   - name: ort_birim_kar
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "ROUND(AVG(birim_kar_tl_kg),3)"
     type: DOUBLE
     unit: "₺/kg"
@@ -103,6 +105,7 @@ measures:
     additive: non
     synonyms: [işçilik maliyeti, işçilik birim maliyet, emek maliyeti]
   - name: toplam_uretim_kg
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: SUM(uretim_kg)
     type: DOUBLE
     unit: "kg"

@@ -17,12 +17,14 @@ synonyms: [kur, döviz, dolar, euro, döviz kuru, parite, exchange, kur farkı]
 
 measures:
   - name: ort_kur
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "ROUND(AVG(kur),4)"
     type: DOUBLE
     unit: "₺"
     additive: non
     synonyms: [kur, ortalama kur, döviz kuru, kaç lira]
   - name: kapanis_kuru
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     # ⚠ Son gözlem — `MAX(tarih)` değil `LAST` semantiği gerekir; DuckDB'de
     # arg_max doğru olanı verir. AVG ile karıştırmak, ay sonu değerlemesini yanlış yapar.
     expression: "ROUND(arg_max(kur, tarih),4)"
@@ -30,16 +32,19 @@ measures:
     unit: "₺"
     synonyms: [kapanış kuru, son kur, dönem sonu kuru, güncel kur]
   - name: en_yuksek_kur
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "ROUND(MAX(kur),4)"
     type: DOUBLE
     unit: "₺"
     synonyms: [en yüksek kur, zirve, maksimum kur, tepe]
   - name: en_dusuk_kur
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "ROUND(MIN(kur),4)"
     type: DOUBLE
     unit: "₺"
     synonyms: [en düşük kur, dip, minimum kur, taban]
   - name: kur_oynakligi
+    lower_is_better: true   # B-5 · yüksek = KÖTÜ
     expression: "ROUND(STDDEV_SAMP(kur),4)"
     type: DOUBLE
     unit: "₺"

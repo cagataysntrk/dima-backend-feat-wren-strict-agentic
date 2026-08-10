@@ -11,12 +11,14 @@ synonyms: [yaşlandırma, yaslandirma, vade analizi, vade, yaş, yas, gecikme,
 
 measures:
   - name: net_bakiye
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "SUM(BORC - ALACAK)"
     type: DOUBLE
     unit: "₺"
     additive: semi
     synonyms: [bakiye, net bakiye, açık bakiye, açık tutar]
   - name: vadesi_gecen
+    lower_is_better: true   # B-5 · yüksek = KÖTÜ
     expression: "SUM(CASE WHEN CAST(VADE_TARIHI AS DATE) < CAST(GETDATE() AS DATE) THEN BORC - ALACAK ELSE 0 END)"
     type: DOUBLE
     unit: "₺"

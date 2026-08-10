@@ -90,6 +90,7 @@ measures:
     synonyms: [fire oranı, fire yüzdesi, hata oranı]
     lower_is_better: true
   - name: toplam_agirlik_kg
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: SUM(kg)
     type: DOUBLE
     unit: "kg"
@@ -107,11 +108,13 @@ measures:
     # *Bir küpün taşıdığı kavramı adlandırmamak, onu taşımıyormuş gibi göstermektir.*
     synonyms: [ağırlık, kilo, tonaj, işlenen, üretim, üretilen, miktar]  # parti bağlamında üretim = işlenen kg
   - name: toplam_metre
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: SUM(metre)
     type: DOUBLE
     unit: "m"
     synonyms: [metre, metraj, uzunluk]
   - name: toplam_ciro
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: SUM(ciro_tl)
     type: DOUBLE
     unit: "₺"
@@ -120,11 +123,13 @@ measures:
   # kâr ≈ ciro − enerji_toplam_tl − kimyasal_tl. İşçilik/SG&A dönemsel (finans/mizan gelir
   # tablosunda tam SMM); bu parti-düzeyi değişken-maliyet katkı payıdır.
   - name: kar
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "SUM(ciro_tl - enerji_toplam_tl - kimyasal_tl)"
     type: DOUBLE
     unit: "₺"
     synonyms: [kar!, kârımız, karımız, kârlı, karlı, kazanç]  # "kar!" tam-kelime (karşılaştır tuzağı)
   - name: kar_marji_yuzde
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "ROUND(SUM(ciro_tl - enerji_toplam_tl - kimyasal_tl)*100.0/NULLIF(SUM(ciro_tl),0),2)"
     type: DOUBLE
     unit: "%"
@@ -144,12 +149,14 @@ measures:
     lower_is_better: true
   # VERİMLİLİK (kişi/operatör bazında anlamlı): ilk-seferde-tamam oranı (RFT). Yüksek iyi.
   - name: ilk_seferde_tamam_yuzde
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "ROUND(SUM(ilk_seferde_tamam)*100.0/NULLIF(COUNT(*),0),2)"
     type: DOUBLE
     unit: "%"
     additive: non
     synonyms: [ilk seferde tamam, rft, ilk sefer, ilk seferde]
   - name: parti_sayisi
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: COUNT(*)
     type: DOUBLE
     unit: "adet"

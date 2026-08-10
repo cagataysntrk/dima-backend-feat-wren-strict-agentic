@@ -23,17 +23,20 @@ default_measure: firsat_adedi
 
 measures:
   - name: firsat_adedi
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "COUNT(DISTINCT firsat_no)"
     type: DOUBLE
     unit: "adet"
     additive: non
     synonyms: [fırsat adedi, fırsat sayısı, kaç fırsat, huni büyüklüğü]
   - name: firsat_tutari
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: SUM(tahmini_tutar)
     type: DOUBLE
     unit: "₺"
     synonyms: [fırsat tutarı, potansiyel tutar, huni değeri, tahmini tutar]
   - name: agirlikli_tutar
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     # Olasılıkla ağırlıklandırılmış hat — huninin "gerçekçi" hâli. ⚠ Ham toplam
     # tutarı forecast diye sunmak, %10 olasılıklı bir fırsatı kesinleşmiş saymaktır.
     expression: "ROUND(SUM(tahmini_tutar * olasilik),2)"
@@ -41,6 +44,7 @@ measures:
     unit: "₺"
     synonyms: [ağırlıklı tutar, olasılıklı tutar, beklenen tutar, ağırlıklı huni]
   - name: kazanma_orani_yuzde
+    lower_is_better: false   # B-5 · yüksek = İYİ
     # Payda YALNIZ SONUÇLANMIŞ fırsatlar — açık fırsatı kayıp saymak oranı yapay
     # düşürür, hariç tutmak ise sonucu bilinmeyeni yok saymaktır. Doğrusu: karara
     # bağlananların içinde kazanılanın payı.
@@ -51,6 +55,7 @@ measures:
     # ⚠ `başarı oranı` KALDIRILDI → `egitim.basari_orani_yuzde`nin (sınav geçme oranı).
     synonyms: [kazanma oranı, dönüşüm oranı, kazanç oranı, win rate, fırsat başarısı]
   - name: kaybedilen_tutar
+    lower_is_better: true   # B-5 · yüksek = KÖTÜ
     expression: "SUM(CASE WHEN asama = 'Kaybedildi' THEN tahmini_tutar ELSE 0 END)"
     type: DOUBLE
     unit: "₺"

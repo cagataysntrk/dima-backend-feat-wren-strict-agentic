@@ -28,12 +28,14 @@ default_measure: is_emri_adedi
 
 measures:
   - name: is_emri_adedi
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "COUNT(DISTINCT is_emri_no)"
     type: DOUBLE
     unit: "adet"
     additive: non
     synonyms: [iş emri adedi, bakım adedi, kaç bakım, müdahale sayısı]
   - name: toplam_bakim_suresi
+    lower_is_better: true   # B-5 · yüksek = KÖTÜ
     expression: SUM(sure_dk)
     type: DOUBLE
     unit: "dk"
@@ -50,12 +52,14 @@ measures:
     # ⚠ `yedek parça maliyeti` KALDIRILDI → `bakim.toplam_yedek_parca_maliyet`in.
     synonyms: [bakım maliyeti, onarım maliyeti, bakım gideri, iş emri maliyeti]
   - name: planli_bakim_yuzde
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "ROUND(100.0 * SUM(CASE WHEN tur = 'PLANLI' THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1)"
     type: DOUBLE
     unit: "%"
     additive: non
     synonyms: [planlı bakım oranı, planlı oran, önleyici bakım oranı, bakım olgunluğu]
   - name: ort_mudahale_suresi
+    lower_is_better: true   # B-5 · yüksek = KÖTÜ
     expression: "ROUND(AVG(sure_dk),1)"
     type: DOUBLE
     unit: "dk"

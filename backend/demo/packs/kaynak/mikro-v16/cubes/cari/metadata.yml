@@ -10,24 +10,28 @@ synonyms: [cari, bakiye, borç, borc, alacak, tahsilat, ödeme, odeme, hesap eks
 
 measures:
   - name: toplam_borc
+    lower_is_better: true   # B-5 · yüksek = KÖTÜ
     expression: "SUM(CASE WHEN cha_tip = 0 THEN cha_meblag ELSE 0 END)"
     type: DOUBLE
     unit: "₺"
     additive: full
     synonyms: [borç, borc, borç toplamı]
   - name: toplam_alacak
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "SUM(CASE WHEN cha_tip = 1 THEN cha_meblag ELSE 0 END)"
     type: DOUBLE
     unit: "₺"
     additive: full
     synonyms: [alacak, alacak toplamı, tahsilat]
   - name: bakiye
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "SUM(CASE WHEN cha_tip = 0 THEN cha_meblag ELSE -cha_meblag END)"
     type: DOUBLE
     unit: "₺"
     additive: semi
     synonyms: [bakiye, net bakiye, kalan]
   - name: hareket_sayisi
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: COUNT(*)
     type: DOUBLE
     unit: "adet"

@@ -59,6 +59,7 @@ measures:
     lower_is_better: true
     synonyms: [iade, iade miktarı, iade kilosu, geri gelen, iade edilen]
   - name: ort_cozum_suresi
+    lower_is_better: true   # B-5 · yüksek = KÖTÜ
     expression: "ROUND(AVG(cozum_suresi_gun),1)"
     type: DOUBLE
     unit: "gün"

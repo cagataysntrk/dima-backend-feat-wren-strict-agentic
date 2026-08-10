@@ -27,17 +27,20 @@ default_measure: siparis_adedi
 
 measures:
   - name: siparis_adedi
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "COUNT(DISTINCT siparis_no)"
     type: DOUBLE
     unit: "adet"
     additive: non
     synonyms: [sipariş adedi, sipariş sayısı, kaç sipariş, sipariş adet]
   - name: siparis_tutari
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: SUM(toplam_tutar)
     type: DOUBLE
     unit: "₺"
     synonyms: [sipariş tutarı, sipariş büyüklüğü, sipariş cirosu, alınan sipariş]
   - name: siparis_kg
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: SUM(toplam_kg)
     type: DOUBLE
     unit: "kg"
@@ -57,6 +60,7 @@ measures:
     lower_is_better: true
     synonyms: [ortalama gecikme, gecikme, kaç gün geç, gecikme günü, termin sapması]
   - name: zamaninda_teslim_yuzde
+    lower_is_better: false   # B-5 · yüksek = İYİ
     # OTIF'in (on-time-in-full) termin yarısı. ⚠ Payda TÜM siparişler — "zamanında
     # teslim ettiklerimizin yüzde kaçı zamanında" gibi bir totoloji üretmez.
     expression: "ROUND(100.0 * SUM(CASE WHEN gecikme_gun <= 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1)"
@@ -66,6 +70,7 @@ measures:
     synonyms: [zamanında teslim, termin performansı, otif, zamanında teslimat oranı,
                teslimat performansı, termine uyum]
   - name: ort_siparis_buyuklugu
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "ROUND(AVG(toplam_tutar),0)"
     type: DOUBLE
     unit: "₺"

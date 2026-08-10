@@ -22,22 +22,26 @@ synonyms: [bütçe, hedef, plan, planlanan, bütçelenen, gerçekleşme, bütçe
 
 measures:
   - name: toplam_hedef
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: SUM(hedef_tutar)
     type: DOUBLE
     unit: "₺"
     synonyms: [hedef, bütçe, planlanan tutar, bütçelenen, hedef tutar, plan]
   - name: ort_hedef
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "ROUND(AVG(hedef_tutar),0)"
     type: DOUBLE
     unit: "₺"
     additive: non
     synonyms: [ortalama hedef, aylık ortalama bütçe, hedef ortalaması]
   - name: hedef_miktar_toplam
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: SUM(hedef_miktar)
     type: DOUBLE
     unit: "ton"
     synonyms: [hedef miktar, planlanan miktar, miktar hedefi]
   - name: kalem_sayisi
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "COUNT(DISTINCT kalem)"
     type: DOUBLE
     unit: "adet"

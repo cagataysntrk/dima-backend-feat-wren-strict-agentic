@@ -22,6 +22,7 @@ default_measure: sevkiyat_adedi
 
 measures:
   - name: sevkiyat_adedi
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "COUNT(DISTINCT sevkiyat_no)"
     type: DOUBLE
     unit: "adet"
@@ -38,6 +39,7 @@ measures:
     unit: "₺"
     synonyms: [nakliye maliyeti, taşıma maliyeti, nakliye gideri, kargo maliyeti]
   - name: toplam_mesafe
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: SUM(mesafe_km)
     type: DOUBLE
     unit: "km"

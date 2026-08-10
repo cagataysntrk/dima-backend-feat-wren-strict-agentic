@@ -18,27 +18,32 @@ synonyms: [miktar, kilo, kg, ton!, tonaj, sevk, mal hareketi, stok hareketi, ka�
 # amacı değildir.
 measures:
   - name: satis_miktari
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "SUM(CASE WHEN STHAR_GCKOD = 'C' THEN STHAR_GCMIK ELSE 0 END)"
     type: DOUBLE
     unit: "kg"
     synonyms: [satış miktarı, satılan, sevk edilen, çıkış]
   - name: alim_miktari
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "SUM(CASE WHEN STHAR_GCKOD = 'G' THEN STHAR_GCMIK ELSE 0 END)"
     type: DOUBLE
     unit: "kg"
     synonyms: [alım miktarı, alınan, toplanan, giriş]
   - name: satis_tutari_hareket
+    lower_is_better: false   # B-5 · yüksek = İYİ
     cekirdek_metrik: satis_tutari
     expression: "SUM(CASE WHEN STHAR_GCKOD = 'C' THEN STHAR_GCMIK * STHAR_NF ELSE 0 END)"
     type: DOUBLE
     unit: "₺"
     synonyms: [satış tutarı, çıkış tutarı]
   - name: alim_tutari
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "SUM(CASE WHEN STHAR_GCKOD = 'G' THEN STHAR_GCMIK * STHAR_NF ELSE 0 END)"
     type: DOUBLE
     unit: "₺"
     synonyms: [alım tutarı, giriş tutarı]
   - name: net_miktar
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "SUM(CASE WHEN STHAR_GCKOD = 'G' THEN STHAR_GCMIK ELSE -STHAR_GCMIK END)"
     type: DOUBLE
     unit: "kg"
@@ -48,12 +53,14 @@ measures:
   # tek ifade oran; stok/ay grananda doğru). NOT: gerçek brüt kâr/SMM ve stok DEĞERİ (maliyet-
   # bazlı) çok-tablo/period-end ister → Sınıf-B view cube'u (knowledge/metrics, Katman 2).
   - name: ort_satis_fiyati
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "SUM(CASE WHEN STHAR_GCKOD = 'C' THEN STHAR_GCMIK * STHAR_NF ELSE 0 END) / NULLIF(SUM(CASE WHEN STHAR_GCKOD = 'C' THEN STHAR_GCMIK ELSE 0 END), 0)"
     type: DOUBLE
     unit: "₺"
     additive: non
     synonyms: [ortalama satış fiyatı, ortalama fiyat, birim fiyat, satış fiyatı, ort satış fiyatı]
   - name: ort_alis_fiyati
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "SUM(CASE WHEN STHAR_GCKOD = 'G' THEN STHAR_GCMIK * STHAR_NF ELSE 0 END) / NULLIF(SUM(CASE WHEN STHAR_GCKOD = 'G' THEN STHAR_GCMIK ELSE 0 END), 0)"
     type: DOUBLE
     unit: "₺"

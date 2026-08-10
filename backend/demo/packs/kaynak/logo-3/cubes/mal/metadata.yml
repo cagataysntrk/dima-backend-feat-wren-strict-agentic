@@ -18,34 +18,40 @@ synonyms: [miktar, kilo, kg, sevk, mal hareketi, stok hareketi, kaç kilo]
 # amacı değildir.
 measures:
   - name: satis_miktari
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "SUM(CASE WHEN IOCODE IN (3, 4) THEN AMOUNT ELSE 0 END)"
     type: DOUBLE
     unit: "kg"
     synonyms: [satış miktarı, satılan, sevk edilen, çıkış]
   - name: alim_miktari
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "SUM(CASE WHEN IOCODE IN (1, 2) THEN AMOUNT ELSE 0 END)"
     type: DOUBLE
     unit: "kg"
     synonyms: [alım miktarı, alınan, giriş]
   - name: satis_tutari_kalem
+    lower_is_better: false   # B-5 · yüksek = İYİ
     cekirdek_metrik: satis_tutari
     expression: "SUM(CASE WHEN IOCODE IN (3, 4) THEN TOTAL ELSE 0 END)"
     type: DOUBLE
     unit: "₺"
     synonyms: [satış tutarı, çıkış tutarı]
   - name: alim_tutari
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "SUM(CASE WHEN IOCODE IN (1, 2) THEN TOTAL ELSE 0 END)"
     type: DOUBLE
     unit: "₺"
     synonyms: [alım tutarı, giriş tutarı]
   # P0 satış genişletme: realize edilmiş ortalama fiyatlar (tutar/miktar, tek-ifade oran).
   - name: ort_satis_fiyati
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "SUM(CASE WHEN IOCODE IN (3, 4) THEN TOTAL ELSE 0 END) / NULLIF(SUM(CASE WHEN IOCODE IN (3, 4) THEN AMOUNT ELSE 0 END), 0)"
     type: DOUBLE
     unit: "₺"
     additive: non
     synonyms: [ortalama satış fiyatı, ortalama fiyat, birim fiyat, satış fiyatı]
   - name: ort_alis_fiyati
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "SUM(CASE WHEN IOCODE IN (1, 2) THEN TOTAL ELSE 0 END) / NULLIF(SUM(CASE WHEN IOCODE IN (1, 2) THEN AMOUNT ELSE 0 END), 0)"
     type: DOUBLE
     unit: "₺"

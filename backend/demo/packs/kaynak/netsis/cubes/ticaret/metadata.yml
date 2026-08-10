@@ -9,21 +9,25 @@ synonyms: [satış, satis, ciro, gelir, alım, alim, alış, alis, fatura, mal]
 
 measures:
   - name: satis_tutari
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "SUM(CASE WHEN FTIRSIP = '1' THEN GENELTOPLAM ELSE 0 END)"
     type: DOUBLE
     unit: "₺"
     synonyms: [satış, ciro, gelir, satış tutarı]
   - name: alim_tutari
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "SUM(CASE WHEN FTIRSIP = '2' THEN GENELTOPLAM ELSE 0 END)"
     type: DOUBLE
     unit: "₺"
     synonyms: [alım, alış, alım tutarı, hurda alımı]
   - name: satis_kdv
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "SUM(CASE WHEN FTIRSIP = '1' THEN KDV ELSE 0 END)"
     type: DOUBLE
     unit: "₺"
     synonyms: [kdv, satış kdv]
   - name: satis_fatura_sayisi
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "SUM(CASE WHEN FTIRSIP = '1' THEN 1 ELSE 0 END)"
     type: DOUBLE
     unit: "adet"
@@ -31,6 +35,7 @@ measures:
   # Alış fatura sayısı — satışın simetriği (FTIRSIP 2=alış). Canlı 2026-07-25: "alış fatura
   # sayısı" ölçü bulunamadı; simetrik ölçü eksikti.
   - name: alim_fatura_sayisi
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "SUM(CASE WHEN FTIRSIP = '2' THEN 1 ELSE 0 END)"
     type: DOUBLE
     unit: "adet"
@@ -44,12 +49,14 @@ measures:
     lower_is_better: true
     synonyms: [iade, iadeler, iade tutarı, geri dönen, iade edilen]
   - name: net_satis
+    lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "SUM(CASE WHEN FTIRSIP = '1' THEN GENELTOPLAM WHEN FTIRSIP = '3' THEN -GENELTOPLAM ELSE 0 END)"
     type: DOUBLE
     unit: "₺"
     synonyms: [net satış, net satis, iadesiz satış, iade düşülmüş satış]
   # AOV = ortalama fatura/sepet tutarı (SUM/COUNT tek ifade — oran; grup grananda doğru).
   - name: ort_fatura_tutari
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
     expression: "SUM(CASE WHEN FTIRSIP = '1' THEN GENELTOPLAM ELSE 0 END) / NULLIF(SUM(CASE WHEN FTIRSIP = '1' THEN 1 ELSE 0 END), 0)"
     type: DOUBLE
     unit: "₺"

@@ -18,11 +18,13 @@ default_measure: toplam_elektrik_kwh
 
 measures:
   - name: toplam_elektrik_kwh
+    lower_is_better: true   # B-5 · yüksek = KÖTÜ
     expression: SUM(elektrik_kwh)
     type: DOUBLE
     unit: "kWh"
     synonyms: [elektrik, elektrik tüketimi, ölçülen elektrik, kwh]
   - name: toplam_dogalgaz_sm3
+    lower_is_better: true   # B-5 · yüksek = KÖTÜ
     expression: SUM(dogalgaz_sm3)
     type: DOUBLE
     unit: "sm³"

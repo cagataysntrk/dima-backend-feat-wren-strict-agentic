@@ -287,12 +287,39 @@ def main() -> int:
 
     _iska = 0
     with TestClient(app) as istemci:
-        sonuc = _kos(istemci, KORPUS)
         if a.kaydet:
-            llm = app.state.llm
-            yol = llm.kaset.yaz(muhur="canli")
-            print(f"kaset yazıldı: {yol} ({len(llm.kaset.kayitlar)} kayıt)")
+            # 🔴🔴 **KAYIT, KASET KENDİ OYNATMASI ALTINDA KAPANANA KADAR TEKRARLANIR.**
+            #
+            # ⊙ Ölçüldü: tek geçişli kayıt **hiçbir zaman** 0 ıskaya inmedi
+            # (10 → 3 → 2 → 1 → 1 → 1). Sebep yapısal: bir geçiş, o geçişin kendi
+            # yolundaki çağrıları kaydeder; ama kaset dolunca **yol değişir** (artık
+            # her şey diskten geldiği için bütçe/zamanlama farklı davranır) ve yeni
+            # yol, kaydedilmemiş bir çağrı isteyebilir. Kovaladığım tek ıska tam olarak
+            # buydu ve dört koşum boyunca **elle** kapatmaya çalıştım.
+            #
+            # Doğru ölçüt bir sayı değil bir **sabit nokta**: kaset, kendi oynatması
+            # altında yeni çağrı doğurmuyorsa kapalıdır.
+            #
+            # ⚠ Tavan var ve aşılırsa **söylenir** — yakınsamayan bir döngü, sessizce
+            # sonsuza kadar denemekten iyidir.
+            # *Bir kaydı tamamlamak, bir kez kaydetmek değil; kaydın kendini
+            # doğurmayı bıraktığı ana kadar sürdürmektir.*
+            for gecis in range(1, 6):
+                sonuc = _kos(istemci, KORPUS)
+                k = app.state.llm.kaset
+                yeni_kayit = k.iska
+                print(f"  geçiş {gecis}: {k.isabet} isabet · {yeni_kayit} YENİ kayıt")
+                k.isabet = k.iska = 0
+                if not yeni_kayit:
+                    break
+            else:
+                print("  ⚠ 5 geçişte kapanmadı — kaset SABİT NOKTAYA ulaşmadı, "
+                      "oynatmada ıska bekleyin")
+            yol = app.state.llm.kaset.yaz(muhur="canli")
+            print(f"kaset yazıldı: {yol} ({len(app.state.llm.kaset.kayitlar)} kayıt)")
         else:
+            sonuc = _kos(istemci, KORPUS)
+        if not a.kaydet:
             k = getattr(app.state.llm, "kaset", None)
             if k:
                 _iska = k.iska
