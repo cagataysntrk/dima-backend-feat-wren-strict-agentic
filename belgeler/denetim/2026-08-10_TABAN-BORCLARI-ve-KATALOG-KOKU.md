@@ -1225,10 +1225,10 @@ gerektirmiyor, ve **her red bir LLM çağrısı + gecikme** demek — yani bedel
 | ☐ | # | iş | biten sayılır: |
 |---|---|---|---|
 | ☐ | `C1` | **Kapalı seçim** biçimi — *«bu kelimenin katalogda karşılığı var mı, yoksa hiçbiri mi?»*; girdi `partial_unknowns()` | açık yeniden-yazım **yok** |
-| ☐ | `C2` | **Çevrimdışı hasat** — `uncovered_words` sıklık sıralı → toplu çağrı → **aday kuyruğu** | sıcak yolda **sıfır** ek gecikme |
+| ✅ | `C2` | **Çevrimdışı hasat** — `lab/sinonim_hasadi.py`; kütükten sıklık sıralı aday kuyruğu, **sıcak yolda sıfır**, sıfır LLM | ⊙ Canlı: **aday 287 · belirsizlik 1 · zaten_var 5**. 🔴 Ve alet **kendi girdisinin kusurunu** buldu: `nda` 38 · `baz` 29 · `duru` 16 — bunlar kelime değil **parça**, kaynağı `partial_unknowns`'ın `§M7` öncesi hâli. Yani hasat, düzeltilmiş bir sistemin **düzeltilmeden önceki** çıktısını okuyordu. ⚠ İlk çözümüm bir **tarih penceresiydi** ve yanlıştı — parçalar sürdü, ve pencereyi sayılar güzelleşene kadar kaydırmak **ölçümü cevaba uydurmak** olurdu. Doğru kök: kütük **soruyu da** saklıyor → `partial_unknowns` **bugünkü kuralla yeniden koşulur**; parçalar tamamen gitti ve bir sonraki morfoloji düzeltmesi bu aleti **kendiliğinden** düzeltir. *Bir kaydı yeniden hesaplayabiliyorsan, ona güvenmek bir tercihtir — ve bayat olabilecek bir tercihtir* |
 | ☐ | `C3` | **`eslesen_terim` alanı** Intent turunun **içine** | **0 ek tur** |
 | ☐ | `C4` | **Sınıf A elden alınır** — kök/çekim normalleştirmesi | 788 beyan elle bakımdan çıktı |
-| ☐ | `C5` | ⚠ **Çok eşleşen kelime kuyruğa GİRMEZ**; onaysız canlıya inmez; *«hiçbiri»* **menü boşluğu** olarak kaydedilir | üç şart da kapılı |
+| ✅ | `C5` | ⚠ **Çok eşleşen kelime kuyruğa GİRMEZ** · onaysız canlıya inmez · *«hiçbiri»* **menü boşluğu** olarak kaydedilir | Üçü de `sinonim_hasadi.siniflandir`'da **kod**: `belirsizlik` (≥2 sahip — *sinonim yazmak `bakiye`'nin ₺11,86 milyonluk seçimini KALICI yapardı*) · `zaten_var` · `aday`. Hiçbiri **sessizce elenmez**: her kelime bir **sınıf** alır — *elenen bir kelime, elendiği söylenmediği sürece kaybolmuş bir sinyaldir*. Kuyruk yalnız **kuyruktur**; `_apply_synonym_overlays` yalnız `approved=True` uygular |
 | ✅ | `C6` | 🔴 **`prompt_enhancer` AÇILMAZ** (`E-8`) | bayrak `off`, ve gerekçesi belgede · **DOĞRULANDI** `sha=d58b5b2`: bayrak `off`; `E-8` gerekçesi ölçümle sağlandı — k=3 örnekleri `ThreadPoolExecutor` ile **paralel** (tek tur), enhancer **seri ikinci tur**, ve route gerçek dilde **%93,3** pes ediyor (2132 vaka) → enhancer istisna değil **kural** olurdu |
 
 ### D · BAYRAK FAZLARI *(`§4h`)*
