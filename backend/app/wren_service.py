@@ -1008,7 +1008,62 @@ class WrenService:
         Model kolonundan gelenler hazır (enrich_categorical); TÜREV boyutlar
         (ör. hafta_gunu = CASE isodow(...)) motor üzerinden DISTINCT ile toplanır →
         yorum chip'lerinin alternatif listeleri ("sadece Pzt" vb.) buradan beslenir.
-        Hata olursa sessizce atlar."""
+        Hata olursa sessizce atlar.
+
+        🔴🔴 **`§DK` — KATALOG GARSONA YALAN SÖYLÜYORDU; kısayol ADA bakıyordu.**
+
+        ## Ölçülen kusur (canlı, 2026-08-10)
+
+        Kısayol `col_vals`'ı **80 modelin kolonlarını tek sözlükte** düzleştirerek
+        kuruyordu ve eşleşmeyi **boyut ADI** üzerinden yapıyordu. Bir küp boyutunun
+        adı başka bir modelin ham kolonuyla çakışırsa, o kolonun değerleri küpün
+        **kendi ifadesini gölgeliyordu** — ve `expression` satırına hiç gelinmiyordu.
+
+        | küp·boyut | küpün İFADESİ (verinin gerçeği) | enum (garsona söylenen) |
+        |---|---|---|
+        | `parti.musteri` | `musteri_ad` → *TOROS ÖRME TİC. LTD. ŞTİ.* | `M1001…` 🔴 |
+        | `kalite.musteri` | `musteri_ad` | `M1001…` 🔴 |
+        | `kalite.tedarikci` | `tedarikci_ad` | `T-101…` 🔴 |
+        | `kalite.vardiya` | `CASE … '1. Vardiya (08-16)'` | `1 · 2 · 3` 🔴 |
+        | `makine_duruslari.vardiya` | aynı `CASE` | `1 · 2 · 3` 🔴 |
+
+        ⊙ **43 boyutun ifadesi adından farklı** — kısayolun yalan söyleyebileceği küme
+        buydu; beşi kanıtlandı. `hafta_gunu`·`yas_grubu` gibi adı hiçbir ham kolonla
+        çakışmayanlar **doğru** çalışıyordu, çünkü onlar zaten DISTINCT yoluna düşüyordu.
+
+        ## Bedeli bir kolaylık değil, bir SESSİZ YANLIŞ
+
+            «bu yıl 1. vardiyada fire oranı» → 3 vardiya birden döndü,
+                                               ilk satır «3. Vardiya (00-08)»,
+                                               süzgeç sessizce düştü, BEYAN YOK.
+
+        Kullanıcı 1. vardiyayı sordu, 3. vardiyanın sayısını okudu. Değer eşleşmesi
+        tutmadı çünkü katalog `'1'` diyordu, veri `'1. Vardiya (08-16)'` tutuyordu.
+
+        ## Düzeltme — *doğruyu yalnız İFADE söyler*
+
+        Kısayol **kaldırılmadı, kanıta bağlandı**: yalnız değerlerin **o küpün kendi
+        `baseObject` modelinin** kolonundan geldiği ve ifadenin **o kolonun çıplak adı**
+        olduğu durumda kullanılır (`(base, expr)` anahtarı). Aksi hâlde değerler,
+        sorgunun kullanacağı **ifadenin kendisiyle** motordan DISTINCT ile toplanır.
+
+        ⚠ Düzleştirilmiş ad sözlüğü yalnız **ifadesi olmayan** boyutlar için kaldı:
+        orada karşılaştırılacak bir ifade yok, ve elde olan en iyi kaynak odur.
+
+        *Bir katalog, sorgunun kullanacağı ifadeden başka bir yerden okunuyorsa, er ya
+        da geç ondan ayrışır — ve ayrıştığı gün kimse fark etmez, çünkü ikisi de
+        geçerli birer cevap üretir.*
+        """
+        #: `(model, kolon) → değerler` — **çakışmaz** anahtar. Eski düz sözlük
+        #: (`kolon → değerler`) 80 modeli tek düzleme indiriyordu ve son yazan
+        #: kazanıyordu; hangi modelin kazandığı sözlük ekleme sırasına bağlıydı.
+        col_vals_tam = {
+            (m["name"], c["name"]): c["values"]
+            for m in models
+            for c in m["columns"]
+            if c.get("values")
+        }
+        #: Yalnız **ifadesiz** boyutlar için yedek (karşılaştırılacak ifade yok).
         col_vals = {
             c["name"]: c["values"]
             for m in models
@@ -1027,12 +1082,22 @@ class WrenService:
             base = mc.get("baseObject")
             for d in mc.get("dimensions", []):
                 name = d.get("name")
-                if name in col_vals:
-                    vals_map[cube["name"]][name] = col_vals[name]
-                    continue
                 expr = d.get("expression")
+                # 🔴 KISAYOL ARTIK KANITA BAĞLI (`§DK`): değerler **bu küpün kendi
+                # baseObject modelinin** kolonundan geldiyse ve ifade o kolonun
+                # **çıplak adıysa**, DISTINCT ile birebir aynı sonucu verir → ucuz yol.
+                if base and expr and (base, expr) in col_vals_tam:
+                    vals_map[cube["name"]][name] = col_vals_tam[(base, expr)]
+                    continue
+                # İfade var ama çıplak bir kolon değil (CASE · COALESCE · ilişki
+                # üzerinden düzleştirilmiş ad) → **doğruyu yalnız ifade söyler**.
                 if base and expr:
                     istekler.append((cube["name"], name, base, expr))
+                    continue
+                # İfadesiz boyut: karşılaştırılacak bir ifade yok, elde olan en iyi
+                # kaynak düzleştirilmiş ad sözlüğüdür.
+                if name in col_vals:
+                    vals_map[cube["name"]][name] = col_vals[name]
 
         if istekler:
             def _parca(i: int, base: str, expr: str) -> str:

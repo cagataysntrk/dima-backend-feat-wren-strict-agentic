@@ -162,7 +162,7 @@ features:
   #   ⚠ Varsayım **kataloğa değil VERİYE** bağlı: bayat bir beyan yanlış pencere üretir,
   #   veri kendini günceller. Ölçülemezse hiçbir şey yapılmaz (fail-closed) ve
   #   netleştirme aynen çalışır — kaldırılmadı, ikinci seçenek oldu.
-  varsayilan_donem: "off"   # ⚠ TIRNAK ŞART: YAML 1.1 çıplak `off`u BOOLEAN okur
+  varsayilan_donem: beta   # ⏳ `D3` ÖLÇÜM KOŞUMU (2026-08-10) — karar korpustan sonra   # ⚠ TIRNAK ŞART: YAML 1.1 çıplak `off`u BOOLEAN okur
   t2_anlatici: alpha   # 🔴 G5 — AÇILDI (2026-08-07). Kapalılığın sebebi bir KARAR
   #   değil, ÖLÇÜLMEMİŞLİKTİ: MIMARI §6.19z'de kazanç ölçümü "⊘ ÖLÇÜLEMEDİ — kota".
   #   Üç ön koşul da sağlandı ve üçü de FAIL-CLOSED:
@@ -260,6 +260,23 @@ features:
   # bir ölçüden değil sıralama/limitten geliyor. *Bir kazancı gösteremeyen bir ölçümle
   # bayrak açmak, ölçmemekle aynı şeydir.* Kendi sonda kümesi yazılınca açılacak.
   katalog_belirsizlik: "off"
+  # 🔴🔴 `§DK-2` — SÜZGEÇ DEĞERİ ÇAPASI (2026-08-10, canlı curl turunda ölçüldü).
+  #
+  # Garson süzgecin **değerini de kendisi yazıyor** ve varlığını hiçbir şey sormuyordu:
+  #   «oee düşük olan makinelerin bakım maliyeti» → `makine eq "Bakım"` → **0 satır**,
+  #   beyan YOK. Kullanıcı bunu *«bakım maliyeti sıfırmış»* diye okur — bir uydurma sayı
+  #   değil bir **uydurma yokluk**, ve yokluğun uydurması daha sinsidir.
+  #
+  # Kapı üç sonuç üretir ve üçü de BEYANLI: değer listede → dokunulmaz · tek yakın
+  # karşılık → düzeltilir **ve söylenir** · karşılık yok → sorgu **koşturulmaz**, gerçek
+  # değerler chip olur. Yalnız **tam** enum'larda konuşur (`wren_service` bir boyutun
+  # değerlerini ancak sayılabildiğinde yazar) → yanlış-pozitif yapısal olarak dışarıda.
+  #
+  # ⏳ `beta` — davranış değiştirir, `KURAL B` ile bayraklı. Kapalıyken davranış birebir.
+  # ⚠ Bu kapı `§DK`'dan (katalog enum düzeltmesi) ÖNCE açılamazdı: o gün enum'lar yalan
+  # söylüyordu (`parti.musteri` → `M1001…`, oysa veri *TOROS ÖRME…* tutuyor) ve kapı
+  # DOĞRU sorguları reddederdi. *Bir doğrulayıcı, doğruladığı kaynaktan güvenilir olamaz.*
+  deger_capasi: "beta"
   # 🔴🔴 **AÇILDI (2026-08-09) — ve gerekçesi bir umut değil bir SAYI.**
   #
   # ⟳ Bir kez kapalı bırakılmıştı: `EE` turunun A/B'si arıza oranını %55 → **%65**

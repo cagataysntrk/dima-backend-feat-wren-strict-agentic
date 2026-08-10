@@ -758,6 +758,68 @@ _NUM_UNIT_AFTER = re.compile(r"\s*(adet|tane|kez|kalem|adetlik|ay|gun|hafta|yil|
                             r"milyon|bin|tl|lira|kg|kilo|ton|adette)")
 
 
+#: 🔴 Görünen etiketin **açıklama kuyruğu**: `«1. Vardiya (08-16)»` → `«1. vardiya»`.
+#: Yalnız **sondaki parantez** atılır — bir şirket adındaki `LTD. ŞTİ.` atılmaz, çünkü
+#: o bir açıklama değil adın parçasıdır. *Bir kuralı genişletmek, onu belirsizleştirmenin
+#: en kolay yoludur.*
+_ETIKET_KUYRUGU = re.compile(r"\s*\([^()]*\)\s*$")
+
+
+def _deger_cekirdegi(nv: str) -> str | None:
+    """Normalize edilmiş bir değerin **çekirdeği** — yoksa `None` (değişiklik yok)."""
+    cekirdek = _ETIKET_KUYRUGU.sub("", nv).strip()
+    return cekirdek if cekirdek and cekirdek != nv else None
+
+
+def boyut_degerleri(cube_meta: dict | None, cols: dict, dname: str) -> list[str]:
+    """🔴🔴 `§DK-3` — **ROUTE İLE GARSON AYNI MENÜYE BAKAR.**
+
+    ## Ölçülen kusur (canlı, 2026-08-10)
+
+    Route'un değer eşleşmesi değerleri `schema["models"][*]["columns"]`'dan, yani **ham
+    model kolonlarından BOYUT ADIYLA** okuyordu — küpün kendi `dimension_values`'ını
+    hiç kullanmadan. Sonuç, `§DK`'nın birebir ikizi ve **ikinci kopyası**:
+
+    | boyut | route'un baktığı | küpün gerçeği (derleyicinin kullandığı) |
+    |---|---|---|
+    | `vardiya` | 🔴 **kolon hiç yok** → süzgeç yapısal olarak imkânsız | `1. Vardiya (08-16)` … |
+    | `musteri` | `M1001…` (kullanıcının asla yazmadığı kodlar) | `AKDENİZ ÖRME TEKSTİL A.Ş.` … |
+    | `tedarikci` | `T-101…` | `FIRAT İPLİK TİC. LTD.` … |
+
+    ⊙ Bedeli ölçüldü: *«bu yıl **1. vardiyada** fire oranı»* → **üç vardiya birden**,
+    ilk satır *«3. Vardiya»*, süzgeç sessizce düştü, beyan **yok**.
+
+    ## Düzeltme
+
+    Kaynak **küpün kendi enum'udur** — kataloğun garsona verdiği liste ve sorgunun
+    döndüreceği değerlerle **aynı** liste. Ham kolon yalnız küpün kaydı **hiç yokken**
+    yedektir (bugünkü davranış; kırpma değil).
+
+    *İki basamağın farklı menülere bakması bir tutarsızlık değil, iki ayrı üründür.*
+    """
+    enum = (cube_meta or {}).get("dimension_values") or {}
+    v = enum.get(dname)
+    if v:
+        return [str(x) for x in v]
+    col = cols.get(dname) or {}
+    return [str(x) for x in (col.get("values") or [])]
+
+
+def deger_eslesmeleri(q: str, degerler: list[str]) -> list[str]:
+    """Sorunun tuttuğu değerler — **tam** eşleşme, yoksa **tekil çekirdek** eşleşmesi.
+
+    🔴 Çekirdek yolu yalnız **tek aday** kalırsa kullanılır: `«ram»` hem `RAM-1` hem
+    `RAM 2`'yi çağırır ve orada seçim yapmak yazı-turadır. *Belirsizlikte tahmin etmemek,
+    bu deponun tek kuralıdır ve çekirdek eşleşmesi onun istisnası olamaz.*
+    """
+    tam = [v for v in degerler if (nv := _norm(v)) and _value_token_hit(q, nv)]
+    if tam:
+        return tam
+    aday = [v for v in degerler
+            if (ck := _deger_cekirdegi(_norm(v))) and _value_token_hit(q, ck)]
+    return aday if len(aday) == 1 else []
+
+
 def _value_token_hit(q: str, nv: str) -> bool:
     """Kategorik DEĞER eşleşmesi: kelime başından, çekim ekine toleranslı
     ("antrasitte" ← Antrasit) — ama salt altdizi DEĞİL ve dönem ifadesinin parçası
@@ -1522,11 +1584,11 @@ def deterministic_refine(prev: dict, q: str, schema: dict,
     # aynı mantık — mevcut aynı-boyut filtresini değiştirir (Erkek→Kadın deterministik).
     cols = {c["name"]: c for mdl in schema.get("models", []) for c in mdl["columns"]}
     for dname in cube_meta.get("dimensions", []):
-        col = cols.get(dname)
-        if not col or not col.get("values"):
+        # 🔴 `§DK-3` — kaynak küpün **kendi** enum'u; ham kolon yalnız yedek.
+        degerler = boyut_degerleri(cube_meta, cols, dname)
+        if not degerler:
             continue
-        matched = [str(v) for v in col["values"]
-                   if (nv := _norm(str(v))) and _value_token_hit(q, nv)]
+        matched = deger_eslesmeleri(q, degerler)
         if not matched:
             continue
         # ÇOK değer ("sadece beyaz ve siyah renk") → `in` filtresi; TEK değer → eq.
@@ -4038,11 +4100,11 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
     # filtreleniyordu (üstelik `renk`teki `not_in` ile ÇELİŞEREK).
     eslesen: dict[str, list[str]] = {}
     for dname in cube_meta.get("dimensions", []):
-        c = cols.get(dname)
-        if not c or not c.get("values"):
+        # 🔴 `§DK-3` — aynı tek kaynak; iki çağrı yeri **aynı menüyü** okur.
+        degerler = boyut_degerleri(cube_meta, cols, dname)
+        if not degerler:
             continue
-        matched = [str(v) for v in c["values"]
-                   if (nv := _norm(str(v))) and _value_token_hit(q, nv)]
+        matched = deger_eslesmeleri(q, degerler)
         if matched:
             eslesen[dname] = matched
     tum_norm = {_norm(v) for vs in eslesen.values() for v in vs}

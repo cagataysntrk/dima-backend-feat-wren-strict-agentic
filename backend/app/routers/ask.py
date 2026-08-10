@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 import time as _time
 
+from app import deger_capasi as _degerler
 from app import diyalog as _diyalog
 from app import donem_capasi as _capa
 from app import kiyas_cebiri
@@ -2728,6 +2729,38 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             if _t_not:
                 cq = _cq_yeni or cq
                 note = " · ".join(x for x in [note, _t_not] if x)
+        # 🔴🔴 `§DK-2` — **SÜZGEÇ DEĞERİ ÇAPASI: SQL derlenmeden ÖNCE.**
+        #
+        # Ölçülen kusur (canlı curl turu): garson süzgecin **değerini de kendisi yazıyor**
+        # ve o değerin var olup olmadığını hiçbir şey sormuyordu →
+        # `maliyet.makine eq "Bakım"` → **0 satır, beyan yok**. Kullanıcı bunu *"bakım
+        # maliyeti sıfırmış"* diye okur; bir uydurma sayı değil bir **uydurma yokluk**.
+        #
+        # ⚠ Konum bilinçli: `route()`'un kendi değer eşleşmesi (`value_index.FuzzyIndex`)
+        # **yalnız route yolunda** çalışıyordu; garsonun fişi oradan geçmiyor. Kuralı
+        # huniye koymak, onu merdivenin **her** basamağında geçerli kılar —
+        # *bir kural yalnız bir basamakta geçerliyse, o kural değil bir tesadüftür.*
+        #
+        # Kapı yalnız **tam** enum'larda konuşur (`wren_service` bir boyutun değerlerini
+        # ancak sayılabildiğinde yazar); kaydı olmayan boyutta **hiçbir şey söylemez**.
+        if "deger_capasi" in resolve_for(settings, principal):
+            _dk = _degerler.denetle(cq, schema)
+            if _dk:
+                _duz = _degerler.duzelt_yerinde(cq, _dk)
+                if _duz:
+                    note = " ".join(x for x in [note, _duz] if x)
+                    trace = [*trace, "süzgeç değeri katalogla eşleştirildi (§DK-2, LLM'siz)"]
+                # 🔴 Karşılığı **hiç** olmayan değer → sorgu KOŞTURULMAZ. Sıfır satır bir
+                # cevap gibi görünür; görünmemesi gerekir. *Dürüst bir red bir başarı
+                # değildir; dürüst bir SORU bir cevaptır* — gerçek değerler chip olur.
+                if any(not b.oneri for b in _dk):
+                    return _finish(AskResponse(
+                        question=body.question, source=None, cube_query=cq,
+                        note=_degerler.netlestirme_metni(_dk),
+                        suggestions=[Suggestion(**s) for s in _degerler.secenekler(_dk)],
+                        trace=[*trace, "§DK-2: süzgeç değeri katalogda YOK → "
+                                       "netleştirme (LLM'siz, sıfır satır sunulmadı)"],
+                    ))
         try:
             if "entity_limit" in cq:
                 sql = _resolve_entity_limit(service, cq, order, limit_val or limit)

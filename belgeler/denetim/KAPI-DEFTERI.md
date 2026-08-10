@@ -99,6 +99,43 @@ kendi özetinde: `doğru=96 · devir=2141 · netleştirme=0 · beyanlı_kısmi=4
 ⚠ **Payda sabit** (2286 · 591) — yani süre düşüşü kapsam kırpılmasından değil.
 *Bir sürenin kısalması iki sebepten olabilir ve ikisi zıttır.*
 
+### 2026-08-10 · korpus (`§DK` demeti) · ⚪ YEŞİL — *ve `A4` ilk kez KENDİ KARARINI yazdı*
+
+`§DK` (katalog enum'u ifadeden) + `§DK-3` (route ile garson aynı menü) + `§DK-2` (süzgeç
+değeri çapası) tek demette indi. Sonuç: korpus **%95,0** (taban %94,4) ✅ · semantik
+**%93,9** · `sessiz_yanlis` **8** (değişmedi) · payda **2286** (sabit).
+
+⊙ **Tek hareket:** `dogru 96 → 95`, `devir 2141 → 2142`. Ve kapı bunu **kendisi
+sınıflandırdı**:
+
+> *"⚠ DEVİR (gerileme DEĞİL): dogru −1 ama devir+netleştirme +1 — kayıp değil DEVİR.
+> ⚠ fiyatı: 1 soru artık bir LLM turu ödüyor."*
+
+🔴 **Bu satır `A4`'ün varlık sebebidir ve `G3`'ün tam tersidir.** `G3`'te aynı şekildeki
+bir düşüş **sorulmadan** gerileme sayılmış ve bir yetenek geri alınmıştı. Bugün aynı
+şekil geldi, etiket **otomatik** kondu ve **fiyatı da yazıldı** — bir LLM turu.
+*Bir ölçüm aracının olgunluğu, verdiği sayıda değil, o sayının ne anlama geldiğini
+söyleyebilmesindedir.*
+
+**Eksen:** doğruluk yüzdesi — ve `E-2` gereği o eksenin **veto yetkisi yok**.
+
+### 2026-08-10 · korpus · 🟡 YAN BULGU — *kapı bir MUTFAK kusuru gösterdi*
+
+Koşum kütüğünde tekrar eden bir uyarı: `veri_araligi okunamadı: cube=enerji_sapma` ve
+`cube=cusum` — `donem_tarih` kolonu kaynakta **yok** (`Binder Error: Referenced column
+"donem_tarih" not found`).
+
+⊙ İki küp, katalogda **var olmayan bir zaman ekseni beyan ediyor**. `varsayilan_donem`
+bunu doğru karşıladı (ölçemedi → **hiçbir şey varsaymadı**, fail-closed) — yani bayrağın
+tasarımı canlıda sınandı ve tuttu. Ama beyanın kendisi bir borç: o küplerde dönem
+soruları **hiç** çalışamaz.
+
+⚠ Bir *"haklı kırmızı"* değil (kapı yeşil verdi) — ama defterin amacı yalnız kırmızıları
+saymak değil, kapının **ne gösterdiğini** kaydetmek. *Bir aletin en ucuz bulgusu, aramadığı
+şeyi yolda görmesidir.*
+
+---
+
 ---
 
 ## Nasıl eklenir

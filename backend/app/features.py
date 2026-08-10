@@ -38,6 +38,9 @@ _SCOPE_ORDER = ("global", "sector", "tenant", "role", "user")
 #   4) Gerekiyorsa admin panelden tenant/rol/kullanıcı override'ı ile aç.
 FLAG_REGISTRY: dict[str, dict[str, str]] = {
     "varsayilan_donem": {
+        # 🔴 `E-4`/`D9` — **YAZILI `on` ŞARTI.** Şartı olmayan bir bayrak
+        # `beta`da **süresiz** yaşar: ne açılır ne kapanır, yalnız unutulur.
+        "on_sarti": "🔴 **ÖLÇÜLDÜ ve `beta`ya alındı** (`D3`, 2026-08-10): korpus doğru-cube **%94,9 → %95,0**, `sessiz_yanlis` **8 → 8 (DEĞİŞMEDİ)**, payda 2286 sabit — `F1.1`'in durdurma şartı (*«`sessiz_yanlis` artarsa faz durur»*) **tetiklenmedi**. Beyan canlıda curl ile doğrulandı (`F1.3`). ⚠ **Korpus kazancı ölçüyor değil, BEDELİ ölçüyor:** korpus soruları katalogdan üretiliyor ve **çoğu zaten dönem taşıyor** — %13,7'lik netleştirme yükü orada değil **gerçek kullanıcı turlarında**. Yani +%0,1 bir kazanç ölçüsü değil, bir **zarar yokluğu** ölçüsüdür ve bayrağın açılma gerekçesi budur. `on` şartı: canlı turlarda dönem-netleştirmesi oranının düştüğü **kullanıcı telemetrisiyle** görülmeli (`interaction_log`), ve **verinin son 12 ayı** penceresinin bayat bir kiracıda (`veri_araligi` ölçülemez) fail-closed davrandığı bir vaka ile doğrulanmalı.",
         "label": "Varsayılan dönem — sormak yerine BEYANLA varsay",
         "description": "🔴 `M-4`. Dönem belirtilmemiş bir soruda sistem bugün cevabı "
                        "**tutup soruyor** (*«… çıkarabilirim — hangi dönem için?»*). "
@@ -621,6 +624,29 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "çapraz-cube harmanı (blend) ifade edebilir. Kapalıyken kıyas "
                        "bugünkü yedi dokunuşuyla akar ve şema eski biçimdedir.",
         "category": "Anlama",
+    },
+    "deger_capasi": {
+        # 🔴 `E-4`/`D9` — **YAZILI `on` ŞARTI.**
+        "on_sarti": "Canlı turda üç sonucun **üçü de** görülmeli: (1) geçerli değer dokunulmadan geçmeli, (2) tek yakın karşılık düzeltilip **beyan edilmeli**, (3) karşılıksız değerde sorgu koşmayıp gerçek değerler chip olmalı. ⚠ Ve `on` şartı bir sayı taşır: korpusta `sessiz_yanlis` **artmamalı** — bu kapı sessiz-yanlış kapatmak için var; bir tanesini bile üretirse amacının tersine çalışıyor demektir. 🔴 Ön koşul `§DK`: enum'lar veriye eşit olmadan bu kapı doğruları reddeder.",
+        "label": "Süzgeç değeri çapası — uydurulmuş değer sessiz sıfır satır üretmez",
+        "description": "🔴 `§DK-2`. Garson bir süzgeç kurarken **değeri de kendisi "
+                       "yazar** ve bugüne kadar o değerin var olup olmadığını hiçbir "
+                       "şey sormuyordu. Canlı ölçüm: «oee düşük olan makinelerin bakım "
+                       "maliyeti» → `makine eq \"Bakım\"` → **0 satır, beyan yok**. "
+                       "Kullanıcı bunu «bakım maliyeti sıfırmış» diye okur — bir uydurma "
+                       "sayı değil bir **uydurma yokluk**, ve yokluğun uydurması daha "
+                       "sinsidir çünkü sıfır bir cevap gibi görünür. "
+                       "⚠ `route()` bu doğrulamayı `value_index.FuzzyIndex` ile ZATEN "
+                       "yapıyordu — ama **yalnız route yolunda**; garsonun fişi oradan "
+                       "geçmiyor. Kural huniye konarak merdivenin HER basamağında "
+                       "geçerli kılındı. "
+                       "⚠ Yalnız **tam** enum'larda konuşur: `wren_service` bir boyutun "
+                       "değerlerini ancak sayılabildiğinde yazar (`0 < len ≤ 64`), çok "
+                       "değerli boyutta kayıt HİÇ YOKTUR → «listede yok» gerçekten "
+                       "yokluktur, örneklem kırpması değil (`§101.1`). "
+                       "*Dürüst bir red bir başarı değildir; dürüst bir SORU bir "
+                       "cevaptır.*",
+        "category": "Doğruluk",
     },
     "katalog_belirsizlik": {
         "label": "Belirsiz ölçüleri katalogda göster",

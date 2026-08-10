@@ -9162,3 +9162,147 @@ devretmektir**. Bugün route çekilmiyor, **soruyu sahipleniyor**.
 
 ⚠ Bu bir gerileme değil, `R2`'nin **görünür kıldığı** eski bir borç: daha önce aynı
 soru sosyal kapıda ölüyordu, bu kata hiç ulaşmıyordu.
+
+---
+
+# 🔴🔴 TUR — 2026-08-10 · **KATALOG GARSONA YALAN SÖYLÜYORDU** (`§DK` · `§DK-2` · `§DK-3`)
+
+> 24 senaryo, curl ile tek tek, en basitten en zora / en kısa zincirden en uzuna.
+> Turun bulduğu şey bir sinonim eksiği değil, **kataloğun kendisinde oturan bir
+> sessiz-yanlış üreticisiydi** — ve üç ayrı kopyası vardı.
+
+## Turun iskeleti — merdivenin her basamağı ayrı yoklandı
+
+| # | basamak | senaryolar | sonuç |
+|---|---|---|---|
+| 1 | sosyal · meta (0 LLM · 0 SQL) | `merhaba` · `teşekkürler` · `neler yapabilirsin` | ✅ üçü de `source=meta`, iz *«sıfır maliyet»* |
+| 2 | route (mutfak kesin biliyor) | `bu yıl toplam ciro` · `bu yıl müşteri bazında ciro` | ✅ `source=cube`, ~50 ms |
+| 3 | garson tek fiş | `toplam ciro` · `makine bazında ortalama oee` | ✅ doğru, `self-consistency %100` |
+| 4 | belirsizlik ifşası | `bakiye` · `bu yıl bakiye` · `toplam fire` · `alacak` | ✅ dördü de sahip beyanı **+ chip** |
+| 5 | yön · üstünlük | `en kötü elektrik tüketimi` · `en iyi ilk seferde tamam` | ✅ / ✅ netleştirme (çok sahipli) |
+| 6 | kısa zincir (3 tur) | `hat bazında fire` → `peki neden yüksek` → `o hatta hangi makine` | ✅ odak tuttu (`RAM 2` beyanlı) |
+| 7 | uzun zincir (5 tur) | `müşteri bazında ciro` → `en yükseği` → `onun fire oranı` → `geçen yıla göre` → `özetle` | ✅ **4/5 tur `source=cube`** — garson yalnız ilk turda |
+| 8 | menü boşlukları | `mayıs ve haziran ayrı ayrı` · `şikayeti olan müşteriler` · `bakım maliyeti` | 🔴 **kusurlar buradan çıktı** |
+
+⊙ **7. satır turun en iyi haberi:** beş turluk zincirde kompozisyon **birikti**
+(`toplam_ciro` → `+fire_orani_yuzde` → `+geçen yıl`) ve dört tur **hiç LLM görmedi**.
+*Garson siparişi bir kez doğru alırsa, mutfak gerisini kendi götürüyor.*
+
+---
+
+## 🔴 KÖK — `§DK`: kısayol **ADA** bakıyordu, **İFADEYE** değil
+
+`wren_service._enrich_cube_dim_values` bir küp boyutunun değerlerini **boyut adıyla**
+arıyor, arama tablosunu da **80 modelin kolonlarını tek sözlükte** düzleştirerek
+kuruyordu. Ad çakışınca başka bir modelin ham kolonu küpün **kendi ifadesini
+gölgeliyor**, `expression` satırına **hiç gelinmiyordu**.
+
+| küp·boyut | küpün İFADESİ (verinin gerçeği) | enum (garsona söylenen) |
+|---|---|---|
+| `parti.musteri` | `musteri_ad` → *TOROS ÖRME TİC. LTD. ŞTİ.* | `M1001…` 🔴 |
+| `kalite.musteri` | `musteri_ad` | `M1001…` 🔴 |
+| `kalite.tedarikci` | `tedarikci_ad` | `T-101…` 🔴 |
+| `kalite.vardiya` | `CASE … '1. Vardiya (08-16)'` | `1 · 2 · 3` 🔴 |
+| `makine_duruslari.vardiya` | aynı `CASE` | `1 · 2 · 3` 🔴 |
+
+**43 boyutun ifadesi adından farklı** — yalanın mümkün olduğu küme buydu; **beşi
+kanıtlandı**. `hafta_gunu`·`yas_grubu` gibi adı hiçbir ham kolonla çakışmayanlar doğru
+çalışıyordu, çünkü onlar **zaten** DISTINCT yoluna düşüyordu.
+
+### Faturası bir kolaylık değil, bir SESSİZ YANLIŞ
+
+```
+S: «bu yıl 1. vardiyada fire oranı»
+C: 3 vardiya birden · ilk satır «3. Vardiya (00-08)» %25,08 · süzgeç sessizce düştü
+   note: YOK   ← kullanıcı 1. vardiyayı sordu, 3. vardiyanın sayısını okudu
+```
+
+**Düzeltme:** kısayol **kaldırılmadı, kanıta bağlandı** — yalnız değerler o küpün kendi
+`baseObject` modelinin kolonundan geliyorsa **ve** ifade o kolonun çıplak adıysa
+kullanılır (`(base, expr)` anahtarı). Aksi hâlde değerler **sorgunun kullanacağı
+ifadeyle** motordan toplanır.
+
+⊙ Ve düzeltme yalnız yalanı kesmedi, **doğruyu bedavaya** verdi: `parti.musteri` doğru
+adları **motora hiç gitmeden** aldı, çünkü `musteri_ad` zaten kendi base'inin
+örneklenmiş kolonuydu.
+
+---
+
+## 🔴 İKİNCİ KOPYA — `§DK-3`: route ile garson **farklı menülere** bakıyordu
+
+`§DK` kataloğu düzeltti; ama route değerleri oradan **okumuyordu**. Kendi eşleşmesini
+yine `schema["models"][*]["columns"]`'dan, **boyut adıyla** yapıyordu — aynı kusurun
+ikinci kopyası, ve bu sefer route'un içinde.
+
+| boyut | route'un baktığı | küpün gerçeği |
+|---|---|---|
+| `vardiya` | 🔴 **kolon hiç yok** → süzgeç yapısal olarak imkânsız | `1. Vardiya (08-16)` … |
+| `musteri` | `M1001…` (kullanıcının **asla yazmadığı** kodlar) | `AKDENİZ ÖRME TEKSTİL A.Ş.` … |
+| `tedarikci` | `T-101…` | `FIRAT İPLİK TİC. LTD.` … |
+
+**Düzeltme:** tek kaynak (`boyut_degerleri`) — küpün kendi enum'u, ham kolon yalnız
+kayıt hiç yokken yedek. Üstüne **çekirdek eşleşmesi**: kullanıcı `«1. vardiya»` yazar,
+katalog `«1. Vardiya (08-16)»` tutar; sondaki parantez atılır ve **tek aday kalırsa**
+eşleşir. `«ram»` iki makineyi çağırdığı için orada **susar**.
+
+```
+ÖNCE : «bu yıl 1. vardiyada fire oranı» → 3 satır, süzgeç YOK
+SONRA: filters: [vardiya eq "1. Vardiya (08-16)"] → %16,78   ✅
+       «2. vardiyada ortalama oee» → 0,635 ✅
+```
+
+---
+
+## 🔴 ÜÇÜNCÜ — `§DK-2`: garson uydurma bir değer yazınca hiçbir şey sormuyordu
+
+```
+S: «oee düşük olan makinelerin bakım maliyeti»
+C: filters: [makine eq "Bakım"]  → 0 satır, beyan YOK
+   ← kullanıcı bunu «bakım maliyeti sıfırmış» diye okur
+```
+
+Bir uydurma **sayı** değil bir uydurma **yokluk** — ve yokluğun uydurması daha sinsidir,
+çünkü sıfır bir cevap gibi görünür. `route()` bu doğrulamayı `value_index` ile **zaten**
+yapıyordu, ama **yalnız route yolunda**; garsonun fişi oradan geçmiyor.
+
+**Düzeltme:** `app/deger_capasi.py` — kural huniye kondu, merdivenin **her** basamağında
+geçerli. Üç sonuç, üçü de beyanlı: geçerli değer **dokunulmaz** · tek karşılık
+**düzeltilir ve söylenir** · karşılık yok → sorgu **koşturulmaz**, gerçek değerler
+**chip** olur.
+
+### ⚠ SIRA BİR TASARIM KARARIYDI
+
+Bu kapı `§DK`'dan **önce** yazılamazdı: o gün enum'lar yalan söylüyordu ve kapı
+**doğru** sorguları reddederdi — kusuru düzeltmek yerine **kilitlerdi**.
+*Bir doğrulayıcı, doğruladığı kaynaktan daha güvenilir olamaz.*
+
+### Ve kapının kendisi bir borç doğurdu — aynı turda ödendi
+
+```
+S: «bu yıl 3. vardiyada duruş dakikası»
+C: «3» vardiya listesinde yok. Var olanlar: 1. Vardiya (08-16) · … Hangisini istersin?
+```
+
+Kapı **haklıydı** ama kullanıcının kastettiği besbelliydi. *Dürüst bir red bir başarı
+değil, çözülecek bir borçtur* → **tekil önek** yolu eklendi:
+
+```
+SONRA: 🔎 Süzgeç değeri katalogla eşleştirildi: «3» → «3. Vardiya (00-08)»
+       → 55.512 dk  ✅
+```
+
+⚠ Sınırı korundu: `«RAM»` iki makineyi çağırır ve orada **soru sormak** doğru kalır.
+
+---
+
+## Kapılar
+
+| dosya | ne kilitler |
+|---|---|
+| `test_katalog_enum_ifadeden.py` (7) | enum **ifadeden** okunur · motor düşerse **susar**, yalana düşmez · kanıtlı kısayol korunur (fazla ileri gitmedi) |
+| `test_deger_kaynagi_tek.py` (7) | route ile garson **aynı menü** · çekirdek eşleşmesi · belirsizlikte **susar** · şirket adı kuyruğu **kırpılmaz** |
+| `test_deger_capasi.py` (12) | üç sonuç · enum'suz boyutta **yargı yok** (`§101.1`) · beraberlikte tahmin yok · sıralı operatörler dışarıda |
+
+*Bir katalog, sorgunun kullanacağı ifadeden başka bir yerden okunuyorsa er ya da geç
+ondan ayrışır — ve ayrıştığı gün kimse fark etmez, çünkü ikisi de geçerli birer cevap
+üretir.*
