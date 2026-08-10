@@ -6,13 +6,14 @@ import { Moon, Sun } from "lucide-react";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { useMounted } from "@/hooks/use-mounted";
+import { cn } from "@/lib/utils";
 
 /**
  * Light/dark toggle. `resolvedTheme` is only known on the client, so until
  * mounted we render a stable, theme-agnostic placeholder that matches the SSR
  * output (no hydration mismatch); the theme-aware icon swaps in after mount.
  */
-export function ThemeToggle() {
+export function ThemeToggle({ className }: { className?: string } = {}) {
   const t = useTranslations("common");
   const { resolvedTheme, setTheme } = useTheme();
   const mounted = useMounted();
@@ -25,7 +26,7 @@ export function ThemeToggle() {
       aria-label={t("theme")}
       title={mounted ? (isDark ? t("themeLight") : t("themeDark")) : undefined}
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="text-muted-foreground hover:text-foreground"
+      className={cn("text-muted-foreground hover:text-foreground", className)}
     >
       {!mounted ? (
         <Sun className="size-4" />

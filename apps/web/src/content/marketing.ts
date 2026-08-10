@@ -1,5 +1,5 @@
 export type MarketingLocale = "tr" | "en";
-export type CapabilityStatus = "available" | "beta" | "planned";
+export type CapabilityStatus = "available" | "pilot" | "planned";
 export type MarketingSceneKey =
   | "question"
   | "definitions"
@@ -65,12 +65,13 @@ export type MarketingContent = {
     terms: string;
     about: string;
     contact: string;
+    textile: string;
     rights: string;
   };
   common: {
     learnMore: string;
     available: string;
-    beta: string;
+    pilot: string;
     planned: string;
     finalTitle: string;
     finalBody: string;
@@ -80,13 +81,15 @@ export type MarketingContent = {
   home: {
     eyebrow: string;
     title: string;
-    rotateWords: string[];
     description: string;
     process: string[];
     proofTitle: string;
     proofBody: string;
     pillarsTitle: string;
     pillarsBody: string;
+    pillars: Array<{ letter: string; title: string; body: string }>;
+    textileTitle: string;
+    textileBody: string;
     workflowTitle: string;
     workflow: Array<{ title: string; body: string }>;
     useCasesTitle: string;
@@ -131,12 +134,13 @@ const tr: MarketingContent = {
     terms: "Kullanım Şartları",
     about: "Hakkımızda",
     contact: "İletişim",
+    textile: "Boyahane çözümü",
     rights: "Tüm hakları saklıdır.",
   },
   common: {
     learnMore: "Ayrıntıyı incele",
     available: "Dima’da doğrulandı",
-    beta: "Beta",
+    pilot: "Pilot kapsamı",
     planned: "Planlanıyor",
     finalTitle: "İlk gerçek iş sorunuzla başlayalım.",
     finalBody:
@@ -146,8 +150,7 @@ const tr: MarketingContent = {
   },
   home: {
     eyebrow: "İşletme verisini anlamanın daha kolay yolu",
-    title: "Verinize sorun. Sonucu",
-    rotateWords: ["anlayın.", "karşılaştırın.", "paylaşın."],
+    title: "İşletme verinizle konuşun. Cevabın nasıl üretildiğini görün.",
     description:
       "dima, günlük iş dilinizle sorduğunuz soruları verinizde bulur; sonucu tablo veya grafikle gösterir ve cevabın nereden geldiğini açıklar.",
     process: ["Sorunuzu yazın", "İş tanımlarıyla eşleşsin", "Kontrol edilsin", "Sonucu görün"],
@@ -157,6 +160,14 @@ const tr: MarketingContent = {
     pillarsTitle: "Güven, yalnızca doğru görünen bir cevaptan gelmez.",
     pillarsBody:
       "Her cevap; iş anlamını taşıyan model, sorgu güvenlik sınırları ve görünür bir çözüm izi üzerinde oluşur.",
+    pillars: [
+      { letter: "D", title: "Definitions", body: "İşletmenizin ölçülerini, ilişkilerini ve terimlerini ortak bir anlamda tutun." },
+      { letter: "I", title: "Interpretation", body: "Soruyu iş dilinden modellenmiş bağlama taşıyın; belirsizliği görünür bırakın." },
+      { letter: "M", title: "Model", body: "Veri kaynaklarını karar vermeyi kolaylaştıran, denetlenebilir bir modelde buluşturun." },
+      { letter: "A", title: "Answer", body: "Sonucu, sorguyu ve cevabın dayanağını birlikte inceleyin." },
+    ],
+    textileTitle: "Boyahane operasyonunu tek bir soruda görünür kılın.",
+    textileBody: "Parti, reçete, makine, OEE, fire, su, enerji ve termin sorularını aynı modellenmiş bağlam üzerinden inceleyen odaklı demo anlatısını keşfedin.",
     workflowTitle: "Sorudan rapora, görünür bir zincir.",
     workflow: [
       {
@@ -235,9 +246,10 @@ const tr: MarketingContent = {
         { id: "model", title: "Herkes aynı tanımı kullansın", body: "Ölçüler, ilişkiler, birimler ve onaylanmış tanımlar ortak bir iş anlamında buluşur.", points: ["Ortak iş tanımları", "İlişkiler", "Anlaşılır adlar ve birimler"] },
         { id: "validate", title: "Çalıştırmadan önce kontrol edin", body: "Önerilen sorgu yalnızca izin verilen veriyi okuma ve çalıştırılabilirlik açısından kontrol edilir.", points: ["Yalnızca okuma", "Çalıştırma öncesi kontrol", "Görünür sorgu"] },
         { id: "explore", title: "Sonucu size uygun biçimde görün", body: "Aynı sonucu tablo, grafik, özet gösterge veya karşılaştırmalı görünümde inceleyin.", points: ["Tablo", "Grafik", "Özet göstergeler", "Karşılaştırma"] },
-        { id: "verify", title: "Cevabı değerlendirin", body: "Geri bildirim ve cevap kaynağı, analizin nasıl oluştuğunu görünür tutar.", status: "beta" },
-        { id: "reuse", title: "Yararlı cevabı yeniden kullanın", body: "Kaydedilen analizleri yeniden çalıştırma, zamanlama ve bildirim özellikleri kontrollü olarak geliştirilmektedir.", status: "beta" },
+        { id: "verify", title: "Cevabı değerlendirin", body: "Geri bildirim ve cevap kaynağı, analizin nasıl oluştuğunu görünür tutar.", status: "pilot" },
+        { id: "reuse", title: "Yararlı cevabı yeniden kullanın", body: "Kaydedilen analizleri yeniden çalıştırma, zamanlama ve bildirim özellikleri kontrollü olarak geliştirilmektedir.", status: "pilot" },
         { id: "govern", title: "Yetki sınırlarını koruyun", body: "Oturum, kurum kapsamı ve kullanıcı yetkileri hem ürün hem sunucu tarafında uygulanır." },
+        { id: "integrate", title: "Mevcut veri kaynaklarıyla başlayın", body: "Bağlantı, tablo keşfi, ortak tanımlar ve erişim sınırları doğrulanmadan entegrasyon desteği iddia edilmez.", visual: { key: "connection", caption: "Bağlantı ve erişim akışı" } },
       ],
     },
     how: {
@@ -247,10 +259,16 @@ const tr: MarketingContent = {
         "Soruyu anlamaktan sonucu göstermeye kadar her adım görünür ve denetlenebilir bir akışta ilerler.",
       cta: "Teknik bir görüşme planlayın",
       sections: [
+        { id: "problem", title: "Ham metinden SQL’e atlamak yeterli değildir", body: "Bir sorgunun sözdizimsel olarak çalışması, işletmenizin doğru metriğini veya doğru yetki sınırını kullandığı anlamına gelmez.", visual: { key: "question", caption: "Soru ve anlam ayrımı" } },
         { id: "onboarding", title: "Veri kaynağını tanımlayın", body: "Bağlantı kurum kapsamında yönetilir; tablolar ve ilişkiler kontrollü biçimde keşfedilir." },
         { id: "semantics", title: "İş tanımlarını ekleyin", body: "Metrikler, zaman aralıkları, birimler ve kurumun kullandığı terimler ortak bir anlamda buluşur." },
-        { id: "dry-plan", title: "Öneriyi kontrol edin", body: "Yapay zekânın önerdiği sorgu, yalnızca okuma ve çalıştırılabilirlik kontrollerinden geçmeden veri kaynağına ulaşmaz." },
+        { id: "interpretation", title: "Soruyu modellenmiş bağlama taşıyın", body: "Soru; ölçü, ayrıntı, zaman ve ilişki seçimleriyle açıkça yorumlanır. Belirsizlik varsa cevap akışında görünür kalır.", visual: { key: "definitions", caption: "Modellenmiş bağlam" } },
+        { id: "guard", title: "Sorguyu güvenlik sınırlarında tutun", body: "Yapay zekânın önerdiği sorgu yalnızca izin verilen okuma biçimleriyle sınırlandırılır.", visual: { key: "checks", caption: "Sorgu korumaları" } },
+        { id: "permissions", title: "Oturum ve yetki kapsamını yeniden doğrulayın", body: "Kullanıcı arayüzünün gösterdiği kapsam yeterli değildir; sunucu her isteği oturum, kurum ve yetki bağlamında tekrar değerlendirir.", visual: { key: "access", caption: "Yetki sınırları" } },
+        { id: "dry-plan", title: "Çalıştırma planını kontrol edin", body: "Öneri, veri kaynağına ulaşmadan önce okunabilirlik ve çalıştırılabilirlik kontrollerinden geçer. Bu adım iş tanımlarının veya kaynak verinin doğruluğunu garanti etmez." },
         { id: "execute", title: "Sonucu ve kaynağını görün", body: "İzinli sorgu çalışır; sonuç, sorgu ve cevabın kaynağı aynı inceleme alanında sunulur." },
+        { id: "provenance", title: "Cevabın dayanağını izleyin", body: "Kullanılan tanımlar, sorgu ve sonuç arasındaki ilişki inceleme yüzeyinde birlikte tutulur.", visual: { key: "source", caption: "Cevap kaynağı" } },
+        { id: "limits", title: "Kontrolün neyi kanıtlamadığını bilin", body: "Çalıştırma öncesi kontrol güvenlik ve çalıştırılabilirlik içindir; iş kuralının, kaynağın veya yorumun mutlak doğruluğunu tek başına kanıtlamaz.", visual: { key: "audit", caption: "İnsan değerlendirmesi" } },
         { id: "planned", title: "Kurum içi hibrit bağlantı", body: "Müşteri ağından dışarı doğru güvenli bağlantı kuran yaklaşım planlanmaktadır; bugün hazır bir özellik değildir.", status: "planned" },
       ],
     },
@@ -261,9 +279,26 @@ const tr: MarketingContent = {
         "Dima, organizasyon şemasını değil karar verilmesi gereken gerçek sonuçları başlangıç noktası alır.",
       cta: "Öncelikli kullanım alanınızı konuşalım",
       sections: [
-        { id: "executive", title: "Karar veren ekipler", body: "Hedeflerden sapan göstergeleri, sonucu oluşturan tanım ve ayrıntılarla birlikte görün.", points: ["Öncelikli sapmaları belirleyin", "Ayrıntıya inin"] },
-        { id: "operations", title: "Operasyonel koordinasyon", body: "Hedef, gerçekleşen ve sapma nedenlerini ekip, süreç ve dönem bağlamında aynı iş diliyle sorgulayın.", points: ["Ortak metrik tanımları", "Takip sorularıyla derinleşme"] },
-        { id: "data", title: "Kurumsal hafıza", body: "Tek seferlik rapor taleplerini azaltırken sorguyu, cevabın kaynağını ve yetki sınırlarını görünür tutun.", points: ["Yeniden kullanılabilir analizler", "Görünür cevap kaynağı"] },
+        { id: "operations", title: "Hangi operasyon adımları bu hafta hedefinden saptı?", body: "Operasyon ekipleri hedef, gerçekleşen ve sapma nedenlerini dönem ve süreç bağlamında aynı iş diliyle inceleyebilir.", points: ["Ortak metrik tanımları", "Takip sorularıyla derinleşme"] },
+        { id: "production", title: "Hangi makine OEE ve fire açısından önce incelenmeli?", body: "Üretim ekipleri makine, vardiya, parti ve kalite sapmasını birlikte sorarak öncelikli inceleme alanını belirler.", points: ["OEE ve fire bağlamı", "Parti ve vardiya ayrıntısı"] },
+        { id: "finance", title: "Hangi ürün grupları hedef marjın altında kaldı?", body: "Finans ekipleri ortak gelir, maliyet ve dönem tanımlarıyla sonucu ve ayrıntısını birlikte izler.", points: ["Tanımlı finans metrikleri", "Sonuçtan ayrıntıya geçiş"] },
+        { id: "sales", title: "Hangi müşteri ve ürün gruplarında risk büyüyor?", body: "Satış ekipleri müşteri, sipariş ve ürün bağlamını birleştirerek değişen ticari sinyalleri inceler.", points: ["Müşteri ve sipariş görünümü", "Karşılaştırmalı sorular"] },
+        { id: "inventory", title: "Hangi malzemeler kritik seviyeye yaklaşıyor?", body: "Stok ekipleri malzeme, rezervasyon, hareket ve ihtiyaç dönemini aynı sorgu bağlamında takip eder.", points: ["Kritik stok görünümü", "İhtiyaç ve hareket bağlamı"] },
+        { id: "executive", title: "Bu hafta karar verilmesi gereken üç sapma nedir?", body: "Yönetim ekipleri öncelikli göstergeleri, onları oluşturan tanımlar ve ayrıntılarla birlikte görür.", points: ["Öncelikli sapmaları belirleme", "Ayrıntıya inme"] },
+      ],
+    },
+    textile: {
+      eyebrow: "Boyahane çözümü",
+      title: "Boyahane verisini üretim kararlarına bağlayın.",
+      description: "Parti, reçete, makine, kalite, kaynak tüketimi ve sevkiyat riskini tek bir modellenmiş bağlamda inceleyen odaklı bir demo anlatısı.",
+      cta: "Boyahane kullanım alanını konuşalım",
+      sections: [
+        { id: "question", title: "Bugün hangi parti kalite ve termin riski taşıyor?", body: "Parti, sipariş, makine ve kalite sapmasını birlikte sorarak incelemeye nereden başlayacağınızı görün.", points: ["Parti ve sipariş bağlamı", "Renk sapması ve kalite notu"], visual: { key: "question", caption: "Parti ve kalite sorusu" } },
+        { id: "production", title: "Hangi makine OEE ve fireyi birlikte etkiliyor?", body: "Makine, vardiya ve üretim kaydı boyunca OEE, fire ve duruş bağlamını karşılaştırın.", points: ["OEE ve fire", "Makine ve vardiya ayrımı"], visual: { key: "coordination", caption: "Üretim göstergeleri" } },
+        { id: "recipe", title: "Reçete ve kimyasal tüketimi nasıl açıklanıyor?", body: "Reçete, kimyasal, su ve enerji kullanımını aynı soru zincirinde görün; demo verisi yalnızca örnek ve anonimdir.", points: ["Reçete ve kimyasal", "Su ve enerji bağlamı"], visual: { key: "definitions", caption: "Reçete ve kaynak tanımları" } },
+        { id: "quality", title: "Kalite sapması hangi koşullarla birlikte görülüyor?", body: "Kalite sonucu, proses koşulları ve parti ayrıntısını görünür tanımlarla karşılaştırın.", points: ["Kalite sapması", "İncelenebilir kaynak"], visual: { key: "checks", caption: "Kalite kontrol zinciri" } },
+        { id: "orders", title: "Hangi siparişin termin ve sevkiyat riski artıyor?", body: "Sipariş tarihi, üretim ilerlemesi ve sevkiyat durumunu karar verilmesi gereken risk etrafında inceleyin.", points: ["Termin görünümü", "Sevkiyat riski"], visual: { key: "priority", caption: "Sipariş ve termin önceliği" } },
+        { id: "integration", title: "Bu anlatı gerçek bağlantı kapsamına nasıl taşınır?", body: "Veri kaynağı, tablo keşfi, ortak tanımlar ve erişim sınırları doğrulanmadan müşteri kurulumu veya entegrasyon iddiası yapılmaz.", points: ["Sanitized demo vocabulary", "Pilot değerlendirme adımları"], status: "pilot", visual: { key: "connection", caption: "Bağlantı ve modelleme akışı" } },
       ],
     },
     security: {
@@ -299,7 +334,7 @@ const tr: MarketingContent = {
       eyebrow: "Hakkımızda",
       title: "İşletme verisini daha anlaşılır ve denetlenebilir kılmak için.",
       description:
-        "dima, UpcyTech Teknoloji Anonim Şirketi tarafından geliştirilen güvenilir konuşmalı analitik ürünüdür.",
+        "dima, UpcyTech Teknoloji Anonim Şirketi tarafından geliştirilen konuşmalı analitik ürünüdür.",
       cta: "Bizimle iletişime geçin",
       sections: [
         { id: "purpose", title: "Neden dima?", body: "İş ekiplerinin cevap beklemesini azaltırken veri ekiplerinin ihtiyaç duyduğu kontrolü korumak için." },
@@ -349,7 +384,7 @@ const tr: MarketingContent = {
         { id: "acceptable", title: "5. Kabul edilebilir kullanım", body: "Hizmet hukuka aykırı faaliyet, yetkisiz erişim, güvenlik testi, tersine mühendislik, kaynak kod çıkarma, zararlı yazılım, aşırı otomatik yük, üçüncü kişi hak ihlali veya izin verilmeyen kişisel veri işleme için kullanılamaz. Güvenliği veya diğer kurum hesaplarını etkileyen kullanım askıya alınabilir." },
         { id: "customer-data", title: "6. Müşteri verisi", body: "Müşteri kendi verisinin ve talimatlarının hukuka uygunluğundan, gerekli aydınlatma/izinlerden ve veri kaynağı erişim yetkisinden sorumludur. UpcyTech müşteri verisini hizmeti sunmak, güvenliğini sağlamak ve belgelenmiş talimatları yerine getirmek için işler; veri üzerindeki hak müşteride kalır." },
         { id: "ai", title: "7. Yapay zekâ ve analitik çıktılar", body: "Yapay zekâ modeli sorgu veya yorum önerebilir; Dima güvenlik ve çalıştırma öncesi kontroller uygular. Bu kontroller iş tanımlarının, kaynak verinin veya sonucun mutlak doğruluğunu garanti etmez. Çıktılar profesyonel, hukuki, mali veya güvenlik kararlarında insan incelemesi olmadan tek dayanak yapılmamalıdır." },
-        { id: "beta", title: "8. Beta ve planlanan özellikler", body: "Beta özellikler değişebilir, sınırlı desteklenebilir veya kaldırılabilir. Planlanan özellikler taahhüt edilmiş teslim tarihi oluşturmaz. Kayıtlı sorgu tanımları, doğrulama, zamanlama ve bildirim kapsamı kurum özellikleri ve sözleşmeyle belirlenir." },
+        { id: "pilot", title: "8. Pilot ve planlanan özellikler", body: "Pilot kapsamındaki özellikler değişebilir, sınırlı desteklenebilir veya kaldırılabilir. Planlanan özellikler taahhüt edilmiş teslim tarihi oluşturmaz. Kayıtlı sorgu tanımları, doğrulama, zamanlama ve bildirim kapsamı kurum özellikleri ve sözleşmeyle belirlenir." },
         { id: "fees", title: "9. Ücret, vergi ve yenileme", body: "Ücretler, para birimi, ödeme takvimi, vergi, kullanım limitleri ve yenileme koşulları sipariş formu veya teklifte belirtilir. Public web sitesinde fiyat yayımlanmaması ücretsiz hizmet anlamına gelmez. Geciken tutarlar uygulanabilir hukuk ve sözleşme sınırlarında erişim kısıtına yol açabilir." },
         { id: "availability", title: "10. Değişiklik ve erişilebilirlik", body: "UpcyTech güvenlik, performans ve ürün gelişimi için hizmeti güncelleyebilir. Belirli uptime, destek süresi, bakım penceresi veya servis kredisi yalnız imzalı SLA veya sipariş formunda yazıyorsa geçerlidir." },
         { id: "confidentiality", title: "11. Gizlilik", body: "Taraflar hizmet ilişkisi içinde öğrendikleri kamuya açık olmayan teknik, ticari ve müşteri bilgilerini yalnız sözleşme amacıyla kullanır ve makul koruma tedbirleri uygular. Kanunen zorunlu açıklamalar mümkünse önceden bildirilir." },
@@ -390,12 +425,13 @@ const en: MarketingContent = {
     terms: "Terms of Service",
     about: "About",
     contact: "Contact",
+    textile: "Textile dyehouse",
     rights: "All rights reserved.",
   },
   common: {
     learnMore: "Explore the details",
     available: "Verified in Dima",
-    beta: "Beta",
+    pilot: "Pilot scope",
     planned: "Planned",
     finalTitle: "Let’s begin with your first real business question.",
     finalBody: "We can assess your data model and highest-priority reporting need together.",
@@ -404,8 +440,7 @@ const en: MarketingContent = {
   },
   home: {
     eyebrow: "A clearer way to understand business data",
-    title: "Ask your data. Then",
-    rotateWords: ["understand it.", "compare it.", "share it."],
+    title: "Talk to your business data. See how the answer is made.",
     description:
       "Ask in everyday business language. dima finds the relevant data, shows the result as a table or chart, and explains where the answer came from.",
     process: ["Write a question", "Match business definitions", "Run checks", "See the result"],
@@ -415,6 +450,14 @@ const en: MarketingContent = {
     pillarsTitle: "Trust takes more than an answer that looks right.",
     pillarsBody:
       "Every answer is grounded in shared business definitions, clear access boundaries, and a visible source.",
+    pillars: [
+      { letter: "D", title: "Definitions", body: "Keep metrics, relationships, and business terms in one shared meaning." },
+      { letter: "I", title: "Interpretation", body: "Move from everyday questions to modeled context while keeping ambiguity visible." },
+      { letter: "M", title: "Model", body: "Bring sources together in a model that supports decisions and review." },
+      { letter: "A", title: "Answer", body: "Inspect the result, query, and source that support the answer together." },
+    ],
+    textileTitle: "Make dyehouse operations visible in one question.",
+    textileBody: "Explore a focused demo narrative for questions across batches, recipes, machines, OEE, waste, water, energy, and order deadlines.",
     workflowTitle: "A visible chain from question to report.",
     workflow: [
       { title: "Connect your data", body: "Prepare tables, relationships, and the business definitions your organization uses." },
@@ -460,9 +503,10 @@ const en: MarketingContent = {
         { id: "model", title: "Give everyone the same definitions", body: "Measures, relationships, units, and approved definitions meet in one shared business model.", points: ["Shared definitions", "Relationships", "Clear labels and units"] },
         { id: "validate", title: "Check before execution", body: "The proposed query is checked for permitted read access and execution.", points: ["Read-only access", "Pre-execution check", "Visible query"] },
         { id: "explore", title: "Review the result your way", body: "Inspect the same result as a table, chart, summary metric, or comparison.", points: ["Table", "Chart", "Summary metrics", "Comparison"] },
-        { id: "verify", title: "Review the answer", body: "Feedback and answer sources keep the analytical path visible.", status: "beta" },
-        { id: "reuse", title: "Reuse helpful answers", body: "Replay, scheduling, and notification capabilities are being developed under controlled feature status.", status: "beta" },
+        { id: "verify", title: "Review the answer", body: "Feedback and answer sources keep the analytical path visible.", status: "pilot" },
+        { id: "reuse", title: "Reuse helpful answers", body: "Replay, scheduling, and notification capabilities are being developed under controlled feature status.", status: "pilot" },
         { id: "govern", title: "Preserve access boundaries", body: "Sessions, organization scope, and user permissions are enforced by both the product and server." },
+        { id: "integrate", title: "Start with existing data sources", body: "Connection, table discovery, shared definitions, and access boundaries are verified before integration support is claimed.", visual: { key: "connection", caption: "Connection and access flow" } },
       ],
     },
     how: {
@@ -471,10 +515,16 @@ const en: MarketingContent = {
       description: "Every step—from understanding the question to showing the result—remains visible and reviewable.",
       cta: "Schedule a technical conversation",
       sections: [
+        { id: "problem", title: "Raw text-to-SQL is not enough", body: "A syntactically valid query does not prove that the right business metric or permission boundary was used.", visual: { key: "question", caption: "Question and meaning" } },
         { id: "onboarding", title: "Define the data source", body: "The connection is managed within the organization scope while tables and relationships are discovered safely." },
         { id: "semantics", title: "Add business definitions", body: "Metrics, time periods, units, and approved terms come together in one shared meaning." },
-        { id: "dry-plan", title: "Check the proposal", body: "An AI-proposed query cannot reach the data source before read-only and execution checks pass." },
+        { id: "interpretation", title: "Move the question into modeled context", body: "The question is interpreted through metric, dimension, time, and relationship choices; ambiguity remains visible when it cannot be resolved.", visual: { key: "definitions", caption: "Modeled context" } },
+        { id: "guard", title: "Keep the query inside access boundaries", body: "An AI proposal is restricted to permitted read operations.", visual: { key: "checks", caption: "Query guards" } },
+        { id: "permissions", title: "Recheck session and permission scope", body: "The interface is not the authority; the server evaluates session, organization, and user permission context again for every request.", visual: { key: "access", caption: "Permission boundaries" } },
+        { id: "dry-plan", title: "Check the execution plan", body: "The proposal passes read-only and executable-plan checks before reaching the data source. This does not guarantee the correctness of business definitions or source data." },
         { id: "execute", title: "Show the result and its source", body: "The permitted query runs; the result, query, and answer source appear in one review surface." },
+        { id: "provenance", title: "Follow the answer provenance", body: "The definitions, query, and result remain connected in the review surface.", visual: { key: "source", caption: "Answer source" } },
+        { id: "limits", title: "Know what the check does not prove", body: "Pre-execution checks address safety and executability; they do not independently prove business correctness, source quality, or interpretation.", visual: { key: "audit", caption: "Human review" } },
         { id: "planned", title: "Hybrid on-premises connection", body: "An outbound-only connection from the customer network is planned; it is not a current production feature.", status: "planned" },
       ],
     },
@@ -484,9 +534,26 @@ const en: MarketingContent = {
       description: "Dima starts with the outcome that needs a decision—not only the org chart.",
       cta: "Discuss your priority use case",
       sections: [
-        { id: "executive", title: "Decision-making teams", body: "See performance gaps and exceptions together with the definitions and details that produced them.", points: ["Identify priority gaps", "Explore the details"] },
-        { id: "operations", title: "Operational coordination", body: "Query targets, actuals, and drivers across teams, processes, and periods in one business language.", points: ["Shared metric definitions", "Deeper follow-up questions"] },
-        { id: "data", title: "Institutional memory", body: "Reduce one-off report requests while keeping queries, answer sources, and permission boundaries visible.", points: ["Reusable analysis", "Visible answer source"] },
+        { id: "operations", title: "Which operational steps deviated from target this week?", body: "Operations teams can inspect targets, actuals, and drivers across processes and periods in one business language.", points: ["Shared metric definitions", "Deeper follow-up questions"] },
+        { id: "production", title: "Which machine should we inspect first for OEE and waste?", body: "Production teams can connect machine, shift, batch, and quality deviation context to prioritize review.", points: ["OEE and waste context", "Batch and shift detail"] },
+        { id: "finance", title: "Which product groups fell below margin target?", body: "Finance teams can follow shared revenue, cost, and period definitions from result to detail.", points: ["Defined finance metrics", "Result-to-detail exploration"] },
+        { id: "sales", title: "Which customer and product groups are becoming a risk?", body: "Sales teams can combine customer, order, and product context to review changing commercial signals.", points: ["Customer and order view", "Comparative questions"] },
+        { id: "inventory", title: "Which materials are approaching critical stock?", body: "Inventory teams can follow material, reservation, movement, and required-period context in one query.", points: ["Critical-stock view", "Need and movement context"] },
+        { id: "executive", title: "Which three deviations require a decision this week?", body: "Executive teams can see priority indicators together with the definitions and details that produced them.", points: ["Identify priority gaps", "Explore the details"] },
+      ],
+    },
+    textile: {
+      eyebrow: "Textile dyehouse",
+      title: "Connect dyehouse data to production decisions.",
+      description: "A focused demo narrative for reviewing batches, recipes, machines, quality, resource use, and shipment risk in one modeled context.",
+      cta: "Discuss the dyehouse use case",
+      sections: [
+        { id: "question", title: "Which batch carries the highest quality or deadline risk?", body: "Connect batch, order, machine, and quality deviation context to see where review should begin.", points: ["Batch and order context", "Color deviation and quality notes"], visual: { key: "question", caption: "Batch and quality question" } },
+        { id: "production", title: "Which machine is affecting OEE and waste together?", body: "Compare OEE, waste, and downtime context across machines, shifts, and production records.", points: ["OEE and waste", "Machine and shift detail"], visual: { key: "coordination", caption: "Production indicators" } },
+        { id: "recipe", title: "How can recipe and chemical use be explained?", body: "Review recipe, chemical, water, and energy use in one question chain using sanitized demo data.", points: ["Recipe and chemicals", "Water and energy context"], visual: { key: "definitions", caption: "Recipe and resource definitions" } },
+        { id: "quality", title: "Which conditions appear with a quality deviation?", body: "Compare quality outcomes, process conditions, and batch detail through visible business definitions.", points: ["Quality deviation", "Reviewable source"], visual: { key: "checks", caption: "Quality checking chain" } },
+        { id: "orders", title: "Which order has rising deadline or shipment risk?", body: "Review order dates, production progress, and shipment status around the decision that needs attention.", points: ["Deadline view", "Shipment risk"], visual: { key: "priority", caption: "Order and deadline priority" } },
+        { id: "integration", title: "How does this narrative become a real integration scope?", body: "No customer deployment or connector claim is made before source access, table discovery, definitions, and permission boundaries are verified.", points: ["Sanitized demo vocabulary", "Pilot evaluation steps"], status: "pilot", visual: { key: "connection", caption: "Connection and modeling flow" } },
       ],
     },
     security: {
@@ -519,7 +586,7 @@ const en: MarketingContent = {
     about: {
       eyebrow: "About",
       title: "Making business data easier to understand and audit.",
-      description: "dima is a trusted conversational analytics product built by UpcyTech Teknoloji Anonim Şirketi.",
+      description: "dima is a conversational analytics product built by UpcyTech Teknoloji Anonim Şirketi.",
       cta: "Contact us",
       sections: [
         { id: "purpose", title: "Why dima?", body: "To help business teams get answers sooner while preserving the control data teams need." },
@@ -567,7 +634,7 @@ const en: MarketingContent = {
         { id: "acceptable", title: "5. Acceptable use", body: "The service may not be used for unlawful activity, unauthorized access or security testing, reverse engineering, source extraction, malware, excessive automated load, infringement, or unauthorized personal-data processing. Use affecting security or other tenants may be suspended." },
         { id: "customer-data", title: "6. Customer data", body: "The customer is responsible for the lawfulness of its data and instructions, required notices and permissions, and authority to access each source. UpcyTech processes customer data to provide and secure the service and follow documented instructions; rights in customer data remain with the customer." },
         { id: "ai", title: "7. AI and analytical output", body: "An LLM may propose queries or interpretations; dima applies guard and dry-plan controls. These controls do not guarantee absolute correctness of business definitions, source data, or results. Output should not be the sole basis for professional, legal, financial, or security decisions without human review." },
-        { id: "beta", title: "8. Beta and planned features", body: "Beta features may change, receive limited support, or be withdrawn. Planned features are not committed delivery dates. Query contracts, verification, scheduling, and notifications depend on tenant features and contract scope." },
+        { id: "pilot", title: "8. Pilot and planned features", body: "Pilot-scope features may change, receive limited support, or be withdrawn. Planned features are not committed delivery dates. Query contracts, verification, scheduling, and notifications depend on tenant features and contract scope." },
         { id: "fees", title: "9. Fees, tax, and renewal", body: "Fees, currency, payment schedule, taxes, usage limits, and renewal are stated in the order form or proposal. The absence of public pricing does not make the service free. Overdue amounts may lead to access restrictions within applicable law and contract terms." },
         { id: "availability", title: "10. Changes and availability", body: "UpcyTech may update the service for security, performance, and product development. Uptime, support times, maintenance windows, or service credits apply only where written in a signed SLA or order form." },
         { id: "confidentiality", title: "11. Confidentiality", body: "Each party uses non-public technical, commercial, and customer information learned through the relationship only for the agreement and protects it with reasonable measures. Legally compelled disclosure is notified in advance where permitted." },
@@ -594,6 +661,7 @@ export const publicRoutes = [
   "/product",
   "/how-it-works",
   "/solutions",
+  "/solutions/textile-dyehouse",
   "/security",
   "/integrations",
   "/about",

@@ -106,7 +106,7 @@ Bilinçli olarak çözülmedi — yeri belli, zamanı değil:
 Tipler artık backend'in `app/schemas.py`'sinden üretiliyor:
 
 ```bash
-DIMA_BACKEND_PATH=../../dima-backend bun run --filter @dima/contracts codegen
+DIMA_BACKEND_PATH=../../backend bun run --filter @dima/contracts codegen
 # ya da backend çalışıyorsa:
 DIMA_BACKEND_URL=http://localhost:8000 bun run --filter @dima/contracts codegen
 ```

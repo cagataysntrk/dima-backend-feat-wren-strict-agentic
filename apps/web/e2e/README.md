@@ -23,10 +23,10 @@ native `fetch` + `WebSocket`'ini ve sistemdeki Chrome'u (headless, CDP üzerinde
 Önce her iki servis de ayakta olmalı (ayrı terminallerde):
 
 ```bash
-# dima-backend
-cd ../dima-backend && npm run dev
+# backend
+cd ../backend && npm run dev
 
-# dima-frontend
+# frontend
 npm run dev
 ```
 

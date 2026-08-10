@@ -13,8 +13,8 @@ import { submitContact } from "@/app/(marketing)/contact/actions";
 
 const initialState: ContactState = { status: "idle" };
 const text = {
-  tr: { name: "Ad soyad", email: "İş e-postası", company: "Şirket", role: "Rol", source: "Veri kaynağı (isteğe bağlı)", need: "Öncelikli rapor veya iş sorusu", send: "Demo talebini gönder", privacy: "Gönderdiğiniz bilgiler demo talebinizi yanıtlamak için işlenir.", link: "Gizlilik metnini okuyun." },
-  en: { name: "Full name", email: "Work email", company: "Company", role: "Role", source: "Data source (optional)", need: "Priority report or business question", send: "Send demo request", privacy: "We process the information you submit to respond to your demo request.", link: "Read the privacy notice." },
+  tr: { name: "Ad soyad", email: "İş e-postası", company: "Şirket", role: "Rol", source: "Veri kaynağı (isteğe bağlı)", need: "Öncelikli rapor veya iş sorusu", send: "Demo talebini gönder", privacy: "Gönderdiğiniz bilgileri demo talebinizi yanıtlamak için işleriz.", consent: "Gizlilik metnini okudum ve bilgilerimin bu amaçla işlenmesini kabul ediyorum.", link: "Gizlilik metnini okuyun." },
+  en: { name: "Full name", email: "Work email", company: "Company", role: "Role", source: "Data source (optional)", need: "Priority report or business question", send: "Send demo request", privacy: "We process the information you submit to respond to your demo request.", consent: "I have read the privacy notice and agree to this processing.", link: "Read the privacy notice." },
 } as const;
 
 export function ContactForm({ locale }: { locale: MarketingLocale }) {
@@ -45,6 +45,10 @@ export function ContactForm({ locale }: { locale: MarketingLocale }) {
       <div><Label htmlFor="need">{t.need} *</Label><Textarea className="mt-2 min-h-32" id="need" name="need" required aria-invalid={!!state.errors?.need} aria-describedby={state.errors?.need ? "need-error" : undefined} />{state.errors?.need && <p id="need-error" className="mt-1 text-xs text-destructive">{state.errors.need}</p>}</div>
       {state.message && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
       <p className="text-xs leading-5 text-muted-foreground">{t.privacy} <Link className="underline hover:text-foreground focus-visible:text-foreground" href="/privacy">{t.link}</Link></p>
+      <div className="flex items-start gap-3">
+        <input className="mt-1 size-4 shrink-0 accent-brand" id="privacyConsent" name="privacyConsent" type="checkbox" required aria-invalid={!!state.errors?.privacyConsent} aria-describedby={state.errors?.privacyConsent ? "privacyConsent-error" : undefined} />
+        <div><Label className="text-xs font-normal leading-5" htmlFor="privacyConsent">{t.consent} <span aria-hidden="true">*</span></Label>{state.errors?.privacyConsent && <p id="privacyConsent-error" className="mt-1 text-xs text-destructive">{state.errors.privacyConsent}</p>}</div>
+      </div>
       <Button disabled={pending} type="submit" variant="brand" size="lg" className="min-h-11">{pending ? <Loader2 className="animate-spin" /> : <Send />}{t.send}</Button>
     </form>
   );

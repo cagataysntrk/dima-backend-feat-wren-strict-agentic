@@ -17,7 +17,7 @@
  * ŞEMA NEREDEN:
  *   1. DIMA_BACKEND_URL verilmişse → GET <url>/openapi.json (backend çalışıyorsa
  *      en doğru kaynak; tüm yollar dahil)
- *   2. Yoksa DIMA_BACKEND_PATH (varsayılan ../dima-backend) → app/schemas.py'den
+ *   2. Yoksa DIMA_BACKEND_PATH (varsayılan ../backend) → app/schemas.py'den
  *      python ile çıkarılır. DB bağımlılıkları gerekmez.
  */
 
@@ -34,7 +34,7 @@ const check = process.argv.includes("--check");
 /**
  * Backend kaynağı AÇIKÇA verilir — varsayılan bir komşu-dizin yolu YOK.
  *
- * Başta `../../../dima-backend` varsayılanı vardı ve yanlış alarm üretti:
+ * Başta komşu backend yolu varsayılanı vardı ve yanlış alarm üretti:
  * geliştiricinin yerel backend kopyası herhangi bir dalda ya da commit'te
  * olabilir (bu makinede 100 commit geriydi), dolayısıyla ona göre "kaymış"
  * demek doğru bilgi taşımıyor. Karşılaştırma ancak referansın ne olduğunu
@@ -65,7 +65,7 @@ async function fetchSchema() {
     if (check) return null; // kademe 2'ye düş
     throw new Error(
       `Backend kaynağı verilmedi.\n\n` +
-        `  DIMA_BACKEND_PATH=../../dima-backend bun run codegen\n` +
+        `  DIMA_BACKEND_PATH=../../backend bun run codegen\n` +
         `  DIMA_BACKEND_URL=http://localhost:8000 bun run codegen\n\n` +
         `Backend deposu güncel bir dalda olmalı — eski bir kopyadan üretmek\n` +
         `sözleşmeyi geriye alır.`,

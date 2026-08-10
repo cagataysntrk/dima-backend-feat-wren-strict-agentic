@@ -2,6 +2,7 @@ import { Container, Eyebrow } from "@/components/marketing/MarketingPrimitives";
 import type { MarketingContent, PageContent } from "@/content/marketing";
 
 export function LegalPage({ page, content }: { page: PageContent; content: MarketingContent }) {
+  const reviewRequired = process.env.DIMA_LEGAL_APPROVED !== "true";
   return (
     <>
       <section className="marketing-grid border-b py-20 sm:py-28">
@@ -13,6 +14,12 @@ export function LegalPage({ page, content }: { page: PageContent; content: Marke
         </Container>
       </section>
       <Container className="py-16 sm:py-24">
+        {reviewRequired ? (
+          <aside role="status" className="mb-6 border border-amber-500/40 bg-amber-500/10 p-5 text-sm leading-6 text-foreground">
+            <strong className="font-mono text-xs uppercase tracking-[0.16em]">LEGAL REVIEW REQUIRED</strong>
+            <p className="mt-2">{content.locale === "tr" ? "Bu taslak, hukuk onayı alınana kadar üretim yayını için onaylanmış hukuki metin değildir." : "This draft is not approved legal text for production publication until counsel signs off."}</p>
+          </aside>
+        ) : null}
         <aside className="mb-12 border-l-2 border-brand bg-muted/40 p-5 text-sm leading-6 text-muted-foreground">{content.legal.notice}</aside>
         <div className="grid gap-12 lg:grid-cols-[240px_1fr]">
           <nav aria-label={page.eyebrow} className="hidden lg:block"><ol className="sticky top-24 space-y-2 text-sm text-muted-foreground">{page.sections.map((section) => <li key={section.id}><a className="hover:text-foreground hover:underline focus-visible:text-foreground focus-visible:underline" href={`#${section.id}`}>{section.title}</a></li>)}</ol></nav>

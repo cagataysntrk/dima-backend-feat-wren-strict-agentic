@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "status": "ready-for-agent-execution",
   "updated": "2026-08-10",
-  "implementationTarget": "dima-frontend/apps/web",
+  "implementationTarget": "frontend/apps/web",
   "research": {
     "competitors": 21,
     "scopedUrlRecords": 2202,

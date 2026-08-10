@@ -8,6 +8,7 @@ function validForm() {
   data.set("company", "Analytical Engines");
   data.set("role", "Founder");
   data.set("need", "Weekly operational exceptions");
+  data.set("privacyConsent", "on");
   return data;
 }
 
@@ -35,5 +36,12 @@ describe("contact validation", () => {
     const data = validForm();
     data.set("company", "Example\r\nInjected");
     expect(validateContactForm(data, "en").payload.company).toBe("Example Injected");
+  });
+  it("requires an explicit privacy acknowledgement", () => {
+    const data = validForm();
+    data.delete("privacyConsent");
+    const result = validateContactForm(data, "en");
+    expect(result.valid).toBe(false);
+    expect(result.errors.privacyConsent).toBeDefined();
   });
 });

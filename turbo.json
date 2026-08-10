@@ -7,7 +7,8 @@
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
         "NEXT_PUBLIC_*",
-        "ANALYZE"
+        "ANALYZE",
+        "DIMA_LEGAL_APPROVED"
       ]
     },
     "dev": {
@@ -26,6 +27,16 @@
     "quality:ui": {
       "dependsOn": []
     },
+    "e2e": {
+      "dependsOn": [],
+      "cache": false,
+      "env": ["FRONTEND_URL", "BACKEND_URL", "CHROME_BIN", "CDP_PORT", "HEADFUL", "DIMA_E2E_SESSION", "DIMA_E2E_SESSION_COOKIE"]
+    },
+    "e2e:marketing": {
+      "dependsOn": [],
+      "cache": false,
+      "env": ["MARKETING_FRONTEND_URL", "MARKETING_CDP_PORT"]
+    },
     "codegen:check": {
       "dependsOn": [],
       "cache": false,
@@ -33,5 +44,5 @@
     }
   },
   "globalEnv": ["NODE_ENV"],
-  "globalPassThroughEnv": ["BACKEND_ORIGIN", "RESEND_API_KEY", "VERCEL_ENV"]
+  "globalPassThroughEnv": ["BACKEND_ORIGIN", "RESEND_API_KEY", "VERCEL_ENV", "DIMA_LEGAL_APPROVED", "FRONTEND_URL", "BACKEND_URL", "CHROME_BIN", "CDP_PORT", "HEADFUL", "DIMA_E2E_SESSION", "DIMA_E2E_SESSION_COOKIE", "MARKETING_FRONTEND_URL", "MARKETING_CDP_PORT"]
 }

@@ -7,7 +7,7 @@ This is the execution layer for building Dima's public marketing website one sta
 1. Send [`MASTER_PROMPT.md`](./MASTER_PROMPT.md) to the coding agent.
 2. Send exactly one stage file from `stages/` with the master prompt.
 3. Require the stage completion report before sending the next stage.
-4. Keep the agent inside `dima-frontend/apps/web` unless the stage explicitly names a shared package or documentation file.
+4. Keep the agent inside `frontend/apps/web` unless the stage explicitly names a shared package or documentation file.
 5. Keep the evidence and claims files open during copy and visual implementation.
 
 The recommended order is:
@@ -53,4 +53,3 @@ The crawl was completed outside the repository so the working tree is not burden
 - Every capability is marked `available`, `pilot`, or `planned` when its production status is not unambiguous.
 - Dima's visual direction is **Editorial Industrial Intelligence**: warm editorial surfaces, restrained technical detail, real product proof, and a consistent token system.
 - The AI agent must not copy competitor copy, assets, layouts, trademarks, or distinctive illustrations.
-

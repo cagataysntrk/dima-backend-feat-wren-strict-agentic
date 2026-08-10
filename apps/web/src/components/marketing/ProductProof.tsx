@@ -3,30 +3,31 @@
 import { Fragment, type KeyboardEvent, useRef, useState } from "react";
 import { AnimatePresence, m } from "motion/react";
 import { BarChart3, CheckCircle2, Database, ShieldCheck } from "lucide-react";
-import { AnimatedList, NumberTicker } from "@/components/marketing/MagicUI";
+import { AnimatedList } from "@/components/marketing/MagicUI";
 import { Button } from "@/components/ui/button";
 import type { MarketingLocale } from "@/content/marketing";
+import { trackMarketingEvent } from "@/lib/marketing/analytics";
 
 const copy = {
   tr: {
-    question: "Brüt kârı hedefin altında kalan ürün grupları hangileri?",
-    context: "Brüt kâr hedefi ≥ %32 · dönem: bu çeyrek · boyut: ürün grubu",
+    question: "Makine bazında OEE ve fire oranı nedir?",
+    context: "Örnek veri · dönem: bu vardiya · boyut: makine",
     tabs: ["Sonuç", "Grafik", "SQL", "Çözüm izi"],
-    result: "3 ürün grubu eşik altında",
-    columns: ["Ürün grubu", "Brüt kâr", "Fark"],
-    rows: [["Kurumsal", "%24,8", "−7,2 puan"], ["Standart", "%28,1", "−3,9 puan"], ["Hizmet", "%31,3", "−0,7 puan"]],
-    trace: ["Brüt kâr tanımı eşleşti", "Yalnızca okuma kontrolü tamamlandı", "Çalıştırma öncesi kontrol tamamlandı"],
-    chartLabel: "Ürün gruplarının brüt kâr oranları: Kurumsal yüzde 24,8; Standart yüzde 28,1; Hizmet yüzde 31,3.",
+    result: "3 makine incelendi",
+    columns: ["Makine", "OEE", "Fire"],
+    rows: [["Jet 01", "%82", "%3,4"], ["Jet 02", "%76", "%5,1"], ["Jet 03", "%89", "%2,2"]],
+    trace: ["Makine ve OEE tanımı eşleşti", "Yalnızca okuma kontrolü tamamlandı", "Çalıştırma planı kontrol edildi", "Sonuç kaynağı görünür tutuldu"],
+    chartLabel: "Örnek makine görünümü: Jet 01 OEE yüzde 82 ve fire yüzde 3,4; Jet 02 OEE yüzde 76 ve fire yüzde 5,1; Jet 03 OEE yüzde 89 ve fire yüzde 2,2.",
   },
   en: {
-    question: "Which product groups are below gross-margin target?",
-    context: "Gross-margin target ≥ 32% · period: this quarter · dimension: product group",
+    question: "What are OEE and waste by machine?",
+    context: "Sample data · period: this shift · dimension: machine",
     tabs: ["Result", "Chart", "SQL", "Resolution trace"],
-    result: "3 product groups below threshold",
-    columns: ["Product group", "Gross margin", "Delta"],
-    rows: [["Enterprise", "24.8%", "−7.2 pts"], ["Standard", "28.1%", "−3.9 pts"], ["Services", "31.3%", "−0.7 pts"]],
-    trace: ["Gross-margin definition matched", "Read-only access check completed", "Pre-execution check completed"],
-    chartLabel: "Gross margin by product group: Enterprise 24.8 percent, Standard 28.1 percent, Services 31.3 percent.",
+    result: "3 machines reviewed",
+    columns: ["Machine", "OEE", "Waste"],
+    rows: [["Jet 01", "82%", "3.4%"], ["Jet 02", "76%", "5.1%"], ["Jet 03", "89%", "2.2%"]],
+    trace: ["Machine and OEE definition matched", "Read-only access check completed", "Execution plan checked", "Result source kept visible"],
+    chartLabel: "Sample machine view: Jet 01 OEE 82 percent and waste 3.4 percent; Jet 02 OEE 76 percent and waste 5.1 percent; Jet 03 OEE 89 percent and waste 2.2 percent.",
   },
 } as const;
 
@@ -41,6 +42,7 @@ export function ProductProof({ locale }: { locale: MarketingLocale }) {
     const last = c.tabs.length - 1;
     const next = event.key === "Home" ? 0 : event.key === "End" ? last : event.key === "ArrowRight" ? (index + 1) % c.tabs.length : (index - 1 + c.tabs.length) % c.tabs.length;
     setTab(next);
+    trackMarketingEvent("product_proof_view_changed", { view: c.tabs[next] });
     tabRefs.current[next]?.focus();
   }
   return (
@@ -70,7 +72,8 @@ export function ProductProof({ locale }: { locale: MarketingLocale }) {
                 tabIndex={tab === index ? 0 : -1}
                 variant={tab === index ? "secondary" : "ghost"}
                 size="sm"
-                onClick={() => setTab(index)}
+                className="min-h-11"
+                onClick={() => { setTab(index); trackMarketingEvent("product_proof_view_changed", { view: label }); }}
                 onKeyDown={(event) => onTabKeyDown(event, index)}
               >
                 {label}
@@ -92,7 +95,7 @@ export function ProductProof({ locale }: { locale: MarketingLocale }) {
               >
             {tab === 0 && (
               <>
-                <p className="mb-5 flex items-center gap-2 text-sm font-medium"><CheckCircle2 className="size-4 shrink-0 text-chart-2" /><NumberTicker value={3} />{locale === "tr" ? " ürün grubu eşik altında" : " product groups below threshold"}</p>
+                <p className="mb-5 flex items-center gap-2 text-sm font-medium"><CheckCircle2 className="size-4 shrink-0 text-chart-2" />{c.result}</p>
                 <div className="grid gap-2 @md/panel:hidden">
                   {c.rows.map((row) => (
                     <div className="rounded-lg border bg-background p-4" key={row[0]}>
@@ -111,7 +114,7 @@ export function ProductProof({ locale }: { locale: MarketingLocale }) {
             )}
             {tab === 1 && (
               <div role="img" aria-label={c.chartLabel}>
-                <div aria-hidden="true" className="flex items-center gap-2 text-sm font-medium"><BarChart3 className="size-4 shrink-0 text-brand" />{locale === "tr" ? "brüt kâr / hedef %32" : "gross margin / 32% target"}</div>
+                <div aria-hidden="true" className="flex items-center gap-2 text-sm font-medium"><BarChart3 className="size-4 shrink-0 text-brand" />{locale === "tr" ? "OEE ve fire / makine" : "OEE and waste / machine"}</div>
                 <div aria-hidden="true" className="mt-7 space-y-5">
                   {/* Sabit 80px sütun + truncate gerçek etiketleri kesiyordu;
                       minmax ile büyüyebilen bir sütun ve `auto` değer sütunu. */}
@@ -131,7 +134,7 @@ export function ProductProof({ locale }: { locale: MarketingLocale }) {
             {/* whitespace-pre (pre-wrap değil): SQL zaten anlamlı yerlerden elle
                 kırılmış; ifade ortasından sarmak yatay kaydırmaktan daha kötü okunur.
                 pre-wrap ile overflow-x-auto zaten birbirini iptal ediyordu. */}
-            {tab === 2 && <pre className="overflow-x-auto whitespace-pre font-mono text-xs leading-6 text-muted-foreground"><code>{`SELECT product_group,\n  ROUND(100 * SUM(gross_profit) /\n    NULLIF(SUM(net_revenue), 0), 1) AS margin_pct\nFROM sales_performance\nWHERE booked_at >= DATE_TRUNC('quarter', CURRENT_DATE)\nGROUP BY product_group\nHAVING SUM(gross_profit) /\n  NULLIF(SUM(net_revenue), 0) < 0.32\nORDER BY margin_pct ASC;`}</code></pre>}
+            {tab === 2 && <pre className="overflow-x-auto whitespace-pre font-mono text-xs leading-6 text-muted-foreground"><code>{`SELECT machine_name,\n  ROUND(AVG(oee_pct), 1) AS oee_pct,\n  ROUND(AVG(waste_pct), 1) AS waste_pct\nFROM dyehouse_shift_summary\nWHERE shift_date = CURRENT_DATE\nGROUP BY machine_name\nORDER BY oee_pct ASC;`}</code></pre>}
             {tab === 3 && <AnimatedList as="ul" className="space-y-4" itemClassName="flex gap-4">{c.trace.map((item, index) => <Fragment key={item}><span className="flex size-7 shrink-0 items-center justify-center rounded-full border font-mono text-xs text-brand">{index + 1}</span><span className="min-w-0 pt-1 text-sm">{item}</span></Fragment>)}</AnimatedList>}
               </m.div>
             </AnimatePresence>

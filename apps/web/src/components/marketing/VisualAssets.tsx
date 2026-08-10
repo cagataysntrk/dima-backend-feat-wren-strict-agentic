@@ -43,7 +43,7 @@ const labels = {
     consumers: "Kullanım alanları",
     available: "Dima’da doğrulandı",
     planned: "planlanıyor",
-    verified: "doğrulandı",
+    verified: "örnek veri",
     concepts: "Müşteri × Ürün × Dönem",
     customerSource: "müşteri kaynağı",
     commercialSource: "ticari kaynak",
@@ -52,11 +52,11 @@ const labels = {
     securityGates: [["Oturum", "güvenli yenileme"], ["Kurum", "sınırlandırılmış kapsam"], ["Yetki", "sunucu kontrolü"], ["Sorgu", "yalnızca okuma"]],
     requestStart: "Kullanıcı isteği",
     requestEnd: "kontrol edilmiş sorgu",
-    productPerformance: "Ürün performansı",
-    grossMargin: "Brüt kâr",
-    productGroups: "Ürün grubu",
-    belowTarget: "Hedef altında",
-    periodStart: "Çeyrek başlangıcı",
+    productPerformance: "Makine performansı",
+    grossMargin: "OEE",
+    productGroups: "Makine incelendi",
+    belowTarget: "Fire",
+    periodStart: "Vardiya başlangıcı",
     current: "güncel",
     validationSteps: [["Yapay zekâ önerisi", "aday sorgu"], ["İş tanımları", "ölçü + ayrıntı"], ["Yalnızca okuma", "izin kontrolü"], ["Ön kontrol", "çalıştırılabilir"], ["Çalıştırma", "yetki kapsamında"]],
     workbenchNav: ["Konuşma", "Katalog", "Sözleşmeler", "Raporlar"],
@@ -77,7 +77,7 @@ const labels = {
     consumers: "Reports and workflows",
     available: "Verified in Dima",
     planned: "Planned",
-    verified: "verified",
+    verified: "sample data",
     concepts: "Customer × Product × Period",
     customerSource: "customer source",
     commercialSource: "commercial source",
@@ -86,11 +86,11 @@ const labels = {
     securityGates: [["Session", "secure renewal"], ["Organization", "limited scope"], ["Permission", "server check"], ["Query", "read-only check"]],
     requestStart: "User request",
     requestEnd: "checked query",
-    productPerformance: "Product performance",
-    grossMargin: "Gross margin",
-    productGroups: "Product groups",
-    belowTarget: "Below target",
-    periodStart: "Quarter start",
+    productPerformance: "Machine performance",
+    grossMargin: "OEE",
+    productGroups: "Machines reviewed",
+    belowTarget: "Waste",
+    periodStart: "Shift start",
     current: "current",
     validationSteps: [["AI proposal", "candidate query"], ["Business definitions", "metric + detail"], ["Read-only access", "permission check"], ["Pre-check", "ready to run"], ["Execution", "permission scoped"]],
     workbenchNav: ["Conversation", "Catalog", "Contracts", "Reports"],
@@ -364,14 +364,14 @@ export function ProductWorkbenchVisual({ locale }: LocaleProps) {
         {/* İç içe container: bu panel sahneden 160px dar, kendi eşiğine ihtiyacı var. */}
         <div className="@container/pane p-5 @2xl/stage:p-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0"><p className="font-mono text-micro text-muted-foreground">{locale === "tr" ? "brüt kâr / bu çeyrek" : "gross margin / this quarter"}</p><p className="mt-1 text-lg font-semibold">{t.productPerformance}</p></div>
+            <div className="min-w-0"><p className="font-mono text-micro text-muted-foreground">{locale === "tr" ? "örnek veri / bu vardiya" : "sample data / this shift"}</p><p className="mt-1 text-lg font-semibold">{t.productPerformance}</p></div>
             <span className="shrink-0 whitespace-nowrap rounded-full border border-chart-2/40 bg-chart-2/10 px-3 py-1 font-mono text-micro text-foreground"><Check className="mr-1 inline size-3 text-chart-2" />{t.verified}</span>
           </div>
           <div className="mt-7 grid gap-4 @sm/pane:grid-cols-3">
             {[
-              { value: 31.4, suffix: "%", decimals: 1, label: t.grossMargin },
-              { value: 12, suffix: "", decimals: 0, label: t.productGroups },
-              { value: 3, suffix: "", decimals: 0, label: t.belowTarget },
+              { value: 82, suffix: "%", decimals: 0, label: t.grossMargin },
+              { value: 3, suffix: "", decimals: 0, label: t.productGroups },
+              { value: 3.4, suffix: "%", decimals: 1, label: t.belowTarget },
             ].map((item) => (
               <MagicCard className="rounded-lg p-4" key={item.label} tilt={false}>
                 <p className="font-display text-3xl tabular-nums">

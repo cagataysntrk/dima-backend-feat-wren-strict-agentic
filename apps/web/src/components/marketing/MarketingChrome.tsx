@@ -40,6 +40,8 @@ export function MarketingHeader({ content }: { content: MarketingContent }) {
     return () => window.removeEventListener("scroll", update);
   }, []);
 
+  const isActive = (href: string) => pathname === href || (href === "/solutions" && pathname.startsWith("/solutions/"));
+
   return (
     <header
       className={cn(
@@ -62,10 +64,10 @@ export function MarketingHeader({ content }: { content: MarketingContent }) {
             <Link
               key={item.key}
               href={item.href}
-              aria-current={pathname === item.href ? "page" : undefined}
+              aria-current={isActive(item.href) ? "page" : undefined}
               className={cn(
-                "whitespace-nowrap rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring",
-                pathname === item.href ? "bg-accent text-foreground" : "text-muted-foreground",
+                "inline-flex min-h-11 items-center whitespace-nowrap rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring",
+                isActive(item.href) ? "bg-accent text-foreground" : "text-muted-foreground",
               )}
             >
               {content.nav[item.key]}
@@ -73,20 +75,20 @@ export function MarketingHeader({ content }: { content: MarketingContent }) {
           ))}
         </nav>
         <div className="ml-auto flex shrink-0 items-center gap-1 lg:ml-3">
-          <LocaleSwitcher />
-          <ThemeToggle />
+          <LocaleSwitcher className="min-h-11 min-w-11" />
+          <ThemeToggle className="min-h-11 min-w-11" />
           <Button asChild variant="ghost" className="hidden sm:inline-flex">
             <Link href="/login">{content.nav.login}</Link>
           </Button>
           <Button asChild variant="brand" className="hidden sm:inline-flex">
             <Link href="/contact">{content.nav.demo}</Link>
           </Button>
-          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <Sheet key={pathname} open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="outline"
                 size="icon"
-                className="lg:hidden"
+                className="min-h-11 min-w-11 lg:hidden"
                 aria-label={
                   mobileOpen
                     ? content.locale === "tr"
@@ -108,10 +110,10 @@ export function MarketingHeader({ content }: { content: MarketingContent }) {
                   <SheetClose asChild key={item.key}>
                     <Link
                       href={item.href}
-                      aria-current={pathname === item.href ? "page" : undefined}
+                      aria-current={isActive(item.href) ? "page" : undefined}
                       className={cn(
-                        "rounded-md px-3 py-3 text-base hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring",
-                        pathname === item.href && "bg-accent",
+                        "flex min-h-11 items-center rounded-md px-3 py-3 text-base hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring",
+                        isActive(item.href) && "bg-accent",
                       )}
                     >
                       {content.nav[item.key]}
@@ -143,6 +145,8 @@ export function MarketingFooter({ content }: { content: MarketingContent }) {
         <FooterGroup title={content.footer.product} links={[
           [content.nav.product, "/product"],
           [content.nav.how, "/how-it-works"],
+          [content.nav.solutions, "/solutions"],
+          [content.footer.textile, "/solutions/textile-dyehouse"],
           [content.nav.integrations, "/integrations"],
         ]} />
         <FooterGroup title={content.footer.company} links={[

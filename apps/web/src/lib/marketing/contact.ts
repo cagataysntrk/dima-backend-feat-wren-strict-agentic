@@ -11,10 +11,11 @@ export type ContactPayload = {
   role: string;
   dataSource: string;
   need: string;
+  privacyConsent: string;
 };
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MAX = { fullName: 120, email: 254, company: 160, role: 120, dataSource: 200, need: 2000 } as const;
+const MAX = { fullName: 120, email: 254, company: 160, role: 120, dataSource: 200, need: 2000, privacyConsent: 2 } as const;
 
 function clean(value: FormDataEntryValue | null, limit: number, multiline = false) {
   if (typeof value !== "string") return "";
@@ -31,10 +32,11 @@ export function validateContactForm(formData: FormData, locale: string) {
     role: clean(formData.get("role"), MAX.role),
     dataSource: clean(formData.get("dataSource"), MAX.dataSource),
     need: clean(formData.get("need"), MAX.need, true),
+    privacyConsent: formData.get("privacyConsent") === "on" ? "on" : "",
   };
   const errors: Partial<Record<keyof ContactPayload, string>> = {};
   const required = tr ? "Bu alan zorunludur." : "This field is required.";
-  for (const key of ["fullName", "email", "company", "role", "need"] as const) {
+  for (const key of ["fullName", "email", "company", "role", "need", "privacyConsent"] as const) {
     if (!payload[key]) errors[key] = required;
   }
   if (payload.email && !EMAIL.test(payload.email)) errors.email = tr ? "Geçerli bir e-posta girin." : "Enter a valid email.";

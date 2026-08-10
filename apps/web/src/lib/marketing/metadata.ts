@@ -12,5 +12,19 @@ export function pageMetadata(page: PageContent, path: string): Metadata {
       url: path,
       type: "website",
     },
+    twitter: {
+      card: "summary_large_image",
+      title: page.title,
+      description: page.description,
+    },
+  };
+}
+
+export function legalMetadata(page: PageContent, path: string): Metadata {
+  return {
+    ...pageMetadata(page, path),
+    robots: process.env.DIMA_LEGAL_APPROVED === "true"
+      ? undefined
+      : { index: false, follow: false },
   };
 }

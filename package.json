@@ -15,7 +15,8 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "quality:ui": "turbo run quality:ui",
-    "e2e": "turbo run e2e"
+    "e2e": "turbo run e2e",
+    "e2e:marketing": "turbo run e2e:marketing"
   },
   "devDependencies": {
     "turbo": "^2.5.6",

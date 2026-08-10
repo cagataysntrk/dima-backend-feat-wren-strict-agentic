@@ -18,6 +18,7 @@
 // Ortam değişkenleri:
 //   FRONTEND_URL  (varsayılan http://frontend.dima.localtld)
 //   BACKEND_URL   (varsayılan http://backend.dima.localtld)
+//   DIMA_E2E_SESSION  (opsiyonel, ürün akışını test etmek için geçerli refresh-cookie değeri)
 //   CHROME_BIN    (otomatik bulunamazsa Chrome ikili yolu)
 //   CDP_PORT      (varsayılan 9222)
 //   HEADFUL=1     (tarayıcıyı görünür başlat — hata ayıklama)
@@ -32,6 +33,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://frontend.dima.localtld"
 const BACKEND_URL = process.env.BACKEND_URL ?? "http://backend.dima.localtld";
 const CDP_PORT = Number(process.env.CDP_PORT ?? 9222);
 const CROSS_QUESTION = "Makine bazında verim ve fire oranı";
+const PRODUCT_SAMPLE_QUESTION = "Makine bazında ortalama OEE";
 
 // --- küçük test koşucusu ----------------------------------------------------
 let passed = 0;
@@ -131,7 +133,7 @@ function launchChrome(url) {
 }
 
 // --- minimal CDP istemcisi (native WebSocket) -------------------------------
-async function getPageTarget(url) {
+async function getPageTarget() {
   for (let i = 0; i < 40; i++) {
     try {
       const r = await fetch(`http://127.0.0.1:${CDP_PORT}/json`);
@@ -158,7 +160,8 @@ class Cdp {
       if (msg.id && this.pending.has(msg.id)) {
         const { resolve, reject } = this.pending.get(msg.id);
         this.pending.delete(msg.id);
-        msg.error ? reject(new Error(msg.error.message)) : resolve(msg.result);
+        if (msg.error) reject(new Error(msg.error.message));
+        else resolve(msg.result);
       }
     });
   }
@@ -215,7 +218,7 @@ async function testBrowser() {
   let cdp;
   try {
     chrome = launchChrome(FRONTEND_URL);
-    const target = await getPageTarget(FRONTEND_URL);
+    const target = await getPageTarget();
     cdp = await Cdp.connect(target.webSocketDebuggerUrl);
     await cdp.send("Runtime.enable");
 
@@ -227,6 +230,31 @@ async function testBrowser() {
       );
       return title;
     });
+
+    const session = process.env.DIMA_E2E_SESSION;
+    if (session) {
+      await cdp.send("Network.enable");
+      await cdp.send("Network.setCookie", {
+        name: process.env.DIMA_E2E_SESSION_COOKIE ?? "dima_refresh",
+        value: session,
+        url: `${FRONTEND_URL}/`,
+        path: "/",
+      });
+    }
+
+    await cdp.send("Page.navigate", { url: new URL("/app", FRONTEND_URL).toString() });
+    await waitFor(cdp, `location.pathname === "/app" || location.pathname === "/login"`, { label: "canonical product route" });
+    const productLocation = await cdp.evaluate(`location.pathname`);
+    if (!session) {
+      await check("Logged-out /app redirects to /login", async () => {
+        if (productLocation !== "/login") throw new Error(`beklenen /login, gelen ${productLocation}`);
+      });
+      return;
+    }
+    await check("Authenticated product flow stays on /app", async () => {
+      if (!productLocation.startsWith("/app")) throw new Error(`beklenen /app, gelen ${productLocation}`);
+    });
+    if (!productLocation.startsWith("/app")) return;
 
     // KRİTİK: localtld/Caddy origin'inde allowedDevOrigins yoksa React hydrate olmaz.
     await check("Client HYDRATE oldu (React fiber mevcut)", async () => {
@@ -242,10 +270,10 @@ async function testBrowser() {
       if (!has) throw new Error("hiçbir butonda React fiber yok — hydrate olmadı");
     });
 
-    await check(`Örnek butona tıkla → input dolar ("${CROSS_QUESTION}")`, async () => {
+    await check(`Örnek butona tıkla → input dolar ("${PRODUCT_SAMPLE_QUESTION}")`, async () => {
       const clicked = await cdp.evaluate(`(() => {
         const btns = [...document.querySelectorAll('button')];
-        const b = btns.find(x => (x.textContent || '').trim() === ${JSON.stringify(CROSS_QUESTION)});
+        const b = btns.find(x => (x.textContent || '').includes(${JSON.stringify("Makine bazında")}));
         if (!b) return false;
         b.click();
         return true;
@@ -254,7 +282,7 @@ async function testBrowser() {
       // setState asenkron: input değeri bir sonraki render'da güncellenir → bekle.
       await waitFor(
         cdp,
-        `(document.querySelector('input')?.value || '').includes('verim')`,
+        `(document.querySelector('input')?.value || '').includes('Makine')`,
         { label: "input value" },
       );
     });

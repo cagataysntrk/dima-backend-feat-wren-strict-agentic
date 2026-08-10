@@ -6,7 +6,7 @@ Understand the existing frontend and convert the competitor crawl into a usable 
 
 ## Read
 
-- dima-frontend/docs/plans/marketing/implementation-pack/
+- frontend/docs/plans/marketing/implementation-pack/
 - COMPETITOR_CRAWL_COVERAGE.md
 - COMPETITOR_EVIDENCE_AND_LESSONS.md
 - CONTENT_CLAIMS_REGISTER.md
@@ -39,4 +39,3 @@ Understand the existing frontend and convert the competitor crawl into a usable 
 ## Handoff
 
 Return the stage report plus a planned file list for Stage 01. Do not implement Stage 01 in the same pass.
-

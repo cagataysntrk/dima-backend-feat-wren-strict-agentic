@@ -11,7 +11,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "test": "vitest run",
-    "e2e": "node e2e/browser-e2e.mjs",
+    "e2e": "bun run e2e:marketing && node e2e/browser-e2e.mjs",
+    "e2e:marketing": "node e2e/marketing-smoke.mjs",
     "quality:ui": "ui-craft-detect \"src/app/(marketing)\" --fail-on error && ui-craft-detect src/components/marketing --fail-on error"
   },
   "dependencies": {

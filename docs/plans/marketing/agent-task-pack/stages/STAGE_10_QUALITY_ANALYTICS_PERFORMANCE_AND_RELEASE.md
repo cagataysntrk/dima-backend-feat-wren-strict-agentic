@@ -6,7 +6,7 @@ Prove that the marketing site is production-ready and has not regressed auth, pr
 
 ## Functional QA
 
-Run the scripts that actually exist in dima-frontend/package.json:
+Run the scripts that actually exist in frontend/package.json:
 
 ~~~bash
 pnpm lint
@@ -110,4 +110,3 @@ Provide:
 8. recommended post-launch monitoring events.
 
 Do not mark release ready when a legal, product-claim, endpoint, or authentication dependency is unresolved.
-

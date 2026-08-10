@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getMarketingContent } from "./marketing";
+import { getMarketingContent, publicRoutes } from "./marketing";
 
 function collectVisibleStrings(value: unknown, key?: string): string[] {
   if (key === "id") return [];
@@ -35,5 +35,25 @@ describe("marketing content", () => {
     expect(visibleCopy).not.toMatch(
       /\b(?:semantic|dry-plan|provenance|tenant|permission|onboarding|read-only|roadmap|backend|frontend|LLM|KPI)\b/i,
     );
+  });
+
+  it("keeps the launch route and capability contracts explicit", () => {
+    expect(publicRoutes).toEqual([
+      "/",
+      "/product",
+      "/how-it-works",
+      "/solutions",
+      "/solutions/textile-dyehouse",
+      "/security",
+      "/integrations",
+      "/about",
+      "/contact",
+      "/privacy",
+      "/terms",
+    ]);
+    const statuses = JSON.stringify(getMarketingContent("tr"));
+    expect(statuses).not.toContain('"beta"');
+    expect(getMarketingContent("tr").pages.textile.sections).toHaveLength(6);
+    expect(getMarketingContent("en").pages.solutions.sections).toHaveLength(6);
   });
 });

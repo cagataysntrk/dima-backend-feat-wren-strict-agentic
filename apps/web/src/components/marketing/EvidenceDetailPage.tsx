@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import Link from "next/link";
 import {
   ArrowDown,
   BarChart3,
@@ -28,12 +29,13 @@ import type {
   PageContent,
 } from "@/content/marketing";
 
-type PageKind = "product" | "how" | "solutions" | "security" | "integrations" | "about";
+type PageKind = "product" | "how" | "solutions" | "textile" | "security" | "integrations" | "about";
 
 const pageScenes: Record<PageKind, Record<string, MarketingSceneKey>> = {
-  product: { ask: "question", model: "definitions", validate: "checks", explore: "results", verify: "source", reuse: "reuse", govern: "access" },
-  how: { onboarding: "connection", semantics: "definitions", "dry-plan": "checks", execute: "source", planned: "deployment" },
-  solutions: { executive: "priority", operations: "coordination", data: "memory" },
+  product: { ask: "question", model: "definitions", validate: "checks", explore: "results", verify: "source", reuse: "reuse", govern: "access", integrate: "connection" },
+  how: { problem: "question", onboarding: "connection", semantics: "definitions", interpretation: "definitions", guard: "checks", permissions: "access", "dry-plan": "checks", execute: "source", provenance: "source", limits: "audit", planned: "deployment" },
+  solutions: { executive: "priority", operations: "coordination", production: "coordination", finance: "priority", sales: "memory", inventory: "memory" },
+  textile: { question: "question", production: "coordination", recipe: "definitions", quality: "checks", orders: "priority", integration: "connection" },
   security: { "read-only": "checks", session: "session", tenant: "access", audit: "audit", flow: "data-flow", deployment: "deployment" },
   integrations: { duckdb: "database", postgres: "database", engine: "support", process: "connection", status: "support" },
   about: { purpose: "purpose", principles: "principles", company: "company", truth: "truth" },
@@ -62,16 +64,19 @@ function EvidenceFrame({
   children,
   caption,
   labelledBy,
+  description,
 }: {
   children: React.ReactNode;
   caption: string;
   labelledBy: string;
+  description: string;
 }) {
   return (
-    <figure aria-labelledby={labelledBy} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <figure aria-labelledby={labelledBy} aria-describedby={`${labelledBy}-description`} className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {/* @container/stage — iç düzenler pencereye değil bu kutunun genişliğine
           göre kırılır. Bu sütun lg'de ~448px, 1440px'te ~576px; aynı JSX ayrıca
           sayfa hero'sunda çok daha geniş render ediliyor. */}
+      <p className="sr-only" id={`${labelledBy}-description`}>{description}</p>
       <div aria-hidden="true" className="@container/stage flex-1">{children}</div>
       <figcaption className="shrink-0 border-t bg-muted/20 px-5 py-3 font-mono text-micro uppercase tracking-wider text-muted-foreground">
         {caption}
@@ -190,8 +195,8 @@ function TraceVisual({ locale }: { locale: MarketingLocale }) {
 
 function ReuseVisual({ locale }: { locale: MarketingLocale }) {
   const items = locale === "tr"
-    ? [[RefreshCw, "Yeniden çalıştır", "aynı tanım"], [Timer, "Zamanla", "Beta"], [CircleGauge, "Bildirim al", "Beta"]]
-    : [[RefreshCw, "Run again", "same definition"], [Timer, "Schedule", "Beta"], [CircleGauge, "Get notified", "Beta"]];
+    ? [[RefreshCw, "Yeniden çalıştır", "aynı tanım"], [Timer, "Zamanla", "Pilot kapsamı"], [CircleGauge, "Bildirim al", "Pilot kapsamı"]]
+    : [[RefreshCw, "Run again", "same definition"], [Timer, "Schedule", "Pilot scope"], [CircleGauge, "Get notified", "Pilot scope"]];
   return <div className="grid gap-px bg-border @xl/stage:grid-cols-3">{items.map(([Icon, title, meta]) => { const VisualIcon = Icon as typeof RefreshCw; return <div className="bg-background p-5" key={String(title)}><TileBody top={<VisualIcon className="size-4 shrink-0 text-brand" />}><p className="text-sm font-semibold">{String(title)}</p><p className="mt-1 font-mono text-xs text-muted-foreground">{String(meta)}</p></TileBody></div>; })}</div>;
 }
 
@@ -275,14 +280,14 @@ export function EvidenceDetailPage({ page, content, kind, heroVisual }: { page: 
   const fallbackHero = kind === "solutions"
     ? (
       <div className="relative aspect-[16/10] overflow-hidden rounded-xl border bg-card shadow-xl">
-        <MarketingEditorialImage asset="decisions" className="marketing-editorial-image" />
+        <MarketingEditorialImage asset="decisions" className="marketing-editorial-image" priority />
         <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-foreground/25 via-transparent to-transparent" />
       </div>
     )
     : kind === "about"
       ? (
         <div className="relative aspect-[4/3] overflow-hidden rounded-xl border bg-card shadow-xl">
-          <MarketingEditorialImage asset="archive" className="marketing-editorial-image" />
+        <MarketingEditorialImage asset="archive" className="marketing-editorial-image" priority />
         </div>
       )
       : undefined;
@@ -311,11 +316,11 @@ export function EvidenceDetailPage({ page, content, kind, heroVisual }: { page: 
                     {section.points ? <AnimatedList as="ul" className="mt-6 grid gap-2" itemClassName="flex gap-3 text-sm">{section.points.map((point) => <Fragment key={point}><Check className="mt-0.5 size-4 shrink-0 text-brand" />{point}</Fragment>)}</AnimatedList> : null}
                   </Reveal>
                   <Reveal delay={0.08} y={18} className="flex">
-                    <MagicCard className="w-full">
+                    <MagicCard className="w-full" tilt={false}>
                       {/* caption artık section.body'yi tekrarlamıyor — aynı cümle
                           ekranda iki kez basılıyordu ve kart yüksekliğini veriye
                           bağlıyordu. Kısa, sabit bir görsel etiket kaldı. */}
-                      <EvidenceFrame labelledBy={`${kind}-${section.id}-title`} caption={section.title}>
+                      <EvidenceFrame labelledBy={`${kind}-${section.id}-title`} caption={section.visual?.caption ?? section.title} description={section.visual?.technicalNote ?? section.body}>
                         <SectionVisual scene={scene} id={section.id} locale={content.locale} />
                       </EvidenceFrame>
                     </MagicCard>
@@ -326,6 +331,18 @@ export function EvidenceDetailPage({ page, content, kind, heroVisual }: { page: 
           })}
         </div>
       </Container>
+      {kind === "textile" ? (
+        <Container className="pb-16 sm:pb-24">
+          <nav aria-label={content.locale === "tr" ? "İlgili dima sayfaları" : "Related dima pages"} className="grid gap-3 border-y py-6 sm:grid-cols-4">
+            {[
+              [content.nav.product, "/product"],
+              [content.nav.how, "/how-it-works"],
+              [content.nav.security, "/security"],
+              [content.footer.contact, "/contact"],
+            ].map(([label, href]) => <Link className="inline-flex min-h-11 items-center justify-between rounded-md border bg-card px-4 text-sm font-medium transition-colors hover:border-brand/40 hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring" href={href} key={href}>{label}<ArrowDown aria-hidden="true" className="-rotate-90 text-brand" /></Link>)}
+          </nav>
+        </Container>
+      ) : null}
       <FinalCta content={content} label={page.cta} />
     </>
   );

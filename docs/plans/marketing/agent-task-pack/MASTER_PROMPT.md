@@ -9,13 +9,13 @@ Your job is to turn the Dima marketing plan into a production-quality site one s
 Work in:
 
 ~~~text
-/Users/enesteve/Desktop/Coding/Upcy/dima/dima-frontend
+/Users/enesteve/Desktop/Coding/Upcy/dima/frontend
 ~~~
 
 The implementation target is:
 
 ~~~text
-dima-frontend/apps/web
+frontend/apps/web
 ~~~
 
 Read these before changing code:
@@ -252,4 +252,3 @@ End each stage with:
 - Deferred work:
 - Recommended next stage:
 ~~~
-

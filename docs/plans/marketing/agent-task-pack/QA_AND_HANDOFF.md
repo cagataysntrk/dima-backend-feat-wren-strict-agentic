@@ -76,7 +76,7 @@ Every stage ends with an evidence-backed report. “Looks good” is not a test 
 
 ## Recommended validation order
 
-Run from `dima-frontend` and inspect `package.json` first:
+Run from `frontend` and inspect `package.json` first:
 
 ```bash
 pnpm lint
@@ -87,4 +87,3 @@ pnpm e2e
 ```
 
 If a script is absent or already fails on baseline, report the exact command and failure. Do not weaken configuration or hide the test.
-

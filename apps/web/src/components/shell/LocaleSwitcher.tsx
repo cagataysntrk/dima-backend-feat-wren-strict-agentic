@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
  * Locale picker. A server action writes the locale cookie, then we refresh so
  * `i18n/request.ts` re-reads it and re-renders the tree in the new language.
  */
-export function LocaleSwitcher() {
+export function LocaleSwitcher({ className }: { className?: string } = {}) {
   const locale = useLocale();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -40,7 +40,7 @@ export function LocaleSwitcher() {
           size="icon"
           aria-label="Language"
           disabled={pending}
-          className="text-muted-foreground hover:text-foreground"
+          className={cn("text-muted-foreground hover:text-foreground", className)}
         >
           <Languages className="size-4" />
         </Button>

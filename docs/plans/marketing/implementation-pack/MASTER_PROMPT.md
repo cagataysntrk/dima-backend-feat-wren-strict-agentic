@@ -14,7 +14,7 @@ You will work stage-by-stage. Do not automatically continue to another stage aft
 
 ## Working repository
 
-Run from the root of `dima-frontend`.
+Run from the root of `frontend`.
 
 Before any change:
 ```bash
