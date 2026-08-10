@@ -84,6 +84,19 @@ class AskRequest(BaseModel):
     #: ⚠ İstemci yankılamazsa bellek YOKTUR — bu bilinçli: sessiz bir sunucu-yanı oturum
     #: deposu, thread/UI gruplamasının semantik sınır taşımasına yol açardı.
     diyalog_durumu: dict[str, Any] | None = None
+    #: 🔴🔴 `§RD` — **ÖNCEKİ BELGE: bir raporu düzenlemek için gereken bağlam.**
+    #:
+    #: ⊙ Ölçüldü (2026-08-10): *«rapora kârlılık da ekle»* → sıradan bir sorgu; `rapor`
+    #: yok. Sebep: bağlam olarak yalnız **son fiş** (`cube_query`) iliştiriliyordu ve bir
+    #: raporun son fişi, raporun **kendisi değildir**.
+    #:
+    #: ⚠ Sunucu bir belgeyi **saklamaz** — `PANO` fiilinin kendi kuralı: *«hiçbir şey
+    #: kaydetmez»*. Bu yüzden bağlamı **istemci** taşır; `cube_query`'nin (checkpoint,
+    #: `D4`) birebir aynı deseni.
+    #: ⚠ Planlayıcıya yalnız **bölüm kimlikleri** gider (küp·ölçü·kırılım) — satırlar
+    #: **gitmez** (`G0b`: korunan yayılım). *Bir planı kurmak için sonuçları bilmek
+    #: gerekmez.*
+    previous_rapor: dict[str, Any] | None = None
     # Strict-agentic /ask'in takip (follow-up) bağlamı: bir önceki turun `AskResponse.sql`'i.
     # BİLEREK `cube_query`den AYRI bir alan — `cube_query` frontend'de scheduling/dashboard/
     # verify gibi başka özelliklerin de gate'i (gerçek CubeQuery şekli varsayıyorlar); onu

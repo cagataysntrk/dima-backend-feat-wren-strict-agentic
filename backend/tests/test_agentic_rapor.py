@@ -107,3 +107,96 @@ def test_TAVAN_ASILMAZ_BOLUM_SAYISI():
     taşısaydı aynı belge iki uçta farklı uzunlukta olurdu."""
     r = report.bolumlerden_kur([_bolum() for _ in range(40)], baslik="x", schema=_SEMA)
     assert r["block_count"] == report._MAX_BLOCKS
+
+
+# --- `§RD` · BELGEYİ DÜZENLEMEK ------------------------------------------------------
+
+def test_BOLUM_KIMLIKLERI_OKUNUR():
+    """🔴 `§RD` — *«rapora kârlılık da ekle»* için planlayıcının **belgeyi** görmesi
+    gerekir; son fiş bir raporun kendisi değildir."""
+    from app.plan_tuketici import _belge_bolumleri
+
+    rapor = report.bolumlerden_kur([_bolum(), _bolum(dims=["musteri"])],
+                                   baslik="x", schema=_SEMA)
+    bolumler = _belge_bolumleri(rapor)
+    assert bolumler is not None and len(bolumler) == 2
+    assert bolumler[1]["cube_query"]["dimensions"] == ["musteri"]
+
+
+def test_SATIRLAR_PLANLAYICIYA_GITMEZ():
+    """🔴🔴 **Kapının en önemli satırı (`G0b`).** Planlayıcıya yalnız **kimlikler** gider;
+    gerçek değerleri sağlayıcıya yollamak korunan yayılımın kapattığı kapıyı yeniden
+    açardı. *Bir planı kurmak için sonuçları bilmek gerekmez.*"""
+    from app.plan_tuketici import _belge_bolumleri
+
+    rapor = report.bolumlerden_kur([_bolum()], baslik="x", schema=_SEMA)
+    for b in (_belge_bolumleri(rapor) or []):
+        assert set(b) == {"cube_query"}, f"kimlik dışı alan sızdı: {sorted(b)}"
+
+
+def test_BAGLAM_METNI_BOLUMLERI_ANLATIR():
+    """Bağlam satırı belgeyi **kimlikleriyle** tarif eder ve son adımın yine bir belge
+    fiili olmasını ister — yoksa düzenleme bir tabloya dönerdi."""
+    from app.plan_garson import baglamli
+
+    metin = baglamli("rapora kârlılık da ekle", None,
+                     [{"cube_query": {"cube": "parti", "measures": ["toplam_ciro"],
+                                      "dimensions": ["musteri"]}}])
+    assert "ÖNCEKİ BELGENİN BÖLÜMLERİ" in metin
+    assert "küp=parti" in metin and "kırılım=musteri" in metin
+    assert "RAPOR/PANO" in metin
+    # 🔴 Cümle **iki kipi de** anlatmalı: ekleme ÇALIŞIP çıkarma çalışmadı (ölçüldü) —
+    # talimat kendisiyle çelişiyordu. *Bir talimat yalnız bir kipi anlatıyorsa, ötekini
+    # yasaklıyor demektir.*
+    assert "ÇIKARILMASINI" in metin and "ÜRETME" in metin
+    assert "EKLEME" in metin
+
+
+def test_BELGE_YOKSA_ESKI_BAGLAM_BIREBIR():
+    """`KURAL B`: bölüm listesi yoksa `baglamli` bugünkü davranışını **bayt bayt** korur."""
+    from app.plan_garson import baglamli
+
+    onceki = {"cube": "parti", "measures": ["toplam_ciro"]}
+    assert baglamli("x", onceki, None) == baglamli("x", onceki)
+    assert baglamli("x", None, []) == "x"
+
+
+def test_BOZUK_BELGE_SESSIZCE_DUSER():
+    """Fail-open: biçimi bozuk bir belge turu düşürmez, bağlam bugünküne döner."""
+    from app.plan_tuketici import _belge_bolumleri
+
+    assert _belge_bolumleri(None) is None
+    assert _belge_bolumleri({"pages": [[{"yok": 1}]]}) is None
+
+
+def test_IKI_CAGIRAN_DA_BOLUMLERI_TASIR():
+    """🔴🔴 `§RD` — **`baglamli`'nin kendi şerhinin uyardığı hata, bu turda TEKRARLANDI.**
+
+    Şerh şunu yazıyordu: *«İki çağıranı var ve ikisi de aynı cümleyi kurmalı … ilk
+    yazımda yalnız birincisi bağlandı, canlıda hiçbir şey değişmedi.»* Ben de yalnız
+    `plan_tuketici`'yi bağladım ve canlıda ölçüldü: *«rapora aylık trend de ekle»* →
+    önceki bölümler **kayboldu**, plan `oee` küpüne gitti — çünkü `PlanGarsonu`'nun
+    sakladığı taslak, `plan_tuketici`'nin planından **önce** gelir.
+
+    *Bir yolu düzeltip ötekini unutmak, düzeltmeyi yapmamakla aynı sonucu verir; yalnız
+    yapıldığını sanmakla farklıdır.*
+    """
+    import inspect
+
+    from app import plan_garson
+
+    assert "onceki_rapor" in inspect.signature(plan_garson.sarmala).parameters
+    assert "bolumler" in inspect.signature(plan_garson.PlanGarsonu.__init__).parameters
+    # ⚠ Ve gövde gerçekten **taşımalı** — imza tek başına bir taşıma kanıtı değildir.
+    assert "self._bolumler" in inspect.getsource(plan_garson.PlanGarsonu._baglamli)
+
+
+def test_ASK_HER_IKI_YOLA_DA_GECIRIR():
+    """⚠ Kapının ikinci yarısı: çağrı yerinin **kendisi** de bağlanmış olmalı."""
+    import inspect
+
+    from app.routers import ask as ask_mod
+
+    kaynak = inspect.getsource(ask_mod)
+    assert "body.previous_rapor)" in kaynak, "🔴 `sarmala` belgeyi almıyor"
+    assert "onceki_rapor=body.previous_rapor" in kaynak, "🔴 tüketici yolu bağlanmamış"

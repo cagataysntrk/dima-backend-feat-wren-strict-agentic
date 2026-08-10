@@ -3912,7 +3912,12 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     # 🔴 `O-14` — GARSON = ORKESTRATÖR. Bir basamak DEĞİL, garsonun
                     # çıktı biçimi: karar yüzeyi (route↔garson) bayt bayt aynı kalır.
                     # Bayrak kapalıysa `sarmala()` nesnenin kendisini döndürür.
-                    _g = _plan_garson.sarmala(llm_probe, cube_index, request, _ent, body.cube_query)
+                    # `§RD` — belge düzenlemede bağlam **bölüm listesidir**; iki çağıran
+                    # da aynı cümleyi kurmalı (`baglamli`'nin ölçülmüş dersi). Liste
+                    # `sarmala`'nın **kendisi** tarafından `istek`ten türetilir — bu
+                    # dosyanın kendi ilkesi: *bağlamı taşıyan nesne elindeyken, o
+                    # bağlamın parçalarını ayrıca istemek onları ayrışmaya davet etmektir.*
+                    _g = _plan_garson.sarmala(llm_probe, cube_index, request, _ent, body.cube_query, body.previous_rapor)
                     parsed, uyum, eksen, adaylar = _select_consistent(
                         _g, _q_llm, catalog_text + _ent_kural, cube_index, k, _sema)
                     parsed = varlik.geri_koy(parsed, _ent)
@@ -4032,7 +4037,8 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # yoldan gelinir; o yüzden yalnız **her zaman bağlı** olan şey okunabilir.
         _pc = _plan_tuketici.cevap(request, service=service, schema=schema,
                                    soru=body.question, settings=settings,
-                                   principal=principal, limit=limit, route_hit=route_hit)
+                                   principal=principal, limit=limit, route_hit=route_hit,
+                                   onceki_rapor=body.previous_rapor)
         if _pc is None and _ertelenen_chip is not None:
             return _finish(_ertelenen_chip)   # `O-19` — plan da yapamadı, sınır konuşur
         if _pc is not None:

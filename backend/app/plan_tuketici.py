@@ -282,7 +282,7 @@ def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = 
 
 def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any = None,
           principal: Any = None, limit: int | None = None,
-          route_hit: dict | None = None) -> dict | None:
+          route_hit: dict | None = None, onceki_rapor: Any = None) -> dict | None:
     """🔴 **BOŞLUĞUN TEK KAPISI** — `ask()` bundan başka bir şey bilmez.
 
     `None` döner ve **hiçbir şey yapmaz** eğer: bayrak kapalıysa, sağlayıcı plan
@@ -413,8 +413,14 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     # 🔴 `O-22` — bu yol da bağlamı görmeli. Ölçüldü: yalnız `PlanGarsonu` bağlandığında
     # canlıda **hiçbir şey değişmedi**, çünkü o turda planı **burası** üretiyordu.
     _onceki = getattr(getattr(request, "state", None), "plan_onceki", None)
+    # 🔴 `§RD` — kullanıcı bir **belgeyi** düzenliyorsa bağlam tek fiş değil **bölüm
+    # listesidir**. Kaynak: bir önceki turun `rapor`u (istemci `previous_rapor` ile geri
+    # yollar) ya da istek durumunda saklanmış hâli. ⚠ Yalnız **kimlikler** gider —
+    # satırlar değil (`G0b`).
+    _onceki_bolumler = _belge_bolumleri(onceki_rapor)
     plan = (getattr(getattr(request, "state", None), "plan_taslagi", None)
-            or plan_garson.plan_uret(llm, plan_garson.baglamli(soru, _onceki),
+            or plan_garson.plan_uret(llm, plan_garson.baglamli(soru, _onceki,
+                                                               _onceki_bolumler),
                                      catalog, index))
     # 🔴 `O-15/Y` — **GEÇ GELEN PLAN ARTIK KAYBOLMUYOR.** Ölçüldü (canlı `II10`,
     # loglarla): garson `19:42:31`'de geçerli bir **4 adımlık** plan üretip sakladı
@@ -654,6 +660,29 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
             "bolumler": _bolumler,
         },
     }
+
+
+def _belge_bolumleri(kaynak: Any) -> list[dict] | None:
+    """`§RD` — istekle gelen **önceki belgenin** bölüm kimlikleri (yoksa `None`).
+
+    ⚠ Kaynak **istemcidir**: bir belge sunucuda saklanmaz (`PANO` fiilinin kendi kuralı:
+    *«hiçbir şey kaydetmez»*). İstemci son cevabın `rapor`unu geri yollar — `cube_query`
+    checkpoint'inin (`D4`) birebir aynı deseni.
+
+    ⚠ Yalnız **kimlikler** okunur; `result` alanına hiç dokunulmaz. Planlayıcıya satır
+    gitmez (`G0b`). *Bir planı kurmak için sonuçları bilmek gerekmez.*
+
+    ⚠ Fail-open: alan yoksa ya da biçimi bozuksa `None` döner ve bağlam bugünkü hâline
+    düşer (`KURAL B`).
+    """
+    if not isinstance(kaynak, dict):
+        return None
+    out: list[dict] = []
+    for sayfa in (kaynak.get("pages") or []):
+        for blok in (sayfa or []):
+            if isinstance(blok, dict) and isinstance(blok.get("cube_query"), dict):
+                out.append({"cube_query": blok["cube_query"]})
+    return out or None
 
 
 def _bulgu_metni(plan: dict, out: dict) -> str:

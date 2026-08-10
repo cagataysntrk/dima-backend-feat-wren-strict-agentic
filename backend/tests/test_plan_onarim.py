@@ -656,8 +656,15 @@ def test_BAGLAM_IKI_URETICIYE_DE_BAGLI():
 
     from app import plan_garson, plan_tuketici
 
-    assert "baglamli(question, self._onceki)" in inspect.getsource(
-        plan_garson.PlanGarsonu._baglamli), "oylama yolu bağlamsız"
+    # ⟳ **ÇAPA TAŞINDI (`§RD`, 2026-08-10).** `baglamli` üçüncü bir bağlam aldı: belge
+    # düzenlemede iliştirilen şey tek fiş değil **bölüm listesidir**. Çapa silinmedi,
+    # yeni imzaya **yeniden çakıldı**; koruduğu şey aynı: *oylama yolu da bağlam görmeli*.
+    # 🔴 Ve kapı **iki bağlamı da** sorar — biri bağlanıp öteki unutulursa, bu dosyanın
+    # kendi dersi (*«planı iki yer üretiyor; birini bağlamak yetmedi»*) üçüncü kez
+    # tekrarlanırdı.
+    _kaynak = inspect.getsource(plan_garson.PlanGarsonu._baglamli)
+    assert "self._onceki" in _kaynak, "oylama yolu bağlamsız"
+    assert "self._bolumler" in _kaynak, "oylama yolu BELGE bağlamsız (§RD)"
     src = inspect.getsource(plan_tuketici.cevap)
     assert "plan_garson.baglamli(soru," in src, "boşluk yolu bağlamsız"
     assert "plan_onceki" in src, "bağlam istek durumundan okunmuyor"

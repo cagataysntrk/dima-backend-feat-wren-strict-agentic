@@ -173,6 +173,16 @@ TAVANLAR = {
 
 #: `(dosya, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 MUAFIYET: list[tuple[str, int, str]] = [
+    ("app/page.tsx", 8,
+     "🔴🔴 `§RD` — **BELGE BAĞLAMI (`contextRapor`), `contextCq`'nun KARDEŞİ.** ⚠ "
+     "**TAŞINAMAZ:** bu dosya thread/bağlam yaşam döngüsünün **tek** sahibidir; bağlamı "
+     "ikinci bir yere koymak, aynı yaşam döngüsünü iki yerden yönetmek olurdu — ve "
+     "`diyalog_durumu` tam olarak bu sebeple burada duruyor (kendi şerhi: *«bir demet "
+     "boyunca EKSİKTİ → KURAL_DEVAM üretimde hiç ateşlenmedi»*). 🔴 Sekiz satırın "
+     "**beşi** yaşam döngüsü noktası (`setContextRapor`) ve biri istek alanı: alanın "
+     "kendisi tek satır, gerisi *«kardeş alan her yerde kardeş kalsın»* disiplini. "
+     "⊙ Ve bu alan bir demet boyunca **yetim**di — backend okuyor, istemci "
+     "doldurmuyordu; kapı yakaladı (`test_K2c`): *tanım GÖNDERİM DEĞİLDİR.*"),
     # ═══ `§RP` — AGENTIC RAPOR/PANO (2026-08-10) ═══
     ("lib/types.ts", 13,
      "🔴🔴 `§RP` — `AskResponse.rapor` alanı: orkestratörün ürettiği **çok bölümlü "

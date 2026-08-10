@@ -148,7 +148,8 @@ def sayaclar() -> dict[str, int]:
     return out
 
 
-def baglamli(soru: str, onceki: dict | None) -> str:
+def baglamli(soru: str, onceki: dict | None,
+             bolumler: list[dict] | None = None) -> str:
     """Takip turunda soruya **önceki sorguyu** iliştirir (`O-22`) — **TEK SAHİP**.
 
     🔴 İki çağıranı var ve ikisi de aynı cümleyi kurmalı: `PlanGarsonu.select_cube`
@@ -161,6 +162,46 @@ def baglamli(soru: str, onceki: dict | None) -> str:
     yeniden yazmak onu yorumlamaktır ve yorum garsonun işidir.
     ⚠ Önceki sorgu yoksa dize **bayt bayt aynı** döner (`KURAL B` disiplini).
     """
+    # 🔴🔴 `§RD` — **BİR BELGEYİ DÜZENLEMEK, TEK BİR FİŞİ DÜZENLEMEK DEĞİLDİR.**
+    #
+    # ⊙ Ölçüldü (curl, 2026-08-10): *«rapora kârlılık da ekle»* → `source=cube`, **tek
+    # satır**, `rapor` **yok**. Kullanıcı bir **belgeyi** düzenlemek istedi; sistem onu
+    # sıradan bir sorgu sandı — çünkü bağlam olarak yalnız **son fiş** iliştiriliyordu ve
+    # bir raporun son fişi, raporun kendisi değildir.
+    #
+    # ⊙ Kullanıcının şartı açıktı: *«sonra düzenleme isteyebilir»*. Bir belge, üstüne
+    # konuşulabilen bir şeydir; konuşulamıyorsa bir çıktıdır, bir **canvas** değil.
+    #
+    # ⚠ **SATIR GÖNDERİLMEZ.** Bölümler yalnız **kimlikleriyle** anlatılır (küp · ölçü ·
+    # kırılım): planlayıcının belgeyi yeniden kurmak için verilere ihtiyacı yok, ve
+    # gerçek değerleri sağlayıcıya yollamak `G0b`'nin (korunan yayılım) kapattığı
+    # kapıyı yeniden açardı. *Bir planı kurmak için sonuçları bilmek gerekmez.*
+    #
+    # ⚠ Tek sahip korunuyor: iki çağıran da (`PlanGarsonu` · `plan_tuketici`) bu
+    # fonksiyondan geçer. Bu dersin bedeli **ölçülerek** ödendi (üstteki şerh).
+    if isinstance(bolumler, list) and bolumler:
+        _satir = []
+        for i, b in enumerate(bolumler, 1):
+            cq = (b or {}).get("cube_query") or {}
+            if not cq.get("cube"):
+                continue
+            _satir.append("  %d. küp=%s · ölçü=%s%s" % (
+                i, cq.get("cube"), ",".join(cq.get("measures") or []) or "-",
+                (" · kırılım=" + ",".join(cq.get("dimensions") or []))
+                if cq.get("dimensions") else ""))
+        if _satir:
+            # 🔴 **CÜMLE İKİ KİPİ DE ANLATMALI — ve bunu bir ölçüm öğretti.**
+            # İlk yazım yalnız *«VAR OLAN bölümleri AYNEN yeniden üret»* diyordu ve
+            # canlıda ölçüldü: *«rapora kârlılık ekle»* ✅ çalıştı, *«rapordan müşteri
+            # kırılımını ÇIKAR»* 🔴 çalışmadı — istenen bölüm yine üretildi. Talimat
+            # kendisiyle çelişiyordu: *«hepsini koru»* ile *«birini çıkar»* aynı cümlede
+            # yarışıyordu ve koruma kazanıyordu.
+            # *Bir talimat yalnız bir kipi anlatıyorsa, ötekini yasaklıyor demektir.*
+            return (soru + "\n\n⊙ ÖNCEKİ BELGENİN BÖLÜMLERİ (kullanıcı bu **belgeyi** "
+                    "düzenliyor):\n" + "\n".join(_satir)
+                    + "\n\nKURAL: kullanıcı bir bölümün ÇIKARILMASINI istiyorsa onu "
+                    "ÜRETME; ötekileri aynen yeniden üret. Bir EKLEME istiyorsa hepsini "
+                    "koru ve yenisini ekle. Son adım yine RAPOR/PANO olsun.")
     if not (isinstance(onceki, dict) and onceki.get("cube")):
         return soru
     return (soru + "\n\n⊙ ÖNCEKİ CEVABIN SORGUSU (kullanıcı bunun ÜSTÜNE konuşuyor — "
@@ -366,7 +407,8 @@ class PlanGarsonu:
     """
 
     def __init__(self, ic: Any, index: dict, istek: Any = None,
-                 varliklar: dict | None = None, onceki: dict | None = None) -> None:
+                 varliklar: dict | None = None, onceki: dict | None = None,
+                 bolumler: list[dict] | None = None) -> None:
         self._ic, self._index, self._istek = ic, index or {}, istek
         #: 🔴🔴 `O-22` — **GARSON TAKİP BAĞLAMINI HİÇ GÖRMÜYORDU.**
         #:
@@ -382,6 +424,16 @@ class PlanGarsonu:
         #: ayrım. *Bir bağlamı bir yolda taşıyıp ötekinde bırakmak, onu rastgele
         #: taşımaktır.*
         self._onceki = onceki if isinstance(onceki, dict) and onceki.get("cube") else None
+        # 🔴🔴 `§RD` — **İKİNCİ ÇAĞIRAN.** `baglamli`'nin kendi şerhi bu hatayı zaten
+        # kaydetmişti: *«ilk yazımda yalnız birincisi bağlandı, canlıda hiçbir şey
+        # değişmedi — çünkü o turda planı İKİNCİSİ üretiyordu»*. Ve aynı hata bu turda
+        # **tekrarlandı**: `plan_tuketici` bağlandı, burası unutuldu ve canlıda ölçüldü —
+        # *«rapora aylık trend de ekle»* → önceki bölümler kayboldu, plan `oee` küpüne
+        # gitti. Sebep: bu sınıfın sakladığı `plan_taslagi`, `plan_tuketici`'nin
+        # ürettiği plandan **önce** gelir.
+        # *Bir yolu düzeltip ötekini unutmak, düzeltmeyi yapmamakla aynı sonucu verir;
+        # yalnız yapıldığını sanmakla farklıdır.*
+        self._bolumler = bolumler if isinstance(bolumler, list) and bolumler else None
         #: ⚠ Bağlam **istek durumuna** da yazılır: planı bu nesne değil, boşlukta
         #: `plan_tuketici` üretiyor olabilir ve o `body`'yi görmez. Tek kaynak, iki
         #: okuyucu.
@@ -401,7 +453,7 @@ class PlanGarsonu:
 
     def _baglamli(self, question: str) -> str:
         """`baglamli`'nin nesne yüzü — mantık modül düzeyinde, **tek sahipli**."""
-        return baglamli(question, self._onceki)
+        return baglamli(question, self._onceki, self._bolumler)
 
     def select_cube(self, question: str, catalog: str, sema: dict | None = None) -> str:
         try:
@@ -470,7 +522,8 @@ class PlanGarsonu:
 
 
 def sarmala(llm: Any, index: dict, istek: Any = None,
-            varliklar: dict | None = None, onceki: dict | None = None) -> Any:
+            varliklar: dict | None = None, onceki: dict | None = None,
+            onceki_rapor: Any = None) -> Any:
     """🔴 `KURAL B`'nin tek satırı: kapalıyken **nesnenin kendisi** döner.
 
     ⚠ `settings`/`principal` **istekten türetilir**, çağırandan alınmaz — ve bu yalnız
@@ -482,7 +535,13 @@ def sarmala(llm: Any, index: dict, istek: Any = None,
     from app.config import get_settings
 
     _p = getattr(getattr(istek, "state", None), "principal", None)
-    return (PlanGarsonu(llm, index, istek, varliklar, onceki)
+    # `§RD` — çağıran **ham belgeyi** verir, bölümlemeyi burası yapar. Gerekçe bu
+    # fonksiyonun kendi ilkesidir (`settings`/`principal` ile aynı): *bir bağlamı taşıyan
+    # nesne elindeyken, o bağlamın parçalarını ayrıca istemek onları ayrışmaya davet
+    # etmektir.* Ve **tek sahip**: bölüm okuma mantığı `plan_tuketici._belge_bolumleri`de.
+    from app.plan_tuketici import _belge_bolumleri
+    return (PlanGarsonu(llm, index, istek, varliklar, onceki,
+                        _belge_bolumleri(onceki_rapor))
             if acik_mi(get_settings(), _p, llm) else llm)
 
 

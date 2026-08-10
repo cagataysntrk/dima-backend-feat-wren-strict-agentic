@@ -10726,3 +10726,155 @@ küme sistemin kendi fiilleri kadar **kapalı** (kapılı: `test_KUME_FIILLERLE_
 ⚠ Ve route'un cevabı **iptal edilmiyor**: plan koşamazsa alt dallar yine ona döner.
 
 > *Bir teslimat türünü tanımayan sistem, onu ancak tesadüfen üretir.*
+
+## `§RD` — BELGEYİ DÜZENLEMEK: **ekleme ✅ · çıkarma ◐**
+
+Kullanıcının şartı: *«sonra düzenleme isteyebilir»*. Ölçülen başlangıç:
+`«rapora kârlılık da ekle»` → `source=cube`, tek satır, `rapor` **yok**.
+
+**Kök:** bağlam olarak yalnız **son fiş** iliştiriliyordu (`baglamli(soru, onceki)`) — ve
+bir raporun son fişi, raporun **kendisi değildir**. Çözüm: `baglamli` bir **bölüm
+listesi** de alır; kaynak istemcinin geri yolladığı `previous_rapor` (`AskRequest`).
+
+⚠ **Satır gönderilmez** — yalnız kimlikler (küp·ölçü·kırılım). `G0b`'nin kapattığı kapı
+yeniden açılmaz. Kapılı: `test_SATIRLAR_PLANLAYICIYA_GITMEZ`.
+⚠ Sunucu belgeyi **saklamaz** (`PANO` fiilinin kendi kuralı); bağlamı istemci taşır —
+`cube_query` checkpoint'inin (`D4`) birebir aynı deseni.
+
+### 🔴 VE `baglamli`'NİN KENDİ ŞERHİNİN UYARDIĞI HATAYI YAPTIM
+
+Şerh şunu yazıyordu: *«İki çağıranı var ve ikisi de aynı cümleyi kurmalı … ilk yazımda
+yalnız birincisi bağlandı, canlıda hiçbir şey değişmedi.»*
+
+Ben de yalnız `plan_tuketici`'yi bağladım. Canlıda ölçüldü:
+
+```
+«rapora aylık trend de ekle» → 🔴 önceki bölümler KAYBOLDU, plan `oee` küpüne gitti
+```
+
+Sebep: `PlanGarsonu`'nun sakladığı `plan_taslagi`, `plan_tuketici`'nin planından **önce**
+gelir. İkinci çağıran bağlanınca:
+
+```
+«rapora aylık trend de ekle» → ✅ 3 bölüm korundu + 4.'sü eklendi, hepsi `parti`
+```
+
+> *Bir yolu düzeltip ötekini unutmak, düzeltmeyi yapmamakla aynı sonucu verir; yalnız
+> yapıldığını sanmakla farklıdır.* — ve bu ders bu dosyada **yazılıydı**.
+
+Kapıya çevrildi: `test_IKI_CAGIRAN_DA_BOLUMLERI_TASIR` (imza **ve gövde**) +
+`test_ASK_HER_IKI_YOLA_DA_GECIRIR`.
+
+### ⊙ Ve bağlam cümlesi **tek kip** anlatıyordu
+
+```
+ÖNCE : «VAR OLAN bölümleri AYNEN yeniden üret»
+  «rapora kârlılık ekle»            ✅
+  «rapordan müşteri kırılımını çıkar» 🔴 bölüm yine üretildi
+```
+
+Talimat kendisiyle çelişiyordu: *«hepsini koru»* ile *«birini çıkar»* aynı cümlede
+yarışıyordu ve **koruma kazanıyordu**. Cümle iki kipi de anlatacak biçimde yazıldı.
+
+> *Bir talimat yalnız bir kipi anlatıyorsa, ötekini yasaklıyor demektir.*
+
+### 📋 ÖLÇÜLEN DURUM — dürüstçe
+
+| işlem | durum | kanıt |
+|---|---|---|
+| belge üretme | ✅ **5/5** | `§RG` |
+| kullanıcının spesifik isteği | ✅ | *«ciro, kârlılık ve müşteri kırılımı»* → üçü de |
+| **ekleme** | ✅ | kârlılık ✅ · aylık trend ✅ (3 bölüm korundu + 1) |
+| **çıkarma** | ◐ **kısmi** | 3 blok → 2 blok, ama `musteri` kırılımı kaldı |
+
+⚠ Çıkarma vakası **belirsiz ölçüldü**: taban raporda **iki özdeş** `musteri` bölümü
+vardı, yani hangisinin çıkarıldığı ayırt edilemiyor. Sıradaki turda **tekil bölümlü** bir
+tabanla yeniden ölçülecek — *bir ölçümün belirsizliğini kapatmadan sonucunu yazmak, bir
+sonraki turu yanlış yere gönderir.*
+
+### ⚠ DÜZELTME — *«çıkarma ◐ kısmi»* YARGIM YANLIŞTI (bugün **sekizinci** ölçüm düzeltmesi)
+
+Söz verdiğim gibi vaka **tekil bölümlü** bir tabanla yeniden ölçüldü:
+
+```
+taban: toplam_ciro | toplam_ciro×musteri | kar_marji_yuzde     ← üçü de FARKLI
+
+«rapordan müşteri kırılımını çıkar»  → 2 blok: kar_marji_yuzde · toplam_ciro   ✅ musteri GİTTİ
+«rapordaki kârlılık bölümünü kaldır» → 2 blok: toplam_ciro · toplam_ciro×musteri ✅ kârlılık GİTTİ
+«rapora fire oranı da ekle»          → 4 blok: üçü KORUNDU + fire_orani_yuzde   ✅
+```
+
+Önceki *«◐ kısmi»* yargım **belirsiz tabanın** eseriymiş: o raporda **iki özdeş**
+`musteri` bölümü vardı ve hangisinin çıkarıldığı ayırt edilemiyordu.
+
+> *Bir ölçümün belirsizliğini kapatmadan sonucunu yazmak, bir sonraki turu yanlış yere
+> gönderir* — ve bu kez o turu **kendim** yanlış yere gönderiyordum.
+
+### 📋 `§RP`+`§RG`+`§RD` — ÖLÇÜLEN NİHAİ DURUM
+
+| yetenek | durum | kanıt |
+|---|---|---|
+| belge üretme | ✅ **5/5** kararlı | `§RG` |
+| kullanıcının spesifik isteği | ✅ | *«ciro, kârlılık ve müşteri kırılımı»* → üçü de |
+| **ekleme** | ✅ | kârlılık · aylık trend · fire oranı |
+| **çıkarma** | ✅ | müşteri kırılımı · kârlılık |
+| çok sayfalı pano | ✅ | 5 blok · 2 sayfa |
+| frontend render | ✅ | var olan `ReportView` (yeni render kodu **sıfır**) |
+| satır sızıntısı | ✅ **yok** | planlayıcıya yalnız kimlikler (kapılı) |
+
+## `§RD` FRONTEND YARISI — **kapı bir YETİM yakaladı ve haklıydı**
+
+Tam kapı üç kırmızı verdi; ikisi aynı şeyi söylüyordu:
+
+```
+🔴 test_K2b: YETİM SÖZLEŞME ALANI → AskRequest.previous_rapor
+🔴 test_K2c: GÖNDERİLMEYEN İSTEK ALANI — backend okuyor, istemci DOLDURMUYOR
+```
+
+Yani rapor düzenleme **yalnız curl'de** çalışıyordu; arayüzde hiç çalışmıyordu. Deponun
+kendi kuralı: *«backend yeteneği frontend tüketicisi olmadan bitti değil; yetim uç = CI
+hatası»*. Kapı bunu bir demet **geçmeden** yakaladı.
+
+> *Tanım GÖNDERİM DEĞİLDİR.*
+
+**Bağlanan:** `contextRapor` — `contextCq`'nun **kardeşi**, aynı yaşam döngüsünün beş
+noktasında onunla birlikte. Gerekçe `diyalog_durumu`'nun kendi şerhinde zaten yazılı:
+*«bir demet boyunca EKSİKTİ → `KURAL_DEVAM` üretimde hiç ateşlenmedi»* — kardeş bir alan
+her yerde kardeş kalmalı.
+
+**Üçüncü kırmızı** `test_BAGLAM_IKI_URETICIYE_DE_BAGLI`'nin çapasıydı: `baglamli` üçüncü
+bir argüman alınca dizge eşleşmesi bozuldu. Çapa **yeniden çakıldı ve güçlendirildi** —
+artık **iki bağlamı da** (fiş ∧ bölüm) sorar, çünkü o dosyanın kendi dersi
+(*«planı iki yer üretiyor; birini bağlamak yetmedi»*) yoksa üçüncü kez tekrarlanırdı.
+
+### ✅ SON DOĞRULAMA — tekil bölümlü tabanla
+
+```
+taban: toplam_ciro | toplam_ciro×musteri | kar_marji_yuzde
+«rapordan müşteri kırılımını çıkar» → 2 blok: toplam_ciro · kar_marji_yuzde       ✅
+«rapora fire oranı da ekle»         → 4 blok: üçü KORUNDU + fire_orani_yuzde      ✅
+```
+
+### 📋 AGENTIC BELGE SENARYOLARI *(P turu)*
+
+| # | istek | sonuç |
+|---|---|---|
+| P1 | *bana bir üretim panosu hazırla* | ✅ **5 blok / 5 küp** (parti·kalite·duruşlar·oee·maliyet), hepsi `makine` ekseninde |
+| P2 | *kalite raporu: fire oranı, rework ve müşteri şikayetleri olsun* | ✅ **üç spesifik istek de** karşılandı (3 küp) |
+| P3 | *enerji raporu çıkar* | ✅ **4 blok / 4 enerji küpü** |
+| P4 | *geçen yıla göre satış raporu hazırla* | 🔴 **belge YOK** |
+
+### 🔴 `§RB` — SIRADAKİ KÖK: plan **belgeyle bitmek zorunda değil**
+
+`P4`'ün iki varyantı ölçüldü:
+
+```
+SORGU → TREND → RAPOR   → plan DOĞRU ama «koşulamadı → adım adım ret»
+SORGU → TREND → ANLAT   → koştu, ama BELGE FİİLİ YOK → rapor=None
+```
+
+`§RG` **orkestratörün koşmasını** zorluyor; ama planın **belgeyle bitmesini** zorlayan
+bir şey yok — garson `ANLAT` seçebiliyor. Kanıtlı çözüm: belge istendi **ve** ≥2 bölüm
+üretildiyse belge zaten **kurulabilir** — `§RP`'nin derleyicisi hazır. *LLM'in seçimine
+bırakılmış bir şey, fişin zaten kanıtladığı bir şeyse, orada bir karar değil bir kumar
+vardır.*

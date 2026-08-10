@@ -59,6 +59,16 @@ export default function Home() {
   // Takip bağlamı: bir sonraki mesajla gönderilecek CubeQuery. Rapor VE clarify notu (kısmi
   // cube_query) bunu günceller — "bu ay" chip'i doğru sorguya uygulansın (ADR-0007 Faz C).
   const [contextCq, setContextCq] = useState<AskResponse["cube_query"]>(null);
+  // 🔴🔴 `§RD` — **BELGE BAĞLAMI: `contextCq`'nun KARDEŞİ.**
+  //
+  // ⊙ Ölçüldü (curl, 2026-08-10): *«rapora kârlılık da ekle»* → sıradan bir sorgu; `rapor`
+  // yok. Sebep: bağlam olarak yalnız **son fiş** gidiyordu ve bir raporun son fişi, raporun
+  // **kendisi değildir**. Backend `previous_rapor`'u okur; sunucu belgeyi **saklamaz**
+  // (`PANO` fiilinin kendi kuralı) — bağlamı istemci taşır, tıpkı `cube_query` gibi.
+  //
+  // ⚠ Ve bu alan bir demet boyunca **yetim** kaldı: backend okuyordu, istemci
+  // doldurmuyordu. Kapı yakaladı (`test_K2c`) — *tanım GÖNDERİM DEĞİLDİR.*
+  const [contextRapor, setContextRapor] = useState<AskResponse["rapor"]>(null);
   // 🔴 `G2` — DİYALOG DURUMU YANKISI. `contextCq`'nun KARDEŞİ: aynı yaşam döngüsü, aynı
   // sıfırlanma noktaları. Sunucu oturum saklamaz; *"sorduğunu hatırlamak"* bu yankıya
   // bağlıdır (`backend/app/schemas.py:82-86` · `context.py::KURAL_DEVAM`).
@@ -170,6 +180,7 @@ export default function Home() {
     const resumedThreads = groupIntoThreads(det.messages);
     setActiveThreadId(resumedThreads.at(-1)?.id ?? null);
     setContextCq(lastReport?.cube_query ?? null);
+    setContextRapor(lastReport?.rapor ?? null);   // `§RD` — kardeş alan, aynı yaşam döngüsü
     setDiyalogDurumu(lastReport?.diyalog_durumu ?? null);
     setCanvasItems([]); // tuval sohbet-oturumu kapsamlı — devralınan sohbette sıfırdan başlar
     setViewHint(lastReport?.view_hint ? { kind: lastReport.view_hint, nonce: Date.now() } : null);
@@ -183,6 +194,7 @@ export default function Home() {
     clearHistory();
     setActiveThreadId(null);
     setContextCq(null);
+    setContextRapor(null);
     setDiyalogDurumu(null);
     setPrevSql(null);
     setCanvasItems([]); // tuval sohbet-oturumu kapsamlı — yeni sohbet sıfırdan başlar
@@ -250,6 +262,7 @@ export default function Home() {
           {
             question: vars.question,
             cube_query: contextCq,
+            previous_rapor: contextRapor,   // `§RD` — belgeyi düzenlemenin bağlamı
             // 🔴 `G2` — bekleyen soru bu turda cevaplanıyor olabilir. Yankı olmadan
             // sunucu turu `KURAL_TAZE` sayar ve "mart" tanınmayan bir soru olur.
             diyalog_durumu: diyalogDurumu,
@@ -350,6 +363,7 @@ export default function Home() {
       else if (data.result) setViewHint(null);
       // Bağlam: rapor ya da clarify (kısmi cube_query) her ikisi de bir sonraki mesaj için.
       setContextCq(data.cube_query ?? null);
+      setContextRapor(data.rapor ?? null);
       // 🔴 `G2` — durumu yankıla: bir sonraki tur "kaldığı yerden" devam edebilsin.
       setDiyalogDurumu(data.diyalog_durumu ?? null);
       // wren_sql takip bağlamı: sql yoksa (meta/katalog/hata notu) bir sonraki soru
@@ -408,6 +422,7 @@ export default function Home() {
       // chip düzenlemesi RAPOR ŞEKLİNİ küçük değiştirir — mevcut görünüm tercihi
       // (ör. panelli) KORUNUR; yeni ipucu yalnız /ask cevabından gelir.
       setContextCq(data.cube_query ?? null);
+      setContextRapor(data.rapor ?? null);
       setDiyalogDurumu(data.diyalog_durumu ?? null);
       // /cube deterministik cube_query akışıdır — wren_sql takip bağlamıyla ilgisiz;
       // bir sonraki /ask sıfırdan (fresh) başlasın diye temizlenir.
@@ -425,7 +440,8 @@ export default function Home() {
       }),
     onSuccess: (r, file) => {
       setStarted(true);
-      setContextCq(null); // yeni veri kaynağı — eski cube bağlamı düşer
+      setContextCq(null);
+    setContextRapor(null); // yeni veri kaynağı — eski cube bağlamı düşer
       setDiyalogDurumu(null);   // …ve bekleyen soru da o kaynağa aitti
       setPrevSql(null); // yeni veri kaynağı — eski wren_sql takip bağlamı da düşer
       // §B Adım 1 — yeni veri kaynağı = yeni konu: yeni thread mint edilir, pseudo-
@@ -607,6 +623,7 @@ export default function Home() {
                     // §B — "konudan çık": DÖRDÜ BİRLİKTE sıfırlanır → panel BOŞALIR,
                     // sonraki soru (sol komposer'dan) YENİ bir thread başlatır.
                     setContextCq(null);
+    setContextRapor(null);
                     setPrevSql(null);
                     setActiveThreadId(null);
                     setViewHint(null);

@@ -618,6 +618,15 @@ export interface AskRequest {
   // vakasının **birebir tekrarıdır**: sunucu tarafı hazır, istemci taşımıyor, kapı
   // yeşil. *Bir deponun defterindeki bir kusur sınıfı, okunmadıkça tekrar eder.*
   diyalog_durumu?: DiyalogDurumu | null;
+  /** 🔴🔴 `§RD` — düzenlenecek **belgenin kendisi** (bir önceki cevabın `rapor`u).
+   *
+   * ⊙ Ölçüldü: *«rapora kârlılık da ekle»* → sıradan bir sorgu; `rapor` yok. Bağlam
+   * olarak yalnız **son fiş** gidiyordu ve bir raporun son fişi, raporun kendisi değildir.
+   * ⚠ Sunucu belgeyi **saklamaz** (`PANO` fiilinin kendi kuralı: *«hiçbir şey
+   * kaydetmez»*); bağlamı istemci taşır — `cube_query` checkpoint'inin (`D4`) birebir
+   * aynı deseni. ⚠ Backend'e yalnız **kimlikler** aktarılır; satırlar planlayıcıya
+   * gitmez (`G0b`). */
+  previous_rapor?: Report | null;
   // Sohbet oturumu kimliği — kalıcı logda chat'i gruplamak için.
   session_id?: string;
   // §B (1 Ağustos 2026) — konu/thread kimliği (client üretir, backend salt echo eder,
