@@ -80,6 +80,10 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
         "category": "dogruluk",
     },
     "olcu_ekleme_takibi": {
+        # 🔴 `E-4`/`D9` — **YAZILI `on` ŞARTI.** Şartı olmayan bir bayrak
+        # `beta`da **süresiz** yaşar: ne açılır ne kapanır, yalnız unutulur.
+        # *Bir eşik yazılmadan geçilemez; yazılmayan eşik geçilmiş sayılmaz.*
+        "on_sarti": "Kazanç zaten ölçülü (korpus doğru-cube **%93,1 → %93,1**, birebir A/B) ve denetimin korkusu gerçekleşmedi. `on` şartı yalnız `KURAL G-1`: **iki ayrı koşum** aynı sonucu vermeli — *tek koşum karar değildir* (`E-5`, `prompt_enhancer` kararı ikinci sağlayıcıda tersine dönmüştü).",
         "label": "Takipte çıplak ikinci ölçü adını EKLEME olarak tanı",
         "description": "🔴 FAZ 4.3'ün ÖLÇÜLMÜŞ borcu. Çok-turlu benchmark hedefini "
                        "tutturamadı (−%18,2 vs hedef −%10) ve kaybedilen turların "
@@ -199,6 +203,10 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
         "category": "arayuz",
     },
     "ui_kanit_gorunurlugu": {
+        # 🔴 `E-4`/`D9` — **YAZILI `on` ŞARTI.** Şartı olmayan bir bayrak
+        # `beta`da **süresiz** yaşar: ne açılır ne kapanır, yalnız unutulur.
+        # *Bir eşik yazılmadan geçilemez; yazılmayan eşik geçilmiş sayılmaz.*
+        "on_sarti": "`D3` (katmanlı makbuz) frontend'de doğrulanmalı: varsayılan **tek satır**, ayrıntı **katlanır ama SİLİNMEZ**. ⚠ Bugün makbuz geliştirici katmanını doğrudan son kullanıcıya basıyor; `on` o katmanlama inmeden verilemez — *denetlenebilirlik korunmadan sadeleştirme, gizlemedir*.",
         "label": "Kanıt görünürlüğü (katmanlı makbuz)",
         "description": "🔴 D3 «zaten yapılmış» diye YANLIŞ KAPATILMIŞTI; ölçüm bunu "
                        "çürüttü: cevap kartında `<details>` sayısı SIFIRDI. Bugün `?` "
@@ -380,6 +388,10 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
         "category": "Konuşma",
     },
     "capa_zinciri": {
+        # 🔴 `E-4`/`D9` — **YAZILI `on` ŞARTI.** Şartı olmayan bir bayrak
+        # `beta`da **süresiz** yaşar: ne açılır ne kapanır, yalnız unutulur.
+        # *Bir eşik yazılmadan geçilemez; yazılmayan eşik geçilmiş sayılmaz.*
+        "on_sarti": "Canlı turda **çoklu-çelişki** dalının gerçekten SORDUĞU görülmeli (`capa:coklu-celiski`). Etki bilerek dar: yalnız istemcinin `reply_to_cube_query` gönderdiği turlar. ⚠ Sormak yerine tahmin ettiği tek bir vaka `on`'u durdurur (ADR-0008).",
         "label": "Çapa zinciri (karta yanıt)",
         "description": "Bir karta yanıt verirken çapa KİMLİĞİYLE taşınır: tek kart → o "
                        "karta yanıt, çok kart → kesişim, farklı cube'lar → SOR. Kapalıyken "
@@ -424,6 +436,10 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
         "category": "Kanıt",
     },
     "metrik_kaydi": {
+        # 🔴 `E-4`/`D9` — **YAZILI `on` ŞARTI.** Şartı olmayan bir bayrak
+        # `beta`da **süresiz** yaşar: ne açılır ne kapanır, yalnız unutulur.
+        # *Bir eşik yazılmadan geçilemez; yazılmayan eşik geçilmiş sayılmaz.*
+        "on_sarti": "Pack kararı **öneridir**; uygulayan tenant'ın kendi kararıdır (ölçüldü: global uygulama korpusu %93,2→%92,6 düşürüyordu). `on` şartı: en az bir tenant `MetrikSahipligi` ile karar vermiş ve o kararın `hakem()`'i beslediği canlı turda görülmüş olmalı.",
         "label": "Metrik kaydı (hakem)",
         "description": "Bir iş terimini birden fazla cube sahipleniyorsa HAKEM kaydı "
                        "karar verir (FAZ 0.18). Kapalıyken kayıt şemaya hiç yazılmaz "
@@ -502,6 +518,10 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
     # yani bayrağı açacak/kapatacak kişi ne yaptığını okuyamıyordu. Bir kill-switch
     # (KURAL B) yalnız KOD'da varsa yarım bir kill-switch'tir.
     "adhoc_cube": {
+        # 🔴 `E-4`/`D9` — **YAZILI `on` ŞARTI.** Şartı olmayan bir bayrak
+        # `beta`da **süresiz** yaşar: ne açılır ne kapanır, yalnız unutulur.
+        # *Bir eşik yazılmadan geçilemez; yazılmayan eşik geçilmiş sayılmaz.*
+        "on_sarti": "Discovery ateşleme oranı ölçülmeli ve ad-hoc cube'un bir **mutfak eksiğini GİZLEMEDİĞİ** doğrulanmalı. ⚠ Kendi kaydının kuralı: *«YAPI ≠ GÜVEN»* — yapı verilir, güven rozeti verilmez. Bir eksikliği kullanılabilir kılmak, onu kapatmak değildir; oranı düşmeden `on` olamaz.",
         "label": "Ad-hoc cube (Discovery cevabına yapı)",
         "description": "LLM'in yazdığı SQL'in SONUCUNDAN oturum-scoped geçici bir cube "
                        "türetir; chip/kırılım/tarih/grafik Discovery cevabında da açılır "
@@ -510,6 +530,10 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
         "category": "Analiz",
     },
     "liste_niyeti": {
+        # 🔴 `E-4`/`D9` — **YAZILI `on` ŞARTI.** Şartı olmayan bir bayrak
+        # `beta`da **süresiz** yaşar: ne açılır ne kapanır, yalnız unutulur.
+        # *Bir eşik yazılmadan geçilemez; yazılmayan eşik geçilmiş sayılmaz.*
+        "on_sarti": "**Dejenere tek-toplam** vakası korpusta **0** olmalı. Bayrağın kendi koruması *«YALNIZ gerçek bir boyut eşleştiğinde»*; o koruma delinirse döküm isteyene tek satır döner ve bu bir **sessiz-yanlıştır**.",
         "label": "Liste/döküm niyeti",
         "description": "'listele'/'dökümü' gibi sorular boyut kırılımına çevrilir (R2 "
                        "yerine cevap). YALNIZ gerçek bir kırılım eşleşirse onurlandırılır "
@@ -517,6 +541,10 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
         "category": "Analiz",
     },
     "t2_sablon": {
+        # 🔴 `E-4`/`D9` — **YAZILI `on` ŞARTI.** Şartı olmayan bir bayrak
+        # `beta`da **süresiz** yaşar: ne açılır ne kapanır, yalnız unutulur.
+        # *Bir eşik yazılmadan geçilemez; yazılmayan eşik geçilmiş sayılmaz.*
+        "on_sarti": "`B3` ölçütü: `narration_guard`'ın **reddettiği/yayımladığı** cümle oranı ölçülmeli, hedef **0 uydurma sayı**. Fail-closed zaten kurulu; ölçülmemiş olan **orandır**. ⚠ Bu bayrak T2'nin **deterministik** ilk basamağıdır — LLM'li `t2_anlatici` ile karıştırılmamalı.",
         "label": "T2 şablon anlatıcı (LLM'siz ilk basamak)",
         "description": "Basit turlarda anlatıyı SİSTEM yazar: `interpret()`'in olgu "
                        "metinlerinden Türkçe bir özet kurar — 0 LLM, 0 token. Tanımadığı "
@@ -599,6 +627,10 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
         "category": "Doğruluk",
     },
     "orkestrator_plan": {
+        # 🔴 `E-4`/`D9` — **YAZILI `on` ŞARTI.** Şartı olmayan bir bayrak
+        # `beta`da **süresiz** yaşar: ne açılır ne kapanır, yalnız unutulur.
+        # *Bir eşik yazılmadan geçilemez; yazılmayan eşik geçilmiş sayılmaz.*
+        "on_sarti": "Ön koşulları kapanmalı: `O-10` (üç ölü fiil) · `O-11` (istem sözleşmesi) · `O-12` (sayaçlar) · `O-13` (denklik). ⚠ Bunlar olmadan bayrak açılsaydı plan kurulur ama **koşamazdı** — ve kurulup koşamayan bir plan, kullanıcıya bir makbuz gösterip boş dönmektir.",
         "label": "Planlayıcı = garson (çok adımlı plan)",
         "description": "Garson bir tek-cube sorgusu yerine ADIMLARDAN oluşan bir plan "
                        "çevirir — 15 fiillik KAPALI küme (SORGU·KIYASLA·AYRISTIR·BAGLA·"
@@ -612,6 +644,10 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
         "category": "Anlama",
     },
     "llm_sema_kisitli": {
+        # 🔴 `E-4`/`D9` — **YAZILI `on` ŞARTI.** Şartı olmayan bir bayrak
+        # `beta`da **süresiz** yaşar: ne açılır ne kapanır, yalnız unutulur.
+        # *Bir eşik yazılmadan geçilemez; yazılmayan eşik geçilmiş sayılmaz.*
+        "on_sarti": "🔴 **Sağlayıcı kararı** — bayrak kararı değil. Bugün `beta` ama **NO-OP**: aktif sağlayıcı `oneOf` desteklemiyor (rapor `F8`). `on` şartı: şema-yetenekli bir sağlayıcı dilimi ile `T-9`'un kaç reddi kapattığı ölçülmeli. *Etkisiz bir bayrağı `on` yapmak, çalıştığını ilan etmektir.*",
         "label": "Şema-kısıtlı LLM çıktısı",
         "description": "Intent-JSON seçimi sağlayıcının native tool-use'una taşınır; "
                        "cube/ölçü/boyut adları o anki kataloğun ENUM'u olur → model var "
