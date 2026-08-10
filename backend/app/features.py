@@ -330,6 +330,19 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "bayrağı paylaşsalardı 2.4'ü geri almak 2.1/2.3'ü de geri alırdı. "
                        "features.yml'e BİLEREK eklenmedi: bu bir DERLEME-ZAMANI/katalog "
                        "beyanıdır, tenant-kapsamlı bir rollout bayrağı değil (FAZ 2.4).",
+        # 🔴 `E-6`/`D10` — **YAPISAL BEYAN**, metin içinde aranmaz.
+        #
+        # `E-6`: *"Bir bayrağın rollout yüzeyi yoksa, o bayrak yoktur."* Bu kayıt bir
+        # istisnadır ve istisnanın **beyan edilmiş** olması gerekir. Gerekçe zaten
+        # `description` içinde yazılıydı — ama bir kapının onu **metin arayarak**
+        # bulması gerekirdi ve o, kapının kendisini kırılgan yapardı.
+        #
+        # *Bir gerekçeyi düzyazıda saklamak, onu bir gün silinebilir kılar; bir alana
+        # yazmak, silinince kapının bağırmasını sağlar.*
+        "rollout_yuzeyi_yok": "DERLEME-ZAMANI beyanı — tenant açıp kapayamaz, karar "
+                              "katalog derlemesinde verilir (FAZ 2.4). `features.yml` "
+                              "tenant-kapsamlı bir yüzeydir ve buraya konsaydı "
+                              "açılabilir SANILIRDI.",
         "category": "semantik",
     },
     "kapsam_mercegi": {

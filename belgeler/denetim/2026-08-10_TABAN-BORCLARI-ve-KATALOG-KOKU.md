@@ -1244,7 +1244,7 @@ gerektirmiyor, ve **her red bir LLM çağrısı + gecikme** demek — yani bedel
 | ☐ | `D7` | **`F8` `llm_sema_kisitli`** — boşa giden token ölçülür, sağlayıcı kararı | `T-9` yapısal olarak kapandı **ya da** karar yazıldı |
 | ☐ | `D8` | **`F4` `cekirdek_katman`** — iki sahiplilik çözülür, `B8` buraya oturur | `T-3` kapandı |
 | ☐ | `D9` | **Her bayrağa yazılı `on` şartı** (`E-4`) | `beta`'da şartsız bayrak **0** *(bugün 21)* |
-| ☐ | `D10` | **Rollout yüzeyi olmayan 5 bayrak** (`E-6`) — `diyalog_bellegi`·`niyet_izi`·`sosyal_sinif`·`t2_anlatici`·`ayni_grain_gocu` | ya `features.yml`'e girdi ya **neden girmediği** yazıldı |
+| ✅ | `D10` | **Rollout yüzeyi olmayan 5 bayrak** (`E-6`) | ⊙ Ölçüldü: **4'ünün yüzeyi artık var** (`diyalog_bellegi`·`niyet_izi`·`sosyal_sinif`·`t2_anlatici`), biri (`ayni_grain_gocu`) **bilerek** dışarıda — *derleme-zamanı beyanı, tenant açıp kapayamaz*. 🔴 Ama **kapısı yoktu** ve kapısı olmayan bir kapanış bir sonraki bayrakta sessizce geri gelir: `test_bayrak_rollout_yuzeyi.py` (4 kapı). ⚠ Gerekçe `description` **düzyazısındaydı**; yapısal bir alana (`rollout_yuzeyi_yok`) taşındı — *bir gerekçeyi düzyazıda saklamak onu bir gün silinebilir kılar; bir alana yazmak, silinince kapının bağırmasını sağlar*. Ters yön de kapılı: `features.yml`'de olup kayıtta olmayan ad bir **yazım hatasıdır** ve *açıldığı sanılan* bir yetenek üretir |
 
 ### E · PERFORMANS *(`§2c/P`)*
 
