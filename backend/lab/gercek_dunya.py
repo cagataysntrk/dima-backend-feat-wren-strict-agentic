@@ -872,6 +872,22 @@ def kapi(sonuc: dict[str, Any], *, yaz: bool = False) -> tuple[int, str]:
     # `--taban-yaz` ile yenilenir. *Bir ölçümü yenilemek, onu görmezden gelmekten
     # farklıdır — birincisi bir karar, ikincisi bir kaza.*
     yeni_nufus = nufus_imzasi(sonuc)
+    # 🔴 **ATIL BİR KAPI, OLMAYAN BİR KAPIDIR — ve sessizce atıl olması en kötüsü.**
+    #
+    # `_nufus` taşımayan bir taban (bu alandan önce yazılmış) `A12`'yi **hiç
+    # ateşlemez**. Bu, deponun `lab/kapi.py` yorumunda kayıtlı tuzağın birebir aynısı:
+    # *"dört bileşenli bir kapının dörtte biri sessizce dekordu."*
+    #
+    # ⊙ Çözüm boşluğu **doldurmak** değil (çevrimdışı yeniden hesaplanan bir imza
+    # gerçeğinden bir tık saparsa her koşumda yanlış-pozitif üretirdi) — boşluğu
+    # **konuşturmak**. Sapma haritası eksikken bu dosya zaten böyle yapıyor.
+    #
+    # *Bir ölçümün eksikliği, o eksikliğin söylendiği sürece bir kusur değildir.*
+    nufus_notu = ("" if eski_nufus else
+                  "\n  ⚠ taban `_nufus` taşımıyor (bu alandan önce yazılmış) → "
+                  "`A12` KIYASLANABİLİRLİK ÖN KOŞULU bu koşumda ATIL.\n"
+                  f"     Bugünkü nüfus: {yeni_nufus} — `--taban-yaz` ile tabanı "
+                  "yenileyince kapı canlanır.")
     if eski_nufus and eski_nufus != yeni_nufus:
         dokum_n = (f"doğru={yeni['dogru']} · devir={yeni['devir']} · "
                    f"🔴 sessiz_yanlış={yeni['sessiz_yanlis']} · payda={yeni['vaka']}")
@@ -920,13 +936,16 @@ def kapi(sonuc: dict[str, Any], *, yaz: bool = False) -> tuple[int, str]:
              f"🔴 sessiz_yanlış={yeni['sessiz_yanlis']} · payda={yeni['vaka']}")
     kuyruk = ("\n  değişen sorular:\n    " + "\n    ".join(degisim)) if degisim else ""
     if sinif == "GERILEME":
-        return 1, f"KAPI KIRMIZI — 🔴 GERİLEME: {gerekce}\n  {dokum}{kuyruk}"
+        return 1, f"KAPI KIRMIZI — 🔴 GERİLEME: {gerekce}\n  {dokum}{kuyruk}{nufus_notu}"
     # ⚠ `DEVIR` ve `KAZANC` kapıyı **geçer** — ama sessizce değil: etiketi ve fiyatı
     # basılır. *Bedava sanılan bir maliyet, ödenmediği için değil GÖRÜLMEDİĞİ için
     # birikir.*
     isaret = {"KAZANC": "✅ KAZANÇ", "DEVIR": "⚠ DEVİR (gerileme DEĞİL)",
               "SABIT": "✅ sabit", "BILINMIYOR": "⚠ ÇÖZÜMLENEMEDİ"}[sinif]
-    return 0, f"kapı yeşil · {isaret}: {gerekce}\n  {dokum}{kuyruk}"
+    # 🔴 Not YEŞİL çıkışa da iliştirilir — ve asıl önemlisi burasıdır: nüfus kontrolü
+    # atılken verilen bir yeşil, **güvenilmez bir yeşildir** ve okuyan bunu bilmelidir.
+    # *Bir kapının neyi sınamadığını söylemesi, sınadıklarını saymasından önemlidir.*
+    return 0, f"kapı yeşil · {isaret}: {gerekce}\n  {dokum}{kuyruk}{nufus_notu}"
 
 
 def main() -> int:

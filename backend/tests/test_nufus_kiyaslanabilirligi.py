@@ -127,3 +127,29 @@ def test_NUFUS_DEGISIMINDE_SORU_LISTESI_YINE_BASILIR(tmp_path, monkeypatch, sapa
     gd.kapi(_sonuc(["a", "b", "c"], sapan={"b": "devir"}), yaz=True)
     _kod, mesaj = gd.kapi(_sonuc(["a", "b", "c", "d"], sapan=sapan))
     assert "taban nüfus" in mesaj and "bugün nüfus" in mesaj
+
+
+def test_NUFUSSUZ_TABANDA_ATILLIK_SOYLENIR(tmp_path, monkeypatch):
+    """🔴🔴 **ATIL BİR KAPI, OLMAYAN BİR KAPIDIR — ve sessizce atıl olması en kötüsü.**
+
+    `_nufus` taşımayan bir taban `A12`'yi hiç ateşlemez. Bu, `lab/kapi.py` yorumunda
+    kayıtlı tuzağın aynısı: *«dört bileşenli bir kapının dörtte biri sessizce dekordu.»*
+
+    ⊙ Çözüm boşluğu **doldurmak** değil — çevrimdışı yeniden hesaplanan bir imza
+    gerçeğinden bir tık saparsa **her koşumda** yanlış-pozitif üretirdi — boşluğu
+    **konuşturmak**. Ve not **yeşil** çıkışa da basılır: nüfus kontrolü atılken verilen
+    bir yeşil, güvenilmez bir yeşildir.
+
+    *Bir kapının neyi sınamadığını söylemesi, sınadıklarını saymasından önemlidir.*
+    """
+    taban = tmp_path / "taban.json"
+    monkeypatch.setattr(gd, "TABAN_YOLU", taban)
+    gd.kapi(_sonuc(["a", "b", "c"]), yaz=True)
+    d = json.loads(taban.read_text())
+    d.pop("_nufus")
+    taban.write_text(json.dumps(d, ensure_ascii=False))
+
+    kod, mesaj = gd.kapi(_sonuc(["a", "b", "c"]))          # değişmemiş → yeşil
+    assert kod == 0
+    assert "ATIL" in mesaj, "🔴 atıllık SESSİZ kaldı — dekor tuzağı"
+    assert "--taban-yaz" in mesaj, "çıkış yolu da söylenmeli"
