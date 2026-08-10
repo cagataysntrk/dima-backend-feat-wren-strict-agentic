@@ -1,0 +1,135 @@
+# ÇEKİRDEK VARLIK SÖZLÜĞÜ — `B8`/`T-3` · **kanonik varlık ekseni**
+#
+# 🔴 `cekirdek/` bir **anlam** katmanıdır ve içinde `metrikler` (ölçü tarafı) vardı;
+# **`varliklar` YOKTU.** Yani ölçülerin kanonik bir sözlüğü var, **varlıkların yok** —
+# ve `blend_sql` eşleşmeyi **ham boyut ADI** üzerinden kurduğu için (`wren_service.py`
+# `key_cols`) aynı gerçek varlığa farklı ad veren küpler **birleşemiyor**.
+#
+# ## ⊙ ÖLÇÜM (2026-08-10, canlı derlenmiş şema) — ve borç SANILANDAN DAR
+#
+# 58 boyut adının **27'si** birden çok küpte geçiyor. Ama çoğu **zaten kanonik**:
+# `makine` **10** küpte · `hat` 6 · `bolum` 6 · `vardiya` 5 · `renk` 4 — bunlar aynı adı
+# taşıdıkları için `blend` onları **bugün de** birleştirebiliyor.
+#
+# 🔴 Gerçekten kırık olan **tek eksen var: MÜŞTERİ** — üç ayrık aile:
+#
+# | aile | ad | küpler |
+# |---|---|---|
+# | cari | `cari_kodu` | `cari` · `ticaret` |
+# | üretim | `musteri` | `kalite` · `parti` · `surdurulebilirlik` |
+# | ticari | `musteri_kod` | `firsat` · `sevkiyat` · `sikayet` · `siparis` |
+#
+# ⚠ Rapor `§3.2` bu tabloyu **beş ad / dört aile küpü** diye yazmıştı (`cari_adi` ·
+# `cari_ref` · `mal` · `yaslandirma`). Kapı yazılınca canlı derlenmiş şemada o adların
+# ve küplerin **bu bileşimde bulunmadığı** görüldü — statik pack, derlenmiş ürünün
+# **girdisidir**, kendisi değil (`B-0`). Borç rapordakinden **dar**.
+#
+# ⚠ *«Şikâyeti olan müşterinin cirosu»* bu yüzden **yapısal olarak** kurulamıyor.
+# Orkestratör bunu iki ayrı bölümle telafi edebilir; o bir **çare değil bir köprüdür**.
+#
+# ⊙ Bu ölçüm raporun `B-3`'ünü **daraltıyor**: iş bir *"kanonik eksen mimarisi"* değil,
+# **bir eksenin** kanonikleştirilmesi. *Bir borcu ölçmeden büyütmek, onu ödenemez
+# göstermenin en kolay yoludur.*
+#
+# ## Alanların anlamı
+#
+# | alan | ne |
+# |---|---|
+# | `kanonik` | varlığın **tek** adı — `blend`in eşleşme anahtarı bu olacak |
+# | `kimlik` | küp başına **kimlik** alanı (kod) |
+# | `ad` | küp başına **görünen ad** alanı |
+# | `sinonimler` | kullanıcının o varlığı çağırdığı kelimeler |
+# | `zaten_kanonik` | tek ad zaten paylaşılıyor — bağlama **gerekmiyor**, ama beyan **gerekiyor** |
+#
+# 🔴 **BU DOSYA BUGÜN `blend`'i DEĞİŞTİRMEZ.** `B8` iki fazdır ve bu **birincisidir**:
+# beyan. `blend_sql`'in anahtarını kanonik varlığa çevirmek ikinci fazdır ve ayrı
+# ölçülür — *bir eşleşme kuralını, neyi eşleştireceğini yazmadan değiştirmek,
+# ölçülemeyen bir davranış değişikliğidir.*
+
+varliklar:
+  # ══ 🔴 KIRIK EKSEN — üç aile, kesişim YOK ═══════════════════════════════════
+  - kanonik: musteri
+    sinonimler: [musteri, müşteri, cari, firma, alici, alıcı, hesap]
+    gerekce: >-
+      Üç ailenin **aynı gerçek varlığa** işaret ettiği ölçülerek biliniyor ama hiçbir
+      yerde **yazılı** değildi. `blend` ham ada baktığı için `parti.musteri` ile
+      `siparis.musteri_kod` bugün birleşemiyor.
+      ⚠ Ailelerin **grain'i de aynı değil**: `cari` hesap düzeyinde, `parti` sipariş
+      veren müşteri düzeyinde. Bu yüzden ikinci faz bir **grain sözleşmesi** ister;
+      adları eşitlemek tek başına *«birleşti»* yanılsaması üretirdi.
+    # 🔴 BAĞLAMALAR **CANLI ŞEMADAN** ölçüldü — ve rapor burada da bayat çıktı.
+    #
+    # Rapor `§3.2` müşteri eksenini **beş ad** (`cari_adi`·`cari_kodu`·`cari_ref`·
+    # `musteri`·`musteri_kod`) ve `mal`·`yaslandirma` küpleriyle listeliyordu. Kapı
+    # yazılınca canlı derlenmiş şemada `cari` küpünde **`cari_adi` YOK** çıktı; `mal`
+    # ve `yaslandirma` bu bileşimde hiç yüklü değil.
+    #
+    # ⊙ Yani eksen rapordakinden **daha dar**: üç aile, **dokuz** küp, **üç** ad.
+    # Bu, bu turda **dördüncü** kez tekrarlayan sınıf: *beklenmedik bir sayıda önce
+    # ÖLÇÜM YÜZEYİNDEN şüphelen* — statik pack, derlenmiş ürünün girdisidir, kendisi
+    # değil (`B-0`).
+    baglamalar:
+      - {kup: cari,              kimlik: cari_kodu,    ad: cari_kodu}
+      - {kup: ticaret,           kimlik: cari_kodu,    ad: cari_kodu}
+      - {kup: kalite,            kimlik: musteri,      ad: musteri}
+      - {kup: parti,             kimlik: musteri,      ad: musteri}
+      - {kup: surdurulebilirlik, kimlik: musteri,      ad: musteri}
+      - {kup: firsat,            kimlik: musteri_kod,  ad: musteri_kod}
+      - {kup: sevkiyat,          kimlik: musteri_kod,  ad: musteri_kod}
+      - {kup: sikayet,           kimlik: musteri_kod,  ad: musteri_kod}
+      - {kup: siparis,           kimlik: musteri_kod,  ad: musteri_kod}
+
+  # ══ ✅ ZATEN KANONİK — bağlama gerekmiyor, ama BEYAN gerekiyor ═══════════════
+  #
+  # ⚠ Beyansız bırakmak *"bakılmadı"* ile *"bakıldı, gerek yok"*u aynı şey yapardı —
+  # ve o ayrım kaybolursa aynı eksen her turda yeniden tartışılır.
+  - kanonik: makine
+    zaten_kanonik: true
+    sinonimler: [makine, tezgah, tezgâh, ekipman]
+    gerekce: "10 küpte **aynı ad**: `makine`. `blend` bugün de birleştiriyor."
+  - kanonik: hat
+    zaten_kanonik: true
+    sinonimler: [hat, hattı, line]
+    gerekce: "6 küpte aynı ad. ⚠ `hattı` beyanı **fazlalık değil**: ünsüz ikizleşmesi
+      morfolojiyle çözülmüyor (`C4` ölçümü)."
+  - kanonik: bolum
+    zaten_kanonik: true
+    sinonimler: [bolum, bölüm, birim]
+    gerekce: "6 küpte **aynı ad** taşıyor; `blend` onu bugün de birleştirebiliyor —
+      bağlama gerekmiyor ama beyan gerekiyor."
+  - kanonik: vardiya
+    zaten_kanonik: true
+    sinonimler: [vardiya, shift]
+    gerekce: "5 küpte **aynı ad**; kanonikleştirme işi yok, yalnız kaydı var."
+  - kanonik: tedarikci
+    zaten_kanonik: true
+    sinonimler: [tedarikci, tedarikçi, satici, satıcı]
+    gerekce: "`kalite` ve `parti` küplerinde **aynı ad**; ikinci bir aile yok."
+
+# ══ VARLIK OLMAYANLAR — ve neden ═══════════════════════════════════════════════
+#
+# 🔴 Bunlar birden çok küpte geçer ama bir **varlık** değil bir **niteliktir**: bir
+# satırın kimliğini vermezler, onu tarif ederler. `blend` anahtarı olamazlar çünkü
+# *«aynı `durum`»* iki küpte aynı şeyi göstermez.
+#
+# *Bir boyutun paylaşılması onu bir varlık yapmaz; varlık, sayılabilen bir ŞEYDİR.*
+varlik_degil:
+  - {ad: durum,         neden: "durum kodu küpe özeldir — `bakim.durum` ≠ `ticaret.durum`"}
+  - {ad: tur,           neden: "tür sınıflaması küpe özel"}
+  - {ad: konu,          neden: "serbest sınıflama"}
+  - {ad: hafta_gunu,    neden: "takvim niteliği — zaman ekseninin türevi"}
+  - {ad: para_birimi,   neden: "para birimi bir ölçünün NİTELİĞİDİR — sayılabilen bir varlık değil"}
+  - {ad: siddet,        neden: "derece niteliği"}
+  - {ad: asama,         neden: "süreç adımı — küpe özel akış"}
+  - {ad: cari_tip,      neden: "müşteri **niteliği**; kimliği `cari_kodu` taşır"}
+  - {ad: renk,          neden: "ürün niteliği — sayılabilen bir varlık değil"}
+  - {ad: renk_derinlik, neden: "rengin niteliği — `renk` gibi, kimlik değil tarif"}
+  - {ad: kumas_cinsi,   neden: "ürünün niteliği — bir kumaş cinsi sayılmaz, tarif eder"}
+  - {ad: kisim,         neden: "üretim niteliği"}
+  - {ad: hesap_kodu,    neden: "muhasebe hesabı — ayrı bir eksen, müşteri değil"}
+  - {ad: departman,     neden: "insan kaynağı ekseni — `bolum` ile karıştırılmamalı"}
+  - {ad: cinsiyet,      neden: "personel niteliği"}
+  - {ad: egitim,        neden: "personel niteliği"}
+  - {ad: yas_grubu,     neden: "personel niteliği"}
+  - {ad: operator,      neden: "personel — ayrı bir eksen, ikinci fazın konusu"}
+  - {ad: satis_temsilcisi, neden: "personel — ayrı eksen"}
