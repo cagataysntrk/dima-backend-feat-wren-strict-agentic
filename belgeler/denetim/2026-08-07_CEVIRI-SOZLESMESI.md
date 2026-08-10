@@ -9932,3 +9932,29 @@ kuralın **her** yolda geçerli olduğu tek yerdir.
 **uygulamaz**, yalnız anlamsız süzgeci düşürür. Canlıda ölçüldü ve cümle o an **yalandı**;
 kaldırıldı. Bugün üçüncü kez aynı ders (`§BD` · `§UY/K` · bu):
 *bir beyan, ölçebildiğinden fazlasını söylediği anda bir varsayıma dönüşür.*
+
+### Doğrulama ve demet kapısı
+
+```
+«bu yıl fire oranı %20 üstü olan hatlar» → rows=3 (hepsi %20 üstü)
+  note: yalnız «anlamsız süzgeç düşürüldü» — eski «eşiği çeviremedim» beyanı SUSTU ✅
+DEMET KAPISI YEŞİL · doğru=95 · sessiz_yanlış=8 · payda=2286 (tam sabit)
+```
+
+### ⚠ Açık gözlem — kaydedildi, kapatılmadı
+
+```
+«bu yıl cirosu 5 milyon üzeri müşteriler»
+  → garson `musteri in [M1001…M1008]` üretti — UYDURMA kod listesi
+  → `§DK-2` yakaladı: «bu değerler musteri listesinde yok» + 8 gerçek ad CHIP
+```
+
+⊙ Davranış **dürüst ve doğru**: değerler gerçekten yok (`§DK` sonrası `parti.musteri`
+**adları** taşıyor) ve sistem sormayı seçiyor. Ama asıl kusur **yukarıda**: bir **eşik**
+sorusuna garson bir **müşteri listesi** üretti.
+
+⚠ **Neden burada durduruldu:** *«bu değer listede yok»* ile *«tür hatası»* farklı
+sınıflar. İkincisinin anlamsızlığı **kanıtlıdır** (bir metin sayıdan büyük olamaz), o
+yüzden düşürülebilir. Birincisinde kullanıcı o değeri gerçekten kastetmiş **olabilir**;
+düşürmek sessiz bir kapsam değişikliği olurdu. *Bir kuralı, kanıtın bittiği yerde
+genişletmek onu bir tahmine çevirir.*
