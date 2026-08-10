@@ -16,6 +16,7 @@ ADIYLA** yapıyordu. Yani aynı kusurun **ikinci kopyası** route'un içindeydi.
 """
 
 from app import cube_router as cr
+from app import deger_eslesme as de
 
 #: Küpün gerçeği: görünen etiketler. Ham kolonda `vardiya` diye bir şey **yok** —
 #: canlıdaki durumun birebir küçüğü.
@@ -33,7 +34,7 @@ _COLS = {"musteri": {"values": ["M1001", "M1002"]}}
 
 
 def _deg(dname):
-    return cr.boyut_degerleri(_CUBE, _COLS, dname)
+    return de.boyut_degerleri(_CUBE, _COLS, dname)
 
 
 def test_KUPUN_ENUMU_HAM_KOLONU_EZER():
@@ -46,14 +47,14 @@ def test_KUPTE_KAYIT_YOKSA_HAM_KOLON_YEDEKTIR():
     """⚠ Düzeltme bir **kırpma** değil: küpün kaydı hiç yoksa bugünkü davranış korunur.
     *Bir kaynağı düzeltmek, öteki kaynağı silmek zorunda değildir.*"""
     bos = {"name": "x", "dimensions": ["musteri"], "dimension_values": {}}
-    assert cr.boyut_degerleri(bos, _COLS, "musteri") == ["M1001", "M1002"]
+    assert de.boyut_degerleri(bos, _COLS, "musteri") == ["M1001", "M1002"]
 
 
 def test_GORUNEN_ETIKETIN_CEKIRDEGI_ESLESIR():
     """🔴 Ölçülen sessiz yanlışın kendisi: kullanıcı `«1. vardiya»` yazar, katalog
     `«1. Vardiya (08-16)»` tutar."""
     q = cr._norm("bu yıl 1. vardiyada fire oranı")
-    assert cr.deger_eslesmeleri(q, _deg("vardiya")) == ["1. Vardiya (08-16)"]
+    assert de.deger_eslesmeleri(q, _deg("vardiya")) == ["1. Vardiya (08-16)"]
 
 
 def test_CEKIRDEK_YOLU_BELIRSIZLIKTE_SUSAR():
@@ -61,24 +62,24 @@ def test_CEKIRDEK_YOLU_BELIRSIZLIKTE_SUSAR():
     seçim yapmak yazı-turadır. *Belirsizlikte tahmin etmemek bu deponun tek kuralıdır
     ve çekirdek eşleşmesi onun istisnası olamaz.*"""
     q = cr._norm("ram makinesinin fire oranı")
-    assert cr.deger_eslesmeleri(q, _deg("makine")) == []
+    assert de.deger_eslesmeleri(q, _deg("makine")) == []
 
 
 def test_TAM_ESLESME_CEKIRDEGI_ONCELER():
     """Tam eşleşme varken çekirdeğe hiç bakılmaz — gevşek kural sıkı kuralı ezemez."""
     q = cr._norm("ram-1 makinesinin fire orani")
-    assert cr.deger_eslesmeleri(q, _deg("makine")) == ["RAM-1"]
+    assert de.deger_eslesmeleri(q, _deg("makine")) == ["RAM-1"]
 
 
 def test_SIRKET_ADI_KUYRUGU_KIRPILMAZ():
     """⚠ `LTD. ŞTİ.` bir **açıklama değil adın parçasıdır**; yalnız sondaki PARANTEZ
     atılır. Kuralı genişletmek onu belirsizleştirirdi."""
-    assert cr._deger_cekirdegi(cr._norm("EGE KNIT DIŞ TİCARET LTD. ŞTİ.")) is None
-    assert cr._deger_cekirdegi(cr._norm("1. Vardiya (08-16)")) == "1. vardiya"
+    assert de._deger_cekirdegi(cr._norm("EGE KNIT DIŞ TİCARET LTD. ŞTİ.")) is None
+    assert de._deger_cekirdegi(cr._norm("1. Vardiya (08-16)")) == "1. vardiya"
 
 
 def test_ALAKASIZ_SORU_DEGER_UYDURMAZ():
     """Değer geçmeyen bir soruda hiçbir süzgeç doğmaz — `§V5`'in kuralı korunuyor."""
     q = cr._norm("bu yil toplam ciro")
     for d in ("vardiya", "musteri", "makine"):
-        assert cr.deger_eslesmeleri(q, _deg(d)) == [], d
+        assert de.deger_eslesmeleri(q, _deg(d)) == [], d

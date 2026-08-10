@@ -758,66 +758,13 @@ _NUM_UNIT_AFTER = re.compile(r"\s*(adet|tane|kez|kalem|adetlik|ay|gun|hafta|yil|
                             r"milyon|bin|tl|lira|kg|kilo|ton|adette)")
 
 
-#: 🔴 Görünen etiketin **açıklama kuyruğu**: `«1. Vardiya (08-16)»` → `«1. vardiya»`.
-#: Yalnız **sondaki parantez** atılır — bir şirket adındaki `LTD. ŞTİ.` atılmaz, çünkü
-#: o bir açıklama değil adın parçasıdır. *Bir kuralı genişletmek, onu belirsizleştirmenin
-#: en kolay yoludur.*
-_ETIKET_KUYRUGU = re.compile(r"\s*\([^()]*\)\s*$")
+def _deger_eslesme():
+    """`§DK-3` modülü — **yerel import**: `deger_eslesme` bu dosyadan `_norm` ve
+    `_value_token_hit` alıyor, yani modül düzeyinde import bir **döngü** olurdu.
+    *Bir bağımlılığı tersine çevirmek yerine geciktirmek, deponun kayıtlı desenidir.*"""
+    from app import deger_eslesme
 
-
-def _deger_cekirdegi(nv: str) -> str | None:
-    """Normalize edilmiş bir değerin **çekirdeği** — yoksa `None` (değişiklik yok)."""
-    cekirdek = _ETIKET_KUYRUGU.sub("", nv).strip()
-    return cekirdek if cekirdek and cekirdek != nv else None
-
-
-def boyut_degerleri(cube_meta: dict | None, cols: dict, dname: str) -> list[str]:
-    """🔴🔴 `§DK-3` — **ROUTE İLE GARSON AYNI MENÜYE BAKAR.**
-
-    ## Ölçülen kusur (canlı, 2026-08-10)
-
-    Route'un değer eşleşmesi değerleri `schema["models"][*]["columns"]`'dan, yani **ham
-    model kolonlarından BOYUT ADIYLA** okuyordu — küpün kendi `dimension_values`'ını
-    hiç kullanmadan. Sonuç, `§DK`'nın birebir ikizi ve **ikinci kopyası**:
-
-    | boyut | route'un baktığı | küpün gerçeği (derleyicinin kullandığı) |
-    |---|---|---|
-    | `vardiya` | 🔴 **kolon hiç yok** → süzgeç yapısal olarak imkânsız | `1. Vardiya (08-16)` … |
-    | `musteri` | `M1001…` (kullanıcının asla yazmadığı kodlar) | `AKDENİZ ÖRME TEKSTİL A.Ş.` … |
-    | `tedarikci` | `T-101…` | `FIRAT İPLİK TİC. LTD.` … |
-
-    ⊙ Bedeli ölçüldü: *«bu yıl **1. vardiyada** fire oranı»* → **üç vardiya birden**,
-    ilk satır *«3. Vardiya»*, süzgeç sessizce düştü, beyan **yok**.
-
-    ## Düzeltme
-
-    Kaynak **küpün kendi enum'udur** — kataloğun garsona verdiği liste ve sorgunun
-    döndüreceği değerlerle **aynı** liste. Ham kolon yalnız küpün kaydı **hiç yokken**
-    yedektir (bugünkü davranış; kırpma değil).
-
-    *İki basamağın farklı menülere bakması bir tutarsızlık değil, iki ayrı üründür.*
-    """
-    enum = (cube_meta or {}).get("dimension_values") or {}
-    v = enum.get(dname)
-    if v:
-        return [str(x) for x in v]
-    col = cols.get(dname) or {}
-    return [str(x) for x in (col.get("values") or [])]
-
-
-def deger_eslesmeleri(q: str, degerler: list[str]) -> list[str]:
-    """Sorunun tuttuğu değerler — **tam** eşleşme, yoksa **tekil çekirdek** eşleşmesi.
-
-    🔴 Çekirdek yolu yalnız **tek aday** kalırsa kullanılır: `«ram»` hem `RAM-1` hem
-    `RAM 2`'yi çağırır ve orada seçim yapmak yazı-turadır. *Belirsizlikte tahmin etmemek,
-    bu deponun tek kuralıdır ve çekirdek eşleşmesi onun istisnası olamaz.*
-    """
-    tam = [v for v in degerler if (nv := _norm(v)) and _value_token_hit(q, nv)]
-    if tam:
-        return tam
-    aday = [v for v in degerler
-            if (ck := _deger_cekirdegi(_norm(v))) and _value_token_hit(q, ck)]
-    return aday if len(aday) == 1 else []
+    return deger_eslesme
 
 
 def _value_token_hit(q: str, nv: str) -> bool:
@@ -1585,10 +1532,10 @@ def deterministic_refine(prev: dict, q: str, schema: dict,
     cols = {c["name"]: c for mdl in schema.get("models", []) for c in mdl["columns"]}
     for dname in cube_meta.get("dimensions", []):
         # 🔴 `§DK-3` — kaynak küpün **kendi** enum'u; ham kolon yalnız yedek.
-        degerler = boyut_degerleri(cube_meta, cols, dname)
+        degerler = _deger_eslesme().boyut_degerleri(cube_meta, cols, dname)
         if not degerler:
             continue
-        matched = deger_eslesmeleri(q, degerler)
+        matched = _deger_eslesme().deger_eslesmeleri(q, degerler)
         if not matched:
             continue
         # ÇOK değer ("sadece beyaz ve siyah renk") → `in` filtresi; TEK değer → eq.
@@ -4101,10 +4048,10 @@ def route(question: str, schema: dict, *, liste_kirilimi: bool = False) -> dict 
     eslesen: dict[str, list[str]] = {}
     for dname in cube_meta.get("dimensions", []):
         # 🔴 `§DK-3` — aynı tek kaynak; iki çağrı yeri **aynı menüyü** okur.
-        degerler = boyut_degerleri(cube_meta, cols, dname)
+        degerler = _deger_eslesme().boyut_degerleri(cube_meta, cols, dname)
         if not degerler:
             continue
-        matched = deger_eslesmeleri(q, degerler)
+        matched = _deger_eslesme().deger_eslesmeleri(q, degerler)
         if matched:
             eslesen[dname] = matched
     tum_norm = {_norm(v) for vs in eslesen.values() for v in vs}
@@ -4645,147 +4592,6 @@ from app.intent_semasi import cube_query_json_schema  # noqa: E402,F401
 #: `§CC-D` — `katalog_metni._AZ_IYI` ile aynı karakter; tek kaynak orası, burada
 #: yalnız **tanınır**. İkinci bir tanım yazmak, işaretin iki sahibi olması olurdu.
 _AZ_IYI_ISARETI = "\u2193"
-
-
-#: 🔴 `C3` — ters yön alanının **iz öneki**. Sabit, çünkü `lab/sinonim_hasadi.py` bu
-#: dizeyi `interaction_log.trace_json` içinde arayarak kanıtlı aday üretir. *Bir izi
-#: makine okuyacaksa, o iz bir biçimdir; biçimi değiştirmek okuyucuyu kırar.*
-TERIM_IZ_ONEKI = "ters-yön eşlemesi: "
-
-#: Kazanan `cq`'ya iliştirilen taşıyıcı. **Oylamadan SONRA** konur (`_select_consistent`),
-#: yani hiçbir oy anahtarına giremez; huni onu boşaltır (`donem_capasi._TASIYICI` deseni).
-TERIM_TASIYICI = "_eslesen_terim"
-
-
-def eslesen_terim_oku(ham: str, index: dict, cube: str | None) -> dict | None:
-    """🔴🔴 `C1`+`C3` — **TERS YÖN: sistem sözlüğünü KULLANIMDAN yazar.**
-
-    ## Neden bir alan, bir ÇAĞRI değil
-
-    Kullanıcı kararı (`E-7`): *"belki bunu sorgu içinde çözeriz, ayrı LLM sorgusu
-    olmayacak — dikkat, çok vakit ve maliyet kaybı olur."* Bugünkü `prompt_enhancer`
-    **ikinci bir tur**dur. Oysa Intent çağrısı kataloğu **zaten** görüyor ve **zaten**
-    koşuyor: model `zayiat → toplam_fire_kg` eşlemesini **zaten yapıyor**, ondan istenen
-    tek şey onu **söylemesi**. Ek çağrı **sıfır**.
-
-    ## Ve sorunun BİÇİMİ — açık üretim değil, KAPALI SEÇİM (`C1`)
-
-    Kullanıcı kararı: *"LLM de tüm eş anlamlıları bulmayacak; **katalogdaki
-    kelimelerden birinin** eş anlamlısı var mı diye bakacak — yani nokta atışı."*
-
-    | | ❌ açık üretim | ✅ **kapalı seçim** |
-    |---|---|---|
-    | çıktı | serbest **metin** | katalogdan **bir ad** ya da **hiçbiri** |
-    | doğrulanabilir mi | 🔴 hayır — `route()` yeniden koşulmadan anlaşılmaz | ✅ **evet** — dönen ad beyaz listede sınanır |
-
-    Bu fonksiyon o sınamadır: `katalog_adi` **seçilen küpün** ölçü/boyut listesinde
-    yoksa eşleme **yok sayılır**. Model bir ad **uyduramaz**, yalnız **seçebilir**.
-
-    ## Sert sınırlar (`B-8`)
-
-    * `kullanicinin_sozu` kataloğun **zaten bildiği** bir kelimeyse eşleme değersizdir
-      (bir sinonim zaten var) → düşürülür.
-    * Eşleme **izde görünür** — sessiz bir öğrenme, öğrenme değil **sızıntıdır**.
-    * ⚠ **Belirsizlik burada çözülmez:** `bakiye` gibi ≥2 sahipli bir terim için üretilen
-      eşleme kuyruğa **düşmez** — o kararı `sinonim_hasadi.siniflandir` verir ve
-      *«`bakiye`'nin ₺11,86 milyonluk seçimini KALICI yapmak»* yasaktır.
-
-    Döner: `{"soz": …, "ad": …}` ya da `None`.
-    """
-    import json as _json
-
-    try:
-        ham_cq = _json.loads(ham)
-    except Exception:                                   # noqa: BLE001 — tur düşmez
-        return None
-    if not isinstance(ham_cq, dict):
-        return None
-    et = ham_cq.get("eslesen_terim")
-    if not isinstance(et, dict):
-        return None
-    soz = str(et.get("kullanicinin_sozu") or "").strip()
-    ad = str(et.get("katalog_adi") or "").strip()
-    if not soz or not ad or len(soz) < 3:
-        return None
-    spec = index.get(cube or ham_cq.get("cube")) or {}
-    # 🔴 KAPALI SEÇİM DOĞRULAMASI — model **seçer**, uyduramaz.
-    if ad not in set(spec.get("measures") or []) | set(spec.get("dimensions") or []):
-        return None
-    return {"soz": soz, "ad": ad}
-
-
-def eslesen_terim_cikar(q: str, cq: dict | None, schema: dict) -> dict | None:
-    """🔴🔴 `C3-D` — **EŞLEME MODELDEN İSTENMEZ, ÇIKARILIR.**
-
-    ## Ölçülen kusur — ve iki başarısız prompt denemesi
-
-    `C3`'ün ilk yazımı eşlemeyi **modelden** istiyordu (`eslesen_terim` alanı). Canlıda
-    **iki kez** ölçüldü ve **ikisi de başarısız**:
-
-    | deneme | biçim | sonuç |
-    |---|---|---|
-    | 1 | düzyazı talimat, *"isteğe bağlı"* | alan **hiç** yazılmadı |
-    | 2 | `Biçim:` şablonunda + **"ZORUNLUDUR"** | alan yine **hiç** yazılmadı |
-
-    Üç turda üçünde de model **doğru çevirdi** (`zayiat→toplam_fire_kg` ·
-    `hasılat→toplam_ciro` · `alıcı→musteri`) ama çevirisini **söylemedi**. Ne kabul ne
-    red izi — yani alanı hiç üretmedi.
-
-    ⊙ *Bir modelden cevabı taşımayan bir alanı doldurmasını istemek, ona bir dipnot
-    yazdırmaktır; cevabı verir, dipnotu atlar.*
-
-    ## Kök çözüm: sinyaller ZATEN elde
-
-    Sistem her turda **iki şeyi birden** hesaplıyor ve **ikisini de ize yazıyor**:
-
-        niyet: … bilinmeyen=zayiat        ← route'un çözemediği kelime
-        cq:   measures:["toplam_fire_kg"] ← garsonun seçtiği ad
-
-    Eşleme bu ikisinin **kesişimidir**. Modelden bir şey istemeye gerek yok: ek token
-    yok, sağlayıcı bağımlılığı yok, prompt riski yok.
-
-    ## Kural — ve neden bu kadar dar
-
-    1. Soruda **tam bir** bilinmeyen kelime olmalı.
-    2. `cq`'daki ölçü/boyut adlarından **route'un kendi sözlüğüyle ulaşabildikleri**
-       elenir — o adlar zaten biliniyordu, bilinmeyen kelimenin karşılığı olamazlar.
-    3. Geriye **tam bir** hedef kalmalı.
-
-    ⚠ Üçünden biri tutmazsa `None`. *«alıcı bazında ciro»* bu yüzden çalışır: `ciro`
-    route'un sözlüğünde **var** (elenir), `musteri` **yok** (kalır) → `alici → musteri`.
-    Ama iki bilinmeyenli bir soruda hangi kelimenin hangi ada gittiği **bilinemez** ve
-    tahmin etmek, bu deponun bugün üç kez uyguladığı *«tekil aday yoksa sus»*
-    disiplinini bozardı.
-
-    *Bir sistemin sözlüğünü elle yazmak, onu her gün yeniden yazmaya razı olmaktır —
-    ama bir LLM'den yazmasını istemek de onu her gün yeniden SATIN ALMAKTIR.*
-    """
-    if not isinstance(cq, dict) or not cq.get("cube"):
-        return None
-    bilinmeyen, _hits = partial_unknowns(q, schema)
-    if len(bilinmeyen) != 1:
-        return None
-    soz = str(bilinmeyen[0])
-    if len(soz) < 3:
-        return None
-    spec = next((c for c in (schema or {}).get("cubes") or []
-                 if c.get("name") == cq["cube"]), None)
-    if not spec:
-        return None
-    msyn = spec.get("measure_synonyms") or {}
-    dsyn = spec.get("dimension_synonyms") or {}
-    hedefler: list[str] = []
-    for ad in [*(cq.get("measures") or []), *(cq.get("dimensions") or [])]:
-        ad = str(ad)
-        syns = list(msyn.get(ad) or dsyn.get(ad) or [])
-        # 🔴 Route bu adı sorudan **bulabiliyorsa** o ad zaten biliniyordu; bilinmeyen
-        # kelimenin karşılığı olamaz. Aynı `_syn_hit_words`, aynı kapsam kuralı —
-        # ikinci bir eşleştirici yazmak `KAT-1` olurdu.
-        if not _syn_hit_words(q, [ad, *syns]):
-            hedefler.append(ad)
-    if len(hedefler) != 1:
-        return None
-    return {"soz": soz, "ad": hedefler[0]}
 
 
 def parse_cube_query(text: str, index: dict) -> dict | None:

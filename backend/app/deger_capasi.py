@@ -252,3 +252,28 @@ def secenekler(bulgular: list[Bulgu]) -> list[dict]:
         for g in b.gecerliler[:EN_FAZLA_SECENEK]:
             out.append({"label": str(g), "query": str(g), "kind": "deger"})
     return out[:EN_FAZLA_SECENEK]
+
+
+def huni_karari(cq: dict, schema: dict | None) -> tuple[str | None, dict | None]:
+    """🔴 Huninin **tek çağrısı**: `(beyan_notu, netleştirme_alanları)`.
+
+    ⊙ Bu fonksiyon `ask()`'ten **çıkarıldı** ve bunu bir kapı istedi: modül büyüme
+    tavanı kırmızı verdi ve kendi mesajını yazdı — *«yeni davranışı modüle çıkar,
+    tavanı yükseltme. Tavanı yükseltmek kapıyı kapının kendisiyle çürütür.»*
+
+    ⚠ Ayrım yapısal olarak da doğru: `ask()` **sırayı** yönetir, bu dosya **kararı**
+    verir. Karar üç satırda değil bir kavramda yaşamalı.
+
+    Döner:
+      * `(not, None)`   → değer düzeltildi, beyan cevaba eklenecek
+      * `(not, alanlar)` → karşılıksız değer var, sorgu **koşturulmayacak**
+      * `(None, None)`  → itiraz yok (`KURAL B`: bayrak kapalıyken zaten çağrılmaz)
+    """
+    bulgular = denetle(cq, schema)
+    if not bulgular:
+        return None, None
+    duzeltme = duzelt_yerinde(cq, bulgular)
+    if any(not b.oneri for b in bulgular):
+        return duzeltme, {"note": netlestirme_metni(bulgular),
+                          "secenekler": secenekler(bulgular)}
+    return duzeltme, None

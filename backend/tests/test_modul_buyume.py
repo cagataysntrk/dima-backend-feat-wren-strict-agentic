@@ -89,6 +89,31 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("dk2-suzgec-degeri-hunide", 13,
+     "🔴🔴 **`§DK-2` — SÜZGEÇ DEĞERİ ÇAPASI.** Garson süzgecin **değerini de kendisi "
+     "yazar** ve varlığını hiçbir şey sormuyordu: `makine eq \"Bakım\"` → **0 satır, "
+     "beyan yok**. Bir uydurma sayı değil bir **uydurma yokluk** — ve sıfır bir cevap "
+     "gibi göründüğü için daha sinsi. "
+     "⊙ Δ = 13: **kararın kendisi taşındı** (`deger_capasi.huni_karari`); burada kalan "
+     "yalnız bayrak kontrolü, notun birleştirilmesi ve netleştirme dönüşü. İlk hâli 30 "
+     "satırdı, kapı *«modüle çıkar»* dedi ve çıkarıldı — 13'e inen kısım budur. "
+     "⚠ **TAŞINAMAZ ve bu maddenin VARLIK SEBEBİ odur:** `route()` bu doğrulamayı "
+     "`value_index` ile **zaten** yapıyordu, ama **yalnız route yolunda**; garsonun fişi "
+     "oradan geçmiyor. Kuralın huniye konması, onu merdivenin **her** basamağında "
+     "geçerli kılan şeydir. *Bir kural yalnız bir basamakta geçerliyse, o kural değil "
+     "bir tesadüftür.* "
+     f"`sha=72e7e3b`"),
+    ("c3d-ters-yon-tasiyicisi-bosaltilir", 8,
+     "🔴 **`C1`+`C3`+`C3-D` — TERS YÖN.** Kullanıcı kuralı: *«tek tek sinonim yazmak "
+     "aptallık.»* Sistem sözlüğünü **kullanımdan** yazıyor: `bilinmeyen=zayiat` ∩ "
+     "garsonun seçtiği ad → `zayiat → toplam_fire_kg`, **0 ek token**. "
+     "⊙ Δ = 8: okuma da çıkarım da `app/ters_yon.py`'ye taşındı (141 satır); burada "
+     "kalan yalnız **taşıyıcının boşaltılması** ve izin yazılması. "
+     "⚠ **TAŞINAMAZ:** taşıyıcı `cq` üzerinde gelir ve huniye varınca boşaltılmalıdır — "
+     "kalırsa `cube_query` cevaba sızar ve SQL derleyicisine bilinmeyen bir alan olarak "
+     "gider (`KÖK-4`'ün aynı dersi). *Bir taşıyıcı alan, taşıdığı yere varınca "
+     "boşaltılmalıdır.* "
+     f"`sha=72e7e3b`"),
     ("b9-odak-varlik-hunide", 2,
      "🔴🔴 **`B9` — ODAK VARLIK.** ⊙ Kusur canlıda İKİ thread'de ölçüldü ve ikisinde de "
      "kök aynıydı: bir önceki tur bir varlığı **adıyla seçmişti**, bir sonraki tur ona "
@@ -588,6 +613,19 @@ MUAFIYET_ASK_KOD = [
      "`V17`'nin kusuru tam da yeni sorgu koşmaktı. *Bir fişi okumak için mutfağa gidilmez.*"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("dk3-tek-kaynak-erisimci", 11,
+     "🔴🔴 **`§DK-3` — ROUTE İLE GARSON AYNI MENÜYE BAKAR.** Route değerleri ham model "
+     "kolonlarından **boyut adıyla** okuyordu; `vardiya` için o kaynakta kolon **hiç "
+     "yok** → süzgeç yapısal olarak imkânsızdı. Canlı bedeli bir **sessiz yanlış**: "
+     "*«bu yıl 1. vardiyada fire oranı»* → üç vardiya birden, ilk satır *«3. Vardiya»*, "
+     "beyan yok. Düzeltmeden sonra **%16,78**, doğru vardiya. "
+     "⊙ Δ = 11: eşleştirmenin **tamamı** `app/deger_eslesme.py`'ye taşındı (62 satır); "
+     "burada kalan iki **çağrı** ve bir **yerel-import erişimcisi**. "
+     "⚠ **TAŞINAMAZ:** erişimci bir döngüyü kırıyor — `deger_eslesme` bu dosyadan "
+     "`_norm` ve `_value_token_hit` alıyor, modül düzeyinde import bir **döngü** olurdu. "
+     "Ve iki çağrı yeri route'un kendi süzgeç kurma satırlarıdır. "
+     "*Bir bağımlılığı tersine çevirmek yerine geciktirmek, deponun kayıtlı desenidir.* "
+     f"`sha=72e7e3b`"),
     ("yb-yon-beyani-cagirana-gecirildi", 1,
      "🔴🔴 **`§YB` — BEYAN VARDI, ÇAĞIRAN OKUMUYORDU.** `_direction`'ın `az_iyi` "
      "parametresi `§W-C`'de eklendi ve doğru çalışıyor (*«en kötü»* + `lower_is_better` "
@@ -1065,6 +1103,27 @@ MUAFIYET_CUBE_ROUTER_KOD = [
 #: değil sessiz bir tavan artışıdır* (bu dosyanın kendi cümlesi). Dosya muafiyeti bu yüzden
 #: **ayrı** sayılır ve `ask()` tavanına **dokunmaz**.
 MUAFIYET_ASK_DOSYA = [
+    ("d2k-oylama-esigi-kisayolu", 10,
+     "🔴🔴 **`§D2/K` — «TEK ADAY» KISAYOLU EŞİĞİ ATLIYORDU.** `D2` (`oylama_paydasi`) bir "
+     "**yalanı** kapatmıştı: 1 cevap + 2 çekimser, payda `cands` ile **%100 «oy birliği»** "
+     "görünüyordu; bayrak paydayı düzeltti ve makbuz artık **%33** yazıyor. Ama **kararı** "
+     "düzeltmedi: `if len(votes) == 1 or agreement >= 2/3` dalı eşiği **hiç sormadan** "
+     "dönüyordu. "
+     "⊙ Canlı kanıt (curl): *«bunu nasıl yorumlarsın»* → iz `self-consistency %33 (3 "
+     "örnek)` **ve cevap verdi**. Yani makbuz *«%33 uyum»* yazarken sistem **oy "
+     "birliğiyle** davranıyordu — raporun `D2` için yazdığı cümle birebir geçerli: "
+     "*şüphenin en yüksek olduğu durum, sistemin en emin göründüğü durumdu.* "
+     "⊙ Δ = 10: değişen **tek satır** (`or len(votes) == 1` kalktı); kalan 9 satır o "
+     "kararın **neden** değiştiğini taşıyan gerekçedir ve bu dosyanın kendi kuralı onu "
+     "zorunlu kılar — *gerekçesiz bir sayı muafiyet değil, sessiz bir tavan artışıdır.* "
+     "⚠ **TAŞINAMAZ:** karar `_select_consistent`'ın oylama satırıdır; oyu sayan yerden "
+     "başka bir yerde verilemez. "
+     "⚠ `KURAL B` **bedavaya** sağlandı: bayrak kapalıyken payda `cands`'tir ve tek "
+     "adayda oran **her zaman 1.0** → eski davranış birebir korunur; yeni koşul yalnız "
+     "bayrak açıkken ısırır. Kapı: `test_oylama_esigi_kisayolu.py` (6). "
+     "*Bir sayıyı dürüst yazmak, ona göre davranmakla aynı şey değildir.* "
+     f"`sha=72e7e3b`"),
+
     ("o19-cokluk-netlestirmeyi-erteler", 5,
      "🔴🔴 **`O-19` — AYRIK ÖLÇÜ KÜMELERİ BİR BELİRSİZLİK DEĞİL, BİR ÇOKLUKTUR.** "
      "⊙ Ölçüldü (canlı `IV` turu, iki soru): *«iade oranı en yüksek 3 müşteriyi **ve** "

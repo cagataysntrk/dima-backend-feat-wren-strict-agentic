@@ -143,7 +143,7 @@ def eslesmeleri_oku() -> dict[str, dict[str, int]]:
         from control_plane.models import InteractionLog
     except Exception:                                        # noqa: BLE001
         return {}
-    from app.cube_router import TERIM_IZ_ONEKI
+    from app.ters_yon import TERIM_IZ_ONEKI
 
     desen = _re.compile(_re.escape(TERIM_IZ_ONEKI) + r"«(.+?)» → `(.+?)`")
     out: dict[str, dict[str, int]] = {}

@@ -20,6 +20,7 @@ Bu dosya iki şeyi kilitler ve ikincisi birincisinden önemlidir:
 import json
 
 from app import cube_router as cr
+from app import ters_yon as ty
 from app.routers.ask import _canon_cq
 
 _INDEX = {
@@ -35,7 +36,7 @@ def _ham(**ek):
 
 def test_KAPALI_SECIM_OKUNUR():
     """Kullanıcının sözü + katalogdan **TAM** ad → eşleme geçerli."""
-    t = cr.eslesen_terim_oku(
+    t = ty.eslesen_terim_oku(
         _ham(eslesen_terim={"kullanicinin_sozu": "zayiat",
                             "katalog_adi": "toplam_fire_kg"}), _INDEX, "parti")
     assert t == {"soz": "zayiat", "ad": "toplam_fire_kg"}
@@ -44,14 +45,14 @@ def test_KAPALI_SECIM_OKUNUR():
 def test_UYDURULMUS_AD_REDDEDILIR():
     """🔴 **Kapının kalbi.** Model bir ad **seçebilir, uyduramaz** — kapalı seçimin
     tamamı bu satırdır. Açık üretimde bu doğrulama **mümkün değildi**."""
-    assert cr.eslesen_terim_oku(
+    assert ty.eslesen_terim_oku(
         _ham(eslesen_terim={"kullanicinin_sozu": "zayiat",
                             "katalog_adi": "toplam_zayiat_kg"}), _INDEX, "parti") is None
 
 
 def test_BOYUT_ADI_DA_GECERLIDIR():
     """Ters yön yalnız ölçüler için değil: *«müşteri»* de bir eşleme hedefidir."""
-    t = cr.eslesen_terim_oku(
+    t = ty.eslesen_terim_oku(
         _ham(eslesen_terim={"kullanicinin_sozu": "alici", "katalog_adi": "musteri"}),
         _INDEX, "parti")
     assert t and t["ad"] == "musteri"
@@ -59,22 +60,22 @@ def test_BOYUT_ADI_DA_GECERLIDIR():
 
 def test_ALAN_YOKSA_SESSIZ():
     """*«Hiçbiri»* de bir cevaptır ve **alanı hiç yazmamak** onun biçimidir."""
-    assert cr.eslesen_terim_oku(_ham(), _INDEX, "parti") is None
+    assert ty.eslesen_terim_oku(_ham(), _INDEX, "parti") is None
 
 
 def test_BOZUK_GIRDI_TURU_DUSURMEZ():
     """Model bozuk JSON ya da yanlış tip üretirse tur **düşmez** — bu bir makbuz alanı;
     bir makbuzun okunamaması cevabı geçersiz kılmaz."""
     for kotu in ("{bozuk", "[]", json.dumps({"cube": "parti", "eslesen_terim": "metin"})):
-        assert cr.eslesen_terim_oku(kotu, _INDEX, "parti") is None
-    assert cr.eslesen_terim_oku(
+        assert ty.eslesen_terim_oku(kotu, _INDEX, "parti") is None
+    assert ty.eslesen_terim_oku(
         _ham(eslesen_terim={"kullanicinin_sozu": "ab",           # <3 harf
                             "katalog_adi": "toplam_fire_kg"}), _INDEX, "parti") is None
 
 
 def test_BILINMEYEN_KUP_ICIN_YARGI_YOK():
     """Küp beyaz listede yoksa hedef ad da sınanamaz → eşleme **kabul edilmez**."""
-    assert cr.eslesen_terim_oku(
+    assert ty.eslesen_terim_oku(
         json.dumps({"cube": "yok", "eslesen_terim": {"kullanicinin_sozu": "zayiat",
                                                      "katalog_adi": "toplam_fire_kg"}}),
         _INDEX, "yok") is None
@@ -92,8 +93,8 @@ def test_TASIYICI_OYU_BOLMEZ():
     *Bir kimliği tanımlarken neyin kimlik OLMADIĞINI da söylemek gerekir.*
     """
     taban = {"cube": "parti", "measures": ["toplam_fire_kg"]}
-    a = {**taban, cr.TERIM_TASIYICI: {"soz": "zayiat", "ad": "toplam_fire_kg"}}
-    b = {**taban, cr.TERIM_TASIYICI: {"soz": "kayip", "ad": "toplam_fire_kg"}}
+    a = {**taban, ty.TERIM_TASIYICI: {"soz": "zayiat", "ad": "toplam_fire_kg"}}
+    b = {**taban, ty.TERIM_TASIYICI: {"soz": "kayip", "ad": "toplam_fire_kg"}}
     assert _canon_cq(a) == _canon_cq(b) == _canon_cq(taban)
 
 
@@ -115,7 +116,7 @@ def test_GERCEK_ALAN_HALA_KIMLIKTIR():
 def test_IZ_ONEKI_SABITTIR():
     """`lab/sinonim_hasadi.py` bu dizeyi `interaction_log.trace_json` içinde arar.
     *Bir izi makine okuyacaksa o iz bir biçimdir; biçimi değiştirmek okuyucuyu kırar.*"""
-    assert cr.TERIM_IZ_ONEKI == "ters-yön eşlemesi: "
+    assert ty.TERIM_IZ_ONEKI == "ters-yön eşlemesi: "
 
 
 # ── 🔴🔴 `C3-D`: EŞLEME MODELDEN İSTENMEZ, ÇIKARILIR ──────────────────────────
@@ -143,7 +144,7 @@ def test_CIKARIM_TEK_BILINMEYENI_TEK_HEDEFE_BAGLAR():
     """🔴 Canlı vaka: *«bu yıl zayiat ne kadar»* → route `zayiat`ı bilmiyor, garson
     `toplam_fire_kg` seçti. Eşleme bu ikisinin **kesişimidir** — modelden bir şey
     istemeye gerek yok."""
-    t = cr.eslesen_terim_cikar(cr._norm("bu yil zayiat ne kadar"),
+    t = ty.eslesen_terim_cikar(cr._norm("bu yil zayiat ne kadar"),
                                {"cube": "parti", "measures": ["toplam_fire_kg"]}, _SEMA_C)
     assert t == {"soz": "zayiat", "ad": "toplam_fire_kg"}
 
@@ -152,7 +153,7 @@ def test_CIKARIM_ROUTEUN_BILDIGI_ADI_ELER():
     """🔴🔴 **Kuralın kalbi.** *«alıcı bazında ciro»*: `ciro` route'un sözlüğünde **var**
     (elenir), `musteri` **yok** (kalır) → `alici → musteri`. Eleme olmasaydı iki hedef
     kalır ve kural susardı."""
-    t = cr.eslesen_terim_cikar(
+    t = ty.eslesen_terim_cikar(
         cr._norm("bu yil alici bazinda ciro"),
         {"cube": "parti", "measures": ["toplam_ciro"], "dimensions": ["musteri"]}, _SEMA_C)
     assert t == {"soz": "alici", "ad": "musteri"}
@@ -161,21 +162,21 @@ def test_CIKARIM_ROUTEUN_BILDIGI_ADI_ELER():
 def test_IKI_BILINMEYENDE_SUSAR():
     """⚠ Hangi kelimenin hangi ada gittiği **bilinemez**. *Tekil aday yoksa sus* —
     bugün üçüncü kez uygulanan aynı disiplin."""
-    assert cr.eslesen_terim_cikar(
+    assert ty.eslesen_terim_cikar(
         cr._norm("bu yil zayiat ve hasilat ne kadar"),
         {"cube": "parti", "measures": ["toplam_fire_kg", "toplam_ciro"]}, _SEMA_C) is None
 
 
 def test_BILINMEYEN_YOKSA_CIKARIM_YOK():
     """Her kelimesi tanınan bir soruda öğrenilecek bir şey yoktur."""
-    assert cr.eslesen_terim_cikar(cr._norm("bu yil toplam ciro"),
+    assert ty.eslesen_terim_cikar(cr._norm("bu yil toplam ciro"),
                                   {"cube": "parti", "measures": ["toplam_ciro"]},
                                   _SEMA_C) is None
 
 
 def test_IKI_HEDEFTE_SUSAR():
     """Tek bilinmeyen ama iki ulaşılamayan ad → eşleme **belirsizdir**, üretilmez."""
-    assert cr.eslesen_terim_cikar(
+    assert ty.eslesen_terim_cikar(
         cr._norm("bu yil zayiat"),
         {"cube": "parti", "measures": ["toplam_fire_kg"], "dimensions": ["musteri"]},
         _SEMA_C) is None

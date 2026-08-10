@@ -201,6 +201,34 @@ def _grup_basina_istendi(qn: str, boyutlar) -> bool:
     return False
 
 
+def _kup_sozlugunde_kelime(terim: str, cube_meta: dict) -> bool:
+    """Terim, cevabın küpünün **sözlüğünde bir kelime** olarak geçiyor mu?
+
+    ⊙ `_match_measure` **öbek** arar (`«toplam durus dakikasi»`); kullanıcı ise tek
+    kelime söyler (`«duruşa»`). Bu yüklem araya giren farkı kapatır: küp adı · küp
+    sinonimleri · ölçü ve boyut sinonimleri **kelimelerine ayrılır** ve terim orada
+    aranır.
+
+    ⚠ Kapsam bilerek **yalnız beyan** içindir; yönlendirmeye dokunmaz. Sinonimleri
+    kelimelerine ayırıp eşleştirmede kullanmak katalogu **açgözlü** yapardı (`§99.1`) —
+    ama *«bu cevap o kavramı içeriyor mu»* sorusunun doğru cevabı kelime düzeyindedir.
+    """
+    from app.cube_router import _norm
+
+    kelimeler: set[str] = set()
+    kaynaklar = [str(cube_meta.get("name") or ""), *(cube_meta.get("synonyms") or []),
+                 str(cube_meta.get("display") or "")]
+    for sozluk in ("measure_synonyms", "dimension_synonyms"):
+        for syns in (cube_meta.get(sozluk) or {}).values():
+            kaynaklar.extend(syns or [])
+    kaynaklar.extend(str(x) for x in (cube_meta.get("measures") or []))
+    kaynaklar.extend(str(x) for x in (cube_meta.get("dimensions") or []))
+    for k in kaynaklar:
+        kelimeler |= {w for w in re.findall(r"[a-z0-9]+", _norm(str(k))) if len(w) > 2}
+    hedef = {w for w in re.findall(r"[a-z0-9]+", _norm(terim)) if len(w) > 2}
+    return bool(hedef) and hedef <= kelimeler
+
+
 def _capraz_kup_ikamesi(qn: str, cq: dict, cube_meta: dict,
                         sema: dict) -> tuple[str, list[str]] | None:
     """Soruda anılan bir ölçü terimi cevabın küpünde **yok**, başka küpte **var** mı?
@@ -242,6 +270,32 @@ def _capraz_kup_ikamesi(qn: str, cq: dict, cube_meta: dict,
             continue
         _ad, _terim = _match_measure(qn, c)
         if not _ad or _ad in (cq.get("measures") or []):
+            continue
+        # 🔴🔴 **`§UY/K` — ÖBEK EŞLEŞMEZ AMA KELİME KAPSANIR: yüklem YANLIŞ-POZİTİF
+        # veriyordu ve DOĞRU bir cevabı «eksik» diye etiketliyordu.**
+        #
+        # ⊙ Canlı ölçüm (curl, 2026-08-10): *«en çok duruşa yol açan 3 nedeni bul»* →
+        # `makine_duruslari.toplam_sure_dk` ile **doğru** cevaplandı
+        # (`Malzeme/Parti Bekleme · 427.140 dk`) — ama not şunu yazdı:
+        #
+        #     ⚠ Sayı doğru ama EKSİK: «durus» bu küpte tanımlı değil.
+        #
+        # 🔴 Oysa kelime **bol bol** kapsanıyor: küp sinonimleri `durus nedeni` ·
+        # `durus nedenleri` · `durus sebebi`; ölçü sinonimleri `toplam durus` ·
+        # `toplam durus dakikasi`. Sebep: hepsi **çok kelimeli öbek** ve
+        # `_match_measure` **tam öbeği** arıyor; soruda öbek geçmiyor, **kelime** geçiyor.
+        #
+        # ⊙ Doğru yüklem depoda **zaten var**: `partial_unknowns` kapsamayı
+        # `_syn_hit_words` ile **kelime düzeyinde** hesaplıyor. İkinci bir kapsama
+        # kavramı yazmak `KAT-1` olurdu — o kavram çağrılır.
+        #
+        # ⚠ Kapı **dar**: yalnız *«bu terim cevabın küpünün sözlüğünde bir kelime mi»*
+        # sorulur. Gerçek ikame (`fire` sorup `rework` almak) etkilenmez — `kalite`nin
+        # sözlüğünde `fire` diye bir kelime yok, beyan aynen yazılır.
+        #
+        # *Bir doğru cevaba «eksik» demek, tüm beyanların güvenini aşındırır* (`§101.1`):
+        # kusur bazen olur, yanlış-pozitif HER SEFERİNDE yanlıştır.
+        if _kup_sozlugunde_kelime(str(_terim or _ad), cube_meta):
             continue
         sahipler = [str(k.get("name")) for k in (sema.get("cubes") or [])
                     if _match_measure(qn, k)[0]]
