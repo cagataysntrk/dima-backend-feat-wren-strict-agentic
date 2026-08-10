@@ -585,6 +585,11 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
         "category": "Anlama",
     },
     "oylama_paydasi": {
+        # 🔴 `E-4`/`D2` — **YAZILI `on` ŞARTI.** ⚠ Bu satır bir kapı tarafından
+        # istendi: şartı YAML yorumuna yazmıştım, `test_bayrak_on_sarti` **yapısal
+        # alan** talep etti ve haklıydı — *bir gerekçeyi düzyazıda saklamak, onu
+        # bir gün silinebilir kılar.*
+        "on_sarti": "`A2` kasetli garson korpusuyla A/B: `sessiz_yanlis` **artmamalı** ve netleştirmeye düşen vakaların KAÇININ gerçekten belirsiz olduğu sayılmalı. ⚠ Enstrüman kaset olmak zorunda: `nl_corpus` `rule` sağlayıcıyla koşar ve oylama yolu orada HİÇ çalışmaz — korpus kanıtı beklemek, hiç gelmeyecek bir ölçümü beklemektir. Kaset bunu SIFIR API ile ölçer: kayıtlı oylar aynı kalır, yalnız payda değişir.",
         "label": "Oylama paydası çekimserleri de sayar",
         "description": "Self-consistency uyum oranı `{cube:null}` (bilmiyorum) oylarını "
                        "da paydaya katar. Kapalıyken 1 cevap + 2 bilmiyorum → uyum %100 "

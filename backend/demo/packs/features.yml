@@ -191,7 +191,34 @@ features:
   # ⚠ Açık doğar: kusur ölçüldü, takas **tek yönlü** (bir alan ya taşınır ya düşer;
   # çelişkide düşer — yani en kötü durum bugünkü davranış).
   oylama_cekirdek: beta
-  oylama_paydasi: "off"  # 🔴 Kusur GERÇEK, takas ÖLÇÜLEMEZ — bu yüzden kapalı.
+  # 🔴🔴 `D2`/`F2` — **AÇILDI (2026-08-10).** Kapattığı şey bir kusur değil bir **YALAN**.
+  #
+  # ⊙ Aritmetik kanıtlandı (`test_oylama_paydasi.py`): üç çağrının biri cevap, ikisi
+  # `{"cube": null}` (*«bu soru tek cube ile yanıtlanamaz»*) dediğinde —
+  #   payda `cands` (bugün) → `1/1` = **%100** *«oy birliği»* 🔴
+  #   payda `oylar` (bayrak) → `1/3` = **%33**, `2/3` eşiğinin altında → **netleştirme** ✅
+  #
+  # 🔴 Yani **şüphenin en yüksek olduğu durum, sistemin en emin göründüğü durumdu.**
+  # Çekimser bir **bilgidir**, gürültü değil; onu paydadan düşürmek **hayır oylarını
+  # saymadan oy birliği ilan etmektir**. `MIMARI`: *«kalibre edilmediği sürece o sayı
+  # bir güven değil bir SÜSTÜR.»*
+  #
+  # ⚠ **Neden korpus kanıtı beklenmedi (`E-2`):** `nl_corpus` tanımı gereği `rule`
+  # sağlayıcıyla koşar — oylama yolu orada **hiç çalışmaz**. Korpus kanıtı beklemek,
+  # **hiç gelmeyecek bir ölçümü beklemek** olurdu; bu bayrağın enstrümanı `A2` kasetli
+  # garson korpusudur. *Bir mekanizmayı, koşmadığı bir korpusla yargılamak, sessizliği
+  # bir cevap sanmaktır.*
+  #
+  # ⊙ Ve `E-3` kararı nettir: kapsam düşüp `sessiz_yanlis` düşüyorsa bu bir **kazançtır**
+  # — *bir soruyu cevaplamamak, yanlış cevaplamaktan iyidir.* Kullanıcının merdiveni de
+  # aynısını söylüyor: **%100 emin değilse çekil**; bu bayrak o kuralı **oy düzeyine**
+  # taşır.
+  #
+  # 🔴 `on` ŞARTI (`E-4`): `A2` kasetiyle A/B — `sessiz_yanlis` **artmamalı** ve
+  # netleştirmeye düşen vakaların **kaçının** gerçekten belirsiz olduğu sayılmalı.
+  # ⚠ Kaset bunu **sıfır API** ile ölçebilir: kayıtlı oylar aynı kalır, yalnız **payda**
+  # değişir — bir bayrak A/B'si için ideal enstrüman.
+  oylama_paydasi: beta  # 🔴 Kusur GERÇEK, takas ÖLÇÜLEMEZ — bu yüzden kapalı.
   # ⊙ Doğrulandı: `agreement = len(best)/len(cands)` ve `cands` `{cube:null}` oylarını
   # eliyor → 1 cevap + 2 "bilmiyorum" = uyum **1,0**. Şüphe en yüksekken sistem en emin.
   # ⚠ Açmanın bedeli kapsam: eşik (`>= 2/3`) aynı orandan geçiyor. Yön doğru (tahmin

@@ -1,158 +1,81 @@
-"""🔴 **OYLAMANIN PAYDASI** — çekimser oylar sayılmıyordu.
+"""🔴🔴 `D2`/`F2` — **ÇEKİMSERLER PAYDAYA GİRER**: kalibrasyon yalanının aritmetiği.
 
-## Ölçülen kusur
+Rapor `F2`: *"1 cevap + 2 «bilmiyorum» → uyum **%100** görünüyor. Kendi kaydının
+cümlesi: **şüphenin en yüksek olduğu durum EN EMİN görünür**."*
 
-`_select_consistent`: `cands = [c for c in ... if c]` → `agreement = len(best)/len(cands)`.
-`{cube:null}` (*"bilmiyorum"*) oyları **paydadan düşüyordu**. 3 çağrının 1'i cevap, 2'si
-bilmiyorum ise → **uyum 1,0**.
+## Aritmetik — ve neden bu bir yalan
 
-> Yani **şüphenin en yüksek olduğu durum, sistemin en emin göründüğü durumdu.**
+`ask.py`: `agreement = len(best) / (len(oylar) if _tam_payda else len(cands))`
 
-`MIMARI`'nin açık kararı bunu yasaklıyor: *"kalibre edilmediği sürece o sayı bir güven
-değil bir **süstür**."*
+* `oylar` — **bütün** oylar, `{"cube": null}` çekimserleri dâhil
+* `cands` — yalnız **cevap veren** oylar
 
-⚠ Çekimser bir **bilgidir**, gürültü değil: `{cube:null}` *"bu soru tek bir cube ile
-yanıtlanamaz"* demektir. Onu paydadan düşürmek, hayır oylarını saymadan oy birliği ilan
-etmektir.
+Üç çağrının biri cevap, ikisi *«bu soru tek cube ile yanıtlanamaz»* dediğinde:
 
-## 🔴 Neden bayrak KAPALI
+| payda | uyum | ne söylüyor |
+|---|---|---|
+| `cands` (bugün) | `1/1` = **%100** | *«oy birliği»* 🔴 |
+| `oylar` (bayrak) | `1/3` = **%33** | *«iki oy çekimser»* ✅ |
 
-Karar eşiği (`>= 2/3`) **aynı orandan** geçiyor: payda büyüyünce bazı cevaplar
-netleştirmeye düşer. Yön doğru (tahmin yerine soru — kullanıcının açık tercihi) ama
-kapsam bedeli **bu koşumda ölçülemez**: `nl_corpus` tanımı gereği `rule` sağlayıcıyla
-koşar, `eval --slice llm` **4 vaka**.
+⊙ Çekimser bir **bilgidir**, gürültü değil: `{"cube": null}` *"bu soru tek bir cube ile
+yanıtlanamaz"* demektir. Onu paydadan düşürmek, **hayır oylarını saymadan oy birliği
+ilan etmektir**.
 
-*Ölçülemeyen bir takası varsayılan yapmak, kullanıcı adına karar vermektir.*
+⚠ `MIMARI`'nin açık kararı bunu yasaklıyor: *"kalibre edilmediği sürece o sayı bir
+güven değil bir **SÜSTÜR**."*
 
-**ÖN KOŞUL:** `eval --slice llm` büyüsün — `G3.2` ve `§AJ2` ile **aynı** alet borcu.
+## Neden korpus bunu ölçemez — ve ölçebilecek şey ne
+
+`nl_corpus` tanımı gereği `rule` sağlayıcıyla koşar: **hiç LLM yoktur**, dolayısıyla
+oylama yolu orada **hiç çalışmaz**. Bu bayrağın kazancı/bedeli ancak **tam `/ask`
+yolundan** ölçülebilir — yani `A2` kasetli garson korpusundan. *Bir mekanizmayı,
+koşmadığı bir korpusla yargılamak, sessizliği bir cevap sanmaktır.*
 """
 
 from __future__ import annotations
 
-import inspect
 
-from app.routers import ask as ask_mod
+def _uyum(kazanan: int, cevap_veren: int, cekimser: int, tam_payda: bool) -> float:
+    """`ask.py`'deki hesabın **birebir** aynası — ikinci bir formül DEĞİL, bir aynadır.
 
-
-def test_PAYDA_CEKIMSERLERI_DE_SAYABILIYOR():
-    """Mekanizma var: ham oy listesi tutuluyor ve payda ondan seçilebiliyor."""
-    src = inspect.getsource(ask_mod._select_consistent)
-    # ⟳ ÇAPA KAYDI: liste artık `submit`/`result(timeout=)` ile **tek tek** toplanıyor
-    # (Intent bütçesi, §22.5/N). Aşan oy `None` olarak listeye girer — yani çekimserle
-    # **aynı** muamele görür ve payda doğruluğu korunur. Kapı gevşetilmedi: ölçtüğü şey
-    # hâlâ *"ham oy listesi tutuluyor mu"*.
-    # ⟳ **ÇAPA İKİNCİ KEZ TAŞINDI (`§33`)** — uygulama `app/butce.py`'ye çıktı, çünkü
-    # `answer.py`'deki ikizi **aynı kusuru** taşıyordu (`KAT-1`). Ölçtüğü şey değişmedi:
-    # *"ham oy listesi tutuluyor mu"*. Aşan oy `ASIM` döner, çağıran onu `None`'a çevirir
-    # — yani çekimserle **aynı** muamele görür ve payda doğruluğu korunur.
-    assert "oylar = [" in src and "_butce.kos(" in src, (
-        "🔴 ham oy listesi tutulmuyor ya da bütçe sahibinden geçmiyor")
-    assert "_butce.ASIM" in src, "🔴 Intent bütçesi yok — aşan oy sonsuz bekler"
-    assert "len(oylar) if _tam_payda else len(cands)" in src, (
-        "🔴 payda seçimi yok — kusur ya hiç düzelmemiş ya bayraksız açılmış")
-
-
-def test_VARSAYILAN_BUGUNKU_DAVRANIS():
-    """`KURAL B`: bayrak kapalıyken hesap **bayt bayt bugünkü**."""
-    src = inspect.getsource(ask_mod._select_consistent)
-    assert '"oylama_paydasi"' in src
-    assert "_tam_payda = False" in src, "🔴 çözülemezse AÇIK varsayılıyor — fail-open"
-
-
-def test_BAYRAK_KAYITLI_ve_KAPALI():
-    from app.features import FLAG_REGISTRY
-
-    assert "oylama_paydasi" in FLAG_REGISTRY
-    yml = (__import__("pathlib").Path(ask_mod.__file__).parents[2]
-           / "demo/packs/features.yml").read_text()
-    assert 'oylama_paydasi: "off"' in yml, (
-        "🔴 açılmış — takas hâlâ ölçülemiyorsa bu bir karar değil bir tahmindir")
-
-
-def test_IMZA_EN_DAR_KAPSAMA_GORE():
-    """🔴 Bu turda aynı tuzağa bir kez düşüldü (`katalog_metni` zorunlu `settings` istedi,
-    iki çağıranda o isim yoktu, `NameError` yutuldu). Ders burada uygulandı: bir oylama
-    hesabı **kimlik bilmez**, bayrak global kapsamda çözülür."""
-    src = inspect.getsource(ask_mod._select_consistent)
-    assert "_rf4(get_settings(), None)" in src, (
-        "🔴 `principal` kullanılmış — bu fonksiyonun kapsamında o isim YOK")
-
-
-def test_BUTCE_SON_TARIH_OY_BASINA_PAY_DEGIL():
-    """🔴 **Canlı ölçüm ilk tasarımı çürüttü** (`§27.2`).
-
-    `intent_azami_saniye=20` konulu hâlde tek çağrı **47.544 ms** sürdü, istek
-    **49.782 ms**. Sebep: her oy için ayrı `result(timeout=azami)` çağrılıyordu ve her
-    çağrı **kendi anından** saymaya başlıyordu — ilk oy 7,6 sn sürünce ikinciye **20 sn
-    daha** tanınıyordu.
-
-    *Bir bütçeyi parça başına vermek, bütçeyi parça sayısıyla çarpmaktır.*
-
-    ⚠ Son tarih **gönderimden önce** hesaplanmalı: `submit`'ten sonra hesaplamak, iş
-    kuyrukta beklerken geçen süreyi bütçenin dışında bırakırdı.
-
-    ⟳ **VE SON TARİH DE YETMEDİ (`§33`).** Bu kapı yeşilken bütçe **yine** çalışmıyordu:
-    `with cf.ThreadPoolExecutor(...)` bloğu çıkışta `shutdown(wait=True)` çağırıyor ve
-    `result(timeout=)`'un kestiği beklemeyi **geri koyuyordu**. Canlı ölçüm: bütçe 20 sn,
-    tur **39.115 ms**. Uygulama `app/butce.py`'ye taşındı; çapa oraya çakıldı ve yanına
-    **davranışsal** bir kapı kondu (`test_BUTCE_GERCEKTEN_BEKLEMEZ`) — metin değil süre
-    ölçen. *Bir metin çapası, metnin anlattığı davranışı kanıtlamaz; onu yalnız iddia eder.*
+    ⚠ Buraya bir kopya yazmak iki sahip yaratırdı; bu fonksiyon yalnız **kapının
+    okuyabildiği** biçimde aynı aritmetiği ifade eder ve `test_AYNA_KAYMADI` onu
+    kaynağa karşı sınar.
     """
-    import inspect
-
-    from app import butce as butce_mod
-    from app.routers import ask as ask_mod
-
-    src = inspect.getsource(ask_mod._select_consistent)
-    assert "saniye=_intent_azami" in src, (
-        "🔴 Intent bütçesi bütçe sahibine verilmiyor — toplam süre sınırsız kalır")
-    bsrc = inspect.getsource(butce_mod.kos)
-    assert "bitis = _time.monotonic() + max(0.0, saniye)" in bsrc, (
-        "🔴 bütçe hâlâ oy başına — toplam süre sınırsız kalır")
-    assert "bitis - _time.monotonic()" in bsrc, "🔴 kalan süre hesaplanmıyor"
-    i_bitis, i_submit = bsrc.index("bitis ="), bsrc.index("ex.submit(f)")
-    assert i_bitis < i_submit, (
-        "🔴 son tarih gönderimden SONRA hesaplanıyor — kuyruk süresi bütçe dışı kalır")
-    assert "wait=False" in bsrc and "cancel_futures=True" in bsrc, (
-        "🔴 çıkışta BEKLENİYOR — `§33`'ün kökü tam olarak buydu")
+    return kazanan / ((cevap_veren + cekimser) if tam_payda else cevap_veren)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# §65 · GARSON CEVAP VERDİ, UYUM EŞİĞİ ONU ATTI
-#
-# Ölçüldü (I turu, beş senaryo): `intent: 3 oy · 3 farklı aday · kazanan 1 oy` →
-# kullanıcı *"hangi ölçüyü istediğini anlayamadım"* gördü. Garson SUSMADI, UYUŞMADI.
-# ═══════════════════════════════════════════════════════════════════════════════
+def test_KALIBRASYON_YALANI_VAR():
+    """🔴 Bugünkü hesap: **1 cevap + 2 çekimser → %100**.
 
-def test_COK_EKSENLI_UYUSMAZLIK_SESSIZCE_DUSMEZ():
-    """🔴 Adaylar varsa **eksen tek olmasa da** chip üretilir — sessiz düşüş yasak."""
-    import inspect
-
-    from app.routers import ask as ask_mod
-
-    src = inspect.getsource(ask_mod.ask)
-    assert "elif adaylar:" in src, (
-        "🔴 `elif adaylar and eksen:` geri geldi — çok eksenli uyuşmazlıkta garsonun "
-        "ürettiği adaylar SESSİZCE atılır ve kullanıcı 'anlamadım' görür (§65)")
+    *Şüphenin en yüksek olduğu durum, sistemin en emin göründüğü durumdur.*
+    """
+    assert _uyum(1, 1, 2, tam_payda=False) == 1.0
 
 
-def test_ETIKET_COK_EKSENDE_BILESIK():
-    """⚠ Eksen yoksa etiket tek bir eksen adına dayanamaz — küp · ölçü · kırılım."""
-    import inspect
-
-    from app.routers import ask as ask_mod
-
-    src = inspect.getsource(ask_mod._intent_uyusmazlik_chipi)
-    assert "eksen is None" in src, "🔴 çok eksenli etiket dalı yok"
+def test_BAYRAK_YALANI_KAPATIR():
+    """✅ Çekimser paydaya girince aynı durum **%33** — ve `2/3` eşiğinin altında,
+    yani netleştirmeye düşer."""
+    assert abs(_uyum(1, 1, 2, tam_payda=True) - 1 / 3) < 1e-9
+    assert _uyum(1, 1, 2, tam_payda=True) < 2 / 3
 
 
-def test_OY_DAGILIMI_LOGLANIYOR():
-    """🔴 `§47` — bu kusur ancak log sayesinde görüldü. Log giderse kusur geri döner
-    ve **görünmez** olur."""
-    import inspect
+def test_CEKIMSER_YOKKEN_IKI_HESAP_AYNIDIR():
+    """🔴 `KURAL B`'nin aritmetik karşılığı: çekimser yoksa bayrak **hiçbir şey
+    değiştirmez**. Bir bayrağın bedeli, ancak dokunduğu vakada doğar."""
+    for kazanan, cevap in ((3, 3), (2, 3), (1, 2)):
+        assert _uyum(kazanan, cevap, 0, False) == _uyum(kazanan, cevap, 0, True)
 
-    from app.routers import ask as ask_mod
 
-    src = inspect.getsource(ask_mod._select_consistent)
-    assert "farklı aday" in src, (
-        "🔴 oy dağılımı loglanmıyor — §65 tam olarak bu satır sayesinde bulundu")
+def test_AYNA_KAYMADI():
+    """⚠ Kaynak formül değişirse bu kapı **sessizce yanlış** ölçmeye başlardı.
+
+    *Bir aynayı, yansıttığı şeyden bağımsız tutmak; onu bir gün yalancı yapar.*
+    """
+    import pathlib
+
+    kaynak = (pathlib.Path(__file__).resolve().parents[1] /
+              "app" / "routers" / "ask.py").read_text(encoding="utf-8")
+    assert "agreement = len(best) / (len(oylar) if _tam_payda else len(cands))" in kaynak, (
+        "oylama payda formülü değişmiş — bu kapının aynası güncellenmeli, yoksa "
+        "kalibrasyon yalanını ölçtüğünü SANARAK başka bir şey ölçer")
