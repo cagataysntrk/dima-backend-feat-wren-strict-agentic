@@ -329,6 +329,40 @@ def _hit(q: str, kaliplar: tuple[str, ...]) -> str | None:
     return None
 
 
+def niyet_kalibi_var(soru: str) -> str | None:
+    """🔴 `R2` — soru **tanınmış bir takip niyeti** taşıyor mu? → tür adı, yoksa `None`.
+
+    ## Neden var — ölçülen kusur
+
+    Canlıda: *«peki ne yapmalıyız»* → **«Görüşürüz! İstediğin zaman buradayım.»**
+    (`sosyal sınıf (kapanis)`). Sebep `peki`'nin kapanış kalıplarında olması **değil**
+    tek başına: sosyal sınıfın *tam kaplama* yüklemi yalnız **katalog** kelimesi arıyor
+    ve *«ne yapmalıyız»* katalogda hiçbir terim taşımıyor — yani ifade "tamamen sosyal"
+    sayılıyordu.
+
+    ⊙ Oysa *«ne yapmalı»* bu modülün **zaten tanıdığı** bir türdür (`TUR_NE_YAPMALI`).
+    Yani sistem cevabı biliyordu ve kendi bilgisini kendi susturuyordu.
+
+    ⚠ Bu fonksiyon **yeni bir sözlük değildir**: `sinifla`'nın okuduğu **aynı** kapalı
+    kalıp tablosunu okur. Var olma sebebi, o bilgiyi `sinifla`'nın `baglam_var`
+    ön koşulu olmadan sorulabilir kılmaktır — sosyal kapı bir bağlam bilmez ama
+    *«bu bir niyet mi»* sorusunun cevabına ihtiyaç duyar.
+
+    *Bir sistemin kendi tanıdığı niyeti bir selamlaşma sanması, bilgi eksikliği değil
+    sıralama hatasıdır.*
+    """
+    q = _norm(soru or "")
+    for tur, kaliplar in ((TUR_PAYLAS, _PAYLAS),
+                          (TUR_TAKIP, _TAKIP),
+                          (TUR_NE_YAPMALI, _NE_YAPMALI),
+                          (TUR_NORMAL, _NORMAL),
+                          (TUR_ANLAT, _ANLAT),
+                          (TUR_NEDEN, _NEDEN)):
+        if _hit(q, kaliplar):
+            return tur
+    return None
+
+
 def sinifla(soru: str, *, baglam_var: bool,
             capa_degerleri: frozenset[str] | None = None) -> Niyet:
     """Takip sorusunu üç sınıftan birine ayırır. **Saf fonksiyon, LLM YOK.**

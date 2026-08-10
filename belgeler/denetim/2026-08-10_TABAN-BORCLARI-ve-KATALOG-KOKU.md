@@ -1283,3 +1283,34 @@ Bu rapor ancak şu üçü birden doğruysa kapanır:
 
 *Bir mimari, en çok güvendiği basamağı en kör hâliyle koşturuyorsa, kusur o basamakta
 değil onu besleyen menüdedir.*
+
+
+---
+
+## EK — 2026-08-10 turlarının ölçülmüş sayıları (`A3` çıktısı)
+
+`gercek_dunya` tabanı yeni şemayla yazıldı ve merdivenin şekli **ilk kez** sayıya döndü:
+
+| sınıf | sayı | pay |
+|---|---|---|
+| payda (vaka) | **2286** | — |
+| `dogru` (route bildi) | **96** | **%4,2** |
+| `devir` (route çekildi → garson) | **2141** | **%93,7** |
+| 🔴 `sessiz_yanlis` | **8** | %0,35 |
+| `beyanli_kismi` | 41 | %1,8 |
+| `netlestirme` | **0** | %0 |
+
+⚠ Bu korpus bilerek **kullanıcının kendi kelimeleriyle** yazılmıştır; düşük route payı
+bir kusur değil, merdivenin ölçülmüş şeklidir. Ama artık bir **sayı**, bir izlenim değil.
+
+🔴 `netlestirme = 0` yeni bir borçtur: route ya biliyor ya çekiliyor, **ara ton yok**.
+
+## EK — bu turda kapanan kusurlar (rapor dışı, canlı curl'den)
+
+| # | kusur | akıbet |
+|---|---|---|
+| `R1` | `$2` yer tutucusu SQL'e sızıyordu → 0 satır + makbuz | ✅ doğrulayıcı reddediyor · `A9` sınıfı eklendi |
+| `R2` | `peki ne yapmalıyız` → *«Görüşürüz!»* | ✅ tanınmış niyet artık veri sinyali (iki kanatta da) |
+| `R3` | doğru cevabın yanında *«bu küpte tanımlı değil»* yalanı | ✅ beyan ad değil **kapsam** kıyaslıyor |
+| `D1` | dönem kapısı **orkestratörün önünde** | ⚠ **açık borç — sıradaki turun konusu** |
+| `B8` | `toplam_sure_dk` ≡ `toplam_durus_dakika` (aynı kavram, iki ad) | ⚠ açık borç (katalog) |

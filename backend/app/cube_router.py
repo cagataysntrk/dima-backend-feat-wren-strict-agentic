@@ -2765,7 +2765,25 @@ def sosyal_edim(q: str) -> tuple[str, bool] | None:
         for k in kaliplar:
             if not _syn_hit(qn, k):
                 continue
-            return tur, not _uncovered(qn, set(re.findall(r"[a-z]+", k)))
+            # 🔴🔴 `R2` — **TANINMIŞ BİR NİYET, TAM KAPLAMAYI ÇÜRÜTÜR.**
+            #
+            # ⊙ Canlıda ölçüldü: *«peki ne yapmalıyız»* → **«Görüşürüz!»**. Kaplama
+            # yüklemi yalnız **katalog** kelimesi arıyordu ve *«ne yapmalıyız»*
+            # katalogda hiçbir terim taşımıyor — ifade "tamamen sosyal" sayıldı.
+            # Oysa `followup` o kalıbı **zaten tanıyor** (`TUR_NE_YAPMALI`): sistem
+            # cevabı biliyordu ve kendi bilgisini kendi susturuyordu.
+            #
+            # ⚠ Yeni bir sözlük YAZILMADI — karar `followup`'ın **aynı** kapalı kalıp
+            # tablosundan geliyor (tek sahip). Yerel import: `followup` bu modülü
+            # zaten çekiyor, modül düzeyinde döngü olurdu.
+            #
+            # *Bir sistemin kendi tanıdığı niyeti bir selamlaşma sanması, bilgi
+            # eksikliği değil sıralama hatasıdır.*
+            from app.followup import niyet_kalibi_var
+
+            tam = not _uncovered(qn, set(re.findall(r"[a-z]+", k))) \
+                and niyet_kalibi_var(qn) is None
+            return tur, tam
     return None
 
 
@@ -3422,6 +3440,26 @@ def veri_niyeti_var(q: str, schema: dict) -> bool:
     if not qn.strip():
         return False
     if _period_hit_words(qn) or compare_mode(qn) or liste_niyeti(qn):
+        return True
+    # 🔴🔴 `R2` — **TANINMIŞ BİR NİYET DE BİR VERİ SİNYALİDİR.**
+    #
+    # ⊙ Canlıda ölçüldü: taze *«peki ne yapmalıyız»* → **«Görüşürüz! İstediğin zaman
+    # buradayım.»** Bu kapının tüm sinyalleri **katalog terimi** arıyordu ve
+    # *«ne yapmalıyız»* hiç terim taşımıyor — sinyal yok sayıldı, sosyal kanat kazandı.
+    #
+    # Oysa `followup` o kalıbı **zaten tanıyor** (`TUR_NE_YAPMALI`) ve aynı soru
+    # bağlamsız sorulduğunda sistem onu **4 adımlık bir planla** cevaplayabiliyor.
+    # Yani cevabı biliyorduk; kendi bilgimizi kendimiz susturuyorduk.
+    #
+    # ⚠ Yeni sözlük YOK — karar `followup`'ın `sinifla` ile paylaştığı **aynı** kapalı
+    # kalıp tablosundan geliyor (tek sahip). Yerel import: `followup` bu modülü zaten
+    # çekiyor, modül düzeyinde döngü olurdu.
+    #
+    # 🔴 Bu, «anlamadım yok» kuralının doğrudan gereği: bir kök-neden ya da reçete
+    # sorusuna *hoşça kal* demek, en ucuz ve en hızlı yanlış cevaptır.
+    from app.followup import niyet_kalibi_var
+
+    if niyet_kalibi_var(qn):
         return True
     if ilgili_cubelar(qn, schema):
         return True

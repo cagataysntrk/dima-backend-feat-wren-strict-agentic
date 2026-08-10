@@ -9092,3 +9092,73 @@ olana düşülür. *Bir ölçümün susması, ölçtüğü şeyin yokluğu deği
 Ayrıca büyüme kapısı `B9`'u geri çevirdi (*«modüle çıkar, tavanı yükseltme»*) — karar,
 uygulama ve en-iyi-çaba sarmalayıcısı `diyalog.py`'ye taşındı; `ask()`te 20 satır yerine
 **2** kaldı ve muafiyet o 2 için yazıldı.
+
+
+---
+
+## `R2` KAPANDI — ve kapının **iki kanadı** olduğu ölçülerek öğrenildi
+
+`ask.py`'nin sosyal kapısı iki kanatlıdır:
+
+| kanat | yüklem | ne zaman kazanır |
+|---|---|---|
+| **güçlü** | `tam_kaplama` | bağlamdan **bağımsız** |
+| **zayıf** | *«veri sinyali bulamadım»* (`veri_niyeti_var`) | yalnız bağlam **yokken** |
+
+İlk düzeltmem yalnız **güçlü** kanadı onardı; birim testi yeşil verdi. Canlı curl
+`peki ne yapmalıyız` → **«Görüşürüz!»** demeye devam etti: taze soruda bağlam yok,
+yani **zayıf** kanat kazanıyordu — ve onun yüklemi de yalnız **katalog terimi** arıyor.
+
+⊙ Kök çözüm ikisinde de aynı ve **yeni bir sözlük değil**: `followup` bu kalıpları
+**zaten tanıyor** (`TUR_NE_YAPMALI`). `niyet_kalibi_var` o kapalı tabloyu `sinifla`'nın
+`baglam_var` ön koşulu olmadan sorulabilir kılar; iki kanat da ona sorar.
+
+> *Bir kapının iki kanadı varsa, birini onarmak onu kapatmaz.*
+> *Ve bir sistemin kendi tanıdığı niyeti bir selamlaşma sanması, bilgi eksikliği değil
+> **sıralama hatasıdır**.*
+
+⚠ Bu, birim testinin neden yetmediğinin de kaydıdır: **kural doğruydu, çağrı yeri
+eksikti** — ve yalnız canlı curl bunu gösterdi.
+
+## `A3`'ün asıl kazancı — sayılar İLK KEZ görünür oldu
+
+`gercek_dunya` tabanı yeni şemayla yazıldı:
+
+```
+payda=2286 · doğru=96 (%4,2) · DEVİR=2141 (%93,7) · sessiz_yanlış=8
+beyanlı_kısmi=41 · netleştirme=0 · sapma haritası=2188 kayıt
+```
+
+⊙ Eski özet yalnız `kabul=1147` diyordu; **route'un %94 oranında çekildiği** hiçbir
+yerde görünmüyordu. Bu korpus bilerek *kullanıcının kendi kelimeleriyle* yazılmıştır —
+yani düşük route payı bir kusur değil, **merdivenin ölçülmüş şeklidir**: route az
+konuşur, garson çok. Ama artık bu bir **sayı**, bir izlenim değil.
+
+⚠ `netleştirme=0` da yeni bir bilgi: bu korpusta route hiç *«hangisini kastettin»*
+demiyor — ya hep biliyor ya hep çekiliyor. Ara ton yok. **Açık borç.**
+
+
+### 🔴 `D1` BÜYÜDÜ — dönem kapısı **orkestratörün önünde** duruyor
+
+`R2` kapandıktan sonra `ne yapmalıyız` şuraya düştü:
+
+```
+source=None · cube=oee · «ort oee çıkarabilirim — hangi dönem için?»
+trace: Intent-path: dönem belirsiz → netleştirme (LLM'siz)
+```
+
+Oysa aynı soru bu turun başında **4 adımlık bir plan** üretmişti
+(`ort_oee` · `fire_orani_yuzde` · `ariza_sayisi` → `PANO`).
+
+⊙ Yani dönem netleştirmesi, **plana değecek** bir soruyu tek ölçülük bir yuva sorusuna
+indiriyor. Bu, `O-17`'nin (*orkestratör route'un önünde duruyordu*) **ayna görüntüsüdür**
+ve aynı sınıftandır: merdivenin bir basamağı, kendinden **sonraki** basamağı görmeden
+karar veriyor.
+
+**Kök soru (sıradaki turun konusu):** dönem belirsizliği bir **netleştirme sebebi** mi,
+yoksa planın çözebileceği bir **eksik** mi? Merdiven şunu söylüyor: route %100 emin
+değilse **çekilir** — ama çekilmek *«hangi dönem?»* diye sormak değil, **garsona
+devretmektir**. Bugün route çekilmiyor, **soruyu sahipleniyor**.
+
+⚠ Bu bir gerileme değil, `R2`'nin **görünür kıldığı** eski bir borç: daha önce aynı
+soru sosyal kapıda ölüyordu, bu kata hiç ulaşmıyordu.
