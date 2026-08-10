@@ -679,3 +679,41 @@ def arastir(service, schema: dict, cube_query: dict, *, mode: str = "yoy",
             "contract_ids": contract_ids,
             "raporlar": rank_dimensions(raporlar),
             "pvm_raporlar": rank_dimensions(pvm_raporlar)}
+
+
+def yanindaki_rapor(service, cq: dict | None, *, limit: int = 200):
+    """🔴🔴 `§AA2` — **REDDİN YANINA KONAN RAPOR: bir tekniğin sınırı, turun cevabı olamaz.**
+
+    ## Ölçülen kusur (7 turluk canlı zincir, 2026-08-10)
+
+    Altı tur kusursuz aktı; yedincisi — *«özetle ne yapmalıyız»* — **bomboş** döndü:
+
+        source=None · rows=0 · interpretation=YOK · next_steps=[]
+        note: «fire_orani_yuzde toplanabilir değil (non_additive) — katkı payı
+               matematiksel olarak tanımsız olur»
+
+    Cümle **doğru**: bir oranda katkı payı gerçekten tanımsızdır. Ama kullanıcı *katkı
+    payı* istemedi, **özet** istedi — ve özet **elde vardı**.
+
+    ⊙ Ve bu, bu dosyanın `§AA1`'de yazdığı dersin **birebir tekrarıydı**: *«Bir sınırı
+    aşmıyoruz, yanına doğru soruyu koyuyoruz.»* Orada uygulanmış, çağıran tarafta
+    uygulanmamıştı — o yüzden yardımcı **buraya** kondu: ilkenin evi burası.
+
+    ## Ne yapar
+
+    Eldeki fişi **LLM'siz** yeniden koşar (`D4`'ün checkpoint yeteneği) ve satırları
+    döndürür; çağıran onları yanıta iliştirir, `_maybe_interpret` olguları ve devam
+    chip'lerini **kendiliğinden** üretir.
+
+    ⚠ En-iyi-çaba: koşum düşerse `None` döner ve **red yine döner** — bir yardımcı,
+    yardım edemediğinde cevabı düşürmemelidir.
+
+    *«Yapamam» bir cevap değildir; «şunu yapamam ama şunu biliyorum» bir cevaptır.*
+    """
+    if not cq or not cq.get("cube"):
+        return None
+    try:
+        return service.query(service.cube_sql(cq), limit=limit)
+    except Exception:                                   # noqa: BLE001 — red yine döner
+        _log.warning("§AA2: red yanında eldeki rapor yeniden koşulamadı", exc_info=True)
+        return None

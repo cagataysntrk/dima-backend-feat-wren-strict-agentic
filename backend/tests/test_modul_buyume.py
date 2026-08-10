@@ -89,6 +89,22 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("aa2-red-yaninda-rapor", 6,
+     "🔴🔴 **`§AA2` — BİR TEKNİĞİN REDDİ, TURUN REDDİ OLAMAZ.** Canlı 7 turluk zincirde "
+     "ölçüldü: altı tur kusursuz aktı (odak beyanlı, yoy hesaplandı, ciro eklendi) ve "
+     "yedincisi — *«özetle ne yapmalıyız»* — **bomboş** döndü: `rows=0` · olgu yok · "
+     "chip yok, yalnız *«katkı payı tanımsız»* notu. Cümle **doğruydu** (bir oranda "
+     "katkı payı gerçekten tanımsızdır) ama kullanıcı katkı payı **istememişti**, özet "
+     "istemişti — ve özet **elde vardı**. "
+     "⊙ Δ = 6: **gövde taşındı** (`contribution.yanindaki_rapor`; ilkenin evi orası, "
+     "çünkü aynı ders `§AA1`'de o dosyada yazılı: *«Bir sınırı aşmıyoruz, yanına doğru "
+     "soruyu koyuyoruz»*). Burada kalan **indirgenemez** üç şey: çağrı · `result=` "
+     "ataması · izin beyanı. "
+     "⚠ **TAŞINAMAZ:** çağrı, katkının reddettiği **dalın kendisidir**; başka bir yerde "
+     "*«red oldu mu»* bilinmez. Ve `result` yanıta burada iliştirilir — *bir cevabı "
+     "üretmek, onu taşıyan alana koymakla tamamlanır.* "
+     "*«Yapamam» bir cevap değildir; «şunu yapamam ama şunu biliyorum» bir cevaptır.* "
+     f"`sha=858336a`"),
     ("dk2-suzgec-degeri-hunide", 13,
      "🔴🔴 **`§DK-2` — SÜZGEÇ DEĞERİ ÇAPASI.** Garson süzgecin **değerini de kendisi "
      "yazar** ve varlığını hiçbir şey sormuyordu: `makine eq \"Bakım\"` → **0 satır, "
@@ -1103,6 +1119,11 @@ MUAFIYET_CUBE_ROUTER_KOD = [
 #: değil sessiz bir tavan artışıdır* (bu dosyanın kendi cümlesi). Dosya muafiyeti bu yüzden
 #: **ayrı** sayılır ve `ask()` tavanına **dokunmaz**.
 MUAFIYET_ASK_DOSYA = [
+    ("aa2-red-yaninda-rapor-dosya", 6,
+     "🔴 `§AA2`'nin dosya-toplamı payı — `ask()` muafiyetinin aynısı ve **aynı "
+     "gerekçeyle**: gövde `contribution.yanindaki_rapor`'a taşındı, burada yalnız çağrı "
+     "kaldı. Toplam tavanı `ask()` tavanını içerdiği için ikisi birlikte hareket eder. "
+     f"`sha=858336a`"),
     ("d2k-oylama-esigi-kisayolu", 10,
      "🔴🔴 **`§D2/K` — «TEK ADAY» KISAYOLU EŞİĞİ ATLIYORDU.** `D2` (`oylama_paydasi`) bir "
      "**yalanı** kapatmıştı: 1 cevap + 2 çekimser, payda `cands` ile **%100 «oy birliği»** "

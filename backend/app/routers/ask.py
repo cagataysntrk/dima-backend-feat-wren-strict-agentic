@@ -2397,43 +2397,11 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             # % paylar, kırpma uyarısı kayboluyordu. `contribution` alanı zengin gövdeyi
             # taşır; `next_steps` yalnız GEZİNME için kalır (kullanıcı bir bulguyu tek
             # başına açmak isterse) — ikisi farklı şeydir ve UI'da farklı görünmelidir.
-            # 🔴🔴 `§AA2` — **BİR TEKNİĞİN REDDİ, TURUN REDDİ OLAMAZ.**
-            #
-            # ⊙ Canlı ölçüm (7 turluk zincir, 2026-08-10): altı tur kusursuz aktı
-            # (odak beyanlı, yoy hesaplandı, ciro eklendi) ve yedinci tur —
-            # *«özetle ne yapmalıyız»* — **bomboş** döndü:
-            #
-            #     source=None · rows=0 · interpretation=YOK · next_steps=[] ·
-            #     note: «fire_orani_yuzde toplanabilir değil (non_additive) —
-            #            katkı payı matematiksel olarak tanımsız olur»
-            #
-            # Cümle **doğru**: bir oranda katkı payı gerçekten tanımsızdır. Ama kullanıcı
-            # *katkı payı* istemedi, **özet** istedi — ve özet **elde vardı**: aynı sistem
-            # *«bunu nasıl yorumlarsın»*a 2 olgu + 6 chip veriyor.
-            #
-            # 🔴 Yani bir **tekniğin** sınırı, **turun** cevabını yuttu. Ve bu, bu dosyanın
-            # kardeşi `contribution.py`'nin `§AA1`'de yazdığı dersin birebir tekrarı:
-            # *«Bir sınırı aşmıyoruz, yanına doğru soruyu koyuyoruz.»* Orada uygulanmış,
-            # burada uygulanmamıştı.
-            #
-            # ⊙ Çözüm yeni bir motor değil: eldeki fişi **LLM'siz yeniden koş** (`D4`'ün
-            # checkpoint yeteneği) → satırlar döner → `_maybe_interpret` olguları ve
-            # chip'leri **kendiliğinden** üretir. Red **kalır**, yalnız artık tek başına
-            # değil.
-            #
-            # ⚠ Yalnız rapor üretilemediğinde koşar: katkı çalıştıysa gövde zaten zengin
-            # ve ikinci bir sorgu boşuna maliyettir (`E6`).
-            #
-            # *«Yapamam» bir cevap değildir; «şunu yapamam ama şunu biliyorum» bir cevaptır.*
-            _sonuc = None
-            if not katki.raporlar and prev_cq:
-                try:
-                    _sql = service.cube_sql(prev_cq)
-                    _ham2 = service.query(_sql, limit=200)
-                    _sonuc = QueryResult(**_ham2) if _ham2 else None
-                except Exception:              # noqa: BLE001 — red yine de döner
-                    _log.warning("konuşma: red yanında rapor yeniden koşulamadı",
-                                 exc_info=True)
+            # 🔴 `§AA2` — bir tekniğin reddi, turun reddi olamaz. Gerekçe ve ölçüm
+            # `contribution.yanindaki_rapor` docstring'inde (ilkenin evi `§AA1` orada).
+            _ham3 = (_contrib.yanindaki_rapor(service, prev_cq)
+                     if not katki.raporlar else None)
+            _sonuc = QueryResult(**_ham3) if _ham3 else None
             return AskResponse(question=body.question, source=None, note=not_metni,
                                cube_query=prev_cq, next_steps=adimlar[:8],
                                result=_sonuc,
