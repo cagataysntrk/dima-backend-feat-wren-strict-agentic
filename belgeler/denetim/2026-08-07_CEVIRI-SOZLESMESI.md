@@ -9625,3 +9625,52 @@ SONRA: enerji_makine → ('2024-01-01', '2026-06-01')  ✅
 
 *Bir adın ardında bir ifade varsa, o adı kullanan her tüketici o ifadeyi de bilmek
 zorundadır — yoksa aynı katalog iki farklı şey anlatır.*
+
+## `§UY/K` + REFACTOR — *ve tavanı kapı korudu*
+
+### Yanlış-pozitif beyan kapandı
+
+```
+ÖNCE : «en çok duruşa yol açan 3 nedeni bul» → Malzeme/Parti Bekleme · 427.140 dk
+       note: «⚠ Sayı doğru ama EKSİK: «durus» bu küpte tanımlı değil.»   🔴 YANLIŞ
+SONRA: aynı doğru cevap, note: yalnız dönem beyanı                        ✅
+```
+
+Kök: küpün sinonimleri **çok kelimeli öbek** (`toplam durus` · `durus nedeni`),
+`_match_measure` **tam öbeği** arıyor; soruda öbek değil **kelime** geçiyor. Doğru
+yüklem depoda **zaten vardı** — `partial_unknowns` kapsamayı kelime düzeyinde
+hesaplıyor. ⚠ Kapı **dar**: `kapsiyor("fire", kalite)` → `False`, yani `§Cİ`'nin gerçek
+ikame beyanı **aynen** çalışıyor.
+
+### 🔴 Modül büyüme kapısı beni yakaladı — ve tavan YÜKSELTİLMEDİ
+
+```
+ask()          1369 > 1345
+cube_router    1964 > 1893
+ask.py toplam  2792 > 2758
+```
+
+Kapının kendi mesajı: *«yeni davranışı MODÜLE ÇIKAR, tavanı yükseltme. Tavanı
+yükseltmek kapıyı kapının kendisiyle çürütür.»* → **203 satır iki yeni modüle çıktı**:
+
+| modül | satır | ayrımın gerekçesi |
+|---|---|---|
+| `app/ters_yon.py` | 141 | *«kullanıcının sözü hangi katalog adına karşılık gelir»* — **öğrenir** |
+| `app/deger_eslesme.py` | 62 | *«söylenen şey bir DEĞER mi, hangisi»* |
+| `deger_capasi.huni_karari` | 30→13 | karar `ask()`ten çıktı; sırayı huni, kararı modül yönetir |
+
+⊙ `cube_router` ise *«bu soru hangi sorguya çevrilir»* sorusunu **cevaplar** — biri
+çalışır, öteki öğrenir. *Bir tavanı yükseltmek bir kazanç değildir.*
+
+⚠ Taşınamaz kalanlar `sha + Δ + gerekçe` ile yazıldı; her biri **neden** taşınamadığını
+söylüyor: huni kuralı huniden başka yerde geçerli olamaz · taşıyıcı vardığı yerde
+boşaltılmalı · erişimci bir import döngüsünü kırıyor · oy kararı oyu sayan yerde verilir.
+
+### Refactor sonrası canlı doğrulama — dördü de tuttu
+
+```
+deger_eslesme     → vardiya eq «2. Vardiya (16-24)» → 0,635          ✅
+ters_yon          → iz: «zayiat» → toplam_fire_kg                     ✅
+huni_karari       → «3» → «3. Vardiya (00-08)» → 55.512 dk            ✅
+§UY/K             → yanlış «eksik» beyanı GİTTİ                       ✅
+```
