@@ -9674,3 +9674,38 @@ ters_yon          → iz: «zayiat» → toplam_fire_kg                     ✅
 huni_karari       → «3» → «3. Vardiya (00-08)» → 55.512 dk            ✅
 §UY/K             → yanlış «eksik» beyanı GİTTİ                       ✅
 ```
+
+---
+
+# TUR — 2026-08-10 · `§ÜK` **«HANGİSİ» SORUSUNA «NE KADAR» CEVABI**
+
+## Turun deseni — aynı şekildeki soru, İKİ farklı davranış
+
+| soru | kırılım | sonuç |
+|---|---|---|
+| `bu yıl en kötü fire` | `makine` ✓ | RAM-2 · %22,12 |
+| `bu yıl en yüksek ciro` | `musteri` ✓ | EGE KNIT |
+| `bu yıl en kötü oee` | `makine` ✓ | RAM-3 |
+| `bu yıl en yüksek enerji tüketimi` | 🔴 **yok** | **5.500.126 kWh** — tek toplam, **beyansız** |
+| `bu yıl en iyi kâr marjı` | — | ✅ *«Hangi kırılımı istiyorsun?»* + 3 chip |
+
+⊙ Sonuncusu **`§D2/K`'nin canlı kanıtı**: iz `self-consistency %33 → netleştirme, tahmin
+YOK`. Yani bu turda yapılan düzeltme, garson kırılımda uyuşamayınca **soruyor**.
+
+🔴 Ama dördüncüsü sessizce toplam veriyordu: kullanıcı **hangisi** diye sordu, sistem
+**ne kadar** diye cevapladı. `order desc` tek satırlık bir toplamın üstünde çalıştı —
+bir **yok-işlem**, ama cevapta sıralanmış bir sonuç gibi duruyor.
+
+## Kök — var olan beyan bu vakayı GÖREMİYORDU
+
+`uyum`un `ustunluk` beyanı yalnız *«sıralama hiç yapılamadı»* durumunu sayıyor. Burada
+sıralama **yapıldı** — anlamsız bir yerde. Yeni yüklem: **üstünlük istendi + sıralama var
++ kırılım yok** → beyan.
+
+⚠ Yanlış-pozitif kapısı (`§101.1`): `timeDimensions` **de bir kırılımdır**
+(*«en yüksek aylık ciro»* ay ay sıralanır) — ikisinden biri varsa beyan yazılmaz.
+Canlı doğrulama bunu hemen gösterdi: aynı soru bir sonraki koşumda `donem_tarih__year`
+ile geldi ve beyan **doğru biçimde yazılmadı**.
+
+*Bir üstünlük sorusu bir SEÇİM ister; seçilecek bir küme yoksa cevap bir sayı değil,
+bir yanlış anlamadır.*

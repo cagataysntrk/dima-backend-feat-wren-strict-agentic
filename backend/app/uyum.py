@@ -619,6 +619,38 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
             "ustunluk",
             "**en yüksek/en çok** dedin ama sıralama uygulayamadım",
             "*«en yüksek 5 makine»* gibi sayı verirsen sıralayıp keserim."))
+    # 🔴🔴 `§ÜK` — **SIRALAMA VAR AMA KIRILIM YOK: «hangisi» sorusuna «ne kadar» cevabı.**
+    #
+    # ⊙ Canlı ölçüm (curl turu, 2026-08-10):
+    #
+    #     «bu yıl en yüksek enerji tüketimi» → {elektrik_tuketimi_kwh: 5.500.126}
+    #     cq: order desc · dimensions: YOK · beyan: YOK
+    #
+    # Kullanıcı **hangisi** diye sordu, sistem **ne kadar** diye cevapladı. `order desc`
+    # tek satırlık bir toplamın üstünde çalıştı — yani bir **yok-işlem**, ama cevapta
+    # sıralanmış bir sonuç gibi duruyor.
+    #
+    # 🔴 Yukarıdaki `ustunluk` beyanı bunu **göremiyor**: o yalnız *sıralama hiç
+    # yapılamadı* durumunu sayıyor. Burada sıralama **yapıldı** — anlamsız bir yerde.
+    #
+    # ⚠ Ve sistem aynı soruyu bazen **doğru** ele alıyor: *«bu yıl en iyi kâr marjı»* →
+    # *«Hangi kırılımı istiyorsun?»* (garson kırılımda uyuşamadı → netleştirme). Yani
+    # davranış **tutarsızdı**: aynı şekildeki soru bir yolda soruluyor, ötekinde
+    # sessizce toplamla cevaplanıyordu.
+    #
+    # ⚠ Yanlış-pozitif kapısı (`§101.1`): `timeDimensions` de bir **kırılımdır**
+    # (*«en yüksek aylık ciro»* → ay ay sıralanır). İkisinden biri varsa beyan **yazılmaz**.
+    #
+    # *Bir üstünlük sorusu bir SEÇİM ister; seçilecek bir küme yoksa cevap bir sayı
+    # değil, bir yanlış anlamadır.*
+    if (niyet.ustunluk_istendi or niyet.ustunluk) and siralama \
+            and not (ic.get("dimensions") or ic.get("timeDimensions")):
+        out.append(Ihlal(
+            "ustunluk_kirilimsiz",
+            "**en yüksek/en kötü** dedin ama cevapta bir **kırılım yok** — bu tek bir "
+            "**toplam**, sıralanacak bir liste değil",
+            "Neye göre sıralayayım? *«makine bazında»* · *«müşteri bazında»* · "
+            "*«aylık»* yazarsan hangisi olduğunu gösteririm."))
     # `§R1` — SAYI VERİLDİ, KESİLMEDİ. Yukarıdaki beyandan **ayrı** bir kusurdur:
     # orada sıralama hiç yapılamamıştır, burada yapılmış ama **sayı tutulmamıştır**.
     elif niyet.ustunluk and not kesme:
