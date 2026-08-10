@@ -70,6 +70,12 @@ kararlar:
 
   - terim: ariza durusu
     kutu: belirsiz
+    # 🔴 `olculer:` — kararın HANGİ ölçüleri yönettiği **beyan edilir**, tahmin edilmez.
+    # Kapı önce bunu okur; yoksa terim↔ad alt-dizesine düşer. `ariza durusu` ↔
+    # `toplam_durus_dakika` bağı bir alt-dize ile kurulamıyordu (çekim eki) ve kalem
+    # **kararsız görünüyordu** — oysa kararı vardı.
+    # *Bir bağı tahmine bırakmak, onu bir gün sessizce kopmaya bırakmaktır.*
+    olculer: [toplam_durus_dakika]
     tarih: 2026-08-04
     gerekce: >-
       `bakim.ariza_suresi` (bakım kaydı) ile `oee.plansiz_durus_dakika` (üretim duruşu)
@@ -84,3 +90,72 @@ kararlar:
       `surdurulebilirlik` ≡ `parti` (ikisi de `partiler` grain'inde — FAZ 2.4 beyanı).
       Yoğunluk ölçüleri `parti` grain'ine ait METRİKLERDİR. Bu bir sahiplik sorunu değil
       bir MODELLEME borcudur; sahip yazmak kusuru gizlerdi.
+
+  # ══ 2026-08-10 · B-6 SAHİPLİK TURU — 9 çok sahipli ölçünün kararsız kalan 6'sı ══
+  #
+  # ⊙ Ölçüldü (`/stats/katalog`, canlı derlenmiş şema): 9 çok sahipli ölçü adı var,
+  # **6'sının kararı yoktu**. Rapor `B-4`: *"boş bırakmak üçüncü bir seçenek değildir"* —
+  # bugün olan da oydu ve maliyeti ₺11,86 milyonluk sessiz bir seçimdi.
+
+  # ── KUTU (1) · TEK SAHİP ────────────────────────────────────────────────
+  - terim: dogalgaz
+    kutu: tek_sahip
+    sahip: enerji_makine
+    tarih: 2026-08-10
+    gerekce: >-
+      `elektrik` kararının birebir eşleniği ve aynı çift: `enerji_makine` doğalgazı
+      MAKİNE grain'inde **ölçer**; `surdurulebilirlik` onu bir raporlama merceği olarak
+      taşır. Aynı hastalığa aynı ilaç — *bir sınıf hatayı bir örnekte kapatmak sınıfı
+      kapatmaz*.
+
+  - terim: tep
+    kutu: tek_sahip
+    sahip: surdurulebilirlik
+    tarih: 2026-08-10
+    gerekce: >-
+      ⚠ Ve bu, `dogalgaz`'ın **tersi** yönde karar — sebebi de tam olarak o: TEP
+      (ton eşdeğer petrol) bir ölçüm değil bir **raporlama birimidir**; doğal evi
+      sürdürülebilirlik raporlamasıdır, makine telemetrisi değil. *Aynı çiftteki iki
+      ölçünün sahibi aynı olmak zorunda değildir; sahibi belirleyen küp değil, ölçünün
+      ne olduğudur.*
+
+  - terim: uretim
+    kutu: tek_sahip
+    sahip: oee
+    tarih: 2026-08-10
+    gerekce: >-
+      🔴 Bu karar **zaten kodda yazılıydı, katalogda değildi**: `wren_service.py`
+      `maliyet.toplam_uretim_kg`'yi doğal dil eşleştirmesinden bilerek çıkarmış ve
+      sebebini yazmış — *"o, kg-başına maliyetin PAYDASIDIR; `toplam üretim` sinonimini
+      taşıdığı için route on eval vakasını oraya yönlendiriyordu ve o cube'un yalnız
+      `makine` boyutu olduğu için soruların çoğunu cevaplayamıyordu bile."*
+      Karar burada **beyan ediliyor** ki bir daha kod yorumundan okunmasın.
+
+  - terim: fire
+    kutu: tek_sahip
+    sahip: parti
+    tarih: 2026-08-10
+    gerekce: >-
+      `parti` fireyi işin kendi biriminde (kg, parti grain'i) ölçer; `oee` onu bir
+      **kalite kaybı bileşeni** olarak taşır. Sistem bugün zaten `parti` seçiyor ve
+      ötekini beyan ediyor — bu satır o **fiili** kararı **bilinçli** hâle getirir.
+      *Kurala bağlanmamış bir alışkanlık, bir gün sessizce değişir.*
+
+  # ── KUTU (2) · GERÇEK BELİRSİZLİK → sahip YAZILMAZ, chip sorar ───────────
+  - terim: alacak
+    kutu: belirsiz
+    tarih: 2026-08-10
+    gerekce: >-
+      `bakiye`nin birebir kardeşi ve aynı çift (`cari` ↔ `mizan`): cari alacağı ile
+      mizan alacağı **farklı sorulardır**. Birini seçmek, kullanıcının sormadığı soruya
+      cevap vermek olur. *Gerçek belirsizliği tahminle kapatmak, belirsizliği yok
+      etmez — yalnız görünmez kılar.*
+
+  - terim: ilk seferde tamam
+    kutu: belirsiz
+    tarih: 2026-08-10
+    gerekce: >-
+      `oee` bunu MAKİNE grain'inde, `parti` PARTİ grain'inde ölçer — yani iki sayı
+      farklı paydalara sahiptir ve *«RFT yüzdesi kaç»* sorusunun iki meşru cevabı
+      vardır. ⚠ Bir sahip seçmek burada bir tercih değil bir **payda seçimidir** ve
+      kullanıcı hangisini sorduğunu söylemeden yapılamaz.
