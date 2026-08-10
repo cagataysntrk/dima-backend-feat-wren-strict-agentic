@@ -8773,3 +8773,46 @@ Türkçede `her` bir belgisiz sıfattır) **ve** sorguda bir kesme bulunmalı. *
 
 **Kapı (tur başı):** 4484 yeşil · korpus **%94.9** · `sessiz_yanlis` **8** · `dogru`
 **96** · eval +0.0%.
+
+---
+
+## `XV` TURU — **`§AR`: doğru boru, ölçülmeyen kazanç** *(2026-08-10)*
+
+### Yapılan — tek sahip, iki tüketici
+
+`pencere`/`turev` alanlarının **ne anlama geldiği** yalnız `llm.py`'nin Intent isteminde
+yazılıydı. Plan istemi **aynı `cube_query` şemasını** kullanıyor ama bu açıklamayı
+**hiç görmüyordu**. Rehber `intent_semasi.ALAN_REHBERI`'ne çıkarıldı ve iki istem de
+onu **çağırıyor** (kopya yok).
+
+🔴 **Intent istemi bayt bayt korundu** — eski ve yeni metin `diff`'lendi: **fark yok**.
+*Bir metni paylaşmak, onu değiştirmek değildir.*
+
+⚠ Ve bu, `llm.py`'nin kendi yorumunun (`M-9`: *«bir kuralı yanlış isteme yazmak, hiç
+yazmamaktır»*) **ikinci istem** hâlidir: kural doğru isteme yazılmıştı ama ikinci istem
+doğduğunda taşınmadı.
+
+### 🔴 ÖLÇÜM — ve dürüst sonuç: **davranış değişmedi**
+
+| soru | sonuç |
+|---|---|
+| *«bu yıl toplam ciromun **yüzde kaçı** ilk 3 müşteriden»* | 3 adım · `SORGU×2→ANLAT` · `pencere=null` |
+| *«bu yıl her müşterinin toplam ciro **içindeki payı**»* | cevapsız |
+| *«bu yıl müşterilerin **ciro payı yüzde olarak**»* | 8 satır · `pencere=null` |
+
+⊙ `pencere:pay` **hiçbirinde ateşlemedi** — ve kritik olan şu: Intent istemi bu kuralı
+**zaten** taşıyordu (*«toplam içindeki payı / yüzde kaçı» → **pay***). Yani boşluk plan
+isteminde değil, **modelin o alana uzanmamasında**.
+
+**Bu turun kazancı bir davranış değil bir yapıdır:** `KAT-1` riski kapandı (iki istem
+tek metinden okuyor) ve plan yolu artık o alanları **görüyor**. Kazanç ölçülmedi ve
+**ölçülmediği yazıldı**.
+
+> *Bir kuralı doğru yere koymak onu uygulatmaz — yalnız uygulanabilir kılar.*
+
+**Açık borç:** `pencere:pay` **öğretilmiş ama kullanılmıyor**. Sonraki adım istemde bir
+**örnek** (bu depoda `AJ3.5` aynı kusuru ölçmüştü: *«zor işi yapana örnek verilmemişti»*)
+ya da route tarafında deterministik bir *«payı/yüzde kaçı»* → `pencere:pay` kuralı —
+ikincisi `§99.1` riski taşır, ölçülmeli.
+
+**Kapı (tur başı):** 4487 yeşil · korpus **%94.9** · `sessiz_yanlis` **8** · eval +0.0%.

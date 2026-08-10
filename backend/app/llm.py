@@ -14,6 +14,8 @@ Uygulamalar:
 
 from __future__ import annotations
 
+from app import intent_semasi as _intent_semasi
+
 import contextvars
 import re
 import time
@@ -408,26 +410,7 @@ def _cube_select_system(catalog: str) -> str:
         # görmüyordu. Canlı uçtan uca sınama gösterdi: `bu yıl aylık **kümülatif** fire`
         # → `cq`'da `pencere` **yok**, `bilinmeyen=kumulatif`. *Bir kuralı yanlış isteme
         # yazmak, hiç yazmamaktır* — ve bunu ancak zinciri sonuna kadar koşarak görürsün.
-        '- PENCERE: "pencere":{"taban":"<ölçü>","kip":"kumulatif|hareketli_ort|sira|'
-        'onceki|degisim_yuzde|pay"}. «kümülatif/birikimli»→kumulatif; «hareketli N aylık '
-        'ortalama»→hareketli_ort + "pencere_boyu":N; «her X için en yüksek»→sira + '
-        '"bolum":["<boyut>"]; «önceki döneme göre yüzde değişim»→degisim_yuzde; '
-        # 🔴 `§V6` — `sira` AÇGÖZLÜYDÜ ve kural İKİ istemde birden yazılı (`KAT-1`).
-        # Ölçüldü (`V13`/`D3`, canlı): *«duruş süresini AZALAN SIRADA İLK 5»* → garson
-        # `pencere:sira` yazdı, `order`+`limit` yazmadı → **11 satır**, hepsi sıra
-        # numaralı ama sıralanmamış ve kesilmemiş. ⊙ İkisi farklı şeydir: `sira` bir
-        # **sütun** üretir (ROW_NUMBER), `order`+`limit` **sonucu** belirler. Kuraldaki
-        # *«her X için»* bir sınırdı ama istemde bir **örnek** gibi duruyordu.
-        # *Bir örnek, kural sanılırsa genişler.*
-        '🔴 `sira` YALNIZ GRUP-İÇİ sıralamadır ve `"bolum"` ŞARTTIR («her makine için '
-        'en yüksek vardiya»). Düz bir «en yüksek/ilk N» isteğinde `sira` DEĞİL '
-        '`order`+`limit` yaz. '
-        '«toplam içindeki payı / yüzde kaçı» → **pay** (turev DEĞİL). '
-        "kumulatif/hareketli_ort/degisim_yuzde bir ZAMAN KOVASI ister (timeDimensions).\n"
-        '- TÜREV (oran/pay): "turev":{"pay":"<ölçü>","payda":"<ölçü>","kip":"yuzde|oran|'
-        'fark"} ve İKİ ölçüyü de measures\'a yaz. «üretimin yüzde kaçı fire», «toplam '
-        "içindeki payı» bunun içindir. ⚠ Katalogda hazır bir oran ölçüsü VARSA "
-        "(ör. `…_orani_yuzde`) **onu** seç, turev yazma.\n"
+        + _intent_semasi.ALAN_REHBERI +
         # 🔴 `AJ3.5` — ÖRNEKLER. Ölçüldü: dar düzenleme yapan `refine_cube` prompt'unda
         # **4 örnek** vardı, doğal dili yorumlayan bu prompt'ta **0**. Zor işi yapana
         # örnek verilmemişti.

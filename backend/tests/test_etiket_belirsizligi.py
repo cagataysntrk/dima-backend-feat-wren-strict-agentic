@@ -180,3 +180,36 @@ def test_KESME_YOKSA_BEYAN_URETMEZ():
     cq = {"cube": "parti", "measures": ["toplam_fire_kg"], "dimensions": ["makine"]}
     assert "grup_basina" not in {i.isaret for i in denetle("her makinede fire ne kadar",
                                                            {"cube_query": cq})}
+
+
+def test_ALAN_REHBERI_TEK_SAHIP_IKI_TUKETICI():
+    """🔴🔴 `§AR` — `pencere`/`turev` açıklaması **yalnız Intent isteminde** yazılıydı.
+
+    ⊙ Ölçüldü (canlı `XII`): *«toplam ciromun **yüzde kaçı** ilk 3 müşteriden geliyor»*
+    → plan `SORGU×2 + ANLAT` kurdu ve *«Sayı doğru ama eksik»* beyan etti. Oysa cevap
+    **ifade edilebilir**: `pencere:{taban:toplam_ciro, kip:pay}`. Aynı `cube_query`
+    şemasını kullanan iki istemden **biri** alanların ne demek olduğunu biliyordu.
+
+    ⚠ Ve `llm.py`'nin kendi yorumu bu dersi zaten yazmış: *«bir kuralı yanlış isteme
+    yazmak, hiç yazmamaktır»* (`M-9`, kümülatif vakası). Bu, o dersin **ikinci istem**
+    hâli — kural doğru isteme yazılmıştı ama ikinci istem doğduğunda taşınmadı.
+    """
+    from app.intent_semasi import ALAN_REHBERI
+    from app.plan_semasi import plan_sistem_metni
+
+    assert "pay" in ALAN_REHBERI and "pencere" in ALAN_REHBERI
+    metin = plan_sistem_metni("- parti: measures[toplam_ciro]; dimensions[musteri]")
+    assert "pencere" in metin, "plan istemi `pencere`'yi hâlâ görmüyor"
+    assert "toplam içindeki payı" in metin, "plan istemi `pay` kipini görmüyor"
+
+
+def test_ALAN_REHBERI_KOPYALANMADI():
+    """⚠ `KAT-1` — metin **çağrılır**, kopyalanmaz: iki kopya bir gün ayrışırdı."""
+    import inspect
+
+    from app import plan_semasi
+
+    src = inspect.getsource(plan_semasi)
+    assert "ALAN_REHBERI" in src, "plan istemi rehberi çağırmıyor"
+    assert '"pencere":{"taban"' not in src, (
+        "rehber metni plan_semasi'ye KOPYALANMIŞ — tek sahip kuralı kırıldı")

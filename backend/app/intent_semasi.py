@@ -24,6 +24,48 @@ from app import cube_operatorleri as _ops  # `M-6` — operatör kümesinin TEK 
 _GRAN_ENUM = ["year", "quarter", "month", "week", "day"]
 
 
+#: 🔴🔴 `§AR` — **ALAN REHBERİ: TEK SAHİP, İKİ TÜKETİCİ.**
+#:
+#: `pencere` ve `turev` alanlarının **ne anlama geldiği** bugüne kadar yalnız
+#: `llm.py`'nin Intent isteminde yazılıydı. Plan istemi (`plan_semasi`) aynı `cube_query`
+#: şemasını kullanıyor ama bu açıklamayı **hiç görmüyordu**.
+#:
+#: ⊙ Ölçüldü (canlı `XII`): *«toplam ciromun **yüzde kaçı** ilk 3 müşteriden geliyor»*
+#: → plan `SORGU×2 + ANLAT` kurdu ve *«Sayı doğru ama eksik»* beyan etti. Oysa cevap
+#: **ifade edilebilir**: `pencere:{taban:toplam_ciro, kip:pay}`. Intent yolu bunu
+#: biliyor, plan yolu bilmiyordu.
+#:
+#: ⚠ Ve bu ders bu dosyada **zaten yazılı**: `llm.py`'nin kendi yorumu diyor ki
+#: *«bir kuralı yanlış isteme yazmak, hiç yazmamaktır»* (`M-9`/`M-3`, kümülatif vakası).
+#: Aynı hata bir seviye yukarıda tekrarlanmış: kural **doğru** isteme yazılmış ama
+#: **ikinci** istem doğduğunda taşınmamış.
+#:
+#: 🔴 Metin **bayt bayt** korunur: `llm.py` bu sabiti aynı yere koyar, yani Intent
+#: istemi değişmez (`KURAL B`). *Bir metni paylaşmak, onu değiştirmek değildir.*
+ALAN_REHBERI = (
+        '- PENCERE: "pencere":{"taban":"<ölçü>","kip":"kumulatif|hareketli_ort|sira|'
+    'onceki|degisim_yuzde|pay"}. «kümülatif/birikimli»→kumulatif; «hareketli N aylık '
+    'ortalama»→hareketli_ort + "pencere_boyu":N; «her X için en yüksek»→sira + '
+    '"bolum":["<boyut>"]; «önceki döneme göre yüzde değişim»→degisim_yuzde; '
+    # 🔴 `§V6` — `sira` AÇGÖZLÜYDÜ ve kural İKİ istemde birden yazılı (`KAT-1`).
+    # Ölçüldü (`V13`/`D3`, canlı): *«duruş süresini AZALAN SIRADA İLK 5»* → garson
+    # `pencere:sira` yazdı, `order`+`limit` yazmadı → **11 satır**, hepsi sıra
+    # numaralı ama sıralanmamış ve kesilmemiş. ⊙ İkisi farklı şeydir: `sira` bir
+    # **sütun** üretir (ROW_NUMBER), `order`+`limit` **sonucu** belirler. Kuraldaki
+    # *«her X için»* bir sınırdı ama istemde bir **örnek** gibi duruyordu.
+    # *Bir örnek, kural sanılırsa genişler.*
+    '🔴 `sira` YALNIZ GRUP-İÇİ sıralamadır ve `"bolum"` ŞARTTIR («her makine için '
+    'en yüksek vardiya»). Düz bir «en yüksek/ilk N» isteğinde `sira` DEĞİL '
+    '`order`+`limit` yaz. '
+    '«toplam içindeki payı / yüzde kaçı» → **pay** (turev DEĞİL). '
+    "kumulatif/hareketli_ort/degisim_yuzde bir ZAMAN KOVASI ister (timeDimensions).\n"
+    '- TÜREV (oran/pay): "turev":{"pay":"<ölçü>","payda":"<ölçü>","kip":"yuzde|oran|'
+    'fark"} ve İKİ ölçüyü de measures\'a yaz. «üretimin yüzde kaçı fire», «toplam '
+    "içindeki payı» bunun içindir. ⚠ Katalogda hazır bir oran ölçüsü VARSA "
+    "(ör. `…_orani_yuzde`) **onu** seç, turev yazma.\n"
+)
+
+
 def cube_query_json_schema(index: dict, *, harman: bool = False) -> dict:
     """FAZ 3a — CubeQuery'nin ŞEMA-KISITLI biçimi: adlar o ANKİ kataloğun **enum**'u.
 

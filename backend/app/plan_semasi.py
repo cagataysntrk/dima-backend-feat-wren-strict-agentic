@@ -388,6 +388,17 @@ def plan_json_schema(index: dict, *, azami_adim: int = AZAMI_ADIM) -> dict[str, 
     }
 
 
+def _alan_rehberi() -> str:
+    """`intent_semasi.ALAN_REHBERI` — **tek sahip**, iki tüketici (`§AR`).
+
+    ⚠ Fonksiyon içi import: `intent_semasi` bu modülü tanımıyor ama tersi doğru değil;
+    modül düzeyinde bağlamak bir döngü riski taşırdı.
+    """
+    from app.intent_semasi import ALAN_REHBERI
+
+    return ALAN_REHBERI
+
+
 def plan_sistem_metni(catalog: str) -> str:
     """Garsona **plan** dilini öğreten istem — fiil listesi `FIIL_ANLAMI`'ndan **üretilir**.
 
@@ -466,6 +477,19 @@ def plan_sistem_metni(catalog: str) -> str:
         "o adımın **sorgusu** demektir (satırları değil). *«O makinede hangi vardiyada»* "
         "→ `SUZ` ile `$1`'in sorgusunu o makineye daralt, sonra yeniden `SORGU` at.\n"
         "- Aritmetik, koşul, döngü YAZAMAZSIN. Yalnız fiiller ve adım referansları.\n"
+        # 🔴🔴 `§AR` — **ALAN REHBERİ PLAN İSTEMİNE DE GELİYOR.**
+        #
+        # ⊙ Ölçüldü (canlı `XII`): *«toplam ciromun **yüzde kaçı** ilk 3 müşteriden»* →
+        # plan `SORGU×2 + ANLAT` kurdu ve *«Sayı doğru ama eksik»* beyan etti. Oysa cevap
+        # **ifade edilebilir**: `pencere:{taban:toplam_ciro, kip:pay}`. Intent yolu bunu
+        # biliyordu (istemi anlatıyor), plan yolu **bilmiyordu** — aynı `cube_query`
+        # şemasını kullandığı hâlde.
+        #
+        # ⚠ Metin **kopyalanmadı**, `intent_semasi.ALAN_REHBERI`'nden **çağrıldı**: iki
+        # istemde iki kopya, bir gün birinin bayatlaması demekti. Ve `llm.py`'nin kendi
+        # yorumu bu dersi zaten yazmış: *«bir kuralı yanlış isteme yazmak, hiç
+        # yazmamaktır»* — bu, o dersin **ikinci istem** hâli.
+        + _alan_rehberi() +
         "- Tarih YAZMA: dönemi `period_expr` alanına kullanıcının kendi ifadesiyle "
         "(sistemin diline çevirerek) koy; tarihi Python hesaplar.\n"
         # 🔴 Bu satır `_cube_select_system`'den **ödünç alındı** ve gerekçesi ölçüldü:
