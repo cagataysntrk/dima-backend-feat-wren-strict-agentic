@@ -8936,3 +8936,48 @@ gerekmiyorsa, modellememek gerekir.*
 
 **Sıradaki:** operatör sözlüğünün `ALAN_REHBERI`'ne bağlanması (`§AR`'nin dördüncü
 tüketicisi) ve `SAYAC`'ın bir kapıya bağlanması.
+
+---
+
+## `XVIII` TURU — **RAPOR ÖNCELİĞİ: `B-9` + `A9`** *(2026-08-10)*
+
+Kullanıcı raporu birinci öncelik ilan etti ve kapı ritmini düzeltti (*«sürekli kapı
+koşma»*). Bu tur **kapısız** yürüdü; doğrulama **curl** ile yapıldı.
+
+### `B-9` — plan reddinin dört kökü, üçü mekanik
+
+Rapor bunu sıranın **önüne** koymuştu; gerekçe: bedeli her red için bir LLM çağrısı
+olarak **her gün** ödeniyor. Canlı kayıttaki tek satırda iki kusur vardı:
+
+```
+plan REDDEDİLDİ (`oee`'de süzülemeyecek alan(lar): `None`
+                 · tanınmayan süzgeç operatörü: `equals`)
+```
+
+| # | kök | çözüm |
+|---|---|---|
+| 1 | plan isteminde `operator` **0 kez** geçiyordu | rehbere süzgeç bölümü — liste `MOTOR_OPERATORLERI`'nden **üretiliyor** |
+| 2 | red *«doğrusunu»* söylemiyordu | *«geçerliler: eq, neq, …»* kuyruğu (`bilinen_boyutlar`'ın eşleniği) |
+| 3 | `None` bir alan adı gibi basılıyordu | *«süzgeçte `dimension` alanı hiç yazılmamış»* |
+| 4 | `equals` bir LLM turuna mal oluyordu | 24 takma ad **seviye 3**'te, **beyan ederek** |
+
+⚠ (2) için ders **aynı fonksiyonda** yazılıydı — boyut dalına uygulanmış, operatör
+dalına uygulanmamıştı. *Bir sınıf hatayı bir örnekte kapatmak, sınıfı kapatmaz.*
+
+### `A9` — red oranı artık bir **sayı**
+
+`SAYAC` vardı, `sayaclar()` vardı, **hiçbir tüketicisi yoktu**. `/stats/plan` ucu +
+16 kapalı sınıflı sebep dağılımı eklendi. İlk ölçüm (5 çok adımlı curl):
+
+```
+denendi 16 · gecerli 10 · onarildi 3 · dustu 0
+red_orani %19 · onarim_tutma %100
+red_nedenleri: boyut_yok 3 · ad_yok 1 · ulasilmaz 1
+```
+
+🟢 **`operator` ve `suzgec_alani` reddi SIFIR** — `B-9` düzeltmesi ölçülebilir biçimde
+tuttu. ⊙ Kalan baskın sınıf **`boyut_yok`**: model küpte olmayan bir boyut adı yazıyor,
+`O-18` yakalıyor, düzeltme turu **%100** kurtarıyor — bedeli tur başına bir LLM çağrısı.
+Sonraki kök adayı bu.
+
+> *Sebebi sayılmayan bir red, düzeltildiğinde de sayılamaz.*

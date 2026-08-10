@@ -75,13 +75,73 @@ SAYAC: dict[str, int] = {
     "tek_adimli": 0,       # 🔴 `R2`'nin ölçüsü: basit soru basit kaldı mı
     "cok_adimli": 0,
     "adim_toplami": 0,     # ortalama adım = adim_toplami / (tek+cok)
+    "yedege_dondu": 0,     # `O-18/Y` — ad reddi sonrası yapısal plana dönüldü
 }
+
+#: 🔴🔴 `A9` — **RED ORANI BİR İZLENİM DEĞİL, BİR SAYI OLMALI.**
+#:
+#: ⊙ Ölçüldü (rapor `§B-9`): `SAYAC` **vardı**, `sayaclar()` **vardı** — ve **hiçbir
+#: tüketicisi yoktu**. Red oranı loglara gözle bakılarak tespit ediliyordu; sebep
+#: dağılımı olmadan hangi düzeltmenin kaç redde dokunduğu **bilinemez**.
+#:
+#: ⚠ Sınıflar **kendi mesajlarımızdan** türer — kapalı bir küme, çünkü o mesajları
+#: biz yazıyoruz (`_plani_oku` · `dogrula` · `plan_onarim.gerekce`). Bir dış metni
+#: sınıflandırmıyoruz; **kendi sözleşmemizi** sayıyoruz.
+#:
+#: *Sebebi sayılmayan bir red, düzeltildiğinde de sayılamaz.*
+RED_SINIFLARI: tuple[tuple[str, str], ...] = (
+    ("json",           "geçerli bir JSON değil"),
+    ("kok_nesne",      "kök bir nesne olmalı"),
+    ("adimlar",        "`adimlar` boş"),
+    ("bilinmeyen_fiil", "tanımlı bir fiil değil"),
+    ("eksik_alan",     "zorunlu alan(lar) eksik"),
+    ("fazla_alan",     "tanımsız alan(lar)"),
+    ("tip",            "üretiyor"),
+    ("ulasilmaz",      "hiçbir adım tarafından kullanılmıyor"),
+    ("tavan",          "tavan"),
+    ("ileri_referans", "ileri referans"),
+    ("butce",          "bütçe"),
+    ("operator",       "süzgeç operatörü"),
+    ("ad_yok",         "diye bir cube YOK"),
+    ("olcu_yok",       "ölçü(ler) yok"),
+    ("boyut_yok",      "boyut(lar) yok"),
+    ("suzgec_alani",   "`dimension` alanı hiç yazılmamış"),
+)
+
+#: Sebep sayacı — `RED_SINIFLARI`'nın anahtarlarıyla + `bilinmeyen`.
+RED_NEDENLERI: dict[str, int] = {}
+
+
+def red_sinifi(mesaj: str) -> str:
+    """Bir red mesajını **kapalı** bir sınıfa indirger (`A9`).
+
+    ⚠ İlk eşleşen sınıf kazanır ve sıra **bilinçli**: yapısal redler (`json`, `fiil`)
+    alan redlerinden önce gelir, çünkü bir plan hiç okunamadıysa alanları da yoktur.
+    """
+    m = str(mesaj or "")
+    for ad, iz in RED_SINIFLARI:
+        if iz in m:
+            return ad
+    return "bilinmeyen"
+
+
+def _redi_say(mesajlar) -> None:
+    """Bir redde geçen **her** sınıfı sayar (tek mesajda iki kusur olabilir)."""
+    for m in (mesajlar or []):
+        RED_NEDENLERI[red_sinifi(m)] = RED_NEDENLERI.get(red_sinifi(m), 0) + 1
 
 
 def sayaclar() -> dict[str, int]:
     """Ölçüm okuyucusu — **kopyasını** verir. Doğrudan sözlüğü vermek, okuyanın
     yazabilmesi demekti."""
-    return dict(SAYAC)
+    out = dict(SAYAC)
+    # 🔴 `A9` — sebep dağılımı **aynı okuyucudan** çıkar: iki ayrı okuyucu, bir gün
+    # yalnız birinin okunması demekti.
+    out["red_nedenleri"] = dict(RED_NEDENLERI)          # type: ignore[assignment]
+    _d, _o, _du = SAYAC["denendi"], SAYAC["onarildi"], SAYAC["dustu"]
+    out["red_orani_yuzde"] = round(100 * (_o + _du) / _d) if _d else 0
+    out["onarim_tutma_yuzde"] = round(100 * _o / (_o + _du)) if (_o + _du) else 0
+    return out
 
 
 def baglamli(soru: str, onceki: dict | None) -> str:
@@ -146,7 +206,9 @@ def plan_uret(llm: Any, question: str, catalog: str, index: dict,
             # ⚠ İkincisi YOK: ikinci deneme bir **döngüdür** ve döngü bu katmanın
             # bilinçli olarak reddettiği şeydir. *Bir hatayı bir kez söylemek öğretmek,
             # üç kez söylemek yalvarmaktır.*
-            _log.info("plan REDDEDİLDİ (%s) → bir kez düzeltme isteniyor",
+            _redi_say(_neden)          # `A9` — sebep dağılımı
+            _log.info("plan REDDEDİLDİ [%s] (%s) → bir kez düzeltme isteniyor",
+                      ",".join(sorted({red_sinifi(m) for m in _neden})) or "-",
                       "; ".join(_neden) or "sebep yok")
             _duzelt = (question + "\n\n🔴 ÖNCEKİ DENEMEN REDDEDİLDİ: "
                        + "; ".join(_neden)

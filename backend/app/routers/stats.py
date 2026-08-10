@@ -154,3 +154,23 @@ def stats_gecikme(request: Request, days: int = Query(7, ge=1, le=90)) -> dict:
                  "gelenden DAHA AZ faydalı bulundu. Bir yol bütçesini aşıyorsa cevap "
                  "'hızlandır' değil, önce 'NEDEN' olmalıdır."),
     }
+
+
+@router.get("/plan", dependencies=[Depends(require("query:run")), Depends(require_company)])
+def stats_plan() -> dict:
+    """🔴🔴 `A9` — **PLAN REDDİ ARTIK BİR SAYI.**
+
+    ⊙ Ölçüldü (rapor `§B-9`): `plan_garson.SAYAC` **vardı**, `sayaclar()` **vardı** ve
+    **hiçbir tüketicisi yoktu**. Red oranı loglara gözle bakılarak tespit ediliyordu —
+    yani bir düzeltmenin kaç redde dokunduğu **ölçülemiyordu**.
+
+    ⚠ Süreç-içi sayaçtır: yeniden başlatınca sıfırlanır ve **öyle olmalı** — bu bir
+    denetim kaydı değil, bir **tur ölçüsü**. Kalıcı olması gerekseydi `interaction_log`
+    zaten var. *Bir ölçüyü kalıcı yapmak, onu ikinci kez yazmaya davet eder.*
+
+    Döner: `denendi` · `gecerli` · `onarildi` · `dustu` · `red_orani_yuzde` ·
+    `onarim_tutma_yuzde` · `tek_adimli`/`cok_adimli` · **`red_nedenleri`** (sınıf → adet).
+    """
+    from app.plan_garson import sayaclar
+
+    return sayaclar()

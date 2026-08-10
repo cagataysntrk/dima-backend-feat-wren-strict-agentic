@@ -812,3 +812,54 @@ def test_PLAN_ISTEMI_OPERATOR_SOZLUGUNU_TASIYOR():
     assert "operator" in metin, "plan istemi süzgeç biçimini hâlâ görmüyor"
     for op in MOTOR_OPERATORLERI:
         assert op in metin, f"`{op}` istemde yok — liste üretilmiyor olabilir"
+
+
+def test_RED_SINIFI_KENDI_MESAJLARIMIZI_TANIR():
+    """🔴🔴 `A9` — **sebebi sayılmayan bir red, düzeltildiğinde de sayılamaz.**
+
+    ⊙ Ölçüldü (rapor `§B-9`): `SAYAC` vardı, `sayaclar()` vardı ve **hiçbir tüketicisi
+    yoktu**; red oranı loglara gözle bakılarak tespit ediliyordu.
+
+    ⚠ Sınıflandırıcı **kendi sözleşmemizi** sayar — bu mesajları biz yazıyoruz, yani
+    kapalı bir kümedir. Bir dış metni sınıflandırmıyoruz.
+    """
+    from app.plan_garson import red_sinifi
+
+    ORNEKLER = {
+        "çıktı geçerli bir JSON değil": "json",
+        "adım 2 (`SORGU`): şu zorunlu alan(lar) eksik: cube_query": "eksik_alan",
+        "adım 4 (`SORGU`): tanımsız alan(lar): dimensions, measures": "fazla_alan",
+        "adım 6 (`BAGLA.kaynak`) bir satirlar bekliyor ama `$5` bir sorgu üretiyor": "tip",
+        "adım 2 (`BAGLA`) hiçbir adım tarafından kullanılmıyor": "ulasilmaz",
+        "plan 13 adım istiyor, tavan 12": "tavan",
+        "adım 3: tanınmayan süzgeç operatörü: `equals`": "operator",
+        "`enerji` diye bir cube YOK": "ad_yok",
+        "`parti`'de şu boyut(lar) yok: sebep": "boyut_yok",
+        "süzgeçte `dimension` alanı hiç yazılmamış (1 süzgeç)": "suzgec_alani",
+    }
+    yanlis = {m: red_sinifi(m) for m, b in ORNEKLER.items() if red_sinifi(m) != b}
+    assert not yanlis, f"sınıflandırılamayan red mesajları: {yanlis}"
+
+
+def test_SAYAC_ORANLARI_VE_SEBEP_DAGILIMI_YAYIMLANIYOR():
+    """🔴 `A9` — okuyucu **oranı** ve **sebep dağılımını** birlikte vermeli.
+
+    ⚠ İki ayrı okuyucu, bir gün yalnız birinin okunması demekti.
+    """
+    from app.plan_garson import sayaclar
+
+    o = sayaclar()
+    for alan in ("denendi", "onarildi", "dustu", "red_orani_yuzde",
+                 "onarim_tutma_yuzde", "red_nedenleri"):
+        assert alan in o, f"`{alan}` yayımlanmıyor: {sorted(o)}"
+    assert isinstance(o["red_nedenleri"], dict)
+
+
+def test_SAYAC_UCU_BAGLI():
+    """🔴 Sayaç yayımlanıyor ama **uç yoksa** yine kimse okumaz — `A9`'un tam hâli."""
+    import inspect
+
+    from app.routers import stats as _stats
+
+    src = inspect.getsource(_stats)
+    assert "/plan" in src and "sayaclar" in src, "`/stats/plan` ucu bağlı değil"

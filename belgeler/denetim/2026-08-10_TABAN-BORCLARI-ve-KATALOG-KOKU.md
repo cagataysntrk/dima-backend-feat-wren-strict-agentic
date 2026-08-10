@@ -1201,7 +1201,7 @@ gerektirmiyor, ve **her red bir LLM çağrısı + gecikme** demek — yani bedel
 | ☐ | `A6` | **NABIZ kademesi** — sabit tohumlu alt küme, ~2 dk, ~2 saatte bir | kendi tabanı ayrı ilan edilmiş; *"korpus %"* demiyor |
 | ☐ | `A7` | **Route korpusu değişiklik-tetikli** olur (`cube_router`·katalog·`packs/**`) + günde 1 | `kapi.py --degisen` kuralına bağlandı |
 | ☐ | `A8` | **KAPI DEFTERİ** — her koşumda *ne yakaladı / hangi kararı yanlış verdirdi* | bugünkü **2 haklı ↔ 1 haksız** kayda geçti |
-| ☐ | `A9` | **`plan_garson.SAYAC` yayımlanır** — red sayısı · onarım tutma oranı · **sebep dağılımı** | red oranı bir izlenim değil **sayı** |
+| ✅ | `A9` | **`plan_garson.SAYAC` yayımlanır** — red sayısı · onarım tutma oranı · **sebep dağılımı** | red oranı bir izlenim değil **sayı** · **KAPANDI** `sha=892de28`: `/stats/plan` ucu + `red_nedenleri` sınıflandırıcısı (16 kapalı sınıf, **kendi mesajlarımızdan**). İlk ölçüm: `red_orani=%19` · `onarim_tutma=%100` · `boyut_yok 3 · ad_yok 1 · ulasilmaz 1` — ve **`operator`/`suzgec_alani` reddi SIFIR**, yani `B1`–`B4` ölçülebilir biçimde tuttu |
 | ☐ | `A10` | **Latency tavanı kapısı** (`P-2`) | `/ask` p95 bütçesi kırmızı verebiliyor *(47→177 ms görünmedi çünkü ölçen yoktu)* |
 | ☐ | `A11` | **Katalog envanteri + kapı** (`B-0`) | küp·ölçü·benzersiz·çok sahipli·yön oranı **tek kaynaktan**; 127/132/141 çelişkisi bitti |
 
