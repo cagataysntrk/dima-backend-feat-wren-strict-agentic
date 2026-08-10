@@ -661,3 +661,50 @@ def test_BAGLAM_IKI_URETICIYE_DE_BAGLI():
     src = inspect.getsource(plan_tuketici.cevap)
     assert "plan_garson.baglamli(soru," in src, "boşluk yolu bağlamsız"
     assert "plan_onceki" in src, "bağlam istek durumundan okunmuyor"
+
+
+def test_ISARET_SIFATI_SUPHE_URETIR():
+    """🔴🔴 `§AT` — *«o makinede»* denince süzgeç kurulmuyordu, **hepsi** dönüyordu.
+
+    Ölçüldü (canlı `IX`, thread C — karşıtlık keskin):
+
+    | soru | süzgeç | satır |
+    |---|---|---|
+    | *«**RAM-2 için** vardiya kırılımı»* | ✅ `makine eq RAM-2` | **3** |
+    | *«**o makinede** vardiya kırılımı»* | 🔴 yok | **33** |
+
+    Varlık **adıyla** anılınca süzgeç kuruluyor, **referansla** anılınca sessizce hepsi
+    dönüyor — ve rozet `source=cube`. *Bir varlığa işaret etmek onu adlandırmaktır.*
+    """
+    from app.niyet_tasima import EKSIK_ATIF, eksiklik
+
+    CQ = {"cube": "parti", "measures": ["fire_orani_yuzde"],
+          "dimensions": ["makine", "vardiya"],
+          "filters": [{"dimension": "tarih", "operator": "gte", "value": "2026-01-01"}]}
+    assert EKSIK_ATIF in eksiklik(CQ, "o makinede vardiya kırılımı")
+    assert EKSIK_ATIF in eksiklik(CQ, "sadece o makineyi göster")
+    assert EKSIK_ATIF in eksiklik(CQ, "bu vardiyada fire nasıl")
+
+
+def test_ADIYLA_ANILAN_VARLIK_SUPHE_URETMEZ():
+    """⚠ `§101.1` — süzgeç zaten kurulmuşsa şüphe yok; yoksa her tur garsona giderdi."""
+    from app.niyet_tasima import EKSIK_ATIF, eksiklik
+
+    CQ = {"cube": "parti", "measures": ["fire_orani_yuzde"],
+          "dimensions": ["makine", "vardiya"],
+          "filters": [{"dimension": "makine", "operator": "eq", "value": "RAM-2"}]}
+    assert EKSIK_ATIF not in eksiklik(CQ, "o makinede vardiya kırılımı")
+
+
+def test_ISARETSIZ_SORU_SUPHE_URETMEZ():
+    """🔴 En kritik yanlış-pozitif kapısı: **taze** bir kırılım sorusu şüphe üretmemeli.
+
+    *«makineye göre fire»* her gün sorulan bir sorudur ve süzgeci **yoktur** — işaret
+    sıfatı olmadığı için şüphe de olmamalı. Aksi hâlde her kırılım sorusu garsona
+    giderdi ve `KURAL B` çiğnenirdi.
+    """
+    from app.niyet_tasima import EKSIK_ATIF, eksiklik
+
+    CQ = {"cube": "parti", "measures": ["fire_orani_yuzde"], "dimensions": ["makine"]}
+    for q in ("makineye göre fire", "bu ay makine kırılımı", "makine bazında fire"):
+        assert EKSIK_ATIF not in eksiklik(CQ, q), q

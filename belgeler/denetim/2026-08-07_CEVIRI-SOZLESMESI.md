@@ -8395,3 +8395,64 @@ kendi küpünden geldi, uydurma bir join kurulmadı. Kullanıcının tarifi bire
 Harman (`blend`) bu aileler arasında **yapısal olarak** kurulamıyor. Orkestratör
 bölümlerle telafi ediyor ama bu bir çare değil bir **köprü**; kanonik bir müşteri
 ekseni bir pack kararıdır ve ölçülerek verilmeli.
+
+---
+
+## `IX` TURU — **ALTI TURLUK ZİNCİR** ve işaret sıfatı kusuru *(2026-08-10)*
+
+### Thread C — dört tur kusursuz
+
+| tur | sonuç |
+|---|---|
+| *«bu yıl fire oranı»* | ✅ `cube` · **0 LLM** |
+| *«makineye göre»* | ✅ `cube` · **0 LLM** · dönem korundu |
+| *«en kötüsü»* | ✅ `cube` · **0 LLM** · `order desc` · RAM-2 |
+| *«neden»* | ✅ RAM-2 akranlarından **%14,4 yüksek** (22,12 ↔ 19,34); fire **%82,2 fazla** |
+
+### 🔴🔴 `§AT` — REFERANSLA ANILAN VARLIĞA SÜZGEÇ KURULMUYOR
+
+Beşinci tur kusuru açtı ve karşıtlık **keskin**:
+
+| soru | üretilen süzgeç | satır |
+|---|---|---|
+| *«**RAM-2 için** vardiya kırılımı»* | ✅ `makine eq RAM-2` | **3** |
+| *«**o makinede** vardiya kırılımı»* | 🔴 **yok** | **33** |
+| *«**sadece o** makineyi göster»* | 🔴 **yok** | **33** |
+
+Varlık **adıyla** anılınca süzgeç kuruluyor, **referansla** anılınca sessizce **hepsi**
+dönüyor — ve rozet `source=cube`, yani en güvendiğimiz basamak. Üstelik ilk satır
+`RAM-3`, yani kullanıcı *«o makine»* (RAM-2) sorup **başka bir makineyi** okuyor.
+
+⚠ `atif_ayikla` bu kalıbı **görmüyor**: o, *«az önce dediğin»* gibi **cümle**
+referanslarını ayıklıyor, çıplak işaret sıfatını değil (ölçüldü — dört soruda da
+dize değişmedi).
+
+🔴 Yüklem eklendi (`niyet_tasima.EKSIK_ATIF`) ve **kapalı sınıf** disipliniyle: Türkçede
+işaret sıfatı **üç** tanedir ve tarihsel olarak sabittir. Bir dil öğretme değil bir
+**şüphe** kuralı — route cevap üretmez, garsona devreder; garson artık önceki sorguyu
+görüyor (`O-22`) ve referansı `BAGLA → SUZ` ile çözebilir.
+
+### ⚠ VE ÜÇÜNCÜ KEZ: DOĞRU YÜKLEM, YANLIŞ YOL
+
+Yüklem bağlandı, tazelendi, ölçüldü → **hâlâ 33 satır**. Sebep: takip turu
+`yapısal=True` ve **624 ms**'de `deterministic_refine` ile cevaplanıyor; `_supheli`
+yalnız **taze** dalda hesaplanıyor ve o dala hiç uğranmıyor.
+
+⊙ Bu, bu oturumda **üçüncü** kez oldu (`O-22` garson↔tüketici · `§AT` taze↔takip).
+Desen açık: **aynı kararın birden çok yolu var ve bir yolu düzeltmek ötekini
+düzeltmiyor.** *Bir sistemin kaç yolu olduğunu, bir düzeltmenin kaç kez tekrarlanması
+gerektiği söyler.*
+
+**Açık borç (kanca yeri yazılı):** `ask.py:4445`, `refined` döndükten hemen sonra —
+`EKSIK_ATIF` varsa `refined = None` yapıp merdivene yol vermek. ⚠ Sıcak yol (624 ms,
+her takip turu) ve düşülecek dalın nereye gittiği **ölçülmeden** değiştirilmemeli.
+Yüklem bugün kurulu, kapılı ve **taze** dalda etkin; takip dalına bağlanması kendi
+ölçüm turunu hak ediyor.
+
+### C6 — ikinci bulgu
+
+*«bir de duruş nedenlerini göster»* → `toplam_sure_dk` harmanla **geldi** (çapraz küp
+çalıştı) ama `neden` **boyutu düştü**: kullanıcı *nedenleri* istedi, yalnız süreyi aldı.
+Aynı sınıf — istenen bir parça sessizce düşüyor.
+
+**Kapı (tur başı):** 4473 yeşil · korpus **%94.9** · `sessiz_yanlis` **8** · eval +0.0%.

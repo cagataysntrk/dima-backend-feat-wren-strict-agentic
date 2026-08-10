@@ -116,6 +116,33 @@ def route_supheli(cq: dict | None, q: str) -> bool:
 EKSIK_DONEM = "donem"
 EKSIK_SIRALAMA = "siralama"
 EKSIK_TUMU = "yok"          # `cq` hiç yok → her şey eksik
+EKSIK_ATIF = "atif"         # *«o makinede»* — referans çözülmedi, süzgeç kurulmadı
+
+#: 🔴🔴 `§AT` — **İŞARET SIFATLARI: kapalı sınıf, üç sözcük.**
+#:
+#: ⊙ Ölçüldü (canlı `IX`, thread C — karşıtlık keskin):
+#:
+#: | soru | üretilen süzgeç | satır |
+#: |---|---|---|
+#: | *«**RAM-2 için** vardiya kırılımı»* | ✅ `makine eq RAM-2` | **3** |
+#: | *«**o makinede** vardiya kırılımı»* | 🔴 **yok** | **33** |
+#: | *«**sadece o** makineyi göster»* | 🔴 **yok** | **33** |
+#:
+#: Yani varlık **adıyla** anılınca süzgeç kuruluyor, **referansla** anılınca sessizce
+#: **hepsi** dönüyor — ve rozet `source=cube`, yani en güvendiğimiz basamak.
+#:
+#: ⚠ Bu bir **dil öğretme** değil bir **şüphe** kuralıdır: route burada cevap üretmez,
+#: garsona devreder. Ve garson artık önceki sorguyu görüyor (`O-22`), yani referansı
+#: `BAGLA → SUZ` ile çözebilir — orkestratörün tam olarak var olma sebebi.
+#:
+#: ⚠ Sınıf **kapalı**: Türkçede işaret sıfatı üç tanedir ve tarihsel olarak sabittir.
+#: ADR-0008 açık uçlu sözlükleri yasaklar, kapalı dilbilgisi sınıflarına izin verir.
+#: `su` burada `şu`'nun normalleşmiş hâlidir — aranan şey **bir boyut adının önündeki**
+#: belirteçtir, çıplak sözcük değil; su/ölçü çakışması bu kalıba giremez.
+#:
+#: *Bir varlığa işaret etmek onu adlandırmaktır — ve adlandırılmış bir varlığa süzgeç
+#: kurulmuyorsa, cevap sorulan soruya ait değildir.*
+ISARET_SIFATLARI = ("o", "bu", "su")
 
 
 def eksiklik(cq: dict | None, q: str) -> frozenset[str]:
@@ -173,4 +200,35 @@ def eksiklik(cq: dict | None, q: str) -> frozenset[str]:
         eksik.add(EKSIK_DONEM)
     if cr._direction(qn) and not (cq.get("order") or cq.get("entity_limit")):
         eksik.add(EKSIK_SIRALAMA)
+    # 🔴 `§AT` — **REFERANSLA ANILAN VARLIĞA SÜZGEÇ KURULMAMIŞ.** Gerekçe ve ölçüm
+    # `ISARET_SIFATLARI`'nın başında. ⚠ Yalnız `cq`'nun **kendi** boyutlarına bakılır:
+    # soruda geçmeyen bir boyut için şüphe üretmek yanlış pozitif olurdu (`§101.1`).
+    if _atif_cozulmemis(cq, q):
+        eksik.add(EKSIK_ATIF)
     return frozenset(eksik)
+
+
+def _atif_cozulmemis(cq: dict | None, q: str) -> bool:
+    """*«o <boyut>»* denmiş ama o boyuta süzgeç kurulmamış mı? (`§AT`)
+
+    ⚠ Çekim toleransı `cube_router._ek_gecerli`'den gelir — **tek sahip**. Türkçe ek
+    kurallarını burada ikinci kez yazmak, ikisinin zamanla ayrışması demekti.
+    """
+    if not cq:
+        return False
+    import re as _re
+
+    from app.cube_router import _KELIME_BASI, _ek_gecerli
+    from app.cube_router import _norm as _n
+
+    qn = _n(q or "")
+    suzulen = {f.get("dimension") for f in (cq.get("filters") or [])
+               if isinstance(f, dict)}
+    isaret = "|".join(ISARET_SIFATLARI)
+    for d in (cq.get("dimensions") or []):
+        if d in suzulen:
+            continue
+        m = _re.search(rf"{_KELIME_BASI}(?:{isaret})\s+{_re.escape(_n(str(d)))}([a-z]*)", qn)
+        if m and _ek_gecerli(m.group(1)):
+            return True
+    return False
