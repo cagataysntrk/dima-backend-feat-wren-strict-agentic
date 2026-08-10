@@ -64,6 +64,7 @@ export function StatusBadge({ status, content }: { status?: CapabilityStatus; co
 }
 
 export function FinalCta({ content, label, asset }: { content: MarketingContent; label?: string; asset?: MarketingAssetKey }) {
+  const tr = content.locale === "tr";
   return (
     <section className="relative overflow-hidden border-t bg-foreground py-16 text-background sm:py-24">
       <Container className={cn("relative z-10 grid gap-10 lg:items-end", asset ? "lg:grid-cols-[1.1fr_0.9fr]" : "max-w-4xl")}>
@@ -78,7 +79,7 @@ export function FinalCta({ content, label, asset }: { content: MarketingContent;
         {asset ? <div aria-hidden="true" className="relative overflow-hidden rounded-lg border border-background/15">
           <MarketingEditorialImage asset={asset} className="aspect-[16/9] opacity-80" sizes="(min-width: 1024px) 36vw, 100vw" />
           <div className="absolute inset-0 bg-gradient-to-tr from-foreground/65 via-transparent to-foreground/15" />
-          <span className="absolute bottom-4 left-4 font-mono text-micro uppercase tracking-[0.16em] text-background/70">dima / next question</span>
+          <span className="absolute bottom-4 left-4 font-mono text-micro uppercase tracking-[0.16em] text-background/70">{tr ? "dima / sonraki soru" : "dima / next question"}</span>
         </div> : null}
       </Container>
     </section>

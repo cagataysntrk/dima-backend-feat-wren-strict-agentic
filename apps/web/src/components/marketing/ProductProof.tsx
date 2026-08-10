@@ -105,8 +105,8 @@ export function ProductProof({ locale }: { locale: MarketingLocale }) {
           <p className="mt-5 max-w-sm text-2xl font-medium leading-tight sm:text-3xl">{step === 0 ? c.question : step === 1 ? c.definition : step === 2 ? c.guardNote : c.result}</p>
           <p className="mt-5 max-w-sm text-sm leading-6 text-background/60">{step === 0 ? c.questionNote : step === 1 ? c.contextNote : step === 2 ? c.guardNote : c.answerNote}</p>
           <div className="mt-8 flex flex-wrap gap-2 font-mono text-micro uppercase text-background/45">
-            <span className="rounded-full border border-background/15 px-3 py-1.5">{locale === "tr" ? "sanitized" : "sanitized"}</span>
-            <span className="rounded-full border border-background/15 px-3 py-1.5">{locale === "tr" ? "okuma" : "read-only"}</span>
+            <span className="rounded-full border border-background/15 px-3 py-1.5">{locale === "tr" ? "anonim örnek" : "anonymized sample"}</span>
+            <span className="rounded-full border border-background/15 px-3 py-1.5">{locale === "tr" ? "yalnızca okuma" : "read-only"}</span>
           </div>
         </div>
 

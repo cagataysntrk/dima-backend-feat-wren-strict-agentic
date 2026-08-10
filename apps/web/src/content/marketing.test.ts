@@ -35,6 +35,27 @@ describe("marketing content", () => {
     expect(visibleCopy).not.toMatch(
       /\b(?:semantic|dry-plan|provenance|tenant|permission|onboarding|read-only|roadmap|backend|frontend|LLM|KPI)\b/i,
     );
+    expect(visibleCopy).not.toMatch(/\b(?:100%|hallucination-free|zero risk|no hallucinations|SOC 2|ISO 27001)\b/i);
+    expect(visibleCopy).not.toMatch(/Ayrıntıyı incele|Explore the details|Learn more|Get started/i);
+  });
+
+  it("keeps the homepage and page narratives scannable", () => {
+    const tr = getMarketingContent("tr");
+    const en = getMarketingContent("en");
+
+    expect(tr.home.process).toHaveLength(4);
+    expect(tr.home.reasons).toHaveLength(3);
+    expect(tr.home.useCases).toHaveLength(5);
+    expect(tr.home.faq).toHaveLength(4);
+    expect(tr.home.description.length).toBeLessThan(220);
+    expect(en.home.description.length).toBeLessThan(260);
+
+    for (const pageKey of Object.keys(tr.pages)) {
+      if (pageKey === "privacy" || pageKey === "terms") continue;
+      expect(tr.pages[pageKey].sections.length).toBeLessThanOrEqual(6);
+      expect(tr.pages[pageKey].cta.length).toBeGreaterThan(8);
+      expect(en.pages[pageKey].cta.length).toBeGreaterThan(8);
+    }
   });
 
   it("keeps the launch route and capability contracts explicit", () => {
@@ -55,5 +76,8 @@ describe("marketing content", () => {
     expect(statuses).not.toContain('"beta"');
     expect(getMarketingContent("tr").pages.textile.sections).toHaveLength(6);
     expect(getMarketingContent("en").pages.solutions.sections).toHaveLength(6);
+    expect(getMarketingContent("tr").pages.how.sections).toHaveLength(6);
+    expect(getMarketingContent("tr").pages.security.sections).toHaveLength(5);
+    expect(getMarketingContent("tr").pages.about.sections).toHaveLength(3);
   });
 });

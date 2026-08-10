@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDown, ArrowRight, Check, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowRight, Check } from "lucide-react";
 import { MarketingEditorialImage, type MarketingAssetKey } from "@/components/marketing/MarketingAssets";
 import { Reveal } from "@/components/marketing/MarketingMotion";
 import { Container, Eyebrow, FinalCta, StatusBadge } from "@/components/marketing/MarketingPrimitives";
@@ -79,30 +79,20 @@ function StorySignal({ section, content, kind, index }: { section: PageContent["
   const tr = content.locale === "tr";
   const labels = railLabels[kind][content.locale];
   const activeLabel = labels[index % labels.length];
+  const kindLabel = tr ? { product: "ürün", how: "akış", solutions: "çözüm", textile: "boyahane", security: "güvenlik", integrations: "bağlantı", about: "ekip" }[kind] : kind;
   const signalPoints = section.points?.slice(0, 3) ?? labels;
   return (
-    <div className="relative overflow-hidden rounded-lg border border-foreground/10 bg-foreground p-5 text-background sm:p-7">
-      <div aria-hidden="true" className="marketing-grid absolute inset-0 opacity-25 [mask-image:linear-gradient(to_bottom,black,transparent_88%)]" />
-      <div className="relative">
-        <div className="flex items-center justify-between gap-4 border-b border-background/15 pb-4">
-          <span className="font-mono text-micro uppercase tracking-[0.16em] text-chart-2">{kind} / {String(index + 1).padStart(2, "0")}</span>
-          <span className="font-mono text-micro uppercase tracking-[0.14em] text-background/48">{section.status ? content.common[section.status] : tr ? "Sürekli akış" : "Continuous flow"}</span>
-        </div>
-        <div className="mt-8 grid grid-cols-[2.5rem_1fr] gap-4 sm:grid-cols-[3.5rem_1fr] sm:gap-6">
-          <span className="font-display text-5xl leading-none text-background/22 sm:text-6xl">{String(index + 1).padStart(2, "0")}</span>
-          <div>
-            <div className="flex items-center gap-2 font-mono text-micro uppercase tracking-[0.14em] text-background/58"><span aria-hidden="true" className="size-2 rounded-full bg-chart-2 shadow-[0_0_0_5px_hsl(var(--chart-2)/0.14)]" />{tr ? "Kanıt hattı" : "Evidence line"}</div>
-            <div aria-hidden="true" className="mt-6 grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-2">
-              <span className="h-px bg-chart-2/70" /><span className="size-2 rounded-full border border-chart-2 bg-foreground" /><span className="h-px bg-chart-2/70" /><span className="size-2 rounded-full border border-chart-2 bg-foreground" /><span className="h-px bg-chart-2/70" />
-            </div>
-            <p className="mt-5 text-lg font-medium leading-7 text-background/90">{activeLabel}</p>
-          </div>
-        </div>
-        <div className="mt-8 grid border-t border-background/15 pt-5 sm:grid-cols-3">
-          {signalPoints.map((point, pointIndex) => <div className="border-b border-background/15 py-3 last:border-b-0 sm:border-b-0 sm:border-r sm:px-4 sm:first:pl-0 sm:last:border-r-0" key={point}><span className="font-mono text-micro text-chart-2">0{pointIndex + 1}</span><p className="mt-2 text-sm leading-6 text-background/62">{point}</p></div>)}
-        </div>
-        <p className="mt-6 max-w-md text-sm leading-6 text-background/52">{section.visual?.caption ?? (tr ? "İş sorusundan dayanağa uzanan görünür akış." : "A visible line from the business question to its basis.")}</p>
+    <div className="border-l-2 border-brand pl-5 sm:pl-6">
+      <div className="flex items-center justify-between gap-4 border-b pb-4">
+        <span className="font-mono text-micro uppercase tracking-[0.16em] text-brand">{kindLabel} / {String(index + 1).padStart(2, "0")}</span>
+        <span className="font-mono text-micro uppercase tracking-[0.14em] text-muted-foreground">{section.status ? content.common[section.status] : tr ? "Görünür akış" : "Visible flow"}</span>
       </div>
+      <div className="mt-5 flex items-center gap-3 font-mono text-micro uppercase tracking-[0.14em] text-muted-foreground"><span aria-hidden="true" className="size-2 rounded-full bg-brand" />{tr ? "Kanıt hattı" : "Evidence line"}<ArrowRight aria-hidden="true" className="size-3.5 text-brand" /></div>
+      <p className="mt-3 text-xl font-medium leading-7">{activeLabel}</p>
+      <ul className="mt-5 grid gap-3 border-t pt-4 sm:grid-cols-3 sm:gap-4">
+        {signalPoints.map((point, pointIndex) => <li className="text-sm leading-6 text-muted-foreground" key={point}><span className="font-mono text-micro text-brand">0{pointIndex + 1}</span><p className="mt-1">{point}</p></li>)}
+      </ul>
+      <p className="mt-5 text-sm leading-6 text-muted-foreground">{section.visual?.caption ?? (tr ? "İş sorusundan dayanağa uzanan görünür akış." : "A visible line from the business question to its basis.")}</p>
     </div>
   );
 }
@@ -132,18 +122,6 @@ function StorySection({ page, content, kind, index }: { page: PageContent; conte
   );
 }
 
-function QuietSignal({ page, content }: { page: PageContent; content: MarketingContent }) {
-  const tr = content.locale === "tr";
-  return (
-    <section className="border-b bg-muted/25 py-14 sm:py-20">
-      <Container className="grid gap-8 lg:grid-cols-[0.6fr_1.4fr] lg:items-center">
-        <Reveal><div className="flex items-center gap-3"><Sparkles aria-hidden="true" className="size-5 text-brand" /><Eyebrow>{tr ? "Tek bir zincir" : "One visible chain"}</Eyebrow></div><h2 className="mt-4 max-w-xl text-balance font-display text-3xl leading-tight sm:text-4xl">{tr ? "İş sorusu, kontrol ve dayanak aynı hikâyede." : "Question, guard, and source stay in the same story."}</h2></Reveal>
-        <Reveal delay={0.08}><div className="grid border-y sm:grid-cols-3">{page.sections.slice(0, 3).map((section, index) => <div className="border-b py-5 last:border-b-0 sm:border-b-0 sm:border-r sm:px-5 sm:first:pl-0 sm:last:border-r-0" key={section.id}><span className="font-mono text-micro text-brand">0{index + 1}</span><p className="mt-3 text-sm font-medium">{section.title}</p></div>)}</div></Reveal>
-      </Container>
-    </section>
-  );
-}
-
 export function EvidenceDetailPage({ page, content, kind }: { page: PageContent; content: MarketingContent; kind: PageKind }) {
   return (
     <>
@@ -151,7 +129,6 @@ export function EvidenceDetailPage({ page, content, kind }: { page: PageContent;
       <StoryRail content={content} kind={kind} />
       {kind === "product" ? <section className="border-b py-16 sm:py-24" aria-labelledby="product-proof-title"><Container><Reveal><Eyebrow>{content.locale === "tr" ? "Ürünün içi" : "Inside the product"}</Eyebrow><h2 id="product-proof-title" className="mt-4 max-w-3xl text-balance font-display text-4xl leading-tight sm:text-5xl">{content.locale === "tr" ? "Cevabın içini adım adım inceleyin." : "Inspect the answer, step by step."}</h2></Reveal><Reveal delay={0.08} className="mt-10"><ProductProof locale={content.locale} /></Reveal></Container></section> : null}
       <div>{page.sections.map((section, index) => <StorySection content={content} index={index} kind={kind} key={section.id} page={page} />)}</div>
-      <QuietSignal content={content} page={page} />
       {kind === "textile" ? (
         <Container className="py-12 sm:py-16">
           <nav aria-label={content.locale === "tr" ? "İlgili dima sayfaları" : "Related dima pages"} className="grid gap-3 border-y py-6 sm:grid-cols-4">

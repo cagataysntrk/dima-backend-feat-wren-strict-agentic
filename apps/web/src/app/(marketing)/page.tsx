@@ -63,28 +63,19 @@ export default async function MarketingHome() {
         </Container>
       </section>
 
-      <section className="border-b bg-muted/25 py-16 sm:py-24" aria-labelledby="pillars-title">
+      <section className="border-b bg-muted/25 py-16 sm:py-24" aria-labelledby="reasons-title">
         <Container>
-          <Reveal className="max-w-3xl"><Eyebrow>D-I-M-A</Eyebrow><h2 id="pillars-title" className="mt-4 text-balance font-display text-4xl sm:text-5xl">{h.pillarsTitle}</h2><p className="mt-5 max-w-2xl leading-7 text-muted-foreground">{h.pillarsBody}</p></Reveal>
-          <div className="mt-12 border-y">
-            {h.pillars.map((pillar, index) => <Reveal key={pillar.letter} delay={index * 0.04}><article className="grid gap-4 border-b py-7 last:border-b-0 sm:grid-cols-[5rem_0.7fr_1.3fr] sm:items-start sm:gap-8"><span className="font-display text-6xl leading-none text-brand sm:text-7xl">{pillar.letter}</span><h3 className="text-xl font-semibold sm:pt-2">{pillar.title}</h3><p className="max-w-xl leading-7 text-muted-foreground sm:pt-2">{pillar.body}</p></article></Reveal>)}
-          </div>
+          <Reveal className="max-w-3xl"><Eyebrow>{tr ? "Güven zinciri" : "Trust chain"}</Eyebrow><h2 id="reasons-title" className="mt-4 text-balance font-display text-4xl sm:text-5xl">{h.reasonsTitle}</h2></Reveal>
+          <ol className="mt-10 border-y">
+            {h.reasons.map((reason, index) => <Reveal key={reason.title} delay={index * 0.05}><li className="grid gap-3 border-b py-6 last:border-b-0 sm:grid-cols-[4rem_0.7fr_1.3fr] sm:items-start sm:gap-8"><span className="font-mono text-micro tabular-nums text-brand">0{index + 1}</span><h3 className="text-xl font-semibold">{reason.title}</h3><p className="max-w-xl leading-7 text-muted-foreground">{reason.body}</p></li></Reveal>)}
+          </ol>
         </Container>
       </section>
 
       <section className="border-b py-16 sm:py-24" aria-labelledby="questions-title">
         <Container className="grid gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">
-          <Reveal><h2 id="questions-title" className="max-w-xl text-balance font-display text-4xl sm:text-5xl">{h.useCasesTitle}</h2><p className="mt-5 max-w-md leading-7 text-muted-foreground">{h.operationsBody}</p><div className="mt-8"><MarketingEditorialImage asset="homeQuality" alt={tr ? "Kumaş kalite kontrolü" : "Fabric quality inspection"} className="aspect-[4/3] rounded-lg" sizes="(min-width: 1024px) 32vw, 100vw" /></div></Reveal>
+          <Reveal><h2 id="questions-title" className="max-w-xl text-balance font-display text-4xl sm:text-5xl">{h.useCasesTitle}</h2><p className="mt-5 max-w-md leading-7 text-muted-foreground">{h.useCasesBody}</p><div className="mt-8"><MarketingEditorialImage asset="homeQuality" alt={tr ? "Kumaş kalite kontrolü" : "Fabric quality inspection"} className="aspect-[4/3] rounded-lg" sizes="(min-width: 1024px) 32vw, 100vw" /></div></Reveal>
           <Reveal delay={0.08}><ul className="border-y">{h.useCases.map((item, index) => <li className="group border-b py-5 last:border-b-0" key={`${item.title}-${item.question}`}><Link href="/product" className="grid min-h-11 grid-cols-[2.5rem_0.7fr_1.3fr_auto] items-center gap-3 transition-colors hover:text-brand focus-visible:text-brand"><span className="font-mono text-micro text-brand">{String(index + 1).padStart(2, "0")}</span><span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground"><Search className="size-3.5" aria-hidden="true" />{item.title}</span><span className="text-sm leading-6 text-foreground">{item.question}</span><ArrowRight aria-hidden="true" className="size-4 text-brand transition-transform group-hover:translate-x-1" /></Link></li>)}</ul></Reveal>
-        </Container>
-      </section>
-
-      <section className="border-b bg-foreground py-16 text-background sm:py-24" aria-labelledby="workflow-title">
-        <Container>
-          <Reveal><h2 id="workflow-title" className="max-w-3xl text-balance font-display text-4xl sm:text-5xl">{h.workflowTitle}</h2></Reveal>
-          <div className="mt-12 grid border-y border-background/15 sm:grid-cols-4 sm:border-x">
-            {h.workflow.map((item, index) => <Reveal key={item.title} delay={index * 0.05}><article className="relative border-b border-background/15 px-4 py-6 last:border-b-0 sm:border-b-0 sm:border-r sm:px-5 sm:last:border-r-0"><span className="font-mono text-micro text-chart-2">0{index + 1}</span><h3 className="mt-8 text-base font-semibold text-background">{item.title}</h3><p className="mt-3 text-sm leading-6 text-background/58">{item.body}</p>{index < h.workflow.length - 1 ? <ArrowRight aria-hidden="true" className="absolute bottom-6 right-4 hidden size-4 text-background/25 sm:block" /> : null}</article></Reveal>)}
-          </div>
         </Container>
       </section>
 
@@ -96,16 +87,12 @@ export default async function MarketingHome() {
       </section>
 
       <section className="border-b bg-muted/25 py-16 sm:py-24" aria-labelledby="trust-title">
-        <Container className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-          <Reveal><div className="flex items-center gap-3 text-sm font-medium"><ShieldCheck className="size-5 text-brand" aria-hidden="true" />{tr ? "Güven ve yönetişim" : "Trust and governance"}</div><h2 id="trust-title" className="mt-4 text-balance font-display text-4xl sm:text-5xl">{h.trustTitle}</h2><p className="mt-5 max-w-xl leading-7 text-muted-foreground">{h.trustBody}</p><Link className="mt-7 inline-flex min-h-11 items-center gap-2 font-semibold text-brand underline-offset-4 hover:underline focus-visible:underline" href="/security">{content.common.learnMore}<ArrowRight className="size-4" aria-hidden="true" /></Link></Reveal>
-          <Reveal delay={0.08}><div className="relative overflow-hidden rounded-lg border"><MarketingEditorialImage asset="homeTrust" alt={tr ? "Operasyon ekibi kumaş ve analiz notlarını inceliyor" : "Operations team reviewing fabric and analysis notes"} className="aspect-[16/10]" sizes="(min-width: 1024px) 54vw, 100vw" /><div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent" /><div className="absolute inset-x-5 bottom-5 flex items-center justify-between gap-4 text-background sm:inset-x-6 sm:bottom-6"><span className="font-mono text-micro uppercase tracking-[0.16em] text-chart-2">{tr ? "Sınırlar görünür" : "Boundaries in view"}</span><span className="text-sm font-medium">{tr ? "yalnızca okuma · kaynak · yetki" : "read-only · source · access"}</span></div></div></Reveal>
-        </Container>
-      </section>
-
-      <section className="border-b py-16 sm:py-24" aria-labelledby="integration-title">
-        <Container className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-          <Reveal><div className="relative overflow-hidden rounded-lg border"><MarketingEditorialImage asset="homeConnections" alt={tr ? "Veriyle birlikte çalışan üretim sahası" : "Production floor connected to operational data"} className="aspect-[16/10]" sizes="(min-width: 1024px) 58vw, 100vw" /><div aria-hidden="true" className="absolute inset-0 bg-gradient-to-tr from-foreground/50 via-transparent to-transparent" /><div className="absolute left-5 top-5 rounded-full border border-background/25 bg-background/85 px-3 py-2 font-mono text-micro uppercase tracking-[0.14em] text-foreground sm:left-6 sm:top-6">{tr ? "kaynak → tanım → cevap" : "source → definition → answer"}</div></div></Reveal>
-          <Reveal delay={0.08}><div className="flex items-center gap-3 text-sm font-medium"><Database className="size-5 text-brand" aria-hidden="true" />{tr ? "Veri kaynakları" : "Data sources"}</div><h2 id="integration-title" className="mt-4 text-balance font-display text-4xl sm:text-5xl">{h.integrationTitle}</h2><p className="mt-5 max-w-xl leading-7 text-muted-foreground">{h.integrationBody}</p><div className="mt-8 flex flex-wrap gap-2 font-mono text-xs text-muted-foreground"><span className="border px-3 py-2">DuckDB / örnek</span><span className="border px-3 py-2">Postgres / doğrulandı</span><span className="border border-dashed px-3 py-2">MSSQL / Oracle / teknik olarak mümkün</span></div><Link className="mt-7 inline-flex min-h-11 items-center gap-2 font-semibold text-brand underline-offset-4 hover:underline focus-visible:underline" href="/integrations">{content.common.learnMore}<ArrowRight className="size-4" aria-hidden="true" /></Link></Reveal>
+        <Container>
+          <Reveal className="max-w-3xl"><Eyebrow>{tr ? "Sınırlar ve kaynaklar" : "Boundaries and sources"}</Eyebrow><h2 id="trust-title" className="mt-4 text-balance font-display text-4xl sm:text-5xl">{tr ? "Cevabı hızlandırırken kontrolü koruyun." : "Move faster while keeping control."}</h2></Reveal>
+          <div className="mt-10 grid gap-10 lg:grid-cols-2">
+            <Reveal><article className="border-t pt-6"><div className="flex items-center gap-3 text-sm font-medium"><ShieldCheck className="size-5 text-brand" aria-hidden="true" />{tr ? "Güven ve yetki" : "Trust and access"}</div><h3 className="mt-4 text-2xl font-semibold">{h.trustTitle}</h3><p className="mt-4 max-w-xl leading-7 text-muted-foreground">{h.trustBody}</p><div className="relative mt-7 overflow-hidden rounded-lg border"><MarketingEditorialImage asset="homeTrust" alt={tr ? "Operasyon ekibi analiz notlarını inceliyor" : "Operations team reviewing analysis notes"} className="aspect-[16/10]" sizes="(min-width: 1024px) 44vw, 100vw" /><div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent" /><span className="absolute inset-x-5 bottom-5 font-mono text-micro uppercase tracking-[0.16em] text-background/85 sm:inset-x-6 sm:bottom-6">{tr ? "okuma · kaynak · yetki" : "read · source · access"}</span></div><Link className="mt-6 inline-flex min-h-11 items-center gap-2 font-semibold text-brand underline-offset-4 hover:underline focus-visible:underline" href="/security">{tr ? "Güvenliği incele" : "Explore security"}<ArrowRight className="size-4" aria-hidden="true" /></Link></article></Reveal>
+            <Reveal delay={0.08}><article className="border-t pt-6"><div className="flex items-center gap-3 text-sm font-medium"><Database className="size-5 text-brand" aria-hidden="true" />{tr ? "Veri kaynakları" : "Data sources"}</div><h3 className="mt-4 text-2xl font-semibold">{h.integrationTitle}</h3><p className="mt-4 max-w-xl leading-7 text-muted-foreground">{h.integrationBody}</p><div className="mt-7 relative overflow-hidden rounded-lg border"><MarketingEditorialImage asset="homeConnections" alt={tr ? "Veriyle birlikte çalışan üretim sahası" : "Production floor connected to operational data"} className="aspect-[16/10]" sizes="(min-width: 1024px) 44vw, 100vw" /><div aria-hidden="true" className="absolute inset-0 bg-gradient-to-tr from-foreground/50 via-transparent to-transparent" /><span className="absolute left-5 top-5 rounded-full border border-background/25 bg-background/85 px-3 py-2 font-mono text-micro uppercase tracking-[0.14em] text-foreground sm:left-6 sm:top-6">{tr ? "kaynak → tanım → cevap" : "source → definition → answer"}</span></div><Link className="mt-6 inline-flex min-h-11 items-center gap-2 font-semibold text-brand underline-offset-4 hover:underline focus-visible:underline" href="/integrations">{tr ? "Bağlantıları incele" : "Explore integrations"}<ArrowRight className="size-4" aria-hidden="true" /></Link></article></Reveal>
+          </div>
         </Container>
       </section>
 
