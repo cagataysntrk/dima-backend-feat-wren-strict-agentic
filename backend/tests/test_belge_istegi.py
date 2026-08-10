@@ -66,3 +66,51 @@ def test_KUME_FIILLERLE_TUTARLI():
 
 def test_BOS_SORU_SESSIZ():
     assert ps.belge_istegi("") is None and ps.belge_istegi(None) is None
+
+
+# --- `§RB` · PLAN BELGEYLE BİTMEK ZORUNDA ---------------------------------------------
+
+def test_YUKLEM_FONKSIYON_KAPSAMINDA():
+    """🔴🔴 `§RB` — **BİR YÜKLEM, KULLANILDIĞI YERDEN DAR BİR KAPSAMDA HESAPLANAMAZ.**
+
+    İlk yazımda `_belge_istegi` `route_hit` dalının **içindeydi**; derleme noktası ise
+    fonksiyon düzeyinde. Yani `§RB`, `route_hit` yokken — yani belge isteklerinin **asıl**
+    hâlinde — hiç koşamazdı. Ve ikinci yazımda sıra ters kaldı (atama kullanımdan
+    **sonra**), bu da bir `NameError` olurdu.
+
+    *Bir yüklemi kullanacağı yerden dar bir kapsamda hesaplamak, onu orada yok saymaktır.*
+    """
+    import inspect
+
+    from app import plan_tuketici
+
+    kaynak = inspect.getsource(plan_tuketici.cevap)
+    atama = kaynak.index("_belge_istegi = _belge_yuklemi(")
+    for kullanim in ("if not _azinlik and _belge_istegi", "bool(_belge_istegi)"):
+        assert kaynak.index(kullanim) > atama, f"🔴 atama {kullanim!r}'dan SONRA"
+
+
+def test_BELGE_FIILI_YOKSA_DA_DERLENIR():
+    """🔴 Ölçülen kusur: *«geçen yıla göre satış raporu hazırla»* → `SORGU→TREND→ANLAT`,
+    belge fiili **yok**, `rapor=None`. Ama fiş bunu zaten kanıtlıyor: belge istendi ve
+    ≥2 bölüm var.
+
+    *LLM'in seçimine bırakılmış bir şey, fişin zaten kanıtladığı bir şeyse, orada bir
+    karar değil bir kumar vardır.*"""
+    import inspect
+
+    from app import plan_tuketici
+
+    kaynak = inspect.getsource(plan_tuketici.cevap)
+    assert "_derle = bool(_belge_fiili) or (bool(_belge_istegi) and len(_bolumler) >= 2)" \
+        in kaynak, "🔴 belge fiili YOKKEN derleme koşulu kurulmamış"
+
+
+def test_ESIK_IKI_BOLUM():
+    """⚠ Eşik **2**: tek bölüm bir belge değil bir **cevaptır**; ona kapak takmak
+    kullanıcıya olmayan bir şeyi vaat etmek olurdu."""
+    import inspect
+
+    from app import plan_tuketici
+
+    assert ">= 2" in inspect.getsource(plan_tuketici.cevap)

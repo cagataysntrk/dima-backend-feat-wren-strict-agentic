@@ -299,6 +299,13 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     Döner: `{source, note, iz, result?, cube_query?}` — `ask()` bunu doğrudan bir
     `AskResponse`'a çevirir, karar vermez.
     """
+    # `§RG`/`§RB` — belge isteği **tek kez** hesaplanır ve iki kararı birden besler:
+    # (1) orkestratör susmasın, (2) plan belgeyle bitmezse belge yine de kurulsun.
+    # ⚠ Kapsam bilinçli **fonksiyon düzeyi**: ilk yazımda `route_hit` dalının içindeydi ve
+    # derleme noktasında **tanımsızdı** — yani `§RB` `route_hit` yokken hiç koşamazdı.
+    # *Bir yüklemi kullanacağı yerden dar bir kapsamda hesaplamak, onu orada yok saymaktır.*
+    from app.plan_semasi import belge_istegi as _belge_yuklemi
+    _belge_istegi = _belge_yuklemi(soru or "")
     from app import plan_garson
 
     # ⚠ **SESSİZ DAL KALMASIN (`ADR-0020`).** Bu fonksiyon `None` döndüğünde neden
@@ -356,8 +363,6 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
         # ⚠ Karşılaştırma `plan_tek_cq` ile **birebir**: başka bir yoldan gelen bir
         # `route_hit`'e dokunmaz. *Bir ön koşulu gevşetirken, gevşemenin sınırını da
         # yazmak gerekir; yoksa gevşeme bir delik olur.*
-        from app.plan_semasi import belge_istegi as _belge_yuklemi
-        _belge_istegi = _belge_yuklemi(soru or "")
         _st = getattr(request, "state", None)
         _sekil = getattr(_st, "plan_sekil", None) or {}
         _tek_cq = getattr(_st, "plan_tek_cq", None)
@@ -502,11 +507,30 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     # `§RP` — belge fiili varsa bölümleri `Report` biçimine diz (tek sahip: `report.py`).
     _belge_fiili = next((str(a.get("fiil")) for a in (plan.get("adimlar") or [])
                          if str(a.get("fiil")) in ("RAPOR", "PANO")), None)
+    # 🔴🔴 `§RB` — **PLANIN BELGEYLE BİTMESİ BİR UMUT OLAMAZ.**
+    #
+    # ⊙ Ölçüldü (curl, 2026-08-10): *«geçen yıla göre satış raporu hazırla»* iki varyant
+    # üretti — `SORGU→TREND→RAPOR` (plan doğru, koşamadı) ve `SORGU→TREND→**ANLAT**`
+    # (koştu ama belge fiili YOK → `rapor=None`). Kullanıcı bir **belge** istedi; garson
+    # son adımda `ANLAT` seçti ve belge **kayboldu**.
+    #
+    # 🔴 `§RG` orkestratörün **koşmasını** zorluyor; planın **belgeyle bitmesini**
+    # zorlayan bir şey yoktu. Ama fiş bunu zaten **kanıtlıyor**: belge istendi ve ortada
+    # **≥2 bölüm** var — bu bir belgedir, fiilin adı ne olursa olsun. `§RP`'nin
+    # derleyicisi hazır; yeniden planlamaya, ikinci bir LLM turuna gerek yok.
+    #
+    # ⚠ Eşik **2**: tek bölüm bir belge değil bir cevaptır ve ona kapak takmak
+    # kullanıcıya olmayan bir şeyi vaat etmek olurdu.
+    #
+    # *LLM'in seçimine bırakılmış bir şey, fişin zaten kanıtladığı bir şeyse, orada bir
+    # karar değil bir kumar vardır.*
     _rapor = None
-    if _belge_fiili and _bolumler:
+    _derle = bool(_belge_fiili) or (bool(_belge_istegi) and len(_bolumler) >= 2)
+    if _derle and _bolumler:
         from app import report as _report
         _baslik = next((str(a.get("baslik")) for a in (plan.get("adimlar") or [])
-                        if str(a.get("fiil")) == _belge_fiili and a.get("baslik")), None)
+                        if _belge_fiili and str(a.get("fiil")) == _belge_fiili
+                        and a.get("baslik")), None)
         try:
             _rapor = _report.bolumlerden_kur(
                 _bolumler, baslik=_baslik or soru or "Rapor", schema=schema)

@@ -10878,3 +10878,105 @@ bir şey yok — garson `ANLAT` seçebiliyor. Kanıtlı çözüm: belge istendi 
 üretildiyse belge zaten **kurulabilir** — `§RP`'nin derleyicisi hazır. *LLM'in seçimine
 bırakılmış bir şey, fişin zaten kanıtladığı bir şeyse, orada bir karar değil bir kumar
 vardır.*
+
+## ✅ `§RB` KAPATILDI — **planın belgeyle bitmesi bir umut olamaz**
+
+```
+«geçen yıla göre satış raporu hazırla»
+  ÖNCE : SORGU→TREND→ANLAT  → rapor=None   ·  SORGU→TREND→RAPOR → «koşulamadı»
+  SONRA: 3/3 koşumda 2 blok  ✅
+«geçen yıla göre satış panosu hazırla» → 2/2 koşumda 2 blok (RAPOR ve PANO fiilleriyle) ✅
+```
+
+**Kök:** `§RG` orkestratörün **koşmasını** zorluyordu; planın **belgeyle bitmesini**
+zorlayan bir şey yoktu ve garson son adımda `ANLAT` seçebiliyordu. Ama fiş bunu zaten
+**kanıtlıyor**: belge istendi **ve** ≥2 bölüm üretildi — bu bir belgedir, fiilin adı ne
+olursa olsun. `§RP`'nin derleyicisi hazırdı; yeniden planlamaya gerek yok.
+
+> *LLM'in seçimine bırakılmış bir şey, fişin zaten kanıtladığı bir şeyse, orada bir karar
+> değil bir kumar vardır.*
+
+⚠ Eşik **2**: tek bölüm bir belge değil bir **cevaptır**; ona kapak takmak kullanıcıya
+olmayan bir şeyi vaat etmek olurdu.
+
+### 🔴 VE YİNE BİR KAPSAM HATASI — kapıya çevrildi
+
+İlk yazımda yüklem (`_belge_istegi`) `route_hit` dalının **içindeydi**, derleme noktası
+ise fonksiyon düzeyinde: yani `§RB`, `route_hit` **yokken** — belge isteklerinin asıl
+hâlinde — hiç koşamazdı. İkinci yazımda atama kullanımdan **sonra** kaldı (`NameError`).
+Üçüncüde fonksiyon başına taşındı ve **sıra kapıyla kilitlendi**
+(`test_YUKLEM_FONKSIYON_KAPSAMINDA`).
+
+> *Bir yüklemi kullanacağı yerden dar bir kapsamda hesaplamak, onu orada yok saymaktır.*
+
+### ⊙ Yanlış-pozitif ölçümü — yüklem **dar** kaldı
+
+```
+«en çok fire veren makineyi bul ve o makinenin vardiya dağılımını göster» → rapor YOK ✅
+«bu yıl toplam ciro»                                                      → rapor YOK ✅
+```
+
+Çok adımlı ama **belge olmayan** sorular etkilenmiyor: koşul `belge_istegi ∧ ≥2 bölüm`.
+
+# 🔴 `Q` TURU — 2026-08-10 · **AGENTIC BELGE, GERÇEK KULLANIMDA**
+
+| # | senaryo | sonuç |
+|---|---|---|
+| Q1 | *bu ay toplam üretim kg* | ✅ boş-aralık beyanı + sahiplik ifşası |
+| Q2 | *makinelere göre duruş süresi* | ✅ route, 11 satır |
+| Q3 | *en düşük oee hangi makinede* | ✅ `asc·limit 1` → `RAM-3 · 0,52` |
+| Q4 | *RAM-3 makinesinin fire oranı* | ✅ `§SR` tuttu — **3** yalan beyan üretmedi |
+| Q5 | *bakım maliyeti raporu hazırla* | 🔴🔴 **iki kırmızı** (aşağıda) |
+| Q6 | *müşteri bazında kârlılık ve ciro karşılaştırması raporu* | ◐ 1 blok (iki ölçü tek blokta) |
+| Q7 | *enerji verimliliği panosu hazırla* | ✅ **4 blok / 4 enerji küpü** |
+| Q8 | *en kötü 3 makinenin bakım ve duruş raporu* | ◐ 2 blok ama ikisi de `ort_oee` — **bakım/duruş değil** |
+| Q9 | kalite raporu thread'i | ⚠ bloklar **1000 satır** (aşağıda) |
+
+## 🔴 `§PB` — PLANLAYICI *«bakım maliyeti»*Nİ **BORDRO** SANDI
+
+```
+«bakım maliyeti raporu hazırla»
+  → SORGU: toplam_brut_maas, toplam_net_maas, toplam_isveren_maliyeti, personel_sayisi
+           · departman, pozisyon                                    ← 🔴 BORDRO
+```
+
+`§UT` ailesinin planlayıcıdaki yüzü: `bakim_is_emri.bakim_maliyeti` **var** (ölçüldü,
+`§UT` turunda) ama planlayıcı **maliyet** kelimesinden başka bir küpe gitti. ⊙ İkinci
+koşumda **doğru** buldu (`SORGU — bakim_maliyeti`) — yani bu bir yetenek eksiği değil bir
+**kararlılık** eksiği.
+
+## 🔴 `§RT` — TEK BÖLÜMLÜ BELGE **SESSİZCE** DÜŞÜYOR
+
+Aynı soruda plan **1 bölüm** üretti ve `§RB`'nin eşiği (**≥2**) yüzünden belge
+kurulmadı — kullanıcı **rapor** istedi, **tablo** aldı ve *bunun neden olmadığı
+söylenmedi*.
+
+⊙ Eşiğin gerekçesi doğru (*«tek bölüm bir belge değil bir cevaptır»*) ama sonucu yanlış:
+sessiz bir indirgeme. Kullanıcının kuralı: *dürüst red bir başarı değil* — burada bir red
+bile yok. **Doğrusu beyan + tık**: *«tek bölümlük bir sonuç çıktı — rapora dönüştürmek
+için ne eklemek istersin?»* (`§TZ` deseni).
+
+## 🔴 `§RY` — BELGE BAĞLAMI **BÜTÜN SATIRLARI** GERİ GÖNDERİYOR
+
+Ölçüm aracım `Argüman listesi çok uzun` ile düştü: istemci `previous_rapor`'u **tam**
+gönderiyor — `pages[][].result.rows` dâhil. Oysa `§RD`'nin kendi şerhi *«yalnız
+kimlikler»* diyor ve sunucu da yalnız onları okuyor.
+
+⊙ Yani sunucunun **az önce ürettiği** satırlar, bir sonraki turda **geri** taşınıyor.
+*Bir aracın sınırına çarpmak, bazen ölçtüğü şeyin kusurunu gösterir.*
+
+## ⚠ `§RK` — RAPOR BLOĞU **1000 SATIR**
+
+```
+kalite raporu → blok 1: 6 boyut (makine,hat,musteri,kumas_cinsi,renk,renk_derinlik) · 1000 satır
+                blok 2: 5 boyut · 1000 satır
+```
+
+Kartezyen patlama. Bir rapor bloğu bir **özet**tir; 1000 satır bir **veri dökümüdür** ve
+yazdırılabilir bir belgeye sığmaz.
+
+## 📋 SIRA — dördü de ölçüldü, hiçbiri tahmin değil
+
+`§RT` (sessiz indirgeme) → `§RY` (boşuna taşınan satır) → `§RK` (blok özeti) → `§PB`
+(kararlılık). İlk üçü **kanıtlı ve kapsam değiştirmeyen** düzeltmeler; `§PB` bir
+planlayıcı kararı ve korpus A/B ister.
