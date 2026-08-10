@@ -539,7 +539,33 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
         if any(not any(_o != _m and any(_b <= _s2 and _e2 <= _e and (_e - _b) > (_e2 - _s2)
                                         for _b, _e in _oth)
                        for _o, _oth in _esles.items())
-               for _s2, _e2 in _sp)} | _verilen_olculer
+               for _s2, _e2 in _sp)}
+    # 🔴🔴 `§ÖB` — **BİRLEŞİM KUSURUN KENDİSİYDİ: sistemin SEÇTİĞİ ölçü, kullanıcının
+    # İSTEDİĞİ sayılıyordu.**
+    #
+    # ⊙ Canlı ölçüm (curl turu, 2026-08-10): *«bu yıl en kötü fire»* →
+    # `fire_orani_yuzde` ile **doğru** cevaplandı (RAM-2 · %22,12), ama not:
+    #
+    #     ⚠ Sayı doğru ama EKSİK: soruda **2 ölçü** geçiyor ama cevapta **1** var —
+    #     `toplam_fire_kg` rapora girmedi.
+    #
+    # Kullanıcı **bir** şey söyledi: *«fire»*. Sinonimler ayrık:
+    # `toplam_fire_kg → ['fire', …]` · `fire_orani_yuzde → ['fire orani', …]`, ve soruda
+    # *«fire orani»* **geçmiyor**. Yani sinonim eşleşmesi tek bir ölçü buluyordu —
+    # ikinciyi **birleşim** ekliyordu (`| _verilen_olculer`), yani **cevabın kendisi**.
+    #
+    # 🔴 Sonuç bir öz-referans: sistemin seçimi *«istenen»* kovasına giriyor, sonra o
+    # kovayla kıyaslanıyor ve **her zaman** bir eksik çıkıyor.
+    #
+    # ⚠ Birleşim gereksizdi: kullanıcının **adıyla andığı** bir ölçü zaten `_esles`
+    # tarafından yakalanır. Birleşimin eklediği tek şey, **kullanıcının hiç anmadığı**
+    # ölçülerdi — ve onlar tanım gereği *«istenen»* değildir.
+    #
+    # ⊙ Kullanıcı *«fire»* deyip `fire_orani_yuzde` almışsa bu **bir ikame beyanıdır**
+    # ve o eksenin kendi kapısı var (`§Cİ`/`olcu_ikamesi`) — burada değil.
+    #
+    # *Bir talebi, cevabın kendisinden türetmek; sınavı kendi cevap anahtarından
+    # yazmaktır.*
     if len(_istenen_olculer) >= 2 and len(_verilen_olculer) < len(_istenen_olculer):
         _dusen = sorted(_istenen_olculer - _verilen_olculer)
         _ad = ", ".join(f"`{_m}`" for _m in _dusen)

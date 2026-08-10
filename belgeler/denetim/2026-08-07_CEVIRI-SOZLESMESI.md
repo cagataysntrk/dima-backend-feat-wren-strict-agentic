@@ -9709,3 +9709,41 @@ ile geldi ve beyan **doğru biçimde yazılmadı**.
 
 *Bir üstünlük sorusu bir SEÇİM ister; seçilecek bir küme yoksa cevap bir sayı değil,
 bir yanlış anlamadır.*
+
+## 🔴 `§ÖB` — SİSTEMİN SEÇTİĞİ ÖLÇÜ, KULLANICININ İSTEDİĞİ SAYILIYORDU
+
+```
+«bu yıl en kötü fire» → fire_orani_yuzde · RAM-2 · %22,12            ✅ DOĞRU
+note: «⚠ Sayı doğru ama EKSİK: soruda 2 ÖLÇÜ geçiyor ama cevapta 1 var
+       — toplam_fire_kg rapora girmedi.»                             🔴 YANLIŞ
+```
+
+Kullanıcı **bir** şey söyledi: *«fire»*. Ve sinonimler **ayrık** — ölçüldü:
+
+```
+toplam_fire_kg   → ['fire', 'waste', …]        ← soruda GEÇİYOR
+fire_orani_yuzde → ['fire orani', …]           ← soruda GEÇMİYOR
+```
+
+Yani sinonim eşleşmesi **tek** ölçü buluyordu; ikinciyi **birleşim** ekliyordu
+(`_istenen_olculer = {…} | _verilen_olculer`) — yani **cevabın kendisi**.
+
+🔴 Bir **öz-referans**: sistemin seçimi *«istenen»* kovasına giriyor, sonra o kovayla
+kıyaslanıyor ve **her zaman** bir eksik çıkıyor.
+
+⚠ Birleşim gereksizdi: kullanıcının **adıyla andığı** ölçü zaten `_esles` tarafından
+yakalanır. Birleşimin eklediği tek şey **kullanıcının hiç anmadığı** ölçülerdi.
+
+### İki yönde de ölçüldü — ve yanlış beyanın yerini DOĞRU beyan aldı
+
+```
+SONRA: «en kötü fire»       → «fire» birden fazla yerde tanımlı — bu cevap parti
+                               tanımıyla hesaplandı. Diğerleri: fire (OEE).   ✅
+       «ciro ve fire»       → ⚠ 2 ölçü geçiyor ama 1 var — toplam_ciro girmedi ✅
+                               (GERÇEK pozitif korundu)
+```
+
+⊙ Kullanıcı *«fire»* deyip `fire_orani_yuzde` almışsa bu bir **ikame/sahiplik**
+meselesidir ve o eksenin kendi kapısı zaten var — *«2 ölçü istedin»* demek değil.
+
+*Bir talebi, cevabın kendisinden türetmek; sınavı kendi cevap anahtarından yazmaktır.*
