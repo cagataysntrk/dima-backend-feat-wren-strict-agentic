@@ -86,6 +86,19 @@ garson `kalite.ort_dE` ile **doğru** cevapladı. `A4`'ün sınıfı; geri alın
 ⚠ Bu satır bir *"haksız kırmızı"* değil çünkü kırmızı **vermedi** (tolerans içinde) —
 ama vermiş olsaydı `G3`'ün tekrarı olurdu.
 
+### 2026-08-10 · korpus (`A7` tetikli) · ⚪ YEŞİL — *ve bir hızlanmanın kanıtı*
+
+`E1` memoizasyonundan sonra koşuldu: **454 sn**, korpus **%94,9** (taban %94,4) ✅,
+semantik **%93,9** (taban %93,5) ✅, `sessiz_yanlis` **8** (değişmedi).
+
+⊙ Bu satır bir *yakalama* değil bir **kanıt**: 2,9× hızlanan bir kod yolunun hiçbir
+gerileme üretmediğini gösteriyor. Ve `A3`'ün ayrıştırılmış çıktısı ilk kez kapının
+kendi özetinde: `doğru=96 · devir=2141 · netleştirme=0 · beyanlı_kısmi=41 ·
+🔴 sessiz_yanlış=8 · payda=2286`.
+
+⚠ **Payda sabit** (2286 · 591) — yani süre düşüşü kapsam kırpılmasından değil.
+*Bir sürenin kısalması iki sebepten olabilir ve ikisi zıttır.*
+
 ---
 
 ## Nasıl eklenir
