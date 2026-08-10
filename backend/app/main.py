@@ -64,7 +64,14 @@ async def lifespan(app: FastAPI):
     )
     _log.info("Wren motoru hazır: datasource=%s şirket=%s proje=%s",
               settings.datasource, settings.company, settings.resolved_project_dir())
-    app.state.llm = build_generator(settings)
+    # 🔴 `A1` — KASET. Ortam değişkeni yoksa **dokunmaz** (`KURAL B`: bayraksız
+    # davranış birebir bugünkü). Raporun `§4i` kararı: kapının yeni merkezi kasetli
+    # garson korpusudur ve o, `/ask`'in TAM yolundan koşar — yani route'u da koşturur.
+    # Sağlayıcıyı burada sarmak, ölçümün ürünün kendi hattından geçmesini garanti eder;
+    # ayrı bir "test hattı" kurmak, ölçtüğü şeyi ölçmeyen bir alet üretirdi.
+    from app.kaset import belki_sar
+
+    app.state.llm = belki_sar(build_generator(settings))
     # BAŞLANGIÇTA hangi LLM sağlayıcı(lar)ının GERÇEKTEN aktif olduğunu net biçimde logla
     # (1 Ağustos 2026, kullanıcı talebi: "llm mi patladı" sorusunun İLK adımı — hangi
     # sağlayıcı yapılandırılmış OLMALI ki sonraki llm.py loglarıyla karşılaştırılabilsin).

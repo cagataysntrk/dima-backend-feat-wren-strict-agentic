@@ -714,6 +714,36 @@ class OpenAICompatibleSqlGenerator:
                 {"role": "user", "content": user},
             ],
         }
+        # 🔴🔴 **AKIL YÜRÜTME SICAK YOLDA KAPALIDIR — ve bu ÖLÇÜLDÜ.**
+        #
+        # `deepseek/deepseek-v4-flash` bir kasetli korpus koşumunda **384 saniye** sürdü
+        # ve **BOŞ** döndü (`finish_reason=length`): token bütçesinin tamamı `reasoning`
+        # kanalına gitti, cevap kanalına hiçbir şey kalmadı.
+        #
+        # ⊙ İlk refleks modeli değiştirmekti; akıl yürütmeyen `inclusionai/ling-2.6-flash`
+        # denendi ve **aynı 21 senaryoda ölçüldü**: orkestra **4 → 0** (model hiç plan
+        # kuramadı), netleştirme 2 → 5, bir cevap **boş** döndü, iki soruda küp değişti.
+        # Yani sorun modelin *yeteneği* değil, bütçesinin nereye gittiğiydi.
+        #
+        # 🔴 İLK DÜZELTMEM `{"exclude": True}` İDİ VE **YANLIŞTI** — ölçüm çürüttü.
+        #
+        # OpenRouter'da `exclude` *"akıl yürütmeyi **döndürme**"* demektir: model yine
+        # yürütür, sen görmezsin. Ölçüldü (aynı 21 senaryo, 47 çağrı):
+        # **medyan 23,8 sn · en uzun 145,7 sn** — yani gecikme hiç çözülmemişti, yalnız
+        # **görünmez** olmuştu. Kanalı gerçekten kapatan anahtar `enabled: false`'tır.
+        #
+        # ⊙ Ve bu ayrım tam da bu deponun tekrar tekrar öğrendiği ders: *bir belirtiyi
+        # gizlemek ile sebebini kaldırmak aynı şey değildir* — üstelik gizleyen çözüm
+        # daha tehlikelidir, çünkü çözülmüş görünür.
+        #
+        # ⚠ Garsonun işi akıl yürütmek değil **çevirmek**: sipariş fişini üretir, sayıyı
+        # her zaman küp koyar. Uzun düşünme burada bir kalite değil, bir **gecikmedir**.
+        # `enabled: false` akıl yürütmeyen modellerde **yok sayılır** — model listesi
+        # tutulmaz, tek satır her iki sınıf için de doğrudur.
+        #
+        # *Bir modelin yavaşlığı bazen bilgisizliğinden değil, düşüncesini nereye
+        # yazdığından gelir.*
+        payload["reasoning"] = {"enabled": False}
         _t0 = time.monotonic()
         try:
             resp = safe_call(
