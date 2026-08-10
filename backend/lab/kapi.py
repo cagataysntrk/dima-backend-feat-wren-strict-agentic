@@ -595,6 +595,45 @@ def tam(sadece: tuple[str, ...] = (), *, hepsi: bool = False) -> int:
     return kotu
 
 
+#: 🔴🔴 `A7` — **ROUTE KORPUSU DEĞİŞİKLİK-TETİKLİDİR.**
+#:
+#: Raporun `§4i` kararı: kapının merkezi **kasetli garson korpusu**dur (her demet, sıfır
+#: API); route korpusu (~10.800 soru, **13-20 dk CPU**) *"her demet sonunda"* değil
+#: **kritik değişiklikte + günde 1** koşar.
+#:
+#: ⊙ Gerekçe ölçülmüş: route korpusu iki şeyi görür ve ikisi de **kapsam** eksenindedir —
+#: *"kaç soru cevaplanabiliyor"* (payda) ve `sessiz_yanlis`. Bu iki sayı ancak
+#: **route'un kendisi ya da katalog** değiştiğinde kıpırdar. Bir anlatı düzeltmesinden
+#: sonra 13 dakika beklemek, ölçmediğini ölçmek için ödenen bir bedeldir.
+#:
+#: ⚠ Liste elle değil **desenle** tutulur: yeni bir pack ya da yeni bir router modülü
+#: eklendiğinde tetikleyici kendiliğinden kapsar. *Elle tutulan bir tetik listesi, bir
+#: gün eklenen dosyayı görmez ve kapı sessizce kör olur.*
+ROUTE_TETIKLEYICILERI: tuple[str, ...] = (
+    "app/cube_router",      # eşleştiricinin kendisi
+    "app/wren_service",     # şema derlemesi + sinonim katmanları
+    "app/compose",          # katman birleştirme
+    "app/katalog_metni",    # garsonun menüsü
+    "demo/packs/",          # katalog verisi (küp · ölçü · sinonim · sahiplik)
+)
+
+
+def route_korpusu_gerekli(degisen: list[str]) -> tuple[bool, str]:
+    """Değişen dosyalar route korpusunu **tetikliyor mu**? Döner: `(gerekli, gerekçe)`.
+
+    🔴 Boş `degisen` → **gerekli** (bilinmeyen bir değişiklik, en kötüsü varsayılır).
+    *Ölçmediğini güvenli saymak, bu deponun üç kez ödediği hatadır.*
+    """
+    if not degisen:
+        return True, "değişen dosya listesi verilmedi — bilinmeyen değişiklik en kötüsü sayılır"
+    vuran = sorted({t for t in ROUTE_TETIKLEYICILERI
+                    for d in degisen if t in d.replace("\\", "/")})
+    if vuran:
+        return True, "tetikleyici dokunuldu: " + ", ".join(vuran)
+    return False, ("route/katalog dosyalarına dokunulmadı — korpusun ölçtüğü iki eksen "
+                   "(payda · sessiz_yanlış) kıpırdayamaz")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--hizli", action="store_true")
@@ -608,7 +647,16 @@ def main() -> int:
                          f"({' | '.join(ADIM_ANAHTARLARI)}). Demet kapısı DEĞİLDİR.")
     ap.add_argument("--degisen", nargs="*", default=[],
                     help="değişen dosya yolları (host'ta `git status` verir)")
+    ap.add_argument("--tetik", action="store_true",
+                    help="`A7` — `--degisen` route/katalog'a dokunduysa `--tam` koş, "
+                         "yoksa ATLA ve sebebini yaz (13-20 dk tasarruf)")
     a = ap.parse_args()
+    if a.tetik:
+        gerekli, gerekce = route_korpusu_gerekli(a.degisen)
+        print(f"`A7` route korpusu: {'KOŞULACAK' if gerekli else 'ATLANDI'} — {gerekce}")
+        if not gerekli:
+            return 0
+        return tam(tuple(a.sadece), hepsi=a.hepsi)
     if a.tam or a.hepsi:
         return tam(tuple(a.sadece), hepsi=a.hepsi)
     if a.hizli:
