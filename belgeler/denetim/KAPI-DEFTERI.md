@@ -243,6 +243,31 @@ sorusunu **kaydeder**. Biri çalışır, öteki öğrenir.
 
 ---
 
+### 2026-08-10 · korpus (`§ÜK` + `§ÖB`) · ⚪ YEŞİL — *ve BEKLENTİM TUTMADI, bu bir bilgi*
+
+Üç yanlış-pozitif beyan düzeltmesinden (`§UY/K` · `§ÜK` · `§ÖB`) sonra **beklentim
+`beyanli_kismi`'nin düşmesiydi** — çünkü o sınıf tam da bu beyanlardan sayılıyor.
+
+```
+kapı yeşil · ✅ sabit: dogru +0 · sessiz_yanlis 0 · devir +0
+doğru=95 · beyanlı_kısmi=41 (DEĞİŞMEDİ) · payda=2286 · nüfus imzası TUTTU
+```
+
+🔴 **Tahmin tutmadı ve bu bir kusur değil bir ÖLÇÜM:** korpusun 41 beyanlı-kısmi vakası,
+düzeltilen üç sınıfın **hiçbirinden** değil. Yani o üç kusur **canlı kullanıcı yolunda**
+vardı, korpusta **yoktu**.
+
+⊙ Sebep deponun kendi yazılı körlüğü (`CLAUDE.md`): *«Korpus soruları katalogdan
+üretiliyor, yani hepsi doğru yazılmış… gerçek kullanıcı deneyimi kırık olabilir — sayı
+yalan söylemiyor, o yolu GÖRMÜYOR.»* Bugün o cümle **üç kez** doğrulandı: üç kusur da
+curl turunda bulundu, korpusta değil.
+
+⚠ Ve bu, kapı sıklığı kuralının **gerekçesidir**: korpus bir gerileme kalkanıdır, bir
+kusur bulucu değil. *Bir aleti, görmediği şeyi araması için koşturmak, onu koşturmamakla
+aynı bilgiyi verir — yalnız daha pahalıya.*
+
+---
+
 ---
 
 ## Nasıl eklenir
