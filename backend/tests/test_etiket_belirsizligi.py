@@ -86,28 +86,24 @@ def test_CANLI_SEMADA_CARPISMA_KALMADI(schema):
         "etmiyor ve her ikisini birden kırılıma sokuyor:\n  " + "\n  ".join(kalan))
 
 
-def test_BOYUT_KENDI_ADIYLA_ANILABILIR(schema):
-    """🔴 `§EB/A` — **bir boyut her zaman kendi adıyla anılabilmeli.**
+def test_BOYUT_ADI_SINONIM_YAPILMADI_KAYDI_DURUYOR():
+    """⟳🔴 `§EB/A` denendi, **ölçüldü, geri alındı.**
 
-    ⊙ Ölçüldü: *«… yas_grubu bazında …»* yalnız **kazara** çalışıyordu — eşleşen token
-    `grubu` idi (iki boyutun etiketinden türemiş) ve boyutun **kendi adı** sinonim
-    listesinde **hiç yoktu**. `§EB` kazayı kaldırınca soru cevapsız kaldı ve kapı
-    (`test_iliski_uzerinden_kirilim_TOPLAMI_DEGISTIRMEZ`) bunu yakaladı.
+    Hipotez doğruydu (*«bir boyut kendi adıyla anılabilmeli»*) ama bedeli ölçüldü:
+    ad **her boyut için** eklenince katalog açgözlü oldu ve gerçek-dünya korpusunda
+    `sessiz_yanlis` **12 → 18**. `§99.1`'in birebir tekrarı — teknik adlar kullanıcının
+    **konuşmadığı** kelimelerdir: kazandırdıkları nadir, çarptırdıkları sık.
 
-    ⚠ Ad küp içinde **benzersizdir**; yeni bir belirsizlik doğurmaz.
-    *Bir şeyin adıyla çağrılamaması, adının olmaması demektir.*
+    *Bir kesinlik kazanmak için bir belirsizlik satın alıyorsan, takasın yönünü sayıyla
+    bilmen gerekir.*
     """
-    from app.cube_router import _norm
+    import inspect
 
-    eksik = []
-    for c in (schema.get("cubes") or []):
-        ds = c.get("dimension_synonyms") or {}
-        for d in (c.get("dimensions") or []):
-            if _norm(str(d)) not in (ds.get(d) or []):
-                eksik.append(f"{c['name']}.{d}")
-    assert not eksik, ("🔴 Şu boyutlar kendi adlarıyla anılamıyor:\n  "
-                       + "\n  ".join(eksik[:20]))
+    from app import wren_service
 
+    src = inspect.getsource(wren_service.WrenService.schema)
+    assert "GERİ ALINDI" in src, "çürütmenin kaydı silinmiş"
+    assert "[_norm(d[\"name\"])]," not in src, "ad yeniden sinonim yapılmış — korpus ölçtü"
 
 def test_DUSEN_TOKEN_DAGARCIKTA_KALIR(schema):
     """🔴 `§EB/T` — düşen token **ayırt etmez ama tanınır**.

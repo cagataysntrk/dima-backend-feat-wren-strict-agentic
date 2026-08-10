@@ -792,17 +792,24 @@ class WrenService:
                 # 🔴🔴 `§EB` — **ETİKETTEN TÜREYEN BELİRSİZ TOKEN SİNONİM OLAMAZ.**
                 # Gerekçe ve ölçüm `_etiket_belirsizligini_ayikla`'da.
                 "dimension_synonyms": _etiket_belirsizligini_ayikla(
-                    # 🔴 `§EB/A` — **BİR BOYUT HER ZAMAN KENDİ ADIYLA ANILABİLİR.**
-                    # ⊙ Ölçüldü: *«… yas_grubu bazında …»* yalnız **kazara** çalışıyordu
-                    # — eşleşen token `grubu` idi (iki boyutun etiketinden türemiş,
-                    # `§EB` onu düşürdü) ve boyutun **kendi adı** sinonim listesinde
-                    # **hiç yoktu**. `_norm` alt çizgiyi koruduğu için `yas grubu`
-                    # (boşluklu) `yas_grubu`'yu karşılamıyor.
-                    # ⚠ Ad küp içinde **benzersizdir**, yani yeni bir belirsizlik
-                    # doğurmaz — doğurduğu tek şey bir **kesinliktir**.
-                    # *Bir şeyin adıyla çağrılamaması, adının olmaması demektir.*
+                    # ⟳🔴 **`§EB/A` DENENDİ, ÖLÇÜLDÜ, GERİ ALINDI.**
+                    #
+                    # Hipotez: *«bir boyut her zaman kendi adıyla anılabilmeli»* —
+                    # çünkü `«… yas_grubu bazında …»` yalnız **kazara** çalışıyordu
+                    # (eşleşen token `grubu` idi) ve `_norm` alt çizgiyi koruduğu için
+                    # `yas grubu` (boşluklu) `yas_grubu`'yu karşılamıyor.
+                    #
+                    # ⊙ Ama ad **her boyut için** eklenince katalog **açgözlü** oldu:
+                    # gerçek-dünya korpusu `sessiz_yanlis` **12 → 18**. `§99.1`'in
+                    # birebir tekrarı — *geniş sinonim küpü açgözlü yapar*, ve teknik
+                    # adlar kullanıcının **konuşmadığı** kelimelerdir: kazandırdıkları
+                    # nadir, çarptırdıkları sık.
+                    #
+                    # ⚠ Ders: bir kapının **kazara** geçmesi, geçtiği yolu meşru yapmaz —
+                    # ama o yolu kapatırken **yerine ne konduğu** ölçülmelidir.
+                    # *Bir kesinlik kazanmak için bir belirsizlik satın alıyorsan,
+                    # takasın yönünü sayıyla bilmen gerekir.*
                     {d["name"]: _merge_syns(
-                        [_norm(d["name"])],
                         _with_label(d.get("label"), _syns(d.get("synonyms"))),
                         _dim_i18n(d["name"]))  # §7b: yerel (YAML) ⊕ yardımcı-teknik dil
                      for d in c.get("dimensions", [])},

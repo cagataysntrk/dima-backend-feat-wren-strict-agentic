@@ -571,6 +571,19 @@ MUAFIYET_ASK_KOD = [
      "`V17`'nin kusuru tam da yeni sorgu koşmaktı. *Bir fişi okumak için mutfağa gidilmez.*"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("eb-t-ayirt-etmeyen-token-taninir", 1,
+     "🔴 **`§EB/T` — AYIRT ETMEYEN AMA TANINAN TOKEN.** ⊙ Ölçüldü: `grubu` iki boyutun "
+     "**etiketinden** türediği için kırılım seçiminden düşürüldü (`§EB`) — ve o anda "
+     "**kapsam kapısı** da onu kaybetti: *«bu yıl yas_grubu bazında işlenen kg»* → "
+     "*«\"grubu\" başka bir konu gibi görünüyor»*. "
+     "⊙ Kusur ayrımda: `partial_unknowns` *«bu kelime dağarcığımızda mı»* diye sorar, "
+     "`_match_dimension` *«hangi boyutu adlandırıyor»* diye — **ikisi aynı listeden "
+     "okuyordu**. "
+     "⊙ Δ = 1: `known |= _syn_hit_words(q, c.get(\"belirsiz_boyut_tokenlari\"))`. "
+     "⚠ **TAŞINAMAZ:** `known` kümesi bu fonksiyonun **kendi** birikimidir; dışarı "
+     "almak kapsam kararını iki dosyaya bölerdi. "
+     "*Bir kelimeyi tanımak ile onunla bir şeyi seçmek aynı yetenek değildir; birini "
+     "kaldırmak ötekini de kaldırıyorsa liste iki iş yapıyordur.* `sha=4d325dd`"),
     ("gg9-tam-kelime-siniri-alfabesinin-yarisini-taniyordu", 1,
      "🔴🔴 **TAM-KELİME SINIRI ASCII-ONLY'Dİ.** Ölçüldü (canlı `GG9`): *«nasıl "
      "**de**ğişti»* → `kalite.ort_dE` eşleşti ve soru iki-cube yetenek sınırına düştü. "

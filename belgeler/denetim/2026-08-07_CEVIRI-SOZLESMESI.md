@@ -8696,3 +8696,44 @@ açığa çıkarır — ve o sözleşmeler yazılı olmadığı için ancak kır
 🔴 **`her <boyut>` = grup başına üstünlük** ifade edilemiyor ve **sessizce** global
 tek satıra indirgeniyor. Üretilen sorgu: `dimensions:[makine,vardiya] · order asc ·
 limit 1`. En az bir **beyan** borcu var; tam çözüm pencere fonksiyonu ister.
+
+---
+
+## `XIII` TURU — **KAPI BENİ YAKALADI: bir kesinlik, altı sessiz yanlışa mal oldu** *(2026-08-10)*
+
+`§EB/A` (*«bir boyut kendi adıyla anılabilmeli»*) hipotezi **doğruydu** ama bedeli
+ölçülmedi. Kapı ölçtü:
+
+```
+🔴 sessiz_yanlis ARTTI: 12 → 18
+```
+
+⊙ Ad **her boyut için** eklenince katalog **açgözlü** oldu — `§99.1`'in birebir
+tekrarı. Teknik adlar kullanıcının **konuşmadığı** kelimelerdir: kazandırdıkları nadir,
+çarptırdıkları sık.
+
+**Geri alındı** ve doğrulandı: `sessiz_yanlis` **18 → 8**, `dogru` **96**, `kabul` 1147.
+
+> *Bir kesinlik kazanmak için bir belirsizlik satın alıyorsan, takasın yönünü sayıyla
+> bilmen gerekir.*
+
+### Ve kazara geçen kapı DÜRÜSTÇE düzeltildi
+
+`test_iliski_uzerinden_kirilim_TOPLAMI_DEGISTIRMEZ[yas_grubu]` soruyu **teknik adla**
+soruyordu (`bu yıl yas_grubu bazında …`) ve yıllardır belirsiz `grubu` token'ı sayesinde
+geçiyordu. Sözleşme değişmedi (*kırılımlı toplam = kırılımsız toplam*); soru artık
+kullanıcının yazacağı biçimde (`yaş grubu`).
+
+*Bir kapıyı teknik adla sürmek, ürünün konuşmadığı bir dilde test etmektir.*
+
+### Turun bilançosu — üç değişiklik, ikisi kaldı
+
+| # | değişiklik | karar |
+|---|---|---|
+| `§EB` | etiket-türevi **belirsiz** token kırılım seçiminden düşer | ✅ **kaldı** (6 çarpışma kapandı) |
+| `§EB/T` | düşen token **dağarcıkta** kalır (tanınır, ayırt etmez) | ✅ **kaldı** |
+| `§EB/A` | boyut adı sinonim yapılır | 🔴 **ölçüldü, geri alındı** (`sessiz_yanlis` +6) |
+
+⊙ Ve bu turda kapı **ilk kez** benim bir düzeltmemi yakaladı — canlı curl değil.
+Sebep yapısal: `§EB/A` bir **kapsam** değişikliğiydi ve kapsamın ölçüsü korpustur.
+*Canlı tur bir yolun çalışıp çalışmadığını söyler; korpus kaç yolun kaldığını.*

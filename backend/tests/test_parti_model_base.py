@@ -61,8 +61,26 @@ def test_iliski_uzerinden_kirilim_TOPLAMI_DEGISTIRMEZ(client, dim):
     """
     from tests.conftest import ask
 
+    # ⟳🔴 **SORU TEKNİK ADLA SORULUYORDU — ve KAZARA çalışıyordu.**
+    #
+    # ⊙ Ölçüldü (`§EB`, 2026-08-10): `yas_grubu` sorusu yalnız `grubu` token'ı üzerinden
+    # eşleşiyordu; o token **iki boyutun etiketinden** türemiş bir belirsizlikti
+    # (`ham_grup` ∩ `yas_grubu`) ve *«renk grubuna göre fire»* sorusuna **personel yaş
+    # grubunu** sokuyordu. Belirsizlik kaldırılınca bu kapı kırmızıya döndü — yani
+    # yıllardır bir **kusur sayesinde** geçiyormuş.
+    #
+    # ⚠ Ve teknik adı sinonim yapmak **ölçülüp reddedildi**: gerçek-dünya korpusunda
+    # `sessiz_yanlis` **12 → 18** (`§EB/A`, `§99.1`'in tekrarı). Teknik ad kullanıcının
+    # konuşmadığı bir kelimedir.
+    #
+    # 🔴 Doğru soru **kullanıcının yazacağı** biçimdir: boyutun **etiketi**. Kapının
+    # sözleşmesi değişmedi (*kırılımlı toplam = kırılımsız toplam*); yalnız o sözleşmeyi
+    # **gerçek bir yoldan** sınıyor. *Bir kapıyı teknik adla sürmek, ürünün konuşmadığı
+    # bir dilde test etmektir.*
+    _etiket = {"yas_grubu": "yaş grubu", "cinsiyet": "cinsiyet",
+               "departman": "departman", "egitim": "eğitim"}.get(dim, dim)
     duz = ask(client, "bu yıl işlenen kg")
-    kirilimli = ask(client, f"bu yıl {dim} bazında işlenen kg")
+    kirilimli = ask(client, f"bu yıl {_etiket} bazında işlenen kg")
 
     assert duz.get("result"), f"kırılımsız sorgu cevap vermedi: {duz.get('note')}"
     assert kirilimli.get("result"), f"{dim} kırılımı cevap vermedi: {kirilimli.get('note')}"
