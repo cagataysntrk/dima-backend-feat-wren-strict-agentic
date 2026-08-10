@@ -318,13 +318,90 @@ class Niyet:
         return self.sinif == SINIF_KONUSMA
 
 
+#: 🔴🔴 **`§FÇ` — FİİL ÇEKİMİ: ad çekimi zinciri bu soruyu CEVAPLAYAMAZ.**
+#:
+#: ## Ölçülen kusur (süit, 2026-08-10)
+#:
+#:     niyet_kalibi_var("bu grafiği yorumla")     → 'anlat'   ✅
+#:     niyet_kalibi_var("bunu nasıl yorumlarsın") →  None     🔴
+#:
+#: `yorumla` bir **fiil kökü**; `yorumlarsın` = `yorumla` + `-r` (geniş zaman) + `-sın`
+#: (2. tekil kişi). `_syn_hit` → `_ek_gecerli` → `_SUFFIX_ATOMS` zinciri **ad** çekimini
+#: (hâl · çoğul · iyelik) doğrular; **kişi eki** orada yoktur ve olmamalıdır — katalog
+#: terimleri **isimdir** ve isimler kişiye göre çekilmez.
+#:
+#: 🔴 Bedeli `R2` sınıfı: *«bunu nasıl yorumlarsın»* tanınmış bir niyet taşımıyor sayılır
+#: → sosyal kapı onu bir kapanış sanabilir → *«Görüşürüz!»*. En üst kuralın
+#: (*«anlamadım/görüşürüz YOK»*) doğrudan ihlali.
+#:
+#: ## Ve tablo kanıtı KENDİ İÇİNDE taşıyordu
+#:
+#:     _ANLAT = (…, "yorumla", "yorumlar misin", "yorumlasana", "aciklar misin", "acikla")
+#:                    └─ dört giriş, İKİ fiilin ELLE YAZILMIŞ çekimi ─┘
+#:
+#: Kullanıcının kuralı (*"tek tek yazmak aptallık"*) burada da geçerli — ve bu sefer
+#: sinonim değil **çekim**. Kök çözüm: zinciri **tamamlamak**, listeyi büyütmek değil.
+#:
+#: ## İki tasarım kararı, ikisi de deponun kendi ölçümlerinden
+#:
+#: 1. 🔴 **ÇIPLAK `-r` YASAK.** `cube_router`'ın `§73` ölçümü: *«tek harflik ünsüz
+#:    atomlar neredeyse HER harf dizisini geçerli bir ek zinciri yapıyordu»* (`s` yüzünden
+#:    `karsilastir` → *«kâr»* okundu). Bu yüzden ekler **bileşiktir** (`rsin`·`irsin`),
+#:    tek harf değil. *Bir ekin kısalığı, onun tehlikesidir.*
+#: 2. 🔴 **PAYLAŞILAN ATOM LİSTESİNE GİRMEZ.** `_SUFFIX_ATOMS` katalog terimlerini
+#:    (isimleri) eşler; oraya kişi eki koymak route'a **sıfır fayda, artı risk** olurdu —
+#:    ve o listenin geri alınmış bir gerileme geçmişi var (`mal`+`iyeti`). Ayrı tutmak
+#:    `KAT-1` ihlali **değildir**: *«bu geçerli bir AD çekimi mi»* ile *«geçerli bir FİİL
+#:    çekimi mi»* aynı soru değildir. Ve ayrı tutulunca korpus **yapısal olarak**
+#:    gerileyemez.
+#:
+#: *Bir dilbilgisi kuralını tamamlamak, bir sözlüğe kelime eklemekten farklıdır:
+#: birincisi bir kez yazılır ve bütün fiiller için çalışır.*
+_FIIL_EKLERI: tuple[str, ...] = (
+    # geniş zaman + kişi — ünlüyle biten kök: "yorumla"+"rsin" · "acikla"+"riz"
+    "rsin", "rsun", "rsiniz", "rsunuz", "rim", "rum", "riz", "ruz", "rlar", "rler",
+    # geniş zaman + kişi — ünsüzle biten kök: "degerlendir"+"irsin" · "goster"+"irsiniz"
+    "irsin", "ursun", "ersin", "arsin", "irsiniz", "ursunuz",
+    "irim", "urum", "erim", "arim", "iriz", "uruz", "eriz", "ariz",
+    # rica/emir: "yorumla"+"sana" (tabloda ELLE yazılıydı — artık kuralla geliyor)
+    "sana", "sene",
+    # yeterlilik: "yorumla"+"yabilir" · "degerlendir"+"ebilir"
+    "yabilir", "yebilir", "abilir", "ebilir",
+    "yabilirsin", "yebilirsin", "abilirsin", "ebilirsin",
+    # soru: "yorumla"+"r misin" bitişik yazımı ("yorumlarmisin")
+    "rmisin", "rmisiniz", "irmisin", "urmusun",
+)
+
+#: Zincir **tam** eşleşir: kalanın tamamı bir fiil eki olmalı, parçası değil.
+_FIIL_EKI_RE = re.compile(r"(?:" + "|".join(sorted(_FIIL_EKLERI, key=len, reverse=True))
+                          + r")\Z")
+
+
+def _fiil_hit(q: str, kok: str) -> bool:
+    """Kök, `q` içinde **çekimli** bir fiil olarak geçiyor mu?
+
+    ⚠ Kelime sınırı `_syn_hit` ile aynı disiplinde: kök **kelime başından** aranır,
+    kalan **tamamen** bir fiil eki olmalıdır. Böylece `acikla` ⊄ `aciklama tablosu`
+    gibi ad türevleri buraya sızmaz — o kalanlar (`ma`·`masi`) fiil eki değildir.
+    """
+    if " " in kok:                     # çok kelimeli kalıplar çekilmez ("analiz et")
+        return False
+    for m in re.finditer(rf"(?:^|[^a-z0-9]){re.escape(kok)}([a-z]+)", q):
+        if _FIIL_EKI_RE.fullmatch(m.group(1)):
+            return True
+    return False
+
+
 def _hit(q: str, kaliplar: tuple[str, ...]) -> str | None:
     """Eşleşen ilk kalıbı döndürür — `_syn_hit` disipliniyle (kelime başı + ek zinciri).
 
     Çok kelimeli kalıplar bölünmez; `_syn_hit` onları olduğu gibi arar.
+
+    🔴 `§FÇ` — ad çekimi tutmazsa **fiil çekimi** denenir. Sıra bilinçli: `_syn_hit` daha
+    dar ve daha çok ölçülmüş; fiil zinciri yalnız onun **pes ettiği** yerde konuşur.
     """
     for k in kaliplar:
-        if _syn_hit(q, k):
+        if _syn_hit(q, k) or _fiil_hit(q, k):
             return k
     return None
 

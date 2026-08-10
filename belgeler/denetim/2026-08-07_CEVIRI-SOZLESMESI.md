@@ -9450,3 +9450,62 @@ gibi. Liste büyütmek değil, **zinciri tamamlamak**.
 ⚠ Dikkat gerekiyor: `acikla` ile katalogdaki `acik` (`açık bakiye`) komşu; gevşek bir
 zincir sosyal kapıda yanlış-pozitif üretir — yani `§101.1` bu sefer **düzeltmenin
 kendisine** bakıyor. Bu yüzden ölçülerek yapılacak, aceleye getirilmeyecek.
+
+---
+
+# ✅ `§FÇ` — FİİL ÇEKİMİ ZİNCİRİ *(önceki turun 3. kırmızısı kapandı)*
+
+## Kök — ve tablo kanıtı kendi içinde taşıyordu
+
+`_syn_hit` → `_ek_gecerli` → `_SUFFIX_ATOMS` zinciri **ad** çekimini (hâl · çoğul ·
+iyelik) doğruluyor. Kişi eki orada **yok** ve **olmamalı**: katalog terimleri isimdir,
+isimler kişiye göre çekilmez. Ama `_ANLAT` tablosu **fiil kökleri** taşıyor:
+
+```python
+_ANLAT = (…, "yorumla", "yorumlar misin", "yorumlasana", "aciklar misin", "acikla", …)
+               └─ dört giriş, İKİ fiilin ELLE YAZILMIŞ çekimi ─┘
+```
+
+## İki tasarım kararı — ikisi de deponun kendi ölçümlerinden
+
+1. 🔴 **ÇIPLAK `-r` YASAK.** `cube_router` `§73`: *"tek harflik ünsüz atomlar neredeyse
+   HER harf dizisini geçerli bir ek zinciri yapıyordu"* — `s` yüzünden `karsilastir`
+   *«kâr»* okunmuştu. Ekler bu yüzden **bileşik**: `rsin` · `irsin` · `yabilir`.
+   Kapı `test_CIPLAK_R_EKI_ATOM_DEGILDIR` üç harften kısa ek eklenmesini **yasaklıyor**.
+2. 🔴 **PAYLAŞILAN ATOM LİSTESİNE GİRMEDİ.** Kişi ekleri `_SUFFIX_ATOMS`'a konsaydı
+   route'a **sıfır fayda, artı risk** olurdu (o listenin geri alınmış bir gerileme
+   geçmişi var: `mal`+`iyeti`). Ayrı tutmak `KAT-1` ihlali **değil** — *«geçerli bir AD
+   çekimi mi»* ile *«geçerli bir FİİL çekimi mi»* aynı soru değildir. ⊙ Ve ayrı
+   tutulunca **korpus yapısal olarak gerileyemez**; kapı `test_PAYLASILAN_ATOM_LISTESI_
+   KIRLETILMEDI` o güvenceyi kilitliyor.
+
+## Ölçüm — iki yönlü
+
+```
+✅ ÇÖZÜLENLER                              🔴 YANLIŞ-POZİTİF TARAMASI
+  bunu nasıl yorumlarsın   → anlat           aciklama tablosu     → _fiil_hit=False
+  bunu yorumlayabilir misin→ anlat           degerlendirme formu  → _fiil_hit=False
+  şunu açıklarsın          → anlat           yorum sayisi         → _fiil_hit=False
+  bunu değerlendirirsin    → anlat           acik bakiye          → _fiil_hit=False
+  yorumlasana              → anlat           toplam ciro          → _fiil_hit=False
+  bu grafiği yorumla       → anlat  (eskisi aynen)
+```
+
+⚠ **Dürüstlük kaydı:** `aciklama tablosu` ve `degerlendirme formu` `niyet_kalibi_var`'da
+zaten `anlat` dönüyordu — sebebi `_syn_hit` (ad zinciri), **bu zincir değil**
+(`_fiil_hit=False` ölçüldü). *Bir kusuru miras almakla üretmek aynı şey değildir* ve
+kapı ikincisini yasaklıyor.
+
+## Canlı (3 turluk thread)
+
+```
+T1 «bu yıl hat bazında fire oranı»  → source=cube · 8 satır
+T2 «bunu nasıl yorumlarsın»         → source=cube · AYNI 8 satır · yeni SQL YOK
+T3 «peki şunu açıklarsın»           → source=cube · aynı çapa
+T4 «bunu değerlendirir misin»       → source=cube · aynı çapa
+   interpretation: 2 olgu («En yüksek hat: RAM 2 %22,12» · «En düşük: Dijital Baskı»)
+   next_steps: 6 chip
+```
+
+⊙ Üçü de eldeki rapora **çapalandı** — sosyal kapanışa da Discovery'ye de düşmedi.
+`R2` sınıfı (*«Görüşürüz!»*) kapandı. **239 hedefli test yeşil.**
