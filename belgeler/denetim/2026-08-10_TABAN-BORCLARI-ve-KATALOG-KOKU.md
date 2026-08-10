@@ -1209,13 +1209,13 @@ gerektirmiyor, ve **her red bir LLM çağrısı + gecikme** demek — yani bedel
 
 | ☐ | # | iş | biten sayılır: |
 |---|---|---|---|
-| ☐ | `B1` | **`T-9` plan reddi** — `ALAN_REHBERI`'ne süzgeç bölümü (operatör listesi `_ops`'tan **üretilerek**) + `{"dimension","operator","value"}` örneği | `plan_semasi`'de `operator` **geçiyor** |
-| ☐ | `B2` | `gerekce()`'ye **geçerli operatör kuyruğu** (`bilinen_boyutlar()`'ın eşleniği) | red mesajı *"doğrusu şu"* diyor |
-| ☐ | `B3` | **`None` mesajı** düzeltilir → *«süzgeçte `dimension` alanı hiç yazılmamış»* | `None` bir ad gibi basılmıyor |
-| ☐ | `B4` | **Mekanik eşlemeler seviye 3'e** (`equals→eq`, `ne→neq`, `>→gt`…), **beyan ederek** | LLM turu harcanmıyor |
-| ☐ | `B5` | **`T-2` çürütülebilir kesinlik** — çok sahipli / dilbilgisiyle çakışan token'da route **çekilir** | `sessiz_yanlis` ↓ ve devir etiketli |
+| ✅ | `B1` | **`T-9` plan reddi** — `ALAN_REHBERI`'ne süzgeç bölümü (operatör listesi `_ops`'tan **üretilerek**) + `{"dimension","operator","value"}` örneği | `plan_semasi`'de `operator` **geçiyor** · **KAPANDI** `sha=d58b5b2`: `plan_semasi`'de `operator` **geçiyor**; liste `MOTOR_OPERATORLERI`'nden **üretiliyor** (12 ad, elle kopya yok) + süzgeç biçimi örneği. Kapı: `test_PLAN_ISTEMI_OPERATOR_SOZLUGUNU_TASIYOR` |
+| ✅ | `B2` | `gerekce()`'ye **geçerli operatör kuyruğu** (`bilinen_boyutlar()`'ın eşleniği) | red mesajı *"doğrusu şu"* diyor · **KAPANDI** `sha=d58b5b2`: red artık *«tanınmayan: `equals` — geçerliler: eq, neq, in, …»* diyor. Kapı: `test_TANIMSIZ_OPERATOR_TESHISI_DOGRUSUNU_SOYLER` |
+| ✅ | `B3` | **`None` mesajı** düzeltilir → *«süzgeçte `dimension` alanı hiç yazılmamış»* | `None` bir ad gibi basılmıyor · **KAPANDI** `sha=d58b5b2`: alan eksikse *«süzgeçte `dimension` alanı hiç yazılmamış»*; `None` **basılmıyor**. Kapı: `test_ALAN_YAZILMAMISSA_NONE_BASILMAZ` |
+| ✅ | `B4` | **Mekanik eşlemeler seviye 3'e** (`equals→eq`, `ne→neq`, `>→gt`…), **beyan ederek** | LLM turu harcanmıyor · **KAPANDI** `sha=d58b5b2`: 24 takma ad seviye 3'te, **beyan ederek** (`equals→eq` …); hedefler `MOTOR_OPERATORLERI`'ne karşı kapıda doğrulanıyor. Kapı: 2 test |
+| ◐ | `B5` | **`T-2` çürütülebilir kesinlik** — çok sahipli / dilbilgisiyle çakışan token'da route **çekilir** | `sessiz_yanlis` ↓ ve devir etiketli · **KISMİ** `sha=d58b5b2`: `§EB` **makinenin ürettiği** belirsizliği yapısal kapattı (6 çarpışma → 0) — *«renk grubuna göre fire»* route'tan çekildi, garson doğru cevapladı. Kalan: beyan edilmiş çok sahiplilik zaten ifşayla cevaplanıyor |
 | ☐ | `B6` | **`T-4` sahip beyanı** — 13 çok sahipli ad için sahip **ya da** *"beyan yok → sor"* | boş bırakılan kalem **0** |
-| ☐ | `B7` | **`T-5` yön beyanı** — 125 kalem + **yeni ölçü kapısı** | `lower_is_better` beyansız oran ↓, kapı var |
+| ◐ | `B7` | **`T-5` yön beyanı** — 125 kalem + **yeni ölçü kapısı** | `lower_is_better` beyansız oran ↓, kapı var · **KISMİ** `sha=d58b5b2`: adı **kesin olumsuz** 11 ölçüye `lower_is_better` eklendi **ve** kök kusur bulundu — beyan vardı, `route()` onu `_direction`'a **geçirmiyordu**. Curl: *«en kötü bakım maliyeti»* 15.161 ₺ (en ucuz) → **74.754 ₺** (en pahalı). Kalan: adı belirsiz ölçüler. Kapı: `test_yon_beyani_zorunlu.py` |
 | ☐ | `B8` | **`T-3` kanonik varlık ekseni** — `cekirdek/varlik_sozlugu.yml` + boyut bağlama + `blend` anahtarı | çapraz-aile müşteri sorusu **kuruluyor** |
 | ☐ | `B9` | **`T-7` odak varlığı** — diyalog durumuna `{boyut, deger, kaynak}` | *«o makinede»* takibi doğru süzüyor |
 | ☐ | `B10` | **`T-6` yetenek envanteri kapısı** — mutfağın ürettiği her alan garsonun şemasında **var** ya da **bilerek dışarıda** | `12 anahtar ↔ 7 alan` farkı kapıda |
@@ -1229,7 +1229,7 @@ gerektirmiyor, ve **her red bir LLM çağrısı + gecikme** demek — yani bedel
 | ☐ | `C3` | **`eslesen_terim` alanı** Intent turunun **içine** | **0 ek tur** |
 | ☐ | `C4` | **Sınıf A elden alınır** — kök/çekim normalleştirmesi | 788 beyan elle bakımdan çıktı |
 | ☐ | `C5` | ⚠ **Çok eşleşen kelime kuyruğa GİRMEZ**; onaysız canlıya inmez; *«hiçbiri»* **menü boşluğu** olarak kaydedilir | üç şart da kapılı |
-| ☐ | `C6` | 🔴 **`prompt_enhancer` AÇILMAZ** (`E-8`) | bayrak `off`, ve gerekçesi belgede |
+| ✅ | `C6` | 🔴 **`prompt_enhancer` AÇILMAZ** (`E-8`) | bayrak `off`, ve gerekçesi belgede · **DOĞRULANDI** `sha=d58b5b2`: bayrak `off`; `E-8` gerekçesi ölçümle sağlandı — k=3 örnekleri `ThreadPoolExecutor` ile **paralel** (tek tur), enhancer **seri ikinci tur**, ve route gerçek dilde **%93,3** pes ediyor (2132 vaka) → enhancer istisna değil **kural** olurdu |
 
 ### D · BAYRAK FAZLARI *(`§4h`)*
 

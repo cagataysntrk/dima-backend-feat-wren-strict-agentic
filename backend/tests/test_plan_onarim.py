@@ -741,3 +741,74 @@ def test_AT_UC_YERLESIM_DE_OLCULDU_KAYDI_DURUYOR():
     CQ = {"cube": "parti", "measures": ["fire_orani_yuzde"], "dimensions": ["makine"]}
     assert EKSIK_ATIF in eksiklik(CQ, "o makinede vardiya kırılımı")
     assert EKSIK_ATIF not in eksiklik(CQ, "makineye göre fire")
+
+
+def test_OPERATOR_TAKMA_ADLARI_MOTORA_KARSI_DOGRULANIR():
+    """🔴 `§AR/S(4)` — her takma adın hedefi motorun **gerçek** operatörü olmalı.
+
+    ⚠ Uydurma bir hedef (`equals → equal_to`) sessizce beyaz listeden düşerdi ve
+    onarım *«düzelttim»* diyerek bir kusuru gizlerdi. *Bir eşleme tablosu, hedefleri
+    doğrulanmadıkça bir tahmin listesidir.*
+    """
+    from app.cube_operatorleri import MOTOR_OPERATORLERI
+    from app.plan_onarim import OPERATOR_TAKMA_ADLARI
+
+    kacak = {k: v for k, v in OPERATOR_TAKMA_ADLARI.items()
+             if v not in MOTOR_OPERATORLERI}
+    assert not kacak, f"motorda olmayan hedefler: {kacak}"
+    # ⚠ Takma ad, motorun **kendi** adıyla çakışmamalı: `in` zaten geçerli.
+    cakisan = [k for k in OPERATOR_TAKMA_ADLARI if k in MOTOR_OPERATORLERI]
+    assert not cakisan, f"geçerli operatörler takma ad olarak yazılmış: {cakisan}"
+
+
+def test_EQUALS_MEKANIK_ONARILIR_VE_BEYAN_EDILIR():
+    """🔴 Canlı red: *«tanınmayan süzgeç operatörü: `equals`»* → bir LLM turu harcandı.
+
+    `equals` motorun 12 operatöründen **tam olarak birini** kastedebilir; bunu karar
+    merciine göndermek bilinen bir cevabı ikinci kez satın almaktır.
+    """
+    from app.plan_onarim import onar
+
+    cq = {"cube": "parti", "measures": ["toplam_fire_kg"],
+          "filters": [{"dimension": "makine", "operator": "equals", "value": "RAM-2"}]}
+    out, beyan = onar(cq, PARTI)
+    assert out["filters"][0]["operator"] == "eq"
+    assert beyan and "equals" in beyan[0], "onarım sessiz olamaz"
+
+
+def test_TANIMSIZ_OPERATOR_TEŞHISI_DOGRUSUNU_SOYLER():
+    """🔴 `§AR/S(2)` — red *«neyin yanlış»* olduğunu söylüyordu, *«doğrusunu»* değil.
+
+    Aynı fonksiyonun docstring'i bu dersi boyut dalı için yazmış; operatör dalına
+    uygulanmamıştı.
+    """
+    from app.plan_onarim import gerekce
+
+    metin = gerekce({"cube": "parti", "measures": ["toplam_fire_kg"],
+                     "filters": [{"dimension": "makine", "operator": "equals",
+                                  "value": "X"}]}, PARTI)
+    assert "geçerliler:" in metin and "eq" in metin, metin
+
+
+def test_ALAN_YAZILMAMISSA_NONE_BASILMAZ():
+    """🔴 `§AR/S(3)` — `None` bir alan adı değildir; *«hiç yazılmamış»* demektir."""
+    from app.plan_onarim import gerekce
+
+    metin = gerekce({"cube": "parti", "measures": ["toplam_fire_kg"],
+                     "filters": [{"operator": "eq", "value": "X"}]}, PARTI)
+    assert "None" not in metin, metin
+    assert "hiç yazılmamış" in metin, metin
+
+
+def test_PLAN_ISTEMI_OPERATOR_SOZLUGUNU_TASIYOR():
+    """🔴 `§AR/S(1)` — plan isteminde `operator` kelimesi **sıfır** kez geçiyordu.
+
+    ⚠ Liste **üretilir**, kopyalanmaz: `§M-6` elle kopyanın bedelini ölçmüştü.
+    """
+    from app.cube_operatorleri import MOTOR_OPERATORLERI
+    from app.plan_semasi import plan_sistem_metni
+
+    metin = plan_sistem_metni("- parti: measures[toplam_fire_kg]; dimensions[makine]")
+    assert "operator" in metin, "plan istemi süzgeç biçimini hâlâ görmüyor"
+    for op in MOTOR_OPERATORLERI:
+        assert op in metin, f"`{op}` istemde yok — liste üretilmiyor olabilir"

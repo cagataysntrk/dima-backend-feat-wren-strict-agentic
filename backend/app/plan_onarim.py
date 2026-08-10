@@ -63,6 +63,23 @@ GRANULERLIKLER = ("day", "week", "month", "quarter", "year")
 #: okuması da `granülerlik=month` veriyordu. Aya düşmek en az sürpriz üreten seçim.
 VARSAYILAN_GRANULERLIK = "month"
 
+#: 🔴 `§AR/S(4)` — **OPERATÖR TAKMA ADLARI: mekanik, tek anlamlı, kapalı.**
+#: Modelin İngilizce/matematiksel makul tahminleri ↔ motorun adları. Her satır
+#: **tek anlamlıdır**: `equals`ın kastedebileceği tam olarak bir operatör var.
+#: ⚠ Hedefler `MOTOR_OPERATORLERI`'ne karşı **kapıda** doğrulanır — uydurma bir hedef
+#: buraya yazılırsa kapı kırmızı verir.
+OPERATOR_TAKMA_ADLARI: dict[str, str] = {
+    "equals": "eq", "equal": "eq", "=": "eq", "==": "eq", "is": "eq",
+    "not_equals": "neq", "not_equal": "neq", "ne": "neq", "!=": "neq", "<>": "neq",
+    ">": "gt", ">=": "gte", "<": "lt", "<=": "lte",
+    "greater_than": "gt", "greater_than_or_equal": "gte",
+    "less_than": "lt", "less_than_or_equal": "lte",
+    "like": "contains", "includes": "contains", "icerir": "contains",
+    "in_list": "in", "one_of": "in", "not_one_of": "not_in",
+    "isnull": "is_null", "is_none": "is_null", "isnotnull": "is_not_null",
+    "begins_with": "starts_with", "startswith": "starts_with",
+}
+
 
 def onar(cq: dict, spec: dict) -> tuple[dict, list[str]]:
     """Bir `cube_query`'yi küp tanımına karşı **mekanik olarak** onarır.
@@ -106,6 +123,29 @@ def onar(cq: dict, spec: dict) -> tuple[dict, list[str]]:
             out.pop("dimensions", None)
         if _yeni:
             out["timeDimensions"] = _yeni
+
+    # ── R1b · OPERATÖR TAKMA ADI — **mekanik, tek anlamlı** ────────────────────
+    # 🔴 `§AR/S(4)` — `equals` motorun 12 operatöründen **tam olarak birini**
+    # kastedebilir. Bunu bir LLM düzeltme turuna havale etmek, bu modülün kendi
+    # cümlesiyle *«bilinen bir cevabı ikinci kez satın almaktır»*.
+    # ⚠ Takma adlar **kapalı**: her biri motorun bir operatörüne birebir eşlenir;
+    # eşlenmeyen bir ad **dokunulmadan** beyaz listeye gider ve orada dürüstçe düşer.
+    _tf = out.get("filters")
+    if isinstance(_tf, list):
+        _yeni_f, _degisti = [], False
+        for f in _tf:
+            if not isinstance(f, dict):
+                _yeni_f.append(f)
+                continue
+            _op = str(f.get("operator") or "").strip().lower()
+            _hedef = OPERATOR_TAKMA_ADLARI.get(_op)
+            if _hedef and _hedef != f.get("operator"):
+                f = {**f, "operator": _hedef}
+                beyan.append(f"`{_op}` operatörü motorda yok — `{_hedef}` olarak okundu")
+                _degisti = True
+            _yeni_f.append(f)
+        if _degisti:
+            out["filters"] = _yeni_f
 
     # ── R2 · `timeDimensions` bir METİN ────────────────────────────────────────
     # Ölçüldü (`II8`): `"timeDimensions": "This month"`. Motor bir **dizi** bekliyor ve
@@ -195,12 +235,21 @@ def gerekce(cq: dict, spec: dict | None) -> str:
         parca.append(f"`{_c}`'nin zaman ekseni {sorted(_z) or '(yok)'} — şu yazılmış: "
                      + ", ".join(f"`{td.get('dimension') if isinstance(td, dict) else td}`"
                                  for td in _bozuk_td))
+    # 🔴 `§AR/S(3)` — **`None` BİR ALAN ADI DEĞİLDİR.** Alan hiç yazılmadığında mesaj
+    # *«süzülemeyecek alan(lar): `None`»* basıyordu ve model onu *«`None` diye bir alan
+    # mı aramışım?»* diye okuyordu. Eksiklik ile geçersizlik **iki ayrı teşhistir**.
+    _eksik_f = [f for f in ((cq or {}).get("filters") or [])
+                if not isinstance(f, dict) or f.get("dimension") is None]
+    if _eksik_f:
+        parca.append(f"süzgeçte `dimension` alanı hiç yazılmamış ({len(_eksik_f)} süzgeç)"
+                     + bilinen_boyutlar(spec))
     _bozuk_f = [f for f in ((cq or {}).get("filters") or [])
-                if not isinstance(f, dict) or f.get("dimension") not in (_b | _z)]
+                if isinstance(f, dict) and f.get("dimension") is not None
+                and f.get("dimension") not in (_b | _z)]
     if _bozuk_f:
         parca.append(f"`{_c}`'de süzülemeyecek alan(lar): "
-                     + ", ".join(f"`{f.get('dimension') if isinstance(f, dict) else f}`"
-                                 for f in _bozuk_f))
+                     + ", ".join(f"`{f.get('dimension')}`" for f in _bozuk_f)
+                     + bilinen_boyutlar(spec))
     try:
         from app import cube_operatorleri as _ops
         _bozuk_op = [str(f.get("operator")) for f in ((cq or {}).get("filters") or [])
@@ -208,7 +257,17 @@ def gerekce(cq: dict, spec: dict | None) -> str:
     except Exception:
         _bozuk_op = []
     if _bozuk_op:
-        parca.append("tanınmayan süzgeç operatörü: " + ", ".join(f"`{o}`" for o in _bozuk_op))
+        # 🔴 `§AR/S(2)` — **DOĞRUSUNU DA SÖYLE.** `bilinen_boyutlar()`'ın birebir
+        # eşleniği: bu fonksiyonun kendi docstring'i *«model neyin olmadığını biliyor,
+        # neyin OLDUĞUNU bilmiyordu; ikinci deneme de düştü»* diyordu — ders boyut
+        # dalında uygulanmış, **operatör dalında uygulanmamıştı**.
+        try:
+            from app.cube_operatorleri import MOTOR_OPERATORLERI as _MO
+            _kuyruk = " — geçerliler: " + ", ".join(_MO)
+        except Exception:                      # noqa: BLE001 — teşhis turu düşmez
+            _kuyruk = ""
+        parca.append("tanınmayan süzgeç operatörü: "
+                     + ", ".join(f"`{o}`" for o in _bozuk_op) + _kuyruk)
     return " · ".join(parca) or f"`{_c}` sorgusu beyaz listeden geçmedi"
 
 

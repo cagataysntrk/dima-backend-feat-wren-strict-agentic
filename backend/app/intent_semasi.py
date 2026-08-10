@@ -24,6 +24,18 @@ from app import cube_operatorleri as _ops  # `M-6` — operatör kümesinin TEK 
 _GRAN_ENUM = ["year", "quarter", "month", "week", "day"]
 
 
+def _OPERATOR_ADLARI() -> tuple[str, ...]:
+    """Motorun tanıdığı operatörler — **tek sahipten** (`§M-6`).
+
+    ⚠ Fonksiyon içi import: `cube_operatorleri` bu modülü tanımıyor, tersi de modül
+    düzeyinde gerekmiyor. *Bir listeyi kopyalamak yerine çağırmak, onu bir gün
+    ayrışmaktan kurtarır.*
+    """
+    from app.cube_operatorleri import MOTOR_OPERATORLERI
+
+    return MOTOR_OPERATORLERI
+
+
 #: 🔴🔴 `§AR` — **ALAN REHBERİ: TEK SAHİP, İKİ TÜKETİCİ.**
 #:
 #: `pencere` ve `turev` alanlarının **ne anlama geldiği** bugüne kadar yalnız
@@ -77,6 +89,28 @@ ALAN_REHBERI = (
     # birini taşımayı unutmaya davettir.
     #
     # *Bir kuralı yazmak onu okunur yapar; bir örnek vermek uygulanabilir.*
+    # 🔴🔴 `§AR/S` — **SÜZGECİN BİÇİMİ VE OPERATÖR SÖZLÜĞÜ: `§AR`'nin ÜÇÜNCÜ TEKRARI.**
+    #
+    # ⊙ Ölçüldü (canlı, kullanıcı kaydı):
+    #
+    #     plan REDDEDİLDİ (adım 1: `oee`'de süzülemeyecek alan(lar): `None`
+    #                            · tanınmayan süzgeç operatörü: `equals`)
+    #
+    # Dört tüketici karşılaştırıldı: Intent **şeması** operatörü `enum` ile veriyor,
+    # Intent **istemi** örnekle veriyor — **plan istemi hiç vermiyordu** (`operator`
+    # kelimesi **sıfır** kez geçiyordu). Model `equals` yazdı; İngilizcede son derece
+    # makul bir tahmin ve onu düzeltecek hiçbir işaret yoktu.
+    #
+    # ⚠ Ve süzgecin **şekli** de hiçbir isteme yazılmamıştı: `dimension` alanı
+    # yazılmadığında red mesajı `None` basıyordu — *«`None` diye bir alan mı aramışım?»*
+    #
+    # 🔴 Liste **`_ops.MOTOR_OPERATORLERI`'nden üretiliyor**, elle kopyalanmıyor:
+    # `§M-6` bu kopyanın bedelini ölçmüştü (motorun tanımadığı bir operatör HTTP 400).
+    # *Bir sözlüğü ikinci kez yazmak, ikisinin ayrışacağı günü planlamaktır.*
+    "- 🔴 SÜZGEÇ BİÇİMİ: `\"filters\":[{\"dimension\":\"<boyut>\","
+    "\"operator\":\"<op>\",\"value\":\"<değer>\"}]` — **üç alan da ZORUNLU**.\n"
+    "  ⊙ GEÇERLİ OPERATÖRLER (başkası YOK): " + ", ".join(_OPERATOR_ADLARI()) + "\n"
+    "  ⚠ *«X hariç»* → `neq` · *«şunlardan biri»* → `in` · *«… üstü»* → `gt`/`gte`.\n"
     "  ⊙ ÖRNEK: «toplam cironun yüzde kaçı ilk 3 müşteriden» → "
     '{"measures":["<ciro>"],"dimensions":["<müşteri>"],'
     '"pencere":{"taban":"<ciro>","kip":"pay"},'
