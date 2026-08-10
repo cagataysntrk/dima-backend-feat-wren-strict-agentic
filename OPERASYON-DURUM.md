@@ -2527,7 +2527,7 @@ soru LLM'e gitmiyor. Dokunulmadı.
 
 ---
 
-## ⊙ TABAN BORÇLARI — kapanan kalemler *(2026-08-10, `sha=d58b5b2` öncesi demet)*
+## ⊙ TABAN BORÇLARI — kapanan kalemler *(2026-08-10, `sha=091248e`)*
 
 Kaynak liste: `belgeler/denetim/2026-08-10_TABAN-BORCLARI-ve-KATALOG-KOKU.md §6b`.
 🔴 Bir kalem **ölçümle** işaretlenir; *"iyileştirildi"* bir işaret değildir.
@@ -2536,14 +2536,14 @@ Kaynak liste: `belgeler/denetim/2026-08-10_TABAN-BORCLARI-ve-KATALOG-KOKU.md §6
 |---|---|---|
 | `B1` istem süzgeç bölümü | ✅ | `plan_semasi`'de `operator` **geçiyor**; 12 operatör **üretilerek** |
 | `B2` geçerli operatör kuyruğu | ✅ | red *«geçerliler: eq, neq, …»* diyor |
-| `B3` `None` mesajı | ✅ | *« alanı hiç yazılmamış»* |
+| `B3` `None` mesajı | ✅ | *«süzgeçte `dimension` alanı hiç yazılmamış»* |
 | `B4` mekanik eşlemeler | ✅ | 24 takma ad seviye 3'te, beyanlı; hedefler kapıda doğrulanıyor |
-| `B5` çürütülebilir kesinlik | ◐ | `§EB`: 6 token çarpışması → **0**; *«renk grubuna göre fire»* garsona devredildi ve doğru cevaplandı |
+| `B5` çürütülebilir kesinlik | ◐ | `§EB`: 6 token çarpışması → **0**; *«renk grubuna göre fire»* garsona devredildi, doğru cevaplandı |
 | `B7` yön beyanı | ◐ | 11 ölçü + **kök**: beyan vardı, `route()` `_direction`'a geçirmiyordu. Curl: 15.161 ₺ → **74.754 ₺** |
 | `C6` enhancer açılmaz | ✅ | bayrak `off`; `E-8` ölçümle: k=3 **paralel** (tek tur), enhancer **seri**, route %93,3 pes ediyor |
 
 ⚠ **Ölçüm aracının sınırı da ölçüldü:** `lab/gercek_dunya.py` **route()**'u ölçüyor
-(kendi raporu böyle yazıyor). 8 `sessiz_yanlis` vakası tek tek sınandı → **3'ü** üründe
-garsona gidiyor, **≥2'si** belirsizlik ifşasıyla cevaplanıyor (curl), **~3'ü** gerçek.
-🔴 Ama `sessiz_yanlis` **artışı** yine de vetodur: route emin olup yanılırsa
-`if route_hit:` merdiveni keser ve garson soruyu **hiç görmez**.
+(kendi raporu böyle yazıyor). Sekiz `sessiz_yanlis` vakası tek tek sınandı → **3'ü**
+üründe garsona gidiyor, **≥2'si** belirsizlik ifşasıyla cevaplanıyor (curl ile
+doğrulandı), **~3'ü** gerçek. 🔴 Ama `sessiz_yanlis` **artışı** yine de vetodur: route
+emin olup yanılırsa `if route_hit:` merdiveni keser ve garson soruyu **hiç görmez**.
