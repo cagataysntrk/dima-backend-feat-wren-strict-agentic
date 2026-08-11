@@ -350,7 +350,7 @@ Yani kapsam dışında **reddetmiyor, uyduruyor**. Uygulamacı eleştirisi bireb
 > wrong.**»*
 
 **(c) LLM-öncesi deterministik NLQ motorları PİYASA TARAFINDAN ÖLDÜRÜLDÜ.**
-Tableau **Ask Data** → Şubat 2024'te emekli. Power BI **Q&A** → **Aralık 2026'da
+Tableau **Ask Data** → Şubat 2024'te emekli *(⚠ tek kaynaklı — bkz. §21.8)*. Power BI **Q&A** → **Aralık 2026'da
 kalkıyor**, *«synonyms, linguistic relationships, row labels, teach Q&A»* dâhil **tüm
 dilbilimsel şema araçları** ile birlikte.
 🔴 **Bu bizi doğrudan ilgilendiriyor:** *«kullanıcı sözlüğü elle beslesin»* modeli iki dev
@@ -1322,6 +1322,152 @@ tanıyor. ⊙ **Sinyal var, tüketicisi yok.**
 
 *Bir sistemin robotik görünmesi, karar vermemesinden değil, kararı hiç vermemiş
 olmasından gelir.*
+
+---
+
+# SEKİZİNCİ KISIM — CEVAP BİÇİMİ VE KONUŞMA UX'İ
+
+> ⚠ **Kısmi bölüm.** UI/UX araştırması sekiz kolda yürüdü; bu bölüm **doğrulanmış**
+> birincil kaynaklara ve tamamlanan *anti-desen* koluna dayanıyor. Bekleyen kollar
+> (çoklu-artefakt kompozisyonu · *«grafik zarar verir»* akademik dayanağı · anlatı
+> üretimi · takip anlama · arayüz desenleri) geldiğinde eklenecek. **Gelmeyen bulgu
+> uydurulmadı.**
+
+## 21 · CEVAP BİÇİMİ — sektörde neyin kural olduğu, neyin olmadığı
+
+### 21.1 🟢 Tableau Pulse — «deterministik olgu → LLM cümle» deseninin BELGELENMİŞ kanıtı
+
+Birincil kaynaktan doğrulandı (`help.tableau.com/.../pulse_insights_platform_insight_types.htm`):
+
+> *«Tableau Pulse Insights Service **starts by using standardized, deterministic
+> statistical models** to detect facts about metrics that are **guaranteed to be
+> accurate**.»*
+> *«Insight summaries **use a large language model to provide a personalized overview in
+> plain language**.»*
+
+Olgular *«scored based on the impact it has on the metric value»* ve yalnız *«most
+statistically impactful»* olanlar dönüyor; ürün *«**avoids displaying noisy or spurious
+findings**»* diyor.
+
+⊙ **NE söyleneceğine istatistik, NASIL söyleneceğine LLM karar veriyor. Sayı asla
+LLM'den çıkmıyor.** Bu, bizim `interpret()` + `llm.anlat` + `narration_guard` üçlümüzün
+birebir aynısıdır — yani **mimari desenimiz sektörün en olgun örneğiyle aynı**.
+
+**14 belgelenmiş içgörü tipi** — ve bu, §18'de ölçtüğüm *«olgu sayısı hep 1-2»*
+kusurunun panzehiri:
+
+| # | tip | # | tip |
+|---|---|---|---|
+| 1 | Period Over Period Change *(hep açık)* | 8 | Goal and Threshold Breakdown |
+| 2 | Correlated Metrics | 9 | Pace to Goal |
+| 3 | Record-level Outliers | 10 | **Top Drivers** *(metrikle aynı yönde)* |
+| 4 | Forecast | 11 | **Top Detractors** *(ters yönde)* |
+| 5 | Current Trend | 12 | **Concentrated Contribution Alert** *(az üye katkının %50+'si)* |
+| 6 | Trend Change Alert | 13 | Top Contributors *(hep açık)* |
+| 7 | Unexpected Values | 14 | Bottom Contributors |
+
+🔴 **Bizde bunun karşılığı `interpret()`'in 1-2 olgusu.** Cevap çeşitliliği bir *«uzunluk
+ayarı»* değil, bir **olgu tipi taksonomisidir** — ve bizde o taksonomi yok.
+
+⚠ **Ve bir tasarım kararı:** Pulse bir **sohbet değil, akış/digest** ürünü. Tableau
+bilinçli olarak chat yerine feed seçti.
+
+### 21.2 🔴 ANLAMLI NEGATİF BULGU — satıcılar cevap biçimini BELGELEMİYOR
+
+Databricks Genie'nin resmî dokümanı, cevabın neyden oluştuğuna ve **ne zaman grafik ne
+zaman tablo** döndüğüne dair **hiçbir kural yayımlamıyor**.
+
+⊙ Bu bir *«bulamadım»* değil, bir **bulgudur**: sektör cevap-biçimi politikasını
+**yazmıyor, LLM muhakemesine bırakıyor**. Yani §18'de ölçtüğüm kusurun (biçim bir karar
+değil yan ürün) **rakiplerde de karşılığı var** — ama onlarda LLM en azından **değişken**
+davranıyor; bizde deterministik boru hattı **sabit** davranıyor.
+
+Yayımlanmış tek net ilke seti **OpenAI Model Spec**: *«Be clear and direct»* · *«Be
+thorough but efficient, while respecting length limits»* · biçim tablo/liste/düzyazı
+arasında **isteğe göre** seçilmeli, **tek bir varsayılana saplanılmamalı**; uzunluk ve
+yapı **kullanıcı amacına uyarlanmalı**. (Analitiğe özel değil, genel model politikası.)
+
+### 21.3 🔴 «KATALOG GİBİ» — kullanıcıların kendiliğinden ad koyduğu kalıp
+
+§18'de bizim ölçtüğümüz kusurun (chip hep 6, olgu hep 1-2) sektördeki adı var. HN'de
+kullanıcılar bunu **kendiliğinden** teşhis ediyor:
+
+> *«the whole **"repeat question, bullet points, summary" ceremony**»* — porridgeraisin
+> *«The abundant bullet points, copious bold text, pithy one line summarizing
+> assertions»* — dddgghhbbfblk
+> *«many bullet points, em dashes, **it's not X but actually Y**»* — sosodev
+> *«plus or minus **3 bullet points in a certain style**»* — Aurornis
+
+Bir kullanıcı (gcanyon) modellerin özet istendiğinde neredeyse her seferinde **tam 20
+madde** ürettiğini ölçmüş.
+
+⊙ **Sabit yapı = robotluğun imzası.** Bizim `6,6,5,6,6,4,6,3` chip dizimiz bunun
+deterministik hâli — LLM'in *«hep 20 madde»*si ile aynı hastalık, farklı sebep.
+
+### 21.4 ⚠ Yalakalık/hedging YAPISALDIR — tasarım kazası değil
+
+* **Anthropic, Persona Vectors:** *«training models based on human feedback can make them
+  **more sycophantic**»*; *«if the "sycophancy" vector is highly active, the model **may
+  not be giving them a straight answer**»*.
+* **Nature:** *«Training language models to be **warm** can **reduce accuracy** and
+  **increase sycophancy**»* — sıcaklık ↔ doğruluk arasında **ölçülmüş ödünleşim**.
+* OpenAI'ın kendi post-mortem'i: *«Sycophancy in GPT-4o»*.
+
+⊙ **Bizim için doğrudan sonuç:** *«daha insani konuşsun»* isteği **bedava değildir**.
+`narration_guard`'ımız tam da bu bedeli ödememek için var — anlatıyı serbest bırakmak
+ölçülmüş bir doğruluk kaybıdır. **Çözüm üslubu gevşetmek değil, olgu taksonomisini
+zenginleştirmektir** (§21.1).
+
+### 21.5 🟢 «CONTEXT IS THE PRODUCT» — küp-önce felsefemizin dış doğrulaması
+
+HN, *«Lessons from building an AI data analyst»*: başarılı örnekler genel modelden değil,
+**dar ve elle küratörlenmiş semantik bağlamdan** geliyor.
+
+Ve Veezoo kurucusu (tillvz), bizim doktrinimizi kelimesi kelimesine yazıyor:
+
+> *«**If AI writes SQL directly, you're building on a probabilistic foundation.** When a
+> CFO asks for revenue **the number can't just be correct 99% of times.**»*
+
+### 21.6 🔴 DOĞRULAMA YÜKÜ — rakiplerin ölçülmüş asıl kusuru
+
+* **Databricks Genie kullanıcısı (a1o, HN):** *«often does not work completely for me…
+  get things **90% there** and I need to jump in, **decipher the query**… and then figure
+  how to change it.»*
+  ⊙ Kullanıcı SQL'i deşifre etmek zorundaysa araç zaman kazandırmıyor, **yük ekliyor**.
+* **Power BI (dav43):** *«it's **beyond hard to error check**.»*
+* **Towards Data Science — *«Why 90% Accuracy in Text-to-SQL is 100% Useless»***:
+  Spider 1.0'da (<10 tablo) %90+ olan modeller, Spider 2.0'da (ortalama **812 kolon**)
+  **%10-20**'ye düşüyor. Kullanıcı **hangi %10'un yanlış olduğunu bilemediği** için kısmi
+  doğruluk kabul edilmiyor; *«Adoption will decline.»*
+
+⊙ **Bu, bizim beyan kültürümüzün ve makbuz yaklaşımımızın en güçlü dış gerekçesidir.**
+Ve `adius`'un reçetesi bizde **zaten var**: *«**show the SQL query and make it editable**
+so that the user can immediately fix simple errors.»*
+
+### 21.7 Pano enflasyonu — ürün yönü için sinyal
+
+HN *«Is Tableau Dead?»*, monkeydust:
+
+> *«I have access to near **100 dashboards**… they more or less **do the same thing**…
+> I don't feel passionate about any of them»*
+> *«We **don't necessarily need more dashboards**, just **faster ways to go from question
+> to reliable answer** where information can be **pushed rather than pulled**.»*
+
+⊙ *«Pushed rather than pulled»* — Tableau Pulse'un feed tercihinin (§21.1) sebebi bu.
+Bizim `schedules` + `channels` altyapımız bu yönü **zaten** destekliyor; ürünleştirilmemiş.
+
+### 21.8 ⚠ DOĞRULANAMAYANLAR — ve bir önceki bölümde DÜZELTME
+
+Araştırma bu dört maddeyi **birincil kaynaktan teyit edemedi** ve tahminle doldurmadı:
+
+| iddia | durum |
+|---|---|
+| **Tableau Ask Data'nın emekliye ayrılması** | ⚠ **İki ajan çelişti.** Rakip-ürün koluyla gelen bilgi §6.1(c)'de *«Şubat 2024»* diye yazıldı; UX kolu `help.tableau.com`'dan **403/404** aldı ve **teyit edemedi**. *Bu satır bir birincil kaynakla doğrulanana kadar «tek kaynaklı» sayılmalıdır.* ⊙ Power BI Q&A'nın Aralık 2026'da kalkması **ayrı** ve **MS Learn'den doğrulanmış** bir maddedir |
+| IBM Watson Analytics EOL tarihi | doğrulanamadı |
+| Thoughtworks Radar'ın text-to-SQL'i *«Hold»*a alması | yalnız HN tanıklığı, birincil kaynak yok |
+| **«Aşırı grafikleştirme» eleştirisi** | 🔴 **VERİ BOŞLUĞU** — *«her şeye grafik getirmek»* şikâyetimiz için **dış literatürde doğrudan eleştiri bulunamadı**. Ya kimse yazmamış, ya da rakipler bu kusuru yaşamıyor. **Ölçülmeden iddia edilmeyecek.** |
+
+*Bir raporun değeri, doldurduğu boşluklar kadar, boş bıraktığını söylediği yerlerdedir.*
 
 # BEŞİNCİ KISIM — NE YAPMALIYIZ
 
