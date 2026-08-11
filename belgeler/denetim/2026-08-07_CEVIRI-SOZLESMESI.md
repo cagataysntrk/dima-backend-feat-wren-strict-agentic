@@ -11445,3 +11445,48 @@ hiçbir giriş yoktu: kullanıcı düzenlemek için belgeyi **kapatmak** zorunda
 
 `page.tsx` **tam tavandaydı** (560/560) ve tasarım ona hiç dokunmadan kuruldu.
 tsc temiz · lint tabanla birebir (10 problem, hiçbiri bu iki dosyada) · 60 hedefli test yeşil.
+
+---
+
+# `X` TURU — 20 senaryo · 4 kök · **ve kendi gerilememi canlıda yakaladım**
+
+*(2026-08-11 · curl, tek tek · kapı yalnız sonda)*
+
+## 🔴 Önce: sevk ettiğim bir gerileme
+
+`«son 2 yıl satış raporu hazırla»` → **18 blok**, istek **2 dakikayı aştı**. Kaynağı
+benim `§RZ` sürümümdü ve iki kusur tek kökten: (1) temel fiş bir **aylık seyirdi** ve
+kırılım adayları o zaman kovasını **miras aldı** → `müşteri × ay` kartezyeni; (2)
+seçicinin *«seyir yarışmaz»* kuralı yalnız `timeDimensions` **varlığına** bakıyordu →
+17 blok birden seyir sayıldı, hiçbiri elenmedi (log: *«17 aday · 17 koştu · 17
+seçildi»*). Düzeltme sonrası: **4 blok · 21,8 sn**.
+
+⚠ **Ve bu gerileme tam kapıdan GEÇMİŞTİ**: kapı, orkestratörün belge yolunu zaman-kovalı
+bir temelle hiç zorlamıyor. Kusur ancak canlı turda göründü — korpusun bilinen
+körlüğünün kardeşi. *Bir kapı, hiç sormadığı soruyu geçiremez.*
+
+## Ölçülen kökler
+
+| kök | ölçülen | durum |
+|---|---|---|
+| `§DB` | *«operatör **bazında** ilk seferde doğru oranı»* → garson (**%100** self-consistency) `operator eq "Operatör"` süzgeci yazdı; `§DK-2` dürüstçe *«hangisini istersin»* deyip **dokuz operatör adı** listeledi. Kullanıcı **kırılım** istemişti → dürüst red, **çıkmaz** red oldu | ✅ düzeltildi |
+| `§KY` | *«geçen yıla göre nasıl»* → `_gecen` ve `_degisim_yuzde` **tümü null**, **not YOK**. `§SD-2` haklı olarak susuyor (sonuç boş değil); boş olan **kıyasın öteki yarısı** | ✅ düzeltildi |
+| `§RS` | Düzenleme **tüm belgeyi yeniden planlıyor**: bazen kusursuz (X9: 4→5, dördü birebir korundu), bazen kayıplı (X6/X7: bölümler kaydı). Tutarsız | ◐ teşhis edildi |
+| `§PY` | Rapor bloğu `limit: 5` fişiyle **23 satır** gösteriyor; aynı fiş `/cube`'da **5** veriyor — `§RE` sınıfı fiş/sonuç ayrışması, bu kez `pencere: pay` yolunda | ◐ teşhis edildi |
+
+## `§DB` — bir boyutun adı, o boyutun değeri olamaz
+
+Kök bir dil sorunu **değil** bir **tür** sorunudur: hiç kimse `operator = "Operatör"` diye
+süzmez. Ve kanıt katalogdadır — değer, süzdüğü boyutun **kendi adı/etiketidir**. Yüklem
+bilerek dar (yalnız o boyutun ad/etiket/sinonim kümesi) ve gerçek bir operatör adı
+süzgeci **aynen** kalır.
+
+Canlı: çıkmaz netleştirme → **9 operatör, ilk seferde doğru oranlarıyla** + dürüst beyan.
+*Dürüst bir red bir başarı değildir — çözüldü.*
+
+## `§KY` — kıyasın yarısı boşken sessiz kalınmaz
+
+⚠ Yüklem **kanıtlı**: yalnız `_gecen` kolonlarının **hepsi** boşsa konuşur. Canlıda
+ikisi de doğrulandı: 2024↔2023 (veri yok) → *«Kıyas kurulamadı»*; ilk-3 kumaş cinsi
+(bazılarının geçen yılı var) → **susuyor**. *Bir yokluğu tanımayan kapı, onu yokluk
+saymaz — var saymaz da; hiç görmez.*

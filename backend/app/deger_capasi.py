@@ -129,6 +129,10 @@ class Bulgu:
     #: 🔴 `§YT` — değer bir **perdeleme yuvasıdır** (`{{ENT_1}}`), yani hiçbir zaman bir
     #: kullanıcı değeri değildi. `bos_islem` gibi düşürülür ama **adı yazılmaz**.
     yuva: bool = False
+    #: 🔴 `§DB` — değer, süzdüğü **boyutun kendi adıdır** (*«operator = Operatör»*).
+    #: `bos_islem` gibi düşürülür ama beyanı **kendi cümlesidir**: kullanıcı bir kırılım
+    #: istemişti ve neden süzgeç görmediğini bilmelidir.
+    boyut_adi: bool = False
 
 
 def _norm(s: str) -> str:
@@ -264,6 +268,25 @@ def _sorudan_kurtar(soru: str, gecerliler: list[str]) -> str | None:
     return None if (en_iyi is None or esit) else en_iyi[1]
 
 
+def _boyutun_kendi_adi(deger: str, boyut: str, cq: dict, schema: dict | None) -> bool:
+    """`§DB` — değer, süzdüğü **boyutun kendi adı** mı? (ad · etiket · sinonim)
+
+    ⚠ Kaynak **katalog**: `dimension_labels` ve `dimension_synonyms`. Bir kelime listesi
+    yazmak, her yeni katalogda elle bakım isterdi (ADR-0008).
+    """
+    _d = _norm(deger)
+    if not _d:
+        return False
+    kup = next((c for c in ((schema or {}).get("cubes") or [])
+                if c.get("name") == cq.get("cube")), {}) or {}
+    adlar = {_norm(boyut)}
+    _et = (kup.get("dimension_labels") or {}).get(boyut)
+    if _et:
+        adlar.add(_norm(str(_et)))
+    adlar |= {_norm(str(x)) for x in ((kup.get("dimension_synonyms") or {}).get(boyut) or [])}
+    return _d in adlar
+
+
 def denetle(cq: dict, schema: dict | None, soru: str = "") -> list[Bulgu]:
     """Süzgeç değerlerini kataloğun **tam** enum'una karşı doğrula.
 
@@ -315,6 +338,33 @@ def denetle(cq: dict, schema: dict | None, soru: str = "") -> list[Bulgu]:
                 out.append(Bulgu(boyut=boyut, deger=str(d), oneri=None,
                                  gecerliler=list(gecerliler), bos_islem=True,
                                  yuva=True))
+                continue
+            # 🔴🔴 `§DB` — **BİR BOYUTUN ADI, O BOYUTUN DEĞERİ OLAMAZ.**
+            #
+            # ⊙ Ölçüldü (curl `X` turu, X18): *«bu yıl **operatör bazında** ilk seferde
+            # doğru oranı»* → garson (self-consistency **%100**) şu süzgeci yazdı:
+            #
+            #     {"dimension": "operator", "operator": "eq", "value": "Operatör"}
+            #
+            # `§DK-2` bunu dürüstçe yakaladı ve *«hangisini istersin»* diye **dokuz
+            # operatör adı** listeledi. Cümle doğruydu ama kullanıcı bir **kırılım**
+            # istemişti — yani dürüst bir red, **çıkmaz** bir reddi oldu.
+            #
+            # 🔴 Kök garsonun tercihinde: *«X bazında»* kalıbındaki `X`'i bir **değer**
+            # sandı. Ve bu bir dil sorunu değil bir **tür** sorunudur: hiç kimse
+            # `operator = "Operatör"` diye süzmez. Kanıt katalogdadır — değer, süzdüğü
+            # boyutun **kendi adı/etiketi**dir.
+            #
+            # ⚠ Yüklem bilerek **dar**: yalnız değer, boyutun kendi ad/etiket/sinonim
+            # kümesine eşitse düşer. Bir kelime listesi değil, **kimlik karşılaştırması**.
+            # ⚠ Ve sessiz değil: süzgeç düşer, kullanıcı ne olduğunu **okur** (`bos_islem`
+            # beyanı) — cevabın kendisi de artık gerçek kırılımı verir.
+            #
+            # *Bir boyutu adıyla süzmek, bir listeyi kendi başlığıyla filtrelemektir.*
+            if _boyutun_kendi_adi(str(d), boyut, cq, schema):
+                out.append(Bulgu(boyut=boyut, deger=str(d), oneri=None,
+                                 gecerliler=list(gecerliler), bos_islem=True,
+                                 boyut_adi=True))
                 continue
             if _norm(str(d)) in bilinen:
                 continue
@@ -459,10 +509,20 @@ def duzelt_yerinde(cq: dict, bulgular: list[Bulgu]) -> str | None:
     esleme = {(b.boyut, _norm(b.deger)): b.oneri for b in bulgular if b.oneri}
     if not esleme and not dusen and not bos:
         return None
+    # 🔴 `§DB` — **kendi cümlesi.** *«Etkisiz bir dışlama»* burada yalan olurdu: ortada
+    # bir dışlama yok, bir **tür karışıklığı** var — kullanıcı kırılım istedi, süzgeç
+    # yazıldı. Ve cümle ne yapıldığını söyler ki kullanıcı sayının kapsamını bilsin.
+    _ba = [b for b in bulgular if b.boyut_adi]
+    if _ba and not esleme and not dusen:
+        adlar = " · ".join(f"«{b.deger}» = **{b.boyut}** boyutunun kendi adı"
+                           for b in _ba)
+        return (f"⚠ Bir süzgeç düşürüldü ({adlar}): bir boyutu **kendi adıyla** süzmek "
+                f"hiçbir kaydı seçmez — soru bir **kırılım** olarak okundu ve tüm "
+                f"kayıtlar üzerinden hesaplandı.")
     if bos and not esleme and not dusen:
         # `§YT` — yuvalar **adlandırılmaz**: kullanıcıya iç mekanizma gösterilmez.
         # Hepsi yuvaysa beyan da yazılmaz; söylenecek bir kullanıcı bilgisi yoktur.
-        adlandirilabilir = [b for b in bos if not b.yuva]
+        adlandirilabilir = [b for b in bos if not b.yuva and not b.boyut_adi]
         if not adlandirilabilir:
             return None
         adlar = " · ".join(f"«{b.deger}» ∉ **{b.boyut}**" for b in adlandirilabilir)

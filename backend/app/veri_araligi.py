@@ -217,7 +217,43 @@ def yokluk_notu(service, result, cube_query: dict, schema: dict) -> str | None:
         return bos_sonuc_notu(service, cube_query, schema)
     if result is None:
         return None
-    return donem_disi_notu(service, cube_query, schema)
+    return kiyas_yarim_notu(result) or donem_disi_notu(service, cube_query, schema)
+
+
+def kiyas_yarim_notu(result: Any) -> str | None:
+    """🔴🔴 `§KY` — **KIYASIN YARISI BOŞKEN SESSİZ KALINMAZ.**
+
+    ⊙ Ölçüldü (curl `X` turu, 5 turluk thread'in 4. turu): *«geçen yıla göre nasıl»* →
+
+        {kumas_cinsi: …, toplam_ciro: 11.347.460, toplam_ciro_gecen: **null**,
+         toplam_ciro_degisim_yuzde: **null**}   ×3 satır — ve **not YOK**
+
+    Kullanıcı bir **kıyas** istedi; bu yıl geldi, geçen yıl **hiç** gelmedi ve ekranda
+    yalnız boş hücreler var. Okuyucu boşluğu kendi varsayımıyla doldurur: *«geçen yıl
+    sıfır mıydı?»*
+
+    🔴 `§SD-2` burada ateşlemez ve **haklı olarak**: sonuç *boş değil* — ölçünün kendisi
+    dolu. Boş olan **kıyasın öteki yarısıdır** ve o ayrı bir yokluk biçimidir. *Bir
+    yokluğu tanımayan kapı, onu yokluk saymaz — var saymaz da; hiç görmez.*
+
+    ⚠ Yüklem **kanıtlı**: yalnız `_gecen` kolonlarının **hepsi** boşsa konuşur. Bir
+    kısmı doluysa bu bir kusur değil bir **olgudur** (o segment geçen yıl yoktu) ve
+    satırın kendisi bunu zaten gösterir.
+
+    ⚠ Ve *«veri yok»* demez: **bu kıyas kurulamadı** der. İkisi farklı iddialardır.
+    """
+    if not isinstance(result, dict):
+        return None
+    kolonlar = [str(c) for c in (result.get("columns") or [])]
+    gecen = [c for c in kolonlar if c.endswith("_gecen")]
+    satirlar = [r for r in (result.get("rows") or []) if isinstance(r, dict)]
+    if not gecen or not satirlar:
+        return None
+    if any(r.get(c) is not None for r in satirlar for c in gecen):
+        return None
+    return ("⚠ **Kıyas kurulamadı**: bu dönem için sayılar var ama **önceki dönemde "
+            "hiç kayıt yok** — boş hücreler bir sıfır değil, bir **karşılığın "
+            "yokluğudur**. Daha geniş bir dönem ya da başka bir kırılım denenebilir.")
 
 
 def donem_disi_notu(service, cube_query: dict, schema: dict) -> str | None:

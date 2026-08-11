@@ -90,3 +90,46 @@ def test_BEYAN_GERCEK_ARALIGI_YAZAR(monkeypatch):
     """Beyan bir *«veri yok»* değildir: elde **ne olduğunu** adıyla söyler."""
     n = _not(_cq("2026-08-01", "2026-08-31"), monkeypatch=monkeypatch)
     assert "30.06.2026" in n and "01.01.2024" in n
+
+
+# --- `§KY` · KIYASIN YARISI BOŞKEN SESSİZ KALINMAZ -----------------------------------
+
+def test_KIYAS_YARIM_BEYAN_EDILIR():
+    """🔴🔴 `§KY` — ölçüldü (curl `X` turu, 5 turluk thread'in 4. turu):
+    *«geçen yıla göre nasıl»* → `toplam_ciro` dolu, `toplam_ciro_gecen` **tümü null**,
+    ve **not YOK**. Okuyucu boşluğu kendi varsayımıyla doldurur: *«geçen yıl sıfır
+    mıydı?»*
+
+    `§SD-2` burada haklı olarak susar (sonuç boş değil); boş olan **kıyasın öteki
+    yarısıdır** — ayrı bir yokluk biçimi.
+
+    *Bir yokluğu tanımayan kapı, onu yokluk saymaz — var saymaz da; hiç görmez.*"""
+    from app import veri_araligi as va
+
+    res = {"columns": ["kumas", "toplam_ciro", "toplam_ciro_gecen"],
+           "rows": [{"kumas": "A", "toplam_ciro": 1, "toplam_ciro_gecen": None},
+                    {"kumas": "B", "toplam_ciro": 2, "toplam_ciro_gecen": None}],
+           "row_count": 2}
+    n = va.kiyas_yarim_notu(res)
+    assert n and "Kıyas kurulamadı" in n
+
+
+def test_KISMEN_DOLU_KIYAS_BIR_KUSUR_DEGIL():
+    """⚠ Yüklem **kanıtlı**: bir kısmı doluysa bu bir kusur değil bir **olgudur** (o
+    segment geçen yıl yoktu) ve satırın kendisi bunu zaten gösterir. Konuşmak, bir
+    olguyu bir arıza gibi sunmak olurdu (`§101.1`)."""
+    from app import veri_araligi as va
+
+    res = {"columns": ["kumas", "toplam_ciro", "toplam_ciro_gecen"],
+           "rows": [{"kumas": "A", "toplam_ciro": 1, "toplam_ciro_gecen": 9},
+                    {"kumas": "B", "toplam_ciro": 2, "toplam_ciro_gecen": None}],
+           "row_count": 2}
+    assert va.kiyas_yarim_notu(res) is None
+
+
+def test_KIYASSIZ_SONUCA_KARISMAZ():
+    """`KURAL B` — `_gecen` kolonu yoksa yol bayt bayt bugünküdür."""
+    from app import veri_araligi as va
+
+    assert va.kiyas_yarim_notu({"columns": ["a"], "rows": [{"a": None}]}) is None
+    assert va.kiyas_yarim_notu(None) is None
