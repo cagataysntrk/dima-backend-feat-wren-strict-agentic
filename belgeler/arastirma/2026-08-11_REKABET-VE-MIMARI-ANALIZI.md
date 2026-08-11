@@ -3164,6 +3164,69 @@ Eğer **tek bir şey** yapılacaksa sırası budur:
 ve kullanıcı **hiçbir şey hissetmiyor** (`KURAL B` gereği davranış aynı kalacak).
 🟢 **C3 (MCP) açılmadan önceye** bağla — o zaman iki kayıt **gerçekten** sorun olur.
 
+---
+
+## 14.14 🔴 SON DENETİM — bölüm bölüm taranan ve EKSİK bulunan dokuz iş
+
+> Rapordaki **her bölümün** eylem gerektiren bulgusu plana karşı tarandı. Dokuzu eksikti;
+> aşağıda faza yerleştirildi. ⚠ *Bu tarama dört kez «var» sanıp yanlış eşleşme buldu —
+> anahtar kelime araması bir kapı değildir.*
+
+### FAZ 0'a — ölçüm
+
+| # | iş | kaynak | neden |
+|---|---|---|---|
+| **A12** | 🔴 **Çok turlu belleği TUR BAZINDA ölç** | §29.3-5 · §21.14 | SParC: Turn 1 **%38,6** → Turn 3 **%3,7** → **Turn ≥4 %1,1**. Bizde tur bazında **hiç ölçüm yok** — *«3. turda ne kadar doğruyuz»* bilinmiyor. ⊙ A1 korpusuna **çok turlu bir dilim** eklenmeli |
+| **A13** | 🔴 **Planın neden AYRIŞMADIĞINI ölç** | §17.6 | Ölçüldü: planların **%60'ı tek adım**, en uzunu **7**, `AZAMI_ADIM=12` **hiç bağlayıcı olmamış**. Üç hipotez var, **hiçbiri sınanmadı**: ① istem tek adımı teşvik ediyor ② deterministik-önce kapısı erken kapanıyor ③ `tek_adimli` kısayolu kural hâline gelmiş. ⊙ **C1/C2'den ÖNCE ölçülmeli** — yoksa yanlış şeyi düzeltiriz |
+| **A14** | **Hava boşluğunu ölç ve YAYINLA** | §29.2 | *«Modelin rakamı üretememesi»* bizim **benzersiz** iddiamız; Veezoo/Pyramid en yakın emsal ama bunu **gizlilik özelliği** diye satıyor, **güvenlik sınırı** diye değil. ⚠ **Ölçülüp yayınlanmadığı sürece sadece bir iddia.** Somut: *«N cevapta üretilen her sayının kaynağı fişte doğrulandı»* |
+
+### FAZ 1'e — hakem ve bağlam
+
+| # | iş | kaynak | neden |
+|---|---|---|---|
+| **B9** | 🔴 **İki-sağlayıcılı LLM hakem** | §7.3 | AUROC ölçümü: `dry_plan` (**query executability**) **0,500 — tam şans**; execution self-consistency **0,613**; string self-consistency **0,675**; tek GPT-4o hakem **0,770**; 🟢 **iki-sağlayıcılı topluluk 0,822** (ECE 0,031). ⊙ **Bizim `k=3` oylamamızın tavanı ~0,675** — CHASE-SQL'in dersi: *darboğaz aday üretimi değil **SEÇİM***. ⚠ Oylamanın **yerine değil, ÜSTÜNE** |
+| **B10** | 🔴 **SKILLS — metodoloji markdown'ları** *(B3'ten AYRI)* | §36.1-5 | ⚠ **B3 `instructions.md` = iş sözlüğü** (*«fire'yi kg konuşuruz»*). **B10 = metodoloji**: kohort · funnel · retention · **YoY-oranı** · what-if — her biri bir **markdown iş akışı**. ⊙ Anthropic: **skill'siz %21 → skill'li >%95**; *«bir skill'e paketlenebilecek bağlam **fiilen sınırsız**»*. Ve §34'ün beş metodoloji hatası (adım sırası · dedup · pencere · kohort ataması · geri dönüş) **kodda değil METİNDE** yaşar. ⚠ Bakım: **pack ile aynı PR** (bakımsız **1 ayda %95→%65**) |
+| **B11** | **Ephemeral / karalama sorgusu** | §36.1-4 | Hex'in ölçümü: ajan önce veriyi **görünmez bir sorguyla** tanıyor → *«ilk denemede doğruluk yükseliyor»*. Bizde **yok**. ⊙ B4 (repair) ile kardeş: biri **hatadan sonra**, öteki **hatadan önce** |
+
+### FAZ 3'e — kapsam ve tanım
+
+| # | iş | kaynak | neden |
+|---|---|---|---|
+| **D10** | 🔴 **Tanım çakışması yönetimi** | §29.3-6 | WisdomAI: *«biggest source of **unexplained trust erosion**»*. Bizde `§Cİ` bir terimin **iki küpte** olduğunu söylüyor — ama **iki farklı TANIMI** olduğunu söylemiyor (ör. `ilk_seferde_tamam` `parti`de ve `oee`'de **farklı formülle**). ⊙ Somut: aynı ada sahip ama **ifadesi farklı** ölçüler taranıp **beyan edilmeli** |
+| **D11** | **Denormalizasyon** | §27.6 | Ölçüm: **3+ tabloda** mevcut sistemler **%20 hata oranıyla** çöküyor. ⊙ Bizde JOIN'i **cube derleyicisi** kuruyor (planlayıcı değil) — yani bu risk **yapısal olarak düşük**. ⚠ Ama **ölçülmedi**: kaç küpümüz 3+ model üstünde? `dimension_origin[*].certified` kaçında `olculmedi`? |
+
+### FAZ 4'e — cebir bütünlüğü
+
+| # | iş | kaynak | neden |
+|---|---|---|---|
+| **E7** | 🔴 **LMDI-I'e geç + sıfır/negatif politikası** | §10.3 | Bugünkü ayrıştırmamız **LMDI-II** ailesinde: artık sıfır ✅, sıra bağımsız ✅ — ama **alt-grup toplanabilirliği YOK**. ⊙ Çok seviyeli iniş (`derinles` → ikinci kırılım) yaptığımızda **katkılar toplanmıyor**; kullanıcı *«bu %30 nereye gitti»* diye sorarsa cevap veremeyiz. ⚠ Ve **`ln(0)` tanımsız**, negatifte LMDI **tanımsız** → politika: sıfır/negatif bileşende **Shapley'e geç ya da dürüstçe sus** |
+
+### FAZ 5'e — agentic'in asıl kilidi
+
+| # | iş | kaynak | neden |
+|---|---|---|---|
+| **F13** | 🔴 **ONAYLI YAZMA AKSİYONLARI** | §17.3 · MIMARI §H | Bugün `_yazma_araclari` **bilerek** `llm_araclari` dışında — *«ajan YAZAMAZ»* (`tools.py`'nin dört değişmezinden biri). Sonuç: *«bunu panoya ekle»* · *«her pazartesi yolla»* **yapılamıyor**. ⊙ **Ve bu «agentic'in asıl kilidi»**: yasak **kaldırılmaz, KADEMELENDİRİLİR** — ajan yazma aracını **öneri** olarak üretir → kullanıcı **onaylar** → `authorize()` + audit (**ikisi de zaten var**) → çalışır. Geri alınamaz iş → **senkron onay**; orta risk → kuyruk. ⚠ **Kapı: onaysız hiçbir yazma; her onay audit'e ayrı satır** |
+
+### 14.15 GÜNCEL TOPLAM
+
+| faz | adım |
+|---|---|
+| FAZ 0 · ölçüm | **14** |
+| FAZ 1 · garsonu besle | **11** |
+| FAZ 2 · yetenek birleşimi | **3** |
+| FAZ 3 · cevap biçimi | **11** |
+| FAZ 4 · kök-neden | **7** |
+| FAZ 5 · temizlik + strateji + yazma | **13** |
+| **TOPLAM** | **59** |
+
+🔴 **Ve §14.13'ün kısa yolu DEĞİŞMEDİ** — beş iş, ~2-3 hafta, hissedilen iyileşmenin ~%70'i.
+Yeni dokuz kalem o beşliye **girmiyor**; ikisi (A13, B9) **ikinci dalgada**, biri (F13)
+**ürün kararı** bekliyor.
+
+⚠ **59 adım bir taahhüt değil, bir KATALOGDUR.** Değeri şurada: *«keşke şunu da
+düşünseydik»* denmesin diye **hepsi yazılı** — ama hangisinin kritik yolda olduğu
+**§14.13'te** ayrıca söylenmiştir.
+
 ## 15 · DÜRÜST KAPANIŞ
 
 ### 15.1 Kullanıcının üç iddiası — ölçümle karşılığı
