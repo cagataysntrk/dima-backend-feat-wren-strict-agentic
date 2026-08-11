@@ -91,6 +91,13 @@ MUTFAK = {
     # aralığını `mom`/`yoy` bazına geri açar). Dil okumaz, motora dokunmaz; girdisi
     # bir CubeQuery parçası, çıktısı bir CubeQuery parçası — tanım gereği mutfak.
     "kiyas_cebiri.py",
+    # 🔴 `§KN` — **KÖK-NEDEN CEBİRİ.** `contribution.py` ile aynı sınıf ve aynı sebep:
+    # girdisi katalog + zaten hesaplanmış sayılar, çıktısı bir **ayrıştırma**. Dil
+    # okumaz, soru ayrıştırmaz, sorgu koşmaz — saf cebir. ⚠ Ürettiği **cümle** onu
+    # garson yapmaz: cümle bir sunum değil, ayrıştırmanın okunabilir hâlidir (aynı şeyi
+    # `contribution` ve `drill` de yapar). *Bir modülü sınıflandıran şey neye baktığı
+    # değil, ne ürettiğidir.*
+    "kok_neden.py",
     "statements.py", "drill.py", "audit_zinciri.py", "lineage.py", "tazelik.py",
     "veri_araligi.py", "result_shape.py", "sensitivity.py",
     # `M-6` — MOTORUN OPERATÖR ADLARI. Dil değil, **motorun kendi sözlüğü**: küme
