@@ -174,3 +174,63 @@ def test_YS_FISTE_KARSILANAN_TERIM_DUSER():
     assert uyum.yok_sayilan_beyani(r, "bu yıl hasılat ne kadar", _CQ_YS,
                                    _SEMA_YS["cubes"][0], _SEMA_YS, ["hasılat"]) is False
     assert not r.note
+
+
+_IDX_YS2 = {"parti": {"dimensions": ["musteri", "renk"],
+                      "measures": ["toplam_ciro", "toplam_fire_kg"]}}
+
+
+def test_YS2_KAPIDA_KALAN_ALAN_TOPLANIR():
+    """🔴🔴 `§YS-2` — ölçüldü (curl `GG` turu): *«…ciroyu **euro** olarak göster»* →
+    `ham={…"dimension":"para_birimi","value":"EUR"}` → **whitelist REDDİ**. Model
+    «euro»yu **atmıyor**, kataloğumuzda olmayan bir boyutla **temsil etmeye çalışıyor**;
+    beyaz liste adayı reddediyor ve oy euro'dan habersiz başka bir örneğe düşüyor."""
+    from app import uyum
+
+    ham = ('{"cube":"parti","measures":["toplam_ciro"],'
+           '"filters":[{"dimension":"para_birimi","operator":"eq","value":"EUR"}]}')
+    assert uyum.kapida_kalanlar(ham, _IDX_YS2) == [("para_birimi", "EUR")]
+
+
+def test_YS2_REDDEDILEN_ORNEGIN_YOK_SAYILANI_DA_TOPLANIR():
+    """🔴 **Reddedilen örneğin `yok_sayilan`'ı da çöpe gidiyordu.** Ölçüldü:
+    *«mars gezegenindeki satışlarımız»* → `ham={"cube":null,"yok_sayilan":["mars
+    gezegeni","satışlar"]}` → REDDİ. Garson **tam da istediğimiz cevabı verdi** ve
+    `parse_cube_query` `None` dönünce onunla birlikte o cevap da düştü.
+
+    *Bir kapıda geri çevrilen kâğıdın üstünde, neden geri çevrildiği de yazılıdır.*"""
+    from app import uyum
+
+    ham = '{"cube":"parti","measures":["toplam_ciro"],"yok_sayilan":["mars gezegeni"]}'
+    assert ("", "mars gezegeni") in uyum.kapida_kalanlar(ham, _IDX_YS2)
+
+
+def test_YS2_TOPRAKLAMA_SUZGECI_UYDURMAYI_ELER():
+    """`§101.1` — denenen alan/değer sorunun bir sözcüğüyle **≥3 harflik ön ek**
+    paylaşmalı. Model kataloğa dokunmayan bir şey uydurmuşsa beyan **susar**."""
+    from app import uyum
+
+    r = _Yanit()
+    cq = {"cube": "parti", "measures": ["toplam_ciro"], "dimensions": []}
+    # ⚠ `sema` geçilir: uydurulmuş alan yolunun kendi kapısı odur ve **artık** olmadan
+    # konuşmaz — *«bu yıl toplam ciro»*da kapsanmayan bir içerik sözcüğü yoktur.
+    assert uyum.kapi_beyani(r, "bu yıl toplam ciro", cq,
+                            [("para_birimi", "EUR")], _SEMA_YS) is False
+    assert uyum.kapi_beyani(r, "bu yıl ciroyu euro olarak göster", cq,
+                            [("para_birimi", "EUR")], _SEMA_YS) is True
+    # ⚠ Beyan **kullanıcının kendi sözcüğünü** yazar (*«euro»*), teknik alan adını
+    # değil: uydurulmuş alan *bir şeyin düştüğünü* söyler, kapsanmayan artık *adını*.
+    assert "euro" in (r.note or "") and "yansımadı" in (r.note or ""), r.note
+
+
+def test_YS2_AYNI_SEY_IKI_KEZ_YAZILMAZ():
+    """`k=3` örneklemede aynı alanı iki örnek denemiş olabilir — canlıda tam bu oldu
+    (*«`para_birimi` = «EUR» · `para_birimi` = «EUR»»*). Bir şeyi iki kez söylemek, iki
+    ayrı kusur varmış gibi okunur."""
+    from app import uyum
+
+    r = _Yanit()
+    cq = {"cube": "parti", "measures": ["toplam_ciro"], "dimensions": []}
+    uyum.kapi_beyani(r, "bu yıl ciroyu euro olarak göster", cq,
+                     [("para_birimi", "EUR"), ("para_birimi", "EUR")], _SEMA_YS)
+    assert (r.note or "").count("euro") == 1, r.note

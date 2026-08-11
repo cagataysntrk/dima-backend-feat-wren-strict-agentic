@@ -2707,3 +2707,17 @@ Beş yeni kök bulundu ve düzeltildi. Tam döküm: çeviri sözleşmesi › `DD
   taşımak, onu kaybetmeye söz vermektir.*
 * ⚠ Kapsam dürüstçe sınırlı: mekanizma ancak bir örnek o alanı **gerçekten denerse**
   ateşler; `§YS` (garsonun kendi bildirimi) kardeş kanal olarak kalıyor.
+
+## `II` turu (2026-08-11) — `§YS-2` kapsamı ölçüldü
+
+* Reddedilen örneğin `yok_sayilan`'ı da artık hasat ediliyor (önce çöpe gidiyordu).
+* Uydurulmuş alanda topraklama **artıkla** birleştirildi: uydurulmuş alan *bir şeyin
+  düştüğünü*, kapsanmayan artık *kullanıcının ona ne dediğini* söyler. Beyan artık
+  kullanıcının kendi sözcüğünü yazıyor (*«euro»*).
+* Artık hesabı **sinonimleri** de sayıyor (kapı yakaladı: *«ciroyu»* kapsanmamış
+  sayılıyordu).
+* 🔴 **KAPSAM DÜRÜSTÇE SINIRLI:** son doğrulama koşumunda beş sorunun beşinde de beyan
+  gelmedi — o turda **hiç whitelist reddi olmadı** ve model sözcükleri sessizce düşürdü.
+  Her iki kanal da **fırsatçı**; sınıf **kapanmadı, daraldı**. Deterministik kapanış
+  sorunun artığını tek başına kullanmayı gerektirir ve o ölçülmüş bir yanlış-pozitif
+  üretir (`§101.1`); kalan yol Türkçe biçimbilimidir ve `§0.0` onu yasaklıyor.

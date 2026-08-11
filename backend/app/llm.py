@@ -401,11 +401,18 @@ def _cube_select_system(catalog: str) -> str:
         #
         # ⚠ Sayı **hiç etkilenmez**: alan yalnız bir cümle üretir, sorguya girmez.
         # *Bir hakeme niyetini sormak başka, ne attığını sormamak başkadır.*
+        # ⚠ **ÖRNEKLİ**, çünkü örneksiz hâli ölçüldü ve verimi **sıfırdı** (curl `II`
+        # turu, dört soru, sıfır bildirim). Bir alanı tarif etmek onu kullandırmıyor;
+        # bir kez **göstermek** kullandırıyor. `AJ3.4`'ün *«karşı ağırlık»* dersi.
         '- YOK SAYILAN: sorunun, bu sorguya **yansımayan** sözcükleri varsa '
-        '"yok_sayilan":["<sözcük>"] olarak yaz (para birimi · olmayan bir ölçü · '
-        'karşılığı olmayan bir yer/şey). Hepsi yansıdıysa alanı hiç yazma. '
-        "⚠ Soru sözcükleri (*«ne kadar»*, *«hangi»*) ve nezaket kalıpları yok sayılan "
-        "DEĞİLDİR — yalnız **içerik** taşıyan sözcükleri yaz.\n"
+        '"yok_sayilan":["<sözcük>"] olarak yaz — ve bunu **atlamak bir hatadır**: '
+        'kullanıcı sayının neyi kapsamadığını bilmek zorundadır.\n'
+        '  Örnek: soru *«bu yıl cironun dolar karşılığı»* → kataloğumda para birimi '
+        'yok, o yüzden {"cube":"…","measures":["toplam_ciro"],…,'
+        '"yok_sayilan":["dolar"]}.\n'
+        "  ⚠ Soru sözcükleri (*«ne kadar»*, *«hangi»*, *«acaba»*) ve nezaket kalıpları "
+        "(*«lütfen»*, *«söyler misin»*) yok sayılan **DEĞİLDİR** — yalnız **içerik** "
+        "taşıyan sözcükleri yaz. Hepsi yansıdıysa alanı hiç yazma.\n"
         "- SADECE yukarıda listelenen ölçü/boyut adlarını kullan.\n"
         # 🔴 `AJ3.4` — **KARŞI AĞIRLIK.** Ölçüldü: bu prompt modele reddetmeyi ÜÇ kez
         # söylüyordu (metinde *"KESİNLİKLE null"*, şemada red **ilk** dal, araç

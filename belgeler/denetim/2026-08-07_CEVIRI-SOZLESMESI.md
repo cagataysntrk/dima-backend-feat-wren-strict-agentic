@@ -12450,3 +12450,50 @@ vermektir.*
 ⚠ **Kapsam dürüstçe sınırlı:** mekanizma ancak bir örnek o alanı **gerçekten denerse**
 ateşler. Aynı turda `mars` ve `gerçekleşme` denemedi ve beyan gelmedi — `§YS` (garsonun
 kendi bildirimi) onların kardeş kanalı olarak kalıyor.
+
+---
+
+# `II` TURU — `§YS-2`'nin KAPSAMI: ölçüldü, ve dürüstçe sınırlı
+
+*(2026-08-11 · `GG+HH` demeti TAM KAPI YEŞİL ile commit `9e84a9b`)*
+
+## Üç iyileştirme
+
+1. **Reddedilen örneğin `yok_sayilan`'ı da çöpe gidiyordu.** `parse_cube_query` `None`
+   dönünce garsonun **tam da istediğimiz** bildirimi (*«mars gezegeni»*) onunla birlikte
+   düşüyordu. Artık hasat ediliyor. *Bir kapıda geri çevrilen kâğıdın üstünde, neden
+   geri çevrildiği de yazılıdır.*
+2. **Uydurulmuş alanda topraklama aranmaz — ama artık gerekir.** *«bu yıl **dolar**
+   bazında toplam ciro»* → model `kur.para_birimi = "TL"` denedi; süzgeç sustu, çünkü
+   denenen **değer** (`TL`) kullanıcının sözcüğüne bağlanmıyordu. Doğru tasarım iki
+   sinyali birleştirmek: **uydurulmuş alan** *bir şeyin düştüğünü*, **kapsanmayan artık**
+   *kullanıcının ona ne dediğini* söyler. Beyan artık kullanıcının kendi sözcüğünü yazıyor
+   (*«euro»*), teknik alan adını değil.
+   ⚠ Artık **tek başına** kullanılmaz — bu deponun ölçtüğü yanlış-pozitif tam olarak oydu
+   (*«söyler misin»*).
+3. **Artık hesabı sinonimleri de sayıyor.** Kapı yakaladı: yalnız adlar taranınca
+   *«ciroyu»* kapsanmamış sayılıyordu, oysa `ciro` `toplam_ciro`'nun sinonimi.
+   *Bir terimi adıyla aramak, ona verdiğimiz adları unutmaktır.*
+
+## 🔴 Ve KAPSAM DÜRÜSTÇE ÖLÇÜLDÜ: her iki kanal da **FIRSATÇI**
+
+Son doğrulama koşumunda **beş sorunun beşinde de** beyan gelmedi — ve sebebi kütükte:
+o turda **hiç whitelist reddi olmadı**. Model *«dolar»*, *«mars»*, *«gerçekleşme»*
+için geçerli bir fiş üretti ve o sözcükleri **sessizce** düşürdü; `yok_sayilan` da
+yazmadı.
+
+| kanal | ne zaman ateşler | ölçülen |
+|---|---|---|
+| `§YS` | garson **kendisi** bildirirse | seyrek (bir koşumda `mars gezegeni`) |
+| `§YS-2` | bir örnek geçersiz bir alanı **denerse** | seyrek (bir koşumda `para_birimi`/`EUR`) |
+
+⊙ Yani sınıf **kapanmadı, daraldı**. İkisi de doğru, ikisi de kapılı, ikisi de canlıda
+en az bir kez ateşledi — ama tetiklenme oranı modelin o anki davranışına bağlı ve
+**yeniden üretilebilir değil**.
+
+⚠ Deterministik bir kapanış, sorunun kapsanmayan artığını **tek başına** kullanmayı
+gerektirir; o da ölçülmüş bir yanlış-pozitif üretir (*«söyler misin»* · *«işledik»*)
+ve `§101.1` gereği reddedildi. Kalan yol Türkçe biçimbilimidir (fiil/ad ayrımı) ve
+`§0.0` onu route'ta yasaklıyor.
+
+*Bir sınıfı daraltmakla kapatmak arasındaki farkı yazmamak, kapattığını sanmaktır.*

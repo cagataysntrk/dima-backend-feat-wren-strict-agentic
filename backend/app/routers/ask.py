@@ -3126,7 +3126,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         if _ys:
             _uyum.yok_sayilan_beyani(resp, body.question, cq, _cm_uyum, schema, _ys)
         if _kk:
-            _uyum.kapi_beyani(resp, body.question, cq, _kk)
+            _uyum.kapi_beyani(resp, body.question, cq, _kk, schema)
         if followup.neden_sorusu(body.question):
             _kok_neden.taze_ek(resp, q_norm, cq, _cm_uyum, service=service, limit=limit)
         resp.contract_id = _record_contract(cq, sql, result, source)

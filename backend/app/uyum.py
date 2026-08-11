@@ -1772,10 +1772,64 @@ def kapida_kalanlar(ham: str, index: dict | None) -> list[tuple[str, str]]:
     for d in (cq.get("dimensions") or []):
         if str(d) not in _boyut:
             out.append((str(d), ""))
+    # 🔴🔴 **REDDEDİLEN ÖRNEĞİN «yok_sayilan»'ı DA ÇÖPE GİDİYORDU.**
+    #
+    # ⊙ Ölçüldü (curl `GG` turu): *«mars gezegenindeki satışlarımız»* →
+    # `ham={"cube":null,"yok_sayilan":["mars gezegeni","satışlar"]}` → whitelist REDDİ.
+    # Yani garson **tam da istediğimiz cevabı verdi** — ve `parse_cube_query` `None`
+    # dönünce onunla birlikte o cevap da düştü. `§YS` kanalı yalnız **kabul edilen**
+    # örneklerde okunuyordu; oysa bir sözcüğü temsil edemediğini söyleyen örnek, tam
+    # olarak **reddedilen** örnektir.
+    #
+    # ⚠ Alan adı boş bırakılır (`("", sözcük)`): beyan onu bir katalog alanı gibi değil,
+    # kullanıcının **kendi sözcüğü** gibi yazar. Topraklama süzgeci ikisinde de aynı.
+    #
+    # *Bir kapıda geri çevrilen kâğıdın üstünde, neden geri çevrildiği de yazılıdır.*
+    for w in (cq.get("yok_sayilan") or []):
+        if isinstance(w, str) and len(w.strip()) >= 3:
+            out.append(("", w.strip()))
     return out[:3]
 
 
-def kapi_beyani(resp, q: str, cq: dict, kalanlar: list[tuple[str, str]]) -> bool:
+def _kapsanmayan(q: str, cq: dict, sema: dict | None) -> list[str]:
+    """Sorunun, teslim edilen fişin **hiçbir parçasıyla** açıklanmayan içerik sözcükleri.
+
+    ⚠ Gövde `cube_router`'ın kendi kapsam kapısıdır (`partial_unknowns` → `_uncovered`,
+    dolgu kökleri ve kısa sözcükler zaten elenir) — ikinci bir kapsam tanımı yazmak
+    `KAT-1` olurdu.
+    """
+    from app import cube_router as _cr
+
+    try:
+        _bilinmeyen = _cr.partial_unknowns(_cr._norm(q or ""), sema or {})[0]
+    except Exception:                     # noqa: BLE001 — beyan susar
+        return []
+    # ⚠ **SİNONİMLER DE FİŞİN PARÇASIDIR.** Kapı bunu yakaladı: yalnız adlar taranınca
+    # *«ciroyu»* kapsanmamış sayılıyordu, oysa `ciro` `toplam_ciro`'nun sinonimi ve
+    # cevap onu **taşıyor**. Bir terimi adıyla aramak, ona verdiğimiz adları unutmaktır.
+    _c = next((c for c in ((sema or {}).get("cubes") or [])
+               if c.get("name") == cq.get("cube")), None) or {}
+    _parca = [str(cq.get("cube") or ""), str(cq.get("period_expr") or "")]
+    for _k, _alanlar in (("measure_synonyms", cq.get("measures") or []),
+                         ("dimension_synonyms", cq.get("dimensions") or [])):
+        for _ad in _alanlar:
+            _parca.append(str(_ad))
+            _parca += [str(x) for x in ((_c.get(_k) or {}).get(str(_ad)) or [])]
+    _fis = _cr._norm(" ".join(_parca))
+    return [w for w in _bilinmeyen if len(w) >= 4 and not _cr._syn_hit(_fis, w)][:2]
+
+
+def _hicbir_kupte_yok(alan: str, sema: dict | None) -> bool:
+    """Bu alan adı **katalogda hiç** yok mu? (Uydurulmuş bir kavram mı, yoksa başka bir
+    küpte duran gerçek bir boyut mu.)"""
+    _a = str(alan or "").split(".")[-1]
+    return bool(_a) and not any(
+        _a in (c.get("dimensions") or []) or _a in ((c.get("measure_expressions") or {}))
+        for c in ((sema or {}).get("cubes") or []))
+
+
+def kapi_beyani(resp, q: str, cq: dict, kalanlar: list[tuple[str, str]],
+                sema: dict | None = None) -> bool:
     """`§YS-2`'nin **iliştirme** yarısı — `§YS`'nin kardeşi, aynı disiplinle.
 
     ⚠ **Topraklama süzgeci** (`§101.1`): denenen alan ya da değeri sorunun bir sözcüğüyle
@@ -1794,23 +1848,52 @@ def kapi_beyani(resp, q: str, cq: dict, kalanlar: list[tuple[str, str]]) -> bool
         str(f.get("dimension")) for f in (cq.get("filters") or [])}
     _gecti: list[str] = []
     for _alan, _deger in kalanlar:
-        if _alan in _fis:
+        if _alan and _alan in _fis:
             continue                       # cevapta zaten var → atılmamış
+        # 🔴🔴 **TOPRAKLAMA, UYDURULMUŞ BİR KAVRAMDA ARANMAZ — ölçüm öğretti.**
+        #
+        # ⊙ Ölçüldü (curl `II` turu): *«bu yıl **dolar** bazında toplam ciro»* → model
+        # `kur.para_birimi = "TL"` denedi ve beyaz liste reddetti. Süzgeç sustu, çünkü
+        # denenen **değer** (`TL`) kullanıcının sözcüğüne (*«dolar»*) bağlanmıyordu.
+        # Ama beyan yine de **doğru** olurdu: kataloğumda para birimi diye bir şey yok.
+        #
+        # ⚠ Ayrım şu: alan **başka bir küpte** duran gerçek bir boyutsa, onu istemediği
+        # hâlde kullanıcıya söylemek gürültüdür — orada topraklama şart. Alan
+        # **hiçbir küpte** yoksa, model bir kavram **uydurmuştur** ve o kavram ancak
+        # sorudan gelebilir; orada topraklama aramak, doğru beyanı susturmaktır.
+        #
+        # *Bir sözcüğün izini ararken, izin bıraktığı şeyin var olup olmadığına da
+        # bakmak gerekir.*
         _aday = [_cr._norm(x) for x in (_deger, _alan) if x]
+        _uydurma = bool(_alan) and _hicbir_kupte_yok(_alan, sema)
+        if _uydurma:
+            # 🔴 **UYDURULMUŞ ALAN «BİR ŞEY DÜŞTÜ» DER; ARTIK «KULLANICI ONA NE DEDİ»Yİ.**
+            # Alanın kendi adı (`kur.para_birimi`) kullanıcının sözcüğüne (*«dolar»*)
+            # bağlanmaz — ve bağlanmadığı için ilk sürüm **sustu**. Ama iki sinyal
+            # birlikte tamdır: uydurulmuş alan **düşme olayının** kanıtı, kapsanmayan
+            # artık ise **adın** kendisi. ⚠ Artık tek başına kullanılmaz — bu deponun
+            # ölçtüğü yanlış-pozitif tam olarak oydu (*«söyler misin»*).
+            _art = _kapsanmayan(q, cq, sema)
+            if _art:
+                _s = f"«{_art[0]}»"
+                if _s not in _gecti:
+                    _gecti.append(_s)
+            continue
         if not any(w.startswith(a[:3]) or a.startswith(w[:3])
                    for a in _aday if len(a) >= 3 for w in _kelime):
-            continue                       # soruda izi yok → uydurma, susulur
+            continue                       # soruda izi yok → gürültü, susulur
         # ⚠ Tekilleştirme: `k=3` örneklemede **aynı** alanı iki örnek denemiş olabilir
         # ve canlıda tam bu oldu (*«`para_birimi` = «EUR» · `para_birimi` = «EUR»»*).
         # Bir şeyi iki kez söylemek, iki ayrı kusur varmış gibi okunur.
-        _s = f"`{_alan}`" + (f" = «{_deger}»" if _deger else "")
+        _s = (f"«{_deger}»" if not _alan
+              else f"`{_alan}`" + (f" = «{_deger}»" if _deger else ""))
         if _s not in _gecti:
             _gecti.append(_s)
     if not _gecti:
         return False
     resp.note = " ".join(x for x in [getattr(resp, "note", None), (
-        f"⚠ Soru kataloğumda **olmayan** bir alana işaret ediyor "
-        f"({' · '.join(_gecti[:2])}) — bu kısım cevaba **yansımadı**.")] if x)
+        f"⚠ Soruda geçen {' · '.join(_gecti[:2])} bu cevaba **yansımadı** — "
+        f"kataloğumda karşılığı yok.")] if x)
     resp.trace = [*(getattr(resp, "trace", None) or []),
                   f"§YS-2: beyaz liste {len(_gecti)} alanı geri çevirdi, beyan edildi"]
     return True
