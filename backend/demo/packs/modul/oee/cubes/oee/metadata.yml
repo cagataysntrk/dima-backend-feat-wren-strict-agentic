@@ -20,7 +20,7 @@ default_measure: ort_oee
 measures:
   - name: ort_oee
     lower_is_better: false   # B-5 · yüksek = İYİ
-    expression: "(1.0*SUM(calisma_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)) * (SUM(performans_PV*planli_uretim_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)) * (1.0*SUM(uretim_kg - hatali_kg)/NULLIF(SUM(uretim_kg),0))"
+    expression: "ROUND(100.0 * (1.0*SUM(calisma_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)) * (SUM(performans_PV*planli_uretim_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)) * (1.0*SUM(uretim_kg - hatali_kg)/NULLIF(SUM(uretim_kg),0)), 2)"
     type: DOUBLE
     unit: "%"
     additive: non
@@ -28,7 +28,7 @@ measures:
   - name: ort_kullanilabilirlik
     lower_is_better: false   # B-5 · yüksek = İYİ
     # Availability = APT/PBT (ISO 22400 6.8) = çalışma/planlı-üretim süresi
-    expression: "1.0*SUM(calisma_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)"
+    expression: "ROUND(100.0*SUM(calisma_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0), 2)"
     type: DOUBLE
     unit: "%"
     additive: non
@@ -36,7 +36,7 @@ measures:
   - name: ort_performans
     lower_is_better: false   # B-5 · yüksek = İYİ
     # Effectiveness (ISO 22400 6.9) — planlı-süre ağırlıklı performans (teorik hız yok)
-    expression: "SUM(performans_PV*planli_uretim_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)"
+    expression: "ROUND(100.0*SUM(performans_PV*planli_uretim_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0), 2)"
     type: DOUBLE
     unit: "%"
     additive: non
@@ -44,7 +44,7 @@ measures:
   - name: ort_kalite
     lower_is_better: false   # B-5 · yüksek = İYİ
     # Quality ratio = GQ/PQ (ISO 22400 6.10) = sağlam/toplam üretim
-    expression: "1.0*SUM(uretim_kg - hatali_kg)/NULLIF(SUM(uretim_kg),0)"
+    expression: "ROUND(100.0*SUM(uretim_kg - hatali_kg)/NULLIF(SUM(uretim_kg),0), 2)"
     type: DOUBLE
     unit: "%"
     additive: non

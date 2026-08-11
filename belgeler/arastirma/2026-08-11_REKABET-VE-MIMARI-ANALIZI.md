@@ -3480,7 +3480,36 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 | **azaltma** | Karar **deterministik ve tablolu** olsun (LLM seçmesin) — ADR-0024'ün aynı ilkesi |
 | **MİMARİ.md** | **ADR-0024'e ek** — *«cevap biçimi de deterministik bir karardır»* |
 
-### D4 · Ön-uç sayı biçimi
+### ✅ D4 · Ön-uç sayı biçimi — **ÜÇ DAYANAĞI DA KARŞILIKSIZ ÇIKTI, AMA ÖLÇÜM DAHA AĞIRINI BULDU** *(2026-08-12)*
+
+> | kartın iddiası | ölçülen |
+> |---|---|
+> | `Intl…{style:"percent"}` → `%56`, 0 ondalık | ✅ doğru **ama ön-uç bunu KULLANMIYOR**: `format.ts` `{maximumFractionDigits: 2}` + birim eki → `55,55 %` |
+> | `d3-format`'ta `tr-TR` yok | ⊘ **`d3-format` hiç kullanılmıyor** — ne bağımlılık ne import |
+> | kompakt `12 B` = bin | ✅ ölçüldü: `12 B` · `1,2 Mn` · `1,2 Mr` — **Türkçesi doğru** |
+>
+> 🔴 **ASIL KUSUR BAŞKAYDI: ölçek ilanı ile değer birbirini tutmuyordu.** Canlıda iki kez
+> bağımsız ölçüldü: `«bölüm bazında oee»` → `ort_oee: 0.641` · `«bu yıl ortalama oee»` →
+> özet **`Oee 0,58 %.`** Katalog `unit: "%"` ilan ediyor, değer **0–1 oranı** →
+> kullanıcı **100× küçük** okuyor, uyarı **yok**. Ve **aynı küpteki** kardeşi
+> `ilk_seferde_tamam_yuzde` **zaten ×100**: yani `%` **tek bir küpte iki ölçek** demekti.
+>
+> ✅ **Düzeltme KATALOGDA** (sunum katmanı bir sayının 0–1 mi 0–100 mü olduğunu bilemez;
+> büyüklükten tahmin etmek `ADR-0008` ihlali ve gerçekten `%0,8` olan bir ölçüyü şişirirdi):
+> dört OEE oranı kardeşlerinin kuralına getirildi (`×100`, `ROUND 2`).
+> **Canlı:** `Oee 0,58 %.` → **`Oee 58,02 %.`** · `Örgü (0,64 %)` → **`Örgü (64,11 %)`**.
+>
+> ⚠ **`maliyet.ort_kar_marji_yuzde` KAPSAM DIŞI:** `AVG(kar_marji_yuzde)` — kaynak
+> kolonun kendi adı `_yuzde`, yani muhtemelen zaten 0–100. Kaba taramam onu *«oran»*
+> sandı (**yanlış pozitif**); değeri doğrulanamadığı için **dokunulmadı** ve kapıda
+> `OLCULMEDI` olarak **adıyla** kayıtlı. *Bir ölçek düzeltmesi, ölçeği ölçülmemiş bir
+> ölçüye uygulanırsa düzelttiğinden fazlasını bozar.*
+>
+> 🔴 **Yayılma kapısı:** `test_d4_yuzde_olcegi.py` (5) — bundan sonra `unit: "%"` ilan
+> eden her ölçü ya `×100` içerir ya da `OLCULMEDI`'ye **gerekçesiyle** yazılır.
+> Demet kapısı yeşil, taban **birebir aynı**.
+
+### D4 · Ön-uç sayı biçimi *(özgün kart)*
 
 | | |
 |---|---|
