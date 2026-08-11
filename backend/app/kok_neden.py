@@ -57,6 +57,10 @@ from dataclasses import dataclass, field
 
 #: Bir bileşenin ölçüdeki **rolü**. Kapalı bir küme: kataloğun ifade dilinde bir
 #: bileşen ya çarpandır, ya paydır, ya paydadır, ya da toplanan bir terimdir.
+#: `§KN` — derinleşmede **kaç aday** koşulur. Bir sabit değil bir **karar**: her aday
+#: bir sorgudur ve üçüncüden sonrası, kullanıcının beklediği zamandan ödenir.
+AZAMI_ADAY = 3
+
 CARPAN = "carpan"
 PAY = "pay"
 PAYDA = "payda"
@@ -265,7 +269,7 @@ def _yuzde(x: float) -> str:
 
 
 def anlati(ayr: Ayristirma, *, segment: str, boyut: str,
-           olcu_display: str = "") -> str:
+           olcu_display: str = "", derinlesildi: bool = False) -> str:
     """`§KN` — ayrıştırmanın **cümlesi**: nereye baktım, ne gördüm, bu yüzden.
 
     ⚠ Cümle **ölçülmüş sayılardan** kurulur; hiçbir yargı eklenmez. `lower_is_better`
@@ -283,8 +287,183 @@ def anlati(ayr: Ayristirma, *, segment: str, boyut: str,
         rol = {PAYDA: " (paydada)", TERIM: " (terim)"}.get(k.bilesen.rol, "")
         satirlar.append(f"· **{k.bilesen.display}**{rol}: {k.hedef:.3g} ↔ akran "
                         f"{k.akran:.3g} — farkın {_yuzde(k.pay_yuzde)}'ini {yon}")
+    # ⚠ Derinleşme **gerçekten** yapıldıysa *«bir sonraki adım onu açmak»* demek, yapılan
+    # işi bir plan gibi sunmaktır. Kuyruk yalnız inilemediğinde yazılır.
     kuyruk = ""
-    if ayr.sucllu:
+    if ayr.sucllu and not derinlesildi:
         kuyruk = (f"\n\n→ Farkın en büyük kaynağı **{ayr.sucllu.display}**. "
                   f"Bir sonraki adım: onu kendi kırılımlarında açmak.")
     return bas + "\n" + "\n".join(satirlar) + kuyruk
+
+
+# --- TAM TUR: bileşen sorgusu → akran tabanı → ayrıştırma → DERİNLEŞME ----------------
+#
+# ⚠ Bu bölüm de **sorgu koşmaz**: koşucuyu çağıran enjekte eder (`kos`). Böylece cebir
+# testte gerçek bir motor olmadan sınanır ve aynı gövde hem `/ask` hem rapor yolunda
+# kullanılabilir. `plan.calistir`'ın deseni birebir aynı sebeple böyledir.
+
+
+def _akran_ortalamasi(satirlar: list[dict], hedef_satir: dict, boyut: str,
+                      alanlar: list[str]) -> dict:
+    """Hedef DIŞINDAKİ satırların ortalaması — *«akran»* budur.
+
+    ⚠ Ortalama, ağırlıksız: bir akranın *«tipik»* değeri sorulduğunda büyük segmentin
+    küçüğü ezmesi istenmez. (Ağırlıklı taban ayrı bir sorunun cevabıdır ve o soru
+    sorulmadı.)
+    """
+    ötekiler = [r for r in satirlar if r is not hedef_satir]
+    out: dict = {}
+    for a in alanlar:
+        vals = [float(r[a]) for r in ötekiler
+                if isinstance(r.get(a), (int, float)) and r.get(a) is not None]
+        if vals:
+            out[a] = sum(vals) / len(vals)
+    return out
+
+
+def hedef_sec(satirlar: list[dict], olcu: str, *, dusuk_iyi: bool,
+              segment: str | None = None, boyut: str | None = None) -> dict | None:
+    """İncelenecek segment: kullanıcı söylediyse **o**, söylemediyse **en aykırı** olan.
+
+    ⚠ *«En aykırı»* ölçünün yönüne göredir (`lower_is_better`): düşük-iyi bir ölçüde
+    en **yüksek** olan, yüksek-iyi bir ölçüde en **düşük** olan incelenir. Yönü beyan
+    edilmemiş bir ölçüde *«kötü»* diye bir şey yoktur (`GG8`) — o zaman da en uçtaki
+    değil, **en düşük** alınır ve anlatı bunu bir yargı olarak sunmaz.
+    """
+    uygun = [r for r in satirlar if isinstance(r.get(olcu), (int, float))]
+    if not uygun:
+        return None
+    if segment and boyut:
+        for r in uygun:
+            if str(r.get(boyut)) == str(segment):
+                return r
+    return max(uygun, key=lambda r: r[olcu]) if dusuk_iyi else min(uygun, key=lambda r: r[olcu])
+
+
+def arastir(prev_cq: dict, cube_meta: dict | None, *, kos,
+            segment: str | None = None, azami_derinlik: int = 1) -> dict | None:
+    """🔴🔴 `§KN` — **TAM TUR: «şuna baktım, şuraya gittim, gördüm ki…»**
+
+    Kullanıcının istediği zincir:
+
+    1. Ölçünün **formülünü** kataloğun içinden oku (bileşenler).
+    2. İncelenen segmenti **akranlarıyla** kıyasla; hangi bileşen farkı açıklıyor?
+    3. Suçlu bileşeni, o segmentin **içinde** bir başka kırılımda aç — **en dibe in**.
+    4. Yolu anlat.
+
+    ⚠ Bugünkü *«neden»* yolu (`contribution`) **zaman içindeki değişimi** açıklar. Bu
+    onun rakibi değil **kardeşi**: burada soru *«neden geçen yıla göre düştü»* değil,
+    *«neden akranlarından düşük»*. İkisi farklı sorulardır ve birini ötekinin yerine
+    koymak, sorulmayan soruyu cevaplamaktır.
+
+    Döner: `{anlati, ayristirma, adimlar}` ya da `None` (*«bu ölçü ayrıştırılamaz»*).
+    """
+    if not isinstance(prev_cq, dict):
+        return None
+    olculer = [str(m) for m in (prev_cq.get("measures") or [])]
+    boyutlar = [str(d) for d in (prev_cq.get("dimensions") or [])]
+    if not olculer or not boyutlar:
+        return None
+    olcu, boyut = olculer[0], boyutlar[0]
+    bl = bilesenler(olcu, cube_meta)
+    if len(bl) < 2:
+        return None
+
+    adimlar: list[str] = [f"formül okundu: **{olcu}** = "
+                          + " × ".join(b.display for b in bl)]
+    _cq = {k: v for k, v in prev_cq.items() if k not in ("order", "limit", "pencere")}
+    _cq["measures"] = [olcu] + [b.ad for b in bl]
+    _cq["dimensions"] = [boyut]
+    satirlar = kos(_cq) or []
+    if len(satirlar) < 2:
+        return None
+    adimlar.append(f"**{boyut}** kırılımında {len(satirlar)} segment ve "
+                   f"{len(bl)} bileşen ölçüldü")
+
+    dusuk_iyi = olcu in ((cube_meta or {}).get("lower_is_better") or [])
+    hedef_satir = hedef_sec(satirlar, olcu, dusuk_iyi=dusuk_iyi,
+                            segment=segment, boyut=boyut)
+    if not hedef_satir:
+        return None
+    alanlar = [olcu] + [b.ad for b in bl]
+    akran = _akran_ortalamasi(satirlar, hedef_satir, boyut, alanlar)
+    ayr = ayristir(olcu, hedef_satir, akran, cube_meta)
+    if ayr is None:
+        return None
+    _seg = str(hedef_satir.get(boyut))
+    adimlar.append(f"**{_seg}** akran ortalamasıyla kıyaslandı → farkın kaynağı "
+                   f"**{(ayr.sucllu or bl[0]).display}**")
+    # 3 · DERİNLEŞME — suçlu bileşeni, hedef segmentin İÇİNDE başka bir kırılımda aç.
+    derin = (derinles(prev_cq, cube_meta, ayr.sucllu, _seg, boyut, kos=kos)
+             if (ayr.sucllu and azami_derinlik > 0) else None)
+    metin = anlati(ayr, segment=_seg, boyut=boyut, derinlesildi=bool(derin),
+                   olcu_display=str(((cube_meta or {}).get("measure_synonyms_display")
+                                     or {}).get(olcu) or olcu).replace("_", " "))
+    if derin:
+        metin += "\n\n" + derin["metin"]
+        adimlar.append(derin["adim"])
+    return {"anlati": metin, "ayristirma": ayr, "adimlar": adimlar,
+            "segment": _seg, "boyut": boyut}
+
+
+def derinles(prev_cq: dict, cube_meta: dict | None, suclu: Bilesen,
+             segment: str, boyut: str, *, kos) -> dict | None:
+    """`§KN` — **en dibe in**: suçlu bileşeni, hedef segmentin içinde ikinci bir
+    kırılımda aç ve en aykırı alt-segmenti bul.
+
+    ⊙ Kullanıcının örneği birebir bu: *«en dibe indim ve gördüm ki vardiya 1'de …
+    bu makine çok durmuş»*. Yani ikinci kırılım, birincinin **içindedir** — bir yan yana
+    kıyas değil bir **iniş**.
+
+    ⚠ İkinci boyutu `drill.available_dimensions` seçer (kullanılmış boyutları ve
+    süzgeçtekileri eler) — ikinci bir sıralama kuralı yazmak `KAT-1` olurdu.
+    """
+    from app.drill import available_dimensions
+
+    _temel = {k: v for k, v in prev_cq.items()
+              if k not in ("order", "limit", "pencere", "timeDimensions")}
+    _temel["filters"] = [*(prev_cq.get("filters") or []),
+                         {"dimension": boyut, "operator": "eq", "value": segment}]
+    adaylar = [d["name"] for d in available_dimensions(cube_meta or {}, _temel)
+               if d["name"] != boyut][:AZAMI_ADAY]
+    if not adaylar:
+        return None
+    # 🔴🔴 **BİR KIRILIMIN AÇIKLAYICI OLUP OLMADIĞI ANCAK KOŞULARAK BİLİNİR.**
+    #
+    # ⊙ Ölçüldü (gerçek `oee` kataloğu, RAM-3): ilk aday `hat` seçildi ve derinleşme
+    # **hiç üretilmedi** — çünkü `hat` bir makinenin **içinde sabittir** (makine bir
+    # hatta aittir), tek satır döner. Sıra listesi bunu bilemez: `available_dimensions`
+    # maliyet/güven sıralar, **hiyerarşi** bilmez ve kendi docstring'i de *«hangi boyutun
+    # daha açıklayıcı olduğu önceden bilinemez»* diyor.
+    #
+    # Kural: adaylar **sırayla koşulur**, ≥2 satır döndürenler arasından **yayılımı en
+    # geniş** olan seçilir. Yayılım, *«bu kırılım gerçekten ayrıştırıyor mu»* sorusunun
+    # ölçülmüş cevabıdır. `§RZ-2`'nin birebir aynı dersi.
+    #
+    # *Bir kırılımı denemeden seçmek, hiyerarşiyi bildiğini varsaymaktır.*
+    en_iyi = None
+    for aday in adaylar:
+        _satirlar = kos({**_temel, "measures": [suclu.ad], "dimensions": [aday]}) or []
+        _uygun = [r for r in _satirlar if isinstance(r.get(suclu.ad), (int, float))]
+        if len(_uygun) < 2:
+            continue
+        _degerler = [float(r[suclu.ad]) for r in _uygun]
+        _yayilim = max(_degerler) - min(_degerler)
+        if en_iyi is None or _yayilim > en_iyi[0]:
+            en_iyi = (_yayilim, aday, _uygun)
+    if en_iyi is None:
+        return None
+    _, d2, uygun = en_iyi
+    # Suçlu bileşen **düşürüyor**sa en düşük alt-segment; yükseltiyorsa en yüksek.
+    en = min(uygun, key=lambda r: r[suclu.ad]) if suclu.yon > 0 else \
+        max(uygun, key=lambda r: r[suclu.ad])
+    otekiler = [float(r[suclu.ad]) for r in uygun if r is not en]
+    ort = sum(otekiler) / len(otekiler) if otekiler else float(en[suclu.ad])
+    _lbl = ((cube_meta or {}).get("dimension_labels") or {}).get(d2, d2)
+    return {
+        "metin": (f"→ **{segment}** içinde {suclu.display} en çok **{en.get(d2)}** "
+                  f"({_lbl}) tarafında ayrışıyor: **{float(en[suclu.ad]):.3g}** ↔ "
+                  f"öteki {_lbl} ortalaması **{ort:.3g}**."),
+        "adim": f"**{segment}** içinde **{_lbl}** kırılımı açıldı → **{en.get(d2)}**",
+        "boyut": d2, "segment": str(en.get(d2)),
+    }

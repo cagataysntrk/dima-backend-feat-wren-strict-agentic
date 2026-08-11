@@ -144,3 +144,87 @@ def test_ANLATI_DEGER_YARGISI_VERMEZ():
 def test_BILESENSIZ_OLCU_SESSIZ(olcu):
     assert kn.bilesenler(olcu, _OEE) == []
     assert kn.ayristir(olcu, {}, {}, _OEE) is None
+
+
+# --- TAM TUR · «şuna baktım, şuraya gittim, gördüm ki…» ------------------------------
+
+_SATIRLAR = [
+    {"makine": "RAM-1", "ort_oee": 0.60, "ort_kullanilabilirlik": 0.90,
+     "ort_performans": 0.70, "ort_kalite": 0.95},
+    {"makine": "RAM-2", "ort_oee": 0.62, "ort_kullanilabilirlik": 0.91,
+     "ort_performans": 0.72, "ort_kalite": 0.95},
+    {"makine": "RAM-3", "ort_oee": 0.45, "ort_kullanilabilirlik": 0.89,
+     "ort_performans": 0.53, "ort_kalite": 0.95},
+]
+_ALT = {  # RAM-3 içinde: `hat` SABİT (tek satır), `vardiya` ayrışıyor
+    "hat": [{"hat": "RAM 3", "ort_performans": 0.53}],
+    "vardiya": [{"vardiya": "1. Vardiya", "ort_performans": 0.38},
+                {"vardiya": "2. Vardiya", "ort_performans": 0.61},
+                {"vardiya": "3. Vardiya", "ort_performans": 0.60}],
+}
+_META = {**_OEE, "dimensions": ["hat", "vardiya"], "lower_is_better": [],
+         "dimension_labels": {"vardiya": "vardiya", "hat": "hat"}}
+
+
+def _kos(cq):
+    """Sahte koşucu — modül **sorgu koşmadığı** için testte gerçek motor gerekmez."""
+    dims = cq.get("dimensions") or []
+    if dims == ["makine"]:
+        return _SATIRLAR
+    return _ALT.get(dims[0] if dims else "", [])
+
+
+def test_TAM_TUR_EN_DIBE_INER():
+    """🔴🔴 **Kullanıcının şartının kendisi**: formülü oku → akranla kıyasla → suçluyu
+    bul → onun içinde en dibe in.
+
+        «en dibe indim ve gördüm ki vardiya 1'de … bu makine çok durmuş»"""
+    prev = {"cube": "oee", "measures": ["ort_oee"], "dimensions": ["makine"],
+            "filters": [{"dimension": "tarih", "operator": "gte", "value": "2026-01-01"}]}
+    out = kn.arastir(prev, _META, kos=_kos)
+    assert out is not None
+    assert "RAM-3" in out["anlati"]
+    assert "performans" in out["anlati"]
+    assert "1. Vardiya" in out["anlati"], "🔴 derinleşme yok"
+    assert any("formül okundu" in a for a in out["adimlar"])
+    assert any("vardiya" in a for a in out["adimlar"])
+
+
+def test_SABIT_KIRILIM_SECILMEZ():
+    """🔴🔴 **Gerçek katalogda ölçülen kusur.** İlk yazımda derinleşme `adaylar[0]`'ı
+    alıyordu ve o `hat` çıktı — `hat` bir makinenin **içinde sabittir** (makine bir
+    hatta aittir), tek satır döner ve derinleşme **hiç üretilmedi**.
+
+    Sıra listesi bunu bilemez: `available_dimensions` maliyet/güven sıralar, hiyerarşi
+    bilmez. *Bir kırılımı denemeden seçmek, hiyerarşiyi bildiğini varsaymaktır.*"""
+    prev = {"cube": "oee", "measures": ["ort_oee"], "dimensions": ["makine"], "filters": []}
+    out = kn.arastir(prev, _META, kos=_kos)
+    assert "1. Vardiya" in out["anlati"] and "RAM 3" not in out["anlati"].split("içinde")[-1]
+
+
+def test_DERINLESILINCE_GENEL_KUYRUK_YAZILMAZ():
+    """⚠ Derinleşme **gerçekten** yapıldıysa *«bir sonraki adım onu açmak»* demek,
+    yapılan işi bir plan gibi sunmaktır."""
+    prev = {"cube": "oee", "measures": ["ort_oee"], "dimensions": ["makine"], "filters": []}
+    out = kn.arastir(prev, _META, kos=_kos)
+    assert "Bir sonraki adım" not in out["anlati"]
+
+
+def test_KULLANICININ_SECTIGI_SEGMENT_ONCELIKLI():
+    """⚠ Kullanıcı bir segment adı verdiyse **o** incelenir; sistemin seçtiği en aykırı
+    değil. *Sorulmayan soruyu cevaplamak, cevap vermemekten farklı bir kusurdur.*"""
+    prev = {"cube": "oee", "measures": ["ort_oee"], "dimensions": ["makine"], "filters": []}
+    out = kn.arastir(prev, _META, kos=_kos, segment="RAM-1")
+    assert out["segment"] == "RAM-1"
+
+
+def test_TEK_SEGMENTTE_KIYAS_YOK():
+    """*Bir akran kıyası, akran olmadan kurulamaz.*"""
+    prev = {"cube": "oee", "measures": ["ort_oee"], "dimensions": ["makine"], "filters": []}
+    assert kn.arastir(prev, _META, kos=lambda cq: _SATIRLAR[:1]) is None
+
+
+def test_BOYUTSUZ_SORUDA_SESSIZ():
+    """⚠ Kesitsel *«neden»* bir **kırılım** ister: tek bir toplamın akranı yoktur."""
+    prev = {"cube": "oee", "measures": ["ort_oee"], "filters": []}
+    assert kn.arastir(prev, _META, kos=_kos) is None
