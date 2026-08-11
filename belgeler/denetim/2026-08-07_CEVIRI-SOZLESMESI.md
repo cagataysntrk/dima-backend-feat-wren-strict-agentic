@@ -11800,3 +11800,37 @@ canvas       müşteri raporu (4 küp) → «şikayet sayısı ekle» → zaten 
 
 *Bir sayıyı yanlış sanmak, onu ölçmeden düzeltmeye kalkmaktan daha ucuzdur — yeter ki
 ölçüm düzeltmeden önce gelsin.*
+
+---
+
+# `BB` TURU — az dokunulmuş küpler · `§KD-boyut` kökü
+
+*(2026-08-11 · curl, tek tek)*
+
+```
+sevkiyat  «araç türüne göre nakliye maliyeti»  → 3 satır ✅
+siparis   «kanal bazında sipariş tutarı»       → 5 satır ✅
+firsat    «aşama bazında fırsat tutarı»        → 6 satır ✅
+egitim    «eğitim türüne göre katılım»         → 🔴 `sonuc` kırılımı, beyan YOK
+```
+
+## `§KD-boyut` — istenen kırılım yerine başkası geldi ve söylenmedi
+
+`egitim`'de bir *tür* boyutu **yok** (`departman` · `personel_kodu` · `sonuc`) ve garson
+en yakınını seçti. Sayı doğru — ama kullanıcı **tür** kırılımı istedi, **sonuç**
+kırılımı aldı ve bunu anlamasının hiçbir yolu yoktu. Mevcut `kirilim` beyanı bunu
+göremiyordu: o yalnız *hiç boyut taşınamadı* hâlini sayıyor.
+*Bir kırılımı sessizce başkasıyla değiştirmek, sorulmayan bir soruyu cevaplamaktır.*
+
+### 🔴 Ve yanlış-pozitifi **canlı ölçüm** yakaladı — prob'um kaçırmıştı
+
+İlk yazımda ilk eşleşen küpte **dönülüyordu**. Çevrimdışı prob **10/10** doğru dedi;
+canlıda *«araç türüne göre nakliye maliyeti»* → cevap `arac_turu` kırılımındaydı
+(**doğru**) ama beyan yine konuştu — döngü `sevkiyat`a gelmeden `bakim_is_emri.tur`'u
+bulup dönmüştü. Prob'da küp sırası farklıydı.
+
+*Sıraya bağlı bir yüklem, sırası değişen her yerde başka bir şey söyler.*
+
+**Düzeltme:** soruda anılan **bütün** boyut adayları toplanır; **herhangi biri** cevapta
+varsa susulur. Canlı doğrulama: `araç türü` **susuyor**, `eğitim türü` **beyan ediyor**,
+`makine bazında oee` ve `kanal bazında sipariş` temiz.

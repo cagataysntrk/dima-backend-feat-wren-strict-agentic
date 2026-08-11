@@ -461,6 +461,75 @@ def _capraz_kup_ikamesi(qn: str, cq: dict, cube_meta: dict,
     return None
 
 
+def _kirilim_ikamesi(qn: str, cq: dict, cube_meta: dict | None,
+                     sema: dict | None) -> tuple[str, list[str]] | None:
+    """🔴🔴 `§KD-boyut` — **İSTENEN KIRILIM YERİNE BAŞKASI GELDİ, VE SÖYLENMEDİ.**
+
+    ## Ölçülen kusur (curl `BB` turu, 2026-08-11)
+
+        «bu yıl eğitim türüne göre katılım»
+          → `egitim` küpü · kırılım **`sonuc`** (BAŞARILI/BAŞARISIZ) · beyan **YOK**
+
+    `egitim`'de bir *tür* boyutu **yok** (ölçüldü: `departman`, `personel_kodu`, `sonuc`)
+    ve garson en yakınını seçti. Sayı doğru — ama kullanıcı **tür** kırılımı istedi,
+    **sonuç** kırılımı aldı ve bunu anlamasının hiçbir yolu yoktu.
+
+    🔴 Mevcut `kirilim` beyanı bunu **göremez**: o yalnız *hiç boyut taşınamadı* hâlini
+    sayar. Burada boyut **var** — yanlış olan. `olcu_ikamesi`'nin boyut eksenindeki
+    kardeşi.
+
+    ## Yüklem — katalogdan, sözlüksüz, ve **dar**
+
+    Soruda anılan bir **boyut** (herhangi bir küpte tanımlı) cevabın kırılımında yoksa
+    beyan edilir. `§101.1` gereği yanlış-pozitif riski **ölçülerek** sınırlandı: on
+    vakalık bir sınamada (dokuzu bu oturumda doğru cevaplanmış gerçek sorular)
+    **10/10** doğru — *«araç türüne göre»* bile doğru şekilde **susuyor**, çünkü
+    `arac_turu` cevapta zaten var.
+
+    ⚠ Boyutsuz cevaplarda **hiç konuşmaz**: orası `kirilim` beyanının işidir ve aynı
+    şeyi iki kez söylemek iki ayrı kusur varmış gibi görünürdü.
+
+    *Bir kırılımı sessizce başkasıyla değiştirmek, sorulmayan bir soruyu cevaplamaktır.*
+    """
+    from app.cube_router import _match_dims
+
+    boyutlar = [str(d) for d in (cq.get("dimensions") or [])]
+    if not boyutlar or not sema:
+        return None
+    # 🔴🔴 **ÖNCE HEPSİNİ TOPLA, SONRA KARAR VER — ve bunu canlı ölçüm öğretti.**
+    #
+    # ⊙ İlk yazımda ilk eşleşen küpte **dönülüyordu** ve canlıda şu çıktı:
+    # *«araç türüne göre nakliye maliyeti»* → cevap `arac_turu` kırılımında (**doğru**)
+    # ama beyan *«tür bu küpte tanımlı değil»* dedi — çünkü döngü `sevkiyat`a gelmeden
+    # `bakim_is_emri.tur`'u bulup dönmüştü.
+    #
+    # ⚠ Ve **çevrimdışı prob'um bunu kaçırmıştı**: orada küp sırası farklıydı ve erken
+    # dönüş doğru cevabı veriyordu. *Sıraya bağlı bir yüklem, sırası değişen her yerde
+    # başka bir şey söyler.*
+    #
+    # Kural: soruda anılan **bütün** boyut adayları toplanır; **herhangi biri** cevapta
+    # varsa susulur (`§101.1`).
+    _var = set(boyutlar)
+    _adaylar: list[str] = []
+    for c in (sema.get("cubes") or []):
+        _adaylar.extend(_match_dims(qn, c))
+    if any(d in _var for d in _adaylar):
+        return None
+    for d in _adaylar:
+        if d not in _var:
+            sahipler = [str(k.get("name")) for k in (sema.get("cubes") or [])
+                        if d in (k.get("dimensions") or [])]
+            # ⚠ Etiket **sahibin** kataloğundan okunur, cevabın küpünden değil: cevabın
+            # küpünde o boyut zaten **yok** (kusurun kendisi bu) ve orada etiket aramak
+            # her seferinde teknik ada düşerdi (`tur` ↔ `tür`).
+            # *Bir şeyin adını, onu tanımayan yere sormak, adını kaybetmektir.*
+            _lbl = next((((k.get("dimension_labels") or {}).get(d))
+                         for k in (sema.get("cubes") or [])
+                         if (k.get("dimension_labels") or {}).get(d)), d)
+            return str(_lbl), sahipler
+    return None
+
+
 def denetle(q: str, cq: dict, cube_meta: dict | None = None,
             sema: dict | None = None) -> list[Ihlal]:
     """Sorudaki niyet işaretlerinin **sorguda karşılığı var mı?**
@@ -825,6 +894,21 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
             "trend",
             "**değişimi/trendi** istedin ama tek bir toplam ürettim — zaman ekseni yok",
             "*«aylara göre»* ya da *«çeyreklere göre»* eklersen zaman ekseninde çizerim."))
+
+    # `§KD-boyut` — istenen kırılım yerine başkası geldiyse **söylenir** (gövde yukarıda).
+    _ki = _kirilim_ikamesi(qn, ic, cube_meta, sema)
+    if _ki:
+        _kt, _ksah = _ki
+        out.append(Ihlal(
+            isaret="kirilim_ikamesi",
+            aciklama=(f"Soruda **«{_kt}»** kırılımı geçiyor ama bu cevap "
+                      f"**{', '.join(str(b) for b in (ic.get('dimensions') or []))}** "
+                      f"kırılımında hesaplandı — «{_kt}» bu küpte tanımlı değil."),
+            oneri=((f"«{_kt}» şu küplerde bir boyut: {', '.join(_ksah[:3])}. "
+                    f"Orada sorabilirsin.") if _ksah else
+                   f"«{_kt}» diye bir kırılım katalogda yok."),
+            chip=({"label": f"{_kt} ({_ksah[0]})", "query": f"{_ksah[0]} {_kt}",
+                   "kind": "olcu"} if _ksah else None)))
 
     # 4 · KIRILIM — mevcut korumanın genelleştirilmiş hâli
     if (niyet.kirilim_istendi and not boyutlar

@@ -165,3 +165,78 @@ def test_ISARET_ZARFI_KAPALI_SINIF():
     kalip = followup._ISARET_ZARFI.pattern
     for alan in ("fire", "duruş", "makine", "ciro", "oee"):
         assert alan not in kalip
+
+
+# --- `§KD-boyut` · İSTENEN KIRILIM YERİNE BAŞKASI GELDİYSE SÖYLENİR ------------------
+
+_SEMA_KD = {"cubes": [
+    {"name": "egitim", "dimensions": ["departman", "personel_kodu", "sonuc"],
+     "dimension_synonyms": {"sonuc": ["sonuç", "sonuc"], "departman": ["departman"]},
+     "dimension_labels": {"sonuc": "sonuç"}},
+    {"name": "bakim_is_emri", "dimensions": ["tur", "makine"],
+     "dimension_synonyms": {"tur": ["tür", "tur"], "makine": ["makine"]},
+     "dimension_labels": {"tur": "tür"}},
+]}
+
+
+def test_KD_BOYUT_IKAMESI_BEYAN_EDILIR():
+    """🔴🔴 **Ölçülen kusur (curl `BB` turu).** *«bu yıl eğitim türüne göre katılım»* →
+    `egitim` küpü, kırılım **`sonuc`** (BAŞARILI/BAŞARISIZ), beyan **YOK**. `egitim`'de
+    bir *tür* boyutu yok ve garson en yakınını seçti: sayı doğru ama kullanıcı **tür**
+    kırılımı istedi, **sonuç** kırılımı aldı.
+
+    Mevcut `kirilim` beyanı bunu göremez — o yalnız *hiç boyut taşınamadı* hâlini sayar.
+
+    *Bir kırılımı sessizce başkasıyla değiştirmek, sorulmayan bir soruyu cevaplamaktır.*"""
+    from app import uyum
+
+    out = uyum._kirilim_ikamesi("bu yil egitim turune gore katilim",
+                                {"cube": "egitim", "dimensions": ["sonuc"]},
+                                _SEMA_KD["cubes"][0], _SEMA_KD)
+    assert out is not None
+    terim, sahipler = out
+    assert "tür" in terim and "bakim_is_emri" in sahipler
+
+
+def test_KD_ISTENEN_KIRILIM_VARSA_SUSAR():
+    """🔴🔴 **Yanlış-pozitif kapısı** (`§101.1`). Ölçüldü: on vakalık sınamada **10/10**
+    doğru — *«araç türüne göre»* bile susuyor çünkü `arac_turu` cevapta **zaten var**."""
+    from app import uyum
+
+    assert uyum._kirilim_ikamesi("bu yil makine bazinda is emri",
+                                 {"cube": "bakim_is_emri", "dimensions": ["makine"]},
+                                 _SEMA_KD["cubes"][1], _SEMA_KD) is None
+
+
+def test_KD_BOYUTSUZ_CEVAPTA_KONUSMAZ():
+    """⚠ Boyutsuz cevaplarda **hiç konuşmaz**: orası `kirilim` beyanının işidir ve aynı
+    şeyi iki kez söylemek iki ayrı kusur varmış gibi görünürdü."""
+    from app import uyum
+
+    assert uyum._kirilim_ikamesi("bu yil egitim turune gore katilim",
+                                 {"cube": "egitim", "dimensions": []},
+                                 _SEMA_KD["cubes"][0], _SEMA_KD) is None
+
+
+def test_KD_ONCE_HEPSINI_TOPLAR():
+    """🔴🔴 **Canlı ölçüm, çevrimdışı prob'un kaçırdığını yakaladı.** İlk yazımda ilk
+    eşleşen küpte **dönülüyordu**: *«araç türüne göre nakliye maliyeti»* → cevap
+    `arac_turu` kırılımında (**doğru**) ama beyan *«tür bu küpte tanımlı değil»* dedi —
+    döngü `sevkiyat`a gelmeden `bakim_is_emri.tur`'u bulup dönmüştü.
+
+    ⚠ Çevrimdışı prob bunu **kaçırmıştı**: orada küp sırası farklıydı.
+    *Sıraya bağlı bir yüklem, sırası değişen her yerde başka bir şey söyler.*"""
+    from app import uyum
+
+    sema = {"cubes": [
+        {"name": "bakim_is_emri", "dimensions": ["tur"],
+         "dimension_synonyms": {"tur": ["tür", "tur"]},
+         "dimension_labels": {"tur": "tür"}},
+        {"name": "sevkiyat", "dimensions": ["arac_turu"],
+         "dimension_synonyms": {"arac_turu": ["arac turu", "araç türü"]},
+         "dimension_labels": {"arac_turu": "araç türü"}},
+    ]}
+    out = uyum._kirilim_ikamesi("bu yil arac turune gore nakliye maliyeti",
+                                {"cube": "sevkiyat", "dimensions": ["arac_turu"]},
+                                sema["cubes"][1], sema)
+    assert out is None, f"🔴 doğru kırılımda yanlış-pozitif: {out}"
