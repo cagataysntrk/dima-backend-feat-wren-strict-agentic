@@ -1438,8 +1438,19 @@ MUAFIYET_CUBE_ROUTER_KOD = [
                            "`olcu_eslemesi` + `grain_uyarisi` `app/cekirdek.py`'ye "
                            "(varyant bilgisi ÇEKİRDEK KATMANIN sorusudur, router'ın "
                            "değil); burada kalan yalnız çağrı ve döngünün yeni şekli"),
-    ("9164806", 13, "0.18 · metrik kaydı = hakem — `_match_cube`'un İLK satırı "
-                    "`schema['metrik_kaydi']`'na bakar; kayıt yoksa davranış birebir bugünkü"),
+    ("9164806", 6, "0.18 · metrik kaydı = hakem — `_match_cube`'un İLK satırı "
+                   "`schema['metrik_kaydi']`'na bakar; kayıt yoksa davranış birebir bugünkü. "
+                   "⟳ **`§SH-2` (2026-08-11): Δ 13 → 6, ÇÜNKÜ GÖVDE TAŞINDI.** Hakem seçimi "
+                   "artık `metrik_kaydi.hakem_secimi`'nde; burada kalan **altı satır** yalnız "
+                   "*sorudur* (`kayıt var mı → sor → dönen küpü ver`). "
+                   "⚠ İndirim **tavana ayrı bir terim olarak yazılmadı**: `TABAN + Σmuafiyet "
+                   "== TAVAN` değişmezi bu deponun kapı-sahteliği kapısıdır ve yanına "
+                   "iliştirilen her düzeltme terimi onu **okunamaz** kılardı. Bir borç "
+                   "azaldıysa, azaldığı **kalemde** azalır. "
+                   "⊙ Ve bunu kapının kendisi istedi: `test_KAPI_SAHTE_DEGIL` *«tavanda "
+                   "boşluk var — kapı büyümeyi DURDURMUYOR»* diye kırmızı verdi. "
+                   "*Kazanılan alan sessizce harcanırsa, bir taşıma bir sonraki büyümenin "
+                   "bütçesine dönüşür.*"),
 ]
 #: 🔴 **AYRI LİSTE — ve bu bir ÖLÇÜM ARACI DÜZELTMESİDİR.** İlk tasarımda dosya tavanı
 #: `TAVAN_ASK_KOD + 1259` idi; yani **modül düzeyine** eklenen bir satır için `MUAFIYET_

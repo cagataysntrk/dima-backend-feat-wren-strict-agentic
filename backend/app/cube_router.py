@@ -1124,20 +1124,17 @@ def _match_cube(q: str, schema: dict) -> dict | None:
     # o kazanır; etmemişse aşağıdaki bugünkü zincir **aynen** koşar. `schema`'da anahtar
     # yoksa (bayrak `off`) davranış **birebir bugünkü** — `cube_router` bayrak okumaz,
     # okumamalı da; karar derleme sınırında verilir (`metrik_kaydi.semaya_yaz`).
+    # 🔴 `§SH-2` — GÖVDE **MODÜLE ÇIKTI** (`metrik_kaydi.hakem_secimi`), ve bunu büyüme
+    # kapısı söyledi: *«yeni eşleştirme kuralı bir modüle çıkar; bu dosya zaten
+    # deterministik yolun tamamını taşıyor.»* Kapı haklıydı ve fazlası doğruydu: kural
+    # zaten **hakemin evine** aitti — `cube_router` yalnız *sorar*, karar vermez.
     _kayit = schema.get("metrik_kaydi")
     if _kayit:
-        from app.metrik_kaydi import hakem
+        from app.metrik_kaydi import hakem_secimi
 
-        for _c in schema.get("cubes", []):
-            _hit = _match_measure(q, _c)[1]
-            if not _hit:
-                continue
-            _sahip = hakem(_hit, _kayit)
-            if _sahip:
-                _cube = next((x for x in schema.get("cubes", [])
-                              if x.get("name") == _sahip), None)
-                if _cube is not None:
-                    return _cube
+        _cube = hakem_secimi(q, schema, _match_measure)
+        if _cube is not None:
+            return _cube
 
     hits = [c for c in schema.get("cubes", []) if _any_hit(q, c.get("synonyms"))]
     if len(hits) == 1:

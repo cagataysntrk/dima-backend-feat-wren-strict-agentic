@@ -89,7 +89,6 @@ YANLIS_CUBE = {
     ("dogalgaz", "surdurulebilirlik", "enerji_makine"),        # ⟳ `§SH` · yön döndü
     ("downtime", "bakim", "oee"),
     ("elektrik", "surdurulebilirlik", "enerji_makine"),        # ⟳ `§SH` · yön döndü
-    ("toplam elektrik", "enerji_tesis", "enerji_makine"),      # ⟳ `§SH` · aynı karar
     ("enerji tep", "enerji_makine", "surdurulebilirlik"),
     ("enerji tep", "enerji_tesis", "surdurulebilirlik"),
     ("fire", "oee", "parti"),
@@ -188,7 +187,12 @@ YANLIS_CUBE = {
 #: yazılı ve **kabul edildi** — iki sessiz yanlış ve altı doğru cevap karşılığında bir
 #: kısaltmanın kaybı. *Bir kapsam sayısı, kapsadığı şey yanlışsa bir kazanç değildir.*
 #:
-#: ⟳ **`§SH` (2026-08-11) — `R10` 14 → 23 (+9), ve bu bir BEDELDİR, gizlenmiyor.**
+#: ⟳ **`§SH-2` (2026-08-11) — `R10` **23 → 14**: BORÇ KAPANDI, taban geri geldi.**
+#: Hakem *«daha spesifik eşleşmeyi ezemez»* kuralıyla sınırlandı (`_match_cube`); dokuz
+#: redin tamamı geri döndü. Aşağıdaki `§SH` notu **tarihsel kayıttır** — bir bedel
+#: ödendiği ve sonra geri alındığı, ikisi birden yazılmadan okunamaz.
+#:
+#: ⟳ ~~**`§SH` — `R10` 14 → 23 (+9), ve bu bir BEDELDİR, gizlenmiyor.**~~
 #: Hakem `elektrik`/`dogalgaz` için `enerji_makine`'yi seçince, o cube'un **kapsam
 #: kapısı** (R10 = seçilen cube sorunun tamamını açıklamıyor) dokuz sinonimde ateşliyor —
 #: `surdurulebilirlik` daha geniş bir kimlik taşıdığı için önceden geçiyorlardı.
@@ -201,7 +205,7 @@ YANLIS_CUBE = {
 #: Kazanç bedelin ~**dört katı**, ve yön doktrine uygun: *cevapsız dürüsttür, yanlış cube
 #: sessizdir.* ⚠ Ama bir red bir **borçtur**: R10'un dokuzu ve aşağıdaki takip kusuru
 #: `§SH-2`'nin işidir — kapatılmadan bu satır *"bitti"* sayılmaz.
-CEVAPSIZ_RED = {"R1": 99, "R4": 1, "R10": 23, "R9": 2}
+CEVAPSIZ_RED = {"R1": 99, "R4": 1, "R10": 14, "R9": 2}
 
 #: Toplam ölçü sinonimi ve doğru çözülen sayısı.  ⟳ Faz 2a-3: 291 → 340 (+49).
 TOPLAM_SINONIM, DOGRU = 470, 340
@@ -329,7 +333,7 @@ def test_ELEKTRIK_iki_cubeda_da_OLCU_sinonimi(schema):
 #: kararıyla çözüldü) ve `enerji_makine` **yeni bir küme olarak 3** ile doğdu — aynı
 #: çakışmanın ilan edilmiş sahibine dönmüş hâli. *Bir kümenin küçülmesi, ötekinin
 #: doğmasıyla ödendiyse bu bir kazanç değil bir KARARDIR; sayısı da öyle okunmalı.*
-@pytest.mark.parametrize("kume,adet", [("surdurulebilirlik", 7), ("enerji_makine", 3), ("parti", 5), ("cari", 4), ("bakim", 2), ("oee", 2), ("mizan", 1)])
+@pytest.mark.parametrize("kume,adet", [("surdurulebilirlik", 7), ("enerji_makine", 2), ("parti", 5), ("cari", 4), ("bakim", 2), ("oee", 2), ("mizan", 1)])
 def test_KUMELER_kayitli(kume, adet):
     """Bir sonraki alan kararının hangi kümeye bakması gerektiği rakamla belli olsun."""
     assert Counter(sec for _, _, sec in YANLIS_CUBE)[kume] == adet

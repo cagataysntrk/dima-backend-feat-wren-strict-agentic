@@ -194,6 +194,72 @@ def test_HAKEM_YOKSA_beyan_SUSMAZ(schema):
 
 
 def test_IKINCI_ESLESTIRICI_YOK():
-    """`KAT-1` — karar `metrik_kaydi.hakem`'den okunur, `uyum` kendi tablosunu kurmaz."""
-    g = _govde("uyum.py", "_hakem_onayli")
+    """`KAT-1` — karar `metrik_kaydi.hakem`'den okunur, `uyum` kendi tablosunu kurmaz.
+
+    ⚠ `§SH-2`: okuma tek bir yere (`_hakem_sahibi`) indi ve `_hakem_onayli` onu çağırıyor
+    — *aynı kuralın iki okuyucusu, zamanla iki farklı cevap verir.*"""
+    g = _govde("uyum.py", "_hakem_sahibi")
     assert "hakem" in g and "SEMA_ANAHTARI" in g
+    assert "_hakem_sahibi" in _govde("uyum.py", "_hakem_onayli")
+
+
+# --- §SH-2 · HAKEM DAHA SPESİFİK EŞLEŞMEYİ EZEMEZ --------------------------------
+
+def test_SPESIFIK_ESLESME_hakemi_YENER(schema):
+    """🔴 Ölçülen kusur (2026-08-11): `elektrik faturası` sorusunda `enerji_tesis` **17
+    karakterlik** tam eşleşme yaparken `surdurulebilirlik` yalnız **8 karakterlik**
+    `elektrik`i eşleştiriyordu — ve hakem `elektrik` için karar verdiği için **kısa
+    eşleşme uzununu deviriyordu**. `enerji_makine`'de öyle bir ölçü yok → R10 → cevapsız.
+
+    Kural bu depoda zaten yazılı (ÖLÇÜ-KANITI / `_daha_spesifik_olcu_sahibi`):
+    *en spesifik ölçü kazanır.* Hakem bir **beraberlik hakemidir**."""
+    from app import cube_router as cr
+    for soru, beklenen in (("bu yil elektrik faturasi", "enerji_tesis"),
+                           ("bu yil elektrik gideri", "enerji_tesis"),
+                           ("bu yil tesis elektrik", "enerji_tesis")):
+        c = cr._match_cube(soru, schema)
+        assert c and c["name"] == beklenen, f"{soru!r} → {c and c.get('name')}"
+
+
+def test_CIPLAK_TERIM_hala_hakeme_gider(schema):
+    """⚠ Kapsam kontrolü: spesifiklik kuralı `§SH`'nin kazancını GERİ ALMAMALI."""
+    from app import cube_router as cr
+    for soru in ("bu yil elektrik", "bu yil dogalgaz"):
+        c = cr._match_cube(soru, schema)
+        assert c and c["name"] == "enerji_makine", f"{soru!r} → {c and c.get('name')}"
+
+
+def test_R10_dokuz_red_KAPANDI(schema):
+    """Borç kapandı mı — sayıyla. `feedback_durust_red_basari_degil`: *bir red bir
+    borçtur.*"""
+    from collections import Counter
+
+    from app import cube_router as cr
+    red: Counter = Counter()
+    for c in schema.get("cubes") or []:
+        for syns in (c.get("measure_synonyms") or {}).values():
+            for sy in syns:
+                if not cr.route(f"bu yil {sy}", schema):
+                    red[cr.red_gerekcesi() or "—"] += 1
+    assert red["R10"] <= 14, f"R10 borcu kapanmadı: {dict(red)}"
+
+
+# --- §SH-2 · BEYAN, ÇÜRÜMÜŞ OTORİTEYİ GÖSTEREMEZ ---------------------------------
+
+def test_IKAME_BEYANI_hakemin_sahibini_gosterir(schema):
+    """Canlıda ölçüldü: `toplam elektrik` → `enerji_tesis`, beyan *«…«elektrik» bu
+    katalogda surdurulebilirlik konusudur»* diyordu — oysa ilan edilmiş sahip
+    `enerji_makine`. Beyan kullanıcıyı **yanlış küpe** yolluyordu."""
+    from app.uyum import _kup_ikamesi
+    r = _kup_ikamesi("bu yil toplam elektrik",
+                     {"cube": "enerji_tesis", "measures": ["elektrik_tuketimi_kwh"]},
+                     schema)
+    if r:                       # ikame beyanı ateşlediyse hedefi DOĞRU olmalı
+        assert r[1] == "enerji_makine", f"çürümüş otorite gösteriliyor: {r}"
+
+
+def test_KARARSIZ_terimde_beyan_ESKI_yolda(schema):
+    """Kararı olmayan terimde hedef `ilgili_cubelar`'dan gelmeye devam etmeli."""
+    from app.uyum import _hakem_sahibi
+    assert _hakem_sahibi("bakiye", schema) is None
+    assert _hakem_sahibi("elektrik", schema) == "enerji_makine"

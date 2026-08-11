@@ -531,8 +531,26 @@ def _kup_ikamesi(qn: str, cq: dict, sema: dict | None) -> tuple[str, str] | None
         # cevap ilan edilen sahipten GELMİYORSA satır aynen ateşlenir.
         if _hakem_onayli(_eslesen, _kup, sema):
             continue
-        return _eslesen, _ad
+        # 🔴 `§SH-2` — VE İKAME BEYANI **HAKEMİN SAHİBİNİ** gösterir, eskisini değil.
+        #
+        # Canlıda ölçüldü: `toplam elektrik` → `enerji_tesis`, beyan *«…«elektrik» bu
+        # katalogda **surdurulebilirlik** konusudur»* diyordu — oysa `elektrik`in ilan
+        # edilmiş sahibi artık `enerji_makine`. Yani beyan **çürümüş bir otoriteyi**
+        # kaynak gösteriyor ve kullanıcıyı **yanlış küpe** yolluyordu; üstelik verdiği
+        # chip de oraya gidiyordu. *Yanlış yeri gösteren bir yön tarifi, hiç yön tarifi
+        # vermemekten kötüdür: birincisine güvenilir.*
+        return _eslesen, (_hakem_sahibi(_eslesen, sema) or _ad)
     return None
+
+
+def _hakem_sahibi(terim: str, sema: dict | None) -> str | None:
+    """`§SH-2` — terimin **ilan edilmiş** sahibi (yoksa `None`). Tek kaynak: `hakem`."""
+    from app import cube_router as _cr
+    from app.metrik_kaydi import SEMA_ANAHTARI, hakem
+    try:
+        return hakem(_cr._norm(str(terim)), (sema or {}).get(SEMA_ANAHTARI))
+    except Exception:                     # noqa: BLE001 — beyan susmaz, tur düşmez
+        return None
 
 
 def _hakem_onayli(terim: str, kup: str, sema: dict | None) -> bool:
@@ -542,12 +560,7 @@ def _hakem_onayli(terim: str, kup: str, sema: dict | None) -> bool:
     `_match_cube`'un okuduğu **aynı** kayıttan. *Bir kararı iki yerde okumak, onu iki
     kez vermektir.*
     """
-    from app import cube_router as _cr
-    from app.metrik_kaydi import SEMA_ANAHTARI, hakem
-    try:
-        return hakem(_cr._norm(str(terim)), (sema or {}).get(SEMA_ANAHTARI)) == kup
-    except Exception:                     # noqa: BLE001 — beyan susmaz, tur düşmez
-        return False
+    return _hakem_sahibi(terim, sema) == kup if _hakem_sahibi(terim, sema) else False
 
 
 def _kirilim_ikamesi(qn: str, cq: dict, cube_meta: dict | None,

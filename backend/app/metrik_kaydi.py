@@ -317,3 +317,55 @@ def semaya_yaz(schema: dict[str, Any], *, acik: bool, base: Any = None,
 
     schema[SEMA_ANAHTARI] = kayit
     return schema
+
+
+def hakem_secimi(q: str, schema: dict[str, Any], olcu_eslestir: Any) -> dict | None:
+    """🔴 `§SH-2` — hakemin **seçimi**: terimin ilan edilmiş sahibi cube, yoksa `None`.
+
+    ## Neden burada, `cube_router`'da değil
+
+    Büyüme kapısı `cube_router.py`'yi **1962 / 1960** ile geri çevirdi ve gerekçesi
+    doğruydu: *«yeni eşleştirme kuralı bir modüle çıkar.»* Ama asıl gerekçe daha
+    kuvvetli: kural zaten **hakemin evine** aitti. `cube_router` bir **soru sorar**
+    (*«bu terimin sahibi var mı?»*); kararın nasıl verildiği onun işi değildir.
+    ⚠ `olcu_eslestir` **enjekte edilir** — bu modül `cube_router`'ı import etseydi
+    döngüsel bağımlılık doğardı (bu depoda ölçülmüş bir taşıma bedeli).
+
+    ## 🔴 HAKEM **DAHA SPESİFİK BİR EŞLEŞMEYİ EZEMEZ** (ölçüldü 2026-08-11)
+
+    İlk sürüm her cube'un eşleşen sinonimini tek tek hakeme soruyordu. Ama ölçü
+    eşleştirici **en uzun** sinonimi döndürür ve cube'lar arasında uzunluklar farklıdır:
+    *«bu yıl elektrik faturası»* sorusunda `enerji_tesis` **17 karakterlik**
+    `elektrik faturasi`'nı eşleştirirken `surdurulebilirlik` yalnız **8 karakterlik**
+    `elektrik`i eşleştiriyordu — ve hakem `elektrik` için karar verdiği için **kısa
+    eşleşme uzununu deviriyordu**. `enerji_makine`'de öyle bir ölçü yok → kapsam kapısı
+    (R10) → **cevapsız**.
+
+    ⊙ Ölçüldü: `R10` **14 → 23**, dokuzunun tamamı bu desen (`elektrik faturasi` ·
+    `elektrik gideri` · `birim elektrik bedeli` · `tesis elektrik` · `elektrik birim
+    fiyati` · `elektrik tuketimi tesis` · `elektrik yogunlugu tesis` · `kg basina
+    elektrik tesis` · `elektrik gaz birim maliyeti`). Kural eklenince **23 → 14**:
+    borç tam kapandı, taban geri geldi.
+
+    🔴 Ve kural bu depoda **zaten yazılıydı** — ÖLÇÜ-KANITI / `_daha_spesifik_olcu_sahibi`:
+    *en spesifik ölçü kazanır.* Hakem bir **beraberlik hakemidir**; beraberlik yoksa
+    hakemlik edecek bir şey de yoktur.
+
+    *Bir sahiplik kararı «bu terim kimin» sorusunu çözer, «kullanıcı hangi terimi
+    söyledi» sorusunu değil.*
+    """
+    kayit = schema.get(SEMA_ANAHTARI)
+    if not kayit:
+        return None
+    hitler = [(h, c) for c in schema.get("cubes", []) if (h := olcu_eslestir(q, c)[1])]
+    enuzun = max((len(h) for h, _ in hitler), default=0)
+    for hit, _c in hitler:
+        if len(hit) < enuzun:
+            continue                      # daha spesifik eşleşme var → hakem karışmaz
+        sahip = hakem(hit, kayit)
+        if sahip:
+            cube = next((x for x in schema.get("cubes", [])
+                         if x.get("name") == sahip), None)
+            if cube is not None:
+                return cube
+    return None
