@@ -1361,3 +1361,40 @@ değişiklik uygulanıp korpus **bir kez** koşulduğunda listeler farklanır; y
 **yeni açılan boyutun soruları** ise artefakt kanıtlanır.
 
 *Bir borcu ödemeden önce, onu ölçen aletin doğru ölçtüğünü bilmek gerekir.*
+
+---
+
+## `§KN-katalog` — kök-neden cebirinin kapsamı bir KOD sınırı değil, KATALOG sınırıdır
+
+⊙ Ölçüldü (2026-08-11, gerçek şema): **136** ölçü ifadesinden **yalnız 1'i** bileşenlerine
+ayrışıyor (`ort_oee = kullanılabilirlik × performans × kalite`). Sebep, bileşenlerin ayrı
+birer **ölçü olarak beyan edilmiş** olması.
+
+**Ve bir hipotezi ölçüp attım.** 136 ifadenin **50'si** `ROUND(...)` ile sarmalı ve
+çoğu bir orandır:
+
+    enerji_yogunlugu_kwh_kg = ROUND( SUM(elektrik_kwh)/NULLIF(SUM(kg),0) , 3)
+    ges_payi_yuzde          = ROUND( SUM(ges_kwh)*100.0/NULLIF(SUM(toplam_elektrik_kwh),0) , 1)
+
+Sarmalı açmanın *«pay/payda»* vakasını açacağını düşündüm ve deneysel olarak ölçtüm:
+
+    bileşeni olan ölçü — ÖNCE: 1   SONRA: 1
+
+🔴 **Sıfır kazanç.** Çünkü pay ve payda alt-ifadeleri (`NULLIF(SUM(toplam_elektrik_kwh),0)`)
+katalogda **ölçü olarak yok**. Sarmalı açmak kodu karmaşıklaştırıp hiçbir şey
+kazandırmayacaktı. *Bir iyileştirmeyi ölçmeden yapmak, olmayan bir kazancı satın almaktır.*
+
+### Kilidi açan şey kod değil, BEYAN
+
+`§KN`'nin geniş çapta çalışması için küplerin oranlarının **pay ve paydasını da birer ölçü
+olarak beyan etmesi** yeterli. Örnek (`surdurulebilirlik`):
+
+    toplam_elektrik_kwh : SUM(elektrik_kwh)      ← zaten var
+    toplam_uretim_kg    : SUM(kg)                ← beyan edilirse `enerji_yogunlugu` ayrışır
+
+⚠ Bu bir **mutfak ekseni** işidir ve ucuzdur: her oran için bir-iki satır YAML. Kazanç
+büyük — *«payda arttıkça değer düşer»* akıl yürütmesi o ölçüde açılır.
+
+⚠ Bu arada boşluk **açıkta değil**: `§KN` sustuğunda mevcut akran açıklayıcısı devralıyor
+ve iyi iş çıkarıyor (*«ROTASYON BASKI, öteki 10 makine ortalamasından %84,8 düşük
+(4,62 ↔ 30,48). Farkı en çok açıklayanlar…»*). İkisi kardeş.
