@@ -433,9 +433,31 @@ def _capraz_kup_ikamesi(qn: str, cq: dict, cube_meta: dict,
         # kusur bazen olur, yanlış-pozitif HER SEFERİNDE yanlıştır.
         if _kup_sozlugunde_kelime(str(_terim or _ad), cube_meta):
             continue
-        sahipler = [str(k.get("name")) for k in (sema.get("cubes") or [])
-                    if _match_measure(qn, k)[0]]
-        return str(_terim or _ad), sahipler
+        # 🔴🔴 `§Cİ-boyut` — **BİR TERİMİN SAHİBİ BİR BOYUT DA OLABİLİR.**
+        #
+        # ⊙ Ölçüldü (curl `Z` turu): *«en yüksek 3 **arıza tipi**»* → cevap
+        # `makine_duruslari`'ndan geldi ve beyan *«ariza şu küplerde var: **oee**»* dedi.
+        # Oysa `ariza_tipi` **bir boyuttur** ve tek sahibi `bakim`'dir (ölçüldü) —
+        # kullanıcı tam da onu arıyordu. Beyan yalnız **ölçü** sahiplerini tarıyordu,
+        # yani doğru adresi bilmesine rağmen söylemiyordu.
+        #
+        # ⚠ Yönlendirme (routing) **değişmedi**: garsonun küp tercihi bir korpus A/B
+        # ister ve bu turda ona dokunulmadı. Değişen tek şey, reddin **yanına konan
+        # adresin** eksiksiz olması.
+        #
+        # ⚠ Boyut eşleşmesi `_match_dims` ile (tek sahip); ikinci bir eşleştirici
+        # `KAT-1` olurdu.
+        #
+        # *Bir adresi bilip söylememek, bilmemekten daha az mazur görülür.*
+        from app.cube_router import _match_dims
+
+        _olcu_sahip = [str(k.get("name")) for k in (sema.get("cubes") or [])
+                       if _match_measure(qn, k)[0]]
+        _boyut_sahip = [str(k.get("name")) for k in (sema.get("cubes") or [])
+                        if str(k.get("name")) not in _olcu_sahip
+                        and str(k.get("name")) != cube_meta.get("name")
+                        and _match_dims(qn, k)]
+        return str(_terim or _ad), _olcu_sahip + _boyut_sahip
     return None
 
 

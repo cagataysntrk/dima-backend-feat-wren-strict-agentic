@@ -11734,3 +11734,36 @@ aynı kesişim **iki yönden** bulundu.
 çünkü ikincisi bir cevap gibi okunur.*
 *Bir kapsam değişikliği, kullanıcının kararıysa bir daraltmadır; sistemin kararıysa bir
 kayıptır.*
+
+---
+
+# `Z` TURU — 17 senaryo · 1 kök · 1 kayıtlı yönlendirme borcu
+
+*(2026-08-11 · curl, tek tek)*
+
+## Doğrulanan zincirler
+
+```
+km_basi_maliyet → §KN: «nakliye maliyeti ÷ mesafe» · Gaziantep · suçlu mesafe · iniş Tır  ✅
+ort_birim_maliyet → §KN doğru SUSTU → akran açıklayıcısı devraldı                          ✅
+canvas: enerji raporu (4 blok) → su tüketimi ekle (5) → enerji sapma çıkar (4)             ✅
+thread: arıza sayısı → ilk 3 → neden böyle → ne yapmalıyız (4 tur, hepsi çapada)           ✅
+```
+
+## `§Cİ-boyut` — bir terimin sahibi bir **boyut** da olabilir
+
+    «en yüksek 3 arıza tipi» → cevap `makine_duruslari`'ndan
+      beyan: «ariza şu küplerde var: **oee**»          🔴 eksik adres
+
+Oysa `ariza_tipi` **bir boyuttur** ve sahibi `bakim`'dir (ölçüldü: tek küp). Beyan yalnız
+**ölçü** sahiplerini tarıyordu — doğru adresi bilmesine rağmen söylemiyordu.
+Canlı sonuç: *«ariza şu küplerde var: oee, **bakim**, bakim_is_emri»*.
+
+*Bir adresi bilip söylememek, bilmemekten daha az mazur görülür.*
+
+## ⊘ Kayıtlı borç: *«arıza tipi»* yönlendirmesi
+
+Garson *«arıza»*yı `makine_duruslari.neden`'in **değeri** sanıyor (`neden = "Arıza"`) —
+ve bu **meşru bir okuma** (o gerçekten bir değer). Ama kullanıcı `bakim.ariza_tipi`'ni
+kastediyor. Bu bir **yönlendirme** kararıdır ve korpus A/B ister; bu turda **bilerek
+dokunulmadı** (`F1.1`: yönlendirme değişikliği ölçülmeden yapılmaz).

@@ -263,3 +263,42 @@ def test_IKAME_BEYANI_DA_TIKLANABILIR():
     kaynak = inspect.getsource(uyum.denetle)
     bas = kaynak.index('isaret="olcu_ikamesi"')
     assert "chip=(" in kaynak[bas:bas + 1400], "🔴 ikame beyanı hâlâ tıklanamaz"
+
+
+def test_CI_BOYUT_SAHIBI_DE_SOYLENIR():
+    """🔴🔴 `§Cİ-boyut` — ölçüldü (curl `Z` turu): *«en yüksek 3 **arıza tipi**»* → cevap
+    `makine_duruslari`'ndan geldi ve beyan *«ariza şu küplerde var: **oee**»* dedi.
+    Oysa `ariza_tipi` **bir boyuttur** ve tek sahibi `bakim`'dir — kullanıcı tam da onu
+    arıyordu. Beyan yalnız **ölçü** sahiplerini tarıyordu: doğru adresi bilmesine rağmen
+    söylemiyordu.
+
+    ⚠ Yönlendirme değişmedi (garsonun küp tercihi korpus A/B ister); değişen tek şey,
+    reddin yanına konan **adresin eksiksiz** olması.
+
+    *Bir adresi bilip söylememek, bilmemekten daha az mazur görülür.*"""
+    sema = {"cubes": [
+        {"name": "makine_duruslari", "measures": ["toplam_sure_dk"],
+         "measure_synonyms": {"toplam_sure_dk": ["durus suresi"]},
+         "dimensions": ["neden"], "dimension_synonyms": {"neden": ["neden"]}},
+        {"name": "bakim", "measures": ["ariza_sayisi"],
+         "measure_synonyms": {"ariza_sayisi": ["ariza sayisi"]},
+         "dimensions": ["ariza_tipi"],
+         "dimension_synonyms": {"ariza_tipi": ["ariza tipi", "arıza tipi"]}},
+    ]}
+    qn = "bu yil en yuksek 3 ariza tipi"
+    out = uyum._capraz_kup_ikamesi(qn, {"cube": "makine_duruslari"},
+                                   sema["cubes"][0], sema)
+    if out:
+        _terim, sahipler = out
+        assert "bakim" in sahipler, f"🔴 boyut sahibi söylenmedi: {sahipler}"
+
+
+def test_CI_CEVABIN_KENDI_KUPU_SAHIP_SAYILMAZ():
+    """⚠ Cevabın küpünü *«şurada var»* diye göstermek, kullanıcıyı bulunduğu yere
+    yönlendirmektir."""
+    sema = {"cubes": [{"name": "k", "measures": ["m"],
+                       "measure_synonyms": {"m": ["mm"]},
+                       "dimensions": ["d"], "dimension_synonyms": {"d": ["dd"]}}]}
+    out = uyum._capraz_kup_ikamesi("dd nedir", {"cube": "k"}, sema["cubes"][0], sema)
+    if out:
+        assert "k" not in out[1]
