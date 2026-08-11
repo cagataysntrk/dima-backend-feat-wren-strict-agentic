@@ -1133,7 +1133,24 @@ def _bulgu_metni(plan: dict, out: dict) -> str:
     sat: list[str] = []
     for a, c in zip(plan.get("adimlar") or [], out.get("ciktilar") or []):
         if a.get("fiil") == "BAGLA" and isinstance(c, tuple):
-            sat.append(f"**{c[0]}** seçildi (`{a.get('olcu')}` = {_b(c[1])}).")
+            # 🔴🔴 `§BG` — **SEÇİLMEYEN BİR ŞEY «None» DİYE SEÇİLMİŞ GİBİ YAZILAMAZ.**
+            #
+            # ⊙ Ölçüldü (curl `Y` turu): *«bu yıl hangi operatör en çok rework yaptı»* →
+            # kaynak sorgu **0 satır** döndü, `BAGLA` seçecek bir şey bulamadı ve cümle
+            # şu oldu: *«**None** seçildi (`rework_sayisi` = …)»*. Kullanıcıya bir Python
+            # değeri sızdı ve üstelik **bir seçim yapılmış gibi** sunuldu.
+            #
+            # ⚠ Doğru cevap sessizlik de değil: adımın **neden** boş döndüğü zaten
+            # yanındaki boşluk beyanında yazılı (`§35`/`yokluk_notu`); burada tek iş, o
+            # boşluğu bir **seçim** gibi anlatmamaktır.
+            #
+            # *Bir seçimin yapılmadığını söylemek, yapılmış gibi bir ad yazmaktan her
+            # zaman iyidir — çünkü ikincisi bir cevap gibi okunur.*
+            if c and c[0] is not None and str(c[0]).strip():
+                sat.append(f"**{c[0]}** seçildi (`{a.get('olcu')}` = {_b(c[1])}).")
+            else:
+                sat.append(f"⚠ `{a.get('olcu')}` için **seçilecek bir satır çıkmadı** — "
+                           f"bu adım bir varlık seçemedi.")
         elif a.get("fiil") == "HESAPLA" and isinstance(c, dict):
             _y = "düşük" if (c.get("fark") or 0) < 0 else "yüksek"
             sat.append(f"Akran ortalaması {_b(c.get('akran_ortalamasi'))} "

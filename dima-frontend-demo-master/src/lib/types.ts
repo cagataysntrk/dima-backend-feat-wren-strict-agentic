@@ -530,7 +530,12 @@ export interface ReportBlock {
   // ⚠ Bu alan backend'de vardı ve burada YOKTU: yetim bir uç, yazılmamış bir uçla
   // aynı şeydir. *Bir beyanı üretip göstermemek, onu hiç üretmemekten daha kötüdür —
   // çünkü üretildiği için kapatılmış sayılır.*
-  ozet_degil?: { satir: number; boyut: number } | null;
+  // ⚠ `§RK-2` — `daralt` **çalıştırılabilir bir fiş**: uyarı yapılacak şeyi de gösterir.
+  // Hiçbir şey kırpılmaz; daraltmayı kullanıcı, görerek ve tıklayarak yapar.
+  ozet_degil?: {
+    satir: number; boyut: number;
+    daralt?: CubeQuery; daralt_boyut?: string[];
+  } | null;
   error: string | null;
 }
 

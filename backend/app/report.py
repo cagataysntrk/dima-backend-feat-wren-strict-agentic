@@ -88,6 +88,30 @@ def bolum_basligi(cq: dict | None, cube_meta: dict | None) -> str | None:
     return baslik[:120]
 
 
+def _daraltma(cq: dict | None, boyut_sayisi: int) -> dict:
+    """🔴🔴 `§RK-2` — **BİR UYARI, YAPILACAK ŞEYİ GÖSTERMİYORSA BİR ŞİKÂYETTİR.**
+
+    ⊙ Ölçüldü (curl `Y` turu): *«bu yıl kalite panosu hazırla»* → karolardan biri **17
+    boyut** taşıyordu (`parti`: tedarikçi × vardiya × makine × hat × … × kısım), ötekiler
+    9 ve 12. `§RK` bunları dürüstçe *«özet değil»* diye damgalıyordu — ama kullanıcının
+    elinde **yapabileceği bir şey yoktu**.
+
+    ⚠ Ve satır kırpmanın yasağı burada da geçerli: bu fonksiyon **hiçbir şeyi
+    değiştirmez**, yalnız *«daraltılmış hâli şudur»* diye **çalıştırılabilir bir fiş**
+    üretir. Kırpmayı kullanıcı, görerek ve tıklayarak yapar — canvas'ın kendi mantığı.
+    *Bir kapsam değişikliği, kullanıcının kararıysa bir daraltmadır; sistemin kararıysa
+    bir kayıptır.*
+
+    ⚠ İlk `_EN_FAZLA_BOYUT` boyut korunur: sıra kataloğun/planın kendi sırasıdır ve
+    burada yeniden sıralamak, ikinci bir «hangisi önemli» kuralı yazmak olurdu.
+    """
+    if not isinstance(cq, dict) or boyut_sayisi <= _EN_FAZLA_BOYUT:
+        return {}
+    _dar = {k: v for k, v in cq.items() if k != "dimensions"}
+    _dar["dimensions"] = list(cq.get("dimensions") or [])[:_EN_FAZLA_BOYUT]
+    return {"daralt": _dar, "daralt_boyut": _dar["dimensions"]}
+
+
 def compose_report(
     service,
     schema: dict,
@@ -303,7 +327,8 @@ def bolumlerden_kur(bolumler: list[dict], *, baslik: str, schema: dict,
         _rs = (_b.get("result") or {}).get("row_count") or 0
         _bo = len((_b.get("cube_query") or {}).get("dimensions") or [])
         if _rs > _OZET_ESIGI or _bo > _EN_FAZLA_BOYUT:
-            _b["ozet_degil"] = {"satir": _rs, "boyut": _bo}
+            _b["ozet_degil"] = {"satir": _rs, "boyut": _bo,
+                                **_daraltma(_b.get("cube_query"), _bo)}
 
     boy = max(1, int(page_size or _DEFAULT_PAGE_SIZE))
     pages = [blocks[i:i + boy] for i in range(0, len(blocks), boy)] or [[]]

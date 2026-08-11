@@ -11698,3 +11698,39 @@ t3 «rapora aylık ciro trendi de ekle» → kimlikler değişmedi → §RÇ: «
      yapılmadı» — üstelik planın adım başlığı «Aylık Ciro Trendi Eklendi» diyordu.
      Deterministik kimlik kıyası bu YANLIŞ İDDİAYI yine yakaladı.                ✅
 ```
+
+---
+
+# `Y` TURU — 20 senaryo · 2 kök · ve bir kök **ölçümle kapandı**
+
+*(2026-08-11 · curl, tek tek)*
+
+## ⊘ `§PY` — teşhis derinleştirmeden **yeniden ölçtüm** ve kapanmıştı
+
+`pencere: pay` + `limit: 5` fişi eskiden **23 satır** gösteriyordu. Yeniden ölçüm:
+`limit 5 → 5 satır`. Yani `§PY` bir **belirtiydi**; kökü zaten düzelttiğim `§RE`
+(çözülmemiş fiş). *Bir belirtinin peşine düşmeden önce, kökünün hâlâ yaşadığını
+doğrulamak gerekir.*
+
+## Kök-neden zincirleri (öncelik) — hepsi doğru
+
+```
+vardiya × oee → 3. Vardiya · suçlu KALİTE → iniş RAM-3
+renk × fire oranı → Koyu · suçlu FİRE (pay) → iniş SELÇUK TEKSTİL
+tedarikçi × fire kg → §KN doğru SUSTU (ölçü ayrışmıyor) → katkı yolu devraldı
+```
+
+⊙ **Tutarlılık kanıtı:** daha önce *«RAM-3 → 3. Vardiya»*, şimdi *«3. Vardiya → RAM-3»* —
+aynı kesişim **iki yönden** bulundu.
+
+## İki kök
+
+| kök | ölçülen | düzeltme |
+|---|---|---|
+| `§BG` | *«hangi operatör en çok rework yaptı»* → `BAGLA` seçemedi ve cümle *«**None** seçildi»* oldu — kullanıcıya sızmış bir Python değeri, üstelik **bir seçim yapılmış gibi** | seçilmediyse dürüstçe söylenir |
+| `§RK-2` | *«kalite panosu hazırla»* → karolardan biri **17 boyut** (9 ve 12 olanlar da var). `§RK` damgalıyordu ama kullanıcının elinde **yapabileceği bir şey yoktu** | damga artık **çalıştırılabilir bir daraltma fişi** taşıyor; kırpmayı kullanıcı yapar |
+
+*Bir seçimin yapılmadığını söylemek, yapılmış gibi bir ad yazmaktan her zaman iyidir —
+çünkü ikincisi bir cevap gibi okunur.*
+*Bir kapsam değişikliği, kullanıcının kararıysa bir daraltmadır; sistemin kararıysa bir
+kayıptır.*

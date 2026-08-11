@@ -114,7 +114,15 @@ export function ReportView({ report, onClose, onSor }: {
                     {b.ozet_degil && (
                       <span
                         className="border border-amber-600/40 px-1 font-mono text-[10px] text-amber-600"
-                        title={`Bu blok bir özet değil: ${b.ozet_degil.satir} satır · ${b.ozet_degil.boyut} boyut. Satırlar kırpılmadı — daralt: bir kırılım çıkar ya da dönemi daralt.`}
+                        title={
+                          `Bu blok bir özet değil: ${b.ozet_degil.satir} satır · ` +
+                          `${b.ozet_degil.boyut} boyut. Satırlar KIRPILMADI.` +
+                          (b.ozet_degil.daralt_boyut?.length
+                            ? ` Daraltılmış hâli: ${b.ozet_degil.daralt_boyut.join(" × ")}` +
+                              ` — aşağıdaki komposere «bu bloğu ${b.ozet_degil.daralt_boyut.join(" × ")}` +
+                              ` kırılımına daralt» yazabilirsin.`
+                            : " Daralt: bir kırılım çıkar ya da dönemi daralt.")
+                        }
                       >
                         ⚠ özet değil · {b.ozet_degil.satir} satır
                       </span>

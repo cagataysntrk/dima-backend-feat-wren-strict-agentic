@@ -312,3 +312,31 @@ def test_RED_HANGI_ALANIN_TANIMSIZ_OLDUGUNU_SOYLER():
     with _pt.raises(PlanHatasi, match="ölçü"):
         pt.calistir({"adimlar": [{"fiil": "SORGU", "cube_query": {
             "cube": "oee", "measures": ["uydurma"]}}]}, service=_Motor(), index=IDX)
+
+
+def test_BG_SECILMEYEN_NONE_DIYE_YAZILMAZ():
+    """🔴🔴 `§BG` — ölçüldü (curl `Y` turu): *«bu yıl hangi operatör en çok rework
+    yaptı»* → kaynak sorgu **0 satır** döndü, `BAGLA` seçecek bir şey bulamadı ve cümle
+    şu oldu:
+
+        «**None** seçildi (`rework_sayisi` = …)»
+
+    Kullanıcıya bir Python değeri sızdı ve üstelik **bir seçim yapılmış gibi** sunuldu.
+
+    *Bir seçimin yapılmadığını söylemek, yapılmış gibi bir ad yazmaktan her zaman iyidir
+    — çünkü ikincisi bir cevap gibi okunur.*"""
+    from app import plan_tuketici
+
+    plan = {"adimlar": [{"fiil": "BAGLA", "olcu": "rework_sayisi", "boyut": "operator"}]}
+    metin = plan_tuketici._bulgu_metni(plan, {"ciktilar": [(None, None)]})
+    assert "None" not in metin
+    assert "seçilecek bir satır çıkmadı" in metin
+
+
+def test_BG_GERCEK_SECIM_BOZULMADI():
+    """`KURAL B` — gerçek bir seçim varken cümle bayt bayt bugünküdür."""
+    from app import plan_tuketici
+
+    plan = {"adimlar": [{"fiil": "BAGLA", "olcu": "rework_sayisi", "boyut": "operator"}]}
+    metin = plan_tuketici._bulgu_metni(plan, {"ciktilar": [("MURAT DEMİR", 42)]})
+    assert "MURAT DEMİR" in metin and "seçildi" in metin

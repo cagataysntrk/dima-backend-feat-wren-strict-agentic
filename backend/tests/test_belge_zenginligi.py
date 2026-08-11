@@ -642,3 +642,48 @@ def test_KIMLIK_TANIMI_TEK():
 
     a = inspect.getsource(plan_tuketici._kayip_bolumleri_geri_koy)
     assert 'str(cq.get("cube") or "")' in a and 'tuple(cq.get("measures") or [])' in a
+
+
+# --- `§RK-2` · UYARI YAPILACAK ŞEYİ DE GÖSTERİR --------------------------------------
+
+def test_OZET_DEGIL_DARALTMA_ONERIR():
+    """🔴🔴 `§RK-2` — ölçüldü (curl `Y` turu): *«bu yıl kalite panosu hazırla»* →
+    karolardan biri **17 boyut** taşıyordu (`parti`), ötekiler 9 ve 12. `§RK` bunları
+    dürüstçe *«özet değil»* diye damgalıyordu — ama kullanıcının elinde **yapabileceği
+    bir şey yoktu**.
+
+    ⚠ Hiçbir şey kırpılmaz: üretilen şey **çalıştırılabilir bir fiş**tir. Daraltmayı
+    kullanıcı, görerek ve tıklayarak yapar.
+    *Bir kapsam değişikliği, kullanıcının kararıysa bir daraltmadır; sistemin kararıysa
+    bir kayıptır.*"""
+    r = report.bolumlerden_kur(
+        [{"cube_query": {"cube": "parti", "measures": ["toplam_ciro"],
+                         "dimensions": ["a", "b", "c", "d", "e"]},
+          "result": {"columns": ["toplam_ciro"], "rows": [{"toplam_ciro": 1}],
+                     "row_count": 1}}],
+        baslik="T", schema={"cubes": [_PARTI]})
+    oz = r["pages"][0][0]["ozet_degil"]
+    assert oz["boyut"] == 5
+    assert oz["daralt_boyut"] == ["a", "b", "c"]
+    assert oz["daralt"]["dimensions"] == ["a", "b", "c"]
+    assert oz["daralt"]["measures"] == ["toplam_ciro"], "🔴 ölçüler kaybolmuş"
+
+
+def test_ESIK_ALTINDA_DARALTMA_YOK():
+    """⚠ `§101.1` — eşiği aşmayan bir bloğa daraltma önermek, olmayan bir sorunu
+    işaret etmektir."""
+    r = report.bolumlerden_kur(
+        [{"cube_query": {"cube": "parti", "measures": ["toplam_ciro"],
+                         "dimensions": ["a"]},
+          "result": {"columns": ["toplam_ciro"],
+                     "rows": [{"toplam_ciro": 1}] * 60, "row_count": 60}}],
+        baslik="T", schema={"cubes": [_PARTI]})
+    oz = r["pages"][0][0]["ozet_degil"]
+    assert oz["satir"] == 60 and "daralt" not in oz
+
+
+def test_DARALTMA_FRONTENDDE_TANIMLI():
+    """🔴 Yetim uç yok: `types.ts` alanı taşımalı (aynı `§RK-FE` dersi)."""
+    tipler = _fe("lib/types.ts")
+    bas = tipler.index("ozet_degil?:")
+    assert "daralt" in tipler[bas:bas + 260]
