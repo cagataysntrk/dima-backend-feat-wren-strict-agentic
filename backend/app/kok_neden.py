@@ -352,6 +352,36 @@ def ayristir(olcu: str, hedef: dict, akran: dict, cube_meta: dict | None,
                       katkilar=katkilar, sucllu=_suclu)
 
 
+#: 🔴 `§KN-ek` — **SAYIYA EK GETİRMEK BİR KELİME LİSTESİ DEĞİL, KAPALI BİR SINIFTIR.**
+#:
+#: ⊙ Ölçüldü (curl `CC` turu, CC-11): *«farkın **%2,2'ini** düşürüyor»* — doğrusu
+#: *«%2,2'**sini**»*. Ek, sayının **okunuşundaki son sözcüğe** göre çekimlenir ve o
+#: sözcük yalnız **son rakamdan** belirlenir: on olasılık, hepsi bu.
+#:
+#: Tablo tek bir olgudan türer — son rakamın sözcüğü (`sıfır bir iki üç dört beş altı
+#: yedi sekiz dokuz`): (a) ünlüyle bitiyor mu (kaynaştırma `s` gerekir mi), (b) son
+#: ünlüsünün dört-yönlü uyumdaki karşılığı. `dört`→`ö`⇒`ü`, `beş`→`e`⇒`i`.
+#: İyelik = `[s]` + ünlü · belirtme = iyelik + `n` + ünlü.
+#:
+#: ⚠ `ADR-0008` ile uyumlu: bu bir **alan sözlüğü** değil, on elemanlı bir sayı
+#: sınıfıdır ve **büyüyemez** — Türkçede on bir rakam yoktur.
+#:
+#: *Bir sayıyı yanlış çekimlemek, cevabın doğruluğunu değiştirmez; ama onu yazanın
+#: dikkatini gösterir.*
+_RAKAM_EKI = {"0": (False, "ı"), "1": (False, "i"), "2": (True, "i"),
+              "3": (False, "ü"), "4": (False, "ü"), "5": (False, "i"),
+              "6": (True, "ı"), "7": (True, "i"), "8": (False, "i"),
+              "9": (False, "u")}
+
+
+def _ek(metin: str, belirtme: bool = False) -> str:
+    """`«%2,2»` → `«%2,2'sini»` (belirtme) · `«%84,1»` → `«%84,1'i»` (iyelik)."""
+    _son = next((c for c in reversed(metin) if c.isdigit()), "0")
+    _unlu_sonu, _u = _RAKAM_EKI[_son]
+    _iyelik = ("s" if _unlu_sonu else "") + _u
+    return f"{metin}'{_iyelik + 'n' + _u if belirtme else _iyelik}"
+
+
 def _yuzde(x: float) -> str:
     return f"%{x:.1f}".replace(".", ",")
 
@@ -392,7 +422,7 @@ def anlati(ayr: Ayristirma, *, segment: str, boyut: str,
         yon = "düşürüyor" if k.katki < 0 else "yükseltiyor"
         rol = {PAYDA: " (paydada)", TERIM: " (terim)"}.get(k.bilesen.rol, "")
         satirlar.append(f"· **{k.bilesen.display}**{rol}: {_sayi(k.hedef)} ↔ akran "
-                        f"{_sayi(k.akran)} — farkın {_yuzde(k.pay_yuzde)}'ini {yon}")
+                        f"{_sayi(k.akran)} — farkın {_ek(_yuzde(k.pay_yuzde), True)} {yon}")
     # ⚠ Derinleşme **gerçekten** yapıldıysa *«bir sonraki adım onu açmak»* demek, yapılan
     # işi bir plan gibi sunmaktır. Kuyruk yalnız inilemediğinde yazılır.
     kuyruk = ""
@@ -591,7 +621,7 @@ def nereye_bak(ayr: Ayristirma, segment: str, boyut: str,
     nokta = (f" ve en çok **{derin['segment']}** tarafında ayrışıyor"
              if derin else "")
     return (f"→ **Öneri:** **{segment}** ({boyut}) için **{ayr.sucllu.display}** "
-            f"incelenmeli — farkın {_yuzde(_pay)}'i oradan geliyor{nokta}. "
+            f"incelenmeli — farkın {_ek(_yuzde(_pay))} oradan geliyor{nokta}. "
             f"Öteki bileşenler bu farkı açıklamıyor.")
 
 
@@ -792,3 +822,29 @@ def aciklanamadi(prev_cq: dict, cube_meta: dict | None) -> tuple[str, list[dict]
             f"tek parça (bileşenlerine ayrılmıyor) ve elimdeki dönemde açıklanacak bir "
             f"**değişim** de yok — yani söyleyebileceğim bir *neden* yok."
             f"{_kuyruk}", chipler)
+
+
+def makbuz_satiri(olcu: str, ad: str, cube_meta: dict | None) -> str | None:
+    """🔴🔴 `§MK-formül` — **AYNI KATALOĞU İKİ YERDE OKUYUP BİRİNDE İNSANCA SÖYLEMEK,
+    ÖTEKİNDE SUSMAK.**
+
+    ⊙ Ölçüldü (curl `CC` turu, CC-2): *«bu nasıl hesaplandı»* → `ort_oee` için **ham
+    SQL** (üç `SUM`/`NULLIF` iç içe) ve üstünde kaçamak bir cümle:
+    *«toplam/ortalamasıdır»*. Aynı turda CC-11 (*«neden»*) **aynı** ölçü için
+    *«ort_oee = kullanılabilirlik × performans × kalite»* diyebiliyordu — çünkü `§KN`
+    bileşenleri kataloğun **kendi metninden** okuyor. Bilgi elimizdeydi; makbuz onu
+    **istemiyordu**.
+
+    ⚠ SQL **gizlenmiyor**: makbuzun kendi kararı (*«gizlemek makbuzu süse çevirir»*)
+    geçerli. İnsanca formül SQL'in **yerine** değil, **önüne** konur.
+    ⚠ Bileşen çıkmayan ölçüde `None` → bugünkü makbuz bayt bayt korunur (`KURAL B`).
+
+    *Bir sistemin bildiğini bir yerde söyleyip başka yerde susması, bilgi eksikliği
+    değil bir tutarsızlıktır — ve kullanıcı onu ikincisiyle tanır.*
+    """
+    try:
+        bl = bilesenler(olcu, cube_meta)
+    except Exception:                    # noqa: BLE001 — makbuz düşmez (ADR-0020)
+        _log.warning("§MK-formül: bileşen okunamadı (best-effort)", exc_info=True)
+        return None
+    return f"  ↳ **{ad}** = {formul_metni(bl)}" if bl else None

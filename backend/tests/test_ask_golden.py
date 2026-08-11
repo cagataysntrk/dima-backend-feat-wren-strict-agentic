@@ -441,7 +441,16 @@ def test_cube_endpoint_chip_edit(client):
     d2 = r.json()
     assert d2["source"] == "cube"
     assert d2["result"]["row_count"] == 2  # Kadın + Erkek
-    assert d2["trace"] == ["chip düzenleme → deterministik cube"]
+    # ⟳ `§SB` (curl `CC` turu) — bu kırılımın `order`/`limit`/`timeDimensions`'ı yok,
+    # yani motorun sırası **arbitrary**dı ve aynı sorgu koşumdan koşuma farklı bir ilk
+    # satır veriyordu (canlıda dört koşum, dört farklı makine). Sıra artık bir **karar**
+    # ve kararlar makbuzda görünür (`ADR-0020`'nin aynı ilkesi: sessiz bir davranış
+    # değişikliği bir davranış değişikliğidir).
+    # ⚠ Tam-eşleşme kapısı **bilerek korundu**: yeni bir iz satırı eklemek, bu satırı
+    # güncellemeyi gerektirsin diye böyle yazılmış. *Bir altın testin işi soru sormaktır.*
+    assert d2["trace"] == ["chip düzenleme → deterministik cube",
+                           "§SB: sırasız kırılım belirlenimli sıraya kondu "
+                           "(ölçüye göre azalan)"]
 
 
 def test_cube_endpoint_rejects_invalid(client):

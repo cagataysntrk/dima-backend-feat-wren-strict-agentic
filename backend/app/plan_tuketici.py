@@ -282,7 +282,8 @@ def calistir(plan: dict, *, service: Any, index: dict, cube_meta: dict | None = 
 
 def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any = None,
           principal: Any = None, limit: int | None = None,
-          route_hit: dict | None = None, onceki_rapor: Any = None) -> dict | None:
+          route_hit: dict | None = None, onceki_rapor: Any = None,
+          koru: bool = True) -> dict | None:
     """🔴 **BOŞLUĞUN TEK KAPISI** — `ask()` bundan başka bir şey bilmez.
 
     `None` döner ve **hiçbir şey yapmaz** eğer: bayrak kapalıysa, sağlayıcı plan
@@ -462,7 +463,15 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
         # koymak değil.
         #
         # *Elindeki belgeyi kaybederek verilen bir cevap, cevap değil bir zarardır.*
-        if _onceki_bolumler:
+        # 🔴 `§RD-5` — **KORUMA, MERDİVENİN SONUNDA BİR CEVAPTIR; ORTASINDA BİR SET.**
+        #
+        # `koru=False` ile çağrıldığında (takip dalının **erken** denemesi) bu dal
+        # `None` döner ve zincir bugünkü gibi sürer. Sebep ölçüldü: erken denemede
+        # `_belgeyi_koru` dönmek, ekranda belge varken sorulan **her** meşru fiş
+        # sorusunu (*«en yükseği hangisi»*) *«belge korundu»* diye cevaplardı — yani
+        # bir kusuru kapatırken sohbeti kilitlerdi.
+        # *Bir korumanın doğru yeri, korunacak şeyden başka seçenek kalmadığı yerdir.*
+        if _onceki_bolumler and koru:
             return _belgeyi_koru(_onceki_bolumler, schema, soru)
         _log.info("orkestratör: kullanılabilir plan yok → merdiven bugünkü gibi")
         return None
@@ -1241,3 +1250,51 @@ def neden_olmadi(plan: dict, hata: Exception) -> str:
     sat += [f"{i}. {_adim_metni(a)}" for i, a in enumerate(adimlar, 1)]
     sat += ["", f"🔴 **Ama tamamlayamadım:** {hata}"]
     return "\n".join(sat)
+
+
+def belge_takibi(request: Any, *, service: Any, schema: dict, soru: str,
+                 settings: Any = None, principal: Any = None,
+                 limit: int | None = None, onceki_rapor: Any = None) -> dict | None:
+    """🔴🔴 `§RD-takip` — **BELGE DÜZENLEME, FİŞ DÜZENLEMEDEN ÖNCE GELİR.**
+
+    ⊙ Ölçüldü (curl `CC` turu, CC-21/CC-22): ekranda **4 bölümlü** bir belge varken
+    *«rapora fire oranını da ekle»* → `refine → deterministik düzenleme` →
+    **`rapor=None`**. Belge yok oldu, yerine tek bloklu bir saçılım grafiği geldi.
+
+    ⊙ Kök bir **öncelik ters çevrilmesidir**, eksik bir yetenek değil: `§RD`/`§RD-4`
+    (*belgeyi düzenle · düzenleyemezsen **koru***) yalnız `ask()`in taze dalında
+    yaşıyor, o da yapısal takip zincirinden **sonra** deneniyor. Bir belge düzenleme
+    isteği aynı anda geçerli bir **fiş** düzenlemesidir de — `deterministic_refine`
+    onu kapar, başarılı olur, ve dört bölüm sessizce silinir. Korumanın kendisi
+    **erişilemezdi**.
+
+    ⚠ İki hipotez **çürütüldü**, ikisi de ölçümle: (1) *«bölüm» sözcüğü `bolum`
+    boyutuna eşleşiyor* — o sözcüğü taşımayan cümle de belgeyi yok etti; (2) *ölçüm
+    artefaktı, istemci `previous_rapor` göndermiyor* — `page.tsx:265` `cube_query`
+    **ve** `previous_rapor`'u birlikte gönderiyor.
+
+    🔴 `KURAL B` **üç katmanla** korunur: bayrak kapalıysa `cevap()` zaten `None`
+    döner · belge yoksa hiç koşulmaz · plan çıkmazsa (`koru=False`) `None` döner ve
+    zincir bugünkü davranışını **bayt bayt** sürdürür.
+
+    ⚠ Yalnız **belge üreten** bir cevap kabul edilir: plan tüketicisi belge kurmadan
+    tek bir sorgu döndürdüyse o zaten takip zincirinin işidir ve orada **LLM'siz**
+    yapılır. *Bir yolu açmak, ona ait olmayan işi de vermek değildir.*
+
+    *Elindeki belgeyi kaybederek verilen bir cevap, cevap değil bir zarardır — ve bu
+    cümle `§RD-4`'te zaten yazılıydı; eksik olan cümle değil, ona giden yoldu.*
+    """
+    if not onceki_rapor:
+        return None
+    try:
+        out = cevap(request, service=service, schema=schema, soru=soru,
+                    settings=settings, principal=principal, limit=limit,
+                    route_hit=None, onceki_rapor=onceki_rapor, koru=False)
+    except Exception:                    # noqa: BLE001 — tur düşmez (ADR-0020)
+        _log.warning("§RD-takip: belge yolu hata verdi (best-effort)", exc_info=True)
+        return None
+    if out is None or not out.get("rapor"):
+        return None
+    out["iz"] = [*(out.get("iz") or []),
+                 "§RD-takip: ekrandaki belge düzenlendi (fiş zincirinden ÖNCE)"]
+    return out

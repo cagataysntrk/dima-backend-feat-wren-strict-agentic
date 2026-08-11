@@ -89,6 +89,64 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("rd-takip-belge-once", 11,
+     "🔴🔴 **`§RD-takip` — BELGE DÜZENLEME, FİŞ DÜZENLEMEDEN ÖNCE GELİR.** "
+     "⊙ Ölçüldü (curl `CC` turu, CC-21/CC-22): ekranda **4 bölümlü** bir belge varken "
+     "*«rapora fire oranını da ekle»* → `refine → deterministik düzenleme` → "
+     "**`rapor=None`**; belge yok oldu, yerine tek bloklu bir saçılım grafiği geldi. "
+     "⊙ Kök bir **öncelik ters çevrilmesidir**, eksik bir yetenek değil: `§RD-4`'ün "
+     "*«düzenleyemezsen KORU»* koruması yalnız taze dalda yaşıyordu ve yapısal takip "
+     "zinciri ondan önce koşuyordu — koruma **erişilemezdi**. "
+     "⊙ İki hipotez ölçümle **çürütüldü**: *«bölüm» sözcüğü suçlu* (o sözcüksüz cümle de "
+     "belgeyi yok etti) ve *ölçüm artefaktı* (`page.tsx:265` `cube_query` **ve** "
+     "`previous_rapor`'u birlikte gönderiyor). "
+     "⊙ Δ = 11: **gövdenin tamamı modülde** (`plan_tuketici.belge_takibi` — çağrı, "
+     "`koru=False` kademesi, *yalnız belge üretirse kabul* kuralı, iz); burada kalan "
+     "on bir satır bir **çağrı** ve bir `AskResponse` kurulumu. "
+     "⚠ **TAŞINAMAZ:** bu bir **kontrol akışı önceliğidir** — hangi basamağın hangisinden "
+     "önce geleceği tam olarak `ask()`in işidir, ve `AskResponse` onun yerelleriyle "
+     "(`body`, `_finish`, `_attach_viz`) kurulur. "
+     "*Elindeki belgeyi kaybederek verilen bir cevap, cevap değil bir zarardır.* "
+     "`sha=0c42572`"),
+    ("ka-tanimadan-cevap", 5,
+     "🔴🔴 **`§KA` — HİÇBİR ŞEYİ TANIMADAN VERİLEN GÜVENLİ BİR CEVAP BİR UYDURMADIR.** "
+     "⊙ Ölçüldü (curl `CC` turu, CC-15): *«asdfgh qwerty»* → `source=cube+llm`, **11 "
+     "satırlık makine bazında OEE raporu**, not YOK, beyan YOK. `route()`in **kapsam "
+     "kapısı** var (`partial_unknowns`), garson devraldığında o kapı hiç koşmuyor. "
+     "⊙ Bir kapı değil bir **beyandır**: doktrin *«anlamadım bir son cevap olamaz»* diyor "
+     "→ cevap **gider**, yanına varsayım olduğu yazılır. Reddetmek `§0.0`'ı, susmak "
+     "`E-2`'yi çiğnerdi. "
+     "⊙ Δ = 5: **yüklem ve metin modülde** (`uyum.tanimadan_cevap_notu` + "
+     "`uyum.uydurma_beyani`); burada kalan beş satır bir **kapı** (`source == "
+     "\"cube+llm\"`) ve bir çağrı. "
+     "⚠ **TAŞINAMAZ:** `_finish` merdivenin **tek** çıkışıdır ve kapı `resolve_for`/`body`/"
+     "`schema` yerellerini okur; niyeti tek bir dala bağlamak ölçülmek isteneni yarım görürdü. "
+     "*Bir hakeme niyetini sormak başka, ne attığını sormamak başkadır.* "
+     "`sha=0c42572`"),
+    ("uy-yoy-beyan-kacagi", 4,
+     "🔴 **`§UY-yoy` — ÖLÇÜ-DÜŞME BEYANI DÖNEMSEL KIYAS YOLUNDA ATLANIYORDU.** "
+     "⊙ Ölçüldü (curl `CC` turu, CC-18/CC-19) — aynı kayıp, iki yol, tek beyan: "
+     "*«bu yıl toplam ciro **ve** fire oranı»* → ✅ *«soruda 2 ölçü, cevapta 1»*; "
+     "*«geçen yıla göre ciro **ve** fire oranı değişimi»* → 🔴 aynı kayıp, **NOT YOK**. "
+     "`yoy` kendi `AskResponse`'unu kurup doğrudan mühre gidiyordu. "
+     "⊙ Δ = 4: **gövde modülde** (`uyum.beyan_ekle` — tek gövde, iki çağıran); burada "
+     "kalan dört satır bir çağrı ve `cube_meta` çözümü. "
+     "⚠ `final_cq` geçilir (`compare` alanıyla): `base_cq` geçilseydi düzeltmenin kendisi "
+     "kıyas yapan yolu *«kıyas istendi ama yok»* diye suçlardı. "
+     "*Bir kuralı yazmak, onu her çağrı yerinde kurmak değildir; ve eksik kurulan yer, "
+     "kuralın hiç olmadığı yerden daha tehlikelidir.* "
+     "`sha=0c42572`"),
+    ("mk-formul-insanca", 3,
+     "🔴 **`§MK-formül` — MAKBUZ HAM SQL BASIYOR, OYSA `§KN` İNSANCA FORMÜLÜ BİLİYOR.** "
+     "⊙ Ölçüldü (curl `CC` turu, CC-2): *«bu nasıl hesaplandı»* → `ort_oee` için üç iç "
+     "içe `SUM`/`NULLIF` ve kaçamak bir cümle (*«toplam/ortalamasıdır»*). Aynı turda "
+     "CC-11 aynı ölçü için *«= kullanılabilirlik × performans × kalite»* diyebiliyordu. "
+     "⊙ SQL **gizlenmez** (makbuzun kendi kararı); insanca formül onun **önüne** konur. "
+     "⊙ Δ = 3: **gövde modülde** (`kok_neden.makbuz_satiri`); burada kalan üç satır "
+     "makbuz döngüsünün içinde bir çağrı ve bir `append`. "
+     "*Bir sistemin bildiğini bir yerde söyleyip başka yerde susması, bilgi eksikliği "
+     "değil bir tutarsızlıktır.* "
+     "`sha=0c42572`"),
     ("nb-neden-sessiz-dusemez", 4,
      "🔴🔴 **`§NB` — BİR «NEDEN» SORUSU CEVAPSIZ KALABİLİR; BAŞKA BİR SORUYA DÖNÜŞEMEZ.** "
      "⊙ Canlıda ölçüldü: *«makine bazında duruş dakika»* → *«neden böyle»* → **66 satırlık "

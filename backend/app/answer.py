@@ -1168,6 +1168,7 @@ def seal(resp: AskResponse, *, request: Request, principal, t0: float,
     from control_plane import audit
 
     from app.pii import apply_to_ask_response
+    from app.result_shape import belirlenimli_sirala as _belirlenimli_sirala
 
     if is_new_topic is not None:
         resp.is_new_topic = is_new_topic
@@ -1176,6 +1177,14 @@ def seal(resp: AskResponse, *, request: Request, principal, t0: float,
     if reply_to_label is not None:
         resp.reply_to_label = reply_to_label
 
+    # 🔴 `§SB` — belirlenimli sıra. Karar ve yüklem `result_shape.belirlenimli_sirala`'da
+    # (tek sahip); burada yalnız çağrı. ⚠ **Yorumdan ÖNCE**: `interpret()` *«en yüksek»*
+    # gibi olguları satır sırasından okuyor ve sonradan sıralamak, yorumun okuduğu
+    # tabloyu altından çekerdi. *Bir sırayı, ona bakan gözden sonra düzeltmek, düzeltmek
+    # değildir.*
+    if _belirlenimli_sirala(resp):
+        resp.trace = [*(resp.trace or []), "§SB: sırasız kırılım belirlenimli sıraya "
+                                           "kondu (ölçüye göre azalan)"]
     # Sıra ÖNEMLİ: öneriler yorumun signal'larına bağımlı; explain ikisini de okur.
     _maybe_interpret(request, resp)
     _temellendir(request, resp)

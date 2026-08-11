@@ -86,3 +86,39 @@ def test_BOS_TERIM_KAPSANMIS_SAYILMAZ():
     """*Bir ölçümün susması, ölçtüğü şeyin yokluğu değildir* — boş terim `True`
     dönseydi bütün beyanlar susardı."""
     assert kapsiyor("", _DURUS) is False
+
+
+class _SahteNiyet:
+    def __init__(self, **kw):
+        self.olcu_adaylari = kw.get("olcu_adaylari", [])
+        self.kirilimlar = kw.get("kirilimlar", [])
+        self.donem_sayisi = kw.get("donem_sayisi", 0)
+        self.filtreler = kw.get("filtreler", [])
+
+
+def test_KA_HICBIR_EKSENE_DEGMEYEN_SORU_BEYAN_EDILIR():
+    """🔴🔴 `§KA` — ölçüldü (curl `CC` turu, CC-15): *«asdfgh qwerty»* → `cube+llm`,
+    **11 satırlık makine bazında OEE raporu**, not YOK. `route()`in kapsam kapısı var;
+    garson devraldığında o kapı **hiç koşmuyor**.
+
+    ⚠ Bir kapı değil bir **beyandır**: cevap gider, yanına varsayım olduğu yazılır —
+    reddetmek `§0.0`'ı (*«anlamadım» bir son cevap olamaz*), susmak `E-2`'yi çiğnerdi."""
+    from app import uyum
+
+    assert uyum.tanimadan_cevap_notu(_SahteNiyet()) is not None
+
+
+def test_KA_TANINAN_TEK_BIR_EKSEN_BILE_SUSTURUR():
+    """`§101.1` kalibrasyonu — aynı turda ölçülen iki vaka **susmalı**, oysa ikisinin de
+    `bilinmeyen` artığı doludur:
+
+        «lütfen bana bu yılın cirosunu söyler misin» → bilinmeyen=soyler,misin  (ölçü+dönem VAR)
+        «kaç makinemiz var»                          → bilinmeyen=kac,makinemiz (kırılım VAR)
+
+    *Artığa bakan bir yüklem bu ikisini suçlardı; tanınana bakan yüklem susuyor.*"""
+    from app import uyum
+
+    for kw in ({"olcu_adaylari": [("parti", "toplam_ciro")]}, {"kirilimlar": ["makine"]},
+               {"donem_sayisi": 1}, {"filtreler": [{"dimension": "makine"}]}):
+        assert uyum.tanimadan_cevap_notu(_SahteNiyet(**kw)) is None, kw
+    assert uyum.tanimadan_cevap_notu(None) is None

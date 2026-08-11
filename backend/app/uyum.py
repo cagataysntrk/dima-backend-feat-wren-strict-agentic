@@ -491,10 +491,39 @@ def _kirilim_ikamesi(qn: str, cq: dict, cube_meta: dict | None,
 
     *Bir kırılımı sessizce başkasıyla değiştirmek, sorulmayan bir soruyu cevaplamaktır.*
     """
+    from app import cube_router as _cr
     from app.cube_router import _match_dims
 
     boyutlar = [str(d) for d in (cq.get("dimensions") or [])]
     if not boyutlar or not sema:
+        return None
+    # 🔴🔴 **KIRILIM NİYETİ ARANMADAN BEYAN EDİLMEZ — iki canlı yanlış-pozitif öğretti.**
+    #
+    # ⊙ Ölçüldü (curl `CC` turu, CC-20/CC-21):
+    #     «son 2 yıl **satış** raporu hazırla» → «satış» ⊂ «satış temsilcisi» → beyan konuştu
+    #     «bir de fire oranı **bölüm**ü ekle»  → «bölüm» = *raporun bölümü* → beyan konuştu
+    #
+    # İkisinde de kullanıcı bir **kırılım istemedi**. İlk yazımın yüklemi *"soruda bir
+    # boyut adı geçiyor"*du — ama bir boyut adının cümlede geçmesi, o kırılımın
+    # **istendiği** anlamına gelmez: «satış» çok-sözcüklü bir etiketin parçası, «bölüm»
+    # ise **belgenin kendi yapı adı**. `§101.1`: yanlış pozitif kusurun kendisinden pahalı.
+    #
+    # ⚠ Ayrım **yeniden yazılmadı, ÇAĞRILDI**: `kirilim_istendi` yüklemi `niyet.py:311`'de
+    # zaten var ve *«son 3 ay'a göre»* tuzağına karşı `gore_donem_mi` ile korumalı. Bu
+    # deponun defterinde `göre`/`bazında` aşırı-yüklenmesi **üç kez** ısırdı; dördüncüsü
+    # için ikinci bir tanıyıcı yazmak `KAT-1`'i çiğnemek olurdu.
+    #
+    # ⚠ Bedeli **bilinerek** ödeniyor: işaretsiz bir gerçek vaka («eğitim türü katılım»)
+    # artık **susar**. Ölçülen sayı bunu haklı çıkarıyor — iki yanlış-pozitife karşı bir
+    # doğru-pozitif, ve o doğru-pozitif işareti **taşıyor** («türüne **göre**»).
+    #
+    # *Bir sözcüğün cümlede bulunması, onun istendiğine dair bir kanıt değildir.*
+    try:
+        _kirilim_istendi = (_cr._herhangi(qn, _cr._BREAKDOWN_HINTS)
+                            and not _cr.gore_donem_mi(qn))
+    except Exception:                     # noqa: BLE001 — beyan susar, tur düşmez
+        _kirilim_istendi = False
+    if not _kirilim_istendi:
         return None
     # 🔴🔴 **ÖNCE HEPSİNİ TOPLA, SONRA KARAR VER — ve bunu canlı ölçüm öğretti.**
     #
@@ -1439,4 +1468,103 @@ def cokluk_mu(eksen: str | None, adaylar: list) -> bool:
         for b in kumeler[i + 1:]:
             if a & b:                 # kesişiyorsa zenginlik farkı — çokluk DEĞİL
                 return False
+    return True
+
+
+def tanimadan_cevap_notu(niyet) -> str | None:
+    """🔴🔴 `§KA` — **HİÇBİR ŞEYİ TANIMADAN VERİLEN GÜVENLİ BİR CEVAP, BİR UYDURMADIR.**
+
+    ## Ölçülen kusur (curl `CC` turu, CC-15)
+
+        «asdfgh qwerty»
+          → `source=cube+llm` · `oee` küpü · **11 satırlık makine bazında OEE raporu**
+          → not YOK · beyan YOK · uyarı YOK
+
+    Sorunun tek bir harfi bile kataloğa değmiyor. `route()` bu soruyu **cevaplamazdı**:
+    onun bir **kapsam kapısı** var (`partial_unknowns` → `_uncovered`) ve açıklanamayan
+    bir içerik sözcüğü kalırsa çekilir. Garson devraldığında o kapı **hiç koşmuyor** —
+    ve garson *ne attığını* söylemiyor.
+
+    🔴 Bu bir **kapı değil, bir beyandır** ve olması gereken de budur: doktrin
+    *«"anlamadım" bir son cevap olamaz»* diyor. Cevap **gider**; yanına *bunun bir
+    varsayım olduğu* yazılır. Reddetmek `§0.0`'ı, susmak `E-2`'yi çiğnerdi.
+
+    ## Yüklem — sözlüksüz, ve `§101.1` gereği DAR
+
+    Dördü **birden** boşsa konuşur: ölçü adayı · kırılım · adı geçen dönem · süzgeç.
+    Yani soru kataloğun **hiçbir** eksenine değmemiştir. Meşru bir iş sorusu bu dördün
+    en az birini taşır — taşımıyorsa cevap zaten bir tahmindir.
+
+    ⚠ Ölçülen kalibrasyon (aynı tur): *«lütfen bana bu yılın cirosunu söyler misin»*
+    (ölçü+dönem var) ve *«kaç makinemiz var»* (`makine` kırılımı var) **susar** — oysa
+    ikisinin de `bilinmeyen` artığı doludur (`soyler,misin` · `kac,makinemiz,var`).
+    *Artığa bakan bir yüklem bu ikisini suçlardı; tanınana bakan yüklem susuyor.*
+
+    ## 🔴 Ve bu, kusurun YALNIZ BİR PARÇASI — kalanı ölçüldü ve BORÇ yazıldı
+
+    Aynı turda iki vaka daha çıktı ve bu yüklem onları **görmez**, çünkü ikisinde de
+    katalog eksenlerine değen bir şey **var**:
+
+        «mars gezegenindeki satışlarımız»   → `satış` tanındı → ₺137.588.350
+        «…ciroyu **euro** olarak göster»    → ölçü+dönem tanındı → ₺74.022.836 (TL)
+
+    Onları ayırt edecek şey artık sözcüğün **ne olduğudur** (`euro` bir nesne, `misin`
+    bir soru eki) ve bunu bilen tek merci **garsonun kendisidir**. Doğru çözüm bir
+    kelime listesi değil, Intent-JSON'a bir `yok_sayilan` alanı ve iddianın iki
+    deterministik süzgeci (sözcük soruda **geçmeli**, teslim edilen fişte
+    **geçmemeli**). Ayrı bir demet, ayrı bir ölçüm — `OPERASYON-DURUM.md`'de.
+
+    *Bir kusurun yarısını kapatmak, tamamını kapatmış gibi yazılmadıkça bir ilerlemedir.*
+    """
+    if niyet is None:
+        return None
+    if (getattr(niyet, "olcu_adaylari", None) or getattr(niyet, "kirilimlar", None)
+            or getattr(niyet, "donem_sayisi", 0) or getattr(niyet, "filtreler", None)):
+        return None
+    return ("⚠ Bu soruyu kataloğumdaki hiçbir **ölçü**, **boyut** ya da **döneme** "
+            "bağlayamadım — aşağıdaki rapor bir **varsayımdır**. Kastettiğin bu "
+            "değilse sorunu biraz açar mısın?")
+
+
+def beyan_ekle(resp, *, soru: str, cq: dict, sema: dict, cube_meta: dict | None = None,
+               chip: bool = True) -> None:
+    """`§UY-yoy` — ihlal beyanını cevaba **iliştirir**: tek gövde, iki çağıran.
+
+    ⊙ Ölçüldü (curl `CC` turu, CC-18/CC-19) — aynı kayıp, iki yol, **tek** beyan:
+
+        «bu yıl toplam ciro **ve** fire oranı»          → ✅ *«soruda 2 ölçü, cevapta 1»*
+        «geçen yıla göre ciro **ve** fire oranı değişimi» → 🔴 aynı kayıp, **NOT YOK**
+
+    Dönemsel kıyas (`yoy`) kendi `AskResponse`'unu kurup doğrudan mühre gidiyor, yani
+    `_answer_from_cube_query`'deki beyan bloğunu **hiç görmüyordu**. `ask.py`'nin kendi
+    uyarısının birebir tekrarı: *bir kuralı yazmak, onu her çağrı yerinde kurmak
+    değildir — ve eksik kurulan yer, kuralın hiç olmadığı yerden daha tehlikelidir,
+    çünkü kural yazılı olduğu için orada da işlediği sanılır.*
+
+    ⚠ `cq` **kıyas alanıyla** geçilmelidir (`compare`): `denetle` onu okur (`:846`) ve
+    okumazsa bu dal, kıyası **yapan** yolun kendisini *«kıyas istendi ama yok»* diye
+    suçlardı — düzeltmenin kendisi bir yanlış-pozitif üretirdi.
+    """
+    ihlaller = denetle(soru, {"cube_query": cq}, cube_meta, sema)
+    if not ihlaller:
+        return
+    resp.eksik_niyet = [i.isaret for i in ihlaller]
+    resp.note = " ".join(x for x in [resp.note, kismi_cevap_notu(ihlaller)] if x)
+    if chip:
+        resp.suggestions = (resp.suggestions or []) + chipler(ihlaller)
+
+
+def uydurma_beyani(resp, niyet) -> bool:
+    """`§KA`'nın **iliştirme** yarısı — yüklem `tanimadan_cevap_notu`'nda.
+
+    Ayrı durur çünkü yüklem saf ve testlenebilir olmalı; bu ise bir cevabı değiştirir.
+    Döner: beyan edildi mi (çağıran ize bunu yazar).
+    """
+    not_ = tanimadan_cevap_notu(niyet)
+    if not not_:
+        return False
+    resp.note = " ".join(x for x in [resp.note, not_] if x)
+    resp.trace = [*(resp.trace or []),
+                  "§KA: katalogda hiçbir eksene değmeyen soru → cevap VARSAYIM "
+                  "olarak beyan edildi"]
     return True

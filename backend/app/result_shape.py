@@ -234,3 +234,60 @@ def authority_from_cube_query(cube_query: dict | None) -> tuple[set[str] | None,
             if ipucu is None:
                 ipucu = kova
     return dims, ipucu
+
+
+def belirlenimli_sirala(resp) -> bool:
+    """🔴🔴 `§SB` — **SIRASIZ BİR KIRILIM, HER KOŞUMDA BAŞKA BİR RAPORDUR.**
+
+    ⊙ Ölçüldü (curl `CC` turu, CC-5…CC-8): **aynı** `cube_query` dört kez koşuldu, dört
+    farklı ilk satır geldi — `RAM-1` · `DİJİTAL BASKI` · `RAM-1` · `FERRARO SANFOR-1`.
+    `GROUP BY` sırası motorun iç işidir ve `ORDER BY` yoksa **söz vermez**. Kullanıcı
+    açısından bu, aynı soruyu iki kez sorduğunda çubukları yer değiştirmiş bir grafik
+    demektir — ve *«en yüksek hangisi»*in cevabı her bakışta başka bir yerdedir.
+
+    ## 🔴 Ve **İLK ÇÖZÜMÜM BİR GERİLEME SATIN ALDI** — kapı yakaladı
+
+    Önce bunu SQL'de yapmıştım (`cube_sql`'e varsayılan bir dış `ORDER BY`). Korpus
+    **taban ile birebir** geçti, ama tam süit iki testi kırdı: `dry_plan` **JOIN
+    budamayı** kaybediyordu (`parti`de 0 → **3** JOIN, `mizan`da 0 → 2). Yani bir
+    sunum kararı, planlayıcının maliyet varsayımını bozuyordu — ve o varsayım
+    *«manifesti ilişki-türevi kolonlarla zenginleştirmek, o kolonlar istenmedikçe
+    maliyet doğurmaz»* cümlesinin tamamıdır.
+
+    ⚠ Doğru yer **sonuç katmanıdır**: `limit` yokken satırlar zaten **tamamı** çekilmiş
+    olur, dolayısıyla burada sıralamak SQL'de sıralamakla **denktir** — ama derleyiciye,
+    planlayıcıya ve makbuza hiç dokunmaz.
+
+    *Bir belirlenimsizliği düzeltmek için doğru katmanı seçmek, düzeltmenin kendisinden
+    önemlidir: yanlış katman, çözdüğünden pahalı bir şey bozar.*
+
+    Yüklem — **hiçbir şey seçmez, yalnız sıralar**:
+      • `limit` **yok** → hangi satırların döndüğü değişemez
+      • kullanıcının kendi `order`ı **yok** → onu ezmeyiz
+      • `timeDimensions` **yok** → zaman serisi kronolojik kalır
+      • `dimensions` **var** ve sayısal bir ölçü kolonu **var** → sıralanacak şey var
+
+    Döner: sıralandı mı (çağıran ize yazabilir).
+    """
+    cq = getattr(resp, "cube_query", None) or {}
+    res = getattr(resp, "result", None)
+    if not isinstance(cq, dict) or res is None:
+        return False
+    if cq.get("limit") or cq.get("order") or cq.get("timeDimensions"):
+        return False
+    if not cq.get("dimensions") or not (cq.get("measures") or []):
+        return False
+    rows = getattr(res, "rows", None)
+    if not isinstance(rows, list) or len(rows) < 2:
+        return False
+    olcu = str(cq["measures"][0])
+    # ⚠ `is not None` — `sayi()` sıfır için `0.0` döner ve bir doğruluk sınavında
+    # **yanlış** okunur. Sıfırlı bir kırılım (ölçülen sıradan bir hâl) sıralanmadan
+    # kalırdı ve kusur tam da o raporlarda sürerdi.
+    if not all(isinstance(r, dict) and sayi(r.get(olcu)) is not None for r in rows):
+        return False
+    try:
+        rows.sort(key=lambda r: sayi(r[olcu]) or 0.0, reverse=True)
+    except Exception:                    # noqa: BLE001 — sıra bir süs, cevap değil
+        return False
+    return True

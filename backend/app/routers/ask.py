@@ -2272,6 +2272,33 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # şeyin yarısını görmemek olurdu.
         if "niyet_izi" in resolve_for(settings, principal):
             resp.trace = [*(resp.trace or []), *_niyet_izi(body.question, schema)]
+        # 🔴🔴 `§KA` — garsonun **hiçbir şeyi tanımadan** verdiği cevap beyan edilir.
+        # Karar ve metin `uyum.tanimadan_cevap_notu`'nda (tek sahip); buraya kalan
+        # yalnız kapı ve çağrı. ⚠ `source == "cube+llm"`: **garson** yolu. `route()`in
+        # kendi kapsam kapısı var (o zaten çekilir), Discovery'nin (`llm:*`) rozeti
+        # ayrı bir dürüstlük kanalı, takip yolları (makbuz · `§KN`) ise soruyu değil
+        # **eldeki fişi** okur — üçünde de bu cümle yanlış olurdu.
+        # ⚠ `niyet` **yeniden çözülmez**: `niyet.coz` belleklidir (`_bellekten`), yani
+        # bu çağrı `_niyet_izi` ile aynı nesneyi paylaşır — ve bayrağa bağlı DEĞİLDİR,
+        # çünkü bu bir iz değil bir **cevap davranışıdır**.
+        # ⚠ **İKİ KEZ ÖLÇÜLDÜ, İKİ KEZ DARALTMIŞTIM — ve ikisi de kendi düzeltmemi
+        # iptal ediyordu.**
+        #   (1) `and not resp.suggestions`: *«asdfgh qwerty»* hâlâ beyansız geldi, çünkü
+        #       dönem varsayımı chip üretmişti. Koşulu *«netleştirmede konuşma»* diye
+        #       eklemiştim — ama netleştirme `source=None` döner, yani koruduğunu
+        #       sandığım şeyi hiç korumuyordu.
+        #   (2) `source == "cube+llm"`: aynı soru sonraki koşumda **Discovery**'ye düştü
+        #       (`llm:openrouter`) ve beyan yine susturuldu. Uydurma sınıfı **bir yola
+        #       ait değildir** — garson da Discovery de aynı boşluğu doldurabilir.
+        # 🔴 Doğru ölçüt yol değil **çıpasızlıktır**: cevabı bir LLM üretti ve soru
+        # kataloğun hiçbir eksenine değmedi. `route()` buraya hiç gelmez (o zaten
+        # kendi kapsam kapısıyla çekilir), yani `"llm"` koşulu `cube` yolunu dışlar.
+        # *Ölçmeden eklenen bir koruma, bir koruma değil bir kör noktadır.*
+        if "llm" in str(resp.source or "") and resp.result:
+            try:
+                _uyum.uydurma_beyani(resp, _niyet.coz(body.question, schema))
+            except Exception:            # noqa: BLE001 — beyan susar, tur düşmez
+                _log.warning("§KA: niyet okunamadı (best-effort)", exc_info=True)
         # `§SD-2` — sessiz bir `null` merdivenin **her** basamağında sessizdir; gövde
         # `veri_araligi.beyani_tamamla`'da (tavan kapısı *«yeni davranışı modüle çıkar»*
         # dedi ve haklıydı — `yokluk_notu` da tam olarak böyle doğmuştu).
@@ -2478,6 +2505,27 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 _ek = f" `{_mexpr[_m]}`" if _mexpr.get(_m) else ""
                 _br = f" — birim: {_munit[_m]}" if _munit.get(_m) else ""
                 _mad.append(f"• **{_ad}** (`{_m}`){_ek}{_br}")
+                # 🔴🔴 `§MK-formül` — **AYNI KATALOĞU İKİ YERDE OKUYUP BİRİNDE İNSANCA
+                # SÖYLEMEK, ÖTEKİNDE SUSMAK.**
+                #
+                # ⊙ Ölçüldü (curl `CC` turu, CC-2): *«bu nasıl hesaplandı»* → `ort_oee`
+                # için **ham SQL** (üç `SUM`/`NULLIF` iç içe) ve üstünde kaçamak bir
+                # cümle: *«toplam/ortalamasıdır»*. Aynı turda CC-11 (*«neden»*) aynı
+                # ölçü için *«**ort_oee** = kullanılabilirlik × performans × kalite»*
+                # diyebiliyordu — çünkü `§KN` bileşenleri **kataloğun kendi metninden**
+                # okuyor. Yani bilgi elimizde vardı; makbuz onu **istemiyordu**.
+                #
+                # ⚠ SQL **gizlenmiyor, öncesine bir satır ekleniyor**: bu dosyanın 20
+                # satır yukarıdaki kendi kararı (*«gizlemek makbuzu süse çevirir»*)
+                # geçerli. İnsanca formül SQL'in yerine değil, **önüne** konur.
+                # ⚠ Bileşen çıkmayan ölçülerde (`bilesenler()` boş) hiçbir şey eklenmez —
+                # yani bugünkü makbuz bayt bayt korunur (`KURAL B`).
+                #
+                # *Bir sistemin bildiğini bir yerde söyleyip başka yerde susması, bilgi
+                # eksikliği değil bir tutarsızlıktır — ve kullanıcı onu ikincisiyle tanır.*
+                _fm = _kok_neden.makbuz_satiri(_m, _ad, cube_meta)
+                if _fm:
+                    _mad.append(_fm)
             _kapsam = _fx(prev_cq, cube_meta)
             _kaynak = (cube_meta or {}).get("base_object") or prev_cq.get("cube")
             _satir = [f"**{_kapsam}**", "",
@@ -3083,6 +3131,27 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 result=QueryResult(**result), source="cube", cube_query=final_cq,
                 trace=[f"{iz} ({mode}, LLM'siz)"],
             )
+            # 🔴🔴 `§UY-yoy` — **ÜÇÜNCÜ ÇAĞRI YERİ; ve bu dosya bunu ÖNCEDEN yazmıştı.**
+            #
+            # ⊙ Ölçüldü (curl `CC` turu, CC-18/CC-19) — aynı kayıp, iki yol, tek beyan:
+            #     «bu yıl toplam ciro **ve** fire oranı»            → ✅ *«soruda 2 ölçü,
+            #        cevapta 1 — `toplam_ciro` rapora girmedi»*
+            #     «geçen yıla göre ciro **ve** fire oranı değişimi» → 🔴 aynı kayıp, **NOT YOK**
+            #
+            # Bu gövde kendi `AskResponse`'unu kurup doğrudan `_finish`'e gidiyor, yani
+            # `_answer_from_cube_query`'deki beyan bloğunu (satır ~3009) **hiç görmüyor**.
+            # `§Cİ/T`'nin 20 satır yukarıdaki uyarısının birebir tekrarı: *bir kuralı
+            # yazmak, onu her çağrı yerinde kurmak değildir — ve eksik kurulan yer,
+            # kuralın hiç olmadığı yerden daha tehlikelidir.*
+            #
+            # ⚠ `final_cq` geçiliyor, `base_cq` değil: içinde `compare` var ve `uyum`
+            # onu **okuyor** (`uyum.py:846`). `base_cq` geçilseydi bu dal kıyas yapan
+            # yolun kendisini *«kıyas istendi ama yok»* diye suçlardı — düzeltmenin
+            # kendisi bir yanlış-pozitif üretirdi.
+            _uyum.beyan_ekle(resp, soru=q_norm, cq=final_cq, sema=schema,
+                             cube_meta=next((c for c in (schema.get("cubes") or [])
+                                             if c.get("name") == final_cq.get("cube")),
+                                            None))
             resp.contract_id = _record_contract(final_cq, out["base_sql"], result, "cube")
             return _finish(_attach_viz(resp, result, final_cq))
         except Exception:
@@ -4542,6 +4611,45 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
     # 🔴 `baglam_var` **gerçek bağlam durumundan**: yapısal takip **ya da** ham takip.
     # *Sabit bir `True`, bir bayrak değil bir yalandır.* (Çağrının kendisi daha yukarıda,
     # eylem kapısından ÖNCE — bkz. `niyet = followup.sinifla(...)`.)
+
+    # 🔴🔴 `§RD-takip` — **BELGE DÜZENLEME, FİŞ DÜZENLEMEDEN ÖNCE GELİR.**
+    #
+    # ⊙ Ölçüldü (curl `CC` turu, CC-21/CC-22): ekranda **4 bölümlü** bir belge varken
+    # *«rapora fire oranını da ekle»* → `refine → deterministik düzenleme` →
+    # **`rapor=None`**. Belge yok oldu ve yerine tek bloklu bir saçılım grafiği geldi.
+    #
+    # ⊙ Kök bir **öncelik ters çevrilmesidir**, bir eksik yetenek değil: `§RD`/`§RD-4`
+    # (belgeyi düzenle / düzenleyemezsen **koru**) yalnız `_try_fresh_intent()` içinde
+    # yaşıyor, o da bu zincirden **sonra** deneniyor. Bir belge düzenleme isteği aynı
+    # anda geçerli bir **fiş** düzenlemesidir de — `deterministic_refine` onu kapar,
+    # başarılı olur, ve dört bölüm sessizce silinir. Korumanın kendisi **erişilemezdi**.
+    #
+    # ⚠ İki hipotez **çürütüldü**, ikisi de ölçümle: (1) *«bölüm» sözcüğü `bolum`
+    # boyutuna eşleşiyor* — sözcüksüz cümle de belgeyi yok etti; (2) *ölçüm artefaktı,
+    # istemci `previous_rapor` göndermiyor olabilir* — `page.tsx:265` `cube_query` **ve**
+    # `previous_rapor`'u birlikte gönderiyor, yani kusur canlıdır.
+    #
+    # 🔴 `KURAL B` **korunur, üç katmanla**: bayrak kapalıysa `cevap()` zaten `None`
+    # döner · belge yoksa dal hiç koşmaz · plan çıkmazsa (`koru=False`) `None` döner ve
+    # zincir bugünkü davranışını **bayt bayt** sürdürür. Yani bu dal yalnız *bugün
+    # belgenin kaybolduğu* turlarda konuşur.
+    #
+    # *Elindeki belgeyi kaybederek verilen bir cevap, cevap değil bir zarardır — ve bu
+    # cümle `§RD-4`'te zaten yazılıydı; eksik olan cümle değil, ona giden yoldu.*
+    _rd = _plan_tuketici.belge_takibi(request, service=service, schema=schema,
+                                      soru=body.question, settings=settings,
+                                      principal=principal, limit=limit,
+                                      onceki_rapor=body.previous_rapor)
+    if _rd is not None:
+        # ⚠ Yalnız **belge üreten** bir cevap kabul edilir. Plan tüketicisi bir belge
+        # kurmadan tek bir sorgu döndürdüyse o zaten bu zincirin işidir ve orada daha
+        # ucuza (LLM'siz) yapılır. *Bir yolu açmak, ona ait olmayan işi de vermek
+        # değildir.*
+        return _finish(_attach_viz(AskResponse(
+            question=body.question, source=_rd["source"], note=_rd["note"],
+            result=_rd.get("result"), cube_query=_rd.get("cube_query"),
+            plan=_rd.get("plan"), rapor=_rd.get("rapor"), trace=_rd["iz"]),
+            _rd.get("result"), _rd.get("cube_query")))
 
     # 3) YAPISAL TAKİP — önceki tur GERÇEK bir CubeQuery ürettiyse (route()/LLM-select/
     # YoY/bu zincirin kendisi), deterministik düzenleme zinciri denenir (bkz. docstring §3).

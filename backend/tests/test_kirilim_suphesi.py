@@ -240,3 +240,54 @@ def test_KD_ONCE_HEPSINI_TOPLAR():
                                 {"cube": "sevkiyat", "dimensions": ["arac_turu"]},
                                 sema["cubes"][1], sema)
     assert out is None, f"🔴 doğru kırılımda yanlış-pozitif: {out}"
+
+
+def test_KD_KIRILIM_ISTENMEDIYSE_SUSAR():
+    """🔴🔴 **`§KD-boyut`'un İKİ CANLI YANLIŞ-POZİTİFİ** (curl `CC` turu, CC-20/CC-21):
+
+        «son 2 yıl **satış** raporu hazırla» → «satış» ⊂ «satış temsilcisi» → beyan konuştu
+        «bir de fire oranı **bölüm**ü ekle»  → «bölüm» = *raporun bölümü* → beyan konuştu
+
+    İkisinde de kullanıcı bir **kırılım istemedi**. İlk yüklem *«soruda bir boyut adı
+    geçiyor»*du — ama bir boyut adının cümlede bulunması, o kırılımın **istendiğine**
+    dair bir kanıt değildir: biri çok-sözcüklü bir etiketin parçası, öteki **belgenin
+    kendi yapı adı**. `§101.1`: yanlış pozitif kusurun kendisinden pahalıdır.
+
+    ⚠ Ayrım **yeniden yazılmadı, çağrıldı** (`kirilim_istendi`, `niyet.py:311`) — bu
+    depoda `göre`/`bazında` aşırı-yüklenmesi üç kez ısırdı."""
+    from app import uyum
+
+    sema = {"cubes": [
+        {"name": "parti", "dimensions": ["musteri", "satis_temsilcisi"],
+         "dimension_synonyms": {"satis_temsilcisi": ["satis temsilcisi", "satis"],
+                                "musteri": ["musteri"]},
+         "dimension_labels": {"satis_temsilcisi": "satış temsilcisi"}},
+        {"name": "bakim", "dimensions": ["bolum"],
+         "dimension_synonyms": {"bolum": ["bolum", "bölüm"]},
+         "dimension_labels": {"bolum": "bölüm"}},
+    ]}
+    for soru in ("son 2 yil satis raporu hazirla",
+                 "bir de fire orani bolumu ekle"):
+        out = uyum._kirilim_ikamesi(soru, {"cube": "parti", "dimensions": ["musteri"]},
+                                    sema["cubes"][0], sema)
+        assert out is None, f"🔴 kırılım istenmemişken beyan konuştu ({soru}): {out}"
+
+
+def test_KD_ISARET_VARSA_HALA_KONUSUR():
+    """Daraltma **doğru-pozitifi öldürmemeli**: `BB` turunun ölçülen vakası işaret
+    (*«türüne **göre**»*) taşır ve beyan aynen konuşur.
+
+    *Bir yüklemi daraltmak, onu susturmak değildir — sınırını çizmektir.*"""
+    from app import uyum
+
+    sema = {"cubes": [
+        {"name": "egitim", "dimensions": ["sonuc", "departman"],
+         "dimension_synonyms": {"sonuc": ["sonuc"]}, "dimension_labels": {}},
+        {"name": "bakim_is_emri", "dimensions": ["tur"],
+         "dimension_synonyms": {"tur": ["tur", "tür"]},
+         "dimension_labels": {"tur": "tür"}},
+    ]}
+    out = uyum._kirilim_ikamesi("bu yil egitim turune gore katilim",
+                                {"cube": "egitim", "dimensions": ["sonuc"]},
+                                sema["cubes"][0], sema)
+    assert out is not None and out[0] == "tür", f"🔴 doğru-pozitif kayboldu: {out}"

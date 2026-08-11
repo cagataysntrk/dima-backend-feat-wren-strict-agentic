@@ -11834,3 +11834,207 @@ bulup dönmüştü. Prob'da küp sırası farklıydı.
 **Düzeltme:** soruda anılan **bütün** boyut adayları toplanır; **herhangi biri** cevapta
 varsa susulur. Canlı doğrulama: `araç türü` **susuyor**, `eğitim türü` **beyan ediyor**,
 `makine bazında oee` ve `kanal bazında sipariş` temiz.
+
+---
+
+# `CC` TURU — makbuz · görünüm · orkestrasyon · hata yolları · canvas
+
+*(2026-08-11 · 26 senaryo, curl ile tek tek, loglar anbean okundu)*
+
+## Koşulan senaryolar
+
+| # | soru | sonuç |
+|---|---|---|
+| 1 | «bu yıl ortalama oee» | ✅ `kpi` · route · 0 LLM |
+| 2 | «bu nasıl hesaplandı» | ✅ makbuz · **yeni sorgu YOK** |
+| 3 | «neler dahil» | ✅ makbuz |
+| 4 | «hangi tarih aralığını aldın» | ✅ makbuz |
+| 5 | «makine bazında bu yıl toplam üretim» | ✅ 11 satır + `§Cİ` çokluk beyanı |
+| 6 | «pasta grafik yap» | ✅ `view_hint=pie` |
+| 7 | «tablo olarak göster» | ✅ `view_hint=table` |
+| 8 | «çizgi grafik olsun» | ✅ `view_hint=line` |
+| 9 | «makine bazında bu yıl ortalama oee» | ✅ |
+| 10 | «en düşük hangisi» | ✅ `order asc` → RAM-3 |
+| 11 | **«neden»** *(çıplak)* | ✅ `§KN` tam zincir → **3. Vardiya** |
+| 12 | «ne yapmalıyız» | ✅ zincir + **öneri** |
+| 13 | «2019 yılı toplam ciro» | ✅ dürüst boşluk + veri aralığı |
+| 14 | «mars gezegenindeki satışlarımız ne kadar» | 🔴 **₺137,5M** — hayalî süzgeç sessizce düştü |
+| 15 | «asdfgh qwerty» | 🔴 **uydurma rapor**, sıfır beyan |
+| 16 | «bu yıl toplam ciroyu **euro** olarak göster» | 🔴 **₺74M**, `euro` sessizce yutuldu |
+| 17 | «…3 makinenin duruş sürelerini göster» | ✅ 3 adımlık orkestrasyon / ✅ netleştirme *(oy %33)* |
+| 18 | «geçen yıla göre ciro **ve** fire oranı değişimi» | 🔴 ciro düştü, **beyan YOK** |
+| 19 | «bu yıl toplam ciro **ve** fire oranı» | ✅ **beyan VAR** → kaçak YoY yolunda |
+| 20 | «son 2 yıl satış raporu hazırla» | ✅ 4-5 adım canvas *(3'te 1 «hangi ölçü?» diye takılıyor)* |
+| 21 | «bir de fire oranı **bölümü** ekle» | 🔴 belge YOK OLDU + `§KD-boyut` yanlış-pozitifi |
+| 22 | «rapora fire oranını da ekle» | 🔴 belge YOK OLDU *(«bölüm» hipotezi çürüdü)* |
+| 23 | «bu yıl RAM-3 makinesinin oee'si» | ✅ süzgeç doğru — ama `niyet` gürültülü |
+| 24 | «lütfen bana bu yılın cirosunu söyler misin» | ✅ nezaket fiilleri artığa girmemeli |
+| 25 | «kaç makinemiz var» | ✅ `§KV` varlık sorusu |
+| 26 | «makine bazında bu yıl oee panosu oluştur» | ✅ 2 adımlık pano taslağı |
+
+## 🔴 KÖK 1 · `§KA` — **kapsam kapısı garsonun cevaplarını KORUMUYOR**
+
+Üç senaryo, tek kök. `route()` cevaplarında bir **kapsam kapısı** var (`unknown` +
+`_islev_sozcugu`): açıklanamayan içerik sözcüğü kalırsa cevap verilmez, netleştirilir.
+Garson (Intent-JSON) devraldığında bu kapı **hiç çalışmıyor** — ve garson **neyi
+attığını söylemiyor**:
+
+```
+«mars gezegenindeki satışlarımız»  → bilinmeyen=mars,gezegenindeki  → ₺137.588.350
+«asdfgh qwerty»                    → bilinmeyen=asdfgh,qwerty       → 11 satır OEE raporu
+«…ciroyu euro olarak göster»       → bilinmeyen=euro                → ₺74.022.836
+```
+
+Üçünde de `niyet` **artığı biliyor** (KÖK-1'in niyet nesnesi onu sayıyor) ama artık
+kullanıcıya **hiç ulaşmıyor**. Doktrin garsona *niyeti* için güvenir; **sessizce
+attıkları** için değil. En ağırı `euro`: para birimi bir sunum tercihi değil, sayının
+**kimliğidir**.
+
+⚠ Kalibrasyon ölçüldü — kör bir *"tüm bilinmeyenleri beyan et"* **yanlış-pozitif** verirdi:
+
+```
+«…cirosunu söyler misin»           → bilinmeyen=soyler,misin   ← nezaket fiili, susulmalı
+«…oee panosu oluştur»              → bilinmeyen=panosu,olustur ← BİZİM teslimat fiilimiz
+«bu yıl RAM-3 makinesinin oee'si»  → üstünlük=3, kırılım=makine ← `niyet` gürültülü
+```
+
+*Bir hakeme niyetini sormak başka, ne attığını sormamak başkadır.*
+
+## 🔴 KÖK 2 · `§RD-takip` — **belge düzenleme yalnız TAZE dalda yaşıyor**
+
+`«son 2 yıl satış raporu hazırla»` → 4 bölümlü canvas ✅. Ardından
+`«rapora fire oranını da ekle»` → `refine → deterministik düzenleme` → **`rapor=None`**.
+Belge yok oldu.
+
+Kök **öncelik ters çevrilmesi**: `plan_tuketici.cevap` (ve içindeki `§RD-4`
+`_belgeyi_koru` koruması) yalnız `_try_fresh_intent()` içinde çağrılıyor; o da yapısal
+takip zincirinden **sonra** deneniyor. Ekranda belge varken bir düzenleme isteği aynı
+zamanda geçerli bir **fiş düzenlemesidir** — `deterministic_refine` onu kapar, tek bloklu
+bir cevap döndürür ve dört bölüm silinir. `§RD-4`'ün koruması **erişilemez**.
+
+⚠ «bölüm» hipotezi (o sözcük `bolum` boyutuna eşleşiyor diye) **çürütüldü**: sözcüksüz
+cümle de belgeyi yok etti. Ön-uç doğrulandı — `cube_query` **ve** `previous_rapor`
+birlikte gönderiliyor (`page.tsx:265`), yani bu canlı bir kusur, ölçüm artefaktı değil.
+
+## 🔴 KÖK 3 · ölçü-düşme beyanı YoY yolunda **atlanıyor**
+
+Aynı kayıp, iki yol, tek beyan:
+
+```
+«bu yıl toplam ciro ve fire oranı»          → ✅ «soruda 2 ölçü, cevapta 1 — toplam_ciro girmedi»
+«geçen yıla göre ciro ve fire oranı değişimi» → 🔴 aynı kayıp, NOT YOK
+```
+
+`KAT-1`'in tersi biçimi: bir kuralın **iki yolu** var ve biri sahipsiz.
+
+## 🔴 KÖK 4 · `§KD-boyut` yanlış-pozitifi — ve altındaki üst-kusur
+
+```
+«son 2 yıl satış raporu hazırla»  → «satış» ⇒ satis_temsilcisi kırılımı SANILDI → beyan konuştu
+«bir de fire oranı bölümü ekle»   → «bölüm» ⇒ bolum boyutu SANILDI            → beyan konuştu
+```
+
+İkisinde de kullanıcı bir **kırılım istemedi**; `niyet`in boyut sezgisi çok-sözcüklü bir
+etiketin **tek parçasını** («satış» ⊂ «satış temsilcisi») ve bir **belge yapısı adını**
+(«bölüm» = raporun bölümü) yakaladı. Beyan yalnız bunu **görünür** kıldı — ama
+`§101.1` gereği yanlış pozitif kusurun kendisinden pahalıdır.
+
+## ⚠ Küçük kökler
+
+* **`§KN` eki:** *«farkın %2,2'ini»* → son rakam **iki** ⇒ *«%2,2'sini»*. Kapalı sınıf.
+* **Makbuz:** `ort_oee` için **ham SQL** basılıyor ve *«toplam/ortalamasıdır»* diye kaçamak
+  yapılıyor — oysa `§KN.bilesenler()` aynı ölçünün insanca formülünü
+  (*kullanılabilirlik × performans × kalite*) katalogdan **zaten okuyor**.
+* **Sırasız kırılım belirlenimsiz:** aynı `cube_query` dört koşumda dört farklı satır
+  sırası verdi (RAM-1 / DİJİTAL BASKI / RAM-1 / FERRARO).
+* **Orkestre cevabında üst `cube_query`** teslim edilen satırlarla uyuşmuyor
+  (`dimensions=["vardiya"]` ama satırlar `makine`).
+
+## 🔍 Ölçüm aletinin İKİ körlüğü — ve bir yanlış teşhis
+
+1. `view_hint` basılmıyordu → *«pasta grafik `bar` dönüyor»* diye **sahte bir kusur**
+   yazdım. Ön-uç dört yerde `view_hint`'i onurlandırıyor; kusur **yoktu**.
+2. `previous_rapor` gönderilmiyordu → canvas kaybını önce artefakt sandım. Alan
+   eklenince kayıp **tekrar etti** — bu kez gerçekti.
+
+*Bir aletin göstermediği alan, olmayan bir alan gibi okunur; ve o okuma, kodda
+olmayan bir kusur icat eder.*
+
+## `CC` turu — TOPLU DÜZELTME ve canlı doğrulama
+
+Yedi kök, **tek** demet, **tek** tazeleme, **tek** kapı (SIFIRINCI KURAL).
+
+| kök | düzeltme | nerede | canlı doğrulama |
+|---|---|---|---|
+| **CC-k** | `§RD-takip` — belge düzenleme, fiş düzenlemeden **önce** | `plan_tuketici.belge_takibi` + `koru=False` kademesi | ✅ 2 bölümlü belge → *«fire oranını da ekle»* → **3 bölüm**, iz: *«fiş zincirinden ÖNCE»* |
+| **CC-e** | `§KA` — çıpasız cevap **varsayım** diye beyan edilir | `uyum.tanimadan_cevap_notu` + `uydurma_beyani` | ✅ *«asdfgh qwerty»* beyan ediyor · iki meşru soru **susuyor** |
+| **CC-g** | `§UY-yoy` — ölçü-düşme beyanı kıyas yolunda da | `uyum.beyan_ekle` (tek gövde, iki çağıran) | ✅ *«geçen yıla göre ciro ve fire oranı»* → *«`toplam_ciro` rapora girmedi»* |
+| **CC-i/j** | `§KD-boyut` **kırılım niyeti** aranmadan konuşmaz | `uyum._kirilim_ikamesi` → `kirilim_istendi` **çağrılır** | ✅ *«satış raporu»* ve *«… bölümü ekle»* **susuyor**; *«türüne göre»* konuşuyor |
+| **CC-c** | `§SB` — sırasız kırılım belirlenimli | `result_shape.belirlenimli_sirala` (**ilk yer yanlıştı**, aşağıda) | ✅ üç koşum, **aynı** ilk satır (RAM-1) |
+| **CC-a** | `§MK-formül` — makbuza insanca formül | `kok_neden.makbuz_satiri` | ✅ `↳ **oee** = kullanılabilirlik × performans × kalite` |
+| **CC-d** | `§KN-ek` — sayı eki son rakama göre | `kok_neden._ek` | ✅ *«%2,2'**sini**»* (on rakamın onu da kapılı) |
+
+### 🔴 Kendi düzeltmemi **iki kez** sessizce iptal ettim — ikisini de canlı ölçüm buldu
+
+`§KA`'nın kapısına ölçmeden iki daraltma koymuştum:
+
+1. `and not resp.suggestions` — *«netleştirmede konuşma»* diye. Ama netleştirme
+   `source=None` döner; koşul koruduğunu sandığım şeyi **hiç** korumuyordu. Canlıda
+   *«asdfgh qwerty»* yine beyansız geldi (dönem varsayımı chip üretmişti).
+2. `source == "cube+llm"` — *«garson yolu»* diye. Sonraki koşumda **aynı soru
+   Discovery'ye düştü** (`llm:openrouter`) ve beyan yine sustu.
+
+⊙ Doğru ölçüt **yol değil çıpasızlıktır**: cevabı bir LLM üretti **ve** soru kataloğun
+hiçbir eksenine değmedi. `route()` bu dala hiç gelmez (kendi kapsam kapısıyla çekilir),
+yani `"llm"` koşulu deterministik yolu zaten dışlar.
+
+*Ölçmeden eklenen bir koruma, bir koruma değil bir kör noktadır.*
+
+### Büyüme kapısı kendi talimatını uygulattı
+
+`ask()` 1387 → **1430**. Kapı *«tavanı yükseltme, modüle çıkar»* dedi ve dördü de
+taşındı (`plan_tuketici.belge_takibi` · `uyum.beyan_ekle` · `uyum.uydurma_beyani` ·
+`kok_neden.makbuz_satiri`) → 1409. Kalan 23 satır **çağrı + `AskResponse`**'tur ve
+`MUAFIYET_ASK_KOD`'a dördü ayrı ayrı **sha + Δ + gerekçe** ile yazıldı.
+
+### ⚠ CC turundan çıkan ve ÖLÇÜLMEDEN düzeltilmeyen üç borç
+
+1. **`§Cİ-belge` şüphesi:** düzenlenmiş belgede *«fire bu küpte tanımlı değil»* beyanı
+   geldi — oysa belgenin **3. bölümü** fire oranıydı. Birleşim kuralı (`_BIRLESIM`)
+   `olcu_ikamesi`'ni **zaten** içeriyor, yani yüklem doğru görünüyor ve kusur başka
+   yerde. *Tahminle düzeltilecek bir şey değil, ölçülecek bir şey.*
+2. **Belge düzenlemede biçim kaybı:** başlık *«Son 2 Yıl Satış Raporu»* → *«Rapor»*,
+   bölümler *«aylık seyir»* → *«toplam»*. `§RD-3` **dönemi** devrediyor, **granülerliği
+   ve başlığı** değil.
+3. **`euro`/`mars` sınıfı** (`§KA`'nın kapatmadığı yarısı): katalog eksenlerine değen
+   ama **atılan** terimler. Ayırt edecek merci garsonun kendisidir → Intent-JSON'a
+   `yok_sayilan` alanı + iddianın iki deterministik süzgeci. Ayrı demet, ayrı ölçüm.
+
+### 🔴 `§SB`'nin İLK ÇÖZÜMÜ BİR GERİLEME SATIN ALDI — ve kapı yakaladı, korpus göremedi
+
+Sıralamayı önce **SQL'e** koymuştum (`cube_sql`'e varsayılan dış `ORDER BY`). Korpus
+**taban ile birebir** geçti — `doğru=95 · devir=2142 · beyanlı_kısmi=41 ·
+sessiz_yanlış=8 · payda=2286` — ama tam süit iki testi kırdı:
+
+```
+test_parti_model_base::test_join_YALNIZCA_iliski_boyutu_istendiginde_uretilir  0 → 3 JOIN
+test_mizan_model_base::test_statements_sorgusu_SIFIR_JOIN_uretir               0 → 2 JOIN
+```
+
+Dış sarmal `dry_plan`'ın **JOIN budamasını** kaybettiriyordu. Ve o budama, Faz 1'in
+maliyet varsayımının tamamıdır: *«manifesti ilişki-türevi kolonlarla zenginleştirmek,
+o kolonlar istenmedikçe maliyet doğurmaz»*.
+
+⊙ Doğru katman **sonuç**tur: `limit` yokken satırların **tamamı** zaten çekilmiştir,
+dolayısıyla orada sıralamak SQL'de sıralamakla **denktir** — ama derleyiciye,
+planlayıcıya ve makbuza hiç dokunmaz. Yeni ev `result_shape.belirlenimli_sirala`,
+çağrı `answer.seal`'de ve **`interpret()`'ten önce** (yorum *«en yüksek»* olgusunu satır
+sırasından okuyor).
+
+⚠ Ve bu, `CLAUDE.md`'nin *«politikanın ölçülen bedeli»* maddesinin birebir tekrarıdır:
+**korpus `route()`'u ölçer**, derleyiciyi ve planlayıcıyı **görmez**. Merkezî bir dosyaya
+(`wren_service.py`) dokunan bir demet, demet sonunda `--hepsi` ister — bu tur onu koştu
+ve tam da o yüzden gerileme **canlıya gitmedi**.
+
+*Bir belirlenimsizliği düzeltmek için doğru katmanı seçmek, düzeltmenin kendisinden
+önemlidir: yanlış katman, çözdüğünden pahalı bir şey bozar.*

@@ -2596,3 +2596,31 @@ sahibi bir **boyut** da olabilir) · `§RZ`/`§RD`/`§RÇ`/`§RÜ`/`§RE`/`§KV`
 
 **Taban bu turların hiçbirinde oynamadı:** `doğru=95 · devir=2142 · netleştirme=0 ·
 beyanlı_kısmi=41 · sessiz_yanlış=8 · payda=2286`.
+
+## `CC` turu (2026-08-11) — makbuz · görünüm · orkestrasyon · hata yolları · canvas
+
+26 senaryo curl ile tek tek koşuldu; **yedi kök** toplu düzeltildi, **tek** kapı koşuldu.
+Tam döküm: `belgeler/denetim/2026-08-07_CEVIRI-SOZLESMESI.md` › `CC TURU`.
+
+| işaret | ne yapar |
+|---|---|
+| `§RD-takip` | Ekranda belge varken düzenleme isteği **fiş düzenlemeden önce** belge yoluna gider. Öncesinde 4 bölümlü bir belge *«rapora fire oranını da ekle»* deyince **yok oluyordu** — `§RD-4`'ün koruması taze dalda kalmış, **erişilemezdi**. |
+| `§KA` | Cevabı bir LLM üretti **ve** soru kataloğun hiçbir eksenine (ölçü · boyut · dönem · süzgeç) değmediyse cevap **varsayım** olarak beyan edilir. Reddetmez (`§0.0`), susmaz (`E-2`). |
+| `§UY-yoy` | Ölçü-düşme beyanı dönemsel kıyas yolunda da koşar (`uyum.beyan_ekle` — tek gövde, iki çağıran). |
+| `§KD-boyut` (daraltıldı) | Beyan **kırılım niyeti** aranmadan konuşmaz; yüklem `niyet.kirilim_istendi`'yi **çağırır** (yeniden yazmaz). İki canlı yanlış-pozitif kapandı. |
+| `§SB` | Sırasız bir kırılım artık belirlenimli: `order`/`limit`/`timeDimensions` yokken ilk ölçüye göre `DESC`. Hangi satırların döndüğü **değişmez**, yalnız sıraları. ⚠ **Sonuç katmanında** (`result_shape.belirlenimli_sirala`, `answer.seal`'den yorumdan ÖNCE çağrılır): ilk sürüm SQL'deydi ve `dry_plan`'ın **JOIN budamasını** bozuyordu (0 → 3 JOIN) — korpus göremedi, tam süit yakaladı. |
+| `§MK-formül` | Makbuz ham SQL'in **önüne** insanca formülü koyar (`kok_neden.makbuz_satiri`). |
+| `§KN-ek` | Yüzde eki sayının **son rakamına** göre çekimlenir (`%2,2'sini`) — on elemanlı kapalı sınıf. |
+
+### Açık borçlar — `CC` turundan, **ölçülmeden düzeltilmeyecek**
+
+* **`§Cİ-belge` şüphesi:** düzenlenmiş belgede *«fire bu küpte tanımlı değil»* beyanı
+  geldi, oysa 3. bölüm fire oranıydı. Birleşim kuralı `olcu_ikamesi`'ni zaten içeriyor →
+  kusur başka yerde, **ölçülecek**.
+* **Belge düzenlemede biçim kaybı:** başlık ve granülerlik devredilmiyor (`§RD-3` yalnız
+  **dönemi** devrediyor).
+* **`euro`/`mars` sınıfı:** katalog eksenlerine değen ama **atılan** terimler — `§KA` bunu
+  görmez. Çözüm: Intent-JSON'a `yok_sayilan` alanı + iddianın iki deterministik süzgeci
+  (sözcük soruda **geçmeli**, teslim edilen fişte **geçmemeli**). Ayrı demet, ayrı ölçüm.
+* *(devreden)* «arıza tipi» yönlendirmesi · `§KN`'yi 8'den fazla ölçüye açmak (pack şeması) ·
+  canlı «düşünüyorum» akışı (`S` fazı) · `B3` müşteri kodu yerine isim.

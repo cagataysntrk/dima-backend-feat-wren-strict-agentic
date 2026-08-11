@@ -180,7 +180,12 @@ def test_BELGE_DUZENLERKEN_DISCOVERYE_DUSULMEZ():
 
     kaynak = inspect.getsource(plan_tuketici.cevap)
     korumasiz = kaynak.index('_log.info("orkestratör: kullanılabilir plan yok')
-    koruma = kaynak.index("if _onceki_bolumler:\n            return _belgeyi_koru(")
+    # ⟳ `§RD-5` (curl `CC` turu) — koşula `and koru` eklendi: koruma **merdivenin
+    # sonunda** bir cevaptır, **ortasında** bir set. Takip dalının erken denemesi
+    # (`koru=False`) belgeyi korumaz, `None` döner ve zincir bugünkü gibi sürer —
+    # aksi hâlde ekranda belge varken sorulan HER meşru fiş sorusu *«belge korundu»*
+    # diye cevaplanırdı. Kapı **satırın varlığını ve SIRASINI** korur, metnini değil.
+    koruma = kaynak.index("if _onceki_bolumler and koru:\n            return _belgeyi_koru(")
     assert koruma < korumasiz, "🔴 belge koruması `return None`'dan SONRA — hiç koşmaz"
 
 

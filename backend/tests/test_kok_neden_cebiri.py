@@ -431,3 +431,36 @@ def test_ACIKLANAMADI_MEVCUT_KIRILIMI_KORUR():
     cq = {"cube": "k", "measures": ["m"], "dimensions": ["makine"], "filters": []}
     _, chipler = kn.aciklanamadi(cq, meta)
     assert chipler[0]["cube_query"]["dimensions"] == ["makine", "vardiya"]
+
+
+def test_KN_EK_ON_RAKAMIN_ONU_DA_DOGRU():
+    """🔴 `§KN-ek` — *«farkın **%2,2'ini**»* ölçüldü (curl `CC`, CC-11); doğrusu
+    *«%2,2'**sini**»*. Ek, sayının okunuşundaki **son sözcüğe** göre çekimlenir ve o
+    sözcük yalnız **son rakamdan** belirlenir: on olasılık, hepsi bu.
+
+    ⚠ `ADR-0008` uyumlu: bir **alan sözlüğü** değil, on elemanlı bir sayı sınıfı — ve
+    **büyüyemez**, çünkü Türkçede on bir rakam yoktur."""
+    from app.kok_neden import _ek
+
+    beklenen = {
+        "%0,0": ("%0,0'ı", "%0,0'ını"), "%84,1": ("%84,1'i", "%84,1'ini"),
+        "%2,2": ("%2,2'si", "%2,2'sini"), "%75,3": ("%75,3'ü", "%75,3'ünü"),
+        "%9,4": ("%9,4'ü", "%9,4'ünü"), "%0,5": ("%0,5'i", "%0,5'ini"),
+        "%6,6": ("%6,6'sı", "%6,6'sını"), "%1,7": ("%1,7'si", "%1,7'sini"),
+        "%13,8": ("%13,8'i", "%13,8'ini"), "%2,9": ("%2,9'u", "%2,9'unu"),
+    }
+    for metin, (iyelik, belirtme) in beklenen.items():
+        assert _ek(metin) == iyelik, f"🔴 iyelik: {metin} → {_ek(metin)}"
+        assert _ek(metin, True) == belirtme, f"🔴 belirtme: {metin} → {_ek(metin, True)}"
+
+
+def test_MK_FORMUL_MAKBUZA_INSANCA_SATIR():
+    """`§MK-formül` — makbuz ham SQL basıyordu; `§KN` aynı ölçünün insanca formülünü
+    **katalogdan** okuyabiliyordu. Bileşen çıkmayan ölçüde `None` → bugünkü makbuz
+    bayt bayt korunur (`KURAL B`)."""
+    from app import kok_neden
+
+    satir = kok_neden.makbuz_satiri("ort_oee", "oee", _OEE)
+    assert satir and "oee** = " in satir, satir
+    assert "kullanılabilirlik" in satir and "×" in satir, satir
+    assert kok_neden.makbuz_satiri("toplam_uretim_kg", "üretim", _OEE) is None
