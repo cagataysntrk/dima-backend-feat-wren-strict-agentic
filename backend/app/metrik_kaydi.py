@@ -103,9 +103,17 @@ def pack_kararlari(base: Any) -> dict[str, str | None]:
     (FAZ 2.2b `MetrikSahipligi`) onu **ezer** — en spesifik kazanır, `compose`'un katman
     sırasıyla aynı ilke.
     """
+    return _kararlari_oku(pathlib.Path(str(base)) / "packs" / "cekirdek" / KARAR_DOSYASI)
+
+
+def _kararlari_oku(yol: pathlib.Path) -> dict[str, str | None]:
+    """Tek bir karar dosyası → `{terim: sahip|None}`. Yoksa/bozuksa boş sözlük.
+
+    ⚠ `sahip: None` **bir kayıttır, boşluk değil**: *«bakıldı, belirsiz olduğuna karar
+    verildi»*. Üst katman onu bilerek **sahipsiz bırakmak** için de kullanabilir.
+    """
     import yaml
 
-    yol = pathlib.Path(str(base)) / "packs" / "cekirdek" / KARAR_DOSYASI
     if not yol.is_file():
         return {}
     try:
@@ -118,6 +126,52 @@ def pack_kararlari(base: Any) -> dict[str, str | None]:
         terim = str((k or {}).get("terim") or "").strip()
         if terim:
             out[terim] = str(k["sahip"]) if k.get("sahip") else None
+    return out
+
+
+def katmanli_kararlar(base: Any, *, sektorler: list[str] | None = None,
+                      moduller: list[str] | None = None,
+                      company: str | None = None) -> dict[str, str | None]:
+    """🔴 `§SH` — **UYGULANAN** kararlar: yalnız TENANT'A ÖZGÜ katmanlardan.
+
+    ## Neden bu fonksiyon var — `FAZ 3.1`'in gerilemesi bir KATMAN hatasıydı
+
+    `3.1` pack kararlarını doğrudan uyguladı ve korpus **%93,2 → %92,6** geriledi
+    (`gitas` erişim **%72 → %69**). Teşhis o gün *«pack kararı dayatılamaz»* diye
+    yazıldı ve karar **öneriye** indirildi (`3.1b`). Ölçüm doğruydu, **teşhis eksikti**:
+
+    > Sorun kararın *pack'ten gelmesi* değil, **çekirdekten** gelmesiydi.
+    > `elektrik → enerji_makine` bir **boyahane** kararıdır (çakışan iki küp de orada);
+    > `gitas` (tarım-ticareti) o çakışmayı **hiç yaşamaz**. Çekirdeğe konunca
+    > `gitas`'a da dayatıldı — ve gerileme oradan geldi.
+
+    Karar **doğru katmana** taşınınca dayatma **yapısal olarak imkânsız** olur:
+    `gitas` boyahane sektör paketini yüklemez, dosyayı **hiç okumaz**.
+
+    ## Katman sırası — `compose` ile AYNI, ve bu bir tesadüf değil
+
+        çekirdek  →  modül  →  sektör  →  şirket
+        (öneri)      ────────  uygulanır  ────────
+
+    ⚠ **Çekirdek bilerek DIŞARIDA:** oraya yazılan bir karar her tenant'a gider ve
+    `3.1`'in ölçtüğü şey tam olarak budur. Çekirdek katmanı `pack_kararlari()` ile
+    **öneri** olarak okunmaya devam eder — *bilgi kaybolmaz, yalnız dayatılmaz.*
+
+    ⚠ **Modül dâhil:** bir modül kararı yalnız o modülü yükleyen tenant'a gider; bu da
+    tenant'a özgüdür. Bugün modül karar dosyası yok — sıra **yer tutuyor**, çünkü
+    olmayan bir katmanı sonradan araya sıkıştırmak, sırayı ikinci kez düşünmek olur.
+
+    En spesifik kazanır: şirket > sektör > modül. Tenant'ın çalışma-zamanı kararı
+    (`MetrikSahipligi`) hepsinin üstündedir ve `sahiplikle_birlestir` onu sonra işler.
+    """
+    kok = pathlib.Path(str(base))
+    out: dict[str, str | None] = {}
+    for m in (moduller or []):
+        out.update(_kararlari_oku(kok / "packs" / "modul" / str(m) / KARAR_DOSYASI))
+    for s in (sektorler or []):
+        out.update(_kararlari_oku(kok / "packs" / "sektor" / str(s) / KARAR_DOSYASI))
+    if company:
+        out.update(_kararlari_oku(kok / "companies" / str(company) / KARAR_DOSYASI))
     return out
 
 
@@ -152,7 +206,8 @@ def onerilerle_birlestir(kayit: list[dict[str, Any]],
 
 
 def sahiplikle_birlestir(kayit: list[dict[str, Any]],
-                         sahiplik: dict[str, str | None]) -> list[dict[str, Any]]:
+                         sahiplik: dict[str, str | None],
+                         *, yontem: str = "insan_karari") -> list[dict[str, Any]]:
     """Taslak kayda **kalıcı sahiplik kararlarını** işler. FAZ 2.2b.
 
     🔴 **0.18 KENDİ KENDİNE ATILDI ve bu fonksiyon onu besliyor.** Taslak katalogdan
@@ -172,7 +227,11 @@ def sahiplikle_birlestir(kayit: list[dict[str, Any]],
         sahip = sahiplik.get(str(k.get("terim")))
         if sahip and sahip in (k.get("adaylar") or []):
             yeni["sahiplenilen_terimler"] = [sahip]
-            yeni["olusturulma_yontemi"] = "insan_karari"
+            # ⚠ `§SH` — KÖKEN KAYBOLMAZ: `insan_karari` (tenant'ın çalışma-zamanı kararı)
+            # ile `pack_karari` (sektör/şirket paketinin beyanı) **farklı şeylerdir** ve
+            # ekranda farklı okunmalıdırlar. *İkisini tek etikete indirmek, kararı kimin
+            # verdiğini silmek olurdu.*
+            yeni["olusturulma_yontemi"] = yontem
         elif sahip:
             yeni["gecersiz_sahip"] = sahip     # aday değil → görünür kalır, uygulanmaz
         out.append(yeni)
@@ -212,7 +271,9 @@ def hakem(terim: str, kayit: list[dict[str, Any]] | None) -> str | None:
     return None
 
 
-def semaya_yaz(schema: dict[str, Any], *, acik: bool, base: Any = None) -> dict[str, Any]:
+def semaya_yaz(schema: dict[str, Any], *, acik: bool, base: Any = None,
+               sektorler: list[str] | None = None, moduller: list[str] | None = None,
+               company: str | None = None) -> dict[str, Any]:
     """Bayrak açıksa kaydı **şemaya** koyar. Kapalıysa **hiç dokunmaz**.
 
     `GERİ AL` mekanizması budur: bayrak `off` → anahtar yok → `cube_router` kaydı hiç
@@ -227,10 +288,19 @@ def semaya_yaz(schema: dict[str, Any], *, acik: bool, base: Any = None) -> dict[
     # işlenir; tenant'ın kendi kararı (FAZ 2.2b) uçta bunun ÜSTÜNE biner — en spesifik
     # kazanır (`compose`'un katman sırasıyla aynı ilke).
     if base is not None:
-        # 🔴 FAZ 3.1b — pack kararı **ÖNERİDİR, UYGULAMA DEĞİL**. Uygulasaydı korpus
+        # 🔴 FAZ 3.1b — **ÇEKİRDEK** kararı ÖNERİDİR, uygulama değil. Uygulasaydı korpus
         # gerilerdi (ölçüldü: %93,2 → %92,6) çünkü bir tenant'ın alan bilgisi bütün
-        # tenant'lara dayatılmış olurdu. Uygulayan tek şey **tenant'ın kendi kararıdır**.
+        # tenant'lara dayatılmış olurdu.
         kayit = onerilerle_birlestir(kayit, pack_kararlari(base))
+        # 🔴 `§SH` — ve TENANT'A ÖZGÜ katmanlar (modül · sektör · şirket) **UYGULANIR**.
+        # `3.1`'in ölçümü doğruydu, teşhisi eksikti: sorun kararın *pack'ten* gelmesi
+        # değil **çekirdekten** gelmesiydi. Doğru katmandaki bir kararı `gitas` **hiç
+        # okumaz** — dosya onun yüklemediği bir pakette yaşar. Dayatma, bir politika
+        # değil bir **dizin yapısı** meselesine indi.
+        kayit = sahiplikle_birlestir(
+            kayit, katmanli_kararlar(base, sektorler=sektorler, moduller=moduller,
+                                     company=company),
+            yontem="pack_karari")
 
     # 🔴 ÇİFT SAHİPLİK REDDİ — **fail-closed**. Bir terimi iki cube birden sahiplenmişse
     # hakem yine YOKTUR, ama artık bir de *"hakem var"* beyanı vardır. Beyan ile kodun

@@ -556,6 +556,38 @@ class WrenService:
             pass
         return DEFAULT_LANGS
 
+    def _tenant_katmanlari(self, kok: Any) -> tuple[str | None, list[str]]:
+        """`§SH` — bu tenant'ın **şirket slug'ı** ve **sektörleri**. Best-effort.
+
+        Slug iki yerden gelebilir ve **ikisi de meşrudur**: servise açıkça geçilen
+        `company_slug` (çok-tenant yol) ya da `Settings.company` (tek-tenant demo/lab
+        yolu). Ölçüldü: canlı konteynerde `company_slug` **None**, `settings.company`
+        **`demo-boyahane`** — yalnız birine bakan bir okuma, kararların **hiçbirini**
+        uygulamazdı ve kusur *"karar dosyası çalışmıyor"* diye okunurdu.
+
+        Sektör `company.yml`'den okunur (`ADR-0005`: kaynak control-plane DB, dosya
+        türetilmiştir). Okunamazsa **boş liste** → hiçbir katman kararı uygulanmaz →
+        bugünkü davranış. *Bilinmeyen bir sektör için karar uygulamak, kararı sahibi
+        olmayan bir tenant'a dayatmaktır.*
+        """
+        from pathlib import Path as _P
+        try:
+            from app.config import get_settings
+            slug = self.company_slug or getattr(get_settings(), "company", None)
+        except Exception:                                      # noqa: BLE001
+            slug = self.company_slug
+        if not slug or not kok:
+            return (slug or None, [])
+        try:
+            import yaml
+
+            cfg = _P(str(kok)) / "companies" / str(slug) / "company.yml"
+            sek = (yaml.safe_load(cfg.read_text(encoding="utf-8")) or {}).get("sektorler")
+            return (str(slug), [str(x) for x in (sek or [])])
+        except Exception:                                      # noqa: BLE001
+            _log.warning("tenant katmanları okunamadı (best-effort): %s", slug)
+            return (str(slug), [])
+
     # -- Public API ------------------------------------------------------
     def schema(self) -> dict[str, Any]:
         if self._schema_cache is not None:
@@ -921,9 +953,15 @@ class WrenService:
             # FAZ 3.1 — `base`: pack karar kaydının kökü. `demo/` dizini, projenin
             # iki üstü (`<demo>/wren-projects/<slug>` ya da geçici derleme dizini).
             _base = get_settings().demo_dir if hasattr(get_settings(), "demo_dir") else None
+            _kok = _base or _pack_koku(self.project_dir)
+            # 🔴 `§SH` — TENANT BAĞLAMI. `katmanli_kararlar` yalnız bu tenant'ın
+            # YÜKLEDİĞİ katmanları okur; bağlam verilmezse hiçbir karar uygulanmaz ve
+            # davranış **birebir bugünküdür**. *Bağlamı olmayan bir katman kararı, en
+            # baştaki dayatmanın ta kendisi olurdu.*
+            _sirket, _sektorler = self._tenant_katmanlari(_kok)
             semaya_yaz(self._schema_cache,
                        acik="metrik_kaydi" in resolve_for(get_settings(), None),
-                       base=_base or _pack_koku(self.project_dir))
+                       base=_kok, company=_sirket, sektorler=_sektorler)
         except Exception:                                      # noqa: BLE001
             # Kayıt bir **iyileştirmedir**, bir ön koşul değil: üretilemezse şema
             # eksiksiz döner ve sistem bugünkü yolunu izler. Sessiz yutma YOK:

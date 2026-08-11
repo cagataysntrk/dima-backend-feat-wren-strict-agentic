@@ -518,8 +518,36 @@ def _kup_ikamesi(qn: str, cq: dict, sema: dict | None) -> tuple[str, str] | None
             continue
         if _deger_metni and _cr._syn_hit(_deger_metni, _eslesen.lower()):
             continue                       # süzgeçte taşınıyor → karşılandı
+        # 🔴 `§SH` — HAKEM KARAR VERDİYSE BU BİR İKAME DEĞİL, KARARIN KENDİSİDİR.
+        #
+        # Canlıda ölçüldü (2026-08-11): `bu yıl elektrik tüketimi` → `enerji_makine`
+        # (sahiplik kararı) ve **yanına şu beyan düştü**: *«…«elektrik» bu katalogda
+        # surdurulebilirlik konusudur — ama bu cevap enerji_makine küpünden geldi»*.
+        # Yani sistem kendi verdiği kararı, aynı cevabın içinde **bir kusur olarak ilan
+        # etti**. `KAT-1` ihlalinin canlı hâli: *«bu terim hangi küpün?»* sorusunun iki
+        # sahibi oldu ve ikisi birbirini yalanladı.
+        #
+        # ⚠ Beyan susmuyor, **haklı olduğu yerde** konuşuyor: hakem kararı yoksa ya da
+        # cevap ilan edilen sahipten GELMİYORSA satır aynen ateşlenir.
+        if _hakem_onayli(_eslesen, _kup, sema):
+            continue
         return _eslesen, _ad
     return None
+
+
+def _hakem_onayli(terim: str, kup: str, sema: dict | None) -> bool:
+    """`§SH` — `terim`in ilan edilmiş sahibi `kup` mu? Karar yoksa `False`.
+
+    ⚠ İkinci bir eşleştirici **yazılmadı**: karar `metrik_kaydi.hakem`'den okunur —
+    `_match_cube`'un okuduğu **aynı** kayıttan. *Bir kararı iki yerde okumak, onu iki
+    kez vermektir.*
+    """
+    from app import cube_router as _cr
+    from app.metrik_kaydi import SEMA_ANAHTARI, hakem
+    try:
+        return hakem(_cr._norm(str(terim)), (sema or {}).get(SEMA_ANAHTARI)) == kup
+    except Exception:                     # noqa: BLE001 — beyan susmaz, tur düşmez
+        return False
 
 
 def _kirilim_ikamesi(qn: str, cq: dict, cube_meta: dict | None,
