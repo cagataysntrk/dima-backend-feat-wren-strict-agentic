@@ -6,10 +6,34 @@
 // açar; sayfalar arasında CSS sayfa-sonu (break-after) verilir. Rapor sabit ölçek (kullanıcı
 // notu: e-posta/rapor tarafında özel responsive gerekmez).
 
+import { useState } from "react";
+
 import type { Report } from "@/lib/types";
 import { ResultView } from "@/components/ResultView";
 
-export function ReportView({ report, onClose }: { report: Report; onClose: () => void }) {
+export function ReportView({ report, onClose, onSor }: {
+  report: Report;
+  onClose: () => void;
+  // 🔴🔴 `§RV-canvas` — **BELGEYE BAKARKEN BELGEYE KONUŞABİLMEK.**
+  //
+  // Kullanıcının şartı açıktı: *"rapor ve dashboard agentic olarak CANVAS olarak
+  // oluşturulup kullanıcı ile mükemmelce tamamlanacak"*. Backend bunu zaten yapıyor
+  // (`previous_rapor` + ekle/çıkar, `§RD`/`§RÇ`) ve sohbetten çalışıyor. Ama belge tam
+  // sayfa açıkken ortada **hiçbir giriş yok**: kullanıcı düzenlemek için belgeyi
+  // KAPATMAK zorundaydı — yani canvas'ın tam da olmaması gereken yeri.
+  //
+  // ⚠ Yeni bir gönderim yolu **açılmadı**: `ReportPanel`'in kendi `onContinue`'u
+  // geçirilir ve o zaten `previous_rapor` taşır. İkinci bir yol, bir gün yalnız
+  // birinin bağlamı taşıması demekti.
+  //
+  // ⚠ Ve **yalnız en son belge** düzenlenebilir (`ReportPanel` karar verir): eski bir
+  // belgeyi düzenlemek, isteği ekrandakinden BAŞKA bir belgeye yazmak olurdu.
+  //
+  // *Bir belgeyi tamamlamak için onu kapatmak gerekiyorsa, o bir canvas değil bir
+  // çıktıdır.*
+  onSor?: (text: string) => void;
+}) {
+  const [istek, setIstek] = useState("");
   const pages = report.pages ?? [];
   const btn =
     "flex h-[26px] items-center border border-hairline px-2 font-mono text-[11px] text-neutral-400 transition-colors hover:text-foreground";
@@ -138,6 +162,31 @@ export function ReportView({ report, onClose }: { report: Report; onClose: () =>
               ))}
             </ul>
           </section>
+        )}
+        {onSor && (
+          <form
+            className="mx-auto mt-4 flex max-w-4xl items-center gap-2 border-t border-hairline pt-3 print:hidden"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const t = istek.trim();
+              if (!t) return;
+              setIstek("");
+              onSor(t);
+            }}
+          >
+            <input
+              value={istek}
+              onChange={(e) => setIstek(e.target.value)}
+              placeholder="Belgeyi düzenle — ör. «kârlılık bölümü ekle» · «müşteri kırılımını çıkar»"
+              className="h-[30px] flex-1 border border-hairline bg-background px-2 font-mono text-[12px] text-foreground outline-none placeholder:text-neutral-500 focus:border-neutral-500"
+            />
+            <button
+              type="submit"
+              className="flex h-[30px] items-center border border-hairline px-3 font-mono text-[11px] text-neutral-400 transition-colors hover:text-foreground"
+            >
+              gönder
+            </button>
+          </form>
         )}
       </div>
     </div>

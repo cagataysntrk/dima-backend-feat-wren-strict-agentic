@@ -11427,3 +11427,21 @@ susturmak olurdu.
 
 Canlı: *«panoya su tüketimi de ekle»* → 4→**5 blok**, yanlış beyan **yok**, `§RÇ` doğru
 şekilde **sustu** (bu kez gerçekten değişti).
+
+## `§RV-canvas` — belgeye bakarken belgeye konuşabilmek (frontend)
+
+Kullanıcının şartı: *«rapor ve dashboard agentic olarak **canvas** olarak oluşturulup
+kullanıcı ile mükemmelce tamamlanacak»*. Backend bunu zaten yapıyordu (`previous_rapor`
++ ekle/çıkar) ve **sohbetten** çalışıyordu — ama belge **tam sayfa açıkken** ortada
+hiçbir giriş yoktu: kullanıcı düzenlemek için belgeyi **kapatmak** zorundaydı.
+*Bir belgeyi tamamlamak için onu kapatmak gerekiyorsa, o bir canvas değil bir çıktıdır.*
+
+| karar | gerekçe |
+|---|---|
+| Komposer `ReportView`'da, gönderim `ReportPanel`'in **kendi** `onContinue`'u | ikinci bir gönderim yolu, bir gün yalnız birinin bağlamı taşıması demekti (`KAT-1`) |
+| Yalnız **en son** belge düzenlenebilir | istek her zaman `previous_rapor` ile gider; eski bir belgeyi düzenlemek isteği **ekrandakinden başka** bir belgeye yazmak olurdu |
+| Açık belge yeni cevabı **izler** (`takip`) | izlemeseydi kullanıcı düzenler ve ekranda hiçbir şey değişmezdi — canvas'ın en can alıcı yerinde sessiz bir hiçlik |
+| Komposer **baskıda gizli**, kaynak listesi **görünür** | yazdırılmış bir belgede metin kutusu bir kanıt değil bir gürültüdür |
+
+`page.tsx` **tam tavandaydı** (560/560) ve tasarım ona hiç dokunmadan kuruldu.
+tsc temiz · lint tabanla birebir (10 problem, hiçbiri bu iki dosyada) · 60 hedefli test yeşil.

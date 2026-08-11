@@ -482,3 +482,59 @@ def test_BIRLESIM_TUM_BLOKLAR_GORULMEDEN_KARAR_VERMEZ():
 
     kaynak = inspect.getsource(plan_tuketici.cevap)
     assert "_sayi >= _blok_sayisi" in kaynak
+
+
+# --- `§RV-canvas` · BELGEYE BAKARKEN BELGEYE KONUŞABİLMEK ----------------------------
+
+def _fe(yol: str) -> str:
+    import pathlib
+    p = pathlib.Path("/dima-frontend-demo-master/src") / yol
+    if not p.exists():
+        pytest.skip("frontend mount edilmemiş")
+    return p.read_text(encoding="utf-8")
+
+
+def test_BELGE_GORUNUMUNDE_KOMPOSER_VAR():
+    """🔴🔴 `§RV-canvas` — **kapının kalbi.** Kullanıcının şartı: *«rapor ve dashboard
+    agentic olarak CANVAS olarak oluşturulup kullanıcı ile mükemmelce tamamlanacak»*.
+    Backend bunu zaten yapıyordu (`previous_rapor` + ekle/çıkar) ve sohbetten
+    çalışıyordu — ama belge **tam sayfa açıkken** ortada hiçbir giriş yoktu: kullanıcı
+    düzenlemek için belgeyi **kapatmak** zorundaydı.
+
+    *Bir belgeyi tamamlamak için onu kapatmak gerekiyorsa, o bir canvas değil bir
+    çıktıdır.*"""
+    kod = _fe("components/ReportView.tsx")
+    assert "onSor" in kod and "<form" in kod and "<input" in kod
+
+
+def test_KOMPOSER_BASKIDA_GIZLI():
+    """⚠ Kaynak listesi baskıda **görünür** (kanıt belgeyle gider), komposer **gizli**:
+    yazdırılmış bir belgede bir metin kutusu bir kanıt değil bir gürültüdür."""
+    kod = _fe("components/ReportView.tsx")
+    form = kod[kod.index("{onSor && ("):]
+    assert "print:hidden" in form[:400]
+
+
+def test_YALNIZ_SON_BELGE_DUZENLENEBILIR():
+    """🔴 Bir düzenleme isteği her zaman `previous_rapor` ile gider ve o **bağlamdaki**
+    (en son) belgedir. Eski bir belge açıkken komposer gösterseydik, istek ekrandakinden
+    **başka** bir belgeye yazılırdı — sessiz ve fark edilmesi imkânsız."""
+    kod = _fe("components/ReportPanel.tsx")
+    assert "onSor={takip ? onContinue : undefined}" in kod
+    assert "setTakip(r === sonBelge)" in kod
+
+
+def test_DUZENLEME_SONUCU_EKRANDA_GORUNUR():
+    """⚠ `takip` olmadan kullanıcı düzenler ve ekranda **hiçbir şey değişmezdi** —
+    canvas'ın en can alıcı yerinde sessiz bir hiçlik.
+    *Bir belgeyi düzenlemek, düzenlenmiş hâlini görmekle tamamlanır.*"""
+    kod = _fe("components/ReportPanel.tsx")
+    assert "takip ? (sonBelge ?? acikRapor) : acikRapor" in kod
+
+
+def test_IKINCI_GONDERIM_YOLU_ACILMADI():
+    """🔴 `KAT-1` — komposer `ReportPanel`'in **kendi** `onContinue`'unu çağırır; o zaten
+    `previous_rapor` taşır. İkinci bir yol, bir gün yalnız birinin bağlamı taşıması
+    demekti."""
+    kod = _fe("components/ReportView.tsx")
+    assert "api-client" not in kod and "useMutation" not in kod

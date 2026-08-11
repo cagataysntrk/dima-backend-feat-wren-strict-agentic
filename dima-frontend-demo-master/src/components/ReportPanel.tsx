@@ -161,6 +161,14 @@ export function ReportPanel({
   // orkestratörün cevabı. *Aynı belgeyi iki farklı görüntüleyiciyle çizmek, iki farklı
   // ürün yapmaktır.*
   const [acikRapor, setAcikRapor] = useState<Report | null>(null);
+  // 🔴 `§RV-canvas` — açık belge **en sonuncuysa** düzenlenebilir ve yeni cevabı
+  // **izler**. İkisi de aynı gerekçeden doğar: bir düzenleme isteği her zaman
+  // `previous_rapor` ile gider, o da bağlamdaki (yani en son) belgedir. Eski bir belge
+  // açıkken composer gösterseydik, istek ekrandakinden **başka** bir belgeye yazılırdı.
+  // ⚠ `takip` olmadan kullanıcı düzenler ve ekranda **hiçbir şey değişmezdi** — canvas'ın
+  // en can alıcı yerinde sessiz bir hiçlik. *Bir belgeyi düzenlemek, düzenlenmiş hâlini
+  // görmekle tamamlanır.*
+  const [takip, setTakip] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   // §B düzeltmesi (1 Ağustos 2026) — çoklu-seçim bağlam: hangi kartların seçili olduğu
   // (index'e göre, thread'in KENDİ item dizisindeki konum) + iki alt-komposer'ın metni.
@@ -228,6 +236,9 @@ export function ReportPanel({
   // FAZ 0.23 — aynı kapı (aşağıdaki render dalıyla TEK sahip). Eskiden `it.result || it.kpi`
   // burada TEKRAR yazılıydı → `lastReportableIdx`/`viewHint` de aynı körlüğü MİRAS ALIYORDU.
   thread.items.forEach((it, i) => { if (raporlanabilir(it)) lastReportableIdx = i; });
+  // `§RV-canvas` — bağlamdaki belge: `previous_rapor` her zaman **bunu** taşır.
+  const sonBelge: Report | null =
+    (lastReportableIdx >= 0 ? thread.items[lastReportableIdx]?.rapor : null) ?? null;
 
   // §B düzeltmesi (1 Ağustos 2026) — çoklu-seçim: en-son (en büyük index) seçilen kart
   // yapısal ÇAPA olur (kendi cube_query/sql'i normal follow-up gibi kullanılır), geri
@@ -249,7 +260,11 @@ export function ReportPanel({
     <>
     {acikRapor && (
       <div className="fixed inset-0 z-50 bg-background">
-        <ReportView report={acikRapor} onClose={() => setAcikRapor(null)} />
+        <ReportView
+          report={takip ? (sonBelge ?? acikRapor) : acikRapor}
+          onClose={() => { setAcikRapor(null); setTakip(false); }}
+          onSor={takip ? onContinue : undefined}
+        />
       </div>
     )}
     <div className="flex h-full min-h-0 flex-col">
@@ -302,7 +317,7 @@ export function ReportPanel({
               <ReportCard
                 key={`${thread.id}-${i}`}
                 item={it}
-                onRaporAc={setAcikRapor}
+                onRaporAc={(r) => { setAcikRapor(r); setTakip(r === sonBelge); }}
                 index={i}
                 threadId={thread.id}
                 viewHint={i === lastReportableIdx ? viewHint : null}
