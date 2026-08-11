@@ -910,7 +910,8 @@ class WrenService:
         ]
         self._apply_synonym_overlays(cubes)  # ADR-0018 katman 3 (canlı, deploy'suz)
         self._apply_measure_overrides(cubes)  # Faz 2d: deprecate edilen ölçüleri NL'den gizle
-        self._damgala_fanout(cubes)           # Faz D2: ilişki sertifikası → boyut kökeni
+        # Faz D2: ilişki sertifikası → boyut kökeni **ve** (`§F6`) ilişkinin kendisi
+        self._damgala_fanout(cubes, relationships)
         if db_ok:
             self._enrich_cube_dim_values(cubes, mdl, models)
         # CROSS-CUBE KPI kataloğu (kpis/*.yml): yönlendirme için ad/etiket/sinonim; tam
@@ -968,8 +969,20 @@ class WrenService:
             _log.warning("metrik kaydı şemaya yazılamadı (best-effort)", exc_info=True)
         return self._schema_cache
 
-    def _damgala_fanout(self, cubes: list) -> None:
-        """İlişki sertifikasını (Faz D2) boyut kökenine damgalar: `origin["certified"]`.
+    def _damgala_fanout(self, cubes: list, iliskiler: list | None = None) -> None:
+        """İlişki sertifikasını (Faz D2) boyut kökenine **ve ilişkinin kendisine** damgalar.
+
+        🔴 `§F6` — **İLİŞKİ DAMGASI EKSİKTİ VE İHRAÇ BUNU DIŞARI SÖYLÜYORDU.**
+        Canlı ölçüm (2026-08-11, Ossie ihraç ucu): boyut kökeni
+        `certified: "olculdu:saglikli"` diyordu ama **ilişkilerin kendisi** damgasızdı;
+        `ossie.belge()` damgasız ilişkiyi — doğru biçimde, fail-closed — `"olculmedi"`
+        diye ihraç ediyordu. Yani `§F3`'te **31/31'ini ölçtüğümüz** ilişkileri karşı
+        tarafa *«ölçmedik»* diye veriyorduk.
+
+        ⚠ Bu bir ihraç kusuru **değildi**: `belge()` kendisine verilmeyeni uyduramaz ve
+        uydurmamalı. Kusur **beslemedeydi** — damga yalnız boyut kökenine basılıyordu.
+        *Kendi ölçümünü eksik beyan etmek, ölçmemekten farklı bir kusurdur: birincisi
+        emeği çöpe atar.*
 
         Sertifika bir **build artefaktıdır** (`target/fanout_certificate.json`,
         `python -m app.fanout`). `schema()` onu yalnız OKUR — ölçmez. Bilerek: ölçüm 62
@@ -987,6 +1000,10 @@ class WrenService:
             for origin in (c.get("dimension_origin") or {}).values():
                 if isinstance(origin, dict):
                     origin["certified"] = fanout.rozet(sert, origin.get("relationship"))
+        # ⚠ İkinci bir rozet fonksiyonu YOK — aynı `fanout.rozet`, aynı artefakt (`KAT-1`).
+        for r in (iliskiler or []):
+            if isinstance(r, dict) and r.get("name"):
+                r["certified"] = fanout.rozet(sert, str(r["name"]))
 
     def _apply_synonym_overlays(self, cubes: list) -> None:
         """Control-plane DB'deki ONAYLI sinonim overlay'lerini schema'ya BİRLEŞTİRİR

@@ -29,7 +29,26 @@ features:
   # FAZ 3.4 — Ossie ithali. `off`: uç 404 döner (GERİ AL).
   ossie_ithal: "off"
   # FAZ 4.4 — Ossie ihracı. `off`: uç 404 döner. İhraç OKUMA işlemidir, `packs/` etkilenmez.
-  ossie_ihrac: "off"
+  #
+  # 🔴 `§F6` — **AÇILDI (2026-08-11), ÇÜNKÜ BAYRAĞIN KENDİ YAZILI ŞARTI KARŞILANDI.**
+  # Şart (`features.py`): *«ihraç edilen model geri ithal edildiğinde birebir aynı SQL
+  # vermiyorsa bayrak AÇILMAZ»*. Pilot **fikstürde değil canlı katalogda** koşuldu:
+  #     dataset **23** · ilişki **31** · ölçü sinonimi **677/677** `ai_context`e taşındı
+  #     round-trip kaybı **SIFIR** (ölçü · boyut · zaman boyutu · `base_object`)
+  #     `x-dima`: `additive` · `certified` · `origin` · `rol` — dördü de taşınıyor
+  #
+  # ⚠ Ve pilot bir KUSUR BULDU ve düzeltti: uç `schema()` şeklini besliyordu,
+  # `disa_aktar` `packs/` şeklini bekliyordu → canlıda **HTTP 500**. Round-trip kapısı
+  # göremedi çünkü fikstürü `packs/` şeklindeydi — *kapı, ucun hiç görmediği bir şekli
+  # sınıyordu.* Yeni kapı `schema()`'nın **kendisini** ihraç ediyor
+  # (`test_f6_ossie_canli_sekil.py`).
+  #
+  # 🔴 `on` ŞARTI (gözlenebilir): canlı `GET /connections/{cid}/ossie` **200** dönmeli ve
+  # gövdesinde `datasets` ≥ 1 + en az bir `ai_context` bulunmalı.
+  # ⚠ `ossie_ithal` **`off` KALIYOR**: o bir YAZMA yoludur ve gerçek bir müşteri modeliyle
+  # pilotu YAPILMADI. *Ölçülmemiş bir yeteneği, kardeşi ölçüldü diye açmak, ölçümü bir
+  # törene çevirir.*
+  ossie_ihrac: beta
   # FAZ 4.5 — MCP yüzeyi. `off`: /mcp/* 404 döner, HTTP yolu ETKİLENMEZ.
   mcp_yuzeyi: "off"
   # FAZ 5.1 — 6. konuşma türü ("bunu takip et"). `off`: tür tanınmaz, davranış birebir.

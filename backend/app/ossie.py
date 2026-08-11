@@ -216,6 +216,96 @@ def _uzanti(x: dict[str, Any]) -> dict[str, Any]:
     return dict(x.get(UZANTI) or x.get("x_dima") or {})
 
 
+def _pack_sekline_getir(cube: dict[str, Any]) -> dict[str, Any]:
+    """🔴 `§F6` — **İKİ ŞEKİL VARDI VE İHRAÇ UCU YANLIŞ OLANI BESLİYORDU.**
+
+    ## Ölçülen kusur (2026-08-11, canlı katalog)
+
+    `GET /connections/{cid}/ossie` gövdesi şunu yapar:
+
+        sema = wren_for_request(request).schema()
+        return {..., **belge(sema.get("cubes") or [], ...)}
+
+    Ama `schema()` cube'ları **düzleştirir** — `measures: ["ort_oee", …]` (dizeler),
+    sözlükler ise `measure_synonyms` / `measure_expressions` / `measure_labels`
+    anahtarlarında **ayrı** durur. `disa_aktar` ise `packs/` şeklini bekliyordu:
+    `measures: [{name, expression, synonyms}, …]`. Sonuç, canlı şemada:
+
+        AttributeError: 'str' object has no attribute 'get'   → HTTP 500
+
+    🔴 **Ve round-trip kapısı bunu GÖREMEDİ**, çünkü fikstürü `packs/` şeklinde yazılmış:
+    yani kural yazılmış, uç bağlanmış, kapı kurulmuş — **ve kapı, ucun hiç görmediği bir
+    şekli sınıyordu.** Bu deponun avladığı sınıfın en sinsi biçimi: *beyan ile kodun
+    ayrışması*, üstelik bir testin arkasına saklanmış hâli.
+
+    ## Neden NORMALİZE, ikinci bir ihracatçı değil
+
+    İki `disa_aktar` yazmak (biri pack, biri şema) `KAT-1` ihlali olurdu ve iki ihracat
+    zamanla iki farklı Ossie belgesi üretirdi. Şekil çevirisi **tek yerde**, ihracatın
+    kapısında durur; `disa_aktar`ın gövdesi **hiç değişmedi**.
+
+    ⚠ Zaten-pack olan girdi **dokunulmadan** geçer (idempotent): ölçü listesi sözlük
+    taşıyorsa çeviri yapılmaz. *Bir normalleştirici, normalleştirdiğini bozmamalıdır.*
+    """
+    olculer = cube.get("measures") or []
+    if not olculer or not all(isinstance(m, str) for m in olculer):
+        return cube                      # zaten `packs/` şekli (ya da boş) → dokunma
+
+    # ⚠ Anahtar adları **ölçüldü, tahmin edilmedi** (canlı `schema()` dökümü, 2026-08-11):
+    # üç tahminim yanlıştı — `measure_labels` **yok** (etiket `measure_synonyms_display`
+    # altında), küp etiketi `label` değil **`display`**, ve `non_additive` `semi_additive`ten
+    # **ayrı bir liste**. *Bir şema çevirisi, şemayı okumadan yazılamaz.*
+    syn = cube.get("measure_synonyms") or {}
+    ifade = cube.get("measure_expressions") or {}
+    birim = cube.get("units") or {}
+    yari, toplanamaz = set(cube.get("semi_additive") or []), set(cube.get("non_additive") or [])
+    kiyaslanamaz = set(cube.get("kiyaslanamaz") or [])
+
+    def _olcu(ad: str) -> dict[str, Any]:
+        k: dict[str, Any] = {"name": ad}
+        for anahtar, kaynak in (("expression", ifade), ("unit", birim), ("synonyms", syn)):
+            if kaynak.get(ad):
+                k[anahtar] = kaynak[ad]
+        # ⚠ `semi`/`non` DÜŞÜRÜLEMEZ: bir bakiyeyi düz `SUM` etmek, bir oranı toplamak
+        # **güvenle yanlış** sayı üretir ve Ossie'de karşılığı yok — `x-dima` şart.
+        if ad in yari:
+            k["additive"] = "semi"
+        elif ad in toplanamaz:
+            k["additive"] = "non"
+        if ad in kiyaslanamaz:
+            k["kiyaslanamaz"] = True
+        return k
+
+    d_syn = cube.get("dimension_synonyms") or {}
+    d_etiket = cube.get("dimension_labels") or {}
+    koken = cube.get("dimension_origin") or {}
+    z_ifade = cube.get("time_dimension_expressions") or {}
+
+    def _boyut(ad: str, zaman: bool = False) -> dict[str, Any]:
+        k: dict[str, Any] = {"name": ad}
+        if d_etiket.get(ad):
+            k["label"] = d_etiket[ad]
+        if d_syn.get(ad):
+            k["synonyms"] = d_syn[ad]
+        if zaman and z_ifade.get(ad):
+            k["expression"] = z_ifade[ad]
+        if koken.get(ad):
+            # `dimension_origin` fan-out riskinin tek kanıtı — ihraçta düşemez (`§F3`).
+            k["properties"] = {"origin": koken[ad]}
+        return k
+
+    out = {**cube,
+           "measures": [_olcu(m) for m in olculer],
+           "dimensions": [_boyut(d) for d in (cube.get("dimensions") or [])
+                          if isinstance(d, str)],
+           "time_dimensions": [_boyut(t, zaman=True)
+                               for t in (cube.get("time_dimensions") or [])
+                               if isinstance(t, str)]}
+    if not out.get("label") and cube.get("display"):
+        out["label"] = str(cube["display"])
+    return out
+
+
 def disa_aktar(cube: dict[str, Any]) -> dict[str, Any]:
     """`packs/` cube'u → **Ossie `dataset`**. Saf fonksiyon — dosya yazmaz.
 
@@ -234,6 +324,7 @@ def disa_aktar(cube: dict[str, Any]) -> dict[str, Any]:
     ⚠ **İhraç bir OKUMA işlemidir** — `packs/` hiç etkilenmez. Geri alma (`ossie_ihrac=off`)
     yalnız ucu kapatır; bu fonksiyonun ürettiği belge zaten hiçbir yere yazılmaz.
     """
+    cube = _pack_sekline_getir(cube)
     ad = str(cube.get("name") or "").strip()
     if not ad:
         raise OssieIthalHatasi(
