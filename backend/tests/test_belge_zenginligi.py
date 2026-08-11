@@ -388,3 +388,59 @@ def test_DEVIR_SESSIZ_DEGIL():
 
     assert "§RD-3" in inspect.getsource(plan_tuketici._donemi_devret)
     assert "_devir_izi" in inspect.getsource(plan_tuketici.cevap)
+
+
+# --- `§RK-FE` · BELGE SÖZLEŞMESİ DENETLENEBİLİR ---------------------------------------
+
+def test_BLOK_ALANLARI_URETILEN_BLOKLA_ORTUSUYOR():
+    """🔴 Beyan **yaşayan** olmalı: `BLOK_ALANLARI` üretilen bloğun anahtarlarını
+    gerçekten kapsıyor mu? Kapsamazsa tuple bir yorum satırına döner."""
+    r = report.bolumlerden_kur(
+        [{"cube_query": {"cube": "parti", "measures": ["toplam_ciro"]},
+          "result": {"columns": ["toplam_ciro"], "rows": [{"toplam_ciro": 1}],
+                     "row_count": 1}}],
+        baslik="T", schema={"cubes": [_PARTI]})
+    blok = r["pages"][0][0]
+    fazla = set(blok) - set(report.BLOK_ALANLARI)
+    assert not fazla, f"🔴 blokta BEYAN EDİLMEMİŞ alan(lar): {sorted(fazla)}"
+
+
+def test_BLOK_ALANLARI_FRONTENDDE_TANIMLI():
+    """🔴🔴 **Yetim uç kapısının göremediği yer.** `test_cevap_alani_yetim_degil`
+    `AskResponse`'un **1. seviyesini** tarar; `Report`/`ReportBlock` ise `rapor` alanının
+    **içindedir** ve `rapor: dict[str, Any]` olduğu için denetlenecek bir model de yoktur.
+
+    ⊙ Bedeli ölçüldü: `§RK`'nın `ozet_degil` damgası backend'de üretiliyor, `types.ts`'te
+    **hiç yoktu**, `ReportView`'de **hiç çizilmiyordu**. Bir beyan üretilip kullanıcıya
+    hiç ulaşmıyordu.
+
+    *Bir beyanı üretip göstermemek, onu hiç üretmemekten daha kötüdür — çünkü üretildiği
+    için kapatılmış sayılır.*"""
+    import pathlib
+
+    kok = pathlib.Path("/dima-frontend-demo-master/src")
+    if not kok.exists():                       # FE mount'suz koşum (hedefli pytest)
+        pytest.skip("frontend mount edilmemiş")
+    tipler = (kok / "lib/types.ts").read_text(encoding="utf-8")
+    bas = tipler.index("export interface ReportBlock {")
+    # ⚠ Kapanış **satır başındaki** `}` — ilk `}` iç içe bir tip olabilir
+    # (`ozet_degil?: { satir: number; … }`). İlk yazımda öyleydi ve test `error`'ı
+    # *"eksik"* sandı. *Bir ayrıştırıcı, ayrıştırdığı dilin iç içe geçtiğini bilmiyorsa
+    # ölçtüğü şeyin değil kendi kusurunun raporunu verir.*
+    govde = tipler[bas:tipler.index("\n}", bas)]
+    eksik = [a for a in report.BLOK_ALANLARI if f"{a}?" not in govde and f"{a}:" not in govde]
+    assert not eksik, f"🔴 `types.ts::ReportBlock`'te YOK: {eksik} — yetim uç"
+
+
+def test_OZET_DEGIL_KULLANICIYA_CIZILIYOR():
+    """🔴 *«Tipte tanımlı olmak»* ile *«ekranda görünmek»* aynı şey değildir — bu deponun
+    en pahalı kusur sınıfı (`geçiyor mu ≠ ULAŞILABİLİR mi`)."""
+    import pathlib
+
+    yol = pathlib.Path("/dima-frontend-demo-master/src/components/ReportView.tsx")
+    if not yol.exists():
+        pytest.skip("frontend mount edilmemiş")
+    kod = yol.read_text(encoding="utf-8")
+    assert "b.ozet_degil" in kod, "🔴 `ozet_degil` çizilmiyor"
+    assert "print:hidden" not in kod.split("ozet_degil")[1][:400], \
+        "🔴 baskıda gizlenmiş — bir belgenin okunamayacağı bilgisi belgeyle gitmelidir"

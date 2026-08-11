@@ -23,6 +23,26 @@ _OZET_ESIGI = 50
 _EN_FAZLA_BOYUT = 3
 
 
+#: 🔴🔴 `§RK-FE` — **BİR BLOĞUN SÖZLEŞMESİ, BEYAN EDİLMEDİĞİ SÜRECE DENETLENEMEZ.**
+#:
+#: ⊙ Ölçüldü: `§RK`'nın `ozet_degil` damgası (*«bu blok bir özet değil, bir döküm»*)
+#: backend'de üretiliyor, `types.ts`'te **hiç yok**, `ReportView`'de **hiç çizilmiyor**.
+#: Yani bir beyan üretilip **kullanıcıya hiç ulaşmıyordu**.
+#:
+#: 🔴 Ve yetim-uç kapısı (`test_cevap_alani_yetim_degil`) bunu **göremezdi**: o
+#: `AskResponse`'un **1. seviyesini** tarıyor, `Report`/`ReportBlock` ise `rapor`
+#: alanının **içinde**. `rapor: dict[str, Any]` olduğu için ortada denetlenecek bir
+#: Pydantic modeli de yoktu — sözleşme yalnız bir docstring cümlesiydi.
+#:
+#: Bu tuple o cümleyi **denetlenebilir** yapar: blok sözlükleri buradan doğrular, kapı
+#: da bunu `types.ts`'teki `ReportBlock` ile karşılaştırır.
+#:
+#: *Bir sözleşme yalnız anlatıldığı yerde yaşıyorsa, o bir sözleşme değil bir niyettir.*
+BLOK_ALANLARI: tuple[str, ...] = (
+    "title", "cube_query", "period", "view_hint", "result", "viz", "error",
+    "ozet_degil",
+)
+
 #: `§RÜ` — zaman kovasının Türkçe adı. **Kapalı bir sınıf**: granülerlik değerleri
 #: `cube_query` sözleşmesinde sayılıdır (ADR-0008'in izin verdiği kapalı küme).
 _GRAN_ADI = {"day": "günlük", "week": "haftalık", "month": "aylık",

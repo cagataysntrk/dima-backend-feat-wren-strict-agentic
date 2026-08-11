@@ -81,11 +81,26 @@ export function ReportView({ report, onClose }: { report: Report; onClose: () =>
                     {b.title ||
                       (typeof b.cube_query.cube === "string" ? b.cube_query.cube : "blok")}
                   </h3>
-                  {b.period && (
-                    <span className="shrink-0 font-mono text-[11px] text-neutral-400">
-                      {b.period}
-                    </span>
-                  )}
+                  <div className="flex shrink-0 items-baseline gap-2">
+                    {/* 🔴 `§RK` — «bu bir özet değil, bir döküm». Backend eşiği aşan
+                        bloğu işaretler ve satırları KIRPMAZ; kırpmamanın bedeli
+                        kullanıcının onu sıradan bir bölüm sanmasıdır. Baskıda da
+                        görünür (`print:hidden` YOK): bir belge yazdırıldığında
+                        okunamayacağı bilgisi belgenin kendisiyle birlikte gitmelidir. */}
+                    {b.ozet_degil && (
+                      <span
+                        className="border border-amber-600/40 px-1 font-mono text-[10px] text-amber-600"
+                        title={`Bu blok bir özet değil: ${b.ozet_degil.satir} satır · ${b.ozet_degil.boyut} boyut. Satırlar kırpılmadı — daralt: bir kırılım çıkar ya da dönemi daralt.`}
+                      >
+                        ⚠ özet değil · {b.ozet_degil.satir} satır
+                      </span>
+                    )}
+                    {b.period && (
+                      <span className="font-mono text-[11px] text-neutral-400">
+                        {b.period}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {b.error ? (
                   <p className="font-mono text-[11px] text-red-500">{b.error}</p>

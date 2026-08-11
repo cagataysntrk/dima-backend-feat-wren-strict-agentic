@@ -523,6 +523,14 @@ export interface ReportBlock {
   // bir AÇIKLAMA ister, reçete değil; ikisini karıştırmak kullanıcının SORMADIĞI bir
   // tavsiyeyi cevabın yerine koymak olurdu.
   prescription?: Prescription | null;
+  // 🔴🔴 `§RK` — BU BLOK BİR ÖZET DEĞİL, BİR DÖKÜM. Backend eşiği aşan bloğu
+  // İŞARETLER ama SATIRLARI KIRPMAZ (sessiz bir kapsam değişikliği bu deponun en
+  // pahalı kusur sınıfıdır). Kırpmamanın bedeli, kullanıcının 1000 satırlık bir bloğu
+  // sıradan bir bölüm sanmasıdır — o yüzden işaret GÖSTERİLMEK ZORUNDADIR.
+  // ⚠ Bu alan backend'de vardı ve burada YOKTU: yetim bir uç, yazılmamış bir uçla
+  // aynı şeydir. *Bir beyanı üretip göstermemek, onu hiç üretmemekten daha kötüdür —
+  // çünkü üretildiği için kapatılmış sayılır.*
+  ozet_degil?: { satir: number; boyut: number } | null;
   error: string | null;
 }
 
