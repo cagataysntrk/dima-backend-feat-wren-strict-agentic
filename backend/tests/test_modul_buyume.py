@@ -876,6 +876,23 @@ MUAFIYET_ASK_KOD = [
      "`V17`'nin kusuru tam da yeni sorgu koşmaktı. *Bir fişi okumak için mutfağa gidilmez.*"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("yon-yumusamis-kutup-kokleri", 5,
+     "🔴 **`§YÖN` — «EN DÜŞÜĞÜ» SORUSU «EN YÜKSEĞİ» SIRALIYORDU.** "
+     "⊙ Ölçüldü (canlı, **üç koşumda da aynı**, 2026-08-11): *«en düşük makine»* → `ASC` "
+     "ama *«en düşüğü hangisi»* → **`DESC`**, ilk satır en YÜKSEK OEE. Kullanıcı en "
+     "düşüğü sordu, sistem en yükseği başa koydu — ve cevap **makul görünüyor**: sıralı "
+     "liste, doğru ölçü, doğru kırılım; yalnız **ters uçtan**. "
+     "⊙ Kök: `_direction` kutbu ön-ek eşleşmesiyle arıyor; `düşük`+iyelik Türkçede "
+     "**zorunlu olarak** yumuşuyor (`düşük→düşüğü`) ve normalize hâlde `dusugu` ile "
+     "`dusuk` tam o harfte ayrışıyor. "
+     "🔴 **Sözlüğe `dusugu` EKLENMEDİ** (`ADR-0008` + `CLAUDE.md`'nin en üst kuralı: "
+     "route'a kelime eklenmez) — ve eklemek **sınıfı kapatmazdı**: `küçüğü`, `düşüğün`, "
+     "`düşüğe` ardından gelirdi. Yumuşama **kapalı bir dilbilgisi kuralıdır** ve sahibi "
+     "zaten var: `app/ek.py::_yumusat` (istisna listesiyle). Burada **çağrılır**, "
+     "kopyalanmaz — aksi hâlde aynı kural bu depoda üçüncü kez yazılırdı (`KAT-1`). "
+     "⊙ Δ = 5: bir yardımcı + iki türetilmiş küme. Küme **büyümüyor**: yalnız kendi "
+     "köklerinin yumuşamışını taşıyor (`dusug`, `kucug`); `az`/`kısa`/`yavaş` aynen "
+     "kalıyor. Kapı: `tests/test_yon_yumusama.py` (5)."),
     ("b1-daraltma-adaylari-ve-kup-adi", 44,
      "🔴 **`§B1` — ADAY SEÇİCİ + KÜP ADI BELİRTECİ** *(rapor `§14` FAZ 1)*. İki iş: "
      "① `daraltma_adaylari` — garson istemine girecek küp kümesi; üç sinyal **yeniden "

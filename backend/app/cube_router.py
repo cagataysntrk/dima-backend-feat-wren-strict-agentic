@@ -1983,6 +1983,44 @@ _AZLIK_KUTBU = frozenset({"dusuk", "az", "kisa", "kucuk", "yavas"})
 _KOTULUK_KUTBU = frozenset({"kotu", "verimsiz"})
 
 
+def _yumusak_kutup(kutup: frozenset[str]) -> frozenset[str]:
+    """🔴 `§YÖN` — KUTUP SÖZCÜKLERİNİN **YUMUŞAMIŞ** BİÇİMİ DE KÖKTÜR.
+
+    ## Ölçülen sessiz yanlış (canlı, üç koşumda da aynı — 2026-08-11)
+
+        «en düşük makine»    → `_direction=ASC`   ✅
+        «en düşüğü hangisi»  → `_direction=DESC`  🔴  ilk satır **en YÜKSEK** OEE
+
+    Kullanıcı *en düşüğü* sordu, sistem *en yükseği* başa koydu. Ve cevap **makul
+    görünüyor** — sıralı bir liste, doğru ölçü, doğru kırılım; yalnız **ters uçtan**.
+
+    ## Kök: yumuşama sınırında kırılan ön-ek eşleşmesi
+
+    `_direction` kutup sözcüğünü `_s.startswith(k)` ile arıyor. `düşük` + iyelik eki
+    Türkçede **zorunlu olarak** yumuşar: `düşük → düşüğü` (`k→ğ`). Normalize edilmiş
+    hâlde `dusugu` ile `dusuk` tam o harfte ayrışır ve ön-ek eşleşmesi **düşer**.
+
+    ## Neden sözlüğe `dusugu` EKLENMEDİ
+
+    `ADR-0008` ve `CLAUDE.md`'nin en üst kuralı: route'a kelime eklenmez. Ve eklemek
+    **sınıfı kapatmazdı** — `küçüğü`, `düşüğün`, `düşüğe` ardından gelirdi. Yumuşama
+    **kapalı bir dilbilgisi kuralıdır** ve sahibi zaten var: `app/ek.py::_yumusat`
+    (istisna listesiyle birlikte). Burada **çağrılır, kopyalanmaz** — aksi hâlde
+    Türkçenin aynı kuralı bu depoda üçüncü kez yazılmış olurdu.
+
+    ⊙ Kazanç `düşük` ile sınırlı değil: `küçük → küçüğ` de kapanır. Yumuşamayan
+    sözcükler (`az` · `kısa` · `yavaş` · `kötü`) **aynen** kalır — yani küme büyümez,
+    yalnız **kendi çekimlerini** tanır.
+    """
+    from app.ek import _yumusat
+
+    return frozenset(kutup | {_norm(_yumusat(k)) for k in kutup})
+
+
+_AZLIK_KOKLERI = _yumusak_kutup(_AZLIK_KUTBU)
+_KOTULUK_KOKLERI = _yumusak_kutup(_KOTULUK_KUTBU)
+
+
 def _konusma_sozcukleri(q: str) -> set[str]:
     """`§46` — konuşma fiillerini **sınıflandırıcının kendi kalıplarından** okur.
 
@@ -2029,9 +2067,11 @@ def _direction(q: str, az_iyi: bool | None = None):
         # (`_herhangi`) zaten çekim toleranslıydı; yapıya geçerken o toleransı düşürmüşüm.
         # *Bir listeyi yapıya çevirirken, listenin sessizce yaptığı işi de taşımak gerekir.*
         _s = m.group(1)
-        if any(_s.startswith(k) for k in _AZLIK_KUTBU):
+        # ⚠ Kökler **yumuşamış biçimi de** taşır (`§YÖN`, `_yumusak_kutup`): *«en
+        # düşüğü»* → `dusugu` ve `dusuk` tam yumuşama harfinde ayrışıyordu.
+        if any(_s.startswith(k) for k in _AZLIK_KOKLERI):
             return "ASC"                      # BÜYÜKLÜK — koşulsuz
-        if any(_s.startswith(k) for k in _KOTULUK_KUTBU):
+        if any(_s.startswith(k) for k in _KOTULUK_KOKLERI):
             # NİTELİK — yönü ölçünün beyanı belirler (`§W-C`). `az_iyi` bilinmiyorsa
             # bugünkü davranış (`ASC`) korunur: bilgi yoksa değişiklik de yoktur.
             return "DESC" if az_iyi else "ASC"

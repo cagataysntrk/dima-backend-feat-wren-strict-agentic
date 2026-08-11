@@ -2992,3 +2992,25 @@ ondan SONRA ekleniyor → süzgeç kurulmuşken «kurulmadı» diyordu, doğru b
 Denetim `resp.cube_query`'ye alındı. Kapı: `test_ODAK_SUZGECI_KURULDUYSA_beyan_YOK`.
 **Canlı doğrulama:** odak kurulu zincir → yalnız doğru beyan · odaksız zincir → 33 satır
 + eksiklik beyanı. Takip/diyalog yüzeyi **299 yeşil**.
+
+### ✅ §YÖN · «en düşüğü» sorusu «en yükseği» sıralıyordu *(2026-08-11)*
+
+🔴 Ölçüldü (canlı, **üç koşumda da aynı**): *«en düşük makine»* → `ASC` ✅ ama
+*«en düşüğü hangisi»* → **`DESC`**, ilk satır en YÜKSEK OEE. Kullanıcı en düşüğü sordu,
+sistem en yükseği başa koydu — ve cevap **makul görünüyor**: sıralı liste, doğru ölçü,
+doğru kırılım; yalnız **ters uçtan**.
+
+**Kök:** `_direction` kutbu ön-ek eşleşmesiyle arıyor; `düşük`+iyelik Türkçede zorunlu
+olarak yumuşuyor (`düşük→düşüğü`) ve normalize hâlde `dusugu` ile `dusuk` **tam o harfte**
+ayrışıyor.
+
+🔴 **Sözlüğe `dusugu` eklenmedi** — sınıfı kapatmazdı (`küçüğü`, `düşüğün`, `düşüğe`
+ardından gelirdi). Yumuşama kapalı bir dilbilgisi kuralıdır ve sahibi `app/ek.py::_yumusat`;
+**çağrıldı**, kopyalanmadı (`KAT-1`). Küme büyümüyor: yalnız `dusug`, `kucug` eklendi.
+
+**Canlı kanıt (3/3):** «en düşüğü hangisi» → `asc`, ilk `RAM-3 (0,52)` · kontrol
+«en yükseği hangisi» → `desc`, ilk `ÖRGÜ HAT (0,65)`.
+Kapı: `tests/test_yon_yumusama.py` (5) + sıralama yüzeyi 136 yeşil.
+
+⚠ Kapı testimde ÜÇÜNCÜ kez aynı hata: docstring'e bakan bir iddia (B2 · D3 · burada) →
+`ast` ile docstring soyuldu. *Bir kapı koda bakmalıdır, kodun hakkındaki cümleye değil.*
