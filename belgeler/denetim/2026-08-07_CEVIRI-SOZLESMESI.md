@@ -12284,3 +12284,61 @@ Hepsi `app/sayi_bicimi.py`'ye bağlandı. *Bir sayının Türkçesi tek bir yerd
 saymıyor ve `§NB` hiç devreye girmiyor. **İki koşumda da aynı** (kararsızlık değil).
 `§NB`'nin kendi docstring'i bu çarpışmayı yazmış ama kapsamı bu yola uzanmıyor.
 Sonraki turun kökü — tahminle değil ölçümle.
+
+---
+
+# `FF` TURU — açık borcun kökü · az dokunulmuş küplerde kök-neden
+
+*(2026-08-11 · curl, tek tek · `EE` demeti TAM KAPI YEŞİL ile doğrulandıktan sonra)*
+
+| # | senaryo | sonuç |
+|---|---|---|
+| 1 | «operatör bazında ilk seferde tamam» → «neden bu kadar düşük» | ✅ akran anlatısı, **Türkçe sayılar** (`%8,7` · `74,39` · `67.814 kg` · `%40,3`) |
+| 2 | «hat bazında ortalama oee» → «neden bu kadar düşük» | ✅ `§KN` tam zincir |
+| 3-5 | `isg` · `siparis` · `firsat` kırılımları | ✅ üçü de doğru küpte |
+| 6 | `isg` → çıplak **«neden»** | 🔴 `refine`, **8 satır, açıklama YOK** → `FF-a` |
+| 7 | «normal mi» | ✅ dönemsel kıyas |
+| 8 | «bunu analiz et» | ✅ yeniden yorum, **0 sorgu** |
+
+## 🔴 KÖK · `FF-a` — **`§NÇ` HÂLÂ GENİŞTİ; KAÇAN VAKA ÇIPLAK «NEDEN»**
+
+```
+«departman bazında bu yıl kaza adedi» → «neden»
+  → refine → deterministik düzenleme · 8 satır · açıklama YOK
+  → niyet: kırılım=kok_neden,sebep
+```
+
+Katalog ölçüldü: `isg.kok_neden`'in sinonimleri arasında **birebir «neden»** var
+(`['kok neden','sebep','neden','kaza nedeni','kok']`) ve o boyut ekranda değil — yani
+`§NÇ` *«kullanıcı yeni satır istiyor»* diye okudu. Kullanıcı ise **tek kelime** yazmıştı.
+
+⚠ `_ISARET_ZARFI` düzeltmesi (`DD` turu) *«neden **böyle**»*i kurtarıyordu; **çıplak**
+«neden» ne zamir ne zarf taşır, süzgeçten geçiyordu.
+
+🔴 **Ve doğru ayrım bu dosyada zaten yazılıydı.** `_kisa_soru`'nun kendi docstring'i tam
+bu örneği veriyor:
+
+> *«Çok kısa takip soruları («**neden?**», «niye?») **zaten eldeki cevaba dairdir** —
+> yeni bir konu üç kelimeden az ifade edilmez.»*
+
+`§NÇ` o yüklemi **hiç sormuyordu**. Düzeltme tek koşul: `and not _kisa_soru(q)`.
+Ölçülen doğru-pozitif korunur (*«en büyük nedeni hangi makinede»* beş kelimedir).
+
+**Düzeltmeden sonra** — ve `§KN-toplam` sayesinde az dokunulmuş bir küpte tam zincir:
+
+```
+🔍 1️⃣ kaza_adedi bir toplam — bileşeni yok → kırılım ekseninde ayrıştırıldı
+   2️⃣ departman kırılımında 5 segment ölçüldü  3️⃣ en büyük: Laboratuvar
+   Laboratuvar toplamın %30,0'ını taşıyor: 3 ↔ öteki departman ortalaması 1,75
+   (bu ölçüde düşük iyidir)
+   → Laboratuvar içinde en çok CİDDİ (siddet) ayrışıyor: 2, bu segmentin %66,7'si
+```
+
+*Bir dosyada iki kural aynı ayrımı yapıyorsa, biri ötekini sormak zorundadır; sormadığı
+gün, ikisi ayrı şeyler söyler.*
+
+## ⚠ `§SB-metin` — tam sayı ondalık taşımaz
+
+Aynı cevap sayacı *«**3,00** ↔ **1,75**»* diye bastı. Ortalama gerçekten kesirlidir,
+sayaç değildir — ve `3,00` okuyucuya *«burada bir kesir var»* der.
+*Bir gösterimin fazladan basamağı, olmayan bir kesinliği vaat eder.*

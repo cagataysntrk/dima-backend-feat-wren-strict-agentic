@@ -648,7 +648,29 @@ def sinifla(soru: str, *, baglam_var: bool,
         #
         # *Bir belirsizlik kuralını, belirsizliğin ortadan kalktığı yerde de uygulamak,
         # kuralı değil alışkanlığı sürdürmektir.*
+        # 🔴🔴 **`§NÇ` HÂLÂ GENİŞTİ — VE KAÇAN VAKA ÇIPLAK «NEDEN»'DİR.**
+        #
+        # ⊙ Ölçüldü (curl `FF` turu, FF-6): *«departman bazında bu yıl kaza adedi»* →
+        # *«**neden**»* → `refine → deterministik düzenleme`, **8 satır**, açıklama
+        # **YOK**. Sebep: `isg.kok_neden`'in sinonimleri arasında birebir **«neden»**
+        # var ve o boyut ekranda değil — yani kural *«kullanıcı yeni satır istiyor»*
+        # diye okudu. Kullanıcı ise tek kelime yazmıştı.
+        #
+        # ⚠ `_ISARET_ZARFI` düzeltmesi *«neden **böyle**»*i kurtarıyordu; **çıplak**
+        # «neden» ne zamir ne zarf taşır, o yüzden süzgeçten geçiyordu.
+        #
+        # 🔴 Ve doğru ayrım bu dosyada **zaten yazılıydı** — `_kisa_soru`'nun kendi
+        # docstring'i tam bu örneği veriyor: *«Çok kısa takip soruları («neden?»,
+        # «niye?») **zaten eldeki cevaba dairdir** — yeni bir konu üç kelimeden az
+        # ifade edilmez.»* `§NÇ` o yüklemi hiç sormuyordu.
+        #
+        # ⚠ Ölçülen doğru-pozitif **korunur**: *«en büyük **nedeni** hangi makinede»*
+        # beş kelimedir, kısa soru değildir → kural aynen ateşler.
+        #
+        # *Bir dosyada iki kural aynı ayrımı yapıyorsa, biri ötekini sormak zorundadır;
+        # sormadığı gün, ikisi ayrı şeyler söyler.*
         if (tur == TUR_NEDEN and not zamir and not _ISARET_ZARFI.search(q)
+                and not _kisa_soru(q)
                 and acik_boyutlar and any(_syn_hit(q, b) for b in acik_boyutlar)):
             return Niyet(sinif=SINIF_YAPISAL, kural="§NÇ:ekranda-olmayan-boyut")
         # "ne yapmalıyız?" ve "normal mi?" zaten ELDEKİ sonuca dairdir — zamir aranmaz.

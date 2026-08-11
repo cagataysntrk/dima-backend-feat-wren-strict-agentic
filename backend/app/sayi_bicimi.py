@@ -60,8 +60,13 @@ def sayi(x) -> str:
         return str(x)
     if abs(v) >= 1000:
         return f"{v:,.0f}".replace(",", ".")
+    # ⚠ **TAM SAYI ONDALIK TAŞIMAZ.** Ölçüldü (curl `FF` turu, FF-6): bir **sayaç**
+    # (`kaza_adedi`) *«**3,00** ↔ öteki departman ortalaması **1,75**»* diye basıldı.
+    # Ortalama gerçekten kesirlidir; sayaç değildir — ve `3,00` okuyucuya *«burada bir
+    # kesir var»* der. *Bir gösterimin fazladan basamağı, olmayan bir kesinliği vaat eder.*
     if abs(v) >= 1:
-        return f"{v:,.2f}".replace(",", "~").replace(".", ",").replace("~", ".")
+        return (f"{v:,.0f}".replace(",", ".") if float(v).is_integer()
+                else f"{v:,.2f}".replace(",", "~").replace(".", ",").replace("~", "."))
     return f"{v:.3f}".replace(".", ",")
 
 

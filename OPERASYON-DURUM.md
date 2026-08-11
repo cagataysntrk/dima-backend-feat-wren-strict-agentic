@@ -2662,3 +2662,13 @@ Beş yeni kök bulundu ve düzeltildi. Tam döküm: çeviri sözleşmesi › `DD
   İki koşumda da aynı (kararsızlık değil). `§NB` bu yola uzanmıyor.
 * *(devreden)* `§Cİ-küp` belge yolunda · `§Cİ-belge` şüphesi · belge granülerlik devri ·
   `euro`/`mars` sınıfı · «arıza tipi» · `§KN` 8 ölçü sınırı · `S` fazı akış · `B3`.
+
+## `FF` turu (2026-08-11) — açık borç kapandı
+
+* **`§NÇ` daraltıldı** (`and not _kisa_soru(q)`): çıplak *«neden»*, ekranda olmayan bir
+  boyutun sinonimi olsa bile artık **konuşma**dır. `isg.kok_neden`'in sinonimleri
+  arasında birebir «neden» var ve tur `refine`'a düşüp **8 satır, sıfır açıklama**
+  veriyordu. Ayrım `_kisa_soru`'da **zaten yazılıydı**; `§NÇ` onu sormuyordu.
+* **`§SB-metin`:** tam sayı ondalık taşımaz (`3,00` → `3`).
+* ⊙ `EE` demeti **TAM KAPI YEŞİL** ile doğrulandı (commit `4f9470f`): korpus taban ile
+  birebir, 4991 test.

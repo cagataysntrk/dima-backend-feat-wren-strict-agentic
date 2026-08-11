@@ -451,3 +451,32 @@ def test_FAZ_5_0_baglam_VARKEN_konusma_sinifi_ACILIR():
     n = followup.sinifla("bu neden böyle?", baglam_var=True)
     assert n.sinif == followup.SINIF_KONUSMA
     assert n.tur == followup.TUR_NEDEN
+
+
+def test_NC_CIPLAK_NEDEN_YAPISAL_SAYILMAZ():
+    """🔴🔴 `§NÇ` — ölçüldü (curl `FF` turu, FF-6): *«departman bazında bu yıl kaza
+    adedi»* → *«**neden**»* → `refine → deterministik düzenleme`, **8 satır**, açıklama
+    **YOK**. `isg.kok_neden`'in sinonimleri arasında birebir «neden» var ve o boyut
+    ekranda değil — kural *«kullanıcı yeni satır istiyor»* diye okudu.
+
+    ⚠ Doğru ayrım bu dosyada **zaten yazılıydı**: `_kisa_soru`'nun docstring'i tam bu
+    örneği veriyor (*«Çok kısa takip soruları («neden?», «niye?») zaten eldeki cevaba
+    dairdir»*). `§NÇ` o yüklemi sormuyordu.
+
+    *Bir dosyada iki kural aynı ayrımı yapıyorsa, biri ötekini sormak zorundadır.*"""
+    from app import followup
+
+    n = followup.sinifla("neden", baglam_var=True, acik_boyutlar=["neden", "kok neden"])
+    assert n.sinif == followup.SINIF_KONUSMA, (n.sinif, n.kural)
+    assert n.tur == followup.TUR_NEDEN
+
+
+def test_NC_OLCULEN_DOGRU_POZITIF_KORUNUR():
+    """Daraltma doğru-pozitifi öldürmemeli: *«en büyük **nedeni** hangi makinede»* beş
+    kelimedir, kısa soru değildir → kural aynen ateşler ve tur **yapısal** kalır."""
+    from app import followup
+
+    n = followup.sinifla("en buyuk nedeni hangi makinede", baglam_var=True,
+                         acik_boyutlar=["neden", "kok neden"])
+    assert n.sinif == followup.SINIF_YAPISAL, (n.sinif, n.kural)
+    assert n.kural == "§NÇ:ekranda-olmayan-boyut"
