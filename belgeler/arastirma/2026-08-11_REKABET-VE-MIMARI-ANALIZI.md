@@ -1366,6 +1366,32 @@ ayrı sorumluluklardır ve ayrı kalmalıdır. Birleşecek olan **yalnız yetene
 *Bir ilkeyi bir satırda uygulayıp bir sonrakinde unutmak, ilkeyi hiç yazmamaktan daha
 pahalıdır — çünkü artık uygulandığı sanılır.*
 
+### ✅ 17.6 — **TEŞHİS BAYAT ÇIKTI (ölçüldü 2026-08-11)** · plan AYRIŞIYOR
+
+> `A13` maddesi *«planın neden ayrışmadığını ölç, C1/C2'den ÖNCE — yoksa yanlış şeyi
+> düzeltiriz»* diyordu. Ölçüm yapıldı (`/stats/plan`, planlayıcı-tetikleyen 10 soru):
+>
+> | | `§17.6` (rapor) | **bugün** |
+> |---|---|---|
+> | tek adım | **%60** (12/20) | **5/24 = %21** |
+> | çok adım | %40 | **19/24 = %79** |
+> | ortalama adım | — | **3,3** (79/24) |
+> | düşen plan | — | **0** |
+>
+> 🔴 **Üç hipotezin ÜÇÜ DE çürüdü:** ① istem ayrıştırmayı engellemiyor (%79 çok adımlı)
+> ② deterministik-önce kapısı erken kapanmıyor (10 soruda **24** planlayıcı çağrısı)
+> ③ `tek_adimli` kısayolu kural hâline gelmemiş (%21).
+>
+> ⚠ **Örneklem farkı dürüstçe:** rapor **kütükteki 20 kayıtlı planı** (üretim karışımı)
+> saymıştı; bu ölçüm planlayıcıyı **bilerek tetikleyen** 10 soruyla yapıldı. Yani ortak
+> soru *«planlayıcı koştuğunda ayrıştırıyor mu»*dur ve cevabı **evet**. Üretim
+> karışımındaki oran ayrı bir ölçüm ister (`A1`'in konusu).
+>
+> ⊙ **Sonuç:** `C1` (fiil listesini `tools.py`'den türetme) bir **acil kusur düzeltmesi
+> değil**; raporun kendi notu da onu `C3`'ten önceye bağlıyor ve *«kullanıcı hiçbir şey
+> hissetmiyor (`KURAL B` gereği davranış aynı kalacak)»* diyor. Ölçüm bu sıralamayı
+> **doğruluyor**.
+
 ### 17.6 🔴 Asıl sorun 15 fiil değil — **plan neredeyse hiç ayrışmıyor**
 
 Kütükten ölçüldü (kayıtlı 20 plan):

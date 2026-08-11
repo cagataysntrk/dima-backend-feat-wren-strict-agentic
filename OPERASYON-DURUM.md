@@ -3084,3 +3084,22 @@ düzeyinde**) · «aylık enerji» 30/3.
 ⊙ İkinci satır tam olarak CHI 2018'in sorunu — kullanıcı artık görebiliyor.
 ⚠ Şans payı **varsayımıyla** yazılır; tabloda olmayan eşikte oran uydurulmaz.
 Kapı: `tests/test_e3_tarama_beyani.py` (6) + istatistik yüzeyi 172 yeşil.
+
+### ✅ A13 · «Plan ayrışmıyor» teşhisi BAYAT çıktı *(2026-08-11)*
+
+`A13`: *«planın neden ayrışmadığını ölç, C1/C2'den ÖNCE.»* Ölçüldü (`/stats/plan`,
+planlayıcı-tetikleyen 10 soru):
+
+| | §17.6 (rapor) | bugün |
+|---|---|---|
+| tek adım | %60 (12/20) | **5/24 = %21** |
+| çok adım | %40 | **19/24 = %79** |
+| ortalama adım | — | **3,3** · düşen **0** |
+
+🔴 Üç hipotezin üçü de çürüdü: istem engellemiyor · deterministik kapı erken kapanmıyor
+(10 soruda **24** çağrı) · `tek_adimli` kural olmamış.
+⚠ Örneklem farkı: rapor kütükteki 20 kayıtlı planı (üretim karışımı) saydı; bu ölçüm
+planlayıcıyı bilerek tetikleyen sorularla. Ortak soru «koştuğunda ayrıştırıyor mu» →
+**evet**. Üretim karışımı ayrı ölçüm ister (A1).
+⊙ Sonuç: **C1 acil bir kusur düzeltmesi değil**; raporun kendi notu da onu C3'ten
+önceye bağlıyor ve «kullanıcı hiçbir şey hissetmiyor» diyor. Ölçüm sıralamayı doğruluyor.
