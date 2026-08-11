@@ -2933,7 +2933,8 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 | **ÖNCE** | Biçim = `viz.analyze` + `interpret` + `_attach_next_steps` üçünün **artığı**. Ölçüldü: chip **6,6,5,6,6,4,6,3**; olgu **hep 1-2**; **çoklu grafik hiç yok**; iki cevapta **sıfır metin** |
 | **SONRA** | Tek bir **biçim kararı** noktası: `niyet` (6 soru türü) + `followup` (5 konuşma türü) **zaten biliyor** → *«bu soru ne tür bir cevap ister»* |
 | **dosyalar** | `app/answer.py` · `app/interpret.py` · `app/viz.py` |
-| **dış dayanak** | **OpenAI Model Spec** — biçim *«tablo/liste/düzyazı arasında **isteğe göre**, **tek bir varsayılana saplanılmadan**»*. ⚠ Ve **anlamlı negatif bulgu**: Databricks Genie **hiçbir biçim kuralı yayımlamıyor** — sektör bunu LLM'e bırakıyor; **biz deterministik yapabiliriz** |
+| **dış dayanak** | 🔴 **Hearst & Tory (IEEE VIS 2019): sohbet bağlamında kullanıcıların %41'i SAF METİN istiyor**, tercih kişi bazında **%82-89 kararlı** (χ² p<0,001) · **Power BI'ın belgelenmiş kuralları**: tek değer → **Card (büyük sayı, grafik değil)**, kesin değer arama → **tablo**, hedefe ilerleme → **KPI** · **Franconeri ve ark. (2021)**: *«vision is **sluggish for comparisons**»* — 2-3'ten fazla değer çifti aranıyorsa iş **tablonun** · **OpenAI Model Spec**: biçim **isteğe göre**, **tek varsayılana saplanılmadan**. ⚠ **Anlamlı negatif bulgu:** Databricks Genie **hiçbir biçim kuralı yayımlamıyor** — sektör LLM muhakemesine bırakıyor; 🟢 **biz deterministik VE yayımlanmış yapabiliriz** |
+| **somut kural taslağı** | tek satır + tek ölçü → **KPI kartı, grafik yok** · ≤3 satır → **metin cümlesi** (*«Text-values»* biçimi: ham değerler) · kesin değer arama / >2-3 kıyas → **tablo** · zaman ekseni → **çizgi** · kırılım + tek ölçü → **çubuk** · ⚠ **kişiselleştirme kancası** (§21.1: tercih **kararlı**) |
 | **curl (8)** | §18'in sekiz sorusu tekrar → chip sayısı **çeşitlendi mi**, sıfır-metin vakaları **kapandı mı** |
 | **risk** | ⚠ Aşırı çeşitlilik de tutarsızlık üretir |
 | **azaltma** | Karar **deterministik ve tablolu** olsun (LLM seçmesin) — ADR-0024'ün aynı ilkesi |
@@ -2947,6 +2948,20 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 | **SONRA** | ECharts/Vega tarafında Türkçe biçim |
 | **dış dayanak** | `Intl.NumberFormat("tr-TR",{style:"percent"})` → **`%56`** (işaret **önde**, **0 ondalık**) · kompakt **`12 B`** = **bin**, İngilizcede **milyar** |
 | **curl/ekran** | Üç grafik: yüzde · binlik · kompakt |
+
+### D5 · Takip anlama — «son cevaba çıpala» + dört kova
+
+| | |
+|---|---|
+| **ÖNCE** | Takip bağlamı `prev_cq` + `history[-8]` ile taşınıyor. 🔴 **Odak varlığı yok** — `ask.py`'nin kendi `§AT` yorumu: *«o makinede vardiya kırılımı»* → süzgeç **kurulamıyor**, **33 satır** dönüyor, ilk satır yanlış makine. Kendi teşhisi: *«Eksik olan bir kanca değil bir **KAVRAM**»* |
+| **SONRA** | ① **Son cevaba çıpalama** modeli açıkça benimsenir ② `niyet`e **dört takip kovası** eklenir: `theme-entity` · `refinement` · `theme-property` · **`answer-refinement`** (önceki **cevaptan** varlık) |
+| **dosyalar** | `app/niyet.py` · `app/followup.py` · `app/context.py` (odak varlığı) · `app/routers/ask.py` |
+| **dış dayanak** | **SParC oranları**: theme-entity **%48,4** · refinement **%33,8** · theme-property **%9,7** · **answer-refinement %8,1** — ⊙ *sonuncusu tam olarak bizim eksik «odak varlığı» kavramımız* · **ThoughtSpot Spotter**: *«All follow-up questions are assumed to be a follow-up on **the LATEST answer**»* · **CoE-SQL (NAACL 2024)**: soruyu yeniden yazmak yerine **önceki SQL'i düzenle** — ⊙ *bizim `deterministic_refine`'ımız bu ailedendir* |
+| ⚠ **tur çöküşü uyarısı** | SParC: Turn 1 **%38,6** → Turn 3 **%3,7** → **Turn ≥4 %1,1**. **Genie'nin uyarısı**: *«Avoid reusing conversation threads across sessions»* · **Power BI**: *«Use **clear chat** when switching topics»* |
+| **curl (4)** | ① *«makine bazında oee»* → *«o makinede vardiya kırılımı»* → **süzgeç kuruldu mu** (bugün kurulmuyor) ② *«peki geçen yıl»* (theme-property) ③ *«en düşüğü hangisi»* → *«onun tedarikçileri»* (answer-refinement) ④ 5. turda konu değişimi → **temiz başlıyor mu** |
+| 🔴 **risk** | Odak varlığı yanlış çıkarılırsa **yanlış süzgeç** = sessiz yanlış |
+| **azaltma** | Odak varlığı **yalnız açık bir üstünlük/seçim adımından** (`order`+`limit=1`, `BAGLA` çıktısı) türetilir — **tahmin edilmez**; belirsizse **netleştirme chip'i** |
+| **MİMARİ.md** | **§ diyalog durumu** — *«odak varlığı» kavramı ve dört takip kovası* |
 
 ---
 
@@ -3028,7 +3043,7 @@ nedensel iddia **nedensel grafik beyanı** ister (DoWhy sınıfı) ve bizde **yo
 FAZ 0  A1 garson korpusu · A2 cevapsız · A3 şişme · A4 kurulum süresi     2-3 gün
 FAZ 1  B1 budama → B2 few-shot → B3 instructions → B4 repair              1-2 hafta
 FAZ 2  C1 kayıt birleşimi → C2 bütçe/stall → C3 MCP                       1 hafta
-FAZ 3  D1 sayaç → D2 taksonomi → D3 biçim kararı → D4 ön-uç biçim         1 hafta
+FAZ 3  D1 sayaç → D2 taksonomi → D3 biçim kararı → D4 ön-uç → D5 takip    1-2 hafta
 FAZ 4  E1 Adtributor → E2 sürpriz → E3 FDR → E4 adlandırma                1 hafta
 FAZ 5  F1-F9 temizlik + strateji                                          paralel
 ```
