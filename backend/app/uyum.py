@@ -615,7 +615,25 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
                           f"«{_terim}» bu küpte tanımlı değil."),
                 oneri=(f"«{_terim}» şu küplerde var: {', '.join(_sahipler[:3])}. "
                        f"Onu ayrıca sorabilirsin; aynı kırılımda birleştirmek her zaman "
-                       f"mümkün olmayabilir.")))
+                       f"mümkün olmayabilir."),
+                # 🔴 `§Cİ-chip` — **KARDEŞİNDE VAR, BURADA YOKTU.**
+                #
+                # ⊙ Ölçüldü (curl `U` turu, U7): *«enerji maliyeti en yüksek 5 makine»*
+                # → beyan hem kusuru hem sahibini **adıyla** söylüyor (*«maliyet şu
+                # küplerde var: maliyet, surdurulebilirlik»*) ve `suggestions` **boş**.
+                # Kullanıcı doğru cevabın adresini görüyor ama oraya **yazarak** gitmek
+                # zorunda.
+                #
+                # `§TZ`'nin dersi (*«sorabilirsin» demek yetmez, **sorulabilir** yapmak
+                # gerekir*) kardeş beyanda (`olcu_ozgullugu`) uygulanmış, burada
+                # uygulanmamıştı — yine *bir kural yalnız bir dalda geçerliyse o kural
+                # değil bir tesadüftür*.
+                #
+                # ⚠ Chip metni **tek sahipten** üretilir (`sahipler[0]`), ki tıklama
+                # gerçekten o küpe çıksın; doğrulama `chipler()`'in kendi işi.
+                chip=({"label": f"{_terim} ({_sahipler[0]})",
+                       "query": f"{_sahipler[0]} {_terim}", "kind": "olcu"}
+                      if _sahipler else None)))
 
     # 1 · KIYAS — "şubata göre", "geçen yılla kıyasla"
     #
@@ -1264,7 +1282,11 @@ def kismi_cevap_notu(ihlaller: list[Ihlal]) -> str:
         return ""
     if len(ihlaller) == 1:
         i = ihlaller[0]
-        return f"⚠ Sayı doğru ama **eksik**: {i.aciklama}.\n\n{i.oneri}"
+        # ⚠ `§UT-M` — nokta **koşullu**: açıklamalar zaten cümledir ve çoğu noktayla
+        # biter. Koşulsuz eklemek canlıda *«…bir karşılık var..»* üretiyordu (ölçüldü,
+        # curl `U` turu). Küçük bir kusur ama kullanıcının okuduğu **tek** cümlede.
+        _a = str(i.aciklama or "").rstrip()
+        return f"⚠ Sayı doğru ama **eksik**: {_a}{'' if _a.endswith(('.', '!', '?', '…')) else '.'}\n\n{i.oneri}"
     satirlar = "\n".join(f"· {i.aciklama}" for i in ihlaller)
     return ("⚠ Sayı doğru ama **eksik** — sorunun şu kısımlarını yerine getiremedim:\n"
             f"{satirlar}\n\n{ihlaller[0].oneri}")

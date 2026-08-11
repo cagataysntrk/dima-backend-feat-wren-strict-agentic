@@ -2270,6 +2270,11 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # şeyin yarısını görmemek olurdu.
         if "niyet_izi" in resolve_for(settings, principal):
             resp.trace = [*(resp.trace or []), *_niyet_izi(body.question, schema)]
+        # `§SD-2` — sessiz bir `null` merdivenin **her** basamağında sessizdir; gövde
+        # `veri_araligi.beyani_tamamla`'da (tavan kapısı *«yeni davranışı modüle çıkar»*
+        # dedi ve haklıydı — `yokluk_notu` da tam olarak böyle doğmuştu).
+        from app import veri_araligi as _va2
+        _va2.beyani_tamamla(resp, service, schema)
         # `§BB-B` — mühürden ÖNCE: boş bir cevap mühürlenirse artık bir **kayıt**tır.
         return seal(_bos_cevap_olamaz(resp, body.question), request=request, principal=principal, t0=t0,
                     session_id=body.session_id, log_body=body,

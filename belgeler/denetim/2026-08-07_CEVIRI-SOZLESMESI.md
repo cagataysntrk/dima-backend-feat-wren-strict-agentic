@@ -11293,3 +11293,48 @@ tek cümlelik tarifi.*
 §RÇ     «bakım bölümünü çıkar» (blok yok)    → 7 blok + «değişiklik yapılmadı»      ✅
 §RD-3   «rapora aylık ciro trendi de ekle»   → 5 bölüm dönemi devraldı + iz beyanı  ✅
 ```
+
+---
+
+# `U` TURU — 21 senaryo · 5 kök · **fiş dürüstlüğü ve sessiz boşluklar**
+
+*(2026-08-11 · curl, tek tek · kapı yalnız sonda)*
+
+## Ölçülen kökler
+
+| kök | ölçülen kusur | düzeltme |
+|---|---|---|
+| `§RE` | *«geçen yıla göre bu yıl kalite raporu»* → 2. bloğun fişi `period_expr: geçen yıl` **+** `filters: 2026`. Gövde geçen yılı hesapladı, **fiş bu yılı iddia etti** (satırlar farklıydı — ölçüldü). `/cube` ile yeniden koşulsa **başka sayı** verirdi (`O-5`). | `SORGU` dışı fiillerin fişi de **çözülür** (`_resolve_period` çağrılır, ikinci çözücü yazılmadı) |
+| `§SD-2` | *«bu ay ile geçen ay ciro kıyası»* → üç alan da `null`, **not YOK**. Aynı dönem sıradan bir soruda *«verinin tamamen dışında»* diyordu. | Beyan `ask()`in **kapanışına** bağlandı (42 çıkışın ortak kapısı); gövde `veri_araligi.beyani_tamamla`'da — tavan kapısı *«modüle çıkar»* dedi ve haklıydı |
+| `§Cİ-chip` | *«enerji maliyeti en yüksek 5 makine»* → beyan doğru sahibi **adıyla** söylüyor, `suggestions` **boş**: kullanıcı adresi görüp oraya **yazarak** gitmek zorunda | `§TZ`'nin dersi kardeş beyanda vardı, burada yoktu → chip eklendi |
+| `§UT-M` | beyan metni *«…bir karşılık var**..**»* | nokta koşullu |
+| `B3`/`D8` | `sikayet` *«en çok iade»* sorusuna `M1003` diye **kod** cevaplıyor | ⊘ **açılmadı** — belgesi var (`D8`): açmanın bedeli ölçülmüş (`doğru 95→79 · sessiz_yanlış 8→10`) ve geri alınmış. Açık soru dar: *o +2 gerçek mi, `payda +2` ile gelen bir ölçüm artefaktı mı?* Ayrılmadan açılmayacak |
+
+## Üç kez ölçüm karar verdi, sezgi değil
+
+1. **`§UT` yanlış-pozitif sandım — değildi.** *«kumaş cinsine göre ortalama kar marjı»*
+   → beyan *«daha özgül bir karşılık var»* dedi. İfadeleri ölçtüm:
+   `parti.kar_marji_yuzde = SUM(kâr)/SUM(ciro)` · `maliyet.ort_kar_marji_yuzde = AVG(oran)`.
+   Kullanıcı *«ortalama»* yazdı → **beyan doğru**. Oranların oranı ile oranların
+   ortalaması aynı sayı değildir.
+2. **`§RE`'yi kendi `§RD-3`'üme yıkacaktım — değildi.** Devir yalnız **tarih süzgeci
+   olmayan** bölüme dokunuyor; o blokta süzgeç vardı. Kusur planın ham adımındaydı.
+3. **Bir netleştirme gerilemesi sandım — değildi.** Aynı soru üç koşumda
+   `netleştirme · cevap · cevap` verdi: garsonun `self-consistency %67` kararsızlığı,
+   benim değişikliğim değil.
+
+## Canlı doğrulama (tek tazeleme sonrası)
+
+```
+§SD-2    «bu ay ile geçen ay ciro kıyası»  → «Bu aralıkta kayıt bulunamadı… veri 01.01.2024–30.06.2026» ✅
+§Cİ-chip «enerji maliyeti en yüksek 5…»    → chip «maliyet (maliyet)» · «enerji maliyeti (surdurulebilirlik)» ✅
+§UT-M    aynı cevap                        → «…karşılık var.» (çift nokta YOK)                             ✅
+§RE      «geçen yıla göre bu yıl kalite…»  → blok1 2025-01-01…2025-12-31 · blok2 2026-01-01                ✅
+```
+
+## Ve bir kapı beni durdurdu — doğru yerde
+
+`§SD-2`'yi `ask()` içine yazınca **modül büyüme tavanı** kırmızı verdi (1380 > 1374) ve
+kendi mesajını söyledi: *«yeni davranışı modüle çıkar, tavanı yükseltme»*. Uydum.
+`yokluk_notu` da tam olarak böyle doğmuştu — bu onun kardeşi.
+*Bir tavanı yükseltmek, kapıyı kapının kendisiyle çürütmektir.*

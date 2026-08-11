@@ -46,6 +46,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import threading
+from typing import Any
 
 from app.logging_setup import get_logger
 
@@ -303,3 +304,42 @@ def _gun(iso: str) -> str:
         return f"{d.day:02d}.{d.month:02d}.{d.year}"
     except ValueError:
         return iso
+
+
+def beyani_tamamla(resp: Any, service, schema: dict) -> None:
+    """🔴🔴 `§SD-2` — **SESSİZ BİR `null`, MERDİVENİN HER BASAMAĞINDA SESSİZDİR.**
+
+    ⊙ Ölçüldü (curl `U` turu, U9): *«bu ay ile geçen ay ciro kıyası»* →
+    `{toplam_ciro: null, toplam_ciro_gecen: null, …}` ve **not YOK**. Oysa aynı dönem
+    için sıradan bir soru *«sorduğun dönem elimdeki verinin tamamen dışında»* diyordu.
+
+    Fark yolun kendisiydi: kıyas cevabı (`_kiyas_cevabi`) `AskResponse`'u **kendi**
+    kurup dönüyor ve `yokluk_notu`'nun çağrıldığı yerden hiç geçmiyordu. 🔴 Bir kural
+    yalnız bir basamakta geçerliyse o kural değil bir **tesadüftür** — bu depoda yedinci
+    kez.
+
+    ⚠ Doğru yer `ask()`in kapanışıdır (*«merdivenin HANGİ basamağından çıkılırsa
+    çıkılsın buradan geçilir»* — onun kendi yorumu), ama **gövdesi orada değil**: modül
+    büyüme kapısı *«yeni davranışı modüle çıkar, tavanı yükseltme»* dedi. `yokluk_notu`
+    da tam olarak böyle doğmuştu; bu onun kardeşi.
+
+    ⚠ Önceki çağrı yeri (`ask.py`'deki erken çağrı) **korundu**: o, `uyum` beyanları
+    eklenmeden **önce** koşuyor. Buraya taşısaydım bir uyum notu varken yokluk beyanı
+    susardı — bir kusuru düzeltirken bir başkasını açmak olurdu.
+
+    ⚠ Yerinde değiştirir (`resp.note`) ve **hiçbir şeyi ezmez**: yalnız söylenecek başka
+    bir şey yoksa yazar.
+
+    *Bir boşluğu açıklamayı tek bir dala bağlamak, öbür dallarda boşluğu okuyucunun
+    varsayımına bırakmaktır.*
+    """
+    if getattr(resp, "note", None) or not getattr(resp, "cube_query", None):
+        return
+    sonuc = getattr(resp, "result", None)
+    if sonuc is None:
+        return
+    try:
+        ham = sonuc.model_dump() if hasattr(sonuc, "model_dump") else sonuc
+        resp.note = yokluk_notu(service, ham, resp.cube_query, schema) or resp.note
+    except Exception:                          # noqa: BLE001 — beyan turu DÜŞÜRMEZ
+        _log.warning("§SD-2: yokluk beyanı yazılamadı (best-effort)", exc_info=True)

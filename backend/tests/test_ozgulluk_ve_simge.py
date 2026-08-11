@@ -239,3 +239,27 @@ def test_IYELIK_EKI_IKI_YONDE_DE_SAYILIR():
     ]}
     qn = "gecen yil toplam durus dakikasi"
     assert uyum._daha_ozgul_sahip(qn, sema["cubes"][0], sema) is None
+
+
+def test_BEYAN_METNI_CIFT_NOKTA_ICERMEZ():
+    """⚠ `§UT-M` — ölçüldü (curl `U` turu): *«…daha özgül bir karşılık var**..**»*.
+    Açıklamalar zaten cümledir; noktayı koşulsuz eklemek onları bozuyordu. Küçük bir
+    kusur ama kullanıcının okuduğu **tek** cümlede."""
+    ih = uyum.Ihlal(isaret="x", aciklama="Bir cümle bitti.", oneri="Öneri.")
+    assert ".." not in uyum.kismi_cevap_notu([ih])
+    ih2 = uyum.Ihlal(isaret="x", aciklama="Nokta yok", oneri="Öneri.")
+    assert "Nokta yok." in uyum.kismi_cevap_notu([ih2])
+
+
+def test_IKAME_BEYANI_DA_TIKLANABILIR():
+    """🔴 `§Cİ-chip` — ölçüldü (curl `U` turu, U7): *«enerji maliyeti en yüksek 5
+    makine»* → beyan doğru sahibi **adıyla** söylüyor, `suggestions` **boş**. Kullanıcı
+    doğru cevabın adresini görüyor ama oraya **yazarak** gitmek zorunda.
+
+    `§TZ`'nin dersi kardeş beyanda (`olcu_ozgullugu`) uygulanmış, burada
+    uygulanmamıştı — *bir kural yalnız bir dalda geçerliyse o kural değil bir
+    tesadüftür.*"""
+    import inspect
+    kaynak = inspect.getsource(uyum.denetle)
+    bas = kaynak.index('isaret="olcu_ikamesi"')
+    assert "chip=(" in kaynak[bas:bas + 1400], "🔴 ikame beyanı hâlâ tıklanamaz"

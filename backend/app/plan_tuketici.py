@@ -513,7 +513,29 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
             # ⚠ `TREND` gibi fiiller sorgularını **kendileri** koşar; adımın kendi
             # `cube_query`'si o bölümün kimliğidir (referanssa çözülmüş hâli yok —
             # o zaman `None` kalır ve kart yeniden koşulamaz, bu **dürüstçe** böyledir).
+            #
+            # 🔴🔴 `§RE` — **FİŞ İLE SAYI AYRIŞIYORDU.** Ölçüldü (curl `U` turu, U20):
+            # *«geçen yıla göre bu yıl kalite raporu hazırla»* → ikinci bloğun fişi
+            #
+            #     {"period_expr": "geçen yıl", "filters": [{tarih gte "2026-01-01"}]}
+            #
+            # Fiilin gövdesi `period_expr`'i çözüp **geçen yılın** satırlarını üretti
+            # (iki bloğun satırları farklıydı — ölçüldü), ama saklanan fiş **bu yılı**
+            # iddia ediyordu. Yani kart *«2026»* diyor, sayılar *«2025»*.
+            #
+            # 🔴 Ve bedeli görüntüyle sınırlı değil: `O-5` gereği her bölüm `/cube` ile
+            # **sıfır LLM** yeniden koşulabilmeli — bu fişle koşulsa **başka bir sayı**
+            # verirdi. `SORGU` dalı bunu zaten doğru yapıyor (`sorgular.append(temiz)`
+            # çözülmüş hâli saklar); ayrım fiilin adına göreydi, oysa kural sınıfsal.
+            #
+            # ⚠ İkinci bir çözücü YAZILMADI, aynısı çağrıldı (`_resolve_period`) —
+            # aynı ifadenin iki farklı tarihe çözülmesi bir kusurdan beter bir
+            # tutarsızlıktır (`calistir`'ın kendi cümlesi).
+            #
+            # *Bir fiş, ürettiği sayıyla aynı şeyi söylemiyorsa, o bir makbuz değil bir
+            # süstür.*
             _cq = adim.get("cube_query") if isinstance(adim.get("cube_query"), dict) else None
+            _cq = _fisi_coz(_cq, schema=schema, soru=soru)
         _satirlar = [r for r in (cikti or []) if isinstance(r, dict)] \
             if isinstance(cikti, list) else []
         _bolumler.append({"cube_query": _cq,
@@ -812,6 +834,39 @@ def _belgeyi_koru(onceki_bolumler: list[dict], schema: dict, soru: str) -> dict:
     return {"source": "cube", "note": BELGE_DEGISMEDI, "rapor": _r,
             "iz": ["Belge düzenlemesi: istek bir bölüme bağlanamadı → belge KORUNDU "
                    "(Discovery'ye düşülmedi — §RD-4)"]}
+
+
+def _fisi_coz(cq: dict | None, *, schema: dict, soru: str) -> dict | None:
+    """`§RE` — bir bölümün fişindeki `period_expr` **çözülür**; gerekçe çağrı yerinde.
+
+    ⚠ `period_expr` bir **niyet taşıyıcısıdır**, bir sorgu alanı değil (`O-15/D`). Fişte
+    kalırsa iki zarar birden doğar: (1) yanındaki bayat `filters` fişi yalancı yapar,
+    (2) `/cube` ile yeniden koşulduğunda **başka bir sayı** çıkar.
+
+    ⚠ Çözülemezse fiş **olduğu gibi** döner: bir onarımın başarısızlığı bir bölümü
+    düşürmez. *Bir kusuru düzeltememek, onu büyütmek için bir sebep değildir.*
+    """
+    if not isinstance(cq, dict) or not cq.get("period_expr"):
+        return cq
+    try:
+        from app.cube_router import _norm
+        from app.routers.ask import _resolve_period
+
+        _spec = next((c for c in (schema.get("cubes") or [])
+                      if c.get("name") == cq.get("cube")), {}) or {}
+        _td = (_spec.get("time_dimensions") or ["tarih"])[0]
+        _kopya = dict(cq)
+        _ifade = _kopya.pop("period_expr")
+        # ⚠ Bayat dönem süzgeci **atılır**: `period_expr` onu ezmek için yazılmıştır;
+        # ikisini yan yana bırakmak tam da ölçülen çelişkiydi.
+        _kopya["filters"] = [f for f in (_kopya.get("filters") or [])
+                             if str((f or {}).get("dimension") or "") != _td]
+        _cozulmus, _ = _resolve_period(None, _kopya, _ifade, _norm(soru or ""), _td)
+        _log.info("§RE: bölüm fişi çözüldü (%s · %r)", cq.get("cube"), _ifade)
+        return _cozulmus
+    except Exception:                          # noqa: BLE001 — çözüm turu DÜŞÜRMEZ
+        _log.warning("§RE: fiş çözülemedi (best-effort)", exc_info=True)
+        return cq
 
 
 def _tarih_suzgeci(cq: Any) -> list[dict]:
