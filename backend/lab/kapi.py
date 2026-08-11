@@ -306,8 +306,15 @@ def _kos(komut: list[str], baslik: str) -> int:
 
 
 #: Özete girecek satırın seçiciler — her aracın "sonuç" satırı farklı biçimde.
+#: ⟳ `§A2`/`§A3` (rapor `§14`) — **`cevapsız` ve `semantik vaka` de manşete girer.**
+#: Öncesinde özet yalnız *«doğru-cube %»*i taşıyordu ve o oran **SQL üretebilmiş**
+#: turların içindedir; cevapsız kalanlar paydanın **dışındadır**. Yani kapı, ürünün en
+#: görünür kusurunu **tanım gereği** göremiyordu (ölçüldü: korpus %19,9 · canlı %21,8).
+#: ⚠ `_son_anlamli` **son** işaretli satırı seçtiği için sıra önemlidir: `nl_corpus`
+#: bu üç satırı doğru-cube → cevapsız → semantik vaka sırasıyla basar ve özete
+#: sonuncusu değil **hepsi** girsin diye `_ozet_satirlari` çoğul döner.
 _OZET_ISARET = ("passed", "failed", "error", "baseline'a göre", "TOPLAM doğru-cube",
-                "ÖLÇÜLEMEDİ", "sınıf ")
+                "ÖLÇÜLEMEDİ", "sınıf ", "cevapsız:", "semantik vaka:")
 
 
 def _son_anlamli(cikti: str) -> str:
@@ -315,7 +322,16 @@ def _son_anlamli(cikti: str) -> str:
     sessizce boş bırakmaktan iyidir (boş özet 'ölçüm yok'u 'sorun yok' gibi gösterir)."""
     satirlar = [s.strip() for s in cikti.splitlines() if s.strip()]
     isaretli = [s for s in satirlar if any(i in s for i in _OZET_ISARET)]
-    return (isaretli[-1] if isaretli else (satirlar[-1] if satirlar else "(çıktı yok)"))[:120]
+    if not isaretli:
+        return (satirlar[-1] if satirlar else "(çıktı yok)")[:120]
+    # ⟳ `§A2` — **korpus manşeti artık ÜÇ satır.** Son işaretli satırı almak, cevapsız
+    # ve semantik payda satırlarını düşürürdü; ölçüm eklendiği hâlde görünmezdi.
+    # ⚠ Öteki adımlar (süit, eval) tek satır basar → davranışları değişmez.
+    _korpus = [s for s in isaretli
+               if any(i in s for i in ("TOPLAM doğru-cube", "cevapsız:", "semantik vaka:"))]
+    if len(_korpus) > 1:
+        return "\n" + "\n".join(f"      {s[:118]}" for s in _korpus)
+    return isaretli[-1][:120]
 
 
 def _dusenler(cikti: str) -> list[str]:

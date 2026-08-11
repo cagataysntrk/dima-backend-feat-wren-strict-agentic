@@ -512,6 +512,37 @@ def kapi_degerlendir(reports: list[dict]) -> tuple[bool, list[str]]:
         b = beklenen["dogru_cube_yuzde"]
         isaret = "✅" if yuzde >= b - TOLERANS_DOGRULUK else "❌ GERİLEME"
         satirlar.append(f"  TOPLAM doğru-cube: %{yuzde:.1f} (taban %{b}) {isaret}")
+        # 🔴🔴 `§A2` — **CEVAPSIZ, MANŞETİN BİRİNCİ SINIF ÜYESİDİR.**
+        #
+        # ⊙ Rapor `§14 A2`: bu sayı **zaten hesaplanıyordu** ve şirket başına markdown'a
+        # yazılıyordu (`kesme_sayi/kesme_payda`) — ama **kapı özetine hiç çıkmıyordu**.
+        # Manşet yalnız *«doğru-cube %»* diyordu ve o oran **SQL üretebilmiş** turların
+        # içindedir; cevapsız kalanlar o paydanın **dışındadır**. Yani manşet, ürünün en
+        # görünür kusurunu **tanım gereği** göremiyordu.
+        #
+        # ⊙ Ölçülen bağlam: korpusta **%19,9**, canlı trafikte **%21,8**. Ve kullanıcının
+        # yaşadığı hâli: altı zayıf promptun **üçü** cevapsız (*«işler iyi mi»* ·
+        # *«bu ay ne oldu»* · *«kısaca özetle»*).
+        #
+        # ⚠ Bir **eşik değil**, bir **görünürlük** satırıdır: kapıyı kırmızı yapmaz.
+        # Gerileme kapısı `doğru-cube` ve `sessiz_yanlış`ta kalır; bu satır *«iyileşme
+        # nerede olmalı»* sorusunu görünür kılar. *Ölçülmeyen bir kusur, kapatılmadığı
+        # için değil, bakılmadığı için kalır.*
+        _cs = sum((r.get("kesme_sayi") or 0) for r in reports if not r.get("error"))
+        _cp = sum((r.get("kesme_payda") or 0) for r in reports if not r.get("error"))
+        if _cp:
+            satirlar.append(f"  🔴 cevapsız: {_cs}/{_cp} (%{100 * _cs / _cp:.1f}) "
+                            f"— cevap yok · kullanıcı durdurmadı · Discovery koşmadı")
+        # `§A3` — **İKİ PAYDA YAN YANA.** Ham tur paydası kartezyen şişmeyi taşır;
+        # semantik payda `(cube, ölçü, niyet)` üçlüsüne çöker (ölçülen şişme **~25×**).
+        # `KURAL A`: ham payda **korunur** — geçmiş tabanlar ona bağlı; semantik olan
+        # **yanına** yazılır. *Bir oranı paydası görünmeden yorumlamak, sayıyı değil
+        # umudu okumaktır.*
+        _vt = sum((r.get("vaka_toplam") or 0) for r in reports if not r.get("error"))
+        _vd = sum((r.get("vaka_dogru") or 0) for r in reports if not r.get("error"))
+        if _vt:
+            satirlar.append(f"  semantik vaka: {_vd}/{_vt} (%{100 * _vd / _vt:.0f}) "
+                            f"· ham tur: {_cp} (şişme {_cp / _vt:.1f}×)")
         if olculemeyen:
             # 🔴 Eksik şirketle hesaplanan toplam, tabanla **aynı ölçü değildir**.
             satirlar[-1] += "  ⚠ KIYAS GEÇERSİZ"

@@ -2789,6 +2789,29 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 | **geri alma** | yok (yeni dosya, mevcut yolu etkilemez) |
 | **MİMARİ.md** | *«§ ölçüm»* — garson korpusunun tanımı ve paydası |
 
+### ✅ A2 · `cevapsız` birinci sınıf metrik — **TAMAMLANDI (2026-08-11)**
+
+> 🟢 **UYGULANDI VE CANLI DOĞRULANDI.** `lab/nl_corpus.py::kapi_degerlendir` üç satırlık
+> manşet basıyor; `lab/kapi.py::_son_anlamli` üçünü de özete taşıyor (öncesinde **son**
+> işaretli satırı seçiyordu ve yeni iki satır **düşerdi** — ölçüm eklendiği hâlde
+> görünmezdi).
+>
+> **Ölçülen manşet:**
+> ```
+> TOPLAM doğru-cube: %95.1 (taban %94.4) ✅
+> 🔴 cevapsız: 2980/14957 (%19.9) — cevap yok · kullanıcı durdurmadı · Discovery koşmadı
+> semantik vaka: 554/590 (%94) · ham tur: 14957 (şişme 25.4×)
+> ```
+> ⊙ Raporun `§1.2` tablosuyla **birebir** (%19,9 · 590 vaka · ~25×).
+>
+> ⚠ Bir **eşik değil görünürlük** satırı: kapıyı kırmızı yapmaz (aksi hâlde bugünkü
+> %19,9 anında kırmızı olur ve kapı kullanılamaz hâle gelirdi). Gerileme kapısı
+> `doğru-cube` ve `sessiz_yanlış`ta kalır. Kapı: `tests/test_a2_cevapsiz_manset.py` (4).
+>
+> **Curl (altı zayıf prompt):** bugün **2/6** cevapsız — *«işler iyi mi»* · *«kısaca
+> özetle»*. Rapor 3/6 ölçmüştü; *«bu ay ne oldu»* artık cevaplanıyor. ⚠ Sebep
+> **izole edilmedi**, B2'nin kazancı diye iddia edilmiyor.
+
 ### A2 · `cevapsız` birinci sınıf metrik
 
 | | |
@@ -2799,6 +2822,12 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 | **curl** | 6 zayıf prompt (*«işler iyi mi»*, *«bu ay ne oldu»*, *«kısaca özetle»* dâhil) → kaçı cevapsız? **Bugün 3/6** |
 | **risk** | yok — yalnız raporlama |
 | **MİMARİ.md** | *«§ test kapısı»* — manşet tanımı |
+
+### ✅ A3 · Şişme katsayısını beyan et — **TAMAMLANDI (2026-08-11)**
+
+> 🟢 A2 ile **aynı manşette**: `semantik vaka: 554/590 (%94) · ham tur: 14957
+> (şişme 25.4×)`. `KURAL A` gereği ham payda **korunur** — geçmiş tabanlar ona bağlı;
+> semantik payda **yanına** yazıldı, yerine değil.
 
 ### A3 · Şişme katsayısını beyan et
 
@@ -3177,7 +3206,7 @@ Eğer **tek bir şey** yapılacaksa sırası budur:
 | # | iş | süre | neden bu |
 |---|---|---|---|
 | ✅ 1 | **B2** — `few_shot_block`'u garsona bağla | **saatler** ✔ bitti | Fonksiyon **zaten yazılmış**, Discovery'ye (%1,7) bağlı, garsona (%37) değil. Dışarıda **+17…+23 puan** ölçülmüş |
-| 2 | **A2** — `cevapsız` metriğini manşete al | **saatler** | %21,8 görünür olmadan **hiçbir iyileşme kanıtlanamaz** |
+| ✅ 2 | **A2** — `cevapsız` metriğini manşete al | **saatler** ✔ bitti | %21,8 görünür olmadan **hiçbir iyileşme kanıtlanamaz** |
 | 3 | **D3'ün iki kuralı** — *«tek değer → grafik yok»* + *«≤3 satır → cümle»* | **günler** | *«Robotik»* hissini tek başına kıran şey. Power BI'ın **belgelenmiş** kuralı + Hearst&Tory **%41** |
 | 4 | **B1** — şema daraltma (`extract_by`, fail-open) | **günler** | Hataların **%27-33'ü** şema bağlama |
 | 5 | **B4** — reflect+repair (tavan 2 tur) | **~1 hafta** | Dürüst redleri **cevaba** çevirir |

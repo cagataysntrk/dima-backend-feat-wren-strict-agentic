@@ -12550,3 +12550,25 @@ her ayarın gerekçesi varken. Açık borç.
 `vqr_ornek_icin`'in replay anahtarından bağımsızlığını *«kaynakta `vqr_acik` geçmesin»*
 diye yazmıştım — ama **docstring onu açıklamak için anıyordu** ve kapı kırmızı verdi.
 Yüklem gövdeye daraltıldı. *Bir yüklem koda bakmalı, açıklamaya değil.*
+
+---
+
+# `A2` TURU — altı zayıf prompt *(rapor §14 FAZ 0 · A2'nin curl şartı)*
+
+*(2026-08-11)*
+
+| soru | sonuç |
+|---|---|
+| «fabrika nasıl gidiyor» | ✅ `cube+llm` · 11 satır (`bakim`) |
+| «en kötü makine hangisi» | ✅ `cube+llm` · 11 satır (`oee`) |
+| «hangi müşteriyle çalışmayı bırakmalıyız» | ✅ `cube+llm` · 8 satır |
+| «işler iyi mi» | 🔴 **cevapsız** |
+| «bu ay ne oldu» | ✅ `cube+llm` · 1 satır (`parti`) — *raporda cevapsızdı* |
+| «kısaca özetle» | 🔴 **cevapsız** |
+
+⊙ **2/6 cevapsız** (rapor 3/6 ölçmüştü). ⚠ *«bu ay ne oldu»*nun düzelme sebebi **izole
+edilmedi** — B2'nin kazancı diye iddia edilmiyor. *Bir iyileşmeyi sebebini ölçmeden
+sahiplenmek, ölçümü bir tebrike çevirir.*
+
+Ve manşet artık bunu **görüyor**: korpus kapısı `🔴 cevapsız: 2980/14957 (%19,9)` +
+`semantik vaka: 554/590 · ham tur: 14957 (şişme 25,4×)` basıyor.

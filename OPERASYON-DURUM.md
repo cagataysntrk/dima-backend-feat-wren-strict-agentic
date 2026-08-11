@@ -2746,3 +2746,22 @@ riskin ayrı kapılardan geçmesi gerektiğini zaten yazmış. Ayrı erişimci: 
 
 ⚠ **Açık borç:** `config.py`'de `vqr_acik: bool = False`'un **yazılı gerekçesi yok** —
 o dosyadaki her ayarın gerekçesi varken. Replay yolunun neden kapalı olduğu **ölçülmeli**.
+
+### ✅ A2 + A3 · `cevapsız` ve semantik payda manşete girdi *(2026-08-11)*
+
+`lab/nl_corpus.py::kapi_degerlendir` üç satır basıyor; `lab/kapi.py::_son_anlamli`
+üçünü de özete taşıyor (öncesinde **son** işaretli satırı seçiyordu → yeni iki satır
+**düşerdi**). Kapı: `tests/test_a2_cevapsiz_manset.py` (4 test).
+
+```
+TOPLAM doğru-cube: %95.1 (taban %94.4) ✅
+🔴 cevapsız: 2980/14957 (%19.9) — cevap yok · kullanıcı durdurmadı · Discovery koşmadı
+semantik vaka: 554/590 (%94) · ham tur: 14957 (şişme 25.4×)
+```
+
+⚠ **Eşik değil görünürlük.** Kapıyı kırmızı yapmaz — aksi hâlde bugünkü %19,9 anında
+kırmızı olur ve kapı kullanılamaz hâle gelirdi. Gerileme kapısı `doğru-cube` ve
+`sessiz_yanlış`ta kalır. `KURAL A`: ham payda korundu, semantik payda **yanına** yazıldı.
+
+**Curl (altı zayıf prompt):** **2/6** cevapsız (*«işler iyi mi»* · *«kısaca özetle»*).
+Rapor 3/6 ölçmüştü; *«bu ay ne oldu»* artık cevaplanıyor — ⚠ sebep **izole edilmedi**.
