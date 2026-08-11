@@ -95,15 +95,32 @@ def gorsel_ekle(resp: AskResponse, result: dict | None, cq: dict | None = None, 
             # kaynağını kanıtlayabilmek"; bir kolon iki tablo öteden geliyorsa bunu
             # kullanıcı GÖRMELİ. `dimension_origin` yalnız ilişki-türevi boyutlarda
             # dolu olduğundan (yerel boyutlarda yok) burası doğal olarak sessiz kalır.
+            #
+            # 🔴 `§F3` — VE SOYAĞACI ARTIK SERTİFİKAYI DA SÖYLÜYOR. Ölçüldü (2026-08-11):
+            # cümle *"…ilişkisi üzerinden geldi (1 sıçrama)"* diyordu ve **orada
+            # bitiyordu**; `fanout` sertifikası 31/31 ilişkiyi ölçmüştü ama o ölçüm
+            # cevabın **hiçbir yerine** ulaşmıyordu (`"certified" in yanıt` → **False**).
+            # Yani kullanıcı bir kolonun iki tablo öteden geldiğini görüyor, o join'in
+            # toplamları şişirip şişirmediğini **bilemiyordu**. Beyan kültürünün tam da
+            # kapatmak için var olduğu boşluk.
             try:
+                from app import fanout as _fanout
+
                 origin = cube_meta.get("dimension_origin") or {}
-                satir = [
-                    f"“{cube_meta.get('dimension_labels', {}).get(d, d)}” boyutu "
-                    f"{origin[d]['model']}.{origin[d]['column']} kolonundan, "
-                    f"{origin[d]['relationship']} ilişkisi üzerinden geldi "
-                    f"({origin[d].get('hops', 1)} sıçrama)."
-                    for d in (cq.get("dimensions") or []) if d in origin
-                ]
+
+                def _soyagaci(d: str) -> str:
+                    o = origin[d]
+                    ad = cube_meta.get("dimension_labels", {}).get(d, d)
+                    c = (f"“{ad}” boyutu {o['model']}.{o['column']} kolonundan, "
+                         f"{o['relationship']} ilişkisi üzerinden geldi "
+                         f"({o.get('hops', 1)} sıçrama)")
+                    # ⚠ `certified` damgası `WrenService.schema()`'dan gelir; ad-hoc/eski
+                    # şemalarda YOK olabilir → `beyan()` `None` döner ve cümle bugünkü
+                    # hâliyle biter. *Eksik bir damga, uydurulmuş bir güvenceden iyidir.*
+                    b = _fanout.beyan(o.get("certified"))
+                    return f"{c} — {b}." if b else f"{c}."
+
+                satir = [_soyagaci(d) for d in (cq.get("dimensions") or []) if d in origin]
                 if satir:
                     resp.calculation_explanation = " ".join(
                         filter(None, [resp.calculation_explanation, *satir]))

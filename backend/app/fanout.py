@@ -182,6 +182,41 @@ def rozet(sert: dict, rel_adi: str | None) -> str | None:
     return "olculdu:saglikli" if k.get("saglikli") else "olculdu:riskli"
 
 
+#: 🔴 `§F3` — ROZETİN TÜRKÇESİ, TEK SAHİPLİ (`KAT-1`).
+#:
+#: Rozet bir **kod**tur (`olculdu:saglikli`); kullanıcı onu okumaz. Cümleyi çağıranın
+#: yazması, aynı kuralın ikinci bir sahibi demekti — bu depoda defalarca ölçülmüş ve her
+#: seferinde sapmayla biten desen. Sözlük burada, `rozet()`'in **yanında** durur: bir
+#: gün üçüncü bir durum eklenirse ikisi birlikte değişir.
+#:
+#: ⚠ Metinler bilerek **fan-out'un sonucunu** söyler, mekanizmasını değil: kullanıcı
+#: *"benzersiz anahtar"* değil *"sayı şişer mi"* sorusunu sorar.
+_ROZET_BEYANI = {
+    "olculdu:saglikli": "bu ilişki fan-out açısından ölçüldü, sayılar şişmiyor",
+    "olculdu:riskli": "🔴 bu ilişki ölçüldü ve RİSKLİ — hedef anahtar benzersiz değil, "
+                      "toplamlar şişmiş olabilir",
+    "olculmedi": "⚠ bu ilişki fan-out açısından ÖLÇÜLMEDİ",
+}
+
+
+def beyan(rozet_kodu: str | None) -> str | None:
+    """Rozet kodu → kullanıcıya söylenecek Türkçe cümle parçası. Bilinmeyen kod → `None`.
+
+    🔴 **Neden ölçülmüş bir sağlık BEYAN EDİLİYOR, sessizce geçilmiyor:** bu modülün
+    tüm değeri *"ölçülmedi"* ile *"ölçüldü, temiz"* ayrımındadır (bkz. `schema()`'nın
+    kendi notu). O ayrım **yalnız damgada** kalırsa kullanıcı için yoktur: soyağacı
+    cümlesi *"bu boyut iki tablo öteden geldi"* der ve okuyan, sayının şişip şişmediğini
+    **bilemez**. Omni'nin `$55,5 milyar`lık kartezyen felaketi (`§23.1`) tam olarak bu
+    boşlukta doğdu — orada ölçüm de yoktu; burada **var ve söylenmiyordu**.
+
+    ⚠ Bilinmeyen kodda **uydurulmaz**, susulur: olmayan bir garantiyi rozetlemek,
+    hiç rozetlememekten kötüdür.
+    """
+    if not rozet_kodu:
+        return None
+    return _ROZET_BEYANI.get(str(rozet_kodu))
+
+
 def duckdb_sorgu(con) -> Sorgu:
     """DuckDB bağlantısını `Sorgu` sözleşmesine sarar (testlerin doğrudan kullandığı yol)."""
     return lambda sql: con.execute(sql).fetchall()

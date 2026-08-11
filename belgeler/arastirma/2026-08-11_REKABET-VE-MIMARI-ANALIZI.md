@@ -803,13 +803,42 @@ Canlı MDL (`demo/wren-project/target/mdl.json`):
 | | adet | kullanıyor muyuz |
 |---|---|---|
 | `models` | **80** | ◐ dolaylı |
-| **`relationships`** | **31** | 🔴 **cube_router'da sıfır anma** — çapraz-küp *«blend»* ile yapılıyor, **gerçek JOIN değil** |
+| **`relationships`** | **31** | ⟳ **F3 · BU SATIR YANLIŞTI — ölçüldü 2026-08-11.** *«cube_router'da sıfır anma»* doğru ama **kusur değil**: router ilişkiyi bilmemelidir (`§38.4` JOIN planlayıcı yasağı), sıradan bir boyut görür. İlişkiler **sekiz katmanda** kullanılıyor → aşağıdaki tablo |
 | `views` | 1 | 🔴 hayır |
 | `cubes` | 23 | ✅ evet |
 
-⊙ **31 tanımlı ilişki var ve çapraz-küp özelliğimiz onları kullanmıyor.** MIMARI.md'nin
-kendi notu: *«blend, gerçek JOIN değil»*. Yani join yolu **beyan edilmiş** ama
-**kullanılmıyor**.
+⟳ ~~**31 tanımlı ilişki var ve çapraz-küp özelliğimiz onları kullanmıyor.**~~ — 🔴 **F3
+ölçümü bu cümleyi çürüttü (2026-08-11).** *«blend, gerçek JOIN değil»* **doğrudur**, ama
+gerçek JOIN başka bir yerde, **daha doğru bir yerde** yapılıyor: `blend` **iki ölçüyü**
+harmanlar (`FULL OUTER JOIN` üstünde, paylaşılan grain zorunlu), ilişkiler ise **boyut
+zenginleştirmesi** yapar. İkisi farklı işlerdir ve **ikisi de canlı**.
+
+**Ölçülen sekiz katman:**
+
+| # | katman | ne yapıyor | kanıt |
+|---|---|---|---|
+| 1 | **cube derleyicisi** — `compose._compose_relationship_dimensions` | `relationships.yml`'in **10 `expose:`** bloğu → **9 ilişki-türevi boyut**, **7 cube**'a enjekte (`oee` · `bakim` · `kalite` · `parti` · `mizan` · `makine_duruslari` · `surdurulebilirlik`) | `grep relationship demo/wren-project/cubes/*/metadata.yml` |
+| 2 | **model katmanı** — `WrenEngine.dry_plan` | `is_calculated` kolon → **gerçek, çok-sıçramalı JOIN**, otomatik | `MIMARI §3.2` |
+| 3 | **fan-out sertifikası** — `fanout.certify` | **31/31 ölçüldü**, hepsi `benzersiz=True · öksüz=0 · null=0 · saglikli` | `target/fanout_certificate.json` |
+| 4 | `WrenService.schema()` | `dimension_origin[*].certified` damgası | kod |
+| 5 | `drill.py:163` | `olculdu:riskli` kök-neden sırasında **geriye itilir** | `_SERTIFIKA_AGIRLIK` |
+| 6 | `gorsel_ekleme` | soyağacı cümlesi — *«… ilişkisi üzerinden geldi (1 sıçrama)»* | canlı curl |
+| 7 | `ossie.py` · `connections.py` | **ithal** ilişki `certified: "olculmedi"` damgalı gelir — sessiz *«sağlıklı»* değil | kod |
+| 8 | ön uç — `InterpretationBar.tsx` | rozet | kod |
+
+🔴 **Ve ölçüm BİR gerçek boşluk buldu — kapatıldı.** Soyağacı cümlesi *«…(1 sıçrama).»*
+ile bitiyordu; `"certified" in yanıt` → **False**. Yani 31 ilişkinin tamamı ölçülmüştü,
+sonuç bir artefakta yazılmıştı, damga şemaya basılmıştı — ve **kullanıcıya hiçbir yerden
+ulaşmıyordu**. Okuyan kişi bir kolonun iki tablo öteden geldiğini görüyor, o join'in
+toplamları **şişirip şişirmediğini bilemiyordu**.
+
+> *Omni'nin `$55,5 milyar`lık kartezyen felaketi (`§23.1`) tam bu boşlukta doğdu — orada
+> **ölçüm de yoktu**. Bizde **vardı ve susuyordu**; bu daha ucuz bir kusurdur ama daha
+> sinsi olanıdır: sistem doğruyu biliyor ve söylemiyor.*
+
+`fanout.beyan()` eklendi (rozet kodunun Türkçesi, **tek sahip** — `KAT-1`). Canlı cevap
+artık: *«“bölüm” boyutu makineler.bolum kolonundan, oee_vardiya_makineler ilişkisi
+üzerinden geldi (1 sıçrama) — **bu ilişki fan-out açısından ölçüldü, sayılar şişmiyor**.»*
 
 ### 11.3 🔴 Wren 7 Mayıs 2026'da mimarisini değiştirdi — biz yarım geçtik
 
@@ -3562,7 +3591,7 @@ nedensel iddia **nedensel grafik beyanı** ister (DoWhy sınıfı) ve bizde **yo
 |---|---|---|
 | ✅ **F1** | Arşivlenmiş `wren-engine` bağımlılığı **KAPATILDI** *(2026-08-11)* | Dört ölçüm: ① konteyner hâlâ **`Restarting (1)`**, `restart: always` ile **sonsuz çökme döngüsü** ② `grep -rn "WREN_ENGINE_URL\|wren-engine" backend/ --include="*.py"` → **SIFIR** (env geçiliyordu, **hiçbir kod okumuyordu**) ③ `CLAUDE.md` zaten yazmış: motor **in-process**, subprocess yok ④ ön-uç/betiklerde 8080 kullanımı yok. **Silinmedi, yorumlandı** (`MIMARI §10`). Ürün doğrulandı: `/health` ok, curl `cube` + `cube+llm` çalışıyor |
 | **F2** | `wren cube query --sql-only` ↔ `cube_router` SQL'i **yan yana** koy | *«4.807 satırın ne kadarı motorun artık kendi yaptığı iş?»* |
-| **F3** | MDL'deki **31 `relationship`**'i çapraz-küpte kullan | bugün *«blend, gerçek JOIN değil»* |
+| ✅ **F3** | MDL'deki **31 `relationship`** — 🔴 **TEŞHİS ESKİMİŞTİ, ÖLÇÜMLE ÇÜRÜTÜLDÜ** *(2026-08-11)* | ⊙ `§11.2` *«cube_router'da sıfır anma»* diyordu; ölçüldü — ilişkiler **sekiz katmanda** kullanılıyor ve router'daki sessizlik bir kusur **değil**, `§38.4`'ün **JOIN planlayıcı yasağının kendisidir** (router ilişkiyi bilmemeli, sıradan bir boyut görmeli). **Cube derleyicisi** `compose._compose_relationship_dimensions` → **10 `expose:`** bloğu → **9 türev boyut**, **7 cube**'a; model katmanı (`dry_plan`) `is_calculated` kolondan **gerçek JOIN** üretiyor. Fan-out sertifikası **31/31 ölçülü, hepsi `saglikli`**. **Canlı:** `bölüm bazında oee` → `cube=oee · dims=['bolum'] · 5 satır`. 🔴 **Bulunan tek gerçek boşluk KAPATILDI:** soyağacı cümlesi *«…(1 sıçrama).»* ile bitiyor, `"certified" in yanıt` → **False**'tu — ölçüm vardı, **söylenmiyordu**. `fanout.beyan()` (tek sahip, `KAT-1`) eklendi; artık *«— bu ilişki fan-out açısından ölçüldü, sayılar şişmiyor»* |
 | **F4** | `modernbert-tr-reranker` ölç | **+5…+9 nDCG@10** potansiyeli |
 | **F5** | Motorda olanı yeniden yazan **~2.000 satırı** kademeli devre dışı bırak | `rls.py` 380 · `dataset.py` 161 · manifest ~1.490 |
 | **F6** | **Apache Ossie pilotu** — bir küp, `ai_context.synonyms` | Türkçe sözlüğü **koddan modele** taşır; **Wren zaten okuyor** |

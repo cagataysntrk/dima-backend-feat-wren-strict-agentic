@@ -650,6 +650,19 @@ Onun yerine sıra **zaten üretilen beyanlardan** okunur — `dimension_origin` 
 | 2 | Az sıçramalı | Her sıçrama bir maliyet ve bir risk |
 | 3 | `olculdu:saglikli` → `olculmedi` → `olculdu:riskli` | **Ölçülmemiş bir ilişki BİLİNMEZDİR; riskli ölçülmüş bir ilişki BİLİNEN bir sorundur** (fan-out toplamları şişirir) — bilinmeyeni bilinen-bozuğun önüne koymak doğrudur |
 
+> 🔴 **`§F3` (2026-08-11) — VE SERTİFİKA ARTIK YALNIZ SIRALAMAYA DEĞİL, CÜMLEYE DE GİRİYOR.**
+> Ölçüldü: sertifika 31/31 ilişkiyi ölçüyordu, damga `dimension_origin[*].certified`'a
+> basılıyordu, `drill` sırasını buna göre kuruyordu — ama **cevabın metninde yoktu**
+> (`"certified" in yanıt` → **False**). Soyağacı cümlesi *«… ilişkisi üzerinden geldi
+> (1 sıçrama).»* diyor ve orada bitiyordu; kullanıcı o join'in **toplamları şişirip
+> şişirmediğini bilemiyordu**. `fanout.beyan()` rozet kodunun Türkçesini **tek sahiple**
+> (`KAT-1`) tutar, `gorsel_ekleme` onu soyağacına ekler. Bilinmeyen kodda **susulur** —
+> *eksik bir damga, uydurulmuş bir güvenceden iyidir.*
+>
+> ⚠ **Ölçmek ile söylemek aynı şey değildir.** Ölçülmüş ve söylenmemiş bir risk,
+> ölçülmemiş bir riskle kullanıcı açısından **aynıdır** — üstelik sistem doğruyu bildiği
+> için daha sinsidir.
+
 Bu sıra **açıklayıcılık hakkında bir iddia DEĞİLDİR** — onu `contribution.rank_dimensions`
 sorguyu koştuktan **sonra** ölçer. **Maliyet ve güven** hakkındadır: kesme yapılacaksa,
 denenmeye önce ucuz ve güvenilir olanlar değer. Sıra **kararlıdır** (eşitlikte beyan sırası
