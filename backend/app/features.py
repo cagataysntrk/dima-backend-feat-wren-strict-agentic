@@ -503,6 +503,18 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "eskisidir (KURAL B).",
         "category": "Yönlendirme",
     },
+    "bicim_karari": {
+        "label": "Cevap biçimi kararı (öneri şeridi soru türüne bağlanır)",
+        "description": "Öneri chip'lerinin kova kotaları `niyet`in altı soru türünden "
+                       "gelir (`app/bicim.py` karar tablosu): tek sayı istendiğinde "
+                       "«+ölçü» ve «top-N» kovaları kapanır, sıralama zaten kurulmuşsa "
+                       "«top-N», kıyas kurulmuşsa «kıyas» kapanır. Ölçüldü: chip dizisi "
+                       "soru ne olursa olsun 6,6,6,6,5,6,6,5 idi — §18.1'in «katalog "
+                       "hissinin birinci kaynağı». Karar DETERMİNİSTİK ve tablolu "
+                       "(ADR-0024'ün aynı ilkesi, LLM seçmez). Kapalıyken kotalar sabit "
+                       "2·2·1·1·1, yani davranış bayt bayt eskisidir (KURAL B).",
+        "category": "Cevap biçimi",
+    },
     "ask_async_discovery": {
         "label": "Discovery arka-plan işi",
         "description": "/ask'in Discovery (ham-SQL LLM) yolu senkron HTTP yerine arka-plan "

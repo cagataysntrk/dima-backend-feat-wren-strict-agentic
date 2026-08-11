@@ -835,6 +835,33 @@ def _adhoc_kayit(request: Request, cq: dict | None) -> dict | None:
         str(cq.get("adhoc_id") or ""))
 
 
+def _bicim_kotasi(soru: str | None, sema: dict | None) -> tuple[dict[str, int], str] | None:
+    """`§D3` — sorudan **öneri kovası kotası**. Çözülemezse `None` (bugünkü davranış).
+
+    🔴 **ŞEMALI okuma zorunludur — ve bunu makbuz yakaladı.** İlk yazımda şemasız
+    `coz_soru()` çağırdım; curl'de `niyet:` izi *«tür=kirilim»* derken `§D3` makbuzu
+    *«toplam»* dedi. Sebep: `kirilim`/`ustunluk` gibi türler **katalog eşleşmesiyle**
+    doğar (`coz`), sorunun salt dilinden değil (`coz_soru`). Sonuç: *«hangi müşteri
+    riskli»* — 8 satırlık bir **kırılım** — tek-sayı kotası alıyordu.
+    ⊙ İki okuma yan yana basılmasaydı bu ayrışma **görünmezdi**; makbuz burada bir
+    süs değil bir **kapı** oldu.
+
+    ⚠ `niyet.coz` istek kapsamında **belleklidir** (anahtar `tam:{soru}`) — aynı turda
+    `route()`/`uyum` zaten çözmüştür, yani ikinci bir çözümleme maliyeti yoktur.
+    *Bir kararı ikinci kez hesaplamak, iki karar riski demektir.*
+    """
+    if not soru or not sema:
+        return None
+    try:
+        from app.bicim import oneri_kotasi
+        from app.niyet import coz
+
+        return oneri_kotasi(coz(soru, sema).turler)
+    except Exception:  # noqa: BLE001 - best-effort (şerit düşmez, eskiye döner)
+        _log.warning("§D3: biçim kotası çözülemedi (best-effort)", exc_info=True)
+        return None
+
+
 def _attach_next_steps(request: Request, resp: AskResponse) -> None:
     """K2 (rehberli analitik) — başarılı rapora DETERMİNİSTİK 'sonraki adım' chip'leri ekler
     (feature flag 'next_steps'): kullanılmayan boyut (kırılım) / ölçü (ölçek) / zaman
@@ -869,11 +896,24 @@ def _attach_next_steps(request: Request, resp: AskResponse) -> None:
         if adhoc is not None:
             # Ad-hoc cube TENANT KATALOĞUNDA YOK; şemasını kendi servisinden okumak
             # zorunludur, yoksa index'te bulunamaz ve chip'ler sessizce üretilmez.
-            cubes = adhoc["schema"].get("cubes") or []
+            _sema = adhoc["schema"]
         else:
-            cubes = wren_for_request(request).schema().get("cubes") or []
+            _sema = wren_for_request(request).schema()
+        cubes = _sema.get("cubes") or []
         index = {c.get("name"): c for c in cubes}
-        adimlar = cube_router.suggest_next_steps(cq, index)
+        # 🔴 `§D3` — ÖNERİ ŞERİDİ ARTIK SORU TÜRÜNE BAĞLI. Ölçüldü (§18'in sekiz
+        # sorusu, 2026-08-11): chip dizisi `6,6,6,6,5,6,6,5` — soru ne olursa olsun
+        # aynı boyda şerit, §18.1'in *"katalog hissinin birinci kaynağı"* dediği şey.
+        # Karar tablosu ve gerekçeleri `app/bicim.py`'de; burada yalnız **tüketilir**.
+        _kota = _gerekce = None
+        if "bicim_karari" in resolve_for(get_settings(), principal):
+            if (_karar := _bicim_kotasi(resp.question, _sema)):
+                _kota, _gerekce = _karar
+        adimlar = cube_router.suggest_next_steps(cq, index, _kota)
+        if _gerekce:
+            # Makbuz: kararı **gerekçesiyle** görünür kıl (`§98.1` disiplini — elenen
+            # bir şey sessizce elenmez).
+            resp.trace = [*(resp.trace or []), f"§D3 biçim: {_gerekce}"]
         if adhoc is not None and adhoc.get("maskeli_kolonlar"):
             # MASKELEME SIRASI (planın 3. risk maddesi): cube MASKELİ satırlardan kuruldu,
             # yani `Ahm** Y***` değerine filtre/kırılım kuran bir chip BOŞ ya da anlamsız

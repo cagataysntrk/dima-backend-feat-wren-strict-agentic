@@ -137,6 +137,12 @@ features:
   # yalnız insan onaylı kayıtlar (`user`/`user_verified`/`chip_approved`).
   # ⚠ Risk: bağlam kirlenmesi (Hex: «çelişkili bağlam modeli çöküş moduna soktu») → k=3.
   vqr_few_shot: beta
+  # §D3 — CEVAP BİÇİMİ BİR KARARDIR. Öneri şeridinin kova kotaları soru türünden
+  # gelir (`app/bicim.py`). Ölçüldü (§18'in sekiz sorusu, 2026-08-11): chip dizisi
+  # 6,6,6,6,5,6,6,5 — soru ne olursa olsun aynı boyda şerit. Ve asıl kusur sayı
+  # değil ALÂKASIZ KOVA: bir «ciro» sorusuna «+ fire» önerilmesi.
+  # Karar deterministik ve tablolu (ADR-0024'ün ilkesi); LLM seçmez.
+  bicim_karari: beta
   agent_plan_secimi: "off"  # FAZ 4: çapraz-alan pilotu — Planlayici.sec() planı ÖNERİR,
                           # dört kapı DENETLER, agent_run makbuzu kaydeder. Seçim ≠
                           # çalıştırma. `off` — sıcak yola LLM çağrısı ekliyor.

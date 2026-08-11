@@ -2765,3 +2765,48 @@ kırmızı olur ve kapı kullanılamaz hâle gelirdi. Gerileme kapısı `doğru-
 
 **Curl (altı zayıf prompt):** **2/6** cevapsız (*«işler iyi mi»* · *«kısaca özetle»*).
 Rapor 3/6 ölçmüştü; *«bu ay ne oldu»* artık cevaplanıyor — ⚠ sebep **izole edilmedi**.
+
+### ✅ D3 · Cevap biçimi bir KARAR oldu — öneri şeridi soru türüne bağlandı *(2026-08-11)*
+
+**Önce ölçüldü, sonra yazıldı** — ve ölçüm işin **yarısını iptal etti.** Raporun
+`§14.13`'ü D3'ten iki grafik kuralı istiyordu (*«tek değer → grafik yok»* · *«≤3 satır →
+cümle»*); ikisi de `viz.py`'de **zaten yazılı ve canlıda ateşliyordu**:
+
+| curl | sonuç |
+|---|---|
+| *«bu yıl toplam ciro»* | `viz=kpi` — `analyze()` tek satır + ölçü kuralı |
+| *«en kötü 3 makineyi analiz et»* | `viz=cumle` · gerekçe: *«3 kalem — üç çubuk, üç kelimeden daha az anlatır»* |
+
+⊙ `§12.12`'nin *«yazılmış ama bağlanmamış»* deseninin **yedinci** örneği — bu kez
+lehimize: **yazılacak kod yoktu.**
+
+**Açık olan yarı öneri şeridiydi.** `§18`'in sekiz sorusu curl ile tekrarlandı:
+
+| | chip dizisi |
+|---|---|
+| `§18` (rapor yazıldığında) | `6,6,5,6,6,4,6,3` |
+| bugün, değişiklikten **önce** | `6,6,6,6,5,6,6,5` 🔴 **daha da sabit** |
+| **sonra** | **`4,6,2,4,4,4,6,3`** |
+
+🔴 **Asıl kusur sayı değil ALÂKASIZ KOVA:** *«bu yıl toplam ciro»*nun chip'leri arasında
+`+ ortalama hız` ve `+ fire` vardı. Bir **ciro** sorusuna başka ölçü önermek soruyu
+derinleştirmez, **değiştirir**.
+
+**Tek sahip `app/bicim.py`** (`KAT-1`): `niyet`in kapalı altı türü × beş kova karar
+tablosu, her ❌ gerekçeli. `cube_router.suggest_next_steps(…, kota)` uygular ve soruyu
+**görmez**; `answer._attach_next_steps` tüketir ve makbuza yazar (`§D3 biçim: …`).
+Bayrak `bicim_karari: beta`. Kapı: `tests/test_d3_bicim_karari.py` (9 test).
+
+🔴 **Bir kusuru makbuz yakaladı:** ilk yazımda kota **şemasız** okumadan geliyordu; curl'de
+`niyet:` izi *«kirilim»* derken `§D3` izi *«toplam»* dedi — *«hangi müşteri riskli»*
+(8 satırlık kırılım) tek-sayı kotası alıyordu. İki iz yan yana basılmasaydı görünmezdi.
+
+⚠ **Kapsam dışı bırakılan iki bulgu (D11'e):** ① tek değerde `summary` KPI kartını
+**tekrar ediyor** (`"ciro: ₺74.022.836,94."`) ② *«geçen yıla göre»* sorusunda
+`toplam_ciro_degisim_yuzde` sonuçta **var**, anlatı değişimi **söylemiyor**. İkisi de
+**hangi olgunun üretildiği** sorunudur; biçim kararı çözemez.
+
+⚠ **Ölçüm aleti:** `lab/curl/bicim.sh` eklendi (viz · `cizilmedi` gerekçesi · not/özet/
+anlatı karakter sayısı · olgu · chip · niyet izi) ve tur **ortasında** düşen token'a karşı
+401 kapısı kondu — `kontrol.sh` başta geçse de token düşebiliyor ve `source=None` sahte
+kusuru yeniden üretiliyordu.

@@ -4422,12 +4422,18 @@ _GRAN_LABEL = {"year": "Yıllık", "quarter": "Çeyreklik", "month": "Aylık",
 _MAX_NEXT_STEPS = 6
 
 
-def suggest_next_steps(cube_query: dict, index: dict) -> list[dict]:
+def suggest_next_steps(cube_query: dict, index: dict,
+                       kota: dict[str, int] | None = None) -> list[dict]:
     """K2 (rehberli analitik) — bir rapordan DETERMİNİSTİK 'sonraki adım' önerileri:
     kullanılmayan BOYUTLAR (kırılım), kullanılmayan ÖLÇÜLER (ölçek), zaman GRANÜLERLİĞİ.
 
     Her öneri TAM cube_query taşır → FE `/cube` ile LLM'siz koşar (mevcut chip yolu).
-    Katalogdan türetilir (LLM yok, halüsinasyon yok). Boş liste = öneri yok."""
+    Katalogdan türetilir (LLM yok, halüsinasyon yok). Boş liste = öneri yok.
+
+    `kota` (🆕 `§D3`) — kova başına slot sayısı; **soru türünden** gelir
+    (`bicim.oneri_kotasi`). `None` → `bicim.VARSAYILAN_KOTA`, yani bugünkü sabit
+    dilimler (`KURAL B`). ⊙ Bu fonksiyon soruyu **görmez ve görmemelidir**: o bilgi
+    niyet katmanınındır; buraya yalnız **kararın sonucu** girer."""
     cube = (cube_query or {}).get("cube")
     spec = index.get(cube) if cube else None
     if not spec:
@@ -4549,7 +4555,20 @@ def suggest_next_steps(cube_query: dict, index: dict) -> list[dict]:
     #
     # ⚠ Tavan **DEĞİŞTİRİLMEDİ**: sorun chip sayısı değil **çeşitliliğiydi**. Tavanı
     # yükseltmek, ölçülmemiş bir UI kararı olurdu.
-    kovalar = [secilen, meases[:2], times[:1], cmp_steps[:1], topn_steps[:1]]
+    #
+    # 🔴 `§D3` — VE KOVA KOTALARI ARTIK SORU TÜRÜNDEN GELİYOR. Yukarıdaki not
+    # (*"sorun sayı değil çeşitlilik"*) doğruydu ama yarımdı: round-robin **hangi**
+    # kovanın gösterileceğini düzeltti, **o kovanın bu soruda anlamlı olup olmadığını**
+    # sormadı. Ölçüldü (2026-08-11, §18'in sekiz sorusu): *"bu yıl toplam ciro"* →
+    # `+ ortalama hız` ve `+ fire` chip'leri. Bir **ciro** sorusuna başka bir ölçü
+    # önermek soruyu derinleştirmez, **değiştirir**.
+    # Gerekçe tablosu ve her ❌'in sebebi: `app/bicim.py`.
+    from app.bicim import (KOVA_KIRILIM, KOVA_KIYAS, KOVA_OLCU, KOVA_TOPN,
+                           KOVA_ZAMAN, VARSAYILAN_KOTA)
+    _k = kota or VARSAYILAN_KOTA
+    kovalar = [secilen[:_k[KOVA_KIRILIM]], meases[:_k[KOVA_OLCU]],
+               times[:_k[KOVA_ZAMAN]], cmp_steps[:_k[KOVA_KIYAS]],
+               topn_steps[:_k[KOVA_TOPN]]]
     sirali: list[dict] = []
     for i in range(max((len(k) for k in kovalar), default=0)):
         for kova in kovalar:

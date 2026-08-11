@@ -5209,6 +5209,54 @@ deterministik `analyze()`/`recommend()` tasarımı Show-Me / Cleveland-McGill te
 Motor/kütüphane eklemek serbesttir; **kararı LLM'e devretmek değil.** İyileştirme LLM'den
 değil **daha zengin girdiden** gelir — ve o girdi zaten elimizdedir.
 
+### 13.1.1 🆕 `§D3` — ADR-0024'E EK: **cevap biçimi de deterministik bir karardır**
+
+ADR-0024 grafiğin **tipini** karara bağladı. Ama cevabın öteki yarısı — **öneri
+şeridi** — hiçbir yerde bir karar değildi: `cube_router.suggest_next_steps` beş kovayı
+sabit kotalarla (`2·2·1·1·1`) doldurup `_MAX_NEXT_STEPS=6`'da kesiyordu ve **soru türü
+bu hesaba hiç girmiyordu**.
+
+**Ölçüldü** (rekabet raporu `§18`'in sekiz sorusu, curl, 2026-08-11):
+
+| | chip dizisi |
+|---|---|
+| rapor `§18` (yazıldığı gün) | `6,6,5,6,6,4,6,3` |
+| bu değişiklikten **önce** | `6,6,6,6,5,6,6,5` — **daha da sabit** |
+| **sonra** | **`4,6,2,4,4,4,6,3`** |
+
+🔴 **Ve asıl kusur SAYI değil, ALÂKASIZ KOVA.** *«bu yıl toplam ciro»* sorusunun altı
+chip'i içinde `+ ortalama hız` ve `+ fire` vardı. Bir **ciro** sorusuna başka bir ölçü
+önermek soruyu **derinleştirmez, değiştirir**. *Bir öneri şeridi, sorulmuş sorunun
+devamıdır; küpün içindekilerin listesi değil.*
+
+| sahip | ne yapar |
+|---|---|
+| **`app/bicim.py`** *(tek sahip)* | `niyet`in **kapalı altı türü** × beş kova karar tablosu; her ❌'in gerekçesi yazılı |
+| `cube_router.suggest_next_steps(cq, index, kota)` | kotayı **uygular**; soruyu **görmez ve görmemelidir** |
+| `answer._attach_next_steps` | kararı **tüketir** ve makbuza yazar (`§D3 biçim: …`) |
+
+**Kapatma kuralları ve sebepleri:** `toplam` → `+ölçü` (konu değişir) + `top-N` (tek
+satır) · `ustunluk` → `top-N` (sıralama zaten kuruldu) · `kiyas` → `kıyas` (kıyas zaten
+kuruldu) · `trend` → `top-N` (zaman serisinde sıralama ekseni yok). Çok türlü soruda
+kova başına **en küçük** kota alınır.
+
+⚠ **Karar deterministik ve tablolu — LLM seçmez** (ADR-0024'ün aynı ilkesi).
+⚠ `KURAL B`: bayrak `bicim_karari` kapalıyken kotalar sabit `2·2·1·1·1`, yani çıktı
+**bayt bayt** eskisidir. Kapı: `tests/test_d3_bicim_karari.py`.
+
+🔴 **Ve bir kusuru makbuzun kendisi yakaladı:** ilk yazımda kota **şemasız** okumadan
+(`niyet.coz_soru`) geliyordu; curl'de `niyet:` izi *«tür=kirilim»* derken `§D3` izi
+*«toplam»* dedi. `kirilim`/`ustunluk` türleri **katalog eşleşmesiyle** doğar. Sonuç:
+*«hangi müşteri riskli»* — 8 satırlık bir kırılım — tek-sayı kotası alıyordu. İki okuma
+yan yana basılmasaydı bu **görünmezdi**. *Bir makbuz, süs değil bir kapıdır.*
+
+⊙ **Grafik tarafında yeni bir kural YAZILMADI — çünkü gerekmiyordu.** Raporun
+`§14.13`'ünün istediği iki kural (*«tek değer → grafik yok»* · *«≤3 satır → cümle»*)
+`viz.py`'de **zaten yazılı ve canlıda ateşliyor**: `analyze()` tek satır + ölçü → `kpi`,
+`_cizme_kurallari` kural 2 → `cumle` (*«3 kalem — üç çubuk, üç kelimeden daha az
+anlatır»*, curl'de birebir görüldü). *Bir yeteneğin yokluğunu varsaymak, onu aramaktan
+pahalıdır.*
+
 ### 13.2 Ölçülen sessiz-yanlış: beyan var, viz onu görmüyordu
 
 Cube metadata'sı `additive: full | semi | non` **beyan ediyor** ve `schema()` bunu

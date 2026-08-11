@@ -2690,7 +2690,7 @@ küme *örtüşmeyen* hâle gelir.
 
 | # | iş | **ÖNCE** | **SONRA** | dosyalar | MİMARİ.md |
 |---|---|---|---|---|---|
-| **D10** | Cevap biçimi | **karar yok** — `viz.analyze` + `interpret` + `_attach_next_steps` üçünün **artığı** (chip hep 6, olgu hep 1-2) | `niyet` + `followup` **zaten** soru türünü biliyor → **tek bir biçim kararı** noktası; olgu sayısı ve chip sayısı soruya bağlanır | `app/answer.py` · `app/interpret.py` · `app/viz.py` | **ADR-0024'e ek** |
+| ✅ **D10** | Cevap biçimi | **karar yok** — `viz.analyze` + `interpret` + `_attach_next_steps` üçünün **artığı** (chip hep 6, olgu hep 1-2) | ✔ **chip sayısı soruya BAĞLANDI** (`app/bicim.py` karar tablosu, `niyet`in altı türü × beş kova; `4,6,2,4,4,4,6,3`). ⚠ *olgu sayısı* `D11`'de kalır — bu turda **1-5 arası zaten değişiyor** (§18'de *«hep 1-2»* idi) | `app/bicim.py` 🆕 · `app/answer.py` · `app/cube_router.py` | ✅ **§13.1.1 ADR-0024'e ek** yazıldı |
 | **D11** | Olgu üretimi | `interpret.py` **11 üretici**, canlıda **1-2** ateşliyor | Ateşlenmeyen koşullar **ölçülüp genişletilir** → hedef **Pulse'un 14 tipine** yakın | `app/interpret.py` | **§ yorum katmanı** |
 | **D12** | Kök-neden yatay eksen | `§KN` **layer-1'de kilitli**, **sürpriz yok**, **FDR yok** | **Adtributor** (~85 satır) + **JS sürprizi** + **Benjamini-Hochberg** | yeni: `app/adtributor.py` · `app/kok_neden.py` | **§KN bölümü** |
 | **D13** | Dış yüzey | `mcp_yuzeyi: off` · `agent_plan_secimi: off` | **MCP açık** (~20 araç eşiği korunarak) | `demo/packs/features.yml` · `app/routers/mcp.py` | **§ MCP** |
@@ -3004,6 +3004,57 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 | ⚠ **risk** | **Gürültü.** Pulse'un kendi ifadesi: *«**avoids displaying noisy or spurious findings**»* |
 | **azaltma** | Her olguya **etki puanı**; yalnız en etkili N tanesi. Ve 🔴 **FDR** (E3) bunun **ön koşulu** |
 
+### ✅ D3 · Cevap biçimi bir KARAR olsun — **TAMAMLANDI (2026-08-11)**
+
+> 🟢 **UYGULANDI VE CANLI DOĞRULANDI.** Yeni tek sahip `app/bicim.py` (karar tablosu:
+> `niyet`in kapalı altı türü × `suggest_next_steps`'in beş kovası) ·
+> `cube_router.suggest_next_steps(…, kota)` · `answer._attach_next_steps` (tüketir +
+> makbuza yazar) · bayrak `bicim_karari: beta`.
+>
+> 🔴 **VE ÖNCE ÖLÇÜLDÜ — kuralın YARISI ZATEN VARDI.** `§14.13`'ün istediği iki grafik
+> kuralı `viz.py`'de **yazılı ve canlıda ateşliyor**: `analyze()` tek satır + ölçü →
+> `kpi` (curl: *«bu yıl toplam ciro»* → `kpi`), `_cizme_kurallari` kural 2 → `cumle`
+> (curl: *«en kötü 3 makineyi analiz et»* → `viz=cumle`, gerekçe **birebir**: *«3 kalem
+> — üç çubuk, üç kelimeden daha az anlatır»*). ⊙ `§12.12`'nin *«yazılmış ama
+> bağlanmamış»* deseninin **yedinci** örneği — bu kez lehimize: yazılacak kod yoktu.
+>
+> **Açık olan yarı ölçüldü ve kapatıldı** — `§18`'in sekiz sorusu curl ile tekrarlandı:
+>
+> | | chip dizisi |
+> |---|---|
+> | `§18` (rapor yazıldığında) | `6,6,5,6,6,4,6,3` |
+> | **bugün, değişiklikten önce** | `6,6,6,6,5,6,6,5` — 🔴 **daha da sabit** |
+> | **sonra** | **`4,6,2,4,4,4,6,3`** |
+>
+> 🔴 **Ve asıl kusur sayı değil ALÂKASIZ KOVA:** *«bu yıl toplam ciro»*nun chip'leri
+> arasında `+ ortalama hız` ve `+ fire` vardı. Bir **ciro** sorusuna başka bir ölçü
+> önermek soruyu derinleştirmez, **değiştirir**. Kapatma kuralları: `toplam` → `+ölçü`
+> + `top-N` · `ustunluk` → `top-N` · `kiyas` → `kıyas` · `trend` → `top-N`; çok türlü
+> soruda kova başına **en küçük** kota.
+>
+> 🔴 **Bir kusuru makbuz yakaladı:** ilk yazımda kota **şemasız** okumadan geliyordu
+> (`niyet.coz_soru`) ve curl'de `niyet:` izi *«kirilim»* derken `§D3` izi *«toplam»*
+> dedi — *«hangi müşteri riskli»* (8 satırlık kırılım) tek-sayı kotası alıyordu.
+> `kirilim`/`ustunluk` **katalog eşleşmesiyle** doğar. İki iz yan yana basılmasaydı
+> görünmezdi. Kapı: `test_karar_semali_okumadan_verilir`.
+>
+> **Kapı:** `tests/test_d3_bicim_karari.py` (9 test) — karar tablosunun anlamı ·
+> çok-türlü indirgeme · `KURAL B` (kota verilmezse **bayt bayt** eski) · kova adlarının
+> tek kaynakta olduğu (`KAT-1`).
+>
+> ⚠ **KAPSAM DIŞI BIRAKILAN, ve neden:** ① *«tek değer → tekrarcı özet»* — `«bu yıl
+> toplam ciro»` cevabı `summary: "ciro: ₺74.022.836,94."` taşıyor, yani KPI kartını
+> **tekrar ediyor** (`§21.3`: *«114 kişi grafikte zaten görüneni tekrar söyleyen
+> metinden rahatsız oldu»*). ② *«geçen yıla göre»* sorusunda sonuçta
+> `toplam_ciro_degisim_yuzde` **var**, anlatı değişimi **söylemiyor**. ⊙ İkisi de
+> **olgu taksonomisi** işidir → `D1`/`D2`/`D11`. Biçim kararı onları çözemez; **hangi
+> olgunun üretildiği** sorunudur.
+>
+> ⚠ `§18`'in *«not (karakter)»* sütunu `note` alanını ölçüyor; kullanıcının gördüğü
+> metin `interpretation.summary`'dir (`OutputInsight.tsx:52`). *«İki cevapta sıfır
+> metin»* bulgusu bu yüzden **`note` için doğru, kullanıcı için yarım** — ölçüm aracının
+> basmadığı alan yine bir teşhisi eğdi.
+
 ### D3 · Cevap biçimi bir KARAR olsun
 
 | | |
@@ -3207,7 +3258,7 @@ Eğer **tek bir şey** yapılacaksa sırası budur:
 |---|---|---|---|
 | ✅ 1 | **B2** — `few_shot_block`'u garsona bağla | **saatler** ✔ bitti | Fonksiyon **zaten yazılmış**, Discovery'ye (%1,7) bağlı, garsona (%37) değil. Dışarıda **+17…+23 puan** ölçülmüş |
 | ✅ 2 | **A2** — `cevapsız` metriğini manşete al | **saatler** ✔ bitti | %21,8 görünür olmadan **hiçbir iyileşme kanıtlanamaz** |
-| 3 | **D3'ün iki kuralı** — *«tek değer → grafik yok»* + *«≤3 satır → cümle»* | **günler** | *«Robotik»* hissini tek başına kıran şey. Power BI'ın **belgelenmiş** kuralı + Hearst&Tory **%41** |
+| ✅ 3 | **D3'ün iki kuralı** — *«tek değer → grafik yok»* + *«≤3 satır → cümle»* | **saatler** ✔ bitti | ⊙ **İkisi de `viz.py`'de ZATEN VARDI ve ateşliyordu** (curl ile doğrulandı). Açık olan yarı **öneri şeridiydi**: chip dizisi `6,6,6,6,5,6,6,5` → **`4,6,2,4,4,4,6,3`**, tek sahip `app/bicim.py` |
 | 4 | **B1** — şema daraltma (`extract_by`, fail-open) | **günler** | Hataların **%27-33'ü** şema bağlama |
 | 5 | **B4** — reflect+repair (tavan 2 tur) | **~1 hafta** | Dürüst redleri **cevaba** çevirir |
 

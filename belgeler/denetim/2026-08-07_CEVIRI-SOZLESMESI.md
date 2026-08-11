@@ -12572,3 +12572,61 @@ sahiplenmek, ölçümü bir tebrike çevirir.*
 
 Ve manşet artık bunu **görüyor**: korpus kapısı `🔴 cevapsız: 2980/14957 (%19,9)` +
 `semantik vaka: 554/590 · ham tur: 14957 (şişme 25,4×)` basıyor.
+
+---
+
+## TUR JJ — `§D3` cevap biçimi: §18'in sekiz sorusu, önce ve sonra *(2026-08-11)*
+
+**Amaç:** raporun `§18` tablosunu **tekrar ölçmek** ve D3'ün gerçekten açık olan yarısını
+bulmak. Kural: körlemesine geliştirme yok — önce rapor, sonra kod okuması, sonra curl.
+
+### Önce — bugünkü hâl (değişiklikten ÖNCE)
+
+| soru | viz | satır | not | olgu | **chip** | niyet türü |
+|---|---|---|---|---|---|---|
+| «bu yıl toplam ciro» | `kpi` | 1 | 0 | 1 | **6** | `toplam` |
+| «makine bazında oee» | `bar` | 11 | 117 | 2 | **6** | `kirilim` |
+| «fire oranı neden yüksek» | `bar` | 6 | 910 | 2 | **6** | `toplam` |
+| «geçen yıla göre nasıl gidiyoruz» | `kpi` | 1 | 199 | 2 | **6** | `kirilim+kiyas+trend` |
+| «en kötü 3 makineyi analiz et» | `cumle` | 3 | 560 | 2 | **6** | `kirilim+ustunluk` |
+| «kalite durumunu özetle» | `kpi` | 1 | 117 | 2 | **5** | `toplam` |
+| «hangi müşteri riskli» | `table`/`scatter` | 5-8 | 117 | 2-3 | **6** | `kirilim` |
+| «üretim raporu hazırla» | `facet_measure` | 330 | 555 | 5 | **5** | `toplam` |
+
+⊙ **Üç şey rapordan bu yana DÜZELMİŞ:** 1000 satırlık pivot duvarı yok · ikinci sıfır-metin
+vakası kapanmış · olgu sayısı artık **1-5** (raporda *«hep 1-2»*).
+🔴 **Ama chip dizisi `6,6,6,6,5,6,6,5` — §18'in `6,6,5,6,6,4,6,3`'ünden DAHA sabit.**
+
+### Teşhis — sayı değil, ALÂKASIZ KOVA
+
+*«bu yıl toplam ciro»*nun altı chip'i: `tedarikçi kırılımı · **+ ortalama hız** · Aylık
+trend · Geçen yıla göre kıyasla · kısım kırılımı · **+ fire**`.
+Bir **ciro** sorusuna *«+ fire»* önermek soruyu **derinleştirmez, değiştirir.**
+
+### Sonra — kova kotaları soru türünden
+
+| soru | chip | makbuz |
+|---|---|---|
+| «bu yıl toplam ciro» | **4** | `soru türü «toplam» — kapatılan kova: +ölçü, top-N` |
+| «makine bazında oee» | **6** | `soru türü «kirilim»` *(en zengin dal, değişmedi)* |
+| «fire oranı neden yüksek» | **2** | `«toplam» — +ölçü, top-N` |
+| «geçen yıla göre nasıl gidiyoruz» | **4** | `«kirilim+kiyas+trend» — kıyas, top-N` |
+| «en kötü 3 makineyi analiz et» | **4** | `«kirilim+ustunluk» — top-N` |
+| «kalite durumunu özetle» | **4** | `«toplam» — +ölçü, top-N` |
+| «hangi müşteri riskli» | **6** | `soru türü «kirilim»` |
+| «en çok ciro yapan 5 müşteriyi listele» | **4** | `«kirilim+liste+ustunluk» — top-N` |
+| «aylık ciro trendi» | **5** | `«kirilim+trend» — top-N` *(granülerlik + MoM korundu)* |
+
+### 🔴 Ve makbuz kendi kusurunu ele verdi
+
+İlk koşumda `niyet:` izi *«tür=kirilim»* derken `§D3` izi *«toplam»* dedi. Sebep: kota
+**şemasız** okumadan (`coz_soru`) geliyordu; `kirilim`/`ustunluk` türleri **katalog
+eşleşmesiyle** doğar. *«hangi müşteri riskli»* — 8 satırlık bir kırılım — tek-sayı kotası
+alıyordu. Şemalı okumaya (`coz(soru, schema)`, aynı istek belleği) geçildi; iki iz artık
+**aynı şeyi söylüyor**.
+
+⊙ *Bir makbuz, süs değil bir kapıdır — ve bu turda kendi yazarını yakaladı.*
+
+⚠ **Ölçüm aleti kusuru (ikinci kez):** tur **ortasında** token düştü ve *«makine bazında
+oee»* `source=None · 0 satır` göründü — yani sahte bir ürün kusuru. `kontrol.sh` turun
+**başında** geçmişti. `lab/curl/bicim.sh` artık her istekte 401'i yakalayıp tazeliyor.
