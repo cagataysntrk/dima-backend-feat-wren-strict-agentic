@@ -878,10 +878,42 @@ pub struct CubeQuery {
 Wren bunu belgesinde *«küçük modeller için **en yüksek kaldıraçlı doğruluk primitifi**»*
 diye adlandırıyor.
 
-⊙ **Bizim `CubeQuery`'miz ile aynı isim, neredeyse aynı şekil.** `cube_router.py`'nin
-**4.807 satırının** bir kısmı motorun artık kendi yaptığı işi ikinci kez yapıyor olabilir.
-**Bu ölçülmeli** — `wren cube query --sql-only` ile bizim `cube_sql` çıktımız yan yana
-konabilir.
+⊙ **Bizim `CubeQuery`'miz ile aynı isim, neredeyse aynı şekil.** ~~`cube_router.py`'nin
+**4.807 satırının** bir kısmı motorun artık kendi yaptığı işi ikinci kez yapıyor olabilir.~~
+
+⟳ 🔴 **`§F2` — ÖLÇÜLDÜ (2026-08-11, motor `0.13.2`) VE KAYGI ÇÜRÜDÜ.** Yan yana kondu;
+**beş vakanın DÖRDÜ bayt bayt aynı** — çünkü `WrenService.cube_sql` **zaten motoru
+çağırıyor**:
+
+```python
+from wren_core import cube_query_to_sql
+base = cube_query_to_sql(json.dumps(cq), self._mdl_bytes().decode())
+```
+
+Yani *«ikinci kez yapıyor»* yersizdi: SQL üretimi **zaten motorun**. Ve `cube_router`'ın
+satırları SQL üretmiyor — **Türkçe NL → CubeQuery** çeviriyor, ki motor onu **hiç
+yapmıyor**. İkisi farklı işlerdir.
+
+🔴 **Ve ölçüm daha önemli bir şey buldu: MOTOR DESTEKLEMEDİĞİNİ SESSİZCE DÜŞÜRÜYOR.**
+`cube_query_to_sql` reddetmiyor — alanı atıp SQL'i üretiyor:
+
+| geçilen | motorun ürettiği | sonuç |
+|---|---|---|
+| `order` / `orderBy` | `ORDER BY` **yok** | *«en yüksek 5 müşteri»* → **rastgele** 5 |
+| `having` | `HAVING` **yok** | *«10 milyon üzeri»* → eşik **hiç uygulanmaz** |
+| `tarih in ["2026-01","2026-03"]` | `WHERE tarih IN ('2026-01','2026-03')` | DATE ↔ ay-metni → **sıfır satır** |
+
+Üçü de **hatasız, uyarısız, `source="cube"` rozetiyle** yanlış sayı üretirdi — bu deponun
+`sessiz_yanlış` diye avladığı sınıfın ta kendisi, ve **kaynağı motor**. Dolayısıyla
+`cube_sql`'in `order`/`limit`/`measure_having`/`ayrik_aylar` sarmalayıcıları bir
+**fazlalık değil bir korumadır**; gerekçeleri yazılıydı, artık **ölçülü** ve **kapılı**
+(`tests/test_f2_motor_siniri.py`, 8 test). ⊙ **F5'in ön koşulu da budur:** motorda
+*«zaten var»* sanılan bir yeteneği silmeden önce, motorun onu **sessizce düşürüp
+düşürmediği** ölçülmelidir.
+
+⚠ Ölçüm turunda bir **sahte kusur** doğdu ve düzeltildi: prob `order`'ı `[{id, desc}]`
+şeklinde geçti, oysa şekil `{measure, direction}`. Canlı curl *«en yüksek cirolu 5
+müşteri»* → **doğru azalan sıralı**. *Aracı, ürünü suçlamadan önce şüphelen.*
 
 ### 11.5 Wren'in **AI Context Layer**'ı — almadığımız asıl parça
 
@@ -3590,7 +3622,7 @@ nedensel iddia **nedensel grafik beyanı** ister (DoWhy sınıfı) ve bizde **yo
 | # | iş | not |
 |---|---|---|
 | ✅ **F1** | Arşivlenmiş `wren-engine` bağımlılığı **KAPATILDI** *(2026-08-11)* | Dört ölçüm: ① konteyner hâlâ **`Restarting (1)`**, `restart: always` ile **sonsuz çökme döngüsü** ② `grep -rn "WREN_ENGINE_URL\|wren-engine" backend/ --include="*.py"` → **SIFIR** (env geçiliyordu, **hiçbir kod okumuyordu**) ③ `CLAUDE.md` zaten yazmış: motor **in-process**, subprocess yok ④ ön-uç/betiklerde 8080 kullanımı yok. **Silinmedi, yorumlandı** (`MIMARI §10`). Ürün doğrulandı: `/health` ok, curl `cube` + `cube+llm` çalışıyor |
-| **F2** | `wren cube query --sql-only` ↔ `cube_router` SQL'i **yan yana** koy | *«4.807 satırın ne kadarı motorun artık kendi yaptığı iş?»* |
+| ✅ **F2** | `wren cube query --sql-only` ↔ `cube_sql` **yan yana kondu** *(2026-08-11, motor `0.13.2`)* | ⊙ Sorunun cevabı: **hiçbiri.** Beş vakanın **dördü bayt bayt aynı**, çünkü `cube_sql` **zaten `wren_core.cube_query_to_sql`'i çağırıyor**; `cube_router`'ın satırları SQL değil **Türkçe NL → CubeQuery** üretiyor ve motor onu hiç yapmıyor. 🔴 **Ve ölçüm daha büyüğünü buldu: motor desteklemediği alanı SESSİZCE DÜŞÜRÜYOR** — `order`→`ORDER BY` yok · `having`→`HAVING` yok · ay-listesi→DATE'i ay-metniyle kıyaslayan `WHERE` (sıfır satır). Üçü de **uyarısız, `source="cube"` rozetiyle** yanlış sayı üretirdi. Sarmalayıcılarımız fazlalık değil **koruma**; gerekçe artık ölçülü ve kapılı (`test_f2_motor_siniri.py`, 8). **F5'in ön koşulu budur.** ⚠ Prob `order`'ı yanlış şekilde geçip sahte bir kusur üretti; canlı curl *«en yüksek cirolu 5 müşteri»* → **doğru azalan sıralı** |
 | ✅ **F3** | MDL'deki **31 `relationship`** — 🔴 **TEŞHİS ESKİMİŞTİ, ÖLÇÜMLE ÇÜRÜTÜLDÜ** *(2026-08-11)* | ⊙ `§11.2` *«cube_router'da sıfır anma»* diyordu; ölçüldü — ilişkiler **sekiz katmanda** kullanılıyor ve router'daki sessizlik bir kusur **değil**, `§38.4`'ün **JOIN planlayıcı yasağının kendisidir** (router ilişkiyi bilmemeli, sıradan bir boyut görmeli). **Cube derleyicisi** `compose._compose_relationship_dimensions` → **10 `expose:`** bloğu → **9 türev boyut**, **7 cube**'a; model katmanı (`dry_plan`) `is_calculated` kolondan **gerçek JOIN** üretiyor. Fan-out sertifikası **31/31 ölçülü, hepsi `saglikli`**. **Canlı:** `bölüm bazında oee` → `cube=oee · dims=['bolum'] · 5 satır`. 🔴 **Bulunan tek gerçek boşluk KAPATILDI:** soyağacı cümlesi *«…(1 sıçrama).»* ile bitiyor, `"certified" in yanıt` → **False**'tu — ölçüm vardı, **söylenmiyordu**. `fanout.beyan()` (tek sahip, `KAT-1`) eklendi; artık *«— bu ilişki fan-out açısından ölçüldü, sayılar şişmiyor»* |
 | ✅ **F4** | `modernbert-tr-reranker` — 🔴 **ÖLÇÜLDÜ → YAPILMAYACAK**, ve ölçüm **daha büyük bir şey buldu** *(2026-08-11)* | ⊙ Reranker'ın ön kabulü: *«darboğazımız SIRALAMA»*. Ölçüldü — **değil**. Dört şirkette **506 yanlış-cube** vakasının tamamı tek bir sınıf: bir terimi **iki küp de meşru olarak sahipleniyor** (`elektrik` → `enerji_makine` ⊕ `surdurulebilirlik`; `satış` → `ticaret` ⊕ `mal` ⊕ `karlilik`). 🔴 **Cross-encoder bunu «daha iyi tahmin ederek» çözerdi** — yani beyan edilebilir bir belirsizliği **sessiz bir seçime** çevirirdi; `§101.1` ve *beyan kültürü*'nün tam da önlemek için var olduğu şey. Üstelik korpus **iyileşir**, ürün **kötüleşir** — bu depoda üç kez ölçülmüş desen. ⊕ Maliyet: `torch` + ~500 ms, ki rapor `stanza`'yı **aynı gerekçeyle** elemişti (`§13.6`). ⊕ Ve tesisat zaten var: `metrik_kaydi.hakem` `_match_cube`'un **ilk satırında** çağrılıyor. **Doğru iş F4 değil, `§SH` (aşağıda).** |
 | ✅ **§SH-2** | **§SH'nin İKİ BORCU KAPATILDI — ve taban her ölçütte İYİLEŞTİ** *(2026-08-11)* | 🔴 **Taşınan teşhis YANLIŞTI ve okumak düzeltti:** korpus satırı *«takip turunda hakem odağı eziyor»* demiyordu, *«dönemsiz soruda sessizce dönem varsaymak»* diyordu — ve canlı ölçüm dönem beyanının **her yolda var** olduğunu gösterdi. **Gerçek kök başkaydı:** hakem, *daha spesifik* bir ölçü eşleşmesini eziyordu. *«elektrik faturası»* sorusunda `enerji_tesis` **17 karakterlik** tam eşleşme yaparken `surdurulebilirlik` yalnız **8 karakterlik** `elektrik`i eşleştiriyor, hakem `elektrik` için karar verdiği için **kısa eşleşme uzununu deviriyordu** → `enerji_makine`'de öyle bir ölçü yok → **R10 → cevapsız**. Dokuzunun **tamamı** bu desendi. ⊙ Kural bu depoda **zaten yazılıydı** (ÖLÇÜ-KANITI / `_daha_spesifik_olcu_sahibi`): *hakem bir **beraberlik** hakemidir.* ⊕ İkinci `KAT-1` kusuru: ikame beyanı **çürümüş otoriteyi** gösteriyordu (*«elektrik surdurulebilirlik konusudur»* — oysa ilan edilmiş sahip `enerji_makine`) ve chip'i **yanlış küpe** yolluyordu. ⊕ Gövde büyüme kapısının isteğiyle `metrik_kaydi.hakem_secimi`'ne **taşındı**; tavan **1960 → 1953** indirildi (*kazanılan alan sessizce harcanmaz*). 🔴 **KORPUS:** doğru-cube **%95,6** · cevapsız **%19,7** *(taban %19,9'dan da İYİ)* · doğru **95** *(geri geldi)* · `sessiz_yanlış` **8 → 7** · `R10` **23 → 14**. Kapı: 165 hedefli yeşil + korpus yeşil |
