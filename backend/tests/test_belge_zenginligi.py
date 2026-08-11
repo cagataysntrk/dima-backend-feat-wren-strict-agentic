@@ -538,3 +538,35 @@ def test_IKINCI_GONDERIM_YOLU_ACILMADI():
     demekti."""
     kod = _fe("components/ReportView.tsx")
     assert "api-client" not in kod and "useMutation" not in kod
+
+
+# --- `§RZ` GERİLEMESİ · KIRILIM BİR SERİ DEĞİLDİR ------------------------------------
+
+def test_KIRILIM_ZAMAN_KOVASINI_MIRAS_ALMAZ():
+    """🔴🔴 **Canlıda ölçülen gerileme (curl `X` turu) — ve kaynağı benim `§RZ`
+    sürümümdü.** *«son 2 yıl satış raporu hazırla»* → **18 blok**, istek **2 dakikayı
+    aştı**. Temel fiş bir **aylık seyirdi** ve `{**temel, dimensions: [ad]}` o kovayı da
+    miras aldı: her kırılım `müşteri × ay` kartezyeni oldu (253 satırlık bloklar).
+
+    *Bir bölümü bir öncekinden türetirken, ondan neyi ALMAYACAĞINI da söylemek gerekir.*"""
+    temel = {**_TEMEL, "timeDimensions": [{"dimension": "tarih", "granularity": "month"}]}
+    ekler = ps.belge_ek_bolumleri(temel, _PARTI)
+    kirilimlar = [e for e in ekler if e.get("dimensions")]
+    assert kirilimlar, "fikstür bozuk"
+    for e in kirilimlar:
+        assert "timeDimensions" not in e, f"🔴 kırılım zaman kovası taşıyor: {e}"
+
+
+def test_SEYIR_TEK_ISARETTEN_TANINMAZ():
+    """🔴 *«Seyir»* yalnız `timeDimensions` varlığı değildir: canlıda **17 blok birden**
+    seyir sayıldı ve hiçbiri elenmedi. Bir seyir zaman kovası taşır **ve kırılımı
+    yoktur**; ikisi bir aradaysa o bir seyir değil bir **kartezyendir**.
+
+    *Bir şeyi tek bir işaretten tanımak, o işareti taşıyan her şeyi o şey sanmaktır.*"""
+    kova = [{"dimension": "tarih", "granularity": "month"}]
+    sahte_seyir = [{"cube_query": {"cube": "parti", "measures": ["toplam_ciro"],
+                                   "timeDimensions": kova, "dimensions": [f"d{i}"]},
+                    "result": {"rows": [{"toplam_ciro": 10}] * 5, "row_count": 5}}
+                   for i in range(6)]
+    out = ps.belge_bolum_sirala(sahte_seyir)
+    assert len(out) == ps.BELGE_AZAMI_EK, f"🔴 kesilmedi: {len(out)} blok"

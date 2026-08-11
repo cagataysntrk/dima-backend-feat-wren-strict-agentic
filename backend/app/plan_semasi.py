@@ -746,13 +746,27 @@ def belge_ek_bolumleri(temel: dict, cube_meta: dict,
     # pahalılaştırıp anlamını değiştirirdi.
     from app.drill import available_dimensions
 
+    # 🔴🔴 **KIRILIM BİR SERİ DEĞİLDİR — ve bunu canlıda ölçerek öğrendim.**
+    #
+    # ⊙ Ölçülen gerileme (curl `X` turu, benim `§RZ` sürümüm): *«son 2 yıl satış raporu
+    # hazırla»* → **18 blok** ve istek **2 dakikayı aştı**. Sebep: temel fiş bir **aylık
+    # seyirdi** (`timeDimensions`) ve `{**temel, "dimensions": [ad]}` o kovayı da
+    # **miras aldı**. Yani her kırılım `müşteri × ay` kartezyeni oldu — 253 satırlık
+    # bloklar. Ve seçicinin *«seyir yarışmaz»* kuralı **bütün blokları** seyir sandığı
+    # için hiçbiri elenmedi.
+    #
+    # ⚠ İki kusur bir kökten: bir **kırılım** ile bir **seyir** ayrı şeylerdir ve
+    # ikisini aynı fişte birleştirmek ikisini de bozar.
+    #
+    # *Bir bölümü bir öncekinden türetirken, ondan neyi ALMAYACAĞINI da söylemek gerekir.*
     for aday in available_dimensions(cube_meta, temel):
         if len(ekler) >= azami + BELGE_ADAY_KIRILIM:
             break
         ad = str(aday.get("name") or "")
         if not ad or ad in _var or ad == _zaman:
             continue
-        ekler.append({**temel, "dimensions": [ad]})
+        _kirilim = {k: v for k, v in temel.items() if k != "timeDimensions"}
+        ekler.append({**_kirilim, "dimensions": [ad]})
 
     # ⚠ Zaman ekseni bilerek **başta**: temel kırılımlıysa ilk ek onu tekrar etmesin,
     # kırılımsızsa (çıplak toplam = kapak sayısı) onu ilk açıklayan şey seyri olsun.
@@ -831,6 +845,15 @@ def belge_bolum_sirala(bloklar: list[dict], *, azami: int = BELGE_AZAMI_EK) -> l
 
     # ⚠ Zaman ekseni (seyir) **yarışmaz**: bir belgenin seyir bölümü bir kırılım değil,
     # onun omurgasıdır — yoğunlaşma ölçütü ona anlamsızdır.
-    seyir = [b for b in bloklar if (b.get("cube_query") or {}).get("timeDimensions")]
+    #
+    # 🔴 Ama *«seyir»* yalnız `timeDimensions` varlığı **değildir**: bir kırılım da onu
+    # miras alabilir (ve canlıda aldı — 17 blok birden *«seyir»* sayıldı, hiçbiri
+    # elenmedi). Bir seyir **zaman kovası taşır ve kırılımı YOKTUR**; ikisi bir aradaysa
+    # o bir seyir değil bir kartezyendir.
+    #
+    # *Bir şeyi tek bir işaretten tanımak, o işareti taşıyan her şeyi o şey sanmaktır.*
+    seyir = [b for b in bloklar
+             if (b.get("cube_query") or {}).get("timeDimensions")
+             and not ((b.get("cube_query") or {}).get("dimensions") or [])]
     kirilim = [b for b in bloklar if b not in seyir]
     return seyir + sorted(kirilim, key=_skor)[:max(0, azami - len(seyir))]
