@@ -3348,6 +3348,79 @@ def _coverage_ok(q: str, known_words: set[str]) -> bool:
     return not _uncovered(q, known_words)
 
 
+def daraltma_adaylari(q: str, schema: dict) -> tuple[set[str], str] | None:
+    """🔴 `§B1` — GARSON İSTEMİNE GİRECEK KÜP KÜMESİ. `None` = **budama yok** (fail-open).
+
+    ## Neden gerekli — ölçüldü
+
+    Garsona **her soruda 23 küpün tamamı, 23.729 karakter** gidiyor (`§4.2`). Şema
+    bağlama hatası kurumsal ölçekte SQL hatalarının **%27,6-33,0'ı** (Spider 2.0 /
+    MultiSpider 2.0); Pinterest'in tablo aramasında budama **%40 → %90**.
+
+    ## 🔴 Fail-open ölçüye değil KANITA bağlıdır
+
+    Planın ilk hâli *«aday <2 ise tam katalog»* diyordu. **Ölçüldü ve yetmedi:**
+    *«kalite durumunu özetle»*de aday sayısı **7** idi (yani kural tetiklenmezdi) ama
+    doğru küp aralarında **değildi**. Sayı bir kanıt değildir.
+
+    Buradaki kanıt şu: **sorunun her İÇERİK sözcüğü katalogla açıklanabiliyor mu?**
+    Açıklanamayan bir içerik sözcüğü varsa, o sözcük **budadığımız** bir küpe ait
+    olabilir — o hâlde budamayız. İşlev sözcükleri (`hangi`·`the`·`ne`) sayılmaz:
+    `islev_sozcukleri` **kapalı bir dilbilgisi sınıfıdır** (ADR-0008) ve `ask.py` onu
+    zaten bu amaçla kullanıyor.
+
+    ## Ölçülen güvenlik (2026-08-11, canlı)
+
+    Sekiz garson sorusunda *«budanmış küme, garsonun GERÇEKTEN seçtiği küpü içeriyor
+    mu»* sınandı: **8/8 kapsandı · 0 kayıp**. Örnek: *«ciro ve duruş»* → aday
+    `{oee, parti, makine_duruslari}`, garsonun seçtiği **`makine_duruslari`** —
+    kartın 3. curl senaryosu.
+
+    ⚠ Üç sinyalin **hiçbiri yeniden yazılmadı**: `ilgili_cubelar` ·
+    `measure_cube_candidates` · `partial_unknowns` **çağrıldı**. Dördüncü bir
+    eşleştirici, dördüncü bir doğruluk demektir.
+    """
+    qn = _norm(q or "")
+    if not qn.strip():
+        return None
+    tum = {c.get("name") for c in (schema.get("cubes") or []) if c.get("name")}
+    if not tum:
+        return None
+    adaylar = {c["name"] for c in ilgili_cubelar(qn, schema)}
+    adaylar |= {c["name"] for c, _ in measure_cube_candidates(qn, schema)}
+    bilinmeyen, ciftler = partial_unknowns(qn, schema)
+    adaylar |= {c["name"] for c, _ in ciftler}
+    adaylar &= tum
+    if not adaylar:
+        return None                      # hiç sinyal yok → tam katalog
+    from app.islev_sozcukleri import _islev_sozcugu
+
+    # 🔴 KAPSAMA, **TUTULAN** KÜPLERE GÖRE HESAPLANIR — ve bunu kapı yakaladı.
+    # İlk yazımda ölçüt salt `partial_unknowns`'un bilinmeyen listesiydi; o liste
+    # **küp-düzeyi** sinonimleri kapsama saymıyor. Sonuç: *«ciro ve durus»* — `durus`
+    # `oee`'nin kendi sinonimi olduğu hâlde *«açıklanamayan içerik sözcüğü»* sayılıp
+    # budama iptal ediliyordu. Fazla temkinli olmak güvenliydi ama **yanlıştı**:
+    # tuttuğumuz bir küp o kelimeyi açıklıyorsa, kelime açıklanmıştır.
+    # ⊙ Canlı katalogda görünmüyordu (orada başka bir sözlük de kapsıyor); yalın
+    # fikstür ayrışmayı görünür kıldı. *Bir kuralın sınırı, en zengin veride değil en
+    # yalın veride ölçülür.*
+    kapsanan: set[str] = set()
+    for c in schema.get("cubes") or []:
+        if c.get("name") not in adaylar:
+            continue
+        kapsanan |= _syn_hit_words(qn, [*(c.get("synonyms") or []),
+                                        *_kup_adi_belirtecleri(c)])
+        for syns in (c.get("dimension_synonyms") or {}).values():
+            kapsanan |= _syn_hit_words(qn, syns)
+        for syns in (c.get("measure_synonyms") or {}).values():
+            kapsanan |= _syn_hit_words(qn, syns)
+    if [w for w in bilinmeyen if not _islev_sozcugu(w) and w not in kapsanan]:
+        return None                      # açıklanamayan İÇERİK sözcüğü → tam katalog
+    if len(adaylar) >= len(tum):
+        return None                      # budama yok — metni gereksiz yere kurma
+    return adaylar, f"{len(adaylar)}/{len(tum)} küp — sorunun her içerik sözcüğü katalogda"
+
+
 def _kup_adi_belirtecleri(c: dict) -> list[str]:
     """🔴 **KÜPÜN KENDİ ADI BİR EŞLEŞME BELİRTECİDİR — ve katalogdan TÜRETİLİR.**
 

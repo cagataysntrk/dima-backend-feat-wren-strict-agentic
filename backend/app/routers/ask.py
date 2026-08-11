@@ -3984,7 +3984,12 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             llm_probe = getattr(request.app.state, "llm", None)
             if llm_probe is not None and hasattr(llm_probe, "select_cube"):
                 try:
-                    catalog_text, cube_index = katalog_metni.metin_ve_indeks(schema, principal)
+                    # `§B1` — GARSON DALI: katalog metni soruya göre daraltılır
+                    # (bayrak `sema_daraltma`; kapalıyken `soru` yok sayılır ve metin
+                    # bayt bayt eskisidir). ⚠ İndeks **budanmaz** — o bir doğrulama
+                    # sınırıdır, bir anlatım tercihi değil.
+                    catalog_text, cube_index = katalog_metni.metin_ve_indeks(
+                        schema, principal, soru=body.question)
                     # SELF-CONSISTENCY (Faz D4). `_select_consistent` ve `consistency_k=3`
                     # ayarı ikisi de YAZILMIŞ ama BAĞLANMAMIŞTI: burada tek bir örnek
                     # alınıyordu, yani ayar bir NİYET BEYANIYDI — `grep consistency_k` bugüne

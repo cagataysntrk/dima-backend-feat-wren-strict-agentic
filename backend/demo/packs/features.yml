@@ -143,6 +143,14 @@ features:
   # değil ALÂKASIZ KOVA: bir «ciro» sorusuna «+ fire» önerilmesi.
   # Karar deterministik ve tablolu (ADR-0024'ün ilkesi); LLM seçmez.
   bicim_karari: beta
+  # §B1 — ŞEMA DARALTMA. Garsona her soruda 23 küp / 23.729 karakter gidiyordu.
+  # ⚠ Raporun kartı «varsayılan off» diyor; burada BİLİNÇLİ olarak `beta`:
+  # sekiz garson sorusunda «budanmış küme garsonun GERÇEKTEN seçtiği küpü içeriyor
+  # mu» sınandı → 8/8 kapsandı, 0 kayıp. Fail-open bir SAYIYA değil KANITA bağlı
+  # (sorunun her içerik sözcüğü katalogda açıklanabiliyor mu).
+  # 🔴 Geniş yayılım için ön koşul A1 (garson korpusu): kapı route()'u ölçer,
+  # garsonu ölçmez — bu bayrağın gerilemesi kapıda GÖRÜNMEZ.
+  sema_daraltma: beta
   agent_plan_secimi: "off"  # FAZ 4: çapraz-alan pilotu — Planlayici.sec() planı ÖNERİR,
                           # dört kapı DENETLER, agent_run makbuzu kaydeder. Seçim ≠
                           # çalıştırma. `off` — sıcak yola LLM çağrısı ekliyor.

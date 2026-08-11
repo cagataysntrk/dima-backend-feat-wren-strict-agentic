@@ -513,6 +513,46 @@ Cube ifadeleri **DuckDB/ANSI** yazılır; DuckDB dışı datasource'ta `WrenServ
 hedef lehçeye çevirir (T-SQL: `GROUP BY` ordinal genişletme, `DATE_TRUNC → DATEADD/DATEDIFF`,
 Türkçe için `COLLATE Latin1_General_CI_AI` enjeksiyonu).
 
+### 3.3b 🆕 `§B1` — KATALOG METNİ SORUYA GÖRE DARALTILIR (şema daraltma)
+
+**ÖNCE:** garsona **her soruda 23 küpün tamamı — 23.729 karakter** gidiyordu.
+Dış dayanak: şema bağlama hatası kurumsal ölçekte SQL hatalarının **%27,6-33,0'ı**
+(Spider 2.0 / MultiSpider 2.0); Pinterest tablo aramasında budama **%40 → %90**.
+
+**SONRA:** `katalog_metni.metin_ve_indeks(…, soru=…)` → `cube_router.daraltma_adaylari`.
+
+| ölçüm (canlı, `demo-boyahane`) | sonuç |
+|---|---|
+| *«ciro ve duruş»* | 3/23 küp · 2.343 karakter — **%90 tasarruf** |
+| *«makine bazında oee»* | 10/23 küp · 6.886 karakter — **%71** |
+| *«en çok ciro yapan 5 müşteri»* | 9/23 küp · 6.118 karakter — **%74** |
+| *«kalite durumunu özetle»* | **fail-open** — tam katalog |
+
+#### 🔴 İki değişmez
+
+1. **İNDEKS ASLA BUDANMAZ.** `build_catalog` iki şey döndürür ve sözleşmeleri ayrıdır:
+   metin sağlayıcıya gider, **indeks `parse_cube_query`'nin beyaz listesidir**. İndeks de
+   budansaydı garsonun fişi *anlatım tercihiyle daraltılmış* bir sınıra karşı doğrulanırdı
+   — o dosyanın kendi cümlesinin ihlali: *«bir kapının genişliği, kapıdan geçenin nasıl
+   anlatıldığına bağlı olamaz.»*
+2. **FAIL-OPEN BİR SAYIYA DEĞİL, KANITA BAĞLIDIR.** Planın ilk hâli *«aday <2 → tam
+   katalog»* diyordu; **ölçüldü ve yetmedi**: *«kalite durumunu özetle»*de aday **7** idi
+   (kural tetiklenmezdi) ama doğru küp aralarında **yoktu**. Kanıt şudur: *sorunun her
+   **içerik** sözcüğü, **tuttuğumuz** küplerle açıklanabiliyor mu?* İşlev sözcükleri
+   sayılmaz (`islev_sozcukleri` — kapalı dilbilgisi sınıfı, ADR-0008).
+
+**Ölçülen güvenlik:** sekiz garson sorusunda *«budanmış küme, garsonun GERÇEKTEN seçtiği
+küpü içeriyor mu»* → **8/8 kapsandı, 0 kayıp**. Bayrak `sema_daraltma`; kapalıyken metin
+**bayt bayt** eskisidir. Kapı: `tests/test_b1_sema_daraltma.py`.
+
+⚠ **Ön koşuldu ve ayrı bir kusurdu:** aday seçici küpün **kendi adını** eşleşme belirteci
+saymıyordu (39 beyanın 12'sinde ad `synonyms:`e kopyalanmayı unutulmuş; `ticaret` dört
+şirkette birden) → `cube_router._kup_adi_belirtecleri`, katalogdan **türev**.
+
+⚠ **`ManifestExtractor.extract_by` BU İŞ İÇİN KULLANILMADI** — motorda ölçüldü: o
+**model/view** budar (ilişkileri koruyarak), garson istemi ise **küplerden** kurulur.
+İkisi aynı şey değildir; `extract_by`'ın yeri SQL derlemesidir (`F10`/`B8`).
+
 ### 3.4 Motorun verdiği ama kullanmadıklarımız (2026-08-02 denetimi)
 
 **Ölçüm:** `wren` paketi 69 dosya / 738 KB; Dima ondan **3 sembol** kullanıyor (`WrenEngine`,

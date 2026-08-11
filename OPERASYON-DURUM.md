@@ -2841,3 +2841,30 @@ Kapı: `tests/test_kup_adi_belirteci.py` (6) + netleştirme/sosyal yüzeyi **94 
 kusuruydu.
 
 ⏭ **Sıradaki:** B1'in kendisi — budama, artık güvenilir bir aday seçici üstünde.
+
+### ✅ B1 · Şema daraltma — katalog metni soruya göre budanıyor *(2026-08-11)*
+
+**Ölçülen kazanç** (canlı `demo-boyahane`; tam katalog **23 küp / 23.729 karakter**):
+
+| soru | budanmış | tasarruf |
+|---|---|---|
+| *«ciro ve duruş»* | **3/23 küp · 2.343 krk** | **%90** |
+| *«makine bazında oee»* · *«ram 3 …»* | 10/23 · 6.886 | **%71** |
+| *«en çok ciro yapan 5 müşteri»* | 9/23 · 6.118 | **%74** |
+| *«kalite durumunu özetle»* | **fail-open** | — (koruma çalıştı) |
+
+Curl: üç senaryonun üçü de geçti — kütükte `§B1 şema daraltma: 3/23 küp — sorunun her
+içerik sözcüğü katalogda`; *«makine bazında oee»* → `cube=oee`, 11 satır; **çapraz-küp**
+*«ciro ve duruş»* → 3 küpe budandı ve garson yine `makine_duruslari` seçti.
+
+🔴 **İki değişmez:** ① **indeks ASLA budanmaz** (`parse_cube_query` beyaz listesi —
+budansaydı bir anlatım tercihi doğrulama sınırını oynatırdı) ② **fail-open sayıya değil
+KANITA bağlı** (kartın *«aday<2»* kuralı ölçüldü ve yetmedi). Güvenlik: 8 garson
+sorusunda budanmış küme garsonun seçtiği küpü **8/8** içerdi, **0 kayıp**.
+
+⚠ **`extract_by` kullanılmadı** — motorda ölçüldü: model/view budar, garson istemi
+küplerden kurulur. Yeri SQL derlemesi (`F10`/`B8`).
+⚠ **Rapordan sapma:** kart `off` diyor, demo paketinde `beta` açıldı (8/8 kanıt).
+🔴 **Geniş yayılımın ön koşulu A1** — kapı route()'u ölçer, garsonu ölçmez.
+
+Kapı: `tests/test_b1_sema_daraltma.py` (8) + katalog/garson yüzeyi **103 yeşil**.

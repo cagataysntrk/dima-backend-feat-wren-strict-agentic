@@ -206,13 +206,20 @@ def _belirsizlik_bloku(cubes: list[dict]) -> str:
 
 
 def build_catalog(schema: dict, *, sozluk: bool = False,
-                  belirsizlik: bool = False) -> tuple[str, dict]:
+                  belirsizlik: bool = False,
+                  metin_kupleri: set[str] | None = None) -> tuple[str, dict]:
     """LLM prompt'u için cube kataloğu metni + doğrulama indeksi.
 
     ⚠ **İki dönüş, iki farklı sözleşme.** Metin sağlayıcıya gider ve **değişebilir**;
     indeks `parse_cube_query`'nin beyaz listesidir ve `sozluk` bayrağından **etkilenmez**.
     Bayrağın indeksi de değiştirmesi, bir prompt tercihinin doğrulama sınırını oynatması
     olurdu — *bir kapının genişliği, kapıdan geçenin nasıl anlatıldığına bağlı olamaz.*
+
+    🔴 **`§B1` — `metin_kupleri` YALNIZ METNİ budar, İNDEKSİ ASLA.** Şema daraltma bir
+    **istem** kararıdır; doğrulama sınırı değildir. İndeks de budansaydı garsonun
+    döndürdüğü fiş, *anlatım tercihiyle daraltılmış* bir beyaz listeye karşı
+    doğrulanırdı — yukarıdaki cümlenin birebir ihlali. Bu yüzden döngü **tüm küpleri**
+    gezer; yalnız `lines`/`enum_lines` süzülür.
     """
     from app.sensitivity import prompt_safe_values
 
@@ -220,7 +227,9 @@ def build_catalog(schema: dict, *, sozluk: bool = False,
     cols = {c["name"]: c for m in schema.get("models", []) for c in m["columns"]}
     lines, enum_lines, index = [], [], {}
     for c in cubes:
-        index[c["name"]] = c
+        index[c["name"]] = c              # 🔴 `§B1`: indeks HER ZAMAN tam (beyaz liste)
+        if metin_kupleri is not None and c["name"] not in metin_kupleri:
+            continue                      # …yalnız METİN budanır
         lines.append(cube_satiri(c, sozluk=sozluk))
         for dim in c.get("dimensions", []):
             col = cols.get(dim)
@@ -242,7 +251,8 @@ def build_catalog(schema: dict, *, sozluk: bool = False,
     return catalog, index
 
 
-def metin_ve_indeks(schema: dict, principal, settings=None) -> tuple[str, dict]:
+def metin_ve_indeks(schema: dict, principal, settings=None, *,
+                    soru: str | None = None) -> tuple[str, dict]:
     """`build_catalog` + bayrak çözümü — **tek yerde**.
 
     🔴 Neden bir yardımcı: `catalog_text` dört ayrı çağrı yerinde üretiliyor (planlayıcı ·
@@ -275,9 +285,24 @@ def metin_ve_indeks(schema: dict, principal, settings=None) -> tuple[str, dict]:
         _bayraklar = resolve_for(settings or get_settings(), principal)
         acik = "katalog_sozlugu" in _bayraklar
         _bel = "katalog_belirsizlik" in _bayraklar
+        _dar = "sema_daraltma" in _bayraklar
     except Exception:                                      # noqa: BLE001 — katalog düşmez
         _log.warning("katalog bayrakları çözülemedi → sade katalog", exc_info=True)
-    return build_catalog(schema, sozluk=acik, belirsizlik=_bel)
+    # 🔴 `§B1` — ŞEMA DARALTMA. Bayrak burada çözülür çünkü bu fonksiyonun **kendi
+    # gerekçesi** budur: *"bir bayrağı N yerde okumak, N−1 yerde okumaya giden yoldur."*
+    # `soru` verilmezse hiçbir şey değişmez (`KURAL B`) — dört çağıranın üçü onu
+    # geçmez ve geçmemelidir.
+    kupler = None
+    if _dar and soru:
+        try:
+            from app import cube_router
+
+            if (_karar := cube_router.daraltma_adaylari(soru, schema)):
+                kupler, _gerekce = _karar
+                _log.info("§B1 şema daraltma: %s", _gerekce)
+        except Exception:                                  # noqa: BLE001 — fail-open
+            _log.warning("§B1: daraltma çözülemedi → tam katalog", exc_info=True)
+    return build_catalog(schema, sozluk=acik, belirsizlik=_bel, metin_kupleri=kupler)
 
 
 def envanter(schema: dict) -> dict:

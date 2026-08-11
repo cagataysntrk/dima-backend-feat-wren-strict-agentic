@@ -503,6 +503,18 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "eskisidir (KURAL B).",
         "category": "Yönlendirme",
     },
+    "sema_daraltma": {
+        "label": "Şema daraltma (garson istemine yalnız ilgili küpler)",
+        "description": "Garsona her soruda 23 küpün tamamı (23.729 karakter) gidiyordu. "
+                       "Aday küpler `ilgili_cubelar` ∪ `measure_cube_candidates` ∪ "
+                       "`partial_unknowns` birleşiminden gelir; budama YALNIZ sorunun her "
+                       "İÇERİK sözcüğü katalogla açıklanabiliyorsa yapılır (fail-open bir "
+                       "sayıya değil KANITA bağlı). 🔴 İndeks (parse_cube_query beyaz "
+                       "listesi) ASLA budanmaz — o bir doğrulama sınırıdır. Dış dayanak: "
+                       "şema bağlama hatası kurumsal ölçekte SQL hatalarının %27,6-33,0'ı. "
+                       "Kapalıyken katalog metni bayt bayt eskisidir (KURAL B).",
+        "category": "Yönlendirme",
+    },
     "bicim_karari": {
         "label": "Cevap biçimi kararı (öneri şeridi soru türüne bağlanır)",
         "description": "Öneri chip'lerinin kova kotaları `niyet`in altı soru türünden "

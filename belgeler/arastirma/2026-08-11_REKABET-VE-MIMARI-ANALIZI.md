@@ -2671,7 +2671,7 @@ küme *örtüşmeyen* hâle gelir.
 
 | # | iş | **ÖNCE (bugün)** | **SONRA (hedef)** | dokunulacak dosyalar | MİMARİ.md'de güncellenecek |
 |---|---|---|---|---|---|
-| **D1** | Garsona şema verme | `katalog_metni.metin_ve_indeks()` → **23 küpün tamamı, 23.729 karakter**, her soruda | `wren_core.ManifestExtractor.extract_by()` ile **soruya göre budanmış** manifest → ilgili 2-3 küp | `app/katalog_metni.py` · `app/wren_service.py` · `app/routers/ask.py` (garson dalı) | **§3 semantik katman anatomisi** — *«katalog metni artık daraltılmış üretilir»* |
+| ✅ **D1** | Garsona şema verme | `katalog_metni.metin_ve_indeks()` → **23 küpün tamamı, 23.729 karakter**, her soruda | ✔ **soruya göre budanmış KATALOG METNİ** (3-10 küp; %71-90 tasarruf). ⚠ `extract_by` DEĞİL — ölçüldü: o model/view budar, garson istemi küplerden kurulur | `app/cube_router.py` (`daraltma_adaylari`) · `app/katalog_metni.py` · `app/routers/ask.py` | ✅ **§3.3b** yazıldı — *«katalog metni soruya göre daraltılır; indeks ASLA budanmaz»* |
 | ✅ **D2** | Garsona örnek verme | ❌ **yok** — istem yalnız katalog + soru | `vqr.ara()` ile **retrieval**, istemin içine **5-10 doğrulanmış (soru → CubeQuery) çifti** | `app/vqr.py` (yeni `ara()`) · `app/llm.py::_cube_select_system` · `app/routers/ask.py` | **§4 LLM rolleri** — *«garson few-shot alır»* |
 | **D3** | İş sözlüğü | ❌ yok (yalnız `SynonymOverride`) | `demo/packs/*/instructions.md` — **versiyonlanmış iş tanımları**, garson istemine eklenir | yeni: `demo/packs/<sektor>/instructions.md` · `app/katalog_metni.py` | **§3.x** yeni alt bölüm |
 | **D4** | Belirsizlik | `soz.py` netleştirme + `§KA` beyanı | **aynen kalır** ⊙ *dışarıdan doğrulandı: +50 puan* | — | — |
@@ -2852,7 +2852,56 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 
 ## FAZ 1 · GARSONU BESLE — en yüksek getiri, 1-2 hafta
 
-### ⏳ B1 · Şema daraltma — **ÖN KOŞUL ÖLÇÜLDÜ VE KAPATILDI (2026-08-11)**
+### ✅ B1 · Şema daraltma — **TAMAMLANDI (2026-08-11)**
+
+> 🟢 **UYGULANDI VE CANLI DOĞRULANDI.** `cube_router.daraltma_adaylari` (karar) ·
+> `katalog_metni.build_catalog(…, metin_kupleri=)` (yalnız **metin** budar) ·
+> `metin_ve_indeks(…, soru=)` (bayrak burada çözülür — o fonksiyonun kendi gerekçesi) ·
+> `ask.py` garson dalı `soru=body.question` geçer. Bayrak `sema_daraltma`.
+>
+> **Ölçülen kazanç (canlı `demo-boyahane`, tam katalog 23 küp / 23.729 karakter):**
+>
+> | soru | budanmış | tasarruf |
+> |---|---|---|
+> | *«ciro ve duruş»* | **3/23 küp · 2.343 krk** | **%90** |
+> | *«makine bazında oee»* | 10/23 · 6.886 | **%71** |
+> | *«ram 3 makinesinin verimliliği»* | 10/23 · 6.886 | **%71** |
+> | *«en çok ciro yapan 5 müşteri»* | 9/23 · 6.118 | **%74** |
+> | *«kalite durumunu özetle»* | **fail-open** | — |
+>
+> **Curl (kartın üç senaryosu):** ① katalog karakteri **ölçüldü ve kütüğe basılıyor**
+> (`§B1 şema daraltma: 3/23 küp — sorunun her içerik sözcüğü katalogda`) ② *«makine
+> bazında oee»* → `cube=oee`, 11 satır, **gerileme yok** ③ **çapraz-küp** *«ciro ve
+> duruş»* → budama 3 küpe indi ve garson yine **`makine_duruslari`**'nı seçti.
+>
+> 🔴 **İKİ DEĞİŞMEZ — ikisi de ölçümle doğdu:**
+> ① **İndeks ASLA budanmaz.** `build_catalog`'un kendi sözleşmesi: metin sağlayıcıya
+> gider, **indeks `parse_cube_query`'nin beyaz listesidir**. İndeks de budansaydı fiş,
+> *anlatım tercihiyle daraltılmış* bir doğrulama sınırına karşı sınanırdı.
+> ② **Fail-open bir SAYIYA değil KANITA bağlı.** Kartın *«aday <2»* kuralı **ölçüldü ve
+> yetmedi**: *«kalite durumunu özetle»*de aday **7** idi ama doğru küp aralarında yoktu.
+> Kanıt: *sorunun her **içerik** sözcüğü, **tuttuğumuz** küplerle açıklanabiliyor mu?*
+>
+> **Güvenlik ölçümü:** sekiz garson sorusunda *«budanmış küme garsonun GERÇEKTEN seçtiği
+> küpü içeriyor mu»* → **8/8 kapsandı · 0 kayıp**. Kapı: `tests/test_b1_sema_daraltma.py`
+> (8) + katalog/garson gerileme yüzeyi **103 yeşil**.
+>
+> ⚠ **`extract_by` KULLANILMADI — ve bu bir ölçüm sonucudur.** Kart onu öneriyordu; canlı
+> konteynerde ölçüldü: `extract_by` **model/view** budar (ilişkileri koruyarak), garson
+> istemi ise **küplerden** kurulur. İkisi aynı şey değil. `extract_by`'ın yeri SQL
+> derlemesidir → `F10`/`B8`.
+>
+> ⚠ **Rapordan bilinçli sapma:** kart *«varsayılan `off`»* diyor; demo paketinde `beta`
+> açıldı çünkü 8/8 kapsama ölçüldü ve fail-open kanıta bağlı. 🔴 **Geniş yayılımın ön
+> koşulu `A1` (garson korpusu)** — kapı `route()`u ölçer, garsonu ölçmez; bu bayrağın
+> gerilemesi kapıda **görünmez**.
+>
+> ⚠ **Bir kusuru kapı yakaladı:** kapsama ölçütü ilk yazımda salt `partial_unknowns`'un
+> listesiydi ve o liste **küp-düzeyi** sinonimleri kapsama saymıyor → *«ciro ve durus»*
+> yalın fikstürde fail-open'a düşüyordu. Ölçüt *«**tuttuğumuz** küplerin açıkladığı
+> kelimeler»*e çevrildi. ⊙ Canlı katalogda görünmüyordu; **yalın fikstür** gösterdi.
+
+### ⏳ B1 ÖN KOŞULU · aday seçici ölçüldü ve onarıldı **(2026-08-11)**
 
 > 🔴 **BUDAMAYA GEÇMEDEN ÖNCE ADAY SEÇİCİ ÖLÇÜLDÜ — ve güvenilir DEĞİLDİ.**
 > Kartın *«aday seçimi `ilgili_cubelar` **zaten var**»* satırı doğru ama **yeterli
@@ -3306,7 +3355,7 @@ Eğer **tek bir şey** yapılacaksa sırası budur:
 | ✅ 1 | **B2** — `few_shot_block`'u garsona bağla | **saatler** ✔ bitti | Fonksiyon **zaten yazılmış**, Discovery'ye (%1,7) bağlı, garsona (%37) değil. Dışarıda **+17…+23 puan** ölçülmüş |
 | ✅ 2 | **A2** — `cevapsız` metriğini manşete al | **saatler** ✔ bitti | %21,8 görünür olmadan **hiçbir iyileşme kanıtlanamaz** |
 | ✅ 3 | **D3'ün iki kuralı** — *«tek değer → grafik yok»* + *«≤3 satır → cümle»* | **saatler** ✔ bitti | ⊙ **İkisi de `viz.py`'de ZATEN VARDI ve ateşliyordu** (curl ile doğrulandı). Açık olan yarı **öneri şeridiydi**: chip dizisi `6,6,6,6,5,6,6,5` → **`4,6,2,4,4,4,6,3`**, tek sahip `app/bicim.py` |
-| 4 | **B1** — şema daraltma (`extract_by`, fail-open) | **günler** | Hataların **%27-33'ü** şema bağlama |
+| ✅ 4 | **B1** — şema daraltma | **saatler** ✔ bitti | Katalog **23.729 → 2.343-6.886 karakter** (%71-90). ⊙ `extract_by` **kullanılmadı** — ölçüldü: o model/view budar, garson istemi küplerden kurulur. Fail-open **kanıta** bağlı; 8/8 kapsama, 0 kayıp |
 | 5 | **B4** — reflect+repair (tavan 2 tur) | **~1 hafta** | Dürüst redleri **cevaba** çevirir |
 
 ⚠ **A1 (garson korpusu) hakkında bir düzeltme:** planın ilk hâli **300-500 soru** diyordu.

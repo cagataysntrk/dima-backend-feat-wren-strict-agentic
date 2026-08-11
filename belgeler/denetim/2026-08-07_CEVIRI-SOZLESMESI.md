@@ -12670,3 +12670,40 @@ işe yaradığını göremeyecektim. ② `ilgili_cubelar` **normalize girdi bekl
 `q_norm` geçiyor); ham metin verince `bakım`/`duruş` ıskalanıyor sandım.
 ⊙ Bu oturumda üçüncü kez: *basılmayan ya da yanlış beslenen bir alan, olmayan bir kusur
 icat ettirir.*
+
+---
+
+## TUR LL — `§B1` şema daraltma: budandı, ve budanan yer DOĞRU yer *(2026-08-11)*
+
+**Önce araştırma:** kartın önerdiği `ManifestExtractor.extract_by` canlı konteynerde
+ölçüldü → *«model/view budar, ilişkileri korur»*. Garson istemi ise **küplerden**
+kuruluyor (`katalog_metni`). ⊙ **İkisi aynı şey değil** — kart körlemesine uygulansaydı
+yanlış katmana dokunulacaktı.
+
+**Sonra kod okuması:** `build_catalog` iki şey döndürüyor ve docstring'i açık —
+*«indeks `parse_cube_query`'nin beyaz listesidir… bir kapının genişliği, kapıdan geçenin
+nasıl anlatıldığına bağlı olamaz.»* → **yalnız metin budanabilir.**
+
+### Curl — kartın üç senaryosu
+
+| # | soru | sonuç |
+|---|---|---|
+| ① | *«makine bazında oee»* | `10/23 küp · 6.886 krk` (**%71**) · `cube=oee`, 11 satır |
+| ② | *«ram 3 makinesinin verimliliği»* | `10/23` · `cube=oee` — gerileme yok |
+| ③ | *«ciro ve duruş»* | 🟢 `3/23 küp · 2.343 krk` (**%90**) · garson yine **`makine_duruslari`** |
+| ⚠ | *«kalite durumunu özetle»* | **fail-open** (log yok) · `cube=kalite` — koruma çalıştı |
+
+### Güvenlik kanıtı — 8/8
+
+Sekiz garson sorusunda *«budanmış küme, garsonun GERÇEKTEN seçtiği küpü içeriyor mu»*:
+`oee · makine_duruslari · oee · parti · parti · surdurulebilirlik · sikayet ·
+bakim_is_emri` → **8/8 kapsandı, 0 kayıp.**
+
+### 🔴 Kapı bir kusurumu yakaladı
+
+Kapsama ölçütünü ilk yazımda salt `partial_unknowns`'un bilinmeyen listesine bağladım; o
+liste **küp-düzeyi** sinonimleri kapsama saymıyor. Sonuç: *«ciro ve durus»* yalın
+fikstürde fail-open'a düşüyordu (`durus`, `oee`'nin kendi sinonimi olduğu hâlde
+*«açıklanamayan»* sayılıyordu). Ölçüt *«**tuttuğumuz** küplerin açıkladığı kelimeler»*e
+çevrildi. ⊙ Canlı katalogda **görünmüyordu** — orada başka bir sözlük de kapsıyor.
+*Bir kuralın sınırı en zengin veride değil, en yalın veride ölçülür.*
