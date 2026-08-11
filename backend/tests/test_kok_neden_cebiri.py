@@ -228,3 +228,106 @@ def test_BOYUTSUZ_SORUDA_SESSIZ():
     """⚠ Kesitsel *«neden»* bir **kırılım** ister: tek bir toplamın akranı yoktur."""
     prev = {"cube": "oee", "measures": ["ort_oee"], "filters": []}
     assert kn.arastir(prev, _META, kos=_kos) is None
+
+
+# --- SARMAL AÇMA · 1 → 8 --------------------------------------------------------------
+
+def test_ORAN_PAY_PAYDA_AYRISIR():
+    """🔴🔴 **Kullanıcının en çok vurguladığı vaka**: *«payı düşürenleri bulmalıyım ya da
+    paydayı diğerlerine göre daha yüksek yapan bileşenleri»*.
+
+    ⊙ Gerçek katalogdan (`parti`): `fire_orani_yuzde` sarmalsız hâlde **hiç
+    ayrışmıyordu**; `ROUND`+`NULLIF` açılınca pay ve payda ayrı ayrı göründü."""
+    meta = {"measure_expressions": {
+        "fire_orani_yuzde": "ROUND(SUM(fire_kg)*100.0/NULLIF(SUM(kg),0),2)",
+        "toplam_fire_kg": "SUM(fire_kg)",
+        "toplam_agirlik_kg": "SUM(kg)"}}
+    bl = {b.ad: b for b in kn.bilesenler("fire_orani_yuzde", meta)}
+    assert set(bl) == {"toplam_fire_kg", "toplam_agirlik_kg"}
+    assert bl["toplam_fire_kg"].yon == 1 and bl["toplam_agirlik_kg"].yon == -1
+    assert bl["toplam_agirlik_kg"].rol == kn.PAYDA
+
+
+def test_YARIM_OLCUM_KAZANCI_GIZLER():
+    """🔴 **Bu testin sebebi bir ölçüm hatasıdır.** Yalnız `ROUND` açıldığında kazanç
+    **sıfırdı** (bütün katalogda 1 → 1) ve az kalsın *«kazanç yok»* diye bırakıyordum.
+    Eksik parça `NULLIF`'ti: payda hep `NULLIF(SUM(x),0)` biçiminde sarılı.
+
+    *Bir kazancı ölçerken yarım ölçmek, kazancın yokluğunu kanıtlamaz — yalnız yarısını
+    görmemiş olursunuz.*"""
+    sadece_round = {"measure_expressions": {
+        "oran": "ROUND(SUM(a)/NULLIF(SUM(b),0),2)", "pay": "SUM(a)", "payda_o": "SUM(b)"}}
+    assert len(kn.bilesenler("oran", sadece_round)) == 2
+
+
+def test_SARMAL_KUMESI_ALAN_TERIMI_ICERMEZ():
+    """🔴 ADR-0008 — `ROUND`/`NULLIF` SQL'in kendi işlevleridir, bir **alan sözlüğü**
+    değil. *Bir yüklem alan kelimesi taşımaya başladığında, o bir yüklem değil bir
+    sözlüktür.*"""
+    kalip = kn._SARMAL_RE.pattern
+    for alan in ("fire", "ciro", "oee", "makine", "uretim", "maliyet"):
+        assert alan not in kalip.lower()
+
+
+def test_SUCLU_OLCUNUN_YONUNE_GORE_SECILIR():
+    """🔴🔴 **Canlıda ölçülen kusur.** `fire_orani_yuzde`'de **düşük iyidir**; ilk
+    yazımım *«en çok düşüren»* bileşeni suçlu sayıyordu ve orada bu **yardım eden**
+    bileşendi — iniş, oranı yükselten `fire` yerine onu düşüren `ağırlık`ta derinleşti.
+    Yani doğru sayıyı bulup **yanlış taşı** kaldırdı.
+
+    *Bir sayının hangi yöne gitmesinin kötü olduğunu bilmeden, sorumlusunu aramak yalnız
+    aritmetiktir.*"""
+    meta = {"measure_expressions": {
+        "oran": "ROUND(SUM(a)*100.0/NULLIF(SUM(b),0),2)", "pay": "SUM(a)", "payda_o": "SUM(b)"},
+        "lower_is_better": ["oran"]}
+    hedef = {"oran": 22.0, "pay": 70.0, "payda_o": 318.0}
+    akran = {"oran": 19.0, "pay": 55.0, "payda_o": 289.0}
+    ayr = kn.ayristir("oran", hedef, akran, meta, dusuk_iyi=True)
+    assert ayr.sucllu.ad == "pay", "🔴 düşük-iyi ölçüde YARDIM EDEN bileşen suçlu sayıldı"
+
+
+def test_YON_BEYANSIZSA_YARGI_YOK():
+    """🔴 `GG8` — *bir listede olmamak, karşıt listede olmak değildir.* Yön beyan
+    edilmemişse *«kötü»* diye bir şey yoktur; **en çok açıklayan** seçilir."""
+    meta = {"measure_expressions": {
+        "oran": "ROUND(SUM(a)/NULLIF(SUM(b),0),2)", "pay": "SUM(a)", "payda_o": "SUM(b)"}}
+    assert kn._yon_beyanli("oran", meta) is False
+    ayr = kn.ayristir("oran", {"oran": 2.0, "pay": 10.0, "payda_o": 5.0},
+                      {"oran": 1.0, "pay": 5.0, "payda_o": 5.0}, meta)
+    assert ayr.sucllu is not None and ayr.katkilar[0].bilesen.ad == "pay"
+
+
+def test_SAYILAR_BILIMSEL_GOSTERIMDE_DEGIL():
+    """🔴 Canlıda ölçüldü: *«ağırlık: 3.17e+05 ↔ akran 2.83e+05»* — teknik olarak doğru,
+    okunabilir olarak **hiç**. *Bir iş kullanıcısı bilimsel gösterimi zihninde çevirmek
+    zorunda kalıyorsa, cevap ona ulaşmamıştır.*"""
+    assert kn._sayi(317000.0) == "317.000"
+    assert "e+" not in kn.anlati(
+        kn.ayristir("oran", {"oran": 22.0, "pay": 70123.0, "payda_o": 318456.0},
+                    {"oran": 19.0, "pay": 54987.0, "payda_o": 289123.0},
+                    {"measure_expressions": {
+                        "oran": "ROUND(SUM(a)*100.0/NULLIF(SUM(b),0),2)",
+                        "pay": "SUM(a)", "payda_o": "SUM(b)"}}),
+        segment="RAM 2", boyut="hat")
+
+
+def test_INIS_KATKI_ISARETIYLE_AYNI_YONDE():
+    """🔴🔴 **Canlıda ölçülen kusur.** `fire_orani_yuzde`'de suçlu `fire` ve oranı
+    **yükseltiyor**; ilk yazımım *«pay bileşeninde en düşüğü ara»* diyordu ve **en az
+    fire veren** tedarikçiyi gösterdi (5.634 ↔ 16.106) — yani sorunun kaynağını sorarken
+    **en masumu** işaret etti.
+
+    *Bir sorumluyu ararken yönü karıştırmak, aynı veriyle en masumu suçlamaktır.*"""
+    meta = {"measure_expressions": {"oran": "ROUND(SUM(a)/NULLIF(SUM(b),0),2)",
+                                    "pay": "SUM(a)", "payda_o": "SUM(b)"},
+            "dimensions": ["tedarikci"], "dimension_labels": {"tedarikci": "tedarikçi"}}
+    alt = [{"tedarikci": "AZ", "pay": 5.0}, {"tedarikci": "ÇOK", "pay": 90.0}]
+    suclu = kn.Bilesen(ad="pay", rol=kn.PAY, yon=1, display="fire")
+    yukselten = kn.derinles({"cube": "x", "measures": ["oran"], "dimensions": ["hat"],
+                             "filters": []}, meta, suclu, "RAM 2", "hat",
+                            kos=lambda cq: alt, katki_isareti=+1)
+    assert "ÇOK" in yukselten["metin"], "🔴 yükselten bileşende en DÜŞÜK seçildi"
+    dusuren = kn.derinles({"cube": "x", "measures": ["oran"], "dimensions": ["hat"],
+                           "filters": []}, meta, suclu, "RAM 2", "hat",
+                          kos=lambda cq: alt, katki_isareti=-1)
+    assert "AZ" in dusuren["metin"]

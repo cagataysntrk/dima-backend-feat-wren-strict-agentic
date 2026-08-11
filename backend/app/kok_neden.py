@@ -111,12 +111,47 @@ class Ayristirma:
 _SUM_RE = re.compile(r"SUM\s*\(", re.IGNORECASE)
 
 
+#: 🔴 `§KN` — kataloğun **kendi** kullandığı iki teknik sarmal. Kapalı bir küme ve bir
+#: **alan sözlüğü değil**: `ROUND` bir yuvarlama, `NULLIF` bir sıfıra-bölme koruması;
+#: ikisi de ölçünün *anlamını* değiştirmez, yalnız yazımını sarar. ADR-0008 bir **alan
+#: terimi** listesi yasaklar; bunlar SQL'in kendi işlevleridir.
+_SARMAL_RE = re.compile(r"(?i)^(ROUND|NULLIF)\((.*)\)$")
+
+
+def _son_virgul(ic: str) -> int:
+    """Derinlik-0'daki **son** virgülün konumu (`ROUND(x, 2)`'nin ikinci argümanı)."""
+    d = 0
+    for i in range(len(ic) - 1, -1, -1):
+        if ic[i] == ")":
+            d += 1
+        elif ic[i] == "(":
+            d -= 1
+        elif ic[i] == "," and d == 0:
+            return i
+    return -1
+
+
 def _sadelestir(ifade: str) -> str:
-    """İfadeyi **karşılaştırılabilir** hâle getirir: boşluklar ve dış parantezler düşer.
+    """İfadeyi **karşılaştırılabilir** hâle getirir: boşluklar, dış parantezler ve
+    kataloğun teknik sarmalları (`ROUND`/`NULLIF`) düşer.
 
     ⚠ Bir SQL ayrıştırıcısı DEĞİL. Tek işi, kataloğun kendi ürettiği iki metnin aynı
     şeyi söyleyip söylemediğine bakmak. *Bir eşitliği aramak, bir dili çözümlemekten
     başka bir iştir.*
+
+    🔴🔴 **SARMAL AÇMA BİR SÜS DEĞİL — ÖLÇÜLDÜ: 1 → 8.** Sarmalsız hâlde bütün katalogda
+    **tek** bir ölçü ayrışıyordu (`ort_oee`). Sarmallar açılınca **sekiz** oldu ve
+    çıkanlar tam da kullanıcının tarif ettiği *pay/payda* vakaları:
+
+        fire_orani_yuzde = toplam_fire_kg (pay) / toplam_agirlik_kg (payda)
+        kar_marji_yuzde  = kar (pay)            / toplam_ciro (payda)
+        km_basi_maliyet  = nakliye_maliyeti     / toplam_mesafe
+
+    ⊙ Ve **iki ölçüm gerekti**: yalnız `ROUND` açıldığında kazanç **sıfırdı** (1 → 1) ve
+    az kalsın *«kazanç yok»* diye bırakıyordum. Eksik parça `NULLIF`'ti — payda hep
+    `NULLIF(SUM(x),0)` biçiminde sarılı olduğu için hiçbir payda ölçüsü eşleşmiyordu.
+    *Bir kazancı ölçerken yarım ölçmek, kazancın yokluğunu kanıtlamaz — yalnız yarısını
+    görmemiş olursunuz.*
     """
     s = re.sub(r"\s+", "", str(ifade or ""))
     while s.startswith("(") and s.endswith(")"):
@@ -131,6 +166,15 @@ def _sadelestir(ifade: str) -> str:
         if kapali_disarida:
             break
         s = s[1:-1]
+    # Teknik sarmalları soy (iç içe olabilir: `ROUND(NULLIF(…),2)`); sınır bilinçli —
+    # dört kat, bu katalogda ölçülen azami derinliğin iki katı.
+    for _ in range(4):
+        m = _SARMAL_RE.match(s)
+        if not m:
+            break
+        ic = m.group(2)
+        v = _son_virgul(ic)
+        s = _sadelestir(ic[:v] if v > 0 else ic)
     return s
 
 
@@ -223,7 +267,8 @@ def _ust_duzey_islenenler(ifade: str) -> list[tuple[str, str]]:
     return out
 
 
-def ayristir(olcu: str, hedef: dict, akran: dict, cube_meta: dict | None) -> Ayristirma | None:
+def ayristir(olcu: str, hedef: dict, akran: dict, cube_meta: dict | None,
+             *, dusuk_iyi: bool | None = None) -> Ayristirma | None:
     """`§KN` — hedef ile akran arasındaki farkı **bileşenlere** ayırır.
 
     `hedef`/`akran`: `{ölçü_adı: değer}` — biri incelenen segment (ör. `RAM-3`), öteki
@@ -254,8 +299,28 @@ def ayristir(olcu: str, hedef: dict, akran: dict, cube_meta: dict | None) -> Ayr
         return None
     for k in katkilar:
         k.pay_yuzde = round(100.0 * abs(k.katki) / toplam, 1)
-    katkilar.sort(key=lambda k: k.katki)          # en çok düşüren başa
-    _suclu = katkilar[0].bilesen if katkilar[0].katki < 0 else None
+    # 🔴🔴 **«SUÇLU» ÖLÇÜNÜN YÖNÜNE GÖRE DEĞİŞİR — ve bunu canlıda ölçtüm.**
+    #
+    # ⊙ `fire_orani_yuzde`'de **düşük iyidir**. İlk yazımım *«en çok düşüren»* bileşeni
+    # suçlu sayıyordu ve orada bu **yardım eden** bileşendi: iniş, oranı yükselten `fire`
+    # yerine onu düşüren `ağırlık`ta derinleşti — yani doğru sayıyı bulup **yanlış taşı**
+    # kaldırdı.
+    #
+    # Kural: ilgilenilen bileşen, ölçüyü **istenmeyen** yönde iten olandır. Yön beyan
+    # edilmemişse (`GG8`) bir *«kötü»* yoktur; o zaman **en çok açıklayan** (mutlak
+    # katkısı en büyük) seçilir ve anlatı bunu bir yargı olarak sunmaz.
+    #
+    # *Bir sayının hangi yöne gitmesinin kötü olduğunu bilmeden, sorumlusunu aramak
+    # yalnız aritmetiktir.*
+    if dusuk_iyi is None:
+        katkilar.sort(key=lambda k: -abs(k.katki))
+        _suclu = katkilar[0].bilesen if katkilar else None
+    elif dusuk_iyi:
+        katkilar.sort(key=lambda k: -k.katki)      # en çok YÜKSELTEN başa (yüksek = kötü)
+        _suclu = katkilar[0].bilesen if katkilar[0].katki > 0 else None
+    else:
+        katkilar.sort(key=lambda k: k.katki)       # en çok DÜŞÜREN başa (düşük = kötü)
+        _suclu = katkilar[0].bilesen if katkilar[0].katki < 0 else None
     try:
         _h, _a = float(hedef.get(olcu)), float(akran.get(olcu))
     except (TypeError, ValueError):
@@ -268,6 +333,24 @@ def _yuzde(x: float) -> str:
     return f"%{x:.1f}".replace(".", ",")
 
 
+def _sayi(x: float) -> str:
+    """İnsan için sayı: `3.17e+05` **bir sayı değil bir gösterimdir**.
+
+    ⊙ Canlıda ölçüldü: *«ağırlık: 3.17e+05 ↔ akran 2.83e+05»* — teknik olarak doğru,
+    okunabilir olarak **hiç**. Bir iş kullanıcısı bilimsel gösterimi zihninde çevirmek
+    zorunda kalıyorsa, cevap ona ulaşmamıştır.
+    """
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return str(x)
+    if abs(v) >= 1000:
+        return f"{v:,.0f}".replace(",", ".")
+    if abs(v) >= 1:
+        return f"{v:,.2f}".replace(",", "~").replace(".", ",").replace("~", ".")
+    return f"{v:.3f}".replace(".", ",")
+
+
 def anlati(ayr: Ayristirma, *, segment: str, boyut: str,
            olcu_display: str = "", derinlesildi: bool = False) -> str:
     """`§KN` — ayrıştırmanın **cümlesi**: nereye baktım, ne gördüm, bu yüzden.
@@ -277,16 +360,16 @@ def anlati(ayr: Ayristirma, *, segment: str, boyut: str,
     değer yargısı, ölçünün yönü beyan edilmeden verilemez (`GG8`).
     """
     _ad = olcu_display or ayr.olcu.replace("_", " ")
-    bas = (f"**{segment}** ({boyut}) {_ad} değeri **{ayr.hedef_deger:.3g}** — "
-           f"akran ortalaması **{ayr.akran_deger:.3g}**.")
+    bas = (f"**{segment}** ({boyut}) {_ad} değeri **{_sayi(ayr.hedef_deger)}** — "
+           f"akran ortalaması **{_sayi(ayr.akran_deger)}**.")
     if not ayr.katkilar:
         return bas
     satirlar = []
     for k in ayr.katkilar:
         yon = "düşürüyor" if k.katki < 0 else "yükseltiyor"
         rol = {PAYDA: " (paydada)", TERIM: " (terim)"}.get(k.bilesen.rol, "")
-        satirlar.append(f"· **{k.bilesen.display}**{rol}: {k.hedef:.3g} ↔ akran "
-                        f"{k.akran:.3g} — farkın {_yuzde(k.pay_yuzde)}'ini {yon}")
+        satirlar.append(f"· **{k.bilesen.display}**{rol}: {_sayi(k.hedef)} ↔ akran "
+                        f"{_sayi(k.akran)} — farkın {_yuzde(k.pay_yuzde)}'ini {yon}")
     # ⚠ Derinleşme **gerçekten** yapıldıysa *«bir sonraki adım onu açmak»* demek, yapılan
     # işi bir plan gibi sunmaktır. Kuyruk yalnız inilemediğinde yazılır.
     kuyruk = ""
@@ -301,6 +384,22 @@ def anlati(ayr: Ayristirma, *, segment: str, boyut: str,
 # ⚠ Bu bölüm de **sorgu koşmaz**: koşucuyu çağıran enjekte eder (`kos`). Böylece cebir
 # testte gerçek bir motor olmadan sınanır ve aynı gövde hem `/ask` hem rapor yolunda
 # kullanılabilir. `plan.calistir`'ın deseni birebir aynı sebeple böyledir.
+
+
+def _yon_beyanli(olcu: str, cube_meta: dict | None) -> bool:
+    """Ölçünün yönü katalogda **beyan edilmiş** mi?
+
+    ⊙ Ölçüldü: şema **yalnız** `lower_is_better` listesini taşıyor; bir
+    `higher_is_better` listesi **yok**. Yani *«listede değil»* iki farklı şey demek
+    olabilir: *«yüksek iyidir»* ya da *«yönü yoktur»* (adet gibi nötr bir sayı).
+
+    ⚠ `GG8` gereği ikisi **ayrılmaz sayılır**: beyan yoksa yön **bilinmiyordur**. O
+    durumda `ayristir` bir *«kötü yön»* varsaymaz, yalnız **en çok açıklayanı** seçer —
+    ve anlatı bunu bir yargı olarak sunmaz.
+
+    *Bir listede olmamak, karşıt listede olmak değildir.*
+    """
+    return olcu in ((cube_meta or {}).get("lower_is_better") or [])
 
 
 def _akran_ortalamasi(satirlar: list[dict], hedef_satir: dict, boyut: str,
@@ -388,14 +487,18 @@ def arastir(prev_cq: dict, cube_meta: dict | None, *, kos,
         return None
     alanlar = [olcu] + [b.ad for b in bl]
     akran = _akran_ortalamasi(satirlar, hedef_satir, boyut, alanlar)
-    ayr = ayristir(olcu, hedef_satir, akran, cube_meta)
+    ayr = ayristir(olcu, hedef_satir, akran, cube_meta,
+                   dusuk_iyi=dusuk_iyi if _yon_beyanli(olcu, cube_meta) else None)
     if ayr is None:
         return None
     _seg = str(hedef_satir.get(boyut))
     adimlar.append(f"**{_seg}** akran ortalamasıyla kıyaslandı → farkın kaynağı "
                    f"**{(ayr.sucllu or bl[0]).display}**")
     # 3 · DERİNLEŞME — suçlu bileşeni, hedef segmentin İÇİNDE başka bir kırılımda aç.
-    derin = (derinles(prev_cq, cube_meta, ayr.sucllu, _seg, boyut, kos=kos)
+    _isaret = next((1 if k.katki > 0 else -1 for k in ayr.katkilar
+                    if ayr.sucllu and k.bilesen.ad == ayr.sucllu.ad), -1)
+    derin = (derinles(prev_cq, cube_meta, ayr.sucllu, _seg, boyut, kos=kos,
+                      katki_isareti=_isaret)
              if (ayr.sucllu and azami_derinlik > 0) else None)
     metin = anlati(ayr, segment=_seg, boyut=boyut, derinlesildi=bool(derin),
                    olcu_display=str(((cube_meta or {}).get("measure_synonyms_display")
@@ -434,7 +537,7 @@ def nereye_bak(ayr: Ayristirma, segment: str, boyut: str,
 
 
 def derinles(prev_cq: dict, cube_meta: dict | None, suclu: Bilesen,
-             segment: str, boyut: str, *, kos) -> dict | None:
+             segment: str, boyut: str, *, kos, katki_isareti: int = -1) -> dict | None:
     """`§KN` — **en dibe in**: suçlu bileşeni, hedef segmentin içinde ikinci bir
     kırılımda aç ve en aykırı alt-segmenti bul.
 
@@ -481,16 +584,27 @@ def derinles(prev_cq: dict, cube_meta: dict | None, suclu: Bilesen,
     if en_iyi is None:
         return None
     _, d2, uygun = en_iyi
-    # Suçlu bileşen **düşürüyor**sa en düşük alt-segment; yükseltiyorsa en yüksek.
-    en = min(uygun, key=lambda r: r[suclu.ad]) if suclu.yon > 0 else \
-        max(uygun, key=lambda r: r[suclu.ad])
+    # 🔴🔴 **İNİŞ YÖNÜ, BİLEŞENİN KATKI İŞARETİNE GÖRE — ve bunu canlıda ölçtüm.**
+    #
+    # ⊙ `fire_orani_yuzde` (düşük iyi): suçlu `fire` ve oranı **yükseltiyor** (+). İlk
+    # yazımım *«pay bileşeninde en düşüğü ara»* diyordu ve **en az fire veren**
+    # tedarikçiyi gösterdi (5.634 ↔ 16.106) — yani sorunun kaynağını sorarken **en
+    # masumu** işaret etti.
+    #
+    # Doğru kural kendi içinde tutarlı ve fazladan bilgi istemez: alt-segment, suçlunun
+    # **katkısıyla aynı yönde** en uçta olandır. `fire` yükseltiyorsa en **yüksek**
+    # fireli, `performans` düşürüyorsa en **düşük** performanslı.
+    #
+    # *Bir sorumluyu ararken yönü karıştırmak, aynı veriyle en masumu suçlamaktır.*
+    en = (max(uygun, key=lambda r: r[suclu.ad]) if katki_isareti > 0
+          else min(uygun, key=lambda r: r[suclu.ad]))
     otekiler = [float(r[suclu.ad]) for r in uygun if r is not en]
     ort = sum(otekiler) / len(otekiler) if otekiler else float(en[suclu.ad])
     _lbl = ((cube_meta or {}).get("dimension_labels") or {}).get(d2, d2)
     return {
         "metin": (f"→ **{segment}** içinde {suclu.display} en çok **{en.get(d2)}** "
-                  f"({_lbl}) tarafında ayrışıyor: **{float(en[suclu.ad]):.3g}** ↔ "
-                  f"öteki {_lbl} ortalaması **{ort:.3g}**."),
+                  f"({_lbl}) tarafında ayrışıyor: **{_sayi(en[suclu.ad])}** ↔ "
+                  f"öteki {_lbl} ortalaması **{_sayi(ort)}**."),
         "adim": f"**{segment}** içinde **{_lbl}** kırılımı açıldı → **{en.get(d2)}**",
         "boyut": d2, "segment": str(en.get(d2)),
     }

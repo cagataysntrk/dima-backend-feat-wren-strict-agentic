@@ -11573,3 +11573,42 @@ açıklar, `§KN` *«akranlarına göre neden farklı»*yı. `§KN` susarsa yol 
 ⊘ **Uydurma alan tavsiyesi yok:** öneri *«nereye bakılmalı»*yı söyler, *«bakım periyodunu
 kısaltın»* demez. Sistem makinenin fiziğini bilmez, **verisini** bilir.
 *Bir öneri, dayanağından fazlasını iddia ettiği anda bir tahmine dönüşür.*
+
+## `§KN` genişledi: **1 → 8 ölçü**, ve üç kusur canlıda ölçülüp düzeltildi
+
+Sarmal açma (`ROUND`/`NULLIF`) — kataloğun **kendi** teknik işlevleri, alan sözlüğü
+değil — ayrıştırılabilir ölçüyü **1'den 8'e** çıkardı ve tam da kullanıcının vurguladığı
+*pay/payda* vakalarını açtı:
+
+```
+fire_orani_yuzde = toplam_fire_kg (pay) / toplam_agirlik_kg (payda)
+kar_marji_yuzde  = kar (pay)            / toplam_ciro (payda)
+km_basi_maliyet  = nakliye_maliyeti     / toplam_mesafe
+```
+
+⚠ **İki ölçüm gerekti:** yalnız `ROUND` açıldığında kazanç **sıfırdı** (1 → 1) ve az
+kalsın *«kazanç yok»* diye bırakıyordum. Eksik parça `NULLIF`'ti.
+*Bir kazancı ölçerken yarım ölçmek, kazancın yokluğunu kanıtlamaz — yalnız yarısını
+görmemiş olursunuz.*
+
+### Canlıda ölçülüp düzeltilen üç kusur
+
+| kusur | ölçülen | düzeltme |
+|---|---|---|
+| **Suçlu yönü** | `fire_orani_yuzde`'de (düşük iyi) *«en çok düşüren»* suçlu sayılıyordu — yani **yardım eden** bileşen; iniş `fire` yerine `ağırlık`ta derinleşti | suçlu, ölçünün **istenmeyen** yönüne iten; yön beyansızsa **en çok açıklayan** (`GG8`) |
+| **İniş yönü** | Suçlu `fire` **yükseltiyor**ken iniş **en az fire veren** tedarikçiyi gösterdi (5.634 ↔ 16.106) — sorunun kaynağını sorarken **en masumu** işaret etti | alt-segment, suçlunun **katkısıyla aynı yönde** en uçta olan |
+| **Sayı biçimi** | *«ağırlık: 3.17e+05 ↔ 2.83e+05»* — teknik olarak doğru, okunabilir olarak hiç | binlik ayraçlı (`316.699`) |
+
+### Canlı sonuç
+
+```
+RAM 2 (hat) fire oranı 22,12 ↔ akran 19,08
+· fire: 70.057 ↔ 54.917 — farkın %68,2'ini yükseltiyor
+· ağırlık (paydada): 316.699 ↔ 282.782 — %31,8 düşürüyor
+→ RAM 2 içinde fire en çok SELÇUK TEKSTİL'de: 21.883 ↔ 12.043
+
+ANADOLU KUMAŞ kar oranı 29,77 ↔ akran 37,40
+· kar: 2.496.972 ↔ 3.542.427 — farkın %75,8'ini düşürüyor
+· ciro (paydada): 8.386.239 ↔ 9.376.657 — %24,2 yükseltiyor
+→ o müşteride kar en düşük ROTASYON BASKI'da: 54.877 ↔ 244.210
+```
