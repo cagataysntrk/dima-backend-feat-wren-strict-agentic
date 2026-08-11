@@ -11118,3 +11118,40 @@ t4 «ne yapmalıyız»                    → reçete                ✅
 |---|---|---|
 | `§PB` | planlayıcı **kararlılığı** (aynı soru bazen bordroya gidiyor) | bir seçim kuralı; korpus A/B'siz dokunmak kapsamı sessizce kaydırır |
 | `B3`/`sikayet` | **katalog**: müşteri **adı** boyutu yok | mutfak işi — küpe boyut kazandırmak, route'u değiştirmek değil |
+
+## `§PB` ÖLÇÜLDÜ — **kararlılık sorunu değil, TUTARLI bir seçim; ve sistem bunu SÖYLÜYOR**
+
+Önceki kaydım *«bazen doğru buluyor → kararlılık sorunu»* diyordu. Altı koşumla ölçüldü:
+
+```
+«bakım maliyeti raporu hazırla» × 6
+  6/6 → cube=maliyet · ort_birim_maliyet …        ← genel küp, TUTARLI
+  0/6 → bakim_is_emri.bakim_maliyeti              ← özgül karşılık
+```
+
+Yani *«bazen»* değil **her zaman**. Tek bir şanslı koşumu genel bir eğilim sanmışım.
+
+### ⚠ Ama `§UT` beyanı **çalışıyor** — ve bunu da yanlış okumuştum
+
+```
+_daha_ozgul_sahip(q, maliyet, sema) → ('bakim maliyeti', ['bakim_is_emri'])   ✅
+cevaplı koşumların 3/3'ünde not:  «… yalnız bir PARÇASIYLA hesaplandı —
+                                   daha özgül bir karşılık var … bakim_is_emri»
+```
+
+İlk okumam *«🔴 beyan YOK»* idi; kaynağı **kırpılmış not** ve **netleştirme** koşumlarıydı
+(o turlarda zaten cevap yok). Bugün **on birinci** ölçüm düzeltmesi.
+
+> *Bir beyanı görmemek, onun olmadığı anlamına gelmez — özellikle çıktıyı kırpan bir
+> yazıcıya bakıyorsanız.*
+
+### 📋 `§PB`'nin gerçek sınıfı
+
+| ne | durum |
+|---|---|
+| doğru cevap veriliyor mu | 🔴 hayır — genel küp seçiliyor |
+| **dürüst mü** | ✅ evet — her cevapta özgül sahip **adıyla** beyan ediliyor |
+| düzeltme sınıfı | **yönlendirme** → korpus A/B **şart** |
+
+⊙ Ve ucuz bir ara adım var, kapsam değiştirmeyen: beyan *«sorabilirsin»* diyor ama bir
+**chip** vermiyor. `§TZ` deseni (beyan + tek tık) burada da geçerli — sıradaki iş.
