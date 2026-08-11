@@ -1398,3 +1398,40 @@ büyük — *«payda arttıkça değer düşer»* akıl yürütmesi o ölçüde 
 ⚠ Bu arada boşluk **açıkta değil**: `§KN` sustuğunda mevcut akran açıklayıcısı devralıyor
 ve iyi iş çıkarıyor (*«ROTASYON BASKI, öteki 10 makine ortalamasından %84,8 düşük
 (4,62 ↔ 30,48). Farkı en çok açıklayanlar…»*). İkisi kardeş.
+
+---
+
+## `§KN-katalog` DENEYİ — **sinonimsiz ölçü de paydayı oynatıyor** (ölçüldü, 2026-08-11)
+
+`§KN`'nin ayrıştırabildiği ölçü **8**; ölçüm **20 tanesinin bir-iki beyanla açıldığını**
+gösterdi (ör. `enerji_tesis`'te tek `SUM(uretim_kg)` beyanı **dört** oranı birden açıyor).
+
+**Hipotez:** ölçü **sinonimsiz** eklenirse route'a görünmez (`_match_measure` yalnız
+`measure_synonyms`'e bakar — ölçüldü), yani `D8`'in riski taşınmaz.
+
+**Deney:** `enerji_tesis`'e `toplam_uretim_kg = SUM(uretim_kg)`, `synonyms: []`. Korpus
+bir kez koşuldu.
+
+| | doğru | devir | sessiz_yanlış | payda |
+|---|---|---|---|---|
+| **taban** | **95** | 2142 | **8** | **2286** |
+| **deney** | **78** | 2132 | **9** | **2271** |
+
+🔴 **Hipotez çürüdü.** Sinonimsiz bir ölçü *görünmez* değil: `doğru` **17 puan** düştü,
+payda **15 küçüldü**, `sessiz_yanlış` +1. Mekanizma `_match_measure` değil — muhtemelen
+garson kataloğu (Intent-JSON ölçüyü **adıyla** seçebiliyor) ve/veya küp zenginlik
+sıralaması. **Geri alındı** (`E-2`/`F1.1`: kapsam kazancı sessiz-yanlışla satın alınmaz).
+
+### Bu, `D8`'in açık sorusuna verilmiş bir cevaptır
+
+`D8` *«boyut ekleme paydayı oynatıyor, bu gerçek mi artefakt mı»* diye sormuştu ve
+*«ayrılmadan yeniden açılmayacak»* denmişti. Bu deney **ölçü** ekleme için aynı sonucu
+verdi ve **sinonim muafiyetinin işe yaramadığını** kanıtladı. Yani katalog genişletmenin
+bedeli sinonimden değil **varlığın kendisinden** geliyor.
+
+⚠ **Kalan yol:** `§KN`'yi genişletmek istiyorsak beyanı korpus üretecinin **görmediği**
+bir yere koymak gerekir (ör. ölçü listesine değil, ayrı bir `bilesenler:` haritasına).
+Bu bir **pack şeması** işidir ve ayrıca planlanmalı.
+
+*Bir muafiyetin işe yaradığını varsaymak, muafiyeti hiç ölçmemekle aynı sonucu verir —
+yalnız daha geç anlaşılır.*
