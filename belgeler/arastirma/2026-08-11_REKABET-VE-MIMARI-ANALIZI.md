@@ -2691,7 +2691,7 @@ küme *örtüşmeyen* hâle gelir.
 | # | iş | **ÖNCE** | **SONRA** | dosyalar | MİMARİ.md |
 |---|---|---|---|---|---|
 | ✅ **D10** | Cevap biçimi | **karar yok** — `viz.analyze` + `interpret` + `_attach_next_steps` üçünün **artığı** (chip hep 6, olgu hep 1-2) | ✔ **chip sayısı soruya BAĞLANDI** (`app/bicim.py` karar tablosu, `niyet`in altı türü × beş kova; `4,6,2,4,4,4,6,3`). ⚠ *olgu sayısı* `D11`'de kalır — bu turda **1-5 arası zaten değişiyor** (§18'de *«hep 1-2»* idi) | `app/bicim.py` 🆕 · `app/answer.py` · `app/cube_router.py` | ✅ **§13.1.1 ADR-0024'e ek** yazıldı |
-| **D11** | Olgu üretimi | `interpret.py` **11 üretici**, canlıda **1-2** ateşliyor | Ateşlenmeyen koşullar **ölçülüp genişletilir** → hedef **Pulse'un 14 tipine** yakın | `app/interpret.py` | **§ yorum katmanı** |
+| ◐ **D11** | Olgu üretimi | `interpret.py` **11 üretici**, canlıda **1-2** ateşliyor | Ateşlenmeyen koşullar **ölçülüp genişletilir** → hedef **Pulse'un 14 tipine** yakın | `app/interpret.py` | **§ yorum katmanı** |
 | **D12** | Kök-neden yatay eksen | `§KN` **layer-1'de kilitli**, **sürpriz yok**, **FDR yok** | **Adtributor** (~85 satır) + **JS sürprizi** + **Benjamini-Hochberg** | yeni: `app/adtributor.py` · `app/kok_neden.py` | **§KN bölümü** |
 | **D13** | Dış yüzey | `mcp_yuzeyi: off` · `agent_plan_secimi: off` | **MCP açık** (~20 araç eşiği korunarak) | `demo/packs/features.yml` · `app/routers/mcp.py` | **§ MCP** |
 

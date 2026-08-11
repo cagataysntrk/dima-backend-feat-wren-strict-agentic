@@ -68,6 +68,54 @@ def _classify(columns: list[str], rows: list[dict],
                 measure_cols=measure_authority(cube_query))
 
 
+def _kiyas_facts(row: dict, measures: list[str], units: dict, lib_set: set,
+                 _ad) -> list[dict]:
+    """🔴 `§D11` — **SONUÇTA DURAN KIYAS, CEVAPTA SÖYLENMELİ.**
+
+    ## Ölçülen kusur (canlı curl, 2026-08-11)
+
+    *«geçen yıla göre nasıl gidiyoruz»* → sonuç **on iki kolon** taşıyordu:
+    `toplam_ciro`, `toplam_ciro_gecen`, **`toplam_ciro_degisim_yuzde`**, kar/ağırlık/parti
+    için aynı üçlü. Üretilen olgular: `single` (*«ciro: ₺74.022.836,94»*) ve `measures`
+    (*«4 ölçü»*). Yani **kıyas hesaplandı ve yorum katmanında atıldı** — kullanıcı
+    *«geçen yıla göre»* diye sordu, cevap **değişimi hiç söylemedi**.
+
+    ⊙ Ölçüldü: `yoy.py:76-80` bu kolonları **üretiyor**; `interpret.py` içinde
+    `_gecen`/`_degisim_yuzde` sözcükleri **hiç geçmiyordu**. `§12.12`'nin *«yazılmış ama
+    bağlanmamış»* deseni, bu kez **iki modül arasında**.
+
+    ## Neden yeni bir biçimlendirici YOK
+
+    Yön (`_tone`), yüzde (`_syuzde`), sayı+birim (`_fmt`) ve ölçü adı (`_ad`) **çağrılır**.
+    Bir kıyas cümlesini kendi başına biçimlendirmek, aynı sayının Türkçesini bu depoda
+    **altıncı** kez yazmak olurdu (`§SB-metin`'in kapattığı kusur).
+
+    ⚠ `narration_guard` açısından güvenli: her sayı sonuç kümesinde **gerçekten var**
+    (`_degisim_yuzde` bir kolondur, türetilmiş bir tahmin değil).
+    """
+    out: list[dict] = []
+    for m in measures:
+        pct = row.get(f"{m}_degisim_yuzde")
+        onceki = row.get(f"{m}_gecen")
+        if pct is None or onceki is None:
+            continue
+        try:
+            p = float(pct)
+        except (TypeError, ValueError):
+            continue
+        lib = m in lib_set
+        yon = "arttı" if p > 1 else "azaldı" if p < -1 else "yatay seyretti"
+        out.append({
+            "type": "kiyas", "measure": m, "pct": round(p, 1),
+            # Yön yargısı YALNIZ `lower_is_better` beyanı olan ölçüde — `_tone`'un
+            # kendi kuralı; nötr bir ölçüde *"yüksek=iyi"* varsaymayız.
+            "favorable": (None if not lib or -1 <= p <= 1 else p < -1),
+            "text": (f"{_ad(m)}: önceki dönem {_fmt(onceki, units.get(m))} → "
+                     f"{_syuzde(abs(round(p, 1)))} {yon}{_tone(p, lib)}"),
+        })
+    return out
+
+
 def _tone(pct: float, lib: bool) -> str:
     """Değer yargısı — YALNIZ yönü BİLİNEN (lower_is_better işaretli) ölçüde. Aksi halde
     boş (adet gibi nötr ölçüde 'yüksek=iyi' varsaymayız → yanıltmayız). lib=düşük iyi:
@@ -448,6 +496,12 @@ def interpret(result: dict | None, cube_query: dict | None = None,
     if len(rows) == 1 and not dims:
         facts.append({"type": "single", "measure": m0,
                       "text": f"{_ad(m0)}: {_fmt(rows[0].get(m0), unit)}"})
+        # 🔴 `§D11` — tek değerin YANINDA duran kıyas da söylenir. Ölçüldü: *«geçen yıla
+        # göre nasıl gidiyoruz»* sonucunda `*_degisim_yuzde` **vardı** ve cevap onu hiç
+        # anmıyordu. ⊙ Ayrıca bu, `§21.3`'ün ölçtüğü *«tekrarcı metin»* şikâyetini de
+        # kapatır: özet artık KPI kartının aynısını tekrar etmiyor, **kartta olmayanı**
+        # söylüyor. Kıyas yoksa hiçbir şey eklenmez (kural DARALTICI değil, EKLEYİCİ).
+        facts += _kiyas_facts(rows[0], measures, units, lib_set, _ad)
     elif time_col and len(rows) > 1:              # zaman serisi → trend
         entity = next((d for d in dims if d != time_col), None)
         if entity is None:

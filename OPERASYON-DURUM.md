@@ -2927,3 +2927,18 @@ tasarımda değil ortamda.
 ⏭ **Kalan:** ②+③ kapanınca adım `lab/kapi.py`'ye **toplu koşuma** bağlanacak (çıkış kodu
 **1** doğrulandı: koşamazsa kapı kırmızı olur, sessiz kalmaz), sonra kaset 21 → ~50.
 🔴 **Kullanıcıdan bir komut gerekiyor:** `sudo chown $(id -u):$(id -g) backend/lab/reports/garson_korpusu.md backend/logs/control_plane.db`
+
+### ✅ §D11-kıyas · Sonuçta duran kıyas artık söyleniyor *(2026-08-11)*
+
+🔴 Ölçüldü: *«geçen yıla göre nasıl gidiyoruz»* sonucunda `*_gecen` ve `*_degisim_yuzde`
+kolonları **vardı**, olgular yalnız `single`+`measures` idi. `yoy.py` üretiyor,
+`interpret.py` o adları **hiç anmıyordu** — kıyas hesaplanıp atılıyordu.
+
+✅ `interpret._kiyas_facts`: yön/yüzde/sayı biçimlendiricileri **çağrılır** (yeniden
+yazılmaz). Yön yargısı yalnız `lower_is_better` beyanlı ölçüde.
+**Canlı kanıt (3/3 koşum):** `ciro: önceki dönem ₺67.200.673,68 → %10,2 arttı`.
+⊙ `§21.3`'ün *«tekrarcı metin»* şikâyetini de kapatır: özet artık kartı tekrar etmiyor.
+Kapı: `tests/test_d11_kiyas_olgusu.py` (5) + yorum yüzeyi 180 yeşil.
+
+⏸ **A1 PARK EDİLDİ** (kullanıcı kararı: *«çok uzun sürdü»*). Ölçüm tesisatı ürün değil.
+Kaset kaydı arka planda; bittiğinde bağlanacak. Kalan insan işi: `sudo chown` (bloke değil).
