@@ -3230,7 +3230,36 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 | **azaltma** | `KURAL B` **zorunlu**: türetilmiş liste bugünkü ile **bayt bayt** aynı çıkmalı; bir kapı bunu kilitler. Bayrak yok — çünkü **davranış değişmemeli** |
 | **MİMARİ.md** | **§2.0** — *«tek yetenek kaydı; plan fiilleri türetilir»* |
 
-### C2 · Bütçe + stall sayacı
+### ✅ C2 · Bütçe + stall sayacı — **ÖLÇÜLDÜ: ZATEN CANLI** *(2026-08-12)*
+
+> 🔴 **Aşağıdaki «ÖNCE» satırının sayıları BAYAT.** Ölçüldü:
+>
+> | | rapor | **bugün** |
+> |---|---|---|
+> | `Butce.adim` | 3 | **8** |
+> | `Butce.saniye` | 10 | **30,0** |
+> | `Butce.sorgu` | **0 — uykuda** | **12 — CANLI** (`if b.sorgu and …` uygulanıyor) |
+> | stall sayacı | **YOK** | **`ONARIM_TAVANI = 2`** — *«Magentic-One stall ≤2»* |
+> | `AZAMI_ADIM` | *«hiç bağlayıcı olmamış»* | **12**, `dogrula`'da **koşmadan önce** |
+> | `AZAMI_SORGU` | — | **8** (plan katmanı; dar olan bağlar) |
+>
+> `Planlayici._kis()` tavanı aşınca `ButceAsimi` **fırlatıyor**; sınıfın docstring'i
+> kısmi-cevap kalıbını yazıyor (*«o ana kadarki adımlar GEÇERLİ»*). Ve `%60 tek adım`
+> rakamı `§A13` ile zaten çürümüştü (**%21**).
+>
+> 🔴 **Stall sayacı bu oturumda `§B4` ile geldi** — C2'nin kendi satırı *«serbest döngüye
+> (B4) geçerken **pazarlık dışı**»* diyordu ve B4 canlıya alınırken tavan onunla birlikte
+> kondu. *Bir şartı, şartı doğuran işi yaparken ödemek en ucuzudur.*
+>
+> ⊙ Yapılan iş: sayıları **kapıya kilitlemek** (`test_c2_butce_stall.py`, 8). Bunlar
+> güvenlik tavanları; biri `sorgu=0`'a düşerse koruma **sessizce** kalkardı — hiçbir test
+> kırılmadan, hiçbir cevap bozulmadan. *Uygulanmayan bir tavan, olmayan bir tavandan
+> kötüdür: birincisine güvenilir.*
+>
+> ⚠ Tek sınırsız eksen `token` ve gerekçesi **yazılı** (telemetri boş); kapı gerekçenin
+> silinmesini de yakalar.
+
+### C2 · Bütçe + stall sayacı *(özgün kart)*
 
 | | |
 |---|---|
