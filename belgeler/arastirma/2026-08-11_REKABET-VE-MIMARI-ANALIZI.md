@@ -944,6 +944,27 @@ zaten yazmış.*
 
 ---
 
+### 12.12 🔴🔴 ÖRÜNTÜ — **«YAZILMIŞ AMA BAĞLANMAMIŞ»**: beş kez ölçüldü
+
+Bu raporun en tekrar eden bulgusu bir kusur değil, bir **desen**:
+
+| # | yetenek | durum |
+|---|---|---|
+| 1 | `wren_core`'un **15 sembolü** | **1'i** kullanılıyor (`cube_query_to_sql`); `ManifestExtractor.extract_by` (**şema daraltma**) hiç çağrılmamış |
+| 2 | `tools.py`'nin **25 aracı** | `agent_plan_secimi: off` · `mcp_yuzeyi: off` → **ikisi de kapalı** |
+| 3 | `interpret.py`'nin **11 olgu üreticisi** | canlıda **1-2** ateşliyor |
+| 4 | `plan_semasi`'nin **15 fiili** ↔ `tools.py` | **%73 örtüşüyor**, biri uykuda |
+| 5 | 🔴 **`vqr.few_shot_block()`** | **yazılmış, çalışıyor** — ama **Discovery'ye (%1,7)** bağlı, **garsona (%37)** değil |
+
+⊙ **Toplam:** ürünün en pahalı yetenekleri **zaten yazılmış**; eksik olan **kablolama**.
+Ve §16.4'ün *«açıkça boşa giden ~2.000 satır»* rakamı bu ışıkta **yeniden okunmalı**:
+boşa giden kod değil, **bağlanmamış kod**.
+
+🔴 **Bunun yönetsel anlamı:** §14'ün FAZ 1'i sanılandan **çok daha ucuz**. B2 bir
+retrieval motoru yazmak değil, **var olan bir fonksiyonu bir yerden daha çağırmak**.
+
+*Bir yeteneğin yokluğunu varsaymak, onu aramaktan pahalıdır — bu raporda beş kez ölçüldü.*
+
 # DÖRDÜNCÜ KISIM — YARARLANABİLECEĞİMİZ AÇIK KAYNAK
 
 > Her satır **LICENSE ham metninden** doğrulandı. GitHub'ın lisans etiketi birden çok kez
@@ -2816,20 +2837,21 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 | **geri alma** | tek bayrak |
 | **MİMARİ.md** | **§3** — *«katalog metni artık soruya göre daraltılmış üretilir; fail-open»* |
 
-### B2 · VQR → garson few-shot 🔴 EN YÜKSEK GETİRİ
+### B2 · VQR → garson few-shot 🔴 EN YÜKSEK GETİRİ — **ve sanılandan ÇOK daha ucuz**
 
 | | |
 |---|---|
-| **ÖNCE** | `vqr.py` **var** ama yalnız **replay** basamağında (merdiven #2). Garsonun istemine **hiç örnek girmiyor** |
-| **SONRA** | `vqr.ara(soru, k=5..10)` → istemin içine **doğrulanmış (soru → CubeQuery) çiftleri** |
-| **dosyalar** | `app/vqr.py` (yeni `ara()`) · `app/llm.py::_cube_select_system` · `app/routers/ask.py` |
-| **dış dayanak** | Cube: **+17…+23 puan**, ve *«**hangi model olduğu değil, semantik belgenin olup olmadığı** belirleyici»* — **4 KB markdown**'dan · Snowflake'in **Context Enrichment ajanı** birebir bu · Wren LanceDB · Fabric kaynak başına **100 örnek** |
-| ⚠ **kritik uyarı** | **Anthropic'in negatif ablasyonu**: ham SQL geçmişine grep erişimi doğruluğu **bir puandan az** oynattı — *«bilgi oradaydı, ajan gördü, **yine de kullanmadı**; darboğaz erişim değil **YAPI**»*. ⊙ **Yani «her şeyi ver» değil, «az sayıda, yapılandırılmış, İNSAN ONAYLI örnek ver».** |
-| **curl (4 senaryo)** | ① VQR'da **olan** bir soruyu benzer biçimde sor → doğru fiş ② VQR'da **olmayan** → gerileme yok ③ **çelişkili** iki örnek varsa ne oluyor ④ istem **kaç token** büyüdü |
+| 🔴 **ÖNCE (ölçüldü, düzeltme)** | `vqr.few_shot_block(question, k=3)` **ZATEN YAZILMIŞ VE ÇALIŞIYOR** (`app/vqr.py:449`, `recall()` üstünde, DAIL-SQL deseni). Ama `ask.py:5135`'te **yalnız Discovery dalına** bağlı — yani trafiğin **%1,7'sine**. 🔴 **Trafiğin %37'sini taşıyan GARSONA hiç bağlanmamış**; `llm.py::_cube_select_system` içinde *«few_shot»* kelimesi bile **geçmiyor** |
+| **SONRA** | Aynı fonksiyon garson dalında da çağrılır; blok `catalog_text`'in yanına eklenir |
+| **dosyalar** | `app/routers/ask.py` (garson dalı, ~`3947`) · `app/llm.py::_cube_select_system` (bloğu kabul etsin) |
+| 🟢 **maliyet** | **Yeni retrieval yazılmayacak.** Tahmini **3-10 satır** + bir bayrak. ⊙ *Planın ilk hâli «`vqr.ara()` yaz» diyordu — denetim bunu çürüttü.* |
+| **dış dayanak** | Cube: **+17…+23 puan**, *«**hangi model olduğu değil, semantik belgenin olup olmadığı** belirleyici»* — **4 KB markdown**'dan · Snowflake'in **Context Enrichment** ajanı birebir bu · Fabric kaynak başına **100 örnek** |
+| ⚠ **kritik uyarı** | **Anthropic'in negatif ablasyonu**: ham SQL geçmişine grep erişimi doğruluğu **bir puandan az** oynattı — *«bilgi oradaydı, ajan gördü, **yine de kullanmadı**; darboğaz erişim değil **YAPI**»*. ⊙ **«Her şeyi ver» değil, «az sayıda, yapılandırılmış, İNSAN ONAYLI örnek ver».** `few_shot_block`'un `k=3` varsayılanı **zaten doğru** |
+| **curl (4)** | ① VQR'da **olan** bir soruyu benzer biçimde sor → doğru fiş ② VQR'da **olmayan** → gerileme yok ③ **çelişkili** iki örnek → ne oluyor ④ istem **kaç token** büyüdü |
 | 🔴 **risk** | **Bağlam kirlenmesi.** Hex'in ölçümü: *«çelişkili bağlam modeli bir **çöküş moduna** soktu»* — 30 dk eylemsiz salınım |
-| **azaltma** | Yalnız `source in ("user_verified","chip_approved")` olan kayıtlar · **en fazla 10** · benzerlik eşiği · çelişki varsa **hiç örnek verme** |
-| **geri alma** | bayrak `vqr_few_shot` |
-| **MİMARİ.md** | **§4** — *«garson few-shot alır; kaynak yalnız insan onaylı VQR»* |
+| **azaltma** | `vqr.py:136`'nın **kendi notu** zaten uyarıyor: *«TEKRAR OYNATMA (`near_exact`) ile ÖRNEK GÖSTERME (`few_shot_block`) **AYNI RİSKTE DEĞİLDİR**»* → `k≤3` koru · yalnız `user_verified`/`chip_approved` · çelişkide **hiç örnek verme** |
+| **geri alma** | bayrak `vqr_few_shot` (🆕 yeni) |
+| **MİMARİ.md** | **§4** — *«garson few-shot alır; kaynak insan onaylı VQR; `few_shot_block` iki dalda da kullanılır»* |
 
 ### B3 · `instructions.md` — iş sözlüğü
 
