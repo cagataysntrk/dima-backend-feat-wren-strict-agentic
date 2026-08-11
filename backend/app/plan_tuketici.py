@@ -636,7 +636,36 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     # ⚠ Kıyas **kimlikler** üzerinden: satır sayısı veri tazelenince değişebilir, bir
     # belgenin **bölüm listesi** değişmez. *Bir değişikliği satır sayısından ölçmek, veri
     # değiştiğinde değişiklik olduğunu sanmaktır.*
+    # 🔴🔴 `§RS` — **«EKLE» DEMEK, HİÇBİR ŞEYİN GİTMEMESİ DEMEKTİR.**
+    #
+    # ⊙ Ölçüldü (curl `X` turu): düzenleme **tüm belgeyi yeniden planlıyor** ve sonuç
+    # **tutarsız** — X9'da kusursuz (4 blok birebir korundu, 5.'si eklendi), X6/X7'de
+    # **kayıplı** (bölümler kaydı). Kullanıcı *«rapora kârlılık ekle»* dediğinde
+    # müşteri kırılımının kaybolmasını beklemez; kaybolduğunu **fark bile etmez**.
+    #
+    # ⚠ Kural **dar**: yalnız **ekleme niyeti** varken ve **çıkarma niyeti yokken**
+    # koşar. İkisi de kataloğun değil dilbilgisinin kapalı sınıfları ve tek sahipleri
+    # `cube_router`'da (`_ADD_RE` · `_RM_VERB_RE`) — ikinci bir liste `KAT-1` olurdu.
+    # *«Yeniden yap»* gibi bir istek ne ekleme ne çıkarmadır; orada plan neyi getirdiyse
+    # o kalır (bir yeniden yazımı geri almak, kullanıcının isteğini ezmek olurdu).
+    #
+    # ⚠ Ve kayıp bölüm **yeniden koşulur**: kimliğiyle geri koymak, sonucu olmayan bir
+    # kart üretirdi (`§RE`'nin dersi — fiş ile sayı aynı şeyi söylemeli).
+    #
+    # *Bir düzenlemeyi «yeniden planlama» olarak yapmak, kullanıcının yazmadığı bir
+    # silmeyi de o düzenlemeye eklemektir.*
     if _onceki_bolumler and _rapor is not None:
+        from app.cube_router import _ADD_RE, _RM_VERB_RE, _norm as _n2
+
+        _qn = _n2(soru or "")
+        if _ADD_RE.search(_qn) and not _RM_VERB_RE.search(_qn):
+            _bolumler, _geri = _kayip_bolumleri_geri_koy(
+                _bolumler, _onceki_bolumler, service=service, schema=schema, limit=limit)
+            if _geri:
+                _rapor = _belgeyi_derle(_bolumler, _baslik_metni(plan, soru), schema)
+                _devir_izi.append(f"§RS: «ekle» isteğinde kaybolan {_geri} bölüm "
+                                  f"geri kondu ve yeniden koştu")
+
         def _kimlik(bs: list[dict]) -> set[tuple]:
             return {(str((b.get("cube_query") or {}).get("cube") or ""),
                      tuple((b.get("cube_query") or {}).get("measures") or []),
@@ -900,6 +929,62 @@ def _fisi_coz(cq: dict | None, *, schema: dict, soru: str) -> dict | None:
     except Exception:                          # noqa: BLE001 — çözüm turu DÜŞÜRMEZ
         _log.warning("§RE: fiş çözülemedi (best-effort)", exc_info=True)
         return cq
+
+
+def _belgeyi_derle(bolumler: list[dict], baslik: str, schema: dict):
+    """`§RS` — bölümleri `Report`'a dizer. Tek sahip yine `report.bolumlerden_kur`."""
+    from app import report as _report
+
+    try:
+        return _report.bolumlerden_kur(bolumler, baslik=baslik, schema=schema)
+    except Exception:                          # noqa: BLE001 — derleme turu DÜŞÜREMEZ
+        _log.warning("§RS: belge yeniden derlenemedi (best-effort)", exc_info=True)
+        return None
+
+
+def _baslik_metni(plan: dict, soru: str) -> str:
+    """Belge başlığı — planın belge fiilindeki başlık, yoksa kullanıcının cümlesi."""
+    return next((str(a.get("baslik")) for a in (plan.get("adimlar") or [])
+                 if str(a.get("fiil")) in ("RAPOR", "PANO") and a.get("baslik")),
+                soru or "Rapor")
+
+
+def _kayip_bolumleri_geri_koy(bolumler: list[dict], onceki: list[dict], *, service,
+                              schema: dict, limit: int | None = None
+                              ) -> tuple[list[dict], int]:
+    """`§RS` — önceki belgede olup yenisinde **olmayan** bölümleri geri koyar ve koşar.
+
+    Gerekçe çağrı yerinde. Burada tek incelik: kimlik kıyası `§RÇ` ile **aynı** üçlüdür
+    (küp · ölçüler · boyutlar) — iki farklı kimlik tanımı, bir gün iki farklı belge
+    demekti (`KAT-1`).
+    """
+    from app import report as _report
+
+    def _k(b: dict) -> tuple:
+        cq = b.get("cube_query") or {}
+        return (str(cq.get("cube") or ""), tuple(cq.get("measures") or []),
+                tuple(cq.get("dimensions") or []))
+
+    _var = {_k(b) for b in bolumler if isinstance(b.get("cube_query"), dict)}
+    _kayip = [b for b in (onceki or [])
+              if isinstance(b.get("cube_query"), dict) and _k(b) not in _var]
+    if not _kayip:
+        return bolumler, 0
+    try:
+        _r = _report.compose_report(
+            service, schema,
+            {"blocks": [{"cube_query": b["cube_query"]} for b in _kayip]},
+            limit=limit or 1000)
+    except Exception:                          # noqa: BLE001 — geri koyma turu DÜŞÜREMEZ
+        _log.warning("§RS: kayıp bölümler koşulamadı (best-effort)", exc_info=True)
+        return bolumler, 0
+    _geri = [{"cube_query": b.get("cube_query"), "result": b["result"]}
+             for sayfa in (_r.get("pages") or []) for b in (sayfa or [])
+             if b.get("result") and not b.get("error")]
+    if not _geri:
+        return bolumler, 0
+    _log.info("§RS: «ekle» isteğinde kaybolan %d bölüm geri kondu", len(_geri))
+    return bolumler + _geri, len(_geri)
 
 
 def _tarih_suzgeci(cq: Any) -> list[dict]:

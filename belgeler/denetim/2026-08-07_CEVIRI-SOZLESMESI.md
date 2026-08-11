@@ -11672,3 +11672,29 @@ değil alışkanlığı sürdürmektir.*
 ⚠ Ayrıca `§NB` için bir **dürüst beyan** dalı da eklendi (`kok_neden.aciklanamadi`):
 konuşma dalı hiçbir açıklayıcı üretemezse artık sessizce düşmüyor — *«ayrıştıramadım»*
 der ve kataloğun kendi boyutlarından **tıklanabilir** kırılımlar önerir.
+
+## `§RS` — *«ekle»* demek, hiçbir şeyin gitmemesi demektir
+
+Düzenleme **tüm belgeyi yeniden planlıyor** ve sonuç **tutarsızdı**: bir turda kusursuz
+(4 blok birebir korundu), başka turda **kayıplı**. Kullanıcı *«rapora kârlılık ekle»*
+dediğinde müşteri kırılımının kaybolmasını beklemez; kaybolduğunu **fark bile etmez**.
+
+**Kural dar tutuldu:** yalnız **ekleme niyeti** varken ve **çıkarma niyeti yokken**
+koşar; yüklemlerin ikisi de dilbilgisinin kapalı sınıfları ve tek sahipleri
+`cube_router`'da (`_ADD_RE` · `_RM_VERB_RE`). *«Yeniden yap»* ne ekleme ne çıkarmadır —
+orada plan neyi getirdiyse o kalır (bir yeniden yazımı geri almak, kullanıcının isteğini
+ezmek olurdu). Ve kayıp bölüm **yeniden koşulur**: kimliğiyle geri koymak sonucu olmayan
+bir kart üretirdi (`§RE`'nin dersi).
+
+*Bir düzenlemeyi «yeniden planlama» olarak yapmak, kullanıcının yazmadığı bir silmeyi de
+o düzenlemeye eklemektir.*
+
+### Canlı canvas zinciri
+
+```
+t1 «son 2 yıl satış raporu hazırla»   → 3 blok
+t2 «rapora kârlılık kırılımı ekle»    → 4 blok · önceki üçü BİREBİR korundu   ✅
+t3 «rapora aylık ciro trendi de ekle» → kimlikler değişmedi → §RÇ: «değişiklik
+     yapılmadı» — üstelik planın adım başlığı «Aylık Ciro Trendi Eklendi» diyordu.
+     Deterministik kimlik kıyası bu YANLIŞ İDDİAYI yine yakaladı.                ✅
+```

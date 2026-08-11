@@ -570,3 +570,75 @@ def test_SEYIR_TEK_ISARETTEN_TANINMAZ():
                    for i in range(6)]
     out = ps.belge_bolum_sirala(sahte_seyir)
     assert len(out) == ps.BELGE_AZAMI_EK, f"🔴 kesilmedi: {len(out)} blok"
+
+
+# --- `§RS` · «EKLE» DEMEK, HİÇBİR ŞEYİN GİTMEMESİ DEMEKTİR ---------------------------
+
+def test_EKLEMEDE_KAYIP_BOLUM_GERI_KONUR():
+    """🔴🔴 **Ölçülen kusur (curl `X` turu).** Düzenleme **tüm belgeyi yeniden
+    planlıyor** ve sonuç **tutarsız**: X9'da kusursuz (4 blok birebir korundu, 5.'si
+    eklendi), X6/X7'de **kayıplı**. Kullanıcı *«rapora kârlılık ekle»* dediğinde müşteri
+    kırılımının kaybolmasını beklemez; kaybolduğunu **fark bile etmez**.
+
+    *Bir düzenlemeyi «yeniden planlama» olarak yapmak, kullanıcının yazmadığı bir silmeyi
+    de o düzenlemeye eklemektir.*"""
+    from app import plan_tuketici
+
+    onceki = [{"cube_query": {"cube": "parti", "measures": ["toplam_ciro"],
+                              "dimensions": ["musteri"]}},
+              {"cube_query": {"cube": "parti", "measures": ["toplam_ciro"],
+                              "dimensions": ["kumas_cinsi"]}}]
+    yeni = [{"cube_query": {"cube": "parti", "measures": ["toplam_ciro"],
+                            "dimensions": ["musteri"]},
+             "result": {"rows": [], "row_count": 0}}]
+
+    class _S:                     # koşucu: kayıp bölümü satırla geri getirir
+        def cube_sql(self, cq):
+            return "SELECT 1"
+
+        def query(self, sql, limit=None):
+            return {"columns": ["toplam_ciro"], "rows": [{"toplam_ciro": 1}],
+                    "row_count": 1}
+
+    out, geri = plan_tuketici._kayip_bolumleri_geri_koy(
+        yeni, onceki, service=_S(), schema={"cubes": []})
+    assert geri == 1 and len(out) == 2
+    assert any((b.get("cube_query") or {}).get("dimensions") == ["kumas_cinsi"]
+               for b in out)
+
+
+def test_KAYIP_BOLUM_YENIDEN_KOSAR():
+    """⚠ Kimliğiyle geri koymak, **sonucu olmayan** bir kart üretirdi — `§RE`'nin dersi:
+    fiş ile sayı aynı şeyi söylemeli."""
+    import inspect
+
+    from app import plan_tuketici
+
+    assert "compose_report" in inspect.getsource(plan_tuketici._kayip_bolumleri_geri_koy)
+
+
+def test_RS_YALNIZ_EKLEME_NIYETINDE():
+    """🔴 **Kural dar tutuldu.** *«çıkar»* isteğinde geri koymak, kullanıcının açık
+    isteğini **geri almak** olurdu; *«yeniden yap»* ne ekleme ne çıkarmadır ve orada plan
+    neyi getirdiyse o kalır.
+
+    ⚠ İki yüklem de dilbilgisinin kapalı sınıfları ve tek sahipleri `cube_router`'da —
+    ikinci bir liste `KAT-1` olurdu."""
+    import inspect
+
+    from app import plan_tuketici
+
+    kaynak = inspect.getsource(plan_tuketici.cevap)
+    assert "_ADD_RE.search(_qn) and not _RM_VERB_RE.search(_qn)" in kaynak
+    assert "from app.cube_router import _ADD_RE, _RM_VERB_RE" in kaynak
+
+
+def test_KIMLIK_TANIMI_TEK():
+    """🔴 `KAT-1` — `§RÇ` ve `§RS` **aynı** üçlüyü kullanır (küp · ölçüler · boyutlar);
+    iki farklı kimlik tanımı bir gün iki farklı belge demekti."""
+    import inspect
+
+    from app import plan_tuketici
+
+    a = inspect.getsource(plan_tuketici._kayip_bolumleri_geri_koy)
+    assert 'str(cq.get("cube") or "")' in a and 'tuple(cq.get("measures") or [])' in a
