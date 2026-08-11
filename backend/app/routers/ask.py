@@ -33,6 +33,7 @@ from app import planner as _planner
 from app import ask_jobs, cekirdek, followup, istek_kimligi, katman_b, typo_onerisi
 from app import soz as _soz
 from app import cube_router
+from app import kok_neden as _kok_neden
 from app import siralama as _siralama
 from app import niyet_tasima as _niyet_tasima
 from app import eylem, gorsel_ekleme, pii, tercih, viz, yoy
@@ -2344,6 +2345,17 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # ÇAĞRILIR, kopyalanmaz (aynı kural iki yerde yaşamasın — bu depoda ölçülmüş
         # desen: drill↔schedules, interpret↔schedules, _uncovered↔_syn_hit).
         if tur in (followup.TUR_NEDEN, followup.TUR_NE_YAPMALI, followup.TUR_ISARET):
+            # 🔴 `§KN` — **KESİTSEL NEDEN ÖNCE.** Ekranda bir kırılım varsa ve ölçünün
+            # formülü katalogda ayrıştırılabiliyorsa, sorulan soru *«akranlarına göre
+            # neden farklı»*dır; `contribution` ise *«geçen döneme göre neden değişti»*i
+            # açıklar. İkisi kardeş; `§KN` susarsa yol bayt bayt bugünkü (`KURAL B`).
+            _oner = tur == followup.TUR_NE_YAPMALI     # `§KN` — öneri YALNIZ sorulduğunda
+            _kn = _kok_neden.cevap_verisi(prev_cq, cube_meta, service=service, oneri=_oner)
+            if _kn:
+                return AskResponse(
+                    question=body.question, source="cube", note=_kn["anlati"],
+                    cube_query=prev_cq, trace=iz + _kn["iz"],
+                    next_steps=[NextStep(**c) for c in _kn["chipler"]])
             recete_payload: dict | None = None
             try:
                 # FAZ F3 — artık KAYITLI bir araç: dört kapıdan (kayıt · yetki ·
@@ -2388,7 +2400,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             # REÇETE (Faz G3) — YALNIZ "ne yapmalıyız?" sorulduğunda. "Neden böyle?"
             # bir AÇIKLAMA ister, reçete değil; ikisini karıştırmak kullanıcının
             # sormadığı bir tavsiyeyi cevabın yerine koymak olurdu.
-            if tur == followup.TUR_NE_YAPMALI and katki.raporlar:
+            if _oner and katki.raporlar:
                 ilk = katki.raporlar[0]
                 dusuk_iyi = (katki.measure or "") in (
                     (cube_meta or {}).get("lower_is_better") or [])

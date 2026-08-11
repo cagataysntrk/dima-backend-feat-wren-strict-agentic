@@ -341,7 +341,8 @@ def hedef_sec(satirlar: list[dict], olcu: str, *, dusuk_iyi: bool,
 
 
 def arastir(prev_cq: dict, cube_meta: dict | None, *, kos,
-            segment: str | None = None, azami_derinlik: int = 1) -> dict | None:
+            segment: str | None = None, azami_derinlik: int = 1,
+            oneri: bool = False) -> dict | None:
     """🔴🔴 `§KN` — **TAM TUR: «şuna baktım, şuraya gittim, gördüm ki…»**
 
     Kullanıcının istediği zincir:
@@ -402,8 +403,34 @@ def arastir(prev_cq: dict, cube_meta: dict | None, *, kos,
     if derin:
         metin += "\n\n" + derin["metin"]
         adimlar.append(derin["adim"])
+    if oneri:
+        metin += "\n\n" + nereye_bak(ayr, _seg, boyut, derin)
     return {"anlati": metin, "ayristirma": ayr, "adimlar": adimlar,
             "segment": _seg, "boyut": boyut}
+
+
+def nereye_bak(ayr: Ayristirma, segment: str, boyut: str,
+               derin: dict | None) -> str:
+    """`§KN` — *«ne yapmalıyız»*ın cevabı: **nereye bakılmalı**.
+
+    🔴 Bilerek bir **reçete değil**, bir **işaret**. `prescribe.py` bir katkı raporundan
+    aksiyon önerir; burada elimizde bir katkı raporu değil bir **formül ayrıştırması**
+    var ve o, *«ne yapılmalı»*yı değil *«hangi taş kaldırılmalı»*yı bilir.
+
+    ⚠ Uydurma alan tavsiyesi (*«bakım periyodunu kısaltın»*) **verilmez**: sistem
+    makinenin fiziğini bilmez, verisini bilir. Söylediği tek şey ölçülmüş olandır —
+    hangi bileşen, hangi alt-segment, ne kadar fark. *Bir öneri, dayanağından fazlasını
+    iddia ettiği anda bir tahmine dönüşür.*
+    """
+    if not ayr.sucllu:
+        return ""
+    _pay = next((k.pay_yuzde for k in ayr.katkilar
+                 if k.bilesen.ad == ayr.sucllu.ad), 0.0)
+    nokta = (f" ve en çok **{derin['segment']}** tarafında ayrışıyor"
+             if derin else "")
+    return (f"→ **Öneri:** **{segment}** ({boyut}) için **{ayr.sucllu.display}** "
+            f"incelenmeli — farkın {_yuzde(_pay)}'i oradan geliyor{nokta}. "
+            f"Öteki bileşenler bu farkı açıklamıyor.")
 
 
 def derinles(prev_cq: dict, cube_meta: dict | None, suclu: Bilesen,
@@ -467,3 +494,64 @@ def derinles(prev_cq: dict, cube_meta: dict | None, suclu: Bilesen,
         "adim": f"**{segment}** içinde **{_lbl}** kırılımı açıldı → **{en.get(d2)}**",
         "boyut": d2, "segment": str(en.get(d2)),
     }
+
+
+# --- MOTORA BAĞLANTI: cebir ile motor arasındaki TEK yüzey ----------------------------
+
+
+def kosucu(service, *, limit: int = 1000):
+    """`§KN` — cebiri motora bağlayan **tek** yer.
+
+    ⚠ Yukarıdaki her şey sorgu koşmaz ve bu bilinçlidir: cebir gerçek bir motor olmadan
+    sınanabilsin. Burada da yeni bir çalıştırma yolu **icat edilmez** — `cube_sql` +
+    `query`, yani `/cube`'un kullandığı aynı ikili. *Bir hesabı iki yoldan koşturmak,
+    bir gün iki farklı sayı almanın en kısa yoludur.*
+    """
+    def _kos(cq: dict) -> list[dict]:
+        try:
+            return (service.query(service.cube_sql(cq), limit=limit) or {}).get("rows") or []
+        except Exception:                      # noqa: BLE001 — bir aday düşerse tur düşmez
+            return []
+    return _kos
+
+
+def cevap_verisi(prev_cq: dict, cube_meta: dict | None, *, service,
+                 limit: int = 1000, segment: str | None = None,
+                 oneri: bool = False) -> dict | None:
+    """`§KN` — `/ask`'in *«neden böyle»* dalı için hazır cevap verisi.
+
+    Döner: `{anlati, iz, chipler}` ya da `None` (*«bu ölçü kesitsel olarak
+    ayrıştırılamaz»* → çağıran bugünkü `contribution` yoluna devam eder).
+
+    ⚠ **`contribution`un rakibi değil kardeşi.** O *«geçen döneme göre neden değişti»*i
+    açıklar; bu *«akranlarına göre neden farklı»*yı. İkisi farklı sorulardır; birini
+    ötekinin yerine koymak, sorulmayan soruyu cevaplamaktır. Bu yüzden `§KN` **önce**
+    denenir (kırılım + formül varsa soru kesitseldir) ama başarısız olursa yol
+    **bayt bayt bugünküdür** (`KURAL B`).
+
+    ⚠ Adımlar `iz`e yazılır: kullanıcının gördüğü *«şu anda şuna baktım, oraya gittim»*
+    zinciri budur ve bir süs değil **denetlenebilirliktir** — her adım bir sorguya karşılık
+    gelir.
+    """
+    # 🔴 `oneri` bir **bayrak** olarak gelir, bir **soru türü** olarak değil — ve bunu
+    # bir kapı öğretti: `test_MUTFAK_dil_ayristiramaz`. Bu modül 🍳 mutfaktır; `followup`
+    # bir 🗣 garson modülüdür ve `TUR_NE_YAPMALI` bir **dil sınıfıdır**. Onu buradan
+    # okumak, mutfağa sipariş defterini açtırmak olurdu.
+    # ⚠ Bedeli ölçüldü ve kabul edildi: `ask()`te **bir satır** (bkz. muafiyet
+    # `kn-kesitsel-neden`). *Bir sınırı korumanın bedeli, sınırı kaldırmanın bedelinden
+    # her zaman küçüktür.*
+    out = arastir(prev_cq, cube_meta, kos=kosucu(service, limit=limit), segment=segment,
+                  oneri=oneri)
+    if not out:
+        return None
+    _boyut = out.get("boyut") or ""
+    _seg = out.get("segment") or ""
+    chipler = [{"label": f"{_seg} — tek başına aç", "kind": "dimension",
+                "cube_query": {**{k: v for k, v in prev_cq.items()
+                                  if k not in ("order", "limit", "pencere")},
+                               "filters": [*(prev_cq.get("filters") or []),
+                                           {"dimension": _boyut, "operator": "eq",
+                                            "value": _seg}]}}]
+    return {"anlati": out["anlati"],
+            "iz": [f"§KN: {a}" for a in out["adimlar"]],
+            "chipler": chipler}

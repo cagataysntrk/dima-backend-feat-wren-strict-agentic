@@ -11514,3 +11514,62 @@ en altta kalır.
 
 Canlı (tazeleme sonrası): `§DB` hâlâ çıkmazı çözüyor (**9 operatör** + beyan) **ve**
 `cinsiyet = Kadın` süzgeci korunuyor (**12 kadın personel**).
+
+---
+
+# `§KN` — KÖK-NEDEN CEBİRİ · *«insan zihnini simüle et»*
+
+*(2026-08-11 · kullanıcının birinci önceliği)*
+
+## Araştırma: kök zaten kataloğun İÇİNDE yazılıydı
+
+`oee` küpü okununca görüldü ki `ort_oee`'nin ifadesi, **üç ayrı ölçünün ifadelerinin
+birebir çarpımıdır**. Yani bileşen keşfi bir SQL cebiri motoru işi **değil**, kataloğun
+kendi metninde bir **üst-düzey işlenen eşitliğidir** — deterministik, sözlüksüz, LLM'siz.
+*Bir sistemin kendi hakkında söylediğini okumak varken, onu çözümlemeye çalışmak, cevabı
+bilerek zor yoldan aramaktır.*
+
+## Ve *«pay/payda»* sezgisi kesin matematiğe oturdu
+
+    ln(v_hedef) − ln(v_akran) = Σ [ ln(f_i,hedef) − ln(f_i,akran) ]
+
+Toplam **artıksız** ayrışır → *«performans farkın %84,1'ini açıklıyor»* bir sezgi değil
+bir **özdeşliktir**. Kapı bunu sayıyla doğruluyor; tutmasaydı yüzdeler bir uydurma olurdu.
+
+## Canlı zincir (curl, gerçek veri)
+
+```
+§KN: formül okundu: ort_oee = kullanılabilirlik × performans × kalite
+§KN: makine kırılımında 11 segment ve 3 bileşen ölçüldü
+§KN: RAM-3 akran ortalamasıyla kıyaslandı → farkın kaynağı performans
+§KN: RAM-3 içinde vardiya kırılımı açıldı → 3. Vardiya (00-08)
+
+RAM-3 oee 0,525 ↔ akran 0,588
+· performans        0,74  ↔ 0,814 — farkın %84,1'ini düşürüyor
+· kalite            0,793 ↔ 0,805 — %13,8
+· kullanılabilirlik 0,894 ↔ 0,896 — %2,2
+→ RAM-3 içinde performans en çok 3. Vardiya'da ayrışıyor: 0,702 ↔ 0,76
+→ Öneri (yalnız «ne yapmalıyız» sorulunca): RAM-3 için performans incelenmeli —
+  farkın %84,1'i oradan geliyor ve en çok 3. Vardiya'da ayrışıyor.
+```
+
+⚠ **`contribution`un rakibi değil kardeşi:** o *«geçen döneme göre neden değişti»*i
+açıklar, `§KN` *«akranlarına göre neden farklı»*yı. `§KN` susarsa yol bayt bayt bugünkü.
+
+## Üç kusuru ölçerek buldum ve düzelttim
+
+1. **Alt-dize yanlış-pozitifi.** `toplam_uretim_kg = SUM(uretim_kg)` dizisi
+   `NULLIF(SUM(uretim_kg),0)`'ın içinde geçtiği için *«OEE'nin çarpanı»* sayılıyordu —
+   kullanıcıya **yanlış bir cümle** kurulacaktı. Üst-düzey işlenen **eşitliği**.
+   *Bir parçayı bir bütünün içinde görmek, onun o bütünü oluşturduğunu göstermez.*
+2. **Derinleşme hiç üretilmedi.** İlk aday `hat` seçiliyordu ve `hat` bir makinenin
+   **içinde sabittir** → tek satır. Adaylar **sırayla koşuluyor**, yayılımı en geniş
+   olan seçiliyor. *Bir kırılımı denemeden seçmek, hiyerarşiyi bildiğini varsaymaktır.*
+3. **Sınır kapısı.** `oneri` bayrağını modülün içinde `followup.TUR_NE_YAPMALI`'dan
+   okumak istedim; `test_MUTFAK_dil_ayristiramaz` kırmızı verdi — `kok_neden` mutfaktır,
+   `followup` garsondur. Bayrak çağırana taşındı (**+1 satır muafiyet**).
+   *Bir sınırı korumanın bedeli, sınırı kaldırmanın bedelinden her zaman küçüktür.*
+
+⊘ **Uydurma alan tavsiyesi yok:** öneri *«nereye bakılmalı»*yı söyler, *«bakım periyodunu
+kısaltın»* demez. Sistem makinenin fiziğini bilmez, **verisini** bilir.
+*Bir öneri, dayanağından fazlasını iddia ettiği anda bir tahmine dönüşür.*

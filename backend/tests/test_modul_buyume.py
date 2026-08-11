@@ -89,6 +89,31 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("kn-kesitsel-neden", 7,
+     "🔴🔴 **`§KN` — KESİTSEL NEDEN: «akranlarına göre neden farklı».** Kullanıcının "
+     "şartı: *«neden sorusu geldiğinde adeta insan zihnini simüle etmeliyiz… formülde "
+     "paydaki değerler arttıkça değer büyür, payda arttıkça düşer… en dibe indim ve "
+     "gördüm ki vardiya 1'de…»*. "
+     "⊙ Gerçek katalogla ölçüldü: `ort_oee = kullanılabilirlik × performans × kalite` → "
+     "RAM-3 farkının **%84,1**'i performanstan, ve RAM-3 içinde performans en çok "
+     "**3. Vardiya**'da ayrışıyor (0,702 ↔ 0,76). "
+     "⊙ Δ = 6: **gövdenin tamamı modülde** (`app/kok_neden.py` — cebir, tam tur, "
+     "derinleşme, motor adaptörü); burada kalan altı satır bir **çağrı** ve bir "
+     "`AskResponse` kurulumu. "
+     "⚠ **TAŞINAMAZ:** `AskResponse` `ask()`in yerelleridir (`body`, `iz`, `prev_cq`) ve "
+     "onu modüle taşımak, sunum katmanını mutfağa sokmak olurdu — `§KN` 🍳 MUTFAK "
+     "sınıfındadır ve orada kalmalıdır. "
+     "⚠ Ve konum bilinçli: `contribution`dan **ÖNCE**. O *«geçen döneme göre neden "
+     "değişti»*i açıklar, `§KN` *«akranlarına göre neden farklı»*yı; ekranda bir kırılım "
+     "varken sorulan soru ikincisidir. `§KN` susarsa yol bayt bayt bugünkü (`KURAL B`). "
+     "*Sorulmayan soruyu cevaplamak, cevap vermemekten farklı bir kusurdur.* "
+     "⚠ **Δ 6 → 7'yi bir KAPI ekletti:** `oneri` bayrağını modülün kendi içinde "
+     "`followup.TUR_NE_YAPMALI`'dan okumak istemiştim; `test_MUTFAK_dil_ayristiramaz` "
+     "kırmızı verdi — `kok_neden` 🍳 mutfaktır, `followup` 🗣 garsondur ve bir dil "
+     "sınıfını mutfaktan okumak sınırı silmektir. Bayrak çağıranda hesaplanıyor "
+     "(`_oner`) ve **iki yerde** kullanılıyor (reçete dalı da ona bağlandı). "
+     "*Bir sınırı korumanın bedeli, sınırı kaldırmanın bedelinden her zaman küçüktür.* "
+     f"`sha=50b930e`"),
     ("kv-varlik-sorusu", 2,
      "🔴🔴 **`§KV` — BİR VARLIĞI SAYMAK, ONUN BİR ÖLÇÜSÜNÜ HESAPLAMAK DEĞİLDİR.** "
      "Canlı `V` turunda **dört** vaka ölçüldü: *«kaç makinemiz var»* → 11 satır "
