@@ -3045,3 +3045,27 @@ kolonunda zaten veriyor → `E5` bu adımın ön koşulu **değilmiş**.
 Kapı: `tests/test_e2_surpriz.py` (7) + katkı yüzeyi 87 yeşil.
 
 ⏭ Kalan: `kok_neden`'in kendi «en büyük segment» satırı hâlâ mutlak katkıya bakıyor.
+
+### ✅ Katkı kapısı FAIL-CLOSED oldu — ve kapatan şey bir ÖLÇÜMDÜ *(2026-08-11)*
+
+`ayristirilabilir_mi` `BILINMIYOR` sınıfında **fail-OPEN**ti; docstring «emin
+olunamayan durumda ayrıştırma yapılmaz» diyor, kod ayrıştırıyordu. Yorumun kendi şartı
+«davranış değişikliği kendi ölçümünü ister» idi — ölçüm yapıldı:
+
+    canlı katalog → TAM 74 · YOK 60 · YARI 2 · **BİLİNMİYOR 0**
+
+⊙ Fail-open dalı **pratikte hiç ulaşılmıyordu**: kapsam maliyeti sıfır. Kapatmamanın
+bedeli ise bir gün beyansız bir pack geldiğinde **sessizce yayımlanan** bir katkı yüzdesi.
+Red gerekçesi **eyleme çevrilebilir**: hangi metadata alanının yazılacağını söylüyor.
+**Canlı (3/3):** katkı yolu çalışıyor, kapsam kaybı yok.
+Kapı: `tests/test_katki_fail_closed.py` (5) + katkı/kök-neden yüzeyi 193 yeşil.
+
+⚠ **Ölçüm DOKUZUNCU kez yanılttı:** ilk probum `measure_expressions`'ı geçmedi ve 77 ölçü
+«BİLİNMİYOR» göründü. `toplanabilirlik` sınıfı oradan okur — küpün KENDİSİ meta olarak
+verilmeli. *Bir okuyucuya eksik sözlük vermek, onu uydurulmuş bir soruna götürür.*
+
+### ⊙ §12.7'nin yarısı bayat çıktı — `§KN-toplam`'a sürpriz UYGULANMADI
+
+O yol bir **değişim** analizi değil, tek dönemlik bir **pay** ifadesi (`*_gecen` yok).
+Adtributor `A ↔ F` ister; orada `F` yok → zorlamak **taban uydurmak** olurdu. Ve modülün
+kendi cümlesi sınırı zaten çiziyor: «bir pay bir açıklama değil bir KONUMDUR».

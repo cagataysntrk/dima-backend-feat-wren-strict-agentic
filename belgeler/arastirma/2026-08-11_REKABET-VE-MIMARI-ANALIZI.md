@@ -918,6 +918,23 @@ Bu oturumda ölçüldü: `contribution._b3` · `interpret` ×6 · `prescribe` ×
 aynı soru sonraki koşumda Discovery'ye düştü). *Ölçmeden eklenen bir koruma, bir koruma
 değil bir kör noktadır.*
 
+### ✅ 12.7 — **KAPANDI (2026-08-11)** · ve teşhisin yarısı DÜZELTİLDİ
+
+> ✅ **Değişim atfı tarafı kapandı** (`§E2`): `contribution` artık Jensen-Shannon
+> sürprizini hesaplıyor ve *«en büyük kalemin payı değişmedi»* durumunu **beyan ediyor**.
+> Kurucu örnek birebir sınandı; kapı `tests/test_e2_surpriz.py`.
+>
+> 🔴 **Ama `§KN-toplam` hakkındaki iddia YARI BAYAT — ölçüldü:** o yol bir **değişim**
+> analizi değil, **tek dönemlik bir pay** ifadesidir (`satirlar = kos({...})`, `*_gecen`
+> kolonu **yok**). Adtributor'ın eleştirisi `A ↔ F` gerektirir; orada `F` **yoktur**.
+> Sürprizi oraya zorlamak, `§E2`'de bilerek reddettiğim şeyi yapmak — **taban uydurmak**
+> — olurdu.
+> ⊙ Ve modülün kendi cümlesi zaten doğru sınırı çiziyor: *«bir pay bir açıklama değil bir
+> **konumdur**… "şu kadarını bu taşıyor" der, "bu yüzden" demez»*. Yani `§KN-toplam` en
+> büyüğü **seçiyor** ama **suçlamıyor**.
+>
+> *Bir eleştiriyi doğru yere uygulamak, onu uygulamak kadar önemlidir.*
+
 ### 12.7 🔴 Sürprizsiz katkı analizi
 `§KN-toplam` **en büyük segmenti** seçiyor, **Jensen-Shannon sürprizi hesaplamıyor**.
 Adtributor'ın kurucu örneği bunun **yanlış cevap** ürettiğini gösteriyor: en çok açıklayan

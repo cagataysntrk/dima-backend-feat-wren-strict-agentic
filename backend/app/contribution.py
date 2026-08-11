@@ -136,9 +136,24 @@ def ayristirilabilir_mi(measure: str, cube_meta: dict | None) -> tuple[bool, str
     katkı payı **yalnız `TAM`** sınıfında tanımlıdır. Yarı-toplanabilir bir stok ölçüsünün
     dönem-içi değişimini segmentlere dağıtmak anlamlı değildir.
 
-    ⚠ **Bilinen borç:** `BILINMIYOR` sınıfında bu fonksiyon **fail-OPEN**tir (ayrıştırır).
-    Denetimde işaretlendi; davranış değişikliği kendi ölçümünü ister ve açık borç olarak
-    kayıtlıdır. Trend tarafı (`interpret`) aynı sınıfta **fail-closed** davranır.
+    ✅ **BORÇ KAPANDI (2026-08-11) — ve kapatan şey bir ÖLÇÜMDÜ.** Bu fonksiyon
+    `BILINMIYOR` sınıfında **fail-OPEN**ti; docstring *«emin olunamayan durumda
+    ayrıştırma yapılmaz»* diyor, kod ayrıştırıyordu. Yorumun kendi şartı *«davranış
+    değişikliği kendi ölçümünü ister»*di — o ölçüm yapıldı:
+
+        canlı katalog (demo-boyahane) → TAM 74 · YOK 60 · YARI 2 · **BİLİNMİYOR 0**
+
+    ⊙ Yani fail-open dalı **pratikte hiç ulaşılmıyordu**: maruziyet **sıfır**. Kapatmanın
+    kapsam maliyeti de sıfırdır, ve kapatmamanın bedeli bir gün **beyansız bir pack**
+    geldiğinde sessizce yayımlanan bir katkı yüzdesidir.
+
+    ⚠ Ve ölçüm kolay yanıltıyordu: ilk probum `measure_expressions`'ı **geçmedi** ve
+    77 ölçü *«BİLİNMİYOR»* göründü. `toplanabilirlik` sınıfı oradan okur — küpün
+    **kendisi** meta olarak verilmelidir. *Bir okuyucuya eksik bir sözlük vermek, onu
+    yanlış bir cevaba değil, uydurulmuş bir soruna götürür.*
+
+    ⊙ Trend tarafı (`interpret`) aynı sınıfta **zaten** fail-closed'dı; artık iki taraf
+    da aynı şeyi söylüyor.
     """
     sinif, gerekce = toplanabilirlik(measure, cube_meta)
     if sinif == TAM:
@@ -148,12 +163,15 @@ def ayristirilabilir_mi(measure: str, cube_meta: dict | None) -> tuple[bool, str
                        "değişimi segmentlere dağıtmak anlamlı değil")
     if sinif == YOK:
         return False, (gerekce + " — katkı payı matematiksel olarak tanımsız olur")
-    # ⚠ `BILINMIYOR` → bugünkü davranış KORUNUYOR (ayrıştırılabilir sayılır).
-    # Denetim bunu bir RİSK olarak işaretledi: docstring "emin olunamayan durumda
-    # ayrıştırma YAPILMAZ" diyor ama kod **fail-OPEN**. Davranışı burada değiştirmek
-    # bu turun kapsamı dışıdır (katkı yolunun kendi ölçümü gerekir) → `OPERASYON-DURUM.md`
-    # açık borçlarına yazıldı. Trend tarafı ise `BILINMIYOR`'da **fail-closed**tir.
-    return True, None
+    # ✅ `BILINMIYOR` → **FAIL-CLOSED** (2026-08-11). Ölçüm: canlı katalogda bu sınıf
+    # **sıfır** ölçüde geçiyor (TAM 74 · YOK 60 · YARI 2), yani kapsam maliyeti yok.
+    # Beyansız bir ölçüde katkı yüzdesi yayımlamak, doğruluğu bilinmeyen bir sayıyı
+    # **doğrulanmış gibi** sunmaktır — ve bu deponun en pahalı hata sınıfıdır.
+    # Gerekçe ve ölçüm docstring'de.
+    return False, (f"`{measure}` için toplanabilirlik beyanı YOK — katkı payı ancak "
+                   "ölçünün segmentler arasında toplanabildiği **beyan edilmişse** "
+                   "hesaplanabilir (cube metadata'sına `measure_expressions` ya da "
+                   "`non_additive`/`semi_additive` yazılmalı)")
 
 
 def contributions(rows: list[dict], dim: str, measure: str) -> list[dict]:
