@@ -2488,6 +2488,14 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             _ham3 = (_contrib.yanindaki_rapor(service, prev_cq)
                      if not katki.raporlar else None)
             _sonuc = QueryResult(**_ham3) if _ham3 else None
+            # 🔴 `§E2` — SÜRPRİZ BEYANI **BURADA** iliştirilir, çünkü `not_metni` reçete
+            # dalında (`rec.gerekce`) **eziliyor**: daha yukarı koymak, beyanı sessizce
+            # kaybettirirdi. ⊙ Ham sözlükten okunur — `ContributionReport` şeması bu
+            # alanı taşımıyor ve şemayı sırf bir cümle için genişletmek, doğrulama
+            # sınırını bir anlatım tercihine bağlamak olurdu (`§B1`'in aynı dersi).
+            if (_surp := ((ham.get("raporlar") or [{}])[0] or {}).get("surpriz_notu")):
+                not_metni = " ".join(x for x in [not_metni, _surp] if x)
+                iz.append("§E2: sürpriz — en büyük kalemin payı değişmemiş")
             return AskResponse(question=body.question, source=None, note=not_metni,
                                cube_query=prev_cq, next_steps=adimlar[:8],
                                result=_sonuc,

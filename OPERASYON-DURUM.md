@@ -3026,3 +3026,22 @@ geçişi (LLM'siz)». ⊙ SParC'ın «Turn≥4 → %1,1» çöküşü bu zincird
 🔴 **Karar: kova adları `niyet.py`'ye EKLENMEDİ.** Davranış var; eklenecek olan yalnız bir
 AD ve bugün tüketicisi yok. Tüketicisiz bir sınıflandırma yazmak, bu oturumda dokuz kez
 ölçtüğüm «yazılmış ama bağlanmamış» desenini kendi elimle üretmek olurdu.
+
+### ✅ E2 · «En büyük müşteri hep suçlu çıkıyor» — sürpriz ölçüldü ve beyan edildi *(2026-08-11)*
+
+🔴 Adtributor'ın **kurucu örneği kendi kodumuzda üredi**: `100→50 · X:94→47 · Mobile:5→1
+· Tablet:1→2` → çıktımız «X — net değişimin %94,0'ı» dedi. Ama X'in payı **hiç
+değişmedi** (%94→%94): X bir sebep değil, **işin kendisi**.
+
+✅ `contribution._surprizi_isle` (Jensen-Shannon) + `surpriz_notu` + `ask.py` bağlantısı.
+Ölçülen: X sürpriz **%0,0** · Mobile %40,8 · **Tablet %59,2**.
+**Beyan:** «X en büyük hareketi taşıyor ama payı değişmedi (%94 → %94) — bu bir sebep
+değil, ölçeğin kendisi. 🔴 Dağılımı en çok değişen: Tablet (%1 → %4).»
+
+⚠ **Forecast gerekmedi:** `F` (beklenen) = önceki dönem, `yoy.compute` onu `*_gecen`
+kolonunda zaten veriyor → `E5` bu adımın ön koşulu **değilmiş**.
+🔴 **Sıralama değiştirilmedi** (kartın kendi risk satırı); eklenen bir ölçü ve beyanı.
+**Canlı:** not + iz `§E2: sürpriz — en büyük kalemin payı değişmemiş`.
+Kapı: `tests/test_e2_surpriz.py` (7) + katkı yüzeyi 87 yeşil.
+
+⏭ Kalan: `kok_neden`'in kendi «en büyük segment» satırı hâlâ mutlak katkıya bakıyor.

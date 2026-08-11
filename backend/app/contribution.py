@@ -176,7 +176,113 @@ def contributions(rows: list[dict], dim: str, measure: str) -> list[dict]:
         k["net_pay"] = (round(k["delta"] / net * 100, 1)
                         if net and abs(net) > brut * 0.01 else None)
         k["brut_pay"] = round(abs(k["delta"]) / brut * 100, 1) if brut else None
+    _surprizi_isle(kalemler)
     return sorted(kalemler, key=lambda k: abs(k["delta"]), reverse=True)
+
+
+def _surprizi_isle(kalemler: list[dict]) -> None:
+    """🔴🔴 `§E2` — **SÜRPRİZ: SEGMENTİN PAYI DEĞİŞTİ Mİ?** (Jensen-Shannon)
+
+    ## Ölçülen kusur — ve raporun kurucu örneği kendi kodumuzda üredi
+
+    Adtributor'ın (NSDI'14) kurucu örneği bu modüle verildi (2026-08-11):
+
+        toplam 100 → 50 ·  X: 94→47 · Mobile: 5→1 · Tablet: 1→2
+        bizim çıktımız →  **X — «net değişimin %94,0'ı»**  (1. sırada)
+
+    Ama **X'in payı hiç değişmedi**: `94/100 = %94` → `47/50 = %94`. X bir sebep değil,
+    **işin kendisidir**. Gerçek sinyal `Mobile` (%5→%2) ve `Tablet` (%1→%4) — yani
+    **dağılımı değişenler**.
+
+    > *«Yalnız explanatory power kullanan her katkı analizi, büyük segmentleri
+    > **sistematik olarak** suçlar.»* — `§10.2`
+
+    ⊙ Bu, kullanıcının *«en büyük müşteri hep suçlu çıkıyor»* şikâyetinin matematiksel
+    adıdır (`§12.7`).
+
+    ## Ne HESAPLANIR
+
+    Her segment için **pay** (share) iki dönemde: `p = önceki/Σönceki`,
+    `q = şimdi/Σşimdi`. Sürpriz, o segmentin **Jensen-Shannon diverjansına katkısıdır**:
+
+        js_i = ½·[ p·log₂(p/m) + q·log₂(q/m) ],   m = (p+q)/2
+
+    ⚠ **Forecast GEREKMİYOR.** Adtributor `F` (beklenen) ister; bizim `F`'imiz **önceki
+    dönemin kendisidir** ve `yoy.compute` onu `*_gecen` kolonunda **zaten** veriyor.
+    Bir tahmin motoru eklemek, elimizdeki ölçülmüş taban dururken **uydurulmuş** bir
+    taban kurmak olurdu.
+
+    ## 🔴 SIRALAMA DEĞİŞTİRİLMEZ — ve bu bilinçli
+
+    `E2`'nin kendi risk satırı: *«bugünkü cevapları değiştirir — ölçüm gerekir, tahmin
+    değil»*. Bu yüzden burada sıra **aynen** `|delta|`'da kalır; eklenen şey bir
+    **ölçü** ve onun **beyanıdır** (`surpriz_notu`). Sessizce yeniden sıralamak, her
+    mevcut cevabı ölçülmemiş biçimde oynatırdı.
+
+    ⚠ Negatif değerli segmentlerde pay tanımsızdır (`Σ<0` ya da karışık işaret) →
+    sürpriz **hesaplanmaz** (`None`). Susmak, anlamsız bir yüzdeden iyidir.
+    """
+    import math
+
+    t0 = sum(k["onceki"] for k in kalemler)
+    t1 = sum(k["simdi"] for k in kalemler)
+    # Paylar ancak aynı işaretli ve sıfırdan farklı toplamlarda anlamlıdır.
+    if t0 <= 0 or t1 <= 0 or any(k["onceki"] < 0 or k["simdi"] < 0 for k in kalemler):
+        for k in kalemler:
+            k["pay_onceki"] = k["pay_simdi"] = k["surpriz"] = None
+        return
+    for k in kalemler:
+        p, q = k["onceki"] / t0, k["simdi"] / t1
+        m = (p + q) / 2
+        js = 0.0
+        if p > 0 and m > 0:
+            js += 0.5 * p * math.log2(p / m)
+        if q > 0 and m > 0:
+            js += 0.5 * q * math.log2(q / m)
+        k["pay_onceki"] = round(p * 100, 1)
+        k["pay_simdi"] = round(q * 100, 1)
+        k["surpriz"] = round(js, 6)
+    toplam_js = sum(k["surpriz"] for k in kalemler) or 0.0
+    for k in kalemler:
+        # Sürpriz PAYI: bu segment, dağılım değişiminin yüzde kaçını taşıyor?
+        k["surpriz_pay"] = (round(k["surpriz"] / toplam_js * 100, 1)
+                            if toplam_js > 0 else None)
+
+
+#: Bir segmentin payı bu kadar oynamadıysa *«dağılımı değişmedi»* sayılır (yüzde puan).
+#: ⚠ Eşik bir **görünürlük** ölçütüdür, bir red değil: altında kalan bir segment yine
+#: raporlanır, yalnız *«payı değişmedi»* diye **beyan edilir**.
+SURPRIZ_ESIGI_PUAN = 1.0
+
+
+def surpriz_notu(bulgular: list[dict]) -> str:
+    """🔴 `§E2` — EN BÜYÜK KALEMİN PAYI DEĞİŞMEDİYSE **SÖYLENİR**.
+
+    Adtributor'ın kurucu örneğinde doğru cevap *«X'i suçlama»* değil, *«X en büyük
+    düşüşü taşıyor **ama payı değişmedi**; dağılımı değişen segment şu»*dur. Kullanıcı
+    ikisini birden görünce kendi kararını verebilir — bizim onun yerine karar vermemize
+    gerek kalmaz.
+
+    Döner: beyan cümlesi ya da `""`.
+    """
+    if not bulgular:
+        return ""
+    bas = bulgular[0]
+    if bas.get("pay_onceki") is None or bas.get("surpriz") is None:
+        return ""                                  # pay tanımsız → susulur
+    oynama = abs(bas["pay_simdi"] - bas["pay_onceki"])
+    if oynama >= SURPRIZ_ESIGI_PUAN:
+        return ""                                  # zaten dağılımı değişmiş → sürpriz yok
+    # Dağılımı EN ÇOK değişen aday (kendisi değilse)
+    aday = max((b for b in bulgular if b is not bas and b.get("surpriz") is not None),
+               key=lambda b: b["surpriz"], default=None)
+    _s = (f"«{bas['deger']}» en büyük hareketi taşıyor ama **payı değişmedi** "
+          f"(%{bas['pay_onceki']:g} → %{bas['pay_simdi']:g}) — yani bu bir **sebep "
+          f"değil, ölçeğin kendisi**.")
+    if aday is not None and abs(aday["pay_simdi"] - aday["pay_onceki"]) >= SURPRIZ_ESIGI_PUAN:
+        _s += (f" 🔴 Dağılımı en çok değişen: «{aday['deger']}» "
+               f"(%{aday['pay_onceki']:g} → %{aday['pay_simdi']:g}).")
+    return _s
 
 
 def decompose(rows: list[dict], dim: str, measure: str, cube_query: dict,
@@ -226,6 +332,9 @@ def decompose(rows: list[dict], dim: str, measure: str, cube_query: dict,
             "cube_query": select_cube_query(cube_query, dim, k["deger"]),
         })
     return {
+        # 🔴 `§E2` — sürpriz beyanı raporun **kendi alanında**: tüketici onu nota
+        # ekler ya da eklemez, ama artık **görebilir**. Sıralama değişmedi.
+        "surpriz_notu": surpriz_notu(bulgular),
         "dimension": dim, "dimension_label": etiket,
         "net_degisim": sum(k["delta"] for k in hepsi),
         "brut_hareket": brut,

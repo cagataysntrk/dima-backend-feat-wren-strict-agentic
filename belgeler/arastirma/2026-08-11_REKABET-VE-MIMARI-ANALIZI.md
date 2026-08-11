@@ -3385,6 +3385,41 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 | **curl (3)** | ① tek boyutlu kök → bugünküyle **aynı** ② bileşik kök → **yeni** cevap ③ kök **hiçbir boyutta değilse** → dürüst beyan (PSqueeze deseni) |
 | **risk** | ⚠ Ölçüm gürültüsü kök neden diye sunulabilir → **E3 ön koşul** |
 
+### ✅ E2 · Jensen-Shannon sürprizi — **TAMAMLANDI (2026-08-11)**
+
+> 🔴 **KURUCU ÖRNEK KENDİ KODUMUZDA ÜREDİ.** Adtributor'ın (NSDI'14) örneği
+> `contribution`'a verildi: `toplam 100→50 · X: 94→47 · Mobile: 5→1 · Tablet: 1→2` →
+> çıktımız **«X — net değişimin %94,0'ı»** dedi ve X'i 1. sıraya koydu. Ama **X'in payı
+> hiç değişmedi** (`94/100=%94` → `47/50=%94`): X bir sebep değil **işin kendisidir**.
+>
+> ✅ `contribution._surprizi_isle` (Jensen-Shannon) + `surpriz_notu` + `ask.py` bağlantısı.
+> Ölçülen çıktı:
+>
+> | segment | delta | pay | sürpriz | sürpriz payı |
+> |---|---|---|---|---|
+> | **X** | −47 *(en büyük)* | %94 → %94 | **0.0000** | **%0,0** |
+> | Mobile | −4 | %5 → %2 | 0.0048 | %40,8 |
+> | Tablet | +1 | %1 → %4 | 0.0070 | **%59,2** |
+>
+> **Beyan:** *«X» en büyük hareketi taşıyor ama **payı değişmedi** (%94 → %94) — yani bu
+> bir **sebep değil, ölçeğin kendisi**. 🔴 Dağılımı en çok değişen: «Tablet» (%1 → %4).*
+>
+> ⚠ **FORECAST GEREKMEDİ.** Adtributor `F` (beklenen) ister; bizim `F`'imiz **önceki
+> dönemin kendisidir** ve `yoy.compute` onu `*_gecen` kolonunda **zaten** veriyor. Bir
+> tahmin motoru eklemek (`E5`), elimizdeki **ölçülmüş** taban dururken **uydurulmuş** bir
+> taban kurmak olurdu. ⊙ Yani `E5` bu adımın ön koşulu **değilmiş**.
+>
+> 🔴 **SIRALAMA DEĞİŞTİRİLMEDİ** — bu kartın kendi risk satırı (*«bugünkü cevapları
+> değiştirir; ölçüm gerekir, tahmin değil»*). Eklenen bir **ölçü** ve onun **beyanıdır**;
+> sessiz yeniden sıralama her mevcut cevabı oynatırdı.
+>
+> **Canlı kanıt:** *«bu yıl müşteri bazında ciro»* → *«neden değişti»* → not: *«…payı
+> değişmedi (%100 → %100) — yani bu bir sebep değil, ölçeğin kendisi»*, iz: `§E2: sürpriz`.
+> Kapı: `tests/test_e2_surpriz.py` (7, kurucu örnek birebir) + katkı yüzeyi **87 yeşil**.
+>
+> ⏭ **KALAN:** `kok_neden`'in kendi *«en büyük segment»* satırı (iz: *«§KN: en büyük
+> segment EGE KNIT…»*) hâlâ mutlak katkıya bakıyor — aynı ölçü oraya da bağlanmalı.
+
 ### E2 · Jensen-Shannon sürprizi 🔴
 
 | | |

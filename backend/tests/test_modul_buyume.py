@@ -89,6 +89,23 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("e2-surpriz-beyani", 3,
+     "🔴🔴 **`§E2` — «EN BÜYÜK MÜŞTERİ HEP SUÇLU ÇIKIYOR» BEYAN EDİLİYOR.** "
+     "⊙ Adtributor'ın (NSDI'14) **kurucu örneği** kendi kodumuza verildi (2026-08-11) ve "
+     "kusur birebir üredi: `toplam 100→50 · X: 94→47 · Mobile: 5→1 · Tablet: 1→2` → "
+     "çıktımız **«X — net değişimin %94,0'ı»** dedi. Ama X'in **payı hiç değişmedi** "
+     "(`94/100=%94` → `47/50=%94`): X bir sebep değil **işin kendisidir**; gerçek sinyal "
+     "`Mobile` (%5→%2) ve `Tablet` (%1→%4). Raporun cümlesi: *«yalnız explanatory power "
+     "kullanan her katkı analizi büyük segmentleri SİSTEMATİK olarak suçlar»* (`§10.2`) — "
+     "kullanıcının *«en büyük müşteri hep suçlu çıkıyor»* şikâyetinin matematiksel adı. "
+     "⊙ Δ = 3: ham sözlükten okuma + not birleştirme + iz. Gövde (Jensen-Shannon) "
+     "`contribution._surprizi_isle` + `surpriz_notu`'nda. "
+     "⚠ **Yeri BİLİNÇLİ:** `not_metni` reçete dalında (`rec.gerekce`) **eziliyor** — daha "
+     "yukarı koymak beyanı sessizce kaybettirirdi. Ve ham sözlükten okunur: "
+     "`ContributionReport` şemasını sırf bir cümle için genişletmek, doğrulama sınırını "
+     "bir anlatım tercihine bağlamak olurdu (`§B1`'in aynı dersi). "
+     "🔴 **SIRALAMA DEĞİŞTİRİLMEDİ** — `E2`'nin kendi risk satırı (*«bugünkü cevapları "
+     "değiştirir, ölçüm gerekir»*); eklenen bir **ölçü** ve onun **beyanıdır**."),
     ("at-cozulmemis-atif-beyani", 5,
      "🔴🔴 **`§AT` — ÇÖZÜLEMEYEN «O <BOYUT>» REFERANSI SESSİZCE DÜŞMEZ.** "
      "⊙ Ölçülen sessiz yanlış (canlı thread, 2026-08-11): ① *«makine bazında ortalama "
