@@ -3100,6 +3100,12 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                           source="auto_cube")
             except Exception:
                 _log.warning("VQR otomatik kayıt başarısız (best-effort)", exc_info=True)
+        # 🔴 `§KN-taze` — taze bir *«neden»* sorusunun **ikinci yarısı**. Karar ve gövde
+        # `kok_neden.taze_ek`'te, dil yüklemi `followup.neden_sorusu`'nda (🗣 garson);
+        # buraya kalan iki satır bir **kapı** ve bir çağrı. `KURAL B`: *«neden»*
+        # taşımayan hiçbir soruda tek bir bayt değişmez.
+        if followup.neden_sorusu(body.question):
+            _kok_neden.taze_ek(resp, q_norm, cq, _cm_uyum, service=service, limit=limit)
         resp.contract_id = _record_contract(cq, sql, result, source)
         return _finish(_attach_viz(resp, result, cq))
 

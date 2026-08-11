@@ -3639,7 +3639,7 @@ _TYPO_MID_WIDE = _TYPO_HIGH
 _TYPO_LEN_RATIO = 0.65
 
 
-def _catalog_vocabulary(schema: dict, only_cube: dict | None = None) -> set[str]:
+def _catalog_vocabulary(schema: dict, only_cube: dict | None = None, *, deger=True) -> set[str]:
     """Katalogdaki tanınan tek-kelimelik terimler (değer + sinonim) — typo-düzeltme
     adaylarının havuzu. `partial_unknowns`'ın kapsam evreniyle AYNI kaynaklardan
     beslenir (cube/ölçü/boyut sinonimleri + kategorik değerler). `only_cube` verilirse
@@ -3655,7 +3655,16 @@ def _catalog_vocabulary(schema: dict, only_cube: dict | None = None) -> set[str]
             terms.update(s.removesuffix("!") for s in syns)
         for syns in (c.get("dimension_synonyms") or {}).values():
             terms.update(s.removesuffix("!") for s in syns)
-        for vals in (c.get("dimension_values") or {}).values():
+        # ⚠ `deger=False` — **SÖZLÜK ile DEĞER LİSTESİ AYNI ŞEY DEĞİLDİR.**
+        # `varlik.perdele`nin çakışma kuralı (*«hem sözlükte hem değer listesinde geçen
+        # kelime belirsizdir»*) ancak bu ikisi ayrılabilirse ifade edilebilir: değerler
+        # de sözlüğe sayılırsa **her** değer kendisiyle çakışır ve kural her şeyi muaf
+        # tutardı. *Bir kümeyi kendisiyle kesiştirmek, bir ayrım üretmez.*
+        # ⚠ Tek satırda (ve kısa adla): tavan bir **bütçedir**, bir öneri değil — ve bu
+        # değişiklik yeni bir eşleştirme kuralı değil, var olan bir erişimcinin iki
+        # farklı soruyu sorabilmesidir. *Bütçeyi aşmayan bir çözüm varken muafiyet
+        # yazmak, bütçeyi bir forma dönüştürür.*
+        for vals in ((c.get("dimension_values") or {}) if deger else {}).values():
             terms.update(str(v) for v in vals or [])
     words: set[str] = set()
     for term in terms:

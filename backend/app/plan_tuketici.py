@@ -786,7 +786,9 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     #
     # *Bir cevabın neyi içerdiğini, cevabın bir parçasına sorarsanız, öbür parçadakini
     # eksik ilan edersiniz.*
-    _BIRLESIM = {"olcu_ikamesi", "olcu_ozgullugu"}
+    # ⟳ `§Cİ-küp` (curl `DD` turu) — küp ikamesi de bir **çapraz-küp** işaretidir:
+    # belge başka bir bloğunda o konuyu karşılamış olabilir.
+    _BIRLESIM = {"olcu_ikamesi", "olcu_ozgullugu", "kup_ikamesi"}
     try:
         from app import uyum as _uyum
         _blok_sayisi = sum(1 for _b in _bolumler if isinstance(_b.get("cube_query"), dict))

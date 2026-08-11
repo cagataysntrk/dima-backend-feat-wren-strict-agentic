@@ -254,6 +254,11 @@ def test_SINIFSIZ_MODUL_BIRAKILAMAZ():
         "viz.py": "🎨", "report.py": "🎨", "prescribe.py": "🎨", "fmt.py": "🎨",
         "viz_email.py": "🎨", "email_render.py": "🎨", "gorsel_ekleme.py": "🎨",
         "result_shape.py": "🎨",
+        # 🎨 `§SB-metin` — bir sayının **Türkçesi**. Dil OKUMAZ (garson değil), sorgu
+        # KOŞMAZ (mutfak değil): sayıyı okunabilir hâle getirir. `fmt.py`'nin kardeşi.
+        # ⊙ Ayrı bir dosya çünkü `§KN` ile `contribution` **kendi kopyalarını** yazmıştı
+        # ve ayrıştılar (ölçüldü, `DD` turu: *«47,836 dk … %83.4'i»* — üç ayrı hata).
+        "sayi_bicimi.py": "🎨",
     }
     hepsi = {p.name for p in APP.glob("*.py")} - {"__init__.py"}
     sinifli = GARSON | MUTFAK | set(MUAF)

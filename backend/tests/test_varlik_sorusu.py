@@ -134,3 +134,40 @@ def test_OLCUSUZ_FISTE_DONEM_SORULMAZ():
 
     assert cube_router.is_period_optional(None, {"semi_additive": []}) is True
     assert cube_router.is_period_optional("ort_oee", {"semi_additive": []}) is False
+
+
+def test_PERDE_KATALOG_TERIMINI_ORTMEZ_TURKCE_KARAKTERLE_DE():
+    """🔴🔴 **İKİ KUSUR BİRBİRİNİ GİZLİYORDU** (curl `DD` turu, DD-5).
+
+    ⊙ *«bu yıl **bakım** raporu hazırla»* → perde «bakım»ı `{{ENT_1}}` yaptı ve modele
+    *«bu bir `departman` değeri»* dedi. Sonuç **«Bakım Departmanı Yıllık Raporu»**:
+    üç bölüm `ik`/`egitim`/`isg`, bakım verisi **yok**. Oysa «bakım» katalogda
+    `bakim_is_emri` küpünün **cube-düzeyi sinonimidir**.
+
+    ⊙ **Kusur 1:** koruma ham `s.lower()` (*«bakım»*, ı ile) ile **normalize** sözlüğü
+    (*«bakim»*) karşılaştırıyordu — Türkçe karakterli **hiçbir** terim korumaya hiç
+    girmiyordu. Kural ASCII bir örnekle (*«ciro»*) yazılmış ve yalnız onunla
+    doğrulanmıştı.
+
+    ⊙ **Kusur 2:** sözlük `dimension_values`'ı da içeriyordu; birincisi düzeltilince
+    **her** değer kendisiyle çakışacak ve perde hiç çalışmayacaktı.
+
+    *İki kusur birbirini gizlediğinde sistem çalışıyor görünür.*"""
+    from app import varlik
+
+    sema = {
+        "models": [{"columns": [
+            {"name": "departman", "values": ["Bakım", "Üretim", "Kalite"]},
+            {"name": "makine", "values": ["RAM-3", "SANTEX"]}]}],
+        "cubes": [
+            {"name": "bakim_is_emri", "synonyms": ["bakim", "bakim is emri"],
+             "dimensions": [], "measure_synonyms": {}, "dimension_synonyms": {}},
+            {"name": "ik", "synonyms": ["personel"],
+             "dimensions": ["departman", "makine"],
+             "measure_synonyms": {}, "dimension_synonyms": {"departman": ["departman"]}},
+        ]}
+    q, ent, _ = varlik.perdele("bu yıl bakım raporu hazırla", sema)
+    assert "bakım" in q and not ent, f"🔴 katalog terimi perdelendi: {q} · {ent}"
+    # Katalog terimi OLMAYAN bir değer aynen perdelenmeye devam eder (`G0b.6` korunur)
+    q2, ent2, _ = varlik.perdele("RAM-3 makinesinin durumu", sema)
+    assert "RAM-3" not in q2 and "RAM-3" in ent2.values(), f"🔴 perde çalışmadı: {q2}"

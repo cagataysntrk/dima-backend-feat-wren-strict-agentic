@@ -189,13 +189,27 @@ def decompose(rows: list[dict], dim: str, measure: str, cube_query: dict,
     etiket = dim_label or dim
     bulgular = []
     for k in tutulan:
+        # 🔴🔴 `§SB-metin` — **SAYININ TÜRKÇESİ TEK SAHİPTEN.**
+        #
+        # ⊙ Ölçüldü (curl `DD` turu, DD-13): burası *«47,836 dk azaldı (net değişimin
+        # %83.4'i)»* yazıyordu — **üç** hata: binlik ayırıcı İngilizce (`{:,.0f}`),
+        # ondalık ayırıcı İngilizce, ek sabit (`'i`; doğrusu `'ü`). Aynı üründe `§KN`
+        # *«farkın %56,1'ini»* diye **doğru** yazıyordu.
+        #
+        # ⚠ Ve niyet zaten doğruydu: `context.py:362` beklenen çıktıyı *«46.524 dk
+        # AZALDI (net değişimin %83,6'sı)»* diye yazmış. Yani kusur bir karar eksikliği
+        # değil, kararın **ikinci bir yerde yeniden uygulanmasıydı** (`KAT-1`).
+        #
+        # *İki yerde biçimlendirilen bir sayı, er ya da geç iki farklı sayı gibi okunur.*
+        from app.sayi_bicimi import ek as _ek, sayi as _sayi, yuzde as _yuzde
+
         yon = "arttı" if k["delta"] > 0 else "azaldı"
-        pay = (f" (net değişimin %{k['net_pay']}'i)" if k["net_pay"] is not None
-               else f" (hareketin %{k['brut_pay']}'i)")
+        pay = (f" (net değişimin {_ek(_yuzde(k['net_pay']))})" if k["net_pay"] is not None
+               else f" (hareketin {_ek(_yuzde(k['brut_pay']))})")
         bulgular.append({
             **k,
-            "label": f"{etiket}: {k['deger']} — {abs(k['delta']):,.0f}{' ' + unit if unit else ''} "
-                     f"{yon}{pay}",
+            "label": f"{etiket}: {k['deger']} — {_sayi(abs(k['delta']))}"
+                     f"{' ' + unit if unit else ''} {yon}{pay}",
             "kind": "dimension",
             "cube_query": select_cube_query(cube_query, dim, k["deger"]),
         })

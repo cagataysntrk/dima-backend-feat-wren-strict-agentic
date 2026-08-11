@@ -89,6 +89,21 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("kn-taze-neden", 2,
+     "🔴🔴 **`§KN-taze` — TAZE BİR «NEDEN» SORUSUNUN İKİNCİ YARISI DA CEVAPLANIR.** "
+     "⊙ Ölçüldü (curl `DD` turu, DD-20): *«bu yıl enerji tüketimi **neden yüksek**»* → "
+     "`elektrik_tuketimi_kwh` + `tep_toplam` döndü ve kök-neden **hiç** çalışmadı. "
+     "`§KN` yalnız **takip** dalında yaşıyordu; oysa kullanıcının şartında bir takip "
+     "koşulu yok: *«neden sorusu geldiğinde adeta insan zihnini simüle etmeliyiz»*. "
+     "⊙ Δ = 2: **gövde `kok_neden.taze_ek`'te**, dil yüklemi "
+     "`followup.neden_sorusu`'nda (🗣 garson, `_NEDEN` sözlüğü **yeniden yazılmadı**); "
+     "burada kalan iki satır bir **kapı** ve bir çağrı. "
+     "⚠ **TAŞINAMAZ:** kapı `body.question` ve `service`/`cq`/`cube_meta` yerellerini "
+     "birlikte okur ve yalnız cevap **hesaplandıktan sonra** anlamlıdır — yani "
+     "merdivenin bu noktasına aittir. `KURAL B`: *«neden»* taşımayan hiçbir soruda tek "
+     "bir bayt değişmez. "
+     "*Bir soruyu iki parçaya bölüp yalnız birini cevaplamak, cevaplamamanın kibar "
+     "hâlidir.* `sha=304a074`"),
     ("rd-takip-belge-once", 11,
      "🔴🔴 **`§RD-takip` — BELGE DÜZENLEME, FİŞ DÜZENLEMEDEN ÖNCE GELİR.** "
      "⊙ Ölçüldü (curl `CC` turu, CC-21/CC-22): ekranda **4 bölümlü** bir belge varken "

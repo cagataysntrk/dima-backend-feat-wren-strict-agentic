@@ -12038,3 +12038,152 @@ ve tam da o yüzden gerileme **canlıya gitmedi**.
 
 *Bir belirlenimsizliği düzeltmek için doğru katmanı seçmek, düzeltmenin kendisinden
 önemlidir: yanlış katman, çözdüğünden pahalı bir şey bozar.*
+
+---
+
+# `DD` TURU — kök-neden derinliği · CC'nin adım adım doğrulaması
+
+*(2026-08-11 · 22 senaryo, curl ile tek tek, en basitten en zora)*
+
+## Grup A — `CC` turunun yedi düzeltmesi, adım adım
+
+| # | senaryo | sonuç |
+|---|---|---|
+| 1 | «hat bazında bu yıl ortalama oee» ×2 | ✅ `§SB` — iki koşum **aynı** ilk satır |
+| 2 | «zxcvbn plok» | ✅ `§KA` — *«hiçbir eksene bağlayamadım… varsayımdır»* |
+| 3 | «geçen ay kaç parti işledik acaba» | ✅ `§KA` **susuyor** (ölçü+dönem var) |
+| 4 | «geçen aya göre üretim **ve** duruş değişimi» | ✅ `§UY-yoy` — *«`toplam_durus_dakika` rapora girmedi»* |
+| 5 | «bu yıl **bakım** raporu hazırla» | 🔴 **İK raporu geldi** → `DD-a` |
+| 6 | «bu yıl fire oranı» → «bu nasıl hesaplandı» | ✅ `§MK-formül` — `↳ fire oranı = fire ÷ ağırlık` |
+| 7 | «makine bazında fire oranı» → «neden böyle» | ✅ pay %56,1 yükseltiyor · payda %43,9 düşürüyor · en dip SELÇUK TEKSTİL |
+| 8 | «bu yıl ortalama oee» → «neden böyle» | 🔴 **teknik red** → `DD-b` |
+
+## Grup B — kök-neden derinliği *(kullanıcının 1. önceliği)*
+
+| # | senaryo | sonuç |
+|---|---|---|
+| 9 | «bu yıl toplam duruş dakika» → «neden böyle» | ✅ toplanabilir ölçüde çalışıyor |
+| 10 | «bu yıl kâr marjı» → «neden bu kadar düşük» | 🔴 aynı teknik red (`DD-b` sistematik) |
+| 11 | «tedarikçi bazında fire oranı» → «neden» | ✅ |
+| 12 | ↑ derinleşme yönü | 🔴 **en masumu gösterdi** → `DD-c` |
+| 13 | «makine bazında duruş» → «neden böyle» | ⚠ *«47,836 dk … %83.4'i»* → `DD-d` |
+| 20 | «bu yıl enerji tüketimi **neden yüksek**» *(taze)* | 🔴 düz metrik, kök-neden **hiç** çalışmadı → `DD-h` |
+
+## Grup C/D — borçlar, belge, uzun zincir
+
+`§KV` varlık listesi ✅ · `§RÇ` kalite raporu 2 bölüm ✅ · `§RD-takip` *«kalite bölümünü
+çıkar»* ✅ · konu değişimi + geri dönüş ✅ · «en düşük oee hangi makinede» → `limit=1` ✅
+
+---
+
+## 🔴 KÖK 1 · `DD-b` — **TEK BİR SAYIYA «NEDEN» SORULAMIYORDU**
+
+```
+«bu yıl ortalama oee»  → «neden böyle»
+  → «ort_oee toplanabilir değil (cube metadata'sında non_additive) —
+     katkı payı matematiksel olarak tanımsız olur»
+```
+
+İki kusur birden: (a) **teknik bir red** kullanıcı cevabına sızıyor; (b) formülünü
+**bildiğimiz** ölçüler tam da formülleri yüzünden cevapsız kalıyor. `§KN` bir **akran
+kıyasıyla** başlıyordu ve akran bir kırılım ister; ekranda kırılım yoksa tur hiç
+başlamıyordu.
+
+**`§KN-tek`:** kırılım yoksa **seçilir** — ve bir varsayılanla değil **ölçülerek**:
+adaylar koşulur, ölçüyü **en çok ayrıştıran** kırılım kazanır. Süpürücü `derinles` ile
+**aynı gövdedir** (`_en_ayristiran`); ikinci bir *«açıklayıcılık»* tanımı yazmak `KAT-1`
+olurdu.
+
+```
+«bu yıl ortalama oee» → «neden böyle»
+  1️⃣ ort_oee = kullanılabilirlik × performans × kalite
+  2️⃣ ekranda kırılım yoktu → en çok ayrıştıran kırılım **makine** seçildi
+  3️⃣ RAM-3 akranla kıyaslandı → farkın kaynağı **performans**
+  4️⃣ RAM-3 içinde **3. Vardiya (00-08)**
+```
+
+*Bir sayının nedenini sormak için önce onu bölmek gerekir; hangi bıçakla böleceğini
+bilmiyorsan, bıçakları dene.*
+
+## 🔴 KÖK 2 · `DD-c` — **İNİŞ YÖNÜ PAYDA BİLEŞENİNDE TERSTİ**
+
+`kar_marji_yuzde = kar ÷ ciro`, RAM-3 marjı düşük, suçlu **ciro** — çünkü cirosu
+akranlardan **YÜKSEK** (9,88M ↔ 6,41M) ve o **paydada**. İniş ise en **DÜŞÜK** cirolu
+tedarikçiyi gösterdi (1,33M ↔ 2,14M): sorunun kaynağını sorarken **en masumu**.
+
+Kök tek satırda: `katki` **zaten** `yon × Δln`'dir, yani `sign(katki)` bileşenin **ölçü
+üzerindeki etkisini** söyler, kendi değerinin yönünü değil. İkisi paydada terstir.
+Doğru işaret `sign(katki) × yon`. Düzeltmeden sonra: **KUZEY İPLİK, 2,83M ↔ 1,76M** ✅
+
+*Bir sorumluyu ararken rolü unutmak, aynı veriyle en masumu suçlamaktır.*
+
+## 🔴 KÖK 3 · `DD-h` — **TAZE BİR «NEDEN» SORUSUNUN YARISI CEVAPSIZDI**
+
+`§KN` yalnız **takip** dalında yaşıyordu. *«bu yıl enerji tüketimi neden yüksek»* düz bir
+metrik döndürüyordu. Kullanıcının şartında takip koşulu yok. **`§KN-taze`:** cevap
+bugünkü gibi hesaplanır, `§KN` onun **üstüne** yazar; *«neden»* taşımayan soruda tek bir
+bayt değişmez. Dil yüklemi `followup.neden_sorusu` (🗣 garson, `_NEDEN` **yeniden
+yazılmadı**), gövde `kok_neden.taze_ek` (🍳 mutfak).
+
+*Bir soruyu iki parçaya bölüp yalnız birini cevaplamak, cevaplamamanın kibar hâlidir.*
+
+## 🔴 KÖK 4 · `DD-a` — **VARLIK PERDESİ KATALOĞUN KENDİ TERİMİNİ ÖRTÜYORDU**
+
+```
+«bu yıl bakım raporu hazırla»
+  → «Bakım Departmanı Yıllık Raporu» · ik(maaş) + egitim + isg
+  → bakım verisi YOK, hatta `departman = Bakım` süzgeci bile YOK
+```
+
+Kütük tek satırda söyledi: `varlık perdesi: 1 yuva`. `G0b.6` perdesi «bakım»ı
+`{{ENT_1}}` yapıp modele *«bu bir `departman` değeri»* dedi — planlayıcı sözcüğü **hiç
+görmedi**. Oysa «bakım» katalogda `bakim_is_emri` küpünün **cube-düzeyi sinonimidir**.
+
+### Ve iki kusur birbirini gizliyordu
+
+Perdenin *«sözlükle çakışan değer perdelenmez»* kuralı **zaten yazılıydı**:
+
+1. **Kusur 1** — koruma ham `s.lower()` (*«bakım»*, ı ile) ile **normalize** sözlüğü
+   (*«bakim»*) karşılaştırıyordu. Türkçe karakter taşıyan **hiçbir** terim korumaya hiç
+   girmiyordu. Kural ASCII bir örnekle (*«ciro»*) yazılmış ve **yalnız onunla**
+   doğrulanmıştı. `§M7`'nin birebir aynı dersi, başka bir dosyada.
+2. **Kusur 2** — sözlük `dimension_values`'ı da içeriyordu; birincisi düzeltilince
+   **her** değer kendisiyle çakışacak ve perde hiç çalışmayacaktı. Docstring'in kendi
+   cümlesi (*«hem sözlükte hem değer listesinde»*) iki ayrı küme varsayıyor, kod tek
+   küme veriyordu → `_catalog_vocabulary(degerler=False)`.
+
+**Düzeltmeden sonra:** *«Bu Yıl Bakım Raporu»* — `bakim` (arıza sayısı/duruşu) +
+`bakim_is_emri` (iş emri, bakım maliyeti). Sızıntı sınırı korundu: `RAM-3` **hâlâ**
+perdeleniyor; muaf kalanlar yalnız kataloğun **kendi ilan ettiği** sinonimler (`kadin`
+→ `ik.cinsiyet`) ve onlar zaten modele giden katalog metninde var (ölçüldü).
+
+*İki kusur birbirini gizlediğinde, sistem çalışıyor görünür; ilkini düzelten kişi
+ikincisini de bulmak zorundadır, yoksa çalışmayı bozar.*
+
+## ⚠ KÖK 5 · `DD-d` — **BİR SAYININ TÜRKÇESİ İKİ YERDE YAZILIYORDU**
+
+```
+§KN          → «farkın %56,1'ini yükseltiyor»                       ✅
+contribution → «47,836 dk azaldı (net değişimin %83.4'i)»            🔴
+```
+
+Üç hata, tek kök: binlik ayırıcı İngilizce, ondalık ayırıcı İngilizce, ek sabit.
+Ve niyet **zaten doğruydu** — `context.py:362` beklenen çıktıyı *«46.524 dk AZALDI (net
+değişimin %83,6'sı)»* diye yazmış. Yeni tek sahip: `app/sayi_bicimi.py` (🎨 sunum).
+
+*İki yerde biçimlendirilen bir sayı, er ya da geç iki farklı sayı gibi okunur.*
+
+## ⚠ `§Cİ-küp` — küp adı ikamesi *(yazıldı, plan yolunda ÖLÇÜLECEK)*
+
+Soru bir küpü **adıyla** çağırdıysa ve cevap başka küptense beyan edilir; üçüncü koşul
+`§101.1`'in kendisi: terim bir **süzgeç değeri** olarak taşınıyorsa karşılanmış sayılır.
+`denetle` düzeyinde doğrulandı; belge yolunda beyan **görünmedi** ve sebebi
+**ölçülmedi** — bir sonraki turun işi. *Perde düzeltilince asıl kusur zaten kapandı;
+bu bir emniyet ağıdır ve emniyet ağı tahminle gerilmez.*
+
+## 🔍 Çürütülen bir teşhis daha
+
+`DD-f`: *«belge bölümü 9 boyutlu kartezyene açılıyor, 1000 satır»* diye yazmıştım —
+ölçünce blokların `ozet_degil` **ve çalıştırılabilir bir daraltma fişi** taşıdığı
+görüldü (`§RK-2`). Kusur değil, **ilan edilmiş ve tıklanabilir** bir sınır. Bu turda
+**dördüncü** kez: prob'um bir alanı basmıyordu.

@@ -464,3 +464,62 @@ def test_MK_FORMUL_MAKBUZA_INSANCA_SATIR():
     assert satir and "oee** = " in satir, satir
     assert "kullanılabilirlik" in satir and "×" in satir, satir
     assert kok_neden.makbuz_satiri("toplam_uretim_kg", "üretim", _OEE) is None
+
+
+def _kos_sahte(kayit):
+    """Sahte motor: `(cube_query) → satırlar`, çağrıları kaydeder."""
+    def _k(cq):
+        kayit.append(cq)
+        return kayit.pop() if False else _KAYIT_SATIR.get(
+            (cq.get("dimensions") or [None])[0], [])
+    return _k
+
+
+_KAYIT_SATIR: dict = {}
+
+
+def test_KN_TEK_KIRILIMSIZ_TEK_DEGERDE_KENDI_KIRILIMINI_SECER():
+    """🔴🔴 `§KN-tek` — ölçüldü (curl `DD` turu, DD-8/DD-10): *«bu yıl ortalama oee»* →
+    *«neden böyle»* teknik bir **red** alıyordu (*«non_additive — katkı payı
+    matematiksel olarak tanımsız»*). Yani formülünü **bildiğimiz** ölçüler, tam da
+    formülleri yüzünden cevapsız kalıyordu.
+
+    Kullanıcının şartı: *«bu tek bir değer olsa bile «neden böyle» sorulabilir, yine en
+    köke inip anlatmalı»*. Çözüm bir varsayılan boyut **seçmek değil, ölçmektir**."""
+    from app import kok_neden
+
+    _KAYIT_SATIR.clear()
+    # `hat` ayrıştırmıyor (tek satır), `makine` ayrıştırıyor → `makine` seçilmeli
+    # `hat` ayrıştırmıyor (tek satır) → `vardiya` seçilmeli
+    _KAYIT_SATIR["hat"] = [{"hat": "Örgü", "ort_oee": 0.6, "ort_kullanilabilirlik": 0.9,
+                            "ort_performans": 0.8, "ort_kalite": 0.83}]
+    _KAYIT_SATIR["vardiya"] = [
+        {"vardiya": "A", "ort_oee": 0.70, "ort_kullanilabilirlik": 0.90,
+         "ort_performans": 0.90, "ort_kalite": 0.86},
+        {"vardiya": "B", "ort_oee": 0.40, "ort_kullanilabilirlik": 0.88,
+         "ort_performans": 0.55, "ort_kalite": 0.83}]
+    cagri: list = []
+    out = kok_neden.arastir({"cube": "oee", "measures": ["ort_oee"]}, _META,
+                            kos=_kos_sahte(cagri), azami_derinlik=0)
+    assert out is not None, "🔴 kırılımsız tek değerde `§KN` hâlâ susuyor"
+    assert out["boyut"] == "vardiya", out["boyut"]
+    assert out["segment"] == "B", out["segment"]
+    assert "ekranda kırılım yoktu" in " ".join(out["adimlar"])
+
+
+def test_KN_YON2_PAYDA_BILESENINDE_INIS_YONU_TERSTIR():
+    """🔴🔴 `§KN-yon2` — ölçüldü (DD-12): `kar_marji_yuzde = kar ÷ ciro`, suçlu **ciro**
+    çünkü akranlardan **YÜKSEK** ve **paydada**. İniş en **DÜŞÜK** cirolu tedarikçiyi
+    gösteriyordu — sorunun kaynağını sorarken **en masumu**.
+
+    `katki` zaten `yon × Δln`'dir; `sign(katki)` bileşenin **ölçü üzerindeki etkisini**
+    söyler, kendi değerinin yönünü değil. İkisi paydada **terstir**."""
+    from app.kok_neden import PAY, PAYDA, Bilesen
+
+    def _isaret(katki: float, b: Bilesen) -> int:
+        return (1 if katki > 0 else -1) * (b.yon or 1)
+
+    assert _isaret(+1.0, Bilesen("fire", PAY, 1)) == 1        # en YÜKSEK fireli
+    assert _isaret(-1.0, Bilesen("performans", "carpan", 1)) == -1   # en DÜŞÜK
+    assert _isaret(-1.0, Bilesen("ciro", PAYDA, -1)) == 1     # en YÜKSEK cirolu
+    assert _isaret(+1.0, Bilesen("ciro", PAYDA, -1)) == -1

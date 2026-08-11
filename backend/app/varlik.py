@@ -84,9 +84,33 @@ def perdele(q: str, schema: dict) -> tuple[str, dict[str, str], str]:
     # **belirsizdir**, ve belirsizliği maskeyle çözmek onu yanlış yöne çözmektir.
     #
     # *Bir maske, maskelediğinden fazlasını örtüyorsa maske değil sansürdür.*
-    from app.cube_router import _catalog_vocabulary
+    from app.cube_router import _catalog_vocabulary, _norm
 
-    sozluk = {s.lower() for s in _catalog_vocabulary(schema)}
+    # 🔴🔴 **İKİ KUSUR BİRBİRİNİ GİZLİYORDU — ve ikisini de canlı bir ölçüm açtı.**
+    #
+    # ⊙ Ölçüldü (curl `DD` turu, DD-5): *«bu yıl **bakım** raporu hazırla»* → kütükte
+    # *«varlık perdesi: 1 yuva»*, plana giden metin *«bu yıl {{ENT_1}} raporu»* ve
+    # modele söylenen tek şey *«bu bir `departman` değeri»*. Sonuç: **«Bakım
+    # Departmanı Yıllık Raporu»** — üç bölüm `ik`/`egitim`/`isg`, hiçbirinde bakım
+    # verisi ve hatta `departman = Bakım` süzgeci bile yok. Oysa «bakım» katalogda
+    # `bakim_is_emri` küpünün **cube-düzeyi sinonimidir**.
+    #
+    # ⊙ **Kusur 1 — ham metin, normalize sözlükle karşılaştırılıyordu.** `s.lower()`
+    # *«bakım»* (ı ile) üretir; `_catalog_vocabulary` ise `_norm`'lu *«bakim»* tutar.
+    # Yani Türkçe karakter taşıyan **hiçbir** terim bu korumaya hiç girmiyordu. Kural
+    # ASCII bir örnekle (*«ciro»*) yazılmış ve **yalnız onunla** doğrulanmıştı.
+    # `§M7`'nin birebir aynı dersi, başka bir dosyada: *bir ön koşulu ortadan
+    # kaldırmak, onu doğrulamaktan ucuzdur.*
+    #
+    # ⊙ **Kusur 2 — sözlük, değerleri de içeriyordu.** Kusur 1 düzeltilince ortaya
+    # çıktı: `_catalog_vocabulary` `dimension_values`'ı da sayıyor, yani **her** değer
+    # kendisiyle çakışır ve perde **hiç** çalışmazdı. Docstring'in kendi cümlesi
+    # (*«hem sözlükte hem değer listesinde»*) iki ayrı küme varsayıyor; kod tek küme
+    # veriyordu. `degerler=False` o ayrımı geri koyar.
+    #
+    # *İki kusur birbirini gizlediğinde, sistem çalışıyor görünür; ilkini düzelten
+    # kişi ikincisini de bulmak zorundadır, yoksa çalışmayı bozar.*
+    sozluk = _catalog_vocabulary(schema, deger=False)
 
     adaylar: dict[str, str] = {}
     for c in schema.get("cubes") or []:
@@ -96,7 +120,7 @@ def perdele(q: str, schema: dict) -> tuple[str, dict[str, str], str]:
                 continue
             for v in prompt_safe_values(col) or []:
                 s = str(v).strip()
-                if len(s) >= _MIN_UZUNLUK and s.lower() not in sozluk:
+                if len(s) >= _MIN_UZUNLUK and _norm(s) not in sozluk:
                     adaylar.setdefault(s, dim)
 
     harita: dict[str, str] = {}

@@ -352,56 +352,12 @@ def ayristir(olcu: str, hedef: dict, akran: dict, cube_meta: dict | None,
                       katkilar=katkilar, sucllu=_suclu)
 
 
-#: 🔴 `§KN-ek` — **SAYIYA EK GETİRMEK BİR KELİME LİSTESİ DEĞİL, KAPALI BİR SINIFTIR.**
-#:
-#: ⊙ Ölçüldü (curl `CC` turu, CC-11): *«farkın **%2,2'ini** düşürüyor»* — doğrusu
-#: *«%2,2'**sini**»*. Ek, sayının **okunuşundaki son sözcüğe** göre çekimlenir ve o
-#: sözcük yalnız **son rakamdan** belirlenir: on olasılık, hepsi bu.
-#:
-#: Tablo tek bir olgudan türer — son rakamın sözcüğü (`sıfır bir iki üç dört beş altı
-#: yedi sekiz dokuz`): (a) ünlüyle bitiyor mu (kaynaştırma `s` gerekir mi), (b) son
-#: ünlüsünün dört-yönlü uyumdaki karşılığı. `dört`→`ö`⇒`ü`, `beş`→`e`⇒`i`.
-#: İyelik = `[s]` + ünlü · belirtme = iyelik + `n` + ünlü.
-#:
-#: ⚠ `ADR-0008` ile uyumlu: bu bir **alan sözlüğü** değil, on elemanlı bir sayı
-#: sınıfıdır ve **büyüyemez** — Türkçede on bir rakam yoktur.
-#:
-#: *Bir sayıyı yanlış çekimlemek, cevabın doğruluğunu değiştirmez; ama onu yazanın
-#: dikkatini gösterir.*
-_RAKAM_EKI = {"0": (False, "ı"), "1": (False, "i"), "2": (True, "i"),
-              "3": (False, "ü"), "4": (False, "ü"), "5": (False, "i"),
-              "6": (True, "ı"), "7": (True, "i"), "8": (False, "i"),
-              "9": (False, "u")}
-
-
-def _ek(metin: str, belirtme: bool = False) -> str:
-    """`«%2,2»` → `«%2,2'sini»` (belirtme) · `«%84,1»` → `«%84,1'i»` (iyelik)."""
-    _son = next((c for c in reversed(metin) if c.isdigit()), "0")
-    _unlu_sonu, _u = _RAKAM_EKI[_son]
-    _iyelik = ("s" if _unlu_sonu else "") + _u
-    return f"{metin}'{_iyelik + 'n' + _u if belirtme else _iyelik}"
-
-
-def _yuzde(x: float) -> str:
-    return f"%{x:.1f}".replace(".", ",")
-
-
-def _sayi(x: float) -> str:
-    """İnsan için sayı: `3.17e+05` **bir sayı değil bir gösterimdir**.
-
-    ⊙ Canlıda ölçüldü: *«ağırlık: 3.17e+05 ↔ akran 2.83e+05»* — teknik olarak doğru,
-    okunabilir olarak **hiç**. Bir iş kullanıcısı bilimsel gösterimi zihninde çevirmek
-    zorunda kalıyorsa, cevap ona ulaşmamıştır.
-    """
-    try:
-        v = float(x)
-    except (TypeError, ValueError):
-        return str(x)
-    if abs(v) >= 1000:
-        return f"{v:,.0f}".replace(",", ".")
-    if abs(v) >= 1:
-        return f"{v:,.2f}".replace(",", "~").replace(".", ",").replace("~", ".")
-    return f"{v:.3f}".replace(".", ",")
+# 🔴 `§KN-ek`/`§KN-sayı` — **BİÇİM TEK SAHİPTE.** Bu üç fonksiyon burada doğdu ve
+# `contribution` kendi kopyasını yazdığı için ayrıştılar (ölçüldü, `DD` turu, DD-13:
+# *«47,836 dk … %83.4'i»* — üç ayrı hata). Gövde artık `app/sayi_bicimi.py`'de; burada
+# yalnız **takma ad** var ki bu dosyanın çağrı yerleri değişmesin.
+# *İki yerde biçimlendirilen bir sayı, er ya da geç iki farklı sayı gibi okunur.*
+from app.sayi_bicimi import ek as _ek, sayi as _sayi, yuzde as _yuzde  # noqa: E402
 
 
 def anlati(ayr: Ayristirma, *, segment: str, boyut: str,
@@ -521,9 +477,9 @@ def arastir(prev_cq: dict, cube_meta: dict | None, *, kos,
         return None
     olculer = [str(m) for m in (prev_cq.get("measures") or [])]
     boyutlar = [str(d) for d in (prev_cq.get("dimensions") or [])]
-    if not olculer or not boyutlar:
+    if not olculer:
         return None
-    olcu, boyut = olculer[0], boyutlar[0]
+    olcu = olculer[0]
     bl = bilesenler(olcu, cube_meta)
     if len(bl) < 2:
         _log.info("§KN: ayrıştırma YOK — «%s» için bileşen sayısı %d (<2)", olcu, len(bl))
@@ -545,9 +501,48 @@ def arastir(prev_cq: dict, cube_meta: dict | None, *, kos,
     # çevirir.*
     _cq = {k: v for k, v in prev_cq.items()
            if k not in ("order", "limit", "pencere", "timeDimensions")}
-    _cq["measures"] = [olcu] + [b.ad for b in bl]
+    _alanlar = [olcu] + [b.ad for b in bl]
+    # 🔴🔴 `§KN-tek` — **TEK BİR SAYIYA DA «NEDEN» SORULABİLİR; SORAN KIRILIM İSTEMEZ.**
+    #
+    # ⊙ Ölçüldü (curl `DD` turu, DD-8/DD-10): *«bu yıl ortalama oee»* → *«neden böyle»*
+    # ve *«bu yıl kâr marjı»* → *«neden bu kadar düşük»* — ikisi de teknik bir **red**
+    # alıyordu: *«ort_oee toplanabilir değil (cube metadata'sında non_additive) — katkı
+    # payı matematiksel olarak tanımsız olur»*. Yani formülü **bildiğimiz** ölçüler,
+    # tam da formülleri yüzünden cevapsız kalıyordu.
+    #
+    # ⊙ Kök: bu tur bir **akran kıyasıyla** başlıyordu ve akran bir **kırılım** ister.
+    # Ekranda kırılım yoksa tur hiç başlamıyordu. Ama kullanıcının şartı açık:
+    # *«bu tek bir değer olsa bile «neden böyle» sorulabilir, yine en köke inip
+    # anlatmalı»*.
+    #
+    # ⚠ Çözüm bir varsayılan boyut **seçmek değil, ölçmektir**: adaylar koşulur ve
+    # ölçüyü **en çok ayrıştıran** kırılım kazanır (`_en_ayristiran` — `derinles` ile
+    # **aynı gövde**). İnsanın yaptığı da budur: *«bu sayı neden böyle?»* diye sorulunca
+    # önce onu **neyin ayırdığına** bakarız.
+    #
+    # ⚠ Kazanan koşumun satırları **yeniden kullanılır**: bileşenler zaten `_alanlar`
+    # ile birlikte çekilir, yani seçim bedava gelmez ama **iki kez** de ödenmez.
+    #
+    # *Bir sayının nedenini sormak için önce onu bölmek gerekir; hangi bıçakla
+    # böleceğini bilmiyorsan, bıçakları dene.*
+    satirlar: list[dict] = []
+    if not boyutlar:
+        from app.drill import available_dimensions
+
+        _adaylar = [d["name"] for d in available_dimensions(cube_meta or {}, _cq)]
+        _sec = _en_ayristiran(_cq, _alanlar, olcu, _adaylar[:AZAMI_ADAY], kos=kos)
+        if _sec is None:
+            _log.info("§KN-tek: ayrıştıran bir kırılım bulunamadı — «%s»", olcu)
+            return None
+        boyut, satirlar = _sec
+        adimlar.append(f"ekranda kırılım yoktu → ölçüyü en çok ayrıştıran kırılım "
+                       f"**{boyut}** seçildi")
+    else:
+        boyut = boyutlar[0]
+    _cq["measures"] = _alanlar
     _cq["dimensions"] = [boyut]
-    satirlar = kos(_cq) or []
+    if not satirlar:
+        satirlar = kos(_cq) or []
     if len(satirlar) < 2:
         _log.info("§KN: ayrıştırma YOK — bileşen sorgusu %d satır döndü (<2)", len(satirlar))
         return None
@@ -571,7 +566,27 @@ def arastir(prev_cq: dict, cube_meta: dict | None, *, kos,
     adimlar.append(f"**{_seg}** akran ortalamasıyla kıyaslandı → farkın kaynağı "
                    f"**{(ayr.sucllu or bl[0]).display}**")
     # 3 · DERİNLEŞME — suçlu bileşeni, hedef segmentin İÇİNDE başka bir kırılımda aç.
-    _isaret = next((1 if k.katki > 0 else -1 for k in ayr.katkilar
+    # 🔴🔴 `§KN-yon2` — **İNİŞ YÖNÜ, BİLEŞENİN KENDİ DEĞERİNİN YÖNÜDÜR — ROLÜYLE
+    # BİRLİKTE.** Ve bunu `§KN-tek` açtığı yeni bir vaka ortaya çıkardı.
+    #
+    # ⊙ Ölçüldü (curl `DD` turu, DD-12): `kar_marji_yuzde = kar ÷ ciro`, RAM-3 marjı
+    # düşük ve suçlu **ciro** — çünkü RAM-3'ün cirosu akranlardan **YÜKSEK** (9,88M ↔
+    # 6,41M) ve o **paydada**. İniş ise en **DÜŞÜK** cirolu tedarikçiyi gösterdi
+    # (1,33M ↔ 2,14M) — yani sorunun kaynağını sorarken **en masumu** işaret etti.
+    # Bu, daha önce `fire` üzerinde düzeltilen kusurun **payda ekseninde tekrarıydı**.
+    #
+    # ⊙ Kök tek satırda: `katki` **zaten** `b.yon * Δln`'dir (`ayristir`). Yani
+    # `sign(katki)` bileşenin **ölçü üzerindeki etkisini** söyler, kendi değerinin
+    # yönünü değil. İkisi payda bileşenlerinde **terstir**: ciro yükselince marj düşer.
+    # Doğru işaret `sign(katki) × yon` — çünkü `sign(Δln) = sign(katki)·sign(yon)`.
+    #
+    #     fire (pay, katki+)     → +1 → en YÜKSEK fireli    ✅
+    #     performans (pay, −)    → −1 → en DÜŞÜK performans ✅
+    #     ciro (payda, −)        → +1 → en YÜKSEK cirolu    ✅ (önceden −1'di)
+    #
+    # *Bir sorumluyu ararken rolü unutmak, aynı veriyle en masumu suçlamaktır.*
+    _isaret = next(((1 if k.katki > 0 else -1) * (k.bilesen.yon or 1)
+                    for k in ayr.katkilar
                     if ayr.sucllu and k.bilesen.ad == ayr.sucllu.ad), -1)
     derin = (derinles(prev_cq, cube_meta, ayr.sucllu, _seg, boyut, kos=kos,
                       katki_isareti=_isaret)
@@ -625,6 +640,41 @@ def nereye_bak(ayr: Ayristirma, segment: str, boyut: str,
             f"Öteki bileşenler bu farkı açıklamıyor.")
 
 
+def _en_ayristiran(temel: dict, olculer: list[str], sira_olcusu: str,
+                   adaylar: list[str], *, kos) -> tuple[str, list[dict]] | None:
+    """🔴🔴 **BİR KIRILIMIN AÇIKLAYICI OLUP OLMADIĞI ANCAK KOŞULARAK BİLİNİR.**
+
+    Adaylar **sırayla koşulur**; ≥2 satır döndürenler arasından `sira_olcusu` üzerinde
+    **yayılımı en geniş** olan seçilir. Yayılım, *«bu kırılım gerçekten ayrıştırıyor
+    mu»* sorusunun ölçülmüş cevabıdır.
+
+    ⊙ Ölçüldü (gerçek `oee` kataloğu, RAM-3): ilk aday `hat` seçilmişti ve derinleşme
+    **hiç üretilmedi** — çünkü `hat` bir makinenin **içinde sabittir** (makine bir hatta
+    aittir), tek satır döner. Sıra listesi bunu bilemez: `available_dimensions`
+    maliyet/güven sıralar, **hiyerarşi** bilmez.
+
+    ⚠ **Tek gövde, iki kat.** Aynı kural iki yerde gerekiyor — hangi kırılımda
+    *başlanacağı* (`§KN-tek`) ve hangi kırılıma *inileceği* (`derinles`). İkinci bir
+    kopya yazmak, zamanla iki farklı *«açıklayıcılık»* tanımı üretirdi (`KAT-1`).
+
+    *Bir kırılımı denemeden seçmek, hiyerarşiyi bildiğini varsaymaktır.*
+    """
+    from app.result_shape import sayi
+
+    en_iyi = None
+    for aday in adaylar:
+        _satirlar = kos({**temel, "measures": list(olculer),
+                         "dimensions": [aday]}) or []
+        _uygun = [r for r in _satirlar if sayi(r.get(sira_olcusu)) is not None]
+        if len(_uygun) < 2:
+            continue
+        _degerler = [sayi(r[sira_olcusu]) for r in _uygun]
+        _yayilim = max(_degerler) - min(_degerler)
+        if en_iyi is None or _yayilim > en_iyi[0]:
+            en_iyi = (_yayilim, aday, _uygun)
+    return (en_iyi[1], en_iyi[2]) if en_iyi else None
+
+
 def derinles(prev_cq: dict, cube_meta: dict | None, suclu: Bilesen,
              segment: str, boyut: str, *, kos, katki_isareti: int = -1) -> dict | None:
     """`§KN` — **en dibe in**: suçlu bileşeni, hedef segmentin içinde ikinci bir
@@ -661,19 +711,10 @@ def derinles(prev_cq: dict, cube_meta: dict | None, suclu: Bilesen,
     # ölçülmüş cevabıdır. `§RZ-2`'nin birebir aynı dersi.
     #
     # *Bir kırılımı denemeden seçmek, hiyerarşiyi bildiğini varsaymaktır.*
-    en_iyi = None
-    for aday in adaylar:
-        _satirlar = kos({**_temel, "measures": [suclu.ad], "dimensions": [aday]}) or []
-        _uygun = [r for r in _satirlar if sayi(r.get(suclu.ad)) is not None]
-        if len(_uygun) < 2:
-            continue
-        _degerler = [sayi(r[suclu.ad]) for r in _uygun]
-        _yayilim = max(_degerler) - min(_degerler)
-        if en_iyi is None or _yayilim > en_iyi[0]:
-            en_iyi = (_yayilim, aday, _uygun)
-    if en_iyi is None:
+    _en = _en_ayristiran(_temel, [suclu.ad], suclu.ad, adaylar, kos=kos)
+    if _en is None:
         return None
-    _, d2, uygun = en_iyi
+    d2, uygun = _en
     # 🔴🔴 **İNİŞ YÖNÜ, BİLEŞENİN KATKI İŞARETİNE GÖRE — ve bunu canlıda ölçtüm.**
     #
     # ⊙ `fire_orani_yuzde` (düşük iyi): suçlu `fire` ve oranı **yükseltiyor** (+). İlk
@@ -848,3 +889,40 @@ def makbuz_satiri(olcu: str, ad: str, cube_meta: dict | None) -> str | None:
         _log.warning("§MK-formül: bileşen okunamadı (best-effort)", exc_info=True)
         return None
     return f"  ↳ **{ad}** = {formul_metni(bl)}" if bl else None
+
+
+def taze_ek(resp, q_norm: str, cq: dict, cube_meta: dict | None, *, service,
+            limit: int = 1000) -> bool:
+    """🔴🔴 `§KN-taze` — **TAZE BİR «NEDEN» SORUSUNUN İKİNCİ YARISI DA CEVAPLANIR.**
+
+    ⊙ Ölçüldü (curl `DD` turu, DD-20): *«bu yıl enerji tüketimi **neden yüksek**»* →
+    `elektrik_tuketimi_kwh` + `tep_toplam` döndü, kök-neden **hiç** çalışmadı. `§KN`
+    yalnız **takip** dalında yaşıyordu (`_cevap_ustunde_konus`), oysa kullanıcının
+    şartında bir takip koşulu yok: *«neden sorusu geldiğinde adeta insan zihnini
+    simüle etmeliyiz»*.
+
+    ⚠ Sayı **bugünkü gibi** hesaplanır; bu fonksiyon onun **üstüne** yazar. Yani
+    `KURAL B`: *«neden»* taşımayan hiçbir soruda tek bir bayt değişmez, ve `§KN`
+    ayrıştıramazsa cevap aynen bugünküdür.
+
+    ⚠ `oneri=False`: öneri **yalnız sorulduğunda** verilir (`§KN`'nin kendi kuralı);
+    *«neden yüksek»* bir açıklama ister, bir aksiyon planı değil.
+
+    Döner: eklendi mi (çağıran ize bunu yazar).
+    """
+    if not isinstance(cq, dict) or not (cq.get("measures") or []):
+        return False
+    try:
+        out = cevap_verisi(cq, cube_meta, service=service, limit=limit, oneri=False)
+    except Exception:                    # noqa: BLE001 — cevap düşmez (ADR-0020)
+        _log.warning("§KN-taze: ayrıştırma hata verdi (best-effort)", exc_info=True)
+        return False
+    if not out:
+        return False
+    resp.note = "\n\n".join(x for x in [resp.note, out["anlati"]] if x)
+    resp.trace = [*(resp.trace or []), *out["iz"]]
+    # ⚠ `next_steps`'e **dokunulmaz**: taze yolda o liste `_attach_next_steps`'in
+    # (sunum katmanı) ve pydantic modelinin işidir; buradan sözlük iliştirmek bir tip
+    # kaçağı olurdu. Kullanıcının ihtiyacı olan **anlatı**dır; chip'ler zaten gelir.
+    # *Bir modülün sınırı, elinden gelen son şeyi de yapmadığı yerdir.*
+    return True

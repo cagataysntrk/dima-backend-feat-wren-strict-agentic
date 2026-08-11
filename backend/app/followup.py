@@ -798,3 +798,28 @@ def makbuza(n: Niyet) -> dict:
     """Sınıflandırma kararı makbuza yazılır: *"neden bu cevap bu biçimde geldi?"*"""
     return {"followup_class": n.sinif, "followup_kind": n.tur,
             "followup_rule": n.kural, "followup_evidence": n.kanit}
+
+
+def neden_sorusu(q: str) -> bool:
+    """🔴🔴 `§KN-taze` — soru, **bağlamdan bağımsız olarak**, bir *«neden»* taşıyor mu?
+
+    ⊙ Ölçüldü (curl `DD` turu, DD-20): *«bu yıl enerji tüketimi **neden yüksek**»* →
+    düz bir metrik döndü (`elektrik_tuketimi_kwh`, `tep_toplam`), kök-neden **hiç**
+    çalışmadı. Sebep bu dosyanın kendi kararıydı ve doğruydu: `_NEDEN` bağlamsız dalda
+    **dışarıda** bırakılmıştı, çünkü *«neden fire yüksek olur»* gerçek bir **veri
+    sorusudur** ve merdivenin cevaplaması gerekir.
+
+    ⊙ Eksik olan o karar değil, **devamıydı**: merdiven sayıyı verir, ama sorunun
+    *«neden»* kısmını kimse ele almaz. Kullanıcının şartında bir takip koşulu yok —
+    *«neden sorusu geldiğinde adeta insan zihnini simüle etmeliyiz»*.
+
+    ⚠ Bu yüklem **yol seçmez**: cevap bugünkü gibi hesaplanır, `§KN` onun **üstüne**
+    yazar. Yanlış-pozitifi ucuzdur (fazladan bir ayrıştırma cümlesi), yanlış-negatifi
+    ise kullanıcının sorusunun yarısını cevapsız bırakmaktır.
+
+    ⚠ Sözlük `_NEDEN`'dir — **yeni bir liste yazılmaz** (`KAT-1`): aynı kalıplar
+    `sinifla`'nın takip dalını da besliyor ve ikisi ayrışamaz.
+
+    *Bir soruyu iki parçaya bölüp yalnız birini cevaplamak, cevaplamamanın kibar hâlidir.*
+    """
+    return bool(_hit(_norm(q or ""), _NEDEN))

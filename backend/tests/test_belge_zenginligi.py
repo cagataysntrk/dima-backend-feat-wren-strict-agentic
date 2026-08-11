@@ -469,13 +469,21 @@ def test_BIRLESIM_KURALI_YALNIZ_CAPRAZ_KUP_ISARETLERINE():
     *Bir cevabın neyi içerdiğini, cevabın bir parçasına sorarsanız, öbür parçadakini
     eksik ilan edersiniz.*"""
     import inspect
+    import re
 
     from app import plan_tuketici
 
     kaynak = inspect.getsource(plan_tuketici.cevap)
-    assert '_BIRLESIM = {"olcu_ikamesi", "olcu_ozgullugu"}' in kaynak
+    # ⟳ `§Cİ-küp` (curl `DD` turu) — `kup_ikamesi` **kümeye girdi** ve bu bir gevşetme
+    # değil, kuralın kendi tanımının uygulanmasıdır: o işaret *«soru bir küpü adıyla
+    # çağırdı, bu blok başka küpten geldi»* der ve bir belgenin **başka bir bloğu** o
+    # küpten gelmiş olabilir. Yani çapraz-küp işaretlerinin **en saf** örneğidir.
+    # ⚠ Kapının asıl işi değişmedi: **dar** işaretler (dönem/eşik/kırılım) hâlâ dışarıda.
+    _kume = kaynak.split("_BIRLESIM = ")[1].split("}")[0] + "}"
+    assert set(re.findall(r'"(\w+)"', _kume)) == {
+        "olcu_ikamesi", "olcu_ozgullugu", "kup_ikamesi"}, _kume
     for dar in ("donem", "esik", "kirilim"):
-        assert f'"{dar}"' not in kaynak.split("_BIRLESIM = ")[1][:60]
+        assert f'"{dar}"' not in _kume
 
 
 def test_BIRLESIM_TUM_BLOKLAR_GORULMEDEN_KARAR_VERMEZ():

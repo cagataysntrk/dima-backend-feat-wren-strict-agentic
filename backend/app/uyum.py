@@ -461,6 +461,67 @@ def _capraz_kup_ikamesi(qn: str, cq: dict, cube_meta: dict,
     return None
 
 
+def _kup_ikamesi(qn: str, cq: dict, sema: dict | None) -> tuple[str, str] | None:
+    """🔴🔴 `§Cİ-küp` — **SORU BİR KÜPÜ ADIYLA ÇAĞIRDI, CEVAP BAŞKA BİR KÜPTEN GELDİ.**
+
+    ## Ölçülen kusur (curl `DD` turu, DD-5)
+
+        «bu yıl **bakım** raporu hazırla»
+          → başlık *«**Bakım Departmanı** Yıllık Raporu»*, üç bölüm: `ik` (maaş) ·
+            `egitim` · `isg` — hepsi `departman` kırılımında, ve **hiçbirinde**
+            `departman = Bakım` süzgeci bile yok.
+
+    Katalogda «bakım» `bakim_is_emri` küpünün **cube-düzeyi sinonimidir**. Kullanıcı bir
+    **konu alanı** istedi; sistem onu bir **boyut değeri** sandı, sonra o değeri de
+    uygulamadı. Sonuç: bakım raporu isteyip **İK raporu** almak.
+
+    ⚠ `route()` bu ayrımı **doğru** yapıyor (ölçüldü, DD-17/DD-18: *«arıza sayısı»* →
+    `bakim`, *«bakım maliyeti»* → `bakim_is_emri`). Kusur yalnız **plan/orkestratör**
+    yolunda — yani garsonun okuması değil, planlayıcının seçimi.
+
+    ## Yüklem — üç koşul, üçü de katalogdan
+
+    1. Soruda bir **cube-düzeyi sinonim** eşleşiyor (`ilgili_cubelar` — yeniden yazılmaz).
+    2. Cevabın küpü o küp **değil**.
+    3. Terim bir **süzgeç değeri** olarak da taşınmıyor — *«bakım departmanındaki personel
+       sayısı»* meşrudur ve orada `departman = Bakım` süzgeci vardır.
+
+    Üçüncü koşul `§101.1`'in kendisidir: bir terimin cevapta **başka bir biçimde**
+    karşılanmış olması, karşılanmamış sayılmaz.
+
+    ⚠ Belge yolunda bu işaret `_BIRLESIM`e girer: bir belgenin kapsamı **bloklarının
+    birleşimidir** ve tek bir blok ıskaladı diye belge ıskalamış sayılmaz.
+
+    *Bir konuyu adıyla istemek, o konunun adının bir yerlerde geçmesini istemek değildir.*
+    """
+    from app import cube_router as _cr
+
+    _kup = str((cq or {}).get("cube") or "")
+    if not _kup or not sema:
+        return None
+    try:
+        _ilgili = _cr.ilgili_cubelar(qn, sema)
+    except Exception:                     # noqa: BLE001 — beyan susar, tur düşmez
+        return None
+    _adaylar = [str(c.get("name")) for c in (_ilgili or []) if c.get("name")]
+    if not _adaylar or _kup in _adaylar:
+        return None
+    # Terim bir süzgeç değeri olarak taşınıyorsa karşılanmıştır (`§101.1`).
+    _deger_metni = _cr._norm(" ".join(
+        str(f.get("value")) for f in (cq.get("filters") or [])
+        if not isinstance(f.get("value"), (list, dict))))
+    for _ad in _adaylar:
+        _c = next((c for c in (sema.get("cubes") or []) if c.get("name") == _ad), None)
+        _syn = [str(x) for x in ((_c or {}).get("synonyms") or [])]
+        _eslesen = next((x for x in _syn if _cr._syn_hit(qn, x.lower())), None)
+        if not _eslesen:
+            continue
+        if _deger_metni and _cr._syn_hit(_deger_metni, _eslesen.lower()):
+            continue                       # süzgeçte taşınıyor → karşılandı
+        return _eslesen, _ad
+    return None
+
+
 def _kirilim_ikamesi(qn: str, cq: dict, cube_meta: dict | None,
                      sema: dict | None) -> tuple[str, list[str]] | None:
     """🔴🔴 `§KD-boyut` — **İSTENEN KIRILIM YERİNE BAŞKASI GELDİ, VE SÖYLENMEDİ.**
@@ -923,6 +984,18 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
             "trend",
             "**değişimi/trendi** istedin ama tek bir toplam ürettim — zaman ekseni yok",
             "*«aylara göre»* ya da *«çeyreklere göre»* eklersen zaman ekseninde çizerim."))
+
+    # `§Cİ-küp` — soru bir küpü **adıyla** çağırdıysa ve cevap başka küptense söylenir.
+    _kupi = _kup_ikamesi(qn, ic, sema)
+    if _kupi:
+        _kterim, _ksahip = _kupi
+        out.append(Ihlal(
+            isaret="kup_ikamesi",
+            aciklama=(f"Soruda **«{_kterim}»** geçiyor ve bu katalogda **{_ksahip}** "
+                      f"konusudur — ama bu cevap **{ic.get('cube')}** küpünden geldi."),
+            oneri=(f"«{_kterim}» konusunu **{_ksahip}** küpünde sorabilirsin."),
+            chip={"label": f"{_kterim} ({_ksahip})", "query": f"{_ksahip} {_kterim}",
+                  "kind": "olcu"}))
 
     # `§KD-boyut` — istenen kırılım yerine başkası geldiyse **söylenir** (gövde yukarıda).
     _ki = _kirilim_ikamesi(qn, ic, cube_meta, sema)

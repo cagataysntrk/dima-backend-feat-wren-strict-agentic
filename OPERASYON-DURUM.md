@@ -2624,3 +2624,24 @@ Tam döküm: `belgeler/denetim/2026-08-07_CEVIRI-SOZLESMESI.md` › `CC TURU`.
   (sözcük soruda **geçmeli**, teslim edilen fişte **geçmemeli**). Ayrı demet, ayrı ölçüm.
 * *(devreden)* «arıza tipi» yönlendirmesi · `§KN`'yi 8'den fazla ölçüye açmak (pack şeması) ·
   canlı «düşünüyorum» akışı (`S` fazı) · `B3` müşteri kodu yerine isim.
+
+## `DD` turu (2026-08-11) — kök-neden derinliği
+
+22 senaryo; ilk sekizi `CC` turunun yedi düzeltmesini **adım adım** doğruladı (hepsi ✅).
+Beş yeni kök bulundu ve düzeltildi. Tam döküm: çeviri sözleşmesi › `DD TURU`.
+
+| işaret | ne yapar |
+|---|---|
+| `§KN-tek` | **Kırılımsız tek bir sayıya da «neden» sorulabilir.** Kırılım bir varsayılanla değil **ölçülerek** seçilir: adaylar koşulur, ölçüyü en çok ayrıştıran kazanır. Süpürücü `derinles` ile **aynı gövde** (`_en_ayristiran`). Öncesinde *«non_additive — katkı payı tanımsız»* diye teknik bir **red** dönüyordu. |
+| `§KN-yon2` | İniş yönü artık bileşenin **rolünü** de sayıyor: `sign(katki) × yon`. Payda bileşeninde ters çalışıyor ve **en masumu** gösteriyordu (`ciro` yüksek olduğu için marj düşükken en düşük cirolu tedarikçiyi işaret ediyordu). |
+| `§KN-taze` | **Taze** bir *«neden»* sorusunun ikinci yarısı da cevaplanır; `§KN` yalnız takip dalında yaşıyordu. Dil yüklemi `followup.neden_sorusu`, gövde `kok_neden.taze_ek`. |
+| `varlik.perdele` | 🔴 **İki kusur birbirini gizliyordu.** Perde kataloğun **kendi terimini** örtüyordu (*«bakım»* → `{{ENT_1}}`, plana *«departman değeri»* diye gitti → **İK raporu**). (1) koruma ham metni normalize sözlükle karşılaştırıyordu — Türkçe karakterli hiçbir terim girmiyordu; (2) sözlük değerleri de içeriyordu → düzeltilince perde hiç çalışmayacaktı. Sızıntı sınırı korundu (`RAM-3` hâlâ perdeleniyor). |
+| `§SB-metin` | Bir sayının **Türkçesi** tek sahipte (`app/sayi_bicimi.py`): `contribution` *«47,836 dk … %83.4'i»* yazıyordu (binlik + ondalık ayırıcı İngilizce, ek sabit). |
+| `§Cİ-küp` | Soru bir küpü **adıyla** çağırdıysa ve cevap başka küptense beyan edilir. `denetle` düzeyinde doğrulandı; **belge yolunda ölçülmedi** — açık borç. |
+
+### Açık borçlar
+
+* **`§Cİ-küp` belge yolunda görünmüyor** — sebebi ölçülmedi (tahminle düzeltilmeyecek).
+* *(devreden)* `§Cİ-belge` şüphesi · belge düzenlemede başlık/granülerlik devri ·
+  `euro`/`mars` sınıfı (Intent-JSON `yok_sayilan` alanı) · «arıza tipi» yönlendirmesi ·
+  `§KN`'yi 8'den fazla ölçüye açmak · canlı «düşünüyorum» akışı (`S` fazı) · `B3`.
