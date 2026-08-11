@@ -1961,6 +1961,251 @@ BORÇ; ilan edilmiş kapsamda RED ÜRÜNÜN KENDİSİDİR.**
 *Seek AI'nin mekanizması bize en yakın üst versiyon: **yapılandırılabilir güven eşiği** +
 kaynağın etiketlenmesi (*«verified by Seek, NOT A HUMAN»*), eşik altı insana gider.*
 
+---
+
+# ON BİRİNCİ KISIM — AGENTIC MİMARİLER: SEKTÖR NE YAPIYOR
+
+## 30 · 🔴 ÖNCE TEŞHİSİ DÜZELT — *«kategorik olmak»* kusur DEĞİL
+
+Şikâyet: *«kapalı bir fiil kümesi ve şablonlarla zar zor.»*
+**Araştırmanın en net bulgusu: liderlerin de kapalı kümesi var — ama o küme «plan
+fiilleri» değil, «ARAÇLAR».**
+
+| sistem | kapalı araç sayısı |
+|---|---|
+| **Snowflake Cortex Agents** | **9 araç tipi** |
+| **Microsoft Fabric Data Agent** | **4 sorgu aracı** (+ max **5 veri kaynağı**) |
+| **Cube MCP** | 16 araç |
+| **Google CA API** | 3 araç sınıfı |
+| **Zenlytic Zoë** | ~4 araç |
+| **DİMA** | **7 plan fiili** (canlı) / **25 araç** (uykuda) |
+
+⊙ **Kapalılık kusur değil. Kusur şurada: bizim 15 öğemiz *araç* değil, *plan adımı*; ve
+her adımın içi şablon.** Endüstri farkı **üç yerde**:
+
+1. 🔴 **DÖNGÜ var.** Snowflake'in resmî ifadesi: **Plan → Use Tools → Reflect and Respond**
+   — *«ajan bu döngüyü tek bir istek içinde gerektiği kadar tekrarlar; plan **LLM
+   tarafından bestelenir, sabit değildir**»*.
+2. **Plan doğal dildedir, `enum` değil.** Magentic-One'ın Orchestrator'ı planı *«doğal
+   dilde adım adım»* yazar.
+3. 🔴 **Araç içi serbest, araç dışı sıkı.** Üretim (SQL) deterministik/derlemeli; **hangi
+   aracı ne zaman çağıracağı serbest.**
+
+### 30.1 🟢 Snowflake Cortex Analyst = **SABİT 6-AJANLI BORU HATTI**
+
+Sektörün **en doğru** text-to-SQL'i (**%90+**, tek-atış GPT-4o'nun **~2 katı**,
+*«piyasadaki başka bir çözümden ~%14 daha doğru»*) — ve **serbest ajan değil**:
+
+| # | ajan | işi |
+|---|---|---|
+| 1 | **Classification** | soruyu 4'e ayırır: **belirsiz / veri-dışı / SQL-dışı / cevaplanabilir** |
+| 2 | **Feature Extraction** | sorunun karakterini çıkarır (zaman serisi? dönem-üstü? sıralama?) ve **downstream prompt'u değiştirir** |
+| 3 | **Context Enrichment** | (i) **verified queries** (ii) **relevant literals** — kullanıcının kelimesi ↔ DB değeri uçurumunu semantik aramayla kapatır |
+| 4 | **SQL Generation** (çoğul) | önce **mantıksal şema**, sonra fiziksele post-process |
+| 5 | 🔴 **Error Correction** | **SQL derleyicisini kullanarak** hem sözdizimsel hem **anlamsal** hata arar |
+| 6 | **Synthesizer** | aday SQL'lerden nihai sorgu |
+
+⊙ **Bizim *«kategorik»* dediğimiz şeyin ta kendisi — ama 15 iş fiili değil, 6 BİLİŞSEL
+AŞAMA:** sınıflandır → özellik çıkar → bağlam zenginleştir → üret → **onar** → sentezle.
+
+### 30.2 Diğer üreticiler — kısa
+
+* **Microsoft Fabric Data Agent** = **sabit 6 adım**. Sert sınırlar: **max 5 veri
+  kaynağı**, kaynak başına **≤100 örnek sorgu**, cevap **25 satır × 25 sütun**,
+  salt-okunur, **yalnız İngilizce**. Niyet önceliği: **kurumsal > rol > geliştirici >
+  kullanıcı**.
+* **Databricks Genie:** **paralel çok-ajanlı keşif** → soruşturma (kök-neden dâhil) →
+  **öz-düzeltme ve mutabakat** → **nihai doğrulama**. *«Parallel thinking»*: aynı soru için
+  **birden çok yörünge** örneklenir — *«çünkü veri işlerinde kodda olduğu gibi deterministik
+  doğrulama testi yok»*. İç kıyas **%32 → %90+**. Supervisor: **max 50 ajan**.
+* **ThoughtSpot Spotter:** text-to-SQL **değil** — *search token*. Kohort, özel takvim, LOD
+  ifadeleri **motorda**, üretilen SQL'de değil.
+* **Hex** (bize en yakın mühendislik anlatısı): **ephemeral (görünmez) sorgular** ile
+  ajan önce veriyi tanıyor → ilk denemede doğruluk yükseliyor · **araç patlaması**:
+  ~**100.000 token**lık araç tanımını birleştirerek düşürdüler · **bağlam kirlenmesi
+  felaketi**: *«çelişkili bağlam modeli bir **çöküş moduna** soktu»* — 30 dakika eylemsiz
+  salınım · **Metric City**: 90 günlük simülasyon, Claude Sonnet **gün 0'da %4 → gün 90'da
+  %24**; yorumları: *«%24 başarısızlık değil, işin **gerçek zorluğunun** kanıtı»*.
+
+## 31 · ANTHROPIC'İN REHBERİ — *«ajan kullanMA»* yönergesi
+
+> *«Mümkün olan **en basit çözümü** bulmanızı ve ancak gerektiğinde karmaşıklığı
+> artırmanızı öneriyoruz. Bu, **hiç agentic sistem kurmamak** anlamına da gelebilir.»*
+> *«Birçok uygulama için **retrieval ve bağlam-içi örneklerle tek bir LLM çağrısını
+> optimize etmek genelde yeterlidir**.»*
+> *«Karmaşıklığı ancak **gösterilebilir şekilde** sonuçları iyileştiriyorsa ekleyin.»*
+> *«Ajanların otonom doğası **daha yüksek maliyet ve birikimli hata potansiyeli** demektir.»*
+
+**ACI (Agent-Computer Interface):** *«HCI'ya harcanan çabayı düşünün ve iyi ACI yaratmaya
+**aynı kadar** çaba ayırın»*; SWE-bench ajanında *«**prompt'tan çok araçları optimize
+etmeye** zaman harcadık»*.
+
+**Çok-ajanlının FİYATI:** ajanlar sohbetten **~4× token**, çok-ajanlı sistemler **~15×**.
+Ve **nerede ÇALIŞMAZ:** *«tüm ajanların **aynı bağlamı paylaşması** gereken veya ajanlar
+arasında **çok bağımlılık** olan alanlar»*. 🔴 **Analitik tam olarak o alandır** — kohort/
+funnel/YoY adımları birbirine **bağımlıdır**.
+
+## 32 · SABİT mi SERBEST mi — ölçülmüş kanıt
+
+### 32.1 AWS Strands: **Swarm (serbest) ↔ Graph (sabit)**
+
+| metrik | Swarm | **Graph** |
+|---|---|---|
+| ort. gecikme | 45 sn | **32 sn** |
+| P95 gecikme | 78 sn | **38 sn** |
+| token/iş | ~12.000 | **~8.500 (−%25)** |
+| insan puanı | **8,2/10** | 7,6/10 |
+| maliyet/iş | $0,08 | **$0,06** |
+
+⊙ Şirket **ikisini birden koştu**: gece batch = **Graph**, yüksek değerli derin analiz =
+**Swarm**. *«Sabit mi serbest mi»* sorusunun doğru cevabı **«ikisi de, farklı iş
+sınıflarına»**.
+
+### 32.2 🔴 Bileşik hata (Lusser yasası)
+
+| adım-başı | 5 adım | 10 adım | 20 adım | 50 adım |
+|---|---|---|---|---|
+| %99 | ~95% | ~90% | ~81% | ~60% |
+| **%95** | ~77% | **~59%** | ~35% | ~7% |
+
+> *«10 adımlık bir kök-neden analizi iş akışı, çok iyimser %95 adım doğruluğunda bile
+> zamanın yaklaşık **%40'ında başarısız olur**.»*
+
+Ve **soft failure** (makul ama yanlış çıktı) hard failure'dan tehlikelidir.
+**Saha ölçümleri:** TheAgentCompany 175 görev → en iyi model **%30,3** · DABstep 450+
+finans görevi → en zorlarda **%14,55** · Magentic-One **kolay görevlerde daha KÖTÜ** —
+⊙ **orkestrasyon her basit soruda ödenen bir vergidir.**
+
+### 32.3 Akademik desenler — sayılarla
+
+| yöntem | ölçülen |
+|---|---|
+| **ReAct** | ALFWorld **+34 puan** |
+| **Reflexion** | HumanEval pass@1 **%91** (GPT-4 SOTA %80) |
+| **Tree of Thoughts** | Game of 24: CoT %4 → **%74** |
+| 🟢 **Self-Discover** | CoT'a karşı **+%32'ye kadar**, CoT-SC'yi **%20+** geçerken **10-40× daha az** hesap |
+
+⊙ **Self-Discover bizim için en ilginci:** sabit fiil listesi ile serbest planlama
+arasındaki **tam orta yol** — sabit bir *atomik modül* kümesi var, **kompozisyon serbest
+ve göreve özgü**, ve **10-40× daha ucuz**.
+
+## 33 · MCP — tesisat, doğruluk değil
+
+**Kim ne açıyor:** dbt MCP **~45 araç** (semantik katman için `list_metrics` ·
+`get_dimensions` · `query_metrics` · `get_metrics_compiled_sql`) · Cube MCP **16 araç**
+(**yazma işlemleri onay gerektiriyor**) · Tableau ~15 (**salt okuma**) · Power BI ~30+
+(**iki ayrı sunucu, birleşik orkestrasyon yok**) · Looker ~20 · Qlik ~25 · ThoughtSpot ~20.
+
+🔴 **Ölçülmüş olumsuz kanıt:**
+* **Araç sayısı bozulması:** geniş araç setiyle araç seçim doğruluğu **%13,62**'ye
+  düşüyor; ilgili alt kümeyi sunmak **%43**'e çıkarıyor. **~20 araç eşiği.**
+* **Bağlam maliyeti:** 7 MCP sunucusu = **67.300 token** siz bir harf yazmadan. Aynı sorgu
+  CLI ~200 token ↔ MCP **~12.957 token (65×)**.
+* **Gecikme:** REST'e göre çağrı başına **3×**, ilk çağrıda **9,4×** yavaş.
+* **Perplexity CTO'su** iç kullanımda MCP'den **geri döndüklerini** açıkladı.
+
+🟢 **Karşı-kanıt:** Anthropic **Tool Search + Deferred Loading** → bağlam kullanımında
+**%85+ azalma**; **code execution with MCP** → **150.000 → 2.000 token (%98,7 tasarruf)**.
+
+🔴 **Güvenlik — analitikte özellikle ciddi:** 14 CVE · internetten erişilebilir **7.000 MCP
+sunucusu** · 2.614 uygulamada **%82 path traversal, %67 code injection**.
+⊙ **Bizim için özel risk:** veri tablolarındaki **serbest metin alanları** (müşteri notu,
+ürün açıklaması) MCP yanıtı olarak modele döndüğünde **prompt injection taşıyıcısıdır**.
+Kendi verisini okuyan bir sistem için bu teorik değil.
+
+## 34 · ÇOK ADIMLI SAYISAL AKIL YÜRÜTME — en zayıf halka
+
+🔴 **Kırılan sözdizimi değil METODOLOJİ.** Teşhis cümlesi: *«**sözdizimi doğruluğu,
+metodoloji doğruluğundan kolaydır**»*. Model geçerli CTE'ler yazar, **analitik kuralı
+ihlal eder**. Beş somut hata:
+
+1. **Adım sırası ihlali** — ulaşılmayan adım tamamlanmış sayılıyor
+2. **Uyumsuz yollarda kullanıcı tekrar kullanımı**
+3. **Dönüşüm penceresi yanlış uygulaması**
+4. **Kohort ataması hataları**
+5. **Geri dönüş olayı mantığı hataları**
+
+⊙ **Hiçbiri SQL hatası değil — hiçbiri `EXPLAIN`'de görünmez, hiçbiri exception atmaz.
+SESSİZ YANLIŞ.**
+
+**Kim iyi yapıyor — üç desen, hepsi aynı fikir:**
+1. 🟢 **Ara temsil + deterministik derleyici.** Akademik en net kanıt: **SMQ** (Semantic
+   Model Query) — ajan ham şema üstünde SQL üretmiyor, kompakt ara temsil üretiyor,
+   **deterministik derleyici** SQL'e çeviriyor. Sonuç: **Spider2-snow'da %94,15**, resmî
+   liderlik tablosunda **3. sıra**. ⊙ *Bizim MDL/CubeQuery mimarimizin akademik ikizi.*
+2. **Semantik katman > serbest SQL** (§7.4'teki dört ölçüm).
+3. **Çok yörünge + mutabakat + doğrulama** (Genie, Snowflake Synthesizer, Hex ephemeral).
+
+## 35 · KARAR MOTORU — kategori doğdu, temeli zayıf
+
+**Gartner Ocak 2026'da *«Decision Intelligence Platforms»* MQ kategorisini AÇTI.**
+**Pigment** üç ajanlı kademeli otonomi: **Analyst** (reaktif) → **Planner** (proaktif,
+*«farklı bölgesel stratejileri **simüle eder**»*) → **Modeler** (otonom model kurar).
+⊙ Not: **Planner, Analyst'ın çıktısına dayanıyor** — öneri **ölçüme zincirlenmiş**.
+
+🔴 **Zayıf halka: NEDENSELLİK.** Bugün BI'ın *«kök neden»* dediği şey neredeyse tamamen
+**korelasyonel ayrıştırma**: *«metrik hangi boyutta düştü»* sorusunu cevaplıyor, *«neden
+düştü»*yü değil. Prescriptive iddia için **nedensel model + karşıolgusal veri** gerekir;
+**hiçbir BI satıcısı bunu ölçülmüş biçimde yayımlamıyor.**
+
+**Hata modları:** korelasyonu nedensellik diye sunmak (öneri üretildiği an **aksiyona
+dönüşüyor**) · simülasyonun kalibre olmaması · **anomali körlüğü** (Hex'in fan-out
+deneyi: model %900'lük sapmayı **kendiliğinden fark etmiyor**, sorulunca anında yakalıyor)
+· **query drift** (ajan governed katman yerine ham tabloya iniyor, tanımlar ayrışıyor).
+
+> *«Bunlar uç durum değil, **yönetişim otonom üretimin gerisinde kaldığında VARSAYILAN
+> SONUÇTUR**.»*
+
+## 36 · 🟢 BİZE ÖNERİLEN HEDEF MİMARİ — üç katmanı ayırmak
+
+Liderlerin ortak yapısı, ve bizim durumumuz:
+
+| katman | sektör | **bizde** |
+|---|---|---|
+| **Orkestrasyon** (hangi araç, hangi sırayla, ne zaman dur) | **SERBEST** — LLM besteler, döngü + reflect | 🔴 **SABİT** (15 fiil + şablon) |
+| **Yetenek/araç** (ne yapılabilir) | **SABİT** — 4-20 iyi tanımlı araç | 🟢 zaten sabit (ama *araç* değil, *plan adımı*) |
+| **Üretim** (SQL/hesap) | **DETERMİNİSTİK** — semantik katman derler | 🟢 **güçlü** (Wren/MDL) |
+
+⊙ **Tek yapısal değişiklik: 15 fiili «plan şeması» olmaktan çıkarıp ARAÇ yapmak ve üstüne
+DÖNGÜ koymak.** Fiil listesini **silmeyin** — OpenAI'ın eşiğine göre (*«15'ten fazla ayrık
+araç sorun değil; **10'dan az örtüşen** araç sorun»*) **örtüşmeyen** bir küme ideal
+aralıkta. ⚠ Ve bu, §17.5'te ölçtüğüm **%73 örtüşmeyi** de çözer: iki sistem birleşince
+küme *örtüşmeyen* hâle gelir.
+
+### 36.1 Kopyalanacaklar — etki/maliyet sırasıyla
+
+| # | ne | dayanak | bizde |
+|---|---|---|---|
+| 1 | 🔴 **Reflect + Repair döngüsü** — derleyici hatasını **ajanın gözüne** ver | Snowflake Error Correction · Wren `retry&repair` · Genie öz-düzeltme. **Bu ajanlık değil, WORKFLOW** | 🔴 tek *«DÜZELTME TURU»*; hata modele **geri verilmiyor** |
+| 2 | **Triaj + belirsizlik kapısı** | Cortex 1. ajanı · Wren `ambiguity detection` | 🟢 var (`soz.py`) — ⚠ ama *«anlamadım»* yerine **netleştirme sorusu** üretmeli |
+| 3 | **VQR + hafıza geri besleme** | Snowflake VQR · Wren LanceDB · Fabric 100 örnek | 🟡 `vqr.store` **var**, garsona **beslenmiyor** |
+| 4 | **Ephemeral/karalama sorgusu** | Hex: *«ilk denemede doğruluk yükseliyor»* | 🔴 **YOK** |
+| 5 | 🟢 **Skills (markdown)** — *kapalı fiil listesinin ilacı, kod yazmadan* | Anthropic + Snowflake + Wren, **üçü de aynı desen**. *«bir skill'e paketlenebilecek bağlam **fiilen sınırsız**»* | 🔴 **YOK** — kohort/YoY-oranı/funnel/what-if birer **markdown** olmalı |
+| 6 | **Ara temsil + deterministik derleyici** | SMQ **%94,15** | 🟢 **var** (MDL/CubeQuery) |
+| 7 | **Eval disiplini — Hex modeli** | **30-50 elle yazılmış soru**, her biri **ayrı bir hata modu**; Anthropic *«~20 sorguyla başlayın»* | 🟢 **≥20 senaryo kuralımız literatürle örtüşüyor** |
+| 8 | **Bütçe + durdurma koşulu** | Snowflake token+süre · **Magentic-One stall counter ≤2** → yeniden planla | 🟡 `Butce` var ama **uykuda**; **stall sayacı YOK** |
+
+### 36.2 Kaçınılacaklar
+
+1. 🔴 **Çok-ajanlı mimariye ATLAMAYIN** — **15× token**, ve analitik tam olarak
+   *«bağımlılık yoğun»* alan. AWS ölçümü aynı yöne.
+2. 🔴 **Araç sayısını şişirmeyin, MCP'yi otomatik iyilik sanmayın** — **~20 araç eşiği**.
+   ⊙ **7 fiilimiz bir avantaj.** MCP'yi **dışa açılım** için kullanın, içeride çoğaltmak
+   için değil.
+3. **Zincir uzunluğunu kutsamayın** — *«akıl yürütmeyen adımları kaldır, adımları
+   birleştir»*; **her adım LLM çağrısı olmasın**.
+4. 🔴 **Otonom aksiyon almaya erken geçmeyin** — TheAgentCompany **%30,3**, görev başına
+   **>$4**. **Karar önerin, kararı uygulamayın.**
+
+### 36.3 🟢 Tek cümlelik hüküm
+
+> **Rakiplerin bizde olmayan şeyi serbest FİİL KÜMESİ değil, serbest DÖNGÜ; ve rakiplerin
+> bizden almak için para harcadığı şey bizde zaten var — deterministik semantik katman.**
+> Cortex Analyst %90+'ı **sabit 6 aşamalı bir boru hattıyla**, dbt %100'ü **serbest
+> SQL'den vazgeçerek** alıyor. Yapılacak iş kategorileri atmak değil; **kategorileri plan
+> şeması olmaktan çıkarıp araç yapmak, üstüne gözlem-yansıma-onarım döngüsü koymak ve
+> metodolojiyi şablondan SKILL'e taşımak.**
+
 # BEŞİNCİ KISIM — NE YAPMALIYIZ
 
 ## 14 · ÖNCELİK SIRASI — ölçülmüş gerekçelerle
