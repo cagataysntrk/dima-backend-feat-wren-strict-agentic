@@ -11767,3 +11767,36 @@ Garson *«arıza»*yı `makine_duruslari.neden`'in **değeri** sanıyor (`neden 
 ve bu **meşru bir okuma** (o gerçekten bir değer). Ama kullanıcı `bakim.ariza_tipi`'ni
 kastediyor. Bu bir **yönlendirme** kararıdır ve korpus A/B ister; bu turda **bilerek
 dokunulmadı** (`F1.1`: yönlendirme değişikliği ölçülmeden yapılmaz).
+
+---
+
+# `AA` TURU — 18 senaryo · **yeni kök YOK** · iki şüphe ölçümle çürütüldü
+
+*(2026-08-11 · curl, tek tek · kod değişikliği olmadığı için kapı koşulmadı)*
+
+## Doğrulananlar
+
+```
+temel        toplam ciro · aylık trend (12 ay) · ilk seferde doğru oranı            ✅
+§SD          «bu ay kaç şikayet» → veri ufku beyanı                                 ✅
+sahiplik     «bu yıl bakiye» → «cari hesap tanımıyla» + tıklanabilir chip            ✅
+§KV          «kaç tedarikçimiz var» → liste · ölçü yok · dönem varsayılmadı          ✅
+canvas       müşteri raporu (4 küp) → «şikayet sayısı ekle» → zaten vardı → §RÇ      ✅
+§KN          müşteri × kâr marjı → «ne yapmalıyız» → dayanaklı öneri                 ✅
+5 tur thread kırılım → en düşük 3 → §KN (kar ÷ ciro, suçlu ciro) → normal mi (yoy    ✅
+             −%19,8) → yorumla — hepsi çapada
+```
+
+## İki şüphe, iki ölçüm, iki çürütme
+
+1. *«En çok gecikme yaşayan müşteri»* → `ort_gecikme_gun = **−24,1**` gördüm ve *«negatif
+   gecikme erken teslimdir, sıralama ters olmalı»* diye düşündüm. Ölçüm: `order` zaten
+   `desc` ve **bütün** müşterilerin ortalaması negatif — hepsi erken teslim ediyor.
+   `−24,1` bunların **en az erkeni**, yani gerçekten *«en çok geciken»*. **Cevap doğru.**
+2. *«Personel bazında verimlilik»* netleştirmesinin seçenekleri sorulan terimle ilgisiz
+   göründü. İki kontrol sorusu (*«karlılık performansı»* → `kar_marji_yuzde`, *«makine
+   bazında etkinlik»* → `oee`) tanımsız terimlerin **doğru** çözüldüğünü gösterdi. Kök
+   sistematik değil: kayıtlı `B1` katalog kararı (`oee`'de personel boyutu bilinçli yok).
+
+*Bir sayıyı yanlış sanmak, onu ölçmeden düzeltmeye kalkmaktan daha ucuzdur — yeter ki
+ölçüm düzeltmeden önce gelsin.*
