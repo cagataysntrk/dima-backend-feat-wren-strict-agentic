@@ -1672,34 +1672,112 @@ tarihsel ilişkisi **Mikro Yazılım** iledir.
 | **IAS / caniasERP** | 1.400+ müşteri, otomotiv/makine/metal. OLAP modülü var, **doğal dil sorgulama belgelenmemiş** |
 | **Karel** | 🔴 **BI/AI veri ürünü YOK** — listeden elenmeli |
 
-### 19.7 ⚠ ARAŞTIRMA BOŞLUĞU — ilk taramanın KAÇIRDIKLARI
+### 19.7 KAÇIRILAN OYUNCULAR — ikinci tarama *(kullanıcı uyarısı üzerine)*
 
-🔴 **Bu bölüm eksik olduğunu kendisi ilan ediyor.** İlk yerel tarama, kullanıcının bizzat
-saydığı şu oyuncuları **bulamadı**:
+🔴 **İlk tarama beş oyuncuyu kaçırdı ve hepsi gerçekti.** Kaçırma sebebi yöntemsel:
+ilk tarama **tohum listesinden** (Sestek, Karel, Logo, Obase…) yürüdü — bu, **kurumsal ve
+görünür** oyuncuları bulur, **küçük/yeni/SEO'su zayıf** olanları kaçırır. Oysa rekabetimiz
+tam o kümede.
 
-| aday | durum |
+⚠ İkinci tarama da arama bütçesiz yapıldı (doğrudan alan adı çekme + DuckDuckGo HTML).
+LinkedIn · Crunchbase (403) · YouTube · startups.watch **açılamadı**. Buna karşılık
+doğrudan çekme, sitelerin **HTML kaynağındaki gizlenmiş içeriği** okuttu — raporun en
+değerli iki bulgusu oradan çıktı.
+
+#### A · Beş hedef
+
+| ürün | kimlik | mimari | fiyat | imalat? |
+|---|---|---|---|---|
+| **DBTalk** `dbtalk.ai` | **Geobilgi Bilişim** (2014), Kocaeli · ürün **2023** · **23 kişi** · kurucular Helvacı/Sarı/Erkman | NL→SQL, 4 DB'ye **eşzamanlı**, 6 dil. 🟢 *«salt okunur SELECT… **yapılandırılabilir bir politikayla değil, MİMARİ DÜZEYDE** engellenir»*. 🟢 **Belirsizlikte «tek hedefli ek soru»** — garsonumuzun birebir muadili | yayınlanmamış | ⚪ |
+| **Sofkar AI** `sofkar.ai` | kuruluş/şehir/kurucu/ekip **hiçbiri yok**; yalnız WhatsApp numarası | *«AI Agent platformu»* — analitikten çok **süreç orkestrasyonu**. 33 konnektör. 🔴 **En fazla 3 tabloya kadar** birleşik analiz. **Hiçbir ERP adıyla anılmıyor** → gerçek ERP entegrasyonu yok işareti. Semantik katman/doğrulama hakkında **sıfır** açıklama | yok · 14 gün deneme | ❌ banka/perakende/sağlık |
+| **Mubisoft** `mubisoft.com` | **Mubisoft Yazılım A.Ş.**, İstanbul · **2026** | 🟢 **Bizim mimarimize en yakın olan.** Kendi başlığı: *«**Neden tek prompt değil, katmanlı pipeline?**»* → **4 akıl yürüten ajan** (Architect NL→SQL · Atlas şema örnekleme · Studio KPI/grafik · **Pulse anomalide kök-neden**) + **7 deterministik servis** (**Sentry: SQL doğrular + satır güvenliği + TC/IBAN/telefon PII maskeler**). *«AI ajanları akıl yürütür; **servisler deterministik ve denetlenebilir** çalışır»*. Logo Tiger 10 şablon · Mikro 4 · Netsis 3 · Nebim 3 | 🔴 **HTML yorumunda gizli:** ₺**1.290** / ₺**3.490** / ₺**8.990** ay (+KDV) | 🟡 ERP-genel |
+| **ERP Asistanı** `erpasistani.com` | 🔴 **Valeria Medya Ltd.**, **Menemen/İzmir** — Mubisoft'tan **tamamen ayrı şirket** | Mikro v15/16/17 · Netsis · Logo GO3. *«gerçek şema doğruluğu»* + **binlerce doğrulanmış örnek** · **`/sql/validate` ucu** · REST API **confidence score** döndürüyor · **MCP Server** (Claude Code/Cursor) · *«Şirket Ajanları»* 7/24 izleme | 🔴 **9.999 ₺/ay** · **99.999 ₺/yıl** | 🟡 ERP-genel |
+| **Listen to Data** `listentodata.com` | Nidakule Ataşehir, İstanbul · kuruluş/kurucu/ekip **sıfır iz** | Nebim V3 (birincil) + SAP. Boru hattı: NLP → SQL → **Doğrulayıcı** → sonuç. 🔴 **Doğrulayıcı YALNIZ GÜVENLİK denetliyor** (injection, salt-okunur) — **anlamsal doğruluk değil**. Prophet/ARIMA, XGBoost, RFM, Monte Carlo iddiaları | sabit liste yok | ❌ **perakende/e-ticaret** |
+| **UMAI Bilişim** `umaibilisim.com` | **Sakarya** — *«**U**nified **M**ulti-**A**gent **I**ntelligence»* | PostgreSQL · **otomatik şema keşfi** · **açık kaynak LLM** (Llama 3, Mistral, CodeLlama) · **tamamen şirket içi** · **WhatsApp + Telegram bot**. Referans: Erenler Belediyesi, Sakarya Üniv., Feoks, CRT Makina | yok | 🟡 üretim emirleri kapsamda |
+| ⚠ **UMAI Yazılım** (Konya) | **ayrı şirket** | telefon `+90 (555) 000 00 00`, e-posta `[email protected]` → **placeholder**; SEO içerik sitesi görünümü | — | **DOĞRULANAMADI** |
+
+#### B · 🔴 İKİ HTML BULGUSU — pazarın olgunluğu hakkında
+
+**1 · Listen to Data'nın kaynak kodunda gömülü itiraf:**
+
+```html
+<!-- TestimonialSection.astro — Yatırım getirisi odaklı demo senaryoları.
+     Gerçek müşteri referansları hazır olduğunda bu bölüm referans formatına
+     dönüştürülecektir. -->
+```
+⊙ **Sitedeki *«40 saniyede sonuç»*, *«6 saatten 20 dakikaya»*, *«ayda 80 saat»* rakamları
+gerçek müşteri değil, DEMO SENARYOSU.**
+
+**2 · Mubisoft'un fiyatları `<!-- FİYAT GEÇİCİ OLARAK GİZLENDİ -->` yorumu içinde duruyor.**
+⊙ Türk KOBİ pazarında **katmanlı AI pipeline'ın parasal karşılığı ~₺3.490/ay**; AI istek
+kotası (1.000/ay) yeni fiyatlama birimi.
+
+#### C · İkinci taramanın çıkardığı YENİ oyuncular
+
+| ürün | kimlik | ayırt edici | fiyat |
+|---|---|---|---|
+| 🥇 **TURBOARD / JAS** | **E-Kalite Yazılım**, **2004** · **500 bin+ kullanıcı** · **2 ABD patenti** · UNDP, Turkcell, **Sağlık Bakanlığı**, **Havelsan** | 🔴 **Pazardaki TEK gerçek semantik katman.** Kendi ifadesi: *«ikinci, **kopuk bir tanım katmanı üzerinden değil**, TURBOARD'da **zaten yönetilen iş mantığı** üzerinden»*. **5 katmanlı öğrenme**, beşincisi *«derlenmiş, **insan tarafından gözden geçirilmiş** bağlam»*. On-prem + **offline LLM** | yayınlanmamış |
+| **Raporzone** | Mikro V16+ · Logo/Netsis yolda | 🟢 **Çift model doğrulama** + *«her sayı kaynağındaki sorguyu **göstermek zorunda**»* · salt-okunurluk *«bir ayar değil, **olmayan bir yetenek**»* | **₺2.000 / 3.000 / 5.000** ay |
+| **nivq** (Nivorbit) | — | 🟢 **Semantik öğrenme katmanı** · 🔴 **pazardaki TEK sayısal doğruluk iddiası: 6. haftada +%34** · KVKK/BDDK/**EU AI Act** · Ollama air-gapped · 7 yıl denetim | **freemium: 15 sorgu/gün** |
+| **ERPAS ai** | yalnız **Logo** (Tiger/GO Wings), on-prem | **sesli sorgu + sesli yanıt** · bağlamı koruyan takip · demo müşterisi **«YILMAZ TEKSTİL»** | yok |
+| **ALL WISE BI** | **Fikir Yazılım**, **Gaziantep** | ERP verisi üstünde NL + tahminleme; konnektör *«teknik keşif toplantısında»* → hazır entegrasyon yok | yok |
+| **Zugaps** · **Vinya** | — | SAP B1 asistanı · MS Dynamics 365 + Copilot entegratörü | — |
+| DEBI · opqora · OnySoft Netsis AI · Quantum AI · muhasebeci.ai · Ponder.ing | — | dolaylı referans | **DOĞRULANAMADI** |
+
+#### D · 🔴 SENTEZ — üç bulgu stratejiyi değiştiriyor
+
+**1 · Pazar mimari olarak üçe ayrılıyor — ve tepede yalnız bir firma var:**
+
+| katman | kim |
 |---|---|
-| **dbtalk** | 🔍 araştırılıyor |
-| **Sofkar AI** | 🔍 araştırılıyor |
-| **Mubisoft ERP Asistanı** | 🔍 araştırılıyor — ⚠ Valeria Medya'nın *«ERP Asistanı»*ndan (§19.3) **ayrı bir ürün**; ikisi karıştırılmamalı |
-| **Listen to Data** | 🔍 araştırılıyor |
-| **UMAI** | 🔍 araştırılıyor |
+| **Gerçek semantik katman** | 🥇 **yalnız TURBOARD (JAS)** — yönetilen iş mantığı + insan onaylı bağlam |
+| **Sonradan eğitilen şema sözlüğü** | Listen to Data (*«Veri Öğrenimi»*) · nivq · DBTalk · Mubisoft (Atlas) |
+| **Ham text-to-SQL** | Sofkar · ERP Asistanı · UMAI · ERPAS ai |
 
-**Kaçırma sebebi — yöntemsel ve kayda değer:** ilk tarama **tohum listesinden** (Sestek,
-Karel, Logo, Netsis, Obase, Turboard…) ve genel Türkçe terimlerden yürüdü. Bu yöntem
-**kurumsal ve görünür** oyuncuları buluyor; **küçük, yeni ve SEO'su zayıf** olanları
-**kaçırıyor**. Oysa bizim rekabetimiz tam olarak o kümede.
+**2 · 🔴 En büyük boşluk: *«doğrulama»* kelimesi GÜVENLİĞİ kastediyor, DOĞRULUĞU değil.**
 
-⊙ **Ve bu, raporun kendi metodolojisi hakkında bir uyarıdır:** *«Türkiye'de bunu yapan
-yok»* cümlesi, **aramanın kapsamı kadar** doğrudur. §19.5'te Dativa AI'ı ancak TRAI
-girişim haritası üzerinden bulabildik; benzer şekilde **haritada olmayan** oyuncular
-büyük olasılıkla hâlâ vardır.
+DBTalk · Listen to Data · Raporzone · Mubisoft — **hepsinde** bir *«Doğrulayıcı / Sentry /
+validate»* katmanı var, ama **hepsi salt-okunurluk ve SQL injection** denetliyor.
+*«Bu SQL soruyu DOĞRU yanıtlıyor mu?»* sorusunu **yalnız ikisi** ele alıyor: **Raporzone**
+(çift model + kaynak sorgu zorunluluğu) ve **nivq** (+%34).
 
-*Bir pazarın boş olduğunu söylemek, aramanın bittiğini varsaymaktır — ve bu varsayım
-neredeyse her zaman yanlıştır.*
+⊙ **Bizim *«mutfakta LLM'e güvenmiyoruz»* + deterministik küp yaklaşımımızın savunulabilir
+farkı tam burada.** Ve `narration_guard`/Query Contract, pazarın **hiç girmediği** yer.
 
-⚠ Bulgular geldiğinde bu bölüm **değiştirilecek**, silinmeyecek: kaçırma kaydı, yöntemin
-sınırının kanıtı olarak kalır.
+**3 · Türkçe iddiaları yüzeysel — morfolojiye kimse dokunmamış.**
+
+En yüksek çıta Listen to Data'nın *«Türkçe **karakter kaybı olmadan**»* ifadesi — yani
+yalnız **karakter seti**. Mubisoft'un *«Etiket Ajanı»*ı kolon adlarını Türkçeleştiriyor ama
+bu **çıktı** tarafında, **giriş** tarafında değil.
+⊙ *«göre/bazında»* çok anlamlılığı, ek çözümleme, fiil-isim ayrımı — **pazarda kimse
+dokunmamış**. §4.1'de *«ters yatırım»* dediğim 8.861 satır, **bu ışıkta yeniden
+değerlendirilmeli**: yanlış olan yatırımın **kendisi** değil, garsona hiç yatırım
+yapılmamış olması.
+
+**4 · İmalat/tekstil dikeyinde tek ciddi rakip TURBOARD.**
+Listen to Data (perakende) ve Sofkar (banka/sağlık) **hedefte değil**; Mubisoft/Raporzone/
+ERP Asistanı sektör-agnostik; ERPAS ai Logo'ya kilitli ama demo müşterisi tekstil.
+
+**5 · ⚠ Pazarda çok fazla «vitrin» var.** Ölçülen sinyaller: Mubisoft **placeholder
+telefon** (`212 000 00 00`) + gizlenmiş fiyat · Listen to Data **sıfır bağımsız iz** +
+demo-senaryo itirafı · UMAI Yazılım placeholder iletişim · Sofkar kurucu/ekip/müşteri
+**hiçbiri yok** · ERP Asistanı müşteri adı yok.
+⊙ **Kanıtlanmış ölçeği olan yalnız TURBOARD** (500K kullanıcı, patent, Havelsan/Turkcell/
+Sağlık Bakanlığı) **ve kısmen DBTalk** (23 kişi, basın, ~15 PoC).
+
+#### E · Bu bölümün kendi sınırı
+
+**Doğrulanamayanlar (uydurulmadı):** tüm yatırım tutarları · Sofkar'ın kuruluş/şehir/
+kurucu/ekip/müşterisi · Listen to Data'nın kuruluş/kurucu/ekibi · DBTalk/Sofkar/TURBOARD/
+ERPAS fiyatları · **YouTube demolarının içeriği** (JS/403) · DEBI · opqora · OnySoft ·
+Quantum AI'ın şirket kimlikleri.
+
+**Taze aramada öncelik:** (1) startups.watch'ta DBTalk ve Listen to Data yatırım kaydı ·
+(2) YouTube demolarının **gerçekten canlı ERP'ye mi bağlandığı** · (3) TURBOARD JAS'ın
+fiyatı ve **gerçek Türkçe performansı**.
+
+*Bir pazarın boş olduğunu söylemek, aramanın bittiğini varsaymaktır — bu rapor o varsayımı
+iki kez yanlışladı.*
 
 ## 20 · BOŞLUK VE PAZAR GERÇEĞİ — sayılarla
 
