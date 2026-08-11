@@ -39,6 +39,23 @@ sıfırlansa bile operasyon buradan devam eder.
 
 ---
 
+## `belgeler/` kökü — **DIŞARIYA VERİLEN, KAPIYLA CANLI TUTULAN**
+
+🔴 Yukarıdaki tabloda **yeni bir bayatlama sınıfı**: ne *«hiç bayatlamaz»* ne *«anında
+bayatlar»* — **bayatlaması bir kapıyla yasaklanmıştır**. Bir denetim raporu yazıldığı anın
+fotoğrafıdır ve **değiştirilmez**; bu ise **yayımlanmış bir iddiadır** ve her zaman
+**güncel** olmak zorundadır, çünkü dışarıdaki biri ona bakıp karar verir.
+
+| dosya | ne | çürümemesini ne sağlıyor |
+|---|---|---|
+| [`DOGRULUK.md`](DOGRULUK.md) | 🔴 **yayımlanan doğruluk sayısı** — oran · payda tanımı · yöntem · **bilinen körlükler** · yeniden üretme komutu | `backend/tests/test_f8_dogruluk_yayini.py` her sayıyı `nl_corpus.json`'dan yeniden hesaplar; ölçüm değişip belge güncellenmezse **kapı kırmızı** |
+
+> *Yayınlanmış ve çürümüş bir sayı, hiç yayınlanmamış bir sayıdan kötüdür — çünkü ona
+> güvenilir.* İçindeki tarih ve sha bir **arşiv damgası değil**, o anki sayıyı üreten
+> koşumun **künyesidir**.
+
+---
+
 ## `kilavuz/` — *nasıl yapılır* (canlı)
 
 | dosya | kime |
