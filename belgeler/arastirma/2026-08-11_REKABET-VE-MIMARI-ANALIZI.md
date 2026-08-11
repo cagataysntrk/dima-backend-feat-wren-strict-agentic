@@ -81,6 +81,52 @@ Rakipler *«her soruya bir şey söyler»*; biz *«bilmediğimizde susarız»* �
 bizim tarafımızı tarif ediyor: *«Text-to-SQL'de başarısızlık **makul ama yanlış bir
 cevaptır**; semantik katmanda başarısızlık **bir hata mesajıdır**.»*
 
+### 0.6 TEK SAYFALIK KARNE — sektör kontrol listesine karşı
+
+> Her satır **ölçüldü**; ölçülmeyen *«bilinmiyor»* yazıyor.
+
+| # | yetenek | sektör dayanağı | **DİMA** |
+|---|---|---|---|
+| 1 | Deterministik ara temsil (LLM SQL yazmaz) | **9 bağımsız emsal**; giriş bileti | 🟢 **VAR** — Intent-JSON + CubeQuery |
+| 2 | Semantik katman | +17…+72 puan, dört ölçüm | 🟢 **VAR** — Wren MDL, 23 küp |
+| 3 | Sorgu doğrulama (derleyici/dry-run) | Zenlytic Clarity Engine | 🟢 **VAR** — `dry_plan` · ⚠ AUROC **0,500** (doğruluk hakkında sıfır bilgi) |
+| 4 | Triaj / belirsizlik kapısı | Cortex 1. ajanı · **+50 puan** | 🟢 **VAR** — `soz.py`, netleştirme chip'i |
+| 5 | Beyan kültürü (*«eksik»* demek) | dbt: *«failure looks like an error message»* | 🟢 **VAR** — `uyum.py`, 131 işaretin çoğu |
+| 6 | Kesitsel kök-neden (formül ayrıştırma) | LMDI · çoğu üründe **yok** | 🟢 **VAR** — `kok_neden.py` |
+| 7 | Deterministik grafik kararı | Veezoo: etiketler bile VQL'den | 🟢 **VAR** — ADR-0024 · canlı **10/10** |
+| 8 | Makbuz / provenance | Bruin · BitBoard · Basedash OEM'in merkezi | 🟢 **VAR** — Query Contract |
+| 9 | Türkçe morfoloji | Veezoo'nun DACH kaması → **$6M** | 🟢 **VAR** — ⚠ 8.861 satır, ters yatırım (§4.1) |
+| 10 | Çok-turlu bellek | — | 🟡 **VAR, tur bazında ÖLÇÜLMÜYOR** |
+| 11 | VQR / hafıza | Snowflake VQR · Wren LanceDB | 🟡 **VAR ama garsona BESLENMİYOR** |
+| 12 | Bütçe + durdurma | Snowflake · **Magentic-One stall ≤2** | 🟡 `Butce` **uykuda** · **stall sayacı YOK** |
+| 13 | Araç kaydı + yetki + makbuz | Cortex 9 · Fabric 4 · Cube 16 | 🟡 **25 araç VAR — bayrak KAPALI** |
+| 14 | MCP yüzeyi | *«dağıtım kanalının kendisi»* | 🟡 **VAR — `mcp_yuzeyi: off`** |
+| 15 | **Şema daraltma (schema linking)** | hataların **%27,6-33,0'ı** · %40→%90 | 🔴 **YOK** — ⊙ *çözümü `ManifestExtractor.extract_by` ile motorun İÇİNDE* |
+| 16 | **Örnek sorgu / few-shot retrieval** | Cube **+17…+23**, 4 KB'den | 🔴 **YOK** |
+| 17 | **İş sözlüğü (`instructions.md`)** | Wren AI Context Layer | 🔴 **YOK** |
+| 18 | **Reflect + repair döngüsü** | Snowflake Error Correction · Genie | 🔴 **YOK** — tek *«düzeltme turu»*, hata modele geri verilmiyor |
+| 19 | **Skills (markdown metodoloji)** | **Anthropic: %21 → >%95** | 🔴 **YOK** |
+| 20 | **Ephemeral/karalama sorgusu** | Hex | 🔴 **YOK** |
+| 21 | **Olgu tipi taksonomisi** | **Pulse'un 14 tipi** | 🔴 **YOK** — `interpret()` **1-2 olgu** |
+| 22 | **Cevap biçimi kararı** | OpenAI Model Spec | 🔴 **YOK** — biçim üç bileşenin **yan ürünü** (chip **6,6,5,6,6,4,6,3**) |
+| 23 | **Sürpriz (JS diverjansı)** | Adtributor kurucu örneği | 🔴 **YOK** — en büyük segment suçlanıyor |
+| 24 | **FDR düzeltmesi** | **CHI 2018: içgörülerin %60+'ı yanlış** | 🔴 **YOK** |
+| 25 | **Bileşik segment araması** | HotSpot **F1 >%90** ↔ Adtributor **<%15** | 🔴 **YOK** — layer-1'de kilitli |
+| 26 | **Garson doğruluk ölçümü** | Hex 30-50 soru · Anthropic %90 kapısı | 🔴 **YOK** — trafiğin **%37'si**, ölçümü **21 senaryo** |
+| 27 | **Kurulum süresi ölçümü** | rakipler *«7 gün»* satıyor | 🔴 **YOK** |
+| 28 | **Yayınlanmış doğruluk** | *«savunma değil SİLAH»* | 🔴 **YOK** |
+| 29 | **İlan edilmiş kapsam** | yaşayanların **hepsinde** var, ölenlerin **hiçbirinde** | 🔴 **YOK** — ⊙ *sıfırıncı karar (§14.0)* |
+| 30 | **Ajan yüzeyinden dağıtım** | Rill: projelerin **%50+'ı ajan kuruyor** | 🔴 **YOK** |
+
+**Sayım:** 🟢 **9 var** · 🟡 **5 yarım** · 🔴 **16 yok**
+
+⊙ **Ve dağılımın anlamı:** dokuz yeşilin tamamı **mimari** kararlar — yani *«doğru şeyi
+kurmuşuz»*. On altı kırmızının çoğu **besleme, ölçüm ve ambalaj** — yani *«kurduğumuzu
+çalıştırmamışız»*. **Beş sarının dördü zaten yazılmış ama KAPALI.**
+
+*Bir sistemin karnesi, neyi yapamadığını değil, yapabildiği hâlde yapmadığını gösterdiğinde
+işe yarar.*
+
 ### 0.5 Tek cümlelik yargı
 
 > **Mimari kamp doğru, semantik katman gerçek bir hendek, kök-neden cebiri sektörün
@@ -1039,6 +1085,27 @@ mü?»* sorusunun tek cevabı; **«payda kutsaldır»** ilkemizin doğal tamamla
 ---
 
 ---
+
+### 13.8 Tamamlayıcı taramalar — elenenler ve neden
+
+Raporun bütünlüğü için, incelenip **alınmayan** kalemler de kayda geçiyor. *Bir
+araştırmanın değeri, reddettiklerinin gerekçesi kadardır.*
+
+| kalem | lisans / durum | karar ve gerekçe |
+|---|---|---|
+| **Malloy** (Google/Meta kökenli) | Apache-2.0 · **2,5K★** · 5.227 commit · 9 SQL motoru | ◐ **İncele, alma.** Semantik modelleme **dili** — bizim MDL'imizin rakibi, tamamlayıcısı değil. ⚠ README'de **üretime hazırlık veya bakım taahhüdü beyanı YOK**. Findly'nin onu derleyici doğrulaması için kullanması (§23.6) **desen olarak** öğretici |
+| **Lightdash** | MIT · dbt üstü BI | 🔴 **Alma.** dbt'ye sıkı bağlı; bizim MDL/Wren zeminimizle **çakışıyor**. ⊙ Yalnız *«metrik katmanını BI'ın kaynağı yapmak»* deseni için okunur |
+| **Evidence.dev** | MIT · kod-tabanlı BI (markdown + SQL) | 🔴 **Alma.** Hedef kitlesi **analist/geliştirici**; bizim iş kullanıcısı hedefimizle örtüşmüyor. ⊙ Ama *«rapor = versiyonlanmış markdown»* fikri **belge/canvas** tarafımız için ilham |
+| **Rill Developer** | Apache-2.0 · DuckDB üstü hızlı BI | ◐ **İzle.** ⊙ Tek gerçek dersi §27'de: **projelerin %50+'ı ajan tarafından kuruluyor** — *«ajan yüzeyi dağıtım kanalıdır»* tezinin kanıtı |
+| **Voyager 2** (UW IDL) | 1,5K★ · **CompassQL'in referans uygulaması** | ◐ **Kaynak olarak oku, bağımlılık alma.** *«Kısmi spesifikasyon + wildcard + ilgili görünümler»* deseni, §9.4'teki *«kullanıcı pasta istedi ama veri zaman serisi»* çözümünün canlı örneği. ⚠ Depo kendi başlığında **React/Redux göçünün alfa sürümü** olduğunu yazıyor — kararlı değil |
+| **DoWhy** (Microsoft/PyWhy) | MIT · nedensel çıkarım | 🔴 **Şimdilik alma — ama kategoriyi kayda geç.** §35'in ölçtüğü boşluk tam burada: BI'ın *«kök neden»* dediği şey **korelasyonel ayrıştırma**; gerçek nedensel iddia **DoWhy/EconML sınıfı** bir araç + **nedensel grafik beyanı** ister. ⊙ Bizde böyle bir beyan **yok** ve uydurmak `GG8`'i çiğner. *Bu, «karar motoru» iddiasının önündeki asıl bilimsel engeldir.* |
+| **Explanation Tables** (Gebaly ve ark., VLDB 2014) | akademik | ◐ **Oku.** Adtributor'ın kardeşi: bir ikili sonucu açıklayan **kompakt, örtüşmeyen kural kümesi** üretir. §10.4'teki *«bileşik segment»* boşluğunun ikinci bir çözüm ailesi; HotSpot'un MCTS'ine göre **daha yorumlanabilir**, daha az kapsayıcı |
+| **SHAP · PyRCA · EconML · Kats · Merlion** | — | 🔴 kategori hatası / ölü / arşivli (§13.7) |
+| **`ruptures`** (BSD-2) · **`statsforecast`** (Apache-2.0) | canlı | 🟢 **Al.** *«Mart'ta düştü»* iddiasını **doğrulamak** ve Adtributor'ın istediği `F` (baseline/forecast) için. §16'nın *«sürpriz hesaplanmıyor»* eksiğinin ön koşulu |
+
+⊙ **Örüntü:** elenen her kalem ya **bizim zaten sahip olduğumuz bir katmanın rakibi**
+(Malloy, Lightdash), ya **farklı bir kullanıcı için** (Evidence), ya da **bir iddiayı
+bilimsel olarak taşıyamayacağımızı gösteriyor** (DoWhy). Üçü de **bilgi**.
 
 # BEŞİNCİ KISIM — BOŞA MI GİTTİ
 
