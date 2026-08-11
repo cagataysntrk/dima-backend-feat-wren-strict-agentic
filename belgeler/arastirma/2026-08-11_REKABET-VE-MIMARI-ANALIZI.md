@@ -2439,109 +2439,409 @@ küme *örtüşmeyen* hâle gelir.
 > şeması olmaktan çıkarıp araç yapmak, üstüne gözlem-yansıma-onarım döngüsü koymak ve
 > metodolojiyi şablondan SKILL'e taşımak.**
 
+---
+
+# ON İKİNCİ KISIM — ÖNCE / SONRA MİMARİ HARİTASI
+
+> ⚠ Bu bölüm **uygulama sırasında açık tutulacak** referanstır. Her satır: *«bu işi bugün
+> KİM yapıyor → yarın KİM yapacak → nasıl doğrulanacak»*.
+>
+> 🔴 **Geliştirme sırasında güncellenecek dosyalar** her satırda **adıyla** yazılıdır.
+
+## 38 · SORUMLULUK DEVİRLERİ — on üç değişiklik
+
+### 38.1 Bağlam ve seçim
+
+| # | iş | **ÖNCE (bugün)** | **SONRA (hedef)** | dokunulacak dosyalar | MİMARİ.md'de güncellenecek |
+|---|---|---|---|---|---|
+| **D1** | Garsona şema verme | `katalog_metni.metin_ve_indeks()` → **23 küpün tamamı, 23.729 karakter**, her soruda | `wren_core.ManifestExtractor.extract_by()` ile **soruya göre budanmış** manifest → ilgili 2-3 küp | `app/katalog_metni.py` · `app/wren_service.py` · `app/routers/ask.py` (garson dalı) | **§3 semantik katman anatomisi** — *«katalog metni artık daraltılmış üretilir»* |
+| **D2** | Garsona örnek verme | ❌ **yok** — istem yalnız katalog + soru | `vqr.ara()` ile **retrieval**, istemin içine **5-10 doğrulanmış (soru → CubeQuery) çifti** | `app/vqr.py` (yeni `ara()`) · `app/llm.py::_cube_select_system` · `app/routers/ask.py` | **§4 LLM rolleri** — *«garson few-shot alır»* |
+| **D3** | İş sözlüğü | ❌ yok (yalnız `SynonymOverride`) | `demo/packs/*/instructions.md` — **versiyonlanmış iş tanımları**, garson istemine eklenir | yeni: `demo/packs/<sektor>/instructions.md` · `app/katalog_metni.py` | **§3.x** yeni alt bölüm |
+| **D4** | Belirsizlik | `soz.py` netleştirme + `§KA` beyanı | **aynen kalır** ⊙ *dışarıdan doğrulandı: +50 puan* | — | — |
+
+### 38.2 Hakem ve döngü
+
+| # | iş | **ÖNCE** | **SONRA** | dosyalar | MİMARİ.md |
+|---|---|---|---|---|---|
+| **D5** | Sorgu hatası | `plan_garson`'da **tek** *«DÜZELTME TURU»*; `llm.py`'de yalnız **boş yanıt** yeniden denemesi | **Reflect+Repair döngüsü**: derleyici/motor hatası **modele geri verilir**, en fazla **2 tur**, sonra dürüst red | `app/plan_kosucu.py` · `app/plan_garson.py` · `app/llm.py` | **§2 merdiven** — *«6. basamak artık onarım döngüsü taşır»* |
+| **D6** | Plan yetenek listesi | `plan_semasi.FIIL_ANLAMI` **elle yazılmış 15 fiil** ↔ `tools.py` **25 araç** (ayrı, %73 örtüşür) | `FIIL_ANLAMI` **`tools.py`'den TÜRETİLİR**; kapalı `enum` **korunur**, üretilmiş olur | `app/plan_semasi.py` · `app/tools.py` | **§2.0 orkestratör** — *«tek yetenek kaydı»* |
+| **D7** | Yetki denetimi (plan) | ❌ plan fiilleri `authorize()` **görmüyor** | Kayıt birleşince **yetki süzgeci plana bedava** gelir | `app/plan_semasi.py` · `control_plane/authorize.py` | **§ güvenlik** |
+| **D8** | Durdurma koşulu | `planner.Butce` **uykuda**; **stall sayacı yok** | Bütçe **canlıya**; **stall ≤2 → yeniden planla**, sonra dur | `app/plan_kosucu.py` · `app/planner.py` | **§2.0** |
+| **D9** | Metodoloji (kohort/funnel/YoY-oranı) | ❌ yok — plan fiilleri + şablon | **Skills**: `demo/skills/*.md` markdown iş akışları; garson bunları **okur** | yeni: `demo/skills/` · `app/katalog_metni.py` | **yeni ADR** |
+
+### 38.3 Cevap ve anlatı
+
+| # | iş | **ÖNCE** | **SONRA** | dosyalar | MİMARİ.md |
+|---|---|---|---|---|---|
+| **D10** | Cevap biçimi | **karar yok** — `viz.analyze` + `interpret` + `_attach_next_steps` üçünün **artığı** (chip hep 6, olgu hep 1-2) | `niyet` + `followup` **zaten** soru türünü biliyor → **tek bir biçim kararı** noktası; olgu sayısı ve chip sayısı soruya bağlanır | `app/answer.py` · `app/interpret.py` · `app/viz.py` | **ADR-0024'e ek** |
+| **D11** | Olgu üretimi | `interpret.py` **11 üretici**, canlıda **1-2** ateşliyor | Ateşlenmeyen koşullar **ölçülüp genişletilir** → hedef **Pulse'un 14 tipine** yakın | `app/interpret.py` | **§ yorum katmanı** |
+| **D12** | Kök-neden yatay eksen | `§KN` **layer-1'de kilitli**, **sürpriz yok**, **FDR yok** | **Adtributor** (~85 satır) + **JS sürprizi** + **Benjamini-Hochberg** | yeni: `app/adtributor.py` · `app/kok_neden.py` | **§KN bölümü** |
+| **D13** | Dış yüzey | `mcp_yuzeyi: off` · `agent_plan_secimi: off` | **MCP açık** (~20 araç eşiği korunarak) | `demo/packs/features.yml` · `app/routers/mcp.py` | **§ MCP** |
+
+### 38.4 🔴 DEĞİŞMEYECEKLER — bilerek
+
+| ne | neden değişmiyor |
+|---|---|
+| **LLM SQL yazmaz** | **9 bağımsız emsal** + lkr.dev %97↔%80 · Omni'nin **21 puanı** |
+| **Sayıyı her zaman küp koyar** | Zenlytic: *«this is the one part we will not make probabilistic»* |
+| **Grafik kararı deterministik** (ADR-0024) | Veezoo etiketleri bile VQL'den render ediyor · canlı **10/10** |
+| **Kapalı fiil/araç kümesi** | Cortex **%90+'ı sabit 6 aşamayla** alıyor · OpenAI eşiği *«10'dan az örtüşen araç»* |
+| **`narration_guard`** | Nature: sıcaklık ↔ doğruluk **ölçülmüş ödünleşim** |
+| **Beyan kültürü** | dbt: *«failure looks like an error message»* |
+| **Türkçe morfoloji yatırımı** | Veezoo'nun dil kaması → **$6M**; pazarda **kimse morfolojiye dokunmamış** |
+
 # ON BİRİNCİ KISIM — NE YAPMALIYIZ
 
-## 14 · ÖNCELİK SIRASI — tüm araştırma harmanlandıktan sonra
+## 14 · NE YAPMALIYIZ — adım adım uygulama planı
 
-> Sıra **etki ÷ maliyet** ile kuruldu; her madde bir **dış ölçüme** ve bir **iç ölçüme**
-> dayanıyor. ⚠ Bu bir faz planı değil, bir **öncelik yargısıdır**.
+> 🔴 **Bu bölüm bir yol haritası değil, bir UYGULAMA PLANIDIR.** Her adımda: *ne
+> yapılacak · hangi dosya · ÖNCE ne vardı → SONRA ne olacak · **nasıl curl ile
+> doğrulanacak** · risk · geri alma · hangi belge güncellenecek.*
 
-### 14.0 🔴 SIFIRINCI KARAR — kapsamı İLAN ET
+### 14.0 ÇALIŞMA PROTOKOLÜ — her adım için geçerli
 
-Bu, listedeki her şeyin **önündedir** ve **kod gerektirmez**.
+**Doğrulama sırası (bağlayıcı):**
 
-Yerleşikler **5 tabloya daralarak %90** alıyor (Databricks ≤5, Looker 5 Explore, Dot <10).
-Hayatta kalanların **hepsinde yazılı kapsam reddi** var (Hex *«What this isn't»*, Dot
-*«1 SQL + biraz Python»*, Omni `ai_chat_topics`). Ölenlerin **hiçbirinde yok**.
+```
+1. hedefli pytest (yalnız dokunulan dosya)     ~5-15 sn   ← serbest
+2. docker tazele + CURL ile canlı doğrulama    ~2-3 dk    ← ASIL KANIT
+3. bir sonraki adıma geç
+…
+N. demet bitince TEK tam kapı                  ~4 dk      ← yalnız BİR kez
+```
 
-⊙ **Ve bu, doktrinimizin çelişkisini de çözer:** *«dürüst red başarı değil»* kuralı
-**ilan edilmemiş** kapsamda doğrudur — her red bir borçtur. **İlan edilmiş** kapsamda
-**red ürünün kendisidir**. Bugün canlı trafiğin **%21,8'i cevapsız** ve bunun ne kadarının
-*«kapsam dışı»*, ne kadarının *«kusur»* olduğunu **bilmiyoruz**.
+🔴 **Adım aralarında kapı YOK.** Ölçülmüş bedel: beş kök için beş ayrı tam kapı ≈ **35 dk**;
+aynı beş kök tek koşumla **7 dk**. *Beş kat maliyet, sıfır ek bilgi.*
+⊙ **Curl asıl kanıttır**, kapı yalnız **gerilemediğini** gösterir.
 
-### 14.1 🔴 ÖNCE ÖLÇ — ölçmediğimiz yeri geliştiremeyiz
+**Her adımda güncellenecek belgeler:**
 
-| # | iş | iç ölçüm | dış dayanak |
-|---|---|---|---|
-| **1** | **Garson korpusu kur** — 300-500 etiketli soru | garson trafiğin **%37'sini** taşıyor, ölçümü **21 senaryo** | Hex: **30-50 elle yazılmış soru, her biri ayrı bir hata modu** · Anthropic: *«~20 sorguyla başlayın»* — **≥20 senaryo kuralımız literatürle örtüşüyor** |
-| **2** | **`cevapsız` oranını manşete al** | korpus **%19,9** · canlı **%21,8** — kapı manşetinde **yok** | rakiplerin en görünür üstünlüğü *«bir şeyle başlamak»* |
-| **3** | **Şişme katsayısını yaz** — *«590 semantik vakada %95»* | **28,0×** | — |
-| **4** | **Kurulum süresini ölç** | 🔴 hiç ölçülmüyor | Zenlytic: *«**Weeks. Sometimes months.** That setup tax is why we've mostly worked with large enterprises»* · rakipler **«7 gün»** satıyor |
-| **5** | **Doğruluk sayısı YAYINLA** | yok | 13 üründen 10'u yayınlamıyor; üçü **payda oyunu** yapıyor. ⊙ *«Bu bir savunma değil, **SİLAH**»* |
-
-### 14.2 🔴 SONRA GARSONU BESLE — en yüksek getirili teknik iş
-
-| # | iş | dış dayanak |
-|---|---|---|
-| **6** | **VQR'ı garsona bağla** (retrieval ile 5-10 örnek sorgu) | Cube **+17…+23 puan**, **4 KB markdown**'dan · Snowflake **Context Enrichment** ajanı · Wren LanceDB · Fabric kaynak başına 100 örnek |
-| **7** | **`ManifestExtractor.extract_by` ile şema daraltma** | şema bağlama hatası **%27,6-33,0** · Pinterest tablo arama **%40→%90** · *«Systems often fail **BEFORE** SQL is generated»* |
-| **8** | 🟢 **SKILLS (markdown)** — kohort · funnel · retention · YoY-oranı · what-if | **Anthropic: skill'siz %21 → skill'li >%95**; *«bir skill'e paketlenebilecek bağlam **fiilen sınırsız**»*. ⊙ **Kapalı fiil listesinin ilacı, kod yazmadan.** Ve metodoloji hataları (adım sırası, dedup, pencere) **metinde** yaşar |
-| **9** | 🔴 **Reflect + Repair döngüsü** — derleyici hatasını **ajanın gözüne** ver | Snowflake **Error Correction Agent** · Wren `retry&repair` · Genie öz-düzeltme. **Bu ajanlık değil, WORKFLOW** — Anthropic'in *«evaluator-optimizer»*'ı |
-| **10** | **Ephemeral/karalama sorgusu** | Hex: *«ilk denemede doğruluk yükseliyor»* |
-| **11** | **İki-sağlayıcılı hakem** | AUROC self-consistency **0,675** → topluluk **0,822** · CHASE-SQL: darboğaz **üretim değil SEÇİM** |
-
-⚠ **Ve bir uyarı — Anthropic'in ölçtüğü:** ham sorgu geçmişine grep erişimi vermek
-doğruluğu **bir puandan az** oynattı; *«bilgi oradaydı, ajan gördü, **yine de
-kullanmadı** — darboğaz erişim değil **YAPI**»*. ⊙ **Yani #6 «her şeyi ver» değil,
-«yapılandırılmış, insan onaylı örnek ver» demektir.**
-
-### 14.3 🟡 İKİ PARALEL SİSTEMİ BİRLEŞTİR
-
-| # | iş | dayanak |
-|---|---|---|
-| **12** | **`FIIL_ANLAMI`'nı `tools.py`'den TÜRET** — kapalı `enum` korunur, **üretilmiş** olur | §17.5: **%73 örtüşme**; `plan_semasi` ilkeyi `cube_query` için uygulayıp fiil kümesi için unutmuş |
-| **13** | **Orkestrasyon katmanını serbestleştir** — 15 fiili **araç** yap, üstüne **döngü** koy | Snowflake **Plan → Use Tools → Reflect**; §36'nın üç katman ayrımı. ⚠ OpenAI eşiği: *«**10'dan az örtüşen** araç sorun»* — birleşme bunu da çözer |
-| **14** | **Bütçe + stall sayacı** | Snowflake token+süre · **Magentic-One stall ≤2 → yeniden planla**. Serbest döngüye geçerken **pazarlık dışı** |
-| **15** | **MCP yüzeyini aç** (`mcp_yuzeyi: off` → on) | Wren **chat UI'ını legacy'e gömdü**; Rill'de projelerin **%50+'ı ajan tarafından** kuruluyor. ⚠ **~20 araç eşiğini** aşma; **prompt injection** riskini (serbest metin hücreleri) ciddiye al |
-
-### 14.4 🟡 KÖK-NEDEN'İ TAMAMLA
-
-| # | iş | dayanak |
-|---|---|---|
-| **16** | **Adtributor (~85 satır)** — `§KN`'nin eksik **yatay** kardeşi | layer-1'de kilitliyiz; bileşik kök nedende **%0**'a düşüyor |
-| **17** | 🔴 **Jensen-Shannon sürprizi** | *«yalnız explanatory power kullanan her analiz **büyük segmentleri sistematik olarak suçlar**»* — `§KN-toplam` tam bu tuzakta |
-| **18** | **FDR düzeltmesi** | **CHI 2018: kullanıcı içgörülerinin %60'ından fazlası yanlış** |
-| **19** | **Metodoloji doğrulayıcı** (funnel/kohort'un 5 klasik hatası) | *«**sözdizimi doğruluğu, metodoloji doğruluğundan kolaydır**»* — hiçbiri `EXPLAIN`'de görünmez |
-| **20** | *«Kök neden»* yerine **«katkı analizi»** demeyi değerlendir | Tableau kendi dokümanında: *«not a tool to prove or disprove hypotheses»*; nedensellik iddiası **hiçbir satıcıda ölçülmemiş** |
-
-### 14.5 🟡 CEVAP BİÇİMİ — «robotik»in ilacı
-
-| # | iş | dayanak |
-|---|---|---|
-| **21** | 🔴 **Olgu taksonomisini AÇ** — ⊙ `interpret.py`'de **11 üretici zaten var**, canlıda **1-2** ateşliyor (§18.3). İş *«kurmak»* değil **«hangi koşul hiç ateşlenmiyor, ölç ve genişlet»** | **Tableau Pulse'un 14 deterministik içgörü tipi**; *«NE söyleneceğine istatistik, NASIL söyleneceğine LLM»* — bizim `interpret`+`llm.anlat`+`narration_guard` üçlümüzün olgun hâli |
-| **22** | **Cevap biçimini bir KARAR yap** — bugün üç bileşenin **yan ürünü** | `niyet.py` altı soru türünü, `followup` beş konuşma türünü **zaten biliyor**; **sinyal var, tüketicisi yok** |
-| **23** | **Chip sayısını soruya bağla** — ölçüldü: **6,6,5,6,6,4,6,3** | *«the whole **"repeat question, bullet points, summary" ceremony**»* — sabit yapı robotluğun imzası |
-| **24** | **Draco hard kısıtları** (özellikle `stack_without_summative_agg`) | bu oturumda **yüzdeleri topladım**; literatür bunu **2018'de** hard hata ilan etmiş |
-| **25** | **Ön-uç sayı biçimi** — `d3-format`'ta **`tr-TR` YOK** | `%56` ↔ `56%` · `12 B` = **bin** ↔ İngilizcede **milyar** |
-
-### 14.6 🟢 STRATEJİK — pazar tarafı
-
-| # | iş | dayanak |
-|---|---|---|
-| **26** | **Kamayı netleştir: imalat + Türkçe + doğrulanabilirlik** | Veezoo'nun **DACH/Almanca kaması → $6M Series A**; Türkiye'de **kimse** imalat semantik katmanı üzerinde Türkçe doğrulanabilir cevap satmıyor |
-| **27** | **Fiyat tabanına cevap hazırla** | AKINSOFT NL raporlamayı **ücretsiz** verdi. Cevap: **«onlarınki ŞEMAYA sorar, bizimki İŞ TANIMINA sorar»** |
-| **28** | **Kanal kararı** | aiperas–Solniro (**Logo distribütörü**) ↔ Turboard (**DMO kamu kanalı**). Bayi kanalı olmadan orta ölçeğe ulaşmak zor |
-| **29** | **Self-serve fiyat düşün** | koltuk bazlı fiyat **ölenlerde yaygın**; çalışanlar düz ücret (Basedash **$1.000/ay**, Definite **$250/ay sınırsız kullanıcı**) |
-| **30** | **Apache Ossie pilotu** — `ai_context.synonyms` | Türkçe sözlüğü **koddan modele** taşır; **Wren zaten okuyor** (`wren context build --from-osi`) |
-
-### 14.7 🟢 TEMİZLİK
-
-**31** arşivlenmiş `wren-engine:latest` bağımlılığı (konteyner **`Restarting`**) ·
-**32** `wren cube query --sql-only` ↔ `cube_router` yan yana ölçümü ·
-**33** MDL'deki **31 `relationship`**'i çapraz-küpte kullan ·
-**34** `modernbert-tr-reranker` ölçümü (**+5…+9 nDCG@10**) ·
-**35** motorda olanı yeniden yazan ~**2.000 satırı** (`rls.py` · `dataset.py` · manifest)
-kademeli devre dışı bırak.
-
-### 14.8 🔴 YAPMAYACAKLARIMIZ — bilinçli
-
-| ne | neden |
+| belge | ne zaman |
 |---|---|
-| **Çok-ajanlı supervisor** | **~15× token**; Anthropic: *«tüm ajanların **aynı bağlamı paylaşması** gereken… alanlar»*da çalışmıyor — **analitik tam olarak o alandır** |
-| **Araç sayısını şişirmek** | **~20 araç eşiği**; geniş sette araç seçim doğruluğu **%13,62** |
-| **Otonom aksiyon almak** | TheAgentCompany **%30,3**, görev başına **>$4**. **Karar öner, kararı uygulama** |
-| **Zincir uzunluğunu kutsamak** | %95 adım doğruluğunda **10 adım = %59** |
-| **Kapalı fiil kümesini atmak** | Cortex Analyst **%90+'ı sabit 6 aşamayla** alıyor; Omni'nin ölçümü: katman *«referans»* olarak verilince **21 puan** kayıp |
+| **`backend/MIMARI.md`** | 🔴 sorumluluk devri olan **her** adımda (§38'deki sütun) |
+| `OPERASYON-DURUM.md` | her adım sonunda: ne bitti, ne açık kaldı |
+| `belgeler/denetim/2026-08-07_CEVIRI-SOZLESMESI.md` | **her curl turu** — soru, cevap, teşhis |
+| `backend/CLAUDE.md` | yalnız bir **kural** değişirse |
+| bu rapor (§38) | ÖNCE/SONRA satırı gerçekleşince ✅ işaretlenir |
+
+**Her adımın çıkış ölçütü (üçü birden):**
+1. Curl ile **en az 3 senaryoda** yeni davranış görüldü
+2. **KURAL B**: bayrak kapalıyken davranış **bayt bayt** eski
+3. `MIMARI.md` + `OPERASYON-DURUM.md` güncellendi
+
+---
+
+### 14.1 SIRA VE BAĞIMLILIK
+
+```
+FAZ 0 (ölçüm — kod değişikliği YOK)
+   A1 garson korpusu ──┬──────────────────────────────┐
+   A2 cevapsız metriği │                              │
+   A3 şişme beyanı     │                              │
+                       ▼                              ▼
+FAZ 1 (garsonu besle)                          FAZ 3 (cevap biçimi)
+   B1 şema daraltma ──► B2 VQR few-shot           D1 olgu sayacı
+                        B3 instructions.md        D2 taksonomi aç
+                        B4 reflect+repair         D3 biçim kararı
+                              │
+                              ▼
+FAZ 2 (yetenek birleştirme)              FAZ 4 (kök-neden)
+   C1 FIIL←tools türetimi                   E1 Adtributor
+   C2 bütçe+stall                           E2 JS sürprizi
+   C3 MCP aç                                E3 FDR
+```
+
+🔴 **FAZ 0 pazarlık dışıdır.** Ölçüm olmadan FAZ 1'in işe yarayıp yaramadığı **bilinemez** —
+ve bu raporun tamamının teşhisi tam olarak budur.
+
+---
+
+## FAZ 0 · ÖLÇÜM — kod değişikliği yok, 2-3 gün
+
+### A1 · Garson korpusu
+
+| | |
+|---|---|
+| **ÖNCE** | Garson trafiğin **%37'sini** taşıyor; ölçümü **21 senaryoluk kayıt kümesi** (`lab/reports/garson_korpusu.md`, kendi notu: *«kayıt kümesi — korpus % değil»*). `lab/kapi.py:375`: *«garson HİÇBİR TOPLU KOŞUMDA YOK»* |
+| **SONRA** | `lab/garson_korpusu.py` — **300-500 etiketli soru**, `(soru → beklenen küp · ölçü · kırılım · dönem)`. Çıktı: `doğru_küp` · `doğru_ölçü` · `doğru_kırılım` · **`cevapsız`** · `netleştirme` |
+| **dosyalar** | yeni `lab/garson_korpusu.py` · `lab/kapi.py` (yeni adım) · `lab/reports/garson_korpusu.md` |
+| **veri kaynağı** | 🔴 **uydurma soru YAZMA** — `interaction_log`'daki **3.554 gerçek etkileşim** var. `source=cube+llm` ve `source=None` olanlardan örnekle |
+| **etiketleme** | Elle. ⚠ Anthropic'in ölçümü: *«LLM'e metrik tanımı ürettirmek **net-negatifti**… **insan-küratörlü** katman kazandı»*. **Etiketi LLM'e ürettirme.** |
+| **curl doğrulama** | Korpus koştuktan sonra **rastgele 10 vakayı** curl ile tekrarla — korpusun raporladığı ile canlının verdiği **aynı mı**? ⊙ *Ölçüm aracı bu oturumda **dört kez** yalan söyledi (§21.8, §2, §19.7); araca da bir kapı gerekir.* |
+| **risk** | ⚠ **Payda kirlenmesi.** Belirsiz sorularda tek bir `gold` yanlıştır — **AmbiQT** deseni: altın cevap bir **KÜME** olmalı |
+| **geri alma** | yok (yeni dosya, mevcut yolu etkilemez) |
+| **MİMARİ.md** | *«§ ölçüm»* — garson korpusunun tanımı ve paydası |
+
+### A2 · `cevapsız` birinci sınıf metrik
+
+| | |
+|---|---|
+| **ÖNCE** | Korpusta **%19,9**, canlıda **%21,8** — **kapı manşetinde YOK**. Manşet `doğru=95` diyor ve bu **SQL üretebilmiş** turların oranı |
+| **SONRA** | Kapı özeti: `doğru=… · **cevapsız=…** · netleştirme=… · sessiz_yanlış=… · payda=…` |
+| **dosyalar** | `lab/nl_corpus.py` · `lab/kapi.py` |
+| **curl** | 6 zayıf prompt (*«işler iyi mi»*, *«bu ay ne oldu»*, *«kısaca özetle»* dâhil) → kaçı cevapsız? **Bugün 3/6** |
+| **risk** | yok — yalnız raporlama |
+| **MİMARİ.md** | *«§ test kapısı»* — manşet tanımı |
+
+### A3 · Şişme katsayısını beyan et
+
+| | |
+|---|---|
+| **ÖNCE** | *«payda=2286»* · *«14.957 tur»* — gerçekte **590 semantik vaka**, şişme **~25×** |
+| **SONRA** | Manşet: *«**590 semantik vakada** %95»*; ham tur sayısı **parantezde** |
+| **dosyalar** | `lab/nl_corpus.py` · `OPERASYON-DURUM.md` |
+| **risk** | ⚠ **Tarihsel taban kırılır.** `KURAL A` gereği ham payda **korunur**, yanına semantik payda **eklenir** |
+
+### A4 · Kurulum süresi ölçümü
+
+| | |
+|---|---|
+| **ÖNCE** | ❌ hiç ölçülmüyor |
+| **SONRA** | *«sıfırdan bir müşteri paketini ayağa kaldırıp ilk doğru cevabı almak: **kaç saat**»* — ölçülüp yazılır |
+| **neden** | Zenlytic: *«**Weeks. Sometimes months.** That setup tax is why we've mostly worked with large enterprises»* · rakipler **«7 gün»**, DBTalk **«30 dakika»** satıyor |
+| **dosyalar** | `belgeler/` yeni ölçüm notu |
+| **risk** | 🔴 **Sonuç kötü çıkabilir — ve o zaman ürün stratejisi değişir.** Bu bir risk değil, **ölçümün amacı** |
+
+---
+
+## FAZ 1 · GARSONU BESLE — en yüksek getiri, 1-2 hafta
+
+### B1 · Şema daraltma (schema linking)
+
+| | |
+|---|---|
+| **ÖNCE** | `katalog_metni.metin_ve_indeks(schema, principal)` → **23 küpün tamamı, 23.729 karakter**, **her soruda** garsona gidiyor |
+| **SONRA** | Soruya göre **budanmış manifest**. Motor bunu **zaten yapıyor**: `wren_core.ManifestExtractor.extract_by()` — *«kullanılan veri kümesi listesine göre manifest'i daralt; **ilişkili modelleri ve ilişkileri KORU**»* |
+| **dosyalar** | `app/katalog_metni.py` · `app/wren_service.py` · `app/routers/ask.py` |
+| **aday seçimi** | `cube_router.ilgili_cubelar(q, schema)` **zaten var** → ilk 2-3 küp + `measure_cube_candidates` |
+| **dış dayanak** | şema bağlama hatası: Spider 2.0 **%27,6**, MultiSpider 2.0 **%33,0** · Pinterest tablo arama **%40→%90** · *«Systems often fail **BEFORE** SQL is generated»* |
+| **curl (3 senaryo)** | ① *«bu yıl toplam ciro»* → katalog **kaç karakter** gitti (log) ② *«makine bazında oee»* → doğru küp hâlâ geliyor mu ③ **çapraz-küp**: *«ciro ve duruş»* → budama **iki küpü de** korudu mu |
+| 🔴 **risk** | **Yanlış budama = kapsam kaybı.** Aday listesi eksikse garson doğru küpü **göremez** |
+| **azaltma** | **Fail-open**: aday **<2** ise **tam katalog** gönder. Bayrak: `sema_daraltma` (varsayılan `off`) |
+| **geri alma** | tek bayrak |
+| **MİMARİ.md** | **§3** — *«katalog metni artık soruya göre daraltılmış üretilir; fail-open»* |
+
+### B2 · VQR → garson few-shot 🔴 EN YÜKSEK GETİRİ
+
+| | |
+|---|---|
+| **ÖNCE** | `vqr.py` **var** ama yalnız **replay** basamağında (merdiven #2). Garsonun istemine **hiç örnek girmiyor** |
+| **SONRA** | `vqr.ara(soru, k=5..10)` → istemin içine **doğrulanmış (soru → CubeQuery) çiftleri** |
+| **dosyalar** | `app/vqr.py` (yeni `ara()`) · `app/llm.py::_cube_select_system` · `app/routers/ask.py` |
+| **dış dayanak** | Cube: **+17…+23 puan**, ve *«**hangi model olduğu değil, semantik belgenin olup olmadığı** belirleyici»* — **4 KB markdown**'dan · Snowflake'in **Context Enrichment ajanı** birebir bu · Wren LanceDB · Fabric kaynak başına **100 örnek** |
+| ⚠ **kritik uyarı** | **Anthropic'in negatif ablasyonu**: ham SQL geçmişine grep erişimi doğruluğu **bir puandan az** oynattı — *«bilgi oradaydı, ajan gördü, **yine de kullanmadı**; darboğaz erişim değil **YAPI**»*. ⊙ **Yani «her şeyi ver» değil, «az sayıda, yapılandırılmış, İNSAN ONAYLI örnek ver».** |
+| **curl (4 senaryo)** | ① VQR'da **olan** bir soruyu benzer biçimde sor → doğru fiş ② VQR'da **olmayan** → gerileme yok ③ **çelişkili** iki örnek varsa ne oluyor ④ istem **kaç token** büyüdü |
+| 🔴 **risk** | **Bağlam kirlenmesi.** Hex'in ölçümü: *«çelişkili bağlam modeli bir **çöküş moduna** soktu»* — 30 dk eylemsiz salınım |
+| **azaltma** | Yalnız `source in ("user_verified","chip_approved")` olan kayıtlar · **en fazla 10** · benzerlik eşiği · çelişki varsa **hiç örnek verme** |
+| **geri alma** | bayrak `vqr_few_shot` |
+| **MİMARİ.md** | **§4** — *«garson few-shot alır; kaynak yalnız insan onaylı VQR»* |
+
+### B3 · `instructions.md` — iş sözlüğü
+
+| | |
+|---|---|
+| **ÖNCE** | Yalnız `SynonymOverride` (terim eşleme). *«Fire'yi kg konuşuruz»*, *«gerçekleşme = …»* gibi **iş tanımı** taşıyacak yer **yok** — ve `GG-a` tam bu yüzden oldu (`butce`de gerçekleşme ölçüsü yok, sessizce `toplam_hedef` döndü) |
+| **SONRA** | `demo/packs/<sektor>/instructions.md` — versiyonlanmış, garson istemine eklenir |
+| **dosyalar** | yeni `demo/packs/*/instructions.md` · `app/katalog_metni.py` |
+| **dış dayanak** | Wren **AI Context Layer**'ın birinci bileşeni · Apache **Ossie**'nin `ai_context` alanı (**ThoughtSpot dâhil 8 satıcı**) · Anthropic: **skill'siz %21 → skill'li >%95** |
+| **curl** | ① sözlükte tanımlı bir terim (*«gerçekleşme»*) → artık **doğru cevap ya da dürüst red** ② tanımsız terim → davranış değişmedi |
+| ⚠ **risk** | **Bakım borcu.** Anthropic: **bakımsız bırakılınca bir ayda %95 → %65** |
+| **azaltma** | Dosya **pack ile aynı repoda, aynı PR'da** — Anthropic'in çözümü birebir bu (*veri-modeli PR'larının ~%90'ı skill değişikliği içeriyor*) |
+| **MİMARİ.md** | **§3** yeni alt bölüm + **yeni ADR** |
+
+### B4 · Reflect + Repair döngüsü
+
+| | |
+|---|---|
+| **ÖNCE** | `plan_garson`'da **tek** *«DÜZELTME TURU»*; `llm.py`'deki yeniden denemeler yalnız **boş yanıt** içindir. Motor hatası modele **geri verilmiyor** — `EE-11`'de ölçüldü: *«🔴 Ama tamamlayamadım: `(cube yok)` diye bir cube YOK»* kullanıcıya gitti |
+| **SONRA** | Motor/derleyici hatası → **modele geri** → **en fazla 2 tur** → sonra dürüst red |
+| **dosyalar** | `app/plan_kosucu.py` · `app/plan_garson.py` · `app/llm.py` |
+| **dış dayanak** | Snowflake **Error Correction Agent** (*«SQL derleyicisini kullanarak hem sözdizimsel hem **anlamsal** hata arar»*) · Wren `retry&repair` · Genie öz-düzeltme · Anthropic **evaluator-optimizer** deseni. ⊙ **Bu ajanlık değil, WORKFLOW** — Anthropic'in *«ajan yerine iş akışı»* önerisine uyar |
+| **curl (3)** | ① `EE-11`'in sorusu (*«km başına nakliye maliyeti neden yüksek»*) → artık **cevap** ② kasıtlı bozuk plan → **2 turda** durdu mu ③ onarılamaz hata → **dürüst red** (sonsuz döngü yok) |
+| 🔴 **risk** | **Gecikme ve maliyet.** Her tur bir LLM çağrısı |
+| **azaltma** | **Kesin tavan 2**; `Butce(saniye=…)` bağlayıcı; onarım turu **yalnız derleyici hatasında** (boş sonuçta değil) |
+| **MİMARİ.md** | **§2** — *«6. basamak onarım döngüsü taşır, tavan 2»* |
+
+---
+
+## FAZ 2 · YETENEK KAYDINI BİRLEŞTİR — 1 hafta
+
+### C1 · `FIIL_ANLAMI`'nı `tools.py`'den türet
+
+| | |
+|---|---|
+| **ÖNCE** | **İki paralel sistem**: `plan_semasi.FIIL_ANLAMI` **elle yazılmış 15 fiil** (canlı) ↔ `tools.py` **25 araç** (`agent_plan_secimi: off`). **Örtüşme %73** (15 fiilin 11'inin araç ikizi var) |
+| **SONRA** | `FIIL_ANLAMI` **`tools.py`'den üretilir** (plan-bestelenebilir araçlar süzülerek). Kapalı `enum` **korunur** — yalnız artık **türetilmiş** olur |
+| **dosyalar** | `app/plan_semasi.py` · `app/tools.py` · `tests/test_plan_semasi.py` |
+| **iç dayanak** | 🔴 `plan_semasi`'nin **kendi docstring'i**: *«`cube_query` ŞEMASI YENİDEN YAZILMIYOR — **ÇAĞRILIYOR**… Bir şemayı iki yerde tanımlamak, iki farklı katalogla koşmaya razı olmaktır.»* — ilkeyi `cube_query` için uygulamış, **fiil kümesi için unutmuş** |
+| **dış dayanak** | OpenAI eşiği: *«15'ten fazla **ayrık** araç sorun değil; **10'dan az ÖRTÜŞEN** araç sorun»* → birleşme kümeyi *örtüşmeyen* yapar |
+| **kazanç** | ① tek kayıt (`KAT-1`) ② **yetki süzgeci plana bedava** ③ MCP plan yolunu da kapsar ④ *«hangi araç hiç seçilmiyor»* **sayılabilir** hâle gelir |
+| **curl (3)** | ① üretilmiş `enum` **bugünkü 15 fiille birebir aynı mı** (kapı ile kilitle) ② tipik 5 soru → **aynı planlar** ③ yetkisiz kullanıcı → **kısıtlı fiil listesi** |
+| 🔴 **risk** | **Canlı yolda yeniden düzenleme.** Yanlış türetim planları bozar |
+| **azaltma** | `KURAL B` **zorunlu**: türetilmiş liste bugünkü ile **bayt bayt** aynı çıkmalı; bir kapı bunu kilitler. Bayrak yok — çünkü **davranış değişmemeli** |
+| **MİMARİ.md** | **§2.0** — *«tek yetenek kaydı; plan fiilleri türetilir»* |
+
+### C2 · Bütçe + stall sayacı
+
+| | |
+|---|---|
+| **ÖNCE** | `planner.Butce(adim=3, saniye=10, **sorgu=0**)` **uykuda**; **stall sayacı YOK**. Ve ölçüm: planların **%60'ı tek adım**, en uzunu **7** — `AZAMI_ADIM=12` **hiç bağlayıcı olmamış** |
+| **SONRA** | Bütçe canlıya; **stall ≤2 → yeniden planla**, sonra dur |
+| **dosyalar** | `app/plan_kosucu.py` · `app/planner.py` |
+| **dış dayanak** | **Magentic-One stall counter ≤2** · Snowflake token+süre tavanı. ⊙ **Serbest döngüye (B4) geçerken pazarlık dışı** |
+| **curl** | ① döngüye giren bir soru → **durdu mu** ② normal soru → gecikme **değişmedi mi** |
+| **risk** | erken kesme → cevapsız artışı |
+| **azaltma** | Kesildiğinde **o ana kadarki adımlar geçerli** (`ButceAsimi` zaten böyle tanımlı) |
+
+### C3 · MCP yüzeyini aç
+
+| | |
+|---|---|
+| **ÖNCE** | `mcp_yuzeyi: "off"` → uçlar **404** |
+| **SONRA** | Açık; `tools.llm_araclari(principal)` çevirisi (yetki süzgeci **yeniden yazılmaz**) |
+| **dosyalar** | `demo/packs/features.yml` · `app/routers/mcp.py` |
+| **dış dayanak** | Wren **chat UI'ını legacy'e gömdü**; Rill'de projelerin **%50+'ı ajan tarafından** kuruluyor. ⊙ *«Chat UI 2026'da varlık değil yük»* |
+| **curl** | ① `tools/list` → **kaç araç** (⚠ **~20 eşiği**) ② `tools/call` yetkisiz → **reddediyor mu** |
+| 🔴 **risk** | **Prompt injection.** 14 CVE · 2.614 uygulamada **%82 path traversal, %67 code injection**. ⊙ **Bizim özel riskimiz:** veri tablolarındaki **serbest metin hücreleri** (müşteri notu, ürün açıklaması) MCP yanıtı olarak modele döner |
+| **azaltma** | Salt-okuma; **yazma araçları kayıtta yok** (zaten öyle); serbest metin alanları için **çıktı sanitizasyonu**; araç sayısı **≤20** |
+| **MİMARİ.md** | **§ MCP** — açılış koşulları ve injection sınırı |
+
+---
+
+## FAZ 3 · CEVAP BİÇİMİ — «robotik»in ilacı, 1 hafta
+
+### D1 · Olgu sayacı *(ölçüm — 1 gün)*
+
+| | |
+|---|---|
+| **ÖNCE** | `interpret.py`'de **11 `facts.append` çağrı yeri**; canlıda **1-2** ateşliyor |
+| **SONRA** | Her çağrı yerine sayaç → **100 gerçek soruda** koş → **hiç ateşlenmeyenleri** listele |
+| **dosyalar** | `app/interpret.py` (geçici sayaç) · `lab/` yeni ölçüm |
+| **çıktı** | *«11 üreticinin şu N tanesi hiç ateşlenmiyor, sebebi şu koşul»* |
+| **risk** | yok (ölçüm) |
+
+### D2 · Taksonomiyi aç
+
+| | |
+|---|---|
+| **ÖNCE** | 1-2 olgu — cevabın **derinliği soruya göre değişmiyor** |
+| **SONRA** | D1'in bulduğu dar koşullar genişletilir → hedef **Pulse'un 14 tipine** yakın |
+| **dış dayanak** | **Tableau Pulse'un 14 deterministik içgörü tipi** (Period-over-Period · Correlated Metrics · Record Outliers · Forecast · Current Trend · Trend Change · Unexpected Values · Goal Breakdown · Pace to Goal · **Top Drivers** · **Top Detractors** · **Concentrated Contribution** · Top/Bottom Contributors) ve *«**standardized, deterministic statistical models**… guaranteed to be accurate»* |
+| **curl (5)** | Beş farklı soru türünde **olgu sayısı** ve **çeşidi** değişiyor mu |
+| ⚠ **risk** | **Gürültü.** Pulse'un kendi ifadesi: *«**avoids displaying noisy or spurious findings**»* |
+| **azaltma** | Her olguya **etki puanı**; yalnız en etkili N tanesi. Ve 🔴 **FDR** (E3) bunun **ön koşulu** |
+
+### D3 · Cevap biçimi bir KARAR olsun
+
+| | |
+|---|---|
+| **ÖNCE** | Biçim = `viz.analyze` + `interpret` + `_attach_next_steps` üçünün **artığı**. Ölçüldü: chip **6,6,5,6,6,4,6,3**; olgu **hep 1-2**; **çoklu grafik hiç yok**; iki cevapta **sıfır metin** |
+| **SONRA** | Tek bir **biçim kararı** noktası: `niyet` (6 soru türü) + `followup` (5 konuşma türü) **zaten biliyor** → *«bu soru ne tür bir cevap ister»* |
+| **dosyalar** | `app/answer.py` · `app/interpret.py` · `app/viz.py` |
+| **dış dayanak** | **OpenAI Model Spec** — biçim *«tablo/liste/düzyazı arasında **isteğe göre**, **tek bir varsayılana saplanılmadan**»*. ⚠ Ve **anlamlı negatif bulgu**: Databricks Genie **hiçbir biçim kuralı yayımlamıyor** — sektör bunu LLM'e bırakıyor; **biz deterministik yapabiliriz** |
+| **curl (8)** | §18'in sekiz sorusu tekrar → chip sayısı **çeşitlendi mi**, sıfır-metin vakaları **kapandı mı** |
+| **risk** | ⚠ Aşırı çeşitlilik de tutarsızlık üretir |
+| **azaltma** | Karar **deterministik ve tablolu** olsun (LLM seçmesin) — ADR-0024'ün aynı ilkesi |
+| **MİMARİ.md** | **ADR-0024'e ek** — *«cevap biçimi de deterministik bir karardır»* |
+
+### D4 · Ön-uç sayı biçimi
+
+| | |
+|---|---|
+| **ÖNCE** | Backend `sayi_bicimi.py` ile düzeldi. **Ön-uç ölçülmedi** ve 🔴 `d3-format`'ta **`tr-TR` locale'i YOK** |
+| **SONRA** | ECharts/Vega tarafında Türkçe biçim |
+| **dış dayanak** | `Intl.NumberFormat("tr-TR",{style:"percent"})` → **`%56`** (işaret **önde**, **0 ondalık**) · kompakt **`12 B`** = **bin**, İngilizcede **milyar** |
+| **curl/ekran** | Üç grafik: yüzde · binlik · kompakt |
+
+---
+
+## FAZ 4 · KÖK-NEDENİ TAMAMLA — 1 hafta
+
+### E1 · Adtributor — yatay eksen
+
+| | |
+|---|---|
+| **ÖNCE** | `§KN` **dikey** ayrıştırma yapıyor (formül bileşenleri) ve **layer-1'de kilitli**; **bileşik segment** (`İstanbul × Mobil`) aranmıyor |
+| **SONRA** | `app/adtributor.py` (~85 satır): `EP = (A−F)/(A_top−F_top)` + **JS sürprizi**; eşikler `T_EP=%67`, `T_EEP=%10`, **top-3** |
+| **dosyalar** | yeni `app/adtributor.py` · `app/kok_neden.py` (çağrı) |
+| **dış dayanak** | Adtributor (NSDI'14) 128 gerçek anomalide **>%95** · HotSpot bileşikte **F1 >%90** ↔ Adtributor **<%15** · `riskloc` (MIT) **doğrulama referansı** olarak yanımızda |
+| **curl (3)** | ① tek boyutlu kök → bugünküyle **aynı** ② bileşik kök → **yeni** cevap ③ kök **hiçbir boyutta değilse** → dürüst beyan (PSqueeze deseni) |
+| **risk** | ⚠ Ölçüm gürültüsü kök neden diye sunulabilir → **E3 ön koşul** |
+
+### E2 · Jensen-Shannon sürprizi 🔴
+
+| | |
+|---|---|
+| **ÖNCE** | `§KN-toplam` **en büyük segmenti** seçiyor; **sürpriz hesaplanmıyor** |
+| **SONRA** | Aday, **dağılımı değişen** segment olmalı |
+| **dış dayanak** | 🔴 Adtributor'ın **kurucu örneği**: gelir 100$→50$; *Veri Merkezi X* düşüşün **%94'ünü** açıklıyor ama **dağılımı değişmemiş** — gerçek kök **Mobile+Tablet**. *«Yalnız explanatory power kullanan her katkı analizi **büyük segmentleri sistematik olarak suçlar**»* |
+| **curl** | *«müşteri bazında ciro → neden»* → **EGE KNIT** (en büyük) yerine **dağılımı değişen** mi geliyor |
+| **risk** | Bugünkü cevapları değiştirir — **ölçüm gerekir**, tahmin değil |
+
+### E3 · FDR düzeltmesi (Benjamini-Hochberg)
+
+| | |
+|---|---|
+| **ÖNCE** | Soru başına **yüzlerce hipotez** taranıyor (`_en_ayristiran` süpürmesi, `derinles` kombinasyonları, `contribution` segment taraması); **düzeltme YOK** |
+| **SONRA** | BH düzeltmesi **veya** keşif/doğrulama ayrımı |
+| **dış dayanak** | 🔴 **Zgraggen, Zhao, Zeleznik, Kraska (CHI 2018): *«In our experiment, **over 60% of user insights were false**»***. ⚠ Power BI'ın ham `p<0,05` Wald eşiği de düzeltme yapmıyor — **sektör de yapmıyor**, ama bu bizi haklı çıkarmaz |
+| **curl** | Aynı soru → **kaç bulgu** eleniyor; elenenler gerçekten zayıf mı |
+| **risk** | Fazla eleme → *«hiçbir şey bulamadım»* |
+| **azaltma** | Elenen sayısını **beyan et** (*«N aday incelendi, M'i istatistiksel eşiği geçti»*) — `§98.1` disiplini |
+
+### E4 · Adlandırma
+
+*«Kök neden»* yerine **«katkı analizi»** kullanmayı değerlendir. Tableau kendi dokümanında:
+*«Correlation is not causation… **not a tool to prove or disprove hypotheses**»*. Gerçek
+nedensel iddia **nedensel grafik beyanı** ister (DoWhy sınıfı) ve bizde **yok**; uydurmak
+`GG8`'i çiğner. ⊙ **İsimlendirme başlı başına bir yanıltma kaynağıdır.**
+
+---
+
+## FAZ 5 · TEMİZLİK VE STRATEJİ
+
+| # | iş | not |
+|---|---|---|
+| **F1** | Arşivlenmiş `ghcr.io/canner/wren-engine:latest` bağımlılığını netleştir | depo **arşivli**, konteyner ölçümde **`Restarting`** |
+| **F2** | `wren cube query --sql-only` ↔ `cube_router` SQL'i **yan yana** koy | *«4.807 satırın ne kadarı motorun artık kendi yaptığı iş?»* |
+| **F3** | MDL'deki **31 `relationship`**'i çapraz-küpte kullan | bugün *«blend, gerçek JOIN değil»* |
+| **F4** | `modernbert-tr-reranker` ölç | **+5…+9 nDCG@10** potansiyeli |
+| **F5** | Motorda olanı yeniden yazan **~2.000 satırı** kademeli devre dışı bırak | `rls.py` 380 · `dataset.py` 161 · manifest ~1.490 |
+| **F6** | **Apache Ossie pilotu** — bir küp, `ai_context.synonyms` | Türkçe sözlüğü **koddan modele** taşır; **Wren zaten okuyor** |
+| **F7** | 🔴 **Kapsamı İLAN ET** | yaşayanların **hepsinde** yazılı kapsam reddi var, ölenlerin **hiçbirinde** yok |
+| **F8** | **Doğruluk sayısı yayınla** | 13 üründen 10'u yayınlamıyor; üçü **payda oyunu** yapıyor. *«Savunma değil **silah**»* |
+| **F9** | Kama/fiyat/kanal kararı | ⚠ **§37.4: taze arama oturumu olmadan stratejik karara temel yapılmamalı** |
+
+---
+
+## 14.9 🔴 RİSK PANOSU — «riskli bir şey yapıyoruz»
+
+| risk | nerede | erken uyarı | geri alma |
+|---|---|---|---|
+| **Kapsam kaybı** (budama fazla) | B1 | `cevapsız` oranı **artarsa** | bayrak `sema_daraltma` |
+| **Bağlam kirlenmesi** (çelişkili örnek) | B2 | aynı soruya **farklı cevap**; gecikme sıçraması | bayrak `vqr_few_shot` |
+| **Sonsuz onarım** | B4 | süre/token sıçraması | tavan **2** + `Butce` |
+| **Plan bozulması** | C1 | üretilmiş `enum` ≠ bugünkü 15 | `KURAL B` kapısı (bayrak yok, **kilit** var) |
+| **Injection** | C3 | serbest metin hücreleri modele dönüyor | MCP bayrağı |
+| **Gürültü kök-neden** | E1/E2 | bulgu sayısı patlar | E3 **ön koşul** |
+| **Bakım borcu** | B3/D2 | bir ay sonra doğruluk düşer (**%95→%65**) | pack ile **aynı PR** kuralı |
+| 🔴 **Ölçüm aracının yalanı** | **hepsi** | bu oturumda **dört kez** oldu | **her adımda curl** — araç değil **sistem** ölçülür |
+
+## 14.10 SIRA ÖZETİ
+
+```
+FAZ 0  A1 garson korpusu · A2 cevapsız · A3 şişme · A4 kurulum süresi     2-3 gün
+FAZ 1  B1 budama → B2 few-shot → B3 instructions → B4 repair              1-2 hafta
+FAZ 2  C1 kayıt birleşimi → C2 bütçe/stall → C3 MCP                       1 hafta
+FAZ 3  D1 sayaç → D2 taksonomi → D3 biçim kararı → D4 ön-uç biçim         1 hafta
+FAZ 4  E1 Adtributor → E2 sürpriz → E3 FDR → E4 adlandırma                1 hafta
+FAZ 5  F1-F9 temizlik + strateji                                          paralel
+```
+
+🔴 **Her fazın sonunda BİR tam kapı. Faz içinde curl.**
+
+⊙ **Ve FAZ 0 olmadan hiçbirinin işe yarayıp yaramadığı bilinemez** — bu raporun tamamının
+teşhisi tam olarak budur.
 
 ## 15 · DÜRÜST KAPANIŞ
 
