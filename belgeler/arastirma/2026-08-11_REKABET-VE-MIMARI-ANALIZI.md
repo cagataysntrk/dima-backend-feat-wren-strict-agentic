@@ -3302,7 +3302,37 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 | **risk** | erken kesme → cevapsız artışı |
 | **azaltma** | Kesildiğinde **o ana kadarki adımlar geçerli** (`ButceAsimi` zaten böyle tanımlı) |
 
-### C3 · MCP yüzeyini aç
+### ⊘ C3 · MCP yüzeyini aç — **AÇILMADI: dört şarttan İKİSİ karşılanmıyor** *(2026-08-12)*
+
+> Kartın `azaltma` satırı bir dilek listesi değil, **açılış şartıdır**. Dördü tek tek
+> ölçüldü:
+>
+> | # | şart | ölçülen | |
+> |---|---|---|---|
+> | ① | araç **≤20** | `KAYIT` **25** · `llm_araclari(None)` **25** · `mcp.araclar(None)` **25** | 🔴 |
+> | ② | yazma aracı **yok** | `yan_etki` dağılımı **`{'yok': 25}`** — sıfır `yazar` | ✅ |
+> | ③ | salt-okuma / **dört kapı** | `mcp.cagir` bir `Planlayici` **istiyor**, `calistir` çağırıyor; `araclar()` `llm_araclari()` ile **aynı sayıda** (`KAT-1`) | ✅ |
+> | ④ | serbest metin **sanitizasyonu** | `mcp.py`'de `sanit`/`temizle`/`kaçış`/`pii` izi **HİÇBİRİ**; `cagir` PII çağırmıyor | 🔴 |
+>
+> 🔴 **İki eksik AYRI CİNSTEN:**
+> * **④ eksik bir KONTROL.** Kartın *«bizim özel riskimiz»* dediği yol tam olarak açık:
+>   bir müşteri notu hücresine yazılmış talimat MCP yanıtı olarak modele döner. Tasarım
+>   işi (neyin süzüleceği + süzmenin **beyan edilmesi**), tek satır değil.
+> * **① bir KARAR.** `≤20`, raporun kendi dış dayanağının daha **katı bir vekilidir**:
+>   OpenAI ölçütü *«15'ten fazla **ayrık** araç sorun değil; **10'dan az ÖRTÜŞEN** araç
+>   sorun»* — yani ölçüt **sayı değil ÖRTÜŞME**. 25 aracın örtüşmesi **ölçülmedi**;
+>   ölçülmeden ne *«eşiği gevşet»* ne *«beş araç kes»* denebilir.
+>   ⚠ Ve **`C1` tam bu ölçümü bekliyor** (fiil ↔ araç eşleşmesi) — ikisi **aynı ölçüme**
+>   bağlı ve birlikte ödenmeli.
+>
+> ⊙ Ölçüye dayanan **on ikinci** *«yapma»*. Ama bir red bir **borçtur**: kapı
+> (`test_c3_mcp_acilis_sartlari.py`, 5) karşılanan iki şartı **kilitliyor** (yazma aracı
+> girerse ya da MCP kendi yürütme yolunu açarsa **kırmızı**) ve iki eksik kapanmadan
+> bayrak açılırsa eksiği **adıyla** söylüyor.
+>
+> *Bir güvenlik sınırını «sonra bakarız» diye açmak, sınırı hiç koymamaktır.*
+
+### C3 · MCP yüzeyini aç *(özgün kart)*
 
 | | |
 |---|---|
