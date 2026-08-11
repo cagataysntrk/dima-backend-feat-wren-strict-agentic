@@ -3417,6 +3417,40 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 
 ## FAZ 4 · KÖK-NEDENİ TAMAMLA — 1 hafta
 
+### ◐ E1 · Adtributor yatay eksen — **TEŞHİS YARI BAYAT (ölçüldü 2026-08-11)**
+
+> 🔴 **`§10.4(a)`'nın *«`derinles` tek bir ikinci boyut açıyor, KOMBİNASYON ARAMASI
+> YAPMIYOR»* iddiası ölçüldü ve yarısı çürüdü.** `derinles` ilk segmente **süzgeç
+> kuruyor** (`{boyut: eq, value: segment}`) ve **içinde** ikinci bir kırılım açıyor —
+> yani **order-2 bileşik** bir cevap üretiyor.
+>
+> **Canlı iz (3 koşumun 2'sinde birebir):**
+> ```
+> §KN: formül okundu: ort_oee = kullanılabilirlik × performans × kalite
+> §KN: hat kırılımında 8 segment ve 3 bileşen ölçüldü
+> §KN: RAM 3 akran ortalamasıyla kıyaslandı → farkın kaynağı performans
+> §KN: RAM 3 içinde vardiya kırılımı açıldı → 3. Vardiya (00-08)
+> ```
+> ⊙ Sonuç `(RAM 3 × 3. Vardiya)` **artı** formül bileşeni (`performans`) — yani
+> **dikey (formül) + yatay (segment)** ayrıştırma bir arada. Adtributor'ın kendisi
+> dikey ekseni hiç yapmaz.
+>
+> **Gerçekten kalan boşluk dar:** parçaları **tek başına sıradan** olan bir bileşik
+> (Adtributor'ın asıl açığı) **kılavuzlu iniş**le bulunamaz; onun için **tüketici**
+> bir kombinasyon araması gerekir.
+>
+> 🔴 **KARAR: tüketici arama BUGÜN YAZILMADI — ve gerekçesi ölçülmüş:**
+> ① Kombinatoryal patlama, raporun kendi `§10.5` uyarısıdır (CHI 2018: *«içgörülerin
+> %60+'ı yanlış»*) ve kart **`E3`'ü ön koşul** ilan ediyor.
+> ② `E3` bu oturumda ölçüldü: **p-değeri yok** → BH uygulanamıyor; elimizdeki tek şey
+> **tarama beyanı** (yazıldı).
+> ③ Tenantlarımızda *parçaları sıradan bir bileşik kök* bulunduğuna dair **hiçbir
+> ölçüm yok**.
+> ⊙ Yani bugün tüketici arama yazmak, **ölçülmemiş bir ihtiyaç için ölçülmemiş bir
+> gürültü kaynağı** eklemek olurdu. Önce böyle bir kökün var olduğu **ölçülmeli**.
+>
+> *Bir yeteneği eklemeden önce, onsuz neyi kaçırdığımızı ölçmek gerekir.*
+
 ### E1 · Adtributor — yatay eksen
 
 | | |

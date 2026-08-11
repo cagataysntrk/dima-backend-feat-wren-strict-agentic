@@ -3103,3 +3103,17 @@ planlayıcıyı bilerek tetikleyen sorularla. Ortak soru «koştuğunda ayrışt
 **evet**. Üretim karışımı ayrı ölçüm ister (A1).
 ⊙ Sonuç: **C1 acil bir kusur düzeltmesi değil**; raporun kendi notu da onu C3'ten
 önceye bağlıyor ve «kullanıcı hiçbir şey hissetmiyor» diyor. Ölçüm sıralamayı doğruluyor.
+
+### ◐ E1 · «Kombinasyon araması yok» teşhisi YARI BAYAT *(2026-08-11)*
+
+`derinles` ilk segmente süzgeç kurup **içinde** ikinci kırılım açıyor → **order-2
+bileşik** cevap. Canlı iz (3 koşumun 2'sinde): «RAM 3 içinde **vardiya** kırılımı açıldı
+→ **3. Vardiya (00-08)**», üstelik formül bileşeni atfıyla (`performans`).
+⊙ Yani **dikey (formül) + yatay (segment)** birlikte — Adtributor dikey ekseni hiç yapmaz.
+
+**Kalan boşluk dar:** parçaları tek başına sıradan olan bir bileşik, kılavuzlu inişle
+bulunamaz; tüketici arama gerekir.
+🔴 **Karar: bugün YAZILMADI.** ① kombinatoryal patlama raporun kendi §10.5 uyarısı ve
+kart `E3`'ü ön koşul ilan ediyor ② `E3` ölçüldü: p-değeri yok → BH uygulanamıyor
+③ tenantlarımızda böyle bir kök bulunduğuna dair **hiçbir ölçüm yok**.
+⊙ Ölçülmemiş bir ihtiyaç için ölçülmemiş bir gürültü kaynağı eklemek olurdu.
