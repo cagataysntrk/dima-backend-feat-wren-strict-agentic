@@ -3221,6 +3221,118 @@ piyasadan kaldırıldı**.
 
 *Bir raporun dürüstlüğü, hangi bölümüne dayanılabileceğini söylediğinde başlar.*
 
+---
+
+# ON ÜÇÜNCÜ KISIM — YENİ GELİŞTİRİCİ İÇİN BAŞLANGIÇ
+
+> 🔴 Bu bölüm, raporu **sohbet bağlamı olmadan** kullanılabilir kılar. Yeni bir
+> geliştirici buradan başlar.
+
+## 39 · SIFIRDAN BAŞLAMA
+
+### 39.1 Okuma sırası — bir günlük
+
+| # | belge | ne verir | süre |
+|---|---|---|---|
+| 1 | **bu rapor `§0` + `§0.6` karne** | 10 dakikada tam durum | 15 dk |
+| 2 | `backend/CLAUDE.md` | 🔴 **kural seti** — garson devri, test kapısı politikası, koşum hijyeni | 45 dk |
+| 3 | `backend/MIMARI.md` **§1-§4** | cevaplama merdiveni (8 basamak), semantik katman, LLM rolleri | 2 saat |
+| 4 | `OPERASYON-DURUM.md` | nerede kaldık, açık borçlar, ölçüm tabanı | 30 dk |
+| 5 | bu rapor **`§38` önce/sonra** + **`§14` plan** | ne yapılacak | 1 saat |
+| 6 | `belgeler/denetim/2026-08-07_CEVIRI-SOZLESMESI.md` **son 3 tur** | nasıl çalışıyoruz (curl turu örneği) | 45 dk |
+
+⚠ **Çelişkide `MIMARI.md` kazanır** (kendi beyanı). Bu rapor bir **analizdir**, mimari
+otorite değildir.
+
+### 39.2 Sistemi ayağa kaldırma
+
+```bash
+export DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0
+docker-compose build dima-backend
+docker rm -f dima-backend-core && docker-compose up -d dima-backend
+curl -sf localhost:8001/health
+```
+
+API **8001**'de (konteyner içinde 8000). Demo: `demo-boyahane@usedima.com` / `dima-demo-1234`
+
+⚠ `docker-compose.yml` **arşivlenmiş** `ghcr.io/canner/wren-engine:latest` imajını da
+kaldırıyor ve ölçümde **`Restarting`** durumundaydı → **§14 FAZ 5 · F1**.
+
+### 39.3 Curl ile doğrulama — `lab/curl/`
+
+```bash
+bash lab/curl/login.sh                              # token
+bash lab/curl/kontrol.sh                            # 🔴 HER TURDAN ÖNCE
+bash lab/curl/sor.sh "bu yıl makine bazında oee"    # taze soru
+bash lab/curl/thread.sh "neden" /tmp/th.json        # thread'li takip
+```
+
+🔴 **`kontrol.sh` atlanmaz.** Ölçülmüş kör nokta: süresi dolmuş token `source=None` gibi
+görünür ve **sahte bir ürün kusuru** olarak loglanır — bu oturumda bir kez oldu.
+
+### 39.4 Kapı — ve ne zaman koşulmaz
+
+```bash
+docker run -d --name kapi --network none \
+  -v "$PWD/backend:/app" -v "$PWD/dima-frontend-demo-master:/dima-frontend-demo-master:ro" \
+  --user "$(id -u):$(id -g)" -w /app -e DIMA_VQR_EMBEDDER=off \
+  dima-test python lab/kapi.py --hepsi
+docker wait kapi && docker logs kapi | tail -20 && docker rm -f kapi
+```
+
+🔴 **Kapı hijyeni (ölçülmüş, ihlali pahalı):** `--rm` **değil** `-d` + `--name` + `docker
+wait` (`--rm` iki koşumun özetini sildi) · **`--user "$(id -u):$(id -g)"` ZORUNLU** (bir
+unutma **229 dosyayı root'a** geçirdi ve üç şirket korpustan düştü) · 🔴 **kapı koşarken
+repoya YAZILMAZ** (mount canlı, ölçüm karışır).
+
+**Taban — bu değişmemeli:**
+```
+doğru=95 · devir=2142 · netleştirme=0 · beyanlı_kısmi=41 · sessiz_yanlış=8 · payda=2286
+4993 passed, 58 skipped
+```
+⚠ `doğru=95` **uçtan uca doğruluk DEĞİL** — SQL üretebilmiş turlarda doğru küp oranı, ve
+payda **590 semantik vakanın ~25× şişmiş** hâli (§1.2, §14 A3).
+
+**Ne zaman koşulur:** yalnız **demet sonunda, bir kez**. Ölçülmüş israf: beş kök için beş
+ayrı kapı **35 dk**, tek koşumla **7 dk**.
+
+### 39.5 Rapordaki ölçümleri tekrarlama
+
+| ölçüm | komut |
+|---|---|
+| **trafik dağılımı** (route %35,5 · garson %37 · cevapsız %21,8) | `docker exec dima-backend-core python3 -c "import sqlite3;c=sqlite3.connect('/app/logs/dima.db');[print(r) for r in c.execute('select source,count(*) from interaction_log group by 1 order by 2 desc')]"` |
+| **korpus şişmesi** (590 semantik vaka) | `grep -E "SEMANTİK VAKA\|cevapsız kesme" backend/lab/reports/nl_corpus.md` |
+| **wren_core yüzeyi** (15 sembol, 1'i kullanılıyor) | `docker exec dima-backend-core python3 -c "import wren_core;print([n for n in dir(wren_core) if not n.startswith('_')])"` · `grep -rhoE "from wren_core import [A-Za-z_, ]+" backend/app/` |
+| **iki paralel sistem** (15 fiil ↔ 25 araç) | `docker exec dima-backend-core python3 -c "from app.plan_semasi import FIIL_ANLAMI; from app import tools; print(len(FIIL_ANLAMI), len(tools.llm_araclari(None)))"` |
+| **plan uzunluğu** (%60 tek adım) | `docker logs dima-backend-core 2>&1 \| grep -oE "plan: [0-9]+ adım" \| sort \| uniq -c` |
+| **cevap biçimi** (chip 6,6,5,6,6,4,6,3) | `lab/curl/sor.sh` ile §18'in 8 sorusu |
+| **`few_shot_block` nereye bağlı** | `grep -rn "few_shot_block" backend/app/ \| grep -v "def "` |
+
+### 39.6 🔴 DOKUNULMAYACAKLAR
+
+§38.4'ün tamamı — ve **neden**leri orada yazılı:
+
+**LLM SQL yazmaz** · **sayıyı her zaman küp koyar** · **grafik kararı deterministik
+(ADR-0024)** · **kapalı fiil/araç kümesi** · **`narration_guard`** · **beyan kültürü** ·
+**Türkçe morfoloji yatırımı**
+
+⚠ Ve iki yapısal kural: **`KURAL B`** (bayrak kapalıyken davranış **bayt bayt** aynı) ·
+**`KAT-1`** (bir kuralın **iki sahibi olamaz** — bu depoda defalarca ölçülmüş kusur sınıfı).
+
+### 39.7 İlk hafta — somut
+
+```
+Gün 1     §39.1 okuma + sistemi ayağa kaldır + lab/curl ile 10 soru sor
+Gün 2-3   FAZ 0 · A1 garson korpusu (interaction_log'daki 3.554 gerçek etkileşimden örnekle)
+Gün 4     FAZ 0 · A2 cevapsız metriği + A3 şişme beyanı
+Gün 5     FAZ 1 · B2 (few_shot_block'u garsona bağla — ~3-10 satır) → curl ile ölç
+```
+
+🔴 **B2 ilk kod işidir** çünkü en ucuz ve en yüksek getirili: fonksiyon **zaten yazılmış**,
+yalnız yanlış dala bağlı (§12.12).
+
+⚠ **Ama A1 olmadan B2'nin işe yarayıp yaramadığı bilinemez.** FAZ 0 pazarlık dışıdır.
+
 ## EK · Kaynakça
 
 **Benchmark:** [Spider 2.0](https://spider2-sql.github.io/) · [arXiv 2411.07763](https://arxiv.org/abs/2411.07763) · [BIRD](https://bird-bench.github.io/) · [BEAVER arXiv 2409.02038](https://arxiv.org/abs/2409.02038) · [BIRD-INTERACT arXiv 2510.05318](https://arxiv.org/abs/2510.05318) · [Archer arXiv 2402.12554](https://ar5iv.labs.arxiv.org/html/2402.12554) · [AIMultiple bağımsız ölçüm](https://aimultiple.com/text-to-sql) · [Stonebraker, CACM](https://cacm.acm.org/blogcacm/if-you-think-you-can-do-real-world-text-to-sql/)
