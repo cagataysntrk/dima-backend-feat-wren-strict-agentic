@@ -424,7 +424,7 @@ Yani kapsam dışında **reddetmiyor, uyduruyor**. Uygulamacı eleştirisi bireb
 > wrong.**»*
 
 **(c) LLM-öncesi deterministik NLQ motorları PİYASA TARAFINDAN ÖLDÜRÜLDÜ.**
-Tableau **Ask Data** → Şubat 2024'te emekli *(⚠ tek kaynaklı — bkz. §21.8)*. Power BI **Q&A** → **Aralık 2026'da
+Tableau **Ask Data** → Şubat 2024'te emekli *(⚠ tek kaynaklı — bkz. §21.13)*. Power BI **Q&A** → **Aralık 2026'da
 kalkıyor**, *«synonyms, linguistic relationships, row labels, teach Q&A»* dâhil **tüm
 dilbilimsel şema araçları** ile birlikte.
 🔴 **Bu bizi doğrudan ilgilendiriyor:** *«kullanıcı sözlüğü elle beslesin»* modeli iki dev
@@ -1459,11 +1459,123 @@ sayısal kökünü verir.
 > üretimi · takip anlama · arayüz desenleri) geldiğinde eklenecek. **Gelmeyen bulgu
 > uydurulmadı.**
 
-## 21 · CEVAP BİÇİMİ — sektörde neyin kural olduğu, neyin olmadığı
+## 21 · CEVAP BİÇİMİ VE KONUŞMA UX'İ
 
-### 21.1 🟢 Tableau Pulse — «deterministik olgu → LLM cümle» deseninin BELGELENMİŞ kanıtı
+> Sekiz araştırma kolundan **beşi tam** döndü (grafik-gerekmez akademisi · takip anlama ·
+> anti-desenler · Pulse mimarisi · Power BI kuralları). **Üçü gelmedi** ve uydurulmadı:
+> çoklu-artefakt kompozisyonu · anlatı üretimi (Arria/Quill/Smart Narrative) · arayüz
+> desenleri. Sebep: oturumun arama bütçesi + Google/Bing/DDG bot engeli + Reddit/archive
+> bloğu. **§37'nin F sınıfı.**
 
-Birincil kaynaktan doğrulandı (`help.tableau.com/.../pulse_insights_platform_insight_types.htm`):
+### 21.1 🔴 EN ÖNEMLİ BULGU — «her cevaba grafik» AMPİRİK OLARAK YANLIŞ
+
+**Hearst & Tory (2019), *«Would You Like A Chart With That?»*, IEEE VIS** — ve bu doğrudan
+**konuşma arayüzü** bağlamında ölçülmüş:
+
+| bulgu | sayı |
+|---|---|
+| **Metni tek başına tercih** | **%41** |
+| istatistiksel anlamlılık | χ²(1,N=45)=**26,8**, p<0,001 · χ²(1,N=44)=**17,9**, p<0,001 |
+| **kişi bazında kararlılık** | **%89** (40/45) ve **%82** (36/44) aynı tercihte kaldı |
+
+🔴 **Her beş kullanıcıdan ikisi sohbet bağlamında grafik İSTEMİYOR** — ve bu bir kaprisi
+değil, **kararlı bir kişilik özelliği**.
+
+Metin tercih edenlerin favorisi **«Text-values»** — ham değerleri veren biçim
+(*«Weightlifting has 15 events, compared to Taekwondo's 8»*). ⊙ Çıplak cevap *«çok basit»*,
+fark hesaplı uzun metin *«gereksiz karmaşık»* bulundu.
+
+Makalenin kendi sonucu: *«Charts containing contextual information might be a reasonable
+default… However, given the diversity of user preferences, such systems should offer
+**personalization options**.»*
+
+### 21.2 Ama «az metin iyidir» de yanlış — Stokes ve ark. (2022), IEEE TVCG
+
+302 katılımcı, **minimalizm dogmasını tersine çeviriyor**:
+
+> *«heavily annotated charts were **NOT penalized**. In fact, participants **preferred the
+> charts with the largest number of textual annotations** over charts with fewer
+> annotations or text alone.»*
+
+**Sıralama:** CTA+ (3-6 anotasyon) **1.** → CTA2 **2.** → salt metin **3.** → **çıplak
+anotasyonsuz grafik SON**.
+
+* **Guideline 1:** *«Rather than aiming for maximally minimalist design, **annotate charts
+  with relevant text**.»*
+* **Guideline 4:** *«**Consider a text-only variant that can stand alone.**»*
+
+### 21.3 🔴 Ve asıl ölçüt METİN MİKTARI DEĞİL, AMACI
+
+**Stokes & Hearst (2022)**, 2000+ serbest yorumun tematik analizi:
+
+> *«the issue that participants cared about most was **not the presence of text**, but
+> rather **the PURPOSE it served**.»*
+
+268 kişi ek bağlamı takdir etti, 227'si eksikliğinden şikâyet etti — ama **114 kişi
+*«gereksiz/tekrarcı»* metinden rahatsız oldu** (grafikte zaten görüneni tekrar söyleyen).
+
+⚠ **Ve bir uyarı:** anotasyon arttıkça *«yanıltıcı/önyargılı»* şüphesi de arttı
+(CTA1:8 · CTA2:12 · CTA+:8) — salt metin yalnız **3** şüphe topladı:
+*«Text was also **less considered a candidate for bias**.»*
+
+⊙ **Bizim için:** `narration_guard`'ın varlığı bu şüpheyi kapatan şeydir — anlatıyı
+**doğrulanabilir** yapmak, onu uzatmaktan daha değerli.
+
+### 21.4 Ne zaman tablo, ne zaman grafik — algısal temel
+
+**Franconeri, Padilla, Shah, Zacks, Hullman (2021)**, *Psychological Science in the Public
+Interest* 22(3):110-161:
+
+> **«Vision is Powerful for Global Statistics / Vision is Sluggish for Comparisons»**
+
+Göz bir grafikten ortalama/uç değeri **milisaniyede** çıkarır; ama **ikiden-üçten fazla
+değer çiftini karşılaştırmak yavaş ve kapasite-sınırlıdır** (saniyede birkaç karşılaştırma).
+🔴 **Çok sayıda tekil değerin ARANMASI gerektiğinde grafik yanlış araçtır — o iş TABLONUN.**
+
+> *«use visual grouping cues to control **which set of comparisons** a viewer should make,
+> and use annotation and highlighting to narrow that set to **the single most important
+> comparison** that supports your message.»*
+
+⚠ Minimalizm nüansı: *«Despite strong calls to declutter…, it is only **mixed evidence**
+that this practice improves aesthetic ratings and **little evidence** that the practice
+affects objective performance.»*
+
+⊙ Tartışma **100 yıllık**: **Washburne (1927)**, *«An experimental study of various graphs:
+Tabular and textual methods…»*, J. Educational Psychology 18.
+
+**Bertini, Correll, Franconeri (2020)** — *«her şey scatter olsun»* görüşünü **straw man**
+ilan edip Tversky'nin **congruence principle**'ını hatırlatıyor: *«the content and format of
+the graphic should **correspond to the content and format of the concepts** to be
+conveyed.»*
+
+### 21.5 🟢 BELGELENMİŞ TEK SOMUT KURAL SETİ — Microsoft Power BI
+
+| durum | görsel | Microsoft'un kendi cümlesi |
+|---|---|---|
+| **tek değer** | **Card** — grafik değil, **büyük sayı** | *«Use cards when **a single number**, such as total sales or market share, is the most important thing to track.»* |
+| **kesin değer arama** | **Tablo** | *«ideal when you need to see **exact values** and make quantitative comparisons across **many values** for a single category.»* |
+| **hedefe ilerleme** | **KPI** | *«communicate progress made toward a **measurable goal**»* |
+
+**Seçim kriteri dörtlüsü:** veri tipi · hedef (kıyas/trend/ilişki/ilerleme) · kitlenin
+detay ihtiyacı · mevcut alan.
+
+⊙ **Bizim `viz.py`'miz ilk ikisini zaten yapıyor** (`kpi` tek satırda, `table` ölçüsüz) —
+**eksik olan «kitlenin detay ihtiyacı»**, yani §21.1'in kişiselleştirmesi.
+
+### 21.6 🔴 ANLAMLI NEGATİF BULGU — satıcılar biçim kuralını YAYIMLAMIYOR
+
+Databricks Genie'nin resmî dokümanı, cevabın neyden oluştuğuna ve **ne zaman grafik ne
+zaman tablo** döndüğüne dair **hiçbir kural** içermiyor (bizzat çekilip doğrulandı).
+
+⊙ **Rakiplerin *«akıllıca»* görünen davranışı yayımlanmış bir kural tablosundan değil,
+model muhakemesinden geliyor.** Yayımlanmış tek net ilke seti **OpenAI Model Spec**:
+*«Be clear and direct»* · *«Be thorough but efficient, while respecting length limits»* ·
+biçim **isteğe göre**, **tek bir varsayılana saplanılmadan**.
+
+🟢 **Bu bizim için fırsat:** biçim kararını **deterministik ve yayımlanmış** yapabiliriz —
+sektörde kimse yapmıyor.
+
+### 21.7 🟢 Tableau Pulse — *«deterministik olgu → LLM ifade»* deseninin kanıtı
 
 > *«Tableau Pulse Insights Service **starts by using standardized, deterministic
 > statistical models** to detect facts about metrics that are **guaranteed to be
@@ -1471,49 +1583,28 @@ Birincil kaynaktan doğrulandı (`help.tableau.com/.../pulse_insights_platform_i
 > *«Insight summaries **use a large language model to provide a personalized overview in
 > plain language**.»*
 
-Olgular *«scored based on the impact it has on the metric value»* ve yalnız *«most
-statistically impactful»* olanlar dönüyor; ürün *«**avoids displaying noisy or spurious
+Olgular *«scored based on the **impact** it has on the metric value»*; yalnız *«most
+statistically impactful»* olanlar döner; ürün *«**avoids displaying noisy or spurious
 findings**»* diyor.
 
-⊙ **NE söyleneceğine istatistik, NASIL söyleneceğine LLM karar veriyor. Sayı asla
-LLM'den çıkmıyor.** Bu, bizim `interpret()` + `llm.anlat` + `narration_guard` üçlümüzün
-birebir aynısıdır — yani **mimari desenimiz sektörün en olgun örneğiyle aynı**.
-
-**14 belgelenmiş içgörü tipi** — ve bu, §18'de ölçtüğüm *«olgu sayısı hep 1-2»*
-kusurunun panzehiri:
+**14 içgörü tipi** — ve **artefakt sayısını belirleyen mekanizma sabit şablon değil,
+istatistiksel etki skoru + gürültü filtresi**:
 
 | # | tip | # | tip |
 |---|---|---|---|
 | 1 | Period Over Period Change *(hep açık)* | 8 | Goal and Threshold Breakdown |
 | 2 | Correlated Metrics | 9 | Pace to Goal |
-| 3 | Record-level Outliers | 10 | **Top Drivers** *(metrikle aynı yönde)* |
+| 3 | Record-level Outliers | 10 | **Top Drivers** *(aynı yönde)* |
 | 4 | Forecast | 11 | **Top Detractors** *(ters yönde)* |
-| 5 | Current Trend | 12 | **Concentrated Contribution Alert** *(az üye katkının %50+'si)* |
+| 5 | Current Trend | 12 | **Concentrated Contribution** *(az üye katkının %50+'si)* |
 | 6 | Trend Change Alert | 13 | Top Contributors *(hep açık)* |
 | 7 | Unexpected Values | 14 | Bottom Contributors |
 
-🔴 **Bizde bunun karşılığı `interpret()`'in 1-2 olgusu.** Cevap çeşitliliği bir *«uzunluk
-ayarı»* değil, bir **olgu tipi taksonomisidir** — ve bizde o taksonomi yok.
+⊙ **Her tipin bir TETİKLENME KOŞULU var** — ör. `Concentrated Contribution` ancak az sayıda
+üye katkının **%50+'sini** oluşturunca ateşlenir. **Cevabı çeşitlendiren, hangi olguların
+tetiklendiğidir.**
 
-⚠ **Ve bir tasarım kararı:** Pulse bir **sohbet değil, akış/digest** ürünü. Tableau
-bilinçli olarak chat yerine feed seçti.
-
-### 21.2 🔴 ANLAMLI NEGATİF BULGU — satıcılar cevap biçimini BELGELEMİYOR
-
-Databricks Genie'nin resmî dokümanı, cevabın neyden oluştuğuna ve **ne zaman grafik ne
-zaman tablo** döndüğüne dair **hiçbir kural yayımlamıyor**.
-
-⊙ Bu bir *«bulamadım»* değil, bir **bulgudur**: sektör cevap-biçimi politikasını
-**yazmıyor, LLM muhakemesine bırakıyor**. Yani §18'de ölçtüğüm kusurun (biçim bir karar
-değil yan ürün) **rakiplerde de karşılığı var** — ama onlarda LLM en azından **değişken**
-davranıyor; bizde deterministik boru hattı **sabit** davranıyor.
-
-Yayımlanmış tek net ilke seti **OpenAI Model Spec**: *«Be clear and direct»* · *«Be
-thorough but efficient, while respecting length limits»* · biçim tablo/liste/düzyazı
-arasında **isteğe göre** seçilmeli, **tek bir varsayılana saplanılmamalı**; uzunluk ve
-yapı **kullanıcı amacına uyarlanmalı**. (Analitiğe özel değil, genel model politikası.)
-
-### 21.3 🔴 «KATALOG GİBİ» — kullanıcıların kendiliğinden ad koyduğu kalıp
+### 21.8 🔴 «KATALOG GİBİ» — kullanıcıların kendiliğinden ad koyduğu kalıp
 
 §18'de bizim ölçtüğümüz kusurun (chip hep 6, olgu hep 1-2) sektördeki adı var. HN'de
 kullanıcılar bunu **kendiliğinden** teşhis ediyor:
@@ -1530,7 +1621,7 @@ madde** ürettiğini ölçmüş.
 ⊙ **Sabit yapı = robotluğun imzası.** Bizim `6,6,5,6,6,4,6,3` chip dizimiz bunun
 deterministik hâli — LLM'in *«hep 20 madde»*si ile aynı hastalık, farklı sebep.
 
-### 21.4 ⚠ Yalakalık/hedging YAPISALDIR — tasarım kazası değil
+### 21.9 ⚠ Yalakalık/hedging YAPISALDIR — tasarım kazası değil
 
 * **Anthropic, Persona Vectors:** *«training models based on human feedback can make them
   **more sycophantic**»*; *«if the "sycophancy" vector is highly active, the model **may
@@ -1544,7 +1635,7 @@ deterministik hâli — LLM'in *«hep 20 madde»*si ile aynı hastalık, farklı
 ölçülmüş bir doğruluk kaybıdır. **Çözüm üslubu gevşetmek değil, olgu taksonomisini
 zenginleştirmektir** (§21.1).
 
-### 21.5 🟢 «CONTEXT IS THE PRODUCT» — küp-önce felsefemizin dış doğrulaması
+### 21.10 🟢 «CONTEXT IS THE PRODUCT» — küp-önce felsefemizin dış doğrulaması
 
 HN, *«Lessons from building an AI data analyst»*: başarılı örnekler genel modelden değil,
 **dar ve elle küratörlenmiş semantik bağlamdan** geliyor.
@@ -1554,7 +1645,7 @@ Ve Veezoo kurucusu (tillvz), bizim doktrinimizi kelimesi kelimesine yazıyor:
 > *«**If AI writes SQL directly, you're building on a probabilistic foundation.** When a
 > CFO asks for revenue **the number can't just be correct 99% of times.**»*
 
-### 21.6 🔴 DOĞRULAMA YÜKÜ — rakiplerin ölçülmüş asıl kusuru
+### 21.11 🔴 DOĞRULAMA YÜKÜ — rakiplerin ölçülmüş asıl kusuru
 
 * **Databricks Genie kullanıcısı (a1o, HN):** *«often does not work completely for me…
   get things **90% there** and I need to jump in, **decipher the query**… and then figure
@@ -1570,7 +1661,7 @@ Ve Veezoo kurucusu (tillvz), bizim doktrinimizi kelimesi kelimesine yazıyor:
 Ve `adius`'un reçetesi bizde **zaten var**: *«**show the SQL query and make it editable**
 so that the user can immediately fix simple errors.»*
 
-### 21.7 Pano enflasyonu — ürün yönü için sinyal
+### 21.12 Pano enflasyonu — ürün yönü için sinyal
 
 HN *«Is Tableau Dead?»*, monkeydust:
 
@@ -1582,7 +1673,7 @@ HN *«Is Tableau Dead?»*, monkeydust:
 ⊙ *«Pushed rather than pulled»* — Tableau Pulse'un feed tercihinin (§21.1) sebebi bu.
 Bizim `schedules` + `channels` altyapımız bu yönü **zaten** destekliyor; ürünleştirilmemiş.
 
-### 21.8 ⚠ DOĞRULANAMAYANLAR — ve bir önceki bölümde DÜZELTME
+### 21.13 ⚠ DOĞRULANAMAYANLAR — ve bir önceki bölümde DÜZELTME
 
 Araştırma bu dört maddeyi **birincil kaynaktan teyit edemedi** ve tahminle doldurmadı:
 
@@ -1596,6 +1687,110 @@ Araştırma bu dört maddeyi **birincil kaynaktan teyit edemedi** ve tahminle do
 *Bir raporun değeri, doldurduğu boşluklar kadar, boş bıraktığını söylediği yerlerdedir.*
 
 ---
+
+### 21.14 🔴 TAKİP ANLAMA — sayılarla, ve bizim niyet nesnemizin eksik listesi
+
+#### CoSQL diyalog-eylem taksonomisi (arXiv:1909.05378)
+
+**Kullanıcı 11 eylem:** `INFORM_SQL` · **`INFER_SQL`** (SQL + insan çıkarımı gerekir —
+evet/hayır, *«3. en yaşlı»*) · **`AMBIGUOUS`** (sistem niyeti teyit etmeli) · `AFFIRM` ·
+`NEGATE` · `NOT_RELATED` · `CANNOT_UNDERSTAND` · `CANNOT_ANSWER` · `GREETING` · `GOOD_BYE` ·
+`THANK_YOU`
+**Sistem 8 eylem:** `CONFIRM_SQL` · **`CLARIFY`** · `REJECT` · `REQUEST_MORE` · `GREETING` ·
+`SORRY` · `WELCOME` · `GOOD_BYE`
+
+🔴 **Bizim için kritik sayı:** majority-baseline (*«hep INFORM_SQL de»*) **%62,8** →
+**soruların ~%37-40'ı doğrudan SQL'e çevrilemez**. Kalanların **~%40'ı `AMBIGUOUS`**,
+onun ~%20'si `INFER_SQL`.
+
+⊙ **Bu, «garson LLM» katmanımızın varlık gerekçesinin sayısal kanıtıdır.**
+
+⚠ Ve en iyi model genel eylem sınıflandırmasında **%83,9** ama:
+> *«The F-scores for more interesting and important dialog acts such as **`INFER_SQL` and
+> `AMBIGUOUS` are around 10%**.»* — **tam ayırt etmesi gereken yerde çöküyor.**
+
+#### SParC tematik ilişki taksonomisi (arXiv:1906.02285) — takip türlerinin haritası
+
+| ilişki | örnek | **oran** |
+|---|---|---|
+| **Theme-entity** (aynı varlık, başka özellik) | *«kapasitesi?»* → *«tüm olanaklarını listele»* | **%48,4** |
+| **Refinement** (aynı tür, farklı kısıt) | *«en az öğrencili?»* → *«en popüler olanı?»* | **%33,8** |
+| **Theme-property** (aynı özellik, başka varlık) | *«X'in puanı?»* → *«Peki Y için?»* | **%9,7** |
+| **Answer refinement** (önceki **CEVAPTAN** varlık) | cevap *«İstatistik böl.»* → o bölüm hakkında | **%8,1** |
+
+🔴 **Bu dört kova, `niyet.py`'nin taşıması gereken TAM listedir** — ve bugün **yok**.
+⊙ Özellikle **Answer refinement (%8,1)**: bu, bu oturumda ölçtüğüm *«odak varlığı yok»*
+kusurunun (`ask.py`'nin `§AT` yorumu: *«o makine»* → süzgeç kurulamıyor, 33 satır dönüyor)
+**akademik adıdır**.
+
+#### ⚠ Tur bazlı çöküş — mimari uyarı
+
+| tur | doğruluk |
+|---|---|
+| Turn 1 | **%38,6** |
+| Turn 2 | %11,6 |
+| Turn 3 | %3,7 |
+| **Turn ≥4** | **%1,1** |
+
+> *«many thematic relations are present **without explicit linguistic markers**…
+> information tends to **implicitly propagate** through the interaction.»*
+
+**Soru yeniden yazma tavanı:** CANARD — Copy 36,25 → Pronoun Sub. 47,44 → Seq2Seq **49,67**
+↔ **insan üst sınırı 59,92** BLEU. Soruların %53,9'unda zamir var ama *«**two-thirds of our
+data cannot be solved with pronoun resolution alone**»*. QReCC uçtan uca **F1 19,10 ↔ insan
+75,45**.
+
+**2025 durumu:** DySQL-Bench (arXiv:2510.26495) çok-turlu dinamik değerlendirmede GPT-4o
+**%58,34 doğruluk, Pass@5 %23,81**. ⊙ *2019'un «turlar arttıkça çöküş» bulgusu **çözülmedi**,
+yalnız mutlak sayılar yükseldi.*
+
+#### 🟢 Ürünlerin GERÇEKTE yaptığı — ve bize önerilen model
+
+| ürün | davranış |
+|---|---|
+| **Snowflake Cortex** | *«recognizes the follow-up, retrieves the context from the initial query, and **rephrases** the second question»*. Açık sınır: *«**doesn't have access to results from previous SQL queries**»* → **stateless LLM + geçmiş metni enjekte**; soru+SQL **metni** taşınır, **veri taşınmaz** |
+| 🟢 **ThoughtSpot Spotter** (en net) | *«All follow-up questions are assumed to be a follow-up on **the LATEST answer** generated»*. Yeni konu için chat **resetlenmeli**. Filtre+gruplama state'i devralınıyor |
+| **Databricks Genie** | *«Context from previous messages is retained»* ⚠ ama: *«**Avoid reusing conversation threads across sessions**, as this can reduce accuracy due to **unintended context reuse**»* |
+| **Power BI Copilot** | *«Use **clear chat** when switching topics to avoid overloading Copilot with unrelated prior context»* |
+| **Looker CA** | kullanıcıya açık talimat: *«refer to the previously established context, but **be explicit about changes**»* |
+
+⊙ **Ortak desen:** hepsi *«soruyu yeniden yaz + geçmiş metnini enjekte et»*.
+🟢 **Rakip strateji — CoE-SQL (NAACL 2024):** soruyu yeniden yazmak yerine **önceki SQL'i
+az sayıda DÜZENLEME ile güncelle**; SParC/CoSQL'de ICL baseline'larını geçiyor.
+⚠ **Bizim `deterministic_refine`'ımız tam olarak bu ailedendir** — yani bu konuda sektörün
+**önerilen** tarafındayız, ölçmemiş olmamız hariç.
+
+### 21.15 🟢 «Neden düştü?» — ÜÇ ÜRÜN DE NEDENSELLİK İDDİA ETMİYOR
+
+| ürün | ne yapıyor | ne demiyor |
+|---|---|---|
+| **Tableau Explain Data** | karmaşıklık ↔ açıklanan değişkenlik ödünleşimi | *«Explain Data is **[not]** a tool that is giving you an answer or telling you anything about **causality**»* · *«**Correlation is not causation**»* |
+| **Power BI Key Influencers** | kategorik → **lojistik regresyon** (ML.NET) · sayısal → **doğrusal regresyon** · segment → **karar ağacı** · **Wald testi p<0,05** · min **100+10** gözlem · 10.000 örneklem | nedensellik |
+| **ThoughtSpot SpotIQ** | trend/korelasyon/artış-azalış/aykırı; **ayarlanabilir** max p-değeri, korelasyon aralığı ve gecikmesi, min göreli fark | nedensellik |
+
+⊙ **Sentez:** *«Neden?»* hiçbir üründe gerçek nedensel çıkarımla değil, **katkı/sürücü
+ayrıştırmasıyla** cevaplanıyor — ve en az biri bunu **açıkça ilan ediyor**.
+🔴 **Bu, §14'ün E4 maddesini (*«kök neden» yerine «katkı analizi»*) doğrudan destekliyor.**
+
+### 21.16 🔴 ÜÇ SOMUT ÇIKARIM — doğrudan uygulanabilir
+
+**1 · *«Her cevaba grafik»* ampirik olarak yanlış.**
+Sohbet bağlamında kullanıcıların **%41'i saf metin istiyor**, tercih **%82-89 kararlı**.
+Grafik **varsayılan** olabilir ama **kişiselleştirme olmadan sabit kural yanlıştır**.
+Somut: tek değer → **büyük sayı** (Power BI Card kuralı) · çok satırlı kesin değer arama →
+**tablo** (Franconeri: *«vision is sluggish for comparisons»*).
+
+**2 · Katalog hissini kıran şey biçim çeşitliliği değil, OLGU TAKSONOMİSİ.**
+Pulse'un 14 tipi bir **grafik menüsü değil**; her biri **tetiklenme koşulu olan bir olgu**.
+Mimari: **deterministik olgu → istatistiksel etki skoru → gürültü filtresi → LLM yalnız
+cümleye döker.** ⊙ Ve §18.3'te ölçtük: `interpret.py`'de **11 üretici zaten var**, canlıda
+**1-2** ateşliyor. **Mesafe 11→14 değil, 1-2→11.**
+
+**3 · Takipte «SON CEVABA ÇIPALA» modelini seç.**
+SParC: bağımlılık **ilk 3 turda** yoğunlaşıyor, Turn ≥4'te doğruluk **%1,1**. ThoughtSpot
+tam bu yüzden **tüm geçmiş yerine yalnız son cevaba** çıpalıyor. Ve takip türleri **sabit
+dört kova**: theme-entity **%48** · refinement **%34** · theme-property **%10** ·
+answer-refinement **%8**.
 
 # SEKİZİNCİ KISIM — TÜRK PAZARI VE YEREL RAKİPLER
 
