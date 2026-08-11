@@ -3155,6 +3155,51 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 
 ## FAZ 3 · CEVAP BİÇİMİ — «robotik»in ilacı, 1 hafta
 
+### ✅ D1 · Olgu sayacı — **ÖLÇÜLDÜ (2026-08-11) ve teşhis DÜZELTİLDİ**
+
+> 🔴 **`§18.3`'ün *«canlıda 1-2 ateşliyor»* teşhisi AZ ÖRNEKLEMDENDİ.** 12 canlı soruda
+> `interpretation.facts[].type` sayıldı (kod değiştirmeden — sayaç enjekte etmek yerine
+> cevabın kendisi okundu):
+>
+> | tip | adet | | tip | adet |
+> |---|---|---|---|---|
+> | `top` · `bottom` | 6 · 6 | | `trend` · `peak` · `delta` | 2 · 2 · 2 |
+> | `kiyas` 🆕 | 4 | | `single` · `measures` | 3 · 2 |
+>
+> **Ve olgu sayısı soruya göre 0-6 arasında değişiyor** (§18: *«hep 1-2»*). Sonraki üç
+> hedefli soru susan üreticileri de ateşledi:
+> *«makine bazında aylık üretim»* → **4** olgu (`trend·peak·delta·shape`) ·
+> *«cinsiyet bazında ciro»* → **3** (`top·bottom·segment_delta`) ·
+> *«vardiya bazında aylık oee»* → `shape` + **dürüst red** (*«dönem trendi YAZILMADI:
+> ort_oee toplanabilir değil»*).
+>
+> 🔴 **`_streak` ÖLÇÜLDÜ VE AKLANDI — genişletilmemeli.** Aylık ciro serisinde gerçek
+> ardışık aynı-yönlü dönem **2**, eşik **3**. Yani üretici bozuk değil, **haklı olarak
+> susuyor**; eşiği düşürmek `D2`'nin kendi risk satırını (*«gürültü»*, Pulse: *«avoids
+> noisy findings»*) çiğnemek olurdu. *Bir üreticinin sessizliği, önce verinin sessizliği
+> olabilir.*
+>
+> ⊙ **Sonuç:** taksonomi `§18`'in çizdiğinden **sağlam**; koşullar dar ama **doğru**.
+> `D2`'nin *«koşulları genişlet»* maddesi bu ölçümle **gereksiz** hâle geldi — genişletme
+> yerine yapılması gereken, üretilen olguların **tüketilmesiydi** (⬇).
+
+### 🔴 D1'in gerçek bulgusu — üretilen olgu ŞABLONA TANITILMAMIŞTI
+
+> `anlatici.TANINAN` **kapalı** bir kümedir ve modülün kendi uyarısı şudur: *«yeni bir
+> tür `interpret()`'e eklenirse bu basamak onu **tanımaz ve turu LLM'e devreder**»*.
+> Ölçüldü: `kiyas` (yeni) **ve zaten üretilmekte olan `segment_delta`** kümede **yoktu**
+> → ikisini taşıyan her cevap, 0 token ile anlatılabilecekken **LLM'e** düşüyordu.
+>
+> **Canlı kanıt (düzeltmeden sonra):** *«cinsiyet bazında ciro»* → 3 olgu ·
+> `narration_kaynak=sablon` · `ai_generated_prose=False`; *«geçen yıla göre ciro»* →
+> `single+kiyas` · aynı şekilde. Kütükte `T2 ŞABLON: LLM çağrısı YAPILMADI`.
+> ⊙ Kazancın ölçüsü kütükte yazılı: anlatı LLM'i bir turda **22,5 sn / turun %93'ü**.
+>
+> ⚠ Genişletme kapıyı **gevşetmez**: `basit_mi`'nin `≤4 olgu` ve `tek ölçü` şartları
+> yerinde — çok ölçülü bir kıyas hâlâ LLM'e gider.
+> Kapı: `tests/test_d1_anlatici_kapsami.py` (4) — *üretilen her tip ⊆ tanınanlar*, yani
+> `interpret` yeni bir tip üretirse kapı **konuşur**.
+
 ### D1 · Olgu sayacı *(ölçüm — 1 gün)*
 
 | | |

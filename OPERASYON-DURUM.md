@@ -2942,3 +2942,25 @@ Kapı: `tests/test_d11_kiyas_olgusu.py` (5) + yorum yüzeyi 180 yeşil.
 
 ⏸ **A1 PARK EDİLDİ** (kullanıcı kararı: *«çok uzun sürdü»*). Ölçüm tesisatı ürün değil.
 Kaset kaydı arka planda; bittiğinde bağlanacak. Kalan insan işi: `sudo chown` (bloke değil).
+
+### ✅ D1 · Olgu taksonomisi ölçüldü — teşhis düzeltildi *(2026-08-11)*
+
+🔴 **`§18.3`'ün «canlıda 1-2 ateşliyor» teşhisi AZ ÖRNEKLEMDENDİ.** 12 canlı soruda tip
+dağılımı: `top·bottom` 6+6 · `kiyas` 4 · `single` 3 · `trend·peak·delta·measures` 2'şer.
+Olgu sayısı **0-6** arasında değişiyor. Hedefli üç soru susan üreticileri de ateşledi
+(`shape` 4 olgu · `segment_delta` 3 olgu · toplanamayan ölçüde **dürüst red**).
+
+🔴 **`_streak` aklandı:** aylık seride gerçek ardışık dönem **2**, eşik **3** — üretici
+haklı olarak susuyor. Eşiği düşürmek `D2`'nin kendi gürültü riskini çiğnemek olurdu.
+⊙ Sonuç: `D2`'nin «koşulları genişlet» maddesi bu ölçümle **gereksiz**.
+
+🔴 **D1'in gerçek bulgusu:** `anlatici.TANINAN` kapalı kümesinde `kiyas` **ve zaten
+üretilen `segment_delta`** yoktu → ikisini taşıyan cevap 0 token ile anlatılabilecekken
+**LLM'e** düşüyordu. Modül bunu docstring'inde önceden yazmış.
+**Canlı kanıt:** iki soru da `narration_kaynak=sablon`, `ai_generated_prose=False`,
+kütükte `T2 ŞABLON: LLM çağrısı YAPILMADI`. Kazanç ölçülü: anlatı LLM'i bir turda 22,5 sn.
+Kapı: `tests/test_d1_anlatici_kapsami.py` (4) — üretilen her tip ⊆ tanınanlar.
+
+⚠ Bir kapı bayatladı: `test_TANIMADIGI_TURU_GORUNCE_DEVREDER` `segment_delta`'yı
+«tanınmayan tür» ÖRNEĞİ olarak kullanıyordu; niyet doğru, örnek bayat → sentetik bir ada
+çevrildi (bir daha bayatlamaz).

@@ -59,9 +59,15 @@ def test_TANIMADIGI_TURU_GORUNCE_DEVREDER():
     """🔴 Bilmediği bir türü **görmezden gelip** kalanı anlatmak, kullanıcıya *eksik ama
     tam görünen* bir özet vermek olurdu. *Bir merdivenin basamağı, ne yapamadığını
     bilmiyorsa basamak değil bir tahmindir.*"""
+    # ⟳ Örnek 2026-08-11'de DEĞİŞTİ: eskiden `segment_delta` kullanılıyordu, ama o tip
+    # `§D1` ile **tanınır** hâle geldi (üretiliyordu ve şablon onu tanımadığı için her
+    # cevabı LLM'e devrediyordu). Testin niyeti doğruydu, **örneği** bayatladı.
+    # ⊙ Yeni örnek `interpret`'in asla üretmeyeceği sentetik bir addır — böylece bu test
+    # taksonomi büyüdükçe bir daha kırılmaz. *Bir kuralı sınayan örnek, kuralın kendisi
+    # kadar dayanıklı olmalıdır.*
     assert anlatici.anlat(_y(
         {"type": "trend", "measure": "x", "text": "x arttı"},
-        {"type": "segment_delta", "measure": "x", "text": "A segmenti"})) is None
+        {"type": "boyle_bir_olgu_tipi_yok", "measure": "x", "text": "A segmenti"})) is None
 
 
 def test_IKI_OLCU_DEVREDILIR():

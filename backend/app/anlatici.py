@@ -49,7 +49,21 @@ _log = get_logger("anlatici")
 #: Şablonun anlatabildiği olgu türleri — **kapalı** küme. Yeni bir tür `interpret()`'e
 #: eklenirse bu basamak onu tanımaz ve turu LLM'e devreder; sessizce atlamaz.
 TANINAN = ("trend", "delta", "peak", "streak", "top", "bottom", "single", "count",
-           "kpi_value", "shape")
+           "kpi_value", "shape", "kiyas", "segment_delta")
+#: 🔴 `kiyas` + `segment_delta` — **bu modülün kendi uyarısı işledi.** Yukarıdaki not
+#: *«yeni bir tür eklenirse bu basamak onu tanımaz ve turu LLM'e devreder»* diyordu ve
+#: tam olarak öyle oldu: `§D11-kıyas` ile eklenen `kiyas`, ve **zaten üretilmekte olan**
+#: `segment_delta` (`interpret.py:572`, tam iki segmentte) burada yoktu — yani ikisini
+#: taşıyan her cevap şablon yerine **LLM'e** düşüyordu.
+#:
+#: ⚠ İkisi de eklenmeye uygun çünkü metinleri `interpret()`'in **kendi** cümleleridir;
+#: burada hiçbir sayı hesaplanmaz, biçimlendirilmez. Ölçülen kazanç bir üslup değil bir
+#: **fatura**: canlıda anlatı LLM'i bir turda 22,5 sn / %93 pay almıştı.
+#:
+#: ⚠ Ve genişletme **kapıyı gevşetmez**: `basit_mi`'nin öteki iki şartı (`≤4 olgu`,
+#: `tek ölçü`) yerinde. Çok ölçülü bir kıyas (dört ölçünün dördü birden) hâlâ LLM'e
+#: gider — iki ölçüyü tek cümlede yan yana koymak bir **ilişki** ima eder ve o çıkarım
+#: bu basamağın yetkisinde değildir.
 
 #: Bu sayıdan fazla olgu varsa anlatı bir **liste**ye dönüşür; liste zaten `facts`
 #: alanında var ve kullanıcı onu görüyor. İkinci kez, cümle biçiminde tekrarlamak
@@ -59,8 +73,11 @@ _AZAMI_OLGU = 4
 #: Anlatının ilk cümlesi bu türlerden biriyle başlar — okuyucu **önce olguyu**, sonra
 #: ayrıntıyı görsün. Sıra rastgele değil: `trend` bir yön, `delta` bir büyüklük,
 #: `single` bir değer verir; üçü de *"ne oldu"* sorusuna doğrudan cevaptır.
-_ONCELIK = ("trend", "delta", "single", "kpi_value", "shape", "streak",
-            "peak", "top", "bottom", "count")
+#: ⊙ `kiyas` **`single`'dan hemen sonra**: tek değer *"ne kadar"*, kıyas *"neye göre"*
+#: sorusunu cevaplar — okuyucu önce değeri, sonra ölçüsünü görmeli. `segment_delta` ise
+#: bir **büyüklük**tir, `delta` ile aynı ailede.
+_ONCELIK = ("trend", "delta", "segment_delta", "single", "kiyas", "kpi_value", "shape",
+            "streak", "peak", "top", "bottom", "count")
 
 
 def basit_mi(yorum: dict | None) -> bool:
