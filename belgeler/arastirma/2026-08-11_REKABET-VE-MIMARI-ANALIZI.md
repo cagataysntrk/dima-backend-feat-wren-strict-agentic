@@ -3076,6 +3076,94 @@ FAZ 5  F1-F9 temizlik + strateji                                          parale
 ⊙ **Ve FAZ 0 olmadan hiçbirinin işe yarayıp yaramadığı bilinemez** — bu raporun tamamının
 teşhisi tam olarak budur.
 
+---
+
+## 14.11 🔴 §11 ve §13'ün KALAN KALEMLERİ — faza yerleştirilmiş
+
+> Denetimde bulundu: §11 (Wren) ve §13 (açık kaynak) **27 kalem** öneriyor, ilk plan
+> yalnız **9'unu** adım yapmıştı. Kalan **18'i** aşağıda — her biri **hangi faza**,
+> **neden orada**, ve **maliyeti** ile.
+
+### FAZ 0'a eklenenler — ölçüm altyapısı
+
+| # | kalem | kaynak | ne yapar | maliyet |
+|---|---|---|---|---|
+| **A5** | **`syrupy`** (MIT, **sıfır bağımlılık**) + `pytest-regressions` | §13.5 | **Snapshot testi**: cevabın *tam metnini* kilitler. ⊙ Bu oturumda `§SB` iz satırı bir altın testi kırdı ve **iyi ki kırdı** — snapshot bunu sistematik yapar | saatler |
+| **A6** | **`test-suite-sql-eval`** deseni (Apache-2.0, EMNLP 2020) | §13.5 | **Damıtılmış çoklu mini veri seti**: `yil = 2026` ile `yil > 2025` **tek** DB'de aynı sonucu verir, **birden çok** mini DB'de ayrışır. ⊙ *«15 gizli kırmızı, 2'si gerçek kusur»* ölçümümüzün panzehiri | günler |
+| **A7** | **`EHRSQL` reliability score** (CC-BY-4.0, NeurIPS 2022) | §13.5 | Kapsam-**içine** red **ağır negatif** · kapsam-**dışına** red **pozitif** · kapsam-dışına uydurma **en ağır negatif**. ⊙ *«Dürüst red başarı değil»* doktrininin **matematiksel formu** — tek başına bir CI kapısı | günler |
+| **A8** | **Inspect AI'ın `stderr`'i** (standart hata) | §13.5 | *«20 senaryoluk paydada %85 ile %90 arasındaki fark **gürültü mü**»* sorusunun tek cevabı. ⊙ **«Payda kutsaldır»** ilkesinin doğal tamamlayıcısı | saatler |
+| **A9** | **`promptfoo`** (saf MIT) — **yalnız garson için** | §13.5 | A1 korpusunu koşturacak hazır harness. ⚠ Mevcut `eval/run.py` zaten selective-prediction yapıyor; **yerine değil, garson için** | günler |
+| **A10** | **`Dr.Spider`** deseni (Apache-2.0, ICLR 2023) | §13.5 | **17 pertürbasyon** · `robustness gap = acc(orijinal) − acc(bozulmuş)`. 🔴 `göre/bazında/bazlı` üçlü aşırı-yüklemesi bizi **üç kez** ısırdı çünkü **ölçülmüyor** | günler |
+| **A11** | **TURSpider / TUR2SQL / BIRDTurk** | §13.6 | Türkçe NL→SQL veri setleri (8.659 / 10.809 / 10.962). ⊙ **Kendi korpusumuzun dışında bir çapa** — bugün hiç yok. ⚠ TUR2SQL lisansı belirsiz, TURSpider HF kopyası **CC BY 4.0** | günler |
+
+### FAZ 1'e eklenenler — getirme ve Türkçe
+
+| # | kalem | kaynak | ne yapar | maliyet |
+|---|---|---|---|---|
+| **B5** | **`Snowball` Türkçe kök bulucu** (BSD-3, 34,4M indirme/ay) | §13.6 | 🟢 **Gölge ölçümde dene** — sıfır bağımlılık, mikrosaniye. ⚠ Kendi belgesi: *«stems only **noun and nominal** verb suffixes»* → `arttı`yı **çözmez**, ama `satışlarımızın`/`cirodaki`/`bazında` tam kapsamda | günler |
+| **B6** | **Zemberek sözlüğü** (Apache-2.0) — **yalnız sözlük** | §13.6 | ~130k köklü sözlük; `_catalog_vocabulary`'yi besler. ⚠ **Kodu alma**: README *«slow maintenance mode»*, son sürüm **2019**, Maven Central'da **yok** | günler |
+| **B7** | **M-Schema** (XiYan-SQL) | §13.7 | **LLM-dostu şema temsili** — B1'in (şema daraltma) **çıktı biçimi** olarak değerlendirilmeli. Ham JSON yerine model için tasarlanmış gösterim | günler |
+| **B8** | **`ManifestExtractor.resolve_used_table_names`** | §11.1 | *«verilen SQL'i ayrıştır, kullanılan tablo adlarını döndür»* → **B1'in doğrulaması**: budanmış manifest, üretilen SQL'in ihtiyacını **gerçekten** karşıladı mı | saatler |
+
+### FAZ 3'e eklenenler — grafik ve biçim
+
+| # | kalem | kaynak | ne yapar | maliyet |
+|---|---|---|---|---|
+| **D6** | 🔴 **Draco hard kısıtları** | §9.2 · §13.4 | `stack_without_summative_agg` (**yüzde toplama YASAK**) · `bar_area_without_zero` · `area_bar_with_log` · `size_nominal` · `shape > 8` · `color > 20`. ⊙ **Bu oturumda yüzdeleri topladım; literatür bunu 2018'de hard hata ilan etmiş** | günler |
+| **D7** | **AVA `ckb` + `purpose` alanı** (MIT) | §13.4 | **51 grafik tipi + `dataPres` şeması + `purpose`** (Trend/Comparison/Rank/Proportion) YAML'e port. ⊙ `purpose` **niyet nesnemize doğal kanca** — D3'ün biçim kararını besler. ⚠ **Bağımlılık alma** (`npm i @antv/ava` = **257 MB**) | günler |
+| **D8** | **CompassQL etkinlik tabloları** (BSD-3) | §13.4 | Sıralama için: `Q × TIMEUNIT_T` agregalı → `line: 0, area: −0.1, bar: −0.2`. ⊙ **Draco'nun aksine zaman serisini DOĞRU yapıyor** (Draco'da `temporal` scale tipi yok, ölçüldü) | günler |
+| **D9** | **Metabase `candidates` + `agent_error` deseni** | §13.3 | Belirsizlikte `400` + **makine-okunur nesne**: `{"error":"ambiguous_measure","candidates":[…],"agent_error":true}`. ⊙ *«Dürüst red başarı değil»* **ve** *«şüphede garson»* kurallarını **aynı anda** karşılıyor; MCP açılınca (C3) **zorunlu** hâle gelir | günler |
+
+### FAZ 4'e eklenenler — kök-neden altyapısı
+
+| # | kalem | kaynak | ne yapar | maliyet |
+|---|---|---|---|---|
+| **E5** | **`ruptures`** (BSD-2) + **`statsforecast`** (Apache-2.0) | §13.8 | 🔴 **E2'nin (JS sürprizi) ÖN KOŞULU**: Adtributor `F` (baseline/forecast) ister — *«beklenen değer»* olmadan *«sürpriz»* hesaplanamaz. Ayrıca *«mart'ta düştü»* iddiasını **doğrular** | günler |
+| **E6** | **Explanation Tables** (VLDB 2014) — **oku, uygulama** | §13.8 | Adtributor'ın kardeşi; **kompakt, örtüşmeyen kural kümesi**. §10.4'ün *«bileşik segment»* boşluğuna **HotSpot'tan daha yorumlanabilir** ikinci çözüm ailesi | okuma |
+
+### FAZ 5'e eklenenler — motorda olanı bırakma
+
+| # | kalem | kaynak | ne yapar | maliyet |
+|---|---|---|---|---|
+| **F10** | **`SessionContext.dry_run` / `register_csv` / `register_parquet`** | §11.1 | `wren_service.dry_plan` sarmalayıcısı ve **`dataset.py` (161 satır)** yerine motorun kendi API'si | günler |
+| **F11** | **`RowLevelAccessControl` + `validate_rlac_rule`** | §11.1 | **`rls.py` (380 satır)** yerine. ⚠ Güvenlik sınırı — **çok dikkatli**, kademeli, A/B ile | hafta |
+| **F12** | **`Manifest` · `to_manifest` · `migrate_manifest_json` · `is_backward_compatible`** | §11.1 | `compose.py` + `mdl_writer.py`'nin manifest kısmı (**~1.490 satır**). ⊙ Özellikle **`migrate_manifest_json`** — pack sürümü değişince **göç bedava** | hafta |
+
+### 14.12 Toplam ve dürüst yargı
+
+| faz | asıl adım | eklenen | toplam |
+|---|---|---|---|
+| FAZ 0 | 4 | **+7** | 11 |
+| FAZ 1 | 4 | **+4** | 8 |
+| FAZ 2 | 3 | — | 3 |
+| FAZ 3 | 5 | **+4** | 9 |
+| FAZ 4 | 4 | **+2** | 6 |
+| FAZ 5 | 9 | **+3** | 12 |
+| | **29** | **+20** | **49** |
+
+🔴 **49 adım bir yol haritası değil, bir KATALOGDUR.** Hepsi *«yapılmalı»* değil,
+*«düşünüldü ve kaydedildi»*. §14.13 hangilerinin gerçekten kritik yolda olduğunu söyler.
+
+### 14.13 🔴 KISA YOL — beş iş, ~2-3 hafta, hissedilen iyileşmenin ~%70'i
+
+Eğer **tek bir şey** yapılacaksa sırası budur:
+
+| # | iş | süre | neden bu |
+|---|---|---|---|
+| 1 | **B2** — `few_shot_block`'u garsona bağla | **saatler** | Fonksiyon **zaten yazılmış**, Discovery'ye (%1,7) bağlı, garsona (%37) değil. Dışarıda **+17…+23 puan** ölçülmüş |
+| 2 | **A2** — `cevapsız` metriğini manşete al | **saatler** | %21,8 görünür olmadan **hiçbir iyileşme kanıtlanamaz** |
+| 3 | **D3'ün iki kuralı** — *«tek değer → grafik yok»* + *«≤3 satır → cümle»* | **günler** | *«Robotik»* hissini tek başına kıran şey. Power BI'ın **belgelenmiş** kuralı + Hearst&Tory **%41** |
+| 4 | **B1** — şema daraltma (`extract_by`, fail-open) | **günler** | Hataların **%27-33'ü** şema bağlama |
+| 5 | **B4** — reflect+repair (tavan 2 tur) | **~1 hafta** | Dürüst redleri **cevaba** çevirir |
+
+⚠ **A1 (garson korpusu) hakkında bir düzeltme:** planın ilk hâli **300-500 soru** diyordu.
+**Fazla iddialı.** Anthropic *«~20 sorguyla başlayın»*, Hex **30-50** kullanıyor.
+🟢 **50 soruyla başla, büyüt.** Aksi hâlde FAZ 0 bir haftayı yer ve **tıkaç olur**.
+
+⚠ **C1 (iki sistemi birleştirme) hakkında:** mimari olarak doğru ama **canlı yolda refactor**
+ve kullanıcı **hiçbir şey hissetmiyor** (`KURAL B` gereği davranış aynı kalacak).
+🟢 **C3 (MCP) açılmadan önceye** bağla — o zaman iki kayıt **gerçekten** sorun olur.
+
 ## 15 · DÜRÜST KAPANIŞ
 
 ### 15.1 Kullanıcının üç iddiası — ölçümle karşılığı
