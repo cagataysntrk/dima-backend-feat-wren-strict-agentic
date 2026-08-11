@@ -33,6 +33,8 @@ disiplinin reçete seviyesindeki karşılığıdır.
 
 from __future__ import annotations
 
+from app.sayi_bicimi import ek as _sek, sayi as _ssayi, yuzde as _syuzde
+
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -113,7 +115,7 @@ def recete(rapor: dict, *, lower_is_better: bool = False,
         return Recete(
             yogunlasma=yogunlasma, dagitik=True,
             gerekce=(f"Değişim dağınık: en büyük segment brüt hareketin yalnız "
-                     f"%{yogunlasma*100:.0f}'ini açıklıyor. Tek bir segmente odaklanmak "
+                     f"{_sek(_syuzde(yogunlasma*100, 0), True)} açıklıyor. Tek bir segmente odaklanmak "
                      "toplamı kayda değer biçimde değiştirmez — sorun büyük olasılıkla "
                      "sistemik. Önce kırılımı değiştirip (başka bir boyut) bakmak gerekir."))
 
@@ -128,7 +130,7 @@ def recete(rapor: dict, *, lower_is_better: bool = False,
     ]
     kotu = [o for o in oneriler if o.yon == "kotulesti"]
     gerekce = (f"Değişim yoğunlaşmış (en büyük segment brüt hareketin "
-               f"%{(yogunlasma or 0)*100:.0f}'i). "
+               f"{_sek(_syuzde((yogunlasma or 0)*100, 0))}). "
                + (f"{len(kotu)} segment ters yönde hareket etmiş; önce onlara bakmak "
                   "en yüksek getirili adım." if kotu else
                   "Segmentlerin hepsi istenen yönde hareket etmiş."))

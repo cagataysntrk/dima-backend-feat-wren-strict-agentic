@@ -10,6 +10,8 @@ LLM'siz üretilir; LLM sonradan "cilalama" olarak eklenebilir (interpret_llm hoo
 
 from __future__ import annotations
 
+from app.sayi_bicimi import ek as _sek, sayi as _ssayi, yuzde as _syuzde
+
 import datetime as _dt
 from typing import Any
 
@@ -93,7 +95,7 @@ def _series_facts(rows: list[dict], time_col: str, measure: str, unit: str | Non
         facts.append({"type": "trend", "measure": measure, "pct": round(pct, 1),
                       "favorable": (None if not lib or -1 <= pct <= 1 else pct < -1),
                       "text": f"{_ad(measure)}: {_fmt_bucket(first[0])}→{_fmt_bucket(last[0])} "
-                              f"%{abs(round(pct, 1))} {yon} "
+                              f"{_syuzde(abs(round(pct, 1)))} {yon} "
                               f"({_fmt(first[1], unit)} → {_fmt(last[1], unit)}){_tone(pct, lib)}"})
     facts.append({"type": "peak", "measure": measure,
                   "text": f"En yüksek {_fmt_bucket(hi[0])} ({_fmt(hi[1], unit)}), "
@@ -109,7 +111,7 @@ def _series_facts(rows: list[dict], time_col: str, measure: str, unit: str | Non
                          if first[1] else None,
                   "favorable": (None if not lib else (last[1] - first[1]) < 0),
                   "text": f"Δ {_ad(measure)}: {_fmt(last[1] - first[1], unit)}"
-                          + (f" (%{abs(round((last[1] - first[1]) / abs(first[1]) * 100, 1))})"
+                          + (f" ({_syuzde(abs(round((last[1] - first[1]) / abs(first[1]) * 100, 1)))})"
                              if first[1] else "")})
 
     st = _streak(pts, lib)
@@ -245,7 +247,7 @@ def _rank_facts(rows: list[dict], dim: str, measure: str, unit: str | None,
     # ve *"boş laf — tek yıl tabii ki %100"* dedi. Bilgi taşımayan bir cümle, güveni
     # aşındırır: okuyan kişi cümlenin hesaplanmış mı yoksa doldurma mı olduğunu ayırt
     # edemez hâle gelir.
-    pay = (f", toplamın %{round(share, 1)}'i)"
+    pay = (f", toplamın {_sek(_syuzde(round(share, 1)))})"
            if (total and toplanabilir and len(ranked) > 1) else ")")
     facts = [{"type": "top", "dim": dim, "measure": measure, "entity": top[0],
               "text": f"En yüksek {_ad(dim)}: {top[0]} ({_fmt(top[1], unit)}" + pay}]
@@ -295,7 +297,7 @@ def _segment_delta(rows: list[dict], dim: str, measure: str, unit: str | None,
         # *"A daha yüksek"*in iyi mi kötü mü olduğunu **uydurmuş** olurduk.
         "favorable": (None if not lib else fark < 0),
         "text": f"{_ad(measure)}: {a[dim]} − {b[dim]} = {_fmt(fark, unit)}"
-                + (f" (%{abs(round(pct, 1))})" if pct is not None else ""),
+                + (f" ({_syuzde(abs(round(pct, 1)))})" if pct is not None else ""),
     }]
 
 
@@ -346,7 +348,7 @@ def _signals(rows: list[dict], dims: list[str], time_col: str | None,
             if abs(change) >= 0.10 and bad:
                 yon = "arttı" if rising else "azaldı"
                 out.append({"severity": "warning", "kind": "trend",
-                            "text": f"{m0} dönem içinde %{abs(change) * 100:.0f} {yon} — izlenmeli"})
+                            "text": f"{m0} dönem içinde {_syuzde(abs(change) * 100, 0)} {yon} — izlenmeli"})
 
     # (c) Yoğunlaşma — kategorik dağılımda tek kalem toplamın ≥%50'si (risk/bağımlılık).
     if dims and not time_col and len(rows) > 2:
@@ -355,7 +357,7 @@ def _signals(rows: list[dict], dims: list[str], time_col: str | None,
         if tot > 0 and max(vals) / tot >= 0.50:
             out.append({"severity": "info", "kind": "concentration",
                         "text": f"Yoğunlaşma — en yüksek kalem toplamın "
-                                f"%{max(vals) / tot * 100:.0f}'i"})
+                                f"{_sek(_syuzde(max(vals) / tot * 100, 0))}"})
     return out
 
 

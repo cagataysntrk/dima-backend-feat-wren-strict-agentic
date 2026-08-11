@@ -2645,3 +2645,20 @@ Beş yeni kök bulundu ve düzeltildi. Tam döküm: çeviri sözleşmesi › `DD
 * *(devreden)* `§Cİ-belge` şüphesi · belge düzenlemede başlık/granülerlik devri ·
   `euro`/`mars` sınıfı (Intent-JSON `yok_sayilan` alanı) · «arıza tipi» yönlendirmesi ·
   `§KN`'yi 8'den fazla ölçüye açmak · canlı «düşünüyorum» akışı (`S` fazı) · `B3`.
+
+## `EE` turu (2026-08-11) — kök-neden her ölçü ailesinde
+
+| işaret | ne yapar |
+|---|---|
+| `§KN-toplam` | **Formülü olmayan bir ölçünün de kökü var.** Cebir logaritma değil **pay**: bir toplam alt segmentlerinin doğrudan toplamıdır, iniş **kırılım ekseninde** olur. Öncesinde kesitsel bir soruya `contribution`'ın **zamansal** cevabı veriliyordu. ⚠ Kapı `contribution.toplanabilirlik` (`TAM` şartı) — kapısız hâli yüzde ölçülerde *«toplamının %11,8'ini taşıyor»* gibi **anlamsız** bir cümle üretti (yüzdeler toplanmaz). |
+| `GIRDI_TIPI["SORGU"]` | Plan doğrulayıcı `SORGU`'nun girdi tipini **hiç bilmiyordu** → `SORGU(cube_query=$3→HESAPLA)` denetimden geçip koşum anında patlıyordu. Erken reddedilince `plan_garson`'un DÜZELTME TURU devreye girer: dürüst red yerine **gerçek cevap**. |
+| `§RD-ad` | Belge düzenlemede **ad devralınır** (`§RD-3`'ün kardeşi). Bilinen sınır: bu turda belge yeniden adlandırılamaz. |
+| `§SB-metin` (genişledi) | Sayının Türkçesi **beş** yerde yazılıyormuş: `contribution._b3` · `interpret` ×6 · `prescribe` ×2 · `plan_tuketici._b`. Hepsi `app/sayi_bicimi.py`'ye bağlandı. |
+
+### Açık borç — ölçüldü, düzeltilmedi
+
+* **«neden» bir BOYUT ADI olduğunda konuşma sınıfı hiç ateşlenmiyor:** `parti`de
+  *«neden bu kadar düşük»* → `LLM-destekli yapısal düzenleme`, `kırılım=kok_neden,sebep`.
+  İki koşumda da aynı (kararsızlık değil). `§NB` bu yola uzanmıyor.
+* *(devreden)* `§Cİ-küp` belge yolunda · `§Cİ-belge` şüphesi · belge granülerlik devri ·
+  `euro`/`mars` sınıfı · «arıza tipi» · `§KN` 8 ölçü sınırı · `S` fazı akış · `B3`.

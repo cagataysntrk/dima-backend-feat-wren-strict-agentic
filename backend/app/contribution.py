@@ -34,6 +34,14 @@ yapar ya da hiçbir şey göstermez. Bu yüzden her segment iki pay taşır:
 
 from __future__ import annotations
 
+# 🔴 `§SB-metin` — **MODÜL DÜZEYİNDE, ve bunu bir kapı öğretti.** İlk yazımda bu import
+# iki ayrı fonksiyonun İÇİNDEYDİ ve `_b3 = _ssayi` üçüncü bir fonksiyondaydı:
+# `F821 Undefined name` — yani o satır koştuğu an bir **`NameError`**. Süit yakaladı
+# (`test_COZULMEYEN_ISIM_YOK`), canlı curl **yakalamadı**, çünkü o dal ancak belli bir
+# akran kıyasında koşuyor.
+# *Bir ismi kullandığın yerde değil, çözüldüğü yerde tanımlamak gerekir.*
+from app.sayi_bicimi import ek as _sek, sayi as _ssayi, yuzde as _syuzde
+
 from typing import Any
 
 from app.logging_setup import get_logger
@@ -201,14 +209,18 @@ def decompose(rows: list[dict], dim: str, measure: str, cube_query: dict,
         # değil, kararın **ikinci bir yerde yeniden uygulanmasıydı** (`KAT-1`).
         #
         # *İki yerde biçimlendirilen bir sayı, er ya da geç iki farklı sayı gibi okunur.*
-        from app.sayi_bicimi import ek as _ek, sayi as _sayi, yuzde as _yuzde
 
         yon = "arttı" if k["delta"] > 0 else "azaldı"
-        pay = (f" (net değişimin {_ek(_yuzde(k['net_pay']))})" if k["net_pay"] is not None
-               else f" (hareketin {_ek(_yuzde(k['brut_pay']))})")
+        # ⚠ Takma adlar `_sek/_ssayi/_syuzde` — **`_sayi` bu modülde ZATEN VAR** ve o bir
+        # *ayrıştırıcıdır* (`str→float`), bir biçimlendirici değil. İlk yazımda yerel bir
+        # import onu fonksiyon içinde **gölgeliyordu**; import modül düzeyine çıkınca
+        # `_sayi(abs(delta))` sessizce **ham float** basacaktı.
+        # *Aynı adı iki farklı işe vermek, birini er ya da geç öteki sanmaktır.*
+        pay = (f" (net değişimin {_sek(_syuzde(k['net_pay']))})" if k["net_pay"] is not None
+               else f" (hareketin {_sek(_syuzde(k['brut_pay']))})")
         bulgular.append({
             **k,
-            "label": f"{etiket}: {k['deger']} — {_sayi(abs(k['delta']))}"
+            "label": f"{etiket}: {k['deger']} — {_ssayi(abs(k['delta']))}"
                      f"{' ' + unit if unit else ''} {yon}{pay}",
             "kind": "dimension",
             "cube_query": select_cube_query(cube_query, dim, k["deger"]),
@@ -585,19 +597,16 @@ def arastir(service, schema: dict, cube_query: dict, *, mode: str = "yoy",
                 # koşumda ekrana `0.5245118291704627` ve `63452.000000000044` düştü —
                 # kayan nokta gürültüsü. Bir makbuz cümlesi doğru olmakla yetinmez,
                 # **okunabilir** de olmalı; okunamayan bir sayı sorgulanmaz, atlanır.
-                def _b3(x):
-                    try:
-                        _f = float(x)
-                    except (TypeError, ValueError):
-                        return str(x)
-                    if abs(_f) >= 1000:
-                        return f"{_f:,.0f}".replace(",", ".")
-                    return f"{_f:.4g}".rstrip("0").rstrip(".") if _f else "0"
+                # 🔴 `§SB-metin` — `_b3` bu sayının **DÖRDÜNCÜ** biçimlendiricisiydi
+                # (ölçüldü, `EE` turu, EE-1: *«%8.7 düşük (74.39 ↔ 81.46)»* — ondalık
+                # ayırıcı İngilizce). Tek sahip `app/sayi_bicimi.py`.
+                # *Bir sayının Türkçesi tek bir yerde yazılır.*
+                _b3 = _ssayi
 
                 _yon = "düşük" if _b["fark"] < 0 else "yüksek"
                 _sat = [f"**{_b['hedef']}**, öteki {_b['akran_sayisi']} "
                         f"{(cube_meta.get('dimension_labels') or {}).get(_b['boyut']) or _b['boyut']} "
-                        f"ortalamasından **%{abs(_b['fark_yuzde'] or 0)} {_yon}** "
+                        f"ortalamasından **{_syuzde(abs(_b['fark_yuzde'] or 0))} {_yon}** "
                         f"({_b3(_b['hedef_deger'])} ↔ akran ort. {_b3(_b['akran_ortalamasi'])}).", ""]
                 if _b["surukleyenler"]:
                     _sat.append("**Farkı en çok açıklayanlar** — aynı kırılımda, akran "
@@ -606,7 +615,7 @@ def arastir(service, schema: dict, cube_query: dict, *, mode: str = "yoy",
                         _br = f" {_s['unit']}" if _s.get("unit") else ""
                         _sat.append(
                             f"• **{_s['label']}**: {_b3(_s['hedef'])}{_br} — akran ortalaması "
-                            f"{_b3(_s['akran_ort'])}{_br} (**%{abs(_s['sapma_yuzde'])} "
+                            f"{_b3(_s['akran_ort'])}{_br} (**{_syuzde(abs(_s['sapma_yuzde']))} "
                             f"{'fazla' if _s['sapma_yuzde'] > 0 else 'az'}**, kötü yönde)")
                     _sat.append("")
                     _sat.append("Ayrıntı için: *«… nedenlerini kır»* ya da *«hangi "

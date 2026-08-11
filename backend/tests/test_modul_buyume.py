@@ -89,6 +89,23 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("kn-toplam-ek", 2,
+     "🔴🔴 **`§KN-toplam` — FORMÜLÜ OLMAYAN BİR ÖLÇÜNÜN DE KÖKÜ VARDIR.** "
+     "⊙ Ölçüldü (curl `EE` turu, EE-2/EE-3): *«müşteri bazında bu yıl toplam ciro»* → "
+     "*«neden»* → *«**Değişimi** en çok sürükleyen segmentler…»*. Soru **kesitseldi**, "
+     "cevap **zamansaldı**: `§KN` susuyordu (bileşen yok) ve `contribution` devralıyordu. "
+     "Kullanıcının şartı birebir: *«genel bir şeyi temsil eder, **onun da alt kırılımları "
+     "vardır, en köke kadar gitmeli**»*. "
+     "⊙ **Ve ilk yerleşimim ALTI testi kırdı — ders bu:** `cevap_verisi`'ne konunca "
+     "reçete/katkı yolunu **eziyordu** (*«konuşma cevabı zengin gövde taşımıyor — UI "
+     "chip'e düşer»*). Toplanabilir ölçüde o yol **yapısal bir gövde** üretiyor; benim "
+     "anlatım yalnız bir nottu. Doğru yer: var olan cevabın **üstüne** yazmak. "
+     "*Bir aracı öne almak, ondan iyi olduğunu değil, ötekini görmediğini gösterir.* "
+     "⊙ Δ = 2: **gövde `kok_neden.toplam_ek`/`toplam_turu`'da** (pay cebiri, iniş, "
+     "`contribution.toplanabilirlik` kapısı); burada kalan iki satır bir çağrı. "
+     "⚠ **TAŞINAMAZ:** çağrı `_cevap_ustunde_konus`'un **döndüğü** noktaya aittir ve "
+     "`service`/`limit`/`konu_cq` yerelleriyle kurulur. "
+     "`sha=52d8883`"),
     ("kn-taze-neden", 2,
      "🔴🔴 **`§KN-taze` — TAZE BİR «NEDEN» SORUSUNUN İKİNCİ YARISI DA CEVAPLANIR.** "
      "⊙ Ölçüldü (curl `DD` turu, DD-20): *«bu yıl enerji tüketimi **neden yüksek**»* → "

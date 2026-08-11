@@ -147,6 +147,26 @@ CIKTI_TIPI: dict[str, str] = {
 #: ⚠ Yalnız **referans taşıyan** alanlar burada; `boyut`/`olcu` gibi sabit alanlar şemanın
 #: `enum`'uyla zaten kısıtlı.
 GIRDI_TIPI: dict[str, dict[str, str | None]] = {
+    # 🔴🔴 **`SORGU` BU TABLODA YOKTU — ve yokluğu denetimi TAMAMEN kapatıyordu.**
+    #
+    # ⊙ Ölçüldü (curl `EE` turu, EE-11): *«bu yıl km başına nakliye maliyeti neden
+    # yüksek»* → plan `SORGU(cube_query="$3")` yazdı, `$3` ise bir **`HESAPLA`**
+    # (`olcum`) adımıydı — doğrusu `$4` (`SUZ` → `sorgu`) olurdu. `dogrula` bunu
+    # göremedi (`GIRDI_TIPI.get("SORGU")` → `None` → beklenen tip `None` → denetim
+    # atlanır) ve kusur **koşum anında** patladı:
+    # *«🔴 Ama tamamlayamadım: `(cube yok)` diye bir cube YOK»*.
+    #
+    # 🔴 Bu, `dogrula`'nın kendi var oluş gerekçesinin ihlaliydi: *«bir planı koşarken
+    # reddetmek, hiç kurmamaktan pahalıdır»*. Denetim yazılıydı, tablo eksikti — ve
+    # eksik bir tablo, denetimi **sessizce** kapatır.
+    #
+    # ⚠ Ve kazanç yalnız daha iyi bir hata mesajı değil: doğrulayıcı erken reddedince
+    # `plan_garson`'un **DÜZELTME TURU** devreye girer, yani kullanıcı bir *«dürüst
+    # red»* yerine **gerçek bir cevap** alır. *Dürüst bir red bir başarı değil, bir
+    # borçtur.*
+    #
+    # ⚠ Satır içi `cube_query` (sözlük) istisnası `dogrula`'da zaten var.
+    "SORGU": {"cube_query": "sorgu"},
     "BAGLA": {"kaynak": "satirlar"},
     "HESAPLA": {"kaynak": "satirlar", "hedef": "varlik"},
     "KIYASLA": {"cube_query": "sorgu"},

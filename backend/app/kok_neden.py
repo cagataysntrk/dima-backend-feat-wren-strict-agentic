@@ -793,8 +793,20 @@ def cevap_verisi(prev_cq: dict, cube_meta: dict | None, *, service,
     # ⚠ Bedeli ölçüldü ve kabul edildi: `ask()`te **bir satır** (bkz. muafiyet
     # `kn-kesitsel-neden`). *Bir sınırı korumanın bedeli, sınırı kaldırmanın bedelinden
     # her zaman küçüktür.*
-    out = arastir(prev_cq, cube_meta, kos=kosucu(service, limit=limit), segment=segment,
-                  oneri=oneri)
+    _kos = kosucu(service, limit=limit)
+    out = arastir(prev_cq, cube_meta, kos=_kos, segment=segment, oneri=oneri)
+    # ⟳🔴 **`§KN-toplam` BURADAN KALDIRILDI — ÇÜNKÜ EZİYORDU, ZENGİNLEŞTİRMİYORDU.**
+    #
+    # ⊙ Ölçüldü (tam kapı, `EE` demeti): buraya konunca **altı** test kırmızı verdi ve
+    # hepsi aynı şeyi söylüyordu — *«reçete izde yok»* · *«açıklama cevabı bozuldu»* ·
+    # *«konuşma cevabı **zengin gövde** taşımıyor — UI chip'e düşer»*. Toplanabilir bir
+    # ölçüde `contribution`/`prescribe` yolu **yapısal bir gövde** üretiyor (kartlar,
+    # chip'ler, ajan izi); benim anlatım yalnız bir **not**tu. Yani daha iyi bir cümle
+    # için daha zengin bir cevabı feda ediyordum.
+    #
+    # ⚠ Doğru yer `toplam_ek` (aşağıda): var olan cevabın **üstüne** yazar. Kullanıcı
+    # hem yapısal gövdeyi hem iniş anlatısını alır. *Bir aracı öne almak, ondan iyi
+    # olduğunu değil, ötekini görmediğini gösterir.*
     if not out:
         return None
     _boyut = out.get("boyut") or ""
@@ -925,4 +937,175 @@ def taze_ek(resp, q_norm: str, cq: dict, cube_meta: dict | None, *, service,
     # (sunum katmanı) ve pydantic modelinin işidir; buradan sözlük iliştirmek bir tip
     # kaçağı olurdu. Kullanıcının ihtiyacı olan **anlatı**dır; chip'ler zaten gelir.
     # *Bir modülün sınırı, elinden gelen son şeyi de yapmadığı yerdir.*
+    return True
+
+
+def toplam_turu(prev_cq: dict, cube_meta: dict | None, *, kos,
+                oneri: bool = False) -> dict | None:
+    """🔴🔴 `§KN-toplam` — **FORMÜLÜ OLMAYAN BİR ÖLÇÜNÜN DE KÖKÜ VARDIR.**
+
+    ## Kullanıcının şartı, birebir
+
+    > *«Formül değerleri db'den gelir, yani bir şeyi temsil eder — satış adedi gibi,
+    > duruş zamanı gibi. Ya da genel bir şeyi temsil eder, **onun da alt kırılımları
+    > vardır, en köke kadar gitmeli**.»*
+
+    ## Ölçülen kusur (curl `EE` turu, EE-2/EE-3)
+
+        «müşteri bazında bu yıl toplam ciro» → «neden»
+          → *«Değişimi en çok sürükleyen segmentler aşağıda…»*
+
+    Soru **kesitseldi** (*«neden bu müşteri böyle»*), cevap **zamansaldı** (*«geçen
+    döneme göre ne değişti»*). `§KN` susuyordu çünkü `toplam_ciro`'nun katalogda
+    bileşeni yok — ve susunca `contribution` devralıyor, yani **başka bir sorunun**
+    cevabı veriliyordu.
+
+    ## Cebir — logaritma değil **pay**
+
+    Bir çarpım/oran ölçüsünde soru *«hangi bileşen»*dir; bir **toplamda** böyle bir
+    bileşen yoktur, çünkü toplam kendi alt segmentlerinin **doğrudan** toplamıdır:
+
+        toplam = Σ segment_i        →  segment_i'nin payı = değer_i / toplam
+
+    Yani iniş, bileşen ekseninde değil **kırılım ekseninde** olur: en büyük segmenti
+    bul, payını söyle, sonra o segmentin **içinde** ikinci bir kırılım aç ve orada da
+    en büyüğü bul. Kullanıcının *«en dibe indim ve gördüm ki…»* cümlesi budur.
+
+    ⚠ Uydurma yok: yalnız **ölçülmüş** paylar yazılır, bir nedensellik iddia edilmez.
+    Cümle *«şu kadarını bu taşıyor»* der, *«bu yüzden»* demez — çünkü bir pay bir
+    açıklama değil bir **konumdur**. *Bir sayının nereden geldiğini söylemek, neden
+    öyle olduğunu söylemekten farklıdır; ikincisini iddia etmek için bir formül gerekir.*
+
+    ⚠ `lower_is_better` **okunur**: yön beyanı yoksa yargı da yoktur (`GG8`).
+
+    Döner: `{anlati, adimlar, segment, boyut}` ya da `None`.
+    """
+    from app.drill import available_dimensions
+    from app.result_shape import sayi
+
+    if not isinstance(prev_cq, dict):
+        return None
+    olculer = [str(m) for m in (prev_cq.get("measures") or [])]
+    if len(olculer) != 1:
+        return None
+    olcu = olculer[0]
+    if len(bilesenler(olcu, cube_meta)) >= 2:
+        return None                       # formül var → `arastir` onun işi
+    # 🔴🔴 **PAY CEBİRİ YALNIZ TOPLANABİLİR BİR ÖLÇÜDE ANLAMLIDIR — ve bunu kendi
+    # düzeltmem öğretti.**
+    #
+    # ⊙ İlk yazımda bu kapı yoktu ve canlı ölçüm (curl `EE` turu) şunu üretti:
+    # *«MURAT DEMİR tek başına **ilk seferde tamam** toplamının %11,8'ini taşıyor»* —
+    # `ilk_seferde_tamam_yuzde` bir **yüzde**. Yüzdeler toplanmaz; o cümlenin paydası
+    # (85,39 + 80,09 + …) hiçbir şeydir. Yani doğru biçimlendirilmiş, akıcı ve
+    # **anlamsız** bir cevap üretmiştim.
+    #
+    # ⚠ Sınıflandırıcı **yeniden yazılmadı, ÇAĞRILDI**: `contribution.toplanabilirlik`
+    # `non_additive` beyanını, `AVG(`/`/`/`MIN(`/`MAX(` ifadesini ve ad sezgisini
+    # (`ort_*`, `*_yuzde`) zaten biliyor. İkinci bir toplanabilirlik tanımı yazmak,
+    # aynı ölçüye iki farklı cevap vermenin en kısa yoludur (`KAT-1`).
+    #
+    # ⚠ `TAM` şartı bilinçli: `YARI` (stok/bakiye) zaman-dışı eksende toplanır ama
+    # burada hangi eksende olduğumuzu bilmiyoruz; `BILINMIYOR`da susmak `§101.1`.
+    #
+    # *Bir cebiri tanımsız olduğu yerde zorlamak, bir sayı üretir ama bir bilgi üretmez.*
+    from app.contribution import TAM, toplanabilirlik
+
+    if toplanabilirlik(olcu, cube_meta)[0] != TAM:
+        return None
+    _cq = {k: v for k, v in prev_cq.items()
+           if k not in ("order", "limit", "pencere", "timeDimensions")}
+    boyutlar = [str(d) for d in (prev_cq.get("dimensions") or [])]
+    adimlar: list[str] = []
+    if boyutlar:
+        boyut = boyutlar[0]
+        satirlar = kos({**_cq, "measures": [olcu], "dimensions": [boyut]}) or []
+    else:
+        _ad = [d["name"] for d in available_dimensions(cube_meta or {}, _cq)]
+        _sec = _en_ayristiran(_cq, [olcu], olcu, _ad[:AZAMI_ADAY], kos=kos)
+        if _sec is None:
+            return None
+        boyut, satirlar = _sec
+        adimlar.append(f"ekranda kırılım yoktu → ölçüyü en çok ayrıştıran kırılım "
+                       f"**{boyut}** seçildi")
+    _uygun = [r for r in satirlar if sayi(r.get(olcu)) is not None]
+    if len(_uygun) < 2:
+        return None
+    adimlar.insert(0, f"**{olcu}** bir toplam — bileşeni yok, o yüzden **kırılım "
+                      f"ekseninde** ayrıştırıldı")
+    adimlar.append(f"**{boyut}** kırılımında {len(_uygun)} segment ölçüldü")
+    _toplam = sum(abs(sayi(r[olcu]) or 0.0) for r in _uygun)
+    if _toplam <= 0:
+        return None
+    _dusuk_iyi = olcu in ((cube_meta or {}).get("lower_is_better") or [])
+    _hedef = max(_uygun, key=lambda r: abs(sayi(r[olcu]) or 0.0))
+    _seg = str(_hedef.get(boyut))
+    _pay = 100.0 * abs(sayi(_hedef[olcu]) or 0.0) / _toplam
+    _akran = (_toplam - abs(sayi(_hedef[olcu]) or 0.0)) / max(1, len(_uygun) - 1)
+    adimlar.append(f"en büyük segment **{_seg}** — toplamın {_ek(_yuzde(_pay))}")
+    _disp = str(((cube_meta or {}).get("measure_synonyms_display") or {}).get(olcu)
+                or olcu).replace("_", " ")
+    _yargi = (" (bu ölçüde **düşük** iyidir)" if _dusuk_iyi else "")
+    metin = (f"**{_seg}** ({boyut}) tek başına **{_disp}** toplamının "
+             f"{_ek(_yuzde(_pay), True)} taşıyor: **{_sayi(sayi(_hedef[olcu]))}** ↔ öteki "
+             f"{boyut} ortalaması **{_sayi(_akran)}**{_yargi}.")
+    # 🔴 EN DİBE İN — segmentin **içinde** ikinci bir kırılım. `derinles` bir `Bilesen`
+    # ister (formül ekseni); burada eksen ölçünün kendisidir, o yüzden süpürücü
+    # **doğrudan** çağrılır — ikinci bir «açıklayıcılık» tanımı yazılmaz (`KAT-1`).
+    _ic = {**_cq, "filters": [*(prev_cq.get("filters") or []),
+                              {"dimension": boyut, "operator": "eq", "value": _seg}]}
+    _ad2 = [d["name"] for d in available_dimensions(cube_meta or {}, _ic)
+            if d["name"] != boyut][:AZAMI_ADAY]
+    _derin = _en_ayristiran(_ic, [olcu], olcu, _ad2, kos=kos) if _ad2 else None
+    if _derin:
+        d2, satir2 = _derin
+        _u2 = [r for r in satir2 if sayi(r.get(olcu)) is not None]
+        _t2 = sum(abs(sayi(r[olcu]) or 0.0) for r in _u2) or 1.0
+        _h2 = max(_u2, key=lambda r: abs(sayi(r[olcu]) or 0.0))
+        _p2 = 100.0 * abs(sayi(_h2[olcu]) or 0.0) / _t2
+        adimlar.append(f"**{_seg}** içinde **{d2}** kırılımı açıldı → "
+                       f"**{_h2.get(d2)}**")
+        metin += (f"\n\n→ **{_seg}** içinde en çok **{_h2.get(d2)}** ({d2}) "
+                  f"ayrışıyor: **{_sayi(sayi(_h2[olcu]))}**, bu segmentin "
+                  f"{_ek(_yuzde(_p2))}.")
+        if oneri:
+            metin += (f"\n\n→ **Öneri:** **{_seg}** ({boyut}) içinde **{_h2.get(d2)}** "
+                      f"({d2}) incelenmeli — segmentin {_ek(_yuzde(_p2))} oradan "
+                      f"geliyor.")
+    elif oneri:
+        metin += (f"\n\n→ **Öneri:** **{_seg}** ({boyut}) incelenmeli — toplamın "
+                  f"{_ek(_yuzde(_pay))} tek başına orada.")
+    metin = ("🔍 **Nasıl buldum:** "
+             + " → ".join(f"{i}️⃣ {a}" for i, a in enumerate(adimlar, 1))
+             + "\n\n" + metin)
+    return {"anlati": metin, "adimlar": adimlar, "segment": _seg, "boyut": boyut}
+
+
+def toplam_ek(resp, prev_cq: dict, cube_meta: dict | None, *, service,
+              limit: int = 1000) -> bool:
+    """`§KN-toplam`'ın **iliştirme** yarısı — var olan cevabı ezmez, zenginleştirir.
+
+    ⊙ Ölçüldü (tam kapı, `EE` demeti): `cevap_verisi`'ne konunca altı test kırmızı
+    verdi; toplanabilir ölçülerde `contribution`/`prescribe` **yapısal bir gövde**
+    (kartlar · chip'ler · ajan izi) üretiyor ve onu bir notla değiştirmek, daha iyi bir
+    cümle için daha zengin bir cevabı feda etmekti.
+
+    ⚠ `oneri=False`: reçete yolu zaten *«ne yapmalı»*yı söylüyor; ikinci bir öneri
+    aynı şeyi iki kez söylemek olurdu.
+
+    Döner: eklendi mi.
+    """
+    if getattr(resp, "note", None) and "§KN" in str(getattr(resp, "trace", "") or ""):
+        return False
+    try:
+        out = toplam_turu(prev_cq, cube_meta, kos=kosucu(service, limit=limit),
+                          oneri=False)
+    except Exception:                    # noqa: BLE001 — cevap düşmez (ADR-0020)
+        _log.warning("§KN-toplam ek: ayrıştırma hata verdi (best-effort)", exc_info=True)
+        return False
+    if not out:
+        return False
+    resp.note = "\n\n".join(x for x in [getattr(resp, "note", None), out["anlati"]] if x)
+    resp.trace = [*(getattr(resp, "trace", None) or []),
+                  *[f"§KN: {a}" for a in out["adimlar"]]]
     return True

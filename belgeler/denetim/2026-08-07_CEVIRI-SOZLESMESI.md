@@ -12187,3 +12187,100 @@ bu bir emniyet ağıdır ve emniyet ağı tahminle gerilmez.*
 ölçünce blokların `ozet_degil` **ve çalıştırılabilir bir daraltma fişi** taşıdığı
 görüldü (`§RK-2`). Kusur değil, **ilan edilmiş ve tıklanabilir** bir sınır. Bu turda
 **dördüncü** kez: prob'um bir alanı basmıyordu.
+
+---
+
+# `EE` TURU — kök-neden her ölçü ailesinde · plan doğrulama · sayı Türkçesi
+
+*(2026-08-11 · curl, tek tek)*
+
+| # | senaryo | sonuç |
+|---|---|---|
+| 1 | «operatör bazında ilk seferde tamam yüzdesi» → «neden» | akran anlatısı geldi ✅ ama sayılar İngilizce → `EE-a` |
+| 2 | «müşteri bazında toplam ciro» → «neden» | 🔴 **zamansal** cevap (*«Değişimi en çok sürükleyen…»*) → `EE-b` |
+| 3 | «makine bazında elektrik tüketimi» → «neden» | 🔴 aynı |
+| 4 | «bu yıl enerji raporu hazırla» | ✅ `enerji_tesis` — perde düzeltmesi tuttu |
+| 5 | «son 2 yıl üretim raporu hazırla» | ✅ **6 küpe** yayılan gerçek rapor |
+| 6 | «rapora enerji tüketimini de ekle» | ✅ 7 bölüm · dönem devri ✅ · 🔴 **başlık kayboldu** → `EE-c` |
+| 7 | «2030 yılı toplam üretim» | ✅ dürüst boşluk + veri aralığı |
+| 8 | «RAM-99 makinesinin oee si» | ✅ *«listede yok»* + **gerçek değer listesi** |
+| 9 | «vardiya bazında oee» → «neden» | ✅ 3. Vardiya → kalite → RAM-3 |
+| 10 | ↑ «ne yapmalıyız» | ✅ öneri, ekler doğru (`%50,6'sı` · `%24,0'ını`) |
+| 11 | «km başına nakliye maliyeti neden yüksek» | 🔴 **dürüst red** — plan koşamadı → `EE-e` |
+| 12 | «geçen yıl en çok fire veren müşteri kim» | ✅ `limit=1` |
+
+## 🔴 KÖK 1 · `EE-b` — **FORMÜLÜ OLMAYAN BİR ÖLÇÜNÜN DE KÖKÜ VARDIR**
+
+Kullanıcının şartı birebir: *«genel bir şeyi temsil eder, **onun da alt kırılımları
+vardır, en köke kadar gitmeli**»*. `§KN` susuyordu (bileşen yok) ve `contribution`
+devralıyordu — yani **kesitsel** bir soruya **zamansal** bir cevap veriliyordu.
+
+**`§KN-toplam`:** cebir logaritma değil **pay**. Bir toplam kendi alt segmentlerinin
+doğrudan toplamıdır; iniş bileşen ekseninde değil **kırılım ekseninde** olur.
+
+```
+«müşteri bazında bu yıl toplam ciro» → «neden»
+  1️⃣ toplam_ciro bir toplam — bileşeni yok → kırılım ekseninde ayrıştırıldı
+  2️⃣ musteri kırılımında 8 segment ölçüldü
+  3️⃣ en büyük segment EGE KNIT — toplamın %18,1'i
+  → EGE KNIT tek başına ciro toplamının %18,1'ini taşıyor: 13.410.234 ↔ 8.658.943
+  → EGE KNIT içinde en çok KUZEY İPLİK (tedarikci): 3.734.883, bu segmentin %27,9'u
+```
+
+### 🔴 Ve ilk yazımım ANLAMSIZ bir cevap üretti — ölçüm yakaladı
+
+Kapısız hâli `ilk_seferde_tamam_yuzde` için de koştu ve şunu yazdı: *«MURAT DEMİR tek
+başına **ilk seferde tamam** toplamının %11,8'ini taşıyor»*. **Yüzdeler toplanmaz** — o
+cümlenin paydası (85,39 + 80,09 + …) hiçbir şeydir. Doğru biçimlendirilmiş, akıcı ve
+**anlamsız** bir cevap.
+
+Kapı `contribution.toplanabilirlik`'i **çağırır** (yeniden yazmaz): `non_additive`
+beyanı · `AVG(`/`/`/`MIN(`/`MAX(` ifadesi · ad sezgisi (`ort_*`, `*_yuzde`). Şart `TAM`.
+
+*Bir cebiri tanımsız olduğu yerde zorlamak, bir sayı üretir ama bir bilgi üretmez.*
+
+## 🔴 KÖK 2 · `EE-e` — **`SORGU` PLAN DOĞRULAMA TABLOSUNDA YOKTU**
+
+```
+«bu yıl km başına nakliye maliyeti neden yüksek»
+  → 🔴 Ama tamamlayamadım: `(cube yok)` diye bir cube YOK
+```
+
+Plan `SORGU(cube_query="$3")` yazdı; `$3` bir **`HESAPLA`** (`olcum`) adımıydı, doğrusu
+`$4` (`SUZ` → `sorgu`). `dogrula` bunu **göremedi**: `GIRDI_TIPI`'nde `SORGU` **yoktu**,
+yani `beklenen = None` ve tip denetimi **sessizce** atlanıyordu.
+
+⚠ Kazanç yalnız daha iyi bir hata mesajı değil: doğrulayıcı erken reddedince
+`plan_garson`'un **DÜZELTME TURU** devreye girer — yani kullanıcı bir *«dürüst red»*
+yerine **gerçek bir cevap** alır. *Dürüst bir red bir başarı değil, bir borçtur.*
+
+*Eksik bir tablo, denetimi sessizce kapatır.*
+
+## 🔴 KÖK 3 · `EE-c` — **BİR BELGEYİ DÜZENLEMEK, ONA YENİ AD VERMEK DEĞİLDİR**
+
+*«Son 2 Yıl Üretim Raporu»* (6 bölüm) → *«rapora enerji tüketimini de ekle»* → bölümler
+korundu (7 oldu) ama başlık **«Makine Bazlı Performans Raporu»** oluverdi. `§RD-3` dönemi
+devrediyordu, **adı** devretmiyordu — ve ad, bir belgenin kullanıcı için **kimliğidir**.
+Bilinen sınır yazıldı: bu turda belge yeniden **adlandırılamaz**.
+
+## ⚠ KÖK 4 · `EE-a` — sayının Türkçesi **BEŞ** yerde yazılıyormuş
+
+`DD` turunda `contribution.decompose`'u tek sahibe bağlamıştım; `EE` turu **dört tane
+daha** buldu:
+
+```
+contribution._b3     → «%8.7 düşük (74.39 ↔ 81.46)»      ← akran anlatısı
+interpret.py ×6      → «%12.4», «toplamın %31'i»
+prescribe.py ×2      → «%68'ini açıklıyor»
+plan_tuketici._b     → «= 0.5245 … akran 0.59»           ← BEŞİNCİ kopya
+```
+
+Hepsi `app/sayi_bicimi.py`'ye bağlandı. *Bir sayının Türkçesi tek bir yerde yazılır.*
+
+## ⚠ Ölçülen, düzeltilmeyen: «neden» bir BOYUT ADI olduğunda
+
+`parti` küpünde *«neden bu kadar düşük»* → `Takip: LLM-destekli yapısal düzenleme`,
+`niyet: kırılım=kok_neden,sebep`. Yani takip sınıflandırıcısı bunu bir **konuşma**
+saymıyor ve `§NB` hiç devreye girmiyor. **İki koşumda da aynı** (kararsızlık değil).
+`§NB`'nin kendi docstring'i bu çarpışmayı yazmış ama kapsamı bu yola uzanmıyor.
+Sonraki turun kökü — tahminle değil ölçümle.

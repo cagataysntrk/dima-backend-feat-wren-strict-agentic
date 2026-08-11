@@ -4743,6 +4743,11 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
             resp = _cevap_ustunde_konus(konu_cq, prev_cube_meta, niyet,
                                         migration_trace + capa_izi, body.session_id)
             if resp is not None:
+                # 🔴 `§KN-toplam` — var olan cevabın **üstüne** iniş anlatısı. Gövde
+                # `kok_neden.toplam_ek`'te; burada yalnız çağrı. Ezmez: yapısal gövde
+                # (kartlar · chip'ler · ajan izi) aynen kalır.
+                _kok_neden.toplam_ek(resp, konu_cq, prev_cube_meta, service=service,
+                                     limit=limit)
                 return _finish(resp)
             # Araç bir şey üretemediyse SESSİZCE düşme: normal zincir devam eder ve
             # kullanıcı en azından bugünkü davranışı alır (gerileme YOK).

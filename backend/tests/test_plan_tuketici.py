@@ -91,7 +91,7 @@ def test_BOSLUKTA_CEVAP_URETIYOR():
     assert c["source"] == "cube+llm"
     assert "3 adımda üretildi" in c["note"]
     assert "RAM-3" in c["note"], "BAGLA'nın seçtiği varlık cevaba girmedi"
-    assert "%11.1" in c["note"], "HESAPLA'nın farkı cevaba girmedi"
+    assert "%11,1" in c["note"], "HESAPLA'nın farkı cevaba girmedi"
     assert c["result"]["row_count"] == 4
     assert c["cube_query"] == CQ, "makbuz TIKLANABİLİR olmalı (O-5: /cube ile 0 LLM)"
 

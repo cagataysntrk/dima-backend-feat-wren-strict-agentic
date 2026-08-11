@@ -40,6 +40,7 @@ from typing import Any
 from app import plan_kosucu
 
 _log = logging.getLogger("dima.plan_tuketici")
+from app.sayi_bicimi import ek as _sek, sayi as _ssayi, yuzde as _syuzde
 
 
 def _govdeler(service: Any, schema: dict, cube_meta: dict | None) -> dict[str, Any]:
@@ -613,6 +614,26 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
         _baslik = next((str(a.get("baslik")) for a in (plan.get("adimlar") or [])
                         if _belge_fiili and str(a.get("fiil")) == _belge_fiili
                         and a.get("baslik")), None)
+        # 🔴🔴 `§RD-ad` — **BİR BELGEYİ DÜZENLEMEK, ONA YENİ BİR AD VERMEK DEĞİLDİR.**
+        #
+        # ⊙ Ölçüldü (curl `EE` turu, EE-6): *«Son 2 Yıl Üretim Raporu»* (6 bölüm) →
+        # *«rapora enerji tüketimini de ekle»* → bölümler korundu (7 oldu) ama başlık
+        # **«Makine Bazlı Performans Raporu»** oluverdi. Planlayıcı her turda yeni bir
+        # ad uyduruyor; kullanıcı ise **aynı belgeyi** düzenlediğini sanıyor.
+        #
+        # ⚠ Kural `§RD-3`'ün (dönem devri) kardeşidir ve aynı gerekçeye dayanır: bir
+        # düzenleme turunda **söylenmemiş olan devralınır**. Dönem devralınıyordu, ad
+        # devralınmıyordu — ve ad, bir belgenin kullanıcı için **kimliğidir**.
+        #
+        # ⚠ Bilinen sınır, yazılı: bu turda belge **yeniden adlandırılamaz**. Ad
+        # değiştirmek ayrı bir istektir ve onu bir kelime listesiyle sezmek bu deponun
+        # yasakladığı şeydir; geldiğinde kendi fiiliyle gelir.
+        #
+        # *Bir belgeyi her dokunuşta yeniden adlandırmak, onu her seferinde yeni bir
+        # belge yapar — ve kullanıcı hangisini düzenlediğini bilemez.*
+        _onceki_ad = (onceki_rapor or {}).get("title") if isinstance(onceki_rapor, dict) else None
+        if _onceki_bolumler and _onceki_ad:
+            _baslik = str(_onceki_ad)
         try:
             _rapor = _report.bolumlerden_kur(
                 _bolumler, baslik=_baslik or soru or "Rapor", schema=schema)
@@ -1166,20 +1187,20 @@ def _bulgu_metni(plan: dict, out: dict) -> str:
             _y = "düşük" if (c.get("fark") or 0) < 0 else "yüksek"
             sat.append(f"Akran ortalaması {_b(c.get('akran_ortalamasi'))} "
                        f"({c.get('akran_sayisi')} akran) — aradaki fark "
-                       f"**%{abs(c.get('fark_yuzde') or 0):.1f} {_y}**.")
+                       f"**{_syuzde(abs(c.get('fark_yuzde') or 0))} {_y}**.")
     return "\n".join(sat)
 
 
 def _b(x: Any) -> str:
     """Okunabilir sayı. ⚠ `§AA1`'in dersi: ham `float` (`0.5245118291704627`) bir cevap
-    değil, bir sızıntıdır."""
-    try:
-        f = float(x)
-    except (TypeError, ValueError):
-        return str(x)
-    if abs(f) >= 1000:
-        return f"{f:,.0f}".replace(",", ".")
-    return (f"{f:.4g}".rstrip("0").rstrip(".") if f else "0")
+    değil, bir sızıntıdır.
+
+    🔴 `§SB-metin` — bu, aynı sayının **BEŞİNCİ** biçimlendiricisiydi ve ötekiler gibi
+    ondalık ayırıcıyı İngilizce basıyordu (*«= 0.5245 … akran 0.59»*). Gövde
+    `app/sayi_bicimi.py`'de; burada yalnız takma ad.
+    *Bir sayının Türkçesi tek bir yerde yazılır.*
+    """
+    return _ssayi(x)
 
 
 def _adim_metni(adim: dict) -> str:
