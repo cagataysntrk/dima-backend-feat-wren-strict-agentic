@@ -1333,3 +1333,31 @@ bir kusur değil, merdivenin ölçülmüş şeklidir. Ama artık bir **sayı**, 
 | `R3` | doğru cevabın yanında *«bu küpte tanımlı değil»* yalanı | ✅ beyan ad değil **kapsam** kıyaslıyor |
 | `D1` | dönem kapısı **orkestratörün önünde** | ⚠ **açık borç — sıradaki turun konusu** |
 | `B8` | `toplam_sure_dk` ≡ `toplam_durus_dakika` (aynı kavram, iki ad) | ⚠ açık borç (katalog) |
+
+---
+
+## `B3` — YENİ BULGU (curl `U` turu, 2026-08-11): **master tablo VAR, desen YOK**
+
+⊙ Ölçülen kusur: *«bu yıl hangi müşteriye en çok iade yapıldı»* → `sikayet.musteri_kod`
+= **`M1003`**. Cevap doğru, ama insana bir şey söylemiyor.
+
+Üç şey ölçüldü:
+
+| ne | sonuç |
+|---|---|
+| `musteri_sikayetleri` tablosunda isim var mı | 🔴 **yok** — yalnız `musteri_kod` |
+| bir müşteri **master** tablosu var mı | ✅ **VAR** — `musteriler(musteri_kodu PK, musteri_adi, …)` (`build_data.py:368`) |
+| katalogda **join'lu boyut** deseni var mı | 🔴 **yok** — küpler tek tablolu (`base_object`); `relationships`/`dimension_origin` hiçbir pakette kullanılmıyor |
+
+**Sonuç:** eksik olan veri değil, **desen**. İsim eklemek `base_object`'i bir view'a
+çevirmeyi (ya da üretimi değiştirmeyi) ister; ikisi de demo DB'sini yeniden üretir ve
+korpus paydasını oynatır — yani `D8`'in **ölçülmüş risk sınıfı**.
+
+🔴 **Bu yüzden `B3` hâlâ `D8`'in arkasında:** `D8`'in açık sorusu (*`sessiz_yanlis +2`
+gerçek mi, `payda +2` ile gelen bir ölçüm artefaktı mı*) ayrılmadan hiçbir boyut ekleme
+işi açılmamalı. Ayırma yöntemi hazır ve ucuz: taban raporundaki **8 sessiz-yanlış sorusu
+kimlikleriyle alındı** (`/tmp/taban_gercek_dunya.md`, hiçbiri müşteriyle ilgili değil) —
+değişiklik uygulanıp korpus **bir kez** koşulduğunda listeler farklanır; yeni ikisi
+**yeni açılan boyutun soruları** ise artefakt kanıtlanır.
+
+*Bir borcu ödemeden önce, onu ölçen aletin doğru ölçtüğünü bilmek gerekir.*
