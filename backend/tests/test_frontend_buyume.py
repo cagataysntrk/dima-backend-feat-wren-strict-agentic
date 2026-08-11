@@ -173,6 +173,15 @@ TAVANLAR = {
 
 #: `(dosya, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 MUAFIYET: list[tuple[str, int, str]] = [
+    ("app/page.tsx", 9,
+     "🔴🔴 `§RY` — **BELGE BAĞLAMI KIRPILARAK GÖNDERİLİR.** ⊙ Ölçüldü: `previous_rapor` "
+     "**tam** gidiyordu (`pages[][].result.rows` dâhil) ve ölçüm aracı `Argüman listesi "
+     "çok uzun` ile düştü — kusuru o gösterdi. Sunucu yalnız **kimlikleri** okuyor "
+     "(`_belge_bolumleri`); yani sunucunun **az önce ürettiği** satırlar bir sonraki "
+     "turda **geri** taşınıyordu. ⚠ Kırpma **istemcide**: veriyi göndermemek, gönderip "
+     "sunucuda atmaktan farklıdır — ikincisi bant genişliğini zaten harcamıştır. "
+     "🔴 Dokuz satırın **sekizi** bu gerekçenin kendisi; kod bir `map` çağrısı. "
+     "*Bir aracın sınırına çarpmak, bazen ölçtüğü şeyin kusurunu gösterir.*"),
     ("app/page.tsx", 8,
      "🔴🔴 `§RD` — **BELGE BAĞLAMI (`contextRapor`), `contextCq`'nun KARDEŞİ.** ⚠ "
      "**TAŞINAMAZ:** bu dosya thread/bağlam yaşam döngüsünün **tek** sahibidir; bağlamı "

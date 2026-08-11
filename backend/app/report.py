@@ -16,6 +16,12 @@ from typing import Any
 _DEFAULT_PAGE_SIZE = 3  # sayfa başına blok (yazdırma/PDF dostu)
 _MAX_BLOCKS = 24
 
+#: `§RK` — bir rapor bloğunun **özet** sayılabileceği üst sınırlar. Aşılırsa blok
+#: **işaretlenir** (kırpılmaz): *bir dökümü rapor diye sunmak, okunmayacağını bilerek
+#: yazmaktır.*
+_OZET_ESIGI = 50
+_EN_FAZLA_BOYUT = 3
+
 
 def compose_report(
     service,
@@ -210,6 +216,26 @@ def bolumlerden_kur(bolumler: list[dict], *, baslik: str, schema: dict,
         except Exception as exc:                      # noqa: BLE001 — blok hatası izole
             block["error"] = str(exc)[:200]
         blocks.append(block)
+
+    # 🔴🔴 `§RK` — **BİR RAPOR BLOĞU BİR ÖZETTİR; 1000 SATIR BİR DÖKÜMDÜR.**
+    #
+    # ⊙ Ölçüldü (curl `Q` turu, 2026-08-10): *«kalite raporu hazırla»* → iki blok, her
+    # biri **6 boyut** (`makine,hat,musteri,kumas_cinsi,renk,renk_derinlik`) ve **1000
+    # satır**. Kartezyen patlama: yazdırılabilir bir belgeye sığmaz, okunamaz.
+    #
+    # ⚠ Satırlar **kırpılmaz** — kırpmak sessiz bir kapsam değişikliği olurdu ve bu
+    # deponun en pahalı kusur sınıfıdır. Yapılan tek şey: bloğu **işaretlemek**, ki
+    # sunum katmanı (ve kullanıcı) bunun bir özet **olmadığını** bilsin.
+    #
+    # ⚠ Eşik `_OZET_ESIGI`: bir rapor sayfasında gözle taranabilecek satır sayısının
+    # üstü. Bir sabit değil bir **karar**; değişirse burada değişir.
+    #
+    # *Bir dökümü rapor diye sunmak, okunmayacağını bilerek yazmaktır.*
+    for _b in blocks:
+        _rs = (_b.get("result") or {}).get("row_count") or 0
+        _bo = len((_b.get("cube_query") or {}).get("dimensions") or [])
+        if _rs > _OZET_ESIGI or _bo > _EN_FAZLA_BOYUT:
+            _b["ozet_degil"] = {"satir": _rs, "boyut": _bo}
 
     boy = max(1, int(page_size or _DEFAULT_PAGE_SIZE))
     pages = [blocks[i:i + boy] for i in range(0, len(blocks), boy)] or [[]]

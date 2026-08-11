@@ -262,7 +262,7 @@ export default function Home() {
           {
             question: vars.question,
             cube_query: contextCq,
-            previous_rapor: contextRapor,   // `§RD` — belgeyi düzenlemenin bağlamı
+            previous_rapor: raporKimlikleri(contextRapor),   // `§RD`+`§RY`
             // 🔴 `G2` — bekleyen soru bu turda cevaplanıyor olabilir. Yankı olmadan
             // sunucu turu `KURAL_TAZE` sayar ve "mart" tanınmayan bir soru olur.
             diyalog_durumu: diyalogDurumu,
@@ -726,4 +726,29 @@ export default function Home() {
       </SettingsDrawer>
     </div>
   );
+}
+
+/** 🔴🔴 `§RY` — **BELGE BAĞLAMI: SATIRLAR BOŞUNA GİDİYORDU.**
+ *
+ * ⊙ Ölçüldü (2026-08-10): `previous_rapor` **tam** gönderiliyordu — `pages[][].result.rows`
+ * dâhil. Ölçüm aracı `Argüman listesi çok uzun` ile düştü ve kusuru o gösterdi.
+ *
+ * 🔴 Oysa sunucu yalnız **kimlikleri** okuyor (`plan_tuketici._belge_bolumleri` → yalnız
+ * `cube_query`) ve `§RD`'nin kendi şerhi bunu yazıyor: *«planlayıcıya satır gitmez
+ * (`G0b`)»*. Yani sunucunun **az önce ürettiği** satırlar bir sonraki turda **geri**
+ * taşınıyordu.
+ *
+ * ⚠ Kırpma **istemcide**: veriyi göndermemek, gönderip sunucuda atmaktan farklıdır —
+ * ikincisi bant genişliğini zaten harcamıştır.
+ *
+ * *Bir aracın sınırına çarpmak, bazen ölçtüğü şeyin kusurunu gösterir.*
+ */
+function raporKimlikleri(r: AskResponse["rapor"]): AskResponse["rapor"] {
+  if (!r) return null;
+  return {
+    ...r,
+    pages: (r.pages ?? []).map((sayfa) =>
+      (sayfa ?? []).map((b) => ({ ...b, result: null, viz: null })),
+    ),
+  };
 }

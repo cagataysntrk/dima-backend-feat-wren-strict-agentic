@@ -10980,3 +10980,76 @@ yazdırılabilir bir belgeye sığmaz.
 `§RT` (sessiz indirgeme) → `§RY` (boşuna taşınan satır) → `§RK` (blok özeti) → `§PB`
 (kararlılık). İlk üçü **kanıtlı ve kapsam değiştirmeyen** düzeltmeler; `§PB` bir
 planlayıcı kararı ve korpus A/B ister.
+
+## ✅ `§RT` · `§RY` · `§RK` KAPATILDI — üçü de **kanıtlı**, üçü de **kapsam değiştirmiyor**
+
+### `§RT` — sessiz indirgeme bitti
+
+```
+«bakım maliyeti raporu hazırla» → 1 bölüm
+  ÖNCE : belge YOK, sebep SÖYLENMEDİ            ← sessiz indirgeme
+  SONRA: «⚠ Tek bölümlük bir sonuç çıktı — bir belge en az iki bölüm ister.
+          Rapora dönüştürmek için ne eklemek istersin? …»   ✅ canlıda doğrulandı
+```
+
+Kullanıcının *canvas* tarifi (*«kullanıcı ile mükemmelce tamamlanacak»*) tam da bunu
+ister: eksik olanı **uydurmak** değil **sormak**. `§TZ` deseni — beyan + tık.
+
+### `§RY` — satırlar artık geri taşınmıyor
+
+Kırpma **istemcide** (`raporKimlikleri`): veriyi göndermemek, gönderip sunucuda atmaktan
+farklıdır — ikincisi bant genişliğini **zaten** harcamıştır. Kusuru ölçüm aracının
+`Argüman listesi çok uzun` hatası gösterdi.
+
+### `§RK` — bir blok özettir, döküm değil ✅ canlıda
+
+```
+«kalite raporu hazırla» → 4 blok
+  · kalite  boyut=1 satır=1000  → ozet_degil={satir:1000, boyut:1}   🔴 işaretlendi
+  · kalite  boyut=1 satır=5     → None                                ✅ temiz
+  · kalite  boyut=1 satır=5     → None                                ✅ temiz
+  · kalite  boyut=8 satır=5     → ozet_degil={satir:5, boyut:8}        🔴 işaretlendi
+```
+
+⚠ **Satır KIRPILMADI** — kırpmak sessiz bir kapsam değişikliği olurdu (bu deponun en
+pahalı kusur sınıfı). Yapılan tek şey **işaretlemek**. Ve iki normal blok
+işaretlenmedi: *her şeyi işaretlemek hiçbir şeyi işaretlememektir.*
+
+### ⊙ `§PB` — teşhis **doğrulandı**: yetenek değil **kararlılık** sorunu
+
+Aynı soru (`«bakım maliyeti raporu hazırla»`) bu turda `bakim_is_emri.bakim_maliyeti`'ni
+**doğru** seçti; `Q` turunda **bordroya** gitmişti. Yani ölçü katalogda var ve
+bulunabiliyor — planlayıcı **bazen** buluyor. Bu bir korpus A/B işidir, bir yama değil.
+
+# `R` TURU — 2026-08-10 · **düzeltmelerin üstünde yeni tur**
+
+| # | senaryo | sonuç |
+|---|---|---|
+| R1 | *bu yıl toplam kar* | ✅ route · ₺27.293.964 |
+| R2 | *müşterilere göre iade kg* | 🔴 **`musteri_kod = M1001`** — ad değil kod |
+| R3 | *en yüksek rework hangi sebepte* | ◐ dürüst netleştirme, **gerçek chip'lerle** (`rework kg` · `rework sayısı`) |
+| R4 | *KONTİNÜ makinelerinin fire oranı* | ✅ `starts_with «KONTİNÜ»` · 2 satır |
+| R5 | *üretim raporu hazırla* | ◐ *«üretim»* çok sahipli → netleştirme |
+| R6 | *şikayet panosu hazırla* | ✅ **7 blok**; 1000 satırlık blok `§RK` ile işaretlendi |
+| R7 | *su tüketimi* | ✅ `§BD` beyanı + `§TZ` chip'leri |
+| R8 | *bu ay şikayet sayısı* | ✅ `§SD` — `sikayet`'in **kendi** ufkuyla (19.07.2026) |
+
+⚠ **R7'de bir kusur yazacaktım, ölçüm durdurdu** (bugün **dokuzuncu** kez): 30 satırlık
+bir koşumda beyan yok sanmıştım; ölçtüm — beyan **da** chip'ler **de** yerindeydi.
+*Bir kusuru yazmadan önce ölçmek, yazdıktan sonra geri almaktan ucuzdur.*
+
+## 🔴 `§BK` — **KOD YERİNE AD** *(üçüncü kez ölçüldü)*
+
+```
+«müşterilere göre iade kg»  → musteri_kod = M1001          🔴
+«en çok iade eden 3 müşteri» → musteri_kod = M1003         🔴 (O12)
+«şikayet panosu» blok 3      → musteri_kod                  🔴
+niyet: kırılım=cari_tip,musteri_kod,musteri                 ← `musteri` ADAY, seçilmedi
+```
+
+Kullanıcı *«müşteri»* yazıyor; sistem **kodu** seçiyor. Ve `musteri` boyutu **aday
+listesinde**. ⊙ Ayrım `§UT`'nin ilkesiyle aynı: `musteri` sorulan kelimeye **tam**
+eşleşir, `musteri_kod` yalnız bir **parçasıyla**. *Bir tamlamanın niteleyeni düşerken
+kaybolan özgüllük, bir kimliğin adı yerine kodu seçilirken de kaybolur.*
+
+⚠ Bu bir **yönlendirme** kararıdır → korpus A/B ister; `§PB` ile aynı kuyruğa girdi.

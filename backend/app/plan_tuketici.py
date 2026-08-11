@@ -536,6 +536,28 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
                 _bolumler, baslik=_baslik or soru or "Rapor", schema=schema)
         except Exception:                     # noqa: BLE001 — belge kurulamazsa tur DÜŞMEZ
             _log.warning("rapor derlenemedi (best-effort)", exc_info=True)
+    # 🔴🔴 `§RT` — **TEK BÖLÜMLÜ BELGE SESSİZCE DÜŞÜYORDU — ve bu bir red bile değildi.**
+    #
+    # ⊙ Ölçüldü (curl `Q` turu, 2026-08-10): *«bakım maliyeti raporu hazırla»* → plan
+    # **1 bölüm** üretti, `§RB`'nin eşiği (≥2) yüzünden belge kurulmadı ve kullanıcı
+    # **tablo** aldı. Neden rapor olmadığı **hiç söylenmedi**.
+    #
+    # 🔴 Eşiğin gerekçesi doğru (*«tek bölüm bir belge değil bir cevaptır»*) ama sonucu
+    # yanlıştı: **sessiz bir indirgeme**. Kullanıcının kuralı — *dürüst red bir başarı
+    # değildir* — burada bir red **bile** yoktu.
+    #
+    # ⚠ Ve doğru cevap bir belge uydurmak değil: kullanıcı bir **canvas** istiyor
+    # (*«kullanıcı ile mükemmelce tamamlanacak»*), yani eksik olanı **sormak** doğru
+    # olanıdır. `§TZ` deseni: beyan + tek tık.
+    #
+    # *Bir indirgemeyi söylemeden yapmak, kullanıcıya istediğini verdiğini sanmasına izin
+    # vermektir.*
+    _belge_notu = None
+    if _belge_istegi and _rapor is None and len(_bolumler) == 1:
+        _belge_notu = ("⚠ **Tek bölümlük** bir sonuç çıktı — bir belge en az iki bölüm "
+                       "ister. Rapora dönüştürmek için ne eklemek istersin? (ör. "
+                       "*«müşteri kırılımı da ekle»* · *«geçen yıla göre kıyasla»* · "
+                       "*«aylık trend ekle»*)")
     # 🔴 **BOŞ SONUÇ SESSİZ KALMAZ.** Merdivenin geri kalanı bunu zaten yapıyor
     # (*«Bu aralıkta kayıt bulunamadı — rapor doğru kuruldu»*); plan yolu yapmıyordu ve
     # `source=cube+llm` rozetiyle **0 satır** dönüyordu. *Boş bir cevabı açıklamadan
@@ -631,6 +653,11 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
                 _gorulen.add(_ih.isaret)
                 _ihlaller.append(_ih)
         _eksik_notu = ("\n\n" + _uyum.kismi_cevap_notu(_ihlaller)) if _ihlaller else ""
+        # `§RT` — belge indirgemesi beyanı, uyum beyanının **yanına** eklenir: ikisi
+        # farklı şeyler söyler (biri *«sorunun bir parçası taşınmadı»*, öteki *«belge
+        # kurulamadı»*) ve biri ötekini ezmemeli.
+        if _belge_notu:
+            _eksik_notu = ("\n\n" + _belge_notu) + _eksik_notu
         if _ihlaller:
             _log.info("plan: beyanlı kısmi cevap (%s)", ", ".join(sorted(_gorulen)))
     except Exception:                          # noqa: BLE001 — beyan turu DÜŞÜRMEZ

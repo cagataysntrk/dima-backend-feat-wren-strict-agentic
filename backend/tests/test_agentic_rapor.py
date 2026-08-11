@@ -200,3 +200,40 @@ def test_ASK_HER_IKI_YOLA_DA_GECIRIR():
     kaynak = inspect.getsource(ask_mod)
     assert "body.previous_rapor)" in kaynak, "🔴 `sarmala` belgeyi almıyor"
     assert "onceki_rapor=body.previous_rapor" in kaynak, "🔴 tüketici yolu bağlanmamış"
+
+
+# --- `§RK` · BİR BLOK ÖZETTİR, DÖKÜM DEĞİL -------------------------------------------
+
+def test_BUYUK_BLOK_ISARETLENIR():
+    """🔴 Ölçülen kusur: *«kalite raporu hazırla»* → **6 boyut · 1000 satır** bloklar.
+    Kartezyen patlama; yazdırılabilir bir belgeye sığmaz."""
+    cok = [{"a": i} for i in range(120)]
+    r = report.bolumlerden_kur([_bolum(satirlar=cok)], baslik="x", schema=_SEMA)
+    assert r["pages"][0][0]["ozet_degil"] == {"satir": 120, "boyut": 0}
+
+
+def test_COK_BOYUT_DA_ISARETLENIR():
+    """⚠ Satır az olsa bile **çok boyut** bir özet değildir: okunabilirliği boyut sayısı
+    da belirler."""
+    r = report.bolumlerden_kur(
+        [{"cube_query": {"cube": "parti", "measures": ["toplam_ciro"],
+                         "dimensions": ["a", "b", "c", "d"]},
+          "result": {"columns": [], "rows": [{"x": 1}], "row_count": 1}}],
+        baslik="x", schema=_SEMA)
+    assert r["pages"][0][0]["ozet_degil"]["boyut"] == 4
+
+
+def test_NORMAL_BLOK_ISARETLENMEZ():
+    """🔴🔴 **Yanlış-pozitif kapısı.** Sıradan bir blok işaretlenirse damga anlamını
+    yitirir — *her şeyi işaretlemek hiçbir şeyi işaretlememektir.*"""
+    r = report.bolumlerden_kur([_bolum(dims=["musteri"])], baslik="x", schema=_SEMA)
+    assert "ozet_degil" not in r["pages"][0][0]
+
+
+def test_SATIRLAR_KIRPILMAZ():
+    """🔴 **Kırpma YOK.** Sessiz bir kapsam değişikliği bu deponun en pahalı kusur
+    sınıfıdır; yapılan tek şey **işaretlemek**."""
+    cok = [{"a": i} for i in range(120)]
+    r = report.bolumlerden_kur([_bolum(satirlar=cok)], baslik="x", schema=_SEMA)
+    assert r["pages"][0][0]["result"]["row_count"] == 120
+    assert len(r["pages"][0][0]["result"]["rows"]) == 120
