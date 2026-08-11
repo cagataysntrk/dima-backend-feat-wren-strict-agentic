@@ -408,6 +408,14 @@ def _maybe_interpret(request: Request, resp: AskResponse) -> None:
             cube_meta=cube_meta, etiketler=etiketler)
     except Exception:  # noqa: BLE001 - yorum best-effort (yanıtı düşürmez)
         _log.warning("çıktı yorumu üretilemedi (best-effort)", exc_info=True)
+    # 🔴 `§YV` — yön varsayımı beyanı **yorumun doğduğu yerde**. `uyum.denetle`'ye
+    # konsaydı hiç ateşlemezdi: orada `interpretation` henüz yok (canlıda ölçüldü) ve
+    # `denetle`'nin ÜÇ çağıranı var — kök-neden soruları planlayıcı yolundan geçiyor.
+    try:
+        from app.uyum import yon_beyani
+        yon_beyani(resp)
+    except Exception:  # noqa: BLE001
+        _log.warning("yön varsayımı beyanı üretilemedi (best-effort)", exc_info=True)
     _anlati_ekle(request, resp)
 
 

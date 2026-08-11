@@ -661,6 +661,38 @@ def _kirilim_ikamesi(qn: str, cq: dict, cube_meta: dict | None,
     return None
 
 
+#: 🔴 `§YV` — **YÖN VARSAYIMI.** `_TREND`'in içindeki fiiller **ikiye ayrılır**; yeni bir
+#: sözlük **yazılmaz**, var olan kapalı küme **bölünür** (`ADR-0008`). Ayrım dilbilgiseldir:
+#: bu dört fiil bir **yön** taşır, `trend`/`degisim`/`seyri` ise yönsüzdür.
+_DUSUS_FIILLERI = ("azaldi", "dustu")
+_ARTIS_FIILLERI = ("artti", "yukseldi")
+
+
+def _yon_varsayimi(qn: str) -> int | None:
+    """Sorunun **varsaydığı** yön: `-1` düşüş · `+1` artış · `None` yönsüz.
+
+    ⚠ Yalnız fiil aranır; *«en düşük»* gibi **üstünlük** ifadeleri buraya girmez — onlar
+    bir sıralama isteğidir, bir yön iddiası değil (`cube_router._direction`'ın işi).
+    """
+    if any(re.search(rf"\b{f}\b", qn) for f in _DUSUS_FIILLERI):
+        return -1
+    if any(re.search(rf"\b{f}\b", qn) for f in _ARTIS_FIILLERI):
+        return 1
+    return None
+
+
+def _olculen_yon(yorum: dict | None) -> tuple[int, float] | None:
+    """Cevabın **kendi** olgularından ölçülen yön ve yüzde. Metin ayrıştırılmaz —
+    `trend`/`delta` olguları sayısal `pct` taşır (`interpret.py:143,158`)."""
+    for f in ((yorum or {}).get("facts") or []):
+        if not isinstance(f, dict) or f.get("type") not in ("trend", "delta"):
+            continue
+        p = f.get("pct")
+        if isinstance(p, (int, float)) and abs(p) > 1:      # `interpret`'in kendi eşiği
+            return (1 if p > 0 else -1), float(p)
+    return None
+
+
 def denetle(q: str, cq: dict, cube_meta: dict | None = None,
             sema: dict | None = None) -> list[Ihlal]:
     """Sorudaki niyet işaretlerinin **sorguda karşılığı var mı?**
@@ -1711,6 +1743,44 @@ def beyan_ekle(resp, *, soru: str, cq: dict, sema: dict, cube_meta: dict | None 
     resp.note = " ".join(x for x in [resp.note, kismi_cevap_notu(ihlaller)] if x)
     if chip:
         resp.suggestions = (resp.suggestions or []) + chipler(ihlaller)
+
+
+def yon_beyani(resp) -> bool:
+    """🔴🔴 `§YV` — **SORUNUN VARSAYDIĞI YÖN, ÖLÇÜLENİN TERSİ.**
+
+    ⊙ Canlıda ölçüldü (2026-08-12): *«ciro neden **düştü**»* → cevap *«%117,4 **arttı**»*
+    ve **hiçbir yerde** *«düşmedi»* denmiyordu. Kullanıcı yanlış bir öncülle geliyor,
+    sistem o öncülü **sessizce düzeltip** başka bir soruyu cevaplıyor. `§101.1`'in sınıfı:
+    cevap **doğru**, ama sorulan soru **bu değildi** — ve bunu anlamanın yolu yok.
+
+    ## 🔴 NEDEN `denetle` DEĞİL BURASI — ölçüm yeri seçti
+
+    İlk yazımda kural `denetle`'ye kondu ve **hiç ateşlemedi**: `resp.interpretation`
+    o çağrı yerlerinde henüz **yok** (canlı curl üç soruda da `yok` dedi). Üstelik
+    `denetle`'nin **üç** çağıranı var (`beyan_ekle` · `ask.py` · `plan_tuketici`) ve
+    kök-neden soruları **planlayıcı** yolundan geçiyor — yani kural iki yerde kurulsa
+    bile üçüncüde yine boşta kalırdı.
+
+    ⊙ `_maybe_interpret` ise **tek** yerdir ve yorumu **kuran** yerdir. *Bir beyanı,
+    dayandığı olgunun doğduğu yere koymak; onu üç kez bağlamaktan hem ucuz hem
+    güvenlidir.*
+
+    ⚠ Bu bir **red değil bir beyandır**: cevap yerinde kalır, yalnız öncül düzeltilir.
+    *Yanlış bir varsayımı düzeltmeden cevaplamak, kullanıcıyı yanlış soruda bırakmaktır.*
+    """
+    q = _norm(str(getattr(resp, "question", "") or ""))
+    bekle = _yon_varsayimi(q)
+    if bekle is None:
+        return False
+    olcum = _olculen_yon(getattr(resp, "interpretation", None))
+    if not olcum or olcum[0] == bekle:
+        return False
+    yon_ad = "düşüş" if bekle < 0 else "artış"
+    ger_ad = "arttı" if olcum[0] > 0 else "azaldı"
+    cumle = (f"⚠ Soru bir **{yon_ad}** varsayıyor ama ölçülen **ters yönde**: "
+             f"**%{abs(olcum[1]):.1f} {ger_ad}**.")
+    resp.note = " ".join(x for x in [getattr(resp, "note", None), cumle] if x)
+    return True
 
 
 def uydurma_beyani(resp, niyet) -> bool:

@@ -3597,6 +3597,36 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 
 ## FAZ 4 · KÖK-NEDENİ TAMAMLA — 1 hafta
 
+### ✅ §YV · SORUNUN VARSAYDIĞI YÖN — **CANLI ÖLÇÜM YENİ BİR KUSUR BULDU** *(2026-08-12)*
+
+> FAZ 4'ün kartlarını ölçmek için kök-neden yolu canlıda basıldı ve **kartlarda olmayan**
+> bir kusur çıktı:
+>
+>     «ciro neden DÜŞTÜ» → özet: «ciro: … %117,4 ARTTI …»
+>     «düşmedi» · «aksine» · «varsayım» — hiçbiri geçmiyor (arandı, YOK)
+>
+> Kullanıcı **yanlış bir öncülle** geliyor; sistem o öncülü **sessizce düzeltip** başka
+> bir soruyu cevaplıyor. `§101.1`'in sınıfı: cevap **doğru**, sorulan soru **bu değil** —
+> ve anlamanın yolu yok.
+>
+> ✅ **`uyum.yon_beyani`** — yüklem **yapısal**: `_TREND`'in **zaten kapalı** fiil kümesi
+> ikiye **bölündü** (yeni sözlük yok, `ADR-0008`); cevap tarafında metin ayrıştırılmaz,
+> `trend`/`delta` olgularının **sayısal `pct`**'i okunur (eşik `interpret`'in kendi eşiği).
+> ⚠ Üstünlük ifadeleri (*«en düşük müşteri»*) **hariç** — onlar sıralama isteğidir, yön
+> iddiası değil; sayılsalardı her top-N sorusu sahte çelişki üretirdi.
+>
+> 🔴 **VE YERİNİ ÖLÇÜM SEÇTİ.** Kural önce `uyum.denetle`'ye kondu ve **hiç ateşlemedi**:
+> orada `resp.interpretation` **henüz yok** (canlı curl üç soruda da `yok` dedi), üstelik
+> `denetle`'nin **üç** çağıranı var ve kök-neden soruları **planlayıcı** yolundan geçiyor.
+> `_maybe_interpret` ise **tek** yerdir ve yorumu **kuran** yerdir.
+> *Bir beyanı, dayandığı olgunun doğduğu yere koymak; onu üç kez bağlamaktan hem ucuz
+> hem güvenlidir.*
+>
+> **Canlı:** `ciro neden düştü` → *«⚠ Soru bir **düşüş** varsayıyor ama ölçülen **ters
+> yönde**: **%117,4 arttı**.»* · `ciro neden arttı` → **sessiz** (varsayım doğru) ·
+> yönsüz sorular → **sessiz**. Kapı: `test_yv_yon_varsayimi.py` (10); demet kapısı yeşil,
+> taban birebir aynı.
+
 ### ◐ E1 · Adtributor yatay eksen — **TEŞHİS YARI BAYAT (ölçüldü 2026-08-11)**
 
 > 🔴 **`§10.4(a)`'nın *«`derinles` tek bir ikinci boyut açıyor, KOMBİNASYON ARAMASI
