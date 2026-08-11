@@ -1469,6 +1469,498 @@ Araştırma bu dört maddeyi **birincil kaynaktan teyit edemedi** ve tahminle do
 
 *Bir raporun değeri, doldurduğu boşluklar kadar, boş bıraktığını söylediği yerlerdedir.*
 
+---
+
+# DOKUZUNCU KISIM — TÜRK PAZARI VE YEREL RAKİPLER
+
+## 19 · YERLİ REKABET HARİTASI — dört katman
+
+### 19.1 🔴 Katman 1 — semantik katman + ontoloji + Türkçe NL: **TEK firma, ve o da perakendede kilitli**
+
+**OBASE — AIReady / AIR** (`obase.com`, 30+ yıl, MicroStrategy MEA *«Yılın İş Ortağı»*).
+AIR lansmanı **23 Ekim 2024**. Kendi ifadesiyle mimari üç katman: **(1) semantik katman
+(2) ontoloji (3) ajan tabanlı orkestrasyon**. Türkçe NL arayüzü, site örneği:
+*«Bugünkü satış düşüşüne ne sebep oldu?»* · anomali/KPI sapma · **sesli etkileşim
+(STT/TTS)** · dashboard→yönetici özeti. Referans: **Migros — MiO**.
+
+⊙ **Bizim tarifimizin en yakın muadili.** Ama: **perakende/telekom/lojistik/ilaç/finans**
+odaklı, **imalat hedefinde DEĞİL**, Migros ölçeğine konumlanmış, fiyat şeffaflığı yok.
+
+### 19.2 Katman 2 — yerli BI motoru + gömülü NL asistanı
+
+**TURBOARD (E-Kalite Yazılım)** — 2004 kuruluş, iki ODTÜ mühendisi, ODTÜ Teknokent +
+TÜBİTAK. **80+ çalışan**. **JAS** (*«Just Ask Simply»*): NL→SQL, NL→görselleştirme,
+**JAS Explain** (grafiği doğal dille açıklama), JAS İçgörü (Haz 2025), özelleştirilebilir
+AI persona'ları.
+
+🟢 **İki güçlü yanı bizi doğrudan ilgilendiriyor:** **LLM bağımsızlığı** (Gemini/GPT/
+DeepSeek/Mistral/Qwen/özel endpoint) ve **tam on-prem SLM** seçeneği (*«sorgular ve veri
+altyapınızdan çıkmaz»*). Müşteriler: Turkcell, T.C. Sağlık Bakanlığı, UNDP.
+
+🔴 **Ve fiyat KAMUYA AÇIK** (nadir): DMO TeknoKatalog ENT-U kurumsal kullanıcı lisansı
+**19.493,83 TL KDV dâhil / 12 ay / kullanıcı**. ⊙ **Kamu satın alma kanalı açık** —
+bizim hiç düşünmediğimiz bir dağıtım yolu.
+
+⚠ Semantik/metrik katman bir **ürün olarak belgelenmiyor**; yerine *«beş öğrenme
+seviyesi»* ve *«mevcut raporlara dayandırma»* iddiası var.
+
+### 19.3 🔴 Katman 3 — **ERP-üstü text-to-SQL dalgası** (2025-26'nın gerçek rekabeti)
+
+Araştırmanın en önemli bulgusu: son ~18 ayda Mikro/Logo/Netsis veritabanları üzerine
+Türkçe NL→SQL asistanı yapan bir **eklenti ekosistemi patladı**. **Hepsi şema-üstü
+text-to-SQL; semantik katman YOK.**
+
+| ürün | ERP | ayırt edici | fiyat |
+|---|---|---|---|
+| **ERP Asistanı** (Valeria Medya, İzmir) | Mikro v15/16/17 · Netsis v3 · Logo GO 3 | şema-doğrulanmış SQL · uygulama üreticisi · *«Şirket Ajanları»* 7/24 anomali · **REST API + MCP SUNUCUSU** | **9.999 TL+KDV/ay** · 99.999 TL+KDV/yıl |
+| **aiperas** | Logo **tam** + Mikro **tam** | NL sorgu · **kök-neden/driver analizi** · anomali · AutoML · yetki + denetim izi | açık değil |
+| **Fora Kayra AI** (Eskişehir) | Mikro | metin + **ses** + dosya · KVKK, veri Mikro'da kalır | açık değil |
+| **OzBI** | Logo · Mikro · 5 veritabanı | **Docker self-hosted** · *«5 dakikada kurulum»* · **«agent swarm»** · departman asistanları | açık değil |
+| **ERPAS ai** | yalnız Logo | Türkçe NL + **sesli** · on-prem | açık değil |
+| **WolvoxAI (AKINSOFT)** | Wolvox 26 ERP | gömülü Türkçe NL raporlama | 🔴 **ÜCRETSİZ — lisansa dâhil** |
+
+🔴 **İki stratejik sinyal:**
+
+1. **aiperas ↔ Solniro stratejik ortaklığı (27 Ekim 2025)** → **Logo ekosisteminde resmî
+   distribütör**. Dalga **kurumsal dağıtıma** bağlandı.
+2. **AKINSOFT NL raporlamayı ÜCRETSİZ verdi** (Mayıs 2026). ⊙ **Fiyat tabanı çöktü.**
+
+⚠ **Ama zaafları kendileri itiraf ediyor.** Fora Kayra kendi blogunda: *«yeni sorguları
+bilinen bir referansla **bir kez doğrulayın**»* · *«**muğlak sorular muğlak sonuç
+verir**»*. ⊙ Bu, dbt'nin *«text-to-SQL'de başarısızlık makul ama yanlış bir cevaptır»*
+cümlesinin Türkçe itirafıdır — ve **bizim ayrımımızın tam yeri**.
+
+### 19.4 Katman 4 — dikey imalat AI ajanları
+
+🔴 **GÜNCEL YAZILIM (Bursa)** — nişimizdeki **en yakın rakip**. 2000 kuruluş, **Sanayi ve
+Teknoloji Bakanlığı onaylı Ar-Ge Merkezi**, 26+ yıl tekstil.
+
+* **LEO TEXTILE** — iplikten konfeksiyona tekstil ERP; **boya/terbiye süreçleri modül
+  içinde**.
+* **WILOOM (MES & IoT)** — **kendi tasarladıkları IoT cihazları**: Wi-Fi, **sıcaklık +
+  nem sensörü**, offline hafıza, **RFID vardiya okuyucu**; tezgâh dur-kalk, **OEE**,
+  duruş/personel/ürün analizi, SMS alarm.
+* **xLAP AI** — *«doğal dilde yönetilen kurumsal çözüm platformu»*: **Lead Architect**
+  tarafından orkestre edilen **12+ uzman ajan** (SQL Uzmanı, Dashboard Tasarımcısı,
+  IoT Monitör, Kalite Kontrol, Yetki Yöneticisi…).
+* Müşteriler: **40+ firma; KOTON, COLIN'S, TOFAŞ, SANKO**.
+
+🟢 **KRİTİK AYRIM — ve konumumuz tam burada:** xLAP'ın doğal dili öncelikle
+**uygulama/dashboard/SQL ÜRETMEK** için; bir **AI low-code builder**. *«İş sorusu sor →
+semantik katmandan doğrulanmış cevap al»* **değil**.
+
+**Genel MES/OEE satıcıları:** ARGE BİLİŞİM `@rgemas` (**7 ülke, 200+ fabrika**, tekstil
+açıkça hedefte: kumaş kontrol, yıkama hattı, kesim) · DORUK `ProMANAGE` (Teknopark
+İstanbul + ABD, ISA-95, artırılmış gerçeklik) · ALFI `MES Suite Pro` (her modülde gömülü
+AI). ⊙ **Hiçbirinde doğal dil analitiği belgelenmemiş.**
+
+### 19.5 🔴 YENİ VE HIZLI RAKİP — DATIVA AI
+
+`dativa.ai` · **2025 kuruluş**, İstanbul Ataşehir · **2-10 kişi** · Crunchbase tanımı:
+*«Generative AI–powered **decision intelligence platform**… natural language, **what-if
+simulations**»*, agentic akışlar.
+
+⊙ **TRAI Girişim Haritası'nda · Web Summit Qatar 2026 startup programında · MEXT (Model
+Fabrika) webinarında «imalatta agentic AI» konuşmacısı** → **bizim nişimize doğrudan
+giriyor**. Açıklanmış yatırım turu yok. **Küçük, fonlanmamış — ama hızlı.**
+
+### 19.6 Büyük yerli ERP üreticileri — ve bir düzeltme
+
+⚠ **Düzeltme:** *«Netsis/Sage»* yanlış — **Netsis'i Logo 2013'te satın aldı**; Sage'in
+tarihsel ilişkisi **Mikro Yazılım** iledir.
+
+| firma | analitik durumu |
+|---|---|
+| **Logo** | **Mind Insight = Qlik Sense altyapısı** üzerine on-prem BI — **AI ve doğal dil YOK**. Ocak 2026: **TS EN ISO/IEC 42001 YZ Yönetim Sistemi** sertifikası. ⚠ *«LOGODIA»* adlı bir NL asistanı iddiası **tek kaynakta** (bir iş ortağı blogu) — Logo'nun kendi kanallarında **doğrulanamadı** |
+| **Nebim V3** | İş Zekası **«powered by Power BI»** — kendi BI motoru yok. NL/AI asistanı **bulunamadı** |
+| **Uyumsoft** | NLP/chatbot/talep tahmini blogda anlatılıyor ama **canlı ürün özelliği olarak doğrulanamadı** |
+| **IAS / caniasERP** | 1.400+ müşteri, otomotiv/makine/metal. OLAP modülü var, **doğal dil sorgulama belgelenmemiş** |
+| **Karel** | 🔴 **BI/AI veri ürünü YOK** — listeden elenmeli |
+
+## 20 · BOŞLUK VE PAZAR GERÇEĞİ — sayılarla
+
+### 20.1 🔴 TÜİK 2025 — hedef segmentimizin **%89,3'ünde BI YOK**
+
+Girişimlerde Bilişim Teknolojileri Kullanım Araştırması 2025 (10+ çalışan):
+
+| | genel | 10–49 | **50–249** | 250+ |
+|---|---|---|---|---|
+| ERP | %28,3 | %23,6 | **%46,0** | %76,5 |
+| CRM | %12,0 | %9,9 | %18,4 | %42,0 |
+| **İŞ ZEKÂSI (BI)** | **%6,5** | %4,9 | **%10,7** | %35,1 |
+
+⊙ **Hedef segmentimiz olan 50–249 çalışanlı orta ölçekli işletmenin %46'sında ERP var,
+%89,3'ünde BI YOK. VERİ VAR, CEVAP YOK.**
+
+🔴 **Bu «Power BI'dan pay al» değil, «EXCEL'DEN pay al» oyunudur.**
+
+**TÜİK YZ İstatistikleri 2025 (ilk kez):** herhangi bir YZ kullanan girişim
+**2021 %2,7 → 2025 %7,5**.
+
+**TÜSİAD SD² × Digitopia, Dijital Olgunluk 2024:** Türkiye DMI **2,87** ↔ global **2,99**
+— ve **makas her yıl açılıyor** (2021: −0,09 → 2024: −0,12). **Bankacılık dışında hiçbir
+sektör global ortalamayı yakalayamıyor**; üretim geride.
+
+**TRAI ekosistem:** Türkiye'deki YZ girişimi **2017'de 24 → Nisan 2026'da 482**. Ocak
+2026 partisindeki 40 yeni girişimde **öngörü ve veri analitiği yalnızca 2** ⊙ **veri
+analitiği, Türk YZ ekosisteminin en az kalabalık dikeylerinden biri.**
+
+### 20.2 Kategori farkındalığı **yok** — ve bu bir fırsat
+
+Araştırma, Türkçe konuşmalı analitik üzerine **bağımsız konferans konuşması, YouTube
+demosu veya topluluk içeriği bulamadı**. Veri Bilimi Okulu havuzunda konu yok. TÜSİAD
+SD²'de 40+ başarı hikâyesi var (Ford Otosan, Brisa, Temsa, Teksan) ama *«doğal dil ile
+veri sorgulama»* başlığı **yok**.
+
+⊙ **Pazarı ilk eğiten avantaj kazanır** — ama aynı zamanda **ürün değil KATEGORİ satmak**
+zorundayız.
+
+**Fiilen ne kullanıyorlar:** **ERP hazır raporu + Excel**. BI alan azınlık = **Power BI**
+(ya da ERP'sinin OEM ettiği Qlik/MicroStrategy). ⚠ Doğrudan anket bulunamadı; dolaylı
+sinyal olarak Türkçe YouTube'da fabrika raporlamasını Excel'de öğreten içerikler
+**42,1B / 22,3B / 3,8B izlenme**. *Bu anket verisi olarak sunulmuyor.*
+
+### 20.3 🟢 Savunulabilir konum — ve üç risk
+
+**Konum:** Kimse *«**imalat semantik katmanı** (OEE, boyahane reçetesi, duruş nedeni,
+bakım, vardiya, İK) üzerinde **doğrulanabilir** Türkçe cevap»* satmıyor. OBASE
+perakendede kilitli; xLAP kod/dashboard üretiyor; ERP asistanları şema-üstü tahmin
+yapıyor **ve bunu kendileri itiraf ediyor**.
+⊙ **Ayrımımız: DOĞRULANABİLİRLİK + İMALAT ONTOLOJİSİ.**
+
+| risk | içerik |
+|---|---|
+| 🔴 **Fiyat tabanı** | AKINSOFT NL raporlamayı **sıfıra** indirdi; alıcı *«bu zaten ERP'mde var»* diyecek. Cevap net olmalı: **onlarınki ŞEMAYA sorar, bizimki İŞ TANIMINA sorar** |
+| 🔴 **Dativa AI** | 2025 kuruluşlu, tam bizim tarifimizi yapıyor, **MEXT üzerinden imalata giriyor** |
+| 🔴 **Kanal** | aiperas–Solniro örneği: **bayi kanalı olmadan orta ölçeğe ulaşmak zor**. Turboard'ın **DMO kamu kanalı** alternatif bir yol gösteriyor |
+
+---
+
+# ONUNCU KISIM — GİRİŞİM RAKİPLERİ: NASIL YAPMIŞLAR
+
+> Soru: *«Bu kadar firma bunu yapabiliyorsa biz neyi eksik yapıyoruz?»*
+> ⚠ Ölüm iddiaları **beyana değil ÖLÇÜME** dayanıyor: canlı DNS/TLS/HTTP adli incelemesi,
+> YC resmî API (**2.203 şirketlik tam sayım**), HN Algolia API, GitHub API.
+
+## 22 · ÖNCE ÖNERMEYİ DÜZELT — *«bu kadar firma yapabiliyor»* YANLIŞ
+
+### 22.1 🔴 MEZARLIK — ağ testiyle doğrulanmış
+
+| şirket | kanıt | akıbet |
+|---|---|---|
+| **DataGPT** | `datagpt.com` **A kaydı YOK** | ÖLÜ · ~$22M / ~$1,3M ARR = **17×** |
+| **Delphi** | HTTP 200 ama içerik **Hollandaca kumar sitesi** | Ekip **Cube'a katıldı** → kendi semantik katmanının sahibi tarafından **yutuldu** |
+| **Patterns** (YC S21) | HTTP **402 Payment Required** · `DEPLOYMENT_DISABLED` | ÖLÜ — Vercel faturası ödenmemiş |
+| **Propel** | GoDaddy **park sayfası** | ÖLÜ |
+| **Sisu Data** | **TLS sertifikası süresi dolmuş** | Snowflake aldı, ürün öldürüldü · **$128,7M / $9,9M = 13×** |
+| **Vizly** (YC S23) | sertifika **13 aydır** yenilenmemiş | ÖLÜ |
+| **Zing Data** | **DNS YOK** | Kapandı 20 Ara 2025 |
+| **Dataherald** (YC W21) | DNS yok · GitHub **3.644★**, son commit Tem 2024 | ÖLÜ — **464 puanlık Show HN'e rağmen** |
+| **Vanna AI** | **23.822★** ama repo **ARŞİVLENMİŞ** (Şub 2026) | 🧟 **ZOMBİ** — en çok yıldızlı OSS text-to-SQL, ticari dönüşüm yok |
+| **Fosfor** (LTIMindtree) | `fosfor.com` A kaydı yok · `ltm.com`'da *«Fosfor»* **0 kez** | ⚠ **fiilen tasfiye — resmî duyuru yok, ÇIKARIM** |
+
+**Satın alınanlar:** Seek AI → **IBM** ($7,5M ile 3,5 yılda çıkış) · Numbers Station →
+**Alation** · Wobby → **Actian/HCL** · Outerbase → **Cloudflare** · Fabi.ai → **Omni** ·
+AskEdith → **Athenic** · Buster → **pivot**.
+
+### 22.2 🔴 YC TAM SAYIMI — 2.203 şirket
+
+**2023 analitik kohortu: %19,0 ölü + %28,6 satılmış = %47,6 bağımsızlığını kaybetti**
+(batch geneli %22,3). ⊙ **Analitik girişimleri 2,1× daha fazla bağımsızlığını yitiriyor**
+— ve bu bir **alt sınır** (pivot edenler hâlâ *«Active»* görünüyor).
+
+**YC'nin iştahı çöküyor:** analitik payı **2023 %8,5 → 2024 %6,0 → 2025 %5,1 → 2026 %2,7**
+(P26 %1,5 = **tarihsel dip**).
+
+### 22.3 🔴 Thoughtworks text-to-SQL'i **HOLD**'a düşürdü
+
+Radar Vol 33 (5 Kas 2025): Trial → **HOLD**, gerekçe *«its reliability often falls short
+of expectations»*. ⊙ **18 ayda Trial'dan Hold'a düşen nadir tekniklerden.**
+
+## 23 · DERİN PROFİLLER — ve her birinin bize dersi
+
+### 23.1 🟢 OMNI — kategorinin kazananı, mimarisi bizimki
+
+Mart 2022 · **Colin Zima (eski Looker Chief Analytics Officer)** + Jamie Davidson (eski
+Looker VP Product). **~$216M**, Series C $120M @ **$1,5B** (Nis 2026). ~190 kişi.
+⊙ **Kuruluştan lansmana ~5 ay** — çünkü **kurucular Looker'ı zaten yapmıştı**.
+
+**Mimari:** kendi semantik katmanı + **ajanın SQL yazmasını YASAKLIYOR**. Akış: soru →
+**Topic** (küratörlü dilim) → ajan **alan/filtre SEÇER** → **motor SQL'i DERLER** →
+doğrulama ajanı denetler. Zima buna **«harness»** diyor.
+
+🔴 **Setin en somut ölçümü** (28 Tem 2026): kendi prod verisinde **100 gerçek soru**,
+5 mimari, Claude Opus hakem + ikinci Opus denetçi, **iki kez** koşturuldu.
+
+| | Omni | en yakın alternatif |
+|---|---|---|
+| doğruluk | **95/100** (zorlarda %90) | zorlarda **%60** |
+| tutarlılık | **96/100 aynı** | **30 cevabı değiştirdi**, **19 kez hiç cevap veremedi** |
+| maliyet | $1,04 / 670K token | $1,29 / 1-6M token |
+
+🔴🔴 **EN KRİTİK BULGU:** semantik katman **VE** playbook verilen genel amaçlı **lider
+kodlama ajanı yine de 21 PUAN GERİDE**.
+
+> Zima: *«when you hand a coding agent the semantic layer, **it's used as a REFERENCE
+> where it should be a RULEBOOK**.»*
+
+Somut felaket: *«It even read the comment we left in the model warning about this exact
+query… **"I have all the definitions I need," it said. Then it did its own thing…** It
+said our top campaign was worth **$55.5 BILLION** in pipeline.»* (Kartezyen fan-out.)
+
+⊙ **Bu, `plan_semasi`'nin kapalı `enum` kararının en güçlü dış gerekçesidir.**
+
+### 23.2 🔴 ZENLYTIC — en öğretici itiraf: **kurulum vergisi**
+
+2021 NY · **$15M / 3 tur** · Verizon, J.Crew, Stanley Black & Decker, Workday, Domino's.
+**Mimari:** kendi semantik katmanı + **«Clarity Engine»** deterministik doğrulayıcı.
+
+> Blankley (6 Ağu 2026): *«the Clarity Engine validates every field reference, join, and
+> aggregation against your model… **This is not a model grading its own homework. It is a
+> checker… This is the one part we will not make probabilistic, because it is the reward
+> signal.**»*
+
+🔴 **EN KRİTİK İTİRAF** (13 May 2026): *«**Zenlytic is hard to set up. We should just say
+it… Weeks. Sometimes months** of tweaking before a non-technical person can ask a question
+and trust the answer. **That setup tax is why we've mostly worked with large enterprises so
+far.**»* — Aynı gün **satış-liderli modeli terk edip self-serve açtılar**.
+
+⊙ **Bizim en yakın risk aynamız:** 23 küp, elle küratörlenmiş paketler → **kurulum vergisi
+bizde de var ve ölçülmüyor.**
+
+### 23.3 🟢 VEEZOO — **mimari ikizimiz** + dil kaması dersi
+
+2016 **ETH Zürih spin-off** · $6M Series A (Eyl 2025) · yönetim kurulunda **Mark Nelson —
+Tableau'nun eski CEO'su** · AXA, Bayer, Helvetia.
+⊙ **Kuruluştan Series A'ya ~9 YIL** — setin en yavaşı, çoğunlukla kendi yağıyla.
+
+**Mimari = bizim Intent-JSON'umuz:** Knowledge Graph + **VQL** (kendi ara temsili) → LLM
+**VQL yazar** (yalnız önceden tanımlı KG kavramları) → **deterministik derleme** → SQL.
+🔴 **Grafik başlıkları/filtreler/etiketler BİLE VQL'den render ediliyor, LLM'den değil** —
+bizim **ADR-0024** yasağımızın birebir aynısı.
+
+> *«**The AI never writes SQL directly.**»* · *«**No Prompt Injection Risks** — The AI
+> operates only on predefined Knowledge Graph concepts.»* · *«**Deterministic Results** —
+> The same question always produces the same result.»*
+
+🔴 **WEDGE = DİL + COĞRAFYA:** DACH/Almanca kurumsal; karşılaştırmalarında **Power BI
+Copilot'ın yalnızca İngilizce olduğunu vurguluyorlar** + İsviçre/AB veri ikametgâhı.
+⊙ **Türkçe kamamızın doğrulanmış emsali — $6M Series A ile ödüllendirilmiş.**
+
+🚩 **En büyük tutarsızlık:** *«#1 In Benchmarks»* diyor ama **kaynak yok**; *«benchmark»*
+adlı tek varlıkları bir **veri hikâyeciliği yarışması**. ⊙ **Determinizm iddiası en güçlü
+şirket, yayınlanmış kanıtı en zayıf şirket.**
+
+### 23.4 🟢 DOT — en az sermaye, **en dürüst kapsam beyanı**
+
+~7 kişi · seed sonrası **halka açık tur yok** · Duolingo, Choco, KRY.
+**Wedge = KANAL:** Slack/Teams/e-posta. **Mimari = agresif REUSE** — kendi katmanını
+dayatmıyor, **var olanı okuyor** (dbt, Power BI, Looker, Malloy, Cube + Notion/Jira).
+
+> *«The layer was never the requirement. The requirement is that **MEANING IS RECORDED
+> SOMEWHERE A MACHINE CAN READ IT**.»* · *«Every BI and AI vendor, **US INCLUDED**, has an
+> incentive to become the place where your definitions live. **RESIST ALL OF US.**»*
+
+🔴 **Raporun en iyi belgelenmiş kapsam reddi — HN'de rakiplerin önünde:**
+*«Dot works well for questions answerable with **1 SQL QUERY AND SOME PYTHON**.»* ·
+*«customers have **LESS THAN 10 TABLES** hooked up.»* · *«**I don't think all
+organizations are ready for AI.**»*
+
+### 23.5 🟢 HEX — reuse stratejisinin ayakta kalanı
+
+2019/2020, **hepsi eski Palantir** · **~$171M** · 2.000+ müşteri · Reddit, Notion,
+**Anthropic**, Figma. **Wedge = PERSONA** (veri pratisyeni). **Mimari = REUSE** (dbt, Cube,
+MetricFlow, **Ossie**).
+
+> McCardel: *«we want to lock you in with an **awesome product experience**, not a
+> proprietary yaml format.»*
+
+🔴 **Yazılı reddi:** *«it's definitely **not "instant insights in a box"**. These models
+**don't know the right questions to ask**… that's your job! And **we think it should stay
+that way**.»*
+
+**Eval felsefesi bizimkiyle aynı:** akademik benchmark'ları **açıkça reddediyor**
+(*«those are **vanity evals**»*); kendi eval'lerinin **yalnızca %20'si geçiyor**.
+
+🔴 **En dürüst öz-eleştiri:** *«**Sunk-cost fallacy** and deep belief in our notebook
+domain expertise kept us working on it **much longer than we should have**.»*
+
+### 23.6 Kalan profiller
+
+| şirket | ders |
+|---|---|
+| **Upsolve AI** (YC W24, **5 kişi**, $1,5M) | **Wedge kayması kanıtlı**: gömülü GenBI → *«Agent Studio for Data Teams»*. **Fiyat en şeffaf:** Free → Pro **$500/ay** → Team **$2.000/ay**. *«**7 days** to a working, reliable agent»* |
+| **Pyramid Analytics** | 🔴 **Mimarisi Intent-JSON'umuzun aynısı** (*«LLM… GENERATE THE RECIPE»*) ama **şirket yorgun**: iş ilanı sitemap'i **3,5 yıldır** güncellenmemiş, basın bültenleri Tem 2025'te durmuş, BlackRock'tan **borç-benzeri $50M** |
+| **Julius AI** (YC S22, **10 kişi**, $10M) | **Semantik katman YOK.** 2M+ kullanıcı, saf self-serve PLG ($20-$500/ay). Wedge = **eğitim** (Harvard Business School zorunlu dersi). Şikâyet: *«it'll reference some database it has created **without your knowledge** and give you the **WRONG ANSWER**»* |
+| **Basedash** (YC S20, 6 kişi) | 4 yıl admin-panel: *«**we were hill climbing an ant hill**»* → pivot → *«**4× more revenue** in one year than the entire 4 years before»*. *«6 aylık satış döngüsü $2k/yıl → **self-serve $12k/yıl**»*. **BI Bench**'i yayınladı |
+| **Bruin** (Türk kurucu **Burak Karakan**) | ~**$20K** (Techstars) ile ~**$1M ARR**. Yazısı: *«Building an AI Data Analyst Sucks»* |
+| **Tellius** | $17M / **$22,8M ARR = 0,75×** → **sağlıklı**, çünkü **pharma dikeyine gömülmüş** |
+| **Findly** (YC S22) | **Malloy** + derleyici doğrulaması. *«For the past **3 YEARS** I've been building an AI data analyst.»* |
+| **Athenic** (eski AskEdith) | 4 yıl ve **bir marka ölümünden** sonra: *«**IT'S NOT A MODEL PROBLEM. WE LEARNED THIS THE HARD WAY.** …**YOU WERE RIGHT.**»* |
+| **Text2SQL.ai** | **TEK KİŞİ**, bootstrapped, ~$96K ARR, **4 yıldır ayakta** |
+
+## 24 · 🟢 YAKINSAYAN MİMARİ — 2026 konsensüsü
+
+**Bağımsız 9+ ekip aynı tasarıma vardı: LLM NİYETİ yazar, DETERMİNİSTİK MOTOR hesaplar.**
+
+```
+Pyramid «recipe» · Veezoo VQL · Inconvo «structured query object» · Athenic Semantic Model
+Wren MDL · Zenlytic Clarity Engine · Findly Malloy · Omni Topic+harness
+Akademi: GRID (RBAC gramere derleniyor, +13 puan) · RUBICON (kısıtlı arayüz %100 ↔ agentic ReAct %0)
+```
+
+⊙ **DİMA'nın *«LLM SQL yazmaz»* değişmezi aykırı bir tercih değil — KAZANAN TARAFIN
+TANIMI.** ⚠ Ama Omni'nin nüansı hayati: semantik katman **yetmiyor**, **zorlayıcı harness**
+gerekiyor (§23.1'in 21 puanı).
+
+## 25 · SEKTÖRÜN ÇÖZÜLMEMİŞ KAVGASI — bağlam öğrenilir mi, küratörlenir mi?
+
+**A tarafı (Zenlytic):** *«**Index the queries, not just the tables**… a company might have
+2.000 tables but only **150 PATTERNS** that actually matter.»*
+
+**B tarafı (ANTHROPIC — kendi üretim sisteminden, ÖLÇÜMLE, 3 Haz 2026):**
+
+> *«**Design for null results. Our most useful ablation was a negative one.** We gave the
+> agent direct grep access to our entire dashboard, transformation, and analyst-notebook
+> SQL (thousands of files)… **ACCURACY MOVED BY LESS THAN A POINT.** … About 80% of the
+> time [cevap korpustaydı]. … **THE INFORMATION WAS THERE, THE AGENT SAW IT, AND IT STILL
+> DIDN'T USE IT. That single experiment told us our bottleneck wasn't access to prior
+> work, IT WAS STRUCTURE.**»*
+
+Ve: *«One idea that **DIDN'T WORK**: bootstrapping the semantic layer by having an LLM
+auto-generate metric definitions… It produced **plausible-looking definitions that encoded
+the very ambiguities we were trying to eliminate**, and was **net-negative** versus a
+smaller, **human-curated** layer.»*
+
+**Anthropic'in diğer ölçümleri:** skill'siz **%21 → skill'li >%95** · **bakımsız
+bırakılınca bir ayda %95 → %65** · skill markdown'ları **transformation modelleriyle aynı
+repo, aynı PR'da**; veri-modeli PR'larının **~%90'ı** skill değişikliği içeriyor; alan
+sahibi **~%90 eval eşiğini** geçmeden ajanı duyuramıyor; *«have the grader judge the
+agent's **QUERY** rather than its number»*.
+
+⊙ **Bizim *«beyanla sınıflandırma, elle uydurma yok»* disiplinimiz B tarafında — ve B
+tarafının elinde ÖLÇÜM var.** Kesişim: **sorgu geçmişini ham malzeme olarak kullanıp insan
+onayına sunmak** — VQR'ımızın tam da yapabileceği şey.
+
+## 26 · EKİP, SÜRE VE «ZOR KISIM AI Mİ?»
+
+### 26.1 Ekip büyüklüğü ile hayatta kalma arasında **korelasyon YOK**
+
+YC'nin `teamSize` alanı, 2025-26 analitik kohortu (n=48): **medyan 2 kişi, %81'i ≤4 kişi**.
+
+```
+Bricks 2 (yaşıyor) · Vizly 2 (ÖLDÜ) · Patterns 2 (ÖLDÜ) · Definite 3 · Buster 4 (pivot)
+Outerbase 4 (satıldı) · Upsolve 5 · Basedash 6 (yaşıyor) · Dot ~7 · Julius 10
+Findly 11 · DATAHERALD 18 (ÖLDÜ) · ParaQuery 1 (yaşıyor) · Text2SQL.ai 1 (yaşıyor)
+```
+
+### 26.2 Süre: demo **haftalar**, güvenilir ürün **yıllar**
+
+Omni **5 ay** (istisna) · Findly **3 yıl** · Veezoo **9 yıl** · Zenlytic 5 yıl sonra hâlâ
+*«haftalar, bazen aylar»* kurulum.
+
+### 26.3 🔴 *«Zor kısım AI mı?»* — kanıt: **ÇOK AZI**
+
+> **Buster kurucusu**, 2 yılını ve $2,4M'ını böyle özetledi: *«**I WAS ABLE TO REBUILD OUR
+> W24 IDEA (AN AI DATA ANALYST) IN ~5 MINUTES.** I pointed Cursor at our old repo…»*
+
+> **Definite kurucusu:** *«**THE AGENT IS KIND OF THE EASY / FUN PART.** Getting the data
+> infrastructure right so the agent works — **that's the hard part**.»*
+
+> **Zing Data kapanış yazısı:** *«we didn't build something **indispensable to enough
+> people willing to pay fast enough**.»*
+
+Sayılar aynı yöne: Anthropic'in **+74 puanı modelden değil** bağlam/skill katmanından ·
+Dot'un **%10→%90'ı** *«modelden değil **konfigürasyondan**»*.
+
+⊙ **AI katmanı artık bir hafta sonu projesi. Zor kısım: veri altyapısı, bağlam bakımı
+(bakımsız 1 ayda %95→%65), dağıtım ve GÜVEN KANITI.**
+
+### 26.4 🔴 Asıl ölüm sebebi: **sermaye/gelir uçurumu**
+
+| ölenler | oran | yaşayanlar | oran |
+|---|---|---|---|
+| Sisu | $128,7M / $9,9M = **13×** | Tellius | $17M / $22,8M = **0,75×** |
+| DataGPT | ~$22M / $1,3M = **17×** | Bruin | ~$20K / ~$1M |
+| Numbers Station | $17,5M / $1,5M = **12×** | Querri | ~0 / $1,9M |
+
+**Ve dağıtım:** Sisu'nun kapanış duyurusu HN'de **2 puan, 0 yorum**. Seek.ai'nin HN'de
+toplam varlığı **2 tesadüfi yorum**. Wren **17.229★** ama organik HN tartışması **yok**.
+
+## 27 · 2026'DA SATILABİLİR ASGARİ KAPSAM — dokuz madde
+
+1. 🔴 **Kapsamı acımasızca daralt.** Databricks resmî önerisi **space başına ≤5 tablo**
+   (tavan 30) · Looker **5 Explore** · Dot müşterilerinin çoğu **<10 tablo**.
+   ⊙ **Kimse *«tüm ambara sor»* ürünü satmıyor — pazarlama öyle diyor, DOKÜMAN demiyor.**
+2. **Bir dikey seç.** Yatay *«AI veri analisti»* ölüyor: Tellius→pharma, Kadoa→finans.
+3. **Deterministik ara temsil + doğrulayıcı** — artık **giriş bileti**, farklılaştırıcı değil.
+4. 🔴 **Netleştirme döngüsü — en ucuz kaldıraç: +50 puan** (%42,5 → %92,5).
+5. **Getirmeyi ayrı birinci-sınıf problem say.** Pinterest tablo arama %40→%90; SEDE
+   %52→%92. *«Systems often fail **BEFORE** SQL is generated.»*
+6. **Denormalizasyon.** 3+ tabloda mevcut sistemler **%20 hata oranıyla** çöküyor.
+7. **Yayınlanmış eval + provenance** — Basedash bunu **OEM satışının merkezine** koydu.
+8. **Self-serve fiyat.** Koltuk bazlı fiyat *«herkes veriye ulaşsın»* vaadiyle çelişiyor ve
+   **ölenlerde yaygın**. Çalışanlar: Basedash düz **$1.000/ay**, Definite **$250/ay
+   sınırsız kullanıcı**, Veezoo *«readers always free»*.
+9. 🔴 **Ajan yüzeyi (MCP).** Wren **chat UI'ını legacy'e gömdü**; Rill'de projelerin
+   **%50+'ı ajan tarafından** kuruluyor. ⊙ **Chat UI 2026'da varlık değil YÜK.**
+
+## 28 · SENTEZ — ölenler ile yaşayanlar
+
+| ÖLENLERİN ortak özellikleri | YAŞAYANLARIN ortak özellikleri |
+|---|---|
+| sermaye/gelir uçurumu **12-17×** | sermaye/gelir **≤1×** ya da gerçek kurumsal traksiyon |
+| farklılaştırıcı = **başkasının katmanı + UI** (Delphi → Cube tarafından yutuldu) | **kendi zorlayıcı harness'i** (Omni, Veezoo, Zenlytic) **VEYA** reuse'u **çoğullaştırmış** (Hex 3+, Dot 7 katman) |
+| dağıtım/zihin payı **sıfır** | **bir kama**: persona · kanal · göç · **dil-coğrafya** |
+| **kapsam reddi YOK** | **YAZILI kapsam reddi** (Hex *«What this isn't»*, Dot *«1 SQL + biraz Python»*, Omni `ai_chat_topics`) |
+| yayınlanmış doğruluk kanıtı yok | **yayınlanmış eval ya da açık metodoloji** |
+
+## 29 · BİZE DÜŞEN
+
+### 29.1 🟢 Dışarıdan DOĞRULANAN kararlarımız
+
+| kararımız | emsal |
+|---|---|
+| LLM SQL yazmaz / Intent-JSON | **9 bağımsız emsal** (§24) |
+| garson / netleştirme | **+50 puan** ölçülmüş |
+| sayıyı her zaman küp koyar | Zenlytic: *«this is the one part **we will not make probabilistic**»* |
+| grafiği LLM'e vermeme (ADR-0024) | **Veezoo: grafik etiketleri bile VQL'den render** |
+| Query Contract / makbuz | Bruin · BitBoard |
+| join planlayıcı yasağı | **Omni'nin $55,5 milyarlık fan-out felaketi** |
+| toplu eval kapısı | **Anthropic %90 launch gate** |
+| Türkçe kaması | **Veezoo'nun DACH kaması → $6M Series A** |
+| *«payda kutsaldır»* | 🔴 **Üç satıcı payda oyunu yapıyor** (Dot *«450+»* → gerçekte 30 · Veezoo *«#1»* → kaynak yok · Omni 95/100 kendi verisi). ⊙ **Bu pazarda SATILABİLİR bir farklılaşma** |
+
+### 29.2 🟢 BENZERSİZ olan — ve henüz kanıtlanmamış
+
+**HAVA BOŞLUĞU:** modelin rakamı **üretememesi**. Veezoo/Pyramid en yakın emsal ama
+**gizlilik özelliği** olarak konumluyorlar, **güvenlik sınırı** olarak değil.
+⚠ **Ölçülüp yayınlanmadığı sürece sadece bir iddia.**
+
+### 29.3 🔴 GERÇEK eksiklerimiz — mimari değil
+
+| # | eksik | dış kanıt |
+|---|---|---|
+| 1 | **Kurulum süresi ölçülmüyor** | rakipler *«7 gün»*/*«60 saniye»* satıyor; Zenlytic'in *«haftalar, bazen aylar»* itirafı bir **uyarı** |
+| 2 | **Getirme / şema budama ayrı kapı değil** | %40→%90 kaldıracı |
+| 3 | 🔴 **Yayınlanmış doğruluk sayısı YOK** | *«Bu bir savunma değil, **SİLAH**»* |
+| 4 | **Öğrenilen bağlam döngüsü** (düzeltme → aday bağlam → insan onayı) | VQR'ımız yarısını yapıyor |
+| 5 | **Çok turlu bellek tur bazında ölçülmüyor** | *«3. turda sıfır»* bulgusu |
+| 6 | **Tanım çakışması yönetimi** | WisdomAI: *«biggest source of **unexplained trust erosion**»* |
+| 7 | **MCP yüzeyi kapalı** | 2026'da **dağıtım kanalının kendisi** |
+
+### 29.4 🔴 Doktrinimizin sınırı — dürüstçe
+
+*«Dürüst red başarı değil»* kuralımız **sektörden AYRILIYOR** (dbt ve Definite reddi
+**erdem** sayıyor). Çıtamız daha yüksek ve savunulabilir — **ama yalnızca kapsam açıkça
+İLAN EDİLDİĞİNDE.**
+
+⊙ Yerleşikler **5 tabloya daralarak %90** alıyor. **İlan edilmemiş kapsamda her red bir
+BORÇ; ilan edilmiş kapsamda RED ÜRÜNÜN KENDİSİDİR.**
+
+*Seek AI'nin mekanizması bize en yakın üst versiyon: **yapılandırılabilir güven eşiği** +
+kaynağın etiketlenmesi (*«verified by Seek, NOT A HUMAN»*), eşik altı insana gider.*
+
 # BEŞİNCİ KISIM — NE YAPMALIYIZ
 
 ## 14 · ÖNCELİK SIRASI — ölçülmüş gerekçelerle
