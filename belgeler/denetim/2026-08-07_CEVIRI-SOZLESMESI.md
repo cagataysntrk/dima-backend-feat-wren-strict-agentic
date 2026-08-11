@@ -11053,3 +11053,68 @@ eşleşir, `musteri_kod` yalnız bir **parçasıyla**. *Bir tamlamanın niteleye
 kaybolan özgüllük, bir kimliğin adı yerine kodu seçilirken de kaybolur.*
 
 ⚠ Bu bir **yönlendirme** kararıdır → korpus A/B ister; `§PB` ile aynı kuyruğa girdi.
+
+## ⚠ `§BK` TEŞHİSİM **ÇÜRÜTÜLDÜ** — ve bu, bugünün en pahalı önlenmiş hatası
+
+Önceki kaydım şöyle diyordu: *«`musteri` boyutu **aday listesinde**, sistem kodu
+seçiyor»*. **Yanlış.** Ölçüldü:
+
+```
+sikayet.dimensions = ['musteri_kod','konu','siddet','makine','operator',
+                      'recete_kod','renk','cozum_sekli','durum']
+sikayet.dimension_synonyms['musteri_kod'] = ['musteri','musteriler','cari','sikayetci']
+
+route → dimensions: ['musteri_kod']   ← tek müşteri boyutu ZATEN BU
+```
+
+🔴 `sikayet` küpünde **`musteri` diye bir boyut YOK.** Route kodu *tercih etmiyor*;
+**tek** olanı seçiyor. Benim aday listesi sandığım satır (`kırılım=cari_tip,musteri_kod,
+musteri`) `niyet`in **küpler arası** token listesiydi, o küpün seçenekleri değil.
+
+⊙ Yani bu bir **yönlendirme kusuru değil**, bir **katalog borcu**: `sikayet` müşteriyi
+**kodla** tutuyor ve adı hiç taşımıyor (`B3` — kanonik varlık ekseni). Düzeltmenin yeri
+mutfak: küpe müşteri **adı** boyutu kazandırmak.
+
+> 🔴 Bir yönlendirme tercihini "düzeltseydim", olmayan bir tercihi değiştirmiş olacaktım
+> — ve `sikayet` sorguları çalışmaz hâle gelirdi.
+
+*Bir kusurun hangi eksende olduğunu yanlış bilmek, onu yanlış yerde çözmeye ve orayı da
+bozmaya götürür.* Bugün **onuncu** kez ölçüm, yazmak üzere olduğum bir kökü düzeltti —
+ve bu seferki, düzeltilmeseydi çalışan bir yolu kıracaktı.
+
+⚠ `§PB` (planlayıcı kararlılığı) **açık kalıyor** ve sınıfı değişmedi: o gerçekten bir
+seçim kararı ve korpus A/B ister.
+
+## 🔴 ÖLÇÜM ARACININ KÖR NOKTASI — **401, bir ürün kusuru gibi göründü**
+
+Turun ortasında üç senaryo art arda `source=None` verdi. Kusur yazmak üzereydim; önce
+ölçtüm:
+
+```
+HTTP 401   ← token süresi dolmuş
+```
+
+⊙ Betiklerim yalnız gövdeyi ayrıştırıyor, **durum kodunu hiç okumuyordu**: yetkisiz bir
+yanıt `source=None` diye görünüyor ve **sahte bir ürün kusuru** olarak loglanabilirdi.
+
+Bu, bugün **üçüncü** ölçüm-yüzeyi kusuru (`measure_having` yazıcıda yoktu · `demo/wren-
+project` bayat şema · bu). Araca `kontrol.sh` eklendi: her turdan önce hattı doğrular ve
+gerekirse token'ı tazeler.
+
+> *Bir ölçüm aracının sessiz kaldığı yer, ölçtüğü sistemin kusuru sanılır.*
+
+## `R` TURU — thread bölümü
+
+```
+t1 «bu yıl makine bazında fire oranı» → 11 satır             ✅
+t2 «en kötü üçünü göster»             → 3 satır, RAM-2 %22,12 ✅
+t3 «neden bu kadar yüksek»            → katkı yolu (LLM'siz)  ✅
+t4 «ne yapmalıyız»                    → reçete                ✅
+```
+
+## 📋 AÇIK KUYRUK — ikisi de **yönlendirme kararı**, ikisi de A/B ister
+
+| kök | sınıf | neden şimdi değil |
+|---|---|---|
+| `§PB` | planlayıcı **kararlılığı** (aynı soru bazen bordroya gidiyor) | bir seçim kuralı; korpus A/B'siz dokunmak kapsamı sessizce kaydırır |
+| `B3`/`sikayet` | **katalog**: müşteri **adı** boyutu yok | mutfak işi — küpe boyut kazandırmak, route'u değiştirmek değil |
