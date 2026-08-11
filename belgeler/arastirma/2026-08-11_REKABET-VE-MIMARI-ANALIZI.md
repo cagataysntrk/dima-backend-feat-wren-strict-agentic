@@ -3322,9 +3322,22 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 > **3 satır**, süzgeç kurulu, **beyan yok** (yanlış pozitif yok).
 > Kapı: `tests/test_at_atif_beyani.py` (5) + takip yüzeyi **269 yeşil**.
 >
-> ⏭ **KALAN (kartın öteki yarısı):** `Baglam`'a **odak varlığı** (`order`+`limit=1` ya da
-> `BAGLA` çıktısından) ve `niyet`e **SParC'ın dört kovası**. O geldiğinde bu beyan bir
-> **süzgece** dönüşür; bugün dürüstçe susuyor.
+> 🔴 **VE KARTIN «ODAK VARLIĞI YOK» TEŞHİSİ BAYAT ÇIKTI — ölçüldü (üç turlu zincir):**
+> ① *«makine bazında oee»* → ② *«en düşüğü hangisi»* (seçim) → ③ *«o makinede vardiya
+> kırılımı»* → **süzgeç KURULDU** (`makine = ÖRGÜ HAT`, **3 satır**) ve sistem bunu
+> **beyan etti**: *«ÖRGÜ HAT üzerinden yanıtlandı — bir önceki turun seçtiği makine.»*
+> ⊙ Sahibi **zaten var**: `app/diyalog.py::odak_uygula` + `odak_suzgeci`. Yani mekanizma
+> yazılmış ve çalışıyor; eksik olan **ikinci turda bir seçim yoksa** ne olacağıydı — ve
+> onu bu tur kapattı (beyan).
+>
+> 🔴 **BİR YANLIŞ POZİTİFİ CANLI ÖLÇÜM YAKALADI:** ilk yazımda yüklemi `refined`'a
+> sormuştum; odak süzgeci ondan **sonra** ekleniyor, dolayısıyla süzgeç kurulmuşken cevap
+> *«süzgeç kurulmadı»* diyordu — üstelik **doğru beyanın hemen yanında**. Denetim
+> `resp.cube_query` üzerine alındı. *Bir yüklemi doğru yazmak yetmez; onu doğru NESNEYE
+> sormak gerekir.* Kapı: `test_ODAK_SUZGECI_KURULDUYSA_beyan_YOK`.
+>
+> ⏭ **KALAN:** `niyet`e **SParC'ın dört kovası** (theme-entity/refinement/theme-property/
+> answer-refinement) — bir **sınıflandırma** işi; odak mekanizması hazır.
 
 ### D5 · Takip anlama — «son cevaba çıpala» + dört kova
 

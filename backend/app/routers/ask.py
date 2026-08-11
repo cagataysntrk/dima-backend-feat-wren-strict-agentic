@@ -4899,7 +4899,16 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 # takip dalında *«o makinede»* sessizce düşüyor ve 33 satır dönüyordu
                 # (ölçüldü, canlı thread). Süzgeç **kurulmuyor** — tahmin etmiyoruz;
                 # yalnız eksikliği söylüyoruz. Gerekçe: `uyum.atif_beyani`.
-                if (_at := _uyum.atif_beyani(body.question or "", refined)):
+                #
+                # ⚠ **VE DENETİM `resp.cube_query` ÜZERİNDE — `refined` ÜZERİNDE DEĞİL.**
+                # İlk yazımda `refined`'ı verdim ve canlı üç turlu zincir **yanlış
+                # pozitif** üretti: `diyalog.odak_uygula` odak süzgecini `refined`'dan
+                # **sonra** ekliyor, dolayısıyla süzgeç kurulmuşken cevap *«süzgeç
+                # kurulmadı»* diyordu — üstelik doğru beyanın (*«ÖRGÜ HAT üzerinden
+                # yanıtlandı»*) hemen yanında. *Bir yüklemi doğru yazmak yetmez; onu
+                # doğru NESNEYE sormak gerekir.*
+                if (_at := _uyum.atif_beyani(body.question or "",
+                                             resp.cube_query or refined)):
                     resp.note = " ".join(x for x in [resp.note, _at] if x)
                     from app.niyet_tasima import EKSIK_ATIF
                     resp.eksik_niyet = [*(resp.eksik_niyet or []), EKSIK_ATIF]

@@ -2978,3 +2978,17 @@ gelebilir; `order` var ama seçim yok. Yanlış odak, hiç odak olmamasından pa
 **Canlı:** «o makinede…» → 33 satır + beyan · «RAM-2 için…» → 3 satır, beyan YOK.
 Kapı: `tests/test_at_atif_beyani.py` (5) + takip yüzeyi 269 yeşil.
 ⏭ Kalan: `Baglam`'a odak varlığı + `niyet`e SParC dört kovası → beyan süzgece dönüşür.
+
+### ✅ §AT düzeltmesi + D5 teşhis güncellemesi *(2026-08-11)*
+
+🔴 **Kartın «odak varlığı YOK» teşhisi BAYAT.** Üç turlu zincir ölçüldü: ① «makine
+bazında oee» → ② «en düşüğü hangisi» (seçim) → ③ «o makinede vardiya kırılımı» →
+**süzgeç KURULDU** (`makine=ÖRGÜ HAT`, 3 satır) + beyan («…bir önceki turun seçtiği
+makine»). Sahibi `app/diyalog.py::odak_uygula` — **zaten yazılmış ve çalışıyor**.
+Eksik olan, ikinci turda **seçim yoksa** ne olacağıydı; onu `§AT` beyanı kapattı.
+
+🔴 **Yanlış pozitifi canlı ölçüm yakaladı:** yüklemi `refined`'a sormuştum, odak süzgeci
+ondan SONRA ekleniyor → süzgeç kurulmuşken «kurulmadı» diyordu, doğru beyanın yanında.
+Denetim `resp.cube_query`'ye alındı. Kapı: `test_ODAK_SUZGECI_KURULDUYSA_beyan_YOK`.
+**Canlı doğrulama:** odak kurulu zincir → yalnız doğru beyan · odaksız zincir → 33 satır
++ eksiklik beyanı. Takip/diyalog yüzeyi **299 yeşil**.

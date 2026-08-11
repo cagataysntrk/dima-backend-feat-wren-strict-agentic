@@ -49,6 +49,24 @@ def test_bozuk_girdide_SESSIZ():
     assert atif_beyani("o makinede", {}) == ""
 
 
+def test_ODAK_SUZGECI_KURULDUYSA_beyan_YOK():
+    """🔴 **Yanlış pozitifi canlı ölçüm yakaladı** (üç turlu zincir, 2026-08-11).
+
+    ① *«makine bazında oee»* → ② *«en düşüğü hangisi»* (seçim) → ③ *«o makinede vardiya
+    kırılımı»* → `diyalog.odak_uygula` süzgeci **kurdu** (`makine = ÖRGÜ HAT`, 3 satır)
+    ve doğru beyanı yazdı; ama benim cümlem onun **yanında** *«süzgeç kurulmadı ve tümü
+    listelendi»* diyordu.
+
+    Kök: yüklemi `refined`'a sormuştum — odak süzgeci ondan **sonra** ekleniyor.
+    *Bir yüklemi doğru yazmak yetmez; onu doğru NESNEYE sormak gerekir.*
+    """
+    kurulmus = {**_CQ_SUZGECSIZ,
+                "filters": [*_CQ_SUZGECSIZ["filters"],
+                            {"dimension": "makine", "operator": "eq",
+                             "value": "ÖRGÜ HAT"}]}
+    assert atif_beyani("o makinede vardiya kırılımı", kurulmus) == ""
+
+
 def test_SUZGEC_KURULMAZ_yalnizca_SOYLENIR():
     """🔴 Tahmin YOK: beyan bir cümledir, bir süzgeç değil.
 
