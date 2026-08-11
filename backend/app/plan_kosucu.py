@@ -174,6 +174,33 @@ def dogrula(plan: dict, *, azami_sorgu: int = AZAMI_SORGU,
             _d = adim.get(_alan)
             if _alan == "cube_query" and isinstance(_d, dict):
                 continue
+            # 🔴🔴 `§F7` — **BOŞ BİR REFERANS LİSTESİ SESSİZCE GEÇİYORDU.**
+            #
+            # ⊙ Canlıda ölçüldü (2026-08-11, *«hava durumu nasıl»* — kataloğun tamamen
+            # dışında bir soru): garson `ANLAT(kaynaklar=[])` yazdı, doğrulayıcı
+            # **kabul etti** ve kullanıcı şunu gördü:
+            #
+            #     Bu cevap 1 adımda üretildi:
+            #     1. ANLAT — bulguları cümleye çevirir — YALNIZ son adım olabilir
+            #        (`kaynaklar`=``)
+            #
+            # `rows=0` · `cube=None`. Yani kullanıcı, sorusunun kapsam dışı olduğunu
+            # öğrenmek yerine **bir planlayıcı iz satırı** okudu.
+            #
+            # 🔴 Kök: aşağıdaki döngü listeyi geziyor — **boş liste hiç dönmez**, dolayısıyla
+            # hiçbir denetim çalışmaz. Oysa bu fonksiyonun kendi cümlesi zaten yazıyor:
+            # *«bir anlatı, anlatacağı bulgulardan önce yazılamaz»*. Hiç bulgusu olmayan
+            # bir anlatı, o ihlalin **en saf hâlidir** — konum değil, varlık sorunu.
+            #
+            # ⚠ Ve bu, `plan_kosucu`'nun kendi teşhisinin ikizi: *«Boş bir sonuç bir cevap
+            # değildir; makbuzlu boş bir sonuç ise bir…»*. Orada `$n` için **çözmek değil
+            # reddetmek** seçilmişti; burada da aynı karar veriliyor — red gerekçesi
+            # garsona döner (`plan_garson.ONARIM_YONERGESI`), plan yeniden yazılır, ve
+            # onarım da tükenirse **kapsam beyanı** konuşur (`yetenek.kapsam_disi`).
+            if isinstance(_d, list) and not _d:
+                raise PlanHatasi(
+                    f"adım {sira} (`{fiil}.{_alan}`) **boş** — anlatacak bir bulgu "
+                    "göstermeden anlatı adımı yazılamaz")
             for _tek in (_d if isinstance(_d, list) else [_d]):
                 if not (isinstance(_tek, str) and _REF.match(_tek)):
                     raise PlanHatasi(
