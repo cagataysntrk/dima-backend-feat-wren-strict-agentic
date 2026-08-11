@@ -11612,3 +11612,32 @@ ANADOLU KUMAŞ kar oranı 29,77 ↔ akran 37,40
 · ciro (paydada): 8.386.239 ↔ 9.376.657 — %24,2 yükseltiyor
 → o müşteride kar en düşük ROTASYON BASKI'da: 54.877 ↔ 244.210
 ```
+
+## `§KN` · senaryo turu (curl) — ve kendi kodumda bulduğum gizli kusur
+
+| senaryo | sonuç |
+|---|---|
+| `km_basi_maliyet` | ✅ *«nakliye maliyeti **÷** mesafe»* · Gaziantep ↔ akran · suçlu **mesafe** · iniş **Tır** |
+| `kisi_basi_egitim_saati` | ✅ Planlama 61 ↔ 125,86 · eğitim saati %69,7 düşürüyor · eğitim alan (paydada) %30,3 yükseltiyor |
+| `fire_orani_yuzde` + *«ne yapmalıyız»* | ✅ öneri dalı çalışıyor |
+| **aylık seri** üstünden *«neden»* | ✅ 11 **makine** segmenti kıyaslandı (hücrelere düşmedi) |
+| boyutsuz (tek toplam) | ✅ doğru **sustu** → değişim açıklayıcısı devraldı |
+| ayrışmayan ölçü (`toplam_durus_dakika`) | ✅ `§KN` doğru sustu — 🔴 ama bkz. `§NB` |
+
+### 🔴 Kendi kodumu okurken yakalanan gizli kusur
+
+`arastir`'ın bileşen sorgusu `timeDimensions`'ı **koruyordu**. Ekrandaki cevap *«aylık
+makine bazında oee»* olsaydı akran kıyası `makine × ay` **hücrelerine** inecekti: *«RAM-3
+akranlarına göre nasıl»* sorusu *«RAM-3'ün Mart ayı öteki hücrelere göre nasıl»*a
+dönerdi. `§RZ`'de canlıda ölçtüğüm kusurun **birebir kardeşi** — bu kez kullanıcı
+görmeden yakalandı.
+*Bir sorunun eksenini değiştiren her miras, cevabı da başka bir sorunun cevabına çevirir.*
+
+### 🔴 `§NB` — *«neden»* sorusu boşta kalınca **veri** dönüyor
+
+    «bu yıl makine bazında duruş dakika» → «neden böyle»
+      → 66 satırlık tablo · note: None · genel chip'ler
+
+`§KN` doğru sustu (ölçü ayrışmıyor), katkı yolu da bir şey üretmedi ve tur **yeni bir
+sorgu** gibi cevaplandı. Kullanıcı bir **açıklama** sordu, bir **tablo** aldı.
+Teşhis edildi, sıradaki turda.

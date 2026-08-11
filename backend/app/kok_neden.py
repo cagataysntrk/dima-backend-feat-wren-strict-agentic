@@ -500,7 +500,21 @@ def arastir(prev_cq: dict, cube_meta: dict | None, *, kos,
         return None
 
     adimlar: list[str] = [f"formül okundu: **{olcu}** = {formul_metni(bl)}"]
-    _cq = {k: v for k, v in prev_cq.items() if k not in ("order", "limit", "pencere")}
+    # 🔴🔴 **KESİTSEL KIYAS BİR ZAMAN SERİSİ DEĞİLDİR.**
+    #
+    # `timeDimensions` de düşer: ekrandaki cevap *«aylık makine bazında oee»* ise, onu
+    # olduğu gibi kullanmak akran kıyasını `makine × ay` **hücrelerine** indirirdi —
+    # yani *«RAM-3 akranlarına göre nasıl»* sorusu *«RAM-3'ün Mart ayı öteki hücrelere
+    # göre nasıl»*a dönerdi. Soru segmentler arasıdır, zaman içinde değil.
+    #
+    # ⊙ Bu, `§RZ`'de canlıda ölçtüğüm kusurun **birebir kardeşi** (orada kırılım adayları
+    # temelin zaman kovasını miras alıp kartezyene dönmüştü) — bu turda kendi kodumu
+    # okurken yakalandı, kullanıcı görmeden.
+    #
+    # *Bir sorunun eksenini değiştiren her miras, cevabı da başka bir sorunun cevabına
+    # çevirir.*
+    _cq = {k: v for k, v in prev_cq.items()
+           if k not in ("order", "limit", "pencere", "timeDimensions")}
     _cq["measures"] = [olcu] + [b.ad for b in bl]
     _cq["dimensions"] = [boyut]
     satirlar = kos(_cq) or []

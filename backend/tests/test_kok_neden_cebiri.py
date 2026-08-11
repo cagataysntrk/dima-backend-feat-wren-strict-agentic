@@ -362,3 +362,28 @@ def test_FORMUL_CUMLESI_ROLE_UYAR():
     c1 = kn.Bilesen(ad="a", rol=kn.CARPAN, yon=1, display="A")
     c2 = kn.Bilesen(ad="b", rol=kn.CARPAN, yon=1, display="B")
     assert kn.formul_metni([c1, c2]) == "A × B"
+
+
+def test_KESITSEL_KIYAS_ZAMAN_SERISI_DEGILDIR():
+    """🔴🔴 **Kendi kodumu okurken yakalanan gizli kusur** — `§RZ`'de canlıda ölçtüğüm
+    kusurun birebir kardeşi.
+
+    Ekrandaki cevap *«aylık makine bazında oee»* ise, `timeDimensions`'ı olduğu gibi
+    kullanmak akran kıyasını `makine × ay` **hücrelerine** indirir: *«RAM-3 akranlarına
+    göre nasıl»* sorusu *«RAM-3'ün Mart ayı öteki hücrelere göre nasıl»*a dönerdi.
+
+    *Bir sorunun eksenini değiştiren her miras, cevabı da başka bir sorunun cevabına
+    çevirir.*"""
+    gorulen: list[dict] = []
+
+    def _kos_izle(cq):
+        gorulen.append(cq)
+        return _SATIRLAR if (cq.get("dimensions") or []) == ["makine"] else _ALT.get(
+            (cq.get("dimensions") or ["?"])[0], [])
+
+    prev = {"cube": "oee", "measures": ["ort_oee"], "dimensions": ["makine"],
+            "timeDimensions": [{"dimension": "tarih", "granularity": "month"}],
+            "filters": []}
+    kn.arastir(prev, _META, kos=_kos_izle)
+    assert gorulen, "sorgu hiç koşulmadı"
+    assert "timeDimensions" not in gorulen[0], "🔴 bileşen sorgusu zaman kovasını miras aldı"
