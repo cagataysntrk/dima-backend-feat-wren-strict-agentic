@@ -1420,6 +1420,37 @@ olmasından gelir.*
 
 ---
 
+### 18.2 KOD HARİTASI — biçim tam olarak nerede karara bağlanıyor
+
+Ölçüldü (kaynak okuma):
+
+| bileşen | yer | ne belirliyor |
+|---|---|---|
+| grafik tipi | `viz.analyze()` (`viz.py:132`) + `recommend()` | `kind` |
+| **olgular** | `interpret.py` — **11 ayrı `facts.append` çağrı yeri** | anlatının içeriği |
+| chip'ler | `answer._attach_next_steps()` (`answer.py:838`) → `drill.next_steps` | öneri şeridi |
+| anlatı | `anlatici.anlat()` + `llm.anlat` + `narration_guard` | cümle |
+
+🔴 **Dördü birbirini görmüyor.** Hiçbiri *«bu soru ne tür bir cevap ister»* diye sormuyor;
+her biri kendi girdisine bakıp kendi parçasını üretiyor. **Cevabın şekli bu dördünün
+ARTIĞI.**
+
+### 18.3 🟢 Ve iyi haber: taksonomi KISMEN ZATEN YAZILMIŞ
+
+`interpret.py` **11 olgu üreticisi** taşıyor (`trend` · `peak` · `delta` · sıralama ·
+bileşen · tek-satır · çok-ölçü · aykırılık · eşik · yoğunlaşma · granülerlik) — ama canlı
+ölçümde **yalnız 1-2 ateşliyor** (§18 tablosu: `olgu` sütunu **hep 1-2**).
+
+⊙ **Yani §14.5'in ilk maddesi sandığımdan ucuz:** *«sıfırdan taksonomi kur»* değil,
+**«11 üreticinin hangi koşullarının hiç ateşlenmediğini ölç ve genişlet»**. Pulse'un
+**14 tipi** ile aramızdaki mesafe **11 → 14** değil, **1-2 → 11**.
+
+**İlk ölçüm şu olmalı:** her `facts.append` çağrı yerine bir sayaç koy, 100 gerçek soruda
+koş, **hiç ateşlenmeyenleri** listele. Bu, bir gün sürer ve *«robotik»* şikâyetinin
+sayısal kökünü verir.
+
+*Bir yeteneğin yokluğunu varsaymak, onu aramaktan pahalıdır — bu raporda üçüncü kez.*
+
 # YEDİNCİ KISIM — CEVAP BİÇİMİ VE KONUŞMA UX'İ
 
 > ⚠ **Kısmi bölüm.** UI/UX araştırması sekiz kolda yürüdü; bu bölüm **doğrulanmış**
@@ -2477,7 +2508,7 @@ kullanmadı** — darboğaz erişim değil **YAPI**»*. ⊙ **Yani #6 «her şey
 
 | # | iş | dayanak |
 |---|---|---|
-| **21** | 🔴 **Olgu tipi taksonomisi kur** — bugün `interpret()` **1-2 olgu** üretiyor | **Tableau Pulse'un 14 deterministik içgörü tipi**; *«NE söyleneceğine istatistik, NASIL söyleneceğine LLM»* — bizim `interpret`+`llm.anlat`+`narration_guard` üçlümüzün olgun hâli |
+| **21** | 🔴 **Olgu taksonomisini AÇ** — ⊙ `interpret.py`'de **11 üretici zaten var**, canlıda **1-2** ateşliyor (§18.3). İş *«kurmak»* değil **«hangi koşul hiç ateşlenmiyor, ölç ve genişlet»** | **Tableau Pulse'un 14 deterministik içgörü tipi**; *«NE söyleneceğine istatistik, NASIL söyleneceğine LLM»* — bizim `interpret`+`llm.anlat`+`narration_guard` üçlümüzün olgun hâli |
 | **22** | **Cevap biçimini bir KARAR yap** — bugün üç bileşenin **yan ürünü** | `niyet.py` altı soru türünü, `followup` beş konuşma türünü **zaten biliyor**; **sinyal var, tüketicisi yok** |
 | **23** | **Chip sayısını soruya bağla** — ölçüldü: **6,6,5,6,6,4,6,3** | *«the whole **"repeat question, bullet points, summary" ceremony**»* — sabit yapı robotluğun imzası |
 | **24** | **Draco hard kısıtları** (özellikle `stack_without_summative_agg`) | bu oturumda **yüzdeleri topladım**; literatür bunu **2018'de** hard hata ilan etmiş |
