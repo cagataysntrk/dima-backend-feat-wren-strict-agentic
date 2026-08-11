@@ -1641,3 +1641,176 @@ def uydurma_beyani(resp, niyet) -> bool:
                   "§KA: katalogda hiçbir eksene değmeyen soru → cevap VARSAYIM "
                   "olarak beyan edildi"]
     return True
+
+
+def yok_sayilan_beyani(resp, q: str, cq: dict, cube_meta: dict | None,
+                       sema: dict | None, iddia: list[str]) -> bool:
+    """🔴🔴 `§YS` — **GARSONUN «TEMSİL EDEMEDİM» İDDİASI, ÖLÇÜLEREK YAYIMLANIR.**
+
+    ## Üç canlı ölçüm, tek sınıf
+
+        «…ciroyu **euro** olarak göster»      → ₺74.022.836, beyan YOK   (curl `CC`, CC-16)
+        «**mars gezegenindeki** satışlarımız» → ₺137.588.350, beyan YOK  (curl `CC`, CC-14)
+        «bütçe **gerçekleşme** oranı»          → `toplam_hedef`, beyan YOK (curl `GG`, GG-a)
+
+    Üçünde de garson soruyu okudu, bir kısmını temsil edemedi ve **sessizce attı**.
+    `§KA` bunları göremez: soru kataloğun eksenlerine **değiyor** (ölçü var, dönem var).
+    Ayırt edecek şey artık sözcüğün **ne olduğudur** (`euro` bir nesne, `misin` bir soru
+    eki) — ve bunu bilen tek merci **garsonun kendisidir**.
+
+    ## Ama bir iddia, bir ölçüm değildir — iki süzgeç
+
+    1. **Sözcük soruda GERÇEKTEN geçmeli.** Model bir sözcük uydurabilir; uydurduğu şey
+       kullanıcının cümlesinde yoksa iddia düşer.
+    2. **Teslim edilen fişte GEÇMEMELİ.** Küp/ölçü/boyut adları, sinonimleri, süzgeç
+       değerleri ve dönem ifadesi taranır; sözcük oralardan birinde karşılanmışsa
+       **atılmamıştır** (`§101.1`: başka biçimde karşılanan bir terim eksik sayılmaz).
+
+    ⚠ Sayı **hiç etkilenmez**: bu alan sorguya girmez, yalnız bir cümle üretir. Yani
+    doktrinin sınırı korunur — garson **okur**, mutfak **sayar**.
+
+    ⚠ Ve reddetmez: cevap gider, yanına *«şu kısım yansımadı»* yazılır (`§0.0`).
+
+    *Bir hakeme niyetini sormak başka, ne attığını sormamak başkadır — ama hakemin
+    sözünü de tartmadan yayımlamak, hakemliği ona devretmektir.*
+
+    Döner: beyan edildi mi.
+    """
+    from app import cube_router as _cr
+
+    if not iddia:
+        return False
+    qn = _cr._norm(q or "")
+    # Fişin **taşıdığı** her metin: adlar, sinonimler, süzgeç değerleri, dönem ifadesi.
+    _tasinan: list[str] = [str(cq.get("cube") or ""), str(cq.get("period_expr") or "")]
+    _tasinan += [str(m) for m in (cq.get("measures") or [])]
+    _tasinan += [str(d) for d in (cq.get("dimensions") or [])]
+    _tasinan += [str(f.get("value")) for f in (cq.get("filters") or [])
+                 if not isinstance(f.get("value"), (list, dict))]
+    _tasinan += [str(f.get("dimension")) for f in (cq.get("filters") or [])]
+    _cm = cube_meta or next((c for c in ((sema or {}).get("cubes") or [])
+                             if c.get("name") == cq.get("cube")), None) or {}
+    for _k in ("measure_synonyms", "dimension_synonyms"):
+        for _ad, _syn in (_cm.get(_k) or {}).items():
+            if _ad in _tasinan:
+                _tasinan += [str(x) for x in (_syn or [])]
+    _tasinan += [str(x) for x in (_cm.get("synonyms") or [])]
+    _fis = _cr._norm(" ".join(t for t in _tasinan if t))
+    _kalan = []
+    for _w in iddia:
+        _wn = _cr._norm(str(_w))
+        if not _wn or len(_wn) < 3:
+            continue
+        if not _cr._syn_hit(qn, _wn):        # (1) soruda geçmiyor → uydurma
+            continue
+        if _fis and _cr._syn_hit(_fis, _wn):  # (2) fişte karşılanmış → atılmamış
+            continue
+        _kalan.append(str(_w))
+    if not _kalan:
+        return False
+    _metin = ", ".join(f"«{w}»" for w in _kalan[:3])
+    resp.note = " ".join(x for x in [getattr(resp, "note", None), (
+        f"⚠ Soruda geçen {_metin} bu cevaba **yansımadı** — sayı bu kısmı "
+        f"hesaba katmıyor.")] if x)
+    resp.trace = [*(getattr(resp, "trace", None) or []),
+                  f"§YS: garson {len(_kalan)} sözcüğü temsil edemediğini bildirdi "
+                  f"(soruda geçtiği ve fişte geçmediği doğrulandı)"]
+    return True
+
+
+def kapida_kalanlar(ham: str, index: dict | None) -> list[tuple[str, str]]:
+    """🔴🔴 `§YS-2` — **KAPIDA GERİ ÇEVRİLENİ OKUMAK.**
+
+    ⊙ Ölçüldü (curl `GG` turu): *«bu yıl toplam ciroyu **euro** olarak göster»* →
+
+        ham={"cube":"parti","measures":["toplam_ciro"],
+             "filters":[{"dimension":"para_birimi","operator":"eq","value":"EUR"}]}
+        → intent: whitelist REDDİ
+
+    🔴 Model «euro»yu **atmıyor** — kataloğumuzda olmayan bir boyutla **temsil etmeye
+    çalışıyor**. Beyaz liste o adayı reddediyor, oy euro'dan habersiz başka bir örneğe
+    düşüyor ve kullanıcı ₺ cinsinden bir sayıyı **güvenle** alıyor.
+
+    ⊙ Bu, `§YS`'nin (garsona *«ne attın»* diye sormak) **ölçülmüş sınırını** açıkladı:
+    garsonun cevabı boştu, çünkü kendi zihninde **atmadı**. Ama bilgi kayıp değil —
+    **kapıda** duruyor: `para_birimi` / `EUR` tam olarak *«temsil edemediğimiz şey»*dir.
+
+    ⚠ Deterministik: bir LLM iddiası değil, **beyaz listenin kendi kararı**. Katalogda
+    olmayan her boyut/ölçü adı ve onun değeri toplanır.
+
+    *Bir hakemin ne attığını sormadan önce, kapıda kimi geri çevirdiğine bakmak
+    gerekir.*
+
+    Döner: `[(alan_adı, denenen_değer)]` — boş liste, geri çevrilen bir şey yok demek.
+    """
+    import json
+
+    try:
+        cq = json.loads(ham or "")
+    except Exception:                     # noqa: BLE001 — hasat susar
+        return []
+    if not isinstance(cq, dict):
+        return []
+    # ⚠ Kaynak `index` — yani `parse_cube_query`'nin **kendi** beyaz listesi. İkinci bir
+    # katalog okuması yazmak, kapının kararıyla beyanın kararını ayrıştırırdı (`KAT-1`).
+    _spec = (index or {}).get(str(cq.get("cube") or ""))
+    if not isinstance(_spec, dict):
+        return []
+    _boyut = {str(d) for d in (_spec.get("dimensions") or [])}
+    _olcu = {str(m) for m in (_spec.get("measures") or [])}
+    out: list[tuple[str, str]] = []
+    for f in (cq.get("filters") or []):
+        if not isinstance(f, dict):
+            continue
+        _d = str(f.get("dimension") or "")
+        _v = f.get("value")
+        if _d and _d not in _boyut and not isinstance(_v, (list, dict)):
+            out.append((_d, str(_v)))
+    for m in (cq.get("measures") or []):
+        if str(m) not in _olcu:
+            out.append((str(m), ""))
+    for d in (cq.get("dimensions") or []):
+        if str(d) not in _boyut:
+            out.append((str(d), ""))
+    return out[:3]
+
+
+def kapi_beyani(resp, q: str, cq: dict, kalanlar: list[tuple[str, str]]) -> bool:
+    """`§YS-2`'nin **iliştirme** yarısı — `§YS`'nin kardeşi, aynı disiplinle.
+
+    ⚠ **Topraklama süzgeci** (`§101.1`): denenen alan ya da değeri sorunun bir sözcüğüyle
+    en az **üç harflik bir ön ek** paylaşmalı (`EUR` ↔ *«euro»*). Model kataloğa
+    dokunmayan bir alan uydurmuşsa (soruda hiçbir izi yoksa) beyan **susar** — yoksa
+    kullanıcıya kendi sormadığı bir şeyi *«yansımadı»* diye anlatırdık.
+
+    ⚠ Ve teslim edilen fişte o alan **varsa** susulur: karşılanmış bir şey atılmamıştır.
+    """
+    from app import cube_router as _cr
+
+    if not kalanlar:
+        return False
+    _kelime = {w for w in re.findall(r"[a-z]+", _cr._norm(q or "")) if len(w) >= 3}
+    _fis = {str(d) for d in (cq.get("dimensions") or [])} | {
+        str(f.get("dimension")) for f in (cq.get("filters") or [])}
+    _gecti: list[str] = []
+    for _alan, _deger in kalanlar:
+        if _alan in _fis:
+            continue                       # cevapta zaten var → atılmamış
+        _aday = [_cr._norm(x) for x in (_deger, _alan) if x]
+        if not any(w.startswith(a[:3]) or a.startswith(w[:3])
+                   for a in _aday if len(a) >= 3 for w in _kelime):
+            continue                       # soruda izi yok → uydurma, susulur
+        # ⚠ Tekilleştirme: `k=3` örneklemede **aynı** alanı iki örnek denemiş olabilir
+        # ve canlıda tam bu oldu (*«`para_birimi` = «EUR» · `para_birimi` = «EUR»»*).
+        # Bir şeyi iki kez söylemek, iki ayrı kusur varmış gibi okunur.
+        _s = f"`{_alan}`" + (f" = «{_deger}»" if _deger else "")
+        if _s not in _gecti:
+            _gecti.append(_s)
+    if not _gecti:
+        return False
+    resp.note = " ".join(x for x in [getattr(resp, "note", None), (
+        f"⚠ Soru kataloğumda **olmayan** bir alana işaret ediyor "
+        f"({' · '.join(_gecti[:2])}) — bu kısım cevaba **yansımadı**.")] if x)
+    resp.trace = [*(getattr(resp, "trace", None) or []),
+                  f"§YS-2: beyaz liste {len(_gecti)} alanı geri çevirdi, beyan edildi"]
+    return True

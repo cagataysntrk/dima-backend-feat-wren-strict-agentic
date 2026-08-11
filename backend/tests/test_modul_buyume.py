@@ -89,6 +89,42 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("ys2-kapida-kalanlar", 4,
+     "🔴🔴 **`§YS-2` — REDDEDİLEN ADAY DA BİR BİLGİ TAŞIR.** "
+     "⊙ Ölçüldü (curl `GG` turu): *«bu yıl toplam ciroyu **euro** olarak göster»* → "
+     "`ham={…\"filters\":[{\"dimension\":\"para_birimi\",\"value\":\"EUR\"}]}` → "
+     "*intent: whitelist REDDİ*. Model «euro»yu **atmıyor**, kataloğumuzda olmayan bir "
+     "boyutla **temsil etmeye çalışıyor**; beyaz liste o adayı reddediyor ve oy "
+     "euro'dan habersiz başka bir örneğe düşüyor. Kullanıcı ₺ cinsinden bir sayıyı "
+     "**güvenle** alıyor. "
+     "⊙ Bu, `§YS`'nin (garsona *«ne attın»* diye sormak) **ölçülmüş sınırını** açıkladı: "
+     "garsonun cevabı boştu, çünkü kendi zihninde atmadı. Bilgi kayıp değil — **kapıda** "
+     "duruyor ve bugüne kadar yalnız kütüğe yazılıp çöpe gidiyordu. "
+     "⊙ Δ = 4: hasat listesinin `request.state`'e **yazılması** + `_select_consistent`'e "
+     "geçirilmesi + `request.state`'ten **okunması** + bir beyan çağrısı. "
+     "⚠ İlk yazımda hasat kazanan **fişe** iliştirilmişti ve `_resolve_period` sözlüğü "
+     "**yeniden kurunca** sessizce düştü — canlıda ölçüldü: hasat doluydu, beyan boştu. "
+     "`request.state` bu deponun kendi deseni (`plan_taslagi`). *Bir yan bilgiyi, "
+     "yeniden kurulabilen bir nesnenin içinde taşımak, onu kaybetmeye söz vermektir.* "
+     "Yüklem "
+     "(`uyum.kapida_kalanlar`, deterministik — `parse_cube_query`'nin **kendi** beyaz "
+     "listesinden) ve topraklama süzgeci (`uyum.kapi_beyani`) modülde. "
+     "⚠ **TAŞINAMAZ:** boşaltma `cq` fişe dönüşmeden önce, beyan `resp` kurulduktan "
+     "sonra olmalı — `_answer_from_cube_query`'nin iki ayrı anı. "
+     "*Bir hakemin ne attığını sormadan önce, kapıda kimi geri çevirdiğine bakmak "
+     "gerekir.* `sha=8bfeea4`"),
+    ("ys-yok-sayilan-beyan", 3,
+     "🔴🔴 **`§YS` — GARSONUN «TEMSİL EDEMEDİM» İDDİASI, ÖLÇÜLEREK YAYIMLANIR.** "
+     "⊙ Üç canlı ölçüm (`euro` · `mars gezegenindeki` · `gerçekleşme`): garson soruyu "
+     "okudu, bir kısmını temsil edemedi ve **sessizce attı**; üçünde de sayı güvenle "
+     "sunuldu. Doktrin garsona *niyeti* için güvenir, **sessizce attıkları** için değil. "
+     "⊙ Δ = 3: taşıyıcının **boşaltılması** (`ters_yon.TERIM_TASIYICI`'nın hemen yanı, "
+     "aynı gerekçe: kalırsa fişe sızar) + bir kapı + bir çağrı. **Gövde** "
+     "`uyum.yok_sayilan_beyani`'nda ve iddiayı iki deterministik süzgeçten geçirir. "
+     "⚠ **TAŞINAMAZ:** boşaltma `cq` **fişe dönüşmeden önce** olmalı, beyan ise `resp` "
+     "**kurulduktan sonra** — ikisi `_answer_from_cube_query`'nin iki ayrı anıdır. "
+     "⚠ Reddetmez: cevap gider, yanına *«şu kısım yansımadı»* yazılır (`§0.0`). "
+     "`sha=8bfeea4`"),
     ("kn-toplam-ek", 2,
      "🔴🔴 **`§KN-toplam` — FORMÜLÜ OLMAYAN BİR ÖLÇÜNÜN DE KÖKÜ VARDIR.** "
      "⊙ Ölçüldü (curl `EE` turu, EE-2/EE-3): *«müşteri bazında bu yıl toplam ciro»* → "
@@ -793,6 +829,25 @@ MUAFIYET_ASK_KOD = [
      "`V17`'nin kusuru tam da yeni sorgu koşmaktı. *Bir fişi okumak için mutfağa gidilmez.*"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("ys-yok-sayilan-tasiyici", 5,
+     "🔴🔴 **`§YS` — GARSONA NE ATTIĞINI SORMAK.** "
+     "⊙ Üç canlı ölçüm, tek sınıf: *«…ciroyu **euro** olarak göster»* → ₺74.022.836, "
+     "beyan YOK · *«**mars gezegenindeki** satışlarımız»* → ₺137.588.350, beyan YOK · "
+     "*«bütçe **gerçekleşme** oranı»* → `toplam_hedef`, beyan YOK (`butce`de bir "
+     "gerçekleşme ölçüsü **yok**). Üçünde de garson soruyu okudu, bir kısmını temsil "
+     "edemedi ve **sessizce attı**. `§KA` bunları göremez: soru kataloğun eksenlerine "
+     "**değiyor**. "
+     "⊙ Δ = 5: bir **sabit** (`YOK_SAYILAN_TASIYICI`) ve dört satırlık bir **taşıyıcı** "
+     "(`≥3` harf, en çok 5). **Karar ve iki deterministik süzgeç** "
+     "`uyum.yok_sayilan_beyani`'nda: sözcük soruda **geçmeli**, teslim edilen fişte "
+     "**geçmemeli**. "
+     "⚠ **TAŞINAMAZ:** `parse_cube_query` çıktısını **beyaz listeyle** kurar; listede "
+     "olmayan bir alan oraya varmadan düşer. Yani taşıyıcı ancak burada toplanabilir — "
+     "`ters_yon.TERIM_TASIYICI`'nın birebir aynı deseni. "
+     "⚠ Sayı **hiç etkilenmez**: alan sorguya girmez, yalnız bir cümle üretir. "
+     "*Bir hakeme niyetini sormak başka, ne attığını sormamak başkadır — ama hakemin "
+     "sözünü de tartmadan yayımlamak, hakemliği ona devretmektir.* "
+     "`sha=8bfeea4`"),
     ("kv-olcusuz-fis-donem-sormaz", 2,
      "🔴 **`§KV` — ÖLÇÜSÜZ BİR FİŞTE DÖNEM SORULMAZ.** Canlı `V` turunda ölçüldü: "
      "*«kaç makinemiz var»* fişi `measures: []` ile geliyor (varlık sorusu, "

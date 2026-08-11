@@ -122,3 +122,55 @@ def test_KA_TANINAN_TEK_BIR_EKSEN_BILE_SUSTURUR():
                {"donem_sayisi": 1}, {"filtreler": [{"dimension": "makine"}]}):
         assert uyum.tanimadan_cevap_notu(_SahteNiyet(**kw)) is None, kw
     assert uyum.tanimadan_cevap_notu(None) is None
+
+
+class _Yanit:
+    def __init__(self):
+        self.note = None
+        self.trace = []
+
+
+_SEMA_YS = {"cubes": [{
+    "name": "parti", "dimensions": ["musteri"],
+    "synonyms": ["parti", "uretim"],
+    "measure_synonyms": {"toplam_ciro": ["ciro", "hasilat", "satis"]},
+    "dimension_synonyms": {"musteri": ["musteri", "cari"]},
+}]}
+_CQ_YS = {"cube": "parti", "measures": ["toplam_ciro"],
+          "filters": [{"dimension": "tarih", "operator": "gte", "value": "2026-01-01"}],
+          "period_expr": "bu yıl"}
+
+
+def test_YS_ATILAN_TERIM_BEYAN_EDILIR():
+    """🔴🔴 `§YS` — üç canlı ölçüm, tek sınıf: *«…ciroyu **euro** olarak göster»* →
+    ₺74.022.836 · *«**mars gezegenindeki** satışlarımız»* → ₺137.588.350 · *«bütçe
+    **gerçekleşme** oranı»* → `toplam_hedef`. Üçünde de garson soruyu okudu, bir kısmını
+    temsil edemedi ve **sessizce attı**."""
+    from app import uyum
+
+    r = _Yanit()
+    assert uyum.yok_sayilan_beyani(r, "bu yıl ciroyu euro olarak göster", _CQ_YS,
+                                   _SEMA_YS["cubes"][0], _SEMA_YS, ["euro"]) is True
+    assert "euro" in (r.note or "") and "yansımadı" in (r.note or ""), r.note
+
+
+def test_YS_UYDURULAN_TERIM_DUSER():
+    """**Süzgeç 1** — model bir sözcük uydurabilir; kullanıcının cümlesinde yoksa iddia
+    düşer. *Bir hakemin sözünü tartmadan yayımlamak, hakemliği ona devretmektir.*"""
+    from app import uyum
+
+    r = _Yanit()
+    assert uyum.yok_sayilan_beyani(r, "bu yıl toplam ciro", _CQ_YS,
+                                   _SEMA_YS["cubes"][0], _SEMA_YS, ["euro"]) is False
+    assert not r.note
+
+
+def test_YS_FISTE_KARSILANAN_TERIM_DUSER():
+    """**Süzgeç 2** — `§101.1`: başka biçimde karşılanan bir terim eksik sayılmaz.
+    *«hasılat»* `toplam_ciro`'nun sinonimidir ve fiş onu **taşır**."""
+    from app import uyum
+
+    r = _Yanit()
+    assert uyum.yok_sayilan_beyani(r, "bu yıl hasılat ne kadar", _CQ_YS,
+                                   _SEMA_YS["cubes"][0], _SEMA_YS, ["hasılat"]) is False
+    assert not r.note

@@ -12342,3 +12342,111 @@ gün, ikisi ayrı şeyler söyler.*
 Aynı cevap sayacı *«**3,00** ↔ **1,75**»* diye bastı. Ortalama gerçekten kesirlidir,
 sayaç değildir — ve `3,00` okuyucuya *«burada bir kesir var»* der.
 *Bir gösterimin fazladan basamağı, olmayan bir kesinliği vaat eder.*
+
+---
+
+# `GG` TURU — kalan küpler · `§YS` (garsona ne attığını sormak)
+
+*(2026-08-11 · curl, tek tek · `FF` demeti TAM KAPI YEŞİL, commit `8bfeea4`)*
+
+| # | senaryo | sonuç |
+|---|---|---|
+| 1 | «bu yıl bütçe **gerçekleşme** oranı» | 🔴 `toplam_hedef` döndü, beyan YOK → `GG-a` |
+| 2 | «bu yıl toplam cari bakiye» | ✅ `cari` |
+| 3 | «bu yıl birim maliyet» | ✅ `maliyet` |
+| 4 | «makine bazında birim maliyet» → «neden» | ✅ akran anlatısı, **Türkçe sayılar** (`%37,6` · `30,83` · `9,83 ₺/kg`) |
+
+## `GG-a` — `butce`de **gerçekleşme ölçüsü yok**
+
+Katalog ölçüldü: `butce` yalnız hedef taşıyor (`toplam_hedef`, `ort_hedef`,
+`hedef_miktar_toplam`, `kalem_sayisi`) ve *«gerçekleşme»* diye bir sinonim **hiç yok**.
+Yani soru cevaplanamaz — ama cevaplanmış **gibi** sunuldu. `euro`/`mars` sınıfının
+**üçüncü** ölçülmüş örneği.
+
+## `§YS` — yazıldı, kapılandı, ve **canlı verimi ÖLÇÜLDÜ: sıfır**
+
+Garsona *«bu sorguya yansımayan sözcükler varsa yaz»* diye soruldu; iddia **iki
+deterministik süzgeçten** geçiyor (sözcük soruda geçmeli, teslim edilen fişte
+geçmemeli). Birim kapıları yeşil. Ama canlıda **hiç ateşlemedi** ve sebebi ölçüldü:
+
+```
+«…ciroyu euro olarak göster»
+  ham={"cube":"parti","measures":["toplam_ciro"],
+       "filters":[{"dimension":"para_birimi","operator":"eq","value":"EUR"}]}
+  → intent: whitelist REDDİ
+```
+
+🔴 **Model «euro»yu ATMIYOR — uydurulmuş bir boyutla TEMSİL ETMEYE ÇALIŞIYOR.** Beyaz
+liste o adayı reddediyor, oy başka bir örneğe düşüyor ve o örnekte euro'dan hiç iz yok.
+Yani garsonun *«ne attım»* cevabı boş; çünkü kendi zihninde **atmadı**.
+
+⊙ Ve bu, aradığım şeyin **daha iyi bir kaynağını** gösteriyor: *«neyin temsil
+edilemediği»* bilgisi zaten **deterministik olarak beyaz listenin elinde** —
+`para_birimi` / `EUR` tam olarak o. Bir LLM'e sorup sonra iki süzgeçle doğrulamak
+yerine, **reddedilen alanları** doğrudan okumak hem daha kesin hem daha ucuz.
+
+⚠ `§YS` **kalıyor**: `mars gezegeni` örneğinde model alanı **gerçekten üretti**
+(`ham={"cube":null,"yok_sayilan":["mars gezegeni","satışlar"]}`) — yani kanal çalışıyor,
+yalnız tek başına yetmiyor. İkisi kardeş olacak.
+
+**Sıradaki kök (ölçülmüş temelle):** `parse_cube_query`'nin **düşürdüğü** alanları
+(bilinmeyen boyut/ölçü/değer) bir taşıyıcıya yaz ve `§YS`'nin aynı süzgeçlerinden
+geçir. Reddedilen aday bile bir **bilgi** taşır — ve bugün o bilgi sessizce çöpe gidiyor.
+
+*Bir hakemin ne attığını sormadan önce, kapıda kimi geri çevirdiğine bakmak gerekir.*
+
+---
+
+# `HH` TURU — `§YS-2`: kapıda geri çevrileni okumak
+
+*(2026-08-11 · `GG` kapısının tek kırmızısıyla başladı)*
+
+## Kapı önce bir **yetenek boşluğu** buldu
+
+`GG` demetinin tam kapısı tek bir testle kırmızı verdi ve teşhisi kendisi yazdı:
+
+```
+🔴 SESSİZ FARK — mutfak 1 alanı okuyor, garson isteyemiyor: ['yok_sayilan']
+    İki seçenek var: (1) `intent_semasi`'ye ekle, (2) `BILEREK_DISARIDA`'ya gerekçesiyle yaz.
+```
+
+`parse_cube_query` `yok_sayilan`'ı okuyordu ama **şema-kısıtlı** sağlayıcılarda alan hiç
+istenemiyordu — `§EŞ`'in birebir aynı dersi. Şemaya eklendi.
+
+## 🔴 KÖK · `§YS-2` — **REDDEDİLEN ADAY DA BİR BİLGİ TAŞIR**
+
+`§YS`'nin canlı verimi sıfırdı ve sebebi ölçülmüştü: model *«euro»*yu **atmıyor**,
+kataloğumuzda olmayan bir boyutla **temsil etmeye çalışıyor** ve beyaz liste o adayı
+reddediyor. Bilgi kayıp değil — **kapıda** duruyor ve bugüne kadar yalnız kütüğe yazılıp
+çöpe gidiyordu.
+
+**Çözüm deterministik:** `uyum.kapida_kalanlar` reddedilen ham JSON'u okur ve
+`parse_cube_query`'nin **kendi** beyaz listesine (`index`) karşı katalogda olmayan
+alan/değer çiftlerini toplar. `uyum.kapi_beyani` iki süzgeçten geçirir: alan teslim
+edilen fişte **olmamalı**, ve alan ya da değeri sorunun bir sözcüğüyle **≥3 harflik ön
+ek** paylaşmalı (`EUR` ↔ *«euro»*) — yoksa model kataloğa dokunmayan bir şey uydurmuştur
+ve beyan **susar**.
+
+### ⚠ Ve ilk yerleşimim sessizce düştü — canlı ölçüm buldu
+
+Hasatı kazanan **fişe** taşıyıcı olarak iliştirmiştim. Hasat doluydu (`[('para_birimi',
+'EUR')]` — çevrimdışı doğrulandı), beyan **boştu**. Sebep: `_resolve_period` sözlüğü
+**yeniden kuruyor** ve bilinmeyen anahtar düşüyor. Doğru yer deponun kendi deseni:
+`request.state` (`plan_taslagi`'nın yaşadığı yer).
+
+*Bir yan bilgiyi, yeniden kurulabilen bir nesnenin içinde taşımak, onu kaybetmeye söz
+vermektir.*
+
+### Canlı doğrulama
+
+```
+«bu yıl toplam ciroyu euro olarak göster»    → ⚠ «Soru kataloğumda OLMAYAN bir alana
+                                                 işaret ediyor (`para_birimi` = «EUR»)
+                                                 — bu kısım cevaba YANSIMADI.»
+«lütfen bana bu yılın cirosunu söyler misin» → susuyor ✅
+«bu yıl makine bazında ortalama oee»         → susuyor ✅
+```
+
+⚠ **Kapsam dürüstçe sınırlı:** mekanizma ancak bir örnek o alanı **gerçekten denerse**
+ateşler. Aynı turda `mars` ve `gerçekleşme` denemedi ve beyan gelmedi — `§YS` (garsonun
+kendi bildirimi) onların kardeş kanalı olarak kalıyor.

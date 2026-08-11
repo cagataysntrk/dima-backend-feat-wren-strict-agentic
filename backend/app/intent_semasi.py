@@ -301,6 +301,18 @@ def cube_query_json_schema(index: dict, *, harman: bool = False) -> dict:
                            "kaçı fire»*, *«toplam içindeki payı»* → `kip:yuzde` ve iki "
                            "ölçüyü de `measures`'a yaz. Katalogda hazır bir oran ölçüsü "
                            "VARSA (ör. `…_orani_yuzde`) onu tercih et, bunu yazma."}
+        # 🔴🔴 `§YS` — **MUTFAK OKUYOR, GARSON İSTEYEMİYORDU.** Yetenek envanteri kapısı
+        # (`test_MUTFAGIN_HER_ALANI_MENUDE_YA_DA_BEYANLI`) bunu ilk koşumda yakaladı:
+        # `parse_cube_query` `yok_sayilan`'ı okuyordu ama şema-kısıtlı sağlayıcılarda
+        # alan **hiç istenemiyordu**. `§EŞ`'in birebir aynı dersi — *bir menüde olmayan
+        # yemek, mutfakta pişebiliyor olsa da sipariş edilemez.*
+        props["yok_sayilan"] = {
+            "type": "array", "items": {"type": "string"},
+            "description": "Sorunun bu sorguya YANSIMAYAN sözcükleri (para birimi · "
+                           "olmayan bir ölçü · karşılığı olmayan bir yer/şey). Hepsi "
+                           "yansıdıysa alanı hiç yazma. ⚠ Soru sözcükleri (*«ne "
+                           "kadar»*, *«hangi»*) ve nezaket kalıpları yok sayılan "
+                           "DEĞİLDİR — yalnız İÇERİK taşıyan sözcükleri yaz."}
         props["measure_having"] = {
             "type": "object", "additionalProperties": False,
             "properties": {"measure": {"type": "string", "enum": olculer},

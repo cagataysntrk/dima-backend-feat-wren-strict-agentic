@@ -2672,3 +2672,38 @@ Beş yeni kök bulundu ve düzeltildi. Tam döküm: çeviri sözleşmesi › `DD
 * **`§SB-metin`:** tam sayı ondalık taşımaz (`3,00` → `3`).
 * ⊙ `EE` demeti **TAM KAPI YEŞİL** ile doğrulandı (commit `4f9470f`): korpus taban ile
   birebir, 4991 test.
+
+## `GG` turu (2026-08-11) — `§YS` ve ölçülen sınırı
+
+* **`§YS`** (`app/uyum.py::yok_sayilan_beyani` + `cube_router.YOK_SAYILAN_TASIYICI` +
+  `llm._cube_select_system`): garsona *«bu sorguya yansımayan sözcükler»* soruluyor;
+  iddia **iki deterministik süzgeçten** geçiyor (soruda geçmeli · fişte geçmemeli).
+  Birim kapıları yeşil.
+* ⚠ **Canlı verimi ölçüldü: sıfır** — ve sebebi bir sonraki kökü verdi. Model *«euro»*yu
+  atmıyor, `para_birimi=EUR` diye **uydurulmuş bir boyutla** temsil etmeye çalışıyor ve
+  **beyaz liste** o adayı reddediyor. Yani *«neyin temsil edilemediği»* bilgisi zaten
+  deterministik olarak beyaz listenin elinde.
+* **SIRADAKİ KÖK (ölçülmüş temelle):** `parse_cube_query`'nin **düşürdüğü** alanları bir
+  taşıyıcıya yaz ve `§YS`'nin aynı süzgeçlerinden geçir. *Bir hakemin ne attığını
+  sormadan önce, kapıda kimi geri çevirdiğine bakmak gerekir.*
+* **`GG-a`:** `butce` küpünde **gerçekleşme ölçüsü yok** (yalnız hedefler) — *«bütçe
+  gerçekleşme oranı»* sessizce `toplam_hedef` ile cevaplanıyor. `euro`/`mars` sınıfının
+  üçüncü örneği; yukarıdaki kök onu da kapatacak.
+
+## `HH` turu (2026-08-11) — `§YS-2`: kapıda geri çevrileni okumak
+
+* **Yetenek envanteri kapısı** bir boşluk buldu ve teşhisi kendisi yazdı: *«mutfak 1 alanı
+  okuyor, garson isteyemiyor: `yok_sayilan`»*. Alan `intent_semasi`'ye eklendi (`§EŞ`'in
+  aynı dersi — şema-kısıtlı sağlayıcılarda alan hiç istenemiyordu).
+* **`§YS-2`** (`uyum.kapida_kalanlar` + `uyum.kapi_beyani`): beyaz listenin **reddettiği**
+  adaydan, katalogda olmayan alan/değer çiftleri **deterministik** olarak toplanır ve iki
+  süzgeçten geçirilir (fişte olmamalı · soruyla ≥3 harflik ön ek paylaşmalı).
+  Canlı: *«ciroyu **euro** olarak göster»* → *«Soru kataloğumda **olmayan** bir alana
+  işaret ediyor (`para_birimi` = «EUR») — bu kısım cevaba **yansımadı**»*; iki meşru
+  soru **susuyor**.
+* ⚠ **İlk yerleşim sessizce düştü:** hasat kazanan fişe iliştirilmişti, `_resolve_period`
+  sözlüğü yeniden kurunca bilinmeyen anahtar düştü. Doğru yer `request.state`
+  (`plan_taslagi`'nın deseni). *Bir yan bilgiyi, yeniden kurulabilen bir nesnenin içinde
+  taşımak, onu kaybetmeye söz vermektir.*
+* ⚠ Kapsam dürüstçe sınırlı: mekanizma ancak bir örnek o alanı **gerçekten denerse**
+  ateşler; `§YS` (garsonun kendi bildirimi) kardeş kanal olarak kalıyor.

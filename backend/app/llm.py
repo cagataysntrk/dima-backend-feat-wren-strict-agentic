@@ -385,6 +385,27 @@ def _cube_select_system(catalog: str) -> str:
         '"measure_having":{"measure":"<ölçü>","op":">"|">="|"<"|"<=","value":<sayı>}. '
         "⚠ Bu bir SATIR süzgeci değil, ölçünün TOPLANMIŞ değerine bir eşiktir (HAVING); "
         "kullanıcı eşik vermediyse alanı hiç yazma.\n"
+        # 🔴🔴 `§YS` — **GARSONA NE ATTIĞINI SORMAK.**
+        #
+        # ⊙ Üç canlı ölçüm, tek sınıf (curl `CC`/`GG` turları):
+        #     «…ciroyu **euro** olarak göster»      → ₺74.022.836, beyan YOK
+        #     «**mars gezegenindeki** satışlarımız» → ₺137.588.350, beyan YOK
+        #     «bütçe **gerçekleşme** oranı»          → `toplam_hedef`, beyan YOK
+        # Üçünde de garson soruyu okudu, bir kısmını **temsil edemedi** ve sessizce
+        # attı. Doktrin garsona *niyeti* için güvenir; **sessizce attıkları** için değil.
+        #
+        # ⚠ Bu bir **okuma** sorusudur, bir sayı sorusu değil — yani tam olarak garsonun
+        # işi. Ve iddiası **iki deterministik süzgeçten** geçer (`uyum.yok_sayilan_beyani`):
+        # sözcük soruda **geçmeli**, teslim edilen fişte **geçmemeli**. Bir LLM iddiası
+        # ancak ölçülerek yayımlanır — bu deponun guard'lı anlatı deseni.
+        #
+        # ⚠ Sayı **hiç etkilenmez**: alan yalnız bir cümle üretir, sorguya girmez.
+        # *Bir hakeme niyetini sormak başka, ne attığını sormamak başkadır.*
+        '- YOK SAYILAN: sorunun, bu sorguya **yansımayan** sözcükleri varsa '
+        '"yok_sayilan":["<sözcük>"] olarak yaz (para birimi · olmayan bir ölçü · '
+        'karşılığı olmayan bir yer/şey). Hepsi yansıdıysa alanı hiç yazma. '
+        "⚠ Soru sözcükleri (*«ne kadar»*, *«hangi»*) ve nezaket kalıpları yok sayılan "
+        "DEĞİLDİR — yalnız **içerik** taşıyan sözcükleri yaz.\n"
         "- SADECE yukarıda listelenen ölçü/boyut adlarını kullan.\n"
         # 🔴 `AJ3.4` — **KARŞI AĞIRLIK.** Ölçüldü: bu prompt modele reddetmeyi ÜÇ kez
         # söylüyordu (metinde *"KESİNLİKLE null"*, şemada red **ilk** dal, araç

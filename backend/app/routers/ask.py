@@ -1069,7 +1069,7 @@ def _zenginligi_birlestir(kova: list[dict]) -> dict:
 
 
 def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
-                       sema: dict | None = None):
+                       sema: dict | None = None, kapida: list | None = None):
     """CubeQuery SELF-CONSISTENCY (literatür #1 / ClarifyGPT deseni): k örnekleme →
     kanonik oylama. Uyuşma = hem doğruluk hem KALİBRE güven sinyali; uyuşmazlık
     tek eksendeyse o eksen chip'e dönüşür.
@@ -1077,6 +1077,15 @@ def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
     `sema` (FAZ 3a): şema-kısıtlı çıktı. `None` = bugünkü serbest-JSON yolu, birebir.
 
     Döner: (kazanan|None, uyum_orani, uyusmazlik_ekseni|None, farklı_adaylar)."""
+    # 🔴 `§YS-2` — beyaz listenin **geri çevirdikleri**. Bir `cube_query` alanı DEĞİL:
+    # ilk yazımda taşıyıcı olarak kazanan fişe iliştirmiştim ve `_resolve_period` sözlüğü
+    # **yeniden kurunca** sessizce düştü (canlıda ölçüldü: hasat doluydu, beyan boştu).
+    # Deponun kendi deseni `request.state`'tir (`plan_taslagi`); burada onun çağıran
+    # tarafından verilen listesi doldurulur.
+    # *Bir yan bilgiyi, yeniden kurulabilen bir nesnenin içinde taşımak, onu kaybetmeye
+    # söz vermektir.*
+    _kapida: list = kapida if kapida is not None else []
+
     def one(_i):
         try:
             ham = llm.select_cube(question, catalog, sema) if sema is not None \
@@ -1089,6 +1098,11 @@ def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
             if cq is None:
                 _log.info("intent: whitelist REDDİ (sema=%s) — ham=%.200s",
                           "acik" if sema is not None else "kapali", ham)
+                # 🔴 `§YS-2` — **REDDEDİLEN ADAY DA BİR BİLGİ TAŞIR.** Yüklem
+                # `uyum.kapida_kalanlar`'da (deterministik: katalogda olmayan alan +
+                # denenen değer); burada yalnız hasat. Bugüne kadar bu bilgi yalnız
+                # kütüğe yazılıp **çöpe gidiyordu**.
+                _kapida.extend(_uyum.kapida_kalanlar(ham, index))
             # 🔴 `C1`+`C3` — **TERS YÖN ALANI: 0 ek tur.** Model `zayiat → toplam_fire_kg`
             # eşlemesini **zaten yapıyor**; ondan istenen tek şey onu **söylemesi**.
             # Alan **kapalı seçim**dir (katalogdan bir ad ya da hiçbiri) ve `eslesen_
@@ -2856,6 +2870,11 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # ⚠ Boşaltma **zorunlu**: kalırsa `cube_query` cevaba sızar ve daha kötüsü SQL
         # derleyicisine bilinmeyen bir alan olarak gider (`KÖK-4`'ün aynı dersi).
         _terim = cq.pop(_ters.TERIM_TASIYICI, None) if isinstance(cq, dict) else None
+        # 🔴 `§YS` — taşıyıcı **burada da boşaltılır** (aynı gerekçe: kalırsa fişe sızar).
+        # Karar ve iki deterministik süzgeç `uyum.yok_sayilan_beyani`'nda; iliştirme
+        # `resp` kurulduktan sonra (aşağıda), çünkü beyan bir **cevaba** yazılır.
+        _ys = cq.pop(cube_router.YOK_SAYILAN_TASIYICI, None) if isinstance(cq, dict) else None
+        _kk = getattr(getattr(request, "state", None), "ys2_kapida", None)
         # 🔴 `C3-D` — **ÇIKARIM ÖNCE GELİR.** Modelin bildirdiği alan iki canlı ölçümde
         # de **hiç gelmedi** (bkz. `eslesen_terim_cikar` docstring'i); çıkarım ise
         # deterministik, sağlayıcıdan bağımsız ve **sıfır ek token**. Bildirilen alan
@@ -3104,6 +3123,10 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # `kok_neden.taze_ek`'te, dil yüklemi `followup.neden_sorusu`'nda (🗣 garson);
         # buraya kalan iki satır bir **kapı** ve bir çağrı. `KURAL B`: *«neden»*
         # taşımayan hiçbir soruda tek bir bayt değişmez.
+        if _ys:
+            _uyum.yok_sayilan_beyani(resp, body.question, cq, _cm_uyum, schema, _ys)
+        if _kk:
+            _uyum.kapi_beyani(resp, body.question, cq, _kk)
         if followup.neden_sorusu(body.question):
             _kok_neden.taze_ek(resp, q_norm, cq, _cm_uyum, service=service, limit=limit)
         resp.contract_id = _record_contract(cq, sql, result, source)
@@ -4020,8 +4043,12 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     # dosyanın kendi ilkesi: *bağlamı taşıyan nesne elindeyken, o
                     # bağlamın parçalarını ayrıca istemek onları ayrışmaya davet etmektir.*
                     _g = _plan_garson.sarmala(llm_probe, cube_index, request, _ent, body.cube_query, body.previous_rapor)
+                    # `§YS-2` — hasat `request.state`'e yazılır: beyan `_answer_from_
+                    # cube_query`'de, yani birkaç dönüşüm sonra okunur.
+                    request.state.ys2_kapida = _ys2 = []
                     parsed, uyum, eksen, adaylar = _select_consistent(
-                        _g, _q_llm, catalog_text + _ent_kural, cube_index, k, _sema)
+                        _g, _q_llm, catalog_text + _ent_kural, cube_index, k, _sema,
+                        kapida=_ys2)
                     parsed = varlik.geri_koy(parsed, _ent)
                     # 🔴 `AJ3.3` — dönem ifadesi **taze yolda da** çözülür ve çözücü
                     # takip yolunun **aynısıdır** (`_resolve_period` → `date_filters`).

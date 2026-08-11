@@ -4616,6 +4616,11 @@ from app.intent_semasi import cube_query_json_schema  # noqa: E402,F401
 _AZ_IYI_ISARETI = "\u2193"
 
 
+#: `§YS` — garsonun *«temsil edemedim»* iddiasının taşıyıcı alanı. Bir sorgu alanı
+#: DEĞİL; `_answer_from_cube_query` onu **boşaltır** (bkz. `ters_yon.TERIM_TASIYICI`).
+YOK_SAYILAN_TASIYICI = "_yok_sayilan"
+
+
 def parse_cube_query(text: str, index: dict) -> dict | None:
     """LLM'in ürettiği CubeQuery JSON'ını cube tanımına karşı DOĞRULAR.
 
@@ -4760,6 +4765,18 @@ def parse_cube_query(text: str, index: dict) -> dict | None:
             blend_out.append({"cube": b["cube"], "measures": bms})
     if blend_out:
         out["blend"] = blend_out
+    # 🔴 `§YS` — **TAŞIYICI ALAN.** Garsonun *«bu sözcükleri temsil edemedim»* iddiası
+    # bir sorgu alanı değil, cevabın **yanında** giden bir okumadır — `TERIM_TASIYICI`
+    # ile birebir aynı desen: burada toplanır, varış noktasında **boşaltılır** ve orada
+    # iki deterministik süzgeçten geçirilir (`uyum.yok_sayilan_beyani`).
+    # ⚠ Yalnız dizge listesi kabul edilir ve `[:5]` ile sınırlanır: bir iddia ne kadar
+    # uzarsa o kadar az iddiadır.
+    # ⚠ Tek deyim: tavan bir **bütçedir**. Süzgeç (`≥3` harf, en çok 5) burada çünkü
+    # taşıyıcı burada kuruluyor; **karar** ve iki doğrulama `uyum.yok_sayilan_beyani`'nda.
+    _ys = [str(w).strip() for w in (cq.get("yok_sayilan") or [])
+           if isinstance(w, (str, int, float)) and len(str(w).strip()) >= 3][:5]
+    if _ys:
+        out[YOK_SAYILAN_TASIYICI] = _ys
     # AD-HOC İŞARETLERİ KORUNUR (FAZ 1 / K1). Bunlar bir sorgu ALANI değil, cevabın
     # KÖKENİDİR — `parse_cube_query` yapıyı beyaz-listeliyor ve bu üçünü düşürseydi:
     # (a) `adhoc_id` kaybolur, İKİNCİ chip tıklaması ad-hoc servisi bulamaz ve zincir
