@@ -2868,3 +2868,33 @@ küplerden kurulur. Yeri SQL derlemesi (`F10`/`B8`).
 🔴 **Geniş yayılımın ön koşulu A1** — kapı route()'u ölçer, garsonu ölçmez.
 
 Kapı: `tests/test_b1_sema_daraltma.py` (8) + katalog/garson yüzeyi **103 yeşil**.
+
+### ✅ B4 · Plan onarım döngüsü — tutma oranı %25 → %90 *(2026-08-11)*
+
+🔴 **Önce ölçüldü ve kart ile gerçek ayrıştı.** Kartın 1. curl senaryosu (`EE-11`) **zaten
+geçiyordu** (canlıda 3 adımlık plan, `cube=sevkiyat`, 451 satır) ve `plan KOŞAMADI` kütükte
+**0 kez** ateşlemişti. Açık olan başka bir şeydi — `/stats/plan`'da duruyordu:
+
+| | önce | sonra |
+|---|---|---|
+| `onarim_tutma_yuzde` | **25** | 🟢 **90** |
+| onarıldı / düştü | 1 / 3 | **9 / 1** |
+| `onarildi_tur1` / `tur2` | — | **7 / 2** |
+
+Dört reddin **dördü de aynı sınıftı** (`ulasilmaz`) ve istem yalnız *«sözleşmeye UYARAK
+yeniden planla»* diyordu — kusuru söyleyip **çareyi** söylemiyordu.
+
+**İki değişiklik:** `ONARIM_TAVANI = 2` (Magentic-One stall≤2) + `ONARIM_YONERGESI`
+(sınıf → çare; anahtarlar `RED_SINIFLARI`'nın kendi kapalı kümesinden — `KAT-1`).
+⊙ **Kazancın büyüğü ikinci turdan değil, yönergeden:** 9 onarımın **7'si ilk turda**.
+⚠ `red_orani_yuzde` 25→56 yükseldi ama **iki örneklem aynı soru karışımı değil**;
+kıyaslanan şey **tutma oranıdır**.
+
+Kütük: turlar `1/2` ve `2/2` etiketli, **3. tur 0 kez** → sonsuz döngü yok. Bayrak
+`onarim_dongusu` (kapalıyken tavan 1, `KURAL B`). Kapı: `tests/test_b4_onarim_dongusu.py`
+(6) + plan yüzeyi **216 yeşil**.
+
+⚠ **Bir kapı politikayı savundu:** `test_TEK_ONARIM_TURU_VE_TAM_BIR_TANE` kırmızı verdi —
+eski *«tam olarak bir tane»* politikasını kilitliyordu. İlke doğruydu ama **tavanın bir
+olması ölçülmemişti**; test ölçümüyle yeniden yazıldı (**silinmedi**) ve `KURAL B` gövdesi
+eklendi.

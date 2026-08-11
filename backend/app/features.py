@@ -503,6 +503,19 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "eskisidir (KURAL B).",
         "category": "Yönlendirme",
     },
+    "onarim_dongusu": {
+        "label": "Plan onarım döngüsü (tavan 2 tur + çare yönergesi)",
+        "description": "Reddedilen bir plan modele GERİ verilir; en fazla 2 tur, sonra "
+                       "dürüst red. Red mesajının yanına sınıfa özgü ÇARE eklenir "
+                       "(`ONARIM_YONERGESI`) — istem eskiden yalnız «sözleşmeye uyarak "
+                       "yeniden planla» diyordu. Ölçüldü (/stats/plan): tek tur "
+                       "onarim_tutma_yuzde=25 ve dört reddin dördü de aynı sınıf "
+                       "(`ulasilmaz`). Dayanak: Snowflake Error Correction · Wren "
+                       "retry&repair · Magentic-One stall≤2 · Anthropic "
+                       "evaluator-optimizer («bu ajanlık değil WORKFLOW»). Kapalıyken "
+                       "tavan 1'dir, yani davranış bugünküyle birebir (KURAL B).",
+        "category": "Yönlendirme",
+    },
     "sema_daraltma": {
         "label": "Şema daraltma (garson istemine yalnız ilgili küpler)",
         "description": "Garsona her soruda 23 küpün tamamı (23.729 karakter) gidiyordu. "

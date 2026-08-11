@@ -115,6 +115,47 @@ RED_SINIFLARI: tuple[tuple[str, str], ...] = (
 #: Sebep sayacı — `RED_SINIFLARI`'nın anahtarlarıyla + `bilinmeyen`.
 RED_NEDENLERI: dict[str, int] = {}
 
+#: 🔴 `§B4` — ONARIM TAVANI. Snowflake **Error Correction** ajanı, Wren `retry&repair`,
+#: Genie öz-düzeltme ve Anthropic'in **evaluator-optimizer** deseni aynı şeyi söylüyor;
+#: Magentic-One'ın **stall sayacı ≤2**'si de tavanı buraya koyuyor. ⊙ Ve raporun kendi
+#: uyarısı: *«bu ajanlık değil WORKFLOW»* — döngü serbest değil, **sayılı**.
+ONARIM_TAVANI = 2
+
+#: 🔴 `§B4` — SINIF → **ÇARE**. Red mesajı kusuru *söyler*; bu tablo **ne yapılacağını**
+#: söyler.
+#:
+#: ## Neden gerekli — ölçüldü (2026-08-11, canlı `/stats/plan`)
+#:
+#:     denendi=16 · geçerli=12 · onarildi=1 · dustu=3
+#:     red_orani_yuzde=25 · 🔴 onarim_tutma_yuzde=25
+#:     red_nedenleri = {"ulasilmaz": 4}
+#:
+#: Onarım turu **vardı ve ateşliyordu** — ama **4'te 1** tutuyordu. Ve dört reddin
+#: **dördü de aynı sınıftı**. Yani sorun modelin anlamaması değil, **ne yapacağının
+#: söylenmemesiydi**: istem yalnız *«sözleşmeye UYARAK yeniden planla»* diyordu.
+#:
+#: ⚠ Yeni bir sözlük değil: anahtarlar `RED_SINIFLARI`'nın **kendi kapalı kümesinden**
+#: gelir (`KAT-1` — sınıfların tek sahibi orası). Bir sınıfın çaresi yoksa satır
+#: yazılmaz; istem yine yalnız kusuru taşır.
+ONARIM_YONERGESI: dict[str, str] = {
+    "ulasilmaz": ("Kullanılmayan adımı ya SİL ya da sonraki bir adımın alanında `$n` "
+                  "ile REFERANS ver. Her adım ya bir sonrakinin girdisi olmalı ya da "
+                  "planın son adımı."),
+    "cozulmemis_referans": ("Bir adım referansı bir alanın TAMAMI olmalıdır "
+                            '(`"cube_query": "$1"`); süzgeç değerinin içine yazılamaz. '
+                            "Önceki adımın seçtiği varlığı süzgeç yapmak için `BAGLA` "
+                            "çıktısını sonraki adımın `hedef` alanında kullan."),
+    "ileri_referans": "Bir adım yalnız KENDİNDEN ÖNCEKİ adımlara referans verebilir.",
+    "bilinmeyen_fiil": "Yalnız sözleşmede tanımlı fiilleri kullan; yeni fiil İCAT ETME.",
+    "eksik_alan": "Eksik zorunlu alanları doldur; alan adlarını sözleşmeden birebir al.",
+    "fazla_alan": "Sözleşmede olmayan alanları KALDIR.",
+    "ad_yok": "Yalnız katalogda YAZILI cube adlarını kullan.",
+    "olcu_yok": "Yalnız o cube'un ölçü listesindeki adları kullan.",
+    "boyut_yok": "Yalnız o cube'un boyut listesindeki adları kullan.",
+    "tavan": "Planı KISALT — adım sayısı tavanı aşıyor.",
+    "json": "Yanıtın TAMAMI tek bir geçerli JSON nesnesi olsun; açıklama metni ekleme.",
+}
+
 
 def red_sinifi(mesaj: str) -> str:
     """Bir red mesajını **kapalı** bir sınıfa indirger (`A9`).
@@ -127,6 +168,25 @@ def red_sinifi(mesaj: str) -> str:
         if iz in m:
             return ad
     return "bilinmeyen"
+
+
+def _onarim_dongusu_acik() -> bool:
+    """`§B4` — ikinci onarım turu açık mı. Kapalıysa tavan **1** (`KURAL B`).
+
+    ⚠ İmza **argümansızdır** ve bu bilinçli: `plan_uret` bir `principal` taşımıyor ve
+    ona bir parametre eklemek iki çağıranı da değiştirirdi. `metin_ve_indeks`'in dersi
+    burada da geçerli — *bir yardımcının imzası, çağıranların **en dar** kapsamına göre
+    çizilir*. Bayrak kiracı düzeyinde daraltılmak istenirse `principal` o gün eklenir;
+    bugün küresel/sektör düzeyi yeterlidir ve yanlış bir bağımlılık üretmez.
+    """
+    try:
+        from app.config import get_settings
+        from app.features import resolve_for
+
+        return "onarim_dongusu" in resolve_for(get_settings(), None)
+    except Exception:                    # noqa: BLE001 — bayrak çözülemezse bugünkü yol
+        _log.warning("§B4: onarım bayrağı çözülemedi → tavan 1", exc_info=True)
+        return False
 
 
 def _redi_say(mesajlar) -> None:
@@ -242,23 +302,48 @@ def plan_uret(llm: Any, question: str, catalog: str, index: dict,
         # olduğunu sormak gerekir.*
         _yedek = _plani_oku(_ham) if plan is None and index else None
         if plan is None:
-            # 🔴 **TEK ONARIM TURU — ve tam olarak bir tane.**
+            # 🔴 **ONARIM DÖNGÜSÜ — SAYILI (`ONARIM_TAVANI`), serbest DEĞİL.**
             #
             # Red bugüne kadar **sessizdi**: hangi adımda hangi alanın eksik olduğu o
             # anda **biliniyordu** ve atılıyordu. Buraya yalnız **boşlukta** gelinir
             # (bugünkü cevap zaten yok), yani bir turun davranışsal maliyeti sıfır.
             #
-            # ⚠ İkincisi YOK: ikinci deneme bir **döngüdür** ve döngü bu katmanın
-            # bilinçli olarak reddettiği şeydir. *Bir hatayı bir kez söylemek öğretmek,
-            # üç kez söylemek yalvarmaktır.*
+            # ⟳ `§B4` — **İKİNCİ TUR AÇILDI, ve bir ölçüme dayanıyor.** Yukarıdaki
+            # *«ikincisi YOK»* kararı bir ilkeydi ve ilke doğruydu (*«üç kez söylemek
+            # yalvarmaktır»*) — ama **tavanı bir** yapması ölçülmemişti. `/stats/plan`:
+            #
+            #     denendi=16 · onarildi=1 · dustu=3 → 🔴 onarim_tutma_yuzde=**25**
+            #     red_nedenleri = {"ulasilmaz": 4}   ← dördü de AYNI sınıf
+            #
+            # Yani tek tur **4'te 1** tutuyordu ve reddin tamamı tek bir sınıftı.
+            # İki değişiklik: tavan **2** (`ONARIM_TAVANI`, Magentic-One stall ≤2) ve
+            # red mesajının yanına **ÇARE** (`ONARIM_YONERGESI`) — istem eskiden yalnız
+            # *«sözleşmeye UYARAK yeniden planla»* diyordu, yani kusuru söyleyip
+            # çözümü söylemiyordu.
+            #
+            # ⚠ Tavan bir **sayıdır**, bir sezgi değil: `KURAL B` gereği bayrak
+            # kapalıyken tavan **1**'dir ve davranış bugünküyle birebir kalır.
             _redi_say(_neden)          # `A9` — sebep dağılımı
-            _log.info("plan REDDEDİLDİ [%s] (%s) → bir kez düzeltme isteniyor",
-                      ",".join(sorted({red_sinifi(m) for m in _neden})) or "-",
-                      "; ".join(_neden) or "sebep yok")
-            _duzelt = (question + "\n\n🔴 ÖNCEKİ DENEMEN REDDEDİLDİ: "
-                       + "; ".join(_neden)
-                       + "\nAynı soruyu, bu kez sözleşmeye UYARAK yeniden planla.")
-            plan = _plani_oku(llm.plan_kur(_duzelt, catalog, _sema), index=index)
+            _tavan = ONARIM_TAVANI if _onarim_dongusu_acik() else 1
+            for _tur in range(1, _tavan + 1):
+                _siniflar = sorted({red_sinifi(m) for m in _neden})
+                _log.info("plan REDDEDİLDİ [%s] (%s) → onarım turu %d/%d",
+                          ",".join(_siniflar) or "-",
+                          "; ".join(_neden) or "sebep yok", _tur, _tavan)
+                _care = [ONARIM_YONERGESI[s] for s in _siniflar if s in ONARIM_YONERGESI]
+                _duzelt = (question + "\n\n🔴 ÖNCEKİ DENEMEN REDDEDİLDİ: "
+                           + "; ".join(_neden)
+                           + ("\n\n🟢 NASIL DÜZELTİLİR:\n- " + "\n- ".join(_care)
+                              if _care else "")
+                           + "\nAynı soruyu, bu kez sözleşmeye UYARAK yeniden planla.")
+                _neden = []
+                plan = _plani_oku(llm.plan_kur(_duzelt, catalog, _sema),
+                                  neden=_neden, index=index)
+                if plan is not None:
+                    SAYAC[f"onarildi_tur{_tur}"] = SAYAC.get(f"onarildi_tur{_tur}", 0) + 1
+                    break
+                if not _neden:
+                    break              # sebep okunamadıysa ikinci tur körlemesine olur
             if plan is None and _yedek is not None:
                 SAYAC["yedege_dondu"] = SAYAC.get("yedege_dondu", 0) + 1
                 _log.info("plan: onarım tutmadı → YAPISAL olarak geçerli ilk plana "

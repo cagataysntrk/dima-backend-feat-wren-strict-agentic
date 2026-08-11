@@ -119,22 +119,43 @@ def test_RED_SEBEBI_SOYLENIYOR():
     assert any("tanımsız alan" in m for m in n2), n2
 
 
-def test_TEK_ONARIM_TURU_VE_TAM_BIR_TANE():
-    """🔴 Bir hatayı bir kez söylemek **öğretmek**, üç kez söylemek **yalvarmaktır**.
+def test_ONARIM_TURU_TAVANLIDIR_ve_SEBEP_TASIR(monkeypatch):
+    """🔴 Döngü **sayılıdır**, serbest değil — *«bu ajanlık değil WORKFLOW»*.
 
-    ⚠ İkinci deneme bir **döngüdür** ve döngü bu katmanın bilinçle reddettiği şey.
+    ⟳ **POLİTİKA DEĞİŞTİ (`§B4`, 2026-08-11) — ve bir ölçüye dayanıyor.** Bu testin
+    eski adı `test_TEK_ONARIM_TURU_VE_TAM_BIR_TANE` idi ve gerekçesi *«bir hatayı bir
+    kez söylemek öğretmek, üç kez söylemek yalvarmaktır»* — ilke doğruydu ama **tavanın
+    bir olması ölçülmemişti**. Canlı `/stats/plan`:
+
+        denendi=16 · onarildi=1 · dustu=3 → onarim_tutma_yuzde=**25**
+        red_nedenleri = {"ulasilmaz": 4}        ← dördü de AYNI sınıf
+
+    Tek tur **4'te 1** tutuyordu. Tavan `ONARIM_TAVANI`'na (2) bağlandı; bayrak
+    kapalıyken **1** kalır ve aşağıdaki ikinci gövde onu kilitler (`KURAL B`).
+
+    *Bir ilkeyi savunmak için, onun sayısını da ölçmek gerekir.*
     """
-    cagrilar: list[str] = []
+    from app import plan_garson as pg
 
-    class _Inatci(_Sahte):
-        def plan_kur(self, question, catalog, sema=None):
-            cagrilar.append(question)
-            return json.dumps({"adimlar": [{"fiil": "BAGLA", "kaynak": "$1"}]})
+    def _kosum(acik: bool) -> list[str]:
+        cagrilar: list[str] = []
 
-    assert plan_uret(_Inatci(""), "soru", "kat", IDX) is None
-    assert len(cagrilar) == 2, f"onarım turu sayısı yanlış: {len(cagrilar)}"
-    assert "REDDEDİLDİ" in cagrilar[1] and "boyut" in cagrilar[1], (
+        class _Inatci(_Sahte):
+            def plan_kur(self, question, catalog, sema=None):
+                cagrilar.append(question)
+                return json.dumps({"adimlar": [{"fiil": "BAGLA", "kaynak": "$1"}]})
+
+        monkeypatch.setattr(pg, "_onarim_dongusu_acik", lambda: acik)
+        assert plan_uret(_Inatci(""), "soru", "kat", IDX) is None
+        return cagrilar
+
+    acik = _kosum(True)
+    assert len(acik) == 1 + pg.ONARIM_TAVANI, f"tavan aşıldı/eksik: {len(acik)}"
+    assert "REDDEDİLDİ" in acik[1] and "boyut" in acik[1], (
         "düzeltme isteğinde SEBEP yok — model neyi düzelteceğini bilemez")
+
+    # 🔴 `KURAL B` — bayrak kapalıyken bugünkü davranış: TEK onarım turu.
+    assert len(_kosum(False)) == 2
 
 
 def test_DUZELTME_TURU_ISE_YARARSA_PLAN_DONER():

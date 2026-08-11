@@ -2680,7 +2680,7 @@ küme *örtüşmeyen* hâle gelir.
 
 | # | iş | **ÖNCE** | **SONRA** | dosyalar | MİMARİ.md |
 |---|---|---|---|---|---|
-| **D5** | Sorgu hatası | `plan_garson`'da **tek** *«DÜZELTME TURU»*; `llm.py`'de yalnız **boş yanıt** yeniden denemesi | **Reflect+Repair döngüsü**: derleyici/motor hatası **modele geri verilir**, en fazla **2 tur**, sonra dürüst red | `app/plan_kosucu.py` · `app/plan_garson.py` · `app/llm.py` | **§2 merdiven** — *«6. basamak artık onarım döngüsü taşır»* |
+| ✅ **D5** | Sorgu hatası | `plan_garson`'da **tek** *«DÜZELTME TURU»*; `llm.py`'de yalnız **boş yanıt** yeniden denemesi | **Reflect+Repair döngüsü**: derleyici/motor hatası **modele geri verilir**, en fazla **2 tur**, sonra dürüst red | `app/plan_kosucu.py` · `app/plan_garson.py` · `app/llm.py` | **§2 merdiven** — *«6. basamak artık onarım döngüsü taşır»* |
 | **D6** | Plan yetenek listesi | `plan_semasi.FIIL_ANLAMI` **elle yazılmış 15 fiil** ↔ `tools.py` **25 araç** (ayrı, %73 örtüşür) | `FIIL_ANLAMI` **`tools.py`'den TÜRETİLİR**; kapalı `enum` **korunur**, üretilmiş olur | `app/plan_semasi.py` · `app/tools.py` | **§2.0 orkestratör** — *«tek yetenek kaydı»* |
 | **D7** | Yetki denetimi (plan) | ❌ plan fiilleri `authorize()` **görmüyor** | Kayıt birleşince **yetki süzgeci plana bedava** gelir | `app/plan_semasi.py` · `control_plane/authorize.py` | **§ güvenlik** |
 | **D8** | Durdurma koşulu | `planner.Butce` **uykuda**; **stall sayacı yok** | Bütçe **canlıya**; **stall ≤2 → yeniden planla**, sonra dur | `app/plan_kosucu.py` · `app/planner.py` | **§2.0** |
@@ -3017,6 +3017,48 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 | ⚠ **risk** | **Bakım borcu.** Anthropic: **bakımsız bırakılınca bir ayda %95 → %65** |
 | **azaltma** | Dosya **pack ile aynı repoda, aynı PR'da** — Anthropic'in çözümü birebir bu (*veri-modeli PR'larının ~%90'ı skill değişikliği içeriyor*) |
 | **MİMARİ.md** | **§3** yeni alt bölüm + **yeni ADR** |
+
+### ✅ B4 · Reflect + Repair döngüsü — **TAMAMLANDI (2026-08-11)**
+
+> 🟢 **UYGULANDI VE CANLI ÖLÇÜLDÜ.** `plan_garson`: `ONARIM_TAVANI = 2` + sınıf başına
+> **çare tablosu** `ONARIM_YONERGESI`; bayrak `onarim_dongusu` (kapalıyken tavan **1**,
+> `KURAL B`). Sayaçlar `/stats/plan`'a `onarildi_tur1`/`onarildi_tur2` olarak eklendi.
+>
+> 🔴 **ÖNCE ÖLÇÜLDÜ — ve kart ile gerçek AYRIŞTI.** Kartın 1. curl senaryosu
+> (`EE-11`: *«km başına nakliye maliyeti neden yüksek»* → *«(cube yok) diye bir cube YOK»*)
+> **zaten geçiyordu**: canlıda 3 adımlık plan, `cube=sevkiyat`, 451 satır. Ve
+> `plan KOŞAMADI` (çalıştırma anındaki red) kütükte **0 kez** ateşlemişti. Yani kartın
+> tarif ettiği boşluk **kapanmıştı**; açık olan başka bir şeydi.
+>
+> **Asıl kusur `/stats/plan`'da duruyordu:**
+> ```
+> denendi=16 · geçerli=12 · onarildi=1 · dustu=3
+> red_orani_yuzde=25 · 🔴 onarim_tutma_yuzde=25
+> red_nedenleri = {"ulasilmaz": 4}      ← dört reddin DÖRDÜ de aynı sınıf
+> ```
+> Onarım turu **vardı ve ateşliyordu** ama **4'te 1** tutuyordu; istem yalnız
+> *«sözleşmeye UYARAK yeniden planla»* diyordu — kusuru söyleyip **çareyi** söylemiyordu.
+>
+> **SONRA (aynı uç, altı planlayıcı sorusu):**
+> ```
+> denendi=18 · onarildi=9 · dustu=1 · onarim_tutma_yuzde=🟢 90
+> onarildi_tur1=7 · onarildi_tur2=2
+> ```
+> ⊙ **Kazancın büyük kısmı ikinci turdan DEĞİL, çare yönergesinden geliyor:** dokuz
+> onarımın **yedisi ilk turda** tuttu. İkinci tur **2** vakayı kurtardı — masrafını
+> çıkarıyor ama küçük yarısı. *Bir döngüyü uzatmadan önce, söylediğinin anlaşılır olup
+> olmadığını sormak gerekir.*
+> ⚠ `red_orani_yuzde` 25→56 yükseldi; **iki örneklem aynı soru karışımı değil** (bu tur
+> bilerek planlayıcı-tetikleyen sorulardı). Kıyaslanan şey **tutma oranıdır**.
+>
+> **Curl/kütük (kartın üç senaryosu):** ① `EE-11` → cevap ✔ ② tavan: kütükte turlar
+> `1/2` ve `2/2` etiketli, **3. tur 0 kez** ✔ ③ onarılamaz hâlde `dustu=1` → dürüst red,
+> sonsuz döngü yok ✔. Kapı: `tests/test_b4_onarim_dongusu.py` (6) + plan yüzeyi **216 yeşil**.
+>
+> ⚠ **Bir kapı politikayı savundu:** `test_TEK_ONARIM_TURU_VE_TAM_BIR_TANE` kırmızı verdi —
+> eski politikayı (*«tam olarak bir tane»*) kilitliyordu. İlke doğruydu ama **tavanın bir
+> olması ölçülmemişti**; test `test_ONARIM_TURU_TAVANLIDIR_ve_SEBEP_TASIR` olarak
+> ölçümüyle birlikte yeniden yazıldı ve `KURAL B` gövdesi eklendi (**silinmedi**).
 
 ### B4 · Reflect + Repair döngüsü
 
@@ -3356,7 +3398,7 @@ Eğer **tek bir şey** yapılacaksa sırası budur:
 | ✅ 2 | **A2** — `cevapsız` metriğini manşete al | **saatler** ✔ bitti | %21,8 görünür olmadan **hiçbir iyileşme kanıtlanamaz** |
 | ✅ 3 | **D3'ün iki kuralı** — *«tek değer → grafik yok»* + *«≤3 satır → cümle»* | **saatler** ✔ bitti | ⊙ **İkisi de `viz.py`'de ZATEN VARDI ve ateşliyordu** (curl ile doğrulandı). Açık olan yarı **öneri şeridiydi**: chip dizisi `6,6,6,6,5,6,6,5` → **`4,6,2,4,4,4,6,3`**, tek sahip `app/bicim.py` |
 | ✅ 4 | **B1** — şema daraltma | **saatler** ✔ bitti | Katalog **23.729 → 2.343-6.886 karakter** (%71-90). ⊙ `extract_by` **kullanılmadı** — ölçüldü: o model/view budar, garson istemi küplerden kurulur. Fail-open **kanıta** bağlı; 8/8 kapsama, 0 kayıp |
-| 5 | **B4** — reflect+repair (tavan 2 tur) | **~1 hafta** | Dürüst redleri **cevaba** çevirir |
+| ✅ 5 | **B4** — reflect+repair (tavan 2 tur) | **saatler** ✔ bitti | `onarim_tutma_yuzde` **25 → 90**. ⊙ Kazancın büyüğü 2. turdan değil **çare yönergesinden** (9 onarımın 7'si ilk turda). Kartın `EE-11` senaryosu **zaten geçiyordu** — asıl kusur `/stats/plan`'da duruyordu |
 
 ⚠ **A1 (garson korpusu) hakkında bir düzeltme:** planın ilk hâli **300-500 soru** diyordu.
 **Fazla iddialı.** Anthropic *«~20 sorguyla başlayın»*, Hex **30-50** kullanıyor.

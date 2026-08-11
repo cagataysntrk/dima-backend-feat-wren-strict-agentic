@@ -151,6 +151,12 @@ features:
   # 🔴 Geniş yayılım için ön koşul A1 (garson korpusu): kapı route()'u ölçer,
   # garsonu ölçmez — bu bayrağın gerilemesi kapıda GÖRÜNMEZ.
   sema_daraltma: beta
+  # §B4 — PLAN ONARIM DÖNGÜSÜ. Ölçüldü (/stats/plan, 2026-08-11):
+  #   denendi=16 · onarildi=1 · dustu=3 → onarim_tutma_yuzde=25
+  #   red_nedenleri={"ulasilmaz": 4}  ← dört reddin DÖRDÜ de aynı sınıf
+  # Tek tur 4'te 1 tutuyordu ve istem yalnız kusuru söyleyip ÇAREYİ söylemiyordu.
+  # Tavan 2 (Magentic-One stall≤2) + sınıfa özgü yönerge. Kapalıyken tavan 1.
+  onarim_dongusu: beta
   agent_plan_secimi: "off"  # FAZ 4: çapraz-alan pilotu — Planlayici.sec() planı ÖNERİR,
                           # dört kapı DENETLER, agent_run makbuzu kaydeder. Seçim ≠
                           # çalıştırma. `off` — sıcak yola LLM çağrısı ekliyor.

@@ -12707,3 +12707,43 @@ fikstürde fail-open'a düşüyordu (`durus`, `oee`'nin kendi sinonimi olduğu h
 *«açıklanamayan»* sayılıyordu). Ölçüt *«**tuttuğumuz** küplerin açıkladığı kelimeler»*e
 çevrildi. ⊙ Canlı katalogda **görünmüyordu** — orada başka bir sözlük de kapsıyor.
 *Bir kuralın sınırı en zengin veride değil, en yalın veride ölçülür.*
+
+---
+
+## TUR MM — `§B4` onarım döngüsü: kart bir yeri, ölçüm başka yeri gösterdi *(2026-08-11)*
+
+**Kartın 1. senaryosu zaten geçiyordu.** `EE-11` (*«km başına nakliye maliyeti neden
+yüksek»*) canlıda: `source=cube+llm · cube=sevkiyat · 451 satır`, 3 adımlık plan. Ve
+`plan KOŞAMADI` kütükte **0 kez**. Yani *«motor hatası modele dönmüyor»* boşluğu
+**kapanmıştı**.
+
+**Asıl kusur `/stats/plan`'daydı:**
+
+| ölçü | önce | sonra |
+|---|---|---|
+| `onarim_tutma_yuzde` | **25** | 🟢 **90** |
+| onarıldı/düştü | 1/3 | 9/1 |
+| tur kırılımı | — | `tur1=7` · `tur2=2` |
+
+Dört reddin dördü **aynı sınıf** (`ulasilmaz`); istem çareyi söylemiyordu.
+
+### Curl turu — planlayıcıyı tetikleyen altı soru
+
+| soru | sonuç |
+|---|---|
+| «km başına nakliye maliyeti neden yüksek» | ✅ `cube+llm` · 72 satır |
+| «en kötü 3 makineyi analiz et» | ✅ 3 satır |
+| «fire oranı neden yüksek ve hangi müşteride yoğunlaşıyor» | ✅ 8 satır |
+| «bakım maliyeti ile arıza sayısı ilişkili mi» | ✅ 11 satır |
+| «hangi müşteriyle çalışmayı bırakmalıyız» | ✅ 1 satır |
+| «üretim raporu hazırla» | ⚠ `source=None` — dürüst red (garson koşumları arası değişiyor) |
+
+### Kütük — tavan tutuyor
+
+`onarım turu 1/2` · `onarım turu 2/2` etiketleri; **`3/` hiç yok** (0 eşleşme).
+Ve `plan_onarim.gerekce` mesajları zaten öğretici: *«⊙ ama `sebep` şu küplerde VAR:
+kalite. O kırılım için ayrı bir `SORGU` adımı yaz»*.
+
+⊙ **Ders:** kazancın büyüğü **ikinci turdan değil, ne yapılacağını söylemekten** geldi
+(9 onarımın 7'si ilk turda). *Bir döngüyü uzatmadan önce, söylediğinin anlaşılır olup
+olmadığını sormak gerekir.*
