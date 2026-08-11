@@ -3014,3 +3014,15 @@ Kapı: `tests/test_yon_yumusama.py` (5) + sıralama yüzeyi 136 yeşil.
 
 ⚠ Kapı testimde ÜÇÜNCÜ kez aynı hata: docstring'e bakan bir iddia (B2 · D3 · burada) →
 `ast` ile docstring soyuldu. *Bir kapı koda bakmalıdır, kodun hakkındaki cümleye değil.*
+
+### ✅ D5 · SParC dört kova ÖLÇÜLDÜ — dördü de davranış olarak VAR *(2026-08-11)*
+
+Beş turlu canlı zincir: **theme-property** («peki geçen yıl» → dönem 2025, 0 LLM) ·
+**theme-entity** («kullanılabilirliği de göster» → ölçü eklendi) · **refinement**
+(`deterministic_refine`) · **answer-refinement** (`diyalog.odak_uygula`). Kartın 4.
+senaryosu da geçti: T5 konu değişimi → `cube=parti`, dönem sıfırlandı, «çapraz-cube konu
+geçişi (LLM'siz)». ⊙ SParC'ın «Turn≥4 → %1,1» çöküşü bu zincirde ÜREMEDİ.
+
+🔴 **Karar: kova adları `niyet.py`'ye EKLENMEDİ.** Davranış var; eklenecek olan yalnız bir
+AD ve bugün tüketicisi yok. Tüketicisiz bir sınıflandırma yazmak, bu oturumda dokuz kez
+ölçtüğüm «yazılmış ama bağlanmamış» desenini kendi elimle üretmek olurdu.

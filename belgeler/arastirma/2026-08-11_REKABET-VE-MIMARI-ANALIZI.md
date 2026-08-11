@@ -3336,8 +3336,25 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 > `resp.cube_query` üzerine alındı. *Bir yüklemi doğru yazmak yetmez; onu doğru NESNEYE
 > sormak gerekir.* Kapı: `test_ODAK_SUZGECI_KURULDUYSA_beyan_YOK`.
 >
-> ⏭ **KALAN:** `niyet`e **SParC'ın dört kovası** (theme-entity/refinement/theme-property/
-> answer-refinement) — bir **sınıflandırma** işi; odak mekanizması hazır.
+> ✅ **DÖRT KOVANIN DÖRDÜ DE ÖLÇÜLDÜ — DAVRANIŞ OLARAK VAR (beş turlu canlı zincir):**
+>
+> | kova | tur | sonuç |
+> |---|---|---|
+> | **theme-property** %9,7 | *«peki geçen yıl»* | dönem 2025'e geçti, ölçü+kırılım korundu · `source=cube` (**0 LLM**) |
+> | **theme-entity** %48,4 | *«kullanılabilirliği de göster»* | ölçü eklendi, dönem korundu |
+> | **refinement** %33,8 | `deterministic_refine` | CoE-SQL ailesi — raporun kendi tespiti |
+> | **answer-refinement** %8,1 | *«o makinede…»* | `diyalog.odak_uygula` süzgeci kurdu + beyan etti |
+>
+> Ve kartın 4. senaryosu da geçti: **T5 konu değişimi** → `cube=parti`, dönem **sıfırlandı**,
+> iz *«çapraz-cube konu geçişi (LLM'siz)»*. ⊙ SParC'ın *«Turn≥4 → %1,1»* çöküş uyarısı
+> bu zincirde **üremedi** (T4 ve T5 ikisi de doğru).
+>
+> 🔴 **KARAR: dört kova `niyet.py`'ye EKLENMEDİ — ve bu bir eksiklik değil bir seçim.**
+> Dördünün de **davranışı** var; eklenecek olan yalnız bir **ad**, ve bugün onun bir
+> tüketicisi yok. Bir sınıflandırmayı tüketicisi olmadan yazmak, bu oturumda **dokuz kez**
+> ölçülen *«yazılmış ama bağlanmamış»* desenini **kendi elimizle** üretmek olurdu.
+> ⊙ Kova adları bir **ölçüm** ya da **yönlendirme** tüketicisi doğduğunda anlam kazanır;
+> o gün `followup.sinifla`'nın kapalı kümesiyle çakışmayacak şekilde eklenir.
 
 ### D5 · Takip anlama — «son cevaba çıpala» + dört kova
 
