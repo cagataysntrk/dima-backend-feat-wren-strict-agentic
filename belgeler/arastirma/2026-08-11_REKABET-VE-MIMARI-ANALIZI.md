@@ -1232,6 +1232,53 @@ ayrı sorumluluklardır ve ayrı kalmalıdır. Birleşecek olan **yalnız yetene
 *Bir ilkeyi bir satırda uygulayıp bir sonrakinde unutmak, ilkeyi hiç yazmamaktan daha
 pahalıdır — çünkü artık uygulandığı sanılır.*
 
+### 17.6 🔴 Asıl sorun 15 fiil değil — **plan neredeyse hiç ayrışmıyor**
+
+Kütükten ölçüldü (kayıtlı 20 plan):
+
+| plan uzunluğu | adet | pay |
+|---|---|---|
+| **1 adım** | **12** | **%60** |
+| 2 adım | 2 | %10 |
+| 3 adım | 2 | %10 |
+| 4 adım | 3 | %15 |
+| 7 adım | 1 | %5 |
+| **8-12 adım** | **0** | **%0** |
+
+⊙ **`AZAMI_ADIM = 12` tavanı hiç bağlayıcı olmamış** — gözlenen en uzun plan **7**, ve
+planların **%60'ı tek adımlık**, yani orkestratör **hiç orkestre etmiyor**.
+
+🔴 **Bu, teşhisi tersine çeviriyor.** *«15 fiil yetmiyor»* demek için önce fiillerin
+kullanılıyor olması gerekir; ölçüm **kullanılmadığını** söylüyor. Sorun **ifade gücü**
+değil, **ayrıştırma isteği**: planlayıcı çok adımlı bir çözüm **kurmaya çalışmıyor**.
+
+**Üç olası kök (hiçbiri henüz ölçülmedi, ayırt edilebilir):**
+1. **İstem ayrıştırmayı teşvik etmiyor** — plan istemi *«mümkünse tek adım»* yönünde bir
+   baskı taşıyor olabilir.
+2. **Deterministik-önce kapısı çok erken kapanıyor** — `route()` bir cevap verince plan
+   yolu hiç denenmiyor; trafiğin %35,5'i zaten böyle.
+3. **Tek adımlık plan bir «başarı» sayılıyor** — `plan_semasi.tek_adimli` bilinçli bir
+   kısayol; ama ölçüm onu **kural** hâline getirmiş olabilir.
+
+⚠ **Ve bu, birleşme kararını daha da güçlendiriyor:** yetenek kaydı tek olsaydı,
+*«planlayıcı hangi araçları hiç seçmiyor»* sorusu **bir sorgu** olurdu. Bugün 15 fiilin
+kaçının canlıda hiç kullanılmadığını **bilmiyoruz**.
+
+### 17.7 Karar motoru — dar ama ilkeli
+
+`prescribe.py`'nin kendi gerekçesi, sektörün *«prescriptive analytics»* iddialarına karşı
+alınmış bilinçli bir pozisyon:
+
+> *«Bir "karar matrisi" kolayca uydurulur: seçenekler × kriterler × ağırlıklar tablosu
+> **her zaman bir sayı üretir**. Ama o sayıların **ölçülmüş bir zemini yoksa** ürün,
+> kanıtlanabilir bir BI aracından **kanaat üreten** bir araca dönüşür.»*
+
+Ve kural: **yalnız veriden ya da BEYANDAN gelen boyutlar** kullanılır, uydurma ağırlık yok.
+
+⊙ Kullanıcının *«karar motoru olmalı»* isteğiyle bu ilke **çelişmiyor** — ama bugünkü
+`prescribe` bir *«nereye bak»* işaretçisi, bir *«ne yap»* motoru değil. Aradaki mesafe
+**kasıtlı**; genişletilecekse **beyan edilmiş** bir zeminle genişletilmeli.
+
 ## 18 · «ROBOTİK / KATALOG GİBİ» — ölçüldü
 
 Sekiz farklı soru türü, canlı:
