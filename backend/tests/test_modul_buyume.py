@@ -89,6 +89,22 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("at-cozulmemis-atif-beyani", 4,
+     "🔴🔴 **`§AT` — ÇÖZÜLEMEYEN «O <BOYUT>» REFERANSI SESSİZCE DÜŞMEZ.** "
+     "⊙ Ölçülen sessiz yanlış (canlı thread, 2026-08-11): ① *«makine bazında ortalama "
+     "oee»* → 11 satır, ilk `ÖRGÜ HAT` ② *«**o makinede** vardiya kırılımı»* → **33 "
+     "satır**, süzgeç YOK, beyan YOK. Kullanıcı TEK makine sordu, 11 makine × vardiya "
+     "aldı — ve cevap **makul görünüyor**, çünkü ilk satır yine önceki turun en yükseği. "
+     "*Doğruluğunun kanıtı gibi görünen bir yanlış.* "
+     "⊙ Yüklem (`niyet_tasima.EKSIK_ATIF`) **kuruluydu** ve yalnız **taze** dalda "
+     "çağrılıyordu; `ask.py`'nin kendi cümlesi bu turda ikinci kez haklı çıktı: *«bir "
+     "kuralı yazmak, onu iki çağrı yerinin ikisinde de kurmak değildir; eksik kurulan "
+     "yer, kuralın hiç olmadığı yerden daha tehlikelidir.»* "
+     "⊙ Δ = 4: bir yüklem çağrısı + not birleştirme + işaret listesi + import. Gövde "
+     "`uyum.atif_beyani`'nde (ölçüm ve gerekçe orada). "
+     "🔴 **Süzgeç KURULMUYOR — tahmin yok:** *«o makine»* çıkarımı yalnız **seçilmiş** "
+     "bir varlıktan gelebilir ve bir sıralama bir seçim değildir; yanlış odak, hiç "
+     "odak olmamasından pahalıdır (`§101.1`). Yapılan tek şey eksikliği SÖYLEMEK."),
     ("b1-sema-daraltma-cagri", 1,
      "🔴 **`§B1` — ŞEMA DARALTMA, GARSON DALINDA** *(rapor `§14` FAZ 1, kısa yolun 4. işi)*. "
      "⊙ Ölçüldü: garsona **her soruda 23 küpün tamamı — 23.729 karakter** gidiyordu "

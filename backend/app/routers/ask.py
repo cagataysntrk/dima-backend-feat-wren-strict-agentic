@@ -4894,6 +4894,15 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 trace_list.append(learn_note)
             resp = _answer_from_cube_query(refined, source="cube", trace=trace_list)
             if resp:
+                # 🔴 `§AT` — ÇÖZÜLEMEYEN REFERANS **BEYAN EDİLİR**. Yüklem yukarıda
+                # tarif edildiği gibi kuruluydu ama **yalnız taze dalda** çağrılıyordu;
+                # takip dalında *«o makinede»* sessizce düşüyor ve 33 satır dönüyordu
+                # (ölçüldü, canlı thread). Süzgeç **kurulmuyor** — tahmin etmiyoruz;
+                # yalnız eksikliği söylüyoruz. Gerekçe: `uyum.atif_beyani`.
+                if (_at := _uyum.atif_beyani(body.question or "", refined)):
+                    resp.note = " ".join(x for x in [resp.note, _at] if x)
+                    from app.niyet_tasima import EKSIK_ATIF
+                    resp.eksik_niyet = [*(resp.eksik_niyet or []), EKSIK_ATIF]
                 return resp
 
         try:

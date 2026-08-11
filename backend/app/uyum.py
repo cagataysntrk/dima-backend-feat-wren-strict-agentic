@@ -1544,6 +1544,51 @@ def cokluk_mu(eksen: str | None, adaylar: list) -> bool:
     return True
 
 
+def atif_beyani(q: str, cq: dict | None) -> str:
+    """🔴🔴 `§AT` — **ÇÖZÜLEMEYEN «O <BOYUT>» REFERANSI SESSİZCE DÜŞMEZ.**
+
+    ## Ölçülen sessiz yanlış (canlı thread, 2026-08-11)
+
+        ① «bu yıl makine bazında ortalama oee»  → 11 satır, ilk: ÖRGÜ HAT
+        ② «**o makinede** vardiya kırılımı»      → **33 satır**, süzgeç YOK, beyan YOK
+
+    Kullanıcı **tek** makine sordu; 11 makine × vardiya aldı. Ve cevap **makul
+    görünüyor**, çünkü ilk satır yine bir önceki turun en yükseği — sessiz yanlışın en
+    pahalı biçimi: *doğruluğunun kanıtı gibi görünen bir yanlış.*
+
+    ## Neden süzgeç KURULMUYOR — ve neden kurmuyoruz
+
+    `ask.py`'nin `§AT` yorumu üç yerleşimi ölçüp geri almış ve kökü doğru koymuş:
+    *«eksik olan yer değil **BİLGİ**»*. *«O makine»* = `ÖRGÜ HAT` çıkarımı yalnız
+    **önceki cevabın seçilmiş varlığından** gelebilir; `prev_cq`'da `order` var ama
+    **seçilmiş varlık yok** (bir sıralama bir seçim değildir).
+
+    🔴 Bu yüzden burada **tahmin edilmez**. İlk satırı «odak» saymak, kullanıcının
+    sormadığı bir süzgeci ona ait sanmaktır — ve yanlış odak, hiç odak olmamasından
+    **pahalıdır** (`§101.1`). Yapılan tek şey: eksikliği **söylemek** ve yolu göstermek.
+
+    ⊙ `ask.py`'nin kendi cümlesi bu turda ikinci kez haklı çıktı: *«bir kuralı yazmak,
+    onu iki çağrı yerinin ikisinde de kurmak değildir; eksik kurulan yer, kuralın hiç
+    olmadığı yerden daha tehlikelidir.»* Yüklem (`niyet_tasima.EKSIK_ATIF`) **kuruluydu**
+    ve yalnız **taze** dalda çağrılıyordu.
+
+    Döner: beyan cümlesi ya da `""` (referans çözülmüşse / hiç yoksa).
+    """
+    try:
+        from app.niyet_tasima import EKSIK_ATIF, eksiklik
+
+        if EKSIK_ATIF not in eksiklik(cq, q or ""):
+            return ""
+    except Exception:                    # noqa: BLE001 — beyan yoksa cevap düşmez
+        _log.warning("§AT: atıf yüklemi çözülemedi (best-effort)", exc_info=True)
+        return ""
+    _boyut = next((str(d) for d in ((cq or {}).get("dimensions") or [])), None)
+    _ad = _boyut.replace("_", " ") if _boyut else "varlık"
+    return (f"⚠ *«o {_ad}»* referansını **çözemedim** — hangisi olduğunu söylemediğin "
+            f"için süzgeç kurulmadı ve **tümü** listelendi.\n\n"
+            f"Adını yazarsan süzgeci kurarım (ör. *«RAM-2 için …»*).")
+
+
 def tanimadan_cevap_notu(niyet) -> str | None:
     """🔴🔴 `§KA` — **HİÇBİR ŞEYİ TANIMADAN VERİLEN GÜVENLİ BİR CEVAP, BİR UYDURMADIR.**
 

@@ -2964,3 +2964,17 @@ Kapı: `tests/test_d1_anlatici_kapsami.py` (4) — üretilen her tip ⊆ tanına
 ⚠ Bir kapı bayatladı: `test_TANIMADIGI_TURU_GORUNCE_DEVREDER` `segment_delta`'yı
 «tanınmayan tür» ÖRNEĞİ olarak kullanıyordu; niyet doğru, örnek bayat → sentetik bir ada
 çevrildi (bir daha bayatlamaz).
+
+### ◐ D5 · «o makinede» sessiz yanlışı BEYANA çevrildi *(2026-08-11)*
+
+🔴 Kusur birebir üredi: ① «makine bazında ortalama oee» → 11 satır ② «**o makinede**
+vardiya kırılımı» → **33 satır**, süzgeç YOK, beyan YOK. ⚠ Raporun yazdığından daha
+tehlikeli: ilk satır yine önceki turun en yükseği, yani cevap **makul görünüyor**.
+
+✅ `uyum.atif_beyani` + takip dalına bağlama. Yüklem `niyet_tasima.EKSIK_ATIF` **zaten
+kuruluydu**, yalnız taze dalda çağrılıyordu.
+🔴 **Süzgeç kurulmadı — karar:** «o makine» çıkarımı yalnız SEÇİLMİŞ bir varlıktan
+gelebilir; `order` var ama seçim yok. Yanlış odak, hiç odak olmamasından pahalıdır.
+**Canlı:** «o makinede…» → 33 satır + beyan · «RAM-2 için…» → 3 satır, beyan YOK.
+Kapı: `tests/test_at_atif_beyani.py` (5) + takip yüzeyi 269 yeşil.
+⏭ Kalan: `Baglam`'a odak varlığı + `niyet`e SParC dört kovası → beyan süzgece dönüşür.

@@ -3295,6 +3295,37 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 | **dış dayanak** | `Intl.NumberFormat("tr-TR",{style:"percent"})` → **`%56`** (işaret **önde**, **0 ondalık**) · kompakt **`12 B`** = **bin**, İngilizcede **milyar** |
 | **curl/ekran** | Üç grafik: yüzde · binlik · kompakt |
 
+### ◐ D5 · Takip anlama — **SESSİZ YANLIŞ BEYANA ÇEVRİLDİ (2026-08-11)**
+
+> 🔴 **Kart hâlâ geçerli ve kusur birebir üredi** (canlı thread):
+> ① *«bu yıl makine bazında ortalama oee»* → 11 satır, ilk `ÖRGÜ HAT`
+> ② *«**o makinede** vardiya kırılımı»* → **33 satır**, süzgeç **YOK**, beyan **YOK**
+>
+> ⚠ Ve raporun yazdığından **daha tehlikeli**: `§AT` *«ilk satır yanlış makine»* diyordu;
+> bugün ilk satır yine `ÖRGÜ HAT` — yani önceki turun en yükseği. Cevap **makul
+> görünüyor**. *Doğruluğunun kanıtı gibi görünen bir yanlış.*
+>
+> ✅ **Yapılan:** `uyum.atif_beyani` + takip dalına bağlama. Yüklem
+> (`niyet_tasima.EKSIK_ATIF`) **zaten kuruluydu** ve yalnız **taze** dalda çağrılıyordu —
+> `ask.py`'nin kendi cümlesi bu turda ikinci kez haklı çıktı: *«bir kuralı yazmak, onu
+> iki çağrı yerinin ikisinde de kurmak değildir; eksik kurulan yer, kuralın hiç olmadığı
+> yerden **daha tehlikelidir**.»*
+>
+> 🔴 **SÜZGEÇ KURULMADI — ve bu bir eksiklik değil bir KARAR.** *«O makine»* çıkarımı
+> yalnız **seçilmiş** bir varlıktan gelebilir; `prev_cq`'da `order` var ama **seçim yok**
+> (bir sıralama bir seçim değildir). Yanlış odak, hiç odak olmamasından **pahalıdır**
+> (`§101.1`). Kartın kendi azaltması da bunu söylüyor: *«odak varlığı yalnız açık bir
+> üstünlük/seçim adımından türetilir — tahmin edilmez»*.
+>
+> **Canlı kanıt:** *«o makinede…»* → 33 satır **+ beyan** (*«…çözemedim — süzgeç
+> kurulmadı ve tümü listelendi. Adını yazarsan süzgeci kurarım»*) · *«RAM-2 için…»* →
+> **3 satır**, süzgeç kurulu, **beyan yok** (yanlış pozitif yok).
+> Kapı: `tests/test_at_atif_beyani.py` (5) + takip yüzeyi **269 yeşil**.
+>
+> ⏭ **KALAN (kartın öteki yarısı):** `Baglam`'a **odak varlığı** (`order`+`limit=1` ya da
+> `BAGLA` çıktısından) ve `niyet`e **SParC'ın dört kovası**. O geldiğinde bu beyan bir
+> **süzgece** dönüşür; bugün dürüstçe susuyor.
+
 ### D5 · Takip anlama — «son cevaba çıpala» + dört kova
 
 | | |
