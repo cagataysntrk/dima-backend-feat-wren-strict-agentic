@@ -121,3 +121,47 @@ def test_ACIK_BOYUTLAR_KUPSUZ_CAGRIDA_SUSAR():
     """Rapor yoksa *«ekranda ne yok»* sorusu tanımsızdır — `capa_degerleri` ile aynı sınır."""
     assert app_context.acik_boyutlar(None, _SEMA) is None
     assert app_context.acik_boyutlar({"cube": "yok"}, _SEMA) is None
+
+
+# --- `§NÇ` DARALTILDI · işaret zarfı belirsizliği kaldırır ---------------------------
+
+def test_NEDEN_BOYLE_YAPISALA_SURUKLENMEZ():
+    """🔴🔴 **Canlıda ölçülen kusur (2026-08-11).** *«bu yıl makine bazında duruş
+    dakika»* → *«**neden böyle**»* → **66 satırlık tablo**, not YOK.
+
+    `§NÇ` doğru çalışıyordu: `makine_duruslari`'nda `neden` **raporda bulunmayan** bir
+    boyuttur, dolayısıyla tur *yapısal* sayıldı ve *«nedene göre kır»* diye okundu.
+
+    🔴 Ama *«neden **böyle**»*'deki `böyle` bir **işaret zarfıdır** ve ekrandaki cevaba
+    işaret eder — orada belirsizlik **yoktur**. Kuralın kendi cümlesi de bunu söylüyor:
+    *«bir cevabın üstünde konuşmak, o cevabın içinde olan şeyler hakkında konuşmaktır»*.
+
+    *Bir belirsizlik kuralını, belirsizliğin ortadan kalktığı yerde de uygulamak, kuralı
+    değil alışkanlığı sürdürmektir.*"""
+    from app import followup
+
+    n = followup.sinifla("neden böyle", baglam_var=True,
+                         acik_boyutlar=frozenset({"makine", "neden"}))
+    assert n.sinif == followup.SINIF_KONUSMA and n.tur == followup.TUR_NEDEN
+
+
+def test_ISARETSIZ_NEDEN_HALA_YAPISAL():
+    """🔴 **Daraltma fazla ileri gitmemeli.** `§NÇ`'nin var olma sebebi duruyor:
+    *«en büyük nedeni hangi makinede»* bir **isim** kullanımıdır, işaret zarfı yoktur ve
+    ekranda olmayan bir boyutu anar → yapısal kalır."""
+    from app import followup
+
+    n = followup.sinifla("en büyük nedeni hangi makinede", baglam_var=True,
+                         acik_boyutlar=frozenset({"neden"}))
+    assert n.sinif == followup.SINIF_YAPISAL and n.kural == "§NÇ:ekranda-olmayan-boyut"
+
+
+def test_ISARET_ZARFI_KAPALI_SINIF():
+    """🔴 `ADR-0008` — işaret zarfları dilbilgisinin **kapalı** bir sınıfıdır, bir alan
+    sözlüğü değil. *Bir yüklem alan kelimesi taşımaya başladığında, o bir yüklem değil
+    bir sözlüktür.*"""
+    from app import followup
+
+    kalip = followup._ISARET_ZARFI.pattern
+    for alan in ("fire", "duruş", "makine", "ciro", "oee"):
+        assert alan not in kalip

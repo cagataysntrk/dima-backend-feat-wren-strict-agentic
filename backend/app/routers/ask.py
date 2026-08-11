@@ -2391,7 +2391,14 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     adimlar.append(NextStep(label=b.label, kind="dimension",
                                             cube_query=b.cube_query))
             if not adimlar and not katki.note:
-                return None
+                # 🔴 `§NB` — düşüş **sessiz olamaz**: burada `None` dönmek turu
+                # `deterministic_refine`'a bırakıyordu ve *«neden»* orada bir **boyut
+                # adıyla** çarpışıp soruyu değiştiriyordu (gövde `kok_neden.aciklanamadi`).
+                _nb, _nbc = _kok_neden.aciklanamadi(prev_cq, cube_meta)
+                return AskResponse(question=body.question, source="cube", note=_nb,
+                                   cube_query=prev_cq, trace=iz + ["§NB: kök-neden "
+                                   "ayrıştırılamadı → dürüst beyan (LLM'siz)"],
+                                   next_steps=[NextStep(**c) for c in _nbc])
             # DÜRÜST RED birinci sınıf: ayrıştırma yapılamadıysa NEDENİ söylenir
             # (toplanamayan ölçü, dönem yok) — boş bir "bilmiyorum" değil.
             not_metni = katki.note or (

@@ -89,6 +89,25 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("nb-neden-sessiz-dusemez", 4,
+     "🔴🔴 **`§NB` — BİR «NEDEN» SORUSU CEVAPSIZ KALABİLİR; BAŞKA BİR SORUYA DÖNÜŞEMEZ.** "
+     "⊙ Canlıda ölçüldü: *«makine bazında duruş dakika»* → *«neden böyle»* → **66 satırlık "
+     "tablo**, not YOK, iz *«LLM-destekli yapısal düzenleme»*. "
+     "🔴 Kök tam da bu dosyanın **kendi yorumunun** uyardığı yerdeydi: konuşma dalı "
+     "`deterministic_refine`'dan önce yakalanır *«aksi halde «neden»/«düşüş» gibi "
+     "kelimeler onun sözlük eşleşmesine karışır»* — ama dal **hiçbir şey üretemeyince** "
+     "`None` dönüyor ve tur tam o çarpışmaya düşüyordu: `makine_duruslari`'nda `neden` "
+     "**bir boyut adıdır** (duruş nedeni) ve garson *«neden böyle»*yi *«nedene göre kır»* "
+     "diye okudu. Sonuç kazara makul bir tabloydu — bu onu **daha da kötü** yapar: "
+     "kullanıcı bir açıklama sordu, sessizce başka bir sorunun cevabını aldı ve bunu "
+     "anlamasının hiçbir yolu yoktu. "
+     "⊙ Δ = 4: **gövde modülde** (`kok_neden.aciklanamadi` — dürüst beyan + kataloğun "
+     "kendi boyutlarından chip'ler); burada kalan dört satır bir çağrı ve bir "
+     "`AskResponse`. "
+     "⚠ **TAŞINAMAZ:** `AskResponse` `ask()`in yerelleriyle kurulur (`body`, `iz`, "
+     "`prev_cq`) ve `kok_neden` 🍳 mutfaktır — sunum katmanını oraya sokmak sınırı silerdi. "
+     "*Cevaplayamadığını söylemeyen bir sistem, cevapladığını sanmaya devam eder.* "
+     f"`sha=2726612`"),
     ("kn-kesitsel-neden", 7,
      "🔴🔴 **`§KN` — KESİTSEL NEDEN: «akranlarına göre neden farklı».** Kullanıcının "
      "şartı: *«neden sorusu geldiğinde adeta insan zihnini simüle etmeliyiz… formülde "

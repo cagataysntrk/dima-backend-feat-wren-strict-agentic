@@ -387,3 +387,47 @@ def test_KESITSEL_KIYAS_ZAMAN_SERISI_DEGILDIR():
     kn.arastir(prev, _META, kos=_kos_izle)
     assert gorulen, "sorgu hiç koşulmadı"
     assert "timeDimensions" not in gorulen[0], "🔴 bileşen sorgusu zaman kovasını miras aldı"
+
+
+# --- `§NB` · AÇIKLANAMAYAN «NEDEN» SESSİZCE BAŞKA SORUYA DÖNÜŞEMEZ --------------------
+
+def test_ACIKLANAMADI_UYDURMA_SEBEP_YAZMAZ():
+    """🔴🔴 `§NB` — ölçüldü: *«makine bazında duruş dakika»* → *«neden böyle»* →
+    **66 satırlık tablo**, not yok. Konuşma dalı bir şey üretemeyince tur
+    `deterministic_refine`'a düşüyordu ve orada `neden` **bir boyut adıyla** çarpışıp
+    soruyu değiştiriyordu.
+
+    ⚠ Beyan **uydurmaz**: *«şu yüzden düşük»* demez, *«ayrıştıramadım, şunlar
+    açılabilir»* der. *Cevaplayamadığını söylemeyen bir sistem, cevapladığını sanmaya
+    devam eder.*"""
+    meta = {"measure_expressions": {"toplam_sure_dk": "SUM(sure_dk)"},
+            "dimensions": ["makine", "neden", "vardiya"],
+            "dimension_labels": {"neden": "duruş nedeni", "vardiya": "vardiya"},
+            "measure_synonyms_display": {"toplam_sure_dk": "duruş dakika"}}
+    cq = {"cube": "makine_duruslari", "measures": ["toplam_sure_dk"],
+          "dimensions": ["makine"], "filters": []}
+    metin, chipler = kn.aciklanamadi(cq, meta)
+    assert "duruş dakika" in metin and "üretemedim" in metin
+    for uydurma in ("yüzünden", "sebebiyle", "çünkü"):
+        assert uydurma not in metin.lower()
+
+
+def test_ACIKLANAMADI_YAPILABILECEGI_GOSTERIR():
+    """🔴 Kullanıcının kuralı: *dürüst bir red bir başarı değildir* — yanına
+    **yapılabilecek olan** konur. Kaynak kataloğun kendi boyutları."""
+    meta = {"measure_expressions": {"m": "SUM(x)"},
+            "dimensions": ["makine", "neden", "vardiya"],
+            "dimension_labels": {"neden": "duruş nedeni"}}
+    cq = {"cube": "k", "measures": ["m"], "dimensions": ["makine"], "filters": []}
+    metin, chipler = kn.aciklanamadi(cq, meta)
+    assert chipler and all(c["cube_query"]["dimensions"][0] == "makine" for c in chipler)
+    assert any("duruş nedeni" in c["label"] for c in chipler)
+    assert "kırılımlar açılabilir" in metin
+
+
+def test_ACIKLANAMADI_MEVCUT_KIRILIMI_KORUR():
+    """⚠ Chip **ekler**, ezmez: kullanıcının ekranındaki kırılım kaybolmamalı."""
+    meta = {"measure_expressions": {"m": "SUM(x)"}, "dimensions": ["makine", "vardiya"]}
+    cq = {"cube": "k", "measures": ["m"], "dimensions": ["makine"], "filters": []}
+    _, chipler = kn.aciklanamadi(cq, meta)
+    assert chipler[0]["cube_query"]["dimensions"] == ["makine", "vardiya"]

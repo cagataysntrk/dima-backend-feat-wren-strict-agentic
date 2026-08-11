@@ -246,6 +246,11 @@ _ISARET_ZAMIRI = ("bu", "bunu", "bunun", "buradaki", "su", "sunu", "sunun",
 #: yazmak bir **kapalı sınıf**tır. Aynı biçim `_USTUNLUK_RE`'de de kullanılıyor.
 _BELGISIZ_ZAMIR = re.compile(r"\b(diger|oteki|beriki)\w*\b")
 
+#: 🔴 **İŞARET ZARFLARI** — `_ISARET_ZAMIRI`'nin kardeşi ve aynı işi görür: soruyu
+#: **eldeki cevaba** bağlar. *«neden böyle»* bir belirsizlik değil bir **işarettir**.
+#: Dilbilgisinin kapalı bir sınıfı (`ADR-0008` bunu açıkça serbest bırakır).
+_ISARET_ZARFI = re.compile(r"\b(boyle|soyle|oyle)\b")
+
 #: 🔴🔴 **`§AA4` — İŞARET ZAMİRİNİN ÇOĞULU YOKTU, ve agentic zincirler orada kopuyordu.**
 #:
 #: Ölçüldü (`AA9` — kullanıcının literal örneğinin ikinci adımı):
@@ -626,8 +631,25 @@ def sinifla(soru: str, *, baglam_var: bool,
         #
         # *Bir cevabın üstünde konuşmak, o cevabın içinde olan şeyler hakkında
         # konuşmaktır; dışındakini sormak yeni bir sipariştir.*
-        if tur == TUR_NEDEN and acik_boyutlar and any(
-                _syn_hit(q, b) for b in acik_boyutlar):
+        # 🔴🔴 **`§NÇ` ÇOK GENİŞTİ — VE BUNU CANLIDA ÖLÇTÜM.**
+        #
+        # ⊙ Ölçülen kusur (curl, 2026-08-11): *«bu yıl makine bazında duruş dakika»* →
+        # *«**neden böyle**»* → **66 satırlık tablo**, not YOK. Kural doğru çalışıyordu:
+        # `makine_duruslari`'nda `neden` **raporda bulunmayan** bir boyuttur, dolayısıyla
+        # tur *yapısal* sayıldı ve *«nedene göre kır»* diye okundu.
+        #
+        # 🔴 Ama *«neden **böyle**»*'deki `böyle` bir **işaret zarfıdır** ve ekrandaki
+        # cevaba işaret eder. Orada belirsizlik **yoktur**: kullanıcı yeni satır değil
+        # açıklama istiyor. Kuralın kendi cümlesi de bunu söylüyor — *«bir cevabın
+        # üstünde konuşmak, o cevabın içinde olan şeyler hakkında konuşmaktır»*.
+        #
+        # ⚠ `ADR-0008` temiz: işaret zarfları dilbilgisinin **kapalı** bir sınıfıdır
+        # (`_ISARET_ZAMIRI`'nin kardeşi), bir alan sözlüğü değil.
+        #
+        # *Bir belirsizlik kuralını, belirsizliğin ortadan kalktığı yerde de uygulamak,
+        # kuralı değil alışkanlığı sürdürmektir.*
+        if (tur == TUR_NEDEN and not zamir and not _ISARET_ZARFI.search(q)
+                and acik_boyutlar and any(_syn_hit(q, b) for b in acik_boyutlar)):
             return Niyet(sinif=SINIF_YAPISAL, kural="§NÇ:ekranda-olmayan-boyut")
         # "ne yapmalıyız?" ve "normal mi?" zaten ELDEKİ sonuca dairdir — zamir aranmaz.
         # "neden"/"düşüş" ise tek başına yeni bir soru olabilir ("fire neden yüksek olur?"),

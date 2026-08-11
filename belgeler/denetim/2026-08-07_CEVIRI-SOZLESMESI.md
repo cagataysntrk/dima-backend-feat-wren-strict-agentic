@@ -11641,3 +11641,34 @@ görmeden yakalandı.
 `§KN` doğru sustu (ölçü ayrışmıyor), katkı yolu da bir şey üretmedi ve tur **yeni bir
 sorgu** gibi cevaplandı. Kullanıcı bir **açıklama** sordu, bir **tablo** aldı.
 Teşhis edildi, sıradaki turda.
+
+## `§NB` — *«neden»* sorusuna tablo dönmesi · **kök benim kuralımdaydı**
+
+    «bu yıl makine bazında duruş dakika» → «neden böyle»
+      ÖNCE:  66 satırlık tablo · not YOK · iz «LLM-destekli yapısal düzenleme»
+      SONRA: duruş nedeni: Malzeme/Parti Bekleme — 47.836 dk (net değişimin %83,4'ü)
+             duruş nedeni: Renk/Parti Değişimi — 6.067 dk (%10,6)
+
+⊙ **Teşhis üç adımda ve ikisinde ölçüm beni düzeltti:**
+
+1. *«Konuşma dalı `contribution` üretemedi, tur refine'a düştü»* sandım → **yanlış**:
+   loglarda konuşma dalından hiç iz yoktu, yani **hiç çağrılmamıştı**.
+2. *«`§NÇ` kendi belgesiyle çelişiyor, koşul ters»* sandım → **yanlış**:
+   `context.acik_boyutlar` zaten *«raporda henüz bulunmayan»* boyutları döndürüyor;
+   kural tasarlandığı gibi çalışıyordu. *Bir kuralı okumadan tersine çevirmek, çalışan
+   bir şeyi bozmanın en hızlı yoludur.*
+3. Gerçek kök: `makine_duruslari`'nda `neden` **raporda bulunmayan bir boyut**; kural
+   turu haklı olarak *yapısal* saydı. Ama *«neden **böyle**»*'deki `böyle` bir **işaret
+   zarfıdır** ve ekrandaki cevaba işaret eder — orada belirsizlik **yoktur**.
+
+**Düzeltme:** `§NÇ` işaret zarfı varken ateşlemiyor (`_ISARET_ZARFI` — `_ISARET_ZAMIRI`'nin
+kardeşi, dilbilgisinin kapalı sınıfı, ADR-0008 temiz). Ve daraltma **fazla ileri
+gitmiyor**: *«en büyük nedeni hangi makinede»* (isim kullanımı, işaret zarfı yok) hâlâ
+yapısal kalıyor — kapısı yazıldı.
+
+*Bir belirsizlik kuralını, belirsizliğin ortadan kalktığı yerde de uygulamak, kuralı
+değil alışkanlığı sürdürmektir.*
+
+⚠ Ayrıca `§NB` için bir **dürüst beyan** dalı da eklendi (`kok_neden.aciklanamadi`):
+konuşma dalı hiçbir açıklayıcı üretemezse artık sessizce düşmüyor — *«ayrıştıramadım»*
+der ve kataloğun kendi boyutlarından **tıklanabilir** kırılımlar önerir.

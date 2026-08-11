@@ -737,3 +737,58 @@ def cevap_verisi(prev_cq: dict, cube_meta: dict | None, *, service,
     return {"anlati": out["anlati"],
             "iz": [f"§KN: {a}" for a in out["adimlar"]],
             "chipler": chipler}
+
+
+# --- `§NB` · AÇIKLANAMAYAN BİR «NEDEN» SESSİZCE BAŞKA BİR SORUYA DÖNÜŞEMEZ -------------
+
+
+def aciklanamadi(prev_cq: dict, cube_meta: dict | None) -> tuple[str, list[dict]]:
+    """🔴🔴 `§NB` — **BİR «NEDEN» SORUSU CEVAPSIZ KALABİLİR; BAŞKA BİR SORUYA DÖNÜŞEMEZ.**
+
+    ## Ölçülen kusur (curl, 2026-08-11)
+
+        «bu yıl makine bazında duruş dakika»  →  «neden böyle»
+          → 66 satırlık TABLO · not YOK · genel chip'ler
+          iz: «Takip: LLM-destekli yapısal düzenleme»
+
+    ⊙ Kök tam da `ask.py`'nin kendi yorumunun uyardığı yerdeydi: konuşma dalı
+    `deterministic_refine`'dan **önce** yakalanır *(«aksi halde «neden»/«düşüş» gibi
+    kelimeler onun sözlük eşleşmesine karışır»)* — ama o dal **hiçbir şey üretemeyince**
+    `None` dönüyor ve tur tam o çarpışmanın içine düşüyordu: `makine_duruslari` küpünde
+    `neden` **bir boyut adıdır** (duruş nedeni) ve garson *«neden böyle»*yi *«nedene göre
+    kır»* diye okudu.
+
+    🔴 Sonuç kazara **makul** bir tabloydu — ve bu onu daha da kötü yapar: kullanıcı bir
+    **açıklama** sordu, sessizce **başka bir sorunun cevabını** aldı ve bunu anlamasının
+    hiçbir yolu yoktu.
+
+    ## Çözüm: düşüş SESSİZ olamaz
+
+    Dürüst bir red **birinci sınıftır** ama tek başına yetmez (kullanıcının kuralı):
+    yanına **yapılabilecek olan** konur. Burada o, kataloğun kendi boyutlarıdır —
+    `drill.available_dimensions` (maliyet/güven sıralı, kullanılmışları eler).
+
+    ⚠ Ve **uydurma bir sebep yazılmaz**: sistem *«şu yüzden düşük»* demez, *«bu ölçüyü
+    ayrıştıramadım, şu kırılımlar açılabilir»* der.
+
+    *Cevaplayamadığını söylemeyen bir sistem, cevapladığını sanmaya devam eder.*
+    """
+    from app.drill import available_dimensions
+
+    olcu = next((str(m) for m in ((prev_cq or {}).get("measures") or [])), "")
+    _ad = str(((cube_meta or {}).get("measure_synonyms_display") or {}).get(olcu)
+              or olcu).replace("_", " ")
+    adaylar = available_dimensions(cube_meta or {}, prev_cq or {})[:3]
+    chipler = [{"label": f"{d['label']} kırılımı", "kind": "dimension",
+                "cube_query": {**{k: v for k, v in (prev_cq or {}).items()
+                                  if k not in ("order", "limit", "pencere")},
+                               "dimensions": [*(prev_cq.get("dimensions") or []),
+                                              d["name"]]}}
+               for d in adaylar]
+    _kuyruk = (" Şu kırılımlar açılabilir: "
+               + " · ".join(f"**{d['label']}**" for d in adaylar) + "."
+               if adaylar else "")
+    return (f"**«{_ad}» için bir kök-neden ayrıştırması üretemedim.** Bu ölçünün formülü "
+            f"tek parça (bileşenlerine ayrılmıyor) ve elimdeki dönemde açıklanacak bir "
+            f"**değişim** de yok — yani söyleyebileceğim bir *neden* yok."
+            f"{_kuyruk}", chipler)
