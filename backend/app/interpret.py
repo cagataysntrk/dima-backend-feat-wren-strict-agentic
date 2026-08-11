@@ -454,6 +454,41 @@ def interpret(result: dict | None, cube_query: dict | None = None,
     # `etiketler=None` → metin **birebir bugünkü** (geriye uyum, testle kilitli).
     _etiket = dict(etiketler or {})
 
+    def _ozet(fs: list[dict]) -> str:
+        """🔴 `§FAZ3-D` — **«ROBOTİK»İN EN SAF HÂLİ: ETİKET-İKİ NOKTA-SAYI.**
+
+        Canlıda ölçüldü (2026-08-12): *«bu yıl toplam ciro»* → cevabın **tek** metni
+
+            ciro: ₺74.022.836,94.
+
+        `answer`/`narration` **yok** (şablon basamağı doğru davranıp susuyor: tek olguda
+        özetin üstüne katacağı **ek bilgi** yok). Yani kullanıcı bir soru soruyor ve bir
+        **veritabanı etiketi** okuyor. FAZ 3'ün *«robotik»in ilacı* dediği şey birebir bu.
+
+        ## Neden burada ve neden bu kadar dar
+
+        `summary` bu fonksiyonun **kendi çıktısıdır** (`KAT-1`: ikinci bir özetleyici
+        yazmak, aynı cümlenin iki sahibi demekti). Ve kural **yalnız tek-olgulu `single`**
+        vakasına dokunur:
+
+        * çok olgulu özetler **birebir aynı** kalır — onlarda olgular birbirini zaten
+          cümleye bağlıyor ve değiştirmek `narration_guard`'ın altındaki zemini oynatırdı;
+        * **sayı, birim ve biçim `_fmt`'ten aynen gelir** — bir karakteri bile yeniden
+          yazılmaz. *Bir sunum düzeltmesi, sayıya dokunduğu anda bir sunum düzeltmesi
+          olmaktan çıkar.*
+
+        ⚠ Ve olgunun `text`'i **değişmiyor**: `narration_guard` ile testlerin dayandığı
+        zemin odur. Değişen yalnız **özetin cümlesi**.
+        """
+        if len(fs) == 1 and fs[0].get("type") == "single":
+            govde = str(fs[0].get("text") or "").rstrip(".")
+            etiket, ayrac, deger = govde.partition(":")
+            if ayrac and deger.strip():
+                # «ciro: ₺74.022.836,94» → «Ciro ₺74.022.836,94.»
+                e = etiket.strip()
+                return f"{e[:1].upper()}{e[1:]} {deger.strip()}."
+        return " ".join(f["text"].rstrip(".") + "." for f in fs)
+
     def _ad(k: str) -> str:
         """İç ad → görünen ad. Sözlükte yoksa **alt çizgiler boşluğa** çevrilir:
         `toplam_fire_kg` → `toplam fire kg`. Ham adı olduğu gibi basmak, kullanıcıya
@@ -582,7 +617,7 @@ def interpret(result: dict | None, cube_query: dict | None = None,
         facts.append({"type": "measures", "text": f"{len(measures)} ölçü: " + ", ".join(measures)})
     if not facts:
         facts.append({"type": "count", "text": f"{len(rows)} satır"})
-    out = {"facts": facts, "summary": " ".join(f["text"].rstrip(".") + "." for f in facts)}
+    out = {"facts": facts, "summary": _ozet(facts)}
     signals = _signals(rows, dims, time_col, m0, unit, m0 in lib_set)  # K3 proaktif sinyaller
     if esikler:
         # EŞİK KIYASI (Faz G3) — gövde `schedules.esik_sinyalleri`'nde: alarm koşumuyla
