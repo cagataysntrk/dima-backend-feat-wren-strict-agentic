@@ -42,6 +42,7 @@ eklendi.
 
 from __future__ import annotations
 
+import numbers
 import re
 from datetime import date, datetime
 from typing import Any
@@ -63,7 +64,25 @@ def is_num(v: Any) -> bool:
     """
     if isinstance(v, bool):
         return False
-    if isinstance(v, (int, float)):
+    # 🔴🔴 **`Decimal` BİR SAYIDIR — ve bunu tanımamak sessiz bir rol kaymasıydı.**
+    #
+    # ⊙ Canlıda ölçüldü (`§KN`, `egitim` küpü): motor `toplam_egitim_saati`'ni
+    # `Decimal('122')` olarak döndürüyor. `isinstance(v, (int, float))` **False**;
+    # `isinstance(v, str)` de **False** → sayı sayılmıyordu. Sonuç: o kolon her yerde
+    # bir **boyut** gibi davranıyordu (`classify` bu yüklemi kullanır) ve `§KN`
+    # ayrıştırabileceği bir ölçüde **sessizce** susuyordu.
+    #
+    # ⚠ Ve kusur **ölçüm yüzeyi yüzünden gizlenmişti**: HTTP `/cube` üzerinden bakınca
+    # `Decimal` JSON'a `"122"` diye serileşiyor ve **string dalı** onu kurtarıyordu.
+    # Yani prob çalışıyor, üretim susuyordu. *Bir kusuru ölçtüğünüz yüzey, üretimin
+    # çalıştığı yüzey değilse, ölçtüğünüz şey kusur değil onun gölgesidir.*
+    #
+    # ⚠ `numbers.Number` **eksi** `complex`. İlk yazımda `numbers.Real` kullandım ve
+    # ölçüm çürüttü: `Decimal` `Real`e **kayıtlı değildir** (Python'un bilinçli kararı —
+    # ikili kayan noktayla aynı semantiği taşımadığı için). `Number` onu kapsar; tek
+    # dışlanması gereken `complex`tir. *Bir soyutlamanın adı, neyi kapsadığını
+    # söylemez — kaydı söyler.*
+    if isinstance(v, numbers.Number) and not isinstance(v, complex):
         return True
     if isinstance(v, str):
         s = v.strip().replace(".", "").replace(",", ".") if "," in v else v.strip()
@@ -73,6 +92,30 @@ def is_num(v: Any) -> bool:
             return False
         return True
     return False
+
+
+def sayi(v: Any) -> float | None:
+    """`is_num`'ın **ikizi**: sayıysa değeri, değilse `None`.
+
+    🔴 Bu fonksiyon bir ölçümden doğdu: motor bazı ölçüleri **metin** olarak döndürüyor
+    (`toplam_egitim_saati: "316"` — canlıda ölçüldü) ve `isinstance(v, (int, float))`
+    süzgeci onları sessizce **eliyordu**. `§KN` bu yüzden ayrıştırabileceği bir ölçüde
+    susuyordu: bileşen bulunuyor, değeri okunamıyor, bileşen sayısı ikinin altına
+    düşüyor, hiçbir şey söylenmiyordu.
+
+    ⚠ Yeni bir kural yazılmadı: `is_num`'ın **aynı** Türkçe-ondalık disiplini. Depoda
+    zaten üç ayrı `_num` var (`interpret` · `statements` · `viz_email`) ve dördüncüsünü
+    yazmak `KAT-1`'i büyütmek olurdu; bu, yükleminin **yanına** konmuş hâlidir.
+
+    *Bir veriyi tanıyan yüklem varken, onu okuyanı başka yerde aramak dördüncü bir
+    gerçek üretir.*
+    """
+    if not is_num(v):
+        return None
+    if isinstance(v, numbers.Number) and not isinstance(v, complex):
+        return float(v)
+    s = str(v).strip()
+    return float(s.replace(".", "").replace(",", ".") if "," in s else s)
 
 
 def looks_date(v: Any) -> bool:

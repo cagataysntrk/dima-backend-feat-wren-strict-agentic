@@ -331,3 +331,34 @@ def test_INIS_KATKI_ISARETIYLE_AYNI_YONDE():
                            "filters": []}, meta, suclu, "RAM 2", "hat",
                           kos=lambda cq: alt, katki_isareti=-1)
     assert "AZ" in dusuren["metin"]
+
+
+def test_GIDIS_YOLU_CEVABIN_ICINDE():
+    """🔴🔴 **Kullanıcının şartı: yolu GÖRMEK.** Adımlar `trace`e de yazılıyor ve
+    `Makbuz` onları çiziyor — ama makbuz **kapalı bir `<details>`** ve tam iz **ikinci**
+    bir `<details>`in içinde: zincir **iki tık** derindeydi.
+
+    ⚠ Çözüm frontend'e satır eklemek değil (o dosya tavanda): yol **cevabın kendisine**
+    yazılır. *Nasıl bulduğunu söylemeyen bir kök-neden analizi, bir iddiadan ibarettir.*"""
+    prev = {"cube": "oee", "measures": ["ort_oee"], "dimensions": ["makine"], "filters": []}
+    out = kn.arastir(prev, _META, kos=_kos)
+    assert out["anlati"].startswith("🔍 **Nasıl buldum:**")
+    assert "formül okundu" in out["anlati"] and "vardiya" in out["anlati"]
+    # ⚠ İz **kaybolmaz**: makinece okunabilir kopya makbuzda kalır (denetlenebilirlik).
+    assert len(out["adimlar"]) >= 3
+
+
+def test_FORMUL_CUMLESI_ROLE_UYAR():
+    """🔴🔴 **Canlıda ölçülen kusur.** İlk yazımım bileşenleri koşulsuz `×` ile
+    birleştiriyordu ve *«kişi başı eğitim = eğitim saati × eğitim alan»* yazdı — oysa
+    **bölme**. Bir formülü yanlış beyan etmek, hiç beyan etmemekten kötüdür: kullanıcı
+    onu doğru sanar ve üstüne akıl yürütür.
+
+    *Bir açıklamanın ilk cümlesi yanlışsa, geri kalanı ne kadar doğru olursa olsun
+    yanlış bir şeyin açıklamasıdır.*"""
+    pay = kn.Bilesen(ad="p", rol=kn.PAY, yon=1, display="eğitim saati")
+    payda = kn.Bilesen(ad="q", rol=kn.PAYDA, yon=-1, display="eğitim alan")
+    assert kn.formul_metni([pay, payda]) == "eğitim saati ÷ eğitim alan"
+    c1 = kn.Bilesen(ad="a", rol=kn.CARPAN, yon=1, display="A")
+    c2 = kn.Bilesen(ad="b", rol=kn.CARPAN, yon=1, display="B")
+    assert kn.formul_metni([c1, c2]) == "A × B"

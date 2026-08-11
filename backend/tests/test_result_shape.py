@@ -177,3 +177,33 @@ def test_OLCU_OTORITESI_HARMANI_GORUR():
         {"measures": ["a"], "blend": [{"measures": ["b"]}]}) == {"a", "b"}
     assert measure_authority(None) is None
     assert measure_authority({}) is None
+
+
+def test_DECIMAL_BIR_SAYIDIR():
+    """🔴🔴 **Canlıda ölçülen sessiz rol kayması.** Motor bazı ölçüleri
+    `Decimal('122')` olarak döndürüyor; `isinstance(v, (int, float))` **False**,
+    `isinstance(v, str)` de **False** → sayı sayılmıyordu. Sonuç: o kolon her yerde bir
+    **boyut** gibi davranıyor ve `§KN` ayrıştırabileceği bir ölçüde sessizce susuyordu.
+
+    ⚠ Kusur **ölçüm yüzeyi yüzünden gizlenmişti**: HTTP `/cube` üzerinden bakınca
+    `Decimal` JSON'a `"122"` diye serileşiyor ve string dalı onu kurtarıyordu — prob
+    çalışıyor, üretim susuyordu.
+
+    *Bir kusuru ölçtüğünüz yüzey, üretimin çalıştığı yüzey değilse, ölçtüğünüz şey kusur
+    değil onun gölgesidir.*"""
+    from decimal import Decimal
+
+    from app.result_shape import is_num, sayi
+
+    assert is_num(Decimal("122")) is True
+    assert sayi(Decimal("122")) == 122.0
+    olculer, boyutlar, _ = classify(["x"], [{"x": Decimal("5")}])
+    assert olculer == ["x"] and boyutlar == [], "🔴 Decimal kolon BOYUT sayıldı"
+
+
+def test_BOOL_SAYI_DEGILDIR():
+    """⚠ `numbers.Real` `bool`u da kapsar (Python'da `bool` bir `int`tir) — bu yüzden
+    `bool` kontrolü **önce** durur ve orada kalmalıdır."""
+    from app.result_shape import is_num
+
+    assert is_num(True) is False and is_num(False) is False

@@ -51,8 +51,13 @@ test edilebilir kalır hem de aynı cebir hem `/ask` hem rapor yolunda kullanıl
 
 from __future__ import annotations
 
+import json
 import math
 import re
+
+from app.logging_setup import get_logger
+
+_log = get_logger("kok_neden")
 from dataclasses import dataclass, field
 
 #: Bir bileşenin ölçüdeki **rolü**. Kapalı bir küme: kataloğun ifade dilinde bir
@@ -267,6 +272,24 @@ def _ust_duzey_islenenler(ifade: str) -> list[tuple[str, str]]:
     return out
 
 
+def formul_metni(bl: list[Bilesen]) -> str:
+    """`§KN` — bileşenlerin **rollerine göre** formül cümlesi.
+
+    🔴 Ölçüldü (canlı, `kisi_basi_egitim_saati`): ilk yazımım bileşenleri koşulsuz
+    `×` ile birleştiriyordu ve *«kişi başı eğitim = eğitim saati **×** eğitim alan»*
+    yazdı — oysa **bölme**. Bir formülü yanlış beyan etmek, hiç beyan etmemekten
+    kötüdür: kullanıcı onu doğru sanar ve üstüne akıl yürütür.
+
+    *Bir açıklamanın ilk cümlesi yanlışsa, geri kalanı ne kadar doğru olursa olsun
+    yanlış bir şeyin açıklamasıdır.*
+    """
+    _pay = [b.display for b in bl if b.yon > 0]
+    _payda = [b.display for b in bl if b.yon < 0]
+    if _payda:
+        return (" × ".join(_pay) or "…") + " ÷ " + " × ".join(_payda)
+    return " × ".join(_pay) or "…"
+
+
 def ayristir(olcu: str, hedef: dict, akran: dict, cube_meta: dict | None,
              *, dusuk_iyi: bool | None = None) -> Ayristirma | None:
     """`§KN` — hedef ile akran arasındaki farkı **bileşenlere** ayırır.
@@ -285,10 +308,10 @@ def ayristir(olcu: str, hedef: dict, akran: dict, cube_meta: dict | None,
         return None
     katkilar: list[Katki] = []
     for b in bl:
-        h, a = hedef.get(b.ad), akran.get(b.ad)
-        try:
-            h, a = float(h), float(a)
-        except (TypeError, ValueError):
+        from app.result_shape import sayi
+
+        h, a = sayi(hedef.get(b.ad)), sayi(akran.get(b.ad))
+        if h is None or a is None:
             return None
         if h <= 0 or a <= 0:
             return None
@@ -410,11 +433,14 @@ def _akran_ortalamasi(satirlar: list[dict], hedef_satir: dict, boyut: str,
     küçüğü ezmesi istenmez. (Ağırlıklı taban ayrı bir sorunun cevabıdır ve o soru
     sorulmadı.)
     """
+    from app.result_shape import sayi
+
     ötekiler = [r for r in satirlar if r is not hedef_satir]
     out: dict = {}
     for a in alanlar:
-        vals = [float(r[a]) for r in ötekiler
-                if isinstance(r.get(a), (int, float)) and r.get(a) is not None]
+        # ⚠ `sayi()` — motor bazı ölçüleri **metin** döndürüyor (`"316"`, canlıda
+        # ölçüldü) ve `isinstance` süzgeci onları eliyordu; bileşen sessizce düşüyordu.
+        vals = [v for r in ötekiler if (v := sayi(r.get(a))) is not None]
         if vals:
             out[a] = sum(vals) / len(vals)
     return out
@@ -429,14 +455,17 @@ def hedef_sec(satirlar: list[dict], olcu: str, *, dusuk_iyi: bool,
     edilmemiş bir ölçüde *«kötü»* diye bir şey yoktur (`GG8`) — o zaman da en uçtaki
     değil, **en düşük** alınır ve anlatı bunu bir yargı olarak sunmaz.
     """
-    uygun = [r for r in satirlar if isinstance(r.get(olcu), (int, float))]
+    from app.result_shape import sayi
+
+    uygun = [r for r in satirlar if sayi(r.get(olcu)) is not None]
     if not uygun:
         return None
     if segment and boyut:
         for r in uygun:
             if str(r.get(boyut)) == str(segment):
                 return r
-    return max(uygun, key=lambda r: r[olcu]) if dusuk_iyi else min(uygun, key=lambda r: r[olcu])
+    return (max(uygun, key=lambda r: sayi(r[olcu])) if dusuk_iyi
+            else min(uygun, key=lambda r: sayi(r[olcu])))
 
 
 def arastir(prev_cq: dict, cube_meta: dict | None, *, kos,
@@ -467,15 +496,16 @@ def arastir(prev_cq: dict, cube_meta: dict | None, *, kos,
     olcu, boyut = olculer[0], boyutlar[0]
     bl = bilesenler(olcu, cube_meta)
     if len(bl) < 2:
+        _log.info("§KN: ayrıştırma YOK — «%s» için bileşen sayısı %d (<2)", olcu, len(bl))
         return None
 
-    adimlar: list[str] = [f"formül okundu: **{olcu}** = "
-                          + " × ".join(b.display for b in bl)]
+    adimlar: list[str] = [f"formül okundu: **{olcu}** = {formul_metni(bl)}"]
     _cq = {k: v for k, v in prev_cq.items() if k not in ("order", "limit", "pencere")}
     _cq["measures"] = [olcu] + [b.ad for b in bl]
     _cq["dimensions"] = [boyut]
     satirlar = kos(_cq) or []
     if len(satirlar) < 2:
+        _log.info("§KN: ayrıştırma YOK — bileşen sorgusu %d satır döndü (<2)", len(satirlar))
         return None
     adimlar.append(f"**{boyut}** kırılımında {len(satirlar)} segment ve "
                    f"{len(bl)} bileşen ölçüldü")
@@ -490,6 +520,8 @@ def arastir(prev_cq: dict, cube_meta: dict | None, *, kos,
     ayr = ayristir(olcu, hedef_satir, akran, cube_meta,
                    dusuk_iyi=dusuk_iyi if _yon_beyanli(olcu, cube_meta) else None)
     if ayr is None:
+        _log.info("§KN: ayrıştırma YOK — «%s» segmentinde bileşen değerleri "
+                  "logaritmaya uygun değil (sıfır/negatif/okunamaz)", hedef_satir)
         return None
     _seg = str(hedef_satir.get(boyut))
     adimlar.append(f"**{_seg}** akran ortalamasıyla kıyaslandı → farkın kaynağı "
@@ -508,6 +540,19 @@ def arastir(prev_cq: dict, cube_meta: dict | None, *, kos,
         adimlar.append(derin["adim"])
     if oneri:
         metin += "\n\n" + nereye_bak(ayr, _seg, boyut, derin)
+    # 🔴🔴 **GİDİŞ YOLU BİR SÜS DEĞİL İÇERİKTİR — ve iki tık derinde duruyordu.**
+    #
+    # ⊙ Ölçüldü (frontend okundu): adımlar `trace`e yazılıyor, `Makbuz` onları çiziyor —
+    # ama makbuz **kapalı bir `<details>`** ve tam iz **ikinci** bir `<details>`in içinde.
+    # Yani kullanıcının *«şuna baktım, şuraya gittim»* zincirini görmesi için **iki tık**
+    # gerekiyordu. Kullanıcının şartı ise onu **görmekti**.
+    #
+    # ⚠ Çözüm frontend'e satır eklemek değil (o dosya tavanda): yol **cevabın kendisine**
+    # yazılır. Zaten öyledir — *nasıl bulduğunu söylemeyen bir kök-neden analizi, bir
+    # iddiadan ibarettir.* İz makinece okunabilir kopyayı taşımaya devam eder.
+    metin = ("🔍 **Nasıl buldum:** "
+             + " → ".join(f"{i}\uFE0F\u20E3 {a}" for i, a in enumerate(adimlar, 1))
+             + "\n\n" + metin)
     return {"anlati": metin, "ayristirma": ayr, "adimlar": adimlar,
             "segment": _seg, "boyut": boyut}
 
@@ -549,6 +594,7 @@ def derinles(prev_cq: dict, cube_meta: dict | None, suclu: Bilesen,
     süzgeçtekileri eler) — ikinci bir sıralama kuralı yazmak `KAT-1` olurdu.
     """
     from app.drill import available_dimensions
+    from app.result_shape import sayi
 
     _temel = {k: v for k, v in prev_cq.items()
               if k not in ("order", "limit", "pencere", "timeDimensions")}
@@ -574,10 +620,10 @@ def derinles(prev_cq: dict, cube_meta: dict | None, suclu: Bilesen,
     en_iyi = None
     for aday in adaylar:
         _satirlar = kos({**_temel, "measures": [suclu.ad], "dimensions": [aday]}) or []
-        _uygun = [r for r in _satirlar if isinstance(r.get(suclu.ad), (int, float))]
+        _uygun = [r for r in _satirlar if sayi(r.get(suclu.ad)) is not None]
         if len(_uygun) < 2:
             continue
-        _degerler = [float(r[suclu.ad]) for r in _uygun]
+        _degerler = [sayi(r[suclu.ad]) for r in _uygun]
         _yayilim = max(_degerler) - min(_degerler)
         if en_iyi is None or _yayilim > en_iyi[0]:
             en_iyi = (_yayilim, aday, _uygun)
@@ -596,14 +642,14 @@ def derinles(prev_cq: dict, cube_meta: dict | None, suclu: Bilesen,
     # fireli, `performans` düşürüyorsa en **düşük** performanslı.
     #
     # *Bir sorumluyu ararken yönü karıştırmak, aynı veriyle en masumu suçlamaktır.*
-    en = (max(uygun, key=lambda r: r[suclu.ad]) if katki_isareti > 0
-          else min(uygun, key=lambda r: r[suclu.ad]))
-    otekiler = [float(r[suclu.ad]) for r in uygun if r is not en]
-    ort = sum(otekiler) / len(otekiler) if otekiler else float(en[suclu.ad])
+    en = (max(uygun, key=lambda r: sayi(r[suclu.ad])) if katki_isareti > 0
+          else min(uygun, key=lambda r: sayi(r[suclu.ad])))
+    otekiler = [sayi(r[suclu.ad]) for r in uygun if r is not en]
+    ort = sum(otekiler) / len(otekiler) if otekiler else sayi(en[suclu.ad])
     _lbl = ((cube_meta or {}).get("dimension_labels") or {}).get(d2, d2)
     return {
         "metin": (f"→ **{segment}** içinde {suclu.display} en çok **{en.get(d2)}** "
-                  f"({_lbl}) tarafında ayrışıyor: **{_sayi(en[suclu.ad])}** ↔ "
+                  f"({_lbl}) tarafında ayrışıyor: **{_sayi(sayi(en[suclu.ad]))}** ↔ "
                   f"öteki {_lbl} ortalaması **{_sayi(ort)}**."),
         "adim": f"**{segment}** içinde **{_lbl}** kırılımı açıldı → **{en.get(d2)}**",
         "boyut": d2, "segment": str(en.get(d2)),
@@ -625,6 +671,14 @@ def kosucu(service, *, limit: int = 1000):
         try:
             return (service.query(service.cube_sql(cq), limit=limit) or {}).get("rows") or []
         except Exception:                      # noqa: BLE001 — bir aday düşerse tur düşmez
+            # 🔴 `ADR-0020` — **SESSİZ YUTMA YOK.** İlk yazımda buradaki `except` sessizdi
+            # ve tam da bu yüzden bir kusuru **teşhis edemedim**: `§KN` canlıda susuyordu,
+            # logda hiçbir iz yoktu ve prob'da aynı sorgu çalışıyordu. Bir dalın sessizce
+            # kapanması, o dalın var olmadığı anlamına gelmez — yalnız görünmediği.
+            _log.info("§KN: bileşen sorgusu düştü (%s)",
+                      json.dumps({k: v for k, v in (cq or {}).items()
+                                  if k in ("cube", "measures", "dimensions")},
+                                 ensure_ascii=False), exc_info=True)
             return []
     return _kos
 
