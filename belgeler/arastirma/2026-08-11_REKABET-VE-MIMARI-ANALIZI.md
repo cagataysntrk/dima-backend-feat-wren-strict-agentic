@@ -9,24 +9,70 @@
 
 ---
 
-## 0 · YÖNETİCİ ÖZETİ — üç cümlede
+## 0 · YÖNETİCİ ÖZETİ — mimari yargı
 
-1. **Ürün kötü değil; ÖLÇÜM ALETİ ürünün üçte birini ölçüyor.** Gerçek trafikte
-   sorulara **route %35,5**, **garson %37,0** cevap veriyor — ama tam kapının ölçtüğü
-   korpus **yalnız route'u** ölçüyor. Kapının kendi yorumu bunu yazıyor:
-   *«`garson` HİÇBİR TOPLU KOŞUMDA YOK — ne yerelde ne `--hepsi`'de.»*
-2. **Korpus 14.957 tur gibi görünüyor, aslında 590 semantik vaka.** Kendi raporunun
-   ifadesiyle *«şişme katsayısı 28,0×»*. Yani yeşil bir kapı, 590 vakanın yeşilliğidir.
-   Her yeni 20'lik curl turunun 4-5 yeni kök bulması bu yüzden **beklenen** bir sonuçtur,
-   bir sürpriz değil.
-3. **Gerçek trafiğin %21,8'i cevapsız kalıyor** (`source=None`). Rakiplerin en zayıf
-   yanı sayılan *«her soruya bir şey söyle»* bizde ölçülmüş bir açık.
+**Soru:** mimarimiz doğru mu, mantığımız yeterli mi, rakiplere göre neredeyiz?
 
----
+### 0.1 Kamp seçimi DOĞRU — ve bu küçük bir şey değil
 
-## 1 · NEREDEYİZ — ölçülmüş tablo
+Sektör 2026'da üç mimari kampa ayrıldı. **DİMA, LLM'in SQL yazmadığı, yapılandırılmış bir
+niyet nesnesi ürettiği A kampındadır** — ThoughtSpot ve Google Looker ile aynı tarafta.
+Bağımsız ölçüm (lkr.dev, 44 iş sorusu): semantik katman **%97**, ham SQL **%80**. Ve daha
+önemlisi: ham SQL'in **7 hatası 3/3 koşumda tekrarladı** — yani **sistematik**, prompt ile
+kapanmaz. Dört ayrı çalışma aynı yönü gösteriyor (+17…+72 puan).
 
-### 1.1 Gerçek trafik hangi basamakta bitiyor
+⊙ **Bu tercih, geri kalan her şeyin üstünde durduğu doğru zemindir.** Julius AI gibi ham
+şemaya serbest SQL yazan ürünler kurumsal ölçekte **%10 bandında**.
+
+### 0.2 Ama ağırlık YANLIŞ dağıtılmış — beş mantık eksiği
+
+| # | mantık eksiği | ölçüm | sektörün yaptığı |
+|---|---|---|---|
+| **1** | 🔴 **Garsonun bağlamı yok.** İsteme yalnız **statik katalog dökümü** (23.729 karakter) giriyor: örnek sorgu yok, iş sözlüğü yok, şema daraltma yok, çalıştır→hatayı gör→düzelt döngüsü yok | garson istemi **45 kod satırı**; route yığını **8.861 satır** | Wren'in kendi **AI Context Layer**'ı (`instructions.md` + `queries.yml` + LanceDB retrieval) — **aldığımız motorun içinde, kullanılmıyor**. Cube: **4 KB markdown → +17…+23 puan** |
+| **2** | 🔴 **Ters yatırım.** Makineye Türkçe öğretmeye 8.861 satır; trafiğin daha büyük kısmını taşıyan hakeme 45 satır | route **%35,5** · garson **%37,0** | O model (*«kullanıcı dilbilimsel şemayı elle beslesin»*) **Microsoft'ta Aralık 2026'da, Tableau'da Şubat 2024'te kaldırıldı** |
+| **3** | 🔴 **Motorun yüzeyi taranmamış.** `wren_core` **15 sembol** açıyor, **1'ini** kullanıyoruz | `rls.py` 380 · `dataset.py` 161 · manifest ~1.490 satır **yeniden yazılmış**; `ManifestExtractor.extract_by` (**şema daraltma**) hiç kullanılmamış | Şema bağlama hatası kurumsal ölçekte hataların **%27,6–33,0'ı** |
+| **4** | 🔴 **Kök-neden yarım.** Layer-1'de kilitli (bileşik segment aranmıyor), **sürpriz (JS diverjansı) hesaplanmıyor**, **FDR düzeltmesi yok** | `§KN-toplam` **en büyük segmenti** seçiyor | Adtributor'ın kurucu örneği: *«yalnız explanatory power kullanan her analiz **büyük segmentleri sistematik olarak suçlar**»*. Ve **CHI 2018: kullanıcı içgörülerinin %60'ından fazlası yanlış** |
+| **5** | 🔴 **Cevap tek kalıpta.** Ölçüldü: 8 farklı soru türünde chip sayısı **6,6,5,6,6,4,6,3**; olgu sayısı **hep 1-2**; **hiçbir cevapta çoklu grafik yok** | *«robotik / katalog gibi»* şikâyetinin sayısal karşılığı | Tableau Pulse **14 deterministik içgörü tipi** üretip **LLM'e yalnız cümleyi** kurduruyor |
+
+### 0.3 Rakipler «mükemmel» değil — ölçümle
+
+* **13 üründen 10'u doğruluk sayısı yayınlamıyor.**
+* **Power BI Copilot** kapsam dışında **LLM genel bilgisinden uyduruyor** (kendi
+  dokümanı); bağımsız ölçüm **%62,5**; uygulamacı: *«3 saniyede DAX üretti, düzeltmem
+  45 dakika sürdü»*.
+* **Databricks Genie**'nin **%84,5**'i **28 soruluk** bir sette (±13 puan).
+* **Gartner:** *«Nearly every vendor claims agentic capability. **Very few have moved past
+  natural-language querying.**»* · agentic analitik projelerinin **%60'ı 2028'e kadar
+  başarısız olacak**.
+* **Türkçe gerçek bir hendek:** Looker · Power BI · Fabric · Qlik **resmen yalnız
+  İngilizce**. Ve BIRDTurk (SIGTURK 2026) ölçmüş: Türkçe **12-15 puan** yakıyor ama
+  **ajanik mimari bu vergiyi ~3 puan azaltıyor** — orkestratör yatırımımızın hakemli
+  doğrulaması.
+
+### 0.4 Farkımız ve zayıflığımız aynı yerden doğuyor
+
+Rakipler *«her soruya bir şey söyler»*; biz *«bilmediğimizde susarız»* — canlı ölçüm:
+**zayıf altı promptun üçünde cevap yok**, korpusta **cevapsız %19,9**, canlı trafikte
+**%21,8**.
+
+⊙ Onların hatası **görünmez** (sessiz yanlış, kullanıcıya zarar verir); bizimki
+**görünür** (boş ekran, ürünü kötü gösterir). **İkisi de kusur.** Ama dbt'nin cümlesi
+bizim tarafımızı tarif ediyor: *«Text-to-SQL'de başarısızlık **makul ama yanlış bir
+cevaptır**; semantik katmanda başarısızlık **bir hata mesajıdır**.»*
+
+### 0.5 Tek cümlelik yargı
+
+> **Mimari kamp doğru, semantik katman gerçek bir hendek, kök-neden cebiri sektörün
+> önünde — ama hakem katmanı bağlamsız, motorun yarısı kullanılmamış ve cevap biçimi tek
+> kalıpta. Sorun ne mimarinin yönü ne de emeğin miktarı; sorun emeğin YERİ.**
+
+## 1 · MİMARİNİN KANITI — sistem gerçekte nasıl çalışıyor
+
+> ⚠ Bu bölüm bir **test eleştirisi değil**. Amacı tek: mimarinin hangi
+> basamağının gerçekte yükü taşıdığını göstermek. Kusurlarımızı bulamamamızın
+> sebebi ancak bundan **sonra** anlam kazanıyor.
+
+### 1.1 🔴 Yükü taşıyan basamak, emeğin gittiği basamak DEĞİL
 
 `interaction_log`, **3.554** kayıt (canlı kullanım):
 
@@ -39,10 +85,13 @@
 | **Discovery** (ham SQL) | `llm:*` | 59 | %1,7 | 🔴 hayır |
 | VQR · yükleme · doğrulama | — | 11 | %0,3 | ◐ |
 
-⊙ **Sonuç:** kapı, ürünün **%35,5'ini** ölçüp *«YEŞİL»* diyor. Kullanıcının
-*«her 20 soruda ciddi sorun çıkıyor»* gözlemi, ölçülmeyen **%64,5**'ten geliyor.
+⊙ **Mimari sonuç:** ürünün **yükünü** garson taşıyor (%37,0), **emeğini** route
+aldı (8.861 satır). Ve garson, mimarinin **en az geliştirilmiş** basamağı —
+istemi 45 satır, bağlamı statik bir katalog dökümü, kendini düzeltme döngüsü yok.
+*Bir sistemin en çok kullanılan parçası, en az düşünülmüş parçasıysa, kusur
+bulma hızı hiç düşmez.*
 
-### 1.2 Korpusun gerçek büyüklüğü
+### 1.2 Neden bu ölçüde göremedik — kapsam yanılsaması
 
 `lab/reports/nl_corpus.md`'nin **kendi** satırları:
 
@@ -74,7 +123,7 @@ Cevapsız kalan %19,9 bu paydanın **dışındadır**.
 (53.725) **2,1 katı**. Bu bir kalite işareti **de** olabilir, bir ağırlık işareti **de**.
 Ayıran şey: iskele ürünün **hangi kısmını** tutuyor? Yukarıdaki tabloya göre: **%35,5'ini**.
 
-### 1.4 Garsonun ölçümü
+### 1.4 Hakem katmanı: mimarinin en kritik, en az bilinen parçası
 
 * `lab/reports/garson_korpusu.md` → **payda 21** ve kendi notu: *«⚠ kayıt kümesi —
   «korpus %» değil»*.
@@ -967,6 +1016,265 @@ mü?»* sorusunun tek cevabı; **«payda kutsaldır»** ilkemizin doğal tamamla
 | **`ruptures`** (BSD-2) · **`statsforecast`** (Apache-2.0) | 🟢 *«mart'ta düştü»* iddiasını doğrulamak ve Adtributor'ın istediği `F` (baseline) için |
 
 ---
+
+---
+
+# ALTINCI KISIM — BOŞA MI GİTTİ
+
+> ⚠ Bu bölüm **batık maliyet yanılgısına** karşı yazıldı. Ölçüt tek: *«bu varlık bugün
+> silinse, yerine ne koymak gerekirdi ve kaça mal olurdu?»* Duygusal bağ, harcanan emek
+> ve *«bu kadar yazdık»* bir gerekçe **değildir**.
+
+## 16 · VARLIK MUHASEBESİ — dosya başına yönetici değerlendirmesi
+
+### 16.1 🟢 KORUNACAK — silinse yeniden yapılması ZORUNLU ve PAHALI
+
+| varlık | büyüklük | neden değerli | dış kanıt |
+|---|---|---|---|
+| **`demo/packs/*` — semantik katman** (23 küp · 80 model · 31 ilişki · 4 şirket) | pack YAML'ları | 🔴 **Ürünün asıl hendeği bu.** Cube'un ölçümü: semantik katman **+17…+23 puan** ve *«hangi model olduğu değil, semantik katmanın olup olmadığı belirleyici»* | Cube arXiv 2604.25149 · dbt · AtScale · Sequeda |
+| **`kok_neden.py`** (1.111) | 1.111 satır | LMDI'nin (Ang 2005, 1.582 atıf) doğru uygulanmış hâli; **artık sıfır, sıra bağımsız**. Rakiplerin çoğunda yalnız **zamansal** karşılığı var | Ang, *Energy Policy* · Tableau Explain Data |
+| **`viz.py`** (731) | 731 satır | Canlı ölçüm **10/10 doğru tip**; Cleveland-McGill gerekçeleriyle yazılmış | §2 ölçümü · Draco/CompassQL kıyası |
+| **`uyum.py` + beyan kültürü** (1.811) | 1.811 satır | dbt'nin cümlesi: *«semantik katmanda başarısızlık bir **hata mesajıdır**»*. Power BI kapsam dışında **uyduruyor** — biz **söylüyoruz** | dbt 2026 · MS Learn |
+| **`vqr.py` + `multilingual-e5-large`** | — | TR-MTEB **birincisi** (66,82); yaygın tuzak `all-MiniLM` Türkçede **22-23** | TR-MTEB, EMNLP 2025 |
+| **Kapılar** (`test_modul_buyume`, `test_alan_haritasi`, altın testler) | — | Bu oturumda **dört** gerçek kusuru yakaladı: JOIN budaması bozulması · `F821` NameError · yüzde toplama · zengin gövde kaybı. **Hiçbirini ben görmedim** | §15.1 |
+| **Belgeler** (47.230 satır) | 34 belge | Kurumsal hafıza; bu raporun kendisi o hafıza sayesinde **ölçülebildi** (şişme katsayısı, cevapsız oranı, `§` sayımı) | — |
+
+⊙ **Bu sütun boşa gitmedi.** Silinse yeniden yapılması aylar alır ve bir kısmı (packs)
+**müşteri başına** yeniden yapılır.
+
+### 16.2 🟡 KISMEN BOŞA — değeri var ama **yanlış orana** yatırıldı
+
+| varlık | büyüklük | dürüst yargı |
+|---|---|---|
+| **`cube_router.py` + Türkçe kural yığını** | **8.861 satır** | 🟡 **Yarısı değerli, yarısı yanlış katmanda.** Değerli yanı: trafiğin **%35,5'ini** **sıfır LLM maliyetiyle** ve **%89-98 doğru küple** cevaplıyor — bu gerçek bir maliyet ve gecikme avantajı. Yanlış yanı: aynı iş **garsona bir örnek sorgu listesi vererek** (Cube: **4 KB markdown → +17…+23 puan**) çok daha ucuza yapılabilirdi. Ve dayandığı ürün modeli (*«kullanıcı dilbilimsel şemayı elle beslesin»*) **Microsoft Aralık 2026'da, Tableau Şubat 2024'te kaldırdı** |
+| **374 test dosyası · 66.546 satır** | uygulamanın **1,24 katı** | 🟡 **Kalitesi yüksek, nişangâhı yanlış.** Ürünün **%35,5'ini** ölçüyor; **%37'sini taşıyan garsonun otomatik ölçümü yok**. Testler kötü değil — **eksik yere bakıyorlar** |
+| **131 `§` işareti · 120 muafiyet** | — | 🟡 **Her biri gerekçeli, toplamı bir borç.** On binlerce hücrelik bir uzayda 131 hücre kapatılmış. Kusur bulma oranı **düşmüyor** (~5 senaryoda 1) — bu, yöntemin ölçeklenmediğinin kanıtı |
+
+⊙ **Buradaki kayıp «yapılan iş» değil, «yapılmayan iş».** 8.861 satır yazılırken garsona
+örnek sorgu bağlanmadı, şema daraltma açılmadı, ölçüm kurulmadı.
+
+### 16.3 🔴 BOŞA GİTTİ — açıkça, savunmasız
+
+| varlık | büyüklük | neden boşa |
+|---|---|---|
+| **`rls.py`** | **380 satır** | `wren_core.RowLevelAccessControl` + `validate_rlac_rule` **motorun içinde duruyor**, hiç kullanılmadı |
+| **`dataset.py`** | **161 satır** | `SessionContext.register_csv` / `register_parquet` **var** |
+| **`compose.py` + `mdl_writer.py`'nin manifest kısmı** | **1.490 satırın bir bölümü** | `Manifest` · `to_manifest` · `migrate_manifest_json` · `is_backward_compatible` **var** |
+| **Korpusun şişme katsayısı** | — | **590 semantik vaka**, 14.957 tur gibi raporlandı. Bu bir kod kaybı değil bir **karar kaybı**: yeşil sayıya bakıp *«iyiyiz»* denildi |
+| **`ghcr.io/canner/wren-engine:latest` bağımlılığı** | — | Depo **arşivli**, konteyner **`Restarting`**. İki yol paralel koşuyor |
+
+**Toplam açıkça boşa giden kod: ~2.000 satır** (53.725'in **%3,7'si**).
+
+⊙ **Bu, korkulandan çok daha küçük bir rakam.** Asıl kayıp silinecek kodda değil,
+**ölçülmeyen basamakta geçen zamanda**.
+
+### 16.4 Sayısal özet — objektif
+
+| kategori | satır | pay |
+|---|---|---|
+| 🟢 korunacak (packs · kök-neden · viz · uyum · vqr · kapılar · belgeler) | ~**115.000** | **%68** |
+| 🟡 kısmen boşa (route yığını · yanlış nişanlı testler) | ~**52.000** | **%31** |
+| 🔴 açıkça boşa (motorda olanı yeniden yazmak) | ~**2.000** | **%1** |
+
+### 16.5 🔴 ASIL KAYIP — koda yazılmayan
+
+Boşa giden şey **satır** değil, **sıra**:
+
+1. **Ölçüm önce kurulmadı.** Garson korpusu ilk gün kurulsaydı, 8.861 satırlık route
+   yığınının hangi kısmının gereksiz olduğu **ölçülebilirdi**. Bugün bilinmiyor.
+2. **Motorun yüzeyi taranmadı.** `dir(wren_core)` bir komut; **15 sembolden 14'ünün**
+   varlığı bu rapora kadar fark edilmedi.
+3. **Kusur bulma hızına bakılmadı.** ~5 senaryoda 1 kök oranı **26 tur boyunca** sabit
+   kaldı ve bu bir **yöntem sinyali** olarak okunmadı; her tur *«bir kök daha kapattık»*
+   diye okundu.
+
+*Bir yöntemin ölçeklenmediğini gösteren sayı, ilk turda da vardı; okunmadı.*
+
+### 16.6 Dürüst cevap: **hayır, boşa gitmedi — ama ucuz da olmadı**
+
+**Boşa gitmedi**, çünkü:
+* Semantik katman, kök-neden cebiri, beyan kültürü ve grafik katmanı **sektörün doğru
+  tarafında** ve bağımsız ölçümlerle desteklenmiş kararlar.
+* Mimari kamp seçimi (**A kampı**) ThoughtSpot ve Google ile aynı; lkr.dev ölçümü
+  **%97 ↔ %80**.
+* Türkçe yatırımı **gerçek bir hendek**: Looker · Power BI · Fabric · Qlik **resmen
+  yalnız İngilizce**.
+
+**Ucuz olmadı**, çünkü:
+* **%31'lik bir dilim yanlış orana yatırıldı** ve bunun ölçüsü ancak bugün çıkarıldı.
+* **~2.000 satır** motorun içinde zaten olan şeyi yeniden yazdı.
+* En pahalısı: **trafiğin %37'si 26 tur boyunca ölçülmeden geliştirildi.**
+
+*Batık maliyet, geçmişte harcanan emek değil; o emeğe bakarak bugün yanlış karar
+vermektir. Yukarıdaki tablo tam da bunu önlemek için sayı ile yazıldı.*
+
+
+---
+
+# YEDİNCİ KISIM — AGENTIC VE CEVAP BİÇİMİ
+
+## 17 · AGENTIC DURUMUMUZ — ölçüldü, ve sanılandan farklı
+
+### 17.1 🔴 İKİ PARALEL AGENTIC SİSTEMİMİZ VAR; ZENGİN OLANI KAPALI
+
+| | canlı yol | araç yolu |
+|---|---|---|
+| dosyalar | `plan_semasi` · `plan_garson` · `plan_tuketici` · `plan_kosucu` | `tools.py` · `planner.py` · `mcp.py` · `routers/mcp.py` |
+| **satır** | **3.288** | **1.448** |
+| yüzey | **15 kapalı fiil** (`enum`, plan *«icat edemez»*) | **25 zengin araç** (erişim · ne zaman · **ne zaman KULLANILMAZ** · determinizm · maliyet · makbuz) |
+| sınır | `AZAMI_ADIM = 12` | `Butce(adim=3, saniye=10.0, **sorgu=0**)` |
+| durum | ✅ **canlı** | 🔴 **`agent_plan_secimi: "off"`** · 🔴 **`mcp_yuzeyi: "off"`** |
+
+⊙ **1.448 satırlık araç altyapısı iki kapalı bayrağın arkasında uyuyor** — ve MCP ucu
+`404` dönüyor. Kullanıcının *«MCP'leri var»* dediği şeyin **bizde de yazılmış hâli var**,
+yalnız **açık değil**.
+
+### 17.2 Araç tanımlarımız aslında sektör standardının üstünde
+
+Örnek (`contribution.decompose`):
+
+> *«[Erişim: iki dönemin sonuçları] [Ne zaman: 'neden değişti' sorusunda, kırılım
+> BELLİYKEN] **[NE ZAMAN KULLANILMAZ: toplanamayan (ortalama/oran) ölçüde — katkı
+> MATEMATİKSEL OLARAK tanımsızdır]** [determinizm=deterministik · maliyet=ucuz ·
+> makbuz=ContractLog]»*
+
+🟢 **Negatif yönerge (*«ne zaman kullanılmaz»*) araç tasarımının en zor ve en atlanan
+parçasıdır** ve 25 aracın **hepsinde** var. Ayrıca her araç **erişim sınırını**
+(*«ham veri YOK»*), **maliyetini** ve **makbuzunu** beyan ediyor.
+
+⊙ Yani *«agentic'imiz zayıf»* teşhisi **yarı yanlış**: yüzey iyi tasarlanmış, **bağlı
+değil**.
+
+### 17.3 Gerçek eksikler
+
+| eksik | ölçüm | sonucu |
+|---|---|---|
+| **Kapalı fiil kümesi** | 15 fiil, `enum` ile kilitli | Kullanıcının istediği *«ne derse ona göre şekil alan»* davranış **yapısal olarak** mümkün değil. ⚠ Ama bu bilinçli bir karar: `plan_semasi`'nin kendi yorumu *«plan denetlenebilir kalır **ancak** fiilleri sonluysa»* |
+| **Alt-ajan / iş bölümü yok** | — | Orkestratör **düz bir adım listesi** koşuyor; dallanma, paralel kol, kendi kendine görev bölme yok |
+| **Kendini düzeltme döngüsü yok** | `plan_garson`'da **tek** *«DÜZELTME TURU»*; `llm.py`'deki yeniden denemeler yalnız **boş yanıt** için | Bir adım patlarsa hata modele geri verilmiyor |
+| **Yazma araçları kapalı** | `_yazma_araclari` bilerek `llm_araclari` dışında | *«Panoya ekle»*, *«her pazartesi yolla»* **yapılamıyor** — ve bu **agentic'in asıl kilidi** |
+| **Araç yolu ile plan yolu ayrık** | 25 araç ↔ 15 fiil, birbirini görmüyor | Aynı işin **iki tarifi** var; biri canlı, biri uykuda |
+
+### 17.4 ⚠ Ama «kapalı fiil kümesi» bir kusur mu — sektör ne diyor
+
+Bu, raporun en dikkatli olması gereken yeri. Anthropic'in kendi rehberi **iş akışlarını
+(workflow) ajanlara tercih etmeyi** öneriyor; bileşik hata (`%95^10 ≈ %60`) çok adımlı
+otonom ajanların ölçülmüş zaafı. Ve Gartner: *«**agentic analitik projelerinin %60'ı
+2028'e kadar başarısız olacak**»*.
+
+⊙ **Yani kapalı fiil kümesi savunulabilir bir mimari karardır** — kusur onda değil,
+**esnekliğin hiç ölçülmemiş olmasında**: bugün *«15 fiil hangi soruların yüzde kaçını
+ifade edemiyor»* sorusunun cevabı **yok**.
+
+*Bir kısıtı savunmak için, onun neyi dışarıda bıraktığını sayabilmek gerekir.*
+
+### 17.5 🔴 «İki paralel sistem saçma değil mi?» — ölçüldü, **evet**, ve birleşmeli
+
+**Doğum tarihleri hikâyeyi anlatıyor:**
+
+| sistem | ilk commit | felsefesi |
+|---|---|---|
+| `tools.py` + `planner.py` (**araç kaydı**) | **2026-08-02** (`ee411d0`) | *«Dima'nın ~15 yeteneği zaten yazılı; eksik olan onların **tipli, denetlenebilir, yetkiye bağlı birer araç olarak BEYAN EDİLMESİYDİ**»* |
+| `plan_semasi.py` + `plan_garson.py` (**kapalı fiil**) | **2026-08-09** (`548a5cd`) | *«Serbest plan **yasak**… bir plan denetlenebilir kalır **ancak** fiilleri sonluysa»* |
+
+⊙ **Yedi gün arayla, aynı soruya iki cevap.** İkincisi canlıya alındı, birincisi
+**silinmedi** — iki bayrağın arkasında bırakıldı.
+
+**Örtüşme ölçüldü: 15 fiilin 11'inin araç ikizi var (%73).**
+
+```
+SORGU → route/cube_sql      TREND    → yoy.compute            SIRALA   → —
+KIR   → drill.expand        BAGLA    → bagla                  MATRIS   → —
+SUZ   → drill.select        HESAPLA  → hesapla                PANO     → —
+BOYUTSEC → contribution.report   AYRISTIR → contribution.decompose   KIYASLA → —
+RAPOR → report.compose      ANLAT    → llm.anlat
+GORSEL → viz.recommend
+```
+
+### 🔴 Ve ironi, `plan_semasi`'nin **kendi docstring'inde** yazılı
+
+O dosya `cube_query` şemasını **kopyalamayı reddediyor**:
+
+> *«🔴 `cube_query` ŞEMASI YENİDEN YAZILMIYOR — **ÇAĞRILIYOR**. İkinci bir kopya yazmak,
+> katalog değişince **birinin bayatlaması** demekti — bu deponun `KAT-1` sınıfı.
+> *Bir şemayı iki yerde tanımlamak, iki farklı katalogla koşmaya razı olmaktır.*»*
+
+⊙ **Aynı dosya, bir sonraki satırda, tüm yetenek listesini kopyalıyor.** İlkeyi
+`cube_query` için uygulayıp **fiil kümesi için uygulamamış.**
+
+### Birleşme tasarımı — ikisi de haklı, ikisi de korunabilir
+
+İki felsefe **çelişmiyor**; farklı katmanlarda doğru:
+
+| katman | doğru sahip | neden |
+|---|---|---|
+| **yetenek kaydı** (ne yapabiliriz, hangi izinle, hangi maliyetle, hangi makbuzla, **ne zaman kullanılmaz**) | 🟢 **`tools.py`** | Zaten `authorize()`'a bağlı, determinizm/maliyet/makbuz beyanı var, **MCP çevirisi bedava** |
+| **plan dilbilgisi** (bir adım nasıl yazılır, referanslar, tip denetimi, `AZAMI_ADIM`) | 🟢 **`plan_semasi`** | `dogrula()` koşmadan tip denetliyor; `GIRDI_TIPI`/`CIKTI_TIPI` gerçek bir katkı |
+
+**Önerilen:** `plan_semasi.FIIL_ANLAMI` **elle yazılmayı bırakır, `tools.py`'den TÜRETİLİR**
+(plan-bestelenebilir araçlar süzülerek). Kapalı `enum` **korunur** — yalnız artık
+**üretilmiş** olur.
+
+**Bu birleşme aynı anda dört şeyi çözer:**
+1. `KAT-1` — tek yetenek listesi; biri bayatlayamaz.
+2. **Yetki süzgeci plana bedava gelir** — bugün plan fiilleri `authorize()` görmüyor.
+3. **MCP yüzeyi plan yolunu da kapsar** — `mcp_yuzeyi` açıldığında aynı kayıttan.
+4. **Ölçülebilir esneklik** — *«15 fiil hangi soruların yüzde kaçını ifade edemiyor»*
+   sorusu, kayıt tek olduğunda **sayılabilir** hâle gelir.
+
+⚠ **Ne birleşMEmeli:** `plan_kosucu` (çalıştırma) ve `plan_tuketici` (cevaba çevirme)
+ayrı sorumluluklardır ve ayrı kalmalıdır. Birleşecek olan **yalnız yetenek beyanıdır**.
+
+⚠ **Risk ve kural:** bu canlı yolda bir yeniden düzenlemedir → `KURAL B` zorunlu
+(bayrak kapalıyken **bayt bayt** aynı davranış) ve türetilmiş `enum`'un bugünkü 15 fiille
+**birebir aynı** çıktığı bir kapıyla kilitlenmeli.
+
+*Bir ilkeyi bir satırda uygulayıp bir sonrakinde unutmak, ilkeyi hiç yazmamaktan daha
+pahalıdır — çünkü artık uygulandığı sanılır.*
+
+## 18 · «ROBOTİK / KATALOG GİBİ» — ölçüldü
+
+Sekiz farklı soru türü, canlı:
+
+| soru | viz | satır | not (karakter) | olgu | **chip** |
+|---|---|---|---|---|---|
+| «bu yıl toplam ciro» | `kpi` | 1 | **0** | 1 | **6** |
+| «makine bazında oee» | `bar` | 11 | 117 | 2 | **6** |
+| «fire oranı neden yüksek» | `pivot` | **1000** | 718 | 1 | **5** |
+| «geçen yıla göre nasıl gidiyoruz» | `kpi` | 1 | 112 | 2 | **6** |
+| «en kötü 3 makineyi analiz et» | `cumle` | 3 | 560 | 2 | **6** |
+| «kalite durumunu özetle» | `kpi` | 1 | 117 | 2 | **4** |
+| «hangi müşteri riskli» | `table` | 5 | **0** | 2 | **6** |
+| «üretim raporu hazırla» | — | 0 | 21 | 0 | 3 |
+
+**Dört ölçülmüş kusur:**
+
+1. 🔴 **Chip sayısı neredeyse sabit: 6,6,5,6,6,4,6,3.** Soru ne olursa olsun aynı boyda
+   bir öneri şeridi. *Katalog hissinin birinci kaynağı budur* — mobilya her cevapta aynı.
+2. 🔴 **Olgu sayısı hep 1-2.** Cevabın **derinliği soruya göre değişmiyor**. Tableau
+   Pulse'un **14 içgörü tipi** üretip duruma göre seçmesiyle kıyaslanınca fark buradan
+   doğuyor.
+3. 🔴 **Hiçbir cevap birden çok grafik taşımıyor** (belge yolu dışında). *«Hem analiz et
+   hem birkaç grafik göster»* isteği **yapısal olarak** karşılanamıyor.
+4. 🔴 **İki cevapta sıfır metin** (*«toplam ciro»*, *«hangi müşteri riskli»*) — ikisi de
+   tam olarak bir cümlenin en çok gerektiği yerler.
+
+⚠ Ve *«fire oranı neden yüksek»* → **1000 satırlık pivot**: bir *«neden»* sorusuna
+**döküm** ile cevap. `§RK-2` bunu *«özet değil»* diye işaretliyor (dürüst), ama kullanıcı
+için sonuç yine bir duvar.
+
+### 18.1 Kök: cevap biçimi bir KARAR DEĞİL, bir YAN ÜRÜN
+
+Bugün cevabın şekli şu üçünün **artığı** olarak oluşuyor: `viz.analyze()` grafik tipini
+seçiyor · `interpret()` 1-2 olgu üretiyor · `_attach_next_steps` chip'leri dolduruyor.
+**Hiçbir yerde *«bu soru ne tür bir cevap ister»* diye soran bir basamak yok.**
+
+Oysa niyet nesnemiz (`niyet.py`) bunu **zaten biliyor**: `TUR_TOPLAM` · `TUR_KIRILIM` ·
+`TUR_TREND` · `TUR_KIYAS` · `TUR_LISTE` · `TUR_USTUNLUK`, ve `followup` beş konuşma türü
+tanıyor. ⊙ **Sinyal var, tüketicisi yok.**
+
+*Bir sistemin robotik görünmesi, karar vermemesinden değil, kararı hiç vermemiş
+olmasından gelir.*
 
 # BEŞİNCİ KISIM — NE YAPMALIYIZ
 
