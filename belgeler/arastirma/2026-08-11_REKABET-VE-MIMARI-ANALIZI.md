@@ -24,7 +24,8 @@
 | **9 · TÜRK PAZARI** | `§19` yerli rekabet haritası · `§20` boşluk ve pazar gerçeği |
 | **10 · GİRİŞİMLER** | `§22` mezarlık · `§23` derin profiller · `§24` yakınsayan mimari · `§25` bağlam kavgası · `§26` ekip ve süre · `§27` asgari kapsam · `§28` sentez · `§29` bize düşen |
 | **11 · AGENTIC SEKTÖR** | `§30` teşhisi düzelt · `§31` Anthropic rehberi · `§32` sabit mi serbest mi · `§33` MCP · `§34` çok adımlı sayısal · `§35` karar motoru · `§36` hedef mimari |
-| **12 · NE YAPMALIYIZ** | `§14` öncelik sırası · `§15` dürüst kapanış |
+| **12 · NE YAPMALIYIZ** | `§14` adım adım uygulama planı (5 faz) · `§15` dürüst kapanış |
+| **13 · YENİ GELİŞTİRİCİ** | `§39` okuma sırası · çalıştırma · curl · kapı · ölçüm tekrarı · dokunulmayacaklar · ilk hafta |
 
 ⚠ **Bölüm numaraları yazım sırasını, kısımlar okuma sırasını gösterir.** Metin içi
 çapraz göndermeler bölüm numarasıyla yapıldığı için numaralar korunmuştur.
