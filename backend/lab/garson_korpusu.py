@@ -115,6 +115,22 @@ def _basamak(cevap: dict) -> str:
     return "garson"                                # 🗣 tek fişle halletti
 
 
+def _rapor_yolu() -> "pathlib.Path":
+    """🔴 `§A1` — RAPOR YOLU **TEK SAHİPTE** ve ortamdan yönlendirilebilir.
+
+    İki yerde ayrı ayrı yazılıydı (ön koşul denetimi + `main`) ve ikisi ayrışabilirdi:
+    denetim bir dosyayı, yazım başkasını kontrol ederdi (`KAT-1`).
+
+    ⚠ `DIMA_GARSON_RAPOR` bir kolaylık değil bir **onarım yolu**: çıktı dosyası bir
+    `--user`'sız koşumdan root'a geçtiyse araç, sahibi olmadığı bir dosyaya yazmak
+    zorunda kalmamalıdır. *Bir ölçüm, yazacağı yeri seçemiyorsa ortamına rehindir.*
+    """
+    import os
+    if (_e := os.environ.get("DIMA_GARSON_RAPOR")):
+        return pathlib.Path(_e)
+    return pathlib.Path(__file__).resolve().parent / "reports" / "garson_korpusu.md"
+
+
 def _ortam_kusuru_beyan_et() -> None:
     """🔴 `§A1` — ÖLÇÜM KOŞAMIYORSA **SEBEBİ EYLEME ÇEVRİLEBİLİR** OLMALI.
 
@@ -155,7 +171,7 @@ def _ortam_kusuru_beyan_et() -> None:
     # ② RAPOR DOSYASI — `--user` unutulmuş bir koşum onu root'a geçirdiyse ölçüm
     # **sonuna kadar koşar** ve son satırda düşer. En pahalı arıza budur: iş yapılır,
     # ürünü atılır.
-    _rapor = pathlib.Path(__file__).resolve().parent / "reports" / "garson_korpusu.md"
+    _rapor = _rapor_yolu()
     if _rapor.exists() and not os.access(_rapor, os.W_OK):
         eksik.append(f"  🔴 `{_rapor}` YAZILAMIYOR (root sahipli).\n"
                      f"     ONARIM:  sudo chown $(id -u):$(id -g) {_rapor}")
@@ -396,7 +412,7 @@ def main() -> int:
                 _iska = k.iska
                 print(f"kaset: {k.isabet} isabet · {k.iska} ıska")
 
-    hedef = pathlib.Path(__file__).resolve().parent / "reports" / "garson_korpusu.md"
+    hedef = _rapor_yolu()
     hedef.parent.mkdir(parents=True, exist_ok=True)
     hedef.write_text(rapor(sonuc), encoding="utf-8")
     print(f"Rapor: {hedef}")

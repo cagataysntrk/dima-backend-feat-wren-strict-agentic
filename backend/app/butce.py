@@ -101,7 +101,27 @@ def kos(isler: list[Callable[[], Any]], *, saniye: float,
     # oynatmayı kayıttan **ayrıştırırdı**.
     #
     # *Bir ölçümün aleti, ölçtüğü şeyi kısaltmamalıdır.*
-    if _os.environ.get("DIMA_KASET") in ("kayit", "oynat"):
+    # 🔴🔴 **VE SONSUZ BİR BÜTÇE, SONSUZ BİR `timeout` DEĞİLDİR** — ölçüldü, 2026-08-11.
+    #
+    # Yukarıdaki karar doğruydu; **taşıyıcısı** yanlıştı. `saniye = inf` yazılınca
+    # `bitis` de `inf` oluyor ve aşağıdaki `fu.result(timeout=inf)` çağrısı
+    # `threading`'in `waiter.acquire(True, inf)`'ine düşüyor:
+    #
+    #     OverflowError: timestamp out of range for platform time_t
+    #
+    # ⊙ **Ölçülen sonuç, aletin kendi amacını yiyordu:** kaset modunda her bütçeli
+    # paralel koşum patlıyor, çağıranın `except`'i onu yutuyor ve kütükte yalnız
+    # *«LLM Intent-JSON seçimi başarısız (best-effort)»* kalıyordu. Yani **garsonun
+    # `k=3` oylaması kaset altında HİÇ koşmuyordu** — kasetli garson korpusunun ölçmek
+    # için var olduğu tam o basamak. Kayıt turunda **16 kez** sayıldı.
+    #
+    # Doğru ifade: sonsuz bütçe = *"kesme yok"* = `timeout=None` (süresiz bekle).
+    # `None` ile `inf` arasındaki fark burada bir üslup tercihi değil, **çalışan bir
+    # ölçüm ile çalışmayan bir ölçüm** arasındaki farktır.
+    #
+    # *Bir niyeti doğru yazmak yetmez; onu taşıyan tipin de o niyeti kaldırması gerekir.*
+    _sinirsiz = _os.environ.get("DIMA_KASET") in ("kayit", "oynat")
+    if _sinirsiz:
         saniye = float("inf")
     bitis = _time.monotonic() + max(0.0, saniye)
     # 🔴🔴 **KASET MODUNDA TEK İŞÇİ — tekrarlanabilirlik paralellikten önemlidir.**
@@ -124,7 +144,9 @@ def kos(isler: list[Callable[[], Any]], *, saniye: float,
         cikti: list[Any] = []
         for fu in gonderilen:
             try:
-                cikti.append(fu.result(timeout=max(0.0, bitis - _time.monotonic())))
+                cikti.append(fu.result(
+                    timeout=None if _sinirsiz
+                    else max(0.0, bitis - _time.monotonic())))
             except _cf.TimeoutError:
                 if log is not None:
                     log.warning("%s BÜTÇEYİ AŞTI (%.1f sn) — BEKLENMİYOR", ad, saniye)
