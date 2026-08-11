@@ -2547,3 +2547,52 @@ Kaynak liste: `belgeler/denetim/2026-08-10_TABAN-BORCLARI-ve-KATALOG-KOKU.md §6
 üründe garsona gidiyor, **≥2'si** belirsizlik ifşasıyla cevaplanıyor (curl ile
 doğrulandı), **~3'ü** gerçek. 🔴 Ama `sessiz_yanlis` **artışı** yine de vetodur: route
 emin olup yanılırsa `if route_hit:` merdiveni keser ve garson soruyu **hiç görmez**.
+
+---
+
+## ⊙ KÖK-NEDEN MOTORU ve AGENTIC CANVAS *(2026-08-11)*
+
+Kullanıcının iki birinci-öncelik isteği bu turda uçtan uca teslim edildi. Ayrıntılı
+curl kayıtları: `belgeler/denetim/2026-08-07_CEVIRI-SOZLESMESI.md` (`T`…`Z` turları).
+
+### `§KN` — kök-neden **cebiri** (`app/kok_neden.py`, 🍳 mutfak)
+
+*«Neden düşük»* sorusuna insan gibi cevap: **formülü kataloğun içinden oku → akranla
+kıyasla → payı düşüreni / paydayı yükselteni bul → o bileşeni kendi kırılımında aç →
+yolu anlat → (istenirse) nereye bakılacağını söyle.**
+
+| parça | ölçülen |
+|---|---|
+| bileşen keşfi | kataloğun **üst-düzey işlenen eşitliği** (`ort_oee` = üç faktörün birebir çarpımı) |
+| katkı payı | `ln` uzayında **artıksız** ayrışma — özdeşlik, kapıda sayıyla doğrulanıyor |
+| kapsam | **8 ölçü** (`ROUND`/`NULLIF` sarmalları açılınca 1 → 8) |
+| canlı | `RAM-3 → performans %84,1 → 3. Vardiya` · `RAM 2 → fire %68,2 → SELÇUK TEKSTİL` · `Planlama → eğitim saati %69,7` |
+
+⚠ `contribution`un **rakibi değil kardeşi**: o *«geçen döneme göre neden değişti»*i,
+`§KN` *«akranlarına göre neden farklı»*yı açıklar. `§KN` susarsa yol bayt bayt bugünkü.
+
+### Aynı turda kapanan kökler
+
+`§NB` (*«neden»* → tablo) · `§NÇ` daraltması (işaret zarfı belirsizliği kaldırır) ·
+`§BG` (*«None seçildi»*) · `§RS` (canvas *«ekle»* bölüm kaybettirmiyor) · `§RK-2`
+(*«özet değil»* uyarısı artık **daraltma fişi** taşıyor) · `§Cİ-boyut` (bir terimin
+sahibi bir **boyut** da olabilir) · `§RZ`/`§RD`/`§RÇ`/`§RÜ`/`§RE`/`§KV`/`§VZ`/`§DB`/`§KY`.
+
+### 🔴 Ölçümle **çürütülen** iki hipotez (ve önlenen iki hatalı değişiklik)
+
+1. **Katalog bileşen beyanı.** *«Sinonimsiz ölçü route'a görünmez, `D8` riski taşımaz»*
+   → korpus: `doğru 95→78`, `payda 2286→2271`. **Geri alındı.** Bedel sinonimden değil
+   **varlığın kendisinden** geliyor. Bu, `D8`'in açık sorusuna verilmiş bir cevaptır.
+2. **`ROUND` sarmalı tek başına.** Kazanç **sıfır** (1→1) — eksik parça `NULLIF`'ti.
+   *Bir kazancı ölçerken yarım ölçmek, kazancın yokluğunu kanıtlamaz.*
+
+### Açık borçlar
+
+| # | borç | neden bekliyor |
+|---|---|---|
+| a | *«arıza tipi»* yönlendirmesi (`neden="Arıza"` değer okuması tercih ediliyor) | **yönlendirme** kararı → korpus A/B ister (`F1.1`) |
+| b | `§KN`'yi 8'den fazla ölçüye açmak | beyan, korpus üretecinin **görmediği** bir haritaya taşınmalı — pack şeması işi |
+| c | canlı *«düşünüyorum»* akışı | `§KN` adımları `trace`e yazılıyor ve **notta görünüyor**; gerçek SSE akışı `S` fazının kendi işi (dürüst fiyatı yazılı) |
+
+**Taban bu turların hiçbirinde oynamadı:** `doğru=95 · devir=2142 · netleştirme=0 ·
+beyanlı_kısmi=41 · sessiz_yanlış=8 · payda=2286`.
