@@ -108,3 +108,49 @@ def ozet(degerler: Iterable[float]) -> dict | None:
     orta = (vals[n // 2] if n % 2 else (vals[n // 2 - 1] + vals[n // 2]) / 2)
     return {"n": n, "ortalama": round(ort, 6), "std": round(std, 6),
             "min": vals[0], "maks": vals[-1], "medyan": round(orta, 6)}
+
+
+#: `|z| ≥ k` eşiğinin **normal** bir dağılımda kendiliğinden işaretlediği pay.
+#: ⚠ Bu bir varsayımdır ve beyanda **adıyla** söylenir — gizlenmiş bir varsayım,
+#: yapılmamış bir varsayımdan tehlikelidir.
+_SANS_PAYI = {2.0: 0.0455, 2.5: 0.0124, 3.0: 0.0027}
+
+
+def tarama_beyani(n_aday: int, n_isaret: int, k: float = VARSAYILAN_K) -> str:
+    """🔴🔴 `§E3` — **KAÇ ADAY TARANDI, KAÇI İŞARETLENDİ.** Tek sahip.
+
+    ## Ölçülen boşluk
+
+    Aykırılık sinyali `|z| ≥ 2` ile N nokta üzerinde koşuyor ve **N kullanıcıya hiç
+    söylenmiyordu**. Oysa bir eşik, taranan aday sayısı büyüdükçe **aritmetik gereği**
+    işaret üretir: kullanıcı *«3 aykırılık bulundu»* cümlesinin çok mu az mı olduğunu
+    bilemez.
+
+    > *«In our experiment, over 60% of user insights were false.»* — Zgraggen, Zhao,
+    > Zeleznik, Kraska (Brown/MIT), **CHI 2018** (`§10.5`)
+
+    ## 🔴 NEDEN BENJAMINI-HOCHBERG DEĞİL
+
+    Kart `FDR düzeltmesi (BH)` diyor. **Ölçüldü: bu depoda p-değeri YOK** — eşik bir
+    z-kesimidir, bir hipotez testi değil (`z_skorlari`). BH **p-değerlerini** sıralar;
+    z'yi p'ye çevirmek **normallik varsayımını dayatmak** olurdu ve o varsayım
+    ölçülmedi. ⊙ `§E2`'de forecast için verdiğim kararın aynısı: **elimizde olmayan bir
+    tabanı uydurmaktansa, elimizdekini beyan etmek.**
+
+    Kartın kendi azaltma satırı da bunu söylüyor: *«Elenen sayısını **beyan et** —
+    "N aday incelendi, M'i istatistiksel eşiği geçti"»* (`§98.1` disiplini).
+
+    ⚠ Ve şans payı **varsayımıyla birlikte** yazılır: `|z|≥2` normal bir dağılımda
+    ~%4,6'yı kendiliğinden işaretler. Varsayımı saklamak, sayıyı olduğundan güçlü
+    göstermek olurdu.
+
+    Döner: beyan cümlesi ya da `""` (taranacak bir şey yoksa).
+    """
+    if n_aday < ASGARI_GOZLEM or n_isaret <= 0:
+        return ""
+    _s = f"{n_aday} aday tarandı, {n_isaret}'i **|z| ≥ {k:g}** eşiğini geçti"
+    if (pay := _SANS_PAYI.get(float(k))) is not None:
+        beklenen = n_aday * pay
+        _s += (f" — ⚠ bu eşik **normal** bir dağılımda ~%{pay * 100:.1f}'ini "
+               f"kendiliğinden işaretler (bu {n_aday} adayda ~{beklenen:.1f})")
+    return _s + "."

@@ -3447,6 +3447,35 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 | **curl** | *«müşteri bazında ciro → neden»* → **EGE KNIT** (en büyük) yerine **dağılımı değişen** mi geliyor |
 | **risk** | Bugünkü cevapları değiştirir — **ölçüm gerekir**, tahmin değil |
 
+### ✅ E3 · Tarama genişliği beyanı — **TAMAMLANDI (2026-08-11)** · BH DEĞİL, ve nedeni ölçüldü
+
+> 🔴 **BENJAMINI-HOCHBERG UYGULANAMADI — ve bu bir eksiklik değil bir ÖLÇÜM SONUCU.**
+> Kart *«FDR düzeltmesi (BH)»* diyor. Ölçüldü: **bu depoda p-değeri YOK** —
+> `stats.z_skorlari` bir **z-kesimi** uygular (`|z| ≥ 2`, asgari 4 gözlem, sıfır-varyans
+> kapısı), bir hipotez testi değil. BH **p-değerlerini** sıralar; z'yi p'ye çevirmek
+> **normallik varsayımını dayatmak** olurdu ve o varsayım ölçülmedi.
+> ⊙ `§E2`'de forecast için verilen kararın aynısı: *elimizde olmayan bir tabanı
+> uydurmaktansa, elimizdekini beyan etmek.*
+>
+> ✅ **Kartın kendi azaltma satırı uygulandı** (*«elenen sayısını beyan et»*, `§98.1`):
+> `stats.tarama_beyani` — tek sahip; `interpret`'in aykırılık sinyalinde çağrılıyor.
+>
+> **Canlı ölçüm (3 soru):**
+>
+> | soru | aday | işaret | şansa düşen |
+> |---|---|---|---|
+> | aylık ciro trendi | 30 | **3** | ~1,4 → şansın **üstünde** |
+> | aylık fire oranı trendi | 30 | **1** | ~1,4 → **şans düzeyinde** |
+> | aylık enerji tüketimi | 30 | **3** | ~1,4 |
+>
+> ⊙ **İkinci satır tam olarak CHI 2018'in sorunudur** (*«içgörülerin %60+'ı yanlış»*):
+> 30 adayda tek bir işaret, beklenenden **fazla değildir**. Kullanıcı bunu artık
+> görebiliyor; öncesinde yalnız *«Olağandışı değer — z=+2,8»* okuyordu.
+>
+> ⚠ Şans payı **varsayımıyla birlikte** yazılır (*«**normal** bir dağılımda ~%4,6»*).
+> Tabloda olmayan bir eşik için oran **hesaplanmaz, uydurulmaz**.
+> Kapı: `tests/test_e3_tarama_beyani.py` (6) + istatistik yüzeyi **172 yeşil**.
+
 ### E3 · FDR düzeltmesi (Benjamini-Hochberg)
 
 | | |

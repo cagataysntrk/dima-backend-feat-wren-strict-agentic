@@ -380,8 +380,15 @@ def _signals(rows: list[dict], dims: list[str], time_col: str | None,
         except Exception:  # noqa: BLE001 - sinyal best-effort
             anoms = []
         if anoms:
+            # 🔴 `§E3` — TARAMA GENİŞLİĞİ BEYAN EDİLİR. `N` kullanıcıya hiç
+            # söylenmiyordu; oysa bir eşik, aday sayısı büyüdükçe **aritmetik gereği**
+            # işaret üretir (CHI 2018: *«içgörülerin %60+'ı yanlış»*). Cümlenin tek
+            # sahibi `stats.tarama_beyani` — şans payı **varsayımıyla birlikte** yazar.
+            from app.stats import tarama_beyani
+            _tb = tarama_beyani(len(rows), len(anoms), 2.0)
             out.append({"severity": "warning", "kind": "anomaly",
-                        "text": "Olağandışı değer — " + "; ".join(anoms[:2])})
+                        "text": "Olağandışı değer — " + "; ".join(anoms[:2])
+                                + (f" ⊙ {_tb}" if _tb else "")})
 
     # (b) Trend yönü endişesi — ilk→son anlamlı (%10+) değişim, ölçü semantiğine göre kötüyse.
     if time_col and len(rows) > 1:

@@ -3069,3 +3069,18 @@ verilmeli. *Bir okuyucuya eksik sözlük vermek, onu uydurulmuş bir soruna göt
 O yol bir **değişim** analizi değil, tek dönemlik bir **pay** ifadesi (`*_gecen` yok).
 Adtributor `A ↔ F` ister; orada `F` yok → zorlamak **taban uydurmak** olurdu. Ve modülün
 kendi cümlesi sınırı zaten çiziyor: «bir pay bir açıklama değil bir KONUMDUR».
+
+### ✅ E3 · Tarama genişliği beyanı — BH DEĞİL, ve nedeni ölçüldü *(2026-08-11)*
+
+🔴 **Benjamini-Hochberg uygulanamadı ve bu bir ÖLÇÜM SONUCU:** depoda **p-değeri yok**;
+`stats.z_skorlari` bir z-kesimi uygular, hipotez testi değil. BH p-değerlerini sıralar;
+z→p çevirmek **normallik varsayımını dayatmak** olurdu. ⊙ `§E2`'nin forecast kararının
+aynısı: *olmayan bir tabanı uydurmaktansa elimizdekini beyan etmek.*
+
+✅ Kartın kendi azaltma satırı uygulandı: `stats.tarama_beyani` (tek sahip) →
+`interpret`'in aykırılık sinyali. **Canlı (3 soru):** «aylık ciro trendi» 30 aday/3
+işaret (şans ~1,4 → üstünde) · «aylık fire oranı» 30/**1** (şans ~1,4 → **şans
+düzeyinde**) · «aylık enerji» 30/3.
+⊙ İkinci satır tam olarak CHI 2018'in sorunu — kullanıcı artık görebiliyor.
+⚠ Şans payı **varsayımıyla** yazılır; tabloda olmayan eşikte oran uydurulmaz.
+Kapı: `tests/test_e3_tarama_beyani.py` (6) + istatistik yüzeyi 172 yeşil.
