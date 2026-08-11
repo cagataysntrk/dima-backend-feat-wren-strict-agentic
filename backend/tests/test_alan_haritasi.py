@@ -259,6 +259,11 @@ def test_SINIFSIZ_MODUL_BIRAKILAMAZ():
         # ⊙ Ayrı bir dosya çünkü `§KN` ile `contribution` **kendi kopyalarını** yazmıştı
         # ve ayrıştılar (ölçüldü, `DD` turu: *«47,836 dk … %83.4'i»* — üç ayrı hata).
         "sayi_bicimi.py": "🎨",
+        # 🎨 `§D3` — **cevabın BİÇİMİ bir karardır** (ADR-0024'ün kardeşi). Soru
+        # türünden öneri-kovası kotası üretir; veri okumaz, sorgu kurmaz, dil
+        # anlamaz — yalnız *"bu cevap nasıl görünmeli"* sorusunu cevaplar. Kararı
+        # `answer.py` tüketir, `cube_router.suggest_next_steps` uygular.
+        "bicim.py": "🎨",
     }
     hepsi = {p.name for p in APP.glob("*.py")} - {"__init__.py"}
     sinifli = GARSON | MUTFAK | set(MUAF)

@@ -448,9 +448,15 @@ def test_cube_endpoint_chip_edit(client):
     # değişikliği bir davranış değişikliğidir).
     # ⚠ Tam-eşleşme kapısı **bilerek korundu**: yeni bir iz satırı eklemek, bu satırı
     # güncellemeyi gerektirsin diye böyle yazılmış. *Bir altın testin işi soru sormaktır.*
+    # ⟳ `§D3` (2026-08-11) — üçüncü satır **bilerek** eklendi: öneri şeridinin kova
+    # kotaları artık soru türünden gelir ve karar **makbuza yazılır**. Bu yol (`/cube`
+    # chip düzenlemesi) şeridi yeniden kurduğu için gerekçe orada da geçerlidir.
+    # ⊙ Ve bu satır tam olarak yukarıdaki notun istediği şeyi yaptı: altın test
+    # **soru sordu**, ben de cevabı yazdım. *Bir altın testin işi soru sormaktır.*
     assert d2["trace"] == ["chip düzenleme → deterministik cube",
                            "§SB: sırasız kırılım belirlenimli sıraya kondu "
-                           "(ölçüye göre azalan)"]
+                           "(ölçüye göre azalan)",
+                           "§D3 biçim: soru türü «kirilim»"]
 
 
 def test_cube_endpoint_rejects_invalid(client):

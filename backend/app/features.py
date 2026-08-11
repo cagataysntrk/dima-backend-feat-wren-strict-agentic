@@ -495,6 +495,7 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
         "category": "Yönlendirme",
     },
     "vqr_few_shot": {
+        "on_sarti": "A1 (garson korpusu, ≥50 etiketli soru) kurulduktan sonra bayrak açık/kapalı A/B koşulur; doğru-küp oranı DÜŞMEMİŞ ve gecikme medyanı +%10'u aşmamışsa `on`. ⊙ Bugün ölçülemiyor: kapı route()'u ölçer, garsonu ölçmez.",
         "label": "Garsona doğrulanmış örnek (few-shot)",
         "description": "Intent-JSON (garson) istemine, VQR'daki İNSAN ONAYLI benzer "
                        "soru→fiş çiftlerinden en fazla 3 örnek eklenir. `few_shot_block` "
@@ -504,6 +505,7 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
         "category": "Yönlendirme",
     },
     "onarim_dongusu": {
+        "on_sarti": "/stats/plan'da `onarim_tutma_yuzde` ≥%80 KALICI (≥100 plan denemesi) ve ikinci turun payı (`onarildi_tur2`) ölçülmüş olacak; ikinci tur kazancı <%5 ise tavan 1'e döner (yönerge kalır). ⊙ Ölçülen: 90 (18 denemede) — payda küçük.",
         "label": "Plan onarım döngüsü (tavan 2 tur + çare yönergesi)",
         "description": "Reddedilen bir plan modele GERİ verilir; en fazla 2 tur, sonra "
                        "dürüst red. Red mesajının yanına sınıfa özgü ÇARE eklenir "
@@ -517,6 +519,7 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
         "category": "Yönlendirme",
     },
     "sema_daraltma": {
+        "on_sarti": "A1 korpusunda budama açık/kapalı koşulur; `cevapsiz` oranı ARTMAMIŞ ve «budanmış küme, seçilen küpü içeriyor» kapsaması ≥%99 ise `on`. ⊙ Bugünkü kanıt 8 curl sorusunda 8/8 — bir korpus değil, bir örneklem.",
         "label": "Şema daraltma (garson istemine yalnız ilgili küpler)",
         "description": "Garsona her soruda 23 küpün tamamı (23.729 karakter) gidiyordu. "
                        "Aday küpler `ilgili_cubelar` ∪ `measure_cube_candidates` ∪ "
@@ -529,6 +532,7 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
         "category": "Yönlendirme",
     },
     "bicim_karari": {
+        "on_sarti": "Ön-uçta daralan öneri şeridi görsel olarak doğrulanacak ve 20 canlı turda hiçbir cevabın `next_steps` sayısı 0'a düşmeyecek. ⊙ Ölçülen dizi 4,6,2,4,4,4,6,3 — en düşük 2, sıfır yok; ama ön-uç ölçülmedi.",
         "label": "Cevap biçimi kararı (öneri şeridi soru türüne bağlanır)",
         "description": "Öneri chip'lerinin kova kotaları `niyet`in altı soru türünden "
                        "gelir (`app/bicim.py` karar tablosu): tek sayı istendiğinde "

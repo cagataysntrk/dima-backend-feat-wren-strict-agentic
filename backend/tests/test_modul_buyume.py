@@ -89,6 +89,18 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("b1-sema-daraltma-cagri", 1,
+     "🔴 **`§B1` — ŞEMA DARALTMA, GARSON DALINDA** *(rapor `§14` FAZ 1, kısa yolun 4. işi)*. "
+     "⊙ Ölçüldü: garsona **her soruda 23 küpün tamamı — 23.729 karakter** gidiyordu "
+     "(raporun `§4.2`'si birebir doğrulandı). Dış dayanak: şema bağlama hatası kurumsal "
+     "ölçekte SQL hatalarının **%27,6-33,0'ı** (Spider 2.0 / MultiSpider 2.0). "
+     "⊙ Kazanç ölçüldü: *«ciro ve duruş»* **3/23 küp · 2.343 karakter (%90)**, "
+     "*«makine bazında oee»* 10/23 · 6.886 (%71). "
+     "⊙ Δ = 1: yalnız **çağrıya `soru=` eklendi**. Karar `cube_router.daraltma_adaylari`'nda, "
+     "budama `katalog_metni`'nde — bu satır ikisini **bağlar**, hiçbirini taşımaz. "
+     "🔴 İndeks **budanmaz** (o `parse_cube_query`'nin beyaz listesidir); fail-open bir "
+     "sayıya değil **kanıta** bağlıdır. Güvenlik: 8 garson sorusunda budanmış küme "
+     "garsonun **gerçekten seçtiği** küpü **8/8** içerdi, **0 kayıp**."),
     ("b2-garsona-few-shot", 2,
      "🔴🔴 **`§B2` — GARSONA ÖRNEK VER** *(rapor `§14` FAZ 1, kısa yolun 1. işi)*. "
      "⊙ Ölçüldü ve **kendi ölçümümle doğrulandı**: `vqr.few_shot_block()` **zaten yazılmış "
@@ -845,6 +857,22 @@ MUAFIYET_ASK_KOD = [
      "`V17`'nin kusuru tam da yeni sorgu koşmaktı. *Bir fişi okumak için mutfağa gidilmez.*"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("b1-daraltma-adaylari-ve-kup-adi", 44,
+     "🔴 **`§B1` — ADAY SEÇİCİ + KÜP ADI BELİRTECİ** *(rapor `§14` FAZ 1)*. İki iş: "
+     "① `daraltma_adaylari` — garson istemine girecek küp kümesi; üç sinyal **yeniden "
+     "yazılmadı, ÇAĞRILDI** (`ilgili_cubelar` · `measure_cube_candidates` · "
+     "`partial_unknowns`). Fail-open bir **sayıya değil KANITA** bağlı: kartın *«aday<2»* "
+     "kuralı ölçüldü ve **yetmedi** — *«kalite durumunu özetle»*de aday **7** idi ama "
+     "doğru küp aralarında **yoktu**. Ölçüt: *sorunun her **içerik** sözcüğü, **tuttuğumuz** "
+     "küplerle açıklanabiliyor mu?* "
+     "② `_kup_adi_belirtecleri` — küpün **kendi adı** bir eşleşme belirtecidir. Ölçüldü: "
+     "**39 küp beyanının 12'sinde (%31)** ad `synonyms:`e kopyalanmayı unutulmuş, "
+     "`ticaret` **dört şirkette birden**. Çözüm 12 sinonimi elle yazmak **değil** "
+     "(o kusuru değil bir örneğini kapatırdı, 13. küpte tekrarlardı) — belirteç "
+     "**katalogdan türetilir**; ADR-0008 ihlali yok. "
+     "⊙ Δ = 44 ve büyük kısmı **ölçüm gerekçesi**: iki fonksiyonun docstring'leri "
+     "kararların **neden** öyle olduğunu taşıyor. Kod tarafı yalın: üç çağrı + bir küme "
+     "birleşimi + bir kapsama denetimi."),
     ("ys-yok-sayilan-tasiyici", 5,
      "🔴🔴 **`§YS` — GARSONA NE ATTIĞINI SORMAK.** "
      "⊙ Üç canlı ölçüm, tek sınıf: *«…ciroyu **euro** olarak göster»* → ₺74.022.836, "
