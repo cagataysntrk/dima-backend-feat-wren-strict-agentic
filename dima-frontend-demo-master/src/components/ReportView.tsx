@@ -138,31 +138,6 @@ export function ReportView({ report, onClose, onSor }: {
           </section>
         ))}
 
-        {/* 🔴 KAYNAK LİSTESİ — raporun ALTINDA ve BASKIDA GÖRÜNÜR.
-            Yol haritasının şartı: *"PDF'e döküldüğünde bile `contract_id` altta kalır."*
-            Buradaki PDF yolu `window.print()`; bu bölüm `print:hidden` TAŞIMAZ.
-            ⚠ `contract_id: null` bir MAKBUZSUZLUKTUR ve gösterilir — kanıtın yokluğunu
-            gizlemek, kanıtsızlıktan kötüdür. */}
-        {!!report.kaynaklar?.length && (
-          <section className="mx-auto max-w-4xl border-t border-hairline pt-3">
-            <h3 className="font-mono text-[11px] uppercase tracking-wide text-muted">
-              kaynaklar
-            </h3>
-            <ul className="mt-1 space-y-0.5">
-              {report.kaynaklar.map((k, i) => (
-                <li key={i} className="font-mono text-[10px] text-neutral-400">
-                  {k.blok}
-                  {k.cube ? ` · ${k.cube}` : ""} ·{" "}
-                  {k.contract_id ? (
-                    <span className="text-foreground">{k.contract_id}</span>
-                  ) : (
-                    <span className="text-amber-600">makbuzsuz</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
         {onSor && (
           <form
             className="mx-auto mt-4 flex max-w-4xl items-center gap-2 border-t border-hairline pt-3 print:hidden"
@@ -187,6 +162,32 @@ export function ReportView({ report, onClose, onSor }: {
               gönder
             </button>
           </form>
+        )}
+
+        {/* 🔴 KAYNAK LİSTESİ — raporun ALTINDA ve BASKIDA GÖRÜNÜR.
+            Yol haritasının şartı: *"PDF'e döküldüğünde bile `contract_id` altta kalır."*
+            Buradaki PDF yolu `window.print()`; bu bölüm `print:hidden` TAŞIMAZ.
+            ⚠ `contract_id: null` bir MAKBUZSUZLUKTUR ve gösterilir — kanıtın yokluğunu
+            gizlemek, kanıtsızlıktan kötüdür. */}
+        {!!report.kaynaklar?.length && (
+          <section className="mx-auto max-w-4xl border-t border-hairline pt-3">
+            <h3 className="font-mono text-[11px] uppercase tracking-wide text-muted">
+              kaynaklar
+            </h3>
+            <ul className="mt-1 space-y-0.5">
+              {report.kaynaklar.map((k, i) => (
+                <li key={i} className="font-mono text-[10px] text-neutral-400">
+                  {k.blok}
+                  {k.cube ? ` · ${k.cube}` : ""} ·{" "}
+                  {k.contract_id ? (
+                    <span className="text-foreground">{k.contract_id}</span>
+                  ) : (
+                    <span className="text-amber-600">makbuzsuz</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
       </div>
     </div>

@@ -279,11 +279,22 @@ def _boyutun_kendi_adi(deger: str, boyut: str, cq: dict, schema: dict | None) ->
         return False
     kup = next((c for c in ((schema or {}).get("cubes") or [])
                 if c.get("name") == cq.get("cube")), {}) or {}
+    # 🔴🔴 **SİNONİMLER BU SORUYA CEVAP VEREMEZ — ve bunu kapı ölçerek gösterdi.**
+    #
+    # ⊙ İlk yazımda `dimension_synonyms` de ad sayılıyordu ve tam kapı **iki kırmızı**
+    # verdi (`test_kirilimli_soru_da_donem_sorar` + `eval` precision `1.0 → 0.9741`):
+    # katalog `cinsiyet`in **DEĞERLERİNİ** sinonim yazmış — `[cinsiyet, kadın, erkek,
+    # cinsiyete göre]` — çünkü kullanıcı *«kadın çalışanlar»* deyince boyut bulunsun.
+    # Yani sinonim kümesi bilerek **değer** taşır; onu *«boyutun adı»* diye okumak
+    # meşru bir süzgeci (`cinsiyet = Kadın`) **silmek** demekti.
+    #
+    # ⚠ Kaynak yalnız **ad** ve **etiket**: ikisi de tanım gereği boyutun kendisidir.
+    # *Bir kümeyi ne için kurulduğunu sormadan kullanmak, onun taşıdığı şeyi değil
+    # adını ödünç almaktır.*
     adlar = {_norm(boyut)}
     _et = (kup.get("dimension_labels") or {}).get(boyut)
     if _et:
         adlar.add(_norm(str(_et)))
-    adlar |= {_norm(str(x)) for x in ((kup.get("dimension_synonyms") or {}).get(boyut) or [])}
     return _d in adlar
 
 
@@ -339,6 +350,8 @@ def denetle(cq: dict, schema: dict | None, soru: str = "") -> list[Bulgu]:
                                  gecerliler=list(gecerliler), bos_islem=True,
                                  yuva=True))
                 continue
+            if _norm(str(d)) in bilinen:
+                continue
             # 🔴🔴 `§DB` — **BİR BOYUTUN ADI, O BOYUTUN DEĞERİ OLAMAZ.**
             #
             # ⊙ Ölçüldü (curl `X` turu, X18): *«bu yıl **operatör bazında** ilk seferde
@@ -365,8 +378,6 @@ def denetle(cq: dict, schema: dict | None, soru: str = "") -> list[Bulgu]:
                 out.append(Bulgu(boyut=boyut, deger=str(d), oneri=None,
                                  gecerliler=list(gecerliler), bos_islem=True,
                                  boyut_adi=True))
-                continue
-            if _norm(str(d)) in bilinen:
                 continue
             # 🔴 `§NT` — DIŞLAMADA «yok» = **yok-işlem**, kapsayışta «yok» = belirsizlik.
             # Var olmayan bir değeri dışlamak hiçbir satırı dışlamaz; kanıt tamdır ve

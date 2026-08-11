@@ -11490,3 +11490,27 @@ Canlı: çıkmaz netleştirme → **9 operatör, ilk seferde doğru oranlarıyla
 ikisi de doğrulandı: 2024↔2023 (veri yok) → *«Kıyas kurulamadı»*; ilk-3 kumaş cinsi
 (bazılarının geçen yılı var) → **susuyor**. *Bir yokluğu tanımayan kapı, onu yokluk
 saymaz — var saymaz da; hiç görmez.*
+
+## `X` turu · kapı üç kırmızı verdi ve **üçü de haklıydı**
+
+| kırmızı | ne söyledi | ders |
+|---|---|---|
+| `test_kirilimli_soru_da_donem_sorar` | `cinsiyet = "Kadın"` süzgeci **silindi** | `§DB` **geçerlilik kontrolünden ÖNCE** duruyordu |
+| `eval answered_precision` | `1.0` → **0.9741** | aynı kök — ve bir doğruluk gerilemesi |
+| `test_PDF_yolu_BASKIDA_kaynak_listesini_TASIR` | kaynak bölgesinde `print:hidden` | canvas komposerı kaynakların **altına** girmişti |
+
+🔴 **`§DB`'nin kökü katalogda yazılıydı:** `cinsiyet`in sinonimleri `[cinsiyet, kadın,
+erkek, cinsiyete göre]` — yani sinonim kümesi **bilerek DEĞER taşıyor** (kullanıcı
+*«kadın çalışanlar»* deyince boyut bulunsun diye). Onu *«boyutun adı»* diye okumak meşru
+bir süzgeci silmek demekti.
+
+İki düzeltme: (1) sıra artık **önce geçerlilik** — geçerli bir katalog değeri hiçbir
+zaman boyutun adı sayılmaz; (2) ad kümesi yalnız **ad + etiket**.
+*Bir kümeyi ne için kurulduğunu sormadan kullanmak, onun taşıdığı şeyi değil adını ödünç
+almaktır.*
+
+Ve komposer sayfaların **altına**, kaynak listesinin **üstüne** alındı: kanıt her zaman
+en altta kalır.
+
+Canlı (tazeleme sonrası): `§DB` hâlâ çıkmazı çözüyor (**9 operatör** + beyan) **ve**
+`cinsiyet = Kadın` süzgeci korunuyor (**12 kadın personel**).
