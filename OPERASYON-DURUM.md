@@ -2898,3 +2898,32 @@ Kütük: turlar `1/2` ve `2/2` etiketli, **3. tur 0 kez** → sonsuz döngü yok
 eski *«tam olarak bir tane»* politikasını kilitliyordu. İlke doğruydu ama **tavanın bir
 olması ölçülmemişti**; test ölçümüyle yeniden yazıldı (**silinmedi**) ve `KURAL B` gövdesi
 eklendi.
+
+### ⏳ A1 · Garson korpusu — korpus ZATEN VAR, engel ORTAM *(2026-08-11)*
+
+🔴 **Kartın varsayımı yanlış çıktı:** `lab/garson_korpusu.py` **yazılmış** (21 kayıtlı
+vaka: çok turlu zincirler · Arapça · sosyal · kök-neden · çapraz-küp), tabanı ve raporu
+var. Ama `grep garson_korpusu lab/kapi.py tests/` → **sıfır**. `§12.12`'nin *«yazılmış ama
+bağlanmamış»* deseninin **sekizinci** örneği ve bu kez **kapının kendisinde**.
+⊙ Kapının *«`--live` ister»* gerekçesi **canlı koşucu** (`lab/garson.py`) içindi; kasetli
+korpus kendi docstring'inde *«SIFIR API»* diyor.
+
+**Üç engel, hepsi ORTAM (ölçüldü):**
+① Canlı `/app/logs` bir **docker volume** (`dima_logs`); tohumlanmış kullanıcı orada.
+   Repodaki `logs/dima.db` bayat kopya, `logs/control_plane.db` ise root sahipli ve
+   **ürünün hiç kullanmadığı** bir artefakt.
+② `lab/reports/garson_korpusu.md` **root sahipli** → korpus sonuna kadar koşup son
+   satırda düşüyor (*iş yapılır, ürünü atılır*).
+③ Sağlayıcı `NoLlmGenerator` → kaset yamalanamıyor → araç canlı koşmaya çalışıp
+   `--network none` altında çöküyor.
+
+🟢 **Doğrulandı:** canlı DB'nin kopyasıyla giriş **çalışıyor**, korpus koşuyor. Engel
+tasarımda değil ortamda.
+
+✅ **Bu turda:** araç üç ön koşulu **tek seferde**, onarım komutlarıyla beyan ediyor.
+⚠ Denetimi önce `_giris()`'e koymuştum ve hiç ulaşılamıyordu (şema hizalaması daha
+önce patlıyor) → `main()`'in ilk satırına alındı.
+
+⏭ **Kalan:** ②+③ kapanınca adım `lab/kapi.py`'ye **toplu koşuma** bağlanacak (çıkış kodu
+**1** doğrulandı: koşamazsa kapı kırmızı olur, sessiz kalmaz), sonra kaset 21 → ~50.
+🔴 **Kullanıcıdan bir komut gerekiyor:** `sudo chown $(id -u):$(id -g) backend/lab/reports/garson_korpusu.md backend/logs/control_plane.db`

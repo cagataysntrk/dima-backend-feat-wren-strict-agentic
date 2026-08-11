@@ -115,6 +115,70 @@ def _basamak(cevap: dict) -> str:
     return "garson"                                # 🗣 tek fişle halletti
 
 
+def _ortam_kusuru_beyan_et() -> None:
+    """🔴 `§A1` — ÖLÇÜM KOŞAMIYORSA **SEBEBİ EYLEME ÇEVRİLEBİLİR** OLMALI.
+
+    Ölçüldü (2026-08-11): bu araç `--hepsi`'ye bağlanamıyordu çünkü kontrol-düzlemi
+    SQLite dosyası **root sahipliğindeydi** — `--user` bayrağı unutulmuş **tek** bir
+    konteyner koşumundan. `CLAUDE.md` bu kusur sınıfını **adıyla** yazıyor (*«bir unutma
+    229 dosyayı root'a geçirdi»*) ama araç bunu `401` diye gösteriyordu: yani **ortam**
+    kusuru bir **kimlik** kusuru gibi okunuyordu.
+
+    ⚠ Bu fonksiyon bir onarım değil bir **teşhistir**: `chown` ayrıcalık ister ve o
+    kararı araç veremez. Verebileceği tek şey, hangi komutun çözeceğini **söylemektir**.
+
+    *Bir ölçüm koşamadığını söylemekle yetinirse, koşamadığı yerde kalır.*
+    """
+    import os
+    import pathlib
+
+    eksik: list[str] = []
+
+    # ① KİMLİK KAYNAĞI — ölçüldü: tohumlanmış kullanıcılar **docker volume'ünde**
+    # (`dima_logs`), repodaki `logs/` ise **bayat bir kopya** (yalnız `owner@dima.local`).
+    # Varsayılan yapılandırma ise üçüncü bir dosyayı gösteriyor: `control_plane.db` —
+    # root sahipliğinde, ürünün hiç kullanmadığı bir artefakt.
+    url = os.environ.get("DIMA_DATABASE_URL", "")
+    if not url:
+        eksik.append(
+            "  🔴 `DIMA_DATABASE_URL` YOK → varsayılan `logs/control_plane.db`, ki o\n"
+            "     ürünün kullandığı DB **DEĞİL** (canlı: `/app/logs/dima.db`, docker\n"
+            "     volume `dima_logs`). Tohumlanmış kullanıcı orada; repodaki kopyada yok.\n"
+            "     ÇÖZÜM:  docker cp dima-backend-core:/app/logs/dima.db /tmp/canli.db\n"
+            "             -v /tmp:/cp  -e DIMA_DATABASE_URL=sqlite:////cp/canli.db")
+    elif url.startswith("sqlite:"):
+        yol = pathlib.Path(url.replace("sqlite:///", "").replace("sqlite:", ""))
+        if yol.exists() and not os.access(yol, os.W_OK):
+            eksik.append(f"  🔴 `{yol}` YAZILAMIYOR — sahibi bu kullanıcı değil.\n"
+                         f"     ONARIM:  sudo chown $(id -u):$(id -g) {yol}")
+
+    # ② RAPOR DOSYASI — `--user` unutulmuş bir koşum onu root'a geçirdiyse ölçüm
+    # **sonuna kadar koşar** ve son satırda düşer. En pahalı arıza budur: iş yapılır,
+    # ürünü atılır.
+    _rapor = pathlib.Path(__file__).resolve().parent / "reports" / "garson_korpusu.md"
+    if _rapor.exists() and not os.access(_rapor, os.W_OK):
+        eksik.append(f"  🔴 `{_rapor}` YAZILAMIYOR (root sahipli).\n"
+                     f"     ONARIM:  sudo chown $(id -u):$(id -g) {_rapor}")
+
+    # ③ KASET — bu aracın *"SIFIR API"* vaadi kasetin **kurulabilmesine** bağlıdır.
+    # Kaset sağlayıcının taşıma metodunu (`_chat`/`_ask`) yamalar; sağlayıcı
+    # `NoLlmGenerator` ise yamalanacak bir şey yoktur ve araç sessizce **canlı** koşmaya
+    # çalışır — `--network none` altında bu bir çökmedir.
+    if not os.environ.get("DIMA_LLM_PROVIDER"):
+        eksik.append(
+            "  ⚠ `DIMA_LLM_PROVIDER` YOK → sağlayıcı `NoLlmGenerator`, kaset\n"
+            "     kurulamaz (`_chat`/`_ask` yok) ve araç CANLI koşmaya çalışır.\n"
+            "     ÇÖZÜM:  -e DIMA_LLM_PROVIDER=<sağlayıcı>  (kaset oynatır, ağ gerekmez)")
+
+    if eksik:
+        raise SystemExit(
+            "🔴 ÖLÇÜM KOŞULMADI — ön koşullar eksik (kimlik değil, **ORTAM**).\n"
+            + "\n".join(eksik)
+            + "\n\n⊙ Bu araç `--hepsi`'ye bu yüzden bağlı değildi: eksikler tek tek\n"
+              "  keşfediliyordu. *Bir ölçüm koşamadığını söylerse yeter sanmak, onu\n"
+              "  koşamadığı yerde bırakmaktır.*")
+
+
 def _giris(istemci) -> dict[str, str]:
     """🔴 `/ask` **kimlik doğrulaması ister** — ve bu, ölçüm aracının ilk tuzağıydı.
 
@@ -125,6 +189,7 @@ def _giris(istemci) -> dict[str, str]:
     *Bir ölçüm aracının en tehlikeli kusuru yanlış ölçmek değil, ölçmediğini
     ölçtüğünü sanmaktır.*
     """
+    _ortam_kusuru_beyan_et()
     r = istemci.post("/auth/login", json={"email": "demo-boyahane@usedima.com",
                                           "password": "dima-demo-1234"})
     if r.status_code != 200:
@@ -266,6 +331,12 @@ def main() -> int:
     ap.add_argument("--kapi", action="store_true")
     ap.add_argument("--taban-yaz", action="store_true")
     a = ap.parse_args()
+
+    # 🔴 `§A1` — ORTAM DENETİMİ **EN BAŞTA**. İlk yazımda bu çağrı `_giris()`'in içindeydi
+    # ve **hiç ulaşılamıyordu**: kontrol-düzlemi şeması uygulama ayağa kalkarken hizalanır,
+    # yani yazma denemesi `TestClient` kurulurken patlıyordu. Teşhis, teşhis edeceği
+    # arızadan **sonra** koşuyordu. *Bir kapının yeri, koruduğu şeyden önce olmalıdır.*
+    _ortam_kusuru_beyan_et()
 
     # 🔴 Ölçüm koşumunun **zamanlayıcıya işi yoktur** — ve o iş parçacığı süreci
     # ayakta tutuyordu: `main.py:109` bir `while True: time.sleep(60)` döngüsü kurar,

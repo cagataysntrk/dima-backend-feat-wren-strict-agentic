@@ -2775,6 +2775,40 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 
 ## FAZ 0 · ÖLÇÜM — kod değişikliği yok, 2-3 gün
 
+### ⏳ A1 · Garson korpusu — **KORPUS ZATEN VAR; ENGEL ÖLÇÜLDÜ (2026-08-11)**
+
+> 🔴 **KARTIN VARSAYIMI YANLIŞ: `lab/garson_korpusu.py` YAZILMIŞ** (16.765 bayt,
+> **21 kayıtlı vaka** — çok turlu zincirler, Arapça, sosyal, kök-neden, çapraz-küp),
+> `lab/garson_korpus_baseline.json` tabanı ve `lab/reports/garson_korpusu.md` raporu
+> **var**. Kart onu *«SONRA yazılacak»* diye tarif ediyor.
+>
+> ⊙ `§12.12`'nin *«yazılmış ama bağlanmamış»* deseninin **SEKİZİNCİ** örneği — ve bu kez
+> **kapının kendisinde**: `grep garson_korpusu lab/kapi.py tests/` → **sıfır** eşleşme.
+> `§1.4`'ün *«garson HİÇBİR TOPLU KOŞUMDA YOK»* şikâyetinin sebebi buydu. Kapının yazılı
+> gerekçesi (*«`--live` ister, kotaya bağlı»*) **canlı koşucu** (`lab/garson.py`) içindir;
+> kasetli korpus kendi docstring'inde *«her demet sonunda, **SIFIR API**»* diyor.
+>
+> 🔴 **NEDEN KOŞAMIYOR — üç engel, hepsi ORTAM (ölçüldü):**
+>
+> | # | engel | ölçüm |
+> |---|---|---|
+> | ① | **Kimlik kaynağı yanlış dosyada** | Canlı konteynerin `/app/logs`'u bir **docker volume** (`dima_logs`); tohumlanmış kullanıcılar (`demo-boyahane@usedima.com`) **orada**. Repodaki `logs/dima.db` **bayat kopya** (yalnız `owner@dima.local`), varsayılan yapılandırmanın gösterdiği `logs/control_plane.db` ise **root sahipli, ürünün hiç kullanmadığı** bir artefakt |
+> | ② | **Rapor dosyası root sahipli** | `lab/reports/garson_korpusu.md` → korpus **sonuna kadar koşuyor** ve son satırda `PermissionError` ile düşüyor. *İş yapılır, ürünü atılır.* |
+> | ③ | **Kaset kurulamıyor** | Sağlayıcı `NoLlmGenerator` → yamalanacak `_chat`/`_ask` yok → araç **canlı** koşmaya çalışıyor ve `--network none` altında çöküyor (`kaset: 0 isabet · 0 ıska`) |
+>
+> 🟢 **DOĞRULANDI:** canlı DB'nin bir **kopyasıyla** (`docker cp` + `DIMA_DATABASE_URL`)
+> giriş **çalışıyor** ve korpus soruları koşuyor — yani engel tasarımda değil **ortamda**.
+>
+> ✅ **BU TURDA YAPILAN:** araç artık **üç ön koşulun üçünü birden**, onarım komutlarıyla
+> **tek seferde** beyan ediyor (`_ortam_kusuru_beyan_et`, `main()`'in ilk satırı).
+> ⚠ İlk yazımda denetimi `_giris()`'e koymuştum ve **hiç ulaşılamıyordu**: şema hizalaması
+> uygulama ayağa kalkarken patlıyordu. *Bir kapının yeri, koruduğu şeyden önce olmalıdır.*
+>
+> ⏭ **KALAN:** ② ve ③ kapanınca (`chown` + kaset sağlayıcısı) adım `lab/kapi.py`'ye
+> **toplu koşuma** bağlanacak — çıkış kodu **1** verdiği doğrulandı, yani koşamazsa kapı
+> kırmızı olur, sessiz kalmaz. Sonra kaset 21 → ~50 vakaya büyütülecek (`§14.13`'ün
+> düzeltmesi: 300-500 değil **50 ile başla**).
+
 ### A1 · Garson korpusu
 
 | | |
