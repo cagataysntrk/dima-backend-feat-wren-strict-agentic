@@ -2672,7 +2672,7 @@ küme *örtüşmeyen* hâle gelir.
 | # | iş | **ÖNCE (bugün)** | **SONRA (hedef)** | dokunulacak dosyalar | MİMARİ.md'de güncellenecek |
 |---|---|---|---|---|---|
 | **D1** | Garsona şema verme | `katalog_metni.metin_ve_indeks()` → **23 küpün tamamı, 23.729 karakter**, her soruda | `wren_core.ManifestExtractor.extract_by()` ile **soruya göre budanmış** manifest → ilgili 2-3 küp | `app/katalog_metni.py` · `app/wren_service.py` · `app/routers/ask.py` (garson dalı) | **§3 semantik katman anatomisi** — *«katalog metni artık daraltılmış üretilir»* |
-| **D2** | Garsona örnek verme | ❌ **yok** — istem yalnız katalog + soru | `vqr.ara()` ile **retrieval**, istemin içine **5-10 doğrulanmış (soru → CubeQuery) çifti** | `app/vqr.py` (yeni `ara()`) · `app/llm.py::_cube_select_system` · `app/routers/ask.py` | **§4 LLM rolleri** — *«garson few-shot alır»* |
+| ✅ **D2** | Garsona örnek verme | ❌ **yok** — istem yalnız katalog + soru | `vqr.ara()` ile **retrieval**, istemin içine **5-10 doğrulanmış (soru → CubeQuery) çifti** | `app/vqr.py` (yeni `ara()`) · `app/llm.py::_cube_select_system` · `app/routers/ask.py` | **§4 LLM rolleri** — *«garson few-shot alır»* |
 | **D3** | İş sözlüğü | ❌ yok (yalnız `SynonymOverride`) | `demo/packs/*/instructions.md` — **versiyonlanmış iş tanımları**, garson istemine eklenir | yeni: `demo/packs/<sektor>/instructions.md` · `app/katalog_metni.py` | **§3.x** yeni alt bölüm |
 | **D4** | Belirsizlik | `soz.py` netleştirme + `§KA` beyanı | **aynen kalır** ⊙ *dışarıdan doğrulandı: +50 puan* | — | — |
 
@@ -2837,6 +2837,32 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 | **azaltma** | **Fail-open**: aday **<2** ise **tam katalog** gönder. Bayrak: `sema_daraltma` (varsayılan `off`) |
 | **geri alma** | tek bayrak |
 | **MİMARİ.md** | **§3** — *«katalog metni artık soruya göre daraltılmış üretilir; fail-open»* |
+
+### ✅ B2 · VQR → garson few-shot — **TAMAMLANDI (2026-08-11)**
+
+> 🟢 **UYGULANDI VE CANLI DOĞRULANDI.** `vqr.few_shot_block(…, guvenilir=True)` +
+> `vqr.garson_ornekleri()` + `company_registry.vqr_ornek_icin()` + bayrak `vqr_few_shot`.
+> `ask()`'e **iki satır** girdi (muafiyet `b2-garsona-few-shot`, Δ=2).
+>
+> **Ölçülen kazanç (curl, tek tek):** *«ram 3 makinesinin verimliliği ne durumda»*
+> **11 satır / ilk satır `ÖRGÜ HAT` (süzgeç yok)** → **1 satır / `RAM-3` · `ort_oee
+> 0,518`**. Üç garson sorusunun üçünde de blok eklendi (242 · 273 · 160 karakter =
+> katalogun **~%1'i**). VQR'da olmayan soru ve route'un cevapladığı soru: **blok yok,
+> gerileme yok**.
+>
+> 🔴 **VE UYGULARKEN İKİNCİ BİR KÖK ÇIKTI — `§12.12`'nin ALTINCI örneği:**
+> `settings.vqr_acik = **False**` olduğu için `vqr_for_request()` **her istekte `None`**
+> dönüyordu. Yani VQR'ın **tamamı** (23 kayıt, **8'i insan onaylı**) kullanılmıyordu:
+> `/verify` sessizce `stored:false` diyor, garson few-shot'ı ateşlemiyor ve
+> **Discovery'nin kendi few-shot'ı da ölüydü**. ⊙ Ve o anahtarın `config.py`'de
+> **yazılı gerekçesi yok** — o dosyadaki her ayarın gerekçesi varken.
+> ⚠ Çözüm anahtarı açmak **değil**: `vqr_acik` **tekrar oynatma** anahtarıdır ve
+> `vqr.py:136` iki riskin **aynı kapıdan geçmemesi** gerektiğini zaten yazmış
+> (replay yarıçapı **TAM**, few-shot **dolaylı**). Ayrı erişimci: `vqr_ornek_icin`.
+>
+> **Kapı:** `tests/test_b2_garson_few_shot.py` (5 test) — insan onaylı süzgeç · yalnız
+> güvenilmez kayıt varsa boş · erişimcinin replay anahtarından bağımsızlığı · `KURAL B` ·
+> `_cube_select_system` imzasının değişmediği.
 
 ### B2 · VQR → garson few-shot 🔴 EN YÜKSEK GETİRİ — **ve sanılandan ÇOK daha ucuz**
 
@@ -3150,7 +3176,7 @@ Eğer **tek bir şey** yapılacaksa sırası budur:
 
 | # | iş | süre | neden bu |
 |---|---|---|---|
-| 1 | **B2** — `few_shot_block`'u garsona bağla | **saatler** | Fonksiyon **zaten yazılmış**, Discovery'ye (%1,7) bağlı, garsona (%37) değil. Dışarıda **+17…+23 puan** ölçülmüş |
+| ✅ 1 | **B2** — `few_shot_block`'u garsona bağla | **saatler** ✔ bitti | Fonksiyon **zaten yazılmış**, Discovery'ye (%1,7) bağlı, garsona (%37) değil. Dışarıda **+17…+23 puan** ölçülmüş |
 | 2 | **A2** — `cevapsız` metriğini manşete al | **saatler** | %21,8 görünür olmadan **hiçbir iyileşme kanıtlanamaz** |
 | 3 | **D3'ün iki kuralı** — *«tek değer → grafik yok»* + *«≤3 satır → cümle»* | **günler** | *«Robotik»* hissini tek başına kıran şey. Power BI'ın **belgelenmiş** kuralı + Hearst&Tory **%41** |
 | 4 | **B1** — şema daraltma (`extract_by`, fail-open) | **günler** | Hataların **%27-33'ü** şema bağlama |

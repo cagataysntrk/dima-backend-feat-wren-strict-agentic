@@ -89,6 +89,22 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("b2-garsona-few-shot", 2,
+     "🔴🔴 **`§B2` — GARSONA ÖRNEK VER** *(rapor `§14` FAZ 1, kısa yolun 1. işi)*. "
+     "⊙ Ölçüldü ve **kendi ölçümümle doğrulandı**: `vqr.few_shot_block()` **zaten yazılmış "
+     "ve çalışıyor**, ama `ask.py:5135`'te **yalnız Discovery** dalına bağlıydı — trafiğin "
+     "**%1,7'si**. Trafiğin **%37'sini** taşıyan garson onu **hiç görmüyordu**; "
+     "`llm.py::_cube_select_system` içinde *«few_shot»* sözcüğü bile **geçmiyordu**. "
+     "Raporun *«yazılmış ama bağlanmamış»* deseninin beşinci ve en pahalı örneği. "
+     "⊙ Dış dayanak: Cube **+17…+23 puan**, *«hangi model olduğu değil, semantik belgenin "
+     "olup olmadığı belirleyici»* — kazanç **4 KB markdown**'dan. "
+     "⊙ Δ = 2: bir **bayrak kapısı** ve bir çağrı. Gövde `vqr.garson_ornekleri`'nde "
+     "(insan onaylı süzgeç + fail-open + kütük). `_cube_select_system` imzası "
+     "**değişmedi** — blok katalog metninin yanına eklenir. "
+     "⚠ **TAŞINAMAZ:** bayrak `resolve_for(settings, principal)` ister ve blok "
+     "`_select_consistent` çağrısının **argümanıdır**; ikisi de bu noktanın yerelleri. "
+     "⚠ `KURAL B`: bayrak kapalıyken istem metni **bayt bayt** eski. "
+     "*Bir fonksiyonu yazmak, onu doğru dala bağlamak değildir.* `sha=ebe0be2`"),
     ("ys2-kapida-kalanlar", 4,
      "🔴🔴 **`§YS-2` — REDDEDİLEN ADAY DA BİR BİLGİ TAŞIR.** "
      "⊙ Ölçüldü (curl `GG` turu): *«bu yıl toplam ciroyu **euro** olarak göster»* → "

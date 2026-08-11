@@ -494,6 +494,15 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "kademeli açar (davranış değişikliği taşıyan tek adım).",
         "category": "Yönlendirme",
     },
+    "vqr_few_shot": {
+        "label": "Garsona doğrulanmış örnek (few-shot)",
+        "description": "Intent-JSON (garson) istemine, VQR'daki İNSAN ONAYLI benzer "
+                       "soru→fiş çiftlerinden en fazla 3 örnek eklenir. `few_shot_block` "
+                       "zaten yazılıydı ama yalnız Discovery dalına bağlıydı; garson "
+                       "trafiğin %37'sini taşıyor. Kapalıyken istem metni bayt bayt "
+                       "eskisidir (KURAL B).",
+        "category": "Yönlendirme",
+    },
     "ask_async_discovery": {
         "label": "Discovery arka-plan işi",
         "description": "/ask'in Discovery (ham-SQL LLM) yolu senkron HTTP yerine arka-plan "

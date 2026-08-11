@@ -446,11 +446,41 @@ class VQR:
             return pairs[best_i]
         return None
 
-    def few_shot_block(self, question: str, k: int = 3) -> str:
+    def few_shot_block(self, question: str, k: int = 3, *,
+                       guvenilir: bool = False) -> str:
         """Select/SQL üretim prompt'una eklenecek doğrulanmış örnekler bloğu ("" olabilir).
         Çift wren_sql sarmalayıcıysa (strict-agentic /ask) SQL olarak, CubeQuery ise
-        JSON olarak gösterilir — DAIL-SQL desenindeki few-shot kazancı iki şekle de uygular."""
+        JSON olarak gösterilir — DAIL-SQL desenindeki few-shot kazancı iki şekle de uygular.
+
+        🔴🔴 `§B2` — **GARSON İÇİN AYRI, DAHA SIKI BİR KAPI (`guvenilir=True`).**
+
+        ⊙ Ölçüldü (rapor `§12.12`, ve kendi ölçümümle doğrulandı): bu fonksiyon **yazılmış
+        ve çalışıyor**, ama `ask.py:5135`'te **yalnız Discovery** dalına bağlı — yani
+        trafiğin **%1,7'sine**. Trafiğin **%37'sini** taşıyan **garsona hiç bağlanmamış**;
+        `llm.py::_cube_select_system` içinde *«few_shot»* sözcüğü bile **geçmiyordu**.
+
+        ⚠ Ve iki dal **aynı riskte değildir**. Bu dosyanın 136. satırındaki kendi notu
+        replay ↔ few-shot ayrımını yapıyor; buraya **üçüncü bir ayrım** ekleniyor:
+
+            Discovery few-shot → çıktı ham SQL, ayrıca `dry_plan`'dan geçer, payı %1,7
+            GARSON few-shot    → çıktı **fiş**, trafiğin %37'si, ve fiş **sayıyı belirler**
+
+        Bu yüzden garson yolunda yalnız **insan onaylı** kayıtlar gösterilir
+        (`_TRUSTED_SOURCES`: `user` · `user_verified` · `chip_approved`). Dış dayanak
+        aynı yöne: Anthropic'in **negatif ablasyonu** — ajana bütün SQL geçmişine grep
+        erişimi vermek doğruluğu **bir puandan az** oynattı; *«bilgi oradaydı, ajan gördü,
+        yine de kullanmadı — darboğaz erişim değil YAPI»*. Yani **çok örnek değil, az ve
+        onaylı örnek**.
+
+        ⚠ `k` varsayılanı **3** ve öyle kalıyor (Cube'un +17…+23 puanı **4 KB**'lık bir
+        bağlamdan geliyor); Hex'in ölçtüğü **bağlam kirlenmesi** riski bu sayıyla sınırlı.
+
+        *Bir örneği göstermek onu emretmek değildir — ama garsona gösterilen örnek,
+        müşterinin göreceği sayıyı belirler.*
+        """
         hits = self.recall(question, k)
+        if guvenilir:
+            hits = [(p, s) for p, s in hits if is_trusted(p.get("source"))]
         if not hits:
             return ""
         lines = ["Doğrulanmış örnekler (benzer sorular — deseni izle):"]
@@ -462,3 +492,21 @@ class VQR:
             else:
                 lines.append(f"  CubeQuery: {json.dumps(payload, ensure_ascii=False)}")
         return "\n".join(lines)
+
+    def garson_ornekleri(self, soru: str) -> str:
+        """🔴 `§B2` — garson dalı için **insan onaylı** few-shot bloğu (hata hâlinde `""`).
+
+        Çağıranda yalnız **bayrak kapısı** kalsın diye burada: `ask()`in büyüme tavanı bir
+        **bütçedir** ve bu iş yeni bir davranış değil, var olan bir fonksiyonu **doğru dala
+        bağlamaktır** (rapor `§12.12` — *«yazılmış ama bağlanmamış»*, beş kez ölçüldü).
+
+        ⚠ Fail-open: okuma patlarsa boş dizge → istem **bayt bayt** eskisi (`KURAL B`).
+        """
+        try:
+            blok = self.few_shot_block(soru, guvenilir=True)
+        except Exception:                 # noqa: BLE001 — örnek yoksa tur düşmez
+            _log.warning("§B2: few-shot bloğu alınamadı (best-effort)", exc_info=True)
+            return ""
+        if blok:
+            _log.info("§B2: garsona %d karakterlik doğrulanmış örnek eklendi", len(blok))
+        return blok

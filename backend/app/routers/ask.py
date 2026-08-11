@@ -1068,6 +1068,15 @@ def _zenginligi_birlestir(kova: list[dict]) -> dict:
     return kazanan
 
 
+def _vqr_ornek(request, soru: str) -> str:
+    """`§B2` — garson few-shot bloğu. Erişimci `vqr_ornek_icin`'dir (**replay anahtarı
+    `vqr_acik` bunu kapatmaz** — gerekçe orada). Fail-open: VQR yoksa boş dizge."""
+    from app.company_registry import vqr_ornek_icin
+
+    v = vqr_ornek_icin(request)
+    return v.garson_ornekleri(soru) if v else ""
+
+
 def _select_consistent(llm, question: str, catalog: str, index: dict, k: int,
                        sema: dict | None = None, kapida: list | None = None):
     """CubeQuery SELF-CONSISTENCY (literatür #1 / ClarifyGPT deseni): k örnekleme →
@@ -4046,9 +4055,30 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                     # `§YS-2` — hasat `request.state`'e yazılır: beyan `_answer_from_
                     # cube_query`'de, yani birkaç dönüşüm sonra okunur.
                     request.state.ys2_kapida = _ys2 = []
+                    # 🔴🔴 `§B2` — **GARSONA ÖRNEK VER.** Rapor `§14 B2`: `few_shot_block`
+                    # **zaten yazılmış ve çalışıyor**, ama yalnız **Discovery** dalına
+                    # bağlıydı (`ask.py:5135`, trafiğin **%1,7'si**); trafiğin **%37'sini**
+                    # taşıyan garson onu **hiç görmüyordu** — `llm.py::_cube_select_system`
+                    # içinde *«few_shot»* sözcüğü bile geçmiyordu. Kendi ölçümümle
+                    # doğrulandı (tek çağrı yeri, Discovery bloğunun içinde).
+                    #
+                    # ⊙ Dış dayanak: Cube'un ölçümü **+17…+23 puan**, ve *«hangi model
+                    # olduğu değil, **semantik belgenin olup olmadığı** belirleyici»* —
+                    # kazanç **4 KB markdown**'dan geliyor. Snowflake'in *Context
+                    # Enrichment* ajanı birebir bu iş.
+                    #
+                    # ⚠ **Kapı garsonda daha sıkı** (`guvenilir=True`): yalnız insan onaylı
+                    # kayıtlar. Gerekçe gövdede (`vqr.few_shot_block`): Discovery'nin
+                    # çıktısı ham SQL'dir ve `dry_plan`'dan geçer; garsonun çıktısı
+                    # **fiştir** ve fiş **sayıyı belirler**.
+                    #
+                    # ⚠ `KURAL B`: bayrak kapalıyken metin **bayt bayt** eski — blok boşsa
+                    # hiçbir şey eklenmez, `_cube_select_system` imzası **değişmedi**.
+                    _few = (_vqr_ornek(request, body.question)
+                            if "vqr_few_shot" in resolve_for(settings, principal) else "")
                     parsed, uyum, eksen, adaylar = _select_consistent(
-                        _g, _q_llm, catalog_text + _ent_kural, cube_index, k, _sema,
-                        kapida=_ys2)
+                        _g, _q_llm, "\n\n".join(x for x in (catalog_text + _ent_kural, _few) if x),
+                        cube_index, k, _sema, kapida=_ys2)
                     parsed = varlik.geri_koy(parsed, _ent)
                     # 🔴 `AJ3.3` — dönem ifadesi **taze yolda da** çözülür ve çözücü
                     # takip yolunun **aynısıdır** (`_resolve_period` → `date_filters`).

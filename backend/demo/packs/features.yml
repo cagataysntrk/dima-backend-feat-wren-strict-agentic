@@ -131,6 +131,12 @@ features:
   next_steps: beta        # rehberli analitik K2 — sonraki adım (kırılım/ölçek/zaman) chip'leri
   ask_intent_first: beta  # /ask: route() boşsa LLM'e Intent-JSON doldurttur (Faz 1 canary —
                           # route()'un kendisi bu bayraktan bağımsız her zaman çalışır)
+  # 🔴 `§B2` (rapor §14 FAZ 1) — garsona doğrulanmış örnek göster. `few_shot_block` zaten
+  # yazılıydı ama YALNIZ Discovery'ye (%1,7) bağlıydı; garson trafiğin %37'sini taşıyor.
+  # Dış ölçüm: Cube +17…+23 puan, 4 KB'lık bir bağlamdan. Kapı garsonda daha sıkı:
+  # yalnız insan onaylı kayıtlar (`user`/`user_verified`/`chip_approved`).
+  # ⚠ Risk: bağlam kirlenmesi (Hex: «çelişkili bağlam modeli çöküş moduna soktu») → k=3.
+  vqr_few_shot: beta
   agent_plan_secimi: "off"  # FAZ 4: çapraz-alan pilotu — Planlayici.sec() planı ÖNERİR,
                           # dört kapı DENETLER, agent_run makbuzu kaydeder. Seçim ≠
                           # çalıştırma. `off` — sıcak yola LLM çağrısı ekliyor.

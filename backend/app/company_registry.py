@@ -209,6 +209,37 @@ def vqr_for_request(request):
 
     if not _gs().vqr_acik:
         return None
+    return _vqr_coz(request)
+
+
+def vqr_ornek_icin(request):
+    """🔴🔴 `§B2` — **ÖRNEK GÖSTERME için VQR; `vqr_acik` bunu kapatmaz.**
+
+    ⊙ Ölçüldü (rapor `§14 B2` uygulanırken, canlı konteynerde): `settings.vqr_acik`
+    **`False`** ve bu yüzden `vqr_for_request()` **her istekte `None`** dönüyor. Sonucu
+    üç yerde birden görülüyordu: `/verify` sessizce `stored:false` diyor · garson
+    few-shot'ı hiç ateşlemiyor · **Discovery'nin kendi few-shot'ı da ölü**. VQR'da
+    **23 kayıt** (8'i insan onaylı) duruyor ve **hiçbiri kullanılmıyor**.
+
+    🔴 Ama anahtar **TEKRAR OYNATMA** anahtarıdır ve `vqr.py`'nin 136. satırı bu ayrımı
+    **zaten yazmış**:
+
+        replay   → saklanan fişi BİREBİR, yeniden doğrulanmadan çalıştırır. Blast radius: TAM.
+        few-shot → bir ÜRETECE örnek verir; üretecin çıktısı ayrıca doğrulanır. Dolaylı.
+
+    ⚠ `vqr_for_request`'in docstring'i *«kapatmanın tek doğru yeri, onu veren yerdir»*
+    diyor — o cümle yazıldığında VQR **yalnız replay** demekti. `§B2` ikinci bir tüketici
+    getiriyor ve onun kapısı **ürün bayrağıdır** (`vqr_few_shot`), replay anahtarı değil.
+    Aynı kapıdan geçirmek, farklı yarıçaptaki iki riski tek düğmeye bağlamak olurdu.
+
+    *Bir anahtarı, açtığı şeyin adıyla değil, kapattığı riskin yarıçapıyla tanımlamak
+    gerekir.*
+    """
+    return _vqr_coz(request)
+
+
+def _vqr_coz(request):
+    """`vqr_for_request` ↔ `vqr_ornek_icin` ortak çözünürlüğü (`KAT-1`: tek gövde)."""
     service = wren_for_request(request)
     slug = getattr(service, "company_slug", None)
     default_vqr = getattr(request.app.state, "vqr", None)

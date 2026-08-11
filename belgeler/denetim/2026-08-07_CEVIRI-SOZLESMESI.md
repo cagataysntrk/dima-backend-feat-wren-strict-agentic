@@ -12497,3 +12497,56 @@ ve `§101.1` gereği reddedildi. Kalan yol Türkçe biçimbilimidir (fiil/ad ayr
 `§0.0` onu route'ta yasaklıyor.
 
 *Bir sınıfı daraltmakla kapatmak arasındaki farkı yazmamak, kapattığını sanmaktır.*
+
+---
+
+# `B2` TURU — garsona doğrulanmış örnek *(rapor §14 FAZ 1)*
+
+*(2026-08-11 · curl, tek tek · raporun `§14.0` protokolüyle: hedefli pytest → docker → curl)*
+
+## Dört senaryo
+
+| # | senaryo | sonuç |
+|---|---|---|
+| ① | «ram 3 makinesinin verimliliği ne durumda» | 🟢 **11 satır → 1 satır**; ilk satır `ÖRGÜ HAT` → **`RAM-3`** · blok **242 krkt** |
+| ① | «duruş nedenlerine göre süre dağılımı nasıl bu ay» | blok **273 krkt** eklendi |
+| ① | «renklere göre nasıl dağılıyor» | blok **160 krkt** eklendi |
+| ② | «bu yıl enerji yoğunluğu nedir» *(VQR'da yok)* | ✅ `source=cube`, **blok yok**, gerileme yok |
+| ③ | «bu yıl toplam ciro» *(route cevaplıyor)* | ✅ garson hiç çalışmadı, **blok yok** |
+| ④ | istem büyümesi | **160–273 karakter** ≈ 23.729'luk katalogun **%1'i** |
+
+## 🔴 Uygularken çıkan ikinci kök — `§12.12`'nin ALTINCI örneği
+
+İlk curl turunda `§B2` **hiç ateşlemedi** ve `/verify` sessizce `{"stored": false}` döndü.
+İki belirti, tek kök — ve tahminle değil ölçümle bulundu:
+
+```
+settings.vqr_acik = False   →   vqr_for_request() HER İSTEKTE None
+```
+
+⊙ Yani VQR'ın **tamamı** kullanılmıyordu: **23 kayıt, 8'i insan onaylı**
+(`chip_approved` 7 · `user_verified` 1) — ve **Discovery'nin kendi few-shot'ı da ölüydü**
+(`ask.py:5135`). Rapor *«few_shot_block Discovery'ye bağlı»* diyordu; gerçek daha ağırdı:
+**hiçbir yere bağlı değildi.**
+
+⚠ **Çözüm anahtarı açmak DEĞİL.** `vqr_acik` bir **tekrar oynatma** anahtarıdır ve
+`vqr.py:136` iki riskin **aynı kapıdan geçmemesi** gerektiğini zaten yazmış:
+
+```
+replay   → saklanan fişi BİREBİR, yeniden doğrulanmadan çalıştırır.  Blast radius: TAM
+few-shot → bir ÜRETECE örnek verir; çıktı ayrıca doğrulanır.         Blast radius: dolaylı
+```
+
+Ayrı erişimci (`vqr_ornek_icin`) yazıldı; ikisi **aynı çözünürlüğü** paylaşıyor (`_vqr_coz`,
+`KAT-1`). Ve garson kapısı Discovery'den **daha sıkı**: yalnız insan onaylı kayıtlar —
+çünkü Discovery'nin çıktısı ham SQL'dir ve `dry_plan`'dan geçer, garsonun çıktısı
+**fiştir** ve fiş **sayıyı belirler**.
+
+⚠ Ve `config.py`'de `vqr_acik: bool = False`'un **yazılı gerekçesi yok** — o dosyadaki
+her ayarın gerekçesi varken. Açık borç.
+
+## Kendi testim kendi naifliğimi yakaladı
+
+`vqr_ornek_icin`'in replay anahtarından bağımsızlığını *«kaynakta `vqr_acik` geçmesin»*
+diye yazmıştım — ama **docstring onu açıklamak için anıyordu** ve kapı kırmızı verdi.
+Yüklem gövdeye daraltıldı. *Bir yüklem koda bakmalı, açıklamaya değil.*

@@ -157,7 +157,7 @@ güncellenmesini gerektirir.
 | 3 | **`cube_router.route()`** — sıfır-LLM deterministik NL→CubeQuery | **`cube`** | **YOK** | tam yapısal · chip · kırılım · drill · Query Contract |
 | 4 | `deterministic_refine()` — yapısal takip | `cube` | yok | aynı |
 | 5 | `cross_cube_add` / `cross_cube_dim_switch` | `cube` | yok | aynı (blend, gerçek JOIN değil) |
-| 6 | **Intent-JSON** — LLM *yapı doldurur*, **SQL YAZMAZ** | **`cube+llm`** | evet (küçük model) | tam yapısal · chip · kırılım · drill · Query Contract |
+| 6 | **Intent-JSON** — LLM *yapı doldurur*, **SQL YAZMAZ** | **`cube+llm`** | evet (küçük model) | tam yapısal · chip · kırılım · drill · Query Contract · 🆕 **few-shot** (`§B2`) |
 | 7 | **Discovery** — LLM ham SQL yazar | `llm:<sağlayıcı>` | evet | **tek atımlık düz tablo. Chip YOK, kırılım YOK, drill YOK.** |
 | 8 | dürüst red | `null` | — | "anlamadığını bil" — yanlış öneri, önerisizlikten kötüdür |
 
@@ -621,6 +621,33 @@ Bildirimde, `/ask/contribution` yanıtında ve `ContributionLayer`'da görünür
 
 
 ---
+
+### 3.9 🆕 `§B2` — GARSON FEW-SHOT ALIR *(2026-08-11)*
+
+Intent-JSON isteminin bağlamı artık **katalog metni + insan onaylı örnekler**:
+
+```
+katalog metni (daraltılmamış)  +  vqr.garson_ornekleri(soru)   ← en fazla 3 çift
+```
+
+**Kaynak kapısı Discovery'den daha sıkıdır** ve bu bilinçlidir:
+
+| tüketici | çıktı | ek doğrulama | kaynak kapısı |
+|---|---|---|---|
+| Discovery few-shot | ham SQL | `dry_plan` | tüm kayıtlar |
+| 🆕 **garson few-shot** | **fiş** (sayıyı belirler) | — | **yalnız insan onaylı** (`user` · `user_verified` · `chip_approved`) |
+
+⚠ **Erişimci ayrıdır:** `company_registry.vqr_ornek_icin()`. `settings.vqr_acik`
+**tekrar oynatma** anahtarıdır ve örnek göstermeyi kapatmaz — `vqr.py`'nin kendi notu
+(*«replay ile few-shot AYNI RİSKTE DEĞİLDİR»*) bu ayrımı zaten yazmıştı. İkisi aynı
+çözünürlüğü paylaşır (`_vqr_coz`, `KAT-1`).
+
+⚠ Bayrak **`vqr_few_shot`**; kapalıyken istem metni **bayt bayt** eskisidir (`KURAL B`).
+`_cube_select_system` imzası **değişmedi** — blok katalog metninin yanına eklenir.
+
+⊙ Ölçülen kazanç (curl): *«ram 3 makinesinin verimliliği ne durumda»* → **11 satır,
+süzgeçsiz** iken **1 satır, `RAM-3`**. Dış dayanak: Cube **+17…+23 puan**, 4 KB'lık bir
+bağlamdan. Kapı: `tests/test_b2_garson_few_shot.py`.
 
 ## 4. DEĞİŞMEZLER — "bunu bozarsan sistem yalan söyler"
 

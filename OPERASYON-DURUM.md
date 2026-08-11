@@ -2721,3 +2721,28 @@ Beş yeni kök bulundu ve düzeltildi. Tam döküm: çeviri sözleşmesi › `DD
   Her iki kanal da **fırsatçı**; sınıf **kapanmadı, daraldı**. Deterministik kapanış
   sorunun artığını tek başına kullanmayı gerektirir ve o ölçülmüş bir yanlış-pozitif
   üretir (`§101.1`); kalan yol Türkçe biçimbilimidir ve `§0.0` onu yasaklıyor.
+
+## RAPOR UYGULAMASI — `§14` adım adım
+
+> Kaynak: `belgeler/arastirma/2026-08-11_REKABET-VE-MIMARI-ANALIZI.md`. Protokol `§14.0`:
+> adım başına *hedefli pytest → docker + **curl***; kapı yalnız faz sonunda **bir kez**.
+
+### ✅ B2 · VQR → garson few-shot *(2026-08-11)*
+
+`vqr.few_shot_block(…, guvenilir=True)` · `vqr.garson_ornekleri()` ·
+`company_registry.vqr_ornek_icin()` · bayrak **`vqr_few_shot`** (beta) ·
+kapı `tests/test_b2_garson_few_shot.py` (5 test).
+
+**Ölçülen kazanç (curl):** *«ram 3 makinesinin verimliliği ne durumda»* →
+**11 satır / ilk satır `ÖRGÜ HAT`** (süzgeç yok) → **1 satır / `RAM-3`**. Üç garson
+sorusunda da blok eklendi (242·273·160 karakter ≈ katalogun **%1'i**); VQR'da olmayan
+soruda ve route'un cevapladığı soruda **blok yok, gerileme yok**.
+
+🔴 **Uygularken çıkan ikinci kök — `§12.12`'nin altıncı örneği:** `settings.vqr_acik`
+**`False`** olduğu için `vqr_for_request()` her istekte `None` dönüyordu; VQR'ın tamamı
+(**23 kayıt, 8'i insan onaylı**) kullanılmıyordu ve **Discovery'nin few-shot'ı da ölüydü**.
+Çözüm anahtarı açmak değil — `vqr_acik` **tekrar oynatma** anahtarıdır; `vqr.py:136` iki
+riskin ayrı kapılardan geçmesi gerektiğini zaten yazmış. Ayrı erişimci: `vqr_ornek_icin`.
+
+⚠ **Açık borç:** `config.py`'de `vqr_acik: bool = False`'un **yazılı gerekçesi yok** —
+o dosyadaki her ayarın gerekçesi varken. Replay yolunun neden kapalı olduğu **ölçülmeli**.
