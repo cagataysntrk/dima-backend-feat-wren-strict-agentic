@@ -871,9 +871,11 @@ def aciklanamadi(prev_cq: dict, cube_meta: dict | None) -> tuple[str, list[dict]
     _kuyruk = (" Şu kırılımlar açılabilir: "
                + " · ".join(f"**{d['label']}**" for d in adaylar) + "."
                if adaylar else "")
-    return (f"**«{_ad}» için bir kök-neden ayrıştırması üretemedim.** Bu ölçünün formülü "
+    # 🔴 `§E4` — *«kök neden»* bir NEDENSELLİK iddiasıdır; ölçtüğümüz **katkıdır**.
+    # Kullanıcıya dönen tek sızıntı buydu (arka uçtaki öteki anmalar yorum/docstring).
+    return (f"**«{_ad}» için bir katkı ayrıştırması üretemedim.** Bu ölçünün formülü "
             f"tek parça (bileşenlerine ayrılmıyor) ve elimdeki dönemde açıklanacak bir "
-            f"**değişim** de yok — yani söyleyebileceğim bir *neden* yok."
+            f"**değişim** de yok — yani gösterebileceğim bir *katkı* yok."
             f"{_kuyruk}", chipler)
 
 

@@ -143,7 +143,7 @@ export function DrillDownPanel({
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Kök nedeni incele"
+      aria-label="Katkıyı incele"
     >
       <div
         ref={kutuRef}
@@ -152,12 +152,23 @@ export function DrillDownPanel({
       >
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-mono text-[13px] uppercase tracking-wide text-muted">
-            Kök nedeni incele
+            Katkıyı incele
           </h2>
           <button onClick={onClose} aria-label="Kapat" className="text-muted hover:text-foreground">
             ✕
           </button>
         </div>
+        {/* 🔴 §E4 — ADLANDIRMA BİR YANILTMA KAYNAĞIDIR. Bu panel KATKI ölçer (hangi
+            kalem farkın ne kadarını açıklıyor), NEDENSELLİK değil. Nedensel bir iddia
+            nedensel graf beyanı ister (DoWhy sınıfı) ve bizde YOK; uydurmak `GG8`'i
+            çiğner. Tableau kendi dokümanında aynı sınırı yazıyor: «Correlation is not
+            causation… not a tool to prove or disprove hypotheses».
+            ⚠ Sınır GİZLENMİYOR, KÜÇÜLTÜLMÜYOR: kullanıcı paneli açar açmaz okuyor. */}
+        <p className="mb-3 text-[11px] leading-relaxed text-muted">
+          Bu bir <strong>katkı analizidir</strong>: hangi kalemin farkın ne kadarını
+          açıkladığını ölçer. <strong>Nedensellik iddiası değildir</strong> — birlikte
+          değişmek, birinin ötekine sebep olduğunu göstermez.
+        </p>
 
         {/* Breadcrumb — istediği adıma geri dönebilir. */}
         {steps.length > 0 && (
@@ -275,7 +286,7 @@ export function DrillDownPanel({
             {current.data.related_cubes.length > 0 && (
               <div>
                 <p className="mb-1 font-mono text-[10px] uppercase tracking-wide text-muted">
-                  ilişkili veri (kök neden adayı)
+                  ilişkili veri (katkı adayı)
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {current.data.related_cubes.map((r) => (

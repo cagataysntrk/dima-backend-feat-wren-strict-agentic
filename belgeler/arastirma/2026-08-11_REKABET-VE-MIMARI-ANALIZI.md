@@ -3757,7 +3757,29 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 | **risk** | Fazla eleme → *«hiçbir şey bulamadım»* |
 | **azaltma** | Elenen sayısını **beyan et** (*«N aday incelendi, M'i istatistiksel eşiği geçti»*) — `§98.1` disiplini |
 
-### E4 · Adlandırma
+### ✅ E4 · Adlandırma — **YAPILDI: ad DEĞİŞTİ, sınır YAZILDI** *(2026-08-12)*
+
+> ⊙ **Ölçüldü — iddia nerede görünüyor:** arka uçtaki *«kök neden»* anmalarının **hemen
+> hepsi yorum/docstring**. Kullanıcının okuduğu iddia **ön-uçtaydı** ve **üç satırdı**:
+> `aria-label="Kök nedeni incele"` · başlık **Kök nedeni incele** ·
+> `ilişkili veri (kök neden adayı)`. *Bir yanıltmanın büyüklüğü kod içindeki sıklığıyla
+> değil, kaç kişinin okuduğuyla ölçülür.*
+>
+> ✅ `Kök nedeni incele` → **`Katkıyı incele`** · `kök neden adayı` → **`katkı adayı`**
+> 🔴 **Ve asıl istenen yapıldı — SINIR YAZILDI.** Panel açılır açılmaz okunan tek satır:
+> *«Bu bir **katkı analizidir**: hangi kalemin farkın ne kadarını açıkladığını ölçer.
+> **Nedensellik iddiası değildir** — birlikte değişmek, birinin ötekine sebep olduğunu
+> göstermez.»* ⚠ Gizlenmiyor, küçültülmüyor, katlanmıyor.
+>
+> ⊕ **Kapı iki gerçek sızıntı daha buldu** (ilk `grep` görmemişti): `kok_neden.py:874`
+> ve `ask.py:5618` — ikisi de **kullanıcıya dönen** metindi, ikisi de düzeltildi.
+> Muafiyetler **sınıfıyla** yazılı: LLM istemi · yönetici paneli açıklaması · iz satırı.
+> *Bir muafiyet, sınıfı yazılmadan verilirse muafiyet değil bir delik olur.*
+>
+> Kapı: `test_e4_adlandirma.py` (5) — ön-uç metnini **ve** arka uçtaki dizge sabitlerini
+> `ast` ile tarar (docstring'ler elenir). Demet kapısı yeşil, taban birebir aynı.
+
+### E4 · Adlandırma *(özgün kart)*
 
 *«Kök neden»* yerine **«katkı analizi»** kullanmayı değerlendir. Tableau kendi dokümanında:
 *«Correlation is not causation… **not a tool to prove or disprove hypotheses**»*. Gerçek

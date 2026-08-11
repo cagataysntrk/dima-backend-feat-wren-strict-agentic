@@ -5616,7 +5616,7 @@ def _ask_drill_govde(request: Request, body: DrillRequest) -> DrillResponse:
         # eksik veriden hesaplanmış bir kök-neden analizi, analizsizlikten kötüdür.
         return DrillResponse(
             formula_explanation="Bu sonuç satır tavanına ulaştı (kırpılmış görünüm) — "
-                                "üzerinden kök-neden dallanması sunulmuyor, çünkü sayılar "
+                                "üzerinden katkı dallanması sunulmuyor, çünkü sayılar "
                                 "eksik veriden hesaplanırdı. Soruyu daraltıp tekrar sor.",
         )
 
