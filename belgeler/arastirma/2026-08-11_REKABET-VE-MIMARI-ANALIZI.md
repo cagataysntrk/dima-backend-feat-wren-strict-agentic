@@ -127,6 +127,13 @@ kurmuşuz»*. On altı kırmızının çoğu **besleme, ölçüm ve ambalaj** �
 *Bir sistemin karnesi, neyi yapamadığını değil, yapabildiği hâlde yapmadığını gösterdiğinde
 işe yarar.*
 
+### 0.55 ⚠ Bu raporun sınırı
+
+Oturumun arama bütçesi tükendi. **Teknik yol haritası (§14.0-14.5, §14.7) arama
+gerektirmeyen kanıtlara dayanıyor — güvenle ilerlenebilir.** Ama **§14.6 (pazar/kama/
+fiyat/kanal)** keşfe dayanıyor ve o temel **bir kez zaten çöktü** (beş yerli oyuncu
+kaçtı, §19.7). Ayrıntı: **§37**.
+
 ### 0.5 Tek cümlelik yargı
 
 > **Mimari kamp doğru, semantik katman gerçek bir hendek, kök-neden cebiri sektörün
@@ -2486,6 +2493,92 @@ piyasadan kaldırıldı**.
 > yaşadığı yerin üçte ikisi.**
 
 ---
+
+---
+
+## 37 · 🔴 KANIT GÜCÜ VE BU RAPORUN SINIRI — geliştirmeye başlamadan ÖNCE okunmalı
+
+> Bu oturumun **WebSearch bütçesi tükendi (200/200)**. Ajanlar aramayı **WebFetch +
+> DuckDuckGo Lite + Semantic Scholar API + HN Algolia API** ile ikame etti. Bu bölüm,
+> hangi bulgunun bundan **etkilendiğini** ve hangisinin **etkilenmediğini** ayırır.
+>
+> ⚠ *Bir raporun en tehlikeli kısmı yanlış olan değil, ne kadar güvenilir olduğu
+> bilinmeyen kısmıdır.*
+
+### 37.1 Asimetri — ve kanıtı elimizde
+
+**Arama bütçesi POZİTİF iddiaları etkilemez, NEGATİF iddiaları çürütür.**
+
+* *«Omni 95/100 ölçtü»* → bir sayfayı **getirdim**, alıntı elimde. Arama gerekmez.
+* *«Türkiye'de kimse yapmıyor»* → **aramanın kapsamı kadar** doğrudur. Ve bu iddia bu
+  raporda **zaten bir kez çürüdü**: `dbtalk` · `Sofkar AI` · `Mubisoft ERP Asistanı` ·
+  `Listen to Data` · `UMAI` — beşi de ilk taramada **kaçtı** (§19.7).
+
+🔴 **Raporda 63 olumsuz iddia var.** Bunlar risk yüzeyidir.
+
+### 37.2 Kanıt sınıfları
+
+| sınıf | yöntem | arama bütçesinden etkilenir mi | rapordaki yeri |
+|---|---|---|---|
+| **A · Yerel ölçüm** | canlı sistem + `curl` + `docker exec` + kod okuma | 🟢 **HAYIR — hiç** | §1 · §2 · §3 · §4 · §11 · §16 · §17 · §18 · §0.6 karnesi |
+| **B · Doğrudan getirme** | bilinen URL'den WebFetch, alıntıyla | 🟢 **HAYIR** | Wren mimarisi · Malloy · Voyager · satıcı dokümanları · Pulse'un 14 tipi |
+| **C · API sayımı** | YC resmî API (**2.203 şirket**), GitHub/PyPI/npm/HF | 🟢 **HAYIR** — deterministik sorgu | §22.2 YC sayımı · yıldız/commit/lisans verileri |
+| **D · Ağ adli incelemesi** | DNS/TLS/HTTP durum testi | 🟢 **HAYIR** | §22.1 mezarlık |
+| **E · Akademik** | Semantic Scholar API + arXiv | 🟡 **az** — makale bulunur, *«başka makale var mı»* zayıflar | §7 · §9 · §10 · §32 |
+| **F · KEŞİF** | *«bu alanda başka kim var»* | 🔴 **EVET, ağır** | §19 yerli rekabet · §13 açık kaynak taraması · tüm *«bulunamadı»* satırları |
+
+### 37.3 🟢 Geliştirmeye ETKİSİ OLMAYAN kısımlar — güvenle ilerlenebilir
+
+§14'ün altı öbeğinden **beşi** A/B/C sınıfına dayanıyor:
+
+| öbek | dayanağı | güven |
+|---|---|---|
+| **§14.0** kapsamı ilan et | Hex/Dot/Omni'nin **yazılı** kapsam reddi (getirildi) + ölenlerde yokluğu (API sayımı) | 🟢 **yüksek** |
+| **§14.1** önce ölç | **tamamen kendi ölçümümüz** (trafik %37/%35,5/%21,8 · şişme 28× · garson 21 senaryo) | 🟢 **en yüksek** |
+| **§14.2** garsonu besle | Cube **+17…+23** (yayın) · Anthropic **%21→>%95** (yayın) · `extract_by` (motorun kendi API'si) | 🟢 **yüksek** |
+| **§14.3** iki sistemi birleştir | **tamamen kendi ölçümümüz** (%73 örtüşme · iki bayrak kapalı · %60 tek adım) | 🟢 **en yüksek** |
+| **§14.4** kök-neden | yayınlanmış algoritmalar (Adtributor/HotSpot/LMDI) + CHI 2018 | 🟢 **yüksek** |
+| **§14.5** cevap biçimi | Pulse'un **14 tipi** (getirildi) + **kendi ölçümümüz** (chip 6,6,5,…) | 🟢 **yüksek** |
+| **§14.7** temizlik | **tamamen kendi ölçümümüz** | 🟢 **en yüksek** |
+
+⊙ **Yani teknik yol haritasının tamamı, arama bütçesinden bağımsız kanıtlara dayanıyor.**
+
+### 37.4 🔴 AÇIKTA OLAN TEK KISIM — §14.6 stratejik/pazar
+
+| madde | dayanağı | risk |
+|---|---|---|
+| **26** kama: *«Türkiye'de kimse imalat + Türkçe + doğrulanabilirlik satmıyor»* | 🔴 **F sınıfı (keşif)** | **Bir kez zaten çürüdü.** Beş oyuncu kaçtı; kaçmayanların sayısı **bilinmiyor** |
+| **27** fiyat tabanı (AKINSOFT ücretsiz) | B sınıfı — ama **fiyat listeleri sık değişir** | orta |
+| **28** kanal kararı (Solniro / DMO) | B/F karışık | orta |
+| **29** self-serve fiyat | C sınıfı (yayınlanmış fiyatlar) | düşük |
+
+### 37.5 🔴 GELİŞTİRMEDEN ÖNCE TAZE OTURUMDA DOĞRULANMASI GEREKENLER
+
+**Tam arama bütçesiyle, sırayla:**
+
+1. 🔴 **Yerli rekabet taramasını BAŞTAN yap.** §19'un tamamı F sınıfı. Tohum listesiyle
+   değil, **Türkçe uzun kuyruk terimleriyle** ve **ERP ekosistemi dizinleriyle**
+   (Logo/Mikro/Netsis iş ortağı listeleri, Teknokent şirket dizinleri, KOSGEB/TÜBİTAK
+   destek listeleri, LinkedIn şirket araması, YouTube Türkçe demolar).
+   ⊙ *«Kimse yapmıyor»* stratejinin temeli; **temeli bir kez çökmüş durumda.**
+2. **Açık kaynak taramasını tazele** — §13. Yeni proje doğuş hızı yüksek; *«en iyi
+   seçenek bu»* iddiaları **altı ayda bayatlıyor**.
+3. **§21.8'in dört doğrulanamayanı** — özellikle **Tableau Ask Data** (iki ajan çelişti)
+   ve *«aşırı grafikleştirme eleştirisi bulunamadı»* boşluğu.
+4. **Fiyat ve paketleme** — hem yerli (AKINSOFT, ERP Asistanı, Turboard/DMO) hem küresel
+   (Basedash, Definite, Upsolve). Fiyat en hızlı bayatlayan veridir.
+5. **Rakiplerin son 3 ay duyuruları** — özellikle **Dativa AI** ve **OBASE AIReady**.
+
+### 37.6 Hüküm
+
+> **Bu raporla geliştirmeye başlanabilir — ama YALNIZ §14.0–14.5 ve §14.7 ile.**
+> §14.6 (pazar/kama/fiyat/kanal) **taze bir arama oturumunda yeniden doğrulanmadan**
+> stratejik karara temel yapılmamalıdır.
+
+⊙ Ve iyi haber: **§14'ün ilk beş öbeği zaten aylarca iş.** Pazar doğrulaması onunla
+**paralel** yürüyebilir; kritik yolda değil.
+
+*Bir raporun dürüstlüğü, hangi bölümüne dayanılabileceğini söylediğinde başlar.*
 
 ## EK · Kaynakça
 
