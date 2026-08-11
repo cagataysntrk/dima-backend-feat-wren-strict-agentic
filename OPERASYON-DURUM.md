@@ -3117,3 +3117,25 @@ bulunamaz; tüketici arama gerekir.
 kart `E3`'ü ön koşul ilan ediyor ② `E3` ölçüldü: p-değeri yok → BH uygulanamıyor
 ③ tenantlarımızda böyle bir kök bulunduğuna dair **hiçbir ölçüm yok**.
 ⊙ Ölçülmemiş bir ihtiyaç için ölçülmemiş bir gürültü kaynağı eklemek olurdu.
+
+### ✅ F1 · Arşivlenmiş `wren-engine` konteyneri kapatıldı *(2026-08-11)*
+
+**Dört ölçüm:** ① konteyner hâlâ **`Restarting (1)`** — `restart: always` ile sonsuz
+çökme döngüsü, 8080'i tutuyor ② `grep -rn "WREN_ENGINE_URL|wren-engine" backend/
+--include="*.py"` → **SIFIR**: env geçiliyordu ama **hiçbir Python kodu okumuyordu**
+③ `CLAUDE.md` mimariyi zaten yazmış — `wren.engine.WrenEngine` **in-process**, subprocess
+YOK; konteyner eski HTTP-servis mimarisinden **artık** ④ ön-uçta/betiklerde 8080 yok.
+⚠ İmajın kaynağı **arşivlenmiş** bir depo, üstelik `latest` etiketiyle.
+
+🔴 **Silinmedi, işaretlendi** (`MIMARI §10`: «kapananlar işaretlenir, silinmez») —
+servis + env + `depends_on` yorumlandı, gerekçe dosyada.
+**Doğrulama:** `/health` ok · curl «bu yıl toplam ciro» → `source=cube` · «makine bazında
+oee» → `source=cube+llm`.
+
+⚠ **ORTAM NOTU (benim değişikliğimden DEĞİL):** `docker-compose` v1.29 bu ortamda
+`KeyError: 'ContainerConfig'` ile **recreate edemiyor** (modern Docker Engine
+uyumsuzluğu). Kanıt: `9f05b635e704_dima-qdrant` konteyneri **2026-07-30**'da oluşmuş ve o
+hash-önekli ad, compose v1'in recreate başarısız olunca verdiği addır — yani sorun
+**12 gündür** var. Backend bu turda `docker run` ile ayağa kaldırıldı (compose spec'i
+birebir kopyalanarak: aynı ağ, port, env-file, iki volume, `--restart always`).
+⏭ Açık borç: compose v1 → v2 geçişi ya da `ContainerConfig` uyumsuzluğunun giderilmesi.

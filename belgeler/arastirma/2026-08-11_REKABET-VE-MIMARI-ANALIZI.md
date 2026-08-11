@@ -3560,7 +3560,7 @@ nedensel iddia **nedensel grafik beyanı** ister (DoWhy sınıfı) ve bizde **yo
 
 | # | iş | not |
 |---|---|---|
-| **F1** | Arşivlenmiş `ghcr.io/canner/wren-engine:latest` bağımlılığını netleştir | depo **arşivli**, konteyner ölçümde **`Restarting`** |
+| ✅ **F1** | Arşivlenmiş `wren-engine` bağımlılığı **KAPATILDI** *(2026-08-11)* | Dört ölçüm: ① konteyner hâlâ **`Restarting (1)`**, `restart: always` ile **sonsuz çökme döngüsü** ② `grep -rn "WREN_ENGINE_URL\|wren-engine" backend/ --include="*.py"` → **SIFIR** (env geçiliyordu, **hiçbir kod okumuyordu**) ③ `CLAUDE.md` zaten yazmış: motor **in-process**, subprocess yok ④ ön-uç/betiklerde 8080 kullanımı yok. **Silinmedi, yorumlandı** (`MIMARI §10`). Ürün doğrulandı: `/health` ok, curl `cube` + `cube+llm` çalışıyor |
 | **F2** | `wren cube query --sql-only` ↔ `cube_router` SQL'i **yan yana** koy | *«4.807 satırın ne kadarı motorun artık kendi yaptığı iş?»* |
 | **F3** | MDL'deki **31 `relationship`**'i çapraz-küpte kullan | bugün *«blend, gerçek JOIN değil»* |
 | **F4** | `modernbert-tr-reranker` ölç | **+5…+9 nDCG@10** potansiyeli |

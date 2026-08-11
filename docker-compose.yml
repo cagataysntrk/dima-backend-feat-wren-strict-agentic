@@ -1,14 +1,37 @@
 version: '3.8'
 
 services:
-  wren-engine:
-    image: ghcr.io/canner/wren-engine:latest
-    container_name: dima-wren-engine
-    ports:
-      - "8080:8080"
-    environment:
-      - WREN_ENGINE_PORT=8080
-    restart: always
+  # 🔴🔴 `§F1` — ARŞİVLENMİŞ MOTOR KONTEYNERİ **KAPATILDI** (2026-08-11, ölçümle).
+  #
+  # ⊙ Ölçüldü, üç ayrı kanıt:
+  #   1. Konteyner **`Restarting (1)`** durumundaydı — `restart: always` ile **sonsuz
+  #      çökme döngüsünde**; her döngüde CPU/disk yakıyor ve 8080'i tutuyordu.
+  #   2. `grep -rn "WREN_ENGINE_URL|wren-engine" backend/ --include="*.py"` → **SIFIR**.
+  #      Env değişkeni geçiliyordu ama **hiçbir Python kodu okumuyordu**.
+  #   3. `backend/CLAUDE.md` mimariyi zaten yazmış: *«`wren.engine.WrenEngine`
+  #      (**in-process**; subprocess YOK)»*. Yani motor **kütüphane olarak** çalışıyor;
+  #      bu konteyner eski (HTTP-servis) mimariden kalma bir **artık**.
+  #   4. Ön-uçta ve betiklerde 8080 kullanımı **yok**.
+  #
+  # ⚠ Ve imajın kaynağı **arşivlenmiş** bir depodur (`Canner/wren-engine` → `WrenAI`
+  # `core/` altına taşındı, salt-okunur), üstelik `latest` etiketiyle: bir daha
+  # güncellenmeyecek bir imajı hareketli bir etiketle çekiyorduk.
+  # Rapor bunu **üç kez** işaretledi (`§11.3` · `§12.9` · `§16.3`).
+  #
+  # 🔴 SİLİNMEDİ, İŞARETLENDİ (`MIMARI §10`: *«kapananlar işaretlenir, silinmez»*).
+  # Geri almak için bu bloğun ve aşağıdaki iki satırın yorumunu kaldırmak yeter.
+  #
+  # *Çalışmayan bir bağımlılık, olmayan bir bağımlılıktan pahalıdır: bakım ister,
+  # kaynak yakar, hiçbir iş görmez.*
+  #
+  # wren-engine:
+  #   image: ghcr.io/canner/wren-engine:latest
+  #   container_name: dima-wren-engine
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     - WREN_ENGINE_PORT=8080
+  #   restart: always
 
   qdrant:
     image: qdrant/qdrant:latest
@@ -27,7 +50,9 @@ services:
       - "8001:8000"
     env_file: .env
     environment:
-      - WREN_ENGINE_URL=http://wren-engine:8080
+      # `§F1` — hiçbir Python kodu okumuyordu (ölçüldü: grep → SIFIR); motor
+      # in-process çalışıyor. Konteynerle birlikte kapatıldı.
+      # - WREN_ENGINE_URL=http://wren-engine:8080
       - QDRANT_URL=http://qdrant:6333
       - LLM_PROVIDER=openai
       - OPENAI_API_KEY=${OPENAI_API_KEY:-${DIMA_OPENROUTER_API_KEY}}
@@ -50,7 +75,7 @@ services:
       # duran önerisiydi. Kapatmak için: DIMA_VQR_EMBEDDER=off (bkz. app/config.py).
       - dima_hf_cache:/tmp/fastembed_cache
     depends_on:
-      - wren-engine
+      # - wren-engine   ← `§F1` kapatıldı (sonsuz çökme döngüsü, tüketicisi yok)
       - qdrant
     restart: always
 
