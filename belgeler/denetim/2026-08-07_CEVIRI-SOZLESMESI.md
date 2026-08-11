@@ -11155,3 +11155,72 @@ cevaplı koşumların 3/3'ünde not:  «… yalnız bir PARÇASIYLA hesaplandı 
 
 ⊙ Ve ucuz bir ara adım var, kapsam değiştirmeyen: beyan *«sorabilirsin»* diyor ama bir
 **chip** vermiyor. `§TZ` deseni (beyan + tek tık) burada da geçerli — sıradaki iş.
+
+## ✅ `§UT` BEYANI ARTIK **TIKLANABİLİR** — `§TZ` deseni üçüncü kez
+
+```
+«bu yıl en kötü bakım maliyeti hangi makinede»
+  ÖNCE : «… bakim_is_emri küpünü SORABİLİRSİN»        ← kullanıcı YAZMAK zorunda
+  SONRA: chip → «bakim maliyeti (bakim_is_emri)»       ✅ canlıda (3 koşumun 2'sinde)
+```
+
+⊙ Bugün bu ders **üçüncü** kez uygulandı: `§TZ` (dönem varsayımı) · `§DK-2` (değer
+listesi) · bu. Hepsinde aynı cümle: *«şunu varsaydım/eksik bıraktım — istersen düzelt»*
+ve hepsinde aynı sonuç: **tık, yazmaktan iyidir.**
+
+⚠ Ve chip'i **ihlali üreten yer** kuruyor (terimi ve sahibini orada biliyoruz); toplayıcı
+(`uyum.chipler`) yalnız topluyor. Metinden chip türetmek, aynı cümleyi ikinci kez
+ayrıştırmak olurdu (`KAT-1`).
+⚠ Kapılı: chip taşımayan bir ihlal kanala **girmez** — *bir tıkın var olması, gideceği
+bir yer olmasına bağlıdır.*
+
+## ⊙ VE ÖLÇÜM ARACI KENDİNİ KANITLADI
+
+Aynı turda `kontrol.sh` iki kez konuştu: **HTTP 000** (backend henüz ayakta değil) ve
+**HTTP 401** (token bayat). İkisi de bir önceki turda **sahte ürün kusuru** olarak
+loglanabilirdi.
+
+> *Bir ölçüm aracını düzeltmek, ölçtüğü her turu düzeltmektir.*
+
+## 🔴 GECİKME KAPISI KIRMIZI VERDİ — **sebep üründe değil, ÖLÇÜM ORTAMINDA**
+
+```
+tam süit → 1 failed: test_DETERMINISTIK_YOL_BUTCEYI_ASMIYOR[1]
+           («cube», p95=1235 ms, bütçe=800, n=24)
+```
+
+Kapının kendi talimatı: *«Cevap "hızlandır" DEĞİL, önce "neden"»*. Uygulandı.
+
+### Adım 1 — bugünün sıcak yola eklediklerini **ölçtüm**
+
+```
+_daha_ozgul_sahip (§UT)      2,02 ms/çağrı     ← en pahalısı
+uyum.denetle (tümü)          1,45 ms/çağrı
+_capraz_kup_ikamesi          0,04 ms/çağrı
+route_supheli (+§KD)         0,02 ms/çağrı
+belge_istegi (§RG)           0,01 ms/çağrı
+veri_araligi.aralik          önbellekli (küp başına tek sorgu)
+```
+
+Toplam birkaç ms — **435 ms'lik aşımı açıklamıyor.**
+
+### Adım 2 — asıl işaret: **süitin kendi süresi**
+
+Bu koşum **269 sn** sürdü; önceki koşumlar ~215 sn. Ve o sırada **ben aynı anda canlı
+backend'e curl senaryoları koşturuyordum** (S turu). Gecikme testi duvar saati ölçer;
+eşzamanlı yük onu şişirir.
+
+### Adım 3 — hipotez **sınandı**
+
+```
+yüksüz koşum → tests/test_gecikme_tavani.py: 2 passed in 26,81 s   ✅
+```
+
+⊙ Yani kırmızı bir **ürün gerilemesi değil**, benim **ölçüm disiplinimin** ihlaliydi:
+*kapı koşarken sisteme yük bindirmek, kapının ölçtüğü şeyi değiştirir.*
+
+> 🔴 **Yeni kural (kendime):** kapı koşarken repoya yazılmaz **ve canlı sisteme yük
+> binilmez.** İlki ölçümün girdisini, ikincisi ölçümün **ortamını** bozar.
+
+⚠ Ve bu, bugün **dördüncü** ölçüm-yüzeyi dersi: `measure_having` yazıcıda yoktu · bayat
+şema · HTTP 401 sessizliği · bu. *Ölçüm aracının kendisi de ölçülmesi gereken bir şeydir.*

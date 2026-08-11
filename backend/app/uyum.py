@@ -54,6 +54,12 @@ class Ihlal:
     isaret: str
     aciklama: str
     oneri: str
+    #: 🔴 `§TZ` deseni — **beyanın yanında bir tık.** Bir ihlal, kullanıcının tek
+    #: hamlede düzeltebileceği bir şeyse o hamleyi **taşır**; taşımıyorsa `None`.
+    #: ⚠ Metin değil **veri**: `{label, query}`. Metni chip'ten türetmek, aynı cümlenin
+    #: ikinci yazarını doğururdu (`KAT-1`).
+    #: *Bir kullanıcıya ne yapabileceğini söyleyip yolu göstermemek, yarım bir cevaptır.*
+    chip: dict | None = None
 
 
 #: *"Değişim/trend"* — zaman EKSENİ ister, tek bir toplam değil.
@@ -558,7 +564,13 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
                 aciklama=(f"Soruda **«{_terim2}»** geçiyor ama bu cevap onun yalnız bir "
                           f"**parçasıyla** hesaplandı — daha özgül bir karşılık var."),
                 oneri=(f"**«{_terim2}»** için {', '.join(_sahip2[:2])} küpünü "
-                       f"sorabilirsin; oradaki ölçü tam olarak bunu ölçüyor.")))
+                       f"sorabilirsin; oradaki ölçü tam olarak bunu ölçüyor."),
+                # `§TZ` — *«sorabilirsin»* demek yetmez, **sorulabilir** yapmak gerekir.
+                # ⊙ Ölçüldü: `«bakım maliyeti raporu hazırla»` 6/6 genel küpe gidiyor ve
+                # beyan her seferinde doğru sahibi **adıyla** söylüyordu — ama kullanıcı
+                # onu **yazmak** zorundaydı. `§TZ`'nin dersi burada da geçerli.
+                chip={"label": f"{_terim2} ({_sahip2[0]})",
+                      "query": f"{_sahip2[0]} {_terim2}", "kind": "olcu"}))
         _ikame = _capraz_kup_ikamesi(qn, ic, cube_meta, sema)
         if _ikame:
             _terim, _sahipler = _ikame
@@ -1190,6 +1202,21 @@ def _tarih_gibi(v) -> bool:
 # ═══════════════════════════════════════════════════════════════════════════════
 # KÖK-3 · BEYANLI KISMİ CEVAP
 # ═══════════════════════════════════════════════════════════════════════════════
+
+def chipler(ihlaller: list[Ihlal]) -> list[dict]:
+    """`§TZ` — ihlallerin **tıklanabilir** olanları. Boş liste = tık yok.
+
+    ⚠ Tek sahip: chip'i **ihlali üreten yer** kurar (terimi ve sahibini orada biliyoruz);
+    burası yalnız toplar. Metinden chip türetmek, aynı cümleyi ikinci kez ayrıştırmaktı.
+    """
+    out, gorulen = [], set()
+    for i in (ihlaller or []):
+        c = getattr(i, "chip", None)
+        if isinstance(c, dict) and c.get("label") and c["label"] not in gorulen:
+            gorulen.add(c["label"])
+            out.append(dict(c))
+    return out
+
 
 def kismi_cevap_notu(ihlaller: list[Ihlal]) -> str:
     """*"Şu kısmını verdim, şu kısmını veremedim, nedeni bu."*

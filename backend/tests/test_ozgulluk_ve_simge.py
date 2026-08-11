@@ -171,3 +171,29 @@ def test_GERCEK_DEGER_HALA_ADLANDIRILIR():
           "filters": [{"dimension": "makine", "operator": "neq", "value": "Bakım"}]}
     notu, _ = dc.huni_karari(cq, sema)
     assert notu and "Bakım" in notu
+
+
+def test_OZGULLUK_BEYANI_CHIP_TASIR():
+    """🔴 `§TZ` deseni — *«sorabilirsin»* demek yetmez, **sorulabilir** yapmak gerekir.
+
+    ⊙ Ölçüldü: *«bakım maliyeti raporu hazırla»* **6/6** genel küpe gidiyor ve beyan her
+    seferinde doğru sahibi **adıyla** söylüyordu — ama kullanıcı onu **yazmak**
+    zorundaydı. Bugün eklenen her beyan (dönem · değer · özgüllük) aynı dersi taşıyor.
+    """
+    q = cr._norm("bu yıl en kötü bakım maliyeti hangi makinede")
+    ihlaller = uyum.denetle(q, {"cube_query": {"cube": "maliyet",
+                                               "measures": ["ort_birim_maliyet"],
+                                               "dimensions": ["makine"]}},
+                            _MALIYET, _SEMA)
+    chipler = uyum.chipler(ihlaller)
+    assert chipler, "🔴 özgüllük beyanı tık taşımıyor"
+    assert chipler[0]["query"] == "bakim_is_emri bakim maliyeti"
+    assert "bakim maliyeti" in chipler[0]["label"]
+
+
+def test_CHIPSIZ_IHLAL_KANALA_GIRMEZ():
+    """⚠ Her ihlal tıklanabilir değildir; olmayanı chip'e çevirmek kullanıcıya
+    **çalışmayan** bir düğme verirdi. *Bir tıkın var olması, gideceği bir yer olmasına
+    bağlıdır.*"""
+    assert uyum.chipler([uyum.Ihlal("trend", "x", "y")]) == []
+    assert uyum.chipler([]) == []

@@ -2992,8 +2992,10 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         # hiçbir yerden öğrenemiyordu. ⚠ Reddetmek DEĞİL — o ölçüldü ve korpusu
         # %94,3 → %83,6 düşürdü. Raporun ölçütü *"belirsizlik sıraya değil CHİP'e"*:
         # cevap gider, alternatif chip olur, kapsam maliyeti SIFIRDIR.
+        # `§TZ` — dönem chip'leriyle **uyum** chip'leri aynı kanaldan gider: ikisi de
+        # *«şunu varsaydım/eksik bıraktım — istersen düzelt»* cümlesinin devamıdır.
         resp.suggestions = _belirsizlik_beyani(resp, q_norm, cq, _cm_uyum, schema,
-                                               _donem_chipleri)
+                                               [*_donem_chipleri, *_uyum.chipler(_ihlaller)])
         # 🔴 **EKSİK NİYETLİ CEVAP «DOĞRULANMIŞ» SAYILAMAZ.** Canlı denetimde bulundu:
         # *"şubatta ciro ocağa göre nasıl değişti"* → `source=vqr`, 434 ms, ve
         # `eksik_niyet=['kiyas','trend']`. Yani **beyanlı kısmi** bir cevap doğrulanmış
