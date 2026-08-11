@@ -2852,6 +2852,53 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 
 ## FAZ 1 · GARSONU BESLE — en yüksek getiri, 1-2 hafta
 
+### ⏳ B1 · Şema daraltma — **ÖN KOŞUL ÖLÇÜLDÜ VE KAPATILDI (2026-08-11)**
+
+> 🔴 **BUDAMAYA GEÇMEDEN ÖNCE ADAY SEÇİCİ ÖLÇÜLDÜ — ve güvenilir DEĞİLDİ.**
+> Kartın *«aday seçimi `ilgili_cubelar` **zaten var**»* satırı doğru ama **yeterli
+> değildi**. Ölçüm (canlı katalog, `demo-boyahane`, 23 küp / **23.729 karakter** —
+> `§4.2`'nin sayısı **birebir** doğrulandı):
+>
+> | soru | aday | 🔴 sorun |
+> |---|---|---|
+> | *«kalite durumunu özetle»* | 6 küp | **`kalite` YOK** — canlı cevap o küpten geliyor |
+> | *«ciro ve duruş»* | 1 küp (`parti`) | `makine_duruslari` **yok** — kartın 3. curl senaryosu |
+> | *«bu yıl toplam ciro»* | 1 küp | fail-open tetiklenir, **kazanç olmaz** |
+>
+> ⚠ **Ve fail-open bu vakayı KURTARMIYOR:** *«kalite durumunu özetle»*de aday sayısı
+> **7**'dir (yani `<2` kuralı devreye girmez) ama doğru küp aralarında değildir →
+> garsona **ihtiyacı olan küpün bulunmadığı** bir katalog giderdi. Bu, kartın kendi
+> 🔴 risk satırının (*«yanlış budama = kapsam kaybı»*) ölçülmüş hâlidir.
+>
+> **KÖK BULUNDU — ve bir sinonim eksikliği değil, bir `KAT-1` ihlali:**
+> `ilgili_cubelar` yalnız **elle yazılmış** `synonyms` listesine bakıyor; küpün adı
+> `name:` alanında **zaten beyanlı** olduğu hâlde ikinci kez oraya kopyalanmayı bekliyor.
+> Ölçüldü — **39 küp beyanının 12'sinde (%31) ad eksik**, `ticaret` **dört şirkette
+> birden**:
+>
+> | şirket | küp | adı var | 🔴 eksik |
+> |---|---|---|---|
+> | demo-boyahane | 23 | 16 | 7 (`kalite`·`bakim`·`makine_duruslari`·`ticaret`·`enerji_*`) |
+> | atiksan | 4 | 3 | 1 (`ticaret`) |
+> | gulteks | 5 | 3 | 2 (`mal`·`ticaret`) |
+> | gitas | 7 | 5 | 2 (`mal`·`ticaret`) |
+>
+> ✅ **Çözüm katalogdan TÜREV** (`cube_router._kup_adi_belirtecleri`) — 12 sinonimi elle
+> yazmak kusuru değil **bir örneğini** kapatırdı. ADR-0008 ihlali yok (yeni sözlük değil,
+> katalog türevi). Dolgu/sosyal süzgeci **yukarıda** olduğu için yanlış pozitif üretmez.
+>
+> **Ölçülen sonuç:** *«kalite durumunu özetle»* → `kalite` **artık aday** ·
+> *«ciro ve duruş»* → `oee · parti · makine_duruslari` (**3. curl senaryosu artık geçer**) ·
+> *«bakım maliyeti»* → `bakim` · *«ticaret hacmi»* → `ticaret` · *«teşekkürler»* → **0 küp**.
+> Kapı: `tests/test_kup_adi_belirteci.py` (6) + netleştirme/sosyal yüzeyi **94 yeşil**.
+>
+> ⚠ **Ölçüm aracı bu adımda İKİ kez yanılttı:** ① `[:6]` dilimi 7. küpü (`kalite`) gizledi
+> ② `ilgili_cubelar` **normalize girdi bekler**, ham metin verince `bakım`/`duruş`
+> ıskalanıyor gibi göründü. İkisi de sahte kusurdu. *Basılmayan alan, olmayan alan gibi
+> okunur.*
+>
+> ⏭ **B1'in kendisi (budama) SIRADAKİ ADIMDIR** — artık güvenilir bir aday seçici üstünde.
+
 ### B1 · Şema daraltma (schema linking)
 
 | | |

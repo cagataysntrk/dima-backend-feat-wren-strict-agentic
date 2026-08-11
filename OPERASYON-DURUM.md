@@ -2810,3 +2810,34 @@ Bayrak `bicim_karari: beta`. Kapı: `tests/test_d3_bicim_karari.py` (9 test).
 anlatı karakter sayısı · olgu · chip · niyet izi) ve tur **ortasında** düşen token'a karşı
 401 kapısı kondu — `kontrol.sh` başta geçse de token düşebiliyor ve `source=None` sahte
 kusuru yeniden üretiliyordu.
+
+### ✅ B1 ÖN KOŞULU · Küpün kendi adı bir eşleşme belirteci oldu *(2026-08-11)*
+
+**B1'e (şema daraltma) geçmeden önce aday seçici ölçüldü — ve güvenilir değildi.**
+Katalog `23 küp / 23.729 karakter` (raporun `§4.2`'si birebir doğrulandı), ama:
+
+| soru | aday | sorun |
+|---|---|---|
+| *«kalite durumunu özetle»* | 6 küp | 🔴 **`kalite` yok** — canlı cevap o küpten geliyor |
+| *«ciro ve duruş»* | 1 küp | 🔴 `makine_duruslari` yok |
+
+⚠ Fail-open (`aday<2 → tam katalog`) bunu **kurtarmıyor**: birinci vakada aday **7**'dir,
+yani kural tetiklenmez ama doğru küp aralarında değildir. Budama açılsaydı garsona
+**ihtiyacı olan küpün olmadığı** bir katalog giderdi — sessiz kapsam kaybı.
+
+**Kök:** `ilgili_cubelar` yalnız **elle yazılmış** `synonyms` listesine bakıyordu; küpün
+adı `name:`te **zaten beyanlı** olduğu hâlde ikinci kez kopyalanmayı bekliyordu (`KAT-1`).
+Ölçüldü: **39 beyanın 12'sinde (%31) ad eksik**, `ticaret` **dört şirkette birden**.
+
+**Çözüm katalogdan türev** — `cube_router._kup_adi_belirtecleri` (12 sinonimi elle yazmak
+kusuru değil bir örneğini kapatırdı; ADR-0008 ihlali yok). Ölçülen sonuç: `kalite` ·
+`bakim` · `ticaret` · `makine_duruslari` artık bulunuyor; *«teşekkürler»* → **0 küp**.
+Kapı: `tests/test_kup_adi_belirteci.py` (6) + netleştirme/sosyal yüzeyi **94 yeşil**.
+⊙ `ilgili_cubelar` aynı zamanda `veri_niyeti_var`'ı besler — çıplak bir küp adı artık
+**veri sorusu** sayılır.
+
+⚠ **Ölçüm aracı bu adımda iki kez yanılttı:** `[:6]` dilimi 7. küpü gizledi · fonksiyon
+**normalize girdi bekler**, ham metin verince sahte ıska üretti. İkisi de kod değil **alet**
+kusuruydu.
+
+⏭ **Sıradaki:** B1'in kendisi — budama, artık güvenilir bir aday seçici üstünde.

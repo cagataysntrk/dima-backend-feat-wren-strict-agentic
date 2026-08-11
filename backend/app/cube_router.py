@@ -3348,6 +3348,46 @@ def _coverage_ok(q: str, known_words: set[str]) -> bool:
     return not _uncovered(q, known_words)
 
 
+def _kup_adi_belirtecleri(c: dict) -> list[str]:
+    """🔴 **KÜPÜN KENDİ ADI BİR EŞLEŞME BELİRTECİDİR — ve katalogdan TÜRETİLİR.**
+
+    ## Ölçülen kusur (2026-08-11, `§B1` araştırması)
+
+    `ilgili_cubelar` yalnız `synonyms` listesine bakıyordu. O liste **elle yazılıyor** ve
+    küpün adı oraya **bazen** kopyalanmış, bazen unutulmuş:
+
+    | şirket | küp | adı sinonimde VAR | 🔴 EKSİK |
+    |---|---|---|---|
+    | demo-boyahane | 23 | 16 | **7** (`kalite`, `bakim`, `makine_duruslari`, `ticaret`…) |
+    | atiksan | 4 | 3 | 1 (`ticaret`) |
+    | gulteks | 5 | 3 | 2 (`mal`, `ticaret`) |
+    | gitas | 7 | 5 | 2 (`mal`, `ticaret`) |
+
+    **39 beyanın 12'si (%31)**; `ticaret` **dördünde birden** eksik. Somut sonuç:
+    *«kalite durumunu özetle»* → `ilgili_cubelar` **`kalite` küpünü döndürmüyordu**
+    (dönen 6 küpün hiçbiri o değildi), oysa canlı cevap `kalite` küpünden geliyor.
+
+    ## Neden bir sözlük değil, bir TÜREV
+
+    Eksik 12 adı `synonyms:` listelerine elle yazmak **kusuru değil bir örneğini**
+    kapatırdı; on üçüncü küp eklendiğinde aynı unutma tekrar olurdu. Ad zaten `name:`
+    alanında **beyan edilmiş**; ikinci kez yazılmasını beklemek `KAT-1`'in ta kendisidir
+    — *bir değeri iki yerde tanımlamak, iki değeri garanti etmektir*.
+
+    ⚠ **ADR-0008 ihlali değildir:** yeni bir kelime listesi yazılmıyor; belirteç
+    **katalogdan türetiliyor** (izin verilen sınıf).
+
+    ⚠ **Sosyal/dolgu riski yok:** çağıran, eşleşmeyi `dolgu` süzgecinden geçmiş
+    `konu_metni` üzerinde arar — bir küp adı dolgu sözcüğüyle çakışsa bile o kelime
+    metinde **kalmaz**. Guard yukarıda ve zaten yazılı.
+    """
+    ad = str(c.get("name") or "").strip()
+    if not ad:
+        return []
+    duz = ad.replace("_", " ")
+    return [ad] if duz == ad else [ad, duz]
+
+
 def ilgili_cubelar(q: str, schema: dict, haric: set[str] | None = None) -> list[dict]:
     """Soruda cube-düzeyi VEYA boyut-düzeyi sinonimi eşleşen cube'lar (ZAYIF sinyal).
 
@@ -3404,7 +3444,12 @@ def ilgili_cubelar(q: str, schema: dict, haric: set[str] | None = None) -> list[
         # İkisi de "bu konu ilgili" sinyali sayılır.
         dim_hit = any(_syn_hit_words(konu_metni, syns)
                       for syns in (c.get("dimension_synonyms") or {}).values())
-        if _syn_hit_words(konu_metni, c.get("synonyms")) or dim_hit:
+        # 🔴 Küpün KENDİ ADI da bir belirteçtir (`_kup_adi_belirtecleri` — ölçüm orada).
+        # Elle yazılmış `synonyms` listesine güvenmek, 39 beyanın 12'sinde küpü
+        # görünmez bırakıyordu.
+        if (_syn_hit_words(konu_metni,
+                           [*(c.get("synonyms") or []), *_kup_adi_belirtecleri(c)])
+                or dim_hit):
             out.append(c)
     # 🔴 **`§N1` — SIRALANMAMIŞ BİR LİSTEYE DİLİM ATMAK BİR SEÇİM DEĞİL, BİR KURADIR.**
     #

@@ -12630,3 +12630,43 @@ alıyordu. Şemalı okumaya (`coz(soru, schema)`, aynı istek belleği) geçildi
 ⚠ **Ölçüm aleti kusuru (ikinci kez):** tur **ortasında** token düştü ve *«makine bazında
 oee»* `source=None · 0 satır` göründü — yani sahte bir ürün kusuru. `kontrol.sh` turun
 **başında** geçmişti. `lab/curl/bicim.sh` artık her istekte 401'i yakalayıp tazeliyor.
+
+---
+
+## TUR KK — `§B1` ön koşulu: aday seçici ölçüldü *(2026-08-11)*
+
+**Kural gereği önce araştırma:** raporun `§14 B1` kartı + `§11.1` + `§4.2` okundu, sonra
+motorun API'si **canlı konteynerde** ölçüldü (`ManifestExtractor.extract_by` → *«model/view
+budar, ilişkileri korur»*), sonra aday seçici ölçüldü. **Kod en sonda yazıldı.**
+
+### Ölçüm — aday seçici budama için YETERSİZ
+
+```
+katalog: 23 küp · 23.729 karakter        ← raporun §4.2'si BİREBİR
+«kalite durumunu özetle» → 6 küp, «kalite» YOK   🔴 canlı cevap o küpten geliyor
+«ciro ve duruş»          → 1 küp (parti)         🔴 makine_duruslari yok
+```
+⚠ Fail-open kurtarmıyor: birinci vakada aday **7** → `<2` kuralı tetiklenmez.
+
+### Kök — sinonim eksikliği değil, `KAT-1`
+
+Küpün adı `name:`te beyanlı; `ilgili_cubelar` ise yalnız elle yazılmış `synonyms`e bakıyor.
+**39 beyanın 12'sinde ad eksik** (`ticaret` dört şirkette birden).
+
+### Sonra — katalogdan türev belirteç
+
+| curl | sonuç |
+|---|---|
+| «kalite durumunu özetle» | ✅ `kalite` aday · canlıda `kpi`, 1 satır |
+| «ticaret hacmi» | ✅ `ticaret` aday · canlıda cevap (fatura türü / cari tipi chip'leri) |
+| «ciro ve duruş» | ✅ `oee · parti · makine_duruslari` — raporun 3. senaryosu artık geçer |
+| «bakım maliyeti» | ✅ `bakim` aday |
+| «teşekkürler» | ✅ **0 küp**, veri yolu dışı — yanlış pozitif yok |
+
+### ⚠ Ölçüm aracı bu turda İKİ kez yanılttı
+
+① Kendi probumda `[:6]` dilimi vardı ve **7. küpü** (`kalite`) gizledi — düzeltmenin
+işe yaradığını göremeyecektim. ② `ilgili_cubelar` **normalize girdi bekliyor** (çağıranlar
+`q_norm` geçiyor); ham metin verince `bakım`/`duruş` ıskalanıyor sandım.
+⊙ Bu oturumda üçüncü kez: *basılmayan ya da yanlış beslenen bir alan, olmayan bir kusur
+icat ettirir.*
