@@ -444,3 +444,41 @@ def test_OZET_DEGIL_KULLANICIYA_CIZILIYOR():
     assert "b.ozet_degil" in kod, "🔴 `ozet_degil` çizilmiyor"
     assert "print:hidden" not in kod.split("ozet_degil")[1][:400], \
         "🔴 baskıda gizlenmiş — bir belgenin okunamayacağı bilgisi belgeyle gitmelidir"
+
+
+# --- `§Cİ-belge` · BELGENİN KAPSAMI BLOKLARININ BİRLEŞİMİDİR --------------------------
+
+def test_BIRLESIM_KURALI_YALNIZ_CAPRAZ_KUP_ISARETLERINE():
+    """🔴🔴 `§Cİ-belge` — ölçüldü (curl `V` turu): 4 bloklu bir panoda *«panoya su
+    tüketimi de ekle»* → beyan *«**su tuket** bu küpte tanımlı değil»*. Oysa
+    `surdurulebilirlik` **panonun bir bloğuydu** ve terimi karşılıyordu.
+
+    Kök: `denetle` bölüm bölüm koşuyor ve bir işaret için **ilk ıskalayan blok
+    kazanıyordu** — `§KB`'nin (harman ölçüleri bayat yüzeyde) birebir kardeşi.
+
+    ⚠ Ve kural **dar**: yalnız çapraz-küp işaretlerinde *«başka blokta var»* gerçekten
+    *«belgede var»* demektir. Dönem/eşik/kırılım bir bloğun **kendi** kusurudur ve bir
+    başkası onu karşılamaz — genişletmek bir kusuru düzeltirken üç tanesini susturmak
+    olurdu.
+
+    *Bir cevabın neyi içerdiğini, cevabın bir parçasına sorarsanız, öbür parçadakini
+    eksik ilan edersiniz.*"""
+    import inspect
+
+    from app import plan_tuketici
+
+    kaynak = inspect.getsource(plan_tuketici.cevap)
+    assert '_BIRLESIM = {"olcu_ikamesi", "olcu_ozgullugu"}' in kaynak
+    for dar in ("donem", "esik", "kirilim"):
+        assert f'"{dar}"' not in kaynak.split("_BIRLESIM = ")[1][:60]
+
+
+def test_BIRLESIM_TUM_BLOKLAR_GORULMEDEN_KARAR_VERMEZ():
+    """⚠ Sayaç `>= _blok_sayisi` ile karşılaştırılır: *«hiçbir blok karşılamadı»* ancak
+    bütün bloklar görüldükten sonra söylenebilir."""
+    import inspect
+
+    from app import plan_tuketici
+
+    kaynak = inspect.getsource(plan_tuketici.cevap)
+    assert "_sayi >= _blok_sayisi" in kaynak

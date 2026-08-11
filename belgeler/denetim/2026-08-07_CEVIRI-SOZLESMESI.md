@@ -11338,3 +11338,92 @@ tek cümlelik tarifi.*
 kendi mesajını söyledi: *«yeni davranışı modüle çıkar, tavanı yükseltme»*. Uydum.
 `yokluk_notu` da tam olarak böyle doğmuştu — bu onun kardeşi.
 *Bir tavanı yükseltmek, kapıyı kapının kendisiyle çürütmektir.*
+
+---
+
+# `V` TURU — 15 senaryo · `§KV` (varlık sorusu) + iki kayıtlı borç
+
+*(2026-08-11 · curl, tek tek · kapı yalnız sonda)*
+
+## 🔴 `§KV` — bir varlığı saymak, onun bir ölçüsünü hesaplamak değildir
+
+Dört vaka + **bir negatif kontrol** ölçüldü:
+
+```
+«kaç makinemiz var»         → 11 satır makine × ort_oee  + uydurma 12 aylık dönem
+«hangi müşterilerimiz var»  → cari_kodu × hareket_sayisi  + uydurma dönem
+«kaç müşterimiz var»        → 🔴 TEK satır {M1001, hareket_sayisi: 23}
+«makineleri listele»        → 11 satır makine × ort_oee  + uydurma dönem
+«kaç parti üretildi bu yıl» → parti_sayisi = 7595  ✅  ← ÖLÇÜ sorusu, DOĞRU
+```
+
+Üçüncüsü en kötüsü: *«kaç müşterimiz var»* sorusuna **bir müşterinin hareket sayısı**.
+
+**Düzeltme iki parçalı ve ikisi de eksiltme** — hiçbir şey uydurulmadı:
+`app/sayim.py` fişten ölçüyü ve **varsayılan** dönemi düşürür (kullanıcının yazdığı
+döneme dokunmaz) ve daraltmayı **beyan eder**; `is_period_optional` ölçüsüz fişte dönem
+sormaz.
+
+### Ve bir dil kuralı yazmaktan son anda döndüm
+
+İlk yüklemim üçüncü bir şart taşıyordu (*«katalogda bir boyut karşılığı olsun»*) ve
+ölçüldüğünde **düştü**: `«hangi müşterilerimiz var»` eşleşiyor, `«kaç müşterimiz var»`
+eşleşmiyor — 1. çoğul iyelik eki (`makine`+`miz`) ek zincirinde yok.
+
+🔴 Çözüm o eki route'a öğretmek **değildi**: en üst kural *«route'a dil kuralı ekleme;
+bir cümle anlaşılmıyorsa çözüm route'u genişletmek değil devri tetiklemektir»* diyor.
+Devir zaten olmuştu — garson `dimensions: [makine]` taşıyan bir fiş üretiyordu. Yani
+**boyutu garsonun fişinden okuduk**; yüklem yalnız sorunun *biçimine* bakıyor.
+*Garson çevirir, biz şekli düzeltiriz.*
+
+### İki kapı beni durdurdu, ikisi de haklıydı
+
+`ask()` **tam tavandaydı** (1374) ve `cube_router` da doluydu. Gövde `app/sayim.py`'ye
+çıktı; geriye kalan **2 + 2** satır için kapının kendi izin verdiği yoldan (**sha + Δ +
+gerekçe**) muafiyet yazıldı. Ve tavan imzayı da biçimlendirdi: `fisi()` bilerek **her
+zaman tuple** döner, çünkü dallanma çağırana yazılsaydı iki satır daha ederdi.
+
+### 🔴 Ve bir dosyayı ezdim — geri aldım
+
+Modülü `app/varlik.py` diye yazacaktım; o ad **zaten doluydu** (`G0b.6` varlık perdesi,
+154 satır) ve üzerine yazdım. `git checkout` ile geri alındı, modül `app/sayim.py` oldu.
+*Yazmadan önce hedefe bakmak bir nezaket değil, bir ön koşuldur.*
+
+## Ölçülüp DÜZELTİLMEYEN iki şey — gerekçeleriyle
+
+| ne | ölçülen | neden şimdi değil |
+|---|---|---|
+| `§Cİ-belge` | 4 bloklu panoda *«su tüketimi ekle»* → beyan *«su tuket bu küpte tanımlı değil»* — oysa `surdurulebilirlik` **panonun bir bloğu** | beyan yüzeyi bölüm bazında; `§KB`'nin kardeşi. Sıradaki turda |
+| `«kaç müşterimiz var»` | `source=llm:openrouter` · `cube=adhoc` (doğru cevap: 8) | 🔴 Discovery = **mutfak eksikliği raporu**; `cari` küpünde müşteri **adı** yok → `B3`, ve `B3` `D8`'in arkasında |
+
+## Canlı doğrulama (tek tazeleme sonrası)
+
+```
+«kaç makinemiz var»          → 11 makine · measures=[] · filters=[] · beyan VAR   ✅
+«makineleri listele»         → aynı                                                ✅
+«kaç parti üretildi bu yıl»  → parti_sayisi=7595 (dokunulmadı)                     ✅
+«bu yıl makine bazında oee»  → ort_oee + dönem (dokunulmadı)                       ✅
+```
+
+## `V` turu · kapı bulgusu ve `§Cİ-belge`
+
+**Kapı kırmızı verdi ve haklıydı:** yeni `app/sayim.py` **sınıflandırılmamıştı**
+(`test_SINIFSIZ_MODUL_BIRAKILAMAZ`). Sınıfı 🗣 **GARSON** — `deger_capasi` ile birebir
+aynı gerekçe: girdisi kullanıcının cümlesi **ve** bir fiş, çıktısı düzeltilmiş bir fiş
+**ve bir beyan**; hiçbir sorgu koşmaz. *Bir modülü sınıflandıran şey neye baktığı değil,
+ne ürettiğidir.*
+
+**`§Cİ-belge` düzeltildi.** 4 bloklu panoda *«panoya su tüketimi de ekle»* → beyan
+*«su tuket bu küpte tanımlı değil»* diyordu; oysa `surdurulebilirlik` **panonun bir
+bloğuydu**. Kök: `denetle` bölüm bölüm koşuyor ve bir işaret için **ilk ıskalayan blok
+kazanıyordu** — `§KB`'nin birebir kardeşi, bu oturumda **beşinci** kez aynı ders:
+*bir cevabın neyi içerdiğini cevabın bir parçasına sorarsanız, öbür parçadakini eksik
+ilan edersiniz.*
+
+⚠ Kural bilerek **dar**: yalnız çapraz-küp işaretlerinde (`olcu_ikamesi`,
+`olcu_ozgullugu`) *«başka blokta var»* gerçekten *«belgede var»* demektir. Dönem/eşik/
+kırılım bir bloğun **kendi** kusurudur; genişletmek bir kusuru düzeltirken üç tanesini
+susturmak olurdu.
+
+Canlı: *«panoya su tüketimi de ekle»* → 4→**5 blok**, yanlış beyan **yok**, `§RÇ` doğru
+şekilde **sustu** (bu kez gerçekten değişti).

@@ -89,6 +89,22 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
+    ("kv-varlik-sorusu", 2,
+     "🔴🔴 **`§KV` — BİR VARLIĞI SAYMAK, ONUN BİR ÖLÇÜSÜNÜ HESAPLAMAK DEĞİLDİR.** "
+     "Canlı `V` turunda **dört** vaka ölçüldü: *«kaç makinemiz var»* → 11 satır "
+     "`makine × ort_oee` **ve uydurma bir 12 aylık dönem**; *«kaç müşterimiz var»* → "
+     "🔴 **tek satır** `{M1001, hareket_sayisi: 23}` — yani *«kaç müşteri»* sorusuna "
+     "**bir müşterinin hareket sayısı**. Kullanıcı bir sayım istedi, bir metrik aldı. "
+     "⊙ Negatif kontrol ayrımı doğruluyor: *«kaç parti üretildi bu yıl»* → "
+     "`parti_sayisi=7595` **doğru** (orada `parti` bir **ölçü** sinonimi). "
+     "⊙ Δ = 2: **gövde modülde** (`app/sayim.py` — yüklem + fiş normalleştirme + beyan); "
+     "burada kalan iki satır **yalnız çağrı**: (1) fiş dönem kapısından **önce** "
+     "düzeltilmeli (varsayımı üreten odur), (2) daraltma **beyan edilmeli**. "
+     "⚠ **TAŞINAMAZ:** birincisi `_period_gate`'ten önceki tek nokta, ikincisi `resp` "
+     "kurulduktan sonraki tek nokta — ikisi de `ask()`in kendi akışında. "
+     "⚠ Ve `fisi()` bilerek **her zaman tuple** döner: dallanma çağırana yazılsaydı iki "
+     "satır daha ederdi. *Bir tavan, kodu modüle iterken imzayı da biçimlendirir.* "
+     f"`sha=2eca01a`"),
     ("es2-esik-hunide", 2,
      "🔴🔴 **`§EŞ-2` — EŞİK KURALI YALNIZ BİR DALDA GEÇERLİYDİ.** Canlı: *«bu yıl fire "
      "oranı %20 üstü olan hatlar»* → 8 hattın **hepsi** döndü ve `uyum` dürüstçe *«eşiği "
@@ -643,6 +659,20 @@ MUAFIYET_ASK_KOD = [
      "`V17`'nin kusuru tam da yeni sorgu koşmaktı. *Bir fişi okumak için mutfağa gidilmez.*"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("kv-olcusuz-fis-donem-sormaz", 2,
+     "🔴 **`§KV` — ÖLÇÜSÜZ BİR FİŞTE DÖNEM SORULMAZ.** Canlı `V` turunda ölçüldü: "
+     "*«kaç makinemiz var»* fişi `measures: []` ile geliyor (varlık sorusu, "
+     "`app/sayim.py`) ama dönem kapısı yine *«dönemi çözemedim — son 12 ayı aldım»* "
+     "deyip **filtre ekliyordu**. Yani cevabın kendi beyanı (*«bir dönem "
+     "varsayılmadı»*) ile fişi **çelişiyordu** — `§RE`'nin aynı sınıfı. "
+     "⊙ Δ = 2: `if measure is None: return True`. "
+     "⚠ **TAŞINAMAZ:** `is_period_optional`'ın kendi docstring'i *«dönem-kapısı için TEK "
+     "gerçek kaynak»* diyor; kuralı başka yere yazmak ikinci bir sahip demekti (`KAT-1`). "
+     "⚠ Ve bu bir istisna değil, o docstring'in **devamı**: dönem sorusu *«bu ölçü hangi "
+     "aralıkta toplanacak»* demektir; toplanacak ölçü yoksa sorunun kendisi yoktur. "
+     "`None` bu yüzeyde yalnız boş `measures`'tan doğar — üç çağıranın üçü de ölçüldü. "
+     "*Bir listeye «hangi dönem» diye sormak, listeyi bir toplam sanmaktır.* "
+     f"`sha=2eca01a`"),
     ("dk3-tek-kaynak-erisimci", 11,
      "🔴🔴 **`§DK-3` — ROUTE İLE GARSON AYNI MENÜYE BAKAR.** Route değerleri ham model "
      "kolonlarından **boyut adıyla** okuyordu; `vardiya` için o kaynakta kolon **hiç "

@@ -730,8 +730,30 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
             (b.get("cube_query") or {}).get("dimensions") for b in _bolumler
             if isinstance(b.get("cube_query"), dict)):
         _karsilanan.add("kirilim")
+    # 🔴🔴 `§Cİ-belge` — **BİR BELGENİN KAPSAMI, BLOKLARININ BİRLEŞİMİDİR.**
+    #
+    # ⊙ Ölçüldü (curl `V` turu, T7/V7): 4 bloklu bir panoda *«panoya su tüketimi de
+    # ekle»* → beyan *«**su tuket** bu küpte tanımlı değil»* dedi. Oysa
+    # `surdurulebilirlik` **panonun bir bloğuydu** ve terimi karşılıyordu.
+    #
+    # 🔴 Kök: `denetle` bölüm **bölüm** koşuyor ve bir işaret için **ilk ıskalayan blok
+    # kazanıyordu**. Yani beyan, cevabın **bir parçasına** bakıp *«bu cevap onu
+    # içermiyor»* diyordu — `§KB`'nin (harman ölçüleri bayat yüzeyde) birebir kardeşi,
+    # bu turda **beşinci** kez aynı ders.
+    #
+    # ⚠ Kural **yalnız çapraz-küp işaretlerine** uygulanır (`olcu_ikamesi`,
+    # `olcu_ozgullugu`): orada *«başka blokta var»* gerçekten *«belgede var»* demektir.
+    # Öteki işaretler (dönem, eşik, kırılım) bir bloğun **kendi** kusurudur ve bir
+    # başkası onu karşılamaz — onlarda ilk-bulan aynen kalır.
+    #
+    # *Bir cevabın neyi içerdiğini, cevabın bir parçasına sorarsanız, öbür parçadakini
+    # eksik ilan edersiniz.*
+    _BIRLESIM = {"olcu_ikamesi", "olcu_ozgullugu"}
     try:
         from app import uyum as _uyum
+        _blok_sayisi = sum(1 for _b in _bolumler if isinstance(_b.get("cube_query"), dict))
+        _iskalayan: dict[str, int] = {}
+        _bekleyen: dict = {}
         for _b in _bolumler:
             _bcq = _b.get("cube_query")
             if not isinstance(_bcq, dict):
@@ -743,8 +765,19 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
             for _ih in _uyum.denetle(soru, {"cube_query": _bcq}, _bcm, schema):
                 if _ih.isaret in _karsilanan or _ih.isaret in _gorulen:
                     continue
+                if _ih.isaret in _BIRLESIM:
+                    # Bu blok ıskaladı — ama belge onu **başka** bir blokla karşılamış
+                    # olabilir. Kararı bütün bloklar görülmeden verme.
+                    _iskalayan[_ih.isaret] = _iskalayan.get(_ih.isaret, 0) + 1
+                    _bekleyen.setdefault(_ih.isaret, _ih)
+                    continue
                 _gorulen.add(_ih.isaret)
                 _ihlaller.append(_ih)
+        # `§Cİ-belge` — yalnız **HİÇBİR** blok karşılamadıysa beyan edilir.
+        for _isaret, _sayi in _iskalayan.items():
+            if _sayi >= _blok_sayisi and _isaret not in _gorulen:
+                _gorulen.add(_isaret)
+                _ihlaller.append(_bekleyen[_isaret])
         _eksik_notu = ("\n\n" + _uyum.kismi_cevap_notu(_ihlaller)) if _ihlaller else ""
         # `§RT` — belge indirgemesi beyanı, uyum beyanının **yanına** eklenir: ikisi
         # farklı şeyler söyler (biri *«sorunun bir parçası taşınmadı»*, öteki *«belge

@@ -67,6 +67,14 @@ GARSON = {
     # `§DK-3` — yukarıdakinin eşleştirme yarısı: kullanıcının yazdığı metni kataloğun
     # görünen etiketlerine bağlar. Saf dizgi işi, LLM yok, motor yok.
     "deger_eslesme.py",
+    # 🔴 `§KV` — **VARLIK SORUSU.** Sınıfı `deger_capasi` ile **birebir aynı gerekçeyle**
+    # garson: girdisi kullanıcının cümlesi **ve** bir `cube_query`, çıktısı düzeltilmiş
+    # bir fiş **ve bir beyan cümlesi**. Hiçbir sorgu koşmaz, motora hiç dokunmaz.
+    # ⚠ Ve iş bölümü doktrinin kendisi: *«kaç makinemiz var»*ın boyutunu **garson**
+    # bulur (`dimensions: [makine]`), bu modül yalnız fişin **şeklini** düzeltir —
+    # ölçüyü ve varsayılan dönemi düşürür. `cube_router`'ın büyüme tavanı onu buraya
+    # çıkarttı; `simge.py` de öyle doğmuştu.
+    "sayim.py",
     # `§SB` — teknik simge yazım sınıfı (`dE`·`kWh`·`pH`). Dil okur, hiçbir şey
     # çalıştırmaz; `cube_router`'ın büyüme tavanı onu buraya çıkarttı.
     "simge.py",

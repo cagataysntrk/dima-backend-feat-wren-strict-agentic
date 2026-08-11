@@ -879,6 +879,19 @@ def is_period_optional(measure: str | None, cube_meta: dict | None) -> bool:
     dönem sorulur — kırılımlı sorularda bile sessiz tüm-zaman varsayımı YOK, kullanıcı
     "Tümü" chip'iyle bilinçli tercih eder (ürün politikası, bkz. tests/test_ask_golden.py
     `_ask_all_time` — "dönem bilgisi yoksa KIRILIMLI sorularda da sorulur")."""
+    # 🔴 `§KV` — **ÖLÇÜSÜZ BİR FİŞTE DÖNEM SORULMAZ.** Ölçüldü (curl `V` turu):
+    # *«kaç makinemiz var»* → fiş `measures: []` (varlık sorusu, `app/sayim.py`) ama
+    # dönem kapısı yine *«dönemi çözemedim, son 12 ayı aldım»* dedi ve **filtre ekledi**.
+    # Yani cevabın kendi beyanı (*«bir dönem varsayılmadı»*) ile fişi çelişiyordu.
+    #
+    # ⚠ Bu bir istisna değil, docstring'in kendi mantığının **devamı**: dönem sorusu
+    # *«bu ölçü hangi aralıkta toplanacak»* demektir; toplanacak bir ölçü yoksa sorunun
+    # kendisi yoktur. `None` bu çağrı yüzeyinde **yalnız** boş `measures`'tan doğar
+    # (üç çağıranın üçü de ölçüldü) — yani *«bilinmeyen ölçü»* anlamına gelmez.
+    #
+    # *Bir listeye «hangi dönem» diye sormak, listeyi bir toplam sanmaktır.*
+    if measure is None:
+        return True
     if not measure or not cube_meta:
         return False
     return measure in (cube_meta.get("semi_additive") or [])

@@ -23,6 +23,7 @@ from app import turetme as _turetme
 from app import uyum as _uyum
 from app import yetenek as _yetenek
 from app import katalog_metni
+from app import sayim as _sayim
 from app import varlik
 from app import context as app_context
 from app import netlestirme as _netlestirme
@@ -4109,6 +4110,9 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                         cq = {**cq, "filters": [*(cq.get("filters") or []), *_dfs]}
                         typo_fix_trace = ((f"{typo_fix_trace} · dönem sistemce çözüldü")
                                           if typo_fix_trace else "dönem sistemce çözüldü")
+            # `§KV` — varlık sorusu: ölçü + varsayılan dönem düşer (gövde `app/sayim.py`).
+            # Dönem kapısından ÖNCE, çünkü varsayımı üreten odur.
+            cq, _kv = _sayim.fisi(body.question, cq, schema)
             gate = _period_gate(cq, cube_meta, route_hit.get("period_optional"), "Intent-path")
             if gate:
                 return gate
@@ -4122,6 +4126,7 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 cq, source=intent_source, learn=(intent_source == "cube+llm"),
                 trace=fresh_trace,
             )
+            _sayim.beyan_ekle(resp, _kv)          # `§KV` — sessiz daraltma YOK
             if resp:
                 return resp
 
