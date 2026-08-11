@@ -9,6 +9,27 @@
 
 ---
 
+## İÇİNDEKİLER
+
+| kısım | bölümler |
+|---|---|
+| **1 · DURUM** | `§0` yönetici özeti · `§1` mimarinin kanıtı · `§2` grafik meselesi · `§3` «en kötü promptta cevap» · `§4` mimari teşhis: ters yatırım |
+| **2 · SEKTÖR** | `§5` üç mimari kamp · `§6` on üç ürün · `§7` ölçülmüş gerçek · `§8` Türkçe vergisi ve hendeği · `§9` grafik seçimi · `§10` kök-neden algoritmaları |
+| **3 · WREN** | `§11` motorun 15 yeteneğinden birini kullanıyoruz |
+| **4 · MUHASEBE** | `§12` aptallık ettiğimiz yerler |
+| **5 · AÇIK KAYNAK** | `§13` alınacaklar |
+| **6 · BOŞA MI GİTTİ** | `§16` varlık muhasebesi |
+| **7 · AGENTIC DURUMUMUZ** | `§17` iki paralel sistem · `§18` «robotik/katalog» ölçümü |
+| **8 · CEVAP BİÇİMİ VE UX** | `§21` sektörde neyin kural olduğu |
+| **9 · TÜRK PAZARI** | `§19` yerli rekabet haritası · `§20` boşluk ve pazar gerçeği |
+| **10 · GİRİŞİMLER** | `§22` mezarlık · `§23` derin profiller · `§24` yakınsayan mimari · `§25` bağlam kavgası · `§26` ekip ve süre · `§27` asgari kapsam · `§28` sentez · `§29` bize düşen |
+| **11 · AGENTIC SEKTÖR** | `§30` teşhisi düzelt · `§31` Anthropic rehberi · `§32` sabit mi serbest mi · `§33` MCP · `§34` çok adımlı sayısal · `§35` karar motoru · `§36` hedef mimari |
+| **12 · NE YAPMALIYIZ** | `§14` öncelik sırası · `§15` dürüst kapanış |
+
+⚠ **Bölüm numaraları yazım sırasını, kısımlar okuma sırasını gösterir.** Metin içi
+çapraz göndermeler bölüm numarasıyla yapıldığı için numaralar korunmuştur.
+
+
 ## 0 · YÖNETİCİ ÖZETİ — mimari yargı
 
 **Soru:** mimarimiz doğru mu, mantığımız yeterli mi, rakiplere göre neredeyiz?
@@ -1019,7 +1040,7 @@ mü?»* sorusunun tek cevabı; **«payda kutsaldır»** ilkemizin doğal tamamla
 
 ---
 
-# ALTINCI KISIM — BOŞA MI GİTTİ
+# BEŞİNCİ KISIM — BOŞA MI GİTTİ
 
 > ⚠ Bu bölüm **batık maliyet yanılgısına** karşı yazıldı. Ölçüt tek: *«bu varlık bugün
 > silinse, yerine ne koymak gerekirdi ve kaça mal olurdu?»* Duygusal bağ, harcanan emek
@@ -1111,7 +1132,7 @@ vermektir. Yukarıdaki tablo tam da bunu önlemek için sayı ile yazıldı.*
 
 ---
 
-# YEDİNCİ KISIM — AGENTIC VE CEVAP BİÇİMİ
+# ALTINCI KISIM — AGENTIC DURUMUMUZ
 
 ## 17 · AGENTIC DURUMUMUZ — ölçüldü, ve sanılandan farklı
 
@@ -1325,7 +1346,7 @@ olmasından gelir.*
 
 ---
 
-# SEKİZİNCİ KISIM — CEVAP BİÇİMİ VE KONUŞMA UX'İ
+# YEDİNCİ KISIM — CEVAP BİÇİMİ VE KONUŞMA UX'İ
 
 > ⚠ **Kısmi bölüm.** UI/UX araştırması sekiz kolda yürüdü; bu bölüm **doğrulanmış**
 > birincil kaynaklara ve tamamlanan *anti-desen* koluna dayanıyor. Bekleyen kollar
@@ -1471,7 +1492,7 @@ Araştırma bu dört maddeyi **birincil kaynaktan teyit edemedi** ve tahminle do
 
 ---
 
-# DOKUZUNCU KISIM — TÜRK PAZARI VE YEREL RAKİPLER
+# SEKİZİNCİ KISIM — TÜRK PAZARI VE YEREL RAKİPLER
 
 ## 19 · YERLİ REKABET HARİTASI — dört katman
 
@@ -1636,7 +1657,7 @@ yapıyor **ve bunu kendileri itiraf ediyor**.
 
 ---
 
-# ONUNCU KISIM — GİRİŞİM RAKİPLERİ: NASIL YAPMIŞLAR
+# DOKUZUNCU KISIM — GİRİŞİM RAKİPLERİ: NASIL YAPMIŞLAR
 
 > Soru: *«Bu kadar firma bunu yapabiliyorsa biz neyi eksik yapıyoruz?»*
 > ⚠ Ölüm iddiaları **beyana değil ÖLÇÜME** dayanıyor: canlı DNS/TLS/HTTP adli incelemesi,
@@ -1963,7 +1984,7 @@ kaynağın etiketlenmesi (*«verified by Seek, NOT A HUMAN»*), eşik altı insa
 
 ---
 
-# ON BİRİNCİ KISIM — AGENTIC MİMARİLER: SEKTÖR NE YAPIYOR
+# ONUNCU KISIM — AGENTIC MİMARİLER: SEKTÖR NE YAPIYOR
 
 ## 30 · 🔴 ÖNCE TEŞHİSİ DÜZELT — *«kategorik olmak»* kusur DEĞİL
 
@@ -2206,58 +2227,109 @@ küme *örtüşmeyen* hâle gelir.
 > şeması olmaktan çıkarıp araç yapmak, üstüne gözlem-yansıma-onarım döngüsü koymak ve
 > metodolojiyi şablondan SKILL'e taşımak.**
 
-# BEŞİNCİ KISIM — NE YAPMALIYIZ
+# ON BİRİNCİ KISIM — NE YAPMALIYIZ
 
-## 14 · ÖNCELİK SIRASI — ölçülmüş gerekçelerle
+## 14 · ÖNCELİK SIRASI — tüm araştırma harmanlandıktan sonra
 
-> Sıra **etki ÷ maliyet** ile kuruldu. Her madde bir **ölçüme** dayanıyor.
+> Sıra **etki ÷ maliyet** ile kuruldu; her madde bir **dış ölçüme** ve bir **iç ölçüme**
+> dayanıyor. ⚠ Bu bir faz planı değil, bir **öncelik yargısıdır**.
 
-### 14.1 🔴 ÖNCE ÖLÇ — çünkü ölçmediğimiz yeri geliştiremeyiz
+### 14.0 🔴 SIFIRINCI KARAR — kapsamı İLAN ET
 
-| # | iş | gerekçe (ölçülmüş) |
-|---|---|---|
-| **1** | **Garson korpusu kur.** 300-500 gerçek soru, `(soru → beklenen küp/ölçü/kırılım)` etiketli. `promptfoo` veya mevcut `eval/run.py` üstünde. | Garson trafiğin **%37'sini** taşıyor ve ölçümü **21 senaryo**. Bu tek madde, geri kalan her şeyin ön koşulu |
-| **2** | **`cevapsız` oranını birinci sınıf metrik yap.** Bugün `%19,9` korpusta, `%21,8` canlıda — ve kapı manşetinde **yok**. | *«En kötü promptta bile cevap veriyorlar»* şikâyetinin sayısal karşılığı |
-| **3** | **Şişme katsayısını manşete yaz.** *«doğru=95»* yerine *«590 semantik vakada %95»*. | *«Yeşil kapı»* yanılsamasını bitirir |
-| **4** | **EHRSQL reliability score'u kapıya ekle.** | *«Dürüst red başarı değil»* doktrininin ölçülebilir hâli |
+Bu, listedeki her şeyin **önündedir** ve **kod gerektirmez**.
+
+Yerleşikler **5 tabloya daralarak %90** alıyor (Databricks ≤5, Looker 5 Explore, Dot <10).
+Hayatta kalanların **hepsinde yazılı kapsam reddi** var (Hex *«What this isn't»*, Dot
+*«1 SQL + biraz Python»*, Omni `ai_chat_topics`). Ölenlerin **hiçbirinde yok**.
+
+⊙ **Ve bu, doktrinimizin çelişkisini de çözer:** *«dürüst red başarı değil»* kuralı
+**ilan edilmemiş** kapsamda doğrudur — her red bir borçtur. **İlan edilmiş** kapsamda
+**red ürünün kendisidir**. Bugün canlı trafiğin **%21,8'i cevapsız** ve bunun ne kadarının
+*«kapsam dışı»*, ne kadarının *«kusur»* olduğunu **bilmiyoruz**.
+
+### 14.1 🔴 ÖNCE ÖLÇ — ölçmediğimiz yeri geliştiremeyiz
+
+| # | iş | iç ölçüm | dış dayanak |
+|---|---|---|---|
+| **1** | **Garson korpusu kur** — 300-500 etiketli soru | garson trafiğin **%37'sini** taşıyor, ölçümü **21 senaryo** | Hex: **30-50 elle yazılmış soru, her biri ayrı bir hata modu** · Anthropic: *«~20 sorguyla başlayın»* — **≥20 senaryo kuralımız literatürle örtüşüyor** |
+| **2** | **`cevapsız` oranını manşete al** | korpus **%19,9** · canlı **%21,8** — kapı manşetinde **yok** | rakiplerin en görünür üstünlüğü *«bir şeyle başlamak»* |
+| **3** | **Şişme katsayısını yaz** — *«590 semantik vakada %95»* | **28,0×** | — |
+| **4** | **Kurulum süresini ölç** | 🔴 hiç ölçülmüyor | Zenlytic: *«**Weeks. Sometimes months.** That setup tax is why we've mostly worked with large enterprises»* · rakipler **«7 gün»** satıyor |
+| **5** | **Doğruluk sayısı YAYINLA** | yok | 13 üründen 10'u yayınlamıyor; üçü **payda oyunu** yapıyor. ⊙ *«Bu bir savunma değil, **SİLAH**»* |
 
 ### 14.2 🔴 SONRA GARSONU BESLE — en yüksek getirili teknik iş
 
-| # | iş | ölçülmüş dayanak |
+| # | iş | dış dayanak |
 |---|---|---|
-| **5** | **VQR'ı garsona bağla** — istemin içine **retrieval ile seçilmiş 5-10 örnek sorgu**. | Cube: **+17…+23 puan**, ve *«varyansın tamamını semantik belge açıklıyor, model seçimi açıklamıyor»* — üstelik **4 KB markdown**'dan |
-| **6** | **`ManifestExtractor.extract_by` ile şema daraltma.** Bugün her soruda **23.729 karakter** gidiyor. | Şema bağlama hatası: Spider 2.0'da **%27,6**, MultiSpider 2.0'da **%33,0** |
-| **7** | **`instructions.md` karşılığı bir iş sözlüğü** (Wren AI Context Layer / Ossie `ai_context`). | Türkçe sözlüğü **koddan modele** taşır — 8.861 satırlık route yığınının varlık sebebini azaltır |
-| **8** | **Çalıştır → hatayı gör → düzelt döngüsü** (bugün yalnız *boş yanıt* için yeniden deneme var). | CHASE-SQL: oylama %68,84 → **eğitilmiş seçici %73,01**, oracle **%82,79**. *Darboğaz üretim değil **seçim*** |
-| **9** | **İki-sağlayıcılı LLM hakem** (sonucu doğrula, k=3 oylamanın yerine değil, **üstüne**). | AUROC: self-consistency **0,675** → tek hakem 0,770 → **topluluk 0,822** (ECE 0,031) |
+| **6** | **VQR'ı garsona bağla** (retrieval ile 5-10 örnek sorgu) | Cube **+17…+23 puan**, **4 KB markdown**'dan · Snowflake **Context Enrichment** ajanı · Wren LanceDB · Fabric kaynak başına 100 örnek |
+| **7** | **`ManifestExtractor.extract_by` ile şema daraltma** | şema bağlama hatası **%27,6-33,0** · Pinterest tablo arama **%40→%90** · *«Systems often fail **BEFORE** SQL is generated»* |
+| **8** | 🟢 **SKILLS (markdown)** — kohort · funnel · retention · YoY-oranı · what-if | **Anthropic: skill'siz %21 → skill'li >%95**; *«bir skill'e paketlenebilecek bağlam **fiilen sınırsız**»*. ⊙ **Kapalı fiil listesinin ilacı, kod yazmadan.** Ve metodoloji hataları (adım sırası, dedup, pencere) **metinde** yaşar |
+| **9** | 🔴 **Reflect + Repair döngüsü** — derleyici hatasını **ajanın gözüne** ver | Snowflake **Error Correction Agent** · Wren `retry&repair` · Genie öz-düzeltme. **Bu ajanlık değil, WORKFLOW** — Anthropic'in *«evaluator-optimizer»*'ı |
+| **10** | **Ephemeral/karalama sorgusu** | Hex: *«ilk denemede doğruluk yükseliyor»* |
+| **11** | **İki-sağlayıcılı hakem** | AUROC self-consistency **0,675** → topluluk **0,822** · CHASE-SQL: darboğaz **üretim değil SEÇİM** |
 
-### 14.3 🟡 KÖK-NEDEN'İ TAMAMLA
+⚠ **Ve bir uyarı — Anthropic'in ölçtüğü:** ham sorgu geçmişine grep erişimi vermek
+doğruluğu **bir puandan az** oynattı; *«bilgi oradaydı, ajan gördü, **yine de
+kullanmadı** — darboğaz erişim değil **YAPI**»*. ⊙ **Yani #6 «her şeyi ver» değil,
+«yapılandırılmış, insan onaylı örnek ver» demektir.**
+
+### 14.3 🟡 İKİ PARALEL SİSTEMİ BİRLEŞTİR
 
 | # | iş | dayanak |
 |---|---|---|
-| **10** | **Adtributor'ı yaz (~85 satır)** — `§KN`'nin eksik **yatay** kardeşi. `riskloc` doğrulama referansı. | Layer-1'de kilitliyiz; bileşik kök nedende Adtributor bile **%0**'a düşüyor (HotSpot ölçümü) |
-| **11** | **Jensen-Shannon sürprizini ekle.** | *«Yalnız explanatory power kullanan her analiz **büyük segmentleri sistematik olarak suçlar**»* — `§KN-toplam`'ımız tam bu tuzakta |
-| **12** | **FDR düzeltmesi (Benjamini-Hochberg)** veya keşif/doğrulama ayrımı. | **CHI 2018: kullanıcı içgörülerinin %60'ından fazlası yanlış** |
-| **13** | **LMDI-I'e geç** (alt-grup toplanabilirliği) + **sıfır/negatif politikası**. | `ln(0)` tanımsız; negatifte LMDI tanımsız → Shapley |
-| **14** | *«Kök neden»* yerine **«katkı analizi»** demeyi değerlendir. | Tableau kendi dokümanında: *«not a tool to prove or disprove hypotheses»*. **İsimlendirme başlı başına bir yanıltma kaynağı** |
+| **12** | **`FIIL_ANLAMI`'nı `tools.py`'den TÜRET** — kapalı `enum` korunur, **üretilmiş** olur | §17.5: **%73 örtüşme**; `plan_semasi` ilkeyi `cube_query` için uygulayıp fiil kümesi için unutmuş |
+| **13** | **Orkestrasyon katmanını serbestleştir** — 15 fiili **araç** yap, üstüne **döngü** koy | Snowflake **Plan → Use Tools → Reflect**; §36'nın üç katman ayrımı. ⚠ OpenAI eşiği: *«**10'dan az örtüşen** araç sorun»* — birleşme bunu da çözer |
+| **14** | **Bütçe + stall sayacı** | Snowflake token+süre · **Magentic-One stall ≤2 → yeniden planla**. Serbest döngüye geçerken **pazarlık dışı** |
+| **15** | **MCP yüzeyini aç** (`mcp_yuzeyi: off` → on) | Wren **chat UI'ını legacy'e gömdü**; Rill'de projelerin **%50+'ı ajan tarafından** kuruluyor. ⚠ **~20 araç eşiğini** aşma; **prompt injection** riskini (serbest metin hücreleri) ciddiye al |
 
-### 14.4 🟡 GRAFİK VE BİÇİM
+### 14.4 🟡 KÖK-NEDEN'İ TAMAMLA
 
 | # | iş | dayanak |
 |---|---|---|
-| **15** | **Draco hard kısıtlarını ekle** (§9.2) — özellikle `stack_without_summative_agg`. | Bu oturumda **yüzdeleri topladım**; literatür bunu 2018'de hard hata ilan etmiş |
-| **16** | **Ön-uç sayı biçimini ölç ve düzelt.** `d3-format`'ta **`tr-TR` YOK**. | `%56` vs `56%` · `12 B` = **bin** ↔ İngilizcede **milyar** |
-| **17** | Grafik seçim kurallarını **belgele ve yayınla**. | Rakiplerin **hiçbiri** yayınlamıyor — **denetlenebilir kural bir rekabet avantajı** |
+| **16** | **Adtributor (~85 satır)** — `§KN`'nin eksik **yatay** kardeşi | layer-1'de kilitliyiz; bileşik kök nedende **%0**'a düşüyor |
+| **17** | 🔴 **Jensen-Shannon sürprizi** | *«yalnız explanatory power kullanan her analiz **büyük segmentleri sistematik olarak suçlar**»* — `§KN-toplam` tam bu tuzakta |
+| **18** | **FDR düzeltmesi** | **CHI 2018: kullanıcı içgörülerinin %60'ından fazlası yanlış** |
+| **19** | **Metodoloji doğrulayıcı** (funnel/kohort'un 5 klasik hatası) | *«**sözdizimi doğruluğu, metodoloji doğruluğundan kolaydır**»* — hiçbiri `EXPLAIN`'de görünmez |
+| **20** | *«Kök neden»* yerine **«katkı analizi»** demeyi değerlendir | Tableau kendi dokümanında: *«not a tool to prove or disprove hypotheses»*; nedensellik iddiası **hiçbir satıcıda ölçülmemiş** |
 
-### 14.5 🟢 TEMİZLİK
+### 14.5 🟡 CEVAP BİÇİMİ — «robotik»in ilacı
 
-| # | iş |
+| # | iş | dayanak |
+|---|---|---|
+| **21** | 🔴 **Olgu tipi taksonomisi kur** — bugün `interpret()` **1-2 olgu** üretiyor | **Tableau Pulse'un 14 deterministik içgörü tipi**; *«NE söyleneceğine istatistik, NASIL söyleneceğine LLM»* — bizim `interpret`+`llm.anlat`+`narration_guard` üçlümüzün olgun hâli |
+| **22** | **Cevap biçimini bir KARAR yap** — bugün üç bileşenin **yan ürünü** | `niyet.py` altı soru türünü, `followup` beş konuşma türünü **zaten biliyor**; **sinyal var, tüketicisi yok** |
+| **23** | **Chip sayısını soruya bağla** — ölçüldü: **6,6,5,6,6,4,6,3** | *«the whole **"repeat question, bullet points, summary" ceremony**»* — sabit yapı robotluğun imzası |
+| **24** | **Draco hard kısıtları** (özellikle `stack_without_summative_agg`) | bu oturumda **yüzdeleri topladım**; literatür bunu **2018'de** hard hata ilan etmiş |
+| **25** | **Ön-uç sayı biçimi** — `d3-format`'ta **`tr-TR` YOK** | `%56` ↔ `56%` · `12 B` = **bin** ↔ İngilizcede **milyar** |
+
+### 14.6 🟢 STRATEJİK — pazar tarafı
+
+| # | iş | dayanak |
+|---|---|---|
+| **26** | **Kamayı netleştir: imalat + Türkçe + doğrulanabilirlik** | Veezoo'nun **DACH/Almanca kaması → $6M Series A**; Türkiye'de **kimse** imalat semantik katmanı üzerinde Türkçe doğrulanabilir cevap satmıyor |
+| **27** | **Fiyat tabanına cevap hazırla** | AKINSOFT NL raporlamayı **ücretsiz** verdi. Cevap: **«onlarınki ŞEMAYA sorar, bizimki İŞ TANIMINA sorar»** |
+| **28** | **Kanal kararı** | aiperas–Solniro (**Logo distribütörü**) ↔ Turboard (**DMO kamu kanalı**). Bayi kanalı olmadan orta ölçeğe ulaşmak zor |
+| **29** | **Self-serve fiyat düşün** | koltuk bazlı fiyat **ölenlerde yaygın**; çalışanlar düz ücret (Basedash **$1.000/ay**, Definite **$250/ay sınırsız kullanıcı**) |
+| **30** | **Apache Ossie pilotu** — `ai_context.synonyms` | Türkçe sözlüğü **koddan modele** taşır; **Wren zaten okuyor** (`wren context build --from-osi`) |
+
+### 14.7 🟢 TEMİZLİK
+
+**31** arşivlenmiş `wren-engine:latest` bağımlılığı (konteyner **`Restarting`**) ·
+**32** `wren cube query --sql-only` ↔ `cube_router` yan yana ölçümü ·
+**33** MDL'deki **31 `relationship`**'i çapraz-küpte kullan ·
+**34** `modernbert-tr-reranker` ölçümü (**+5…+9 nDCG@10**) ·
+**35** motorda olanı yeniden yazan ~**2.000 satırı** (`rls.py` · `dataset.py` · manifest)
+kademeli devre dışı bırak.
+
+### 14.8 🔴 YAPMAYACAKLARIMIZ — bilinçli
+
+| ne | neden |
 |---|---|
-| **18** | `docker-compose.yml`'deki **arşivlenmiş** `ghcr.io/canner/wren-engine:latest` bağımlılığını netleştir (konteyner şu an **`Restarting`**) |
-| **19** | `wren cube query --sql-only` ile `cube_router`'ın SQL üretimini **yan yana koy** — ne kadarı yeniden yazım? |
-| **20** | MDL'deki **31 `relationship`**'i çapraz-küp yolunda kullan (bugün *«blend»*) |
-| **21** | Apache **Ossie** pilotu — bir küp, `ai_context.synonyms` ile, `ossie validate` |
-| **22** | `modernbert-tr-reranker`'ı ölç (**+5…+9 nDCG@10** potansiyeli) |
+| **Çok-ajanlı supervisor** | **~15× token**; Anthropic: *«tüm ajanların **aynı bağlamı paylaşması** gereken… alanlar»*da çalışmıyor — **analitik tam olarak o alandır** |
+| **Araç sayısını şişirmek** | **~20 araç eşiği**; geniş sette araç seçim doğruluğu **%13,62** |
+| **Otonom aksiyon almak** | TheAgentCompany **%30,3**, görev başına **>$4**. **Karar öner, kararı uygulama** |
+| **Zincir uzunluğunu kutsamak** | %95 adım doğruluğunda **10 adım = %59** |
+| **Kapalı fiil kümesini atmak** | Cortex Analyst **%90+'ı sabit 6 aşamayla** alıyor; Omni'nin ölçümü: katman *«referans»* olarak verilince **21 puan** kayıp |
 
 ## 15 · DÜRÜST KAPANIŞ
 
