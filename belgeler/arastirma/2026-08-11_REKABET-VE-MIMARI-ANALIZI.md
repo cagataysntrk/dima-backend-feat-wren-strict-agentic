@@ -3227,6 +3227,108 @@ Yeni dokuz kalem o beşliye **girmiyor**; ikisi (A13, B9) **ikinci dalgada**, bi
 düşünseydik»* denmesin diye **hepsi yazılı** — ama hangisinin kritik yolda olduğu
 **§14.13'te** ayrıca söylenmiştir.
 
+---
+
+## 14.16 🔴 WREN MOTORU — kalem kalem denetim, hiçbiri atlanmadan
+
+> §11'in **tamamı** plana karşı tarandı ve **ölçüldü**. ⚠ İlk taramam iki yanlış bulgu
+> üretti (aşağıda çürütüldü) — *bir yeteneğin yokluğunu varsaymak, onu aramaktan
+> pahalıdır.*
+
+### A · `wren_core`'un 15 sembolü — durum tablosu
+
+| sembol | bugün | plan |
+|---|---|---|
+| `cube_query_to_sql` | 🟢 **kullanılıyor** | — |
+| **`ManifestExtractor.extract_by`** | 🔴 hiç | **B1** (şema daraltma) |
+| **`ManifestExtractor.resolve_used_table_names`** | 🔴 hiç | **B8** (B1'in doğrulaması) |
+| **`SessionContext.dry_run`** | 🟡 `wren_service.dry_plan` sarıyor | **F10** |
+| **`SessionContext.register_csv/parquet`** | 🔴 `dataset.py` (161 satır) yeniden yazmış | **F10** |
+| 🆕 **`SessionContext.get_available_functions`** | 🔴 hiç | **F14** ⬇ |
+| 🆕 **`SessionContext.transform_sql`** | 🔴 hiç | **F14** ⬇ |
+| 🆕 **`SessionContext.pushdown_limit`** | 🔴 hiç | **F14** ⬇ |
+| 🆕 **`SessionContext.list_tables`** | 🔴 hiç | **F14** ⬇ |
+| **`RowLevelAccessControl` + `validate_rlac_rule`** | 🔴 `rls.py` (380) yeniden yazmış | **F11** |
+| **`Manifest` · `to_manifest` · `migrate_manifest_json` · `is_backward_compatible`** | 🔴 `compose.py`+`mdl_writer.py` (~1.490) | **F12** |
+| 🆕 **`Manifest.get_cube` / `get_model`** | 🔴 hiç — hedefli erişim | **F12'ye dâhil** |
+| `Model` · `SessionProperty` · `RemoteFunction` · `to_json_base64` | 🔴 hiç | **F15** ⬇ *(değerlendirilecek)* |
+
+### B · 🔴 İKİ YANLIŞ BULGUM — ölçümle çürütüldü, kayda geçiyor
+
+**1 · *«Operatörlerin 5'i eksik»* — YANLIŞ.**
+`cube_router.py`'de 7 operatör görünce eksik sandım. Ama `app/cube_operatorleri.py`
+**motorun 12 operatörünün tamamını** taşıyor ve Intent-JSON şeması ona **bağlı**
+(`§M-6`). Dosyanın kendi notu:
+
+> *«Her biri çalışan konteynerin `/cube` ucuna **tek tek gönderildi ve satır döndürdü**…
+> Bir operatör buraya **ölçülmeden** eklenemez.»*
+
+⊙ Yani `contains` · `starts_with` · `is_null` · `is_not_null` **garson üzerinden ifade
+edilebiliyor**. `route()`'un 7'de kalması **doktrin gereği doğrudur** — *«adı X ile
+başlayanlar»* gibi bir kalıp route'a Türkçe öğretmek olurdu. **Eylem gerekmiyor.**
+
+**2 · *«`views` kullanılmıyor»* — YARIM DOĞRU.**
+MDL'de **tek bir view** var (`enerji_tesis`) ve `compose.py` onu **üretiyor**. Sorgu
+yolunda ayrıca ele alınmıyor ama **küp olarak zaten erişilebilir**. ⊙ Eylem gerekmiyor;
+yalnız **yeni view eklenirse** yolun sınandığı bir kapı yok — **F16**'ya not düşüldü.
+
+### C · 🔴 GERÇEK BOŞLUK — granülerlik
+
+| | |
+|---|---|
+| **motor** | `year · quarter · month · week · day · **hour · minute**` |
+| **biz** | `intent_semasi._GRAN_ENUM = ["year","quarter","month","week","day"]` · `plan_onarim.GRANULERLIKLER` **aynı beş** |
+| 🔴 **eksik** | **`hour` ve `minute`** |
+
+⊙ **Ve bu, imalat dikeyinde doğrudan kayıp:** vardiya içi analiz, saatlik OEE, duruş
+yoğunluğunun saat dağılımı — *«hangi saatlerde duruyor»* sorusu **ifade edilemiyor**.
+
+⚠ **Ve tam olarak `§M-6`'nın kapattığı kusurun ikizi:** operatörler tek kaynağa bağlandı,
+**granülerlik bağlanmadı** — iki yerde elle yazılı liste duruyor (`intent_semasi` ve
+`plan_onarim`), yani `KAT-1` ihlali de var.
+
+### D · Plana eklenen dört madde
+
+| # | iş | faz | maliyet |
+|---|---|---|---|
+| **B12** | 🔴 **Granülerliği tek kaynağa bağla + `hour`/`minute` aç** — `cube_operatorleri.py`'nin deseniyle: motora **tek tek gönder, satır döndürdüğünü ÖLÇ**, sonra ekle. `intent_semasi._GRAN_ENUM` ve `plan_onarim.GRANULERLIKLER` o kaynaktan türesin | FAZ 1 | günler |
+| **F14** | **`SessionContext`'in dört kullanılmayan yeteneği**: `get_available_functions` (motorun desteklediği fonksiyonları **sormak**, varsaymak yerine) · `transform_sql` · `pushdown_limit` · `list_tables` | FAZ 5 | günler |
+| **F15** | `Model` · `SessionProperty` · `RemoteFunction` · `to_json_base64` — **değerlendir**; `RemoteFunction` özel iş fonksiyonları (ör. Türkçe tarih/metin) için kapı olabilir | FAZ 5 | okuma |
+| **F16** | **`views` yolu için bir kapı** — bugün tek view var ve sınanmıyor | FAZ 5 | saatler |
+
+### E · Wren'in **ürün** tarafından alınacaklar — plan durumu
+
+| kalem | §11 | plan |
+|---|---|---|
+| **AI Context Layer → `instructions.md`** | §11.5 | ✅ **B3** |
+| **AI Context Layer → `queries.yml`** | §11.5 | 🟡 **B2** bunu **VQR** ile yapıyor — ⊙ *format olarak Wren'inkine yaklaştırmak, ileride `wren context build` ile beslemeyi açar* → **B2'ye not** |
+| **LanceDB hibrit erişim** | §11.5 | 🟡 bizde `multilingual-e5-large` + leksik yedek **zaten var** (TR-MTEB birincisi) — **değiştirmeye gerek yok** |
+| **`wren serve mcp`** (`query_cube`·`list_cubes`·`describe_cube`·`get_context`·**`recall_queries`**) | §11.5 | ✅ **C3** — ⚠ *`recall_queries` bizim VQR'ımızın MCP karşılığı; C3'te araç adları hizalanmalı* |
+| **`skills/`** | §11.3 | ✅ **B10** |
+| **`evals/`** | §11.3 | 🆕 **A15** ⬇ — *Wren'in kendi eval koşumu; A1'e desen olarak bakılmalı* |
+| **`sdk/` (`wren-langchain`, `wren-pydantic`)** | §11.3 | 🆕 **F17** ⬇ — *değerlendir; bugün doğrudan `wren_core` kullanıyoruz* |
+| **Değer profilleme (value profiling)** | §11.5 | 🆕 **B13** ⬇ — 🔴 Wren'in **6 doğruluk sütunundan biri**, bizde **yok**: kullanıcının yazdığı değer (*«kırmızı»*) DB'deki değere (*«KIRMIZI»*, *«Kırmızı-01»*) **eşlenmeli**. ⊙ `deger_capasi.py` bunun **bir kısmını** yapıyor; Snowflake'in *«relevant literals»* ajanı tam bu iş |
+| **`wren cube query --sql-only` kıyası** | §11.4 | ✅ **F2** |
+| **`relationships` (31)** | §11.2 | ✅ **F3** |
+| **arşivlenmiş `wren-engine` imajı** | §11.3 | ✅ **F1** |
+
+### F · Eklenen üç madde daha
+
+| # | iş | faz | neden |
+|---|---|---|---|
+| **A15** | **Wren'in `evals/` dizinini incele** — A1'in korpus tasarımına desen | FAZ 0 | okuma |
+| **B13** | 🔴 **Değer profilleme (value profiling)** — Wren'in 6 doğruluk sütunundan biri; `deger_capasi.py`'nin üstüne. *«Kullanıcının kelimesi ↔ DB değeri»* uçurumu | FAZ 1 | günler |
+| **F17** | `wren-langchain` / `wren-pydantic` SDK'larını değerlendir | FAZ 5 | okuma |
+
+### 14.17 GÜNCEL TOPLAM
+
+**FAZ 0: 15** · **FAZ 1: 13** · **FAZ 2: 3** · **FAZ 3: 11** · **FAZ 4: 7** · **FAZ 5: 17**
+→ **66 adım**
+
+🔴 **Kısa yol (§14.13) yine değişmedi** — beş iş, ~2-3 hafta. Yeni yedi kalemden yalnız
+**B12 (saatlik granülerlik)** ürün açısından hızlı bir kazanç; imalat dikeyinde *«hangi
+saatte duruyor»* sorusunu açıyor.
+
 ## 15 · DÜRÜST KAPANIŞ
 
 ### 15.1 Kullanıcının üç iddiası — ölçümle karşılığı
