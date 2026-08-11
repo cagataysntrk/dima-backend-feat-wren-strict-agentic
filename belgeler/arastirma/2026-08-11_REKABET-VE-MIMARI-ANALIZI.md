@@ -3215,7 +3215,38 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 
 ## FAZ 2 · YETENEK KAYDINI BİRLEŞTİR — 1 hafta
 
-### C1 · `FIIL_ANLAMI`'nı `tools.py`'den türet
+### ⊘ C1 · `FIIL_ANLAMI`'nı `tools.py`'den türet — **ÖLÇÜLDÜ, ŞİMDİ YAPILMIYOR** *(2026-08-12)*
+
+> İlke (`KAT-1`) doğru ve bağlayıcı; soru **ne zaman** ödeneceği. Üç ölçüm ertelemeyi
+> gerektirdi:
+>
+> | | ölçülen |
+> |---|---|
+> | `FIIL_ANLAMI` | **15 fiil** ✅ raporla aynı · **CANLI** (`plan_garson.py:284` her çağrıda şema kuruyor) |
+> | `tools` kaydı | **25 araç** ✅ raporla aynı · ⊘ **plan yolunda UYKUDA** — iki tüketicisi de kapalı: `mcp.py` (`mcp_yuzeyi: off`) ve `Planlayici.sec()` (`agent_plan_secimi: off`) |
+> | adlar | 🔴 **örtüşmüyor**: `SORGU`/`AYRISTIR`/`GORSEL` ↔ `route`/`contribution.decompose`/`viz.recommend` |
+>
+> ① **Canlı kaydı uykudaki kayıttan türetmek** olurdu: riski canlı yol taşır, faydayı
+> kapalı yol. Kartın kendi `risk` satırı zaten yazıyor: *«Yanlış türetim planları bozar.»*
+> ② Kullanıcı **hiçbir şey hissetmez** (`KURAL B` → bayt bayt aynı), ve bu oturumun
+> bağlayıcı uyarısı: *«ölçüm/altyapı tesisatı ürün değildir»*.
+> ③ Adlar örtüşmediği için türetim bir **eşleme tablosu** ister → iki kayıt yerine **üç**
+> şey. `KAT-1` adına yapılan bir işin üçüncü bir kayıt doğurması, ilkeyi ilkenin adıyla
+> çiğnemek olurdu.
+>
+> ⚠ **Raporun *«örtüşme %73»* rakamına dokunulmadı**: o **anlamsal** bir eşleştirmedir;
+> kaba bir ad eşlemesi %26 verdi ve bu onu **çürütmez** — *kaba bir ölçü, ölçemediği bir
+> iddiayı çürütemez.*
+>
+> 🔴 **VE BORÇ KENDİNİ TOPLUYOR:** `test_c1_tek_yetenek_kaydi.py` iki bayraktan biri
+> açıldığı gün **kırmızı** olur ve ödeme biçimini satır satır yazar (araç kendi `fiil`ini
+> **beyan eder** → `FIIL_ANLAMI` türetilir → bayt bayt aynı çıkar). O gün iki kayıt da
+> canlı olacak ve ayrışmaları **gerçek** bir risk hâline gelecek.
+> ⊙ Yani `C1`'in doğru sırası **`C3`'ten sonra**dır, önce değil.
+>
+> *Bir borcu ertelemek, onu unutmak değildir — eğer erteleme kendi alarmını kuruyorsa.*
+
+### C1 · `FIIL_ANLAMI`'nı `tools.py`'den türet *(özgün kart)*
 
 | | |
 |---|---|
