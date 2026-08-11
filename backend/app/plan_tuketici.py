@@ -448,6 +448,22 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
             _log.info("orkestratör: plan GEÇ geldi (yarış) → kurtarıldı, %d adım",
                       len(plan.get("adimlar") or []))
     if not plan:
+        # 🔴🔴 `§RD-4` — **BELGE DÜZENLENİRKEN DISCOVERY'YE DÜŞÜLMEZ.**
+        #
+        # ⊙ Ölçüldü (curl `T` turu, T28): ekranda **6 bloklu** bir pano varken
+        # *«panodan kalite bölümünü çıkar»* → `source=llm:openrouter`, **ham SQL**,
+        # ve pano **yok oldu** (`rapor=None`). Kullanıcı bir belgeyi düzenliyordu;
+        # sistem yerine bir SQL yazdı.
+        #
+        # 🔴 Doktrinin kendi cümlesi: *Discovery'nin her ateşlenmesi bir mutfak
+        # eksikliği raporudur* — ama burada mutfak zaten doluydu: belge **elimizdeydi**.
+        # Bir düzenleme isteği karşılanamıyorsa doğru cevap belgeyi **korumak** ve
+        # anlamadığımızı **söylemektir**; belgeyi yok edip yerine alakasız bir tablo
+        # koymak değil.
+        #
+        # *Elindeki belgeyi kaybederek verilen bir cevap, cevap değil bir zarardır.*
+        if _onceki_bolumler:
+            return _belgeyi_koru(_onceki_bolumler, schema, soru)
         _log.info("orkestratör: kullanılabilir plan yok → merdiven bugünkü gibi")
         return None
     _n = len(plan["adimlar"])
@@ -524,6 +540,41 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     #
     # *LLM'in seçimine bırakılmış bir şey, fişin zaten kanıtladığı bir şeyse, orada bir
     # karar değil bir kumar vardır.*
+    # `§RZ` — belge istendi ama plan tek bölüm ürettiyse, eksik bölümleri **katalogdan**
+    # türet ve koş. Gerekçe `plan_semasi.belge_ek_bolumleri`'nde; burada yalnız **çağrı**
+    # var. ⚠ Temel bölüm **yeniden koşulmaz** (`bolumlerden_kur`'un aynı ilkesi): bir
+    # sonucu iki kez hesaplamak, onu bir kez yanlış hesaplamanın en kolay yoludur.
+    if (_belge_istegi and len(_bolumler) == 1
+            and isinstance(_bolumler[0].get("cube_query"), dict)):
+        _bolumler.extend(_ek_bolumler_kos(_bolumler[0]["cube_query"], service=service,
+                                          schema=schema, limit=limit))
+
+    # 🔴🔴 `§RD-3` — **BİR BELGENİN BÜTÜN BÖLÜMLERİ AYNI DÖNEMİ KONUŞUR.**
+    #
+    # ⊙ Ölçüldü (curl `T` turu, T24): elde *«son 2 yıl»* dönemli 3 bloklu bir rapor
+    # varken *«rapora aylık ciro trendi de ekle»* → eklenen blok
+    # `{"cube":"parti","measures":["toplam_ciro"]}` — **ne aylık, ne dönemli**. Yani
+    # iki yıllık blokların yanında **tüm zamanların** bir sayısı duruyordu.
+    #
+    # 🔴 Ve bu bir grafik kusuru değil bir **doğruluk** kusurudur: aynı belgede iki
+    # farklı evreni aynı başlık altında okumak, kıyaslanamaz iki sayıyı kıyaslanır
+    # sanmaktır — ve hiçbir yerde yazmıyordu.
+    #
+    # ⚠ Sahiplik: **kendi dönemi olan bölüme dokunulmaz.** Kullanıcı *«bir de geçen ayı
+    # ekle»* derse o bölümün dönemi onundur. Devralma yalnız **hiç dönemi olmayan**
+    # bölüme uygulanır — yani bir seçim ezilmez, bir **boşluk** doldurulur.
+    #
+    # *Bir belgede dönemini söylemeyen bir bölüm, dönemi olmayan bir bölüm değildir —
+    # dönemi bilinmeyen bir bölümdür.*
+    # ⚠ Ve devralan bölüm **YENİDEN KOŞULUR.** İlk yazımda süzgeci koşulmuş bir bölümün
+    # fişine basıyordum — yani sayının taşımadığı bir dönemi **iddia ediyordum**. Bu
+    # deponun en pahalı kusur sınıfı tam olarak budur: fiş ile sayının ayrışması.
+    # *Bir fişi sayıyı değiştirmeden düzeltmek, yalanı belgelemektir.*
+    _devir_izi: list[str] = []
+    if _belge_istegi and len(_bolumler) > 1:
+        _bolumler = _donemi_devret(_bolumler, service=service, schema=schema, limit=limit,
+                                   onceki=_onceki_bolumler, iz=_devir_izi)
+
     _rapor = None
     _derle = bool(_belge_fiili) or (bool(_belge_istegi) and len(_bolumler) >= 2)
     if _derle and _bolumler:
@@ -553,7 +604,27 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
     # *Bir indirgemeyi söylemeden yapmak, kullanıcıya istediğini verdiğini sanmasına izin
     # vermektir.*
     _belge_notu = None
-    if _belge_istegi and _rapor is None and len(_bolumler) == 1:
+    # 🔴 `§RÇ` — **DEĞİŞMEYEN BİR BELGE, DEĞİŞTİĞİNİ SÖYLEMEDEN GERİ VERİLEMEZ.**
+    #
+    # ⊙ Ölçüldü (curl `T` turu, T27/T29): 6 bloklu bir pano varken *«panodan bakım
+    # bölümünü çıkar»* → **6 blok, birebir aynı**, ve **tek kelime** açıklama yok.
+    # (O panoda `bakim` bloğu zaten yoktu — yani istek karşılanamazdı.) Kullanıcı
+    # bölümün çıkarıldığını sanır ve bir daha bakmaz.
+    #
+    # ⚠ Kıyas **kimlikler** üzerinden: satır sayısı veri tazelenince değişebilir, bir
+    # belgenin **bölüm listesi** değişmez. *Bir değişikliği satır sayısından ölçmek, veri
+    # değiştiğinde değişiklik olduğunu sanmaktır.*
+    if _onceki_bolumler and _rapor is not None:
+        def _kimlik(bs: list[dict]) -> set[tuple]:
+            return {(str((b.get("cube_query") or {}).get("cube") or ""),
+                     tuple((b.get("cube_query") or {}).get("measures") or []),
+                     tuple((b.get("cube_query") or {}).get("dimensions") or []))
+                    for b in (bs or []) if isinstance(b.get("cube_query"), dict)}
+        if _kimlik(_bolumler) == _kimlik(_onceki_bolumler):
+            _belge_notu = BELGE_DEGISMEDI
+            _log.info("§RÇ: düzenleme belgeyi DEĞİŞTİRMEDİ (%d bölüm) → beyan",
+                      len(_bolumler))
+    if _belge_notu is None and _belge_istegi and _rapor is None and len(_bolumler) == 1:
         _belge_notu = ("⚠ **Tek bölümlük** bir sonuç çıktı — bir belge en az iki bölüm "
                        "ister. Rapora dönüştürmek için ne eklemek istersin? (ör. "
                        "*«müşteri kırılımı da ekle»* · *«geçen yıla göre kıyasla»* · "
@@ -676,6 +747,7 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
         # *"kaç adım koştu"* sorusunun cevabıdır ve okuyucunun ilk aradığı odur.
         # Beyan yoksa liste bayt bayt bugünküdür (`KURAL B` disiplini).
         "iz": ([f"orkestratör: {_n} adımlık plan koştu ({out['sorgu_sayisi']} sorgu)"]
+               + _devir_izi
                + [f"onarım: {b}" for b in (out.get("onarimlar") or [])]),
         "result": _son,
         "cube_query": (_bolumler[-1]["cube_query"] if _bolumler else None),
@@ -711,6 +783,148 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
             "bolumler": _bolumler,
         },
     }
+
+
+#: `§RÇ` — bir düzenleme isteği belgeyi **değiştirmediyse** söylenecek cümle. Tek sahip:
+#: iki dal (plan yok · plan değiştirmedi) aynı şeyi söylüyorsa orada iki dal değil bir
+#: dal vardır (`§AY`'nin aynı dersi).
+BELGE_DEGISMEDI = ("⚠ Belgede bir **değişiklik yapılmadı** — isteğini bir bölüme "
+                   "bağlayamadım. Bölümü adıyla yazabilirsin (ör. *«müşteri kırılımını "
+                   "çıkar»* · *«oee bölümünü çıkar»*), ya da ne eklemek istediğini söyle.")
+
+
+def _belgeyi_koru(onceki_bolumler: list[dict], schema: dict, soru: str) -> dict:
+    """`§RD-4`/`§RÇ` — elde tutulan belgeyi **aynen** geri ver + neden değişmediğini söyle.
+
+    ⚠ Bölümlerin **sonuçları yoktur** (istemci yalnız kimlikleri geri yollar — `G0b`),
+    o yüzden belge burada **yeniden koşulmaz**; kimlikleriyle dizilir. Frontend elindeki
+    kartları zaten çiziyor; buradan giden şey belgenin **kaybolmadığının** kanıtıdır.
+    """
+    from app import report as _report
+
+    try:
+        _r = _report.bolumlerden_kur(onceki_bolumler, baslik=soru or "Rapor", schema=schema)
+    except Exception:                     # noqa: BLE001 — koruma turu DÜŞÜREMEZ
+        _log.warning("§RD-4: belge korunamadı (best-effort)", exc_info=True)
+        _r = None
+    _log.info("§RD-4: belge düzenlemesi çözülemedi → belge KORUNDU (%d bölüm)",
+              len(onceki_bolumler))
+    return {"source": "cube", "note": BELGE_DEGISMEDI, "rapor": _r,
+            "iz": ["Belge düzenlemesi: istek bir bölüme bağlanamadı → belge KORUNDU "
+                   "(Discovery'ye düşülmedi — §RD-4)"]}
+
+
+def _tarih_suzgeci(cq: Any) -> list[dict]:
+    """Bir fişin **dönem** süzgeçleri. Tek sahip: üç yerde tekrar eden okuma."""
+    if not isinstance(cq, dict):
+        return []
+    return [f for f in (cq.get("filters") or [])
+            if str((f or {}).get("dimension") or "") == "tarih"]
+
+
+def _donemi_devret(bolumler: list[dict], *, service: Any, schema: dict,
+                   limit: int | None = None, onceki: list[dict] | None = None,
+                   iz: list[str] | None = None) -> list[dict]:
+    """`§RD-3` — dönemi olmayan bölümler belgenin dönemini devralır **ve yeniden koşar**.
+
+    Gerekçe çağrı yerinde. Burada tek karar: **hangi dönem belgenindir?**
+
+    1. Yeni planın dönemi olan **ilk** bölümü — kullanıcı bu turda bir dönem yazdıysa o
+       kazanır (*«bir de geçen ayı ekle»* onun seçimidir, ezilmez).
+    2. Yoksa **önceki belgenin** dönemi.
+
+    🔴 İkinci basamak canlıda ölçülerek eklendi (curl `D7`): elde *«son 2 yıl»* dönemli
+    6 bloklu bir rapor varken *«rapora aylık ciro trendi de ekle»* → yeni planın
+    **hiçbir** bölümünde dönem yoktu. Yani belge, bir **düzenleme** turunda dönemini
+    tümden kaybediyordu ve kullanıcı bunu ancak sayılar tuhaflaşınca fark ederdi.
+
+    ⚠ İlk yazımda devir yalnız *«bölümlerden biri dönemi biliyorsa»* koşuyordu — yani
+    tam da en çok gerektiği yerde, **hepsi unuttuğunda**, hiç koşmuyordu.
+    *Bir boşluğu doldurmayı elde kalan bir örneğe bağlarsanız, hiçbir örnek kalmadığında
+    boşluk en büyük hâline gelir.*
+    """
+    from app import report as _report
+
+    _belge = next((_tarih_suzgeci(b.get("cube_query")) for b in bolumler
+                   if _tarih_suzgeci(b.get("cube_query"))), [])
+    _kaynak_adi = "planın kendi dönemi"
+    if not _belge:
+        _belge = next((_tarih_suzgeci(b.get("cube_query")) for b in (onceki or [])
+                       if _tarih_suzgeci(b.get("cube_query"))), [])
+        _kaynak_adi = "önceki belgenin dönemi"
+    if not _belge:
+        return bolumler
+    _hedef = [i for i, b in enumerate(bolumler)
+              if isinstance(b.get("cube_query"), dict)
+              and not _tarih_suzgeci(b.get("cube_query"))]
+    if not _hedef:
+        return bolumler
+    _yeni = [{**bolumler[i]["cube_query"],
+              "filters": list(bolumler[i]["cube_query"].get("filters") or []) + list(_belge)}
+             for i in _hedef]
+    try:
+        _r = _report.compose_report(service, schema,
+                                    {"blocks": [{"cube_query": cq} for cq in _yeni]},
+                                    limit=limit or 1000)
+    except Exception:                     # noqa: BLE001 — devir turu DÜŞÜREMEZ
+        _log.warning("§RD-3: dönem devri koşulamadı (best-effort)", exc_info=True)
+        return bolumler
+    _bloklar = [b for sayfa in (_r.get("pages") or []) for b in (sayfa or [])]
+    _devredi = False
+    for _i, _blok in zip(_hedef, _bloklar):
+        if _blok.get("error") or not _blok.get("result"):
+            continue      # ⚠ koşamayan bölüm ESKİ hâliyle kalır — fişi hâlâ doğrudur
+        bolumler[_i] = {"cube_query": _blok.get("cube_query"), "result": _blok["result"]}
+        _log.info("§RD-3: bölüm belgenin dönemini devraldı ve yeniden koştu (%s · %s)",
+                  (_blok.get("cube_query") or {}).get("cube"), _kaynak_adi)
+        _devredi = True
+    # 🔴 **SESSİZ DEVİR YOK.** Kullanıcının yazmadığı bir dönemle hesaplanmış bir sayı,
+    # varsayımı görülmeden okunmamalı (`§MV`'nin aynı kuralı).
+    if _devredi and iz is not None:
+        iz.append(f"belge dönemi: {len(_hedef)} bölüm {_kaynak_adi}ni devraldı "
+                  f"ve yeniden koştu (§RD-3)")
+    return bolumler
+
+
+def _ek_bolumler_kos(temel: dict, *, service: Any, schema: dict,
+                     limit: int | None = None) -> list[dict]:
+    """`§RZ`'nin türettiği ek bölümleri **koşar** ve `_bolumler` biçiminde döner.
+
+    ⚠ Koşucu **yeniden yazılmadı**: `report.compose_report` bir bloğu koşan tek sahiptir
+    (dönem çözümü · `cube_sql` · hata izolasyonu hepsi orada). İkinci bir koşucu, bir gün
+    ikisinden yalnız birinin düzeltileceği anlamına gelirdi (`KAT-1`).
+
+    ⚠ **Boş bölüm eklenmez:** bir belgeye sıfır satırlık bir kırılım koymak, sayfayı
+    doldurup okuyucuya hiçbir şey söylememektir.
+    """
+    from app import report as _report
+    from app.plan_semasi import belge_bolum_sirala, belge_ek_bolumleri
+
+    _kup = str((temel or {}).get("cube") or "")
+    _meta = next((c for c in (schema.get("cubes") or []) if c.get("name") == _kup), None)
+    if not _meta:
+        return []
+    _ekler = belge_ek_bolumleri(temel, _meta)
+    if not _ekler:
+        return []
+    try:
+        _r = _report.compose_report(service, schema,
+                                    {"blocks": [{"cube_query": cq} for cq in _ekler]},
+                                    limit=limit or 1000)
+    except Exception:                     # noqa: BLE001 — zenginleştirme turu DÜŞÜREMEZ
+        _log.warning("§RZ: ek bölümler koşulamadı (best-effort)", exc_info=True)
+        return []
+    _kosan: list[dict] = []
+    for _blok in (b for sayfa in (_r.get("pages") or []) for b in (sayfa or [])):
+        _sonuc = _blok.get("result")
+        if _sonuc and (_sonuc.get("row_count") or 0) > 0:
+            _kosan.append({"cube_query": _blok.get("cube_query"), "result": _sonuc})
+    # `§RZ-2` — seçim **koşulmuş satırların üstünde** yapılır: hangi kırılımın bilgi
+    # taşıdığı koşmadan bilinemez. Gerekçe `belge_bolum_sirala`'da.
+    _out = belge_bolum_sirala(_kosan)
+    _log.info("§RZ: belge tek bölümlüktü → %d aday türetildi · %d koştu · %d seçildi",
+              len(_ekler), len(_kosan), len(_out))
+    return _out
 
 
 def _belge_bolumleri(kaynak: Any) -> list[dict] | None:

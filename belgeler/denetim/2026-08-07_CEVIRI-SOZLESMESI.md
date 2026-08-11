@@ -11224,3 +11224,72 @@ yüksüz koşum → tests/test_gecikme_tavani.py: 2 passed in 26,81 s   ✅
 
 ⚠ Ve bu, bugün **dördüncü** ölçüm-yüzeyi dersi: `measure_having` yazıcıda yoktu · bayat
 şema · HTTP 401 sessizliği · bu. *Ölçüm aracının kendisi de ölçülmesi gereken bir şeydir.*
+
+---
+
+# `T` TURU — 29 senaryo · 8 kök · **agentic belge ekseni**
+
+*(2026-08-11 · curl, tek tek, loglarla · kapı yalnız sonda)*
+
+## Ölçüm hattı — ve iki alet kusuru daha
+
+| # | ne oldu | ders |
+|---|---|---|
+| 1 | `sor.sh "$q" "$TH"` thread **kurmuyordu**: `thread_id`/`session_id` **pass-through** alanlar; thread durumunu istemci `history`+`cube_query` ile taşır (frontend'in `contextCq`'si gibi). Üç tur bağlamsız çıktı ve **ürün kusuru** gibi göründü. | Doğru alet `thread.sh`. *Bir bağlamı kurmayan alet, bağlamın yokluğunu ölçer.* |
+| 2 | `belge.sh` notu **200 karakterde** kesiyordu; `§RÇ` beyanı notun **sonunda** olduğu için *"beyan çıkmıyor"* diye teşhis yazacaktım. | Beşinci ölçüm-yüzeyi dersi. |
+| 3 | Tur ortasında **HTTP 401** — yeni `HTTP=` satırı anında yakaladı (eskiden `source=None` diye ürün kusuru sanılırdı). | Kalıcı kazanç. |
+
+## Ölçülen turlar (özet)
+
+**T1–T15 · temel + thread A.** `§SD` veri-ufku beyanı ✅ · `§KS` sıralama+kesme ✅ ·
+yoy `+%10,2` ✅ · sahiplik beyanı + chip ✅. Thread A (5 tur): t2 çapaya oturdu
+(`order asc`+`limit 3`), t3 *«bunu yorumla»* → **0 adım · 0 sorgu**, t4 kök-neden
+dallanması, t5 deterministik refine. **0 kez** *«ilişkilendiremedim»* → sözleşme #3 ✅.
+
+**T16–T29 · belge ekseni.** Sekiz kök çıktı:
+
+| kök | ölçülen kusur | düzeltme |
+|---|---|---|
+| `§UT-YP` | *«geçen yıl toplam duruş dakika»* → `oee.toplam_durus_dakika` **doğru**, beyan *«yalnız bir parçasıyla»* dedi | yüklem cevabın **seçtiği ölçünün kimliğini** okur |
+| `§VZ` | *«geçen ay toplam fire kg»* (kayıt yok) → ölçü hem **boyut** hem **zaman ekseni** ilan edildi | otorite ölçü tarafında da geçerli (`measure_authority`, harman dâhil) |
+| `§RZ` | *«…kârlılık ve fire de olsun»* → plan **1 bölüm** → rapor **YOK** (3/3) | eksik bölümler **katalogdan** türetilir ve koşulur |
+| `§RZ-2` | türetilen bölümler bir **satış** raporuna `vardiya`+`renk_derinlik` | seçim **ölçülür**: okunabilirlik + **eşit bölüşümün kaç katı** |
+| `§RD-3` | düzenleme turunda belge **dönemini tümden kaybetti** (6 blok, hiçbirinde dönem yok) | dönem önceki belgeden devralınır, bölüm **yeniden koşar**, iz **beyan eder** |
+| `§RD-4` | 6 bloklu pano varken düzenleme **Discovery'ye düştü** ve pano **yok oldu** | belge elde tutulur, Discovery'ye düşülmez |
+| `§RÇ` | çıkarma karşılanamadı, belge **birebir aynı** döndü, **tek kelime** açıklama yok | kimlik kıyası + beyan |
+| `§RÜ` | her bloğun `title` = **`None`** | başlık fişten türetilir (katalog etiketleriyle) |
+
+## İki kez ölçüm beni düzeltti
+
+**1 · Gecikme.** Belge isteği ~27 sn sürüyordu; teşhisim *«aday süpürmesi pahalı»* idi.
+Ölçüm: **13 adaylık süpürme 0,61 sn**, tek blok **0,03 sn**. Kaynak süpürme değil,
+garsonun `k=3` planlaması. Aday sayısını kısmak **hiçbir şey** kazandırmazdı, yalnız
+seçimi kör ederdi. *Bir maliyeti ölçmeden kısmak, ölçülmemiş bir yerden ödemektir.*
+
+**2 · Kendi ölçütüm.** `§RZ-2`'nin ilk sürümü **ham payı** kullanıyordu ve ham pay
+kardinaliteye **ters orantılıdır**: 3 değerli `vardiya` her zaman 23 değerli
+`musteri`yi yener. Canlıda tam da bu oldu. Düzeltme: `pay × n` — *eşit bölüşümün kaç
+katı*. `vardiya` 1,2 · `musteri` 3,5.
+
+## Ve `§RÇ`'nin en güzel kanıtı
+
+`«panodan bakım bölümünü çıkar»` turunda planın 8. adımının başlığı şuydu:
+
+> `PANO` — … `baslik`=**«Bakım bölümü çıkarılmış pano»**
+
+Garson bölümü **çıkardığını sanmıştı**; kimlikler değişmemişti. Deterministik kıyas
+yalanı yakaladı ve kullanıcıya söyledi. *Mutfakta LLM'e güvenmemenin ne demek olduğunun
+tek cümlelik tarifi.*
+
+## Canlı doğrulama (tek tazeleme sonrası)
+
+```
+§VZ     «geçen ay toplam fire kg»            → viz kind=kpi                        ✅
+§UT-YP  «geçen yıl toplam duruş dakika»      → 890.161 dk, yanlış beyan YOK        ✅
+§RZ     «bakım maliyeti raporu hazırla»      → 1 bölüm → 2 bölüm (seyir eklendi)   ✅
+        «kalite raporu hazırla»              → 3 bölüm                             ✅
+§RÜ     her blok                             → «ciro, kar … — müşteri kırılımı»    ✅
+§RD-4   pano 8 blok → «kalite bölümünü çıkar» → **7 blok**, Discovery YOK           ✅
+§RÇ     «bakım bölümünü çıkar» (blok yok)    → 7 blok + «değişiklik yapılmadı»      ✅
+§RD-3   «rapora aylık ciro trendi de ekle»   → 5 bölüm dönemi devraldı + iz beyanı  ✅
+```

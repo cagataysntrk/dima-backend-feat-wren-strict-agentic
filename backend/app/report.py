@@ -23,6 +23,51 @@ _OZET_ESIGI = 50
 _EN_FAZLA_BOYUT = 3
 
 
+#: `§RÜ` — zaman kovasının Türkçe adı. **Kapalı bir sınıf**: granülerlik değerleri
+#: `cube_query` sözleşmesinde sayılıdır (ADR-0008'in izin verdiği kapalı küme).
+_GRAN_ADI = {"day": "günlük", "week": "haftalık", "month": "aylık",
+             "quarter": "çeyreklik", "year": "yıllık"}
+
+
+def bolum_basligi(cq: dict | None, cube_meta: dict | None) -> str | None:
+    """🔴 `§RÜ` — **BİR CANVAS BELGESİNİN BÖLÜMLERİ ADSIZ OLAMAZ.**
+
+    ⊙ Ölçüldü (curl `T` turu, T20): üretilen her bloğun `title`'ı **`None`**. `Block.title`
+    yalnız spec'ten okunuyordu (`b.get("title")`) ve orkestratörün ürettiği bölümlerde öyle
+    bir alan **hiç yok**. Yani belge yolu ne zaman planlayıcıdan gelse, kullanıcı başlıksız
+    kutular görüyordu.
+
+    ⚠ Başlık **uydurulmaz, kimlikten türetilir**: ölçü ve boyut adları kataloğun kendi
+    etiketlerinden (`measure_synonyms_display` · `dimension_labels`) okunur. Etiket yoksa
+    teknik ad yazılır — *bir bölümün adı, o bölümün fişinden başka bir yerden gelemez.*
+
+    ⚠ LLM **çağrılmaz**: bir başlık için bir model turu satın almak, deterministik bir
+    bilgiyi olasılıklı hâle getirmektir.
+    """
+    if not isinstance(cq, dict):
+        return None
+    meta = cube_meta or {}
+    _od = meta.get("measure_synonyms_display") or {}
+    _bd = meta.get("dimension_labels") or {}
+    olculer = [str(m) for m in (cq.get("measures") or [])]
+    for parca in (cq.get("blend") or []):
+        olculer.extend(str(m) for m in ((parca or {}).get("measures") or []))
+    if not olculer:
+        return None
+    _ad = [str(_od.get(m) or m).replace("_", " ") for m in olculer[:3]]
+    baslik = ", ".join(_ad) + (" …" if len(olculer) > 3 else "")
+    boyutlar = [str(_bd.get(d) or d).replace("_", " ") for d in (cq.get("dimensions") or [])]
+    if boyutlar:
+        baslik += " — " + " × ".join(boyutlar[:3]) + " kırılımı"
+    _td = (cq.get("timeDimensions") or [{}])[0]
+    _gran = _GRAN_ADI.get(str(_td.get("granularity") or ""))
+    if _gran:
+        baslik += f" — {_gran} seyir"
+    elif not boyutlar:
+        baslik += " — toplam"
+    return baslik[:120]
+
+
 def compose_report(
     service,
     schema: dict,
@@ -49,7 +94,8 @@ def compose_report(
                 f for f in cq.get("filters", []) if f.get("dimension") != "tarih"
             ] + dfs
         block: dict[str, Any] = {
-            "title": b.get("title"),
+            # `§RÜ` — spec başlık verdiyse o kazanır; vermediyse fişten türetilir.
+            "title": b.get("title") or bolum_basligi(cq, cubes.get(cq.get("cube"))),
             "cube_query": cq,
             "period": period or None,
             "view_hint": b.get("view_hint"),  # widget'ın kayıtlı görünümü (FE onurlandırır)
@@ -197,7 +243,9 @@ def bolumlerden_kur(bolumler: list[dict], *, baslik: str, schema: dict,
         cq = b.get("cube_query") if isinstance(b.get("cube_query"), dict) else None
         sonuc = b.get("result")
         block: dict[str, Any] = {
-            "title": b.get("baslik") or b.get("title"),
+            # `§RÜ` — orkestratörün bölümleri başlık taşımaz; kimliğinden türetilir.
+            "title": (b.get("baslik") or b.get("title")
+                      or bolum_basligi(cq, cubes.get((cq or {}).get("cube")))),
             "cube_query": cq,
             "period": None,
             "view_hint": None,

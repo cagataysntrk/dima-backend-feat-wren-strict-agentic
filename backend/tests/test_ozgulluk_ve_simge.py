@@ -197,3 +197,45 @@ def test_CHIPSIZ_IHLAL_KANALA_GIRMEZ():
     bağlıdır.*"""
     assert uyum.chipler([uyum.Ihlal("trend", "x", "y")]) == []
     assert uyum.chipler([]) == []
+
+
+# --- `§UT-YP` · KENDİ BEYANIMIN YANLIŞ-POZİTİFİ ---------------------------------------
+
+def test_SECILEN_OLCU_UZUN_TERIMI_TASIYORSA_BEYAN_YOK():
+    """🔴🔴 `§UT-YP` — **ÖLÇÜLDÜ (curl `T` turu, T4) ve beyan YALAN SÖYLÜYORDU.**
+
+        «geçen yıl toplam duruş dakika» → oee.toplam_durus_dakika · 890.161 dk  ✅ TAM DOĞRU
+          beyan: «"toplam durus" … yalnız bir PARÇASIYLA hesaplandı»            🔴 YALAN
+
+    Yüklem yalnız **eşleşen terimlere** bakıyordu — `oee` terimi `durus` (1 kelime),
+    `makine_duruslari` terimi `toplam durus` (2 kelime) — ve *«öteki daha uzun»* diyordu.
+    Oysa cevabın **SEÇTİĞİ ölçünün adı** o uzun terimin her kelimesini zaten taşıyor:
+    `toplam_durus_dakika`.
+
+    ⚠ `§101.1`: bir kusur bazen olur, **yanlış-pozitif her seferinde** — ve bu beyan
+    kullanıcıyı **doğru cevaptan** başka bir küpe yönlendiriyordu.
+
+    *Bir cevabın neyi ölçtüğünü, cevabın eşleştiği kelimeye sorarsanız, seçtiği ölçüyü
+    hiç görmemiş olursunuz.*
+    """
+    sema = {"cubes": [
+        {"name": "oee", "measures": ["toplam_durus_dakika"],
+         "measure_synonyms": {"toplam_durus_dakika": ["durus"]}},
+        {"name": "makine_duruslari", "measures": ["toplam_sure_dk"],
+         "measure_synonyms": {"toplam_sure_dk": ["toplam durus"]}},
+    ]}
+    qn = "gecen yil toplam durus dakika"
+    assert uyum._daha_ozgul_sahip(qn, sema["cubes"][0], sema) is None
+
+
+def test_IYELIK_EKI_IKI_YONDE_DE_SAYILIR():
+    """⚠ `dakika` ↔ `dakikasi`: Türkçede tamlamanın başı iyelik eki alır (`§UT`'nin kendi
+    dersi). Kapsama tek yönden bakan bir yüklem, aynı kavramı iki kavram sanardı."""
+    sema = {"cubes": [
+        {"name": "oee", "measures": ["toplam_durus_dakika"],
+         "measure_synonyms": {"toplam_durus_dakika": ["durus"]}},
+        {"name": "makine_duruslari", "measures": ["toplam_sure_dk"],
+         "measure_synonyms": {"toplam_sure_dk": ["toplam durus dakikasi"]}},
+    ]}
+    qn = "gecen yil toplam durus dakikasi"
+    assert uyum._daha_ozgul_sahip(qn, sema["cubes"][0], sema) is None

@@ -90,12 +90,39 @@ def looks_date(v: Any) -> bool:
 
 def classify(columns: list[str], rows: list[dict], *,
              dim_cols: set[str] | None = None,
+             measure_cols: set[str] | None = None,
              time_col_hint: str | None = None) -> tuple[list[str], list[str], str | None]:
-    """`(measures, dims, time_col)` — bkz. modül docstring'indeki kural sırası."""
+    """`(measures, dims, time_col)` — bkz. modül docstring'indeki kural sırası.
+
+    🔴🔴 `§VZ` — **OTORİTE YARIM VERİLMİŞTİ: BOYUTA EVET, ÖLÇÜYE HAYIR.**
+
+    Kural 1 *«otorite kazanır»* diyordu ama yalnız `dimensions` için. Bir kolon otoriter
+    boyut **değilse**, rolü yine **değerlerinden** çıkarılıyordu — ve çıkarımın koşulu
+    `len(vals) > 0`'dı. Yani **değeri NULL olan bir ölçü** hiç değeri olmadığı için
+    ölçü sayılamıyor, sessizce **boyuta** düşüyordu.
+
+    ⊙ Canlıda ölçüldü (curl `T` turu, T6): *«geçen ay toplam fire kg»* → o ayda kayıt yok,
+    tek satır `{"toplam_fire_kg": None}`:
+
+        kind='table' · time_col='toplam_fire_kg' · dims=['toplam_fire_kg'] · measures=[]
+
+    🔴 Bir **ölçü**, hem boyut hem de **zaman ekseni** ilan edildi. Aynı soru dolu bir ayda
+    doğru (`kpi`) cevap veriyordu — yani kusur veriye göre **görünüp kayboluyordu**.
+
+    ⚠ Otorite **kısıtlayıcı değil, kesinleştiricidir**: `cube_query.measures`'ta olan kolon
+    kesin ölçüdür; **olmayan** sayısal kolonlar (`_gecen`, `_degisim_yuzde` gibi YoY türevleri)
+    eskisi gibi çıkarımla ölçü sayılmaya devam eder — `_roles_from_cube_query`'nin kendi
+    gerekçesi budur ve **korunmuştur**.
+
+    *Bir rolü verinin kendisinden çıkarmak, verinin susduğu yerde rolü de susturur.*
+    """
     measures: list[str] = []
     dims: list[str] = []
     for c in columns:
-        if dim_cols is not None:
+        if measure_cols and c in measure_cols:
+            # 0) OTORİTE (ÖLÇÜ): fişin kendi ölçüsü — değeri NULL olsa da ölçüdür.
+            olcu = True
+        elif dim_cols is not None:
             # 1) OTORİTE: cube_query boyutları kesin. Boyut değilse ve sayısalsa ölçü.
             if c in dim_cols:
                 olcu = False
@@ -123,6 +150,25 @@ def classify(columns: list[str], rows: list[dict], *,
             None,
         )
     return measures, dims, time_col
+
+
+def measure_authority(cube_query: dict | None) -> set[str] | None:
+    """`cube_query` → **KESİN ölçü** kolonları (`§VZ`). Yoksa `None` — çıkarıma düşülür.
+
+    ⚠ Harman ölçüleri **dâhildir**: bir çapraz-küp harmanında ölçüler `cq["measures"]`'da
+    değil `cq["blend"][*]["measures"]`'dadır. `§KB` tam olarak bu yüzeyi ıskaladığı için
+    *«bu cevap onu içermiyor»* diye yanlış beyan yazmıştı; aynı hatayı burada tekrarlamak
+    NULL değerli bir harman ölçüsünü yine boyuta düşürürdü.
+
+    *Bir cevabın ölçüsünü, cevabın yalnız bir parçasına sorarsanız, öbür parçadakini
+    kaybedersiniz.*
+    """
+    if not cube_query:
+        return None
+    olculer = {str(m) for m in (cube_query.get("measures") or [])}
+    for parca in (cube_query.get("blend") or []):
+        olculer.update(str(m) for m in ((parca or {}).get("measures") or []))
+    return olculer or None
 
 
 def authority_from_cube_query(cube_query: dict | None) -> tuple[set[str] | None, str | None]:

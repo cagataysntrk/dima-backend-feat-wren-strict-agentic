@@ -655,3 +655,182 @@ def belge_istegi(soru: str) -> str | None:
         if _syn_hit(q, fiil.lower()):
             return fiil
     return None
+
+
+#: `§RZ` — bir belgeye türetilecek **azami** ek bölüm. Bir sabit değil bir **karar**:
+#: dört bölüm bir kapak sayfasına sığar, sekiz bölüm bir döküme dönüşür (`§RK`'nın
+#: aynı gerekçesi, blok düzeyinde).
+BELGE_EN_AZ_BOLUM = 2
+BELGE_AZAMI_EK = 3
+#: Kaç kırılım **denenir** (koşulur), kaçı **seçilir** — bkz. `belge_bolum_sirala`.
+#:
+#: 🔴 Sınır **6 idi ve seçimi bozuyordu**: `parti`de `musteri` katalogda 10. sırada,
+#: yani bir **satış** raporunun en doğal kırılımı hiç **ölçülmüyordu** bile. Ve kesmeyi
+#: yapan sıranın kendisi anlamsız (`dimension_origin` boş → beyan sırası). *Anlamı
+#: olmayan bir sıranın hangi adayın ölçüleceğine karar vermesi, kusurun kendisidir.*
+#:
+#: ⊙ **Bedeli ölçüldü ve beklentimi çürüttü.** Canlıda belge isteği ~27 sn sürüyordu ve
+#: ilk teşhisim *«süpürme pahalı»* idi. Ölçüm (`kalite`, 13 aday):
+#:
+#:     süpürme (13 blok) = 0,61 sn   ·   tek blok = 0,03 sn
+#:
+#: Yani gecikmenin kaynağı süpürme **değil**, garsonun `k=3` planlamasıdır. Aday sayısını
+#: kısmak **hiçbir şey** kazandırmaz, yalnız seçimi kör eder.
+#: *Bir maliyeti ölçmeden kısmak, ölçülmemiş bir yerden ödemektir.*
+BELGE_ADAY_KIRILIM = 24
+#: Bir kırılımın **okunabilir** sayıldığı satır aralığı. Alt sınır: tek satırlık bir
+#: kırılım bir kırılım değildir. Üst sınır `§RK`'nın kendi eşiği — orada bir blok artık
+#: bir özet değil bir **döküm** sayılıyor; burada da bir bölüm olarak seçilmemeli.
+BELGE_EN_AZ_SATIR = 3
+
+
+def belge_ek_bolumleri(temel: dict, cube_meta: dict,
+                       *, azami: int = BELGE_AZAMI_EK) -> list[dict]:
+    """🔴🔴 `§RZ` — **BİR BELGE İSTEĞİ, TEK BÖLÜMLÜ BİR PLANLA KARŞILANAMAZ.**
+
+    ## Ölçülen kusur (curl `T` turu, 2026-08-11 · **3/3 aynı**)
+
+        «son 2 yıl satış raporu hazırla, kârlılık ve fire de olsun»
+          plan: SORGU → ANLAT          → **1 bölüm** → `§RT`: «tek bölümlük bir sonuç çıktı»
+          rapor: **YOK** (3 koşumda 3)
+
+    Kullanıcı bir **belge** istedi; sistem dürüstçe *«olmadı»* dedi. Ama kullanıcının
+    kuralı açık: **dürüst bir red bir başarı değildir** — cevaplanması gereken bir soruysa
+    çözülmek zorundadır. Ve çözülebilirdi: aynı turda *«bana bir üretim panosu hazırla»*
+    **altı** bölüm üretti. Yani eksik olan yetenek değil, **zenginleştirme**ydi.
+
+    ## Neden bu iş planlayıcının kumarına bırakılamaz
+
+    `§RB` planın belgeyle **bitmesini** garantiledi; kaç **bölüm** olacağını garanti eden
+    hiçbir şey yoktu — o, garsonun o anki tercihiydi. Oysa bir belgenin bölümleri
+    **kataloğun kendisinden** çıkar: aynı ölçüler, küpün kendi boyutlarıyla kesilir.
+
+    ⚠ ADR-0008 temiz: burada bir **kelime listesi** yok. Kaynak `cube_meta`'nın kendi
+    `dimensions`'ı, sıra kataloğun sırası — yani üretilen her bölümün karşılığı katalogda
+    **vardır**, uydurulmaz.
+
+    ⚠ Ölçüler ve süzgeçler **temelden aynen taşınır** (`§RD-3`): bir belgenin bütün
+    bölümleri aynı dönemi konuşmak zorundadır; farklı dönemli iki bölüm yan yana bir
+    belge değil bir yanılgıdır.
+
+    *Bir belgeyi tek bölümle karşılamak, kullanıcıya kapağını gösterip içini vermemektir.*
+    """
+    if not isinstance(temel, dict) or not temel.get("cube"):
+        return []
+    _var = {str(d) for d in (temel.get("dimensions") or [])}
+    ekler: list[dict] = []
+
+    # 1) ZAMAN EKSENİ — bir belgenin en çok beklenen bölümü: aynı ölçünün seyri.
+    # ⚠ Anahtar `time_dimensions` (ÇOĞUL) ve zaman boyutu `dimensions` listesinde
+    # **yoktur** — ölçüldü. Tekil bir ada yazsaydım bu dal hiç koşmaz, kusur da
+    # *"türetici zaman bölümü üretmiyor"* diye değil *"hiç üretmiyor"* diye görünürdü.
+    _zaman = next((str(d) for d in (cube_meta.get("time_dimensions") or []) if d), "")
+    if _zaman and not (temel.get("timeDimensions") or []):
+        ekler.append({**{k: v for k, v in temel.items() if k != "dimensions"},
+                      "timeDimensions": [{"dimension": _zaman, "granularity": "month"}]})
+
+    # 2) KIRILIMLAR — sıra **kataloğun beyan sırası DEĞİL**, `drill.available_dimensions`.
+    #
+    # ⊙ İlk yazımda katalog sırasını kullandım ve canlıda ölçüldü: bir **satış** raporuna
+    # `tedarikci` ve `vardiya` bölümleri geldi — `musteri` ve `kumas_cinsi` dururken.
+    # Beyan sırasının bir anlamı yok; o dosyanın kendi cümlesi bunu zaten yazmış:
+    # *«eskiden YAML beyan sırasında dönüyordu — yani hiçbir anlamı yoktu»*.
+    #
+    # ⚠ Ve o fonksiyon benim atladığım bir şeyi de yapıyor: **süzgeçteki** boyutları da
+    # eler. Temel `musteri`ye süzülmüşse `musteri` kırılımı tek satırlık bir bölüm olurdu.
+    # *Bir listeyi ikinci kez yazmak, birincinin öğrendiklerini ikincide unutmaktır.*
+    #
+    # ⊘ **`contribution.rank_dimensions` bilerek kullanılmadı:** o, bir **değişimin**
+    # açıklayıcılığını sıralar — iki dönem ve boyut başına birer sorgu ister. Bir raporun
+    # bölüm listesi bir varyans analizi değildir; oraya onun aletini tutmak, cevabı
+    # pahalılaştırıp anlamını değiştirirdi.
+    from app.drill import available_dimensions
+
+    for aday in available_dimensions(cube_meta, temel):
+        if len(ekler) >= azami + BELGE_ADAY_KIRILIM:
+            break
+        ad = str(aday.get("name") or "")
+        if not ad or ad in _var or ad == _zaman:
+            continue
+        ekler.append({**temel, "dimensions": [ad]})
+
+    # ⚠ Zaman ekseni bilerek **başta**: temel kırılımlıysa ilk ek onu tekrar etmesin,
+    # kırılımsızsa (çıplak toplam = kapak sayısı) onu ilk açıklayan şey seyri olsun.
+    # Tek kural: *bir bölüm bir öncekini tekrar etmemelidir.*
+    #
+    # ⚠ Liste bilerek **azamiden uzun** döner: hangisinin bilgi taşıdığı koşmadan
+    # bilinemez (`available_dimensions`'ın kendi itirafı). Seçimi `belge_bolum_sirala`
+    # yapar — koşulmuş satırların üstünde, **ölçerek**.
+    return ekler
+
+
+def belge_bolum_sirala(bloklar: list[dict], *, azami: int = BELGE_AZAMI_EK) -> list[dict]:
+    """🔴 `§RZ-2` — **HANGİ KIRILIM BİR BÖLÜM OLMAYA DEĞER? — TAHMİN DEĞİL, ÖLÇÜM.**
+
+    ## Ölçülen kusur (canlı, `§RZ` ilk sürümü)
+
+        «son 2 yıl satış raporu hazırla, kârlılık ve fire de olsun»
+          türetilen bölümler: **tedarikçi** · **vardiya**        🔴 bir SATIŞ raporuna
+
+    `musteri` ve `kumas_cinsi` dururken. Sebep ölçüldü: `parti` küpünde
+    `dimension_origin` **boş**, yani `available_dimensions`'ın maliyet sıralaması her
+    boyuta aynı skoru veriyor ve `sorted` kararlı olduğu için sonuç **katalog beyan
+    sırası** — o dosyanın kendi cümlesiyle *«hiçbir anlamı yoktu»*.
+
+    ## Neden bir tercih listesi YAZILMADI
+
+    *«musteri, tedarikci'den önce gelir»* demek, her yeni katalog için elle bakım
+    isteyen **açık uçlu bir liste** olurdu (ADR-0008) — ve kullanıcının kendi kuralı:
+    *tek tek sinonim yazmak aptallıktır.* Katalogda ticari bir eksen beyanı **yok**
+    (`pvm` ölçü çifti verir, boyut vermez; `dimension_values` boş) — yani bu bir
+    **katalog borcudur**, kodla kapatılamaz.
+
+    ## Bunun yerine: bilgi taşıyan bölüm ÖLÇÜLÜR
+
+    İki ölçüt, ikisi de koşulmuş satırların üstünde:
+
+    1. **Okunabilirlik** — `BELGE_EN_AZ_SATIR` ≤ satır ≤ `§RK`'nın özet eşiği. Tek
+       satırlık bir kırılım bir kırılım değildir; 500 satırlık bir kırılım bir döküm.
+    2. **Yoğunlaşma** — en büyük segmentin payı, **eşit bölüşüme göre**. Cironun %60'ı
+       tek bir müşteriden geliyorsa `musteri` bir **etkileyen faktördür**; üçe eşit bölen
+       `vardiya` değildir. `contribution.rank_dimensions`'ın *«en büyük tek segment
+       payı»* sezgisinin aynısı.
+
+       🔴 **Ham pay YETMEZ — ölçüldü ve ilk sürümüm bu yüzden yanlış seçti.** Ham pay
+       kardinaliteye **ters orantılıdır**: 3 değerli `vardiya`nın en büyük payı (~%40)
+       23 değerli `musteri`ninkinden (~%15) mekanik olarak büyüktür. Canlıda tam da bu
+       oldu: bir **satış** raporuna `vardiya` ve `renk_derinlik` seçildi.
+
+       Doğru ölçüt **kat**: `pay × n` — *«bu segment eşit bölüşümdeki payının kaç katı»*.
+       `vardiya` 0,40×3 = **1,2**; `musteri` 0,15×23 = **3,5**. Aynı sayı kullanıcıya
+       gösterilebilecek bir cümledir de: *«en büyük müşteri, eşit paydan 3,5 kat fazla»*.
+
+       *Kardinalitesi farklı iki dağılımı ham payla kıyaslamak, küçük olanı her seferinde
+       kazandırmaktır.*
+
+    ⊘ `rank_dimensions`'ın **kendisi** çağrılmadı: onun girdisi bir **değişim** raporudur
+    (`bulgular`/`delta`), iki dönem ister. Sözleşmesi tutmayan bir fonksiyonu çağırmak,
+    onu çağırmamaktan daha kötüdür.
+
+    *Bir bölümün değerini beyan sırasından okumak, hiç okumamaktır.*
+    """
+    from app.report import _OZET_ESIGI
+
+    def _skor(b: dict) -> tuple:
+        sonuc = b.get("result") or {}
+        satir = int(sonuc.get("row_count") or 0)
+        okunur = BELGE_EN_AZ_SATIR <= satir <= _OZET_ESIGI
+        cq = b.get("cube_query") or {}
+        olcu = next((str(m) for m in (cq.get("measures") or [])), "")
+        degerler = [abs(float(r.get(olcu) or 0))
+                    for r in (sonuc.get("rows") or []) if isinstance(r, dict)]
+        toplam = sum(degerler)
+        pay = (max(degerler) / toplam) if (toplam and degerler) else 0.0
+        kat = pay * len(degerler)          # eşit bölüşümün kaç katı — bkz. docstring
+        return (0 if okunur else 1, -kat)
+
+    # ⚠ Zaman ekseni (seyir) **yarışmaz**: bir belgenin seyir bölümü bir kırılım değil,
+    # onun omurgasıdır — yoğunlaşma ölçütü ona anlamsızdır.
+    seyir = [b for b in bloklar if (b.get("cube_query") or {}).get("timeDimensions")]
+    kirilim = [b for b in bloklar if b not in seyir]
+    return seyir + sorted(kirilim, key=_skor)[:max(0, azami - len(seyir))]

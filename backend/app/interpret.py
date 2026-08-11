@@ -57,10 +57,13 @@ def _classify(columns: list[str], rows: list[dict],
     sayısal değerli bir boyut (ay numarası, vardiya no, yıl) ÖLÇÜ sanılıyor ve anlatım
     onun "ortalamasını" bir metrik gibi sunuyordu.
     """
-    from app.result_shape import authority_from_cube_query, classify as _rol
+    from app.result_shape import (authority_from_cube_query, classify as _rol,
+                                  measure_authority)
 
     dim_cols, time_hint = authority_from_cube_query(cube_query)
-    return _rol(columns, rows, dim_cols=dim_cols, time_col_hint=time_hint)
+    # `§VZ` — otorite artık ÖLÇÜ tarafında da geçerli: NULL değerli bir ölçü boyuta düşmez.
+    return _rol(columns, rows, dim_cols=dim_cols, time_col_hint=time_hint,
+                measure_cols=measure_authority(cube_query))
 
 
 def _tone(pct: float, lib: bool) -> str:

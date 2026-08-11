@@ -125,3 +125,55 @@ def test_TEK_uygulama_kaldi():
     from app import interpret
 
     assert "result_shape" in inspect.getsource(interpret._classify)
+
+
+# --- `§VZ` · ÖLÇÜ OTORİTESİ ------------------------------------------------------------
+
+def test_NULL_DEGERLI_OLCU_BOYUTA_DUSMEZ():
+    """🔴🔴 `§VZ` — **OTORİTE YARIM VERİLMİŞTİ: BOYUTA EVET, ÖLÇÜYE HAYIR.**
+
+    ⊙ Ölçüldü (curl `T` turu, T6): *«geçen ay toplam fire kg»* → o ayda kayıt yok, tek
+    satır `{"toplam_fire_kg": None}` ve karar şuydu:
+
+        kind='table' · time_col='toplam_fire_kg' · dims=['toplam_fire_kg'] · measures=[]
+
+    🔴 Bir **ölçü**, hem boyut hem de **zaman ekseni** ilan edildi. Aynı soru dolu bir
+    ayda doğru (`kpi`) cevap veriyordu — yani kusur veriye göre **görünüp kayboluyordu**.
+
+    Kök: kolon otoriter boyut *değilse* rolü **değerlerinden** çıkarılıyordu ve çıkarımın
+    koşulu `len(vals) > 0`'dı. Değeri NULL olan bir ölçü hiç değeri olmadığı için ölçü
+    sayılamıyor, sessizce boyuta düşüyordu.
+
+    *Bir rolü verinin kendisinden çıkarmak, verinin sustuğu yerde rolü de susturur.*
+    """
+    olculer, boyutlar, zaman = classify(
+        ["toplam_fire_kg"], [{"toplam_fire_kg": None}],
+        dim_cols=set(), measure_cols={"toplam_fire_kg"})
+    assert olculer == ["toplam_fire_kg"], "🔴 NULL ölçü boyuta düştü"
+    assert boyutlar == [] and zaman is None
+
+
+def test_TUREV_OLCU_HALA_CIKARIMLA_GELIR():
+    """⚠ Otorite **kısıtlayıcı değil, kesinleştiricidir.** `_gecen`/`_degisim_yuzde` gibi
+    YoY türevleri `cube_query.measures`'ta **yoktur** ve eskisi gibi çıkarımla ölçü
+    sayılmaya devam eder — `_roles_from_cube_query`'nin kendi gerekçesi budur."""
+    olculer, _b, _z = classify(
+        ["musteri", "toplam_ciro", "toplam_ciro_gecen"],
+        [{"musteri": "A", "toplam_ciro": 5, "toplam_ciro_gecen": 4}],
+        dim_cols={"musteri"}, measure_cols={"toplam_ciro"})
+    assert "toplam_ciro_gecen" in olculer
+
+
+def test_OLCU_OTORITESI_HARMANI_GORUR():
+    """🔴 `§KB` dersi: harman ölçüleri `cq["measures"]`'da değil `cq["blend"][*]`'dedir.
+    Aynı yüzeyi burada da ıskalasaydım, NULL değerli bir **harman** ölçüsü yine boyuta
+    düşerdi.
+
+    *Bir cevabın ölçüsünü, cevabın yalnız bir parçasına sorarsanız, öbür parçadakini
+    kaybedersiniz.*"""
+    from app.result_shape import measure_authority
+
+    assert measure_authority(
+        {"measures": ["a"], "blend": [{"measures": ["b"]}]}) == {"a", "b"}
+    assert measure_authority(None) is None
+    assert measure_authority({}) is None

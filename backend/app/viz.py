@@ -134,6 +134,7 @@ def analyze(
     rows: list[dict],
     dim_cols: set[str] | None = None,
     time_col_hint: str | None = None,
+    measure_cols: set[str] | None = None,
 ) -> dict[str, Any]:
     """chart.ts analyze()'in portu — sonuç şeklinden TABAN viz kararı.
 
@@ -154,6 +155,7 @@ def analyze(
     from app.result_shape import classify as _rol
 
     measures, dims, time_col = _rol(columns, rows, dim_cols=dim_cols,
+                                    measure_cols=measure_cols,
                                     time_col_hint=time_col_hint)
 
     heat: dict[str, str] | None = None
@@ -370,7 +372,11 @@ def recommend(
         return None
 
     dim_cols, time_hint = _roles_from_cube_query(cube_query, columns)
-    spec = analyze(columns, rows, dim_cols=dim_cols, time_col_hint=time_hint)
+    # `§VZ` — ölçü otoritesi TEK SAHİPTEN (`result_shape`); ikinci bir türetme `KAT-1` olurdu.
+    from app.result_shape import measure_authority as _olcu_otoritesi
+
+    spec = analyze(columns, rows, dim_cols=dim_cols, time_col_hint=time_hint,
+                   measure_cols=_olcu_otoritesi(cube_query))
     measures: list[str] = spec["measures"]
     dims: list[str] = spec["dims"]
     time_col: str | None = spec["time_col"]

@@ -281,6 +281,38 @@ def _daha_ozgul_sahip(qn: str, cube_meta: dict, sema: dict) -> tuple[str, list[s
     kendi = [w for w in re.findall(r"[a-z0-9]+", _norm(str(_kendi_terim or ""))) if w]
     if not kendi:
         return None
+
+    # 🔴🔴 `§UT-YP` — **KENDİ EKLEDİĞİM BEYANIN YANLIŞ-POZİTİFİ** (curl `T` turu, T4).
+    #
+    #     «geçen yıl toplam duruş dakika»  → oee.toplam_durus_dakika · 890.161 dk  ✅ TAM DOĞRU
+    #       beyan: «"toplam durus" … yalnız bir parçasıyla hesaplandı»             🔴 YALAN
+    #
+    # ⊙ Ölçüldü — yüklem yalnız **eşleşen terimlere** bakıyordu:
+    #
+    #       oee              → ölçü `toplam_durus_dakika`  terim=`durus`        (1 kelime)
+    #       makine_duruslari → ölçü `toplam_sure_dk`       terim=`toplam durus` (2 kelime)
+    #
+    # Terim kıyası *«öteki daha uzun»* diyor — ama cevabın **seçtiği ölçünün ADI** o uzun
+    # terimin her kelimesini zaten taşıyor: `toplam_durus_dakika`. Yani özgüllük **hiç
+    # kaybolmamıştı**; kaybolan şey yüklemin görüş alanıydı.
+    #
+    # ⚠ `§101.1`: bir kusur bazen olur, **yanlış-pozitif her seferinde**. Ve bu beyan
+    # kullanıcıyı **doğru cevaptan** başka bir küpe yönlendiriyordu.
+    # 🔴 Asıl kök yine katalogda: iki küp aynı kavrama iki ad vermiş (`B8`) — bu kapı o
+    # borcu kapatmaz, yalnız yanlış cümleyi susturur.
+    #
+    # *Bir cevabın neyi ölçtüğünü, cevabın eşleştiği kelimeye sorarsanız, seçtiği ölçüyü
+    # hiç görmemiş olursunuz.*
+    kimlik = [w for w in re.findall(r"[a-z0-9]+",
+                                    _norm(f"{_kendi_terim or ''} {_kendi_ad or ''}")) if w]
+    kimlik_metin = " ".join(kimlik)
+
+    def _kimlikte(w: str) -> bool:
+        """Kelime, cevabın **seçtiği ölçünün kimliğinde** var mı? İki çekim yönü de sayılır:
+        `dakika`↔`dakikasi` (Türkçede tamlamanın başı iyelik eki alır — `§UT`'nin kendi
+        dersi). Ek zinciri disiplini yine `_syn_hit`'in; ikinci bir kural `KAT-1` olurdu."""
+        return _syn_hit(kimlik_metin, w) or any(_syn_hit(w, k) for k in kimlik)
+
     for c in (sema.get("cubes") or []):
         if c.get("name") == cube_meta.get("name"):
             continue
@@ -301,6 +333,9 @@ def _daha_ozgul_sahip(qn: str, cube_meta: dict, sema: dict) -> tuple[str, list[s
         # onunla eşleşir. İkinci bir ek kuralı yazmak `KAT-1` olurdu.
         #
         # *Bir dilbilgisi kuralını atlayan yüklem, atladığı yerde en çok gerekendir.*
+        # `§UT-YP` — cevabın seçtiği ölçü o uzun terimi ZATEN ifade ediyorsa özgüllük kaybı YOK.
+        if all(_kimlikte(w) for w in oteki):
+            continue
         if len(oteki) > len(kendi) and all(_syn_hit(oteki_metin, w) for w in kendi):
             return str(_terim or _ad), [str(c.get("name"))]
     return None
