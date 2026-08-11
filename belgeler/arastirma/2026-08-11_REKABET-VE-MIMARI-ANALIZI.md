@@ -1598,6 +1598,35 @@ tarihsel ilişkisi **Mikro Yazılım** iledir.
 | **IAS / caniasERP** | 1.400+ müşteri, otomotiv/makine/metal. OLAP modülü var, **doğal dil sorgulama belgelenmemiş** |
 | **Karel** | 🔴 **BI/AI veri ürünü YOK** — listeden elenmeli |
 
+### 19.7 ⚠ ARAŞTIRMA BOŞLUĞU — ilk taramanın KAÇIRDIKLARI
+
+🔴 **Bu bölüm eksik olduğunu kendisi ilan ediyor.** İlk yerel tarama, kullanıcının bizzat
+saydığı şu oyuncuları **bulamadı**:
+
+| aday | durum |
+|---|---|
+| **dbtalk** | 🔍 araştırılıyor |
+| **Sofkar AI** | 🔍 araştırılıyor |
+| **Mubisoft ERP Asistanı** | 🔍 araştırılıyor — ⚠ Valeria Medya'nın *«ERP Asistanı»*ndan (§19.3) **ayrı bir ürün**; ikisi karıştırılmamalı |
+| **Listen to Data** | 🔍 araştırılıyor |
+| **UMAI** | 🔍 araştırılıyor |
+
+**Kaçırma sebebi — yöntemsel ve kayda değer:** ilk tarama **tohum listesinden** (Sestek,
+Karel, Logo, Netsis, Obase, Turboard…) ve genel Türkçe terimlerden yürüdü. Bu yöntem
+**kurumsal ve görünür** oyuncuları buluyor; **küçük, yeni ve SEO'su zayıf** olanları
+**kaçırıyor**. Oysa bizim rekabetimiz tam olarak o kümede.
+
+⊙ **Ve bu, raporun kendi metodolojisi hakkında bir uyarıdır:** *«Türkiye'de bunu yapan
+yok»* cümlesi, **aramanın kapsamı kadar** doğrudur. §19.5'te Dativa AI'ı ancak TRAI
+girişim haritası üzerinden bulabildik; benzer şekilde **haritada olmayan** oyuncular
+büyük olasılıkla hâlâ vardır.
+
+*Bir pazarın boş olduğunu söylemek, aramanın bittiğini varsaymaktır — ve bu varsayım
+neredeyse her zaman yanlıştır.*
+
+⚠ Bulgular geldiğinde bu bölüm **değiştirilecek**, silinmeyecek: kaçırma kaydı, yöntemin
+sınırının kanıtı olarak kalır.
+
 ## 20 · BOŞLUK VE PAZAR GERÇEĞİ — sayılarla
 
 ### 20.1 🔴 TÜİK 2025 — hedef segmentimizin **%89,3'ünde BI YOK**
