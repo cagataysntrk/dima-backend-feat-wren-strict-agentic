@@ -1967,7 +1967,10 @@ def _belirsizlik_beyani(resp, q_norm: str, cq: dict, cube_meta, schema: dict,
     if not oteki:
         return taban
 
-    yeni = _bc.chipler(terim, oteki, schema)
+    # ⊙ Sorulan kırılım **buradan** gider: `cq` zaten elimizde ve alternatifin o boyutu
+    # taşıyıp taşımadığı yapısal bir gerçektir. Süzgeci `chipler()`'e koymak KAT-1'dir —
+    # not metni de chip listesinden türüyor, yani tek düzeltme ikisini birden düzeltir.
+    yeni = _bc.chipler(terim, oteki, schema, cq.get("dimensions") or [])
     if not yeni:
         return taban
     resp.note = " ".join(x for x in [

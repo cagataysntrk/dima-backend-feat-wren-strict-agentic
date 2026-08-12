@@ -86,18 +86,47 @@ def not_metni(terim: str, secilen_etiket: str, oteki_etiketler: list[str]) -> st
 
 
 def chipler(terim: str, oteki_cubelar: list[str],
-            schema: dict[str, Any]) -> list[dict[str, str]]:
+            schema: dict[str, Any],
+            gereken_boyutlar: list[str] | None = None) -> list[dict[str, str]]:
     """`[{label, query}]` — chip tıklanınca **aynı belirsizliğe geri dönmemeli**.
 
     Bu yüzden `query` cube adıyla **nitelenir** (`olcu_netlestirme`'nin ve
     `ay_netlestirme`'nin aynı disiplini): *"kullanıcıyı aynı duvara ikinci kez çarptıran
     bir chip, chip olmamasından kötüdür."*
+
+    ## 🔴 `gereken_boyutlar` — SORULAN KIRILIMI TAŞIMAYAN KÜP BİR ALTERNATİF DEĞİLDİR
+
+    Canlıda ölçüldü (2026-08-12), *«bu yıl makine bazında tep»*:
+
+        note = «tep» birden fazla yerde tanımlı — bu cevap **sürdürülebilirlik**
+               tanımıyla hesaplandı. Diğerleri: tep (bölüm/makine enerji (ölçülen)) ·
+               tep (tesis enerji (ISO-50001)).
+
+    İkinci alternatif `enerji_tesis`'tir ve **`makine` boyutu YOKTUR** — yani kullanıcı
+    o tanımı seçse *makine bazında* bir cevap **alamaz**. Beyan, veremeyeceği bir şeyi
+    sayıyordu.
+
+    ⊙ Ve bu, bu dosyanın kendi cümlesinin ihlaliydi: *"kullanıcıyı aynı duvara ikinci
+    kez çarptıran bir chip, chip olmamasından kötüdür."* Kural yazılıydı; **kırılım
+    ekseninde uygulanmıyordu**.
+
+    ⚠ Süzgeç **yapısaldır** (boyut adı katalogda var mı), bir tahmin değil. Ve
+    `gereken_boyutlar` boşsa (kırılımsız soru) hiçbir şey elenmez — bir süzgecin
+    kapsamı, ölçtüğü şeyle sınırlı kalmalıdır.
+
+    > *Bir alternatifi sunmak, onun sorulan soruyu cevaplayabileceğini söylemektir.*
     """
+    gerekli = [str(b) for b in (gereken_boyutlar or []) if b]
     out: list[dict[str, str]] = []
     for ad in oteki_cubelar:
         cm = next((c for c in (schema.get("cubes") or []) if c.get("name") == ad), None)
         if cm is None:
             continue
+        if gerekli:
+            var = {(d.get("name") if isinstance(d, dict) else d)
+                   for d in (cm.get("dimensions") or [])}
+            if not set(gerekli) <= var:
+                continue                # sorulan kırılımı veremiyor → alternatif DEĞİL
         etiket = cube_etiketi(cm)
         # 🔴 `kind="tanim"` — bu chip bir DEVAM SORUSU değil: aynı soruyu BAŞKA BİR
         # TANIMLA yeniden sorar. `ReportCard` devam sorularını *"bu cevabın üstünde

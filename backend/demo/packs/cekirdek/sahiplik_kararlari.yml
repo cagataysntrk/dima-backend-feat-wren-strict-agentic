@@ -45,6 +45,31 @@ kararlar:
     kutu: tek_sahip
     sahip: ticaret
     tarih: 2026-08-04
+    # ⟳ **DOĞRULANDI (2026-08-12) — ve borç ⑤ bu ölçümle KAPANDI.**
+    #
+    # Borç şöyle yazılmıştı: *«`satis` sahipliği sektör dosyalarında çözülmeli;
+    # çekirdek kararı (`ticaret`) ile korpusun beklentisi (`karlilik`) ayrışıyor.»*
+    # Ölçüm ayrışmanın **ne olduğunu** gösterdi ve borcu çürüttü:
+    #
+    #   korpus raporundaki yanlış-cube satırları · `karlilik → ticaret` **×21**
+    #                                              `mal → ticaret`      **×8**
+    #
+    # Yani sistem tam olarak **bu kararın söylediğini** seçiyor. Korpusun *«beklenen»*i
+    # sorunun ÜRETİLDİĞİ küptür — bir anlam yargısı değil, bir köken kaydı. Bir sahiplik
+    # kararı verildiği anda, öteki küpten üretilmiş sorular **tanımı gereği** kırmızıya
+    # döner ve o kırmızı kararın KUSURU değil FİYATIDIR.
+    #
+    # 🔴 Bu yüzden sektör dosyasına taşınacak bir şey YOK: taşıma ancak bir sektör
+    # **başka** bir sahip isterse anlamlıdır ve ölçüldü — istemiyor.
+    #
+    # ⚠ Ve `karlilik.satis_tutari_turev`'in kendi beyanı bu kararı **doğruluyor**:
+    # `kiyaslanamaz: true` · `cekirdek_metrik: satis_tutari` · dosyanın kendi cümlesi
+    # *«ŞİRKETLER ARASI KIYASLANMAZ — kârlılık hesabının GİRDİSİDİR»*. Çıplak «satış»
+    # sorusunun cevabı o olamaz.
+    #
+    # ⊘ Sinonimi SİLMEK denenmedi ve denenmeyecek: aynı deney `surdurulebilirlik`te
+    # ölçüldü (yanlış-cube 245→135 ama erişim %64→%56, `eval_gate` kırmızı). Deponun
+    # kendi cümlesi: *«Doğru çözüm bir SAHİPLİK KARARIDIR, kimlik silmek değil.»*
     gerekce: >-
       Satış ticari olarak FATURAYLA doğar ve `ticaret` fatura grain'indedir (FAZ 2.1(c)
       karar kalemi: kanonik `satis_tutari` grain'i = fatura). `mal` stok hareketi,
@@ -112,6 +137,21 @@ kararlar:
     kutu: tek_sahip
     sahip: surdurulebilirlik
     tarih: 2026-08-10
+    # ⟳ **DOĞRULANDI (2026-08-12) — borç ④ («çelişkili») ÖLÇÜMLE ÇÜRÜDÜ.**
+    #
+    # Borç *«çekirdek surdurulebilirlik diyor, korpus enerji_makine bekliyor»* diyordu.
+    # Üç ölçüm sırayla yapıldı ve üçüncüsü belirleyiciydi:
+    #
+    #   ① grain hipotezi  ⊘ çürüdü — İKİSİNDE DE `makine` boyutu var
+    #   ② ifade            ikisi de birebir `SUM(tep)`
+    #   ③ 🔴 CANLI SAYI    `enerji_makine` → 1179,0382 · `surdurulebilirlik` → 1179,0390
+    #
+    # **Aynı sayı.** Kullanıcı hangi küpten cevap alırsa alsın doğru sayıyı görüyor;
+    # korpusun 4 kırmızısı bir puanlama artefaktıdır, bir kullanıcı kusuru değil.
+    # Karar **değiştirilmiyor** — ve `tek_sahip` yerine `grain_hatasi` demek de doğru
+    # olurdu (aynı nicelik iki kez tanımlı); ama kutu değişikliği hakemi kapatır ve
+    # bugünkü doğru davranışı bozardı. *Bir sınıflandırmayı düzeltmek için çalışan bir
+    # davranışı bozmak, kaydı koda tercih etmektir.*
     gerekce: >-
       ⚠ Ve bu, `dogalgaz`'ın **tersi** yönde karar — sebebi de tam olarak o: TEP
       (ton eşdeğer petrol) bir ölçüm değil bir **raporlama birimidir**; doğal evi

@@ -64,6 +64,23 @@ kararlar:
 
 # ── BİLEREK DIŞARIDA BIRAKILANLAR ────────────────────────────────────────────
 #
+# ⟳ **2026-08-12 · İKİSİ DE ÖLÇÜLDÜ VE KAPANDI — ve ikisi de «taşınmayacak» çıktı.**
+# Aşağıdaki iki not **olduğu gibi duruyor** (kararın o günkü hâli); ölçümün cevabı:
+#
+#   🔴 `tep` — «çelişki» ÇÜRÜDÜ. İki küpün `tep`'i **aynı sayıyı** veriyor
+#      (canlı: 1179,0382 ↔ 1179,0390) ve ikisinde de `makine` boyutu var. Kullanıcı
+#      hangisinden cevap alırsa alsın **doğru sayıyı** görüyor; korpusun 4 kırmızısı
+#      bir puanlama artefaktıdır. Taşımanın kazancı **ölçüldü ve sıfır** — notun kendi
+#      şartı (*«ölçülmemiş bir kazanç, kazanç değildir»*) böylece sağlandı.
+#
+#   🔴 `satis` — «sektör dosyalarında çözülmeli» İHTİYACI YOK. Ölçüldü: korpus
+#      raporundaki `karlilik → ticaret` **21** ve `mal → ticaret` **8** satırının
+#      hepsinde sistem **çekirdek kararının söylediğini** seçiyor. Yani karar zaten
+#      çalışıyor; sektöre taşıma ancak bir sektör **başka** bir sahip isterse anlamlı
+#      olurdu ve istemiyor.
+#
+# ⊙ Ölçüye dayanan on yedinci *«yapma»*. Fiyat kaydı: `tests/test_sahiplik_karari_fiyati.py`.
+#
 # 🔴 `tep` — çekirdekteki karar `surdurulebilirlik` diyor, korpusun beklentisi
 # `enerji_makine`. **İkisi ölçümle çelişiyor** ve bir çelişkiyi taşımadan karara
 # çevirmek, kararı bir tahmine indirmek olurdu. Çözülmeden buraya TAŞINMAZ.
