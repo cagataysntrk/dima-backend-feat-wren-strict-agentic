@@ -11,7 +11,7 @@
 | **B** | route'un **çürütülebilirliği** + garson | ✅ **KAPANDI** — *aşağıda* |
 | **C** | Wren motorunun **kullanılmayan** yetenekleri | ✅ **KAPANDI** — *aşağıda* |
 | **D** | agentic önerileri **tek tek** | ✅ **KAPANDI** — *aşağıda* |
-| **E** | cevap biçimi + UX önerileri **tek tek** | 🔵 |
+| **E** | cevap biçimi + UX önerileri **tek tek** | ✅ **KAPANDI** — *aşağıda* |
 | **F** | LLM girdi token'ı / maliyet | 🔵 |
 | **G** | repo düzeni · **yetim uç kapısı** · belge şişkinliği | 🔵 |
 
@@ -547,7 +547,57 @@ bir cümle değil bir **yüklem**.
 (`narration_guard.py:171-186`). Planın `B3` kalemi (*«ölçülmemiş olan oran»*) **kapalı**.
 🅜 payda kutsal — ve burada **var**.
 
-### ⏭ `E`'de kalan
+### E.2 ⊘ Chip'lerin üç edim ayrımı — **DÖRT ŞERİT VAR, ve ayrım ŞEMADA**
 
-**E.2** `next_steps` üç edim ayrımının FE'de tamlığı · **E.4** `ReportCard` makbuz
-katmanlaması (`§D3`).
+Soru: *«`suggest_next_steps` chip'leri FE'de üç edim olarak ayrışıyor mu, yoksa hepsi
+aynı şerit mi?»* **Ölçüldü — ayrışıyor, hem de dört şeritte** (`ReportCard.tsx`):
+
+| şerit | satır | edim |
+|---|---|---|
+| **devam sorusu** (`suggestions`) | `:1120` | *«bu cevabın **üstünde** konuşur — yeni sorgu yazılmaz»* |
+| **belirsizlik** (`kind="tanim"`) | `:1151` | aynı soruyu **başka bir tanımla** yeniden sorar |
+| **türetme** (`kind="turetme"`) | `:1160` | `KÖK-7d` |
+| **sonraki adım** (`next_steps` → `NextStepChips`) | `:1211` | **sorguyu düzenler** — `cube_query` taşır |
+
+🔴 **Ve ayrım bir yorum satırı değil, bir ŞEMA:** `NextStep` **`cube_query` alanını
+ZORUNLU** taşır (`schemas.py:295`), `Suggestion` ise **hiç taşımaz** (`:268`). Yani
+*«bu chip yeni sorgu yazar mı»* sorusunun cevabı **tipten** okunuyor; bir gün ikisi
+karışsa Pydantic **sınırda** durdurur.
+
+⊙ Kodun kendi notu (`schemas.py:272`) bunun **ölçülmüş** bir kusurdan doğduğunu
+söylüyor: `kind` alanı *«**üçüncü bir edim doğduğu için**»* eklendi (`KÖK-9`), çünkü
+belirsizlik chip'i *«yeni sorgu yazılmaz»* açıklamasıyla basılırken **tam da yeni bir
+sorgu yazıyordu**. 🆈 *Bir chip'in yanındaki açıklama, chip'in kendisi kadar bir vaattir.*
+
+⊘ **KARAR: yeni iş yok.** Kapılar **zaten var**: `test_chipler.py` · `test_next_steps.py`.
+
+### E.4 ⊘ `ReportCard` makbuz katmanlaması — **ÜÇ KATMAN, bayraklı, ayrıntı SİLİNMİYOR**
+
+`§D3`'ün istediği *«tek satır + katlanır ayrıntı»* **kurulu**: `ReportCard.tsx:763`
+**KATMANLI MAKBUZ**, bayrak `useFeature("ui_kanit_gorunurlugu")` (`:128`), `contract_id`
+**katman 3**'te (`:1240`).
+
+Bayrağın **bugünkü hâli ölçüldü** — `features.yml:541` **`beta`** (kapalı değil), ve
+kararın gerekçesi bayrağın yanında yazılı:
+
+> *«Ölçüldü: cevap kartında `<details>` **SIFIRDI** — `D3` **yanlış kapatılmıştı**.
+> Varsayılan KISA (Steyvers 2025: uzun açıklama doğruluğu artırmadan **güveni** artırır).
+> **Ayrıntı SİLİNMEZ, katlanır.** KAPALIYKEN eski üç-yüzeyli davranış birebir (`KURAL B`).»*
+
+⊘ **KARAR: yeni iş yok** — ve dikkat: bu kart bir kez *«yanlış kapatılmış»*, sonra
+**ölçümle** yeniden açılmış. ㊷'nin tersi de doğru: *bir kartın «yapıldı» işareti,
+yapılmadığının da kaydı olabilir.* Kapı **zaten var**: `test_kanit_gorunurlugu.py`.
+
+### ✅ `E` KAPANDI — dörtte dördü ölçüldü
+
+| kalem | karar | kapı |
+|---|---|---|
+| **E.1** grafik niyet kancası | ⊘ **açılmaz** (daraltmalar yapıdan) | `test_e1_grafik_niyeti_yapidan.py` (**5**, bu turda yazıldı) |
+| **E.2** chip üç edim ayrımı | ⊘ **var** — ayrım **şemada** | `test_chipler.py` · `test_next_steps.py` |
+| **E.3** anlatı guard oranı | ⊘ **ölçülüyor** — payda dahil | `narration_guard.makbuza()` |
+| **E.4** makbuz katmanlaması | ⊘ **var** — `beta`, ayrıntı katlanır | `test_kanit_gorunurlugu.py` |
+
+⊙ Üç mevcut kapı birlikte koşuldu: **33 yeşil** (6,2 sn).
+🔴 **`E`'nin dersi:** dört kalemin **üçü zaten yapılmıştı** ve rapor bunu bilmiyordu.
+㊷ bu oturumda **onuncu** kez doğrulandı — *bir denetim kartının asıl işi, işi yapmak
+değil, yapılıp yapılmadığını ÖLÇMEKTİR.*
