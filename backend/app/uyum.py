@@ -1415,10 +1415,31 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
     # ⚠ Yalnız **beyan eder**, cevabı öldürmez (`KÖK-3`).
     #
     # *Bir kısıtlamayı uygulayamamak bir sınırdır; uygulamadığını söylememek bir hatadır.*
-    if re.search(r"\b(sadece|yalniz|yalnizca|only|just)\b", qn) and not any(
-            f.get("dimension") and f.get("dimension") != "tarih"
-            and f.get("operator") not in ("gte", "lte")
-            for f in filtreler):
+    # 🔴🔴 `§T6` — **YANLIŞ UYARI: KISITLAMA UYGULANDI, «UYGULAYAMADIM» DENDİ.**
+    # Canlıda ölçüldü (curl, 2026-08-12), ve kusur sandığımın **tersi** çıktı:
+    #
+    #     çapa   : filters=[{tarih, gte, 2026-01-01}]
+    #     «sadece son 3 ayı» → filters=[{tarih, gte, 2026-05-12}]   ← DARALDI, doğru
+    #     note   : «kısıtlama taşıyamadım — sayı TÜM kayıtları kapsıyor»  ← YALAN
+    #
+    # `deterministic_refine` işini **doğru yapıyordu**; bu yüklem onu **görmüyordu**,
+    # çünkü tarih boyutunu ve `gte`/`lte`'yi kasten **saymıyor**. O dışlama bir miras
+    # tarih süzgecinin *«kısıtlama uygulandı»* sanılmasını önlemek içindi — ama
+    # kullanıcının **bu turda** çözdürdüğü bir dönemi de eliyordu.
+    #
+    # ⊙ Ayrım `niyet`ten geliyor, ikinci bir çözücü yazılmadı (`KAT-1`): `donemler`
+    # **bu ifadeden** çözülen aralıkları taşır. Doluysa ve sorgu bir tarih kısıtı
+    # taşıyorsa kısıtlama **uygulanmıştır**.
+    #
+    # ㉜ *Yanlış bir uyarı, uyarısızlıktan pahalıdır* — ve burada iki kat: cümle yalnız
+    # yanıltmıyor, **veri hakkında yanlış bir şey** söylüyor (*«tüm kayıtlar»*).
+    _donem_kisiti_bu_turda = bool(niyet.donemler) and _tarih_kisiti_var(ic)
+    if (re.search(r"\b(sadece|yalniz|yalnizca|only|just)\b", qn)
+            and not _donem_kisiti_bu_turda
+            and not any(
+                f.get("dimension") and f.get("dimension") != "tarih"
+                and f.get("operator") not in ("gte", "lte")
+                for f in filtreler)):
         out.append(Ihlal(
             "kisitlama",
             "**sadece …** dedin ama sorguya bir kısıtlama taşıyamadım — sayı **tüm**"
