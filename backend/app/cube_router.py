@@ -4836,7 +4836,26 @@ def parse_cube_query(text: str, index: dict) -> dict | None:
     def _ad(m):
         return str(m).rstrip(_AZ_IYI_ISARETI).strip() if isinstance(m, str) else m
 
-    measures = [_ad(m) for m in (cq.get("measures") or [])]
+    # 🔴 **YİNELENEN ÖLÇÜ TEKİLLEŞTİRİLİR — SIRA KORUNARAK** (canlı ölçüm 2026-08-12).
+    #
+    # Ölçülen kusur: *«hedefin neresindeyiz»* → `measures: ['toplam_hedef',
+    # 'toplam_hedef']`, ve özet kullanıcıya *«**2 ölçü: toplam_hedef, toplam_hedef**»*
+    # dedi. Üç ayrı zarar, ve üçüncüsü sessiz:
+    #   ① anlamsız bir cümle — aynı ölçüyü iki kez sayan bir envanter satırı
+    #   ② `_ozet`/`viz` ikinci sütunu **ayrı bir ölçü** sanar
+    #   ③ 🔴 `olcu_sayisi` **2** olur → `anlatici.basit_mi` **False** → deterministik
+    #      şablon atlanır ve tur **LLM'e** düşer. Yani bir yinelenme, `§D11-b`'nin
+    #      kuralını *«iki farklı ölçü var»* diye yanıltıp bedava bir LLM çağrısı doğurur.
+    #
+    # ⚠ Sıra **korunur**: `interpret` olguları `measures[0]` üzerinden üretir; sıralamayı
+    # bozan bir tekilleştirme, cevabın anlattığı ölçüyü sessizce değiştirirdi.
+    #
+    # ⊙ Yer **burası**, çünkü `parse_cube_query` bu deponun tek doğrulama boğazıdır
+    # (10+ çağıran: `/ask` · plan koşucusu · plan tüketicisi · panolar · zamanlamalar).
+    # Çağıranlardan birine yazmak, ötekilerde aynı kusuru açık bırakırdı (`KAT-1`).
+    #
+    # `KURAL B`: yinelenme yoksa liste **bayt bayt aynı** kalır.
+    measures = list(dict.fromkeys(_ad(m) for m in (cq.get("measures") or [])))
     if measures:
         cq["measures"] = measures
     if not measures or any(m not in spec.get("measures", []) for m in measures):
