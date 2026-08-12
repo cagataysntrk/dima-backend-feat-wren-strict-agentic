@@ -100,17 +100,42 @@ cevapsız kalıyor ve kullanıcı bunu **fark etmiyor** — çünkü eksiklik **
    (kapalı liste), ama **136 ölçü elle etiketlenecek** demek — ve bu tam da kullanıcının
    *«elle küratörlemeyi bırak»* dediği iş. → **A.5'in kuyruğuna** girer.
 
-### A.5 ⏭ *«Kullanımdan hasat»* — ölçülmesi gereken üç şey
+### A.5 ✅ *«Kullanımdan hasat»* — **HAT ZATEN KURULU; ÇEVİREN YOK**
 
-Kullanıcının önerdiği yer değişikliği: eşleme **çevrimdışı toplu** üretilir → **aday
-kuyruğu** → **insan onaylar** → sonra deterministik ve bedava.
-⚠ **`E-8` sınırı:** *sıcak yola seri ikinci LLM turu eklenemez, ölçümle bile açılmaz.*
+Kullanıcının önerdiği yer değişikliği — *eşleme çevrimdışı üretilir → **aday kuyruğu** →
+**insan onaylar** → sonra deterministik ve bedava* — **zaten mimarinin kendisi**. Ölçüldü:
 
-Bir sonraki turda ölçülecek:
+| parça | kod | durum |
+|---|---|---|
+| **madenci** (LLM taslak üretir) | `app/sinonim_onerici.py::oner` · `ciplak_cube_icin` | ✅ **yazılı** |
+| **aday kuyruğu** | `kuyruga_koy` → `SynonymOverride(approved=False)` | ✅ **yazılı** |
+| **insan onayı** | `admin_app/routers/synonyms.py:98` | ✅ **bağlı** |
+| **tüketim** | `compose` **yalnız `approved=True`** okur (`ADR-0018 1e`) | ✅ **kapılı** |
+| **`E-8` koruması** | *«yalnız çağrıldığında çalışır — hiçbir `/ask` yolundan tetiklenmez»* | ✅ **tasarım** |
 
-- **① `vqr` deposu bu kuyruğun karşılığı mı?** (`few_shot_block` var; **aday kuyruğu +
-  insan onayı** var mı, yoksa yalnız otomatik mi?)
-- **② `SynonymOverride` / terfi yolu** — kullanıcının kelimesi kataloğa **onayla**
-  giriyor mu, hangi uçtan?
-- **③ `E-8` gerçekten korunuyor mu** — sıcak yolda ikinci bir LLM çağrısı var mı
-  (`consistency_k`, `prompt_enhancer`, `t2_anlatici` zincirleri ölçülecek).
+⊙ Ve koruma **parametre değil sabit**: `V1-MIMARI-HARITASI.md:2345` — *«`approved=False`
+**SABİT** (parametre değil!)»*. Yani bir LLM çıktısı **insan onaylamadan hiçbir sorguyu
+etkileyemez** ve bu bir yapılandırma değil bir **yapı**.
+
+🔴 **AMA: madencinin ÇAĞIRANI YOK.** Tüm repo tarandı — `sinonim_onerici` yalnız
+**testlerde ve belgelerde** geçiyor, hiçbir uçtan/işten/CLI'dan **tetiklenmiyor**.
+`belgeler/denetim/2026-08-05_V1-SON-KONTROL.md:212` bunu **yetim modül** listesinde
+*«meşru — tasarım: offline»* diye sınıflandırmış.
+
+> ⚠ **Sınıflandırma doğru, sonuç eksik.** *«Offline»* bir **çalışma kipidir**, bir
+> **çalışmama gerekçesi değil**. Hat kurulu ve kapılı; eksik olan tek şey **kolu çeviren**:
+> bugün sözlük kullanımdan **hiç** büyümüyor, çünkü hasat **hiç koşmuyor**.
+>
+> 🆌 *Bir motoru doğru kurmak onu çalıştırmaz; gerekçeli bir yetimlik, çalıştırılmamış bir
+> motoru «tasarım» diye kaydeder.*
+
+### A.6 ⏭ KARAR — `A` için yapılacaklar
+
+| # | iş | risk | gerekçe |
+|---|---|---|---|
+| 1 | **Yön beyansızlığını anlatıda söyle** (68/136) | 🟢 yok | uydurma yok, yeni liste yok — *var olan bilgisizliğin beyanı* |
+| 2 | **Kapı:** yön beyansız oran **%50'yi geçerse kırmızı** | 🟢 yok | katalog büyürken borç **sessizce** büyümesin |
+| 3 | **Madencinin kolunu çevir**: `lab/` altında bir **çevrimdışı koşucu** (route-edilemeyen soruları `interaction_log`'dan al → `oner` → `kuyruga_koy`) | 🟡 orta | hat kurulu; eklenen tek şey **tetik**. `E-8` **korunur** (sıcak yol değil) |
+| 4 | **Kapı:** `sinonim_onerici`'nin **bir çağıranı olmalı** — yoksa kırmızı | 🟢 yok | *bir motoru kurmak onu çalıştırmaz* |
+| ⏸ | `higher_is_better` listesi | — | **136 ölçüyü elle etiketlemek** = tam da bırakılması istenen iş → **3 numaranın kuyruğuna** |
+
