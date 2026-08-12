@@ -364,6 +364,11 @@ def hizli(degisen: list[str]) -> int:
     print(f"\n⚠ KAPSANMADI: {atlanan} test dosyası. Bu bir KAPI DEĞİL, bir SİNYALDİR — "
           f"seçim import bağımlılığına bakar, davranışa değil.\n"
           f"  Kapı: python lab/kapi.py --tam   (faz sonunda, commit'ten önce)")
+    # ⚠ Bildirim **burada da** çağrılır: `--hizli` kendi çıkışını kullanıyor ve ilk
+    # yazımda yalnız `--tam` özetine bağlıydı. Ölçüldü: hızlı koşumda **34 test
+    # atlanıyordu** ve özet yine yeşildi. *İki çıkışı olan bir koşucuda, tek çıkışa
+    # konan bir bildirim yarım bir bildirimdir.*
+    _belgeler_bildirimi()
     if not secili:
         return 0
     # ⚡ PARALEL (2026-08-04) — ölçüldü: `app/wren_service.py` değişiminde 635 test
@@ -611,6 +616,7 @@ def tam(sadece: tuple[str, ...] = (), *, hepsi: bool = False) -> int:
     print("\n" + "=" * 78)
     print("FAZ KAPISI ÖZETİ")
     print("=" * 78)
+    _belgeler_bildirimi()
     print("\n".join(ozet))
     if sadece:
         print("\n" + ("✓ KISMİ KOŞUM YEŞİL — ama bu bir DEMET KAPISI DEĞİL"
@@ -665,6 +671,54 @@ def route_korpusu_gerekli(degisen: list[str]) -> tuple[bool, str]:
         return True, "tetikleyici dokunuldu: " + ", ".join(vuran)
     return False, ("route/katalog dosyalarına dokunulmadı — korpusun ölçtüğü iki eksen "
                    "(payda · sessiz_yanlış) kıpırdayamaz")
+
+
+#: 🔴🔴 `belgeler/` BAĞLANMAZSA SESSİZCE KAYBOLAN KAPILAR.
+#:
+#: ## Ölçülen kusur (2026-08-12, denetim ajanı buldu)
+#:
+#:     belgeler BAĞLI DEĞİL  → 11 skipped in 0.12s
+#:     belgeler BAĞLI        → 11 passed in 4.85s
+#:
+#: Ve hiçbir **belgeli reçete** o mount'u içermiyordu (`grep "belgeler:/belgeler"` →
+#: `MIMARI.md`/`CLAUDE.md`/`OPERASYON.md`'de sıfır). Yani *«yayınlanmış bir sayı
+#: çürümesin»* diye kurulan iki kapı (`§F8` doğruluk yayını · `§0.6` karne manşeti)
+#: **hiç koşmuyordu** — ve `pytest` bunu `skipped` diye, yani **iyi haber gibi**
+#: raporluyordu.
+#:
+#: 🔴 Bu, `§F8` hijyeninin **aynadaki hâli**: orada *«kapı, ortam eksiğini ürün kusuru
+#: gibi göstermemeli»* dedik ve skip'i doğru bulduk. Doğruydu — ama yarısıydı:
+#: **koşucu da o eksiği sessizce yutmamalı.**
+#:
+#: > *Bir kapıyı ortam eksiğinde susturmak dürüstlüktür; o susmayı DUYURMAMAK ise
+#: > kapsamı sessizce kırpmaktır.*
+#:
+#: ⚠ Koşum **düşürülmez** (yerel geliştirici `belgeler` olmadan da koşabilmeli); yalnız
+#: kaybedilen kapsam **adıyla** yazılır — `--hizli`nın *«KAPSANMADI»* satırıyla aynı
+#: disiplin (`ADR-0020`: sessiz yutma yok).
+BELGELERE_BAGLI_KAPILAR = (
+    "test_f8_dogruluk_yayini.py",       # yayınlanmış doğruluk sayısı çürümesin
+    "test_karne_kendini_sayar.py",      # §0.6 karne manşeti satırlarla tutsun
+)
+
+
+def _belgeler_var_mi() -> bool:
+    """`belgeler/` konteynerden görülüyor mu — iki yerleşim de denenir."""
+    import pathlib as _p
+
+    return any((_p.Path(a) / "arastirma").is_dir()
+               for a in ("/belgeler", _p.Path(__file__).resolve().parents[2] / "belgeler"))
+
+
+def _belgeler_bildirimi() -> None:
+    if _belgeler_var_mi():
+        return
+    print("\n🔴 KAPSAM KAYBI: `belgeler/` bağlanmamış → şu kapılar HİÇ KOŞMADI:")
+    for ad in BELGELERE_BAGLI_KAPILAR:
+        print(f"      ↳ {ad}")
+    print("   Bunlar YAYINLANMIŞ SAYILARI koruyan kapılardır (doğruluk yayını · karne\n"
+          "   manşeti). Yeşil bir özet, onların koştuğu anlamına GELMEZ.\n"
+          '   Reçeteye ekleyin:  -v "$PWD/belgeler:/belgeler:ro"')
 
 
 def main() -> int:

@@ -338,6 +338,17 @@ pahalı olur.**
   kendi derlenmiş ağacına yazıyor (`lab/izolasyon.py`) → yarış **yapısal olarak** yok.
   Yasak, doğruluğu hız feda ederek satın alıyordu; izolasyon ikisini birden verdi.
   **Sınır korundu:** aynı ağaca iki süreç hâlâ giremez, kilit hâlâ dizin başına.
+- 🔴🔴 **`belgeler/` MOUNT'U ZORUNLU — yoksa iki YAYIN KAPISI sessizce düşer.**
+  Ölçüldü (2026-08-12, denetim ajanı buldu): mount yokken `test_f8_dogruluk_yayini.py`
+  ve `test_karne_kendini_sayar.py` **11 test birden atlanıyor** (`11 skipped in 0.12s`)
+  ve `pytest` bunu `skipped` diye, yani **iyi haber gibi** raporluyor. Bu iki kapı
+  *«yayınlanmış bir sayı çürümesin»* diye kurulmuştu; hiç koşmuyorlardı.
+  ⊙ `lab/kapi.py` artık kaybı **adıyla bildiriyor** (iki çıkışında da), ama en doğrusu
+  mount'u vermektir:
+  `-v "$PWD/belgeler:/belgeler:ro"` · frontend kapıları için ayrıca
+  `-v "$PWD/dima-frontend-demo-master:/dima-frontend-demo-master:ro"`.
+  *Bir kapıyı ortam eksiğinde susturmak dürüstlüktür; o susmayı DUYURMAMAK ise kapsamı
+  sessizce kırpmaktır.*
 - 🔴 **KOŞUM HİJYENİ:** `--rm` değil **`-d`**, `--name` ver, `docker wait` + `docker logs`
   ile oku, sonda `docker rm -f`. (`--rm` konteyner çıkınca kütüğü siler; bu operasyonda
   **iki koşumun özeti böyle kayboldu**.)

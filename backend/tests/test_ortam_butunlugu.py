@@ -196,3 +196,64 @@ def test_TABAN_yolu_gitignore_disinda():
     carpisan = [y for y in yasakli if yol.startswith(y.rstrip("*").rstrip("/"))
                 and y.rstrip("*").rstrip("/") != "lab"]
     assert not carpisan, f"🔴 taban gitignore'lu yolda: {carpisan} — commit edilemez"
+
+def test_KAPI_KAYBETTIGI_KAPSAMI_BILDIRIR():
+    """🔴🔴 **BİR KAPIYI SUSTURMAK DÜRÜSTLÜKTÜR; SUSMAYI DUYURMAMAK KAPSAM KIRPMAKTIR.**
+
+    ## Ölçülen kusur (2026-08-12) — bir denetim ajanı buldu
+
+        belgeler BAĞLI DEĞİL  → 11 skipped in 0.12s
+        belgeler BAĞLI        → 11 passed in 4.85s
+
+    Ve **hiçbir belgeli reçete** `-v "$PWD/belgeler:/belgeler:ro"` içermiyordu. Yani
+    *«yayınlanmış bir sayı çürümesin»* diye kurulan iki kapı — `§F8` doğruluk yayını ve
+    `§0.6` karne manşeti — **hiç koşmuyordu**; `pytest` bunu `skipped` diye, yani **iyi
+    haber gibi** raporluyordu.
+
+    ⊙ `§F8` hijyeni *«kapı, ortam eksiğini ürün kusuru gibi göstermemeli»* diyordu ve
+    doğruydu — ama **yarısıydı**. Öteki yarısı: **koşucu o eksiği sessizce yutmamalı.**
+
+    ## Bu kapı ne ölçer
+
+    `lab/kapi.py` kaybettiği kapsamı **adıyla** bildiriyor mu. Koşumu düşürmez (yerel
+    geliştirici `belgeler` olmadan da koşabilmeli) — yalnız *«yeşil özet, o kapıların
+    koştuğu anlamına gelmez»* der.
+
+    ⚠ Yüklem **gövdeye** kurulu: bildirim fonksiyonu ÇAĞRILIYOR mu (`ast`), ve listesi
+    gerçekten `belgeler`e bağımlı dosyaları mı sayıyor.
+    """
+    import ast
+
+    kaynak = (_KOK / "lab" / "kapi.py").read_text(encoding="utf-8")
+    agac = ast.parse(kaynak)
+
+    # ① Bildirim fonksiyonu var ve ÇAĞRILIYOR (yazılıp çağrılmayan bir bildirim yoktur).
+    # ⚠ **KAÇ ÇIKIŞTA çağrıldığını SAY** — bu oturumun taze dersi (`«tek boğaz»`
+    # iddiası bir ikinci `llm.repair` yüzünden çürümüştü). `lab/kapi.py`'nin **iki**
+    # çıkışı var: `hizli()` kendi özetini basıp dönüyor, `--tam`/`--hepsi` ise
+    # `FAZ KAPISI ÖZETİ` bloğunu. İlk yazımda bildirim yalnız ikincisindeydi ve hızlı
+    # koşumda **34 test atlanırken** özet yine yeşildi.
+    #
+    # *İki çıkışı olan bir koşucuda, tek çıkışa konan bir bildirim yarım bir bildirimdir.*
+    bildiren = {fn.name for fn in ast.walk(agac)
+                if isinstance(fn, ast.FunctionDef)
+                and any(isinstance(n, ast.Call) and getattr(n.func, "id", "")
+                        == "_belgeler_bildirimi" for n in ast.walk(fn))}
+    assert "hizli" in bildiren, (
+        "🔴 `--hizli` yolu kaybettiği kapsamı BİLDİRMİYOR — o yol kendi çıkışını "
+        "kullanıyor ve ölçüldü: 34 test atlanırken özet yeşil görünüyordu.")
+    assert len(bildiren) >= 2, (
+        f"🔴 bildirim yalnız {sorted(bildiren)} içinde — `lab/kapi.py`'nin İKİ çıkışı "
+        "var (`hizli` ve tam-kapı özeti); ikisi de bildirmeli.")
+
+    # ② Liste GERÇEKTEN `belgeler`e bağımlı dosyaları sayıyor mu — boş yeşil avı.
+    from lab.kapi import BELGELERE_BAGLI_KAPILAR
+
+    assert BELGELERE_BAGLI_KAPILAR, "⊘ liste boş — bildirim hiçbir şey söylemez"
+    for ad in BELGELERE_BAGLI_KAPILAR:
+        f = _KOK / "tests" / ad
+        assert f.is_file(), f"bildirimde olmayan dosya: {ad}"
+        icerik = f.read_text(encoding="utf-8")
+        assert "skipif" in icerik and "belgeler" in icerik, (
+            f"🔴 `{ad}` bildirimde ama `belgeler` yokluğunda ATLAMIYOR — liste bayat. "
+            "Bir bildirimi, bildirdiği şey doğru değilken taşımak gürültüdür.")
