@@ -68,7 +68,24 @@ def test_KENDI_EVAL_KOSUMUMUZ_var_ve_TAM():
 
 
 def test_EVAL_KAPIDA_kosuyor():
-    """Üçüncü dayanak: koşum **bağlı**. Yazılıp koşulmayan bir eval, olmayan bir evaldir."""
-    kapi = (pathlib.Path(__file__).parent.parent / "lab" / "kapi.py").read_text(
-        encoding="utf-8")
-    assert "eval" in kapi, "eval koşumu kapıdan düşmüş"
+    """Üçüncü dayanak: koşum **bağlı**. Yazılıp koşulmayan bir eval, olmayan bir evaldir.
+
+    🔴🔴 **İLK YAZIMIM DEKORATİFTİ** (denetim ajanı buldu, kendi ölçümüm doğruladı):
+
+        assert "eval" in kapi          # ← `"eval"` `lab/kapi.py`'de **19 kez** geçiyor
+
+    Düz nesirde, yorumda, değişken adında… Yani bu yüklem **hiçbir mutasyonla kırmızı
+    veremezdi**; `eval` adımı kaydından tamamen silinse bile yeşil kalırdı. Bu, bu
+    oturumda ölçülen beşinci *«kapı bir metni ölçüyordu»* vakası.
+
+    ✅ Yüklem artık **kaydın kendisine** bağlı: adım `ADIM_ANAHTARLARI`'nda olmalı **ve**
+    `TOPLUDA_YOK`'ta olmamalı — yani toplu koşumda **gerçekten** koşmalı.
+    """
+    from lab import kapi as _k
+
+    assert "eval" in _k.ADIM_ANAHTARLARI, (
+        f"🔴 `eval` adımı kapı kaydından DÜŞMÜŞ. Kayıtlı adımlar: "
+        f"{sorted(_k.ADIM_ANAHTARLARI)}")
+    assert "eval" not in _k.TOPLUDA_YOK, (
+        "🔴 `eval` **toplu koşumdan çıkarılmış** (`TOPLUDA_YOK`). Kayıtlı olmak "
+        "koşmak değildir — *yazılıp koşulmayan bir eval, olmayan bir evaldir.*")
