@@ -1975,7 +1975,17 @@ def _belirsizlik_beyani(resp, q_norm: str, cq: dict, cube_meta, schema: dict,
         return taban
     resp.note = " ".join(x for x in [
         resp.note,
-        _bc.not_metni(terim, _bc.cube_etiketi(cube_meta), [c["label"] for c in yeni]),
+        # ⟳ `§D10` — aynı ad **farklı formülle** tanımlıysa cümle sertleşir; ölçüm
+        # `measure_expressions` karşılaştırmasıdır (yapısal), gövde `belirsizlik_chipi`de.
+        # ⚠ Karşılaştırma **ÇÖZÜLMÜŞ ÖLÇÜ ADIYLA** yapılır, kullanıcının sözcüğüyle
+        # değil: `measure_expressions` ölçü adıyla anahtarlıdır. İlk yazımımda `terim`
+        # («fire») geçtim, arama boş döndü ve fark **sessizce** susturuldu — canlı curl
+        # yakaladı. *Bir sözlüğü yanlış anahtar uzayıyla sorgulamak, «yok» cevabını
+        # «fark yok» diye okumaktır.*
+        _bc.not_metni(terim, _bc.cube_etiketi(cube_meta), [c["label"] for c in yeni],
+                      tanim_farkli=_bc.tanimlari_farkli_mi(
+                          next(iter(cq.get("measures") or []), terim),
+                          [cq.get("cube"), *oteki], schema)),
     ] if x)
     return [*taban, *[Suggestion(**c) for c in yeni]]
 

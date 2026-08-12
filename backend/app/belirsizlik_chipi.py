@@ -72,15 +72,70 @@ def alternatifler(terim: str, kayit: list[dict[str, Any]] | None,
     return []
 
 
-def not_metni(terim: str, secilen_etiket: str, oteki_etiketler: list[str]) -> str:
+def tanimlari_farkli_mi(terim: str, cubelar: list[str], schema: dict[str, Any]) -> bool:
+    """🔴🔴 `§D10` — AYNI AD, **FARKLI FORMÜL** mü?
+
+    ## Ölçülen kusur (2026-08-12)
+
+    Katalogda **9 ölçü adı** birden çok küpte geçiyor. Üçünün formülü **farklı**:
+
+        toplam_fire_kg          oee  : SUM(hatali_kg)
+                                parti: SUM(CASE WHEN ilk_seferde_tamam = 0 THEN kg END)
+        toplam_durus_dakika     bakim: SUM(durus_dakika)
+                                oee  : SUM(planli_durus_dk + plansiz_durus_dk)
+        ilk_seferde_tamam_yuzde oee  : … / NULLIF(SUM(parti_sayisi),0)
+                                parti: … / NULLIF(COUNT(*),0)
+
+    Öteki **altısı** (`bakiye` · `toplam_alacak` · `toplam_borc` · `toplam_dogalgaz_sm3` ·
+    `toplam_tep` · `toplam_uretim_kg`) **bayt bayt aynı** formülü taşıyor.
+
+    ⊙ Beyan bugüne kadar dokuzunu da **aynı cümleyle** geçiyordu: *«birden fazla yerde
+    tanımlı»*. Ama iki durum aynı değil:
+
+    | durum | kullanıcı için |
+    |---|---|
+    | aynı formül, iki küp | bir **kapsam** tercihi — sayı ikisinde de aynı hesaplanır |
+    | **farklı formül** | bir **TANIM** farkı — öteki küpte sayı **başka bir şeydir** |
+
+    WisdomAI'ın ölçümü bu ikinciyi *«açıklanamayan güven erozyonunun en büyük kaynağı»*
+    diye adlandırıyor: kullanıcı iki yerde iki farklı sayı görür ve **ikisinin de doğru
+    olduğunu** anlayamaz.
+
+    > *İki tanımı «aynı ad» diye bir araya koymak, farkı adın arkasına saklamaktır.*
+
+    ⚠ Yüklem **yapısal**: `measure_expressions` karşılaştırılır. Bir kelime listesi ya da
+    bir sezgi değil — formül metni ya aynıdır ya değildir. Beyan yoksa (ifade
+    yazılmamışsa) **fark iddia edilmez** (`§101.1`: bilinmeyeni bir fark saymak, olmayan
+    bir riski icat etmektir).
+    """
+    ifadeler = set()
+    for ad in cubelar:
+        cm = next((c for c in (schema.get("cubes") or []) if c.get("name") == ad), None)
+        e = ((cm or {}).get("measure_expressions") or {}).get(terim)
+        if not e:
+            return False                 # beyan eksik → fark İDDİA EDİLMEZ
+        ifadeler.add(str(e).strip())
+    return len(ifadeler) > 1
+
+
+def not_metni(terim: str, secilen_etiket: str, oteki_etiketler: list[str],
+              *, tanim_farkli: bool = False) -> str:
     """Cevabın notuna eklenen beyan — **kısa, tek cümle, suçlayıcı değil**.
 
     ⚠ *"Yanlış olabilir"* DENMEZ: sayı doğrudur, yalnız **hangi tanımın** kullanıldığı
     bir tercihti. *Bir tercihi bildirmek özür dilemek değildir.*
+
+    ⟳ `§D10` (2026-08-12): `tanim_farkli=True` ise cümle **sertleşir** — çünkü o durumda
+    öteki küpteki sayı bir kapsam farkı değil **başka bir hesap**tır. Varsayılan `False`:
+    çağıran ölçmediyse fark iddia edilmez (`KURAL B` — eski çağrılar birebir aynı).
     """
     if not oteki_etiketler:
         return ""
     oteki = " · ".join(oteki_etiketler)
+    if tanim_farkli:
+        return (f"⚠ «{terim}» birden fazla yerde ve **FARKLI FORMÜLLE** tanımlı — bu "
+                f"cevap **{secilen_etiket}** tanımıyla hesaplandı. Diğerleri: {oteki}. "
+                "Öteki tanımdaki sayı bir kapsam farkı değil, **başka bir hesaptır**.")
     return (f"«{terim}» birden fazla yerde tanımlı — bu cevap **{secilen_etiket}** "
             f"tanımıyla hesaplandı. Diğerleri: {oteki}.")
 
