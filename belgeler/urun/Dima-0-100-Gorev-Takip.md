@@ -8215,7 +8215,7 @@ Bizde `Baglam.adaylar` + `KURAL_CELISKI` **zaten var** (*"boş değilse çağır
 | Citations / lineage | makbuz + `contract_log.provenance_json` + **`Baglam.kural`** | ✅ **daha güçlü** — *"neden bu sayı?"*nın yanında *"neden bu bağlam?"* |
 | Semantic model = versiyonlu dosya | `company.yml` · `relationships.yml` · cube `metadata.yml` · `mdl_writer.py` (round-trip güvenli) | ✅ var |
 | Kök-neden / katkı | `drill.py` · `contribution.py` | ✅ var |
-| İstatistik | `stats.py` (56 satır, tek kaynak) | 🟡 **dar** — anomali var, forecast/regresyon yok |
+| İstatistik | `stats.py` (**200** satır ⟳08-12, tek kaynak) | ⟳ **İKİ İDDİA DA BAYATTI.** Ölçüldü: dosya **200 satır** (kart *«56»*, denetim ajanı *«156»* — üçü de farklı gün, **hiçbiri bugün**). **Regresyon VAR**: `trend()` en küçük kareler + `r²`, `n<5 → None`, anlamlılık testi yok ve bu **docstring'inde yazılı**. Forecast gerçekten **yok** (`§E5` park). → dar değil, **sınırı beyanlı**: *bir modülün dürüstlüğü satır sayısıyla değil, yapamadığını söyleyip söylemediğiyle ölçülür.* |
 | Knowledge (ekipten öğrenme) | `vqr.py` · `sinonim_onerici.py` | 🟡 kısmi |
 | **Çok-adımlı LLM planlama** | `sec()` **zincire bağlandı**, bayrak `off` | 🟡 **hazır, ölçülmedi** |
 | **Skills** (kayıtlı iş akışı) | — | ❌ |

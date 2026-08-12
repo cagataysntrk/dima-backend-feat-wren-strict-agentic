@@ -124,12 +124,12 @@ Bunlar **ürün kusuru** ya da **sahte güvence**; ötekiler bayat sayı/işaret
 | **E2** | JS sürprizi | ✅ | ✅ **KAPANDI (08-12)** — matematik zaten **DOĞRUYDU** (bağımsız JSD ile fark `4,2e-07`). İki kusur da kapandı: ① **tel üstünde düşüyordu** → `ContributionFinding`'e 4 alan + `ContributionReport.surpriz_notu`; ② **kırpma süzgeci sürpriz adayını yiyordu** → aday havuzu **kırpılmamış** liste, aday kırpıldıysa *«listede yok»* **söyleniyor**, ve kırpılanların JS payı ≥%20 ise **kütlesi beyan ediliyor**. ⊙ İki bağımsız ölçüm: ajanın vakası `Web` **%43,3** (not `""` idi), benim vakam `C` **%97,6** (not *«A sebep değil»* deyip **susuyordu**). Kapı `test_e2_kirpilan_surpriz.py` (6), **iki yarı da mutasyonlu**. `549e258` | ✅ |
 | **E3** | çoklu karşılaştırma | ✅ | ✅ **KAPANDI (08-12)** — beyan **dört yerin birindeydi**. `tarama_beyani` bir **z-kesimine** bağlı olduğu için öteki üçe doğrudan bağlanamazdı (*«|z| ≥ 2»* diye **yanlış bir cümle** basardı). → aynı sahibe **ikinci kip**: `stats.secim_beyani` — genişliği yazar, **şans payını yazmaz** ve *neden* yazmadığını söyler. Bağlanan yerler: `_en_ayristiran` (2 çağıran) · `derinles` · `toplam_turu` · `contribution.arastir`. ⚠ Taranan sayı **dilimden** okunuyor (`AZAMI_ADAY` tavanı). ⚠ Yeni alan **aynı anda** `ContributionResponse`'a yazıldı — `§E2`'nin *«tel üstünde düşüyor»* dersi tekrarlanmadı. Kapı `test_e3_secim_genisligi.py` (7), kapsam **sayıyla** kilitli, mutasyonlu | ✅ |
 | **E4** | Adlandırma | ✅ | ✅ kapı gerçek (`ast` + ön-uç metni), 5 yeşil | ⊘ |
-| **E5** | `ruptures`+`statsforecast` | ⏸ park | ✅ doğru park — ⚠ rapor **kendisiyle çelişiyor**: `:4289` *«E2'nin ÖN KOŞULU»* ↔ `:4074-4077` *«ön koşulu değilmiş»* | 🔵 |
+| **E5** | `ruptures`+`statsforecast` | ⏸ park | ✅ doğru park — ⚠ rapor **kendisiyle çelişiyor**: `:4289` *«E2'nin ÖN KOŞULU»* ↔ `:4074-4077` *«ön koşulu değilmiş»* | ✅ *(rapor çelişkisi kapandı: «E2'nin ön koşulu» ⟳ çürütüldü, park başka gerekçeyle geçerli)* |
 | **E6** | Explanation Tables | ⊘ | ✅ doğru (kartın kendisi *«oku»* diyor) | ⊘ |
 | **E7** | LMDI | ⊘ | ✅ **BAĞIMSIZ DOĞRULANDI**: `|Σδ − Δbütün| = 0,00e+00`, gövdede log yok, alt-grup toplanabilirliği **TAM**; `ast` göçü doğrulandı (yorumda `log2` yanlış-kırmızı yapmıyor). 🔴 Ama bir kapı **kör**, beyan **ön-uçta bozuk** (aşağıda) | ✅ *(e7 kapısı (6) yeşil)* |
 | **+** | 🔴 `kok_neden.toplam_turu` | — | 🔴🔴 **SESSİZ YANLIŞ PAY, YAYINDA.** `_toplam = sum(abs(...))` ama metin *«toplamın %P'i»* diyor; `_akran` **mutlak** ortalama, metin *«ortalaması»* diyor. Yayınlanmış karışık-işaretli ölçüyle (`enerji_sapma.toplam_enpg`) ölçüldü: cümle *«%51,4'ünü taşıyor … öteki ortalaması 4.250»* — **gerçek pay %600**, **gerçek ortalama −3.750**. Akıcı, doğru biçimli, **12 kat yanlış ve işareti ters**. `contribution.py:191-196` aynı kapıyı **zaten koyuyor** → aynı pay cebrinin **iki sahibi** (`KAT-1`) | ✅ *(pay cebri onarıldı, kapı 7)* |
 | **+** | 🔴 `kirpilan_esik_yuzde` | — | 🔴 **BİRİM HATASI, KULLANICIYA GÖRÜNÜR.** Backend `1.0` (yüzde), ön-uç `(x*100).toFixed(1)` → *«N segment eşiğin altında kaldı (|pay| < **%100.0**)»*. Kapı göremez: `test_KIRPMA_SESSIZ_DEGIL` yalnız **anahtar varlığına** bakıyor, hiç kırpma olmayan veride de yeşil. ⚠ Ayrıca beyan yalnız **SAYI** taşıyor, **kütle** taşımıyor: 41 segmentin 40'ı kırpılınca gösterilen toplam **%83,3**, gerçek **%99,3** → **16 puan görünmez** | ✅ *(birim + kütle beyanı, mutasyonlu)* |
-| **+** | `stats.py` | *«56 satır, forecast/regresyon yok»* | 🔴 **İKİSİ DE BAYAT**: dosya **156 satır**; forecast yok ✅ ama **regresyon VAR** (`trend()` en küçük kareler + `r²`, `stats.py:63-101`) — dürüstlüğü iyi (`n<5 → None`) ama önerme yanlış | 🔵 |
+| **+** | `stats.py` | *«56 satır, forecast/regresyon yok»* | 🔴 **İKİSİ DE BAYAT**: dosya **156 satır**; forecast yok ✅ ama **regresyon VAR** (`trend()` en küçük kareler + `r²`, `stats.py:63-101`) — dürüstlüğü iyi (`n<5 → None`) ama önerme yanlış | ✅ *(kart tazelendi: **200** satır ölçüldü — ajanın «156»'sı da bayattı; regresyon VAR ve sınırı docstring'de beyanlı)* |
 
 **E · iyileştirme önerileri (ajan):** ① `toplam_turu`'nun pay cebrini `contribution`'a **devret** (tek sahip); işaret/büyüklük ayrışıyorsa pay **basılmasın** · ② kırpma beyanına **KÜTLE** ekle (`kirpilan_pay_yuzde`) + ön-uçtaki `*100`'ü kaldır + kapı **render edilen dizgeyi** ölçsün · ③ E2'yi **tele bağla** (4 alan) · ④ `surpriz_notu` adayını **kırpılmamış** listeden seç, kırpılanların JS payı ≥%20 ise **beyan et** · ⑤ E3'ü kalan üç tarama yerine genişlet — genişletilmiyorsa **rapora yaz**.
 
@@ -141,7 +141,7 @@ Bunlar **ürün kusuru** ya da **sahte güvence**; ötekiler bayat sayı/işaret
 |---|---|---|---|---|
 | **F1** | motor temizliği | ✅ ⟳08-12 | ✅ **ÖZÜ DOĞRU**: `app/`+`lab/` izi **0** · env **47 değişken** · imaj **yok** · `:8080` **boş** · motor `wren 0.13.2` + `wren-core-py 0.7.3` in-process, canlı curl 5 gerçek satır. 🔴 Ama **4. kapı DEKORATİF**: kendi kaynak dosyasını okuyup içinde `"wren-project"` arıyor (`:135`) → `demo/wren-project` **tamamen silindiğinde 4/4 YEŞİL** kaldı. ⊙ Ve kartın *«silinirse her cevap düşer»* uyarısı da **abartılı**: derleme artefaktı, `main.py:57` her açılışta yeniden üretiyor | ✅ *(tautoloji kaldırıldı, yapısal yükleme çevrildi)* |
 | **F2** | `cube_sql` ↔ motor | ✅ | ✅ doğru (2 gerçek çağrı, kapı 8/8) | ⊘ |
-| **F5** | silinecek kod yok | ✅ | ✅ doğru — ⚠ bir nüans yanlış: kart *«`motor_rls`/`motor_cls` kapalı»* diyor, ölçüm `motor_rls="shadow"` · `motor_cls="off"` | 🔵 *(nüans)* |
+| **F5** | silinecek kod yok | ✅ | ✅ doğru — ⚠ bir nüans yanlış: kart *«`motor_rls`/`motor_cls` kapalı»* diyor, ölçüm `motor_rls="shadow"` · `motor_cls="off"` | ✅ *(nüans yazıldı: `shadow` ≠ `off`; §F12 denkliği yalnız 0 kural için geçerli, ilk kuralda bozulur)* |
 | **F7** | *«ama şunu yapabilirim»* | ✅ | ✅ **KAPANDI (08-12)** — üç kutu vardı ve bağlıydı ama **iki kalıntı kusur** taşıyordu. ① `yetenek.py` forecast dalındaki elle yazılmış *«son 6 ayda ciro nasıl gitti»* → `route()` **`None`** (ölçüldü; kısa hâli çalışıyor) → örnek artık **ilk doğrulanmış chip'ten** türüyor. ② Chipler **konu-kördü** — üç sebep: katalog sırası · ilk cube dolunca erken `return` · **`measures[:2]` sabit dilimi** (`parti`'nin **11** ölçüsü var, `toplam_ciro` **5. sırada**). → `ilgili_cubelar` ile sıralama + **dönüşümlü** aday + sorulan ölçüyü dilimden öne alma (`_syn_hit`, yeni sözcük listesi **yok**). Ölçüldü: `ciro`→*«son 6 ayda ciro»* · `fire`→*«son 6 ayda fire»*. ⚠ İlk düzeltmem **iki kez** yarımdı (dilim; ve sinonimi **ölçü sözlüğünde** aradım — gerçek yer `measure_synonyms_display`). Kapı (7), mutasyonlu — mutasyon ajanın canlı çıktısını **birebir** üretti. `HEAD` | ✅ |
 | **F8** | yayınlanmış doğruluk | ✅ | ✅ **AYRIM KAPANIYOR**: `sum(cats)=14.957 ≡ sum(kesme_payda)=14.957`, **fark 0**; `CUBE-SAPMA(None)` **45 (%0,30)** adıyla yayında; 13 kapı yeşil | ⊘ |
 | **F10** | `dry_run`/`register_csv` | ⊘ | ✅ doğru | ⊘ |
@@ -166,12 +166,12 @@ Bunlar **ürün kusuru** ya da **sahte güvence**; ötekiler bayat sayı/işaret
 
 | kimlik | rapor | **ÖLÇÜLEN** | durum |
 |---|---|---|---|
-| **§38 D1** garsona şema | ✅ | ✅ gerçek — 8 soruda tasarruf `%0/49/60/91/91/93`, indeks **23=23** hiç budanmıyor. ⚠ *«2/8 %0»* ajanın setinde **3/8**, tavan %95 değil **%93** → payda farklı, **yeniden ölçülmeli** | 🔵 |
+| **§38 D1** garsona şema | ✅ | ✅ gerçek — 8 soruda tasarruf `%0/49/60/91/91/93`, indeks **23=23** hiç budanmıyor. ⚠ *«2/8 %0»* ajanın setinde **3/8**, tavan %95 değil **%93** → payda farklı, **yeniden ölçülmeli** | ✅ *(⟳ yeniden ölçüldü: kendi 8'lik setimde **1/8 sıfır**, tavan **%95,7** — kart «2/8, %95», ajan «3/8, %93». **Üçü de doğru, çünkü sayı SORU SETİNE bağlı**: bu bir vekil ölçüttür, kapı değil. Mekanizma doğrulandı — indeks **23=23** hiç budanmıyor, süzme yalnız istem tarafında)* |
 | **§38 D2** garsona örnek | ✅ | ✅ **gerçek ve canlı** (`ask.py:4093-4096`, bayrak `beta`). ⚠ Kart *«`vqr.ara()` yeni»* diyor; ölçüldü **`vqr.ara` YOK** — iş `few_shot_block` ile yapıldı, kartın ÖNCE/SONRA metni **bayat** | ✅ *(gerekçe tazelendi (`few_shot_block`))* |
 | **§38 D3** iş sözlüğü | ⏸ | ✅ gerekçe ölçüme dayanıyor (`business_rules` tek çağrı: `llm.py:225`, Discovery istemi) | ⊘ |
 | **§38 D4** belirsizlik | ✅ | ✅ gerçek (canlı: `note` + `suggestions[{kind:"tanim"}]`). 🔴 **Ön uç `kind`'ı GÖRMÜYOR** — `ReportPanel.tsx:357` jenerik basıyor; `belirsizlik_chipi.py:51` *«FE bunu AYRI grupta, KENDİ açıklamasıyla»* diyor → **sözleşme yerine getirilmemiş**; en kritik chip en sıradan görünüyor | ✅ *(saf-not dalı süzüyor, kapı 5 mutasyonlu)* |
 | **§38 D5** sorgu hatası | ✅ | ✅ gerçek (`ONARIM_TAVANI=2`, 11 hata sınıfı çare taşıyor) | ⊘ |
-| **§38 D6** plan yetenek listesi | ✅ | ✅ **gerçek ve tam** (15/15, `{'yok':31}`, kapı 13). ⚠ `MIMARI.md §2.0 «tek yetenek kaydı»` → **grep 0**, yazılmamış | 🔵 *(belge)* |
+| **§38 D6** plan yetenek listesi | ✅ | ✅ **gerçek ve tam** (15/15, `{'yok':31}`, kapı 13). ⚠ `MIMARI.md §2.0 «tek yetenek kaydı»` → **grep 0**, yazılmamış | ✅ *(belge nüansı — `MIMARI.md §2.0` cümlesi aşağıda ⑲'a taşındı)* |
 | **§38 D7** yetki denetimi | ✅ *(5)* | ✅ gerçek — ama kapı **6** test. 🔴 **`§14.14 F13` ile ÇELİŞİYOR** (aşağıda çelişki #5) | ✅ *(sayı 6'ya, gerekçe `§F13` ile uzlaştırıldı)* |
 | **§38 D8** durdurma koşulu | ✅ *(8)* | ✅ gerçek (`Butce(8, 30.0, 12)` birebir, `AZAMI_ADIM=12`) — kapı **7** test | ✅ *(kapı sayısı **8 ÖLÇÜLDÜ** (ajan yanıldı) + çift sayım kayda geçti)* |
 | **§38 D9** metodoloji skills | ✅ | 🟡 **YARIM** — 3 dosya var, yükleyici okuyor, **ama `skills: off`** → `katalog_metni.py:380` metni **hiç eklemiyor**. `§14.14 B10` aynı işe *«KISMEN KAPANDI»* diyor, `§38` **düz ✅** | ✅ *(işaret ✅ → ◐ (`skills: off` → metin bağlanmıyor))* |
@@ -197,7 +197,7 @@ Bunlar **ürün kusuru** ya da **sahte güvence**; ötekiler bayat sayı/işaret
 | **§14.11 D6** Draco hard kısıtları | işaretsiz | Kalem kalem ölçüldü: `stack_without_summative_agg` → ✅ **eşdeğeri var** (`viz.py:474 _additive()`) · `color>20` → 🟡 kısmi (`_KATEGORI_TAVANI=20`, yalnız `bar`+sıralanmamış) · `size_nominal`/`shape>8` → ⊘ **konu dışı** (backend spec'inde size/shape kanalı **yok**) · `bar_area_without_zero`/`area_bar_with_log` → 🔴 **YOK**, ikisi de **ön-uç eksen** işi. ⊙ **Gerçek kalan yüzey 2 kısıt**; kart olduğundan **çok büyük** görünüyor | ✅ *(◐ kısmen — 6 kısıt kalem kalem yazıldı)* |
 | **§14.11 D7** AVA `ckb`+`purpose` | işaretsiz | ⊘ **İTHALAT GEREKSİZ** (257 MB npm) — `purpose`'un karşılığı **zaten var** (`niyet`'in kapalı 6 türü, `bicim.py` tüketiyor). 🟢 **Ama gerçek bir delta var**: `viz.recommend` **niyeti hiç almıyor**, grafik kararı yalnız veri şeklinden | ✅ *(⊘ ithalat reddedildi, delta ayrı kaleme)* |
 | **§14.11 D8** CompassQL etkinlik tabloları | işaretsiz | 🟡 açık ama **düşük getirili**: skor tablosu yok (dallı karar var), bugünkü karar canlıda **10/10**; skor tablosu **yeni bir kalibrasyon borcu** getirir | ✅ *(⊘ ertelendi, gerekçe ölçüldü)* |
-| **§14.11 D9** Metabase `candidates`+`agent_error` | işaretsiz *(şart gerçekleşti)* | 🔴 **GERÇEK BOŞLUK, ve sanılandan GENİŞ** — aşağıda ayrı bölüm | 🔵 |
+| **§14.11 D9** Metabase `candidates`+`agent_error` | işaretsiz *(şart gerçekleşti)* | 🔴 **GERÇEK BOŞLUK, ve sanılandan GENİŞ** — aşağıda ayrı bölüm | ✅ *(satır 110'da ZATEN kapalıydı — yinelenmiş satır; `belirsizlik_meta` + `mcp._meta` kodda doğrulandı)* |
 | **§14.14 D10** tanım çakışması | ✅ | ✅ **RAPORUN EN İYİ KALEMİ** — bağımsız yeniden üretildi: 9 çok-küplü ölçü, **tam 3'ü farklı formüllü**; kapı 10, `test_ASK_YOLUNA_BAGLI` **adrese değil zincire** bağlı | ⊘ |
 | **§14.14 D11** denormalizasyon | işaretsiz | 🟢 **ÖLÇÜLDÜ, BUGÜN KAPATILABİLİR**: ① *«kaç küp 3+ modelde»* → **7/23 (%30)**, `kalite` 4 tablo ② *«`certified` kaçında `olculmedi`»* → **0/9** (hepsi `olculdu:saglikli`, `hops=1`). Kartın hipotezi (*«JOIN'i derleyici kurar, risk yapısal düşük»*) **doğrulandı** — ama sayı **yazılı değil** | ✅ *(kapı 5, üç eşik mutasyonlu)* |
 
@@ -411,3 +411,22 @@ harcaması ayrı bir **yönetişim** kararı. Kapı (12), mutasyonlu.
 
 > 🅨 *Bir aracı yayımlamak onu çağrılabilir yapmaz.* · 🅠 *Yanlış yayımlanmış bir
 > sözleşme, hiç yayımlanmamıştan kötüdür.*
+
+---
+
+## ⑲ FAZ DENETİMİ **KAPANDI** — kalan sıfır *(08-12)*
+
+Son üç kalem:
+
+| kalem | ölçüm | karar |
+|---|---|---|
+| `§14.11 D9` Metabase | satır **110**'da zaten kapalıydı; `belirsizlik_meta` + `mcp._meta` **kodda doğrulandı** | ✅ yinelenmiş satır |
+| `E1` gerekçe zinciri | *«E3 ön koşuldu»* **sağlanmamıştı** (4 tarama yerinin 1'i); bu oturumda **dördü de** bağlandı | ✅ zincir onarıldı |
+| `§38 D1` garsona şema | kendi 8'lik setimde **1/8 sıfır**, tavan **%95,7**; kart «2/8, %95», ajan «3/8, %93» | ✅ **üçü de doğru** — sayı **soru setine** bağlı, bu bir **vekil ölçüt** |
+
+⚠ **`§38 D6` belge nüansı kayda geçti:** `MIMARI.md §2.0`'da *«tek yetenek kaydı»* cümlesi
+**yazılmamış** (`grep` → 0). Mekanizma **var ve tam** (15/15 fiil–araç, kapı 13); eksik olan
+**ilan**. → `G` kaleminde `MIMARI.md` yeniden düzenlenirken **yazılacak**.
+
+> 🆉 *Bir vekil ölçütün sayısı örneklemle değişiyorsa, o sayı bir kapı değil bir gözlemdir —
+> ve kapı sanılırsa her yeni örneklem bir «gerileme» uydurur.*
