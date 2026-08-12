@@ -143,6 +143,52 @@ cevaptır**; semantik katmanda başarısızlık **bir hata mesajıdır**.»*
 
 **Sayım:** 🟢 **18 var** · 🟡 **6 yarım** · 🔴 **6 yok**  *(30 satır — ölçüldü 2026-08-12)*
 
+### 0.7 🔴🔴 KİMLİK HARİTASI — `D9` **ÜÇ AYRI İŞİ** adlandırıyor (ölçüldü 2026-08-12)
+
+Bu belgede kart kimlikleri (`A1`·`B12`·`D9`…) **tek bir uzaydan gelmiyor**; üç ayrı
+bölüm aynı harf-sayı adlarını **bağımsız olarak** kullanmış. Ölçüm (`68` kimlik
+ayrıştırıldı, **21'i** birden çok başlık taşıyor; gürültü elenince **dokuz `D`** gerçek
+çakışma):
+
+| kimlik | `§38` — **kapanış kartları** | `§14.1` — **FAZ 3 yol haritası** | `§14.11`/`§14.14` — **rakip analizi kalemleri** |
+|---|---|---|---|
+| **D1** | Garsona şema verme | Olgu sayacı | — |
+| **D2** | Garsona örnek verme | Taksonomiyi aç | — |
+| **D3** | İş sözlüğü | Cevap biçimi bir KARAR olsun | — |
+| **D4** | Belirsizlik | Ön-uç sayı biçimi | — |
+| **D5** | Sorgu hatası | Takip anlama | — |
+| **D7** | Yetki denetimi (plan) | — | AVA `ckb` + `purpose` alanı |
+| **D8** | Durdurma koşulu | — | CompassQL etkinlik tabloları |
+| **D9** | Metodoloji (kohort/funnel/YoY) | — | Metabase `candidates` + `agent_error` |
+| **D11** | Olgu üretimi | — | Denormalizasyon |
+
+🔴 **Bu bir biçim kusuru değil, bir ÖLÇÜM kusurudur.** Çakışan bir kimlik iki farklı
+işaret taşıyabilir ve **ikisi de doğru** görünür:
+
+    «✅ D1 · Olgu sayacı TAMAMLANDI»            (§14.1, satır 3657)
+    «⏸ D11 olgu üretimi — sayaç tesisatı PARK»  (§38.3/§40.9, satır 4862)
+
+İkisi **aynı işi** anlatıyor, biri ✅ biri ⏸. Bir tarama hangisini okursa onu doğru
+sanar. *Bir raporda bir kimlik iki işi gösteriyorsa, o raporun karne satırları artık
+**sayılamaz** — çünkü sayım kimliğe dayanır.*
+
+⊙ **Ve bedeli soyut değil, bu turda ödendi:** `§14.11 D9` (*Metabase `candidates` +
+`agent_error`*) şunu yazıyor: *«MCP açılınca (C3) **zorunlu** hâle gelir»*. Ölçüldü —
+`mcp_yuzeyi: beta` **AÇILDI** (`features.yml:105`), yani şart **gerçekleşti**; ama madde
+**işaretsiz** duruyor ve hiçbir tarama kırmızı vermiyor, çünkü *«D9»* adı `§38`'de ✅
+(*Metodoloji*) diye okunuyor. **Bir kimliğin çakışması, bir borcu görünmez yapar.**
+
+⚠ **Kimlikler YENİDEN NUMARALANMIYOR.** Bu belge üç ayrı turda üç ayrı bağlamda yazıldı
+ve numaraları değiştirmek, ona atıf yapan **on beş commit mesajını** ve dört kapı
+dosyasını **sessizce yanlış** yapardı — yani çakışmayı düzeltirken **daha kötü** bir
+çakışma üretirdi. Onun yerine ayrım **yazıya geçirildi** ve bir kapıya bağlandı
+(`tests/test_kimlik_uzayi_tek_anlamli.py`): yeni bir çakışma doğarsa bu tablo
+güncellenene kadar kırmızı kalır.
+
+> *Bir kimliği yeniden adlandırmak geçmişi yanlışlar; onu belgelemek yalnız geleceği
+> düzeltir — ve bir raporda düzeltilebilecek tek zaman gelecektir.*
+
+
 > ⟳ **BU SATIR BAYATTI ve düzeltildi.** Eski hâli: *«🟢 9 var · 🟡 5 yarım · 🔴 16 yok»* —
 > yani **30 satırın 16'sı**. Oysa satırların kendisi sayıldığında **18 yeşil** çıkıyor:
 > aradaki fark bu oturumun kapattığı kalemlerdir (§B1·§B2·§B4·§C2·§D1·§D3·§E2·§F7·§F8…)
