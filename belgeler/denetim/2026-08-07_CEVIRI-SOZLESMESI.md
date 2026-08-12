@@ -12985,3 +12985,35 @@ bu tur bir kusur kapatma turu, bir kapsam açma turu değil ㊸.
 
 ✅ Yapılacak: netleştirme *«kırılım»* eksenindeyse chip'ler **küpün boyutları** olsun —
 `S05`/`S07` deseninin **aynısı**, yeni bir yazar doğurmadan.
+
+## 🔬 TAZELEME + CANLI DOĞRULAMA — **BİRİ TUTTU, İKİSİ YARIM** ㉚
+
+İmaj yeniden kuruldu (`dima-backend-temiz:s06`) ve konteyner **aynı env/volume/port** ile
+takas edildi *(env **koşan konteynerden** okundu — 40 satır; eski imaj rollback için
+duruyor)*. `/health` **3. denemede ok**.
+
+| # | kusur | canlı sonuç |
+|---|---|---|
+| **②** | `«sadece son 3 ayı»` çapalı | ✅ **TUTTU** — filtre `tarih gte 2026-05-12`, **yanlış uyarı YOK** |
+| **①** | `«2019 cirosu»` | 🔴 **YARIM** — hâlâ `source=llm:openrouter · cube=adhoc`, beyan **yok** |
+| **③** | `«bu ay açılan partileri listele»` | 🔴 **YARIM** — hâlâ *«Hangi kırılımı istiyorsun?»* |
+
+### Neden yarım — ve ikisi de **kapsam** meselesi 🅣
+
+**①** `uyum.denetle`'ye eklediğim beyan **küp yolunda** çalışıyor (kapı bunu kanıtlıyor:
+bir `cube_query` verildiğinde `donem_tasinmadi` üretiliyor). Ama canlı girdi o yola
+**hiç varmıyor** — garson `adhoc` üretip Discovery'ye sapıyor. **Düzeltme doğru, yeri
+eksik:** Discovery'ye sapma kararı `uyum.denetle`'den **önce** veriliyor.
+
+**③** Bu turda `acik_slotlar` **`['cube','olcu']`** ölçüldü — önceki turda `['olcu']`di.
+㉝ **Belirlenimsiz yol**: garsonun örneklemesi turdan tura değişiyor. Ve not hâlâ
+*«kırılım»* diyorsa `netlestirme_sorusu` ya **çağrılmadı** ya `adaylar` **boş** geldi ve
+yedek dala düştü. Kapı doğru şeyi ölçüyor (yardımcı **doğru** cevap veriyor), ama
+**çağrıldığı yer** bu girdiyi görmüyor.
+
+> 🅣 *Bir düzeltmenin doğruluğu, uygulandığı yerin kapsamıyla sınırlıdır.*
+> ㉚ *İlk düzeltmen de yarım olabilir* — bu oturumda **yirmi birinci** kez.
+
+⊙ **Yine de ikisi de gerileme değil:** ① eski davranış (uydurma ad) **aynen** duruyor,
+③ eski soru **aynen** duruyor; eklenen beyanlar **kapılı** ve küp yolunda **çalışıyor**.
+Kalan iş bir **kapsam genişletme** işidir, bir onarım değil.
