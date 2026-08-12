@@ -8,6 +8,14 @@ dependencies = [
   # For local fork development install it editable instead:
   #   pip install -e ../dima-wrenai/core/wren[postgres]
   "wrenai>=0.13,<0.14",
+  # 🔴 `§F14`/`§F1` — **DOĞRUDAN İMPORT, BEYANSIZ BAĞIMLILIK** (⟳ 2026-08-12).
+  # `app/wren_service.py:1494,1733` `from wren_core import cube_query_to_sql` yazıyor;
+  # paket bugün yalnız `wrenai` üzerinden **geçişli** geliyordu. Ölçüldü: kurulu
+  # sürüm `wren-core-py 0.7.3`. Geçişli bir bağımlılığa doğrudan import etmek,
+  # üst paketin bir gün onu bırakmasıyla **çözümleme anında** değil **çalışma
+  # anında** kırılır. *Bir bağımlılığı yapılandırmadan çıkarmak, onu ortamdan
+  # çıkarmaz — yalnız görünmez yapar.*
+  "wren-core-py>=0.7.3,<0.8",
   "fastapi>=0.115",
   "uvicorn[standard]>=0.30",
   "anthropic>=0.40",

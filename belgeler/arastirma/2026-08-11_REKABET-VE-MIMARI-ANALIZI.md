@@ -994,6 +994,13 @@ artık: *«“bölüm” boyutu makineler.bolum kolonundan, oee_vardiya_makinele
 
 **Bizim durumumuz:** `pyproject.toml` **doğru** tarafta (`wrenai>=0.13,<0.14` +
 `wren-core-py>=0.7.3`).
+> ⟳ **DÜZELTME (2026-08-12, `§F14` denetimi): bu cümle yazıldığı gün DOSYA HAKKINDA
+> YANLIŞTI.** `pyproject.toml` yalnız `wrenai`'yi beyan ediyordu; `wren-core-py`
+> **geçişli** geliyordu — oysa `app/wren_service.py:1494,1733` `from wren_core import
+> cube_query_to_sql` diye **doğrudan** import ediyor. Beyan bugün eklendi (ölçülen
+> kurulu sürüm **0.7.3**) ve `tests/test_wren_bagimliligi_beyanli.py` ile kapatıldı.
+> ⊙ *Bir iddiayı yazmak onu doğru yapmaz; bu satır bir ölçüm değil bir **niyet**
+> kaydıymış ve iki tur boyunca ölçüm gibi okunmuş.*
 🔴 **Ama kök `docker-compose.yml` hâlâ `ghcr.io/canner/wren-engine:latest` konteynerini
 ayağa kaldırıyor** — **arşivlenmiş** bir depodan gelen, bir daha güncellenmeyecek imaj,
 üstelik `latest` etiketiyle.
