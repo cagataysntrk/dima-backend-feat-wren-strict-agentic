@@ -128,7 +128,7 @@ kovası hatasıydı (`b2f3edb`), gerileme **hiç olmadı**.
 
 | # | faz | ölçüme bağlı mı | durum |
 |---|---|---|---|
-| 1 | **`FAZ 0`** Türkçe gömme ölçümü (`Recall@3`) | — | ⏭ **SIRADA** |
+| 1 | **`FAZ 0`** Türkçe gömme ölçümü (`Recall@3`) | — | ✅ **BİTTİ — %89,5 → 🟢 DEVAM** |
 | 2 | **katalog borcu** (68 yön beyanı) | ⊘ | ⏭ planda **yoktu**, eklendi |
 | 3 | **`FAZ 4`** kıyas temeli chip'i | ⊘ | ⏭ |
 | 4 | **`FAZ 1`** `emin_miyim` (şekil birleştir) | ⊘ | ⏭ |
@@ -162,6 +162,7 @@ kovası hatasıydı (`b2f3edb`), gerileme **hiç olmadı**.
 
 | tur | ne yapıldı | kapı | commit |
 |---|---|---|---|
+| 1 | **`FAZ 0` ÖLÇÜLDÜ** — `Recall@3 = %89,5` 🟢 · vektör leksikten **+10,6 puan** · ⚠ mutlak eşik **kullanılamaz** | hedefli ✅ | *(bu tur)* |
 | 0 | operasyon kuruldu: bu dosya · memory · raporun bayat sayıları düzeltildi · **taşınan belge yolları onarıldı** | 27 ✅ | `1ee3d14`+ |
 
 ⚠ **Tur 0'da ölçülen ortam değişikliği:** `1ee3d14` `belgeler/DOGRULUK.md`'yi
@@ -169,3 +170,52 @@ kovası hatasıydı (`b2f3edb`), gerileme **hiç olmadı**.
 Yol sabitleri güncellendi — kapı **gevşetilmedi**, aradığı yer düzeltildi.
 🅣 *Taşınma fark edilmeseydi kapılar «belge yok» diye **sessizce atlanır** ve yayın
 çürümesi görünmez olurdu.*
+
+---
+
+## §6 · `FAZ 0` SONUCU *(2026-08-13, ölçüldü — `lab/oneri_olcum.py`)*
+
+```
+havuz     136 ölçü · 865 görünüm (ad + etiket + 677 sinonim)
+vaka      19 ölçülebilir (+1 gürültü)   ⚠ payda küçük — eğilim işareti, kanıt değil
+                        R@1     R@3     R@5    MRR
+leksik (difflib)      %78,9   %78,9   %78,9   0,807
+vektör (e5-large)     %89,5   %89,5   %89,5   0,909
+birleşik max()        %89,5   %89,5   %89,5   0,909
+```
+
+### 🟢 KARAR: `§13.1` eşiği geçildi — `%89,5 ≥ %85` → **DEVAM**
+
+**Ve vektör hakkını veriyor:** leksik tabana göre **+10,6 puan** (`MRR +0,102`). Yani
+gömme altyapısı taşımak **gerekçeli** — `difflib` yolu aynı işi yapmıyor.
+*Bir bileşeni eklemenin gerekçesi, onsuz ölçülen sayıdır.*
+
+### 🔴 ÖLÇÜMÜN İKİNCİ BULGUSU — **MUTLAK EŞİK KULLANILAMAZ**
+
+Gürültü vakası *«vardya»* (katalogda karşılığı **yok**) en iyi kosinüsü **0,851** aldı —
+gerçek eşleşmelerle **aynı bantta**. Yani:
+
+> 🔴 `FAZ 2`'nin marj kapısında **taban skor bir eşik olarak konulamaz**; yalnız
+> **sıralama ve marj** anlamlıdır. E5 kosinüsü `0,7–1,0`'da sıkışıyor.
+
+⚠ Bu, `§24`'ün *«taban skor altındaysa sınır beyanı»* dalını **doğrudan etkiler**: o dal
+kosinüs eşiğiyle **kurulamaz**; ya leksik skora ya da *«birinci ile ikinci arasındaki
+fark**sız**lığa»* bağlanmalıdır. `FAZ 2` bu bulguyla tasarlanacak.
+
+### `R@1 = R@3 = R@5` — ve bu neden anlamlı
+
+Üç sayı **eşit**: hedef ya **birinci** sırada geliyor ya **hiç** gelmiyor. Yani kusur bir
+*«sıralama»* kusuru değil bir **kapsam** kusuru — iki vaka (`%10,5`) katalogda hiçbir
+görünümle eşleşmiyor. Bu, öneri katmanının değil **katalog borcunun** alanı ⑤.
+
+### ⚠ Bu ölçümün SINIRI — dürüstlük notu
+
+| ölçülmedi | neden |
+|---|---|
+| **BGE-M3** karşılaştırması | ağsız ortamda **indirilemiyor** (~2 GB); `--network none` |
+| gerçek gecikme (p95) | ayrı ölçüm; burada toplu gömme yapıldı |
+| kabul oranı | kullanıcı gerektirir (`§13.2`) |
+
+🅜 **Payda 19** — `§13.1` *«30–40 ifade»* diyordu. Bu bir **eğilim işaretidir**, kanıt
+değil; `FAZ 5` öncesi payda büyütülmeli. Karar eşiği geçildi ama **rahat bir farkla
+değil**: bir vaka değişse oran %84,2'ye düşer ve karar **sarıya** döner.
