@@ -354,17 +354,52 @@ export function ReportPanel({
                 <div className="border-l-2 border-amber-500/50 bg-amber-500/[0.04] py-1.5 pl-3 font-mono text-[12px] leading-snug text-neutral-500">
                   {it.note}
                 </div>
-                {it.suggestions && it.suggestions.length > 0 && (
+                {/* 🔴 `§38 D4` — **KIND SÜZGECİ BU DALDA YOKTU** (⟳ 2026-08-12).
+                    `ReportCard` üç edimi ayırıyor (`!s.kind` devam · `"tanim"` başka
+                    tanım · `"turetme"` bunu mu demek istedin) ama bu saf-not dalı
+                    HEPSİNİ tek tip butona basıyordu. Backend sözleşmesi
+                    (`app/belirsizlik_chipi.py:51`) *«Frontend bunu AYRI bir grupta ve
+                    KENDİ açıklamasıyla basar»* diyor ve **bileşen ayrımı yapmıyor** —
+                    yani bu dal da o cümlenin kapsamındaydı.
+                    ⚠ *«Bu sayı BAŞKA BİR HESAP»* chip'i ile *«tedarikçi kırılımı»*
+                    chip'i aynı görünüyorsa, kullanıcı hangisinin YENİ BİR SAYI
+                    getireceğini bilemez — ve bir chip'in yanındaki açıklama, chip'in
+                    kendisi kadar bir vaattir. */}
+                {it.suggestions && it.suggestions.filter((s) => !s.kind).length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    {it.suggestions.map((s) => (
-                      <button
-                        key={s.label}
-                        onClick={() => onReply?.(thread.id, i, s.query)}
-                        className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-600 transition-colors hover:border-accent/50 hover:text-foreground dark:text-neutral-300"
-                      >
-                        {s.label}
-                      </button>
-                    ))}
+                    {it.suggestions
+                      .filter((s) => !s.kind)
+                      .map((s) => (
+                        <button
+                          key={s.label}
+                          onClick={() => onReply?.(thread.id, i, s.query)}
+                          className="border border-hairline px-2 py-1 font-mono text-[11px] text-neutral-600 transition-colors hover:border-accent/50 hover:text-foreground dark:text-neutral-300"
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                  </div>
+                )}
+                {it.suggestions && it.suggestions.some((s) => s.kind === "tanim") && (
+                  <div className="mt-2 border-l-2 border-amber-400/60 pl-3 dark:border-amber-500/50">
+                    <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                      başka tanım
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {it.suggestions
+                        .filter((s) => s.kind === "tanim")
+                        .map((s, k) => (
+                          <button
+                            key={`tanim-${k}`}
+                            onClick={() => onReply?.(thread.id, i, s.query)}
+                            title="Aynı soruyu bu tanımla yeniden sorar — yeni bir sayı gelir"
+                            className="border border-amber-400/50 px-2 py-1 font-mono text-[11px] text-amber-700 transition-colors hover:border-amber-500 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/30"
+                          >
+                            <span className="mr-1 opacity-60">⇄</span>
+                            {s.label}
+                          </button>
+                        ))}
+                    </div>
                   </div>
                 )}
                 {/* ⚠️ FAZ 0.23 — SAF-NOT dalında `next_steps` YOKTU (ölçüldü:
