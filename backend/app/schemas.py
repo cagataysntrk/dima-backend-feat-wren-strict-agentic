@@ -753,6 +753,12 @@ class PvmReport(BaseModel):
     bulgular: list[PvmFinding] = Field(default_factory=list)
     kirpilan_segment: int = 0
     kirpilan_esik_yuzde: float = 0.0
+    #: ⟳ 08-12 — kırpılanların **KÜTLESİ** (brüt hareket içindeki payı).
+    #: Sayı tek başına *«ne kadarı görünmez»* sorusunu cevaplamıyordu.
+    kirpilan_pay_yuzde: float = 0.0
+    #: ⟳ 08-12 — kırpılanların **KÜTLESİ** (brüt hareket içindeki payı).
+    #: Sayı tek başına *«ne kadarı görünmez»* sorusunu cevaplamıyordu.
+    kirpilan_pay_yuzde: float = 0.0
     # ŞELALE GRAFİĞİ (Faz I2) — PVM'nin ARTIKSIZ ayrışması şelalenin seçim kuralını tam
     # olarak karşılar (fiyat+miktar+birleşik = net, birebir). Karar BACKEND'de alınır
     # (ADR-0024: grafik kararı LLM'e VERİLMEZ, frontend'e de bırakılmaz) ve toplam

@@ -361,6 +361,15 @@ def decompose(rows: list[dict], dim: str, measure: str, cube_query: dict,
         # yoksa liste "her şey bu kadar" diye okunur.
         "kirpilan_segment": kirpilan,
         "kirpilan_esik_yuzde": _GURULTU_PAYI,
+        # 🔴 **KÜTLE de beyan edilir** (⟳ 2026-08-12, denetim bulgusu). Sayı tek
+        # başına *«ne kadarı görünmez»* sorusunu cevaplamıyordu: ölçüldü, 41
+        # segmentin 40'ı kırpılınca gösterilen `net_pay` toplamı **%83,3**, gerçek
+        # **%99,3** — **16 puan** sessizce kayboluyordu ve kullanıcı bunu soramıyordu.
+        # *«Kaç segment» bir kapsam beyanı değildir; «ne kadarı» beyandır.*
+        "kirpilan_pay_yuzde": (round(sum(abs(k["delta"]) for k in hepsi
+                                         if brut and abs(k["delta"]) / brut * 100
+                                         < _GURULTU_PAYI) / brut * 100, 1)
+                               if brut else 0.0),
     }
 
 

@@ -131,8 +131,13 @@ function SegmentRapor({
         // KIRPMA SESSİZ OLMAZ. "Veri yok" ile "kırpıldı" ayrı şeylerdir; ikincisini
         // göstermemek kapsamı sessizce daraltmaktır.
         <p className="font-mono text-[10px] text-neutral-500">
+          {/* 🔴 BİRİM HATASI DÜZELTİLDİ (⟳ 2026-08-12, denetim bulgusu).
+              Backend `_GURULTU_PAYI = 1.0` gönderiyor ve bu ZATEN YÜZDE
+              (karşılaştırma: `abs(delta)/brut*100 >= 1.0`). Buradaki ikinci `*100`
+              ekranda «|pay| < %100.0» yazdırıyordu — yani beyan, HER ŞEYİN
+              kırpıldığını söylüyordu. Bir birim hatası, beyanı kendi tersine çevirir. */}
           {r.kirpilan_segment} segment eşiğin altında kaldı (|pay| &lt; %
-          {(r.kirpilan_esik_yuzde * 100).toFixed(1)}) — gösterilmedi, yok sayılmadı.
+          {r.kirpilan_esik_yuzde.toFixed(1)}) — gösterilmedi, yok sayılmadı.
         </p>
       )}
     </div>
@@ -272,7 +277,10 @@ function PvmRapor({
       </div>
       {r.kirpilan_segment > 0 && (
         <p className="font-mono text-[10px] text-neutral-500">
-          {r.kirpilan_segment} segment eşiğin altında kaldı — gösterilmedi, yok sayılmadı.
+          {/* ⟳ PVM dalı eşiği HİÇ yazmıyordu — kardeşiyle aynı beyanı taşısın:
+              «kaç segment» tek başına «hangi eşikle» sorusunu cevaplamaz. */}
+          {r.kirpilan_segment} segment eşiğin altında kaldı (|pay| &lt; %
+          {r.kirpilan_esik_yuzde.toFixed(1)}) — gösterilmedi, yok sayılmadı.
         </p>
       )}
     </div>

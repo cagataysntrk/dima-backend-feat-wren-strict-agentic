@@ -115,7 +115,52 @@ def test_KIRPMA_SESSIZ_DEGIL():
     """⚠ Tek *«toplam %100 değil»* etkisi bir **sunum** kararıdır ve makbuzu olmalı:
     kaç segment kırpıldı **ve** hangi eşikle. *Sessiz kırpma «her şey kapsandı» gibi
     okunur.*"""
+    # 🔴🔴 **YÜKLEM GÜÇLENDİRİLDİ** (⟳ 08-12, denetim bulgusu). Eski hâli yalnız
+    # **anahtar varlığına** bakıyordu ve **hiç kırpma olmayan** veride de yeşildi —
+    # yani *«kırpma sessiz değil»* iddiasının arkasında **tek bir bit** vardı.
+    # ⚠ Artık GERÇEKTEN kırpan veriyle ölçülüyor ve **kütle** de isteniyor.
     r = decompose(_SATIRLAR, "makine", "fire", {"cube": "oee", "measures": ["fire"]})
-    assert "kirpilan_segment" in r and "kirpilan_esik_yuzde" in r, (
-        "🔴 kırpma beyanı eksik — kullanıcı eksik toplamı bir hata sanar.")
+    for alan in ("kirpilan_segment", "kirpilan_esik_yuzde", "kirpilan_pay_yuzde"):
+        assert alan in r, f"🔴 kırpma beyanında `{alan}` yok — kullanıcı eksik toplamı bir hata sanar."
     assert r["kirpilan_esik_yuzde"] > 0
+
+    # gerçekten kırpan veri: 1 büyük + 40 küçük segment
+    satirlar = [{"makine": f"S{i}", "fire": v, "fire_gecen": 0.0}
+                for i, v in enumerate([1000.0] + [1.0] * 40)]
+    k = decompose(satirlar, "makine", "fire", {"cube": "oee", "measures": ["fire"]})
+    assert k["kirpilan_segment"] > 0, (
+        "⊘ ölçüm tabanı çöktü: bu veride kırpma ATEŞLEMEDİ — yüklem boşa düşüyor.")
+    assert k["kirpilan_pay_yuzde"] > 0, (
+        "🔴 kırpılan KÜTLE sıfır bildiriliyor — *«kaç segment» bir kapsam beyanı "
+        "değildir; «ne kadarı» beyandır.*")
+    gosterilen = sum(abs(b.get("brut_pay") or 0.0) for b in k["bulgular"])
+    assert abs(gosterilen + k["kirpilan_pay_yuzde"] - 100.0) < 1.0, (
+        f"🔴 BEYAN KAPANMIYOR: gösterilen %{gosterilen:.1f} + kırpılan "
+        f"%{k['kirpilan_pay_yuzde']:.1f} ≠ %100 — bir kısmı **adsız** kalıyor.")
+
+
+def test_ON_UC_ESIGI_IKI_KEZ_YUZDEYE_CEVIRMIYOR():
+    """🔴 **BİRİM HATASI** — ekranda *«|pay| < %100.0»* yazıyordu (⟳ 08-12).
+
+    Backend `_GURULTU_PAYI = 1.0` gönderiyor ve bu **zaten yüzde**
+    (`abs(delta)/brut*100 >= 1.0`). Ön uç bir kez daha `*100` uyguluyordu:
+
+        {(r.kirpilan_esik_yuzde * 100).toFixed(1)}   →  %100.0
+
+    Yani beyan, **her şeyin** kırpıldığını söylüyordu — *bir birim hatası, beyanı
+    kendi tersine çevirir.* Ayrıca PVM dalı eşiği **hiç** yazmıyordu; o da eklendi.
+    """
+    import pathlib as _p
+
+    fe = (_p.Path(__file__).parent.parent.parent / "dima-frontend-demo-master"
+          / "src" / "components" / "ContributionLayer.tsx")
+    if not fe.is_file():
+        import pytest
+        pytest.skip("⊘ ön uç bağlanmamış — `-v \"$PWD/dima-frontend-demo-master:…:ro\"`")
+    m = fe.read_text(encoding="utf-8")
+    assert "kirpilan_esik_yuzde * 100" not in m, (
+        "🔴 ön uç eşiği İKİ KEZ yüzdeye çeviriyor → ekranda «%100.0». Backend zaten "
+        "yüzde gönderiyor.")
+    assert m.count("kirpilan_esik_yuzde.toFixed(1)") >= 2, (
+        "🔴 iki kırpma beyanından biri eşiği YAZMIYOR — *«kaç segment» tek başına "
+        "«hangi eşikle» sorusunu cevaplamaz.*")
