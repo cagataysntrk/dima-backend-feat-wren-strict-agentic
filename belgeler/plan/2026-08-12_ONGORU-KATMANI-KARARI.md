@@ -630,11 +630,29 @@ davranış **bayt bayt** aynı ve bu **kapıyla kanıtlanır**.
 
 **Hayır — iki farklı olay karıştırılıyor:**
 
-| kim | ne oldu | gerçek sebep |
+| kim | ne oldu | kaynak |
 |---|---|---|
-| **Tableau Ask Data** | emekliye ayrıldı | LLM dalgası → Einstein/Pulse'a **yol haritası kayması** |
-| **Power BI Q&A** | duruyor, öne çıkarılmıyor | Copilot'a kayma + *«teach Q&A»* = **elle** sinonim eğitimi |
-| **ThoughtSpot** | 🔴 **bırakmadı** — search-first hâlâ omurga | LLM'i **kabuk** olarak üstüne koydu |
+| **Tableau Ask Data** | 🔴 **EMEKLİ** — Cloud **Şubat 2024**, Server **2024.2** | *«Tableau's Ask Data and Metrics features were retired in Tableau Cloud in February 2024 and in Tableau Server version 2024.2.»* — `help.tableau.com` |
+| **Power BI Q&A** | 🔴 **EMEKLİ EDİLİYOR — Aralık 2026** | *«Q&A experiences are going away in December 2026. We recommend using Copilot for Power BI…»* — `learn.microsoft.com` (`ms.date: 2026-05-22`) |
+| **ThoughtSpot** | ✅ **bırakmadı** — token motoru omurga, LLM **üstünde** | *«Spotter is **built on top of** the BI industry's leading relational search model…»* — `docs.thoughtspot.com/cloud/latest/spotter` |
+
+⟳ **BU TABLO 2026-08-13'te DÜZELTİLDİ.** İlk yazımımda *«Power BI Q&A duruyor, öne
+çıkarılmıyor»* demiştim — **yanlıştı**: resmî belge **Aralık 2026 emekliliğini** ilan
+ediyor. ⚠ Ayrıca ThoughtSpot'un LLM katmanının adı **«Sage» değil «Spotter»**; `Sage`
+adı erişilebilen hiçbir belgede geçmiyor.
+
+🔴 **Ve Power BI'ın belgelenmiş çöküş sebebi TAM OLARAK bu belgenin tezidir** (birebir):
+> *«One of the most basic and effective ways to improve the Q&A visual experience is
+> through adding **synonyms** for the names of tables and fields… a publishing company
+> trying to see 'novel sales last year' may not receive useful results **without defining
+> 'novel' as a synonym for 'product'**.»*
+> *«The **Teach Q&A** section allows you to train Q&A to recognize words.»*
+
+⊙ Yani iki *«yazarken yönlendiren»* ürün de öldü ve **ikisi de yerine LLM sohbet asistanı
+koydu**. Ayakta kalan ThoughtSpot, LLM'i **deterministik token motorunun yerine değil
+ÜSTÜNE** koyarak kaldı. ⚠ Ve LLM sağlayıcısı **takılıp çıkarılabilir** (*«including the
+GPT-series models, Google Gemini, Snowflake Cortex, and Claude»*) — yani LLM **çekirdek
+değil, değiştirilebilir bir bileşen**.
 
 🔴 Kategoride ayakta kalan, guided'ı **bırakmayan** ve LLM'i **üstüne** koyan firma.
 Yani bu belgenin sırası — *önce deterministik omurga, sonra LLM kabuğu* — piyasada
@@ -730,3 +748,444 @@ sonrasında değişmiş olabilir. Bu, kararı değiştirmez ama iddiayı yumuşa
 **kanıtlanmış bir yol** değil, **kanıtlanmış bir yolun ayakta kalan örneğine benzeyen** bir yol.
 
 > *Bir raporun sayısını kapıya bağlamazsan, o sayı bir sonraki turda bir hatıra olur.*
+
+---
+
+# EK — 2026-08-13 · KAYNAKLI ARAŞTIRMA
+
+> ⚠ **Yöntem:** Bu bölüm **dört paralel ajanın `WebFetch` ile çektiği resmî belgelerden**
+> derlendi. Her sayının yanında kaynak var. `WebSearch` oturum bütçesi tükendiği için
+> **arama yapılmadı** — yalnız bilinen belge adresleri çekildi; dolayısıyla bu bir
+> **literatür taraması değil, hedefli bir kaynak doğrulamasıdır**.
+> 🔴 **Kaynakta bulunamayan hiçbir sayı yazılmadı.** *«Kaynakta yok»* diyen maddeler
+> bilerek boş bırakıldı.
+
+---
+
+## §18 · SEMANTİK VE VEKTÖREL KATMAN — nasıl yapılır
+
+### 18.1 🔴 Bu bir RAG problemi DEĞİL — **varlık bağlama** (entity linking)
+
+| | RAG | **bizim işimiz** |
+|---|---|---|
+| girdi | serbest belge yığını | **kapalı** sözlük: 136 ölçü + 816 terim |
+| çıktı | isteme konacak metin | **bir alan kimliği** |
+| araçlar | chunking · reranker LLM · context stuffing | **eşleme + sıralama** |
+
+⊘ RAG araç zinciri burada **gereksiz ve zararlı**: chunk yok, uzun belge yok, LLM
+reranker gecikme bütçesini (§18.9) tek başına yer.
+
+### 18.2 ✅ Ölçek kararı — **HNSW DEĞİL, EXACT arama**
+
+Dört satıcı da aynı yönü gösteriyor:
+
+| kaynak | ifade |
+|---|---|
+| **Weaviate** | *«**Flat index**: a simple, lightweight index that is designed for **small datasets**»* · dinamik indeks eşiği *«by default **10,000**»* |
+| **Vespa** | *«**Since the dataset is small, we do not specify `index`** which would build HNSW data structures for faster (but **approximate**) vector search.»* |
+| **Qdrant** | *«Use exact searches to bypass HNSW… returning results in a **stable, deterministic order**… practical only for small collections.»* |
+| **Elastic** | exact kNN: *«**Best for small datasets or precise scoring**»* · *«HNSW trades perfect accuracy for speed, so results **aren't always the true k closest neighbors**.»* |
+
+🔴 **Bizim ölçeğimiz ~1.000 vektör — Weaviate'in kendi eşiğinin ONDA BİRİ.**
+1.000 × 1024 boyut × float32 ≈ **4 MB**; tek matris çarpımı milisaniye altı.
+
+> **Karar: ANN kullanılmayacak.** HNSW bu ölçekte tek şey getirir: **kayıp recall + kararsız
+> sıralama**. Ve kararsız sıralama, `ADR-0024`'ün determinizm kültürüyle **doğrudan çelişir**.
+
+⊙ Yan fayda: exact arama **tekrarlanabilir** — aynı girdi her zaman aynı listeyi verir,
+yani kapıya bağlanabilir 🆇.
+
+### 18.3 Hibrit erişim — leksik + dense, ve **RRF tuzağı**
+
+**Neden hibrit:** Vespa'nın ölçümü (327 sorgu, nDCG@10):
+
+```
+BM25   (leksik) 0.3210   ← LEKSİK DENSE'İ GEÇTİ
+dense           0.3077
+hibrit          0.3233 – 0.3423   ← ikisini de geçti (+%6,6 nispi)
+```
+
+⊙ Weaviate'in konumlandırması aynı yönde (birebir): *«**Vector search is more forgiving
+semantically and keyword search is more precise.**»*
+🔴 Kısa alan adlarında (`toplam_fire_kg`) ayırt edici sinyal **tam token eşleşmesidir**
+(`fire`·`oee`·`kg`) — yani **leksik ayak vazgeçilmez**.
+
+**RRF formülü** (Elastic, birebir):
+```
+score = Σ  1 / ( k + rank(result(q), d) )        # rank 1'den başlar
+rank_constant default = 60
+```
+> *«RRF **requires no tuning**, and the different relevance indicators **do not have to be
+> related to each other** to achieve high-quality results.»* — Elastic
+
+🔴 **VE BURADA BİR TUZAK VAR — `k` sabiti satıcıya göre DEĞİŞİYOR:**
+
+| satıcı | `k` | rank tabanı |
+|---|---|---|
+| Elastic · OpenSearch · Weaviate | **60** | **1**-tabanlı |
+| **Qdrant** | **2** | **0**-tabanlı |
+
+⚠ *«Endüstri standardı 60»* diye kopyalarsan **farklı bir sistem** kurmuş olursun: `k`
+küçüldükçe ilk sıralar keskinleşir. **Autocomplete için küçük `k` aslında istenen
+davranış olabilir** — ama bu **bilinçli** seçilmeli, miras alınmamalı ㉓.
+
+⚠ **VE RRF TARTIŞMASIZ ÜSTÜN DEĞİL.** Weaviate 1.24'te varsayılanı RRF'ten skor
+normalizasyonuna **çevirdi** (birebir): *«the default `relativeScoreFusion` algorithm showed
+a **~6% improvement in recall** over the `rankedFusion` method»* — gerekçe: *«retains more
+information from the original searches than `rankedFusion`, which **only retains the
+rankings**»*. Qdrant da kabul ediyor: *«**Neither dominates the other in general**, so use
+your eval set to choose.»*
+
+> 🔴 **RRF'in tartışmasız üstünlüğü DOĞRULUK değil, AYAR GEREKTİRMEMESİDİR.**
+> Bizde bir altın küme yokken doğru başlangıç **RRF**; küme kurulunca ikisi **ölçülür**.
+
+**Ağırlık kalibrasyonu** — Qdrant'ın protokolü (birebir, tek kaynaklı yöntem):
+> *«**Split your eval queries in two. Try different weights on the first half, then measure
+> on the second half.** Measuring on the same queries you tuned on **inflates** the result.»*
+> *«Without an eval set: **leave weights at the default (1.0, 1.0)**.»*
+
+⚠ Ve **kullanım sıklığı** (popülerlik) üçüncü sinyal olarak eklenecekse (birebir uyarı):
+> *«RRF scores are small (sums of `1/(k+rank)`), while decay functions return `[0,1]`, so an
+> unweighted decay term **will dominate** the fused score unless you multiply it by a
+> smaller coefficient.»*
+
+### 18.4 Model seçimi — **E5 prefix tuzağı** vs **BGE-M3**
+
+🔴 **`multilingual-e5-large` PREFIX ZORUNLU** (model kartı, birebir):
+> *«Each input text should start with **"query: "** or **"passage: "**, even for non-English texts.»*
+> SSS: *«Do I need to add the prefix…? **Yes, this is how the model is trained, otherwise you
+> will see a performance degradation.**»*
+
+⚠ **VE BİZİM İŞİMİZ SİMETRİK:** kart *«Use `'query: '` prefix for **symmetric** tasks such
+as semantic similarity»* diyor. `hasıl` ↔ `toplam_fire_kg` bir belge arama değil, bir
+**terim eşlemesi** → **iki tarafa da `query: `** konur.
+🔴 `query:`/`passage:` ayrımını burada kullanmak **sessiz bir kalite kaybıdır** —
+patlamaz, sadece kötü sonuç verir. `vqr.py`'nin bugünkü kullanımı **denetlenmeli**.
+
+⊙ **`BAAI/bge-m3` bu derdi tamamen kaldırıyor** (birebir):
+> *«The BGE-M3 model **no longer requires adding instructions** to the queries.»*
+> *«It can **simultaneously** perform… dense retrieval, multi-vector retrieval, and sparse retrieval.»*
+> *«obtaining token weights (similar to the BM25) **without any additional cost** when
+> generating dense embeddings.»*
+
+🔴 **Bu son cümle bizim için belirleyici:** BGE-M3 **hibridin leksik ayağını bedava**
+veriyor — ayrı bir BM25 indeksi kurmadan. Snake_case alan adlarında tam-token eşleşmesi
+tam da ihtiyacımız olan şey.
+
+⚠ **E5'in ikinci tuzağı** (kart SSS'i, birebir): *«**Why does the cosine similarity scores
+distribute around 0.7 to 1.0?** …we use a low temperature 0.01 for InfoNCE contrastive
+loss.»* → **sabit eşik (ör. «0,8 üstü kabul») E5'te anlamsızdır**; yalnız **sıralama** ve
+**göreli fark** kullanılabilir.
+
+### 18.5 🔴 Türkçe — **hiçbir büyük model kartı taahhüt etmiyor**
+
+| model | Türkçe ifadesi |
+|---|---|
+| `bge-m3` | *«more than 100 working languages»* — **Türkçe adı hiç geçmiyor**, liste yok |
+| `multilingual-e5-large` | *«supports 100 languages from xlm-roberta»* + ⚠ *«**low-resource languages may see performance degradation**»* |
+| `paraphrase-multilingual-MiniLM-L12-v2` | ✅ YAML dil listesinde **`tr` VAR** (ama 384 boyut, 128 token, benchmark yok) |
+| `gte-multilingual-base` | *«over 70 languages»* — **Türkçe geçmiyor** |
+| `emrecan/bert-base-turkish-…-stsb-tr` | ✅ **Türkçe'ye özel** · STS-b (tr) **Spearman 0,830** ⚠ eğitim *«**machine translated** versions»* |
+
+🔴 **E5'in Türkçe skorları YALNIZ SINIFLANDIRMA** (`MTOPIntent tr` acc 74,29 ·
+`MassiveIntent tr` ~69–74) — **retrieval skoru yok**; `Mr. TyDi` dil listesinde Türkçe
+**bulunmuyor**.
+
+### 18.6 🔴🔴 **KISA / TEK KELİME PERFORMANSI — HİÇBİR KAYNAKTA YOK**
+
+Beş model kartının **hiçbirinde** tek kelime / snake_case alan adı gömme hakkında uyarı ya
+da ölçüm yok. En yakın ifade BGE-M3'ün *«spanning from **short sentences** to long
+documents»* — *«kısa cümle»* diyor, *«tek kelime»* demiyor.
+
+> **Bu, `§13.1` ölüm şartının literatürden DOĞRULANMASIDIR:** kart okuyarak model
+> seçilemez. **Kendi ölçümümüz zorunludur.** 🆕
+
+### 18.7 Ne gömüyoruz — **alan adını DEĞİL**
+
+`toplam_fire_kg` ham hâliyle gömmek kötü. Gömülecek olan **çok görünümlü** temsil:
+
+```
+alan: toplam_fire_kg
+ ├ görünen etiket : "toplam fire (kg)"        ← measure_synonyms_display  ✅ VAR
+ ├ sinonimler     : "fire, zayiat, kayıp"     ← cube_synonyms.yml         ✅ VAR
+ ├ küp bağlamı    : "üretim · kalite"
+ └ birim          : "kilogram"
+→ her görünüm AYRI vektör; sorgu en yakın GÖRÜNÜME eşleşir, alan o görünümden türer
+```
+
+⊙ Üç girdinin üçü de **zaten katalogda** — ek yazım işi yok.
+
+### 18.8 Yazım hatası — **edge n-gram + fuzzy**, ve Türkçe uyarısı
+
+Beş hibrit belgesinin **hiçbirinde** prefix/typo/autocomplete geçmiyor (kapsamları değil).
+Satıcıların ayrı referanslarından:
+
+**Elastic `search_as_you_type`** (birebir): *«Wraps the analyzer of `my_field._3gram` with an
+**edge ngram token filter**»* → prefix için önerilen mekanizma **indeksleme zamanı edge
+n-gram**, arama zamanı wildcard değil.
+
+**Fuzzy eşikleri** — iki bağımsız kaynak neredeyse aynı:
+
+| | Algolia | Typesense |
+|---|---|---|
+| 1 hata min. uzunluk | **4** | **4** |
+| 2 hata min. uzunluk | **8** | **7** |
+| maksimum hata | **2** | **2** |
+| tam eşleşme varsa | *«Typo count is the **first criterion** in the ranking formula»* | `typo_tokens_threshold=1` → **hatalıya hiç bakma** |
+
+🔴 **VE BİZİM İÇİN KRİTİK BİR TUZAK** — Elastic `fuzziness: AUTO` (birebir):
+> *«`0..2` **Must match exactly**»*
+
+⚠ Yani **3 karakterden kısa terimlerde hiç düzeltme yapılmaz**. Türkçe kısa ölçü
+adlarında (`kâr`·`adet`·`OEE`) tipo toleransı isteniyorsa **eşik elle düşürülmeli**.
+
+⚠ Ve ters yönde: *«bu eşikler Latin/İngilizce kelime uzunluğu dağılımına göre kalibre
+edilmiş; **Türkçe eklemeli yapıda kelimeler uzun** olduğu için 2-hata eşiği daha erken
+tetiklenir»* → **ölçmeden benimseme** 🅡.
+
+### 18.9 Instant-search UX — **kaynaklı sayı tablosu**
+
+| kıstas | değer | kaynak |
+|---|---|---|
+| **algı eşiği** | **100 ms** — *«system is reacting instantaneously»* | NN/g |
+| akış kesilme eşiği | 1.000 ms | NN/g |
+| motor hedefi | **< 50 ms** | Typesense |
+| **debounce** | **200 ms** · *«Delays of over **300 ms** will start degrading the user experience»* | Algolia ×2 |
+| yavaş ağda debounce | 400 ms | Algolia |
+| *«takıldı»* göstergesi | 500 ms | Algolia |
+| **öneri adedi (masaüstü)** | **≤ 10** — *«users tend to either begin to ignore suggestions»* | Baymard |
+| öneri adedi (mobil) | ~8 (Amazon: **6**) | Baymard |
+| kaydırma çubuğu | 🔴 **YASAK** — *«should be **avoided**»* | Baymard |
+| **öneri seçilme oranı** | 🔴 **%23** (136 örnekte 31) | NN/g |
+
+🔴🔴 **SON SATIR EN ÖNEMLİSİ.** NN/g ölçümünde öneriler **yalnızca %23 oranında**
+seçiliyor. Bu bizim **kabul oranı** eşiğimizin **gerçekçi tabanı**:
+
+> ⚠ *«Kabul oranı %20'nin altındaysa özellik başarısız»* diye bir eşik koymak **yanlış
+> olurdu** — genel web aramasında taban zaten %23. **Bizim avantajımız kapalı bir uzay
+> ve yapılı bir katalog olması**; hedef bunun **belirgin üstü** olmalı, ama eşik
+> literatüre göre konmalı, sezgiye göre değil 🅔.
+
+**Klavye/erişilebilirlik — W3C ARIA APG Combobox zorunlu:** `role="combobox"` ·
+`aria-expanded` · `aria-controls` · `aria-activedescendant` (DOM odağı **input'ta kalır**) ·
+↓↑ seçenek gezinme · `Enter` kabul · `Esc` kapat.
+⚠ Çelişki: APG *«son seçenekte dur»*, Baymard *«başa dön»* diyor → **APG kazanır**.
+
+### 18.10 🔴🔴 KARŞI KANIT — *«Schema Linking'in Ölümü»*
+
+**Lehimize olan kanıt** önce:
+
+| bulgu | kaynak |
+|---|---|
+| BIRD hata analizi: **%41,6 «Wrong Schema Linking»** — en büyük tek kategori | `arxiv 2305.03111` Ek B.6 |
+| *«schema linking… continues to be a **significant obstacle** for models»* | aynı |
+| **Spider 2.0**: gerçek kurumsal şemalarda (*«over 1,000 columns»*) doğruluk **%91,2 → %21,3** | `arxiv 2411.07763` |
+| İnsan **%92,96** ↔ en iyi model **%81,95** (BIRD, 2026-08) | `bird-bench.github.io` |
+| Databricks Genie: *«support up to **30 tables**… **prejoin** related tables into views»* | `docs.databricks.com` |
+
+🔴 **AMA CİDDİ BİR KARŞI KANIT VAR** — *«The Death of Schema Linking? Text-to-SQL in the
+Age of Well-Reasoned Language Models»* (`arxiv 2408.07702`), birebir:
+> *«**We find empirically that newer models are adept at utilizing relevant schema elements
+> during generation even in the presence of large numbers of irrelevant ones.** As such, our
+> Text-to-SQL pipeline **entirely forgoes schema linking**… Our approach **ranks first on the
+> BIRD benchmark** achieving an accuracy of **71.83%**.»*
+
+**Bu bizi üç yerden vurur:**
+1. **%41,6 rakamı 2023 ChatGPT'ye ait** — güncel model kırılımı **bulunamadı**.
+2. Makale, **filtrelemenin KENDİSİNİN** hata kaynağı olduğunu söylüyor: gerekli sütunu
+   eleyip atmak. 🔴 **Kullanıcı tıklaması da bir filtredir** — yanlış tıklama, geri
+   dönüşü olmayan bir hatadır.
+3. Şema bağlam penceresine sığıyorsa *«hiç bağlama yapma»* BIRD'de **1. sırayı** almış.
+
+**Karşı-karşı argüman:** Makale açıkça koşul koyuyor — *«in cases where the schema **fits
+within the model's context window**»*. Spider 2.0'ın *«over 1,000 columns»* şemaları bu
+koşulu sağlamıyor ve orada doğruluk **%21,3**.
+
+> 🔴 **SAVUNULABİLİR EN GÜÇLÜ FORMÜLASYON (üç kanıtı birden karşılar):**
+> *«Şema bağlama, **şema büyükken** baskın hata kaynağıdır; küçük şemalarda modern
+> modeller kendi başına başa çıkıyor. Tıklama tasarımımız **büyük/gerçek kurumsal
+> şemalar** için doğru; küçük şemalarda **gereksiz sürtünme** yaratabilir.»*
+
+⊙ **Bizim kataloğumuz hangisi?** 23 küp · 136 ölçü · 816 terim — **sınırda**. Tek bir
+küpün şeması bağlam penceresine rahat sığar; **23 küpün tamamı + değerler** sığmaz.
+🔴 Bu, öneri katmanının **küp seçiminde** haklı, **küp içi alan seçiminde** tartışmalı
+olduğunu söyler. → `§20`'de karar satırı.
+
+**İkinci karşı kanıt:** BIRD-Interact'ta **etkileşimli** modda SOTA modeller yalnız
+**%16–24**. *«Kullanıcıya sor»* tek başına sihirli değnek **değil** — sorulanın **doğru
+şey** olması ve seçeneklerin **doğru üretilmiş** olması gerekiyor.
+
+**Üçüncü karşı kanıt — ve bir UX riski:** Cortex Analyst'ta `suggestion` içerik tipi
+**yalnız son çare** (birebir): *«only included in a response **if** the user question was
+ambiguous **and** Cortex Analyst **could not** return a SQL statement»*. Genie'de
+netleştirme **elle yazılan bir talimat**.
+🔴 **Hiçbir ürün tıklamayı BİRİNCİL akış yapmamış.** Endüstri *«önce çıkarım dene, olmazsa
+sor»* düzenini seçmiş. Bizim önerimiz bunun **tersi** — ve bunun **doğrudan ürün örneği
+yok**. Bu bir yenilik olabilir; bir uyarı da olabilir.
+
+### 18.11 Endüstri doğrulaması — semantik katman tarafı **bizim lehimize**
+
+| ürün | birebir ifade |
+|---|---|
+| **Snowflake Cortex Analyst** | *«Generic AI solutions often struggle with text-to-SQL… as **schemas lack critical knowledge** like business process definitions and metrics handling.»* · VQR: *«leverages relevant SQL queries from the repository when answering similar questions»* |
+| **Cube** | *«agents writing SQL against a warehouse end up with **inconsistent metrics and ungoverned access** — numbers that don't match how your business defines them»* · *«Every query passes through the semantic layer runtime, where it's validated… **deterministically**»* |
+| **dbt MetricFlow** | *«Rather than capturing arbitrary join logic, MetricFlow **captures the types of each identifier** and then helps users navigate to appropriate joins. This allows us to **avoid the construction of fan out and chasm joins**»* |
+
+🔴 **Üçü de aynı şeyi söylüyor: ham şema üzerinde LLM'e SQL yazdırmak çalışmıyor** —
+SQL üretimi LLM'den alınıp **deterministik bir motora** veriliyor, LLM'e kalan iş yalnız
+*«hangi metrik + hangi boyut»*.
+
+⊙ **Bu tam olarak bizim `küp + garson` mimarimizdir** ve `VQR`'ımız Cortex Analyst'ın
+*«Verified Query Repository»*siyle **aynı fikir** — üstelik bizde **daha önce** vardı.
+⚠ Cortex Analyst'ın kendi uyarısı bizim için de geçerli: *«**Invalid or inaccurate queries
+can negatively impact** Cortex Analyst's performance and accuracy.»* → VQR'a giren her
+kayıt **onaylı** olmalı.
+
+---
+
+## §19 · TEK TUŞLA AÇ/KAPA — ve bayraklama
+
+### 19.1 ✅ Birbirine mani değiller — **yapısal sebep**
+
+Öneri katmanı `cube_query`'yi **ÜRETMENİN** yeni bir yolu; **KOŞMANIN** değil.
+
+```
+öneri katmanı  ─┐
+                ├─→ cube_query ──→ parse_cube_query ──→ compose ──→ motor ──→ makbuz
+serbest metin  ─┘        ▲               ▲                              ▲
+                    AYNI NESNE      AYNI BEYAZ LİSTE              AYNI GUARD
+```
+
+🔴 İki giriş kapısı, **tek koridor**. Bu yüzden aynı anda var olabilirler ve bu yüzden
+`KURAL B` **kanıtlanabilir**.
+
+### 19.2 Üç kademe — ve üçü de **zaten mevcut mekanizma**
+
+| kademe | ne | mekanizma | durum |
+|---|---|---|---|
+| ① **bayrak** | `oneri_katmani: off\|alpha\|beta\|on` | `demo/packs/features.yml` | ✅ desen var |
+| ② **kapsam** | `global < sector < tenant < role < **user**` | `features.py` çözüm sırası | ✅ **var** |
+| ③ **ekran tuşu** | kullanıcı kapsamında override yazar | `FeatureOverride` | ✅ **var** |
+
+🔴 **Yani ekrandaki tuş yeni bir kavram değil** — `features.py`'nin **en spesifik kapsamı**
+olan `user`'a bir override yazmak. Kod tarafında **yeni bir mekanizma gerekmiyor**.
+
+```
+[ ⚡ Öngörü  ●━━ ]   ← açık: öneriler + çapa + pill
+[ ⚡ Öngörü ━━●  ]   ← kapalı: BUGÜNKÜ davranış, bayt bayt (KURAL B)
+```
+
+### 19.3 🟢 Bedava gelen: **A/B kontrol grubu**
+
+Kullanıcı-kapsamlı bir tuş, **ölçüm için bir hediyedir**: kapatanlar **kontrol grubu**
+olur. Aynı katalog, aynı korpus, aynı motor — tek fark giriş kapısı.
+
+⊙ Bu, `§13.2`'nin *«kabul oranı»* ölçütünü **karşılaştırmalı** hâle getirir: *«açık
+kullanıcılar tek tıkla cevaba daha çok mu ulaşıyor?»* — ve bu, bir **kanıttır**, bir
+izlenim değil.
+
+### 19.4 ⚠ Dört tuzak
+
+**① Thread ortasında kapatma.** Çapa ve pill'ler ne olacak? **Zarif düşüş** şart:
+çapa → düz metin bağlam · pill'ler → normal `cube_query`. **Veri kaybı olmamalı**;
+kullanıcı geri açtığında aynı yerden devam etmeli.
+
+**② 🆀 BAYRAK ARKASINDAKİ KAPI SUSAR.** Bu deponun ölçülmüş kusuru. Öneri kapıları
+**yalnız bayrak açıkken** koşarsa, kapalı kip sessizce çürür. → **Her iki kipte de koşan**
+kapı gerekir; `KURAL B` yüklemi ikisini **kıyaslamalı**.
+
+**③ Öğrenme asimetrisi.** Kapalı kullanıcılardan **tıklama etiketi gelmez** — çünkü
+kapalıyken hiçbir şey değişmiyor (`KURAL B`). ⊘ Bu **kabul edilir**: alternatifi,
+kapalı kipte gizlice veri toplamaktır ve o `KURAL B`'yi çiğner.
+
+**④ Tuşun yeri bir vaattir 🆈.** *«Öngörü»* yazan bir tuş, kapatıldığında ürünün
+**bozulmadığını** garanti etmeli. Kapalı kipte cevap kalitesi düşerse tuş bir **tuzağa**
+dönüşür.
+
+### 19.5 Kapı sözleşmesi
+
+```
+test_oneri_katmani_kural_b.py
+  ① bayrak KAPALI → yanıt gövdesi bugünküyle BAYT BAYT aynı        (mutasyonlu)
+  ② bayrak AÇIK   → aynı cube_query seçilirse yanıt AYNI           (öneri yalnız GİRİŞ)
+  ③ her iki kipte de guard/makbuz/beyan alanları DEĞİŞMEZ
+  ④ öneri ucu var ise FE tüketicisi de var                          (§G yetim uç kapısı)
+  ⑤ öneri listesindeki her aday TEMSİL EDİLEBİLİR                   (JOIN yasağı vb.)
+```
+
+---
+
+## §20 · KARAR MATRİSİ — her ihtimal, önceden verilmiş karar
+
+### 20.1 Ön koşul ölçümü (`§13.1`) sonucuna göre
+
+| Recall@3 | karar | gerekçe |
+|---|---|---|
+| **≥ %85** | 🟢 **tam uygula** | tıklama-etiket döngüsü kapanır |
+| %70–85 | ◐ **dar kapsamla uygula** | öneri **yalnız** sinonimi olan alanlarda; hasat döngüsü kapsamı büyütür |
+| **< %70** | 🔴 **DUR** | tredmill geri gelir; `§2` teşhisi geçerli kalır, **çare değişir** |
+| ölçüm koşulamıyor | 🔴 **DUR** | 🆆 *hesaplayamadığını söylemek de bir ölçümdür* |
+
+### 20.2 Prototip sonrası
+
+| gözlem | karar |
+|---|---|
+| kabul oranı **NN/g tabanının (%23) belirgin üstü** | 🟢 devam |
+| kabul oranı ~%23 civarı | ◐ **sıralama** sorunu — model/füzyon değiştir, tasarımı değil |
+| kabul oranı **%23 altı** | 🔴 öneri **gürültü**; chip'lere geri dön, öneri katmanını kapat |
+| p95 gecikme **> 300 ms** | ⚠ debounce 200→400 · model küçült · **yalnız leksik** kipe düş |
+| p95 gecikme **> 500 ms** | 🔴 *«takıldı»* göstergesi **zorunlu** (Algolia eşiği) |
+| `CLARIFY:*` oranı **düşmedi** | 🔴 öneri, cevapsızlığı **gizliyor** — `§12.2/③` gerçekleşti |
+| erişim tabanı **geri gelmedi** (69/69/69/72) | 🔴 kapsam kaybı kapanmadı → **kazanç yok** |
+
+### 20.3 Katalog gerçekleriyle karşılaşınca
+
+| durum | karar |
+|---|---|
+| **iki öneri aynı etikete** sahip (Thread 4) | 🔴 katalog tutarlılık borcu **açılır**; etiket eki **anlamlı** olmalı, `(satış)` yetmez |
+| ölçü **yön beyansız** (68/136) | üstünlük önerisi **sunulmaz**; `[↑]/[↓]` sorulur — ve bu bir **borç sayacına** yazılır |
+| alan **çıplak** (sinonimsiz, 1 adet) | öneride **görünmez**; hasat kuyruğuna **otomatik** düşer |
+| öneri **temsil edilemiyor** (JOIN) | 🔴 **sunulmaz** — 🆈 chip'in açıklaması bir vaattir |
+
+### 20.4 Mimari sınırlarda
+
+| durum | karar |
+|---|---|
+| öneri **küp seçiminde** yanılıyor | 🟢 tasarım doğru — büyük şema, `§18.10` lehimize |
+| öneri **küp içi alan seçiminde** sürtünme yaratıyor | ◐ `§18.10` karşı kanıtı geçerli → küp içinde **çıkarıma güven**, yalnız **çok sahipli** alanda sor |
+| kullanıcı **uzun cümle** yazıyor (>8 kelime / fiil var) | öneri şeridi **söner**; kademe ③ (garson taslağı) |
+| kademe ③ **v1 kapsamında olmayacaksa** | 🔴 **ilan edilir** — sessizce kapsam dışı bırakmak `§12.2/③`'tür |
+| pill satırı **6+ öğe** | adımlar **dikey**, yuvalar **yatay**; ikisi aynı şeritte **olmaz** |
+
+### 20.5 Teknik seçimler — önceden verilmiş kararlar
+
+| soru | karar | gerekçe |
+|---|---|---|
+| ANN mi exact mi | ✅ **exact** | ~1.000 vektör; `ADR-0024` determinizmi |
+| füzyon | ✅ **RRF** başlangıçta, altın küme kurulunca **ölç ve seç** | *«RRF requires no tuning»*; ama *«neither dominates»* |
+| `k` sabiti | 🔴 **bilinçli seç, miras alma** | 60 (Elastic) ↔ 2 (Qdrant) aynı ad, farklı sistem |
+| ağırlık | ✅ **1.0 / 1.0** (altın küme yokken) | Qdrant: *«hand-tuned weights without measurement are unlikely to beat the default»* |
+| model | ◐ **BGE-M3 önde** ama **ölçümle** seçilir | prefix derdi yok + sparse bedava; ⚠ Türkçe taahhüdü **yok** |
+| E5 kullanılacaksa | 🔴 **iki tarafa da `query: `** | simetrik görev; kart birebir söylüyor |
+| eşik tabanlı kabul | ⊘ **kullanılmaz** | E5 kosinüsü 0,7–1,0'da sıkışıyor → **sıralama** kullan |
+| prefix mekanizması | ✅ **edge n-gram** (indeksleme zamanı) | Elastic `search_as_you_type` deseni |
+| fuzzy eşiği | ≥4 krk → 1 hata · ≥7 krk → 2 hata · maks **2** | Algolia + Typesense **aynı** · ⚠ Türkçe'de **ölçmeden benimseme** |
+| öneri adedi | **5–7** (tavan 10) · **kaydırma YOK** | Baymard |
+| debounce | **200 ms** | Algolia ×2 |
+
+---
+
+## §21 · BU EKİN SINIRI
+
+⚠ **`WebSearch` bütçesi tükendiği için literatür taraması yapılmadı** — yalnız bilinen
+adresler çekildi. Dolayısıyla:
+- Bulunamayan bir kanıt, **var olmadığı anlamına gelmez** 🅣.
+- MTEB liderlik tablosu **okunamadı** (JS kabuğu) → model karşılaştırması **kart
+  düzeyinde** kaldı.
+- Snowflake'in sayısal doğruluk iddiası (blog) **404** → **kullanılmadı**.
+- Power BI emeklilik blogu **403** → tarih yalnız `learn.microsoft.com`'dan doğrulandı.
+
+🔴 **Ve en önemlisi:** `§18.6` literatürün **bize cevap veremediği** yeri işaretliyor —
+kısa/tek kelime gömme performansı. **`§13.1` ölçümü bu yüzden ertelenemez.**
+
+> *Bir kaynağın söylemediği şey, senin ölçmen gereken şeydir.*
