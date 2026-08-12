@@ -509,3 +509,45 @@ harcaması** ayrı bir **yönetişim** kararıdır; ilan edilmeden verilemez. Ve
 *«ajan onu görünce davranışını değiştiriyor mu»* sorusu bir **davranış** ölçümüdür ve
 `B.6/②`'nin garson korpusu **canlı** koşulmadan cevaplanamaz. → `B` kuyruğuna **bağlandı**,
 `D`'de ayrı bir borç açılmadı (㊲ *aynı işin iki satırı*).
+
+---
+
+## E · CEVAP BİÇİMİ + UX — **E.1 KAPANDI**
+
+### E.1 ⊘ `viz.recommend` niyet kancası — **AÇILMAZ, çünkü daraltmalar ZATEN yürürlükte**
+
+Raporun (`§14.11 D7`) `@antv/ava` ithalatını reddederken bıraktığı **tek 🟢 delta**:
+*«`viz.recommend` imzası niyeti hiç almıyor… kanca yalnız daraltıcı yönde açılır»*.
+
+**İmza ölçümü doğru** — `(result, units, lower_set, cube_query, non_additive, hedefler,
+paket)`, niyet yok. **Ama önerilen iki daraltmanın ikisi de zaten var**, ve bir
+**etiketten** değil **yapıdan** türetilerek:
+
+| raporun istediği | bugünkü hâli | nereden |
+|---|---|---|
+| `TUR_KIYAS` → `partition` kapansın | ✅ **kapalı** | `viz.py:497` pay grafiği `len(measures)==1` ister; kıyas ailesi (`_gecen`·`_degisim_yuzde`) **her zaman** çok ölçülü |
+| `TUR_TREND` → tabloya daraltma yasak | ✅ **yasak** | `viz.py:220` `time_col and measures≥1` → **`line`**; `table` için ya **ölçü 0** ya **boyut >2** gerek |
+
+⊘ **KARAR: kanca açılmaz.** `niyet=` eklemek, yapının söylediğine **ikinci bir sahip**
+vermek olurdu (`KAT-1`) — ve iki sahip bir gün ayrışır: kullanıcı *«trend»* der ama
+sonuçta zaman sütunu **yoktur**; o an etiket `line`, yapı `table` der. `ADR-0024`
+determinizmi kararı **veriye** bağladığı için çalışıyor.
+
+✅ **Yapılan iş, kararı DEĞİŞMEZ yapmaktı:** `test_e1_grafik_niyeti_yapidan.py` (**5**,
+🅑 mutasyonla kanıtlı — tek-ölçü şartı kaldırılınca kapı kırmızı). Raporun beyanı artık
+bir cümle değil bir **yüklem**.
+
+⊙ **Yan ölçüm — raporun *«6 tür zaten bağlı»* iddiası DOĞRU:** üretici zincir
+`niyet.coz(soru, schema).turler` → `bicim.oneri_kotasi` (`answer.py:872`) **koşuyor**.
+⚠ ㊺ **Aynı adlı iki ölçüt:** `followup`'ın `niyet.tur`'u (konuşma sınıfı) ile
+`app/niyet.py`'nin 6 türü (sorgu şekli) **ayrı** kavramlar — karıştırılmadı.
+
+⊙ **E.3 önden kapandı:** `narration_guard` uydurma-sayı **oranı** ölçülüyor —
+`makbuza()` hem `rejected_sentences` hem **`total_sentences`** (payda) basıyor
+(`narration_guard.py:171-186`). Planın `B3` kalemi (*«ölçülmemiş olan oran»*) **kapalı**.
+🅜 payda kutsal — ve burada **var**.
+
+### ⏭ `E`'de kalan
+
+**E.2** `next_steps` üç edim ayrımının FE'de tamlığı · **E.4** `ReportCard` makbuz
+katmanlaması (`§D3`).
