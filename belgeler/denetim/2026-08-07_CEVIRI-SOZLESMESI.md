@@ -12747,3 +12747,48 @@ kalite. O kırılım için ayrı bir `SORGU` adımı yaz»*.
 ⊙ **Ders:** kazancın büyüğü **ikinci turdan değil, ne yapılacağını söylemekten** geldi
 (9 onarımın 7'si ilk turda). *Bir döngüyü uzatmadan önce, söylediğinin anlaşılır olup
 olmadığını sormak gerekir.*
+
+---
+
+# 🔴 TUR — A–G SONRASI CURL SENARYOLARI *(2026-08-12, `dima-backend-temiz` :8001)*
+
+Önkoşul: süit **276 ✅** · korpus **✅ çıkış 0**. Giriş: `demo-boyahane@usedima.com`.
+⚠ Backend **imajdan** koşuyor — bu tur **imajdaki** kodu ölçer ⑦.
+
+| # | senaryo | soru | `source` | küp | sonuç |
+|---|---|---|---|---|---|
+| **S01** | toplam | *bu yıl toplam ciro* | `cube` | parti | ✅ `74.022.836,94` — LLM'siz |
+| **S02** | kırılım | *müşteriye göre bu yıl ciro* | `cube` | parti | ✅ 8 satır, `musteri` boyutu |
+| **S03** | trend | *son 6 ay ciro trendi* | `cube` | parti | ✅ 5 satır, `tarih__month` ekseni |
+| **S04** | YoY kıyas | *geçen yıla göre bu yıl ciro* | `cube` | parti | ✅ kıyas ailesi tam: `_gecen` + `_degisim_yuzde` |
+| **S05** | üstünlük | *en çok ciro yapan 5 müşteri* | `cube+llm` | parti | ✅ `limit=5`; **dönem çözülemedi ve BEYAN EDİLDİ** (*«son 12 ay alındı»*) + 4 dönem chip'i |
+| **S06** | **liste** | *bu ay açılan partileri listele* | **`None`** | — | 🔴 **KUSUR** — *«Hangi kırılımı istiyorsun?»* |
+| **S07** | belirsiz terim | *bu yıl bakiye* | `cube+llm` | cari | ✅ *«birden fazla yerde tanımlı… **cari hesap** tanımıyla»* + öteki tanım **chip olarak** |
+| **S08** | yazım hatası | *bu yil **cirp*** | `cube+llm` | parti | ✅ garson `toplam_ciro`'ya bağladı |
+| **S09** | morfoloji | *bu yıl ciro **arttı mı*** | `cube+llm` | parti | ✅ *«Sayı doğru ama **eksik**: değişimi istedin, zaman ekseni yok»* |
+| **S10** | sosyal | *teşekkürler* | **`meta`** | — | ✅ **0 LLM · 0 SQL** — *«Rica ederim…»* |
+| **S11** | kapsam dışı | *önümüzdeki ay ciro ne olur* | `None` | — | ✅ **ilan edilmiş** kapsam kararı (forecast v1'de yok) |
+| **S12** | çok sahipli ölçü | *bu yıl toplam fire* | `cube` | parti | ✅ *«**FARKLI FORMÜLLE** tanımlı… öteki bir kapsam farkı değil, **başka bir hesaptır**»* |
+
+## 🔴 TEŞHİS-1 · `S06` — LİSTE NİYETİ KIRILIM SORUSUNA DÜŞÜYOR
+
+*«bu ay açılan partileri **listele**»* → `source=None`, `note="Hangi kırılımı istiyorsun?"`
+
+⚠ **Bu bir kırılım sorusu değil, bir DÖKÜM sorusudur.** `app/niyet.py`'nin kapalı altı
+türünden biri **`TUR_LISTE`** — *«satır dökümü»* — ve tam da bu cümle onun tanımı.
+Sistem niyeti **doğru sınıflandırmış olsa bile** cevabı üretmiyor, kullanıcıya bir
+**kırılım** soruyor; oysa istenen kırılım değil, **satırların kendisi**.
+
+🔴 Kullanıcının bağlayıcı kuralı: *«dürüst red başarı değil; cevaplanması gereken her red
+bir **eksiklik raporudur**.»* Ve `S05` bunun **karşıt kanıtı**: orada da bir eksik vardı
+(dönem), ama sistem **varsayılanı uygulayıp beyan etti** — cevapsız bırakmadı.
+🆑 *Belirsizliği cevapsız bırakmak, cevaplayıp beyan etmekle aynı şey değildir.*
+
+⏭ **Ölçülecek:** `liste_niyeti` route'ta **tanınıyor mu**, tanınıyorsa `CubeQuery`'ye
+**neden dönüşmüyor**? *(Bir sonraki turda; düzeltmeler **toplu** yapılacak.)*
+
+## ⊙ Bu turun sekiz olumlu ölçümü — hepsi **beyan kültürü**
+
+`S05` dönem varsayımını · `S07` tanım çokluğunu · `S09` istenen ama üretilemeyen ekseni ·
+`S11` kapsam kararını · `S12` **aynı adın farklı formülünü** söylüyor. Beşi de
+*«sayıyı ver, sınırı sakla»* değil **«sayıyı ver, sınırı da söyle»** deseninde.
