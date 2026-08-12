@@ -13017,3 +13017,42 @@ yedek dala düştü. Kapı doğru şeyi ölçüyor (yardımcı **doğru** cevap 
 ⊙ **Yine de ikisi de gerileme değil:** ① eski davranış (uydurma ad) **aynen** duruyor,
 ③ eski soru **aynen** duruyor; eklenen beyanlar **kapılı** ve küp yolunda **çalışıyor**.
 Kalan iş bir **kapsam genişletme** işidir, bir onarım değil.
+
+## ⟳ `①` YENİDEN ÖLÇÜLDÜ — **BELİRLENİMSİZ, ve 4 koşumun 3'ü Discovery**
+
+Bir önceki tur *«hâlâ Discovery»* demiştim; **tek koşuma** dayanıyordu 🅢. Sayarak:
+
+| koşum | `source` | küp | tarih filtresi | beyan |
+|---|---|---|---|---|
+| 1 | `cube+llm` | parti | **`>= '201…'`** ✅ | (gerek yok — filtre var) |
+| 2–4 | `llm:openrouter` | **adhoc** | yok | yok |
+
+㉝ **Aynı girdi, iki farklı yol** — garsonun örneklemesi turdan tura değişiyor. `1.`
+koşumda iz *«dönem=1(**çözülemedi**)»* diyor: yeni beyan **çalışıyor**, ve o turda sorgu
+zaten bir tarih kısıtı taşıdığı için **susması doğru**.
+
+### Sapma noktası ölçüldü — ve kodun kendi uyarısı bunu tarif ediyor
+
+`uyum.beyan_ekle` **tek yerden** çağrılıyor (`ask.py:3261`) ve orası **küp yolu**.
+Discovery dalı kendi `AskResponse`'unu kurup doğrudan `_finish`'e gidiyor. Yirmi satır
+yukarıdaki yorum bunu **zaten yazmış**:
+
+> *«Bu gövde kendi `AskResponse`'unu kurup doğrudan `_finish`'e gidiyor, yani beyan
+> bloğunu **hiç görmüyor**… bir kuralı yazmak, onu her çağrı yerinde kurmak değildir —
+> ve **eksik kurulan yer, kuralın hiç olmadığı yerden daha tehlikelidir**.»*
+
+⊘ **KARAR: beyanı Discovery dalına taşımak BU TURDA YAPILMAZ** ㊸. Gerekçe ölçülü:
+o dal bugüne dek `uyum.denetle`'den **hiç geçmedi**; oraya bağlamak **hiç sınanmamış**
+bir yanlış-pozitif yüzeyi açar (`§101.1`: yanlış uyarı kusurdan pahalıdır) ve bu tur bir
+**kusur kapatma** turu. ⚠ Ayrıca çözüm **Discovery'yi kısmak değildir** 🆒 — kapsam
+kaybı olurdu. Borç **adıyla** kaydedildi 🆓.
+
+## ✅ TEK KAPI — **276 passed** (67,8 sn)
+
+`lab/kapi.py --hizli --degisen <603 dosya>` → **276 passed**, kırmızı **yok**.
+⊙ Seçim doğrulandı: **383/456** test dosyası seçili ve **üç yeni kapı da içinde**
+(`test_t8…` · `test_t6…` · `test_s06…` — `_secim` *«değişen test dosyaları HER ZAMAN
+koşar»* diyor ve ölçüm bunu **doğruladı**).
+⚠ **Açık ölçüm:** 383 dosya seçiliyken **276 test** koşması bir oran olarak düşük
+görünüyor; bu **bir kusur iddiası değil**, ölçülmemiş bir sayı — sonraki turda bakılacak
+㉔.
