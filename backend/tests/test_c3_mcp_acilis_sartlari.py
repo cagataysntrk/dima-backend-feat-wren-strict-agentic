@@ -129,10 +129,21 @@ def test_YAZMA_ARACI_MCP_YUZEYINDE_YOK():
     ✅ Düzeltme yapısal: `tools.okuyan_araclar()` (`yan_etki != "yok"` → dışarıda) +
     `mcp.cagir()` adı bilinse bile **reddediyor**. Doğru şart budur ve **bayraktan
     bağımsızdır**: kayıt ne olursa olsun MCP yüzeyi salt-okumadır."""
-    yazanlar = {a.ad for a in tools.KAYIT if getattr(a, "yan_etki", "yok") != "yok"}
-    listede = {a["name"] for a in mcp.araclar(None)}
-    assert not (yazanlar & listede), (
-        f"🔴 YAZMA aracı MCP yüzeyinde: {sorted(yazanlar & listede)} — MCP açılışı bloke")
+    # 🔴 ⟳ **BOŞ YEŞİLDİ (2026-08-12, denetim ajanı buldu).** Bayrak kapalıyken
+    # `yazanlar` boş küme; `not (∅ & listede)` **önemsizce** doğru. Bayrağı açmadan
+    # ölçülen bir sızdırmazlık, ölçülmemiş bir sızdırmazlıktır.
+    from tests.kapi_ortak import yazma_araclari_acik
+
+    with yazma_araclari_acik() as _t:
+        from app import mcp as _m
+        yazanlar = {a.ad for a in _t.KAYIT if getattr(a, "yan_etki", "yok") != "yok"}
+        assert yazanlar, (
+            "⊘ ölçüm tabanı çöktü: bayrak açıkken bile kayıtta yazan araç yok — "
+            "bu test o hâlde hiçbir şey ölçmüyor.")
+        listede = {a["name"] for a in _m.araclar(None)}
+        assert not (yazanlar & listede), (
+            f"🔴 YAZMA aracı MCP yüzeyinde: {sorted(yazanlar & listede)} — MCP açılışı "
+            "bloke")
 
 
 def test_MCP_CAGRISI_DORT_KAPIDAN_geciyor():
@@ -182,6 +193,38 @@ def test_BORC_KENDINI_TOPLUYOR_mcp_acilirsa_KIRMIZI():
         "🔴 `mcp_yuzeyi` AÇILDI ama kartın azaltma listesi karşılanmadı:\n  "
         + "\n  ".join(eksik)
         + "\n\nBir güvenlik sınırını «sonra bakarız» diye açmak, sınırı hiç koymamaktır.")
+
+
+def test_ORTUSME_OLCUMU_BAYRAKTAN_BAGIMSIZ():
+    """🔴 **ÖLÇÜLEN SAYI BİR YEŞİLE BAĞLI DEĞİLDİ** (2026-08-12, denetim ajanı buldu).
+
+    `test_BORC_KENDINI_TOPLUYOR` bayrak `off` iken **erken dönüyor**; yani
+    `ORTUSME_TAVANI` ve `ARAC_TAVANI` **hiç koşmuyordu** ve `§C3` ①'i çözen ölçüm
+    (*«örtüşen çift 1 · 25 aracın 23'ü ayrık»*) hiçbir kapıyla kilitli değildi.
+
+    ⊙ *Bir kararı bir ölçüme dayandırıp o ölçümü kapıya bağlamamak, kararı bir
+    anıya bırakmaktır.* Bayrak bir gün açılacak; o gün ölçümün hâlâ geçerli olduğunu
+    **bugünden** bilmek gerekir.
+
+    ⚠ Bu test bayraktan **bağımsız**: örtüşme kaydın kendi yapısal özelliğidir
+    (aynı birincil etiket + aynı girdi anahtarları), bir yüzeyin açık olup
+    olmamasıyla ilgisi yoktur.
+    """
+    ort = _ortusen_ciftler(tools.KAYIT)
+    karisan = {a for c in ort for a in c}
+    assert len(tools.KAYIT) >= 20, "⊘ ölçüm tabanı çöktü: kayıt beklenmedik biçimde küçük"
+    assert len(karisan) <= ORTUSME_TAVANI, (
+        f"🔴 ÖRTÜŞEN araç {len(karisan)} > {ORTUSME_TAVANI}: {sorted(karisan)}. "
+        "OpenAI ölçütü sayı değil ÖRTÜŞMEDİR: planlayıcı bunlar arasında SEÇEMEZ.")
+    assert len(tools.KAYIT) <= ARAC_TAVANI, (
+        f"🔴 araç sayısı {len(tools.KAYIT)} > {ARAC_TAVANI} (ikincil emniyet)")
+    # ⊙ Ölçülen değerin KENDİSİ kayda geçer: bugün tek örtüşen çift `stats.trend` ↔
+    # `stats.ozet` (aynı `('yorum','istatistik')` etiketi, aynı `{degerler}` girdisi).
+    # Sayı büyürse karar (§C3 ①) **yeniden okunmalı**.
+    assert len(ort) <= 1, (
+        f"🔴 örtüşen çift sayısı {len(ort)} (ölçülen 1): {ort}. `§C3` ①'in kararı "
+        "*«25 aracın 23'ü ayrık»* ölçümüne dayanıyordu — ölçüm değişti, karar "
+        "yeniden okunsun.")
 
 
 def test_KAPALIYKEN_bugunku_davranis():

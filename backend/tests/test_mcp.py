@@ -175,11 +175,27 @@ def test_YAZAN_arac_MCP_yuzeyinde_YOK():
     #
     # *Bir kapıyı bir şeyin YOKLUĞUNA bağlamak, o şey meşru olarak var olduğu gün kapıyı
     # bir engele çevirir.*
-    yazanlar = {a.ad for a in tools.hepsi() if a.yan_etki == "yazar"}
-    listede = {a["name"] for a in mcp.araclar(None)}
-    assert not (yazanlar & listede), (
-        f"🔴 YAZAN araç MCP yüzeyinde: {sorted(yazanlar & listede)}. MCP bir ÇEVİRİDİR "
-        "ve salt-okumadır; ajanın yazma yetkisi ayrı bir mimari karardır (MIMARI §4).")
+    # 🔴 ⟳ **BOŞ YEŞİLDİ (2026-08-12, denetim ajanı buldu).** Bayrak kapalıyken
+    # `yazanlar` **boş küme** oluyor ve `not (∅ & listede)` **önemsizce** doğru —
+    # yani test her koşumda yeşildi ve hiçbir şey ölçmüyordu.
+    #
+    # ⊙ Doğru desen aynı dosyada zaten vardı (`test_MCP_SALT_OKUMA_yazma_araci_SIZMAZ`):
+    # bayrağı **aç**, sonra `assert yazanlar` ile ölçüm tabanını doğrula.
+    #
+    # *Bir kümenin boş olduğu yerde kesişim iddiası, bir iddia değil bir tanımdır.*
+    from tests.kapi_ortak import yazma_araclari_acik
+
+    with yazma_araclari_acik() as tools:
+        from app import mcp
+        yazanlar = {a.ad for a in tools.hepsi() if a.yan_etki == "yazar"}
+        assert yazanlar, (
+            "⊘ ölçüm tabanı çöktü: bayrak açıkken bile `tools.hepsi()` içinde yazan "
+            "araç yok — bu test o hâlde HİÇBİR ŞEY ölçmüyor.")
+        listede = {a["name"] for a in mcp.araclar(None)}
+        assert not (yazanlar & listede), (
+            f"🔴 YAZAN araç MCP yüzeyinde: {sorted(yazanlar & listede)}. MCP bir "
+            "ÇEVİRİDİR ve salt-okumadır; ajanın yazma yetkisi ayrı bir mimari "
+            "karardır (MIMARI §4).")
 
 
 def test_MCP_cagrisi_AYNI_makbuzu_uretir():
