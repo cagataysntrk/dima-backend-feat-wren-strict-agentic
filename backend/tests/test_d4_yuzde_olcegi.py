@@ -52,9 +52,29 @@ import pathlib
 import yaml
 
 _PACKS = pathlib.Path(__file__).parent.parent / "demo" / "packs"
-#: Ölçeği **doğrulanamayan** ve bu yüzden bilerek dokunulmayan ölçüler. Bir gün değeri
-#: ölçülürse ya listeden çıkar ya da düzeltilir — ama **sessizce** kalmaz.
-OLCULMEDI = {"maliyet.ort_kar_marji_yuzde"}
+#: Ölçeği **doğrulanamayan** ve bu yüzden bilerek dokunulmayan ölçüler.
+#:
+#: ✅ **BOŞALDI (2026-08-12).** `maliyet.ort_kar_marji_yuzde` canlı curl ile ölçüldü:
+#: **28,13** → zaten **0–100** ölçeğinde, dokunulmasına gerek yok. Kaba taramam
+#: (*«ifadede 100 geçiyor mu»*) onu *«oran»* sanmıştı — **yanlış pozitif**, ve tam da
+#: bu yüzden dokunulmamıştı. *Bir listeye «ölçülmedi» diye yazmak, ölçülünce onu
+#: listeden çıkarma borcunu da doğurur.*
+OLCULMEDI: set[str] = set()
+
+#: ✅ **ÖLÇÜLDÜ, ZATEN YÜZDE** — ifadesinde `100` **geçmiyor** ama değeri **0–100**.
+#:
+#: Yüklem (*«ifadede 100 var mı»*) **kaba** bir vekildir ve bunu üretiyor: kaynak kolonu
+#: zaten yüzde olan bir ortalama (`AVG(kar_marji_yuzde)`) `×100` içermez ama ölçek
+#: doğrudur. Kaba bir vekili, ölçülmüş bir gerçeğe **karşı** kullanmak, ölçümü çöpe
+#: atmak olurdu.
+#:
+#: | ölçü | canlı curl | karar |
+#: |---|---|---|
+#: | `maliyet.ort_kar_marji_yuzde` | *«bu yıl ortalama kar marjı»* → **28,13** | ✅ zaten yüzde, dokunulmadı |
+#:
+#: ⚠ Kayıt **kanıtla** girer: bir ölçü buraya ancak **canlı değeri ölçülünce** yazılır.
+#: *Bir muafiyet, ölçüsü yazılmadan verilirse muafiyet değil bir tahmindir.*
+OLCULDU_ZATEN_YUZDE = {"maliyet.ort_kar_marji_yuzde"}
 
 
 def _yuzde_olculeri() -> dict[str, str]:
@@ -95,9 +115,10 @@ def test_AYNI_KUPTE_TEK_OLCEK():
 
 def test_OLCULMEYEN_olcu_SESSIZCE_kalmiyor():
     """*Bir ölçek düzeltmesi, ölçeği ölçülmemiş bir ölçüye uygulanırsa düzelttiğinden
-    fazlasını bozar.* Dokunulmayan kalem **adıyla** kayıtlı."""
+    fazlasını bozar.* ⊙ Liste bugün **boş**: tek kalemi ölçüldü (28,13 → zaten yüzde) ve
+    çıkarıldı ve **kanıtlı** kayda (`OLCULDU_ZATEN_YUZDE`) geçti."""
     o = _yuzde_olculeri()
-    for ad in OLCULMEDI:
+    for ad in OLCULMEDI | OLCULDU_ZATEN_YUZDE:
         assert ad in o, f"{ad} katalogdan kalkmış — kayıt güncellensin"
 
 
@@ -105,9 +126,12 @@ def test_YENI_ORAN_OLCUSU_sessizce_GIREMEZ():
     """🔴 Yayılma kapısı: bundan sonra `unit: \"%\"` ilan eden her ölçü ya **×100**
     içerir ya da `OLCULMEDI`'ye **gerekçesiyle** yazılır."""
     kacak = [k for k, v in _yuzde_olculeri().items()
-             if "100" not in v and k not in OLCULMEDI]
+             if "100" not in v and k not in OLCULMEDI | OLCULDU_ZATEN_YUZDE]
     assert not kacak, (
         "🔴 `unit: \"%\"` ilan edip 0-1 oranı üreten YENİ ölçü(ler):\n  "
         + "\n  ".join(kacak)
-        + "\n\nKullanıcı bunları 100× küçük görür. Ya ifadeye `100.0 *` ekle, ya da "
-          "değerini ÖLÇÜP `OLCULMEDI`'ye gerekçesiyle yaz — sessiz bırakma.")
+        + "\n\nKullanıcı bunları 100× küçük görür. Üç yoldan biri:\n"
+          "  ① ifadeye `100.0 *` ekle (ölçek gerçekten 0-1 ise)\n"
+          "  ② canlı curl ile ÖLÇ; zaten 0-100 çıkarsa `OLCULDU_ZATEN_YUZDE`'ye "
+          "**değeriyle** yaz\n"
+          "  ③ ölçemiyorsan `OLCULMEDI`'ye **gerekçesiyle** yaz — sessiz bırakma.")

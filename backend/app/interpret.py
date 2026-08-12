@@ -454,6 +454,26 @@ def interpret(result: dict | None, cube_query: dict | None = None,
     # `etiketler=None` → metin **birebir bugünkü** (geriye uyum, testle kilitli).
     _etiket = dict(etiketler or {})
 
+    def _buyuk_harf(s: str) -> str:
+        """🔴 **TÜRKÇE BÜYÜK HARF — `str.upper()` BU DİLDE YANLIŞTIR.**
+
+        Ölçüldü (2026-08-12): `«iade»` → Python `.upper()` → **`Iade`** (noktasız I).
+        Türkçede `i`'nin büyüğü **`İ`**'dir; `I`'nın küçüğü `ı`'dır. Bu, cümlenin ilk
+        harfinde her `i`-başlangıçlı ölçüde görünürdü (`iade` · `ilk seferde tamam` …).
+
+        ⚠ Kusuru **kendi düzeltmem** üretti (`FAZ 3` özet cümlesi) ve *«Türkçe morfoloji»*
+        `§38.4`'ün dokunulmazlarından. Bu bir **sözlük değil**, iki harflik **kapalı bir
+        dilbilgisi kuralıdır** (`ADR-0008` sözlükleri yasaklar, kuralları değil) — ve aynı
+        eşleme bu depoda zaten var (`uyum._norm`, `llm._norm`).
+
+        *Bir dilin büyük harfi, o dilin kuralıyla yazılır; kütüphanenin varsayılanıyla
+        değil.*
+        """
+        if not s:
+            return s
+        ilk = {"i": "İ", "ı": "I"}.get(s[0], s[0].upper())
+        return ilk + s[1:]
+
     def _ozet(fs: list[dict]) -> str:
         """🔴 `§FAZ3-D` — **«ROBOTİK»İN EN SAF HÂLİ: ETİKET-İKİ NOKTA-SAYI.**
 
@@ -485,8 +505,7 @@ def interpret(result: dict | None, cube_query: dict | None = None,
             etiket, ayrac, deger = govde.partition(":")
             if ayrac and deger.strip():
                 # «ciro: ₺74.022.836,94» → «Ciro ₺74.022.836,94.»
-                e = etiket.strip()
-                return f"{e[:1].upper()}{e[1:]} {deger.strip()}."
+                return f"{_buyuk_harf(etiket.strip())} {deger.strip()}."
         return " ".join(f["text"].rstrip(".") + "." for f in fs)
 
     def _ad(k: str) -> str:

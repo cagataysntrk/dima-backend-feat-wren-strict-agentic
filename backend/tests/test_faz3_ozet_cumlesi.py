@@ -94,3 +94,31 @@ def test_IKI_NOKTASIZ_olgu_ELLENMEZ():
     sonuc = {"rows": [{"parti_sayisi": 7}], "columns": ["parti_sayisi"], "row_count": 1}
     o = interpret(sonuc, cube_query={"cube": "parti", "measures": ["parti_sayisi"]})
     assert o["summary"].endswith(".")
+
+
+# --- ⑪ + TÜRKÇE BÜYÜK HARF ------------------------------------------------------
+
+def test_TURKCE_BUYUK_HARF_i_noktali():
+    """🔴 **`str.upper()` BU DİLDE YANLIŞTIR** — ve kusuru bu dosyanın kendi düzeltmesi
+    üretti. Ölçüldü (canlı): `«iade»` → `Iade` (noktasız I). Türkçede `i`'nin büyüğü
+    **`İ`**'dir.
+
+    ⚠ Sözlük değil **iki harflik kapalı bir dilbilgisi kuralı** (`ADR-0008` sözlükleri
+    yasaklar, kuralları değil) ve aynı eşleme depoda zaten var (`uyum._norm`).
+    *Bir dilin büyük harfi, o dilin kuralıyla yazılır; kütüphanenin varsayılanıyla değil.*
+    """
+    sonuc = {"rows": [{"toplam_iade_kg": 33959.2}], "columns": ["toplam_iade_kg"],
+             "row_count": 1}
+    o = interpret(sonuc, cube_query={"cube": "sikayet", "measures": ["toplam_iade_kg"]},
+                  units={"toplam_iade_kg": "kg"}, etiketler={"toplam_iade_kg": "iade"})
+    assert o["summary"].startswith("İade "), o["summary"]
+    assert not o["summary"].startswith("Iade"), "noktasız I geri geldi"
+
+
+def test_KISALTMA_gorunum_adi_KATALOGDAN(schema):
+    """⑪ — `oee` küpünde `label:` **yoktu**, görünen ad ilk sinonimden (`oee`) düşüyordu
+    ve cümle başında `Oee` oluyordu. Düzeltme **katalogda** (`label: OEE`); koda
+    büyük-harf heuristiği **yazılmadı**."""
+    c = next(x for x in schema["cubes"] if x["name"] == "oee")
+    assert (c.get("measure_synonyms_display") or {}).get("ort_oee") == "OEE", (
+        "kısaltmanın görünen adı katalogdan düştü — `label: OEE` silinmiş olabilir")

@@ -19,6 +19,7 @@ default_measure: ort_oee
 # ortalama (satır-AVG değil). OEE = A×P×Q (ISO 22400 6.6).
 measures:
   - name: ort_oee
+    label: OEE          # ⑪ görünen ad KATALOGDA: `label` yoksa ilk sinonim («oee») düşer ve cümle başında «Oee» olur
     lower_is_better: false   # B-5 · yüksek = İYİ
     expression: "ROUND(100.0 * (1.0*SUM(calisma_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)) * (SUM(performans_PV*planli_uretim_suresi_dk)/NULLIF(SUM(planli_uretim_suresi_dk),0)) * (1.0*SUM(uretim_kg - hatali_kg)/NULLIF(SUM(uretim_kg),0)), 2)"
     type: DOUBLE
