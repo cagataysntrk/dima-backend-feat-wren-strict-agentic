@@ -81,12 +81,12 @@ Bunlar **ürün kusuru** ya da **sahte güvence**; ötekiler bayat sayı/işaret
 | **B2** | VQR few-shot | ✅ | ✅ ama **KISMİ**: tek çağrı yeri; `_cube_select_system`'in **6 çağrısından 1'i** besleniyor. Canlı doğrulandı (*«ram 3 makinesinin verimliliği»* → `RAM-3`, `ort_oee 51,78`) | ✅ |
 | **B3** | iş sözlüğü | ⏸ park (§26) | ✅ gerekçe birebir doğru (`business_rules` yalnız Discovery istemine giriyor) | ⊘ |
 | **B4** | reflect+repair | ✅ | ✅ doğru **ve kapısı canlı** — mutasyon (tavan 2→5) **kırmızı** verdi | ⊘ |
-| **B5** | Snowball TR kök | ⊘ red | ◐ karar doğru, **kapsamı fazla geniş**: gerekçe route tüketicisine ölçülmüş; B1'in kapsama yükleminde ek-toleransı **güvenli ve gerekli** | 🔵 |
+| **B5** | Snowball TR kök | ⊘ red | ◐ karar doğru, **kapsamı fazla geniş**: gerekçe route tüketicisine ölçülmüş; B1'in kapsama yükleminde ek-toleransı **güvenli ve gerekli** | ✅ |
 | **B6** | Zemberek | ⊘ red | ✅ **FAZ B'nin en iyi belgelenmiş reddi** (`app/ek.py:8-14`, üç somut engel) | ⊘ |
-| **B7** | M-Schema | ⏸ park | ✅ doğru ama **ALARMSIZ** — şart yalnız düzyazı, açılışı haber verecek kapı yok | 🔵 |
-| **B8** | `resolve_used_table_names` | ⏸ park | ✅ doğru ama **ALARMSIZ** (aynı sınıf) | 🔵 |
-| **B9** | iki-sağlayıcılı hakem | ⏸ park | ✅ doğru + 🔴 **KİMLİK ÇAKIŞMASI**: `B9` **üç şeye** bağlı — §14.14 hakem · `app/diyalog.py:89` **ODAK VARLIK** · `tests/test_b9_sparc_iliskileri.py` **SParC** | 🔵 |
-| **B10** | SKILLS | ✅ *(off)* | ✅ **KISMİ**: 🔴 **İKİ kapı dosyası aynı üç kuralı** ölçüyor (`test_b10_skills.py:60,79,91` ↔ `test_d9_metodoloji_skilleri.py:80,98,110`) → `KAT-1`. 🔴 `skills_metni()` **KİRACI KÖRÜ**: `project_dir` parametresi **var, hiç geçilmiyor** → her kiracı aynı skill metnini alıyor (bayrak `off` olduğu için bugün zararsız) | 🔵 |
+| **B7** | M-Schema | ⏸ park | ✅ doğru ama **ALARMSIZ** — şart yalnız düzyazı, açılışı haber verecek kapı yok | ⊘ |
+| **B8** | `resolve_used_table_names` | ⏸ park | ✅ doğru ama **ALARMSIZ** (aynı sınıf) | ⊘ |
+| **B9** | iki-sağlayıcılı hakem | ⏸ park | ✅ doğru + 🔴 **KİMLİK ÇAKIŞMASI**: `B9` **üç şeye** bağlı — §14.14 hakem · `app/diyalog.py:89` **ODAK VARLIK** · `tests/test_b9_sparc_iliskileri.py` **SParC** | ✅ |
+| **B10** | SKILLS | ✅ *(off)* | ✅ **KISMİ**: 🔴 **İKİ kapı dosyası aynı üç kuralı** ölçüyor (`test_b10_skills.py:60,79,91` ↔ `test_d9_metodoloji_skilleri.py:80,98,110`) → `KAT-1`. 🔴 `skills_metni()` **KİRACI KÖRÜ**: `project_dir` parametresi **var, hiç geçilmiyor** → her kiracı aynı skill metnini alıyor (bayrak `off` olduğu için bugün zararsız) | ✅ |
 | **B11** | ephemeral sorgu | ⊘ | ✅ doğru — **120/121 = %99,2** boyut değer taşıyor; `FuzzyIndex` **1.306** girdi | ⊘ |
 | **B12** | granülerlik | ⊘ + tek sahip ✅ | ✅ tek sahip 4/4 doğrulandı. 🔴 **§14.16 C BAYAT** (*«iki yerde elle yazılı… KAT-1 ihlali»*) · 🔴 **satır 4497 BAYAT** (*«hızlı bir kazanç»*) · 🔴 **BEŞİNCİ kopya var**: `_GRAN_LABEL` (`cube_router.py:4579,4639`) — *«beşinci kopya doğamaz»* kapısı `{`'li sözlüğü **kaçırıyor** · 🔴 **canlı sessiz-yanlış AZALTILMAMIŞ**: *«bu yıl saatlik duruş dağılımı»* → **`neden`** kırılımı, `note` **BOŞ** | ✅ |
 | **B13** | değer profilleme | ✅ | ✅ doğru | ⊘ |

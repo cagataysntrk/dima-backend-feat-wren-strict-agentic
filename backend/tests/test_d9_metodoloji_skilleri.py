@@ -28,6 +28,12 @@ yazmakta**: `kohort.md`'nin tamamı bir *«yapamam ama şunu beyan et»* talimat
 
 `§38.4` dokunulmazı: kapalı fiil kümesi. Skill garsona *«hangi VAR OLAN yapıyla
 karşıla»* der; bir yetenek **icat etmez**. Aşağıdaki kapı bunu ölçer.
+
+⊙ **İŞ BÖLÜMÜ (`KAT-1`, ⟳ 08-12):** bu dosya üç metodoloji dosyasının **İÇERİĞİNİ**
+sahiplenir. **MEKANİZMA** (`tests/test_b10_skills.py`): yükleyici · `KURAL B` · indeks
+dokunulmazlığı · açılış şartı · kiracı bağlaması.
+⚠ *«Skill yeni fiil icat etmiyor»* iki dosyada da ölçülüyor — **iki ayrı yüklemle**,
+bilinçli bir ikinci göz. Biri bayatlarsa öteki konuşur.
 """
 
 from __future__ import annotations

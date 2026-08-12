@@ -162,6 +162,17 @@ ayrıştırıldı, **21'i** birden çok başlık taşıyor; gürültü elenince 
 | **D9** | Metodoloji (kohort/funnel/YoY) | — | Metabase `candidates` + `agent_error` |
 | **D11** | Olgu üretimi | — | Denormalizasyon |
 
+🔴 **VE `D` UZAYI TEK ÇAKIŞAN UZAY DEĞİL — `B9` ÜÇ ŞEYİ ADLANDIRIYOR** *(⟳ 08-12)*:
+
+| kimlik | `§14.14` kalemi | **kodda** | **kapıda** |
+|---|---|---|---|
+| **B9** | ⏸ iki-sağlayıcılı LLM hakem | `app/diyalog.py:89` **ODAK VARLIK** (✅ canlı) | `tests/test_b9_sparc_iliskileri.py` **SParC ilişkileri** |
+
+⚠ **Ve bunu `test_kimlik_uzayi_tek_anlamli` GÖREMEZ** — ve bu bir kusur değil bir
+**kapsam**: o kapı **raporu** ayrıştırır, `B9`'un öteki iki anlamı **kodda** yaşıyor.
+Bir belgeyi ayrıştıran kapı, belgenin dışındaki bir çakışmayı göremez. *Bir kapının
+kapsamı, kapının kendisi kadar bir vaattir* — bu yüzden sınırı burada yazılı.
+
 🔴 **Bu bir biçim kusuru değil, bir ÖLÇÜM kusurudur.** Çakışan bir kimlik iki farklı
 işaret taşıyabilir ve **ikisi de doğru** görünür:
 
@@ -4330,10 +4341,10 @@ teşhisi tam olarak budur.
 
 | # | kalem | kaynak | ne yapar | maliyet |
 |---|---|---|---|---|
-| ⊘ **B5** | **`Snowball` Türkçe kök bulucu** (BSD-3, 34,4M indirme/ay) | §13.6 | 🟢 **Gölge ölçümde dene** — sıfır bağımlılık, mikrosaniye. ⚠ Kendi belgesi: *«stems only **noun and nominal** verb suffixes»* → `arttı`yı **çözmez**, ama `satışlarımızın`/`cirodaki`/`bazında` tam kapsamda | günler ⟳ **KARAR:** **REDDEDİLDİ (`§40.4`)** — kendi belgesi *«stems only, not lemmas»*; Türkçe'de ekler anlamı TAŞIR (`§G/AJ0`: *«arttı»* bir FİİL). Kök bulucu o ayrımı siler. |
+| ⊘ **B5** | **`Snowball` Türkçe kök bulucu** (BSD-3, 34,4M indirme/ay) | §13.6 | 🟢 **Gölge ölçümde dene** — sıfır bağımlılık, mikrosaniye. ⚠ Kendi belgesi: *«stems only **noun and nominal** verb suffixes»* → `arttı`yı **çözmez**, ama `satışlarımızın`/`cirodaki`/`bazında` tam kapsamda | günler ⟳ **KARAR:** **REDDEDİLDİ (`§40.4`)** — kendi belgesi *«stems only, not lemmas»*; Türkçe'de ekler anlamı TAŞIR (`§G/AJ0`: *«arttı»* bir FİİL). Kök bulucu o ayrımı siler. | ⟳ **08-12: RED AYAKTA, ama ÖLÇÜM BİR KAPSAM AYRIMI GÖSTERDİ.** Bir denetim ajanı *«gerekçe route tüketicisine ölçülmüş, B1'in kapsama yükleminde ek-toleransı ayrı bir iş»* dedi ve ölçümü haklı: `§B1` daraltması **30 soruda 14'ünde (%47) fail-open** veriyor ve tetikleyici çoğu kez **ek**: `durum` sinonimi `durumunu` token'ını açıklamıyor, yani **tutulan küp kelimeyi zaten kapsadığı hâlde** budama iptal ediliyor. ⊘ **Ama `B5` reddi bundan etkilenmiyor:** Snowball bir **kök bulucu**dur ve `route`'un **anlam kararına** girerdi; buradaki ihtiyaç bir anlam kararı değil, *«bu kelime zaten kapsandı mı»* sorusudur. 🔴 **Ve o iyileştirme `§38.4` DOKUNULMAZI'na değiyor** (Türkçe morfoloji) → **ayrı bir kalem** olarak, kendi ölçümüyle açılmalı. ⏸ Şartı **gözlenebilir**: önce fail-open'ın **maliyeti** ölçülsün (budanmayan katalogda garson doğruluğu düşüyor mu — bugün ölçülemiyor, `§26` park), sonra `_AD_YAPAN_EKLER`/`turetme._kokler` gibi **var olan kapalı sınıflarla** (yeni sözlük YAZILMADAN, `ADR-0008`) denensin. *Bir güvenli varsayılanın (fail-open) maliyeti ölçülmeden, onu daraltmak bir iyileştirme değil bir kumardır.*
 | ⊘ **B6** | **Zemberek sözlüğü** (Apache-2.0) — **yalnız sözlük** | §13.6 | ~130k köklü sözlük; `_catalog_vocabulary`'yi besler. ⚠ **Kodu alma**: README *«slow maintenance mode»*, son sürüm **2019**, Maven Central'da **yok** | günler ⟳ **KARAR:** **REDDEDİLDİ (`§40.4`)** — README *«slow maintenance»*; ve sözlük bugün kataloğun KENDİ kelimelerinden besleniyor. Dış sözlük, katalogda olmayan bir kelimeyi *tanıyormuş* gibi gösterir. |
-| ⏸ **B7** | **M-Schema** (XiYan-SQL) | §13.7 | **LLM-dostu şema temsili** — B1'in (şema daraltma) **çıktı biçimi** olarak değerlendirilmeli. Ham JSON yerine model için tasarlanmış gösterim | günler ⟳ **KARAR:** **PARK (`§40.5`)** — `B1`'in çıktı biçimi; `B1` ✅ ama biçim değişimi `KURAL B` ister. Şart: `§26`. |
-| ⏸ **B8** | **`ManifestExtractor.resolve_used_table_names`** | §11.1 | *«verilen SQL'i ayrıştır, kullanılan tablo adlarını döndür»* → **B1'in doğrulaması**: budanmış manifest, üretilen SQL'in ihtiyacını **gerçekten** karşıladı mı | saatler ⟳ **KARAR:** **PARK (`§40.5`)** — `B1`'in doğrulaması. Şart: `B1`'in bir kırmızısı ölçülene kadar. |
+| ⏸ **B7** | **M-Schema** (XiYan-SQL) | §13.7 | **LLM-dostu şema temsili** — B1'in (şema daraltma) **çıktı biçimi** olarak değerlendirilmeli. Ham JSON yerine model için tasarlanmış gösterim | günler ⟳ **KARAR:** **PARK (`§40.5`)** — `B1`'in çıktı biçimi; `B1` ✅ ama biçim değişimi `KURAL B` ister. Şart: `§26`. | ⟳ **08-12: «ALARMSIZ» İDDİASI ÇÜRÜDÜ.** Bir denetim ajanı bu parkın şartını *«yalnız düzyazı, açılışı haber verecek kapı yok»* diye bildirdi. Ölçüldü: `M-Schema` **`§40.1` envanterinin *«kodda İZ YOK»* satırında** ve `tests/test_envanter_iddiasi_taze.py` onu `ast` ile **12.026 kod adına karşı** ölçüyor — sembol kodda belirdiği gün kapı **kırmızı** verir. ⊙ Alarm vardı, ajan onu **başka bir dosyada** aradı. *Bir kapının yokluğunu iddia etmek, onu aradığın YERİN kapsamıyla sınırlıdır.*
+| ⏸ **B8** | **`ManifestExtractor.resolve_used_table_names`** | §11.1 | *«verilen SQL'i ayrıştır, kullanılan tablo adlarını döndür»* → **B1'in doğrulaması**: budanmış manifest, üretilen SQL'in ihtiyacını **gerçekten** karşıladı mı | saatler ⟳ **KARAR:** **PARK (`§40.5`)** — `B1`'in doğrulaması. Şart: `B1`'in bir kırmızısı ölçülene kadar. | ⟳ **08-12: «ALARMSIZ» İDDİASI ÇÜRÜDÜ.** Bir denetim ajanı bu parkın şartını *«yalnız düzyazı, açılışı haber verecek kapı yok»* diye bildirdi. Ölçüldü: `resolve_used_table_names` **`§40.1` envanterinin *«kodda İZ YOK»* satırında** ve `tests/test_envanter_iddiasi_taze.py` onu `ast` ile **12.026 kod adına karşı** ölçüyor — sembol kodda belirdiği gün kapı **kırmızı** verir. ⊙ Alarm vardı, ajan onu **başka bir dosyada** aradı. *Bir kapının yokluğunu iddia etmek, onu aradığın YERİN kapsamıyla sınırlıdır.*
 
 ### FAZ 3'e eklenenler — grafik ve biçim
 

@@ -377,7 +377,13 @@ def metin_ve_indeks(schema: dict, principal, settings=None, *,
     # ⚠ `indeks` **DOKUNULMAZ**: o bir beyaz listedir ve skill metni bir ölçü/boyut
     # adı eklemez — metodoloji anlatır. İndekse dokunmak, plan doğrulamasının
     # sınırını bir anlatım tercihine bağlamak olurdu (`§B1`'in aynı dersi).
-    if _skl and (_sk := skills_metni()):
+    # 🔴 `project_dir` **GEÇİLİYOR** (⟳ 08-12, denetim bulgusu). Öncesinde
+    # `skills_metni()` argümansız çağrılıyordu ve içeride `get_settings()`
+    # **GLOBAL** proje dizinine düşüyordu — yani her kiracı **aynı** skill metnini
+    # alırdı. Parametre yazılmıştı ama **hiç geçilmemişti**: bu deponun kendi
+    # ölçtüğü *«yazılmış ama bağlanmamış»* sınıfı, altıncı kez.
+    # ⚠ Bugün zararsızdı (`skills: off`); açıldığı gün **sessiz-yanlış** olurdu.
+    if _skl and (_sk := skills_metni((settings or get_settings()).resolved_project_dir())):
         metin = f"{metin}\n\n## METODOLOJİ (nasıl karşılanır)\n\n{_sk}"
     return metin, indeks
 

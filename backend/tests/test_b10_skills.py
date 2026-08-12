@@ -27,6 +27,14 @@ eklemesini varsayılan açmak, `motor_rls` ve `ossie_ithal` için **reddettiğim
 aynısı olurdu.
 
 > *Ölçülemeyen bir kazancı varsayılan açmak, ölçümü bir törene çevirir.*
+
+⊙ **İŞ BÖLÜMÜ (`KAT-1`, ⟳ 08-12):** bu dosya **MEKANİZMAYI** sahiplenir — yükleyici,
+`KURAL B`, indeks dokunulmazlığı, açılış şartı, kiracı bağlaması.
+`tests/test_d9_metodoloji_skilleri.py` **İÇERİĞİ** sahiplenir — üç metodoloji dosyasının
+ne anlattığı (huni dönüşüm sınırı · kohort *«yapılamaz»* beyanı · gerçek küp adı).
+⚠ *«Skill yeni fiil icat etmiyor»* kuralı **ikisinde de** var ve bu **bilinçli**: iki
+farklı yüklem (biri kayıttan tarar, öteki ters-tırnaklı BÜYÜK sözcükleri arar), yani
+bir yedeklilik değil **iki ayrı göz**. Sessiz bir kopya olmasın diye burada yazılı.
 """
 
 from __future__ import annotations
@@ -141,3 +149,32 @@ def test_ACILIS_SARTI_YAZILI():
     a = (FLAG_REGISTRY.get("skills") or {}).get("description", "")
     assert "§26" in a, "açılış şartı (garson doğruluk ölçümü) bayrak kaydında yazılı değil"
     assert "ölçülemez" in a or "ölçüm" in a
+
+
+def test_SKILLS_KIRACIYA_BAGLI_CAGRILIYOR():
+    """🔴 `skills_metni()` **argümansız** çağrılamaz — yoksa her kiracı aynı metni alır.
+
+    Ölçüldü (08-12, denetim bulgusu): `katalog_metni.py:380` `skills_metni()` diyordu ve
+    fonksiyon içeride `get_settings().resolved_project_dir()` ile **GLOBAL** dizine
+    düşüyordu. `project_dir` parametresi **yazılmıştı ama hiç geçilmemişti** — bu deponun
+    kendi ölçtüğü *«yazılmış ama bağlanmamış»* sınıfı.
+
+    ⚠ Bayrak (`skills`) kapalı olduğu için bugün **zararsızdı**; açıldığı gün bir
+    kiracı, başka bir kiracının metodoloji metnini görürdü — ve hiçbir beyan konuşmazdı.
+
+    Yüklem `ast` üstünde: çağrının **argüman taşıdığını** ölçer, metni değil.
+    """
+    import ast
+    import pathlib as _p
+
+    kaynak = (_p.Path(__file__).parent.parent / "app"
+              / "katalog_metni.py").read_text(encoding="utf-8")
+    cagrilar = [n for n in ast.walk(ast.parse(kaynak))
+                if isinstance(n, ast.Call)
+                and getattr(n.func, "id", None) == "skills_metni"]
+    assert cagrilar, "⊘ ölçüm tabanı çöktü: `skills_metni` hiç çağrılmıyor"
+    bos = [n.lineno for n in cagrilar if not n.args and not n.keywords]
+    assert not bos, (
+        f"🔴 `skills_metni()` ARGÜMANSIZ çağrılıyor (satır {bos}) → global proje "
+        "dizinine düşer ve **her kiracı aynı metni alır**. Kiracının `project_dir`'ini "
+        "geçin. *Yazılmış ama bağlanmamış bir parametre, olmayan bir parametredir.*")
