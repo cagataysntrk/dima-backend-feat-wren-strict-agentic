@@ -353,3 +353,21 @@ düzenlemesiyle **aynı koşumda** yapılabilir.
 | kalem | kart | önce | sonra | durum |
 |---|---|---|---|---|
 | **D11** | denormalizasyon | ⚠ ölçülmedi | ✅ **KAPANDI (08-12)** — **23 küp**, dağılım **{1:16, 2:6, 3:1}**; 3+ tablo **yalnız `kalite`**. Köken **9**, `hops` **9/9→1**, `certified` **9/9→`olculdu:saglikli`**. Kapı `test_d11_denormalizasyon_siniri.py` (5), **üç eşik de mutasyonlu**. ⚠ Ajanın sayısı **+1 kaymıştı** (`base_object` taban, `relationship` kenar) — *«7/23»* aslında **2+ tablo**. | ✅ |
+
+---
+
+## ⑱ `§E2`'nin ⏭ KALAN'ı — **BAĞLANAMAZ, AMA BEYAN EDİLEBİLİR** *(08-12)*
+
+Raporun kendi notu *«`kok_neden`'in «en büyük segment» satırı … aynı ölçü oraya da
+bağlanmalı»* diyordu. **Ölçüldü: bağlanamaz.** Jensen-Shannon **iki dağılım** ister;
+`toplam_turu` (`prev_cq` + `kos`) **tek dönem** üstünde çalışır ve bir **bileşim**
+sorusunu cevaplar. Taban uydurmak `§E2`'nin forecast için, `§E3`'ün BH için **reddettiği**
+şeydir.
+
+⚠ Kusur yine de gerçekti: cümle *«neden»* sorusuna cevap olarak okunuyor ve *«en büyüğü
+suçlu»* diye anlaşılıyordu — Adtributor'ın kurucu örneğinin uyardığı okumanın ta kendisi.
+→ Ölçü bağlanmadı, **ölçülemediği söylendi**: *«bu bir BÜYÜKLÜK ifadesidir, bir SEBEP
+değil; kıyas dönemi yok, payın değişip değişmediği ölçülmedi.»* Kapı
+`test_kok_neden_pay_cebri.py` (7), mutasyonlu.
+
+> 🆆 *Bir ölçüyü hesaplayamıyorsan, hesaplayamadığını söylemek de bir ölçümdür.*
