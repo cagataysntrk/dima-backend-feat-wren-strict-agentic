@@ -5298,6 +5298,15 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
                 on_step(list(trace))
             try:
                 wren_sql = llm.repair(body.question, prompt_schema, wren_sql, str(e))
+                # 🔴 **İKİNCİ ONARIM DA DENETLENİR** (⑧ düzeltmesi, 2026-08-12).
+                # ⚠ Önceki sürüm *«burası tek boğaz»* diyordu ve **yanılıyordu**: bu
+                # ikinci `llm.repair` ÇALIŞTIRMA hatasından doğuyor ve kapsam denetimi
+                # yukarıda, dry_plan dalında kalmıştı. Bir denetim ajanı bunu bağımsız
+                # olarak buldu. *Bir «tek boğaz» iddiası, boğazların SAYILMASIYLA
+                # doğrulanır — biriyle değil.*
+                from app import wren_service as _ws2
+                if (_kd2 := _ws2.kapsam_disi_reddi(wren_sql)) is not None:
+                    return _honest_refusal(note=_kd2[0], trace=trace + _kd2[1])
                 planned = motor.dry_plan(wren_sql)
                 result = motor.query(wren_sql, limit=limit)
             except Exception as exc2:

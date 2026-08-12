@@ -134,16 +134,31 @@ cevaptır**; semantik katmanda başarısızlık **bir hata mesajıdır**.»*
 > **yeniden hesaplar**; ayrışırlarsa kırmızı olur. *Bir karneyi elle saymak, bir gün
 > yanlış saymaktır.*
 
-⊙ **Kalan 🔴 yedi** ve üçü ölçülmüş kararlarla kapalı sayılır:
+⊙ **Kalan 🔴 altı** ve dördü ölçülmüş kararlarla kapalı sayılır:
 `26 garson doğruluk ölçümü` · `27 kurulum süresi ölçümü` → **ölçüm işi**, kullanıcının
 bağlayıcı kuralıyla PARK (*«ölçüm/altyapı tesisatı ürün değildir»*); `30 ajan yüzeyinden
-dağıtım` → `mcp_yuzeyi` açılışına, o da `§C1`'e bağlı. `25 bileşik segment araması`
-layer-1'de kilitli. **Gerçekten açık üç ürün kalemi:** `17 iş sözlüğü` ·
-`19 Skills` · `20 ephemeral/karalama sorgusu`.
+dağıtım` → `mcp_yuzeyi` açılışına, o da `§C1`'e bağlı; `25 bileşik segment araması`
+layer-1'de kilitli.
 
-⊙ **Ve dağılımın anlamı:** dokuz yeşilin tamamı **mimari** kararlar — yani *«doğru şeyi
-kurmuşuz»*. On altı kırmızının çoğu **besleme, ölçüm ve ambalaj** — yani *«kurduğumuzu
-çalıştırmamışız»*. **Beş sarının dördü zaten yazılmış ama KAPALI.**
+🔴 **Gerçekten açık TEK ürün kalemi: `17 iş sözlüğü`** — ve onun da eksiği veri/kod
+değil **bir BEYAN** (12 bütçe kaleminin operasyonel küp karşılığı; şirkete göre değişir,
+iş tarafı bildirir — uydurmak `§38.4` ihlali olurdu).
+⊙ `19 Skills` **mekanizması kuruldu** (`demo/skills/*.md` + `katalog_metni.skills_metni`
++ `skills` bayrağı); bayrak **kapalı** ve açılış şartı yazılı: `§26` (garsonun doğruluk
+ölçümü). `20 ephemeral` **🟡'ye çevrildi** — Hex'in işini kurulum-anı profillemeyle
+yapıyoruz (**120/121 boyut** değer taşıyor, canlı doğrulandı).
+
+⊙ **Ve dağılımın anlamı:** on sekiz yeşilin tamamı **mimari** kararlar — yani *«doğru
+şeyi kurmuşuz»*. Altı kırmızının çoğu **besleme, ölçüm ve ambalaj** — yani *«kurduğumuzu
+çalıştırmamışız»*. **Altı sarının çoğu zaten yazılmış ama KAPALI.**
+
+> ⟳ **BU PARAGRAFLAR DA BAYATTI ve düzeltildi (2026-08-12).** Manşet iki tur önce
+> düzeltilmişti ama hemen altındaki üç cümle *«yedi»* · *«üç ürün kalemi»* · *«dokuz
+> yeşil / on altı kırmızı / beş sarı»* demeye devam ediyordu — yani kapı **tek cümleyi**
+> ölçüyordu ve yanındaki paragraf yalan söylüyordu.
+> *Bir kapıyı tek bir cümleye bağlamak, komşusuna yalan söyleme izni vermektir.*
+> ✅ Kapı genişletildi: sayı **sözcükleri** de (kapalı bir gramer sınıfı) satırlarla
+> karşılaştırılıyor — `test_karne_kendini_sayar.py`.
 
 *Bir sistemin karnesi, neyi yapamadığını değil, yapabildiği hâlde yapmadığını gösterdiğinde
 işe yarar.*

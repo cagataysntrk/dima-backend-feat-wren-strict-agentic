@@ -89,7 +89,7 @@ TABAN_CUBE_ROUTER_KOD = 1663  # 1739 ölçüldü − 75 muafiyet = taban; tavan 
 #: `(sha, Δ, gerekçe)` — her satır **bir maddeye** aittir ve nedeni yazılıdır.
 #: 🔴 Toplamları aşağıda **kapıyla** doğrulanır: kimse listeye bakmadan tavanı büyütemez.
 MUAFIYET_ASK_KOD = [
-    ("kapsam-disi-satir-uretmez", 3,
+    ("kapsam-disi-satir-uretmez", 6,
      "🔴🔴 **`§⑧` — KAPSAM DIŞI BİR SORU BİR SATIRA DÖNÜŞEMEZ.** "
      "⊙ Canlı ölçüm (2026-08-12, **dört tur, dördü de**): *«hava durumu nasıl»* → "
      "`source=llm:openrouter` · `cube=adhoc` · **1 satır** — ve o satır küpten değil "
@@ -103,7 +103,15 @@ MUAFIYET_ASK_KOD = [
      "yüklem `wren_service.veriye_dokunmuyor` (yapısal, gramer — kelime listesi YOK, "
      "`ADR-0008`), reddi kuran `wren_service.kapsam_disi_reddi`, metin `soz.py` "
      "(`ret.kapsam_disi` — red cümlelerinin TEK SAHİBİ). "
-     "⚠ **Bu üç satır TAŞINAMAZ:** karar noktası tam olarak SQL'in üretildiği ile "
+     "⟳ **Δ 3 → 6 (2026-08-12): İKİNCİ BOĞAZ.** Bir denetim ajanı ölçtü: `ask.py`'de "
+     "**iki** `llm.repair` var — biri `dry_plan` hatasından (5248), öteki **ÇALIŞTIRMA** "
+     "hatasından (5300) doğuyor. Kapsam denetimi yalnız birincisindeydi ve ikinci "
+     "onarımın ürettiği SQL `motor.query`ye **denetimsiz** gidiyordu. Commit mesajım "
+     "*«burası tek boğaz»* diyordu ve **yanılıyordu**. ⊙ Kapı da aynı varsayımı "
+     "paylaşıyordu (`index()` ilk oluşumu alıyordu) — ikisi birlikte düzeltildi: kapı "
+     "artık onarımları **SAYIYOR** ve her birinden sonra denetim arıyor. "
+     "*Bir «tek boğaz» iddiası, boğazların SAYILMASIYLA doğrulanır — biriyle değil.* "
+     "⚠ **Bu satırlar TAŞINAMAZ:** karar noktası tam olarak SQL'in üretildiği ile "
      "`dry_plan`'a verildiği arasıdır; daha yukarısı SQL'i bilmez, daha aşağısı zaten "
      "uydurma satırı çalıştırmıştır. "
      "🔴 Ve bu, raporun kendi farklılaşma iddiasının ölçülmemiş yarısıydı (`§1232`: "

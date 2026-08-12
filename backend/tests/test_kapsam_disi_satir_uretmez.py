@@ -136,8 +136,24 @@ def test_KURAL_ONARIMDAN_SONRA_kosuyor():
 
     kaynak = (pathlib.Path(__file__).parent.parent
               / "app" / "routers" / "ask.py").read_text(encoding="utf-8")
-    onarim = kaynak.index("llm.repair(body.question")
-    kural = kaynak.index("kapsam_disi_reddi")
-    assert kural > onarim, (
-        "🔴 kapsam kuralı `llm.repair`'den ÖNCE koşuyor — onarımın ürettiği SQL "
-        "denetimsiz kalır ve kusur birebir geri gelir (canlı curl ile ölçüldü).")
+    # 🔴🔴 **HER onarım denetlenmeli — SAYARAK ölç, ilk oluşuma bakma.**
+    #
+    # ⚠ İlk sürümüm `kaynak.index(...)` ile **ilk** `llm.repair`i alıyordu ve dosyadaki
+    # **İKİNCİ** onarımı (çalıştırma hatası dalı, `ask.py:~5300`) yapısal olarak
+    # göremiyordu. Bir denetim ajanı bunu bağımsız olarak buldu: o dalda kapsam
+    # denetimi **yoktu** ve uydurma SQL `motor.query`ye kadar gidiyordu.
+    #
+    # ⊙ Yani hem kod hem kapı aynı varsayımı paylaşıyordu: *«tek bir onarım var»*.
+    # *Bir kapı, ölçtüğü şeyin KAÇ TANE olduğunu saymıyorsa, ikincisini hiç görmez.*
+    onarimlar = [i for i in range(len(kaynak))
+                 if kaynak.startswith("llm.repair(body.question", i)]
+    kurallar = [i for i in range(len(kaynak))
+                if kaynak.startswith("kapsam_disi_reddi", i)]
+    assert onarimlar, "⊘ ölçüm tabanı çöktü: `llm.repair` çağrısı bulunamadı"
+    # Her onarımdan SONRA (ve bir sonraki onarımdan önce) bir kapsam denetimi olmalı.
+    for i, o in enumerate(onarimlar):
+        sinir = onarimlar[i + 1] if i + 1 < len(onarimlar) else len(kaynak)
+        assert any(o < k < sinir for k in kurallar), (
+            f"🔴 {i + 1}. `llm.repair` (offset {o}) sonrası kapsam denetimi YOK — "
+            "onarımın ürettiği SQL denetimsiz kalır ve kusur birebir geri gelir "
+            "(canlı curl ile ölçüldü, ve ikinci onarım bir denetim ajanıyla bulundu).")
