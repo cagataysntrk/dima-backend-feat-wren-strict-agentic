@@ -67,6 +67,24 @@ _CUBE = {
     "dimensions": ["operator", "tarih"],
     "time_dimensions": ["tarih"],
     "units": {"fire_kg": "kg"},
+    # 🔴 **ÖLÇÜ İFADELERİ — fikstür GERÇEK ŞEKLE getirildi (2026-08-12).**
+    #
+    # Bu dört test **tabanda kırmızıydı** ve bir demet boyunca değil, fark edilmeden
+    # duruyordu (`HEAD` worktree'sinde ayrıca ölçüldü). Sebep bir ürün kusuru değil,
+    # fikstürün gerçek şemadan **ayrışmasıydı**: `WrenService.schema()` (`:834`)
+    # `measure_expressions`'ı çalışma anında ölçülerin `expression` alanından
+    # **türetiyor**; elle yazılmış bu sözlükte o anahtar hiç yoktu. `contribution`'ın
+    # toplanabilirlik kapısı da haklı olarak *«beyan YOK»* diyip duruyordu.
+    #
+    # ⚠ Bedeli ölçüldü ve ucuz değildi: kırmızı duran dördün **ikisi PII maskeleme**
+    # kapısıydı (`test_NEDEN_etiketleri_PII_MASKELI` · `test_TCKN_de_maskelenir`).
+    # Yani maskeleme bu süre boyunca **hiç ölçülmedi** — 2026-08-06'da faturası çıkan
+    # *"görünmeyen kapı"* sınıfının birebir tekrarı.
+    #
+    # ⊙ `§F6`'nın dersi: *kapı GERÇEK artefaktı okur, elle yazılmış bir fikstürü
+    # değil.* Burada artefaktı okuyamıyoruz (sahte servis) — o hâlde en azından
+    # **aynı türetmeyi** yapmalı ki fikstür gerçekten uzaklaşmasın.
+    "measure_expressions": {"fire_kg": "SUM(fire_kg)"},
 }
 
 
