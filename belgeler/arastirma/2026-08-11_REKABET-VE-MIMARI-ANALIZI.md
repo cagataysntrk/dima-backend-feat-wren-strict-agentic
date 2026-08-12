@@ -119,7 +119,27 @@ cevaptır**; semantik katmanda başarısızlık **bir hata mesajıdır**.»*
 | 29 | **İlan edilmiş kapsam** | yaşayanların **hepsinde** var, ölenlerin **hiçbirinde** | 🟢 **VAR** *(§F7 `ddc6fa3`)* — `yetenek.py` **üç kutu** (`anlamadim`·`yapamiyorum`·`yapmiyorum`) ve canlı: *«forecast v1'de yok — bilinçli bir karar… **Yapabildiğim:** geçmiş eğilimi gösterebilirim»* + chip |
 | 30 | **Ajan yüzeyinden dağıtım** | Rill: projelerin **%50+'ı ajan kuruyor** | 🔴 **YOK** |
 
-**Sayım:** 🟢 **9 var** · 🟡 **5 yarım** · 🔴 **16 yok**
+**Sayım:** 🟢 **18 var** · 🟡 **5 yarım** · 🔴 **7 yok**  *(30 satır — ölçüldü 2026-08-12)*
+
+> ⟳ **BU SATIR BAYATTI ve düzeltildi.** Eski hâli: *«🟢 9 var · 🟡 5 yarım · 🔴 16 yok»* —
+> yani **30 satırın 16'sı**. Oysa satırların kendisi sayıldığında **18 yeşil** çıkıyor:
+> aradaki fark bu oturumun kapattığı kalemlerdir (§B1·§B2·§B4·§C2·§D1·§D3·§E2·§F7·§F8…)
+> ve karne **satır satır güncellenirken manşeti güncellenmemişti**.
+>
+> 🔴 Bu, `§F8`'in (*«yayınlanmış ve çürümüş bir sayı, hiç yayınlanmamış bir sayıdan
+> kötüdür — çünkü ona güvenilir»*) **kendi rapordaki hâliydi**: bu belgeyi açan biri
+> *«9 var, 16 yok»* okuyup ürünü yarısı yapılmış sanırdı.
+>
+> ✅ Artık **kapılı**: `backend/tests/test_karne_kendini_sayar.py` manşeti satırlardan
+> **yeniden hesaplar**; ayrışırlarsa kırmızı olur. *Bir karneyi elle saymak, bir gün
+> yanlış saymaktır.*
+
+⊙ **Kalan 🔴 yedi** ve üçü ölçülmüş kararlarla kapalı sayılır:
+`26 garson doğruluk ölçümü` · `27 kurulum süresi ölçümü` → **ölçüm işi**, kullanıcının
+bağlayıcı kuralıyla PARK (*«ölçüm/altyapı tesisatı ürün değildir»*); `30 ajan yüzeyinden
+dağıtım` → `mcp_yuzeyi` açılışına, o da `§C1`'e bağlı. `25 bileşik segment araması`
+layer-1'de kilitli. **Gerçekten açık üç ürün kalemi:** `17 iş sözlüğü` ·
+`19 Skills` · `20 ephemeral/karalama sorgusu`.
 
 ⊙ **Ve dağılımın anlamı:** dokuz yeşilin tamamı **mimari** kararlar — yani *«doğru şeyi
 kurmuşuz»*. On altı kırmızının çoğu **besleme, ölçüm ve ambalaj** — yani *«kurduğumuzu
