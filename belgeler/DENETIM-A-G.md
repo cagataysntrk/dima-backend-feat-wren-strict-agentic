@@ -240,7 +240,7 @@ yolunu sınıyor. Sonuç:
 
 | # | iş | risk | not |
 |---|---|---|---|
-| 1 | **Çekilme sebebini SAY** — `cekilme_sebebi` adlandırıldı (`B.4`) ama sayaç yok | 🟢 | `lab/nl_corpus.py`'nin `cats` kovasına ekle; **payda kutsal** (🅜) |
+| 1 ✅ | **Çekilme sebebini SAY** — *yapıldı: `sebep::<x>` kovası, **yalnız kesilen turda**; payda `ast` kapısıyla korunuyor, mutasyonlu* | 🟢 | `lab/nl_corpus.py`'nin `cats` kovasına ekle; **payda kutsal** (🅜) |
 | 2 | **Garson korpusu (`A1`)** — `route()` dışı bir ölçüm tabanı | 🟡 | deponun **kendi** ilan ettiği ön koşul; `sema_daraltma`/`few_shot` yayılımının şartı |
 
 ⚠ Sektör karşılaştırması (Snowflake Cortex Analyst · Databricks Genie · Wren AI) ancak
