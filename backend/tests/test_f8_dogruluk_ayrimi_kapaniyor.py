@@ -48,6 +48,13 @@ pytestmark = pytest.mark.skipif(
     reason="`belgeler/` bağlanmamış — konteynere `-v \"$PWD/belgeler:/belgeler:ro\"` ekleyin")
 
 
+#: Teşhis katmanının öneki — `nl_corpus.TESHIS_ONEKI` ile **aynı** dize; burada
+#: yeniden yazılmasının sebebi kapının `lab/`'a bağımlı olmaması (`tests/` → `lab/`
+#: içe aktarımı kapıyı bir koşucuya bağlardı). ⚠ İkisi ayrışırsa
+#: `test_TESHIS_ONEKI_TEK_SAHIP` kırmızı olur.
+TESHIS_ONEKI = "sebep::"
+
+
 def _olcum() -> tuple[collections.Counter, int]:
     """→ `({kategori: adet}, payda)` — **artefakttan**, belgeden değil."""
     if not _ARTEFAKT.is_file():
@@ -56,6 +63,21 @@ def _olcum() -> tuple[collections.Counter, int]:
     say: collections.Counter = collections.Counter()
     for sirket in veri:
         for anahtar, adet in (sirket.get("cats") or {}).items():
+            # 🔴🔴 `§PAYDA` — **TEŞHİS KOVALARI BİR DAVRANIŞ SINIFI DEĞİLDİR.**
+            # `§B` ile `cats`'e ikinci bir kova ailesi girdi (`sebep::…` — *«route neden
+            # çekildi»*). Bunlar tur **sınıfı** değil, tur **üstüne** bir katman: bir tur
+            # hem `tekil::CLARIFY:konu` hem `sebep::cok_sahipli_terim` olabilir.
+            #
+            # Toplama katılırlarsa ayrım paydaya **kapanmaz** — ölçüldü: kategoriler
+            # 17.798, payda 14.957, fark **2.841** = `bilinmeyen_token 1.279 +
+            # cok_sahipli_terim 862 + sebep_yok 364 + olcu_bulunamadi 336`. **Birebir.**
+            #
+            # ⊙ Bu, `nl_corpus.tur_paydasi`'nın (erişim oranı) **kardeş kararıdır** ve
+            # aynı gerekçeyle veriliyor 🆖; ayrı bir ölçüt **değil**, aynı ölçütün
+            # ikinci tüketicisi. ⚠ Kovalar **kaybolmuyor** — `DOGRULUK.md`'de kendi
+            # tablosunda yayımlanıyor 🅖.
+            if str(anahtar).startswith(TESHIS_ONEKI):
+                continue
             # `tekil::OK` / `süreç::OK` → aynı davranış, iki koşum yolu
             say[anahtar.split("::")[-1]] += adet
     payda = sum(s.get("kesme_payda", 0) for s in veri)
@@ -146,3 +168,21 @@ def test_PAYDA_YAYINDA_ve_KESME_ORANI_TUTUYOR():
         f"🔴 cevapsız-kesme oranı BAYAT: artefakt **{oran}** diyor ({kesme}/{payda}), "
         f"belgede yok. Bir oranı paydası değişince güncellememek, payda oyununun "
         "kendisidir.")
+
+
+def test_TESHIS_ONEKI_TEK_SAHIP():
+    """⚠ `KAT-1` — önek iki yerde yazılı (kapı `lab/`'a bağımlı olmasın diye). İkisi
+    **ayrışırsa** bu kapı sessizce yanlış sayar: teşhis kovaları ayrıma **geri girer**
+    ve `AYRIM_PAYDAYA_KAPANIYOR` bir gün açıklanamaz bir kırmızı verir.
+
+    *Bir dizeyi iki yere yazmak serbesttir; ikisinin aynı kaldığını **söylememek**
+    değildir.*
+    """
+    import sys
+
+    sys.path.insert(0, str(_BACKEND))
+    from lab.nl_corpus import TESHIS_ONEKI as _kaynak
+
+    assert TESHIS_ONEKI == _kaynak, (
+        f"🔴 TEŞHİS ÖNEKİ AYRIŞTI: kapı {TESHIS_ONEKI!r} ↔ üreteç {_kaynak!r} — "
+        "kapı artık teşhis kovalarını ayrımdan çıkaramıyor.")

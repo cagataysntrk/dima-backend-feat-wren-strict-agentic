@@ -578,7 +578,19 @@ def test_TERS_TUZAK_FAZ_6_2_YAZMA_ARACLARI_AYAKTA():
     # ⚠ Eklenmesi `EYLEM_KAYIT`'a yeni bir eylem yazmayı gerektirir ve o, `/ask/eylem`'in
     # **kabul kümesini** değiştirir — ayrı bir karar, ayrı bir ölçüm. Ölçüsü de yazılı:
     # `measure:approve` bir ölçüyü **kataloğa** alır, kapsamı bir panodan geniştir.
-    assert {a.ad for a in YAZMA_KAYIT} == {"dashboards.create", "schedules.create"}
+    # ⟳ **`preferences.set` KAYDA GİRDİ (2026-08-12) — ve `measures.approve`'un TERSİ
+    # sebeple.** O çıkarılmıştı çünkü `EYLEM_KAYIT`'ta karşılığı **yoktu**: ajan önerse
+    # kullanıcı **onaylayamazdı** (*«onay yolu olmayan bir öneri bir çıkmazdır»*).
+    # `preferences.set`'in onay yolu **var** — `ARAC_EYLEM["preferences.set"] =
+    # "tercih.kaydet"` ve aşağıdaki `_eylem.beyan(...)` döngüsü onu **fail-closed**
+    # doğruluyor: karşılığı olmasa bu satır `KeyError` ile düşerdi.
+    #
+    # ⊙ Yani listeye ad eklemek kapıyı **gevşetmiyor**; kapının asıl yüklemi (her yazma
+    # aracının bir onay yolu olması) **aynen** koşuyor ve yeni adı da **o** sınıyor.
+    # ⚠ Geri alınabilir olduğu için `geri_alinamaz_olanlar()` **değişmedi** — aşağıdaki
+    # yüklem hâlâ yalnız `schedules.create` bekliyor ve bu **bilinçli**.
+    assert {a.ad for a in YAZMA_KAYIT} == {"dashboards.create", "schedules.create",
+                                           "preferences.set"}
     assert all(a.yan_etki == "yazar" for a in YAZMA_KAYIT)
     # 🔴 Ve kaydın **tamamının** onay yolu olmalı — iki kayıt birbirine bağlandı
     # (`ARAC_EYLEM`, `§C1`'in ikinci vakası). Bu satır, listenin bir gün yeniden
