@@ -317,8 +317,25 @@ def _rank_facts(rows: list[dict], dim: str, measure: str, unit: str | None,
     # *Bir üstünlük iddiası, kıyaslayacak ikinci bir şey yoksa bir iddia değil bir
     # süstür — ve süs, hesaplanmışla doldurulmuşu ayırt edilemez kılar.*
     if len(ranked) == 1:
+        # ⟳🔴 **KENDİ DÜZELTMEMİN GERİLEMESİ — CANLI TURDA YAKALANDI (soru 03).**
+        #
+        # İlk yazımda metin `f"{_ad(measure)}: …"` idi ve **varlığın adını düşürüyordu**:
+        #
+        #     «en çok fire veren makine hangisi» → «Fire 124.758,70 kg»
+        #                                           ↑ HANGİ makine? Soru tam onu sordu.
+        #
+        # ⊙ Tek gruplu iki farklı durum var ve ilk yazım ikisini bir sandı:
+        #   · **süzülmüş** tek değer (`ariza_tipi eq "pompa arızası"`) → üstünlük bir SÜS
+        #   · **top-1** (`order`+`limit`) → tek satır **cevabın kendisidir**, adı şart
+        #
+        # Doğru ayrım metnin **iddiasındadır**, satır sayısında değil: uydurma olan
+        # *«en yüksek»* sözüdür, **ad değil**. Ad her iki durumda da söylenir; kıyas
+        # iddiası hiçbirinde.
+        #
+        # *Bir cümleden fazlasını silmek, sildiğin şeyin neden yanlış olduğunu
+        # bilmediğini gösterir.*
         return [{"type": "single", "measure": measure, "dim": dim, "entity": top[0],
-                 "text": f"{_ad(measure)}: {_fmt(top[1], unit)}"}]
+                 "text": f"{top[0]}: {_fmt(top[1], unit)}"}]
     facts = [{"type": "top", "dim": dim, "measure": measure, "entity": top[0],
               "text": f"En yüksek {_ad(dim)}: {top[0]} ({_fmt(top[1], unit)}" + pay}]
     if len(ranked) > 1:

@@ -48,6 +48,34 @@ def test_TEK_GRUPTA_USTUNLUK_YOK_TEK_DEGER_VAR():
         "*bir üstünlük iddiası, kıyaslayacak ikinci bir şey yoksa bir süstür.*")
     assert "En yüksek" not in f[0]["text"], f"yapılmamış kıyas ima ediliyor: {f[0]['text']}"
     assert "26" in f[0]["text"], "sayı kayboldu — susturma değil DÜZELTME isteniyordu"
+    assert "pompa arızası" in f[0]["text"], (
+        "🔴 VARLIK ADI kayboldu. Uydurma olan *«en yüksek»* sözüdür, **ad değil**.")
+
+
+def test_TOP1_SORUSUNDA_VARLIK_ADI_KAYBOLMAZ():
+    """🔴🔴 **KENDİ DÜZELTMEMİN GERİLEMESİ — CANLI TURDA YAKALANDI (soru 03).**
+
+    İlk yazımda metin `«{ölçü}: {değer}»` idi ve varlığın adını düşürüyordu:
+
+        «en çok fire veren makine hangisi» → «Fire 124.758,70 kg»
+                                              ↑ HANGİ makine? Soru tam onu sordu.
+
+    ⊙ Tek gruplu **iki farklı** durum var ve ilk yazım ikisini bir sandı:
+      · **süzülmüş** tek değer → üstünlük bir SÜS
+      · **top-1** (`order`+`limit`) → tek satır **cevabın kendisidir**, adı şart
+
+    Doğru ayrım metnin **iddiasındadır**: uydurma olan *«en yüksek»* sözüdür, **ad değil**.
+
+    *Bir cümleden fazlasını silmek, sildiğin şeyin neden yanlış olduğunu bilmediğini
+    gösterir.*
+    """
+    f = _rank_facts([{"makine": "RAM-2", "toplam_fire_kg": 124758.7}],
+                    "makine", "toplam_fire_kg", "kg")
+    assert f[0]["type"] == "single"
+    assert "RAM-2" in f[0]["text"], (
+        f"🔴 top-1 cevabında makine adı YOK: {f[0]['text']!r} — soru «hangi makine» idi.")
+    assert f[0].get("entity") == "RAM-2", "yapısal alan da taşımalı (chip/drill okur)"
+    assert "En yüksek" not in f[0]["text"]
 
 
 def test_IKI_GRUPTA_SIRALAMA_AYNEN_KALIR():
