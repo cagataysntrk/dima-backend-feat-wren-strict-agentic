@@ -38,17 +38,47 @@ import pytest
 
 from app import cube_router as cr
 
-#: 🔴 (temiz soru, bozulmuş hâli, sınıf) — üçü de bu depoda **canlıda** ölçüldü.
-#: ⚠ Liste **kapalı**: her kalem bir canlı turdan gelir, bir dilek listesinden değil.
+#: 🔴 (temiz soru, bozulmuş hâli, sınıf) — hepsi bu depoda **ölçülerek** seçildi.
+#: ⚠ Liste **kapalı**: her kalem bir ölçümden gelir, bir dilek listesinden değil.
+#:
+#: ⟳ **2026-08-12'de YENİDEN KURULDU.** İlk üç kalemin **ikisi** `route()`'a hiç
+#: düşmüyordu (`ciromuz ne kadar` · `fire orani yuksek mi` → `None`), yani `skip`
+#: veriyordu: *bir sağlamlık kapısının atladığı vaka, ölçülmemiş bir vakadır.*
 BOZULMALAR = [
-    ("ciromuz ne kadar", "cirumuz ne kadar", "yazim"),
-    ("fire orani yuksek mi", "fıre oranı yüksek mi", "yazim"),
-    ("makine bazında ciro", "makine bazinda ciro", "cekim"),
+    ("makine bazında ciro", "makine bazinda ciro", "cekim"),     # noktasız ı
+    ("makine bazında fire", "makine bazında fıre", "yazim"),
+    ("bu yıl ciro", "bu yil ciro", "cekim"),
+    ("bu ay ciro", "bu ay cıro", "yazim"),
+]
+
+#: ⚠ **ÖLÇÜLMÜŞ DEVİR VAKALARI** — temiz soru route'lanıyor, bozulmuş hâli **düşüyor**.
+#: Bunlar birer **kusur değildir**: bu deponun en üst kuralı *«route'a dil kuralı
+#: EKLEME; şüphede garson devreye girer»* diyor ve `None` tam olarak o devrin
+#: tetikleyicisidir. Burada listelenmelerinin sebebi, bir gün **sessizce** başka bir
+#: küpe gitmeye başlarlarsa fark edilmesidir.
+DEVRE_DUSENLER = [
+    ("toplam ciro", "toplm ciro", "harf-düşmesi"),
+    ("ortalama oee", "ortalama oe", "harf-düşmesi"),
 ]
 
 
-def _cq(soru: str, schema: dict) -> dict | None:
-    return cr.route(soru, schema)
+def _kup(soru: str, schema: dict) -> str | None:
+    """→ route'un seçtiği küp adı, yoksa `None`.
+
+    🔴🔴 **BU YARDIMCI BİR KUSURUN KARŞILIĞIDIR.** İlk yazımım `a.get("cube")` diyordu;
+    oysa `route()` şunu döndürüyor:
+
+        {'cube_query': {'cube': 'parti', …}, 'measure', 'order', 'limit', 'period_optional'}
+
+    Yani `"cube"` **kök seviyede yok** ve karşılaştırma daima `None == None` oluyordu —
+    kapı **iki farklı küpü bile** eşit sayardı. Bir denetim ajanı bunu mutasyonla
+    kanıtladı; kendi ölçümüm doğruladı. *Bir yüklemi yanlış adrese bağlamak, onu
+    silmekten kötüdür: silinen kapı yoktur, yanlış bağlanan kapı VAR SANILIR.*
+    """
+    r = cr.route(soru, schema)
+    if not isinstance(r, dict):
+        return None
+    return (r.get("cube_query") or {}).get("cube")
 
 
 @pytest.mark.parametrize("temiz,bozuk,sinif", BOZULMALAR)
@@ -59,15 +89,60 @@ def test_BOZULMA_AYNI_KUBE_GIDER(temiz, bozuk, sinif, schema):
     tolere ediyor (canlıda ölçüldü) ama o **belirlenimsizdir** ve bir kapıya bağlanamaz.
     Burada ölçülen şey **deterministik yolun** kaybıdır.
     """
-    a, b = _cq(temiz, schema), _cq(bozuk, schema)
-    if a is None:
-        pytest.skip(f"⊘ temiz soru zaten route'a düşmüyor ({temiz}) — kayıp ölçülemez")
+    a = _kup(temiz, schema)
+    assert a is not None, (
+        f"⊘ ölçüm tabanı çöktü: temiz soru «{temiz}» artık route'lanmıyor — bu vaka "
+        "listeden çıkarılmalı ya da yerine route'lanan bir vaka konmalı. "
+        "*Atlanan bir vaka, ölçülmemiş bir vakadır.*")
+    b = _kup(bozuk, schema)
     assert b is not None, (
         f"🔴 SAĞLAMLIK KAYBI [{sinif}]: «{temiz}» route'lanıyor ama «{bozuk}» düşüyor. "
         "Kullanıcı aynı şeyi sordu, sistem birini anladı ötekini anlamadı.")
-    assert a.get("cube") == b.get("cube"), (
-        f"🔴 SAĞLAMLIK KAYBI [{sinif}]: küp değişti — «{temiz}»→{a.get('cube')} ama "
-        f"«{bozuk}»→{b.get('cube')}. *Bozulma cevabı değiştirdi.*")
+    assert a == b, (
+        f"🔴 SAĞLAMLIK KAYBI [{sinif}]: küp değişti — «{temiz}»→{a} ama «{bozuk}»→{b}. "
+        "*Bozulma cevabı değiştirdi.*")
+
+
+@pytest.mark.parametrize("temiz,bozuk,sinif", DEVRE_DUSENLER)
+def test_DEVRE_DUSEN_SESSIZCE_BASKA_KUBE_GITMIYOR(temiz, bozuk, sinif, schema):
+    """⚠ Ölçülmüş devir vakaları: bozulmuş hâl route'a **düşüyor** ve bu **doğrudur**.
+
+    Bu deponun en üst kuralı: *«route'a dil kuralı EKLEME; bir cümle anlaşılmıyorsa
+    çözüm route'u genişletmek değil DEVRİ tetiklemektir.»* `None` o devrin
+    tetikleyicisidir — yani burada ölçülen şey bir kusur değil, **tasarımın çalıştığı**.
+
+    🔴 Kapının koruduğu şey **sessiz-yanlış**: bir gün bu sorular `None` yerine
+    **başka bir küpe** gitmeye başlarsa, kullanıcı yanlış bir sayı alır ve hiçbir
+    beyan konuşmaz. *Anlamamak bir hatadır; yanlış anlamak bir arızadır.*
+    """
+    a = _kup(temiz, schema)
+    assert a is not None, f"⊘ ölçüm tabanı çöktü: «{temiz}» artık route'lanmıyor"
+    b = _kup(bozuk, schema)
+    assert b is None or b == a, (
+        f"🔴 SESSİZ-YANLIŞ [{sinif}]: «{bozuk}» artık **{b}** küpüne gidiyor, oysa "
+        f"temiz hâli **{a}**. Bozulmuş bir soruyu yanlış bir küple cevaplamak, hiç "
+        "cevaplamamaktan kötüdür — çünkü sayı doğru görünür.")
+    if b == a:
+        pytest.skip(
+            f"✅ İYİ HABER: «{bozuk}» artık doğru küpe ({a}) route'lanıyor — deterministik "
+            "yol güçlenmiş. Vakayı `BOZULMALAR`'a taşıyın.")
+
+
+def test_HICBIR_VAKA_ATLANMIYOR(schema):
+    """🔴🔴 **META KAPI** — *bir sağlamlık kapısının atladığı vaka, ölçülmemiş bir
+    vakadır.*
+
+    İlk yazımda üç vakanın **ikisi** `skip` veriyordu (temiz soru route'lanmıyordu) ve
+    `pytest` bunu **iyi haber gibi** (`2 skipped`) raporluyordu. Yani *«üç bozulma
+    sınıfı ölçülüyor»* cümlesinin arkasında **tek** bir canlı yüklem vardı.
+
+    ⚠ Bu kapı `BOZULMALAR`'ın tamamının **ölçülebilir** kaldığını garanti eder; bir
+    vaka bir gün route'lanmaz olursa burada kırmızı verir, sessizce atlanmaz.
+    """
+    dusen = [t for t, _b, _s in BOZULMALAR if _kup(t, schema) is None]
+    assert not dusen, (
+        f"🔴 bu temiz sorular artık route'lanmıyor: {dusen} — vakaları ölçülemez hâle "
+        "geldi. Listeyi ölçerek yenileyin; *atlanan bir kapı, olmayan bir kapıdır.*")
 
 
 def test_BAZINDA_DORDUNCU_ANLAMI_AYIRT_EDILIYOR(schema):
