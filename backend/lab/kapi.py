@@ -391,9 +391,17 @@ def hizli(degisen: list[str]) -> int:
 
 #: Tüm adımlar — anahtar, `--sadece` ile seçmek için. **Sıra anlamlıdır:** korpus
 #: BAŞTA, çünkü yerel kapının tek adımı odur ve `--hepsi`'de de önce o konuşmalıdır.
-ADIM_ANAHTARLARI = ("korpus", "gercek", "suit", "eval", "senaryo", "garson", "eval_llm")
+ADIM_ANAHTARLARI = ("korpus", "gercek", "suit", "eval", "senaryo", "garson_korpusu",
+                    "garson", "eval_llm")
 
-#: 🔴 **`garson` HİÇBİR TOPLU KOŞUMDA YOK — ne yerelde ne `--hepsi`'de.**
+#: 🔴 **`garson` (CANLI KOŞUCU) HİÇBİR TOPLU KOŞUMDA YOK — ne yerelde ne `--hepsi`'de.**
+#:
+#: ⟳ **BAŞLIK DÜZELTİLDİ (2026-08-12) — ve düzeltmenin sebebi bir MİRAS kusuruydu.**
+#: Bu blok *«garson»* diyordu ve okuyan bunu **garson basamağının tamamı** sanıyordu.
+#: Oysa ölçüldü: `lab/garson_korpusu.py` **kasetli** koşuyor (`--network none`,
+#: `36 isabet · 0 ıska`) ve aşağıdaki gerekçenin **hiçbir maddesi** ona uymuyor —
+#: kota istemiyor, ağ istemiyor, belirlenimsiz değil. O adım artık `--hepsi`'de.
+#: *Bir sınıfın ilk üyesi için yazılmış gerekçe, ikinci üyeye sessizce miras kalır.*
 #:
 #: Sebebi bir tercih değil, bir **tabiat farkı** (yol haritası §12.2b): öteki beş adım
 #: **belirlenimlidir** ve LLM'siz koşar; `garson` ise `--live` ister, kotaya bağlıdır ve
@@ -513,6 +521,17 @@ def tam(sadece: tuple[str, ...] = (), *, hepsi: bool = False) -> int:
         # **hiçbir koşulda kırmızı veremez** (ölçüldü: `returncode == 0`, senaryo tümden
         # çökse bile). Dört bileşenli bir kapının dörtte biri sessizce **dekordu**.
         ([sys.executable, "lab/konusma_senaryolari.py", "--kapi"], "konuşma senaryoları"),
+        # 🔴🔴 **KASETLİ GARSON KORPUSU — GARSON BASAMAĞININ TEK TOPLU ÖLÇÜMÜ.**
+        #
+        # ⟳ Yazılmıştı ama **hiçbir koşuma bağlı değildi** (ölçüldü 2026-08-12:
+        # `grep garson_korpusu lab/kapi.py tests/` → sıfır). Ve sebebi bir **miras**tı:
+        # yukarıdaki `GARSON_TOPLUDA_YOK` gerekçesi (*«`--live` ister, kotaya bağlı,
+        # BELİRLENİMSİZ»*) **canlı koşucu** `lab/garson.py` için yazılmıştı; kasetli
+        # korpus ise kendi başlığında *«her demet sonunda, SIFIR API»* diyor ve
+        # `--network none` altında **36 isabet · 0 ıska** ile koştuğu ölçüldü.
+        #
+        # *Bir sınıfın ilk üyesi için yazılmış gerekçe, ikinci üyeye sessizce miras kalır.*
+        ([sys.executable, "lab/garson_korpusu.py", "--kapi"], "kasetli garson korpusu"),
         # 🔴 GARSON KAPISI — yalnız `--sadece garson` ile. `--live` ve ağ ister; ötekiler
         # `--network none` ile koşar. Toplu koşuma girmemesi bilinçlidir (yukarı bak).
         ([sys.executable, "lab/garson.py", "--live"], "garson kapısı"),
@@ -560,6 +579,20 @@ def tam(sadece: tuple[str, ...] = (), *, hepsi: bool = False) -> int:
               "  son tam koşumdaki sonuçlarını korur; düzeltme onları besleyen bir dosyaya\n"
               "  dokunduysa TÜM kapı tekrar koşmalıdır (sessiz kırpma yok).\n")
         adimlar = tuple(secili)
+
+    # 🔴 ORTAM ENGELLİ ADIM — **açıkça istenmediyse** düşürülür, ve düşüşü özet
+    # içinde `_belgeler_bildirimi()` **adıyla** yazar.
+    #
+    # ⚠ İki yanlış seçenek vardı ve ikisi de reddedildi: (a) yine de koşturmak → gecelik
+    # CI, ortam eksiğini bir **ürün kusuru** gibi kırmızıya çevirirdi (`§F8` hijyeni);
+    # (b) sessizce atlamak → yeşil özet, koşmamış bir kapıyı koşmuş gibi okuturdu
+    # (`ADR-0020`). Üçüncü yol: **düşür ve söyle**.
+    #
+    # ⊙ `--sadece garson_korpusu` bu düşürmeyi **bilerek** atlar: açıkça istenen bir
+    # adımın ortam reçetesini görmek, onun sessizce yok sayılmasından iyidir.
+    if not sadece:
+        _engelli = {ad for ad, (kosul, *_) in ORTAMA_BAGLI_ADIMLAR.items() if not kosul()}
+        adimlar = tuple(a for a in adimlar if a[1] not in _engelli)
 
     kotu = 0
     ozet: list[str] = []
@@ -736,8 +769,48 @@ ORTAMA_BAGLI_KAPILAR: dict[str, tuple] = {
 BELGELERE_BAGLI_KAPILAR = tuple(ORTAMA_BAGLI_KAPILAR)
 
 
+def _garson_korpusu_kosulabilir() -> bool:
+    """🔴 `A1` — kasetli korpusun **üç** ön koşulu; üçü de ORTAM, hiçbiri ürün.
+
+    Ölçüldü (2026-08-12), üçü de tek tek: kaset kurulmazsa araç **canlı** koşmaya
+    çalışır (`--network none` altında çökme), kimlik kaynağı yanlış dosyaysa `/ask`
+    401 döner (ve o **kimlik kusuru gibi** okunur), rapor dosyası root sahipliyse
+    korpus sonuna kadar koşup **son satırda** düşer.
+
+    ⚠ Bu bir onarım değil bir **koşuldur**: onarımı aracın kendisi (`--kapi` çıktısı)
+    komutlarıyla yazar. Buradaki tek karar, adımı **sessizce yeşil saymamak**.
+    """
+    import os
+    import pathlib as _p
+
+    lab = _p.Path(__file__).resolve().parent
+    if not (lab / "kasetler" / "garson-korpus.json").is_file():
+        return False
+    if not (os.environ.get("DIMA_LLM_PROVIDER") and os.environ.get("DIMA_DATABASE_URL")):
+        return False
+    rapor = lab / "reports" / "garson_korpusu.md"
+    return not (rapor.exists() and not os.access(rapor, os.W_OK))
+
+
+#: 🔴 `adım → (koşul, ne kaybedilir, reçete)` — `ORTAMA_BAGLI_KAPILAR`ın **adım**
+#: karşılığı.
+#:
+#: ⚠ Neden ayrı bir sözlük: o sözlüğün her anahtarı `tests/` altında **var olan bir
+#: dosya** olmak zorunda (`test_ortam_butunlugu` bunu ölçüyor, ve haklı — bayat bir
+#: bildirim gürültüdür). Bir lab adımı o yüklemi karşılayamaz. *İki farklı şeyi tek
+#: listeye sıkıştırmak, listenin yüklemini ikisine de yanlış uygular.*
+ORTAMA_BAGLI_ADIMLAR: dict[str, tuple] = {
+    "kasetli garson korpusu": (
+        _garson_korpusu_kosulabilir,
+        "garson basamağı — trafiğin %37'si (21 senaryo · çok turlu · kasetli)",
+        'docker cp dima-backend-core:/app/logs/dima.db /tmp/canli.db  →  '
+        '--env-file .env -v /tmp:/cp -e DIMA_DATABASE_URL=sqlite:////cp/canli.db'),
+}
+
+
 def _belgeler_bildirimi() -> None:
-    dusen = [(ad, ne, ipucu) for ad, (kosul, ne, ipucu) in ORTAMA_BAGLI_KAPILAR.items()
+    dusen = [(ad, ne, ipucu) for ad, (kosul, ne, ipucu)
+             in (*ORTAMA_BAGLI_KAPILAR.items(), *ORTAMA_BAGLI_ADIMLAR.items())
              if not kosul()]
     if not dusen:
         return

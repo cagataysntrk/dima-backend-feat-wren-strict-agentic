@@ -2965,10 +2965,36 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 > ⚠ İlk yazımda denetimi `_giris()`'e koymuştum ve **hiç ulaşılamıyordu**: şema hizalaması
 > uygulama ayağa kalkarken patlıyordu. *Bir kapının yeri, koruduğu şeyden önce olmalıdır.*
 >
-> ⏭ **KALAN:** ② ve ③ kapanınca (`chown` + kaset sağlayıcısı) adım `lab/kapi.py`'ye
-> **toplu koşuma** bağlanacak — çıkış kodu **1** verdiği doğrulandı, yani koşamazsa kapı
-> kırmızı olur, sessiz kalmaz. Sonra kaset 21 → ~50 vakaya büyütülecek (`§14.13`'ün
-> düzeltmesi: 300-500 değil **50 ile başla**).
+> ✅ **KAPANDI (2026-08-12) — ÜÇ ENGEL DE ÖLÇÜLDÜ, ADIM TOPLU KOŞUMA BAĞLANDI.**
+>
+> | engel | çözüm | ölçüm |
+> |---|---|---|
+> | ① kimlik kaynağı | `docker cp` + `DIMA_DATABASE_URL` | giriş **çalıştı** |
+> | ② root sahipli rapor | dosya `lab/reports/` (**gitignore'lu artefakt dizini**) — kenara alındı, `sudo` gerekmedi | rapor **yazıldı** |
+> | ③ kaset kurulamıyor | sağlayıcı **kimliği** gerekiyormuş: anahtar `model`i de taşıyor | `0 isabet` → `0/106 ıska` → ✅ **`36 isabet · 0 ıska`** |
+>
+> 🔴 **VE ASIL SEBEP ③ DEĞİLDİ — BİR MİRAStı.** `lab/kapi.py`'nin dışlama gerekçesi
+> (*«`--live` ister, kotaya bağlıdır, **BELİRLENİMSİZDİR**»*) **canlı koşucu**
+> `lab/garson.py` için yazılmıştı; kasetli korpus `--network none` altında koşuyor ve
+> hiçbir maddesi ona uymuyor. Blok başlığı *«garson»* deyince ikisi tek şey sanıldı.
+>
+> > *Bir sınıfın ilk üyesi için yazılmış gerekçe, ikinci üyeye sessizce miras kalır.*
+>
+> ✅ **BAĞLANDI:** `ADIM_ANAHTARLARI` + `adimlar` (`lab/kapi.py`), ve ortam eksikse
+> **düşürülür ama YAZILIR** — yeni `ORTAMA_BAGLI_ADIMLAR` (koşul · ne kaybedilir ·
+> reçete). Üçüncü yol seçildi: koşturmak ortam eksiğini **ürün kusuru** gibi kırmızıya
+> çevirirdi (`§F8` hijyeni), sessizce atlamak yeşil özeti **yalancı** yapardı
+> (`ADR-0020`). Kapı: `tests/test_a1_garson_korpusu_bagli.py` (6) — adım kayıtlı ·
+> komut/anahtar **sayısı eşit** · `TOPLUDA_YOK`'ta değil · koşul **gerçekten** ortama
+> bakıyor (sağlayıcı silinince `False`) · bildirim **iki listeyi de** okuyor · kaset+taban
+> commit'li.
+>
+> 📊 **İLK BAĞLI ÖLÇÜM:** `route 9 · garson 6 · orkestra 3 · sosyal 1 · netleştirme 2 ·
+> payda 21 · boş 1` — cevaplanabilirlik **18/21** (taban 17). ⊙ Garson basamağı artık
+> **görünüyor**: taban günü 4, bugün **6**.
+>
+> ⏭ **KALAN:** kaset 21 → ~50 vakaya büyütülecek (`§14.13`'ün düzeltmesi: 300-500 değil
+> **50 ile başla**).
 
 ### A1 · Garson korpusu
 
