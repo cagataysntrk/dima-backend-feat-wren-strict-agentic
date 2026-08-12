@@ -13134,3 +13134,40 @@ ağacı okuyor. Yani kapı **taze katalogda** doğruyu söylüyor; tek dosyalık
 ⏭ **Sıradaki iş:** dokuz boyutun `dimension_origin` beyanı — **ölç, sonra karar**.
 ⚠ Bu bir **katalog beyanı** işidir (fan-out ölçümü), bir kapı gevşetme işi **değil**;
 `§D11`'in kendi cümlesi: *«beyansız bir JOIN, ölçülmemiş bir risktir»*.
+
+## 🔬 `d11` KÖKÜ — **SERTİFİKA GİTIGNORE'LU DERLEME AĞACINDA YAŞIYOR**
+
+Zincir uçtan uca ölçüldü:
+
+```
+fanout.rozet(sert, rel) → sert["relationships"][rel] YOKSA → "olculmedi"
+sertifika dosyası      → demo/wren-project/target/fanout_certificate.json   (31 ilişki)
+                          ↑ gitignore'lu DERLEME ARTEFAKTI (CLAUDE.md)
+lab/izolasyon.py:67    → çıktı dizinini KOPYALAMIYOR (`if ad == _CIKTI: continue`)
+```
+
+Yani **paralel koşumda her işçi sertifikasız bir ağaç kuruyor** ve dokuz boyut
+*«ölçülmedi»* damgası alıyor. Hedefli koşum **önceden derlenmiş** ağacı okuyor, sertifika
+orada duruyor, kapı yeşil veriyor.
+
+🔴 **Kapı doğruyu söylüyor; yeşil olan koşum bayat.**
+
+### ⊘ KARAR: bu tur ONARILMAZ — ve **neden kırmızı kalacağı** yazılıyor 🅗
+
+Üç yol var ve **üçü de bugün riskli**:
+
+| yol | neden bugün değil |
+|---|---|
+| sertifikayı izole ağaca **kopyala** | 🔴 **`mdl_version: None`** — sertifikanın **sürüm damgası YOK**. Doğrulanamayan bir ölçümü taze bir ağaca taşımak, tam da `CLAUDE.md`'nin *«bayat okuma»* tuzağı 🅕 |
+| kapıyı sertifika yokken **atlat** | 🆊 kapıyı dişsizleştirir — `§D11`'in tek yüklemi budur |
+| her işçide **yeniden sertifikala** | canlı DB sorgusu ister; kapı maliyeti testin kendisinden büyür |
+
+**Ön koşul ölçüldü ve adlandırıldı:** sertifika **sürümlenmeli** (`mdl_version` doldurulmalı
+— `contracts.py:145` zaten `mdl_version`'ı **kimliğin parçası** sayıyor). Damga varsa
+kopyalama **ilkeli** olur: *«bu sertifika bu MDL'ye aittir»* denetlenebilir.
+
+⚠ **Ve bu bir kusur değil bir sıralama:** `§D11` kapısı **çalışıyor** ve borcu **görünür**
+tutuyor. Kapatmak için önce sertifikaya kimlik vermek gerekiyor — o da ayrı bir iş.
+
+📌 **Kapı kırmızı KALIYOR** ve sebebi burada yazılı. 🅗 *Borcun alarmı çalsa da borç
+ödenmeyebilir — ödenmeyecekse **neden** ödenmediği yazılır.*
