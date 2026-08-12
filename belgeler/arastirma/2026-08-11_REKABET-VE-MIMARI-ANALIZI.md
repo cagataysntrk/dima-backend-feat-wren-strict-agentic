@@ -1610,7 +1610,7 @@ olmasından gelir.*
 | bileşen | yer | ne belirliyor |
 |---|---|---|
 | grafik tipi | `viz.analyze()` (`viz.py:132`) + `recommend()` | `kind` |
-| **olgular** | `interpret.py` — **11 ayrı `facts.append` çağrı yeri** | anlatının içeriği |
+| **olgular** | `interpret.py` — **11 `facts.append` çağrı yeri**, ⟳ ama **14 AYRI TİP** (2026-08-12 `ast` ile sayıldı) | anlatının içeriği |
 | chip'ler | `answer._attach_next_steps()` (`answer.py:838`) → `drill.next_steps` | öneri şeridi |
 | anlatı | `anlatici.anlat()` + `llm.anlat` + `narration_guard` | cümle |
 
@@ -1620,19 +1620,76 @@ ARTIĞI.**
 
 ### 18.3 🟢 Ve iyi haber: taksonomi KISMEN ZATEN YAZILMIŞ
 
-`interpret.py` **11 olgu üreticisi** taşıyor (`trend` · `peak` · `delta` · sıralama ·
-bileşen · tek-satır · çok-ölçü · aykırılık · eşik · yoğunlaşma · granülerlik) — ama canlı
-ölçümde **yalnız 1-2 ateşliyor** (§18 tablosu: `olgu` sütunu **hep 1-2**).
+⟳ **ÖLÇÜLDÜ (2026-08-12) — VE BU BÖLÜMÜN SAYISI YANLIŞ BİRİMDEYDİ.**
 
-⊙ **Yani §14.5'in ilk maddesi sandığımdan ucuz:** *«sıfırdan taksonomi kur»* değil,
-**«11 üreticinin hangi koşullarının hiç ateşlenmediğini ölç ve genişlet»**. Pulse'un
-**14 tipi** ile aramızdaki mesafe **11 → 14** değil, **1-2 → 11**.
+`ast` ile sayıldı: **11 `facts.append` çağrı yeri**, ama **14 AYRI TİP**:
 
-**İlk ölçüm şu olmalı:** her `facts.append` çağrı yerine bir sayaç koy, 100 gerçek soruda
-koş, **hiç ateşlenmeyenleri** listele. Bu, bir gün sürer ve *«robotik»* şikâyetinin
-sayısal kökünü verir.
+    bottom · count · delta · kiyas · kpi_components · kpi_value · measures
+    peak · segment_delta · shape · single · streak · top · trend
+
+⊙ Yani *«Pulse'un **14 tipi** ile aramızdaki mesafe»* diye yazılan cümle **çağrı yerini
+tipe** kıyaslıyordu. Tip ekseninde mesafe **yok**: bugün de 14. Bir çağrı yeri birden çok
+tip üretebiliyor (`_kpi_facts` → `kpi_value`+`kpi_components`; `_streak` ayrı bir üretici).
+
+> *İki sayıyı kıyaslamadan önce birimlerinin aynı olduğunu ölçmek gerekir; yoksa kıyas
+> bir mesafe değil bir kur farkı üretir.*
+
+🟢 **Canlı ölçüm (curl, 2026-08-12) raporun ÖTEKİ yarısını DOĞRULADI:**
+
+| soru | olgu | tipler |
+|---|---|---|
+| *«bu yıl aylık ciro trendi»* | **3** | `trend` · `peak` · `delta` |
+| *«makine bazında ortalama oee bu yıl»* | **2** | `top` · `bottom` |
+
+Yani gerçek mesafe **2-3 → 14**: tipler var, **koşulları ateşlenmiyor**.
+
+⏸ **KARAR — sayaç PARK:** *«her çağrı yerine sayaç koy, 100 soruda koş»* bir **ölçüm
+tesisatıdır**, ürün değil (kullanıcı kuralı). Değerinin çoğu zaten yukarıda **statik +
+canlı** olarak alındı. Tesisat, `A1` kaseti 21→50'ye büyüdüğünde **bedava** gelir: o
+korpus zaten tam `/ask` yolundan koşuyor.
+
+🔴 **VE ÖLÇÜM ARARKEN GERÇEK BİR KUSUR ÇIKTI** (aşağıda `§D11-b`) — *bir sayıyı doğrulamak,
+onu üreten yolu okumayı gerektirir; ve o yolda kural yazılıydı ama koşmuyordu.*
 
 *Bir yeteneğin yokluğunu varsaymak, onu aramaktan pahalıdır — bu raporda üçüncü kez.*
+
+### 18.4 🔴🔴 `§D11-b` — YAZILI KURAL KOŞMUYORDU; ONU İKİ **KAZA** AYAKTA TUTUYORDU
+
+Olgu üreticilerini okurken çıktı (2026-08-12). `anlatici.basit_mi`'nin son şartı şunu
+**yazıyor**:
+
+> *«Tek ölçü şartı: iki ölçüyü tek cümlede anlatmak, aralarında bir **ilişki** ima eder
+> (*«ciro arttı, fire düştü»* → bir neden-sonuç okunur). O çıkarım bu basamağın yetkisinde
+> değil.»*
+
+Ölçüm — iki ölçülü **gerçek** bir `interpret` çıktısıyla:
+
+    olculer = {'toplam_ciro'}   →   len(olculer) <= 1   →   True   (kural GEÇTİ)
+
+⊙ Çünkü `interpret` olguları yalnız `measures[0]` için üretir; **ikinci ölçünün adı hiçbir
+olguda geçmez**. Yazılı şart **her zaman** geçiyordu.
+
+**Kuralı fiilen uygulayan iki kaza vardı — ve ikisi de bu kuralı bilmiyordu:**
+
+| # | kaza | kırılganlığı |
+|---|---|---|
+| ① | `len(olgular) > _AZAMI_OLGU` | iki ölçüde olgu **5**, tavan **4** → tavan 5 olsa ölür |
+| ② | `measures` tipi `TANINAN`da yok | kapsam kapısı onu *«bilinen istisna»* diye kaydetmiş — yani **eklenmeye davetiye** |
+
+⚠ Ve `test_d1_anlatici_kapsami.py::test_COK_OLCULU_KIYAS_hala_LLM_e_gider` **yeşildi** —
+doğru sonucu ölçüyordu, doğru **sebebi** değil.
+
+> *Bir kuralın yazılı sahibi onu uygulamıyorsa, kural yoktur; yalnız onu şu an tesadüfen
+> karşılayan bir yan etki vardır.*
+
+✅ **DÜZELTİLDİ:** `interpret` artık `olcu_sayisi`ni **kaynağından** taşıyor (ek anahtar;
+`facts`/`summary` tüketicileri etkilenmez) ve `basit_mi` kuralı ondan okuyor; taşımayan
+eski sözlükler için geri düşüş korundu (`KURAL B`).
+
+✅ **KAPI** `tests/test_d11_olcu_sarti_gercekten_kosuyor.py` (7 vaka) — ve asıl testi
+**kazaları kaldırarak** ölçüyor: tavan 9'a çıkarılır, `measures` tanınanlara eklenir,
+kural **yine** tutmalıdır. *Bir değişmezi, onu şu an ayakta tutan tesadüflerle birlikte
+ölçmek, tesadüfü değişmez sanmaktır.*
 
 # YEDİNCİ KISIM — CEVAP BİÇİMİ VE KONUŞMA UX'İ
 
@@ -2852,7 +2909,7 @@ küme *örtüşmeyen* hâle gelir.
 | # | iş | **ÖNCE** | **SONRA** | dosyalar | MİMARİ.md |
 |---|---|---|---|---|---|
 | ✅ **D10** | Cevap biçimi | **karar yok** — `viz.analyze` + `interpret` + `_attach_next_steps` üçünün **artığı** (chip hep 6, olgu hep 1-2) | ✔ **chip sayısı soruya BAĞLANDI** (`app/bicim.py` karar tablosu, `niyet`in altı türü × beş kova; `4,6,2,4,4,4,6,3`). ⚠ *olgu sayısı* `D11`'de kalır — bu turda **1-5 arası zaten değişiyor** (§18'de *«hep 1-2»* idi) | `app/bicim.py` 🆕 · `app/answer.py` · `app/cube_router.py` | ✅ **§13.1.1 ADR-0024'e ek** yazıldı |
-| ◐ **D11** | Olgu üretimi | `interpret.py` **11 üretici**, canlıda **1-2** ateşliyor | Ateşlenmeyen koşullar **ölçülüp genişletilir** → hedef **Pulse'un 14 tipine** yakın | `app/interpret.py` | **§ yorum katmanı** |
+| ◐ **D11** | Olgu üretimi | ⟳ **BİRİM DÜZELTİLDİ (2026-08-12):** 11 **çağrı yeri** ama **14 TİP** — hedef sanılan *«Pulse'un 14'ü»* tip ekseninde **zaten karşılanmış**. Canlıda **2-3** ateşliyor (curl) → gerçek mesafe **2-3 → 14** | Ateşlenmeyen koşullar genişletilir. ⏸ Sayaç tesisatı **PARK** (`A1` kaseti 21→50 olunca bedava gelir). ✅ Ölçüm sırasında çıkan gerçek kusur kapatıldı: `§D11-b` | `app/interpret.py` · `app/anlatici.py` | **§ yorum katmanı** |
 | ◐ **D12** | Kök-neden yatay eksen | ⟳ **ÜÇ VAADİN BİRİ YAPILDI, BİRİ ÖLÇÜLÜP REDDEDİLDİ, BİRİ AÇIK** (2026-08-12): ✅ **JS sürprizi** `contribution.py:201 _surprizi_isle` + `:276 surpriz_notu` (kapı `test_e2_surpriz.py`) · ⊘ **Benjamini-Hochberg** `§E3`'te **ölçülüp reddedildi** — bu depoda **p-değeri yok**, eşik bir istatistik değil bir **karar**; yerine `stats.tarama_beyani` (kapı `test_e3_tarama_beyani.py`) · 🔴 **Adtributor** (`app/adtributor.py`) hâlâ **yok**, `§25 bileşik segment` layer-1'de kilitli | JS ✅ · BH ⊘ (ölçülü red) · Adtributor 🔴 | `app/contribution.py` · `app/stats.py` | **§KN bölümü** |
 | **D13** | Dış yüzey | `mcp_yuzeyi: off` · `agent_plan_secimi: off` | **MCP açık** (~20 araç eşiği korunarak) | `demo/packs/features.yml` · `app/routers/mcp.py` | **§ MCP** |
 
@@ -3502,10 +3559,10 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 
 | | |
 |---|---|
-| **ÖNCE** | `interpret.py`'de **11 `facts.append` çağrı yeri**; canlıda **1-2** ateşliyor |
-| **SONRA** | Her çağrı yerine sayaç → **100 gerçek soruda** koş → **hiç ateşlenmeyenleri** listele |
-| **dosyalar** | `app/interpret.py` (geçici sayaç) · `lab/` yeni ölçüm |
-| **çıktı** | *«11 üreticinin şu N tanesi hiç ateşlenmiyor, sebebi şu koşul»* |
+| **ÖNCE** | ⟳ **ÖLÇÜLDÜ:** 11 çağrı yeri ama **14 tip**; canlıda **2-3** ateşliyor (curl) |
+| **SONRA** | ⏸ **PARK** — geçici sayaç bir **ölçüm tesisatıdır**, ürün değil. Değerin statik+canlı alınabilen kısmı `§18.3`'te alındı |
+| **niçin park** | Tesisat `A1` kaseti **21→50** olunca **bedava** gelir: o korpus tam `/ask` yolundan koşuyor ve olguları zaten üretiyor. Ayrı bir sayaç, iki sahipli bir ölçüm olurdu (`KAT-1`) |
+| **çıktı (alınan)** | *«tip ekseninde mesafe yok; mesafe **koşul** ekseninde: 2-3 → 14»* |
 | **risk** | yok (ölçüm) |
 
 ### D2 · Taksonomiyi aç

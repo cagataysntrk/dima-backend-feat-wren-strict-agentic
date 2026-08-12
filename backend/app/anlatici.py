@@ -92,6 +92,28 @@ def basit_mi(yorum: dict | None) -> bool:
     # 🔴 Tek ölçü şartı: iki ölçüyü tek cümlede anlatmak, aralarında bir **ilişki** ima
     # eder (*"ciro arttı, fire düştü"* → bir neden-sonuç okunur). O çıkarım bu basamağın
     # yetkisinde değil. *Bir yan yana koyma, cümlede bir bağlaca dönüşür.*
+    #
+    # ⟳ **ÖLÇÜLDÜ (2026-08-12): BU SATIR KURALI HİÇ UYGULAMIYORDU.** İki ölçülü bir
+    # yorumda `olculer` yine **tek elemanlıydı** — çünkü `interpret` olguları yalnız
+    # `measures[0]` için üretir; ikinci ölçünün adı hiçbir olguda geçmez. Yani yazılı
+    # şart **her zaman geçiyordu**.
+    #
+    # Kuralı fiilen uygulayan **iki kaza** vardı ve ikisi de bu kuralı bilmiyordu:
+    #   ① `len(olgular) > _AZAMI_OLGU` — iki ölçüde olgu 5 oluyordu (tavan 4)
+    #   ② `measures` tipinin `TANINAN`da olmayışı — kapsam kapısı onu bir
+    #      *«bilinen istisna»* diye kaydetmiş, yani **eklenmeye davetiye** çıkarmış
+    #
+    # ⚠ Tavan 5'e çıkarılsa ya da `measures` tanınanlara eklense, iki ölçülü bir cevap
+    # şablona düşer ve yorumun yasakladığı **bağlaç** cümlede belirirdi. Hiçbir kırmızı
+    # konuşmazdı: `test_..._COK_OLCULU_KIYAS_hala_LLM_e_gider` yeşildi — **yanlış
+    # sebeple**.
+    #
+    # *Bir kuralın yazılı sahibi onu uygulamıyorsa, kural yoktur; yalnız onu şu an
+    # tesadüfen karşılayan bir yan etki vardır.*
+    sayi = yorum.get("olcu_sayisi")
+    if isinstance(sayi, int):
+        return sayi <= 1
+    # Geri düşüş: `olcu_sayisi` taşımayan çağrı (dış/eski yorum sözlükleri).
     olculer = {f.get("measure") for f in olgular if f.get("measure")}
     return len(olculer) <= 1
 

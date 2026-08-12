@@ -636,7 +636,12 @@ def interpret(result: dict | None, cube_query: dict | None = None,
         facts.append({"type": "measures", "text": f"{len(measures)} ölçü: " + ", ".join(measures)})
     if not facts:
         facts.append({"type": "count", "text": f"{len(rows)} satır"})
-    out = {"facts": facts, "summary": _ozet(facts)}
+    # 🔴 `olcu_sayisi` **EKLENDİ (2026-08-12)** — ve sebebi `anlatici.basit_mi`'nin
+    # ölçülmüş bir boşluğu: *«iki ölçüyü şablon anlatmasın»* kuralı olgulardan türetilen
+    # bir kümeye bakıyordu, ama olgular yalnız `measures[0]` için üretiliyor — küme
+    # **her zaman** tek elemanlıydı. Kuralın uygulanabilmesi için sayının **kaynağından**
+    # taşınması gerekiyor. (Ek bir anahtar; mevcut tüketiciler `facts`/`summary` okur.)
+    out = {"facts": facts, "summary": _ozet(facts), "olcu_sayisi": len(measures)}
     signals = _signals(rows, dims, time_col, m0, unit, m0 in lib_set)  # K3 proaktif sinyaller
     if esikler:
         # EŞİK KIYASI (Faz G3) — gövde `schedules.esik_sinyalleri`'nde: alarm koşumuyla
