@@ -2376,6 +2376,35 @@ ve öneri şeridi **yanlış adaylar** gösterir.
 
 **Geri alma** `marj_esigi: ∞` · **Bitti** eşik **ayarlanabilir** ve etkisi **ölçülüyor**
 
+> ⟳🔴 **`2.1`+`2.2` ERTELENDİ ㊸ · `2.4` ZATEN VARDI ㊷ — 13 Ağustos 2026, kodda ölçüldü.**
+> Kapı: `tests/test_marj_kapisi_on_kosullari.py` (5 yüklem, **2 mutasyon** 🅑) —
+> ertelemenin dayandığı üç olguyu **kilitler**; biri değişirse ⊘ düşer 🅗.
+>
+> **① Bayrak kaydı SAYI taşımıyor.** `features.resolve_for -> dict[str, str]`; değerler
+> **aşamadır** (`off|alpha|beta|prod`). `marj_esigi: ∞` bir sayıdır, bu şekle oturmaz ⑤.
+> Sayısal ayarların evi `config.Settings` (`consistency_k`·`intent_azami_saniye`). İkisini
+> birden kullanmak **tek düğme için iki mekanizma** demektir — `KAT-1`'in tersi.
+>
+> **② `cube_router` bilerek SAF.** `:1375`: *«Bayrak parametrede, `get_settings()`
+> çağrısında DEĞİL… Bayrağı çağıran çözer»* — gerekçesi `lab/`'ın A/B koşabilmesi.
+> `_match_cube`'un **beş** genel çağıranı var, beşi de `(q, schema)`.
+>
+> **③ 🔴 BELİRLEYİCİ: ayar TEK KAYNAĞI BÖLERDİ.** Beraberliği **kıran** (`:1194/1200`)
+> ile **tanımlayan** (`cube_tie_candidates:2547`) **aynı** `_longest_syn_hit`'i okur; o
+> fonksiyonun docstring'i der ki *«ikisi ayrışırsa chip, route'un çözebildiği bir soruya
+> sorulur.»* Yalnız `_match_cube`'u ayarlanabilir yapmak o ayrışmayı **elle üretmekti**.
+>
+> ⊙ Ve `FAZ 2`'yi doğuran **ölçülmüş bir kusur yok**; planın kendi zarar kontrolü *«faz
+> **etkisiz** teslim edilir»* diyor. Ölçülmemiş bir ihtiyaç için sistemin **en çok
+> sınanan** yolunda beş imza açmak `§101.1`'in tersidir.
+>
+> **`2.4` zaten vardı ㊷ (on üçüncü kez):** `typo_correct` her düzeltmeyi
+> `{"kind": "auto"|"suggest"}` diye yazıyor — bu tam olarak `Karar.OTO_ICRA`/`GOSTER`,
+> **dört** üretim noktasında. Yeni alan açmak ㊲ *aynı işin iki satırı* olurdu.
+>
+> **`2.5`** planın kendi ⊘'si, korundu. 🔴 **`2.3` AÇIK KALDI** — `D4` proaktif sınır
+> deseni var (`ask.py:3374`) ama **bağlamsızlık** dalına bağlı, `SINIR` kararına değil.
+
 ---
 
 ### FAZ 3 · Aday yan kanalı 🟢 FAZ 0'ı beklemez

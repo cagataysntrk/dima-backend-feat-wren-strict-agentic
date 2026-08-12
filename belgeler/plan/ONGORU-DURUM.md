@@ -407,3 +407,45 @@ yuvarlanmadı**; boşluk bırakmak `test_KAPI_SAHTE_DEGIL`'i kırmızı verirdi.
 📌 **`FAZ 1` ✅.** Sırada **`FAZ 2` marj kapısı** — ⚠ `FAZ 0`'ın bulgusu gereği
 **mutlak eşik YOK**; `emin_miyim.karar` zaten marj tabanlıdır, `FAZ 2` onun **üstüne**
 kurulur.
+
+---
+
+## §10 · `FAZ 2` — **KISMİ: `2.1`+`2.2` ⊘ · `2.4` ㊷ · `2.3` AÇIK** *(2026-08-13)*
+
+🔴 **`FAZ 2` BİTMEDİ.** `2.3` (SINIR → proaktif sınır beyanı) gerçekten açık; sonraki
+turun işi. Bu turda `2.1`/`2.2` **gerekçeli ⊘** ㊸ ve `2.4` **zaten yapılmış** çıktı.
+
+### `2.1`+`2.2` ⊘ — üç engel, üçü de KODDA ölçüldü
+
+| # | engel | ölçüm |
+|---|---|---|
+| ① | bayrak kaydı **sayı taşımıyor** | `resolve_for -> dict[str, str]`; değerler **aşama** (`off\|alpha\|beta\|prod`) ⑤ |
+| ② | `cube_router` **bilerek saf** | `:1375` *«bayrağı çağıran çözer»*; `_match_cube`'un **beş** genel çağıranı, hepsi `(q, schema)` |
+| ③ | 🔴 **tek kaynağı bölerdi** | kıran (`:1194/1200`) ile tanımlayan (`cube_tie_candidates:2547`) **aynı** `_longest_syn_hit`'i okur |
+
+③ belirleyicidir: `_longest_syn_hit`'in kendi docstring'i *«ikisi ayrışırsa chip,
+route'un çözebildiği bir soruya sorulur»* diyor. Yalnız `_match_cube`'u ayarlanabilir
+yapmak o ayrışmayı **elle üretmek** olurdu.
+
+Sayısal ayarların evi `config.Settings`'tir (`consistency_k` · `intent_azami_saniye`).
+`features.yml` + `Settings` birlikte kullanmak **tek düğme için iki mekanizma** = `KAT-1`
+ihlali. ⊙ Ve `FAZ 2`'yi doğuran **ölçülmüş kusur yok**; planın kendi zarar kontrolü
+*«faz etkisiz teslim edilir»* diyor 🅗.
+
+### `2.4` ZATEN VARDI — ㊷ **on üçüncü** kez
+
+`typo_correct` her düzeltmeyi `{"kind": "auto"|"suggest"}` yazıyor — bu tam olarak
+`Karar.OTO_ICRA` / `Karar.GOSTER`, **dört** üretim noktasında. Yeni bir `_meta.karar`
+alanı ㊲ *aynı işin iki satırı* olurdu.
+
+### Teslim: **ertelemenin kapısı**
+
+⊘ bir sonuçtur, ama **kapısız bir ⊘ bir niyettir**.
+`tests/test_marj_kapisi_on_kosullari.py` — **5 yüklem**, ertelemenin dayandığı üç olguyu
+kilitler; biri değişirse ⊘ **kırmızıyla** düşer.
+
+🅑 **İki mutasyon:** ① `cube_tie_candidates`'in ölçüsünü ayrıştır (**1 kırmızı**)
+② `_match_cube`'a `get_settings()` koy (**1 kırmızı**). İkisi de `diff` ile geri alındı.
+
+📌 **Sırada: `2.3`** — `D4` proaktif sınır deseni **var** (`ask.py:3374`) ama
+**bağlamsızlık** dalına bağlı, `SINIR` kararına değil.
