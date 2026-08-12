@@ -50,8 +50,8 @@ kapanmaz. Dört ayrı çalışma aynı yönü gösteriyor (+17…+72 puan).
 
 | # | mantık eksiği | ölçüm | sektörün yaptığı |
 |---|---|---|---|
-| **1** | 🔴 **Garsonun bağlamı yok.** İsteme yalnız **statik katalog dökümü** (23.729 karakter) giriyor: örnek sorgu yok, iş sözlüğü yok, şema daraltma yok, çalıştır→hatayı gör→düzelt döngüsü yok | garson istemi **45 kod satırı**; route yığını **9.274 satır** | Wren'in kendi **AI Context Layer**'ı (`instructions.md` + `queries.yml` + LanceDB retrieval) — **aldığımız motorun içinde, kullanılmıyor**. Cube: **4 KB markdown → +17…+23 puan** |
-| **2** | 🔴 **Ters yatırım.** Makineye Türkçe öğretmeye 9.274 satır; trafiğin daha büyük kısmını taşıyan hakeme 45 satır | route **%35,5** · garson **%37,0** | O model (*«kullanıcı dilbilimsel şemayı elle beslesin»*) **Microsoft'ta Aralık 2026'da, Tableau'da Şubat 2024'te kaldırıldı** |
+| **1** | 🔴 **Garsonun bağlamı yok.** İsteme yalnız **statik katalog dökümü** (23.729 karakter) giriyor: örnek sorgu yok, iş sözlüğü yok, şema daraltma yok, çalıştır→hatayı gör→düzelt döngüsü yok | garson istemi **45 kod satırı**; route yığını **9.468 satır** | Wren'in kendi **AI Context Layer**'ı (`instructions.md` + `queries.yml` + LanceDB retrieval) — **aldığımız motorun içinde, kullanılmıyor**. Cube: **4 KB markdown → +17…+23 puan** |
+| **2** | 🔴 **Ters yatırım.** Makineye Türkçe öğretmeye 9.468 satır; trafiğin daha büyük kısmını taşıyan hakeme 45 satır | route **%35,5** · garson **%37,0** | O model (*«kullanıcı dilbilimsel şemayı elle beslesin»*) **Microsoft'ta Aralık 2026'da, Tableau'da Şubat 2024'te kaldırıldı** |
 | **3** | 🔴 **Motorun yüzeyi taranmamış.** `wren_core` **15 sembol** açıyor, **1'ini** kullanıyoruz | `rls.py` 380 · `dataset.py` 161 · manifest ~1.490 satır **yeniden yazılmış**; `ManifestExtractor.extract_by` (**şema daraltma**) hiç kullanılmamış | Şema bağlama hatası kurumsal ölçekte hataların **%27,6–33,0'ı** |
 | **4** | 🔴 **Kök-neden yarım.** Layer-1'de kilitli (bileşik segment aranmıyor), **sürpriz (JS diverjansı) hesaplanmıyor**, **FDR düzeltmesi yok** | `§KN-toplam` **en büyük segmenti** seçiyor | Adtributor'ın kurucu örneği: *«yalnız explanatory power kullanan her analiz **büyük segmentleri sistematik olarak suçlar**»*. Ve **CHI 2018: kullanıcı içgörülerinin %60'ından fazlası yanlış** |
 | **5** | 🔴 **Cevap tek kalıpta.** Ölçüldü: 8 farklı soru türünde chip sayısı **6,6,5,6,6,4,6,3**; olgu sayısı **hep 1-2**; **hiçbir cevapta çoklu grafik yok** | *«robotik / katalog gibi»* şikâyetinin sayısal karşılığı | Tableau Pulse **14 deterministik içgörü tipi** üretip **LLM'e yalnız cümleyi** kurduruyor |
@@ -90,9 +90,9 @@ cevaptır**; semantik katmanda başarısızlık **bir hata mesajıdır**.»*
 >
 > ```
 > route yığını : wc -l cube_router niyet followup uyum deger_capasi turetme islev_sozcukleri
-> backend      : find app -name '*.py'                    → 149 dosya · 56.215 satır
-> test         : ls tests/test_*.py · cat tests/test_*.py  → 410 dosya · 71.534 satır
-> belgeler     : find belgeler -name '*.md'                → 36 md · 52.147 satır
+> backend      : find app -name '*.py'                    → 149 dosya · **56.899** satır
+> test         : ls tests/test_*.py · cat tests/test_*.py  → **427** dosya · **74.313** satır
+> belgeler     : find belgeler -name '*.md'                → **37** md · **52.731** satır
 > § işareti    : grep -ohE '§[A-Z0-9][A-Za-z0-9._-]*' app/*.py app/routers/*.py | sort -u
 >                                                          → 271 benzersiz
 > ```
@@ -118,7 +118,7 @@ cevaptır**; semantik katmanda başarısızlık **bir hata mesajıdır**.»*
 | 6 | Kesitsel kök-neden (formül ayrıştırma) | LMDI · çoğu üründe **yok** | 🟢 **VAR** — `kok_neden.py` |
 | 7 | Deterministik grafik kararı | Veezoo: etiketler bile VQL'den | 🟢 **VAR** — ADR-0024 · canlı **10/10** |
 | 8 | Makbuz / provenance | Bruin · BitBoard · Basedash OEM'in merkezi | 🟢 **VAR** — Query Contract |
-| 9 | Türkçe morfoloji | Veezoo'nun DACH kaması → **$6M** | 🟢 **VAR** — ⚠ 9.274 satır, ters yatırım (§4.1) |
+| 9 | Türkçe morfoloji | Veezoo'nun DACH kaması → **$6M** | 🟢 **VAR** — ⚠ 9.468 satır, ters yatırım (§4.1) |
 | 10 | Çok-turlu bellek | — | 🟡 **VAR, tur bazında ÖLÇÜLMÜYOR** |
 | 11 | VQR / hafıza | Snowflake VQR · Wren LanceDB | 🟡 **VAR ama garsona BESLENMİYOR** |
 | 12 | Bütçe + durdurma | Snowflake · **Magentic-One stall ≤2** | 🟢 **VAR** *(§C2 `97dc8f6`)* — ~~uykuda~~ **ölçüldü:** `Butce(adim=8·saniye=30·sorgu=12)` **canlı**, `AZAMI_ADIM=12` koşmadan önce uygulanıyor, stall sayacı `ONARIM_TAVANI=2` (**§B4** ile geldi). Tavanlar kapıda kilitli |
@@ -218,7 +218,7 @@ kaçtı, §19.7). Ayrıntı: **§37**.
 | VQR · yükleme · doğrulama | — | 11 | %0,3 | ◐ |
 
 ⊙ **Mimari sonuç:** ürünün **yükünü** garson taşıyor (%37,0), **emeğini** route
-aldı (9.274 satır). Ve garson, mimarinin **en az geliştirilmiş** basamağı —
+aldı (9.468 satır). Ve garson, mimarinin **en az geliştirilmiş** basamağı —
 istemi 45 satır, bağlamı statik bir katalog dökümü, kendini düzeltme döngüsü yok.
 *Bir sistemin en çok kullanılan parçası, en az düşünülmüş parçasıysa, kusur
 bulma hızı hiç düşmez.*
@@ -334,10 +334,10 @@ mühendisi değiliz sonuçta.»* Bu bölüm o cümlenin **ölçümüdür**.
 
 | basamak | trafik payı | yazılmış kod |
 |---|---|---|
-| **route** — deterministik Türkçe NL→CubeQuery | **%35,5** | **9.274 satır** (`cube_router` · `niyet` · `followup` · `uyum` · `deger_capasi` · `turetme` · `islev_sozcukleri`) |
+| **route** — deterministik Türkçe NL→CubeQuery | **%35,5** | **9.468 satır** (`cube_router` · `niyet` · `followup` · `uyum` · `deger_capasi` · `turetme` · `islev_sozcukleri`) |
 | **garson** — Intent-JSON hakemi | **%37,0** | orkestratör *koşumu* dâhil 5.701 satır; ama **hakemin kendi istemi: 45 kod satırı** |
 
-⊙ **Makineye Türkçe öğretmek için 9.274 satır yazdık; trafiğin daha büyük kısmını
+⊙ **Makineye Türkçe öğretmek için 9.468 satır yazdık; trafiğin daha büyük kısmını
 taşıyan hakemi 45 satırlık bir istemle yönetiyoruz.**
 
 Ve bu, mimarinin **kendi en üst kuralıyla** çelişiyor. `CLAUDE.md` şöyle diyor:
@@ -370,7 +370,7 @@ statik katalog dökümü (23.729 karakter · 23 küp) + kullanıcının sorusu
 zaten sunuyor. Wren'in mimarisinde `instructions.md` (iş bilgisi) + `queries.yml`
 (örnek sorgular) + **LanceDB hibrit erişim** olan bir **AI Context Layer** var. Biz
 Wren'in **motorunu ve MDL'ini** aldık, **AI bağlam katmanını almadık** — ve onun yerine
-9.274 satır Türkçe kural yazdık.
+9.468 satır Türkçe kural yazdık.
 
 *Bir kütüphanenin en pahalı parçasını yeniden yazmak, onu kullanmamanın en pahalı
 biçimidir.*
@@ -486,7 +486,7 @@ Tableau **Ask Data** → Şubat 2024'te emekli *(⚠ tek kaynaklı — bkz. §21
 kalkıyor**, *«synonyms, linguistic relationships, row labels, teach Q&A»* dâhil **tüm
 dilbilimsel şema araçları** ile birlikte.
 🔴 **Bu bizi doğrudan ilgilendiriyor:** *«kullanıcı sözlüğü elle beslesin»* modeli iki dev
-tarafından terk edildi. Bizim 9.274 satırlık Türkçe kural yığınımız o modelin bir
+tarafından terk edildi. Bizim 9.468 satırlık Türkçe kural yığınımız o modelin bir
 akrabasıdır.
 
 **(d) Qlik'in dersi — mükemmel motor, kullanılmayan ürün.** Motoru determinizm açısından
@@ -626,7 +626,7 @@ Qwen2.5-Coder-3B **%15,38**.
 | **Tableau Agent** | ◐ Türkçe prompt kabul ediyor, **İngilizce cevap veriyor** |
 
 ⊙ **Türkçe morfoloji yatırımı savunulabilir bir konumdur** — ama §4.1'deki ters yatırım
-uyarısıyla birlikte okunmalı: 9.274 satır **route'a**, 45 satır **garsona**.
+uyarısıyla birlikte okunmalı: 9.468 satır **route'a**, 45 satır **garsona**.
 
 ## 9 · GRAFİK — rakiplerin «basit grafiği tutturması» nasıl oluyor
 
@@ -983,7 +983,7 @@ Execution/UI.
 * **LanceDB yerel bellek indeksi** — **hibrit erişim** (retrieval)
 
 🔴 **Biz Wren'in motorunu ve MDL'ini aldık; AI bağlam katmanını ALMADIK** — ve yerine
-**9.274 satır Türkçe kural** yazdık.
+**9.468 satır Türkçe kural** yazdık.
 
 Ve Wren'in kendi doğruluk çerçevesi altı sütun sayıyor: *schema linking · value profiling ·
 **ambiguity detection** · generation trace · **retry/repair** · eval*. Belirsizlik tespiti
@@ -1003,7 +1003,7 @@ yerel MCP açık. Belge tutarsız, **bizim lehimize**.
 Bu bölüm bir suçlama değil, bir **muhasebe**. Her madde ölçülmüştür.
 
 ### 12.1 🔴 Ters yatırım
-**9.274 satır route'a (trafiğin %35,5'i), 45 satır garsonun istemine (trafiğin %37'si).**
+**9.468 satır route'a (trafiğin %35,5'i), 45 satır garsonun istemine (trafiğin %37'si).**
 Ve `CLAUDE.md`'nin **en üst kuralı** bunun tersini söylüyor: *«route'a Türkçe öğretmemiz
 gerekir ki bu gereksiz… asıl **LLM'e** güveniyoruz»*. Kural doğru yazılmış, yatırım tersine
 yapılmış. **271 `§` işareti** ve **130 muafiyet** bu terslığin faturasıdır.
@@ -1306,11 +1306,11 @@ bilimsel olarak taşıyamayacağımızı gösteriyor** (DoWhy). Üçü de **bilg
 
 | varlık | büyüklük | dürüst yargı |
 |---|---|---|
-| **`cube_router.py` + Türkçe kural yığını** | **9.274 satır** | 🟡 **Yarısı değerli, yarısı yanlış katmanda.** Değerli yanı: trafiğin **%35,5'ini** **sıfır LLM maliyetiyle** ve **%89-98 doğru küple** cevaplıyor — bu gerçek bir maliyet ve gecikme avantajı. Yanlış yanı: aynı iş **garsona bir örnek sorgu listesi vererek** (Cube: **4 KB markdown → +17…+23 puan**) çok daha ucuza yapılabilirdi. Ve dayandığı ürün modeli (*«kullanıcı dilbilimsel şemayı elle beslesin»*) **Microsoft Aralık 2026'da, Tableau Şubat 2024'te kaldırdı** |
+| **`cube_router.py` + Türkçe kural yığını** | **9.468 satır** | 🟡 **Yarısı değerli, yarısı yanlış katmanda.** Değerli yanı: trafiğin **%35,5'ini** **sıfır LLM maliyetiyle** ve **%89-98 doğru küple** cevaplıyor — bu gerçek bir maliyet ve gecikme avantajı. Yanlış yanı: aynı iş **garsona bir örnek sorgu listesi vererek** (Cube: **4 KB markdown → +17…+23 puan**) çok daha ucuza yapılabilirdi. Ve dayandığı ürün modeli (*«kullanıcı dilbilimsel şemayı elle beslesin»*) **Microsoft Aralık 2026'da, Tableau Şubat 2024'te kaldırdı** |
 | **410 test dosyası · 71.534 satır** | uygulamanın **1,24 katı** | 🟡 **Kalitesi yüksek, nişangâhı yanlış.** Ürünün **%35,5'ini** ölçüyor; **%37'sini taşıyan garsonun otomatik ölçümü yok**. Testler kötü değil — **eksik yere bakıyorlar** |
 | **271 `§` işareti · 130 muafiyet** | — | 🟡 **Her biri gerekçeli, toplamı bir borç.** On binlerce hücrelik bir uzayda 131 hücre kapatılmış. Kusur bulma oranı **düşmüyor** (~5 senaryoda 1) — bu, yöntemin ölçeklenmediğinin kanıtı |
 
-⊙ **Buradaki kayıp «yapılan iş» değil, «yapılmayan iş».** 9.274 satır yazılırken garsona
+⊙ **Buradaki kayıp «yapılan iş» değil, «yapılmayan iş».** 9.468 satır yazılırken garsona
 örnek sorgu bağlanmadı, şema daraltma açılmadı, ölçüm kurulmadı.
 
 ### 16.3 🔴 BOŞA GİTTİ — açıkça, savunmasız
@@ -1347,7 +1347,7 @@ bilimsel olarak taşıyamayacağımızı gösteriyor** (DoWhy). Üçü de **bilg
 
 Boşa giden şey **satır** değil, **sıra**:
 
-1. **Ölçüm önce kurulmadı.** Garson korpusu ilk gün kurulsaydı, 9.274 satırlık route
+1. **Ölçüm önce kurulmadı.** Garson korpusu ilk gün kurulsaydı, 9.468 satırlık route
    yığınının hangi kısmının gereksiz olduğu **ölçülebilirdi**. Bugün bilinmiyor.
 2. **Motorun yüzeyi taranmadı.** `dir(wren_core)` bir komut; **15 sembolden 14'ünün**
    varlığı bu rapora kadar fark edilmedi.
@@ -2354,7 +2354,7 @@ En yüksek çıta Listen to Data'nın *«Türkçe **karakter kaybı olmadan**»*
 yalnız **karakter seti**. Mubisoft'un *«Etiket Ajanı»*ı kolon adlarını Türkçeleştiriyor ama
 bu **çıktı** tarafında, **giriş** tarafında değil.
 ⊙ *«göre/bazında»* çok anlamlılığı, ek çözümleme, fiil-isim ayrımı — **pazarda kimse
-dokunmamış**. §4.1'de *«ters yatırım»* dediğim 9.274 satır, **bu ışıkta yeniden
+dokunmamış**. §4.1'de *«ters yatırım»* dediğim 9.468 satır, **bu ışıkta yeniden
 değerlendirilmeli**: yanlış olan yatırımın **kendisi** değil, garsona hiç yatırım
 yapılmamış olması.
 
@@ -4191,7 +4191,7 @@ teşhisi tam olarak budur.
 |---|---|---|---|---|
 | ⊘ **F10** | **`SessionContext.dry_run` / `register_csv` / `register_parquet`** | §11.1 | `wren_service.dry_plan` sarmalayıcısı ve **`dataset.py` (161 satır)** yerine motorun kendi API'si | günler ⟳ **KARAR:** **`§F5`'TE ÖLÇÜLÜP REDDEDİLDİ (`§40.2`)** — `dataset.py`'nin 161 satırı dökümlendi; `register_csv` o işin **hiçbirini** yapmıyor (`ingest_file` 42 satır yalnız yaklaşıyor). |
 | ⊘ **F11** | **`RowLevelAccessControl` + `validate_rlac_rule`** | §11.1 | **`rls.py` (380 satır)** yerine. ⚠ Güvenlik sınırı — **çok dikkatli**, kademeli, A/B ile | hafta ⟳ **KARAR:** **`§F5`'TE ÖLÇÜLÜP REDDEDİLDİ (`§40.2`)** — *«sembol düzeyinde doğru, yetenek düzeyinde farklı»*; ve `§F12`'nin üçüncü ölçümü RLS enjeksiyonunun manifesti **v2-uyumsuz** yaptığını gösterdi. |
-| ⊘ **F12** | ⟳ **ÜÇÜNCÜ ÖLÇÜM (2026-08-12): ⑦'nin ÖN KOŞUL KAPISI KÖRDÜ — ve koşul ZATEN SAĞLANMIYOR.** 🔴 `is_backward_compatible` *«RLS uygulanmış manifestte de True»* diyordu; **boş bir doğruydu**: varsayılan tenant (`demo-boyahane`) hiçbir cube'da `always_filter` beyan etmiyor, yani `manifeste_yaz` her iki kademede de **bayt bayt aynı** manifesti döndürüyordu — test *«RLS uygulanmış»* diyordu ama RLS **hiç uygulanmamıştı**. İzole + taze derlenmiş `gulteks` (logo-3) ile ölçüldü: ham **True** · `shadow` (0 kural) **True** · 🔴 **`on` (3 kural: `cari`·`mal`·`ticaret`, hepsi `CANCELLED = 0`) → `False`**. Kontrol izole (aynı manifest, yalnız enjeksiyon farkı) ve kusur **varsayılan** manifestte de yeniden üretiliyor (tek yapay `always_filter` → 1 kural → `False`) — yani bulgu tenant'a değil **enjeksiyonun kendisine** bağlı. ⊙ Bu tam olarak kartın *«bir gün RLS enjeksiyonu manifesti v2-uyumsuz hâle getirirse kapı bayrağı açmadan önce konuşur»* cümlesinin gerçekleşmesidir; kapı konuşamamıştı çünkü **kural olmayan tek tenant'a** bakıyordu. *Bir ön koşul kapısını, koşulun oluşamadığı yerde koşmak, kapıyı kurmakla kurmamak arasındaki farkı yok eder.* Kapı artık **görüyor**: `test_RLAC_ENJEKSIYONU_v2_UYUMUNU_BOZUYOR`. *(ilk ölçümün metni aşağıda korunuyor)* · **`Manifest` · `to_manifest` · `migrate_manifest_json` · `is_backward_compatible`** — **ÖLÇÜLDÜ, İKİYE AYRILDI** *(ilk ölçüm 2026-08-12)*. ⊘ **Göç YAPILMIYOR:** beş projenin `schema_version`'ı da **5**, yani göçülecek **sürüm farkı yok**; API *«maximum supported version is 4»* diyor ve base64'te de *«JSON error»* — **girdi biçimi belgesizce çelişiyor**. ⚠ Ve `wren_project.yml`'nin `schema_version`'ı ile motorun *«layout version»*'ı **aynı şey olmayabilir**; denk saymak ölçülmemiş bir eşitlik kurmak olurdu. *«Göç bedava» ancak göçülecek bir şey varsa kazançtır* — on üçüncü ölçülmüş «yapma». ✅ **AMA YARISI HEMEN DEĞERLİ:** `is_backward_compatible(manifest)` → **`True`**, hem temiz hem **RLS uygulanmış** hâlde — bu **`motor_rls` borcunun ön koşulu** ve artık kapılı. 🔴 **VE ÖLÇÜM BORÇ ⑦'NİN ŞEKLİNİ DEĞİŞTİRDİ:** `rls(shadow)` ve `rls(on)` → **0 kural**; demo katalogda RLS **hiç kural enjekte etmiyor**, yani `motor_rls`'i açmak burada **hiçbir şey değiştirmezdi** (daha önce ölçülen *«`shadow ≡ off`»*'un sebebi budur). Eksik olan **bayrak değil KURAL**. *Bir korumayı açmadan önce, koruyacak bir şeyi olduğunu ölçmek gerekir.* Kapı: `test_f12_manifest_uyumu.py` (4) — sürüm tekliğini, v2 uyumunu ve kural sayısını kilitler; ayrışırlarsa karar **yeniden okunur** | §11.1 | `compose.py` + `mdl_writer.py`'nin manifest kısmı (**~1.490 satır**). ⊙ Özellikle **`migrate_manifest_json`** — pack sürümü değişince **göç bedava** | hafta ⟳ **KARAR:** **ÖLÇÜLDÜ, AÇILAMIYOR (`§40.9`)** — izole+taze `gulteks`: `is_backward_compatible` ham **True** · shadow **True** · 🔴 **`on` (3 kural) → False**. RLS enjeksiyonu manifesti **v2-uyumsuz** yapıyor. ⊙ Kapı önce **kör**dü (kural olmayan tek tenant'a bakıyordu) — *bir ön koşul kapısı, koşulun sağlanmadığı bir örnekle sınanmadıkça boş bir doğrudur.* |
+| ⊘ **F12** | ⟳ **ÜÇÜNCÜ ÖLÇÜM (2026-08-12): ⑦'nin ÖN KOŞUL KAPISI KÖRDÜ — ve koşul ZATEN SAĞLANMIYOR.** 🔴 `is_backward_compatible` *«RLS uygulanmış manifestte de True»* diyordu; **boş bir doğruydu**: varsayılan tenant (`demo-boyahane`) hiçbir cube'da `always_filter` beyan etmiyor, yani `manifeste_yaz` her iki kademede de **bayt bayt aynı** manifesti döndürüyordu — test *«RLS uygulanmış»* diyordu ama RLS **hiç uygulanmamıştı**. İzole + taze derlenmiş `gulteks` (logo-3) ile ölçüldü: ham **True** · `shadow` (0 kural) **True** · 🔴 **`on` (3 kural: `cari`·`mal`·`ticaret`, hepsi `CANCELLED = 0`) → `False`**. Kontrol izole (aynı manifest, yalnız enjeksiyon farkı) ve kusur **varsayılan** manifestte de yeniden üretiliyor (tek yapay `always_filter` → 1 kural → `False`) — yani bulgu tenant'a değil **enjeksiyonun kendisine** bağlı. ⊙ Bu tam olarak kartın *«bir gün RLS enjeksiyonu manifesti v2-uyumsuz hâle getirirse kapı bayrağı açmadan önce konuşur»* cümlesinin gerçekleşmesidir; kapı konuşamamıştı çünkü **kural olmayan tek tenant'a** bakıyordu. *Bir ön koşul kapısını, koşulun oluşamadığı yerde koşmak, kapıyı kurmakla kurmamak arasındaki farkı yok eder.* Kapı artık **görüyor**: `test_RLAC_ENJEKSIYONU_v2_UYUMUNU_BOZUYOR`. *(ilk ölçümün metni aşağıda korunuyor)* · **`Manifest` · `to_manifest` · `migrate_manifest_json` · `is_backward_compatible`** — **ÖLÇÜLDÜ, İKİYE AYRILDI** *(ilk ölçüm 2026-08-12)*. ⊘ **Göç YAPILMIYOR:** beş projenin `schema_version`'ı da **5**, yani göçülecek **sürüm farkı yok**; API *«maximum supported version is 4»* diyor ve base64'te de *«JSON error»* — **girdi biçimi belgesizce çelişiyor**. ⚠ Ve `wren_project.yml`'nin `schema_version`'ı ile motorun *«layout version»*'ı **aynı şey olmayabilir**; denk saymak ölçülmemiş bir eşitlik kurmak olurdu. *«Göç bedava» ancak göçülecek bir şey varsa kazançtır* — on üçüncü ölçülmüş «yapma». ✅ **AMA YARISI HEMEN DEĞERLİ:** `is_backward_compatible(manifest)` → **`True`**, hem temiz hem **RLS uygulanmış** hâlde — bu **`motor_rls` borcunun ön koşulu** ve artık kapılı. 🔴 **VE ÖLÇÜM BORÇ ⑦'NİN ŞEKLİNİ DEĞİŞTİRDİ:** `rls(shadow)` ve `rls(on)` → **0 kural**; demo katalogda RLS **hiç kural enjekte etmiyor**, yani `motor_rls`'i açmak burada **hiçbir şey değiştirmezdi** (daha önce ölçülen *«`shadow ≡ off`»*'un sebebi budur). Eksik olan **bayrak değil KURAL**. *Bir korumayı açmadan önce, koruyacak bir şeyi olduğunu ölçmek gerekir.* Kapı: `test_f12_manifest_uyumu.py` (**5**) — sürüm tekliğini, v2 uyumunu ve kural sayısını kilitler; ayrışırlarsa karar **yeniden okunur** | §11.1 | `compose.py` + `mdl_writer.py`'nin manifest kısmı (**~1.490 satır**). ⊙ Özellikle **`migrate_manifest_json`** — pack sürümü değişince **göç bedava** | hafta ⟳ **KARAR:** **ÖLÇÜLDÜ, AÇILAMIYOR (`§40.9`)** — izole+taze `gulteks`: `is_backward_compatible` ham **True** · shadow **True** · 🔴 **`on` (3 kural) → False**. RLS enjeksiyonu manifesti **v2-uyumsuz** yapıyor. ⊙ Kapı önce **kör**dü (kural olmayan tek tenant'a bakıyordu) — *bir ön koşul kapısı, koşulun sağlanmadığı bir örnekle sınanmadıkça boş bir doğrudur.* |
 
 ### 14.12 Toplam ve dürüst yargı
 
@@ -4230,7 +4230,7 @@ ve kullanıcı **hiçbir şey hissetmiyor** (`KURAL B` gereği davranış aynı 
 
 ---
 
-## 14.14 🔴 SON DENETİM — bölüm bölüm taranan ve EKSİK bulunan dokuz iş
+## 14.14 🔴 SON DENETİM — bölüm bölüm taranan ve EKSİK bulunan **ON** iş *(⟳ 2026-08-12: «dokuz» yazıyordu; tablolar **10** satır taşıyor — `A12·A13·A14·B9·B10·B11·D10·D11·E7·F13` — ve `§14.15`'in **59**'u ancak **10** ile tutuyor)*
 
 > Rapordaki **her bölümün** eylem gerektiren bulgusu plana karşı tarandı. Dokuzu eksikti;
 > aşağıda faza yerleştirildi. ⚠ *Bu tarama dört kez «var» sanıp yanlış eşleşme buldu —
@@ -4269,7 +4269,7 @@ ve kullanıcı **hiçbir şey hissetmiyor** (`KURAL B` gereği davranış aynı 
 
 | # | iş | kaynak | neden |
 |---|---|---|---|
-| ✅ **F13** | ⟳ **İKİNCİ ÖLÇÜM (2026-08-12): «eksik parça» İDDİASI ÇÜRÜDÜ — araç VARDI, KAPI yoktu.** `app/yazma_araclari.py` üç aracı `yan_etki="yazar"` ile **zaten** tanımlıyor ve `tools.py:643` (`KAYIT = KAYIT + … + _yazma_araclari()`) onu **tam bağlıyor** — yani *«ajan öneremiyor»* yanlıştı. 🔴 Gerçekte eksik olan: `Planlayici.calistir()`'in dört kapısında `yan_etki`·`onay`·`bilet` **hiç geçmiyordu**; `yazma_araclari.py`'nin *«yalnız onay_akisi üzerinden»* değişmezi **düzyazıydı**. ⚠ Ve boşluğu gizleyen ikinci kusur: araçlar zaten çalışmıyordu (ilan edilen `girdi` gerçek imzayla tutmuyor → `TypeError`) — yani güvenlik bir kapı değil bir **uyumsuzluktu**, ve bir `TypeError` bir **red değildir**. ✅ **Beşinci kapı** `_onay_kapisi` (fail-closed: `onay_biletleri` boş) + MCP sızdırmazlığı. ⊘ Açık kalan: `girdi`↔imza adaptörü (`FAZ H`) — `test_YAZMA_ARACLARININ_GIRDI_BEYANI_HALA_UYUMSUZ` onu gizlemiyor. *(ilk ölçümün metni aşağıda korunuyor)* · 🔴 **ONAYLI YAZMA AKSİYONLARI** — **ÖLÇÜLDÜ: KİLİDİN BİR YARISI ZATEN KURULU** *(ilk ölçüm 2026-08-12)*. ⊙ `onay_akisi.py` **289 satır** (durumlar · risk kademeleri · bilet ömrü · **yasak argüman** listesi) · `yazma_araclari.py` *«yalnız `onay_akisi` üzerinden»* · `POST /ask/eylem` **canlı** ve `bilet_dogrula` çağırıyor · şema bilet alanı **fail-closed** · `authorize()`+audit **var**. 🔴 **VE BAYRAĞIN ADI YANILTIYOR:** `onay_akisi: "off"` bir *«onay akışı kapalı»* **değildir** — bayrağın kendi açıklaması *«kapsam İÇİ ve GERİ ALINABİLİR bir eylem İSTEMSİZ koşar… **YAZMA YÜZEYİ BÜYÜMEZ**»* diyor; yani bayrak **istem kaldırır**, onay eklemez, ve `off` **daha muhafazakâr** olandır. *Bir bayrağın adı, ne yaptığının kanıtı değildir.* 🔴 **Gerçekten eksik tek parça:** ajanın yazma aracını **öneri olarak üretmesi** — `tools.KAYIT`'ta `yan_etki="yazar"` araç **yok** (`§C3`: `{'yok': 25}`), planlayıcı onu **seçemez**. ⚠ Bu bir kablolama değil bir **karar**: kayda bir `yazar` araç girdiği an `§C3`'ün MCP açılış şartı da kırmızıya döner — **ikisi aynı kararın iki yüzü** ve birlikte verilmeli. Kapı: `test_f13_onayli_yazma.py` (6) kurulu yarıyı kilitler, eksik yarıyı **adıyla** bekler | §17.3 · MIMARI §H | Bugün `_yazma_araclari` **bilerek** `llm_araclari` dışında — *«ajan YAZAMAZ»* (`tools.py`'nin dört değişmezinden biri). Sonuç: *«bunu panoya ekle»* · *«her pazartesi yolla»* **yapılamıyor**. ⊙ **Ve bu «agentic'in asıl kilidi»**: yasak **kaldırılmaz, KADEMELENDİRİLİR** — ajan yazma aracını **öneri** olarak üretir → kullanıcı **onaylar** → `authorize()` + audit (**ikisi de zaten var**) → çalışır. Geri alınamaz iş → **senkron onay**; orta risk → kuyruk. ⚠ **Kapı: onaysız hiçbir yazma; her onay audit'e ayrı satır** |
+| ✅ **F13** | ⟳ **İKİNCİ ÖLÇÜM (2026-08-12): «eksik parça» İDDİASI ÇÜRÜDÜ — araç VARDI, KAPI yoktu.** `app/yazma_araclari.py` yazma araçlarını `yan_etki="yazar"` ile tanımlıyor ve `tools.py:818` (`KAYIT = KAYIT + … + _yazma_araclari()`) onu bağlıyor — 🔴 **AMA BİR BAYRAĞA KOŞULLU, ve koşul burada yazılmamıştı** (⟳ ölçüm 2026-08-12): `_yazma_araclari()` `DIMA_YAZMA_ARACLARI` kapalıyken `()` döndürür, yani araçlar kayda **hiç girmez** *(bu bir kusur değil, modülün ilan ettiği tasarım: «bir aracı kayda alıp sonra engellemek, o engelin bir gün unutulabileceği anlamına gelir»)*. Ölçülen iki durum: bayrak **kapalı (varsayılan)** → `KAYIT` **31**, dağılım **`{'yok': 31}`**, yazar araç **0** · bayrak **açık** → `KAYIT` **33**, **`{'yok': 31, 'yazar': 2}`**, araçlar **`dashboards.create`·`schedules.create`** — yani **üç değil İKİ**. ⊙ *Bir bağlamayı koşulunu yazmadan bildirmek, varsayılan durumda var olmayan bir yeteneği var göstermektir.* Eski satır **iki kez** yanılıyordu — yani *«ajan öneremiyor»* yanlıştı. 🔴 Gerçekte eksik olan: `Planlayici.calistir()`'in dört kapısında `yan_etki`·`onay`·`bilet` **hiç geçmiyordu**; `yazma_araclari.py`'nin *«yalnız onay_akisi üzerinden»* değişmezi **düzyazıydı**. ⚠ Ve boşluğu gizleyen ikinci kusur: araçlar zaten çalışmıyordu (ilan edilen `girdi` gerçek imzayla tutmuyor → `TypeError`) — yani güvenlik bir kapı değil bir **uyumsuzluktu**, ve bir `TypeError` bir **red değildir**. ✅ **Beşinci kapı** `_onay_kapisi` (fail-closed: `onay_biletleri` boş) + MCP sızdırmazlığı. ⊘ Açık kalan: `girdi`↔imza adaptörü (`FAZ H`) — `test_YAZMA_ARACLARININ_GIRDI_BEYANI_HALA_UYUMSUZ` onu gizlemiyor. *(ilk ölçümün metni aşağıda korunuyor)* · 🔴 **ONAYLI YAZMA AKSİYONLARI** — **ÖLÇÜLDÜ: KİLİDİN BİR YARISI ZATEN KURULU** *(ilk ölçüm 2026-08-12)*. ⊙ `onay_akisi.py` **289 satır** (durumlar · risk kademeleri · bilet ömrü · **yasak argüman** listesi) · `yazma_araclari.py` *«yalnız `onay_akisi` üzerinden»* · `POST /ask/eylem` **canlı** ve `bilet_dogrula` çağırıyor · şema bilet alanı **fail-closed** · `authorize()`+audit **var**. 🔴 **VE BAYRAĞIN ADI YANILTIYOR:** `onay_akisi: "off"` bir *«onay akışı kapalı»* **değildir** — bayrağın kendi açıklaması *«kapsam İÇİ ve GERİ ALINABİLİR bir eylem İSTEMSİZ koşar… **YAZMA YÜZEYİ BÜYÜMEZ**»* diyor; yani bayrak **istem kaldırır**, onay eklemez, ve `off` **daha muhafazakâr** olandır. *Bir bayrağın adı, ne yaptığının kanıtı değildir.* 🔴 **Gerçekten eksik tek parça:** ajanın yazma aracını **öneri olarak üretmesi** — `tools.KAYIT`'ta `yan_etki="yazar"` araç **yok** (`§C3` o gün `{'yok': 25}` ölçmüştü; **bugün bayrak kapalıyken `{'yok': 31}`, açıkken `{'yok': 31, 'yazar': 2}`**), planlayıcı onu **seçemez**. ⚠ Bu bir kablolama değil bir **karar**: kayda bir `yazar` araç girdiği an `§C3`'ün MCP açılış şartı da kırmızıya döner — **ikisi aynı kararın iki yüzü** ve birlikte verilmeli. Kapı: `test_f13_onayli_yazma.py` (**13**) kurulu yarıyı kilitler, eksik yarıyı **adıyla** bekler | §17.3 · MIMARI §H | Bugün `_yazma_araclari` **bilerek** `llm_araclari` dışında — *«ajan YAZAMAZ»* (`tools.py`'nin dört değişmezinden biri). Sonuç: *«bunu panoya ekle»* · *«her pazartesi yolla»* **yapılamıyor**. ⊙ **Ve bu «agentic'in asıl kilidi»**: yasak **kaldırılmaz, KADEMELENDİRİLİR** — ajan yazma aracını **öneri** olarak üretir → kullanıcı **onaylar** → `authorize()` + audit (**ikisi de zaten var**) → çalışır. Geri alınamaz iş → **senkron onay**; orta risk → kuyruk. ⚠ **Kapı: onaysız hiçbir yazma; her onay audit'e ayrı satır** |
 
 ### 14.15 GÜNCEL TOPLAM
 
@@ -4284,7 +4284,7 @@ ve kullanıcı **hiçbir şey hissetmiyor** (`KURAL B` gereği davranış aynı 
 | **TOPLAM** | **59** |
 
 🔴 **Ve §14.13'ün kısa yolu DEĞİŞMEDİ** — beş iş, ~2-3 hafta, hissedilen iyileşmenin ~%70'i.
-Yeni dokuz kalem o beşliye **girmiyor**; ikisi (A13, B9) **ikinci dalgada**, biri (F13)
+Yeni **on** kalem o beşliye **girmiyor**; ikisi (A13, B9) **ikinci dalgada**, biri (F13)
 **ürün kararı** bekliyor.
 
 ⚠ **59 adım bir taahhüt değil, bir KATALOGDUR.** Değeri şurada: *«keşke şunu da
@@ -4442,7 +4442,7 @@ küpün koyması · beyan kültürü · kesitsel kök-neden cebiri (LMDI'nin do�
 
 🔴 **Yanlış olan mimari değil, ağırlığın dağılımı:** trafiğin %37'sini taşıyan basamak
 **45 satırlık bir istemle** yönetiliyor ve **hiç ölçülmüyor**; %35,5'ini taşıyan basamağa
-**9.274 satır** yazılmış. Ve o 9.274 satırın varlık sebebi olan model
+**9.468 satır** yazılmış. Ve o 9.468 satırın varlık sebebi olan model
 (*«kullanıcı dilbilimsel şemayı elle beslesin»*) **Microsoft ve Tableau tarafından
 piyasadan kaldırıldı**.
 
@@ -4695,10 +4695,29 @@ böyle kapattı: ölçüldü, bu depoda p-değeri olmadığı görüldü, **redd
 ### 40.1 Ölçüm — bağımlılıklar ve kod izleri
 
     syrupy · ruptures · statsforecast · snowballstemmer · zemberek · promptfoo → HİÇBİRİ KURULU DEĞİL
-    M-Schema · resolve_used_table_names · LMDI · perturbation · TURSpider     → kodda İZ YOK
+    M-Schema · resolve_used_table_names · LMDI · TURSpider · perturbation     → kodda İZ YOK
+                                                    (⟳ 08-12: **beşi de yeniden ölçüldü**,
+                                                     `ast` ile 12.026 kod adı tarandı → 0)
     değer profilleme (`FuzzyIndex` · `dimension_values` · `deger_capasi`)      → ✅ VAR
     `SessionContext` · `RowLevelAccessControl`                                → ✅ ÖLÇÜLMÜŞ (`§F5`)
     view fan-out kapısı (`test_view_fanout_guard.py`)                         → ✅ VAR
+
+> 🔴🔴 **BU ENVANTER BİR *SEMBOL* ENVANTERİDİR, BİR *YETENEK* ENVANTERİ DEĞİL — ve ayrımı
+> yazmamak bu turda bir yanlış çelişki üretti.** Bir denetim ajanı *«`perturbation` ✅ artık
+> var»* bildirdi (`tests/test_a10_saglamlik_farki.py`, 6 kapı), ben yamaladım — sonra
+> **kendi ölçümüm yamayı çürüttü**: `app/`+`lab/`+`tests/` altındaki **12.026** kod adı
+> `ast` ile tarandığında `perturbation` **0** kez geçiyor. İkisi de doğruydu:
+>
+> | okuma | ölçüm |
+> |---|---|
+> | *sembol* `perturbation` kodda var mı | 🔴 **HAYIR** — 0 kod adı |
+> | *yetenek* (sağlamlık pertürbasyonu) kurulu mu | ✅ **EVET** — `§40.6 A10`, ama **Türkçe adla** (`BOZULMALAR`, `test_a10_saglamlik_farki`) |
+>
+> ⊙ Yani bu envanter, **yerel adla kurulmuş bir yeteneği göremez** — yabancı sembol adını
+> arar. Bu bir kusur değil bir **kapsamdır**, ama yazılmadığı için iki tur boyunca bir
+> *«bölüm içi çelişki»* gibi okundu.
+>
+> *Yabancı adların envanteri, kendi dilinde yazılmış bir yeteneği yokluk sanır.*
 
 ### 40.2 🔴 ÜÇ KALEM ZATEN KAPANMIŞ — kartları bayattı
 
@@ -4776,7 +4795,7 @@ gerekçesi düzeltildi (`test_b12_granulerlik_tek_sahip.py`).
 
 ⚠ Bu, `㉔`'ün kendi belgemize uygulanmasıdır: yazılı gerekçe **ölçülmeden** kabul edilmişti.
 
-#### F14 · `SessionContext`'in dört yeteneği — ikisi ZATEN kullanılıyor
+#### F14 · `SessionContext`'in dört yeteneği — **biri** kullanılıyor, **ikisi hiç ölçülmedi**
 
 Kart dört yetenek sayıyor. Ölçüldü: bu depo motoru `WrenEngine` üzerinden çağırıyor ve o
 yüzeyin **tamamı** dört metottur:
@@ -4785,10 +4804,11 @@ yüzeyin **tamamı** dört metottur:
 
 | kart | ölçüm |
 |---|---|
-| `dry_run` | ✅ **yüzeyde var ve kullanılıyor** |
+| `dry_run` | 🔴 **yüzeyde var ama ÜRÜN KODUNDA HİÇ ÇAĞRILMIYOR** — `grep -rn dry_run backend/app/` → **0** *(ölçüm 2026-08-12)*. İlk yazımdaki *«kullanılıyor»* ölçülmemiş bir varsayımdı; ve aynı belgenin `§14.16 A` tablosu bunu **zaten doğru** yazmış: *«`wren_service.dry_plan` sarıyor»* |
 | `dry_plan` | ✅ **kullanılıyor** — güvenlik zincirinin ikinci kapısı |
 | `get_available_functions` | ⊘ `WrenEngine` yüzeyinde **yok**; `get_session_context(manifest_str, function_path, properties, data_source)` fabrikasının arkasında |
 | `transform_sql` | ⊘ aynı |
+| `pushdown_limit` · `list_tables` | 🔴 **HİÇ ÖLÇÜLMEDİ.** `§14.16 D`'nin F14 kartı dört yeteneği **bu ikisiyle** sayıyordu; bu tablo onların yerine `dry_run`/`dry_plan`'ı koydu — yani karar, kartın saydığı dördün **ikisini görmeden** verildi. Kurulu `wren` paketinde de grep = **0** |
 
 ⊘ **KARAR: AÇILMIYOR.** Kartın vaadi (*«motorun desteklediği fonksiyonları **sormak**,
 varsaymak yerine»*) doğru bir ilkedir ama bugün bir kusur ölçülmedi: derleyici zaten
