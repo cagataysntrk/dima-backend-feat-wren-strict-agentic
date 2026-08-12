@@ -8,7 +8,7 @@
 | kalem | konu | durum |
 |---|---|---|
 | **A** | iş sözlüğü: elle değil **kullanımdan hasat** | 🟣 ölçüldü — *aşağıda* |
-| **B** | route'un **çürütülebilirliği** + garson | 🟣 ölçüldü — *aşağıda* |
+| **B** | route'un **çürütülebilirliği** + garson | ✅ **KAPANDI** — *aşağıda* |
 | **C** | Wren motorunun **kullanılmayan** yetenekleri | 🔵 |
 | **D** | agentic önerileri **tek tek** | 🔵 |
 | **E** | cevap biçimi + UX önerileri **tek tek** | 🔵 |
@@ -241,7 +241,7 @@ yolunu sınıyor. Sonuç:
 | # | iş | risk | not |
 |---|---|---|---|
 | 1 ✅ | **Çekilme sebebini SAY** — *yapıldı: `sebep::<x>` kovası, **yalnız kesilen turda**; payda `ast` kapısıyla korunuyor, mutasyonlu* | 🟢 | `lab/nl_corpus.py`'nin `cats` kovasına ekle; **payda kutsal** (🅜) |
-| 2 | **Garson korpusu (`A1`)** — `route()` dışı bir ölçüm tabanı | 🟡 | deponun **kendi** ilan ettiği ön koşul; `sema_daraltma`/`few_shot` yayılımının şartı |
+| 2 ✅ | **Garson korpusu (`A1`)** — *yapıldı: `lab/garson_korpusu.py`, **40 vaka** (tek sahipli ölçülerden), kuru mod varsayılan, sağlayıcı yoksa koşmaz, `E-8` ve payda kapılı; mutasyonlu* | 🟡 | deponun **kendi** ilan ettiği ön koşul; `sema_daraltma`/`few_shot` yayılımının şartı |
 
 ⚠ Sektör karşılaştırması (Snowflake Cortex Analyst · Databricks Genie · Wren AI) ancak
 **②** kurulduktan sonra anlamlı olur: karşılaştırma bir **sayı** ister, bugün elimizde
