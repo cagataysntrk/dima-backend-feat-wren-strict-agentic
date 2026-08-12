@@ -2425,6 +2425,42 @@ ve öneri şeridi **yanlış adaylar** gösterir.
 - ② kıyas temeli **verilmişse** chip **basılmıyor** (yanlış-pozitif)
 - ③ yön **beyansız** ölçüde `[akran]` chip'i **sunulmuyor** (`68/136` gerçeği)
 
+> ⟳🔴 **DÜZELTİLDİ — 13 Ağustos 2026 · canlı curl + kod ölçümü.** Bu maddenin
+> **gerekçesi bayattı**, `③` ise **yanlıştı**; kapı yazıldı ama ölçülene göre yazıldı.
+>
+> **ⓐ Gerekçe bayat 🅟.** *«"RAM-3 neden düşük" cevapsız»* artık doğru değil — **iki
+> kipte de** cevaplanıyor: çapalı hâlde *«RAM-3, öteki 10 makine ortalamasından %10,7
+> düşük (52,45 ↔ akran ort. 58,76)»* (11 satır), çapasızda `source=cube+llm` ve
+> makbuzun 2. adımı **`KIYASLA`** (`plan_semasi.FIIL_ANLAMI`). Motor
+> `contribution._akran_kiyasi`. ㊷ *kartın yapılacağı yapılmıştı* — **on ikinci** kez.
+>
+> **ⓑ Fazın kalan işi yetenek değil ZİNCİRDİ ㉕.** Hiçbir test bu yolu **kod adıyla**
+> anmıyordu (㉙, **sıfır** dosya): çalışan ama **kapısız** bir yetenek sessizce
+> gerileyebilirdi. Teslim edilen **kapının kendisidir** (7 yüklem, **iki mutasyonla**
+> kanıtlandı 🅑) — ürün kodu **değişmedi**.
+>
+> **ⓒ `③` uygulansaydı çalışan cevabı KIRARDI.** `ort_oee`, `_yon_beyanli()` gözünde
+> *«beyansız»*dır — oysa katalog onu **beyan ediyor**: `oee/metadata.yml:23` →
+> `lower_is_better: false` (*«B-5 · yüksek = İYİ»*). Kaybı yapan **projeksiyon**:
+> `wren_service.py:853` listeye **yalnız doğru olanları** alıyor, `false` ile *«alan
+> yok»* aynı kovaya düşüyor. 🆋 Üç kova sayıldı: **72 `true` · 55 `false` · 46 alan
+> yok**. Doğru ölçüt yönün *beyanı* değil, yargının **yokluğu**dur (`GG8`): akran
+> kıyası bir **olgudur** (*«%10,7 düşük»*), bir yargı değil. Kapı `③`'ü bu yönde
+> yazdı: *«chip basılmasın»* değil, **«yargı üretilmesin»**.
+>
+> **ⓓ Bu, borç ⑫'nin çerçevesini de düzeltir.** *«Üçüncü hâl (`higher_is_better`) YOK,
+> şema sözleşmesi işi»* demiştim; **kaynakta VAR** — 55 ölçü `false` diyor. Kalan iş
+> `wren_service.py:853`'te **ikinci bir projeksiyon** ve onu okuyan tüketici; maliyet
+> sanılandan **çok düşük**, ama yine de bir *davranış* değişikliği (yargı üretimi)
+> olduğu için ⑫ olarak açık kalır.
+>
+> **ⓔ İki yüklemim de önce yanlış yazıldı ③ — ikisini de ölçüm düzeltti:** (1)
+> *«`compare` taşıyan chip»* süzgeci yanlıştı — chip'ler `{**cube_query}` ile üretilir,
+> kaynak `compare` taşıyorsa **hepsi** miras alır; süzgeç **eklemeyi** aramalı.
+> (2) *«sorguda zaman ekseni yoksa dönem kıyası teklif edilmemeli»* dedim, **ürün
+> haklıydı**: `/cube` ile ölçüldü — eksensiz `cube_query` + `compare: yoy` → **11
+> satır**, `ort_oee_gecen` doldu. Tetikleyici **küpün** ekseni, sorgunun değil.
+
 **Geri alma** chip üretimini kapat · **Bitti** ölçülmüş kusur sınıfı **kapalı**
 
 ---

@@ -129,7 +129,7 @@ kovası hatasıydı (`b2f3edb`), gerileme **hiç olmadı**.
 | # | faz | ölçüme bağlı mı | durum |
 |---|---|---|---|
 | 1 | **`FAZ 0`** Türkçe gömme ölçümü (`Recall@3`) | — | ✅ **BİTTİ — %89,5 → 🟢 DEVAM** |
-| 2 | ~~katalog borcu (68 yön beyanı)~~ | ⊘ | ⟳ **ÇERÇEVE ÇÜRÜDÜ** — 68'in ~50'si gerçekten yönsüz; gerçek borç **~18** ve `§7`'de ⑫ olarak kayıtlı |
+| 2 | ~~katalog borcu (68 yön beyanı)~~ | ⊘⟳ | ⟳ **ÇERÇEVE ÇÜRÜDÜ** — 68'in ~50'si gerçekten yönsüz; gerçek borç **~18** ve `§7`'de ⑫ olarak kayıtlı |
 | 3 | **`FAZ 4`** kıyas temeli chip'i | ⊘ | ⏭ |
 | 4 | **`FAZ 1`** `emin_miyim` (şekil birleştir) | ⊘ | ⏭ |
 | 5 | **`FAZ 2`** marj kapısı (varsayılan `∞`) | ⊘ | ⏭ |
@@ -270,3 +270,75 @@ devreye giriyor. 🅗 **Borç ödenmiyor, ve nedeni bu satır.**
 
 📌 **Yeni borç ⑫:** üçüncü hâl (`higher_is_better`) — ~18 ölçü. Ön koşulu yok, ama
 `AZAMI_YONSUZ_ORAN` tavanı **onunla birlikte** yeniden tanımlanmalı.
+
+---
+
+## §8 · `FAZ 4` SONUCU — **YETENEK VARDI, ZİNCİR YOKTU** *(2026-08-13)*
+
+**Planın gerekçesi ölçümde çürüdü** 🅟 — ㊷ **on ikinci** kez. *«"RAM-3 neden düşük"
+cevapsız»* artık doğru değil; **iki kipte de** cevaplanıyor:
+
+| kip | ölçülen |
+|---|---|
+| çapalı (`cube_query` verilmiş) | *«RAM-3, öteki 10 makine ortalamasından **%10,7 düşük** (52,45 ↔ akran ort. 58,76)»* · **11 satır** |
+| çapasız (fresh) | `source=cube+llm`, makbuzun 2. adımı **`KIYASLA`** — *«bir varlığı akranlarıyla karşılaştırır»* |
+
+Motor `contribution._akran_kiyasi` (`:600`), ilkel `ilkeller.py:82`, fiil adı
+`plan_semasi.FIIL_ANLAMI`. Chip şeridi: **5 chip, hepsi `cube_query` taşıyor** (süs yok 🆈).
+
+### Kalan iş yetenek değil **zincirdi** ㉕
+
+㉙ ile arandı: `_akran_kiyasi` / `akran_ortalamasi` adını anan test **sıfır** dosya.
+Yani çalışan bir yetenek **kapısızdı** — gerilese kimse duymazdı. Bu turun teslimi
+**kapının kendisi**: `tests/test_kiyas_temeli_chipi.py`, **7 yüklem**, ürün kodu
+**değişmedi**.
+
+🅑 **İki mutasyonla kanıtlandı** (ikisi de `sed` ile uygulanıp `diff` ile geri alındı):
+
+| mutasyon | öldürdüğü yüklem |
+|---|---|
+| küpün zaman ekseni şartını kaldır | `test_tetikleyici_SORGUNUN_degil_KUPUN_zaman_ekseni` |
+| chip'ten `compare`'i düşür (süse çevir) | + `test_kiyas_temeli_chipi_URETILIR` |
+
+⑯ komşu: `d3_bicim` · `kiyas_cebiri` · `d11_kiyas_olgusu` · `temellendirme` + yeni kapı
+→ **53 ✅**.
+
+### Planın `③` maddesi **yanlıştı** — uygulansaydı çalışan cevabı kırardı
+
+Plan *«yön beyansız ölçüde `[akran]` chip'i sunulmasın»* diyordu. Ama `ort_oee`
+`_yon_beyanli()` gözünde beyansızdır **ve** *«RAM-3 neden düşük»* onun üstünde çalışır.
+Doğru ölçüt yönün **beyanı** değil, yargının **yokluğu**dur (`GG8`): akran kıyası bir
+**olgudur**, yargı değil. Kapı `③`'ü *«yargı üretilmesin»* diye yazdı.
+
+### ⚠ ⑫'nin çerçevesi de düzeldi — ve **kendi dünkü sayım yanlıştı**
+
+`ort_oee` **beyanlıdır**: `oee/metadata.yml:23` → `lower_is_better: false`
+(*«B-5 · yüksek = İYİ»*). Kaybı yapan **projeksiyondur**: `wren_service.py:853` listeye
+**yalnız doğru olanları** alıyor (`if m.get("lowerIsBetter") or m.get("lower_is_better")`)
+→ `false` ile *«alan yok»* **aynı kovaya** düşüyor.
+
+🆋 **Üç kova sayıldı** (`demo/packs/**/metadata.yml`, ham YAML):
+
+| kova | sayı | anlam |
+|---|---|---|
+| `lower_is_better: true` | **72** | düşük = iyi |
+| `lower_is_better: false` | **55** | **yüksek = iyi — ÜÇÜNCÜ HÂL, ZATEN VAR** |
+| alan yok | **46** | gerçekten yönsüz (kur · adet · tutar · maaş · metre) |
+
+⟳ Dünkü *«68 `lower` + 68 beyansız, üçüncü hâl kodda YOK»* ölçümü **`false`'u beyansız
+saymıştı**. Üçüncü hâl **kaynakta var**; kaybolduğu yer tek satırlık bir projeksiyon.
+⑫ yine de açık kalır — çünkü tüketiciyi yazmak bir **davranış** değişikliğidir (yargı
+üretimi), ama maliyeti *«şema sözleşmesi»* değil.
+
+### ③ İki yüklemim de önce yanlış yazıldı, ikisini de ölçüm düzeltti
+
+1. *«`compare` taşıyan chip»* süzgeci **yanlıştı**: chip'ler `{**cube_query, …}` ile
+   üretilir → kaynak `compare` taşıyorsa **hepsi** miras alır. Süzgeç mirası değil
+   **eklemeyi** aramalı.
+2. *«Sorguda zaman ekseni yoksa dönem kıyası teklif edilmemeli»* dedim; **ürün
+   haklıydı**. `/cube` ile ölçüldü: eksensiz `cube_query` + `compare: yoy` → **11
+   satır**, `ort_oee_gecen` · `ort_oee_degisim_yuzde` doldu. Vaat **tutuluyor** 🆈.
+   Tetikleyici **küpün** ekseni, sorgunun değil.
+
+📌 **`FAZ 4` ✅** — ürün kodu değişmeden, çünkü ürün zaten doğruydu; teslim **kapı +
+düzeltilmiş teşhis**. Sırada **`FAZ 1` `emin_miyim`**.
