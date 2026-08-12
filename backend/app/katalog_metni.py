@@ -251,6 +251,71 @@ def build_catalog(schema: dict, *, sozluk: bool = False,
     return catalog, index
 
 
+def skills_metni(project_dir=None) -> str:
+    """🔴 `§B10` / `§36.1-5` — **METODOLOJİ MARKDOWN'LARI** (`demo/skills/*.md`).
+
+    ## Neden markdown, neden kod değil
+
+    Raporun hükmü (`§36.3`): *«metodolojiyi şablondan SKILL'e taşımak»*; ve `§36.1-5`
+    bunu *«kapalı fiil listesinin ilacı, **kod yazmadan**»* diye adlandırıyor. Yani
+    amaç fiil kümesini büyütmek **değil** (`§38.4` dokunulmazı) — garsona *«bu isteği
+    hangi VAR OLAN yapıyla karşıla»* demektir.
+
+    ## Ölçülmüş gerekçe (2026-08-12, canlı)
+
+        «geçen yıla göre ciro»              → toplam_ciro_degisim_yuzde: 9.7  ✅
+        «geçen yıla göre ciro BÜYÜME ORANI» → 🔴 CEVAPSIZ
+        iz: niyet tür=kirilim+kiyas+trend · 🔴temsil-yok=kiyas · bilinmeyen=buyume,orani
+
+    Yani **oran zaten hesaplanıyor**; garson onun *adını* bilmiyordu. Bir kelimeyi
+    `route()`a öğretmek `CLAUDE.md`'nin en üst kuralına aykırı olurdu — çözüm garsona
+    **bağlam** vermektir.
+
+    ## ⚠ Neden BAYRAKLI ve varsayılan KAPALI
+
+    Garsonun doğruluk ölçümü **yok** (`§26`, park edilmiş kalem). Kazancı ölçemediğimiz
+    bir bağlam eklemesini varsayılan açmak, `motor_rls`/`ossie_ithal` için reddettiğimiz
+    şeyin aynısı olurdu. *Ölçülemeyen bir kazancı varsayılan açmak, ölçümü bir törene
+    çevirir.*
+
+    Dosya yoksa **boş** döner ve hiçbir şey değişmez.
+    """
+    import pathlib as _p
+
+    if project_dir is None:
+        from app.config import get_settings
+        try:
+            project_dir = get_settings().resolved_project_dir()
+        except Exception:                                  # noqa: BLE001
+            return ""
+    # Skills **pack ile aynı repoda** durur (Anthropic'in çözümü birebir bu: *veri-modeli
+    # PR'larının ~%90'ı skill değişikliği içeriyor*).
+    #
+    # ⚠ **YOL SABİT DEĞİL — ölçüldü.** Derlenmiş proje iki ayrı yerleşimde bulunuyor:
+    #     demo/wren-project              → skills iki değil BİR üstte
+    #     demo/wren-projects/<sirket>    → iki üstte
+    # İlk yazımım `.parent.parent`e sabitlenmişti ve birincisinde **boş** döndü (kapının
+    # «boş yeşil avı» testi yakaladı). Doğru çözüm sabit bir derinlik değil, **sınırlı
+    # bir yukarı arama**: bir `skills/` dizini bulunana kadar en fazla üç üst.
+    # *Bir yolu sabit bir derinliğe bağlamak, o derinliğin değişmeyeceğini varsaymaktır.*
+    kok = None
+    _d = _p.Path(str(project_dir))
+    for _ in range(3):
+        _d = _d.parent
+        if (_aday := _d / "skills").is_dir():
+            kok = _aday
+            break
+    if kok is None:
+        return ""
+    parcalar = []
+    for f in sorted(kok.glob("*.md")):
+        try:
+            parcalar.append(f.read_text(encoding="utf-8").strip())
+        except Exception:                                  # noqa: BLE001
+            _log.warning("skill okunamadı: %s", f, exc_info=True)
+    return "\n\n---\n\n".join(x for x in parcalar if x)
+
+
 def metin_ve_indeks(schema: dict, principal, settings=None, *,
                     soru: str | None = None) -> tuple[str, dict]:
     """`build_catalog` + bayrak çözümü — **tek yerde**.
@@ -280,12 +345,13 @@ def metin_ve_indeks(schema: dict, principal, settings=None, *,
     # dalında `UnboundLocalError` demekti — bu oturumda **üçüncü** kez çıkan sınıf
     # (`llm_probe` · `AZAMI_SORGU` · bu). *Koşullu bağlanan bir ad, tanımsız bir addan
     # daha sinsidir: statik olarak var, çalışırken yok.*
-    acik = _bel = False
+    acik = _bel = _skl = False
     try:
         _bayraklar = resolve_for(settings or get_settings(), principal)
         acik = "katalog_sozlugu" in _bayraklar
         _bel = "katalog_belirsizlik" in _bayraklar
         _dar = "sema_daraltma" in _bayraklar
+        _skl = "skills" in _bayraklar
     except Exception:                                      # noqa: BLE001 — katalog düşmez
         _log.warning("katalog bayrakları çözülemedi → sade katalog", exc_info=True)
     # 🔴 `§B1` — ŞEMA DARALTMA. Bayrak burada çözülür çünkü bu fonksiyonun **kendi
@@ -302,7 +368,18 @@ def metin_ve_indeks(schema: dict, principal, settings=None, *,
                 _log.info("§B1 şema daraltma: %s", _gerekce)
         except Exception:                                  # noqa: BLE001 — fail-open
             _log.warning("§B1: daraltma çözülemedi → tam katalog", exc_info=True)
-    return build_catalog(schema, sozluk=acik, belirsizlik=_bel, metin_kupleri=kupler)
+    metin, indeks = build_catalog(schema, sozluk=acik, belirsizlik=_bel,
+                                  metin_kupleri=kupler)
+    # 🔴 `§B10` SKILLS — metodoloji markdown'ları katalogun **sonuna** eklenir.
+    # ⚠ Sonuna, çünkü katalog **sabit önek**tir ve önbelleklenebilir olmalı
+    # (`katalog_sozlugu` bayrağının kendi gerekçesi). Skill metni de sabittir; ikisi
+    # birlikte hâlâ sabit bir öneki oluşturur.
+    # ⚠ `indeks` **DOKUNULMAZ**: o bir beyaz listedir ve skill metni bir ölçü/boyut
+    # adı eklemez — metodoloji anlatır. İndekse dokunmak, plan doğrulamasının
+    # sınırını bir anlatım tercihine bağlamak olurdu (`§B1`'in aynı dersi).
+    if _skl and (_sk := skills_metni()):
+        metin = f"{metin}\n\n## METODOLOJİ (nasıl karşılanır)\n\n{_sk}"
+    return metin, indeks
 
 
 def envanter(schema: dict) -> dict:

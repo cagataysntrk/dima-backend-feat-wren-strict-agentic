@@ -316,6 +316,17 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "404 döner. ⚠ Round-trip kapısı bu bayraktan BAĞIMSIZDIR — ihraç "
                        "edilen model geri ithal edildiğinde birebir aynı SQL vermiyorsa "
                        "bayrak AÇILMAZ (FAZ 4.4).",
+        # ⟳ Şart YAML yorumundan **kayda** taşındı (2026-08-12): `test_bayrak_on_sarti`
+        # haklıydı — bir şart, kaydın dışında yaşarsa kapı onu göremez ve *«yazılı»*
+        # olması bir işe yaramaz.
+        "on_sarti": "🔴 **ÖLÇÜLDÜ ve `beta`ya alındı** (`§F6`, 2026-08-11): canlı pilot "
+                    "fikstürde değil **canlı katalogda** koştu — `GET /connections/{cid}/"
+                    "export-semantic` → **HTTP 200 · 58.465 bayt** · dataset **23** · "
+                    "ilişki **31** (hepsi `olculdu:saglikli`) · **135 ölçü** `ai_context` "
+                    "taşıyor · ölçü sinonimi **677/677** · round-trip kaybı **SIFIR**. "
+                    "`prod` şartı (gözlenebilir): en az bir GERÇEK müşteri modeli ihraç "
+                    "edilip karşı tarafın aracıyla okunmalı — *kendi round-trip'imiz "
+                    "bizim şeklimizi doğrular, standardı değil*.",
         "category": "genisleme",
     },
     "ossie_ithal": {
@@ -328,6 +339,21 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "'olculmedi'` damgasıyla gelir: bir başkasının modelinin doğru "
                        "olduğunu VARSAYMAK, sessiz-yanlışın ithal edilmiş hâli olurdu. "
                        "Kapalıyken uç 404 döner (FAZ 3.4).",
+        # ⟳ Şart YAML yorumundan **kayda** taşındı (2026-08-12).
+        "on_sarti": "🔴 **ÖLÇÜLDÜ ve `beta`ya alındı** (`§⑥`, 2026-08-12) — kapalılığın "
+                    "iki gerekçesi de çürüdü: *«yazma yolu»* (⊘ `ossie.cevir()` **saf "
+                    "fonksiyon**, `ossie.py`'de sıfır yazma ilkeli) ve *«gerçek modelle "
+                    "pilot yok»* (⊘ canlı katalog round-trip kapısı yeşil). Canlı pilot: "
+                    "kendi ihracımız (58.465 bayt) `POST /connections/{cid}/"
+                    "import-semantic`'e geri beslendi → **HTTP 200** · 23 dataset → **23 "
+                    "cube** · 31 ilişki → **31** · kayıp YOK. ⊙ Pilot bir kusur buldu ve "
+                    "kapattı: yabancı belgenin **üst düzey** `certified` iddiası kabul "
+                    "ediliyordu; artık sertifika yalnız `x-dima`dan okunur. "
+                    "`prod` şartı (gözlenebilir): `POST …/import-semantic` **200** dönmeli "
+                    "ve dönen `cubes` sayısı beslenen `datasets` sayısına **EŞİT** olmalı; "
+                    "ayrıca genel bir istek-boyutu sınırı konursa bu uca da uygulanmalı "
+                    "(`cevir`'de boyut/sayı sınırı YOK — ölçüldü, ve bu ucun getirdiği "
+                    "YENİ bir risk değil: uç kimlik doğrulamalı).",
         "category": "genisleme",
     },
     "ayni_grain_gocu": {
@@ -649,6 +675,20 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "görünür; yani şüphenin en yüksek olduğu durum en emin görünür. "
                        "Açıkken bazı cevaplar netleştirmeye düşer (kapsam ↓, güven ↑).",
         "category": "Doğruluk",
+    },
+    "skills": {
+        "label": "Skills — metodoloji markdown'ları (garsona nasıl karşılanır)",
+        "description": "`demo/skills/*.md` iş akışları katalog metninin SONUNA eklenir. "
+                       "Amaç fiil kümesini büyütmek DEĞİL (§38.4 dokunulmazı): garsona "
+                       "sistemin ZATEN ürettiği bir yapının adını söylemek. Ölçülmüş "
+                       "gerekçe: «geçen yıla göre ciro» → `toplam_ciro_degisim_yuzde: "
+                       "9.7` ✅ ama «geçen yıla göre ciro BÜYÜME ORANI» → CEVAPSIZ; iz "
+                       "`bilinmeyen=buyume,orani`. Oran zaten hesaplanıyordu, garson "
+                       "adını bilmiyordu. "
+                       "🔴 VARSAYILAN OFF ve AÇILIŞ ŞARTI YAZILI: garsonun doğruluk "
+                       "ölçümü YOK (§26, park) → kazanç ölçülemez. Ölçüm kurulmadan "
+                       "açmak, motor_rls/ossie_ithal için reddettiğimiz şeyin aynısıdır.",
+        "category": "Anlama",
     },
     "katalog_sozlugu": {
         "label": "Katalog sözlüğü (LLM Türkçe eşanlamları görür)",

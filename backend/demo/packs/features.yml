@@ -26,6 +26,15 @@ features:
   # FAZ 2.3 — kapsam merceği. `off`: her kullanıcı bugünkü TAM katalogu görür.
   # 🔴 Mercek bir GÖRÜNÜRLÜK aracıdır, GÜVENLİK SINIRI DEĞİL — kapatmak yetki AÇMAZ.
   kapsam_mercegi: "off"   # ⚠ TIRNAK ŞART: YAML 1.1 çıplak `off`u BOOLEAN okur
+  # `§B10` SKILLS — metodoloji markdown'ları (`demo/skills/*.md`) garsonun katalog
+  # metnine eklenir. `off`: tek bayt bile eklenmez (KURAL B).
+  #
+  # 🔴 AÇILIŞ ŞARTI (gözlenebilir): garsonun doğruluk ölçümü kurulmalı (`§26`). Kazancı
+  # ölçemediğimiz bir bağlam eklemesini varsayılan açmak, `motor_rls`/`ossie_ithal` için
+  # reddettiğimiz şeyin aynısı olurdu.
+  # ⊙ Açıldığında ilk ölçülecek vaka yazılı: *«geçen yıla göre ciro büyüme oranı»*
+  #   bugün CEVAPSIZ; skill'li hâlde `toplam_ciro_degisim_yuzde` dönmeli.
+  skills: "off"
   # FAZ 3.4 — Ossie ithali. `off`: uç 404 döner (GERİ AL).
   #
   # 🔴 `§⑥` — **AÇILDI (2026-08-12), ÇÜNKÜ İKİ GEREKÇESİ DE ÖLÇÜMLE DÜŞTÜ.**
