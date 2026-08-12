@@ -1,4 +1,29 @@
-"""🔴 `§C1` — İKİ KAYIT VAR, AMA **BİRİ CANLI BİRİ UYKUDA**; BİRLEŞTİRME ŞİMDİ DEĞİL.
+"""⟳✅ `§C1` — **BORÇ ÖDENDİ (`§D6`, 2026-08-12).** Bu dosya artık bir **karar kaydıdır**.
+
+> 🔴🔴 **ÖNCE BUNU OKU — aşağıdaki analiz TARİHSELDİR ve kararı TERSİNE DÖNDÜ.**
+>
+> Dosya *«BİRLEŞTİRME ŞİMDİ DEĞİL»* diye açılıyordu ve ödeme `119.` satırda bir **yorumda**
+> duyuruluyordu. Bir denetim ajanı bunu `KAT-1` ihlali olarak bildirdi; ölçüm **daha
+> incesini** gösterdi (⟳ 2026-08-12):
+>
+> | iddia | ölçüm |
+> |---|---|
+> | *«`c1` ve `d6` aynı kuralın iki kapısı»* | ◐ **kısmen**: 12 yüklemin **yalnız biri** örtüşüyor (fiil↔araç birebirliği) |
+> | *«`c1` bayat»* | 🔴 **EVET** — başlık *«25 araç»*, *«`mcp_yuzeyi: off`»*; ikisi de artık yanlış (**31** · **beta**) |
+> | *«alarm iki bayrağı gözlüyor»* (docstring) | 🔴 **HAYIR** — kod yalnız `agent_plan_secimi`'ne bakıyor; `mcp_yuzeyi` demetten **gerekçesiz** düşmüş |
+>
+> ⊙ Son satır önemli: `mcp_yuzeyi` **beta'ya açıldı** ve dosyanın kendi vaadi
+> (*«iki bayraktan biri açıldığı gün kırmızı olur»*) **çalmadı**. Çalmaması bugün
+> **doğrudur** — borç ödendiği için iki kayıt artık ayrışamaz — ama o gerekçe
+> **yazılmamıştı**. *Bir alarmın kapsamını daraltmak meşrudur; daraltmayı yazmamak
+> değildir* (ders ㊴).
+>
+> ✅ **Bugünkü iş bölümü** (`KAT-1`):
+> · **`test_d6_tek_yetenek_kaydi.py` = ÖDEMENİN KAPISI** — fiil↔araç birebirliği,
+>   içe-aktarma anında ayrışma denetimi, sıra, altı yeni ilkel, yetki sınıfı.
+> · **bu dosya = KARARIN KAYDI** — *neden ertelendiği*, *neyle ödendiği*, ve ödemenin
+>   **sınırının** ne olduğu. Yükü taşıyan yüklem `d6`'dadır; buradaki birebirlik
+>   yüklemi bilerek **ikinci bir gözdür** ve gerekçesi aşağıda yazılı.
 
 ## Raporun isteği
 
@@ -13,9 +38,9 @@
 | | ölçülen |
 |---|---|
 | `FIIL_ANLAMI` | **15 fiil** — ✅ raporla aynı |
-| `tools` kaydı | **25 araç** — ✅ raporla aynı |
+| `tools` kaydı | **25 araç** — ✅ raporla aynı *(⟳ o günün fotoğrafı; bugün **31**)* |
 | `FIIL_ANLAMI` **canlı mı** | 🔴 **EVET**: `plan_garson.py:284` her planlayıcı çağrısında `plan_json_schema(index)` kuruyor; `plan_tuketici.py:1216` anlamları makbuza yazıyor |
-| `tools` kaydı **canlı mı** | ⊘ **HAYIR (plan yolunda)**: tek iki tüketicisi `mcp.py` (`mcp_yuzeyi: "off"` → 404) ve `Planlayici.sec()` (`agent_plan_secimi: "off"`) |
+| `tools` kaydı **canlı mı** | ⊘ **HAYIR (plan yolunda)**: tek iki tüketicisi `mcp.py` (`mcp_yuzeyi: "off"` → 404) ve `Planlayici.sec()` (`agent_plan_secimi: "off"`) *(⟳ `mcp_yuzeyi` bugün **beta** — ertelemenin şartı düştü, ama borç zaten ödendiği için risk doğmadı)* |
 | adlar örtüşüyor mu | 🔴 **HAYIR**: `SORGU`/`AYRISTIR`/`GORSEL` ↔ `route`/`contribution.decompose`/`viz.recommend` |
 
 ⚠ **Raporun *«örtüşme %73»* rakamına DOKUNMUYORUZ:** o **anlamsal** bir eşleştirmedir
@@ -133,6 +158,19 @@ def test_BORC_KENDINI_TOPLUYOR():
     assert beyan == set(FIIL_ANLAMI) and len(beyan) == 15, (
         f"🔴 `C1` ödemesi bozuldu: kayıt {len(beyan)} fiil beyan ediyor, plan şeması "
         f"{len(FIIL_ANLAMI)} taşıyor. İki yetenek kaydı ayrıştı (`KAT-1`).")
+    # 🔴 **KAPSAM DARALTMASI — ve gerekçesi** (⟳ 2026-08-12): docstring bir zamanlar
+    # *«iki bayraktan biri açıldığı gün»* diyordu; demette bugün **yalnız biri** var.
+    # `mcp_yuzeyi` **beta'ya açıldı** ve bu alarm çalmadı — çünkü çalmasına **gerek
+    # kalmadı**: `§D6` ödemesinden sonra iki kayıt ayrışamaz (üstteki birebirlik yüklemi
+    # ve `plan_semasi._fiilleri_kayittan_dogrula` içe-aktarmada patlar). Yani alarmın
+    # koruduğu risk, MCP yolunda **yapısal olarak** yok.
+    #
+    # ⚠ Ama `agent_plan_secimi` demette KALIYOR: o bayrak `Planlayici.sec()`'i açar,
+    # yani araç kaydını **plan seçiminde** canlı yapar — ödemenin sınırının (plan
+    # istemindeki sıralı METİN türetilmedi) ilk kez ürün davranışına dokunacağı yer
+    # orasıdır.
+    #
+    # *Bir alarmın kapsamını daraltmak meşrudur; daraltmayı yazmamak değildir.*
     acik = [ad for ad in ("agent_plan_secimi",) if _bayrak(ad) != "off"]
     assert not acik, (
         f"🔴 {acik} AÇILDI — artık `tools` kaydı da canlı yolda.\n"
