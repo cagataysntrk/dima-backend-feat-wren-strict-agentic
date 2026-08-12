@@ -1,0 +1,46 @@
+# Model zenginleştirme (generate_models_duckdb.py bunu okur, yeniden üretimde KORUNUR).
+# Fiziksel kolonlar tablodan gelir; buradaki EK kolonlar cross-model calculated field'lar
+# (WrenAI relationship üzerinden — netsis `hesaplanan` deseni). Amaç: üretim verisini
+# KİŞİYE ve DEMOGRAFİYE bağlamak → "cinsiyet/yaş/eğitim bazında verimlilik" deterministik.
+#
+# Zincir: partiler.operator = personel.ad_soyad (1-hop) → cinsiyet/departman/vardiya;
+#         personel.personel_kodu = personel_ozluk.personel_kodu (2-hop) → doğum/eğitim/poz.
+
+partiler:
+  # İlişki kolonu (lineage): partiler → personel (operator adıyla). JOIN'i motor üretir.
+  - handle: personel
+    relationship: partiler_personel
+  # 1-hop demografi (operatörün): cinsiyet + departman + vardiyası.
+  - name: operator_cinsiyet
+    type: VARCHAR
+    expression: personel.cinsiyet
+  - name: operator_departman
+    type: VARCHAR
+    expression: personel.departman
+  # 2-hop (personel → özlük): doğum tarihi + eğitim + pozisyon. yaş grubu cube'da türetilir.
+  - name: operator_dogum_tarihi
+    type: DATE
+    expression: personel.dogum_tarihi
+  - name: operator_egitim
+    type: VARCHAR
+    expression: personel.egitim
+
+personel:
+  # İlişki kolonu: personel → özlük (1:1). Özlükteki demografiyi personel'e taşır (böylece
+  # partiler 2-hop ile erişir). Doğum tarihi hiç sorulmamış olsa da ŞEMADA var → analiz mümkün.
+  - handle: personel_ozluk
+    relationship: personel_ozluk_personel
+  - name: dogum_tarihi
+    type: DATE
+    expression: personel_ozluk.dogum_tarihi
+  - name: egitim
+    type: VARCHAR
+    expression: personel_ozluk.egitim
+  - name: pozisyon
+    type: VARCHAR
+    expression: personel_ozluk.pozisyon
+  # medeni_hal (Faz 2.2): `ik` cube'u view'dan modele taşınırken gerekti. Diğer üçüyle
+  # aynı desen — özlükteki demografiyi personel'e taşır ki bordro 2 sıçramada erişsin.
+  - name: medeni_hal
+    type: VARCHAR
+    expression: personel_ozluk.medeni_hal

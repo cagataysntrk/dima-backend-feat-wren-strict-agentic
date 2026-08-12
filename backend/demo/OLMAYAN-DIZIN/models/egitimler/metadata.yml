@@ -1,0 +1,24 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.egitimler
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: egitimler
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: egitimler
+columns:
+- name: egitim_kodu
+  type: VARCHAR
+- name: konu
+  type: VARCHAR
+- name: kategori
+  type: VARCHAR
+- name: saat
+  type: INTEGER
+- name: tarih
+  type: DATE
+- name: egitmen
+  type: VARCHAR
+- name: maliyet
+  type: DOUBLE
+- name: yer
+  type: VARCHAR

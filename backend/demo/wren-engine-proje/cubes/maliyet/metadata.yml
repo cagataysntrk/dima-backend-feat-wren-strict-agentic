@@ -1,0 +1,144 @@
+name: maliyet
+label: Birim maliyet / kârlılık
+base_object: urun_maliyetleri
+
+# MALİYET CUBE'U (2026-08-05) — ERP-bağımsız dikey.
+#
+# 🔴 TÜRETME: maliyet UYDURULMADI. `partiler` her partide `kimyasal_tl` · `elektrik_tl` ·
+# `dogalgaz_tl` · `su_tl` · `imalat_suresi_dk` · `kg` taşıyor; birim maliyet bunların
+# GERÇEK toplamından çıkarıldı.
+#
+# *Bağımsız üretilmiş bir maliyet tablosu, "maliyet neden arttı" sorusunu enerji
+# verisinden kopuk — yani cevaplanamaz — yapardı.* Burada zincir gerçektir: enerji
+# tüketimi artınca bu cube'daki maliyet DE artar, çünkü ikisi aynı satırdan gelir.
+#
+# ⚠ BEŞ BİLEŞEN AYRI AYRI görünür (kimyasal/elektrik/gaz/su/işçilik/genel). Tek bir
+# "toplam maliyet" sütunu, "maliyet neden arttı" sorusunu ayrıştırılamaz yapardı —
+# ve bu sorunun tüm değeri ayrıştırmasındadır.
+synonyms: [maliyet, birim maliyet, kârlılık, karlılık, kâr marjı, marj, maliyetler,
+           maliyet analizi, birim kâr]
+
+measures:
+  - name: ort_birim_maliyet
+    expression: "ROUND(AVG(toplam_maliyet_tl_kg),3)"
+    type: DOUBLE
+    # 🔴 `§YB` — YÖN BEYANI. Beyan yoksa *«en kötü»* **en DÜŞÜĞÜ** seçer.
+    # ⊙ Ölçüldü (canlı): *«bu yıl en kötü bakım maliyeti olan makine»* →
+    # `direction: asc` → **en ucuz** makine döndü, `source=cube`, beyansız.
+    # Bir maliyet için *«çok olan iyidir»* varsaymak, cevabı tersine çevirir.
+    lower_is_better: true
+    unit: "₺/kg"
+    additive: non
+    synonyms: [birim maliyet, kilo maliyeti, maliyet, ortalama maliyet, kg maliyeti,
+               birim maliyetimiz]
+  - name: ort_kar_marji_yuzde
+    lower_is_better: false   # B-5 · yüksek = İYİ
+    expression: "ROUND(AVG(kar_marji_yuzde),2)"
+    type: DOUBLE
+    unit: "%"
+    additive: non
+    # 🔴 KN-2 ÇAKIŞMASI — çıplak `kâr marjı`·`karlılık`·`marj`·`kar oranı` KALDIRILDI.
+    #
+    # Aynı gerekçe, üçüncü kez (bkz. `toplam üretim`, `kimyasal/enerji maliyeti`):
+    # `parti.kar_marji_yuzde` marjı **PARTİ grain'inde ve TOPLAM/TOPLAM** hesaplar
+    # (ISO tarzı: SUM(ciro−maliyet)/SUM(ciro)). Buradaki ise AYLIK maliyetlendirme
+    # tablosunun satır-AVG'sidir — **farklı bir sayı**, üstelik farklı bir tanım.
+    # ⊙ Ölçüldü: `karlılık` → R1 (iki sahip, kimse kazanamıyor) ve
+    # `test_DEGISMEMESI_gerekenler[karlılık-parti-kar_marji_yuzde]` kırmızı.
+    # ⚠ Nitelenmiş hâller KALDI: *"ortalama kâr marjı"* hâlâ buraya gelir.
+    #
+    # *İki farklı tanımı tek isme bağlamak, hangisinin geldiğini kullanıcıya
+    # sordurur — ve o soruyu soramaz, çünkü iki tanım olduğunu bilmez.*
+    synonyms: [ortalama kâr marjı, ortalama karlılık, aylık marj, brüt marj]
+  - name: ort_birim_kar
+    lower_is_better: false   # B-5 · yüksek = İYİ
+    expression: "ROUND(AVG(birim_kar_tl_kg),3)"
+    type: DOUBLE
+    unit: "₺/kg"
+    additive: non
+    synonyms: [birim kâr, kilo başına kâr, birim kazanç]
+  - name: kimyasal_maliyet_kg
+    expression: "ROUND(AVG(kimyasal_tl_kg),3)"
+    type: DOUBLE
+    # 🔴 `§YB` — YÖN BEYANI. Beyan yoksa *«en kötü»* **en DÜŞÜĞÜ** seçer.
+    # ⊙ Ölçüldü (canlı): *«bu yıl en kötü bakım maliyeti olan makine»* →
+    # `direction: asc` → **en ucuz** makine döndü, `source=cube`, beyansız.
+    # Bir maliyet için *«çok olan iyidir»* varsaymak, cevabı tersine çevirir.
+    lower_is_better: true
+    unit: "₺/kg"
+    additive: non
+    # 🔴 KN-2 ÇAKIŞMASI — çıplak `kimyasal maliyeti`/`boya maliyeti` KALDIRILDI.
+    # Ölçüldü (eval `ny-kimyasal-maliyet-renk`): golden `surdurulebilirlik.toplam_kimyasal_tl`
+    # bekliyor ve bu cube o soruyu **cevaplayamaz bile** — yalnız `makine` boyutu var,
+    # soru `renk bazında` istiyor. Çıplak terim TOPLAM maliyetin (₺), buradaki ise
+    # KG BAŞINA birim maliyetin (₺/kg) adıdır; ikisi farklı ölçülerdir.
+    # *Bir birim maliyeti, toplam maliyetin adıyla çağırmak, iki farklı sayıyı tek isme
+    # bağlamaktır — ve hangisinin geldiğini kullanıcı göremez.*
+    # ⚠ `kg başına kimyasal` KALDIRILDI — o `surdurulebilirlik.kimyasal_yogunlugu_tl_kg`in
+    # ZATEN sinonimiydi; nitelendirirken **yeni bir çakışma** yaratmışım ve sinonim
+    # envanteri kapısı onu yakaladı. *Bir çakışmayı çözerken ikincisini doğurmamak,
+    # çözümün kendisi kadar önemlidir.*
+    synonyms: [kimyasal birim maliyet, birim boya maliyeti, maliyet tablosu kimyasal]
+  - name: enerji_maliyet_kg
+    expression: "ROUND(AVG(elektrik_tl_kg + dogalgaz_tl_kg),3)"
+    type: DOUBLE
+    # 🔴 `§YB` — YÖN BEYANI. Beyan yoksa *«en kötü»* **en DÜŞÜĞÜ** seçer.
+    # ⊙ Ölçüldü (canlı): *«bu yıl en kötü bakım maliyeti olan makine»* →
+    # `direction: asc` → **en ucuz** makine döndü, `source=cube`, beyansız.
+    # Bir maliyet için *«çok olan iyidir»* varsaymak, cevabı tersine çevirir.
+    lower_is_better: true
+    unit: "₺/kg"
+    additive: non
+    # 🔴 Aynı gerekçe (eval `ny-enerji-maliyet-asama`): çıplak `enerji maliyeti`
+    # `surdurulebilirlik.toplam_enerji_tl`in; burası ₺/kg birim maliyettir.
+    # ⚠ `kg başına enerji` KALDIRILDI — `surdurulebilirlik.enerji_yogunlugu_kwh_kg`in.
+    synonyms: [enerji birim maliyet, elektrik gaz birim maliyeti, maliyet tablosu enerji]
+  - name: iscilik_maliyet_kg
+    expression: "ROUND(AVG(iscilik_tl_kg),3)"
+    type: DOUBLE
+    # 🔴 `§YB` — YÖN BEYANI. Beyan yoksa *«en kötü»* **en DÜŞÜĞÜ** seçer.
+    # ⊙ Ölçüldü (canlı): *«bu yıl en kötü bakım maliyeti olan makine»* →
+    # `direction: asc` → **en ucuz** makine döndü, `source=cube`, beyansız.
+    # Bir maliyet için *«çok olan iyidir»* varsaymak, cevabı tersine çevirir.
+    lower_is_better: true
+    unit: "₺/kg"
+    additive: non
+    synonyms: [işçilik maliyeti, işçilik birim maliyet, emek maliyeti]
+  - name: toplam_uretim_kg
+    lower_is_better: false   # B-5 · yüksek = İYİ
+    expression: SUM(uretim_kg)
+    type: DOUBLE
+    unit: "kg"
+    # 🔴 PAYDA ROLÜ — NL yüzeyine ÇIKMAZ.
+    # Bu ölçü bir üretim raporu değil, kg-başına maliyetin PAYDASIDIR
+    # (`urun_maliyetleri` AYLIK maliyetlendirme tablosu, yil/ay grain).
+    # ⊙ Ölçüldü: `toplam üretim` sinonimi buradayken ON eval vakası bu
+    # cube'a gidiyordu — ve cube'un yalnız `makine` boyutu olduğu için
+    # soruların çoğunu cevaplayamıyordu bile. precision −%12,7.
+    # ⚠ SİLİNMİYOR: SQL'de gerekli, `/cube` ile açıkça istenebilir.
+    nl: false
+    # 🔴 KN-2 ÇAKIŞMASI — ölçüldü (eval, 2026-08-05): `toplam üretim` bu cube'a gidiyordu
+    # ve **on eval vakası** düştü (`tarih-bugun` · `tarih-dun` · `tarih-son30gun` …).
+    # `maliyet` cube'unun tabanı `urun_maliyetleri` — AYLIK maliyetlendirme tablosu
+    # (yil/ay grain). Oradaki üretim, kg başına maliyetin PAYDASIDIR; bir üretim
+    # raporu değil. Çıplak `toplam üretim` üretim cube'unun (`oee`) kimliğidir.
+    # ⚠ Nitelenmiş hâller KALDI: *"maliyetlendirilen üretim"* hâlâ buraya gelir.
+    # *Bir paydayı, ölçünün kendisi sanmak — payda büyüdükçe cevap kayar.*
+    synonyms: [maliyetlendirilen üretim, maliyet üretim miktarı]
+
+# PVM: birim maliyet × üretim miktarı → "maliyet neden arttı: birim mi, hacim mi?"
+pvm:
+  - value: ort_birim_maliyet
+    volume: toplam_uretim_kg
+    price_label: birim maliyet (₺/kg)
+
+dimensions:
+  - name: makine
+    expression: makine
+    type: VARCHAR
+    synonyms: [makine, tezgah, hat, makina, ekipman]
+
+time_dimensions:
+  - name: donem_tarih
+    expression: "make_date(yil, ay, 1)"
+    type: DATE

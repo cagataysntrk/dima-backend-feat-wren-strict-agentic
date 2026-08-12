@@ -1,0 +1,92 @@
+name: bakim_is_emri
+label: Bakım iş emri (planlı / plansız)
+base_object: bakim_is_emirleri
+
+# BAKIM İŞ EMRİ CUBE'U (2026-08-05).
+#
+# 🔴 ÖLÇÜLEN KUSUR: `bakim_planlari` tablosunda **11 satır** vardı ve son tarihi
+# **2024-02-16**'ydı. Yani 29 aylık verinin **27 ayında planlı bakım kaydı yok**.
+# Katalogda görünen ama veride olmayan bir tablo, *"planlı bakım nasıl gidiyor"*
+# sorusuna boş cevap verir.
+#
+# > ⚠ Ve **boş cevap, yanlış cevaptan daha az fark edilir**: kullanıcı sayıyı görmez,
+# > hata da görmez — sistemin cevabı yokmuş gibi değil, *cevap sıfırmış* gibi okur.
+#
+# 🔴 PLANLI/PLANSIZ AYRIMI bu cube'un varlık sebebidir. Bakımın tek anlamlı yönetim
+# ölçüsü **planlı bakım oranı**dır; ikisini tek "bakım" sütununda toplamak, bakım
+# olgunluğunu ölçülemez yapar. *Çok bakım yapmak iyi değildir — çok PLANSIZ bakım
+# yapmak kötüdür, ve fark yalnız bu ayrımla görünür.*
+synonyms: [bakım, bakım iş emri, onarım, arıza müdahalesi, planlı bakım,
+           plansız bakım, bakım emri, iş emri]
+
+# 🔴 `M-2` — VARSAYILAN ÖLÇÜ. Sistem her şeyi biliyorken (dönem·kırılım·üstünlük)
+# yalnız *«hangi ölçü»* diye sorup pes ediyordu; `cube_router` R4'te bu alanı zaten
+# okuyor, alan **yoktu**. Gerekçe: iş emri **adedi** bu küpün kimliğidir (küp adı `bakim_is_emri`); süre/maliyet onun nitelikleridir.
+# ⚠ Gerçekten belirsiz küplere (`ik` brüt/net · `cari` borç/alacak · `maliyet` ·
+# `parti`) BİLEREK yazılmadı — orada sormak doğru davranıştır.
+default_measure: is_emri_adedi
+
+measures:
+  - name: is_emri_adedi
+    lower_is_better: null   # B-5 · yön YOK — «en kötü» sorulursa SORULMALI
+    expression: "COUNT(DISTINCT is_emri_no)"
+    type: DOUBLE
+    unit: "adet"
+    additive: non
+    synonyms: [iş emri adedi, bakım adedi, kaç bakım, müdahale sayısı]
+  - name: toplam_bakim_suresi
+    lower_is_better: true   # B-5 · yüksek = KÖTÜ
+    expression: SUM(sure_dk)
+    type: DOUBLE
+    unit: "dk"
+    synonyms: [bakım süresi, toplam süre, müdahale süresi, kaç dakika]
+  - name: bakim_maliyeti
+    expression: SUM(maliyet)
+    type: DOUBLE
+    # 🔴 `§YB` — YÖN BEYANI. Beyan yoksa *«en kötü»* **en DÜŞÜĞÜ** seçer.
+    # ⊙ Ölçüldü (canlı): *«bu yıl en kötü bakım maliyeti olan makine»* →
+    # `direction: asc` → **en ucuz** makine döndü, `source=cube`, beyansız.
+    # Bir maliyet için *«çok olan iyidir»* varsaymak, cevabı tersine çevirir.
+    lower_is_better: true
+    unit: "₺"
+    # ⚠ `yedek parça maliyeti` KALDIRILDI → `bakim.toplam_yedek_parca_maliyet`in.
+    synonyms: [bakım maliyeti, onarım maliyeti, bakım gideri, iş emri maliyeti]
+  - name: planli_bakim_yuzde
+    lower_is_better: false   # B-5 · yüksek = İYİ
+    expression: "ROUND(100.0 * SUM(CASE WHEN tur = 'PLANLI' THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 1)"
+    type: DOUBLE
+    unit: "%"
+    additive: non
+    synonyms: [planlı bakım oranı, planlı oran, önleyici bakım oranı, bakım olgunluğu]
+  - name: ort_mudahale_suresi
+    lower_is_better: true   # B-5 · yüksek = KÖTÜ
+    expression: "ROUND(AVG(sure_dk),1)"
+    type: DOUBLE
+    unit: "dk"
+    additive: non
+    # ⚠ `mttr` KALDIRILDI → `bakim.ort_durus_dakika`nın (MTTR arıza ONARIM süresidir).
+    synonyms: [ortalama müdahale, ortalama bakım süresi, ne kadar sürüyor]
+
+dimensions:
+  - name: makine
+    expression: makine
+    type: VARCHAR
+    synonyms: [makine, tezgah, hat, makina, ekipman]
+  - name: tur
+    expression: tur
+    type: VARCHAR
+    label: tür
+    synonyms: [tür, tip, planlı mı, bakım türü]
+  - name: konu
+    expression: konu
+    type: VARCHAR
+    synonyms: [konu, arıza tipi, iş konusu, ne yapıldı]
+  - name: ekip
+    expression: ekip
+    type: VARCHAR
+    synonyms: [ekip, kim yaptı, servis, bakım ekibi]
+
+time_dimensions:
+  - name: tarih
+    expression: tarih
+    type: DATE

@@ -1,0 +1,22 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.siparis_satirlari
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: siparis_satirlari
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: siparis_satirlari
+columns:
+- name: siparis_no
+  type: VARCHAR
+- name: satir_no
+  type: INTEGER
+- name: urun_kodu
+  type: VARCHAR
+- name: miktar
+  type: DOUBLE
+- name: tutar
+  type: DOUBLE
+- name: birim
+  type: VARCHAR
+- name: kumas_tipi
+  type: VARCHAR

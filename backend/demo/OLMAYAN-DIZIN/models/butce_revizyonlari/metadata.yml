@@ -1,0 +1,26 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.butce_revizyonlari
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: butce_revizyonlari
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: butce_revizyonlari
+columns:
+- name: yil
+  type: INTEGER
+- name: revizyon_no
+  type: INTEGER
+- name: ay
+  type: INTEGER
+- name: bolum
+  type: VARCHAR
+- name: hesap_kodu
+  type: VARCHAR
+- name: kalem
+  type: VARCHAR
+- name: degisim_orani
+  type: DOUBLE
+- name: gerekce
+  type: VARCHAR
+- name: tarih
+  type: DATE

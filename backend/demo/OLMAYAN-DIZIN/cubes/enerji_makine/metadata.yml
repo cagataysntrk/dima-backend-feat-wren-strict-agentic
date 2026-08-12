@@ -1,0 +1,58 @@
+name: enerji_makine
+label: bölüm/makine enerji (ölçülen)
+base_object: makine_enerji_aylik
+
+# Bölüm/makine bazlı ÖLÇÜLEN enerji (ISO-50001 §6.3.1 SEU/ÖEK belirleme kaynağı). Grain =
+# makine×ay (bölüm'lü). surdurulebilirlik parti-grain'inden AYRI — burada BÖLÜM ekseni var
+# (surdurulebilirlik'te yok) ve sayaç-ölçümüdür (tahsis değil). KİMLİK: bölüm/ölçülen/ÖEK
+# odaklı → bare "tep/enerji" tutulmaz (surdurulebilirlik makine-yoğunluğunu çalmasın).
+synonyms: [bölüm enerji, ölçülen enerji, sayaç, öek, önemli enerji kullanımı, bölüm tüketim,
+           ekipman tüketim, bölüm bazlı enerji, kuru terbiye, boyahane enerji]
+
+# 🔴 `M-2` — VARSAYILAN ÖLÇÜ. Sistem her şeyi biliyorken (dönem·kırılım·üstünlük)
+# yalnız *«hangi ölçü»* diye sorup pes ediyordu; `cube_router` R4'te bu alanı zaten
+# okuyor, alan **yoktu**. Gerekçe: ölçülen enerji taşıyıcılarının **birincili** elektrik; `p14` (*«en çok enerji harcayan 3 makine»*) tam bu eksikten cevapsız kaldı.
+# ⚠ Gerçekten belirsiz küplere (`ik` brüt/net · `cari` borç/alacak · `maliyet` ·
+# `parti`) BİLEREK yazılmadı — orada sormak doğru davranıştır.
+default_measure: toplam_elektrik_kwh
+
+measures:
+  - name: toplam_elektrik_kwh
+    lower_is_better: true   # B-5 · yüksek = KÖTÜ
+    expression: SUM(elektrik_kwh)
+    type: DOUBLE
+    unit: "kWh"
+    synonyms: [elektrik, elektrik tüketimi, ölçülen elektrik, kwh]
+  - name: toplam_dogalgaz_sm3
+    lower_is_better: true   # B-5 · yüksek = KÖTÜ
+    expression: SUM(dogalgaz_sm3)
+    type: DOUBLE
+    unit: "sm³"
+    synonyms: [doğalgaz, gaz, doğalgaz tüketimi, sm3]
+  - name: toplam_tep
+    expression: SUM(tep)
+    type: DOUBLE
+    unit: "TEP"
+    synonyms: [tep, ölçülen tep, enerji tep, ton eşdeğer petrol]
+    lower_is_better: true
+
+dimensions:
+  - name: bolum
+    expression: bolum
+    type: VARCHAR
+    label: bölüm
+    synonyms: [bölüm, bolum, kısım, ünite, hangi bölüm]
+  - name: makine
+    expression: makine
+    type: VARCHAR
+    label: makine
+    synonyms: [makin, cihaz, tezgah, ekipman]
+  - name: hat
+    expression: hat
+    type: VARCHAR
+    synonyms: [hat, hattı, line]
+
+time_dimensions:
+  - name: donem_tarih
+    expression: "make_date(yil, ay, 1)"
+    type: DATE

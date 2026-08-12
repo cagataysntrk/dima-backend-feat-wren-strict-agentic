@@ -1,0 +1,21 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.tedarikciler
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: tedarikciler
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: tedarikciler
+columns:
+- name: tedarikci_kodu
+  type: VARCHAR
+  is_primary_key: true
+  not_null: true
+- name: unvan
+  type: VARCHAR
+- name: sehir
+  type: VARCHAR
+- name: vergi_no
+  type: VARCHAR
+- name: tur
+  type: VARCHAR
+primary_key: tedarikci_kodu

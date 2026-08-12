@@ -1,0 +1,103 @@
+name: mizan
+label: mizan (hesap bakiyeleri)
+base_object: yevmiye_satirlari
+synonyms:
+- mizan
+- hesap bakiyesi
+- hesap bakiyeleri
+- muhasebe
+- defter
+- muavin
+- hesap planı
+- genel muhasebe
+- hesap hareketleri
+- yevmiye
+- gelir tablosu
+- bilanço
+measures:
+- name: toplam_borc
+  expression: SUM(borc)
+  type: DOUBLE
+  unit: ₺
+  synonyms:
+  - borç
+  - toplam borç
+  - borç tutarı
+  - debit
+- name: toplam_alacak
+  expression: SUM(alacak)
+  type: DOUBLE
+  unit: ₺
+  synonyms:
+  - alacak
+  - toplam alacak
+  - alacak tutarı
+  - credit
+- name: bakiye
+  expression: SUM(borc - alacak)
+  type: DOUBLE
+  unit: ₺
+  additive: semi
+  synonyms:
+  - bakiye
+  - hesap bakiyesi
+  - net bakiye
+  - kalan bakiye
+  - borç bakiyesi
+dimensions:
+- name: hesap_kodu
+  expression: hesap_kodu
+  type: VARCHAR
+  label: hesap kodu
+  synonyms:
+  - hesap
+  - hesap kodu
+  - kod
+  - hesap no
+- name: hesap_adi
+  expression: COALESCE(NULLIF(hesap_plani_hesap_adi, ''), hesap_kodu)
+  type: VARCHAR
+  label: hesap adı
+  synonyms:
+  - hesap adı
+  - hesap ismi
+  - hesap açıklaması
+- name: hesap_tipi
+  expression: hesap_plani_hesap_tipi
+  type: VARCHAR
+  label: tipi
+  synonyms:
+  - hesap tipi
+  - hesap türü
+  - hesap tipine göre
+  - hesap türüne göre
+  - aktif pasif
+  - gelir gider
+  - hangi tip hesap
+  properties:
+    origin:
+      model: hesap_plani
+      column: hesap_tipi
+      relationship: yevmiye_satirlari_hesap_plani
+      hops: 1
+- name: ana_grup
+  expression: hesap_plani_ana_grup
+  type: VARCHAR
+  label: anagrup
+  synonyms:
+  - ana grup
+  - ana gruba göre
+  - hesap grubu
+  - hesap grubuna göre
+  - bilanço grubu
+  - hangi ana grup
+  properties:
+    origin:
+      model: hesap_plani
+      column: ana_grup
+      relationship: yevmiye_satirlari_hesap_plani
+      hops: 1
+time_dimensions:
+- name: tarih
+  expression: yevmiye_fisleri_tarih
+  type: DATE

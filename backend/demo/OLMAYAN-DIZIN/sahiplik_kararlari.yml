@@ -1,0 +1,95 @@
+# 🔴🔴 `§SH` — BOYAHANE SEKTÖRÜNÜN SAHİPLİK KARARLARI (2026-08-11)
+#
+# ## Neden ÇEKİRDEKTE DEĞİL, BURADA
+#
+# `FAZ 3.1` bu kararları `packs/cekirdek/sahiplik_kararlari.yml`e yazdı ve **uyguladı**;
+# korpus **%93,2 → %92,6** geriledi, `gitas` erişimi **%72 → %69** düştü. O gün teşhis
+# *«pack kararı dayatılamaz»* diye yazıldı ve karar **öneriye** indirildi (`3.1b`) —
+# ölçüm doğruydu, **teşhis eksikti**:
+#
+# > Sorun kararın *pack'ten* gelmesi değil, **çekirdekten** gelmesiydi. `elektrik`
+# > çakışması `enerji_makine` ⊕ `surdurulebilirlik` arasındadır ve **ikisi de boyahane
+# > sektöründe** yaşar. `gitas` (tarım-ticareti) bu çakışmayı **hiç yaşamaz** — ama
+# > çekirdeğe konan karar ona da gidiyordu. Gerileme oradan geldi.
+#
+# Karar doğru katmana gelince dayatma **yapısal olarak imkânsız**: `gitas` bu paketi
+# yüklemez, bu dosyayı **hiç okumaz**. Bir politika sorunu, bir **dizin** sorununa indi.
+#
+# ## ÖLÇÜLEN KUSUR — bu iki satırın karşılığı
+#
+# `lab/reports/nl_corpus.md` · boyahane: **yanlış cube 264**, ve listenin ilk 10'unun
+# **10'u** aynı desende:
+#
+#     `geçen ay makine bazında elektrik`  beklenen=enerji_makine  seçilen=surdurulebilirlik
+#     `makine bazında doğalgaz`           beklenen=enerji_makine  seçilen=surdurulebilirlik
+#
+# Canlı probda kök neden birebir görüldü: `surdurulebilirlik` `elektrik`i **cube düzeyi**
+# sinonim olarak taşır (`_longest_syn_hit=8`), `enerji_makine` ise **ölçü düzeyinde**
+# (`_longest_syn_hit=0`) → `_match_cube` cube-düzeyi eşleşmeyi seçer. Ve
+# `makine bazında doğalgaz` sorusunda `_match_cube` **`None`** döner — yani bu çakışma
+# *«cevapsız %19,9»*'un da bir parçası.
+#
+# ⚠ `surdurulebilirlik`in KİMLİĞİ SİLİNMEZ. Denendi ve ölçüldü: yanlış-cube 245→135
+# ama erişim **%64 → %56**, `eval_gate` kırmızı. `test_SURDURULEBILIRLIK_kimligi_KORUNUYOR`
+# o denemeyi ikinci kez yapmayı engelliyor ve kendi çözümünü de yazıyor:
+# *«Doğru çözüm bir SAHİPLİK KARARIDIR, kimlik silmek değil.»* — bu dosya odur.
+#
+# ## GERİ AL
+#
+# Satırı sil → `hakem` `None` döner → bugünkü yol. Tümü: `metrik_kaydi` bayrağı `off`.
+
+kararlar:
+  - terim: elektrik
+    kutu: tek_sahip
+    sahip: enerji_makine
+    tarih: 2026-08-11
+    gerekce: >-
+      `enerji_makine.toplam_elektrik_kwh` elektriği **makine grain'inde ve adıyla**
+      ölçer. `surdurulebilirlik.toplam_enerji_kwh` de `SUM(elektrik_kwh)`'tir — yani
+      katalog yalan söylemiyor, gerçekten **iki meşru sahip** var; ama ikincisi elektriği
+      bir **sürdürülebilirlik merceği** olarak taşır (yoğunluk/karbon bağlamında), çıplak
+      *«elektrik»* sorusunun cevabı değildir. Ölçüldü: boyahane yanlış-cube listesinin
+      ilk 10'unun 10'u bu terim.
+
+  - terim: dogalgaz
+    kutu: tek_sahip
+    sahip: enerji_makine
+    tarih: 2026-08-11
+    gerekce: >-
+      `elektrik`in birebir ikizi: `enerji_makine.toplam_dogalgaz_sm3` ölçülen tüketim,
+      `surdurulebilirlik.toplam_dogalgaz_sm3` aynı sayının sürdürülebilirlik merceği.
+      ⊙ Ve bu terimde kusur daha ağır: `makine bazında doğalgaz` sorusunda `_match_cube`
+      **hiçbirini** seçemiyor (`None`) — yani çakışma yalnız yanlış cevap değil,
+      **cevapsızlık** da üretiyor.
+
+# ── BİLEREK DIŞARIDA BIRAKILANLAR ────────────────────────────────────────────
+#
+# ⟳ **2026-08-12 · İKİSİ DE ÖLÇÜLDÜ VE KAPANDI — ve ikisi de «taşınmayacak» çıktı.**
+# Aşağıdaki iki not **olduğu gibi duruyor** (kararın o günkü hâli); ölçümün cevabı:
+#
+#   🔴 `tep` — «çelişki» ÇÜRÜDÜ. İki küpün `tep`'i **aynı sayıyı** veriyor
+#      (canlı: 1179,0382 ↔ 1179,0390) ve ikisinde de `makine` boyutu var. Kullanıcı
+#      hangisinden cevap alırsa alsın **doğru sayıyı** görüyor; korpusun 4 kırmızısı
+#      bir puanlama artefaktıdır. Taşımanın kazancı **ölçüldü ve sıfır** — notun kendi
+#      şartı (*«ölçülmemiş bir kazanç, kazanç değildir»*) böylece sağlandı.
+#
+#   🔴 `satis` — «sektör dosyalarında çözülmeli» İHTİYACI YOK. Ölçüldü: korpus
+#      raporundaki `karlilik → ticaret` **21** ve `mal → ticaret` **8** satırının
+#      hepsinde sistem **çekirdek kararının söylediğini** seçiyor. Yani karar zaten
+#      çalışıyor; sektöre taşıma ancak bir sektör **başka** bir sahip isterse anlamlı
+#      olurdu ve istemiyor.
+#
+# ⊙ Ölçüye dayanan on yedinci *«yapma»*. Fiyat kaydı: `tests/test_sahiplik_karari_fiyati.py`.
+#
+# 🔴 `tep` — çekirdekteki karar `surdurulebilirlik` diyor, korpusun beklentisi
+# `enerji_makine`. **İkisi ölçümle çelişiyor** ve bir çelişkiyi taşımadan karara
+# çevirmek, kararı bir tahmine indirmek olurdu. Çözülmeden buraya TAŞINMAZ.
+# ⊙ Bugünkü davranış zaten `surdurulebilirlik` seçiyor; taşımamak bir gerileme değil,
+# yalnız bir kazanç eksikliğidir — ve ölçülmemiş bir kazanç, kazanç değildir.
+#
+# 🔴 `satis`/`uretim`/`fire` — boyahane'nin **ölçülen** yanlış-cube listesinde YOKLAR.
+# `satis` üstelik başka sektörlerin (geri-dönüşüm · kumaş · tarım) terimi ve orada
+# çekirdek kararı (`ticaret`) ile korpusun beklentisi (`karlilik`) **ayrışıyor** —
+# o ayrım o sektörlerin kendi dosyalarında, kendi ölçümleriyle çözülür.
+#
+# *Bir karar dosyası, çözülmüş kararların yeridir; açık soruların değil.*

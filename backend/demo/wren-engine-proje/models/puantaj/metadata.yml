@@ -1,0 +1,29 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.puantaj
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: puantaj
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: puantaj
+columns:
+- name: id
+  type: INTEGER
+  is_primary_key: true
+  not_null: true
+- name: tarih
+  type: DATE
+- name: personel_kodu
+  type: VARCHAR
+- name: vardiya
+  type: VARCHAR
+- name: giris_saat
+  type: VARCHAR
+- name: cikis_saat
+  type: VARCHAR
+- name: calisilan_saat
+  type: DOUBLE
+- name: mesai_saat
+  type: DOUBLE
+- name: durum
+  type: VARCHAR
+primary_key: id

@@ -131,7 +131,48 @@ def test_AYRIM_YAZILI_wren_project_YENI_MOTORUN():
     temizlik turunda eski motorun kalıntısı sanılıp silinirse **her cevap** düşer.
     Bu yüzden ayrım bu dosyada **yazılı** ve yazılı kalmalı.
     """
+    # 🔴🔴 **İLK YAZIMIM BİR TAUTOLOJİYDİ** (denetim ajanı ölçtü, 2026-08-12):
+    #
+    #     m = pathlib.Path(__file__).read_text()      # ← KENDİ dosyasını okuyor
+    #     assert "wren-project" in m                  # ← KENDİ docstring'ini doğruluyor
+    #
+    # Ajan izole bir kopyada `demo/wren-project` dizinini **tamamen sildi** ve bu dosya
+    # **4/4 YEŞİL** kaldı. Yani *«silinmeye karşı korunuyor»* diyen kapı, silinmeyi
+    # **hiç göremiyordu**. Bu, `§F12`'nin adını koyduğu hatanın aynısı: *bir ön koşul
+    # kapısı, koşulun sağlanmadığı bir örnekle sınanmadıkça boş bir doğrudur.*
+    #
+    # ✅ Yüklem artık **YAPISAL**: dizin gerçekten var mı · içinde bir MDL hedefi var mı ·
+    # ve adı eski servisin izleriyle **çakışmıyor** mu.
+    #
+    # ⚠ Ve kartın **zararı da abartılıydı** — ölçüldü: `demo/wren-project` gitignore'lu
+    # bir **derleme artefaktıdır** ve `main.py` her açılışta `compose_and_build` ile
+    # onu **yeniden üretir**. Yani *«silinirse her cevap düşer»* değil, **geçici** bir
+    # `FileNotFoundError` riski. Cümle bu yüzden aşağıda düzeltildi.
+    from app.config import get_settings
+
+    proje = pathlib.Path(str(get_settings().resolved_project_dir()))
+    assert proje.is_dir(), (
+        f"🔴 model dizini YOK: {proje} — `DIMA_PROJECT_DIR` yanlış ya da dizin bir "
+        "temizlik turunda silinmiş. ⚠ Bu **geçici** bir kusurdur (`compose_and_build` "
+        "onu yeniden üretir) ama koşum ortasında `FileNotFoundError` verir.")
+    assert (proje / "target").is_dir() or list(proje.glob("*/")), (
+        f"🔴 {proje} **boş** — derlenmiş model yok; bir cevap üretilemez.")
+    ad = proje.name
+    assert not any(iz.replace("_", "-") in ad for iz in SERVIS_IZLERI), (
+        f"🔴 model dizininin adı eski SERVİS izleriyle çakışıyor: {ad!r}. "
+        "*İki şeyin adı benziyorsa, kapı onları ADIYLA değil YOLUYLA ayırmalıdır.*")
+    # ⚠ **HANGİ YÜKLEM YÜK TAŞIYOR — mutasyonla ölçüldü (08-12):**
+    # · `proje.is_dir()` → **kırmızı veremiyor**: `conftest`'in `_composed` fikstürü
+    #   `compose_and_build` çağırıyor ve dizini **yeniden üretiyor**. Yani silinmeye
+    #   karşı koruma, **kendiliğinden iyileşen** bir şeyi koruyor. Yüklem yine de
+    #   duruyor (koşum ortasında silinirse `FileNotFoundError` verir) ama **kanıt
+    #   değeri düşüktür** ve bu yazılı.
+    # · `ad` çakışması → **kırmızı VERİYOR** (`DIMA_PROJECT_DIR=demo/wren-engine-proje`
+    #   ile sınandı). Asıl değişmez budur: bir temizlik turu *«`wren-engine` geçen her
+    #   şeyi sil»* derse, model dizini o taramaya **girmemeli**.
+    # *Bir kapının hangi yükleminin yük taşıdığını, mutasyon söyler — niyet değil.*
+    # ⊙ Ayrım metinde de kalsın (beyan kültürü) — ama artık **yükü o taşımıyor**.
     m = pathlib.Path(__file__).read_text(encoding="utf-8")
     assert "wren-project" in m and "DIMA_PROJECT_DIR" in m, (
-        "🔴 `wren-project` ↔ `wren-engine` ayrımı silinmiş — *iki şeyin adı benziyorsa, "
-        "kapı onları ADIYLA değil YOLUYLA ayırmalıdır.*")
+        "⚠ ayrımın açıklaması silinmiş; davranış yapısal kapılarla korunuyor ama bir "
+        "sonraki okuyucu NEDEN iki şeyin ayrı olduğunu bilemez.")

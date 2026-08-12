@@ -1,0 +1,27 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.banka_hareketleri
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: banka_hareketleri
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: banka_hareketleri
+columns:
+- name: id
+  type: INTEGER
+  is_primary_key: true
+  not_null: true
+- name: tarih
+  type: DATE
+- name: banka_kodu
+  type: VARCHAR
+- name: islem_tipi
+  type: VARCHAR
+- name: tutar
+  type: DOUBLE
+- name: para_birimi
+  type: VARCHAR
+- name: cari_kodu
+  type: VARCHAR
+- name: aciklama
+  type: VARCHAR
+primary_key: id

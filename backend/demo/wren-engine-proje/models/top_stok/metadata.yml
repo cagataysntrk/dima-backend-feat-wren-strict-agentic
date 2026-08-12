@@ -1,0 +1,31 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.top_stok
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: top_stok
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: top_stok
+columns:
+- name: top_no
+  type: VARCHAR
+  is_primary_key: true
+  not_null: true
+- name: parti_no
+  type: VARCHAR
+- name: ham_ad
+  type: VARCHAR
+- name: renk
+  type: VARCHAR
+- name: en_cm
+  type: INTEGER
+- name: boy_m
+  type: DOUBLE
+- name: agirlik_kg
+  type: DOUBLE
+- name: depo_kodu
+  type: VARCHAR
+- name: kalite_sinifi
+  type: VARCHAR
+- name: durum
+  type: VARCHAR
+primary_key: top_no

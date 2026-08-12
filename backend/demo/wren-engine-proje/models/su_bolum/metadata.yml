@@ -1,0 +1,18 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.su_bolum
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: su_bolum
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: su_bolum
+columns:
+- name: bolum
+  type: VARCHAR
+- name: yil
+  type: INTEGER
+- name: ay
+  type: INTEGER
+- name: su_m3
+  type: DOUBLE
+- name: su_lt_kg
+  type: DOUBLE

@@ -1,0 +1,90 @@
+name: makine_duruslari
+label: duruş nedenleri
+base_object: makine_duruslari
+synonyms:
+- duruş nedeni
+- duruş nedenleri
+- duruş sebebi
+- duruş kategorisi
+- makine duruşu nedeni
+- duruş kaydı
+- duruş olayı
+- stoppage reason
+measures:
+- name: toplam_sure_dk
+  expression: SUM(sure_dk)
+  type: DOUBLE
+  unit: dk
+  synonyms:
+  - toplam duruş dakikası
+  - duruş dakikası toplamı
+  - nedenlere göre duruş
+  - duruş nedenine göre toplam
+  - toplam duruş
+  - duruş nedeni
+  - duruş nedenleri
+  lower_is_better: true
+- name: duruş_sayisi
+  expression: COUNT(*)
+  type: DOUBLE
+  unit: adet
+  synonyms:
+  - duruş sayısı
+  - kaç duruş
+  - duruş olayı sayısı
+  - duruş adedi
+  lower_is_better: true
+dimensions:
+- name: makine
+  expression: makine
+  type: VARCHAR
+  label: makine
+  synonyms:
+  - makin
+  - cihaz
+  - tezgah
+- name: hat
+  expression: hat
+  type: VARCHAR
+  synonyms:
+  - hat
+  - hattı
+  - line
+- name: vardiya
+  expression: CASE vardiya WHEN 1 THEN '1. Vardiya (08-16)' WHEN 2 THEN '2. Vardiya
+    (16-24)' WHEN 3 THEN '3. Vardiya (00-08)' ELSE CAST(vardiya AS VARCHAR) END
+  type: VARCHAR
+  synonyms:
+  - vardiya
+  - vardiyalar
+- name: neden
+  expression: neden
+  type: VARCHAR
+  label: duruş nedeni
+  synonyms:
+  - duruş nedeni
+  - duruş sebebi
+  - nedenine göre
+  - neden bazında
+  - duruş kategorisi
+- name: bolum
+  expression: makineler_bolum
+  type: VARCHAR
+  label: bölüm
+  synonyms:
+  - bölüm
+  - bolum
+  - kısım
+  - ünite
+  - hangi bölüm
+  - bölümlere göre
+  properties:
+    origin:
+      model: makineler
+      column: bolum
+      relationship: makine_duruslari_makineler
+      hops: 1
+time_dimensions:
+- name: tarih
+  expression: tarih
+  type: DATE

@@ -1,0 +1,35 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.irsaliyeler
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: irsaliyeler
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: irsaliyeler
+columns:
+- name: irsaliye_no
+  type: VARCHAR
+  is_primary_key: true
+  not_null: true
+- name: tarih
+  type: DATE
+- name: tur
+  type: VARCHAR
+- name: cari_kodu
+  type: VARCHAR
+- name: cari_tip
+  type: VARCHAR
+- name: arac_plaka
+  type: VARCHAR
+- name: sofor
+  type: VARCHAR
+- name: toplam_kg
+  type: DOUBLE
+- name: toplam_top
+  type: INTEGER
+- name: referans_no
+  type: VARCHAR
+- name: fatura_no
+  type: VARCHAR
+- name: durum
+  type: VARCHAR
+primary_key: irsaliye_no

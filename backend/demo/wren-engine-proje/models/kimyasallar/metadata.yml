@@ -1,0 +1,19 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.kimyasallar
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: kimyasallar
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: kimyasallar
+columns:
+- name: kimyasal_kodu
+  type: VARCHAR
+  is_primary_key: true
+  not_null: true
+- name: kimyasal_adi
+  type: VARCHAR
+- name: tur
+  type: VARCHAR
+- name: birim_fiyat
+  type: DOUBLE
+primary_key: kimyasal_kodu

@@ -1,0 +1,35 @@
+name: ariza_kayitlari
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: ariza_kayitlari
+columns:
+- name: ariza_no
+  type: VARCHAR
+  is_primary_key: true
+  not_null: true
+- name: tarih
+  type: DATE
+- name: makine
+  type: VARCHAR
+- name: ariza_tipi
+  type: VARCHAR
+- name: durus_dakika
+  type: INTEGER
+- name: mudahale_eden
+  type: VARCHAR
+  sensitivity: person
+- name: yedek_parca_maliyet
+  type: DOUBLE
+- name: aciklama
+  type: VARCHAR
+- name: durum
+  type: VARCHAR
+- name: makineler
+  type: makineler
+  relationship: ariza_kayitlari_makineler
+- name: makineler_bolum
+  type: VARCHAR
+  is_calculated: true
+  expression: makineler.bolum
+primary_key: ariza_no

@@ -1,0 +1,29 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.uygunsuzluklar
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: uygunsuzluklar
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: uygunsuzluklar
+columns:
+- name: uygunsuzluk_no
+  type: VARCHAR
+- name: parti_no
+  type: VARCHAR
+- name: tarih
+  type: DATE
+- name: tur
+  type: VARCHAR
+- name: kategori
+  type: VARCHAR
+- name: sapma
+  type: DOUBLE
+- name: makine
+  type: VARCHAR
+- name: operator
+  type: VARCHAR
+  sensitivity: person
+- name: karar
+  type: VARCHAR
+- name: etkilenen_kg
+  type: DOUBLE

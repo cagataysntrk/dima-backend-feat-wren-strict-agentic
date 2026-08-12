@@ -1,0 +1,25 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.izinler
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: izinler
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: izinler
+columns:
+- name: id
+  type: INTEGER
+  is_primary_key: true
+  not_null: true
+- name: personel_kodu
+  type: VARCHAR
+- name: izin_tipi
+  type: VARCHAR
+- name: baslangic
+  type: DATE
+- name: bitis
+  type: DATE
+- name: gun_sayisi
+  type: INTEGER
+- name: durum
+  type: VARCHAR
+primary_key: id

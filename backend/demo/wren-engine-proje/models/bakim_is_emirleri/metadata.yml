@@ -1,0 +1,30 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.bakim_is_emirleri
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: bakim_is_emirleri
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: bakim_is_emirleri
+columns:
+- name: is_emri_no
+  type: VARCHAR
+- name: ariza_no
+  type: VARCHAR
+- name: tarih
+  type: DATE
+- name: makine
+  type: VARCHAR
+- name: tur
+  type: VARCHAR
+- name: konu
+  type: VARCHAR
+- name: sure_dk
+  type: INTEGER
+- name: maliyet
+  type: DOUBLE
+- name: ekip
+  type: VARCHAR
+- name: kisi_sayisi
+  type: INTEGER
+- name: durum
+  type: VARCHAR

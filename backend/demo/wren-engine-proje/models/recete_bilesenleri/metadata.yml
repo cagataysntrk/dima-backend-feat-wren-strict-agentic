@@ -1,0 +1,20 @@
+# ÜRETİLMİŞTİR: lab/generate_models_duckdb.py ← boyahane.recete_bilesenleri
+# (elle düzenleme yeniden üretimde ezilir; cube'lar/sinonimler packs'te yaşar.)
+name: recete_bilesenleri
+table_reference:
+  catalog: boyahane
+  schema: main
+  table: recete_bilesenleri
+columns:
+- name: recete_kod
+  type: VARCHAR
+- name: kimyasal_kodu
+  type: VARCHAR
+- name: kimyasal_adi
+  type: VARCHAR
+- name: miktar
+  type: DOUBLE
+- name: birim
+  type: VARCHAR
+- name: rol
+  type: VARCHAR
