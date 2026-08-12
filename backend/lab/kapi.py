@@ -760,6 +760,9 @@ ORTAMA_BAGLI_KAPILAR: dict[str, tuple] = {
     "test_karne_kendini_sayar.py": (
         _belgeler_var_mi, "§0.6 karne manşeti satırlarla tutsun",
         '-v "$PWD/belgeler:/belgeler:ro"'),
+    "test_a14_hava_boslugu_yayini.py": (
+        _belgeler_var_mi, "hava boşluğu yayını (§A14) — modelin sayı üretemediği iddiası",
+        '-v "$PWD/belgeler:/belgeler:ro"'),
     "test_belge_duzeni.py": (
         _repo_koku_var_mi, "belge düzeni denetimi (7 test)",
         "repo KÖKÜNÜ bağlayın (yalnız `backend/` yetmez)"),
