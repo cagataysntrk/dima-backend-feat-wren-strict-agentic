@@ -1189,3 +1189,236 @@ adresler çekildi. Dolayısıyla:
 kısa/tek kelime gömme performansı. **`§13.1` ölçümü bu yüzden ertelenemez.**
 
 > *Bir kaynağın söylemediği şey, senin ölçmen gereken şeydir.*
+
+---
+
+# EK 2 — 2026-08-13 · PÜRÜZLER, YAPISAL FARK, VE ÖLÇÜLMÜŞ SÜRPRİZ
+
+---
+
+## §22 · SEKTÖRÜN REDDETTİĞİ ŞEY BİZİMKİ DEĞİL — altı eksende
+
+Ask Data / Q&A'nın *«guided»* tarafı, bir **karar hattının süsüydü**: kullanıcı yazarken
+terim önerilir, ama sistem yine **tek bir cevap denemesi** yapar ve tutmazsa kullanıcı
+*«sihirli kelimeleri»* öğrenmek zorunda kalır. Bizimki **kararın kendisini** kullanıcı
+edimine çeviriyor. Fark altı eksende:
+
+| # | eksen | onların reddettiği | bizim önerdiğimiz |
+|---|---|---|---|
+| 1 | **öneri neyin süsü** | bir **karar hattının** | **kararın kendisi** |
+| 2 | **sözlük** | *«Teach Q&A»* — ayrı bir **yönetici görevi** | **akış içi tıklama** → onay kuyruğu |
+| 3 | **altta ne var** | tablo/sütun adları üzerinde bir ayrıştırıcı | **derlenmiş semantik katman** (küp·grain·ölçü sahipliği) |
+| 4 | **sayı garantisi** | ⊘ yok | 🔴 **sayıyı her zaman küp koyar** + `narration_guard` |
+| 5 | **çok adımlı iş** | ⊘ hiç yok | **kapalı fiil kümesi** (15 fiil · 31 ilkel) |
+| 6 | **hata görünürlüğü** | sessiz — *«sonuç yok»* | **beyan**: kapsam · seçim · yön |
+
+> ⊙ **Sonuç:** *«Bu yol denendi ve terk edildi»* itirazı bize **doğrudan uygulanmaz**;
+> terk edilen şey **beslemesi olmayan bir ayrıştırıcıydı**, kararı devreden bir arayüz
+> değil.
+
+🔴 **AMA BUNUN TERSİ DE DOĞRU VE AĞIR:** emsal yoksa **kanıt da yok**. Ölçüldü (`§18.10`):
+*«Hiçbir ürün tıklamayı BİRİNCİL akış yapmamış»* — Cortex Analyst'ın `suggestion` tipi
+**yalnız son çare**. Yani bu bir **yenilik** olabilir; **kimsenin denemediği için değil,
+denenip işe yaramadığı için** boş olan bir alan da olabilir. `§24` bu ikilemi çözüyor.
+
+---
+
+## §23 · 🔴🔴 ÖLÇÜLMÜŞ SÜRPRİZ — SIRALAMA ZATEN VAR, **LİSTE ATILIYOR**
+
+Bu turda `cube_router.py` ölçüldü ve öneri katmanının **çoğu zaten yazılmış** çıktı.
+Üç ayrı yerde, **üç farklı biçimde**:
+
+### ① Marj kapısı — `cube_router.py:1187-1195`
+
+```python
+scored = sorted(hits, key=lambda c: _longest_syn_hit(q, c), reverse=True)
+# Fark BELİRGİN olmalı (≥4 harf)
+if _longest_syn_hit(q, scored[0]) - _longest_syn_hit(q, scored[1]) >= 4:
+    return scored[0]
+# cube-düzeyi çoklu aday, kırılamadı. Kanıt EŞİTSE bu bir tahmin sorusu değil bir
+# SORU sorma anıdır → `cube_tie_candidates` netleştirme chip'i üretir (Faz 3.1)
+return None
+```
+
+🔴 **Sıralanmış bir aday listesi VAR. Marj hesaplanıyor VE bir kapı olarak kullanılıyor.**
+Ve kodun kendi yorumu bizim tezimizi **kelimesi kelimesine** söylüyor:
+> *«Kanıt eşitse bu bir **tahmin sorusu değil** bir **SORU SORMA ANIDIR**.»*
+
+### ② Tam sıralayıcı — `cube_router.py:3865-3878` (yazım önerisi)
+
+```python
+scored = sorted(((difflib.SequenceMatcher(None, w, cand).ratio(), cand) ...), reverse=True)
+best_score, best = scored[0]
+if best == w or best_score < min_suggest:   continue     # ← TABAN SKOR
+len_ratio = min(len(w), len(best)) / max(len(w), len(best))
+if len_ratio < _TYPO_LEN_RATIO:             continue     # ← UZUNLUK GUARD'I
+second_score = scored[1][0] if len(scored) > 1 else 0.0  # ← İKİNCİYE BAKIYOR
+```
+
+🔴 **Burada zaten tam bir öneri motoru var:** sıralama · **taban skor** (`min_suggest`) ·
+uzunluk guard'ı · **ikinci adayla karşılaştırma**. Öneri katmanının istediği her parça.
+
+### ③ Belirsizlikte teslim — `cube_router.py:1109`
+
+```python
+return adaylar[0] if len(adaylar) == 1 else None    # >1 aday → PES ET
+```
+
+⚠ Birden çok aday varsa **liste atılıyor** ve `None` dönüyor.
+
+### Bunun üç sonucu
+
+**🅐 `CLAUDE.md`'nin kendi cümlesi eksik.** Orada *«`route()`'un **derece** kavramı yok
+(marj hesaplanıp atılıyor)»* yazıyor. **Ölçüm bunu daraltıyor:** marj **atılmıyor**, bir
+**kapı** olarak kullanılıyor. Atılan şey **kaybedenlerdir** — ve öneri katmanının istediği
+tam olarak onlar.
+
+> 🔴 **Öneri katmanı bir sıralayıcı YAZMAK değil, var olan sıralayıcının ÇÖPE ATTIĞI
+> LİSTEYİ YÜZEYE ÇIKARMAKTIR.**
+
+**🅑 `KAT-1` riski ölçüldü.** Üç yerde **üç farklı** marj/eşik mantığı var: `≥4 harf` ·
+`SequenceMatcher + min_suggest + len_ratio` · `len(adaylar)==1`. Bunlar bir gün ayrışır.
+→ Öneri katmanı bu üçünü **tek bir sıralama sözleşmesinde** birleştirmelidir; bu, katman
+eklemeden **borç kapatan** bir iştir.
+
+**🅒 Maliyet tahmini düştü.** `§4.3`'ün *«bedava olmayan üç şey»*inden **②** (kısmi girdi
+sıralayıcısı) sanıldığından küçük: taban var, eksik olan **önek/yarım kelime** ve
+**vektörel ayak**.
+
+---
+
+## §24 · 🔴🔴 ÇÖZÜM: **MARJ KAPILI OTO-İCRA** — ikilemi bitiriyor
+
+### Sorun
+
+| yaklaşım | sorun |
+|---|---|
+| **endüstri**: *«önce çıkar, olmazsa sor»* (Cortex) | sessiz-yanlış **kalıyor** — çıkarım yanılınca kimse bilmiyor |
+| **ilk taslağımız**: *«önce tıklat»* | uzman **yavaşlıyor** · emsali **yok** · her soruda tık **sürtünme** |
+
+### Çözüm: ikisi de değil — **marj karar versin**
+
+```
+                    route/garson → SIRALANMIŞ ADAY LİSTESİ (zaten var, §23)
+                                          │
+                              marj = skor(1) − skor(2)
+                                          │
+                 ┌────────────────────────┴────────────────────────┐
+        marj ≥ eşik                                        marj < eşik
+   🟢 DOĞRUDAN CEVAPLA                              🔵 CEVAPLAMA, ADAYLARI GÖSTER
+   + altta ince şerit:                              «İki şey kastediyor olabilirsin:»
+   «…kastettiysen: [aday 2] [aday 3]»                 [aday 1] [aday 2]  (+N diğer)
+                 └────────────────────────┬────────────────────────┘
+                                          │
+                        taban skor altındaysa (hiçbir aday yeterli değil)
+                              🔴 PROAKTİF SINIR BEYANI
+                        «Bu konuda bir ölçüm yok. Şunlar var: …»
+```
+
+### Neden bu, dört sorunu birden çözüyor
+
+| sorun | nasıl çözülüyor |
+|---|---|
+| **uzman yavaşlıyor** | net soruda marj büyük → **doğrudan cevap**, tık yok |
+| **sessiz-yanlış** | marj küçükken **cevap verilmiyor** → yanlış sessizce basılmıyor |
+| **emsal yok riski** (`§22`) | endüstrinin düzeni **korunuyor** (*«önce çıkar»*), yalnız **eşiği görünür** oluyor |
+| **filtre riski** (`§18.10`) | kaybeden adaylar **atılmıyor**, ince şeritte **duruyor** |
+
+🔴 **Ve bu bir icat değil, `:1190`'ın GENELLEŞTİRİLMESİ.** Bugün `≥4 harf` kuralı **tek
+bir dalda** ve **tek bir ölçütle** çalışıyor; öneri katmanı onu **her dala** ve **birleşik
+skora** taşıyor.
+
+### Tek ayarlanabilir sayı — ve ölçülebilir
+
+`marj_esigi` **tek bir skalerdir** ve etkisi doğrudan ölçülür:
+
+```
+eşik ↑  → daha çok soru sorulur → doğruluk ↑ · erişim ↓   (bugünkü kırmızının yönü)
+eşik ↓  → daha çok doğrudan cevap → erişim ↑ · sessiz-yanlış riski ↑
+```
+
+⊙ **Bu, `§1.2`'de ölçülen ZIT hareketin kontrol düğmesidir.** Bugün doğruluk +1,2 puan
+arttı, erişim 15 puan düştü — çünkü sistem **örtük olarak eşiği yükseltti**. Marj kapısı
+bunu **açık, ayarlanabilir ve ölçülebilir** yapar 🆕.
+
+⚠ Eşik **elle seçilmez**: altın küme üzerinde *«doğrudan cevaplananların ne kadarı
+doğruydu»* eğrisi çizilir ve **kabul edilebilir sessiz-yanlış oranına** göre konur.
+
+---
+
+## §25 · PÜRÜZLER — ve her birinin çözümü
+
+| # | pürüz | çözüm | durum |
+|---|---|---|---|
+| **1** | *«Tıklamayı birincil yapan ürün yok»* | 🔴 **`§24` marj kapısı** — birincil olan **çıkarım**, tıklama yalnız marj düşükken | ✅ çözüldü |
+| **2** | `§18.10` **filtre riski**: yanlış tıklama geri dönüşsüz | ⊙ Biz **LLM bağlamını değil GÖRÜNTÜYÜ** süzüyoruz — kaybedenler `[+N diğer]` ile erişilebilir; serbest metin **hep açık** | ✅ çözüldü |
+| **3** | **Soğuk başlangıç**: yeni şirkette kullanım geçmişi yok → popülerlik önceliği yok | Sektör paketinin **korpustan üretilmiş** çekirdek soruları tohum olur (`nl_corpus` zaten üretiyor) | ✅ çözüldü |
+| **4** | 🔴 **Konum yanlılığı**: üstteki daha çok tıklanır → sayım kendini besler | ① yalnız **1. sırayı ATLAYAN** tıklama **güçlü** sinyal ② `ε` oranında **karıştırma** ③ *«yazdı, hiçbirini tıklamadı»* → üsttekilere **negatif** | ✅ çözüldü |
+| **5** | **Aynı etiketli iki aday** (Thread 4) | 🔴 Etiket **FARKTAN türetilir**, küp adından değil: iki aday hangi **nitelikte ayrışıyorsa** o basılır (küp işi · grain · birim) | ✅ çözüldü |
+| **6** | **Gömücü soğuk açılış** — ⚠ bu depoda **ÖLÇÜLMÜŞ** bir kusur (konteyner soğuk başlarken `/ask` dakikalarca asılı kaldı) | Gömücü **ısınana kadar** öneri **yalnız leksik** kipte çalışır; ısınma **hazırlık probuna** bağlanır (`/health/ready`) | ✅ çözüldü |
+| **7** | Kullanıcı **gerçekten karşılanamayan** bir şey istiyor → öneri bunu **gizler** | **Taban skor** altında hiçbir aday yoksa → 🔴 **proaktif sınır beyanı** (`§D4`), *«ölçüm yok»* bir **cevaptır** 🆆 | ✅ çözüldü |
+| **8** | 🔴🔴 **YETKİ SIZINTISI**: kullanıcının göremeyeceği bir ölçü öneride görünürse **bilgi sızar** | Öneri listesi **sıralamadan ÖNCE** `authorize()` ile süzülür — sıralamadan sonra değil. *Bayraklar ≠ yetki; güvenlik sınırı her zaman `authorize()`* | ✅ çözüldü |
+| **9** | **Korpus ne ölçecek?** `route()` sıralayıcıya dönünce *«doğru-cube»* ne demek | Ölçüt **`doğru-cube@1`** ve **`doğru-cube@3`** olarak **ikiye ayrılır**; 🅜 **payda kutsal** — ham tur sayısı **değişmez** (`KURAL A`) | ✅ çözüldü |
+| **10** | **Geri dönüş**: kötü çıkarsa ne olacak | Bayrak kapalı → **bayt bayt** bugünkü. ⊙ Ve **hasat edilen sinonimler kalıcı bir varlıktır** — arayüz geri alınsa bile katalog **zenginleşmiş** kalır | ✅ çözüldü |
+| **11** | **Ekran bütçesi**: 4 mevcut chip şeridi + 2 öneri şeridi | *yazarken* ↔ *cevaptan sonra* **ayrı an**; yazınca kart şeritleri **söner**. Toplam görünür seçenek **≤10**, **kaydırma yasak** (Baymard) | ✅ çözüldü |
+| **12** | **Mobil**: pill düzenleme acı verici, klavye ekranın yarısını kapatıyor | Mobilde **öneri var, pill düzenleme yok**; öneri adedi **6** (Baymard/Amazon) | ◐ kısmi |
+| **13** | **Dil karışımı**: `OEE`·`WIP`·`downtime` — Türkçe cümlede İngilizce terim | Leksik ayak bunu **zaten** yakalar (tam token); vektörel ayak çok dilli. ⚠ **Ölçüm setine karışık ifadeler konulmalı** | ◐ ölçüme bağlı |
+| **14** | **Eş anlamlı ama farklı grain'de** iki aday (aylık ciro ↔ günlük ciro) | Grain **etikete girer** (`§25/5` ile aynı kural); ve `compose` grain ihlalini **zaten** yakalıyor → pill **kırmızıya döner** | ✅ çözüldü |
+| **15** | **Öneri gecikmesi ile garson gecikmesi karışır** | Öneri **asla** garsonu beklemez: deterministik liste **anında**, garson gelirse **zenginleştirir** (`E-8` korunur) | ✅ çözüldü |
+
+### 25.1 🔴 En ağır üçü — ayrıntı
+
+**⑧ Yetki sızıntısı** bu listenin **tek güvenlik kalemi** ve sessizdir: öneri listesi bir
+**envanter ifşasıdır**. *«Personel maliyeti»* önerisi, o ölçüyü göremeyen bir kullanıcıya
+**şirkette böyle bir ölçü olduğunu** söyler. → Süzme **sıralamadan önce**, ve bunun bir
+**kapısı** olmalı.
+
+**④ Konum yanlılığı** öğrenme döngüsünün **sessiz zehri**: düzeltilmezse sistem kendi ilk
+tahminlerini *«doğrulanmış»* sanır ve **yanlışta sabitlenir**. En ucuz panzehir üçüncü
+madde: *«kullanıcı yazdı, hiçbirini tıklamadı»* — bu **en değerli negatif sinyaldir** ve
+bedava gelir.
+
+**⑨ Korpus ölçütü** atlanırsa kapı **yanlış şeyi** ölçer: bugünkü `doğru-cube` **tek
+adayı** varsayıyor. `@1` ↔ `@3` ayrımı yapılmazsa öneri katmanı korpusta **iyileşme gibi
+görünen bir gerileme** üretebilir — ve bu deponun kayıtlı en pahalı tuzağıdır
+(*«gitas düştü, doğruluk YÜKSELDİ»*).
+
+---
+
+## §26 · RİSKE ATMAMAK — kademeli teslim sırası
+
+Her adım **tek başına değerli** ve **tek başına geri alınabilir** olmalı:
+
+| # | adım | tek başına değeri | geri alma |
+|---|---|---|---|
+| **0** | `§13.1` gömme ölçümü | 🔴 **karar verir** | — (kod yok) |
+| **1** | **Üç marj mantığını birleştir** (`§23/🅑`) | `KAT-1` borcu kapanır — **öneri olmadan da kazanç** | saf yeniden düzenleme |
+| **2** | **Marj kapılı oto-icra** (`§24`) | `§1.2`'nin ZIT hareketine **kontrol düğmesi** | eşik = ∞ → bugünkü davranış |
+| **3** | **Kaybeden adayları yüzeye çıkar** (ince şerit) | belirsizlik **görünür** olur | şerit gizlenir |
+| **4** | Kıyas temeli chip'i | ölçülmüş kusur sınıfı **kapanır** | chip kaldırılır |
+| **5** | Öneri ucu + FE şeridi + **tuş** | tamamlama başlar | 🔴 tuş **kullanıcıda** |
+| **6** | Çapa · pill · makro · plan önizleme | `§5`–`§7` | bayrak |
+| **7** | Hasat döngüsü | sözlük **kendi kendine** büyür | onay kuyruğu zaten insanlı |
+
+🔴 **Adım 1 ve 2 öneri katmanından BAĞIMSIZ ve bugün yapılabilir.** İkisi de mevcut
+kusurları kapatıyor, ikisi de yeni bir yüzey açmıyor, ikisi de `§13.1`'i beklemiyor.
+
+> **Riske atmamanın tanımı bu:** ölçüm bekleyen kısım **ertelenir**, ölçüm beklemeyen
+> kısım **bugün değer üretir**, ve hiçbir adım bir sonrakine **mecbur bırakmaz**.
+
+---
+
+## §27 · GÜNCELLENMİŞ KARAR ÖZETİ
+
+| soru | cevap | değişti mi |
+|---|---|---|
+| Sektörün reddi bize uyar mı? | ⊘ **Hayır** — altı eksende yapısal fark (`§22`) | 🆕 |
+| Ama emsal var mı? | 🔴 **Yok** — ve bu bir risk; `§24` onu **azaltıyor** | 🆕 |
+| Sıralayıcı yazacak mıyız? | ⊘ **Hayır** — **zaten var**, listeyi atıyor (`§23`) | 🔴 **DEĞİŞTİ** |
+| Tıklama birincil mi? | ⊘ **Hayır** — birincil **çıkarım**, tıklama **marj düşükken** (`§24`) | 🔴 **DEĞİŞTİ** |
+| Açık/kapalı birlikte olur mu? | ✅ **Evet** — iki giriş kapısı, tek koridor (`§19`) | — |
+| Riske atmadan başlanır mı? | ✅ **Evet** — adım 1–2 ölçümü beklemiyor (`§26`) | 🆕 |
+| Uygulama ne zaman? | 🔴 adım 3'ten itibaren **`§13.1` sonrası** | — |
+
+> *Bir sistemi geliştirmenin en ucuz yolu, onun zaten hesapladığı ama attığı şeyi
+> kullanmaktır.*
