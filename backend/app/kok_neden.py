@@ -1036,21 +1036,65 @@ def toplam_turu(prev_cq: dict, cube_meta: dict | None, *, kos,
     adimlar.insert(0, f"**{olcu}** bir toplam — bileşeni yok, o yüzden **kırılım "
                       f"ekseninde** ayrıştırıldı")
     adimlar.append(f"**{boyut}** kırılımında {len(_uygun)} segment ölçüldü")
-    _toplam = sum(abs(sayi(r[olcu]) or 0.0) for r in _uygun)
-    if _toplam <= 0:
+    # 🔴🔴 **PAY CEBRİ — SESSİZ-YANLIŞ ONARILDI (⟳ 2026-08-12, denetim bulgusu).**
+    #
+    # Eski hâli paydayı **mutlak** toplamdan alıyordu (`sum(abs(...))`) ama cümle
+    # *«toplamının %P'ini taşıyor»* diyordu; `_akran` da **mutlak** ortalamaydı ama
+    # cümle *«öteki ortalaması»* diyordu. Karışık işaretli bir `SUM` ölçüsünde
+    # (`enerji_sapma.toplam_enpg` — `lower_is_better`, tasarım gereği ±) ölçüldü:
+    #
+    #     değerler   : +9000 · −4500 · −3000 · 0
+    #     brüt       : 16.500      net (GERÇEK toplam): 1.500
+    #     basılan pay: %54,5       gerçek pay        : %600      ← 11 KAT
+    #     basılan akran: +2.500    gerçek akran      : −2.500    ← İŞARET TERS
+    #
+    # Akıcı, doğru biçimlendirilmiş ve **güvenle yanlış** bir cümle. `§101.1`'in
+    # tersi: bir yanlış-pozitif değil, **bir yanlış SAYI**.
+    #
+    # ⊙ Kural yeniden yazılmadı: `contribution.contributions()` (`:191-196`) bu cebri
+    # **zaten** taşıyor — *«net pay ancak net değişim brüt hareketin anlamlı bir
+    # kısmıysa yorumlanabilir»*. Aynı eşik (%1) burada da uygulanıyor (`KAT-1`).
+    #
+    # *Bir payı mutlak değerlerle hesaplayıp «toplamın payı» diye sunmak, işaretleri
+    # yok sayıp güven satmaktır.*
+    _brut = sum(abs(sayi(r[olcu]) or 0.0) for r in _uygun)
+    _net = sum(sayi(r[olcu]) or 0.0 for r in _uygun)
+    if _brut <= 0:
         return None
     _dusuk_iyi = olcu in ((cube_meta or {}).get("lower_is_better") or [])
     _hedef = max(_uygun, key=lambda r: abs(sayi(r[olcu]) or 0.0))
     _seg = str(_hedef.get(boyut))
-    _pay = 100.0 * abs(sayi(_hedef[olcu]) or 0.0) / _toplam
-    _akran = (_toplam - abs(sayi(_hedef[olcu]) or 0.0)) / max(1, len(_uygun) - 1)
-    adimlar.append(f"en büyük segment **{_seg}** — toplamın {_ek(_yuzde(_pay))}")
+    _hv = sayi(_hedef[olcu]) or 0.0
+    # 🔴 **İKİ ŞART** — ve ikincisi ilk düzeltmemde EKSİKTİ (ders ㉚).
+    # ① `contribution`'ın eşiği: net, brütün anlamlı bir kısmı olmalı (işaretler
+    #    birbirini götürmesin).
+    # ② **PAY %100'Ü AŞAMAZ.** Karışık işaretli bir toplamda bu matematiksel olarak
+    #    mümkündür (+9000 / net 1500 = **%600**) ama cümle *«toplamının %P'ini
+    #    taşıyor»* diyor — ve bir parçanın bütünün altı katını *taşıması* okuyucunun
+    #    zihninde bir anlam taşımaz. İlk düzeltmem yalnız ①'i koydu ve kapı **%600**
+    #    basmaya devam etti; ölçüm yakaladı.
+    # *Doğru hesaplanmış bir sayı, yanlış bir cümlede hâlâ yanlıştır.*
+    _ham = (100.0 * _hv / _net) if _net else None
+    _pay = (_ham if (_ham is not None and abs(_net) > _brut * 0.01
+                     and abs(_ham) <= 100.0) else None)
+    _akran = (_net - _hv) / max(1, len(_uygun) - 1)          # 🔴 İŞARETLİ ortalama
+    adimlar.append(f"en büyük segment **{_seg}** — toplamın {_ek(_yuzde(_pay))}"
+                   if _pay is not None else
+                   f"en büyük segment **{_seg}** — ⚠ pay hesaplanamadı: segmentler "
+                   f"birbirini götürüyor (brüt {_sayi(_brut)} ↔ net {_sayi(_net)})")
     _disp = str(((cube_meta or {}).get("measure_synonyms_display") or {}).get(olcu)
                 or olcu).replace("_", " ")
     _yargi = (" (bu ölçüde **düşük** iyidir)" if _dusuk_iyi else "")
-    metin = (f"**{_seg}** ({boyut}) tek başına **{_disp}** toplamının "
-             f"{_ek(_yuzde(_pay), True)} taşıyor: **{_sayi(sayi(_hedef[olcu]))}** ↔ öteki "
-             f"{boyut} ortalaması **{_sayi(_akran)}**{_yargi}.")
+    metin = ((f"**{_seg}** ({boyut}) tek başına **{_disp}** toplamının "
+              f"{_ek(_yuzde(_pay), True)} taşıyor: **{_sayi(_hv)}** ↔ öteki "
+              f"{boyut} ortalaması **{_sayi(_akran)}**{_yargi}.")
+             if _pay is not None else
+             # ⚠ Pay basılamıyorsa cümle **büyüklüğe** iner ve nedenini SÖYLER —
+             # sessizce yanlış bir yüzde basmaktansa eksik ama doğru bir cümle.
+             (f"**{_seg}** ({boyut}) en büyük tekil **{_disp}** hareketi: "
+              f"**{_sayi(_hv)}** ↔ öteki {boyut} ortalaması **{_sayi(_akran)}**{_yargi}. "
+              f"⚠ Toplam içindeki payı **hesaplanamadı**: segmentler birbirini "
+              f"götürüyor (brüt {_sayi(_brut)} ↔ net {_sayi(_net)})."))
     # 🔴 EN DİBE İN — segmentin **içinde** ikinci bir kırılım. `derinles` bir `Bilesen`
     # ister (formül ekseni); burada eksen ölçünün kendisidir, o yüzden süpürücü
     # **doğrudan** çağrılır — ikinci bir «açıklayıcılık» tanımı yazılmaz (`KAT-1`).
@@ -1075,8 +1119,14 @@ def toplam_turu(prev_cq: dict, cube_meta: dict | None, *, kos,
                       f"({d2}) incelenmeli — segmentin {_ek(_yuzde(_p2))} oradan "
                       f"geliyor.")
     elif oneri:
+        # ⚠ İKİNCİ pay cümlesi — `_pay` `None` olabilir (işaretler götürüyor ya da
+        # pay %100'ü aşıyor). Korumasız bırakılırsa *«toplamın None'ı»* basardı.
+        # *Bir düzeltme, aynı sayının ÖTEKİ kullanım yerini de kapsamalıdır* (ders ㉚).
         metin += (f"\n\n→ **Öneri:** **{_seg}** ({boyut}) incelenmeli — toplamın "
-                  f"{_ek(_yuzde(_pay))} tek başına orada.")
+                  f"{_ek(_yuzde(_pay))} tek başına orada."
+                  if _pay is not None else
+                  f"\n\n→ **Öneri:** **{_seg}** ({boyut}) incelenmeli — en büyük tekil "
+                  f"hareket orada (**{_sayi(_hv)}**).")
     metin = ("🔍 **Nasıl buldum:** "
              + " → ".join(f"{i}️⃣ {a}" for i, a in enumerate(adimlar, 1))
              + "\n\n" + metin)
