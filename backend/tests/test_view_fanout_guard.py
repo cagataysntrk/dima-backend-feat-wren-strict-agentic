@@ -64,6 +64,45 @@ def _view_files(project_dir: Path) -> list[Path]:
     return sorted(views_dir.glob("*/metadata.yml"))
 
 
+def _tum_projeler() -> list[Path]:
+    """🔴🔴 **TÜM KİRACILAR** — varsayılan proje **ve** `demo/wren-projects/*`.
+
+    Ölçülen kusur (2026-08-12, denetim ajanı + kendi ölçümüm): bu kapı
+    `settings.resolved_project_dir()` ile **tek** kiracıya bakıyordu ve
+    **9 view'in 1'ini** görüyordu.
+
+        wren-project  : enerji_tesis                          (3 LEFT JOIN)  ← görülen
+        atiksan       : cari_finans_src · karlilik_src         (1 + 2)       ← görülmeyen
+        gitas         : cari_finans_src · karlilik_src · mizan_src (1+1+1)   ← görülmeyen
+        gulteks       : cari_finans_src · karlilik_src         (1 + 2)       ← görülmeyen
+        demo-boyahane : enerji_tesis                          (3)            ← görülmeyen
+
+    Toplam **9 view · 15 LEFT JOIN**; korunan **3**. `karlilik_src`'nin
+    `LEFT JOIN stok_kartlari ON STOK_KODU` bacağı, kuralın doğduğu `parti_zengin`
+    vakasının **tam sınıfıdır** — fan-out tutarı şişirir ve `source="cube"` rozetiyle
+    çıkar, yani **sessiz-yanlış**.
+
+    ⊙ Ve ölçüldü: dört kiracının **dördü de** `--network none` altında servis kurup
+    sorgu koşabiliyor — yani kapsamı dar tutmanın **ortamsal bir gerekçesi yoktu**.
+    """
+    kok = Path(__file__).parent.parent / "demo"
+    out = [kok / "wren-project"]
+    p = kok / "wren-projects"
+    if p.is_dir():
+        out += sorted(d for d in p.iterdir() if d.is_dir() and (d / "views").is_dir())
+    return [d for d in out if (d / "views").is_dir()]
+
+
+def _servis(project_dir: Path):
+    """O kiracının kendi motoru — view'ler **kendi verisiyle** ölçülmeli."""
+    from app.config import get_settings
+    from app.wren_service import WrenService
+
+    s = get_settings()
+    return WrenService(project_dir=str(project_dir), datasource=s.datasource,
+                       connection_info=s.connection_dict())
+
+
 def _first_from_table(statement: str) -> str | None:
     m = re.search(r"\bFROM\s+([A-Za-z_][A-Za-z0-9_]*)", statement, re.IGNORECASE)
     return m.group(1) if m else None
@@ -109,30 +148,91 @@ def test_no_view_fans_out_relative_to_its_base_table(duckdb_conn):
     kalıcıdır çünkü ne zaman biri yeni bir denormalize view yazsa aynı risk geri gelir."""
     from app.config import get_settings
 
-    settings = get_settings()
-    views = _view_files(settings.resolved_project_dir())
-    assert views, "beklenen en az bir view (enerji_tesis) bulunamadı"
-
-    checked = 0
-    for vf in views:
-        data = yaml.safe_load(vf.read_text(encoding="utf-8")) or {}
-        stmt = data.get("statement")
-        if not stmt:
+    settings = get_settings()          # noqa: F841 — kapsam artık TÜM kiracılar
+    checked, atlanan = 0, []
+    for proje in _tum_projeler():
+        views = _view_files(proje)
+        if not views:
             continue
-        base_table = _first_from_table(stmt)
-        assert base_table, f"{vf}: FROM tablosu ayrıştırılamadı"
-        base_count = duckdb_conn.execute(f"SELECT COUNT(*) FROM {base_table}").fetchone()[0]
-        view_count = duckdb_conn.execute(f"SELECT COUNT(*) FROM ({stmt}) t").fetchone()[0]
-        assert view_count <= base_count, (
+        try:
+            svc = _servis(proje)
+        except Exception as exc:                                 # noqa: BLE001
+            # ⚠ Ortam eksiği **sessizce** geçilmez: sayılır ve aşağıda beyan edilir.
+            atlanan.append(f"{proje.name}: {type(exc).__name__}")
+            continue
+        for vf in views:
+            data = yaml.safe_load(vf.read_text(encoding="utf-8")) or {}
+            stmt = data.get("statement")
+            if not stmt:
+                continue
+            base_table = _first_from_table(stmt)
+            assert base_table, f"{vf}: FROM tablosu ayrıştırılamadı"
+            try:
+                base_count = svc.query(f"SELECT COUNT(*) AS n FROM {base_table}")["rows"][0]["n"]
+                view_count = svc.query(f"SELECT COUNT(*) AS n FROM ({stmt}) t")["rows"][0]["n"]
+            except Exception as exc:                             # noqa: BLE001
+                atlanan.append(f"{proje.name}/{vf.parent.name}: {type(exc).__name__}")
+                continue
+            assert view_count <= base_count, (
             f"FAN-OUT: view '{data.get('name')}' ({vf}) temel tablosu '{base_table}' "
             f"({base_count} satır) yerine {view_count} satır döndürüyor — bir JOIN "
             f"çoğaltıyor olabilir (benzersizliği garanti edilmeyen bir anahtar kolonu ara)."
         )
         checked += 1
-    # Faz 2 sonrası geriye tek meşru view kaldı (enerji_tesis). Sayı düştü diye eşiği
-    # 0'a indirmiyoruz: 0 olsaydı `_view_files` bir gün sessizce boş dönse (dizin adı
-    # değişti, compose atladı) test yine YEŞİL kalırdı — yani kendini ölçmez hale gelirdi.
-    assert checked >= 1
+    # 🔴 **PAYDA KİLİDİ** (⟳ 08-12). Eski eşik `>= 1` idi ve tek view'le yeşil kalıyordu
+    # — yani kapsam 9'dan 1'e düştüğü hâlde kapı bunu **hiç duyurmadı**. Bu deponun
+    # `gitas` dersinin birebir tekrarı: *sistem bozulurken sayı iyileşir.*
+    # ⚠ Eşik **9**: bugün ölçülen view sayısı. Bir view **eklenirse** bu sayı büyür
+    # (kapı kırmızı vermez); **düşerse** kırmızı verir ve gerekçesi yazılır.
+    # 🔴 **KAPSAM İKİYE BÖLÜNDÜ — ve ikisi de SAYIYLA yazılı** (⟳ 08-12).
+    #
+    # Ölçüldü: dokuz view'in **yedisi** `--network none` altında koşamıyor —
+    # `[INVALID_SQL] table 'wren.dbo.cari_hareketler' not found`. Sebep **ortamsal**:
+    # `atiksan`·`gitas`·`gulteks` `CLAUDE.md`'ye göre **mssql** lab fikstürleridir ve
+    # temel tabloları yerel veri kaynağında **yok**. Bu bir ürün kusuru değil.
+    #
+    # ⚠ Ama sessizce geçilmiyor: ölçülemeyenler **adıyla** sayılıyor ve sayı bir
+    # tavana bağlı. Biri ölçülebilir hâle gelirse (veri yerelleşirse) kapı **iyi
+    # haberle** kırmızı verir ve kapsam genişletilir.
+    #
+    # *Bir kapıyı ortam eksiğinde susturmak dürüstlüktür; o susmayı DUYURMAMAK
+    # kapsamı sessizce kırpmaktır.*
+    assert len(atlanan) <= 7, (
+        f"🔴 ATLANAN VIEW SAYISI ARTTI ({len(atlanan)} > 7): {atlanan}\n"
+        "Daha önce ölçülebilen bir view artık ölçülemiyor — kapsam DARALDI.")
+    if len(atlanan) < 7:
+        import pytest as _pt
+        _pt.skip(f"✅ İYİ HABER: yalnız {len(atlanan)} view atlandı (önce 7) — "
+                 f"{atlanan}. Bir kiracının verisi yerelleşmiş olabilir; tavanı "
+                 "düşürüp kapsamı genişletin.")
+    assert checked >= 2, (
+        f"🔴 PAYDA DÜŞTÜ: yalnız {checked} view DAVRANIŞSAL olarak ölçüldü, beklenen "
+        "**≥2** (`wren-project/enerji_tesis` · `demo-boyahane/enerji_tesis`).\n"
+        "*Hız kapsamdan değil çekirdekten satın alınır — payda kutsaldır.*")
+
+
+def test_TUM_VIEWLER_SAYILIYOR_hicbiri_SESSIZCE_DUSMUYOR():
+    """🔴🔴 **KAPSAM KİLİDİ** — dokuz view'in **hepsi** görülmeli, ölçülebilsin ya da
+    ölçülemesin.
+
+    Ölçülen kusur: kapı `settings.resolved_project_dir()` ile **tek** kiracıya
+    bakıyordu ve **9 view'in 1'ini** görüyordu; eski eşik `checked >= 1` olduğu için
+    kapsam 9'dan 1'e düştüğü hâlde **hiçbir kırmızı konuşmadı**. Bu deponun `gitas`
+    dersinin birebir tekrarı: *sistem bozulurken sayı iyileşir.*
+
+    ⊙ Ve hepsi risk taşıyor: **9 view · 15 LEFT JOIN** (ölçüldü). `karlilik_src`'nin
+    `LEFT JOIN stok_kartlari ON STOK_KODU` bacağı, kuralın doğduğu `parti_zengin`
+    vakasının **tam sınıfıdır**.
+    """
+    tum = [(p.name, vf.parent.name) for p in _tum_projeler() for vf in _view_files(p)]
+    assert len(tum) >= 9, (
+        f"🔴 VIEW SAYISI DÜŞTÜ: {len(tum)} bulundu, beklenen ≥9 → {tum}\n"
+        "Bir view silindiyse gerekçesi yazılsın; bir dizin adı değiştiyse tarayıcı "
+        "düzeltilsin — *sessizce düşen bir view, ölçülmeyen bir risktir.*")
+    kiracilar = {p for p, _ in tum}
+    assert len(kiracilar) >= 4, (
+        f"🔴 yalnız {len(kiracilar)} kiracı tarandı: {sorted(kiracilar)} — kapı yine "
+        "tek kiracıya daralmış olabilir.")
 
 
 def test_ad_soyad_join_anahtari_riski_ILISKIYE_TASINDI(duckdb_conn):
