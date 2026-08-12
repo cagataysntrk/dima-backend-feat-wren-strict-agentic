@@ -35,6 +35,32 @@ puan** (n=11.237) — orada yarım puanlık bir düşüş **gerçektir**.
 
 > *Bir oranı aralığı olmadan yayımlamak, okuyucuya kendi payda duygusunu uydurtmaktır.*
 
+### 🔴 GÜVENİLİRLİK — reddin İKİ TÜRÜ ayrı sayılır (`§A7`, EHRSQL deseni)
+
+EHRSQL'in (NeurIPS 2022) ölçütü bir doğruluk oranı değil bir **davranış** ölçütüdür:
+
+| davranış | işaret | bizde |
+|---|---|---|
+| kapsam-**dışı** soruya **red** | ✅ **pozitif** | **85** |
+| kapsam-**dışı** soruya **CEVAP** | 🔴 **en ağır negatif** | **1** |
+| kapsam-**içi** soruya **red** | 🔴 negatif | **339** (%2,3) |
+| kapsam-**içi** soruya cevap | ✅ pozitif | **11.732** (%78,4) |
+
+    gürültü (kapsam-dışı) paydası 86 → doğru red oranı **%98,8**
+    netleştirme (bir red değil, bir SORU)                    2.755  (%18,4)
+
+⊙ **Neden tek bir sayı yazılmıyor:** EHRSQL'in birleşik skoru bir **ceza katsayısı**
+seçmeyi gerektirir (*«kapsam-içi bir red, kapsam-dışı bir cevaptan kaç kat hafiftir»*) ve
+o katsayı bir **iş kararıdır**, bir ölçüm değil. Katsayıyı biz seçip tek bir sayı
+yayımlasaydık, seçimimizi bir ölçüm gibi sunmuş olurduk.
+
+⚠ Ve **netleştirme bir red değildir**: kullanıcıya bir soru sorulmuştur, cevap
+kapanmamıştır. Onu redle aynı kefeye koymak, sistemin en dürüst davranışını bir
+başarısızlık gibi saymak olurdu.
+
+> *Bir güvenilirlik skoru, cezasının kim tarafından seçildiği yazılmadan bir ölçüm
+> değil bir tercihtir.*
+
 ### Şirket kırılımı — ortalamanın arkasındaki dağılım
 
 | şirket | sektör | doğru küp | semantik vaka | cevapsız | şişme |
