@@ -25,6 +25,9 @@ from datetime import date, timedelta
 from app import cekirdek, mali_takvim
 from app import cube_operatorleri as _cube_op
 from app.llm import _norm
+# 🔴 `FAZ 1` — *«emin miyim?»* sorusunun tek sahibi. Takma adlar, bu dosyanın kendi
+# `karar`/`Aday` adlarıyla çakışmasın diye (🅒 ödünç ad tuzağı).
+from app.emin_miyim import Karar as _EminKarar, karar as _emin_karar
 
 #: FAZ 9.3 — bu modül bugüne kadar hiç log ATMIYORDU; `route()` saf bir fonksiyon olduğu
 #: için doğruydu. Ama chip DÜŞÜRMEK bir karardır ve sessiz kalırsa "kaç chip yutuldu"
@@ -1106,7 +1109,11 @@ def _daha_spesifik_olcu_sahibi(q: str, kazanan: dict, schema: dict) -> dict | No
                if c is not kazanan
                and (syn := _match_measure(q, c)[1] or "")
                and len(syn) > len(kanit) and kanit in syn]
-    return adaylar[0] if len(adaylar) == 1 else None
+    # 🔴 `FAZ 1` — *«emin miyim»*in **en dejenere** hâli: skor yok, yalnız **teklik**.
+    # `marj=∞` tam olarak *«ikinci aday hiç olmasın»* demektir; iki aday eşit skorlu
+    # olduğunda fark `0 < ∞` → karar `OTO_ICRA` değildir. Davranış birebir aynı.
+    _tek = _emin_karar([0.0] * len(adaylar), marj=float("inf"))
+    return adaylar[0] if _tek is _EminKarar.OTO_ICRA else None
 
 
 def _match_cube(q: str, schema: dict) -> dict | None:
@@ -1187,7 +1194,11 @@ def _match_cube(q: str, schema: dict) -> dict | None:
         scored = sorted(hits, key=lambda c: _longest_syn_hit(q, c), reverse=True)
         # Fark BELİRGİN olmalı (≥4 harf): "yaşlandırma"(11) vs "cari"(4) → yaslandirma;
         # ama "fire"(4) vs "üretim"(6) → gerçek belirsizlik, kırma (çapraz konu → sor).
-        if _longest_syn_hit(q, scored[0]) - _longest_syn_hit(q, scored[1]) >= 4:
+        # 🔴 `FAZ 1` — aynı *«emin miyim»* iskeleti; **taban yok** (mutlak bir harf
+        # sayısı iyi/kötü demez), yalnız **marj** var. Skor birimi **harf**tir ve
+        # `[0,1]`'e ÇEVRİLMEZ: bkz. `emin_miyim` modül başlığı 🅭.
+        if _emin_karar([float(_longest_syn_hit(q, c)) for c in scored[:2]],
+                       marj=4.0) is _EminKarar.OTO_ICRA:
             return scored[0]
         # cube-düzeyi çoklu aday, kırılamadı. Kanıt EŞİTSE bu bir tahmin sorusu değil bir
         # SORU sorma anıdır → `cube_tie_candidates` netleştirme chip'i üretir (Faz 3.1).
@@ -3845,7 +3856,8 @@ def typo_correct(q: str, schema: dict) -> tuple[str, list[dict]]:
         return q, []
     # Cube çözülemediyse (resolved=None → vocab TÜM kataloğa genişledi) "öneri" barajı
     # da yükselir; tek-cube'a-daralmış durumda eski (test edilmiş) davranış korunur.
-    min_suggest = _TYPO_MID if resolved is not None else _TYPO_MID_WIDE
+    # 🔴 `FAZ 1` — bu seçim artık aşağıda `karar(..., baglam_belirsiz=resolved is None)`
+    # olarak ifade ediliyor; kural **kaybolmadı**, tek sahibine taşındı (`KAT-1`).
     # ÇAPRAZ-KONU TERİMİ YAZIM HATASI DEĞİLDİR (Faz D3, ölçülmüş vaka). Soru bir cube'a
     # çözüldüğünde `unknown`, YALNIZ O CUBE'a göre bilinmeyenleri içerir; oysa kelime
     # başka bir cube'un GERÇEK terimi olabilir. Ölçüldü: "personel bazlı verimlilikleri
@@ -3867,14 +3879,26 @@ def typo_correct(q: str, schema: dict) -> tuple[str, list[dict]]:
             key=lambda t: t[0], reverse=True,
         )
         best_score, best = scored[0]
-        if best == w or best_score < min_suggest:
+        if best == w:
             continue
         len_ratio = min(len(w), len(best)) / max(len(w), len(best))
         if len_ratio < _TYPO_LEN_RATIO:
             continue  # uzunluk çok farklı → muhtemelen alakasız kelime, ELE
         second_score = scored[1][0] if len(scored) > 1 else 0.0
+        # 🔴 `FAZ 1` — üç kademe (**oto** / **öner** / **sus**) artık `emin_miyim.karar`
+        # tarafından kuruluyor; eşikler (`_TYPO_*`) **burada**, çünkü onlar bu yolun
+        # kalibre sabitleridir (`KAT-1`).
+        # ⚠ İkinci aday yokken özgün kod `second_score = 0.0` sayıyordu — `karar()`'ın
+        # *«ikinci yoksa fark sonsuz»* kuralıyla **aynı sonucu** verir (baraj 0,65'in
+        # altına düşemez), ama farkı **açıkça** taşımak için sahte aday geçiriliyor:
+        # davranış varsayımdan değil **koddan** okunsun.
+        _kr = _emin_karar([best_score, second_score], taban=_TYPO_HIGH, marj=_TYPO_GAP,
+                          taban_goster=_TYPO_MID, taban_goster_genis=_TYPO_MID_WIDE,
+                          baglam_belirsiz=resolved is None)
+        if _kr is _EminKarar.SINIR:
+            continue
         fixed_q = re.sub(rf"\b{re.escape(w)}\b", best, q)
-        if best_score >= _TYPO_HIGH and (best_score - second_score) >= _TYPO_GAP:
+        if _kr is _EminKarar.OTO_ICRA:
             q_out = re.sub(rf"\b{re.escape(w)}\b", best, q_out)
             corrections.append({"kind": "auto", "from": w, "to": best, "corrected_q": fixed_q})
         else:

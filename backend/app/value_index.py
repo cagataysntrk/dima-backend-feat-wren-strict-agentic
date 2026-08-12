@@ -134,8 +134,13 @@ class FuzzyIndex:
         if not cands:
             return None
         c = cands[0]
-        if c.score < AUTO_SCORE or len(c.surface) < MIN_AUTO_LEN:
+        # ⚠ Uzunluk ön koşulu **burada kalır** (`KAT-1`): *«kaç harften kısa bir yüzey
+        # otomatik düzeltilmez»* bu indeksin alan bilgisidir, ortak *«emin miyim»*
+        # sorusu değil. Eşik aritmetiğinin tek sahibi ise artık `emin_miyim.karar`.
+        if len(c.surface) < MIN_AUTO_LEN:
             return None
-        if len(cands) > 1 and cands[1].score > c.score - AUTO_MARGIN:
-            return None  # yakın ikinci aday → belirsiz, sorulur
+        from app.emin_miyim import Karar, karar
+        if karar([x.score for x in cands],
+                 taban=AUTO_SCORE, marj=AUTO_MARGIN) is not Karar.OTO_ICRA:
+            return None  # düşük skor ya da yakın ikinci aday → belirsiz, sorulur
         return c

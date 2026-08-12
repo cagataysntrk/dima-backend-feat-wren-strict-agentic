@@ -342,3 +342,68 @@ saymıştı**. Üçüncü hâl **kaynakta var**; kaybolduğu yer tek satırlık 
 
 📌 **`FAZ 4` ✅** — ürün kodu değişmeden, çünkü ürün zaten doğruydu; teslim **kapı +
 düzeltilmiş teşhis**. Sırada **`FAZ 1` `emin_miyim`**.
+
+---
+
+## §9 · `FAZ 1` SONUCU — **DÖRT SAHİP → BİR** *(2026-08-13)*
+
+`app/emin_miyim.py` yazıldı; *«elimdeki aday üstünde işlem yapacak kadar açık ara önde
+mi»* sorusunun **tek sahibi**. ㊷ bu kez temiz çıktı: dosya **yoktu**.
+
+⚠ **Planın «beş çağıran»ı DÖRTTÜR** ⑲ — ㉙ ile sayıldı:
+
+| # | yer | taban | marj | ek ön koşul | sonuç |
+|---|---|---|---|---|---|
+| ① | `value_index.auto_fix` | `AUTO_SCORE` 0,80 | `AUTO_MARGIN` 0,08 | `MIN_AUTO_LEN` | 2 |
+| ② | `cube_router` yazım hatası | `_TYPO_HIGH` 0,82 | `_TYPO_GAP` 0,08 | `len_ratio` · çapraz-konu | **3** |
+| ③ | `_match_cube:1190` | *(yok)* | **4 harf** | — | 2 |
+| ④ | `cube_router:1109` | *(yok)* | **∞** | — | 2 |
+
+② **üç sonuçludur** ve `Karar`'ın üç hâli (`OTO_ICRA`/`GOSTER`/`SINIR`) birebir odur;
+①③④ dejenere hâlleri. Kalibre sabitleri **çağıranlarda kaldı** (`KAT-1`).
+
+### 🔴 Planın `1.5` ve kapı `⑤`'i UYGULANMADI — gerekçesi yazıldı 🅗
+
+Plan *«harf farkını 0–1'e normalize et»* + *«normalize değilse `ValueError`»* istiyordu.
+`_longest_syn_hit` bir **harf sayısıdır** (üst sınırı yok; katalogdaki en uzun ad **30**).
+Sabit bir payda uydurmak 🅭 gerekirdi ve o payda aşıldığı gün (*33 harflik bir eşanlamlı
+eklenince*) `ValueError` **küp seçimini çökertirdi**. Yani `⑤` bir güvenlik kapısı değil,
+**kendi ürettiği riskin bekçisi** olurdu. Yerine sözleşme **birim-bağımsız**: skorlar
+yalnız *tek çağrı içinde* kıyaslanabilir; ③ harf sayısını **olduğu gibi** geçirir.
+
+### ⚠ `Aday` dataclass'ı ÖLÇÜMLE ELENDİ
+
+Plan `1.1` `Aday(kimlik·etiket·skor·kaynak)` istiyordu. Yazıldı — sonra ölçüldü:
+**dört çağıranın hiçbiri** `kimlik`/`etiket`/`kaynak` alanlarını kullanmıyor, hepsi
+kukla değer geçiyordu. Bugün karşılığı olmayan bir soyutlama 🆈; sözleşme
+`karar(skorlar: list[float], …)`'a indirildi. Gerekirse eklemek bir satırdır.
+
+### 🔴 TAVAN KAPISI KIRMIZI VERDİ — ve haklıydı, ama ölçtüğü şey sınırlıydı
+
+`test_CUBE_ROUTER_TAVANI_ASMIYOR`: **1969 ≤ 1954 değil**. Sıkıştırma **8 satır** geri
+verdi (1969 → 1961) ve orada tükendi. Kalan **+7**, kuralın çıkmasının değil,
+**yerine geçen çağrının sözdizimi bedelidir**: beş anahtarlı bir `karar(...)`,
+`a >= X and (a-b) >= Y` yazımından uzundur. ㊳ *Vekil ölçüt, ölçmediği bir iyileşmeyi
+cezalandırabilir* — tavan **kod satırını** sayar, **sahip sayısını** değil; burada
+iyileşen sahip sayısıdır (**4 → 1**).
+
+⊙ Çözüm listenin kendi mekanizması: `MUAFIYET_CUBE_ROUTER_KOD`'a `(sha, Δ=7, gerekçe)`
+maddesi — emsali `§B12` (aynı sınıf, `KAT-1`, `Δ=1`). 🅜 Δ **tam ölçülen fazladır,
+yuvarlanmadı**; boşluk bırakmak `test_KAPI_SAHTE_DEGIL`'i kırmızı verirdi.
+
+### Kanıt
+
+* Kapı `tests/test_emin_miyim_tek_sahip.py` — **8 yüklem**, ① `ast` ile *«kimse kendi
+  marjını hesaplamıyor»*, ③ üç kademe + `_MID_WIDE`'ın **taşındığı**, ④' harf biriminin
+  **korunduğu**.
+* 🅑 **İki mutasyon:** `fark >= marj` → `>` (**2 kırmızı**) · `_MID_WIDE` dalını düşür
+  (**1 kırmızı**). İkisi de `diff` ile geri alındı.
+* ⑯ komşu: `modul_buyume` · `typo` · `value_index` · `match_cube` · `tie` · `daraltma`
+  → **272 ✅ · 2 atlandı**.
+* 🔴 **Korpus ✅ çıkış 0 — dört şirket de TABANLA BİREBİR:** boyahane %83 · atiksan %69
+  · gulteks %68 · gitas %72 · doğru-cube **%95,6** · semantik **%94,4**. `KURAL B`
+  davranış düzeyinde kanıtlandı.
+
+📌 **`FAZ 1` ✅.** Sırada **`FAZ 2` marj kapısı** — ⚠ `FAZ 0`'ın bulgusu gereği
+**mutlak eşik YOK**; `emin_miyim.karar` zaten marj tabanlıdır, `FAZ 2` onun **üstüne**
+kurulur.

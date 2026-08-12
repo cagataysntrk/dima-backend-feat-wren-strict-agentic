@@ -935,6 +935,28 @@ MUAFIYET_ASK_KOD = [
      "`V17`'nin kusuru tam da yeni sorgu koşmaktı. *Bir fişi okumak için mutfağa gidilmez.*"),
 ]
 MUAFIYET_CUBE_ROUTER_KOD = [
+    ("faz1-emin-miyim-tek-sahip", 7,
+     "🔴 **`FAZ 1` — KAT-1 DÜZELTMESİ, Δ=7. Ve bu, tavanın ÖLÇTÜĞÜ ŞEYİN sınırıdır.** "
+     "⊙ Ölçüldü (2026-08-13): *«elimdeki aday üstünde işlem yapacak kadar açık ara "
+     "önde mi»* sorusu **DÖRT** yerde ayrı ayrı kuruluyordu — `value_index.auto_fix` "
+     "(0,80 / 0,08) · `cube_router` yazım hatası (0,82 / 0,08 / `_MID_WIDE`) · "
+     "`_match_cube` harf farkı (≥4) · `:1109` teklik (`len==1`). Soru bir, sahip dört. "
+     "✅ Tek sahip `app/emin_miyim.karar`; kalibre sabitleri **çağıranlarda kaldı** "
+     "(onlar alan bilgisidir, ortak soru değil). "
+     "⚠ **NEDEN TAVAN İNMEDİ DE ÇIKTI:** kural dosyadan **çıktı**, ama yerine geçen "
+     "çağrı, yerini aldığı satır-içi aritmetikten **uzundur** — beş anahtarlı bir "
+     "`karar(...)` çağrısı, `a >= X and (a - b) >= Y` yazımından daha çok satır tutar. "
+     "Yani bu Δ **yeni bir eşleştirme kuralı değil**, bir devrin **sözdizimi bedelidir**. "
+     "㊳ *Bir vekil ölçüt, ölçmediği bir iyileşmeyi cezalandırabilir* — tavan kod "
+     "satırını sayar, **sahip sayısını** değil; ve bu maddede iyileşen şey sahip "
+     "sayısıdır (4 → 1). "
+     "⊙ Alternatifler ölçülerek elendi: sıkıştırma **8 satır** geri verdi (1969 → 1961) "
+     "ve orada tükendi; `③`/`④`'ü göç dışı bırakmak yalnız **2** satır kazandırıp "
+     "kapının kendi `①` maddesini (*«hiçbir çağıran kendi marjını hesaplamıyor»*) "
+     "çiğnerdi. "
+     "🅜 **Δ tam ölçülen fazladır (7), yuvarlanmadı** — boşluk bırakmak bir sonraki "
+     "büyümenin peşin ödenmiş faturası olurdu ve `test_KAPI_SAHTE_DEGIL` bunu zaten "
+     "kırmızı verir."),
     ("b12-granulerlik-tek-sahip", 1,
      "🔴 **`§B12` — KAT-1 DÜZELTMESİ, Δ=1 (tek `import` satırı).** "
      "⊙ Ölçüldü (2026-08-12): zaman granülerliği kümesi **DÖRT** yerde elle yazılıydı "
