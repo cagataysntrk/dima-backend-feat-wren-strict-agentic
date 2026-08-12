@@ -128,7 +128,7 @@ cevaptır**; semantik katmanda başarısızlık **bir hata mesajıdır**.»*
 | 16 | **Örnek sorgu / few-shot retrieval** | Cube **+17…+23**, 4 KB'den | 🟢 **VAR** *(§B2)* — `vqr.few_shot_block()` **garsona** bağlandı (önce yalnız Discovery'ye bağlıydı: *«yazılmış ama bağlanmamış»*) |
 | 17 | **İş sözlüğü (`instructions.md`)** | Wren AI Context Layer | 🔴 **YOK — ve ölçüm nerede olmadığını GÖSTERDİ** *(2026-08-12)*. ⊙ `business_rules` **VAR ve BAĞLI** (`wren_service:1008` → `schema["business_rules"]` → `llm.py:226`) ama **yalnız Discovery'nin SQL istemine**; garsonun istemi (`_cube_select_system`) **yalnız katalog** alıyor — yani raporun *«ters yatırım»* bulgusunun tam kaldıracı burada duruyor. ⚠ Mevcut `knowledge/rules/*.md` **garsonun sözlüğü değil**: içeriği SQL semantiği (oran = SUM/SUM) ve kaynak şema bilgisi (Logo `TRCODE`/`IOCODE`) — garson SQL yazmaz, **küp seçer**. 🔴 **Canlı ölçülen somut kusur:** *«bütçe gerçekleşme oranı»* ve *«hedefin neresindeyiz»* → yalnız **`toplam_hedef`** dönüyor. Üç düzeyde ölçüldü: `butce` küpünde gerçekleşme ölçüsü **yok** (yalnız `toplam_hedef`·`ort_hedef`·`hedef_miktar_toplam`·`kalem_sayisi`); `butce_hedefleri` tablosunda gerçekleşme **kolonu yok** (`demo/genisletme.py:164`); ama küp `gerçekleşme` kelimesini **cube sinonimi olarak talep ediyor**. ⊙ Küpün kendi başlığı bunu zaten biliyordu: *«Gerçekleşme tek başına bir gerçekleşme değildir; bir hedefe göre gerçekleşmedir.»* — gerçekleşme **başka küplerde** yaşıyor, yani bu bir **çapraz-küp KPI** (`kpi.py`) kalemidir. ⚠ **Genelleme DENENDİ ve ÇÜRÜDÜ:** *«küp sinonimi hiçbir ölçü/boyut adına karşılık gelmiyorsa kusurdur»* yüklemi **66 kalem** buldu ve çoğu meşru (`bakim ← tamir` · `ik ← insan kaynakları` · `sevkiyat ← lojistik`): küp sinonimleri **konuyu** adlandırır, ölçüyü değil. `gerçekleşme`'yi `tamir`'den ayıran şey **yapısal değil anlamsaldır** → kapalı bir kapı kurulamaz (`ADR-0008`). *Bir kusuru genellemek, ancak genellemesi ölçülebiliyorsa doğrudur.* |
 | 18 | **Reflect + repair döngüsü** | Snowflake Error Correction · Genie | 🟢 **VAR** *(§B4)* — `plan_garson` onarım döngüsü: red **sınıfı** garsona geri veriliyor, tavan **2** (Magentic-One). Ölçüldü: tutma **%25 → %90** |
-| 19 | **Skills (markdown metodoloji)** | **Anthropic: %21 → >%95** | 🔴 **YOK — doğrulandı** *(2026-08-12)*: `demo/skills/` dizini yok, `app/*.py`'de `skills` atfı yok. 🔴 **VE ARTIK SOMUT BİR GEREKÇESİ VAR — canlı ölçüldü.** Üç metodoloji sorusu basıldı: ① *«fire %10 azalsa ne olur»* → ✅ **beyanlı red** (forecast bilinçli kapsam dışı — doğru davranış) ② *«müşteri kohort analizi yap»* → 8 satır, ama **kohort değil PİVOT** (müşteri × ay); 3 adım makbuzu var, *«kohort metodolojisi uygulanmadı»* beyanı **yok** ③ 🔴 *«geçen yıla göre ciro **büyüme oranı**»* → **cevapsız**. Oysa YoY **çalışıyor ve deterministik**: *«geçen yıla göre ciro»* → `toplam_ciro` · `toplam_ciro_gecen` · **`toplam_ciro_degisim_yuzde: 9.7`** (`source=cube`). Yani **büyüme oranı zaten hesaplanıyor**; kıran şey ifadenin kendisi. İz teşhisi tam veriyor: `garson çağrıldı — kullanılabilir bir karar dönmedi` · `niyet: tür=kirilim+kiyas+trend · 🔴temsil-yok=kiyas · granülerlik=year · bilinmeyen=buyume,orani`. ⊙ Niyet nesnesi isteği **doğru teşhis etmiş** (kıyas+trend+yıl) ve temsil edilemeyeni işaretlemiş; sistem yine de sahip olduğu yeteneği kullanmamış. ⚠ **İkincil kusur aynı yanıtta:** netleştirme chip'leri *«ortalama hız» · «fire» · «fire oranı»* — bir **ciro** sorusuna. *Bir netleştirme, sorulanla ilgisiz seçenekler sunuyorsa netleştirmez, oyalar.* ⊙ Bu, `§B10`'un tam olarak öngördüğü boşluk: *«kohort · funnel · retention · **YoY-oranı** · what-if — her biri bir markdown iş akışı»*. ⚠ Ve `CLAUDE.md`'nin en üst kuralı çözümün **yerini** de söylüyor: route'a dil eklenmez, **garsona bağlam** verilir — Skills tam olarak o bağlamdır. 🔴 Ölçüm engeli yazılı: garsonun doğruluk ölçümü **yok** (`§26`, PARK) → kazanç ölçülemez. Bu yüzden yapılırsa **bayrakla** ve açılış şartı `§26` olarak yapılmalı. |
+| 19 | **Skills (markdown metodoloji)** | **Anthropic: %21 → >%95** | ⟳✅ **BU CÜMLE ARTIK YANLIŞ (2026-08-12, aynı gün):** `demo/skills/` **var** — `yoy-orani.md` · `huni.md` · `kohort.md`; `katalog_metni.skills_metni()` onları okuyor, bayrak `skills` (off, şart `§26`). Eski hâli: *«dizin yok, `skills` atfı yok»*. 🔴 **VE ARTIK SOMUT BİR GEREKÇESİ VAR — canlı ölçüldü.** Üç metodoloji sorusu basıldı: ① *«fire %10 azalsa ne olur»* → ✅ **beyanlı red** (forecast bilinçli kapsam dışı — doğru davranış) ② *«müşteri kohort analizi yap»* → 8 satır, ama **kohort değil PİVOT** (müşteri × ay); 3 adım makbuzu var, *«kohort metodolojisi uygulanmadı»* beyanı **yok** ③ 🔴 *«geçen yıla göre ciro **büyüme oranı**»* → **cevapsız**. Oysa YoY **çalışıyor ve deterministik**: *«geçen yıla göre ciro»* → `toplam_ciro` · `toplam_ciro_gecen` · **`toplam_ciro_degisim_yuzde: 9.7`** (`source=cube`). Yani **büyüme oranı zaten hesaplanıyor**; kıran şey ifadenin kendisi. İz teşhisi tam veriyor: `garson çağrıldı — kullanılabilir bir karar dönmedi` · `niyet: tür=kirilim+kiyas+trend · 🔴temsil-yok=kiyas · granülerlik=year · bilinmeyen=buyume,orani`. ⊙ Niyet nesnesi isteği **doğru teşhis etmiş** (kıyas+trend+yıl) ve temsil edilemeyeni işaretlemiş; sistem yine de sahip olduğu yeteneği kullanmamış. ⚠ **İkincil kusur aynı yanıtta:** netleştirme chip'leri *«ortalama hız» · «fire» · «fire oranı»* — bir **ciro** sorusuna. *Bir netleştirme, sorulanla ilgisiz seçenekler sunuyorsa netleştirmez, oyalar.* ⊙ Bu, `§B10`'un tam olarak öngördüğü boşluk: *«kohort · funnel · retention · **YoY-oranı** · what-if — her biri bir markdown iş akışı»*. ⚠ Ve `CLAUDE.md`'nin en üst kuralı çözümün **yerini** de söylüyor: route'a dil eklenmez, **garsona bağlam** verilir — Skills tam olarak o bağlamdır. 🔴 Ölçüm engeli yazılı: garsonun doğruluk ölçümü **yok** (`§26`, PARK) → kazanç ölçülemez. Bu yüzden yapılırsa **bayrakla** ve açılış şartı `§26` olarak yapılmalı. |
 | 20 | **Ephemeral/karalama sorgusu** | Hex | 🟡 **AMACI KARŞILANIYOR, MEKANİZMA FARKLI** *(ölçüldü 2026-08-12)*. Hex'in ephemeral sorgusunun **işi** *«ajan önce veriyi tanısın»*dır; biz bunu **soru başına gizli sorguyla değil, kurulum anında BİR KEZ** yapıyoruz: `_enrich_categorical` (düşük kardinaliteli kolonlara `values`) + `_enrich_cube_dim_values` (türev boyutlara motor üzerinden DISTINCT) + `value_index.FuzzyIndex`. 🔴 **Kapsam ölçüldü: 121 boyutun 120'si (%99) değer taşıyor**; `FuzzyIndex`'in **beş tüketicisi** var (`cube_router` 8 atıf · `deger_capasi` 5 · `context` · `varlik` · `features`). ✅ **Canlı doğrulandı:** *«**kontinü kasar** makinesinde kaç arıza»* → `makine = "KONTİNÜ KASAR"` (kullanıcı küçük harf yazdı, profil eşledi) · 15 arıza. Ve profil `§DK-2`'yi besliyor: *«**baskı** bölümünde fire»* → *««Baskı» departman listesinde yok. Var olanlar: Boyahane»* — **LLM'siz netleştirme, sıfır satır sunulmadı**. ⚠ **Yapılmayan:** soru-başına keşif sorgusu. Ve bu bilinçli sayılmalı — raporun kendi `§31`'i Anthropic'i alıntılıyor: *«mümkün olan EN BASİT çözüm… karmaşıklığı ancak GÖSTERİLEBİLİR ŞEKİLDE sonuçları iyileştiriyorsa ekleyin»*. Bir kez profilleme, her soruda gizli sorgudan **ucuz ve ölçülebilir**. ⊙ 🔴→🟡: *bir yeteneği rakibin mekanizmasıyla aramak, onu kendi mekanizmamızda görmemeye yol açar.* |
 | 21 | **Olgu tipi taksonomisi** | **Pulse'un 14 tipi** | 🟢 **VAR** *(§D1 ölçümü teşhisi çürüttü)* — *«hep 1-2»* **az örneklemdenmiş**: canlıda **0–6** olgu, `TANINAN` **12 tip**. Kusur üretimde değil **tüketimdeydi** (`kiyas`+`segment_delta` şablona tanıtılmamış) |
 | 22 | **Cevap biçimi kararı** | OpenAI Model Spec | 🟢 **VAR** *(§D3 `88579d8`)* — `bicim.py` **tek sahip**: niyetin kapalı türleri × chip kovaları. Chip **6,6,6,6,5,6,6,5 → 4,6,2,4,4,4,6,3** |
@@ -1296,6 +1296,14 @@ bilimsel olarak taşıyamayacağımızı gösteriyor** (DoWhy). Üçü de **bilg
 
 ### 16.2 🟡 KISMEN BOŞA — değeri var ama **yanlış orana** yatırıldı
 
+> ⟳⚠ **`§` SAYISI YAYIMLANABİLİR BİR ÖLÇÜM DEĞİLDİR — desenle değişiyor.** Bu belge iki
+> yerde **131** ve **271** yazıyor; iki bağımsız denetim **279** ve **379** ölçtü; benim
+> ölçümüm desene göre **164** (`§X`), **110** (backtick'li), **83** (çıplak).
+>
+> 🔴 Beşi de *«doğru»* — çünkü hepsi **farklı bir şey** sayıyor. *Birimi tanımlanmamış
+> bir sayı, bir ölçüm değil bir izlenimdir.* Bu satırın taşıması gereken şey bir sayı
+> değil, **sayma yöntemi**dir; yöntemi olmayan sayı buradan çıkarılmalıdır.
+
 | varlık | büyüklük | dürüst yargı |
 |---|---|---|
 | **`cube_router.py` + Türkçe kural yığını** | **9.274 satır** | 🟡 **Yarısı değerli, yarısı yanlış katmanda.** Değerli yanı: trafiğin **%35,5'ini** **sıfır LLM maliyetiyle** ve **%89-98 doğru küple** cevaplıyor — bu gerçek bir maliyet ve gecikme avantajı. Yanlış yanı: aynı iş **garsona bir örnek sorgu listesi vererek** (Cube: **4 KB markdown → +17…+23 puan**) çok daha ucuza yapılabilirdi. Ve dayandığı ürün modeli (*«kullanıcı dilbilimsel şemayı elle beslesin»*) **Microsoft Aralık 2026'da, Tableau Şubat 2024'te kaldırdı** |
@@ -1306,6 +1314,13 @@ bilimsel olarak taşıyamayacağımızı gösteriyor** (DoWhy). Üçü de **bilg
 örnek sorgu bağlanmadı, şema daraltma açılmadı, ölçüm kurulmadı.
 
 ### 16.3 🔴 BOŞA GİTTİ — açıkça, savunmasız
+
+> ⟳🔴 **BU BÖLÜMÜN *«BOŞA GİTTİ»* RAKAMI ÇÜRÜK — ve çürüten ölçüm bu belgenin
+> **kendi §40.2**'sinde yazılı.** Ölçüldü (2026-08-12): `rls.py` *«hiç kullanılmadı»*
+> değil — `wren_service.py:20` onu içe aktarıyor ve **11 çağrı yeri** var; `dataset.py`
+> ile `register_csv` **farklı işler** yapıyor. Kapı: `tests/test_f5_bosa_giden_kod.py`.
+>
+> ⊙ *Aynı belgede iki farklı gerçek koşuyorsa, okuyan hangisine güveneceğini bilemez.*
 
 | varlık | büyüklük | neden boşa |
 |---|---|---|
@@ -1369,6 +1384,11 @@ vermektir. Yukarıdaki tablo tam da bunu önlemek için sayı ile yazıldı.*
 
 ### 17.1 🔴 İKİ PARALEL AGENTIC SİSTEMİMİZ VAR; ZENGİN OLANI KAPALI
 
+> ⟳ **BAYRAK AÇILDI (`§D13`, 2026-08-12):** `demo/packs/features.yml` → `mcp_yuzeyi: beta`.
+> Aşağıdaki *«MCP ucu 404 dönüyor»* satırı artık **yalnız `agent_plan_secimi` için**
+> doğrudur. Canlı: `GET /mcp/tools` → **200 · 31 araç · yazma aracı SIFIR**.
+> ⚠ Araç sayısı da bayat: **25 → 31** (`§D6` altı ilkeli kayda soktu).
+
 | | canlı yol | araç yolu |
 |---|---|---|
 | dosyalar | `plan_semasi` · `plan_garson` · `plan_tuketici` · `plan_kosucu` | `tools.py` · `planner.py` · `mcp.py` · `routers/mcp.py` |
@@ -1421,6 +1441,16 @@ ifade edemiyor»* sorusunun cevabı **yok**.
 *Bir kısıtı savunmak için, onun neyi dışarıda bıraktığını sayabilmek gerekir.*
 
 ### 17.5 🔴 «İki paralel sistem saçma değil mi?» — ölçüldü, **evet**, ve birleşmeli
+
+> ⟳✅ **BU BÖLÜMÜN TAMAMI KAPANDI (`§D6`, 2026-08-12).** Aşağıdaki *«%73 örtüşme»*,
+> *«ironi: `plan_semasi` ilkeyi kendi fiil kümesine uygulamamış»* ve *«önerilen:
+> `FIIL_ANLAMI` türetilsin»* üçü de **artık geçersiz**:
+>
+> · Her araç kendi fiilini **beyan ediyor** (`tools.Arac.fiil`) → örtüşme **15/15 = %100**
+>   (eksik denen dördü de kayıtta: `sirala` · `matris` · `pano.taslak` · `contribution.akran`)
+> · `plan_semasi._fiilleri_kayittan_dogrula()` **içe aktarma anında** koşuyor; ayrışma
+>   varsa uygulama **ayağa kalkmıyor**
+> · Ve `§17.6`'nın *«`C1` acil kusur düzeltmesi değil»* notu bu yüzden **ters yönde** bayat
 
 **Doğum tarihleri hikâyeyi anlatıyor:**
 
@@ -1512,6 +1542,14 @@ pahalıdır — çünkü artık uygulandığı sanılır.*
 
 ### 17.6 🔴 Asıl sorun 15 fiil değil — **plan neredeyse hiç ayrışmıyor**
 
+> ⟳🔴 **BU BÖLÜM YÜRÜRLÜKTE DEĞİL — aynı numarayı taşıyan İKİ `§17.6` var.** Yukarıdaki
+> (`✅ 17.6`, satır ~1487) bu bölümün üç hipotezini **ölçüp çürüttü** (plan %79 çok
+> adımlı). Bu bölüm **kayıt için** duruyor (`MIMARI §10`: kapananlar işaretlenir,
+> silinmez) ve *«hiçbiri henüz ölçülmedi»* cümlesi **bayattır**.
+>
+> ⊙ *İki bölüm aynı numarayı taşıyorsa, hangisinin yürürlükte olduğu yazılmadıkça
+> okuyan yanlışını seçer.*
+
 Kütükten ölçüldü (kayıtlı 20 plan):
 
 | plan uzunluğu | adet | pay |
@@ -1594,8 +1632,22 @@ Bugün cevabın şekli şu üçünün **artığı** olarak oluşuyor: `viz.analy
 seçiyor · `interpret()` 1-2 olgu üretiyor · `_attach_next_steps` chip'leri dolduruyor.
 **Hiçbir yerde *«bu soru ne tür bir cevap ister»* diye soran bir basamak yok.**
 
+> ⟳🔴 **ÇÜRÜDÜ (denetim ajanı buldu, 2026-08-12'de ÖLÇEREK doğrulandı).** O basamak
+> **var**: `app/bicim.py` (6.132 bayt, `niyet.TUR_*` × beş kova karar tablosu) ve
+> **tüketiliyor** — `answer.py:864` `from app.bicim import oneri_kotasi`, bayrak
+> `bicim_karari: beta` (**açık**). Yani *«sinyal var, tüketicisi yok»* cümlesi bugünkü
+> kodu tarif etmiyor; `§18.2`'nin dört bileşenlik haritası bu **beşinci** bileşeni hiç
+> görmüyor ve o yüzden *«dördü birbirini görmüyor»* de bayat.
+>
+> ⊙ *Bir teşhis, teşhis ettiği eksik kapandıktan sonra silinmezse, kapanmış bir işi
+> açık gösterir.*
+
 Oysa niyet nesnemiz (`niyet.py`) bunu **zaten biliyor**: `TUR_TOPLAM` · `TUR_KIRILIM` ·
 `TUR_TREND` · `TUR_KIYAS` · `TUR_LISTE` · `TUR_USTUNLUK`, ve `followup` beş konuşma türü
+
+> ⟳ **«beş» BAYAT (ölçüldü 2026-08-12):** `followup.py` **sekiz** tür taşıyor —
+> `TUR_NEDEN` · `TUR_NORMAL` · `TUR_NE_YAPMALI` · `TUR_ISARET` · `TUR_ANLAT` ·
+> `TUR_TAKIP` · `TUR_PAYLAS` · `TUR_MAKBUZ`.
 tanıyor. ⊙ **Sinyal var, tüketicisi yok.**
 
 *Bir sistemin robotik görünmesi, karar vermemesinden değil, kararı hiç vermemiş
