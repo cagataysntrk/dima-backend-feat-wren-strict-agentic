@@ -12792,3 +12792,51 @@ bir **eksiklik raporudur**.»* Ve `S05` bunun **karşıt kanıtı**: orada da bi
 `S05` dönem varsayımını · `S07` tanım çokluğunu · `S09` istenen ama üretilemeyen ekseni ·
 `S11` kapsam kararını · `S12` **aynı adın farklı formülünü** söylüyor. Beşi de
 *«sayıyı ver, sınırı sakla»* değil **«sayıyı ver, sınırı da söyle»** deseninde.
+
+## TUR — İKİNCİ YARI (`T1`–`T8`, thread/takip)
+
+⚠ **Önce kendi testimi düzelttim (③, on beşinci kez):** takip turlarını `thread_id` ile
+çapaladım ve *«ekranda yok»* aldım; **`thread_id` bir PASS-THROUGH'dur** (`schemas.py:112`
+— istemci üretir, sunucu **aynen yansıtır**; cevapta `None` gelmesi **doğru**). Gerçek
+çapa **`cube_query`**'dir (`answer.py`: `follow_up=bool(body.cube_query)`). Çapa
+verilince **hepsi çalıştı**. *Bir ürünü, yanlış kurulmuş bir testin başarısızlığıyla
+yargılama* 🆒.
+
+| # | senaryo | soru | `source` | sonuç |
+|---|---|---|---|---|
+| **T1** | çapa | *bu yıl makine bazında oee* | `cube` | ✅ 11 satır |
+| **T2b** | *«normal mi?»* | çapalı | `cube` | ✅ *«Geçen dönemle kıyas — «normal mi» sorusunun **nesnel zemini** budur»* · 2 olgu |
+| **T4b** | *«bunu analiz et»* | çapalı | `cube` | ✅ 2 olgu, aynı `cube_query` **korundu** |
+| **T5** | makbuz | *bu nasıl hesaplandı* | `cube` | ✅ ölçü + **SQL karşılığı** + kırılım + tarih |
+| **T6** | **dönem düzeltme** | *sadece son 3 ayı* | `cube` | 🔴 **KUSUR** — *«**sadece …** dedin ama sorguya bir kısıtlama **taşıyamadım** — sayı **tüm** kayıtları kapsıyor»* |
+| **T7** | konu değişimi | *peki enerji tarafı* | `cube+llm` | ⚠ küpte kalıp **beyan etti** (*«enerji bu küpte yok»*) — dürüst, ama **mutfak eksiği** |
+| **T8** | **eski dönem** | *2019 cirosu* | 🔴 **`llm:openrouter`** | 🔴🔴 **EN AĞIR** — `cube=**adhoc**`, ölçü **`toplam_ciro_2019`** *(uydurulmuş ad)* |
+| **S13b** | kompozisyon | *bir de fire ekle* | `cube+llm` | ✅ `['ort_oee','toplam_fire_kg']`, 11 satır |
+| **S14** | *«neden böyle?»* | çapalı | `cube+llm` | ✅ **6 adımlı makbuz** (`SORGU`→`BAGLA`→…) |
+
+## 🔴🔴 TEŞHİS-2 · `T8` — DISCOVERY UYDURMA ÖLÇÜ ADI ÜRETTİ
+
+*«2019 cirosu»* → `source=llm:openrouter` · `cube=adhoc` · `measures=['toplam_ciro_2019']`
+
+**`toplam_ciro_2019` diye bir ölçü katalogda YOKTUR.** Discovery bir ölçü adı **uydurdu**
+ve tek satırlık bir sonuç döndürdü. Kullanıcının bağlayıcı kuralı: *«`source=llm:*` ya da
+`cube=adhoc` görülürse bu bir **MUTFAK EKSİKLİĞİ RAPORUDUR**»* — ve burada iki katmanlı:
+① **route** 2019'u çözemedi (veri **2025-06 → 2026-06**; 2019 **kapsam dışı**),
+② düşülen Discovery **dürüst bir «veri yok» yerine bir ad uydurdu**.
+
+⚠ Doğru davranış `T7`'de zaten var: *«**enerji** bu küpte yok»* diye **beyan etmek**.
+`T8`'de aynı beyan kurulabilirdi: *«2019 verisi yok — elimdeki aralık 06.2025–06.2026»*.
+🆑 *Belirsizliği cevapsız bırakmak, cevaplayıp beyan etmekle aynı şey değildir* — ama
+**uydurmak** ikisinden de kötüdür.
+
+## 🔴 TEŞHİS-3 · `T6` — *«SADECE …»* KISITLAMASI TAŞINMIYOR
+
+*«sadece son 3 ayı»* bir **daraltma** edimidir ve çapadaki `cube_query`'nin dönem
+filtresini **değiştirmeliydi**. Sistem *«kısıtlamayı taşıyamadım»* deyip **tüm** kayıtları
+döndürdü — beyan **doğru** ama edim **yerine getirilmedi**. `S05`'in dönem chip'leri
+(*Bugün/Bu hafta/Bu ay/Bu yıl*) burada da sunulsaydı red **cevaplanabilir** olurdu.
+
+## 📊 TUR KARNESİ — 20 senaryo
+
+**17 ✅ · 3 kusur:** `S06` liste niyeti · `T6` dönem daraltma · **`T8` uydurma ölçü adı**.
+⊙ Ve **kendi test hatam** on beşinci kez çıktı (`thread_id` ≠ çapa).
