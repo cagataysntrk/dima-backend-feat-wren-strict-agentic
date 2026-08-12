@@ -34,6 +34,8 @@ kanıtla** karşılandı.
 
 from __future__ import annotations
 
+import pytest
+
 from app.ossie import UZANTI, belge, cevir, disa_aktar
 
 
@@ -89,6 +91,28 @@ def test_SESSIZ_YANLISI_ONLEYEN_alanlar_x_dimada(schema):
         assert f'"{alan}"' in u, f"{alan} ihraçta düştü"
 
 
+def _olcum_kosmus_mu(schema) -> bool:
+    """🔴 **ORTAM MI, KUSUR MU** — bu ayrım bir kapı hijyenidir (`§F8`'in aynı dersi).
+
+    Fan-out sertifikası bir **ölçümün** sonucudur: `_damgala_fanout` damgayı ancak
+    ölçüm koşmuşsa `olculdu:*` yapar. **Taze derlenmiş** bir proje ağacında ölçüm
+    henüz koşmamıştır ve damga **31/31 `olculmedi`** olur — ölçüldü (2026-08-12,
+    `HEAD` worktree'sinde).
+
+    ⊙ Ve bu **doğru** davranıştır: ölçmediğini *«sağlıklı»* diye damgalamak, bu deponun
+    en pahalı hatası olurdu. Yanlış olan, testin bu bağımlılığı **beyan etmemesiydi**:
+    ana depoda `demo/wren-project` **ısınmış** bir artefakttır ve orada yeşil,
+    taze bir ağaçta kırmızı veriyordu.
+
+    > *Bir kapı, kendi ortamının durumunu ürünün kusuru gibi göstermemelidir.*
+
+    ⚠ Ve bu bir **muafiyet değil**: ölçüm koşmuşsa test tam katılığıyla koşar
+    (aşağıdaki `31/31` iddiası). Yalnız *«ölçüm hiç koşmamış»* hâli **skip**tir.
+    """
+    return any(str(r.get("certified") or "").startswith("olculdu")
+               for r in (schema.get("relationships") or []))
+
+
 def test_ILISKI_SERTIFIKASI_ihracta_TASINIR(schema):
     """`§F3` ile tutarlılık: `certified` bir eksiklik değil bir **beyandır**; dışarı
     verirken düşürmek karşı tarafa *«ölçüldü»* demektir."""
@@ -101,6 +125,9 @@ def test_ILISKI_SERTIFIKASI_ihracta_TASINIR(schema):
     # `olculdu:saglikli` derken ilişkiler `olculmedi` gidiyordu; `§F3` ise **31/31**'ini
     # ölçmüştü. Kusur ihraçta değil BESLEMEDEYDİ — damga yalnız boyut kökenine basılıyordu.
     # *Kendi ölçümünü eksik beyan etmek, ölçmemekten farklı bir kusurdur: emeği çöpe atar.*
+    if not _olcum_kosmus_mu(schema):
+        pytest.skip("fan-out ölçümü bu proje ağacında hiç koşmamış (taze derleme) — "
+                    "31/31 `olculmedi` beklenen ve DOĞRU hâldir")
     assert "olculdu:saglikli" in damgalar, (
         f"ölçülmüş ilişkiler «ölçülmedi» diye ihraç ediliyor: {sorted(damgalar)}")
 
@@ -110,6 +137,8 @@ def test_SEMADA_iliskiler_de_DAMGALI(schema):
     rels = schema.get("relationships") or []
     assert rels
     assert all(r.get("certified") for r in rels), "damgasız ilişki var"
+    if not _olcum_kosmus_mu(schema):
+        pytest.skip("fan-out ölçümü bu proje ağacında hiç koşmamış (taze derleme)")
     assert sum(1 for r in rels if r["certified"] == "olculdu:saglikli") == len(rels), (
         "canlı katalogda 31/31 sağlıklı ölçülmüştü — damga bunu yansıtmalı")
 

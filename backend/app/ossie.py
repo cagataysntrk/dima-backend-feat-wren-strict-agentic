@@ -199,8 +199,29 @@ def cevir(belge: dict[str, Any]) -> dict[str, Any]:
             # pahalı hatasının (sessiz-yanlış) ithal edilmiş hâli olurdu.
             # ⚠ Belge bir sertifika BEYAN ediyorsa o taşınır (round-trip); beyan YOKSA
             # `olculmedi` — varsayılanı "ok" yapmak, sessiz-yanlışı ithal etmek olurdu.
-            "certified": _uzanti(r).get("certified") or r.get("certified")
-                         or SERTIFIKA_OLCULMEDI,
+            # 🔴 **YABANCI BİR BELGENİN SERTİFİKA İDDİASINA GÜVENİLMEZ** (⑥, 2026-08-12).
+            #
+            # Önceki hâl: `_uzanti(r).get("certified") or r.get("certified") or OLCULMEDI`
+            # — ortadaki terim, belgenin **üst düzey** `certified` alanını olduğu gibi
+            # kabul ediyordu. Canlı pilotta ölçüldü: 58 KB'lık bir belge ithal edildi ve
+            # ilişkiler `olculdu:saglikli` olarak **içeri geçti**.
+            #
+            # ⊙ Ve bu, ucun KENDİ yazılı değişmeziyle çelişiyordu (`connections.py`:
+            # *«ithal edilen her ilişki `olculmedi` damgasıyla gelir — bir başkasının
+            # modelinin doğru olduğunu VARSAYMAK, sessiz-yanlışın ithal edilmiş hâli
+            # olurdu»*). Yani kural iki yerde yazılıydı ve kod **gevşek** olanı
+            # uyguluyordu — `KAT-1`'in tam tersi.
+            #
+            # ✅ Ayrım **yapısal**: `x-dima` BİZİM ad alanımızdır ve round-trip sadakati
+            # onu ister (kendi ihracımız geri okunurken sertifika düşmemeli — bkz.
+            # `test_beyan_edilmis_sertifika_KORUNUR`). Üst düzey `certified` ise Ossie
+            # şemasında **yoktur**; yabancı bir belgede görülürse o bir **iddiadır**,
+            # bir ölçüm değil.
+            #
+            # ⚠ Beyan dürüst: `x-dima` de taklit edilebilir. Bu satır bir kimlik
+            # doğrulaması değil, **varsayılanı güvenliye çekmektir** — belgenin sessizce
+            # "ölçüldü" demesini engeller.
+            "certified": _uzanti(r).get("certified") or SERTIFIKA_OLCULMEDI,
         })
 
     return {"cubes": cubes, "relationships": iliskiler, "uyarilar": uyarilar}

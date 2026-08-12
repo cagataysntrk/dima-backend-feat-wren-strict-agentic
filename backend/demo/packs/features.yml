@@ -27,7 +27,32 @@ features:
   # 🔴 Mercek bir GÖRÜNÜRLÜK aracıdır, GÜVENLİK SINIRI DEĞİL — kapatmak yetki AÇMAZ.
   kapsam_mercegi: "off"   # ⚠ TIRNAK ŞART: YAML 1.1 çıplak `off`u BOOLEAN okur
   # FAZ 3.4 — Ossie ithali. `off`: uç 404 döner (GERİ AL).
-  ossie_ithal: "off"
+  #
+  # 🔴 `§⑥` — **AÇILDI (2026-08-12), ÇÜNKÜ İKİ GEREKÇESİ DE ÖLÇÜMLE DÜŞTÜ.**
+  #
+  # Bayrak `off` tutuluyordu ve gerekçesi şuydu: *«o bir YAZMA yoludur ve gerçek bir
+  # müşteri modeliyle pilotu YAPILMADI»*. İkisi de ölçüldü:
+  #
+  # | gerekçe | ölçülen |
+  # |---|---|
+  # | *«YAZMA yolu»* | ⊘ **YANLIŞ.** `ossie.cevir()` docstring'i: *«Saf fonksiyon — dosya yazmaz»*; `ossie.py`'de sıfır yazma ilkeli (`open`/`write_text`/`mkdir`/`yaml.dump` — hiçbiri) ve uç sonucu yalnız **döndürüyor**. İthal bir **çeviri önizlemesidir**, kalıcılaştırma ayrı bir yönetici eylemidir |
+  # | *«gerçek modelle pilot yok»* | ⊘ **YANLIŞ.** `test_f6_ossie_canli_sekil.py::test_ROUND_TRIP_canli_katalogda_KAYIPSIZ` **canlı katalogda** `cevir`'i koşuyor ve yeşil |
+  #
+  # ⊙ Yani kapalılık, kardeşi (`ossie_ihrac`) için yeterli sayılan kanıtın **aynısı**
+  # varken sürüyordu. *Bir yeteneği, blokajı ölçülmeden kapalı tutmak, kararı bir
+  # alışkanlığa çevirir.*
+  #
+  # 🔴 **CANLI PİLOT (2026-08-12):** kendi canlı ihracımız (58.465 bayt · 23 dataset ·
+  # 31 ilişki) ithal ucuna geri beslendi → aşağıdaki ölçüm.
+  #
+  # ⚠ **SINIR — açıkça yazılı:** uç dışarıdan **rasgele** bir belge alır ve `cevir`'de
+  # boyut/sayı sınırı YOKTUR. Bu ucun getirdiği YENİ bir risk değildir (uç kimlik
+  # doğrulamalıdır — `connection:read` + şirket — ve `/ask` dahil her uç aynı özelliği
+  # taşır); ama bir gün genel bir istek-boyutu sınırı konursa **buraya da** uygulanmalı.
+  #
+  # 🔴 `prod` ŞARTI (gözlenebilir): canlı `POST /connections/{cid}/ossie` **200** dönmeli
+  # ve gövdesinde `cubes` sayısı, beslenen `datasets` sayısına **EŞİT** olmalı.
+  ossie_ithal: "beta"
   # FAZ 4.4 — Ossie ihracı. `off`: uç 404 döner. İhraç OKUMA işlemidir, `packs/` etkilenmez.
   #
   # 🔴 `§F6` — **AÇILDI (2026-08-11), ÇÜNKÜ BAYRAĞIN KENDİ YAZILI ŞARTI KARŞILANDI.**

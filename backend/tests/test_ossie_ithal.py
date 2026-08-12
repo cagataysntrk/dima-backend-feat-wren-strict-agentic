@@ -135,16 +135,72 @@ def test_BAYRAK_KAPALIYKEN_UC_404():
     *"yetkin yok"* demez, **yok** der."""
     kaynak = (KOK / "app" / "routers" / "connections.py").read_text(encoding="utf-8")
     i = kaynak.index("def import_semantic")
-    govde = kaynak[i:i + 1600]
+    # ⚠ Dilim, docstring büyüyünce **yanlış-kırmızı** verdi (bu turda ölçüldü): kural
+    # yerindeydi, kapı bir BAYT PENCERESİ ölçüyordu. Doğru sınır fonksiyonun **kendi
+    # gövdesidir** — bir sonraki `def`e kadar. *Bir kapıyı sabit bir dilime bağlamak,
+    # onu bir gün yalnız uzayan bir yorum yüzünden kırar.*
+    j = kaynak.find("\ndef ", i + 1)
+    govde = kaynak[i:j if j > 0 else len(kaynak)]
     assert '"ossie_ithal" not in resolve_for' in govde
     assert "status_code=404" in govde
 
 
-def test_VARSAYILAN_OFF():
+def test_BAYRAK_BETA_ve_PILOTU_KOSULDU():
+    """⟳ **`off` → `beta` (2026-08-12) — iki gerekçesi de ÖLÇÜMLE DÜŞTÜ.**
+
+    Bayrak kapalı tutuluyordu; gerekçesi *«o bir YAZMA yoludur ve gerçek bir müşteri
+    modeliyle pilotu YAPILMADI»* idi. İkisi de ölçüldü:
+
+    | gerekçe | ölçülen |
+    |---|---|
+    | *«YAZMA yolu»* | ⊘ `ossie.cevir()` **saf fonksiyon** (kendi docstring'i), `ossie.py`'de sıfır yazma ilkeli, uç sonucu yalnız **döndürüyor** |
+    | *«gerçek modelle pilot yok»* | ⊘ `test_f6_ossie_canli_sekil::test_ROUND_TRIP_canli_katalogda_KAYIPSIZ` **canlı katalogda** koşuyor ve yeşil |
+
+    🔴 **CANLI PİLOT (2026-08-12):** kendi ihracımız (`GET …/export-semantic` → **200**,
+    58.465 bayt) `POST …/import-semantic`'e geri beslendi:
+
+        HTTP 200 · 53.761 bayt
+        23 dataset → 23 cube   ·   31 ilişki → 31 ilişki
+        kayıp dataset: YOK     ·   uyarı: YOK
+
+    ⊙ Ve pilot **bir kusur buldu**: ilişkiler `olculdu:saglikli` olarak içeri geçiyordu —
+    yani belgenin **üst düzey** `certified` iddiasına güveniliyordu. Ucun kendi yazılı
+    değişmezi bunun tersini söylüyordu; kural iki yerde yazılı, kod **gevşek** olanı
+    uyguluyordu. Kesildi: sertifika artık yalnız `x-dima`dan okunur.
+
+    *Bir pilotun değeri, geçmesinde değil; geçerken ne gösterdiğindedir.*
+    """
     import yaml
 
     d = yaml.safe_load((KOK / "demo" / "packs" / "features.yml").read_text(encoding="utf-8"))
-    assert (d.get("features") or d).get("ossie_ithal") == "off"
+    assert (d.get("features") or d).get("ossie_ithal") == "beta", (
+        "bayrak değişmiş — değişiklik bir ÖLÇÜMLE gelmelidir (canlı pilot: beslenen "
+        "`datasets` sayısı = dönen `cubes` sayısı).")
+
+
+def test_YABANCI_SERTIFIKA_IDDIASI_KABUL_EDILMEZ():
+    """🔴 Pilotun bulduğu kusur — kapı hâline getirildi.
+
+    Bir belge **üst düzeyde** `certified: "olculdu:saglikli"` iddia edebilir; Ossie
+    şemasında böyle bir alan **yoktur**, yani bu bir ölçüm değil bir **iddiadır**.
+    Kabul etmek, *«bir başkasının modelinin doğru olduğunu varsaymak»* — bu deponun en
+    pahalı hatasının (sessiz-yanlış) ithal edilmiş hâli olurdu.
+
+    ⚠ Ve `x-dima` beyanı **korunur**: round-trip sadakati onu ister. Ayrım yapısaldır —
+    bizim ad alanımız ile yabancı bir üst düzey alan.
+    """
+    b = {"version": "0.2", "datasets": [],
+         "relationships": [{"name": "r", "datasets": ["a", "b"],
+                            "certified": "olculdu:saglikli"}]}
+    assert ossie.cevir(b)["relationships"][0]["certified"] == "olculmedi", (
+        "🔴 yabancı bir belgenin sertifika İDDİASI ölçüm sayıldı")
+
+    b2 = {"version": "0.2", "datasets": [],
+          "relationships": [{"name": "r", "datasets": ["a", "b"],
+                             ossie.UZANTI: {"certified": "olculdu:saglikli"}}]}
+    assert ossie.cevir(b2)["relationships"][0]["certified"] == "olculdu:saglikli", (
+        "🔴 KENDİ beyanımız düştü — round-trip sadakati bozuldu "
+        "(`ossie_ihrac` bayrağının açılış şartı tam olarak budur)")
 
 
 def test_CEKIRDEK_KATMANA_INIYOR_ERP_YE_DEGIL():

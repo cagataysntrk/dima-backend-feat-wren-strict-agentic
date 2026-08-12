@@ -225,9 +225,23 @@ def import_semantic(cid: str, body: dict, request: Request) -> dict:
     sayıları kimsenin denetlemediği bir kayıt olurdu. *Yarım ithal edilmiş bir model,
     ithal edilmemiş bir modelden kötüdür.*
 
-    🔴 İthal edilen her ilişki **`certified: "olculmedi"`** damgasıyla gelir — bir
-    başkasının modelinin doğru olduğunu **varsaymak**, bu deponun en pahalı hatasının
-    (sessiz-yanlış) ithal edilmiş hâli olurdu.
+    🔴 **SERTİFİKA: VARSAYILAN `olculmedi`, ve YABANCI İDDİA KABUL EDİLMEZ.**
+
+    ⟳ Bu paragrafın ilk hâli *«ithal edilen **her** ilişki `olculmedi` damgasıyla
+    gelir»* diyordu ve **kod öyle davranmıyordu** (ölçüldü, canlı pilot 2026-08-12:
+    kendi 58 KB'lık ihracımız geri ithal edildi, ilişkiler `olculdu:saglikli` geçti).
+    İkisinden biri yanlıştı — ve *ikisi de kısmen* yanlıştı:
+
+    * **Kod fazla gevşekti:** belgenin **üst düzey** `certified` alanına güveniyordu.
+      Yabancı bir iddiayı ölçüm saymak, sessiz-yanlışın ithal edilmiş hâlidir. ✅ Kesildi.
+    * **Metin fazla katıydı:** *«her ilişki»* demek, kendi ihracımızın geri okunmasını
+      da bozardı — oysa `ossie_ihrac` bayrağının açılış şartı tam olarak **kayıpsız
+      round-trip**tir. Bir güvenlik kuralını, kendi kayıt sadakatimizi kırarak yazmak
+      bir kural değil bir çelişkidir.
+
+    ✅ **Bugünkü kural:** sertifika yalnız **`x-dima`** ad alanından okunur (bizim
+    beyanımız, round-trip için); yoksa **`olculmedi`**. *Varsayılanı güvenliye çekmek,
+    kimlik doğrulaması değildir — ama belgenin sessizce «ölçüldü» demesini engeller.*
     """
     from app.config import get_settings
     from app.features import resolve_for
