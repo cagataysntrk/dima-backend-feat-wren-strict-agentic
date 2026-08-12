@@ -356,8 +356,17 @@ def _capraz_alan_pilotu(request, body, q_norm: str, schema: dict, principal,
                 # "yok" olmasının ikinci sebebi buydu (birincisi aracın hiç çağrılmaması).
                 sonuc = plan.calistir("route", body.question, schema) or sonuc
             elif ad == "llm.select_cube" and not sonuc:
-                catalog_text, index = katalog_metni.metin_ve_indeks(schema, principal)
-                ham = plan.calistir("llm.select_cube", body.question, catalog_text)
+                catalog_text, index = katalog_metni.metin_ve_indeks(
+                    schema, principal, soru=body.question)
+                # ⟳ `§B2` (08-12): few-shot **bu garson çağrısına da** veriliyor.
+                # Ölçüldü: `_vqr_ornek` TEK çağrı yerindeydi (taze yol) — plan içi
+                # garson ve takip garsonu **sıfır örnek** görüyordu. ⚠ `KURAL B`:
+                # bayrak kapalıyken `_few2` boş → metin bayt bayt eski.
+                from app.features import resolve_for as _rf_b2
+                _few2 = (_vqr_ornek(request, body.question)
+                         if "vqr_few_shot" in _rf_b2(get_settings(), principal) else "")
+                ham = plan.calistir("llm.select_cube", body.question,
+                                    "\n\n".join(x for x in (catalog_text, _few2) if x))
                 cq = cube_router.parse_cube_query(ham, index)
                 if cq:
                     sonuc = {"cube_query": cq, "order": None, "limit": None}
@@ -5014,7 +5023,14 @@ def ask(request: Request, body: AskRequest) -> AskResponse:
         reason = None
         if llm_probe is not None and hasattr(llm_probe, "refine_cube"):
             try:
-                catalog_text, cube_index = katalog_metni.metin_ve_indeks(schema, principal)
+                catalog_text, cube_index = katalog_metni.metin_ve_indeks(
+                    schema, principal, soru=body.question)
+                # ⟳ `§B2` (08-12): takip garsonu da few-shot görüyor (aynı gerekçe).
+                from app.features import resolve_for as _rf_b2t
+                _few3 = (_vqr_ornek(request, body.question)
+                         if "vqr_few_shot" in _rf_b2t(settings, principal) else "")
+                if _few3:
+                    catalog_text = catalog_text + "\n\n" + _few3
                 raw = llm_probe.refine_cube(
                     json.dumps(prev_cq, ensure_ascii=False), body.question, catalog_text)
                 decision = _parse_decision(raw)
@@ -6010,4 +6026,3 @@ def ask_verify(request: Request, body: AskVerifyRequest) -> dict:
                  nl_question=f"[{verdict}] {body.question}" + (f" · {comment}" if comment else ""),
                  ip=request.client.host if request.client else None)
     return {"stored": stored, "removed": removed}
-
