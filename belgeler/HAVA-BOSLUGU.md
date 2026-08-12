@@ -75,6 +75,43 @@ kaldı.
 
 ---
 
+## 4b · ⚠ 🔴 BU SAYILARIN **YENİDEN ÜRETİLEBİLİR ARTEFAKTI YOK** — ve bu yazılı
+
+Bir denetim ajanı (2026-08-12) bu yayının kapısını ölçtü ve haklı çıktı: `§A14`'ün yedi
+testinden **dördü** yalnız *«bu belgede şu dizge geçiyor mu»* diye bakıyor — yani
+**kendisinin yazdığı** metni doğruluyor. Kendi ölçümüm eksiği **tam yerinde** buldu:
+
+| kardeş yayın | artefaktı | yeniden hesaplanabilir mi |
+|---|---|---|
+| `DOGRULUK.md` | `lab/reports/nl_corpus.json` | ✅ **evet** — `test_f8_dogruluk_ayrimi_kapaniyor.py` her sayıyı yeniden hesaplıyor |
+| **`HAVA-BOSLUGU.md`** | 🔴 **yok** | ❌ **hayır** — `12 / 20 / 0 / 9-12` **tek seferlik canlı bir turdan** geliyor |
+
+⊙ Aranan yerde de yok: `lab/kasetler/` altındaki **2 kaset dosyası** `hava_boslugu`
+alanını taşıyan **10 makbuz** içeriyor, ama **10'unun 10'u BOŞ**. Sebebi bu belgenin
+kendi uyarısıdır (*«tek ölçülü soruda `hava_boslugu` BOŞ döner»*): kaset korpusunun
+soruları **tek ölçülü**. Yani alan üretiliyor, ama korpus onu **doldurmuyor**.
+
+**Bunun anlamı — ve anlamı OLMAYAN şey:**
+
+* ❌ Sayılar uydurma **değil**: 12 canlı cevap gerçekten koşuldu, çıktıları o turda
+  okundu. Mekanizmanın kendisi **kapılı** (`§A14`'ün kalan üç testi `yayilim.geri_koy` ·
+  `iddia.dogrula` · `narration_guard.dogrula` üçünün de ayakta olmasını şart koşuyor).
+* 🔴 Ama **çürürlerse kimse duymaz**. `DOGRULUK.md`'nin sayıları bir kapıyla korunuyor;
+  bunlar bir **anı**dır. Ve `§F8`'in kendi kuralı şudur: *«Yayınlanmış ve çürümüş bir
+  sayı, hiç yayınlanmamış bir sayıdan kötüdür — çünkü ona güvenilir.»*
+
+🔴 **Artefakt üretmenin şartı ölçüldü ve ucuz değil:** hava boşluğu yalnız **anlatı
+basamağı koşan** (yani LLM'e giden) cevaplarda dolar; bir artefakt üretmek **ağ + kota +
+belirlenimsiz** bir tur demektir ve bu depo o maliyeti CI'ya sokmayı reddediyor. ⊘ **Bu
+yüzden ARTEFAKT ÜRETİLMİYOR ve gerekçesi burada.** Ucuz yol açık ve yazılı: kaset
+korpusuna **çok ölçülü** birkaç soru girdiği gün (`§26` / `A1` kaseti 21→50 borcu)
+`hava_boslugu` **kendiliğinden** dolar ve bu sayılar `DOGRULUK.md` gibi yeniden
+hesaplanabilir olur.
+
+> *Bir eksiği kapatamıyorsan, onu en azından yayının içine yaz — okuyucu neye
+> güveneceğini ancak o zaman bilir. Ölçülemeyen bir sayıyı ölçülmüş gibi sunmak,
+> yanlış bir sayıdan daha pahalıdır.*
+
 ## 5 · Bilinen körlükler — ve neden yazılı
 
 1. **Payda küçük (12).** Bu bir korpus değil, **canlı bir turdur**. Oran değil **varlık**
