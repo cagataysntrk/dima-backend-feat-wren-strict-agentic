@@ -360,7 +360,8 @@ def _iki_cube_olcusu(q: str, schema: dict) -> str | None:
                       for kelime, cs in sorted(sahipler.items()))
 
 
-def onerileri_kur(schema: dict, *, tur: str, en_fazla: int = 3) -> list[dict]:
+def onerileri_kur(schema: dict, *, tur: str, en_fazla: int = 3,
+                  soru: str | None = None) -> list[dict]:
     """🔴 `G8` — *"ama şunu yapabilirim"*: **katalogdan türet, `route()` ile doğrula**.
 
     Bugün `Sinir.mesaj` içindeki örnekler **elle yazılmış** (*"son 6 ayda ciro nasıl
@@ -380,32 +381,103 @@ def onerileri_kur(schema: dict, *, tur: str, en_fazla: int = 3) -> list[dict]:
         "iki_cube": ["{olcu}"],
     }.get(tur, ["{olcu}"])
 
-    out: list[dict] = []
-    for c in (schema or {}).get("cubes", [])[:6]:
-        olculer = [m.get("name") if isinstance(m, dict) else m
-                   for m in (c.get("measures") or [])][:2]
-        boyutlar = [d.get("name") if isinstance(d, dict) else d
-                    for d in (c.get("dimensions") or [])][:1]
+    # 🔴🔴 `§F7` — **CHİPLER KONU-KÖRDÜ** (⟳ 2026-08-12, denetim ajanı + canlı ölçüm).
+    #
+    # Eski gövde `schema["cubes"][:6]`'yı **katalog sırasıyla** geziyor ve **ilk cube üç
+    # slotu doldurunca dönüyordu**. Ölçüldü (`POST /ask`, *«gelecek ay ciro tahmini»*):
+    #
+    #     düzyazı  : «… «son 6 ayda ciro nasıl gitti» …»          ← ciro vaat ediyor
+    #     chipler  : ['son 6 ayda arıza sayısı', 'bu yıl arıza sayısı', …]
+    #     katalog  : ['bakim', 'bakim_is_emri', 'butce', 'cari', …]   ← alfabetik
+    #
+    # Yani sorunun kendisi **yükleme hiç girmiyordu**: kullanıcı `ciro` sorup `arıza`
+    # önerisi alıyordu. *Bir öneri, sorulmayan soruya verilen doğru cevaptır.*
+    #
+    # ✅ İki onarım, ikisi de mevcut sahipleri çağırıyor (`KAT-1` — ikinci eşleştirici
+    # YAZILMADI):
+    #   ① `soru` verilirse `cube_router.ilgili_cubelar` ile eşleşen cube'lar **başa**
+    #      alınır (o fonksiyonun kendi tanımı: *«bu soru şu konularla ilgili görünüyor»*).
+    #   ② Adaylar cube'lar arasında **dönüşümlü** (round-robin) denenir — böylece tek bir
+    #      cube bütün slotları yemez ama `en_fazla` yine **doldurulabilir**. Kör bir
+    #      «cube başına 2» tavanı kapsamı düşürürdü; dönüşümlü sıra düşürmez.
+    kubeler = list((schema or {}).get("cubes", []) or [])
+    if soru:
+        try:
+            _ilgili = [c.get("name") for c in cube_router.ilgili_cubelar(soru, schema or {})]
+            _yer = {ad: i for i, ad in enumerate(_ilgili) if ad}
+            # ⚠ `sort` **kararlıdır**: eşleşmeyenlerin katalog sırası korunur.
+            kubeler.sort(key=lambda c: _yer.get(c.get("name"), len(_yer) + 1))
+        except Exception:                             # noqa: BLE001 — fail-closed
+            pass                                      # eşleştirme çökerse eski sıra
+
+    # Aday DİZGELERİ önce (ucuz), doğrulama sonra (pahalı) — `route()` çağrısı ancak
+    # dönüşümlü sırada gerçekten denenen aday için yapılır, erken çıkış korunur.
+    _nq = cube_router._norm(soru) if soru else ""
+    havuz: list[list[str]] = []
+    for c in kubeler[:6]:
+        # 🔴🔴 **SABİT DİLİM SORULAN ÖLÇÜYÜ SAKLIYORDU** (⟳ 08-12, ikinci ölçüm).
+        # Cube'u başa almak yetmedi: `parti`'nin **11** ölçüsü var ve `toplam_ciro`
+        # **5. sırada** — `[:2]` onu aday bile yapmıyordu. Ölçüldü: `«son 6 ayda ciro»`
+        # `route()`'tan **geçiyor**, ama üretilmiyordu bile.
+        # *Bir tavanın altında kalan doğru cevap, yanlış cevaptan ayırt edilemez.*
+        #
+        # ✅ Dilim **büyütülmedi** (aday sayısı patlar, her aday bir `route()` çağrısıdır);
+        # sorunun andığı ölçüler dilimden **önce**ye alınır. Eşleşme ölçütü
+        # `cube_router._syn_hit` — biçimbirim disiplinli, kapalı; yeni sözcük listesi
+        # YAZILMADI (`ADR-0008`, `KAT-1`).
         etiketler = {**(c.get("measure_synonyms_display") or {}),
                      **(c.get("dimension_labels") or {})}
+        _tum = list(c.get("measures") or [])
+
+        def _anilan(m, _et=etiketler) -> bool:
+            """⚠ **SİNONİM ÖLÇÜ SÖZLÜĞÜNDE DEĞİL** (ilk yazımım orada aradı ve boş
+            döndü — ders ㉙: *kod adıyla ara*). Gerçek katalogda görünen ad cube
+            düzeyindeki `measure_synonyms_display` haritasındadır: ölçüldü,
+            `toplam_ciro → «ciro»`. Yalnız `name`/`synonyms`'e bakmak, kullanıcının
+            **yazdığı** kelimeyi hiç görmemekti."""
+            if not _nq:
+                return False
+            _ad = m.get("name") if isinstance(m, dict) else m
+            _adaylar = [_ad, _et.get(_ad)]
+            if isinstance(m, dict):
+                _adaylar += list(m.get("synonyms") or [])
+            return any(cube_router._syn_hit(_nq, str(x)) for x in _adaylar if x)
+
+        _tum.sort(key=lambda m: 0 if _anilan(m) else 1)   # kararlı: geri kalan sıra korunur
+        olculer = [m.get("name") if isinstance(m, dict) else m for m in _tum][:2]
+        boyutlar = [d.get("name") if isinstance(d, dict) else d
+                    for d in (c.get("dimensions") or [])][:1]
+        adaylar: list[str] = []
         for olcu in filter(None, olculer):
             for kalip in kaliplar:
                 if "{kirilim}" in kalip and not boyutlar:
                     continue
-                soru = kalip.format(
+                aday = kalip.format(
                     olcu=etiketler.get(olcu) or str(olcu).replace("_", " "),
                     kirilim=(etiketler.get(boyutlar[0]) if boyutlar else "") or
                             (str(boyutlar[0]).replace("_", " ") if boyutlar else ""))
-                soru = " ".join(soru.split())
-                try:
-                    if cube_router.route(cube_router._norm(soru), schema) is None:
-                        continue                      # 🔴 cevap açmıyor → BASILMAZ
-                except Exception:                     # noqa: BLE001 — fail-closed
-                    continue
-                if soru not in [o["query"] for o in out]:
-                    out.append({"label": soru, "query": soru})
-                if len(out) >= en_fazla:
-                    return out
+                adaylar.append(" ".join(aday.split()))
+        if adaylar:
+            havuz.append(adaylar)
+
+    out: list[dict] = []
+    gorulen: set[str] = set()
+    for _tur in range(max((len(a) for a in havuz), default=0)):
+        for adaylar in havuz:
+            if _tur >= len(adaylar):
+                continue
+            aday = adaylar[_tur]
+            if aday in gorulen:
+                continue
+            gorulen.add(aday)
+            try:
+                if cube_router.route(cube_router._norm(aday), schema) is None:
+                    continue                          # 🔴 cevap açmıyor → BASILMAZ
+            except Exception:                         # noqa: BLE001 — fail-closed
+                continue
+            out.append({"label": aday, "query": aday})
+            if len(out) >= en_fazla:
+                return out
     return out
 
 
@@ -449,15 +521,25 @@ def kapsam_disi(q: str, schema: dict, *, erken: bool = False) -> Sinir | None:
         return None
 
     if _forecast_mi(q):
+        # 🔴 `§F7` — **ELLE YAZILMIŞ ÖRNEK BİR ÇIKMAZDI** (⟳ 08-12). Metin *«son 6 ayda
+        # ciro nasıl gitti»* diyordu ve ölçüldü: `route()` bu cümleye **`None`** döner
+        # (*«son 6 ayda ciro»* döner). Yani *«yapabildiğim şu»* diyen cümlenin kendisi
+        # **ikinci bir duvara** çarptırıyordu — ve modül bu riski `onerileri_kur`'un
+        # docstring'inde **kendi eliyle yazmıştı**. Örnek artık **ilk doğrulanmış
+        # chip'ten** türer: düzyazı ile chipler tek kaynaktan gelir ve ayrışamazlar.
+        _on = onerileri_kur(schema, tur="forecast", soru=q)
+        _ornek = " ya da ".join(f"*«{o['query']}»*" for o in _on[:2])
         return Sinir(
             tur="forecast", kutu=KUTU_YAPMIYORUM,
             mesaj=("Geleceğe dönük tahmin (forecast) **v1'de yok** — ve bu bir eksiklik "
                    "değil, bilinçli bir karar: elimdeki sayılar ölçülmüş geçmiştir, "
                    "onlardan bir projeksiyon üretmek başka bir güvence sınıfıdır.\n\n"
-                   "Yapabildiğim: **geçmiş eğilimi** gösterebilirim — *«son 6 ayda ciro "
-                   "nasıl gitti»* ya da *«bu yıl ile geçen yılı kıyasla»*."),
+                   + ("Yapabildiğim: **geçmiş eğilimi** gösterebilirim — "
+                      f"{_ornek}." if _ornek else
+                      "Yapabildiğim: **geçmiş eğilimi** gösterebilirim; bu katalogda "
+                      "doğrulayabildiğim bir örnek bulamadım.")),
             gerekce="v1 kapsam kararı (yol haritası: forecast dışarıda)",
-            oneriler=onerileri_kur(schema, tur="forecast"))
+            oneriler=_on)
 
     olm = _olumsuzluk(q, schema)
     if olm:
@@ -469,7 +551,7 @@ def kapsam_disi(q: str, schema: dict, *, erken: bool = False) -> Sinir | None:
                    "Yapabildiğim: olumlu hâlini sorabilirsin — sonra kırılıma inip "
                    "sıfır olan grubu görebiliriz."),
             gerekce="olumsuzluk filtresi (neq/not_in) v1'de bağlı değil",
-            oneriler=onerileri_kur(schema, tur="olumsuzluk"))
+            oneriler=onerileri_kur(schema, tur="olumsuzluk", soru=q))
 
     if _yargi_mi(q):
         # 🔴 §18.2 — sınır **netleştirmeden önce** konuşur (`_guvenli_kapsam_disi`
@@ -485,7 +567,7 @@ def kapsam_disi(q: str, schema: dict, *, erken: bool = False) -> Sinir | None:
                    "\n\nYapabildiğim: sayıyı ve **değişimini** göstermek — "
                    "*«geçen aya göre»* dersen yönü birlikte okuruz."),
             gerekce="yargı için beyan edilmiş eşik/hedef yok (ADR-0028)",
-            oneriler=onerileri_kur(schema, tur="yargi"))
+            oneriler=onerileri_kur(schema, tur="yargi", soru=q))
 
     ikili = _iki_cube_olcusu(q, schema)
     # ⚠ Koşul `DEVREDILEBILIR`'i **okur**, tür adını burada tekrar etmez: bir kümeyi
@@ -518,7 +600,7 @@ def kapsam_disi(q: str, schema: dict, *, erken: bool = False) -> Sinir | None:
                    "Yapabildiğim: birini sorup üstüne *«bir de … ekle»* diyebilirsin — "
                    "ortak kırılım varsa ikisi aynı tabloda gelir."),
             gerekce="Ö12: yan yana ✅ (blend) · ilişki ⊘ (v2 · II-D)",
-            oneriler=onerileri_kur(schema, tur="iki_cube"))
+            oneriler=onerileri_kur(schema, tur="iki_cube", soru=q))
 
     return None
 
