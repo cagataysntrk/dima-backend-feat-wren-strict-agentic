@@ -8,7 +8,7 @@
 | kalem | konu | durum |
 |---|---|---|
 | **A** | iş sözlüğü: elle değil **kullanımdan hasat** | 🟣 ölçüldü — *aşağıda* |
-| **B** | route'un **çürütülebilirliği** + garson | 🔵 |
+| **B** | route'un **çürütülebilirliği** + garson | 🟣 ölçüldü — *aşağıda* |
 | **C** | Wren motorunun **kullanılmayan** yetenekleri | 🔵 |
 | **D** | agentic önerileri **tek tek** | 🔵 |
 | **E** | cevap biçimi + UX önerileri **tek tek** | 🔵 |
@@ -139,3 +139,65 @@ etkileyemez** ve bu bir yapılandırma değil bir **yapı**.
 | 4 | **Kapı:** `sinonim_onerici`'nin **bir çağıranı olmalı** — yoksa kırmızı | 🟢 yok | *bir motoru kurmak onu çalıştırmaz* |
 | ⏸ | `higher_is_better` listesi | — | **136 ölçüyü elle etiketlemek** = tam da bırakılması istenen iş → **3 numaranın kuyruğuna** |
 
+---
+
+## B · ROUTE'UN ÇÜRÜTÜLEBİLİRLİĞİ — **KURAL VAR, UYGULANIYOR, VE ÖLÇÜLDÜ**
+
+### B.1 ✅ *«Bir token birden çok sahibe işaret ediyorsa route çekilir»* — **uygulanıyor**
+
+Ölçüldü (gerçek katalog, `route(_norm(q), schema)`):
+
+| soru | `measure_cube_candidates` | `route()` |
+|---|---|---|
+| *«bu yıl adet»* | **5+ sahip** (`bakim·cari·kalite·oee·parti`) | **`None`** ✅ çekildi |
+| *«bu yıl tep»* | **2 sahip** (`enerji_makine·enerji_tesis`) | **`None`** ✅ çekildi |
+| *«bu yıl bakiye»* | **2 sahip** (`cari·mizan`) | **`None`** ✅ çekildi |
+| *«bu yıl fire»* | 1 aday görünüyor ama ölçü **iki küpte** | **`None`** ✅ çekildi |
+
+⊙ Yani kural **çürütülebilir** hâlde: çok sahipli bir terimde route **karar vermiyor**,
+ve bu davranış **dört ayrı girdiyle** doğrulandı. `§A.2`'nin **73 çok-sahipli terimi** bu
+mekanizmanın girdisi; `adet` (**6 küp**) en ağır vaka.
+
+### B.2 🔴 Ama çözüm *«dur ve sor»* değil, *«cevapla ve beyan et»* — **ve bu bilinçli**
+
+Ölçüldü: `_belirsizlik_beyani` `ask.py:3125`'te çağrılıyor — yani **`cq` oluştuktan
+sonra**. Sıra şu:
+
+```
+route çekilir (None)  →  garson (Intent-JSON) bir tanım SEÇER  →  cevap üretilir
+                      →  belirsizlik SONRADAN beyan edilir + öteki tanıma tek tık
+```
+
+Kartın *«CI'da chip ateşliyor, üretimde Intent-JSON gölgeliyor»* teşhisi **yarı doğru**:
+Intent **gerçekten** seçiyor, ama beyan **kaybolmuyor** — `§38 D4` bu turda kapandı ve
+chip artık ön uçta **ayrı şeritte** (*«başka tanım»*, ⇄, *«yeni bir sayı gelir»*).
+
+⊙ Ve bu bir eksiklik değil **yazılı bir karar**: `§38.3 D13`'te Metabase'in
+*«400 + `agent_error`»* deseni **üç ölçülmüş gerekçeyle reddedildi** — cevabı geri
+çekmek *«kullanıcı asla cevapsız kalmaz»* ve *«dürüst red başarı değil»* kurallarıyla
+**doğrudan çelişiyor**.
+
+> 🆑 *Bir belirsizliği cevapsız bırakmakla, cevaplayıp beyan etmek aynı dürüstlük
+> sınıfında değildir — ikincisi kullanıcıya bir sonraki adımı da verir.*
+
+### B.3 ⚠ SEKTÖRÜN BIRAKTIĞI ŞEY ROUTE DEĞİLDİ — kayda geçti
+
+MS Q&A ve Tableau Ask Data'nın kaldırdığı model *«kullanıcı dilbilimsel şemayı **elle**
+beslesin»*di: eşanlam listeleri, ifade kalıpları, *«şunu şöyle de sorabilirim»* —
+**anlama sorumluluğunu son kullanıcının bakımına yıkmak**. O gün **LLM yoktu**; kural
+listesi tükenince **cevap da tükeniyordu**.
+
+Bizde route bir **tek yol değil, bir hızlı yol**: tükendiği yerde **garson** devralıyor
+(`§0.0` *«en ufak %5 şüphede garson gitsin»*). Ölçülü kazanç: küp **145–434 ms** ·
+garson k=3 **98 sn** · Discovery **12,5 sn** · korpus **LLM'siz %94,9**.
+
+> ⊙ *Bir hızlı yolu, onun yerine geçmeye çalışan bir modelin başarısızlığıyla yargılamak,
+> çözdüğü sorunu görmeden onu kaldırmaktır.*
+
+### B.4 ⏭ ÖLÇÜLMEMİŞ OLAN — bir sonraki turun işi
+
+🔴 **Route kaç kez, hangi sebeple çekiliyor?** Bugün `route()` `None` dönüyor ama
+**sebebi** kayda geçmiyor: *«çok sahipli terim»* mi, *«tanınmayan token»* mı, *«dönem
+yok»* mu? Bu ayrım olmadan garsonun yükünün **ne kadarının** belirsizlikten geldiği
+bilinemez — ve `§A.2`'nin 73 terimlik borcunun **ürün maliyeti** ölçülemez.
+→ `KÖK-1`'in **niyet nesnesi** bunun için var; sebep oraya yazılmalı ve **sayılmalı**.
