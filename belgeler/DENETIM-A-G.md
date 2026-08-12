@@ -304,3 +304,74 @@ O yüzden karar **ölçümden sonra**:
 > 🆘 *Bir yeteneği «kullanılmıyor» diye işaretlemek ucuzdur; onun işini başka bir yerde
 > kendimizin yapıp yapmadığını ölçmek pahalıdır — ve karar ancak ikincisinden sonra
 > verilebilir.*
+
+### C.4 ÖLÇÜLDÜ — **dört sorunun dördü de cevaplandı, ve üçü iddiayı DARALTTI**
+
+#### ① `wren.memory` ↔ bizim `vqr` — **ÖRTÜŞÜYOR**, ama motorun **iki fazlası** var
+
+```
+WrenMemory : describe_schema · get_context · index_manifest · recall_queries
+             reset · schema_is_current · status · store_query
+VQR (biz)  : few_shot_block · garson_ornekleri · near_exact · recall · remove · store
+```
+
+| motor | bizde karşılığı |
+|---|---|
+| `store_query` | `store` ✅ |
+| `recall_queries` | `recall` · `near_exact` ✅ |
+| `get_context` | `few_shot_block` · `garson_ornekleri` ✅ |
+| **`index_manifest`** | ⊘ **yok** |
+| **`schema_is_current`** | ⊘ **yok** |
+
+⊘ **KARAR: ithalat GEREKSİZ** (㊷ *kartın yapılacağı yapılmış olabilir*) — üç çekirdek
+yetenek **bizde var** ve **Türkçe morfolojiye bağlı** (`_tokens`/`_lex_score`), motorunki
+değil. 🟢 **Ama iki fazlası bir BOŞLUK işaret ediyor**: *«şema değişti mi, bellek bayat
+mı»* sorusu. Bu ayrı bir kaleme yazıldı — ithalat değil, **soru** alınıyor.
+
+#### ② `wren.skills_content` ↔ `demo/skills/*.md` — **BAŞKA KÜME, başka iş**
+
+```
+motor : dlt-connector · enrich-context · genbi · generate-mdl · onboarding · usage
+biz   : huni.md · kohort.md · yoy-orani.md
+```
+
+⊘ **KARAR: örtüşme YOK, eksiklik de yok.** Motorunkiler **semantik katmanı KURMA**
+becerileri (bağlayıcı yazma, MDL üretme, onboarding); bizimkiler **analiz metodolojisi**
+(huni, kohort, YoY oranı). Aynı ada sahip iki farklı şey — 🅒 *ödünç şema, tanımadığı
+kategoriyi görünmez yapar*'ın tersi: **ödünç ad, farklı kategoriyi aynı sanmıştı**.
+
+#### ③ 🔴 **EN AĞIR İDDİA ÇÜRÜDÜ: `rls.py` motorun işini TEKRARLAMIYOR**
+
+`app/rls.py:1` — dosyanın **kendi başlığı**:
+
+> *«FAZ 1.1 — **MOTOR-SEVİYESİ RLS.** `always_filter`'ın yerini **motor devralır**.»*
+
+Ve gerekçesi **ölçülmüş iki baypasla** yazılı: ① **JOIN** (`compose.py:434`) —
+*«filtreli bir modele join'lemek `always_filter`'ı BAYPAS EDER»* ② **Discovery ham SQL** —
+`_inject_always_filter` yalnız `cube_sql()` yolundan çağrılıyor.
+
+⊙ Yani `rls.py` motorun `transform_sql`'inin **rakibi değil**, motorun RLS'i **her model
+referansına indirebilmesi için gereken GİRDİYİ** üretiyor. *«Yeniden yazılmış 380 satır»*
+teşhisi **yanlış çerçeve**: bu satırlar motoru **kullanmak için** yazılmış.
+
+> 🆚 *Bir modülün satır sayısı, onun neyin yerine geçtiğini söylemez; başlığı söyler.*
+
+#### ④ `motor_rls="shadow"` — **YAZMIYOR, ve bu bir DÜZELTME**
+
+`rls.py:160` tablo: `shadow` → manifest **dokunulmaz**, *«gölge yalnız ÖLÇER»*.
+`:163` **açıkça**: *«`shadow` MANİFESTE YAZMAZ — ve bu bir DÜZELTMEDİR. İlk sürüm
+`shadow`'da da yazıyordu.»* `:222`: *«`shadow`'da uygulama katmanı sahibi KALIR.»*
+
+⚠ Kullanıcının hipotezi (*«karşılaştırma verisi zaten üretiliyor olabilir»*) **kısmen**
+doğrulandı: `:191` bir **gölge denetimi**nden söz ediyor (*«`shadow`'da yalnız kıyas
+için»*). 🔴 **Ama kıyasın ÇIKTISININ nereye gittiği ve okuyanı olup olmadığı bu turda
+ölçülemedi** — bir sonraki turun ilk işi.
+
+### C.5 ⏭ `C` için kalan — ve şimdiden görünen iki iş
+
+| # | iş | risk |
+|---|---|---|
+| 1 | **Gölge kıyasının çıktısı**: nereye yazılıyor, okuyanı var mı — **ölç** | 🟢 ölçüm |
+| 2 | **`schema_is_current` boşluğu**: bellek bayatlığı bizde kapılı mı? (`vqr` şema-sürüm kapısı olduğu **yazılı**, **ölçülmedi**) | 🟢 ölçüm |
+| ⊘ | `wren.memory` · `skills_content` ithalatı | **reddedildi, gerekçesi yukarıda** |
+| ⏭ | `dataset.py` (161) ↔ `register_csv/parquet` · manifest (~1.490) ↔ `load_mdl` — **aynı çerçeve hatasına düşmemek için** başlıklarından oku | 🟢 ölçüm |
