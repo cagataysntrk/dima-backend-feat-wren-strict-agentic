@@ -13056,3 +13056,43 @@ koşar»* diyor ve ölçüm bunu **doğruladı**).
 ⚠ **Açık ölçüm:** 383 dosya seçiliyken **276 test** koşması bir oran olarak düşük
 görünüyor; bu **bir kusur iddiası değil**, ölçülmemiş bir sayı — sonraki turda bakılacak
 ㉔.
+
+# 🔴🔴 DÜZELTME — *«KAPI TEMİZ»* RAPORLARIM **ALTI DOSYALIK BİR ÖRNEKLEMDİ**
+
+Kapının seçim oranını ölçerken (383 dosya ↔ 276 test) kusurun **kapıda değil bende**
+olduğu çıktı:
+
+```
+HIZLI KAPI · değişen=1   → seçilen test dosyası 6/456      ← BU OTURUMDAKİ TÜM KOŞUMLAR
+HIZLI KAPI · değişen=606 → seçilen test dosyası 383/456    ← DOĞRUSU
+```
+
+**Sebep: kabuk.** `docker run … --degisen $D` yazmıştım; **zsh tırnaksız değişkeni
+kelimelere BÖLMEZ** (bash böler). 606 dosya **tek argüman** olarak gitti, `_secim` onu
+tek bir ad sandı ve **6 dosya** seçti. Doğrusu `${=D}`.
+
+⚠ Yani bu oturumda *«276 passed, kırmızı yok»* diye **üç kez** rapor ettiğim şey, süitin
+**%5,6'sıydı** (276 / 4.886). 🅢 *Tek bir yeşil, kapsamı ölçülmeden bir kanıt değildir.*
+🅣 *Bir kapının yeşili, aradığı yerin kapsamıyla sınırlıdır* — ve burada kapsamı
+**ben** daraltmışım.
+
+## GERÇEK KAPI SONUCU — **4.839 ✅ · 4 🔴 · 43 atlandı** (4 dk 26 sn)
+
+```
+tests/test_beyanlar_curumesin.py::test_TERS_TUZAK_FAZ_6_2_YAZMA_ARACLARI_AYAKTA
+tests/test_d11_denormalizasyon_siniri.py::test_SERTIFIKASIZ_KOKEN_YOK
+tests/test_f8_dogruluk_ayrimi_kapaniyor.py::test_AYRIM_PAYDAYA_KAPANIYOR
+tests/test_f8_dogruluk_ayrimi_kapaniyor.py::test_BUYUK_SAYILAR_YAYINDA_TAZE
+```
+
+⏭ **Sıradaki iş:** dördünü **tek tek** teşhis et — ⚠ 🆐 *önce kendi kapsamıyla sına*:
+bu oturumda korpus kırmızısı **iki kez** benim ölçüm hatam çıktı. Üçü isimlerinden
+**yayın/beyan tazeliği** kokuyor (`f8_dogruluk_ayrimi` ikisi, `beyanlar_curumesin` biri)
+— yani muhtemelen **bu oturumda değişen sayıların belgeye yansımaması**; dördüncüsü
+(`d11 SERTIFIKASIZ_KOKEN`) ayrı bir sınıf.
+
+⊙ **Ve bir yan not:** arka planda koşan bir tasarım ajanı `belgeler/plan/2026-08-12_
+ONGORU-KATMANI-KARARI.md` yazmış ve içinde *«şu anda korpus kapısı kırmızı (erişim
+69→54)»* diyor. **Bu bilgi BAYAT** — o kırmızı benim payda kovası hatamdı ve
+`b2f3edb`'de kapandı; korpus bugün **çıkış kodu 0** (83/69/68/72). Belge o hâliyle
+okunursa yanlış bir gerileme alarmı üretir 🅟.
