@@ -1020,6 +1020,37 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
             "Düşen ölçüyü ayrıca sorabilirsin; ya da takip turunda "
             "*«… ölçüsünü de ekle»* diyerek aynı rapora ekletebilirsin."))
 
+    # 🔴🔴 `§T8` — **SORU BİR DÖNEM ADLADI, SORGU ONU TAŞIMADI.** Curl'de ölçüldü
+    # (2026-08-12, `T8`): *«2019 cirosu»* → `route` cube'u ve ölçüyü **doğru** buluyor
+    # ama **«2019»u sessizce atıyor**:
+    #
+    #     route('2019 cirosu') → {"cube":"parti","measures":["toplam_ciro"]}   ← FİLTRE YOK
+    #     route('bu yil ciro') → {… "filters":[{"tarih","gte","2026-01-01"}]}
+    #
+    # Yani üretilen sayı *«2019'un cirosu»* değil **«tüm zamanların cirosu»**dur ve
+    # kullanıcı onu 2019 sanır. 🅫 *Doğru bir sayı, yanlış bir cümlede hâlâ yanlıştır.*
+    #
+    # ⊙ **Sinyal zaten üretiliyordu, kimse okumuyordu** (🆌): `Niyet` bu ayrımı **saymak
+    # için** kurulmuştu — `donem_sayisi` sorunun **adıyla saydığı** dönem, `donemler`
+    # ise **çözülebilenler**. İkisinin farkı raporun *«bilgi var, temsil yok»*
+    # cümlesinin sayısal hâlidir. Burada yalnız **okunuyor**; ikinci bir sayaç
+    # yazılmadı (`KAT-1`).
+    #
+    # ⚠ `§101.1` — beyan **yalnız** üç şart birden tutunca: dönem **adlandı** · **hiçbiri
+    # çözülemedi** · sorgu bir tarih kısıtı **taşımıyor**. Çözülen bir dönem varsa
+    # (`bu yil`) ya da sorgu zaten filtreliyse **susar**; aksi hâlde her cevabın altına
+    # bir uyarı düşer ve uyarı okunmaz olur.
+    if (niyet.donem_sayisi >= 1 and not niyet.donemler
+            and not _tarih_kisiti_var(ic) and not (ic.get("compare")
+                                                   or ic.get("compare_mode"))):
+        out.append(Ihlal(
+            "donem_tasinmadi",
+            "soruda bir **dönem** geçiyor ama sorguya bir tarih kısıtı taşıyamadım — "
+            "sayı **tüm** kayıtları kapsıyor",
+            "Dönemi katalogdaki bir aralıkla yazarsan uygularım (*«bu yıl»* · "
+            "*«son 3 ay»* · *«geçen ay»*); adlandırdığın dönem verinin dışındaysa "
+            "o aralıkta kayıt bulunmayabilir."))
+
     _olcu_kiyasi = (len([m for m in (ic.get("measures") or []) if m]) >= 2
                     and not niyet.cok_donem)
     if (TUR_KIYAS in niyet.turler and not _olcu_kiyasi
@@ -1561,6 +1592,23 @@ def _ustunluk_mu(qn: str, topn_cue, ic: dict | None = None,
         if any(a <= m.start() and m.end() <= b for a, b in olcu_araliklari):
             continue                       # "en yüksek kur" → ölçünün ADI
         return True
+    return False
+
+
+def _tarih_kisiti_var(cq: dict) -> bool:
+    """Sorgu bir **tarih KISITI** taşıyor mu — `filters` ya da `date_filters` içinde?
+
+    ⚠ ㊺ `_zaman_ekseni_var`ın **kardeşi ama aynı soru değil**: o *«kırılımda zaman
+    boyutu var mı»* (trend çizilebilir mi), bu *«süzgeçte tarih var mı»* (dönem
+    daraltıldı mı). Aynı adı taşısalardı biri ötekinin yerine geçer ve `§T8` sessiz
+    kalırdı.
+    """
+    if cq.get("date_filters"):
+        return True
+    for f in (cq.get("filters") or []):
+        d = str((f or {}).get("dimension") or "")
+        if d.startswith("tarih") or "date" in d.lower():
+            return True
     return False
 
 
