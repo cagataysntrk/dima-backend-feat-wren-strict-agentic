@@ -4514,7 +4514,29 @@ yalnız **yeni view eklenirse** yolun sınandığı bir kapı yok — **F16**'ya
 yoğunluğunun saat dağılımı — *«hangi saatlerde duruyor»* sorusu **ifade edilemiyor**.
 
 ⚠ **Ve tam olarak `§M-6`'nın kapattığı kusurun ikizi:** operatörler tek kaynağa bağlandı,
-**granülerlik bağlanmadı** — iki yerde elle yazılı liste duruyor (`intent_semasi` ve
+**granülerlik bağlanmadı** — iki yerde elle yazılı liste duruyor *(⟳🔴 **08-12 BU CÜMLE BAYAT**: tek sahip `cube_operatorleri.GRANULERLIKLER` kuruldu ve **4 tüketici** ondan türüyor. Ama ölçüm daha fazlasını buldu — aşağı bak)* (`intent_semasi` ve
+
+> 🔴🔴 **⟳ 08-12 — «BEŞİNCİ KOPYA DOĞAMAZ» KAPISI ÜÇ KOPYAYI HİÇ GÖRMEMİŞ.**
+> Kusur desende değil **TARAMA BİRİMİNDE**ydi: kapı dosyayı **satır satır** arıyordu ve
+> üç etiket sözlüğünün üçü de **iki satıra yayılmış**tı — hiçbir tek satır beşini birden
+> taşımadığı için kapı ömrü boyunca hiçbirini görmedi.
+>
+> | bulunan | ne | yargı |
+> |---|---|---|
+> | `cube_router._GRAN_LABEL` | chip başlığı, **BÜYÜK** harfli | ⊘ etiket, küme değil |
+> | `report._GRAN_ADI` | rapor bölüm başlığı, küçük harfli | ⊘ etiket |
+> | `tercih._GRAN_ETIKET` | tercih onay metni, küçük harfli | 🔴 **`_GRAN_ADI` ile BİREBİR AYNI** |
+>
+> ✅ **Onarım üç katmanlı:** ① tarama **dosya bütününde** yapılıyor ② desen `{`'li
+> sözlükleri ve `:` ayırıcısını da kapsıyor *(⚠ ilk genişletmem tuple'ı kaybetti —
+> ders ㉚, üç biçim de sınandı)* ③ üç etiket sözlüğü **gerekçesiyle** muaf, ama iki
+> yeni kapı bedelini alıyor: `_GRAN_LABEL` sahiple **birlikte büyümeli**, ve
+> `_GRAN_ADI ≡ _GRAN_ETIKET` **ayrışamaz** (mutasyonla doğrulandı).
+> ⚠ Ayrıca `_GRAN_LABEL[finer]` **doğrudan indeksleme**ydi → sahip `hour` ile büyüse
+> chip üretimi **`KeyError`** ile çökerdi; `.get(finer, finer)` yapıldı.
+>
+> *Bir çok-satırlı gerçeği satır satır aramak, onu hiç aramamaktır.*
+
 `plan_onarim`), yani `KAT-1` ihlali de var.
 
 ### D · Plana eklenen dört madde
@@ -4556,7 +4578,7 @@ yoğunluğunun saat dağılımı — *«hangi saatlerde duruyor»* sorusu **ifad
 → **66 adım**
 
 🔴 **Kısa yol (§14.13) yine değişmedi** — beş iş, ~2-3 hafta. Yeni yedi kalemden yalnız
-**B12 (saatlik granülerlik)** ürün açısından hızlı bir kazanç; imalat dikeyinde *«hangi
+**B12 (saatlik granülerlik)** ürün açısından hızlı bir kazanç *(⟳🔴 **08-12: BU SATIR BAYAT** — `§40.7` kararı **⊘ AÇILMIYOR**'dur ve gerekçesi `motor ≠ veri`: motor `hour`'u kabul etse bile veri o çözünürlüğü taşımıyor)*; imalat dikeyinde *«hangi
 saatte duruyor»* sorusunu açıyor.
 
 ## 15 · DÜRÜST KAPANIŞ

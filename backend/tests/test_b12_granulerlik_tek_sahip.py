@@ -93,20 +93,90 @@ def test_BESINCI_KOPYA_SESSIZCE_DOGAMAZ():
     ilgilendirmez — *bir kapı, ölçtüğü şeyin biçimine değil YAPISINA bağlanır.*
     """
     kalip = re.compile(
-        r"""[\[(]\s*(?:["'](?:year|quarter|month|week|day)["']\s*,\s*){4}"""
-        r"""["'](?:year|quarter|month|week|day)["']\s*,?\s*[\])]""")
+        # ⟳ 08-12: `{` EKLENDİ ve ayırıcıya `:` girdi. Desen yalnız `[`/`(`
+        # arıyordu; `cube_router._GRAN_LABEL = {"year": …, "day": …}` **sözlüğü**
+        # beşini de sayıyordu ama kapının kör noktasındaydı.
+        r"""[\[({]\s*(?:["'](?:year|quarter|month|week|day)["']\s*(?::[^,}\])]*)?\s*,\s*){4}"""
+        r"""["'](?:year|quarter|month|week|day)["']\s*(?::[^,}\])]*)?\s*,?\s*[\])}]""")
+    # 🔴🔴 **TARAMA SATIR SATIR DEĞİL, DOSYA BÜTÜNÜNDE** (⟳ 08-12).
+    # İlk yazım her satırı ayrı arıyordu ve `cube_router._GRAN_LABEL` **iki satıra**
+    # yayıldığı için hiçbir tek satır beşini birden taşımıyordu → kapı onu **hiç
+    # göremedi**. Deseni genişletmek yetmedi; kusur **tarama biriminde**ydi.
+    # *Bir çok-satırlı gerçeği satır satır aramak, onu hiç aramamaktır.*
     kacak = []
     for f in sorted(_APP.rglob("*.py")):
         if f.name == "cube_operatorleri.py":          # SAHİP — burada olması gerekir
             continue
-        for n, satir in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
-            if kalip.search(satir):
-                kacak.append(f"{f.relative_to(_APP)}:{n}")
+        metin = f.read_text(encoding="utf-8")
+        for m in kalip.finditer(metin):
+            if any(muaf in metin[max(0, m.start() - 400):m.start()]
+                   for muaf, _gerekce in MUAF_KOPYALAR):
+                continue
+            kacak.append(f"{f.relative_to(_APP)}:{metin[:m.start()].count(chr(10)) + 1}")
     assert not kacak, (
         "🔴 granülerlik kümesinin İKİNCİ bir elle yazılmış kopyası doğdu:\n  "
         + "\n  ".join(kacak)
         + "\n\nSahip `app/cube_operatorleri.GRANULERLIKLER`'dir; oradan türet.\n"
           "*Aynı kuralın iki sahibi, iki farklı gün ayrışır.*")
+
+
+#: 🔴 **GEREKÇELİ MUAFİYET** — kümeyi değil, kümenin **ETİKETİNİ** taşıyan yapılar.
+#: ⚠ Kapalı liste: her kalem tek tek okunup yargılandı, ve muafiyet **etiketin sahiple
+#: birlikte büyüdüğünü** ölçen ayrı bir kapıyla dengeleniyor (aşağıda) — yani muafiyet
+#: bir af değil, bir **görev devri**dir.
+MUAF_KOPYALAR = (
+    ("_GRAN_LABEL", "kümenin kendisi değil TÜRKÇE ETİKETLERİ (chip başlığı, BÜYÜK harfli); "
+                    "sahip kümeyi, bu sözlük adı taşır"),
+    ("_GRAN_ADI", "rapor bölüm başlığının küçük harfli etiketi (`app/report.py`)"),
+    ("_GRAN_ETIKET", "tercih onayının küçük harfli etiketi (`app/tercih.py`)"),
+)
+
+#: 🔴🔴 **ÜÇ ETİKET SÖZLÜĞÜ VAR VE İKİSİ BİREBİR AYNI** (ölçüldü 2026-08-12).
+#: `report._GRAN_ADI` ile `tercih._GRAN_ETIKET` aynı beş çifti taşıyor — gerçek bir
+#: `KAT-1` ikizi. ⚠ Bugün **birleştirilmiyor**: `tercih` → `report` bağımlılığı yeni bir
+#: modül kenarı açar ve ikisinin tüketicisi ayrı (rapor başlığı ↔ onay metni). Onun
+#: yerine **ayrışmaları yasak**: aşağıdaki kapı ikisinin eşit kalmasını şart koşuyor.
+#: *Bir kopyayı kaldıramıyorsan, en azından sessizce ayrışmasını engelle.*
+
+
+def test_ETIKETLER_SAHIPLE_BIRLIKTE_BUYUR():
+    """🔴 `_GRAN_LABEL` sahibin **tam** kümesini etiketlemeli — muafiyetin bedeli budur.
+
+    Ölçüldü (08-12): erişim `_GRAN_LABEL[finer]` ile **doğrudan** yapılıyordu; sahip
+    bir gün `hour` ile büyüse chip üretimi **`KeyError`** ile çökerdi. Erişim
+    `.get(finer, finer)`'a çevrildi (çökme yerine teknik ad) ve bu kapı eksikliği
+    **duyurur** — yastık, onarımın yerine geçmesin.
+    """
+    from app.cube_operatorleri import GRANULERLIKLER
+    from app.cube_router import _GRAN_LABEL
+
+    eksik = set(GRANULERLIKLER) - set(_GRAN_LABEL)
+    fazla = set(_GRAN_LABEL) - set(GRANULERLIKLER)
+    assert not eksik, (
+        f"🔴 sahip büyüdü ama ETİKET yazılmadı: {sorted(eksik)} — kullanıcı chip'te "
+        "teknik adı görür. `.get` çökmeyi önler ama bu bir onarım değil bir yastıktır.")
+    assert not fazla, (
+        f"🔴 etiketi olan ama sahipte OLMAYAN granülerlik: {sorted(fazla)} — *bir "
+        "etiket, adlandırdığı şey kalkınca da kalırsa, olmayan bir yeteneği ADLANDIRIR.*")
+
+
+def test_AYNI_ETIKETIN_IKI_SOZLUGU_AYRISMIYOR():
+    """🔴 `report._GRAN_ADI` ≡ `tercih._GRAN_ETIKET` — ikisi **birebir** kalmalı.
+
+    Ölçüldü: iki sözlük aynı beş çifti taşıyor ve **ayrı ayrı elle yazılmış**. Biri
+    düzeltilip öteki unutulursa kullanıcı **aynı granülerliği** rapor başlığında bir,
+    onay metninde başka türlü okur — ve hangisinin doğru olduğunu bilemez.
+
+    ⊙ Bu kapı `§B12`'nin kendi ilkesinin etiket düzeyindeki hâli: sahip tek olamıyorsa
+    **ayrışma** yasaktır.
+    """
+    from app.report import _GRAN_ADI
+    from app.tercih import _GRAN_ETIKET
+
+    assert _GRAN_ADI == _GRAN_ETIKET, (
+        f"🔴 iki etiket sözlüğü AYRIŞTI:\n  report._GRAN_ADI    = {_GRAN_ADI}\n"
+        f"  tercih._GRAN_ETIKET = {_GRAN_ETIKET}\n"
+        "*Aynı kuralın iki sahibi, iki farklı gün ayrışır* — ve o gün bugündür.")
 
 
 def test_MERDIVEN_SIRASI_GERCEKTEN_INCELIYOR():

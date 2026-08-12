@@ -4576,6 +4576,16 @@ from app.katalog_metni import build_catalog  # noqa: E402,F401
 #: `.index(cur)+1` bir sonraki **daha ince** granülerliği verir; sahip kabadan
 #: inceye sıralıdır.
 _GRAN_LADDER = list(_cube_op.GRANULERLIKLER)
+#: 🔴 **BU BİR BEŞİNCİ KOPYA DEĞİL — ama olmasına RAMAK KALMIŞTI** (⟳ 2026-08-12).
+#: Sahip `cube_operatorleri.GRANULERLIKLER`'dir ve **kümeyi** o tanımlar; burası yalnız
+#: o kümenin **Türkçe etiketlerini** taşır — ayrı bir bilgi, ayrı bir sahip (`KAT-1`
+#: ihlali değil). ⚠ Ama iki kusur ölçüldü ve düzeltildi:
+#:   ① `test_b12…::test_BESINCI_KOPYA_SESSIZCE_DOGAMAZ`'ın deseni yalnız `[`/`(` ile
+#:      başlayan dizileri arıyordu; `{`'li **sözlük** onun kör noktasındaydı.
+#:   ② erişim `_GRAN_LABEL[finer]` idi — sahip bir gün büyürse (`hour`) **`KeyError`**
+#:      ile çökerdi; bir etiket eksikliği bir çökme sebebi olmamalı.
+#: Kapı artık `set(_GRAN_LABEL) == set(GRANULERLIKLER)` diyor: etiketler sahiple
+#: **birlikte** büyür, ve büyümezse **kırmızı** verir — sessizce değil.
 _GRAN_LABEL = {"year": "Yıllık", "quarter": "Çeyreklik", "month": "Aylık",
                "week": "Haftalık", "day": "Günlük"}
 _MAX_NEXT_STEPS = 6
@@ -4636,7 +4646,7 @@ def suggest_next_steps(cube_query: dict, index: dict,
                               {"dimension": time_dims[0], "granularity": "month"}]}})
         elif cur in _GRAN_LADDER and _GRAN_LADDER.index(cur) + 1 < len(_GRAN_LADDER):
             finer = _GRAN_LADDER[_GRAN_LADDER.index(cur) + 1]
-            times.append({"label": f"{_GRAN_LABEL[finer]} detay", "kind": "time",
+            times.append({"label": f"{_GRAN_LABEL.get(finer, finer)} detay", "kind": "time",
                           "cube_query": {**cube_query, "timeDimensions": [
                               {**tds[0], "granularity": finer}]}})
 
