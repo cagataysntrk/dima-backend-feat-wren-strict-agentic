@@ -3206,7 +3206,38 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 
 ## FAZ 0 · ÖLÇÜM — kod değişikliği yok, 2-3 gün
 
-### ⏳ A1 · Garson korpusu — **KORPUS ZATEN VAR; ENGEL ÖLÇÜLDÜ (2026-08-11)**
+### ⟳◐ A1 · Garson korpusu — **KORPUS VAR; ama «BAĞLI» ≠ «KOŞUYOR» (⟳ 08-12)**
+
+> 🔴🔴 **08-12 DENETİMİ — İKİ AYRI KUSUR.**
+>
+> **① «Bağlandı» ile «koşuyor» aynı şey değil.** Ölçüldü: adım `ADIM_ANAHTARLARI`'nda
+> **ama** `YEREL_KAPI=('korpus','gercek')` içinde **yok** → yerel kapıda hiç koşmuyor;
+> `--hepsi`'de `_garson_korpusu_kosulabilir()` env'siz **False** döndüğü için **düşüyor**.
+> Yani adım *«bağlı»* ama **hiçbir olağan koşumda çalışmıyor**.
+>
+> **② Diskteki artefakt tabana göre KIRMIZI — ve sebebi yazmıyordu.** Rapor `18/21`
+> yayınlıyor; en yeni artefakt (08-12 10:58) `11/21` (taban **17**).
+>
+> ⊙ **TEŞHİS — deterministik yol hiç bozulmamış:**
+>
+> | basamak | taban | artefakt | fark |
+> |---|---|---|---|
+> | `route` | 9 | **9** | **0** ← deterministik |
+> | `sosyal` | 1 | **1** | **0** ← deterministik |
+> | `garson` | 4 | 2 | **−2** ← LLM |
+> | `orkestra` | 4 | 0 | **−4** ← LLM |
+> | `netlestirme` | 3 | 9 | **+6** |
+>
+> Toplam korunmuş (21). **Yalnız LLM'e bağlı iki basamak çökmüş ve farkın tamamı
+> netleştirmeye gitmiş** — bu bir **KASET ISKASI imzasıdır**, bir ürün gerilemesi değil.
+>
+> ✅ **ONARIM:** `kapi()` bir ıskada bile kırmızı veriyordu (`lab/garson_korpusu.py:345`)
+> **ama `rapor()` `iska`'yı hiç almıyordu** → sayı artefakta ulaşmıyor, okuyan ayırt
+> edemiyordu. Artık `rapor(sonuc, iska=)` ve artefakt ya *«🔴 KASET ISKASI: N — bu turlar
+> ölçülmedi»* ya *«✅ ıska yok — sayılar bir ürün ölçümüdür»* satırını taşıyor.
+>
+> *Bir ölçümün kırmızısı, sebebini taşımıyorsa bir alarm değil bir muammadır.*
+
 
 > 🔴 **KARTIN VARSAYIMI YANLIŞ: `lab/garson_korpusu.py` YAZILMIŞ** (16.765 bayt,
 > **21 kayıtlı vaka** — çok turlu zincirler, Arapça, sosyal, kök-neden, çapraz-küp),
