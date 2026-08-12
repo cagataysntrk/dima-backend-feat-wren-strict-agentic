@@ -70,20 +70,99 @@ def test_MANIFEST_v2_cekirdekle_UYUMLU(manifest_b64):
     assert is_backward_compatible(manifest_b64) is True
 
 
-def test_RLS_UYGULANMIS_manifest_de_UYUMLU(manifest_b64):
-    """Enjeksiyonun kendisi uyumu bozmamalı — *bir korumanın bedeli, korumanın
-    kullanılamaz hâle gelmesi olamaz.*"""
+def test_SERVIS_EDILEN_manifest_UYUMLU_kalir(manifest_b64):
+    """Bugün **servis edilen** manifest (`off`/`shadow`) v2-uyumlu — ve öyle kalmalı.
+
+    ⚠ Bu test `on`'u **artık kapsamıyor**; sebebi aşağıdaki testte ölçüldü."""
     import json
 
     from wren_core import is_backward_compatible
 
     from app import rls
     ham = base64.b64decode(manifest_b64)
-    for kademe in ("shadow", "on"):
-        islenmis, _ = rls.manifeste_yaz(ham, kademe=kademe)
+    for kademe in ("off", "shadow"):
+        islenmis, n = rls.manifeste_yaz(ham, kademe=kademe)
+        assert n == 0, f"{kademe} kademesi manifeste YAZMAMALI — {n} kural yazdı"
         b = islenmis if isinstance(islenmis, bytes) else islenmis.encode()
         json.loads(b)                                   # bozulmamış JSON
         assert is_backward_compatible(base64.b64encode(b).decode()) is True, kademe
+
+
+def test_RLAC_ENJEKSIYONU_v2_UYUMUNU_BOZUYOR(manifest_b64):
+    """🔴🔴 **⑦ `motor_rls` AÇILAMAZ — ve bu artık bir tahmin değil, ÖLÇÜM.**
+
+    ## Bu kapı neden KÖRDÜ
+
+    Önceki sürüm (`test_RLS_UYGULANMIS_manifest_de_UYUMLU`) `shadow` **ve** `on` için
+    `True` iddia ediyordu ve yeşildi. Ama **boş bir yeşildi**: varsayılan tenant
+    (`demo-boyahane`) hiçbir cube'da `always_filter` beyan etmiyor, yani `manifeste_yaz`
+    her iki kademede de **bayt bayt aynı** manifesti döndürüyordu. Test *«RLS uygulanmış
+    manifest»* diyordu ama RLS **hiç uygulanmamıştı**.
+
+    ⊙ Ve `app/rls.py`'nin kendi docstring'i bu körlüğü **zaten adlandırmıştı**:
+    *«801 yeşil test bunu YAKALAMADI… `alwaysFilter` yalnız gulteks'te var (logo-3
+    tenant'ı) ve süit o tenant'ın ham SQL yolunu ölçmüyor.»*
+
+    ## Ölçüm (2026-08-12) — izole, taze derlenmiş **gulteks** projesi
+
+    | manifest | kural | `is_backward_compatible` |
+    |---|---|---|
+    | ham | 0 | ✅ `True` |
+    | `shadow` | 0 | ✅ `True` |
+    | 🔴 **`on`** | **3** (`cari`·`mal`·`ticaret`, hepsi `CANCELLED = 0`) | 🔴 **`False`** |
+
+    Kontrol izole: **aynı** manifest, yalnız enjeksiyon farkı. Ve kusur **varsayılan**
+    manifestte de yeniden üretiliyor (tek yapay `always_filter` → 1 kural → `False`) —
+    yani bulgu tenant'a değil **enjeksiyonun kendisine** bağlı.
+
+    ## 🔴 SONUÇ: borç ⑦'nin şekli ÜÇÜNCÜ KEZ değişti
+
+    | ne zaman | iddia |
+    |---|---|
+    | ilk | *«bayrak kapalı, açılmalı»* |
+    | ikinci | *«eksik olan bayrak değil KURAL»* (⊘ — kural gulteks'te **var**) |
+    | 🔴 **üçüncü, ölçülmüş** | kural **var**, bayrak **`shadow`**; ama açmak manifesti **v2-uyumsuz** yapıyor |
+
+    ⚠ Ve bu tam olarak F12 kartının *«bir gün RLS enjeksiyonu manifesti v2-uyumsuz hâle
+    getirirse kapı **bayrağı açmadan önce** konuşur»* cümlesinin gerçekleşmesidir. Kapı
+    konuşamamıştı çünkü **kural olmayan tek tenant'a** bakıyordu.
+
+    > *Bir ön koşul kapısını, koşulun oluşamadığı yerde koşmak; kapıyı kurmakla onu
+    > kurmamak arasındaki farkı yok eder.*
+
+    ## Bu test bir kusuru DONDURMUYOR
+
+    `False` bugünkü **ölçülmüş** gerçektir. `True` olduğu gün bu test kırılır ve o gün
+    ⑦'nin engeli kalkmış demektir — pilot o zaman anlamlıdır.
+    """
+    import json
+
+    from wren_core import is_backward_compatible
+
+    from app import rls
+
+    man = json.loads(base64.b64decode(manifest_b64))
+    modeller = {m.get("name") for m in man.get("models") or []}
+    hedef = next((c for c in (man.get("cubes") or [])
+                  if (c.get("base_object") or c.get("baseObject")) in modeller), None)
+    assert hedef is not None, (
+        "⊘ ölçüm tabanı çöktü: manifestte modele bağlı hiçbir cube yok — bu test o hâlde "
+        "hiçbir şey ölçmüyor demektir.")
+    hedef["always_filter"] = "1 = 1"
+
+    islenmis, n = rls.manifeste_yaz(
+        json.dumps(man, ensure_ascii=False).encode(), kademe="on")
+    assert n >= 1, "⊘ enjeksiyon çalışmadı — kapı yine kör olurdu"
+
+    uyum = is_backward_compatible(base64.b64encode(islenmis).decode())
+    assert uyum is False, (
+        "✅ RLAC enjeksiyonu artık v2 uyumunu BOZMUYOR — `motor_rls` borcunun (⑦) "
+        "ölçülmüş engeli kalktı.\n"
+        "Sıradaki adım: `motor_rls: \"on\"` pilotu. Ölçülmesi gerekenler:\n"
+        "  ① `demo-boyahane` bayt bayt AYNI kalır (0 kural — KURAL B)\n"
+        "  ② `gulteks`te JOIN ve Discovery ham-SQL baypasları KAPANIR\n"
+        "  ③ `_inject_always_filter` devrettiği cube'larda yüklemi İKİ KEZ yazmaz\n"
+        "Ve bu testin iddiası ölçümle güncellensin — bir kayıt, ölçümü değişince yenilenir.")
 
 
 def test_TUM_PROJELER_TEK_SURUMDE():
@@ -109,7 +188,9 @@ def test_RLS_KURAL_SAYISI_kayitli(manifest_b64):
     ham = base64.b64decode(manifest_b64)
     _, n = rls.manifeste_yaz(ham, kademe="on")
     assert n == 0, (
-        f"🔴 RLS artık {n} kural enjekte ediyor (önce 0'dı).\n"
-        "Borç ⑦ ölçülebilir hâle geldi: `motor_rls` pilotu ARTIK ANLAMLI — "
-        "`is_backward_compatible` yeşilken kademeli aç ve JOIN + Discovery baypaslarını "
-        "canlı curl ile doğrula.")
+        f"🔴 VARSAYILAN tenant'ta RLS artık {n} kural enjekte ediyor (önce 0'dı).\n"
+        "⚠ Bu, kuralın *hiç yokluğu* demek DEĞİLDİR ve öyle okunmamalıdır: ölçüldü "
+        "(2026-08-12), `gulteks` (logo-3) üç cube'da `always_filter` beyan ediyor ve "
+        "`rls(on)` orada **3 kural** yazıyor. Buradaki `0` yalnız `demo-boyahane`nin "
+        "kataloğunun bir özelliğidir.\n"
+        "Borç ⑦'nin gerçek engeli `test_RLAC_ENJEKSIYONU_v2_UYUMUNU_BOZUYOR`'da yazılı.")
