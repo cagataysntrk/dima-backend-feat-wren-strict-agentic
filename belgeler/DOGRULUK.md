@@ -45,9 +45,43 @@ EHRSQL'in (NeurIPS 2022) ölçütü bir doğruluk oranı değil bir **davranış
 | kapsam-**dışı** soruya **CEVAP** | 🔴 **en ağır negatif** | **1** |
 | kapsam-**içi** soruya **red** | 🔴 negatif | **339** (%2,3) |
 | kapsam-**içi** soruya cevap | ✅ pozitif | **11.732** (%78,4) |
+| **küp bulunamadı → Discovery'ye düştü** | ⚠ **bir davranış değil, bir MUTFAK EKSİĞİ** | **45** (%0,3) |
 
     gürültü (kapsam-dışı) paydası 86 → doğru red oranı **%98,8**
     netleştirme (bir red değil, bir SORU)                    2.755  (%18,4)
+
+### ⟳ 🔴 AYRIM KAPANMIYORDU — 45 SATIR ADSIZDI (düzeltildi 2026-08-12)
+
+Bu bölüm kendini *«davranışın tam ayrımı»* diye sunuyor. Ölçüldü, **sunmuyordu**:
+
+    11.732 + 339 + 2.755 + 85 + 1 = 14.912        payda = 14.957
+                                    ADSIZ = 45  (%0,30)
+
+Artefakttan (`lab/reports/nl_corpus.json`) yeniden hesaplandığında ayrım **birebir**
+kapanıyor ve eksik kategorinin adı çıkıyor:
+
+    OK                        11.732   %78,4      NOTE(gürültü✓)        85   %0,6
+    CLARIFY:konu               1.971   %13,2      CUBE-SAPMA(None)      45   %0,3  ← ADSIZ OLAN
+    CLARIFY:dönem                690   % 4,6      YANLIS-OK              1   %0,0
+    NOTE                         339   % 2,3      ─────────────────────────────────
+    CLARIFY:ölçü                  94   % 0,6      TOPLAM            14.957  %100,0
+
+⊙ **Ve atlanan kategori tesadüfen atlanmadı — o, tabloya sığmayandı.** Öteki yedisi bir
+*davranıştır* (cevapladı · reddetti · sordu); `CUBE-SAPMA(None)` bir davranış değil bir
+**yönlendirmedir**: soru küplerde karşılanamadı ve Discovery'ye düştü. EHRSQL'in ikili
+şeması (cevap ↔ red) onun için bir kutu tanımlamıyor — ve tanımlamadığı için **yazılmadı**.
+
+🔴 Oysa bu depoda o sayı **en anlamlı olanlardan biridir**: `CLAUDE.md`'nin en üst kuralı
+*«Discovery'nin her ateşlenmesi bir MUTFAK EKSİKLİĞİ RAPORUDUR»* diyor ve hedefi
+**sıfıra yaklaştırmak**. Yani ayrımdan düşen 45 satır, kapatılması gereken açığın ta
+kendisiydi. *(Dördü de `boyahane`'de ve hepsi aynı iki desende: `vardiya bazında …` —
+`personel_vardiya`/`kaza_vardiya`/`vardiya` üç aday arasında bir sahip seçilemiyor.)*
+
+> *Bir ödünç alınan şema, kendi tanımadığı kategoriyi görünmez yapar — ve görünmeyen
+> kategori, çoğu zaman ölçmek istediğin şeyin ta kendisidir.*
+
+⚠ Bu düzeltme bir **kapıya** bağlandı: `tests/test_f8_dogruluk_ayrimi_kapaniyor.py`
+ayrımı artefakttan yeniden hesaplar ve paydaya eşit olmasını şart koşar.
 
 ⊙ **Neden tek bir sayı yazılmıyor:** EHRSQL'in birleşik skoru bir **ceza katsayısı**
 seçmeyi gerektirir (*«kapsam-içi bir red, kapsam-dışı bir cevaptan kaç kat hafiftir»*) ve
