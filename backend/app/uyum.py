@@ -1086,7 +1086,54 @@ def denetle(q: str, cq: dict, cube_meta: dict | None = None,
                    "kind": "olcu"} if _ksah else None)))
 
     # 4 · KIRILIM — mevcut korumanın genelleştirilmiş hâli
-    if (niyet.kirilim_istendi and not boyutlar
+    #
+    # 🔴🔴 **DÖRDÜNCÜ ANLAM: «X bazında» BİR BİRİM/PARA BİRİMİ OLABİLİR** (canlı tur,
+    # soru 22, 2026-08-12).
+    #
+    #     «dolar bazında ciro» → cevap **₺** 137.588.350,68
+    #                          → beyan: *«bir KIRILIM istedin ama boyut taşıyamadım»*
+    #
+    # ⊙ Kullanıcı kırılım **istemedi**; bir **para birimi** istedi. Sistem ona
+    # söylemediği bir şeyi söylediğini söylüyor — ve `niyet.py`'nin bu satır için yazdığı
+    # doktrin tam olarak şu: *«Yanlış bir beyan, sessizlikten kötüdür… güvenin en hızlı
+    # tükendiği yer burasıdır.»*
+    #
+    # ⚠ `göre`/`bazında` aşırı-yüklenmesi bu depoda **üç kez** ısırmıştı (kırılım ·
+    # granülerlik · dönem-aralığı); bu **dördüncüsü**.
+    #
+    # ## Ayrım YAPISAL — kelime listesi değil, KATALOG (ölçüldü)
+    #
+    # | soru | katalogda boyut adayı | «kırılım istendi» doğru mu |
+    # |---|---|---|
+    # | *«dolar bazında ciro»* | **[]** | 🔴 hayır |
+    # | *«euro bazında ciro»* | **[]** | 🔴 hayır |
+    # | *«makine bazında ciro»* | `['makine']` | ✅ evet |
+    # | *«departman bazında ciro»* | `['bolum','departman']` | ✅ evet |
+    #
+    # Yani: soruda kataloğun **hiçbir** küpünde boyut adayı yoksa, `bazında` bir kırılım
+    # işareti değildir. Ölçüt kataloğun kendisi — ikinci bir tanıyıcı yazılmıyor
+    # (`ADR-0008` · `KAT-1`).
+    #
+    # ⚠ **Bedeli bilinerek ödeniyor** (yukarıdaki `gore_donem_mi` kararının aynısı):
+    # katalogda hiç karşılığı olmayan gerçek bir kırılım isteği (*«şube bazında»*) artık
+    # **susar**. `§101.1`: bir yanlış-pozitifin bedeli, kapattığı kusurdan ağırdır.
+    #
+    # ⊙ Ve doğru beyan kanalı bu değil **`§YS`**'dir: *«dolar»* sözcüğü fişe yansımadıysa
+    # onu garson `yok_sayilan` olarak bildirir. Bu satırın işi kırılımdır, para birimi değil.
+    # ⚠ `_match_dims` **burada içe aktarılır**: `denetle` gövdesinde `_cr` diye bir ad
+    # YOK (ölçüldü — ilk yazımım `NameError` alıp `except`e düştü ve daraltma **hiç
+    # koşmadı**; üç test kırmızı verdi ve sebep koddaki kural değil benim kapsamımdı).
+    # *Bir modülün adını başka bir fonksiyondan hatırlamak, onu içe aktarmak değildir.*
+    from app.cube_router import _match_dims as _md
+
+    _kupler = (sema or {}).get("cubes") or []
+    try:
+        # ⚠ Şema **boşsa** daraltma uygulanmaz: hesaplanamayan bir ayrım, ayrımın
+        # yokluğu değildir — o durumda eski (konuşan) davranış korunur.
+        _boyut_adayi_var = (not _kupler) or any(_md(qn, c) for c in _kupler)
+    except Exception:                     # noqa: BLE001 — şüphede eski davranış
+        _boyut_adayi_var = True
+    if (niyet.kirilim_istendi and not boyutlar and _boyut_adayi_var
             and _time_gran(qn) is None and not _PERIOD_RANGE_REF.search(qn)):
         out.append(Ihlal(
             "kirilim",
