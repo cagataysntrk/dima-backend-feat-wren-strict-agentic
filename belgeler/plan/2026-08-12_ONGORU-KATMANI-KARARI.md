@@ -1962,3 +1962,152 @@ Buradaki **her dosya adı, imza ve satır numarası ölçüldü**. Ölçülmeyen
 | ③ | `cube_tie_candidates`'in **bugünkü kapsamı** | adım 3'te ikinci sahipliğin kapanması buna bağlı |
 
 > *Bir göç planının değeri, ölçtüğü şeylerde değil, **ölçmediğini söylediği** yerlerdedir.*
+
+---
+
+# EK 5 — 2026-08-13 · UI/UX **DEMO KAPSAMI**
+
+> 🔴 **Kapsam kararı (kullanıcı, 2026-08-13):** *«Şu anki demo front olduğundan çok
+> kasmaya gerek yok, çalıştığını görelim yeterli.»* Bu bölüm o kararın **sınırını çizer** —
+> ve sınır çizmek, iş kısmak değil **riski küçültmektir**.
+
+---
+
+## §40 · DEMO YÜZEYİ — ne kanıtlıyoruz, ne ERTELİYORUZ
+
+### 40.1 Demo'nun kanıtlaması gereken **tek** iddia
+
+> *«Öngörü, sessiz-yanlışı azaltırken uzmanı yavaşlatmıyor.»*
+
+Bunun için **üç** şey görünmeli, fazlası değil:
+① öneri şeridi · ② **marj kapısının üç çıkışı** · ③ **tek tuşla geçiş**.
+
+⊘ Pill düzenleme, çapa geçmişi, plan önizleme, mobil — bu iddiayı **kanıtlamıyor**,
+yalnız **zenginleştiriyor**. → `§40.4` demo dışı.
+
+### 40.2 Minimum yüzey
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  DİMA                                    [ ⚡ Öngörü  ●━━ ]   │ ← TEK TUŞ
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│   … sohbet · rapor kartları (BUGÜNKÜ HÂLİ, dokunulmadı)      │
+│                                                              │
+├──────────────────────────────────────────────────────────────┤
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │ bu ay fire▌                                            │  │
+│  └────────────────────────────────────────────────────────┘  │
+│   ▸ bu ay toplam fire (kg)                          %94  ↵   │ ← ≤7, kaydırma YOK
+│   ▸ bu ay fire oranı                                %71      │
+│   ▸ makineye göre fire (kg) — bu ay                 %66      │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Marj kapısının üç çıkışı — demo'da nasıl görünür:**
+
+```
+🟢 OTO-İCRA          [cevap kartı] + tek satır:
+                      «deterministik · marj yüksek — …kastettiysen: fire oranı»
+
+🔵 ADAYLARI GÖSTER   cevap YOK, yerine:
+                      «İkisinden hangisi?  ▸ fire (kg)   ▸ fire oranı   (+3 diğer)»
+
+🔴 SINIR BEYANI      «Bu konuda bir ölçüm yok. Şunlar var: fire · OEE · enerji …»
+```
+
+⊙ Üçü de **düz metin + liste** — yeni bir bileşen kütüphanesi, animasyon, ikon seti
+gerekmiyor. Mevcut chip stilleri **yeniden kullanılır**.
+
+### 40.3 Tek tuş — nerede, ne yapar, ⚠ ve neyi kaybettirir
+
+| | demo | ürün |
+|---|---|---|
+| **yeri** | üst çubuk, sohbetin dışında (thread'e ait değil, **kullanıcıya** ait) | aynı |
+| **okuma** | `useFeature("oneri_katmani")` ⊕ yerel geçersiz kılma | `features.py` çözümü |
+| **yazma** | `localStorage` | `FeatureOverride` (**user** kapsamı) |
+| **kapalıyken** | öneri şeridi **hiç render edilmez**, `/oneri` **çağrılmaz** | aynı + `KURAL B` kapısı |
+
+🔴 **Ve dürüst maliyet:** `localStorage` ile **`§19.3`'ün bedava A/B'si KAYBOLUR** —
+kimin açık kimin kapalı olduğu sunucuda bilinmez, yani *«açık kullanıcılar tek tıkla
+cevaba daha çok mu ulaşıyor»* **ölçülemez**.
+
+> ⊙ **Karar:** demo için kabul edilebilir. **Ama `§13.2`'nin kabul oranı ölçütü, tuş
+> `FeatureOverride`'a bağlanana kadar KOŞULAMAZ.** Bu bir eksiklik değil, bir **sıra**:
+> önce çalıştığını gör, sonra ölç.
+
+⚠ Ve `KURAL B` kapısı **yine de yazılır** — backend tarafında bayrak kapalıyken davranışın
+bayt bayt aynı olduğu, FE'den bağımsız kanıtlanır.
+
+### 40.4 Demo KAPSAMI ↔ demo DIŞI
+
+| | ne | neden |
+|---|---|---|
+| ✅ | **öneri şeridi** (≤7, kaydırma yok) | iddianın **kendisi** |
+| ✅ | **klavye**: ↓↑ · `Enter` · `Esc` | 🔴 **poliş değil** — *«uzman yavaşlamıyor»* iddiası **yalnız klavyeyle** kanıtlanır |
+| ✅ | **marj kapısının üç çıkışı** | sessiz-yanlış azalması **buradan** görünür |
+| ✅ | **tek tuş** | karşılaştırmayı **aynı ekranda** mümkün kılar |
+| ✅ | skor rozeti (`%94`) | marjın **görünür** olması — demo için öğretici |
+| ⊘ | **pill satırı düzenleme** | `Niyet` aynası; iddiayı kanıtlamıyor · en pahalı FE işi |
+| ⊘ | **çapa nesnesi + geçmiş şeridi** | çapa **düz metin rozeti** olarak yeter |
+| ⊘ | **plan önizleme UI** (Thread 5) | garson gerektiriyor; ayrı demet |
+| ⊘ | **mobil** | demo masaüstü |
+| ⊘ | tam **ARIA** (`aria-activedescendant`…) | ürün şartı; demo'da ↓↑`Enter` yeter |
+| ⊘ | `ReportCard`'ın 4 şeridinin **sönmesi** | şerit **girdinin altında**, çakışma yok |
+
+🟢 **Sonuç: `ReportCard.tsx` (1.283 satır) HİÇ AÇILMIYOR.** Öneri şeridi girdi bileşeninde
+yaşıyor — `§25/⑪` şerit enflasyonu riski demo'da **doğmuyor**.
+
+### 40.5 Dokunulan dosyalar — **üç**
+
+```
+dima-frontend-demo-master/src/
+  lib/types.ts            +  interface Aday { kimlik, etiket, skor, kaynak }
+  components/ChatPanel.tsx +  öneri şeridi · debounce 200ms · ↓↑ Enter Esc · tuş
+  lib/api.ts (ya da eşdeğeri) +  GET /oneri çağrısı
+```
+
+⚠ `§39/②`'nin uyarısı burada **hafifliyor**: FE bu depoda zayıf halka, ama demo kapsamı
+**üç dosya** — ve hiçbiri `ReportCard` değil.
+
+### 40.6 Klavye neden **poliş değil**
+
+`§24`'ün tüm iddiası şu: *«net soruda marj büyük → doğrudan cevap, tık yok.»*
+Kullanıcı öneriyi **fareyle** tıklamak zorundaysa bu iddia **sınanamaz**.
+
+```
+yazar → ↓ ile seç → Enter        ← el klavyeden ÇIKMAZ
+yazar → Enter                     ← öneriyi görmezden gel, bugünkü akış
+```
+
+🔴 İkisi de **ellerini klavyede tutuyor**. Demo bunu göstermezse *«uzman yavaşlamıyor»*
+iddiası **gösterilmemiş** olur — ölçülmemiş bile değil, **gösterilmemiş**.
+
+### 40.7 «Çalıştığını görmek» — gözle doğrulanacak **beş** şey
+
+| # | senaryo | görülecek |
+|---|---|---|
+| 1 | `bu ay f` yaz | 3 harfte şerit **dolar**, `< 300 ms` |
+| 2 | ↓↓ `Enter` | fareye **dokunmadan** cevap gelir |
+| 3 | `müşteri bazında hasıl` yaz + `Enter` | 🔵 cevap **YOK**, *«hangisi?»* — belirsizlik **görünür** |
+| 4 | `bu ay toplam ciro` yaz + `Enter` | 🟢 **doğrudan cevap** + ince *«…kastettiysen»* şeridi |
+| 5 | Tuşu **kapat**, aynı üç soruyu tekrar sor | **bugünkü davranış**, şerit yok, `/oneri` **çağrılmıyor** (ağ sekmesi) |
+
+⊙ Beşinci satır demo'nun **en değerli** anıdır: *«bozmadık»* iddiası **aynı ekranda,
+tek tuşla** gösterilir.
+
+### 40.8 🔴 Demo'nun kanıtlayamayacağı şey — dürüstlük notu
+
+| kanıtlanır | **kanıtlanmaz** |
+|---|---|
+| mekanizma çalışıyor | **kabul oranı** (`§13.2`) — `FeatureOverride` gerekiyor |
+| gecikme kabul edilebilir | **Recall@3** (`§13.1`) — ayrı offline ölçüm |
+| belirsizlik görünür oluyor | sessiz-yanlışın **gerçekten azaldığı** — korpus `@1`/`@3` gerekiyor |
+| *«bozmadık»* (gözle) | `KURAL B`'nin **bayt bayt** olduğu — **kapı** gerekiyor |
+
+> 🔴 **Demo bir gösteri, ölçüm değil.** *«Çalıştığını gördük»* ile *«işe yarıyor»* farklı
+> cümlelerdir; ikincisi `§13`'ün ölçütlerine bağlıdır ve demo onları **atlamaz, erteler**.
+
+⚠ **Ve ertelenen tek şey ölçüm değil:** `§40.4`'te ⊘ konan altı madde **ürün için hâlâ
+gerekli**. Demo'nun başarısı onları **kapsam dışı** yapmaz — yalnız **sonraya** koyar.
+*Bir kapsam kararını bir tamamlanma sanmak, bu deponun ㊷ dersinin tersidir.*
