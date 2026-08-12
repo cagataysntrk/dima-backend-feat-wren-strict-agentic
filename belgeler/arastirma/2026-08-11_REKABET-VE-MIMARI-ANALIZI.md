@@ -4197,7 +4197,7 @@ ve kullanıcı **hiçbir şey hissetmiyor** (`KURAL B` gereği davranış aynı 
 | # | iş | kaynak | neden |
 |---|---|---|---|
 | **B9** | 🔴 **İki-sağlayıcılı LLM hakem** | §7.3 | AUROC ölçümü: `dry_plan` (**query executability**) **0,500 — tam şans**; execution self-consistency **0,613**; string self-consistency **0,675**; tek GPT-4o hakem **0,770**; 🟢 **iki-sağlayıcılı topluluk 0,822** (ECE 0,031). ⊙ **Bizim `k=3` oylamamızın tavanı ~0,675** — CHASE-SQL'in dersi: *darboğaz aday üretimi değil **SEÇİM***. ⚠ Oylamanın **yerine değil, ÜSTÜNE** |
-| **B10** | 🔴 **SKILLS — metodoloji markdown'ları** *(B3'ten AYRI)* | §36.1-5 | ⚠ **B3 `instructions.md` = iş sözlüğü** (*«fire'yi kg konuşuruz»*). **B10 = metodoloji**: kohort · funnel · retention · **YoY-oranı** · what-if — her biri bir **markdown iş akışı**. ⊙ Anthropic: **skill'siz %21 → skill'li >%95**; *«bir skill'e paketlenebilecek bağlam **fiilen sınırsız**»*. Ve §34'ün beş metodoloji hatası (adım sırası · dedup · pencere · kohort ataması · geri dönüş) **kodda değil METİNDE** yaşar. ⚠ Bakım: **pack ile aynı PR** (bakımsız **1 ayda %95→%65**) |
+| ✅ **B10** | 🔴 **SKILLS — metodoloji markdown'ları** *(B3'ten AYRI)* | §36.1-5 | ⚠ **B3 `instructions.md` = iş sözlüğü** (*«fire'yi kg konuşuruz»*). **B10 = metodoloji**: kohort · funnel · retention · **YoY-oranı** · what-if — her biri bir **markdown iş akışı**. ⊙ Anthropic: **skill'siz %21 → skill'li >%95**; *«bir skill'e paketlenebilecek bağlam **fiilen sınırsız**»*. Ve §34'ün beş metodoloji hatası (adım sırası · dedup · pencere · kohort ataması · geri dönüş) **kodda değil METİNDE** yaşar. ⚠ Bakım: **pack ile aynı PR** (bakımsız **1 ayda %95→%65**) ⟳ **KARAR:** **KISMEN KAPANDI (`§D9`, 2026-08-12):** üç metodoloji markdown'ı yazıldı (`yoy-orani.md` · `huni.md` · `kohort.md`) ve kapıya bağlandı (`test_d9_metodoloji_skilleri.py`, 11). Mekanizma + içerik hazır; **bayrak `skills: off`** ve açılış şartı `§26` (garson doğruluk ölçümü) — o PARK'ta. |
 | ✅ **B11** | **Ephemeral / karalama sorgusu** | §36.1-4 | Hex'in ölçümü: ajan önce veriyi **görünmez bir sorguyla** tanıyor → *«ilk denemede doğruluk yükseliyor»*. Bizde **yok**. ⊙ B4 (repair) ile kardeş: biri **hatadan sonra**, öteki **hatadan önce** ⟳ **KARAR:** **AMACI KARŞILANIYOR (`§40.3`)** — Hex soru-başına gizli sorgu koşar; biz kurulum anında **bir kez** profilliyoruz: **121 boyutun 120'si (%99)** değer taşıyor. Mekanizma farklı, sonuç aynı, maliyet daha düşük. |
 
 ### FAZ 3'e — kapsam ve tanım
@@ -4303,8 +4303,8 @@ yoğunluğunun saat dağılımı — *«hangi saatlerde duruyor»* sorusu **ifad
 
 | # | iş | faz | maliyet |
 |---|---|---|---|
-| **B12** | 🔴 **Granülerliği tek kaynağa bağla + `hour`/`minute` aç** — `cube_operatorleri.py`'nin deseniyle: motora **tek tek gönder, satır döndürdüğünü ÖLÇ**, sonra ekle. `intent_semasi._GRAN_ENUM` ve `plan_onarim.GRANULERLIKLER` o kaynaktan türesin | FAZ 1 | günler |
-| **F14** | **`SessionContext`'in dört kullanılmayan yeteneği**: `get_available_functions` (motorun desteklediği fonksiyonları **sormak**, varsaymak yerine) · `transform_sql` · `pushdown_limit` · `list_tables` | FAZ 5 | günler |
+| ⊘ **B12** | 🔴 **Granülerliği tek kaynağa bağla + `hour`/`minute` aç** — `cube_operatorleri.py`'nin deseniyle: motora **tek tek gönder, satır döndürdüğünü ÖLÇ**, sonra ekle. `intent_semasi._GRAN_ENUM` ve `plan_onarim.GRANULERLIKLER` o kaynaktan türesin | FAZ 1 | günler ⟳ **KARAR:** **AÇILMIYOR (`§40.7`) — ve gerekçemiz DÜZELTİLDİ.** Motor `hour`/`minute` için SQL **üretiyor** ve sorgu **koşuyor**; engel motorda değil **VERİDE**: `day` ve `hour` **birebir aynı 782 satırı** verdi (`tarih` bir DATE kolonu, gün altı çözünürlük yok). Açılsaydı kullanıcı *«saatlik»* isteyip **günlük** sayı alırdı. Tek sahip (`cube_operatorleri.GRANULERLIKLER`) ✅ yapıldı; açılış şartı artık gözlenebilir: zaman ekseni **TIMESTAMP** olmalı ve iki kova **farklı satır** vermeli. |
+| ⊘ **F14** | **`SessionContext`'in dört kullanılmayan yeteneği**: `get_available_functions` (motorun desteklediği fonksiyonları **sormak**, varsaymak yerine) · `transform_sql` · `pushdown_limit` · `list_tables` | FAZ 5 | günler ⟳ **KARAR:** **AÇILMIYOR (`§40.7`).** Ölçüldü: depo motoru `WrenEngine` üzerinden çağırıyor ve o yüzeyin tamamı dört metot — `close·dry_plan·dry_run·query`. **`dry_run` ve `dry_plan` ZATEN kullanılıyor**; `get_available_functions`/`transform_sql` bu yüzeyde **yok** (fabrika arkasında). İlke doğru ama bugün bir kusur ölçülmedi: `dry_plan` her sorguyu koşmadan önce motora doğrulatıyor. ⏸ Şart: `dry_plan`'ın kaçırdığı bir fonksiyon uyumsuzluğu **canlıda ölçülene** kadar. |
 | ⊘ **F15** | `Model` · `SessionProperty` · `RemoteFunction` · `to_json_base64` — **değerlendir**; `RemoteFunction` özel iş fonksiyonları (ör. Türkçe tarih/metin) için kapı olabilir | FAZ 5 | okuma ⟳ **KARAR:** **REDDEDİLDİ (`§40.4`)** — bugün karşılığı yok; `RemoteFunction` Türkçe tarih/metin için bir kapı olabilir ama `§B12`'nin motor sözleşmesi işiyle birlikte açılır. |
 | ✅ **F16** | **`views` yolu için bir kapı** — bugün tek view var ve sınanmıyor | FAZ 5 | saatler ⟳ **KARAR:** **ZATEN VAR (`§40.2`)** — `tests/test_view_fanout_guard.py` koşuyor: `parti_zengin` view'ının `personel.ad_soyad` üzerinden LEFT JOIN'i bir fan-out riskiydi, `4.7b` en az invaziv düzeltmeyle regresyon kapısına çevrildi. |
 
@@ -4699,3 +4699,47 @@ böyle kapattı: ölçüldü, bu depoda p-değeri olmadığı görüldü, **redd
 
 *Bir yol haritasının sonundaki maddeler, kararları yazılmadıkça bir kuyruk değil bir
 gürültüdür.*
+
+### 40.7 🔴 B12 ve F14 — MOTOR SÖZLEŞMESİ ÖLÇÜLDÜ, ve biri kendi gerekçemizi çürüttü
+
+#### B12 · `hour`/`minute` — engel motorda DEĞİL, **VERİDE**
+
+Kapının yazılı gerekçesi *«motorun `timeDimensions.granularity` sözleşmesi bu beşini
+tanıyor»* idi. **Ölçüldü ve çürüdü:** motor `hour`/`minute` için sorunsuz SQL üretiyor
+ve sorgu **koşuyor**.
+
+    granularity=day   → 782 satır · ilk kova 2024-01-01 00:00
+    granularity=hour  → 782 satır · ilk kova 2024-01-01 00:00     ← BİREBİR AYNI
+
+`tarih` bir **DATE** kolonu; gün altı çözünürlük **yok**. `hour` açılsaydı kullanıcı
+*«saatlik»* isteyip **günlük** sayı alırdı — etiketi *«saatlik»* yazarak. Bu bir eksiklik
+değil bir **sessiz-yanlıştır**.
+
+> *Bir granülerliği motorun kabul etmesi, verinin onu taşıdığı anlamına gelmez; kabul
+> eden bir motor, olmayan bir çözünürlüğü ADLANDIRIR.*
+
+⊘ **KARAR: AÇILMIYOR** — ve açılış şartı artık **gözlenebilir**: bir küpün zaman ekseni
+**TIMESTAMP** olmalı ve `day` ile `hour` kovaları **farklı satır sayısı** vermeli. Kapının
+gerekçesi düzeltildi (`test_b12_granulerlik_tek_sahip.py`).
+
+⚠ Bu, `㉔`'ün kendi belgemize uygulanmasıdır: yazılı gerekçe **ölçülmeden** kabul edilmişti.
+
+#### F14 · `SessionContext`'in dört yeteneği — ikisi ZATEN kullanılıyor
+
+Kart dört yetenek sayıyor. Ölçüldü: bu depo motoru `WrenEngine` üzerinden çağırıyor ve o
+yüzeyin **tamamı** dört metottur:
+
+    WrenEngine → close · dry_plan · dry_run · query
+
+| kart | ölçüm |
+|---|---|
+| `dry_run` | ✅ **yüzeyde var ve kullanılıyor** |
+| `dry_plan` | ✅ **kullanılıyor** — güvenlik zincirinin ikinci kapısı |
+| `get_available_functions` | ⊘ `WrenEngine` yüzeyinde **yok**; `get_session_context(manifest_str, function_path, properties, data_source)` fabrikasının arkasında |
+| `transform_sql` | ⊘ aynı |
+
+⊘ **KARAR: AÇILMIYOR.** Kartın vaadi (*«motorun desteklediği fonksiyonları **sormak**,
+varsaymak yerine»*) doğru bir ilkedir ama bugün bir kusur ölçülmedi: derleyici zaten
+motorun kendi manifestinden üretiyor ve `dry_plan` her sorguyu **koşmadan önce** motora
+doğrulatıyor. *Bir soruyu sormak, cevabı zaten bilen bir kapı varken yeni bir bağımlılıktır.*
+⏸ Şart: `dry_plan`'ın kaçırdığı bir fonksiyon uyumsuzluğu **canlıda ölçülene** kadar.

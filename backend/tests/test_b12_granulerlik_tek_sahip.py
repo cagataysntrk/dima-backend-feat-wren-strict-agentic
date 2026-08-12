@@ -119,16 +119,37 @@ def test_MERDIVEN_SIRASI_GERCEKTEN_INCELIYOR():
 
 
 def test_HOUR_MINUTE_YOK_ve_bu_bir_KARAR():
-    """⊘ Rapor `§B12` *«`hour`/`minute` açılacak»* diyordu. Açılmadı ve gerekçesi
-    yazılı: motorun `timeDimensions.granularity` sözleşmesi bu beşini tanıyor.
+    """⊘ Rapor `§B12` *«`hour`/`minute` açılacak»* diyordu. Açılmadı.
 
-    ⚠ Bu test bir eksiği **dondurmuyor**: motor sözleşmesi genişlerse kırılır ve o gün
-    karar yeniden okunur. *Bir kümeyi yerelde büyütmek, motorun tanımadığı bir değeri
-    geçerli sanmaktır.*
+    ## 🔴🔴 ⟳ **GEREKÇE DÜZELTİLDİ (2026-08-12) — ESKİSİ YANLIŞTI**
+
+    Bu test *«motorun sözleşmesi bu beşini tanıyor»* diyordu. **Ölçüldü ve çürüdü:**
+    motor `hour`/`minute` için **sorunsuz SQL üretiyor** (330/334 karakter) ve sorgu
+    **koşuyor**. Yani engel motorda değil.
+
+    🔴 **Gerçek engel VERİDE ve ölçüldü:**
+
+        granularity=day   → 782 satır · ilk kova 2024-01-01 00:00
+        granularity=hour  → 782 satır · ilk kova 2024-01-01 00:00   ← BİREBİR AYNI
+
+    `tarih` bir **DATE** kolonudur; gün altı çözünürlük **yoktur**. `hour` açılsaydı
+    kullanıcı *«saatlik»* isteyip **günlük** sayı alırdı — ve etiket *«saatlik»*
+    yazardı. Bu bir eksiklik değil bir **sessiz-yanlıştır**.
+
+    > *Bir granülerliği motorun kabul etmesi, verinin onu taşıdığı anlamına gelmez;
+    > kabul eden bir motor, olmayan bir çözünürlüğü ADLANDIRIR.*
+
+    ⚠ Ve bu, bu deponun kendi dersinin (`㉔`) kendi belgesine uygulanmasıdır: yazılı
+    gerekçe **ölçülmeden** kabul edilmişti.
+
+    ## Açılış şartı — artık gözlenebilir
+
+    `hour` ancak bir küpün zaman ekseni **TIMESTAMP** olduğunda ve `day` ile `hour`
+    kovaları **farklı satır sayısı** verdiğinde açılır.
     """
     from app.cube_operatorleri import GRANULERLIKLER
 
     assert "hour" not in GRANULERLIKLER and "minute" not in GRANULERLIKLER, (
-        "✅ `hour`/`minute` eklenmiş — motor sözleşmesinin gerçekten genişlediği "
-        "CANLI bir `/cube` çağrısıyla doğrulandı mı? (`§M-6`'nın deseni: küme "
-        "motorun kendi ağzından ölçülür.)")
+        "✅ `hour`/`minute` eklenmiş — VERİNİN gün altı çözünürlük taşıdığı ölçüldü mü? "
+        "Şart: bir küpün zaman ekseni TIMESTAMP olmalı ve `day` ile `hour` kovaları "
+        "FARKLI satır sayısı vermeli (bugün ikisi de 782).")
