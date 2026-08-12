@@ -250,3 +250,71 @@ def cube_etiketi(cube_meta: dict[str, Any]) -> str:
         return str(ad).removesuffix("!")
     syns = cube_meta.get("synonyms") or []
     return str(syns[0]).removesuffix("!") if syns else ""
+
+def belirsizlik_meta(soru: str, cq: dict[str, Any] | None,
+                     schema: dict[str, Any] | None) -> dict[str, Any] | None:
+    """🔴🔴 `§14.11 D9` — **MAKİNE-OKUNUR BELİRSİZLİK** (MCP/ajan yüzeyi için).
+
+    ## Ölçülen boşluk
+
+    HTTP `/ask` belirsizliği **hem beyan ediyor hem yapısal aday veriyor**:
+
+        note        : «fire» birden fazla yerde ve FARKLI FORMÜLLE tanımlı…
+        suggestions : [{"kind":"tanim", "label":"fire (OEE)", "query":"OEE fire"}]
+
+    MCP yolu (`mcp.cagir` → `Planlayici.calistir`) o zincire **hiç uğramıyordu**:
+    aynı soruda ajan `toplam_fire_kg`'yi alıp `oee` küpündeki **aynı adlı, başka
+    hesaplı** ölçünün varlığını **bilemiyordu**. `§14.14 D10`'un insanlar için
+    kapattığı sessiz-yanlış, ajan yüzeyinde **açıktı**.
+
+    ## ⊘ Ve kartın ÖTEKİ yarısı REDDEDİLDİ — gerekçesiyle
+
+    Metabase deseni `400` + `agent_error: true` istiyor, yani **cevabı geri çekmek**.
+    Bu depoda üç ölçülmüş sebeple alınmıyor:
+
+    1. Bugünkü davranış **daha iyi**: cevap **verilir**, belirsizlik **beyan edilir**,
+       öteki tanıma **tek tık** üretilir (`§38 D4` canlı doğrulandı). `400` bunu
+       *«kullanıcı asla cevapsız kalmaz»* ve *«dürüst red başarı değil»* kurallarının
+       **tersine** çevirirdi.
+    2. MCP'de `400`'ün karşılığı `isError: true`'dur ve bir ajan için bu bir **araç
+       arızasıdır**, bir netleştirme daveti değil — ajan ya yeniden dener ya **uydurur**.
+    3. `§40.9`'un kendi ölçümü: **netleştirme bir red değildir** (2.755 · %18,4).
+       Belirsizliği redde çevirmek o %18,4'ü `cevapsız`a yazmak olurdu.
+
+    ✅ Alınan yarı budur: **aday listesi**, `isError`'a dokunmadan.
+
+    ⚠ `KURAL B`: belirsizlik yoksa `None` döner ve çağıran hiçbir alan eklemez —
+    çıktı bayt bayt eskisiyle aynı kalır.
+
+    → `{"terim", "secilen_cube", "adaylar": [...], "tanim_farkli": bool, "beyan": str}`
+    """
+    if not cq or not schema:
+        return None
+    kayit = schema.get("metrik_kaydi")
+    secilen = cq.get("cube")
+    if not kayit or not secilen:
+        return None
+    from app import cube_router as _cr
+
+    cm = next((c for c in (schema.get("cubes") or []) if c.get("name") == secilen), None)
+    if cm is None:
+        return None
+    terim = _cr._match_measure(_cr._norm(soru or ""), cm)[1]
+    if not terim:
+        return None
+    oteki = alternatifler(terim, kayit, secilen)
+    if not oteki:
+        return None
+    farkli = tanimlari_farkli_mi(terim, [secilen, *oteki], schema)
+    return {
+        "terim": terim,
+        "secilen_cube": secilen,
+        "adaylar": [cube_etiketi(c) for ad in oteki
+                    for c in (schema.get("cubes") or []) if c.get("name") == ad],
+        "tanim_farkli": bool(farkli),
+        "beyan": not_metni(terim, cube_etiketi(cm),
+                           [cube_etiketi(c) for ad in oteki
+                            for c in (schema.get("cubes") or []) if c.get("name") == ad],
+                           tanim_farkli=bool(farkli), olcu=terim,
+                           cubelar=[secilen, *oteki], schema=schema),
+    }

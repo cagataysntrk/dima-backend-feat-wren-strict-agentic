@@ -150,3 +150,42 @@ def test_COZULEMEYEN_IMZA_SAYISI_KAYITLI():
         f"🔴 imzası çözülemeyen araç sayısı arttı ({len(cozulemeyen)}): {cozulemeyen}. "
         "Bu araçların şeması `\"string\"`e düşüyor — *bir kapsamı daraltmak meşrudur; "
         "daraltmanın BÜYÜMESİNİ fark etmemek değildir.*")
+
+
+def test_BELIRSIZLIK_AJANA_DA_BILDIRILIYOR(schema):
+    """🔴🔴 `§14.11 D9` — belirsizlik **MCP makbuzunda** da olmalı.
+
+    Ölçülen boşluk: HTTP `/ask` hem `note` hem `suggestions[{kind:"tanim"}]` üretiyordu;
+    MCP yolu o zincire **hiç uğramıyordu** → ajan `toplam_fire_kg`'yi alıp `oee`'deki
+    **aynı adlı, başka hesaplı** ölçüyü **bilemiyordu**.
+
+    ⊘ Kartın `400 + agent_error` yarısı **reddedildi** (gerekçe
+    `belirsizlik_chipi.belirsizlik_meta` docstring'inde); alınan yarı **aday listesi**.
+    Bu kapı ikisini birden kilitler: alan **var** ve `isError` **değişmiyor**.
+    """
+    from app import cube_router as cr, mcp
+
+    class _P:
+        kosum = None
+
+        def calistir(self, ad, question=None, schema=None, makbuz=None, **kw):
+            return cr.route(question, schema)
+
+    belirsiz = mcp.cagir(_P(), "route", {"question": "bu yil fire ne kadar",
+                                         "schema": schema})
+    b = belirsiz["_meta"].get("belirsizlik")
+    assert b, ("🔴 belirsiz bir soruda MCP makbuzu **aday taşımıyor** — ajan, aynı adlı "
+               "başka hesaplı bir ölçünün varlığını bilemez (`§14.14 D10`'un ajan "
+               "yüzeyindeki hâli).")
+    for alan in ("terim", "secilen_cube", "adaylar", "tanim_farkli", "beyan"):
+        assert alan in b, f"🔴 belirsizlik makbuzunda `{alan}` yok: {sorted(b)}"
+    assert belirsiz["isError"] is False, (
+        "🔴 belirsizlik `isError`'a dokunmuş — `400 + agent_error` deseni **bilerek "
+        "reddedildi**: bir ajan için `isError` bir ARAÇ ARIZASIDIR, netleştirme daveti "
+        "değil. *Kullanıcı asla cevapsız kalmaz.*")
+
+    # `KURAL B`: belirsizlik yoksa alan HİÇ eklenmez
+    net = mcp.cagir(_P(), "route", {"question": "bu yil ciro", "schema": schema})
+    assert "belirsizlik" not in net["_meta"], (
+        "🔴 belirsiz OLMAYAN bir soruda da alan eklenmiş — `KURAL B` gereği çıktı bayt "
+        "bayt eski kalmalı. *Bir beyanı her cevaba iliştirmek, onu gürültüye çevirir.*")

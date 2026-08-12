@@ -115,13 +115,37 @@ def cagir(planlayici: Any, ad: str, argumanlar: dict[str, Any] | None = None,
 
     adimlar = getattr(getattr(planlayici, "kosum", None), "adimlar", []) or []
     son = adimlar[-1] if adimlar else None
+
+    # 🔴🔴 `§14.11 D9` — **BELİRSİZLİK AJANA DA BİLDİRİLİR** (⟳ 08-12).
+    # Ölçüldü: aynı soruda HTTP `/ask` hem `note` hem `suggestions[{kind:"tanim"}]`
+    # üretiyordu; MCP yolu o zincire **hiç uğramıyordu** ve ajan `toplam_fire_kg`'yi
+    # alıp `oee`'deki **aynı adlı, başka hesaplı** ölçüyü bilemiyordu. `§14.14 D10`'un
+    # insanlar için kapattığı sessiz-yanlış, ajan yüzeyinde **açıktı**.
+    # ⊘ Kartın `400 + agent_error` yarısı **REDDEDİLDİ** (gerekçesi
+    # `belirsizlik_chipi.belirsizlik_meta` docstring'inde): cevabı geri çekmek bu
+    # deponun *«kullanıcı asla cevapsız kalmaz»* kuralının tersidir ve MCP'de
+    # `isError` bir ajan için **araç arızası** demektir, netleştirme daveti değil.
+    # ⚠ `KURAL B`: belirsizlik yoksa `belirsizlik` **None** döner ve `_meta` bugünküyle
+    # bayt bayt aynı kalır. `isError` **hiç değişmiyor**.
+    _bel = None
+    try:
+        from app import belirsizlik_chipi as _bc
+
+        _arg = argumanlar or {}
+        _bel = _bc.belirsizlik_meta(
+            str(_arg.get("question") or _arg.get("soru") or ""),
+            (sonuc or {}).get("cube_query") if isinstance(sonuc, dict) else None,
+            _arg.get("schema") if isinstance(_arg.get("schema"), dict) else None)
+    except Exception:                                         # noqa: BLE001
+        _bel = None                                           # beyan cevabı DÜŞÜRMEZ
     return {
         "content": [{"type": "text",
                      "text": hata if hata else _zarfla(_metin(sonuc))}],
         "isError": bool(hata),
         # 🔴 **MAKBUZ** — jenerik MCP sunucularında olmayan fark. Aynı `Adim` nesnesi
         # HTTP yolunda da üretilir; burada yeniden BİÇİMLENDİRİLMEZ, olduğu gibi verilir.
-        "_meta": {"makbuz": _adim_sozlugu(son)},
+        "_meta": ({"makbuz": _adim_sozlugu(son), "belirsizlik": _bel} if _bel
+                  else {"makbuz": _adim_sozlugu(son)}),
     }
 
 
