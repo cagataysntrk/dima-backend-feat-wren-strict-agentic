@@ -12,7 +12,7 @@
 | **C** | Wren motorunun **kullanılmayan** yetenekleri | ✅ **KAPANDI** — *aşağıda* |
 | **D** | agentic önerileri **tek tek** | ✅ **KAPANDI** — *aşağıda* |
 | **E** | cevap biçimi + UX önerileri **tek tek** | ✅ **KAPANDI** — *aşağıda* |
-| **F** | LLM girdi token'ı / maliyet | 🔵 |
+| **F** | LLM girdi token'ı / maliyet | ✅ **KAPANDI** — *aşağıda* |
 | **G** | repo düzeni · **yetim uç kapısı** · belge şişkinliği | 🔵 |
 
 ---
@@ -601,3 +601,52 @@ yapılmadığının da kaydı olabilir.* Kapı **zaten var**: `test_kanit_gorunu
 🔴 **`E`'nin dersi:** dört kalemin **üçü zaten yapılmıştı** ve rapor bunu bilmiyordu.
 ㊷ bu oturumda **onuncu** kez doğrulandı — *bir denetim kartının asıl işi, işi yapmak
 değil, yapılıp yapılmadığını ÖLÇMEKTİR.*
+
+---
+
+## F · LLM GİRDİ TOKEN'I / MALİYET — **KAPANDI**
+
+### F.1 ⊘ İstem boyutu — **kırpma VAR, bayrağı `beta`**
+
+Soru: katalog metni isteme **tam mı** gidiyor? **Hayır — daraltılıyor.**
+`katalog_metni.py:353` → `_dar = "sema_daraltma" in _bayraklar`; bayrak
+`features.yml:224` **`beta`**. Kapalıyken `soru` **yok sayılır** ve metin tam gider
+(`KURAL B`). ⊘ **Yeni iş yok.**
+
+### F.2 ⚠ Gölge sayacı — **loglanıyor, TOPLANMIYOR**
+
+`compose.py:808-810`: `shadow` kademesi *«%d cube birleşecekti, YAZILMADI»* diye
+**loglar** ve grain ihlallerini `warning`'e basar. Ama **kaç kez koştuğu / kaç kez
+ayrıştığı** hiçbir yerde **toplanmıyor**. `C`'den devralınan kalem **doğrulandı**.
+
+### F.3 ✅ Token telemetrisi — **VAR ve KALICI** (㊷ on birinci kez)
+
+`llm.record_llm_usage(model, input_tokens, output_tokens, latency_ms)` (`llm.py:109`,
+**5 çağrı**) → istek-kapsamlı `ContextVar` → `answer.py:258`
+`InteractionLog.llm_input_tokens` · `llm_output_tokens` · `llm_model` · `llm_latency_ms`.
+Sıfırlama `ask.py:2128` `reset_llm_usage()` — istek başına.
+
+### 🔴 `F`'nin ASIL bulgusu — `F.2` ve `F.3` **aynı kusurun** iki hâli
+
+**Ölçüldü:** `app/routers/` altında `input_tokens` arayan **hiçbir uç yok (0)**.
+
+> Sayı **üretiliyor**, hiçbir yerden **okunamıyor**. 🆓 Adı: **toplama katmanı yok.**
+
+⊘ **KARAR: uç AÇILMAZ, boşluk RAPORLANIR** — iki gerekçeyle:
+① Bir `/stats/maliyet` ucu bugün yazılsa **ön uç tüketicisi olmayan** bir uç olurdu; yani
+`§G`'nin **tam da kapatmak üzere olduğu** yetim-uç sınıfını **elimizle üretirdik**.
+② Kullanıcının açık talimatı: *«riskliyse sadece raporlansın»*.
+
+✅ **Yapılan iş — var olanı KİLİTLEMEK:** `test_f_maliyet_zinciri.py` (**5**,
+🅑 mutasyonla kanıtlı — `llm_input_tokens` yazımdan düşünce kapı kırmızı).
+Zincirin dört halkası (`llm_model`·`llm_input_tokens`·`llm_output_tokens`·
+`llm_latency_ms`) `ast` ile denetleniyor; biri sessizce koparsa **hiçbir cevap
+bozulmazdı**, yalnız **ne harcadığımız** kaybolurdu. 🅩
+⊙ Beşinci yüklem **boşluğun kendisini** kapıya bağlıyor: bir gün maliyet ucu açılırsa
+kapı kırmızı olur ve *«FE tüketicisi var mı»* sorusu **sorulmak zorunda** kalır.
+
+### ⏭ `F`'den `G`'ye devreden
+
+**Gölge sayacı** ve **maliyet toplaması** — ikisi de bir **okuma yüzeyi** ister ve o
+yüzeyin meşruiyeti `§G`'nin yetim-uç kararına bağlı. `G` o kararı verdikten **sonra**
+açılabilirler; önce açılırlarsa kuralı ihlal ederler.
