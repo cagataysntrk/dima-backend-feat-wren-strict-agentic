@@ -389,3 +389,25 @@ ayrımı yapmıyor**. → saf-not dalı artık süzüyor + *«başka tanım»* �
 renderer **birebir aynı** açıklama cümlesini taşıyor. Kapı
 `test_d4_tanim_chipi_ayri_gorunur.py` (5), mutasyonlu; birinci yüklem backend sözleşme
 cümlesine **zincirli**.
+
+---
+
+## ⑬⑥ `§38.3 D13` — **YAYIMLANAN ≠ ÇAĞRILABİLİR** *(08-12 · `aa1b5d2`)*
+
+Ajanın üç iddiası **tek tek ölçüldü**; ikisi **zaten kapanmıştı**, biri gerçekti:
+
+| ajanın iddiası | ölçüm |
+|---|---|
+| *«31 `inputSchema` property tipi `{'string'}`»* | ⊘ **kapanmış** — tip uyuşmazlığı **0** (`tools._json_tipi`) |
+| *«5 zorunlu parametre şemada eksik»* | ⊘ **kapanmış** — gerçekten eksik **0**; 13'ünün hepsi beyanlı `enjekte` |
+| *«3 kaynaksız `llm.*`»* | 🔴 **GERÇEK** |
+
+`llm.prompt_enhance`·`llm.anlat`·`llm.select_cube` `tools/list`'te **görünüyordu** ama
+`baglanma="servis:llm"` ve uç yalnız `{"servis:wren"}` sağlıyordu → çağrı `ValueError`.
+→ Yayım artık **sağlanan kaynaktan türetiliyor** (`_KAYNAK_ADLARI`, **tek yerde**;
+`tools/call` da aynı sabitten besleniyor ve bir `assert` ayrışmayı koşum anında yakalıyor).
+Ölçüldü **32 → 29**. ⊘ `servis:llm` **bilerek yok** — dış çağıranın LLM bütçesi
+harcaması ayrı bir **yönetişim** kararı. Kapı (12), mutasyonlu.
+
+> 🅨 *Bir aracı yayımlamak onu çağrılabilir yapmaz.* · 🅠 *Yanlış yayımlanmış bir
+> sözleşme, hiç yayımlanmamıştan kötüdür.*
