@@ -24,14 +24,16 @@ from __future__ import annotations
 
 import pathlib
 
-import pytest
-
 from tests.kapi_ortak import fe_dosyalari
+from tests.kapi_ortak import frontend_dir
 from tests.kapi_ortak import yorumsuz as _ortak_yorumsuz
 
 from app.schemas import AskResponse
 
-FE = pathlib.Path(__file__).resolve().parents[2] / "dima-frontend-demo-master" / "src"
+# ⊙ `FE` sabiti KALDIRILDI (2026-08-12): frontend kökünün tek sahibi
+# `kapi_ortak.frontend_dir()`tir ve mount yoksa **skip** eder. Burada ikinci bir
+# yol hesabı tutmak, dört testin o skip'i atlayıp `FileNotFoundError` ile sahte
+# kırmızı vermesinin sebebiydi.
 
 #: Frontend tüketicisi ARANMAYAN alanlar ve **gerekçeleri**. Gerekçesiz muafiyet yok.
 MUAF: dict[str, str] = {
@@ -42,11 +44,28 @@ MUAF: dict[str, str] = {
 }
 
 
+def _fe_oku(*parca: str) -> str:
+    """🔴 Tek bir frontend dosyasını oku — **mount yoksa SKIP**.
+
+    ⚠ Ölçüldü (2026-08-12): bu dosyanın dört testi `FE / …` yolunu **doğrudan**
+    okuyordu ve `belgeler`/`frontend` bağlanmadan koşan hızlı kapıda **dört sahte
+    kırmızı** verdi (`FileNotFoundError`). Aynı dosyanın `_fe_metni()`'si zaten
+    doğru davranıyordu — yani kusur bilgi eksikliği değil, **kuralın iki yerde
+    olmaması**ydı: bir sahip skip ediyor, dört çağıran onu atlıyordu.
+
+    `KAT-1`: *"nerede olduğunu"* bilen tek yer `kapi_ortak.frontend_dir()`tir.
+    Ham yol okuyan her çağıran, o sahibi **es geçen** ikinci bir sahiptir.
+
+    ⊙ `§F8`'in dersinin ikinci hâli: *bir kapı, kendi ortamının eksiğini ürünün
+    kusuru gibi göstermemelidir.*
+    """
+    return (frontend_dir().joinpath(*parca)).read_text(encoding="utf-8")
+
+
 def _fe_metni() -> str:
-    if not FE.exists():
-        pytest.skip("frontend kaynağı mount edilmemiş (CI reçetesinde -v ... :ro gerekir)")
+    kok = frontend_dir()
     return "\n".join(f.read_text(encoding="utf-8", errors="ignore")
-                     for f in FE.rglob("*.ts*"))
+                     for f in kok.rglob("*.ts*"))
 
 
 def test_HER_CEVAP_ALANININ_frontend_TUKETICISI_var():
@@ -100,9 +119,7 @@ def _yorumsuz_kod(m: str) -> str:
 
 
 def _panel_metni() -> str:
-    if not FE.exists():
-        pytest.skip("frontend kaynağı mount edilmemiş (CI reçetesinde -v ... :ro gerekir)")
-    return (FE / "components" / "ReportPanel.tsx").read_text(encoding="utf-8")
+    return _fe_oku("components", "ReportPanel.tsx")
 
 
 def test_RAPORLANABILIRLIK_kapisi_TEK_SAHIP():
@@ -150,7 +167,7 @@ def test_RAPORLANABILIRLIK_SAYMIYOR_KAPATIYOR():
 def test_ONAY_KARTI_ULASILABILIR():
     """`eylem_onerisi` cevabı (`result`/`kpi`/`contribution`/`prescription` HEPSİ None)
     kapıdan GEÇMELİ — yoksa *"onayla iş yapabilen meslektaş"* vaadi ekranda yoktur."""
-    kart = (FE / "components" / "ReportCard.tsx").read_text(encoding="utf-8")
+    kart = _fe_oku("components", "ReportCard.tsx")
     assert "eylem_onerisi" in kart, "onay kartı ReportCard'da YOK"
     kod = _yorumsuz_kod(_panel_metni())
     i = kod.index("SAF_NOT_ALANLARI = new Set")
@@ -178,7 +195,7 @@ def test_SAF_NOT_dalinda_NEXT_STEPS_var():
 
     # Chip'in kendisi TEK SAHİPTEDİR (`NextStepChips`) — deterministik /cube yolunu
     # kullandığı orada kilitlenir, burada tekrar aranmaz (ikinci sahip doğmasın).
-    chip = (FE / "components" / "NextStepChips.tsx")
+    chip = frontend_dir() / "components" / "NextStepChips.tsx"
     assert chip.exists(), "`NextStepChips` tek sahibi YOK — blok yine kopyalanmış olabilir"
     assert "onCubeEdit({ cq: step.cube_query" in chip.read_text(encoding="utf-8"), \
         "`next_steps` chip'i deterministik /cube yolunu kullanmıyor (LLM'e düşer)"
@@ -190,12 +207,10 @@ def test_REPORTCARD_KONUSMA_dalindaki_BILINCLI_gizleme_KORUNDU():
     `ContributionLayer`'ın TIKLANABİLİR SEGMENTLERİNDEN gelir; `next_steps`'i orada da
     göstermek aynı listeyi **İKİ KEZ**, üstelik ikincisini **YANLIŞ BAŞLIKLA**
     (*"sonraki adım"*) sunardı. 0.23 bu koşula DOKUNMAZ."""
-    if not FE.exists():
-        pytest.skip("frontend kaynağı mount edilmemiş")
     # ⚠ İlk sürüm BİREBİR bir ifadeyi arıyordu ve chip bloğu tek sahibe (`NextStepChips`)
     # taşınınca **yanlış-kırmızı** verdi — kural yerindeydi, kapı metni ölçüyordu (bu
     # turda beşinci kez). Doğru ölçüm: chip kullanımını BULup KORUYUCUSUNA bakmak.
-    kart = _yorumsuz_kod((FE / "components" / "ReportCard.tsx").read_text(encoding="utf-8"))
+    kart = _yorumsuz_kod(_fe_oku("components", "ReportCard.tsx"))
     i = kart.find("<NextStepChips")
     assert i > 0, "ReportCard chip'leri tek sahip üzerinden render etmiyor"
     koruyucu = kart[max(0, i - 200):i]
@@ -308,17 +323,17 @@ def test_FAZ_0_11_SUPERSEDES_BAGLANDI_silinmedi():
     from app.routers.decisions import DecisionIn
 
     assert "supersedes" in DecisionIn.model_fields, "backend alanı SİLİNMİŞ"
-    istemci = _yorumsuz_kod((FE / "lib" / "api-client.ts").read_text(encoding="utf-8"))
+    istemci = _yorumsuz_kod(_fe_oku("lib", "api-client.ts"))
     assert "supersedes" in istemci, "istemci `supersedes` GÖNDEREMİYOR — yetim sürüyor"
     katman = _yorumsuz_kod(
-        (FE / "components" / "PrescriptionLayer.tsx").read_text(encoding="utf-8"))
+        _fe_oku("components", "PrescriptionLayer.tsx"))
     assert "supersedes:" in katman, "revizyon zinciri UI'da bağlanmamış"
 
 
 def test_FAZ_0_7_OLU_SARMALAYICI_SILINDI():
     """✅ **FAZ 0.7.** `runQuery()` sarmalayıcısı vardı, **çağıranı yoktu**. Uç kapısı
     onu yeşil sanıyordu çünkü `/query` dizesi sarmalayıcının KENDİ içinde geçiyordu."""
-    istemci = _yorumsuz_kod((FE / "lib" / "api-client.ts").read_text(encoding="utf-8"))
+    istemci = _yorumsuz_kod(_fe_oku("lib", "api-client.ts"))
     assert "export async function runQuery" not in istemci, \
         "ölü sarmalayıcı HÂLÂ duruyor — 'bir gün lazım olur' bir gerekçe değildir"
 
@@ -326,7 +341,7 @@ def test_FAZ_0_7_OLU_SARMALAYICI_SILINDI():
 def test_FAZ_0_3_TUVAL_ROZETI_var():
     """✅ **FAZ 0.3.** MIMARI §5: bir cevabın `source`'unu **gizlemek ya da eşitlemek**
     yasaktır. Aynı cevap sohbette rozetli, tuvalde rozetsizdi."""
-    tuval = _yorumsuz_kod((FE / "components" / "AnalysisCanvas.tsx").read_text(encoding="utf-8"))
+    tuval = _yorumsuz_kod(_fe_oku("components", "AnalysisCanvas.tsx"))
     assert "SourceBadge" in tuval, "tuval HÂLÂ rozetsiz (§5 ihlali)"
     assert "function SourceBadge" not in tuval, \
         "tuvale İKİNCİ bir rozet render edici yazılmış — tek sahip `ChatPanel.SourceBadge`"

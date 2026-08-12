@@ -128,6 +128,28 @@ class Settings(BaseSettings):
     # Self-consistency (ADR-0008 + literatür önerisi #1): LLM cube-seçimi k kez
     # örneklenir, kanonik CubeQuery üzerinde oylanır; uyuşmazlık → chip. 1 = kapalı.
     consistency_k: int = 3
+    # 🔴 **INTENT'İN BÜTÇESİ.** Ölçüldü (canlı, openrouter): tek bir Intent çağrısı
+    # **98.176 ms**. Kullanıcı 1,5 dakika bekleyip *"anlayamadım"* aldı.
+    # ⚠ Anlatıdan (8 sn) gevşek, çünkü Intent bir **süs değil cevabın kendisi**: erken
+    # kesmek kapsamı düşürür. Ama sınırsız da olamaz.
+    # ⚠ `requests`'in `timeout`'u **okuma başına**dır; toplam süreyi ancak çağıran sınırlar.
+    intent_azami_saniye: float = 20.0
+
+    #: 🔴 `§55` — **Discovery'nin duvar-saati bütçesi.** En güvenmediğimiz basamak
+    #: (`§0.0`: *"yan dükkândan sipariş"*) en uzun bekleten basamaktı: ölçüldü 63.526 ms.
+    #: ⚠ Aşımda cevap düşmez, **yol** düşer — dürüst ret zaten oradadır.
+    discovery_azami_saniye: float = 25.0
+
+    # 🔴 **ANLATININ ZAMAN BÜTÇESİ** — canlı ölçüm (2026-08-07): aynı sağlayıcı aynı iş
+    # için **2.936 ms ↔ 22.564 ms ↔ 69.399 ms** yaptı, ve *flash* adlı bir modelde.
+    #
+    # ⚠ Anlatı bir **süslemedir**: altındaki `summary` zaten yazılı ve doğru. 22 saniyelik
+    # bir üslup için kullanıcıyı bekletmek, cevabı geciktirmenin karşılığı olmayan biçimi.
+    # Aşılırsa anlatı **düşer**, cevap **düşmez** — en kötü durum yine *"süssüz ama doğru"*.
+    #
+    # *Bir süsün bütçesi, süslediği şeyin süresini aşamaz.*
+    anlati_azami_saniye: float = 8.0
+
     # 🔴 **VQR KAPALI (kullanıcı kararı, 2026-08-07): *"o bambaşka bir ar-ge konusu."***
     #
     # Doğrulanmış soru deposu merdivenin **İLK** basamağıdır — yani bir kayıt dondurulduğu
@@ -142,28 +164,6 @@ class Settings(BaseSettings):
     #
     # *Bir öğrenme deposu, öğrendiğini ne zaman unutacağını bilmiyorsa, öğrenmez —
     # ezberler; ve ezber, düzeltilen kusuru da korur.*
-    # 🔴 **ANLATININ ZAMAN BÜTÇESİ** — canlı ölçüm (2026-08-07): aynı sağlayıcı aynı iş
-    # için **2.936 ms ↔ 22.564 ms ↔ 69.399 ms** yaptı, ve *flash* adlı bir modelde.
-    #
-    # ⚠ Anlatı bir **süslemedir**: altındaki `summary` zaten yazılı ve doğru. 22 saniyelik
-    # bir üslup için kullanıcıyı bekletmek, cevabı geciktirmenin karşılığı olmayan biçimi.
-    # Aşılırsa anlatı **düşer**, cevap **düşmez** — en kötü durum yine *"süssüz ama doğru"*.
-    #
-    # *Bir süsün bütçesi, süslediği şeyin süresini aşamaz.*
-    # 🔴 **INTENT'İN BÜTÇESİ.** Ölçüldü (canlı, openrouter): tek bir Intent çağrısı
-    # **98.176 ms**. Kullanıcı 1,5 dakika bekleyip *"anlayamadım"* aldı.
-    # ⚠ Anlatıdan (8 sn) gevşek, çünkü Intent bir **süs değil cevabın kendisi**: erken
-    # kesmek kapsamı düşürür. Ama sınırsız da olamaz.
-    # ⚠ `requests`'in `timeout`'u **okuma başına**dır; toplam süreyi ancak çağıran sınırlar.
-    intent_azami_saniye: float = 20.0
-
-    #: 🔴 `§55` — **Discovery'nin duvar-saati bütçesi.** En güvenmediğimiz basamak
-    #: (`§0.0`: *"yan dükkândan sipariş"*) en uzun bekleten basamaktı: ölçüldü 63.526 ms.
-    #: ⚠ Aşımda cevap düşmez, **yol** düşer — dürüst ret zaten oradadır.
-    discovery_azami_saniye: float = 25.0
-
-    anlati_azami_saniye: float = 8.0
-
     vqr_acik: bool = False
 
     # Verified Query Repository dosyası (boş = <proje>/knowledge/verified/queries.jsonl).
