@@ -966,6 +966,25 @@ def main() -> int:
 
     metin = rapor(sonuc)
     print(metin)
+    # 🔴 **MAKİNE-OKUNUR KOPYA — yayınlanmış sayıyı bir kapı okuyabilsin diye.**
+    #
+    # ## Ölçülen boşluk (2026-08-12, denetim ajanı buldu)
+    #
+    # `belgeler/DOGRULUK.md` **sessiz-yanlış 7 / 2.286** yayımlıyor ve `§F8` kapısı o
+    # belgedeki *her sayıyı* korpustan yeniden hesaplıyor — **sessiz-yanlış HARİÇ**
+    # (`grep sessiz tests/test_f8_dogruluk_yayini.py` → **0**). Yani yayının en ağır
+    # satırı korumasızdı.
+    #
+    # ⚠ Sebep yapısaldı, ihmal değil: `§F8` bilinçli olarak **JSON'dan** okur
+    # (*«`.md` insan içindir ve biçimi değişebilir»*) ve bu ölçümün JSON'u **diske hiç
+    # yazılmıyordu** — yalnız `--json` bayrağıyla stdout'a basılıyordu.
+    #
+    # ⊙ Yani kapı yazılamıyordu çünkü **okunacak artefakt yoktu**. Bu iki satır onu
+    # kalıcı kılar; yeni bir ölçüm eklemez, var olanı **yazar**.
+    #
+    # *Bir ölçümü yalnız ekrana basmak, onu ölçmemekle bir kapı için aynı şeydir.*
+    (pathlib.Path(__file__).resolve().parent / "reports" / "gercek_dunya.json").write_text(
+        json.dumps(sonuc, ensure_ascii=False, indent=2), encoding="utf-8")
     hedef = pathlib.Path(__file__).resolve().parent / "reports" / "gercek_dunya.md"
     hedef.parent.mkdir(parents=True, exist_ok=True)
     hedef.write_text(metin, encoding="utf-8")

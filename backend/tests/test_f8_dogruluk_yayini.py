@@ -129,3 +129,83 @@ def test_YENIDEN_URETME_komutu_ve_SURUM_yazili():
     assert "lab/kapi.py --tam" in m, "yeniden üretme komutu yok"
     assert re.search(r"`[0-9a-f]{7,40}`", m), "kod sürümü (sha) yok"
     assert re.search(r"20\d\d-\d\d-\d\d", m), "ölçüm tarihi yok"
+
+# --- 🔴 SESSİZ-YANLIŞ: yayının EN AĞIR satırı, ve korumasızdı --------------------
+
+_GD = _KOK / "lab" / "reports" / "gercek_dunya.json"
+
+
+def _gercek_dunya() -> dict:
+    import json as _j
+
+    return _j.loads(_GD.read_text(encoding="utf-8"))
+
+
+@pytest.mark.skipif(not _GD.is_file(),
+                    reason="`gercek_dunya.json` yok — `python lab/kapi.py --tam` koşulmamış")
+def test_SESSIZ_YANLIS_ve_PAYDASI_belgede_DOGRU():
+    """🔴🔴 **YAYININ EN AĞIR SATIRI KORUMASIZDI.**
+
+    ## Ölçülen boşluk (2026-08-12, denetim ajanı buldu)
+
+    `belgeler/DOGRULUK.md` *«Sessiz yanlış **7** / **2.286**»* yayımlıyor ve bu dosya
+    belgedeki her sayıyı korpustan yeniden hesaplıyor — **bunu hariç**
+    (`grep sessiz` → **0**). Yani en pahalı kusur sınıfının yayınlanmış sayısı
+    çürüyebilirdi.
+
+    ⚠ **Sebep yapısaldı, ihmal değil:** bu dosyanın kendi ilkesi *«JSON'dan, `.md`'den
+    değil»* ve o ölçümün JSON'u **diske hiç yazılmıyordu** (yalnız `--json` ile
+    stdout'a). `lab/gercek_dunya.py` artık `lab/reports/gercek_dunya.json` yazıyor.
+
+    ## ⊙ Ve bir «çelişki» ihbarı ölçümle ÇÖZÜLDÜ
+
+    Ajan *«DOGRULUK.md 7 ↔ taban 8 ↔ rapor §39.4 8»* diye üç yerde iki sayı bildirdi.
+    Ölçüm ayrımı gösterdi:
+
+        gercek_dunya.md (2026-08-12, GÜNCEL) → K1 0 · K2 2 · K3 3 · K4 0 · K5 2 = **7**
+        gercek_dunya_baseline.json (08-10)   → **8**  ← bir RATCHET TAVANI, ölçüm değil
+
+    ⊙ Yani yayın **doğruydu**; taban bir üst sınır ve `7 < 8` bir **iyileşme**. Bayat
+    olan yalnız raporun §39.4 satırıydı. *Bir tavanı bir ölçüm sanmak, iyileşmeyi
+    çelişki gibi okur.*
+
+    ## Payda da denetlenir
+
+    `toplam_vaka − katalog sızıntısı` = 2351 − 65 = **2286**. Payda oyununun en sık
+    biçimi paydayı sessizce değiştirmektir; sayı ile payda **birlikte** doğrulanır.
+    """
+    d = _gercek_dunya()
+    sayac = d.get("sayac") or {}
+    assert sayac, "⊘ ölçüm tabanı çöktü: `sayac` boş — kapı hiçbir şey ölçmüyor"
+
+    sessiz = sum(int((v or {}).get("sessiz_yanlis", 0) or 0) for v in sayac.values())
+    payda = int(d.get("toplam_vaka") or 0) - len(d.get("sizinti") or [])
+    m = _metin()
+
+    assert f"**{sessiz}**" in m or f"| {sessiz} |" in m, (
+        f"🔴 sessiz-yanlış yayını BAYAT: ölçülen **{sessiz}**, belgede yok.\n"
+        "Bu, yayının en ağır satırıdır — *yayınlanmış ve çürümüş bir sayı, hiç "
+        "yayınlanmamış bir sayıdan kötüdür.*")
+    assert f"{payda:,}".replace(",", ".") in m, (
+        f"🔴 sessiz-yanlış PAYDASI bayat (ölçülen {payda:,}). Paydayı sessizce "
+        "değiştirmek, payda oyununun en sık biçimidir.")
+
+
+@pytest.mark.skipif(not _GD.is_file(), reason="`gercek_dunya.json` yok")
+def test_TABAN_bir_TAVANDIR_olcum_ONU_ASMAZ():
+    """`gercek_dunya_baseline.json` bir **ratchet**: ölçüm onu aşarsa gerileme vardır.
+
+    ⚠ Ve taban **ölçüm değildir** — yayın tabandan değil **ölçümden** yazılır. İkisini
+    karıştırmak bu turda bir «çelişki» ihbarı üretti.
+    """
+    import json as _j
+
+    taban_yolu = _KOK / "lab" / "gercek_dunya_baseline.json"
+    if not taban_yolu.is_file():
+        pytest.skip("taban yok")
+    taban = int(_j.loads(taban_yolu.read_text(encoding="utf-8")).get("sessiz_yanlis", 0))
+    olcum = sum(int((v or {}).get("sessiz_yanlis", 0) or 0)
+                for v in (_gercek_dunya().get("sayac") or {}).values())
+    assert olcum <= taban, (
+        f"🔴 GERİLEME: sessiz-yanlış {olcum} > taban {taban}. Bu, rozetli ve uyarısız "
+        "yanlış sayı demektir — bu deponun en pahalı kusur sınıfı.")

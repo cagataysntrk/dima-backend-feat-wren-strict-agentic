@@ -64,7 +64,18 @@ if TYPE_CHECKING:                                  # pragma: no cover
 #:
 #: ## Kural: eylemi olan araç ondan TÜRER
 #:
-#: `izin` · `modul` · `fonksiyon` · `geri_alma_ref` artık **eylem beyanından** okunur.
+#: `izin` · `modul` · `fonksiyon` artık **eylem beyanından** okunur.
+#:
+#: ⚠ ⟳ **DÜZELTME (2026-08-12): `geri_alma_ref` TÜRETİLMİYOR** — ilk yazımda bu satırda
+#: sayılmıştı ve bir denetim ajanı uyuşmazlığı yakaladı. `_eylemden()` **üç** alan
+#: döndürüyor; `geri_alma_ref` elle yazılı **kalıyor** ve bu bilinçli: `EylemBeyani`'de
+#: karşılığı **yok** — orada `geri_alinabilir: bool` var, yani *«geri alınabilir mi»*.
+#: Araç tarafı **daha fazlasını** taşıyor: geri almanın **YOLUNU**
+#: (`dashboards.remove_widget`). Bir `bool`dan bir yol türetilemez.
+#:
+#: ⊙ İkisi çelişemez — `test_GERI_ALINABILIRLIK_iki_kayitta_CELISMEZ` bunu kilitliyor.
+#: *İki kodlamayı birleştiremiyorsan, en azından ayrışmalarını duyulur yap; ama
+#: birleştirdiğini SÖYLEME.*
 #: Araca özgü kalan tek şey **anlatım**dır (`ozet` · `girdi` · `notlar`) — yani LLM'e
 #: *ne zaman kullanılır / kullanılmaz* diyen kısım.
 #:
