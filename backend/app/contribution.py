@@ -273,7 +273,7 @@ def _surprizi_isle(kalemler: list[dict]) -> None:
 SURPRIZ_ESIGI_PUAN = 1.0
 
 
-def surpriz_notu(bulgular: list[dict]) -> str:
+def surpriz_notu(bulgular: list[dict], gosterilen: set | None = None) -> str:
     """🔴 `§E2` — EN BÜYÜK KALEMİN PAYI DEĞİŞMEDİYSE **SÖYLENİR**.
 
     Adtributor'ın kurucu örneğinde doğru cevap *«X'i suçlama»* değil, *«X en büyük
@@ -298,9 +298,66 @@ def surpriz_notu(bulgular: list[dict]) -> str:
           f"(%{bas['pay_onceki']:g} → %{bas['pay_simdi']:g}) — yani bu bir **sebep "
           f"değil, ölçeğin kendisi**.")
     if aday is not None and abs(aday["pay_simdi"] - aday["pay_onceki"]) >= SURPRIZ_ESIGI_PUAN:
+        # 🔴 Aday **kırpılmış** olabilir: havuz artık kırpılmamış liste. Adı verilip
+        # nerede olduğu söylenmezse kullanıcı onu tabloda arar ve **bulamaz** —
+        # *bir segmenti adıyla anıp listeden çıkarmak, onu hiç anmamaktan kötüdür.*
+        _yok = gosterilen is not None and aday["deger"] not in gosterilen
         _s += (f" 🔴 Dağılımı en çok değişen: «{aday['deger']}» "
-               f"(%{aday['pay_onceki']:g} → %{aday['pay_simdi']:g}).")
+               f"(%{aday['pay_onceki']:g} → %{aday['pay_simdi']:g})"
+               + (" — hareketi gürültü payının altında kaldığı için **aşağıdaki listede yok**."
+                  if _yok else "."))
     return _s
+
+
+#: 🔴 `§E2` — kırpılan segmentler **dağılım değişiminin** bu kadarını taşıyorsa beyan
+#: edilir. Birim: **yüzde** (JS kütlesinin payı), `_GURULTU_PAYI` ile karıştırılmasın —
+#: o `|delta|` merceğinin eşiği, bu **sürpriz** merceğininki. `§E2`'nin bütün tezi
+#: ikisinin **aynı şey olmadığıdır**: ölçüldü, hareketi %0,19 olan bir segment toplam
+#: sürprizin **%97,6**'sını taşıyabiliyor.
+KIRPILAN_SURPRIZ_ESIGI_YUZDE = 20.0
+
+
+def _surpriz_beyani(hepsi: list[dict], tutulan: list[dict], kirpilan: int) -> str:
+    """🔴🔴 `§E2` — **KIRPMA SÜZGECİ SÜRPRİZ ADAYINI YİYORDU.**
+
+    Kırpma ölçütü `|delta| / brüt ≥ %1`, yani **`|delta|` merceği** — ve `§E2`'nin bütün
+    tezi *«`|delta|` yanlış mercek»*tir. İkisi çakışınca ölçü kendi süzgecinin altında
+    kalıyordu: `surpriz_notu(bulgular)` adayı **kırpılmış** listeden seçiyordu.
+
+    ⟳ **ÖLÇÜLDÜ (2026-08-12)** — iki bağımsız vaka, aynı sınıf:
+
+    | girdi | kırpılan segment | onun sürpriz payı | eski not |
+    |---|---|---|---|
+    | denetim ajanının vakası | `Web` (%0,19 hareket) | **%43,3** *(en yüksek)* | `""` |
+    | benim vakam | `C` (%0,20 hareket) | **%97,6** | *«A sebep değil»* — **ve susuyor** |
+
+    İkinci vakada kurucu örneğin can alıcı **ikinci yarısı** (*«dağılımı en çok değişen:
+    …»*) tam da **en gerekli olduğu anda** kayboluyordu: not *«en büyük kalem bir sebep
+    değil»* deyip, sebebin **kim olduğunu** söylemeden bitiyordu.
+
+    ✅ Onarım **iki parçalı** — ikisi de gerekli:
+      ① aday havuzu **kırpılmamış** liste (`hepsi`), ve aday kırpıldıysa bu **söylenir**;
+      ② kırpılanların toplam JS payı `≥%20` ise **kütlesi** ayrıca beyan edilir.
+
+    ⊙ ② tek başına yetmez (ad verilmez), ① tek başına yetmez: not **yalnız** en büyük
+    kalemin payı *değişmediğinde* üretiliyor (`SURPRIZ_ESIGI_PUAN`), oysa ajanın
+    vakasında not `""` idi ve %43,3 yine de kayboluyordu. *Bir beyanı, ancak başka bir
+    cümlenin üretildiği durumda vermek, onu beyan değil süs yapar.*
+    """
+    _gos = {k["deger"] for k in tutulan}
+    _s = surpriz_notu(hepsi, gosterilen=_gos)
+    if not kirpilan:
+        return _s
+    _kutle = sum(k.get("surpriz_pay") or 0.0 for k in hepsi if k["deger"] not in _gos)
+    if _kutle < KIRPILAN_SURPRIZ_ESIGI_YUZDE:
+        return _s
+    # ⚠ Türkçe sayı/ek **tek sahipten** (`sayi_bicimi`) — `KAT-1`. İkinci bir
+    # biçimlendirici, er ya da geç iki farklı sayı gibi okunur (`§SB-metin`).
+    # ⚠ **BELİRTME EKİ** — «%43,3'ü taşıyor» değil «%43,3'ünü taşıyor». `sayi_bicimi.ek`
+    # bu ayrımı `belirtme=` ile **zaten** biliyor; ikinci bir ek üreticisi yazılmadı.
+    _b = (f"⚠ Gürültü payının altında kaldığı için listeye girmeyen {kirpilan} segment, "
+          f"dağılım değişiminin {_sek(_syuzde(round(_kutle, 1)), True)} taşıyor.")
+    return f"{_s} {_b}" if _s else _b
 
 
 def decompose(rows: list[dict], dim: str, measure: str, cube_query: dict,
@@ -352,7 +409,7 @@ def decompose(rows: list[dict], dim: str, measure: str, cube_query: dict,
     return {
         # 🔴 `§E2` — sürpriz beyanı raporun **kendi alanında**: tüketici onu nota
         # ekler ya da eklemez, ama artık **görebilir**. Sıralama değişmedi.
-        "surpriz_notu": surpriz_notu(bulgular),
+        "surpriz_notu": _surpriz_beyani(hepsi, tutulan, kirpilan),
         "dimension": dim, "dimension_label": etiket,
         "net_degisim": sum(k["delta"] for k in hepsi),
         "brut_hareket": brut,

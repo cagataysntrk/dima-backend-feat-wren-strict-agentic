@@ -756,9 +756,6 @@ class PvmReport(BaseModel):
     #: ⟳ 08-12 — kırpılanların **KÜTLESİ** (brüt hareket içindeki payı).
     #: Sayı tek başına *«ne kadarı görünmez»* sorusunu cevaplamıyordu.
     kirpilan_pay_yuzde: float = 0.0
-    #: ⟳ 08-12 — kırpılanların **KÜTLESİ** (brüt hareket içindeki payı).
-    #: Sayı tek başına *«ne kadarı görünmez»* sorusunu cevaplamıyordu.
-    kirpilan_pay_yuzde: float = 0.0
     # ŞELALE GRAFİĞİ (Faz I2) — PVM'nin ARTIKSIZ ayrışması şelalenin seçim kuralını tam
     # olarak karşılar (fiyat+miktar+birleşik = net, birebir). Karar BACKEND'de alınır
     # (ADR-0024: grafik kararı LLM'e VERİLMEZ, frontend'e de bırakılmaz) ve toplam
@@ -779,6 +776,15 @@ class ContributionFinding(BaseModel):
     delta: float = 0.0
     net_pay: float | None = None    # net değişime oranı (net ~0 ise None — uydurulmaz)
     brut_pay: float | None = None   # mutlak hareketlerin toplamına oranı
+    #: 🔴 `§E2` — **JENSEN-SHANNON SÜRPRİZİ** (⟳ 08-12). `contribution._surprizi_isle`
+    #: bunları **zaten üretiyordu**; şemada karşılıkları olmadığı için Pydantic
+    #: sınırında **sessizce düşüyorlardı**. `§E2`'nin tezi *«|delta| yanlış mercek»* —
+    #: dağılım payı çok değişen ama hareketi küçük bir segment, yalnız bu alanlarla
+    #: görünür olur. `None`: pay hesaplanamadı (toplam ≤0 ya da negatif bileşen).
+    pay_onceki: float | None = None
+    pay_simdi: float | None = None
+    surpriz: float | None = None
+    surpriz_pay: float | None = None
     cube_query: dict[str, Any]
 
 
@@ -792,6 +798,17 @@ class ContributionReport(BaseModel):
     bulgular: list[ContributionFinding] = Field(default_factory=list)
     kirpilan_segment: int = 0
     kirpilan_esik_yuzde: float = 0.0
+    #: ⟳ 08-12 — kırpılanların **KÜTLESİ**; *«kaç segment»* bir kapsam beyanı değildir.
+    kirpilan_pay_yuzde: float = 0.0
+    #: 🔴🔴 `§E2` — **SÜRPRİZ TEL ÜSTÜNDE DÜŞÜYORDU** (⟳ 08-12, denetim bulgusu).
+    #: Jensen-Shannon sürprizi `contribution.py:201-267`'de **hesaplanıyor** ve
+    #: matematiği bağımsız doğrulandı (fark `4,2e-07`) — ama bu şemada **hiçbir alanı
+    #: yoktu**, yani ön-ucun çağırdığı **tek** uç (`/ask/contribution`) onu **atıyordu**.
+    #: `ask.py:2515` sürpriz notunu **ham sözlükten** kurtarıyor ve yorumunda bunu
+    #: kabul ediyor — yani kayıp biliniyordu, kapatılmamıştı.
+    #: ⊙ `§E2`'nin bütün tezi *«|delta| yanlış mercek»*tir; merceği hesaplayıp
+    #: **göstermemek**, o tezi kanıtlayıp rafa kaldırmaktır.
+    surpriz_notu: str | None = None
 
 
 class ContributionResponse(BaseModel):
