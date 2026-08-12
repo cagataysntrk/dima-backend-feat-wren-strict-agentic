@@ -1104,7 +1104,21 @@ def toplam_turu(prev_cq: dict, cube_meta: dict | None, *, kos,
                    f"birbirini götürüyor (brüt {_sayi(_brut)} ↔ net {_sayi(_net)})")
     _disp = str(((cube_meta or {}).get("measure_synonyms_display") or {}).get(olcu)
                 or olcu).replace("_", " ")
-    _yargi = (" (bu ölçüde **düşük** iyidir)" if _dusuk_iyi else "")
+    # 🔴 `§A.3` — **YÖN BEYANSIZLIĞI SESSİZDİ** (⟳ 2026-08-12).
+    #
+    # Eski satır iki farklı durumu **aynı sessizlikle** karşılıyordu: *«yüksek iyidir»*
+    # ve *«yönü katalogda beyan edilmemiş»*. Ölçüldü: **136 ölçünün 68'i** (%50)
+    # `lower_is_better`'da **değil**, ve şemada bir `higher_is_better` listesi **yok** —
+    # `_yon_beyanli` bunu zaten biliyor (`:400`) ama yalnız **yargıyı susturuyordu**,
+    # sustuğunu **söylemiyordu**.
+    #
+    # ⚠ `§101.1`: beyan **yalnız burada** — yani zaten bir yön yargısının basılacağı
+    # cümlede. Her cevabın altına eklenirse uyarı okunmaz olur.
+    # ⊙ `§E2`/`§E3` ile aynı kalıp: *hesaplayamadığını söylemek de bir ölçümdür.*
+    _yargi = (" (bu ölçüde **düşük** iyidir)" if _dusuk_iyi
+              else ("" if _yon_beyanli(olcu, cube_meta)
+                    else " ⚠ (bu ölçüde artışın iyi mi kötü mü olduğu **katalogda "
+                         "beyan edilmemiş** — sayı verilir, yargı verilmez)"))
     metin = ((f"**{_seg}** ({boyut}) tek başına **{_disp}** toplamının "
               f"{_ek(_yuzde(_pay), True)} taşıyor: **{_sayi(_hv)}** ↔ öteki "
               f"{boyut} ortalaması **{_sayi(_akran)}**{_yargi}.")
