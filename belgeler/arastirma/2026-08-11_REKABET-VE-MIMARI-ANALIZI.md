@@ -50,8 +50,8 @@ kapanmaz. Dört ayrı çalışma aynı yönü gösteriyor (+17…+72 puan).
 
 | # | mantık eksiği | ölçüm | sektörün yaptığı |
 |---|---|---|---|
-| **1** | 🔴 **Garsonun bağlamı yok.** İsteme yalnız **statik katalog dökümü** (23.729 karakter) giriyor: örnek sorgu yok, iş sözlüğü yok, şema daraltma yok, çalıştır→hatayı gör→düzelt döngüsü yok | garson istemi **45 kod satırı**; route yığını **8.861 satır** | Wren'in kendi **AI Context Layer**'ı (`instructions.md` + `queries.yml` + LanceDB retrieval) — **aldığımız motorun içinde, kullanılmıyor**. Cube: **4 KB markdown → +17…+23 puan** |
-| **2** | 🔴 **Ters yatırım.** Makineye Türkçe öğretmeye 8.861 satır; trafiğin daha büyük kısmını taşıyan hakeme 45 satır | route **%35,5** · garson **%37,0** | O model (*«kullanıcı dilbilimsel şemayı elle beslesin»*) **Microsoft'ta Aralık 2026'da, Tableau'da Şubat 2024'te kaldırıldı** |
+| **1** | 🔴 **Garsonun bağlamı yok.** İsteme yalnız **statik katalog dökümü** (23.729 karakter) giriyor: örnek sorgu yok, iş sözlüğü yok, şema daraltma yok, çalıştır→hatayı gör→düzelt döngüsü yok | garson istemi **45 kod satırı**; route yığını **9.274 satır** | Wren'in kendi **AI Context Layer**'ı (`instructions.md` + `queries.yml` + LanceDB retrieval) — **aldığımız motorun içinde, kullanılmıyor**. Cube: **4 KB markdown → +17…+23 puan** |
+| **2** | 🔴 **Ters yatırım.** Makineye Türkçe öğretmeye 9.274 satır; trafiğin daha büyük kısmını taşıyan hakeme 45 satır | route **%35,5** · garson **%37,0** | O model (*«kullanıcı dilbilimsel şemayı elle beslesin»*) **Microsoft'ta Aralık 2026'da, Tableau'da Şubat 2024'te kaldırıldı** |
 | **3** | 🔴 **Motorun yüzeyi taranmamış.** `wren_core` **15 sembol** açıyor, **1'ini** kullanıyoruz | `rls.py` 380 · `dataset.py` 161 · manifest ~1.490 satır **yeniden yazılmış**; `ManifestExtractor.extract_by` (**şema daraltma**) hiç kullanılmamış | Şema bağlama hatası kurumsal ölçekte hataların **%27,6–33,0'ı** |
 | **4** | 🔴 **Kök-neden yarım.** Layer-1'de kilitli (bileşik segment aranmıyor), **sürpriz (JS diverjansı) hesaplanmıyor**, **FDR düzeltmesi yok** | `§KN-toplam` **en büyük segmenti** seçiyor | Adtributor'ın kurucu örneği: *«yalnız explanatory power kullanan her analiz **büyük segmentleri sistematik olarak suçlar**»*. Ve **CHI 2018: kullanıcı içgörülerinin %60'ından fazlası yanlış** |
 | **5** | 🔴 **Cevap tek kalıpta.** Ölçüldü: 8 farklı soru türünde chip sayısı **6,6,5,6,6,4,6,3**; olgu sayısı **hep 1-2**; **hiçbir cevapta çoklu grafik yok** | *«robotik / katalog gibi»* şikâyetinin sayısal karşılığı | Tableau Pulse **14 deterministik içgörü tipi** üretip **LLM'e yalnız cümleyi** kurduruyor |
@@ -82,6 +82,28 @@ Rakipler *«her soruya bir şey söyler»*; biz *«bilmediğimizde susarız»* �
 bizim tarafımızı tarif ediyor: *«Text-to-SQL'de başarısızlık **makul ama yanlış bir
 cevaptır**; semantik katmanda başarısızlık **bir hata mesajıdır**.»*
 
+> 🔴🔴 **BU BELGEDEKİ SATIR/DOSYA SAYILARI BİR FOTOĞRAFTIR — ve 2026-08-12'de
+> yeniden çekildi.** Bir denetim ajanı on iki kalemin **bayatladığını** ölçtü; hepsi
+> kendi ölçümümle doğrulanıp güncellendi.
+>
+> ⚠ **Ve sayı, ÖLÇÜM YÖNTEMİ olmadan yeniden üretilemez** — bu yüzden yöntem burada:
+>
+> ```
+> route yığını : wc -l cube_router niyet followup uyum deger_capasi turetme islev_sozcukleri
+> backend      : find app -name '*.py'                    → 149 dosya · 56.215 satır
+> test         : ls tests/test_*.py · cat tests/test_*.py  → 410 dosya · 71.534 satır
+> belgeler     : find belgeler -name '*.md'                → 36 md · 52.147 satır
+> § işareti    : grep -ohE '§[A-Z0-9][A-Za-z0-9._-]*' app/*.py app/routers/*.py | sort -u
+>                                                          → 271 benzersiz
+> ```
+>
+> ⊙ `§` sayısı için ajan **284**, ben **271** ölçtüm — fark **desen** farkıdır, kod
+> farkı değil. *İki ölçüm ayrışıyorsa önce yöntemleri karşılaştırılır; sayılar değil.*
+>
+> ⚠ Bu satırlar **taban değildir**: güncel taban her zaman `lab/reports/` altındadır
+> (`CLAUDE.md`'nin aynı uyarısı). *Bir belgeye yazılmış sayı, yazıldığı anın
+> fotoğrafıdır; taban diye okunursa yanlış bir gerileme alarmı üretir.*
+
 ### 0.6 TEK SAYFALIK KARNE — sektör kontrol listesine karşı
 
 > Her satır **ölçüldü**; ölçülmeyen *«bilinmiyor»* yazıyor.
@@ -96,7 +118,7 @@ cevaptır**; semantik katmanda başarısızlık **bir hata mesajıdır**.»*
 | 6 | Kesitsel kök-neden (formül ayrıştırma) | LMDI · çoğu üründe **yok** | 🟢 **VAR** — `kok_neden.py` |
 | 7 | Deterministik grafik kararı | Veezoo: etiketler bile VQL'den | 🟢 **VAR** — ADR-0024 · canlı **10/10** |
 | 8 | Makbuz / provenance | Bruin · BitBoard · Basedash OEM'in merkezi | 🟢 **VAR** — Query Contract |
-| 9 | Türkçe morfoloji | Veezoo'nun DACH kaması → **$6M** | 🟢 **VAR** — ⚠ 8.861 satır, ters yatırım (§4.1) |
+| 9 | Türkçe morfoloji | Veezoo'nun DACH kaması → **$6M** | 🟢 **VAR** — ⚠ 9.274 satır, ters yatırım (§4.1) |
 | 10 | Çok-turlu bellek | — | 🟡 **VAR, tur bazında ÖLÇÜLMÜYOR** |
 | 11 | VQR / hafıza | Snowflake VQR · Wren LanceDB | 🟡 **VAR ama garsona BESLENMİYOR** |
 | 12 | Bütçe + durdurma | Snowflake · **Magentic-One stall ≤2** | 🟢 **VAR** *(§C2 `97dc8f6`)* — ~~uykuda~~ **ölçüldü:** `Butce(adim=8·saniye=30·sorgu=12)` **canlı**, `AZAMI_ADIM=12` koşmadan önce uygulanıyor, stall sayacı `ONARIM_TAVANI=2` (**§B4** ile geldi). Tavanlar kapıda kilitli |
@@ -196,7 +218,7 @@ kaçtı, §19.7). Ayrıntı: **§37**.
 | VQR · yükleme · doğrulama | — | 11 | %0,3 | ◐ |
 
 ⊙ **Mimari sonuç:** ürünün **yükünü** garson taşıyor (%37,0), **emeğini** route
-aldı (8.861 satır). Ve garson, mimarinin **en az geliştirilmiş** basamağı —
+aldı (9.274 satır). Ve garson, mimarinin **en az geliştirilmiş** basamağı —
 istemi 45 satır, bağlamı statik bir katalog dökümü, kendini düzeltme döngüsü yok.
 *Bir sistemin en çok kullanılan parçası, en az düşünülmüş parçasıysa, kusur
 bulma hızı hiç düşmez.*
@@ -221,10 +243,10 @@ Cevapsız kalan %19,9 bu paydanın **dışındadır**.
 
 | | ölçü |
 |---|---|
-| backend uygulama | **148 modül · 53.725 satır** (34.945 kod + 11.594 yorum + docstring) |
-| test | **374 dosya · 66.546 satır** — uygulamanın **1,24 katı** |
-| belge | **34 belge · 47.230 satır** |
-| en büyük iki modül | `ask.py` **5.935** · `cube_router.py` **4.807** |
+| backend uygulama | **149 modül · 56.215 satır** (34.945 kod + 11.594 yorum + docstring) |
+| test | **410 dosya · 71.534 satır** — uygulamanın **1,24 katı** |
+| belge | **36 belge · 52.147 satır** |
+| en büyük iki modül | `ask.py` **6.012** · `cube_router.py` **4.981** |
 | `ask()` tek fonksiyon | **1.416 kod satırı** (tavan 1.414, 7 muafiyetle) |
 | kod içi `§` kural işareti | **131 farklı işaret** |
 | büyüme tavanı muafiyeti | **120 kayıt** (4 ayrı liste) |
@@ -312,10 +334,10 @@ mühendisi değiliz sonuçta.»* Bu bölüm o cümlenin **ölçümüdür**.
 
 | basamak | trafik payı | yazılmış kod |
 |---|---|---|
-| **route** — deterministik Türkçe NL→CubeQuery | **%35,5** | **8.861 satır** (`cube_router` · `niyet` · `followup` · `uyum` · `deger_capasi` · `turetme` · `islev_sozcukleri`) |
+| **route** — deterministik Türkçe NL→CubeQuery | **%35,5** | **9.274 satır** (`cube_router` · `niyet` · `followup` · `uyum` · `deger_capasi` · `turetme` · `islev_sozcukleri`) |
 | **garson** — Intent-JSON hakemi | **%37,0** | orkestratör *koşumu* dâhil 5.701 satır; ama **hakemin kendi istemi: 45 kod satırı** |
 
-⊙ **Makineye Türkçe öğretmek için 8.861 satır yazdık; trafiğin daha büyük kısmını
+⊙ **Makineye Türkçe öğretmek için 9.274 satır yazdık; trafiğin daha büyük kısmını
 taşıyan hakemi 45 satırlık bir istemle yönetiyoruz.**
 
 Ve bu, mimarinin **kendi en üst kuralıyla** çelişiyor. `CLAUDE.md` şöyle diyor:
@@ -348,7 +370,7 @@ statik katalog dökümü (23.729 karakter · 23 küp) + kullanıcının sorusu
 zaten sunuyor. Wren'in mimarisinde `instructions.md` (iş bilgisi) + `queries.yml`
 (örnek sorgular) + **LanceDB hibrit erişim** olan bir **AI Context Layer** var. Biz
 Wren'in **motorunu ve MDL'ini** aldık, **AI bağlam katmanını almadık** — ve onun yerine
-8.861 satır Türkçe kural yazdık.
+9.274 satır Türkçe kural yazdık.
 
 *Bir kütüphanenin en pahalı parçasını yeniden yazmak, onu kullanmamanın en pahalı
 biçimidir.*
@@ -464,7 +486,7 @@ Tableau **Ask Data** → Şubat 2024'te emekli *(⚠ tek kaynaklı — bkz. §21
 kalkıyor**, *«synonyms, linguistic relationships, row labels, teach Q&A»* dâhil **tüm
 dilbilimsel şema araçları** ile birlikte.
 🔴 **Bu bizi doğrudan ilgilendiriyor:** *«kullanıcı sözlüğü elle beslesin»* modeli iki dev
-tarafından terk edildi. Bizim 8.861 satırlık Türkçe kural yığınımız o modelin bir
+tarafından terk edildi. Bizim 9.274 satırlık Türkçe kural yığınımız o modelin bir
 akrabasıdır.
 
 **(d) Qlik'in dersi — mükemmel motor, kullanılmayan ürün.** Motoru determinizm açısından
@@ -604,7 +626,7 @@ Qwen2.5-Coder-3B **%15,38**.
 | **Tableau Agent** | ◐ Türkçe prompt kabul ediyor, **İngilizce cevap veriyor** |
 
 ⊙ **Türkçe morfoloji yatırımı savunulabilir bir konumdur** — ama §4.1'deki ters yatırım
-uyarısıyla birlikte okunmalı: 8.861 satır **route'a**, 45 satır **garsona**.
+uyarısıyla birlikte okunmalı: 9.274 satır **route'a**, 45 satır **garsona**.
 
 ## 9 · GRAFİK — rakiplerin «basit grafiği tutturması» nasıl oluyor
 
@@ -961,7 +983,7 @@ Execution/UI.
 * **LanceDB yerel bellek indeksi** — **hibrit erişim** (retrieval)
 
 🔴 **Biz Wren'in motorunu ve MDL'ini aldık; AI bağlam katmanını ALMADIK** — ve yerine
-**8.861 satır Türkçe kural** yazdık.
+**9.274 satır Türkçe kural** yazdık.
 
 Ve Wren'in kendi doğruluk çerçevesi altı sütun sayıyor: *schema linking · value profiling ·
 **ambiguity detection** · generation trace · **retry/repair** · eval*. Belirsizlik tespiti
@@ -981,10 +1003,10 @@ yerel MCP açık. Belge tutarsız, **bizim lehimize**.
 Bu bölüm bir suçlama değil, bir **muhasebe**. Her madde ölçülmüştür.
 
 ### 12.1 🔴 Ters yatırım
-**8.861 satır route'a (trafiğin %35,5'i), 45 satır garsonun istemine (trafiğin %37'si).**
+**9.274 satır route'a (trafiğin %35,5'i), 45 satır garsonun istemine (trafiğin %37'si).**
 Ve `CLAUDE.md`'nin **en üst kuralı** bunun tersini söylüyor: *«route'a Türkçe öğretmemiz
 gerekir ki bu gereksiz… asıl **LLM'e** güveniyoruz»*. Kural doğru yazılmış, yatırım tersine
-yapılmış. **131 `§` işareti** ve **120 muafiyet** bu terslığin faturasıdır.
+yapılmış. **271 `§` işareti** ve **130 muafiyet** bu terslığin faturasıdır.
 
 ### 12.2 🔴 Ölçülmeyen basamağa güvenmek
 Trafiğin **%37'sini** taşıyan garsonun **otomatik doğruluk ölçümü yok**. Kapının kendi
@@ -1264,10 +1286,10 @@ bilimsel olarak taşıyamayacağımızı gösteriyor** (DoWhy). Üçü de **bilg
 | **`demo/packs/*` — semantik katman** (23 küp · 80 model · 31 ilişki · 4 şirket) | pack YAML'ları | 🔴 **Ürünün asıl hendeği bu.** Cube'un ölçümü: semantik katman **+17…+23 puan** ve *«hangi model olduğu değil, semantik katmanın olup olmadığı belirleyici»* | Cube arXiv 2604.25149 · dbt · AtScale · Sequeda |
 | **`kok_neden.py`** (1.111) | 1.111 satır | LMDI'nin (Ang 2005, 1.582 atıf) doğru uygulanmış hâli; **artık sıfır, sıra bağımsız**. Rakiplerin çoğunda yalnız **zamansal** karşılığı var | Ang, *Energy Policy* · Tableau Explain Data |
 | **`viz.py`** (731) | 731 satır | Canlı ölçüm **10/10 doğru tip**; Cleveland-McGill gerekçeleriyle yazılmış | §2 ölçümü · Draco/CompassQL kıyası |
-| **`uyum.py` + beyan kültürü** (1.811) | 1.811 satır | dbt'nin cümlesi: *«semantik katmanda başarısızlık bir **hata mesajıdır**»*. Power BI kapsam dışında **uyduruyor** — biz **söylüyoruz** | dbt 2026 · MS Learn |
+| **`uyum.py` + beyan kültürü** (2.055) | 2.055 satır | dbt'nin cümlesi: *«semantik katmanda başarısızlık bir **hata mesajıdır**»*. Power BI kapsam dışında **uyduruyor** — biz **söylüyoruz** | dbt 2026 · MS Learn |
 | **`vqr.py` + `multilingual-e5-large`** | — | TR-MTEB **birincisi** (66,82); yaygın tuzak `all-MiniLM` Türkçede **22-23** | TR-MTEB, EMNLP 2025 |
 | **Kapılar** (`test_modul_buyume`, `test_alan_haritasi`, altın testler) | — | Bu oturumda **dört** gerçek kusuru yakaladı: JOIN budaması bozulması · `F821` NameError · yüzde toplama · zengin gövde kaybı. **Hiçbirini ben görmedim** | §15.1 |
-| **Belgeler** (47.230 satır) | 34 belge | Kurumsal hafıza; bu raporun kendisi o hafıza sayesinde **ölçülebildi** (şişme katsayısı, cevapsız oranı, `§` sayımı) | — |
+| **Belgeler** (52.147 satır) | 36 belge | Kurumsal hafıza; bu raporun kendisi o hafıza sayesinde **ölçülebildi** (şişme katsayısı, cevapsız oranı, `§` sayımı) | — |
 
 ⊙ **Bu sütun boşa gitmedi.** Silinse yeniden yapılması aylar alır ve bir kısmı (packs)
 **müşteri başına** yeniden yapılır.
@@ -1276,11 +1298,11 @@ bilimsel olarak taşıyamayacağımızı gösteriyor** (DoWhy). Üçü de **bilg
 
 | varlık | büyüklük | dürüst yargı |
 |---|---|---|
-| **`cube_router.py` + Türkçe kural yığını** | **8.861 satır** | 🟡 **Yarısı değerli, yarısı yanlış katmanda.** Değerli yanı: trafiğin **%35,5'ini** **sıfır LLM maliyetiyle** ve **%89-98 doğru küple** cevaplıyor — bu gerçek bir maliyet ve gecikme avantajı. Yanlış yanı: aynı iş **garsona bir örnek sorgu listesi vererek** (Cube: **4 KB markdown → +17…+23 puan**) çok daha ucuza yapılabilirdi. Ve dayandığı ürün modeli (*«kullanıcı dilbilimsel şemayı elle beslesin»*) **Microsoft Aralık 2026'da, Tableau Şubat 2024'te kaldırdı** |
-| **374 test dosyası · 66.546 satır** | uygulamanın **1,24 katı** | 🟡 **Kalitesi yüksek, nişangâhı yanlış.** Ürünün **%35,5'ini** ölçüyor; **%37'sini taşıyan garsonun otomatik ölçümü yok**. Testler kötü değil — **eksik yere bakıyorlar** |
-| **131 `§` işareti · 120 muafiyet** | — | 🟡 **Her biri gerekçeli, toplamı bir borç.** On binlerce hücrelik bir uzayda 131 hücre kapatılmış. Kusur bulma oranı **düşmüyor** (~5 senaryoda 1) — bu, yöntemin ölçeklenmediğinin kanıtı |
+| **`cube_router.py` + Türkçe kural yığını** | **9.274 satır** | 🟡 **Yarısı değerli, yarısı yanlış katmanda.** Değerli yanı: trafiğin **%35,5'ini** **sıfır LLM maliyetiyle** ve **%89-98 doğru küple** cevaplıyor — bu gerçek bir maliyet ve gecikme avantajı. Yanlış yanı: aynı iş **garsona bir örnek sorgu listesi vererek** (Cube: **4 KB markdown → +17…+23 puan**) çok daha ucuza yapılabilirdi. Ve dayandığı ürün modeli (*«kullanıcı dilbilimsel şemayı elle beslesin»*) **Microsoft Aralık 2026'da, Tableau Şubat 2024'te kaldırdı** |
+| **410 test dosyası · 71.534 satır** | uygulamanın **1,24 katı** | 🟡 **Kalitesi yüksek, nişangâhı yanlış.** Ürünün **%35,5'ini** ölçüyor; **%37'sini taşıyan garsonun otomatik ölçümü yok**. Testler kötü değil — **eksik yere bakıyorlar** |
+| **271 `§` işareti · 130 muafiyet** | — | 🟡 **Her biri gerekçeli, toplamı bir borç.** On binlerce hücrelik bir uzayda 131 hücre kapatılmış. Kusur bulma oranı **düşmüyor** (~5 senaryoda 1) — bu, yöntemin ölçeklenmediğinin kanıtı |
 
-⊙ **Buradaki kayıp «yapılan iş» değil, «yapılmayan iş».** 8.861 satır yazılırken garsona
+⊙ **Buradaki kayıp «yapılan iş» değil, «yapılmayan iş».** 9.274 satır yazılırken garsona
 örnek sorgu bağlanmadı, şema daraltma açılmadı, ölçüm kurulmadı.
 
 ### 16.3 🔴 BOŞA GİTTİ — açıkça, savunmasız
@@ -1310,7 +1332,7 @@ bilimsel olarak taşıyamayacağımızı gösteriyor** (DoWhy). Üçü de **bilg
 
 Boşa giden şey **satır** değil, **sıra**:
 
-1. **Ölçüm önce kurulmadı.** Garson korpusu ilk gün kurulsaydı, 8.861 satırlık route
+1. **Ölçüm önce kurulmadı.** Garson korpusu ilk gün kurulsaydı, 9.274 satırlık route
    yığınının hangi kısmının gereksiz olduğu **ölçülebilirdi**. Bugün bilinmiyor.
 2. **Motorun yüzeyi taranmadı.** `dir(wren_core)` bir komut; **15 sembolden 14'ünün**
    varlığı bu rapora kadar fark edilmedi.
@@ -2137,7 +2159,7 @@ En yüksek çıta Listen to Data'nın *«Türkçe **karakter kaybı olmadan**»*
 yalnız **karakter seti**. Mubisoft'un *«Etiket Ajanı»*ı kolon adlarını Türkçeleştiriyor ama
 bu **çıktı** tarafında, **giriş** tarafında değil.
 ⊙ *«göre/bazında»* çok anlamlılığı, ek çözümleme, fiil-isim ayrımı — **pazarda kimse
-dokunmamış**. §4.1'de *«ters yatırım»* dediğim 8.861 satır, **bu ışıkta yeniden
+dokunmamış**. §4.1'de *«ters yatırım»* dediğim 9.274 satır, **bu ışıkta yeniden
 değerlendirilmeli**: yanlış olan yatırımın **kendisi** değil, garsona hiç yatırım
 yapılmamış olması.
 
@@ -4194,7 +4216,7 @@ küpün koyması · beyan kültürü · kesitsel kök-neden cebiri (LMDI'nin do�
 
 🔴 **Yanlış olan mimari değil, ağırlığın dağılımı:** trafiğin %37'sini taşıyan basamak
 **45 satırlık bir istemle** yönetiliyor ve **hiç ölçülmüyor**; %35,5'ini taşıyan basamağa
-**8.861 satır** yazılmış. Ve o 8.861 satırın varlık sebebi olan model
+**9.274 satır** yazılmış. Ve o 9.274 satırın varlık sebebi olan model
 (*«kullanıcı dilbilimsel şemayı elle beslesin»*) **Microsoft ve Tableau tarafından
 piyasadan kaldırıldı**.
 

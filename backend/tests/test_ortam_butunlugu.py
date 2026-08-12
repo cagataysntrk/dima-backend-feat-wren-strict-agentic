@@ -247,13 +247,14 @@ def test_KAPI_KAYBETTIGI_KAPSAMI_BILDIRIR():
         "var (`hizli` ve tam-kapı özeti); ikisi de bildirmeli.")
 
     # ② Liste GERÇEKTEN `belgeler`e bağımlı dosyaları sayıyor mu — boş yeşil avı.
-    from lab.kapi import BELGELERE_BAGLI_KAPILAR
+    from lab.kapi import ORTAMA_BAGLI_KAPILAR
 
-    assert BELGELERE_BAGLI_KAPILAR, "⊘ liste boş — bildirim hiçbir şey söylemez"
-    for ad in BELGELERE_BAGLI_KAPILAR:
+    assert ORTAMA_BAGLI_KAPILAR, "⊘ liste boş — bildirim hiçbir şey söylemez"
+    for ad, (kosul, ne, ipucu) in ORTAMA_BAGLI_KAPILAR.items():
         f = _KOK / "tests" / ad
         assert f.is_file(), f"bildirimde olmayan dosya: {ad}"
         icerik = f.read_text(encoding="utf-8")
-        assert "skipif" in icerik and "belgeler" in icerik, (
-            f"🔴 `{ad}` bildirimde ama `belgeler` yokluğunda ATLAMIYOR — liste bayat. "
-            "Bir bildirimi, bildirdiği şey doğru değilken taşımak gürültüdür.")
+        # ⚠ Dosya GERÇEKTEN ortama bağlı mı — bayat bir bildirim gürültüdür.
+        assert "skip" in icerik, (
+            f"🔴 `{ad}` bildirimde ama hiçbir koşulda ATLAMIYOR — liste bayat.")
+        assert callable(kosul) and ne and ipucu, f"{ad}: bildirim eksik alanlı"

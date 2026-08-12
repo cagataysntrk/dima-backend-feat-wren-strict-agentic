@@ -696,12 +696,6 @@ def route_korpusu_gerekli(degisen: list[str]) -> tuple[bool, str]:
 #: ⚠ Koşum **düşürülmez** (yerel geliştirici `belgeler` olmadan da koşabilmeli); yalnız
 #: kaybedilen kapsam **adıyla** yazılır — `--hizli`nın *«KAPSANMADI»* satırıyla aynı
 #: disiplin (`ADR-0020`: sessiz yutma yok).
-BELGELERE_BAGLI_KAPILAR = (
-    "test_f8_dogruluk_yayini.py",       # yayınlanmış doğruluk sayısı çürümesin
-    "test_karne_kendini_sayar.py",      # §0.6 karne manşeti satırlarla tutsun
-)
-
-
 def _belgeler_var_mi() -> bool:
     """`belgeler/` konteynerden görülüyor mu — iki yerleşim de denenir."""
     import pathlib as _p
@@ -710,15 +704,47 @@ def _belgeler_var_mi() -> bool:
                for a in ("/belgeler", _p.Path(__file__).resolve().parents[2] / "belgeler"))
 
 
+def _repo_koku_var_mi() -> bool:
+    """Repo kökü (backend'in ÜSTÜ) görülüyor mu — `test_belge_duzeni` bunu ister."""
+    import pathlib as _p
+
+    kok = _p.Path(__file__).resolve().parents[2]
+    return (kok / "belgeler").is_dir() and (kok / "backend").is_dir()
+
+
+#: 🔴 `dosya → (koşul, ne kaybedilir, reçete ipucu)`.
+#:
+#: ⟳ **LİSTE İKİ DOSYADAN ÜÇE ÇIKTI (2026-08-12) — ve sebebi bir derstir.** İlk yazımda
+#: yalnız `belgeler/` bağımlılığını saydım; sonra ölçüldü ki `test_belge_duzeni.py`'nin
+#: **yedi** testi de atlanıyor — **başka** bir ortam eksiğinden (repo kökü). Yani liste
+#: bir sınıfı değil, o sınıfın **ilk gördüğüm üyesini** sayıyordu.
+#:
+#: *Bir kapsam kaybını bildirirken tek bir sebebi saymak, ikinci sebebi sessiz bırakır.*
+ORTAMA_BAGLI_KAPILAR: dict[str, tuple] = {
+    "test_f8_dogruluk_yayini.py": (
+        _belgeler_var_mi, "yayınlanmış doğruluk sayısı (§F8)",
+        '-v "$PWD/belgeler:/belgeler:ro"'),
+    "test_karne_kendini_sayar.py": (
+        _belgeler_var_mi, "§0.6 karne manşeti satırlarla tutsun",
+        '-v "$PWD/belgeler:/belgeler:ro"'),
+    "test_belge_duzeni.py": (
+        _repo_koku_var_mi, "belge düzeni denetimi (7 test)",
+        "repo KÖKÜNÜ bağlayın (yalnız `backend/` yetmez)"),
+}
+
+#: Geriye dönük ad — `test_ortam_butunlugu` ve dış okuyucular için.
+BELGELERE_BAGLI_KAPILAR = tuple(ORTAMA_BAGLI_KAPILAR)
+
+
 def _belgeler_bildirimi() -> None:
-    if _belgeler_var_mi():
+    dusen = [(ad, ne, ipucu) for ad, (kosul, ne, ipucu) in ORTAMA_BAGLI_KAPILAR.items()
+             if not kosul()]
+    if not dusen:
         return
-    print("\n🔴 KAPSAM KAYBI: `belgeler/` bağlanmamış → şu kapılar HİÇ KOŞMADI:")
-    for ad in BELGELERE_BAGLI_KAPILAR:
-        print(f"      ↳ {ad}")
-    print("   Bunlar YAYINLANMIŞ SAYILARI koruyan kapılardır (doğruluk yayını · karne\n"
-          "   manşeti). Yeşil bir özet, onların koştuğu anlamına GELMEZ.\n"
-          '   Reçeteye ekleyin:  -v "$PWD/belgeler:/belgeler:ro"')
+    print("\n🔴 KAPSAM KAYBI: ortam eksik → şu kapılar HİÇ KOŞMADI:")
+    for ad, ne, ipucu in dusen:
+        print(f"      ↳ {ad}  ({ne})\n           çare: {ipucu}")
+    print("   Yeşil bir özet, bu kapıların koştuğu anlamına GELMEZ.")
 
 
 def main() -> int:
