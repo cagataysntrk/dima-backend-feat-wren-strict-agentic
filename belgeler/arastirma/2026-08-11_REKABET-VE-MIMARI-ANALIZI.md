@@ -4172,7 +4172,35 @@ nedensel iddia **nedensel grafik beyanı** ister (DoWhy sınıfı) ve bizde **yo
 
 | # | iş | not |
 |---|---|---|
-| ✅ **F1** | Arşivlenmiş `wren-engine` bağımlılığı **KAPATILDI** *(2026-08-11)* | Dört ölçüm: ① konteyner hâlâ **`Restarting (1)`**, `restart: always` ile **sonsuz çökme döngüsü** ② `grep -rn "WREN_ENGINE_URL\|wren-engine" backend/ --include="*.py"` → **SIFIR** (env geçiliyordu, **hiçbir kod okumuyordu**) ③ `CLAUDE.md` zaten yazmış: motor **in-process**, subprocess yok ④ ön-uç/betiklerde 8080 kullanımı yok. **Silinmedi, yorumlandı** (`MIMARI §10`). Ürün doğrulandı: `/health` ok, curl `cube` + `cube+llm` çalışıyor |
+| ✅ **F1** | Arşivlenmiş `wren-engine` bağımlılığı **KAPATILDI** *(2026-08-11)* · ⟳ **VE ORTAMDAN DA TEMİZLENDİ (2026-08-12, kullanıcı kararı)** | Dört ölçüm: ① konteyner hâlâ **`Restarting (1)`**, `restart: always` ile **sonsuz çökme döngüsü** ② `grep -rn "WREN_ENGINE_URL\|wren-engine" backend/ --include="*.py"` → **SIFIR** (env geçiliyordu, **hiçbir kod okumuyordu**) ③ `CLAUDE.md` zaten yazmış: motor **in-process**, subprocess yok ④ ön-uç/betiklerde 8080 kullanımı yok. **Silinmedi, yorumlandı** (`MIMARI §10`). Ürün doğrulandı: `/health` ok, curl `cube` + `cube+llm` çalışıyor |
+> 🔴🔴 **⟳ 08-12 — KARAR DOĞRUYDU AMA ORTAM ONU UYGULAMAMIŞTI.** Kullanıcı sordu: *«eski o
+> kaldırdığımız Wren motorunu ayağa kaldırmadın di mi? bu riski almayalım, onu temizle ve
+> **kural olarak ekle**»*. Ölçüldü: koşan `wren-engine` konteyneri **YOKTU** (risk
+> gerçekleşmemişti) — **ama** koşan backend konteyneri hâlâ
+> `WREN_ENGINE_URL=http://wren-engine:8080` taşıyordu, çünkü o konteyner satır yoruma
+> alınmadan **önceki** compose'dan yaratılmıştı. Ve arşivlenmiş **imaj (679 MB)** diskte
+> duruyordu.
+>
+> ⊙ Değişken **ölü**ydü (okuyan Python kodu: **0**, kendi ölçümüm) — ama *bir bağımlılığı
+> yapılandırmadan çıkarmak onu ortamdan çıkarmaz; çalışan süreç, yazıldığı günün
+> yapılandırmasını taşır.*
+>
+> ✅ **Yapılan:** backend temiz env ile yeniden yaratıldı (47 değişken, kalıntı 0) ·
+> kalıntı konteyner kaldırıldı · imaj silindi · `:8080` boş · **canlı curl** ile yeni
+> motorun çalıştığı doğrulandı (`source=cube`, gerçek SQL, gerçek satır).
+> 🔴 **Kural yazıldı** (`backend/CLAUDE.md` değişmezler) **ve kapıya bağlandı**:
+> `tests/test_arsivlenmis_motor_dirilmiyor.py` (4, mutasyonla doğrulandı).
+>
+> ⚠ **Yan ölçüm — bir araç tuzağı kayda geçsin:** temizliği `docker-compose up -d
+> --force-recreate` ile denedim; `docker-compose` **v1** bu makinede yeni imaj biçiminde
+> `KeyError: 'ContainerConfig'` ile düşüyor **ve düşerken eski konteyneri durduruyor** →
+> backend **40 saniye kapalı** kaldı. Geri alındı, `docker run` yoluyla tamamlandı.
+> *Bir temizlik aracının kendisi, temizlediği şeyden daha büyük bir risk olabilir.*
+>
+> ⚠ **VE ADI BENZEYENİ SİLME:** `demo/wren-project` **yeni** motorun model dizinidir
+> (`DIMA_PROJECT_DIR`); eski motorun kalıntısı sanılıp silinirse **her cevap düşer**.
+> Ayrım kapının içine yazıldı. *İki şeyin adı benziyorsa, kapı onları ADIYLA değil
+> YOLUYLA ayırmalıdır.*
 | ✅ **F2** | `wren cube query --sql-only` ↔ `cube_sql` **yan yana kondu** *(2026-08-11, motor `0.13.2`)* | ⊙ Sorunun cevabı: **hiçbiri.** Beş vakanın **dördü bayt bayt aynı**, çünkü `cube_sql` **zaten `wren_core.cube_query_to_sql`'i çağırıyor**; `cube_router`'ın satırları SQL değil **Türkçe NL → CubeQuery** üretiyor ve motor onu hiç yapmıyor. 🔴 **Ve ölçüm daha büyüğünü buldu: motor desteklemediği alanı SESSİZCE DÜŞÜRÜYOR** — `order`→`ORDER BY` yok · `having`→`HAVING` yok · ay-listesi→DATE'i ay-metniyle kıyaslayan `WHERE` (sıfır satır). Üçü de **uyarısız, `source="cube"` rozetiyle** yanlış sayı üretirdi. Sarmalayıcılarımız fazlalık değil **koruma**; gerekçe artık ölçülü ve kapılı (`test_f2_motor_siniri.py`, 8). **F5'in ön koşulu budur.** ⚠ Prob `order`'ı yanlış şekilde geçip sahte bir kusur üretti; canlı curl *«en yüksek cirolu 5 müşteri»* → **doğru azalan sıralı** |
 | ✅ **F3** | MDL'deki **31 `relationship`** — 🔴 **TEŞHİS ESKİMİŞTİ, ÖLÇÜMLE ÇÜRÜTÜLDÜ** *(2026-08-11)* | ⊙ `§11.2` *«cube_router'da sıfır anma»* diyordu; ölçüldü — ilişkiler **sekiz katmanda** kullanılıyor ve router'daki sessizlik bir kusur **değil**, `§38.4`'ün **JOIN planlayıcı yasağının kendisidir** (router ilişkiyi bilmemeli, sıradan bir boyut görmeli). **Cube derleyicisi** `compose._compose_relationship_dimensions` → **10 `expose:`** bloğu → **9 türev boyut**, **7 cube**'a; model katmanı (`dry_plan`) `is_calculated` kolondan **gerçek JOIN** üretiyor. Fan-out sertifikası **31/31 ölçülü, hepsi `saglikli`**. **Canlı:** `bölüm bazında oee` → `cube=oee · dims=['bolum'] · 5 satır`. 🔴 **Bulunan tek gerçek boşluk KAPATILDI:** soyağacı cümlesi *«…(1 sıçrama).»* ile bitiyor, `"certified" in yanıt` → **False**'tu — ölçüm vardı, **söylenmiyordu**. `fanout.beyan()` (tek sahip, `KAT-1`) eklendi; artık *«— bu ilişki fan-out açısından ölçüldü, sayılar şişmiyor»* |
 | ✅ **F4** | `modernbert-tr-reranker` — 🔴 **ÖLÇÜLDÜ → YAPILMAYACAK**, ve ölçüm **daha büyük bir şey buldu** *(2026-08-11)* | ⊙ Reranker'ın ön kabulü: *«darboğazımız SIRALAMA»*. Ölçüldü — **değil**. Dört şirkette **506 yanlış-cube** vakasının tamamı tek bir sınıf: bir terimi **iki küp de meşru olarak sahipleniyor** (`elektrik` → `enerji_makine` ⊕ `surdurulebilirlik`; `satış` → `ticaret` ⊕ `mal` ⊕ `karlilik`). 🔴 **Cross-encoder bunu «daha iyi tahmin ederek» çözerdi** — yani beyan edilebilir bir belirsizliği **sessiz bir seçime** çevirirdi; `§101.1` ve *beyan kültürü*'nün tam da önlemek için var olduğu şey. Üstelik korpus **iyileşir**, ürün **kötüleşir** — bu depoda üç kez ölçülmüş desen. ⊕ Maliyet: `torch` + ~500 ms, ki rapor `stanza`'yı **aynı gerekçeyle** elemişti (`§13.6`). ⊕ Ve tesisat zaten var: `metrik_kaydi.hakem` `_match_cube`'un **ilk satırında** çağrılıyor. **Doğru iş F4 değil, `§SH` (aşağıda).** |

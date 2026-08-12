@@ -150,6 +150,30 @@ uvicorn app.main:app --reload --port 8000   # dev
 ```
 
 ## Değişmezler (kurallar)
+- 🔴🔴 **ARŞİVLENMİŞ MOTOR DİRİLMEZ — motor IN-PROCESS'tir** *(kullanıcı kararı 2026-08-12)*.
+  Bu depoda **iki ayrı şey** benzer ad taşıyor ve karıştırılmaları ürünü sessizce bozar:
+
+  | | **YENİ — yaşayan** | **ESKİ — arşivlenmiş** |
+  |---|---|---|
+  | ne | `wren.engine.WrenEngine` — **Python kütüphanesi** | `ghcr.io/canner/wren-engine` — **Docker servisi** |
+  | nasıl | `from wren.engine import WrenEngine` (`wren_service.py:18`), subprocess YOK | HTTP `:8080`, `WREN_ENGINE_URL` |
+  | durum | ✅ her cevabın SQL'ini bu derliyor | ⊘ **kapatıldı** (`§F1`), imajı **silindi** (679 MB) |
+
+  ⚠ `demo/wren-project` **YENİ** motorundur (semantik model dizini, `DIMA_PROJECT_DIR`) —
+  adı benziyor diye temizlik turunda silinirse **her cevap düşer**.
+  🔴 **Kural:** `app/`+`lab/` altında `WREN_ENGINE_URL`·`wren-engine`·`WREN_ENGINE_PORT`
+  **geçemez**; `docker-compose.yml`'deki blok **yorumda kalır** (silinmez —
+  `MIMARI §10`). Kapı: `tests/test_arsivlenmis_motor_dirilmiyor.py` (4).
+  ⊙ **Ölçülen kalıntı (2026-08-12):** karar 08-11'de verilip compose doğru yazıldığı
+  hâlde, **koşan konteyner** hâlâ `WREN_ENGINE_URL=http://wren-engine:8080` taşıyordu —
+  çünkü satır yoruma alınmadan **önceki** compose'dan yaratılmıştı. Değişken ölüydü
+  (okuyan kod: **0**), ama ölü bir işaretçi bir gün okunduğunda ölü kalmaz.
+  *Bir bağımlılığı yapılandırmadan çıkarmak onu ortamdan çıkarmaz; çalışan süreç,
+  yazıldığı günün yapılandırmasını taşır.*
+  ⚠ **Ve `docker-compose` (v1) bu makinede backend'i YENİDEN YARATAMIYOR**: yeni imaj
+  biçiminde `KeyError: 'ContainerConfig'` ile düşüyor **ve düşerken eski konteyneri
+  durduruyor** (ölçüldü — backend 40 sn kapalı kaldı). Backend `docker run` ile
+  kaldırılır; `docker-compose up` denenmez.
 - **Yalnızca read-only**: guard `SELECT/WITH` dışını reddeder; asla DDL/DML çalıştırma.
 - **LLM önerir, motor doğrular**: her üretilen SQL çalıştırılmadan önce `dry_plan`'dan geçer.
 - **Sırlar env'de**: DB kimlik bilgileri ve API key asla commit edilmez (`.env` gitignore'da).
