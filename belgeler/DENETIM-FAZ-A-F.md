@@ -45,7 +45,7 @@ Bunlar **ürün kusuru** ya da **sahte güvence**; ötekiler bayat sayı/işaret
 | **⑤** | `test_view_fanout_guard` — **9 view'ın 1'ini** görüyor; `karlilik_src`'nin 2 `LEFT JOIN`'i korunmasız | 🔴 **KÖR KAPI** | 🔵 bekliyor |
 | **⑥** | `kirpilan_esik_yuzde` ön-uçta `*100` → ekranda *«eşiğin altında (|pay| < **%100.0**)»* | 🔴 **BİRİM HATASI (kullanıcıya görünür)** | 🔵 bekliyor |
 | **⑦** | `test_kimlik_uzayi_tek_anlamli` — deseni `**`'ta duruyor, **`D6` ve `D10` çakışmalarını kaçırıyor**; taban kapısı 62 sayıp yeşil kalıyor | 🔴 **KÖR KAPI (bugün yazdığım)** | 🟣 **DOĞRULANDI** *(dar desen YOK ↔ geniş desen VAR)* |
-| **⑧** | `test_c3…:152` · `test_a15…:71` · `test_arsivlenmis…:135` — üçü de **kendi metnini** ölçüyor | 🔴 **DEKORATİF KAPI** | 🔵 bekliyor *(④ ile aynı sınıf)* |
+| **⑧** | `test_c3…:152` · ~~`test_a15…:71`~~ · `test_arsivlenmis…:135` — kendi metnini ölçüyor | 🔴 **DEKORATİF KAPI** | ◐ **A15 KAPANDI**, C3 ve F1 bekliyor |
 
 ---
 
@@ -53,21 +53,21 @@ Bunlar **ürün kusuru** ya da **sahte güvence**; ötekiler bayat sayı/işaret
 
 | # | kalem | rapor | **ÖLÇÜLEN** | durum |
 |---|---|---|---|---|
-| **A1** | garson korpusu | ✅ *«BAĞLANDI»* | ◐ **bağlı ama hiçbir olağan koşumda KOŞMUYOR**: `YEREL_KAPI=("korpus","gercek")` → yerel kapıda yok; `--hepsi`'de `_garson_korpusu_kosulabilir()` **False** (env'siz). 🔴 Diskteki **en yeni** artefakt (08-12 10:58) `route 9·garson 2·orkestra 0` → **11/21**, taban **17** → `kapi()` kuralına göre **KIRMIZI**; rapor **18/21** yayınlıyor. Kaset ıskası mı gerçek gerileme mi — **ayırt eden yok** | 🔵 |
+| **A1** | garson korpusu | ✅ *«BAĞLANDI»* | ◐ **bağlı ama hiçbir olağan koşumda KOŞMUYOR**: `YEREL_KAPI=("korpus","gercek")` → yerel kapıda yok; `--hepsi`'de `_garson_korpusu_kosulabilir()` **False** (env'siz). 🔴 Diskteki **en yeni** artefakt (08-12 10:58) `route 9·garson 2·orkestra 0` → **11/21**, taban **17** → `kapi()` kuralına göre **KIRMIZI**; rapor **18/21** yayınlıyor. Kaset ıskası mı gerçek gerileme mi — **ayırt eden yok** | ✅ |
 | **A2** | cevapsız manşet | ✅ | ✅ gerçek (`lab/nl_corpus.py:534`, f-string append) | ⊘ *(iddia doğru)* |
 | **A3** | şişme beyanı | ✅ | ✅ gerçek (`lab/nl_corpus.py:544-545`) | ⊘ |
-| **A4** | kurulum süresi | **işaretsiz** | 🔴 **HİÇBİR KARAR YAZILMAMIŞ** — raporda 2 kez geçiyor (`:3332`, `:4234`), karne #27 `🔴 YOK`. FAZ 0'ın **tek işaretsiz** kalemi; `§40`'ın kendi kuralını (*«kararı yazılmadıkça kapanmaz»*) ihlal ediyor | 🔵 |
-| **A5** | `syrupy` | ⊘ red | ◐ karar doğru (paket **yok**), **gerekçe varsayım**: *«30+ kapı yapıya bağlı»* hiç sayılmamış | 🔵 |
+| **A4** | kurulum süresi | **işaretsiz** | 🔴 **HİÇBİR KARAR YAZILMAMIŞ** — raporda 2 kez geçiyor (`:3332`, `:4234`), karne #27 `🔴 YOK`. FAZ 0'ın **tek işaretsiz** kalemi; `§40`'ın kendi kuralını (*«kararı yazılmadıkça kapanmaz»*) ihlal ediyor | ✅ |
+| **A5** | `syrupy` | ⊘ red | ◐ karar doğru (paket **yok**), **gerekçe varsayım**: *«30+ kapı yapıya bağlı»* hiç sayılmamış | ✅ |
 | **A6** | `test-suite-sql-eval` | ⏸ park | ✅ şart yazılı **ve bugün doğru** (`sessiz_yanlis=7`, payda `2286`) | ⊘ |
-| **A7** | EHRSQL güvenilirlik | ✅ yayınlandı | ◐ **YAYINLANDI, KORUMASIZ** — `test_f8_dogruluk_yayini.py`'de bu bölüme ait **sıfır** yüklem; bölüm silinse süit yeşil kalır | 🔵 |
-| **A8** | Inspect AI `stderr` | ✅ | ◐ **YAYINLANDI, KORUMASIZ** (Wilson aralıkları kapısız). ⊙ Ve yetenek **yeni değil**: `eval/run.py` `coverage_ci95`'i **2026-07-30**'dan beri taşıyor (`9456d21`), A8 *«bu turda yapıldı»* diyor | 🔵 |
+| **A7** | EHRSQL güvenilirlik | ✅ yayınlandı | ◐ **YAYINLANDI, KORUMASIZ** — `test_f8_dogruluk_yayini.py`'de bu bölüme ait **sıfır** yüklem; bölüm silinse süit yeşil kalır | ✅ |
+| **A8** | Inspect AI `stderr` | ✅ | ◐ **YAYINLANDI, KORUMASIZ** (Wilson aralıkları kapısız). ⊙ Ve yetenek **yeni değil**: `eval/run.py` `coverage_ci95`'i **2026-07-30**'dan beri taşıyor (`9456d21`), A8 *«bu turda yapıldı»* diyor | ✅ |
 | **A9** | `promptfoo` | ⊘ red | ✅ ölçüme dayalı ve doğru (`eval/run.py` gerçekten selective-prediction) | ⊘ |
 | **A10** | `Dr.Spider` sağlamlık | ✅ | 🔴🔴 **KAPI ÖLÜYDÜ** → **ONARILDI (bugün)**: yüklem `cube_query.cube`'a bağlandı · 2 skip'li çift ölçülmüş 4 çiftle değiştirildi · **ölçülen 2 gerçek devir vakası** (`toplam ciro`→`toplm ciro`, `ortalama oee`→`ortalama oe`) ayrı bir *sessiz-yanlış* kapısına kondu · **meta kapı**: hiçbir vaka atlanamaz. **10 geçti · 0 atlandı** | ✅ |
 | **A11** | TURSpider | ⏸ park | ✅ kodda iz yok, şart yazılı | ⊘ |
-| **A12** | tur bazında ölçüm | ✅ | ◐ **kod var, kanıt+kapı yok**: en yeni artefakt `tur` sütunu **taşımıyor** (kod commit'inden **önce** yazılmış) → tablo hiç üretilmemiş. Rapor *«3 zincir · 11 tur»*, `KORPUS` **2 zincir · 8 tur** (tur≥2 paydası **6**). 🔴 Karne satır 10 hâlâ `🟡 tur bazında ÖLÇÜLMÜYOR` → **kendi içinde çelişki** | 🔵 |
-| **A13** | plan ayrışması | ✅ | ◐ araç gerçek (`/stats/plan`), **kapı yok**, sayaç bellek içi. Canlı: `tek_adimli 3 · cok_adimli 0` — yayınlanan %79'u ne doğrular ne çürütür, **korunmadığını** gösterir | 🔵 |
+| **A12** | tur bazında ölçüm | ✅ | ◐ **kod var, kanıt+kapı yok**: en yeni artefakt `tur` sütunu **taşımıyor** (kod commit'inden **önce** yazılmış) → tablo hiç üretilmemiş. Rapor *«3 zincir · 11 tur»*, `KORPUS` **2 zincir · 8 tur** (tur≥2 paydası **6**). 🔴 Karne satır 10 hâlâ `🟡 tur bazında ÖLÇÜLMÜYOR` → **kendi içinde çelişki** | ✅ |
+| **A13** | plan ayrışması | ✅ | ◐ araç gerçek (`/stats/plan`), **kapı yok**, sayaç bellek içi. Canlı: `tek_adimli 3 · cok_adimli 0` — yayınlanan %79'u ne doğrular ne çürütür, **korunmadığını** gösterir | ✅ |
 | **A14** | hava boşluğu | ✅ *(7)* | ✅ gerçek ve sağlam — ama kapı sayısı **9** (rapor 7 diyor) | 🔵 *(sayı)* |
-| **A15** | Wren `evals/` | ⊘ **ve** ⏸ | 🔴 **İKİ FARKLI İŞARET AYNI BELGEDE**: `:4476`=`⊘ YAPILMIYOR`, `:4487`+`:4863`=`⏸ PARK`. 🔴 Kapının 3. testi `assert "eval" in kapi` — `"eval"` dosyada **22 kez** geçiyor → **hiçbir mutasyonla kırmızı veremez** | 🔵 |
+| **A15** | Wren `evals/` | ⊘ **ve** ⏸ | 🔴 **İKİ FARKLI İŞARET AYNI BELGEDE**: `:4476`=`⊘ YAPILMIYOR`, `:4487`+`:4863`=`⏸ PARK`. 🔴 Kapının 3. testi `assert "eval" in kapi` — `"eval"` dosyada **22 kez** geçiyor → **hiçbir mutasyonla kırmızı veremez** | ✅ |
 
 **A · iyileştirme önerileri (ajan):** ① A10 yüklemini düzelt + `skipped==0` meta-testi *(yapıldı)* · ② `test_f8`'e Wilson **ve** EHRSQL yüklemleri ekle (`85+1+339+11.732+45 == 14.957`) · ③ `test_a15`'i `ADIM_ANAHTARLARI`/`TOPLUDA_YOK` desenine bağla + A15'in tek işareti olsun · ④ yeni `test_a12_tur_kirilimi.py` + `§40.8` birimini düzelt + karne satır 10 hizala · ⑤ `_garson_korpusu_kosulabilir()` **hangi ön koşulun** düştüğünü söylesin; A1 bir faz-sonu demetine girsin; 11/21 araştırılsın; **A4'e karar yazılsın**.
 
