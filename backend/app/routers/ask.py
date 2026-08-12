@@ -1429,14 +1429,59 @@ def _intent_uyusmazlik_chipi(question: str, eksen: str, adaylar: list[dict],
             kind={"dimensions": "dimension", "measures": "measure"}.get(eksen, "measure"),
             cube_query=cq,
         ))
-    soru = {"cube": "Hangi konuyu kastettin?", "measures": "Hangi ölçüyü istiyorsun?",
-            "dimensions": "Hangi kırılımı istiyorsun?"}.get(eksen, "Hangisini istiyorsun?")
+    # 🔴🔴 `§S06` — **SORULAN SORU, EKSİK OLAN ŞEYLE UYUŞMUYORDU.**
+    #
+    # Canlıda ölçüldü (curl, 2026-08-12) — *«bu ay açılan partileri listele»*:
+    #
+    #     note              = «Hangi KIRILIMI istiyorsun?»
+    #     diyalog_durumu    = {"acik_slotlar": ["olcu"],
+    #                          "kismi_cq": {"dimensions": ["makine","renk","musteri"],
+    #                                       "measures": []}}      ← KIRILIM ZATEN ÜÇ TANE
+    #     next_steps        = [+ ortalama hız] [+ fire] …          ← chip'ler ÖLÇÜ sunuyor
+    #
+    # Yani **chip'ler doğruydu, soru yanlıştı**: sistem elinde üç kırılım varken
+    # *«hangi kırılım»* diye soruyor, eksik olan **ölçü**yü sormuyordu. Kullanıcı
+    # sorulan soruyu cevaplayamaz — çünkü sorunun cevabı zaten sorgunun içinde.
+    #
+    # 🆃 **İki ölçüt zıt yöne gidiyordu:** `eksen` garsonun **örnekleri arasındaki
+    # ayrışmayı** söyler (self-consistency %67); `diyalog.acik_slotlar` **sorgunun
+    # kendisinde neyin boş olduğunu**. İkincisi veriyi okur, birincisi oyları — ve
+    # kullanıcının gördüğü şey **eksik olan**dır.
+    #
+    # ⊙ İkinci bir yuva çözümleyicisi yazılmadı (`KAT-1`): `diyalog.acik_slotlar` **tek
+    # sahiptir** ve burada yalnız **çağrılıyor**. `eksen` yedek olarak kalır — yuva
+    # analizi bir şey söylemezse (ör. yalnız küp ayrışmışsa) eski davranış birebir.
+    soru = netlestirme_sorusu(adaylar, eksen)
     return AskResponse(
         question=question, source=None, note=soru,
         next_steps=adimlar,
         trace=[f"Intent-path: self-consistency uyuşmazlığı (%{uyum*100:.0f} uyum / {k} "
                f"örnek, eksen={eksen}) → netleştirme, tahmin YOK"],
     )
+
+
+def netlestirme_sorusu(adaylar: list[dict] | None, eksen: str | None) -> str:
+    """Netleştirme sorusu — **eksik olan yuvadan** türer, garsonun oy ayrışmasından değil.
+
+    ⚠ Saf ve modül düzeyinde: yüklem **doğrudan** sınanabilsin diye. Gövdenin içine
+    gömülü bir karar, mutasyonla kanıtlanamaz — kapı yalnız *«çağrıldı mı»*yı görür,
+    *«doğru mu»*yu değil 🅯.
+    """
+    from app import diyalog as _dy
+
+    acik = None
+    if adaylar:
+        ortak = [s for s in _dy.acik_slotlar(adaylar[0])
+                 if all(s in _dy.acik_slotlar(cq) for cq in adaylar[1:])]
+        acik = ortak[0] if ortak else None
+    if acik:
+        yanit = {_dy.SLOT_CUBE: "Hangi konuyu kastettin?",
+                 _dy.SLOT_OLCU: "Hangi ölçüyü istiyorsun?"}.get(acik)
+        if yanit:
+            return yanit
+    # yedek: yuva analizi susarsa **eski davranış birebir** (`KURAL B` kenarı)
+    return {"cube": "Hangi konuyu kastettin?", "measures": "Hangi ölçüyü istiyorsun?",
+            "dimensions": "Hangi kırılımı istiyorsun?"}.get(eksen, "Hangisini istiyorsun?")
 
 
 def _llm_source(llm, used_rule: bool) -> str:

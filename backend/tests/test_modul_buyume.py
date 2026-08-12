@@ -1525,6 +1525,20 @@ MUAFIYET_ASK_DOSYA = [
     # 🅥 *bir tavanın pratikte var olması, ilan edilmiş olması demek değildir*.
     # Tavan adım sayısına eşitlendi: **davranış aynı**, sınır artık **yazılı**.
     # ⊙ Δ ölçüldü (2875 − 2873), tahmin değil.
+    # 🔴 `§S06` (08-13) — **YÜKLEMİ TEST EDİLEBİLİR YERE TAŞIMANIN BEDELİ.**
+    # Netleştirme sorusu `ask()` gövdesinin içinde kuruluyordu ve oradaki bir kararı
+    # **mutasyonla kanıtlamak imkânsızdı**: kapı yalnız *«çağrıldı mı»*yı görüyor,
+    # *«doğru mu»*yu görmüyordu 🅯. Karar modül düzeyine (`netlestirme_sorusu`) çıktı;
+    # `ask()` **büyümedi** (1444 sabit), dosya toplamı **+13**.
+    # ⊙ Δ ölçüldü (2888 − 2875), tahmin değil. Bu, tavanın **istediği** yön:
+    # gövdeden çıkan kod dosyada kalır ama **sınanabilir** olur.
+    ("s06-netlestirme-sorusu-modul-duzeyinde", 13,
+     "🔴 `§S06` — netleştirme sorusu artık **eksik olan yuvadan** türüyor "
+     "(`diyalog.acik_slotlar`), garsonun oy ayrışmasından (`eksen`) değil. Canlıda "
+     "ölçüldü: üç kırılımı olan ama ölçüsü olmayan bir adayda sistem *«hangi kırılım»* "
+     "diye soruyordu. Karar `ask()` gövdesinden **modül düzeyine** çıkarıldı ki "
+     "mutasyonla kanıtlanabilsin; `ask()` kod satırı **değişmedi** (1444). "
+     "`sha=HEAD~0` · kapı `test_s06_sorulan_soru_eksik_olan.py`"),
     ("c2-prompt-enhance-butcesi-ilan-edildi", 2,
      "🔴 `§C2` — `_prompt_enhance_dene` planlayıcısı `sorgu=0` (SINIRSIZ eksen) ile "
      "kuruluyordu ve bu uçta `servis:wren` VERİLDİĞİ için sorgu koşabiliyordu. Tavan "
