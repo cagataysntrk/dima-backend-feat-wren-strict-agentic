@@ -31,6 +31,8 @@ from __future__ import annotations
 import pathlib
 import sys
 
+import pytest
+
 _KOK = pathlib.Path(__file__).resolve().parents[1]
 if str(_KOK) not in sys.path:                          # pragma: no cover
     sys.path.insert(0, str(_KOK))
@@ -41,7 +43,15 @@ def test_OLCUM_TABANI_BELGE_VE_ISARETLER_YERINDE():
     from lab.belge_dizini import BAS, BELGELER, SON
 
     for ad in BELGELER:
-        metin = (_KOK / ad).read_text(encoding="utf-8")
+        yol = _KOK / ad
+        # ⚠ `belgeler/` mount'u yoksa bu dosya YOK — ve `read_text()` çirkin bir
+        # `FileNotFoundError` fırlatır. `CLAUDE.md`'nin kendi dersi: ortam eksiğinde
+        # susmak dürüstlüktür, ama **susmayı duyurmamak** kapsamı sessizce kırpar.
+        if not yol.is_file():
+            pytest.skip(
+                f"⊘ `{ad}` YOK — bu kapı ÖLÇMEDEN atlandı. Koşum satırına "
+                '`-v "$PWD/belgeler:/belgeler:ro"` eklenmeli.')
+        metin = yol.read_text(encoding="utf-8")
         assert BAS in metin and SON in metin, (
             f"⊘ `{ad}` içinde dizin işaretleri (`{BAS}` / `{SON}`) yok — dizin "
             "yazılamaz.")
@@ -56,8 +66,11 @@ def test_DIZIN_TAZE():
     *Bir dizinin bağlantısı da bir vaattir* 🆈 — tutulmuyorsa dizin, yokluğundan
     **kötüdür**: okuyan ona güvenir.
     """
-    from lab.belge_dizini import kos
+    from lab.belge_dizini import BELGELER, kos
 
+    eksik = [a for a in BELGELER if not (_KOK / a).is_file()]
+    if eksik:
+        pytest.skip(f"⊘ ölçülemedi, dosya yok: {eksik} — `belgeler/` mount'u eksik.")
     bayat = [ad for ad, d in kos(yaz=False).items() if d["durum"] != "taze"]
     assert not bayat, (
         f"🔴 BELGE DİZİNİ BAYATLADI: {bayat}\n"

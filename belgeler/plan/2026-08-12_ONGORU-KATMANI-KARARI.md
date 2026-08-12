@@ -6,6 +6,63 @@
 
 ---
 
+<!-- DIZIN:BAS -->
+
+## 🧭 DİZİN — *üretilir, elle yazılmaz* (`lab/belge_dizini.py`)
+
+⊙ **2546 satır · 46 bölüm · 104 alt başlık.** Şişkinliğin çaresi silmek değil **gezinmek**: önce bölümü seç, sonra bölüm içinde ara.
+
+| # | bölüm | satır | alt başlık |
+|---|---|---|---|
+| 1 | [§0 · TEK CÜMLE](#0-tek-cümle) | `66` | 0 |
+| 2 | [§1 · BUGÜN NEREDEYİZ — ölçülmüş durum](#1-bugün-neredeyiz-ölçülmüş-durum) | `83` | 3 |
+| 3 | [§2 · TEŞHİS — kusurun ortak kökü](#2-teşhis-kusurun-ortak-kökü) | `141` | 0 |
+| 4 | [§3 · KARAR](#3-karar) | `161` | 3 |
+| 5 | [§4 · MİMARİ DEĞİŞİKLİK — ne kadar küçük](#4-mimari-değişiklik-ne-kadar-küçük) | `202` | 3 |
+| 6 | [§5 · ARAYÜZ — üç mekanizma](#5-arayüz-üç-mekanizma) | `242` | 3 |
+| 7 | [§6 · BEŞ THREAD — basitten karmaşığa](#6-beş-thread-basitten-karmaşığa) | `299` | 6 |
+| 8 | [§7 · ÜÇ KADEME — ve karışmamalılar](#7-üç-kademe-ve-karışmamalılar) | `430` | 0 |
+| 9 | [§8 · SÖZLÜK — girdiden ÇIKTIYA](#8-sözlük-girdiden-çiktiya) | `450` | 3 |
+| 10 | [§9 · ŞİRKET / SEKTÖR / DİKEY ÇARPIMI — zaten çözülmüş](#9-şirket-sektör-dikey-çarpimi-zaten-çözülmüş) | `496` | 1 |
+| 11 | [§10 · NE DEĞİŞMİYOR — `§38.4` dokunulmazları](#10-ne-değişmiyor-384-dokunulmazları) | `543` | 0 |
+| 12 | [§11 · TRADE-OFF TABLOSU](#11-trade-off-tablosu) | `563` | 0 |
+| 13 | [§12 · RİSKLER VE ÖLÜM ŞARTLARI](#12-riskler-ve-ölüm-şartlari) | `577` | 3 |
+| 14 | [§13 · ÖLÇÜM PLANI — hiçbir satır yazılmadan önce](#13-ölçüm-plani-hiçbir-satır-yazılmadan-önce) | `614` | 3 |
+| 15 | [§14 · YOL HARİTASI — sıra](#14-yol-haritasi-sıra) | `654` | 0 |
+| 16 | [§15 · SEKTÖR KONUMU — devrimsel mi?](#15-sektör-konumu-devrimsel-mi) | `688` | 5 |
+| 17 | [§16 · KARAR ÖZETİ](#16-karar-özeti) | `784` | 0 |
+| 18 | [§17 · BU BELGENİN SINIRI](#17-bu-belgenin-siniri) | `803` | 0 |
+| 19 | [§18 · SEMANTİK VE VEKTÖREL KATMAN — nasıl yapılır](#18-semantik-ve-vektörel-katman-nasıl-yapılır) | `830` | 11 |
+| 20 | [§19 · TEK TUŞLA AÇ/KAPA — ve bayraklama](#19-tek-tuşla-açkapa-ve-bayraklama) | `1111` | 5 |
+| 21 | [§20 · KARAR MATRİSİ — her ihtimal, önceden verilmiş karar](#20-karar-matrisi-her-ihtimal-önceden-verilmiş-karar) | `1183` | 5 |
+| 22 | [§21 · BU EKİN SINIRI](#21-bu-ekin-siniri) | `1243` | 0 |
+| 23 | [§22 · SEKTÖRÜN REDDETTİĞİ ŞEY BİZİMKİ DEĞİL — altı eksende](#22-sektörün-reddettiği-şey-bizimki-değil-altı-eksende) | `1264` | 0 |
+| 24 | [§23 · 🔴🔴 ÖLÇÜLMÜŞ SÜRPRİZ — SIRALAMA ZATEN VAR, **LİSTE ATILIYOR**](#23-ölçülmüş-sürpriz-siralama-zaten-var-liste-atiliyor) | `1291` | 4 |
+| 25 | [§24 · 🔴🔴 ÇÖZÜM: **MARJ KAPILI OTO-İCRA** — ikilemi bitiriyor](#24-çözüm-marj-kapili-oto-icra-ikilemi-bitiriyor) | `1355` | 4 |
+| 26 | [§25 · PÜRÜZLER — ve her birinin çözümü](#25-pürüzler-ve-her-birinin-çözümü) | `1414` | 1 |
+| 27 | [§26 · RİSKE ATMAMAK — kademeli teslim sırası](#26-riske-atmamak-kademeli-teslim-sırası) | `1453` | 0 |
+| 28 | [§27 · GÜNCELLENMİŞ KARAR ÖZETİ](#27-güncellenmiş-karar-özeti) | `1480` | 0 |
+| 29 | [§28 · GARSON = **SEÇİLMEYENİN PILL'İNİ HAZIRLAYAN**](#28-garson-seçilmeyenin-pillini-hazirlayan) | `1501` | 6 |
+| 30 | [§29 · 🔴🔴 DÖRDÜNCÜ ÖLÇÜM — `§24` ZATEN YAZILMIŞ, **ADIYLA**](#29-dördüncü-ölçüm-24-zaten-yazilmiş-adiyla) | `1603` | 3 |
+| 31 | [§30 · 🔴🔴 GÖÇ DESENİ **ZATEN KANITLANMIŞ** — `route()` imzası DEĞİŞMEZ](#30-göç-deseni-zaten-kanitlanmiş-route-imzası-değişmez) | `1687` | 0 |
+| 32 | [§31 · BİLEŞEN ENVANTERİ — her parça, bugün ↔ sonra](#31-bileşen-envanteri-her-parça-bugün-sonra) | `1721` | 2 |
+| 33 | [§32 · UÇTAN UCA AKIŞ — önce ↔ sonra](#32-uçtan-uca-akiş-önce-sonra) | `1762` | 0 |
+| 34 | [§33 · HER İHTİMAL — girdi × durum matrisi](#33-her-ihtimal-girdi-durum-matrisi) | `1802` | 3 |
+| 35 | [§34 · SEKİZ ADIM — dosya · sözleşme · kapı · geri alma](#34-sekiz-adim-dosya-sözleşme-kapı-geri-alma) | `1852` | 8 |
+| 36 | [§35 · SÖZLEŞME DEĞİŞİKLİKLERİ — tam liste](#35-sözleşme-değişiklikleri-tam-liste) | `1964` | 0 |
+| 37 | [§36 · NE KIRILABİLİR — ve kapısı](#36-ne-kirilabilir-ve-kapısı) | `1979` | 0 |
+| 38 | [§37 · GERİ ALMA — üç seviye](#37-geri-alma-üç-seviye) | `1996` | 0 |
+| 39 | [§38 · TAKVİM DEĞİL, **KAPI SIRASI**](#38-takvim-değil-kapi-sirasi) | `2011` | 0 |
+| 40 | [§39 · BU BÖLÜMÜN SINIRI](#39-bu-bölümün-siniri) | `2033` | 0 |
+| 41 | [§40 · DEMO YÜZEYİ — ne kanıtlıyoruz, ne ERTELİYORUZ](#40-demo-yüzeyi-ne-kanıtlıyoruz-ne-erteliyoruz) | `2056` | 8 |
+| 42 | [§41 · İKİ ÖLÇÜM, İKİ DÜZELTME — fazlardan önce](#41-iki-ölçüm-iki-düzeltme-fazlardan-önce) | `2205` | 2 |
+| 43 | [§42 · FAZLAR — alt maddeleriyle](#42-fazlar-alt-maddeleriyle) | `2276` | 9 |
+| 44 | [§43 · «ÖTEKİ ZARAR GÖRMESİN» — çapraz kontrol listesi](#43-öteki-zarar-görmesin-çapraz-kontrol-listesi) | `2493` | 0 |
+| 45 | [§44 · FAZ BAĞIMLILIK HARİTASI](#44-faz-bağimlilik-haritasi) | `2515` | 0 |
+| 46 | [§45 · BU PLANIN SINIRI](#45-bu-planin-siniri) | `2534` | 0 |
+
+<!-- DIZIN:SON -->
+
 ## §0 · TEK CÜMLE
 
 > Cevaplama merdiveninin **6. basamağının çıktısı** bir `CubeQuery` **kararı** olmaktan
@@ -596,6 +653,10 @@ Kullanıcı **her soruda** kontrol ediyor. **Kontrol edilebilir bir numara, numa
 
 ## §14 · YOL HARİTASI — sıra
 
+> ⟳ **BU BÖLÜM YERİNİ `§42` (faz planı) + `§44` (bağımlılık haritası)'YE BIRAKTI** *(2026-08-13)*. Silinmedi — ara kararların
+> kaydı olarak duruyor (`MIMARI.md §10`: *«kapananlar işaretlenir, silinmez»*).
+> 🔴 **Uygulama için yürürlükteki metin `§42`'dir.**
+
 ```
 0  🔴 ÖN KOŞUL     §13.1 gömme ölçümü            ─ eşik altındaysa BURADA DURULUR
                     ↓
@@ -721,6 +782,10 @@ deterministik omurga çalışır.
 ---
 
 ## §16 · KARAR ÖZETİ
+
+> ⟳ **BU BÖLÜM YERİNİ `§27` (güncellenmiş)'YE BIRAKTI** *(2026-08-13)*. Silinmedi — ara kararların
+> kaydı olarak duruyor (`MIMARI.md §10`: *«kapananlar işaretlenir, silinmez»*).
+> 🔴 **Uygulama için yürürlükteki metin `§27`'dir.**
 
 | soru | cevap |
 |---|---|
@@ -1387,6 +1452,10 @@ görünen bir gerileme** üretebilir — ve bu deponun kayıtlı en pahalı tuza
 
 ## §26 · RİSKE ATMAMAK — kademeli teslim sırası
 
+> ⟳ **BU BÖLÜM YERİNİ `§42` + `§44`'YE BIRAKTI** *(2026-08-13)*. Silinmedi — ara kararların
+> kaydı olarak duruyor (`MIMARI.md §10`: *«kapananlar işaretlenir, silinmez»*).
+> 🔴 **Uygulama için yürürlükteki metin `§42` + `§44`'dir.**
+
 Her adım **tek başına değerli** ve **tek başına geri alınabilir** olmalı:
 
 | # | adım | tek başına değeri | geri alma |
@@ -1582,7 +1651,10 @@ chip**. Birleştirme hedefi:
 ```
 app/emin_miyim.py  (yeni · TEK SAHİP)
    karar(adaylar) → OTO_ICRA | ADAYLARI_GOSTER | SINIR_BEYANI
-   · skorlar 0–1'e normalize (harf sayısı da, oran da, oy da)
+   · ⟳🔴 **BU SATIR `§41.1` İLE GEÇERSİZ.** *«Hepsini tek sayıya normalize et»*
+     **bir REGRESYON olurdu**: `_TYPO_HIGH/MID/GAP` **canlı bulgularla** kalibre edilmiş
+     (`fizibilite/profitability = 0.6087` → 0.60 eşiği yanlış öneri üretmişti).
+     ✅ Doğrusu: `emin_miyim` **ŞEKLİ** birleştirir, **sabitleri çağıran korur** → `§41.1`
    · TABAN  : altındaysa hiçbir aday yeterli değil → sınır beyanı
    · MARJ   : birinci-ikinci farkı → oto-icra ya da göster
    · beş çağıran da BURAYA sorar (KAT-1)
@@ -1779,13 +1851,17 @@ hiçbir şey değişmez. Tüm dönüşüm bu çizginin solunda kalır.
 
 ## §34 · SEKİZ ADIM — dosya · sözleşme · kapı · geri alma
 
+> ⟳ **BU BÖLÜM YERİNİ `§42` — alt maddeler ORADA, burada YOK'YE BIRAKTI** *(2026-08-13)*. Silinmedi — ara kararların
+> kaydı olarak duruyor (`MIMARI.md §10`: *«kapananlar işaretlenir, silinmez»*).
+> 🔴 **Uygulama için yürürlükteki metin `§42` — alt maddeler ORADA, burada YOK'dir.**
+
 ### Adım 1 · `emin_miyim.py` — **beş tanımı birleştir** 🔴 öneri katmanından BAĞIMSIZ
 
 ```
 DOSYA   app/emin_miyim.py (yeni) · çağıranlar: cube_router ×3 · value_index · llm
 SÖZLEŞME  karar(adaylar, *, taban, marj) -> OTO_ICRA | GOSTER | SINIR
           adaylar: [Aday(kimlik, etiket, skor 0-1, kaynak)]
-          ⚠ TÜM skorlar 0–1'e normalize (harf sayısı da, oran da, oy da)
+          ⟳🔴 GEÇERSİZ — bkz. `§41.1`: sabitler ÇAĞIRANDA kalır, yalnız ŞEKİL birleşir
 KAPI    test_emin_miyim_tek_sahip.py
           ① beş çağıranın hiçbiri kendi marjını hesaplamıyor (ast)
           ② `value_index.auto_fix` davranışı BİREBİR korunuyor (mutasyonlu)
@@ -1933,6 +2009,10 @@ katalogda kalır. Arayüz tamamen geri alınsa bile **katalog zenginleşmiş** o
 ---
 
 ## §38 · TAKVİM DEĞİL, **KAPI SIRASI**
+
+> ⟳ **BU BÖLÜM YERİNİ `§44`'YE BIRAKTI** *(2026-08-13)*. Silinmedi — ara kararların
+> kaydı olarak duruyor (`MIMARI.md §10`: *«kapananlar işaretlenir, silinmez»*).
+> 🔴 **Uygulama için yürürlükteki metin `§44`'dir.**
 
 | # | adım | `§13.1` bekler mi | tek başına değerli mi | geri alınabilir mi |
 |---|---|---|---|---|

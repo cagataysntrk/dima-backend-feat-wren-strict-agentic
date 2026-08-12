@@ -53,7 +53,13 @@ BAS, SON = "<!-- DIZIN:BAS -->", "<!-- DIZIN:SON -->"
 #: Dizinlenen belgeler. ⚠ `CLAUDE.md` **bilerek yok**: 21 başlıkla zaten gezilebiliyor
 #: ve bir dizin orada **gürültü** olurdu. *Her şeyi işaretleyen bir ölçüt hiçbir şeyi
 #: işaretlemez.*
-BELGELER = ("MIMARI.md",)
+BELGELER = (
+    "MIMARI.md",
+    # ⟳ 2026-08-13 — öngörü katmanı kararı **52 bölüme** ulaştı ve raporun KENDİ teşhis
+    # ettiği hastalığa yakalandı (*«123 h3 tek düzlemde, o yüzden kullanılamıyor»*).
+    # Kendi ilacımızı kendimize uyguluyoruz.
+    "../belgeler/plan/2026-08-12_ONGORU-KATMANI-KARARI.md",
+)
 
 _H2 = re.compile(r"^## +(.+?)\s*$")
 _H3 = re.compile(r"^### +(.+?)\s*$")
