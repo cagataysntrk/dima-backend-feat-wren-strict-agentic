@@ -696,6 +696,67 @@ gerekçe *«aynı fonksiyon, tek sahipli»* diyordu — doğru, ama **çağıran
 bugün **dokuzuncu yetim uç** olurdu ve bu kapı onu **kırmızı** yapardı. `F`'nin ⊘ kararı
 `G`'nin kapısıyla **tutarlı** çıktı 🆃.
 
+### G.2 ✅ `MIMARI.md` ŞİŞKİNLİĞİ — **çare silmek değil, GEZİNMEK**
+
+Kullanıcı: *«aşırı şişti o yüzden kullanılamıyor.»* **Ölçüldü:** `MIMARI.md` **5.652
+satır · 262 başlık** (h2 **16** · h3 **123**) · `CLAUDE.md` **433 satır · 21 başlık**.
+
+🆚 **Asıl sorun satır sayısı DEĞİL.** 5.652 satır bir mimari otorite için fazla değil;
+**123 eşit görünen alt başlık** arasında aradığını bulamamak fazla. Ve silmek çare
+olamazdı: `MIMARI.md §10` *«kapananlar işaretlenir, silinmez»* ve ㊿ *özeti korumak,
+özetlediğini korumaz* — bir kararın gerekçesi kısaltılırsa altı ay sonra o karar
+**yeniden tartışılır**.
+
+✅ **Yapılan:** `lab/belge_dizini.py` — bölümleri **satır numarasıyla** ve alt başlık
+sayısıyla listeleyen **üretilmiş** dizin (26 satır), `MIMARI.md`'nin başına işaretler
+arasına işlendi. Okuyucu artık **16 bölüm** arasından seçiyor.
+⚠ `CLAUDE.md` **bilerek dizinsiz**: 21 başlıkla zaten geziliyor, dizin orada **gürültü**
+olurdu 🆊.
+
+✅ **Kapı:** `test_g_belge_dizini_taze.py` (**4**, 🅑 belgeye bölüm eklenince kırmızı).
+Dördüncü yüklem **silmeyi de** yasaklıyor: belge 5.652'nin altına düşerse kırmızı.
+
+🔴 **Yazarken İKİ kez yanıldım, ikisi de koda yazıldı:**
+① **Çapa:** `ı`→`i` çeviriyordum; GitHub `ı`'yı **korur** → ürettiğim bağlantılar
+**hiçbir yere gitmezdi**. Görünür ama tıklanmaz bir dizin, dizinsizlikten kötüdür 🆈.
+② ㉛ **Dizin kendini sayıyordu:** blok içindeki `## 🧭 DİZİN` başlığı bölüm sanılıyor,
+her yazım satırları kaydırıyor, dizin **hiçbir zaman** *«taze»* olamıyordu — kendi
+kuyruğunu kovalayan bir kapı. Onarım: blok **taranmıyor** + **sabit nokta** (≤5 geçiş,
+oturmazsa **söylüyor**).
+
+### G.3 ✅ *«TEK YETENEK KAYDI»* — `MIMARI.md §2.0`'a yazıldı
+
+`§38 D6`'nın cümlesi `MIMARI.md`'de **0 eşleşmeydi**; artık `§2.0`'da (`#### 🔴 TEK
+YETENEK KAYDI`). İçerik **rapordan** alındı ㉔: planlayıcının fiil kümesi `app/tools.py`
+kaydından **türetilir**, eşleme **aracın kendi beyanına** (`Arac.fiil`) yazılır, doğrulama
+**içe aktarma anında** koşar — ayrışırsa **uygulama ayağa kalkmaz**. **15/15** eşleşme,
+**31** ilkel, kapı `test_d6_tek_yetenek_kaydi.py`.
+
+⊙ Ve raporun **ölçülmüş dersi** de yazıldı: iddia ilk konduğunda *«tek kayıt»* doğru
+**görünüyordu** (9/15 fiil kayıtlı bir aracı çağırıyordu), ama **6/15 fiilin gövdesi
+kayıtta HİÇ YOKTU** — planlayıcı onları çağırabiliyor, envanter yetki sınıfını
+**bilmiyordu**. *Bir kaydın tekliği, sayısıyla değil kapsamıyla ölçülür.*
+
+---
+
+# ✅ A–G KAPANIŞ KARNESİ
+
+| harf | konu | karar | kapı |
+|---|---|---|---|
+| **A** | iş sözlüğü kullanımdan hasat | ✅ hat kuruluydu, **kolu takıldı** | `test_a_sozluk_hasadi.py` · `test_a_yon_beyani.py` |
+| **B** | route çürütülebilirliği + garson | ✅ `cekilme_sebebi` **türetilmiş** · korpus **40 vaka** | `test_b_cekilme_sebebi.py` · `test_b_sebep_sayaci.py` · `test_b_garson_korpusu.py` |
+| **C** | motorun kullanılmayan yetenekleri | ⊘ 7 metot + 4 alt sistem **gerekçeli**; *«2.000 satır»* iddiası **çürüdü** | `test_wren_bagimliligi_beyanli.py` |
+| **D** | agentic öneriler | ⊘ üçü **zaten kapalıydı**, biri (`kalan`) **bu oturumda** bağlandı | `test_c2_butce_stall.py` |
+| **E** | cevap biçimi + UX | ⊘ dördün **üçü** zaten yapılmıştı; kanca **açılmadı** | `test_e1_grafik_niyeti_yapidan.py` |
+| **F** | LLM token / maliyet | ⚠ ölçülüyor ama **okunamıyor**; uç **açılmadı**, boşluk **adlandırıldı** | `test_f_maliyet_zinciri.py` |
+| **G** | repo düzeni | ✅ **yetim uç kapısı** + belge dizini + `§2.0` cümlesi | `test_g_yetim_uc_kapisi.py` · `test_g_belge_dizini_taze.py` |
+
+## Bu denetimin TEK cümlelik dersi
+
+㊷ **on bir kez** doğrulandı: bir denetim kartının asıl işi **işi yapmak** değil,
+**yapılıp yapılmadığını ölçmektir**. Yirmi iddia ölçüm altında daraldı — ve **on tanesi
+benim kendi probum ya da kapımdı**. En pahalı hata, olmayan bir kusuru *«düzeltmek»*
+olurdu.
 ### ⏭ `G`'de kalan
 
 **G.2** `MIMARI.md` şişkinliği — ölçüldü: **5.652 satır · 262 başlık** (h2 **16** · h3

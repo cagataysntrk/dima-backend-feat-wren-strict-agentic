@@ -11,6 +11,33 @@
 
 ---
 
+<!-- DIZIN:BAS -->
+
+## 🧭 DİZİN — *üretilir, elle yazılmaz* (`lab/belge_dizini.py`)
+
+⊙ **5696 satır · 16 bölüm · 123 alt başlık.** Şişkinliğin çaresi silmek değil **gezinmek**: önce bölümü seç, sonra bölüm içinde ara.
+
+| # | bölüm | satır | alt başlık |
+|---|---|---|---|
+| 1 | [§0 · ⟳ YÜRÜRLÜKTE — YOL HARİTASININ OTORİTE ALDIĞI BAŞLIKLAR  *(FAZ −1/Kutu B)*](#0-yürürlükte-yol-haritasinin-otorite-aldiği-başliklar-faz-1kutu-b) | `41` | 0 |
+| 2 | [1. Sistem nedir, ne DEĞİLDİR](#1-sistem-nedir-ne-değildir) | `122` | 3 |
+| 3 | [2. Cevaplama merdiveni — normatif akış](#2-cevaplama-merdiveni-normatif-akış) | `175` | 4 |
+| 4 | [3. Semantik katman anatomisi — asıl karışıklık kaynağı](#3-semantik-katman-anatomisi-asıl-karışıklık-kaynağı) | `491` | 8 |
+| 5 | [4. DEĞİŞMEZLER — "bunu bozarsan sistem yalan söyler"](#4-değişmezler-bunu-bozarsan-sistem-yalan-söyler) | `749` | 0 |
+| 6 | [5. YAPILMAYACAKLAR — gerekçesiyle](#5-yapilmayacaklar-gerekçesiyle) | `817` | 0 |
+| 7 | [6. Bilinen açık kusurlar (2026-08-02 itibarıyla, hepsi doğrulandı)](#6-bilinen-açık-kusurlar-2026-08-02-itibarıyla-hepsi-doğrulandı) | `846` | 58 |
+| 8 | [7. Ölçüm sözleşmesi](#7-ölçüm-sözleşmesi) | `4103` | 6 |
+| 9 | [8. Belge otoritesi ve belgelenmiş çelişkiler](#8-belge-otoritesi-ve-belgelenmiş-çelişkiler) | `4497` | 3 |
+| 10 | [9. Hedef mimari — nereye gidiyoruz](#9-hedef-mimari-nereye-gidiyoruz) | `4619` | 2 |
+| 11 | [11. Agentic katman sözleşmesi (Faz F1 — araç kaydı kuruldu)](#11-agentic-katman-sözleşmesi-faz-f1-araç-kaydı-kuruldu) | `4743` | 10 |
+| 12 | [12. Konuşma sözleşmesi — thread bağlamsallığı (Faz G5 kuruldu)](#12-konuşma-sözleşmesi-thread-bağlamsallığı-faz-g5-kuruldu) | `4997` | 12 |
+| 13 | [13. Görsel dilbilgisi — semantik metadata görselleştirmeyi besler (Faz I1)](#13-görsel-dilbilgisi-semantik-metadata-görselleştirmeyi-besler-faz-i1) | `5300` | 8 |
+| 14 | [15. KARAR KAYDI — Query Contract'ın bir üstü (Faz E-4)](#15-karar-kaydi-query-contractın-bir-üstü-faz-e-4) | `5479` | 4 |
+| 15 | [14. Arka–ön sözleşmesi — "Tanım Tamamlandı" = arka + ön + test](#14-arkaön-sözleşmesi-tanım-tamamlandı-arka-ön-test) | `5530` | 5 |
+| 16 | [10. Bu belge nasıl güncellenir](#10-bu-belge-nasıl-güncellenir) | `5687` | 0 |
+
+<!-- DIZIN:SON -->
+
 ## §0 · ⟳ YÜRÜRLÜKTE — YOL HARİTASININ OTORİTE ALDIĞI BAŞLIKLAR  *(FAZ −1/Kutu B)*
 
 > 🔴 **BU BLOK BİR KURAL BEYAN ETMEZ — YALNIZ OTORİTE İŞARET EDER.**
@@ -179,6 +206,23 @@ eklemek büyütmez.*
 **Tek adımlı bir plan, basamak 6'nın bugünkü `CubeQuery`'sidir** (`plan_semasi.tek_adimli`)
 ve aynı `parse_cube_query` beyaz listesinden geçer. Çok adımlı planda adımlar sırayla koşar;
 her adımın gövdesi **zaten var olan** bir modüldür (aşağıdaki tablo).
+
+#### 🔴 TEK YETENEK KAYDI — *plan fiilleri TÜRETİLİR, ikinci kez yazılmaz* `§38 D6`
+
+Planlayıcının çağırabildiği her fiilin karşılığı **tek bir kayıtta** durur (`app/tools.py`)
+ve `plan_semasi`'nin fiil kümesi ondan **türetilir**; eşleme üçüncü bir tabloya değil,
+**aracın kendi beyanına** yazılır (`Arac.fiil`). Doğrulama **içe aktarma anında** koşar:
+kayıt ile fiil kümesi ayrışırsa **uygulama ayağa kalkmaz**. Bugün **15/15** tam eşleşme,
+**31** ilkel; kapı `tests/test_d6_tek_yetenek_kaydi.py`.
+
+⊙ **Ve bu değişmez ölçülerek kazanıldı:** iddia ilk yazıldığında *«tek kayıt»* **doğru
+görünüyordu** — 9/15 fiil kayıtlı bir aracın gövdesini çağırıyordu. Ölçüm kusurun
+**örtüşme oranında değil KAPSAMDA** olduğunu gösterdi: **6/15 fiilin gövdesi kayıtta HİÇ
+YOKTU** (`MATRIS`·`SIRALA`·`RAPOR`·`PANO` → `app.ilkeller`; `KIYASLA`·`BOYUTSEC` →
+`app.contribution`). Planlayıcı onları **çağırabiliyordu** ama envanter yetki sınıfını,
+determinizmini ve maliyetini **bilmiyordu**.
+
+> *Bir kaydın tekliği, sayısıyla değil **kapsamıyla** ölçülür.*
 
 🔴 **LLM çağrı sayısı DEĞİŞMEZ** — ölçülmüş: garson zaten yalnız `route_hit is None` dalında
 çağrılıyor. Göç *ne zaman* çağrıldığını değil *ne döndürdüğünü* değiştiriyor.
