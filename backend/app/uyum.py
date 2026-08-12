@@ -1922,12 +1922,42 @@ def uydurma_beyani(resp, niyet, *, soru: str | None = None,
 
     Döner: beyan edildi mi (çağıran ize bunu yazar).
     """
+    # 🔴🔴 **İKİ KANIT — ve ilk yazımım YALNIZ BİRİNİ KULLANIYORDU (ölçüldü 2026-08-12).**
+    #
+    # `ters_yon.eslesen_terim_cikar` *«fişteki ad kullanıcının hangi sözcüğünün
+    # karşılığı»* sorusunu cevaplar ve **tekillik** ister: tam bir bilinmeyen + tam bir
+    # hedef. Yazım hatası sınıfını (`cirumuz`) kapatıyor — ama **fazladan sözcük**
+    # sınıfını kapatmıyor:
+    #
+    #     «dolar bazında ciro»          → ₺137.588.350 · cube=parti · measures=[toplam_ciro]
+    #                                   → ve yanında: *«hiçbir ÖLÇÜYE bağlayamadım»*  🔴
+    #
+    # ⊙ `ciro` katalogda **var**; bağlanan da odur. Kullanıcının fazladan bir sözcüğü
+    # (`dolar`) temsil edilememiş — bu doğru bir eksikliktir ama cümlesi **yanlıştır**:
+    # *«hiçbir ölçüye bağlayamadım»* demek, bağlananı yok saymaktır.
+    #
+    # 🔴 İkinci kanıt: `partial_unknowns`'un **isabet** listesi. Ölçüldü, yedi vakada da
+    # doğru ayırıyor:
+    #
+    #     «dolar bazında ciro»        hits=1 (parti)   → SUS
+    #     «ciroyu euro olarak göster» hits=1 (parti)   → SUS
+    #     «hedefin neresindeyiz»      hits=1 (butce)   → SUS
+    #     «cirumuz ne kadar»          hits=0           → ters_yon yakalar → SUS
+    #     «asdfgh qwerty»             hits=0           → 🔴 KONUŞ  (kuralın sebebi)
+    #
+    # *Bir soru kataloğa değdiyse, cevabın «hiçbir şeye değmedim» demesi bir ölçüm
+    # değil bir dil sürçmesidir.*
     kanit = None
     if soru and cq and schema:
         try:
+            from app import cube_router as _cr
             from app import ters_yon as _ty
 
-            kanit = _ty.eslesen_terim_cikar(soru, cq, schema)
+            _bil, _isabet = _cr.partial_unknowns(_cr._norm(soru), schema)
+            if _isabet:
+                kanit = {"isabet": len(_isabet)}          # katalogda karşılığı VAR
+            else:
+                kanit = _ty.eslesen_terim_cikar(soru, cq, schema)
         except Exception:                # noqa: BLE001 — kanıt yoksa yüklem eskisi gibi
             kanit = None
     not_ = tanimadan_cevap_notu(niyet, kanit=kanit)

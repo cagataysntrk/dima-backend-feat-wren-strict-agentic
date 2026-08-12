@@ -91,27 +91,37 @@ def test_KURAL_B_ESKI_CAGRI_BIREBIR_AYNI():
 
 
 def test_ASK_YOLUNA_BAGLI():
-    """🔴 Yazılıp çağrılmayan bir ayrım, yazılmamış bir ayrımdır (bu deponun 8 kez
-    ölçtüğü desen)."""
+    """🔴 Yazılıp çağrılmayan bir ayrım, yazılmamış bir ayrımdır.
+
+    ⟳ **YÜKLEM İKİ KEZ YERE BAĞLANDI, İKİ KEZ KIRILDI (2026-08-12).** Önce `ask.py`'de
+    `tanimlari_farkli_mi` çağrısını aradı; gövde `belirsizlik_chipi.not_metni`'ye
+    taşınınca kırıldı. Sonra `olcu=next(iter(cq.get` dizisini aradı; gövde
+    `beyani_ilistir`'e taşınınca yine kırıldı.
+
+    ⊙ İki taşımayı da **büyüme kapısı** emretti (*«modüle çıkar, tavanı yükseltme»*) ve
+    ikisi de doğruydu. Kırılan kapıydı, kural değil.
+
+    *Bir kapıyı çağrının ADRESİNE bağlamak, ilk taşımada onu kırar* (ders ㉕).
+
+    Yeni yüklem **zincirin iki halkasını** ölçer, adresini değil:
+      ① `ask.py` belirsizlik beyanını **çağırıyor** mu
+      ② sahibi farkı **gerçekten hesaplıyor** mu (çözülmüş ölçü adıyla)
+    """
+    import inspect
     import pathlib
+
+    from app import belirsizlik_chipi as _bc
 
     kaynak = (pathlib.Path(__file__).parent.parent / "app" / "routers"
               / "ask.py").read_text(encoding="utf-8")
-    assert "tanimlari_farkli_mi" in kaynak, (
-        "🔴 `§D10` ayrımı `ask.py`'de çağrılmıyor — beyan yine dokuz vakayı aynı "
-        "cümleyle geçer.")
-    i = kaynak.index("tanimlari_farkli_mi")
-    assert "not_metni" in kaynak[max(0, i - 400):i], (
-        "ayrım hesaplanıyor ama BEYANA bağlanmamış — bir tespit, sonucu yoksa bir "
-        "gözlemdir.")
-    # 🔴 **ANAHTAR UZAYI** — canlı curl bunu yakaladı: ilk yazımım kullanıcının
-    # sözcüğünü (`terim` = «fire») geçiyordu, oysa `measure_expressions` **ölçü adıyla**
-    # (`toplam_fire_kg`) anahtarlı. Arama boş döndü ve fark **sessizce** susturuldu.
-    # *Bir sözlüğü yanlış anahtar uzayıyla sorgulamak, «yok» cevabını «fark yok» diye
-    # okumaktır.*
-    assert 'cq.get("measures")' in kaynak[i - 400:i + 200], (
+    assert "beyani_ilistir" in kaynak, (
+        "🔴 `ask.py` belirsizlik beyanını çağırmıyor — beyan hiç iliştirilmez.")
+    govde = inspect.getsource(_bc.beyani_ilistir) + inspect.getsource(_bc.not_metni)
+    assert "tanimlari_farkli_mi" in govde, (
+        "🔴 fark hesabı sahibinde yok — beyan yine dokuz vakayı aynı cümleyle geçer.")
+    assert 'cq.get("measures")' in govde, (
         "🔴 karşılaştırma çözülmüş ÖLÇÜ ADIYLA yapılmıyor — kullanıcının sözcüğü "
-        "`measure_expressions`'ta bulunmaz ve fark hep susar.")
+        "`measure_expressions`'ta bulunmaz ve fark hep susar (canlı curl bunu yakaladı).")
 
 
 @pytest.mark.parametrize("olcu,kupler", [

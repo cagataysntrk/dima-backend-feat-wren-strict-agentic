@@ -118,8 +118,33 @@ def tanimlari_farkli_mi(terim: str, cubelar: list[str], schema: dict[str, Any]) 
     return len(ifadeler) > 1
 
 
+def beyani_ilistir(resp, terim: str, cube_meta: dict | None, chipler_: list[dict],
+                   cq: dict, oteki: list[str], schema: dict[str, Any]) -> None:
+    """🔴 `§Cİ`/`§D10` — **TEK ÇAĞRILIK YÜZ**: notu kurar ve cevaba iliştirir.
+
+    ## Neden burada — ve bunu bir kapı söyledi
+
+    Gövde `ask.py`'deydi ve dosya büyüme tavanı (`test_ASK_PY_DOSYASI_ASK_DISINDA_
+    SESSIZCE_SISMIYOR`) kırmızı verdi. Kapının emri değişmiyor: *«yeni davranışı MODÜLE
+    çıkar, tavanı yükseltme»*.
+
+    ⊙ Ve doğrusu da bu: **karar** (hangi tanım seçildi · formüller farklı mı), **metin**
+    ve **chip** aynı modülde durur. `ask.py`'de kalan tek şey çağrıdır.
+
+    *Bir kararın, metninin ve chip'inin ayrı evlerde oturması, üç sahip demektir.*
+    """
+    resp.note = " ".join(x for x in [
+        resp.note,
+        not_metni(terim, cube_etiketi(cube_meta), [c["label"] for c in chipler_],
+                  olcu=next(iter(cq.get("measures") or []), terim),
+                  cubelar=[cq.get("cube"), *oteki], schema=schema),
+    ] if x)
+
+
 def not_metni(terim: str, secilen_etiket: str, oteki_etiketler: list[str],
-              *, tanim_farkli: bool = False) -> str:
+              *, tanim_farkli: bool = False,
+              olcu: str | None = None, cubelar: list[str] | None = None,
+              schema: dict[str, Any] | None = None) -> str:
     """Cevabın notuna eklenen beyan — **kısa, tek cümle, suçlayıcı değil**.
 
     ⚠ *"Yanlış olabilir"* DENMEZ: sayı doğrudur, yalnız **hangi tanımın** kullanıldığı
@@ -131,6 +156,12 @@ def not_metni(terim: str, secilen_etiket: str, oteki_etiketler: list[str],
     """
     if not oteki_etiketler:
         return ""
+    # ⟳ Karar **burada** verilebilir (2026-08-12): çağıran `olcu`+`cubelar`+`schema`
+    # geçerse fark **bu modülde** hesaplanır. Sebep bir büyüme kapısıydı — `ask.py`'nin
+    # dosya tavanı aşıldı ve kapının emri açık: *«yeni davranışı MODÜLE çıkar, tavanı
+    # yükseltme»*. Ve doğrusu da bu: kararın ve metnin **tek sahibi** burasıdır.
+    if olcu and cubelar and schema is not None:
+        tanim_farkli = tanimlari_farkli_mi(olcu, cubelar, schema)
     oteki = " · ".join(oteki_etiketler)
     if tanim_farkli:
         return (f"⚠ «{terim}» birden fazla yerde ve **FARKLI FORMÜLLE** tanımlı — bu "

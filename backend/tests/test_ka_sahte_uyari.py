@@ -130,6 +130,45 @@ def test_KANIT_HESABI_COKERSE_BEYAN_KALIR(monkeypatch):
                                schema={"cubes": []}) is True
 
 
+def test_IKINCI_KANIT_KATALOG_ISABETI(monkeypatch):
+    """🔴🔴 **ÖNCEKİ DÜZELTMEM YARIMDI — ölçüldü (2026-08-12).**
+
+    `ters_yon` **tekillik** ister (tam bir bilinmeyen + tam bir hedef) ve yazım hatası
+    sınıfını kapatır. Ama **fazladan sözcük** sınıfını kapatmaz:
+
+        «dolar bazında ciro» → ₺137.588.350 · measures=[toplam_ciro]
+                             → ve yanında *«hiçbir ÖLÇÜYE bağlayamadım»*  🔴
+
+    `ciro` katalogda **var** ve bağlanan odur; temsil edilemeyen şey fazladan bir sözcük
+    (`dolar`). Eksiklik doğru, **cümle yanlış**.
+
+    ⊙ İkinci kanıt `partial_unknowns`'un **isabet** listesidir; yedi vakada ölçüldü ve
+    `«asdfgh qwerty»` (hits=0) korunuyor.
+
+    *Bir soru kataloğa değdiyse, cevabın «hiçbir şeye değmedim» demesi bir ölçüm değil
+    bir dil sürçmesidir.*
+    """
+    monkeypatch.setattr("app.cube_router.partial_unknowns",
+                        lambda q, s: (["dolar"], [({"name": "parti"}, "toplam_ciro")]))
+    r = _resp()
+    assert uyum.uydurma_beyani(r, _Niyet(), soru="dolar bazında ciro",
+                               cq={"cube": "parti", "measures": ["toplam_ciro"]},
+                               schema={"cubes": []}) is False
+    assert not r.note, f"🔴 katalogda karşılığı olan soruya çıpasız damgası: {r.note!r}"
+
+
+def test_ISABET_YOKSA_KONUSUR(monkeypatch):
+    """🔴 Öteki yön — `«asdfgh qwerty»`: isabet yok, ters yön de yok → **beyan kalmalı**."""
+    monkeypatch.setattr("app.cube_router.partial_unknowns",
+                        lambda q, s: (["asdfgh", "qwerty"], []))
+    monkeypatch.setattr("app.ters_yon.eslesen_terim_cikar", lambda q, cq, s: None)
+    r = _resp()
+    assert uyum.uydurma_beyani(r, _Niyet(), soru="asdfgh qwerty",
+                               cq={"cube": "oee", "measures": ["ort_oee"]},
+                               schema={"cubes": []}) is True
+    assert "varsayımdır" in (r.note or "")
+
+
 def test_KANIT_KANALI_GERCEKTEN_BAGLI():
     """🔴 Yazılıp bağlanmayan bir kanal, yazılmamış bir kanaldır (bu deponun 8 kez
     ölçtüğü desen).
