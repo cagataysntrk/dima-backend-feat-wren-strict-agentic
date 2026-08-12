@@ -328,6 +328,24 @@ def run_company(name, login, pw, slug, pay: int = 0, pay_sayisi: int = 1):
         kesme_toplam[0] += 1
         if _cevapsiz_kesme(d):
             kesme_sayi[0] += 1
+            # 🔴 `§B.6/①` — **KESMENİN SEBEBİ SAYILIYOR** (⟳ 2026-08-12).
+            #
+            # `§B.1`'de ölçüldü: çok sahipli bir terimde `route()` **çekiliyor** ve kural
+            # uygulanıyor. `§B.4`'te sebep **adlandırıldı** (`Niyet.cekilme_sebebi`). Ama
+            # **sayılmıyordu** — yani *«garsonun yükünün %kaçı belirsizlikten»* sorusu
+            # cevapsızdı ve `§A.2`'nin **73 çok-sahipli terimlik** borcunun **ürün
+            # maliyeti** ölçülemiyordu.
+            #
+            # ⚠ **YALNIZ KESİLEN TURDA** hesaplanır: her soruda `niyet.coz` çağırmak
+            # korpusu yavaşlatırdı ve ölçmek istediğimiz popülasyon zaten **kesilenler**.
+            # ⊙ **PAYDA DEĞİŞMİYOR**: bu ayrı bir ad-uzayı (`sebep::`), `kesme_toplam`
+            # ve `vaka_toplam` sayaçlarına **dokunmuyor** (🅜 *payda kutsaldır*).
+            try:
+                from app.niyet import coz as _niyet_coz
+                _sb = _niyet_coz(q, schema).cekilme_sebebi or "sebep_yok"
+            except Exception:                          # noqa: BLE001 — ölçüm cevabı düşürmez
+                _sb = "olculemedi"
+            cats[f"sebep::{_sb}"] += 1
         s = _sinif(d, exp)
         cats[f"tekil::{s}"] += 1
         # DOĞRULUK KANALI (2 Ağustos 2026): `exp` TÜM cube adlarıdır, yani yukarıdaki
