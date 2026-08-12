@@ -764,3 +764,57 @@ olurdu.
 asıl sorun **123 h3**'ün tek düzlemde durması. ⚠ **Silme yok** — dizinleme/özetleme.
 **G.3** `§38 D6`'nın *«tek yetenek kaydı»* cümlesi — `MIMARI.md`'de **0 eşleşme**,
 `§2.0`'a yazılacak.
+
+---
+
+# 🔴 DEMET KAPISI SONRASI — KORPUS KIRMIZI, ve KÖKÜ ÖLÇÜLDÜ
+
+## Ölçüm
+
+`lab/kapi.py --hizli --degisen <603 dosya>` → **276 ✅** (68 sn, ikinci koşum).
+`lab/nl_corpus.py --kapi` → 🔴 **KAPI KIRMIZI**:
+
+```
+boyahane: erişim %73 (taban %69) ✅
+atiksan : erişim %54 (taban %69) ❌   gulteks: %53 (taban %69) ❌   gitas: %58 (taban %72) ❌
+TOPLAM doğru-cube: %95,6 (taban %94,4) ✅
+SEMANTİK VAKA    : 558/591 = %94,4 (taban %93,5) ✅
+🔴 cevapsız      : 2.946/14.957 (%19,7)
+```
+
+⚠ **İki ölçüt ZIT yönde hareket etti** ve bu tesadüf değil: **doğruluk yükseldi,
+erişim düştü.** Sistem daha az **tahmin ediyor**, daha çok **soruyor**.
+
+## Kök — `CLARIFY:dönem`, ve payı ÜÇ ŞİRKETTE VAR, BİRİNDE YOK
+
+| şirket | `OK` | `CLARIFY:konu` | **`CLARIFY:dönem`** |
+|---|---|---|---|
+| boyahane ✅ | **%69** | %11 | *(listede yok)* |
+| atiksan ❌ | %51 | %11 | **%9** |
+| gulteks ❌ | %50 | %11 | **%9** |
+| gitas ❌ | %54 | %8 | **%9** |
+
+🔴 **Ayırt edici tek kalem `CLARIFY:dönem`.** `CLARIFY:konu` **dördünde de** ~%11 —
+yani konu netleştirmesi bir gerileme değil, **taban davranışı**. Düşen üç şirketin
+ortak farkı, her birinde **~%9'luk bir dönem netleştirmesi**: sistem *«hangi dönem?»*
+diye soruyor ve o tur bir **cevap üretmiyor**.
+
+⊙ Üç şirket aynı sınıf: `atiksan`·`gulteks` **mssql lab fikstürleri**, `gitas` da öyle;
+`boyahane` **yerel DuckDB**. Yani ayrım **şirkete özel bir tarih boyutu** meselesi
+olabilir — ölçülmedi, **iddia edilmiyor**.
+
+## Karar — ve neden bir *«düzeltip geçme»* değil
+
+🔴 **Kullanıcının bağlayıcı kuralı:** *«dürüst red başarı değil; cevaplanması gereken her
+red bir **eksiklik raporudur**.»* Şirket başına **180–300 soru** *«hangi dönem?»*e
+düşüyor. Bu bir kalite kazancı gibi görünebilir (`§F`'nin *netleştirme önceliği*) ama
+planın kendi ölçütü şöyle diyordu:
+
+> *«Ölçü: kapsam kaybı vs kapanan sessiz-yanlış. **Kayıp > kazanç ise açılmaz.**»*
+
+**Bugünkü sayı:** kazanç **+1,2 puan** doğruluk (94,4 → 95,6) · kayıp **~15 puan** erişim
+(69 → 54). 🆑 *Belirsizliği cevapsız bırakmak, cevaplayıp beyan etmekle aynı şey değildir.*
+
+⏭ **Sıradaki iş:** `CLARIFY:dönem`in **hangi girdide** ateşlendiğini ölçmek — dönem
+ifadesi **çözülemiyor** mu, yoksa **çözülüyor ama iki adaya mı** düşüyor? İkisi farklı
+kusur ve farklı yerde düzeltilir.
