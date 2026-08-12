@@ -23,6 +23,7 @@ Bir yorum bir tüketici değildir. Kapı **koda** bakar.
 
 from __future__ import annotations
 
+import contextlib
 import pathlib
 import re
 
@@ -119,3 +120,41 @@ def tam_yol_deseni(yol: str) -> re.Pattern[str]:
     kacisli = re.escape(yol).replace(r"\{", "{").replace(r"\}", "}")
     govde = re.sub(r"\{[^}]+\}", lambda _m: r"[^\"'`\s]+", kacisli)
     return re.compile(govde + r"(?![\w/-])")
+
+
+@contextlib.contextmanager
+def yazma_araclari_acik():
+    """🔴 `yazma_araclari` bayrağını **gerçekten** açan bağlam — ve neden bir yardımcı.
+
+    İlk sürümlerim üç ayrı testte `os.environ[...] = "on"` + `importlib.reload(tools)`
+    yazdı ve **üçü de kırmızı** verdi. Sebep ürün değil ölçümdü (bu turda aracın 23.
+    yanılması): `config.get_settings` **`@lru_cache`li**. Env'i içeri kurmak, zaten
+    önbelleğe alınmış `Settings`'i değiştirmez — bayrak açılmış **görünür**, kapalı
+    **kalır**.
+
+    ⚠ Ve bu tam olarak *"kapıyı ürünün değil kendi kurulumunun kusuruyla kırmızıya
+    döndürmek"* sınıfıdır. Kurulum tek yerde durursa yalnız bir kez yanlış olur.
+    """
+    import importlib
+    import os
+
+    from app import config
+
+    onceki = os.environ.get("DIMA_YAZMA_ARACLARI")
+    os.environ["DIMA_YAZMA_ARACLARI"] = "on"
+    config.get_settings.cache_clear()
+    from app import tools
+    importlib.reload(tools)
+    try:
+        from app import mcp
+        importlib.reload(mcp)
+        yield tools
+    finally:
+        if onceki is None:
+            os.environ.pop("DIMA_YAZMA_ARACLARI", None)
+        else:
+            os.environ["DIMA_YAZMA_ARACLARI"] = onceki
+        config.get_settings.cache_clear()
+        importlib.reload(tools)
+        from app import mcp as _m
+        importlib.reload(_m)

@@ -316,11 +316,16 @@ class Planlayici:
     """
 
     def __init__(self, *, principal: Any = None, butce: Butce | None = None,
-                 kaynaklar: dict[str, Any] | None = None) -> None:
+                 kaynaklar: dict[str, Any] | None = None,
+                 onay_biletleri: dict[str, str] | None = None) -> None:
         self.principal = principal
         self.butce = butce or Butce()
         # Servise bağlı araçlar için istek-kapsamlı nesneler: {"servis:wren": svc, …}
         self.kaynaklar = kaynaklar or {}
+        # 🔴 ONAY BİLETLERİ — `{araç adı: bilet}`. Boş sözlük = **hiçbir yazma yok**.
+        # Fail-closed bilinçlidir: bileti olmayan bir yazma aracı çalışmaz. Bunu
+        # opsiyonel yapmak, onayı bir "unutulabilir adım" hâline getirirdi.
+        self.onay_biletleri: dict[str, str] = dict(onay_biletleri or {})
         self.kosum = Kosum()
         self._baslangic = time.monotonic()
         # Bu koşumda DENENMİŞ deterministik ARAÇ ADLARI — deterministik-önce kapısının belleği.
@@ -339,6 +344,55 @@ class Planlayici:
             raise AracReddi(
                 f"{arac.ad}: bu kullanıcının yetkisi yok ({arac.izin}). Ajan, kullanıcının "
                 "kendi eliyle yapamayacağı bir işi onun adına YAPAMAZ.")
+
+    def _onay_kapisi(self, arac: tools.Arac) -> None:
+        """🔴 **BEŞİNCİ KAPI (2026-08-12) — `yan_etki != "yok"` ise ONAY BİLETİ ŞART.**
+
+        ## Neden bu kapı doğdu — ölçülmüş bir boşluk
+
+        `app/yazma_araclari.py` üç yazma aracını *"**yalnız** `onay_akisi` üzerinden
+        çağrılabilir"* diye ilan ediyor ve bunu her aracın `notlar` alanına da yazıyor.
+        Ölçüldü: `calistir()`'in dört kapısında `yan_etki` · `onay` · `bilet`
+        kelimelerinin **hiçbiri geçmiyordu**. Yani değişmez **düzyazıydı**.
+
+        > *Beyan edilmiş ama uygulanmamış bir kural, bir kural değil bir niyettir.*
+        > Bu turda aynı sınıf `consistency_k` · `expose:` üreteci · fan-out ölçümü ·
+        > `_select_consistent`'ta da ölçülmüştü — bu, o listenin beşincisidir.
+
+        ## ⚠ Ve boşluğu GİZLEYEN şey, ikinci bir kusurdu
+
+        Kural neden hiç fark edilmedi? Çünkü yazma araçları **zaten çalışmıyordu**:
+        ilan edilen `girdi` (`title` · `cube_query`) gerçek imzayla
+        (`request` · `did` · `body` · `session`) tutmuyor ve çağrı `TypeError` veriyor.
+        Yani bugünkü güvenlik bir **kaza**ydı — bir kapı değil, bir uyumsuzluk.
+
+        🔴 Ve bir `TypeError` bir **red değildir** (`ADR-0020` · *dürüst red* kültürü):
+        çağırana neyin neden yapılmadığını söylemez, denetim kaydına bir gerekçe
+        yazmaz, ve uyumsuzluk bir gün giderilirse **sessizce yazmaya döner**.
+
+        ## Kapının biçimi — fail-closed
+
+        Bilet `onay_akisi.bilet_dogrula()` ile doğrulanır (imza + ömür). Bilet yoksa,
+        yanlışsa ya da süresi geçmişse araç **koşmaz**. `self.onay_biletleri` varsayılan
+        olarak **boştur**: bir planlayıcıyı elle kurmak, yazma yetkisi vermez.
+        """
+        if arac.yan_etki == "yok":
+            return
+        token = self.onay_biletleri.get(arac.ad)
+        if not token:
+            raise AracReddi(
+                f"{arac.ad}: bu araç `yan_etki={arac.yan_etki!r}` beyan ediyor ve "
+                "ONAY BİLETİ olmadan çalıştırılamaz. Ajan bir yazma işini ancak "
+                "ÖNERİR; onayı kullanıcı verir (`POST /ask/eylem` — bilet + denetim "
+                "kaydı). Onaysız yazma, onayı bir süs yapardı.")
+        from app import onay_akisi
+        try:
+            onay_akisi.bilet_dogrula(token, arac.ad)
+        except Exception as exc:                              # noqa: BLE001
+            raise AracReddi(
+                f"{arac.ad}: onay bileti GEÇERSİZ ({type(exc).__name__}). Süresi "
+                "geçmiş ya da başka bir eylem için verilmiş bir bilet, verilmemiş bir "
+                "biletle aynıdır.") from exc
 
     def _deterministik_once_kapisi(self, arac: tools.Arac) -> None:
         """LLM aracı, aynı etiketteki deterministik kardeşi DENENMEDEN seçilemez.
@@ -492,6 +546,7 @@ class Planlayici:
         """
         arac = tools.get(arac_adi)                 # KAYIT kapısı (uydurma araç = KeyError)
         self._yetki_kapisi(arac)
+        self._onay_kapisi(arac)
         self._deterministik_once_kapisi(arac)
         self._butce_kapisi(arac)
 

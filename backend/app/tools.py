@@ -713,3 +713,32 @@ def llm_araclari(principal=None) -> list[dict]:
         }
         for a in araclar
     ]
+
+
+def okuyan_araclar(principal=None) -> list[dict]:
+    """🔴 **SALT-OKUMA yüzeyleri için araç listesi** — `yan_etki != "yok"` olan HİÇBİR
+    araç dönmez.
+
+    ## Neden bu süzgeç var — ölçülmüş bir sızıntı
+
+    2026-08-12'de ölçüldü: `yazma_araclari` bayrağı **açıkken** `KAYIT` 25 → **28** olur
+    ve `mcp.araclar(None)` de **28** döndürüyordu — yani `dashboards.create` ·
+    `schedules.create` · `measures.approve` **MCP yüzeyinde görünüyordu**.
+
+    `§C3` kartının azaltma satırı *«salt-okuma; **yazma araçları kayıtta yok** (zaten
+    öyle)»* diyor. Parantez kartın kendi kaydıydı ve **doğruydu** — ama bir güvence
+    değil bir **rastlantıydı**: kayıtta yazan araç olmadığı için MCP salt-okumaydı.
+    `§F13`'ün bayrağı açıldığı an o rastlantı bitiyor ve güvence **sessizce** ölüyordu.
+
+    > *Bir sınırı bir rastlantının koruması, o sınırın hiç konmamış olmasıdır — çünkü
+    > rastlantı değişince kimse haberdar olmaz.*
+
+    ## `KAT-1` — ikinci bir süzgeç DEĞİL
+
+    Yetki süzgeci burada **yeniden yazılmıyor**: `llm_araclari(principal)` çağrılıyor ve
+    o zaten `izinli_araclar()` → `authorize()` matrisine bağlı. Buraya eklenen tek şey
+    **kaydın kendi beyan ettiği** `yan_etki` alanına bakan bir eleme. Yani otorite yine
+    kaydın kendisidir; bu fonksiyon bir **karar** vermiyor, beyanı **uyguluyor**.
+    """
+    yazanlar = {a.ad for a in KAYIT if a.yan_etki != "yok"}
+    return [a for a in llm_araclari(principal) if a["name"] not in yazanlar]

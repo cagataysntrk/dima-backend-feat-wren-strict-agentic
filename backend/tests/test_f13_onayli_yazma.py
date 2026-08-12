@@ -105,16 +105,108 @@ def test_ONAY_AKISI_BAYRAGI_ONAY_EKLEMEZ_ISTEM_KALDIRIR():
 
 # --- EKSİK YARI: karar verilmeden yazılamaz --------------------------------------
 
-def test_AJAN_HALA_YAZMA_ARACI_ONERMIYOR():
-    """🔴 `F13`'ün gerçekte eksik olan tek parçası. Kayda bir `yazar` araç girdiği an
-    bu test **ve** `§C3`'ün MCP kapısı birlikte konuşur — ikisi aynı kararın iki yüzü."""
-    yazanlar = [getattr(a, "ad", "?") for a in tools.KAYIT
-                if getattr(a, "yan_etki", "") == "yazar"]
-    assert not yazanlar, (
-        f"🔴 kayda `yazar` araç girdi: {yazanlar}\n"
-        "`F13` kademelendirmesi ancak ŞU ÜÇÜ birlikte kurulunca tamamdır:\n"
-        "  ① ajan aracı **öneri** olarak üretir (plan/`tools` kaydı)\n"
-        "  ② kullanıcı **onaylar** → `onay_akisi` bileti (kurulu ✅)\n"
-        "  ③ `authorize()` + audit ayrı satır (kurulu ✅)\n"
-        "⚠ Ve `tests/test_c3_mcp_acilis_sartlari.py::test_YAZMA_ARACI_kayitta_YOK` "
-        "aynı anda kırmızıya döner — MCP açılış şartı 'yazma aracı yok'tur.")
+def test_YAZMA_ARACI_ONAYSIZ_KOSAMAZ():
+    """🔴 ⟳ **F13'ün EKSİK YARISI KAPANDI (2026-08-12) — ve ölçüm iddiayı düzeltti.**
+
+    Borç şöyle yazılmıştı: *«ajan yazma aracını öneri olarak üretsin — `tools.KAYIT`'ta
+    `yan_etki="yazar"` araç YOK»*. Ölçüm bunu **çürüttü**:
+
+    | iddia | ölçülen |
+    |---|---|
+    | kayıtta `yazar` araç yok | ⊘ **`app/yazma_araclari.py` ZATEN VAR** — üç araç, `YAZMA_KAYIT` |
+    | ajan öneremiyor | ⊘ `tools.py:643` **`KAYIT = KAYIT + … + _yazma_araclari()`** — tam bağlı |
+    | eksik olan kablolama | 🔴 eksik olan **BAYRAK DEĞİL, KAPI** |
+
+    ⊙ *«Yazılmış ama bağlanmamış»* değil — **yazılmış, bağlanmış, korunmamış.**
+
+    ## 🔴 Asıl bulgu: değişmez DÜZYAZIYDI
+
+    `yazma_araclari.py` *«yalnız `onay_akisi` üzerinden çağrılabilir»* diye ilan
+    ediyordu ve bunu üç aracın `notlar` alanına da yazıyordu. Ölçüldü:
+    `Planlayici.calistir()`'in dört kapısında `yan_etki` · `onay` · `bilet`
+    kelimelerinin **hiçbiri geçmiyordu**.
+
+    ## ⚠ Ve boşluğu GİZLEYEN şey ikinci bir kusurdu
+
+    Neden hiç fark edilmedi? Çünkü araçlar **zaten çalışmıyordu**: ilan edilen `girdi`
+    (`title`·`cube_query`) gerçek imzayla (`request`·`did`·`body`·`session`) tutmuyor
+    ve çağrı `TypeError` veriyor. Bugünkü güvenlik bir kapı değil bir **uyumsuzluktu**
+    — ve bir `TypeError` bir **red değildir**: gerekçe söylemez, denetim kaydına
+    geçmez, ve uyumsuzluk bir gün giderilirse **sessizce yazmaya döner**.
+
+    ✅ Beşinci kapı: `Planlayici._onay_kapisi` — `yan_etki != "yok"` ise geçerli bir
+    **onay bileti** şart, yoksa `AracReddi`. Fail-closed: `onay_biletleri` varsayılan
+    olarak **boş**tur, yani bir planlayıcıyı elle kurmak yazma yetkisi vermez.
+    """
+    from app.planner import AracReddi, Planlayici
+    from tests.kapi_ortak import yazma_araclari_acik
+
+    with yazma_araclari_acik() as tools:
+        yazanlar = [a for a in tools.KAYIT if a.yan_etki != "yok"]
+        assert yazanlar, (
+            "⊘ ölçüm tabanı çöktü: bayrak açıkken bile kayıtta yazan araç yok — bu test "
+            "o hâlde hiçbir şey ölçmüyor demektir.")
+
+        p = Planlayici(kaynaklar={})
+        try:
+            p.calistir(yazanlar[0].ad, title="x")
+        except AracReddi as red:
+            assert "ONAY" in str(red).upper(), (
+                f"red DÜRÜST değil — gerekçesi yazılmamış: {red}")
+        except TypeError as exc:                              # pragma: no cover
+            raise AssertionError(
+                "🔴 ONAY KAPISI ÇALIŞMADI: çağrı araca kadar gitti ve `TypeError` ile "
+                f"düştü ({exc}). Bir `TypeError` bir red değildir — bugün yazmıyorsa "
+                "bunun sebebi bir kapı değil, bir imza uyumsuzluğudur.") from exc
+        else:                                                 # pragma: no cover
+            raise AssertionError(
+                f"🔴 {yazanlar[0].ad} ONAYSIZ KOŞTU — `F13`'ün tek değişmezi çiğnendi.")
+
+
+def test_ONAY_KAPISI_DORDUN_YANINDA_BESINCI():
+    """Kapı **kod yolunda**, bir yorumda değil: `calistir()` onu gerçekten çağırmalı."""
+    import inspect
+
+    from app.planner import Planlayici
+
+    src = inspect.getsource(Planlayici.calistir)
+    assert "_onay_kapisi" in src, (
+        "🔴 onay kapısı `calistir()` yolunda DEĞİL — yazılmış ama çağrılmayan bir kapı, "
+        "yazılmamış bir kapıdır (bu oturumda ölçülen en sık kusur sınıfı).")
+
+
+def test_YAZMA_ARACLARININ_GIRDI_BEYANI_HALA_UYUMSUZ():
+    """⊘ **AÇIK KALAN YARIM — ve kapatılmadığı KAYITLI.**
+
+    Üç yazma aracının ilan ettiği `girdi`, işaret ettiği fonksiyonun imzasıyla
+    tutmuyor (`add_widget(request, did, body, session)`). Yani araçlar bugün **onay
+    bileti verilse bile** koşamaz.
+
+    🔴 Bu bir kusur değil bir **kapsam**: aradaki adaptör (FastAPI el sıkışmasından
+    arındırılmış çağrılabilir bir yüzey) `FAZ H`'nin işidir ve bu turda **yapılmadı**.
+    Bu test onu **gizlemiyor**: uyumsuzluk giderildiği gün kırılır ve o gün onay
+    kapısının gerçekten tek koruma olduğu hatırlanır.
+
+    *Bir eksiği bir testle kaydetmek, onu yapmak değildir — ama sessizce bırakmaktan
+    farkı, bir gün mutlaka konuşacak olmasıdır.*
+    """
+    import inspect
+
+    from tests.kapi_ortak import yazma_araclari_acik
+
+    with yazma_araclari_acik():
+        from app.yazma_araclari import YAZMA_KAYIT
+        uyumsuz = []
+        for a in YAZMA_KAYIT:
+            try:
+                fn = a.cagir(None)
+                params = set(inspect.signature(fn).parameters)
+            except Exception:                                 # noqa: BLE001
+                continue
+            if not set(a.girdi) <= params:
+                uyumsuz.append(a.ad)
+        assert uyumsuz, (
+            "✅ Yazma araçlarının `girdi` beyanı artık gerçek imzayla UYUMLU — yani "
+            "araçlar gerçekten çağrılabilir hâle gelmiş. O hâlde tek koruma "
+            "`_onay_kapisi`dir: `FAZ H` adaptörleriyle birlikte onay akışının uçtan uca "
+            "canlı olduğunu doğrulayın ve bu kaydı GÜNCELLEYİN.")

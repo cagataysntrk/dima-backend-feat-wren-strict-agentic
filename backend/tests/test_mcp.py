@@ -49,9 +49,65 @@ def test_MCP_kendi_KAYDINI_kurmaz():
             assert getattr(n.func, "id", "") != "Arac", (
                 "🔴 `app/mcp.py` KENDİ `Arac`'ını tanımlamış — kayıt tek yerde durmalı.")
     # Ve kaydı GERÇEKTEN `tools`'tan okuyor mu:
-    assert "llm_araclari" in _adlar(_MCP), (
-        "🔴 MCP araç listesi `tools.llm_araclari()`'ndan gelmiyor — yetki süzgeci ikinci "
-        "kez yazılmış olabilir ve iki kopya AYRIŞIR.")
+    #
+    # ⚠ İlk sürüm tek bir ADA bağlıydı (`"llm_araclari" in _adlar(_MCP)`) ve `§C3` ④/②
+    # düzeltmesinde liste `tools.okuyan_araclar()`'a geçince **yanlış-kırmızı** verdi:
+    # kural yerindeydi (fonksiyon `llm_araclari`'ı kendi içinde çağırıyor), kapı **adı**
+    # ölçüyordu. Bu, bu turda kapının bir cümleye bağlanmasının kaçıncı kez ceza
+    # kestiğinin bir örneği — doğru ölçüm **iddianın kendisidir**:
+    #   ① liste `tools`'un BİR üreticisinden gelir, ve
+    #   ② yetki süzgeci burada İKİNCİ KEZ YAZILMAZ.
+    uretici = {"llm_araclari", "okuyan_araclar"} & _adlar(_MCP)
+    assert uretici, (
+        "🔴 MCP araç listesi `tools`'un bir araç üreticisinden gelmiyor — yetki süzgeci "
+        "ikinci kez yazılmış olabilir ve iki kopya AYRIŞIR.")
+    assert not ({"izinli_araclar", "authorize"} & _adlar(_MCP)), (
+        "🔴 `app/mcp.py` yetki matrisine DOĞRUDAN dokunuyor — süzgecin ikinci sahibi "
+        "doğdu. Yetki kararı `tools.izinli_araclar()` → `authorize()` zincirinde kalır.")
+
+
+def test_MCP_SALT_OKUMA_yazma_araci_SIZMAZ():
+    """🔴 `§C3` ② — **listede yazma aracı YOK, ve bu artık YAPISAL.**
+
+    Ölçüldü (2026-08-12): `yazma_araclari` bayrağı **açıkken** `tools.KAYIT` 25 → **28**
+    olur ve `mcp.araclar(None)` de **28** döndürüyordu — üç yazma aracı MCP yüzeyinde
+    **görünüyordu**. Kartın *«yazma araçları kayıtta yok (zaten öyle)»* güvencesi bir
+    güvence değil bir **rastlantıydı**: kayıtta yazan araç olmadığı için doğruydu.
+
+    *Bir sınırı bir rastlantının koruması, o sınırın hiç konmamış olmasıdır.*
+    """
+    from tests.kapi_ortak import yazma_araclari_acik
+
+    with yazma_araclari_acik() as tools:
+        from app import mcp
+
+        yazanlar = {a.ad for a in tools.KAYIT if a.yan_etki != "yok"}
+        assert yazanlar, (
+            "⊘ ölçüm tabanı çöktü: bayrak açıkken bile kayıtta yazan araç yok — bu test "
+            "o hâlde HİÇBİR ŞEY ölçmüyor demektir (boş bir kapı, yeşil bir kapıdan kötüdür).")
+        listede = {a["name"] for a in mcp.araclar(None)}
+        assert not (yazanlar & listede), (
+            f"🔴 YAZMA aracı MCP yüzeyinde: {sorted(yazanlar & listede)}. MCP "
+            "SALT-OKUMADIR; yazma yalnız onay akışı (`POST /ask/eylem`) üzerinden.")
+
+
+def test_MCP_CAGRISI_yazma_aracini_REDDEDER():
+    """🔴 Listeden gizlemek **yetmez** — adı bilen bir ajan yine çağırabilirdi.
+
+    *Bir yüzeyi yalnız listeden gizleyerek kapatmak, kapıyı kilitlemek değil tabelayı
+    indirmektir.*
+    """
+    from tests.kapi_ortak import yazma_araclari_acik
+    from app.yazma_araclari import YAZMA_KAYIT
+
+    sinif = type("SahteP", (), {"kosum": None})()
+    with yazma_araclari_acik():
+        from app import mcp
+        r = mcp.cagir(sinif, YAZMA_KAYIT[0].ad, {"title": "x"})
+    assert r["isError"] is True
+    metin = r["content"][0]["text"]
+    assert "SALT-OKUMA" in metin and "onay" in metin.lower(), (
+        f"red DÜRÜST değil — neyin neden reddedildiği yazılmamış: {metin[:160]}")
 
 
 def test_MCP_araci_kendisi_CAGIRMAZ_kapidan_gecirir():
@@ -78,9 +134,20 @@ def test_planlayicisiz_cagri_REDDEDILIR():
 
 def test_arac_listesi_LLM_yuzeyiyle_AYNI_kumedir():
     """Üç yüzey ayrışmaz: MCP'nin gördüğü araç kümesi LLM'inkiyle **birebir aynı**."""
+    # ⟳ **AYNI KÜME → SALT-OKUMA ALT KÜMESİ (2026-08-12).** `yazma_araclari` bayrağı
+    # açıldığı gün bu eşitlik kırılacaktı — ve o kırılma bir **kusur değil, kasıt**
+    # olurdu: MCP salt-okumadır, ajan yüzeyi değildir. Eşitliği olduğu gibi bırakmak,
+    # güvenlik sınırının kendisini bir gerileme gibi raporlardı.
+    #
+    # Değişmez korundu ve **daraltıldı**: MCP'de `tools` kaydında olmayan bir araç
+    # bulunamaz (ayrışma yasağı), ve eksiği **yalnız** yazma araçları olabilir.
     m = {a["name"] for a in mcp.araclar(None)}
     l = {a["name"] for a in tools.llm_araclari(None)}
-    assert m == l, f"MCP/LLM araç kümeleri ayrıştı: MCP−LLM={m - l}, LLM−MCP={l - m}"
+    assert m <= l, f"🔴 MCP'de `tools` kaydında OLMAYAN araç var: {sorted(m - l)}"
+    yazanlar = {a.ad for a in tools.KAYIT if a.yan_etki != "yok"}
+    assert (l - m) <= yazanlar, (
+        f"🔴 MCP'den OKUYAN bir araç düşmüş: {sorted((l - m) - yazanlar)} — üç yüzey "
+        "yalnız yazma sınırında ayrışabilir, başka hiçbir gerekçeyle.")
     # MCP spec camelCase ister; çeviri YALNIZ burada yapılır.
     assert all(mcp.SEMA_ALANI in a for a in mcp.araclar(None))
     assert all("input_schema" not in a for a in mcp.araclar(None))
@@ -94,11 +161,25 @@ def test_YAZAN_arac_MCP_yuzeyinde_YOK():
     `yan_etki="yazar"` bir araç eklerse, o araç **sessizce MCP'den de** çağrılabilir
     olurdu. Bu kapı o günü görünür kılar.
     """
-    yazanlar = [a.ad for a in tools.hepsi() if a.yan_etki == "yazar"]
-    assert not yazanlar, (
-        f"🔴 Kayda yazan araç girmiş: {yazanlar}. MCP yüzeyi bir ÇEVİRİ olduğu için bu "
-        f"araçlar oradan da çağrılabilir hâle geldi. FAZ 6.1'in onay kademesi inmeden "
-        f"bu sınır gevşetilemez (MIMARI §4).")
+    # ⟳ **İDDİA DÜZELTİLDİ (2026-08-12) — ve bu testin KENDİ ÖNGÖRÜSÜ gerçekleşti.**
+    #
+    # Yukarıdaki docstring aynen şunu yazıyordu: *"bir gün biri kayda `yan_etki='yazar'`
+    # bir araç eklerse, o araç SESSİZCE MCP'den de çağrılabilir olurdu."* O gün geldi
+    # (`yazma_araclari` bayrağı, `§F13`) ve öngörü **birebir** doğru çıktı: ölçüldü,
+    # bayrak açıkken üç yazma aracı `mcp.araclar(None)`'da görünüyordu.
+    #
+    # Ama kapının **ölçtüğü şey** yanlıştı: kaydın boş olmasını istiyordu. Kayıt bir gün
+    # dolacaktı — çünkü ajanın yazma ÖNERMESİ meşru bir hedeftir. Doğru değişmez kaydın
+    # boşluğu değil, **yüzeyin sızdırmazlığıdır**; ve o artık yapısaldır
+    # (`tools.okuyan_araclar` + `mcp.cagir`'in reddi).
+    #
+    # *Bir kapıyı bir şeyin YOKLUĞUNA bağlamak, o şey meşru olarak var olduğu gün kapıyı
+    # bir engele çevirir.*
+    yazanlar = {a.ad for a in tools.hepsi() if a.yan_etki == "yazar"}
+    listede = {a["name"] for a in mcp.araclar(None)}
+    assert not (yazanlar & listede), (
+        f"🔴 YAZAN araç MCP yüzeyinde: {sorted(yazanlar & listede)}. MCP bir ÇEVİRİDİR "
+        "ve salt-okumadır; ajanın yazma yetkisi ayrı bir mimari karardır (MIMARI §4).")
 
 
 def test_MCP_cagrisi_AYNI_makbuzu_uretir():

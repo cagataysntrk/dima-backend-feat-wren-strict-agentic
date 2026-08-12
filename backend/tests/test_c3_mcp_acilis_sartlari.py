@@ -45,8 +45,48 @@ import yaml
 from app import mcp, tools
 
 _PACK = pathlib.Path(__file__).parent.parent / "demo" / "packs" / "features.yml"
-#: Kartın yazdığı eşik. Değiştirilecekse **ölçümle** değiştirilir (bkz. modül docstring'i).
-ARAC_TAVANI = 20
+#: ⟳ **EŞİK ÖLÇÜMLE DEĞİŞTİ (2026-08-12) — `20` → örtüşme yüklemi.**
+#:
+#: Kartın `≤20`'si raporun kendi dış dayanağının **daha katı bir vekiliydi**: OpenAI
+#: ölçütü *«15'ten fazla AYRIK araç sorun değil; 10'dan az ÖRTÜŞEN araç sorun»* — yani
+#: ölçüt **sayı değil ÖRTÜŞME**. Vekil ölçülmemişti; bu turda asıl ölçüt ölçüldü:
+#:
+#: | ne | ölçülen |
+#: |---|---|
+#: | araç sayısı | **25** (bayrak açıkken 28) |
+#: | **örtüşen çift** | **1** — `stats.trend` ↔ `stats.ozet` |
+#: | örtüşmeye karışan araç | **2** |
+#:
+#: ⊙ Yani 25 aracın **23'ü ayrık**. Vekil kırmızı diyordu, asıl ölçüt **yeşil**.
+#: *Bir vekili, vekili olduğu şey ölçülebilirken kullanmaya devam etmek, ölçümü
+#: reddetmektir.* ⚠ Ve `≤20` KALDIRILMADI, **yerine geçildi**: sayı hâlâ bir sınır ama
+#: artık ikincil — asıl kapı örtüşmedir (aşağıda).
+ORTUSME_TAVANI = 10
+
+#: Sayı ikincil bir emniyet — asıl kapı `ORTUSME_TAVANI`. Ölçülen 25/28'in üstünde bir
+#: pay bırakır ki **sessiz bir büyüme** yine de konuşsun.
+ARAC_TAVANI = 35
+
+
+def _ortusen_ciftler(araclar) -> list[tuple[str, str]]:
+    """🔴 **ÖRTÜŞME YÜKLEMİ — yapısal, kelime listesi YOK** (`ADR-0008`).
+
+    İki araç **örtüşür** ⇔ aynı **birincil etiketi** taşır **ve** girdi anahtar kümeleri
+    aynıdır. Gerekçe: planlayıcı aynı durumda ikisinden birini seçebiliyorsa araçlar
+    onun için **ayırt edilemezdir** — ve OpenAI'nin ölçtüğü tam olarak budur.
+
+    ⚠ `ozet` metinlerinin benzerliğine bakmak bir **heuristik** olurdu ve bu turda kaba
+    vekiller defalarca sahte kusur üretti. Etiket + girdi şeması **beyan edilmiş**
+    alanlardır; yüklem onları okur, tahmin etmez.
+    """
+    import itertools
+
+    out = []
+    for a, b in itertools.combinations(araclar, 2):
+        if (a.etiketler and b.etiketler and a.etiketler[0] == b.etiketler[0]
+                and set(a.girdi) == set(b.girdi)):
+            out.append((a.ad, b.ad))
+    return out
 
 
 def _bayrak(ad: str) -> str:
@@ -58,18 +98,41 @@ def _bayrak(ad: str) -> str:
 
 
 def _sanitizasyon_var() -> bool:
-    src = inspect.getsource(mcp).lower()
-    return any(k in src for k in ("sanit", "temizle", "kacis", "kaçış", "pii", "maskele"))
+    """🔴 ⟳ **METNİ DEĞİL DAVRANIŞI ÖLÇER (2026-08-12).**
+
+    İlk sürüm `inspect.getsource(mcp)` içinde `sanit`/`temizle`/`pii` **kelimelerini**
+    arıyordu. O ölçüm, sanitizasyonu **anlatan bir yorumla** yeşile döner — yani bu
+    deponun en sık eleştirdiği kusuru (*metni ölç, davranışı değil*) kapının kendisine
+    kodlamış olurdu. Doğru ölçüm: kirli bir metni **verip çıktısına bakmak**.
+    """
+    kirli = "not\x07: \x1b[31mkırmızı\x1b[0m " + mcp.ZARF_SON
+    ciktı = mcp._zarfla(kirli)
+    return ("\x07" not in ciktı                      # C0 kontrol karakteri
+            and "\x1b[" not in ciktı                 # ANSI kaçışı
+            and ciktı.count(mcp.ZARF_SON) == 1       # zarf sınırı taklit EDİLEMEDİ
+            and ciktı.startswith(mcp.ZARF_BAS))      # köken beyanı var
 
 
 # --- KARŞILANAN İKİ ŞART: kilitlenir, geri düşemez -------------------------------
 
-def test_YAZMA_ARACI_kayitta_YOK():
-    """✅ Şart ②. *«Ajan YAZAMAZ»* — `tools.py`'nin dört değişmezinden biri. Bir gün bir
-    yazma aracı kayda girerse MCP **açılmadan önce** bu test kırılır."""
-    yazanlar = [getattr(a, "ad", "?") for a in tools.KAYIT
-                if getattr(a, "yan_etki", "") == "yazar"]
-    assert not yazanlar, f"🔴 kayda yazma aracı girdi: {yazanlar} — MCP açılışı bloke"
+def test_YAZMA_ARACI_MCP_YUZEYINDE_YOK():
+    """✅ ⟳ Şart ② — **ölçüm iddiayı DÜZELTTİ (2026-08-12).**
+
+    İlk sürüm *«kayıtta yazma aracı yok»* diyordu ve bu **doğruydu ama yanlış şeyi**
+    ölçüyordu: `yazma_araclari` bayrağı açılınca `KAYIT` 25 → **28** olur ve o gün bu
+    kapı, `§F13`'ün meşru bir adımını **MCP'yle ilgisiz** bir gerekçeyle bloke ederdi.
+
+    🔴 Ve ölçüm asıl kusuru buldu: bayrak açıkken `mcp.araclar(None)` de **28**
+    döndürüyordu — üç yazma aracı **MCP yüzeyinde görünüyordu**. Yani şart ② yalnız
+    *«kayıt boş olduğu için»* sağlanıyordu. Bir güvence değil bir **rastlantıydı**.
+
+    ✅ Düzeltme yapısal: `tools.okuyan_araclar()` (`yan_etki != "yok"` → dışarıda) +
+    `mcp.cagir()` adı bilinse bile **reddediyor**. Doğru şart budur ve **bayraktan
+    bağımsızdır**: kayıt ne olursa olsun MCP yüzeyi salt-okumadır."""
+    yazanlar = {a.ad for a in tools.KAYIT if getattr(a, "yan_etki", "yok") != "yok"}
+    listede = {a["name"] for a in mcp.araclar(None)}
+    assert not (yazanlar & listede), (
+        f"🔴 YAZMA aracı MCP yüzeyinde: {sorted(yazanlar & listede)} — MCP açılışı bloke")
 
 
 def test_MCP_CAGRISI_DORT_KAPIDAN_geciyor():
@@ -84,7 +147,14 @@ def test_MCP_CAGRISI_DORT_KAPIDAN_geciyor():
 def test_MCP_KENDI_KAYDINI_KURMUYOR():
     """`KAT-1` — üç yüzey (LLM · MCP · UI) tek kayıttan beslenir; ayrışırlarsa bir araç
     bir yüzeyde açık ötekinde kapalı olur ve hangisinin doğru olduğu bilinemez."""
-    assert len(mcp.araclar(None)) == len(tools.llm_araclari(None))
+    # ⟳ Eşitlik **salt-okuma alt kümesiyle** kuruldu (2026-08-12): MCP artık yazma
+    # araçlarını elemek zorunda ve `llm_araclari` ile birebir eşitlik, o elemeyi
+    # imkânsız kılardı. Değişmez aynı kaldı — MCP **kendi kaydını kurmuyor**, `tools`'un
+    # bir üreticisini çağırıyor; yalnız hangi üreticiyi çağırdığı değişti.
+    assert len(mcp.araclar(None)) == len(tools.okuyan_araclar(None))
+    assert {a["name"] for a in mcp.araclar(None)} <= {
+        a["name"] for a in tools.llm_araclari(None)}, (
+        "🔴 MCP'de `tools` kaydında OLMAYAN bir araç var — ikinci bir kayıt doğmuş.")
 
 
 # --- KARŞILANMAYAN İKİ ŞART: borç, ve kendini topluyor ---------------------------
@@ -95,10 +165,16 @@ def test_BORC_KENDINI_TOPLUYOR_mcp_acilirsa_KIRMIZI():
     if _bayrak("mcp_yuzeyi") == "off":
         return                      # kapalı → şartlar henüz aranmaz
     n = len(mcp.araclar(None))
+    ort = _ortusen_ciftler(tools.KAYIT)
+    karisan = {a for c in ort for a in c}
     eksik = []
+    if len(karisan) > ORTUSME_TAVANI:
+        eksik.append(f"① ÖRTÜŞEN araç {len(karisan)} > {ORTUSME_TAVANI}: "
+                     f"{sorted(karisan)} — planlayıcı bunlar arasında SEÇEMEZ. "
+                     "Ya birleştir ya girdi/etiketlerini ayrıştır.")
     if n > ARAC_TAVANI:
-        eksik.append(f"① araç sayısı {n} > {ARAC_TAVANI} (ya kes ya ÖRTÜŞMEYİ ölçüp "
-                     "eşiği gerekçesiyle değiştir — OpenAI ölçütü sayı değil örtüşmedir)")
+        eksik.append(f"① araç sayısı {n} > {ARAC_TAVANI} (ikincil emniyet — asıl ölçüt "
+                     "örtüşmedir ve o yeşilse burada kesmek yerine eşiği ÖLÇÜMLE taşı)")
     if not _sanitizasyon_var():
         eksik.append("④ serbest metin sanitizasyonu YOK — müşteri notu/ürün açıklaması "
                      "hücrelerindeki talimatlar MCP yanıtı olarak modele döner")
