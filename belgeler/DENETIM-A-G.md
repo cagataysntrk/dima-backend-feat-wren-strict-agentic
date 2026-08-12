@@ -9,7 +9,7 @@
 |---|---|---|
 | **A** | iş sözlüğü: elle değil **kullanımdan hasat** | 🟣 ölçüldü — *aşağıda* |
 | **B** | route'un **çürütülebilirliği** + garson | ✅ **KAPANDI** — *aşağıda* |
-| **C** | Wren motorunun **kullanılmayan** yetenekleri | 🟣 ölçüldü — *aşağıda* |
+| **C** | Wren motorunun **kullanılmayan** yetenekleri | ✅ **KAPANDI** — *aşağıda* |
 | **D** | agentic önerileri **tek tek** | 🔵 |
 | **E** | cevap biçimi + UX önerileri **tek tek** | 🔵 |
 | **F** | LLM girdi token'ı / maliyet | 🔵 |
@@ -375,3 +375,59 @@ için»*). 🔴 **Ama kıyasın ÇIKTISININ nereye gittiği ve okuyanı olup olm
 | 2 | **`schema_is_current` boşluğu**: bellek bayatlığı bizde kapılı mı? (`vqr` şema-sürüm kapısı olduğu **yazılı**, **ölçülmedi**) | 🟢 ölçüm |
 | ⊘ | `wren.memory` · `skills_content` ithalatı | **reddedildi, gerekçesi yukarıda** |
 | ⏭ | `dataset.py` (161) ↔ `register_csv/parquet` · manifest (~1.490) ↔ `load_mdl` — **aynı çerçeve hatasına düşmemek için** başlıklarından oku | 🟢 ölçüm |
+
+### C.6 ✅ `C` KAPANDI — son üç ölçüm
+
+#### ① Gölge kıyasının çıktısı — **VAR ve LOGLANIYOR**; kullanıcının hipotezi **doğrulandı**
+
+`rls.rlac_manifesti` → `(manifest, sayı)` döndürüyor ve **kademe kararı vermiyor**
+(*«bir dönüşümün kendi anahtarını okuması, aynı kuralın iki sahibini doğurur»* — `KAT-1`).
+Çıktının gittiği yer **ölçüldü**: `compose.py:808` → `_log.warning("çekirdek katman
+(shadow) — %s", mesaj)`.
+
+⊙ Ve `compose.py:773` bu turda ölçtüğüm dersi **kendi diliyle** yazmış:
+
+> *«`shadow`'un yazmaması bilinçli: **yazan bir gölge, gölge değildir** — FAZ 1.1'de
+> ölçülen kusurun aynısı (`motor_rls` gölgesi manifeste RLAC yazıyordu).»*
+
+✅ **Kullanıcının teşhisi doğruydu**: karşılaştırma verisi **gerçekten üretiliyor**.
+⚠ Ama *«kimse ölçüsüne bakmamış»* kısmı da doğru: çıktı bir **`warning` satırı**, bir
+**sayaç değil** — yani *«gölge kaç kez ayrıştı»* sorusu bir log taramasıyla cevaplanır,
+bir metrikle değil. → **`§F` kuyruğuna** yazıldı (telemetri kalemi).
+
+#### ② 🔴 `vqr`'ın *«şema-sürüm kapısı»* — **İZİ YOK**
+
+`app/vqr.py`'de `schema_version` · `surum` · `version` → **0 isabet**. Yani `wren.memory`
+karşılaştırmasında bulduğum boşluk (`schema_is_current`) **gerçek**: şema değiştiğinde
+belleğin bayatlayıp bayatlamadığı **bilinmiyor**.
+
+⚠ **Ve bu bir «yapılmamış iş» değil, bir «yazılmış ama ölçülmemiş iddia»**: depoda
+*«`vqr.recall` ham-SQL replay'i; şema-sürüm kapısı var»* diye bir cümle geçiyordu.
+🅐 *Bir değişmezin ilanını ölçmek, değişmezi ölçmek değildir.* → **`D` kuyruğuna** yazıldı.
+
+#### ③ `dataset.py` ↔ `register_csv` — **AYNI ÇERÇEVE HATASI, aynı cevap**
+
+`app/dataset.py:1` **kendi başlığı**:
+
+> *«Yüklenen Excel/CSV → oturum-scoped DuckDB + **oto-MDL/cube**… Böylece yüklenen veri
+> **MEVCUT cube/NL pipeline'ından geçer** (route + yorum + KPI bedava).»*
+
+⊘ **Motorun `register_csv`'sinin işi değil**: o bir dosyayı motor oturumuna **kaydeder**;
+`dataset.py` ise ondan bir **cube** üretir ki `route()`·`interpret`·KPI **bedava** çalışsın.
+Bir dosyayı tanıtmak ile onu **semantik katmana** sokmak aynı iş değildir (㊹ *motor ≠ veri*).
+
+### C.7 `C` — KARAR TABLOSU
+
+| yetenek | karar | gerekçe |
+|---|---|---|
+| `dry_run` · `pushdown_limit` · `list_tables` · `transform_sql` · `load_mdl` · `register_csv` · `register_parquet` | ⊘ **açılmıyor** | `dry_plan` **25 çağrı** her sorguyu koşmadan doğruluyor; ötekiler için **ölçülmüş bir kusur yok** (`§F14`) |
+| `get_available_functions` | 🟢 **tek açılabilir** | desteklenen fonksiyon kümesi bugün bir **varsayım**; `§B12` aynı sınıfın ölçümle çürüdüğünü gösterdi |
+| `wren.memory` | ⊘ **ithal edilmez** | `vqr` ile örtüşüyor **ve Türkçe morfolojiye bağlı**; ithalat o bağı koparırdı |
+| `wren.skills_content` | ⊘ **konu dışı** | semantik katmanı **kurma** becerileri ↔ bizimki **analiz metodolojisi** |
+| `wren.ask_templates` · `wren.genbi` | ⊘ **konu dışı** | grafik kararı **deterministik** (`ADR-0024`); şablon/GenBI ithalatı o kararı LLM'e devrederdi |
+| `rls.py` · `dataset.py` · manifest | ⊘ **tekrar DEĞİL** | üçü de motora **girdi** üretiyor; başlıkları bunu yazıyor |
+| gölge kıyası | 🟢 **sayaç eksik** | log var, metrik yok → `§F` |
+| `vqr` şema-sürüm | 🔴 **ölçülmemiş iddia** | → `§D` |
+
+> 🆛 *Bir motoru «az kullanıyoruz» diye suçlamadan önce, onun hangi işini bizim
+> yaptığımızı değil, bizim hangi işimizi onun yapamayacağını sormak gerekir.*
