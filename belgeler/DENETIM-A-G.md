@@ -650,3 +650,56 @@ kapı kırmızı olur ve *«FE tüketicisi var mı»* sorusu **sorulmak zorunda*
 **Gölge sayacı** ve **maliyet toplaması** — ikisi de bir **okuma yüzeyi** ister ve o
 yüzeyin meşruiyeti `§G`'nin yetim-uç kararına bağlı. `G` o kararı verdikten **sonra**
 açılabilirler; önce açılırlarsa kuralı ihlal ederler.
+
+---
+
+## G · REPO DÜZENİ — **G.1 KAPANDI**
+
+### G.1 ✅ YETİM UÇ KAPISI — *«geliştirdik, uç açtık, ön uç hiç çağırmadı»*
+
+Kullanıcının `G` teşhisinin **ikinci yarısı**. `test_g_yetim_modul_kapisi.py` birinci
+yarıyı kapatmıştı (modül yazılıp import edilmezse kırmızı); ama bir modül **import
+edilip** bir uç açabilir ve o uç **hiç çağrılmayabilir** — modül kapısı bunu **göremez**.
+🅣 *Bir kapının yokluğu, aradığın yerin kapsamıyla sınırlıdır.*
+
+**Ölçüldü (`ast`, `@router.<fiil>`):**
+
+```
+app/routers/ altında HTTP ucu                         : 77  (19 dosya)
+statik yolu ön uç kaynağında HİÇ geçmeyen             :  8
+```
+
+⚠ **İlk ölçütüm NAİFTİ ve düzelttim** (㊳ 🆊): yolun **son parçasını** aramıştım
+(`/ask/{id}/cube` → `"cube"`) — tesadüfen eşleşiyor ve borcu **4** gibi düşük gösteriyordu.
+Doğru ölçüt **statik önektir** (`/stats/plan`), ve o **8** diyor.
+
+**Sekizi de meşru — ve ÜÇ ayrı sebeple** *(kapı bir «hepsi bağlansın» dayatması değil)*:
+
+| sebep | uçlar |
+|---|---|
+| altyapı yoklaması | `/health` · `/health/ready` |
+| **başka istemci** (ön uç değil, **ajan**) | `/mcp/tools` · `/mcp/call` |
+| işletme aracı (`lab/` + curl) | `/stats/plan` · `/stats/gecikme` · `/stats/katalog` · `/dry-plan` |
+
+✅ **Kapı:** `test_g_yetim_uc_kapisi.py` (**5**). 🅑 Mutasyonla kanıtlı — tüketicisiz bir
+uç eklenince **iki** yüklem birden kırmızı (beyansız + tavan). Maliyet **4,7 sn**
+(önbellekli; modül kapısının ilk yazımı önbeleksiz **2 dk+** sürmüştü, aynı hata
+tekrarlanmadı).
+
+🔴 **Ve kapı ilk koşumunda KENDİ YAZARINI yakaladı:** `/stats/katalog` için yazdığım
+gerekçe *«aynı fonksiyon, tek sahipli»* diyordu — doğru, ama **çağıranı söylemiyordu**.
+`test_HER_GEREKCE_CAGIRANI_SOYLUYOR` onu kırmızıya çevirdi ve gerekçe düzeltildi.
+🆏 *Bir yetimliğin gerekçesi «neden bağlı değil»i değil, «bağlı olmadan nasıl
+çalışıyor»u anlatmalıdır.*
+
+⊙ **`F`'nin devrettiği karar burada kapandı:** maliyet/gölge sayacı için bir uç açılsaydı
+bugün **dokuzuncu yetim uç** olurdu ve bu kapı onu **kırmızı** yapardı. `F`'nin ⊘ kararı
+`G`'nin kapısıyla **tutarlı** çıktı 🆃.
+
+### ⏭ `G`'de kalan
+
+**G.2** `MIMARI.md` şişkinliği — ölçüldü: **5.652 satır · 262 başlık** (h2 **16** · h3
+**123**); `CLAUDE.md` **433 satır · 21 başlık**. 🆚 *Satır sayısı değil başlık söyler*:
+asıl sorun **123 h3**'ün tek düzlemde durması. ⚠ **Silme yok** — dizinleme/özetleme.
+**G.3** `§38 D6`'nın *«tek yetenek kaydı»* cümlesi — `MIMARI.md`'de **0 eşleşme**,
+`§2.0`'a yazılacak.
