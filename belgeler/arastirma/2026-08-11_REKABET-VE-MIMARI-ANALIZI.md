@@ -3866,7 +3866,27 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 | **çıktı (alınan)** | *«tip ekseninde mesafe yok; mesafe **koşul** ekseninde: 2-3 → 14»* |
 | **risk** | yok (ölçüm) |
 
-### D2 · Taksonomiyi aç
+### ⊘ D2 · Taksonomiyi aç — **REDDEDİLDİ: ÖNÜLÜ KARŞILANDI (⟳ 2026-08-12)**
+
+> **Karar yazıldı** (`§40`: *bir «değerlendir» maddesi kararı yazılmadıkça kapanmaz*).
+>
+> Kartın hedefi *«Pulse'un **14 tipine** yakın»*tı. Ölçüldü (kendi koşumum):
+> `anlatici.TANINAN` = **12** olgu türü *(`bottom·count·delta·kiyas·kpi_value·peak·
+> segment_delta·shape·single·streak·top·trend`)* **+ 2 gerekçeli istisna**
+> (`kpi_components`·`measures`) = **14**. Yani hedef **tip ekseninde zaten**
+> karşılanıyor ve `§14.1 D1`'in kendi gövdesi bunu **yazmış**.
+>
+> ⚠ **DENETİM AJANININ GEREKÇESİ DÜZELTİLDİ.** Ajan *«`interpret.py` **14 tip
+> sabiti, 0 dinamik**»* demişti; ölçtüm — `interpret.py`'de **3** statik `kind`
+> var (`anomaly`·`concentration`·`trend`) ve **3** dinamik atama. *«14»* o dosyanın
+> değil, `anlatici.TANINAN`'ın sayısıdır. Karar **aynı kalıyor** ama dayanağı
+> **doğru dosyaya** bağlandı — *yanlış gerekçeli bir ⊘, bir sonraki turda «zaten
+> ölçmüştük» diye yeniden okunmaz* (`§F14`'ün dersi).
+>
+> ⊙ Kalan mesafe **tip** ekseninde değil **koşul** ekseninde (canlıda 2-3 sinyal
+> ateşliyor) ve o `§D11`'in park şartına bağlı. `_streak` eşiği **3** ölçülüp
+> **aklandı**; düşürmek `D2`'nin kendi gürültü riskini çiğnerdi.
+
 
 | | |
 |---|---|
@@ -4359,9 +4379,9 @@ teşhisi tam olarak budur.
 
 | # | kalem | kaynak | ne yapar | maliyet |
 |---|---|---|---|---|
-| **D6** | 🔴 **Draco hard kısıtları** | §9.2 · §13.4 | `stack_without_summative_agg` (**yüzde toplama YASAK**) · `bar_area_without_zero` · `area_bar_with_log` · `size_nominal` · `shape > 8` · `color > 20`. ⊙ **Bu oturumda yüzdeleri topladım; literatür bunu 2018'de hard hata ilan etmiş** | günler |
-| **D7** | **AVA `ckb` + `purpose` alanı** (MIT) | §13.4 | **51 grafik tipi + `dataPres` şeması + `purpose`** (Trend/Comparison/Rank/Proportion) YAML'e port. ⊙ `purpose` **niyet nesnemize doğal kanca** — D3'ün biçim kararını besler. ⚠ **Bağımlılık alma** (`npm i @antv/ava` = **257 MB**) | günler |
-| **D8** | **CompassQL etkinlik tabloları** (BSD-3) | §13.4 | Sıralama için: `Q × TIMEUNIT_T` agregalı → `line: 0, area: −0.1, bar: −0.2`. ⊙ **Draco'nun aksine zaman serisini DOĞRU yapıyor** (Draco'da `temporal` scale tipi yok, ölçüldü) | günler |
+| **D6** | 🔴 **Draco hard kısıtları** | §9.2 · §13.4 | `stack_without_summative_agg` (**yüzde toplama YASAK**) · `bar_area_without_zero` · `area_bar_with_log` · `size_nominal` · `shape > 8` · `color > 20`. ⊙ **Bu oturumda yüzdeleri topladım; literatür bunu 2018'de hard hata ilan etmiş** ⟳ **KARAR: ◐ KISMEN KARŞILANDI — kalan iki kısıt FE'ye devredilir (2026-08-12).** Altı kısıt tek tek ölçüldü: ① `stack_without_summative_agg` → **EŞDEĞERİ ZATEN VAR** (`app/viz.py` `_additive` + `_INTENSIVE_NAME`; yüzde/oran **yığılamıyor**, pie/treemap teklif edilmiyor) ② `color > 20` → **KISMİ** (`_KATEGORI_TAVANI = 20` var ama **renk kanalı** kısıtı değil) ③ `size_nominal` · ④ `shape > 8` → ⊘ **KONU DIŞI**: backend spec'inde **size/shape kanalı yok** (üretilen türler `bar·line·scatter·stacked·heatmap·pivot·table·kpi·facet·facet_measure`; `scatter` yalnız `{x,y,color}`) ⑤ `bar_area_without_zero` · ⑥ `area_bar_with_log` → 🔴 **YOK, ve ikisi de ÖN-UÇ EKSEN işi** — backend'de yeri yok, FE kartına taşınır. ⊙ Yani kart bugünkü hâliyle olduğundan **çok büyük** görünüyordu: bize düşen tek hard kısıt ①'dir ve **kuruludur**. | günler |
+| **D7** | **AVA `ckb` + `purpose` alanı** (MIT) | §13.4 | **51 grafik tipi + `dataPres` şeması + `purpose`** (Trend/Comparison/Rank/Proportion) YAML'e port. ⊙ `purpose` **niyet nesnemize doğal kanca** — D3'ün biçim kararını besler. ⚠ **Bağımlılık alma** (`npm i @antv/ava` = **257 MB**) | günler | ⟳ **KARAR: ⊘ İTHALAT REDDEDİLİR · ✅ AMACI ZATEN KARŞILANIYOR · 🟢 tek delta ayrı kaleme (2026-08-12).** `purpose`'un karşılığı **zaten var ve bağlı**: `app/niyet.py`'nin **kapalı 6 türü** (`TUR_TOPLAM·TUR_KIRILIM·TUR_USTUNLUK·TUR_TREND·TUR_KIYAS·TUR_LISTE` — ölçüldü) ve `app/bicim.py` onu **tüketiyor**. 257 MB'lık `@antv/ava` ithalatı, mekanizması farklı ama sonucu aynı olan bir şeyi ikinci kez kurmak olurdu (`§40.3`). 🟢 **Tek gerçek delta ölçüldü:** `viz.recommend` imzası niyeti **hiç almıyor** — parametreleri `(result, units, lower_set, cube_query, non_additive, hedefler, paket)`, yani grafik kararı **yalnız veri şeklinden** doğuyor. Kanca **yalnız daraltıcı** yönde açılır (`TUR_KIYAS` → `partition` teklifi kapanır; `TUR_TREND` → tabloya daraltma yasak), `niyet=None` ile **`KURAL B`** ve LLM seçmez → **`ADR-0024`** korunur.
+| **D8** | **CompassQL etkinlik tabloları** (BSD-3) | §13.4 | Sıralama için: `Q × TIMEUNIT_T` agregalı → `line: 0, area: −0.1, bar: −0.2`. ⊙ **Draco'nun aksine zaman serisini DOĞRU yapıyor** (Draco'da `temporal` scale tipi yok, ölçüldü) | günler | ⟳ **KARAR: ⊘ ERTELENİR — GEREKÇESİ ÖLÇÜLDÜ (2026-08-12).** Depoda sayısal bir etkinlik/skor tablosu **yok** (ölçüldü: `viz.py`'de `etkinlik|effectiveness` → **0**); karar **dallıdır** (`if/elif`), sıralı değil. Kartın **asıl içeriği** — zaman serisi → `line` tercih edilir, tabloya düşürülmez — `viz._cizme_kurallari`'nde **`not time_col` şartı olarak zaten kurulu** (**3** ayrı dalda ölçüldü) ve canlıda **10/10**. ⊙ Sayısal bir etkinlik tablosu eklemek, **ölçülmüş** bir kararın yerine **kalibre edilmemiş** bir skor koymak olurdu — `§0.6`'nın *«kalibre edilmediği sürece o sayı bir güven değil bir süstür»* kararının aynısı. ⏸ Şart: bugünkü dallı kararın **canlıda bir kırmızısı ölçülene** kadar (`§B12`/`§F14` deseni: *«ölçülmüş bir kusur yok»*).
 | **D9** | **Metabase `candidates` + `agent_error` deseni** | §13.3 | Belirsizlikte `400` + **makine-okunur nesne**: `{"error":"ambiguous_measure","candidates":[…],"agent_error":true}`. ⊙ *«Dürüst red başarı değil»* **ve** *«şüphede garson»* kurallarını **aynı anda** karşılıyor; MCP açılınca (C3) **zorunlu** hâle gelir | günler | ⟳ **08-12 KARAR: KART İKİYE BÖLÜNDÜ.** ⊘ `400 + agent_error` **REDDEDİLDİ**, üç ölçülmüş gerekçeyle: ① bugünkü davranış daha iyi — cevap **verilir**, belirsizlik **beyan edilir**, öteki tanıma **tek tık** üretilir (`§38 D4` canlı); `400` bunu *«kullanıcı asla cevapsız kalmaz»* ve *«dürüst red başarı değil»* kurallarının **tersine** çevirirdi ② MCP'de `400`'ün karşılığı `isError` ve bir ajan için bu bir **araç arızasıdır**, netleştirme daveti değil — ajan ya yeniden dener ya **uydurur** ③ `§40.9`'un kendi ölçümü: **netleştirme bir red değildir** (2.755 · %18,4). ✅ `candidates` yarısı **ALINDI**: `mcp.cagir` artık `_meta.belirsizlik = {terim, secilen_cube, adaylar[], tanim_farkli, beyan}` taşıyor. Sahip `belirsizlik_chipi.belirsizlik_meta` (`KAT-1` — HTTP yoluyla **aynı** karar ve metin). Ölçüldü: *«bu yıl fire ne kadar»* → `{terim:'fire', secilen_cube:'parti', adaylar:['OEE']}`, `isError` **değişmedi**; *«bu yıl ciro»* → alan **hiç eklenmiyor** (`KURAL B`). Kapı `test_BELIRSIZLIK_AJANA_DA_BILDIRILIYOR`.
 
 ### FAZ 4'e eklenenler — kök-neden altyapısı
