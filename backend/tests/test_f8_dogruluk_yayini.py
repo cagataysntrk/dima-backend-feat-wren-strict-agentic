@@ -34,9 +34,21 @@ _KOK = pathlib.Path(__file__).parent.parent
 _JSON = _KOK / "lab" / "reports" / "nl_corpus.json"
 _BELGE = _KOK.parent / "belgeler" / "DOGRULUK.md"
 
-pytestmark = pytest.mark.skipif(
-    not _JSON.is_file(),
-    reason="korpus artefaktı yok — `python lab/kapi.py --tam` koşulmamış")
+#: ⚠ İki AYRI eksiklik, iki AYRI sonuç — ve bunu ayırmak bir kapı hijyenidir:
+#:   · `belgeler/` **hiç bağlanmamış** (konteynerde `-v …/belgeler:/belgeler:ro` yok)
+#:     → bu bir **koşum ortamı** eksiğidir, bir ürün kusuru değil → **SKIP**
+#:   · dizin **var** ama `DOGRULUK.md` yok → yayın gerçekten kayıp → **FAIL**
+#: Ölçüldü: mount unutulunca kapı dört sahte kırmızı verdi (bu turda aracın yirmi
+#: birinci yanılması). *Bir kapı, kendi ortamının eksiğini ürünün kusuru gibi
+#: göstermemelidir.*
+pytestmark = [
+    pytest.mark.skipif(
+        not _JSON.is_file(),
+        reason="korpus artefaktı yok — `python lab/kapi.py --tam` koşulmamış"),
+    pytest.mark.skipif(
+        not _BELGE.parent.is_dir(),
+        reason="`belgeler/` bağlanmamış — konteynere `-v \"$PWD/belgeler:/belgeler:ro\"` ekleyin"),
+]
 
 
 def _dc(k: dict) -> tuple[int, int]:

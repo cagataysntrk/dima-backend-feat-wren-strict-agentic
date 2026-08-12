@@ -99,24 +99,24 @@ cevaptır**; semantik katmanda başarısızlık **bir hata mesajıdır**.»*
 | 9 | Türkçe morfoloji | Veezoo'nun DACH kaması → **$6M** | 🟢 **VAR** — ⚠ 8.861 satır, ters yatırım (§4.1) |
 | 10 | Çok-turlu bellek | — | 🟡 **VAR, tur bazında ÖLÇÜLMÜYOR** |
 | 11 | VQR / hafıza | Snowflake VQR · Wren LanceDB | 🟡 **VAR ama garsona BESLENMİYOR** |
-| 12 | Bütçe + durdurma | Snowflake · **Magentic-One stall ≤2** | 🟡 `Butce` **uykuda** · **stall sayacı YOK** |
+| 12 | Bütçe + durdurma | Snowflake · **Magentic-One stall ≤2** | 🟢 **VAR** *(§C2 `97dc8f6`)* — ~~uykuda~~ **ölçüldü:** `Butce(adim=8·saniye=30·sorgu=12)` **canlı**, `AZAMI_ADIM=12` koşmadan önce uygulanıyor, stall sayacı `ONARIM_TAVANI=2` (**§B4** ile geldi). Tavanlar kapıda kilitli |
 | 13 | Araç kaydı + yetki + makbuz | Cortex 9 · Fabric 4 · Cube 16 | 🟡 **25 araç VAR — bayrak KAPALI** |
 | 14 | MCP yüzeyi | *«dağıtım kanalının kendisi»* | 🟡 **VAR — `mcp_yuzeyi: off`** |
-| 15 | **Şema daraltma (schema linking)** | hataların **%27,6-33,0'ı** · %40→%90 | 🔴 **YOK** — ⊙ *çözümü `ManifestExtractor.extract_by` ile motorun İÇİNDE* |
-| 16 | **Örnek sorgu / few-shot retrieval** | Cube **+17…+23**, 4 KB'den | 🔴 **YOK** |
+| 15 | **Şema daraltma (schema linking)** | hataların **%27,6-33,0'ı** · %40→%90 | 🟢 **VAR** *(§B1)* — ölçüldü: istem **%71-90** küçülüyor, kapsam **8/8**. ⚠ İndeks **her zaman tam**, yalnız **metin** budanır (`katalog_metni`) |
+| 16 | **Örnek sorgu / few-shot retrieval** | Cube **+17…+23**, 4 KB'den | 🟢 **VAR** *(§B2)* — `vqr.few_shot_block()` **garsona** bağlandı (önce yalnız Discovery'ye bağlıydı: *«yazılmış ama bağlanmamış»*) |
 | 17 | **İş sözlüğü (`instructions.md`)** | Wren AI Context Layer | 🔴 **YOK** |
-| 18 | **Reflect + repair döngüsü** | Snowflake Error Correction · Genie | 🔴 **YOK** — tek *«düzeltme turu»*, hata modele geri verilmiyor |
+| 18 | **Reflect + repair döngüsü** | Snowflake Error Correction · Genie | 🟢 **VAR** *(§B4)* — `plan_garson` onarım döngüsü: red **sınıfı** garsona geri veriliyor, tavan **2** (Magentic-One). Ölçüldü: tutma **%25 → %90** |
 | 19 | **Skills (markdown metodoloji)** | **Anthropic: %21 → >%95** | 🔴 **YOK** |
 | 20 | **Ephemeral/karalama sorgusu** | Hex | 🔴 **YOK** |
-| 21 | **Olgu tipi taksonomisi** | **Pulse'un 14 tipi** | 🔴 **YOK** — `interpret()` **1-2 olgu** |
-| 22 | **Cevap biçimi kararı** | OpenAI Model Spec | 🔴 **YOK** — biçim üç bileşenin **yan ürünü** (chip **6,6,5,6,6,4,6,3**) |
-| 23 | **Sürpriz (JS diverjansı)** | Adtributor kurucu örneği | 🔴 **YOK** — en büyük segment suçlanıyor |
-| 24 | **FDR düzeltmesi** | **CHI 2018: içgörülerin %60+'ı yanlış** | 🔴 **YOK** |
+| 21 | **Olgu tipi taksonomisi** | **Pulse'un 14 tipi** | 🟢 **VAR** *(§D1 ölçümü teşhisi çürüttü)* — *«hep 1-2»* **az örneklemdenmiş**: canlıda **0–6** olgu, `TANINAN` **12 tip**. Kusur üretimde değil **tüketimdeydi** (`kiyas`+`segment_delta` şablona tanıtılmamış) |
+| 22 | **Cevap biçimi kararı** | OpenAI Model Spec | 🟢 **VAR** *(§D3 `88579d8`)* — `bicim.py` **tek sahip**: niyetin kapalı türleri × chip kovaları. Chip **6,6,6,6,5,6,6,5 → 4,6,2,4,4,4,6,3** |
+| 23 | **Sürpriz (JS diverjansı)** | Adtributor kurucu örneği | 🟢 **VAR** *(§E2 `21f1b8a`)* — Jensen-Shannon segment sürprizi + beyan. ⚠ **Sıralama DEĞİŞTİRİLMEDİ**: eklenen bir **ölçü** ve onun beyanı |
+| 24 | **FDR düzeltmesi** | **CHI 2018: içgörülerin %60+'ı yanlış** | 🟡 **BH UYGULANAMAZ, YERİNE BEYAN** *(§E3 `74678ef`)* — ölçüldü: bu depoda **p-değeri yok**, eşik bir z-kesimi; BH'yi uygulamak **normallik varsayımını dayatmak** olurdu. Yerine **tarama beyanı**: *«N aday tarandı, M'i işaretlendi; ~K'sı şansa düşer»* |
 | 25 | **Bileşik segment araması** | HotSpot **F1 >%90** ↔ Adtributor **<%15** | 🔴 **YOK** — layer-1'de kilitli |
 | 26 | **Garson doğruluk ölçümü** | Hex 30-50 soru · Anthropic %90 kapısı | 🔴 **YOK** — trafiğin **%37'si**, ölçümü **21 senaryo** |
 | 27 | **Kurulum süresi ölçümü** | rakipler *«7 gün»* satıyor | 🔴 **YOK** |
-| 28 | **Yayınlanmış doğruluk** | *«savunma değil SİLAH»* | 🔴 **YOK** |
-| 29 | **İlan edilmiş kapsam** | yaşayanların **hepsinde** var, ölenlerin **hiçbirinde** | 🔴 **YOK** — ⊙ *sıfırıncı karar (§14.0)* |
+| 28 | **Yayınlanmış doğruluk** | *«savunma değil SİLAH»* | 🟢 **VAR** *(§F8 `45730be`)* — [`belgeler/DOGRULUK.md`](../DOGRULUK.md): **%95,6** (payda 11.237) + **iki payda birden** + şişme **25,3×** + **en düşük şirket tabloda** + **bilinen körlükler** + yeniden üretme künyesi. Kapıyla çürümüyor |
+| 29 | **İlan edilmiş kapsam** | yaşayanların **hepsinde** var, ölenlerin **hiçbirinde** | 🟢 **VAR** *(§F7 `ddc6fa3`)* — `yetenek.py` **üç kutu** (`anlamadim`·`yapamiyorum`·`yapmiyorum`) ve canlı: *«forecast v1'de yok — bilinçli bir karar… **Yapabildiğim:** geçmiş eğilimi gösterebilirim»* + chip |
 | 30 | **Ajan yüzeyinden dağıtım** | Rill: projelerin **%50+'ı ajan kuruyor** | 🔴 **YOK** |
 
 **Sayım:** 🟢 **9 var** · 🟡 **5 yarım** · 🔴 **16 yok**
@@ -4065,7 +4065,7 @@ yoğunluğunun saat dağılımı — *«hangi saatlerde duruyor»* sorusu **ifad
 | **LanceDB hibrit erişim** | §11.5 | 🟡 bizde `multilingual-e5-large` + leksik yedek **zaten var** (TR-MTEB birincisi) — **değiştirmeye gerek yok** |
 | **`wren serve mcp`** (`query_cube`·`list_cubes`·`describe_cube`·`get_context`·**`recall_queries`**) | §11.5 | ✅ **C3** — ⚠ *`recall_queries` bizim VQR'ımızın MCP karşılığı; C3'te araç adları hizalanmalı* |
 | **`skills/`** | §11.3 | ✅ **B10** |
-| **`evals/`** | §11.3 | 🆕 **A15** ⬇ — *Wren'in kendi eval koşumu; A1'e desen olarak bakılmalı* |
+| **`evals/`** | §11.3 | ⊘ **A15 — ÖLÇÜLDÜ, YAPILMIYOR** *(2026-08-12)*: kurulu `wren` paketinde **28 alt modül** var, **`evals` YOK** (`import wren.evals` → `ModuleNotFoundError`) — depoda var, **pakette değil**; desen için klon gerekir. ⊙ Ve desen alınacak yer **boş değil**: `eval/run.py` **392 satır** + `cases.yaml` + `baseline.json` + iki ground-truth + tarihli mutabakat, `lab/kapi.py --hepsi` içinde **koşuyor** ve `test_eval_gate` bir **taban ratchet'i** tutuyor (raporun kendi cümlesi `§13.5`: *«listedeki çoğu araçtan **olgun**»*). ⊙ Üstelik hedefi **`A1`** ve `A1` **PARK** (*«ölçüm tesisatı ürün değildir»*) — park edilmiş bir işe desen aramak parkı dolambaçlı yoldan bozar. **On beşinci ölçülmüş «yapma».** ⚠ `§13.5`'in adlandırdığı **gerçek** eksikler ayrı duruyor: snapshot katmanı · kategori kırılımı · **standart hata**; onlar `evals/`'ı kopyalamakla değil kendi koşumumuza **eklenerek** gelir. Kapı: `test_a15_eval_kosumu.py` (3) — pakete `evals` girerse karar **yeniden okunur** | ~~🆕 **A15** ⬇~~ — *Wren'in kendi eval koşumu; A1'e desen olarak bakılmalı* |
 | **`sdk/` (`wren-langchain`, `wren-pydantic`)** | §11.3 | 🆕 **F17** ⬇ — *değerlendir; bugün doğrudan `wren_core` kullanıyoruz* |
 | **Değer profilleme (value profiling)** | §11.5 | ⊘ **B13 — ÖLÇÜLDÜ, ÇÜRÜDÜ** *(2026-08-12)*: canlı curl — `SİYAH`→**`Siyah`** (büyük/küçük + Türkçe İ) · `kontinü kasar`→**`KONTİNÜ KASAR`** · `ferraro sanfor`→**`FERRARO SANFOR-1`** (kartın **`Kırmızı-01` vakasının ta kendisi**) · olmayan değer (`kırmızı`) → **satır YOK + beyan + soru** (*«Var olanlar: Açık · Beyaz · Koyu · Orta · Siyah. Hangisini istersin?»*). Yani hem eşleme hem — daha önemlisi — **eşleşmeyenin beyanı** çalışıyor. ⚠ Bir **sahte kusur** karakterize edildi: `siyah renkli partiler` süzgeçsiz görünüyor ama sebep **ölçü yokluğu** (*«Hangi ölçüyü istiyorsun?»*), değer eşleştirici değil. Fark: Wren profillemeyi *build-time istatistiği* tutar, bizimki **çalışma-zamanı bulanık eşleme + katalog enum'u** — aynı sonuç, üstelik **beyanlı**. On dördüncü ölçülmüş «yapma». Kapı: `test_b13_deger_profilleme.py` (5) | ~~🆕 **B13** ⬇~~ — 🔴 Wren'in **6 doğruluk sütunundan biri**, bizde **yok**: kullanıcının yazdığı değer (*«kırmızı»*) DB'deki değere (*«KIRMIZI»*, *«Kırmızı-01»*) **eşlenmeli**. ⊙ `deger_capasi.py` bunun **bir kısmını** yapıyor; Snowflake'in *«relevant literals»* ajanı tam bu iş |
 | **`wren cube query --sql-only` kıyası** | §11.4 | ✅ **F2** |
