@@ -1602,3 +1602,363 @@ app/emin_miyim.py  (yeni · TEK SAHİP)
 
 > *Bu depo, çözümü dört kez yazmış ve dördünde de çöpe atmış. Yapılacak iş bir icat değil,
 > bir **toplama**.*
+
+---
+
+# EK 4 — 2026-08-13 · A'DAN Z'YE DÖNÜŞÜM
+
+> Bu bölüm *«nasıl evireceğiz»*in tam cevabıdır: **her bileşen · her ihtimal · her adım ·
+> her geri alma**. Buradaki her dosya adı ve imza **ölçüldü**, varsayılmadı.
+
+---
+
+## §30 · 🔴🔴 GÖÇ DESENİ **ZATEN KANITLANMIŞ** — `route()` imzası DEĞİŞMEZ
+
+`cube_router.route`'un kendi docstring'i (birebir, `:4150`):
+
+> *«**Red gerekçesi (Faz 0):** `None` dönen her dal `_reddet("R…")` ile etiketlenir ve
+> `red_gerekcesi()` ile okunabilir. **İmza DEĞİŞMEDİ — beş çağıranın hiçbiri kırılmadı**
+> (`app/llm.py`'nin `_llm_usage_var` kalıbı).»*
+
+🔴 **Bu tam olarak bizim ihtiyacımız olan göçtür ve bu depoda BİR KEZ BAŞARIYLA YAPILMIŞ.**
+Aday listesi de aynı yoldan taşınır:
+
+```python
+# app/cube_router.py — DEĞİŞMEYEN imza
+def route(question, schema, *, liste_kirilimi=False) -> dict | None:
+    ...
+    _adaylari_yaz(sirali_liste)        # ← YAN KANAL (ContextVar), `_reddet()` ile aynı desen
+    return kazanan_cube_query          # ← dönüş tipi AYNI
+
+# okuyan taraf — yalnız isteyen okur
+adaylar = cube_router.adaylar()        # `red_gerekcesi()` ile aynı kalıp
+```
+
+| kazanç | neden |
+|---|---|
+| **beş çağıran dokunulmaz** | `yetenek.py:474` · `typo_onerisi.py:69` · `ask.py` · … imza aynı |
+| **`KURAL B` bedava** | bayrak kapalıyken kimse `adaylar()` çağırmaz → davranış **bayt bayt** aynı |
+| **istek-kapsamlı** | `_llm_usage_var` gibi `ContextVar` → yarış yok, sızıntı yok |
+| **kapı kolay** | *«`adaylar()` çağrılmıyorsa yanıt birebir aynı»* tek yüklemle kanıtlanır |
+
+> ⊘ **`route()`'un dönüş tipini `list` yapmak REDDEDİLDİ** — beş çağıranı kırar, `KURAL B`
+> kanıtını zorlaştırır, ve deponun **kendi çözdüğü** bir problemi yeniden açar ㉓.
+
+---
+
+## §31 · BİLEŞEN ENVANTERİ — her parça, bugün ↔ sonra
+
+### 31.1 🟢 Dokunulmayanlar *(en büyük grup — ve bu iyi haber)*
+
+| bileşen | neden dokunulmuyor |
+|---|---|
+| `parse_cube_query` beyaz listesi | seçilen aday **aynı** kapıdan geçer |
+| `compose` · grain sözleşmesi · motor | `cube_query` şekli değişmiyor |
+| `narration_guard` · `contracts` (makbuz) | cevap yolu **aynı** |
+| `viz.recommend` (`ADR-0024`) | `§E.1`'de kapılandı — niyet almaz |
+| `kok_neden` · `contribution` · `yoy` · `interpret` | makronun **gövdeleri**, çağrılma biçimi değişmiyor |
+| `planner.Butce` · `AZAMI_ADIM` · `ONARIM_TAVANI` | tavanlar aynen |
+| `authorize()` · RLS · tenant damgası | 🔴 **güvenlik sınırı asla bayrağa bağlanmaz** |
+| `POST /cube` | pill/checkpoint yolu **zaten** bu ucu kullanıyor |
+
+### 31.2 🔵 Değişenler — ve her birinin **tam** işi
+
+| # | bileşen | bugün | sonra | dokunuş |
+|---|---|---|---|---|
+| **A** | `cube_router.route` | kazananı döner, kaybedenleri **atar** | + `_adaylari_yaz()` **yan kanal** | 🟢 küçük |
+| **B** | `cube_router:1190` marj | `≥4 harf`, tek dalda | `emin_miyim.karar()` çağırır | 🟢 küçük |
+| **C** | `cube_router:1109` | `len==1 else None` | listeyi **yazar**, sonra `None` | 🟢 küçük |
+| **D** | `cube_router:3865` typo | kendi taban+marjı | `emin_miyim` kullanır | 🟢 küçük |
+| **E** | `value_index.auto_fix` | 🔴 **referans uygulama** | `emin_miyim`'e **taşınır** (sahibi olur) | 🟡 orta |
+| **F** | `cube_tie_candidates` | ⚠ **ikinci sahip** — bağımsız yeniden türetiyor | `adaylar()`'ı **okur** (`KAT-1`) | 🟡 orta |
+| **G** | **`emin_miyim.py`** 🆕 | ⊘ yok | **tek sahip**: taban · marj · karar | 🔴 yeni |
+| **H** | `llm.select_cube` (garson) | çoğunluk seçer, **dağılımı atar** | dağılımı **marj olarak** döner | 🟡 orta |
+| **I** | **`oneri.py`** 🆕 | ⊘ yok | kısmi girdi → sıralı aday (leksik+vektör+sıklık) | 🔴 yeni |
+| **J** | `vqr` gömücü | doğrulanmış soru eşleme | + **terim** gömme (çok görünümlü) | 🟡 orta |
+| **K** | `schemas.py` | `Suggestion` · `NextStep` | + `Aday` (skor·marj·gerekçe) | 🟢 küçük |
+| **L** | `routers/ask.py` | tek cevap | + `/oneri` ucu · `_meta.marj` | 🟡 orta |
+| **M** | FE `ChatPanel` | tek girdi | + öneri şeridi · çapa · pill | 🔴 yeni |
+| **N** | FE `ReportCard` | 4 chip şeridi | yazarken **söner** | 🟢 küçük |
+| **O** | `features.py` | bayrak çözümü | + `oneri_katmani` · `marj_esigi` | 🟢 küçük |
+| **P** | `nl_corpus` | `doğru-cube` | + `doğru-cube@1` / `@3` | 🟡 orta |
+
+⊙ **On altı bileşenin sekizi «küçük», üçü «yeni».** Ve üç yeninin ikisi (`emin_miyim`,
+`oneri`) **saf fonksiyon** — motor, DB, LLM dokunuşu yok, yani **test edilmesi ucuz**.
+
+---
+
+## §32 · UÇTAN UCA AKIŞ — önce ↔ sonra
+
+```
+ÖNCE                                         SONRA
+─────────────────────────────────            ─────────────────────────────────
+                                             [her tuş] ──→ /oneri  (leksik, ~ms)
+                                                  │           └→ vektör (ısınmışsa)
+                                                  │           └→ sıklık önceliği
+                                                  ▼
+                                             ÖNERİ ŞERİDİ (≤7, kaydırma yok)
+                                                  │
+[Enter] ──→ ask()                            [Enter/tık] ──→ ask()
+   │                                              │
+route() ──→ cube_query | None                route() ──→ cube_query | None
+   │            └ None ise → garson                 └ + adaylar()  ← YAN KANAL
+   │                                              │
+   │                                        emin_miyim.karar(adaylar)
+   │                                              │
+   │                                 ┌────────────┼────────────┐
+   │                            marj≥eşik    marj<eşik    taban altı
+   │                                 │            │            │
+   │                            OTO-İCRA    ADAY PILL'LERİ  SINIR BEYANI
+   │                                 │       (⊘ LLM)      (⊘ LLM)
+   │                                 │            │
+   └─────────────────────────────────┴────────────┘
+                    │                        aday YOK / uzun cümle
+                    │                                │
+                    │                        GARSON taslak plan
+                    │                        → pill önizleme → onay
+                    ▼                                │
+            parse_cube_query ◄───────────────────────┘   (AYNI beyaz liste)
+                    ▼
+            compose → motor → guard → makbuz → beyan     (HEPSİ AYNI)
+```
+
+🔴 **Kırmızı çizgi:** `parse_cube_query`'nin **solunda** her şey değişebilir; **sağında**
+hiçbir şey değişmez. Tüm dönüşüm bu çizginin solunda kalır.
+
+---
+
+## §33 · HER İHTİMAL — girdi × durum matrisi
+
+### 33.1 Girdi tipine göre davranış
+
+| # | girdi | öneri şeridi | Enter'da ne olur | LLM |
+|---|---|---|---|---|
+| 1 | **boş** | son bakılanlar · en çok sorulanlar · dikeyin çekirdek 5'i | — | ⊘ |
+| 2 | **1–2 karakter** | ⊘ **gösterme** (gürültü) | — | ⊘ |
+| 3 | **3+ karakter, kısmi** | önek + leksik + vektör | en iyi adayla ask() | ⊘ |
+| 4 | **tam tek terim** (`fire`) | ölçü adayları × dönem × kırılım | marj kapısı | ⊘ |
+| 5 | **net tam soru** | ince şerit (*«…kastettiysen»*) | 🟢 **oto-icra** | ⊘ |
+| 6 | **belirsiz soru** (çok sahipli) | adaylar | 🔵 **cevaplama, göster** | ⊘ |
+| 7 | **yazım hatalı** | kanonik yazım önerilir | `auto_fix` marjı | ⊘ |
+| 8 | **karışık dil** (`OEE downtime`) | leksik tam-token yakalar | normal | ⊘ |
+| 9 | **sosyal** (`teşekkürler`) | ⊘ **şerit kapalı** | sosyal sınıf | ⊘ |
+| 10 | **kapsam dışı** | taban altı → *«ölçüm yok»* | 🔴 **sınır beyanı** | ⊘ |
+| 11 | **uzun bileşik** (>8 kelime ∨ fiil) | 🔴 **şerit söner** | garson → **plan önizleme** | ✅ |
+| 12 | **takip** (çapa dolu) | iki şerit: *bu rapor üstünde* ∥ *yeni konu* | seçime göre | ⊘ |
+| 13 | **chip tıklaması** | — | `POST /cube`, 0 LLM | ⊘ |
+| 14 | **pill düzenleme** | — | yeniden kur, koş | ⊘ |
+
+🔴 **On dört satırın on ikisi sıfır LLM.** Bu, `E-8`'in ürün karşılığıdır.
+
+### 33.2 Sistem durumuna göre
+
+| durum | öneri katmanı | gerekçe |
+|---|---|---|
+| bayrak **kapalı** | ⊘ **hiç çalışmaz** | `KURAL B` — bayt bayt bugünkü |
+| gömücü **soğuk** | ◐ **yalnız leksik** | ⚠ ölçülmüş kusur: soğuk açılış `/ask`'i asmıştı |
+| gömücü **hazır değil** (`/health/ready`) | ◐ yalnız leksik | aynı |
+| garson **sağlayıcısız** | ✅ 1–10, 12–14 çalışır · ⊘ 11 çalışmaz | *«sessizce `rule`'a düşme»* yasağı |
+| yetki **dar** | 🔴 aday listesi **süzülmüş** | süzme **sıralamadan ÖNCE** |
+| katalog **yeni derlendi** | 🔴 indeks **bayat** → tazelenene kadar leksik | `demo/wren-project` tuzağı |
+| thread **çapalı**, kullanıcı bayrağı **kapattı** | çapa → düz metin bağlam, pill → normal sorgu | zarif düşüş |
+| **mobil** | öneri **6**, pill düzenleme ⊘ | Baymard |
+
+### 33.3 Marj kapısının dört çıkışı — hiçbiri *«anlamadım»* değil
+
+| çıkış | koşul | kullanıcı ne görür |
+|---|---|---|
+| 🟢 **OTO-İCRA** | `skor₁ ≥ taban` ∧ `marj ≥ eşik` | cevap + makbuz + ince *«kastettiysen»* şeridi |
+| 🔵 **ADAYLARI GÖSTER** | `skor₁ ≥ taban` ∧ `marj < eşik` | *«Şunlardan hangisi?»* + `[+N diğer]` |
+| 🟣 **GARSON TASLAĞI** | aday yok ∧ garson var | pill önizleme → onay |
+| 🔴 **SINIR BEYANI** | `skor₁ < taban` ∨ garson yok | *«Bu konuda ölçüm yok. Şunlar var: …»* |
+
+> 🔴 **Dördü de bir CEVAPTIR.** *«Anlamadım»* diye beşinci bir çıkış **yok** — kullanıcının
+> bağlayıcı kuralı yapısal olarak sağlanmış olur.
+
+---
+
+## §34 · SEKİZ ADIM — dosya · sözleşme · kapı · geri alma
+
+### Adım 1 · `emin_miyim.py` — **beş tanımı birleştir** 🔴 öneri katmanından BAĞIMSIZ
+
+```
+DOSYA   app/emin_miyim.py (yeni) · çağıranlar: cube_router ×3 · value_index · llm
+SÖZLEŞME  karar(adaylar, *, taban, marj) -> OTO_ICRA | GOSTER | SINIR
+          adaylar: [Aday(kimlik, etiket, skor 0-1, kaynak)]
+          ⚠ TÜM skorlar 0–1'e normalize (harf sayısı da, oran da, oy da)
+KAPI    test_emin_miyim_tek_sahip.py
+          ① beş çağıranın hiçbiri kendi marjını hesaplamıyor (ast)
+          ② `value_index.auto_fix` davranışı BİREBİR korunuyor (mutasyonlu)
+          ③ normalize edilmemiş skor girerse ValueError
+GERİ AL  saf yeniden düzenleme — davranış değişmez, revert yeterli
+DEĞER   🟢 `KAT-1` borcu kapanır · öneri katmanı olmadan da kazanç
+```
+
+### Adım 2 · Marj kapılı oto-icra — 🔴 `§13.1`'i BEKLEMEZ
+
+```
+DOSYA   app/cube_router.py (:1190, :1109) · features.py (marj_esigi)
+SÖZLEŞME  bugünkü `≥4 harf` → `emin_miyim.karar()`; eşik BAYRAKTAN gelir
+          🔴 eşik = ∞ → BUGÜNKÜ DAVRANIŞ (varsayılan)
+KAPI    test_marj_kapisi.py
+          ① eşik=∞ → korpus çıktısı BİREBİR aynı (KURAL B)
+          ② eşik düşürülünce oto-icra artar, sessiz-yanlış SAYILIR
+GERİ AL  eşik = ∞
+DEĞER   🟢 §1.2'nin ZIT hareketine (doğruluk↑ erişim↓) KONTROL DÜĞMESİ
+```
+
+### Adım 3 · Aday yan kanalı — `route()` imzası **değişmez**
+
+```
+DOSYA   app/cube_router.py (`_aday_var` ContextVar) · ask.py (reset)
+SÖZLEŞME  `adaylar() -> list[Aday]` — `red_gerekcesi()` ile AYNI kalıp
+          reset `ask()` başında, `reset_llm_usage()` ile AYNI yerde
+KAPI    test_aday_yan_kanali.py
+          ① beş çağıranın imzası değişmedi (inspect.signature)
+          ② `adaylar()` çağrılmazsa yanıt BİREBİR aynı
+          ③ istekler arası SIZINTI yok (ardışık iki ask)
+GERİ AL  `adaylar()` çağıranı kaldır
+DEĞER   `cube_tie_candidates`'in ikinci sahipliği (F) kapanabilir
+```
+
+### Adım 4 · Kıyas temeli chip'i — 🔴 bağımsız, ölçülmüş kusuru kapatır
+
+```
+DOSYA   app/kok_neden.py · schemas.Suggestion · ReportCard.tsx
+SÖZLEŞME  değerlendirici yüklem («düşük/kötü/yüksek») + kıyas temeli YOK
+          → [akran ▾] [dönem ▾] [hedef ▾] chip'leri
+KAPI    test_kiyas_temeli_chipi.py — «RAM-3 neden düşük» artık CEVAPSIZ DEĞİL
+GERİ AL  chip üretimini kapat
+DEĞER   🟢 ölçülmüş, tekrar eden kusur sınıfı kapanır
+```
+
+### Adım 5 · Öneri motoru — 🔴 **`§13.1` ÖLÇÜMÜNDEN SONRA**
+
+```
+ÖN KOŞUL  Recall@3 ≥ %85 (yoksa §20.1'e göre dar kapsam ya da DUR)
+DOSYA   app/oneri.py (yeni, saf) · lab/oneri_indeksi.py (üreteç)
+SÖZLEŞME  ara(kismi_girdi, schema, principal) -> list[Aday]
+          🔴 authorize() süzmesi SIRALAMADAN ÖNCE
+          leksik (edge n-gram) ⊕ vektör (exact, flat) ⊕ sıklık → RRF
+          ⚠ `k` sabiti BİLİNÇLİ seçilir (60 ↔ 2 tuzağı)
+KAPI    test_oneri_motoru.py
+          ① yetkisiz ölçü listede YOK (🔴 sızıntı kapısı)
+          ② p95 < 300 ms (kapının kendi maliyeti ölçülür)
+          ③ gömücü soğukken leksik kipe düşer, ÇÖKMEZ
+          ④ indeks bayatsa leksik kipe düşer + BEYAN eder
+GERİ AL  `oneri_katmani: off`
+```
+
+### Adım 6 · Öneri ucu + FE şeridi + **tuş** — 🔴 ikisi AYNI demette
+
+```
+DOSYA   routers/ask.py (`GET /oneri`) · types.ts · ChatPanel.tsx · FeatureOverride
+SÖZLEŞME  debounce 200 ms · ≤7 öneri · kaydırma YOK · ARIA combobox (↓↑ Enter Esc)
+          tuş → user-kapsamlı FeatureOverride (features.py zaten çözüyor)
+KAPI    test_g_yetim_uc_kapisi.py 🔴 uç açılırsa FE tüketicisi AYNI demette
+        test_oneri_katmani_kural_b.py — bayrak kapalı → BAYT BAYT aynı
+GERİ AL  tuş kullanıcıda; bayrak global `off`
+```
+
+### Adım 7 · Çapa · pill · makro · plan önizleme
+
+```
+DOSYA   ChatPanel.tsx · ReportCard.tsx · plan_semasi · plan_garson
+SÖZLEŞME  pill = Niyet alanlarının görünür hâli · `+` TİPLİ (ölçü/kırılım/dönem/adım)
+          garson çıktısı HER ZAMAN plan (1..N); N≥2 → HER ZAMAN önizleme
+          canlı doğrulama: geçersiz kombinasyonda pill KIRMIZI (grain ihlali zaten var)
+KAPI    test_pill_niyet_aynasi.py · test_plan_onizleme.py (koşmadan önce görünür)
+GERİ AL  bayrak
+```
+
+### Adım 8 · Hasat döngüsü
+
+```
+DOSYA   sinonim_onerici (var) · lab/sozluk_hasadi.py (var) · yeni: tıklama kaydı
+SÖZLEŞME  tıklama → (ham ifade → alan) adayı → kuyruk (approved=False) → insan onayı
+          🔴 KONUM YANLILIĞI: yalnız «1. sırayı ATLAYAN» tık GÜÇLÜ sinyal
+             + ε karıştırma + «hiçbirini tıklamadı» = NEGATİF sinyal
+KAPI    test_hasat_konum_yanliligi.py — naif sayım kendini beslemiyor
+GERİ AL  kayıt kapat; kuyruk zaten insanlı, onaysız hiçbir şey compose'a girmez
+DEĞER   🟢 KALICI VARLIK — arayüz geri alınsa bile sözlük zenginleşmiş kalır
+```
+
+---
+
+## §35 · SÖZLEŞME DEĞİŞİKLİKLERİ — tam liste
+
+| ne | değişiklik | kırıcı mı |
+|---|---|---|
+| `route()` imzası | ⊘ **değişmiyor** | ⊘ |
+| `cube_query` şekli | ⊘ **değişmiyor** | ⊘ |
+| `AskResponse` | `+ _meta.marj` · `+ adaylar[]` (bayraklı) | ⊘ ekleme |
+| `Suggestion` | `+ kind="aday"` (dördüncü şerit) | ⊘ ekleme |
+| yeni `Aday` modeli | `kimlik · etiket · skor · kaynak · gerekce` | 🆕 |
+| `GET /oneri` | yeni uç | 🆕 ⚠ FE tüketicisi **aynı demette** |
+| `features.yml` | `+ oneri_katmani` · `+ marj_esigi` | ⊘ ekleme |
+| korpus ölçütü | `doğru-cube` → `@1` **ve** `@3` | ⚠ **payda değişmez** 🅜 |
+
+---
+
+## §36 · NE KIRILABİLİR — ve kapısı
+
+| risk | belirti | kapı |
+|---|---|---|
+| `route()` çağıranı kırılır | import hatası | ① imza değişmedi (`inspect`) |
+| yan kanal **sızar** | ikinci istekte önceki adaylar | ② ardışık istek yalıtımı |
+| bayrak kapalıyken davranış değişir | korpus oynar | ③ `KURAL B` bayt-bayt |
+| yetkisiz ölçü **görünür** | 🔴 bilgi sızıntısı | ④ dar yetkili principal ile liste boş |
+| öneri **çalıştırılamaz** aday sunar | tık → hata | ⑤ her aday **temsil edilebilir** |
+| indeks **bayatlar** | yanlış öneri, sessiz | ⑥ `mdl_version` deseni · bayatsa **beyan** |
+| kapı **bayrak arkasında susar** | 🆀 | ⑦ her kapı **iki kipte** koşar |
+| korpus **yanlış şeyi ölçer** | *«iyileşme gibi görünen gerileme»* | ⑧ `@1`/`@3` ayrımı + payda sabit |
+| konum yanlılığı **sabitler** | öneri hep aynı, kabul düşüyor | ⑨ ε karıştırma etkin |
+| garson **ilk boyamayı bloke eder** | ekran boş, 98 sn | ⑩ öneri garsonu **beklemez** |
+
+---
+
+## §37 · GERİ ALMA — üç seviye
+
+```
+1  ANLIK    ekrandaki tuş → o kullanıcı için kapalı (FeatureOverride, user kapsamı)
+2  ŞİRKET   features.yml `oneri_katmani: off` → tenant/global kapsam
+3  KOD      revert — ⚠ ama adım 1/2/4 REVERT EDİLMEZ: onlar borç kapatıyor
+```
+
+🟢 **Ve geri alınamayan tek şey bir VARLIK:** hasat edilmiş sinonimler onaylanmış olarak
+katalogda kalır. Arayüz tamamen geri alınsa bile **katalog zenginleşmiş** olur.
+
+> *Doğru tasarlanmış bir deney, başarısız olduğunda bile bir şey bırakır.*
+
+---
+
+## §38 · TAKVİM DEĞİL, **KAPI SIRASI**
+
+| # | adım | `§13.1` bekler mi | tek başına değerli mi | geri alınabilir mi |
+|---|---|---|---|---|
+| 1 | `emin_miyim` birleştirme | ⊘ **hayır** | ✅ `KAT-1` borcu | ✅ revert |
+| 2 | marj kapısı | ⊘ **hayır** | ✅ kontrol düğmesi | ✅ eşik=∞ |
+| 3 | aday yan kanalı | ⊘ **hayır** | ✅ ikinci sahip kapanır | ✅ |
+| 4 | kıyas temeli chip'i | ⊘ **hayır** | ✅ kusur sınıfı | ✅ |
+| 5 | öneri motoru | 🔴 **EVET** | — | ✅ bayrak |
+| 6 | uç + FE + tuş | 🔴 evet | ✅ tamamlama | ✅ tuş |
+| 7 | çapa · pill · plan önizleme | 🔴 evet | ✅ | ✅ bayrak |
+| 8 | hasat döngüsü | 🔴 evet | ✅ kalıcı varlık | ◐ kısmi |
+
+🔴 **Dördü ölçüm beklemiyor ve dördü de bugünkü kusurları kapatıyor.** Öneri katmanı
+çıkmasa bile bu dördü **kalıcı kazançtır**.
+
+---
+
+## §39 · BU BÖLÜMÜN SINIRI
+
+Buradaki **her dosya adı, imza ve satır numarası ölçüldü**. Ölçülmeyen ve bu yüzden
+**tahmin olan** üç şey:
+
+| # | ne | neden önemli |
+|---|---|---|
+| ① | `oneri.py`'nin **gerçek gecikmesi** | adım 5'in kapısı p95<300 ms; model seçimine bağlı |
+| ② | FE tarafının **iş büyüklüğü** | adım 6–7 ağırlıklı FE; bu depoda FE **zayıf halka** (`§E3` alanı **ekranda görünmüyordu**) |
+| ③ | `cube_tie_candidates`'in **bugünkü kapsamı** | adım 3'te ikinci sahipliğin kapanması buna bağlı |
+
+> *Bir göç planının değeri, ölçtüğü şeylerde değil, **ölçmediğini söylediği** yerlerdedir.*
