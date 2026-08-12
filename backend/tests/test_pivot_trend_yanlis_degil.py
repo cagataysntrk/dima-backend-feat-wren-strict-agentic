@@ -215,14 +215,28 @@ def test_TOPLANABILIRLIGI_BILINMEYEN_OLCU_FAIL_CLOSED():
 
 def test_TEK_KALEMDE_TOPLAMIN_PAYI_YAZILMAZ():
     """*"toplamın %100,0'i"* bilgi taşımaz. Kullanıcı: *"boş laf — tek yıl tabii ki %100."*
-    Doldurma cümleler, hesaplanmış cümlelere olan güveni de aşındırır."""
+    Doldurma cümleler, hesaplanmış cümlelere olan güveni de aşındırır.
+
+    ⟳ **SÖZLEŞME GÜÇLENDİ (2026-08-12) — ve bu testin İDDİASI DEĞİŞMEDİ, KAPSAMI BÜYÜDÜ.**
+
+    Bu test *«tek kalemde pay yazılmaz»* diyordu ve `top` olgusunun metnini ölçüyordu.
+    `§18.5`'te aynı gerekçe **başlığa** da uygulandı: tek kalemde *«en yüksek»* demek de
+    yapılmamış bir kıyası ima eder. Artık tek grup `top` değil **`single`** üretiyor.
+
+    ⚠ Test **gevşetilmedi**: eski yüklem (*«toplamın» geçmesin*) aynen duruyor, üstüne
+    üstünlük iddiasının da yokluğu ve **varlık adının korunduğu** ölçülüyor.
+    *Bir sözleşme güçlendiğinde, onu ölçen kapı daralmaz — genişler.*
+    """
     tek = {"columns": ["yil", "fire_kg"], "row_count": 1,
            "rows": [{"yil": "2026", "fire_kg": 454477}]}
     y = interpret(tek, {"cube": "fire", "measures": ["fire_kg"], "dimensions": ["yil"]},
                   cube_meta=META_TOPLANABILIR)
-    ust = next(f for f in y["facts"] if f["type"] == "top")
+    ust = next(f for f in y["facts"] if f["type"] in ("top", "single"))
     assert "toplamın" not in ust["text"], \
         f"tek kalemde 'toplamın %100'i' basıldı: {ust['text']}"
+    assert "En yüksek" not in ust["text"], \
+        f"tek kalemde ÜSTÜNLÜK iddia edildi (§18.5): {ust['text']}"
+    assert "2026" in ust["text"], f"varlık adı düştü: {ust['text']}"
 
 
 def test_TOPLANAMAYAN_OLCUDE_SIRALAMA_TOPLAMA_YAPMAZ():

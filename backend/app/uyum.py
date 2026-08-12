@@ -43,10 +43,27 @@ cevap **rozetsizdir** — yasağı çiğnemez, **karşılar**.
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
 
 #: Bir niyet işaretinin sorguda karşılığı yoksa üretilen kayıt.
+
+#: 🔴 **MODÜL KAYDEDİCİSİ — ve yokluğu GİZLİ BİR KIRMIZIYDI.**
+#:
+#: `§AT` beyanı (`atif_notu`) bir `except` içinde `_log.warning(...)` çağırıyordu ama bu
+#: modülde `_log` diye bir ad **hiç tanımlı değildi**. Yani o satır koştuğu an bir
+#: `NameError` doğuracak ve — daha kötüsü — onu saran `except Exception` **kendi yazım
+#: hatasını da yutacaktı.
+#:
+#: ⚠ Taban ölçüldü (`git worktree`, HEAD~6): kusur **oradan geliyor**, bu turun eseri
+#: değil. `test_COZULMEYEN_ISIM_YOK` onu görüyordu; görünmemesinin sebebi yerel kapının
+#: yalnız **değişen dosyaların** testlerini seçmesiydi — demet kapısı koşunca konuştu.
+#:
+#: *Bir en-iyi-çaba bloğu, kendi içindeki yazım hatasını da yutar; onu ancak dışarıdan
+#: bir kapı görebilir.*
+_log = logging.getLogger("dima.uyum")
+
 @dataclass(frozen=True)
 class Ihlal:
     """`isaret` telemetri için SABİT; `aciklama` kullanıcıya gider."""
@@ -1865,6 +1882,32 @@ def yon_beyani(resp) -> bool:
              f"**%{abs(olcum[1]):.1f} {ger_ad}**.")
     resp.note = " ".join(x for x in [getattr(resp, "note", None), cumle] if x)
     return True
+
+
+def ka_beyani(resp, soru: str, schema: dict) -> bool:
+    """🔴 `§KA`'nın **TEK ÇAĞRILIK** yüzü — ve buraya gelişi bir kapının emriydi.
+
+    ## Neden `ask()`'te değil burada
+
+    Modül büyüme kapısı (`test_ASK_FONKSIYONU_TAVANI_ASMIYOR`) `ask()`'i **1438 kod
+    satırında** tutuyor ve kendi mesajı şunu diyor:
+
+    > *«yeni davranışı **modüle çıkar**, tavanı yükseltme. Tavanı yükseltmek kapıyı
+    > kapının kendisiyle çürütür.»*
+
+    Fiş kanalı eklenince `ask()` 1440'a çıktı. Kapı haklı: burada zaten **karar** (yüklem)
+    ve **iliştirme** var; `ask()`'te duran tek şey niyetin çözülmesiydi — o da bu
+    beyanın kendi girdisi. *Bir kararın girdisini toplamak, kararı veren yerin işidir.*
+
+    ⚠ `niyet` **lazy** içe aktarılır: `niyet` bu modülü çağırıyor (`ustunluk_istendi`),
+    tepede içe aktarmak döngü kurardı.
+
+    Döner: beyan edildi mi.
+    """
+    from app import niyet as _n
+
+    return uydurma_beyani(resp, _n.coz(soru, schema), soru=soru,
+                          cq=resp.cube_query, schema=schema)
 
 
 def uydurma_beyani(resp, niyet, *, soru: str | None = None,

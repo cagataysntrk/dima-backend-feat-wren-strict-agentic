@@ -130,16 +130,31 @@ def test_KANIT_HESABI_COKERSE_BEYAN_KALIR(monkeypatch):
                                schema={"cubes": []}) is True
 
 
-def test_CAGRI_YERI_FISI_GERCEKTEN_VERIYOR():
+def test_KANIT_KANALI_GERCEKTEN_BAGLI():
     """🔴 Yazılıp bağlanmayan bir kanal, yazılmamış bir kanaldır (bu deponun 8 kez
-    ölçtüğü desen)."""
+    ölçtüğü desen).
+
+    ⟳ **YÜKLEM YERE DEĞİL İDDİAYA BAĞLANDI (2026-08-12).** İlk yazımım `ask.py`'de
+    `uydurma_beyani(` çağrısının yanında `soru=`/`cq=` arıyordu; büyüme kapısı gövdeyi
+    `uyum.ka_beyani`'ye taşıtınca kapı kırıldı — oysa **kanal bozulmamıştı**, yalnız
+    yeri değişmişti. *Bir kapıyı çağrının adresine bağlamak, ilk taşınmada onu
+    kırar* (ders ㉕: kapıyı ADA değil GÖVDEYE bağla).
+
+    Yeni yüklem iki halkayı da ölçer: `ask()` kanalı **çağırıyor** mu, ve kanal fişi
+    **gerçekten taşıyor** mu.
+    """
+    import inspect
     import pathlib
 
     kaynak = (pathlib.Path(__file__).parent.parent / "app" / "routers"
               / "ask.py").read_text(encoding="utf-8")
-    i = kaynak.index("uydurma_beyani(")
-    govde = kaynak[i:i + 300]
+    assert "ka_beyani(" in kaynak, (
+        "🔴 `ask()` `§KA` kanalını hiç çağırmıyor → *«cirumuz»* sahte uyarısı geri gelir.")
+    govde = inspect.getsource(uyum.ka_beyani)
     for alan in ("soru=", "cq=", "schema="):
         assert alan in govde, (
-            f"🔴 `§KA` çağrısı `{alan}` taşımıyor → kanıt kanalı hiç koşmaz ve "
-            "*«cirumuz»* sahte uyarısı geri gelir.")
+            f"🔴 kanal `{alan}` taşımıyor → kanıt hiç hesaplanmaz ve yüklem eski "
+            "(sahte uyarı veren) hâline döner.")
+    assert "resp.cube_query" in govde, (
+        "🔴 fişin kaynağı `resp.cube_query` değil — teslim edilmeyen bir fişe bakan "
+        "bir kanıt, kanıt değildir.")
