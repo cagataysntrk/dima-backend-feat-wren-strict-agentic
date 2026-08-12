@@ -13096,3 +13096,41 @@ ONGORU-KATMANI-KARARI.md` yazmış ve içinde *«şu anda korpus kapısı kırm�
 69→54)»* diyor. **Bu bilgi BAYAT** — o kırmızı benim payda kovası hatamdı ve
 `b2f3edb`'de kapandı; korpus bugün **çıkış kodu 0** (83/69/68/72). Belge o hâliyle
 okunursa yanlış bir gerileme alarmı üretir 🅟.
+
+## ✅ DÖRT KIRMIZIDAN ÜÇÜ KAPANDI — **üçü de benim işimin sonucuydu**
+
+**Tam kapı (doğru kapsam): 4.843 ✅ · 1 🔴 · 43 atlandı** (383/456 dosya, 4 dk 16 sn).
+
+| kırmızı | kök | karar |
+|---|---|---|
+| `f8 · AYRIM_PAYDAYA_KAPANIYOR` | `sebep::` kovaları ayrıma giriyordu — fark **2.841**, dört kovanın toplamıyla **birebir** | ✅ ayrımdan çıkarıldı |
+| `f8 · BUYUK_SAYILAR_YAYINDA_TAZE` | aynı kök | ✅ birlikte kapandı |
+| `beyanlar_curumesin · YAZMA_ARACLARI` | donmuş küme `preferences.set`'i bilmiyordu | ✅ gerekçesiyle güncellendi |
+
+🔴 **Ve `§PAYDA` düzeltmem YARIMMIŞ** ㉚: oranı (`tur_paydasi`) düzeltmiş, **kapanış
+kapısını** görmemiştim. Aynı ayrımın **iki tüketicisi** vardı; birini onarıp ötekini
+bırakmak, kuralın **yarısını** kurmaktır.
+✅ Onarım tek sahibi korudu ve **ayrışmayı kapıya bağladı** (`test_TESHIS_ONEKI_TEK_SAHIP`).
+
+## 🔴 DÖRDÜNCÜ — `d11 SERTIFIKASIZ_KOKEN_YOK` **tesadüf değil, ÜRETİLEBİLİR**
+
+Hedefli koşumda **geçiyor**, paralel koşumda **düşüyor**. ㉝ diye geçmedim, **ürettim**
+(`-n 4 --dist loadfile`, dört dosya):
+
+```
+🔴 SERTİFİKASIZ köken (9 boyut): bakim.bolum · kalite.bolum · kalite.operator ·
+   makine_duruslari.bolum · mizan.hesap_tipi · mizan.ana_grup · oee.bolum ·
+   parti.kisim · surdurulebilirlik.kisim        — hepsi `dimension_origin='olculmedi'`
+```
+
+⚠ **Bu bir sıra kusuru değil, bir ARTEFAKT ayrımı** ⑪: paralel koşum her işçiye **taze
+derlenmiş** bir ağaç veriyor (`lab/izolasyon.py`); hedefli koşum **önceden derlenmiş**
+ağacı okuyor. Yani kapı **taze katalogda** doğruyu söylüyor; tek dosyalık koşum
+**bayat** bir ölçümle yeşil veriyor.
+
+> `CLAUDE.md`'nin kendi dersi: *«bayat bir okuma, yanlış bir sonuçtan kötüdür: yanlış
+> sonuç sorgulanır, bayat okuma güvenilir.»*
+
+⏭ **Sıradaki iş:** dokuz boyutun `dimension_origin` beyanı — **ölç, sonra karar**.
+⚠ Bu bir **katalog beyanı** işidir (fan-out ölçümü), bir kapı gevşetme işi **değil**;
+`§D11`'in kendi cümlesi: *«beyansız bir JOIN, ölçülmemiş bir risktir»*.
