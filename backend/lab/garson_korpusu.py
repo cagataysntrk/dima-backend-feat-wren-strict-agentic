@@ -222,7 +222,7 @@ def _kos(istemci, korpus: list[dict]) -> list[dict]:
         gecmis: list[str] = []
         cq = None
         durum = None
-        for soru in s["turlar"]:
+        for _tur, soru in enumerate(s["turlar"], 1):
             govde: dict = {"question": soru}
             if gecmis:
                 govde["history"] = list(gecmis)
@@ -236,11 +236,12 @@ def _kos(istemci, korpus: list[dict]) -> list[dict]:
             # koşmadığı bir turu bir ürün davranışı gibi raporladı.
             # *Bir hatayı bir sınıfa çevirmek, onu ölçümden silmektir.*
             if r.status_code != 200:
-                out.append({"senaryo": s["ad"], "soru": soru, "basamak": "hata",
+                out.append({"senaryo": s["ad"], "soru": soru, "tur": _tur, "basamak": "hata",
                             "cube": None, "not": f"HTTP {r.status_code}", "satir": 0})
                 continue
             d = r.json()
-            out.append({"senaryo": s["ad"], "soru": soru, "basamak": _basamak(d),
+            out.append({"senaryo": s["ad"], "soru": soru, "tur": _tur,
+                        "basamak": _basamak(d),
                         "cube": (d.get("cube_query") or {}).get("cube"),
                         "not": (d.get("note") or "")[:120],
                         "satir": len(((d.get("result") or {}).get("rows")) or [])})
@@ -284,11 +285,39 @@ def rapor(sonuc: list[dict]) -> str:
         sat.append(f"🔴 **boş cevap: {o['bos_cevap']}** — makbuzlu boş bir sonuç bir "
                    "yanlıştır: doğruluğunun kanıtı gibi görünür.")
         sat.append("")
-    sat.append("| senaryo | soru | basamak | cube | satır |")
-    sat.append("|---|---|---|---|---|")
+    # 🔴🔴 `§A12` — **TUR BAZINDA KIRILIM.** SParC'ın ölçümü: Turn 1 **%38,6** → Turn 3
+    # **%3,7** → Turn ≥4 **%1,1**; yani çok turlu bellekte doğruluk **çöküyor**. Kartın
+    # şikâyeti *«bizde tur bazında hiç ölçüm yok»* idi — ve haklıydı: korpus turları
+    # koşuyordu ama raporu **tur numarasını hiç yazmıyordu**.
+    #
+    # ⊙ Ölçüm **bedava**: `_kos` zaten tur sırasını biliyor. *Bir ölçümün eksikliği,
+    # verinin yokluğu değil, onu yazmayan bir satırdır.*
+    #
+    # ⚠ Bu kırılım **cevaplanabilirlik** ölçer (bir küpe bağlandı mı), doğruluk değil —
+    # ikisini karıştırmak SParC'ın sayısıyla bizimkini kıyaslanabilir sanmaktır.
+    _tur_dagilim: dict[int, list[str]] = {}
     for r in sonuc:
-        sat.append(f"| {r['senaryo']} | `{r['soru'][:44]}` | {r['basamak']} | "
-                   f"{r['cube'] or '—'} | {r['satir']} |")
+        _tur_dagilim.setdefault(int(r.get("tur") or 1), []).append(r["basamak"])
+    if len(_tur_dagilim) > 1:
+        sat.append("## Tur bazında cevaplanabilirlik (`§A12`)")
+        sat.append("")
+        sat.append("| tur | n | cevaplanan | pay |")
+        sat.append("|---|---|---|---|")
+        for t in sorted(_tur_dagilim):
+            b = _tur_dagilim[t]
+            ok = sum(1 for x in b if x in ("route", "garson", "orkestra"))
+            sat.append(f"| {t} | {len(b)} | {ok} | %{100 * ok / max(len(b), 1):.0f} |")
+        sat.append("")
+        sat.append("⚠ **Cevaplanabilirlik ≠ doğruluk.** SParC'ın *«Turn≥4 → %1,1»* sayısı "
+                   "açık şemada **birebir SQL eşleşmesi** ölçer; bu tablo kapalı bir "
+                   "semantik katmanda **bir küpe bağlanabilme**yi ölçer. İki sayı "
+                   "kıyaslanamaz — *aynı adı taşıyan iki ölçüt, aynı şeyi ölçmez.*")
+        sat.append("")
+    sat.append("| senaryo | soru | tur | basamak | cube | satır |")
+    sat.append("|---|---|---|---|---|---|")
+    for r in sonuc:
+        sat.append(f"| {r['senaryo']} | `{r['soru'][:44]}` | {r.get('tur', 1)} | "
+                   f"{r['basamak']} | {r['cube'] or '—'} | {r['satir']} |")
     return "\n".join(sat)
 
 

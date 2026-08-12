@@ -4188,7 +4188,7 @@ ve kullanıcı **hiçbir şey hissetmiyor** (`KURAL B` gereği davranış aynı 
 
 | # | iş | kaynak | neden |
 |---|---|---|---|
-| **A12** | 🔴 **Çok turlu belleği TUR BAZINDA ölç** | §29.3-5 · §21.14 | SParC: Turn 1 **%38,6** → Turn 3 **%3,7** → **Turn ≥4 %1,1**. Bizde tur bazında **hiç ölçüm yok** — *«3. turda ne kadar doğruyuz»* bilinmiyor. ⊙ A1 korpusuna **çok turlu bir dilim** eklenmeli |
+| ✅ **A12** | 🔴 **Çok turlu belleği TUR BAZINDA ölç** | §29.3-5 · §21.14 | SParC: Turn 1 **%38,6** → Turn 3 **%3,7** → **Turn ≥4 %1,1**. Bizde tur bazında **hiç ölçüm yok** — *«3. turda ne kadar doğruyuz»* bilinmiyor. ⊙ A1 korpusuna **çok turlu bir dilim** eklenmeli ⟳ **KARAR:** **YAPILDI (`§40.8`)** — korpus artık her kaydı `tur` ile etiketliyor ve rapora **tur bazında cevaplanabilirlik** tablosu koyuyor. 🟢 Canlı (3 zincir · 11 tur): **Tur 1-5 hepsi %100**. SParC'ın *«Turn≥4 → %1,1»* çöküşü **yeniden üretilmedi** — sebebi yapısal (SParC açık şemada **birebir SQL eşleşmesi** ölçer; biz kapalı semantik katmanda, odak taşıma deterministik). ⚠ İki sınır yazılı: bu **cevaplanabilirlik**tir doğruluk değil · payda 11. |
 | ✅ **A13** | 🔴 **Planın neden AYRIŞMADIĞINI ölç** | §17.6 | ⟳ **ÖLÇÜLDÜ ve TEŞHİS ÇÜRÜDÜ (`§17.6`, 2026-08-11): PLAN AYRIŞIYOR.** `/stats/plan` ile 10 planlayıcı-tetikleyen soru: tek adım **%60 → 5/24 = %21** · çok adım **19/24 = %79** · ortalama adım **3,3** · düşen plan **0**. 🔴 **Üç hipotezin ÜÇÜ DE çürüdü:** ① istem ayrıştırmayı engellemiyor ② deterministik-önce kapısı erken kapanmıyor (10 soruda **24** planlayıcı çağrısı) ③ `tek_adimli` kısayolu kural hâline gelmemiş. ⚠ Örneklem farkı dürüstçe yazılı: rapor **kütükteki 20 kaydı** (üretim karışımı) saymıştı, bu ölçüm planlayıcıyı **bilerek tetikleyen** 10 soruyla yapıldı; ortak soru *«planlayıcı koştuğunda ayrıştırıyor mu»* ve cevabı **evet**. ⊙ Kartın *«C1/C2'den ÖNCE ölçülmeli»* şartı **yerine getirildi** ve sıralamayı doğruladı |
 | ✅ **A14** | **Hava boşluğunu ölç ve YAYINLA** | §29.2 | ✅ **YAYINLANDI (2026-08-12): [`belgeler/HAVA-BOSLUGU.md`](../HAVA-BOSLUGU.md).** Ölçüm **12 canlı cevap**, tek tek curl. 🔴 **İki katman ölçüldü ve BİRİNCİSİ DAHA GÜÇLÜ:** ① **9/12 cevapta LLM anlatı basamağı HİÇ koşmadı** — cümleyi deterministik kod kurdu, sayı modele gitmedi bile ② kalan 3'ünde LLM koştu ve sayılar **perdelendi**: **20 yer tutucu · 0 bozulan · 0 düşen iddia**, anlatı guard'ı doğruladı. ⊙ Ve `§D11-b`+`§18.5` düzeltmeleri bu turda katman ①'i **genişletti** (yinelenen ölçü ve uydurma üstünlük kalkınca daha çok cevap şablonda kaldı). ⚠ **Dört körlük yazılı:** payda küçük (12 — oran değil **varlık** kanıtlar) · Discovery yolu ayrı (güvencesi `§⑧`) · `bozulan=0` bir tavan değil bir ölçüm · `guard_muaf` bir gevşetmedir ve içeriği yayında. Kapı `tests/test_a14_hava_boslugu_yayini.py` (7) — sayıları değil **mekanizmayı** korur: yer tutucu · iddia kapısı · anlatı guard'ı · şablon yolu |
 
@@ -4196,7 +4196,7 @@ ve kullanıcı **hiçbir şey hissetmiyor** (`KURAL B` gereği davranış aynı 
 
 | # | iş | kaynak | neden |
 |---|---|---|---|
-| **B9** | 🔴 **İki-sağlayıcılı LLM hakem** | §7.3 | AUROC ölçümü: `dry_plan` (**query executability**) **0,500 — tam şans**; execution self-consistency **0,613**; string self-consistency **0,675**; tek GPT-4o hakem **0,770**; 🟢 **iki-sağlayıcılı topluluk 0,822** (ECE 0,031). ⊙ **Bizim `k=3` oylamamızın tavanı ~0,675** — CHASE-SQL'in dersi: *darboğaz aday üretimi değil **SEÇİM***. ⚠ Oylamanın **yerine değil, ÜSTÜNE** |
+| ⏸ **B9** | 🔴 **İki-sağlayıcılı LLM hakem** | §7.3 | AUROC ölçümü: `dry_plan` (**query executability**) **0,500 — tam şans**; execution self-consistency **0,613**; string self-consistency **0,675**; tek GPT-4o hakem **0,770**; 🟢 **iki-sağlayıcılı topluluk 0,822** (ECE 0,031). ⊙ **Bizim `k=3` oylamamızın tavanı ~0,675** — CHASE-SQL'in dersi: *darboğaz aday üretimi değil **SEÇİM***. ⚠ Oylamanın **yerine değil, ÜSTÜNE** ⟳ **KARAR:** **PARK, şartı yazılı (`§40.8`)** — kartın ölçümü sağlam (`dry_plan` AUROC **0,500 tam şans** · self-consistency **0,613**), hakem gerçekten değerli. Ama iki sağlayıcı = **iki kat kota** ve kazancı ölçecek taban yok (`§26` park). *Kazancı ölçülemeyen bir maliyeti varsayılan açmak, ölçümü bir törene çevirir.* **Şart: `§26`.** |
 | ✅ **B10** | 🔴 **SKILLS — metodoloji markdown'ları** *(B3'ten AYRI)* | §36.1-5 | ⚠ **B3 `instructions.md` = iş sözlüğü** (*«fire'yi kg konuşuruz»*). **B10 = metodoloji**: kohort · funnel · retention · **YoY-oranı** · what-if — her biri bir **markdown iş akışı**. ⊙ Anthropic: **skill'siz %21 → skill'li >%95**; *«bir skill'e paketlenebilecek bağlam **fiilen sınırsız**»*. Ve §34'ün beş metodoloji hatası (adım sırası · dedup · pencere · kohort ataması · geri dönüş) **kodda değil METİNDE** yaşar. ⚠ Bakım: **pack ile aynı PR** (bakımsız **1 ayda %95→%65**) ⟳ **KARAR:** **KISMEN KAPANDI (`§D9`, 2026-08-12):** üç metodoloji markdown'ı yazıldı (`yoy-orani.md` · `huni.md` · `kohort.md`) ve kapıya bağlandı (`test_d9_metodoloji_skilleri.py`, 11). Mekanizma + içerik hazır; **bayrak `skills: off`** ve açılış şartı `§26` (garson doğruluk ölçümü) — o PARK'ta. |
 | ✅ **B11** | **Ephemeral / karalama sorgusu** | §36.1-4 | Hex'in ölçümü: ajan önce veriyi **görünmez bir sorguyla** tanıyor → *«ilk denemede doğruluk yükseliyor»*. Bizde **yok**. ⊙ B4 (repair) ile kardeş: biri **hatadan sonra**, öteki **hatadan önce** ⟳ **KARAR:** **AMACI KARŞILANIYOR (`§40.3`)** — Hex soru-başına gizli sorgu koşar; biz kurulum anında **bir kez** profilliyoruz: **121 boyutun 120'si (%99)** değer taşıyor. Mekanizma farklı, sonuç aynı, maliyet daha düşük. |
 
@@ -4211,7 +4211,7 @@ ve kullanıcı **hiçbir şey hissetmiyor** (`KURAL B` gereği davranış aynı 
 
 | # | iş | kaynak | neden |
 |---|---|---|---|
-| **E7** | 🔴 **LMDI-I'e geç + sıfır/negatif politikası** | §10.3 | Bugünkü ayrıştırmamız **LMDI-II** ailesinde: artık sıfır ✅, sıra bağımsız ✅ — ama **alt-grup toplanabilirliği YOK**. ⊙ Çok seviyeli iniş (`derinles` → ikinci kırılım) yaptığımızda **katkılar toplanmıyor**; kullanıcı *«bu %30 nereye gitti»* diye sorarsa cevap veremeyiz. ⚠ Ve **`ln(0)` tanımsız**, negatifte LMDI **tanımsız** → politika: sıfır/negatif bileşende **Shapley'e geç ya da dürüstçe sus** |
+| ⊘ **E7** | 🔴 **LMDI-I'e geç + sıfır/negatif politikası** | §10.3 | Bugünkü ayrıştırmamız **LMDI-II** ailesinde: artık sıfır ✅, sıra bağımsız ✅ — ama **alt-grup toplanabilirliği YOK**. ⊙ Çok seviyeli iniş (`derinles` → ikinci kırılım) yaptığımızda **katkılar toplanmıyor**; kullanıcı *«bu %30 nereye gitti»* diye sorarsa cevap veremeyiz. ⚠ Ve **`ln(0)` tanımsız**, negatifte LMDI **tanımsız** → politika: sıfır/negatif bileşende **Shapley'e geç ya da dürüstçe sus** ⟳ **KARAR:** **ÖNCÜL YANLIŞ ÇIKTI (`§40.8`)** — ayrıştırmamız LMDI **değil**, saf toplamsal fark (`delta = simdi − onceki`), gövdede **logaritma yok**. `ln(0)`/negatif kaygıları **konu dışı**; alt-grup toplanabilirliği *«yok»* değil **TAM**. LMDI-I↔II ayrımı **çarpımsal** ayrıştırma içindir. ⊘ Geçmek, tam toplanabilir bir yöntemi sıfır/negatifte **tanımsız** bir yöntemle değiştirmek olurdu. Kapı `tests/test_e7_toplamsal_ayristirma.py` (6). |
 
 ### FAZ 5'e — agentic'in asıl kilidi
 
@@ -4743,3 +4743,60 @@ varsaymak yerine»*) doğru bir ilkedir ama bugün bir kusur ölçülmedi: derle
 motorun kendi manifestinden üretiyor ve `dry_plan` her sorguyu **koşmadan önce** motora
 doğrulatıyor. *Bir soruyu sormak, cevabı zaten bilen bir kapı varken yeni bir bağımlılıktır.*
 ⏸ Şart: `dry_plan`'ın kaçırdığı bir fonksiyon uyumsuzluğu **canlıda ölçülene** kadar.
+
+### 40.8 🔴 SON ÜÇ KALEM — A12 · E7 · B9
+
+#### A12 · Tur bazında ölçüm — YAPILDI, ve SParC'ın çöküşü BİZDE YOK
+
+Kartın şikâyeti haklıydı: korpus çok turlu zincirleri **koşuyordu** ama raporu **tur
+numarasını hiç yazmıyordu**. ✅ `lab/garson_korpusu.py` artık her kaydı `tur` ile
+etiketliyor ve rapora **tur bazında cevaplanabilirlik** tablosu koyuyor. *Bir ölçümün
+eksikliği, verinin yokluğu değil, onu yazmayan bir satırdır.*
+
+🟢 **Canlı ölçüm (3 zincir · 11 tur, curl):**
+
+    Tur 1: 3/3 = %100      Tur 4: 1/1 = %100
+    Tur 2: 3/3 = %100      Tur 5: 1/1 = %100
+    Tur 3: 3/3 = %100
+
+⊙ SParC'ın *«Turn 1 %38,6 → Turn ≥4 %1,1»* çöküşü **yeniden üretilmedi** — ve sebebi
+yapısal: SParC **açık şemada birebir SQL eşleşmesi** ölçer; biz **kapalı bir semantik
+katmanda** ölçüyoruz ve odak taşıma deterministik (`§B9 ODAK VARLIK`).
+
+⚠ **İki dürüstlük sınırı yazılı:** ① bu tablo **cevaplanabilirlik** ölçer (bir küpe
+bağlanabilme), **doğruluk değil** ② payda küçük (11 tur). *Aynı adı taşıyan iki ölçüt,
+aynı şeyi ölçmez.*
+
+#### E7 · LMDI — ⊘ **ÖNCÜL YANLIŞ ÇIKTI**
+
+Kart *«ayrıştırmamız LMDI-II ailesinde… alt-grup toplanabilirliği YOK… `ln(0)` tanımsız»*
+diyordu. Ölçüldü: `contribution.contributions()` **saf toplamsal fark ayrıştırması**
+yapıyor (`delta = simdi − onceki`), gövdede **logaritma yok**.
+
+| kartın kaygısı | ölçüm |
+|---|---|
+| `ln(0)` tanımsız | ⊘ konu dışı — logaritma kullanılmıyor |
+| negatifte LMDI tanımsız | ⊘ konu dışı — çıkarma her işarette tanımlı |
+| alt-grup toplanabilirliği **YOK** | 🔴 **TERSİ** — toplamsal ayrıştırma **tam** toplanabilir |
+
+⊙ LMDI-I ↔ LMDI-II ayrımı **çarpımsal/indeks** ayrıştırma içindir (etkinlik × yapı ×
+yoğunluk); biz bir değişimi **tek boyutun segmentlerine** bölüyoruz.
+
+> *Bir yöntemi ait olmadığı ailenin kusurlarıyla eleştirmek, çözdüğü sorunu göremeden onu
+> değiştirmeye çalışmaktır.*
+
+⊘ **KARAR: LMDI'ye GEÇİLMİYOR** — geçmek, tam toplanabilir bir yöntemi sıfır/negatifte
+**tanımsız** bir yöntemle değiştirmek olurdu. Kapı `tests/test_e7_toplamsal_ayristirma.py`
+(6): parçaların toplamı = bütün · sıfır bileşen · negatif bileşen · sıra bağımsızlık ·
+gövdede logaritma **yok** · kırpma **sessiz değil**.
+
+#### B9 · İki-sağlayıcılı LLM hakem — ⏸ **PARK, şartı yazılı**
+
+Kartın ölçümü sağlam: `dry_plan` AUROC **0,500 (tam şans)**, execution self-consistency
+**0,613**. Yani bugünkü öz-değerlendirme sinyalleri **zayıf** ve bir hakem gerçekten
+değerli olurdu.
+
+⏸ Ama iki sağlayıcı = **her soruda iki kat kota** ve kazancı ölçecek bir taban **yok**:
+garsonun doğruluk ölçümü `§26` ile park edilmiş. *Kazancı ölçülemeyen bir maliyeti
+varsayılan açmak, ölçümü bir törene çevirir* — `motor_rls`/`ossie_ithal`/`skills` için
+verilen kararın aynısı. **Şart: `§26`.**
