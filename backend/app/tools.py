@@ -863,6 +863,58 @@ def deterministik_olanlar(etiket: str | None = None) -> list[Arac]:
             if a.determinizm == "deterministik" and (etiket is None or etiket in a.etiketler)]
 
 
+#: JSON-Schema karşılıkları. ⚠ Kapalı eşleme: bilinmeyen bir açıklama `"string"`e düşer
+#: — **bugünkü davranış**, yani `KURAL B` anlamında geri adım yok.
+_JSON_TIPI = {"list": "array", "dict": "object", "int": "integer",
+              "float": "number", "bool": "boolean", "str": "string"}
+
+
+def _json_tipi(arac: "Arac", alan: str) -> str:
+    """Bir aracın `girdi` alanının **GERÇEK** JSON-Schema tipi.
+
+    ## 🔴🔴 Neden var — ölçülmüş bir yayın kusuru (2026-08-12)
+
+    Üretec her alanı **`"type": "string"`** ilan ediyordu. Ölçüldü (denetim ajanı +
+    kendi ölçümüm): **31 aracın 77 alanının tamamı** `string` yayımlanıyordu, oysa
+    gerçek imzalarda **`object` 31 · `array` 14 · `boolean` 7 · sayısal 5** var.
+
+    Sonucu bir varsayım değil, canlı ölçüm:
+
+        POST /mcp/call {"name":"stats.ozet","arguments":{"degerler":"[1,2,3]"}}
+          ← ŞEMAYA UYUYOR  → isError:true (ValueError)
+        POST /mcp/call {"name":"stats.ozet","arguments":{"degerler":[1,2,3,10]}}
+          ← ŞEMAYI YOK SAYIYOR → 200 ✅
+
+    Yani **sözleşmeye uyan çağrı düşüyor, uymayan çalışıyordu**; merdivenin birinci
+    basamağı `route` bile MCP'den çağrılamıyordu. Bir ajan için yanlış bir şema,
+    olmayan bir araçtan **kötüdür** — çünkü deneyip başarısız olur ve nedenini bilemez.
+
+    > *Yanlış yayımlanmış bir sözleşme, hiç yayımlanmamış bir sözleşmeden kötüdür:
+    > birincisine uyulur.*
+
+    ⚠ Tip **`girdi` metninden değil GERÇEK İMZADAN** türetilir (`modul.fonksiyon` →
+    `inspect.signature`). İmza çözülemezse (**4/31**) bugünkü `"string"`e düşer —
+    sessiz bir geri adım değil, **ölçülmüş** bir kapsam.
+    """
+    import importlib
+    import inspect
+
+    try:
+        fn = getattr(importlib.import_module(arac.modul), arac.fonksiyon, None)
+        if fn is None:
+            return "string"
+        par = inspect.signature(fn).parameters.get(alan)
+    except Exception:                                        # noqa: BLE001
+        return "string"
+    if par is None or par.annotation is inspect.Parameter.empty:
+        return "string"
+    ann = str(par.annotation)
+    for anahtar, tip in _JSON_TIPI.items():
+        if ann.startswith(anahtar) or ann.startswith(f"<class '{anahtar}'>"):
+            return tip
+    return "string"
+
+
 def llm_araclari(principal=None) -> list[dict]:
     """LLM'e verilecek araç listesi — sağlayıcı-bağımsız JSON şeması.
 
@@ -881,7 +933,7 @@ def llm_araclari(principal=None) -> list[dict]:
             ),
             "input_schema": {
                 "type": "object",
-                "properties": {k: {"type": "string", "description": v}
+                "properties": {k: {"type": _json_tipi(a, k), "description": v}
                                for k, v in a.girdi.items()},
                 "required": list(a.girdi),
             },
