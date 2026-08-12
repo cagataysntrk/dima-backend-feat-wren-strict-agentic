@@ -1115,6 +1115,28 @@ def toplam_turu(prev_cq: dict, cube_meta: dict | None, *, kos,
               f"**{_sayi(_hv)}** ↔ öteki {boyut} ortalaması **{_sayi(_akran)}**{_yargi}. "
               f"⚠ Toplam içindeki payı **hesaplanamadı**: segmentler birbirini "
               f"götürüyor (brüt {_sayi(_brut)} ↔ net {_sayi(_net)})."))
+
+    # 🔴🔴 `§E2`'nin ⏭ KALAN'ı — **VE ÇÖZÜMÜ BEYAN, BAĞLAMA DEĞİLDİ** (⟳ 2026-08-12).
+    #
+    # Raporun kendi notu *«`kok_neden`'in «en büyük segment» satırı hâlâ mutlak katkıya
+    # bakıyor — aynı ölçü oraya da bağlanmalı»* diyordu. Ölçüldü: **bağlanamaz.**
+    # Jensen-Shannon sürprizi **iki dağılım** ister (önce ↔ sonra); `toplam_turu` ise
+    # `prev_cq` + `kos` ile **tek dönem** üstünde çalışır — bir *bileşim* sorusunu
+    # cevaplar (*«bu toplamı ne oluşturuyor»*), bir *değişim* sorusunu değil. Taban
+    # uydurmak, `§E2`'nin forecast için ve `§E3`'ün BH için **reddettiği** şeydir.
+    #
+    # ⚠ Ama kusurun **kendisi gerçek**: kullanıcı bunu *«neden»* sorusuna cevap olarak
+    # okuyor ve *«en büyüğü suçlu»* diye anlıyor — Adtributor'ın kurucu örneğinin tam
+    # olarak uyardığı okuma. Yapılabilecek şey ölçüyü bağlamak değil, **ölçülemediğini
+    # söylemek**: cümle bir BÜYÜKLÜK ifadesidir ve payının değişip değişmediği
+    # bilinmiyor.
+    #
+    # *Bir ölçüyü hesaplayamıyorsan, hesaplayamadığını söylemek de bir ölçümdür.*
+    if _pay is not None:
+        metin += ("\n\n⚠ Bu bir **büyüklük** ifadesidir, bir **sebep** değil: bu soruda "
+                  "kıyas dönemi yok, yani segmentin payının **değişip değişmediği "
+                  "ölçülmedi**. Payı değişmemiş en büyük kalem bir sebep değil, ölçeğin "
+                  "kendisidir — *«neden değişti»* sorusu için bir dönem kıyası gerekir.")
     # 🔴 EN DİBE İN — segmentin **içinde** ikinci bir kırılım. `derinles` bir `Bilesen`
     # ister (formül ekseni); burada eksen ölçünün kendisidir, o yüzden süpürücü
     # **doğrudan** çağrılır — ikinci bir «açıklayıcılık» tanımı yazılmaz (`KAT-1`).

@@ -149,3 +149,40 @@ def test_KURAL_TEK_SAHIPLI():
     assert "_brut * 0.01" in k, (
         "🔴 `kok_neden` artık `contribution`'ın eşiğini kullanmıyor — aynı kuralın iki "
         "sahibi olur ve iki farklı gün ayrışır (`KAT-1`).")
+
+
+def test_BUYUKLUK_SEBEP_DIYE_SUNULMUYOR():
+    """🔴🔴 `§E2`'nin ⏭ KALAN'ı — **ve çözümü BAĞLAMA değil BEYANDI** (⟳ 08-12).
+
+    Rapor *«`kok_neden`'in «en büyük segment» satırı hâlâ mutlak katkıya bakıyor — aynı
+    ölçü oraya da bağlanmalı»* diyordu. Ölçüldü: **bağlanamaz.** Jensen-Shannon sürprizi
+    **iki dağılım** ister (önce ↔ sonra); `toplam_turu` `prev_cq` + `kos` ile **tek
+    dönem** üstünde çalışır ve bir **bileşim** sorusunu cevaplar. Taban uydurmak,
+    `§E2`'nin forecast için ve `§E3`'ün BH için **reddettiği** şeydir.
+
+    ⚠ Ama kusur gerçek: kullanıcı bunu *«neden»* sorusuna cevap olarak okuyup *«en
+    büyüğü suçlu»* diye anlıyor — Adtributor'ın kurucu örneğinin uyardığı okuma.
+    Yapılabilen şey ölçüyü bağlamak değil, **ölçülemediğini söylemek**.
+
+    *Bir ölçüyü hesaplayamıyorsan, hesaplayamadığını söylemek de bir ölçümdür.*
+    """
+    r = kn.toplam_turu(_CQ, _META, kos=_kos_fabrikasi([100.0, 50.0, 30.0, 20.0]))
+    m = _metin(r)
+    assert "büyüklük" in m and "sebep" in m, (
+        f"🔴 en büyük segment cümlesi bir SEBEP gibi sunuluyor — `§E2`'nin kurucu "
+        f"uyarısı yok:\n{m[:400]}")
+    assert "kıyas dönemi" in m, (
+        f"🔴 beyan, payın NEDEN ölçülemediğini söylemiyor — eksiklik bir unutma gibi "
+        f"okunur:\n{m[:400]}")
+
+
+def test_BEYAN_PAY_BASILAMAYAN_DALDA_TEKRARLANMIYOR():
+    """⚠ `§101.1` — pay zaten basılamadığında cümle **büyüklüğe iniyor** ve nedenini
+    kendi içinde söylüyor. İkinci bir *«bu bir büyüklüktür»* uyarısı aynı şeyi iki kez
+    söylemek olurdu; *bir beyanı iki kez vermek onu bir kez vermekten güvenilir yapmaz,
+    yalnız gürültü yapar.*"""
+    r = kn.toplam_turu(_CQ, _META, kos=_kos_fabrikasi([9000.0, -4500.0, -3000.0, 0.0]))
+    m = _metin(r)
+    assert "hesaplanamadı" in m, "⊘ ölçüm tabanı: bu veride pay zaten basılıyor"
+    assert m.count("büyüklük") <= 1, (
+        f"🔴 aynı uyarı iki kez basılıyor:\n{m[:400]}")
