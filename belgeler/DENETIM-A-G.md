@@ -818,3 +818,45 @@ planın kendi ölçütü şöyle diyordu:
 ⏭ **Sıradaki iş:** `CLARIFY:dönem`in **hangi girdide** ateşlendiğini ölçmek — dönem
 ifadesi **çözülemiyor** mu, yoksa **çözülüyor ama iki adaya mı** düşüyor? İkisi farklı
 kusur ve farklı yerde düzeltilir.
+
+## ⟳ DÜZELTME — *«`CLARIFY:dönem` kökü»* İDDİAM YANLIŞTI: bu bir **PAYDA ARTEFAKTI**
+
+Bir önceki turda *«ayırt edici kalem `CLARIFY:dönem`»* demiştim. Sınıf dağılımı doğruydu
+(üç şirkette **%9**, boyahane'de **0** — yeniden ölçüldü, tutuyor) ama **erişim düşüşünü
+o açıklamıyor**. Ölçüm:
+
+| şirket | taban `tur` | bugün `tur` | Δ payda | taban erişim | bugün |
+|---|---|---|---|---|---|
+| boyahane | 5.306 | **10.764** | **+%103** | 64 → *(kapı 69)* | **73** ✅ |
+| atiksan | 1.462 | **1.845** | **+%26** | 67 → *(69)* | **54** ❌ |
+| gulteks | 1.618 | **2.079** | **+%28** | 62 → *(69)* | **53** ❌ |
+| gitas | 2.479 | **3.110** | **+%25** | 67 → *(72)* | **58** ❌ |
+
+🔴 **Payda DÖRDÜNDE DE büyüdü** (toplam **10.865 → 14.957**, +%38) — korpus katalogdan
+üretiliyor ve katalog büyüdü. `erişim = OK / tur`. Payda büyürken pay aynı kalırsa oran
+**mekanik olarak** düşer.
+
+**Mutlak sayıya çevirince kayıp on beş puan değil, üç:** atiksan taban `%67 × 1.462 ≈
+980` OK → bugün `%51 × 1.845 = 949` OK. **−31 soru (−%3)**, *«−15 puan»* değil.
+
+🔴 **Ve kapının tabanı bu kıyası YAPAMAZ:** `_turlar`'ın son iki kaydı **yalnız
+`erisim_yuzde`** taşıyor — `tur` **yok**. Yani kapı bir oranı, **hangi payda üzerinde
+ölçüldüğü bilinmeyen** bir oranla karşılaştırıyor. 🅔 *İki ayrı kiple ölçülen bir oran,
+aynı ölçüt değildir.*
+
+⊙ **Bu, deponun kendi kayıtlı dersinin AYNADAKİ hâli:** `gitas` korpustan düşünce payda
+445→342 inmiş ve doğruluk **yükselmişti** — *«sistem bozulurken sayı iyileşti»*. Bugün
+tersi oldu: **payda büyüdü ve sayı kötüleşti, sistem bozulmadan.** Aynı kusur sınıfı, iki
+yönü. 🅜 *Payda kutsaldır — ve kutsallığı, **yazılı olmasıyla** korunur.*
+
+⊙ Aynı büyümüş payda üzerinde **iki doğruluk ölçütü de yükseldi**: doğru-cube **%95,6**
+(taban %94,4) · semantik vaka **%94,4** (taban %93,5). Bir gerilemede bu **beklenmez**.
+
+### ⏭ Çıkan iş — kapının kendisi onarılacak
+
+**① Taban kaydına `tur` YAZILACAK** (oran tek başına bir ölçüm değildir ㉗).
+**② Kapı, payda değiştiğinde bunu BEYAN ETMELİ** — oranı sessizce kıyaslamak yerine
+*«payda %26 büyüdü, oran kıyası geçersiz; mutlak OK: 980 → 949»* demeli 🆆.
+**③ `CLARIFY:dönem` ayrı bir borç olarak kalır** — açıkladığı şey erişim düşüşü değil,
+ama **şirket başına 181–296 soru** hâlâ *«hangi dönem?»*e düşüyor ve *«dürüst red başarı
+değildir»*.
