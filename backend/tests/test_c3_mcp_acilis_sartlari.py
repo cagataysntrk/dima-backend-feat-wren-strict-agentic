@@ -227,9 +227,43 @@ def test_ORTUSME_OLCUMU_BAYRAKTAN_BAGIMSIZ():
         "yeniden okunsun.")
 
 
-def test_KAPALIYKEN_bugunku_davranis():
-    """`KURAL B` — kapalıyken uçlar 404; bu kapı bayrağın hâlâ kapalı olduğunu **kayda
-    geçirir**, ki açıldığı gün yukarıdaki test bilinçli bir kararın sonucu olsun."""
-    assert _bayrak("mcp_yuzeyi") == "off", (
-        "bayrak açılmış — `test_BORC_KENDINI_TOPLUYOR_mcp_acilirsa_KIRMIZI` ve "
-        "`test_c1_tek_yetenek_kaydi.py::test_BORC_KENDINI_TOPLUYOR` birlikte okunmalı")
+def test_BAYRAK_ACILDI_ve_BORCLAR_ODENDI():
+    """⟳🔴 **BAYRAK AÇILDI (2026-08-12, `beta`) — ve bu kapı artık ÖDEMEYİ kaydediyor.**
+
+    ## Eski hâli ve neden değişti
+
+    Bu test *«bayrak hâlâ `off`»* diyordu ve gerekçesi doğruydu: *«açıldığı gün iki borç
+    birlikte okunsun»*. O gün geldi ve **iki borç da ödendi**:
+
+    | borç | ödeme |
+    |---|---|
+    | `§C3` dört şart | ✅ ölçüldü: örtüşme **1 çift** (tavan 10) · araç **31** (tavan 35) · yazma aracı MCP'de **yapısal olarak** yok · dört kapı · sanitizasyon |
+    | `§C1` tek yetenek kaydı | ✅ `§D6` ile: `Arac.fiil` beyanı · **15/15** eşleşme · ayrışma **içe aktarmada patlıyor** |
+
+    ⚠ **Ne türetildi, ne türetilmedi — açıkça:** fiil **kümesi** kayıttan türetiliyor ve
+    içe aktarmada doğrulanıyor; plan istemindeki **sıralı metin** `plan_semasi`'nde kaldı
+    ve gerekçesi yazılı (araç `ozet`leri MCP için yazılmış uzun metinlerdir; isteme
+    dökmek `KURAL B`'yi çiğnerdi). *Bir ödemeyi olduğundan büyük yazmak, bir sonraki
+    okuyucuyu yanıltır.*
+
+    ## Bu kapı bundan sonra ne ölçüyor
+
+    Bayrağın **geri kapanmadığını** değil — kapanabilir, o bir ürün kararıdır. Ölçtüğü
+    şey: bayrak **açıkken** dört şartın hâlâ geçerli olduğu. Şart bozulursa yüzey
+    açık kalamaz.
+    """
+    bayrak = _bayrak("mcp_yuzeyi")
+    assert bayrak in ("beta", "on", "off"), f"tanınmayan bayrak değeri: {bayrak}"
+    if bayrak == "off":
+        return  # kapatmak meşru bir ürün kararıdır; şartlar zaten aşağıda ölçülüyor
+    ort = _ortusen_ciftler(tools.KAYIT)
+    karisan = {a for c in ort for a in c}
+    assert len(karisan) <= ORTUSME_TAVANI and len(tools.KAYIT) <= ARAC_TAVANI, (
+        f"🔴 MCP yüzeyi AÇIK ama `§C3` ① şartı bozuldu: örtüşen {len(karisan)} "
+        f"(tavan {ORTUSME_TAVANI}) · araç {len(tools.KAYIT)} (tavan {ARAC_TAVANI}).")
+    from app.plan_semasi import FIIL_ANLAMI
+
+    beyan = {a.fiil for a in tools.KAYIT if a.fiil}
+    assert beyan == set(FIIL_ANLAMI), (
+        "🔴 MCP yüzeyi AÇIK ama `§C1` ödemesi bozuldu: iki yetenek kaydı ayrıştı "
+        f"(kayıt {len(beyan)} ↔ plan {len(FIIL_ANLAMI)}). `KAT-1`.")

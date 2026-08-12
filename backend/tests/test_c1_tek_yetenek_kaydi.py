@@ -116,7 +116,24 @@ def test_BORC_KENDINI_TOPLUYOR():
     ⚠ Ödeme biçimi kartta yazılı: her araç **kendi fiilini beyan eder**, `FIIL_ANLAMI`
     ondan **türetilir**, ve türetilmiş liste bugünküyle **bayt bayt** aynı çıkar
     (`KURAL B`; bayrak yok, çünkü davranış değişmemeli)."""
-    acik = [ad for ad in ("mcp_yuzeyi", "agent_plan_secimi") if _bayrak(ad) != "off"]
+    # ⟳✅ **BORÇ ÖDENDİ (2026-08-12, `§D6`) — ve bu test artık ÖDEMEYİ doğruluyor.**
+    #
+    # Kartın istediği üç adım da yapıldı:
+    #   ① her araç `fiil` alanıyla kendi fiilini BEYAN ediyor (15/15)
+    #   ② fiil KÜMESİ kayıttan türetiliyor ve **içe aktarmada** doğrulanıyor — ayrışırsa
+    #      uygulama ayağa kalkmıyor (`plan_semasi._fiilleri_kayittan_dogrula`)
+    #   ③ liste bugünkü 15 fiille **bayt bayt aynı** (`KURAL B`)
+    #
+    # ⚠ Ödemenin **sınırı da yazılı**: plan istemindeki sıralı METİN türetilmedi ve
+    # gerekçesi var (araç `ozet`leri MCP için yazılmış uzun metinlerdir; isteme dökmek
+    # davranışı değiştirirdi). *Bir ödemeyi olduğundan büyük yazmak, okuyucuyu yanıltır.*
+    from app.plan_semasi import FIIL_ANLAMI
+
+    beyan = {a.fiil for a in tools.KAYIT if a.fiil}
+    assert beyan == set(FIIL_ANLAMI) and len(beyan) == 15, (
+        f"🔴 `C1` ödemesi bozuldu: kayıt {len(beyan)} fiil beyan ediyor, plan şeması "
+        f"{len(FIIL_ANLAMI)} taşıyor. İki yetenek kaydı ayrıştı (`KAT-1`).")
+    acik = [ad for ad in ("agent_plan_secimi",) if _bayrak(ad) != "off"]
     assert not acik, (
         f"🔴 {acik} AÇILDI — artık `tools` kaydı da canlı yolda.\n"
         "İki yetenek kaydı aynı anda canlı olamaz (`KAT-1`): `C1`'i şimdi öde —\n"

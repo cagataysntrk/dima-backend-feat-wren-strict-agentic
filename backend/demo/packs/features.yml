@@ -84,7 +84,25 @@ features:
   # törene çevirir.*
   ossie_ihrac: beta
   # FAZ 4.5 — MCP yüzeyi. `off`: /mcp/* 404 döner, HTTP yolu ETKİLENMEZ.
-  mcp_yuzeyi: "off"
+  # 🔴 `§D13`/`§C3` — **`beta`ya ALINDI (2026-08-12)** ve açılış bir dilek değil, dört
+  # ölçülmüş şartın karşılanmasıydı:
+  #   ① örtüşme — OpenAI'ın asıl ölçütü sayı değil ÖRTÜŞMEDİR. Ölçüldü: **1 çift**
+  #      (`stats.trend`↔`stats.ozet`), 31 aracın 29'u AYRIK (tavan 10). Araç sayısı 31 ≤ 35.
+  #   ② yazma aracı MCP'de YOK — ve artık **yapısal**: `tools.okuyan_araclar()` eler,
+  #      `mcp.cagir()` adı bilinse bile reddeder. (Eskiden sınırı kaydın BOŞLUĞU koruyordu;
+  #      `§F13` bayrağı açıldığı an güvence sessizce ölüyordu.)
+  #   ③ dört kapı — MCP'den çağrılan araç HTTP'dekiyle AYNI kapılardan geçer.
+  #   ④ sanitizasyon — C0/C1 kontrol karakterleri · ANSI kaçışları · zarf sınırı taklidi;
+  #      kelime listesi YOK (`ADR-0008`).
+  #
+  # ⚠ `§C3` açılışı **tek bir borca** bağlamıştı: *«`§C1` (tek yetenek kaydı) hâlâ
+  # `mcp_yuzeyi` açılışına bağlı»*. O borç `§D6` ile kapandı (15/15 fiil–araç eşleşmesi,
+  # içe aktarmada doğrulanıyor). Son engel kalktı.
+  #
+  # 🔴 `on` ŞARTI (gözlenebilir): canlı `GET /mcp/tools` **200** dönmeli, listede **hiçbir
+  # yazma aracı bulunmamalı**, ve bir `POST /mcp/call` çağrısı HTTP yoluyla **aynı makbuzu**
+  # üretmeli. *Bir yüzeyi açmak, onun kanıtını görmeden tamamlanmaz.*
+  mcp_yuzeyi: beta
   # FAZ 5.1 — 6. konuşma türü ("bunu takip et"). `off`: tür tanınmaz, davranış birebir.
   # 🔴 `F6`/`D1` — **AÇILDI (2026-08-10).** Rapor: *«yeni motor yazılmadı, yalnız
   # ERİŞİM açılıyor»* — `zamanla.olustur` zaten var ve testli (`test_tur_takip.py`).

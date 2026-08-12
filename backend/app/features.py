@@ -303,6 +303,13 @@ FLAG_REGISTRY: dict[str, dict[str, str]] = {
                        "yetki · deterministik-önce · bütçe) geçer ve AYNI makbuzu üretir "
                        "— jenerik MCP sunucularında olmayan fark budur. Kapalıyken uçlar "
                        "404 döner, HTTP yolu etkilenmez (FAZ 4.5).",
+        # 🔴 `§D13` — `beta`ya alındı (2026-08-12); `on` şartı **gözlenebilir** olmalı.
+        # Üçü de canlı curl ile ölçüldü ve üçü birden aranıyor: bir yüzeyin açıklığı
+        # tek bir 200'le değil, **sınırının da durduğuyla** kanıtlanır.
+        "on_sarti": ("Canlı `GET /mcp/tools` **200** dönmeli ve listede **hiçbir yazma "
+                     "aracı** bulunmamalı; bir `POST /mcp/call` çağrısı HTTP yoluyla "
+                     "**aynı makbuzu** (araç · determinizm · süre) ve **enjeksiyon "
+                     "zarfını** üretmeli; kayıtta olmayan bir araç adı **reddedilmeli**."),
         "category": "genisleme",
     },
     "ossie_ihrac": {
