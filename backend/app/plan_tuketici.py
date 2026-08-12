@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import json
 import logging
+import types
 from typing import Any
 
 from app import plan_kosucu
@@ -840,6 +841,41 @@ def cevap(request: Any, *, service: Any, schema: dict, soru: str, settings: Any 
                 _gorulen.add(_isaret)
                 _ihlaller.append(_bekleyen[_isaret])
         _eksik_notu = ("\n\n" + _uyum.kismi_cevap_notu(_ihlaller)) if _ihlaller else ""
+        # 🔴🔴 `§YS-plan` — **GARSONUN «TEMSİL EDEMEDİM» İDDİASI, PLAN YOLUNDA DA.**
+        #
+        # Ölçülen kusur (curl, 2026-08-12): *«müşteri kohort analizi yap»* → plan koştu,
+        # **müşteri × dönem PİVOTU** teslim edildi ve *«kohort uygulanmadı»* beyanı
+        # **yoktu**. `uyum.denetle` bunu göremez: o bir **CubeQuery** denetleyicisidir
+        # (ölçü · boyut · sıralama), *«kohort»* ise bir **metodoloji** sözcüğü — hiçbir
+        # küp eksenine karşılık gelmez.
+        #
+        # ⊙ Sahip **değişmiyor**: karar ve iki deterministik süzgeç yine
+        # `uyum.yok_sayilan_beyani`'nda (küp yolunun kullandığı **aynı** gövde). Buraya
+        # kalan yalnız çağrı ve **fişin birleşimi**: plan çok bloklu olduğu için bir
+        # sözcük *«fişte geçmiyor»* sayılmadan önce **bütün** blokların taşıdıkları
+        # birleştirilir — `§Cİ-belge`'nin aynı disiplini (*bir cevabın neyi içerdiğini
+        # bir parçasına sorarsanız, öbür parçadakini eksik ilan edersiniz*).
+        _ys = [str(w).strip() for w in ((plan or {}).get("yok_sayilan") or [])
+               if str(w).strip()]
+        if _ys:
+            _bkup = {"cube": "", "measures": [], "dimensions": [], "filters": [],
+                     "period_expr": ""}
+            for _b in _bolumler:
+                _bcq = _b.get("cube_query")
+                if not isinstance(_bcq, dict):
+                    continue
+                _bkup["cube"] = _bkup["cube"] or str(_bcq.get("cube") or "")
+                _bkup["period_expr"] += " " + str(_bcq.get("period_expr") or "")
+                _bkup["measures"] += [str(m) for m in (_bcq.get("measures") or [])]
+                _bkup["dimensions"] += [str(d) for d in (_bcq.get("dimensions") or [])]
+                _bkup["filters"] += list(_bcq.get("filters") or [])
+            _cm0 = next((c for c in (schema.get("cubes") or [])
+                         if c.get("name") == _bkup["cube"]), None)
+            _kabuk = types.SimpleNamespace(note="", trace=[])
+            if _uyum.yok_sayilan_beyani(_kabuk, soru, _bkup, _cm0, schema, _ys):
+                _eksik_notu += ("\n\n" if _eksik_notu else "\n\n") + _kabuk.note.strip()
+                _log.info("§YS-plan: temsil edilemeyen sözcük beyan edildi (%s)",
+                          ", ".join(_ys))
         # `§RT` — belge indirgemesi beyanı, uyum beyanının **yanına** eklenir: ikisi
         # farklı şeyler söyler (biri *«sorunun bir parçası taşınmadı»*, öteki *«belge
         # kurulamadı»*) ve biri ötekini ezmemeli.

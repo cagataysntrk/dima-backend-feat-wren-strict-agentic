@@ -1718,6 +1718,37 @@ kalır** (`KURAL B`), ve `single` tanınan tip olmalı (yoksa cevap sessizce LLM
 🟢 Canlı: tek tip → *«Arıza sayısı 26 adet»* · 8 tipli gerçek kırılım → *«En yüksek arıza
 tipi: sensör hatası (16 adet, toplamın %21,3'ü). En düşük: elektrik kesintisi; 8 kalem.»*
 
+### 18.6 🔴 `§YS-plan` — «TEMSİL EDEMEDİM» İDDİASI PLAN YOLUNDA **SÖYLENEMİYORDU**
+
+`§0.6` satır 19 şunu ölçmüştü: *«müşteri kohort analizi yap» → 8 satır, ama kohort değil
+**PİVOT** (müşteri × ay); 3 adım makbuzu var, «kohort metodolojisi uygulanmadı» beyanı
+**yok**.* Kök **iki katmanlı** çıktı (2026-08-12):
+
+| katman | ölçüm |
+|---|---|
+| çağrı | `uyum.yok_sayilan_beyani` **yalnız** küp yolunda (`ask.py:3151`); plan yolu ondan **önce** dönüyor (`ask.py:4222`) |
+| 🔴 girdi | plan şemasında `yok_sayilan` alanı **hiç yoktu** — plan garsonu *«temsil edemedim»* **diyemiyordu bile** |
+
+⚠ `uyum.denetle` bunu göremez: o bir **CubeQuery** denetleyicisidir (ölçü·boyut·sıralama);
+*«kohort»* bir **metodoloji** sözcüğüdür, hiçbir küp eksenine karşılık gelmez.
+
+> *Bir menüde olmayan yemek, mutfakta pişebiliyor olsa da sipariş edilemez.* (`§EŞ`)
+
+✅ Alan plan şemasına **ve** istemine eklendi; beyan **aynı tek sahibe** bağlandı
+(`uyum.yok_sayilan_beyani` — küp yolunun kullandığı gövde, `KAT-1`). Plan çok bloklu
+olduğu için fiş **birleştirilerek** ölçülüyor (`§Cİ-belge` disiplini). Kapı
+`tests/test_ys_plan_beyani.py` (7): alan şemada **ve** istemde · kohort iddiası
+süzgeçlerden geçer · fişte geçen sözcük beyan **edilmez** (`§101.1`) · soruda geçmeyen
+sözcük beyan **edilmez** · birleşik fiş kuruluyor mu (yapısal) · beyan turu düşürmez.
+
+⚠ **CANLI DOĞRULAMA YARIM:** bu turda aynı soru üç koşumda da **plan yoluna düşmedi**
+(`llm:openrouter` ×2, dürüst red ×1) — yol seçimi belirlenimsiz. Kanal birim düzeyinde
+ölçüldü; **uçtan uca kanıt bir sonraki plan-yolu koşumunda alınacak**. *Ölçülmemiş bir
+yolu ölçülmüş saymak, bu raporun kapatmaya çalıştığı kusurun kendisidir.*
+
+⏸ Ve asıl yetenek (**kohort metodolojisinin uygulanması**) `§B10 Skills`'te ve **PARK**:
+bayrak kapalı, açılış şartı `§26`. Bu düzeltme yeteneği değil **dürüstlüğü** kapatıyor.
+
 # YEDİNCİ KISIM — CEVAP BİÇİMİ VE KONUŞMA UX'İ
 
 > ⚠ **Kısmi bölüm.** UI/UX araştırması sekiz kolda yürüdü; bu bölüm **doğrulanmış**

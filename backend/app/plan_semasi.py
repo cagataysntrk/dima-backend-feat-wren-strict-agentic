@@ -403,7 +403,34 @@ def plan_json_schema(index: dict, *, azami_adim: int = AZAMI_ADIM) -> dict[str, 
         "type": "object", "additionalProperties": False,
         "properties": {
             "adimlar": {"type": "array", "minItems": 1, "maxItems": azami_adim,
-                        "items": {"type": "object", "oneOf": dallar}}},
+                        "items": {"type": "object", "oneOf": dallar}},
+            # 🔴🔴 `§YS-plan` — **KÜP YOLUNDA VARDI, PLAN YOLUNDA YOKTU.**
+            #
+            # Canlı ölçüm (curl, 2026-08-12): *«müşteri kohort analizi yap»* → plan
+            # koştu, **müşteri × dönem PİVOTU** teslim edildi (8 satır, 3 adımlık
+            # makbuz) ve *«kohort metodolojisi uygulanmadı»* diye **tek kelime yok**.
+            #
+            # ⊙ Sebep ölçüldü ve yapısal: `uyum.yok_sayilan_beyani` **yalnız** küp
+            # yolunda çağrılıyor (`ask.py:3151`); plan yolu ondan önce dönüyor
+            # (`ask.py:4222`). Ama asıl eksik çağrı değil **girdi**ydi: plan şemasında
+            # `yok_sayilan` alanı **hiç yoktu**, yani plan garsonu *«şunu temsil
+            # edemedim»* diyemiyordu bile.
+            #
+            # ⚠ `§EŞ`'in birebir aynı dersi (`intent_semasi`'de de aynı yorum duruyor):
+            # *bir menüde olmayan yemek, mutfakta pişebiliyor olsa da sipariş edilemez.*
+            #
+            # 🔴 Ve çözüm bir **kelime listesi değil** (`ADR-0008`): hangi sözcüğün
+            # temsil edilemediğini bilen tek merci garsonun kendisidir; iddiası
+            # `uyum.yok_sayilan_beyani`'nin **iki deterministik süzgecinden** geçer
+            # (sözcük soruda GEÇMELİ · teslim edilen fişte GEÇMEMELİ). Kural tek sahipli
+            # kalıyor — bu alan yalnız aynı sahibi **plan yoluna da** besliyor.
+            "yok_sayilan": {
+                "type": "array", "items": {"type": "string"},
+                "description": "Sorunun bu PLANA yansımayan sözcükleri (uygulanmayan "
+                               "bir metodoloji · olmayan bir ölçü · karşılığı olmayan "
+                               "bir şey). Hepsi yansıdıysa alanı hiç yazma. ⚠ Soru "
+                               "sözcükleri ve nezaket kalıpları yok sayılan DEĞİLDİR — "
+                               "yalnız İÇERİK taşıyan sözcükleri yaz."}},
         "required": ["adimlar"],
     }
 
@@ -482,6 +509,12 @@ def plan_sistem_metni(catalog: str) -> str:
         "Yani zincir `SORGU → AYRISTIR → BOYUTSEC` olmalıdır, `SORGU → BOYUTSEC` değil.\n\n"
         "Kurallar:\n"
         '- SADECE JSON döndür: {"adimlar":[{"fiil":"...", ...}]}\n'
+        # 🔴 `§YS-plan` — alan şemada var ama **istenmezse yazılmaz** (bu deponun
+        # ölçülmüş dersi: `C3`'ün ilk yazımında model alanı üç turda da hiç doldurmadı).
+        '- Sorunun bir kısmını bu plana YANSITAMADIYSAN (uygulanmayan bir metodoloji, '
+        'karşılığı olmayan bir ölçü/şey) o sözcükleri `"yok_sayilan":["<sözcük>"]` '
+        'olarak yaz — **atlamak bir hatadır**. Örnek: *«müşteri kohort analizi yap»* '
+        'için kohort metodolojisi uygulanamıyorsa `"yok_sayilan":["kohort"]`.\n'
         "- 🔴 SORU TEK ADIMLA CEVAPLANIYORSA TEK ADIM YAZ. Plan uzunluğu bir maliyettir; "
         "gereksiz adım cevabı iyileştirmez, yalnız yavaşlatır.\n"
         "- Bir adım, önceki bir adımın çıktısına `$1` `$2` biçiminde işaret eder. "
