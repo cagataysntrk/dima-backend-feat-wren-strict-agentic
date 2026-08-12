@@ -86,14 +86,29 @@ def test_GOVDEDE_LOGARITMA_YOK():
     ⚠ `math.log2` bu modülde **var** ama `§E2`'nin Jensen-Shannon sürprizinde — ayrı bir
     fonksiyon, ayrı bir iş. *Bir modülde bir sembolün bulunması, onu her fonksiyonun
     kullandığı anlamına gelmez.*
-    """
-    import inspect
 
-    govde = inspect.getsource(contributions)
-    for iz in ("log", "ln("):
-        assert iz not in govde, (
-            f"🔴 ayrıştırma gövdesinde `{iz}` geçiyor — yöntem artık toplamsal olmayabilir; "
-            "`§E7` kararı (LMDI'ye geçilmiyor) yeniden okunmalı.")
+    🔴 **İlk yazımım kırılgandı** (bir denetim ajanı ölçtü, 2026-08-12):
+    `inspect.getsource()` **docstring'i ve yorumları da** döndürür. Yani gövdeye
+    *«burada logaritma YOK»* diye bir yorum yazan biri bu kapıyı **yanlış-kırmızı**
+    yapardı — ve bu, bu turda `test_d7`'de ölçülen kusurun **aynadaki hâlidir**: orada
+    bir yorum kapıyı haksız **yeşil**, burada haksız **kırmızı** yapıyordu.
+
+    ✅ Yüklem artık `ast` üstünde: bir docstring `ast.Constant`'tır, çağrılan bir
+    logaritma `ast.Name`/`ast.Attribute`. *Bir davranışı ölçen yüklem, o davranışı
+    anlatan metni kanıt saymamalıdır — hangi yöne çevirirse çevirsin.*
+    """
+    import ast
+    import inspect
+    import textwrap
+
+    agac = ast.parse(textwrap.dedent(inspect.getsource(contributions)))
+    adlar = {n.id for n in ast.walk(agac) if isinstance(n, ast.Name)}
+    adlar |= {n.attr for n in ast.walk(agac) if isinstance(n, ast.Attribute)}
+    kacak = {a for a in adlar if a in {"log", "log2", "log10", "ln", "logaddexp"}}
+    assert not kacak, (
+        f"🔴 ayrıştırma gövdesi bir logaritma ÇAĞIRIYOR: {kacak} — yöntem artık "
+        "toplamsal olmayabilir; `§E7` kararı (LMDI'ye geçilmiyor) yeniden okunmalı.")
+    assert adlar, "⊘ ölçüm tabanı çöktü: gövdeden hiç ad okunamadı"
 
 
 def test_KIRPMA_SESSIZ_DEGIL():

@@ -130,9 +130,17 @@ def gecerli(op) -> bool:
 # ⚠ `KURAL B`: dördünün de ürettiği değer **bayt bayt aynı** kalır —
 # `test_b12_granulerlik_tek_sahip.py` bunu ölçer.
 #
-# ⊙ `hour`/`minute` **YOK ve bu bir karardır**: motorun `timeDimensions.granularity`
-# sözleşmesi bu beşini tanıyor. Genişletmek motor sözleşmesinin değişmesini gerektirir
-# — *bir kümeyi yerelde büyütmek, motorun tanımadığı bir değeri geçerli sanmaktır.*
+# ⊙ `hour`/`minute` **YOK ve bu bir karardır** — ama gerekçesi ⟳ **2026-08-12'de
+# DÜZELTİLDİ** (`§40.7 B12`). Eski gerekçe *«motorun `timeDimensions.granularity`
+# sözleşmesi bu beşini tanıyor»* idi ve **ölçülmeden** yazılmıştı; ölçüm onu çürüttü.
+#
+# 🔴 Gerçek sebep **motor değil VERİ** (ders ㊹): motor `hour`'u kabul etse bile bu
+# depodaki zaman eksenleri `hour` çözünürlüğü **taşımıyor**. Kabul eden bir motor,
+# olmayan bir çözünürlüğü **adlandırır** — ve adlandırılmış boş bir kova bir hata
+# değil bir **sessiz-yanlıştır**.
+#
+# ⊘ Açılış şartı bu yüzden **gözlenebilir**: bir küpün zaman ekseni **TIMESTAMP**
+# olmalı **ve** `day` ile `hour` kovaları **farklı satır sayısı** vermeli.
 GRANULERLIKLER: tuple[str, ...] = ("year", "quarter", "month", "week", "day")
 
 #: İstem metni için hazır biçim — `llm.py` onu elle yazmasın.

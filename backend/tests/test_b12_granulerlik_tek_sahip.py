@@ -46,9 +46,9 @@ import re
 _APP = pathlib.Path(__file__).parent.parent / "app"
 
 #: 🔴 Bugünkü sözleşme — motorun `timeDimensions.granularity` için tanıdıkları.
-#: ⚠ `hour`/`minute` **YOK ve bu bir karardır**: genişletmek motor sözleşmesinin
-#: değişmesini gerektirir. *Bir kümeyi yerelde büyütmek, motorun tanımadığı bir değeri
-#: geçerli sanmaktır.*
+#: ⚠ `hour`/`minute` **YOK ve bu bir karardır** — ⟳ gerekçe **08-12'de düzeltildi**
+#: (`§40.7 B12`): sebep motorun sözleşmesi **değil**, verinin o çözünürlüğü
+#: **taşımaması**. *Kabul eden bir motor, olmayan bir çözünürlüğü ADLANDIRIR.*
 BEKLENEN = ("year", "quarter", "month", "week", "day")
 
 
@@ -57,8 +57,9 @@ def test_SAHIP_TEK_ve_SIRASI_KABADAN_INCEYE():
     from app.cube_operatorleri import GRANULERLIKLER
 
     assert GRANULERLIKLER == BEKLENEN, (
-        f"🔴 granülerlik sözleşmesi değişti: {GRANULERLIKLER}. Motorun tanıdığı küme "
-        "budur; genişletmek motor sözleşmesinin değişmesini gerektirir.")
+        f"🔴 granülerlik sözleşmesi değişti: {GRANULERLIKLER}. Bu küme motorun "
+        "kabul ettiği değil, **verinin taşıdığı** çözünürlüklerdir (`§40.7 B12`); "
+        "büyütmek için önce `day`↔`hour` kovalarının FARKLI satır saydığı ölçülmeli.")
 
 
 def test_DORT_TUKETICI_de_SAHIPTEN_TURUYOR():
