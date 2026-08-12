@@ -12896,3 +12896,49 @@ kaynağa dayanıyormuş gibi görünür.
 | ③ | dönem **kapsam dışıysa** Discovery'ye düşmeden **beyan et** | `cube_router` dönem dalı + `veri_araligi` | 🔴 en yüksek değer, `§38.4` sınırı |
 | ② | `sadece` dalı **dönem eksenini** de denesin | `uyum.py:1387` | orta |
 | ① | ham **satır dökümü** yolu (kırılıma çevirmeden) | `liste_niyeti` çevresi | ⚠ `on_sarti` yazılı — dikkat |
+
+## ⟳ TEŞHİS-2 DÜZELTİLDİ — route ÇEKİLMİYOR, **DÖNEMİ SESSİZCE DÜŞÜRÜYOR**
+
+*«Discovery'ye düşüyor»* demiştim. **Ölçüm bunu çürüttü** (16. kez kendi teşhisim):
+
+```
+route('2019 cirosu')  → {"cube":"parti","measures":["toplam_ciro"]}          ← FİLTRE YOK
+route('bu yil ciro')  → {"cube":"parti","measures":["toplam_ciro"],
+                         "filters":[{"dimension":"tarih","operator":"gte",
+                                     "value":"2026-01-01"}]}
+```
+
+🔴 Route **cube'u ve ölçüyü doğru buluyor**, sonra **«2019»u sessizce atıyor**. Yani
+üretilen sorgu *«2019 cirosu»* değil **«tüm zamanların cirosu»**dur — ve bu bir
+**sessiz-yanlış**tır: sayı doğru hesaplanır, **soru başkadır** 🅫.
+
+⊙ Canlıda `source=llm:openrouter` görülmesi bunun **sonucu**: sorgu boş/anlamsız kalınca
+üst katman Discovery'ye düşüyor ve orada ad uyduruluyor. **Kök yukarıda.**
+
+### ✅ VE SİNYAL ZATEN ÜRETİLİYOR — bağlanmamış (㊷ + 🆌)
+
+```
+niyet.coz('2019 cirosu') → donem_sayisi=1 · donemler=0 · temsil_edilemeyen=[]
+niyet.coz('bu yil ciro') → donem_sayisi=1 · donemler=1 · temsil_edilemeyen=[]
+```
+
+**`donem_sayisi=1` ama `donemler=0`** — *«soru bir dönem ADLADI, sistem onu TEMSİL
+EDEMEDİ»*. `Niyet` bu ayrımı **saymak için** kurulmuştu (`KÖK-1 Faz 1`: *«sistem artık
+temsil edemediği şeyi SAYABİLİYOR»*).
+
+🔴 Ama `Niyet.temsil_edilemeyen` (`:224`) **yalnız iki durumu** biliyor: `cok_donem`
+(≥2 dönem adlandı) ve `kiyas`. **Tek dönem adlanıp çözülememesi listede YOK** — ve
+`app/` altında bu özelliğin **hiçbir tüketicisi yok** (ölçüldü: 0).
+
+### ⏭ DÜZELTMENİN YERİ — ve BİR TAŞLA İKİ KUSUR
+
+Beyanı **bugün üreten** yer `uyum.py`: `T7`'nin *«enerji bu küpte yok»* ve `T9`'un
+*«zaman ekseni yok»* cümleleri oradan çıkıyor — ölçü ve boyut eksenleri **zaten**
+denetleniyor. **Eksik olan DÖNEM ekseni.**
+
+⊙ Ve aynı eksik `②`'yi de açıklıyor: `uyum.py:1387`'nin `sadece` dalı kısıtlamayı yalnız
+**boyut değeri** olarak arıyor. **Tek bir eksen eklemesi iki kusuru birden kapatır** —
+`T8` (2019) ve `T6` (sadece son 3 ay).
+
+⚠ `§101.1`: beyan **yalnız** soru bir dönem adlayıp sorgu onu taşımadığında basılmalı;
+her cevaba eklenirse okunmaz olur.
