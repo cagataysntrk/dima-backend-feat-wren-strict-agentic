@@ -148,6 +148,47 @@ class Niyet:
         """🔴 Soru birden çok dönem **adıyla** anıyor mu — çözülebilirlikten bağımsız."""
         return self.donem_sayisi > 1
 
+    #: 🔴 `§B.4` — **ROUTE'UN ÇEKİLME SEBEBİ ADLANDIRILDI** (⟳ 2026-08-12).
+    #: Kapalı küme; `KÖK-1`'in *«sistem temsil edemediği şeyi SAYABİLSİN»* ilkesi.
+    SEBEP_COK_SAHIP = "cok_sahipli_terim"
+    SEBEP_BILINMEYEN = "bilinmeyen_token"
+    SEBEP_OLCU_YOK = "olcu_bulunamadi"
+
+    @property
+    def cekilme_sebebi(self) -> str | None:
+        """🔴🔴 `§B.4` — **ROUTE ÇEKİLİYORSA, NEDEN?**
+
+        ## Ölçülen boşluk
+
+        `§B.1`'de doğrulandı: çok sahipli bir terimde `route()` **`None`** dönüyor ve
+        kural **uygulanıyor**. Ama `None` **sebepsizdi**: *«`adet` altı küpe işaret
+        ediyor»* ile *«bu kelimeyi hiç tanımıyorum»* aynı boşluğa düşüyordu.
+
+        ⊙ Sonuç: garsonun yükünün **ne kadarının** belirsizlikten geldiği bilinemiyordu —
+        ve `§A.2`'nin **73 çok-sahipli terimlik** borcunun **ürün maliyeti** ölçülemiyordu.
+
+        ## Neden bir alan DEĞİL, bir türev
+
+        `referans`'ın gerekçesinin aynısı (`KAT-1`): bir alan olsaydı *«kim doldurur»*
+        sorusu doğardı — `_coz_soru` mu, `route()` mü, `ask.py` mi? Türev olduğunda
+        **doldurulacak bir yer yoktur**: niyet neyse sebep odur.
+
+        ⚠ **Bu bir tahmin değil bir SINIFLANDIRMADIR**: yalnız `Niyet`'in **zaten
+        taşıdığı** alanlardan okunur (`olcu_adaylari` · `bilinmeyenler`). Yeni bir
+        ölçüm, yeni bir liste, yeni bir eşik **yok**.
+
+        Döner: kapalı kümeden bir sebep ya da `None` (*«çekilecek bir şey yok»*).
+        """
+        if len({c for c, _m in self.olcu_adaylari}) >= 2:
+            # 🔴 Aynı terim **iki farklı küpe** işaret ediyor: `§A.2`'nin 73 teriminden
+            # biri. Bu bir bilgisizlik değil, bir **çokluk** — ve ikisi ayrı şeydir.
+            return self.SEBEP_COK_SAHIP
+        if self.bilinmeyenler:
+            return self.SEBEP_BILINMEYEN
+        if not self.olcu_adaylari:
+            return self.SEBEP_OLCU_YOK
+        return None
+
     @property
     def referans(self) -> dict | None:
         """🔴 `G6.4` — KIYASIN İKİ UCU: `{eksen, kaynak, hedef}`. **TEK TEMSİL.**
