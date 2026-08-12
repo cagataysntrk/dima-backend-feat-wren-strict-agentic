@@ -1691,6 +1691,33 @@ eski sözlükler için geri düşüş korundu (`KURAL B`).
 kural **yine** tutmalıdır. *Bir değişmezi, onu şu an ayakta tutan tesadüflerle birlikte
 ölçmek, tesadüfü değişmez sanmaktır.*
 
+### 18.5 🔴 TEK KALEMDE ÜSTÜNLÜK — *«aynı soru, aynı sayı, iki farklı cümle»*
+
+Canlı ölçüm (curl ×3, 2026-08-12), *«pompa arızası kaç kere oldu»*:
+
+| koşum | `dimensions` | özet |
+|---|---|---|
+| 1, 2 | `["ariza_tipi"]` | *«**En yüksek arıza tipi**: pompa arızası (26 adet).»* |
+| 3 | — | *«Arıza sayısı 26 adet.»* |
+
+⊙ **Sayı üçünde de 26** — yani *«self-consistency %33»* kaydı **bayat**: terim çözülüyor
+(`ariza_tipi eq "pompa arızası"`), ayrışan tek şey **kırılımın varlığı**. Ama ayrışan
+şey masumsuz değil: kullanıcı zaten **tek bir tipe** süzmüşken *«en yüksek arıza tipi»*
+demek, **yapılmamış bir kıyası ima eder**.
+
+⚠ Ve bu kural depoda **zaten vardı** — yalnız yarısına uygulanmıştı: `_rank_facts`'in
+`pay` satırı tek kalemde *«toplamın %100,0'i»* yazmayı bırakmıştı, çünkü canlı bir
+kullanıcı ona *«boş laf»* demişti. Aynı gerekçe **başlığa** uygulanmamıştı.
+
+> *Bir üstünlük iddiası, kıyaslayacak ikinci bir şey yoksa bir iddia değil bir süstür —
+> ve süs, hesaplanmışla doldurulmuşu ayırt edilemez kılar.*
+
+✅ Tek grupta `top`/`bottom` yerine `single` üretiliyor. Kapı
+`tests/test_tek_kalemde_ustunluk.py` (5) — iki grupta sıralama, üç grupta pay **aynen
+kalır** (`KURAL B`), ve `single` tanınan tip olmalı (yoksa cevap sessizce LLM'e düşerdi).
+🟢 Canlı: tek tip → *«Arıza sayısı 26 adet»* · 8 tipli gerçek kırılım → *«En yüksek arıza
+tipi: sensör hatası (16 adet, toplamın %21,3'ü). En düşük: elektrik kesintisi; 8 kalem.»*
+
 # YEDİNCİ KISIM — CEVAP BİÇİMİ VE KONUŞMA UX'İ
 
 > ⚠ **Kısmi bölüm.** UI/UX araştırması sekiz kolda yürüdü; bu bölüm **doğrulanmış**

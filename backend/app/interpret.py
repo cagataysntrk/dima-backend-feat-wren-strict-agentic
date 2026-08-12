@@ -297,6 +297,28 @@ def _rank_facts(rows: list[dict], dim: str, measure: str, unit: str | None,
     # edemez hâle gelir.
     pay = (f", toplamın {_sek(_syuzde(round(share, 1)))})"
            if (total and toplanabilir and len(ranked) > 1) else ")")
+    # 🔴🔴 **TEK KALEMDE ÜSTÜNLÜK YAZILMAZ — bir sıralama en az iki şey ister.**
+    #
+    # Canlı ölçüm (curl ×3, 2026-08-12): *«pompa arızası kaç kere oldu»* →
+    # `filters: ariza_tipi eq "pompa arızası"` **ve** `dimensions: ["ariza_tipi"]`.
+    # Sonuç tek gruptu, ama cümle şuydu:
+    #
+    #     «En yüksek arıza tipi: pompa arızası (26 adet).»
+    #
+    # ⊙ Kullanıcı zaten **tek bir tipe** süzmüştü. Bu cümle bir sıralama **ima ediyor**
+    # ve o sıralama hiç yapılmadı — üstelik aynı soru başka bir koşumda `dimensions`
+    # olmadan geldi ve *«Arıza sayısı 26 adet»* dedi. Aynı soru, aynı sayı, **iki farklı
+    # cümle**: biri doğru, biri uydurma bir kıyas.
+    #
+    # ⚠ Bu, hemen yukarıdaki `pay` kuralının **aynısıdır** ve o kural canlı bir
+    # kullanıcı şikâyetinden doğmuştu (*«toplamın %100,0'i» → «boş laf»*). Kural payda
+    # uygulanmış, **başlıkta uygulanmamıştı**: yani bir yarısı ölçülmüş bir kural.
+    #
+    # *Bir üstünlük iddiası, kıyaslayacak ikinci bir şey yoksa bir iddia değil bir
+    # süstür — ve süs, hesaplanmışla doldurulmuşu ayırt edilemez kılar.*
+    if len(ranked) == 1:
+        return [{"type": "single", "measure": measure, "dim": dim, "entity": top[0],
+                 "text": f"{_ad(measure)}: {_fmt(top[1], unit)}"}]
     facts = [{"type": "top", "dim": dim, "measure": measure, "entity": top[0],
               "text": f"En yüksek {_ad(dim)}: {top[0]} ({_fmt(top[1], unit)}" + pay}]
     if len(ranked) > 1:
