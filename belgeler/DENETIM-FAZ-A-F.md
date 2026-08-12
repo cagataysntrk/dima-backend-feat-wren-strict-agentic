@@ -66,7 +66,7 @@ Bunlar **ürün kusuru** ya da **sahte güvence**; ötekiler bayat sayı/işaret
 | **A11** | TURSpider | ⏸ park | ✅ kodda iz yok, şart yazılı | ⊘ |
 | **A12** | tur bazında ölçüm | ✅ | ◐ **kod var, kanıt+kapı yok**: en yeni artefakt `tur` sütunu **taşımıyor** (kod commit'inden **önce** yazılmış) → tablo hiç üretilmemiş. Rapor *«3 zincir · 11 tur»*, `KORPUS` **2 zincir · 8 tur** (tur≥2 paydası **6**). 🔴 Karne satır 10 hâlâ `🟡 tur bazında ÖLÇÜLMÜYOR` → **kendi içinde çelişki** | ✅ |
 | **A13** | plan ayrışması | ✅ | ◐ araç gerçek (`/stats/plan`), **kapı yok**, sayaç bellek içi. Canlı: `tek_adimli 3 · cok_adimli 0` — yayınlanan %79'u ne doğrular ne çürütür, **korunmadığını** gösterir | ✅ |
-| **A14** | hava boşluğu | ✅ *(7)* | ✅ gerçek ve sağlam — ama kapı sayısı **9** (rapor 7 diyor) | 🔵 *(sayı)* |
+| **A14** | hava boşluğu | ✅ *(7)* | ✅ gerçek ve sağlam — ama kapı sayısı **9** (rapor 7 diyor → **düzeltildi**) | ✅ |
 | **A15** | Wren `evals/` | ⊘ **ve** ⏸ | 🔴 **İKİ FARKLI İŞARET AYNI BELGEDE**: `:4476`=`⊘ YAPILMIYOR`, `:4487`+`:4863`=`⏸ PARK`. 🔴 Kapının 3. testi `assert "eval" in kapi` — `"eval"` dosyada **22 kez** geçiyor → **hiçbir mutasyonla kırmızı veremez** | ✅ |
 
 **A · iyileştirme önerileri (ajan):** ① A10 yüklemini düzelt + `skipped==0` meta-testi *(yapıldı)* · ② `test_f8`'e Wilson **ve** EHRSQL yüklemleri ekle (`85+1+339+11.732+45 == 14.957`) · ③ `test_a15`'i `ADIM_ANAHTARLARI`/`TOPLUDA_YOK` desenine bağla + A15'in tek işareti olsun · ④ yeni `test_a12_tur_kirilimi.py` + `§40.8` birimini düzelt + karne satır 10 hizala · ⑤ `_garson_korpusu_kosulabilir()` **hangi ön koşulun** düştüğünü söylesin; A1 bir faz-sonu demetine girsin; 11/21 araştırılsın; **A4'e karar yazılsın**.
