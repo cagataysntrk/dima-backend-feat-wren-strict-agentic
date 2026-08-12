@@ -136,7 +136,7 @@ cevaptır**; semantik katmanda başarısızlık **bir hata mesajıdır**.»*
 | 24 | **FDR düzeltmesi** | **CHI 2018: içgörülerin %60+'ı yanlış** | 🟡 **BH UYGULANAMAZ, YERİNE BEYAN** *(§E3 `74678ef`)* — ölçüldü: bu depoda **p-değeri yok**, eşik bir z-kesimi; BH'yi uygulamak **normallik varsayımını dayatmak** olurdu. Yerine **tarama beyanı**: *«N aday tarandı, M'i işaretlendi; ~K'sı şansa düşer»* |
 | 25 | **Bileşik segment araması** | HotSpot **F1 >%90** ↔ Adtributor **<%15** | 🔴 **YOK** — layer-1'de kilitli |
 | 26 | **Garson doğruluk ölçümü** | Hex 30-50 soru · Anthropic %90 kapısı | 🔴 **YOK** — trafiğin **%37'si**, ölçümü **15 senaryo · 21 tur** *(⟳08-12 birim düzeltmesi: `lab/garson_korpusu.py::KORPUS` **15** senaryo taşıyor, **21** onların tur toplamı; `lab/reports/garson_korpusu.md` başlığı zaten «payda 21 — kayıt kümesi, «korpus %» değil» diye uyarıyordu. ㉗)* |
-| 27 | **Kurulum süresi ölçümü** | rakipler *«7 gün»* satıyor | 🔴 **YOK** |
+| 27 | **Kurulum süresi ölçümü** | rakipler *«7 gün»* satıyor | 🔴 **YOK** *(⟳08-12: kalem **artık işaretli** — `§A4` ⏸ PARK, şartı **gözlenebilir**: bir sonraki gerçek kurulum zamanlanarak yapılır. Makine tarafı ölçüldü: `compose_and_build` **4,66 sn**; baskın bileşen **insan emeği** ve geriye dönük kurtarılamaz — dört şirket paketlenmiş, **süre kaydı yok**)* |
 | 28 | **Yayınlanmış doğruluk** | *«savunma değil SİLAH»* | 🟢 **VAR** *(§F8 `45730be`)* — [`belgeler/DOGRULUK.md`](../DOGRULUK.md): **%95,6** (payda 11.237) + **iki payda birden** + şişme **25,3×** + **en düşük şirket tabloda** + **bilinen körlükler** + yeniden üretme künyesi. Kapıyla çürümüyor |
 | 29 | **İlan edilmiş kapsam** | yaşayanların **hepsinde** var, ölenlerin **hiçbirinde** | 🟢 **VAR** *(§F7 `ddc6fa3`)* — `yetenek.py` **üç kutu** (`anlamadim`·`yapamiyorum`·`yapmiyorum`) ve canlı: *«forecast v1'de yok — bilinçli bir karar… **Yapabildiğim:** geçmiş eğilimi gösterebilirim»* + chip |
 | 30 | **Ajan yüzeyinden dağıtım** | Rill: projelerin **%50+'ı ajan kuruyor** | 🔴 **YOK** |
@@ -3338,6 +3338,37 @@ ve bu raporun tamamının teşhisi tam olarak budur.
 | **neden** | Zenlytic: *«**Weeks. Sometimes months.** That setup tax is why we've mostly worked with large enterprises»* · rakipler **«7 gün»**, DBTalk **«30 dakika»** satıyor |
 | **dosyalar** | `belgeler/` yeni ölçüm notu |
 | **risk** | 🔴 **Sonuç kötü çıkabilir — ve o zaman ürün stratejisi değişir.** Bu bir risk değil, **ölçümün amacı** |
+
+> ⟳⏸ **KARAR YAZILDI (2026-08-12) — FAZ 0'ın TEK İŞARETSİZ KALEMİYDİ.** Bir denetim
+> ajanı bunu bulgu olarak bildirdi: kalem raporda **iki kez** geçiyor, `§0.6` karnesi
+> `🔴 YOK` diyor, ama **hiçbir karar yazılmamıştı** — ve `§40`'ın kendi kuralı
+> *«bir «değerlendir» maddesi, değerlendirilip kararı YAZILMADIKÇA kapanmaz»* diyor.
+>
+> **Ölçülebilen yarısı BUGÜN ölçüldü:**
+>
+> | ne | ölçüm |
+> |---|---|
+> | kaynak paketi | **3** (`logo-3` · `mikro-v16` · `netsis`) |
+> | paketlenmiş şirket | **4** (`atiksan` · `demo-boyahane` · `gitas` · `gulteks`) |
+> | `compose_and_build` (pack → derlenmiş proje) | **4,66 sn** |
+> | keşif/taslak makinesi | `db_introspect.py` **7** fonksiyon · `mdl_writer.py` **11** |
+>
+> ⊙ Yani **makine tarafı saniyeler sürüyor** — ve kartın sorduğu şey bu değil.
+> Kartın sorusu *«ilk DOĞRU cevaba kaç saat»* ve o sürenin baskın bileşeni **insan
+> emeği**: katalog düzeltme, sinonim kurma, ölçü doğrulama.
+>
+> ⏸ **PARK — şartı GÖZLENEBİLİR:** *bir sonraki gerçek müşteri kurulumu **zamanlanarak**
+> yapılır* (paket seçimi → bağlantı → keşif → katalog düzeltme → ilk doğru cevap; her
+> adım damgalanır). Bugün ölçülemez ve **geriye dönük de kurtarılamaz**: dört şirket
+> zaten paketlenmiş ama **hiçbirinin süre kaydı yok**.
+>
+> 🔴 **Ve neden UYDURULMUYOR:** bu sayı rakiplerin *«7 gün»* / *«30 dakika»* iddialarına
+> karşı yayımlanacak. `§F8`'in kuralı gereği ölçülmemiş bir kurulum süresi yayımlamak,
+> tam da eleştirdiğimiz şeyi yapmak olurdu. *Rakibin pazarlama sayısına, kendi
+> pazarlama sayınla cevap vermek bir ölçüm değil bir müzayededir.*
+>
+> ⚠ Kartın *«risk»* satırı yerinde duruyor: sonuç kötü çıkarsa strateji değişir — ama
+> **ölçülmeden** hiçbir strateji değişmez.
 
 ---
 
