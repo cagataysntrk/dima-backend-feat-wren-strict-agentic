@@ -347,3 +347,9 @@ doğrulandı: yama öncesi HEAD, bayrak açık → aynı iki kırmızı).
 ⚠ **Açık kalan soru (bir sonraki tura):** başka kaç kapı yalnız tek bir yapılandırmada
 anlamlı? `features.yml`'deki her bayrak için aynı sınıf taranmalı — bu, `A3` test
 düzenlemesiyle **aynı koşumda** yapılabilir.
+
+### ⑭ `§14.14 D11` — denormalizasyon
+
+| kalem | kart | önce | sonra | durum |
+|---|---|---|---|---|
+| **D11** | denormalizasyon | ⚠ ölçülmedi | ✅ **KAPANDI (08-12)** — **23 küp**, dağılım **{1:16, 2:6, 3:1}**; 3+ tablo **yalnız `kalite`**. Köken **9**, `hops` **9/9→1**, `certified` **9/9→`olculdu:saglikli`**. Kapı `test_d11_denormalizasyon_siniri.py` (5), **üç eşik de mutasyonlu**. ⚠ Ajanın sayısı **+1 kaymıştı** (`base_object` taban, `relationship` kenar) — *«7/23»* aslında **2+ tablo**. | ✅ |
