@@ -894,3 +894,52 @@ TOPLAM doğru-cube %95,6 (94,4) ✅    SEMANTİK VAKA %94,4 (93,5) ✅    çık�
 
 > 🆖 *Bir kova eklemek paydaya dokunmamalıdır* — ve ben tam da bunu yaptığım turda,
 > commit mesajına *«payda untouched»* yazmıştım. 🅟 **Commit mesajı kanıt değildir.**
+
+---
+
+# 📌 KAPANIŞ — AÇIK BORÇLARIN DURUMU *(2026-08-13)*
+
+## ✅ Bu turda kapananlar
+
+**⑨ Teşhis kovaları yayına yazıldı** 🅖 — `DOGRULUK.md`'ye *«TEŞHİS KATMANI — ayrımın
+parçası DEĞİL, üstündeki bir kat»* bölümü: `bilinmeyen_token 1.279 · cok_sahipli_terim
+862 · sebep_yok 364 · olcu_bulunamadi 336` = **2.841**, payda **14.957'nin içinde
+değil**. Sayılar **artefakttan** okundu (`lab/reports/nl_corpus.json`), belgeden değil ㉔.
+Kapılar: **19 ✅**.
+
+**⑤ `uyum._cok_donem` — ⊘ GEREKÇELİ: fazlalık, ölçüldü** ㊲
+```
+ocak ve haziran           _cok_donem=2   niyet.donem_sayisi=2
+2025 ve 2026              _cok_donem=2   niyet.donem_sayisi=2
+son 3 ay ve son 6 ay      _cok_donem=2   niyet.donem_sayisi=2
+ilk ceyrek ve ikinci ceyrek _cok_donem=2  niyet.donem_sayisi=2
+bu yil                    _cok_donem=0   niyet.donem_sayisi=1
+```
+Dört çok-dönem biçiminde **birebir aynı**; tek fark tek-dönem sınırında (0 ↔ 1) ve ikisi
+de *«çok değil»* diyor. **`Niyet` tek sahiptir** (`KAT-1`) ve `donem_sayisi` dört biçimin
+dördünü de sayıyor. Fonksiyon **silinmedi** (dosya/kod silme yok) ama **artık borç
+değil**: yerini `Niyet` almış, ve bu **ölçülerek** gösterildi.
+
+## ⏭ Devreden borçlar — **adlarıyla ve gerekçeleriyle**
+
+| # | borç | durum | ön koşulu |
+|---|---|---|---|
+| **d11** | 9 boyutun fan-out sertifikası | 🔴 **kapı kırmızı KALIYOR** 🅗 | sertifikaya **`mdl_version` damgası** (bugün `None`) |
+| **①** | Discovery dalına beyan taşıma | ⊘ ertelendi ㊸ | o dal `uyum.denetle`'den **hiç geçmedi** — sınanmamış yanlış-pozitif yüzeyi (`§101.1`) |
+| **③** | `netlestirme_sorusu` çağrı yeri | ⏭ açık | `adaylar` boş gelen dalda `diyalog_durumu.kismi_cq` okunabilir |
+| **④** | `CLARIFY:dönem` (181–296 soru/şirket) | ⏭ açık, **ölçülmedi** | hangi kalıplar · `donemler` boş mu, çok aday mı |
+| **⑥** | `demo/OLMAYAN-DIZIN` (1,2 MB, 0 referans) | ⏭ kayıtlı | **silinmez** — karar kullanıcının |
+| **⑩** | fan-out sertifikasına sürüm damgası | ⏭ açık | `d11`'in ön koşulu |
+
+## 📊 Oturumun kapanış ölçümü
+
+| ölçüt | değer |
+|---|---|
+| süit | **4.843 ✅ · 1 🔴 (gerekçeli) · 43 atlandı** (383/456 dosya) |
+| korpus | **✅ çıkış 0** — erişim 83/69/68/72 · doğru-cube **%95,6** · vaka **%94,4** |
+| curl | **20 senaryo · 17 ✅ · 3 kusur → 3'ü de kapandı** |
+| A–G | **yedi harf de kapandı** |
+
+🔴 **Oturumun tek cümlesi:** *iddialar ölçüm altında **yirmi iki kez** daraldı; ve
+**yirmi dördü** benim kendi probum, testim ya da teşhisimdi.* En pahalısı sondan bir
+öncekiydi — üç kez *«kapı temiz»* dedim, meğer süitin **%5,6**'sını ölçüyormuşum.

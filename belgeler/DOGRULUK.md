@@ -66,6 +66,35 @@ kapanıyor ve eksik kategorinin adı çıkıyor:
     NOTE                         339   % 2,3      ─────────────────────────────────
     CLARIFY:ölçü                  94   % 0,6      TOPLAM            14.957  %100,0
 
+### ⟳ TEŞHİS KATMANI — **ayrımın parçası DEĞİL, üstündeki bir kat** *(2026-08-13)*
+
+`§B` ile korpusa ikinci bir sayaç ailesi girdi: **route neden çekildi**. Bunlar bir tur
+**sınıfı** değil, tur **üstüne** bir katman — bir tur hem `CLARIFY:konu` hem
+`cok_sahipli_terim` olabilir. Bu yüzden **yukarıdaki toplama katılmazlar**; ayrı durur ve
+ayrı okunurlar.
+
+```
+bilinmeyen_token          1.279   route bir token'ı hiç tanımadı
+cok_sahipli_terim           862   terim ≥2 küpe işaret etti → route çekildi
+sebep_yok                   364   çekilme oldu ama sınıflandırılamadı  ← ADSIZ KALAN
+olcu_bulunamadi             336   dönem/kırılım çözüldü, ölçü bulunamadı
+──────────────────────────────
+TOPLAM                    2.841   (payda 14.957'nin %19,0'u — ama PAYDANIN İÇİNDE DEĞİL)
+```
+
+⚠ **Neden ayrı durmak zorundalar:** toplama katıldıklarında ayrım paydaya **kapanmıyordu**
+— kategoriler 17.798, payda 14.957, fark **2.841**, yani bu dört kovanın **tamı tamına**
+kendisi. Kapı (`test_f8_dogruluk_ayrimi_kapaniyor.py`) bunu yakaladı ve düzeltme
+**ayrımdan çıkarmak** oldu, kapıyı gevşetmek değil.
+
+> 🆖 *Bir kova eklemek paydaya dokunmamalıdır.* Ve dokunduğunda çare kovayı **silmek**
+> değil, onu **kendi tablosuna** koymaktır — çünkü kova gerçek bir şey ölçüyor.
+
+⊙ **`sebep_yok` (364) burada da en öğreticisi:** çekilme oldu ama **sebebi
+sınıflandırılamadı**. Yukarıdaki `CUBE-SAPMA(None)` ile aynı aile — *«adı olmayan
+kategori»* — ve aynı sebeple yazıldı: **ölçülüp adlandırılmayan bir şey, ölçülmemiş
+sayılır.**
+
 ⊙ **Ve atlanan kategori tesadüfen atlanmadı — o, tabloya sığmayandı.** Öteki yedisi bir
 *davranıştır* (cevapladı · reddetti · sordu); `CUBE-SAPMA(None)` bir davranış değil bir
 **yönlendirmedir**: soru küplerde karşılanamadı ve Discovery'ye düştü. EHRSQL'in ikili
