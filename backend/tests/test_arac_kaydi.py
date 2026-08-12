@@ -323,7 +323,15 @@ def test_superadmin_hepsini_gorur():
 @pytest.mark.parametrize("arac", tools.hepsi(), ids=lambda a: a.ad)
 def test_beyan_DOLU(arac):
     assert len(arac.ozet) >= 20, f"{arac.ad}: özet çok kısa — LLM'e giden tanım budur"
-    assert arac.girdi, f"{arac.ad}: girdi şeması boş"
+    # 🔴 `girdi` boş olabilir — **ama yalnız TAM ENJEKTE araçlarda** (⟳ 08-12).
+    # Ölçüldü: `katalog` aracının çağıranın vereceği hiçbir girdisi yok; şema
+    # `enjekte=("schema",)` ile planlayıcı tarafından sağlanıyor. Yüklem
+    # *«her aracın girdisi vardır»* diyordu ve bu **hiçbir zaman zorunlu değildi**:
+    # bir keşif aracı, keşfedileni parametre olarak isteyemez.
+    # ⚠ Muafiyet dar: `enjekte` **boşsa** girdi hâlâ zorunlu — yoksa LLM o aracı
+    # nasıl çağıracağını bilemez.
+    assert arac.girdi or arac.enjekte, (
+        f"{arac.ad}: girdi şeması boş VE hiçbir kaynak enjekte edilmiyor — LLM bu aracı nasıl çağıracağını bilemez")
     assert arac.cikti, f"{arac.ad}: çıktı beyanı boş"
     assert arac.etiketler, f"{arac.ad}: etiketsiz — deterministik-önce kuralı çalışmaz"
 
@@ -464,7 +472,11 @@ def test_ARAC_SAYISI_KAYITLI():
     # §99.1'in emsali: uzun bir liste, seçimi KÖTÜLEŞTİRİR.
     # ⚠ İkisi de maliyet="sifir" · yan_etki="yok": veriye dokunmuyorlar, sorgu
     # koşmuyorlar — bütçe muhasebesi bozulmaz.
-    beklenen = 34 if acik else 31
+    # ⟳ 08-12: **+1** — `katalog` keşif aracı eklendi (`§14.16 E`). Gerekçe:
+    # `route`'un `required` alanları `['question','schema']` idi ve ŞEMA DÖNDÜREN
+    # HİÇBİR ARAÇ YOKTU; sıfırdan başlayan bir ajan merdivenin birinci basamağına
+    # ulaşamıyordu. Araç `yan_etki="yok"` · `maliyet="sifir"` — yazma yüzeyi BÜYÜMEDİ.
+    beklenen = 35 if acik else 32
     assert len(tools.hepsi()) == beklenen, (
         f"araç sayısı {len(tools.hepsi())}, beklenen {beklenen} — kayıt değiştiyse bu "
         f"bir ÜRÜN kararıdır ve beyanı da değişmeli.")

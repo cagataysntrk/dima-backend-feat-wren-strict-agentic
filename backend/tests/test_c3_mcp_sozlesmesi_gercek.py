@@ -131,10 +131,20 @@ def test_MERDIVENIN_BIRINCI_BASAMAGI_CAGRILABILIR():
     r = next((a for a in mcp.araclar() if a["name"] == "route"), None)
     if r is None:
         pytest.skip("⊘ `route` MCP yüzeyinde yayımlanmıyor (yetki süzgeci?)")
-    props = r["inputSchema"]["properties"]
-    assert props.get("schema", {}).get("type") == "object", (
-        f"🔴 `route.schema` **{props.get('schema', {}).get('type')!r}** ilan ediliyor, "
-        "oysa `dict` bekleniyor. Merdivenin birinci basamağı çağrılamaz hâle gelir.")
+    # ⟳ 08-12 — **YÜKLEM GÜÇLENDİ.** İlk hâli *«`schema` `object` ilan edilmeli»*
+    # diyordu; ölçüm daha iyi bir çözüm gösterdi: `schema` **çağırandan hiç
+    # istenmemeli**, planlayıcı **enjekte** etmeli (`report.compose`'un deseni).
+    # Sebebi ölçüldü: **hiçbir araç şema DÖNDÜRMÜYOR**, yani sıfırdan başlayan bir
+    # ajan `schema`'yı hiçbir yerden alamıyordu — doğru tipte ilan etmek yetmezdi.
+    # *Bir alanı doğru ilan etmek, onu üretilebilir yapmaz.*
+    gerekli = set(r["inputSchema"]["required"])
+    assert "schema" not in gerekli, (
+        f"🔴 `route` hâlâ çağırandan `schema` İSTİYOR ({sorted(gerekli)}). Hiçbir araç "
+        "şema döndürmüyor → sıfırdan başlayan bir ajan merdivenin birinci basamağına "
+        "ulaşamaz. `enjekte=(\"schema\",)` yapın.")
+    assert gerekli == {"question"}, (
+        f"🔴 `route`'un gerekli alanları {sorted(gerekli)} — bir ajan yalnız SORUYU "
+        "verebilmeli.")
 
 
 def test_COZULEMEYEN_IMZA_SAYISI_KAYITLI():
@@ -189,3 +199,28 @@ def test_BELIRSIZLIK_AJANA_DA_BILDIRILIYOR(schema):
     assert "belirsizlik" not in net["_meta"], (
         "🔴 belirsiz OLMAYAN bir soruda da alan eklenmiş — `KURAL B` gereği çıktı bayt "
         "bayt eski kalmalı. *Bir beyanı her cevaba iliştirmek, onu gürültüye çevirir.*")
+
+
+def test_HICBIR_ARAC_CAGIRANDAN_SUNUCU_NESNESI_ISTEMIYOR():
+    """🔴🔴 `§14.16 E`'nin **gerçek** bulgusu: bir ajan `schema`/`service` üretemez.
+
+    Ölçüldü (08-12): **beş** araç çağırandan yalnız sunucunun üretebileceği bir nesne
+    istiyordu — `route`·`deterministic_refine`·`contribution.report`·`cross_cube_add`
+    (`schema`) ve `yoy.compute` (`service`). Hiçbiri bir ajan tarafından
+    **çağrılamazdı**, ve `route` merdivenin **birinci basamağıdır**.
+
+    ⊙ Çözüm zaten depoda vardı: `report.compose` `enjekte=("service","schema")` ile
+    aynı işi yapıyordu. Beşi de o desene taşındı.
+
+    *Bir aracı yayımlamak, onu çağrılabilir yapmaz — çağıranın verebileceği şeyleri
+    istemek yapar.*
+    """
+    from app import tools
+
+    kacak = {a.ad: sorted(set(a.girdi) & {"schema", "service", "svc", "sema"})
+             for a in tools.KAYIT
+             if set(a.girdi) & {"schema", "service", "svc", "sema"}}
+    assert not kacak, (
+        f"🔴 çağıranın ÜRETEMEYECEĞİ alanı isteyen araç(lar): {kacak}\n"
+        "Bu alanlar `girdi`den `enjekte`ye taşınmalı — yoksa araç MCP'de yayımlanır "
+        "ama **çağrılamaz**.")

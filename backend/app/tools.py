@@ -215,8 +215,8 @@ KAYIT: tuple[Arac, ...] = (
         ad="route",
         fiil="SORGU",
         ozet="Türkçe soruyu SIFIR LLM ile bir CubeQuery'ye çözer; çözemezse None döner. [Erişim: yalnız KATALOG (ölçü/boyut adları) — ham veri YOK] [Ne zaman: her soruda İLK basamak] [NE ZAMAN KULLANILMAZ: takip mesajlarında (o `deterministic_refine`'ın işi); bir cevabın ÜSTÜNDE konuşurken]",
-        girdi={"question": "kullanıcının sorusu (ham metin)",
-               "schema": "cube kataloğu (WrenService.schema())"},
+        girdi={"question": "kullanıcının sorusu (ham metin)",},
+        enjekte=("schema",),
         cikti="{cube_query, order, limit} ya da None",
         determinizm="deterministik", maliyet="sifir", yan_etki="yok",
         izin="query:run", makbuz=None,
@@ -230,8 +230,8 @@ KAYIT: tuple[Arac, ...] = (
         ad="deterministic_refine",
         ozet="Var olan bir CubeQuery'yi takip sorusuyla düzenler (granülerlik, kırılım, "
              "sıralama, dönem) — yeni sorgu üretmez, mevcut olanı değiştirir. [Erişim: önceki CubeQuery + katalog] [Ne zaman: elde bir rapor VARKEN gelen takip mesajında] [NE ZAMAN KULLANILMAZ: taze soruda (önceki sorgu yoksa); konu değiştiğinde]",
-        girdi={"prev": "önceki cube_query", "q": "normalize edilmiş takip sorusu",
-               "schema": "cube kataloğu"},
+        girdi={"prev": "önceki cube_query", "q": "normalize edilmiş takip sorusu",},
+        enjekte=("schema",),
         cikti="düzenlenmiş cube_query ya da None",
         determinizm="deterministik", maliyet="sifir", yan_etki="yok",
         izin="query:run", makbuz=None,
@@ -286,8 +286,9 @@ KAYIT: tuple[Arac, ...] = (
         ad="yoy.compute",
         fiil="TREND",
         ozet="Aynı raporu önceki dönemle (yıl ya da ay) hizalayıp kıyas kolonları ekler. [Erişim: CubeQuery + zaman boyutu] [Ne zaman: 'geçen yıla/aya göre' istendiğinde] [NE ZAMAN KULLANILMAZ: çok-yıl veri yoksa; zaman boyutu olmayan cube'da]",
-        girdi={"service": "WrenService", "cq": "CubeQuery", "mode": "'yoy' | 'mom'",
+        girdi={ "cq": "CubeQuery", "mode": "'yoy' | 'mom'",
                "time_dim": "zaman boyutu adı", "limit": "satır üst sınırı"},
+        enjekte=("service",),
         cikti="{rows, columns} — <ölçü>_gecen ve <ölçü>_degisim_yuzde kolonlarıyla",
         determinizm="deterministik", maliyet="ucuz", yan_etki="yok",
         izin="query:run", makbuz=None,
@@ -317,8 +318,9 @@ KAYIT: tuple[Arac, ...] = (
         ad="contribution.report",
         fiil="AYRISTIR",
         ozet="KULLANILMAYAN boyutları tarar, değişimi ayrıştırır, açıklayıcılığa göre sıralar. [Erişim: kullanılmayan boyutlar + iki dönem] [Ne zaman: hangi kırılımın açıkladığı BİLİNMEDİĞİNDE] [NE ZAMAN KULLANILMAZ: pahalıdır (boyut başına sorgu) — kırılım belliyse `contribution.decompose` yeter]",
-        girdi={"service": "WrenService", "schema": "cube kataloğu", "cube_query": "kaynak CubeQuery",
+        girdi={ "cube_query": "kaynak CubeQuery",
                "mode": "yoy|mom", "kind": "segment|pvm", "max_dimensions": "tarama sınırı"},
+        enjekte=("service", "schema"),
         cikti="{measure, mode, kind, raporlar[], pvm_raporlar[], taranmayan_boyut, note}",
         # Boyut başına AYRI bir kıyas sorgusu koşar (cari + geçen dönem) — tek bir
         # `decompose` çağrısından pahalıdır ve maliyet sınıfı bunu SÖYLEMELİDİR.
@@ -380,8 +382,8 @@ KAYIT: tuple[Arac, ...] = (
     Arac(
         ad="cross_cube_add",
         ozet="Mevcut rapora BAŞKA bir cube'un ölçüsünü `blend` olarak katar (LLM'siz). [Erişim: iki cube'un ölçüleri + ortak grain] [Ne zaman: kullanıcı ikinci bir cube'un ölçüsünü de istediğinde] [NE ZAMAN KULLANILMAZ: grain uyuşmuyorsa (fan-out); ilişki sertifikası `olculmedi` ise]",
-        girdi={"prev": "mevcut CubeQuery", "q": "kullanıcının sorusu",
-               "schema": "cube kataloğu"},
+        girdi={"prev": "mevcut CubeQuery", "q": "kullanıcının sorusu",},
+        enjekte=("schema",),
         cikti="genişletilmiş CubeQuery (`blend` alanı dolu) ya da None",
         determinizm="deterministik", maliyet="sifir", yan_etki="yok",
         izin="query:run", makbuz=None,
@@ -707,6 +709,28 @@ KAYITSIZ_OLANLAR: tuple[Arac, ...] = (
         notlar="⚠ Yol haritası bu aracı `resolve_series` diye adlandırmıştı; öyle bir "
                "fonksiyon YOK. Ad koddan alındı.",
         etiketler=("kpi",),
+    ),
+    Arac(
+        ad="katalog",
+        ozet="Bu kiracının KATALOG ENVANTERİ: hangi küpler, hangi ölçüler, hangi "
+             "boyutlar var. "
+             "[Erişim: yok — şema enjekte edilir] "
+             "[Ne zaman: bir ajan MERDİVENE BAŞLAMADAN ÖNCE; `route` bir `schema` "
+             "ister ve onu başka hiçbir araç vermiyordu] "
+             "[NE ZAMAN KULLANILMAZ: bir soruyu cevaplamak için — bu bir keşif "
+             "aracıdır, bir cevap aracı değil]",
+        girdi={},
+        enjekte=("schema",),
+        cikti="küp/ölçü/boyut envanteri (salt-okuma)",
+        determinizm="deterministik", maliyet="sifir", yan_etki="yok",
+        etiketler=("llmsiz", "kesif"),
+        izin="query:run", makbuz=None,
+        modul="app.katalog_metni", fonksiyon="envanter",
+        notlar="🔴 `§14.16 E` ölçümüyle doğdu: `route`'un `required` alanları "
+               "`['question','schema']` idi ve ŞEMA DÖNDÜREN HİÇBİR ARAÇ YOKTU — "
+               "yani sıfırdan başlayan bir ajan merdivenin BİRİNCİ BASAMAĞINA hiç "
+               "ulaşamıyordu. Envanter tek sahipten gelir (`katalog_metni.envanter`, "
+               "`/stats/katalog` ile AYNI fonksiyon; `KAT-1`).",
     ),
     Arac(
         ad="report.compose",
